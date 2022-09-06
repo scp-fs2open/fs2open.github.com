@@ -2052,7 +2052,8 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 	turret->flags.set(Ship::Subsystem_Flags::Has_fired); //set has fired flag for scriptng - nuke
 
 	//Fire animation stuff
-	Ship_info[parent_ship->ship_info_index].animations.start(model_get_instance(parent_ship->model_instance_num), animation::ModelAnimationTriggerType::TurretFired, animation::anim_name_from_subsys(turret->system_info), animation::ModelAnimationDirection::FWD, true);
+	Ship_info[parent_ship->ship_info_index].animations.get(model_get_instance(parent_ship->model_instance_num), animation::ModelAnimationTriggerType::TurretFired, animation::anim_name_from_subsys(turret->system_info))
+		.start(animation::ModelAnimationDirection::FWD, true);
 	return true;
 }
 
@@ -2526,7 +2527,7 @@ void ai_turret_execute_behavior(ship *shipp, ship_subsys *ss)
 	bool in_fov = turret_fov_test(ss, &gvec, &v2e);
 	bool something_was_ok_to_fire = false;
 
-	if (in_fov) {
+	if (in_fov && num_valid) {
 
 		// Do salvo thing separately - to prevent messing up things
 		int number_of_firings;
@@ -2669,15 +2670,13 @@ void ai_turret_execute_behavior(ship *shipp, ship_subsys *ss)
 			{
 				// starting animation checks
 				if (ss->turret_animation_position == MA_POS_NOT_SET) {
-					bool started = false;
 					//For legacy animations using subtype for turret number
-					started |= Ship_info[shipp->ship_info_index].animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::TurretFiring, animation::ModelAnimationDirection::FWD, false, false, false, ss->system_info->subobj_num, true);
+					auto animList = Ship_info[shipp->ship_info_index].animations.getAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::TurretFiring, ss->system_info->subobj_num, true);
 					//For modern animations using proper triggered-by-subsys name
-					started |= Ship_info[shipp->ship_info_index].animations.start(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::TurretFiring, animation::anim_name_from_subsys(ss->system_info), animation::ModelAnimationDirection::FWD);
-					if (started) {
-						int duration = Ship_info[shipp->ship_info_index].animations.getTimeAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::TurretFiring, ss->system_info->subobj_num, true);
-						int duration2 = Ship_info[shipp->ship_info_index].animations.getTime(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::TurretFiring, animation::anim_name_from_subsys(ss->system_info));
-						ss->turret_animation_done_time = timestamp(duration > duration2 ? duration : duration2);
+					animList += Ship_info[shipp->ship_info_index].animations.get(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::TurretFiring, animation::anim_name_from_subsys(ss->system_info));
+					
+					if (animList.start(animation::ModelAnimationDirection::FWD)) {
+						ss->turret_animation_done_time = timestamp(animList.getTime());
 						ss->turret_animation_position = MA_POS_SET;
 					}
 				}
@@ -2814,7 +2813,7 @@ bool turret_adv_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mo
 bool turret_fov_test(ship_subsys *ss, vec3d *gvec, vec3d *v2e, float size_mod)
 {
 	bool in_fov = false;
-	if (ss->system_info->flags[Model::Subsystem_Flags::Turret_restricted_fov])
+	if (ss->system_info->flags[Model::Subsystem_Flags::Turret_base_restricted_fov])
 		in_fov = turret_adv_fov_test(ss, gvec, v2e, size_mod);
 	else
 		in_fov = turret_std_fov_test(ss, gvec, v2e, size_mod);

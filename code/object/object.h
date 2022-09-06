@@ -110,8 +110,8 @@ typedef struct obj_flag_name {
 	int flag_list;
 } obj_flag_name;
 
-#define MAX_OBJECT_FLAG_NAMES			11
 extern obj_flag_name Object_flag_names[];
+extern const int Num_object_flag_names;
 
 struct dock_instance;
 class model_draw_list;

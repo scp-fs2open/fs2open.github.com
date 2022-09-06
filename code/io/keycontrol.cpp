@@ -320,6 +320,7 @@ int Normal_key_set[] = {
 	TIME_SLOW_DOWN,
 
 	TOGGLE_HUD_CONTRAST,
+	TOGGLE_HUD_SHADOWS,
 
 	MULTI_TOGGLE_NETINFO,
 	MULTI_SELF_DESTRUCT,
@@ -461,6 +462,7 @@ int Non_critical_key_set[] = {
 	MULTI_MESSAGE_TARGET,
 	MULTI_OBSERVER_ZOOM_TO,
 	TOGGLE_HUD_CONTRAST,
+	TOGGLE_HUD_SHADOWS,
 
 	MULTI_TOGGLE_NETINFO,
 	MULTI_SELF_DESTRUCT,
@@ -1924,12 +1926,12 @@ int button_function_critical(int n, net_player *p = NULL)
 			if(at_self)
 				control_used(CYCLE_NUM_MISSLES);
 
-			if ( objp == Player_obj ) {
-				if ( Player_ship->weapons.num_secondary_banks <= 0 ) {
+			if ( Ships[objp->instance].weapons.num_secondary_banks <= 0 ) {
+				if ( objp == Player_obj ) {
 					HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "This ship has no secondary weapons", 33));
 					gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
-					break;
 				}
+				break;
 			}
 
 			polymodel *pm = model_get(Ship_info[Ships[objp->instance].ship_info_index].model_num);
@@ -2558,6 +2560,11 @@ int button_function(int n)
 		case TOGGLE_HUD_CONTRAST:
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			hud_toggle_contrast();
+			break;
+
+		case TOGGLE_HUD_SHADOWS:
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
+			hud_toggle_shadows();
 			break;
 
 		// toggle network info

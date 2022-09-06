@@ -2070,6 +2070,7 @@ void vm_angular_move_forward_vec(const vec3d* goal_f, const matrix* orient, cons
 
 	// handle bank separately, simpler, since its just a target velocity
 	{
+		CLAMP(bank_vel, -vel_limit->xyz.z, vel_limit->xyz.z);
 		float delta_bank_vel = bank_vel - w_in->xyz.z;
 		float delta_bank_accel = fl_abs(delta_bank_vel) / delta_t; // the accel required to reach the target vel this frame
 		float accel = (delta_bank_accel > acc_limit->xyz.z) ? acc_limit->xyz.z : delta_bank_accel;
@@ -2951,6 +2952,49 @@ void vm_interpolate_angles_quick(angles *dest0, angles *src0, angles *src1, floa
 	dest0->p = src0->p + (arc_measures.p * interp_perc);
 	dest0->h = src0->h + (arc_measures.h * interp_perc);
 	dest0->b = src0->b + (arc_measures.b * interp_perc);
+}
+
+// Interpolate between two matrices, using t as a percentage progress between them.
+// Intended values for t are [0.0f, 1.0f], but only values close to zero rejected, 
+// as you could conceivably use these calculations to find a rotation that is more 
+// than 100% of the rotation.
+// derived by Asteroth from our AI code
+void vm_interpolate_matrices(matrix* out_orient, const matrix* curr_orient, const matrix* goal_orient, float t) 
+{
+	// check the case where it doesn't make sense to go through the whole function
+	if (fl_near_zero(t)) {
+		*out_orient = *curr_orient;
+		return;
+	}
+
+	matrix Mtemp1;
+
+	vm_copy_transpose(&Mtemp1, curr_orient);     // Mtemp1 = curr ^-1
+ 
+	matrix matrix_delta;        // rotation matrix from curr_orient to goal_orient
+ 
+	vm_matrix_x_matrix(&matrix_delta, &Mtemp1, goal_orient);    // Rot = goal * Mtemp1
+	vm_orthogonalize_matrix(&matrix_delta);
+ 
+ 	vec3d rot_axis;            // vector indicating direction of rotation axis
+	float theta;                // magnitude of rotation about the rotation axis
+
+	vm_matrix_to_rot_axis_and_angle(&matrix_delta, &theta, &rot_axis);     // determines angle and rotation axis from curr to goal
+
+	// if we had identical or nearly identical matrices, it shows up here as theta being very close to zero.
+	if (fl_near_zero(theta)) {
+		// goal orient is a little better here in case theta was close enough to zero
+		// but the matrices were not actually identical.  It won't look like the ship is
+		// stuck in its old orientation.
+		*out_orient = *goal_orient;
+		return;
+	}
+
+	matrix rot_matrix;
+
+	vm_quaternion_rotate(&rot_matrix, t * theta, &rot_axis); // get the matrix that rotates current to our interpolated matrix
+	vm_matrix_x_matrix(out_orient, &rot_matrix, curr_orient); // do the final rotation
+	
 }
 
 std::ostream& operator<<(std::ostream& os, const vec3d& vec)

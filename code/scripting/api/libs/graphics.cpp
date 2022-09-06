@@ -40,6 +40,8 @@ namespace {
 
 static const int NextDrawStringPosInitial[] = {0, 0};
 static int NextDrawStringPos[] = {NextDrawStringPosInitial[0], NextDrawStringPosInitial[1]};
+static fix PreviousFrametimeOverall = 0;
+
 static bool WarnedBadThicknessLine = false;
 
 }
@@ -50,10 +52,6 @@ namespace api {
 
 //**********LIBRARY: Graphics
 ADE_LIB(l_Graphics, "Graphics", "gr", "Graphics Library");
-
-void graphics_on_frame() {
-	memcpy(NextDrawStringPos, NextDrawStringPosInitial, sizeof(NextDrawStringPos));
-}
 
 static float lua_Opacity = 1.0f;
 static int lua_Opacity_type = GR_ALPHABLEND_FILTER;
@@ -1228,6 +1226,13 @@ static int drawString_sub(lua_State *L, bool use_resize_arg)
 		return ade_set_error(L, "i", 0);
 
 	int resize_mode = lua_ResizeMode;
+
+	// if the frame has changed since the last drawString call, reset the string position
+	if (PreviousFrametimeOverall != game_get_overall_frametime())
+	{
+		PreviousFrametimeOverall = game_get_overall_frametime();
+		memcpy(NextDrawStringPos, NextDrawStringPosInitial, sizeof(NextDrawStringPos));
+	}
 
 	int x = NextDrawStringPos[0];
 	int y = NextDrawStringPos[1];

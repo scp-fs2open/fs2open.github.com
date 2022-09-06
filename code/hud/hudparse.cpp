@@ -306,8 +306,8 @@ void parse_hud_gauges_tbl(const char *filename)
 		if (optional_string("$Reticle Style:")) {
 			int temp = required_string_either("FS1", "FS2");
 
-			// using require_string_either won't advance the Mp pointer to the next token so force it instead
-			skip_to_start_of_string("#Gauge Config");
+			// using require_string_either won't advance the Mp pointer to the next token
+			Mp += 3;
 
 			if (temp < 0)
 				Warning(LOCATION, "Undefined reticle style in hud_gauges.tbl!");
@@ -445,20 +445,17 @@ void parse_hud_gauges_tbl(const char *filename)
 			}
 
 			// Pruning time. Let's see if the current resolution defined by the user matches the conditions set by this entry
+			bool prune_config = false;
 			if (optional_string("$Required Aspect:")) {
 				// filter aspect ratio.
 				if (optional_string("Full Screen")) {
-					if( (float)gr_screen.center_w / (float)gr_screen.center_h > 1.5) {
-						skip_to_start_of_string("#Gauge Config");
-						//skip_to_start_of_string_either("#Gauge Config", "#End");
-						continue;
+					if ((float)gr_screen.center_w / (float)gr_screen.center_h > 1.5f) {
+						prune_config = true;
 					}
 				}
 				else if (optional_string("Wide Screen")) {
-					if( (float)gr_screen.center_w / (float)gr_screen.center_h <= 1.5) {
-						skip_to_start_of_string("#Gauge Config");
-						//skip_to_start_of_string_either("#Gauge Config", "#End");
-						continue;
+					if ((float)gr_screen.center_w / (float)gr_screen.center_h <= 1.5f) {
+						prune_config = true;
 					}
 				}
 			}
@@ -469,13 +466,11 @@ void parse_hud_gauges_tbl(const char *filename)
 				stuff_int_list(min_res, 2, RAW_INTEGER_TYPE);
 
 				if (min_res[0] > gr_screen.max_w) {
-					skip_to_start_of_string("#Gauge Config");
-					continue;
+					prune_config = true;
 				}
 				else if (min_res[0] == gr_screen.center_w) {
 					if (min_res[1] > gr_screen.center_h) {
-						skip_to_start_of_string("#Gauge Config");
-						continue;
+						prune_config = true;
 					}
 				}
 			}
@@ -486,15 +481,19 @@ void parse_hud_gauges_tbl(const char *filename)
 				stuff_int_list(max_res, 2, RAW_INTEGER_TYPE);
 
 				if (max_res[0] < gr_screen.max_w) {
-					skip_to_start_of_string("#Gauge Config");
-					continue;
+					prune_config = true;
 				}
 				else if (max_res[0] == gr_screen.center_w) {
 					if (max_res[1] < gr_screen.center_h) {
-						skip_to_start_of_string("#Gauge Config");
-						continue;
+						prune_config = true;
 					}
 				}
+			}
+
+			// don't prune resolutions in FRED
+			if (!Fred_running && prune_config) {
+				skip_to_start_of_string("#Gauge Config");
+				continue;
 			}
 
 			// let's start parsing for gauges.
@@ -966,11 +965,6 @@ int parse_gauge_type()
 
 void load_gauge(int gauge, gauge_settings* settings)
 {
-	SCP_vector<int> ship_index;
-	ship_index.push_back(-1);
-	if (settings->ship_idx == NULL) {
-		settings->ship_idx = &ship_index;
-	}
 	switch(gauge) {
 	case HUD_OBJECT_CUSTOM:
 		load_gauge_custom(settings);
@@ -1366,7 +1360,7 @@ std::unique_ptr<T> gauge_load_common(gauge_settings* settings, T* preAllocated =
 
 template<typename T>
 void gauge_assign_common(const gauge_settings* settings, std::unique_ptr<T>&& hud_gauge) {
-	if(settings->ship_idx->at(0) >= 0) {
+	if(settings->ship_idx && settings->ship_idx->at(0) >= 0) {
 		for (auto ship_index = settings->ship_idx->begin(); ship_index != settings->ship_idx->end(); ++ship_index) {
 			std::unique_ptr<T> instance(new T());
 			*instance = *hud_gauge;
@@ -3008,7 +3002,7 @@ void load_gauge_radar_dradis(gauge_settings* settings)
 	if(optional_string("Unknown Contact Filename:")) {
 		stuff_string(unknown_fname, F_NAME, MAX_FILENAME_LEN);
 	}
-	if(optional_string("Cockpit Target:") && settings->ship_idx->at(0) >= 0) {
+	if(optional_string("Cockpit Target:") && settings->ship_idx && settings->ship_idx->at(0) >= 0) {
 		stuff_string(display_name, F_NAME, MAX_FILENAME_LEN);
 
 		if(optional_string("Canvas Size:")) {
@@ -4583,6 +4577,12 @@ void load_gauge_lock(gauge_settings* settings)
 
 		Lockspin_half_w = temp[0];
 		Lockspin_half_h = temp[1];
+	}
+	if(optional_string("Loop Locked Animation:")) {
+		stuff_boolean(&loop_locked_anim);
+	}
+	if(optional_string("Blink Locked Animation:")) {
+		stuff_boolean(&loop_locked_anim);
 	}
 
 	hud_gauge->initBitmaps(fname_lock, fname_spin);

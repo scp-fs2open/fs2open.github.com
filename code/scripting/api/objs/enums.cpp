@@ -114,6 +114,7 @@ flag_def_list Enumerations[] = {
 	// the following OS_ definitions use bitfield values, not the indexes in enums.h
 	{"OS_NONE", 0, 0},
 	{"OS_MAIN", OS_MAIN, 0},
+	{"OS_ENGINE", OS_ENGINE, 0},
 	{"OS_TURRET_BASE_ROTATION", OS_TURRET_BASE_ROTATION, 0},
 	{"OS_TURRET_GUN_ROTATION", OS_TURRET_GUN_ROTATION, 0},
 	{"OS_SUBSYS_ALIVE", OS_SUBSYS_ALIVE, 0},
@@ -128,6 +129,7 @@ flag_def_list Enumerations[] = {
 	{ "MOVIE_PRE_BRIEF", LE_MOVIE_PRE_BRIEF, 0 },
 	{ "MOVIE_PRE_GAME", LE_MOVIE_PRE_GAME, 0 },
 	{ "MOVIE_PRE_DEBRIEF", LE_MOVIE_PRE_DEBRIEF, 0 },
+	{ "MOVIE_POST_DEBRIEF", LE_MOVIE_POST_DEBRIEF, 0 },
 	{ "MOVIE_END_CAMPAIGN", LE_MOVIE_END_CAMPAIGN, 0 },
 	{"TBOX_FLASH_NAME", LE_TBOX_FLASH_NAME, 0},
 	{"TBOX_FLASH_CARGO", LE_TBOX_FLASH_CARGO, 0},

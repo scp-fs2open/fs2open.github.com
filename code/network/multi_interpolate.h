@@ -9,13 +9,13 @@ constexpr int PACKET_INFO_LIMIT = 4; // we should never need more than 4 packets
 typedef struct packet_info {
 
 	int frame;							// this allows us to directly compare one packet to another.  
-	int remote_missiontime;	// the remote timestamp that matches this packet.
-	vec3d position;						// what it says on the tin
-	vec3d velocity;						// what it says on the tin
-	vec3d rotational_velocity;			// what it says on the tin
-	vec3d desired_velocity;				// what it says on the tin
-	vec3d desired_rotational_velocity;	// this one is only actually from the packet when we are dealing with a player ship.
-	angles angle;						// what it says on the tin, this is kept in angles so we can directly slerp later.
+	int remote_missiontime;				// the remote timestamp that matches this packet.
+	vec3d 	position;						// what it says on the tin
+	vec3d 	velocity;						// what it says on the tin
+	vec3d 	rotational_velocity;			// what it says on the tin
+	vec3d 	desired_velocity;				// what it says on the tin
+	vec3d 	desired_rotational_velocity;	// this one is only actually from the packet when we are dealing with a player ship.
+	matrix	orientation;					// the orientation as transmitted by the other instance
 
 	packet_info(int frame_in = 0, int time_in = 0, const vec3d* position_in = &vmd_zero_vector, const vec3d* velocity_in = &vmd_zero_vector, 
 		const vec3d* rotational_velocity_in = &vmd_zero_vector, const vec3d* desired_velocity_in = &vmd_zero_vector, const vec3d* desired_rotational_velocity_in = &vmd_zero_vector,
@@ -28,9 +28,10 @@ typedef struct packet_info {
 		rotational_velocity = *rotational_velocity_in;
 		desired_velocity = *desired_velocity_in;
 		desired_rotational_velocity = *desired_rotational_velocity_in;
-		angle = *angles_in;
+		vm_angles_2_matrix(&orientation, angles_in);
 	}
-}packet_info;
+
+} packet_info;
 
 // the real center of the new interpolation code.  When a packet is received, its frame is used as the key in the unordered_map _packets
 // those keys are kept in _received_frames
@@ -58,7 +59,7 @@ public:
 
 	// adds a new packet, whilst also manually sorting the relevant entries
 	void add_packet(int frame, int time_delta, vec3d* position, vec3d* velocity, vec3d* rotational_velocity, vec3d* desired_velocity, vec3d* desired_rotational_velocity, angles* angles, int player_index);
-	void interpolate(vec3d* pos, matrix* ori, physics_info* pip, bool player_ship);
+	void interpolate(vec3d* pos, matrix* ori, physics_info* pip, vec3d* last_pos, matrix* last_orient, bool player_ship);
 
 	int get_hull_comparison_frame() { return _hull_comparison_frame; }
 	int get_shields_comparison_frame() { return _shields_comparison_frame; }

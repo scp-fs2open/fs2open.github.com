@@ -4,9 +4,13 @@
 #include "ai/aigoals.h"
 #include "mission/missionmessage.h"
 #include "ship/ship.h"
+#include "parse/sexp.h"
 #include "globalincs/globals.h"
 
+namespace sexp { class LuaAISEXP; }
+
 struct ai_mode_lua {
+	const sexp::LuaAISEXP& sexp;
 	bool needsTarget;
 	const char* hudText;
 };
@@ -17,6 +21,7 @@ struct player_order_lua {
 	SCP_string displayText = "";
 	enum class target_restrictions : int { TARGET_ALLIES, TARGET_ALL, TARGET_OWN, TARGET_ENEMIES, TARGET_SAME_WING, TARGET_PLAYER_WING, TARGET_ALL_CAPS, TARGET_ALLIED_CAPS, TARGET_ENEMY_CAPS, TARGET_NOT_SELF } targetRestrictions = target_restrictions::TARGET_ALL;
 };
+
 
 void ai_lua_add_mode(int sexp_op, const ai_mode_lua& mode);
 bool ai_lua_add_order(int sexp_op, player_order_lua order);

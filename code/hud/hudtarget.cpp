@@ -1530,6 +1530,8 @@ void hud_target_missile(object *source_obj, int next_flag)
 				continue;
 			}
 
+			Assertion(Objects[so->objnum].type == OBJ_SHIP, "hud_target_missile was about to call obj_team with a non-ship obejct with type %d. Please report!", Objects[so->objnum].type); 
+
 			// only allow targeting of hostile bombs
 			if (!iff_x_attacks_y(Player_ship->team, obj_team(A))) {
 				continue;
@@ -4523,6 +4525,7 @@ void HudGaugeTargetTriangle::render(float  /*frametime*/)
 	object *targetp = &Objects[Player_ai->target_objnum];
 
 	// draw the targeting triangle that orbits the outside of the outer circle of the reticle
+	// checking !target_is_dying is correct here, since you do not want -1 (no target) or 1(is actually dying)
 	if (!Player->target_is_dying && maybeFlashSexp() != 1) {
 
 		hud_set_iff_color(targetp, 1);

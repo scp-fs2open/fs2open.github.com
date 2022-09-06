@@ -885,8 +885,14 @@ void red_alert_bash_wingman_status()
 							mprintf(("Invalid ship class specified in red alert data for ship %s. Using mission defaults.\n", shipp->ship_name));
 					}
 
+					float max_hull;
+					if (shipp->special_hitpoints)
+						max_hull = shipp->ship_max_hull_strength;
+					else
+						max_hull = Ship_info[shipp->ship_info_index].max_hull_strength;
+
 					// restore hull (but not shields)
-					if (ras->hull >= 0.0f && ras->hull <= ship_objp->hull_strength)
+					if (ras->hull >= 0.0f && ras->hull <= max_hull)
 						ship_objp->hull_strength = ras->hull;
 					else
 						mprintf(("Invalid health in red alert data for ship %s. Using mission defaults.\n", shipp->ship_name));
@@ -979,9 +985,15 @@ void red_alert_bash_wingman_status()
 						}
 					}
 
+					float max_hull;
+					if (pobjp->special_hitpoints)
+						max_hull = pobjp->ship_max_hull_strength;
+					else
+						max_hull = Ship_info[pobjp->ship_class].max_hull_strength;
+
 					// restore hull (but not shields)
-					if (ras->hull >= 0.0f && ras->hull <= (pobjp->initial_hull * pobjp->ship_max_hull_strength / 100.0f))
-						pobjp->initial_hull = (int) (ras->hull * 100.0f / pobjp->ship_max_hull_strength);
+					if (ras->hull >= 0.0f && ras->hull <= max_hull)
+						pobjp->initial_hull = (int) (ras->hull * 100.0f / max_hull);
 					else
 						mprintf(("Invalid health in red alert data for ship %s. Using mission defaults.\n", pobjp->name));
 

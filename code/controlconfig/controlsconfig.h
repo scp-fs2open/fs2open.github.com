@@ -294,6 +294,8 @@ enum IoActionId : int {
 	JOY_ABS_THROTTLE_AXIS							= 127,
 	JOY_REL_THROTTLE_AXIS							= 128,
 
+	TOGGLE_HUD_SHADOWS,
+
 	/*!
 	 * This must always be below the last defined item
 	 */

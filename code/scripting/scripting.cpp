@@ -14,6 +14,7 @@
 #include "hud/hud.h"
 #include "io/key.h"
 #include "mission/missioncampaign.h"
+#include "network/multi.h"
 #include "parse/parselo.h"
 #include "scripting/doc_html.h"
 #include "scripting/doc_json.h"
@@ -44,6 +45,7 @@ flag_def_list Script_conditions[] =
 	{"Action", CHC_ACTION, 0},
 	{"Version", CHC_VERSION, 0},
 	{"Application", CHC_APPLICATION, 0},
+	{"Multi type", CHC_MULTI_SERVER, 0},
 };
 
 int Num_script_conditions = sizeof(Script_conditions) / sizeof(flag_def_list);
@@ -312,6 +314,18 @@ bool ConditionedHook::AddCondition(script_condition *sc)
 		}
 		break;
 	}
+	case CHC_MULTI_SERVER:
+	{
+		if (stricmp("Server", sc->condition_string.c_str()) == 0 || stricmp("Master", sc->condition_string.c_str()) == 0)
+		{
+			sc->condition_cached_value = 1;
+		}
+		else
+		{
+			sc->condition_cached_value = 0;
+		}
+		break;
+	}
 	default:
 		break;
 	}
@@ -425,6 +439,8 @@ bool ConditionedHook::ConditionsValid(int action, object *objp1, object *objp2, 
 
 			case CHC_WEAPONCLASS:
 			{
+				bool found_weapon = false;
+
 				for (auto objp : objp_array)
 				{
 					if (objp == nullptr)
@@ -435,6 +451,8 @@ bool ConditionedHook::ConditionsValid(int action, object *objp1, object *objp2, 
 						// scp.condition_cached_value holds the weapon_info_index of the requested weapon class
 						if (Weapons[objp->instance].weapon_info_index != scp.condition_cached_value)
 							return false;
+
+						found_weapon = true;
 						break;
 					}
 					else if (objp->type == OBJ_BEAM)
@@ -442,9 +460,15 @@ bool ConditionedHook::ConditionsValid(int action, object *objp1, object *objp2, 
 						// scp.condition_cached_value holds the weapon_info_index of the requested weapon class
 						if (Beams[objp->instance].weapon_info_index != scp.condition_cached_value)
 							return false;
+
+						found_weapon = true;
 						break;
 					}
 				}
+
+				//If a weaponclass is specified, but none of the objects was even any weapon, the hook must not evaluate.
+				if (!found_weapon)
+					return false;
 
 				if (objp1 == nullptr || objp1->type != OBJ_SHIP)
 					break;
@@ -634,6 +658,13 @@ bool ConditionedHook::ConditionsValid(int action, object *objp1, object *objp2, 
 				{
 					return false;
 				}
+				break;
+			}
+			
+			case CHC_MULTI_SERVER:
+			{
+				//condition_cached_value is 0 if we execute on clients, 1 on servers
+				return static_cast<bool>(scp.condition_cached_value == 1) == static_cast<bool>(MULTIPLAYER_MASTER);
 			}
 
 			default:
@@ -776,6 +807,8 @@ int script_state::RunCondition(int action, object *objp1, object *objp2, int mor
 			num++;
 		}
 	}
+
+	ProcessAddedHooks();
 	return num;
 }
 
@@ -790,11 +823,6 @@ bool script_state::IsConditionOverride(int action, object *objp1, object *objp2,
 		}
 	}
 	return false;
-}
-
-void script_state::EndFrame()
-{
-	EndLuaFrame();
 }
 
 void script_state::Clear()
@@ -1138,6 +1166,7 @@ bool script_state::ParseCondition(const char *filename)
 			case CHC_OBJECTTYPE:
 			case CHC_VERSION:
 			case CHC_APPLICATION:
+			case CHC_MULTI_SERVER:
 			default:
 				stuff_string(sct.condition_string, F_NAME);
 				break;
@@ -1187,7 +1216,14 @@ bool script_state::ParseCondition(const char *filename)
 }
 
 void script_state::AddConditionedHook(ConditionedHook hook) {
-	ConditionalHooks.push_back(std::move(hook));
+	AddedHooks.push_back(std::move(hook));
+}
+
+void script_state::ProcessAddedHooks() {
+	for (auto& hook : AddedHooks) {
+		ConditionalHooks.push_back(std::move(hook));
+	}
+	AddedHooks.clear();
 	AssayActions();
 }
 

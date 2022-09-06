@@ -642,6 +642,9 @@ void parse_gamesnd_old(game_snd* gs)
 
 	stuff_string(entry.filename, F_NAME, MAX_FILENAME_LEN, ",");
 
+	// since we have a new filename, first assume it's valid
+	gs->flags &= ~GAME_SND_NOT_VALID;
+
 	if (!stricmp(entry.filename, NOX("empty")) || !stricmp(entry.filename, NOX("none")))
 	{
 		entry.filename[0] = 0;
@@ -854,12 +857,15 @@ void parse_gamesnd_new(game_snd* gs, bool no_create)
 		entry = &gs->sound_entries.back();
 	}
 
+	// Default pitch is 1.0. This is set here in case we don't have a valid file name
+	gs->pitch_range = util::UniformFloatRange(1.0f);
+
 	char name[MAX_FILENAME_LEN];
 	// New extended format found
 	stuff_string(name, F_NAME, MAX_FILENAME_LEN);
 
-	// Default pitch is 1.0. This is set here in case we don't have a valid file name
-	gs->pitch_range = util::UniformFloatRange(1.0f);
+	// since we have a new filename, first assume it's valid
+	gs->flags &= ~GAME_SND_NOT_VALID;
 
 	if (!stricmp(name, NOX("empty")) || !stricmp(name, NOX("none")))
 	{

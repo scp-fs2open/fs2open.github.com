@@ -59,18 +59,19 @@ class player;
 // version 43 - 7/30/99
 // version 44 - 8/24/99
 // version 46 - 8/30/99
-// version 47 - 11/11/2003 (FS2OpenPXO, FS2 Open Changes - FS2Open 3.6)
-// revert  46 - 9/7/2006 (the 47 bump wasn't needed, reverting to retail version for compatibility reasons)
-// version 48 - 8/15/2016 Multiple changes to the packet format for multi sexps
-// version 49 - 7/26/2020 Addition of multilock
-// version 50 - 7/27/2020 IPv6
-// version 51 - 9/20/2020 Object Update Packet Upgrade: Waypoints, subsystem rotation, bandwidth improvements, bugfixes
-// version 52 - 10/9/2020 Dumbfire Rollback, increases accuracy of high ping, or delayed packet primary fire for clients.
-// version 53 - 12/2/2020 big set of packet fixes/upgrades
+// version 47 - 11/11/2003 - (FS2OpenPXO, FS2 Open Changes - FS2Open 3.6)
+// revert  46 - 9/7/2006 - (the 47 bump wasn't needed, reverting to retail version for compatibility reasons)
+// version 48 - 8/15/2016 - Multiple changes to the packet format for multi sexps
+// version 49 - 7/26/2020 - Addition of multilock
+// version 50 - 7/27/2020 - IPv6
+// version 51 - 9/20/2020 - Object Update Packet Upgrade: Waypoints, subsystem rotation, bandwidth improvements, bugfixes
+// version 52 - 10/9/2020 - Dumbfire Rollback, increases accuracy of high ping, or delayed packet primary fire for clients.
+// version 53 - 12/2/2020 - big set of packet fixes/upgrades
 // version 54 - 3/20/2021 - Fixes for FSO 21_2 especially better net_sig calc, better missile intercept
-// version 55 - 8/28/2021 Adding multi-compatible animations
-// version 56 - 8/28/2021 Fix animations for 22_0 release
-// version 57 - 6/5/2022 Upgrade interpolation, fix multiplayer sexp handling, and enable player orders to exceed 16
+// version 55 - 8/28/2021 - Adding multi-compatible animations
+// version 56 - 8/28/2021 - Fix animations for 22_0 release
+// version 57 - 6/5/2022 - Upgrade interpolation, fix multiplayer sexp handling, and enable player orders to exceed 16
+// version 58 - ??/??/?? - Submodel translation and a fixed multi_pack_unpack_subsystem_list
 // STANDALONE_ONLY
 
 #define MULTI_FS_SERVER_VERSION							57

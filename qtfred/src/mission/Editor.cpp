@@ -2571,7 +2571,7 @@ int Editor::internal_error(const char* msg, ...) {
 	return -1;
 }
 int Editor::fred_check_sexp(int sexp, int type, const char* msg, ...) {
-	SCP_string buf, sexp_buf, error_buf;
+	SCP_string buf, sexp_buf, error_buf, bad_node_str;
 	int err = 0, z, faulty_node;
 	va_list args;
 
@@ -2588,12 +2588,18 @@ int Editor::fred_check_sexp(int sexp, int type, const char* msg, ...) {
 
 	convert_sexp_to_string(sexp_buf, sexp, SEXP_ERROR_CHECK_MODE);
 	truncate_message_lines(sexp_buf, 30);
+
+	stuff_sexp_text_string(bad_node_str, faulty_node, SEXP_ERROR_CHECK_MODE);
+	if (!bad_node_str.empty()) {	// the previous function adds a space at the end
+		bad_node_str.pop_back();
+	}
+
 	sprintf(error_buf,
 			"Error in %s: %s\n\nIn sexpression: %s\n\n(Bad node appears to be: %s)",
 			buf.c_str(),
 			sexp_error_message(z),
 			sexp_buf.c_str(),
-			Sexp_nodes[faulty_node].text);
+			bad_node_str.c_str());
 
 	if (z < 0 && z > -100)
 		err = 1;

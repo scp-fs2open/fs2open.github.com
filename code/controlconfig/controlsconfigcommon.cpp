@@ -258,6 +258,7 @@ void control_config_common_init_bindings() {
 	// HUD
 	(TOGGLE_HUD,                                    KEY_SHIFTED | KEY_O, -1, COMPUTER_TAB, 1, "Toggle HUD",                       CC_TYPE_TRIGGER)
 	(TOGGLE_HUD_CONTRAST,                                         KEY_L, -1, COMPUTER_TAB, 1, "Toggle High HUD Contrast",         CC_TYPE_TRIGGER)
+	(TOGGLE_HUD_SHADOWS,                              KEY_ALTED | KEY_L, -1, COMPUTER_TAB, 0, "Toggle HUD Drop Shadows",          CC_TYPE_TRIGGER)
 	(HUD_TARGETBOX_TOGGLE_WIREFRAME,    KEY_ALTED | KEY_SHIFTED | KEY_Q, -1, COMPUTER_TAB, 1, "Toggle HUD Wireframe Target View", CC_TYPE_TRIGGER)
 
 	// Custom Controls
@@ -409,6 +410,7 @@ SCP_unordered_map<SCP_string, IoActionId> old_text = {
 	{"Increase Time Compression",               TIME_SPEED_UP},
 	{"Decrease Time Compression",               TIME_SLOW_DOWN},
 	{"Toggle High HUD Contrast",                TOGGLE_HUD_CONTRAST},
+	{"Toggle HUD Drop Shadows",                 TOGGLE_HUD_SHADOWS},
 	{"(Multiplayer) Toggle Network Info",       MULTI_TOGGLE_NETINFO},
 	{"(Multiplayer) Self Destruct",             MULTI_SELF_DESTRUCT},
 
@@ -1122,6 +1124,7 @@ void LoadEnumsIntoActionMap() {
 	ADD_ENUM_TO_ACTION_MAP(TIME_SLOW_DOWN)
 
 	ADD_ENUM_TO_ACTION_MAP(TOGGLE_HUD_CONTRAST)
+	ADD_ENUM_TO_ACTION_MAP(TOGGLE_HUD_SHADOWS)
 
 	ADD_ENUM_TO_ACTION_MAP(MULTI_TOGGLE_NETINFO)
 

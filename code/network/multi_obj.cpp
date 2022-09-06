@@ -74,6 +74,9 @@ struct oo_info_sent_to_players {
 	SCP_vector<float> subsystem_2b;
 	SCP_vector<float> subsystem_2h;
 	SCP_vector<float> subsystem_2p;
+	SCP_vector<float> subsystem_x;
+	SCP_vector<float> subsystem_y;
+	SCP_vector<float> subsystem_z;
 };
 
 struct oo_netplayer_records{
@@ -163,10 +166,6 @@ void multi_ship_record_rank_seq_num(object* objp, int seq_num);
 // recalculate how much time is between position packets
 float multi_oo_calc_pos_time_difference(int player_id, int net_sig_idx);
 
-
-// tolerance for bashing position
-#define OO_POS_UPDATE_TOLERANCE	150.0f
-
 // new improved - more compacted info type
 #define OO_POS_AND_ORIENT_NEW		(1<<0)		// To update position and orientation. Because getting accurate velocity requires orientation, and accurate orienation requires velocity
 #define OO_FULL_PHYSICS				(1<<1)		// Since AI don't use all phys_info values, we need a flag to confirm when all have been transmitted.
@@ -202,67 +201,80 @@ float multi_oo_calc_pos_time_difference(int player_id, int net_sig_idx);
 #define OO_SUBSYS_TIME				1000
 
 // timestamp values for object update times based on client's update level.
-// Cyborg17 - This is the one update number I have adjusted, because it's the player's target.
+// Cyborg - Many of these values have been adjusted over time, but not based
+// on any scientific method, at least since Volition first wrote them.
+// It may be good to adjust these according to actual bandwidth use over time
+// once we have time.
 int Multi_oo_target_update_times[MAX_OBJ_UPDATE_LEVELS] = 
 {
-	50, 				// 20x a second 
-	50, 				// 20x a second
-	20,				// 50x a second
-	20,				// 50x a second
+	66, 			// Dialup, 15x a second 
+	50, 			// Medium, 20x a second
+	30,				// High, 33x a second
+	20,				// LAN, 50x a second
+};
+
+// Cyborg - This I added to increase updates for players, to mitigate the added
+// latency from multiple clients getting each other's positions.
+int Multi_oo_player_update_times[MAX_OBJ_UPDATE_LEVELS] =
+{
+	100,				// Dialup, 10x a second
+	66,					// Medium, 15x a second
+	33,					// High, 30x a second
+	20,					// LAN, 50x a second
 };
 
 // for near ships
 int Multi_oo_front_near_update_times[MAX_OBJ_UPDATE_LEVELS] =
 {
-	150,				// low update
-	100,				// medium update
-	66,				// high update
-	66,				// LAN update
+	150,			// Dialup, 6.5x a second 
+	100,			// Medium, 10x a second
+	66,				// High, 15x a second
+	50,				// LAN, 20x a second 
 };
 
 // for medium ships
 int Multi_oo_front_medium_update_times[MAX_OBJ_UPDATE_LEVELS] =
 {
-	250,				// low update
-	180, 				// medium update
-	120,				// high update
-	66,					// LAN update
+	250,				// Dialup, 4x a second
+	180, 				// medium, 5.5x a second
+	120,				// high, 8.3x a second
+	66,					// LAN, 15x a second
 };
 
 // for far ships
 int Multi_oo_front_far_update_times[MAX_OBJ_UPDATE_LEVELS] =
 {
-	750,				// low update
-	350, 				// medium update
-	150, 				// high update
-	66,					// LAN update
+	750,				// Dialup, 1.3x a second
+	350, 				// medium, 2.85x a second
+	150, 				// high, 6.6x a second
+	66,					// LAN, 15x a second
 };
 
 // for near ships
 int Multi_oo_rear_near_update_times[MAX_OBJ_UPDATE_LEVELS] = 
 {
-	300,				// low update
-	200,				// medium update
-	100,				// high update
-	66,					// LAN update
+	300,				// Dialup, 3.3x a second
+	200,				// medium, 5x a second
+	100,				// high 10x a second
+	66,					// LAN, 15x a second
 };
 
 // for medium ships
 int Multi_oo_rear_medium_update_times[MAX_OBJ_UPDATE_LEVELS] = 
 {
-	800,				// low update
-	600,				// medium update
-	300,				// high update
-	66,					// LAN update
+	800,				// Dialup, 1.25x a second
+	600,				// medium, 1.6x a second
+	300,				// high, 3.3x a second
+	100,				// LAN, 10x a second
 };
 
 // for far ships
 int Multi_oo_rear_far_update_times[MAX_OBJ_UPDATE_LEVELS] = 
 {
-	2500, 				// low update
-	1500,				// medium update
-	400,				// high update
-	66,					// LAN update
+	2500, 				// Dialup, 24x a *minute*
+	1500,				// medium, 40x a *minute* 
+	400,				// high, 2.5x a second
+	200,				// LAN, 5x a second
 };
 
 // ship index list for possibly sorting ships based upon distance, etc
@@ -345,6 +357,9 @@ void multi_rollback_ship_record_add_ship(int obj_num)
 			Oo_info.player_frame_info[i].last_sent[net_sig_idx].subsystem_2b.push_back(-1.0f);
 			Oo_info.player_frame_info[i].last_sent[net_sig_idx].subsystem_2h.push_back(-1.0f);
 			Oo_info.player_frame_info[i].last_sent[net_sig_idx].subsystem_2p.push_back(-1.0f);
+			Oo_info.player_frame_info[i].last_sent[net_sig_idx].subsystem_x.push_back(0.0f);
+			Oo_info.player_frame_info[i].last_sent[net_sig_idx].subsystem_y.push_back(0.0f);
+			Oo_info.player_frame_info[i].last_sent[net_sig_idx].subsystem_z.push_back(0.0f);
 		}
 	}
 
@@ -900,7 +915,9 @@ void multi_oo_respawn_reset_info(object* objp)
 			player_record.last_sent[objp->net_signature].subsystem_2b[i] = -1.0f;
 			player_record.last_sent[objp->net_signature].subsystem_2h[i] = -1.0f;
 			player_record.last_sent[objp->net_signature].subsystem_2p[i] = -1.0f;
-
+			player_record.last_sent[objp->net_signature].subsystem_x[i] = 0.0f;
+			player_record.last_sent[objp->net_signature].subsystem_y[i] = 0.0f;
+			player_record.last_sent[objp->net_signature].subsystem_z[i] = 0.0f;
 		}
 	}
 
@@ -930,6 +947,13 @@ bool multi_oo_sort_func(const short &index1, const short &index2)
 	// get the 2 objects
 	obj1 = &Objects[Ships[index1].objnum];
 	obj2 = &Objects[Ships[index2].objnum];
+
+	// always prioritze player objects
+	if (obj1->flags[Object::Object_Flags::Player_ship] && !obj2->flags[Object::Object_Flags::Player_ship]) {
+		return true;
+	} else if (!obj1->flags[Object::Object_Flags::Player_ship] && obj2->flags[Object::Object_Flags::Player_ship]) {
+		return false;
+	}
 
 	// get the distance and dot product to the player obj for both
 	vm_vec_sub(&v1, &OO_player_obj->pos, &obj1->pos);
@@ -1357,6 +1381,27 @@ int multi_oo_pack_data(net_player *pl, object *objp, ushort oo_flags, ubyte *dat
 				delete angs_1;
 				delete angs_2;
 			}
+
+			// ditto for translation
+			if (subsystem->system_info->flags[Model::Subsystem_Flags::Translates]) {
+				auto smi = subsystem->submodel_instance_1;
+
+				if (smi && smi->canonical_offset.xyz.x != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_x[i]) {
+					flags[i] |= OO_SUBSYS_TRANSLATION_x;
+					subsys_data.push_back(smi->canonical_offset.xyz.x);
+				}
+
+				if (smi && smi->canonical_offset.xyz.y != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_y[i]) {
+					flags[i] |= OO_SUBSYS_TRANSLATION_y;
+					subsys_data.push_back(smi->canonical_offset.xyz.y);
+				}
+
+				if (smi && smi->canonical_offset.xyz.z != Oo_info.player_frame_info[pl->player_id].last_sent[objp->net_signature].subsystem_z[i]) {
+					flags[i] |= OO_SUBSYS_TRANSLATION_z;
+					subsys_data.push_back(smi->canonical_offset.xyz.z);
+				}
+			}
+
 			i++;
 		}
 
@@ -1368,9 +1413,10 @@ int multi_oo_pack_data(net_player *pl, object *objp, ushort oo_flags, ubyte *dat
 
 			// Check that we are not sending too much data, if so, don't actually send.
 			if (packet_size + ret <= OO_MAX_DATA_SIZE) {
-				nprintf(("Network","Had to remove subsystems section from data packet for %s\n", shipp->ship_name));
 				oo_flags |= OO_SUBSYSTEMS_NEW;		
 				packet_size += ret;
+			} else {
+				nprintf(("Network","Had to remove subsystems section from data packet for %s\n", shipp->ship_name));
 			}
 		}
 	}
@@ -1897,6 +1943,24 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num, int time_delt
 					data_idx++;
 				}
 
+				if (flags[i] & OO_SUBSYS_TRANSLATION_x) {
+					subsysp->submodel_instance_1->canonical_prev_offset.xyz.x = subsysp->submodel_instance_1->canonical_offset.xyz.x;
+					subsysp->submodel_instance_1->canonical_offset.xyz.x = subsys_data[data_idx];
+					data_idx++;
+				}
+
+				if (flags[i] & OO_SUBSYS_TRANSLATION_y) {
+					subsysp->submodel_instance_1->canonical_prev_offset.xyz.y = subsysp->submodel_instance_1->canonical_offset.xyz.y;
+					subsysp->submodel_instance_1->canonical_offset.xyz.y = subsys_data[data_idx];
+					data_idx++;
+				}
+
+				if (flags[i] & OO_SUBSYS_TRANSLATION_z) {
+					subsysp->submodel_instance_1->canonical_prev_offset.xyz.z = subsysp->submodel_instance_1->canonical_offset.xyz.z;
+					subsysp->submodel_instance_1->canonical_offset.xyz.z = subsys_data[data_idx];
+					data_idx++;
+				}
+
 				// fix up the matrixes
 				if (flags[i] & OO_SUBSYS_ROTATION_1) {
 					vm_angles_2_matrix(&subsysp->submodel_instance_1->canonical_prev_orient, prev_angs_1);
@@ -2070,9 +2134,11 @@ void multi_oo_reset_timestamp(net_player *pl, object *objp, int range, int in_co
 {
 	int stamp = 0;	
 
-	// if this is the guy's target, 
+	// if this is the guy's target, or if they are a player.
 	if((pl->s_info.target_objnum != -1) && (pl->s_info.target_objnum == OBJ_INDEX(objp))){
 		stamp = Multi_oo_target_update_times[pl->p_info.options.obj_update_level];
+	} else if (objp->flags[Object::Object_Flags::Player_ship]){
+		stamp = Multi_oo_player_update_times[pl->p_info.options.obj_update_level];
 	} else {
 		// reset the timestamp appropriately
 		if(in_cone){
@@ -2523,6 +2589,15 @@ void multi_init_oo_and_ship_tracker()
 	temp_sent_to_player.subsystem_2p.reserve(MAX_MODEL_SUBSYSTEMS);
 	temp_sent_to_player.subsystem_2p.push_back(0.0f);
 
+	temp_sent_to_player.subsystem_x.reserve(MAX_MODEL_SUBSYSTEMS);
+	temp_sent_to_player.subsystem_x.push_back(0.0f);
+
+	temp_sent_to_player.subsystem_y.reserve(MAX_MODEL_SUBSYSTEMS);
+	temp_sent_to_player.subsystem_y.push_back(0.0f);
+
+	temp_sent_to_player.subsystem_z.reserve(MAX_MODEL_SUBSYSTEMS);
+	temp_sent_to_player.subsystem_z.push_back(0.0f);
+
 	temp_netplayer_records.last_sent.push_back(temp_sent_to_player);
 	Oo_info.frame_info.push_back(temp_position_records);
 	
@@ -2961,43 +3036,43 @@ void multi_oo_update_server_rate()
 }
 
 // is this object one which needs to go through the interpolation
-int multi_oo_is_interp_object(object *objp)
+bool multi_oo_is_interp_object(object *objp)
 {	
 	// if not multiplayer, skip it
 	if(!(Game_mode & GM_MULTIPLAYER)){
-		return 0;
+		return false;
 	}
 
 	// if its not a ship, skip it
 	if(objp->type != OBJ_SHIP){
-		return 0;
+		return false;
 	}
 
 	// other bogus cases
 	if((objp->instance < 0) || (objp->instance >= MAX_SHIPS)){
-		return 0;
+		return false;
 	}
 
 	// if I'm a client and this is not me, I need to interp it
 	if(!MULTIPLAYER_MASTER){
 		if(objp != Player_obj){
-			return 1;
+			return true;
 		} else {
-			return 0;
+			return false;
 		}
 	}
 
 	// servers only interpolate other player ships
 	if(!(objp->flags[Object::Object_Flags::Player_ship])){
-		return 0;
+		return false;
 	}
 
 	// here we know its a player ship - is it mine?
 	if(objp == Player_obj){
-		return 0;
+		return false;
 	}
 
 	// interp it
-	return 1;
+	return true;
 }
 

@@ -30,7 +30,7 @@ env:
   NEBULA_PASSWORD: ${{ secrets.NEBULA_PASSWORD }}
   HLP_API: ${{ secrets.HLP_API }}
   HLP_KEY: ${{ secrets.HLP_KEY }}
-  RELEASE_TAG: ${{ github.event.inputs.releaseTag }}
+  RELEASE_TAG: ${{ inputs.releaseTag }}
 
 jobs:
   post_builds:
@@ -51,10 +51,10 @@ jobs:
         run: pip install -r ci/post/requirements.txt
 
       - name: Post Builds (Auto trigger)
-        if: ${{ github.event_name == 'workflow_call' }} || ${{ github.event_name == 'push' }}
+        if: ${{ (github.event_name == 'workflow_call') || (github.event_name == 'push') }}
         env:
-          LINUX_RESULT: ${{ github.event.inputs.linux_result }}
-          WINDOWS_RESULT: ${{ github.event.inputs.windows_result }}
+          LINUX_RESULT: ${{ inputs.linux_result }}
+          WINDOWS_RESULT: ${{ inputs.windows_result }}
         run: python ci/post/main.py release
 
       - name: Post Builds (Manual trigger)

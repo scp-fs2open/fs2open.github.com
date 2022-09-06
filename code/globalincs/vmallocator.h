@@ -6,7 +6,9 @@
 #include <list>
 #include <locale>
 #include <map>
+#include <memory>
 #include <queue>
+#include <set>
 #include <sstream>
 #include <string>
 #include <type_traits>
@@ -14,24 +16,24 @@
 #include <unordered_set>
 #include <vector>
 
-template< typename T >
-using SCP_vector = std::vector< T, std::allocator< T > >;
+template <typename T>
+using SCP_vector = std::vector<T, std::allocator<T>>;
 
-template< typename T >
+template <typename T>
 bool SCP_vector_contains(SCP_vector<T>& vector, T item) {
 	return std::find(vector.begin(), vector.end(), item) != vector.end();
 }
 
-template< typename T >
-using SCP_list = std::list< T, std::allocator< T > >;
+template <typename T>
+using SCP_list = std::list<T, std::allocator<T>>;
 
 
 extern std::locale SCP_default_locale;
 
-template< class charT >
+template <class charT>
 charT SCP_toupper(charT ch) { return std::toupper(ch, SCP_default_locale); }
 
-template< class charT >
+template <class charT>
 charT SCP_tolower(charT ch) { return std::tolower(ch, SCP_default_locale); }
 
 typedef std::basic_string<char, std::char_traits<char>, std::allocator<char> > SCP_string;
@@ -50,20 +52,23 @@ extern void SCP_tolower(char *str);
 extern void SCP_toupper(char *str);
 
 
-template< typename T, typename U >
-using SCP_map = std::map<T, U, std::less<T>, std::allocator<std::pair<const T, U> > >;
+template <typename T, typename U>
+using SCP_map = std::map<T, U, std::less<T>, std::allocator<std::pair<const T, U>>>;
 
-template< typename T, typename U >
-using SCP_multimap = std::multimap<T, U, std::less<T>, std::allocator<std::pair<const T, U> > >;
+template <typename T, typename U>
+using SCP_multimap = std::multimap<T, U, std::less<T>, std::allocator<std::pair<const T, U>>>;
 
-template< typename T >
-using SCP_queue = std::queue< T, std::deque< T, std::allocator< T > > >;
+template <typename T>
+using SCP_queue = std::queue<T, std::deque<T, std::allocator<T>>>;
 
-template< typename T >
-using SCP_deque = std::deque< T, std::allocator< T > >;
+template <typename T>
+using SCP_deque = std::deque<T, std::allocator<T>>;
+
+template <typename T>
+using SCP_set = std::set<T, std::less<T>, std::allocator<T>>;
 
 #if __cplusplus < 201402L
-template <class T, bool>
+template<class T, bool>
 struct enum_hasher_util {
 	inline size_t operator()(const T& elem) { return std::hash<T>()(elem); }
 };
@@ -154,5 +159,23 @@ using SCP_unordered_map = std::unordered_map<Key, T, Hash, KeyEqual, std::alloca
 
 template <typename Key, typename Hash = SCP_hash<Key>, typename KeyEqual = std::equal_to<Key>>
 using SCP_unordered_set = std::unordered_set<Key, Hash, KeyEqual, std::allocator<Key>>;
+
+template <typename T, typename... Args>
+typename std::enable_if<!std::is_array<T>::value, std::unique_ptr<T>>::type make_unique(Args&&... args) {
+	return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+}
+template <typename T, typename... Args>
+typename std::enable_if<std::is_array<T>::value, std::unique_ptr<T>>::type make_unique(std::size_t n) {
+	return std::unique_ptr<T>(new typename std::remove_extent<T>::type[n]());
+}
+
+template <typename T, typename... Args>
+typename std::enable_if<!std::is_array<T>::value, std::shared_ptr<T>>::type make_shared(Args&&... args) {
+	return std::shared_ptr<T>(new T(std::forward<Args>(args)...));
+}
+template <typename T, typename... Args>
+typename std::enable_if<std::is_array<T>::value, std::shared_ptr<T>>::type make_shared(std::size_t n) {
+	return std::shared_ptr<T>(new typename std::remove_extent<T>::type[n]());
+}
 
 #endif // _VMALLOCATOR_H_INCLUDED_

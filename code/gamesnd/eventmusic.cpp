@@ -1294,7 +1294,7 @@ void parse_soundtrack()
 			continue;
 
 		// check for file
-		if (!cf_exists_full(Soundtracks[strack_idx].patterns[i].fname, CF_TYPE_MUSIC))
+		if (!cf_exists_full_ext(Soundtracks[strack_idx].patterns[i].fname, CF_TYPE_MUSIC, NUM_AUDIO_EXT, audio_ext_list))
 			return;
 	}
 

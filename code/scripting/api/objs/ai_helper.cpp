@@ -93,5 +93,29 @@ ADE_FUNC(turnTowardsPoint,
 	return ADE_RETURN_NIL;
 }
 
+ADE_FUNC(turnTowardsOrientation,
+	l_AI_Helper,
+	"orientation target, [boolean respectDifficulty = true, vector turnrateModifier /* 100% of tabled values in all rotation axes by default */]",
+	"turns the ship towards the specified orientation during this frame",
+	nullptr,
+	nullptr)
+{
+	object_h ship;
+	matrix_h* target;
+	bool diffTurn = true;
+	vec3d* modifier = nullptr;
+
+	int argnum = ade_get_args(L, "oo|bo", l_AI_Helper.Get(&ship), l_Matrix.GetPtr(&target), &diffTurn, l_Vector.GetPtr(&modifier));
+	if (argnum == 0) {
+		return ADE_RETURN_NIL;
+	}
+
+	matrix* mat = target->GetMatrix();
+	vec3d targetVec = mat->vec.fvec + ship.objp->pos;
+
+	ai_turn_towards_vector(&targetVec, ship.objp, nullptr, nullptr, 0.0f, (diffTurn ? 0 : AITTV_FAST), &mat->vec.rvec, modifier);
+	return ADE_RETURN_NIL;
+}
+
 }
 }

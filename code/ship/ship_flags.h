@@ -26,6 +26,7 @@ namespace Ship {
 		Vanished,					// allows subsystem to be made to disappear without a trace (for swapping it for a true model for example.
 		Missiles_ignore_if_dead,	// forces homing missiles to target hull if subsystem is dead before missile hits it.
 		Rotates,
+		Translates,
 		Damage_as_hull,				// Applies armor damage instead of subsystem damge. - FUBAR
 		No_aggregate,				// exclude this subsystem from the aggregate subsystem-info tracking - Goober5000
 		Play_sound_for_player,		// If this subsystem is a turret on a player ship, play firing sounds - The E 
@@ -133,6 +134,7 @@ namespace Ship {
 		Fail_sound_locked_primary,		// Kiloku -- Play the firing fail sound when the weapon is locked.
 		Fail_sound_locked_secondary,		// Kiloku -- Play the firing fail sound when the weapon is locked.
 		Subsystem_cache_valid,		// Goober5000 - whether the subsystem list index caches can be used
+		Aspect_immune,						// Kiloku -- Ship cannot be targeted by Aspect Seekers.
 
 		NUM_VALUES
 

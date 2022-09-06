@@ -117,6 +117,11 @@ namespace animation {
 		NUM_VALUES
 	};
 
+	FLAG_LIST(Animation_Instance_Flags) {
+		Stop_after_next_loop,	//Once a looping animation would start the next loop, stop the animation instead. Only valid for looping animations
+		NUM_VALUES
+	};
+
 	template <bool is_optional = false>
 	struct ModelAnimationData {
 	private:
@@ -246,6 +251,8 @@ namespace animation {
 			ModelAnimationState state = ModelAnimationState::UNTRIGGERED;
 			float time = 0.0f;
 			float duration = 0.0f;
+			flagset<animation::Animation_Instance_Flags> instance_flags;
+			float speed = 1.0f;
 		};
 		//PMI ID -> Instance Data
 		std::map<int, instance_data> m_instances;
@@ -349,14 +356,29 @@ namespace animation {
 
 		void clearShipData(polymodel_instance* pmi);
 
-		bool start(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& name, ModelAnimationDirection direction, bool forced = false, bool instant = false, bool pause = false, int subtype = SUBTYPE_DEFAULT) const;
-		bool startAll(polymodel_instance* pmi, ModelAnimationTriggerType type, ModelAnimationDirection direction, bool forced = false, bool instant = false, bool pause = false, int subtype = SUBTYPE_DEFAULT, bool strict = false) const;
-		bool startBlanket(polymodel_instance* pmi, ModelAnimationTriggerType type, ModelAnimationDirection direction, bool forced = false, bool instant = false, bool pause = false) const;
-		bool startDockBayDoors(polymodel_instance* pmi, ModelAnimationDirection direction, bool forced, bool instant, bool pause, int subtype) const;
-
-		int getTime(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& name, int subtype = SUBTYPE_DEFAULT) const;
-		int getTimeAll(polymodel_instance* pmi, ModelAnimationTriggerType type, int subtype = SUBTYPE_DEFAULT, bool strict = false) const;
-		int getTimeDockBayDoors(polymodel_instance* pmi, int subtype) const;
+		class AnimationList {
+			std::vector<std::shared_ptr<ModelAnimation>> animations;
+			polymodel_instance* pmi = nullptr;
+			AnimationList(polymodel_instance* pmi_ = nullptr) : pmi(pmi_) {}
+			friend class ModelAnimationSet;
+		public:
+			bool start(ModelAnimationDirection direction, bool forced = false, bool instant = false, bool pause = false) const;
+			int getTime() const;
+			void setFlag(Animation_Instance_Flags flag, bool set = true) const;
+			void setSpeed(float speed = 1.0f) const;
+			AnimationList& operator+=(const AnimationList& rhs);
+			AnimationList operator+(const AnimationList& rhs);
+		};
+		//Get Animations of the specified type, with a specified name, and optionally specified subtype. Will always find corresponding animations that have the default subtype
+		AnimationList get(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& name, int subtype = SUBTYPE_DEFAULT) const;
+		//Get Animations of the specified type and optionally specified subtype regardless of the name. Will find corresponding animations that have the default subtype if strict is false
+		AnimationList getAll(polymodel_instance* pmi, ModelAnimationTriggerType type, int subtype = SUBTYPE_DEFAULT, bool strict = false) const;
+		//Get all Animations of the specified type
+		AnimationList getBlanket(polymodel_instance* pmi, ModelAnimationTriggerType type) const;
+		//Get DockBayDoor Animations with proper handling for dock bay door subtypes
+		AnimationList getDockBayDoors(polymodel_instance* pmi, int subtype) const;
+		//Get Animations from SEXP/Scripting specifiers using the TriggeredBy field. Parses TriggeredBy and defers to getX functions depending on animation type
+		AnimationList parseScripted(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& triggeredBy) const;
 
 		struct RegisteredTrigger { ModelAnimationTriggerType type; int subtype; const SCP_string& name; };
 		std::vector<RegisteredTrigger> getRegisteredTriggers() const;

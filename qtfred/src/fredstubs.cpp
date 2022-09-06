@@ -202,7 +202,14 @@ struct fs_builtin_mission *game_find_builtin_mission(char*){return NULL;}
 void game_format_time(fix, char*){}
 void game_do_state(int){}
 void game_process_event(int, int){}
-void game_shudder_apply(int, float){}
+
+bool Game_shudder_perpetual;
+bool Game_shudder_everywhere;
+TIMESTAMP Game_shudder_time;
+int Game_shudder_total;
+float Game_shudder_intensity;
+void game_shudder_apply(int, float, bool, bool){}
+
 int game_hacked_data(){return 0;}
 int game_single_step;
 int last_single_step;

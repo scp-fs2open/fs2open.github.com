@@ -32,7 +32,7 @@
 #define PF_GLIDING				(1 << 14)
 #define PF_FORCE_GLIDE			(1 << 15)
 #define PF_NEWTONIAN_DAMP		(1 << 16)	// SUSHI: Whether or not to use newtonian dampening
-#define PF_NO_DAMP				(1 << 17)	// Goober5000 - don't damp velocity changes in physics; used for instantaneous acceleration
+#define PF_MANEUVER_NO_DAMP				(1 << 17)	// Goober5000 - don't damp velocity changes in physics; used for instantaneous acceleration
 
 //information for physics sim for an object
 typedef struct physics_info {

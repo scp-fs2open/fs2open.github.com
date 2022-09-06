@@ -21,6 +21,7 @@
 #include "mission/missionlog.h"
 #include "mission/missionmessage.h"
 #include "mission/missiontraining.h"
+#include "missionui/missioncmdbrief.h"
 #include "missionui/redalert.h"
 #include "nebula/neb.h"
 #include "object/objcollide.h"
@@ -67,6 +68,12 @@
 #include <utility>
 
 extern bool Ships_inited;
+
+extern bool Game_shudder_perpetual;
+extern bool Game_shudder_everywhere;
+extern TIMESTAMP Game_shudder_time;
+extern int Game_shudder_total;
+extern float Game_shudder_intensity;
 
 namespace scripting {
 namespace api {
@@ -1257,25 +1264,107 @@ ADE_FUNC(renderFrame, l_Mission, NULL, "Renders mission frame, but does not move
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(applyShudder, l_Mission, "number time, number intesity", "Applies a shudder effects to the camera. Time is in seconds. Intensity specifies the shudder effect strength, the Maxim has a value of 1440.", "boolean", "true if successfull, false otherwise")
+ADE_FUNC(applyShudder, l_Mission, "number time, number intensity, [boolean perpetual, boolean everywhere]", "Applies a shudder effect to the camera. Time is in seconds. Intensity specifies the shudder effect strength; the Maxim has a value of 1440. If perpetual is true, the shudder does not decay. If everywhere is true, the shudder is applied regardless of view.", "boolean", "true if successful, false otherwise")
 {
 	float time = -1.0f;
 	float intensity = -1.0f;
+	bool perpetual = false;
+	bool everywhere = false;
 
-	if (!ade_get_args(L, "ff", &time, &intensity))
+	if (!ade_get_args(L, "ff|bb", &time, &intensity, &perpetual, &everywhere))
 		return ADE_RETURN_FALSE;
 
 	if (time < 0.0f || intensity < 0.0f)
 	{
-		LuaError(L, "Illegal shudder values given. Must be bigger than zero, got time of %f and intensity of %f.", time, intensity);
+		LuaError(L, "Illegal shudder values given. Must be bigger than zero; got time of %f and intensity of %f.", time, intensity);
 		return ADE_RETURN_FALSE;
 	}
 
 	int int_time = fl2i(time * 1000.0f);
 
-	game_shudder_apply(int_time, intensity * 0.01f);
+	game_shudder_apply(int_time, intensity * 0.01f, perpetual, everywhere);
 
 	return ADE_RETURN_TRUE;
+}
+
+ADE_VIRTVAR(ShudderPerpetual, l_Mission, "boolean", "Gets or sets whether the shudder is perpetual, i.e. with a constant intensity that does not decay.", "boolean", "the shudder perpetual flag")
+{
+	bool perpetual = Game_shudder_perpetual;
+
+	if (ADE_SETTING_VAR && ade_get_args(L, "*b", &perpetual))
+	{
+		Game_shudder_perpetual = perpetual;
+	}
+
+	return ade_set_args(L, "b", perpetual);
+}
+
+ADE_VIRTVAR(ShudderEverywhere, l_Mission, "boolean", "Gets or sets whether the shudder is applied everywhere regardless of camera view.", "boolean", "the shudder everywhere flag")
+{
+	bool everywhere = Game_shudder_everywhere;
+
+	if (ADE_SETTING_VAR && ade_get_args(L, "*b", &everywhere))
+	{
+		Game_shudder_everywhere = everywhere;
+	}
+
+	return ade_set_args(L, "b", everywhere);
+}
+
+ADE_VIRTVAR(ShudderTimeLeft, l_Mission, "number", "Gets or sets the number of seconds until the shudder stops.  This is independent of the decay time.", "number", "the shudder time left variable")
+{
+	float time_left = Game_shudder_time.isValid()
+		? timestamp_until(Game_shudder_time) / static_cast<float>(MILLISECONDS_PER_SECOND)
+		: 0.0f;
+
+	if (ADE_SETTING_VAR && ade_get_args(L, "*f", &time_left))
+	{
+		if (time_left < 0.0f)
+		{
+			LuaError(L, "Illegal shudder time left.  Must be bigger than zero; got %f.", time_left);
+			time_left = 0.0f;
+		}
+
+		Game_shudder_time = _timestamp(static_cast<int>(time_left * MILLISECONDS_PER_SECOND));
+	}
+
+	return ade_set_args(L, "f", time_left);
+}
+
+ADE_VIRTVAR(ShudderDecayTime, l_Mission, "number", "Gets or sets the shudder decay time in seconds.  This can be zero in which case the shudder will not decay.", "number", "the shudder decay time variable")
+{
+	float total = Game_shudder_total / static_cast<float>(MILLISECONDS_PER_SECOND);
+
+	if (ADE_SETTING_VAR && ade_get_args(L, "*f", &total))
+	{
+		if (total < 0.0f)
+		{
+			LuaError(L, "Illegal shudder decay time.  Must be bigger than zero; got %f.", total);
+			total = 0.0f;
+		}
+
+		Game_shudder_total = static_cast<int>(total * MILLISECONDS_PER_SECOND);
+	}
+
+	return ade_set_args(L, "f", total);
+}
+
+ADE_VIRTVAR(ShudderIntensity, l_Mission, "number", "Gets or sets the shudder intensity variable.  For comparison, the Maxim has a value of 1440.", "number", "the shudder intensity variable")
+{
+	float intensity = Game_shudder_intensity * 100.0f;
+
+	if (ADE_SETTING_VAR && ade_get_args(L, "*f", &intensity))
+	{
+		if (intensity < 0.0f)
+		{
+			LuaError(L, "Illegal shudder intensity.  Must be bigger than zero; got %f.", intensity);
+			intensity = 0.0f;
+		}
+
+		Game_shudder_intensity = intensity * 0.01f;
+	}
+
+	return ade_set_args(L, "f", intensity);
 }
 
 ADE_FUNC(isInCampaign, l_Mission, NULL, "Get whether or not the current mission being played in a campaign (as opposed to the tech room's simulator)", "boolean", "true if in campaign, false if not")
@@ -1502,14 +1591,25 @@ ADE_FUNC(isRedAlertMission,
 	return ade_set_args(L, "b", red_alert_mission() != 0);
 }
 
-int testLineOfSight_internal(lua_State* L, bool returnDist) {
+ADE_FUNC(hasCommandBriefing,
+	l_Mission,
+	nullptr,
+	"Determines if the current mission has a command briefing",
+	"boolean",
+	"true if command briefing, false otherwise.")
+{
+	return ade_set_args(L, "b", mission_has_cmd_brief() != 0);
+}
+
+int testLineOfSight_internal(lua_State* L, bool returnDist_and_Obj) {
 	vec3d from, to;
 	luacpp::LuaTable excludedObjects;
 	bool testForShields = false, testForHull = true;
 	float threshold = 10.0f;
 
 	float distStore = 0.0f;
-	float* dist = returnDist ? &distStore : nullptr;
+	float* dist = returnDist_and_Obj ? &distStore : nullptr;
+	object* intersecting_obj = nullptr;
 
 	if (!ade_get_args(L, "oo|tbbf", l_Vector.Get(&from), l_Vector.Get(&to), &excludedObjects, &testForShields, &testForHull, &threshold)) {
 		return ADE_RETURN_FALSE;
@@ -1545,10 +1645,10 @@ int testLineOfSight_internal(lua_State* L, bool returnDist) {
 		}
 	}
 
-	bool hasLoS = test_line_of_sight(&from, &to, std::move(excludedObjectIDs), threshold, testForShields, testForHull, dist);
+	bool hasLoS = test_line_of_sight(&from, &to, std::move(excludedObjectIDs), threshold, testForShields, testForHull, dist, &intersecting_obj);
 
-	if(returnDist)
-		return ade_set_args(L, "bf", hasLoS, *dist);
+	if (returnDist_and_Obj)
+		return ade_set_args(L, "bfo", hasLoS, *dist, l_Object.Set(object_h(intersecting_obj)));
 	else
 		return ade_set_args(L, "b", hasLoS);
 }
@@ -1558,7 +1658,7 @@ ADE_FUNC(hasLineOfSight, l_Mission, "vector from, vector to, [table excludedObje
 	return testLineOfSight_internal(L, false);
 }
 
-ADE_FUNC(getLineOfSightFirstIntersect, l_Mission, "vector from, vector to, [table excludedObjects /* expects list of objects, empty by default */, boolean testForShields = false, boolean testForHull = true, number threshold = 10.0]", "Checks whether the to-position is in line of sight from the from-position and returns the distance to the first interruption of the line of sight, disregarding specific excluded objects and objects with a radius of less then threshold.", "boolean, number", "true and zero if there is line of sight, false and the distance otherwise.")
+ADE_FUNC(getLineOfSightFirstIntersect, l_Mission, "vector from, vector to, [table excludedObjects /* expects list of objects, empty by default */, boolean testForShields = false, boolean testForHull = true, number threshold = 10.0]", "Checks whether the to-position is in line of sight from the from-position and returns the distance and intersecting object to the first interruption of the line of sight, disregarding specific excluded objects and objects with a radius of less then threshold.", "boolean, number, object", "true and zero and nil if there is line of sight, false and the distance and intersecting object otherwise.")
 {
 	return testLineOfSight_internal(L, true);
 }
@@ -1729,7 +1829,11 @@ ADE_FUNC(waitAsync,
 
 	class time_resolve_context : public resolve_context, public std::enable_shared_from_this<time_resolve_context> {
 	  public:
-		time_resolve_context(int timestamp) : m_timestamp(timestamp) {}
+		time_resolve_context(int timestamp) : m_timestamp(timestamp) {
+			static int unique_id_counter = 0;
+			m_unique_id = unique_id_counter++;
+			nprintf(("scripting", "waitAsync: Creating asynchronous context %d.\n", m_unique_id));
+		}
 		void setResolver(Resolver resolver) override
 		{
 			// Keep checking the time until the timestamp is elapsed
@@ -1737,11 +1841,13 @@ ADE_FUNC(waitAsync,
 			auto cb = [this, self, resolver](
 						  executor::IExecutionContext::State contextState) {
 				if (contextState == executor::IExecutionContext::State::Invalid) {
+					mprintf(("waitAsync: Context is invalid, possibly due to a game state change (current state is %s).  Aborting asynchronous context %d.\n", GS_state_text[gameseq_get_state()], m_unique_id));
 					resolver(true, luacpp::LuaValueList());
 					return executor::Executor::CallbackResult::Done;
 				}
 
 				if (timestamp_elapsed(m_timestamp)) {
+					nprintf(("scripting", "waitAsync: Timestamp has elapsed for asynchronous context %d.\n", m_unique_id));
 					resolver(false, luacpp::LuaValueList());
 					return executor::Executor::CallbackResult::Done;
 				}
@@ -1756,6 +1862,7 @@ ADE_FUNC(waitAsync,
 
 	  private:
 		int m_timestamp = -1;
+		int m_unique_id = -1;
 	};
 	return ade_set_args(L,
 		"o",

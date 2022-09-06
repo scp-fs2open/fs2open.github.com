@@ -151,8 +151,8 @@ class EngineSEXP : public DynamicSEXP {
 
   public:
 	void initialize() override;
-	int getMinimumArguments() override;
-	int getMaximumArguments() override;
+	int getMinimumArguments() const override;
+	int getMaximumArguments() const override;
 	int getArgumentType(int argnum) const override;
 	int execute(int node) override;
 	int getReturnType() override;

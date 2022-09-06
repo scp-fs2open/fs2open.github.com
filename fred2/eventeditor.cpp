@@ -161,7 +161,7 @@ BEGIN_MESSAGE_MAP(event_editor, CDialog)
 	ON_BN_CLICKED(IDC_BROWSE_WAVE, OnBrowseWave)
 	ON_CBN_SELCHANGE(IDC_WAVE_FILENAME, OnSelchangeWaveFilename)
 	ON_BN_CLICKED(IDC_PLAY, OnPlay)
-	ON_BN_CLICKED(IDC_UPDATE, OnUpdate)
+	ON_BN_CLICKED(IDC_UPDATE, OnUpdateStuff)
 	ON_BN_CLICKED(ID_CANCEL, OnButtonCancel)
 	ON_CBN_SELCHANGE(IDC_EVENT_TEAM, OnSelchangeTeam)
 	ON_CBN_SELCHANGE(IDC_MESSAGE_TEAM, OnSelchangeMessageTeam)
@@ -1574,8 +1574,13 @@ void event_editor::OnPlay()
 	}
 }
 
-void event_editor::OnUpdate() 
+void event_editor::OnUpdateStuff() 
 {
+	int z = MessageBox("This will set the head ANIs according to the FS1 personas.  Do you want to proceed?\n\n(Consider using the 'Sync Personas' buttons in the Voice Acting Manager instead.)", "Update Stuff", MB_ICONQUESTION | MB_YESNO);
+	if (z != IDYES) {
+		return;
+	}
+
 //	GetDlgItem(IDC_WAVE_FILENAME)->GetWindowText(m_wave_filename);
 	UpdateData(TRUE);
 	update_persona();

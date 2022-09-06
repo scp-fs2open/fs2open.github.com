@@ -20,10 +20,10 @@ void set_show_damage_lightning_flag(Checkbox* caller) {
 	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowDamageLightning, !value);
 }
 
-void set_rotate_subsys_flag(Checkbox* caller) {
+void set_move_subsys_flag(Checkbox* caller) {
 	auto value = caller->GetChecked();
 
-	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::RotateSubsystems, !value);
+	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::MoveSubsystems, !value);
 }
 
 void set_post_proc_flag(Checkbox* caller) {
@@ -232,7 +232,7 @@ void RenderOptions::open(Button* /*caller*/) {
 	cbp = (Checkbox*)dialogWindow->AddChild(new Checkbox("Show Damage lightning", 2, y, set_show_damage_lightning_flag));
 	y += cbp->GetHeight() + 2;
 
-	cbp = (Checkbox*)dialogWindow->AddChild(new Checkbox("Rotate Subsystems", 2, y, set_rotate_subsys_flag));
+	cbp = (Checkbox*)dialogWindow->AddChild(new Checkbox("Rotate/Translate Subsystems", 2, y, set_move_subsys_flag));
 	y += cbp->GetHeight() + 2;
 
 	cbp = (Checkbox*)dialogWindow->AddChild(new Checkbox("Hide Post Processing", 2, y, set_post_proc_flag));

@@ -20,16 +20,34 @@
 #define vm_is_vec_nan(v) (fl_is_nan((v)->xyz.x) || fl_is_nan((v)->xyz.y) || fl_is_nan((v)->xyz.z))
 
 //Macros/functions to fill in fields of structures
+//VEC_NULL macros split into two functions in 2009 with commit 75a514b
 
-//macro to check if vector is zero
-#define IS_VEC_NULL_SQ_SAFE(v) (IS_NEAR_ZERO((v)->xyz.x, 1e-16) && \
-								IS_NEAR_ZERO((v)->xyz.y, 1e-16) && \
-								IS_NEAR_ZERO((v)->xyz.z, 1e-16))
+// Null vector checks are performed on the following types of vectors:
+// * orientation component vectors
+// * positions
+// * velocities
+// * normals
+// In each of these cases, FLT_EPSILON or 1.192092896e-07F is a reasonable threshold.
 
-#define IS_VEC_NULL(v) (IS_NEAR_ZERO((v)->xyz.x, 1e-36) && \
-						IS_NEAR_ZERO((v)->xyz.y, 1e-36) && \
-						IS_NEAR_ZERO((v)->xyz.z, 1e-36))
+// macro to check if vector is close to zero or would be close to zero after squaring
+// (uses FLT_EPSILON; original threshold was 1e-16 which can be tightened up a bit)
+#define IS_VEC_NULL_SQ_SAFE(v) \
+		(fl_near_zero((v)->xyz.x) && \
+		fl_near_zero((v)->xyz.y) && \
+		fl_near_zero((v)->xyz.z))
 
+// macro to check if vector is close to zero
+// (original threshold was 1e-36 which was too small)
+#define IS_VEC_NULL(v) IS_VEC_NULL_SQ_SAFE(v)
+
+// macro to check if moment-of-inertia vector is close to zero
+// (uses the previous 1e-36 threshold since MOI values are really small)
+#define IS_MOI_VEC_NULL(v) \
+		(fl_near_zero((v)->xyz.x, (float) 1e-36) && \
+		fl_near_zero((v)->xyz.y, (float) 1e-36) && \
+		fl_near_zero((v)->xyz.z, (float) 1e-36))
+
+// currently only used to check orientations
 #define IS_MAT_NULL(v) (IS_VEC_NULL(&(v)->vec.fvec) && IS_VEC_NULL(&(v)->vec.uvec) && IS_VEC_NULL(&(v)->vec.rvec))
 
 //macro to set a vector to zero.  we could do this with an in-line assembly
@@ -569,6 +587,13 @@ void vm_match_bank(vec3d* out_rvec, const vec3d* goal_fvec, const matrix* match_
 // rot_vel is only used to determine the rotation direction. Assumes that it is not a full 2PI rotation in any axis.  
 // You will get strange results otherwise.
 void vm_interpolate_angles_quick(angles* dest0, angles* src0, angles* src1, float interp_perc);
+
+// Interpolate between two matrices, using t as a percentage progress between them.
+// Intended values for t are [0.0f, 1.0f], but only values close to zero rejected, 
+// as you could conceivably use these calculations to find a rotation that is more 
+// than 100% of the rotation.
+// derived by Asteroth from our AI code
+void vm_interpolate_matrices(matrix* out_orient, const matrix* curr_orient, const matrix* goal_orient, float t);
 
 // generates a well distributed quasi-random position in a -1 to 1 cube
 // the caller must provide and increment the seed for each call for proper results

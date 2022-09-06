@@ -2509,13 +2509,13 @@ void sexp_tree::NodeCopy()
 
 void sexp_tree::NodeReplacePaste()
 {
-	if (item_index < 0)
+	if (item_index < 0 || Sexp_clipboard < 0)
 		return;
 
 	int i;
 
 	// the following assumptions are made..
-	Assert((Sexp_clipboard > -1) && (Sexp_nodes[Sexp_clipboard].type != SEXP_NOT_USED));
+	Assert(Sexp_nodes[Sexp_clipboard].type != SEXP_NOT_USED);
 	Assert(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_LIST);
 	Assertion(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_CONTAINER_NAME,
 		"Attempt to use container name %s from SEXP clipboard. Please report!",
@@ -2587,13 +2587,13 @@ void sexp_tree::NodeReplacePaste()
 
 void sexp_tree::NodeAddPaste()
 {
-	if (item_index < 0)
+	if (item_index < 0 || Sexp_clipboard < 0)
 		return;
 
 	int i;
 
 	// the following assumptions are made..
-	Assert((Sexp_clipboard > -1) && (Sexp_nodes[Sexp_clipboard].type != SEXP_NOT_USED));
+	Assert(Sexp_nodes[Sexp_clipboard].type != SEXP_NOT_USED);
 	Assert(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_LIST);
 	Assertion(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_CONTAINER_NAME,
 		"Attempt to use container name %s from SEXP clipboard. Please report!",
@@ -3171,6 +3171,7 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 		case OPF_SUBSYSTEM:
 		case OPF_AWACS_SUBSYSTEM:
 		case OPF_ROTATING_SUBSYSTEM:
+		case OPF_TRANSLATING_SUBSYSTEM:
 		case OPF_SUBSYS_OR_GENERIC:
 			str = "<name of subsystem>";
 			break;
@@ -3301,6 +3302,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_SUBSYSTEM:		
 		case OPF_AWACS_SUBSYSTEM:
 		case OPF_ROTATING_SUBSYSTEM:
+		case OPF_TRANSLATING_SUBSYSTEM:
 		case OPF_SUBSYSTEM_TYPE:
 		case OPF_DOCKER_POINT:
 		case OPF_DOCKEE_POINT:
@@ -3780,6 +3782,7 @@ int sexp_tree::verify_tree(int node, int *bypass)
 			case OPF_SUBSYSTEM:
 			case OPF_AWACS_SUBSYSTEM:
 			case OPF_ROTATING_SUBSYSTEM:
+			case OPF_TRANSLATING_SUBSYSTEM:
 				if (type2 == SEXP_ATOM_STRING)
 					if (ai_get_subsystem_type(tree_nodes[node].text) == SUBSYSTEM_UNKNOWN)
 						type2 = 0;
@@ -5033,6 +5036,7 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 		
 		case OPF_AWACS_SUBSYSTEM:
 		case OPF_ROTATING_SUBSYSTEM:
+		case OPF_TRANSLATING_SUBSYSTEM:
 		case OPF_SUBSYSTEM:
 			list = get_listing_opf_subsystem(parent_node, arg_index);
 			break;
@@ -5727,7 +5731,8 @@ sexp_list_item *sexp_tree::get_listing_opf_wing()
 #define OPS_BEAM_TURRET		3
 #define OPS_AWACS				4
 #define OPS_ROTATE			5
-#define OPS_ARMOR			6
+#define OPS_TRANSLATE			6
+#define OPS_ARMOR			7
 sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_index)
 {
 	int op, child, sh;
@@ -5771,6 +5776,14 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 		case OP_REVERSE_ROTATING_SUBSYSTEM:
 		case OP_ROTATING_SUBSYS_SET_TURN_TIME:
 			special_subsys = OPS_ROTATE;
+			break;
+
+		// translating
+		case OP_LOCK_TRANSLATING_SUBSYSTEM:
+		case OP_FREE_TRANSLATING_SUBSYSTEM:
+		case OP_REVERSE_TRANSLATING_SUBSYSTEM:
+		case OP_TRANSLATING_SUBSYS_SET_SPEED:
+			special_subsys = OPS_TRANSLATE;
 			break;
 
 		// where we care about capital ship subsystem cargo
@@ -5905,6 +5918,13 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 			// rotating
 			case OPS_ROTATE:
 				if (subsys->system_info->flags[Model::Subsystem_Flags::Rotates]) {
+					head.add_data(subsys->system_info->subobj_name);
+				}
+				break;
+
+			// translating
+			case OPS_TRANSLATE:
+				if (subsys->system_info->flags[Model::Subsystem_Flags::Translates]) {
 					head.add_data(subsys->system_info->subobj_name);
 				}
 				break;
@@ -6372,23 +6392,28 @@ sexp_list_item *sexp_tree::get_listing_opf_builtin_hud_gauge()
 sexp_list_item *sexp_tree::get_listing_opf_custom_hud_gauge()
 {
 	sexp_list_item head;
-	SCP_unordered_set<SCP_string> all_gauges;
+	// prevent duplicate names, comparing case-insensitively
+	SCP_unordered_set<SCP_string, SCP_string_lcase_hash, SCP_string_lcase_equal_to> all_gauges;
 
 	for (auto &gauge : default_hud_gauges)
 	{
-		all_gauges.insert(gauge->getCustomGaugeName());
-		head.add_data(gauge->getCustomGaugeName());
+		SCP_string name = gauge->getCustomGaugeName();
+		if (!name.empty() && all_gauges.count(name) == 0)
+		{
+			head.add_data(name.c_str());
+			all_gauges.insert(std::move(name));
+		}
 	}
 
 	for (auto &si : Ship_info)
 	{
 		for (auto &gauge : si.hud_gauges)
 		{
-			// avoid duplicating any HUD gauges
-			if (all_gauges.count(gauge->getCustomGaugeName()) == 0)
+			SCP_string name = gauge->getCustomGaugeName();
+			if (!name.empty() && all_gauges.count(name) == 0)
 			{
-				all_gauges.insert(gauge->getCustomGaugeName());
-				head.add_data(gauge->getCustomGaugeName());
+				head.add_data(name.c_str());
+				all_gauges.insert(std::move(name));
 			}
 		}
 	}
@@ -6970,15 +6995,15 @@ sexp_list_item *sexp_tree::get_listing_opf_ship_flags()
 	int i;
 	sexp_list_item head;
 	// object flags
-	for ( i = 0; i < MAX_OBJECT_FLAG_NAMES; i++) {
+	for ( i = 0; i < Num_object_flag_names; i++) {
 		head.add_data(Object_flag_names[i].flag_name);
 	}
 	// ship flags
-	for ( i = 0; i < MAX_SHIP_FLAG_NAMES; i++) {
+	for ( i = 0; i < Num_ship_flag_names; i++) {
 		head.add_data(Ship_flag_names[i].flag_name);
 	}
 	// ai flags
-	for ( i = 0; i < MAX_AI_FLAG_NAMES; i++) {
+	for ( i = 0; i < Num_ai_flag_names; i++) {
 		head.add_data(Ai_flag_names[i].flag_name);
 	}
 
@@ -7089,7 +7114,8 @@ sexp_list_item *sexp_tree::get_listing_opf_animation_name(int parent_node)
 	sh = ship_name_lookup(tree_nodes[child].text, 1);
 
 	switch(op) {
-		case OP_TRIGGER_ANIMATION_NEW: {
+		case OP_TRIGGER_ANIMATION_NEW:
+		case OP_STOP_LOOPING_ANIMATION: {
 			child = tree_nodes[child].next;
 			auto triggerType = animation::anim_match_type(tree_nodes[child].text);
 

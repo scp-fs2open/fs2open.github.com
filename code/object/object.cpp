@@ -115,6 +115,8 @@ obj_flag_name Object_flag_names[] = {
 	{ Object::Object_Flags::Attackable_if_no_collide, "ai-attackable-if-no-collide", 1,},
 };
 
+extern const int Num_object_flag_names = sizeof(Object_flag_names) / sizeof(obj_flag_name);
+
 #ifdef OBJECT_CHECK
 checkobject::checkobject() 
     : type(0), signature(0), parent_sig(0) 
@@ -1273,7 +1275,7 @@ void obj_move_all_post(object *objp, float frametime)
 					shipp = &Ships[objp->instance];
 
 					for (i=0; i<MAX_SHIP_ARCS; i++ )	{
-						if ( timestamp_valid( shipp->arc_timestamp[i] ) )	{
+						if ( shipp->arc_timestamp[i].isValid() )	{
 							// Move arc endpoints into world coordinates	
 							vec3d tmp1, tmp2;
 							vm_vec_unrotate(&tmp1,&shipp->arc_pts[i][0],&objp->orient);
@@ -1370,7 +1372,7 @@ void obj_move_all_post(object *objp, float frametime)
 
 					if (db->arc_frequency > 0) {
 						for (i=0; i<MAX_DEBRIS_ARCS; i++ )	{
-							if ( timestamp_valid( db->arc_timestamp[i] ) )	{
+							if ( db->arc_timestamp[i].isValid() )	{
 								// Move arc endpoints into world coordinates	
 								vec3d tmp1, tmp2;
 								vm_vec_unrotate(&tmp1,&db->arc_pts[i][0],&objp->orient);
@@ -1504,15 +1506,21 @@ void obj_move_all(float frametime)
 		// pre-move
 		obj_move_all_pre(objp, frametime);
 
-		// store last pos and orient
-		objp->last_pos = cur_pos;
-		objp->last_orient = objp->orient;
+		bool interpolation_object = multi_oo_is_interp_object(objp);
+
+		// store last pos and orient, but only for non-interpolation objects
+		// interpolation objects will need to to work backwards from the last good position
+		// to prevent collision issues
+		if (!interpolation_object){
+			objp->last_pos = cur_pos;
+			objp->last_orient = objp->orient;
+		}
 
 		// Goober5000 - skip objects which don't move, but only until they're destroyed
 		if (!(objp->flags[Object::Object_Flags::Immobile] && objp->hull_strength > 0.0f)) {
 			// if this is an object which should be interpolated in multiplayer, do so
-			if (multi_oo_is_interp_object(objp)) {
-				objp->interp_info.interpolate(&objp->pos, &objp->orient, &objp->phys_info, objp->flags[Object::Object_Flags::Player_ship]);
+			if (interpolation_object) {
+				objp->interp_info.interpolate(&objp->pos, &objp->orient, &objp->phys_info, &objp->last_pos, &objp->last_orient, objp->flags[Object::Object_Flags::Player_ship]);
 			} else {
 				// physics
 				obj_move_call_physics(objp, frametime);

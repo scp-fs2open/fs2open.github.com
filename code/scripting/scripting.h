@@ -63,6 +63,7 @@ enum ConditionalType {
 	CHC_ACTION      = 9,
 	CHC_VERSION     = 10,
 	CHC_APPLICATION = 11,
+	CHC_MULTI_SERVER = 12,
 };
 
 //Actions
@@ -173,6 +174,9 @@ class script_state
 	//Utility variables
 	SCP_vector<image_desc> ScriptImages;
 	SCP_vector<ConditionedHook> ConditionalHooks;
+	// Scripts can add new hooks at runtime; we collect all hooks to be added here and add them at the end of the current
+	// frame to avoid corrupting any iterators that the script system may be using.
+	SCP_vector<ConditionedHook> AddedHooks;
 
 	SCP_vector<script_function> GameInitFunctions;
 
@@ -192,9 +196,6 @@ class script_state
 
 	static void OutputLuaDocumentation(scripting::ScriptingDocumentation& doc,
 		const scripting::DocumentationErrorReporter& errorReporter);
-
-	//Internal Lua helper functions
-	void EndLuaFrame();
 
 public:
 	//***Init/Deinit
@@ -258,11 +259,10 @@ public:
 
 	void RunInitFunctions();
 
+	void ProcessAddedHooks();
+
 	//*****Other functions
-	void EndFrame();
-
 	static script_state* GetScriptState(lua_State* L);
-
 	util::event<void, lua_State*> OnStateDestroy;
 };
 
@@ -337,13 +337,19 @@ bool script_state::EvalStringWithReturn(const char* string, const char* format, 
 				scripting::ade_get_args(LuaState, format, rtn);
 			}
 		} catch (const LuaException&) {
+			lua_pop(LuaState, 1);
+
 			return false;
 		}
 	} catch (const LuaException& e) {
 		LuaError(GetLuaSession(), "%s", e.what());
 
+		lua_pop(LuaState, 1);
+
 		return false;
 	}
+
+	lua_pop(LuaState, 1);
 
 	return true;
 }

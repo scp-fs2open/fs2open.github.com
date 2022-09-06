@@ -951,6 +951,9 @@ void mission_campaign_store_goals_and_events()
 	int cur, i;
 	cmission *mission_obj;
 
+	if (!(Game_mode & GM_CAMPAIGN_MODE) || (Campaign.current_mission < 0))
+		return;
+
 	cur = Campaign.current_mission;
 	name = Campaign.missions[cur].name;
 
@@ -1027,6 +1030,9 @@ void mission_campaign_store_variables(int persistence_type, bool store_red_alert
 	int cur, i, j;
 	cmission *mission_obj;
 
+	if (!(Game_mode & GM_CAMPAIGN_MODE) || (Campaign.current_mission < 0))
+		return;
+
 	cur = Campaign.current_mission;
 	mission_obj = &Campaign.missions[cur];
 
@@ -1092,6 +1098,9 @@ void mission_campaign_store_variables(int persistence_type, bool store_red_alert
 // jg18 - adapted from mission_campaign_store_variables()
 void mission_campaign_store_containers(ContainerType persistence_type, bool store_red_alert)
 {
+	if (!(Game_mode & GM_CAMPAIGN_MODE) || (Campaign.current_mission < 0))
+		return;
+
 	if (!sexp_container_has_persistent_non_eternal_containers()) {
 		// nothing to do
 		return;
@@ -1891,12 +1900,8 @@ void mission_campaign_save_on_close_variables()
 {
 	int i;
 
-	// make sure we are actually playing a campaign
-	if (!(Game_mode & GM_CAMPAIGN_MODE))
-		return;
-
-	// make sure this is a single-player campaign
-	if (!(Campaign.type == CAMPAIGN_TYPE_SINGLE))
+	// make sure we are actually playing a single-player campaign
+	if (!(Game_mode & GM_CAMPAIGN_MODE) || (Campaign.type != CAMPAIGN_TYPE_SINGLE) || (Campaign.current_mission < 0))
 		return;
 
 	// now save variables
@@ -1936,7 +1941,7 @@ void mission_campaign_save_on_close_variables()
 void mission_campaign_save_on_close_containers()
 {
 	// make sure we are actually playing a single-player campaign
-	if (!(Game_mode & GM_CAMPAIGN_MODE) || (Campaign.type != CAMPAIGN_TYPE_SINGLE))
+	if (!(Game_mode & GM_CAMPAIGN_MODE) || (Campaign.type != CAMPAIGN_TYPE_SINGLE) || (Campaign.current_mission < 0))
 		return;
 
 	// now save containers

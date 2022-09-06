@@ -199,6 +199,10 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_UPDATE_COMMAND_UI(ID_SPEED50, OnUpdateSpeed50)
 	ON_COMMAND(ID_SPEED100, OnSpeed100)
 	ON_UPDATE_COMMAND_UI(ID_SPEED100, OnUpdateSpeed100)
+	ON_COMMAND(ID_SPEED500, OnSpeed500)
+	ON_UPDATE_COMMAND_UI(ID_SPEED500, OnUpdateSpeed500)
+	ON_COMMAND(ID_SPEED1000, OnSpeed1000)
+	ON_UPDATE_COMMAND_UI(ID_SPEED1000, OnUpdateSpeed1000)
 	ON_COMMAND(ID_SELECT, OnSelect)
 	ON_UPDATE_COMMAND_UI(ID_SELECT, OnUpdateSelect)
 	ON_COMMAND(ID_SELECT_AND_MOVE, OnSelectAndMove)
@@ -1744,7 +1748,19 @@ void CFREDView::OnSpeed100()
 	set_physics_controls();
 }
 
-void CFREDView::OnRot1() 
+void CFREDView::OnSpeed500()
+{
+	physics_speed = 500;
+	set_physics_controls();
+}
+
+void CFREDView::OnSpeed1000()
+{
+	physics_speed = 1000;
+	set_physics_controls();
+}
+
+void CFREDView::OnRot1()
 {
 	physics_rot = 2;
 	set_physics_controls();
@@ -1814,7 +1830,17 @@ void CFREDView::OnUpdateSpeed100(CCmdUI* pCmdUI)
 	pCmdUI->SetCheck(physics_speed == 100);
 }
 
-void CFREDView::OnUpdateRot1(CCmdUI* pCmdUI) 
+void CFREDView::OnUpdateSpeed500(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetCheck(physics_speed == 500);
+}
+
+void CFREDView::OnUpdateSpeed1000(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetCheck(physics_speed == 1000);
+}
+
+void CFREDView::OnUpdateRot1(CCmdUI* pCmdUI)
 {
 	pCmdUI->SetCheck(physics_rot == 2);
 }
@@ -3376,7 +3402,7 @@ int CFREDView::internal_error(const char *msg, ...)
 
 int CFREDView::fred_check_sexp(int sexp, int type, const char *msg, ...)
 {
-	SCP_string buf, sexp_buf, error_buf;
+	SCP_string buf, sexp_buf, error_buf, bad_node_str;
 	int err = 0, z, faulty_node;
 	va_list args;
 
@@ -3393,7 +3419,13 @@ int CFREDView::fred_check_sexp(int sexp, int type, const char *msg, ...)
 
 	convert_sexp_to_string(sexp_buf, sexp, SEXP_ERROR_CHECK_MODE);
 	truncate_message_lines(sexp_buf, 30);
-	sprintf(error_buf, "Error in %s: %s\n\nIn sexpression: %s\n\n(Bad node appears to be: %s)", buf.c_str(), sexp_error_message(z), sexp_buf.c_str(), Sexp_nodes[faulty_node].text);
+
+	stuff_sexp_text_string(bad_node_str, faulty_node, SEXP_ERROR_CHECK_MODE);
+	if (!bad_node_str.empty()) {	// the previous function adds a space at the end
+		bad_node_str.pop_back();
+	}
+
+	sprintf(error_buf, "Error in %s: %s\n\nIn sexpression: %s\n\n(Bad node appears to be: %s)", buf.c_str(), sexp_error_message(z), sexp_buf.c_str(), bad_node_str.c_str());
 
 	if (z < 0 && z > -100)
 		err = 1;

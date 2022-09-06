@@ -2221,7 +2221,7 @@ void stars_set_background_model(const char *model_name, const char *texture_name
 		return;
 	}
 
-	if (model_name != nullptr && *model_name != '\0') {
+	if (model_name != nullptr && *model_name != '\0' && stricmp(model_name, "none") != 0) {
 		new_model = model_load(model_name, 0, nullptr, -1);
 
 		if (texture_name != nullptr && *texture_name != '\0') {

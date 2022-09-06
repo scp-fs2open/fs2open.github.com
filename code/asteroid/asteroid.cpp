@@ -77,7 +77,7 @@ bool Default_asteroid_throwing_behavior = true;
 typedef struct asteroid_target {
 	int objnum;
 	int signature;
-	int throw_stamp;
+	TIMESTAMP throw_stamp;
 	int incoming_asteroids;
 } asteroid_target;
 
@@ -114,7 +114,7 @@ void asteroid_add_target(object* objp) {
 	asteroid_target new_target;
 	new_target.objnum = OBJ_INDEX(objp);
 	new_target.signature = objp->signature;
-	new_target.throw_stamp = timestamp(Random::next(500, 2000));
+	new_target.throw_stamp = _timestamp(Random::next(500, 2000));
 	new_target.incoming_asteroids = count_incident_asteroids(OBJ_INDEX(objp)); // this *should* normally be 0
 
 	Asteroid_targets.push_back(new_target);
@@ -313,9 +313,9 @@ object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int asteroi
 	asp->asteroid_subtype = asteroid_subtype;
 	asp->flags = 0;
 	asp->flags |= AF_USED;
-	asp->check_for_wrap = timestamp_rand(0, ASTEROID_CHECK_WRAP_TIMESTAMP);
-	asp->check_for_collide = timestamp_rand(0, ASTEROID_UPDATE_COLLIDE_TIMESTAMP);
-	asp->final_death_time = timestamp(-1);
+	asp->check_for_wrap = _timestamp_rand(0, ASTEROID_CHECK_WRAP_TIMESTAMP);
+	asp->check_for_collide = _timestamp_rand(0, ASTEROID_UPDATE_COLLIDE_TIMESTAMP);
+	asp->final_death_time = TIMESTAMP::invalid();
 	asp->collide_objnum = -1;
 	asp->collide_objsig = -1;
 	asp->target_objnum = -1;
@@ -815,7 +815,7 @@ static void maybe_throw_asteroid()
 
 		nprintf(("AI", "Incoming asteroids to %s: %i\n", Ships[target_objp->instance].ship_name, target.incoming_asteroids));
 
-		target.throw_stamp = timestamp(1000 + 1200 * target.incoming_asteroids /(Game_skill_level+1));
+		target.throw_stamp = _timestamp(1000 + 1200 * target.incoming_asteroids / (Game_skill_level+1));
 
 		int counter = Random::next(Asteroid_field.num_used_field_debris_types);
 		int subtype = -1;
@@ -1433,7 +1433,7 @@ void asteroid_hit( object * pasteroid_obj, object * other_obj, vec3d * hitpos, f
 	pasteroid_obj->hull_strength -= damage;
 
 	if (pasteroid_obj->hull_strength < 0.0f) {
-		if ( asp->final_death_time <= 0 ) {
+		if ( !asp->final_death_time.isValid() ) {
 			int play_loud_collision = 0;
 
 			explosion_life = asteroid_create_explosion(pasteroid_obj);
@@ -1441,7 +1441,7 @@ void asteroid_hit( object * pasteroid_obj, object * other_obj, vec3d * hitpos, f
 			asteroid_explode_sound(pasteroid_obj, asp->asteroid_type, play_loud_collision);
 			asteroid_do_area_effect(pasteroid_obj);
 
-			asp->final_death_time = timestamp( fl2i(explosion_life*1000.0f)/5 );	// Wait till 30% of vclip time before breaking the asteroid up.
+			asp->final_death_time = _timestamp( fl2i(explosion_life*MILLISECONDS_PER_SECOND)/5 );	// Wait till 30% of vclip time before breaking the asteroid up.
 			if ( hitpos ) {
 				asp->death_hit_pos = *hitpos;
 			} else {
@@ -1621,11 +1621,18 @@ static void asteroid_maybe_break_up(object *pasteroid_obj)
 					}
 				}
 			}
-			asp->final_death_time = timestamp(-1);
+			asp->final_death_time = TIMESTAMP::invalid();
 		}
 		if (hooked) {
 			scripting::hooks::OnDeath->run(
 				scripting::hook_param_list(scripting::hook_param("Self", 'o', pasteroid_obj)),
+				pasteroid_obj);
+		}
+		if (scripting::hooks::OnAsteroidDeath->isActive()) {
+			scripting::hooks::OnAsteroidDeath->run(
+				scripting::hook_param_list(
+					scripting::hook_param("Asteroid", 'o', pasteroid_obj),
+					scripting::hook_param("Hitpos", 'o', asp->death_hit_pos)),
 				pasteroid_obj);
 		}
 	}
@@ -1774,7 +1781,7 @@ void asteroid_process_post(object * obj)
 		if (Asteroid_field.field_type == FT_ACTIVE) {
 			if ( timestamp_elapsed(asp->check_for_wrap) ) {
 				asteroid_maybe_reposition(obj, &Asteroid_field);
-				asp->check_for_wrap = timestamp(ASTEROID_CHECK_WRAP_TIMESTAMP);
+				asp->check_for_wrap = _timestamp(ASTEROID_CHECK_WRAP_TIMESTAMP);
 			}
 		}
 
@@ -1782,7 +1789,7 @@ void asteroid_process_post(object * obj)
 
 		if ( timestamp_elapsed(asp->check_for_collide) ) {
 			asteroid_update_collide_flag(obj);
-			asp->check_for_collide = timestamp(ASTEROID_UPDATE_COLLIDE_TIMESTAMP);
+			asp->check_for_collide = _timestamp(ASTEROID_UPDATE_COLLIDE_TIMESTAMP);
 		}
 
 		asteroid_maybe_break_up(obj);

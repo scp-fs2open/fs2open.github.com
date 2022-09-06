@@ -1785,7 +1785,7 @@ void multi_ingame_send_ship_update(net_player *p)
 	// go through the list and send all ships which are mark as OF_COULD_BE_PLAYER
 	while(moveup!=END_OF_LIST(&Ship_obj_list)){
 		//Make sure the object can be a player and is on the same team as this guy
-		if(Objects[moveup->objnum].flags[Object::Object_Flags::Could_be_player] && obj_team(&Objects[moveup->objnum]) == p->p_info.team){
+		if(Objects[moveup->objnum].flags[Object::Object_Flags::Could_be_player] && Objects[moveup->objnum].type == OBJ_SHIP && obj_team(&Objects[moveup->objnum]) == p->p_info.team){
 			// send the update
 			send_ingame_ship_update_packet(p,&Ships[Objects[moveup->objnum].instance]);
 		}
