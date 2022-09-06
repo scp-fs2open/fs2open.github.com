@@ -40,7 +40,7 @@ ADE_VIRTVAR(AudioFilename,
 	return ade_set_args(L, "s", stage->voice);
 }
 
-ADE_VIRTVAR(isValid,
+ADE_VIRTVAR(isVisible,
 		l_BriefStage,
 		nullptr,
 		"The result of the stage formula",
@@ -178,7 +178,7 @@ ADE_VIRTVAR(Team, l_Goals, nullptr, "The goal team", "mission_goal", "The goal t
 	return ade_set_args(L, "i", current->team);
 }
 
-ADE_VIRTVAR(isValid, l_Goals, nullptr, "The goal validity", "mission_goal", "true if valid, false otherwise")
+ADE_VIRTVAR(isGoalValid, l_Goals, nullptr, "The goal validity", "mission_goal", "true if valid, false otherwise")
 {
 	mission_goal* current = nullptr;
 	if (!ade_get_args(L, "o", l_Goals.GetPtr(&current))) {
