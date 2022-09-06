@@ -355,7 +355,8 @@ void Player::stopPlayback() {
 	audioPlaybackClose(&m_state);
 	videoPlaybackClose(&m_state);
 
-	m_decoderThread->join();
+	if(m_decoderThread->joinable())
+		m_decoderThread->join();
 }
 
 void Player::decoderThread() {
