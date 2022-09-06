@@ -12,62 +12,8 @@
 #include <memory>
 #include <map>
 
+#include <tl/optional.hpp>
 #include <linb/any.hpp>
-
-//Since we don't have C++17, this is a small (actually not std conform) implementation of an optional that works for objects with complex constructors
-template<typename T>
-class optional {
-	union data {
-		T t;
-		bool dummy;
-		constexpr data(T other_t) : t(other_t) {}
-		constexpr data() : dummy(false) {}
-	} data;
-	bool filled = false;
-
-public:
-	constexpr optional(const T& other_data) : data(other_data), filled(true) { }
-	constexpr optional() : data() { }
-
-	operator T() const {
-		if (filled)
-			return data.t;
-		else {
-			UNREACHABLE("Tried access a non-filled optional.");
-			return T();
-		}
-	}
-	
-	inline const T* operator&() const {
-		return filled ? &data.t : nullptr;
-	}
-
-	inline bool has() const {
-		return filled;
-	}
-
-	inline void if_filled(const std::function<void(const T&)>& fnc) const {
-		if (filled)
-			fnc(data.t);
-	}
-
-	inline void if_filled_or_set(const std::function<void(const T&)>& fnc, const T* orSet = nullptr) {
-		if (filled)
-			fnc(data.t);
-		else if (orSet != nullptr) {
-			data = *orSet;
-			filled = true;
-		}
-	}
-
-	inline bool operator==(const optional<T>& rhs) {
-		if (filled != rhs.filled)
-			return false;
-		else if (!filled)
-			return true;
-		return data.t == rhs.data.t;
-	}
-};
 
 class ship;
 class ship_info;
@@ -126,16 +72,18 @@ namespace animation {
 	struct ModelAnimationData {
 	private:
 		template<typename T>
-		using maybe_optional = typename std::conditional<is_optional, optional<T>, T>::type;
+		using maybe_optional = typename std::conditional<is_optional, tl::optional<T>, T>::type;
 
 	public:
 		ModelAnimationData() = default;
-		ModelAnimationData(const ModelAnimationData<!is_optional>& other) :
-			position(other.position),
-			orientation(other.orientation) {};
+
 		ModelAnimationData(const vec3d& copy_position, const matrix& copy_orientation) :
 			position(copy_position),
 			orientation(copy_orientation) {};
+		ModelAnimationData(const tl::optional<vec3d>& copy_position, const tl::optional<matrix>& copy_orientation) :
+			position(*copy_position),
+			orientation(*copy_orientation) {};
+		ModelAnimationData(const ModelAnimationData<!is_optional>& other) : ModelAnimationData(other.position, other.orientation) {};
 
 		maybe_optional<vec3d> position;
 		maybe_optional<matrix> orientation;
@@ -144,21 +92,27 @@ namespace animation {
 		void applyDelta(const ModelAnimationData<true>& delta) {
 			ModelAnimationData<true> data = *this;
 
-			delta.orientation.if_filled([&data](const matrix& other) -> void {
-				data.orientation.if_filled_or_set([&data, &other](const matrix& current) -> void {
+			if(delta.orientation) {
+				if (data.orientation) {
 					matrix tmp;
-					vm_matrix_x_matrix(&tmp, &other, &current);
-					data.orientation = tmp;
-				}, &other);
-			});
+					vm_matrix_x_matrix(&tmp, &(*delta.orientation), &(*data.orientation));
+					data.orientation = std::move(tmp);
+				}
+				else {
+					data.orientation = delta.orientation;
+				}
+			}
 
-			delta.position.if_filled([&data](const vec3d& other) -> void {
-				data.position.if_filled_or_set([&data, &other](const vec3d& current) -> void {
+			if (delta.position) {
+				if (data.position) {
 					vec3d tmp;
-					vm_vec_add(&tmp, &current, &other);
-					data.position = tmp;
-				}, &other);
-			});
+					vm_vec_add(&tmp, &(*delta.position), &(*data.position));
+					data.position = std::move(tmp);
+				}
+				else {
+					data.position = delta.position;
+				}
+			}
 
 			*this = data;
 		}
@@ -169,7 +123,7 @@ namespace animation {
 	class ModelAnimationSubmodel {
 	protected:
 		SCP_string m_name;
-		optional<int> m_submodel;
+		tl::optional<int> m_submodel;
 		bool is_turret = false;
 
 	private:
