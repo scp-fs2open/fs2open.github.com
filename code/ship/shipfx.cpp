@@ -3462,6 +3462,11 @@ int WE_Default::warpStart()
 	{
 		compute_warpout_stuff(&effect_time, &pos);
 		effect_time += SHIPFX_WARP_DELAY;
+
+		if (sip->flags[Ship::Info_Flags::Supercap]) {
+			// turn off warpin physics in case we're jumping out immediately
+			objp->phys_info.flags &= ~PF_SPECIAL_WARP_IN;
+		}
 	}
 
 	radius = shipfx_calculate_effect_radius(objp, direction);
