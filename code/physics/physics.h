@@ -77,7 +77,7 @@ typedef struct physics_info {
 
 	vec3d  linear_thrust;				// -1 through 1, how much thrust is being applied in the lateral directions
 										// COSMETIC ONLY, this should not be used for physical behavior
-	vec3d  rotational_thrust;			// -1 through 1, how much thrust is being applied in the rotationally
+	vec3d  rotational_thrust;			// -1 through 1, how much thrust is being applied rotationally
 										// COSMETIC ONLY, this should not be used for physical behavior
 		
 	// Data that changes each frame.  Physics fills these in each frame.
