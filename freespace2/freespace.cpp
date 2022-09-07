@@ -7255,6 +7255,9 @@ void game_format_time(fix m_time,char *time_str)
 //
 // ----------------------------------------------------------------
 
+static sound_handle Subspace_ambient_left_channel = sound_handle::invalid();
+static sound_handle Subspace_ambient_right_channel = sound_handle::invalid();
+
 // 
 void game_start_subspace_ambient_sound()
 {

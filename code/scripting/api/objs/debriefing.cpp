@@ -53,7 +53,7 @@ ADE_VIRTVAR(Recommendation, l_DebriefStage, nullptr, "The recommendation text of
 	return ade_set_args(L, "s", stage->recommendation_text);
 }
 
-ADE_VIRTVAR(isValid,
+ADE_VIRTVAR(isVisible,
 	l_DebriefStage,
 	nullptr,
 	"The result of the stage formula",

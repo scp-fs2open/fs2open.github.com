@@ -2,6 +2,8 @@
 //
 #include "ui.h"
 
+#include "freespace.h"
+
 #include "globalincs/alphacolors.h"
 
 #include "cmdline/cmdline.h"
@@ -705,39 +707,22 @@ ADE_FUNC(initDebriefing,
 	nullptr,
 	"Builds the debriefing, the stats, sets the next campaign mission, and makes all relevant data accessible",
 	"number",
-	"Returns 1 when completed")
+	"Returns true when completed")
 {
 	//This is used to skip some UI preloading in debrief init
 	API_Access = true;
 	
-	//freespace.cpp does all this stuff before entering debrief so we have to do it here, too -Mjn
-	hud_stop_looped_locking_sounds();
-	hud_stop_looped_engine_sounds();
-	afterburner_stop_sounds();
-	player_stop_looped_sounds();
-	obj_snd_stop_all(); // stop all object-linked persistant sounds
-	if (Subspace_ambient_left_channel.isValid()) {
-		snd_stop(Subspace_ambient_left_channel);
-		Subspace_ambient_left_channel = sound_handle::invalid();
-	}
+	// stop all looping mission sounds
+	game_stop_looped_sounds();
 
-	if (Subspace_ambient_right_channel.isValid()) {
-		snd_stop(Subspace_ambient_right_channel);
-		Subspace_ambient_right_channel = sound_handle::invalid();
-	}
-	snd_stop(Radar_static_looping);
-	Radar_static_looping = sound_handle::invalid();
-	snd_stop(Target_static_looping);
-	shipfx_stop_engine_wash_sound();
-	Target_static_looping = sound_handle::invalid();
-
-	mission_goal_fail_incomplete(); // fail all incomplete goals before entering debriefing
+	 // fail all incomplete goals before entering debriefing
+	mission_goal_fail_incomplete();
 	hud_config_as_player();
 	debrief_init();
 
 	API_Access = false;
 	
-	return ade_set_args(L, "i", 1);
+	return ade_set_args(L, "b", true);
 }
 
 ADE_FUNC(getDebriefingMusicName,
@@ -878,7 +863,7 @@ ADE_FUNC(replayMission,
 	nullptr,
 	"Resets the mission outcome and begins the current mission again if in campaign",
 	"number",
-	"Returns 1 when completed")
+	"Returns true when completed")
 {
 	// This is used to skip some UI preloading in debrief init
 	API_Access = true;
@@ -889,7 +874,7 @@ ADE_FUNC(replayMission,
 
 	API_Access = false;
 
-	return ade_set_args(L, "i", 1);
+	return ade_set_args(L, "b", true);
 }
 
 ADE_FUNC(acceptMission,
@@ -897,7 +882,7 @@ ADE_FUNC(acceptMission,
 	nullptr,
 	"Accepts the mission outcome, saves the stats, and begins the next mission if in campaign",
 	"number",
-	"Returns 1 when completed")
+	"Returns true when completed")
 {
 	// This is used to skip some UI preloading in debrief init
 	API_Access = true;
@@ -908,7 +893,7 @@ ADE_FUNC(acceptMission,
 
 	API_Access = false;
 
-	return ade_set_args(L, "i", 1);
+	return ade_set_args(L, "b", true);
 }
 
 //**********SUBLIBRARY: UserInterface/LoopBrief

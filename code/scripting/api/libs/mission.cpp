@@ -1631,7 +1631,7 @@ ADE_FUNC(isRedAlertMission,
 ADE_FUNC(hasCommandBriefing,
 	l_Mission,
 	nullptr,
-	"Determines if the current mission has a command briefing",
+	"Determines if the current mission has a debriefing",
 	"boolean",
 	"true if command briefing, false otherwise.")
 {
@@ -1654,13 +1654,13 @@ ADE_FUNC(hasGoalsSlide,
 ADE_FUNC(hasDebriefing,
 	l_Mission,
 	nullptr,
-	"Determines if the current mission has a command briefing",
+	"Determines if the current mission has a debriefing",
 	"boolean",
 	"true if command briefing, false otherwise.")
 {
-	bool check = false;
+	bool check = true;
 	if (The_mission.flags[Mission::Mission_Flags::Toggle_debriefing]) {
-		check = true;
+		check = false;
 	}
 	
 	return ade_set_args(L, "b", check);
