@@ -2048,8 +2048,8 @@ void vm_angular_move_forward_vec(const vec3d* goal_f, const matrix* orient, cons
 				theta_goal.xyz.y = w_in->xyz.y * d;
 			}
 		}
-		// continue to interpolate, unless we also have no velocity, in which case we have arrived
-		else if (vm_vec_mag_squared(w_in) < SMALL_NUM * SMALL_NUM) {
+		// continue to interpolate, unless we also have no velocity (and dont need to bank), in which case we have arrived
+		else if (vm_vec_mag_squared(w_in) < SMALL_NUM * SMALL_NUM && bank_vel == 0.0f) {
 			*next_orient = *orient;
 			vm_vec_zero(w_out);
 			return;
