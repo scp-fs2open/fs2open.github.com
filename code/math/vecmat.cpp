@@ -2955,9 +2955,9 @@ void vm_interpolate_angles_quick(angles *dest0, angles *src0, angles *src1, floa
 }
 
 // Interpolate between two matrices, using t as a percentage progress between them.
-// Intended values for t are [0.0f, 1.0f], but only values close to zero rejected, 
-// as you could conceivably use these calculations to find a rotation that is more 
-// than 100% of the rotation.
+// Intended values for t are [0.0f, 1.0f], but values outside this range are allowed,
+// as you could conceivably use these calculations to find a rotation that is outside 
+// the usual 0-100%.
 // derived by Asteroth from our AI code
 void vm_interpolate_matrices(matrix* out_orient, const matrix* curr_orient, const matrix* goal_orient, float t) 
 {
