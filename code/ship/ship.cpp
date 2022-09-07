@@ -4495,6 +4495,9 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			stuff_float(&mtp->length);
 		}
 
+		// make sure norm is normalized, and put any extra in length
+		mtp->length *= vm_vec_normalize(&mtp->norm);
+
 		parse_game_sound("+StartSnd:", &mtp->start_snd);
 		parse_game_sound("+LoopSnd:", &mtp->loop_snd);
 		parse_game_sound("+StopSnd:", &mtp->stop_snd);
@@ -19526,41 +19529,66 @@ void ship_render_batch_thrusters(object *obj)
 
 		render_amount = 0.0f;
 
-		//WMC - get us a steady value
-		vec3d des_vel;
-		vm_vec_rotate(&des_vel, &pi->desired_vel, &obj->orient);
+		if (mtp->use_flags.any_set()) {
+			if(pi->desired_rotvel.xyz.x < 0 && (mtp->use_flags[Ship::Thruster_Flags::Pitch_up])) {
+				render_amount = fl_abs(pi->desired_rotvel.xyz.x) / pi->max_rotvel.xyz.x;
+			} else if(pi->desired_rotvel.xyz.x > 0 && (mtp->use_flags[Ship::Thruster_Flags::Pitch_down])) {
+				render_amount = fl_abs(pi->desired_rotvel.xyz.x) / pi->max_rotvel.xyz.x;
+			} else if(pi->desired_rotvel.xyz.y < 0 && (mtp->use_flags[Ship::Thruster_Flags::Roll_right])) {
+				render_amount = fl_abs(pi->desired_rotvel.xyz.y) / pi->max_rotvel.xyz.y;
+			} else if(pi->desired_rotvel.xyz.y > 0 && (mtp->use_flags[Ship::Thruster_Flags::Roll_left])) {
+				render_amount = fl_abs(pi->desired_rotvel.xyz.y) / pi->max_rotvel.xyz.y;
+			} else if(pi->desired_rotvel.xyz.z < 0 && (mtp->use_flags[Ship::Thruster_Flags::Bank_right])) {
+				render_amount = fl_abs(pi->desired_rotvel.xyz.z) / pi->max_rotvel.xyz.z;
+			} else if(pi->desired_rotvel.xyz.z > 0 && (mtp->use_flags[Ship::Thruster_Flags::Bank_left])) {
+				render_amount = fl_abs(pi->desired_rotvel.xyz.z) / pi->max_rotvel.xyz.z;
+			}
 
-		if(pi->desired_rotvel.xyz.x < 0 && (mtp->use_flags[Ship::Thruster_Flags::Pitch_up])) {
-			render_amount = fl_abs(pi->desired_rotvel.xyz.x) / pi->max_rotvel.xyz.x;
-		} else if(pi->desired_rotvel.xyz.x > 0 && (mtp->use_flags[Ship::Thruster_Flags::Pitch_down])) {
-			render_amount = fl_abs(pi->desired_rotvel.xyz.x) / pi->max_rotvel.xyz.x;
-		} else if(pi->desired_rotvel.xyz.y < 0 && (mtp->use_flags[Ship::Thruster_Flags::Roll_right])) {
-			render_amount = fl_abs(pi->desired_rotvel.xyz.y) / pi->max_rotvel.xyz.y;
-		} else if(pi->desired_rotvel.xyz.y > 0 && (mtp->use_flags[Ship::Thruster_Flags::Roll_left])) {
-			render_amount = fl_abs(pi->desired_rotvel.xyz.y) / pi->max_rotvel.xyz.y;
-		} else if(pi->desired_rotvel.xyz.z < 0 && (mtp->use_flags[Ship::Thruster_Flags::Bank_right])) {
-			render_amount = fl_abs(pi->desired_rotvel.xyz.z) / pi->max_rotvel.xyz.z;
-		} else if(pi->desired_rotvel.xyz.z > 0 && (mtp->use_flags[Ship::Thruster_Flags::Bank_left])) {
-			render_amount = fl_abs(pi->desired_rotvel.xyz.z) / pi->max_rotvel.xyz.z;
+			//Backslash - show thrusters according to thrust amount, not speed
+			if(pi->side_thrust > 0 && (mtp->use_flags[Ship::Thruster_Flags::Slide_right])) {
+				render_amount = pi->side_thrust;
+			} else if(pi->side_thrust < 0 && (mtp->use_flags[Ship::Thruster_Flags::Slide_left])) {
+				render_amount = -pi->side_thrust;
+			} else if(pi->vert_thrust > 0 && (mtp->use_flags[Ship::Thruster_Flags::Slide_up])) {
+				render_amount = pi->vert_thrust;
+			} else if(pi->vert_thrust < 0 && (mtp->use_flags[Ship::Thruster_Flags::Slide_down])) {
+				render_amount = -pi->vert_thrust;
+			} else if(pi->forward_thrust > 0 && (mtp->use_flags[Ship::Thruster_Flags::Forward])) {
+				render_amount = pi->forward_thrust;
+			} else if(pi->forward_thrust < 0 && (mtp->use_flags[Ship::Thruster_Flags::Reverse])) {
+				render_amount = -pi->forward_thrust;
+			}
+		} else {
+			// calculate it automatically
+			vec3d cross, rotvel;
+			rotvel.xyz.x = pi->desired_rotvel.xyz.x / pi->max_rotvel.xyz.x;
+			rotvel.xyz.y = pi->desired_rotvel.xyz.y / pi->max_rotvel.xyz.y;
+			rotvel.xyz.z = pi->desired_rotvel.xyz.z / pi->max_rotvel.xyz.z;
+			vec3d pos = mtp->pos / (obj->radius * 0.5f); // for full activation at half radius, further out will get capped to 1
+			vm_vec_cross(&cross, &pos, &rotvel);
+			render_amount = vm_vec_dot(&mtp->norm, &cross);
+			CLAMP(render_amount, 0.0f, 1.0f);
+
+			render_amount += -vm_vec_dot(&mtp->norm, &vmd_x_vector) * pi->side_thrust;
+			render_amount += -vm_vec_dot(&mtp->norm, &vmd_y_vector) * pi->vert_thrust;
+			render_amount += -vm_vec_dot(&mtp->norm, &vmd_z_vector) * pi->forward_thrust;
+
+		}
+		CLAMP(render_amount, 0.0f, 1.0f);
+
+		if (pi->flags & PF_GLIDING) {
+			//WMC - get us a steady value
+			vec3d des_vel;
+			vm_vec_rotate(&des_vel, &pi->desired_vel, &obj->orient);
+
+			vec3d glide_dir;
+			vm_vec_copy_normalize(&glide_dir, &des_vel);
+			render_amount += -vm_vec_dot(&mtp->norm, &glide_dir);
+			CLAMP(render_amount, 0.0f, 1.0f);
 		}
 
-		//Backslash - show thrusters according to thrust amount, not speed
-		if(pi->side_thrust > 0 && (mtp->use_flags[Ship::Thruster_Flags::Slide_right])) {
-			render_amount = pi->side_thrust;
-		} else if(pi->side_thrust < 0 && (mtp->use_flags[Ship::Thruster_Flags::Slide_left])) {
-			render_amount = -pi->side_thrust;
-		} else if(pi->vert_thrust > 0 && (mtp->use_flags[Ship::Thruster_Flags::Slide_up])) {
-			render_amount = pi->vert_thrust;
-		} else if(pi->vert_thrust < 0 && (mtp->use_flags[Ship::Thruster_Flags::Slide_down])) {
-			render_amount = -pi->vert_thrust;
-		} else if(pi->forward_thrust > 0 && (mtp->use_flags[Ship::Thruster_Flags::Forward])) {
-			render_amount = pi->forward_thrust;
-		} else if(pi->forward_thrust < 0 && (mtp->use_flags[Ship::Thruster_Flags::Reverse])) {
-			render_amount = -pi->forward_thrust;
-		}
-
-		//Don't render small faraway thrusters (more than 10k * radius away)
-		if ( vm_vec_dist(&Eye_position, &obj->pos) > (10000.0f * mtp->radius) ) {
+		//Don't render small faraway thrusters (more than 1k * radius * length away)
+		if ( vm_vec_dist(&Eye_position, &obj->pos) > (1000.0f * mtp->radius * mtp->length) ) {
 			render_amount = 0.0f;
 		}
 
