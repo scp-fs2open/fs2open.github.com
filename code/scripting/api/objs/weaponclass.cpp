@@ -4,6 +4,8 @@
 #include "weaponclass.h"
 #include "model.h"
 #include "weapon/weapon.h"
+#include "graphics/matrix.h"
+#include "vecmath.h"
 
 namespace scripting {
 namespace api {
@@ -550,6 +552,183 @@ ADE_FUNC(isValid, l_Weaponclass, NULL, "Detects whether handle is valid", "boole
 		return ADE_RETURN_FALSE;
 
 	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(renderTechModel,
+	l_Weaponclass,
+	"number X1, number Y1, number X2, number Y2, [number RotationPercent =0, number PitchPercent =0, number "
+	"BankPercent=40, number Zoom=1.3]",
+	"Draws weapon tech model",
+	"boolean",
+	"Whether weapon was rendered")
+{
+	int x1, y1, x2, y2;
+	angles rot_angles = {0.0f, 0.0f, 40.0f};
+	int idx;
+	float zoom = 1.3f;
+	if (!ade_get_args(L,
+			"oiiii|ffff",
+			l_Weaponclass.Get(&idx),
+			&x1,
+			&y1,
+			&x2,
+			&y2,
+			&rot_angles.h,
+			&rot_angles.p,
+			&rot_angles.b,
+			&zoom))
+		return ade_set_error(L, "b", false);
+
+	if (idx < 0 || idx >= weapon_info_size())
+		return ade_set_args(L, "b", false);
+
+	if (x2 < x1 || y2 < y1)
+		return ade_set_args(L, "b", false);
+
+	CLAMP(rot_angles.p, 0.0f, 100.0f);
+	CLAMP(rot_angles.b, 0.0f, 100.0f);
+	CLAMP(rot_angles.h, 0.0f, 100.0f);
+
+	weapon_info* wip = &Weapon_info[idx];
+	model_render_params render_info;
+
+	//Load the model if it exists or exit early
+	if (VALID_FNAME(wip->tech_model)) {
+		wip->model_num = model_load(wip->tech_model, 0, NULL, 0);
+	} else {
+		return ade_set_args(L, "b", false);
+	}
+
+	if (wip->model_num < 0)
+		return ade_set_args(L, "b", false);
+
+	// Handle angles
+	matrix orient = vmd_identity_matrix;
+	angles view_angles = {-0.6f, 0.0f, 0.0f};
+	vm_angles_2_matrix(&orient, &view_angles);
+
+	rot_angles.p = (rot_angles.p * 0.01f) * PI2;
+	rot_angles.b = (rot_angles.b * 0.01f) * PI2;
+	rot_angles.h = (rot_angles.h * 0.01f) * PI2;
+	vm_rotate_matrix_by_angles(&orient, &rot_angles);
+
+	// Clip
+	gr_set_clip(x1, y1, x2 - x1, y2 - y1, GR_RESIZE_NONE);
+
+	// Handle 3D init stuff
+	g3_start_frame(1);
+	g3_set_view_matrix(&wip->closeup_pos, &vmd_identity_matrix, wip->closeup_zoom * zoom);
+
+	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+	gr_set_view_matrix(&Eye_position, &Eye_matrix);
+
+	// Handle light
+	light_reset();
+	vec3d light_dir = vmd_zero_vector;
+	light_dir.xyz.y = 1.0f;
+	light_add_directional(&light_dir, 0.65f, 1.0f, 1.0f, 1.0f);
+	light_rotate_all();
+
+	// Draw the ship!!
+	model_clear_instance(wip->model_num);
+	render_info.set_detail_level_lock(0);
+
+	uint render_flags = MR_AUTOCENTER | MR_NO_FOGGING;
+
+	if (wip->wi_flags[Weapon::Info_Flags::Mr_no_lighting])
+		render_flags |= MR_NO_LIGHTING;
+
+	render_info.set_flags(render_flags);
+
+	model_render_immediate(&render_info, wip->model_num, &orient, &vmd_zero_vector);
+
+	// OK we're done
+	gr_end_view_matrix();
+	gr_end_proj_matrix();
+
+	// Bye!!
+	g3_end_frame();
+	gr_reset_clip();
+
+	return ade_set_args(L, "b", true);
+}
+
+// Nuke's alternate tech model rendering function
+ADE_FUNC(renderTechModel2,
+	l_Weaponclass,
+	"number X1, number Y1, number X2, number Y2, [orientation Orientation=nil, number Zoom=1.3]",
+	"Draws weapon tech model",
+	"boolean",
+	"Whether weapon was rendered")
+{
+	int x1, y1, x2, y2;
+	int idx;
+	float zoom = 1.3f;
+	matrix_h* mh = NULL;
+	if (!ade_get_args(L, "oiiiio|f", l_Weaponclass.Get(&idx), &x1, &y1, &x2, &y2, l_Matrix.GetPtr(&mh), &zoom))
+		return ade_set_error(L, "b", false);
+
+	if (idx < 0 || idx >= weapon_info_size())
+		return ade_set_args(L, "b", false);
+
+	if (x2 < x1 || y2 < y1)
+		return ade_set_args(L, "b", false);
+
+	weapon_info* wip = &Weapon_info[idx];
+	model_render_params render_info;
+
+	// Load the model if it exists or exit early
+	if (VALID_FNAME(wip->tech_model)) {
+		wip->model_num = model_load(wip->tech_model, 0, NULL, 0);
+	} else {
+		return ade_set_args(L, "b", false);
+	}
+
+	if (wip->model_num < 0)
+		return ade_set_args(L, "b", false);
+
+	// Handle angles
+	matrix* orient = mh->GetMatrix();
+
+	// Clip
+	gr_set_clip(x1, y1, x2 - x1, y2 - y1, GR_RESIZE_NONE);
+
+	// Handle 3D init stuff
+	g3_start_frame(1);
+	g3_set_view_matrix(&wip->closeup_pos, &vmd_identity_matrix, wip->closeup_zoom * zoom);
+
+	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+	gr_set_view_matrix(&Eye_position, &Eye_matrix);
+
+	// Handle light
+	light_reset();
+	vec3d light_dir = vmd_zero_vector;
+	light_dir.xyz.y = 1.0f;
+	light_add_directional(&light_dir, 0.65f, 1.0f, 1.0f, 1.0f);
+	light_rotate_all();
+
+	// Draw the ship!!
+	model_clear_instance(wip->model_num);
+	render_info.set_detail_level_lock(0);
+
+	uint render_flags = MR_AUTOCENTER | MR_NO_FOGGING;
+
+	if (wip->wi_flags[Weapon::Info_Flags::Mr_no_lighting])
+		render_flags |= MR_NO_LIGHTING;
+
+	render_info.set_flags(render_flags);
+
+	model_render_immediate(&render_info, wip->model_num, orient, &vmd_zero_vector);
+
+	// OK we're done
+	gr_end_view_matrix();
+	gr_end_proj_matrix();
+
+	// Bye!!
+	g3_end_frame();
+	gr_reset_clip();
+
+	return ade_set_args(L, "b", true);
 }
 
 ADE_FUNC(getWeaponClassIndex, l_Weaponclass, NULL, "Gets the index value of the weapon class", "number", "index value of the weapon class")
