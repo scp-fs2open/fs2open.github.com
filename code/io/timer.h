@@ -21,13 +21,20 @@
 
 using Random = util::Random;
 
-// "strong typedef", based on similar usage in gamesnd, based in turn on this article:
+// Empty structs used as type-safe markers.
+struct ui_timestamp_tag {};
+struct timestamp_tag {};
+
+// These classes use the "strong typedef" pattern, based on
+// similar usage in gamesnd, based in turn on this article:
 // https://www.ilikebigbits.com/2014_05_06_type_safe_handles.html
 // 
-// Do not add additional fields or member functions to this class
-// (such as the functionality in timestamp_delta).  This class must
-// remain lightweight so that it can be optimized away.
-struct ui_timestamp_tag {};
+// Do not add additional fields or member functions to these classes
+// (such as the functionality in timestamp_delta).  These classes must
+// remain lightweight so that they can be optimized away.
+
+// Timestamp measuring real time.  Runs regardless of time compression or pausing.
+// Useful for timing real-world events and UI features like cursor blinking.
 class UI_TIMESTAMP : public util::ID<ui_timestamp_tag, int, -1>
 {
 public:
@@ -42,7 +49,8 @@ public:
 	inline bool isImmediate() const { return m_val == 1; }
 };
 
-struct timestamp_tag {};
+// Timestamp measuring game time.  Sensitive to time compression and pausing.
+// Useful for timing in-mission events.
 class TIMESTAMP : public util::ID<timestamp_tag, int, -1>
 {
 public:
@@ -56,6 +64,15 @@ public:
 	inline bool isNever() const { return m_val == 0; }
 	inline bool isImmediate() const { return m_val == 1; }
 };
+
+// For converting from old-style timestamps:
+//   A timestamp of 0 is invalid
+//   A timestamp of 1 elapses immediately
+//   A timestamp of 2 or more corresponds to that value of the timestamp timer
+// See also the implementation of timestamp(int).  Also be careful not to confuse these values
+// with the deltas; timestamp(-1) returns 0 and timestamp(0) returns 1.  But timestamp(1)
+// returns the current value of timestamp_ms() plus 1 millisecond.  To add further confusion,
+// legacy code often used -1 rather than 0 to indicate an invalid timestamp.
 
 
 //==========================================================================
