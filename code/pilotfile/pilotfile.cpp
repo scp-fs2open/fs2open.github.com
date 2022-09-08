@@ -246,9 +246,8 @@ void pilotfile::update_stats_backout(scoring_struct *stats, bool training)
 	if (stats->m_promotion_earned >= 0) {
 		// deal with a multi-rank promotion mission
 		for (i = 0; i < MAX_FREESPACE2_RANK; ++i) {
-			if (p_stats->score <= Ranks[i].points) {
-				p_stats->rank = i-1;
-				break;
+			if (p_stats->score >= Ranks[i].points) {
+				p_stats->rank = i;
 			}
 		}
 		Assertion (p_stats->rank >= 0, "Rank became negative.");
