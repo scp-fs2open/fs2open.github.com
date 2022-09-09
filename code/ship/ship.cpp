@@ -18542,7 +18542,7 @@ int ship_class_compare(int ship_class_1, int ship_class_2)
  * Gives the index into the Damage_types[] vector of a specified damage type name
  * @return -1 if not found
  */
-static int damage_type_get_idx(char *name)
+static int damage_type_get_idx(const char *name)
 {
 	//This should never be bigger than INT_MAX anyway
 	for(int i = 0; i < (int)Damage_types.size(); i++)
@@ -18557,7 +18557,7 @@ static int damage_type_get_idx(char *name)
 /**
  * Either loads a new damage type, or returns the index of one with the same name as given
  */
-int damage_type_add(char *name)
+int damage_type_add(const char *name)
 {
 	int i = damage_type_get_idx(name);
 	if(i != -1)
