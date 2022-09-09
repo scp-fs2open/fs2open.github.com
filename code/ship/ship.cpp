@@ -8869,7 +8869,7 @@ static void ship_do_thruster_frame( ship *shipp, object *objp, float frametime )
 
 		// If thrust at 0, go at half as fast, full thrust; full framerate
 		// so set rate from 0.67 to 1.67, depending on thrust from 0 to 1
-		rate = 0.67f * (1.0f + objp->phys_info.forward_thrust);
+		rate = 0.67f * (1.0f + objp->phys_info.linear_thrust.xyz.z);
 	}
 
 	Assert( frametime > 0.0f );
@@ -8935,7 +8935,7 @@ void ship_do_weapon_thruster_frame( weapon *weaponp, object *objp, float frameti
 
 	// If thrust at 0, go at half as fast, full thrust; full framerate
 	// so set rate from 0.67 to 1.67, depending on thrust from 0 to 1
-	rate = 0.67f * (1.0f + objp->phys_info.forward_thrust);
+	rate = 0.67f * (1.0f + objp->phys_info.linear_thrust.xyz.z);
 
 	if (wip->thruster_flame.first_frame >= 0)
 		flame_anim = &wip->thruster_flame;
@@ -10774,21 +10774,19 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	if (by_sexp) {
 		Objects[sp->objnum].phys_info.desired_rotvel = ph_inf.desired_rotvel;
 		Objects[sp->objnum].phys_info.desired_vel = ph_inf.desired_vel;
-		Objects[sp->objnum].phys_info.forward_thrust = ph_inf.forward_thrust;
 		Objects[sp->objnum].phys_info.fspeed = ph_inf.fspeed;
 		Objects[sp->objnum].phys_info.heading = ph_inf.heading;
 		Objects[sp->objnum].phys_info.last_rotmat = ph_inf.last_rotmat;
-		Objects[sp->objnum].phys_info.prev_fvec = ph_inf.prev_fvec;
 		Objects[sp->objnum].phys_info.prev_ramp_vel = ph_inf.prev_ramp_vel;
 		Objects[sp->objnum].phys_info.reduced_damp_decay = ph_inf.reduced_damp_decay;
 		Objects[sp->objnum].phys_info.rotvel = ph_inf.rotvel;
 		Objects[sp->objnum].phys_info.shockwave_decay = ph_inf.shockwave_decay;
 		Objects[sp->objnum].phys_info.shockwave_shake_amp = ph_inf.shockwave_shake_amp;
-		Objects[sp->objnum].phys_info.side_thrust = ph_inf.side_thrust;
 		Objects[sp->objnum].phys_info.speed = ph_inf.speed;
 		Objects[sp->objnum].phys_info.vel = ph_inf.vel;
-		Objects[sp->objnum].phys_info.vert_thrust = ph_inf.vert_thrust;
 		Objects[sp->objnum].phys_info.ai_desired_orient = ph_inf.ai_desired_orient;
+		Objects[sp->objnum].phys_info.linear_thrust = ph_inf.linear_thrust;
+		Objects[sp->objnum].phys_info.rotational_thrust = ph_inf.rotational_thrust;
 	}
 
 	ship_set_new_ai_class(sp, sip->ai_class);
@@ -19478,9 +19476,7 @@ int get_nearest_bbox_point(object *ship_objp, vec3d *start, vec3d *box_pt)
 
 void ship_set_thruster_info(mst_info *mst, object *obj, ship *shipp, ship_info *sip)
 {
-	mst->length.xyz.z = obj->phys_info.forward_thrust;
-	mst->length.xyz.x = obj->phys_info.side_thrust;
-	mst->length.xyz.y = obj->phys_info.vert_thrust;
+	mst->length = obj->phys_info.linear_thrust;
 
 	//	Maybe add noise to thruster geometry.
 	if (!(sip->flags[Ship::Info_Flags::No_thruster_geo_noise])) {
@@ -19530,48 +19526,45 @@ void ship_render_batch_thrusters(object *obj)
 		render_amount = 0.0f;
 
 		if (mtp->use_flags.any_set()) {
-			if(pi->desired_rotvel.xyz.x < 0 && (mtp->use_flags[Ship::Thruster_Flags::Pitch_up])) {
-				render_amount = fl_abs(pi->desired_rotvel.xyz.x) / pi->max_rotvel.xyz.x;
-			} else if(pi->desired_rotvel.xyz.x > 0 && (mtp->use_flags[Ship::Thruster_Flags::Pitch_down])) {
-				render_amount = fl_abs(pi->desired_rotvel.xyz.x) / pi->max_rotvel.xyz.x;
-			} else if(pi->desired_rotvel.xyz.y < 0 && (mtp->use_flags[Ship::Thruster_Flags::Roll_right])) {
-				render_amount = fl_abs(pi->desired_rotvel.xyz.y) / pi->max_rotvel.xyz.y;
-			} else if(pi->desired_rotvel.xyz.y > 0 && (mtp->use_flags[Ship::Thruster_Flags::Roll_left])) {
-				render_amount = fl_abs(pi->desired_rotvel.xyz.y) / pi->max_rotvel.xyz.y;
-			} else if(pi->desired_rotvel.xyz.z < 0 && (mtp->use_flags[Ship::Thruster_Flags::Bank_right])) {
-				render_amount = fl_abs(pi->desired_rotvel.xyz.z) / pi->max_rotvel.xyz.z;
-			} else if(pi->desired_rotvel.xyz.z > 0 && (mtp->use_flags[Ship::Thruster_Flags::Bank_left])) {
-				render_amount = fl_abs(pi->desired_rotvel.xyz.z) / pi->max_rotvel.xyz.z;
+			if(pi->rotational_thrust.xyz.x < 0 && (mtp->use_flags[Ship::Thruster_Flags::Pitch_up])) {
+				render_amount = -pi->rotational_thrust.xyz.x;
+			} else if(pi->rotational_thrust.xyz.x > 0 && (mtp->use_flags[Ship::Thruster_Flags::Pitch_down])) {
+				render_amount = pi->rotational_thrust.xyz.x;
+			} else if(pi->rotational_thrust.xyz.y < 0 && (mtp->use_flags[Ship::Thruster_Flags::Roll_right])) {
+				render_amount = -pi->rotational_thrust.xyz.y;
+			} else if(pi->rotational_thrust.xyz.y > 0 && (mtp->use_flags[Ship::Thruster_Flags::Roll_left])) {
+				render_amount = pi->rotational_thrust.xyz.y;
+			} else if(pi->rotational_thrust.xyz.z < 0 && (mtp->use_flags[Ship::Thruster_Flags::Bank_right])) {
+				render_amount = -pi->rotational_thrust.xyz.z;
+			} else if(pi->rotational_thrust.xyz.z > 0 && (mtp->use_flags[Ship::Thruster_Flags::Bank_left])) {
+				render_amount = pi->rotational_thrust.xyz.z;
 			}
 
 			//Backslash - show thrusters according to thrust amount, not speed
-			if(pi->side_thrust > 0 && (mtp->use_flags[Ship::Thruster_Flags::Slide_right])) {
-				render_amount = pi->side_thrust;
-			} else if(pi->side_thrust < 0 && (mtp->use_flags[Ship::Thruster_Flags::Slide_left])) {
-				render_amount = -pi->side_thrust;
-			} else if(pi->vert_thrust > 0 && (mtp->use_flags[Ship::Thruster_Flags::Slide_up])) {
-				render_amount = pi->vert_thrust;
-			} else if(pi->vert_thrust < 0 && (mtp->use_flags[Ship::Thruster_Flags::Slide_down])) {
-				render_amount = -pi->vert_thrust;
-			} else if(pi->forward_thrust > 0 && (mtp->use_flags[Ship::Thruster_Flags::Forward])) {
-				render_amount = pi->forward_thrust;
-			} else if(pi->forward_thrust < 0 && (mtp->use_flags[Ship::Thruster_Flags::Reverse])) {
-				render_amount = -pi->forward_thrust;
+			if(pi->linear_thrust.xyz.x > 0 && (mtp->use_flags[Ship::Thruster_Flags::Slide_right])) {
+				render_amount = pi->linear_thrust.xyz.x;
+			} else if(pi->linear_thrust.xyz.x < 0 && (mtp->use_flags[Ship::Thruster_Flags::Slide_left])) {
+				render_amount = -pi->linear_thrust.xyz.x;
+			} else if(pi->linear_thrust.xyz.y > 0 && (mtp->use_flags[Ship::Thruster_Flags::Slide_up])) {
+				render_amount = pi->linear_thrust.xyz.y;
+			} else if(pi->linear_thrust.xyz.y < 0 && (mtp->use_flags[Ship::Thruster_Flags::Slide_down])) {
+				render_amount = -pi->linear_thrust.xyz.y;
+			} else if(pi->linear_thrust.xyz.z > 0 && (mtp->use_flags[Ship::Thruster_Flags::Forward])) {
+				render_amount = pi->linear_thrust.xyz.z;
+			} else if(pi->linear_thrust.xyz.z < 0 && (mtp->use_flags[Ship::Thruster_Flags::Reverse])) {
+				render_amount = -pi->linear_thrust.xyz.z;
 			}
 		} else {
 			// calculate it automatically
-			vec3d cross, rotvel;
-			rotvel.xyz.x = pi->desired_rotvel.xyz.x / pi->max_rotvel.xyz.x;
-			rotvel.xyz.y = pi->desired_rotvel.xyz.y / pi->max_rotvel.xyz.y;
-			rotvel.xyz.z = pi->desired_rotvel.xyz.z / pi->max_rotvel.xyz.z;
+			vec3d cross;
 			vec3d pos = mtp->pos / (obj->radius * 0.5f); // for full activation at half radius, further out will get capped to 1
-			vm_vec_cross(&cross, &pos, &rotvel);
+			vm_vec_cross(&cross, &pos, &pi->rotational_thrust);
 			render_amount = vm_vec_dot(&mtp->norm, &cross);
 			CLAMP(render_amount, 0.0f, 1.0f);
 
-			render_amount += -vm_vec_dot(&mtp->norm, &vmd_x_vector) * pi->side_thrust;
-			render_amount += -vm_vec_dot(&mtp->norm, &vmd_y_vector) * pi->vert_thrust;
-			render_amount += -vm_vec_dot(&mtp->norm, &vmd_z_vector) * pi->forward_thrust;
+			render_amount += -vm_vec_dot(&mtp->norm, &vmd_x_vector) * pi->linear_thrust.xyz.x;
+			render_amount += -vm_vec_dot(&mtp->norm, &vmd_y_vector) * pi->linear_thrust.xyz.y;
+			render_amount += -vm_vec_dot(&mtp->norm, &vmd_z_vector) * pi->linear_thrust.xyz.z;
 
 		}
 		CLAMP(render_amount, 0.0f, 1.0f);

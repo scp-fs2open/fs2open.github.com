@@ -95,6 +95,7 @@ extern bool Always_warn_player_about_unbound_keys;
 extern struct shadow_disable_overrides {
 	bool disable_techroom, disable_mission_select_weapons, disable_mission_select_ships, disable_cockpit;
 } Shadow_disable_overrides;
+extern float Thruster_easing;
 
 void mod_table_init();
 void mod_table_post_process();
