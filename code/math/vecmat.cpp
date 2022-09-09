@@ -2048,8 +2048,8 @@ void vm_angular_move_forward_vec(const vec3d* goal_f, const matrix* orient, cons
 				theta_goal.xyz.y = w_in->xyz.y * d;
 			}
 		}
-		// continue to interpolate, unless we also have no velocity, in which case we have arrived
-		else if (vm_vec_mag_squared(w_in) < SMALL_NUM * SMALL_NUM) {
+		// continue to interpolate, unless we also have no velocity (and dont need to bank), in which case we have arrived
+		else if (vm_vec_mag_squared(w_in) < SMALL_NUM * SMALL_NUM && bank_vel == 0.0f) {
 			*next_orient = *orient;
 			vm_vec_zero(w_out);
 			return;
@@ -2955,9 +2955,9 @@ void vm_interpolate_angles_quick(angles *dest0, angles *src0, angles *src1, floa
 }
 
 // Interpolate between two matrices, using t as a percentage progress between them.
-// Intended values for t are [0.0f, 1.0f], but only values close to zero rejected, 
-// as you could conceivably use these calculations to find a rotation that is more 
-// than 100% of the rotation.
+// Intended values for t are [0.0f, 1.0f], but values outside this range are allowed,
+// as you could conceivably use these calculations to find a rotation that is outside 
+// the usual 0-100%.
 // derived by Asteroth from our AI code
 void vm_interpolate_matrices(matrix* out_orient, const matrix* curr_orient, const matrix* goal_orient, float t) 
 {

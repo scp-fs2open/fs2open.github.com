@@ -5,6 +5,8 @@
 
 #include <memory>
 
+#include <tl/optional.hpp>
+
 bool model_exists(const SCP_string& filename);
 
 bool read_virtual_model_file(polymodel* pm, const SCP_string& filename, model_parse_depth depth, int ferror, model_read_deferred_tasks& deferredTasks);
@@ -43,17 +45,15 @@ public:
 
 class VirtualPOFOperationChangeData : public VirtualPOFOperation {
 	SCP_string submodel;
-	//TODO Refactor into proper optional when available
-	std::unique_ptr<vec3d> setOffset = nullptr;
+	tl::optional<vec3d> setOffset = tl::nullopt;
 public:
 	VirtualPOFOperationChangeData();
 	void process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const override;
 };
 
 class VirtualPOFOperationHeaderData : public VirtualPOFOperation {
-	//TODO Refactor into proper optional when available
-	std::unique_ptr<float> radius = nullptr;
-	std::unique_ptr<std::pair<vec3d, vec3d>> boundingbox = nullptr;
+	tl::optional<float> radius = tl::nullopt;
+	tl::optional<std::pair<vec3d, vec3d>> boundingbox = tl::nullopt;
 public:
 	VirtualPOFOperationHeaderData();
 	void process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const override;

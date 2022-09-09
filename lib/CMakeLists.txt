@@ -53,4 +53,6 @@ add_subdirectory(variant)
 
 add_subdirectory(any)
 
+add_subdirectory(optional)
+
 ADD_SUBDIRECTORY(lz4)

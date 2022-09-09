@@ -68,6 +68,8 @@ target_link_libraries(code PUBLIC variant)
 
 target_link_libraries(code PUBLIC any)
 
+target_link_libraries(code PUBLIC optional)
+
 # Headers for standalone "gui" on UNIX
 IF(UNIX)
 	TARGET_LINK_LIBRARIES(code PUBLIC ${MONGOOSE_LIBS})
