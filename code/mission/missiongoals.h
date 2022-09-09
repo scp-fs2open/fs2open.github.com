@@ -14,6 +14,7 @@
 
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
+#include "io/timer.h"
 
 struct ai_goal;
 struct ai_info;
@@ -105,15 +106,15 @@ typedef struct mission_event {
 	int	repeat_count;			// number of times to test this goal
 	int trigger_count;			// number of times to allow this goal to trigger
 	int	interval;				// interval (in seconds) at which an evaulation is repeated once true.
-	int	timestamp;				// set at 'interval' seconds when we start to eval.
+	TIMESTAMP	timestamp;		// set at 'interval' seconds when we start to eval.
 	int	score;					// score for this event
 	int	chain_delay;
 	int	flags;
 	char	*objective_text;
 	char	*objective_key_text;
 	int	count;					// object count for directive display
-	int	satisfied_time;			// this is used to temporarily mark the directive as satisfied when the event isn't (e.g. for a destroyed wave when there are more waves later)
-	int	born_on_date;			// timestamp at which event was born
+	TIMESTAMP	satisfied_time;	// this is used to temporarily mark the directive as satisfied when the event isn't (e.g. for a destroyed wave when there are more waves later)
+	TIMESTAMP	born_on_date;	// timestamp at which event was born
 	int	team;						// for multiplayer games
 
 	// event log stuff
@@ -129,7 +130,7 @@ typedef struct mission_event {
 
 extern int Num_mission_events;
 extern mission_event Mission_events[MAX_MISSION_EVENTS];
-extern int Mission_goal_timestamp;
+extern TIMESTAMP Mission_goal_timestamp;
 extern int Event_index;  // used by sexp code to tell what event it came from
 extern bool Log_event;
 extern bool Snapshot_all_events;
@@ -193,6 +194,9 @@ void mission_goal_exit();
 
 int mission_goal_find_sexp_tree(int root_node);
 int mission_event_find_sexp_tree(int root_node);
+
+int mission_goal_lookup(const char *name);
+int mission_event_lookup(const char *name);
 
 int ML_objectives_init(int x, int y, int w, int h);
 void ML_objectives_close();
