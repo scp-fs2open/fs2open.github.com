@@ -69,7 +69,7 @@ extern const char *Strafe_submode_text[];
 
 extern void hud_init_targeting_colors();
 
-enum leadIndicatorBehavior {
+enum class leadIndicatorBehavior {
     DEFAULT = 0,
     MULTIPLE,
     AVERAGE

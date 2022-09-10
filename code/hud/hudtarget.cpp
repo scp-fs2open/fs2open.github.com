@@ -3898,11 +3898,8 @@ void HudGaugeLeadIndicator::renderIndicator(int frame_offset, object *targetp, v
 void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 {
 	vec3d		target_pos;
-	vec3d		source_pos;
-	vec3d		*rel_pos;
 	vec3d		lead_target_pos;
 	object		*targetp;
-	polymodel	*pm;
 	ship_weapon	*swp;
 	weapon_info	*wip;
 	weapon_info	*tmp=NULL;
@@ -3940,7 +3937,6 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 		target_pos = targetp->pos;
 	}
 
-	pm = model_get(Ship_info[Player_ship->ship_info_index].model_num);
 	swp = &Player_ship->weapons;
 
 	// Added to take care of situation where there are no primary banks on the player ship
@@ -3996,22 +3992,6 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 			if (wip->wi_flags[Weapon::Info_Flags::Nolink] ||  (wip->wi_flags[Weapon::Info_Flags::Ballistic] && swp->primary_bank_ammo[bank] <= 0))
 				continue;
 
-			if (bank < 0)
-				continue;
-
-			if (pm->n_guns && bank != -1 ) {
-				rel_pos = &pm->gun_banks[bank].pnt[0];
-			} else {
-				rel_pos = NULL;
-			}
-
-			source_pos = Player_obj->pos;
-			if (rel_pos != NULL) {
-				vec3d	gun_point;
-				vm_vec_unrotate(&gun_point, rel_pos, &Player_obj->orient);
-				vm_vec_add2(&source_pos, &gun_point);
-			}
-
 			auto weapon_range = MIN((wip->max_speed * wip->lifetime), wip->weapon_range);
 			if (weapon_range < dist_to_target)
 				continue;
@@ -4029,28 +4009,12 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 				}
 			}
 		}
-		if (Lead_indicator_behavior == leadIndicatorBehavior::AVERAGE) {
+		if (average_instances > 0 && Lead_indicator_behavior == leadIndicatorBehavior::AVERAGE) {
 			averaged_lead_pos = averaged_lead_pos/i2fl(average_instances);
 			renderIndicator(frame_offset, targetp, &averaged_lead_pos);
 		}
 	}
-	else {
-		if (pm->n_guns && bank_to_fire != -1 ) {
-			rel_pos = &pm->gun_banks[bank_to_fire].pnt[0];
-		} else {
-			rel_pos = NULL;
-		}
-
-		// source_pos will contain the world coordinate of where to base the lead indicator prediction
-		// from.  Normally, this will be the world pos of the gun turret of the currently selected primary
-		// weapon.
-		source_pos = Player_obj->pos;
-		if (rel_pos != NULL) {
-			vec3d	gun_point;
-			vm_vec_unrotate(&gun_point, rel_pos, &Player_obj->orient);
-			vm_vec_add2(&source_pos, &gun_point);
-		}
-
+	else if (bank_to_fire >= 0) { //leadIndicatorBehavior::DEFAULT
 		frame_offset = pickFrame(prange, srange, dist_to_target);
 		if ( frame_offset < 0 && srange != -1.0f ) {
 			return;
