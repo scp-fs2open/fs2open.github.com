@@ -251,9 +251,8 @@ ADE_VIRTVAR(Name, l_Ship, "string", "Ship name. This is the actual name of the s
 	ship *shipp = &Ships[objh->objp->instance];
 
 	if(ADE_SETTING_VAR && s != nullptr) {
-		auto len = sizeof(shipp->ship_name);
-		strncpy(shipp->ship_name, s, len);
-		shipp->ship_name[len - 1] = 0;
+		auto size = sizeof(shipp->ship_name);
+		strncpy_s(shipp->ship_name, s, size-1);
 	}
 
 	return ade_set_args(L, "s", shipp->ship_name);

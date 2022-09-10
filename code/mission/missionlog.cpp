@@ -858,7 +858,7 @@ void message_log_init_scrollback(int pw)
 				Assert(!(entry->index & CARGO_NO_DEPLETE));
 
 				message_log_add_segs(XSTR( "Cargo revealed: ", 418), LOG_COLOR_NORMAL);
-				strncpy(text, Cargo_names[entry->index], sizeof(text) - 1);
+				strncpy_s(text, Cargo_names[entry->index], 255);
 				message_log_add_segs( text, LOG_COLOR_BRIGHT );
 				break;
 
@@ -868,7 +868,7 @@ void message_log_init_scrollback(int pw)
 
 				message_log_add_segs(entry->sname_display.c_str(), LOG_COLOR_NORMAL);
 				message_log_add_segs(XSTR( " subsystem cargo revealed: ", 1488), LOG_COLOR_NORMAL);
-				strncpy(text, Cargo_names[entry->index], sizeof(text) - 1);
+				strncpy_s(text, Cargo_names[entry->index], 255);
 				message_log_add_segs( text, LOG_COLOR_BRIGHT );
 				break;
 

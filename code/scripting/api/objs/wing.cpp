@@ -51,9 +51,8 @@ ADE_VIRTVAR(Name, l_Wing, "string", "Name of Wing", "string", "Wing name, or emp
 		return ade_set_error(L, "s", "");
 
 	if(ADE_SETTING_VAR && s != NULL) {
-		auto len = sizeof(Wings[wdx].name);
-		strncpy(Wings[wdx].name, s, len);
-		Wings[wdx].name[len - 1] = 0;
+		auto size = sizeof(Wings[wdx].name);
+		strncpy_s(Wings[wdx].name, s, size-1);
 	}
 
 	return ade_set_args(L, "s", Wings[wdx].name);

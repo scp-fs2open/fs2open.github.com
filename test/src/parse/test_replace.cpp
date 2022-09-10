@@ -3,7 +3,7 @@
 
 #include <parse/parselo.h>
 
-#include "globalincs/safe_strings.h"
+#include "globalincs/pstypes.h"
 
 #include "util/FSTestFixture.h"
 

@@ -420,7 +420,6 @@ public:
 };
 
 #include "globalincs/vmallocator.h"
-#include "globalincs/safe_strings.h"
 
 // check to see that a passed sting is valid, ie:
 //  - has >0 length

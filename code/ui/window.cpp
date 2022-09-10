@@ -632,7 +632,7 @@ void UI_WINDOW::draw_one_xstr(UI_XSTR *xs, int frame)
 
 	// print this puppy out	
 	int xoffset = lcl_get_xstr_offset(xs->xstr_id, gr_screen.res);
-	strncpy(str, XSTR(xs->xstr, xs->xstr_id), 254);
+	strncpy_s(str, XSTR(xs->xstr, xs->xstr_id), 254);
 	if(str[0] == '&'){
 		if(strlen(str) > 1){			
 			gr_string((xs->x) + xoffset, xs->y, str + 1, GR_RESIZE_MENU);

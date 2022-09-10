@@ -245,7 +245,7 @@ void EventEditorDialog::initMessageWidgets() {
 		}
 
 		if (!conflict) {  // update name if no conflicts, otherwise keep old name
-			strncpy(m_messages[m_cur_msg].name, text.toUtf8().constData(), NAME_LENGTH - 1);
+			strncpy_s(m_messages[m_cur_msg].name, text.toUtf8().constData(), NAME_LENGTH - 1);
 
 			auto item = ui->messageList->item(m_cur_msg);
 			item->setText(text);
@@ -258,7 +258,7 @@ void EventEditorDialog::initMessageWidgets() {
 
 		auto msg = ui->messageContent->toPlainText();
 
-		strncpy(m_messages[m_cur_msg].message, msg.toUtf8().constData(), MESSAGE_LENGTH - 1);
+		strncpy_s(m_messages[m_cur_msg].message, msg.toUtf8().constData(), MESSAGE_LENGTH - 1);
 		lcl_fred_replace_stuff(m_messages[m_cur_msg].message, MESSAGE_LENGTH - 1);
 	});
 	connect(ui->messageTeamCombo, QOverload<int>::of(&QComboBox::activated), this, [this](int id) {

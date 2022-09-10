@@ -680,14 +680,14 @@ int psnet_get_network_status()
 /**
  * Convert a ::net_addr to a string
  */
-const char *psnet_addr_to_string(const net_addr *address, char *text, size_t max_len)
+const char *psnet_addr_to_string(const net_addr *address, char *text, size_t max_size)
 {
 	in6_addr addr6;
 
 	memcpy(&addr6, &address->addr, sizeof(addr6));
 
-	if ( inet_ntop(AF_INET6, &addr6, text, static_cast<socklen_t>(max_len)) == nullptr ) {
-		strncpy(text, "", max_len);
+	if ( inet_ntop(AF_INET6, &addr6, text, static_cast<socklen_t>(max_size)) == nullptr ) {
+		strncpy_s(text, max_size, "", max_size-1);
 	}
 
 	return text;

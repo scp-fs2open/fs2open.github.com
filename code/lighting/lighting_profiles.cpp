@@ -1,5 +1,4 @@
 #include "globalincs/pstypes.h"
-#include "globalincs/safe_strings.h"
 #include "globalincs/vmallocator.h"
 #include "def_files/def_files.h"
 #include "lighting/lighting.h"

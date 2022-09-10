@@ -1194,9 +1194,9 @@ void brief_render(float frametime)
 	gr_set_color_fast(&Color_bright_white);
 
 	if (Game_mode & GM_MULTIPLAYER) {
-		char buf[256];
-		strncpy(buf, The_mission.name, 256);
-		font::force_fit_string(buf, 255, Title_coords_multi[gr_screen.res][2]);
+		char buf[NAME_LENGTH];
+		strcpy_s(buf, The_mission.name);
+		font::force_fit_string(buf, NAME_LENGTH - 1, Title_coords_multi[gr_screen.res][2]);
 		gr_string(Title_coords_multi[gr_screen.res][0], Title_coords_multi[gr_screen.res][1], buf, GR_RESIZE_MENU);
 	} else {
 		gr_get_string_size(&w, NULL, The_mission.name);
