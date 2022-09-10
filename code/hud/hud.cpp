@@ -1611,6 +1611,7 @@ void hud_update_frame(float  /*frametime*/)
 	if (Player->target_is_dying) {
 		hud_stop_looped_locking_sounds();
 		if ( Players[Player_num].flags & PLAYER_FLAGS_AUTO_TARGETING ) {
+			Player_ai->target_objnum = -1;
 			hud_target_auto_target_next();
 		}
 	}
