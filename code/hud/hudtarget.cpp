@@ -4025,9 +4025,7 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 			renderIndicator(frame_offset, targetp, &lead_target_pos);
 		}
 	}
-
-	if ( bank_to_fire < 0 )
-		return;
+	else return;
 
 	//do dumbfire lead indicator - color is orange (255,128,0) - bright, (192,96,0) - dim
 	//phreak changed 9/01/02
