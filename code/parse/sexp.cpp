@@ -8327,7 +8327,7 @@ int sexp_angle_vectors(int node) {
 	if (IS_VEC_NULL(&v1) || IS_VEC_NULL(&v2))
 		return SEXP_NAN;
 
-	float angle = acosf_safe(vm_vec_dot(&v1, &v2) / (vm_vec_mag(&v1) * vm_vec_mag(&v2)));
+	float angle = fl_degrees(vm_vec_dot(&v1, &v2) / (vm_vec_mag(&v1) * vm_vec_mag(&v2)));
 
 	return fl2ir(angle);
 }
@@ -8360,7 +8360,7 @@ int sexp_angle_fvec_target(int node) {
 		vm_vec_normalized_dir(&v2, &pos2, &pos1);
 
 		// No need to divide by product of magnitudes, both fvec and v2 are normalized
-		float angle = acosf_safe(vm_vec_dot(&v1, &v2));
+		float angle = fl_degrees(acosf_safe(vm_vec_dot(&v1, &v2)));
 
 		return fl2ir(angle);
 	}
