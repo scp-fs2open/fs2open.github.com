@@ -253,7 +253,7 @@ struct ship_obj;
 #define OP_SIGNUM							(0x0013 | OP_CATEGORY_ARITHMETIC)	// Goober5000
 #define OP_IS_NAN							(0x0014 | OP_CATEGORY_ARITHMETIC)	// Goober5000
 #define OP_NAN_TO_NUMBER					(0x0015 | OP_CATEGORY_ARITHMETIC)	// Goober5000
-
+#define OP_ANGLE_VECTORS					(0x0016 | OP_CATEGORY_ARITHMETIC)	// Lafiel
 
 #define	OP_TRUE								(0x0000 | OP_CATEGORY_LOGICAL)
 #define	OP_FALSE							(0x0001 | OP_CATEGORY_LOGICAL)
@@ -422,6 +422,7 @@ struct ship_obj;
 #define OP_LIST_DATA_INDEX					(0x005c | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Karajorma/jg18
 #define OP_MAP_HAS_KEY						(0x005d | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Karajorma/jg18
 #define OP_MAP_HAS_DATA_ITEM				(0x005e | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Karajorma/jg18
+#define OP_ANGLE_FVEC_TARGET				(0x005f | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Lafiel
 
 // conditional sexpressions
 #define OP_WHEN								(0x0000 | OP_CATEGORY_CONDITIONAL)
