@@ -12,6 +12,8 @@
 #include "hud/hudtargetbox.h"
 #include "hud/hudtarget.h"
 
+extern int Training_obj_num_display_lines;
+
 namespace scripting {
 namespace api {
 
@@ -264,6 +266,11 @@ ADE_FUNC(getTargetDistance, l_HUD, "object targetee, [vector targeter_position]"
 
 	auto dist = hud_find_target_distance(targetee_h->objp, targeter_pos);
 	return ade_set_args(L, "f", dist);
+}
+
+ADE_FUNC(getDirectiveLines, l_HUD, nullptr, "Returns the number of lines displayed by the currently active directives", "number", "The number of lines")
+{
+	return ade_set_args(L, "i", Training_obj_num_display_lines);
 }
 
 
