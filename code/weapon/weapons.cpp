@@ -239,7 +239,7 @@ special_flag_def_list_new<Weapon::Info_Flags, weapon_info*, flagset<Weapon::Info
 	{ "no collide",						Weapon::Info_Flags::No_collide,						    true },
 	{ "multilock target dead subsys",   Weapon::Info_Flags::Multilock_target_dead_subsys,		true },
 	{ "no evasion",						Weapon::Info_Flags::No_evasion,						    true },
-  { "don't merge lead indicators",	Weapon::Info_Flags::Dont_merge_indicators,			    true, false },
+ 	{ "don't merge lead indicators",	Weapon::Info_Flags::Dont_merge_indicators,			    true },
 };
 
 const size_t num_weapon_info_flags = sizeof(Weapon_Info_Flags) / sizeof(special_flag_def_list_new<Weapon::Info_Flags, weapon_info*, flagset<Weapon::Info_Flags>&>);
