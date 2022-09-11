@@ -12,6 +12,7 @@
 #include "globalincs/pstypes.h"
 #include "globalincs/systemvars.h"
 #include "graphics/2d.h"
+#include "hud/hudtarget.h"
 
 extern int Directive_wait_time;
 extern bool True_loop_argument_sexps;
@@ -92,6 +93,7 @@ extern bool Show_subtitle_uses_pixels;
 extern int Show_subtitle_screen_base_res[];
 extern int Show_subtitle_screen_adjusted_res[];
 extern bool Always_warn_player_about_unbound_keys;
+extern leadIndicatorBehavior Lead_indicator_behavior;
 extern struct shadow_disable_overrides {
 	bool disable_techroom, disable_mission_select_weapons, disable_mission_select_ships, disable_cockpit;
 } Shadow_disable_overrides;

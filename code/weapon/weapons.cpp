@@ -194,6 +194,7 @@ flag_def_list_new<Weapon::Info_Flags> Weapon_Info_Flags[] = {
 	{ "no collide",						Weapon::Info_Flags::No_collide,						    true, false },
 	{ "multilock target dead subsys",   Weapon::Info_Flags::Multilock_target_dead_subsys,		true, false },
 	{ "no evasion",						Weapon::Info_Flags::No_evasion,						    true, false },
+	{ "don't merge lead indicators",	Weapon::Info_Flags::Dont_merge_indicators,			    true, false },
 };
 
 const size_t num_weapon_info_flags = sizeof(Weapon_Info_Flags) / sizeof(flag_def_list_new<Weapon::Info_Flags>);
