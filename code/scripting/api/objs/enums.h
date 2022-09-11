@@ -117,9 +117,10 @@ const int32_t LE_MOVIE_PRE_CMD_BRIEF         = 104;
 const int32_t LE_MOVIE_PRE_BRIEF             = 105;
 const int32_t LE_MOVIE_PRE_GAME              = 106;
 const int32_t LE_MOVIE_PRE_DEBRIEF           = 107;
-const int32_t LE_MOVIE_END_CAMPAIGN          = 108;
+const int32_t LE_MOVIE_POST_DEBRIEF          = 108;
+const int32_t LE_MOVIE_END_CAMPAIGN          = 109;
 
-const int ENUM_NEXT_INDEX = 109; // <<<<<<<<<<<<<<<<<<<<<<
+const int ENUM_NEXT_INDEX = 110; // <<<<<<<<<<<<<<<<<<<<<<
 extern flag_def_list Enumerations[];
 extern size_t Num_enumerations;
 

@@ -5142,6 +5142,7 @@ void game_leave_state( int old_state, int new_state )
 			if ( (new_state != GS_STATE_VIEW_MEDALS) && (new_state != GS_STATE_OPTIONS_MENU) ) {
 				debrief_close();				
 				fsspeech_stop();
+				common_maybe_play_cutscene(MOVIE_POST_DEBRIEF);
 			}
 			break;
 

@@ -9529,7 +9529,7 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 
 	aip = &Ai_info[Ships[docker_objp->instance].ai_index];
 
-	docker_objp->phys_info.forward_thrust = 0.0f;		//	Kill thrust so we don't have a sputtering thruster.
+	docker_objp->phys_info.linear_thrust.xyz.z = 0.0f;		//	Kill thrust so we don't have a sputtering thruster.
 
 	// Goober5000 - moved out here to save calculations
 	if (dock_mode != DOA_DOCK_STAY)
@@ -13231,7 +13231,7 @@ int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, int allowed_path_
 	pl_objp->phys_info.prev_ramp_vel.xyz.x = 0.0f;
 	pl_objp->phys_info.prev_ramp_vel.xyz.y = 0.0f;
 	pl_objp->phys_info.prev_ramp_vel.xyz.z = 0.0f;
-	pl_objp->phys_info.forward_thrust = 0.0f;		// How much the forward thruster is applied.  0-1.
+	pl_objp->phys_info.linear_thrust.xyz.z = 0.0f;		// How much the forward thruster is applied.  -1 - 1.
 	pl_objp->pos = pos;
 
 	vec3d rvec;		vm_vec_zero(&rvec);
@@ -14975,8 +14975,6 @@ void init_ai_object(int objnum)
 
 	aip->attacker_objnum = -1;
 	aip->goal_signature = -1;
-
-	Objects[objnum].phys_info.prev_fvec = Objects[objnum].orient.vec.fvec;
 
 	aip->last_predicted_enemy_pos.xyz.x = 0.0f;	//	Says this value needs to be recomputed!
 	aip->time_enemy_in_range = 0.0f;

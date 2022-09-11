@@ -943,10 +943,10 @@ void debrief_choose_voice(char *voice_dest, size_t buf_size, char *voice_base, i
 	else
 	{
 		strncpy(voice_dest, "9_", buf_size);
-		strncat(voice_dest, voice_base, buf_size);
+		strncat(voice_dest, voice_base, buf_size-2);
 	}
 	// Ensure null terminator
-	voice_dest[buf_size] = '\0';
+	voice_dest[buf_size-1] = '\0';
 }
 
 void debrief_choose_medal_variant(char *buf, int medal_earned, int zero_based_version_index)

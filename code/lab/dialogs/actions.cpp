@@ -55,10 +55,12 @@ void change_secondary(Tree* caller) {
 
 void destroy_ship(Button* /*caller*/) {
 	if (getLabManager()->isSafeForShips()) {
-		auto obj = &Objects[getLabManager()->CurrentObject];
+		if (Objects[getLabManager()->CurrentObject].type == OBJ_SHIP) {
+			auto obj = &Objects[getLabManager()->CurrentObject];
 
-		obj->flags.remove(Object::Object_Flags::Player_ship);
-		ship_self_destruct(obj);
+			obj->flags.remove(Object::Object_Flags::Player_ship);
+			ship_self_destruct(obj);
+		}
 	}
 }
 

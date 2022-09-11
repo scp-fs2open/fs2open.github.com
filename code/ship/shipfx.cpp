@@ -3462,6 +3462,11 @@ int WE_Default::warpStart()
 	{
 		compute_warpout_stuff(&effect_time, &pos);
 		effect_time += SHIPFX_WARP_DELAY;
+
+		if (sip->flags[Ship::Info_Flags::Supercap]) {
+			// turn off warpin physics in case we're jumping out immediately
+			objp->phys_info.flags &= ~PF_SPECIAL_WARP_IN;
+		}
 	}
 
 	radius = shipfx_calculate_effect_radius(objp, direction);
@@ -3534,7 +3539,7 @@ int WE_Default::warpStart()
 			objp->phys_info.prev_ramp_vel.xyz.x = 0.0f;
 			objp->phys_info.prev_ramp_vel.xyz.y = 0.0f;
 			objp->phys_info.prev_ramp_vel.xyz.z = warping_speed;
-			objp->phys_info.forward_thrust = 1.0f;		// How much the forward thruster is applied.  0-1.
+			objp->phys_info.linear_thrust.xyz.z = 1.0f;		// How much the forward thruster is applied.  -1 - 1.
 		}
 	}
 
@@ -3569,7 +3574,7 @@ int WE_Default::warpFrame(float frametime)
 			objp->phys_info.prev_ramp_vel.xyz.x = 0.0f;
 			objp->phys_info.prev_ramp_vel.xyz.y = 0.0f;
 			objp->phys_info.prev_ramp_vel.xyz.z = warping_speed;
-			objp->phys_info.forward_thrust = 0.0f;		// How much the forward thruster is applied.  0-1.
+			objp->phys_info.linear_thrust.xyz.z = 0.0f;		// How much the forward thruster is applied.  -1 - 1.
 
 			stage_time_end = timestamp(fl2i(warping_time*1000.0f));
 		}

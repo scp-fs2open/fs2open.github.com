@@ -344,8 +344,8 @@ VirtualPOFOperationChangeData::VirtualPOFOperationChangeData() {
 	stuff_string(submodel, F_NAME);
 
 	if (optional_string("+Set Offset:")) {
-		setOffset = make_unique<vec3d>();
-		stuff_vec3d(setOffset.get());
+		vec3d& offset = setOffset.emplace();
+		stuff_vec3d(&offset);
 	}
 }
 
@@ -357,7 +357,7 @@ void VirtualPOFOperationChangeData::process(polymodel* pm, model_read_deferred_t
 		return;
 	}
 
-	if (setOffset != nullptr) {
+	if (setOffset) {
 		pm->submodel[subobj_no].offset = *setOffset;
 		auto it = deferredTasks.model_subsystems.find(submodel);
 		if (it != deferredTasks.model_subsystems.end()) {
@@ -368,27 +368,27 @@ void VirtualPOFOperationChangeData::process(polymodel* pm, model_read_deferred_t
 
 VirtualPOFOperationHeaderData::VirtualPOFOperationHeaderData() {
 	if (optional_string("+Set Radius:")) {
-		radius = make_unique<float>();
-		stuff_float(radius.get());
+		radius = 0.0f;
+		stuff_float(&(*radius));
 	}
 
 	if (optional_string("$Set Bounding Box:")) {
-		boundingbox = make_unique<std::pair<vec3d, vec3d>>();
+		auto& bb = boundingbox.emplace();
 		required_string("+Minimum:");
-		stuff_vec3d(&boundingbox->first);
+		stuff_vec3d(&bb.first);
 		required_string("+Maximum:");
-		stuff_vec3d(&boundingbox->second);
+		stuff_vec3d(&bb.second);
 	}
 }
 
 void VirtualPOFOperationHeaderData::process(polymodel* pm, model_read_deferred_tasks& /*deferredTasks*/, model_parse_depth /*depth*/, const VirtualPOFDefinition& /*virtualPof*/) const {
-	if (radius != nullptr) {
+	if (radius) {
 		pm->rad = pm->core_radius = *radius;
 	}
 
-	if (boundingbox != nullptr) {
-		pm->mins = boundingbox->first;
-		pm->maxs = boundingbox->second;
+	if (boundingbox) {
+		pm->mins = (*boundingbox).first;
+		pm->maxs = (*boundingbox).second;
 		model_calc_bound_box(pm->bounding_box, &pm->mins, &pm->maxs);
 	}
 }
