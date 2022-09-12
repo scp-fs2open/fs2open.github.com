@@ -45,21 +45,16 @@ void ScrollingTextElement::OnChildAdd(Element* child)
 {
 	Element::OnChildAdd(child);
 	_animation_start_time = Rocket::Core::GetSystemInterface()->GetElapsedTime();
-	_newAnimationStarted = true;
 }
 void ScrollingTextElement::OnChildRemove(Element* child)
 {
 	Element::OnChildRemove(child);
 	_animation_start_time = Rocket::Core::GetSystemInterface()->GetElapsedTime();
-	_newAnimationStarted = true;
 }
-void ScrollingTextElement::OnUpdate()
-{
-	if (_newAnimationStarted) {
-		//Disabled because this should be controled by the Lua to prevent it playing on frame 0
-		//gamesnd_play_iface(InterfaceSounds::BRIEF_TEXT_WIPE);
-		_newAnimationStarted = false;
-	}
+
+void ScrollingTextElement::OnUpdate() {
+	// This method originally existed to play a sound effect which has been removed
+	// in favor of doing it manually. -Mjn
 }
 void ScrollingTextElement::OnBeforeRender()
 {

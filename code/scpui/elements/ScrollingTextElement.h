@@ -41,7 +41,6 @@ class ScrollingTextElement : public Rocket::Core::Element {
 
 	float _duration = 1.5f;
 	float _animation_start_time = -1.0f;
-	bool _newAnimationStarted = false;
 };
 
 } // namespace elements

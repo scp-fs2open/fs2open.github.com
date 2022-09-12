@@ -1294,13 +1294,7 @@ ADE_FUNC(isInCampaign, l_Mission, NULL, "Get whether or not the current mission 
 
 ADE_FUNC(isInCampaignLoop, l_Mission, nullptr, "Get whether or not the current mission being played is a loop mission in the context of a campaign", "boolean", "true if in loop and campaign, false if not")
 {
-	bool b = false;
-
-	if ((Campaign.loop_enabled) && (Game_mode & GM_CAMPAIGN_MODE)) {
-		b = true;
-	}
-
-	return ade_set_args(L, "b", b);
+	return ade_set_args(L, "b", (Campaign.loop_enabled) && (Game_mode & GM_CAMPAIGN_MODE));
 }
 
 ADE_FUNC(isTraining, l_Mission, nullptr, "Get whether or not the current mission being played is a training mission", "boolean", "true if in training, false if not")
@@ -1316,35 +1310,17 @@ ADE_FUNC(isTraining, l_Mission, nullptr, "Get whether or not the current mission
 
 ADE_FUNC(isScramble, l_Mission, nullptr, "Get whether or not the current mission being played is a scramble mission", "boolean", "true if in training, false if not")
 {
-	bool b = false;
-
-	if (brief_only_allow_briefing()) {
-		b = true;
-	}
-
-	return ade_set_args(L, "b", b);
+	return ade_set_args(L, "b", (brief_only_allow_briefing()));
 }
 
 ADE_FUNC(isMissionSkipAllowed, l_Mission, nullptr, "Get whether or not the player has reached the failure limit", "boolean", "true if limit reached, false if not")
 {
-	bool b = false;
-
-	if (Player->failures_this_session >= PLAYER_MISSION_FAILURE_LIMIT) {
-		b = true;
-	}
-
-	return ade_set_args(L, "b", b);
+	return ade_set_args(L, "b", (Player->failures_this_session >= PLAYER_MISSION_FAILURE_LIMIT));
 }
 
 ADE_FUNC(hasNoBriefing, l_Mission, nullptr, "Get whether or not the mission is set to skip the briefing", "boolean", "true if it should be skipped, false if not")
 {
-	bool b = false;
-
-	if (The_mission.flags[Mission::Mission_Flags::No_briefing]) {
-		b = true;
-	}
-
-	return ade_set_args(L, "b", b);
+	return ade_set_args(L, "b", (The_mission.flags[Mission::Mission_Flags::No_briefing]));
 }
 
 ADE_FUNC(isNebula, l_Mission, nullptr, "Get whether or not the current mission being played is set in a nebula", "boolean", "true if in nebula, false if not")
