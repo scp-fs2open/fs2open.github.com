@@ -10046,21 +10046,21 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 	// but it breaks multi, so there will just be a warning on debug instead.
 	if ((ship_name == nullptr) || (ship_name_lookup(ship_name) >= 0) /*|| (ship_find_exited_ship_by_name(ship_name) >= 0)*/) {
 		// regular name, regular suffix
-		char default_name[NAME_LENGTH];
+		char base_name[NAME_LENGTH];
 		char suffix[NAME_LENGTH];
-		strcpy_s(default_name, Ship_info[ship_type].name);
+		strcpy_s(base_name, Ship_info[ship_type].name);
 		sprintf(suffix, NOX(" %d"), n);
 
 		// default names shouldn't have a hashed suffix
-		end_string_at_first_hash_symbol(default_name);
+		end_string_at_first_hash_symbol(base_name);
 
 		// start building name
-		strcpy_s(shipp->ship_name, default_name);
+		strcpy_s(shipp->ship_name, base_name);
 
 		// if generated name will be longer than allowable name, truncate the class section of the name by the overflow
-		int char_overflow = (strlen(default_name) + strlen(suffix)) - (NAME_LENGTH - 1);
+		int char_overflow = (strlen(base_name) + strlen(suffix)) - (NAME_LENGTH - 1);
 		if (char_overflow > 0) {
-			shipp->ship_name[strlen(default_name) - char_overflow] = '\0';
+			shipp->ship_name[strlen(base_name) - char_overflow] = '\0';
 		}
 
 		// complete building the name by adding suffix number
