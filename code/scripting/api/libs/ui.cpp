@@ -739,9 +739,9 @@ ADE_FUNC(getDebriefing, l_UserInterface_Debrief, nullptr, "Get the debriefing", 
 {
 	// get a pointer to the appropriate debriefing structure
 	if (MULTI_TEAM) {
-		return ade_set_args(L, "o", l_Debrief.Set(Debriefings[Net_player->p_info.team]));
+		return ade_set_args(L, "o", l_Debrief.Set(Net_player->p_info.team));
 	} else {
-		return ade_set_args(L, "o", l_Debrief.Set(Debriefings[0]));
+		return ade_set_args(L, "o", l_Debrief.Set(0));
 	}
 }
 
@@ -782,7 +782,7 @@ ADE_FUNC(getEarnedPromotion,
 		debrief_choose_medal_variant(filename, Rank_medal_index, Promoted);
 		displayname = Ranks[Promoted].name;
 
-		return ade_set_args(L, "oss", l_DebriefStage.Set(Promotion_stage), displayname, filename);
+		return ade_set_args(L, "oss", l_DebriefStage.Set(debrief_stage_h(&Promotion_stage)), displayname, filename);
 	} else {
 		return ADE_RETURN_NIL;
 	}
@@ -804,7 +804,7 @@ ADE_FUNC(getEarnedBadge,
 			Player->stats.medal_counts[Player->stats.m_badge_earned.back()] - 1);
 		displayname = Ranks[Promoted].name;
 
-		return ade_set_args(L, "oss", l_DebriefStage.Set(Badge_stage), displayname, filename);
+		return ade_set_args(L, "oss", l_DebriefStage.Set(debrief_stage_h(&Badge_stage)), displayname, filename);
 	} else {
 		return ADE_RETURN_NIL;
 	}
@@ -820,7 +820,7 @@ ADE_FUNC(getTraitor,
 	if (Turned_traitor) {
 		Player->flags &= ~PLAYER_FLAGS_PROMOTED;
 		scoring_level_init(&Player->stats);
-		return ade_set_args(L, "o", l_DebriefStage.Set(Traitor_debriefing.stages[0]));
+		return ade_set_args(L, "o", l_DebriefStage.Set(debrief_stage_h(&Traitor_debriefing.stages[0])));
 	} else {
 		return ADE_RETURN_NIL;
 	}

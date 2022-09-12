@@ -3,13 +3,25 @@
 namespace scripting {
 namespace api {
 
-//**********HANDLE: debriefing
-ADE_OBJ(l_DebriefStage, debrief_stage, "debriefing_stage", "Debriefing stage handle");
-
-ADE_VIRTVAR(Text, l_DebriefStage, nullptr, "The text of the stage", "debriefing_stage", "The text")
+debrief_stage_h::debrief_stage_h() {}
+debrief_stage_h::debrief_stage_h(debrief_stage* db_stage) : stage(db_stage) {}
+debrief_stage* debrief_stage_h::getStage() const
 {
-	debrief_stage* stage = nullptr;
-	if (!ade_get_args(L, "o", l_DebriefStage.GetPtr(&stage))) {
+	return stage;
+};
+
+bool debrief_stage_h::IsValid() const
+{
+	return stage >= 0;
+}
+
+//**********HANDLE: debriefing
+ADE_OBJ(l_DebriefStage, debrief_stage_h, "debriefing_stage", "Debriefing stage handle");
+
+ADE_VIRTVAR(Text, l_DebriefStage, nullptr, "The text of the stage", "string", "The text")
+{
+	debrief_stage_h stage;
+	if (!ade_get_args(L, "o", l_DebriefStage.Get(&stage))) {
 		return ADE_RETURN_NIL;
 	}
 
@@ -17,18 +29,18 @@ ADE_VIRTVAR(Text, l_DebriefStage, nullptr, "The text of the stage", "debriefing_
 		LuaError(L, "This property is read only.");
 	}
 
-	return ade_set_args(L, "s", stage->text);
+	return ade_set_args(L, "s", stage.getStage()->text);
 }
 
 ADE_VIRTVAR(AudioFilename,
 	l_DebriefStage,
 	nullptr,
 	"The filename of the audio file to play",
-	"debriefing_stage",
+	"string",
 	"The file name")
 {
-	debrief_stage* stage = nullptr;
-	if (!ade_get_args(L, "o", l_DebriefStage.GetPtr(&stage))) {
+	debrief_stage_h stage;
+	if (!ade_get_args(L, "o", l_DebriefStage.Get(&stage))) {
 		return ADE_RETURN_NIL;
 	}
 
@@ -36,13 +48,13 @@ ADE_VIRTVAR(AudioFilename,
 		LuaError(L, "This property is read only.");
 	}
 
-	return ade_set_args(L, "s", stage->voice);
+	return ade_set_args(L, "s", stage.getStage()->voice);
 }
 
-ADE_VIRTVAR(Recommendation, l_DebriefStage, nullptr, "The recommendation text of the stage", "debriefing_stage", "The recommendation text")
+ADE_VIRTVAR(Recommendation, l_DebriefStage, nullptr, "The recommendation text of the stage", "string", "The recommendation text")
 {
-	debrief_stage* stage = nullptr;
-	if (!ade_get_args(L, "o", l_DebriefStage.GetPtr(&stage))) {
+	debrief_stage_h stage;
+	if (!ade_get_args(L, "o", l_DebriefStage.Get(&stage))) {
 		return ADE_RETURN_NIL;
 	}
 
@@ -50,18 +62,18 @@ ADE_VIRTVAR(Recommendation, l_DebriefStage, nullptr, "The recommendation text of
 		LuaError(L, "This property is read only.");
 	}
 
-	return ade_set_args(L, "s", stage->recommendation_text);
+	return ade_set_args(L, "s", stage.getStage()->recommendation_text);
 }
 
 ADE_VIRTVAR(isVisible,
 	l_DebriefStage,
 	nullptr,
 	"The result of the stage formula",
-	"debriefing_stage",
+	"boolean",
 	"true if the stage should be displayed, false otherwise")
 {
-	debrief_stage* stage = nullptr;
-	if (!ade_get_args(L, "o", l_DebriefStage.GetPtr(&stage))) {
+	debrief_stage_h stage;
+	if (!ade_get_args(L, "o", l_DebriefStage.Get(&stage))) {
 		return ADE_RETURN_NIL;
 	}
 
@@ -69,7 +81,7 @@ ADE_VIRTVAR(isVisible,
 		LuaError(L, "This property is read only.");
 	}
 
-	if (eval_sexp(stage->formula)) {
+	if (eval_sexp(stage.getStage()->formula)) {
 		return ADE_RETURN_TRUE;
 	} else {
 		return ADE_RETURN_FALSE;
@@ -77,7 +89,7 @@ ADE_VIRTVAR(isVisible,
 }
 
 //**********HANDLE: debriefing
-ADE_OBJ(l_Debrief, debriefing, "debriefing", "Debriefing handle");
+ADE_OBJ(l_Debrief, int, "debriefing", "Debriefing handle");
 
 ADE_INDEXER(l_Debrief,
 	"number index",
@@ -85,11 +97,16 @@ ADE_INDEXER(l_Debrief,
 	"debriefing_stage",
 	"The stage at the specified location.")
 {
-	debriefing* debrief = nullptr;
+	int debriefIdx;
 	int index = -1;
-	if (!ade_get_args(L, "oi", l_Debrief.GetPtr(&debrief), &index)) {
+	if (!ade_get_args(L, "oi", l_Debrief.Get(&debriefIdx), &index)) {
 		return ADE_RETURN_NIL;
 	}
+
+	if (debriefIdx < 0)
+		return ADE_RETURN_NIL;
+
+	debriefing* debrief = &Debriefings[debriefIdx];
 
 	--index;
 
@@ -98,17 +115,17 @@ ADE_INDEXER(l_Debrief,
 		return ADE_RETURN_NIL;
 	}
 
-	return ade_set_args(L, "o", l_DebriefStage.Set(debrief->stages[index]));
+	return ade_set_args(L, "o", l_DebriefStage.Set(debrief_stage_h(&Debriefings[debriefIdx].stages[index])));
 }
 
 ADE_FUNC(__len, l_Debrief, nullptr, "The number of stages in the debriefing", "number", "The number of stages.")
 {
-	debriefing* debrief = nullptr;
-	if (!ade_get_args(L, "o", l_Debrief.GetPtr(&debrief))) {
+	int debrief;
+	if (!ade_get_args(L, "o", l_Debrief.Get(&debrief))) {
 		return ADE_RETURN_NIL;
 	}
 
-	return ade_set_args(L, "i", debrief->num_stages);
+	return ade_set_args(L, "i", Debriefings[debrief].num_stages);
 }
 
 } // namespace api
