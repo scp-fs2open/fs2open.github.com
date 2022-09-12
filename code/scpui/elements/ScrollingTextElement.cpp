@@ -51,7 +51,6 @@ void ScrollingTextElement::OnChildRemove(Element* child)
 	Element::OnChildRemove(child);
 	_animation_start_time = Rocket::Core::GetSystemInterface()->GetElapsedTime();
 }
-
 void ScrollingTextElement::OnBeforeRender()
 {
 	if (_animation_start_time >= 0.0f) {

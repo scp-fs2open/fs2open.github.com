@@ -8,7 +8,7 @@ namespace scripting {
 namespace api {
 
 struct brief_stage_h {
-	int brief, stage;
+	int br_brief, br_stage;
 	brief_stage_h();
 	explicit brief_stage_h(int brief, int stage);
 	bool IsValid() const;

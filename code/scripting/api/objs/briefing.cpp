@@ -5,18 +5,18 @@
 namespace scripting {
 namespace api {
 
-brief_stage_h::brief_stage_h() : brief(-1), stage(-1) {}
+brief_stage_h::brief_stage_h() : br_brief(-1), br_stage(-1) {}
 
-brief_stage_h::brief_stage_h(int brief, int stage) : brief(brief), stage(stage) {}
+brief_stage_h::brief_stage_h(int brief, int stage) : br_brief(brief), br_stage(stage) {}
 
 bool brief_stage_h::IsValid() const
 {
-	return brief >= 0 && stage >= 0;
+	return br_brief >= 0 && br_stage >= 0;
 }
 
 brief_stage* brief_stage_h::getStage() const
 {
-	return &Briefings[brief].stages[stage];
+	return &Briefings[br_brief].stages[br_stage];
 }
 
 //**********HANDLE: briefing
