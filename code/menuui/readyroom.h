@@ -25,8 +25,6 @@ struct sim_mission {
 extern SCP_vector<sim_mission> Sim_Missions;
 extern SCP_vector<sim_mission> Sim_CMissions;
 
-extern bool API_Access;
-
 extern int Sim_room_overlay_id;
 extern int Campaign_room_overlay_id;
 
@@ -34,7 +32,7 @@ void sim_room_init();
 void sim_room_close();
 void sim_room_do_frame(float frametime);
 
-void api_sim_room_build_mission_list();
+void api_sim_room_build_mission_list(bool API_Access);
 
 // called by main menu to continue on with current campaign (if there is one).
 int readyroom_continue_campaign();

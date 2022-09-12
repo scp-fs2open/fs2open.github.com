@@ -198,7 +198,7 @@ static credits_screen_buttons Buttons[NUM_BUTTONS][GR_NUM_RESOLUTIONS] = {
 //XSTR:ON
 };
 
-static char Credits_music_name[NAME_LENGTH];
+char Credits_music_name[NAME_LENGTH];
 static int	Credits_music_handle = -1;
 static UI_TIMESTAMP	Credits_music_begin_timestamp;
 
@@ -206,19 +206,21 @@ static int	Credits_frametime;		// frametime of credits_do_frame() loop in ms
 static int	Credits_last_time;		// timestamp used to calc frametime (in ms)
 static float Credits_counter;
 
-static int Credits_num_images;
-static int Credits_artwork_index;
+int Credits_num_images;
+int Credits_artwork_index;
 static SCP_vector<int> Credits_bmps;
 
 // Positions for credits...
 float Credit_start_pos, Credit_stop_pos, Credit_position = 0.0f;
 
 static int Credits_music_delay				= 2000;
-static float Credits_scroll_rate			= 15.0f;
-static float Credits_artwork_display_time	= 9.0f;
-static float Credits_artwork_fade_time		= 1.0f;
+float Credits_scroll_rate					= 15.0f;
+float Credits_artwork_display_time			= 9.0f;
+float Credits_artwork_fade_time				= 1.0f;
 
-credits_info Credits_Info;
+SCP_string credits_complete;
+
+SCP_vector<SCP_string> Credit_text_parts;
 
 static bool Credits_parsed;
 
@@ -260,7 +262,7 @@ void credits_start_music()
 	}
 }
 
-char* credits_get_music_filename(const char* music)
+const char* credits_get_music_filename(const char* music)
 {
 	int credits_spooled_music_index = event_music_get_spooled_music_index(music);
 	if (credits_spooled_music_index != -1) {
@@ -318,11 +320,8 @@ void credits_parse_table(const char* filename)
 		{
 			int temp;
 			stuff_int(&temp);
-			if (temp > 0) {
+			if (temp > 0) 
 				Credits_num_images = temp;
-			}
-
-			Credits_Info.num_images = Credits_num_images;
 		}
 		if (optional_string("$Start Image Index:"))
 		{
@@ -337,15 +336,12 @@ void credits_parse_table(const char* filename)
 			{
 				Credits_artwork_index = Credits_num_images - 1;
 			}
-			Credits_Info.start_index = Credits_artwork_index;
 		}
 		if (optional_string("$Text scroll rate:"))
 		{
 			stuff_float(&Credits_scroll_rate);
-			if (Credits_scroll_rate < 0.01f) {
+			if (Credits_scroll_rate < 0.01f)
 				Credits_scroll_rate = 0.01f;
-			}
-			Credits_Info.scroll_rate = Credits_scroll_rate;
 		}
 		if (optional_string("$Artworks display time:"))
 		{
@@ -353,15 +349,12 @@ void credits_parse_table(const char* filename)
 			if (Credits_artwork_display_time < 0.01f) {
 				Credits_artwork_display_time = 0.01f;
 			}
-			Credits_Info.art_display_time = Credits_artwork_display_time;
 		}
 		if (optional_string("$Artworks fade time:"))
 		{
 			stuff_float(&Credits_artwork_fade_time);
-			if (Credits_artwork_fade_time < 0.01f){
+			if (Credits_artwork_fade_time < 0.01f)
 				Credits_artwork_fade_time = 0.01f;
-			}
-			Credits_Info.art_fade_time = Credits_artwork_fade_time;
 		}
 		if (optional_string("$SCP Credits position:"))
 		{
@@ -398,7 +391,6 @@ void credits_parse_table(const char* filename)
 			if (first_run && !Credits_parsed && line == mod_check)
 			{
 				credits_text.append(unmodified_credits);
-				Credits_Info.credit_parts.push_back(unmodified_credits);
 			}
 
 			first_run = false;
@@ -407,7 +399,6 @@ void credits_parse_table(const char* filename)
 			{
 				// If the line is empty then just append a newline, don't bother with splitting it first
 				credits_text.append("\n");
-				Credits_Info.credit_parts.push_back("\n");
 			}
 			else
 			{
@@ -429,8 +420,6 @@ void credits_parse_table(const char* filename)
 				{
 					credits_text.append(SCP_string(lines[i], charNum[i]));
 					credits_text.append("\n");
-					Credits_Info.credit_parts.push_back(SCP_string(lines[i], charNum[i]));
-					Credits_Info.credit_parts.push_back("\n");
 				}
 			}
 		}
@@ -451,12 +440,10 @@ void credits_scp_position()
 	switch (SCP_credits_position) {
 	case START:
 		Credit_text_parts.insert(Credit_text_parts.begin(), fs2_open_credit_text);
-		Credits_Info.credit_parts.insert(Credits_Info.credit_parts.begin(), fs2_open_credit_text);
 		break;
 
 	case END:
 		Credit_text_parts.push_back(fs2_open_credit_text);
-		Credits_Info.credit_parts.push_back(fs2_open_credit_text);
 		break;
 
 	default:
@@ -467,15 +454,6 @@ void credits_scp_position()
 
 void credits_parse()
 {
-	// Build the API credits defaults here
-	Credits_Info.music = "Cinema";
-	Credits_Info.num_images = 46;
-	Credits_Info.start_index = Random::next(46);
-	Credits_Info.scroll_rate = 15.0f;
-	Credits_Info.art_display_time = 9.0f;
-	Credits_Info.art_fade_time = 1.0f;
-	Credits_Info.credit_parts.clear();
-	Credits_Info.credits_complete.clear();
 
 	// Parse main table
 	credits_parse_table("credits.tbl");

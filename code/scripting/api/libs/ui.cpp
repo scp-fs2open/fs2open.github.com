@@ -688,15 +688,14 @@ ADE_FUNC(buildMissionList,
 	"number",
 	"Returns 1 when completed")
 {
-	API_Access = true;
 
 	Sim_Missions.clear();
 	Sim_CMissions.clear();
 
-	api_sim_room_build_mission_list();
+	api_sim_room_build_mission_list(true);
 
 	mprintf(("Building mission lists for scripting API is complete!\n"));
-	API_Access = false;
+
 	return ade_set_args(L, "i", 1);
 }
 
@@ -711,10 +710,10 @@ ADE_FUNC(buildCredits,
 	credits_parse();
 	credits_scp_position();
 
-	size_t count = Credits_Info.credit_parts.size();
+	size_t count = Credit_text_parts.size();
 
 	for (size_t i = 0; i < count; i++) {
-		Credits_Info.credits_complete.append(Credits_Info.credit_parts[i]);
+		credits_complete.append(Credit_text_parts[i]);
 	}
 
 	//Make sure we clean up after ourselves
@@ -782,7 +781,7 @@ ADE_VIRTVAR(Music, l_UserInterface_Credits, nullptr, "The credits music filename
 		LuaError(L, "This property is read only.");
 	}
 
-	return ade_set_args(L, "s", credits_get_music_filename(Credits_Info.music.c_str()));
+	return ade_set_args(L, "s", credits_get_music_filename(Credits_music_name));
 }
 
 ADE_VIRTVAR(NumImages, l_UserInterface_Credits, nullptr, "The total number of credits images", "number", "The number of images")
@@ -792,7 +791,7 @@ ADE_VIRTVAR(NumImages, l_UserInterface_Credits, nullptr, "The total number of cr
 		LuaError(L, "This property is read only.");
 	}
 
-	return ade_set_args(L, "i", Credits_Info.num_images);
+	return ade_set_args(L, "i", Credits_num_images);
 }
 
 ADE_VIRTVAR(StartIndex, l_UserInterface_Credits, nullptr, "The image index to begin with", "number", "The index")
@@ -802,7 +801,7 @@ ADE_VIRTVAR(StartIndex, l_UserInterface_Credits, nullptr, "The image index to be
 		LuaError(L, "This property is read only.");
 	}
 
-	return ade_set_args(L, "i", Credits_Info.start_index);
+	return ade_set_args(L, "i", Credits_artwork_index);
 }
 
 ADE_VIRTVAR(DisplayTime, l_UserInterface_Credits, nullptr, "The display time for each image", "number", "The display time")
@@ -812,7 +811,7 @@ ADE_VIRTVAR(DisplayTime, l_UserInterface_Credits, nullptr, "The display time for
 		LuaError(L, "This property is read only.");
 	}
 
-	return ade_set_args(L, "f", Credits_Info.art_display_time);
+	return ade_set_args(L, "f", Credits_artwork_display_time);
 }
 
 ADE_VIRTVAR(FadeTime, l_UserInterface_Credits, nullptr, "The crossfade time for each image", "number", "The fade time")
@@ -822,7 +821,7 @@ ADE_VIRTVAR(FadeTime, l_UserInterface_Credits, nullptr, "The crossfade time for 
 		LuaError(L, "This property is read only.");
 	}
 
-	return ade_set_args(L, "f", Credits_Info.art_fade_time);
+	return ade_set_args(L, "f", Credits_artwork_fade_time);
 }
 
 ADE_VIRTVAR(ScrollRate, l_UserInterface_Credits, nullptr, "The scroll rate of the text", "number", "The scroll rate")
@@ -832,7 +831,7 @@ ADE_VIRTVAR(ScrollRate, l_UserInterface_Credits, nullptr, "The scroll rate of th
 		LuaError(L, "This property is read only.");
 	}
 
-	return ade_set_args(L, "f", Credits_Info.scroll_rate);
+	return ade_set_args(L, "f", Credits_scroll_rate);
 }
 
 ADE_VIRTVAR(Complete, l_UserInterface_Credits, nullptr, "The complete credits string", "string", "The credits")
@@ -842,7 +841,7 @@ ADE_VIRTVAR(Complete, l_UserInterface_Credits, nullptr, "The complete credits st
 		LuaError(L, "This property is read only.");
 	}
 
-	return ade_set_args(L, "s", Credits_Info.credits_complete);
+	return ade_set_args(L, "s", credits_complete);
 }
 
 } // namespace api

@@ -136,8 +136,6 @@ static sim_room_buttons Buttons[GR_NUM_RESOLUTIONS][NUM_BUTTONS] = {
 SCP_vector<sim_mission> Sim_Missions;
 SCP_vector<sim_mission> Sim_CMissions;
 
-bool API_Access = false;
-
 const char* Sim_filename[GR_NUM_RESOLUTIONS] = {
 	"LoadMission",
 	"2_LoadMission"
@@ -457,7 +455,7 @@ int sim_room_standalone_mission_filter(const char *filename)
 //
 // returns 1 if finished with all missions, 0 otherwise
 //
-int build_standalone_mission_list_do_frame()
+int build_standalone_mission_list_do_frame(bool API_Access)
 {
 	int font_height = gr_get_font_height();
 	char filename[MAX_FILENAME_LEN];
@@ -511,6 +509,7 @@ int build_standalone_mission_list_do_frame()
 					api_mission.filename = filename;
 					api_mission.mission_desc = The_mission.mission_desc;
 					api_mission.author = The_mission.author;
+					api_mission.visible = 1;
 
 					Sim_Missions.push_back(api_mission);
 				}
@@ -543,7 +542,7 @@ int build_standalone_mission_list_do_frame()
 //
 // returns 1 if finished with all missions, 0 otherwise
 //
-int build_campaign_mission_list_do_frame()
+int build_campaign_mission_list_do_frame(bool API_Access)
 {
 	int font_height = gr_get_font_height();
 	char str[256];
@@ -630,7 +629,9 @@ void sim_room_build_listing()
 		if (Hash_table_inited) {
 			if (!Standalone_mission_names_inited) {  // Is this the first time through
 				// build_list_do_frame builds list and adds sim room line and sets Standalone_mission_names_inited
-				popup_till_condition(build_standalone_mission_list_do_frame, POPUP_CANCEL, XSTR("Loading missions", 991) );
+				popup_till_condition([]() -> int { return build_standalone_mission_list_do_frame(false); },
+					POPUP_CANCEL,
+					XSTR("Loading missions", 991));
 			} else {
 				for (i=0; i<Num_standalone_missions_with_info; i++) {
 					if (Standalone_mission_names[i]) {
@@ -656,7 +657,9 @@ void sim_room_build_listing()
 
 		if (!Campaign_mission_names_inited) {  // Is this the first time through
 			// builds list, adds sim room line and sets Campaign_mission_names_inited
-			popup_till_condition(build_campaign_mission_list_do_frame, POPUP_CANCEL, XSTR("Loading campaign missions",992));
+			popup_till_condition([]() -> int { return build_standalone_mission_list_do_frame(false); },
+				POPUP_CANCEL,
+				XSTR("Loading campaign missions", 992));
 		} else {
 			for (i=0; i<Num_campaign_missions_with_info; i++) {
 				if (Campaign_mission_names[i]) {
@@ -1234,7 +1237,7 @@ void sim_room_close()
 //so this method provides a way to do the exact same thing from scripting.
 //It has some duplication of code but seemed the easiest way to provide similar
 //functionality without a complete refactor.
-void api_sim_room_build_mission_list()
+void api_sim_room_build_mission_list(bool API_Access)
 {
 	char wild_card[256];
 
@@ -1256,9 +1259,9 @@ void api_sim_room_build_mission_list()
 	Num_standalone_missions =
 		cf_get_file_list(MAX_MISSIONS, Mission_filenames, CF_TYPE_MISSIONS, wild_card, CF_SORT_NAME);
 
-	while (!build_standalone_mission_list_do_frame()) {
+	while (!build_standalone_mission_list_do_frame(API_Access)) {
 	}
-	while (!build_campaign_mission_list_do_frame()) {
+	while (!build_campaign_mission_list_do_frame(API_Access)) {
 	}
 
 	Num_campaign_missions_with_info = Num_standalone_missions_with_info = Standalone_mission_names_inited =
