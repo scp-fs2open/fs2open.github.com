@@ -365,6 +365,8 @@ bool ConditionedHook::ConditionsValid(int action, object *objp1, object *objp2, 
 
 			case CHC_SHIPTYPE:
 			{
+				bool found_ship = false;
+
 				for (auto objp : objp_array)
 				{
 					if (objp != nullptr && objp->type == OBJ_SHIP)
@@ -372,41 +374,63 @@ bool ConditionedHook::ConditionsValid(int action, object *objp1, object *objp2, 
 						auto sip = &Ship_info[Ships[objp->instance].ship_info_index];
 						if (sip->class_type >= 0)
 						{
+							found_ship = true;
 							if (stricmp(Ship_types[sip->class_type].name, scp.condition_string.c_str()) != 0)
 								return false;
 						}
 						break;
 					}
 				}
+
+				// If a ship type is specified, but none of the objects was even any ship, the hook must not evaluate.
+				if (!found_ship)
+					return false;
+
 				break;
 			}
 
 			case CHC_SHIPCLASS:
 			{
+				bool found_ship = false;
+
 				for (auto objp : objp_array)
 				{
 					if (objp != nullptr && objp->type == OBJ_SHIP)
 					{
+						found_ship = true;
 						// scp.condition_cached_value holds the ship_info_index of the requested ship class
 						if (Ships[objp->instance].ship_info_index != scp.condition_cached_value)
 							return false;
 						break;
 					}
 				}
+
+				// If a ship class is specified, but none of the objects was even any ship, the hook must not evaluate.
+				if (!found_ship)
+					return false;
+
 				break;
 			}
 
 			case CHC_SHIP:
 			{
+				bool found_ship = false;
+
 				for (auto objp : objp_array)
 				{
 					if (objp != nullptr && objp->type == OBJ_SHIP)
 					{
+						found_ship = true;
 						if (stricmp(Ships[objp->instance].ship_name, scp.condition_string.c_str()) != 0)
 							return false;
 						break;
 					}
 				}
+
+				// If a ship is specified, but none of the objects was even any ship, the hook must not evaluate.
+				if (!found_ship)
+					return false;
+
 				break;
 			}
 
