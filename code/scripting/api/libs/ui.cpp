@@ -538,9 +538,9 @@ ADE_FUNC(getBriefing,
 {
 	// get a pointer to the appropriate briefing structure
 	if (MULTI_TEAM) {
-		return ade_set_args(L, "o", l_Brief.Set(Briefings[Net_player->p_info.team]));
+		return ade_set_args(L, "o", l_Brief.Set(Net_player->p_info.team));
 	} else {
-		return ade_set_args(L, "o", l_Brief.Set(Briefings[0]));
+		return ade_set_args(L, "o", l_Brief.Set(0));
 	}
 
 }
@@ -622,7 +622,7 @@ ADE_INDEXER(l_Briefing_Goals,
 	if (!ade_get_args(L, "*i", &idx))
 		return ade_set_error(L, "s", "");
 
-	return ade_set_args(L, "o", l_Goals.Set(Mission_goals[idx]));
+	return ade_set_args(L, "o", l_Goals.Set(idx));
 }
 
 ADE_FUNC(__len, l_Briefing_Goals, nullptr, "The number of goals in the mission", "number", "The number of goals.")

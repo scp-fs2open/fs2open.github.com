@@ -37,7 +37,6 @@ class ScrollingTextElement : public Rocket::Core::Element {
 
 	void OnChildAdd(Element* child) override;
 	void OnChildRemove(Element* child) override;
-	void OnUpdate() override;
 
 	float _duration = 1.5f;
 	float _animation_start_time = -1.0f;

@@ -52,10 +52,6 @@ void ScrollingTextElement::OnChildRemove(Element* child)
 	_animation_start_time = Rocket::Core::GetSystemInterface()->GetElapsedTime();
 }
 
-void ScrollingTextElement::OnUpdate() {
-	// This method originally existed to play a sound effect which has been removed
-	// in favor of doing it manually. -Mjn
-}
 void ScrollingTextElement::OnBeforeRender()
 {
 	if (_animation_start_time >= 0.0f) {

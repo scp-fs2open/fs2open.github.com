@@ -5,13 +5,27 @@
 namespace scripting {
 namespace api {
 
+brief_stage_h::brief_stage_h() : brief(-1), stage(-1) {}
+
+brief_stage_h::brief_stage_h(int brief, int stage) : brief(brief), stage(stage) {}
+
+bool brief_stage_h::IsValid() const
+{
+	return brief >= 0 && stage >= 0;
+}
+
+brief_stage* brief_stage_h::getStage() const
+{
+	return &Briefings[brief].stages[stage];
+}
+
 //**********HANDLE: briefing
-ADE_OBJ(l_BriefStage, brief_stage, "briefing_stage", "Briefing stage handle");
+ADE_OBJ(l_BriefStage, brief_stage_h, "briefing_stage", "Briefing stage handle");
 
 ADE_VIRTVAR(Text, l_BriefStage, nullptr, "The text of the stage", "string", "The text")
 {
-	brief_stage* stage = nullptr;
-	if (!ade_get_args(L, "o", l_BriefStage.GetPtr(&stage))) {
+	brief_stage_h stage;
+	if (!ade_get_args(L, "o", l_BriefStage.Get(&stage))) {
 		return ADE_RETURN_NIL;
 	}
 
@@ -19,7 +33,7 @@ ADE_VIRTVAR(Text, l_BriefStage, nullptr, "The text of the stage", "string", "The
 		LuaError(L, "This property is read only.");
 	}
 
-	return ade_set_args(L, "s", stage->text);
+	return ade_set_args(L, "s", stage.getStage()->text);
 }
 
 ADE_VIRTVAR(AudioFilename,
@@ -29,8 +43,8 @@ ADE_VIRTVAR(AudioFilename,
 	"string",
 	"The file name")
 {
-	brief_stage* stage = nullptr;
-	if (!ade_get_args(L, "o", l_BriefStage.GetPtr(&stage))) {
+	brief_stage_h stage;
+	if (!ade_get_args(L, "o", l_BriefStage.Get(&stage))) {
 		return ADE_RETURN_NIL;
 	}
 
@@ -38,7 +52,7 @@ ADE_VIRTVAR(AudioFilename,
 		LuaError(L, "This property is read only.");
 	}
 
-	return ade_set_args(L, "s", stage->voice);
+	return ade_set_args(L, "s", stage.getStage()->voice);
 }
 
 ADE_VIRTVAR(isVisible,
@@ -48,8 +62,8 @@ ADE_VIRTVAR(isVisible,
 		"boolean",
 		"true if the stage should be displayed, false otherwise")
 	{
-		brief_stage* stage = nullptr;
-		if (!ade_get_args(L, "o", l_BriefStage.GetPtr(&stage))) {
+		brief_stage_h stage;
+		if (!ade_get_args(L, "o", l_BriefStage.Get(&stage))) {
 			return ADE_RETURN_NIL;
 		}
 
@@ -57,7 +71,7 @@ ADE_VIRTVAR(isVisible,
 			LuaError(L, "This property is read only.");
 		}
 
-		if (eval_sexp(stage->formula)) {
+		if (eval_sexp(stage.getStage()->formula)) {
 			return ADE_RETURN_TRUE;
 		} else {
 			return ADE_RETURN_FALSE;
@@ -65,7 +79,7 @@ ADE_VIRTVAR(isVisible,
 	}
 
 //**********HANDLE: briefing
-ADE_OBJ(l_Brief, briefing, "briefing", "Briefing handle");
+ADE_OBJ(l_Brief, int, "briefing", "Briefing handle");
 
 ADE_INDEXER(l_Brief,
 	"number index",
@@ -73,11 +87,16 @@ ADE_INDEXER(l_Brief,
 	"briefing_stage",
 	"The stage at the specified location.")
 {
-	briefing* brief = nullptr;
+	int briefIdx;
 	int index = -1;
-	if (!ade_get_args(L, "oi", l_Brief.GetPtr(&brief), &index)) {
+	if (!ade_get_args(L, "oi", l_Brief.Get(&briefIdx), &index)) {
 		return ADE_RETURN_NIL;
 	}
+
+	if (briefIdx < 0)
+		return ADE_RETURN_NIL;
+
+	briefing* brief = &Briefings[briefIdx];
 
 	--index;
 
@@ -86,26 +105,29 @@ ADE_INDEXER(l_Brief,
 		return ADE_RETURN_NIL;
 	}
 
-	return ade_set_args(L, "o", l_BriefStage.Set(brief->stages[index]));
+	return ade_set_args(L, "o", l_BriefStage.Set(brief_stage_h(briefIdx, index)));
 }
 
 ADE_FUNC(__len, l_Brief, nullptr, "The number of stages in the briefing", "number", "The number of stages.")
 {
-	briefing* brief = nullptr;
-	if (!ade_get_args(L, "o", l_Brief.GetPtr(&brief))) {
+	int brief;
+	if (!ade_get_args(L, "o", l_Brief.Get(&brief))) {
 		return ADE_RETURN_NIL;
 	}
 
-	return ade_set_args(L, "i", brief->num_stages);
+	if (brief < 0)
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "i", Briefings[brief].num_stages);
 }
 
 //**********HANDLE: mission goals
-ADE_OBJ(l_Goals, mission_goal, "mission_goal", "Mission objective handle");
+ADE_OBJ(l_Goals, int, "mission_goal", "Mission objective handle");
 
 ADE_VIRTVAR(Name, l_Goals, nullptr, "The name of the goal", "string", "The goal name")
 {
-	mission_goal* current = nullptr;
-	if (!ade_get_args(L, "o", l_Goals.GetPtr(&current))) {
+	int current;
+	if (!ade_get_args(L, "o", l_Goals.Get(&current))) {
 		return ADE_RETURN_NIL;
 	}
 
@@ -113,13 +135,13 @@ ADE_VIRTVAR(Name, l_Goals, nullptr, "The name of the goal", "string", "The goal 
 		LuaError(L, "This property is read only.");
 	}
 
-	return ade_set_args(L, "s", current->name);
+	return ade_set_args(L, "s", Mission_goals[current].name);
 }
 
 ADE_VIRTVAR(Message, l_Goals, nullptr, "The message of the goal", "string", "The goal message")
 {
-	mission_goal* current = nullptr;
-	if (!ade_get_args(L, "o", l_Goals.GetPtr(&current))) {
+	int current;
+	if (!ade_get_args(L, "o", l_Goals.Get(&current))) {
 		return ADE_RETURN_NIL;
 	}
 
@@ -127,13 +149,13 @@ ADE_VIRTVAR(Message, l_Goals, nullptr, "The message of the goal", "string", "The
 		LuaError(L, "This property is read only.");
 	}
 
-	return ade_set_args(L, "s", current->message);
+	return ade_set_args(L, "s", Mission_goals[current].message);
 }
 
 ADE_VIRTVAR(Type, l_Goals, nullptr, "The goal type", "string", "primary, secondary, bonus, or none")
 {
-	mission_goal* current = nullptr;
-	if (!ade_get_args(L, "o", l_Goals.GetPtr(&current))) {
+	int current;
+	if (!ade_get_args(L, "o", l_Goals.Get(&current))) {
 		return ADE_RETURN_NIL;
 	}
 
@@ -143,7 +165,7 @@ ADE_VIRTVAR(Type, l_Goals, nullptr, "The goal type", "string", "primary, seconda
 
 	SCP_string type;
 
-	int bit = current->type & GOAL_TYPE_MASK;
+	int bit = Mission_goals[current].type & GOAL_TYPE_MASK;
 	switch (bit) {
 	case PRIMARY_GOAL:
 		type = "primary";
@@ -167,8 +189,8 @@ ADE_VIRTVAR(Type, l_Goals, nullptr, "The goal type", "string", "primary, seconda
 
 ADE_VIRTVAR(Team, l_Goals, nullptr, "The goal team", "team", "The goal team")
 {
-	mission_goal* current = nullptr;
-	if (!ade_get_args(L, "o", l_Goals.GetPtr(&current))) {
+	int current;
+	if (!ade_get_args(L, "o", l_Goals.Get(&current))) {
 		return ADE_RETURN_NIL;
 	}
 
@@ -176,13 +198,13 @@ ADE_VIRTVAR(Team, l_Goals, nullptr, "The goal team", "team", "The goal team")
 		LuaError(L, "This property is read only.");
 	}
 
-	return ade_set_args(L, "o", l_Team.Set(current->team));
+	return ade_set_args(L, "o", l_Team.Set(Mission_goals[current].team));
 }
 
 ADE_VIRTVAR(isGoalValid, l_Goals, nullptr, "The goal validity", "boolean", "true if valid, false otherwise")
 {
-	mission_goal* current = nullptr;
-	if (!ade_get_args(L, "o", l_Goals.GetPtr(&current))) {
+	int current;
+	if (!ade_get_args(L, "o", l_Goals.Get(&current))) {
 		return ADE_RETURN_NIL;
 	}
 
@@ -190,7 +212,7 @@ ADE_VIRTVAR(isGoalValid, l_Goals, nullptr, "The goal validity", "boolean", "true
 		LuaError(L, "This property is read only.");
 	}
 
-	bool valid = current->type & INVALID_GOAL;
+	bool valid = Mission_goals[current].type & INVALID_GOAL;
 
 	return ade_set_args(L, "b", !valid);
 }
