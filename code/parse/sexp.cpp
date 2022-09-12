@@ -12055,7 +12055,7 @@ void sexp_hud_set_coords(int n)
 
 	HudGauge* hg = hud_get_gauge(gaugename);
 	if (hg) {
-		hg->updateGaugeCoords(coord_x, coord_y);
+		hg->setGaugeCoords(coord_x, coord_y);
 	} else {
 		WarningEx(LOCATION, "Could not find a hud gauge named %s\n", gaugename);
 	}
@@ -12072,7 +12072,7 @@ void sexp_hud_set_frame(int n)
 
 	HudGauge* hg = hud_get_gauge(gaugename);
 	if (hg) {
-		hg->updateGaugeFrame(frame_num);
+		hg->setGaugeFrame(frame_num);
 	} else {
 		WarningEx(LOCATION, "Could not find a hud gauge named %s\n", gaugename);
 	}

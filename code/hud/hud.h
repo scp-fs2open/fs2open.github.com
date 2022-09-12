@@ -313,8 +313,6 @@ public:
 
 	// For updating custom gauges
 	const char* getCustomGaugeName();
-	void updateGaugeCoords(int _x, int _y);
-	void updateGaugeFrame(int frame_offset);
 	void updateCustomGaugeText(const char* txt);
 	void updateCustomGaugeText(const SCP_string& txt);
 	const char* getCustomGaugeText();
@@ -335,7 +333,9 @@ public:
 	
 	void setFont();
 	void setGaugeColor(int bright_index = HUD_C_NONE);
-	
+	void setGaugeCoords(int _x, int _y);
+	void setGaugeFrame(int frame_offset);
+
 	// rendering functions
 	void renderBitmap(int x, int y);
 	void renderBitmap(int frame, int x, int y);

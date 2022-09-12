@@ -439,13 +439,13 @@ const char* HudGauge::getCustomGaugeText()
 	return custom_text.c_str();
 }
 
-void HudGauge::updateGaugeCoords(int _x, int _y)
+void HudGauge::setGaugeCoords(int _x, int _y)
 {
 	position[0] = _x;
 	position[1] = _y;
 }
 
-void HudGauge::updateGaugeFrame(int frame_offset)
+void HudGauge::setGaugeFrame(int frame_offset)
 {
 	if (frame_offset < 0 ||frame_offset > custom_frame.num_frames) {
 		return;
