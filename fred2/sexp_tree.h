@@ -287,6 +287,7 @@ public:
 	sexp_list_item *get_listing_opf_weapon_banks();
 	sexp_list_item *get_listing_opf_builtin_hud_gauge();
 	sexp_list_item *get_listing_opf_custom_hud_gauge();
+	sexp_list_item *get_listing_opf_any_hud_gauge();
 	sexp_list_item *get_listing_opf_ship_effect();
 	sexp_list_item *get_listing_opf_animation_type();
 	sexp_list_item *get_listing_opf_mission_moods();
