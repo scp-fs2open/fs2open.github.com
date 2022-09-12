@@ -128,6 +128,7 @@ struct ship_obj;
 #define OPF_CONTAINER_VALUE		97		// jg18 - Container data and map container keys
 #define OPF_DATA_OR_STR_CONTAINER	98	// jg18 - any data, or a container that is accessed via strings
 #define OPF_TRANSLATING_SUBSYSTEM	99	// Goober5000 - a translating subsystem
+#define OPF_ANY_HUD_GAUGE		100		// Goober5000 - both custom and builtin
 
 // Operand return types
 #define	OPR_NUMBER				1	// returns number
@@ -1131,6 +1132,7 @@ const char *CTEXT(int n);
 #define SEXP_CHECK_INVALID_AWACS_SUBSYS			-174
 #define SEXP_CHECK_INVALID_ROTATING_SUBSYS		-175
 #define SEXP_CHECK_INVALID_TRANSLATING_SUBSYS	-176
+#define SEXP_CHECK_INVALID_ANY_HUD_GAUGE		-177
 
 
 #define TRAINING_CONTEXT_SPEED		(1<<0)

@@ -95,7 +95,7 @@ ADE_FUNC(setPosition, l_HudGauge, "number, number", "Sets the position of the sp
 	if (!ade_get_args(L, "oii", l_HudGauge.Get(&gauge), &x, &y))
 		return ADE_RETURN_NIL;
 
-	gauge->initPosition(x, y);
+	gauge->updateGaugeCoords(x, y);
 	return ADE_RETURN_NIL;
 }
 

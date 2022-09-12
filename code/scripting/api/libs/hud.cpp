@@ -185,13 +185,6 @@ ADE_FUNC(getHUDGaugeHandle, l_HUD, "string Name", "Returns a handle to a specifi
 
 	gauge = hud_get_gauge(name);
 	if (gauge == nullptr)
-	{
-		int idx = hud_get_default_gauge_index(name);
-		if (idx >= 0 && idx < (int)default_hud_gauges.size())
-			gauge = default_hud_gauges[idx].get();
-	}
-
-	if (gauge == nullptr)
 		return ADE_RETURN_NIL;
 	else
 		return ade_set_args(L, "o", l_HudGauge.Set(gauge));

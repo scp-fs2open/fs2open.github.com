@@ -439,22 +439,14 @@ const char* HudGauge::getCustomGaugeText()
 	return custom_text.c_str();
 }
 
-void HudGauge::updateCustomGaugeCoords(int _x, int _y)
+void HudGauge::updateGaugeCoords(int _x, int _y)
 {
-	if(!custom_gauge) {
-		return;
-	}
-
 	position[0] = _x;
 	position[1] = _y;
 }
 
-void HudGauge::updateCustomGaugeFrame(int frame_offset)
+void HudGauge::updateGaugeFrame(int frame_offset)
 {
-	if(!custom_gauge) {
-		return;
-	}
-	
 	if (frame_offset < 0 ||frame_offset > custom_frame.num_frames) {
 		return;
 	}
@@ -3981,6 +3973,18 @@ int hud_get_default_gauge_index(const char *name)
 	}
 
 	return -1;
+}
+
+HudGauge *hud_get_gauge(const char *name)
+{
+	auto gauge = hud_get_custom_gauge(name);
+	if (gauge == nullptr)
+	{
+		int idx = hud_get_default_gauge_index(name);
+		if (idx >= 0 && idx < (int)default_hud_gauges.size())
+			gauge = default_hud_gauges[idx].get();
+	}
+	return gauge;
 }
 
 HudGaugeMultiMsg::HudGaugeMultiMsg():

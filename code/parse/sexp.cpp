@@ -3389,8 +3389,19 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
-				if (hud_get_gauge(CTEXT(node), true) == nullptr) {
+				if (hud_get_custom_gauge(CTEXT(node), true) == nullptr) {
 					return SEXP_CHECK_INVALID_CUSTOM_HUD_GAUGE;
+				}
+
+				break;
+
+			case OPF_ANY_HUD_GAUGE:
+				if (type2 != SEXP_ATOM_STRING) {
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+
+				if (hud_get_gauge(CTEXT(node)) == nullptr) {
+					return SEXP_CHECK_INVALID_ANY_HUD_GAUGE;
 				}
 
 				break;
@@ -11934,7 +11945,7 @@ void sexp_hud_set_text_num(int n)
 	auto gaugename = CTEXT(n);
 	char tmp[16] = "";
 
-	HudGauge* cg = hud_get_gauge(gaugename);
+	HudGauge* cg = hud_get_custom_gauge(gaugename);
 	if (cg) {
 		int num = eval_num(CDR(n), is_nan, is_nan_forever);
 		if (is_nan || is_nan_forever) {
@@ -11945,7 +11956,7 @@ void sexp_hud_set_text_num(int n)
 		}
 		cg->updateCustomGaugeText(tmp);
 	} else {
-		WarningEx(LOCATION, "Could not find a hud gauge named %s\n", gaugename);
+		WarningEx(LOCATION, "Could not find a custom hud gauge named %s\n", gaugename);
 	}
 }
 
@@ -11954,11 +11965,11 @@ void sexp_hud_set_text(int n)
 	auto gaugename = CTEXT(n);
 	auto text = CTEXT(CDR(n));
 
-	HudGauge* cg = hud_get_gauge(gaugename);
+	HudGauge* cg = hud_get_custom_gauge(gaugename);
 	if (cg) {
 		cg->updateCustomGaugeText(text);
 	} else {
-		WarningEx(LOCATION, "Could not find a hud gauge named %s\n", gaugename);
+		WarningEx(LOCATION, "Could not find a custom hud gauge named %s\n", gaugename);
 	}
 }
 
@@ -11975,7 +11986,7 @@ void sexp_hud_set_message(int n)
 			sexp_replace_variable_names_with_values(message);
 			sexp_container_replace_refs_with_values(message);
 
-			HudGauge* cg = hud_get_gauge(gaugename);
+			HudGauge* cg = hud_get_custom_gauge(gaugename);
 			if (cg) {
 				cg->updateCustomGaugeText(message);
 			} else {
@@ -11999,7 +12010,7 @@ void sexp_hud_set_directive(int n)
 		return;
 	}
 
-	HudGauge* cg = hud_get_gauge(gaugename);
+	HudGauge* cg = hud_get_custom_gauge(gaugename);
 	if (cg) {
 		cg->updateCustomGaugeText(message);
 	} else {
@@ -12042,9 +12053,9 @@ void sexp_hud_set_coords(int n)
 	if (is_nan || is_nan_forever)
 		return;
 
-	HudGauge* cg = hud_get_gauge(gaugename);
-	if (cg) {
-		cg->updateCustomGaugeCoords(coord_x, coord_y);
+	HudGauge* hg = hud_get_gauge(gaugename);
+	if (hg) {
+		hg->updateGaugeCoords(coord_x, coord_y);
 	} else {
 		WarningEx(LOCATION, "Could not find a hud gauge named %s\n", gaugename);
 	}
@@ -12059,9 +12070,9 @@ void sexp_hud_set_frame(int n)
 	if (is_nan || is_nan_forever)
 		return;
 
-	HudGauge* cg = hud_get_gauge(gaugename);
-	if (cg) {
-		cg->updateCustomGaugeFrame(frame_num);
+	HudGauge* hg = hud_get_gauge(gaugename);
+	if (hg) {
+		hg->updateGaugeFrame(frame_num);
 	} else {
 		WarningEx(LOCATION, "Could not find a hud gauge named %s\n", gaugename);
 	}
@@ -12081,11 +12092,11 @@ void sexp_hud_set_color(int n)
 	if (is_nan || is_nan_forever)
 		return;
 
-	HudGauge* cg = hud_get_gauge(gaugename);
-	if (cg) {
-		cg->sexpLockConfigColor(false);
-		cg->updateColor((ubyte)rgb[0], (ubyte)rgb[1], (ubyte)rgb[2], (HUD_color_alpha + 1) * 16);
-		cg->sexpLockConfigColor(true);
+	HudGauge* hg = hud_get_gauge(gaugename);
+	if (hg) {
+		hg->sexpLockConfigColor(false);
+		hg->updateColor((ubyte)rgb[0], (ubyte)rgb[1], (ubyte)rgb[2], (HUD_color_alpha + 1) * 16);
+		hg->sexpLockConfigColor(true);
 	} else {
 		WarningEx(LOCATION, "Could not find a hud gauge named %s\n", gaugename);
 	}
@@ -12157,7 +12168,7 @@ void sexp_hud_set_custom_gauge_active(int node)
 	for(; node >= 0; node = CDR(node)) {
 
 		auto gaugename = CTEXT(node);
-		hg = hud_get_gauge(gaugename);
+		hg = hud_get_custom_gauge(gaugename);
 
 		if (hg) {
 			hg->updateActive(activate);
@@ -29493,17 +29504,22 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_STRING;
 
 		case OP_HUD_SET_MESSAGE:
-			if(argnum == 0)
+			if (argnum == 0)
 				return OPF_CUSTOM_HUD_GAUGE;
 			else
 				return OPF_MESSAGE;
 
 		case OP_HUD_SET_TEXT_NUM:
+			if (argnum == 0)
+				return OPF_CUSTOM_HUD_GAUGE;
+			else
+				return OPF_POSITIVE;
+
 		case OP_HUD_SET_COORDS:
 		case OP_HUD_SET_FRAME:
 		case OP_HUD_SET_COLOR:
-			if(argnum == 0)
-				return OPF_CUSTOM_HUD_GAUGE;
+			if (argnum == 0)
+				return OPF_ANY_HUD_GAUGE;
 			else
 				return OPF_POSITIVE;
 
@@ -30865,7 +30881,7 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_HUD_GAUGE_SET_ACTIVE:
 			if (argnum == 0)
-				return OPF_CUSTOM_HUD_GAUGE;
+				return OPF_ANY_HUD_GAUGE;
 			else
 				return OPF_BOOL;
 
@@ -31302,8 +31318,9 @@ bool sexp_recoverable_error(int num)
 		case SEXP_CHECK_AMBIGUOUS_GOAL_NAME:
 
 		// Having an invalid gauge in FSO won't hurt,
-		// as all places which call hud_get_gauge() check its return value for NULL.
+		// as all places which call hud_get_gauge() or hud_get_custom_gauge() check its return value for NULL.
 		case SEXP_CHECK_INVALID_CUSTOM_HUD_GAUGE:
+		case SEXP_CHECK_INVALID_ANY_HUD_GAUGE:
 			return true;
 
 		// most errors will halt mission loading
@@ -31500,6 +31517,9 @@ const char *sexp_error_message(int num)
 
 		case SEXP_CHECK_INVALID_CUSTOM_HUD_GAUGE:
 			return "Invalid custom HUD gauge";
+
+		case SEXP_CHECK_INVALID_ANY_HUD_GAUGE:
+			return "Invalid custom or builtin HUD gauge";
 
 		case SEXP_CHECK_INVALID_TARGET_PRIORITIES:
 			return "Invalid target priorities";
@@ -36689,25 +36709,25 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	//WMC
 	{ OP_HUD_SET_TEXT, "hud-set-text\r\n"
-		"\tSets the text value of a given HUD gauge. Works for custom and certain retail gauges. Takes 2 arguments...\r\n"
+		"\tSets the text value of a given HUD gauge. Works for custom gauges only. Takes 2 arguments...\r\n"
 		"\t1:\tHUD gauge to be modified\r\n"
 		"\t2:\tText to be set"
 	},
 
 	{ OP_HUD_SET_TEXT_NUM, "hud-set-text-num\r\n"
-		"\tSets the text value of a given HUD gauge to a number. Works for custom and certain retail gauges. Takes 2 arguments...\r\n"
+		"\tSets the text value of a given HUD gauge to a number. Works for custom gauges only. Takes 2 arguments...\r\n"
 		"\t1:\tHUD gauge to be modified\r\n"
 		"\t2:\tNumber to be set"
 	},
 
 	{ OP_HUD_SET_MESSAGE, "hud-set-message\r\n"
-		"\tSets the text value of a given HUD gauge to a message from the mission's message list. Works for custom and certain retail gauges. Takes 2 arguments...\r\n"
+		"\tSets the text value of a given HUD gauge to a message from the mission's message list. Works for custom gauges only. Takes 2 arguments...\r\n"
 		"\t1:\tHUD gauge to be modified\r\n"
 		"\t2:\tMessage"
 	},
 
 	//WMC
-	{ OP_HUD_SET_COORDS, "hud-set-coord\r\n"
+	{ OP_HUD_SET_COORDS, "hud-set-coords\r\n"
 		"\tSets the coordinates of a given HUD gauge. Works for custom and retail gauges. Takes 3 arguments...\r\n"
 		"\t1:\tHUD gauge to be modified\r\n"
 		"\t2:\tCoordinate X component\r\n"
@@ -36723,7 +36743,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	//WMC
 	{ OP_HUD_SET_COLOR, "hud-set-color\r\n"
-		"\tSets the color of a given HUD gauge. Works only for custom gauges Takes 4 arguments...\r\n"
+		"\tSets the color of a given HUD gauge. Works for custom and retail gauges. Takes 4 arguments...\r\n"
 		"\t1:\tHUD gauge to be modified\r\n"
 		"\t2:\tRed component (0-255)\r\n"
 		"\t3:\tGreen component (0-255)\r\n"
@@ -37241,7 +37261,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	},
 
 	{OP_HUD_GAUGE_SET_ACTIVE, "hud-gauge-set-active (deprecated)\r\n"
-		"\tActivates or deactivates a given custom gauge."
+		"\tActivates or deactivates a given hud gauge.  Works for custom and retail gauges."
 		"Takes 2 Arguments...\r\n"
 		"\t1:\tHUD Gauge name\r\n"
 		"\t2:\tBoolean, whether or not to display this gauge\r\n"
