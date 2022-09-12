@@ -4576,13 +4576,11 @@ void stuff_sexp_text_string(SCP_string &dest, int node, int mode)
 		// number
 		if (Sexp_nodes[node].subtype == SEXP_ATOM_NUMBER)
 		{
-			Assert(Sexp_variables[sexp_variables_index].type & SEXP_VARIABLE_NUMBER);
 			sprintf(dest, "@%s[%s] ", var_name, var_contents);
 		}
 		// string
 		else if (Sexp_nodes[node].subtype == SEXP_ATOM_STRING)
 		{
-			Assert(Sexp_variables[sexp_variables_index].type & SEXP_VARIABLE_STRING);
 			sprintf(dest, "\"@%s[%s]\" ", var_name, var_contents);
 		}
 		else
