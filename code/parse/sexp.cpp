@@ -3389,7 +3389,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
-				if (hud_get_custom_gauge(CTEXT(node), true) == nullptr) {
+				if (hud_get_gauge(CTEXT(node), true) == nullptr) {
 					return SEXP_CHECK_INVALID_CUSTOM_HUD_GAUGE;
 				}
 
@@ -11934,7 +11934,7 @@ void sexp_hud_set_text_num(int n)
 	auto gaugename = CTEXT(n);
 	char tmp[16] = "";
 
-	HudGauge* cg = hud_get_custom_gauge(gaugename);
+	HudGauge* cg = hud_get_gauge(gaugename);
 	if (cg) {
 		int num = eval_num(CDR(n), is_nan, is_nan_forever);
 		if (is_nan || is_nan_forever) {
@@ -11954,7 +11954,7 @@ void sexp_hud_set_text(int n)
 	auto gaugename = CTEXT(n);
 	auto text = CTEXT(CDR(n));
 
-	HudGauge* cg = hud_get_custom_gauge(gaugename);
+	HudGauge* cg = hud_get_gauge(gaugename);
 	if (cg) {
 		cg->updateCustomGaugeText(text);
 	} else {
@@ -11975,7 +11975,7 @@ void sexp_hud_set_message(int n)
 			sexp_replace_variable_names_with_values(message);
 			sexp_container_replace_refs_with_values(message);
 
-			HudGauge* cg = hud_get_custom_gauge(gaugename);
+			HudGauge* cg = hud_get_gauge(gaugename);
 			if (cg) {
 				cg->updateCustomGaugeText(message);
 			} else {
@@ -11999,7 +11999,7 @@ void sexp_hud_set_directive(int n)
 		return;
 	}
 
-	HudGauge* cg = hud_get_custom_gauge(gaugename);
+	HudGauge* cg = hud_get_gauge(gaugename);
 	if (cg) {
 		cg->updateCustomGaugeText(message);
 	} else {
@@ -12042,7 +12042,7 @@ void sexp_hud_set_coords(int n)
 	if (is_nan || is_nan_forever)
 		return;
 
-	HudGauge* cg = hud_get_custom_gauge(gaugename);
+	HudGauge* cg = hud_get_gauge(gaugename);
 	if (cg) {
 		cg->updateCustomGaugeCoords(coord_x, coord_y);
 	} else {
@@ -12059,7 +12059,7 @@ void sexp_hud_set_frame(int n)
 	if (is_nan || is_nan_forever)
 		return;
 
-	HudGauge* cg = hud_get_custom_gauge(gaugename);
+	HudGauge* cg = hud_get_gauge(gaugename);
 	if (cg) {
 		cg->updateCustomGaugeFrame(frame_num);
 	} else {
@@ -12081,7 +12081,7 @@ void sexp_hud_set_color(int n)
 	if (is_nan || is_nan_forever)
 		return;
 
-	HudGauge* cg = hud_get_custom_gauge(gaugename);
+	HudGauge* cg = hud_get_gauge(gaugename);
 	if (cg) {
 		cg->sexpLockConfigColor(false);
 		cg->updateColor((ubyte)rgb[0], (ubyte)rgb[1], (ubyte)rgb[2], (HUD_color_alpha + 1) * 16);
@@ -12141,7 +12141,7 @@ void sexp_hud_gauge_set_active(int n)
 	auto gaugename = CTEXT(n);
 	bool active = is_sexp_true(CDR(n));
 
-	hg = hud_get_custom_gauge(gaugename);
+	hg = hud_get_gauge(gaugename);
 	if (hg) {
 		hg->updateActive(active);
 	} else {
@@ -12157,7 +12157,7 @@ void sexp_hud_set_custom_gauge_active(int node)
 	for(; node >= 0; node = CDR(node)) {
 
 		auto gaugename = CTEXT(node);
-		hg = hud_get_custom_gauge(gaugename);
+		hg = hud_get_gauge(gaugename);
 
 		if (hg) {
 			hg->updateActive(activate);
@@ -31302,7 +31302,7 @@ bool sexp_recoverable_error(int num)
 		case SEXP_CHECK_AMBIGUOUS_GOAL_NAME:
 
 		// Having an invalid gauge in FSO won't hurt,
-		// as all places which call hud_get_custom_gauge() check its return value for NULL.
+		// as all places which call hud_get_gauge() check its return value for NULL.
 		case SEXP_CHECK_INVALID_CUSTOM_HUD_GAUGE:
 			return true;
 
