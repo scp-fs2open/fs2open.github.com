@@ -12,7 +12,7 @@ debrief_stage* debrief_stage_h::getStage() const
 
 bool debrief_stage_h::IsValid() const
 {
-	return stage >= 0;
+	return stage != nullptr;
 }
 
 //**********HANDLE: debriefing
