@@ -84,6 +84,7 @@ extern int	Num_goals;									// number of goals for this mission
 #define MEF_DIRECTIVE_TEMP_TRUE		(1 << 2)		// this directive is temporarily true.
 #define MEF_USING_TRIGGER_COUNT		(1 << 3)		// Karajorma - use trigger count as well as repeat count to determine how many repeats this event has
 #define MEF_USE_MSECS				(1 << 4)		// Goober5000 - interval and chain delay are in milliseconds, not seconds
+#define MEF_TIMESTAMP_HAS_INTERVAL	(1 << 5)		// Goober5000 - flag to simulate Volition's gloriously buggy hack
 
 #define MAX_MISSION_EVENT_LOG_FLAGS		9			// this must be changed if a mission log flag is added below
 
@@ -109,7 +110,7 @@ typedef struct mission_event {
 	TIMESTAMP	timestamp;		// set at 'interval' seconds when we start to eval.
 	int	score;					// score for this event
 	int	chain_delay;
-	int	flags;
+	int	flags;					// MEF_*
 	char	*objective_text;
 	char	*objective_key_text;
 	int	count;					// object count for directive display

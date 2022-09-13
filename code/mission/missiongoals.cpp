@@ -923,18 +923,42 @@ void mission_process_event( int event )
 		// What everyone expected the chaining behavior to be, as specified in Karajorma's original fix to Mantis #82
 		if (Alternate_chaining_behavior) {
 			if (event > 0){
-				if (!Mission_events[event - 1].result ||
-					(Mission_events[event - 1].satisfied_time.isValid() && timestamp_since(Mission_events[event - 1].satisfied_time) < offset)) {
-						sindex = -1;  // bypass evaluation
+				if (!Mission_events[event - 1].result || !timestamp_elapsed(timestamp_delta(Mission_events[event - 1].satisfied_time, offset))) {
+					sindex = -1;  // bypass evaluation
 				}
 			}
 		}
 		// Volition's original chaining behavior as used in retail and demonstrated in e.g. btm-01.fsm (or btm-01.fs2 in the Port)
 		else {
 			if (event > 0){
-				if (!Mission_events[event - 1].result ||
-					(Mission_events[event - 1].timestamp.isValid() && timestamp_since(Mission_events[event - 1].timestamp) < offset)) {
-						sindex = -1;  // bypass evaluation
+				// This flag is needed because of a remarkable coincidence of mistakes that all counteracted each other perfectly to produce an important feature.
+				// It appears that originally mission_event.timestamp was in fix units, like satisfied_time and born_on_date.  At some point this was changed to
+				// a timestamp, but not every assignment was changed.  And since a fix is an int under the hood, there were no type conflicts.  Surprisingly there
+				// were no logic errors either; the fix/Missiontime assignments happened after the timestamps were needed, and the only places where the timestamp
+				// field was treated as a fix (here and in sexp_event_delay_status) happened after the event had been resolved and the Missiontime assignments had
+				// occurred.  The mission_event.timestamp field spent half its life as one unit and half as another, successfully.
+				//
+				// The following chaining behavior check typically occurred during the fix/Missiontime part of the life cycle.  However, for chained events that
+				// repeat, the event is granted a new timestamp and the chain check is performed on mixed units.  Due to the way the condition was written, the
+				// much-too-small comparison evaluated to false successfully and allowed the event subsequent to the chained repeating event to become current.
+				// This is the behavior necessary to allow the "Match Speed 1 1/2" event in btm-01.fsm to activate, display the "Match Speed" directive, and
+				// continue with the mission.  Without this behavior, the mission would break.
+				//
+				// Naturally, upgrading the timestamps caused all evaluations to use consistent units and broke the mission.  Due to the long repeat interval, the
+				// timestamp was evaluated too late when the event was likely to have become false.  The previous mixed-units comparison avoided the repeat interval
+				// precisely at the right time, and then became consistent units when the repeat interval no longer mattered.  In order to restore the expected
+				// behavior while keeping all units consistent, it is necessary to set a flag when a timestamp includes an interval so that the interval can be
+				// deducted from the period of time that evaluation is bypassed.
+				if (Mission_events[event - 1].flags & MEF_TIMESTAMP_HAS_INTERVAL) {
+					if (Mission_events[event - 1].flags & MEF_USE_MSECS) {
+						offset -= Mission_events[event - 1].interval;
+					} else {
+						offset -= Mission_events[event - 1].interval * MILLISECONDS_PER_SECOND;
+					}
+				}
+
+				if (!Mission_events[event - 1].result || !timestamp_elapsed(timestamp_delta(Mission_events[event - 1].timestamp, offset))) {
+					sindex = -1;  // bypass evaluation
 				}
 			}
 
@@ -989,6 +1013,7 @@ void mission_process_event( int event )
 	// if the sexpression is known false, then no need to evaluate anymore
 	if ((sindex >= 0) && (Sexp_nodes[sindex].value == SEXP_KNOWN_FALSE)) {
 		Mission_events[event].timestamp = _timestamp();
+		Mission_events[event].flags &= ~MEF_TIMESTAMP_HAS_INTERVAL;
 		Mission_events[event].satisfied_time = _timestamp();
 		// _argv[-1] - repeat_count of -1 would mean repeat indefinitely, so set to 0 instead.
 		Mission_events[event].repeat_count = 0;
@@ -1027,6 +1052,7 @@ void mission_process_event( int event )
 			Mission_events[event].repeat_count--;
 		if ( Mission_events[event].repeat_count == 0 ) {
 			Mission_events[event].timestamp = _timestamp();
+			Mission_events[event].flags &= ~MEF_TIMESTAMP_HAS_INTERVAL;
 			Mission_events[event].formula = -1;
 
 			if(Game_mode & GM_MULTIPLAYER){
@@ -1043,10 +1069,11 @@ void mission_process_event( int event )
 		else if (bump_timestamp || (!((Mission_events[event].repeat_count == -1) && (Mission_events[event].flags & MEF_USING_TRIGGER_COUNT) && (Mission_events[event].trigger_count != 0)))) {
 			int interval = Mission_events[event].interval;
 			if (!(Mission_events[event].flags & MEF_USE_MSECS))
-				interval *= 1000;
+				interval *= MILLISECONDS_PER_SECOND;
 
 			// set the timestamp to time out 'interval' milliseconds in the future.
 			Mission_events[event].timestamp = _timestamp( interval );
+			Mission_events[event].flags |= MEF_TIMESTAMP_HAS_INTERVAL;
 		}
 	}
 
