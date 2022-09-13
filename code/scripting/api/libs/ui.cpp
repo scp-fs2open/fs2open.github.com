@@ -731,7 +731,7 @@ ADE_INDEXER(l_UserInterface_SingleMissions, "number Index", "Array of simulator 
 	if (!ade_get_args(L, "*i", &idx))
 		return ade_set_error(L, "s", "");
 	
-	return ade_set_args(L, "o", l_TechRoomMission.Set(Sim_Missions[idx]));
+	return ade_set_args(L, "o", l_TechRoomMission.Set(sim_mission_h(idx, false)));
 }
 
 ADE_FUNC(__len, l_UserInterface_SingleMissions, nullptr, "The number of single missions", "number", "The number of single missions")
@@ -746,7 +746,7 @@ ADE_INDEXER(l_UserInterface_CampaignMissions, "number Index", "Array of campaign
 	if (!ade_get_args(L, "*i", &idx))
 		return ade_set_error(L, "s", "");
 	
-	return ade_set_args(L, "o", l_TechRoomMission.Set(Sim_CMissions[idx]));
+	return ade_set_args(L, "o", l_TechRoomMission.Set(sim_mission_h(idx, true)));
 }
 
 ADE_FUNC(__len, l_UserInterface_CampaignMissions, nullptr, "The number of campaign missions", "number", "The number of campaign missions")
@@ -765,7 +765,7 @@ ADE_INDEXER(l_UserInterface_Cutscenes,
 	if (!ade_get_args(L, "*i", &idx))
 		return ade_set_error(L, "s", "");
 
-	return ade_set_args(L, "o", l_TechRoomCutscene.Set(Cutscenes[idx]));
+	return ade_set_args(L, "o", l_TechRoomCutscene.Set(cutscene_info_h(idx)));
 }
 
 ADE_FUNC(__len, l_UserInterface_Cutscenes, nullptr, "The number of cutscenes", "number", "The number of cutscenes")
