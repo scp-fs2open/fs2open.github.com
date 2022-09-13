@@ -339,12 +339,18 @@ bool ConditionedHook::AddAction(script_action *sa)
 	if(!script_hook_valid(&sa->hook))
 		return false;
 
+	if (sa->action_type == CHA_NONE)
+	{
+		Warning(LOCATION, "Cannot add an action of type CHA_NONE");
+		return false;
+	}
+
 	Actions.push_back(*sa);
 
 	return true;
 }
 
-bool ConditionedHook::ConditionsValid(int action, object *objp1, object *objp2, int more_data)
+bool ConditionedHook::ConditionsValid(int action_type, object *objp1, object *objp2, int more_data)
 {
 	object *objp_array[2];
 	objp_array[0] = objp1;
@@ -499,7 +505,7 @@ bool ConditionedHook::ConditionsValid(int action, object *objp1, object *objp2, 
 				auto shipp = &Ships[objp1->instance];
 				bool primary = false, secondary = false, prev_primary = false, prev_secondary = false;
 
-				switch (action)
+				switch (action_type)
 				{
 					case CHA_ONWPSELECTED:
 					{
@@ -699,7 +705,7 @@ bool ConditionedHook::ConditionsValid(int action, object *objp1, object *objp2, 
 	return true;
 }
 
-bool ConditionedHook::IsOverride(script_state* sys, int action)
+bool ConditionedHook::IsOverride(script_state* sys, int action_type)
 {
 	Assert(sys != NULL);
 	// bool b = false;
@@ -707,7 +713,7 @@ bool ConditionedHook::IsOverride(script_state* sys, int action)
 	//Do the actions
 	for(SCP_vector<script_action>::iterator sap = Actions.begin(); sap != Actions.end(); ++sap)
 	{
-		if (sap->action_type == action) {
+		if (sap->action_type == action_type) {
 			if (sys->IsOverride(sap->hook))
 				return true;
 		}
@@ -716,13 +722,13 @@ bool ConditionedHook::IsOverride(script_state* sys, int action)
 	return false;
 }
 
-bool ConditionedHook::Run(class script_state* sys, int action)
+bool ConditionedHook::Run(class script_state* sys, int action_type)
 {
 	Assert(sys != NULL);
 
 	// Do the actions
 	for (auto & Action : Actions) {
-		if (Action.action_type == action) {
+		if (Action.action_type == action_type) {
 			sys->RunBytecode(Action.hook.hook_function);
 		}
 	}
@@ -814,7 +820,7 @@ void script_state::UnloadImages()
 	ScriptImages.clear();
 }
 
-int script_state::RunCondition(int action, object *objp1, object *objp2, int more_data)
+int script_state::RunCondition(int action_type, object *objp1, object *objp2, int more_data)
 {
 	TRACE_SCOPE(tracing::LuaHooks);
 	int num = 0;
@@ -825,9 +831,9 @@ int script_state::RunCondition(int action, object *objp1, object *objp2, int mor
 
 	for(SCP_vector<ConditionedHook>::iterator chp = ConditionalHooks.begin(); chp != ConditionalHooks.end(); ++chp) 
 	{
-		if(chp->ConditionsValid(action, objp1, objp2, more_data))
+		if (chp->ConditionsValid(action_type, objp1, objp2, more_data))
 		{
-			chp->Run(this, action);
+			chp->Run(this, action_type);
 			num++;
 		}
 	}
@@ -836,13 +842,13 @@ int script_state::RunCondition(int action, object *objp1, object *objp2, int mor
 	return num;
 }
 
-bool script_state::IsConditionOverride(int action, object *objp1, object *objp2, int more_data)
+bool script_state::IsConditionOverride(int action_type, object *objp1, object *objp2, int more_data)
 {
 	for(SCP_vector<ConditionedHook>::iterator chp = ConditionalHooks.begin(); chp != ConditionalHooks.end(); ++chp)
 	{
-		if(chp->ConditionsValid(action, objp1, objp2, more_data))
+		if (chp->ConditionsValid(action_type, objp1, objp2, more_data))
 		{
-			if(chp->IsOverride(this, action))
+			if(chp->IsOverride(this, action_type))
 				return true;
 		}
 	}
