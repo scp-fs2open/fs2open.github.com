@@ -45,20 +45,11 @@ void ScrollingTextElement::OnChildAdd(Element* child)
 {
 	Element::OnChildAdd(child);
 	_animation_start_time = Rocket::Core::GetSystemInterface()->GetElapsedTime();
-	_newAnimationStarted = true;
 }
 void ScrollingTextElement::OnChildRemove(Element* child)
 {
 	Element::OnChildRemove(child);
 	_animation_start_time = Rocket::Core::GetSystemInterface()->GetElapsedTime();
-	_newAnimationStarted = true;
-}
-void ScrollingTextElement::OnUpdate()
-{
-	if (_newAnimationStarted) {
-		gamesnd_play_iface(InterfaceSounds::BRIEF_TEXT_WIPE);
-		_newAnimationStarted = false;
-	}
 }
 void ScrollingTextElement::OnBeforeRender()
 {
