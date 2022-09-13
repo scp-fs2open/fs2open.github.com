@@ -105,6 +105,20 @@ ADE_VIRTVAR(isVisible, l_TechRoomMission, nullptr, "If the mission should be vis
 	return ade_set_args(L, "b", !(current.getStage()->visible == 0));
 }
 
+ADE_VIRTVAR(isCampaignMission, l_TechRoomMission, nullptr, "If the mission is campaign or single", "boolean", "true if campaign, false if single")
+{
+	sim_mission_h current;
+	if (!ade_get_args(L, "o", l_TechRoomMission.Get(&current))) {
+		return ADE_RETURN_NIL;
+	}
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "b", current.isCMission);
+}
+
 //**********HANDLE: tech cutscenes
 ADE_OBJ(l_TechRoomCutscene, cutscene_info_h, "custscene_info", "Tech Room cutscene handle");
 
