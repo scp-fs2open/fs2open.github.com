@@ -2,6 +2,8 @@
 //
 #include "ui.h"
 
+#include "freespace.h"
+
 #include "globalincs/alphacolors.h"
 
 #include "cmdline/cmdline.h"
@@ -21,7 +23,6 @@
 #include "missionui/fictionviewer.h"
 #include "missionui/missionbrief.h"
 #include "mission/missioncampaign.h"
-#include "mission/missionbriefcommon.h"
 #include "missionui/missionscreencommon.h"
 #include "mission/missioncampaign.h"
 #include "missionui/redalert.h"
@@ -654,14 +655,132 @@ ADE_FUNC(skipTraining,
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(startBriefingMap,
+// For now any loadout error checking needs to happen in the script to prevent FSO from
+// generating a popup that will not be interactible from Librocket. A later update to this
+// method will introduce return values instead of generating pops and those return values
+// can be used to handle loadout popups on the script side
+ADE_FUNC(commitToMission,
 	l_UserInterface_Brief,
 	nullptr,
-	"Starts the briefing map for the current mission. Doesn't currently do anything.",
+	"Commits to the current mission with current loadout data, and starts the mission.",
+	nullptr,
+	"nothing")
+{
+	(void)L;
+	commit_pressed();
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(startBriefingMap,
+	l_UserInterface_Brief,
+	"number x1, number y1, [number x2 = 888, number y2 = 235, number static offset x, number static offset y]",
+	"Starts the briefing map for the current mission. This also inits the current mission's loadout information "
+	"for maninipulation by Lua.",
+	nullptr,
+	"nothing")
+{
+
+	int x1;
+	int y1;
+	int x2 = 888;
+	int y2 = 371;
+	int stat_x;
+	int stat_y;
+
+	if (!ade_get_args(L, "ii|iiii", &x1, &y1, &x2, &y2, &stat_x, &stat_y)) {
+		LuaError(L, "X and Y coordinates not provided!");
+		return ADE_RETURN_NIL;
+	}
+
+	// Saving retail coords here for posterity
+	//  GR_640 - 19, 147, 555, 232
+	//  GR_1024 - 30, 235, 888, 371
+
+	bscreen.map_x1 = x1;
+	bscreen.map_x2 = x1 + x2;
+	bscreen.map_y1 = y1;
+	bscreen.map_y2 = y1 + y2;
+
+	bstat_x = x1 + stat_x;
+	bstat_y = y1 + stat_y;
+
+	brief_api = 1;
+
+	brief_api_init();
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(closeBriefingMap,
+	l_UserInterface_Brief,
+	nullptr,
+	"Closes the briefing map. Required after drawing!",
+	nullptr,
+	"nothing")
+{
+	(void)L;
+	brief_api_close();
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(drawBriefingMap,
+	l_UserInterface_Brief,
+	nullptr,
+	"Draws the briefing map for the current mission.",
+	nullptr,
+	"nothing")
+{
+	(void)L;
+	brief_api_do_frame(flRealframetime);
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(callNextMapStage,
+	l_UserInterface_Brief,
+	nullptr,
+	"Sends the briefing map to the next stage.",
+	nullptr,
+	"nothing")
+{
+	(void)L;
+	brief_do_next_pressed(0);
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(callPrevMapStage,
+	l_UserInterface_Brief,
+	nullptr,
+	"Sends the briefing map to the previous stage.",
+	nullptr,
+	"nothing")
+{
+	(void)L;
+	brief_do_prev_pressed();
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(callFirstMapStage,
+	l_UserInterface_Brief,
+	nullptr,
+	"Sends the briefing map to the first stage.",
+	nullptr,
+	"nothing")
+{
+	(void)L;
+	brief_do_start_pressed();
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(callLastMapStage,
+	l_UserInterface_Brief,
+	nullptr,
+	"Sends the briefing map to the last stage.",
 	nullptr,
 	"nothing")
 {
 	SCP_UNUSED(L);
+	(void)L;
+	brief_do_end_pressed();
 	return ADE_RETURN_NIL;
 }
 

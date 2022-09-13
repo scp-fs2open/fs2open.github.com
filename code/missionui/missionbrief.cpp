@@ -61,6 +61,11 @@ static int Brief_goals_coords[GR_NUM_RESOLUTIONS][4] = {
 	}
 };
 
+// static effect coords for API
+int bstat_x;
+int bstat_y;
+int brief_api;
+
 static int	Current_brief_stage;	// what stage of the briefing we're on
 static int	Last_brief_stage;
 static int	Num_brief_stages;
@@ -976,6 +981,69 @@ void brief_init()
    Brief_inited = TRUE;
 }
 
+// --------------------------------------------------------------------------------------
+// brief_api_init()
+//
+// A pared down version of brief_init() for use with the Scpui API. Removes initialization of
+// elements not used by the API but still allows drawing of the briefing map - Mjn
+//
+void brief_api_init()
+{
+	// get a pointer to the appropriate briefing structure
+	if (MULTI_TEAM) {
+		Briefing = &Briefings[Net_player->p_info.team];
+	} else {
+		Briefing = &Briefings[0];
+	}
+
+	Brief_last_auto_advance = 0;
+
+	brief_compact_stages(); // compact the briefing array to eliminate unused stages
+
+	// The API handles mission goals on it's own, but we still need to count the stages and add one
+	// if appropriate -Mjn
+	if (The_mission.flags[Mission::Mission_Flags::Toggle_showing_goals] ==
+		!!(The_mission.game_type & MISSION_TYPE_TRAINING)) {
+		Num_brief_stages = Briefing->num_stages + 1;
+	} else {
+		Num_brief_stages = Briefing->num_stages;
+	}
+
+	Current_brief_stage = 0;
+	Last_brief_stage = 0;
+
+	// init the scene-cut data
+	brief_transition_reset();
+
+	hud_anim_init(&Fade_anim, bstat_x, bstat_y, Brief_static_name[gr_screen.res]);
+	hud_anim_load(&Fade_anim);
+
+	common_select_init();
+
+	// This loads the static bitmap for stage cuts - Mjn
+	if (Closeup_bitmap == -1) {
+		Closeup_bitmap = bm_load(Closeup_background_filename[gr_screen.res]);
+	};
+
+	// init the briefing map
+	brief_init_map();
+
+	// set the camera target
+	if (Briefing->num_stages > 0) {
+		brief_set_new_stage(&Briefing->stages[0].camera_pos,
+			&Briefing->stages[0].camera_orient,
+			0,
+			Current_brief_stage);
+		brief_reset_icons(Current_brief_stage);
+	}
+
+	Brief_playing_fade_sound = 0;
+	Brief_mouse_up_flag = 0;
+	Closeup_font_height = gr_get_font_height();
+	Closeup_icon = NULL;
+	Brief_inited = TRUE;
+}
+
 // -------------------------------------------------------------------------------------
 // brief_render_closeup_text()
 //
@@ -1199,6 +1267,25 @@ void brief_render(float frametime)
 	if (Current_brief_stage == Briefing->num_stages) {
 		ML_objectives_do_frame(0);
 	}	
+}
+
+// -------------------------------------------------------------------------------------
+// brief_api_render()
+//
+// A pared down version of brief_render() for use with the Scpui API. Removes rendering of
+// elements not used by the API but still allows drawing of the briefing map - Mjn
+//
+//	frametime is in seconds
+void brief_api_render(float frametime)
+{
+
+	gr_set_bitmap(Brief_grid_bitmap);
+
+	brief_render_map(Current_brief_stage, frametime);
+
+	if (Fade_anim.first_frame != -1) {
+		brief_maybe_blit_scene_cut(frametime);
+	}
 }
 
 // -------------------------------------------------------------------------------------
@@ -1787,6 +1874,112 @@ void brief_do_frame(float frametime)
 	}
 }
 
+// -------------------------------------------------------------------------------------
+// brief_api_do_frame()
+//
+// this is a pared down version of brief_do_frame() for use with the Scpui API - Mjn
+// frametime is in seconds
+//
+void brief_api_do_frame(float frametime)
+{
+
+	// This may be needed by a future PR to get map icon clicking working through the API - Mjn
+	// if (Closeup_icon) {
+	//	Brief_mouse_up_flag = 0;
+	//}
+	gr_reset_clip();
+
+	if (!Background_playing) {
+		int time = -1;
+		int check_jump_flag = 1;
+
+		if (Current_brief_stage != Last_brief_stage) {
+
+			// Check if we have a quick transition pending
+			if (Quick_transition_stage != -1) {
+				Quick_transition_stage = -1;
+				brief_reset_last_new_stage();
+				time = 0;
+				check_jump_flag = 0;
+			}
+
+			if (check_jump_flag) {
+				if (abs(Current_brief_stage - Last_brief_stage) > 1) {
+					Quick_transition_stage = Current_brief_stage;
+					Current_brief_stage = Last_brief_stage;
+					Assert(Current_brief_stage >= 0);
+					Start_fade_up_anim = 1;
+					goto Transition_done;
+				}
+			}
+
+			if (time != 0) {
+				if (Current_brief_stage > Last_brief_stage) {
+					if (Briefing->stages[Last_brief_stage].flags & BS_FORWARD_CUT) {
+						Quick_transition_stage = Current_brief_stage;
+						Current_brief_stage = Last_brief_stage;
+						Assert(Current_brief_stage >= 0);
+						Start_fade_up_anim = 1;
+						goto Transition_done;
+					} else {
+						time = Briefing->stages[Current_brief_stage].camera_time;
+					}
+				} else {
+					if (Briefing->stages[Last_brief_stage].flags & BS_BACKWARD_CUT) {
+						Quick_transition_stage = Current_brief_stage;
+						Current_brief_stage = Last_brief_stage;
+						Assert(Current_brief_stage >= 0);
+						Start_fade_up_anim = 1;
+						goto Transition_done;
+					} else {
+						time = Briefing->stages[Last_brief_stage].camera_time;
+					}
+				}
+			}
+
+			if (Current_brief_stage < 0) {
+				Int3();
+				Current_brief_stage = 0;
+			}
+
+			// set the camera target
+			brief_set_new_stage(&Briefing->stages[Current_brief_stage].camera_pos,
+				&Briefing->stages[Current_brief_stage].camera_orient,
+				time,
+				Current_brief_stage);
+
+			// Brief_playing_fade_sound = 0;
+			Last_brief_stage = Current_brief_stage;
+			// brief_reset_icons(Current_brief_stage);
+			// brief_update_closeup_icon(0);
+		}
+
+	Transition_done:
+
+		if (Brief_mouse_up_flag && !Closeup_icon) {
+			brief_check_for_anim();
+		}
+
+		brief_api_render(frametime);
+		brief_camera_move(frametime, Current_brief_stage);
+
+		// More methods for dealing with clicking on ship icons to be solved in a future PR - Mjn
+		// This also handles the static bitmap for first/last stage cuts
+		if (Closeup_icon && (Closeup_bitmap >= 0)) {
+			// blit closeup background
+			gr_set_bitmap(Closeup_bitmap);
+			gr_bitmap(Closeup_coords[gr_screen.res][BRIEF_X_COORD],
+				Closeup_coords[gr_screen.res][BRIEF_Y_COORD],
+				GR_RESIZE_MENU);
+		}
+
+		// This may be needed in by a future PR to get map icon clicking working through the API - Mjn
+		// if (Closeup_icon) {
+		//	brief_render_closeup(Closeup_icon->ship_class, frametime);
+		//}
+	}
+}
+
 // --------------------------------------------------------------------------------------
 //	brief_unload_bitmaps()
 //
@@ -1848,6 +2041,29 @@ void brief_close()
 
 	Brief_inited = FALSE;
 }
+
+// ------------------------------------------------------------------------------------
+// brief_api_close()
+//
+// A pared down version of brief_close() for use with the Scpui API. Closes only
+// elements used by the API but still allows drawing of the briefing map - Mjn
+//
+void brief_api_close()
+{
+	if (Brief_inited == FALSE) {
+		nprintf(("Warning", "brief_close() returning without doing anything\n"));
+		return;
+	}
+
+	if (Fade_anim.first_frame != -1) {
+		bm_unload(Fade_anim.first_frame);
+	}
+
+	Briefing_paused = 0;
+
+	Brief_inited = FALSE;
+}
+
 
 void briefing_stop_music(bool fade)
 {
@@ -1921,7 +2137,7 @@ void brief_maybe_blit_scene_cut(float frametime)
 
 		Fade_anim.time_elapsed += frametime;
 
-		if ( !Brief_playing_fade_sound ) {
+		if (!Brief_playing_fade_sound && !brief_api) {
 			gamesnd_play_iface(InterfaceSounds::BRIEFING_STATIC);
 			Brief_playing_fade_sound = 1;
 		}
