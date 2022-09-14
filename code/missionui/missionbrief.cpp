@@ -1948,6 +1948,7 @@ void brief_api_do_frame(float frametime)
 				time,
 				Current_brief_stage);
 
+			//A few items commented out, but keeping a record for closeup icon fixing in a later PR - Mjn
 			// Brief_playing_fade_sound = 0;
 			Last_brief_stage = Current_brief_stage;
 			// brief_reset_icons(Current_brief_stage);
@@ -2051,7 +2052,7 @@ void brief_close()
 void brief_api_close()
 {
 	if (Brief_inited == FALSE) {
-		nprintf(("Warning", "brief_close() returning without doing anything\n"));
+		nprintf(("Warning", "brief_api_close() returning without doing anything\n"));
 		return;
 	}
 
