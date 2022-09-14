@@ -694,7 +694,7 @@ ADE_FUNC(getLoopBrief,
 	"loop_brief_stage",
 	"The loop brief data")
 {
-	return ade_set_args(L, "o", l_LoopBriefStage.Set(Campaign.missions[Campaign.current_mission]));
+	return ade_set_args(L, "o", l_LoopBriefStage.Set(cmission_h(Campaign.current_mission)));
 }
 
 ADE_FUNC(setLoopChoice, l_UserInterface_LoopBrief, "boolean", "Accepts mission outcome and then True to go to loop, False to skip", nullptr, nullptr)
@@ -733,7 +733,7 @@ ADE_LIB_DERIV(l_UserInterface_RedAlert,
 {
 
 	 if (Briefings[0].num_stages) {
-		return ade_set_args(L, "o", l_RedAlertStage.Set(Briefings[0].stages[0]));
+		return ade_set_args(L, "o", l_RedAlertStage.Set(redalert_stage_h(0,0)));
 	 } else {
 		 return ADE_RETURN_NIL;
 	 }
@@ -766,7 +766,7 @@ ADE_LIB_DERIV(l_UserInterface_FictionViewer,
 ADE_FUNC(getFiction, l_UserInterface_FictionViewer, nullptr, "Get the fiction.", "fiction_viewer_stage", "The fiction data")
 {
 	if (Fiction_viewer_active_stage >= 0) {
-		return ade_set_args(L, "o", l_FictionViewerStage.Set(Fiction_viewer_stages[Fiction_viewer_active_stage]));
+		return ade_set_args(L, "o", l_FictionViewerStage.Set(fiction_viewer_stage_h(Fiction_viewer_active_stage)));
 	} else {
 		return ADE_RETURN_NIL;
 	}
