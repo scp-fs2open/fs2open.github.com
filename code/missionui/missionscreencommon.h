@@ -115,6 +115,7 @@ void common_music_close();
 
 int common_num_cutscenes_valid(int movie_type);
 void common_maybe_play_cutscene(int movie_type, bool restart_music = false, int music = 0);
+void common_play_cutscene(const char* filename, bool restart_music = false, int music = 0);
 
 int common_scroll_down_pressed(int *start, int size, int max_show);
 int common_scroll_up_pressed(int *start, int size, int max_show);

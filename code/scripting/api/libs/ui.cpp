@@ -5,9 +5,11 @@
 #include "globalincs/alphacolors.h"
 
 #include "cmdline/cmdline.h"
+#include "cutscene/cutscenes.h"
 #include "gamesnd/eventmusic.h"
 #include "gamesequence/gamesequence.h"
 #include "menuui/barracks.h"
+#include "menuui/credits.h"
 #include "menuui/mainhallmenu.h"
 #include "menuui/optionsmenu.h"
 #include "menuui/playermenu.h"
@@ -27,6 +29,7 @@
 #include "playerman/managepilot.h"
 #include "scpui/SoundPlugin.h"
 #include "scpui/rocket_ui.h"
+#include "scripting/api/objs/techroom.h"
 #include "scripting/api/objs/loop_brief.h"
 #include "scripting/api/objs/redalert.h"
 #include "scripting/api/objs/fictionviewer.h"
@@ -214,6 +217,19 @@ ADE_FUNC(maybePlayCutscene, l_UserInterface, "enumeration MovieType, boolean Res
 	return ADE_RETURN_NIL;
 }
 
+ADE_FUNC(playCutscene, l_UserInterface, "string Filename, boolean RestartMusic, number ScoreIndex", "Plays a cutscene.  If RestartMusic is true, then the music score at ScoreIndex will be started after the cutscene plays.", nullptr, "Returns nothing")
+{
+	const char* filename;
+	bool restart_music = false;
+	int score_index = 0;
+
+	if (!ade_get_args(L, "sbi", &filename, &restart_music, &score_index))
+		return ADE_RETURN_NIL;
+
+	common_play_cutscene(filename, restart_music, score_index);
+	return ADE_RETURN_NIL;
+}
+
 //**********SUBLIBRARY: UserInterface/PilotSelect
 ADE_LIB_DERIV(l_UserInterface_PilotSelect, "PilotSelect", nullptr,
               "API for accessing values specific to the pilot select screen.<br><b>Warning:</b> This is an internal "
@@ -347,6 +363,20 @@ ADE_FUNC(startAmbientSound, l_UserInterface_MainHall, nullptr, "Starts the ambie
 {
 	(void)L;
 	main_hall_start_ambient();
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(stopAmbientSound, l_UserInterface_MainHall, nullptr, "Stops the ambient mainhall sound.", nullptr, "nothing")
+{
+	(void)L;
+	main_hall_stop_ambient();
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(startMusic, l_UserInterface_MainHall, nullptr, "Starts the mainhall music.", nullptr, "nothing")
+{
+	(void)L;
+	main_hall_start_music();
 	return ADE_RETURN_NIL;
 }
 
@@ -748,6 +778,177 @@ ADE_FUNC(getFictionMusicName, l_UserInterface_FictionViewer, nullptr,
 	"The file name or empty if no music")
 {
 	return ade_set_args(L, "s", common_music_get_filename(SCORE_FICTION_VIEWER).c_str());
+}
+
+//**********SUBLIBRARY: UserInterface/TechRoom
+ADE_LIB_DERIV(l_UserInterface_TechRoom,
+	"TechRoom",
+	nullptr,
+	"API for accessing data related to the tech room UI.<br><b>Warning:</b> This is an internal "
+	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	l_UserInterface);
+
+ADE_FUNC(buildMissionList,
+	l_UserInterface_TechRoom,
+	nullptr,
+	"Builds the mission list for display. Must be called before the sim_mission handle will have data",
+	"number",
+	"Returns 1 when completed")
+{
+
+	Sim_Missions.clear();
+	Sim_CMissions.clear();
+
+	api_sim_room_build_mission_list(true);
+
+	mprintf(("Building mission lists for scripting API is complete!\n"));
+
+	return ade_set_args(L, "i", 1);
+}
+
+ADE_FUNC(buildCredits,
+	l_UserInterface_TechRoom,
+	nullptr,
+	"Builds the credits for display. Must be called before the credits_info handle will have data",
+	"number",
+	"Returns 1 when completed")
+{
+
+	credits_parse();
+	credits_scp_position();
+
+	size_t count = Credit_text_parts.size();
+
+	for (size_t i = 0; i < count; i++) {
+		credits_complete.append(Credit_text_parts[i]);
+	}
+
+	//Make sure we clean up after ourselves
+	Credit_text_parts.clear();
+
+	mprintf(("Building credits for scripting API is complete!\n"));
+
+	return ade_set_args(L, "i", 1);
+}
+
+ADE_LIB_DERIV(l_UserInterface_SingleMissions, "SingleMissions", nullptr, nullptr, l_UserInterface_TechRoom);
+ADE_INDEXER(l_UserInterface_SingleMissions, "number Index", "Array of simulator missions", "sim_mission", "Mission handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "s", "");
+	
+	return ade_set_args(L, "o", l_TechRoomMission.Set(sim_mission_h(idx, false)));
+}
+
+ADE_FUNC(__len, l_UserInterface_SingleMissions, nullptr, "The number of single missions", "number", "The number of single missions")
+{
+	return ade_set_args(L, "i", Sim_Missions.size());
+}
+
+ADE_LIB_DERIV(l_UserInterface_CampaignMissions, "CampaignMissions", nullptr, nullptr, l_UserInterface_TechRoom);
+ADE_INDEXER(l_UserInterface_CampaignMissions, "number Index", "Array of campaign missions", "sim_mission", "Mission handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "s", "");
+	
+	return ade_set_args(L, "o", l_TechRoomMission.Set(sim_mission_h(idx, true)));
+}
+
+ADE_FUNC(__len, l_UserInterface_CampaignMissions, nullptr, "The number of campaign missions", "number", "The number of campaign missions")
+{
+	return ade_set_args(L, "i", Sim_CMissions.size());
+}
+
+ADE_LIB_DERIV(l_UserInterface_Cutscenes, "Cutscenes", nullptr, nullptr, l_UserInterface_TechRoom);
+ADE_INDEXER(l_UserInterface_Cutscenes,
+	"number Index",
+	"Array of cutscenes",
+	"custscene_info",
+	"Cutscene handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "s", "");
+
+	return ade_set_args(L, "o", l_TechRoomCutscene.Set(cutscene_info_h(idx)));
+}
+
+ADE_FUNC(__len, l_UserInterface_Cutscenes, nullptr, "The number of cutscenes", "number", "The number of cutscenes")
+{
+	return ade_set_args(L, "i", Cutscenes.size());
+}
+
+ADE_LIB_DERIV(l_UserInterface_Credits, "Credits", nullptr, nullptr, l_UserInterface_TechRoom);
+ADE_VIRTVAR(Music, l_UserInterface_Credits, nullptr, "The credits music filename", "string", "The music filename")
+{
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "s", credits_get_music_filename(Credits_music_name));
+}
+
+ADE_VIRTVAR(NumImages, l_UserInterface_Credits, nullptr, "The total number of credits images", "number", "The number of images")
+{
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "i", Credits_num_images);
+}
+
+ADE_VIRTVAR(StartIndex, l_UserInterface_Credits, nullptr, "The image index to begin with", "number", "The index")
+{
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "i", Credits_artwork_index);
+}
+
+ADE_VIRTVAR(DisplayTime, l_UserInterface_Credits, nullptr, "The display time for each image", "number", "The display time")
+{
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "f", Credits_artwork_display_time);
+}
+
+ADE_VIRTVAR(FadeTime, l_UserInterface_Credits, nullptr, "The crossfade time for each image", "number", "The fade time")
+{
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "f", Credits_artwork_fade_time);
+}
+
+ADE_VIRTVAR(ScrollRate, l_UserInterface_Credits, nullptr, "The scroll rate of the text", "number", "The scroll rate")
+{
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "f", Credits_scroll_rate);
+}
+
+ADE_VIRTVAR(Complete, l_UserInterface_Credits, nullptr, "The complete credits string", "string", "The credits")
+{
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "s", credits_complete);
 }
 
 } // namespace api
