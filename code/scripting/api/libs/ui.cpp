@@ -676,7 +676,7 @@ ADE_FUNC(getCmdBriefing,
 	"The briefing data")
 {
 	// The cmd briefing code has support for specifying the team but only sets the index to 0
-	return ade_set_args(L, "o", l_CmdBrief.Set(Cmd_briefs[0]));
+	return ade_set_args(L, "o", l_CmdBrief.Set(0));
 }
 
 //**********SUBLIBRARY: UserInterface/LoopBrief
