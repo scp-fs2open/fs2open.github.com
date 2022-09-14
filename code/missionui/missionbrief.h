@@ -38,11 +38,6 @@ extern int	Brief_multitext_bitmap;	// bitmap for multiplayer chat window
 extern int	Brief_background_bitmap;
 extern UI_INPUTBOX	Common_multi_text_inputbox[3];
 
-// These are used to allow the API to define the coords for brief map static effect
-extern int bstat_x;
-extern int bstat_y;
-extern int brief_api;
-
 // Sounds
 #define		BRIEFING_MUSIC_DELAY	2500		// 650 ms delay before briefing music starts
 extern int	Briefing_music_handle;

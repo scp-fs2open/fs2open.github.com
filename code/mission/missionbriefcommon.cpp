@@ -633,6 +633,7 @@ void brief_init_screen(int  /*multiplayer_flag*/)
 	bscreen.map_x2			= Brief_grid_coords[gr_screen.res][0] + Brief_grid_coords[gr_screen.res][2];
 	bscreen.map_y1			= Brief_grid_coords[gr_screen.res][1];
 	bscreen.map_y2			= Brief_grid_coords[gr_screen.res][1] + Brief_grid_coords[gr_screen.res][3];
+	bscreen.resize          = GR_RESIZE_MENU;
 }
 
 // --------------------------------------------------------------------------------------
@@ -1217,7 +1218,7 @@ void brief_start_highlight_anims(int stage_num)
 //
 void brief_render_map(int stage_num, float frametime)
 {
-	gr_set_clip(bscreen.map_x1 + 1, bscreen.map_y1 + 1, bscreen.map_x2 - bscreen.map_x1 - 1, bscreen.map_y2 - bscreen.map_y1 - 2, GR_RESIZE_MENU);
+	gr_set_clip(bscreen.map_x1 + 1, bscreen.map_y1 + 1, bscreen.map_x2 - bscreen.map_x1 - 1, bscreen.map_y2 - bscreen.map_y1 - 2, bscreen.resize);
 
     if (stage_num >= Briefing->num_stages) {
 		gr_reset_clip();

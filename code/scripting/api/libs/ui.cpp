@@ -700,12 +700,7 @@ ADE_FUNC(startBriefingMap,
 	bscreen.map_x2 = x1 + x2;
 	bscreen.map_y1 = y1;
 	bscreen.map_y2 = y1 + y2;
-
-	bstat_x = x1 + stat_x;
-	bstat_y = y1 + stat_y;
-
-	brief_api = 1;
-
+	bscreen.resize = GR_RESIZE_NONE;
 	brief_api_init();
 
 	return ADE_RETURN_NIL;

@@ -61,11 +61,6 @@ static int Brief_goals_coords[GR_NUM_RESOLUTIONS][4] = {
 	}
 };
 
-// static effect coords for API
-int bstat_x;
-int bstat_y;
-int brief_api;
-
 static int	Current_brief_stage;	// what stage of the briefing we're on
 static int	Last_brief_stage;
 static int	Num_brief_stages;
@@ -1015,16 +1010,9 @@ void brief_api_init()
 	// init the scene-cut data
 	brief_transition_reset();
 
-	hud_anim_init(&Fade_anim, bstat_x, bstat_y, Brief_static_name[gr_screen.res]);
-	hud_anim_load(&Fade_anim);
-
-	//This will need to be replaced with an API version in a later PR - Mjn
+	//This will need to be replaced with an API version in a later PR that deals with
+	//weapon and ship select APIs - Mjn
 	common_select_init();
-
-	// This loads the static bitmap for stage cuts - Mjn
-	if (Closeup_bitmap == -1) {
-		Closeup_bitmap = bm_load(Closeup_background_filename[gr_screen.res]);
-	};
 
 	// init the briefing map
 	brief_init_map();
@@ -1038,7 +1026,6 @@ void brief_api_init()
 		brief_reset_icons(Current_brief_stage);
 	}
 
-	Brief_playing_fade_sound = 0;
 	Brief_mouse_up_flag = 0;
 	Closeup_font_height = gr_get_font_height();
 	Closeup_icon = NULL;
@@ -1284,8 +1271,16 @@ void brief_api_render(float frametime)
 
 	brief_render_map(Current_brief_stage, frametime);
 
-	if (Fade_anim.first_frame != -1) {
-		brief_maybe_blit_scene_cut(frametime);
+	//We don't play the static anim from the API, but we still need to quick transition between stages -Mjn
+	if (Start_fade_up_anim) {
+		Current_brief_stage = Quick_transition_stage;
+
+		if (Current_brief_stage < 0) {
+			brief_transition_reset();
+			Current_brief_stage = Last_brief_stage;
+		}
+
+		Assert(Current_brief_stage >= 0);
 	}
 }
 
@@ -1888,7 +1883,7 @@ void brief_api_do_frame(float frametime)
 	// if (Closeup_icon) {
 	//	Brief_mouse_up_flag = 0;
 	//}
-	gr_reset_clip();
+	//gr_reset_clip();
 
 	if (!Background_playing) {
 		int time = -1;
@@ -1966,14 +1961,11 @@ void brief_api_do_frame(float frametime)
 		brief_camera_move(frametime, Current_brief_stage);
 
 		// More methods for dealing with clicking on ship icons to be solved in a future PR - Mjn
-		// This also handles the static bitmap for first/last stage cuts
-		if (Closeup_icon && (Closeup_bitmap >= 0)) {
-			// blit closeup background
-			gr_set_bitmap(Closeup_bitmap);
-			gr_bitmap(Closeup_coords[gr_screen.res][BRIEF_X_COORD],
-				Closeup_coords[gr_screen.res][BRIEF_Y_COORD],
-				GR_RESIZE_MENU);
-		}
+		//if (Closeup_icon) {
+		//	gr_bitmap(Closeup_coords[gr_screen.res][BRIEF_X_COORD],
+		//		Closeup_coords[gr_screen.res][BRIEF_Y_COORD],
+		//		GR_RESIZE_MENU);
+		//}
 
 		// This may be needed in by a future PR to get map icon clicking working through the API - Mjn
 		// if (Closeup_icon) {
@@ -2057,10 +2049,6 @@ void brief_api_close()
 		return;
 	}
 
-	if (Fade_anim.first_frame != -1) {
-		bm_unload(Fade_anim.first_frame);
-	}
-
 	Briefing_paused = 0;
 
 	Brief_inited = FALSE;
@@ -2139,7 +2127,7 @@ void brief_maybe_blit_scene_cut(float frametime)
 
 		Fade_anim.time_elapsed += frametime;
 
-		if (!Brief_playing_fade_sound && !brief_api) {
+		if ( !Brief_playing_fade_sound ) {
 			gamesnd_play_iface(InterfaceSounds::BRIEFING_STATIC);
 			Brief_playing_fade_sound = 1;
 		}

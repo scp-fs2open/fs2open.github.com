@@ -262,7 +262,7 @@ extern int Brief_static_coords[GR_NUM_RESOLUTIONS][2];
 
 typedef struct brief_screen
 {
-	int map_x1, map_x2, map_y1, map_y2;
+	int map_x1, map_x2, map_y1, map_y2, resize;
 /*	int btext_x1, btext_x2, btext_y1, btext_y2;
 	int cup_x1, cup_x2, cup_y1, cup_y2;
 	int cupinfo_x1, cupinfo_x2, cupinfo_y1, cupinfo_y2;*/
