@@ -1134,11 +1134,20 @@ void pilotfile::csg_write_variables()
 
 void pilotfile::csg_read_settings()
 {
+	clamped_range_warnings.clear();
 	// sound/voice/music
 	if (!Using_in_game_options) {
-		snd_set_effects_volume(cfread_float(cfp));
-		event_music_set_volume(cfread_float(cfp));
-		snd_set_voice_volume(cfread_float(cfp));
+		float temp_volume = cfread_float(cfp);
+		clamp_value_with_warn(&temp_volume, 0.f, 1.f, "Effects Volume");
+		snd_set_effects_volume(temp_volume);
+
+		temp_volume = cfread_float(cfp);
+		clamp_value_with_warn(&temp_volume, 0.f, 1.f, "Music Volume");
+		event_music_set_volume(temp_volume);
+
+		temp_volume = cfread_float(cfp);
+		clamp_value_with_warn(&temp_volume, 0.f, 1.f, "Voice Volume");
+		snd_set_voice_volume(temp_volume);
 
 		Briefing_voice_enabled = cfread_int(cfp) != 0;
 	} else {
@@ -1154,13 +1163,20 @@ void pilotfile::csg_read_settings()
 
 	// skill level
 	Game_skill_level = cfread_int(cfp);
+	clamp_value_with_warn(&Game_skill_level, 0, 4, "Game Skill Level");
 
 	// input options
 	if (!Using_in_game_options) {
 		Use_mouse_to_fly   = cfread_int(cfp) != 0;
 		Mouse_sensitivity  = cfread_int(cfp);
+		clamp_value_with_warn(&Mouse_sensitivity, 0, 9, "Mouse Sensitivity");
+
 		Joy_sensitivity    = cfread_int(cfp);
+		clamp_value_with_warn(&Joy_sensitivity, 0, 9, "Joystick Sensitivity");
+
 		Joy_dead_zone_size = cfread_int(cfp);
+		clamp_value_with_warn(&Joy_dead_zone_size, 0, 45, "Joystick Deadzone");
+
 	} else {
 		// The values are set by the in-game menu but we still need to read the int from the file to maintain the correct offset
 		cfread_int(cfp);
@@ -1184,28 +1200,44 @@ void pilotfile::csg_read_settings()
 		dummy = cfread_int(cfp);
 		dummy = cfread_int(cfp);
 	}
+	if (!clamped_range_warnings.empty()) {
+		ReleaseWarning(LOCATION, "The following values in the campaign save file were out of bounds and were automatically reset:\n%s\nPlease check your settings!\n", clamped_range_warnings.c_str());
+		clamped_range_warnings.clear();
+	}
 }
 
 void pilotfile::csg_write_settings()
 {
 	startSection(Section::Settings);
+	clamped_range_warnings.clear();
 
 	// sound/voice/music
+	clamp_value_with_warn(&Master_sound_volume, 0.f, 1.f, "Effects Volume");
 	cfwrite_float(Master_sound_volume, cfp);
+	clamp_value_with_warn(&Master_event_music_volume, 0.f, 1.f, "Music Volume");
 	cfwrite_float(Master_event_music_volume, cfp);
+	clamp_value_with_warn(&Master_voice_volume, 0.f, 1.f, "Voice Volume");
 	cfwrite_float(Master_voice_volume, cfp);
 
 	cfwrite_int(Briefing_voice_enabled ? 1 : 0, cfp);
 
 	// skill level
+	clamp_value_with_warn(&Game_skill_level, 0, 4, "Game Skill Level");
 	cfwrite_int(Game_skill_level, cfp);
 
 	// input options
 	cfwrite_int(Use_mouse_to_fly, cfp);
+	clamp_value_with_warn(&Mouse_sensitivity, 0, 9, "Mouse Sensitivity");
 	cfwrite_int(Mouse_sensitivity, cfp);
+	clamp_value_with_warn(&Joy_sensitivity, 0, 9, "Joystick Sensitivity");
 	cfwrite_int(Joy_sensitivity, cfp);
+	clamp_value_with_warn(&Joy_dead_zone_size, 0, 45, "Joystick Deadzone");
 	cfwrite_int(Joy_dead_zone_size, cfp);
 
+	if (!clamped_range_warnings.empty()) {
+		ReleaseWarning(LOCATION, "The following values were out of bounds when saving the campaign file and were automatically reset.\n%s\nThis shouldn't be possible, please contact the FreeSpace 2 Open Source Code Project!\n", clamped_range_warnings.c_str());
+		clamped_range_warnings.clear();
+	}
 	endSection();
 }
 

@@ -10,6 +10,7 @@
 #include "gamesnd/eventmusic.h"
 #include "def_files/def_files.h"
 #include "globalincs/version.h"
+#include "graphics/shadows.h"
 #include "localization/localize.h"
 #include "mission/missioncampaign.h"
 #include "mission/missionload.h"
@@ -41,14 +42,19 @@ bool Dont_automatically_select_turret_when_targeting_ship;
 bool Weapons_inherit_parent_collision_group;
 bool Flight_controls_follow_eyepoint_orientation;
 int FS2NetD_port;
+int Default_multi_object_update_level;
 float Briefing_window_FOV;
 bool Disable_hc_message_ani;
 bool Red_alert_applies_to_delayed_ships;
 bool Beams_use_damage_factors;
 float Generic_pain_flash_factor;
 float Shield_pain_flash_factor;
+float Emp_pain_flash_factor;
+std::tuple<float, float, float> Emp_pain_flash_color;
 gameversion::version Targeted_version; // Defaults to retail
 SCP_string Window_title;
+SCP_string Mod_title;
+SCP_string Mod_version;
 bool Unicode_text_mode;
 bool Use_tabled_strings_for_default_language;
 bool Dont_preempt_training_voice;
@@ -91,6 +97,8 @@ bool Supernova_hits_at_zero;
 bool Show_subtitle_uses_pixels;
 int Show_subtitle_screen_base_res[2];
 int Show_subtitle_screen_adjusted_res[2];
+bool Always_warn_player_about_unbound_keys;
+shadow_disable_overrides Shadow_disable_overrides {false, false, false, false};
 
 void mod_table_set_version_flags();
 
@@ -135,6 +143,14 @@ void parse_mod_table(const char *filename)
 
 		if (optional_string("$Window icon:")) {
 			stuff_string(Window_icon_path, F_NAME);
+		}
+
+		if (optional_string("$Mod title:")) {
+			stuff_string(Mod_title, F_NAME);
+		}
+
+		if (optional_string("$Mod version:")) {
+			stuff_string(Mod_version, F_NAME);
 		}
 		
 		if (optional_string("$Unicode mode:")) {
@@ -268,6 +284,10 @@ void parse_mod_table(const char *filename)
 			}
 		}
 
+		if (optional_string("$Always warn player about unbound keys used in Directives Gauge:")) {
+			stuff_boolean(&Always_warn_player_about_unbound_keys);
+		}
+
 		optional_string("#SEXP SETTINGS");
 
 		if (optional_string("$Loop SEXPs Then Arguments:")) {
@@ -361,15 +381,41 @@ void parse_mod_table(const char *filename)
 		}
 
 		if (optional_string("$Generic Pain Flash Factor:")) {
-			stuff_float(&Generic_pain_flash_factor);
-			if (Generic_pain_flash_factor != 1.0f)
-				mprintf(("Game Settings Table: Setting generic pain flash factor to %.2f\n", Generic_pain_flash_factor));
+			float temp;
+			stuff_float(&temp);
+			if (temp >= 0.0f) {
+				mprintf(("Game Settings Table: Setting generic pain flash factor to %.2f\n", temp));
+				Generic_pain_flash_factor = temp;
+			}
 		}
 
 		if (optional_string("$Shield Pain Flash Factor:")) {
-			stuff_float(&Shield_pain_flash_factor);
-			if (Shield_pain_flash_factor != 0.0f)
-				 mprintf(("Game Settings Table: Setting shield pain flash factor to %.2f\n", Shield_pain_flash_factor));
+			float temp;
+			stuff_float(&temp);
+			if (temp >= 0.0f) {
+				mprintf(("Game Settings Table: Setting shield pain flash factor to %.2f\n", temp));
+				Shield_pain_flash_factor = temp;
+			}
+		}
+
+		if (optional_string("$EMP Pain Flash Factor:")) {
+			float temp;
+			stuff_float(&temp);
+			if (temp >= 0.0f) {
+				mprintf(("Game Settings Table: Setting EMP pain flash factor to %.2f\n", temp));
+				Emp_pain_flash_factor = temp;
+			}
+		}
+
+		if (optional_string("$EMP Pain Flash Color:")) {
+			int rgb[3];
+			stuff_int_list(rgb, 3);
+			if ((rgb[0] >= 0 && rgb[0] <= 255) && (rgb[1] >= 0 && rgb[1] <= 255) && (rgb[2] >= 0 && rgb[2] <= 255)) {
+				Emp_pain_flash_color = std::make_tuple(static_cast<float>(rgb[0])/255, static_cast<float>(rgb[1])/255, static_cast<float>(rgb[2])/255);
+			} else {
+				error_display(0, "$EMP Pain Flash Color is %i, %i, %i. "
+					"One or more of these values is not within the range of 0-255. Assuming default color.", rgb[0], rgb[1], rgb[2]);
+			}
 		}
 
 		if (optional_string("$BMPMAN Slot Limit:")) {
@@ -526,6 +572,35 @@ void parse_mod_table(const char *filename)
 			}
 		}
 
+		if (optional_string("$Shadow Quality Default:")) {
+			int quality;
+			stuff_int(&quality);
+			// only set values if shadows are enabled and using default quality --wookieejedi
+			if (Shadow_quality_uses_mod_option) {
+				switch (quality) {
+				case 0:
+					Shadow_quality = ShadowQuality::Disabled;
+					break;
+				case 1:
+					Shadow_quality = ShadowQuality::Low;
+					break;
+				case 2:
+					Shadow_quality = ShadowQuality::Medium;
+					break;
+				case 3:
+					Shadow_quality = ShadowQuality::High;
+					break;
+				case 4:
+					Shadow_quality = ShadowQuality::Ultra;
+					break;
+				default:
+					// Shadow_quality was already set in cmdline.cpp, so just keep that default --wookieejedi
+					mprintf(("Game Settings Table: '$Shadow Quality Default:' value for default shadow quality %d is invalid. Using default quality of %d...\n", quality, static_cast<int>(Shadow_quality)));
+					break;
+				}
+			}
+		}
+
 		if (optional_string("$Shadow Cascade Distances:")) {
 			float dis[4];
 			stuff_float_list(dis, 4);
@@ -545,6 +620,22 @@ void parse_mod_table(const char *filename)
 			else {
 				error_display(0, "$Shadow Cascade Distances Cockpit are %f, %f, %f, %f. One or more are < 0, and/or values are not increasing. Assuming default distances.", dis[0], dis[1], dis[2], dis[3]);
 			}
+		}
+
+		if (optional_string("$Shadow Disable Techroom:")) {
+			stuff_boolean(&Shadow_disable_overrides.disable_techroom);
+		}
+
+		if (optional_string("$Shadow Disable Cockpit:")) {
+			stuff_boolean(&Shadow_disable_overrides.disable_cockpit);
+		}
+
+		if (optional_string("$Shadow Disable Mission Brief Weapons:")) {
+			stuff_boolean(&Shadow_disable_overrides.disable_mission_select_weapons);
+		}
+
+		if (optional_string("$Shadow Disable Mission Brief Ships:")) {
+			stuff_boolean(&Shadow_disable_overrides.disable_mission_select_ships);
 		}
 
 		if (optional_string("$Minimum Pixel Size Thrusters:")) {
@@ -569,6 +660,16 @@ void parse_mod_table(const char *filename)
 			stuff_int(&FS2NetD_port);
 			if (FS2NetD_port)
 				mprintf(("Game Settings Table: FS2NetD connecting to port %i\n", FS2NetD_port));
+		}
+
+		if (optional_string("$Default object update level for multiplayer:")) {
+			int object_update;
+			stuff_int(&object_update);
+			if ((object_update >= OBJ_UPDATE_LOW) && (object_update <= OBJ_UPDATE_LAN)) {
+				Default_multi_object_update_level = object_update;
+			} else {
+				mprintf(("Game Settings Table: '$Default object update level for multiplayer:' value of %d is not between %d and %d. Using default value of %d.\n", object_update, OBJ_UPDATE_LOW, OBJ_UPDATE_LAN, OBJ_UPDATE_HIGH));
+			}
 		}
 
 		optional_string("#SOUND SETTINGS");
@@ -863,14 +964,19 @@ void mod_table_reset()
 	Weapons_inherit_parent_collision_group = false;
 	Flight_controls_follow_eyepoint_orientation = false;
 	FS2NetD_port = 0;
+	Default_multi_object_update_level = OBJ_UPDATE_HIGH;
 	Briefing_window_FOV = 0.29375f;
 	Disable_hc_message_ani = false;
 	Red_alert_applies_to_delayed_ships = false;
 	Beams_use_damage_factors = false;
 	Generic_pain_flash_factor = 1.0f;
 	Shield_pain_flash_factor = 0.0f;
+	Emp_pain_flash_factor = 1.0f;
+	Emp_pain_flash_color = std::make_tuple(1.0f, 1.0f, 0.5f);
 	Targeted_version = gameversion::version(2, 0, 0, 0); // Defaults to retail
 	Window_title = "";
+	Mod_title = "";
+	Mod_version = "";
 	Unicode_text_mode = false;
 	Use_tabled_strings_for_default_language = false;
 	Dont_preempt_training_voice = false;
@@ -915,6 +1021,7 @@ void mod_table_reset()
 	Show_subtitle_screen_base_res[1] = -1;
 	Show_subtitle_screen_adjusted_res[0] = -1;
 	Show_subtitle_screen_adjusted_res[1] = -1;
+	Always_warn_player_about_unbound_keys = false;
 }
 
 void mod_table_set_version_flags()

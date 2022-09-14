@@ -742,6 +742,24 @@ ADE_VIRTVAR(Team, l_Ship, "team", "Ship's team", "team", "Ship team, or invalid 
 	return ade_set_args(L, "o", l_Team.Set(shipp->team));
 }
 
+ADE_VIRTVAR(PersonaIndex, l_Ship, "number", "Persona index", "number", "The index of the persona from messages.tbl, 0 if no persona is set")
+{
+	object_h *objh;
+	int p_index = -1;
+	if(!ade_get_args(L, "o|i", l_Ship.GetPtr(&objh), &p_index))
+		return ade_set_error(L, "i", 0);
+
+	if(!objh->IsValid())
+		return ade_set_error(L, "i", 0);
+
+	ship *shipp = &Ships[objh->objp->instance];
+
+	if(ADE_SETTING_VAR && p_index > 0)
+		shipp->persona_index = p_index - 1;
+
+	return ade_set_args(L, "i", shipp->persona_index + 1);
+}
+
 ADE_VIRTVAR(Textures, l_Ship, "shiptextures", "Gets ship textures", "shiptextures", "Ship textures, or invalid shiptextures handle if ship handle is invalid")
 {
 	object_h *sh = nullptr;
@@ -968,6 +986,52 @@ ADE_VIRTVAR(Orders, l_Ship, "shiporders", "Array of ship orders", "shiporders", 
 	return ade_set_args(L, "o", l_ShipOrders.Set(object_h(objh->objp)));
 }
 
+ADE_FUNC(turnTowardsPoint,
+	l_Ship,
+	"vector target, [boolean respectDifficulty = true, vector turnrateModifier /* 100% of tabled values in all rotation axes by default */, number bank /* native bank-on-heading by default */ ]",
+	"turns the ship towards the specified point during this frame",
+	nullptr,
+	nullptr)
+{
+	object_h shiph;
+	vec3d* target;
+	bool diffTurn = true;
+	vec3d* modifier = nullptr;
+	float bank = 0.0f;
+
+	int argnum = ade_get_args(L, "oo|bof", l_Ship.Get(&shiph), l_Vector.GetPtr(&target), &diffTurn, l_Vector.GetPtr(&modifier), &bank);
+	if (argnum == 0) {
+		return ADE_RETURN_NIL;
+	}
+
+	ai_turn_towards_vector(target, shiph.objp, nullptr, nullptr, bank, (diffTurn ? 0 : AITTV_FAST) | (argnum >= 5 ? AITTV_FORCE_DELTA_BANK : 0), nullptr, modifier);
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(turnTowardsOrientation,
+	l_Ship,
+	"orientation target, [boolean respectDifficulty = true, vector turnrateModifier /* 100% of tabled values in all rotation axes by default */]",
+	"turns the ship towards the specified orientation during this frame",
+	nullptr,
+	nullptr)
+{
+	object_h ship;
+	matrix_h* target;
+	bool diffTurn = true;
+	vec3d* modifier = nullptr;
+
+	int argnum = ade_get_args(L, "oo|bo", l_Ship.Get(&ship), l_Matrix.GetPtr(&target), &diffTurn, l_Vector.GetPtr(&modifier));
+	if (argnum == 0) {
+		return ADE_RETURN_NIL;
+	}
+
+	matrix* mat = target->GetMatrix();
+	vec3d targetVec = mat->vec.fvec + ship.objp->pos;
+
+	ai_turn_towards_vector(&targetVec, ship.objp, nullptr, nullptr, 0.0f, (diffTurn ? 0 : AITTV_FAST), &mat->vec.rvec, modifier);
+	return ADE_RETURN_NIL;
+}
+
 ADE_FUNC(getCenterPosition, l_Ship, nullptr, "Returns the position of the ship's physical center, which may not be the position of the origin of the model", "vector", "World position of the center of the ship, or nil if an error occurred")
 {
 	object_h *shiph;
@@ -1176,7 +1240,7 @@ ADE_FUNC_DEPRECATED(getAnimationDoneTime, l_Ship, "number Type, number Subtype",
 	if(type == animation::ModelAnimationTriggerType::None)
 		return ADE_RETURN_FALSE;
 
-	int time_ms = Ship_info[Ships[objh->objp->instance].ship_info_index].animations.getTimeAll(model_get_instance(Ships[objh->objp->instance].model_instance_num), type, subtype);
+	int time_ms = Ship_info[Ships[objh->objp->instance].ship_info_index].animations.getAll(model_get_instance(Ships[objh->objp->instance].model_instance_num), type, subtype).getTime();
 	float time_s = (float)time_ms / 1000.0f;
 
 	return ade_set_args(L, "f", time_s);
@@ -1230,7 +1294,7 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem Ta
 			{
 				ai_mode = AI_GOAL_DESTROY_SUBSYSTEM;
 				ai_shipname = Ships[tgh->objp->instance].ship_name;
-				ai_submode = ship_get_subsys_index( &Ships[tgsh->objp->instance], tgsh->ss->system_info->subobj_name );
+				ai_submode = ship_find_subsys( &Ships[tgsh->objp->instance], tgsh->ss->system_info->subobj_name );
 			}
 			else if(tgh_valid && tgh->objp->type == OBJ_WEAPON)
 			{
@@ -1592,7 +1656,7 @@ ADE_FUNC_DEPRECATED(triggerAnimation, l_Ship, "string Type, [number Subtype, boo
 	if(type == animation::ModelAnimationTriggerType::None)
 		return ADE_RETURN_FALSE;
 
-	Ship_info[Ships[objh->objp->instance].ship_info_index].animations.startAll(model_get_instance(Ships[objh->objp->instance].model_instance_num), type, b ? animation::ModelAnimationDirection::FWD : animation::ModelAnimationDirection::RWD, instant, instant, false, subtype);
+	Ship_info[Ships[objh->objp->instance].ship_info_index].animations.getAll(model_get_instance(Ships[objh->objp->instance].model_instance_num), type, subtype).start(b ? animation::ModelAnimationDirection::FWD : animation::ModelAnimationDirection::RWD, instant, instant);
 
 	return ADE_RETURN_TRUE;
 }
@@ -1623,9 +1687,36 @@ ADE_FUNC(triggerSubmodelAnimation, l_Ship, "string type, string triggeredBy, [bo
 		return ADE_RETURN_FALSE;
 
 	ship* shipp = &Ships[objh->objp->instance];
-	auto animationStartFunc = animation::anim_parse_scripted_start(Ship_info[shipp->ship_info_index].animations, model_get_instance(shipp->model_instance_num), animtype, trigger).first;
 
-	return animationStartFunc(forwards ? animation::ModelAnimationDirection::FWD : animation::ModelAnimationDirection::RWD, forced || instant, instant, pause) ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
+	return Ship_info[shipp->ship_info_index].animations.parseScripted(model_get_instance(shipp->model_instance_num), animtype, trigger).start(forwards ? animation::ModelAnimationDirection::FWD : animation::ModelAnimationDirection::RWD, forced || instant, instant, pause) ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
+}
+
+ADE_FUNC(setAnimationSpeed, l_Ship, "string type, string triggeredBy, [number speedMultiplier = 1.0]",
+	"Sets the speed multiplier at which an animation runs. Anything other than 1 will not work in multiplayer. Type is the string name of the animation type, "
+	"triggeredBy is a closer specification which animation should trigger. See *-anim.tbm specifications.",
+	nullptr,
+	nullptr)
+{
+	object_h* objh;
+	const char* type = nullptr;
+	const char* trigger = nullptr;
+	float speed = 1.0f;
+
+	if (!ade_get_args(L, "oss|f", l_Ship.GetPtr(&objh), &type, &trigger, &speed))
+		return ADE_RETURN_NIL;
+
+	if (!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	auto animtype = animation::anim_match_type(type);
+	if (animtype == animation::ModelAnimationTriggerType::None)
+		return ADE_RETURN_NIL;
+
+	ship* shipp = &Ships[objh->objp->instance];
+
+	Ship_info[shipp->ship_info_index].animations.parseScripted(model_get_instance(shipp->model_instance_num), animtype, trigger).setSpeed(speed);
+
+	return ADE_RETURN_NIL;
 }
 
 ADE_FUNC(getSubmodelAnimationTime, l_Ship, "string type, string triggeredBy", "Gets time that animation will be done", "number", "Time (seconds), or 0 if ship handle is invalid")
@@ -1644,9 +1735,8 @@ ADE_FUNC(getSubmodelAnimationTime, l_Ship, "string type, string triggeredBy", "G
 		return ade_set_error(L, "f", 0.0f);
 
 	ship* shipp = &Ships[objh->objp->instance];
-	auto animationTimeFunc = animation::anim_parse_scripted_start(Ship_info[shipp->ship_info_index].animations, model_get_instance(shipp->model_instance_num), animtype, trigger).second;
 
-	int time_ms = animationTimeFunc();
+	int time_ms = Ship_info[shipp->ship_info_index].animations.parseScripted(model_get_instance(shipp->model_instance_num), animtype, trigger).getTime();
 	float time_s = (float)time_ms / 1000.0f;
 
 	return ade_set_args(L, "f", time_s);

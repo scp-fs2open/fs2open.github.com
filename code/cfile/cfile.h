@@ -326,15 +326,17 @@ void cfread_vector(vec3d* vec, CFILE* file, vec3d* deflt = nullptr);
 // to n characters.
 void cfread_string(char *buf,int n, CFILE *file);
 /**
- * @brief Read a fixed length string that is not null-terminated, with the length stored in file
+ * @brief Read a fixed length string that is not null-terminated, with the length stored in file.
  *
+ * If it is not null-terminated, the length of the string *must* be less than the size of the buffer (to make room for one)
+ * 
  * @param buf Pre-allocated array to store string
- * @param n Size of pre-allocated array
+ * @param buffer_size Size of pre-allocated array
  * @param file File to read from
  *
  * @note Appends NULL character to string (buf)
  */
-void cfread_string_len(char *buf,int n, CFILE *file);
+void cfread_string_len(char *buf,int buffer_size, CFILE *file);
 
 /**
  * @brief Read a string from the file where the length is stored in the file

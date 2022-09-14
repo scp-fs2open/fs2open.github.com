@@ -64,9 +64,12 @@ int os_foreground();
 // process management --------------------------------------------------------------
 
 /**
- * @brief Removes all pending events and ignores them
+ * @brief Defers all pending events to be handled later
  */
-void os_ignore_events();
+void os_defer_events_on_load_screen();
+
+// removes key events that may unintentionally skip the cutscene
+void os_remove_deferred_cutscene_key_events();
 
 // call to process windows messages. only does something in non THREADED mode
 void os_poll();

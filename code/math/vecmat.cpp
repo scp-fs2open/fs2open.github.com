@@ -1901,7 +1901,7 @@ float time_to_arrival(float goal, float vel, float vel_limit, float acc_limit) {
 // and also scales their speed to make a nice straight line
 // note that this is now treated as a movement in linear space, despite the name
 vec3d vm_angular_move(const vec3d* goal, float delta_t,
-	vec3d* vel, const vec3d* vel_limit, const vec3d* acc_limit, bool aggressive_bank, bool force_no_overshoot, bool no_directional_bias)
+	vec3d* vel, const vec3d* vel_limit, const vec3d* acc_limit, bool no_bank, bool force_no_overshoot, bool no_directional_bias)
 {
 	vec3d ret, slow;
 	vm_vec_make(&slow, 1.f, 1.f, 1.f);
@@ -1915,12 +1915,12 @@ vec3d vm_angular_move(const vec3d* goal, float delta_t,
 		// so they arrive at approximately the same time as the slowest component, so the path there is nice and straight
 		float max = fmax(slow.xyz.x, fmax(slow.xyz.y, slow.xyz.z));
 		if (max != 0) vm_vec_scale(&slow, 1 / max);
-		if (aggressive_bank) slow.xyz.z = 1.f;
 	}
 
 	ret.xyz.x = vm_angular_move_1dimension(goal->xyz.x, delta_t, &vel->xyz.x, vel_limit->xyz.x, acc_limit->xyz.x, slow.xyz.x, force_no_overshoot);
 	ret.xyz.y = vm_angular_move_1dimension(goal->xyz.y, delta_t, &vel->xyz.y, vel_limit->xyz.y, acc_limit->xyz.y, slow.xyz.y, force_no_overshoot);
-	ret.xyz.z = vm_angular_move_1dimension(goal->xyz.z, delta_t, &vel->xyz.z, vel_limit->xyz.z, acc_limit->xyz.z, slow.xyz.z, force_no_overshoot);
+	if (!no_bank)
+		ret.xyz.z = vm_angular_move_1dimension(goal->xyz.z, delta_t, &vel->xyz.z, vel_limit->xyz.z, acc_limit->xyz.z, slow.xyz.z, force_no_overshoot);
 	return ret;
 }
 
@@ -2012,7 +2012,7 @@ void vm_angular_move_matrix(const matrix* goal_orient, const matrix* curr_orient
 //					orient		=>		current orientation matrix (with current forward vector)
 //					w_in		=>		current input angular velocity
 //					delta_t		=>		this frametime
-//					delta_bank	=>		desired change in bank in degrees
+//					bank_vel	=>		desired bank velocity
 //					next_orient	=>		the orientation matrix at time delta_t (with current forward vector)
 //					w_out		=>		the angular velocity of the ship at delta_t
 //					vel_limit	=>		maximum rotational speed
@@ -2027,15 +2027,14 @@ void vm_angular_move_matrix(const matrix* goal_orient, const matrix* curr_orient
 //		function attempts to rotate the forward vector toward the goal forward vector taking account of anglular
 //		momentum (velocity)  Attempt to try to move bank by goal delta_bank. 
 //		called "vm_forward_interpolate" in retail 
-void vm_angular_move_forward_vec(const vec3d* goal_f, const matrix* orient, const vec3d* w_in, float delta_t, float delta_bank,
+void vm_angular_move_forward_vec(const vec3d* goal_f, const matrix* orient, const vec3d* w_in, float delta_t, float bank_vel,
 	matrix* next_orient, vec3d* w_out, const vec3d* vel_limit, const vec3d* acc_limit, bool no_directional_bias)
 {
 	vec3d rot_axis;
 	vm_vec_cross(&rot_axis, &orient->vec.fvec, goal_f); // Get the direction to rotate to the goal
 	float cos_theta = vm_vec_dot(&orient->vec.fvec, goal_f);  // Get cos(theta) where theta is the amount to rotate
 	float sin_theta = fmin(vm_vec_mag(&rot_axis), 1.0f);      // Get sin(theta) (cap at 1 for floating point errors)
-	vec3d theta_goal;
-	vm_vec_make(&theta_goal, 0, 0, delta_bank);         // theta_goal will contain the radians to rotate (in the same direction as rot_axis but in local coords)
+	vec3d theta_goal = vmd_zero_vector;    // theta_goal will contain the radians to rotate (in the same direction as rot_axis but in local coords)
 
 	if (sin_theta <= SMALL_NUM) { // sin(theta) is small so we are either very close or very far
 		if (cos_theta < 0) { // cos(theta) < 0, sin(theta) ~ 0 means we are pointed exactly the opposite way
@@ -2049,8 +2048,8 @@ void vm_angular_move_forward_vec(const vec3d* goal_f, const matrix* orient, cons
 				theta_goal.xyz.y = w_in->xyz.y * d;
 			}
 		}
-		// continue to interpolate, unless we also have no velocity, in which case we have arrived
-		else if (vm_vec_mag_squared(w_in) < SMALL_NUM * SMALL_NUM) {
+		// continue to interpolate, unless we also have no velocity (and dont need to bank), in which case we have arrived
+		else if (vm_vec_mag_squared(w_in) < SMALL_NUM * SMALL_NUM && bank_vel == 0.0f) {
 			*next_orient = *orient;
 			vm_vec_zero(w_out);
 			return;
@@ -2063,14 +2062,24 @@ void vm_angular_move_forward_vec(const vec3d* goal_f, const matrix* orient, cons
 
 		// derive theta from sin(theta) for better accuracy
 		vm_vec_copy_scale(&theta_goal, &local_rot_axis, (cos_theta > 0 ? asinf_safe(sin_theta) : PI - asinf_safe(sin_theta)) / sin_theta);
-		
-		// reset z to delta_bank, because it just got cleared
-		theta_goal.xyz.z = delta_bank;
 	}
 
 	// calculate best approach in linear space (returns velocity in w_out and position difference in rot_axis)
 	*w_out = *w_in;
 	rot_axis = vm_angular_move(&theta_goal, delta_t, w_out, vel_limit, acc_limit, true, false, no_directional_bias);
+
+	// handle bank separately, simpler, since its just a target velocity
+	{
+		CLAMP(bank_vel, -vel_limit->xyz.z, vel_limit->xyz.z);
+		float delta_bank_vel = bank_vel - w_in->xyz.z;
+		float delta_bank_accel = fl_abs(delta_bank_vel) / delta_t; // the accel required to reach the target vel this frame
+		float accel = (delta_bank_accel > acc_limit->xyz.z) ? acc_limit->xyz.z : delta_bank_accel;
+		if (delta_bank_vel < 0)
+			accel = -accel;
+
+		rot_axis.xyz.z = w_in->xyz.z * delta_t + accel * delta_t * delta_t * 0.5f; // vt + 1/2at^2
+		w_out->xyz.z = w_in->xyz.z + accel * delta_t;
+	}
 
 	//	normalize rotation axis and determine total rotation angle
 	float theta = vm_vec_mag(&rot_axis);
@@ -2943,6 +2952,49 @@ void vm_interpolate_angles_quick(angles *dest0, angles *src0, angles *src1, floa
 	dest0->p = src0->p + (arc_measures.p * interp_perc);
 	dest0->h = src0->h + (arc_measures.h * interp_perc);
 	dest0->b = src0->b + (arc_measures.b * interp_perc);
+}
+
+// Interpolate between two matrices, using t as a percentage progress between them.
+// Intended values for t are [0.0f, 1.0f], but values outside this range are allowed,
+// as you could conceivably use these calculations to find a rotation that is outside 
+// the usual 0-100%.
+// derived by Asteroth from our AI code
+void vm_interpolate_matrices(matrix* out_orient, const matrix* curr_orient, const matrix* goal_orient, float t) 
+{
+	// check the case where it doesn't make sense to go through the whole function
+	if (fl_near_zero(t)) {
+		*out_orient = *curr_orient;
+		return;
+	}
+
+	matrix Mtemp1;
+
+	vm_copy_transpose(&Mtemp1, curr_orient);     // Mtemp1 = curr ^-1
+ 
+	matrix matrix_delta;        // rotation matrix from curr_orient to goal_orient
+ 
+	vm_matrix_x_matrix(&matrix_delta, &Mtemp1, goal_orient);    // Rot = goal * Mtemp1
+	vm_orthogonalize_matrix(&matrix_delta);
+ 
+ 	vec3d rot_axis;            // vector indicating direction of rotation axis
+	float theta;                // magnitude of rotation about the rotation axis
+
+	vm_matrix_to_rot_axis_and_angle(&matrix_delta, &theta, &rot_axis);     // determines angle and rotation axis from curr to goal
+
+	// if we had identical or nearly identical matrices, it shows up here as theta being very close to zero.
+	if (fl_near_zero(theta)) {
+		// goal orient is a little better here in case theta was close enough to zero
+		// but the matrices were not actually identical.  It won't look like the ship is
+		// stuck in its old orientation.
+		*out_orient = *goal_orient;
+		return;
+	}
+
+	matrix rot_matrix;
+
+	vm_quaternion_rotate(&rot_matrix, t * theta, &rot_axis); // get the matrix that rotates current to our interpolated matrix
+	vm_matrix_x_matrix(out_orient, &rot_matrix, curr_orient); // do the final rotation
+	
 }
 
 std::ostream& operator<<(std::ostream& os, const vec3d& vec)

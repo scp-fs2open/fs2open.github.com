@@ -127,6 +127,7 @@ struct ship_obj;
 #define OPF_ANIMATION_NAME 		96		// Lafiel
 #define OPF_CONTAINER_VALUE		97		// jg18 - Container data and map container keys
 #define OPF_DATA_OR_STR_CONTAINER	98	// jg18 - any data, or a container that is accessed via strings
+#define OPF_TRANSLATING_SUBSYSTEM	99	// Goober5000 - a translating subsystem
 
 // Operand return types
 #define	OPR_NUMBER				1	// returns number
@@ -815,9 +816,16 @@ struct ship_obj;
 #define OP_CLEAR_CONTAINER					(0x004d | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma/jg18
 #define OP_ADD_BACKGROUND_BITMAP_NEW		(0x004e | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_ADD_SUN_BITMAP_NEW				(0x004f | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
+
 #define OP_CANCEL_FUTURE_WAVES				(0x0050 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// naomimyselfandi
 #define OP_COPY_CONTAINER					(0x0051 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// jg18
 #define OP_APPLY_CONTAINER_FILTER			(0x0052 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// jg18
+#define OP_STOP_LOOPING_ANIMATION			(0x0053 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Lafiel
+#define OP_LOCK_TRANSLATING_SUBSYSTEM		(0x0054 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_FREE_TRANSLATING_SUBSYSTEM		(0x0055 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_REVERSE_TRANSLATING_SUBSYSTEM	(0x0056 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_TRANSLATING_SUBSYS_SET_SPEED		(0x0057 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
+
 
 // defined for AI goals
 #define OP_AI_CHASE							(0x0000 | OP_CATEGORY_AI | OP_NONCAMPAIGN_FLAG)
@@ -841,6 +849,8 @@ struct ship_obj;
 #define OP_AI_FORM_ON_WING					(0x0012 | OP_CATEGORY_AI | OP_NONCAMPAIGN_FLAG) // The E
 #define OP_AI_CHASE_SHIP_CLASS				(0x0013 | OP_CATEGORY_AI | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_AI_PLAY_DEAD_PERSISTENT			(0x0014 | OP_CATEGORY_AI | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_AI_FLY_TO_SHIP					(0x0015 | OP_CATEGORY_AI | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_AI_REARM_REPAIR					(0x0016 | OP_CATEGORY_AI | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
 #define OP_GOALS_ID							(0x0000 | OP_CATEGORY_UNLISTED)
 #define OP_NEXT_MISSION						(0x0001 | OP_CATEGORY_UNLISTED)		// used in campaign files for branching
@@ -1117,6 +1127,10 @@ const char *CTEXT(int n);
 #define SEXP_CHECK_WRONG_CONTAINER_TYPE			-170
 #define SEXP_CHECK_INVALID_ANIMATION			-171
 #define SEXP_CHECK_WRONG_CONTAINER_DATA_TYPE	-172
+#define SEXP_CHECK_INVALID_SPECIAL_ARG_TYPE		-173
+#define SEXP_CHECK_INVALID_AWACS_SUBSYS			-174
+#define SEXP_CHECK_INVALID_ROTATING_SUBSYS		-175
+#define SEXP_CHECK_INVALID_TRANSLATING_SUBSYS	-176
 
 
 #define TRAINING_CONTEXT_SPEED		(1<<0)
@@ -1296,6 +1310,7 @@ extern int query_operator_argument_type(int op, int argnum);
 extern void update_sexp_references(const char *old_name, const char *new_name);
 extern void update_sexp_references(const char *old_name, const char *new_name, int format);
 extern int query_referenced_in_sexp(int mode, const char *name, int *node);
+extern void stuff_sexp_text_string(SCP_string &dest, int node, int mode);
 extern int build_sexp_string(SCP_string &accumulator, int cur_node, int level, int mode);
 extern int sexp_query_type_match(int opf, int opr);
 extern bool sexp_recoverable_error(int num);
@@ -1357,6 +1372,7 @@ void set_turret_secondary_ammo(ship_subsys *turret, int requested_bank, int requ
 extern int get_category(int sexp_id);
 extern int category_of_subcategory(int subcategory_id);
 extern int get_subcategory(int sexp_id);
+extern const char *get_category_name(int category_id);
 
 // Goober5000
 extern void sexp_music_close();

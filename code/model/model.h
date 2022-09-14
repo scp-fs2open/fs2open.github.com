@@ -44,13 +44,13 @@ extern int model_render_flags_size;
 #define MOVEMENT_TYPE_TRIGGERED		3
 #define MOVEMENT_TYPE_INTRINSIC		4	// intrinsic (non-subsystem-based)
 
-
 // DA 11/13/98 Reordered to account for difference between max and game
 #define MOVEMENT_AXIS_NONE		-1
 #define MOVEMENT_AXIS_X			0
 #define MOVEMENT_AXIS_Y			2
 #define MOVEMENT_AXIS_Z			1
 #define MOVEMENT_AXIS_OTHER		3
+
 
 // defines for special objects like gun and missile points, docking point, etc
 // Hoffoss: Please make sure that subsystem NONE is always index 0, and UNKNOWN is
@@ -88,7 +88,15 @@ struct submodel_instance
 	float	current_turn_rate = 0.0f;
 	float	desired_turn_rate = 0.0f;
 	float	turn_accel = 0.0f;
-	int		turn_step_zero_timestamp = timestamp();		// timestamp determines when next step is to begin (for stepped rotation)
+	TIMESTAMP stepped_rotation_started;
+
+	float	cur_offset = 0.0f;
+	float	prev_offset = 0.0f;
+
+	float	current_shift_rate = 0.0f;
+	float	desired_shift_rate = 0.0f;
+	float	shift_accel = 0.0f;
+	TIMESTAMP stepped_translation_started;
 
 	bool	blown_off = false;						// If set, this subobject is blown off
 	bool	collision_checked = false;
@@ -97,6 +105,9 @@ struct submodel_instance
 	// and should almost never be written directly.  In most cases, coders should prefer cur_angle and prev_angle.
 	matrix	canonical_orient = vmd_identity_matrix;
 	matrix	canonical_prev_orient = vmd_identity_matrix;
+	// similarly for translation
+	vec3d	canonical_offset = vmd_zero_vector;
+	vec3d	canonical_prev_offset = vmd_zero_vector;
 
 	// --- these fields used to be in bsp_info ---
 
@@ -108,6 +119,7 @@ struct submodel_instance
 
 	//SMI-Specific movement axis. Only valid in MOVEMENT_TYPE_TRIGGERED.
 	vec3d	rotation_axis;
+	vec3d	translation_axis;
 
 	submodel_instance()
 	{
@@ -129,15 +141,26 @@ struct polymodel_instance
 #define MAX_MODEL_SUBSYSTEMS		200				// used in ships.cpp (only place?) for local stack variable DTP; bumped to 200
 													// when reading in ships.tbl
 
-// definition of stepped rotation struct
 typedef struct stepped_rotation {
 	int num_steps;				// number of steps in complete revolution
 	float fraction;			// fraction of time in step spent in accel
 	float t_transit;			// time spent moving from one step to next
 	float t_pause;				// time at rest between steps
-	float max_turn_rate;		// max turn rate going betweens steps
+	float max_turn_rate;		// max turn rate going between steps
 	float max_turn_accel;	// max accel going between steps
+	bool backwards;				// if rate is negative
 } stepped_rotation_t;
+
+typedef struct stepped_translation {
+	bool reverse_after_step;	// for back-and-forth motion
+	float step_distance;	// linear displacement of one step
+	float fraction;			// fraction of time in step spent in accel
+	float t_transit;			// time spent moving from one step to next
+	float t_pause;				// time at rest between steps
+	float max_shift_rate;		// max shift rate going between steps
+	float max_shift_accel;	// max accel going between steps
+	bool backwards;				// if rate is negative
+} stepped_translation_t;
 
 struct queued_animation;
 
@@ -182,9 +205,10 @@ public:
 	// engine wash info
 	struct engine_wash_info		*engine_wash_pointer;					// index into Engine_wash_info
 
-	// rotation specific info
+	// movement specific info
 	int			weapon_rotation_pbank;				// weapon-controlled rotation - Goober5000
-	stepped_rotation_t	*stepped_rotation;			// turn rotation struct
+	std::shared_ptr<stepped_rotation_t>		stepped_rotation;		// turn rotation struct
+	std::shared_ptr<stepped_translation_t>	stepped_translation;	// shift translation struct
 
 	// AWACS specific information
 	float		awacs_intensity;						// awacs intensity of this subsystem
@@ -347,11 +371,18 @@ public:
 	char	name[MAX_NAME_LEN];						// name of the subsystem.  Probably displayed on HUD
 
 	int		rotation_type = MOVEMENT_TYPE_NONE;
-	vec3d	rotation_axis = vmd_zero_vector;		// which axis this subobject rotates on.
-	int		rotation_axis_id = MOVEMENT_AXIS_NONE;	// for optimization
+	vec3d	rotation_axis = vmd_zero_vector;			// which axis this subobject rotates on.
+	int		rotation_axis_id = MOVEMENT_AXIS_NONE;		// for optimization
+
+	int		translation_type = MOVEMENT_TYPE_NONE;
+	vec3d	translation_axis = vmd_zero_vector;
+	int		translation_axis_id = MOVEMENT_AXIS_NONE;
 
 	float	default_turn_rate = 0.0f;
 	float	default_turn_accel = 0.0f;
+
+	float	default_shift_rate = 0.0f;
+	float	default_shift_accel = 0.0f;
 
 	flagset<Model::Submodel_flags> flags;
 
@@ -837,6 +868,42 @@ public:
 	vertex_buffer detail_buffers[MAX_MODEL_DETAIL_LEVELS];
 };
 
+struct model_read_deferred_tasks {
+	struct model_subsystem_parse {
+		int subobj_nr;
+		float rad;
+		vec3d pnt;
+		SCP_string props;
+	};
+
+	struct engine_subsystem_parse {
+		int thruster_nr;
+	};
+
+	struct weapon_subsystem_parse {
+		int turret_nr;
+		int gun_subobj_nr;
+		vec3d turretNorm;
+		int n_slots;
+		SCP_vector<vec3d> firingpoints;
+	};
+
+	struct texture_idx_replace {
+		SCP_map<int, int> replacementIds;
+	};
+
+	//Key: Subsystem Name
+	SCP_unordered_map<SCP_string, model_subsystem_parse, SCP_string_lcase_hash, SCP_string_lcase_equal_to> model_subsystems;
+	//Key: Subsystem Name
+	SCP_unordered_map<SCP_string, engine_subsystem_parse, SCP_string_lcase_hash, SCP_string_lcase_equal_to> engine_subsystems;
+	//Key: Parent Subobject Nr
+	SCP_unordered_map<int, weapon_subsystem_parse> weapons_subsystems;
+	//Key: Subobject Nr
+	SCP_unordered_map<int, texture_idx_replace> texture_replacements;
+};
+
+using model_parse_depth = SCP_unordered_map<SCP_string, int, SCP_string_lcase_hash, SCP_string_lcase_equal_to>;
+
 // Iterate over a submodel tree, starting at the given submodel root node, and running the given function for each node.  The function's signature should be:
 //
 // void func(int submodel, int level, bool isLeaf);
@@ -872,6 +939,8 @@ void model_init();
 
 // call to unload a model (works like bm_unload()), "force" SHOULD NEVER BE SET outside of modelread.cpp!!!!
 void model_unload(int modelnum, int force = 0);
+// Directly frees polymodel data, regardless of state and usage in ship classes. Use with caution. Will not clear textures
+void model_free(polymodel* pm);
 
 // Call to free all existing models
 void model_free_all();
@@ -885,6 +954,8 @@ void model_delete_instance(int model_instance_num);
 
 // Goober5000
 void model_load_texture(polymodel *pm, int i, char *file);
+
+SCP_set<int> model_get_textures_used(polymodel* pm, int submodel);
 
 // Returns a pointer to the polymodel structure for model 'n'
 polymodel *model_get(int model_num);
@@ -1001,13 +1072,20 @@ extern int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi
 
 // Rotates the angle of a submodel.  Use this so the right unlocked axis
 // gets stuffed.
-extern void submodel_canonicalize(bsp_info *sm, submodel_instance *smi, bool clamp);
+extern void submodel_canonicalize_rotation(bsp_info *sm, submodel_instance *smi, bool clamp);
 extern void submodel_rotate(model_subsystem *psub, submodel_instance *smi);
 extern void submodel_rotate(bsp_info *sm, submodel_instance *smi);
 
 // Rotates the angle of a submodel.  Use this so the right unlocked axis
 // gets stuffed.  Does this for stepped rotations
 void submodel_stepped_rotate(model_subsystem *psub, submodel_instance *smi);
+
+// Similar to above
+extern void submodel_canonicalize_translation(bsp_info *sm, submodel_instance *smi);
+extern void submodel_translate(model_subsystem *psub, submodel_instance *smi);
+extern void submodel_translate(bsp_info *sm, submodel_instance *smi);
+
+void submodel_stepped_translate(model_subsystem *psub, submodel_instance *smi);
 
 // ------- submodel transformations -------
 
@@ -1098,6 +1176,7 @@ void submodel_get_cross_sectional_avg_pos(int model_num, int submodel_num, float
 void submodel_get_cross_sectional_random_pos(int model_num, int submodel_num, float z_slice_pos, vec3d* pos);
   
 extern int model_find_submodel_index(int modelnum, const char *name);
+extern int model_find_submodel_index(const polymodel* pm, const char* name);
 
 // gets the index into the docking_bays array of the specified type of docking point
 // Returns the index.  second functions returns the index of the docking bay with
@@ -1350,6 +1429,8 @@ void model_page_in_textures(int modelnum, int ship_info_index = -1);
 
 // given a model, unload all of its textures
 void model_page_out_textures(int model_num, bool release = false);
+// given a model, without respect to usage state of the polymodel
+void model_page_out_textures(polymodel* pm, bool release = false, const SCP_set<int>& skipTextures = {}, const SCP_set<int>& skipGlowBanks = {});
 
 void model_do_intrinsic_motions(object *objp);
 

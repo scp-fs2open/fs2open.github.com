@@ -318,10 +318,10 @@ void obj_snd_stop_all()
  *
  * @param new_vol Volume of requested sound to play
  *
- * @return 1 A sound was stopped 
- * @return 0 A sound was not stopped
+ * @return true A sound was stopped
+ * @return false A sound was not stopped
  */
-int obj_snd_stop_lowest_vol(float new_vol)
+bool obj_snd_stop_lowest_vol(float new_vol)
 {
 	obj_snd			*osp;
 	object			*objp = NULL;
@@ -352,10 +352,10 @@ int obj_snd_stop_lowest_vol(float new_vol)
 			obj_snd_stop(objp, obj_snd_index);
 		}
 
-		return TRUE;
+		return true;
 	}
 	
-	return FALSE;
+	return false;
 }
 
 //int Debug_1 = 0, Debug_2 = 0;
@@ -446,7 +446,7 @@ void obj_snd_do_frame()
 	object			*objp, *closest_objp;
 	game_snd			*gs;
 	ship				*sp;
-	int				channel, go_ahead_flag;
+	int				channel;
 	vec3d			source_pos;
 	float				add_distance;
 
@@ -461,10 +461,10 @@ void obj_snd_do_frame()
 	}
 
 	closest_dist = 1000000.0f;
-	closest_objp = NULL;
+	closest_objp = nullptr;
 
-	object *observer_obj = NULL;
-	if (Viewer_obj != NULL) {
+	object *observer_obj = nullptr;
+	if (Viewer_obj != nullptr) {
 		observer_obj = Viewer_obj;
 	} else if (Viewer_mode & VM_OTHER_SHIP && Player_ai->target_objnum != -1) {
 		// apparently Viewer_obj is still null when Viewing Other Ship externally
@@ -474,10 +474,10 @@ void obj_snd_do_frame()
 	}
 
 	for ( osp = GET_FIRST(&obj_snd_list); osp !=END_OF_LIST(&obj_snd_list); osp = GET_NEXT(osp) ) {
-		Assert(osp != NULL);
+		Assert(osp != nullptr);
 		objp = &Objects[osp->objnum];
 		if ((Player_obj == objp) && (observer_obj == Player_obj) && !(osp->flags & OS_PLAY_ON_PLAYER)) {
-			// we don't play the engine sound if the view is from the player
+			// we don't play sounds if the view is from the player
 			// unless OS_PLAY_ON_PLAYER was set manually
 			continue;
 		}
@@ -509,14 +509,15 @@ void obj_snd_do_frame()
 			}
 		}
 
-		// If the object is a ship, we don't want to start the engine sound unless the ship is
-		// moving (unless flag SIF_BIG_SHIP is set)
 		speed_vol_multiplier = 1.0f;
 		rot_vol_mult = 1.0f;
 		alive_vol_mult = 1.0f;
 		if ( objp->type == OBJ_SHIP ) {
 			ship_info *sip = &Ship_info[Ships[objp->instance].ship_info_index];
-			if ( !(sip->is_big_or_huge()) ) {
+
+			// we don't want to start the engine sound unless the ship is
+			// moving (unless flag SIF_BIG_SHIP is set)
+			if ( (osp->flags & OS_ENGINE) && !(sip->is_big_or_huge()) ) {
 				if ( objp->phys_info.max_vel.xyz.z <= 0.0f ) {
 					percent_max = 0.0f;
 				}
@@ -535,7 +536,9 @@ void obj_snd_do_frame()
 					speed_vol_multiplier = sip->min_engine_vol + ((1.0f - sip->min_engine_vol) * percent_max);
 				}
 			}
-			if (osp->ss != NULL)
+
+			// check conditions for subsystem sounds
+			if (osp->ss != nullptr)
 			{
 				if (osp->flags & OS_TURRET_BASE_ROTATION)
 				{
@@ -584,11 +587,14 @@ void obj_snd_do_frame()
 			}
 		}
 
-		go_ahead_flag = TRUE;
-		float max_vol,new_vol;
 		if ( !osp->instance.isValid() ) {
+			bool go_ahead_flag = true;
+			float new_vol;
+
+			// if this is a 3D sound, check distance
+			// (since non-3D sounds have gs->max set to 0, they will never be played)
 			if ( distance < gs->max ) {
-				max_vol = gs->volume_range.max();
+				float max_vol = gs->volume_range.max();
 				if ( distance <= gs->min ) {
 					new_vol = max_vol;
 				}
@@ -612,7 +618,7 @@ void obj_snd_do_frame()
 						break;
 
 					default:
-						Int3();	// get Alan
+						UNREACHABLE("Unhandled object type %d for persistent sound; get a coder!", objp->type);
 						break;
 				} // end switch
 
@@ -652,7 +658,7 @@ void obj_snd_do_frame()
 		if (!osp->instance.isValid())
 			continue;
 
-		sp = NULL;
+		sp = nullptr;
 		if ( objp->type == OBJ_SHIP )
 			sp = &Ships[objp->instance];
 
@@ -660,7 +666,7 @@ void obj_snd_do_frame()
 		channel = ds_get_channel(osp->instance);
 		// for DirectSound3D sounds, re-establish the maximum speed based on the
 		//	speed_vol_multiplier
-		if ( sp == NULL || ( (sp != NULL) && (sp->flags[Ship::Ship_Flags::Engines_on]) ) ) {
+		if ( (sp == nullptr) || !(osp->flags & OS_ENGINE) || (sp->flags[Ship::Ship_Flags::Engines_on]) ) {
 			snd_set_volume( osp->instance, gs->volume_range.next() *speed_vol_multiplier*rot_vol_mult*alive_vol_mult );
 		}
 		else {

@@ -665,8 +665,16 @@ void CFred_mission_save::save_ai_goals(ai_goal *goalp, int ship)
 					str = "ai-stay-still";
 					break;
 
+				case AI_GOAL_REARM_REPAIR:
+					str = "ai-rearm-repair";
+					break;
+
+				case AI_GOAL_FLY_TO_SHIP:
+					str = "ai-fly-to-ship";
+					break;
+
 				default:
-					Assert(0);
+					UNREACHABLE("Goal %d not handled!", goalp[i].ai_mode);
 				}
 
 				if (valid)
@@ -1888,6 +1896,9 @@ int CFred_mission_save::save_cutscenes()
 						break;
 					case MOVIE_PRE_DEBRIEF:
 						strcpy_s(type, "$Debriefing Cutscene:");
+						break;
+					case MOVIE_POST_DEBRIEF:
+						strcpy_s(type, "$Post-debriefing Cutscene:");
 						break;
 					case MOVIE_END_CAMPAIGN:
 						strcpy_s(type, "$Campaign End Cutscene:");
@@ -3490,6 +3501,8 @@ int CFred_mission_save::save_objects()
 				fout(" \"fail-sound-locked-primary\"");
 			if (shipp->flags[Ship::Ship_Flags::Fail_sound_locked_secondary])
 				fout(" \"fail-sound-locked-secondary\"");
+			if (shipp->flags[Ship::Ship_Flags::Aspect_immune])
+				fout(" \"aspect-immune\"");
 			fout(" )");
 		}
 		// -----------------------------------------------------------
@@ -3702,8 +3715,10 @@ int CFred_mission_save::save_objects()
 					fout("\n+Orders Accepted:");
 
 				int bitfield = 0;
-				for (size_t order : shipp->orders_accepted)
-					bitfield |= Player_orders[order].id;
+				for (size_t order : shipp->orders_accepted) {
+					if(order < 32)
+						bitfield |= (1 << (order - 1)); //The first "true" order starts at idx 1, since 0 can be "no order"				
+				}
 				fout(" %d\t\t;! note that this is a bitfield!!!", bitfield);
 			}
 			else {

@@ -4777,15 +4777,15 @@ sexp_list_item* sexp_tree::get_listing_opf_ship_flags() {
 	int i;
 	sexp_list_item head;
 	// object flags
-	for (i = 0; i < MAX_OBJECT_FLAG_NAMES; i++) {
+	for (i = 0; i < Num_object_flag_names; i++) {
 		head.add_data(Object_flag_names[i].flag_name);
 	}
 	// ship flags
-	for (i = 0; i < MAX_SHIP_FLAG_NAMES; i++) {
+	for (i = 0; i < Num_ship_flag_names; i++) {
 		head.add_data(Ship_flag_names[i].flag_name);
 	}
 	// ai flags
-	for (i = 0; i < MAX_AI_FLAG_NAMES; i++) {
+	for (i = 0; i < Num_ai_flag_names; i++) {
 		head.add_data(Ai_flag_names[i].flag_name);
 	}
 
@@ -4892,7 +4892,8 @@ sexp_list_item *sexp_tree::get_listing_opf_animation_name(int parent_node)
 	sh = ship_name_lookup(tree_nodes[child].text, 1);
 
 	switch(op) {
-		case OP_TRIGGER_ANIMATION_NEW: {
+		case OP_TRIGGER_ANIMATION_NEW:
+		case OP_STOP_LOOPING_ANIMATION: {
 			child = tree_nodes[child].next;
 			auto triggerType = animation::anim_match_type(tree_nodes[child].text);
 
@@ -5494,7 +5495,8 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 
 				// Replace Container Data submenu
 				// disallowed on variable-type SEXP args, to prevent FSO/FRED crashes
-				if (op_type != OPF_VARIABLE_NAME) {
+				// also disallowed for special argument options (not supported for now)
+				if (op_type != OPF_VARIABLE_NAME && op_type != OPF_ANYTHING && op_type != OPF_DATA_OR_STR_CONTAINER) {
 					const auto &containers = get_all_sexp_containers();
 					for (int idx = 0; idx < (int)containers.size(); ++idx) {
 						const auto &container = containers[idx];

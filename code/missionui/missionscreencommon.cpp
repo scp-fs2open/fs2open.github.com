@@ -1650,6 +1650,8 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 	angles rot_angles, view_angles;
 	matrix model_orient;
 
+	const bool& shadow_disable_override = flags & MR_IS_MISSILE ? Shadow_disable_overrides.disable_mission_select_weapons : Shadow_disable_overrides.disable_mission_select_ships;
+
 	if (effect == 2) {  // FS2 Effect; Phase 0 Expand scanline, Phase 1 scan the grid and wireframe, Phase 2 scan up and reveal the ship, Phase 3 tilt the camera, Phase 4 start rotating the ship
 		// rotate the ship as much as required for this frame
 		if (time >= 3.6f) // Phase 4
@@ -1774,7 +1776,8 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 			render_info->set_detail_level_lock(0);
 
 			gr_zbuffer_set(true);
-			if(Shadow_quality != ShadowQuality::Disabled)
+
+			if(shadow_maybe_start_frame(shadow_disable_override))
             {
 				gr_end_view_matrix();
 				gr_end_proj_matrix();
@@ -1883,7 +1886,7 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 
 		render_info->set_detail_level_lock(0);
 
-		if(Shadow_quality != ShadowQuality::Disabled)
+		if(shadow_maybe_start_frame(shadow_disable_override))
 		{
 			if ( flags & MR_IS_MISSILE )  {
 				shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, gr_screen.clip_aspect, -closeup_pos->xyz.z + pm->rad, -closeup_pos->xyz.z + pm->rad + 20.0f, -closeup_pos->xyz.z + pm->rad + 200.0f, -closeup_pos->xyz.z + pm->rad + 1000.0f);
@@ -1923,6 +1926,8 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 		g3_end_frame();
 		gr_reset_clip();
 	}
+
+	shadow_end_frame();
 }
 
 /**

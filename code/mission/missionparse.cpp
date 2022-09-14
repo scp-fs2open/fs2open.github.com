@@ -64,6 +64,7 @@
 #include "parse/sexp_container.h"
 #include "scripting/hook_api.h"
 #include "scripting/scripting.h"
+#include "species_defs/species_defs.h"
 #include "playerman/player.h"
 #include "popup/popup.h"
 #include "popup/popupdead.h"
@@ -319,7 +320,8 @@ flag_def_list_new<Mission::Parse_Object_Flags> Parse_object_flags[] = {
     { "same-departure-warp-when-docked",	Mission::Parse_Object_Flags::SF_Same_departure_warp_when_docked,	true, false },
     { "ai-attackable-if-no-collide",		Mission::Parse_Object_Flags::OF_Attackable_if_no_collide, true, false },
     { "fail-sound-locked-primary",			Mission::Parse_Object_Flags::SF_Fail_sound_locked_primary, true, false },
-    { "fail-sound-locked-secondary",		Mission::Parse_Object_Flags::SF_Fail_sound_locked_secondary, true, false }
+    { "fail-sound-locked-secondary",		Mission::Parse_Object_Flags::SF_Fail_sound_locked_secondary, true, false },
+    { "aspect-immune",						Mission::Parse_Object_Flags::SF_Aspect_immune, true, false }
 };
 
 const size_t num_parse_object_flags = sizeof(Parse_object_flags) / sizeof(flag_def_list_new<Mission::Parse_Object_Flags>);
@@ -419,6 +421,9 @@ const std::shared_ptr<scripting::Hook> OnDepartureStartedHook = scripting::Hook:
 		{"Self", "ship", "An alias for Ship."},
 		{"Ship", "ship", "The ship that has begun the departure process."},
 	});
+
+ const std::shared_ptr<scripting::Hook> OnLoadoutAboutToParseHook = scripting::Hook::Factory("On Loadout About To Parse",
+	"Called during mission load just before parsing the team loadout.",{});
 
 // Goober5000
 void parse_custom_bitmap(const char *expected_string_640, const char *expected_string_1024, char *string_field_640, char *string_field_1024)
@@ -614,15 +619,9 @@ void parse_mission_info(mission *pm, bool basic = false)
 	pm->support_ships.support_available_for_species = 0;
 
 	// for each species, store whether support is available
-	for (int species = 0; species < (int)Species_info.size(); species++)
-	{
-        for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it)
-		{
-			if ((it->flags[Ship::Info_Flags::Support]) && (it->species == species))
-			{
-				pm->support_ships.support_available_for_species |= (1 << species);
-				break;
-			}
+	for (int species = 0; species < (int)Species_info.size(); species++) {
+		if (Species_info[species].support_ship_index >= 0) {
+			pm->support_ships.support_available_for_species |= (1 << species);
 		}
 	}
 
@@ -851,6 +850,10 @@ void parse_player_info2(mission *pm)
 	SCP_vector<loadout_row> list, list2;
 	team_data *ptr;
 
+	if (OnLoadoutAboutToParseHook->isActive()) {
+		OnLoadoutAboutToParseHook->run();
+	}
+
 	// read in a ship/weapon pool for each team.
 	for ( nt = 0; nt < Num_teams; nt++ ) {
 		int num_choices;
@@ -1003,17 +1006,24 @@ void parse_cutscenes(mission *pm)
 		while (!optional_string("#end"))
 		{
 			// this list should correspond to the MOVIE_* #defines
-			scene.type = optional_string_one_of(6,
+			scene.type = optional_string_one_of(8,
 				"$Fiction Viewer Cutscene:",
 				"$Command Brief Cutscene:",
 				"$Briefing Cutscene:",
 				"$Pre-game Cutscene:",
 				"$Debriefing Cutscene:",
-				"$Campaign End Cutscene:");
+				"$Post-debriefing Cutscene:",
+				"$Campaign End Cutscene:",
+				// this is not a #define, but a synonym for one
+				"$Post-briefing Cutscene:");
 
 			// no more cutscenes specified?
 			if (scene.type < 0)
 				break;
+
+			// post-briefing is the same as pre-game
+			if (scene.type == 7)
+				scene.type = MOVIE_PRE_GAME;
 
 			// get the cutscene file
 			stuff_string(scene.filename, F_NAME, NAME_LENGTH);
@@ -1798,7 +1808,7 @@ void parse_dock_one_docked_object(p_object *pobjp, p_object *parent_pobjp)
 	ai_dock_with_object(objp, dockpoint, parent_objp, parent_dockpoint, AIDO_DOCK_NOW);
 }
 
-int parse_create_object_sub(p_object *objp);
+int parse_create_object_sub(p_object *objp, bool standalone_ship = false);
 
 // Goober5000
 void parse_create_docked_object_helper(p_object *pobjp, p_dock_function_info *infop)
@@ -1825,7 +1835,7 @@ void parse_create_docked_object_helper(p_object *pobjp, p_dock_function_info *in
  * This is a bit tricky because of the way initial docking is now handled.
  * Docking groups require special treatment.
  */
-int parse_create_object(p_object *pobjp)
+int parse_create_object(p_object *pobjp, bool standalone_ship)
 {
 	object *objp;
 
@@ -1861,7 +1871,7 @@ int parse_create_object(p_object *pobjp)
 	// create normally
 	else
 	{
-		parse_create_object_sub(pobjp);
+		parse_create_object_sub(pobjp, standalone_ship);
 	}
 
 	// get the main object
@@ -1894,7 +1904,7 @@ void parse_bring_in_docked_wing(p_object *p_objp, int wingnum, int shipnum);
  * Given a stuffed p_object struct, create an object and fill in the necessary fields.
  * @return object number.
  */
-int parse_create_object_sub(p_object *p_objp)
+int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 {
 	int	i, j, k, objnum, shipnum;
 	int anchor_objnum = -1;
@@ -1912,7 +1922,7 @@ int parse_create_object_sub(p_object *p_objp)
 	MONITOR_INC(NumShipArrivals, 1);
 
 	// base level creation - need ship name in case of duplicate textures
-	objnum = ship_create(&p_objp->orient, &p_objp->pos, p_objp->ship_class, p_objp->name);
+	objnum = ship_create(&p_objp->orient, &p_objp->pos, p_objp->ship_class, p_objp->name, standalone_ship);
 	Assert(objnum != -1);
 	shipnum = Objects[objnum].instance;
 
@@ -2458,7 +2468,7 @@ int parse_create_object_sub(p_object *p_objp)
 				send_ship_create_packet(&Objects[objnum], (p_objp == Arriving_support_ship));
 		}
 		// also add this ship to the multi ship tracking and interpolation struct
-		multi_ship_record_add_ship(objnum);
+		multi_rollback_ship_record_add_ship(objnum);
 	}
 
 	// If the ship is in a wing, this will be done in mission_set_wing_arrival_location() instead
@@ -3357,9 +3367,10 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
         if (tmp_orders != -1) {
 			p_objp->flags.set(Mission::Parse_Object_Flags::SF_Use_unique_orders);
 
-			for(size_t j = 0; j < Player_orders.size(); j++){
-				if(Player_orders[j].id & tmp_orders)
-					p_objp->orders_accepted.insert(j);
+			//Iterate over all player orders for the bitfield, but restrict to those that the integer could actually provide
+			for(size_t j = 0; j < Player_orders.size() && j < std::numeric_limits<decltype(tmp_orders)>::digits; j++) {
+				if((1 << j) & tmp_orders)
+					p_objp->orders_accepted.insert(j + 1); //The first "true" order starts at idx 1, since 0 can be "no order"
 			}
 		}
     }
@@ -4716,10 +4727,7 @@ void parse_wing(mission *pm)
 
 	// initialize wing goals
 	for (i=0; i<MAX_AI_GOALS; i++) {
-		wingp->ai_goals[i].ai_mode = AI_GOAL_NONE;
-		wingp->ai_goals[i].signature = -1;
-		wingp->ai_goals[i].priority = -1;
-		wingp->ai_goals[i].flags.reset();
+		ai_goal_reset(&wingp->ai_goals[i]);
 	}
 
 	// 7/13/98 -- MWA
@@ -6246,6 +6254,7 @@ bool post_process_mission()
 				SCP_string location_str;
 				SCP_string sexp_str;
 				SCP_string error_msg;
+				SCP_string bad_node_str;
 
 				// it's helpful to point out the goal/event, so do that if we can
 				int index;
@@ -6257,8 +6266,13 @@ bool post_process_mission()
 
 				convert_sexp_to_string(sexp_str, i, SEXP_ERROR_CHECK_MODE);
 				truncate_message_lines(sexp_str, 30);
+
+				stuff_sexp_text_string(bad_node_str, bad_node, SEXP_ERROR_CHECK_MODE);
+				if (!bad_node_str.empty()) {	// the previous function adds a space at the end
+					bad_node_str.pop_back();
+				}
 				
-				sprintf(error_msg, "%s%s.\n\nIn sexpression: %s\n\n(Bad node appears to be: %s)\n", location_str.c_str(), sexp_error_message(result), sexp_str.c_str(), Sexp_nodes[bad_node].text);
+				sprintf(error_msg, "%s%s.\n\nIn sexpression: %s\n\n(Bad node appears to be: %s)\n", location_str.c_str(), sexp_error_message(result), sexp_str.c_str(), bad_node_str.c_str());
 				Warning(LOCATION, "%s", error_msg.c_str());
 
 				// syntax errors are recoverable in Fred but not FS
@@ -7544,10 +7558,13 @@ int mission_do_departure(object *objp, bool goal_is_to_warp)
 
 	mprintf(("Entered mission_do_departure() for %s\n", shipp->ship_name));
 
-	// add scripting hook for 'On Departure Started' --wookieejedi
-	// hook is placed at the beginning of this function to allow the scripter to
-	// actually have access to the ship's departure decisions before they are all executed
-	OnDepartureStartedHook->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp), scripting::hook_param("Ship", 'o', objp)));
+	if (OnDepartureStartedHook->isActive())
+	{
+		// add scripting hook for 'On Departure Started' --wookieejedi
+		// hook is placed at the beginning of this function to allow the scripter to
+		// actually have access to the ship's departure decisions before they are all executed
+		OnDepartureStartedHook->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp), scripting::hook_param("Ship", 'o', objp)));
+	}
 
 	// abort rearm, because if we entered this function we're either going to depart via hyperspace, depart via bay,
 	// or revert to our default behavior
@@ -8069,7 +8086,7 @@ void mission_bring_in_support_ship( object *requester_objp )
 	vec3d center, warp_in_pos;
 	p_object *pobj;
 	ship *requester_shipp;
-	int i, requester_species;
+	int i;
 
 	Assert ( requester_objp->type == OBJ_SHIP );
 	requester_shipp = &Ships[requester_objp->instance];	//	MK, 10/23/97, used to be ->type, bogus, no?
@@ -8078,6 +8095,17 @@ void mission_bring_in_support_ship( object *requester_objp )
 	if ( Arriving_support_ship ) {
 		mission_add_to_arriving_support( requester_objp );
 		return;
+	}
+
+	// If the support ship class was set via SEXP, use it. Otherwise, look it up by the requester's species.
+	int ship_class = The_mission.support_ships.ship_class;
+	if (ship_class < 0) {
+		int requester_species = Ship_info[requester_shipp->ship_info_index].species;
+		ship_class = Species_info[requester_species].support_ship_index;
+		if ( ship_class < 0 ) {
+			Warning(LOCATION, "Couldn't determine the support ship class to bring in\n");
+			return;
+		}
 	}
 	
 	// create a parse object, and put it onto the ship arrival list.  This whole thing kind of stinks.
@@ -8088,6 +8116,7 @@ void mission_bring_in_support_ship( object *requester_objp )
 
 	Arriving_support_ship = &Support_ship_pobj;
 	pobj = Arriving_support_ship;
+	pobj->ship_class = ship_class;
 
 	// get average position of all ships
 	obj_get_average_ship_pos( &center );
@@ -8120,33 +8149,6 @@ void mission_bring_in_support_ship( object *requester_objp )
 	} while(1);
 
 	vm_set_identity( &(pobj->orient) );
-
-	// *sigh*.  Gotta get the ship class.  For now, this will amount to finding a ship in the ship_info
-	// array with the same team as the requester of type SIF_SUPPORT.  Might need to be changed, but who knows
-
-	// Goober5000 - who knew of the SCP release? ;) only determine ship class if not set by SEXP
-	pobj->ship_class = The_mission.support_ships.ship_class;
-	if (pobj->ship_class < 0)
-	{
-		requester_species = Ship_info[requester_shipp->ship_info_index].species;
-
-		// 5/6/98 -- MWA  Don't need to do anything for multiplayer.  I think that we always want to use
-		// the species of the caller ship.
-
-		i = -1;
-		// get index of correct species support ship
-		for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
-            if ((it->species == requester_species) && (it->flags[Ship::Info_Flags::Support])) {
-				i = (int)std::distance(Ship_info.cbegin(), it);
-				break;
-			}
-		}
-
-		if ( i != -1 )
-			pobj->ship_class = i;
-		else
-			Int3();				// BOGUS!!!!  gotta figure something out here
-	}
 
 	// set support ship hitpoints
 	pobj->ship_max_hull_strength = Ship_info[i].max_hull_strength;

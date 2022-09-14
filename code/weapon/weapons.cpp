@@ -39,7 +39,7 @@
 #include "object/objectsnd.h"
 #include "parse/parsehi.h"
 #include "parse/parselo.h"
-#include "scripting/scripting.h"
+#include "scripting/global_hooks.h"
 #include "particle/particle.h"
 #include "playerman/player.h"
 #include "radar/radar.h"
@@ -6437,7 +6437,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 
 	//Only try and play animations on POF Weapons
 	if (wip->render_type == WRT_POF && wp->model_instance_num > -1) {
-		wip->animations.startAll(model_get_instance(wp->model_instance_num), animation::ModelAnimationTriggerType::OnSpawn, animation::ModelAnimationDirection::FWD);
+		wip->animations.getAll(model_get_instance(wp->model_instance_num), animation::ModelAnimationTriggerType::OnSpawn).start(animation::ModelAnimationDirection::FWD);
 	}
 
 	if (Script_system.IsActiveAction(CHA_ONWEAPONCREATED)) {
@@ -7015,7 +7015,7 @@ void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos
 //
 //	Call to figure out if a weapon is armed or not
 //
-//Weapon is armed when...
+//Weapon is unarmed when...
 //1: Weapon is shot down by weapon
 //OR
 //1: weapon is destroyed before arm time
@@ -7083,8 +7083,6 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 	weapon *wp;
 	bool		hit_target = false;
 
-	object      *other_objp;
-	ship_obj	*so;
 	ship		*shipp;
 	int         objnum;
 
@@ -7095,6 +7093,14 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 	wp = &Weapons[weapon_obj->instance];
 	wip = &Weapon_info[weapon_type];
 	objnum = wp->objnum;
+
+	if (scripting::hooks::OnMissileDeathStarted->isActive() && wip->subtype == WP_MISSILE) {
+		// analagous to On Ship Death Started
+		scripting::hooks::OnMissileDeathStarted->run(scripting::hook_param_list(
+			scripting::hook_param("Weapon", 'o', weapon_obj),
+			scripting::hook_param("Object", 'o', other_obj)),
+			weapon_obj);
+	}
 
 	// check if the weapon actually hit the intended target
 	if (weapon_has_homing_object(wp))
@@ -7245,11 +7251,11 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 		return;
 
 	// For all objects that had this weapon as a target, wipe it out, forcing find of a new enemy
-	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
-		other_objp = &Objects[so->objnum];
-		Assert(other_objp->instance != -1);
+	for ( auto so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
+		auto ship_objp = &Objects[so->objnum];
+		Assert(ship_objp->instance != -1);
         
-		shipp = &Ships[other_objp->instance];
+		shipp = &Ships[ship_objp->instance];
 		Assert(shipp->ai_index != -1);
         
 		ai_info	*aip = &Ai_info[shipp->ai_index];
@@ -7274,6 +7280,13 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 		if (aip->hitter_objnum == objnum) {
 			aip->hitter_objnum = -1;
         }
+	}
+
+	if (scripting::hooks::OnMissileDeath->isActive() && wip->subtype == WP_MISSILE) {
+		scripting::hooks::OnMissileDeath->run(scripting::hook_param_list(
+			scripting::hook_param("Weapon", 'o', weapon_obj),
+			scripting::hook_param("Object", 'o', other_obj)),
+			weapon_obj);
 	}
 
     weapon_obj->flags.set(Object::Object_Flags::Should_be_dead);
@@ -9381,6 +9394,8 @@ bool weapon_target_satisfies_lock_restrictions(weapon_info* wip, object* target)
 {
 	if (target->type != OBJ_SHIP)
 		return true;
+	else if (wip->is_locked_homing() && Ships[target->instance].flags[Ship::Ship_Flags::Aspect_immune])
+		return false;
 
 	auto& restrictions = wip->ship_restrict;
 	// if you didn't specify any restrictions, you can always lock

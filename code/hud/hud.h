@@ -70,6 +70,7 @@ enum class HudAlignment
 
 extern int HUD_draw;
 extern int HUD_contrast;
+extern bool HUD_shadows;
 
 #define HUD_NUM_COLOR_LEVELS	16
 extern color HUD_color_defaults[HUD_NUM_COLOR_LEVELS];
@@ -208,6 +209,7 @@ int hud_disabled_except_messages();
 // contrast stuff
 void hud_toggle_contrast();
 void hud_set_contrast(int high);
+void hud_toggle_shadows();
 
 class HudGauge 
 {

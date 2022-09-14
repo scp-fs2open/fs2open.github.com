@@ -30,6 +30,7 @@
 #include <parse/parselo.h>
 #include <render/3d.h>
 #include <render/3dinternal.h>
+#include <render/batching.h>
 #include <scripting/scripting.h>
 #include <ship/ship.h>
 #include <weapon/weapon.h>
@@ -39,6 +40,9 @@ namespace {
 
 static const int NextDrawStringPosInitial[] = {0, 0};
 static int NextDrawStringPos[] = {NextDrawStringPosInitial[0], NextDrawStringPosInitial[1]};
+static fix PreviousFrametimeOverall = 0;
+
+static bool WarnedBadThicknessLine = false;
 
 }
 
@@ -48,10 +52,6 @@ namespace api {
 
 //**********LIBRARY: Graphics
 ADE_LIB(l_Graphics, "Graphics", "gr", "Graphics Library");
-
-void graphics_on_frame() {
-	memcpy(NextDrawStringPos, NextDrawStringPosInitial, sizeof(NextDrawStringPos));
-}
 
 static float lua_Opacity = 1.0f;
 static int lua_Opacity_type = GR_ALPHABLEND_FILTER;
@@ -817,6 +817,41 @@ ADE_FUNC(drawSphere, l_Graphics, "[number Radius = 1.0, vector Position]", "Draw
 	return ADE_RETURN_TRUE;
 }
 
+ADE_FUNC(draw3dLine, l_Graphics, "vector origin, vector destination, [boolean translucent=true, number thickness=1.0, number thicknessEnd=thickness]", "Draws a line from origin to destination. "
+"The line may be translucent or solid. Translucent lines will NOT use the alpha value, instead being more transparent the darker the color is. "
+"The thickness at the start can be different from the thickness at the end, to draw a line that tapers or expands.", nullptr, nullptr)
+{
+	vec3d *v1 = &vmd_zero_vector;
+	vec3d *v2 = &vmd_zero_vector;
+	bool translucent = true;
+	float thickness = 1.0f;
+	float thicknessEnd = -1.0f;
+
+	if (!ade_get_args(L, "oo|bff", l_Vector.GetPtr(&v1), l_Vector.GetPtr(&v2), &translucent, &thickness, &thicknessEnd))
+		return ADE_RETURN_NIL;
+
+	if (thickness < 0) thickness = 0;
+	if (thicknessEnd < 0) thicknessEnd = thickness;
+	
+	if (thickness <= 0 && thicknessEnd <= 0)
+	{
+		if (!WarnedBadThicknessLine)
+		{
+			LuaError(L, "At least one end of a 3D line must be greater than zero! The line won't be drawn!\nThis warning won't be shown again this play session.");
+			WarnedBadThicknessLine = true;
+		}
+
+		//While the batching_add_line function would also do this check, I feel that its good to return early here.
+		return ADE_RETURN_NIL;
+	}
+
+	color &clr = gr_screen.current_color;
+
+	batching_add_line(v1, v2, thickness, thicknessEnd, clr, translucent);
+
+	return ADE_RETURN_NIL;
+}
+
 // Aardwolf's test code to render a model, supposed to emulate WMC's gr.drawModel function
 ADE_FUNC(drawModel, l_Graphics, "model model, vector position, orientation orientation",
          "Draws the given model with the specified position and orientation - Use with extreme care, may not work "
@@ -1192,6 +1227,13 @@ static int drawString_sub(lua_State *L, bool use_resize_arg)
 
 	int resize_mode = lua_ResizeMode;
 
+	// if the frame has changed since the last drawString call, reset the string position
+	if (PreviousFrametimeOverall != game_get_overall_frametime())
+	{
+		PreviousFrametimeOverall = game_get_overall_frametime();
+		memcpy(NextDrawStringPos, NextDrawStringPosInitial, sizeof(NextDrawStringPos));
+	}
+
 	int x = NextDrawStringPos[0];
 	int y = NextDrawStringPos[1];
 
@@ -1253,20 +1295,38 @@ static int drawString_sub(lua_State *L, bool use_resize_arg)
 		SCP_vector<int> linelengths;
 		SCP_vector<const char*> linestarts;
 
-		if (y2 >= 0 && y2 < y)
+		// This would pass a <=0 value to split_str
+		if (x2 <= x)
 		{
-			// Invalid y2 value
-			Warning(LOCATION, "Illegal y2 value passed to drawString. Got %d y2 value but %d for y.", y2, y);
+			static bool Warned_drawString_x_x2 = false;
+			if (!Warned_drawString_x_x2)
+			{
+				Warning(LOCATION, "Illegal values passed to gr.drawString: x2 (%d) must be greater than x (%d).", x2, x);
+				Warned_drawString_x_x2 = true;
+			}
 
-			int temp = y;
-			y = y2;
-			y2 = temp;
+			std::swap(x, x2);
+		}
+		// Invalid y2 value
+		if (y2 >= 0 && y2 <= y)
+		{
+			static bool Warned_drawString_y_y2 = false;
+			if (!Warned_drawString_y_y2)
+			{
+				Warning(LOCATION, "Illegal y2 value passed to gr.drawString: y2 (%d) must be greater than y (%d).", y2, y);
+				Warned_drawString_y_y2 = true;
+			}
+
+			std::swap(y, y2);
 		}
 
 		num_lines = split_str(s, x2-x, linelengths, linestarts, INT_MAX, (unicode::codepoint_t)-1, false);
 
-		//Make sure we don't go over size
 		int line_ht = gr_get_font_height();
+		if (y2 < 0)
+			y2 = y + line_ht;
+
+		//Make sure we don't go over size
 		num_lines = MIN(num_lines, (y2 - y) / line_ht);
 
 		int curr_y = y;

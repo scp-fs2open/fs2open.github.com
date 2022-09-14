@@ -297,6 +297,8 @@ BEGIN
             MENUITEM "x10\t6",                      32901
             MENUITEM "x50\t7",                      32917
             MENUITEM "x100\t8",                     32918
+            MENUITEM "x500",                        32920
+            MENUITEM "x1000",                       32922
         END
         POPUP "Rotation"
         BEGIN
@@ -445,7 +447,7 @@ IDR_MENU_EDIT_SEXP_TREE MENU
 BEGIN
     POPUP "Edit sexp tree"
     BEGIN
-        MENUITEM "&Delete Item\tDelete",        ID_DELETE
+        MENUITEM "&Delete Item",                ID_DELETE
         MENUITEM "&Edit Data\tSpace Bar",       ID_EDIT_TEXT
         MENUITEM "Expand All",                  ID_EXPAND_ALL
         MENUITEM SEPARATOR
@@ -454,7 +456,7 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "Cut\tCtrl+X",                 ID_EDIT_CUT, GRAYED
         MENUITEM "Copy\tCtrl+C",                ID_EDIT_COPY
-        MENUITEM "Paste (Overwrite)\tCtrl+Shift+V",   ID_EDIT_PASTE, GRAYED
+        MENUITEM "Paste (Overwrite)\tCtrl+Shift+V", ID_EDIT_PASTE, GRAYED
         MENUITEM SEPARATOR
         POPUP "Add Operator"
         BEGIN
@@ -467,7 +469,7 @@ BEGIN
             MENUITEM SEPARATOR
         END
         MENUITEM SEPARATOR
-        MENUITEM "Paste (Add Child)\tCtrl+V", ID_EDIT_PASTE_SPECIAL, GRAYED
+        MENUITEM "Paste (Add Child)\tCtrl+V",   ID_EDIT_PASTE_SPECIAL, GRAYED
         MENUITEM SEPARATOR
         POPUP "Insert Operator"
         BEGIN
@@ -495,11 +497,11 @@ BEGIN
         MENUITEM "Add/Modify Container",        ID_EDIT_SEXP_TREE_EDIT_CONTAINERS
         POPUP "Replace Container Name"
         BEGIN
-            MENUITEM "Placeholder", ID_PLACEHOLDER, GRAYED
+            MENUITEM "Placeholder",                 ID_PLACEHOLDER, GRAYED
         END
         POPUP "Replace Container Data"
         BEGIN
-            MENUITEM "Placeholder",             ID_PLACEHOLDER, GRAYED
+            MENUITEM "Placeholder",                 ID_PLACEHOLDER, GRAYED
         END
     END
 END
@@ -1755,7 +1757,7 @@ STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Ignore Orders"
 FONT 8, "MS Sans Serif"
 BEGIN
-    LISTBOX         IDC_IGNORE_ORDERS_LIST, 7, 47, 105, 163, LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP | LBS_HASSTRINGS | LBS_OWNERDRAWFIXED
+    LISTBOX         IDC_IGNORE_ORDERS_LIST,7,47,105,163,LBS_OWNERDRAWFIXED | LBS_HASSTRINGS | LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
     DEFPUSHBUTTON   "OK",IDOK,62,7,50,14
     PUSHBUTTON      "Cancel",IDCANCEL,62,24,50,14
 END
@@ -2072,12 +2074,12 @@ BEGIN
     PUSHBUTTON      "Global Affected-By-Gravity",IDC_AFFECTED_BY_GRAVITY,7,58,100,14
 END
 
-IDD_VOICE_MANAGER DIALOG 0, 0, 407, 218
+IDD_VOICE_MANAGER DIALOGEX 0, 0, 407, 226
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Voice Acting Manager"
-FONT 8, "MS Sans Serif"
+FONT 8, "MS Sans Serif", 0, 0, 0x0
 BEGIN
-    GROUPBOX        "File Name Options",IDC_FILE_NAME_OPTIONS,7,7,130,204
+    GROUPBOX        "File Name Options",IDC_FILE_NAME_OPTIONS,7,7,130,214
     GROUPBOX        "Abbreviations",IDC_ABBREVIATIONS,12,17,120,101
     LTEXT           "Campaign",IDC_LBL_ABBREV_CAMPAIGN,17,28,58,10
     EDITTEXT        IDC_ABBREV_CAMPAIGN,82,27,44,12,ES_AUTOHSCROLL
@@ -2097,24 +2099,30 @@ BEGIN
     LTEXT           "Example",IDC_LBL_EXAMPLE,17,158,31,10
     EDITTEXT        IDC_EXAMPLE,49,156,77,12,ES_AUTOHSCROLL | ES_READONLY
     CONTROL         "Include sender name in filename",IDC_INCLUDE_SENDER,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,14,175,112,10
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,14,175,116,10
     CONTROL         "Don't replace existing file names",IDC_NO_REPLACE,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,14,186,112,10
-    PUSHBUTTON      "Generate File Names",IDC_GENERATE_FILE_NAMES,12,198,120,14
-    GROUPBOX        "Script Options",IDC_SCRIPT_OPTIONS,143,7,257,204
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,14,186,116,10
+    PUSHBUTTON      "Generate File Names",IDC_GENERATE_FILE_NAMES,12,200,120,14
+    GROUPBOX        "Script Options",IDC_SCRIPT_OPTIONS,143,7,257,214
     GROUPBOX        "Script Entry Format",IDC_ENTRY,149,17,246,76
     EDITTEXT        IDC_ENTRY_FORMAT,154,28,109,56,ES_MULTILINE | ES_AUTOHSCROLL | ES_WANTRETURN
     LTEXT           "$filename - name of the message file\r\n$message - text of the message\r\n$persona - persona of the sender\r\n$sender - name of the sender\r\n\r\nNote that $persona and $sender will only appear for the Message section.",IDC_STATIC,270,28,120,58
-    GROUPBOX        "Export",IDC_EXPORT,149,98,119,83
-    CONTROL         "Everything",IDC_EXPORT_EVERYTHING,"Button",BS_AUTORADIOBUTTON,153,108,99,9
+    GROUPBOX        "Export",IDC_EXPORT,276,98,119,83
+    CONTROL         "Everything",IDC_EXPORT_EVERYTHING,"Button",BS_AUTORADIOBUTTON,280,108,99,9
     CONTROL         "Just Command Briefings",IDC_EXPORT_COMMAND_BRIEFINGS,
-                    "Button",BS_AUTORADIOBUTTON,153,118,99,9
-    CONTROL         "Just Briefings",IDC_EXPORT_BRIEFINGS,"Button",BS_AUTORADIOBUTTON,153,128,99,9
-    CONTROL         "Just Debriefings",IDC_EXPORT_DEBRIEFINGS,"Button",BS_AUTORADIOBUTTON,153,138,99,9
-    CONTROL         "Just Messages",IDC_EXPORT_MESSAGES,"Button",BS_AUTORADIOBUTTON,153,148,99,9
-    PUSHBUTTON      "Generate Script",IDC_GENERATE_SCRIPT,149,190,120,14
+                    "Button",BS_AUTORADIOBUTTON,280,118,99,9
+    CONTROL         "Just Briefings",IDC_EXPORT_BRIEFINGS,"Button",BS_AUTORADIOBUTTON,280,128,99,9
+    CONTROL         "Just Debriefings",IDC_EXPORT_DEBRIEFINGS,"Button",BS_AUTORADIOBUTTON,280,138,99,9
+    CONTROL         "Just Messages",IDC_EXPORT_MESSAGES,"Button",BS_AUTORADIOBUTTON,280,148,99,9
+    PUSHBUTTON      "Generate Script",IDC_GENERATE_SCRIPT,275,185,120,30
     CONTROL         "Group send-message-list messages before others",IDC_GROUP_MESSAGES,
-                    "Button",BS_AUTOCHECKBOX | BS_TOP | BS_MULTILINE | WS_TABSTOP,166,159,100,19
+                    "Button",BS_AUTOCHECKBOX | BS_TOP | BS_MULTILINE | WS_TABSTOP,293,159,100,19
+    GROUPBOX        "Sync Personas",IDC_SYNC_PERSONAS,149,98,119,118
+    PUSHBUTTON      "Copy message personas to ships",IDC_MESSAGE_PERSONAS_TO_SHIPS,154,128,109,14
+    PUSHBUTTON      "Copy ship personas to messages",IDC_SHIP_PERSONAS_TO_MESSAGES,154,145,109,14
+    PUSHBUTTON      "Set head ANIs using personas in messages.tbl",IDC_SET_HEAD_ANIS_USING_MESSAGES_TBL,154,188,109,23,BS_MULTILINE
+    PUSHBUTTON      "Clear personas from ships that don't send messages",IDC_CLEAR_PERSONAS_FROM_NON_SENDERS,154,162,109,23,BS_MULTILINE
+    LTEXT           "NOTE: Only wingman personas are modified here.",IDC_LBL_NOTE,155,109,107,16
 END
 
 IDD_CUSTOM_WING_NAMES DIALOG 0, 0, 390, 54
@@ -3016,6 +3024,11 @@ BEGIN
 END
 
 IDD_BRIEFING_EDITOR AFX_DIALOG_LAYOUT
+BEGIN
+    0
+END
+
+IDD_VOICE_MANAGER AFX_DIALOG_LAYOUT
 BEGIN
     0
 END

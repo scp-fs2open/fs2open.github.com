@@ -16,7 +16,7 @@ FLAG_LIST(LabRenderFlag) {
 	ModelRotationEnabled,
 	ShowInsignia,
 	ShowDamageLightning,
-	RotateSubsystems,
+	MoveSubsystems,
 	HidePostProcessing,
 	NoDiffuseMap,
 	NoGlowMap,
@@ -67,14 +67,17 @@ enum class TextureOverride {
 	Specular
 };
 
+constexpr auto LAB_MISSION_NONE_STRING = "None";
+constexpr auto LAB_TEAM_COLOR_NONE = "<none>";
+
 class LabRenderer {
 public:
 	LabRenderer() {
 		bloomLevel = gr_bloom_intensity();
 		textureQuality = TextureQuality::Maximum;
 		cameraDistance = 100.0f;
-		currentTeamColor = "<none>";
-		useBackground("None");
+		currentTeamColor = LAB_TEAM_COLOR_NONE;
+		useBackground(LAB_MISSION_NONE_STRING);
 
 		labCamera.reset(new OrbitCamera());
 
@@ -108,25 +111,28 @@ public:
 	}
 
 	void useNextTeamColorPreset() {
-		auto color_itr = Team_Colors.find(currentTeamColor);
+		if (!Team_Colors.empty()) {
+			auto color_itr = Team_Colors.find(currentTeamColor);
 
-		if (color_itr == Team_Colors.begin()) {
-			color_itr = --Team_Colors.end();
-			currentTeamColor = color_itr->first;
-		}
-		else {
-			--color_itr;
-			currentTeamColor = color_itr->first;
+			if (color_itr == Team_Colors.begin()) {
+				color_itr = --Team_Colors.end();
+				currentTeamColor = color_itr->first;
+			} else {
+				--color_itr;
+				currentTeamColor = color_itr->first;
+			}
 		}
 	}
 
 	void usePreviousTeamColorPreset() {
-		auto color_itr = Team_Colors.find(currentTeamColor);
+		if (!Team_Colors.empty()) {
+			auto color_itr = Team_Colors.find(currentTeamColor);
 
-		++color_itr;
-		if (color_itr == Team_Colors.end())
-			color_itr = Team_Colors.begin();
-		currentTeamColor = color_itr->first;
+			++color_itr;
+			if (color_itr == Team_Colors.end())
+				color_itr = Team_Colors.begin();
+			currentTeamColor = color_itr->first;
+		}
 	}
 
 	void setTeamColor(SCP_string teamColor) {

@@ -112,7 +112,7 @@ extern void skip_token();
 
 // optional
 extern int optional_string(const char *pstr);
-extern int optional_string_either(const char *str1, const char *str2);
+extern int optional_string_either(const char *str1, const char *str2, bool advance = true);
 extern int optional_string_one_of(int arg_count, ...);
 
 // required

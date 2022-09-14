@@ -1459,7 +1459,10 @@ void player_tips_popup()
 	} while(ret > 0);
 }
 
-void player_tips_controls() {
+/**
+ * Displays a popup notification if the pilot was converted from pre-22.0 which might disrupt control settings.  Returns true if the popup was shown.
+ */
+bool player_tips_controls() {
 	if (Player->save_flags & PLAYER_FLAGS_PLR_VER_PRE_CONTROLS5) {
 		// Special case. Since the Controls5 PR is significantly different from retail, users must be informed
 		// of changes regarding their bindings
@@ -1476,7 +1479,11 @@ void player_tips_controls() {
 			Pilot.save_player(Player);
 			Pilot.save_savefile();
 		}
+
+		return true;
 	}
+
+	return false;
 }
 
 SCP_vector<SCP_string> player_select_enumerate_pilots() {

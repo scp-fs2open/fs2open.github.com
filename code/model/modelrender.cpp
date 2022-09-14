@@ -1281,16 +1281,17 @@ void model_render_children_buffers(model_draw_list* scene, model_material *rende
 		return;
 	}
 
-	// Get submodel rotation data and use submodel orientation matrix
-	// to put together a matrix describing the final orientation of
-	// the submodel relative to its parent
+	// Get submodel rotation/translation data and use it to put together a matrix and a vector
+	// describing the final position of the submodel relative to its parent
 	matrix submodel_orient = vmd_identity_matrix;
+	vec3d submodel_offset = sm->offset;
 
 	if ( smi != nullptr ) {
 		submodel_orient = smi->canonical_orient;
+		vm_vec_add2(&submodel_offset, &smi->canonical_offset);
 	}
 
-	scene->push_transform(&sm->offset, &submodel_orient);
+	scene->push_transform(&submodel_offset, &submodel_orient);
 	
 	if ( (model_flags & MR_SHOW_OUTLINE || model_flags & MR_SHOW_OUTLINE_HTL || model_flags & MR_SHOW_OUTLINE_PRESET) && 
 		sm->outline_buffer != nullptr ) {
@@ -2105,7 +2106,7 @@ float convert_distance_and_diameter_to_pixel_size(float distance, float diameter
 float model_render_get_diameter_clamped_to_min_pixel_size(const vec3d* pos, float diameter, float min_pixel_size)
 {
 	// Don't do any scaling math if the pixel size is set to zero.
-	if (min_pixel_size <= FLT_EPSILON)
+	if (fl_near_zero(min_pixel_size))
 		return diameter;
 
 	float distance_to_eye = vm_vec_dist(&Eye_position, pos);

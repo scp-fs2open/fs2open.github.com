@@ -12,6 +12,7 @@
 #ifndef _AI_H
 #define _AI_H
 
+#include "ai/aigoals.h"
 #include "ai/ai_profiles.h"
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
@@ -33,8 +34,8 @@ typedef struct ai_flag_name {
 	char flag_name[TOKEN_LENGTH];
 } ai_flag_name;
 
-#define MAX_AI_FLAG_NAMES			2
 extern ai_flag_name Ai_flag_names[];
+extern const int Num_ai_flag_names;
 
 //	dock_orient_and_approach() modes.
 #define	DOA_APPROACH	1		//	Approach the current point on the path (aip->path_cur)
@@ -55,59 +56,16 @@ extern ai_flag_name Ai_flag_names[];
 #define	AISS_3	43				//  Gotten near spot, fly about there.
 #define	AISS_1a	44				//	Pick a new nearby spot because we are endangered, then go to AISS_2
 
-#define MAX_AI_GOALS	5
-
-// types of ai goals -- tyese types will help us to determination on which goals should
-// have priority over others (i.e. when a player issues a goal to a wing, then a seperate
-// goal to a ship in that wing).  We would probably use this type in conjunction with
-// goal priority to establish which goal to follow
-#define AIG_TYPE_EVENT_SHIP			1		// from mission event direct to ship
-#define AIG_TYPE_EVENT_WING			2		// from mission event direct to wing
-#define AIG_TYPE_PLAYER_SHIP		3		// from player direct to ship
-#define AIG_TYPE_PLAYER_WING		4		// from player direct to wing
-#define AIG_TYPE_DYNAMIC			5		// created on the fly
-
 //	Flags to ai_turn_towards_vector().
 #define	AITTV_FAST					(1<<0)	//	Turn fast, not slowed down based on skill level.
 #define AITTV_VIA_SEXP				(1<<1)	//	Goober5000 - via sexp
 #define AITTV_IGNORE_BANK			(1<<2)	//	Goober5000 - ignore bank when turning
 #define AITTV_SLOW_BANK_ACCEL		(1<<3)  //  Asteroth - used by formation flying
+#define AITTV_FORCE_DELTA_BANK		(1<<4)  //  Lafiel - Always use the provided delta bank and override calculated values
 
 #define	KAMIKAZE_HULL_ON_DEATH	-1000.0f	//	Hull strength ship gets set to if it crash-dies.
 
-// structure for AI goals
-typedef struct ai_goal {
-	int	signature;			//	Unique identifier.  All goals ever created (per mission) have a unique signature.
-	int	ai_mode;				// one of the AIM_* modes for this goal
-	int	ai_submode;			// maybe need a submode
-	int	type;					// one of the AIG_TYPE_* values above
-	flagset<AI::Goal_Flags>	flags;				// one of the AIGF_* values above
-	fix	time;					// time at which this goal was issued.
-	int	priority;			// how important is this goal -- number 0 - 100
-
-	const char *target_name;	// name of the thing that this goal acts upon
-	int		target_name_index;	// index of goal_target_name in Goal_target_names[][]
-	waypoint_list *wp_list;		// waypoints that this ship might fly.
-	int target_instance;		// instance of thing this ship might be chasing (currently only used for weapons; note, not the same as objnum!)
-	int	target_signature;		// signature of object this ship might be chasing (currently only used for weapons; paired with above value to confirm target)
-
-	// unions for docking stuff.
-	// (AIGF_DOCKER_INDEX_VALID and AIGF_DOCKEE_INDEX_VALID tell us to use indexes; otherwise we use names)
-	// these are the dockpoints used on the docker and dockee ships, not the ships themselves
-	union {
-		const char *name;
-		int	index;
-	} docker;
-	
-	union {
-		const char *name;
-		int	index;
-	} dockee;
-
-	object_ship_wing_point_team lua_ai_target;
-
-} ai_goal;
-
+// individual AI modes aka AI behaviors
 #define	AIM_CHASE				0
 #define	AIM_EVADE				1
 #define	AIM_GET_BEHIND			2		//	This mode is not actually implemented.
@@ -137,8 +95,7 @@ typedef struct ai_goal {
 #define	MAX_WAYPOINTS_PER_LIST	20
 #define	MAX_ENEMY_DISTANCE	2500.0f		//	Maximum distance from which a ship will pursue an enemy.
 
-#define AI_GOAL_NONE				-1
-
+#define MAX_AI_GOALS	5
 #define	AI_ACTIVE_GOAL_DYNAMIC	999
 
 typedef struct ai_class {
@@ -503,7 +460,7 @@ typedef struct ai_info {
 	int multilock_check_timestamp;		// when to check for multilock next
 	SCP_vector<std::pair<int, ship_subsys*>> ai_missile_locks_firing;  // a list of missile locks (locked objnum, locked subsys) the ai is currently firing
 	
-	object_ship_wing_point_team lua_ai_target;
+	ai_lua_parameters lua_ai_target;
 } ai_info;
 
 // Goober5000
@@ -530,11 +487,6 @@ typedef struct {
 
 extern int Mission_all_attack;	//	!0 means all teams attack all teams.
 
-extern void update_ai_info_for_hit(int hitter_obj, int hit_obj);
-extern void ai_frame_all(void);
-
-extern int find_guard_obj(void);
-
 extern ai_info Ai_info[];
 extern ai_info *Player_ai;
 
@@ -545,7 +497,6 @@ extern int Num_ai_classes;
 extern int Ai_firing_enabled;
 
 extern const char *Skill_level_names(int skill_level, int translate = 1);
-extern int Ai_goal_signature;
 
 extern control_info AI_ci;
 
@@ -586,6 +537,7 @@ extern void ai_do_default_behavior(object *obj);
 extern void ai_start_waypoints(object *objp, waypoint_list *wp_list, int wp_flags);
 extern void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hit_normal);
 extern void ai_ship_destroy(int shipnum);
+extern vec3d ai_get_acc_limit(vec3d* vel_limit, const object* objp);
 extern void ai_turn_towards_vector(vec3d *dest, object *objp, vec3d *slide_vec, vec3d *rel_pos, float bank_override, int flags, vec3d *rvec = nullptr, vec3d* turnrate_mod = nullptr);
 extern void init_ai_object(int objnum);
 extern void ai_init(void);				//	Call this one to parse ai.tbl.
@@ -685,6 +637,6 @@ void do_random_sidethrust(ai_info *aip, ship_info *sip);
 void ai_formation_object_recalculate_slotnums(int form_objnum, int exiting_objnum = -1);
 
 
-bool test_line_of_sight(vec3d* from, vec3d* to, std::unordered_set<const object*>&& excluded_objects = {}, float threshold = 10.0f, bool test_for_shields = false, bool test_for_hull = true, float* first_intersect_dist = nullptr);
+bool test_line_of_sight(vec3d* from, vec3d* to, std::unordered_set<const object*>&& excluded_objects = {}, float threshold = 10.0f, bool test_for_shields = false, bool test_for_hull = true, float* first_intersect_dist = nullptr, object** first_intersect_obj = nullptr);
 
 #endif

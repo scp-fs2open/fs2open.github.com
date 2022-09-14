@@ -190,8 +190,8 @@ static unsigned int Defaults_cycle_pos = 0; // the controls preset that was last
 int Control_config_overlay_id;
 
 struct conflict {
-	int first = -1;     // index of other control in conflict with this one
-	int second = -1;    // index of other control in conflict with this one
+	int first = -1;  // index of other control in conflict with this one
+	int second = -1; // index of other control in conflict with this one
 };
 
 SCP_vector<conflict> Conflicts;
@@ -1137,8 +1137,7 @@ void control_config_toggle_invert()
 		item.second.invert_toggle();
 		break;
 	default:
-		// unhandled
-		mprintf(("Unhandled selItem in control_config_toggle_invert(): %i", static_cast<int>(Selected_item)));
+		UNREACHABLE("Unhandled selItem in control_config_toggle_invert(): %i\n", static_cast<int>(Selected_item));
 	}
 }
 
@@ -1287,6 +1286,15 @@ int control_config_accept()
 		}
 
 		SCP_string str = cstr;
+		
+		// Check if a hardcoded preset with name already exists. If so, complain to user and force retry
+		auto it = std::find_if(Control_config_presets.begin(), Control_config_presets.end(),
+							  [str](CC_preset& p) { return (p.name == str) && ((p.type == Preset_t::tbl) || (p.type == Preset_t::hardcode)); });
+
+		if (it != Control_config_presets.end()) {
+			popup(flags, 1, POPUP_OK, "You may not overwrite a default preset.  Please choose another name.");
+			goto retry;
+		}
 
 		// Check if a preset file with name already exists.  If so, prompt the user
 		CFILE* fp = cfopen((str + ".json").c_str(), "r", CFILE_NORMAL, CF_TYPE_PLAYER_BINDS, false,
@@ -1657,8 +1665,7 @@ void control_config_draw_selected_preset() {
 	auto preset_it = control_config_get_current_preset();
 
 	if (preset_it != Control_config_presets.end()) {
-		sprintf(preset_str, XSTR("Preset: %s", 1659), preset_it->name.c_str());
-		
+		sprintf(preset_str, XSTR("Preset: %s", 1659), preset_it->name.c_str());		
 	} else {
 		sprintf(preset_str, XSTR("Preset: custom", 1660), "");
 	}
@@ -2532,7 +2539,7 @@ int check_control_used(int id, int key)
 		return 0;
 	}
 
-	if (item.disabled)
+	if (item.disabled || item.locked)
 		return 0;
 
 	short z = item.get_btn(CID_KEYBOARD);	// Get the key that's bound to this control
@@ -2601,17 +2608,30 @@ int check_control_used(int id, int key)
 
 int check_control(int id, int key) 
 {
-	if (check_control_used(id, key)) {
-		if (Ignored_keys[id]) {
-			if (Ignored_keys[id] > 0) {
-				Ignored_keys[id]--;
-			}
-			return 0;
-		}
-		return 1;
+	const bool is_control_used = check_control_used(id, key) != 0;
+	const bool is_ignored = Ignored_keys[id] != 0;
+
+	//Decrement Ignored_keys if key was pressed and is ignored
+	if (is_control_used && Ignored_keys[id] > 0) {
+		Ignored_keys[id]--;
 	}
 
-	if (Control_config[id].continuous_ongoing) {
+	int control_triggered = 0;	// boolean as int (0 = false, 1 = true); Weirdness for compatibility with control_run_lua();
+	if (is_control_used && !is_ignored) {
+		control_triggered = 1;
+	}
+
+	if (Control_config[id].type == CC_TYPE_CONTINUOUS) {
+		// Only call lua in here when it's a continuous button
+
+		if (control_run_lua(static_cast<IoActionId>(id), control_triggered)) {
+			// lua has taken care of the control already.  Mark as not triggered to prevent hardcode from executing.
+			control_triggered = 0;
+
+		}	// Else, let hardcode process the control
+	}
+
+	if (!is_control_used && Control_config[id].continuous_ongoing) {
 		// If we reach this point, then it means this is a continuous control
 		// which has just been released
 
@@ -2624,7 +2644,7 @@ int check_control(int id, int key)
 		Control_config[id].continuous_ongoing = false;
 	}
 
-	return 0;
+	return control_triggered;
 }
 
 /**
@@ -2753,7 +2773,8 @@ void control_get_axes_readings(int *axis_v, float frame_time)
 	mouse_get_delta(&axe[MOUSE_ID][MOUSE_X_AXIS], &axe[MOUSE_ID][MOUSE_Y_AXIS], &axe[MOUSE_ID][MOUSE_Z_AXIS]);
 
 	for (int action = 0; action < Action::NUM_VALUES; ++action) {
-		CCI & item = Control_config[action + JOY_AXIS_BEGIN];
+		const auto action_id = static_cast<IoActionId>(action + JOY_AXIS_BEGIN);
+		CCI & item = Control_config[action_id];
 
 		// Assume actions are all axis actions, no need to check
 		// Assumes all axes are uniquely bound to an action
@@ -2766,6 +2787,28 @@ void control_get_axes_readings(int *axis_v, float frame_time)
 		if (!item.second.empty()) {
 			scale_invert(item.second, action, item.type, frame_time, axe, axis_v);
 		}
+
+		//Call Lua hooks
+		if (control_run_lua(action_id, axis_v[action])) {
+			Assert(item.type == CC_TYPE_AXIS_ABS || item.type == CC_TYPE_AXIS_REL);
+
+			switch (item.type) {
+			case CC_TYPE_AXIS_ABS:
+				axis_v[action] = item.used;
+				break;
+			case CC_TYPE_AXIS_REL:
+				axis_v[action] = 0;
+				break;
+			case CC_TYPE_AXIS_BTN_NEG:
+			case CC_TYPE_AXIS_BTN_POS:
+			default:
+				//This should never happen, especially with the above Assertion. This is required as incomplete switches on an enum generate warnings
+				break;
+			}
+		}
+
+		//Store values for possible lua override
+		item.used = axis_v[action];
 	}
 }
 

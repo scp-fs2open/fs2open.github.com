@@ -101,11 +101,11 @@ ADE_VIRTVAR(AWACSRadius, l_Subsystem, "number", "Subsystem AWACS radius", "numbe
 	return ade_set_args(L, "f", sso->ss->awacs_radius);
 }
 
-ADE_VIRTVAR(Orientation, l_Subsystem, "orientation", "Orientation of subobject or turret base", "orientation", "Subsystem orientation, or null orientation if handle is invalid")
+ADE_VIRTVAR(Orientation, l_Subsystem, "orientation", "Orientation of subobject or turret base", "orientation", "Subsystem orientation, or identity orientation if handle is invalid")
 {
 	ship_subsys_h *sso;
 	matrix_h *mh = nullptr;
-	if(!ade_get_args(L, "o|o", l_Subsystem.GetPtr(&sso), l_Matrix.GetPtr(&mh)))
+	if (!ade_get_args(L, "o|o", l_Subsystem.GetPtr(&sso), l_Matrix.GetPtr(&mh)))
 		return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
 
 	if (!sso->isSubsystemValid())
@@ -115,10 +115,19 @@ ADE_VIRTVAR(Orientation, l_Subsystem, "orientation", "Orientation of subobject o
 	if (smi == nullptr)
 		return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
 
-	if(ADE_SETTING_VAR && mh)
+	if (ADE_SETTING_VAR && mh != nullptr)
 	{
+		auto pm = model_get(sso->ss->system_info->model_num);
+		auto sm = &pm->submodel[sso->ss->system_info->subobj_num];
+
 		smi->canonical_prev_orient = smi->canonical_orient;
 		smi->canonical_orient = *mh->GetMatrix();
+
+		float angle = 0.0f;
+		vm_closest_angle_to_matrix(&smi->canonical_orient, &sm->rotation_axis, &angle);
+
+		smi->cur_angle = angle;
+		smi->turret_idle_angle = angle;
 	}
 
 	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&smi->canonical_orient)));
@@ -145,6 +154,36 @@ ADE_VIRTVAR(GunOrientation, l_Subsystem, "orientation", "Orientation of turret g
 	}
 
 	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&smi->canonical_orient)));
+}
+
+ADE_VIRTVAR(TranslationOffset,
+	l_Subsystem,
+	"vector",
+	"Gets or sets the translated submodel instance offset of the subsystem or turret base.  This is relative to the existing submodel offset to its parent; a non-translated submodel will have a TranslationOffset of zero.",
+	"vector",
+	"Offset, or zero vector if handle is not valid")
+{
+	ship_subsys_h *sso;
+	vec3d *vec = nullptr;
+	if (!ade_get_args(L, "o|o", l_Subsystem.GetPtr(&sso), l_Vector.GetPtr(&vec)))
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	if (!sso->isSubsystemValid())
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	auto smi = sso->ss->submodel_instance_1;
+	if (smi == nullptr)
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	if (ADE_SETTING_VAR && vec != nullptr)
+	{
+		smi->canonical_prev_offset = smi->canonical_offset;
+		smi->canonical_offset = *vec;
+
+		smi->cur_offset = vm_vec_mag(vec);
+	}
+
+	return ade_set_args(L, "o", l_Vector.Set(smi->canonical_offset));
 }
 
 ADE_VIRTVAR(HitpointsLeft, l_Subsystem, "number", "Subsystem hitpoints left", "number", "Hitpoints left, or 0 if handle is invalid. Setting a value of 0 will disable it - set a value of -1 or lower to actually blow it up.")
@@ -268,6 +307,23 @@ ADE_VIRTVAR(Name, l_Subsystem, "string", "Subsystem name", "string", "Subsystem 
 	}
 
 	return ade_set_args(L, "s", ship_subsys_get_name(sso->ss));
+}
+
+ADE_VIRTVAR(NumFirePoints, l_Subsystem, "number", "Number of firepoints", "number", "Number of fire points, or 0 if handle is invalid")
+{
+	ship_subsys_h* sso;
+	if (!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
+		return ade_set_error(L, "i", 0);
+
+	if (!sso->isSubsystemValid())
+		return ade_set_error(L, "i", 0);
+
+	if (ADE_SETTING_VAR)
+	{
+		LuaError(L, "Setting the number of fire points for subsystems is not allowed!");
+	}
+
+	return ade_set_args(L, "i", sso->ss->system_info->turret_num_firing_points);
 }
 
 ADE_FUNC(getModelName, l_Subsystem, NULL, "Returns the original name of the subsystem in the model file", "string", "name or empty string on error")
@@ -592,6 +648,29 @@ ADE_FUNC(isTargetInFOV, l_Subsystem, "object Target", "Determines if the object 
 		return ADE_RETURN_FALSE;
 }
 
+ADE_FUNC(isPositionInFOV, l_Subsystem, "vector Target", "Determines if a position is in the turrets FOV", "boolean", "true if in FOV, false if not, nil on error or if subsystem is not a turret ")
+{
+	ship_subsys_h* sso;
+	vec3d target = vmd_zero_vector;
+	if (!ade_get_args(L, "o|o", l_Subsystem.GetPtr(&sso), l_Vector.Get(&target)))
+		return ADE_RETURN_NIL;
+
+	if (!sso->isSubsystemValid() || !(sso->ss->system_info->type == SUBSYSTEM_TURRET))
+		return ADE_RETURN_NIL;
+
+	vec3d tpos, tvec;
+	ship_get_global_turret_info(sso->objp, sso->ss->system_info, &tpos, &tvec);
+
+	vec3d v2e;
+	vm_vec_normalized_dir(&v2e, &target, &tpos);
+	bool in_fov = turret_fov_test(sso->ss, &tvec, &v2e);
+
+	if (in_fov)
+		return ADE_RETURN_TRUE;
+	else
+		return ADE_RETURN_FALSE;
+}
+
 ADE_FUNC(fireWeapon, l_Subsystem, "[number TurretWeaponIndex = 1, number FlakRange = 100]", "Fires weapon on turret", nullptr, nullptr)
 {
 	ship_subsys_h *sso;
@@ -615,6 +694,12 @@ ADE_FUNC(fireWeapon, l_Subsystem, "[number TurretWeaponIndex = 1, number FlakRan
 	}
 
 	wnum--;	//Lua->FS2
+
+	if (wnum < 0 || wnum >= MAX_SHIP_WEAPONS)
+	{
+		LuaError(L, "TurretWeaponIndex (%i) is invalid! Minimum is 1, maximum is %i", wnum+1, MAX_SHIP_WEAPONS+1);
+		return ADE_RETURN_NIL;
+	}
 
 	//Get default turret info
 	vec3d gpos, gvec;
@@ -656,7 +741,7 @@ ADE_FUNC(rotateTurret, l_Subsystem, "vector Pos, boolean reset=false", "Rotates 
 		return ADE_RETURN_FALSE;
 }
 
-ADE_FUNC(getTurretHeading, l_Subsystem, NULL, "Returns the turrets forward vector", "vector", "Returns a normalized version of the forward vector or null vector on error")
+ADE_FUNC(getTurretHeading, l_Subsystem, NULL, "Returns the turrets forward vector", "vector", "Returns a normalized version of the forward vector in the ship's reference frame or null vector on error")
 {
 	ship_subsys_h *sso;
 	if(!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))

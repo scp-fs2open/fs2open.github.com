@@ -285,6 +285,9 @@ int Main_hall_overlay_id;
 // blit the freespace version #
 void main_hall_blit_version();
 
+// blit the mod title and version
+void main_hall_blit_mod();
+
 // blit any necessary tooltips
 void main_hall_maybe_blit_tooltips();
 
@@ -1049,6 +1052,9 @@ void main_hall_do(float frametime)
 	// blit the freespace version #
 	main_hall_blit_version();
 
+	// blit the mod title and version
+	main_hall_blit_mod();
+
 	// blit ship and weapon table status
 #ifndef NDEBUG
 	main_hall_blit_table_status();
@@ -1059,6 +1065,7 @@ void main_hall_do(float frametime)
 
 	// see if we have a missing campaign and force the player to select a new campaign if so
 	extern bool Campaign_room_no_campaigns;
+	bool popup_shown = false;
 	if ( !(Player->flags & PLAYER_FLAGS_IS_MULTI) && Campaign_file_missing && !Campaign_room_no_campaigns ) {
 		int rc = popup(0, 3, XSTR("Go to Campaign Room", 1607), XSTR("Select another pilot", 1608), XSTR("Exit Game", 1609), XSTR("The currently active campaign cannot be found.  Please select another...", 1600));
 
@@ -1079,13 +1086,20 @@ void main_hall_do(float frametime)
 				gameseq_post_event(GS_EVENT_CAMPAIGN_ROOM);
 				break;
 		}
+
+		// since all paths in this code block will take us to a different state, don't display any more popups
+		popup_shown = true;
 	}
 
 	// Display a popup if playermenu loaded a player file with a different version than expected
-	player_tips_controls();
+	if (!popup_shown) {
+		popup_shown = player_tips_controls();
+	}
 
 	// maybe run the player tips popup
-	player_tips_popup();
+	if (!popup_shown) {
+		player_tips_popup();
+	}
 
 	// if we were supposed to skip a frame, then stop doing it after 1 frame
 	if (Main_hall_frame_skip) {
@@ -1789,6 +1803,33 @@ void main_hall_blit_version()
 	gr_string(5, gr_screen.max_h_unscaled_zoomed - (h * 2 + 6), version_string.c_str(), GR_RESIZE_MENU_ZOOMED);
 
 	font::set_font(old_font);
+}
+
+/**
+ * Blit the mod title and version
+ */
+void main_hall_blit_mod()
+{
+	if ((!Mod_title.empty()) && (!Mod_version.empty())) {
+
+		int w, h;
+
+		// format the version string
+		auto mod_string = Mod_title + " " + Mod_version;
+
+		int old_font = font::get_current_fontnum();
+		font::set_font(Main_hall->font);
+
+		// get the length of the string
+		gr_get_string_size(&w, &h, mod_string.c_str());
+
+		// print the string near the lower left corner
+		gr_set_color_fast(&Color_bright_white);
+		gr_string(5, gr_screen.max_h_unscaled_zoomed - (h * 3 + 6), mod_string.c_str(), GR_RESIZE_MENU_ZOOMED);
+
+		font::set_font(old_font);
+
+	}
 }
 
 /**

@@ -53,6 +53,26 @@ void material_set_unlit(material* mat_info, int texture, float alpha, bool blend
 	}
 }
 
+void material_set_unlit_opaque(material* mat_info, int texture, bool depth_testing)
+{
+	mat_info->set_texture_map(TM_BASE_TYPE, texture);
+
+	gr_alpha_blend blend_mode = ALPHA_BLEND_NONE;
+	gr_zbuffer_type depth_mode = material_determine_depth_mode(depth_testing, false);
+
+	mat_info->set_blend_mode(blend_mode);
+	mat_info->set_depth_mode(depth_mode);
+	mat_info->set_cull_mode(false);
+
+	
+	mat_info->set_color(1.0f, 1.0f, 1.0f, 1.0f);
+	
+
+	if ( texture >= 0 && bm_has_alpha_channel(texture) ) {
+		mat_info->set_texture_type(material::TEX_TYPE_XPARENT);
+	}
+}
+
 void material_set_unlit_emissive(material* mat_info, int texture, float alpha, float color_scale)
 {
 	material_set_unlit(mat_info, texture, alpha, true, true);
@@ -161,6 +181,13 @@ void material_set_batched_bitmap(batched_bitmap_material* mat_info, int base_tex
 
 	mat_info->set_color_scale(color_scale);
 }
+
+void material_set_batched_opaque_bitmap(batched_bitmap_material* mat_info, int base_tex, float color_scale) {
+	material_set_unlit_opaque(mat_info, base_tex, true);
+
+	mat_info->set_color_scale(color_scale);
+}
+
 void material_set_nanovg(nanovg_material* mat_info, int base_tex) {
 	material_set_unlit(mat_info, base_tex, 1.0f, true, false);
 

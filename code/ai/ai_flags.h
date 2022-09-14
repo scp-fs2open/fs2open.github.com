@@ -145,6 +145,7 @@ namespace AI {
 		Prevent_negative_turret_ammo,
 		Fix_keep_safe_distance,
 		Ignore_aspect_when_leading,
+		Fix_good_rearm_time_bug,
 
 		NUM_VALUES
 	};

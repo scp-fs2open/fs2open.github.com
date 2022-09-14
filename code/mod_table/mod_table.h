@@ -1,3 +1,4 @@
+#pragma once
 /*
  * Created by Hassan "Karajorma" Kazmi for the FreeSpace2 Source Code Project.
  * You may not sell or otherwise commercially exploit the source or things you
@@ -31,13 +32,18 @@ extern bool Dont_automatically_select_turret_when_targeting_ship;
 extern bool Weapons_inherit_parent_collision_group;
 extern bool Flight_controls_follow_eyepoint_orientation;
 extern int FS2NetD_port;
+extern int Default_multi_object_update_level;
 extern float Briefing_window_FOV;
 extern bool Disable_hc_message_ani;
 extern bool Red_alert_applies_to_delayed_ships;
 extern bool Beams_use_damage_factors;
 extern float Generic_pain_flash_factor;
 extern float Shield_pain_flash_factor;
+extern float Emp_pain_flash_factor;
+extern std::tuple<float, float, float> Emp_pain_flash_color;
 extern SCP_string Window_title;
+extern SCP_string Mod_title;
+extern SCP_string Mod_version;
 extern bool Unicode_text_mode;
 extern bool Use_tabled_strings_for_default_language;
 extern bool Dont_preempt_training_voice;
@@ -80,6 +86,10 @@ extern bool Supernova_hits_at_zero;
 extern bool Show_subtitle_uses_pixels;
 extern int Show_subtitle_screen_base_res[];
 extern int Show_subtitle_screen_adjusted_res[];
+extern bool Always_warn_player_about_unbound_keys;
+extern struct shadow_disable_overrides {
+	bool disable_techroom, disable_mission_select_weapons, disable_mission_select_ships, disable_cockpit;
+} Shadow_disable_overrides;
 
 void mod_table_init();
 void mod_table_post_process();

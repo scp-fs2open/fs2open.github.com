@@ -168,7 +168,7 @@ void physics_sim_rot(matrix * orient, physics_info * pi, float sim_time )
 			shock_amplitude = pi->shockwave_shake_amp * shock_fraction_time_left;
 		}
 	}
-	else if (pi->flags & PF_NO_DAMP) {
+	else if (pi->flags & PF_MANEUVER_NO_DAMP) {
 		rotdamp = 0.0f;
 	}
 	else {
@@ -305,7 +305,7 @@ void physics_sim_vel(vec3d * position, physics_info * pi, float sim_time, matrix
 		}
 	}
 	// no damping at all
-	else if (pi->flags & PF_NO_DAMP) {
+	else if (pi->flags & PF_MANEUVER_NO_DAMP) {
 		damp = vmd_zero_vector;
 	}
 	// newtonian
@@ -655,7 +655,7 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 		}
 		else {
 			//Use the maximum value in X, Y, and Z (including overclocking)
-			dynamic_glide_cap_goal = MAX(MAX(pi->max_vel.xyz.x,pi->max_vel.xyz.y), pi->max_vel.xyz.z);
+			dynamic_glide_cap_goal = std::max({ pi->max_vel.xyz.x,pi->max_vel.xyz.y, pi->max_vel.xyz.z });
 		}
 		pi->cur_glide_cap = velocity_ramp(pi->cur_glide_cap, dynamic_glide_cap_goal, ramp_time_const, sim_time);
 

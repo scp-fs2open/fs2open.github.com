@@ -395,7 +395,12 @@ void HudGaugeBrackets::renderObjectBrackets(object *targetp, color *clr, int w_c
 	int bound_rc;
 	SCP_list<CJumpNode>::iterator jnp;
 
-	if ( Player->target_is_dying <= 0 || (Player_ai->target_objnum >= 0 && targetp != &Objects[Player_ai->target_objnum])) {
+
+	bool not_player_target = (Player_ai->target_objnum < 0 || targetp != &Objects[Player_ai->target_objnum]);
+
+
+	// target_is_dying is set to zero when the target is not dying, -1 when no target. Only 1, aka "TRUE", is invalid.
+	if ( not_player_target || Player->target_is_dying <= 0) {
 		int modelnum;
 
 		switch ( targetp->type ) {
@@ -475,7 +480,13 @@ void HudGaugeBrackets::renderObjectBrackets(object *targetp, color *clr, int w_c
 			int target_objnum = -1;
 
 			if(flags & TARGET_DISPLAY_DIST) {
-				distance = Player_ai->current_target_distance;
+				// since we can have either the target, or rogue asteroids bracketed,
+				// check which case we are in, and then do the correct distance.
+				if (not_player_target) {
+					distance = hud_find_target_distance(targetp, &Player_obj->pos);
+				} else {
+					distance = Player_ai->current_target_distance;
+				}
 			}
 
 			if(flags & TARGET_DISPLAY_DOTS) {

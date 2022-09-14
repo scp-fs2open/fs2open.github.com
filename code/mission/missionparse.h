@@ -96,7 +96,8 @@ typedef struct support_ship_info {
 #define	MOVIE_PRE_BRIEF			2
 #define	MOVIE_PRE_GAME			3
 #define	MOVIE_PRE_DEBRIEF		4
-#define MOVIE_END_CAMPAIGN		5
+#define	MOVIE_POST_DEBRIEF		5
+#define	MOVIE_END_CAMPAIGN		6
 
 // defines a mission cutscene.
 typedef struct mission_cutscene {
@@ -495,7 +496,7 @@ p_object *mission_parse_get_arrival_ship(const char *name);
 bool mission_check_ship_yet_to_arrive(const char *name);
 p_object *mission_parse_get_parse_object(ushort net_signature);
 p_object *mission_parse_get_parse_object(const char *name);
-int parse_create_object(p_object *objp);
+int parse_create_object(p_object *objp, bool standalone_ship = false);
 void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> &parse_flags);
 
 void mission_parse_close();

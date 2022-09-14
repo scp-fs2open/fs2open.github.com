@@ -160,6 +160,10 @@ protected:
 	afx_msg void OnUpdateSpeed50(CCmdUI* pCmdUI);
 	afx_msg void OnSpeed100();
 	afx_msg void OnUpdateSpeed100(CCmdUI* pCmdUI);
+	afx_msg void OnSpeed500();
+	afx_msg void OnUpdateSpeed500(CCmdUI* pCmdUI);
+	afx_msg void OnSpeed1000();
+	afx_msg void OnUpdateSpeed1000(CCmdUI* pCmdUI);
 	afx_msg void OnSelect();
 	afx_msg void OnUpdateSelect(CCmdUI* pCmdUI);
 	afx_msg void OnSelectAndMove();

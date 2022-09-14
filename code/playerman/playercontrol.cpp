@@ -511,16 +511,6 @@ void do_view_external()
 }
 
 /**
- * Separate out the reading of thrust keys, so we can call this from external view as well as from normal view
- */
-void do_thrust_keys(control_info *ci)
-{
-	ci->forward = check_control_timef(FORWARD_THRUST) - check_control_timef(REVERSE_THRUST);
-	ci->sideways = (check_control_timef(RIGHT_SLIDE_THRUST) - check_control_timef(LEFT_SLIDE_THRUST));//for slideing-Bobboau
-	ci->vertical = (check_control_timef(UP_SLIDE_THRUST) - check_control_timef(DOWN_SLIDE_THRUST));//for slideing-Bobboau
-}
-
-/**
  * Called by single and multiplayer modes to reset information inside of control info structure
  */
 void player_control_reset_ci( control_info *ci )
@@ -548,15 +538,16 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 
 	oldspeed = ci->forward_cruise_percent;
 	player_control_reset_ci( ci );
+	control_reset_lua_cache();
 
 	// Camera & View controls
 	if ( Viewer_mode & VM_EXTERNAL ) {
+		// External mode
 		control_used(VIEW_EXTERNAL);
-
 		do_view_external();
-		do_thrust_keys(ci);
 
 	} else if ( Viewer_mode & VM_CHASE ) {
+		// Chase mode
 		do_view_chase();
 
 	} else {
@@ -569,7 +560,6 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 	// Ship controls
 	if (Viewer_mode & VM_CAMERA_LOCKED) {
 		// From keyboard...
-		do_thrust_keys(ci);
 		if ( check_control(BANK_WHEN_PRESSED) ) {
 			ci->bank = check_control_timef(BANK_LEFT) + check_control_timef(YAW_LEFT) - check_control_timef(YAW_RIGHT) - check_control_timef(BANK_RIGHT);
 			ci->heading = 0.0f;
@@ -608,6 +598,12 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 	}
 
 	if (!(Game_mode & GM_DEAD)) {
+		// Thrust controls
+		ci->forward = check_control_timef(FORWARD_THRUST) - check_control_timef(REVERSE_THRUST);
+		ci->sideways = (check_control_timef(RIGHT_SLIDE_THRUST) - check_control_timef(LEFT_SLIDE_THRUST)); // for slideing-Bobboau
+		ci->vertical = (check_control_timef(UP_SLIDE_THRUST) - check_control_timef(DOWN_SLIDE_THRUST)); // for slideing-Bobboau
+
+		// Throttle controls
 		if ( button_info_query(&Player->bi, ONE_THIRD_THROTTLE) ) {
 			control_used(ONE_THIRD_THROTTLE);
 			player_clear_speed_matching();
@@ -1372,7 +1368,7 @@ void player_level_init()
 	Player->cargo_scan_loop    = sound_handle::invalid();
 	Player->cargo_inspect_time = 0;			// time that current target's cargo has been inspected for
 
-	Player->target_is_dying = -1;				// The player target is dying, set to -1 if no target
+	Player->target_is_dying = -1;				// Whether the player target is dying, -1 if no target
 	Player->current_target_sx = -1;			// Screen x-pos of current target (or subsystem if applicable)
 	Player->current_target_sy = -1;			// Screen y-pos of current target (or subsystem if applicable)
 	Player->target_in_lock_cone = -1;		// Is the current target in secondary weapon lock cone?

@@ -66,6 +66,14 @@ namespace {
 		report_problematic_container(sexp_name, "non-map", container_name);
 	}
 
+	void report_container_used_in_special_arg(const SCP_string &op_name, const char *container_name)
+	{
+		const SCP_string msg =
+			op_name + " called on container " + container_name + " while it is being used in a special argument SEXP";
+		Warning(LOCATION, "%s", msg.c_str());
+		log_printf(LOGFILE_EVENT_LOG, "%s", msg.c_str());
+	}
+
 	void add_to_map_internal(sexp_container &container, const SCP_string &key, const SCP_string &data) {
 		Assertion(container.is_map(),
 			"Attempt to add map data to non-map container %s. Please report!",
@@ -84,6 +92,30 @@ namespace {
 #endif
 		map_data.emplace(key, data);
 	}
+
+	// Containers should not be modified if the game is simply checking the syntax. 
+	bool are_containers_modifiable()
+	{
+		// can always modify containers during the mission itself
+		if (Game_mode & GM_IN_MISSION) {
+			return true;
+		}
+
+		// can also modify if we are calling the sexp from a script or if we are briefing / debriefing, etc.
+		switch (gameseq_get_state()) {
+			case GS_STATE_BRIEFING:
+			case GS_STATE_DEBRIEF:
+			case GS_STATE_CMD_BRIEF:
+			case GS_STATE_FICTION_VIEWER:
+			case GS_STATE_SCRIPTING:
+				return true;
+
+			default:
+				return false;
+		}
+	}
+
+	const SCP_string Remove_op_prefix = "Remove_";
 } // namespace
 
 // map_container_hash impl
@@ -176,6 +208,88 @@ const SCP_string &sexp_container::get_value_at_index(int index) const
 		UNREACHABLE("Container %s has invalid type (%d). Please report!", container_name.c_str(), (int)type);
 		return *list_data.cbegin(); // gibberish
 	}
+}
+
+SCP_string sexp_container::apply_list_modifier(ListModifier modifier, int data_index)
+{
+	Assertion(is_list(),
+		"Attempt to call list modifier (%d) on non-list container %s (type %d). Please report!",
+		(int)modifier,
+		container_name.c_str(),
+		(int)type);
+	Assertion(!list_data.empty(),
+		"Attempt to call list modifier (%d) on empty list container %s. Please report!",
+		(int)modifier,
+		container_name.c_str());
+
+	switch (modifier) {
+		case ListModifier::GET_FIRST:
+		case ListModifier::REMOVE_FIRST:
+			return list_get_first(modifier == ListModifier::REMOVE_FIRST);
+
+		case ListModifier::GET_LAST:
+		case ListModifier::REMOVE_LAST:
+			return list_get_last(modifier == ListModifier::REMOVE_LAST);
+
+		case ListModifier::GET_RANDOM:
+		case ListModifier::REMOVE_RANDOM:
+			return list_get_random(modifier == ListModifier::REMOVE_RANDOM);
+
+		case ListModifier::AT_INDEX:
+			return list_get_at(data_index);
+
+		default:
+			UNREACHABLE("Unhandled list modifier %d. Please report!", (int)modifier);
+			return "";
+	}
+}
+
+SCP_string sexp_container::list_get_first(bool remove)
+{
+	return list_apply_iterator(list_data.begin(), "First", remove);
+}
+
+SCP_string sexp_container::list_get_last(bool remove)
+{
+	return list_apply_iterator(--list_data.end(), "Last", remove);
+}
+
+SCP_string sexp_container::list_get_random(bool remove)
+{
+	const int rand_index = util::Random::next((int)list_data.size());
+	auto list_it = std::next(list_data.begin(), rand_index);
+	return list_apply_iterator(list_it, "Random", remove);
+}
+
+SCP_string sexp_container::list_get_at(int index)
+{
+	Assertion(index >= 0 && index < (int)list_data.size(),
+		"Attempt to use At list modifier for container %s with invalid index %d. Please report!",
+		container_name.c_str(),
+		index);
+
+	auto list_it = std::next(list_data.begin(), index);
+	return list_apply_iterator(list_it, "At", false);
+}
+
+SCP_string sexp_container::list_apply_iterator(SCP_list<SCP_string>::iterator list_it, const char *location, bool remove)
+{
+	Assertion(list_it != list_data.end(),
+		"Attempt to access invalid position in list container %s at location %s. Please report!",
+		container_name.c_str(),
+		location);
+
+	SCP_string result = *list_it;
+
+	if (remove && are_containers_modifiable()) {
+		if (is_being_used_in_special_arg()) {
+			report_container_used_in_special_arg(Remove_op_prefix + location, container_name.c_str());
+		} else {
+			list_data.erase(list_it);
+		}
+	}
+
+	return result;
 }
 
 // ListModifier-related functions
@@ -487,69 +601,33 @@ bool get_replace_text_for_modifier(const SCP_string &text,
 		}
 
 		const size_t modifier_length = strlen(get_list_modifier_name(modifier));
-		int data_index = 0;
+		int data_index = -1;
 		size_t number_length = 0;
-		SCP_string number_string;
-		auto &list_data = container.list_data;
-		auto list_it = list_data.begin();
 
-		switch (modifier) {
-		case ListModifier::GET_FIRST:
-			replacement_text = list_data.front();
-			break;
-
-		case ListModifier::GET_LAST:
-			replacement_text = list_data.back();
-			break;
-
-		case ListModifier::REMOVE_FIRST:
-			replacement_text = list_data.front();
-			list_data.pop_front();
-			break;
-
-		case ListModifier::REMOVE_LAST:
-			replacement_text = list_data.back();
-			list_data.pop_back();
-			break;
-
-		case ListModifier::GET_RANDOM:
-			data_index = util::Random::next((int)list_data.size());
-			replacement_text = *std::next(list_it, data_index);
-			break;
-
-		case ListModifier::REMOVE_RANDOM:
-			data_index = util::Random::next((int)list_data.size());
-			std::advance(list_it, data_index);
-			replacement_text = *list_it;
-			list_data.erase(list_it);
-			break;
-
-		case ListModifier::AT_INDEX:
-			number_string = text.substr(lookHere + modifier_length);
+		if (modifier == ListModifier::AT_INDEX) {
+			SCP_string number_string = text.substr(lookHere + modifier_length);
 			if (number_string.empty()) {
 				Warning(LOCATION,
 					"Container text replacement found empty index into list container %s",
 					container.container_name.c_str());
 				return false;
 			}
+
 			data_index = atoi(number_string.c_str());
-			if (data_index < 0 || data_index >= (int)list_data.size()) {
+
+			if (data_index < 0 || data_index >= (int)container.list_data.size()) {
 				Warning(LOCATION,
 					"Container text replacement found invalid index '%s' into list container %s",
 					number_string.c_str(),
 					container.container_name.c_str());
 				return false;
 			}
-			replacement_text = *std::next(list_it, data_index);
 
 			// include spaces, in case the FREDder put one between "At" and the index
 			number_length = strspn(number_string.c_str(), " 0123456789");
-			break;
-
-		default:
-			UNREACHABLE("Unhandled list modifier %d. Please report!", (int)modifier);
-			return false;
 		}
+
+		replacement_text = container.apply_list_modifier(modifier, data_index);
 
 		num_chars_to_replace += modifier_length;
 
@@ -660,28 +738,6 @@ bool sexp_container_replace_refs_with_values(char *text, size_t max_len)
 	return replaced_anything;
 }
 
-// Containers should not be modified if the game is simply checking the syntax. 
-bool are_containers_modifiable()
-{
-	// can always modify containers during the mission itself
-	if (Game_mode & GM_IN_MISSION) {
-		return true;
-	}
-
-	// can also modify if we are calling the sexp from a script or if we are briefing / debriefing, etc.
-	switch (gameseq_get_state()) {
-	case GS_STATE_BRIEFING:
-	case GS_STATE_DEBRIEF:
-	case GS_STATE_CMD_BRIEF:
-	case GS_STATE_FICTION_VIEWER:
-	case GS_STATE_SCRIPTING:
-		return true;
-
-	default:
-		return false;
-	}
-}
-
 bool sexp_container_CTEXT_helper(int &node, sexp_container &container, SCP_string &result)
 {
 	if (container.is_map()) {
@@ -714,7 +770,6 @@ bool sexp_container_CTEXT_helper(int &node, sexp_container &container, SCP_strin
 		const char *modifier_name = CTEXT(node);
 		const auto modifier = get_list_modifier(modifier_name);
 
-
 		if (modifier == ListModifier::INVALID) {
 			const SCP_string &container_name = container.container_name;
 			Warning(LOCATION,
@@ -729,60 +784,32 @@ bool sexp_container_CTEXT_helper(int &node, sexp_container &container, SCP_strin
 		}
 
 		int data_index = -1;
-		auto &list_data = container.list_data;
-		auto list_it = list_data.begin();
 
-		switch (modifier) {
-		case ListModifier::GET_FIRST:
-		case ListModifier::REMOVE_FIRST:
-			result = list_data.front();
-			if (modifier == ListModifier::REMOVE_FIRST && are_containers_modifiable()) {
-				list_data.pop_front();
-			}
-			return true;
-
-		case ListModifier::GET_LAST:
-		case ListModifier::REMOVE_LAST:
-			result = list_data.back();
-			if (modifier == ListModifier::REMOVE_LAST && are_containers_modifiable()) {
-				list_data.pop_back();
-			}
-			return true;
-
-		case ListModifier::GET_RANDOM:
-		case ListModifier::REMOVE_RANDOM:
-			data_index = util::Random::next((int)list_data.size());
-			std::advance(list_it, data_index);
-			result = *list_it;
-			if (modifier == ListModifier::REMOVE_RANDOM && are_containers_modifiable()) {
-				list_data.erase(list_it);
-			}
-			return true;
-
-		case ListModifier::AT_INDEX:
+		if (modifier == ListModifier::AT_INDEX) {
 			node = CDR(node);
 			if (node == -1) {
 				return false;
 			}
+
 			bool is_nan, is_nan_forever;
 			data_index = eval_num(node, is_nan, is_nan_forever);
 			if (is_nan || is_nan_forever) {
 				return false;
 			}
-			if (data_index < 0 || data_index >= (int)list_data.size()) {
+
+			if (data_index < 0 || data_index >= (int)container.list_data.size()) {
 				return false;
 			}
-			result = *std::next(list_it, data_index);
-			return true;
-
-		default:
-			UNREACHABLE("Unhandled list modifier %d found for container %s",
-				(int)modifier,
-				container.container_name.c_str());
-			break;
 		}
+
+		result = container.apply_list_modifier(modifier, data_index);
+		return true;
+	} else {
+		UNREACHABLE("Container %s has invalid type (%d). Please report!",
+			container.container_name.c_str(),
+			(int)container.type);
+		return false;
 	}
-	return false;
 }
 
 // inspired by sexp_campaign_file_variable_count()
@@ -1153,6 +1180,11 @@ void sexp_add_to_list(int node)
 		return;
 	}
 
+	if (container.is_being_used_in_special_arg()) {
+		report_container_used_in_special_arg("Add-to-list", container_name);
+		return;
+	}
+
 	while (node != -1) {
 		if (add_to_back) {
 			container.list_data.emplace_back(CTEXT(node));
@@ -1178,6 +1210,11 @@ void sexp_remove_from_list(int node)
 
 	if (!container.is_list()) {
 		report_non_list_container("Remove-from-list", container_name);
+		return;
+	}
+
+	if (container.is_being_used_in_special_arg()) {
+		report_container_used_in_special_arg("Remove-from-list", container_name);
 		return;
 	}
 
@@ -1220,6 +1257,11 @@ void sexp_add_to_map(int node)
 		return;
 	}
 
+	if (container.is_being_used_in_special_arg()) {
+		report_container_used_in_special_arg("Add-to-map", container_name);
+		return;
+	}
+
 	node = CDR(node);
 	Assertion(node != -1, "Add-to-map wasn't given values to add. Please report!");
 
@@ -1256,6 +1298,11 @@ void sexp_remove_from_map(int node)
 
 	if (!container.is_map()) {
 		report_non_map_container("Remove-from-map", container_name);
+		return;
+	}
+
+	if (container.is_being_used_in_special_arg()) {
+		report_container_used_in_special_arg("Remove-from-map", container_name);
 		return;
 	}
 
@@ -1323,6 +1370,12 @@ void sexp_get_map_keys(int node)
 		return;
 	}
 
+	// SEXP doesn't modify map container, so using it in special arg here is OK
+	if (list_container.is_being_used_in_special_arg()) {
+		report_container_used_in_special_arg("Get-map-keys", list_container_name);
+		return;
+	}
+
 	node = CDR(node);
 	if (node != -1) {
 		replace_contents = is_sexp_true(node);
@@ -1351,6 +1404,11 @@ void sexp_clear_container(int node)
 		}
 
 		auto &container = *p_container;
+
+		if (container.is_being_used_in_special_arg()) {
+			report_container_used_in_special_arg("Clear-container", container_name);
+			continue;
+		}
 
 		if (container.is_map()) {
 			container.map_data.clear();
@@ -1399,6 +1457,12 @@ void sexp_copy_container(int node)
 							   " and container " + dest_container_name + " whose types don't match";
 		Warning(LOCATION, "%s", msg.c_str());
 		log_printf(LOGFILE_EVENT_LOG, "%s", msg.c_str());
+		return;
+	}
+
+	// SEXP doesn't modify source container, so using it in special arg here is OK
+	if (dest_container.is_being_used_in_special_arg()) {
+		report_container_used_in_special_arg("Copy-container", dest_container_name);
 		return;
 	}
 
@@ -1468,6 +1532,12 @@ void sexp_apply_container_filter(int node)
 
 	if (!filter_container.is_list()) {
 		report_non_list_container("Apply-container-filter", filter_container_name);
+		return;
+	}
+
+	// SEXP doesn't modify filter container, so using it here is ok
+	if (container.is_being_used_in_special_arg()) {
+		report_container_used_in_special_arg("Apply-container-filter", container_name);
 		return;
 	}
 
@@ -1648,4 +1718,73 @@ int sexp_container_collect_map_key_arguments(int node,
 	bool just_count)
 {
 	return collect_container_values(node, argument_vector, just_count, "For-map-container-keys", true);
+}
+
+int sexp_container_query_sexp_args_count(const int node, SCP_vector<int> &cumulative_arg_countss, bool only_valid_args)
+{
+	Assertion(cumulative_arg_countss.empty(),
+		"Attempt to count number of SEXP arguments when counts already exit. Please repot!");
+
+	int count = 0;
+
+	// intiial value, for no arguments
+	cumulative_arg_countss.emplace_back(0);
+
+	int n = CDR(node);
+
+	for (; n != -1; n = CDR(n))
+	{
+		if (only_valid_args && !(Sexp_nodes[n].flags & SNF_ARGUMENT_VALID)) {
+			continue;
+		}
+
+		const int prev_index = cumulative_arg_countss.back();
+
+		if (Sexp_nodes[n].subtype == SEXP_ATOM_CONTAINER_NAME) {
+			const char *container_name = Sexp_nodes[n].text;
+			const auto *p_container = get_sexp_container(container_name);
+
+			// should have been checked in get_sexp()
+			Assertion(p_container, "Special argument SEXP given nonexistent container %s. Please report!", container_name);
+			const auto &container = *p_container;
+
+			Assertion(container.is_of_string_type(),
+				"Attempt to use non-string-valued container %s as special argument options. Please report!",
+				container_name);
+			// if the container is empty, the index will be a duplicate, but that's ok
+			cumulative_arg_countss.emplace_back(prev_index + container.size());
+		} else {
+			cumulative_arg_countss.emplace_back(prev_index + 1);
+		}
+
+		count++;
+	}
+
+	return count;
+}
+
+void sexp_container_set_special_arg_status(int arg_handler_node, bool status)
+{
+	Assertion(arg_handler_node != -1,
+		"Attempt to set special argument status on invalid argument handler. Please report!");
+
+	for (int arg_node = CDR(arg_handler_node); arg_node != -1; arg_node = CDR(arg_node)) {
+		Assertion(Sexp_nodes[arg_node].subtype != SEXP_ATOM_CONTAINER_DATA,
+			"Attempt to use Replace Container Data as special argument option, which isn't supported. Please report!");
+
+		if (Sexp_nodes[arg_node].subtype == SEXP_ATOM_CONTAINER_NAME) {
+			const char *container_name = Sexp_nodes[arg_node].text;
+			auto *p_container = get_sexp_container(container_name);
+
+			// should have been checked in get_sexp()
+			Assertion(p_container,
+				"Special argument SEXP given nonexistent container %s. Please report!",
+				container_name);
+			auto &container = *p_container;
+
+			// status could match, if the FREDder added the same container multiple times
+			// as an argument to the same SEXP, which is odd but not an error
+			container.used_in_special_arg = status;
+		}
+	}
 }

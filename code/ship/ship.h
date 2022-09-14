@@ -338,6 +338,7 @@ public:
 	model_subsystem *system_info;					// pointer to static data for this subsystem -- see model.h for definition
 
 	int			parent_objnum;						// objnum of the parent ship
+	int			parent_subsys_index;				// index of this subsystem in the parent ship's linked list
 
 	char		sub_name[NAME_LENGTH];					//WMC - Name that overrides name of original
 	float		current_hits;							// current number of hits this subsystem has left.
@@ -448,8 +449,8 @@ typedef struct ship_flag_name {
 	char flag_name[TOKEN_LENGTH];		// the name written to the mission file for its corresponding parse_object flag
 } ship_flag_name;
 
-#define MAX_SHIP_FLAG_NAMES					23
 extern ship_flag_name Ship_flag_names[];
+extern const int Num_ship_flag_names;
 
 #define DEFAULT_SHIP_PRIMITIVE_SENSOR_RANGE		10000	// Goober5000
 
@@ -609,6 +610,7 @@ public:
 	// types of subsystems.  (i.e. the list might contain 3 engines.  There will be one subsys_info entry
 	// describing the state of all engines combined) -- MWA 4/1/97
 	ship_subsys	subsys_list;									//	linked list of subsystems for this ship.
+	std::unique_ptr<ship_subsys*[]> subsys_list_indexer;		//	provides random-access lookup to the linked list
 	ship_subsys	*last_targeted_subobject[MAX_PLAYERS];	// Last subobject that has been targeted.  NULL if none;(player specific)
 	ship_subsys_info	subsys_info[SUBSYSTEM_MAX];		// info on particular generic types of subsystems	
 
@@ -690,7 +692,7 @@ public:
 
 	// Stuff for showing electrical arcs on damaged ships
 	vec3d	arc_pts[MAX_SHIP_ARCS][2];			// The endpoints of each arc
-	int		arc_timestamp[MAX_SHIP_ARCS];		// When this times out, the spark goes away.  -1 is not used
+	TIMESTAMP	arc_timestamp[MAX_SHIP_ARCS];		// When this times out, the spark goes away.  Invalid is not used
 	ubyte		arc_type[MAX_SHIP_ARCS];			// see MARC_TYPE_* defines in model.h
 	int		arc_next_time;							// When the next damage/emp arc will be created.	
 	SCP_vector<int>		passive_arc_next_times;		// When the next passive ship arc will be created.	
@@ -1582,7 +1584,7 @@ extern void ship_init();				// called once	at game start
 extern void ship_level_init();		// called before the start of each level
 
 //returns -1 if failed
-extern int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name = nullptr);
+extern int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name = nullptr, bool standalone_ship = false);
 extern void change_ship_type(int n, int ship_type, int by_sexp = 0);
 extern void ship_process_pre( object * objp, float frametime );
 extern void ship_process_post( object * objp, float frametime );
@@ -1618,8 +1620,6 @@ extern void ship_cleanup(int shipnum, int cleanup_mode);
 // Goober5000
 extern void ship_destroy_instantly(object *ship_obj, bool with_debris = false);
 extern void ship_actually_depart(int shipnum, int method = SHIP_DEPARTED_WARP);
-
-extern const std::shared_ptr<scripting::Hook> OnShipDeathStartedHook;
 
 extern bool in_autoaim_fov(ship *shipp, int bank_to_fire, object *obj);
 extern int ship_stop_fire_primary(object * obj);
@@ -1705,11 +1705,12 @@ extern int ship_find_num_turrets(object *objp);
 
 extern void compute_slew_matrix(matrix *orient, angles *a);
 extern void ship_get_eye( vec3d *eye_pos, matrix *eye_orient, object *obj, bool do_slew = true, bool from_origin = false);		// returns in eye the correct viewing position for the given object
-//extern camid ship_get_followtarget_eye(object *obj);
-extern ship_subsys *ship_get_indexed_subsys( ship *sp, int index, vec3d *attacker_pos = NULL );	// returns index'th subsystem of this ship
-extern int ship_get_index_from_subsys(ship_subsys *ssp, int objnum);
-extern int ship_get_subsys_index(ship *sp, const char* ss_name);		// returns numerical index in linked list of subsystems
-extern int ship_get_subsys_index(ship *shipp, ship_subsys *subsys);
+
+extern ship_subsys *ship_find_first_subsys(ship *sp, int subsys_type, vec3d *attacker_pos = nullptr);
+extern ship_subsys *ship_get_indexed_subsys(ship *sp, int index);	// returns index'th subsystem of this ship
+extern int ship_find_subsys(ship *sp, const char *ss_name);		// returns numerical index in linked list of subsystems
+extern int ship_get_subsys_index(ship_subsys *subsys);
+
 extern float ship_get_subsystem_strength( ship *shipp, int type, bool skip_dying_check = false );
 extern ship_subsys *ship_get_subsys(const ship *shipp, const char *subsys_name);
 extern int ship_get_num_subsys(ship *shipp);

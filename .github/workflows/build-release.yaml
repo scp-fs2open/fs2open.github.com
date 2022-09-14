@@ -315,6 +315,6 @@ jobs:
     needs: [linux_zip, windows_zip]
     uses: ./.github/workflows/post-build-release.yaml
     with:
-      linux_result: ${{ needs.build_linux.result }}
-      windows_result: ${{ needs.build_windows.result }}
+      linux_result: ${{ needs.linux_zip.result }}
+      windows_result: ${{ needs.windows_zip.result }}
       releaseTag: ${{ github.ref_name }}
