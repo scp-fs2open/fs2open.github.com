@@ -32,7 +32,7 @@ layout (std140) uniform lightData {
 	vec3 diffuseLightColor;
 	float coneAngle;
 
-	vec3 specLightColor;
+	vec3 lightDir;
 	float coneInnerAngle;
 
 	vec3 coneDir;
@@ -41,9 +41,7 @@ layout (std140) uniform lightData {
 	vec3 scale;
 	float lightRadius;
 
-	vec3 lightDir;
 	int lightType;
-
 	bool enable_shadows;
 };
 
@@ -140,6 +138,6 @@ void main()
 	vec3 halfVec = normalize(lightDir + eyeDir);
 	float NdotL = clamp(dot(normal, lightDir), 0.0, 1.0);
 	vec4 fragmentColor = vec4(color * (diffuseLightColor * NdotL * attenuation), 1.0);
-	fragmentColor.rgb += computeLighting(specColor.rgb, lightDir, normal.xyz, halfVec, eyeDir, gloss, fresnel, NdotL).rgb * specLightColor * attenuation;
+	fragmentColor.rgb += computeLighting(specColor.rgb, lightDir, normal.xyz, halfVec, eyeDir, gloss, fresnel, NdotL).rgb * diffuseLightColor * attenuation;
 	fragOut0 = max(fragmentColor, vec4(0.0));
 }

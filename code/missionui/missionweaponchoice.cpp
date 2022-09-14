@@ -889,14 +889,8 @@ void wl_render_overhead_view(float frametime)
 			g3_set_view_matrix( &sip->closeup_pos, &Eye_matrix, zoom);
 			render_info.set_detail_level_lock(0);
 			
-
-			light_reset();
-			vec3d light_dir = vmd_zero_vector;
-			light_dir.xyz.x = 0.5;
-			light_dir.xyz.y = 2.0f;
-			light_dir.xyz.z = -2.0f;	
-			light_add_directional(&light_dir, 0.65f, 1.0f, 1.0f, 1.0f);
-			light_rotate_all();
+			//setup lights
+			common_setup_room_lights();
 
             Glowpoint_use_depth_buffer = false;
             

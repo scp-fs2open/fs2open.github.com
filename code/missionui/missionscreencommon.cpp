@@ -22,7 +22,9 @@
 #include "gamesnd/eventmusic.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/linklist.h"
+#include "globalincs/vmallocator.h"
 #include "graphics/2d.h"
+#include "graphics/color.h"
 #include "graphics/matrix.h"
 #include "graphics/shadows.h"
 #include "hud/hudwingmanstatus.h"
@@ -1627,13 +1629,8 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 
 	if(!(flags & MR_NO_LIGHTING))
 	{
-		light_reset();
-		vec3d light_dir = vmd_zero_vector;
-		light_dir.xyz.x = -0.5;
-		light_dir.xyz.y = 2.0f;
-		light_dir.xyz.z = -2.0f;	
-		light_add_directional(&light_dir, 0.65f, 1.0f, 1.0f, 1.0f);
-		light_rotate_all();
+		//setup lights
+		common_setup_room_lights();
 	}
 
 	if (sip != NULL && sip->replacement_textures.size() > 0) 
@@ -1784,14 +1781,8 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 
 			g3_done_instance(true);
 
-			// lighting for techroom
-			light_reset();
-			vec3d light_dir = vmd_zero_vector;
-			light_dir.xyz.y = 1.0f;
-			light_dir.xyz.x = 0.0000001f;
-			light_add_directional(&light_dir, 0.65f, 1.0f, 1.0f, 1.0f);
-			light_rotate_all();
-			// lighting for techroom
+			//setup lights
+			common_setup_room_lights();
 
 			// render the ships
 			model_clear_instance(model_id);
@@ -1901,13 +1892,8 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 			g3_set_view_matrix(&pos, &vmd_identity_matrix, closeup_zoom);
 		}
 
-		// lighting for techroom
-		light_reset();
-		vec3d light_dir = vmd_zero_vector;
-		light_dir.xyz.y = 1.0f;
-		light_add_directional(&light_dir, 0.65f, 1.0f, 1.0f, 1.0f);
-		light_rotate_all();
-		// lighting for techroom
+		//setup lights
+		common_setup_room_lights();
 
 		model_clear_instance(model_id);
 
@@ -1955,6 +1941,24 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 	}
 
 	shadow_end_frame();
+}
+
+/**
+ * @brief add and rotate lights for all the non-gameplay ship rendering instances
+ */
+void common_setup_room_lights()
+{
+	light_reset();
+	auto tempv = vm_vec_new(-1.0f,0.3f,-1.0f);
+	auto tempc = hdr_color(1.0f,0.95f,0.9f, 0.0f, 1.5f);//use 3 for qaz shaders
+	light_add_directional(&tempv,&tempc);
+	tempv.xyz={-0.4f,0.4f,1.1f};
+	tempc = hdr_color(0.788f,0.886f,1.0f,0.0f,1.5f);//use 3 for qaz shaders
+	light_add_directional(&tempv,&tempc);
+	tempv.xyz={0.4f,0.1f,0.4f};
+	tempc = hdr_color(1.0f,1.0f,1.0f,0.0f,0.4f);//use 0.8 for qaz shaders
+	light_add_directional(&tempv,&tempc);
+	light_rotate_all();
 }
 
 // NEWSTUFF END
