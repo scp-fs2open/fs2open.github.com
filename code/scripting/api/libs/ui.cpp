@@ -714,7 +714,7 @@ ADE_FUNC(startBriefingMap,
 ADE_FUNC(closeBriefingMap,
 	l_UserInterface_Brief,
 	nullptr,
-	"Closes the briefing map. Required after drawing!",
+	"Closes the briefing map. Required when done drawing!",
 	nullptr,
 	"nothing")
 {
@@ -726,7 +726,7 @@ ADE_FUNC(closeBriefingMap,
 ADE_FUNC(drawBriefingMap,
 	l_UserInterface_Brief,
 	nullptr,
-	"Draws the briefing map for the current mission.",
+	"Draws the briefing map for the current mission. Must be called On Frame.",
 	nullptr,
 	"nothing")
 {

@@ -59,8 +59,8 @@ ADE_VIRTVAR(hasForwardCut,
 	l_BriefStage,
 	nullptr,
 	"The result of the stage formula",
-	"briefing_stage",
-	"true if the stage should be displayed, false otherwise")
+	"boolean",
+	"true if the stage is set to cut to the next stage, false otherwise")
 {
 	brief_stage_h stage;
 	if (!ade_get_args(L, "o", l_BriefStage.Get(&stage))) {
@@ -82,8 +82,8 @@ ADE_VIRTVAR(hasBackwardCut,
 	l_BriefStage,
 	nullptr,
 	"The result of the stage formula",
-	"briefing_stage",
-	"true if the stage should be displayed, false otherwise")
+	"boolean",
+	"true if the stage is set to cut to the previous stage, false otherwise")
 {
 	brief_stage_h stage;
 	if (!ade_get_args(L, "o", l_BriefStage.Get(&stage))) {

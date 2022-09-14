@@ -1018,6 +1018,7 @@ void brief_api_init()
 	hud_anim_init(&Fade_anim, bstat_x, bstat_y, Brief_static_name[gr_screen.res]);
 	hud_anim_load(&Fade_anim);
 
+	//This will need to be replaced with an API version in a later PR - Mjn
 	common_select_init();
 
 	// This loads the static bitmap for stage cuts - Mjn
