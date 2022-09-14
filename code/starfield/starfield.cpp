@@ -847,7 +847,7 @@ static void irradiance_map_gen()
 		gen_flags |= BMP_FLAG_RENDER_TARGET_DYNAMIC;
 	}
 
-	gr_screen.irrmap_render_target = bm_make_render_target(16, 16, gen_flags);
+	gr_screen.irrmap_render_target = bm_make_render_target(irr_size, irr_size, gen_flags);
 	IRRMAP = gr_screen.irrmap_render_target;
 }
 
