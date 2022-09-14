@@ -179,6 +179,15 @@ SCP_vector<exited_ship> Ships_exited;
 SCP_vector<ship_registry_entry> Ship_registry;
 SCP_unordered_map<SCP_string, int, SCP_string_lcase_hash, SCP_string_lcase_equal_to> Ship_registry_map;
 
+int ship_registry_get_index(const char *name)
+{
+	auto ship_it = Ship_registry_map.find(name);
+	if (ship_it != Ship_registry_map.end())
+		return ship_it->second;
+
+	return -1;
+}
+
 const ship_registry_entry *ship_registry_get(const char *name)
 {
 	auto ship_it = Ship_registry_map.find(name);
