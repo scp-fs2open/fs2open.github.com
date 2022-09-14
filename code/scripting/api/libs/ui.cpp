@@ -673,21 +673,19 @@ ADE_FUNC(commitToMission,
 
 ADE_FUNC(startBriefingMap,
 	l_UserInterface_Brief,
-	"number x1, number y1, [number x2 = 888, number y2 = 235, number static offset x, number static offset y]",
+	"number x1, number y1, [number x2 = 888, number y2 = 235]",
 	"Starts the briefing map for the current mission. This also inits the current mission's loadout information "
 	"for maninipulation by Lua.",
 	nullptr,
-	"nothing")
+	nullptr)
 {
 
 	int x1;
 	int y1;
 	int x2 = 888;
 	int y2 = 371;
-	int stat_x;
-	int stat_y;
 
-	if (!ade_get_args(L, "ii|iiii", &x1, &y1, &x2, &y2, &stat_x, &stat_y)) {
+	if (!ade_get_args(L, "ii|ii", &x1, &y1, &x2, &y2)) {
 		LuaError(L, "X and Y coordinates not provided!");
 		return ADE_RETURN_NIL;
 	}
@@ -711,7 +709,7 @@ ADE_FUNC(closeBriefingMap,
 	nullptr,
 	"Closes the briefing map. Required when done drawing!",
 	nullptr,
-	"nothing")
+	nullptr)
 {
 	(void)L;
 	brief_api_close();
@@ -723,7 +721,7 @@ ADE_FUNC(drawBriefingMap,
 	nullptr,
 	"Draws the briefing map for the current mission. Must be called On Frame.",
 	nullptr,
-	"nothing")
+	nullptr)
 {
 	(void)L;
 	brief_api_do_frame(flRealframetime);
@@ -747,7 +745,7 @@ ADE_FUNC(callPrevMapStage,
 	nullptr,
 	"Sends the briefing map to the previous stage.",
 	nullptr,
-	"nothing")
+	nullptr)
 {
 	(void)L;
 	brief_do_prev_pressed();
@@ -771,7 +769,7 @@ ADE_FUNC(callLastMapStage,
 	nullptr,
 	"Sends the briefing map to the last stage.",
 	nullptr,
-	"nothing")
+	nullptr)
 {
 	SCP_UNUSED(L);
 	(void)L;
