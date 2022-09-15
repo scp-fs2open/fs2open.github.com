@@ -17,6 +17,7 @@
 #include "windows_stub/config.h"
 #include "globalincs/scp_defines.h"
 #include "globalincs/toolchain.h"
+#include "globalincs/vmallocator.h"
 #include "utils/strings.h"
 
 #include <cstdio>    // For NULL, etc
@@ -25,6 +26,7 @@
 #include <cstring>
 #include <algorithm>
 #include <cstdint>
+#include <functional>
 
 // value to represent an uninitialized state in any int or uint
 #define UNINITIALIZED 0x7f8e6d9c
@@ -209,12 +211,24 @@ struct flag_def_list {
 	ubyte var;
 };
 
+//A list of parse names for a flag enum
 template<class T>
 struct flag_def_list_new {
     const char* name;			// The parseable representation of this flag
     T def;				// The flag definition for this flag
     bool in_use;		// Whether or not this flag is currently in use or obsolete
     bool is_special;	// Whether this flag requires special processing. See parse_string_flag_list<T, T> for details
+};
+
+//A list of parse names for a flag enum. Instead of specifying whether an argument needs special handling,
+//a functor can passed that is called to handle an argument proceeding the flag. If used with parse_string_flag_list_special,
+//these will automatically be called when a special argument is encountered
+template<class T, typename... additional_args>
+struct special_flag_def_list_new : public flag_def_list_new<T> {
+	std::function<void(const SCP_string&, additional_args...)> parse_special;
+
+	special_flag_def_list_new(const char* name, T flag, bool in_use) : flag_def_list_new<T>{ name, flag, in_use, false } {}
+	special_flag_def_list_new(const char* name, T flag, bool in_use, const decltype(parse_special)& parseSpecial) : flag_def_list_new<T>{ name, flag, in_use, true }, parse_special(parseSpecial) { }
 };
 
 // weapon count list (mainly for pilot files)

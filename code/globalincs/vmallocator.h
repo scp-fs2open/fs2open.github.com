@@ -1,6 +1,7 @@
 #ifndef _VMALLOCATOR_H_INCLUDED_
 #define _VMALLOCATOR_H_INCLUDED_
 
+#include <algorithm>
 #include <deque>
 #include <iterator>
 #include <list>
