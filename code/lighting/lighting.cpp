@@ -263,8 +263,6 @@ void light_add_tube(const vec3d *p0, const vec3d *p1, float r1, float r2, float 
 
 	l.source_radius = MAX(0.0f,source_radius);
 
-	l.source_radius = MAX(0.0f,source_radius);
-
 	Lights.push_back(l);
 }
 
