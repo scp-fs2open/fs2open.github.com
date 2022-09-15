@@ -1190,7 +1190,7 @@ namespace animation {
 	}
 
 	void ModelAnimationSegmentSoundDuring::executeAnimation(const ModelAnimationSubmodelBuffer& state, float timeboundLower, float timeboundUpper, ModelAnimationDirection direction, int pmi_id) {
-		polymodel_instance* pmi = model_get_instance(pmi->id);
+		polymodel_instance* pmi = model_get_instance(pmi_id);
 
 		if (timeboundLower <= 0.0f && 0.0f <= timeboundUpper) {
 			if (!m_flipIfReversed || direction == ModelAnimationDirection::FWD)
