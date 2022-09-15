@@ -96,7 +96,7 @@ missile_obj Missile_obj_list;						// head of linked list of missile_obj structs
 #define DEFAULT_WEAPON_SPAWN_COUNT	10
 
 int	Num_spawn_types = 0;
-char** Spawn_names = NULL;
+char** Spawn_names = nullptr;
 
 //WEAPON SUBTYPE STUFF
 const char *Weapon_subtype_names[] = {

@@ -211,6 +211,7 @@ struct flag_def_list {
 	ubyte var;
 };
 
+//A list of parse names for a flag enum
 template<class T>
 struct flag_def_list_new {
     const char* name;			// The parseable representation of this flag
@@ -219,6 +220,9 @@ struct flag_def_list_new {
     bool is_special;	// Whether this flag requires special processing. See parse_string_flag_list<T, T> for details
 };
 
+//A list of parse names for a flag enum. Instead of specifying whether an argument needs special handling,
+//a functor can passed that is called to handle an argument proceeding the flag. If used with parse_string_flag_list_special,
+//these will automatically be called when a special argument is encountered
 template<class T, typename... additional_args>
 struct special_flag_def_list_new : public flag_def_list_new<T> {
 	std::function<void(const SCP_string&, additional_args...)> parse_special;

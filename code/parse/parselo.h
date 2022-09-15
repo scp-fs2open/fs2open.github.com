@@ -157,7 +157,8 @@ extern void parse_string_flag_list(int *dest, flag_def_list defs[], size_t defs_
 
 // A templated version of parse_string_flag_list, to go along with the templated flag_def_list_new.
 // If the "is_special" flag is set, or a string was not found in the def list, it will be added to the unparsed_or_special_strings Vector
-// so that you can process it properly later
+// so that you can process it properly later. If you just want to handle special flags (that is, flags with arguments or special code on parse),
+// consider using parse_string_flag_list_special and a special_flag_def_list_new instead.
 template<class Flagdef, class Flagset>
 void parse_string_flag_list(Flagset& dest, const Flagdef defs[], size_t n_defs, SCP_vector<SCP_string>* unparsed_or_special_strings)
 {
@@ -185,6 +186,7 @@ void parse_string_flag_list(Flagset& dest, const Flagdef defs[], size_t n_defs, 
     }
 }
 
+// Like parse_string_flag_list, but capable of automatically handling special flags registered in the special_flag_def_list_new
 template<class T, class Flagset, size_t n, typename... additional_args, typename... additional_args_fwd>
 void parse_string_flag_list_special(Flagset& dest, const special_flag_def_list_new<T, additional_args...>(&defs)[n], SCP_vector<SCP_string>* unparsed_strings, additional_args_fwd&&... args) {
 	SCP_vector<SCP_string> unparsed;
