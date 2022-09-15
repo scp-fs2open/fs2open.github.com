@@ -657,7 +657,7 @@ void sim_room_build_listing()
 
 		if (!Campaign_mission_names_inited) {  // Is this the first time through
 			// builds list, adds sim room line and sets Campaign_mission_names_inited
-			popup_till_condition([]() -> int { return build_standalone_mission_list_do_frame(false); },
+			popup_till_condition([]() -> int { return build_campaign_mission_list_do_frame(false); },
 				POPUP_CANCEL,
 				XSTR("Loading campaign missions", 992));
 		} else {
