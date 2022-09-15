@@ -172,10 +172,9 @@ void light_add_directional(const vec3d *dir, float intensity, float r, float g, 
 	l.g = g;
 	l.b = b;
 
-	//Direcional lights not yet switched to use lighting profiles multipliers as that's part of a seperate project
+	//configurable global tuning of light qualities
 	auto lp = lighting_profile::current();
-	l.intensity = lp->directional_light_brightness.handle(intensity);
-	l.intensity = lp->overall_brightness.handle(l.intensity);
+	l.intensity = lp->overall_brightness.handle(lp->directional_light_brightness.handle(intensity));
 	l.rada = 0.0f;
 	l.radb = 0.0f;
 	l.rada_squared = l.rada*l.rada;
@@ -213,8 +212,7 @@ void light_add_point(const vec3d *pos, float r1, float r2, float intensity, floa
 
 	//configurable global tuning of light qualities
 	auto lp = lighting_profile::current();
-	l.intensity = lp->point_light_brightness.handle(intensity);
-	l.intensity = lp->overall_brightness.handle(l.intensity);
+	l.intensity = lp->overall_brightness.handle(lp->point_light_brightness.handle(intensity));
 	l.rada = lp->point_light_radius.handle(r1);
 	l.radb = lp->point_light_radius.handle(r2);
 	l.rada_squared = l.rada*l.rada;
@@ -252,8 +250,7 @@ void light_add_tube(const vec3d *p0, const vec3d *p1, float r1, float r2, float 
 
 	//configurable global tuning of light qualities
 	auto lp = lighting_profile::current();
-	l.intensity = lp->tube_light_brightness.handle(intensity);
-	l.intensity = lp->overall_brightness.handle(l.intensity);
+	l.intensity = lp->overall_brightness.handle(lp->tube_light_brightness.handle(intensity));
 	l.rada = lp->tube_light_radius.handle(r1);
 	l.radb = lp->tube_light_radius.handle(r2);
 	l.rada_squared = l.rada*l.rada;
@@ -457,8 +454,7 @@ void light_add_cone(const vec3d *pos, const vec3d *dir, float angle, float inner
 	l.b = b;
 
 	auto lp = lighting_profile::current();
-	l.intensity = lp->cone_light_brightness.handle(intensity);
-	l.intensity = lp->overall_brightness.handle(l.intensity);
+	l.intensity = lp->overall_brightness.handle(lp->cone_light_brightness.handle(intensity));
 	l.rada = lp->cone_light_radius.handle(r1);
 	l.radb = lp->cone_light_radius.handle(r2);
 	l.rada_squared = l.rada*l.rada;

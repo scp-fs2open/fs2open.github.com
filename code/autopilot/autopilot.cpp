@@ -47,10 +47,9 @@ NavMessage NavMsgs[NP_NUM_MESSAGES];
 int audio_handle;
 int NavLinkDistance;
 // time offsets for autonav events
-int LockAPConv;
-int EndAPCinematic;
-int MoveCamera;
-int camMovingTime;
+TIMESTAMP LockAPConv;
+TIMESTAMP EndAPCinematic;
+TIMESTAMP MoveCamera;
 //float CameraSpeed;
 bool CinematicStarted, CameraMoving;
 vec3d cameraPos, cameraTarget;
@@ -262,9 +261,9 @@ bool StartAutopilot()
 	}
 
 	if (The_mission.flags[Mission::Mission_Flags::Use_ap_cinematics])
-		LockAPConv = timestamp(); // lock convergence instantly
+		LockAPConv = _timestamp(); // lock convergence instantly
 	else
-		LockAPConv = timestamp(3000); // 3 seconds before we lock convergence
+		LockAPConv = _timestamp(3 * MILLISECONDS_PER_SECOND); // 3 seconds before we lock convergence
 	Player_use_ai = 1;
 	set_time_compression(1);
 	lock_time_compression(true);
@@ -828,9 +827,8 @@ bool StartAutopilot()
 		//CameraMoving = false;
 
 
-		EndAPCinematic = timestamp((10000*tc_factor)+NPS_TICKRATE); // 10 objective seconds before end of cinematic 
-		MoveCamera = timestamp((5500*tc_factor)+NPS_TICKRATE);
-		camMovingTime = int(4.5*float(tc_factor));
+		EndAPCinematic = _timestamp((10 * MILLISECONDS_PER_SECOND * tc_factor) + NPS_TICKRATE); // 10 objective seconds before end of cinematic 
+		MoveCamera = _timestamp(fl2i(5.5 * MILLISECONDS_PER_SECOND * tc_factor) + NPS_TICKRATE);
 		set_time_compression((float)tc_factor);
 	}
 
@@ -1047,15 +1045,13 @@ void NavSystem_Do()
 					if(cam != NULL)
 						cam->set_rotation_facing(&Player_obj->pos);
 
-					if (timestamp() >= MoveCamera && !CameraMoving && vm_vec_mag(&cameraTarget) > 0.0f)
+					if (timestamp_elapsed(MoveCamera) && !CameraMoving && vm_vec_mag(&cameraTarget) > 0.0f)
 					{
-						//Free_camera->set_position(&cameraTarget, float(camMovingTime), float(camMovingTime)/2.0f);
-						//Free_camera->set_translation_velocity(&cameraTarget);
 						CameraMoving = true;
 					}
 
 
-					if (timestamp() >= EndAPCinematic || !CanAutopilot())
+					if (timestamp_elapsed(EndAPCinematic) || !CanAutopilot())
 					{
 						nav_warp();
 						EndAutoPilot();

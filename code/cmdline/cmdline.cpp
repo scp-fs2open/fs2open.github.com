@@ -1853,7 +1853,7 @@ bool SetCmdlineParams()
 	if (emissive_power_arg.found() && emissive_power_arg.has_param()) {
 		Cmdline_emissive_power = emissive_power_arg.get_float();
 	} else if (emissive_arg.found() || emissive_power_arg.found()) {
-		// for legacy support no parm defaults to the old emissive value
+		// for legacy support no argument param defaults to the old emissive value
 		Cmdline_emissive_power = 0.30f;
 	}
 
@@ -2008,10 +2008,6 @@ bool SetCmdlineParams()
 
 	if ( no_fbo_arg.found() ) {
 		Cmdline_no_fbo = 1;
-	}
-
-	if ( emissive_arg.found() && !emissive_power_arg.found()){
-		Cmdline_emissive_power = 0.30f;
 	}
 
 	if ( rearm_timer_arg.found() )

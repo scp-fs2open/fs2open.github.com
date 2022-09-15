@@ -1299,6 +1299,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/background_element.h
 	scripting/api/objs/beam.cpp
 	scripting/api/objs/beam.h
+	scripting/api/objs/briefing.cpp
+	scripting/api/objs/briefing.h
 	scripting/api/objs/bytearray.cpp
 	scripting/api/objs/bytearray.h
 	scripting/api/objs/camera.cpp
@@ -1403,6 +1405,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/subsystem.h
 	scripting/api/objs/team.cpp
 	scripting/api/objs/team.h
+	scripting/api/objs/techroom.cpp
+	scripting/api/objs/techroom.h
 	scripting/api/objs/texture.cpp
 	scripting/api/objs/texture.h
 	scripting/api/objs/texturemap.cpp

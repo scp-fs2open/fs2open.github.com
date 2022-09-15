@@ -179,6 +179,15 @@ SCP_vector<exited_ship> Ships_exited;
 SCP_vector<ship_registry_entry> Ship_registry;
 SCP_unordered_map<SCP_string, int, SCP_string_lcase_hash, SCP_string_lcase_equal_to> Ship_registry_map;
 
+int ship_registry_get_index(const char *name)
+{
+	auto ship_it = Ship_registry_map.find(name);
+	if (ship_it != Ship_registry_map.end())
+		return ship_it->second;
+
+	return -1;
+}
+
 const ship_registry_entry *ship_registry_get(const char *name)
 {
 	auto ship_it = Ship_registry_map.find(name);
@@ -8869,7 +8878,7 @@ static void ship_do_thruster_frame( ship *shipp, object *objp, float frametime )
 
 		// If thrust at 0, go at half as fast, full thrust; full framerate
 		// so set rate from 0.67 to 1.67, depending on thrust from 0 to 1
-		rate = 0.67f * (1.0f + objp->phys_info.forward_thrust);
+		rate = 0.67f * (1.0f + objp->phys_info.linear_thrust.xyz.z);
 	}
 
 	Assert( frametime > 0.0f );
@@ -8935,7 +8944,7 @@ void ship_do_weapon_thruster_frame( weapon *weaponp, object *objp, float frameti
 
 	// If thrust at 0, go at half as fast, full thrust; full framerate
 	// so set rate from 0.67 to 1.67, depending on thrust from 0 to 1
-	rate = 0.67f * (1.0f + objp->phys_info.forward_thrust);
+	rate = 0.67f * (1.0f + objp->phys_info.linear_thrust.xyz.z);
 
 	if (wip->thruster_flame.first_frame >= 0)
 		flame_anim = &wip->thruster_flame;
@@ -10046,16 +10055,26 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 	// but it breaks multi, so there will just be a warning on debug instead.
 	if ((ship_name == nullptr) || (ship_name_lookup(ship_name) >= 0) /*|| (ship_find_exited_ship_by_name(ship_name) >= 0)*/) {
 		// regular name, regular suffix
+		char base_name[NAME_LENGTH];
 		char suffix[NAME_LENGTH];
-		strcpy_s(shipp->ship_name, Ship_info[ship_type].name);
+		strcpy_s(base_name, Ship_info[ship_type].name);
 		sprintf(suffix, NOX(" %d"), n);
 
 		// default names shouldn't have a hashed suffix
-		end_string_at_first_hash_symbol(shipp->ship_name);
+		end_string_at_first_hash_symbol(base_name);
 
-		// build it
-		Assert(strlen(shipp->ship_name) + strlen(suffix) <= NAME_LENGTH - 1);
+		// start building name
+		strcpy_s(shipp->ship_name, base_name);
+
+		// if generated name will be longer than allowable name, truncate the class section of the name by the overflow
+		int char_overflow = (strlen(base_name) + strlen(suffix)) - (NAME_LENGTH - 1);
+		if (char_overflow > 0) {
+			shipp->ship_name[strlen(base_name) - char_overflow] = '\0';
+		}
+
+		// complete building the name by adding suffix number
 		strcat_s(shipp->ship_name, suffix);
+
 	} else {
 		if (ship_find_exited_ship_by_name(ship_name) >= 0 && !(Game_mode & GM_MULTIPLAYER)) {
 			Warning(LOCATION, "Newly-arrived ship %s has been given the same name as a ship previously destroyed in-mission. This can cause unpredictable SEXP behavior. Correct your mission file or scripts to prevent duplicates.", ship_name);
@@ -10774,21 +10793,19 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	if (by_sexp) {
 		Objects[sp->objnum].phys_info.desired_rotvel = ph_inf.desired_rotvel;
 		Objects[sp->objnum].phys_info.desired_vel = ph_inf.desired_vel;
-		Objects[sp->objnum].phys_info.forward_thrust = ph_inf.forward_thrust;
 		Objects[sp->objnum].phys_info.fspeed = ph_inf.fspeed;
 		Objects[sp->objnum].phys_info.heading = ph_inf.heading;
 		Objects[sp->objnum].phys_info.last_rotmat = ph_inf.last_rotmat;
-		Objects[sp->objnum].phys_info.prev_fvec = ph_inf.prev_fvec;
 		Objects[sp->objnum].phys_info.prev_ramp_vel = ph_inf.prev_ramp_vel;
 		Objects[sp->objnum].phys_info.reduced_damp_decay = ph_inf.reduced_damp_decay;
 		Objects[sp->objnum].phys_info.rotvel = ph_inf.rotvel;
 		Objects[sp->objnum].phys_info.shockwave_decay = ph_inf.shockwave_decay;
 		Objects[sp->objnum].phys_info.shockwave_shake_amp = ph_inf.shockwave_shake_amp;
-		Objects[sp->objnum].phys_info.side_thrust = ph_inf.side_thrust;
 		Objects[sp->objnum].phys_info.speed = ph_inf.speed;
 		Objects[sp->objnum].phys_info.vel = ph_inf.vel;
-		Objects[sp->objnum].phys_info.vert_thrust = ph_inf.vert_thrust;
 		Objects[sp->objnum].phys_info.ai_desired_orient = ph_inf.ai_desired_orient;
+		Objects[sp->objnum].phys_info.linear_thrust = ph_inf.linear_thrust;
+		Objects[sp->objnum].phys_info.rotational_thrust = ph_inf.rotational_thrust;
 	}
 
 	ship_set_new_ai_class(sp, sip->ai_class);
@@ -18542,7 +18559,7 @@ int ship_class_compare(int ship_class_1, int ship_class_2)
  * Gives the index into the Damage_types[] vector of a specified damage type name
  * @return -1 if not found
  */
-static int damage_type_get_idx(char *name)
+static int damage_type_get_idx(const char *name)
 {
 	//This should never be bigger than INT_MAX anyway
 	for(int i = 0; i < (int)Damage_types.size(); i++)
@@ -18557,7 +18574,7 @@ static int damage_type_get_idx(char *name)
 /**
  * Either loads a new damage type, or returns the index of one with the same name as given
  */
-int damage_type_add(char *name)
+int damage_type_add(const char *name)
 {
 	int i = damage_type_get_idx(name);
 	if(i != -1)
@@ -19478,9 +19495,7 @@ int get_nearest_bbox_point(object *ship_objp, vec3d *start, vec3d *box_pt)
 
 void ship_set_thruster_info(mst_info *mst, object *obj, ship *shipp, ship_info *sip)
 {
-	mst->length.xyz.z = obj->phys_info.forward_thrust;
-	mst->length.xyz.x = obj->phys_info.side_thrust;
-	mst->length.xyz.y = obj->phys_info.vert_thrust;
+	mst->length = obj->phys_info.linear_thrust;
 
 	//	Maybe add noise to thruster geometry.
 	if (!(sip->flags[Ship::Info_Flags::No_thruster_geo_noise])) {
@@ -19530,48 +19545,45 @@ void ship_render_batch_thrusters(object *obj)
 		render_amount = 0.0f;
 
 		if (mtp->use_flags.any_set()) {
-			if(pi->desired_rotvel.xyz.x < 0 && (mtp->use_flags[Ship::Thruster_Flags::Pitch_up])) {
-				render_amount = fl_abs(pi->desired_rotvel.xyz.x) / pi->max_rotvel.xyz.x;
-			} else if(pi->desired_rotvel.xyz.x > 0 && (mtp->use_flags[Ship::Thruster_Flags::Pitch_down])) {
-				render_amount = fl_abs(pi->desired_rotvel.xyz.x) / pi->max_rotvel.xyz.x;
-			} else if(pi->desired_rotvel.xyz.y < 0 && (mtp->use_flags[Ship::Thruster_Flags::Roll_right])) {
-				render_amount = fl_abs(pi->desired_rotvel.xyz.y) / pi->max_rotvel.xyz.y;
-			} else if(pi->desired_rotvel.xyz.y > 0 && (mtp->use_flags[Ship::Thruster_Flags::Roll_left])) {
-				render_amount = fl_abs(pi->desired_rotvel.xyz.y) / pi->max_rotvel.xyz.y;
-			} else if(pi->desired_rotvel.xyz.z < 0 && (mtp->use_flags[Ship::Thruster_Flags::Bank_right])) {
-				render_amount = fl_abs(pi->desired_rotvel.xyz.z) / pi->max_rotvel.xyz.z;
-			} else if(pi->desired_rotvel.xyz.z > 0 && (mtp->use_flags[Ship::Thruster_Flags::Bank_left])) {
-				render_amount = fl_abs(pi->desired_rotvel.xyz.z) / pi->max_rotvel.xyz.z;
+			if(pi->rotational_thrust.xyz.x < 0 && (mtp->use_flags[Ship::Thruster_Flags::Pitch_up])) {
+				render_amount = -pi->rotational_thrust.xyz.x;
+			} else if(pi->rotational_thrust.xyz.x > 0 && (mtp->use_flags[Ship::Thruster_Flags::Pitch_down])) {
+				render_amount = pi->rotational_thrust.xyz.x;
+			} else if(pi->rotational_thrust.xyz.y < 0 && (mtp->use_flags[Ship::Thruster_Flags::Roll_right])) {
+				render_amount = -pi->rotational_thrust.xyz.y;
+			} else if(pi->rotational_thrust.xyz.y > 0 && (mtp->use_flags[Ship::Thruster_Flags::Roll_left])) {
+				render_amount = pi->rotational_thrust.xyz.y;
+			} else if(pi->rotational_thrust.xyz.z < 0 && (mtp->use_flags[Ship::Thruster_Flags::Bank_right])) {
+				render_amount = -pi->rotational_thrust.xyz.z;
+			} else if(pi->rotational_thrust.xyz.z > 0 && (mtp->use_flags[Ship::Thruster_Flags::Bank_left])) {
+				render_amount = pi->rotational_thrust.xyz.z;
 			}
 
 			//Backslash - show thrusters according to thrust amount, not speed
-			if(pi->side_thrust > 0 && (mtp->use_flags[Ship::Thruster_Flags::Slide_right])) {
-				render_amount = pi->side_thrust;
-			} else if(pi->side_thrust < 0 && (mtp->use_flags[Ship::Thruster_Flags::Slide_left])) {
-				render_amount = -pi->side_thrust;
-			} else if(pi->vert_thrust > 0 && (mtp->use_flags[Ship::Thruster_Flags::Slide_up])) {
-				render_amount = pi->vert_thrust;
-			} else if(pi->vert_thrust < 0 && (mtp->use_flags[Ship::Thruster_Flags::Slide_down])) {
-				render_amount = -pi->vert_thrust;
-			} else if(pi->forward_thrust > 0 && (mtp->use_flags[Ship::Thruster_Flags::Forward])) {
-				render_amount = pi->forward_thrust;
-			} else if(pi->forward_thrust < 0 && (mtp->use_flags[Ship::Thruster_Flags::Reverse])) {
-				render_amount = -pi->forward_thrust;
+			if(pi->linear_thrust.xyz.x > 0 && (mtp->use_flags[Ship::Thruster_Flags::Slide_right])) {
+				render_amount = pi->linear_thrust.xyz.x;
+			} else if(pi->linear_thrust.xyz.x < 0 && (mtp->use_flags[Ship::Thruster_Flags::Slide_left])) {
+				render_amount = -pi->linear_thrust.xyz.x;
+			} else if(pi->linear_thrust.xyz.y > 0 && (mtp->use_flags[Ship::Thruster_Flags::Slide_up])) {
+				render_amount = pi->linear_thrust.xyz.y;
+			} else if(pi->linear_thrust.xyz.y < 0 && (mtp->use_flags[Ship::Thruster_Flags::Slide_down])) {
+				render_amount = -pi->linear_thrust.xyz.y;
+			} else if(pi->linear_thrust.xyz.z > 0 && (mtp->use_flags[Ship::Thruster_Flags::Forward])) {
+				render_amount = pi->linear_thrust.xyz.z;
+			} else if(pi->linear_thrust.xyz.z < 0 && (mtp->use_flags[Ship::Thruster_Flags::Reverse])) {
+				render_amount = -pi->linear_thrust.xyz.z;
 			}
 		} else {
 			// calculate it automatically
-			vec3d cross, rotvel;
-			rotvel.xyz.x = pi->desired_rotvel.xyz.x / pi->max_rotvel.xyz.x;
-			rotvel.xyz.y = pi->desired_rotvel.xyz.y / pi->max_rotvel.xyz.y;
-			rotvel.xyz.z = pi->desired_rotvel.xyz.z / pi->max_rotvel.xyz.z;
+			vec3d cross;
 			vec3d pos = mtp->pos / (obj->radius * 0.5f); // for full activation at half radius, further out will get capped to 1
-			vm_vec_cross(&cross, &pos, &rotvel);
+			vm_vec_cross(&cross, &pos, &pi->rotational_thrust);
 			render_amount = vm_vec_dot(&mtp->norm, &cross);
 			CLAMP(render_amount, 0.0f, 1.0f);
 
-			render_amount += -vm_vec_dot(&mtp->norm, &vmd_x_vector) * pi->side_thrust;
-			render_amount += -vm_vec_dot(&mtp->norm, &vmd_y_vector) * pi->vert_thrust;
-			render_amount += -vm_vec_dot(&mtp->norm, &vmd_z_vector) * pi->forward_thrust;
+			render_amount += -vm_vec_dot(&mtp->norm, &vmd_x_vector) * pi->linear_thrust.xyz.x;
+			render_amount += -vm_vec_dot(&mtp->norm, &vmd_y_vector) * pi->linear_thrust.xyz.y;
+			render_amount += -vm_vec_dot(&mtp->norm, &vmd_z_vector) * pi->linear_thrust.xyz.z;
 
 		}
 		CLAMP(render_amount, 0.0f, 1.0f);

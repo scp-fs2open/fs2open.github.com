@@ -142,6 +142,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "bitwise-or",						OP_BITWISE_OR,							2,	INT_MAX,	SEXP_ARITHMETIC_OPERATOR,	},	// Goober5000
 	{ "bitwise-not",					OP_BITWISE_NOT,							1,	1,			SEXP_ARITHMETIC_OPERATOR,	},	// Goober5000
 	{ "bitwise-xor",					OP_BITWISE_XOR,							2,	2,			SEXP_ARITHMETIC_OPERATOR,	},	// Goober5000
+	{ "angle-vectors",					OP_ANGLE_VECTORS,						6,  6,			SEXP_ARITHMETIC_OPERATOR,   },  // Lafiel
 
 	//Logical Category
 	{ "true",							OP_TRUE,								0,	0,			SEXP_BOOLEAN_OPERATOR,	},
@@ -309,6 +310,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "get-object-speed-x",				OP_GET_OBJECT_SPEED_X,					1,	2,			SEXP_INTEGER_OPERATOR,	},
 	{ "get-object-speed-y",				OP_GET_OBJECT_SPEED_Y,					1,	2,			SEXP_INTEGER_OPERATOR,	},
 	{ "get-object-speed-z",				OP_GET_OBJECT_SPEED_Z,					1,	2,			SEXP_INTEGER_OPERATOR,	},
+	{ "angle-facing-object",			OP_ANGLE_FVEC_TARGET,					2,  2,			SEXP_INTEGER_OPERATOR,  }, // Lafiel 
 
 	//Variables Sub-Category
 	{ "string-to-int",					OP_STRING_TO_INT,						1,	1,			SEXP_INTEGER_OPERATOR,	}, // Karajorma
@@ -4574,13 +4576,11 @@ void stuff_sexp_text_string(SCP_string &dest, int node, int mode)
 		// number
 		if (Sexp_nodes[node].subtype == SEXP_ATOM_NUMBER)
 		{
-			Assert(Sexp_variables[sexp_variables_index].type & SEXP_VARIABLE_NUMBER);
 			sprintf(dest, "@%s[%s] ", var_name, var_contents);
 		}
 		// string
 		else if (Sexp_nodes[node].subtype == SEXP_ATOM_STRING)
 		{
-			Assert(Sexp_variables[sexp_variables_index].type & SEXP_VARIABLE_STRING);
 			sprintf(dest, "\"@%s[%s]\" ", var_name, var_contents);
 		}
 		else
@@ -8306,6 +8306,69 @@ int sexp_get_object_angle(int n, int axis)
 
 		default:
 			return SEXP_NAN;
+	}
+}
+
+int sexp_angle_vectors(int node) {
+	vec3d v1, v2;
+	bool is_nan1, is_nan_forever1, is_nan2, is_nan_forever2;
+
+	eval_vec3d(&v1, node, is_nan1, is_nan_forever1);
+	eval_vec3d(&v2, node, is_nan2, is_nan_forever2);
+
+	if (is_nan_forever1 || is_nan_forever2)
+		return SEXP_NAN_FOREVER;
+
+	if (is_nan1 || is_nan2)
+		return SEXP_NAN;
+
+	if (IS_VEC_NULL(&v1) || IS_VEC_NULL(&v2))
+		return SEXP_NAN;
+
+	float angle = fl_degrees(vm_vec_dot(&v1, &v2) / (vm_vec_mag(&v1) * vm_vec_mag(&v2)));
+
+	return fl2ir(angle);
+}
+
+int sexp_angle_fvec_target(int node) {
+	auto* ship = eval_ship(node);
+
+	if (ship->status == ShipStatus::EXITED)
+		return SEXP_NAN_FOREVER;
+	else if (ship->status == ShipStatus::NOT_YET_PRESENT)
+		return SEXP_NAN;
+
+	const vec3d& pos1 = ship->objp->pos;
+	const vec3d& v1 = ship->objp->orient.vec.fvec;
+
+	object_ship_wing_point_team oswpt;
+	eval_object_ship_wing_point_team(&oswpt, CDR(node));
+
+	switch (oswpt.type)
+	{
+	case OSWPT_TYPE_SHIP:
+	case OSWPT_TYPE_WING:
+	case OSWPT_TYPE_WAYPOINT: {
+		const vec3d& pos2 = oswpt.objp->pos;
+
+		if (vm_vec_equal(pos1, pos2))
+			return SEXP_NAN;
+
+		vec3d v2;
+		vm_vec_normalized_dir(&v2, &pos2, &pos1);
+
+		// No need to divide by product of magnitudes, both fvec and v2 are normalized
+		float angle = fl_degrees(acosf_safe(vm_vec_dot(&v1, &v2)));
+
+		return fl2ir(angle);
+	}
+
+	case OSWPT_TYPE_NONE:
+	case OSWPT_TYPE_EXITED:
+		return SEXP_NAN_FOREVER;
+
+	default:
+		return SEXP_NAN;
 	}
 }
 
@@ -17436,7 +17499,7 @@ int sexp_key_pressed(int node)
 	if (is_nan_forever)
 		return SEXP_KNOWN_FALSE;
 
-	return timestamp_has_time_elapsed(Control_config[z].used, t * 1000);
+	return timestamp_since(Control_config[z].used) >= t * MILLISECONDS_PER_SECOND;
 }
 
 void sexp_key_reset(int node)
@@ -17508,13 +17571,13 @@ int sexp_targeted(int node)
 	}
 
 	if (CDR(node) >= 0) {
-		z = eval_num(CDR(node), is_nan, is_nan_forever) * 1000;
+		z = eval_num(CDR(node), is_nan, is_nan_forever);
 		if (is_nan)
 			return SEXP_FALSE;
 		if (is_nan_forever)
 			return SEXP_KNOWN_FALSE;
 
-		if (!timestamp_has_time_elapsed(Players_target_timestamp, z)){
+		if (timestamp_since(Players_target_timestamp) < z * MILLISECONDS_PER_SECOND){
 			return SEXP_FALSE;
 		}
 
@@ -17541,13 +17604,13 @@ int sexp_node_targeted(int node)
 	}
 
 	if (CDR(node) >= 0) {
-		z = eval_num(CDR(node), is_nan, is_nan_forever) * 1000;
+		z = eval_num(CDR(node), is_nan, is_nan_forever);
 		if (is_nan)
 			return SEXP_FALSE;
 		if (is_nan_forever)
 			return SEXP_KNOWN_FALSE;
 
-		if (!timestamp_has_time_elapsed(Players_target_timestamp, z)){
+		if (timestamp_since(Players_target_timestamp) < z * MILLISECONDS_PER_SECOND){
 			return SEXP_FALSE;
 		}
 	}
@@ -17562,13 +17625,13 @@ int sexp_speed(int node)
 
 	if (Training_context & TRAINING_CONTEXT_SPEED) {
 		if (Training_context_speed_set) {
-			z = eval_num(node, is_nan, is_nan_forever) * 1000;
+			z = eval_num(node, is_nan, is_nan_forever);
 			if (is_nan)
 				return SEXP_FALSE;
 			if (is_nan_forever)
 				return SEXP_KNOWN_FALSE;
 
-			if (timestamp_has_time_elapsed(Training_context_speed_timestamp, z)){
+			if (timestamp_since(Training_context_speed_timestamp) >= z * MILLISECONDS_PER_SECOND){
 				return SEXP_KNOWN_TRUE;
 			}
 		}
@@ -21530,12 +21593,12 @@ int sexp_missile_locked(int node)
 
 	// if we've gotten this far, we must have satisfied whatever conditions the sexp imposed
 	// finally, test if we've locked for a certain period of time
-	z = eval_num(node, is_nan, is_nan_forever) * 1000;
+	z = eval_num(node, is_nan, is_nan_forever);
 	if (is_nan)
 		return SEXP_FALSE;
 	if (is_nan_forever)
 		return SEXP_KNOWN_FALSE;
-	if (timestamp_has_time_elapsed(Players_mlocked_timestamp, z))
+	if (timestamp_since(Players_mlocked_timestamp) >= z * MILLISECONDS_PER_SECOND)
 	{
 		return SEXP_TRUE;
 	}
@@ -25093,6 +25156,10 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_bitwise_xor(node);
 				break;
 
+			case OP_ANGLE_VECTORS:
+				sexp_val = sexp_angle_vectors(node);
+				break;
+
 			// boolean operators can have one of the special sexp values (known true, known false, unknown)
 			case OP_TRUE:
 				sexp_val = SEXP_KNOWN_TRUE;
@@ -25385,6 +25452,10 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 			case OP_DISTANCE_BBOX_SUBSYSTEM:
 				sexp_val = sexp_distance_subsystem(node, sexp_bbox_distance_point);
+				break;
+
+			case OP_ANGLE_FVEC_TARGET:
+				sexp_val = sexp_angle_fvec_target(node);
 				break;
 
 			case OP_NUM_WITHIN_BOX:
@@ -27959,6 +28030,8 @@ int query_operator_return_type(int op)
 		case OP_GET_HOTKEY:
 		case OP_GET_CONTAINER_SIZE:
 		case OP_LIST_DATA_INDEX:
+		case OP_ANGLE_VECTORS:
+		case OP_ANGLE_FVEC_TARGET:
 			return OPR_NUMBER;
 
 		case OP_ABS:
@@ -28530,6 +28603,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_SIGNUM:
 		case OP_IS_NAN:
 		case OP_NAN_TO_NUMBER:
+		case OP_ANGLE_VECTORS:
 			return OPF_NUMBER;
 
 		case OP_POW:
@@ -28896,6 +28970,12 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_GET_OBJECT_BANK:
 		case OP_GET_OBJECT_HEADING:
 			return OPF_SHIP_WING;
+
+		case OP_ANGLE_FVEC_TARGET:
+			if (argnum == 0)
+				return OPF_SHIP;
+			else
+				return OPF_SHIP_WING_POINT;
 
 		case OP_SET_OBJECT_POSITION:
 			if(argnum == 0)
@@ -32991,6 +33071,7 @@ int get_subcategory(int sexp_id)
 		case OP_NUM_WITHIN_BOX:
 		case OP_SPECIAL_WARP_DISTANCE:
 		case OP_IS_IN_BOX:
+		case OP_ANGLE_FVEC_TARGET:
 			return STATUS_SUBCATEGORY_DISTANCE_AND_COORDINATES;
 
 		case OP_STRING_TO_INT:
@@ -33236,6 +33317,16 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	// Goober5000
 	{ OP_BITWISE_XOR, "bitwise-xor\r\n"
 		"\tPerforms the bitwise XOR operator on its arguments.  This is the same as if the logical XOR operator was performed on each successive bit.  Takes 2 or more numeric arguments.\r\n" },
+
+	{ OP_ANGLE_VECTORS, "angle-vectors\r\n"
+		"\tCalculates the angle between two vectors."
+		"Takes 6 arguments...\r\n"
+		"\t1: The x component of the first vector.\r\n"
+		"\t2: The y component of the first vector.\r\n"
+		"\t3: The z component of the first vector.\r\n"
+		"\t4: The x component of the second vector.\r\n"
+		"\t5: The y component of the second vector.\r\n"
+		"\t6: The z component of the second vector.\r\n"},
 
 	{ OP_SET_OBJECT_SPEED_X, "set-object-speed-x (deprecated in favor of ship-maneuver)\r\n"
 		"\tSets the X speed of a ship or wing."
@@ -33823,6 +33914,13 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tThe name of the object.\r\n"
 		"\t2:\tThe name of the ship which houses the subsystem.\r\n"
 		"\t3:\tThe name of the subsystem." },
+
+	{ OP_ANGLE_FVEC_TARGET, "angle-facing-object\r\n"
+		"\tReturns the angle between the forward vector of a ship and the vector from the ship to another object.\r\n"
+		"\tThis is effectively the FoV the ship would need to see the object.\r\n\r\n"
+		"Returns a numeric value.  Takes 2 arguments...\r\n"
+		"\t1:\tThe name of the ship from which to check.\r\n"
+		"\t2:\tThe name of the object to check." },
 
 	{ OP_NUM_WITHIN_BOX, "Number of specified objects in the box specified\r\n"
 		"\t1: Box center (X)\r\n"

@@ -332,7 +332,7 @@ void ssm_create(object *target, vec3d *start, size_t ssm_index, ssm_firing_info 
 		ssm.sinfo.start_pos.resize(count);
 
 		for (idx = 0; idx < count; idx++) {
-			ssm.sinfo.delay_stamp[idx] = timestamp(200 + (int)frand_range(-199.0f, 1000.0f));
+			ssm.sinfo.delay_stamp[idx] = _timestamp(200 + (int)frand_range(-199.0f, 1000.0f));
 			ssm_get_random_start_pos(&ssm.sinfo.start_pos[idx], start, &dir, ssm_index);
 		}
 
@@ -454,7 +454,7 @@ void ssm_process()
 					}
 				}
 				// maybe create his warpin effect
-				else if((moveup->sinfo.delay_stamp[idx] >= 0) && timestamp_elapsed(moveup->sinfo.delay_stamp[idx])){
+				else if((moveup->sinfo.delay_stamp[idx].isValid()) && timestamp_elapsed(moveup->sinfo.delay_stamp[idx])){
 					// get an orientation
 					vec3d temp;
 					matrix orient;

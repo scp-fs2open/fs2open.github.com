@@ -12,6 +12,7 @@
 #include "globalincs/pstypes.h"
 #include "globalincs/systemvars.h"
 #include "graphics/2d.h"
+#include "hud/hudtarget.h"
 
 extern int Directive_wait_time;
 extern bool True_loop_argument_sexps;
@@ -56,6 +57,11 @@ extern bool Using_in_game_options;
 extern float Dinky_shockwave_default_multiplier;
 extern bool Shockwaves_always_damage_bombs;
 extern bool Shockwaves_damage_all_obj_types_once;
+extern bool Shockwaves_inherit_parent_damage_type;
+extern SCP_string Inherited_shockwave_damage_type_suffix;
+extern SCP_string Inherited_dinky_shockwave_damage_type_suffix;
+extern SCP_string Default_shockwave_damage_type;
+extern SCP_string Default_dinky_shockwave_damage_type;
 extern std::tuple<ubyte, ubyte, ubyte> Arc_color_damage_p1;
 extern std::tuple<ubyte, ubyte, ubyte> Arc_color_damage_p2;
 extern std::tuple<ubyte, ubyte, ubyte> Arc_color_damage_s1;
@@ -87,9 +93,11 @@ extern bool Show_subtitle_uses_pixels;
 extern int Show_subtitle_screen_base_res[];
 extern int Show_subtitle_screen_adjusted_res[];
 extern bool Always_warn_player_about_unbound_keys;
+extern leadIndicatorBehavior Lead_indicator_behavior;
 extern struct shadow_disable_overrides {
 	bool disable_techroom, disable_mission_select_weapons, disable_mission_select_ships, disable_cockpit;
 } Shadow_disable_overrides;
+extern float Thruster_easing;
 
 void mod_table_init();
 void mod_table_post_process();

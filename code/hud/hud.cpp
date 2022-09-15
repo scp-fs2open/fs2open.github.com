@@ -1611,6 +1611,7 @@ void hud_update_frame(float  /*frametime*/)
 	if (Player->target_is_dying) {
 		hud_stop_looped_locking_sounds();
 		if ( Players[Player_num].flags & PLAYER_FLAGS_AUTO_TARGETING ) {
+			Player_ai->target_objnum = -1;
 			hud_target_auto_target_next();
 		}
 	}
@@ -1966,7 +1967,7 @@ void update_throttle_sound()
 		throttle_sound_check_id = timestamp(THROTTLE_SOUND_CHECK_INTERVAL);
 	
 		if ( object_get_gliding(Player_obj) ) {	// Backslash
-			percent_throttle = Player_obj->phys_info.forward_thrust;
+			percent_throttle = Player_obj->phys_info.linear_thrust.xyz.z;
 		} else {
 			percent_throttle = Player_obj->phys_info.fspeed / Ship_info[Ships[Player_obj->instance].ship_info_index].max_speed;
 		}
