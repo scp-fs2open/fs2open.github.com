@@ -290,7 +290,7 @@ ADE_VIRTVAR(CountermeasureCount, l_Control_Info, "number", "Number of countermea
 
 ADE_FUNC(clearLuaButtonInfo, l_Control_Info, NULL, "Clears the lua button control info", NULL, NULL)
 {
-	(void)L; // unused parameter
+	SCP_UNUSED(L); // unused parameter
 
 	if (Player != nullptr) {
 		button_info_clear(&Player->lua_bi);

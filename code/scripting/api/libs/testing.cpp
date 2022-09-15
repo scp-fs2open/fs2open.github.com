@@ -85,7 +85,7 @@ ADE_FUNC(openAudioStreamMem,
 
 ADE_FUNC(avdTest, l_Testing, NULL, "Test the AVD Physics code", NULL, NULL)
 {
-	(void)L; // unused parameter
+	SCP_UNUSED(L); // unused parameter
 
 	static bool initialized = false;
 	static avd_movement avd;

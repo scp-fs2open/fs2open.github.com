@@ -55,10 +55,11 @@ ADE_VIRTVAR(AudioFilename,
 	return ade_set_args(L, "s", stage.getStage()->voice);
 }
 
-ADE_VIRTVAR(isVisible,
+ADE_FUNC(checkVisible,
 		l_BriefStage,
 		nullptr,
-		"The result of the stage formula",
+		"Evaluates the stage formula and returns the result. Could potentially have side effects if the stage formula has a 'perform-actions' or similar operator. "
+		"Note that the standard UI evaluates the formula exactly once per stage on briefing initialization.",
 		"boolean",
 		"true if the stage should be displayed, false otherwise")
 	{
@@ -212,9 +213,7 @@ ADE_VIRTVAR(isGoalValid, l_Goals, nullptr, "The goal validity", "boolean", "true
 		LuaError(L, "This property is read only.");
 	}
 
-	bool valid = Mission_goals[current].type & INVALID_GOAL;
-
-	return ade_set_args(L, "b", !valid);
+	return ade_set_args(L, "b", !(Mission_goals[current].type & INVALID_GOAL));
 }
 
 } // namespace api

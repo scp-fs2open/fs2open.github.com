@@ -336,9 +336,6 @@ void brief_skip_training_pressed()
 		return;
 	}
 
-	// page out mission messages
-	message_mission_shutdown();
-
 	if ( !(Game_mode & GM_CAMPAIGN_MODE) ){
 		gameseq_post_event( GS_EVENT_MAIN_MENU );
 	}

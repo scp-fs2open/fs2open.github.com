@@ -361,21 +361,21 @@ ADE_LIB_DERIV(l_UserInterface_MainHall, "MainHall", nullptr,
 
 ADE_FUNC(startAmbientSound, l_UserInterface_MainHall, nullptr, "Starts the ambient mainhall sound.", nullptr, "nothing")
 {
-	(void)L;
+	SCP_UNUSED(L);
 	main_hall_start_ambient();
 	return ADE_RETURN_NIL;
 }
 
 ADE_FUNC(stopAmbientSound, l_UserInterface_MainHall, nullptr, "Stops the ambient mainhall sound.", nullptr, "nothing")
 {
-	(void)L;
+	SCP_UNUSED(L);
 	main_hall_stop_ambient();
 	return ADE_RETURN_NIL;
 }
 
 ADE_FUNC(startMusic, l_UserInterface_MainHall, nullptr, "Starts the mainhall music.", nullptr, "nothing")
 {
-	(void)L;
+	SCP_UNUSED(L);
 	main_hall_start_music();
 	return ADE_RETURN_NIL;
 }
@@ -578,37 +578,47 @@ ADE_FUNC(getBriefing,
 ADE_FUNC(exitLoop,
 	l_UserInterface_Brief,
 	nullptr,
-	"Skips the current mission, exits the campaign loop, and loads the next non-loop mission in a campaign",
+	"Skips the current mission, exits the campaign loop, and loads the next non-loop mission in a campaign. Returns to the main hall if the player is not in a campaign.",
 	nullptr,
 	"nothing")
 {
-	(void)L;
+	SCP_UNUSED(L);
+
+	if (!(Game_mode & GM_CAMPAIGN_MODE)) {
+		gameseq_post_event(GS_EVENT_MAIN_MENU);
+	}
+
 	mission_campaign_exit_loop();
+
 	return ADE_RETURN_NIL;
 }
 
 ADE_FUNC(skipMission,
 	l_UserInterface_Brief,
 	nullptr,
-	"Skips the current mission, and loads the next mission in a campaign",
+	"Skips the current mission, and loads the next mission in a campaign. Returns to the main hall if the player is not in a campaign.",
 	nullptr,
 	"nothing")
 {
-	(void)L;
+	SCP_UNUSED(L);
+
+	if (!(Game_mode & GM_CAMPAIGN_MODE)) {
+		gameseq_post_event(GS_EVENT_MAIN_MENU);
+	}
+
 	mission_campaign_skip_to_next();
+
 	return ADE_RETURN_NIL;
 }
 
 ADE_FUNC(skipTraining,
 	l_UserInterface_Brief,
 	nullptr,
-	"Skips the current training mission, and loads the next mission in a campaign",
+	"Skips the current training mission, and loads the next mission in a campaign. Returns to the main hall if the player is not in a campaign.",
 	nullptr,
 	"nothing")
 {
-	(void)L;
-	// page out mission messages
-	message_mission_shutdown();
+	SCP_UNUSED(L);
 
 	if (!(Game_mode & GM_CAMPAIGN_MODE)) {
 		gameseq_post_event(GS_EVENT_MAIN_MENU);
@@ -627,6 +637,7 @@ ADE_FUNC(skipTraining,
 	} else {
 		gameseq_post_event(GS_EVENT_START_GAME);
 	}
+
 	return ADE_RETURN_NIL;
 }
 
@@ -637,7 +648,7 @@ ADE_FUNC(startBriefingMap,
 	nullptr,
 	"nothing")
 {
-	(void)L;
+	SCP_UNUSED(L);
 	return ADE_RETURN_NIL;
 }
 
