@@ -1281,16 +1281,17 @@ void model_render_children_buffers(model_draw_list* scene, model_material *rende
 		return;
 	}
 
-	// Get submodel rotation data and use submodel orientation matrix
-	// to put together a matrix describing the final orientation of
-	// the submodel relative to its parent
+	// Get submodel rotation/translation data and use it to put together a matrix and a vector
+	// describing the final position of the submodel relative to its parent
 	matrix submodel_orient = vmd_identity_matrix;
+	vec3d submodel_offset = sm->offset;
 
 	if ( smi != nullptr ) {
 		submodel_orient = smi->canonical_orient;
+		vm_vec_add2(&submodel_offset, &smi->canonical_offset);
 	}
 
-	scene->push_transform(&sm->offset, &submodel_orient);
+	scene->push_transform(&submodel_offset, &submodel_orient);
 	
 	if ( (model_flags & MR_SHOW_OUTLINE || model_flags & MR_SHOW_OUTLINE_HTL || model_flags & MR_SHOW_OUTLINE_PRESET) && 
 		sm->outline_buffer != nullptr ) {
@@ -1872,9 +1873,9 @@ void model_render_glowpoint_add_light(int point_num, vec3d *pos, matrix *orient,
 			cone_dir_screen.xyz.z = -cone_dir_screen.xyz.z;
 			light_add_cone(
 				&world_pnt, &cone_dir_screen, gpo->cone_angle, gpo->cone_inner_angle, gpo->dualcone, 1.0f, light_radius, 1,
-				lightcolor.xyz.x, lightcolor.xyz.y, lightcolor.xyz.z,-1);
+				lightcolor.xyz.x, lightcolor.xyz.y, lightcolor.xyz.z);
 		} else {
-			light_add_point(&world_pnt, 1.0f, light_radius, 1,	lightcolor.xyz.x, lightcolor.xyz.y, lightcolor.xyz.z, -1);
+			light_add_point(&world_pnt, 1.0f, light_radius, 1,	lightcolor.xyz.x, lightcolor.xyz.y, lightcolor.xyz.z);
 		}
 	}
 }

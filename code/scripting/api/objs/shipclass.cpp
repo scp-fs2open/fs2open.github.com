@@ -10,6 +10,7 @@
 #include "ship/ship.h"
 #include "playerman/player.h"
 #include "graphics/matrix.h"
+#include "missionui/missionscreencommon.h"
 
 namespace scripting {
 namespace api {
@@ -648,12 +649,8 @@ ADE_FUNC(renderTechModel,
 	gr_set_proj_matrix( Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
 	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
-	//Handle light
-	light_reset();
-	vec3d light_dir = vmd_zero_vector;
-	light_dir.xyz.y = 1.0f;
-	light_add_directional(&light_dir, 0.65f, 1.0f, 1.0f, 1.0f);
-	light_rotate_all();
+	//setup lights
+	common_setup_room_lights();
 
 	//Draw the ship!!
 	model_clear_instance(sip->model_num);
@@ -721,12 +718,8 @@ ADE_FUNC(renderTechModel2, l_Shipclass, "number X1, number Y1, number X2, number
 	gr_set_proj_matrix( Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
 	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
-	//Handle light
-	light_reset();
-	vec3d light_dir = vmd_zero_vector;
-	light_dir.xyz.y = 1.0f;
-	light_add_directional(&light_dir, 0.65f, 1.0f, 1.0f, 1.0f);
-	light_rotate_all();
+	//setup lights
+	common_setup_room_lights();
 
 	//Draw the ship!!
 	model_clear_instance(sip->model_num);

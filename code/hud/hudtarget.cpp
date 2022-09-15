@@ -3898,16 +3898,14 @@ void HudGaugeLeadIndicator::renderIndicator(int frame_offset, object *targetp, v
 void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 {
 	vec3d		target_pos;
-	vec3d		source_pos;
-	vec3d		*rel_pos;
 	vec3d		lead_target_pos;
 	object		*targetp;
-	polymodel	*pm;
 	ship_weapon	*swp;
 	weapon_info	*wip;
 	weapon_info	*tmp=NULL;
-	float			dist_to_target, prange, srange;
-	int			bank_to_fire, frame_offset;
+	float		dist_to_target, prange, srange;
+	int			bank_to_fire;
+	int			frame_offset = -1;
 
 	if (Player_ai->target_objnum == -1)
 		return;
@@ -3939,7 +3937,6 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 		target_pos = targetp->pos;
 	}
 
-	pm = model_get(Ship_info[Player_ship->ship_info_index].model_num);
 	swp = &Player_ship->weapons;
 
 	// Added to take care of situation where there are no primary banks on the player ship
@@ -3947,27 +3944,17 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 	if ( swp->num_primary_banks == 0 )
 		return;
 
-	bank_to_fire = hud_get_best_primary_bank(&prange);
+	srange = ship_get_secondary_weapon_range(Player_ship);
 
-	if ( bank_to_fire < 0 )
-		return;
-
-	wip = &Weapon_info[swp->primary_bank_weapons[bank_to_fire]];
-
-	if (pm->n_guns && bank_to_fire != -1 ) {
-		rel_pos = &pm->gun_banks[bank_to_fire].pnt[0];
-	} else {
-		rel_pos = NULL;
-	}
-
-	// source_pos will contain the world coordinate of where to base the lead indicator prediction
-	// from.  Normally, this will be the world pos of the gun turret of the currently selected primary
-	// weapon.
-	source_pos = Player_obj->pos;
-	if (rel_pos != NULL) {
-		vec3d	gun_point;
-		vm_vec_unrotate(&gun_point, rel_pos, &Player_obj->orient);
-		vm_vec_add2(&source_pos, &gun_point);
+	if ( (swp->current_secondary_bank >= 0) && (swp->secondary_bank_weapons[swp->current_secondary_bank] >= 0) )
+	{
+		int bank = swp->current_secondary_bank;
+		tmp = &Weapon_info[swp->secondary_bank_weapons[bank]];
+		if ( tmp->wi_flags[Weapon::Info_Flags::Dont_merge_indicators] 
+		|| (!(tmp->is_homing()) && !(tmp->is_locked_homing() && Player->target_in_lock_cone) )) {
+			//The secondary lead indicator is handled farther below if it is a non-locking type, or if the Dont_merge_indicators flag is set for it.
+			srange = -1.0f;
+		}
 	}
 
 	// Determine "accurate" distance to target.
@@ -3981,27 +3968,64 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 		dist_to_target = hud_find_target_distance(targetp, Player_obj);
 	}
 
-	srange = ship_get_secondary_weapon_range(Player_ship);
+	//Moved here to avoid potentially leaving wip undefined. These values will be
+	//overwritten if using non-default leadIndicatorBehaviors, this is desired.
+	bank_to_fire = hud_get_best_primary_bank(&prange);
+	wip = &Weapon_info[swp->primary_bank_weapons[bank_to_fire]];
 
-	if ( (swp->current_secondary_bank >= 0) && (swp->secondary_bank_weapons[swp->current_secondary_bank] >= 0) )
-	{
-		int bank = swp->current_secondary_bank;
-		tmp = &Weapon_info[swp->secondary_bank_weapons[bank]];
-		if ( !(tmp->is_homing()) && !(tmp->is_locked_homing() && Player->target_in_lock_cone) ) {
-			//The secondary lead indicator is handled farther below if it is a non-locking type
-			srange = -1.0f;
+	if (Lead_indicator_behavior != leadIndicatorBehavior::DEFAULT && Player_ship->flags[Ship::Ship_Flags::Primary_linked]) {
+		vec3d averaged_lead_pos;
+		vm_vec_zero(&averaged_lead_pos);
+		int average_instances = 0;
+		for (int i = 0; i < swp->num_primary_banks; i++) {
+			auto bank = i;
+			// calculate the range of the weapon, and only display the lead target indicator
+			// if the weapon can actually hit the target
+			Assert(bank >= 0 && bank < swp->num_primary_banks);
+			Assert(swp->primary_bank_weapons[bank] < weapon_info_size());
+
+			if (swp->primary_bank_weapons[bank] < 0)
+				continue;
+
+			wip = &Weapon_info[swp->primary_bank_weapons[bank]];
+
+			if (wip->wi_flags[Weapon::Info_Flags::Nolink] ||  (wip->wi_flags[Weapon::Info_Flags::Ballistic] && swp->primary_bank_ammo[bank] <= 0))
+				continue;
+
+			auto weapon_range = MIN((wip->max_speed * wip->lifetime), wip->weapon_range);
+			if (weapon_range < dist_to_target)
+				continue;
+
+			frame_offset = pickFrame(weapon_range, srange, dist_to_target);
+
+			if (frame_offset >= 0) {
+				hud_calculate_lead_pos(&lead_target_pos, &target_pos, targetp, wip, dist_to_target);
+				if (Lead_indicator_behavior == leadIndicatorBehavior::MULTIPLE) {
+					renderIndicator(frame_offset, targetp, &lead_target_pos);
+				}
+				else if (Lead_indicator_behavior == leadIndicatorBehavior::AVERAGE) {
+					vm_vec_add2(&averaged_lead_pos, &lead_target_pos);
+					average_instances++;
+				}
+			}
+		}
+		if (average_instances > 0 && Lead_indicator_behavior == leadIndicatorBehavior::AVERAGE) {
+			averaged_lead_pos = averaged_lead_pos/i2fl(average_instances);
+			renderIndicator(frame_offset, targetp, &averaged_lead_pos);
 		}
 	}
+	else if (bank_to_fire >= 0) { //leadIndicatorBehavior::DEFAULT
+		frame_offset = pickFrame(prange, srange, dist_to_target);
+		if ( frame_offset < 0 && srange != -1.0f ) {
+			return;
+		}
 
-	frame_offset = pickFrame(prange, srange, dist_to_target);
-	if ( frame_offset < 0 && srange != -1.0f ) {
-		return;
+		if (frame_offset >= 0) {
+			hud_calculate_lead_pos(&lead_target_pos, &target_pos, targetp, wip, dist_to_target);
+			renderIndicator(frame_offset, targetp, &lead_target_pos);
+		}
 	}
-
-	if (frame_offset >= 0) {
-		hud_calculate_lead_pos(&lead_target_pos, &target_pos, targetp, wip, dist_to_target);
-		renderIndicator(frame_offset, targetp, &lead_target_pos);
-	}
+	else return;
 
 	//do dumbfire lead indicator - color is orange (255,128,0) - bright, (192,96,0) - dim
 	//phreak changed 9/01/02
@@ -4010,17 +4034,17 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 		wip=&Weapon_info[swp->secondary_bank_weapons[bank]];
 
 		//get out of here if the secondary weapon is a homer or if its out of range
-		if ( wip->is_homing() )
+		if ( wip->is_homing() && !wip->wi_flags[Weapon::Info_Flags::Dont_merge_indicators] )
 			return;
 
 		double max_dist = MIN((wip->lifetime * wip->max_speed), wip->weapon_range);
 
 		if (dist_to_target > max_dist)
 			return;
-	}
 
-	hud_calculate_lead_pos(&lead_target_pos, &target_pos, targetp, wip, dist_to_target);
-	renderIndicator(0, targetp, &lead_target_pos);
+		hud_calculate_lead_pos(&lead_target_pos, &target_pos, targetp, wip, dist_to_target);
+		renderIndicator(0, targetp, &lead_target_pos);
+	}
 }
 
 //Backslash

@@ -16,7 +16,7 @@ FLAG_LIST(LabRenderFlag) {
 	ModelRotationEnabled,
 	ShowInsignia,
 	ShowDamageLightning,
-	RotateSubsystems,
+	MoveSubsystems,
 	HidePostProcessing,
 	NoDiffuseMap,
 	NoGlowMap,
@@ -74,8 +74,6 @@ class LabRenderer {
 public:
 	LabRenderer() {
 		bloomLevel = gr_bloom_intensity();
-		ambientFactor = Cmdline_ambient_factor;
-		directionalFactor = static_light_factor;
 		textureQuality = TextureQuality::Maximum;
 		cameraDistance = 100.0f;
 		currentTeamColor = LAB_TEAM_COLOR_NONE;
@@ -145,17 +143,18 @@ public:
 
 	void setRenderFlag(LabRenderFlag flag, bool value) { renderFlags.set(flag, value); }
 
-	int setAmbientFactor(int factor) { 
-		ambientFactor = factor; 
-		Cmdline_ambient_factor = factor;
-		gr_calculate_ambient_factor();
-
+	static float setAmbientFactor(float factor) { 
+		lighting_profile::lab_set_ambient(factor);
 		return factor; 
 	}
 
-	float setDirectionalFactor(float factor) { 
-		directionalFactor = factor; 
-		static_light_factor = factor;
+	static float setLightFactor(float factor) {
+		lighting_profile::lab_set_light(factor);
+		return factor; 
+	}
+
+	static float setEmissiveFactor(float factor) { 
+		lighting_profile::lab_set_emissive(factor);
 		return factor; 
 	}
 
@@ -186,8 +185,6 @@ public:
 
 private:
 	flagset<LabRenderFlag> renderFlags;
-	int ambientFactor;
-	float directionalFactor;
 	int bloomLevel;
 	float exposureLevel;
 	TextureQuality textureQuality;

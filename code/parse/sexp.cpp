@@ -142,6 +142,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "bitwise-or",						OP_BITWISE_OR,							2,	INT_MAX,	SEXP_ARITHMETIC_OPERATOR,	},	// Goober5000
 	{ "bitwise-not",					OP_BITWISE_NOT,							1,	1,			SEXP_ARITHMETIC_OPERATOR,	},	// Goober5000
 	{ "bitwise-xor",					OP_BITWISE_XOR,							2,	2,			SEXP_ARITHMETIC_OPERATOR,	},	// Goober5000
+	{ "angle-vectors",					OP_ANGLE_VECTORS,						6,  6,			SEXP_ARITHMETIC_OPERATOR,   },  // Lafiel
 
 	//Logical Category
 	{ "true",							OP_TRUE,								0,	0,			SEXP_BOOLEAN_OPERATOR,	},
@@ -309,6 +310,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "get-object-speed-x",				OP_GET_OBJECT_SPEED_X,					1,	2,			SEXP_INTEGER_OPERATOR,	},
 	{ "get-object-speed-y",				OP_GET_OBJECT_SPEED_Y,					1,	2,			SEXP_INTEGER_OPERATOR,	},
 	{ "get-object-speed-z",				OP_GET_OBJECT_SPEED_Z,					1,	2,			SEXP_INTEGER_OPERATOR,	},
+	{ "angle-facing-object",			OP_ANGLE_FVEC_TARGET,					2,  2,			SEXP_INTEGER_OPERATOR,  }, // Lafiel 
 
 	//Variables Sub-Category
 	{ "string-to-int",					OP_STRING_TO_INT,						1,	1,			SEXP_INTEGER_OPERATOR,	}, // Karajorma
@@ -482,6 +484,10 @@ SCP_vector<sexp_oper> Operators = {
 	{ "free-rotating-subsystem",		OP_FREE_ROTATING_SUBSYSTEM,				2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "reverse-rotating-subsystem",		OP_REVERSE_ROTATING_SUBSYSTEM,			2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "rotating-subsys-set-turn-time",	OP_ROTATING_SUBSYS_SET_TURN_TIME,		3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "lock-translating-subsystem",		OP_LOCK_TRANSLATING_SUBSYSTEM,			2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "free-translating-subsystem",		OP_FREE_TRANSLATING_SUBSYSTEM,			2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "reverse-translating-subsystem",	OP_REVERSE_TRANSLATING_SUBSYSTEM,		2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "translating-subsys-set-speed",	OP_TRANSLATING_SUBSYS_SET_SPEED,		3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "trigger-submodel-animation",		OP_TRIGGER_SUBMODEL_ANIMATION,			4,	6,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "change-subsystem-name",			OP_CHANGE_SUBSYSTEM_NAME,				3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma
 	{ "ship-subsys-targetable",			OP_SHIP_SUBSYS_TARGETABLE,				2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
@@ -684,7 +690,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "show-subtitle-image",			OP_CUTSCENES_SHOW_SUBTITLE_IMAGE,		8,	11,			SEXP_ACTION_OPERATOR,	},
 	{ "clear-subtitles",				OP_CLEAR_SUBTITLES,						0,	0,			SEXP_ACTION_OPERATOR,	},
 	{ "lock-perspective",				OP_CUTSCENES_FORCE_PERSPECTIVE,			1,	2,			SEXP_ACTION_OPERATOR,	},
-	{ "set-camera-shudder",				OP_SET_CAMERA_SHUDDER,					2,	2,			SEXP_ACTION_OPERATOR,	},
+	{ "set-camera-shudder",				OP_SET_CAMERA_SHUDDER,					2,	4,			SEXP_ACTION_OPERATOR,	},
 	{ "supernova-start",				OP_SUPERNOVA_START,						1,	1,			SEXP_ACTION_OPERATOR,	},
 	{ "supernova-stop",					OP_SUPERNOVA_STOP,						0,	0,			SEXP_ACTION_OPERATOR,	},	//CommanderDJ
 	{ "set-motion-debris-override",		OP_SET_MOTION_DEBRIS,					1,  1,			SEXP_ACTION_OPERATOR,	},	// The E
@@ -2410,6 +2416,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 			case OPF_AWACS_SUBSYSTEM:
 			case OPF_ROTATING_SUBSYSTEM:
+			case OPF_TRANSLATING_SUBSYSTEM:
 			case OPF_SUBSYSTEM:
 			case OPF_SUBSYSTEM_OR_NONE:
 			case OPF_SUBSYS_OR_GENERIC:
@@ -2555,6 +2562,12 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					if ((type == OPF_ROTATING_SUBSYSTEM) && !(Ship_info[ship_class].subsystems[i].flags[Model::Subsystem_Flags::Rotates]))
 					{
 						return SEXP_CHECK_INVALID_ROTATING_SUBSYS;
+					}
+
+					// translating subsystem, like above - Goober5000
+					if ((type == OPF_TRANSLATING_SUBSYSTEM) && !(Ship_info[ship_class].subsystems[i].flags[Model::Subsystem_Flags::Translates]))
+					{
+						return SEXP_CHECK_INVALID_TRANSLATING_SUBSYS;
 					}
 				}
 
@@ -4563,13 +4576,11 @@ void stuff_sexp_text_string(SCP_string &dest, int node, int mode)
 		// number
 		if (Sexp_nodes[node].subtype == SEXP_ATOM_NUMBER)
 		{
-			Assert(Sexp_variables[sexp_variables_index].type & SEXP_VARIABLE_NUMBER);
 			sprintf(dest, "@%s[%s] ", var_name, var_contents);
 		}
 		// string
 		else if (Sexp_nodes[node].subtype == SEXP_ATOM_STRING)
 		{
-			Assert(Sexp_variables[sexp_variables_index].type & SEXP_VARIABLE_STRING);
 			sprintf(dest, "\"@%s[%s]\" ", var_name, var_contents);
 		}
 		else
@@ -8295,6 +8306,69 @@ int sexp_get_object_angle(int n, int axis)
 
 		default:
 			return SEXP_NAN;
+	}
+}
+
+int sexp_angle_vectors(int node) {
+	vec3d v1, v2;
+	bool is_nan1, is_nan_forever1, is_nan2, is_nan_forever2;
+
+	eval_vec3d(&v1, node, is_nan1, is_nan_forever1);
+	eval_vec3d(&v2, node, is_nan2, is_nan_forever2);
+
+	if (is_nan_forever1 || is_nan_forever2)
+		return SEXP_NAN_FOREVER;
+
+	if (is_nan1 || is_nan2)
+		return SEXP_NAN;
+
+	if (IS_VEC_NULL(&v1) || IS_VEC_NULL(&v2))
+		return SEXP_NAN;
+
+	float angle = fl_degrees(vm_vec_dot(&v1, &v2) / (vm_vec_mag(&v1) * vm_vec_mag(&v2)));
+
+	return fl2ir(angle);
+}
+
+int sexp_angle_fvec_target(int node) {
+	auto* ship = eval_ship(node);
+
+	if (ship->status == ShipStatus::EXITED)
+		return SEXP_NAN_FOREVER;
+	else if (ship->status == ShipStatus::NOT_YET_PRESENT)
+		return SEXP_NAN;
+
+	const vec3d& pos1 = ship->objp->pos;
+	const vec3d& v1 = ship->objp->orient.vec.fvec;
+
+	object_ship_wing_point_team oswpt;
+	eval_object_ship_wing_point_team(&oswpt, CDR(node));
+
+	switch (oswpt.type)
+	{
+	case OSWPT_TYPE_SHIP:
+	case OSWPT_TYPE_WING:
+	case OSWPT_TYPE_WAYPOINT: {
+		const vec3d& pos2 = oswpt.objp->pos;
+
+		if (vm_vec_equal(pos1, pos2))
+			return SEXP_NAN;
+
+		vec3d v2;
+		vm_vec_normalized_dir(&v2, &pos2, &pos1);
+
+		// No need to divide by product of magnitudes, both fvec and v2 are normalized
+		float angle = fl_degrees(acosf_safe(vm_vec_dot(&v1, &v2)));
+
+		return fl2ir(angle);
+	}
+
+	case OSWPT_TYPE_NONE:
+	case OSWPT_TYPE_EXITED:
+		return SEXP_NAN_FOREVER;
+
+	default:
+		return SEXP_NAN;
 	}
 }
 
@@ -17425,7 +17499,7 @@ int sexp_key_pressed(int node)
 	if (is_nan_forever)
 		return SEXP_KNOWN_FALSE;
 
-	return timestamp_has_time_elapsed(Control_config[z].used, t * 1000);
+	return timestamp_since(Control_config[z].used) >= t * MILLISECONDS_PER_SECOND;
 }
 
 void sexp_key_reset(int node)
@@ -17497,13 +17571,13 @@ int sexp_targeted(int node)
 	}
 
 	if (CDR(node) >= 0) {
-		z = eval_num(CDR(node), is_nan, is_nan_forever) * 1000;
+		z = eval_num(CDR(node), is_nan, is_nan_forever);
 		if (is_nan)
 			return SEXP_FALSE;
 		if (is_nan_forever)
 			return SEXP_KNOWN_FALSE;
 
-		if (!timestamp_has_time_elapsed(Players_target_timestamp, z)){
+		if (timestamp_since(Players_target_timestamp) < z * MILLISECONDS_PER_SECOND){
 			return SEXP_FALSE;
 		}
 
@@ -17530,13 +17604,13 @@ int sexp_node_targeted(int node)
 	}
 
 	if (CDR(node) >= 0) {
-		z = eval_num(CDR(node), is_nan, is_nan_forever) * 1000;
+		z = eval_num(CDR(node), is_nan, is_nan_forever);
 		if (is_nan)
 			return SEXP_FALSE;
 		if (is_nan_forever)
 			return SEXP_KNOWN_FALSE;
 
-		if (!timestamp_has_time_elapsed(Players_target_timestamp, z)){
+		if (timestamp_since(Players_target_timestamp) < z * MILLISECONDS_PER_SECOND){
 			return SEXP_FALSE;
 		}
 	}
@@ -17551,13 +17625,13 @@ int sexp_speed(int node)
 
 	if (Training_context & TRAINING_CONTEXT_SPEED) {
 		if (Training_context_speed_set) {
-			z = eval_num(node, is_nan, is_nan_forever) * 1000;
+			z = eval_num(node, is_nan, is_nan_forever);
 			if (is_nan)
 				return SEXP_FALSE;
 			if (is_nan_forever)
 				return SEXP_KNOWN_FALSE;
 
-			if (timestamp_has_time_elapsed(Training_context_speed_timestamp, z)){
+			if (timestamp_since(Training_context_speed_timestamp) >= z * MILLISECONDS_PER_SECOND){
 				return SEXP_KNOWN_TRUE;
 			}
 		}
@@ -20294,7 +20368,7 @@ int sexp_is_in_turret_fov(int node)
 }
 
 // Goober5000
-void sexp_set_subsys_rotation_lock_free(int node, bool locked)
+void sexp_set_subsys_motion_lock_free(int node, bool is_rotation, bool locked)
 {
 	// get the ship
 	auto ship_entry = eval_ship(node);
@@ -20310,37 +20384,44 @@ void sexp_set_subsys_rotation_lock_free(int node, bool locked)
 		if (subsys == nullptr)
 			continue;
 
-		// see if it's already at the state we want
-		if (subsys->flags[Ship::Subsystem_Flags::Rotates] == !locked)
-			continue;
-
-		// set the flag
-		subsys->flags.set(Ship::Subsystem_Flags::Rotates, !locked);
+		// skip if it's already at the state we want; if not, set the flag
+		if (is_rotation)
+		{
+			if (subsys->flags[Ship::Subsystem_Flags::Rotates] == !locked)
+				continue;
+			subsys->flags.set(Ship::Subsystem_Flags::Rotates, !locked);
+		}
+		else
+		{
+			if (subsys->flags[Ship::Subsystem_Flags::Translates] == !locked)
+				continue;
+			subsys->flags.set(Ship::Subsystem_Flags::Translates, !locked);
+		}
 
 		// set moving or not, depending on flag
 		if (locked)
 		{   
-			if (subsys->subsys_snd_flags[Ship::Subsys_Sound_Flags::Rotate])
+			if (is_rotation && subsys->subsys_snd_flags[Ship::Subsys_Sound_Flags::Rotate])
 			{
 				obj_snd_delete_type(ship_entry->shipp->objnum, subsys->system_info->rotation_snd, subsys);
 				subsys->subsys_snd_flags.remove(Ship::Subsys_Sound_Flags::Rotate);
 			}
 
 			// bit of a hack... set the timestamp to just the delta so that we can restore it properly later
-			auto &stamp = subsys->submodel_instance_1->stepped_rotation_started;
+			auto &stamp = is_rotation ? subsys->submodel_instance_1->stepped_rotation_started : subsys->submodel_instance_1->stepped_translation_started;
 			if (stamp.isValid())
 				stamp = TIMESTAMP(timestamp_since(stamp));
 		}
 		else
 		{
-			if (subsys->system_info->rotation_snd.isValid())
+			if (is_rotation && subsys->system_info->rotation_snd.isValid())
 			{
 				obj_snd_assign(ship_entry->shipp->objnum, subsys->system_info->rotation_snd, &subsys->system_info->pnt, OS_SUBSYS_ROTATION, subsys);
 				subsys->subsys_snd_flags.set(Ship::Subsys_Sound_Flags::Rotate);
 			}
 
 			// and restore the timestamp from the delta
-			auto &stamp = subsys->submodel_instance_1->stepped_rotation_started;
+			auto &stamp = is_rotation ? subsys->submodel_instance_1->stepped_rotation_started : subsys->submodel_instance_1->stepped_translation_started;
 			if (stamp.isValid())
 				stamp = timestamp_delta(_timestamp(), -stamp.value());
 		}
@@ -20348,7 +20429,7 @@ void sexp_set_subsys_rotation_lock_free(int node, bool locked)
 }
 
 // Goober5000
-void sexp_reverse_rotating_subsystem(int node)
+void sexp_reverse_moving_subsystem(int node, bool is_rotation)
 {
 	// get the ship
 	auto ship_entry = eval_ship(node);
@@ -20364,18 +20445,26 @@ void sexp_reverse_rotating_subsystem(int node)
 		if (subsys == nullptr || subsys->submodel_instance_1 == nullptr)
 			continue;
 
-		// switch direction of rotation
-		subsys->submodel_instance_1->current_turn_rate *= -1.0f;
-		subsys->submodel_instance_1->desired_turn_rate *= -1.0f;
+		// switch direction of motion
+		if (is_rotation)
+		{
+			subsys->submodel_instance_1->current_turn_rate *= -1.0f;
+			subsys->submodel_instance_1->desired_turn_rate *= -1.0f;
+		}
+		else
+		{
+			subsys->submodel_instance_1->current_shift_rate *= -1.0f;
+			subsys->submodel_instance_1->desired_shift_rate *= -1.0f;
+		}
 	}
 }
 
 // Goober5000
-void sexp_rotating_subsys_set_turn_time(int node)
+void sexp_moving_subsys_set_turn_time_or_speed(int node, bool is_rotation)
 {
 	int n = node;
 	bool is_nan, is_nan_forever;
-	float turn_time, turn_accel;
+	float time_or_speed, accel;
 
 	// get the ship
 	auto ship_entry = eval_ship(n);
@@ -20389,23 +20478,44 @@ void sexp_rotating_subsys_set_turn_time(int node)
 		return;
 	n = CDR(n);
 
-	// get and set the turn time
-	turn_time = eval_num(n, is_nan, is_nan_forever) / 1000.0f;
+	// get and set the value
+	time_or_speed = eval_num(n, is_nan, is_nan_forever) / 1000.0f;
 	if (is_nan || is_nan_forever)
 		return;
-	subsys->submodel_instance_1->desired_turn_rate = PI2 / turn_time;
+	if (fl_near_zero(time_or_speed))
+	{
+		Warning(LOCATION, "In %s, %s cannot be zero!", is_rotation ? "rotating-subsys-set-turn-time" : "translating-subsys-set-speed", is_rotation ? "turn time" : "speed");
+		return;
+	}
+	if (is_rotation)
+		subsys->submodel_instance_1->desired_turn_rate = PI2 / time_or_speed;
+	else
+		subsys->submodel_instance_1->desired_shift_rate = time_or_speed;
 	n = CDR(n);
 
-	// maybe get and set the turn accel
+	// maybe get and set the accel
 	if (n != -1)
 	{
-		turn_accel = eval_num(n, is_nan, is_nan_forever) / 1000.0f;
+		accel = eval_num(n, is_nan, is_nan_forever) / 1000.0f;
 		if (is_nan || is_nan_forever)
 			return;
-		subsys->submodel_instance_1->turn_accel = PI2 / turn_accel;
+		if (fl_near_zero(accel))
+		{
+			Warning(LOCATION, "In %s, acceleration cannot be zero!", is_rotation ? "rotating-subsys-set-turn-time" : "translating-subsys-set-speed");
+			return;
+		}
+		if (is_rotation)
+			subsys->submodel_instance_1->turn_accel = PI2 / accel;
+		else
+			subsys->submodel_instance_1->shift_accel = accel;
 	}
 	else
-		subsys->submodel_instance_1->current_turn_rate = PI2 / turn_time;
+	{
+		if (is_rotation)
+			subsys->submodel_instance_1->current_turn_rate = PI2 / time_or_speed;
+		else
+			subsys->submodel_instance_1->current_shift_rate = time_or_speed;
+	}
 }
 
 void sexp_trigger_submodel_animation(int node)
@@ -21257,8 +21367,8 @@ void multi_sexp_add_nav_waypoint()
 	if (!Current_sexp_network_packet.get_int(vert))
 		return;
 
+	object_ship_wing_point_team oswpt;
 	if (Current_sexp_network_packet.get_string(oswpt_name)) {
-		object_ship_wing_point_team oswpt;
 		eval_object_ship_wing_point_team(&oswpt, -1, oswpt_name);
 		oswptp = &oswpt;
 	}
@@ -21483,12 +21593,12 @@ int sexp_missile_locked(int node)
 
 	// if we've gotten this far, we must have satisfied whatever conditions the sexp imposed
 	// finally, test if we've locked for a certain period of time
-	z = eval_num(node, is_nan, is_nan_forever) * 1000;
+	z = eval_num(node, is_nan, is_nan_forever);
 	if (is_nan)
 		return SEXP_FALSE;
 	if (is_nan_forever)
 		return SEXP_KNOWN_FALSE;
-	if (timestamp_has_time_elapsed(Players_mlocked_timestamp, z))
+	if (timestamp_since(Players_mlocked_timestamp) >= z * MILLISECONDS_PER_SECOND)
 	{
 		return SEXP_TRUE;
 	}
@@ -23864,6 +23974,8 @@ void sexp_set_camera_shudder(int n)
 {
 	int time;
 	float intensity;
+	bool perpetual = false;
+	bool everywhere = false;
 	bool is_nan, is_nan_forever;
 
 	eval_nums(n, is_nan, is_nan_forever, time, intensity);
@@ -23871,11 +23983,24 @@ void sexp_set_camera_shudder(int n)
 		return;
 	intensity *= 0.01f;
 
-	game_shudder_apply(time, intensity);
+	if (n >= 0)
+	{
+		perpetual = is_sexp_true(n);
+		n = CDR(n);
+	}
+	if (n >= 0)
+	{
+		everywhere = is_sexp_true(n);
+		n = CDR(n);
+	}
+
+	game_shudder_apply(time, intensity, perpetual, everywhere);
 
 	Current_sexp_network_packet.start_callback();
 	Current_sexp_network_packet.send_int(time);
-	Current_sexp_network_packet.send_float(intensity); 
+	Current_sexp_network_packet.send_float(intensity);
+	Current_sexp_network_packet.send_bool(perpetual);
+	Current_sexp_network_packet.send_bool(everywhere);
 	Current_sexp_network_packet.end_callback();
 }
 
@@ -23883,10 +24008,14 @@ void multi_sexp_set_camera_shudder()
 {
 	int time;
 	float intensity;
+	bool perpetual = false;
+	bool everywhere = false;
 
 	Current_sexp_network_packet.get_int(time);
 	if (Current_sexp_network_packet.get_float(intensity)) {
-		game_shudder_apply(time, intensity);
+		Current_sexp_network_packet.get_bool(perpetual);
+		Current_sexp_network_packet.get_bool(everywhere);
+		game_shudder_apply(time, intensity, perpetual, everywhere);
 	}
 }
 
@@ -25027,6 +25156,10 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_bitwise_xor(node);
 				break;
 
+			case OP_ANGLE_VECTORS:
+				sexp_val = sexp_angle_vectors(node);
+				break;
+
 			// boolean operators can have one of the special sexp values (known true, known false, unknown)
 			case OP_TRUE:
 				sexp_val = SEXP_KNOWN_TRUE;
@@ -25319,6 +25452,10 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 			case OP_DISTANCE_BBOX_SUBSYSTEM:
 				sexp_val = sexp_distance_subsystem(node, sexp_bbox_distance_point);
+				break;
+
+			case OP_ANGLE_FVEC_TARGET:
+				sexp_val = sexp_angle_fvec_target(node);
 				break;
 
 			case OP_NUM_WITHIN_BOX:
@@ -26726,17 +26863,21 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			case OP_LOCK_ROTATING_SUBSYSTEM:
 			case OP_FREE_ROTATING_SUBSYSTEM:
-				sexp_set_subsys_rotation_lock_free(node, op_num == OP_LOCK_ROTATING_SUBSYSTEM);
+			case OP_LOCK_TRANSLATING_SUBSYSTEM:
+			case OP_FREE_TRANSLATING_SUBSYSTEM:
+				sexp_set_subsys_motion_lock_free(node, op_num == OP_LOCK_ROTATING_SUBSYSTEM || op_num == OP_FREE_ROTATING_SUBSYSTEM, op_num == OP_LOCK_ROTATING_SUBSYSTEM || op_num == OP_LOCK_TRANSLATING_SUBSYSTEM);
 				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_REVERSE_ROTATING_SUBSYSTEM:
-				sexp_reverse_rotating_subsystem(node);
+			case OP_REVERSE_TRANSLATING_SUBSYSTEM:
+				sexp_reverse_moving_subsystem(node, op_num == OP_REVERSE_ROTATING_SUBSYSTEM);
 				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_ROTATING_SUBSYS_SET_TURN_TIME:
-				sexp_rotating_subsys_set_turn_time(node);
+			case OP_TRANSLATING_SUBSYS_SET_SPEED:
+				sexp_moving_subsys_set_turn_time_or_speed(node, op_num == OP_ROTATING_SUBSYS_SET_TURN_TIME);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -27889,6 +28030,8 @@ int query_operator_return_type(int op)
 		case OP_GET_HOTKEY:
 		case OP_GET_CONTAINER_SIZE:
 		case OP_LIST_DATA_INDEX:
+		case OP_ANGLE_VECTORS:
+		case OP_ANGLE_FVEC_TARGET:
 			return OPR_NUMBER;
 
 		case OP_ABS:
@@ -28153,6 +28296,10 @@ int query_operator_return_type(int op)
 		case OP_FREE_ROTATING_SUBSYSTEM:
 		case OP_REVERSE_ROTATING_SUBSYSTEM:
 		case OP_ROTATING_SUBSYS_SET_TURN_TIME:
+		case OP_LOCK_TRANSLATING_SUBSYSTEM:
+		case OP_FREE_TRANSLATING_SUBSYSTEM:
+		case OP_REVERSE_TRANSLATING_SUBSYSTEM:
+		case OP_TRANSLATING_SUBSYS_SET_SPEED:
 		case OP_TRIGGER_SUBMODEL_ANIMATION:
 		case OP_PLAYER_USE_AI:
 		case OP_PLAYER_NOT_USE_AI:
@@ -28456,6 +28603,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_SIGNUM:
 		case OP_IS_NAN:
 		case OP_NAN_TO_NUMBER:
+		case OP_ANGLE_VECTORS:
 			return OPF_NUMBER;
 
 		case OP_POW:
@@ -28822,6 +28970,12 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_GET_OBJECT_BANK:
 		case OP_GET_OBJECT_HEADING:
 			return OPF_SHIP_WING;
+
+		case OP_ANGLE_FVEC_TARGET:
+			if (argnum == 0)
+				return OPF_SHIP;
+			else
+				return OPF_SHIP_WING_POINT;
 
 		case OP_SET_OBJECT_POSITION:
 			if(argnum == 0)
@@ -30126,11 +30280,29 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_ROTATING_SUBSYSTEM;
 
+		case OP_LOCK_TRANSLATING_SUBSYSTEM:
+		case OP_FREE_TRANSLATING_SUBSYSTEM:
+		case OP_REVERSE_TRANSLATING_SUBSYSTEM:
+			if (argnum == 0)
+				return OPF_SHIP;
+			else
+				return OPF_TRANSLATING_SUBSYSTEM;
+
 		case OP_ROTATING_SUBSYS_SET_TURN_TIME:
 			if (argnum == 0)
 				return OPF_SHIP;
 			else if (argnum == 1)
 				return OPF_ROTATING_SUBSYSTEM;
+			else if (argnum == 2)
+				return OPF_NUMBER;
+			else
+				return OPF_POSITIVE;
+
+		case OP_TRANSLATING_SUBSYS_SET_SPEED:
+			if (argnum == 0)
+				return OPF_SHIP;
+			else if (argnum == 1)
+				return OPF_TRANSLATING_SUBSYSTEM;
 			else if (argnum == 2)
 				return OPF_NUMBER;
 			else
@@ -30582,7 +30754,10 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_POSITIVE;
 
 		case OP_SET_CAMERA_SHUDDER:
-			return OPF_POSITIVE;
+			if (argnum == 0 || argnum == 1)
+				return OPF_POSITIVE;
+			else
+				return OPF_BOOL;
 
 		case OP_CUTSCENES_SHOW_SUBTITLE:
 			if (argnum < 2)
@@ -31255,6 +31430,9 @@ const char *sexp_error_message(int num)
 
 		case SEXP_CHECK_INVALID_ROTATING_SUBSYS:
 			return "This must be a rotating subsystem";
+
+		case SEXP_CHECK_INVALID_TRANSLATING_SUBSYS:
+			return "This must be a translating subsystem";
 
 		case SEXP_CHECK_INVALID_SUBSYS_TYPE:
 			return "Invalid subsystem type";
@@ -32515,6 +32693,10 @@ int get_subcategory(int sexp_id)
 		case OP_FREE_ROTATING_SUBSYSTEM:
 		case OP_REVERSE_ROTATING_SUBSYSTEM:
 		case OP_ROTATING_SUBSYS_SET_TURN_TIME:
+		case OP_LOCK_TRANSLATING_SUBSYSTEM:
+		case OP_FREE_TRANSLATING_SUBSYSTEM:
+		case OP_REVERSE_TRANSLATING_SUBSYSTEM:
+		case OP_TRANSLATING_SUBSYS_SET_SPEED:
 		case OP_TRIGGER_SUBMODEL_ANIMATION:
 		case OP_CHANGE_SUBSYSTEM_NAME:
 		case OP_SHIP_SUBSYS_TARGETABLE:
@@ -32889,6 +33071,7 @@ int get_subcategory(int sexp_id)
 		case OP_NUM_WITHIN_BOX:
 		case OP_SPECIAL_WARP_DISTANCE:
 		case OP_IS_IN_BOX:
+		case OP_ANGLE_FVEC_TARGET:
 			return STATUS_SUBCATEGORY_DISTANCE_AND_COORDINATES;
 
 		case OP_STRING_TO_INT:
@@ -33134,6 +33317,16 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	// Goober5000
 	{ OP_BITWISE_XOR, "bitwise-xor\r\n"
 		"\tPerforms the bitwise XOR operator on its arguments.  This is the same as if the logical XOR operator was performed on each successive bit.  Takes 2 or more numeric arguments.\r\n" },
+
+	{ OP_ANGLE_VECTORS, "angle-vectors\r\n"
+		"\tCalculates the angle between two vectors."
+		"Takes 6 arguments...\r\n"
+		"\t1: The x component of the first vector.\r\n"
+		"\t2: The y component of the first vector.\r\n"
+		"\t3: The z component of the first vector.\r\n"
+		"\t4: The x component of the second vector.\r\n"
+		"\t5: The y component of the second vector.\r\n"
+		"\t6: The z component of the second vector.\r\n"},
 
 	{ OP_SET_OBJECT_SPEED_X, "set-object-speed-x (deprecated in favor of ship-maneuver)\r\n"
 		"\tSets the X speed of a ship or wing."
@@ -33721,6 +33914,13 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tThe name of the object.\r\n"
 		"\t2:\tThe name of the ship which houses the subsystem.\r\n"
 		"\t3:\tThe name of the subsystem." },
+
+	{ OP_ANGLE_FVEC_TARGET, "angle-facing-object\r\n"
+		"\tReturns the angle between the forward vector of a ship and the vector from the ship to another object.\r\n"
+		"\tThis is effectively the FoV the ship would need to see the object.\r\n\r\n"
+		"Returns a numeric value.  Takes 2 arguments...\r\n"
+		"\t1:\tThe name of the ship from which to check.\r\n"
+		"\t2:\tThe name of the object to check." },
 
 	{ OP_NUM_WITHIN_BOX, "Number of specified objects in the box specified\r\n"
 		"\t1: Box center (X)\r\n"
@@ -36337,6 +36537,41 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	},
 
 	// Goober5000
+	{ OP_LOCK_TRANSLATING_SUBSYSTEM, "lock-translating-subsystem\r\n"
+		"\tInstantaneously locks a translating subsystem so that it cannot translate unless freed by free-translating-subsystem.  "
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tName of the ship housing the subsystem\r\n"
+		"\tRest:\tName of the translating subsystem to lock"
+	},
+
+	// Goober5000
+	{ OP_FREE_TRANSLATING_SUBSYSTEM, "free-translating-subsystem\r\n"
+		"\tInstantaneously frees a translating subsystem previously locked by lock-translating-subsystem.  "
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tName of the ship housing the subsystem\r\n"
+		"\tRest:\tName of the translating subsystem to free"
+	},
+
+	// Goober5000
+	{ OP_REVERSE_TRANSLATING_SUBSYSTEM, "reverse-translating-subsystem\r\n"
+		"\tInstantaneously reverses the translation direction of a translating subsystem.  "
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tName of the ship housing the subsystem\r\n"
+		"\tRest:\tName of the translating subsystem to reverse"
+	},
+
+	// Goober5000
+	{ OP_TRANSLATING_SUBSYS_SET_SPEED, "translating-subsys-set-speed\r\n"
+		"\tSets the speed (movement rate) of a translating subsystem.  "
+		"Takes 3 or 4 arguments...\r\n"
+		"\t1:\tName of the ship housing the subsystem\r\n"
+		"\t2:\tName of the translating subsystem to configure\r\n"
+		"\t3:\tThe movement rate, in millimeters per second (i.e. one thousand times the speed in m/s) - positive is along the vector of the translation axis\r\n"
+		"\t4:\tThe acceleration (x1000, just as #3 is m/s x1000) to change from the current movement rate to the desired movement rate.  "
+		"Omit this argument if you want an instantaneous change."
+	},
+
+	// Goober5000
 	{ OP_TRIGGER_SUBMODEL_ANIMATION, "trigger-submodel-animation\r\n"
 		"\tActivates a submodel animation trigger for a given ship.  Takes 4 to 6 arguments...\r\n"
 		"\t1: The ship on which the animation should run\r\n"
@@ -36876,9 +37111,11 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_SET_CAMERA_SHUDDER, "set-camera-shudder\r\n"
 		"\tCauses the camera to shudder.  Currently this will only work if the camera is showing the player's viewpoint (i.e. the HUD).\r\n\r\n"
-		"Takes 2 arguments...\r\n"
+		"Takes 2 to 4 arguments...\r\n"
 		"\t1: Time (in milliseconds)\r\n"
-		"\t2: Intensity.  For comparison, the Maxim has an intensity of 1440."
+		"\t2: Intensity.  For comparison, the Maxim has an intensity of 1440.\r\n"
+		"\t3: Perpetual (optional).  Whether the effect is perpetual, i.e. does not decay.\r\n"
+		"\t4: Everywhere (optional).  Whether the effect is applied to all camera views.\r\n"
 	},
 
 	{ OP_JUMP_NODE_SET_JUMPNODE_NAME, "set-jumpnode-name\r\n"

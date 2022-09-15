@@ -258,11 +258,12 @@ namespace animation {
 		animList.parentSet->initializeSubmodelBuffer(pmi, applyBuffer);
 
 		for (const auto& anim : animList.animationList) {
-			switch (anim->m_instances[pmi->id].state) {
+			const auto& instanceData = anim->m_instances[pmi->id];
+			switch (instanceData.state) {
 			case ModelAnimationState::RUNNING_FWD:
 			case ModelAnimationState::RUNNING_RWD:
 			case ModelAnimationState::NEED_RECALC:
-				anim->play(frametime, pmi, applyBuffer);
+				anim->play(frametime * instanceData.speed, pmi, applyBuffer);
 				break;
 			case ModelAnimationState::COMPLETED:
 			case ModelAnimationState::PAUSED:
@@ -305,7 +306,7 @@ namespace animation {
 	}
 
 	void ModelAnimationSubmodel::reset(polymodel_instance* pmi) {
-		if(!m_submodel.has())
+		if(!m_submodel)
 			findSubmodel(pmi);
 
 		auto dataIt = m_initialData.find({ pmi->id });
@@ -321,6 +322,8 @@ namespace animation {
 		if (!submodel)
 			return;
 
+		// rotation -----
+
 		submodel->canonical_prev_orient = submodel->canonical_orient;
 		submodel->canonical_orient = data.orientation;
 
@@ -332,8 +335,19 @@ namespace animation {
 		vm_matrix_to_rot_axis_and_angle(&delta, &deltaAngle, &submodel->rotation_axis);
 		submodel->current_turn_rate = deltaAngle / flFrametime;
 
-		//TODO: Once translation is a thing
-		//m_subsys->submodel_instance_1->offset = data.position;
+		// translation -----
+
+		submodel->canonical_prev_offset = submodel->canonical_offset;
+		submodel->canonical_offset = data.position;
+		
+		vec3d delta_vec;
+		vm_vec_sub(&delta_vec, &submodel->canonical_offset, &submodel->canonical_prev_offset);
+
+		// figure out the sign of the displacement based on whether it is along or against the axis
+		int sign = (vm_vec_dot(&delta_vec, &submodel->translation_axis) < 0.0f) ? -1 : 1;
+
+		float deltaMag = sign * vm_vec_mag(&delta_vec);
+		submodel->current_shift_rate = deltaMag / flFrametime;
 	}
 
 	void ModelAnimationSubmodel::resetPhysicsData(polymodel_instance* pmi) {
@@ -360,15 +374,19 @@ namespace animation {
 			if (submodel.second->rotation_type == MOVEMENT_TYPE_NONE) {
 				submodel.second->rotation_type = MOVEMENT_TYPE_TRIGGERED;
 			}
+			if (submodel.second->translation_type == MOVEMENT_TYPE_NONE) {
+				submodel.second->translation_type = MOVEMENT_TYPE_TRIGGERED;
+			}
 		}
 		
 		data.orientation = submodel.first->canonical_orient;
-		//TODO: Once translation is a thing
-		//data.position = m_subsys->submodel_instance_1->offset;
+		data.position = submodel.first->canonical_offset;
 
 		//In this case, we just initial-type initialized the submodel. Properly set its last frame data as well
-		if(isInitialType)
+		if (isInitialType) {
 			submodel.first->canonical_prev_orient = submodel.first->canonical_orient;
+			submodel.first->canonical_prev_offset = submodel.first->canonical_offset;
+		}
 
 		return true;
 	}
@@ -383,8 +401,8 @@ namespace animation {
 		polymodel* pm = model_get(pmi->model_num);
 
 		//Do we have a submodel number already cached?
-		if (m_submodel.has())
-			submodelNumber = m_submodel;
+		if (m_submodel)
+			submodelNumber = *m_submodel;
 		//We seem to have a submodel name
 		else {
 			for (int i = 0; i < pm->n_models; i++) {
@@ -427,8 +445,8 @@ namespace animation {
 		polymodel* pm = model_get(pmi->model_num);
 
 		//Do we have a submodel number already cached?
-		if (m_submodel.has())
-			submodelNumber = m_submodel;
+		if (m_submodel)
+			submodelNumber = *m_submodel;
 		//Do we know if we were told to find the barrel submodel or not? This implies we have a subsystem name, not a submodel name
 		else {
 			ship_info* sip = nullptr;
@@ -480,15 +498,30 @@ namespace animation {
 		if (!submodel)
 			return;
 
+		// rotation -----
+
 		submodel->canonical_prev_orient = submodel->canonical_orient;
 		submodel->canonical_orient = data.orientation;
 
+		submodel->rotation_axis = sm->rotation_axis;
+
 		float angle = 0.0f;
 		vm_closest_angle_to_matrix(&submodel->canonical_orient, &sm->rotation_axis, &angle);
-		submodel->rotation_axis = sm->rotation_axis;
 
 		submodel->cur_angle = angle;
 		submodel->turret_idle_angle = angle;
+
+		// translation -----
+
+		submodel->canonical_prev_offset = submodel->canonical_offset;
+		submodel->canonical_offset = data.position;
+
+		submodel->translation_axis = sm->translation_axis;
+
+		// figure out the sign of the displacement based on whether it is along or against the axis
+		int sign = (vm_vec_dot(&submodel->canonical_offset, &submodel->translation_axis) < 0.0f) ? -1 : 1;
+
+		submodel->cur_offset = sign * vm_vec_mag(&submodel->canonical_offset);
 	}
 
 
@@ -530,7 +563,7 @@ namespace animation {
 
 		for (const auto& submodel : other.m_submodels) {
 			auto newSubmodel = std::shared_ptr<ModelAnimationSubmodel>(submodel->copy());
-			newSubmodel->m_submodel = optional<int>();
+			newSubmodel->m_submodel = tl::nullopt;
 			m_submodels.push_back(newSubmodel);
 		}
 
@@ -773,7 +806,7 @@ namespace animation {
 	int ModelAnimationSet::AnimationList::getTime() const {
 		float duration = 0.0f;
 
-		for (auto anim : animations) {
+		for (const auto& anim : animations) {
 			if (anim->m_instances[pmi->id].state == ModelAnimationState::UNTRIGGERED)
 				continue;
 			float localDur = anim->m_instances[pmi->id].duration;
@@ -784,9 +817,14 @@ namespace animation {
 	}
 
 	void ModelAnimationSet::AnimationList::setFlag(Animation_Instance_Flags flag, bool set) const {
-		for (auto anim : animations)
+		for (const auto& anim : animations)
 			anim->m_instances[pmi->id].instance_flags.set(flag, set);
 	}
+
+	void ModelAnimationSet::AnimationList::setSpeed(float speed) const {
+		for (const auto& anim : animations)
+			anim->m_instances[pmi->id].speed = speed;
+	};
 
 	ModelAnimationSet::AnimationList& ModelAnimationSet::AnimationList::operator+=(const AnimationList& rhs) {
 		Assertion(pmi == rhs.pmi, "Tried to concatenate two AnimationLists of different model instances!");
@@ -797,7 +835,7 @@ namespace animation {
 	ModelAnimationSet::AnimationList ModelAnimationSet::AnimationList::operator+(const AnimationList& rhs) {
 		Assertion(pmi == rhs.pmi, "Tried to concatenate two AnimationLists of different model instances!");
 		AnimationList result = *this;
-		result.animations.insert(animations.end(), rhs.animations.cbegin(), rhs.animations.cend());
+		result.animations.insert(result.animations.end(), rhs.animations.cbegin(), rhs.animations.cend());
 		return result;
 	}
 	
@@ -1179,7 +1217,7 @@ namespace animation {
 
 	void ModelAnimationParseHelper::parseSingleMoveable() {
 		volatile ModelAnimationMoveableOrientation o = ModelAnimationMoveableOrientation(nullptr, angles{ 0,0,0 });
-		volatile ModelAnimationMoveableRotation r = ModelAnimationMoveableRotation(nullptr, angles{ 0,0,0 }, angles{0,0,0}, optional<angles>());
+		volatile ModelAnimationMoveableRotation r = ModelAnimationMoveableRotation(nullptr, angles{ 0,0,0 }, angles{0,0,0}, tl::nullopt);
 		
 		required_string("$Name:");
 		char animID[NAME_LENGTH];
@@ -1433,7 +1471,7 @@ namespace animation {
 			required_string("+velocity:");
 			stuff_angles_deg_phb(&velocity);
 
-			optional<angles> acceleration;
+			tl::optional<angles> acceleration;
 
 			if (optional_string("+acceleration:")) {
 				angles accel{ 0,0,0 };
@@ -1442,7 +1480,7 @@ namespace animation {
 				bool allZero = accel.p == 0 && accel.b == 0 && accel.h == 0;
 
 				if (!allZero) {
-					acceleration = accel;
+					acceleration = std::move(accel);
 				}
 			}
 
@@ -1453,7 +1491,7 @@ namespace animation {
 				//Hence, throw time away, and let the segment handle calculating how long it actually takes
 			}
 
-			auto rotation = std::shared_ptr<ModelAnimationSegmentRotation>(new ModelAnimationSegmentRotation(subsys, target, velocity, optional<float>(), acceleration, absolute));
+			auto rotation = std::shared_ptr<ModelAnimationSegmentRotation>(new ModelAnimationSegmentRotation(subsys, target, velocity, tl::nullopt, acceleration, absolute));
 
 			if (optional_string("$Sound:")) {
 				gamesnd_id start_sound;
@@ -1498,7 +1536,7 @@ namespace animation {
 		{"$Set Angle:", 			ModelAnimationSegmentSetAngle::parser},
 		{"$Rotation:",		 	ModelAnimationSegmentRotation::parser},
 		{"$Axis Rotation:", 	ModelAnimationSegmentAxisRotation::parser},
-	//	{"$Translation:", 		ModelAnimationSegmentTranslation::parser},
+		{"$Translation:", 		ModelAnimationSegmentTranslation::parser},
 		{"$Sound During:", 		ModelAnimationSegmentSoundDuring::parser},
 		{"$Inverse Kinematics:", 	ModelAnimationSegmentIK::parser}
 	};

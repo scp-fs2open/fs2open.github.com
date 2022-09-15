@@ -81,13 +81,7 @@ void convert_model_material(model_uniform_data* data_out,
 		data_out->diffuseFactor.xyz.x = gr_light_color[0] * light_factor;
 		data_out->diffuseFactor.xyz.y = gr_light_color[1] * light_factor;
 		data_out->diffuseFactor.xyz.z = gr_light_color[2] * light_factor;
-		data_out->ambientFactor.xyz.x = gr_light_ambient[0] + gr_user_ambient;
-		data_out->ambientFactor.xyz.y = gr_light_ambient[1] + gr_user_ambient;
-		data_out->ambientFactor.xyz.z = gr_light_ambient[2] + gr_user_ambient;
-
-		CLAMP(data_out->ambientFactor.xyz.x, 0.02f, 1.0f);
-		CLAMP(data_out->ambientFactor.xyz.y, 0.02f, 1.0f);
-		CLAMP(data_out->ambientFactor.xyz.z, 0.02f, 1.0f);
+		gr_get_ambient_light(&data_out->ambientFactor);
 
 		if (material.get_light_factor() > 0.25f && Cmdline_emissive) {
 			data_out->emissionFactor.xyz.x = gr_light_emission[0];

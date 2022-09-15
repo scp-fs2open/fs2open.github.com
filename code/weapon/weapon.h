@@ -14,6 +14,7 @@
 
 #include "globalincs/globals.h"
 #include "globalincs/systemvars.h"
+#include "globalincs/pstypes.h"
 
 #include "actions/Program.h"
 #include "decals/decals.h"
@@ -29,6 +30,8 @@
 #include "weapon/swarm.h"
 #include "weapon/trails.h"
 #include "weapon/weapon_flags.h"
+#include "model/modelrender.h"
+#include "render/3d.h"
 
 class object;
 class ship_subsys;

@@ -143,7 +143,7 @@ protected:
 	afx_msg void OnBrowseWave();
 	afx_msg void OnSelchangeWaveFilename();
 	afx_msg void OnPlay();
-	afx_msg void OnUpdate();
+	afx_msg void OnUpdateStuff();
 	afx_msg void OnSelchangeTeam();
 	afx_msg void OnSelchangeMessageTeam();
 	afx_msg void OnDblclkMessageList();

@@ -56,6 +56,7 @@
 #include "mod_table/mod_table.h"
 #include "model/model.h"
 #include "model/modelrender.h"
+#include "model/modelreplace.h"
 #include "nebula/neb.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
@@ -178,6 +179,15 @@ SCP_vector<exited_ship> Ships_exited;
 
 SCP_vector<ship_registry_entry> Ship_registry;
 SCP_unordered_map<SCP_string, int, SCP_string_lcase_hash, SCP_string_lcase_equal_to> Ship_registry_map;
+
+int ship_registry_get_index(const char *name)
+{
+	auto ship_it = Ship_registry_map.find(name);
+	if (ship_it != Ship_registry_map.end())
+		return ship_it->second;
+
+	return -1;
+}
 
 const ship_registry_entry *ship_registry_get(const char *name)
 {
@@ -2752,7 +2762,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		// Goober5000 - if this is a modular table, and we're replacing an existing file name, and the file doesn't exist, don't replace it
 		if (replace)
 			if (sip->cockpit_pof_file[0] != '\0')
-				if (!cf_exists_full(temp, CF_TYPE_MODELS))
+				if (!model_exists(temp))
 					valid = false;
 
 		if (valid)
@@ -2819,7 +2829,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		// Goober5000 - if this is a modular table, and we're replacing an existing file name, and the file doesn't exist, don't replace it
 		if (replace)
 			if (sip->pof_file[0] != '\0')
-				if (!cf_exists_full(temp, CF_TYPE_MODELS))
+				if (!model_exists(temp))
 					valid = false;
 
 		if (valid)
@@ -4495,6 +4505,9 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			stuff_float(&mtp->length);
 		}
 
+		// make sure norm is normalized, and put any extra in length
+		mtp->length *= vm_vec_normalize(&mtp->norm);
+
 		parse_game_sound("+StartSnd:", &mtp->start_snd);
 		parse_game_sound("+LoopSnd:", &mtp->loop_snd);
 		parse_game_sound("+StopSnd:", &mtp->stop_snd);
@@ -5784,6 +5797,27 @@ void ship_init()
 			Ships_inited = true;
 		}
 
+		for (SCP_vector<species_info>::iterator ii = Species_info.begin(); ii != Species_info.end(); ++ii) {
+			if (*ii->support_ship_name) {
+				int index = ship_info_lookup(ii->support_ship_name);
+				if (index < 0) {
+					Warning(LOCATION, "Could not find support ship class '%s' for species species '%s'", ii->support_ship_name, ii->species_name);
+				} else {
+					ii->support_ship_index = index;
+				}
+			} else {
+				// No support ship explicitly given
+				int species_index = (int) std::distance(Species_info.begin(), ii);
+				for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
+					if ((it->species == species_index) && (it->flags[Ship::Info_Flags::Support])) {
+						int ship_index = (int) std::distance(Ship_info.cbegin(), it);
+						ii->support_ship_index = ship_index;
+						break;
+					}
+				}
+			}
+		}
+
 		// We shouldn't already have any subsystem pointers at this point.
 		Assertion(Ship_subsystems.empty(), "Some pre-allocated subsystems didn't get cleared out: " SIZE_T_ARG " batches present during ship_init(); get a coder!\n", Ship_subsystems.size());
 	}
@@ -6037,13 +6071,13 @@ void physics_ship_init(object *objp)
 	else 
 		pi->mass = pm->mass * sinfo->density;
 
-	// it was print-worthy back in read_model_file() in modelread.cpp, but now that its being used for an actual ship the user should be warned.
-	if (IS_VEC_NULL(&pm->moment_of_inertia.vec.fvec)
-		&& IS_VEC_NULL(&pm->moment_of_inertia.vec.uvec)
-		&& IS_VEC_NULL(&pm->moment_of_inertia.vec.rvec))
+	// it was print-worthy back in read_and_process_model_file() in modelread.cpp, but now that its being used for an actual ship the user should be warned.
+	if (IS_MOI_VEC_NULL(&pm->moment_of_inertia.vec.fvec)
+		&& IS_MOI_VEC_NULL(&pm->moment_of_inertia.vec.uvec)
+		&& IS_MOI_VEC_NULL(&pm->moment_of_inertia.vec.rvec))
 		Warning(LOCATION, "%s (%s) has a null moment of inertia!", sinfo->name, sinfo->pof_file);
 
-	// if invalid they were already warned about this in read_model_file() in modelread.cpp, so now we just need to try and sweep it under the rug
+	// if invalid they were already warned about this in read_and_process_model_file() in modelread.cpp, so now we just need to try and sweep it under the rug
 	if (!is_valid_matrix(&pm->moment_of_inertia))
 	{
 		// TODO: generate MOI properly
@@ -6080,10 +6114,10 @@ void physics_ship_init(object *objp)
 		pi->flags |= PF_SLIDE_ENABLED;
 
 	pi->cur_glide_cap = pi->max_vel.xyz.z; //Init dynamic glide cap stuff to the max vel.
-	if ( sinfo->glide_cap > 0.000001f || sinfo->glide_cap < -0.000001f )		//Backslash
+	if (sinfo->glide_cap > 0.000001f || sinfo->glide_cap < -0.000001f)		//Backslash
 		pi->glide_cap = sinfo->glide_cap;
 	else
-		pi->glide_cap = MAX(MAX(pi->max_vel.xyz.z, sinfo->max_overclocked_speed), pi->afterburner_max_vel.xyz.z);
+		pi->glide_cap = std::max({ pi->max_vel.xyz.z, sinfo->max_overclocked_speed, pi->afterburner_max_vel.xyz.z });
 	// If there's not a value for +Max Glide Speed set in the table, we want this cap to default to the fastest speed the ship can go.
 	// However, a negative value means we want no cap, thus allowing nearly infinite maximum gliding speeds.
 
@@ -6346,7 +6380,7 @@ void ship::clear()
 
 	memset(&arc_pts, 0, MAX_SHIP_ARCS * 2 * sizeof(vec3d));
 	for (i = 0; i < MAX_SHIP_ARCS; i++)
-		arc_timestamp[i] = timestamp(-1);
+		arc_timestamp[i] = TIMESTAMP::invalid();
 	memset(&arc_type, 0, MAX_SHIP_ARCS * sizeof(ubyte));
 	arc_next_time = timestamp(-1);
 
@@ -7074,6 +7108,8 @@ static int subsys_set(int objnum, int ignore_subsys_info)
 			ship_system->flags.set(Ship::Subsystem_Flags::No_aggregate);
 		if (model_system->flags[Model::Subsystem_Flags::Rotates])
 			ship_system->flags.set(Ship::Subsystem_Flags::Rotates);
+		if (model_system->flags[Model::Subsystem_Flags::Translates])
+			ship_system->flags.set(Ship::Subsystem_Flags::Translates);
 		if (model_system->flags[Model::Subsystem_Flags::Player_turret_sound])
 			ship_system->flags.set(Ship::Subsystem_Flags::Play_sound_for_player);
 		if (model_system->flags[Model::Subsystem_Flags::No_disappear])
@@ -7906,11 +7942,11 @@ void ship_destroy_instantly(object *ship_objp, bool with_debris)
 	Assert(ship_objp->type == OBJ_SHIP);
 	Assert(!(ship_objp == Player_obj));
 
-	if (OnShipDeathStartedHook->isActive()) {
+	if (scripting::hooks::OnShipDeathStarted->isActive()) {
 		// add scripting hook for 'On Ship Death Started' -- Goober5000
 		// hook is placed at the beginning of this function to allow the scripter to
 		// actually have access to the ship before any death routines (such as mission logging) are executed
-		OnShipDeathStartedHook->run(scripting::hook_param_list(scripting::hook_param("Ship", 'o', ship_objp)));
+		scripting::hooks::OnShipDeathStarted->run(scripting::hook_param_list(scripting::hook_param("Ship", 'o', ship_objp)));
 	}
 
 	// undocking and death preparation
@@ -7925,6 +7961,11 @@ void ship_destroy_instantly(object *ship_objp, bool with_debris)
 	// scripting stuff
 	if (scripting::hooks::OnDeath->isActive()) {
 		scripting::hooks::OnDeath->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', ship_objp),
+			scripting::hook_param("Ship", 'o', ship_objp)),
+			ship_objp);
+	}
+	if (scripting::hooks::OnShipDeath->isActive()) {
+		scripting::hooks::OnShipDeath->run(scripting::hook_param_list(
 			scripting::hook_param("Ship", 'o', ship_objp)),
 			ship_objp);
 	}
@@ -8857,7 +8898,7 @@ static void ship_do_thruster_frame( ship *shipp, object *objp, float frametime )
 
 		// If thrust at 0, go at half as fast, full thrust; full framerate
 		// so set rate from 0.67 to 1.67, depending on thrust from 0 to 1
-		rate = 0.67f * (1.0f + objp->phys_info.forward_thrust);
+		rate = 0.67f * (1.0f + objp->phys_info.linear_thrust.xyz.z);
 	}
 
 	Assert( frametime > 0.0f );
@@ -8923,7 +8964,7 @@ void ship_do_weapon_thruster_frame( weapon *weaponp, object *objp, float frameti
 
 	// If thrust at 0, go at half as fast, full thrust; full framerate
 	// so set rate from 0.67 to 1.67, depending on thrust from 0 to 1
-	rate = 0.67f * (1.0f + objp->phys_info.forward_thrust);
+	rate = 0.67f * (1.0f + objp->phys_info.linear_thrust.xyz.z);
 
 	if (wip->thruster_flame.first_frame >= 0)
 		flame_anim = &wip->thruster_flame;
@@ -10034,16 +10075,26 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 	// but it breaks multi, so there will just be a warning on debug instead.
 	if ((ship_name == nullptr) || (ship_name_lookup(ship_name) >= 0) /*|| (ship_find_exited_ship_by_name(ship_name) >= 0)*/) {
 		// regular name, regular suffix
+		char base_name[NAME_LENGTH];
 		char suffix[NAME_LENGTH];
-		strcpy_s(shipp->ship_name, Ship_info[ship_type].name);
+		strcpy_s(base_name, Ship_info[ship_type].name);
 		sprintf(suffix, NOX(" %d"), n);
 
 		// default names shouldn't have a hashed suffix
-		end_string_at_first_hash_symbol(shipp->ship_name);
+		end_string_at_first_hash_symbol(base_name);
 
-		// build it
-		Assert(strlen(shipp->ship_name) + strlen(suffix) <= NAME_LENGTH - 1);
+		// start building name
+		strcpy_s(shipp->ship_name, base_name);
+
+		// if generated name will be longer than allowable name, truncate the class section of the name by the overflow
+		int char_overflow = (strlen(base_name) + strlen(suffix)) - (NAME_LENGTH - 1);
+		if (char_overflow > 0) {
+			shipp->ship_name[strlen(base_name) - char_overflow] = '\0';
+		}
+
+		// complete building the name by adding suffix number
 		strcat_s(shipp->ship_name, suffix);
+
 	} else {
 		if (ship_find_exited_ship_by_name(ship_name) >= 0 && !(Game_mode & GM_MULTIPLAYER)) {
 			Warning(LOCATION, "Newly-arrived ship %s has been given the same name as a ship previously destroyed in-mission. This can cause unpredictable SEXP behavior. Correct your mission file or scripts to prevent duplicates.", ship_name);
@@ -10762,21 +10813,19 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	if (by_sexp) {
 		Objects[sp->objnum].phys_info.desired_rotvel = ph_inf.desired_rotvel;
 		Objects[sp->objnum].phys_info.desired_vel = ph_inf.desired_vel;
-		Objects[sp->objnum].phys_info.forward_thrust = ph_inf.forward_thrust;
 		Objects[sp->objnum].phys_info.fspeed = ph_inf.fspeed;
 		Objects[sp->objnum].phys_info.heading = ph_inf.heading;
 		Objects[sp->objnum].phys_info.last_rotmat = ph_inf.last_rotmat;
-		Objects[sp->objnum].phys_info.prev_fvec = ph_inf.prev_fvec;
 		Objects[sp->objnum].phys_info.prev_ramp_vel = ph_inf.prev_ramp_vel;
 		Objects[sp->objnum].phys_info.reduced_damp_decay = ph_inf.reduced_damp_decay;
 		Objects[sp->objnum].phys_info.rotvel = ph_inf.rotvel;
 		Objects[sp->objnum].phys_info.shockwave_decay = ph_inf.shockwave_decay;
 		Objects[sp->objnum].phys_info.shockwave_shake_amp = ph_inf.shockwave_shake_amp;
-		Objects[sp->objnum].phys_info.side_thrust = ph_inf.side_thrust;
 		Objects[sp->objnum].phys_info.speed = ph_inf.speed;
 		Objects[sp->objnum].phys_info.vel = ph_inf.vel;
-		Objects[sp->objnum].phys_info.vert_thrust = ph_inf.vert_thrust;
 		Objects[sp->objnum].phys_info.ai_desired_orient = ph_inf.ai_desired_orient;
+		Objects[sp->objnum].phys_info.linear_thrust = ph_inf.linear_thrust;
+		Objects[sp->objnum].phys_info.rotational_thrust = ph_inf.rotational_thrust;
 	}
 
 	ship_set_new_ai_class(sp, sip->ai_class);
@@ -18351,6 +18400,32 @@ void ship_do_submodel_rotation(ship *shipp, model_subsystem *psub, ship_subsys *
 	}
 }
 
+// Goober5000
+void ship_do_submodel_translation(ship *shipp, model_subsystem *psub, ship_subsys *pss)
+{
+	Assert(shipp);
+	Assert(psub);
+	Assert(pss);
+
+	// check if we actually can translate
+	if ( !(pss->flags[Ship::Subsystem_Flags::Translates]) ){
+		return;
+	}
+
+	if (psub->flags[Model::Subsystem_Flags::Triggered]) {
+		//Triggered translation is handled by animation stepping.
+		//The flag doesn't do anything at all anymore, except prevent other translation types
+		return;
+	}
+
+	// if we got this far, we can translate - so choose which method to use
+	if (psub->flags[Model::Subsystem_Flags::Stepped_translate]	) {
+		submodel_stepped_translate(psub, pss->submodel_instance_1);
+	} else {
+		submodel_translate(psub, pss->submodel_instance_1 );
+	}
+}
+
 void ship_move_subsystems(object *objp)
 {
 	Assertion(objp->type == OBJ_SHIP, "ship_move_subsystems should only be called for ships!  objp type = %d", objp->type);
@@ -18366,6 +18441,7 @@ void ship_move_subsystems(object *objp)
 
 		// do solar/radar/gas/activator rotation here
 		ship_do_submodel_rotation(shipp, psub, pss);
+		ship_do_submodel_translation(shipp, psub, pss);
 	}
 }
 
@@ -18503,7 +18579,7 @@ int ship_class_compare(int ship_class_1, int ship_class_2)
  * Gives the index into the Damage_types[] vector of a specified damage type name
  * @return -1 if not found
  */
-static int damage_type_get_idx(char *name)
+static int damage_type_get_idx(const char *name)
 {
 	//This should never be bigger than INT_MAX anyway
 	for(int i = 0; i < (int)Damage_types.size(); i++)
@@ -18518,7 +18594,7 @@ static int damage_type_get_idx(char *name)
 /**
  * Either loads a new damage type, or returns the index of one with the same name as given
  */
-int damage_type_add(char *name)
+int damage_type_add(const char *name)
 {
 	int i = damage_type_get_idx(name);
 	if(i != -1)
@@ -19439,9 +19515,7 @@ int get_nearest_bbox_point(object *ship_objp, vec3d *start, vec3d *box_pt)
 
 void ship_set_thruster_info(mst_info *mst, object *obj, ship *shipp, ship_info *sip)
 {
-	mst->length.xyz.z = obj->phys_info.forward_thrust;
-	mst->length.xyz.x = obj->phys_info.side_thrust;
-	mst->length.xyz.y = obj->phys_info.vert_thrust;
+	mst->length = obj->phys_info.linear_thrust;
 
 	//	Maybe add noise to thruster geometry.
 	if (!(sip->flags[Ship::Info_Flags::No_thruster_geo_noise])) {
@@ -19490,41 +19564,63 @@ void ship_render_batch_thrusters(object *obj)
 
 		render_amount = 0.0f;
 
-		//WMC - get us a steady value
-		vec3d des_vel;
-		vm_vec_rotate(&des_vel, &pi->desired_vel, &obj->orient);
+		if (mtp->use_flags.any_set()) {
+			if(pi->rotational_thrust.xyz.x < 0 && (mtp->use_flags[Ship::Thruster_Flags::Pitch_up])) {
+				render_amount = -pi->rotational_thrust.xyz.x;
+			} else if(pi->rotational_thrust.xyz.x > 0 && (mtp->use_flags[Ship::Thruster_Flags::Pitch_down])) {
+				render_amount = pi->rotational_thrust.xyz.x;
+			} else if(pi->rotational_thrust.xyz.y < 0 && (mtp->use_flags[Ship::Thruster_Flags::Roll_right])) {
+				render_amount = -pi->rotational_thrust.xyz.y;
+			} else if(pi->rotational_thrust.xyz.y > 0 && (mtp->use_flags[Ship::Thruster_Flags::Roll_left])) {
+				render_amount = pi->rotational_thrust.xyz.y;
+			} else if(pi->rotational_thrust.xyz.z < 0 && (mtp->use_flags[Ship::Thruster_Flags::Bank_right])) {
+				render_amount = -pi->rotational_thrust.xyz.z;
+			} else if(pi->rotational_thrust.xyz.z > 0 && (mtp->use_flags[Ship::Thruster_Flags::Bank_left])) {
+				render_amount = pi->rotational_thrust.xyz.z;
+			}
 
-		if(pi->desired_rotvel.xyz.x < 0 && (mtp->use_flags[Ship::Thruster_Flags::Pitch_up])) {
-			render_amount = fl_abs(pi->desired_rotvel.xyz.x) / pi->max_rotvel.xyz.x;
-		} else if(pi->desired_rotvel.xyz.x > 0 && (mtp->use_flags[Ship::Thruster_Flags::Pitch_down])) {
-			render_amount = fl_abs(pi->desired_rotvel.xyz.x) / pi->max_rotvel.xyz.x;
-		} else if(pi->desired_rotvel.xyz.y < 0 && (mtp->use_flags[Ship::Thruster_Flags::Roll_right])) {
-			render_amount = fl_abs(pi->desired_rotvel.xyz.y) / pi->max_rotvel.xyz.y;
-		} else if(pi->desired_rotvel.xyz.y > 0 && (mtp->use_flags[Ship::Thruster_Flags::Roll_left])) {
-			render_amount = fl_abs(pi->desired_rotvel.xyz.y) / pi->max_rotvel.xyz.y;
-		} else if(pi->desired_rotvel.xyz.z < 0 && (mtp->use_flags[Ship::Thruster_Flags::Bank_right])) {
-			render_amount = fl_abs(pi->desired_rotvel.xyz.z) / pi->max_rotvel.xyz.z;
-		} else if(pi->desired_rotvel.xyz.z > 0 && (mtp->use_flags[Ship::Thruster_Flags::Bank_left])) {
-			render_amount = fl_abs(pi->desired_rotvel.xyz.z) / pi->max_rotvel.xyz.z;
+			//Backslash - show thrusters according to thrust amount, not speed
+			if(pi->linear_thrust.xyz.x > 0 && (mtp->use_flags[Ship::Thruster_Flags::Slide_right])) {
+				render_amount = pi->linear_thrust.xyz.x;
+			} else if(pi->linear_thrust.xyz.x < 0 && (mtp->use_flags[Ship::Thruster_Flags::Slide_left])) {
+				render_amount = -pi->linear_thrust.xyz.x;
+			} else if(pi->linear_thrust.xyz.y > 0 && (mtp->use_flags[Ship::Thruster_Flags::Slide_up])) {
+				render_amount = pi->linear_thrust.xyz.y;
+			} else if(pi->linear_thrust.xyz.y < 0 && (mtp->use_flags[Ship::Thruster_Flags::Slide_down])) {
+				render_amount = -pi->linear_thrust.xyz.y;
+			} else if(pi->linear_thrust.xyz.z > 0 && (mtp->use_flags[Ship::Thruster_Flags::Forward])) {
+				render_amount = pi->linear_thrust.xyz.z;
+			} else if(pi->linear_thrust.xyz.z < 0 && (mtp->use_flags[Ship::Thruster_Flags::Reverse])) {
+				render_amount = -pi->linear_thrust.xyz.z;
+			}
+		} else {
+			// calculate it automatically
+			vec3d cross;
+			vec3d pos = mtp->pos / (obj->radius * 0.5f); // for full activation at half radius, further out will get capped to 1
+			vm_vec_cross(&cross, &pos, &pi->rotational_thrust);
+			render_amount = vm_vec_dot(&mtp->norm, &cross);
+			CLAMP(render_amount, 0.0f, 1.0f);
+
+			render_amount += -vm_vec_dot(&mtp->norm, &vmd_x_vector) * pi->linear_thrust.xyz.x;
+			render_amount += -vm_vec_dot(&mtp->norm, &vmd_y_vector) * pi->linear_thrust.xyz.y;
+			render_amount += -vm_vec_dot(&mtp->norm, &vmd_z_vector) * pi->linear_thrust.xyz.z;
+
+		}
+		CLAMP(render_amount, 0.0f, 1.0f);
+
+		if (pi->flags & PF_GLIDING) {
+			//WMC - get us a steady value
+			vec3d des_vel;
+			vm_vec_rotate(&des_vel, &pi->desired_vel, &obj->orient);
+
+			vec3d glide_dir;
+			vm_vec_copy_normalize(&glide_dir, &des_vel);
+			render_amount += -vm_vec_dot(&mtp->norm, &glide_dir);
+			CLAMP(render_amount, 0.0f, 1.0f);
 		}
 
-		//Backslash - show thrusters according to thrust amount, not speed
-		if(pi->side_thrust > 0 && (mtp->use_flags[Ship::Thruster_Flags::Slide_right])) {
-			render_amount = pi->side_thrust;
-		} else if(pi->side_thrust < 0 && (mtp->use_flags[Ship::Thruster_Flags::Slide_left])) {
-			render_amount = -pi->side_thrust;
-		} else if(pi->vert_thrust > 0 && (mtp->use_flags[Ship::Thruster_Flags::Slide_up])) {
-			render_amount = pi->vert_thrust;
-		} else if(pi->vert_thrust < 0 && (mtp->use_flags[Ship::Thruster_Flags::Slide_down])) {
-			render_amount = -pi->vert_thrust;
-		} else if(pi->forward_thrust > 0 && (mtp->use_flags[Ship::Thruster_Flags::Forward])) {
-			render_amount = pi->forward_thrust;
-		} else if(pi->forward_thrust < 0 && (mtp->use_flags[Ship::Thruster_Flags::Reverse])) {
-			render_amount = -pi->forward_thrust;
-		}
-
-		//Don't render small faraway thrusters (more than 10k * radius away)
-		if ( vm_vec_dist(&Eye_position, &obj->pos) > (10000.0f * mtp->radius) ) {
+		//Don't render small faraway thrusters (more than 1k * radius * length away)
+		if ( vm_vec_dist(&Eye_position, &obj->pos) > (1000.0f * mtp->radius * mtp->length) ) {
 			render_amount = 0.0f;
 		}
 
@@ -19864,7 +19960,7 @@ void ship_render(object* obj, model_draw_list* scene)
 	// Only render electrical arcs if within 500m of the eye (for a 10m piece)
 	if ( vm_vec_dist_quick( &obj->pos, &Eye_position ) < obj->radius*50.0f && !Rendering_to_shadow_map ) {
 		for ( int i = 0; i < MAX_SHIP_ARCS; i++ )	{
-			if ( timestamp_valid(shipp->arc_timestamp[i]) ) {
+			if ( shipp->arc_timestamp[i].isValid() ) {
 				model_instance_add_arc(pm, pmi, -1, &shipp->arc_pts[i][0], &shipp->arc_pts[i][1], shipp->arc_type[i]);
 			}
 		}

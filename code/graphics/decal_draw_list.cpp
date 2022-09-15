@@ -114,13 +114,7 @@ decal_draw_list::decal_draw_list(size_t num_decals)
 	header->viewportSize.x = (float) gr_screen.max_w;
 	header->viewportSize.y = (float) gr_screen.max_h;
 
-	header->ambientLight.xyz.x = gr_light_ambient[0] + gr_user_ambient;
-	header->ambientLight.xyz.y = gr_light_ambient[1] + gr_user_ambient;
-	header->ambientLight.xyz.z = gr_light_ambient[2] + gr_user_ambient;
-
-	CLAMP(header->ambientLight.xyz.x, 0.02f, 1.0f);
-	CLAMP(header->ambientLight.xyz.y, 0.02f, 1.0f);
-	CLAMP(header->ambientLight.xyz.z, 0.02f, 1.0f);
+	gr_get_ambient_light(&header->ambientLight);
 
 	// Square the ambient part of the light to match the formula used in the main model shader
 	header->ambientLight.xyz.x *= header->ambientLight.xyz.x;

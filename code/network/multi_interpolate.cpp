@@ -70,7 +70,7 @@ void interpolation_manager::interpolate(vec3d* pos, matrix* ori, physics_info* p
 		// then we need to adjust our timing since some of the sim time is used up getting to that last packet.
 		if (!_packets_expended && !_packets.empty()) {
 			*pos = _packets.front().position;
-			vm_angles_2_matrix(ori, &_packets.front().angle);
+			*ori = _packets.front().orientation;
 			pip->vel = _packets.front().velocity;
 			pip->desired_vel = _packets.front().desired_velocity;
 			pip->rotvel = _packets.front().rotational_velocity;
@@ -82,18 +82,25 @@ void interpolation_manager::interpolate(vec3d* pos, matrix* ori, physics_info* p
 
 		sim_time = (sim_time > 0.25f) ? 0.25f : sim_time;
 
-		// at some point, we may want to do something fancier, but for now...
-		*last_orient = *ori;
-
 		physics_sim(pos, ori, pip, sim_time);
 
 		// we can't trust what the last position was on the local instance, so figure out what it should have been
 		// use flFrametime here because we need to know what the last position would have been if it was accurate in the last frame.
 		vm_vec_scale_add(last_pos, pos, &pip->vel, -flFrametime);
 
+		// Asteroth's method for last orient.
+		vec3d normalized_rotvel;
+		float mag = vm_vec_copy_normalize(&normalized_rotvel, &pip->rotvel);
+
+		matrix rotate_to_previous;
+
+		vm_quaternion_rotate(&rotate_to_previous, -mag * flFrametime, &normalized_rotvel);
+		vm_matrix_x_matrix(last_orient, &rotate_to_previous, ori);
+
 		// duplicate the rest of the physics engine's calls here to make the simulation more exact.
 		pip->speed = vm_vec_mag(&pip->vel);
 		pip->fspeed = vm_vec_dot(&ori->vec.fvec, &pip->vel);
+
 		return; // we should not try interpolating and siming, so return.
 	}
 
@@ -111,9 +118,6 @@ void interpolation_manager::interpolate(vec3d* pos, matrix* ori, physics_info* p
 
 	// one by one interpolate the vectors to get the desired results.
 	vec3d temp_vector;
-
-	// at some point, we may want to do something fancier, but for now...
-	*last_orient = *ori;
 
 	// set new position.
 	vm_vec_sub(&temp_vector, &_packets[_upcoming_packet_index].position, &_packets[_prev_packet_index].position);
@@ -145,9 +149,16 @@ void interpolation_manager::interpolate(vec3d* pos, matrix* ori, physics_info* p
 	}
 
 	// calculate the new orientation.
-	angles temp_angles;
-	vm_interpolate_angles_quick(&temp_angles, &_packets[_prev_packet_index].angle, &_packets[_upcoming_packet_index].angle, scale);
-	vm_angles_2_matrix(ori, &temp_angles);
+	vm_interpolate_matrices(ori, &_packets[_prev_packet_index].orientation, &_packets[_upcoming_packet_index].orientation, scale);
+
+	// a quick calculation for the last orientation, courtesy Asteroth
+	vec3d normalized_rotvel;
+	float mag = vm_vec_copy_normalize(&normalized_rotvel, &pip->rotvel);
+
+	matrix rotate_to_previous;
+
+	vm_quaternion_rotate(&rotate_to_previous, -mag * flFrametime, &normalized_rotvel);
+	vm_matrix_x_matrix(last_orient, &rotate_to_previous, ori);
 
 	// duplicate the rest of the physics engine's calls here to make the simulation more exact.
 	pip->speed = vm_vec_mag(&pip->vel);
@@ -215,6 +226,5 @@ void interpolation_manager::replace_packet(int index, vec3d* pos, matrix* orient
 	_packets[index].desired_velocity = pip->desired_vel;
 	_packets[index].rotational_velocity = pip->rotvel;
 	_packets[index].desired_rotational_velocity = pip->desired_rotvel; 
-
-	vm_extract_angles_matrix(&_packets[index].angle, orient);
+	_packets[index].orientation = *orient;
 }

@@ -81,6 +81,7 @@ int HUD_color_alpha = HUD_COLOR_ALPHA_DEFAULT;		// 1 -> HUD_COLOR_ALPHA_USER_MAX
 
 int HUD_draw     = 1;
 int HUD_contrast = 0;										// high or lo contrast (for nebula, etc)
+bool HUD_shadows = false;
 
 // Goober5000
 int HUD_disable_except_messages = 0;
@@ -753,6 +754,12 @@ void HudGauge::renderString(int x, int y, const char *str)
 		}
 	}
 
+	if (HUD_shadows) {
+		gr_set_color_fast(&Color_black);
+		gr_string(x + nx + 1, y + ny + 1, str);
+		gr_set_color_fast(&gauge_color);
+	}
+
 	gr_string(x + nx, y + ny, str);
 	gr_reset_screen_scale();
 }
@@ -776,9 +783,20 @@ void HudGauge::renderString(int x, int y, int gauge_id, const char *str)
 		}
 	}
 
+
 	if ( gauge_id > -2 ) {
+		if (HUD_shadows) {
+			gr_set_color_fast(&Color_black);
+			emp_hud_string(x + nx + 1, y + ny + 1, gauge_id, str, GR_RESIZE_FULL);
+			gr_set_color_fast(&gauge_color);
+		}
 		emp_hud_string(x + nx, y + ny, gauge_id, str, GR_RESIZE_FULL);
 	} else {
+		if (HUD_shadows) {
+			gr_set_color_fast(&Color_black);
+			gr_string(x + nx + 1, y + ny + 1, str);
+			gr_set_color_fast(&gauge_color);
+		}
 		gr_string(x + nx, y + ny, str);
 	}
 
@@ -1593,6 +1611,7 @@ void hud_update_frame(float  /*frametime*/)
 	if (Player->target_is_dying) {
 		hud_stop_looped_locking_sounds();
 		if ( Players[Player_num].flags & PLAYER_FLAGS_AUTO_TARGETING ) {
+			Player_ai->target_objnum = -1;
 			hud_target_auto_target_next();
 		}
 	}
@@ -1948,7 +1967,7 @@ void update_throttle_sound()
 		throttle_sound_check_id = timestamp(THROTTLE_SOUND_CHECK_INTERVAL);
 	
 		if ( object_get_gliding(Player_obj) ) {	// Backslash
-			percent_throttle = Player_obj->phys_info.forward_thrust;
+			percent_throttle = Player_obj->phys_info.linear_thrust.xyz.z;
 		} else {
 			percent_throttle = Player_obj->phys_info.fspeed / Ship_info[Ships[Player_obj->instance].ship_info_index].max_speed;
 		}
@@ -2466,7 +2485,7 @@ void hud_start_text_flash(const char *txt, int t, int interval)
 	// HACK. don't override EMP if its still going    :)
 	// An additional hack: don't interrupt other warnings if this is a missile launch alert (Swifty)
 	if(!timestamp_elapsed(Hud_text_flash_timer))
-		if( !stricmp(Hud_text_flash, NOX("Emp")) || !stricmp(txt, NOX("Launch")) )
+		if(!stricmp(Hud_text_flash, XSTR("Emp", 1670)) || !stricmp(txt, XSTR("Launch", 1507)))
 			return;
 
 	strncpy(Hud_text_flash, txt, 500);
@@ -3864,6 +3883,11 @@ void hud_toggle_contrast()
 void hud_set_contrast(int high)
 {
 	HUD_contrast = high;
+}
+
+void hud_toggle_shadows()
+{
+	HUD_shadows = !HUD_shadows;
 }
 
 // Paging functions for the rest of the HUD code

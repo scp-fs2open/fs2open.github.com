@@ -148,6 +148,34 @@ ADE_VIRTVAR(Orientation, l_SubmodelInstance, "orientation", "Gets or sets the su
 	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&smi->canonical_orient)));
 }
 
+ADE_VIRTVAR(TranslationOffset,
+	l_SubmodelInstance,
+	"vector",
+	"Gets or sets the translated submodel instance offset.  This is relative to the existing submodel offset to its parent; a non-translated submodel will have a TranslationOffset of zero.",
+	"vector",
+	"Offset, or zero vector if handle is not valid")
+{
+	submodelinstance_h *smih;
+	vec3d *vec = nullptr;
+	if (!ade_get_args(L, "o|o", l_SubmodelInstance.GetPtr(&smih), l_Vector.GetPtr(&vec)))
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	if (!smih->IsValid())
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	if (ADE_SETTING_VAR && vec != nullptr)
+	{
+		auto smi = smih->Get();
+
+		smi->canonical_prev_offset = smi->canonical_offset;
+		smi->canonical_offset = *vec;
+
+		smi->cur_offset = vm_vec_mag(vec);
+	}
+
+	return ade_set_args(L, "o", l_Vector.Set(smih->Get()->canonical_offset));
+}
+
 ADE_FUNC(findWorldPoint, l_SubmodelInstance, "vector", "Calculates the world coordinates of a point in a submodel's frame of reference", "vector", "Point, or empty vector if handle is not valid")
 {
 	submodelinstance_h *smih;

@@ -22,10 +22,9 @@ struct model_light {
 	vec3 diffuse_color;
 	int light_type;
 
-	vec3 spec_color;
+	vec3 direction;
 	float attenuation;
 
-	vec3 direction;
 };
 
 layout (std140) uniform modelData {

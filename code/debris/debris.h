@@ -43,15 +43,15 @@ typedef struct debris {
 	int		model_num;				// What model this uses
 	int		model_instance_num;		// What model instance this uses - needed for arcs
 	int		submodel_num;			// What submodel this uses
-	int		next_fireball;			// When to start a fireball
-	int		is_hull;				// indicates whether this is a collideable, destructable piece of debris from the model, or just a generic debris fragment
+	TIMESTAMP	next_fireball;		// When to start a fireball
+	bool	is_hull;				// indicates whether this is a collideable, destructable piece of debris from the model, or just a generic debris fragment
 	int		species;				// What species this is from.  -1 if don't care.
-	int		fire_timeout;			// timestamp that holds time for fireballs to stop appearing
-	int		sound_delay;			// timestamp to signal when sound should start
+	TIMESTAMP	fire_timeout;		// timestamp that holds time for fireballs to stop appearing
+	TIMESTAMP	sound_delay;		// timestamp to signal when sound should start
 	fix		time_started;			// time when debris was created
 
 	vec3d	arc_pts[MAX_DEBRIS_ARCS][2];	// The endpoints of each arc
-	int		arc_timestamp[MAX_DEBRIS_ARCS];	// When this times out, the spark goes away.  -1 is not used
+	TIMESTAMP	arc_timestamp[MAX_DEBRIS_ARCS];	// When this times out, the spark goes away.  Invalid is not used
 	int		arc_frequency;					// Starts at 1000, gets bigger
 
 	int		parent_alt_name;
@@ -69,7 +69,7 @@ void debris_init();
 void debris_render(object * obj, model_draw_list *scene);
 void debris_delete( object * obj );
 void debris_process_post( object * obj, float frame_time);
-object *debris_create( object * source_obj, int model_num, int submodel_num, vec3d *pos, vec3d *exp_center, int hull_flag, float exp_force );
+object *debris_create( object * source_obj, int model_num, int submodel_num, vec3d *pos, vec3d *exp_center, bool hull_flag, float exp_force );
 int debris_check_collision( object * obj, object * other_obj, vec3d * hitpos, collision_info_struct *debris_hit_info=NULL, vec3d* hitnormal = NULL );
 void debris_hit( object * debris_obj, object * other_obj, vec3d * hitpos, float damage );
 int debris_get_team(object *objp);

@@ -174,7 +174,7 @@ int Control_check_count = 0;
 
 static int Tab;  // which tab we are currently in
 static int Binding_mode = 0;  // are we waiting for a key to bind it?
-static int Bind_time = 0;
+static UI_TIMESTAMP Bind_time = UI_TIMESTAMP::invalid();
 static int Search_mode = 0;  // are we waiting for a key to bind it?
 static int Last_key = -1;
 static int Selected_line = 0;  // line that is currently selected for binding
@@ -1173,7 +1173,7 @@ void control_config_do_bind()
 	control_config_detect_axis_reset();
 
 	Binding_mode = 1;
-	Bind_time = timer_get_milliseconds();
+	Bind_time = ui_timestamp();
 	Search_mode = 0;
 	Last_key = -1;
 	Axis_override.clear();
@@ -1970,7 +1970,7 @@ void control_config_do_frame(float frametime)
 			}
 
 			// Debounce timer to allow mouse double-click (maybe?)
-			if (!done && (Bind_time + 375 < timer_get_milliseconds())) {
+			if (!done && (ui_timestamp_since(Bind_time) > 375)) {
 				for (i=0; i<NUM_BUTTONS; i++){
 					if ( (CC_Buttons[gr_screen.res][i].button.is_mouse_on()) && (CC_Buttons[gr_screen.res][i].button.enabled()) ){
 						break;

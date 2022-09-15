@@ -49,8 +49,12 @@ bool Red_alert_applies_to_delayed_ships;
 bool Beams_use_damage_factors;
 float Generic_pain_flash_factor;
 float Shield_pain_flash_factor;
+float Emp_pain_flash_factor;
+std::tuple<float, float, float> Emp_pain_flash_color;
 gameversion::version Targeted_version; // Defaults to retail
 SCP_string Window_title;
+SCP_string Mod_title;
+SCP_string Mod_version;
 bool Unicode_text_mode;
 bool Use_tabled_strings_for_default_language;
 bool Dont_preempt_training_voice;
@@ -63,6 +67,11 @@ bool Using_in_game_options;
 float Dinky_shockwave_default_multiplier;
 bool Shockwaves_always_damage_bombs;
 bool Shockwaves_damage_all_obj_types_once;
+bool Shockwaves_inherit_parent_damage_type;
+SCP_string Inherited_shockwave_damage_type_suffix;
+SCP_string Inherited_dinky_shockwave_damage_type_suffix;
+SCP_string Default_shockwave_damage_type;
+SCP_string Default_dinky_shockwave_damage_type;
 std::tuple<ubyte, ubyte, ubyte> Arc_color_damage_p1;
 std::tuple<ubyte, ubyte, ubyte> Arc_color_damage_p2;
 std::tuple<ubyte, ubyte, ubyte> Arc_color_damage_s1;
@@ -94,7 +103,9 @@ bool Show_subtitle_uses_pixels;
 int Show_subtitle_screen_base_res[2];
 int Show_subtitle_screen_adjusted_res[2];
 bool Always_warn_player_about_unbound_keys;
+leadIndicatorBehavior Lead_indicator_behavior;
 shadow_disable_overrides Shadow_disable_overrides {false, false, false, false};
+float Thruster_easing;
 
 void mod_table_set_version_flags();
 
@@ -139,6 +150,14 @@ void parse_mod_table(const char *filename)
 
 		if (optional_string("$Window icon:")) {
 			stuff_string(Window_icon_path, F_NAME);
+		}
+
+		if (optional_string("$Mod title:")) {
+			stuff_string(Mod_title, F_NAME);
+		}
+
+		if (optional_string("$Mod version:")) {
+			stuff_string(Mod_version, F_NAME);
 		}
 		
 		if (optional_string("$Unicode mode:")) {
@@ -369,15 +388,41 @@ void parse_mod_table(const char *filename)
 		}
 
 		if (optional_string("$Generic Pain Flash Factor:")) {
-			stuff_float(&Generic_pain_flash_factor);
-			if (Generic_pain_flash_factor != 1.0f)
-				mprintf(("Game Settings Table: Setting generic pain flash factor to %.2f\n", Generic_pain_flash_factor));
+			float temp;
+			stuff_float(&temp);
+			if (temp >= 0.0f) {
+				mprintf(("Game Settings Table: Setting generic pain flash factor to %.2f\n", temp));
+				Generic_pain_flash_factor = temp;
+			}
 		}
 
 		if (optional_string("$Shield Pain Flash Factor:")) {
-			stuff_float(&Shield_pain_flash_factor);
-			if (Shield_pain_flash_factor != 0.0f)
-				 mprintf(("Game Settings Table: Setting shield pain flash factor to %.2f\n", Shield_pain_flash_factor));
+			float temp;
+			stuff_float(&temp);
+			if (temp >= 0.0f) {
+				mprintf(("Game Settings Table: Setting shield pain flash factor to %.2f\n", temp));
+				Shield_pain_flash_factor = temp;
+			}
+		}
+
+		if (optional_string("$EMP Pain Flash Factor:")) {
+			float temp;
+			stuff_float(&temp);
+			if (temp >= 0.0f) {
+				mprintf(("Game Settings Table: Setting EMP pain flash factor to %.2f\n", temp));
+				Emp_pain_flash_factor = temp;
+			}
+		}
+
+		if (optional_string("$EMP Pain Flash Color:")) {
+			int rgb[3];
+			stuff_int_list(rgb, 3);
+			if ((rgb[0] >= 0 && rgb[0] <= 255) && (rgb[1] >= 0 && rgb[1] <= 255) && (rgb[2] >= 0 && rgb[2] <= 255)) {
+				Emp_pain_flash_color = std::make_tuple(static_cast<float>(rgb[0])/255, static_cast<float>(rgb[1])/255, static_cast<float>(rgb[2])/255);
+			} else {
+				error_display(0, "$EMP Pain Flash Color is %i, %i, %i. "
+					"One or more of these values is not within the range of 0-255. Assuming default color.", rgb[0], rgb[1], rgb[2]);
+			}
 		}
 
 		if (optional_string("$BMPMAN Slot Limit:")) {
@@ -535,10 +580,10 @@ void parse_mod_table(const char *filename)
 		}
 
 		if (optional_string("$Shadow Quality Default:")) {
-			// only read this value if shadows are enabled and using default quality --wookieejedi
+			int quality;
+			stuff_int(&quality);
+			// only set values if shadows are enabled and using default quality --wookieejedi
 			if (Shadow_quality_uses_mod_option) {
-				int quality;
-				stuff_int(&quality);
 				switch (quality) {
 				case 0:
 					Shadow_quality = ShadowQuality::Disabled;
@@ -614,6 +659,14 @@ void parse_mod_table(const char *filename)
 		}
 		if (optional_string("$Minimum Pixel Size Lasers:")) {
 			stuff_float(&Min_pixel_size_laser);
+		}
+
+		if (optional_string("$Thruster easing value:")) {
+			stuff_float(&Thruster_easing);
+			if (Thruster_easing <= 0.0f) {
+				Warning(LOCATION, "A \'Thruster easing value\' less than or equal to 0 will not be used.\n");
+			}
+
 		}
 
 		optional_string("#NETWORK SETTINGS");
@@ -821,6 +874,29 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Shockwaves_damage_all_obj_types_once);
 		}
 
+		if (optional_string("$Shockwaves Inherit Parent Weapon Damage Type:")) {
+			stuff_boolean(&Shockwaves_inherit_parent_damage_type);
+		}
+
+		if (optional_string("$Inherited Shockwave Damage Type Added Suffix:")) {
+			stuff_string(Inherited_shockwave_damage_type_suffix, F_NAME);
+			Inherited_dinky_shockwave_damage_type_suffix = Inherited_shockwave_damage_type_suffix;
+		}
+
+		if (optional_string("$Inherited Dinky Shockwave Damage Type Added Suffix:")) {
+			stuff_string(Inherited_dinky_shockwave_damage_type_suffix, F_NAME);
+		}
+
+		if (optional_string("$Default Shockwave Damage Type:")) {
+			stuff_string(Default_shockwave_damage_type, F_NAME);
+			// Should this automatically be copied to dinky shockwaves?
+			Default_dinky_shockwave_damage_type = Default_shockwave_damage_type;
+		}
+
+		if (optional_string("$Default Dinky Shockwave Damage Type:")) {
+			stuff_string(Default_dinky_shockwave_damage_type, F_NAME);
+		}
+
 		if (optional_string("$Use Engine Wash Intensity:")) {
 			stuff_boolean(&Use_engine_wash_intensity);
 		}
@@ -856,6 +932,30 @@ void parse_mod_table(const char *filename)
 		
 		if (optional_string("$Custom briefing icons always override standard icons:")) {
 			stuff_boolean(&Custom_briefing_icons_always_override_standard_icons);
+		}
+
+		if (optional_string("$Lead indicator behavior:")){
+			SCP_string temp;
+			stuff_string(temp, F_RAW);
+			SCP_tolower(temp);
+
+			if (temp == "default")
+			{
+				Lead_indicator_behavior = leadIndicatorBehavior::DEFAULT;
+			}
+			else if (temp == "multiple")
+			{
+				Lead_indicator_behavior = leadIndicatorBehavior::MULTIPLE;
+			}
+			else if (temp == "average")
+			{
+				Lead_indicator_behavior = leadIndicatorBehavior::AVERAGE;
+			}
+			else
+			{
+				Warning(LOCATION, "$Lead indicator behavior: Invalid selection. Must be default, multiple or average. Reverting to default.");
+				Lead_indicator_behavior = leadIndicatorBehavior::DEFAULT;
+			}
 		}
 
 		required_string("#END");
@@ -933,8 +1033,12 @@ void mod_table_reset()
 	Beams_use_damage_factors = false;
 	Generic_pain_flash_factor = 1.0f;
 	Shield_pain_flash_factor = 0.0f;
+	Emp_pain_flash_factor = 1.0f;
+	Emp_pain_flash_color = std::make_tuple(1.0f, 1.0f, 0.5f);
 	Targeted_version = gameversion::version(2, 0, 0, 0); // Defaults to retail
 	Window_title = "";
+	Mod_title = "";
+	Mod_version = "";
 	Unicode_text_mode = false;
 	Use_tabled_strings_for_default_language = false;
 	Dont_preempt_training_voice = false;
@@ -947,6 +1051,11 @@ void mod_table_reset()
 	Dinky_shockwave_default_multiplier = 1.0f;
 	Shockwaves_always_damage_bombs = false;
 	Shockwaves_damage_all_obj_types_once = false;
+	Shockwaves_inherit_parent_damage_type = false;
+	Inherited_shockwave_damage_type_suffix = "";
+	Inherited_dinky_shockwave_damage_type_suffix = "";
+	Default_shockwave_damage_type = "";
+	Default_dinky_shockwave_damage_type = "";
 	Arc_color_damage_p1 = std::make_tuple(static_cast<ubyte>(64), static_cast<ubyte>(64), static_cast<ubyte>(225));
 	Arc_color_damage_p2 = std::make_tuple(static_cast<ubyte>(128), static_cast<ubyte>(128), static_cast<ubyte>(255));
 	Arc_color_damage_s1 = std::make_tuple(static_cast<ubyte>(200), static_cast<ubyte>(200), static_cast<ubyte>(255));
@@ -980,6 +1089,8 @@ void mod_table_reset()
 	Show_subtitle_screen_adjusted_res[0] = -1;
 	Show_subtitle_screen_adjusted_res[1] = -1;
 	Always_warn_player_about_unbound_keys = false;
+	Lead_indicator_behavior = leadIndicatorBehavior::DEFAULT;
+	Thruster_easing = 0;
 }
 
 void mod_table_set_version_flags()
@@ -990,5 +1101,8 @@ void mod_table_set_version_flags()
 		Shockwaves_damage_all_obj_types_once = true;
 		Framerate_independent_turning = true;					// this is already true, but let's re-emphasize it
 		Use_host_orientation_for_set_camera_facing = true;		// this is essentially a bugfix
+	}
+	if (mod_supports_version(22, 4, 0)) {
+		Shockwaves_inherit_parent_damage_type = true;	// people intuitively expect shockwaves to default to the damage type of the weapon that spawned them
 	}
 }

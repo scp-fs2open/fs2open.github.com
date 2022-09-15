@@ -5,19 +5,36 @@
 #include "globalincs/alphacolors.h"
 
 #include "cmdline/cmdline.h"
+#include "cutscene/cutscenes.h"
 #include "gamesnd/eventmusic.h"
+#include "gamesequence/gamesequence.h"
 #include "menuui/barracks.h"
+#include "menuui/credits.h"
 #include "menuui/mainhallmenu.h"
 #include "menuui/optionsmenu.h"
 #include "menuui/playermenu.h"
 #include "menuui/readyroom.h"
+#include "mission/missionmessage.h"
+#include "mission/missiongoals.h"
 #include "mission/missionbriefcommon.h"
+#include "mission/missionparse.h"
+#include "missionui/fictionviewer.h"
+#include "missionui/missionbrief.h"
 #include "mission/missioncampaign.h"
+#include "mission/missionbriefcommon.h"
 #include "missionui/missionscreencommon.h"
+#include "mission/missioncampaign.h"
+#include "missionui/redalert.h"
+#include "network/multi.h"
 #include "playerman/managepilot.h"
 #include "scpui/SoundPlugin.h"
 #include "scpui/rocket_ui.h"
+#include "scripting/api/objs/techroom.h"
+#include "scripting/api/objs/loop_brief.h"
+#include "scripting/api/objs/redalert.h"
+#include "scripting/api/objs/fictionviewer.h"
 #include "scripting/api/objs/cmd_brief.h"
+#include "scripting/api/objs/briefing.h"
 #include "scripting/api/objs/color.h"
 #include "scripting/api/objs/enums.h"
 #include "scripting/api/objs/player.h"
@@ -88,6 +105,76 @@ ADE_FUNC(disableInput, l_UserInterface, "", "Disables UI input", "boolean", "tru
 	return ADE_RETURN_TRUE;
 }
 
+ADE_VIRTVAR(ColorTags,
+	l_UserInterface,
+	nullptr,
+	"The available tagged colors",
+	"{ string => color ... }",
+	"A mapping from tag string to color value")
+{
+	using namespace luacpp;
+
+	LuaTable mapping = LuaTable::create(L);
+
+	for (const auto& tagged : Tagged_Colors) {
+		SCP_string tag;
+		tag.resize(1, tagged.first);
+
+		mapping.addValue(tag, l_Color.Set(*tagged.second));
+	}
+
+	return ade_set_args(L, "t", mapping);
+}
+
+ADE_FUNC(DefaultTextColorTag,
+	l_UserInterface,
+	"number UiScreen",
+	"Gets the default color tag string for the specified state. 1 for Briefing, 2 for CBriefing, 3 for Debriefing, "
+	"4 for Fiction Viewer, 5 for Red Alert, 6 for Loop Briefing, 7 for Recommendation text. Defaults to 1. Index into ColorTags.",
+	"string",
+	"The default color tag")
+{
+	int UiScreen;
+
+	if (!ade_get_args(L, "i", &UiScreen)) {
+		UiScreen = 1;
+	}
+	
+	SCP_string tagStr;
+	char defaultColor = default_briefing_color;
+
+	switch (UiScreen) {
+		case 1:
+			defaultColor = default_briefing_color;
+			break;
+		case 2:
+			defaultColor = default_command_briefing_color;
+			break;
+		case 3:
+			defaultColor = default_debriefing_color;
+			break;
+		case 4:
+			defaultColor = default_fiction_viewer_color;
+			break;
+		case 5:
+			defaultColor = default_redalert_briefing_color;
+			break;
+		case 6:
+			defaultColor = default_loop_briefing_color;
+			break;
+		case 7:
+			defaultColor = default_recommendation_color;
+			break;
+	}
+
+	if (defaultColor == '\0' || !brief_verify_color_tag(defaultColor)) {
+		defaultColor = Color_Tags[0];
+	}
+	tagStr.resize(1, defaultColor);
+
+	return ade_set_args(L, "s", tagStr);
+}
+
 ADE_FUNC(playElementSound,
 	l_UserInterface,
 	"any element /* A libRocket element */, string event, string state = \"\"",
@@ -127,6 +214,19 @@ ADE_FUNC(maybePlayCutscene, l_UserInterface, "enumeration MovieType, boolean Res
 	}
 
 	common_maybe_play_cutscene(movie_type.index - LE_MOVIE_PRE_FICTION, restart_music, score_index);
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(playCutscene, l_UserInterface, "string Filename, boolean RestartMusic, number ScoreIndex", "Plays a cutscene.  If RestartMusic is true, then the music score at ScoreIndex will be started after the cutscene plays.", nullptr, "Returns nothing")
+{
+	const char* filename;
+	bool restart_music = false;
+	int score_index = 0;
+
+	if (!ade_get_args(L, "sbi", &filename, &restart_music, &score_index))
+		return ADE_RETURN_NIL;
+
+	common_play_cutscene(filename, restart_music, score_index);
 	return ADE_RETURN_NIL;
 }
 
@@ -266,6 +366,20 @@ ADE_FUNC(startAmbientSound, l_UserInterface_MainHall, nullptr, "Starts the ambie
 	return ADE_RETURN_NIL;
 }
 
+ADE_FUNC(stopAmbientSound, l_UserInterface_MainHall, nullptr, "Stops the ambient mainhall sound.", nullptr, "nothing")
+{
+	(void)L;
+	main_hall_stop_ambient();
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(startMusic, l_UserInterface_MainHall, nullptr, "Starts the mainhall music.", nullptr, "nothing")
+{
+	(void)L;
+	main_hall_start_music();
+	return ADE_RETURN_NIL;
+}
+
 //**********SUBLIBRARY: UserInterface/Barracks
 ADE_LIB_DERIV(l_UserInterface_Barracks, "Barracks", nullptr,
               "API for accessing values specific to the barracks screen.<br><b>Warning:</b> This is an internal "
@@ -333,7 +447,6 @@ ADE_FUNC(playVoiceClip,
 }
 
 //**********SUBLIBRARY: UserInterface/CampaignMenu
-// This needs a slightly different name since there is already a type called "Options"
 ADE_LIB_DERIV(l_UserInterface_Campaign,
 	"CampaignMenu",
 	nullptr,
@@ -411,8 +524,143 @@ ADE_FUNC(resetCampaign,
 	return ADE_RETURN_TRUE;
 }
 
+//**********SUBLIBRARY: UserInterface/Briefing
+ADE_LIB_DERIV(l_UserInterface_Brief,
+	"Briefing",
+	nullptr,
+	"API for accessing data related to the briefing UI.<br><b>Warning:</b> This is an internal "
+	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	l_UserInterface);
+
+ADE_FUNC(getBriefingMusicName,
+	l_UserInterface_Brief,
+	nullptr,
+	"Gets the file name of the music file to play for the briefing.",
+	"string",
+	"The file name or empty if no music")
+{
+	return ade_set_args(L, "s", common_music_get_filename(SCORE_BRIEFING).c_str());
+}
+
+ADE_FUNC(runBriefingStageHook,
+	l_UserInterface_Brief,
+	"number oldStage, number newStage",
+	"Run $On Briefing Stage: hooks.",
+	nullptr,
+	nullptr)
+{
+	int oldStage = -1, newStage = -1;
+	if (ade_get_args(L, "ii", &oldStage, &newStage) == 2) {
+		// Subtract 1 to convert from Lua conventions to C conventions
+		common_fire_stage_script_hook(oldStage - 1, newStage - 1);
+	} else {
+		LuaError(L, "Bad arguments given to ui.runBriefingStageHook!");
+	}
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(getBriefing,
+	l_UserInterface_Brief,
+	nullptr,
+	"Get the briefing",
+	"briefing",
+	"The briefing data")
+{
+	// get a pointer to the appropriate briefing structure
+	if (MULTI_TEAM) {
+		return ade_set_args(L, "o", l_Brief.Set(Net_player->p_info.team));
+	} else {
+		return ade_set_args(L, "o", l_Brief.Set(0));
+	}
+
+}
+
+ADE_FUNC(exitLoop,
+	l_UserInterface_Brief,
+	nullptr,
+	"Skips the current mission, exits the campaign loop, and loads the next non-loop mission in a campaign",
+	nullptr,
+	"nothing")
+{
+	(void)L;
+	mission_campaign_exit_loop();
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(skipMission,
+	l_UserInterface_Brief,
+	nullptr,
+	"Skips the current mission, and loads the next mission in a campaign",
+	nullptr,
+	"nothing")
+{
+	(void)L;
+	mission_campaign_skip_to_next();
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(skipTraining,
+	l_UserInterface_Brief,
+	nullptr,
+	"Skips the current training mission, and loads the next mission in a campaign",
+	nullptr,
+	"nothing")
+{
+	(void)L;
+	// page out mission messages
+	message_mission_shutdown();
+
+	if (!(Game_mode & GM_CAMPAIGN_MODE)) {
+		gameseq_post_event(GS_EVENT_MAIN_MENU);
+	}
+
+	// tricky part.  Need to move to the next mission in the campaign.
+	mission_goal_mark_objectives_complete();
+	mission_goal_fail_incomplete();
+	mission_campaign_store_goals_and_events_and_variables();
+
+	mission_campaign_eval_next_mission();
+	mission_campaign_mission_over();
+
+	if (Campaign.next_mission == -1 || (The_mission.flags[Mission::Mission_Flags::End_to_mainhall])) {
+		gameseq_post_event(GS_EVENT_MAIN_MENU);
+	} else {
+		gameseq_post_event(GS_EVENT_START_GAME);
+	}
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(startBriefingMap,
+	l_UserInterface_Brief,
+	nullptr,
+	"Starts the briefing map for the current mission. Doesn't currently do anything.",
+	nullptr,
+	"nothing")
+{
+	(void)L;
+	return ADE_RETURN_NIL;
+}
+
+ADE_LIB_DERIV(l_Briefing_Goals, "Objectives", nullptr, nullptr, l_UserInterface_Brief);
+ADE_INDEXER(l_Briefing_Goals,
+	"number Index",
+	"Array of goals",
+	"mission_goal",
+	"goal handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "s", "");
+
+	return ade_set_args(L, "o", l_Goals.Set(idx));
+}
+
+ADE_FUNC(__len, l_Briefing_Goals, nullptr, "The number of goals in the mission", "number", "The number of goals.")
+{
+	return ade_set_args(L, "i", Num_goals);
+}
+
 //**********SUBLIBRARY: UserInterface/CommandBriefing
-// This needs a slightly different name since there is already a type called "Options"
 ADE_LIB_DERIV(l_UserInterface_CmdBrief,
 	"CommandBriefing",
 	nullptr,
@@ -420,47 +668,7 @@ ADE_LIB_DERIV(l_UserInterface_CmdBrief,
 	"API for the new UI system. This should not be used by other code and may be removed in the future!",
 	l_UserInterface);
 
-ADE_VIRTVAR(ColorTags,
-	l_UserInterface_CmdBrief,
-	nullptr,
-	"The available tagged colors",
-	"{ string => color ... }",
-	"A mapping from tag string to color value")
-{
-	using namespace luacpp;
-
-	LuaTable mapping = LuaTable::create(L);
-
-	for (const auto& tagged : Tagged_Colors) {
-		SCP_string tag;
-		tag.resize(1, tagged.first);
-
-		mapping.addValue(tag, l_Color.Set(*tagged.second));
-	}
-
-	return ade_set_args(L, "t", mapping);
-}
-
-ADE_VIRTVAR(DefaultTextColorTag,
-	l_UserInterface_CmdBrief,
-	nullptr,
-	"Gets the default color tag string for the command briefing. Index into ColorTags.",
-	"string",
-	"The default color tag")
-{
-	SCP_string tagStr;
-
-	auto defaultColor = default_command_briefing_color;
-
-	if (defaultColor == '\0' || !brief_verify_color_tag(defaultColor)) {
-		defaultColor = Color_Tags[0];
-	}
-	tagStr.resize(1, defaultColor);
-
-	return ade_set_args(L, "s", tagStr);
-}
-
-ADE_FUNC(getBriefing,
+ADE_FUNC(getCmdBriefing,
 	l_UserInterface_CmdBrief,
 	nullptr,
 	"Get the command briefing.",
@@ -468,27 +676,279 @@ ADE_FUNC(getBriefing,
 	"The briefing data")
 {
 	// The cmd briefing code has support for specifying the team but only sets the index to 0
-	return ade_set_args(L, "o", l_CmdBrief.Set(Cmd_briefs[0]));
+	return ade_set_args(L, "o", l_CmdBrief.Set(0));
 }
 
-ADE_FUNC(getBriefingMusicName, l_UserInterface_CmdBrief, nullptr, "Gets the file name of the music file to play for the briefing.", "string", "The file name or empty if no music")
+//**********SUBLIBRARY: UserInterface/LoopBrief
+ADE_LIB_DERIV(l_UserInterface_LoopBrief,
+	"LoopBrief",
+	nullptr,
+	"API for accessing data related to the loop brief UI.<br><b>Warning:</b> This is an internal "
+	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	l_UserInterface);
+
+ADE_FUNC(getLoopBrief,
+	l_UserInterface_LoopBrief,
+	nullptr,
+	"Get the loop brief.",
+	"loop_brief_stage",
+	"The loop brief data")
 {
-	return ade_set_args(L, "s", common_music_get_filename(SCORE_BRIEFING).c_str());
+	return ade_set_args(L, "o", l_LoopBriefStage.Set(cmission_h(Campaign.current_mission)));
 }
 
-ADE_FUNC(runBriefingStageHook, l_UserInterface_CmdBrief, "number oldStage, number newStage", "Run $On Briefing Stage: hooks.", nullptr, nullptr)
+ADE_FUNC(setLoopChoice, l_UserInterface_LoopBrief, "boolean", "Accepts mission outcome and then True to go to loop, False to skip", nullptr, nullptr)
 {
-	int oldStage = -1, newStage = -1;
-	if (ade_get_args(L, "ii", &oldStage, &newStage) == 2)
-	{
-		// Subtract 1 to convert from Lua conventions to C conventions
-		common_fire_stage_script_hook(oldStage -1, newStage -1);
+	bool choice = false;
+	ade_get_args(L, "|b", &choice);
+
+	if (choice) {
+		// select the loop mission
+		Campaign.loop_enabled = 1;
+		Campaign.loop_reentry = Campaign.next_mission; // save reentry pt, so we can break out of loop
+		Campaign.next_mission = Campaign.loop_mission;
+
+		mission_campaign_mission_over();
+	} else {
+		mission_campaign_mission_over();
 	}
-	else
-	{
-		LuaError(L, "Bad arguments given to ui.runBriefingStageHook!");
-	}
+
 	return ADE_RETURN_NIL;
+}
+
+//**********SUBLIBRARY: UserInterface/RedAlert
+ADE_LIB_DERIV(l_UserInterface_RedAlert,
+	"RedAlert",
+	nullptr,
+	"API for accessing data related to the Red Alert UI.<br><b>Warning:</b> This is an internal "
+	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	l_UserInterface);
+
+ ADE_FUNC(getRedAlert,
+	l_UserInterface_RedAlert,
+	nullptr,
+	"Get the red alert brief.",
+	"red_alert_stage",
+	"The red-alert data")
+{
+
+	 if (Briefings[0].num_stages) {
+		return ade_set_args(L, "o", l_RedAlertStage.Set(redalert_stage_h(0,0)));
+	 } else {
+		 return ADE_RETURN_NIL;
+	 }
+	 
+}
+
+ADE_FUNC(replayPreviousMission,
+	l_UserInterface_RedAlert,
+	nullptr,
+	"Loads the previous mission of the campaign, does nothing if not in campaign",
+	"boolean",
+	"Returns true if the operation was successful, false otherwise")
+{
+	if (!mission_campaign_previous_mission()) {
+		return ADE_RETURN_FALSE;
+	} else {
+		return ADE_RETURN_TRUE;
+	}
+
+}
+
+//**********SUBLIBRARY: UserInterface/FictionViewer
+ADE_LIB_DERIV(l_UserInterface_FictionViewer,
+	"FictionViewer",
+	nullptr,
+	"API for accessing data related to the fiction viewer UI.<br><b>Warning:</b> This is an internal "
+	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	l_UserInterface);
+
+ADE_FUNC(getFiction, l_UserInterface_FictionViewer, nullptr, "Get the fiction.", "fiction_viewer_stage", "The fiction data")
+{
+	if (Fiction_viewer_active_stage >= 0) {
+		return ade_set_args(L, "o", l_FictionViewerStage.Set(fiction_viewer_stage_h(Fiction_viewer_active_stage)));
+	} else {
+		return ADE_RETURN_NIL;
+	}
+}
+
+ADE_FUNC(getFictionMusicName, l_UserInterface_FictionViewer, nullptr,
+	"Gets the file name of the music file to play for the fiction viewer.",
+	"string",
+	"The file name or empty if no music")
+{
+	return ade_set_args(L, "s", common_music_get_filename(SCORE_FICTION_VIEWER).c_str());
+}
+
+//**********SUBLIBRARY: UserInterface/TechRoom
+ADE_LIB_DERIV(l_UserInterface_TechRoom,
+	"TechRoom",
+	nullptr,
+	"API for accessing data related to the tech room UI.<br><b>Warning:</b> This is an internal "
+	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	l_UserInterface);
+
+ADE_FUNC(buildMissionList,
+	l_UserInterface_TechRoom,
+	nullptr,
+	"Builds the mission list for display. Must be called before the sim_mission handle will have data",
+	"number",
+	"Returns 1 when completed")
+{
+
+	Sim_Missions.clear();
+	Sim_CMissions.clear();
+
+	api_sim_room_build_mission_list(true);
+
+	mprintf(("Building mission lists for scripting API is complete!\n"));
+
+	return ade_set_args(L, "i", 1);
+}
+
+ADE_FUNC(buildCredits,
+	l_UserInterface_TechRoom,
+	nullptr,
+	"Builds the credits for display. Must be called before the credits_info handle will have data",
+	"number",
+	"Returns 1 when completed")
+{
+
+	credits_parse();
+	credits_scp_position();
+
+	size_t count = Credit_text_parts.size();
+
+	for (size_t i = 0; i < count; i++) {
+		credits_complete.append(Credit_text_parts[i]);
+	}
+
+	//Make sure we clean up after ourselves
+	Credit_text_parts.clear();
+
+	mprintf(("Building credits for scripting API is complete!\n"));
+
+	return ade_set_args(L, "i", 1);
+}
+
+ADE_LIB_DERIV(l_UserInterface_SingleMissions, "SingleMissions", nullptr, nullptr, l_UserInterface_TechRoom);
+ADE_INDEXER(l_UserInterface_SingleMissions, "number Index", "Array of simulator missions", "sim_mission", "Mission handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "s", "");
+	
+	return ade_set_args(L, "o", l_TechRoomMission.Set(sim_mission_h(idx, false)));
+}
+
+ADE_FUNC(__len, l_UserInterface_SingleMissions, nullptr, "The number of single missions", "number", "The number of single missions")
+{
+	return ade_set_args(L, "i", Sim_Missions.size());
+}
+
+ADE_LIB_DERIV(l_UserInterface_CampaignMissions, "CampaignMissions", nullptr, nullptr, l_UserInterface_TechRoom);
+ADE_INDEXER(l_UserInterface_CampaignMissions, "number Index", "Array of campaign missions", "sim_mission", "Mission handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "s", "");
+	
+	return ade_set_args(L, "o", l_TechRoomMission.Set(sim_mission_h(idx, true)));
+}
+
+ADE_FUNC(__len, l_UserInterface_CampaignMissions, nullptr, "The number of campaign missions", "number", "The number of campaign missions")
+{
+	return ade_set_args(L, "i", Sim_CMissions.size());
+}
+
+ADE_LIB_DERIV(l_UserInterface_Cutscenes, "Cutscenes", nullptr, nullptr, l_UserInterface_TechRoom);
+ADE_INDEXER(l_UserInterface_Cutscenes,
+	"number Index",
+	"Array of cutscenes",
+	"custscene_info",
+	"Cutscene handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "s", "");
+
+	return ade_set_args(L, "o", l_TechRoomCutscene.Set(cutscene_info_h(idx)));
+}
+
+ADE_FUNC(__len, l_UserInterface_Cutscenes, nullptr, "The number of cutscenes", "number", "The number of cutscenes")
+{
+	return ade_set_args(L, "i", Cutscenes.size());
+}
+
+ADE_LIB_DERIV(l_UserInterface_Credits, "Credits", nullptr, nullptr, l_UserInterface_TechRoom);
+ADE_VIRTVAR(Music, l_UserInterface_Credits, nullptr, "The credits music filename", "string", "The music filename")
+{
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "s", credits_get_music_filename(Credits_music_name));
+}
+
+ADE_VIRTVAR(NumImages, l_UserInterface_Credits, nullptr, "The total number of credits images", "number", "The number of images")
+{
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "i", Credits_num_images);
+}
+
+ADE_VIRTVAR(StartIndex, l_UserInterface_Credits, nullptr, "The image index to begin with", "number", "The index")
+{
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "i", Credits_artwork_index);
+}
+
+ADE_VIRTVAR(DisplayTime, l_UserInterface_Credits, nullptr, "The display time for each image", "number", "The display time")
+{
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "f", Credits_artwork_display_time);
+}
+
+ADE_VIRTVAR(FadeTime, l_UserInterface_Credits, nullptr, "The crossfade time for each image", "number", "The fade time")
+{
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "f", Credits_artwork_fade_time);
+}
+
+ADE_VIRTVAR(ScrollRate, l_UserInterface_Credits, nullptr, "The scroll rate of the text", "number", "The scroll rate")
+{
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "f", Credits_scroll_rate);
+}
+
+ADE_VIRTVAR(Complete, l_UserInterface_Credits, nullptr, "The complete credits string", "string", "The credits")
+{
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "s", credits_complete);
 }
 
 } // namespace api

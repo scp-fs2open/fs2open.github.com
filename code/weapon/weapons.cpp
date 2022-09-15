@@ -39,7 +39,7 @@
 #include "object/objectsnd.h"
 #include "parse/parsehi.h"
 #include "parse/parselo.h"
-#include "scripting/scripting.h"
+#include "scripting/global_hooks.h"
 #include "particle/particle.h"
 #include "playerman/player.h"
 #include "radar/radar.h"
@@ -194,6 +194,7 @@ flag_def_list_new<Weapon::Info_Flags> Weapon_Info_Flags[] = {
 	{ "no collide",						Weapon::Info_Flags::No_collide,						    true, false },
 	{ "multilock target dead subsys",   Weapon::Info_Flags::Multilock_target_dead_subsys,		true, false },
 	{ "no evasion",						Weapon::Info_Flags::No_evasion,						    true, false },
+	{ "don't merge lead indicators",	Weapon::Info_Flags::Dont_merge_indicators,			    true, false },
 };
 
 const size_t num_weapon_info_flags = sizeof(Weapon_Info_Flags) / sizeof(flag_def_list_new<Weapon::Info_Flags>);
@@ -4186,6 +4187,68 @@ void weapon_generate_indexes_for_precedence()
 	Player_weapon_precedence_file = "";	// Similar to the above, this would swap with an empty string, thereby being equivalent to .clear() and .shrink_to_fit().
 }
 
+void weapon_finalize_shockwave_damage_types()
+{
+	// First, check if we've got any finalizing to do at all.
+	if (!Shockwaves_inherit_parent_damage_type && Default_shockwave_damage_type.empty() && Default_dinky_shockwave_damage_type.empty()) {
+		return;
+	}
+
+	int default_damage_type_idx = -1, default_dinky_damage_type_idx = -1;
+
+	if (!Default_shockwave_damage_type.empty()) {
+		default_damage_type_idx = damage_type_add(Default_shockwave_damage_type.c_str());
+	}
+
+	if (!Default_dinky_shockwave_damage_type.empty()) {
+		default_dinky_damage_type_idx = damage_type_add(Default_dinky_shockwave_damage_type.c_str());
+	}
+
+	// Next, go through each weapon and check to see if the shockwaves have specifically-set damage types.
+	for (auto &wi : Weapon_info) {
+		// First, the primary shockwave.
+		if (wi.shockwave.damage_type_idx_sav == -1) {
+			// If we have both options set, inheritance takes priority, but
+			// only if a damage type actually exists for the parent weapon.
+			if (Shockwaves_inherit_parent_damage_type && wi.damage_type_idx_sav != -1) {
+				// We want to inherit, and the parent weapon actually
+				// has a damage type, so we're copying it.
+				if (!Inherited_shockwave_damage_type_suffix.empty()) {
+					// OR ARE WE?
+					SCP_string temp_name = Damage_types[wi.damage_type_idx_sav].name;
+					temp_name += Inherited_shockwave_damage_type_suffix;
+					wi.shockwave.damage_type_idx_sav = damage_type_add(temp_name.c_str());
+					wi.shockwave.damage_type_idx = wi.shockwave.damage_type_idx_sav;
+				} else {
+					wi.shockwave.damage_type_idx_sav = wi.damage_type_idx_sav;
+					wi.shockwave.damage_type_idx = wi.damage_type_idx;
+				}
+			} else if (default_damage_type_idx != -1) {
+				// We have a default value, so we're using it.
+				wi.shockwave.damage_type_idx_sav = default_damage_type_idx;
+				wi.shockwave.damage_type_idx = default_damage_type_idx;
+			}
+		}
+		// Now the same for the dinky shockwave.
+		if (wi.dinky_shockwave.damage_type_idx_sav == -1) {
+			if (Shockwaves_inherit_parent_damage_type && wi.damage_type_idx_sav != -1) {
+				if (!Inherited_dinky_shockwave_damage_type_suffix.empty()) {
+					SCP_string temp_name = Damage_types[wi.damage_type_idx_sav].name;
+					temp_name += Inherited_dinky_shockwave_damage_type_suffix;
+					wi.dinky_shockwave.damage_type_idx_sav = damage_type_add(temp_name.c_str());
+					wi.dinky_shockwave.damage_type_idx = wi.dinky_shockwave.damage_type_idx_sav;
+				} else {
+					wi.dinky_shockwave.damage_type_idx_sav = wi.damage_type_idx_sav;
+					wi.dinky_shockwave.damage_type_idx = wi.damage_type_idx;
+				}
+			} else if (default_dinky_damage_type_idx != -1) {
+				wi.dinky_shockwave.damage_type_idx_sav = default_dinky_damage_type_idx;
+				wi.dinky_shockwave.damage_type_idx = default_dinky_damage_type_idx;
+			}
+		}
+	}
+}
+
 void weapon_do_post_parse()
 {
 	weapon_info *wip;
@@ -4195,6 +4258,7 @@ void weapon_do_post_parse()
 	weapon_clean_entries();
 	weapon_generate_indexes_for_substitution();
 	weapon_generate_indexes_for_precedence();
+	weapon_finalize_shockwave_damage_types();
 
 	Default_cmeasure_index = -1;
 
@@ -7015,7 +7079,7 @@ void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos
 //
 //	Call to figure out if a weapon is armed or not
 //
-//Weapon is armed when...
+//Weapon is unarmed when...
 //1: Weapon is shot down by weapon
 //OR
 //1: weapon is destroyed before arm time
@@ -7083,8 +7147,6 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 	weapon *wp;
 	bool		hit_target = false;
 
-	object      *other_objp;
-	ship_obj	*so;
 	ship		*shipp;
 	int         objnum;
 
@@ -7095,6 +7157,14 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 	wp = &Weapons[weapon_obj->instance];
 	wip = &Weapon_info[weapon_type];
 	objnum = wp->objnum;
+
+	if (scripting::hooks::OnMissileDeathStarted->isActive() && wip->subtype == WP_MISSILE) {
+		// analagous to On Ship Death Started
+		scripting::hooks::OnMissileDeathStarted->run(scripting::hook_param_list(
+			scripting::hook_param("Weapon", 'o', weapon_obj),
+			scripting::hook_param("Object", 'o', other_obj)),
+			weapon_obj);
+	}
 
 	// check if the weapon actually hit the intended target
 	if (weapon_has_homing_object(wp))
@@ -7245,11 +7315,11 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 		return;
 
 	// For all objects that had this weapon as a target, wipe it out, forcing find of a new enemy
-	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
-		other_objp = &Objects[so->objnum];
-		Assert(other_objp->instance != -1);
+	for ( auto so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
+		auto ship_objp = &Objects[so->objnum];
+		Assert(ship_objp->instance != -1);
         
-		shipp = &Ships[other_objp->instance];
+		shipp = &Ships[ship_objp->instance];
 		Assert(shipp->ai_index != -1);
         
 		ai_info	*aip = &Ai_info[shipp->ai_index];
@@ -7274,6 +7344,13 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 		if (aip->hitter_objnum == objnum) {
 			aip->hitter_objnum = -1;
         }
+	}
+
+	if (scripting::hooks::OnMissileDeath->isActive() && wip->subtype == WP_MISSILE) {
+		scripting::hooks::OnMissileDeath->run(scripting::hook_param_list(
+			scripting::hook_param("Weapon", 'o', weapon_obj),
+			scripting::hook_param("Object", 'o', other_obj)),
+			weapon_obj);
 	}
 
     weapon_obj->flags.set(Object::Object_Flags::Should_be_dead);

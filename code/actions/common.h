@@ -18,7 +18,7 @@ struct ProgramLocals {
 	matrix localOrient = vmd_identity_matrix;
 	int hostSubobject = -1;
 
-	int waitTimestamp = 0;
+	TIMESTAMP waitTimestamp = TIMESTAMP::invalid();
 
 	expression::ProgramVariables variables;
 };

@@ -870,6 +870,8 @@ add_file_folder("Model"
 	model/modelread.cpp
 	model/modelrender.h
 	model/modelrender.cpp
+	model/modelreplace.h
+	model/modelreplace.cpp
 	model/modelsinc.h
 	model/model_flags.h
 )
@@ -1271,6 +1273,8 @@ add_file_folder("Scripting\\\\Api\\\\Libs"
 	scripting/api/libs/options.h
 	scripting/api/libs/parse.cpp
 	scripting/api/libs/parse.h
+	scripting/api/objs/redalert.cpp
+	scripting/api/objs/redalert.h
 	scripting/api/libs/tables.cpp
 	scripting/api/libs/tables.h
 	scripting/api/libs/testing.cpp
@@ -1294,6 +1298,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/background_element.h
 	scripting/api/objs/beam.cpp
 	scripting/api/objs/beam.h
+	scripting/api/objs/briefing.cpp
+	scripting/api/objs/briefing.h
 	scripting/api/objs/bytearray.cpp
 	scripting/api/objs/bytearray.h
 	scripting/api/objs/camera.cpp
@@ -1322,6 +1328,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/executor.h
 	scripting/api/objs/eye.cpp
 	scripting/api/objs/eye.h
+	scripting/api/objs/fictionviewer.cpp
+	scripting/api/objs/fictionviewer.h
 	scripting/api/objs/file.cpp
 	scripting/api/objs/file.h
 	scripting/api/objs/fireballclass.cpp
@@ -1338,6 +1346,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/hudgauge.h
 	scripting/api/objs/intelentry.cpp
 	scripting/api/objs/intelentry.h
+	scripting/api/objs/loop_brief.cpp
+	scripting/api/objs/loop_brief.h
 	scripting/api/objs/LuaSEXP.cpp
 	scripting/api/objs/LuaSEXP.h
 	scripting/api/objs/luaaisexp.cpp
@@ -1394,6 +1404,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/subsystem.h
 	scripting/api/objs/team.cpp
 	scripting/api/objs/team.h
+	scripting/api/objs/techroom.cpp
+	scripting/api/objs/techroom.h
 	scripting/api/objs/texture.cpp
 	scripting/api/objs/texture.h
 	scripting/api/objs/texturemap.cpp

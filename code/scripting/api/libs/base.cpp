@@ -522,6 +522,14 @@ ADE_FUNC(inMissionEditor, l_Base, nullptr, "Determine if the current script is r
 	return ade_set_args(L, "b", Fred_running != 0);
 }
 
+ADE_FUNC(inDebug, l_Base, nullptr, "Determines if FSO is running in Release or Debug", "boolean", "true if debug, false if release") {
+	#ifndef NDEBUG
+		return ADE_RETURN_TRUE;
+	#else
+		return ADE_RETURN_FALSE;
+	#endif
+}
+
 ADE_FUNC(isEngineVersionAtLeast,
 		 l_Base,
 		 "number major, number minor, number build, [number revision = 0]",
@@ -580,6 +588,53 @@ ADE_FUNC(getVersionString, l_Base, nullptr,
 {
 	auto str = gameversion::get_version_string();
 	return ade_set_args(L, "s", str.c_str());
+}
+
+ADE_FUNC(getModTitle, l_Base, nullptr,
+         "Returns the title of the current mod as defined in game_settings.tbl. Will return an empty string if not defined.",
+         "string", "The mod title")
+{
+	auto str = Mod_title;
+	return ade_set_args(L, "s", str.c_str());
+}
+
+ADE_FUNC(getModVersion, l_Base, nullptr,
+         "Returns the version of the current mod as defined in game_settings.tbl. If the version is semantic versioning then the "
+		 "returned numbers will reflect that. String always returns the complete string. If semantic version is not used then "
+		 "the returned numbers will all be -1",
+         "string, number, number, number", "The mod version string; the major, minor, patch version numbers or -1 if invalid")
+{
+	auto version = Mod_version;
+
+	int major = -1;
+	int minor = -1;
+	int patch = -1;
+	
+	int i = 0;
+	auto str = Mod_version;
+	while (i <= 3) {
+		size_t pos = str.find_first_of('.');
+		if (pos != SCP_string::npos) {
+			auto ver = str.substr(0, pos);
+			if(!ver.empty() && std::find_if(ver.begin(), ver.end(), [](char c) { return !std::isdigit(c); }) == ver.end()){
+				if (major < 0) {
+					major = std::stoi(str.c_str());
+				} else if (minor < 0) {
+					minor = std::stoi(str.c_str());
+				}
+				str.erase(0, pos + 1);
+			} else if (major < 0) {
+				break; //Break out of the loop if the first string is not a digit. In this case we only return the whole string.
+			}
+		} else if ((major > -1) && (minor > -1) && (!str.empty() && std::find_if(str.begin(), str.end(), [](char c) {
+					   return !std::isdigit(c);
+				   }) == str.end())) {
+			patch = std::stoi(str.c_str());
+		}
+		i++;
+	}
+
+	return ade_set_args(L, "siii", version.c_str(), major, minor, patch);
 }
 
 ADE_VIRTVAR(MultiplayerMode, l_Base, "boolean", "Determines if the game is currently in single- or multiplayer mode",

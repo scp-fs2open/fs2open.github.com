@@ -185,7 +185,7 @@ public:
 //**************************************************************
 //WMC - Damage type handling code
 
-int damage_type_add(char *name);
+int damage_type_add(const char *name);
 
 //**************************************************************
 //WMC - Armor stuff
@@ -692,7 +692,7 @@ public:
 
 	// Stuff for showing electrical arcs on damaged ships
 	vec3d	arc_pts[MAX_SHIP_ARCS][2];			// The endpoints of each arc
-	int		arc_timestamp[MAX_SHIP_ARCS];		// When this times out, the spark goes away.  -1 is not used
+	TIMESTAMP	arc_timestamp[MAX_SHIP_ARCS];		// When this times out, the spark goes away.  Invalid is not used
 	ubyte		arc_type[MAX_SHIP_ARCS];			// see MARC_TYPE_* defines in model.h
 	int		arc_next_time;							// When the next damage/emp arc will be created.	
 	SCP_vector<int>		passive_arc_next_times;		// When the next passive ship arc will be created.	
@@ -902,6 +902,7 @@ struct ship_registry_entry
 extern SCP_vector<ship_registry_entry> Ship_registry;
 extern SCP_unordered_map<SCP_string, int, SCP_string_lcase_hash, SCP_string_lcase_equal_to> Ship_registry_map;
 
+extern int ship_registry_get_index(const char *name);
 extern const ship_registry_entry *ship_registry_get(const char *name);
 
 #define REGULAR_WEAPON	(1<<0)
@@ -1620,8 +1621,6 @@ extern void ship_cleanup(int shipnum, int cleanup_mode);
 // Goober5000
 extern void ship_destroy_instantly(object *ship_obj, bool with_debris = false);
 extern void ship_actually_depart(int shipnum, int method = SHIP_DEPARTED_WARP);
-
-extern const std::shared_ptr<scripting::Hook> OnShipDeathStartedHook;
 
 extern bool in_autoaim_fov(ship *shipp, int bank_to_fire, object *obj);
 extern int ship_stop_fire_primary(object * obj);

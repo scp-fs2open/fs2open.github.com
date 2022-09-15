@@ -320,6 +320,7 @@ int Normal_key_set[] = {
 	TIME_SLOW_DOWN,
 
 	TOGGLE_HUD_CONTRAST,
+	TOGGLE_HUD_SHADOWS,
 
 	MULTI_TOGGLE_NETINFO,
 	MULTI_SELF_DESTRUCT,
@@ -461,6 +462,7 @@ int Non_critical_key_set[] = {
 	MULTI_MESSAGE_TARGET,
 	MULTI_OBSERVER_ZOOM_TO,
 	TOGGLE_HUD_CONTRAST,
+	TOGGLE_HUD_SHADOWS,
 
 	MULTI_TOGGLE_NETINFO,
 	MULTI_SELF_DESTRUCT,
@@ -2558,6 +2560,11 @@ int button_function(int n)
 		case TOGGLE_HUD_CONTRAST:
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			hud_toggle_contrast();
+			break;
+
+		case TOGGLE_HUD_SHADOWS:
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
+			hud_toggle_shadows();
 			break;
 
 		// toggle network info

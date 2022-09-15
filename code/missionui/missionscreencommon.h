@@ -88,6 +88,7 @@ void	common_reset_buttons();
 void	common_redraw_pressed_buttons();
 void  common_maybe_clear_focus();
 void ship_select_common_init();
+void common_setup_room_lights();
 
 int mission_ui_background_load(const char *custom_background, const char *single_background, const char *multi_background = NULL);
 
@@ -115,6 +116,7 @@ void common_music_close();
 
 int common_num_cutscenes_valid(int movie_type);
 void common_maybe_play_cutscene(int movie_type, bool restart_music = false, int music = 0);
+void common_play_cutscene(const char* filename, bool restart_music = false, int music = 0);
 
 int common_scroll_down_pressed(int *start, int size, int max_show);
 int common_scroll_up_pressed(int *start, int size, int max_show);

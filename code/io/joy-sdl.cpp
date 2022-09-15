@@ -583,18 +583,18 @@ namespace joystick
 	{
 		Assertion(index >= 0 && index < numButtons(), "Invalid index %d!", index);
 
-		return _button[index].DownTimestamp >= 0;
+		return _button[index].DownTimestamp.isValid();
 	}
 
 	float Joystick::getButtonDownTime(int index) const
 	{
 		Assertion(index >= 0 && index < numButtons(), "Invalid index %d!", index);
 
-		if (_button[index].DownTimestamp >= 0)
+		if (_button[index].DownTimestamp.isValid())
 		{
-			auto diff = timer_get_milliseconds() - _button[index].DownTimestamp;
+			auto diff = ui_timestamp_since(_button[index].DownTimestamp);
 
-			return static_cast<float>(diff) / 1000.f;
+			return static_cast<float>(diff) / MILLISECONDS_PER_SECOND;
 		}
 
 		return 0.0f;
@@ -664,7 +664,7 @@ namespace joystick
 			return 0.0f;
 		}
 
-		int val;
+		UI_TIMESTAMP val;
 
 		if (ext) {
 			// Use 8-position
@@ -675,13 +675,13 @@ namespace joystick
 			val = _hat[index].DownTimestamp4[pos];
 		}
 
-		if (val < 0) {
+		if (!val.isValid()) {
 			return 0.0f;
 		}
 
-		auto diff = timer_get_milliseconds() - val;
+		auto diff = ui_timestamp_since(val);
 
-		return static_cast<float>(diff) / 1000.f;
+		return static_cast<float>(diff) / MILLISECONDS_PER_SECOND;
 	}
 
 	int Joystick::numAxes() const
@@ -753,11 +753,11 @@ namespace joystick
 		{
 			if (SDL_JoystickGetButton(_joystick, i) == 1)
 			{
-				_button[i].DownTimestamp = timer_get_milliseconds();
+				_button[i].DownTimestamp = ui_timestamp();
 			}
 			else
 			{
-				_button[i].DownTimestamp = -1;
+				_button[i].DownTimestamp = UI_TIMESTAMP::invalid();
 			}
 		}
 
@@ -772,30 +772,30 @@ namespace joystick
 
 			// Reset timestampts
 			for (auto j = 0; j < 4; ++j) {
-				_hat[i].DownTimestamp4[j] = -1;
+				_hat[i].DownTimestamp4[j] = UI_TIMESTAMP::invalid();
 			}
 			for (auto j = 0; j < 8; ++j) {
-				_hat[i].DownTimestamp8[j] = -1;
+				_hat[i].DownTimestamp8[j] = UI_TIMESTAMP::invalid();
 			}
 
 			if (_hat[i].Value != HAT_CENTERED)
 			{
 				// Set the 4-pos timestamp(s)
 				if ((hatset[HAT_DOWN])) {
-					_hat[i].DownTimestamp4[HAT_DOWN] = timer_get_milliseconds();
+					_hat[i].DownTimestamp4[HAT_DOWN] = ui_timestamp();
 				}
 				if ((hatset[HAT_UP])) {
-					_hat[i].DownTimestamp4[HAT_UP] = timer_get_milliseconds();
+					_hat[i].DownTimestamp4[HAT_UP] = ui_timestamp();
 				}
 				if ((hatset[HAT_LEFT])) {
-					_hat[i].DownTimestamp4[HAT_LEFT] = timer_get_milliseconds();
+					_hat[i].DownTimestamp4[HAT_LEFT] = ui_timestamp();
 				}
 				if ((hatset[HAT_RIGHT])) {
-					_hat[i].DownTimestamp4[HAT_RIGHT] = timer_get_milliseconds();
+					_hat[i].DownTimestamp4[HAT_RIGHT] = ui_timestamp();
 				}
 
 				// Set the 8-pos timestamp
-				_hat[i].DownTimestamp8[hatval] = timer_get_milliseconds();
+				_hat[i].DownTimestamp8[hatval] = ui_timestamp();
 			}
 		}
 	}
@@ -844,7 +844,7 @@ namespace joystick
 
 		auto down = evt.state == SDL_PRESSED;
 
-		_button[button].DownTimestamp = down ? timer_get_milliseconds() : -1;
+		_button[button].DownTimestamp = down ? ui_timestamp() : UI_TIMESTAMP::invalid();
 
 		if (down)
 		{
@@ -867,36 +867,36 @@ namespace joystick
 		// Reset inactive hat positions
 		for (auto i = 0; i < 4; ++i) {
 			if (!hatset[i]) {
-				_hat[hat].DownTimestamp4[i] = -1;
+				_hat[hat].DownTimestamp4[i] = UI_TIMESTAMP::invalid();
 			}
 		}
 		for (auto i = 0; i < 8; ++i) {
 			if (i != hatpos) {
-				_hat[hat].DownTimestamp8[i] = -1;
+				_hat[hat].DownTimestamp8[i] = UI_TIMESTAMP::invalid();
 			}
 		}
 
 		if (hatpos != HAT_CENTERED) {
 			// Set the 4-pos timestamps and down counts if the timestamp is not set
-			if ((hatset[HAT_DOWN]) && (_hat[hat].DownTimestamp4[HAT_DOWN] == -1)) {
-				_hat[hat].DownTimestamp4[HAT_DOWN] = timer_get_milliseconds();
+			if ((hatset[HAT_DOWN]) && (!_hat[hat].DownTimestamp4[HAT_DOWN].isValid())) {
+				_hat[hat].DownTimestamp4[HAT_DOWN] = ui_timestamp();
 				++_hat[hat].DownCount4[HAT_DOWN];
 			}
-			if ((hatset[HAT_UP]) && (_hat[hat].DownTimestamp4[HAT_UP] == -1)) {
-				_hat[hat].DownTimestamp4[HAT_UP] = timer_get_milliseconds();
+			if ((hatset[HAT_UP]) && (!_hat[hat].DownTimestamp4[HAT_UP].isValid())) {
+				_hat[hat].DownTimestamp4[HAT_UP] = ui_timestamp();
 				++_hat[hat].DownCount4[HAT_UP];
 			}
-			if ((hatset[HAT_LEFT]) && (_hat[hat].DownTimestamp4[HAT_LEFT] == -1)) {
-				_hat[hat].DownTimestamp4[HAT_LEFT] = timer_get_milliseconds();
+			if ((hatset[HAT_LEFT]) && (!_hat[hat].DownTimestamp4[HAT_LEFT].isValid())) {
+				_hat[hat].DownTimestamp4[HAT_LEFT] = ui_timestamp();
 				++_hat[hat].DownCount4[HAT_LEFT];
 			}
-			if ((hatset[HAT_RIGHT]) && (_hat[hat].DownTimestamp4[HAT_RIGHT] == -1)) {
-				_hat[hat].DownTimestamp4[HAT_RIGHT] = timer_get_milliseconds();
+			if ((hatset[HAT_RIGHT]) && (!_hat[hat].DownTimestamp4[HAT_RIGHT].isValid())) {
+				_hat[hat].DownTimestamp4[HAT_RIGHT] = ui_timestamp();
 				++_hat[hat].DownCount4[HAT_RIGHT];
 			}
 
 			// Set the 8-pos timestamp and down count
-			_hat[hat].DownTimestamp8[hatpos] = timer_get_milliseconds();
+			_hat[hat].DownTimestamp8[hatpos] = ui_timestamp();
 			++_hat[hat].DownCount8[hatpos];
 		}
 	}

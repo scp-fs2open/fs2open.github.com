@@ -12,7 +12,7 @@ layout (std140) uniform lightData {
 	vec3 diffuseLightColor;
 	float coneAngle;
 
-	vec3 specLightColor;
+	vec3 lightDir;
 	float coneInnerAngle;
 
 	vec3 coneDir;
@@ -21,7 +21,6 @@ layout (std140) uniform lightData {
 	vec3 scale;
 	float lightRadius;
 
-	vec3 lightDir;
 	int lightType;
 
 	bool enable_shadows;

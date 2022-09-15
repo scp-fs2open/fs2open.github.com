@@ -66,8 +66,11 @@ static auto MouseSensitivityOption =
 
 bool Use_mouse_to_fly = false;
 
+static SCP_string mouse_mode_display(bool mode) { return mode ? "Joy-0" : "Mouse"; }
+
 static auto UseMouseOption = options::OptionBuilder<bool>("Input.UseMouse", "Mouse", "Use the mouse for flying")
                                  .category("Input")
+				 .display(mouse_mode_display) 
                                  .level(options::ExpertLevel::Beginner)
                                  .default_val(false)
                                  .bind_to(&Use_mouse_to_fly)

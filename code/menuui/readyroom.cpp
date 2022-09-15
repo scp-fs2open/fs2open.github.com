@@ -133,6 +133,9 @@ static sim_room_buttons Buttons[GR_NUM_RESOLUTIONS][NUM_BUTTONS] = {
 //XSTR:ON
 };
 
+SCP_vector<sim_mission> Sim_Missions;
+SCP_vector<sim_mission> Sim_CMissions;
+
 const char* Sim_filename[GR_NUM_RESOLUTIONS] = {
 	"LoadMission",
 	"2_LoadMission"
@@ -452,7 +455,7 @@ int sim_room_standalone_mission_filter(const char *filename)
 //
 // returns 1 if finished with all missions, 0 otherwise
 //
-int build_standalone_mission_list_do_frame()
+int build_standalone_mission_list_do_frame(bool API_Access)
 {
 	int font_height = gr_get_font_height();
 	char filename[MAX_FILENAME_LEN];
@@ -499,6 +502,18 @@ int build_standalone_mission_list_do_frame()
 				Standalone_mission_flags[Num_standalone_missions_with_info] = The_mission.game_type;
 				int y = Num_lines * (font_height + 2);
 
+				//Add mission data to the API
+				if (API_Access) {
+					sim_mission api_mission;
+					api_mission.name = The_mission.name;
+					api_mission.filename = filename;
+					api_mission.mission_desc = The_mission.mission_desc;
+					api_mission.author = The_mission.author;
+					api_mission.visible = 1;
+
+					Sim_Missions.push_back(api_mission);
+				}
+
 				// determine some extra information
 				int flags = 0;
 				fs_builtin_mission *fb = game_find_builtin_mission(filename);				
@@ -527,10 +542,11 @@ int build_standalone_mission_list_do_frame()
 //
 // returns 1 if finished with all missions, 0 otherwise
 //
-int build_campaign_mission_list_do_frame()
+int build_campaign_mission_list_do_frame(bool API_Access)
 {
 	int font_height = gr_get_font_height();
 	char str[256];
+	char filename[MAX_FILENAME_LEN];
 	static int valid_missions_with_info = 0; // we use this to avoid blank entries in the mission list
 
 	// When no campaign files in data directory
@@ -549,14 +565,28 @@ int build_campaign_mission_list_do_frame()
 	Campaign_mission_flags[Num_campaign_missions_with_info] = 0;
 
 	// Only allow missions already completed
-	if (Campaign.missions[Num_campaign_missions_with_info].completed || Simroom_show_all) 
+	if (Campaign.missions[Num_campaign_missions_with_info].completed || (Simroom_show_all || API_Access)) 
 	{
 		if (!get_mission_info(Campaign.missions[Num_campaign_missions_with_info].name)) 
 		{
+			strcpy_s(filename, Campaign.missions[Num_campaign_missions_with_info].name);
+			
 			// add to list
 			Campaign_mission_names[Num_campaign_missions_with_info] = vm_strdup(The_mission.name);
 			Campaign_mission_flags[Num_campaign_missions_with_info] = The_mission.game_type;
 			int y = valid_missions_with_info * (font_height + 2);
+
+			// Add mission data to the API
+			if (API_Access) {
+				sim_mission api_mission;
+				api_mission.name = The_mission.name;
+				api_mission.filename = filename;
+				api_mission.mission_desc = The_mission.mission_desc;
+				api_mission.author = The_mission.author;
+				api_mission.visible = Campaign.missions[Num_campaign_missions_with_info].completed;
+
+				Sim_CMissions.push_back(api_mission);
+			}
 
 			// determine some extra information
 			int flags = 0;
@@ -599,7 +629,9 @@ void sim_room_build_listing()
 		if (Hash_table_inited) {
 			if (!Standalone_mission_names_inited) {  // Is this the first time through
 				// build_list_do_frame builds list and adds sim room line and sets Standalone_mission_names_inited
-				popup_till_condition(build_standalone_mission_list_do_frame, POPUP_CANCEL, XSTR("Loading missions", 991) );
+				popup_till_condition([]() -> int { return build_standalone_mission_list_do_frame(false); },
+					POPUP_CANCEL,
+					XSTR("Loading missions", 991));
 			} else {
 				for (i=0; i<Num_standalone_missions_with_info; i++) {
 					if (Standalone_mission_names[i]) {
@@ -625,7 +657,9 @@ void sim_room_build_listing()
 
 		if (!Campaign_mission_names_inited) {  // Is this the first time through
 			// builds list, adds sim room line and sets Campaign_mission_names_inited
-			popup_till_condition(build_campaign_mission_list_do_frame, POPUP_CANCEL, XSTR("Loading campaign missions",992));
+			popup_till_condition([]() -> int { return build_standalone_mission_list_do_frame(false); },
+				POPUP_CANCEL,
+				XSTR("Loading campaign missions", 992));
 		} else {
 			for (i=0; i<Num_campaign_missions_with_info; i++) {
 				if (Campaign_mission_names[i]) {
@@ -1197,6 +1231,78 @@ void sim_room_close()
 
 	// unload special mission icons
 	sim_room_unload_mission_icons();
+}
+
+//The mission list for the tech room is built each time the game state is entered
+//so this method provides a way to do the exact same thing from scripting.
+//It has some duplication of code but seemed the easiest way to provide similar
+//functionality without a complete refactor.
+void api_sim_room_build_mission_list(bool API_Access)
+{
+	char wild_card[256];
+
+	Num_campaign_missions = 0;
+	Get_file_list_filter = sim_room_campaign_mission_filter;
+
+	mission_campaign_build_list(false, false);
+
+	Hash_table_inited = 0;
+	if (build_campaign_mission_filename_hash_table()) {
+		Hash_table_inited = 1;
+	}
+
+	Get_file_list_filter = sim_room_standalone_mission_filter;
+	memset(wild_card, 0, 256);
+	strcpy_s(wild_card, NOX("*"));
+	strcat_s(wild_card, FS_MISSION_FILE_EXT);
+
+	Num_standalone_missions =
+		cf_get_file_list(MAX_MISSIONS, Mission_filenames, CF_TYPE_MISSIONS, wild_card, CF_SORT_NAME);
+
+	while (!build_standalone_mission_list_do_frame(API_Access)) {
+	}
+	while (!build_campaign_mission_list_do_frame(API_Access)) {
+	}
+
+	Num_campaign_missions_with_info = Num_standalone_missions_with_info = Standalone_mission_names_inited =
+		Campaign_mission_names_inited = 0;
+
+	int i;
+	for (i = 0; i < Num_campaign_missions; i++) {
+		if (Campaign_missions[i]) {
+			vm_free(Campaign_missions[i]);
+			Campaign_missions[i] = NULL;
+		}
+	}
+
+	if (Standalone_mission_names_inited) {
+		for (i = 0; i < Num_standalone_missions; i++) {
+			if (Standalone_mission_names[i] != NULL) {
+				vm_free(Standalone_mission_names[i]);
+				Standalone_mission_names[i] = NULL;
+			}
+			Standalone_mission_flags[i] = 0;
+		}
+	}
+
+	if (Campaign_mission_names_inited) {
+		for (i = 0; i < Campaign.num_missions; i++) {
+			if (Campaign_mission_names[i]) {
+				vm_free(Campaign_mission_names[i]);
+				Campaign_mission_names[i] = NULL;
+			}
+		}
+	}
+
+	for (i = 0; i < Num_standalone_missions; i++) {
+		vm_free(Mission_filenames[i]);
+		Mission_filenames[i] = NULL;
+	}
+
+	// free global Campaign_* list stuff
+	mission_campaign_free_list();
+
+	campaign_mission_hash_table_delete();
 }
 
 // ---------------------------------------------------------------------

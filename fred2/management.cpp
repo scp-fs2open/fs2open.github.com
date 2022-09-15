@@ -25,6 +25,7 @@
 #include "mission/missionmessage.h"
 #include "mission/missiongoals.h"
 #include "mission/missionbriefcommon.h"
+#include "model/modelreplace.h"
 #include "Management.h"
 #include "cfile/cfile.h"
 #include "graphics/2d.h"
@@ -411,6 +412,7 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	animation::ModelAnimationParseHelper::parseTables();
 	obj_init();
 	model_free_all();				// Free all existing models
+	virtual_pof_init();
 	ai_init();
 	ai_profiles_init();
 	armor_init();

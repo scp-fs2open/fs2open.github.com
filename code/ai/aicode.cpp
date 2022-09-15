@@ -284,7 +284,7 @@ typedef struct {
 	int team;
 	int weapon_index;
 	int max_fire_count;
-	const char *shipname;
+	int ship_registry_index;
 } huge_fire_info;
 
 SCP_vector<huge_fire_info> Ai_huge_fire_info;
@@ -314,7 +314,7 @@ void ai_set_rearm_status(int team, int time)
 {
 	Assert( time >= 0 );
 
-	Iff_info[team].ai_rearm_timestamp = timestamp(time * 1000);
+	Iff_info[team].ai_rearm_timestamp = _timestamp(time * MILLISECONDS_PER_SECOND);
 }
 
 /**
@@ -330,7 +330,10 @@ int ai_good_time_to_rearm(object *objp)
 	Assert(objp->type == OBJ_SHIP);
 	team = Ships[objp->instance].team;
 	
-	return timestamp_valid(Iff_info[team].ai_rearm_timestamp);
+	if (The_mission.ai_profile->flags[AI::Profile_Flags::Fix_good_rearm_time_bug])
+		return Iff_info[team].ai_rearm_timestamp.isValid() && !timestamp_elapsed(Iff_info[team].ai_rearm_timestamp);
+	else
+		return Iff_info[team].ai_rearm_timestamp.isValid();
 }
 
 /**
@@ -338,15 +341,13 @@ int ai_good_time_to_rearm(object *objp)
  */
 void ai_good_secondary_time( int team, int weapon_index, int max_fire_count, const char *shipname )
 {
-	Assert(shipname != NULL);
-	int index;
+	Assert(shipname != nullptr);
 	huge_fire_info new_info; 
 
 	new_info.weapon_index = weapon_index;
 	new_info.team = team;
 	new_info.max_fire_count = max_fire_count;
-
-	new_info.shipname = ai_get_goal_target_name( shipname, &index );
+	new_info.ship_registry_index = ship_registry_get_index(shipname);
 
 	Ai_huge_fire_info.push_back(new_info);
 }
@@ -370,17 +371,18 @@ int is_preferred_weapon(int weapon_num, object *firer_objp, object *target_objp)
 
 	// get target object's signature and try to find it in the list.
 	target_signature = target_objp->signature;
-	for (hfi = Ai_huge_fire_info.begin();hfi != Ai_huge_fire_info.end(); ++hfi ) {
-		int ship_index, signature;
-
+	for (hfi = Ai_huge_fire_info.begin(); hfi != Ai_huge_fire_info.end(); ++hfi)
+	{
 		if ( hfi->weapon_index == -1 )
 			continue;
-
-		ship_index = ship_name_lookup( hfi->shipname );
-		if ( ship_index == -1 )
+		if ( hfi->ship_registry_index == -1 )
 			continue;
 
-		signature = Objects[Ships[ship_index].objnum].signature;
+		auto ship_entry = &Ship_registry[hfi->ship_registry_index];
+		if (ship_entry->status != ShipStatus::PRESENT)
+			continue;
+
+		int signature = ship_entry->objp->signature;
 
 		// sigatures, weapon_index, and team must match
 		if ( (signature == target_signature) && (hfi->weapon_index == weapon_num) && (hfi->team == firer_team) )
@@ -883,7 +885,7 @@ void ai_level_init()
 	Ai_goal_signature = 0;
 
 	for (i = 0; i < (int) Iff_info.size(); i++)
-		Iff_info[i].ai_rearm_timestamp = timestamp(-1);
+		Iff_info[i].ai_rearm_timestamp = TIMESTAMP::invalid();
 
 	// clear out the stuff needed for AI firing powerful secondary weapons
 	ai_init_secondary_info();
@@ -2792,7 +2794,7 @@ void copy_xlate_model_path_points(object *objp, model_path *mp, int dir, int cou
 	auto pm = model_get(pmi->model_num);
 
 	// Goober5000 - check for moving submodels
-	if ((mp->parent_submodel >= 0) && (pm->submodel[mp->parent_submodel].rotation_type >= 0))
+	if ((mp->parent_submodel >= 0) && ((pm->submodel[mp->parent_submodel].rotation_type >= 0) || (pm->submodel[mp->parent_submodel].translation_type >= 0)))
 	{
 		moving_submodel = true;
 
@@ -9167,7 +9169,7 @@ void ai_chase()
 			
 			//	Chance of hitting ship is based on dot product of firing ship's forward vector with vector to ship
 			//	and also the size of the target relative to distance to target.
-			if (dot_to_enemy > MAX(0.5f, 0.90f + aip->ai_accuracy/10.0f - En_objp->radius/MAX(1.0f,dist_to_enemy))) {
+			if (dot_to_enemy > std::max(0.5f, 0.90f + aip->ai_accuracy / 10.0f - En_objp->radius / std::max(1.0f, dist_to_enemy))) {
 
 				ship *temp_shipp;
 				ship_weapon *tswp;
@@ -9444,7 +9446,7 @@ int find_parent_moving_submodel(polymodel *pm, int dock_index)
 		submodel = pm->paths[path_num].parent_submodel;
 
 		// submodel must exist and must move
-		if ((submodel >= 0) && (submodel < pm->n_models) && (pm->submodel[submodel].rotation_type >= 0))
+		if ((submodel >= 0) && (submodel < pm->n_models) && ((pm->submodel[submodel].rotation_type >= 0) || (pm->submodel[submodel].translation_type >= 0)))
 		{
 			return submodel;
 		}
@@ -9526,7 +9528,7 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 
 	aip = &Ai_info[Ships[docker_objp->instance].ai_index];
 
-	docker_objp->phys_info.forward_thrust = 0.0f;		//	Kill thrust so we don't have a sputtering thruster.
+	docker_objp->phys_info.linear_thrust.xyz.z = 0.0f;		//	Kill thrust so we don't have a sputtering thruster.
 
 	// Goober5000 - moved out here to save calculations
 	if (dock_mode != DOA_DOCK_STAY)
@@ -13228,7 +13230,7 @@ int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, int allowed_path_
 	pl_objp->phys_info.prev_ramp_vel.xyz.x = 0.0f;
 	pl_objp->phys_info.prev_ramp_vel.xyz.y = 0.0f;
 	pl_objp->phys_info.prev_ramp_vel.xyz.z = 0.0f;
-	pl_objp->phys_info.forward_thrust = 0.0f;		// How much the forward thruster is applied.  0-1.
+	pl_objp->phys_info.linear_thrust.xyz.z = 0.0f;		// How much the forward thruster is applied.  -1 - 1.
 	pl_objp->pos = pos;
 
 	vec3d rvec;		vm_vec_zero(&rvec);
@@ -14973,8 +14975,6 @@ void init_ai_object(int objnum)
 	aip->attacker_objnum = -1;
 	aip->goal_signature = -1;
 
-	Objects[objnum].phys_info.prev_fvec = Objects[objnum].orient.vec.fvec;
-
 	aip->last_predicted_enemy_pos.xyz.x = 0.0f;	//	Says this value needs to be recomputed!
 	aip->time_enemy_in_range = 0.0f;
 	aip->time_enemy_near = 0.0f;
@@ -16228,7 +16228,7 @@ void maybe_cheat_fire_synaptic(object *objp)
 	}
 }
 
-bool test_line_of_sight(vec3d* from, vec3d* to, std::unordered_set<const object*>&& excluded_objects, float threshold, bool test_for_shields, bool test_for_hull, float* first_intersect_dist) {
+bool test_line_of_sight(vec3d* from, vec3d* to, std::unordered_set<const object*>&& excluded_objects, float threshold, bool test_for_shields, bool test_for_hull, float* first_intersect_dist, object** first_intersect_obj) {
 	bool collides = false;
 
 	for (object* objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
@@ -16304,8 +16304,11 @@ bool test_line_of_sight(vec3d* from, vec3d* to, std::unordered_set<const object*
 				}
 				else {
 					//If we need to find the first intersect distance, we need to keep searching if there might be an intersect earlier. Also, always record the first dist found
-					if (!collides || *first_intersect_dist > dist)
+					if (!collides || *first_intersect_dist > dist) {
 						*first_intersect_dist = dist;
+						if (first_intersect_obj != nullptr)
+							*first_intersect_obj = objp;
+					}
 					collides = true;
 				}
 			}
@@ -16321,8 +16324,11 @@ bool test_line_of_sight(vec3d* from, vec3d* to, std::unordered_set<const object*
 				}
 				else {
 					//If we need to find the first intersect distance, we need to keep searching if there might be an intersect earlier
-					if (!collides || *first_intersect_dist > dist)
+					if (!collides || *first_intersect_dist > dist) {
 						*first_intersect_dist = dist;
+						if (first_intersect_obj != nullptr)
+							*first_intersect_obj = objp;
+					}
 					collides = true;
 				}
 			}

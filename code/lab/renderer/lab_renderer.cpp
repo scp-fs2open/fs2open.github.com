@@ -60,7 +60,7 @@ void LabRenderer::renderModel(float frametime) {
 	PostProcessing_override = renderFlags[LabRenderFlag::HidePostProcessing];
 
 	if (obj->type == OBJ_SHIP) {
-		Ships[obj->instance].flags.set(Ship::Ship_Flags::Subsystem_movement_locked, !renderFlags[LabRenderFlag::RotateSubsystems]);
+		Ships[obj->instance].flags.set(Ship::Ship_Flags::Subsystem_movement_locked, !renderFlags[LabRenderFlag::MoveSubsystems]);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Draw_as_wireframe, renderFlags[LabRenderFlag::ShowWireframe]);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_full_detail, renderFlags[LabRenderFlag::ShowFullDetail]);
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Render_without_light,
@@ -89,7 +89,7 @@ void LabRenderer::renderModel(float frametime) {
 		model_render_set_wireframe_color(&Color_white);
 
 	if (renderFlags[LabRenderFlag::ShowThrusters] || renderFlags[LabRenderFlag::ShowAfterburners]) {
-		obj->phys_info.forward_thrust = 1.0f;
+		obj->phys_info.linear_thrust.xyz.z = 1.0f;
 		if (obj->type == OBJ_SHIP) {
 			Ships[obj->instance].flags.remove(Ship::Ship_Flags::No_thrusters);
 		}
@@ -102,7 +102,7 @@ void LabRenderer::renderModel(float frametime) {
 			obj->phys_info.flags &= ~PF_AFTERBURNER_ON;
 	}
 	else {
-		obj->phys_info.forward_thrust = 0.0f;
+		obj->phys_info.linear_thrust.xyz.z = 0.0f;
 
 		if (obj->type == OBJ_SHIP)
 			Ships[obj->instance].flags.set(Ship::Ship_Flags::No_thrusters);

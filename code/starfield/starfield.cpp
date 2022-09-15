@@ -9,7 +9,9 @@
 
 
 
+#include "globalincs/pstypes.h"
 #include <climits>
+#include <string>
 
 #include "freespace.h"
 #include "cmdline/cmdline.h"
@@ -25,6 +27,7 @@
 #include "model/modelrender.h"
 #include "nebula/neb.h"
 #include "options/Option.h"
+#include "osapi/dialogs.h"
 #include "parse/parselo.h"
 #include "render/3d.h"
 #include "render/batching.h"
@@ -87,7 +90,7 @@ typedef struct starfield_bitmap {
 	int glow_n_frames;
 	int glow_fps;
 	int xparent;
-	float r, g, b, i, spec_r, spec_g, spec_b;		// only for suns
+	float r, g, b, i;		// only for suns
 	int glare;										// only for suns
 	int flare;										// Is there a lens-flare for this sun?
 	flare_info flare_infos[MAX_FLARE_COUNT];		// each flare can use a texture in flare_bmp, with different scale
@@ -468,16 +471,8 @@ void parse_startbl(const char *filename)
 				stuff_float(&sbm.b);
 				stuff_float(&sbm.i);
 
-				if (optional_string("$SunSpecularRGB:")) {
-					stuff_float(&sbm.spec_r);
-					stuff_float(&sbm.spec_g);
-					stuff_float(&sbm.spec_b);
-				}
-				else {
-					sbm.spec_r = sbm.r;
-					sbm.spec_g = sbm.g;
-					sbm.spec_b = sbm.b;
-				}
+				if (optional_string("$SunSpecularRGB:"))
+					Warning(LOCATION, "Sun %s tried to set SunSpecularRGB. This feature has been deprecated and will be ignored.", sbm.filename);
 
 				// lens flare stuff
 				if (optional_string("$Flare:")) {
@@ -1191,7 +1186,7 @@ void stars_draw_sun(int show_sun)
 
 		// add the light source corresponding to the sun, except when rendering to an envmap
 		if ( !Rendering_to_env )
-			light_add_directional(&sun_dir, bm->i, bm->r, bm->g, bm->b, bm->spec_r, bm->spec_g, bm->spec_b, true);
+			light_add_directional(&sun_dir, bm->i, bm->r, bm->g, bm->b);
 
 		// if supernova
 		if ( supernova_active() && (idx == 0) )
