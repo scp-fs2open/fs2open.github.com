@@ -3253,6 +3253,10 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 			str = "<Custom hud gauge>";
 			break;
 
+		case OPF_ANY_HUD_GAUGE:
+			str = "<Custom or builtin hud gauge>";
+			break;
+
 		case OPF_ANIMATION_NAME:
 			str = "<Animation trigger name>";
 			break;			
@@ -3353,6 +3357,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_MESSAGE_OR_STRING:
 		case OPF_BUILTIN_HUD_GAUGE:
 		case OPF_CUSTOM_HUD_GAUGE:
+		case OPF_ANY_HUD_GAUGE:
 		case OPF_SHIP_EFFECT:
 		case OPF_ANIMATION_TYPE:
 		case OPF_SHIP_FLAG:
@@ -5329,6 +5334,10 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = get_listing_opf_custom_hud_gauge();
 			break;
 
+		case OPF_ANY_HUD_GAUGE:
+			list = get_listing_opf_any_hud_gauge();
+			break;
+
 		case OPF_SHIP_EFFECT:
 			list = get_listing_opf_ship_effect();
 			break;
@@ -6417,6 +6426,16 @@ sexp_list_item *sexp_tree::get_listing_opf_custom_hud_gauge()
 			}
 		}
 	}
+
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_any_hud_gauge()
+{
+	sexp_list_item head;
+
+	head.add_list(get_listing_opf_builtin_hud_gauge());
+	head.add_list(get_listing_opf_custom_hud_gauge());
 
 	return head.next;
 }

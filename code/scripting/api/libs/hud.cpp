@@ -12,6 +12,8 @@
 #include "hud/hudtargetbox.h"
 #include "hud/hudtarget.h"
 
+extern int Training_obj_num_display_lines;
+
 namespace scripting {
 namespace api {
 
@@ -181,14 +183,7 @@ ADE_FUNC(getHUDGaugeHandle, l_HUD, "string Name", "Returns a handle to a specifi
 		return ADE_RETURN_NIL;
 	HudGauge* gauge = nullptr;
 
-	gauge = hud_get_custom_gauge(name);
-	if (gauge == nullptr)
-	{
-		int idx = hud_get_default_gauge_index(name);
-		if (idx >= 0 && idx < (int)default_hud_gauges.size())
-			gauge = default_hud_gauges[idx].get();
-	}
-
+	gauge = hud_get_gauge(name);
 	if (gauge == nullptr)
 		return ADE_RETURN_NIL;
 	else
@@ -264,6 +259,11 @@ ADE_FUNC(getTargetDistance, l_HUD, "object targetee, [vector targeter_position]"
 
 	auto dist = hud_find_target_distance(targetee_h->objp, targeter_pos);
 	return ade_set_args(L, "f", dist);
+}
+
+ADE_FUNC(getDirectiveLines, l_HUD, nullptr, "Returns the number of lines displayed by the currently active directives", "number", "The number of lines")
+{
+	return ade_set_args(L, "i", Training_obj_num_display_lines);
 }
 
 

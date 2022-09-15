@@ -313,8 +313,6 @@ public:
 
 	// For updating custom gauges
 	const char* getCustomGaugeName();
-	void updateCustomGaugeCoords(int _x, int _y);
-	void updateCustomGaugeFrame(int frame_offset);
 	void updateCustomGaugeText(const char* txt);
 	void updateCustomGaugeText(const SCP_string& txt);
 	const char* getCustomGaugeText();
@@ -335,7 +333,9 @@ public:
 	
 	void setFont();
 	void setGaugeColor(int bright_index = HUD_C_NONE);
-	
+	void setGaugeCoords(int _x, int _y);
+	void setGaugeFrame(int frame_offset);
+
 	// rendering functions
 	void renderBitmap(int x, int y);
 	void renderBitmap(int frame, int x, int y);
@@ -570,8 +570,9 @@ public:
 	void render(float frametime) override;
 };
 
-HudGauge* hud_get_custom_gauge(const char* name, bool check_all_gauges = false);
-int hud_get_default_gauge_index(const char* name);
+HudGauge *hud_get_custom_gauge(const char *name, bool check_all_gauges = false);
+int hud_get_default_gauge_index(const char *name);
+HudGauge *hud_get_gauge(const char *name);
 
 extern SCP_vector<std::unique_ptr<HudGauge>> default_hud_gauges;
 

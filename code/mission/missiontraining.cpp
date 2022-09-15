@@ -100,15 +100,14 @@ int Training_obj_window_coords[GR_NUM_RESOLUTIONS][2] = {
 
 
 // training objectives global vars.
-int Training_obj_num_lines;
+int Training_obj_num_lines = 0;
+int Training_obj_num_display_lines = 0;
 int Training_obj_lines[TRAINING_OBJ_LINES];
 training_message_mods Training_message_mods[MAX_TRAINING_MESSAGE_MODS];
 
 // local module prototypes
 void training_process_message();
 
-
-static int Directive_frames_loaded = 0;
 
 HudGaugeDirectives::HudGaugeDirectives():
 HudGauge(HUD_OBJECT_DIRECTIVES, HUD_DIRECTIVES_VIEW, false, true, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP), 255, 255, 255)
@@ -216,8 +215,10 @@ void HudGaugeDirectives::pageIn()
 void HudGaugeDirectives::render(float  /*frametime*/)
 {
 	char buf[256], *second_line;
-	int i, t, x, y, z, end, offset, bx, by, y_count;
+	int i, t, x, y, z, end, offset, bx, by;
 	color *c;
+
+	Training_obj_num_display_lines = 0;
 
 	if (!Training_obj_num_lines){
 		return;
@@ -241,10 +242,9 @@ void HudGaugeDirectives::render(float  /*frametime*/)
 	bx = position[0];
 	by = position[1] + middle_frame_offset_y;
 
-	y_count = 0;
 	for (i=0; i<end; i++) {
 		x = position[0] + text_start_offsets[0];
-		y = position[1] + text_start_offsets[1] + y_count * text_h;
+		y = position[1] + text_start_offsets[1] + Training_obj_num_display_lines * text_h;
 		z = TRAINING_OBJ_LINES_MASK(i + offset);
 
 		c = &Color_normal;
@@ -315,14 +315,14 @@ void HudGaugeDirectives::render(float  /*frametime*/)
 		
 		renderString(x, y, EG_OBJ1 + i, buf);
 		
-		y_count++;
+		Training_obj_num_display_lines++;
 
 		if ( second_line ) {
-			y = position[1] + text_start_offsets[1] + y_count * text_h;
+			y = position[1] + text_start_offsets[1] + Training_obj_num_display_lines * text_h;
 			
 			renderString(x+12, y, EG_OBJ1 + i + 1, second_line);
 			
-			y_count++;
+			Training_obj_num_display_lines++;
 		}
 	}
 
@@ -353,9 +353,6 @@ void training_mission_init()
 	for (i = 0; i < TRAINING_MESSAGE_QUEUE_MAX; i++)
 		Training_message_queue[i].special_message = NULL;
 
-	// The E: This is now handled by the new HUD code. No need to check here.
-	Directive_frames_loaded = 1;
-	
 	// only clear player flags if this is actually a training mission
 	if ( The_mission.game_type & MISSION_TYPE_TRAINING ) {
 		Player->flags &= ~(PLAYER_FLAGS_MATCH_TARGET | PLAYER_FLAGS_MSG_MODE | PLAYER_FLAGS_AUTO_TARGETING | PLAYER_FLAGS_AUTO_MATCH_SPEED | PLAYER_FLAGS_LINK_PRIMARY | PLAYER_FLAGS_LINK_SECONDARY );
