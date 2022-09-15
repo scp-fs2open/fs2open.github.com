@@ -1631,7 +1631,7 @@ ADE_FUNC(isRedAlertMission,
 ADE_FUNC(hasCommandBriefing,
 	l_Mission,
 	nullptr,
-	"Determines if the current mission has a debriefing",
+	"Determines if the current mission has a command briefing",
 	"boolean",
 	"true if command briefing, false otherwise.")
 {
@@ -1656,14 +1656,9 @@ ADE_FUNC(hasDebriefing,
 	nullptr,
 	"Determines if the current mission has a debriefing",
 	"boolean",
-	"true if command briefing, false otherwise.")
+	"true if debriefing, false otherwise.")
 {
-	bool check = true;
-	if (The_mission.flags[Mission::Mission_Flags::Toggle_debriefing]) {
-		check = false;
-	}
-	
-	return ade_set_args(L, "b", check);
+	return ade_set_args(L, "b", The_mission.flags[Mission::Mission_Flags::Toggle_debriefing]);
 }
 
 int testLineOfSight_internal(lua_State* L, bool returnDist_and_Obj) {

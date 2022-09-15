@@ -810,16 +810,27 @@ ADE_FUNC(getEarnedBadge,
 	}
 }
 
+ADE_FUNC(clearMissionStats,
+	l_UserInterface_Debrief,
+	nullptr,
+	"Clears out the player's mission stats.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L); // unused parameter
+	Player->flags &= ~PLAYER_FLAGS_PROMOTED;
+	scoring_level_init(&Player->stats);
+	return ADE_RETURN_NIL;
+}
+
 ADE_FUNC(getTraitor,
 	l_UserInterface_Debrief,
 	nullptr,
 	"Get the traitor stage",
 	"debriefing_stage",
-	"The traitor stage or nil if the player is not traitor. Will also clear out any earned stats if true")
+	"The traitor stage or nil if the player is not traitor. Should be coupled with clearMissionStats if true")
 {
 	if (Turned_traitor) {
-		Player->flags &= ~PLAYER_FLAGS_PROMOTED;
-		scoring_level_init(&Player->stats);
 		return ade_set_args(L, "o", l_DebriefStage.Set(debrief_stage_h(&Traitor_debriefing.stages[0])));
 	} else {
 		return ADE_RETURN_NIL;
@@ -829,14 +840,12 @@ ADE_FUNC(getTraitor,
 ADE_FUNC(mustReplay,
 	l_UserInterface_Debrief,
 	nullptr,
-	"Gets whether or not the player must replay the mission. Will also clear out any earned stats if true",
+	"Gets whether or not the player must replay the mission. Should be coupled with clearMissionStats if true",
 	"boolean",
 	"true if must replay, false otherwise")
 {
 
 	if (Must_replay_mission) {
-		Player->flags &= ~PLAYER_FLAGS_PROMOTED;
-		scoring_level_init(&Player->stats);
 		return ade_set_args(L, "b", true);
 	} else {
 		return ade_set_args(L, "b", false);
@@ -861,7 +870,7 @@ ADE_FUNC(canSkip,
 ADE_FUNC(replayMission,
 	l_UserInterface_Debrief,
 	nullptr,
-	"Resets the mission outcome and begins the current mission again if in campaign",
+	"Resets the mission outcome and begins the current mission again",
 	"number",
 	"Returns true when completed")
 {

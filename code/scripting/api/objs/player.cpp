@@ -173,7 +173,7 @@ ADE_VIRTVAR(AutoAdvance,
 	return ade_set_args(L, "b", plr->get()->auto_advance != 0);
 }
 
-ADE_VIRTVAR(SkipPopup,
+ADE_VIRTVAR(ShowSkipPopup,
 	l_Player,
 	"boolean value",
 	"Determines if the skip mission popup is shown for the current mission.",
