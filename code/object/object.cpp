@@ -1244,15 +1244,18 @@ void obj_move_all_post(object *objp, float frametime)
 					}
 					//handles both defaults and adjustments.
 					float r = wi->light_radius;
+					float source_radius = objp->radius;
 					if (wi->render_type == WRT_LASER) {
 						r = lp->laser_light_radius.handle(r);
 						light_color.i(lp->laser_light_brightness.handle(light_color.i()));
 					} else {
+						//Missiles should typically not be treated as lights for their whole radius. TODO: make configurable.
+						source_radius *= 0.05f;
 						r = lp->missile_light_radius.handle(r);
 						light_color.i(lp->missile_light_brightness.handle(light_color.i()));
 					}
 					if(r > 0.0f && light_color.i() > 0.0f)
-						light_add_point(&objp->pos, r, r, &light_color);
+						light_add_point(&objp->pos, r, r, &light_color,source_radius);
 				}
 			}
 
@@ -1344,8 +1347,9 @@ void obj_move_all_post(object *objp, float frametime)
 					}
 					// P goes from 0 to 1 to 0 over the life of the explosion
 					// Only do this if rad is > 0.0000001f
+					// TODO: Make fireball source radius configurable, currently sized based on modern subspace portal textures as that will be a very prominent case of it
 					if (rad > 0.0001f)
-						light_add_point( &objp->pos, rad * 2.0f, rad * 5.0f, intensity, r, g, b);
+						light_add_point( &objp->pos, rad * 2.0f, rad * 5.0f, intensity, r, g, b,rad * 0.3f);
 				}
 			}
 

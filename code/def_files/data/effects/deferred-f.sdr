@@ -1,7 +1,7 @@
 //? #version 150
-#include "lighting.sdr"
+#include "lighting.sdr" //! #include "lighting.sdr"
 
-#include "shadows.sdr"
+#include "shadows.sdr" //! #include "shadows.sdr"
 
 in vec3 beamVec;
 in vec3 lightPosition;
@@ -43,45 +43,101 @@ layout (std140) uniform lightData {
 
 	int lightType;
 	bool enable_shadows;
+
+	float sourceRadius;
 };
 
-void GetLightInfo(vec3 position, out vec3 lightDir, out float attenuation)
+// Nearest point sphere and tube light calculations taken from 
+// "Real Shading in Unreal Engine 4" by Brian Karis, Epic Games
+// Part of SIGGRAPH 2013 Course: Physically Based Shading in Theory and Practice
+
+vec3 ExpandLightSize(in vec3 lightDir, in vec3 reflectDir) {
+	// There's an extra max(...,sourceRadius) call here vs the version in the paper.
+	// This prevents the centerToRay calculation from choosing a point behind
+	// the reflection ray's origin (i.e. underneath the surface).
+	// this is necessary for situations where the fragment being shaded lies inside 
+	// the sourceRadius of the light.
+	// Instead, we choose a point suffciently far away from the reflection origin (hence max(...,sourceRadius))
+	// so that we have a gradual transition as the shaded fragments along the surface
+	// shift from being inside to outside the light.
+	vec3 centerToRay = max(dot(lightDir, reflectDir),sourceRadius) * reflectDir - lightDir;
+	return lightDir + centerToRay * clamp(sourceRadius/length(centerToRay), 0.0, 1.0);
+}
+void GetLightInfo(vec3 position, in float alpha, in vec3 reflectDir, out vec3 lightDir, out float attenuation, out float area_normalisation)
 {
 	if (lightType == LT_DIRECTIONAL) {
 		lightDir = normalize(lightPosition);
 		attenuation = 1.0;
+		area_normalisation = 1.0;
 	} else {
 		// Positional light source
-		lightDir = lightPosition - position.xyz;
-		float dist = length(lightDir);
-		attenuation = 1.0 - clamp(sqrt(dist / lightRadius), 0.0, 1.0);
+		if (lightType == LT_POINT) {
+			lightDir = lightPosition - position.xyz;
+			float dist = length(lightDir);
 
-		if(dist > lightRadius && lightType != LT_TUBE) {
-			discard;
-		}
-
-		if (lightType == LT_TUBE) {  // Tube light
-			float beamLength = length(beamVec);
-			vec3 beamDir = beamVec / beamLength;
-			//The actual 'lighting element' is shorter than the light volume cylinder
-			//To compensate the light is moved forward along the beam one radius and the length shortened
-			//this allows room for clean falloff of the light past the ends of beams.
-			vec3 adjustedLightPos = lightPosition - (beamDir * lightRadius);
-			beamLength = beamLength - (lightRadius * 2.0);
-			//adjustments having been made, lightdir needs recalculating
-			lightDir = adjustedLightPos - position.xyz;
-			// Get nearest point on line
-			float neardist = clamp(dot(lightDir, beamDir), 0.0, beamLength);
-			// Move back from the endpoint of the beam along the beam by the distance we calculated
-			vec3 nearest = adjustedLightPos - beamDir * neardist;
-			lightDir = nearest - position.xyz;
+			// this chunk is unneccessary if sourceRadius= 0.0, but let's avoid a branch.
+			// given a sphere of radius sourceRadius centered at lightDir,
+			// move lightDir towards the ray defined by reflectDir
+			lightDir = ExpandLightSize(lightDir, reflectDir);
 			dist = length(lightDir);
+			// Energy conservation term
+			float alpha_adjust = clamp(alpha + (sourceRadius/(2*dist)), 0.0, 1.0);
+			area_normalisation = alpha/alpha_adjust;
+			area_normalisation *= area_normalisation;
+			//end chunk
+
+
 			if(dist > lightRadius) {
 				discard;
 			}
 			attenuation = 1.0 - clamp(sqrt(dist / lightRadius), 0.0, 1.0);
-		} else if (lightType == LT_CONE) {
+		} 
+		else if (lightType == LT_TUBE) {  // Tube light
+			
+			vec3 beamDir = normalize(beamVec);
+			//The actual 'lighting element' is shorter than the light volume cylinder
+			//To compensate the light is moved forward along the beam one radius and the length shortened
+			//this allows room for clean falloff of the light past the ends of beams.
+			vec3 adjustedLightPos = lightPosition - (beamDir * lightRadius);
+			vec3 adjustedbeamVec = beamVec - 2.0 * lightRadius * beamDir;
+			float beamLength = length(adjustedbeamVec);
+			//adjustments having been made, sourceDir needs recalculating
+			vec3 sourceDir = adjustedLightPos - position.xyz;
+
+			// Get point on beam nearest to the reflection ray.
+			vec3 a_t = reflectDir;
+			vec3 b_t = beamDir;
+			vec3 b_0 = sourceDir;
+			vec3 c = cross(a_t, b_t);
+			vec3 d = b_0;
+			vec3 r = d - a_t * dot(d, a_t) - c * dot(d,c);
+			float neardist = dot(r, r)/dot(b_t, r);
+			// Move along the beam by the distance we calculated
+			lightDir = sourceDir - beamDir * clamp(neardist, 0.0, beamLength);
+			// Somebody with a symbolic expression simplifier or a wrinklier brain than me
+			// should figure out how to optimise these calcs - qaz
+
+
+			// this chunk is unneccessary if sourceRadius = 0.0, but let's avoid a branch.
+			// Same principle as in LT_POINT, treat chosen location as a spherelight.
+			lightDir = ExpandLightSize(lightDir, reflectDir);
+			float dist = length(lightDir);
+			// Energy conservation term
+			float alpha_adjust = min(alpha + (sourceRadius/(2*dist)), 1.0);
+			area_normalisation = alpha/alpha_adjust;
+			// don't need to square as it's a line rather than a sphere.
+			//end chunk
+
+			if(dist > lightRadius) {
+				discard;
+			}
+			attenuation = 1.0 - clamp(sqrt(dist / lightRadius), 0.0, 1.0);
+		} 
+		else if (lightType == LT_CONE) {
+			lightDir = lightPosition - position.xyz;
 			float coneDot = dot(normalize(-lightDir), coneDir);
+			float dist = length(lightDir);
+			attenuation = 1.0 - clamp(sqrt(dist / lightRadius), 0.0, 1.0);
 			if(dualCone) {
 				if(abs(coneDot) < coneAngle) {
 					discard;
@@ -115,13 +171,16 @@ void main()
 	// The vector in the normal buffer could be longer than the unit vector since decal rendering only adds to the normal buffer
 	vec3 normal = normalize(normalData.xyz);
 	float gloss = normalData.a;
+	float roughness = clamp(1.0f - gloss, 0.0f, 1.0f);
+	float alpha = roughness * roughness;
 	float fresnel = specColor.a;
 	vec3 eyeDir = normalize(-position);
 
 	vec3 lightDir;
 	float attenuation;
-
-	GetLightInfo(position, lightDir, attenuation);
+	float area_normalisation;
+	vec3 reflectDir = reflect(-eyeDir, normal);
+	GetLightInfo(position, alpha, reflectDir, lightDir, attenuation, area_normalisation);
 
 	if (enable_shadows) {
 		vec4 fragShadowPos = shadow_mv_matrix * inv_view_matrix * vec4(position, 1.0);
@@ -138,6 +197,6 @@ void main()
 	vec3 halfVec = normalize(lightDir + eyeDir);
 	float NdotL = clamp(dot(normal, lightDir), 0.0, 1.0);
 	vec4 fragmentColor = vec4(1.0);
-	fragmentColor.rgb = computeLighting(specColor.rgb, diffColor, lightDir, normal.xyz, halfVec, eyeDir, gloss, fresnel, NdotL).rgb * diffuseLightColor * attenuation;
+	fragmentColor.rgb = computeLighting(specColor.rgb, diffColor, lightDir, normal.xyz, halfVec, eyeDir, alpha, area_normalisation, fresnel, NdotL).rgb * diffuseLightColor * attenuation;
 	fragOut0 = max(fragmentColor, vec4(0.0));
 }

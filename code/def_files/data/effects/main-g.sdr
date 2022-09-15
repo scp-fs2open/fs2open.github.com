@@ -25,6 +25,7 @@ struct model_light {
 	vec3 direction;
 	float attenuation;
 
+	float ml_sourceRadius;
 };
 
 layout (std140) uniform modelData {

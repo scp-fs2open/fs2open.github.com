@@ -22,8 +22,9 @@ layout (std140) uniform lightData {
 	float lightRadius;
 
 	int lightType;
-
 	bool enable_shadows;
+
+	float sourceRadius;
 };
 
 out vec3 lightPosition;

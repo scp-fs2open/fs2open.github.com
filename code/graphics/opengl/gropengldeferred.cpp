@@ -171,6 +171,7 @@ void gr_opengl_deferred_lighting_finish()
 
 			// Set a default value for all lights. Only the first directional light will change this.
 			light_data->enable_shadows = false;
+			light_data->sourceRadius = l.source_radius;
 
 			switch (l.type) {
 			case Light_Type::Directional:
