@@ -1305,6 +1305,7 @@ static bool gr_init_sub(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, i
 	gr_screen.bytes_per_pixel= depth / 8;
 	gr_screen.rendering_to_texture = -1;
 	gr_screen.envmap_render_target = -1;
+	gr_screen.irrmap_render_target = -1;
 	gr_screen.line_width = 1.0f;
 	gr_screen.mode = mode;
 	gr_screen.res = res;

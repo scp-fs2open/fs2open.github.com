@@ -301,7 +301,7 @@ void gr_opengl_dump_envmap(const char* filename)
 	auto height = 512; // in future envmap resolution should be dynamic, or at least extracted from envmap_render_target
 	auto sphere_width = 4 * width;
 	auto sphere_height = 2 * height;
-	auto env_tex = bm_get_gr_info<tcache_slot_opengl>(gr_screen.envmap_render_target);
+	auto env_tex = bm_get_gr_info<tcache_slot_opengl>(ENVMAP);
 	glBindTexture(env_tex->texture_target, env_tex->texture_id);
 
 	// Save the previous render target so we can reset it once we are done here
@@ -860,6 +860,7 @@ void opengl_setup_function_pointers()
 
 	gr_screen.gf_print_screen		= gr_opengl_print_screen;
 	gr_screen.gf_dump_envmap		= gr_opengl_dump_envmap;
+	gr_screen.gf_calculate_irrmap	= gr_opengl_calculate_irrmap;
 
 	gr_screen.gf_zbuffer_get		= gr_opengl_zbuffer_get;
 	gr_screen.gf_zbuffer_set		= gr_opengl_zbuffer_set;

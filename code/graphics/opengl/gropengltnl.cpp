@@ -858,13 +858,17 @@ void opengl_tnl_set_model_material(model_material *material_info)
 		} else {
 			gr_opengl_tcache_set(material_info->get_texture_map(TM_SPECULAR_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, 2);
 		}
+	}
 
-		if ( Current_shader->flags & SDR_FLAG_MODEL_ENV_MAP ) {
-			Current_shader->program->Uniforms.setTextureUniform("sEnvmap", 3);
+	if ( Current_shader->flags & SDR_FLAG_MODEL_ENV_MAP ) {
+		Current_shader->program->Uniforms.setTextureUniform("sEnvmap", 3);
 
-			gr_opengl_tcache_set(ENVMAP, TCACHE_TYPE_CUBEMAP, &u_scale, &v_scale, &array_index, 3);
-			Assertion(array_index == 0, "Cube map arrays are not supported yet!");
-		}
+		gr_opengl_tcache_set(ENVMAP, TCACHE_TYPE_CUBEMAP, &u_scale, &v_scale, &array_index, 3);
+
+		Current_shader->program->Uniforms.setTextureUniform("sIrrmap", 11);
+
+		gr_opengl_tcache_set(IRRMAP, TCACHE_TYPE_CUBEMAP, &u_scale, &v_scale, &array_index, 11);
+		Assertion(array_index == 0, "Cube map arrays are not supported yet!");
 	}
 
 	if ( Current_shader->flags & SDR_FLAG_MODEL_NORMAL_MAP ) {

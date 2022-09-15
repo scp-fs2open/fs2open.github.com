@@ -206,6 +206,8 @@ enum shader_type {
 
 	SDR_TYPE_ENVMAP_SPHERE_WARP,
 
+	SDR_TYPE_IRRADIANCE_MAP_GEN,
+
 	NUM_SHADER_TYPES
 };
 
@@ -697,6 +699,7 @@ typedef struct screen {
 	int rendering_to_face = 0;    // wich face of the texture we are rendering to, -1 if the back buffer
 
 	int envmap_render_target = 0;
+	int irrmap_render_target = -1; // Irradiance map for diffuse env lighting.
 
 	float line_width = 0.0f;
 
@@ -717,6 +720,9 @@ typedef struct screen {
 
 	// transforms and dumps the current environment map to a file
 	std::function<void(const char* filename)> gf_dump_envmap;
+
+	// generate diffuse irradiance cubemap for IBL.
+	std::function<void()> gf_calculate_irrmap;
 
 	// Retrieves the zbuffer mode.
 	std::function<int()> gf_zbuffer_get;
