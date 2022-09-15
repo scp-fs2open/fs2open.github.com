@@ -228,8 +228,12 @@ namespace animation {
 		//PMI ID -> Instance Data
 		std::map<int, instance_data> m_instances;
 
+		std::shared_ptr<ModelAnimationSubmodel> m_submodel;
+		tl::optional<vec3d> m_position;
+
 		//configurables:
 	public:
+		float m_radius;
 		gamesnd_id m_start;
 		gamesnd_id m_end;
 		gamesnd_id m_during;
@@ -242,12 +246,13 @@ namespace animation {
 		void executeAnimation(const ModelAnimationSubmodelBuffer& state, float timeboundLower, float timeboundUpper, ModelAnimationDirection direction, int pmi_id) override;
 		void exchangeSubmodelPointers(ModelAnimationSet& replaceWith) override;
 
-		void playStartSnd(int pmi_id);
-		void playEndSnd(int pmi_id);
+		sound_handle playSnd(polymodel_instance* pmi, const gamesnd_id& sound, bool loop);
+		void playStartSnd(polymodel_instance* pmi);
+		void playEndSnd(polymodel_instance* pmi);
 
 	public:
 		static std::shared_ptr<ModelAnimationSegment> parser(ModelAnimationParseHelper* data);
-		ModelAnimationSegmentSoundDuring(std::shared_ptr<ModelAnimationSegment> segment, gamesnd_id start, gamesnd_id end, gamesnd_id during, bool flipIfReversed = false);
+		ModelAnimationSegmentSoundDuring(std::shared_ptr<ModelAnimationSegment> segment, gamesnd_id start, gamesnd_id end, gamesnd_id during, bool flipIfReversed = false, float radius = 0.0f, std::shared_ptr<ModelAnimationSubmodel> submodel = nullptr, tl::optional<vec3d> position = tl::nullopt);
 
 	};
 	

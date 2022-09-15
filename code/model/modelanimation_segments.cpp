@@ -1,5 +1,7 @@
 #include "model/modelanimation_segments.h"
 
+#include "render/3d.h"
+
 namespace animation {
 
 	ModelAnimationSegment* ModelAnimationSegmentSerial::copy() const {
@@ -1169,8 +1171,8 @@ namespace animation {
 	}
 
 
-	ModelAnimationSegmentSoundDuring::ModelAnimationSegmentSoundDuring(std::shared_ptr<ModelAnimationSegment> segment, gamesnd_id start, gamesnd_id end, gamesnd_id during, bool flipIfReversed) :
-		m_segment(std::move(segment)), m_start(start), m_end(end), m_during(during), m_flipIfReversed(flipIfReversed) { }
+	ModelAnimationSegmentSoundDuring::ModelAnimationSegmentSoundDuring(std::shared_ptr<ModelAnimationSegment> segment, gamesnd_id start, gamesnd_id end, gamesnd_id during, bool flipIfReversed, float radius, std::shared_ptr<ModelAnimationSubmodel> submodel, tl::optional<vec3d> position) :
+		m_segment(std::move(segment)), m_submodel(submodel), m_position(std::move(position)), m_radius(radius), m_start(start), m_end(end), m_during(during), m_flipIfReversed(flipIfReversed) { }
 
 	ModelAnimationSegment* ModelAnimationSegmentSoundDuring::copy() const {
 		auto newCopy = new ModelAnimationSegmentSoundDuring(*this);
@@ -1188,23 +1190,25 @@ namespace animation {
 	}
 
 	void ModelAnimationSegmentSoundDuring::executeAnimation(const ModelAnimationSubmodelBuffer& state, float timeboundLower, float timeboundUpper, ModelAnimationDirection direction, int pmi_id) {
+		polymodel_instance* pmi = model_get_instance(pmi->id);
+
 		if (timeboundLower <= 0.0f && 0.0f <= timeboundUpper) {
 			if (!m_flipIfReversed || direction == ModelAnimationDirection::FWD)
-				playStartSnd(pmi_id);
+				playStartSnd(pmi);
 			else
-				playEndSnd(pmi_id);
+				playEndSnd(pmi);
 		}
 
 		if (0.0f < timeboundLower && timeboundUpper < m_duration.at(pmi_id)) {
 			if (m_during.isValid() && (!m_instances[pmi_id].currentlyPlaying.isValid() || !snd_is_playing(m_instances[pmi_id].currentlyPlaying)))
-				m_instances[pmi_id].currentlyPlaying = snd_play_looping(gamesnd_get_game_sound(m_during));
+				m_instances[pmi_id].currentlyPlaying = playSnd(pmi, m_during, true);
 		}
 
 		if (timeboundLower <= m_duration.at(pmi_id) && m_duration.at(pmi_id) <= timeboundUpper) {
 			if (!m_flipIfReversed || direction == ModelAnimationDirection::FWD)
-				playEndSnd(pmi_id);
+				playEndSnd(pmi);
 			else
-				playStartSnd(pmi_id);
+				playStartSnd(pmi);
 		}
 		m_segment->executeAnimation(state, timeboundLower, timeboundUpper, direction, pmi_id);
 	}
@@ -1213,37 +1217,73 @@ namespace animation {
 		m_segment->exchangeSubmodelPointers(replaceWith);
 	}
 
-	void ModelAnimationSegmentSoundDuring::playStartSnd(int pmi_id) {
-		if (snd_is_playing(m_instances[pmi_id].currentlyPlaying))
-			snd_stop(m_instances[pmi_id].currentlyPlaying);
+	void ModelAnimationSegmentSoundDuring::playStartSnd(polymodel_instance* pmi) {
+		if (snd_is_playing(m_instances[pmi->id].currentlyPlaying))
+			snd_stop(m_instances[pmi->id].currentlyPlaying);
 		
 		if(m_start.isValid())
-			m_instances[pmi_id].currentlyPlaying = snd_play(gamesnd_get_game_sound(m_start));
+			m_instances[pmi->id].currentlyPlaying = playSnd(pmi, m_start, false);
 	}
-	void ModelAnimationSegmentSoundDuring::playEndSnd(int pmi_id) {
-		if (snd_is_playing(m_instances[pmi_id].currentlyPlaying))
-			snd_stop(m_instances[pmi_id].currentlyPlaying);
+	void ModelAnimationSegmentSoundDuring::playEndSnd(polymodel_instance* pmi) {
+		if (snd_is_playing(m_instances[pmi->id].currentlyPlaying))
+			snd_stop(m_instances[pmi->id].currentlyPlaying);
 
 		if (m_end.isValid()) 
-			m_instances[pmi_id].currentlyPlaying = snd_play(gamesnd_get_game_sound(m_end));
+			m_instances[pmi->id].currentlyPlaying = playSnd(pmi, m_end, false);
+	}
+
+	sound_handle ModelAnimationSegmentSoundDuring::playSnd(polymodel_instance* pmi, const gamesnd_id& sound, bool loop) {
+		if (m_submodel != nullptr && pmi->objnum > 0) {
+			auto submodel = m_submodel->findSubmodel(pmi);
+			if (submodel.first != nullptr) {
+				const object& obj = Objects[pmi->objnum];
+
+				vec3d pnt;
+				model_instance_local_to_global_point(&pnt, m_position ? &(*m_position) : &vmd_zero_vector, pmi->id, (int)(submodel.first - pmi->submodel), &obj.orient, &obj.pos);
+
+				return snd_play_3d(gamesnd_get_game_sound(sound), &pnt, &View_position, m_radius, nullptr, loop ? 1 : 0);
+			}
+		}
+
+		if(loop)
+			return snd_play_looping(gamesnd_get_game_sound(sound));
+		else
+			return snd_play(gamesnd_get_game_sound(sound));
 	}
 	
 	std::shared_ptr<ModelAnimationSegment> ModelAnimationSegmentSoundDuring::parser(ModelAnimationParseHelper* data) {
 		gamesnd_id start_sound;
 		gamesnd_id loop_sound;
 		gamesnd_id end_sound;
-		float snd_rad;
+		float snd_rad = 0.0f;
+		
+		auto submodel = ModelAnimationParseHelper::parseSubmodel();
+		if (!submodel) {
+			if (data->parentSubmodel)
+				submodel = data->parentSubmodel;
+		}
 
 		parse_game_sound("+Start:", &start_sound);
 		parse_game_sound("+Loop:", &loop_sound);
 		parse_game_sound("+End:", &end_sound);
 
-		required_string("+Radius:");
-		stuff_float(&snd_rad);
+		if (optional_string("+Radius:")) {
+			stuff_float(&snd_rad);
+		}
+
+		tl::optional<vec3d> position = tl::nullopt;
+		if (optional_string("+Position:")) {
+			if (!submodel)
+				error_display(1, "Supplied sound position for animation but no parent submodel. Cannot play sound as 3D without attachment to submodel.");
+
+			vec3d parse;
+			stuff_vec3d(&parse);
+			position = std::move(parse);
+		}
 
 		bool flipIfReversed = optional_string("+Flip When Reversed");
 
-		auto segment = std::shared_ptr<ModelAnimationSegmentSoundDuring>(new ModelAnimationSegmentSoundDuring(data->parseSegment(), start_sound, end_sound, loop_sound, flipIfReversed));
+		auto segment = std::shared_ptr<ModelAnimationSegmentSoundDuring>(new ModelAnimationSegmentSoundDuring(data->parseSegment(), start_sound, end_sound, loop_sound, flipIfReversed, snd_rad, submodel, position));
 
 		return segment;
 	}
