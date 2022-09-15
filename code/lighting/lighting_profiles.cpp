@@ -218,7 +218,7 @@ void lighting_profile::reset()
 
 	ambient_light_brightness.reset();
 	//Inverse of the overall brightness boost
-	ambient_light_brightness.set_multiplier(0.286); 
+	ambient_light_brightness.set_multiplier(0.286f); 
 	ambient_light_brightness.stack_multiplier(Cmdline_ambient_power);
 	ambient_light_brightness.set_adjust(MAX(0.0f,Cmdline_emissive_power));
 }
