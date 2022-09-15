@@ -284,7 +284,7 @@ typedef struct {
 	int team;
 	int weapon_index;
 	int max_fire_count;
-	const char *shipname;
+	int ship_registry_index;
 } huge_fire_info;
 
 SCP_vector<huge_fire_info> Ai_huge_fire_info;
@@ -341,15 +341,13 @@ int ai_good_time_to_rearm(object *objp)
  */
 void ai_good_secondary_time( int team, int weapon_index, int max_fire_count, const char *shipname )
 {
-	Assert(shipname != NULL);
-	int index;
+	Assert(shipname != nullptr);
 	huge_fire_info new_info; 
 
 	new_info.weapon_index = weapon_index;
 	new_info.team = team;
 	new_info.max_fire_count = max_fire_count;
-
-	new_info.shipname = ai_get_goal_target_name( shipname, &index );
+	new_info.ship_registry_index = ship_registry_get_index(shipname);
 
 	Ai_huge_fire_info.push_back(new_info);
 }
@@ -373,17 +371,18 @@ int is_preferred_weapon(int weapon_num, object *firer_objp, object *target_objp)
 
 	// get target object's signature and try to find it in the list.
 	target_signature = target_objp->signature;
-	for (hfi = Ai_huge_fire_info.begin();hfi != Ai_huge_fire_info.end(); ++hfi ) {
-		int ship_index, signature;
-
+	for (hfi = Ai_huge_fire_info.begin(); hfi != Ai_huge_fire_info.end(); ++hfi)
+	{
 		if ( hfi->weapon_index == -1 )
 			continue;
-
-		ship_index = ship_name_lookup( hfi->shipname );
-		if ( ship_index == -1 )
+		if ( hfi->ship_registry_index == -1 )
 			continue;
 
-		signature = Objects[Ships[ship_index].objnum].signature;
+		auto ship_entry = &Ship_registry[hfi->ship_registry_index];
+		if (ship_entry->status != ShipStatus::PRESENT)
+			continue;
+
+		int signature = ship_entry->objp->signature;
 
 		// sigatures, weapon_index, and team must match
 		if ( (signature == target_signature) && (hfi->weapon_index == weapon_num) && (hfi->team == firer_team) )
