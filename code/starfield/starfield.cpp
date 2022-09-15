@@ -473,7 +473,7 @@ void parse_startbl(const char *filename)
 				stuff_float(&sbm.i);
 
 				if (optional_string("$SunSpecularRGB:"))
-					Warning(LOCATION, "Sun %s tried to set SunSpecularRGB. This feature has been deprecated and will be ignored.", sbm.filename);
+					mprintf(("Sun %s tried to set SunSpecularRGB. This feature has been deprecated and will be ignored.\n", sbm.filename));
 
 				// lens flare stuff
 				if (optional_string("$Flare:")) {
