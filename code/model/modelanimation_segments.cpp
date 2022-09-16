@@ -1233,7 +1233,7 @@ namespace animation {
 	}
 
 	sound_handle ModelAnimationSegmentSoundDuring::playSnd(polymodel_instance* pmi, const gamesnd_id& sound, bool loop) {
-		if (m_submodel != nullptr && pmi->objnum > 0) {
+		if (m_submodel != nullptr && pmi->objnum >= 0) {
 			auto submodel = m_submodel->findSubmodel(pmi);
 			if (submodel.first != nullptr) {
 				const object& obj = Objects[pmi->objnum];
