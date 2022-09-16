@@ -58,7 +58,7 @@ ADE_VIRTVAR(AudioFilename,
 ADE_VIRTVAR(hasForwardCut,
 	l_BriefStage,
 	nullptr,
-	"The result of the stage formula",
+	"If the stage has a forward cut flag",
 	"boolean",
 	"true if the stage is set to cut to the next stage, false otherwise")
 {
@@ -81,7 +81,7 @@ ADE_VIRTVAR(hasForwardCut,
 ADE_VIRTVAR(hasBackwardCut,
 	l_BriefStage,
 	nullptr,
-	"The result of the stage formula",
+	"If the stage has a backward cut flag",
 	"boolean",
 	"true if the stage is set to cut to the previous stage, false otherwise")
 {
