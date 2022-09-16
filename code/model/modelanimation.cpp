@@ -21,6 +21,9 @@ namespace animation {
 		{ "seamless with startup",		animation::Animation_Flags::Seamless_with_startup,				true, [](const SCP_string& from, ModelAnimation& anim) {
 			anim.m_flagData.loopsFrom = static_cast<float>(std::atof(from.c_str()));
 			anim.m_flags.set(animation::Animation_Flags::Loop);
+
+			//While this flag implies Reset_at_completion semantically, it's implemented in a conflicting manner. Hence, make sure that seamless will take priority, and force-disable reset at completion if set
+			anim.m_flags.set(animation::Animation_Flags::Reset_at_completion, false);
 		}}
 	};
 
