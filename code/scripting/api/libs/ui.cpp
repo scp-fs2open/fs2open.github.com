@@ -59,7 +59,6 @@ ADE_FUNC(setOffset, l_UserInterface, "number x, number y",
          "Sets the offset from the top left corner at which <b>all</b> rocket contexts will be rendered", "boolean",
          "true if the operation was successful, false otherwise")
 {
-
 	float x;
 	float y;
 
@@ -559,6 +558,20 @@ ADE_FUNC(runBriefingStageHook,
 	return ADE_RETURN_NIL;
 }
 
+ADE_FUNC(initBriefing,
+	l_UserInterface_Brief,
+	nullptr,
+	"Initializes the briefing.  Handles various non-UI housekeeping tasks and compacts the stages to remove those that should not be shown.",
+	nullptr,
+	"nothing")
+{
+	SCP_UNUSED(L);
+
+	// TODO: probably call brief_api_init()
+
+	return ADE_RETURN_NIL;
+}
+
 ADE_FUNC(getBriefing,
 	l_UserInterface_Brief,
 	nullptr,
@@ -742,13 +755,11 @@ ADE_LIB_DERIV(l_UserInterface_RedAlert,
 	"red_alert_stage",
 	"The red-alert data")
 {
-
 	 if (Briefings[0].num_stages) {
 		return ade_set_args(L, "o", l_RedAlertStage.Set(redalert_stage_h(0,0)));
 	 } else {
 		 return ADE_RETURN_NIL;
 	 }
-	 
 }
 
 ADE_FUNC(replayPreviousMission,
@@ -763,7 +774,6 @@ ADE_FUNC(replayPreviousMission,
 	} else {
 		return ADE_RETURN_TRUE;
 	}
-
 }
 
 //**********SUBLIBRARY: UserInterface/FictionViewer
@@ -806,7 +816,6 @@ ADE_FUNC(buildMissionList,
 	"number",
 	"Returns 1 when completed")
 {
-
 	Sim_Missions.clear();
 	Sim_CMissions.clear();
 
@@ -824,7 +833,6 @@ ADE_FUNC(buildCredits,
 	"number",
 	"Returns 1 when completed")
 {
-
 	credits_parse();
 	credits_scp_position();
 
@@ -894,7 +902,6 @@ ADE_FUNC(__len, l_UserInterface_Cutscenes, nullptr, "The number of cutscenes", "
 ADE_LIB_DERIV(l_UserInterface_Credits, "Credits", nullptr, nullptr, l_UserInterface_TechRoom);
 ADE_VIRTVAR(Music, l_UserInterface_Credits, nullptr, "The credits music filename", "string", "The music filename")
 {
-
 	if (ADE_SETTING_VAR) {
 		LuaError(L, "This property is read only.");
 	}
@@ -904,7 +911,6 @@ ADE_VIRTVAR(Music, l_UserInterface_Credits, nullptr, "The credits music filename
 
 ADE_VIRTVAR(NumImages, l_UserInterface_Credits, nullptr, "The total number of credits images", "number", "The number of images")
 {
-
 	if (ADE_SETTING_VAR) {
 		LuaError(L, "This property is read only.");
 	}
@@ -914,7 +920,6 @@ ADE_VIRTVAR(NumImages, l_UserInterface_Credits, nullptr, "The total number of cr
 
 ADE_VIRTVAR(StartIndex, l_UserInterface_Credits, nullptr, "The image index to begin with", "number", "The index")
 {
-
 	if (ADE_SETTING_VAR) {
 		LuaError(L, "This property is read only.");
 	}
@@ -924,7 +929,6 @@ ADE_VIRTVAR(StartIndex, l_UserInterface_Credits, nullptr, "The image index to be
 
 ADE_VIRTVAR(DisplayTime, l_UserInterface_Credits, nullptr, "The display time for each image", "number", "The display time")
 {
-
 	if (ADE_SETTING_VAR) {
 		LuaError(L, "This property is read only.");
 	}
@@ -934,7 +938,6 @@ ADE_VIRTVAR(DisplayTime, l_UserInterface_Credits, nullptr, "The display time for
 
 ADE_VIRTVAR(FadeTime, l_UserInterface_Credits, nullptr, "The crossfade time for each image", "number", "The fade time")
 {
-
 	if (ADE_SETTING_VAR) {
 		LuaError(L, "This property is read only.");
 	}
@@ -944,7 +947,6 @@ ADE_VIRTVAR(FadeTime, l_UserInterface_Credits, nullptr, "The crossfade time for 
 
 ADE_VIRTVAR(ScrollRate, l_UserInterface_Credits, nullptr, "The scroll rate of the text", "number", "The scroll rate")
 {
-
 	if (ADE_SETTING_VAR) {
 		LuaError(L, "This property is read only.");
 	}
@@ -954,7 +956,6 @@ ADE_VIRTVAR(ScrollRate, l_UserInterface_Credits, nullptr, "The scroll rate of th
 
 ADE_VIRTVAR(Complete, l_UserInterface_Credits, nullptr, "The complete credits string", "string", "The credits")
 {
-
 	if (ADE_SETTING_VAR) {
 		LuaError(L, "This property is read only.");
 	}

@@ -55,30 +55,6 @@ ADE_VIRTVAR(AudioFilename,
 	return ade_set_args(L, "s", stage.getStage()->voice);
 }
 
-ADE_FUNC(checkVisible,
-		l_BriefStage,
-		nullptr,
-		"Evaluates the stage formula and returns the result. Could potentially have side effects if the stage formula has a 'perform-actions' or similar operator. "
-		"Note that the standard UI evaluates the formula exactly once per stage on briefing initialization.",
-		"boolean",
-		"true if the stage should be displayed, false otherwise")
-	{
-		brief_stage_h stage;
-		if (!ade_get_args(L, "o", l_BriefStage.Get(&stage))) {
-			return ADE_RETURN_NIL;
-		}
-
-		if (ADE_SETTING_VAR) {
-			LuaError(L, "This property is read only.");
-		}
-
-		if (eval_sexp(stage.getStage()->formula)) {
-			return ADE_RETURN_TRUE;
-		} else {
-			return ADE_RETURN_FALSE;
-		}
-	}
-
 //**********HANDLE: briefing
 ADE_OBJ(l_Brief, int, "briefing", "Briefing handle");
 
