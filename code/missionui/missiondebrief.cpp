@@ -1972,22 +1972,25 @@ void debrief_init()
 	Debrief_player = Player;
 //	Debrief_current_net_player_index = debrief_multi_list[0].net_player_index;
 
-	// set up the Debrief_stages[] and Recommendations[] arrays.  Only do the following stuff
-	// for non-clients (i.e. single and game server).  Multiplayer clients will get their debriefing
-	// info directly from the server.
-	if ( !MULTIPLAYER_CLIENT ) {
-		debrief_set_stages_and_multi_stuff();
+	// Only setup Debrief_stages and Recommendations if not running through API access.
+	if (!API_Access) {
+		// set up the Debrief_stages[] and Recommendations[] arrays.  Only do the following stuff
+		// for non-clients (i.e. single and game server).  Multiplayer clients will get their debriefing
+		// info directly from the server.
+		if (!MULTIPLAYER_CLIENT) {
+			debrief_set_stages_and_multi_stuff();
 
-		if ( Num_debrief_stages <= 0 ) {
-			Num_debrief_stages = 0;
-		} else if (!API_Access) { //Do not load voice files in API mode -Mjn
-			debrief_voice_load_all();
-		}
-	} else {
-		// multiplayer client may have already received their debriefing info.  If they have not,
-		// then set the num debrief stages to 0
-		if ( !Debrief_multi_stages_loaded ) {
-			Num_debrief_stages = 0;
+			if (Num_debrief_stages <= 0) {
+				Num_debrief_stages = 0;
+			} else if (!API_Access) { // Do not load voice files in API mode -Mjn
+				debrief_voice_load_all();
+			}
+		} else {
+			// multiplayer client may have already received their debriefing info.  If they have not,
+			// then set the num debrief stages to 0
+			if (!Debrief_multi_stages_loaded) {
+				Num_debrief_stages = 0;
+			}
 		}
 	}
 
