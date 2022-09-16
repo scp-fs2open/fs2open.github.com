@@ -562,14 +562,27 @@ ADE_FUNC(runBriefingStageHook,
 ADE_FUNC(initBriefing,
 	l_UserInterface_Brief,
 	nullptr,
-	"Initializes the briefing.  Handles various non-UI housekeeping tasks and compacts the stages to remove those that should not be shown.",
+	"Initializes the briefing and prepares the map for drawing.  Also handles various non-UI housekeeping tasks "
+	"and compacts the stages to remove those that should not be shown.",
 	nullptr,
 	"nothing")
 {
 	SCP_UNUSED(L);
 
-	// TODO: probably call brief_api_init()
+	brief_api_init();
 
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(closeBriefing,
+	l_UserInterface_Brief,
+	nullptr,
+	"Closes the briefing and pauses the map. Required after using the briefing API!",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+	brief_api_close();
 	return ADE_RETURN_NIL;
 }
 
@@ -657,25 +670,26 @@ ADE_FUNC(skipTraining,
 
 // For now any loadout error checking needs to happen in the script to prevent FSO from
 // generating a popup that will not be interactible from Librocket. A later update to this
-// method will introduce return values instead of generating pops and those return values
+// method will introduce return values instead of generating popups and those return values
 // can be used to handle loadout popups on the script side
 ADE_FUNC(commitToMission,
 	l_UserInterface_Brief,
 	nullptr,
-	"Commits to the current mission with current loadout data, and starts the mission.",
+	"Commits to the current mission with current loadout data, and starts the mission. WIP, do not use!",
 	nullptr,
 	"nothing")
 {
-	(void)L;
+	SCP_UNUSED(L);
 	commit_pressed();
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(startBriefingMap,
+ADE_FUNC(drawBriefingMap,
 	l_UserInterface_Brief,
-	"number x1, number y1, [number x2 = 888, number y2 = 235]",
-	"Starts the briefing map for the current mission. This also inits the current mission's loadout information "
-	"for maninipulation by Lua.",
+	"number x, number y, [number width = 888, number height = 371]",
+	"Draws the briefing map for the current mission at the specified coordinates. Note that the "
+	"width and height must be a specific aspect ratio to match retail. If changed then some icons "
+	"may be clipped from view unexpectedly. Must be called On Frame.",
 	nullptr,
 	nullptr)
 {
@@ -699,32 +713,9 @@ ADE_FUNC(startBriefingMap,
 	bscreen.map_y1 = y1;
 	bscreen.map_y2 = y1 + y2;
 	bscreen.resize = GR_RESIZE_NONE;
-	brief_api_init();
 
-	return ADE_RETURN_NIL;
-}
-
-ADE_FUNC(closeBriefingMap,
-	l_UserInterface_Brief,
-	nullptr,
-	"Closes the briefing map. Required when done drawing!",
-	nullptr,
-	nullptr)
-{
-	(void)L;
-	brief_api_close();
-	return ADE_RETURN_NIL;
-}
-
-ADE_FUNC(drawBriefingMap,
-	l_UserInterface_Brief,
-	nullptr,
-	"Draws the briefing map for the current mission. Must be called On Frame.",
-	nullptr,
-	nullptr)
-{
-	(void)L;
 	brief_api_do_frame(flRealframetime);
+
 	return ADE_RETURN_NIL;
 }
 
@@ -735,7 +726,7 @@ ADE_FUNC(callNextMapStage,
 	nullptr,
 	"nothing")
 {
-	(void)L;
+	SCP_UNUSED(L);
 	brief_do_next_pressed(0);
 	return ADE_RETURN_NIL;
 }
@@ -747,7 +738,7 @@ ADE_FUNC(callPrevMapStage,
 	nullptr,
 	nullptr)
 {
-	(void)L;
+	SCP_UNUSED(L);
 	brief_do_prev_pressed();
 	return ADE_RETURN_NIL;
 }
@@ -759,7 +750,7 @@ ADE_FUNC(callFirstMapStage,
 	nullptr,
 	"nothing")
 {
-	(void)L;
+	SCP_UNUSED(L);
 	brief_do_start_pressed();
 	return ADE_RETURN_NIL;
 }
@@ -772,7 +763,6 @@ ADE_FUNC(callLastMapStage,
 	nullptr)
 {
 	SCP_UNUSED(L);
-	(void)L;
 	brief_do_end_pressed();
 	return ADE_RETURN_NIL;
 }
