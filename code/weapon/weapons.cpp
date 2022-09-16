@@ -127,7 +127,7 @@ weapon_explosions Weapon_explosions;
 SCP_vector<lod_checker> LOD_checker;
 
 special_flag_def_list_new<Weapon::Info_Flags, weapon_info*, flagset<Weapon::Info_Flags>&> Weapon_Info_Flags[] = {
-	{ "spawn",							Weapon::Info_Flags::Spawn,								true, [](const SCP_string& spawn, weapon_info* weaponp, flagset<Weapon::Info_Flags>& /*flags*/) {
+	{ "spawn",							Weapon::Info_Flags::Spawn,								true, [](const SCP_string& spawn, weapon_info* weaponp, flagset<Weapon::Info_Flags>& flags) {
 		if (weaponp->num_spawn_weapons_defined < MAX_SPAWN_TYPES_PER_WEAPON)
 		{
 			//We need more spawning slots
@@ -136,6 +136,7 @@ special_flag_def_list_new<Weapon::Info_Flags, weapon_info*, flagset<Weapon::Info
 				Spawn_names = (char**)vm_realloc(Spawn_names, (Num_spawn_types + 10) * sizeof(*Spawn_names));
 			}
 
+			flags.set(Weapon::Info_Flags::Spawn);
 			weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_type = (short)Num_spawn_types;
 			size_t start_num = spawn.find_first_of(',');
 			if (start_num == SCP_string::npos) {
