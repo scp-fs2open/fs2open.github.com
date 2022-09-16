@@ -276,7 +276,8 @@ ADE_FUNC(clear, l_Graphics, nullptr, "Calls gr_clear(), which fills the entire s
 {
 	gr_clear();
 
-	(void)(L);	// avoid unused parameter warning
+	SCP_UNUSED(L);	// avoid unused parameter warning
+
 	return ADE_RETURN_NIL;
 }
 

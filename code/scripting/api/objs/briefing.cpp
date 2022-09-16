@@ -55,29 +55,6 @@ ADE_VIRTVAR(AudioFilename,
 	return ade_set_args(L, "s", stage.getStage()->voice);
 }
 
-ADE_VIRTVAR(isVisible,
-		l_BriefStage,
-		nullptr,
-		"The result of the stage formula",
-		"boolean",
-		"true if the stage should be displayed, false otherwise")
-	{
-		brief_stage_h stage;
-		if (!ade_get_args(L, "o", l_BriefStage.Get(&stage))) {
-			return ADE_RETURN_NIL;
-		}
-
-		if (ADE_SETTING_VAR) {
-			LuaError(L, "This property is read only.");
-		}
-
-		if (eval_sexp(stage.getStage()->formula)) {
-			return ADE_RETURN_TRUE;
-		} else {
-			return ADE_RETURN_FALSE;
-		}
-	}
-
 //**********HANDLE: briefing
 ADE_OBJ(l_Brief, int, "briefing", "Briefing handle");
 
@@ -212,9 +189,7 @@ ADE_VIRTVAR(isGoalValid, l_Goals, nullptr, "The goal validity", "boolean", "true
 		LuaError(L, "This property is read only.");
 	}
 
-	bool valid = Mission_goals[current].type & INVALID_GOAL;
-
-	return ade_set_args(L, "b", !valid);
+	return ade_set_args(L, "b", !(Mission_goals[current].type & INVALID_GOAL));
 }
 
 } // namespace api

@@ -1237,7 +1237,7 @@ ADE_FUNC(loadMission, l_Mission, "string missionName", "Loads a mission", "boole
 
 ADE_FUNC(unloadMission, l_Mission, NULL, "Stops the current mission and unloads it", NULL, NULL)
 {
-	(void)L; // unused parameter
+	SCP_UNUSED(L); // unused parameter
 
 	if(Game_mode & GM_IN_MISSION)
 	{
@@ -1387,13 +1387,7 @@ ADE_FUNC(isInCampaignLoop, l_Mission, nullptr, "Get whether or not the current m
 
 ADE_FUNC(isTraining, l_Mission, nullptr, "Get whether or not the current mission being played is a training mission", "boolean", "true if in training, false if not")
 {
-	bool b = false;
-
-	if (The_mission.game_type & MISSION_TYPE_TRAINING) {
-		b = true;
-	}
-
-	return ade_set_args(L, "b", b);
+	return ade_set_args(L, "b", (The_mission.game_type & MISSION_TYPE_TRAINING) != 0);
 }
 
 ADE_FUNC(isScramble, l_Mission, nullptr, "Get whether or not the current mission being played is a scramble mission", "boolean", "true if in training, false if not")
@@ -1638,15 +1632,14 @@ ADE_FUNC(hasCommandBriefing,
 	return ade_set_args(L, "b", mission_has_cmd_brief() != 0);
 }
 
-ADE_FUNC(hasGoalsSlide,
+ADE_FUNC(hasGoalsStage,
 	l_Mission,
 	nullptr,
-	"Determines if the current mission will show a Goals slide",
+	"Determines if the current mission will show a Goals briefing stage",
 	"boolean",
-	"true if slide is active, false otherwise.")
+	"true if stage is active, false otherwise.")
 {
-	bool goals = The_mission.flags[Mission::Mission_Flags::Toggle_showing_goals] ==
-		!!(The_mission.game_type & MISSION_TYPE_TRAINING);
+	bool goals = The_mission.flags[Mission::Mission_Flags::Toggle_showing_goals] == !!(The_mission.game_type & MISSION_TYPE_TRAINING);
 	
 	return ade_set_args(L, "b", goals);
 }
