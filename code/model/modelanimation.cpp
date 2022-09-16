@@ -19,7 +19,8 @@ namespace animation {
 		{ "random starting phase",		animation::Animation_Flags::Random_starting_phase,				true },
 		{ "pause on reverse",			animation::Animation_Flags::Pause_on_reverse,					true },
 		{ "seamless with startup",		animation::Animation_Flags::Seamless_with_startup,				true, [](const SCP_string& from, ModelAnimation& anim) {
-			anim.m_flagData.loopsFrom = std::atof(from.c_str());
+			anim.m_flagData.loopsFrom = static_cast<float>(std::atof(from.c_str()));
+			anim.m_flags.set(animation::Animation_Flags::Loop);
 		}}
 	};
 
@@ -106,6 +107,16 @@ namespace animation {
 						if (instanceData.instance_flags[Animation_Instance_Flags::Stop_after_next_loop])
 							stop(pmi, false);
 					}
+					else if (m_flags[Animation_Flags::Seamless_with_startup]) {
+						//Loop from start
+						instanceData.time = m_flagData.loopsFrom;
+
+						//We need to go into final shutdown mode. Go to start of seamless segment, and play backwards
+						if (instanceData.instance_flags[Animation_Instance_Flags::Stop_after_next_loop]) {
+							instanceData.state = ModelAnimationState::RUNNING_RWD;
+							instanceData.instance_flags.set(Animation_Instance_Flags::Seamless_loop_shutdown);
+						}
+					}
 					else {
 						//Loop back
 						instanceData.state = ModelAnimationState::RUNNING_RWD;
@@ -137,6 +148,10 @@ namespace animation {
 						//Loop from end. This happens when a Loop + Reset at completion animation is started in reverse.
 						instanceData.time = instanceData.duration;
 					}
+					else if (m_flags[Animation_Flags::Seamless_with_startup]) {
+						//We're either in final shutdown, or reversed before we reached the seamless part. Either way, ensure the stop flag is set to fully stop
+						instanceData.instance_flags.set(Animation_Instance_Flags::Stop_after_next_loop);
+					}
 					else {
 						//Loop back
 						instanceData.time = 0;
@@ -148,6 +163,13 @@ namespace animation {
 				}
 				else
 					stop(pmi, false);
+			}
+			else if (m_flags[Animation_Flags::Seamless_with_startup] && !instanceData.instance_flags[Animation_Instance_Flags::Seamless_loop_shutdown] && instanceData.time < m_flagData.loopsFrom) {
+				//Loop from end. This happens when a seamless loop is reversed after entering the seamless part. If stop is set, set the shutdown flag instead
+				if (instanceData.instance_flags[Animation_Instance_Flags::Stop_after_next_loop])
+					instanceData.instance_flags.set(Animation_Instance_Flags::Seamless_loop_shutdown);
+				else
+					instanceData.time = instanceData.duration;
 			}
 
 			m_animation->calculateAnimation(applyBuffer, instanceData.time, pmi->id);
@@ -237,6 +259,7 @@ namespace animation {
 		instance_data& instanceData = m_instances[pmi->id];
 		instanceData.time = 0.0f;
 		instanceData.state = ModelAnimationState::UNTRIGGERED;
+		instanceData.instance_flags.reset();
 
 		if (cleanup)
 			ModelAnimationSet::cleanRunning();
