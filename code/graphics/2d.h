@@ -253,7 +253,8 @@ enum class uniform_block_type {
 	DecalGlobals = 4,
 	DeferredGlobals = 5,
 	Matrices = 6,
-	GenericData = 7,
+	MovieData = 7,
+	GenericData = 8,
 
 	NUM_BLOCK_TYPES
 };

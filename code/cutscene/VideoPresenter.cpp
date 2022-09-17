@@ -95,7 +95,7 @@ void VideoPresenter::uploadVideoFrame(const VideoFramePtr& frame) {
 	}
 }
 
-void VideoPresenter::displayFrame(float x1, float y1, float x2, float y2) {
+void VideoPresenter::displayFrame(float x1, float y1, float x2, float y2, float alpha) {
 	GR_DEBUG_SCOPE("Draw video frame");
 
 	movie_vertex vertex_data[4];
@@ -127,10 +127,29 @@ void VideoPresenter::displayFrame(float x1, float y1, float x2, float y2) {
 	layout.add_vertex_component(vertex_format_data::POSITION2, sizeof(vertex_data[0]), offsetof(movie_vertex, pos));
 	layout.add_vertex_component(vertex_format_data::TEX_COORD2, sizeof(vertex_data[0]), offsetof(movie_vertex, uv));
 
-	if (_properties.pixelFormat == FramePixelFormat::YUV420) {
+	switch (_properties.pixelFormat) {
+	case FramePixelFormat::YUV420:
+		if (alpha < 1.0f)
+			material_set_movie(&_movie_material,
+				_planeTextureHandles[0],
+				_planeTextureHandles[1],
+				_planeTextureHandles[2],
+				alpha);
 		gr_render_movie(&_movie_material, PRIM_TYPE_TRISTRIP, &layout, 4, gr_immediate_buffer_handle, offset);
-	} else {
+		break;
+	case FramePixelFormat::BGR:
+		if (alpha < 1.0f)
+			material_set_unlit(&_rgb_material, _planeTextureHandles[0], alpha, false, false);
 		gr_render_primitives(&_rgb_material, PRIM_TYPE_TRISTRIP, &layout, 0, 4, gr_immediate_buffer_handle, offset);
+		break;
+	case FramePixelFormat::BGRA:
+		if (alpha < 1.0f)
+			material_set_unlit(&_rgb_material, _planeTextureHandles[0], alpha, true, false);
+		gr_render_primitives(&_rgb_material, PRIM_TYPE_TRISTRIP, &layout, 0, 4, gr_immediate_buffer_handle, offset);
+		break;
+	default:
+		UNREACHABLE("Unhandled enum value!");
+		break;
 	}
 }
 

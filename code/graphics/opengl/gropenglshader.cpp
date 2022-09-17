@@ -73,6 +73,7 @@ opengl_uniform_block_binding GL_uniform_blocks[] = {
     {uniform_block_type::DecalGlobals, "decalGlobalData"},
     {uniform_block_type::DeferredGlobals, "globalDeferredData"},
     {uniform_block_type::Matrices, "matrixData"},
+	{uniform_block_type::MovieData, "movieData"},
     {uniform_block_type::GenericData, "genericData"},
 };
 

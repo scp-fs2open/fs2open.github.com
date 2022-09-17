@@ -371,7 +371,7 @@ void material_set_unlit_color(material* mat_info, int texture, color *clr, bool 
 void material_set_unlit_color(material* mat_info, int texture, color *clr, float alpha, bool blending, bool depth_testing);
 void material_set_unlit_volume(particle_material* mat_info, int texture, bool point_sprites);
 void material_set_distortion(distortion_material *mat_info, int texture, bool thruster);
-void material_set_movie(movie_material *mat_info, int y_bm, int u_bm, int v_bm);
+void material_set_movie(movie_material *mat_info, int y_bm, int u_bm, int v_bm, float alpha = 1.0f);
 void material_set_batched_bitmap(batched_bitmap_material* mat_info, int base_tex, float alpha, float color_scale);
 void material_set_batched_opaque_bitmap(batched_bitmap_material* mat_info, int base_tex, float color_scale);
 void material_set_nanovg(nanovg_material* mat_info, int base_tex);
