@@ -194,7 +194,7 @@ void convert_model_material(model_uniform_data* data_out,
 	}
 
 	if (shader_flags & SDR_FLAG_MODEL_SHADOWS) {
-		data_out->shadow_mv_matrix = Shadow_view_matrix;
+		data_out->shadow_mv_matrix = Shadow_view_matrix_light;
 
 		for (size_t i = 0; i < MAX_SHADOW_CASCADES; ++i) {
 			data_out->shadow_proj_matrix[i] = Shadow_proj_matrix[i];

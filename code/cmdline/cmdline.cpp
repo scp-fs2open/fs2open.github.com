@@ -171,6 +171,7 @@ Flag exe_params[] =
     { "-fb_thrusters",      "Enable Framebuffer Thrusters",             true,   EASY_ALL_ON,						EASY_DEFAULT,					"Graphics",     "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-fb_thrusters", },
 	{ "-no_deferred",		"Disable Deferred Lighting",				true,	EASY_DEFAULT | EASY_HI_MEM_OFF,		EASY_ALL_ON | EASY_HI_MEM_ON,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_deferred"},
 	{ "-enable_shadows",	"Enable Shadows",							true,	EASY_ALL_ON  | EASY_HI_MEM_ON,		EASY_DEFAULT | EASY_HI_MEM_OFF,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-enable_shadows"},
+	{ "-deferred_cockpit",	"Enable Deferred Lighting for Cockpits",	true,	EASY_ALL_ON	 | EASY_HI_MEM_ON,		EASY_DEFAULT | EASY_HI_MEM_OFF,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-deferred_cockpit"},
 
 	{ "-no_vsync",			"Disable vertical sync",					true,	0,									EASY_DEFAULT,					"Game Speed",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_vsync", },
 
@@ -345,6 +346,7 @@ cmdline_parm flightshaftsoff_arg("-nolightshafts", NULL, AT_NONE);
 cmdline_parm shadow_quality_arg("-shadow_quality", NULL, AT_INT);
 cmdline_parm enable_shadows_arg("-enable_shadows", NULL, AT_NONE);
 cmdline_parm no_deferred_lighting_arg("-no_deferred", NULL, AT_NONE);	// Cmdline_no_deferred
+cmdline_parm deferred_lighting_cockpit_arg("-deferred_cockpit", nullptr, AT_NONE);
 cmdline_parm anisotropy_level_arg("-anisotropic_filter", NULL, AT_INT);
 
 float Cmdline_clip_dist = Default_min_draw_distance;
@@ -364,6 +366,7 @@ int Cmdline_softparticles = 0;
 int Cmdline_bloom_intensity = 25;
 bool Cmdline_force_lightshaft_off = false;
 int Cmdline_no_deferred_lighting = 0;
+bool Cmdline_deferred_lighting_cockpit = false;
 int Cmdline_aniso_level = 0;
 
 // Game Speed related
@@ -2110,6 +2113,11 @@ bool SetCmdlineParams()
 	if( no_deferred_lighting_arg.found() )
 	{
 		Cmdline_no_deferred_lighting = 1;
+	}
+
+	if( deferred_lighting_cockpit_arg.found() )
+	{
+		Cmdline_deferred_lighting_cockpit = true;
 	}
 
 	if (anisotropy_level_arg.found()) 

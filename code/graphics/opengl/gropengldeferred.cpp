@@ -54,7 +54,7 @@ void opengl_clear_deferred_buffers()
 	GL_state.CullFace(cull);
 }
 
-void gr_opengl_deferred_lighting_begin()
+void gr_opengl_deferred_lighting_begin(bool clearNonColorBufs)
 {
 	if ( Cmdline_no_deferred_lighting)
 		return;
@@ -74,7 +74,13 @@ void gr_opengl_deferred_lighting_begin()
 	glDrawBuffers(5, buffers);
 
 	static const float black[] = { 0, 0, 0, 1.0f };
+
 	glClearBufferfv(GL_COLOR, 0, black);
+	if (clearNonColorBufs) {
+		glClearBufferfv(GL_COLOR, 1, black);
+		glClearBufferfv(GL_COLOR, 2, black);
+		glClearBufferfv(GL_COLOR, 3, black);
+	}
 }
 
 void gr_opengl_deferred_lighting_end()
@@ -140,7 +146,7 @@ void gr_opengl_deferred_lighting_finish()
 		auto header = uniformAligner.getHeader<deferred_global_data>();
 		if (Shadow_quality != ShadowQuality::Disabled) {
 			// Avoid this overhead when we are not going to use these values
-			header->shadow_mv_matrix = Shadow_view_matrix;
+			header->shadow_mv_matrix = Shadow_view_matrix_light;
 			for (size_t i = 0; i < MAX_SHADOW_CASCADES; ++i) {
 				header->shadow_proj_matrix[i] = Shadow_proj_matrix[i];
 			}
@@ -149,7 +155,7 @@ void gr_opengl_deferred_lighting_finish()
 			header->middist = Shadow_cascade_distances[2];
 			header->fardist = Shadow_cascade_distances[3];
 
-			vm_inverse_matrix4(&header->inv_view_matrix, &gr_view_matrix);
+			vm_inverse_matrix4(&header->inv_view_matrix, &Shadow_view_matrix_render);
 		}
 
 		header->invScreenWidth = 1.0f / gr_screen.max_w;

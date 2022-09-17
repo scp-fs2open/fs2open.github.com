@@ -23,7 +23,8 @@
 
 extern vec3d check_offsets[8];
 
-matrix4 Shadow_view_matrix;
+matrix4 Shadow_view_matrix_light;
+matrix4 Shadow_view_matrix_render;
 matrix4 Shadow_proj_matrix[MAX_SHADOW_CASCADES];
 float Shadow_cascade_distances[MAX_SHADOW_CASCADES];
 
@@ -408,7 +409,7 @@ matrix shadows_start_render(matrix *eye_orient, vec3d *eye_pos, float fov, float
 	Shadow_proj_matrix[2] = Shadow_frustums[2].proj_matrix;
 	Shadow_proj_matrix[3] = Shadow_frustums[3].proj_matrix;
 
-	gr_shadow_map_start(&Shadow_view_matrix, &light_matrix, eye_pos);
+	gr_shadow_map_start(&Shadow_view_matrix_light, &light_matrix, eye_pos);
 
 	return light_matrix;
 }
@@ -436,6 +437,8 @@ void shadows_render_all(float fov, matrix *eye_orient, vec3d *eye_pos)
 	}
 
 	//shadows_debug_show_frustum(&Player_obj->orient, &Player_obj->pos, fov, gr_screen.clip_aspect, Min_draw_distance, 3000.0f);
+
+	Shadow_view_matrix_render = gr_view_matrix;
 
 	gr_end_proj_matrix();
 	gr_end_view_matrix();

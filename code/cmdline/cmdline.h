@@ -67,6 +67,7 @@ extern int Cmdline_softparticles;
 extern int Cmdline_bloom_intensity;
 extern bool Cmdline_force_lightshaft_off;
 extern int Cmdline_no_deferred_lighting;
+extern bool Cmdline_deferred_lighting_cockpit;
 extern int Cmdline_emissive;
 extern int Cmdline_aniso_level;
 

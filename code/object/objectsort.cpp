@@ -303,7 +303,7 @@ void obj_render_queue_all()
 
 	objp = Objects;
 
-	gr_deferred_lighting_begin();
+	gr_deferred_lighting_begin(false);
 
 	scene.init();
 

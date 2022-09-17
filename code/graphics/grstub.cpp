@@ -217,7 +217,7 @@ void gr_stub_copy_effect_texture()
 {
 }
 
-void gr_stub_deferred_lighting_begin()
+void gr_stub_deferred_lighting_begin(bool /*clearNonColorBufs*/)
 {
 }
 
