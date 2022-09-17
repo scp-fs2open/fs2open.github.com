@@ -1691,6 +1691,32 @@ ADE_FUNC(triggerSubmodelAnimation, l_Ship, "string type, string triggeredBy, [bo
 	return Ship_info[shipp->ship_info_index].animations.parseScripted(model_get_instance(shipp->model_instance_num), animtype, trigger).start(forwards ? animation::ModelAnimationDirection::FWD : animation::ModelAnimationDirection::RWD, forced || instant, instant, pause) ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
 }
 
+ADE_FUNC(stopLoopingSubmodelAnimation, l_Ship, "string type, string triggeredBy",
+	"Stops a currently looping animation after it has finished its current loop. Type is the string name of the animation type, "
+	"triggeredBy is a closer specification which animation was triggered. See *-anim.tbm specifications. ",
+	"boolean",
+	"True if successful, false or nil otherwise")
+{
+	object_h* objh;
+	const char* type = nullptr;
+	const char* trigger = nullptr;
+
+	if (!ade_get_args(L, "oss", l_Ship.GetPtr(&objh), &type, &trigger))
+		return ADE_RETURN_NIL;
+
+	if (!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	auto animtype = animation::anim_match_type(type);
+	if (animtype == animation::ModelAnimationTriggerType::None)
+		return ADE_RETURN_FALSE;
+
+	ship* shipp = &Ships[objh->objp->instance];
+
+	Ship_info[shipp->ship_info_index].animations.parseScripted(model_get_instance(shipp->model_instance_num), animtype, trigger).setFlag(animation::Animation_Instance_Flags::Stop_after_next_loop);
+	return ADE_RETURN_TRUE;
+}
+
 ADE_FUNC(setAnimationSpeed, l_Ship, "string type, string triggeredBy, [number speedMultiplier = 1.0]",
 	"Sets the speed multiplier at which an animation runs. Anything other than 1 will not work in multiplayer. Type is the string name of the animation type, "
 	"triggeredBy is a closer specification which animation should trigger. See *-anim.tbm specifications.",
