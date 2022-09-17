@@ -8,8 +8,7 @@ namespace fso {
 			PlayerOrdersDialogModel::PlayerOrdersDialogModel(QObject* parent, EditorViewport* viewport, bool multi) :
 				AbstractDialogModel(parent, viewport)
 			{
-				m_multi = multi;
-				initialiseData();
+				initialiseData(multi);
 			}
 
 			bool PlayerOrdersDialogModel::apply()
@@ -81,10 +80,11 @@ namespace fso {
 				modelChanged();
 			}
 
-			void PlayerOrdersDialogModel::initialiseData() {
+			void PlayerOrdersDialogModel::initialiseData(bool multi) {
 				std::set<size_t> default_orders;
 
 				object* objp;
+				m_multi = multi;
 
 				if (!m_multi) {
 					default_orders = ship_get_default_orders_accepted(&Ship_info[Ships[_editor->cur_ship].ship_info_index]);

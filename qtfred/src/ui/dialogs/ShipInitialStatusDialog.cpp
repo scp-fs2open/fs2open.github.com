@@ -16,11 +16,14 @@ namespace fso {
 	namespace fred {
 		namespace dialogs {
 
-			ShipInitialStatusDialog::ShipInitialStatusDialog(QWidget* parent, EditorViewport* viewport, bool multi)
-				: QDialog(parent), ui(new Ui::ShipInitialStatusDialog()),
-				_model(new ShipInitialStatusDialogModel(this, viewport, multi)), _viewport(viewport)
+			ShipInitialStatusDialog::ShipInitialStatusDialog(QDialog* parent, EditorViewport* viewport)
+				: QDialog(parent), ui(new Ui::ShipInitialStatusDialog()), _viewport(viewport)
 			{
 				ui->setupUi(this);
+				parentDialog = dynamic_cast<ShipEditorDialog*>(parent);
+				Assert(parentDialog);
+				_model = std::unique_ptr<ShipInitialStatusDialogModel>(new ShipInitialStatusDialogModel(this,
+					viewport, parentDialog->getIfMultipleShips()));
 
 				connect(this, &QDialog::accepted, _model.get(), &ShipInitialStatusDialogModel::apply);
 				connect(this, &QDialog::rejected, _model.get(), &ShipInitialStatusDialogModel::reject);
@@ -102,6 +105,10 @@ namespace fso {
 
 				QDialog::closeEvent(event);
 			}
+			void ShipInitialStatusDialog::showEvent(QShowEvent* event) {
+				_model->initializeData(parentDialog->getIfMultipleShips());
+				QDialog::showEvent(event);
+			}
 			void ShipInitialStatusDialog::updateUI()
 			{
 				util::SignalBlockers blockers(this);
@@ -139,7 +146,7 @@ namespace fso {
 				updateDockee();
 				updateSubsystems();
 				ui->colourComboBox->clear();
-				if (_model->m_use_teams) {
+				if (_model->getUseTeamcolours()) {
 					int i = 0;
 					ui->colourComboBox->setEnabled(true);
 					ui->colourComboBox->addItem("none", i);
@@ -173,7 +180,7 @@ namespace fso {
 			{
 				auto index = ui->dockpointList->currentIndex();
 				ui->dockpointList->clear();
-				if (!_model->m_multi_edit) {
+				if (!_model->getIfMultpleShips()) {
 					for (int dockpoint = 0; dockpoint < _model->getnum_dock_points(); dockpoint++) {
 						auto newItem = new QListWidgetItem;
 						newItem->setText(
@@ -325,7 +332,7 @@ namespace fso {
 				ship_subsys* ptr;
 				auto index = ui->subsystemList->currentIndex();
 				ui->subsystemList->clear();
-				if (!_model->m_multi_edit) {
+				if (!_model->getIfMultpleShips()) {
 					ui->subsystemList->setEnabled(true);
 					ui->subIntegritySpinBox->setEnabled(true);
 					if (_model->getShip_has_scannable_subsystems()) {

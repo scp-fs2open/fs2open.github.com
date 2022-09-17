@@ -47,6 +47,46 @@ namespace fso {
 					return Qt::Unchecked;
 				}
 			}
+			int ShipEditorDialogModel::getSingleShip() const
+			{
+				return single_ship;
+			}
+			bool ShipEditorDialogModel::getIfMultipleShips() const
+			{
+				return multi_edit;
+			}
+			int ShipEditorDialogModel::getNumSelectedPlayers() const
+			{
+				return player_count;
+			}
+			int ShipEditorDialogModel::getNumUnmarkedPlayers() const
+			{
+				return pship_count;
+			}
+			bool ShipEditorDialogModel::getUIEnable() const
+			{
+				return enable;
+			}
+			int ShipEditorDialogModel::getNumSelectedShips() const
+			{
+				return ship_count;
+			}
+			int ShipEditorDialogModel::getUseCue() const
+			{
+				return cue_init;
+			}
+			int ShipEditorDialogModel::getNumSelectedObjects() const
+			{
+				return total_count;
+			}
+			int ShipEditorDialogModel::getNumValidPlayers() const
+			{
+				return pvalid_count;
+			}
+			int ShipEditorDialogModel::getIfPlayerShip() const
+			{
+				return player_ship;
+			}
 			void ShipEditorDialogModel::initializeData() {
 				int type, wing = -1;
 				int cargo = 0, base_ship, base_player, pship = -1;
@@ -232,6 +272,9 @@ namespace fso {
 										_m_assist_score = ((int)(Ships[i].assist_score_pct * 100));
 
 										_m_persona = Ships[i].persona_index;
+										_m_alt_name = Fred_alt_names[base_ship];
+										_m_callsign = Fred_callsigns[base_ship];
+
 
 										// we use final_death_time member of ship structure for holding the amount of time before a mission
 										// to destroy this ship
@@ -560,9 +603,11 @@ namespace fso {
 
 			bool ShipEditorDialogModel::apply()
 			{
-				update_data();
-				_editor->missionChanged();
-				initializeData();
+				if (_modified) {
+					update_data();
+					_editor->missionChanged();
+					_modified = false;
+				}
 				return true;
 			}
 
@@ -761,7 +806,6 @@ namespace fso {
 						// zero the entry
 						strcpy_s(Fred_alt_names[ship], "");
 					}
-					return;
 				}
 				// otherwise see if it already exists
 				if (mission_parse_lookup_alt(_m_alt_name.c_str()) >= 0) {
@@ -806,7 +850,6 @@ namespace fso {
 						// zero the entry
 						strcpy_s(Fred_callsigns[ship], "");
 					}
-					return;
 				}
 				// otherwise see if it already exists
 				if (mission_parse_lookup_callsign(_m_callsign.c_str()) >= 0) {
@@ -824,11 +867,11 @@ namespace fso {
 					"Couldn't add new Callsign. Already using too many!",
 					{ DialogButton::Ok });
 			}
-			void ShipEditorDialogModel::setShipName(const SCP_string& m_ship_name)
+			void ShipEditorDialogModel::setShipName(const SCP_string m_ship_name)
 			{
 				modify(_m_ship_name, m_ship_name);
 			}
-			SCP_string ShipEditorDialogModel::getShipName()
+			SCP_string ShipEditorDialogModel::getShipName() const
 			{
 				return _m_ship_name;
 			}
@@ -850,246 +893,246 @@ namespace fso {
 				_editor->missionChanged();
 			}
 
-			int ShipEditorDialogModel::getShipClass()
+			int ShipEditorDialogModel::getShipClass() const
 			{
 				return _m_ship_class;
 			}
 
-			void ShipEditorDialogModel::setAIClass(int m_ai_class)
+			void ShipEditorDialogModel::setAIClass(const int m_ai_class)
 			{
 				modify(_m_ai_class, m_ai_class);
 				modelChanged();
 			}
 
-			int ShipEditorDialogModel::getAIClass()
+			int ShipEditorDialogModel::getAIClass() const
 			{
 				return _m_ai_class;
 			}
 
-			void ShipEditorDialogModel::setTeam(int m_team)
+			void ShipEditorDialogModel::setTeam(const int m_team)
 			{
 				modify(_m_team, m_team);
 				modelChanged();
 			}
 
-			int ShipEditorDialogModel::getTeam()
+			int ShipEditorDialogModel::getTeam() const
 			{
 				return _m_team;
 			}
 
-			void ShipEditorDialogModel::setCargo(const SCP_string& m_cargo)
+			void ShipEditorDialogModel::setCargo(const SCP_string m_cargo)
 			{
 				modify(_m_cargo1, m_cargo);
 			}
 
-			SCP_string ShipEditorDialogModel::getCargo()
+			SCP_string ShipEditorDialogModel::getCargo() const
 			{
 				return _m_cargo1;
 			}
 
-			void ShipEditorDialogModel::setAltName(const SCP_string& m_altName)
+			void ShipEditorDialogModel::setAltName(const SCP_string m_altName)
 			{
 				modify(_m_alt_name, m_altName);
 			}
 
-			SCP_string ShipEditorDialogModel::getAltName()
+			SCP_string ShipEditorDialogModel::getAltName() const
 			{
 				return _m_alt_name;
 			}
 
-			void ShipEditorDialogModel::setCallsign(const SCP_string& m_callsign)
+			void ShipEditorDialogModel::setCallsign(const SCP_string m_callsign)
 			{
 				modify(_m_callsign, m_callsign);
 			}
 
-			SCP_string ShipEditorDialogModel::getCallsign()
+			SCP_string ShipEditorDialogModel::getCallsign() const
 			{
 				return _m_callsign;
 			}
 
-			SCP_string ShipEditorDialogModel::getWing()
+			SCP_string ShipEditorDialogModel::getWing() const
 			{
 				return m_wing;
 			}
 
-			void ShipEditorDialogModel::setHotkey(int m_hotkey)
+			void ShipEditorDialogModel::setHotkey(const int m_hotkey)
 			{
 				modify(_m_hotkey, m_hotkey);
 			}
 
-			int ShipEditorDialogModel::getHotkey()
+			int ShipEditorDialogModel::getHotkey() const
 			{
 				return _m_hotkey;
 			}
 
-			void ShipEditorDialogModel::setPersona(int m_persona)
+			void ShipEditorDialogModel::setPersona(const int m_persona)
 			{
 				modify(_m_persona, m_persona);
 			}
 
-			int ShipEditorDialogModel::getPersona()
+			int ShipEditorDialogModel::getPersona() const
 			{
 				return _m_persona;
 			}
 
-			void ShipEditorDialogModel::setScore(int m_score)
+			void ShipEditorDialogModel::setScore(const int m_score)
 			{
 				modify(_m_score, m_score);
 			}
 
-			int ShipEditorDialogModel::getScore()
+			int ShipEditorDialogModel::getScore() const
 			{
 				return _m_score;
 			}
 
-			void ShipEditorDialogModel::setAssist(int m_assist_score)
+			void ShipEditorDialogModel::setAssist(const int m_assist_score)
 			{
 				modify(_m_assist_score, m_assist_score);
 			}
 
-			int ShipEditorDialogModel::getAssist()
+			int ShipEditorDialogModel::getAssist() const
 			{
 				return _m_assist_score;
 			}
 
-			void ShipEditorDialogModel::setPlayer(bool m_player)
+			void ShipEditorDialogModel::setPlayer(const bool m_player)
 			{
 				modify(_m_player_ship, m_player);
 			}
 
-			bool ShipEditorDialogModel::getPlayer()
+			bool ShipEditorDialogModel::getPlayer() const
 			{
 				return _m_player_ship;
 			}
 
-			void ShipEditorDialogModel::setArrivalLocation(int value)
+			void ShipEditorDialogModel::setArrivalLocation(const int value)
 			{
 				modify(_m_arrival_location, value);
 			}
 
-			int ShipEditorDialogModel::getArrivalLocation()
+			int ShipEditorDialogModel::getArrivalLocation() const
 			{
 				return _m_arrival_location;
 			}
 
-			void ShipEditorDialogModel::setArrivalTarget(int value)
+			void ShipEditorDialogModel::setArrivalTarget(const int value)
 			{
 				modify(_m_arrival_target, value);
 			}
 
-			int ShipEditorDialogModel::getArrivalTarget()
+			int ShipEditorDialogModel::getArrivalTarget() const
 			{
 				return _m_arrival_target;
 			}
 
-			void ShipEditorDialogModel::setArrivalDistance(int value)
+			void ShipEditorDialogModel::setArrivalDistance(const int value)
 			{
 				modify(_m_arrival_dist, value);
 			}
 
-			int ShipEditorDialogModel::getArrivalDistance()
+			int ShipEditorDialogModel::getArrivalDistance() const
 			{
 				return _m_arrival_dist;
 			}
 
-			void ShipEditorDialogModel::setArrivalDelay(int value)
+			void ShipEditorDialogModel::setArrivalDelay(const int value)
 			{
 				modify(_m_arrival_delay, value);
 			}
 
-			int ShipEditorDialogModel::getArrivalDelay()
+			int ShipEditorDialogModel::getArrivalDelay() const
 			{
 				return _m_arrival_delay;
 			}
 
-			void ShipEditorDialogModel::setArrivalCue(bool value)
+			void ShipEditorDialogModel::setArrivalCue(const bool value)
 			{
 				modify(_m_update_arrival, value);
 			}
 
-			bool ShipEditorDialogModel::getArrivalCue()
+			bool ShipEditorDialogModel::getArrivalCue() const
 			{
 				return _m_update_arrival;
 			}
 
-			void ShipEditorDialogModel::setArrivalFormula(int old_form, int new_form)
+			void ShipEditorDialogModel::setArrivalFormula(const int old_form, const int new_form)
 			{
 				if (old_form != _m_arrival_tree_formula)
 					modify(_m_arrival_tree_formula, new_form);
 			}
 
-			int ShipEditorDialogModel::getArrivalFormula()
+			int ShipEditorDialogModel::getArrivalFormula() const
 			{
 				return _m_arrival_tree_formula;
 			}
 
-			void ShipEditorDialogModel::setNoArrivalWarp(int value)
+			void ShipEditorDialogModel::setNoArrivalWarp(const int value)
 			{
 				modify(_m_no_arrival_warp, value);
 			}
 
-			int ShipEditorDialogModel::getNoArrivalWarp()
+			int ShipEditorDialogModel::getNoArrivalWarp() const
 			{
 				return _m_no_arrival_warp;
 			}
 
-			void ShipEditorDialogModel::setDepartureLocation(int value)
+			void ShipEditorDialogModel::setDepartureLocation(const int value)
 			{
 				modify(_m_departure_location, value);
 			}
 
-			int ShipEditorDialogModel::getDepartureLocation()
+			int ShipEditorDialogModel::getDepartureLocation() const
 			{
 				return _m_departure_location;
 			}
 
-			void ShipEditorDialogModel::setDepartureTarget(int value)
+			void ShipEditorDialogModel::setDepartureTarget(const int value)
 			{
 				modify(_m_departure_target, value);
 			}
 
-			int ShipEditorDialogModel::getDepartureTarget()
+			int ShipEditorDialogModel::getDepartureTarget() const
 			{
 				return _m_departure_target;
 			}
 
-			void ShipEditorDialogModel::setDepartureDelay(int value)
+			void ShipEditorDialogModel::setDepartureDelay(const int value)
 			{
 				modify(_m_departure_delay, value);
 			}
 
-			int ShipEditorDialogModel::getDepartureDelay()
+			int ShipEditorDialogModel::getDepartureDelay() const
 			{
 				return _m_departure_delay;
 			}
 
-			void ShipEditorDialogModel::setDepartureCue(bool value)
+			void ShipEditorDialogModel::setDepartureCue(const bool value)
 			{
 				modify(_m_update_departure, value);
 			}
 
-			bool ShipEditorDialogModel::getDepartureCue()
+			bool ShipEditorDialogModel::getDepartureCue() const
 			{
 				return _m_update_departure;
 			}
 
-			void ShipEditorDialogModel::setDepartureFormula(int old_form, int new_form)
+			void ShipEditorDialogModel::setDepartureFormula(const int old_form, const int new_form)
 			{
 				if (old_form != _m_departure_tree_formula)
 					modify(_m_departure_tree_formula, new_form);
 			}
 
-			int ShipEditorDialogModel::getDepartureFormula()
+			int ShipEditorDialogModel::getDepartureFormula() const
 			{
 				return _m_departure_tree_formula;
 			}
 
-			void ShipEditorDialogModel::setNoDepartureWarp(int value)
+			void ShipEditorDialogModel::setNoDepartureWarp(const int value)
 			{
 				modify(_m_no_departure_warp, value);
 			}
 
-			int ShipEditorDialogModel::getNoDepartureWarp()
+			int ShipEditorDialogModel::getNoDepartureWarp() const
 			{
 				return _m_no_departure_warp;
 			}
@@ -1255,9 +1298,19 @@ namespace fso {
 				}
 			}
 
-			bool ShipEditorDialogModel::wing_is_player_wing(int wing)
+			bool ShipEditorDialogModel::wing_is_player_wing(const int wing)
 			{
 				return Editor::wing_is_player_wing(wing);
+			}
+
+			std::set<size_t> ShipEditorDialogModel::getShipOrders() const
+			{
+				return ship_orders;
+			}
+
+			bool ShipEditorDialogModel::getTexEditEnable() const
+			{
+				return texenable;
 			}
 
 			int ShipEditorDialogModel::make_ship_list(int* arr)

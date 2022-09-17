@@ -7,20 +7,7 @@ namespace fso {
 			ShipGoalsDialogModel::ShipGoalsDialogModel(QObject* parent, EditorViewport* viewport, bool multi, int shipp, int wingp)
 				: AbstractDialogModel(parent, viewport)
 			{
-				int i;
-				for (i = 0; i < ED_MAX_GOALS; i++) {
-					m_behavior[i] = -1;
-					m_object[i] = -1;
-					m_priority[i] = 0;
-					m_subsys[i] = -1;
-					m_dock2[i] = -1;
-					//m_data[i] = 0;
-				}
-				goalp = nullptr;
-				m_multi_edit = multi;
-				self_ship = shipp;
-				self_wing = wingp;
-				initializeData();
+				initializeData(multi, shipp, wingp);
 			}
 			bool ShipGoalsDialogModel::apply()
 			{
@@ -64,7 +51,7 @@ namespace fso {
 				return true;
 			}
 
-			int ShipGoalsDialogModel::verify_orders(int ship)
+			int ShipGoalsDialogModel::verify_orders(const int ship)
 			{
 				const char* str;
 				SCP_string error_message;
@@ -89,11 +76,11 @@ namespace fso {
 				return 0;
 			}
 
-			void ShipGoalsDialogModel::update_item(int item)
+			void ShipGoalsDialogModel::update_item(const int item)
 			{
 				char* docker, * dockee, * subsys;
 				int mode;
-				char save[80];
+				char save[80]{};
 				SCP_string error_message;
 				waypoint_list* wp_list;
 
@@ -283,10 +270,22 @@ namespace fso {
 
 			void ShipGoalsDialogModel::reject() {}
 
-			void ShipGoalsDialogModel::initializeData()
+			void ShipGoalsDialogModel::initializeData(const bool multi, const int shipp, const int wingp)
 			{
 				int i, j, z;
 				object* ptr;
+				for (i = 0; i < ED_MAX_GOALS; i++) {
+					m_behavior[i] = -1;
+					m_object[i] = -1;
+					m_priority[i] = 0;
+					m_subsys[i] = "";
+					m_dock2[i] = -1;
+					// m_data[i] = 0;
+				}
+				goalp = nullptr;
+				m_multi_edit = multi;
+				self_ship = shipp;
+				self_wing = wingp;
 				Assert(Ai_goal_list_size <= MAX_VALID);
 
 
@@ -371,6 +370,7 @@ namespace fso {
 				else {
 					initialize_multi();
 				}
+				modelChanged();
 			}
 			void ShipGoalsDialogModel::initialize(ai_goal* goals, int ship)
 			{
@@ -624,27 +624,27 @@ namespace fso {
 			{
 				return _modified;
 			}
-			void ShipGoalsDialogModel::setShip(int ship)
+			void ShipGoalsDialogModel::setShip(const int ship)
 			{
 				self_ship = ship;
 			}
-			int ShipGoalsDialogModel::getShip()
+			int ShipGoalsDialogModel::getShip() const 
 			{
 				return self_ship;
 			}
-			void ShipGoalsDialogModel::setWing(int data)
+			void ShipGoalsDialogModel::setWing(const int data)
 			{
 				modify(self_wing, data);
 			}
-			int ShipGoalsDialogModel::getWing()
+			int ShipGoalsDialogModel::getWing() const 
 			{
 				return self_wing;
 			}
-			 ai_goal* ShipGoalsDialogModel::getGoal()
+			ai_goal* ShipGoalsDialogModel::getGoal() const 
 			{
 				return goalp;
 			}
-			 int ShipGoalsDialogModel::getValid(int pos)
+			int ShipGoalsDialogModel::getValid(const int pos) const 
 			{
 				return valid[pos];
 			}
@@ -652,46 +652,47 @@ namespace fso {
 			{
 				return Editor::getAi_goal_list();
 			}
-			 int ShipGoalsDialogModel::getGoalsSize()
+			int ShipGoalsDialogModel::getGoalsSize() const 
 			{
 				return Ai_goal_list_size;
 			}
-			void ShipGoalsDialogModel::setBehavior(int pos, int data)
+			void ShipGoalsDialogModel::setBehavior(const int pos, const int data)
 			{
 				modify(m_behavior[pos], data);
 			}
-			 int ShipGoalsDialogModel::getBehavior(int pos)
+			int ShipGoalsDialogModel::getBehavior(const int pos) const 
 			{
 				return m_behavior[pos];
 			}
-			void ShipGoalsDialogModel::setObject(int pos, int data)
+			void ShipGoalsDialogModel::setObject(const int pos, const int data)
 			{
 				modify(m_object[pos], data);
 			}
-			int ShipGoalsDialogModel::getObject(int pos)
+			int ShipGoalsDialogModel::getObject(const int pos) const 
 			{
 				return m_object[pos];
 			}
-			void ShipGoalsDialogModel::setSubsys(int pos, SCP_string& data)
+			void ShipGoalsDialogModel::setSubsys(const int pos, const SCP_string& data)
 			{
 				modify(m_subsys[pos], data);
 			}
-			SCP_string ShipGoalsDialogModel::getSubsys(int pos)
+			SCP_string ShipGoalsDialogModel::getSubsys(const int pos) const 
 			{
 				return m_subsys[pos];
 			}
-			void ShipGoalsDialogModel::setDock(int pos, long long data)
+			void ShipGoalsDialogModel::setDock(const int pos, const long long data)
 			{
 				modify(m_dock2[pos], data);
 			}
-			int ShipGoalsDialogModel::getDock(int pos)
+			int ShipGoalsDialogModel::getDock(const int pos) const 
 			{
 				return m_dock2[pos];
 			}
-			void ShipGoalsDialogModel::setPriority(int pos, int data) {
+			void ShipGoalsDialogModel::setPriority(const int pos, const int data)
+			{
 				modify(m_priority[pos], data);
 			}
-			 int ShipGoalsDialogModel::getPriority(int pos)
+			int ShipGoalsDialogModel::getPriority(const int pos) const 
 			{
 				return m_priority[pos];
 			}

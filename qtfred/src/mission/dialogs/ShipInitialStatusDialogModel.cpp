@@ -104,12 +104,12 @@ void initial_status_mark_dock_leader_helper(object* objp, dock_function_info* in
 ShipInitialStatusDialogModel::ShipInitialStatusDialogModel(QObject* parent, EditorViewport* viewport, bool multi)
 	: AbstractDialogModel(parent, viewport)
 {
-	m_multi_edit = multi;
-	initializeData();
+	initializeData(multi);
 }
 
-void ShipInitialStatusDialogModel::initializeData()
+void ShipInitialStatusDialogModel::initializeData(bool multi)
 {
+	m_multi_edit = multi;
 	int vflag, sflag, hflag;
 	object* objp = nullptr;
 	m_ship = _editor->cur_ship;
@@ -292,6 +292,7 @@ void ShipInitialStatusDialogModel::initializeData()
 	if (vflag) {
 		m_velocity = BLANKFIELD;
 	}
+	modelChanged();
 }
 
 void ShipInitialStatusDialogModel::update_docking_info()
@@ -644,42 +645,42 @@ void ShipInitialStatusDialogModel::set_modified()
 	return _modified;
 }
 
-void ShipInitialStatusDialogModel::setVelocity(int value)
+void ShipInitialStatusDialogModel::setVelocity(const int value)
 {
 	modify(m_velocity, value);
 }
 
- int ShipInitialStatusDialogModel::getVelocity()
+ int ShipInitialStatusDialogModel::getVelocity() const
 {
 	return m_velocity;
 }
 
-void ShipInitialStatusDialogModel::setHull(int value)
+void ShipInitialStatusDialogModel::setHull(const int value)
 {
 	modify(m_hull, value);
 }
 
- int ShipInitialStatusDialogModel::getHull()
+ int ShipInitialStatusDialogModel::getHull() const
 {
 	return m_hull;
 }
 
-void ShipInitialStatusDialogModel::setHasShield(int state)
+void ShipInitialStatusDialogModel::setHasShield(const int state)
 {
 	modify(m_has_shields, state);
 }
 
-int ShipInitialStatusDialogModel::getHasShield()
+int ShipInitialStatusDialogModel::getHasShield() const
 {
 	return m_has_shields;
 }
 
-void ShipInitialStatusDialogModel::setShieldHull(int value)
+void ShipInitialStatusDialogModel::setShieldHull(const int value)
 {
 	modify(m_shields, value);
 }
 
- int ShipInitialStatusDialogModel::getShieldHull()
+ int ShipInitialStatusDialogModel::getShieldHull() const
 {
 	return m_shields;
 }
@@ -689,82 +690,82 @@ void ShipInitialStatusDialogModel::setForceShield(const int state)
 	modify(m_force_shields, state);
 }
 
- int ShipInitialStatusDialogModel::getForceShield()
+ int ShipInitialStatusDialogModel::getForceShield() const
 {
 	return m_force_shields;
 }
 
-void ShipInitialStatusDialogModel::setShipLocked(int state)
+void ShipInitialStatusDialogModel::setShipLocked(const int state)
 {
 	modify(m_ship_locked, state);
 }
 
- int ShipInitialStatusDialogModel::getShipLocked()
+ int ShipInitialStatusDialogModel::getShipLocked() const
 {
 	return m_ship_locked;
 }
 
-void ShipInitialStatusDialogModel::setWeaponLocked(int state)
+void ShipInitialStatusDialogModel::setWeaponLocked(const int state)
 {
 	modify(m_weapons_locked, state);
 }
 
- int ShipInitialStatusDialogModel::getWeaponLocked()
+ int ShipInitialStatusDialogModel::getWeaponLocked() const
 {
 	return m_weapons_locked;
 }
 
-void ShipInitialStatusDialogModel::setPrimariesDisabled(int state)
+void ShipInitialStatusDialogModel::setPrimariesDisabled(const int state)
 {
 	modify(m_primaries_locked, state);
 }
 
- int ShipInitialStatusDialogModel::getPrimariesDisabled()
+ int ShipInitialStatusDialogModel::getPrimariesDisabled() const
 {
 	return m_primaries_locked;
 }
 
-void ShipInitialStatusDialogModel::setSecondariesDisabled(int state)
+void ShipInitialStatusDialogModel::setSecondariesDisabled(const int state)
 {
 	modify(m_secondaries_locked, state);
 }
 
- int ShipInitialStatusDialogModel::getSecondariesDisabled()
+ int ShipInitialStatusDialogModel::getSecondariesDisabled() const
 {
 	return m_secondaries_locked;
 }
 
-void ShipInitialStatusDialogModel::setTurretsDisabled(int state)
+void ShipInitialStatusDialogModel::setTurretsDisabled(const int state)
 {
 	modify(m_turrets_locked, state);
 }
 
- int ShipInitialStatusDialogModel::getTurretsDisabled()
+ int ShipInitialStatusDialogModel::getTurretsDisabled() const
 {
 	return m_turrets_locked;
 }
 
-void ShipInitialStatusDialogModel::setAfterburnerDisabled(int state)
+void ShipInitialStatusDialogModel::setAfterburnerDisabled(const int state)
 {
 	modify(m_afterburner_locked, state);
 }
 
- int ShipInitialStatusDialogModel::getAfterburnerDisabled()
+ int ShipInitialStatusDialogModel::getAfterburnerDisabled() const
 {
 	return m_afterburner_locked;
 }
 
-void ShipInitialStatusDialogModel::setDamage(int value)
+void ShipInitialStatusDialogModel::setDamage(const int value)
 {
 	modify(m_damage, value);
 }
 
- int ShipInitialStatusDialogModel::getDamage()
+ int ShipInitialStatusDialogModel::getDamage() const
 {
 	return m_damage;
 }
 
-SCP_string ShipInitialStatusDialogModel::getCargo()
+SCP_string ShipInitialStatusDialogModel::getCargo() const
 {
 	return m_cargo_name;
 }
@@ -774,7 +775,7 @@ void ShipInitialStatusDialogModel::setCargo(const SCP_string& text)
 	modify(m_cargo_name, text);
 }
 
-SCP_string ShipInitialStatusDialogModel::getColour()
+SCP_string ShipInitialStatusDialogModel::getColour() const
 {
 	return m_team_color_setting;
 }
@@ -784,7 +785,7 @@ void ShipInitialStatusDialogModel::setColour(const SCP_string& text)
 	modify(m_team_color_setting, text);
 }
 
-void ShipInitialStatusDialogModel::change_subsys(int new_subsys)
+void ShipInitialStatusDialogModel::change_subsys(const int new_subsys)
 {
 	int z, cargo_index;
 	ship_subsys* ptr;
@@ -852,22 +853,22 @@ void ShipInitialStatusDialogModel::change_subsys(int new_subsys)
 	modelChanged();
 }
 
- int ShipInitialStatusDialogModel::getShip()
+ int ShipInitialStatusDialogModel::getShip() const
 {
 	return m_ship;
 }
 
- int ShipInitialStatusDialogModel::getnum_dock_points()
+ int ShipInitialStatusDialogModel::getnum_dock_points() const
 {
 	return num_dock_points;
 }
 
- int ShipInitialStatusDialogModel::getShip_has_scannable_subsystems()
+ int ShipInitialStatusDialogModel::getShip_has_scannable_subsystems() const
 {
 	return ship_has_scannable_subsystems;
 }
 
- dockpoint_information* ShipInitialStatusDialogModel::getdockpoint_array()
+ dockpoint_information* ShipInitialStatusDialogModel::getdockpoint_array() const
 {
 	return dockpoint_array;
 }
@@ -881,6 +882,16 @@ void ShipInitialStatusDialogModel::setDockee(const int point, const int ship)
 void ShipInitialStatusDialogModel::setDockeePoint(const int dockPoint, const int dockeePoint)
 {
 	modify(dockpoint_array[dockPoint].dockee_point, dockeePoint);
+}
+
+bool ShipInitialStatusDialogModel::getUseTeamcolours() const
+{
+	return m_use_teams;
+}
+
+bool ShipInitialStatusDialogModel::getIfMultpleShips() const
+{
+	return m_multi_edit;
 }
 
 } // namespace dialogs

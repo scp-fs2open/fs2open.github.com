@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>466</width>
-    <height>681</height>
+    <width>468</width>
+    <height>688</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -45,23 +45,42 @@
             </widget>
            </item>
            <item row="2" column="1">
-            <widget class="QComboBox" name="AIClassCombo"/>
+            <widget class="QComboBox" name="AIClassCombo">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Sets the Ship's AI&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+            </widget>
            </item>
            <item row="4" column="1">
             <widget class="QComboBox" name="cargoCombo">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Type to add Ship's Cargo or select previous&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
              <property name="editable">
               <bool>true</bool>
              </property>
             </widget>
            </item>
            <item row="1" column="1">
-            <widget class="QComboBox" name="shipClassCombo"/>
+            <widget class="QComboBox" name="shipClassCombo">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Sets the ship's class&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+            </widget>
            </item>
            <item row="3" column="1">
-            <widget class="QComboBox" name="teamCombo"/>
+            <widget class="QComboBox" name="teamCombo">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Sets the ship's team&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+            </widget>
            </item>
            <item row="0" column="1">
-            <widget class="QLineEdit" name="shipNameEdit"/>
+            <widget class="QLineEdit" name="shipNameEdit">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Sets the ship's name&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+            </widget>
            </item>
            <item row="4" column="0">
             <widget class="QLabel" name="cargoLabel">
@@ -86,6 +105,9 @@
            </item>
            <item row="6" column="1">
             <widget class="QComboBox" name="callsignCombo">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Sets ship's callsign (Replaces name in messages)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
              <property name="editable">
               <bool>true</bool>
              </property>
@@ -114,6 +136,9 @@
            </item>
            <item row="5" column="1">
             <widget class="QComboBox" name="altNameCombo">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Change ship's class name (i.e. GTF Ulysses -&amp;gt; NTF Ulysses)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
              <property name="editable">
               <bool>true</bool>
              </property>
@@ -123,6 +148,9 @@
          </item>
          <item>
           <widget class="QPushButton" name="textureReplacementButton">
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Changes ship's textures&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
            <property name="text">
             <string>Texture Replacement</string>
            </property>
@@ -143,6 +171,9 @@
            </item>
            <item row="2" column="1">
             <widget class="QComboBox" name="hotkeyCombo">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Adds the ship to the specified targeting hotkey&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
              <item>
               <property name="text">
                <string>None</string>
@@ -196,10 +227,17 @@
             </widget>
            </item>
            <item row="3" column="1">
-            <widget class="QComboBox" name="personaCombo"/>
+            <widget class="QComboBox" name="personaCombo">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Sets the head ani &amp;amp; voice for automated messages&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+            </widget>
            </item>
            <item row="5" column="1">
             <widget class="QSpinBox" name="assistEdit">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;How many points the player gets for an assist&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
              <property name="buttonSymbols">
               <enum>QAbstractSpinBox::NoButtons</enum>
              </property>
@@ -214,6 +252,9 @@
            </item>
            <item row="1" column="1">
             <widget class="QLabel" name="wing">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Wing the current ship is in&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
              <property name="text">
               <string>Static</string>
              </property>
@@ -235,6 +276,9 @@
            </item>
            <item row="4" column="1">
             <widget class="QSpinBox" name="killScoreEdit">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;How many points the player gets for the kill&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
              <property name="buttonSymbols">
               <enum>QAbstractSpinBox::NoButtons</enum>
              </property>
@@ -266,6 +310,9 @@
            </item>
            <item>
             <widget class="fso::fred::ShipFlagCheckbox" name="playerShipCheckBox">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Mark this ship as a player start point(Multi Only)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
              <property name="text">
               <string>Player Ship</string>
              </property>
@@ -275,6 +322,9 @@
          </item>
          <item>
           <widget class="QPushButton" name="playerShipButton">
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set as player ship (Single player, Must be part of a starting wing)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
            <property name="text">
             <string>Set As Player Ship</string>
            </property>
@@ -299,6 +349,9 @@
          </property>
          <item row="5" column="0">
           <widget class="QPushButton" name="specialStatsButton">
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Change ship's max health or explosion damage (Combines olf FRED's Special hits and special exp dialogs)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
            <property name="text">
             <string>Special Stats</string>
            </property>
@@ -351,6 +404,9 @@
          </item>
          <item row="3" column="0">
           <widget class="QPushButton" name="weaponsButton">
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Change the ships weapons&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
            <property name="text">
             <string>Weapons</string>
            </property>
@@ -358,6 +414,9 @@
          </item>
          <item row="4" column="0">
           <widget class="QPushButton" name="playerOrdersButton">
+           <property name="toolTip">
+            <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Sets what orders the player can give the ship&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
            <property name="text">
             <string>Player Orders</string>
            </property>
@@ -388,6 +447,9 @@
        </property>
        <item>
         <widget class="QPushButton" name="miscButton">
+         <property name="toolTip">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set ship's flags (Add special Features)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
          <property name="text">
           <string>Misc</string>
          </property>
@@ -395,6 +457,9 @@
        </item>
        <item>
         <widget class="QPushButton" name="initialStatusButton">
+         <property name="toolTip">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the ship's inital state(i.e. speed, damage, docked)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
          <property name="text">
           <string>Initial Status</string>
          </property>
@@ -402,6 +467,9 @@
        </item>
        <item>
         <widget class="QPushButton" name="initialOrdersButton">
+         <property name="toolTip">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Give orders to the ship&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
          <property name="text">
           <string>Initial Orders</string>
          </property>
@@ -409,6 +477,9 @@
        </item>
        <item>
         <widget class="QPushButton" name="tblInfoButton">
+         <property name="toolTip">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;View the ships entry in ships.tbl and tbms&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
          <property name="text">
           <string>TBL Info</string>
          </property>
@@ -416,6 +487,9 @@
        </item>
        <item>
         <widget class="QPushButton" name="hideCuesButton">
+         <property name="toolTip">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Hide the arrival/departure section&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
          <property name="text">
           <string>Hide Cues</string>
          </property>
@@ -451,7 +525,11 @@
              </widget>
             </item>
             <item row="1" column="1">
-             <widget class="QComboBox" name="arrivalTargetCombo"/>
+             <widget class="QComboBox" name="arrivalTargetCombo">
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Target Ship&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
+             </widget>
             </item>
             <item row="1" column="0">
              <widget class="QLabel" name="arrivalTargetLabel">
@@ -468,12 +546,20 @@
              </widget>
             </item>
             <item row="0" column="1">
-             <widget class="QComboBox" name="arrivalLocationCombo"/>
+             <widget class="QComboBox" name="arrivalLocationCombo">
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Sets ship's arrival location&lt;/p&gt;&lt;p&gt;Hyperspace - Ship appears where it is on the map,&lt;/p&gt;&lt;p&gt;Near Ship - Ship appears at a random location the specified distance of the target,&lt;/p&gt;&lt;p&gt;In front of ship - Ship appears ate the specified distance somewhere in a cone in front of the target,&lt;/p&gt;&lt;p&gt;Docking Bay - Ship arrives in the targets fighter bay&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
+             </widget>
             </item>
             <item row="3" column="1">
              <layout class="QHBoxLayout" name="arrivalDelayLayout">
               <item>
-               <widget class="QSpinBox" name="arrivalDelaySpinBox"/>
+               <widget class="QSpinBox" name="arrivalDelaySpinBox">
+                <property name="toolTip">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Time to wait after cue conditions met&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                </property>
+               </widget>
               </item>
               <item>
                <widget class="QLabel" name="arrivalSeconds">
@@ -488,6 +574,9 @@
              <layout class="QHBoxLayout" name="arrivalDistanceLayout">
               <item>
                <widget class="QSpinBox" name="arrivalDistanceEdit">
+                <property name="toolTip">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Distance from target&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                </property>
                 <property name="buttonSymbols">
                  <enum>QAbstractSpinBox::NoButtons</enum>
                 </property>
@@ -515,6 +604,9 @@
           </item>
           <item>
            <widget class="QPushButton" name="restrictArrivalPathsButton">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Limit the fighterbay paths the arriving ship can use&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
             <property name="text">
              <string>Restrict Arrival Paths</string>
             </property>
@@ -522,6 +614,9 @@
           </item>
           <item>
            <widget class="QPushButton" name="customWarpinButton">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Change the apperance, speed and sound of the warp effect (Excluding Docking bay)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
             <property name="text">
              <string>Custom Warp-in Parameters</string>
             </property>
@@ -551,6 +646,9 @@
             </item>
             <item>
              <widget class="QCheckBox" name="updateArrivalCueCheckBox">
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Change cue for all selected ships&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
               <property name="text">
                <string>Update Cue</string>
               </property>
@@ -563,6 +661,9 @@
           </item>
           <item>
            <widget class="fso::fred::ShipFlagCheckbox" name="noArrivalWarpCheckBox">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Ship pops into existance&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
             <property name="text">
              <string>No Warp Effect</string>
             </property>
@@ -587,7 +688,11 @@
              </widget>
             </item>
             <item row="1" column="1">
-             <widget class="QComboBox" name="departureTargetCombo"/>
+             <widget class="QComboBox" name="departureTargetCombo">
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set departure target&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
+             </widget>
             </item>
             <item row="3" column="0">
              <widget class="QLabel" name="departureDelayLabel">
@@ -613,12 +718,20 @@
              </spacer>
             </item>
             <item row="0" column="1">
-             <widget class="QComboBox" name="departureLocationCombo"/>
+             <widget class="QComboBox" name="departureLocationCombo">
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Sets ship's departure location&lt;/p&gt;&lt;p&gt;Hyperspace - Ship leaves from where it is,&lt;/p&gt;&lt;p&gt;Docking Bay - Ship departs into the targets fighter bay&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
+             </widget>
             </item>
             <item row="3" column="1">
              <layout class="QHBoxLayout" name="departureDelayLayout">
               <item>
-               <widget class="QSpinBox" name="departureDelaySpinBox"/>
+               <widget class="QSpinBox" name="departureDelaySpinBox">
+                <property name="toolTip">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Time to wait after cue conditions met&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                </property>
+               </widget>
               </item>
               <item>
                <widget class="QLabel" name="departureSeconds">
@@ -653,6 +766,9 @@
           </item>
           <item>
            <widget class="QPushButton" name="restrictDeparturePathsButton">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Limit the fighterbay paths the departing ship can use&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
             <property name="text">
              <string>Restrict Departure Paths</string>
             </property>
@@ -660,6 +776,9 @@
           </item>
           <item>
            <widget class="QPushButton" name="customWarpoutButton">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Change the apperance, speed and sound of the warp effect (Hyperspace only)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
             <property name="text">
              <string>Custom Warp-out Parameters</string>
             </property>
@@ -689,6 +808,9 @@
             </item>
             <item>
              <widget class="QCheckBox" name="updateDepartureCueCheckBox">
+              <property name="toolTip">
+               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Change cue for all selected ships&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
               <property name="text">
                <string>Update Cue</string>
               </property>
@@ -701,6 +823,9 @@
           </item>
           <item>
            <widget class="fso::fred::ShipFlagCheckbox" name="noDepartureWarpCheckBox">
+            <property name="toolTip">
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Ship pops out of existance&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
             <property name="text">
              <string>No Warp Effect</string>
             </property>
