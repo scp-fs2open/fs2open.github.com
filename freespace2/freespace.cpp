@@ -4322,19 +4322,21 @@ void game_set_frametime(int state)
 	if (Frametime > MAX_FRAMETIME)	{
 #ifndef NDEBUG
 		mprintf(("Frame %2i too long!!: frametime = %.3f (%.3f)\n", Framecount, f2fl(Frametime), f2fl(debug_frametime)));
-
-		// If the frame took more than 5 seconds, assume we're tracing through a debugger.  If timestamps are running, correct the elapsed time.
-		if (!Cmdline_slow_frames_ok && !timestamp_is_paused() && (Last_frame_timestamp != 0) && (f2fl(Frametime) > 5.0f)) {
-			auto delta_timestamp = timestamp() - Last_frame_timestamp;
-			// could be 0 if we have time compression slowed to a crawl
-			if (delta_timestamp > 0) {
-				mprintf(("Adjusting timestamp by %2i milliseconds to compensate\n", delta_timestamp));
-				timestamp_adjust_pause_offset(delta_timestamp);
-			}
-		}
 #endif
 		Frametime = MAX_FRAMETIME;
 	}
+
+#ifndef NDEBUG
+	// If the frame took more than 5 seconds, assume we're tracing through a debugger.  If timestamps are running, correct the elapsed time.
+	if (!Cmdline_slow_frames_ok && !timestamp_is_paused() && (Last_frame_timestamp != 0)) {
+		auto delta_timestamp = timestamp() - Last_frame_timestamp;
+		if (delta_timestamp > 5 * MILLISECONDS_PER_SECOND) {
+			delta_timestamp -= 20;	// suppose last frame was 50 FPS
+			mprintf(("Too much time passed between frames.  Adjusting timestamp by %i milliseconds to compensate\n", delta_timestamp));
+			timestamp_adjust_pause_offset(delta_timestamp);
+		}
+	}
+#endif
 
 	flRealframetime = f2fl(Frametime);
 
