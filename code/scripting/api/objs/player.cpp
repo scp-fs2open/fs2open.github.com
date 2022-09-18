@@ -173,6 +173,28 @@ ADE_VIRTVAR(AutoAdvance,
 	return ade_set_args(L, "b", plr->get()->auto_advance != 0);
 }
 
+ADE_VIRTVAR(ShowSkipPopup,
+	l_Player,
+	"boolean value",
+	"Determines if the skip mission popup is shown for the current mission.",
+	"boolean",
+	"true if it should be shown, false otherwise or if the handle is invalid")
+{
+	player_h* plr;
+	bool value = false;
+	if (!ade_get_args(L, "o|b", l_Player.GetPtr(&plr), &value))
+		return ADE_RETURN_FALSE;
+
+	if (!plr->isValid())
+		return ADE_RETURN_FALSE;
+
+	if (ADE_SETTING_VAR) {
+		plr->get()->show_skip_popup = value ? 1 : 0;
+	}
+
+	return ade_set_args(L, "b", plr->get()->show_skip_popup != 0);
+}
+
 ADE_FUNC(isValid, l_Player, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
 {
 	player_h* plr;
@@ -508,6 +530,175 @@ ADE_FUNC(getShipclassKills, l_ScoringStats, "shipclass class",
 	}
 
 	return ade_set_args(L, "i", ssh->get()->kills[ship_idx]);
+}
+
+//This is per mission stats
+ADE_VIRTVAR(MissionPrimaryShotsFired,
+	l_ScoringStats,
+	"number",
+	"The number of primary shots that have been fired in the current mission.",
+	"number",
+	"The score value")
+{
+	scoring_stats_h* ssh;
+	if (!ade_get_args(L, "o", l_ScoringStats.GetPtr(&ssh))) {
+		return ade_set_error(L, "i", -1);
+	}
+
+	if (!ssh->isValid()) {
+		return ade_set_error(L, "i", -1);
+	}
+
+	return ade_set_args(L, "i", ssh->get()->mp_shots_fired);
+}
+
+ADE_VIRTVAR(MissionPrimaryShotsHit,
+	l_ScoringStats,
+	"number",
+	"The number of primary shots that have hit in the current mission.",
+	"number",
+	"The score value")
+{
+	scoring_stats_h* ssh;
+	if (!ade_get_args(L, "o", l_ScoringStats.GetPtr(&ssh))) {
+		return ade_set_error(L, "i", -1);
+	}
+
+	if (!ssh->isValid()) {
+		return ade_set_error(L, "i", -1);
+	}
+
+	return ade_set_args(L, "i", ssh->get()->mp_shots_hit);
+}
+
+ADE_VIRTVAR(MissionPrimaryFriendlyHit,
+	l_ScoringStats,
+	"number",
+	"The number of primary friendly fire hits in the current mission.",
+	"number",
+	"The score value")
+{
+	scoring_stats_h* ssh;
+	if (!ade_get_args(L, "o", l_ScoringStats.GetPtr(&ssh))) {
+		return ade_set_error(L, "i", -1);
+	}
+
+	if (!ssh->isValid()) {
+		return ade_set_error(L, "i", -1);
+	}
+
+	return ade_set_args(L, "i", ssh->get()->mp_bonehead_hits);
+}
+
+ADE_VIRTVAR(MissionSecondaryShotsFired,
+	l_ScoringStats,
+	"number",
+	"The number of secondary shots that have been fired in the current mission.",
+	"number",
+	"The score value")
+{
+	scoring_stats_h* ssh;
+	if (!ade_get_args(L, "o", l_ScoringStats.GetPtr(&ssh))) {
+		return ade_set_error(L, "i", -1);
+	}
+
+	if (!ssh->isValid()) {
+		return ade_set_error(L, "i", -1);
+	}
+
+	return ade_set_args(L, "i", ssh->get()->ms_shots_fired);
+}
+
+ADE_VIRTVAR(MissionSecondaryShotsHit,
+	l_ScoringStats,
+	"number",
+	"The number of secondary shots that have hit in the current mission.",
+	"number",
+	"The score value")
+{
+	scoring_stats_h* ssh;
+	if (!ade_get_args(L, "o", l_ScoringStats.GetPtr(&ssh))) {
+		return ade_set_error(L, "i", -1);
+	}
+
+	if (!ssh->isValid()) {
+		return ade_set_error(L, "i", -1);
+	}
+
+	return ade_set_args(L, "i", ssh->get()->ms_shots_hit);
+}
+
+ADE_VIRTVAR(MissionSecondaryFriendlyHit,
+	l_ScoringStats,
+	"number",
+	"The number of secondary friendly fire hits in the current mission.",
+	"number",
+	"The score value")
+{
+	scoring_stats_h* ssh;
+	if (!ade_get_args(L, "o", l_ScoringStats.GetPtr(&ssh))) {
+		return ade_set_error(L, "i", -1);
+	}
+
+	if (!ssh->isValid()) {
+		return ade_set_error(L, "i", -1);
+	}
+
+	return ade_set_args(L, "i", ssh->get()->ms_bonehead_hits);
+}
+
+ADE_VIRTVAR(MissionTotalKills, l_ScoringStats, "number", "The total number of kills in the current mission.", "number", "The score value")
+{
+	scoring_stats_h* ssh;
+	if (!ade_get_args(L, "o", l_ScoringStats.GetPtr(&ssh))) {
+		return ade_set_error(L, "i", -1);
+	}
+
+	if (!ssh->isValid()) {
+		return ade_set_error(L, "i", -1);
+	}
+
+	return ade_set_args(L, "i", ssh->get()->m_kill_count_ok);
+}
+
+ADE_VIRTVAR(MissionAssists, l_ScoringStats, "number", "The total number of assists in the current mission.", "number", "The score value")
+{
+	scoring_stats_h* ssh;
+	if (!ade_get_args(L, "o", l_ScoringStats.GetPtr(&ssh))) {
+		return ade_set_error(L, "i", -1);
+	}
+
+	if (!ssh->isValid()) {
+		return ade_set_error(L, "i", -1);
+	}
+
+	return ade_set_args(L, "i", ssh->get()->m_assists);
+}
+
+ADE_FUNC(getMissionShipclassKills,
+	l_ScoringStats,
+	"shipclass class",
+	"Returns the number of kills of a specific ship class recorded in this statistics structure for the current mission.",
+	"number",
+	"The kills for that specific ship class")
+{
+	using namespace luacpp;
+
+	scoring_stats_h* ssh;
+	int ship_idx;
+	if (!ade_get_args(L, "oo", l_ScoringStats.GetPtr(&ssh), l_Shipclass.Get(&ship_idx))) {
+		return ade_set_error(L, "i", -1);
+	}
+
+	if (!ssh->isValid()) {
+		return ade_set_error(L, "i", -1);
+	}
+
+	if (ship_idx < 0 || ship_idx >= (int)Ship_info.size()) {
+		return ade_set_error(L, "i", -1);
+	}
+
+	return ade_set_args(L, "i", ssh->get()->m_kills[ship_idx]);
 }
 }
 }

@@ -66,6 +66,8 @@ const int DEBRIEFING_FONT = font::FONT1;
 
 extern float Brief_text_wipe_time_elapsed;
 
+bool API_Access = false;
+
 // 3rd coord is max width in pixels
 int Debrief_title_coords[GR_NUM_RESOLUTIONS][3] = {
 	{ // GR_640
@@ -320,10 +322,10 @@ static int Rank_bitmap;
 static int Medal_bitmap;
 static int Badge_bitmap;
 
-static int Promoted;
+int Promoted;
 static int Debrief_accepted;
-static int Turned_traitor;
-static int Must_replay_mission;
+int Turned_traitor;
+int Must_replay_mission;
 
 static int Current_mode;
 static int New_mode;
@@ -366,7 +368,7 @@ debriefing	Traitor_debriefing;				// used when player is a traitor
 
 // pointers to the active stages for this debriefing
 static debrief_stage *Debrief_stages[MAX_DEBRIEF_STAGES];
-static debrief_stage Promotion_stage, Badge_stage;
+debrief_stage Promotion_stage, Badge_stage;
 static debrief_stats_kill_info *Debrief_stats_kills = NULL;
 static debrief_multi_list_info Multi_list[MAX_PLAYERS];
 int Multi_list_select;
@@ -379,7 +381,7 @@ static int Debrief_skip_popup_already_shown = 0;
 
 void debrief_text_init();
 bool debrief_can_accept();
-void debrief_accept(int ok_to_post_start_game_event = 1);
+void debrief_accept(int ok_to_post_start_game_event);
 void debrief_kick_selected_player();
 
 
@@ -1279,7 +1281,8 @@ void debrief_accept(int ok_to_post_start_game_event)
 {
 	int go_loop = 0;
 
-	if ( !debrief_can_accept() && (Game_mode & GM_CAMPAIGN_MODE) ) {
+	//Skip this bit if we're in API mode because the API handles these popups differently
+	if ( !debrief_can_accept() && (Game_mode & GM_CAMPAIGN_MODE) && !API_Access) {
 		const char *str;
 		int z;
 
@@ -1865,6 +1868,23 @@ void debrief_text_init()
 	debrief_setup_ship_kill_stats(Current_stage);
 }
 
+//Move this into its own method to allow easier API access - Mjn
+int debrief_select_music()
+{
+
+	if (Turned_traitor || ((Game_mode & GM_CAMPAIGN_MODE) && (Campaign.next_mission == Campaign.current_mission))) {
+		// you failed the mission, so you get the fail music
+		return SCORE_DEBRIEF_FAIL;
+	} else if (mission_goals_met()) {
+		// you completed all primaries and secondaries, so you get the win music
+		return SCORE_DEBRIEF_SUCCESS;
+	} else {
+		// you somehow passed the mission, so you get a little something for your efforts.
+		return SCORE_DEBRIEF_AVERAGE;
+	}
+
+}
+
 
 // --------------------------------------------------------------------------------------
 //
@@ -1872,20 +1892,10 @@ void debrief_text_init()
 // start up the appropriate music
 static void debrief_init_music()
 {
-	int score = SCORE_DEBRIEF_AVERAGE;
-
+	
 	Debrief_music_timeout = UI_TIMESTAMP::invalid();
 
-	if ( Turned_traitor || ((Game_mode & GM_CAMPAIGN_MODE) && (Campaign.next_mission == Campaign.current_mission)) ) {
-		// you failed the mission, so you get the fail music
-		score = SCORE_DEBRIEF_FAIL;
-	} else if ( mission_goals_met() ) {
-		// you completed all primaries and secondaries, so you get the win music
-		score = SCORE_DEBRIEF_SUCCESS;
-	} else {
-		// you somehow passed the mission, so you get a little something for your efforts.
-		score = SCORE_DEBRIEF_AVERAGE;
-	}
+	int score = debrief_select_music();
 
 	// if multi client then give a slight delay before playing average music
 	// since we'd like to eval the goals once more for slow clients
@@ -1948,7 +1958,7 @@ void debrief_init()
 	// be backed out if used chooses to replace them.
 	scoring_level_close();
 
-	debrief_ui_init();  // init UI items
+	debrief_ui_init(); // init UI items
 	debrief_award_init();
 	show_stats_init();
 	debrief_voice_init();
@@ -1962,22 +1972,25 @@ void debrief_init()
 	Debrief_player = Player;
 //	Debrief_current_net_player_index = debrief_multi_list[0].net_player_index;
 
-	// set up the Debrief_stages[] and Recommendations[] arrays.  Only do the following stuff
-	// for non-clients (i.e. single and game server).  Multiplayer clients will get their debriefing
-	// info directly from the server.
-	if ( !MULTIPLAYER_CLIENT ) {
-		debrief_set_stages_and_multi_stuff();
+	// Only setup Debrief_stages and Recommendations if not running through API access.
+	if (!API_Access) {
+		// set up the Debrief_stages[] and Recommendations[] arrays.  Only do the following stuff
+		// for non-clients (i.e. single and game server).  Multiplayer clients will get their debriefing
+		// info directly from the server.
+		if (!MULTIPLAYER_CLIENT) {
+			debrief_set_stages_and_multi_stuff();
 
-		if ( Num_debrief_stages <= 0 ) {
-			Num_debrief_stages = 0;
+			if (Num_debrief_stages <= 0) {
+				Num_debrief_stages = 0;
+			} else if (!API_Access) { // Do not load voice files in API mode -Mjn
+				debrief_voice_load_all();
+			}
 		} else {
-			debrief_voice_load_all();
-		}
-	} else {
-		// multiplayer client may have already received their debriefing info.  If they have not,
-		// then set the num debrief stages to 0
-		if ( !Debrief_multi_stages_loaded ) {
-			Num_debrief_stages = 0;
+			// multiplayer client may have already received their debriefing info.  If they have not,
+			// then set the num debrief stages to 0
+			if (!Debrief_multi_stages_loaded) {
+				Num_debrief_stages = 0;
+			}
 		}
 	}
 
@@ -1992,8 +2005,10 @@ void debrief_init()
 	// Just calculate this once instead of every frame. -MageKing17
 	Max_debrief_Lines = Debrief_text_wnd_coords[gr_screen.res][3]/gr_get_font_height(); //Make the max number of lines dependent on the font height.
 
-	// start up the appropriate music
-	debrief_init_music();
+	// start up the appropriate music only if we're not in API mode - Mjn
+	if (!API_Access) {
+		debrief_init_music();
+	}
 
 	if (Game_mode & GM_MULTIPLAYER) {
 		multi_debrief_init();
@@ -2077,9 +2092,12 @@ void debrief_close()
 	// clear out award text 
 	Debrief_award_text_num_lines = 0;
 
-	debrief_voice_unload_all();
-	common_music_close();
-	chatbox_close();
+	//These don't need to be handled when accessing through the API -Mjn
+	if (!API_Access) {
+		debrief_voice_unload_all();
+		common_music_close();
+		chatbox_close();
+	}
 
 	// unload bitmaps
 	if (Background_bitmap >= 0){
@@ -2103,7 +2121,7 @@ void debrief_close()
 	}
 
 	Debrief_ui_window.destroy();
-	common_free_interface_palette();		// restore game palette
+	common_free_interface_palette(); // restore game palette
 	show_stats_close();
 
 	if (Game_mode & GM_MULTIPLAYER){

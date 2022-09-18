@@ -1315,6 +1315,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/color.h
 	scripting/api/objs/control_info.cpp
 	scripting/api/objs/control_info.h
+	scripting/api/objs/debriefing.cpp
+	scripting/api/objs/debriefing.h
 	scripting/api/objs/debris.cpp
 	scripting/api/objs/debris.h
 	scripting/api/objs/decaldefinition.cpp
