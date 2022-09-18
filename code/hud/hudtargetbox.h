@@ -40,7 +40,7 @@ extern int Targetbox_wire;
 extern int Targetbox_shader_effect;
 extern bool Lock_targetbox_mode;
 
-enum class CargoScanType { DEFAULT, DUAL_SCAN_LINES };
+enum class CargoScanType { DEFAULT, DUAL_SCAN_LINES, DISCO_SCAN_LINES };
 
 class HudGaugeTargetBox: public HudGauge // HUD_TARGET_MONITOR
 {

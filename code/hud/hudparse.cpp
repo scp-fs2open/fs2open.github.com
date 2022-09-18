@@ -3217,11 +3217,13 @@ void load_gauge_target_monitor(gauge_settings* settings)
 		stuff_int_list(Cargo_string_offsets, 2);
 	}
 	if (optional_string("Cargo Scan Type:")) {
-		int type = required_string_one_of(2, "default", "dualscanlines");
+		int type = required_string_one_of(3, "default", "dualscanlines", "discoscanlines");
 		if (type == 0) {
 			Cargo_scan_type = CargoScanType::DEFAULT;
-		} else {
+		} else if (type == 1) {
 			Cargo_scan_type = CargoScanType::DUAL_SCAN_LINES;
+		} else {
+			Cargo_scan_type = CargoScanType::DISCO_SCAN_LINES;
 		}
 	}
 	if(optional_string("Cargo Scan Start Offsets:")) {
