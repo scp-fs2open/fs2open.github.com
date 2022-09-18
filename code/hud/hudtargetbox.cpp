@@ -277,6 +277,11 @@ void HudGaugeTargetBox::initHullOffsets(int x, int y)
 	Hull_offsets[1] = y;
 }
 
+void HudGaugeTargetBox::initCargoScanType(CargoScanType scantype)
+{
+	Cargo_scan_type = scantype;
+}
+
 void HudGaugeTargetBox::initCargoScanStartOffsets(int x, int y)
 {
 	Cargo_scan_start_offsets[0] = x;
@@ -1909,7 +1914,7 @@ void HudGaugeTargetBox::maybeRenderCargoScan(ship_info *target_sip, ship_subsys 
 	renderLine(x1, y1, x2, y1);
 
 	// RT Changed this to be optional
-	if(Cmdline_dualscanlines) {
+	if(Cargo_scan_type == CargoScanType::DUAL_SCAN_LINES) {
 		// added 2nd horizontal scan line - phreak
 		y1 = fl2i(position[1] + Cargo_scan_start_offsets[1] + Cargo_scan_h - ( (i2fl(Player->cargo_inspect_time) / scan_time) * Cargo_scan_h ));
 		renderLine(x1, y1, x2, y1);
@@ -1923,7 +1928,7 @@ void HudGaugeTargetBox::maybeRenderCargoScan(ship_info *target_sip, ship_subsys 
 	renderLine(x1, y1-3, x1, y2-1);
 
 	// RT Changed this to be optional
-	if(Cmdline_dualscanlines) {
+	if(Cargo_scan_type == CargoScanType::DUAL_SCAN_LINES) {
 		// added 2nd vertical scan line - phreak
 		x1 = fl2i(0.5f + Cargo_scan_w + position[0] + Cargo_scan_start_offsets[0] - ( (i2fl(Player->cargo_inspect_time) / scan_time) * Cargo_scan_w ));
 		renderLine(x1, y1-3, x1, y2-1);
