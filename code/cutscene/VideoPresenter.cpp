@@ -129,8 +129,7 @@ void VideoPresenter::displayFrame(float x1, float y1, float x2, float y2, float 
 
 	switch (_properties.pixelFormat) {
 	case FramePixelFormat::YUV420:
-		if (alpha < 1.0f)
-			material_set_movie(&_movie_material,
+		material_set_movie(&_movie_material,
 				_planeTextureHandles[0],
 				_planeTextureHandles[1],
 				_planeTextureHandles[2],
@@ -138,13 +137,11 @@ void VideoPresenter::displayFrame(float x1, float y1, float x2, float y2, float 
 		gr_render_movie(&_movie_material, PRIM_TYPE_TRISTRIP, &layout, 4, gr_immediate_buffer_handle, offset);
 		break;
 	case FramePixelFormat::BGR:
-		if (alpha < 1.0f)
-			material_set_unlit(&_rgb_material, _planeTextureHandles[0], alpha, false, false);
+		material_set_unlit(&_rgb_material, _planeTextureHandles[0], alpha, false, false);
 		gr_render_primitives(&_rgb_material, PRIM_TYPE_TRISTRIP, &layout, 0, 4, gr_immediate_buffer_handle, offset);
 		break;
 	case FramePixelFormat::BGRA:
-		if (alpha < 1.0f)
-			material_set_unlit(&_rgb_material, _planeTextureHandles[0], alpha, true, false);
+		material_set_unlit(&_rgb_material, _planeTextureHandles[0], alpha, true, false);
 		gr_render_primitives(&_rgb_material, PRIM_TYPE_TRISTRIP, &layout, 0, 4, gr_immediate_buffer_handle, offset);
 		break;
 	default:
