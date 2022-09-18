@@ -60,11 +60,13 @@ namespace animation {
 		Loop,					//Will automatically loop the animation once it completes. Is compatible with Reset_at_completion to loop back from the start instead of reversing. Incompatible with Auto_reverse
 		Random_starting_phase,  //When an animation is started from an untriggered state, will randomize its time to any possible time of the animation + possibly on the reverse, if the animation would automatically enter that
 		Pause_on_reverse,		//Will cause any start in RWD direction to behave as a call to pause the animation. Required (and also only really useful) when a looping animation is supposed to be triggered by an internal engine trigger
+		Seamless_with_startup,	//Provides automatic handling of animations that loop with an initialization part (effectively looping from a specific time)
 		NUM_VALUES
 	};
 
 	FLAG_LIST(Animation_Instance_Flags) {
 		Stop_after_next_loop,	//Once a looping animation would start the next loop, stop the animation instead. Only valid for looping animations
+		Seamless_loop_shutdown, //Set whenever a seamlessly looping animation is in its final shutdown phase
 		NUM_VALUES
 	};
 
@@ -220,8 +222,14 @@ namespace animation {
 		//True if the animation can externally have its state changed. Needs special handling
 		bool m_canChangeState;
 
+	public:
 		flagset<animation::Animation_Flags>	m_flags;
+		struct {
+			//Seamless_with_startup
+			float loopsFrom = 0.0f;
+		} m_flagData;
 
+	private:
 		ModelAnimationState play(float frametime, polymodel_instance* pmi, ModelAnimationSubmodelBuffer& applyBuffer, bool applyOnly = false);
 
 		friend class ModelAnimationSet;
