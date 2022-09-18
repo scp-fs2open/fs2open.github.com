@@ -7513,6 +7513,40 @@ void ship_render_show_ship_cockpit(object *objp)
 	gr_set_view_matrix(&Eye_position, &Eye_matrix); // Reset Camera to normal
 }
 
+void ship_render_player_ship(object* objp) {
+	const bool hasCockpitModel = Ship_info[Ships[Viewer_obj->instance].ship_info_index].cockpit_model_num > 0;
+
+	const bool renderCockpitModel = Viewer_mode != VM_TOPDOWN && hasCockpitModel;
+	const bool renderShipModel = (Ship_info[Ships[Viewer_obj->instance].ship_info_index].flags[Ship::Info_Flags::Show_ship_model])
+		&& (!Viewer_mode || (Viewer_mode & VM_PADLOCK_ANY) || (Viewer_mode & VM_OTHER_SHIP) || (Viewer_mode & VM_TRACK)
+			|| !(Viewer_mode & VM_EXTERNAL));
+
+	//Nothing to do
+	if (!(renderCockpitModel || renderShipModel))
+		return;
+
+	//If we aren't sure whether cockpits and external models can share the same worldspace, we need to pre-render the external ship hull without shadows / deferred and give the cockpit precedence, unless this ship has no cockpit at all
+	const bool prerenderShipModel = renderShipModel && hasCockpitModel && !Cockpit_shares_coordinate_space;
+
+	vec3d eye_pos;
+	matrix eye_orient;
+	ship_get_eye_local(&eye_pos, &eye_orient, objp);
+
+	gr_post_process_save_zbuffer();
+	
+	if (prerenderShipModel) {
+		vec3d cockpit_eye_pos;
+		matrix dummy;
+		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 0.05f, Max_draw_distance);
+		gr_set_view_matrix(&eye_pos, &eye_orient);
+
+
+	}
+
+
+	gr_post_process_restore_zbuffer();
+}
+
 void ship_init_cockpit_displays(ship *shipp)
 {
 	ship_info *sip = &Ship_info[shipp->ship_info_index];
@@ -13898,6 +13932,45 @@ void ship_get_eye( vec3d *eye_pos, matrix *eye_orient, object *obj, bool do_slew
 	if ( Viewer_obj == obj && do_slew) {
 		// Add the cockpit leaning translation offset
 		vm_vec_add2(eye_pos,&leaning_position);
+		compute_slew_matrix(eye_orient, &Viewer_slew_angles);
+	}
+}
+
+// calculates the eye position for this ship in the ships reference frame.  Uses the
+// view_positions array in the model.  The 0th element is the normal viewing position.
+// the vector of the eye is returned in the parameter 'eye'.  The orientation of the
+// eye is returned in orient.
+void ship_get_eye_local(vec3d* eye_pos, matrix* eye_orient, object* obj, bool do_slew)
+{
+	Assertion(obj->type == OBJ_SHIP, "Only ships can have eye positions!");
+
+	ship* shipp = &Ships[obj->instance];
+	auto pmi = model_get_instance(shipp->model_instance_num);
+	auto pm = model_get(pmi->model_num);
+
+	// check to be sure that we have a view eye to look at.....spit out nasty debug message
+	if (shipp->current_viewpoint < 0 || pm->n_view_positions == 0 || shipp->current_viewpoint > pm->n_view_positions) {
+		*eye_pos = ZERO_VECTOR;
+		*eye_orient = IDENTITY_MATRIX;
+		return;
+	}
+
+	// eye points are stored in an array -- the normal viewing position for a ship is the current_eye_index
+	// element.
+	eye* ep = &(pm->view_positions[shipp->current_viewpoint]);
+
+	if (ep->parent >= 0 && pm->submodel[ep->parent].flags[Model::Submodel_flags::Can_move]) {
+		model_instance_local_to_global_point_orient(eye_pos, eye_orient, &ep->pnt, &vmd_identity_matrix, pm, pmi, ep->parent);
+	}
+	else {
+		model_local_to_global_point(eye_pos, &ep->pnt, Ship_info[shipp->ship_info_index].model_num, ep->parent, &obj->orient);
+		*eye_orient = IDENTITY_MATRIX;
+	}
+
+	//	Modify the orientation based on head orientation.
+	if (Viewer_obj == obj && do_slew) {
+		// Add the cockpit leaning translation offset
+		vm_vec_add2(eye_pos, &leaning_position);
 		compute_slew_matrix(eye_orient, &Viewer_slew_angles);
 	}
 }
