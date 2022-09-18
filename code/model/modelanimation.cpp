@@ -186,6 +186,12 @@ namespace animation {
 				instanceData.state = ModelAnimationState::PAUSED;
 			return;
 		}
+		else if (instanceData.state == ModelAnimationState::PAUSED) {
+			if (direction == ModelAnimationDirection::FWD)
+				instanceData.state = ModelAnimationState::RUNNING_FWD;
+			else
+				instanceData.state = ModelAnimationState::RUNNING_RWD;
+		}
 
 		float timeOffset = multiOverrideTime != nullptr ? *multiOverrideTime : 0.0f;
 
@@ -193,6 +199,11 @@ namespace animation {
 		//Don't apply just yet if it's a non-initial type, as there might be other animations this'd need to depend upon
 		ModelAnimationSubmodelBuffer applyBuffer;
 		m_set->initializeSubmodelBuffer(pmi, applyBuffer);
+		auto runningAnims = m_set->s_runningAnimations.find(pmi->id);
+		if (runningAnims != m_set->s_runningAnimations.end()) {
+			for (const auto& anim : runningAnims->second.animationList)
+				anim->play(0, pmi, applyBuffer, true);
+		}
 		play(0, pmi, applyBuffer);
 		
 		if (direction == ModelAnimationDirection::RWD) {
