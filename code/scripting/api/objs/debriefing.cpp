@@ -65,21 +65,17 @@ ADE_VIRTVAR(Recommendation, l_DebriefStage, nullptr, "The recommendation text of
 	return ade_set_args(L, "s", stage.getStage()->recommendation_text);
 }
 
-ADE_VIRTVAR(checkVisible,
+ADE_FUNC(checkVisible,
 	l_DebriefStage,
 	nullptr,
 	"Evaluates the stage formula and returns the result. Could potentially have side effects if the stage formula has a 'perform-actions' or similar operator. "
-	"Note that the standard UI evaluates the formula exactly once per stage on briefing initialization.",
+	"Note that the standard UI evaluates the formula exactly once per stage on debriefing initialization.",
 	"boolean",
 	"true if the stage should be displayed, false otherwise")
 {
 	debrief_stage_h stage;
 	if (!ade_get_args(L, "o", l_DebriefStage.Get(&stage))) {
 		return ADE_RETURN_FALSE;
-	}
-
-	if (ADE_SETTING_VAR) {
-		LuaError(L, "This property is read only.");
 	}
 
 	if (eval_sexp(stage.getStage()->formula)) {
