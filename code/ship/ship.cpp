@@ -10087,7 +10087,7 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 		strcpy_s(shipp->ship_name, base_name);
 
 		// if generated name will be longer than allowable name, truncate the class section of the name by the overflow
-		int char_overflow = (strlen(base_name) + strlen(suffix)) - (NAME_LENGTH - 1);
+		int char_overflow = static_cast <int> (strlen(base_name) + strlen(suffix)) - (NAME_LENGTH - 1);
 		if (char_overflow > 0) {
 			shipp->ship_name[strlen(base_name) - char_overflow] = '\0';
 		}
