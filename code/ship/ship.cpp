@@ -7380,7 +7380,7 @@ void ship_render_player_ship(object* objp) {
 	ship* shipp = &Ships[objp->instance];
 	ship_info* sip = &Ship_info[shipp->ship_info_index];
 
-	const bool hasCockpitModel = sip->cockpit_model_num > 0;
+	const bool hasCockpitModel = sip->cockpit_model_num >= 0;
 
 	const bool renderCockpitModel = Viewer_mode != VM_TOPDOWN && hasCockpitModel;
 	const bool renderShipModel = (sip->flags[Ship::Info_Flags::Show_ship_model])
