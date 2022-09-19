@@ -885,17 +885,30 @@ ADE_FUNC(canSkip,
 
 ADE_FUNC(replayMission,
 	l_UserInterface_Debrief,
-	nullptr,
-	"Resets the mission outcome and begins the current mission again",
 	"number",
+	"Resets the mission outcome, and optionally restarts the mission at the briefing; "
+	"1 to restart the mission, 0 to return to the main menu. Defaults to 1.",
+	"boolean",
 	"Returns true when completed")
 {
+	
+	int start;
+
+	if (!ade_get_args(L, "|i", &start)) {
+		start = 1;
+	}
+	
 	// This is used to skip some UI preloading in debrief init
 	API_Access = true;
 
 	debrief_close();
 
-	gameseq_post_event(GS_EVENT_START_GAME);
+	if (start == 1) {
+		gameseq_post_event(GS_EVENT_START_GAME);
+	} else {
+		gameseq_post_event(GS_EVENT_MAIN_MENU);
+	};
+	
 
 	API_Access = false;
 
@@ -904,15 +917,27 @@ ADE_FUNC(replayMission,
 
 ADE_FUNC(acceptMission,
 	l_UserInterface_Debrief,
-	nullptr,
-	"Accepts the mission outcome, saves the stats, and begins the next mission if in campaign",
 	"number",
+	"Accepts the mission outcome, saves the stats, and optionally begins the next mission if in campaign; "
+	"1 to start the next mission, 0 to return to the main menu. Defaults to 1.",
+	"boolean",
 	"Returns true when completed")
 {
+	int start;
+
+	if (!ade_get_args(L, "|i", &start)) {
+		start = 1;
+	}
+
 	// This is used to skip some UI preloading in debrief init
 	API_Access = true;
 
-	debrief_accept();
+	if (start == 1) {
+		debrief_accept(1);
+	} else {
+		debrief_accept(0);
+		gameseq_post_event(GS_EVENT_MAIN_MENU);
+	};
 
 	debrief_close();
 
