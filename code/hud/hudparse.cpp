@@ -3109,6 +3109,7 @@ void load_gauge_target_monitor(gauge_settings* settings)
 	int Speed_offsets[2];
 	int Cargo_string_offsets[2];
 	int Hull_offsets[2];
+	CargoScanType Cargo_scan_type;
 	int Cargo_scan_start_offsets[2];
 	int Cargo_scan_size[2];
 
@@ -3165,6 +3166,7 @@ void load_gauge_target_monitor(gauge_settings* settings)
 	Hull_offsets[0] = 134;
 	Hull_offsets[1] = 42;
 
+	Cargo_scan_type = Cmdline_dualscanlines ? CargoScanType::DUAL_SCAN_LINES : CargoScanType::DEFAULT;
 	Cargo_scan_start_offsets[0] = 2;
 	Cargo_scan_start_offsets[1] = 45;
 	Cargo_scan_size[0] = 130;
@@ -3214,6 +3216,16 @@ void load_gauge_target_monitor(gauge_settings* settings)
 	if(optional_string("Cargo Contents Offsets:")) {
 		stuff_int_list(Cargo_string_offsets, 2);
 	}
+	if (optional_string("Cargo Scan Type:")) {
+		int type = required_string_one_of(3, "default", "dualscanlines", "discoscanlines");
+		if (type == 1) {
+			Cargo_scan_type = CargoScanType::DUAL_SCAN_LINES;
+		} else if (type == 2) {
+			Cargo_scan_type = CargoScanType::DISCO_SCAN_LINES;
+		} else {
+			Cargo_scan_type = CargoScanType::DEFAULT;
+		}
+	}
 	if(optional_string("Cargo Scan Start Offsets:")) {
 		stuff_int_list(Cargo_scan_start_offsets, 2);
 	}
@@ -3247,6 +3259,7 @@ void load_gauge_target_monitor(gauge_settings* settings)
 	hud_gauge->initSpeedOffsets(Speed_offsets[0], Speed_offsets[1]);
 	hud_gauge->initCargoStringOffsets(Cargo_string_offsets[0], Cargo_string_offsets[1]);
 	hud_gauge->initHullOffsets(Hull_offsets[0], Hull_offsets[1]);
+	hud_gauge->initCargoScanType(Cargo_scan_type);
 	hud_gauge->initCargoScanStartOffsets(Cargo_scan_start_offsets[0], Cargo_scan_start_offsets[1]);
 	hud_gauge->initCargoScanSize(Cargo_scan_size[0], Cargo_scan_size[1]);
 	hud_gauge->initSubsysNameOffsets(Subsys_name_offsets[0], Subsys_name_offsets[1], Use_subsys_name_offsets);

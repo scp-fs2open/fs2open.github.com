@@ -40,6 +40,8 @@ extern int Targetbox_wire;
 extern int Targetbox_shader_effect;
 extern bool Lock_targetbox_mode;
 
+enum class CargoScanType { DEFAULT, DUAL_SCAN_LINES, DISCO_SCAN_LINES };
+
 class HudGaugeTargetBox: public HudGauge // HUD_TARGET_MONITOR
 {
 	hud_frames Monitor_frame;
@@ -66,6 +68,7 @@ class HudGaugeTargetBox: public HudGauge // HUD_TARGET_MONITOR
 	// remember, these coords describe the rightmost position of this element, not the leftmost like it usually does.
 	int Hull_offsets[2];
 
+	CargoScanType Cargo_scan_type;
 	int Cargo_scan_start_offsets[2];
 	int Cargo_scan_h;
 	int Cargo_scan_w;
@@ -100,6 +103,7 @@ public:
 	void initSpeedOffsets(int x, int y);
 	void initCargoStringOffsets(int x, int y);
 	void initHullOffsets(int x, int y);
+	void initCargoScanType(CargoScanType scantype);
 	void initCargoScanStartOffsets(int x, int y);
 	void initCargoScanSize(int w, int h);
 	void initSubsysNameOffsets(int x, int y, bool activate);

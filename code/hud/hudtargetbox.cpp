@@ -277,6 +277,11 @@ void HudGaugeTargetBox::initHullOffsets(int x, int y)
 	Hull_offsets[1] = y;
 }
 
+void HudGaugeTargetBox::initCargoScanType(CargoScanType scantype)
+{
+	Cargo_scan_type = scantype;
+}
+
 void HudGaugeTargetBox::initCargoScanStartOffsets(int x, int y)
 {
 	Cargo_scan_start_offsets[0] = x;
@@ -1901,32 +1906,84 @@ void HudGaugeTargetBox::maybeRenderCargoScan(ship_info *target_sip, ship_subsys 
 
 	setGaugeColor(HUD_C_BRIGHT);
 
-	// draw horizontal scan line
-	x1 = position[0] + Cargo_scan_start_offsets[0]; // Cargo_scan_coords[gr_screen.res][0];
-	y1 = fl2i(0.5f + position[1] + Cargo_scan_start_offsets[1] + ( (i2fl(Player->cargo_inspect_time) / scan_time) * Cargo_scan_h ));
-	x2 = x1 + Cargo_scan_w;
+	int left = position[0] + Cargo_scan_start_offsets[0];
+	int right = left + Cargo_scan_w;
+	int top = position[1] + Cargo_scan_start_offsets[1];
+	int bot = top + Cargo_scan_h;
 
-	renderLine(x1, y1, x2, y1);
+	float t = i2fl(Player->cargo_inspect_time) / scan_time;
 
-	// RT Changed this to be optional
-	if(Cmdline_dualscanlines) {
-		// added 2nd horizontal scan line - phreak
-		y1 = fl2i(position[1] + Cargo_scan_start_offsets[1] + Cargo_scan_h - ( (i2fl(Player->cargo_inspect_time) / scan_time) * Cargo_scan_h ));
+	if (Cargo_scan_type == CargoScanType::DEFAULT || Cargo_scan_type == CargoScanType::DUAL_SCAN_LINES) {
+		// draw horizontal scan line
+		x1 = left;
+		y1 = fl2i(0.5f + top + (t * Cargo_scan_h));
+		x2 = x1 + Cargo_scan_w;
+
 		renderLine(x1, y1, x2, y1);
-	}
 
-	// draw vertical scan line
-	x1 = fl2i(0.5f + position[0] + Cargo_scan_start_offsets[0] + ( (i2fl(Player->cargo_inspect_time) / scan_time) * Cargo_scan_w ));
-	y1 = position[1] + Cargo_scan_start_offsets[1];
-	y2 = y1 + Cargo_scan_h;
+		// RT Changed this to be optional
+		if (Cargo_scan_type == CargoScanType::DUAL_SCAN_LINES) {
+			// added 2nd horizontal scan line - phreak
+			y1 = fl2i(bot - (t * Cargo_scan_h));
+			renderLine(x1, y1, x2, y1);
+		}
 
-	renderLine(x1, y1-3, x1, y2-1);
+		// draw vertical scan line
+		x1 = fl2i(0.5f + left + (t * Cargo_scan_w));
+		y1 = top;
+		y2 = bot;
 
-	// RT Changed this to be optional
-	if(Cmdline_dualscanlines) {
-		// added 2nd vertical scan line - phreak
-		x1 = fl2i(0.5f + Cargo_scan_w + position[0] + Cargo_scan_start_offsets[0] - ( (i2fl(Player->cargo_inspect_time) / scan_time) * Cargo_scan_w ));
-		renderLine(x1, y1-3, x1, y2-1);
+		renderLine(x1, y1 - 3, x1, y2 - 1);
+
+		// RT Changed this to be optional
+		if (Cargo_scan_type == CargoScanType::DUAL_SCAN_LINES) {
+			// added 2nd vertical scan line - phreak
+			x1 = fl2i(0.5f + right - (t * Cargo_scan_w));
+			renderLine(x1, y1 - 3, x1, y2 - 1);
+		}
+	} else if (Cargo_scan_type == CargoScanType::DISCO_SCAN_LINES) {	
+		// by popular demand, this, which was made as a joke, was added - Asteroth
+		for (int i = 0; i < 4; i++) {
+			float arr[2] = { 1 / 0.75f, 1 / 0.4f };
+			float tmod;
+			if (i < 2) {
+				tmod = powf(t, arr[i]);
+			} else {
+				tmod = 1 - powf(1 - t, arr[i - 2]);
+			}
+
+			if (tmod < 0.5f) {
+				y2 = fl2i(0.5f + bot - 2.f * tmod * Cargo_scan_h);
+				renderLine(left, bot, right, y2);
+			} else {
+				x2 = fl2i(0.5f + right - (2.f * tmod - 1) * Cargo_scan_w);
+				renderLine(left, bot, x2, top);
+			}
+
+			if (tmod < 0.5f) {
+				x2 = fl2i(0.5f + right - 2.f * tmod * Cargo_scan_w);
+				renderLine(right, bot, x2, top);
+			} else {
+				y2 = fl2i(0.5f + top + (2.f * tmod - 1) * Cargo_scan_h);
+				renderLine(right, bot, left, y2);
+			}
+
+			if (tmod < 0.5f) {
+				y2 = fl2i(0.5f + top + 2.f * tmod * Cargo_scan_h);
+				renderLine(right, top, left, y2);
+			} else {
+				x2 = fl2i(0.5f + left + (2.f * tmod - 1) * Cargo_scan_w);
+				renderLine(right, top, x2, bot);
+			}
+
+			if (tmod < 0.5f) {
+				x2 = fl2i(0.5f + left + 2.f * tmod * Cargo_scan_w);
+				renderLine(left, top, x2, bot);
+			} else {
+				y2 = fl2i(0.5f + bot - (2.f * tmod - 1) * Cargo_scan_h);
+				renderLine(left, top, right, y2);
+			}
+		}
 	}
 }
 
