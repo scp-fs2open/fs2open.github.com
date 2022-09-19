@@ -1390,9 +1390,9 @@ ADE_FUNC(isTraining, l_Mission, nullptr, "Get whether or not the current mission
 	return ade_set_args(L, "b", (The_mission.game_type & MISSION_TYPE_TRAINING) != 0);
 }
 
-ADE_FUNC(isScramble, l_Mission, nullptr, "Get whether or not the current mission being played is a scramble mission", "boolean", "true if in training, false if not")
+ADE_FUNC(isScramble, l_Mission, nullptr, "Get whether or not the current mission being played is a scramble mission", "boolean", "true if scramble, false if not")
 {
-	return ade_set_args(L, "b", (brief_only_allow_briefing()));
+	return ade_set_args(L, "b", (brief_only_allow_briefing() == 1));
 }
 
 ADE_FUNC(isMissionSkipAllowed, l_Mission, nullptr, "Get whether or not the player has reached the failure limit", "boolean", "true if limit reached, false if not")
