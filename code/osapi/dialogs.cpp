@@ -203,13 +203,18 @@ namespace os
 			msgStream << "\n";
 			msgStream << Separator;
 
-			mprintf(("Lua Error: %s\n", msgStream.str().c_str()));
+			nprintf(("lua","Lua Error: %s\n", msgStream.str().c_str()));
 
 			if (running_unittests) {
 				throw LuaErrorException(msgStream.str());
 			}
 
+			if (Cmdline_lua_devmode) {
+				return;
+			}
+
 			if (Cmdline_noninteractive) {
+				throw LuaErrorException(msgStream.str());
 				abort();
 				return;
 			}

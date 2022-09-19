@@ -512,6 +512,7 @@ cmdline_parm graphics_debug_output_arg("-gr_debug", nullptr, AT_NONE); // Cmdlin
 cmdline_parm log_to_stdout_arg("-stdout_log", nullptr, AT_NONE); // Cmdline_log_to_stdout
 cmdline_parm slow_frames_ok_arg("-slow_frames_ok", nullptr, AT_NONE);	// Cmdline_slow_frames_ok
 cmdline_parm fixed_seed_rand("-seed", nullptr, AT_INT);	// Cmdline_rng_seed,Cmdline_reuse_rng_seed;
+cmdline_parm luadev_arg("-luadev", "nullptr", AT_NONE);	// Cmdline_slow_frames_ok
 
 
 char *Cmdline_start_mission = NULL;
@@ -545,6 +546,7 @@ bool Cmdline_debug_window = false;
 bool Cmdline_graphics_debug_output = false;
 bool Cmdline_log_to_stdout = false;
 bool Cmdline_slow_frames_ok = false;
+bool Cmdline_lua_devmode = false;
 
 // Other
 cmdline_parm get_flags_arg(GET_FLAGS_STRING, "Output the launcher flags file", AT_STRING);
@@ -2166,6 +2168,9 @@ bool SetCmdlineParams()
 
 	if (slow_frames_ok_arg.found()) {
 		Cmdline_slow_frames_ok = true;
+	}
+	if ( luadev_arg.found()) {
+		Cmdline_lua_devmode = true;
 	}
 
 	if (show_video_info.found())

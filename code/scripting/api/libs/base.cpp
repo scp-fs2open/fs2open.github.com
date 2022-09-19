@@ -24,6 +24,7 @@
 #include "scripting/util/LuaValueDeserializer.h"
 #include "scripting/util/LuaValueSerializer.h"
 #include "utils/Random.h"
+#include "cmdline/cmdline.h"
 
 namespace scripting {
 namespace api {
@@ -34,7 +35,7 @@ ADE_LIB(l_Base, "Base", "ba", "Base FreeSpace 2 functions");
 
 ADE_FUNC(print, l_Base, "string Message", "Prints a string", NULL, NULL)
 {
-	mprintf(("%s", lua_tostring(L, -1)));
+	nprintf(("lua","%s", lua_tostring(L, -1)));
 
 	return ADE_RETURN_NIL;
 }
