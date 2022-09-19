@@ -7376,59 +7376,102 @@ static void ship_find_warping_ship_helper(object *objp, dock_function_info *info
 //WMC - used for FTL and maneuvering thrusters
 extern bool Rendering_to_shadow_map;
 
-void ship_render_cockpit(object *objp)
-{
-	if(objp->type != OBJ_SHIP || objp->instance < 0)
+void ship_render_player_ship(object* objp) {
+	ship* shipp = &Ships[objp->instance];
+	ship_info* sip = &Ship_info[shipp->ship_info_index];
+
+	const bool hasCockpitModel = sip->cockpit_model_num > 0;
+
+	const bool renderCockpitModel = Viewer_mode != VM_TOPDOWN && hasCockpitModel;
+	const bool renderShipModel = (sip->flags[Ship::Info_Flags::Show_ship_model])
+		&& (!Viewer_mode || (Viewer_mode & VM_PADLOCK_ANY) || (Viewer_mode & VM_OTHER_SHIP) || (Viewer_mode & VM_TRACK)
+			|| !(Viewer_mode & VM_EXTERNAL));
+
+	//Nothing to do
+	if (!(renderCockpitModel || renderShipModel))
 		return;
 
-	ship *shipp = &Ships[objp->instance];
-	ship_info *sip = &Ship_info[shipp->ship_info_index];
+	//If we aren't sure whether cockpits and external models can share the same worldspace, we need to pre-render the external ship hull without shadows / deferred and give the cockpit precedence, unless this ship has no cockpit at all
+	const bool prerenderShipModel = renderShipModel && hasCockpitModel && !Cockpit_shares_coordinate_space;
+	const bool deferredRenderShipModel = renderShipModel && !prerenderShipModel;
 
-	if(sip->cockpit_model_num < 0)
-		return;
-
-	polymodel *pm = model_get(sip->cockpit_model_num);
-	Assert(pm != NULL);
-
-	//Setup
 	gr_reset_clip();
-	hud_save_restore_camera_data(1);
 
-	matrix eye_ori = vmd_identity_matrix;
-	vec3d eye_pos = vmd_zero_vector;
-	ship_get_eye(&eye_pos, &eye_ori, objp, false, true);
+	vec3d eye_pos;
+	matrix eye_orient;
+	ship_get_eye_local(&eye_pos, &eye_orient, objp);
 
-	vec3d pos = vmd_zero_vector;
+	if (prerenderShipModel) {
+		gr_post_process_save_zbuffer();
 
-	vm_vec_unrotate(&pos, &sip->cockpit_offset, &eye_ori);
+		vec3d cockpit_eye_pos;
+		matrix dummy;
+		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 0.05f, Max_draw_distance);
+		gr_set_view_matrix(&eye_pos, &eye_orient);
+
+		model_render_params render_info;
+		render_info.set_object_number(OBJ_INDEX(objp));
+
+		// update any replacement and/or team color textures (wookieejedi), then render
+		render_info.set_replacement_textures(shipp->ship_replacement_textures);
+
+		if (sip->uses_team_colors)
+			render_info.set_team_color(shipp->team_name, shipp->secondary_team_name, 0, 0);
+
+		render_info.set_detail_level_lock(0);
+		model_render_immediate(&render_info, sip->model_num, &vmd_identity_matrix, &vmd_zero_vector);
+
+		gr_end_view_matrix();
+		gr_end_proj_matrix();
+
+		gr_post_process_restore_zbuffer();
+	}
+
+	//We only needed to prerender the ship model. This can occur if the cockpit isn't rendered for some reason but a model exists.
+	//In this case, we still want to not render the ship model with deferred rendering to keep visuals constant for the ship
+	if (!renderCockpitModel && !deferredRenderShipModel)
+		return;
+
+	gr_post_process_save_zbuffer();
 
 	float fov_backup = Proj_fov;
-
 	g3_set_fov(Sexp_fov <= 0.0f ? COCKPIT_ZOOM_DEFAULT : Sexp_fov);
 
 	//Deal with the model
-	model_clear_instance(sip->cockpit_model_num);
+	if(renderCockpitModel)
+		model_clear_instance(sip->cockpit_model_num);
+
+	//Deal with shadow if we have to
 	if (shadow_maybe_start_frame(Shadow_disable_overrides.disable_cockpit)) {
 		gr_reset_clip();
 		Shadow_override = false;
 
-		shadows_start_render(&Eye_matrix, &leaning_position, Proj_fov, gr_screen.clip_aspect, std::get<0>(Shadow_distances_cockpit), std::get<1>(Shadow_distances_cockpit), std::get<2>(Shadow_distances_cockpit), std::get<3>(Shadow_distances_cockpit));
+		shadows_start_render(&eye_orient, &eye_pos, Proj_fov, gr_screen.clip_aspect, std::get<0>(Shadow_distances_cockpit), std::get<1>(Shadow_distances_cockpit), std::get<2>(Shadow_distances_cockpit), std::get<3>(Shadow_distances_cockpit));
 
-		model_render_params shadow_render_info;
-		shadow_render_info.set_detail_level_lock(0);
-		shadow_render_info.set_flags(MR_NO_TEXTURING | MR_NO_LIGHTING);
-		model_render_immediate(&shadow_render_info, sip->cockpit_model_num, &eye_ori, &pos);
+		if (deferredRenderShipModel) {
+			model_render_params shadow_render_info;
+			shadow_render_info.set_detail_level_lock(0);
+			shadow_render_info.set_flags(MR_NO_TEXTURING | MR_NO_LIGHTING);
+			shadow_render_info.set_object_number(OBJ_INDEX(objp));
+			model_render_immediate(&shadow_render_info, sip->model_num, shipp->model_instance_num, &vmd_identity_matrix, &vmd_zero_vector);
+		}
+		if (renderCockpitModel) {
+			model_render_params shadow_render_info;
+			shadow_render_info.set_detail_level_lock(0);
+			shadow_render_info.set_flags(MR_NO_TEXTURING | MR_NO_LIGHTING);
+			model_render_immediate(&shadow_render_info, sip->cockpit_model_num, &vmd_identity_matrix, &sip->cockpit_offset);
+		}
 
 		shadows_end_render();
 		gr_clear_states();
 	}
 
-	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 0.02f, 10.0f * pm->rad);
-	gr_set_view_matrix(&leaning_position, &Eye_matrix);
+	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 0.02f, Max_draw_distance);
+	gr_set_view_matrix(&eye_pos, &eye_orient);
 
 	Shadow_view_matrix_render = gr_view_matrix;
 
-	if(Cmdline_deferred_lighting_cockpit)
+	if (Cmdline_deferred_lighting_cockpit)
 		gr_deferred_lighting_begin(true);
 
 	uint render_flags = MR_NORMAL;
@@ -7438,19 +7481,34 @@ void ship_render_cockpit(object *objp)
 		render_flags |= MR_NO_GLOWMAPS;
 	}
 
-	model_render_params render_info;
-	render_info.set_detail_level_lock(0);
-	render_info.set_flags(render_flags);
-	render_info.set_replacement_textures(Player_cockpit_textures);
+	//Properly render ship and cockpit model
+	if (deferredRenderShipModel) {
+		model_render_params render_info;
+		render_info.set_detail_level_lock(0);
+		render_info.set_flags(render_flags);
+		render_info.set_replacement_textures(shipp->ship_replacement_textures);
+		render_info.set_object_number(OBJ_INDEX(objp));
+		if (sip->uses_team_colors)
+			render_info.set_team_color(shipp->team_name, shipp->secondary_team_name, 0, 0);
 
-	model_render_immediate(&render_info, sip->cockpit_model_num, &eye_ori, &pos);
+		model_render_immediate(&render_info, sip->cockpit_model_num, &vmd_identity_matrix, &vmd_zero_vector);
+	}
+	if (renderCockpitModel) {
+		model_render_params render_info;
+		render_info.set_detail_level_lock(0);
+		render_info.set_flags(render_flags);
+		render_info.set_replacement_textures(Player_cockpit_textures);
+
+		model_render_immediate(&render_info, sip->cockpit_model_num, &vmd_identity_matrix, &sip->cockpit_offset);
+	}
+
 
 	if (Cmdline_deferred_lighting_cockpit) {
 		gr_end_view_matrix();
 		gr_end_proj_matrix();
 
 		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-		gr_set_view_matrix(&Eye_position, &Eye_matrix);
+		gr_set_view_matrix(&eye_pos, &eye_orient);
 
 		gr_deferred_lighting_end();
 		gr_deferred_lighting_finish();
@@ -7464,85 +7522,8 @@ void ship_render_cockpit(object *objp)
 
 	Proj_fov = fov_backup;
 
-	hud_save_restore_camera_data(0);
-
 	//Restore the Shadow_override
 	shadow_end_frame();
-}
-
-void ship_render_show_ship_cockpit(object *objp)
-{
-	if (objp->type != OBJ_SHIP || objp->instance < 0)
-		return;
-
-	vec3d cockpit_eye_pos;
-	matrix dummy;
-	ship_get_eye(&cockpit_eye_pos, &dummy, objp, true, false); // Get cockpit eye position
-
-	gr_end_view_matrix();
-	gr_end_proj_matrix();
-	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 0.05f, Max_draw_distance);
-	gr_set_view_matrix(&cockpit_eye_pos, &Eye_matrix); // Set Camera to cockpit eye position
-	
-	Glowpoint_override = true; // Turn off glowpoints so they dont get rendered fixed at origin
-
-	model_render_params render_info;
-
-	render_info.set_object_number(OBJ_INDEX(objp));
-
-	// update any replacement and/or team color textures (wookieejedi), then render
-	ship* shipp = &Ships[objp->instance];
-	ship_info* sip = &Ship_info[Ships[objp->instance].ship_info_index];
-
-	render_info.set_replacement_textures(shipp->ship_replacement_textures);
-
-	if (sip->uses_team_colors) {
-		render_info.set_team_color(shipp->team_name, shipp->secondary_team_name, 0, 0);
-	}
-
-	render_info.set_detail_level_lock(0);
-
-	model_render_immediate(&render_info, sip->model_num, &objp->orient,
-	                       &objp->pos); // Render ship model with fixed detail level 0 so its not switching LOD when
-	                                    // moving away from origin
-	Glowpoint_override = false;
-
-	gr_end_view_matrix();
-	gr_end_proj_matrix();
-	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-	gr_set_view_matrix(&Eye_position, &Eye_matrix); // Reset Camera to normal
-}
-
-void ship_render_player_ship(object* objp) {
-	const bool hasCockpitModel = Ship_info[Ships[Viewer_obj->instance].ship_info_index].cockpit_model_num > 0;
-
-	const bool renderCockpitModel = Viewer_mode != VM_TOPDOWN && hasCockpitModel;
-	const bool renderShipModel = (Ship_info[Ships[Viewer_obj->instance].ship_info_index].flags[Ship::Info_Flags::Show_ship_model])
-		&& (!Viewer_mode || (Viewer_mode & VM_PADLOCK_ANY) || (Viewer_mode & VM_OTHER_SHIP) || (Viewer_mode & VM_TRACK)
-			|| !(Viewer_mode & VM_EXTERNAL));
-
-	//Nothing to do
-	if (!(renderCockpitModel || renderShipModel))
-		return;
-
-	//If we aren't sure whether cockpits and external models can share the same worldspace, we need to pre-render the external ship hull without shadows / deferred and give the cockpit precedence, unless this ship has no cockpit at all
-	const bool prerenderShipModel = renderShipModel && hasCockpitModel && !Cockpit_shares_coordinate_space;
-
-	vec3d eye_pos;
-	matrix eye_orient;
-	ship_get_eye_local(&eye_pos, &eye_orient, objp);
-
-	gr_post_process_save_zbuffer();
-	
-	if (prerenderShipModel) {
-		vec3d cockpit_eye_pos;
-		matrix dummy;
-		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 0.05f, Max_draw_distance);
-		gr_set_view_matrix(&eye_pos, &eye_orient);
-
-
-	}
-
 
 	gr_post_process_restore_zbuffer();
 }

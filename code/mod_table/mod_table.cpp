@@ -646,7 +646,7 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Shadow_disable_overrides.disable_mission_select_ships);
 		}
 
-		if (optional_string("$Enable 'show ship' Deferred Render, Cockpit Shares Coordinate Space:")) {
+		if (optional_string("$Cockpit Shares Coordinate Space:")) {
 			stuff_boolean(&Cockpit_shares_coordinate_space);
 		}
 
