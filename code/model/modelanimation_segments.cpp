@@ -861,8 +861,8 @@ namespace animation {
 	}
 	
 
-	ModelAnimationSegmentTranslation::ModelAnimationSegmentTranslation(std::shared_ptr<ModelAnimationSubmodel> submodel, tl::optional<vec3d> target, tl::optional<vec3d> velocity, tl::optional<float> time, tl::optional<vec3d> acceleration, CoordinateSystem coordType) :
-		m_submodel(std::move(submodel)), m_target(target), m_velocity(velocity), m_time(time), m_acceleration(acceleration), m_coordType(coordType) { }
+	ModelAnimationSegmentTranslation::ModelAnimationSegmentTranslation(std::shared_ptr<ModelAnimationSubmodel> submodel, tl::optional<vec3d> target, tl::optional<vec3d> velocity, tl::optional<float> time, tl::optional<vec3d> acceleration, CoordinateSystem coordType, bool isAbsolute) :
+		m_submodel(std::move(submodel)), m_target(target), m_velocity(velocity), m_time(time), m_acceleration(acceleration), m_coordType(coordType), m_isAbsolute(isAbsolute) { }
 
 	ModelAnimationSegment* ModelAnimationSegmentTranslation::copy() const {
 		return new ModelAnimationSegmentTranslation(*this);
@@ -879,7 +879,12 @@ namespace animation {
 		}
 
 		if (m_target) { //If we have an target specified, use it.
-			instanceData.m_actualTarget = *m_target;
+			if (m_isAbsolute) {
+				const ModelAnimationData<>& submodel = base[m_submodel].data;
+				instanceData.m_actualTarget = *m_target - submodel.position;
+			}
+			else
+				instanceData.m_actualTarget = *m_target;
 		}
 		else { //If we don't have a target specified, calculate it. This implies we must have velocity and time.
 			const vec3d& v = *m_velocity;
@@ -1105,17 +1110,22 @@ namespace animation {
 		m_submodel = replaceWith.getSubmodel(m_submodel);
 	}
 
-	//ToDo: DIsabled Translation for now until the backend becomes completed.
-	//ModelAnimationParseHelper::Segment ModelAnimationSegmentTranslation::reg("$Translation:", &parser);
 	std::shared_ptr<ModelAnimationSegment> ModelAnimationSegmentTranslation::parser(ModelAnimationParseHelper* data) {
 		tl::optional<vec3d> offset, velocity, acceleration;
 		tl::optional<float> time;
 		CoordinateSystem coordSystem = CoordinateSystem::COORDS_PARENT;
+		bool isAbsolute = false;
 
 		if (optional_string("+Vector:")) {
 			vec3d parse;
 			stuff_vec3d(&parse);
 			offset = std::move(parse);
+			isAbsolute = optional_string("+Absolute");
+			bool relative = optional_string("+Relative");
+
+			if (isAbsolute && relative) {
+				error_display(1, "Translation cannot both be absolute and relative!");
+			}
 		}
 
 		if (optional_string("+Velocity:")) {
@@ -1165,7 +1175,7 @@ namespace animation {
 				error_display(1, "Translation has no target submodel!");
 		}
 
-		auto segment = std::shared_ptr<ModelAnimationSegmentTranslation>(new ModelAnimationSegmentTranslation(submodel, offset, velocity, time, acceleration, coordSystem));
+		auto segment = std::shared_ptr<ModelAnimationSegmentTranslation>(new ModelAnimationSegmentTranslation(submodel, offset, velocity, time, acceleration, coordSystem, isAbsolute));
 
 		return segment;
 	}
