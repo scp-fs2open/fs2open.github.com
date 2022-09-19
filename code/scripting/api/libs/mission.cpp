@@ -1651,7 +1651,7 @@ ADE_FUNC(hasDebriefing,
 	"boolean",
 	"true if debriefing, false otherwise.")
 {
-	return ade_set_args(L, "b", The_mission.flags[Mission::Mission_Flags::Toggle_debriefing]);
+	return ade_set_args(L, "b", !(The_mission.flags[Mission::Mission_Flags::Toggle_debriefing]));
 }
 
 int testLineOfSight_internal(lua_State* L, bool returnDist_and_Obj) {
