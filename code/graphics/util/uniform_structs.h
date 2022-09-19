@@ -217,6 +217,11 @@ struct matrix_uniforms {
 	matrix4 projMatrix;
 };
 
+struct movie_uniforms {
+	float alpha;
+	float pad[3];
+};
+
 namespace generic_data {
 
 struct passthrough_data {

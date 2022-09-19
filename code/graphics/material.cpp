@@ -162,12 +162,12 @@ void material_set_rocket_interface(interface_material* mat_info,
 	mat_info->set_texture_type(material::TEX_TYPE_INTERFACE);
 }
 
-void material_set_movie(movie_material* mat_info, int y_bm, int u_bm, int v_bm) {
+void material_set_movie(movie_material* mat_info, int y_bm, int u_bm, int v_bm, float alpha) {
 	mat_info->set_depth_mode(ZBUFFER_TYPE_NONE);
 	mat_info->set_blend_mode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
 
 	mat_info->set_cull_mode(false);
-	mat_info->set_color(1.0f, 1.0f, 1.0f, 1.0f);
+	mat_info->set_color(1.0f, 1.0f, 1.0f, alpha);
 
 	mat_info->setYtex(y_bm);
 	mat_info->setUtex(u_bm);
