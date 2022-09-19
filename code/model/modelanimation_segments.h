@@ -186,7 +186,7 @@ namespace animation {
 	class ModelAnimationSegmentTranslation : public ModelAnimationSegment {
 		struct instance_data {
 			vec3d m_actualVelocity;
-			vec3d m_actualTarget; //Usually won't be needed, but if vel + angle is specified, not all angles necessarily end simultaneously.
+			vec3d m_actualTarget;
 			vec3d m_actualTime;
 			tl::optional<vec3d> m_actualAccel;
 			tl::optional<vec3d> m_accelTime;
@@ -204,6 +204,7 @@ namespace animation {
 		tl::optional<float> m_time;
 		tl::optional<vec3d> m_acceleration;
 		enum class CoordinateSystem { COORDS_PARENT, COORDS_LOCAL_AT_START, COORDS_LOCAL_CURRENT } m_coordType;
+		bool m_isAbsolute;
 
 	private:
 
@@ -214,7 +215,7 @@ namespace animation {
 		void exchangeSubmodelPointers(ModelAnimationSet& replaceWith) override;
 	public:
 		static std::shared_ptr<ModelAnimationSegment> parser(ModelAnimationParseHelper* data);
-		ModelAnimationSegmentTranslation(std::shared_ptr<ModelAnimationSubmodel> submodel, tl::optional<vec3d> target, tl::optional<vec3d> velocity, tl::optional<float> time, tl::optional<vec3d> acceleration, CoordinateSystem coordType = CoordinateSystem::COORDS_PARENT);
+		ModelAnimationSegmentTranslation(std::shared_ptr<ModelAnimationSubmodel> submodel, tl::optional<vec3d> target, tl::optional<vec3d> velocity, tl::optional<float> time, tl::optional<vec3d> acceleration, CoordinateSystem coordType = CoordinateSystem::COORDS_PARENT, bool isAbsolute = false);
 
 	};
 
