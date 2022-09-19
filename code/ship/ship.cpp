@@ -7397,17 +7397,19 @@ void ship_render_player_ship(object* objp) {
 
 	gr_reset_clip();
 
-	vec3d eye_pos;
+	vec3d eye_pos, eye_offset;
 	matrix eye_orient;
 	ship_get_eye_local(&eye_pos, &eye_orient, objp);
+	vm_vec_copy_scale(&eye_offset, &eye_pos, -1.0f);
+
+	float fov_backup = Proj_fov;
+	g3_set_fov(Sexp_fov <= 0.0f ? COCKPIT_ZOOM_DEFAULT : Sexp_fov);
 
 	if (prerenderShipModel) {
 		gr_post_process_save_zbuffer();
 
-		vec3d cockpit_eye_pos;
-		matrix dummy;
 		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 0.05f, Max_draw_distance);
-		gr_set_view_matrix(&eye_pos, &eye_orient);
+		gr_set_view_matrix(&leaning_position, &eye_orient);
 
 		model_render_params render_info;
 		render_info.set_object_number(OBJ_INDEX(objp));
@@ -7419,7 +7421,7 @@ void ship_render_player_ship(object* objp) {
 			render_info.set_team_color(shipp->team_name, shipp->secondary_team_name, 0, 0);
 
 		render_info.set_detail_level_lock(0);
-		model_render_immediate(&render_info, sip->model_num, &vmd_identity_matrix, &vmd_zero_vector);
+		model_render_immediate(&render_info, sip->model_num, shipp->model_instance_num, &objp->orient, &eye_offset);
 
 		gr_end_view_matrix();
 		gr_end_proj_matrix();
@@ -7429,37 +7431,40 @@ void ship_render_player_ship(object* objp) {
 
 	//We only needed to prerender the ship model. This can occur if the cockpit isn't rendered for some reason but a model exists.
 	//In this case, we still want to not render the ship model with deferred rendering to keep visuals constant for the ship
-	if (!renderCockpitModel && !deferredRenderShipModel)
+	if (!renderCockpitModel && !deferredRenderShipModel) {
+		Proj_fov = fov_backup;
 		return;
+	}
 
-	gr_post_process_save_zbuffer();
-
-	float fov_backup = Proj_fov;
-	g3_set_fov(Sexp_fov <= 0.0f ? COCKPIT_ZOOM_DEFAULT : Sexp_fov);
+	gr_reset_clip();
 
 	//Deal with the model
 	if(renderCockpitModel)
 		model_clear_instance(sip->cockpit_model_num);
+
+	gr_post_process_save_zbuffer();
 
 	//Deal with shadow if we have to
 	if (shadow_maybe_start_frame(Shadow_disable_overrides.disable_cockpit)) {
 		gr_reset_clip();
 		Shadow_override = false;
 
-		shadows_start_render(&eye_orient, &eye_pos, Proj_fov, gr_screen.clip_aspect, std::get<0>(Shadow_distances_cockpit), std::get<1>(Shadow_distances_cockpit), std::get<2>(Shadow_distances_cockpit), std::get<3>(Shadow_distances_cockpit));
+		shadows_start_render(&eye_orient, &leaning_position, Proj_fov, gr_screen.clip_aspect, std::get<0>(Shadow_distances_cockpit), std::get<1>(Shadow_distances_cockpit), std::get<2>(Shadow_distances_cockpit), std::get<3>(Shadow_distances_cockpit));
 
 		if (deferredRenderShipModel) {
 			model_render_params shadow_render_info;
 			shadow_render_info.set_detail_level_lock(0);
 			shadow_render_info.set_flags(MR_NO_TEXTURING | MR_NO_LIGHTING);
 			shadow_render_info.set_object_number(OBJ_INDEX(objp));
-			model_render_immediate(&shadow_render_info, sip->model_num, shipp->model_instance_num, &vmd_identity_matrix, &vmd_zero_vector);
+			//model_render_immediate(&shadow_render_info, sip->model_num, shipp->model_instance_num, &objp->orient, &eye_offset);
 		}
 		if (renderCockpitModel) {
 			model_render_params shadow_render_info;
 			shadow_render_info.set_detail_level_lock(0);
 			shadow_render_info.set_flags(MR_NO_TEXTURING | MR_NO_LIGHTING);
-			model_render_immediate(&shadow_render_info, sip->cockpit_model_num, &vmd_identity_matrix, &sip->cockpit_offset);
+			vec3d offset = sip->cockpit_offset;
+			vm_vec_unrotate(&offset, &offset, &objp->orient);
+			model_render_immediate(&shadow_render_info, sip->cockpit_model_num, &objp->orient, &offset);
 		}
 
 		shadows_end_render();
@@ -7467,7 +7472,7 @@ void ship_render_player_ship(object* objp) {
 	}
 
 	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 0.02f, Max_draw_distance);
-	gr_set_view_matrix(&eye_pos, &eye_orient);
+	gr_set_view_matrix(&leaning_position, &eye_orient);
 
 	Shadow_view_matrix_render = gr_view_matrix;
 
@@ -7491,15 +7496,17 @@ void ship_render_player_ship(object* objp) {
 		if (sip->uses_team_colors)
 			render_info.set_team_color(shipp->team_name, shipp->secondary_team_name, 0, 0);
 
-		model_render_immediate(&render_info, sip->cockpit_model_num, &vmd_identity_matrix, &vmd_zero_vector);
+		model_render_immediate(&render_info, sip->model_num, shipp->model_instance_num, &objp->orient, &eye_offset);
 	}
 	if (renderCockpitModel) {
 		model_render_params render_info;
 		render_info.set_detail_level_lock(0);
 		render_info.set_flags(render_flags);
 		render_info.set_replacement_textures(Player_cockpit_textures);
+		vec3d offset = sip->cockpit_offset;
+		vm_vec_unrotate(&offset, &offset, &objp->orient);
 
-		model_render_immediate(&render_info, sip->cockpit_model_num, &vmd_identity_matrix, &sip->cockpit_offset);
+		model_render_immediate(&render_info, sip->cockpit_model_num, &objp->orient, &offset);
 	}
 
 
@@ -7508,7 +7515,7 @@ void ship_render_player_ship(object* objp) {
 		gr_end_proj_matrix();
 
 		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-		gr_set_view_matrix(&eye_pos, &eye_orient);
+		gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
 		gr_deferred_lighting_end();
 		gr_deferred_lighting_finish();
@@ -13917,7 +13924,7 @@ void ship_get_eye( vec3d *eye_pos, matrix *eye_orient, object *obj, bool do_slew
 	}
 }
 
-// calculates the eye position for this ship in the ships reference frame.  Uses the
+// calculates the eye position for this ship in the ships reference frame, but rotated along.  Uses the
 // view_positions array in the model.  The 0th element is the normal viewing position.
 // the vector of the eye is returned in the parameter 'eye'.  The orientation of the
 // eye is returned in orient.
@@ -13941,11 +13948,11 @@ void ship_get_eye_local(vec3d* eye_pos, matrix* eye_orient, object* obj, bool do
 	eye* ep = &(pm->view_positions[shipp->current_viewpoint]);
 
 	if (ep->parent >= 0 && pm->submodel[ep->parent].flags[Model::Submodel_flags::Can_move]) {
-		model_instance_local_to_global_point_orient(eye_pos, eye_orient, &ep->pnt, &vmd_identity_matrix, pm, pmi, ep->parent);
+		model_instance_local_to_global_point_orient(eye_pos, eye_orient, &ep->pnt, &vmd_identity_matrix, pm, pmi, ep->parent, &obj->orient, &vmd_zero_vector);
 	}
 	else {
-		model_local_to_global_point(eye_pos, &ep->pnt, Ship_info[shipp->ship_info_index].model_num, ep->parent, &obj->orient);
-		*eye_orient = IDENTITY_MATRIX;
+		model_local_to_global_point(eye_pos, &ep->pnt, Ship_info[shipp->ship_info_index].model_num, ep->parent, &obj->orient, &vmd_zero_vector);
+		*eye_orient = obj->orient;
 	}
 
 	//	Modify the orientation based on head orientation.
