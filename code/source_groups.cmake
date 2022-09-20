@@ -1274,8 +1274,6 @@ add_file_folder("Scripting\\\\Api\\\\Libs"
 	scripting/api/libs/options.h
 	scripting/api/libs/parse.cpp
 	scripting/api/libs/parse.h
-	scripting/api/objs/redalert.cpp
-	scripting/api/objs/redalert.h
 	scripting/api/libs/tables.cpp
 	scripting/api/libs/tables.h
 	scripting/api/libs/testing.cpp
@@ -1385,6 +1383,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/player.h
 	scripting/api/objs/promise.cpp
 	scripting/api/objs/promise.h
+	scripting/api/objs/redalert.cpp
+	scripting/api/objs/redalert.h
 	scripting/api/objs/sexpvar.cpp
 	scripting/api/objs/sexpvar.h
 	scripting/api/objs/shields.cpp
