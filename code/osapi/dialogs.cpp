@@ -215,7 +215,6 @@ namespace os
 
 			if (Cmdline_noninteractive) {
 				throw LuaErrorException(msgStream.str());
-				abort();
 				return;
 			}
 
