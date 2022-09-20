@@ -7451,12 +7451,12 @@ void ship_render_player_ship(object* objp) {
 
 		shadows_start_render(&eye_orient, &leaning_position, Proj_fov, gr_screen.clip_aspect, std::get<0>(Shadow_distances_cockpit), std::get<1>(Shadow_distances_cockpit), std::get<2>(Shadow_distances_cockpit), std::get<3>(Shadow_distances_cockpit));
 
-		if (deferredRenderShipModel) {
+		if (deferredRenderShipModel && Show_ship_casts_shadow) {
 			model_render_params shadow_render_info;
 			shadow_render_info.set_detail_level_lock(0);
 			shadow_render_info.set_flags(MR_NO_TEXTURING | MR_NO_LIGHTING);
 			shadow_render_info.set_object_number(OBJ_INDEX(objp));
-			//model_render_immediate(&shadow_render_info, sip->model_num, shipp->model_instance_num, &objp->orient, &eye_offset);
+			model_render_immediate(&shadow_render_info, sip->model_num, shipp->model_instance_num, &objp->orient, &eye_offset);
 		}
 		if (renderCockpitModel) {
 			model_render_params shadow_render_info;
