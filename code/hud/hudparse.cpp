@@ -3217,12 +3217,17 @@ void load_gauge_target_monitor(gauge_settings* settings)
 		stuff_int_list(Cargo_string_offsets, 2);
 	}
 	if (optional_string("Cargo Scan Type:")) {
-		int type = required_string_one_of(3, "default", "dualscanlines", "discoscanlines");
-		if (type == 1) {
+		char type_str[NAME_LENGTH];
+		stuff_string(type_str, F_NAME, NAME_LENGTH);
+
+		if (!stricmp(type_str, "dualscanlines")) {
 			Cargo_scan_type = CargoScanType::DUAL_SCAN_LINES;
-		} else if (type == 2) {
+		} else if (!stricmp(type_str, "discoscanlines")) {
 			Cargo_scan_type = CargoScanType::DISCO_SCAN_LINES;
 		} else {
+			if (stricmp(type_str, "default")) {
+				Warning(LOCATION, "Unrecognized cargo scan type: %s", type_str);
+			}
 			Cargo_scan_type = CargoScanType::DEFAULT;
 		}
 	}
