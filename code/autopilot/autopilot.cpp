@@ -1208,7 +1208,7 @@ void send_autopilot_msg(const char *msg, const char *snd)
 	}
 
 	if (msg[0] != '\0' && strcmp(msg, "none") != 0)
-		message_training_queue("autopilot builtin message", timestamp(0), 5); // display message for five seconds
+		message_training_queue("autopilot builtin message", TIMESTAMP::immediate(), 5); // display message for five seconds
 }
 
 // ********************************************************************************************
