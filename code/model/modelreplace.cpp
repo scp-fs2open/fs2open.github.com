@@ -49,7 +49,7 @@ public:
 		}
 
 		//Don't copy, just move
-		const polymodel_holder(const polymodel_holder&) = delete;
+		polymodel_holder(const polymodel_holder&) = delete;
 		polymodel_holder& operator=(const polymodel_holder&) = delete;
 
 		~polymodel_holder() {
@@ -73,7 +73,7 @@ public:
 		if (it == cache.end()) {
 			auto pmh = ::make_shared<polymodel_holder>(pof_name, depth);
 			if(pmh->needs_emplace)
-				virtual_pof_build_cache.cache.emplace(pof_name, pmh);
+				cache.emplace(pof_name, pmh);
 			return pmh;
 		}
 		return it->second;
