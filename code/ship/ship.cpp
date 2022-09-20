@@ -7451,10 +7451,11 @@ void ship_render_player_ship(object* objp) {
 
 		shadows_start_render(&eye_orient, &leaning_position, Proj_fov, gr_screen.clip_aspect, std::get<0>(Shadow_distances_cockpit), std::get<1>(Shadow_distances_cockpit), std::get<2>(Shadow_distances_cockpit), std::get<3>(Shadow_distances_cockpit));
 
-		if (deferredRenderShipModel && Show_ship_casts_shadow) {
+		if (deferredRenderShipModel) {
 			model_render_params shadow_render_info;
 			shadow_render_info.set_detail_level_lock(0);
-			shadow_render_info.set_flags(MR_NO_TEXTURING | MR_NO_LIGHTING);
+			//If we just want to recieve, we still have to write to the color buffer but not to the zbuffer, otherwise shadow recieving breaks
+			shadow_render_info.set_flags(MR_NO_TEXTURING | MR_NO_LIGHTING | (Show_ship_casts_shadow ? 0 : MR_NO_ZBUFFER));
 			shadow_render_info.set_object_number(OBJ_INDEX(objp));
 			model_render_immediate(&shadow_render_info, sip->model_num, shipp->model_instance_num, &objp->orient, &eye_offset);
 		}
@@ -7462,6 +7463,7 @@ void ship_render_player_ship(object* objp) {
 			model_render_params shadow_render_info;
 			shadow_render_info.set_detail_level_lock(0);
 			shadow_render_info.set_flags(MR_NO_TEXTURING | MR_NO_LIGHTING);
+			shadow_render_info.set_object_number(OBJ_INDEX(objp));
 			vec3d offset = sip->cockpit_offset;
 			vm_vec_unrotate(&offset, &offset, &objp->orient);
 			model_render_immediate(&shadow_render_info, sip->cockpit_model_num, &objp->orient, &offset);
@@ -7497,6 +7499,7 @@ void ship_render_player_ship(object* objp) {
 			render_info.set_team_color(shipp->team_name, shipp->secondary_team_name, 0, 0);
 
 		model_render_immediate(&render_info, sip->model_num, shipp->model_instance_num, &objp->orient, &eye_offset);
+		gr_zbuffer_clear(true);
 	}
 	if (renderCockpitModel) {
 		model_render_params render_info;
@@ -7505,7 +7508,6 @@ void ship_render_player_ship(object* objp) {
 		render_info.set_replacement_textures(Player_cockpit_textures);
 		vec3d offset = sip->cockpit_offset;
 		vm_vec_unrotate(&offset, &offset, &objp->orient);
-
 		model_render_immediate(&render_info, sip->cockpit_model_num, &objp->orient, &offset);
 	}
 
