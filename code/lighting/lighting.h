@@ -84,6 +84,9 @@ public:
 	light_indexing_info bufferLights();
 };
 
+enum class lighting_mode { NORMAL, COCKPIT };
+extern lighting_mode Lighting_mode;
+
 extern void light_reset();
 
 //Intensity in lighting inputs multiplies the base colors.

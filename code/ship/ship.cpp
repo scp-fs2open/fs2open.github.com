@@ -7436,6 +7436,8 @@ void ship_render_player_ship(object* objp) {
 		return;
 	}
 
+	Lighting_mode = lighting_mode::COCKPIT;
+
 	gr_reset_clip();
 
 	//Deal with the model
@@ -7525,6 +7527,8 @@ void ship_render_player_ship(object* objp) {
 		gr_reset_lighting();
 		gr_set_lighting();
 	}
+
+	Lighting_mode = lighting_mode::NORMAL;
 
 	gr_end_view_matrix();
 	gr_end_proj_matrix();
