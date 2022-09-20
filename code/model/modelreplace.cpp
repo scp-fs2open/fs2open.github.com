@@ -33,18 +33,19 @@ private:
 	SCP_unordered_map<SCP_string, std::shared_ptr<polymodel_holder>, SCP_string_lcase_hash, SCP_string_lcase_equal_to> cache;
 
 public:
-	class polymodel_holder : std::enable_shared_from_this<polymodel_holder> {
+	class polymodel_holder {
 		polymodel* _pm;
 		model_read_deferred_tasks _deferred;
-		SCP_set<int> keepTextures{}, keepGlowbanks{};
+		SCP_set<int> keepTextures{}, keepGlowbanks{}, keepSM{};
+		bool needs_emplace = false;
+		friend class VirtualPOFBuildCache;
 
 	public:
-		polymodel_holder(const SCP_string& pof_name, const model_parse_depth& depth) {
+		polymodel_holder(const SCP_string& pof_name, const model_parse_depth& depth) : _pm(new polymodel()), _deferred() {
 			auto status = read_model_file(_pm, pof_name.c_str(), 0, _deferred, depth);
 			create_family_tree(_pm);
-			if (status == modelread_status::SUCCESS_REAL) {
-				virtual_pof_build_cache.cache.emplace(pof_name, shared_from_this());
-			}
+			if (status == modelread_status::SUCCESS_REAL)
+				needs_emplace = true;
 		}
 
 		//Don't copy, just move
@@ -54,7 +55,8 @@ public:
 		~polymodel_holder() {
 			if (_pm == nullptr)
 				return;
-
+			for (int sm : keepSM)
+				_pm->submodel[sm].bsp_data = nullptr;
 			model_page_out_textures(_pm, true, keepTextures, keepGlowbanks);
 			model_free(_pm);
 		}
@@ -63,12 +65,16 @@ public:
 		inline const polymodel* pm() const { return _pm; }
 		inline void keepTexture(int texture) { keepTextures.emplace(texture); }
 		inline void keepGlowbank(int gb) { keepGlowbanks.emplace(gb); }
+		inline void keepBSPData(int sm) { keepSM.emplace(sm); }
 	};
 
 	const std::shared_ptr<polymodel_holder> operator()(const SCP_string& pof_name, const model_parse_depth& depth) {
 		auto it = cache.find(pof_name);
 		if (it == cache.end()) {
-			return ::make_shared<polymodel_holder>(pof_name, depth);
+			auto pmh = ::make_shared<polymodel_holder>(pof_name, depth);
+			if(pmh->needs_emplace)
+				virtual_pof_build_cache.cache.emplace(pof_name, pmh);
+			return pmh;
 		}
 		return it->second;
 	}
@@ -279,7 +285,7 @@ void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_
 	const polymodel* appendingPM = appendingPMholder->pm();
 
 	int src_subobj_no = model_find_submodel_index(appendingPM, subobjNameSrc.c_str());
-	int dest_subobj_no = model_find_submodel_index(appendingPM, subobjNameDest.c_str());
+	int dest_subobj_no = model_find_submodel_index(pm, subobjNameDest.c_str());
 
 	if (src_subobj_no >= 0 && dest_subobj_no >= 0) {
 		create_family_tree(pm);
@@ -357,7 +363,7 @@ void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_
 				}
 
 				//Clear old pointer to data
-				appendingPM->submodel[to_copy_submodels[i]].bsp_data = nullptr;
+				appendingPMholder->keepBSPData(to_copy_submodels[i]);
 			}
 
 			//Register as next child to our destination
