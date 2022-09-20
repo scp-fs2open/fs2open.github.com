@@ -29,6 +29,7 @@
 #include "mission/missioncampaign.h"
 #include "missionui/redalert.h"
 #include "network/multi.h"
+#include "network/multiteamselect.h"
 #include "playerman/managepilot.h"
 #include "radar/radarsetup.h"
 #include "scpui/SoundPlugin.h"
@@ -40,6 +41,7 @@
 #include "scripting/api/objs/cmd_brief.h"
 #include "scripting/api/objs/briefing.h"
 #include "scripting/api/objs/debriefing.h"
+#include "scripting/api/objs/shipwepselect.h"
 #include "scripting/api/objs/color.h"
 #include "scripting/api/objs/enums.h"
 #include "scripting/api/objs/player.h"
@@ -1034,6 +1036,69 @@ ADE_FUNC(getFictionMusicName, l_UserInterface_FictionViewer, nullptr,
 	"The file name or empty if no music")
 {
 	return ade_set_args(L, "s", common_music_get_filename(SCORE_FICTION_VIEWER).c_str());
+}
+
+//**********SUBLIBRARY: UserInterface/ShipWepSelect
+ADE_LIB_DERIV(l_UserInterface_ShipWepSelect,
+	"ShipWepSelect",
+	nullptr,
+	"API for accessing data related to the ship and weapon select UIs.<br><b>Warning:</b> This is an internal "
+	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	l_UserInterface);
+
+ADE_FUNC(initSelect,
+	l_UserInterface_ShipWepSelect,
+	nullptr,
+	"Initializes selection data including wing slots, ship and weapon pool, and loadout information",
+	nullptr,
+	nullptr)
+{
+	//Note this does all the things from common_select_init() in missionscreencommon.cpp except load UI
+	//elements into memory - Mjn
+	
+	Common_team = 0;
+
+	if ((Game_mode & GM_MULTIPLAYER) && IS_MISSION_MULTI_TEAMS)
+		Common_team = Net_player->p_info.team;
+
+	common_set_team_pointers(Common_team);
+
+	ship_select_common_init();
+	weapon_select_common_init();
+
+	if ( Game_mode & GM_MULTIPLAYER ) {
+		multi_ts_common_init();
+	}
+
+	// restore loadout from Player_loadout if this is the same mission as the one previously played
+	if ( !(Game_mode & GM_MULTIPLAYER) ) {
+		if ( !stricmp(Player_loadout.filename, Game_current_mission_filename) ) {
+			wss_maybe_restore_loadout();
+			ss_synch_interface();
+			wl_synch_interface();
+		}
+	}
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_LIB_DERIV(l_Loadout_Wings, "Loadout_Wings", nullptr, nullptr, l_UserInterface_ShipWepSelect);
+ADE_INDEXER(l_Loadout_Wings, //
+	"number Index",
+	"Array of loadout wing data",
+	"loadout_wing",
+	"loadout handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "s", "");
+	idx--; //Convert to Lua's 1 based index system
+	return ade_set_args(L, "o", l_Loadout_Wing.Set(ss_wing_info_h(idx)));
+}
+
+ADE_FUNC(__len, l_Loadout_Wings, nullptr, "The number of loadout wings", "number", "The number of loadout wings.")
+{
+	return ade_set_args(L, "i", Ss_wings->num_slots);
 }
 
 //**********SUBLIBRARY: UserInterface/TechRoom
