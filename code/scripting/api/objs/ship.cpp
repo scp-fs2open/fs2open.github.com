@@ -1278,8 +1278,8 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem Ta
 	if(priority < 0.0f)
 		return ade_set_error(L, "b", false);
 
-	if(priority > 1.0f)
-		priority = 1.0f;
+	if(priority > 2.0f)
+		priority = 2.0f;
 
 	bool tgh_valid = tgh && tgh->IsValid();
 	bool tgsh_valid = tgsh && tgsh->isSubsystemValid();
