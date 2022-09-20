@@ -885,7 +885,7 @@ ADE_FUNC(canSkip,
 
 ADE_FUNC(replayMission,
 	l_UserInterface_Debrief,
-	"[boolean restart = false]",
+	"[boolean restart = true]",
 	"Resets the mission outcome, and optionally restarts the mission at the briefing; "
 	"true to restart the mission, false to stay at current UI. Defaults to true.",
 	nullptr,
@@ -912,7 +912,7 @@ ADE_FUNC(replayMission,
 
 ADE_FUNC(acceptMission,
 	l_UserInterface_Debrief,
-	"[boolean start = false]",
+	"[boolean start = true]",
 	"Accepts the mission outcome, saves the stats, and optionally begins the next mission if in campaign; "
 	"true to start the next mission, false to stay at current UI. Defaults to true.",
 	nullptr,
