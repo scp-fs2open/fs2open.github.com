@@ -5,6 +5,9 @@
 #include "vecmath.h"
 #include "weaponclass.h"
 
+extern bool sexp_check_flag_arrays(const char *flag_name, Object::Object_Flags &object_flag, Ship::Ship_Flags &ship_flags, Mission::Parse_Object_Flags &parse_obj_flag, AI::AI_Flags &ai_flag);
+extern void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future_ships, Object::Object_Flags object_flag, Ship::Ship_Flags ship_flag, Mission::Parse_Object_Flags parse_obj_flag, AI::AI_Flags ai_flag, bool set_flag);
+
 namespace scripting {
 namespace api {
 
@@ -61,6 +64,72 @@ ADE_VIRTVAR(
 	}
 
 	return ade_set_args(L, "s", poh->getObject()->get_display_name());
+}
+
+ADE_FUNC(setFlag, l_ParseObject, "boolean set_it, string flag_name1, [string flag_name2, string flag_name3, string flag_name4, string flag_name5]", "Sets or clears a flag or series of flags.  The flag name can be any string that the alter-ship-flag SEXP operator accepts.", nullptr, "Returns nothing")
+{
+	parse_object_h *poh = nullptr;
+	bool set_it;
+	const char *flag_name[5];
+
+	int num_args = ade_get_args(L, "obs|ssss", l_ParseObject.GetPtr(&poh), &set_it, &flag_name[0], &flag_name[1], &flag_name[2], &flag_name[3], &flag_name[4]);
+	if (num_args < 3)
+		return ADE_RETURN_NIL;
+
+	if (!poh->isValid())
+		return ADE_RETURN_NIL;
+
+	auto pobjp = poh->getObject();
+	object_ship_wing_point_team oswpt(pobjp);
+
+	for (int i = 0; i < num_args - 2; i++)
+	{
+		auto object_flag = Object::Object_Flags::NUM_VALUES;
+		auto ship_flag = Ship::Ship_Flags::NUM_VALUES;
+		auto parse_obj_flag = Mission::Parse_Object_Flags::NUM_VALUES;
+		auto ai_flag = AI::AI_Flags::NUM_VALUES;
+
+		sexp_check_flag_arrays(flag_name[i], object_flag, ship_flag, parse_obj_flag, ai_flag);
+		sexp_alter_ship_flag_helper(oswpt, true, object_flag, ship_flag, parse_obj_flag, ai_flag, set_it);
+	}
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(getFlag, l_ParseObject, "string flag_name1, [string flag_name2, string flag_name3, string flag_name4, string flag_name5]", "Checks whether one or more specified flags are set.  The flag name can be any string that the alter-ship-flag SEXP operator accepts.", "boolean", "Returns whether all flags are set, or nil if the ship is not valid")
+{
+	parse_object_h *poh = nullptr;
+	const char *flag_name[5];
+
+	int num_args = ade_get_args(L, "os|ssss", l_ParseObject.GetPtr(&poh), &flag_name[0], &flag_name[1], &flag_name[2], &flag_name[3], &flag_name[4]);
+	if (num_args < 2)
+		return ADE_RETURN_NIL;
+
+	if (!poh->isValid())
+		return ADE_RETURN_NIL;
+
+	auto pobjp = poh->getObject();
+
+	for (int i = 0; i < num_args - 1; i++)
+	{
+		auto object_flag = Object::Object_Flags::NUM_VALUES;
+		auto ship_flag = Ship::Ship_Flags::NUM_VALUES;
+		auto parse_obj_flag = Mission::Parse_Object_Flags::NUM_VALUES;
+		auto ai_flag = AI::AI_Flags::NUM_VALUES;
+
+		sexp_check_flag_arrays(flag_name[i], object_flag, ship_flag, parse_obj_flag, ai_flag);
+
+		// we only check parse flags
+
+		if (parse_obj_flag != Mission::Parse_Object_Flags::NUM_VALUES)
+		{
+			if (!pobjp->flags[parse_obj_flag])
+				return ADE_RETURN_FALSE;
+		}
+	}
+
+	// if we're still here, all the flags we were looking for were present
+	return ADE_RETURN_TRUE;
 }
 
 ADE_VIRTVAR(Position, l_ParseObject, "vector", "The position at which the object will arrive.", "vector",

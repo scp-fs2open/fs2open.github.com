@@ -29,6 +29,8 @@
 #include "parse/parselo.h"
 
 extern void ship_reset_disabled_physics(object *objp, int ship_class);
+extern bool sexp_check_flag_arrays(const char *flag_name, Object::Object_Flags &object_flag, Ship::Ship_Flags &ship_flags, Mission::Parse_Object_Flags &parse_obj_flag, AI::AI_Flags &ai_flag);
+extern void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future_ships, Object::Object_Flags object_flag, Ship::Ship_Flags ship_flag, Mission::Parse_Object_Flags parse_obj_flag, AI::AI_Flags ai_flag, bool set_flag);
 
 namespace scripting {
 namespace api {
@@ -178,6 +180,87 @@ ADE_FUNC(__len, l_Ship, NULL, "Number of subsystems on ship", "number", "Subsyst
 		return ade_set_error(L, "i", 0);
 
 	return ade_set_args(L, "i", ship_get_num_subsys(&Ships[objh->objp->instance]));
+}
+
+ADE_FUNC(setFlag, l_Ship, "boolean set_it, string flag_name1, [string flag_name2, string flag_name3, string flag_name4, string flag_name5]", "Sets or clears a flag or series of flags.  The flag name can be any string that the alter-ship-flag SEXP operator accepts.", nullptr, "Returns nothing")
+{
+	object_h *objh;
+	bool set_it;
+	const char *flag_name[5];
+
+	int num_args = ade_get_args(L, "obs|ssss", l_Ship.GetPtr(&objh), &set_it, &flag_name[0], &flag_name[1], &flag_name[2], &flag_name[3], &flag_name[4]);
+	if (num_args < 3)
+		return ADE_RETURN_NIL;
+
+	if (!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	auto shipp = &Ships[objh->objp->instance];
+	object_ship_wing_point_team oswpt(shipp);
+
+	for (int i = 0; i < num_args - 2; i++)
+	{
+		auto object_flag = Object::Object_Flags::NUM_VALUES;
+		auto ship_flag = Ship::Ship_Flags::NUM_VALUES;
+		auto parse_obj_flag = Mission::Parse_Object_Flags::NUM_VALUES;
+		auto ai_flag = AI::AI_Flags::NUM_VALUES;
+
+		sexp_check_flag_arrays(flag_name[i], object_flag, ship_flag, parse_obj_flag, ai_flag);
+		sexp_alter_ship_flag_helper(oswpt, true, object_flag, ship_flag, parse_obj_flag, ai_flag, set_it);
+	}
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(getFlag, l_Ship, "string flag_name1, [string flag_name2, string flag_name3, string flag_name4, string flag_name5]", "Checks whether one or more specified flags are set.  The flag name can be any string that the alter-ship-flag SEXP operator accepts.", "boolean", "Returns whether all flags are set, or nil if the ship is not valid")
+{
+	object_h *objh;
+	const char *flag_name[5];
+
+	int num_args = ade_get_args(L, "os|ssss", l_Ship.GetPtr(&objh), &flag_name[0], &flag_name[1], &flag_name[2], &flag_name[3], &flag_name[4]);
+	if (num_args < 2)
+		return ADE_RETURN_NIL;
+
+	if (!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	auto shipp = &Ships[objh->objp->instance];
+	auto objp = objh->objp;
+	auto aip = &Ai_info[shipp->ai_index];
+
+	for (int i = 0; i < num_args - 1; i++)
+	{
+		auto object_flag = Object::Object_Flags::NUM_VALUES;
+		auto ship_flag = Ship::Ship_Flags::NUM_VALUES;
+		auto parse_obj_flag = Mission::Parse_Object_Flags::NUM_VALUES;
+		auto ai_flag = AI::AI_Flags::NUM_VALUES;
+
+		sexp_check_flag_arrays(flag_name[i], object_flag, ship_flag, parse_obj_flag, ai_flag);
+
+		// now check the flags
+		if (object_flag != Object::Object_Flags::NUM_VALUES)
+		{
+			if (!(objp->flags[object_flag]))
+				return ADE_RETURN_FALSE;
+		}
+
+		if (ship_flag != Ship::Ship_Flags::NUM_VALUES)
+		{
+			if (!(shipp->flags[ship_flag]))
+				return ADE_RETURN_FALSE;
+		}
+
+		// we don't check parse flags
+
+		if (ai_flag != AI::AI_Flags::NUM_VALUES)
+		{
+			if (!(aip->ai_flags[ai_flag]))
+				return ADE_RETURN_FALSE;
+		}
+	}
+
+	// if we're still here, all the flags we were looking for were present
+	return ADE_RETURN_TRUE;
 }
 
 ADE_VIRTVAR(ShieldArmorClass, l_Ship, "string", "Current Armor class of the ships' shield", "string", "Armor class name, or empty string if none is set")
@@ -2046,7 +2129,6 @@ ADE_FUNC(getDisplayString, l_Ship, nullptr, "Returns the string which should be 
 
 ADE_FUNC(vanish, l_Ship, nullptr, "Vanishes this ship from the mission. Works in Singleplayer only and will cause the ship exit to not be logged.", "boolean", "True if the deletion was successful, false otherwise.")
 {
-
 	object_h* objh = nullptr;
 
 	if (!ade_get_args(L, "o", l_Ship.GetPtr(&objh)))
