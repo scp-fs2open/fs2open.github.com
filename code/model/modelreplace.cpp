@@ -387,8 +387,6 @@ void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_
 				pm->maps[usedTexture.second] = appendingPM->maps[usedTexture.first];
 				appendingPMholder->keepTexture(usedTexture.first);
 			}
-
-			VirtualPOFOperationAddTurret::addTurretToPM(pm, deferredTasks, 0, appendingPM, appendingSubsys);
 		}
 		else {
 			Warning(LOCATION, "Failed to add submodel %s of POF %s to virtual POF %s, original POF already has a subsystem with the same name as was supposed to be added.", subobjNameSrc.c_str(), appendingPOF.c_str(), virtualPof.name.c_str());
@@ -397,12 +395,6 @@ void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_
 	else {
 		Warning(LOCATION, "Failed to add submodel %s of POF %s to virtual POF %s, specified subobject was not found. Returning original POF", subobjNameSrc.c_str(), appendingPOF.c_str(), virtualPof.name.c_str());
 	}
-}
-
-
-
-void VirtualPOFOperationAddTurret::addTurretToPM(polymodel* pm, model_read_deferred_tasks& deferredTasks, int turretNum, const polymodel* toAppend, const model_read_deferred_tasks& toAppendTasks) {
-
 }
 
 VirtualPOFOperationRenameSubobjects::VirtualPOFOperationRenameSubobjects() {
@@ -415,38 +407,19 @@ VirtualPOFOperationRenameSubobjects::VirtualPOFOperationRenameSubobjects() {
 }
 
 void VirtualPOFOperationRenameSubobjects::process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth /*depth*/, const VirtualPOFDefinition& /*virtualPof*/) const {
-	for (int i = 0; i < pm->n_models; i++) {
-		auto it = replacements.find(pm->submodel[i].name);
-		if (it != replacements.end()) {
-			strncpy(pm->submodel[i].name, it->second.c_str(), it->second.size());
-			pm->submodel[i].name[it->second.size()] = '\0';
-		}
-		it = replacements.find(pm->submodel[i].lod_name);
-		if (it != replacements.end()) {
-			strncpy(pm->submodel[i].lod_name, it->second.c_str(), it->second.size());
-			pm->submodel[i].lod_name[it->second.size()] = '\0';
-		}
-	}
 
-	auto copy_model_subsys = deferredTasks.model_subsystems;
-	for (const auto& replace : replacements) {
-		deferredTasks.model_subsystems.erase(replace.first);
-	}
-	for (const auto& replace : replacements) {
-		auto it = copy_model_subsys.find(replace.first);
-		if (it != copy_model_subsys.end())
-			deferredTasks.model_subsystems.emplace(replace.second, it->second);
-	}
+	for (int i = 0; i < pm->n_models; i++)
+		change_submodel_name(pm->submodel[i], replacements);
 
-	auto copy_engine_subsys = deferredTasks.engine_subsystems;
-	for (const auto& replace : replacements) {
-		deferredTasks.engine_subsystems.erase(replace.first);
-	}
-	for (const auto& replace : replacements) {
-		auto it = copy_engine_subsys.find(replace.first);
-		if (it != copy_engine_subsys.end())
-			deferredTasks.engine_subsystems.emplace(replace.second, it->second);
-	}
+	decltype(deferredTasks.model_subsystems) copy_model_subsys;
+	for (const auto& entry : deferredTasks.model_subsystems)
+		copy_model_subsys.emplace(change_submodel_name(model_read_deferred_tasks::model_subsystem_pair(entry), replacements));
+	deferredTasks.model_subsystems = std::move(copy_model_subsys);
+
+	decltype(deferredTasks.engine_subsystems) copy_engine_subsys;
+	for (const auto& entry : deferredTasks.engine_subsystems)
+		copy_engine_subsys.emplace(change_submodel_name(model_read_deferred_tasks::engine_subsystem_pair(entry), replacements));
+	deferredTasks.engine_subsystems = std::move(copy_engine_subsys);
 }
 
 VirtualPOFOperationChangeData::VirtualPOFOperationChangeData() {
