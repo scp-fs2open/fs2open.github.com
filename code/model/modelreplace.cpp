@@ -21,9 +21,63 @@ static SCP_unordered_map<SCP_string, std::function<std::unique_ptr<VirtualPOFOpe
 /*
 * forward declares for internal modelread functions
 */
-extern int read_model_file(polymodel* pm, const char* filename, int ferror, model_read_deferred_tasks& deferredTasks, model_parse_depth depth = {});
+extern modelread_status read_model_file(polymodel* pm, const char* filename, int ferror, model_read_deferred_tasks& deferredTasks, model_parse_depth depth = {});
 extern void create_family_tree(polymodel* obj);
 extern void model_calc_bound_box(vec3d* box, vec3d* big_mn, vec3d* big_mx);
+
+static class VirtualPOFBuildCache {
+public:
+	class polymodel_holder;
+
+private:
+	SCP_unordered_map<SCP_string, std::shared_ptr<polymodel_holder>, SCP_string_lcase_hash, SCP_string_lcase_equal_to> cache;
+
+public:
+	class polymodel_holder : std::enable_shared_from_this<polymodel_holder> {
+		polymodel* _pm;
+		model_read_deferred_tasks _deferred;
+		SCP_set<int> keepTextures{}, keepGlowbanks{};
+
+	public:
+		polymodel_holder(const SCP_string& pof_name, const model_parse_depth& depth) {
+			auto status = read_model_file(_pm, pof_name.c_str(), 0, _deferred, depth);
+			create_family_tree(_pm);
+			if (status == modelread_status::SUCCESS_REAL) {
+				virtual_pof_build_cache.cache.emplace(pof_name, shared_from_this());
+			}
+		}
+
+		//Don't copy, just move
+		const polymodel_holder(const polymodel_holder&) = delete;
+		polymodel_holder& operator=(const polymodel_holder&) = delete;
+
+		~polymodel_holder() {
+			if (_pm == nullptr)
+				return;
+
+			model_page_out_textures(_pm, true, keepTextures, keepGlowbanks);
+			model_free(_pm);
+		}
+
+		inline const model_read_deferred_tasks& deferred() const { return _deferred; }
+		inline const polymodel* pm() const { return _pm; }
+		inline void keepTexture(int texture) { keepTextures.emplace(texture); }
+		inline void keepGlowbank(int gb) { keepGlowbanks.emplace(gb); }
+	};
+
+	const std::shared_ptr<polymodel_holder> operator()(const SCP_string& pof_name, const model_parse_depth& depth) {
+		auto it = cache.find(pof_name);
+		if (it == cache.end()) {
+			return ::make_shared<polymodel_holder>(pof_name, depth);
+		}
+		return it->second;
+	}
+
+	void clear() {
+		cache.clear();
+	}
+
+} virtual_pof_build_cache;
 
 // General Functions and external code paths
 
@@ -58,6 +112,10 @@ bool read_virtual_model_file(polymodel* pm, const SCP_string& filename, model_pa
 		operation->process(pm, deferredTasks, depth, virtual_pof);
 
 	return true;
+}
+
+void virtual_pof_purge_cache() {
+	virtual_pof_build_cache.clear();
 }
 
 // Parsing function
@@ -122,38 +180,77 @@ void virtual_pof_init() {
 // Internal helper functions
 
 #define REPLACE_IF_EQ(data) if ((data) == source) (data) = dest;
-#define REPLACE_IF_EQ_TERNARY(data) (data == source ? dest : data)
+#define REPLACE_IF_STRIEQ(data) if (stricmp(data, source.c_str()) == 0) { strncpy(data, dest.c_str(), dest.size()); data[dest.size()] = '\0'; }
 
-static bsp_info change_submodel_numbers(const bsp_info& input, int source, int dest) {
-	bsp_info submodel = input;
-	for (auto& detail : submodel.details)
+//Generates one function for replacing data in a type, which is a map entry of which the key may be replaced. Takes an rvalue reference, used for making a copy and modifying the tempoary to then assign it somewhere
+#define CHANGE_HELPER_MAP_KEY(name, intype, argtype) template<typename map_t> static typename std::enable_if<std::is_same<typename map_t::value_type, std::pair<const argtype, argtype>>::value, intype>::type name(intype&& input, map_t replace){ \
+	const auto it = replace.find(input.first); \
+	intype result = { (it == replace.end() ? input.first : it->second), input.second }; \
+	for (const auto& replacement : replace) { \
+		const argtype& source = replacement.first; \
+		const argtype& dest = replacement.second;
+#define CHANGE_HELPER_MAP_KEY_END } return result; }
+
+//Generates two functions for replacing data in a type. One that takes an rvalue reference, used for making a copy and modifying the tempoary to then assign it somewhere, and one which takes an lvalue reference for modifying in-place
+#define CHANGE_HELPER(name, intype, argtype) template<typename map_t> static typename std::enable_if<std::is_same<typename map_t::value_type, std::pair<const argtype, argtype>>::value>::type name(intype& input, map_t replace); \
+template<typename map_t> inline static typename std::enable_if<std::is_same<typename map_t::value_type, std::pair<const argtype, argtype>>::value, intype>::type name(intype&& input, map_t replace){ \
+	name<map_t>(input, replace); \
+	return input; \
+} \
+template<typename map_t> static typename std::enable_if<std::is_same<typename map_t::value_type, std::pair<const argtype, argtype>>::value>::type name(intype& input, map_t replace) {\
+	for (const auto& replacement : replace) { \
+		const argtype& source = replacement.first; \
+		const argtype& dest = replacement.second;
+#define CHANGE_HELPER_END }}
+
+//Change submodel numbers in a submodel
+CHANGE_HELPER(change_submodel_numbers, bsp_info, int) 
+	for (auto& detail : input.details)
 		REPLACE_IF_EQ(detail);
-	REPLACE_IF_EQ(submodel.first_child);
-	REPLACE_IF_EQ(submodel.i_replace);
-	for (auto& debris : submodel.live_debris)
+	REPLACE_IF_EQ(input.first_child);
+	REPLACE_IF_EQ(input.i_replace);
+	for (auto& debris : input.live_debris)
 		REPLACE_IF_EQ(debris);
-	REPLACE_IF_EQ(submodel.look_at_submodel);
-	REPLACE_IF_EQ(submodel.my_replacement);
-	REPLACE_IF_EQ(submodel.next_sibling);
-	REPLACE_IF_EQ(submodel.parent);
+	REPLACE_IF_EQ(input.look_at_submodel);
+	REPLACE_IF_EQ(input.my_replacement);
+	REPLACE_IF_EQ(input.next_sibling);
+	REPLACE_IF_EQ(input.parent);
+CHANGE_HELPER_END
 
-	return submodel;
-}
+//Change submodel numbers in a subsystem definition
+CHANGE_HELPER(change_submodel_numbers, model_read_deferred_tasks::model_subsystem_pair, int)
+	REPLACE_IF_EQ(input.second.subobj_nr);
+CHANGE_HELPER_END
 
-static model_read_deferred_tasks::model_subsystem_pair change_submodel_numbers(const model_read_deferred_tasks::model_subsystem_pair& input, int source, int dest) {
-	model_read_deferred_tasks::model_subsystem_pair subsystem = input;
-	REPLACE_IF_EQ(subsystem.second.subobj_nr);
-	return subsystem;
-}
+//Change submodel numbers in a turret definition
+CHANGE_HELPER_MAP_KEY(change_submodel_numbers, model_read_deferred_tasks::weapon_subsystem_pair, int)
+	REPLACE_IF_EQ(input.second.gun_subobj_nr);
+CHANGE_HELPER_MAP_KEY_END
 
-static model_read_deferred_tasks::weapon_subsystem_pair change_submodel_numbers(const model_read_deferred_tasks::weapon_subsystem_pair& input, int source, int dest) {
-	model_read_deferred_tasks::weapon_subsystem_pair subsystem = { REPLACE_IF_EQ_TERNARY(input.first), input.second };
-	REPLACE_IF_EQ(subsystem.second.gun_subobj_nr);
-	return subsystem;
-}
+//Change submodel name in a submodel
+CHANGE_HELPER(change_submodel_name, bsp_info, SCP_string)
+	REPLACE_IF_STRIEQ(input.name);
+	REPLACE_IF_STRIEQ(input.lod_name);
+CHANGE_HELPER_END
 
-#undef REPLACE_IF_EQ_TERNARY
+//Change submodel name in a subsystem definition
+CHANGE_HELPER_MAP_KEY(change_submodel_name, model_read_deferred_tasks::model_subsystem_pair, SCP_string)
+	SCP_UNUSED(source);
+	SCP_UNUSED(dest);
+CHANGE_HELPER_MAP_KEY_END
+
+//Change submodel numbers in an engine definition
+CHANGE_HELPER_MAP_KEY(change_submodel_name, model_read_deferred_tasks::engine_subsystem_pair, SCP_string)
+	SCP_UNUSED(source);
+	SCP_UNUSED(dest);
+CHANGE_HELPER_MAP_KEY_END
+
+#undef CHANGE_HELPER
+#undef CHANGE_HELPER_END
+#undef CHANGE_HELPER_MAP_KEY
+#undef CHANGE_HELPER_MAP_KEY_END
 #undef REPLACE_IF_EQ
+#undef REPLACE_IF_STRIEQ
 
 // Actual replacement operations
 
@@ -177,20 +274,17 @@ VirtualPOFOperationAddSubmodel::VirtualPOFOperationAddSubmodel() {
 }
 
 void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const {
-	polymodel* appendingPM = new polymodel();
-	model_read_deferred_tasks appendingSubsys;
-	SCP_set<int> keepTextures;
-	read_model_file(appendingPM, appendingPOF.c_str(), 0, appendingSubsys, depth);
+	auto appendingPMholder = virtual_pof_build_cache(appendingPOF, depth);
+	const model_read_deferred_tasks& appendingSubsys = appendingPMholder->deferred();
+	const polymodel* appendingPM = appendingPMholder->pm();
 
 	int src_subobj_no = model_find_submodel_index(appendingPM, subobjNameSrc.c_str());
 	int dest_subobj_no = model_find_submodel_index(appendingPM, subobjNameDest.c_str());
 
 	if (src_subobj_no >= 0 && dest_subobj_no >= 0) {
 		create_family_tree(pm);
-		create_family_tree(appendingPM);
 
-		if (rename != nullptr)
-			rename->process(appendingPM, appendingSubsys, depth, virtualPof);
+		const VirtualPOFOperationRenameSubobjects::replacement_map& renameMap = (rename == nullptr ? VirtualPOFOperationRenameSubobjects::replacement_map{} : rename->replacements);
 
 		SCP_vector<int> to_copy_submodels;
 		bool has_name_collision = false;
@@ -221,11 +315,17 @@ void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_
 				pm->submodel[i] = oldSubmodels[i];
 			delete[] oldSubmodels;
 
+			SCP_unordered_map<int, int> replaceSubobjNo;
+			for (int i = 0; i < (int)to_copy_submodels.size(); i++)
+				replaceSubobjNo.emplace(to_copy_submodels[i], i + old_n_submodel);
+
 			//Copy subsystem definitions
 			for (int i = 0; i < (int)to_copy_submodels.size(); i++) {
 				auto it = appendingSubsys.model_subsystems.find(appendingPM->submodel[to_copy_submodels[i]].name);
 				if (it != appendingSubsys.model_subsystems.end()) {
-					deferredTasks.model_subsystems.emplace(change_submodel_numbers(*it, to_copy_submodels[i], i + old_n_submodel));
+					deferredTasks.model_subsystems.emplace(
+						change_submodel_name(change_submodel_numbers(model_read_deferred_tasks::model_subsystem_pair(*it), replaceSubobjNo), renameMap)
+					);
 				}
 			}
 			
@@ -236,7 +336,7 @@ void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_
 			//Copy over new data. This one needs to be fully free'd afterwards, so make sure to nullptr the respective pointers before freeing later
 			for (int i = 0; i < (int)to_copy_submodels.size(); i++) {
 				auto& newSubmodel = pm->submodel[i + old_n_submodel];
-				newSubmodel = change_submodel_numbers(appendingPM->submodel[to_copy_submodels[i]], to_copy_submodels[i], i + old_n_submodel);
+				newSubmodel = change_submodel_name(change_submodel_numbers(bsp_info(appendingPM->submodel[to_copy_submodels[i]]), replaceSubobjNo), renameMap);
 
 				//Set new Depth
 				newSubmodel.depth += deltaDepth;
@@ -249,8 +349,6 @@ void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_
 						int newID = pm->n_textures++;
 						if (pm->n_textures > MAX_MODEL_TEXTURES) {
 							Warning(LOCATION, "Failed to add submodel %s of POF %s to virtual POF %s, combined POF has too many (over %d) textures.", subobjNameSrc.c_str(), appendingPOF.c_str(), virtualPof.name.c_str(), MAX_MODEL_TEXTURES);
-							model_page_out_textures(appendingPM, true);
-							model_free(appendingPM);
 							return;
 						}
 						it = textureIDReplace.emplace(textureID, newID).first;
@@ -287,7 +385,7 @@ void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_
 			//Actually copy textures
 			for (const auto& usedTexture : textureIDReplace) {
 				pm->maps[usedTexture.second] = appendingPM->maps[usedTexture.first];
-				keepTextures.emplace(usedTexture.first);
+				appendingPMholder->keepTexture(usedTexture.first);
 			}
 
 			VirtualPOFOperationAddTurret::addTurretToPM(pm, deferredTasks, 0, appendingPM, appendingSubsys);
@@ -299,10 +397,6 @@ void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_
 	else {
 		Warning(LOCATION, "Failed to add submodel %s of POF %s to virtual POF %s, specified subobject was not found. Returning original POF", subobjNameSrc.c_str(), appendingPOF.c_str(), virtualPof.name.c_str());
 	}
-
-	
-	model_page_out_textures(appendingPM, true, keepTextures);
-	model_free(appendingPM);
 }
 
 

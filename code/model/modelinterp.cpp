@@ -3426,6 +3426,6 @@ void bsp_polygon_data::replace_textures_used(const SCP_map<int, int>& replacemen
 	}
 }
 
-SCP_set<int> model_get_textures_used(polymodel* pm, int submodel) {
+SCP_set<int> model_get_textures_used(const polymodel* pm, int submodel) {
 	return bsp_polygon_data{ pm->submodel[submodel].bsp_data }.get_textures_used();
 }
