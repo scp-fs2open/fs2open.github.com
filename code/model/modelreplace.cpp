@@ -74,7 +74,7 @@ public:
 		auto it = cache.find(pof_name);
 		
 		//Don't load from cache if it's a virtual pof (always reload these) or we don't have it cached
-		if ((vp_it != virtual_pofs.end() && vp_it->second.size() > depth[pof_name]) || it == cache.end()) {
+		if ((vp_it != virtual_pofs.end() && (int)vp_it->second.size() > depth[pof_name]) || it == cache.end()) {
 			auto pmh = ::make_shared<polymodel_holder>(pof_name, depth);
 			if(pmh->needs_emplace)
 				cache.emplace(pof_name, pmh);
