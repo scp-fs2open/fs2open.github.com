@@ -1203,7 +1203,7 @@ ADE_FUNC(startMission,
 	return ade_set_args(L, "b", false);
 }
 
-ADE_FUNC(getMissionTime, l_Mission, NULL, "Game time in seconds since the mission was started; is affected by time compression", "number", "Mission time (seconds) of the current or most recently played mission.")
+ADE_FUNC(getMissionTime, l_Mission, nullptr, "Game time in seconds since the mission was started; is affected by time compression", "number", "Mission time (seconds) of the current or most recently played mission.")
 {
 	return ade_set_args(L, "x", Missiontime);
 }
