@@ -1276,6 +1276,7 @@ void sexp_add_to_map(int node)
 			// modifying existing keys' data is ok, but adding new keys is not
 			if (container.map_data.find(key) == container.map_data.end()) {
 				report_container_used_in_special_arg("Add-to-map", container_name);
+				node = CDDR(node); // skip to next key-data pair
 				continue;
 			}
 		}
