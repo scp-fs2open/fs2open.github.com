@@ -1368,7 +1368,7 @@ ADE_VIRTVAR(ShudderIntensity, l_Mission, "number", "Gets or sets the shudder int
 
 ADE_FUNC(isInMission, l_Mission, nullptr, "get whether or not a mission is currently being played", "boolean", "true if in mission, false otherwise")
 {
-	return ade_set_args(L, "b", (Game_mode & GM_IN_MISSION));
+	return ade_set_args(L, "b", (Game_mode & GM_IN_MISSION) != 0);
 }
 
 ADE_FUNC(isInCampaign, l_Mission, NULL, "Get whether or not the current mission being played in a campaign (as opposed to the tech room's simulator)", "boolean", "true if in campaign, false if not")
