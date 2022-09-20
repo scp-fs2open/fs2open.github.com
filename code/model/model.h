@@ -894,12 +894,16 @@ struct model_read_deferred_tasks {
 
 	//Key: Subsystem Name
 	SCP_unordered_map<SCP_string, model_subsystem_parse, SCP_string_lcase_hash, SCP_string_lcase_equal_to> model_subsystems;
+	using model_subsystem_pair = decltype(model_subsystems)::value_type;
 	//Key: Subsystem Name
 	SCP_unordered_map<SCP_string, engine_subsystem_parse, SCP_string_lcase_hash, SCP_string_lcase_equal_to> engine_subsystems;
+	using engine_subsystem_pair = decltype(engine_subsystems)::value_type;
 	//Key: Parent Subobject Nr
 	SCP_unordered_map<int, weapon_subsystem_parse> weapons_subsystems;
+	using weapon_subsystem_pair = decltype(weapons_subsystems)::value_type;
 	//Key: Subobject Nr
 	SCP_unordered_map<int, texture_idx_replace> texture_replacements;
+	using texture_replacement_pair = decltype(texture_replacements)::value_type;
 };
 
 using model_parse_depth = SCP_unordered_map<SCP_string, int, SCP_string_lcase_hash, SCP_string_lcase_equal_to>;

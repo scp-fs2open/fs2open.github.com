@@ -122,25 +122,37 @@ void virtual_pof_init() {
 // Internal helper functions
 
 #define REPLACE_IF_EQ(data) if ((data) == source) (data) = dest;
+#define REPLACE_IF_EQ_TERNARY(data) (data == source ? dest : data)
 
-static void change_submodel_numbers(polymodel* pm, int source, int dest) {
-	//For now only in the subobject data...
-	//TODO Phase 2 expand to full polymodel
-	for (int i = 0; i < pm->n_models; i++) {
-		auto& submodel = pm->submodel[i];
-		for (auto& detail : submodel.details)
-			REPLACE_IF_EQ(detail);
-		REPLACE_IF_EQ(submodel.first_child);
-		REPLACE_IF_EQ(submodel.i_replace);
-		for (auto& debris : submodel.live_debris)
-			REPLACE_IF_EQ(debris);
-		REPLACE_IF_EQ(submodel.look_at_submodel);
-		REPLACE_IF_EQ(submodel.my_replacement);
-		REPLACE_IF_EQ(submodel.next_sibling);
-		REPLACE_IF_EQ(submodel.parent);
-	}
+static bsp_info change_submodel_numbers(const bsp_info& input, int source, int dest) {
+	bsp_info submodel = input;
+	for (auto& detail : submodel.details)
+		REPLACE_IF_EQ(detail);
+	REPLACE_IF_EQ(submodel.first_child);
+	REPLACE_IF_EQ(submodel.i_replace);
+	for (auto& debris : submodel.live_debris)
+		REPLACE_IF_EQ(debris);
+	REPLACE_IF_EQ(submodel.look_at_submodel);
+	REPLACE_IF_EQ(submodel.my_replacement);
+	REPLACE_IF_EQ(submodel.next_sibling);
+	REPLACE_IF_EQ(submodel.parent);
+
+	return submodel;
 }
 
+static model_read_deferred_tasks::model_subsystem_pair change_submodel_numbers(const model_read_deferred_tasks::model_subsystem_pair& input, int source, int dest) {
+	model_read_deferred_tasks::model_subsystem_pair subsystem = input;
+	REPLACE_IF_EQ(subsystem.second.subobj_nr);
+	return subsystem;
+}
+
+static model_read_deferred_tasks::weapon_subsystem_pair change_submodel_numbers(const model_read_deferred_tasks::weapon_subsystem_pair& input, int source, int dest) {
+	model_read_deferred_tasks::weapon_subsystem_pair subsystem = { REPLACE_IF_EQ_TERNARY(input.first), input.second };
+	REPLACE_IF_EQ(subsystem.second.gun_subobj_nr);
+	return subsystem;
+}
+
+#undef REPLACE_IF_EQ_TERNARY
 #undef REPLACE_IF_EQ
 
 // Actual replacement operations
@@ -209,15 +221,11 @@ void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_
 				pm->submodel[i] = oldSubmodels[i];
 			delete[] oldSubmodels;
 
-			//Modify new data to correct submodel indices. First move all indices to a safe spot where there can be no overlaps, then to the correct spot
-			for (const auto& id : to_copy_submodels)
-				change_submodel_numbers(appendingPM, id, id + pm->n_models);
+			//Copy subsystem definitions
 			for (int i = 0; i < (int)to_copy_submodels.size(); i++) {
-				change_submodel_numbers(appendingPM, to_copy_submodels[i] + pm->n_models, i + old_n_submodel);
 				auto it = appendingSubsys.model_subsystems.find(appendingPM->submodel[to_copy_submodels[i]].name);
 				if (it != appendingSubsys.model_subsystems.end()) {
-					it->second.subobj_nr = i + old_n_submodel;
-					deferredTasks.model_subsystems.emplace(*it);
+					deferredTasks.model_subsystems.emplace(change_submodel_numbers(*it, to_copy_submodels[i], i + old_n_submodel));
 				}
 			}
 			
@@ -228,7 +236,7 @@ void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_
 			//Copy over new data. This one needs to be fully free'd afterwards, so make sure to nullptr the respective pointers before freeing later
 			for (int i = 0; i < (int)to_copy_submodels.size(); i++) {
 				auto& newSubmodel = pm->submodel[i + old_n_submodel];
-				newSubmodel = appendingPM->submodel[to_copy_submodels[i]];
+				newSubmodel = change_submodel_numbers(appendingPM->submodel[to_copy_submodels[i]], to_copy_submodels[i], i + old_n_submodel);
 
 				//Set new Depth
 				newSubmodel.depth += deltaDepth;
@@ -281,6 +289,8 @@ void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_
 				pm->maps[usedTexture.second] = appendingPM->maps[usedTexture.first];
 				keepTextures.emplace(usedTexture.first);
 			}
+
+			VirtualPOFOperationAddTurret::addTurretToPM(pm, deferredTasks, 0, appendingPM, appendingSubsys);
 		}
 		else {
 			Warning(LOCATION, "Failed to add submodel %s of POF %s to virtual POF %s, original POF already has a subsystem with the same name as was supposed to be added.", subobjNameSrc.c_str(), appendingPOF.c_str(), virtualPof.name.c_str());
@@ -293,6 +303,12 @@ void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_
 	
 	model_page_out_textures(appendingPM, true, keepTextures);
 	model_free(appendingPM);
+}
+
+
+
+void VirtualPOFOperationAddTurret::addTurretToPM(polymodel* pm, model_read_deferred_tasks& deferredTasks, int turretNum, const polymodel* toAppend, const model_read_deferred_tasks& toAppendTasks) {
+
 }
 
 VirtualPOFOperationRenameSubobjects::VirtualPOFOperationRenameSubobjects() {

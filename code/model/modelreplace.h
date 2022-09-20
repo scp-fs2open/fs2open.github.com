@@ -43,6 +43,15 @@ public:
 	void process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const override;
 };
 
+class VirtualPOFOperationAddTurret : public VirtualPOFOperation {
+	
+	static void addTurretToPM(polymodel* pm, model_read_deferred_tasks& deferredTasks, int turretSubobjFrom, const polymodel* toAppend, const model_read_deferred_tasks& toAppendTasks);
+	friend class VirtualPOFOperationAddSubmodel;
+public:
+	VirtualPOFOperationAddTurret();
+	void process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const override;
+};
+
 class VirtualPOFOperationChangeData : public VirtualPOFOperation {
 	SCP_string submodel;
 	tl::optional<vec3d> setOffset = tl::nullopt;
