@@ -885,40 +885,57 @@ ADE_FUNC(canSkip,
 
 ADE_FUNC(replayMission,
 	l_UserInterface_Debrief,
+	"[boolean restart = true]",
+	"Resets the mission outcome, and optionally restarts the mission at the briefing; "
+	"true to restart the mission, false to stay at current UI. Defaults to true.",
 	nullptr,
-	"Resets the mission outcome and begins the current mission again",
-	"number",
-	"Returns true when completed")
+	nullptr)
 {
+
+	bool restart = true;
+
+	ade_get_args(L, "|b", &restart);
+
 	// This is used to skip some UI preloading in debrief init
 	API_Access = true;
 
 	debrief_close();
 
-	gameseq_post_event(GS_EVENT_START_GAME);
+	if (restart) {
+		gameseq_post_event(GS_EVENT_START_GAME);
+	}
 
 	API_Access = false;
 
-	return ade_set_args(L, "b", true);
+	return ADE_RETURN_NIL;
 }
 
 ADE_FUNC(acceptMission,
 	l_UserInterface_Debrief,
+	"[boolean start = true]",
+	"Accepts the mission outcome, saves the stats, and optionally begins the next mission if in campaign; "
+	"true to start the next mission, false to stay at current UI. Defaults to true.",
 	nullptr,
-	"Accepts the mission outcome, saves the stats, and begins the next mission if in campaign",
-	"number",
-	"Returns true when completed")
+	nullptr)
 {
+	bool start = true;
+
+	ade_get_args(L, "|b", &start);
+
 	// This is used to skip some UI preloading in debrief init
 	API_Access = true;
 
-	debrief_accept();
+	if (start) {
+		debrief_accept(1);
+	} else {
+		debrief_accept(0);
+	};
 
 	debrief_close();
 
 	API_Access = false;
 
-	return ade_set_args(L, "b", true);
+	return ADE_RETURN_NIL;
 }
 
 //**********SUBLIBRARY: UserInterface/LoopBrief
