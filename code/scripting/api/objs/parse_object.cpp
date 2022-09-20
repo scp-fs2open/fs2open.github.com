@@ -16,10 +16,10 @@ p_object* parse_object_h::getObject() const { return _obj; }
 bool parse_object_h::isValid() const { return _obj != nullptr; }
 
 //**********HANDLE: parse_object
-ADE_OBJ(l_ParseObject, parse_object_h, "parse_object", "Handle to a parse object");
+ADE_OBJ(l_ParseObject, parse_object_h, "parse_object", "Handle to a parsed ship");
 
 ADE_VIRTVAR(Name, l_ParseObject, "string",
-            "The name of the object. If possible, don't set the name but set the display name instead.", "string",
+            "The name of the parsed ship. If possible, don't set the name but set the display name instead.", "string",
             "The name or empty string on error")
 {
 	parse_object_h* poh = nullptr;
@@ -42,7 +42,7 @@ ADE_VIRTVAR(Name, l_ParseObject, "string",
 
 ADE_VIRTVAR(
     DisplayName, l_ParseObject, "string",
-    "The display name of the object. If the name should be shown to the user, use this since it can be translated.",
+    "The display name of the parsed ship. If the name should be shown to the user, use this since it can be translated.",
     "string", "The display name or empty string on error")
 {
 	parse_object_h* poh = nullptr;
@@ -132,8 +132,8 @@ ADE_FUNC(getFlag, l_ParseObject, "string flag_name1, [string flag_name2, string 
 	return ADE_RETURN_TRUE;
 }
 
-ADE_VIRTVAR(Position, l_ParseObject, "vector", "The position at which the object will arrive.", "vector",
-            "The position of the object.")
+ADE_VIRTVAR(Position, l_ParseObject, "vector", "The position at which the parsed ship will arrive.", "vector",
+            "The position of the parsed ship.")
 {
 	parse_object_h* poh = nullptr;
 	vec3d* newPos       = nullptr;
@@ -153,7 +153,7 @@ ADE_VIRTVAR(Position, l_ParseObject, "vector", "The position at which the object
 	return ade_set_args(L, "o", l_Vector.Set(poh->getObject()->pos));
 }
 
-ADE_VIRTVAR(Orientation, l_ParseObject, "orientation", "The orientation of the object.", "orientation", "The orientation")
+ADE_VIRTVAR(Orientation, l_ParseObject, "orientation", "The orientation of the parsed ship.", "orientation", "The orientation")
 {
 	parse_object_h* poh = nullptr;
 	matrix_h* newMat    = nullptr;
@@ -173,7 +173,7 @@ ADE_VIRTVAR(Orientation, l_ParseObject, "orientation", "The orientation of the o
 	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&poh->getObject()->orient)));
 }
 
-ADE_VIRTVAR(ShipClass, l_ParseObject, "shipclass", "The ship class of the object.", "shipclass", "The ship class")
+ADE_VIRTVAR(ShipClass, l_ParseObject, "shipclass", "The ship class of the parsed ship.", "shipclass", "The ship class")
 {
 	parse_object_h* poh = nullptr;
 	int newClass        = -1;
@@ -193,7 +193,7 @@ ADE_VIRTVAR(ShipClass, l_ParseObject, "shipclass", "The ship class of the object
 	return ade_set_args(L, "o", l_Shipclass.Set(poh->getObject()->ship_class));
 }
 
-ADE_VIRTVAR(InitialHull, l_ParseObject, "number", "The initial hull percentage of this object.", "number",
+ADE_VIRTVAR(InitialHull, l_ParseObject, "number", "The initial hull percentage of this parsed ship.", "number",
             "The initial hull")
 {
 	parse_object_h* poh = nullptr;
@@ -214,7 +214,7 @@ ADE_VIRTVAR(InitialHull, l_ParseObject, "number", "The initial hull percentage o
 	return ade_set_args(L, "i", poh->getObject()->initial_hull);
 }
 
-ADE_VIRTVAR(InitialShields, l_ParseObject, "number", "The initial shields percentage of this object.", "number",
+ADE_VIRTVAR(InitialShields, l_ParseObject, "number", "The initial shields percentage of this parsed ship.", "number",
             "The initial shields")
 {
 	parse_object_h* poh   = nullptr;
@@ -264,8 +264,8 @@ ADE_VIRTVAR(MainStatus, l_ParseObject, nullptr,
 	return ade_set_args(L, "o", l_ParseSubsystem.Set(parse_subsys_h()));
 }
 
-ADE_VIRTVAR(Subsystems, l_ParseObject, nullptr, "Get the list of subsystems of this parse object",
-            "parse_subsystem[]", "An array of the parse subsystems of this object")
+ADE_VIRTVAR(Subsystems, l_ParseObject, nullptr, "Get the list of subsystems of this parsed ship",
+            "parse_subsystem[]", "An array of the parse subsystems of this parsed ship")
 {
 	parse_object_h* poh = nullptr;
 	if (!ade_get_args(L, "o", l_ParseObject.GetPtr(&poh)))
@@ -295,7 +295,7 @@ ADE_VIRTVAR(Subsystems, l_ParseObject, nullptr, "Get the list of subsystems of t
 	return ade_set_args(L, "t", tbl);
 }
 
-ADE_FUNC(isPlayerStart, l_ParseObject, nullptr, "Determines if this parse object is a player start.", "boolean",
+ADE_FUNC(isPlayerStart, l_ParseObject, nullptr, "Determines if this parsed ship is a player start.", "boolean",
          "true if player start, false if not or if invalid")
 {
 	parse_object_h* poh = nullptr;

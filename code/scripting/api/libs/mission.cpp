@@ -388,6 +388,46 @@ ADE_FUNC(__len, l_Mission_Ships, NULL,
 		return ade_set_args(L, "i", 0);
 }
 
+//****SUBLIBRARY: Mission/ParsedShips
+ADE_LIB_DERIV(l_Mission_ParsedShips, "ParsedShips", nullptr, "Parsed ships (aka parse objects) in the mission", l_Mission);
+
+ADE_INDEXER(l_Mission_ParsedShips, "number/string IndexOrName", "Gets parsed ship", "parse_object", "Parsed ship handle, or invalid handle if index was invalid")
+{
+	const char *name;
+	if (!ade_get_args(L, "*s", &name))
+		return ade_set_error(L, "o", l_ParseObject.Set(parse_object_h(nullptr)));
+
+	auto pobjp = mission_parse_get_parse_object(name);
+
+	if (pobjp)
+	{
+		return ade_set_args(L, "o", l_ParseObject.Set(parse_object_h(pobjp)));
+	}
+	else
+	{
+		auto idx = atoi(name);
+		if (idx > 0)
+		{
+			idx--;	// Lua -> C++
+
+			if (idx < static_cast<int>(Parse_objects.size()))
+			{
+				return ade_set_args(L, "o", l_ParseObject.Set(parse_object_h(&Parse_objects[idx])));
+			}
+		}
+	}
+
+	return ade_set_error(L, "o", l_ParseObject.Set(parse_object_h(nullptr)));
+}
+
+ADE_FUNC(__len, l_Mission_ParsedShips, NULL,
+		 "Number of parsed ships in the mission. This function is quick and the value returned can be relied on to be stable for the entire mission.",
+		 "number",
+		 "Number of parsed ships in the most recently loaded mission, or 0 if no mission has been parsed yet")
+{
+	return ade_set_args(L, "i", static_cast<int>(Parse_objects.size()));
+}
+
 //****SUBLIBRARY: Mission/Waypoints
 ADE_LIB_DERIV(l_Mission_Waypoints, "Waypoints", NULL, NULL, l_Mission);
 
