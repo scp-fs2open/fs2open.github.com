@@ -201,7 +201,7 @@ void virtual_pof_init() {
 #define CHANGE_HELPER(name, intype, argtype) template<typename map_t> static typename std::enable_if<std::is_same<typename map_t::value_type, std::pair<const argtype, argtype>>::value>::type name(intype& input, map_t replace); \
 template<typename map_t> inline static typename std::enable_if<std::is_same<typename map_t::value_type, std::pair<const argtype, argtype>>::value, intype>::type name(intype&& input, map_t replace){ \
 	name<map_t>(input, replace); \
-	return input; \
+	return std::move(input); \
 } \
 template<typename map_t> static typename std::enable_if<std::is_same<typename map_t::value_type, std::pair<const argtype, argtype>>::value>::type name(intype& input, map_t replace) {\
 	for (const auto& replacement : replace) { \
