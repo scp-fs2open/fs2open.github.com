@@ -25,14 +25,8 @@ struct ss_slot_info_h {
 	ss_slot_info* getSlot() const;
 };
 
-//DECLARE_ADE_OBJ(l_LoadoutWingSlot, ss_slot_info_h);
-
-//DECLARE_ADE_OBJ(l_LoadoutWing, ss_wing_info_h);
-
 DECLARE_ADE_OBJ(l_Loadout_Wing, ss_wing_info_h);
 DECLARE_ADE_OBJ(l_Loadout_Wing_Slot, ss_slot_info_h);
-
-//DECLARE_ADE_OBJ(l_Goals, int);
 
 } // namespace api
 } // namespace scripting
