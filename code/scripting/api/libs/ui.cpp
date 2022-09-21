@@ -1056,6 +1056,8 @@ ADE_FUNC(initSelect,
 	//Note this does all the things from common_select_init() in missionscreencommon.cpp except load UI
 	//elements into memory - Mjn
 	
+	SCP_UNUSED(L); // unused parameter
+
 	Common_team = 0;
 
 	if ((Game_mode & GM_MULTIPLAYER) && IS_MISSION_MULTI_TEAMS)
