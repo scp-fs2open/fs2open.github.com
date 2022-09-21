@@ -73,6 +73,7 @@ extern "C" {
 #include "scripting/api/libs/hookvars.h"
 #include "scripting/api/libs/hud.h"
 #include "scripting/api/libs/mission.h"
+#include "scripting/api/libs/multi.h"
 #include "scripting/api/libs/options.h"
 #include "scripting/api/libs/parse.h"
 #include "scripting/api/libs/tables.h"
