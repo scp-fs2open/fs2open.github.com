@@ -66,15 +66,15 @@ ADE_VIRTVAR(
 	return ade_set_args(L, "s", poh->getObject()->get_display_name());
 }
 
-ADE_FUNC(setFlag, l_ParseObject, "boolean set_it, string flag_name1, [string flag_name2, string flag_name3, string flag_name4, string flag_name5]", "Sets or clears a flag or series of flags.  The flag name can be any string that the alter-ship-flag SEXP operator accepts.", nullptr, "Returns nothing")
+ADE_FUNC(setFlag, l_ParseObject, "boolean set_it, string flag_name(s)", "Sets or clears one or more flags - this function can accept an arbitrary number of flag arguments.  The flag names can be any string that the alter-ship-flag SEXP operator supports.", nullptr, "Returns nothing")
 {
 	parse_object_h *poh = nullptr;
 	bool set_it;
-	const char *flag_name[5];
+	const char *flag_name;
 
-	int num_args = ade_get_args(L, "obs|ssss", l_ParseObject.GetPtr(&poh), &set_it, &flag_name[0], &flag_name[1], &flag_name[2], &flag_name[3], &flag_name[4]);
-	if (num_args < 3)
+	if (!ade_get_args(L, "obs", l_ParseObject.GetPtr(&poh), &set_it, &flag_name))
 		return ADE_RETURN_NIL;
+	int skip_args = 2;	// not 3 because there will be one more below
 
 	if (!poh->isValid())
 		return ADE_RETURN_NIL;
@@ -82,42 +82,43 @@ ADE_FUNC(setFlag, l_ParseObject, "boolean set_it, string flag_name1, [string fla
 	auto pobjp = poh->getObject();
 	object_ship_wing_point_team oswpt(pobjp);
 
-	for (int i = 0; i < num_args - 2; i++)
-	{
+	do {
 		auto object_flag = Object::Object_Flags::NUM_VALUES;
 		auto ship_flag = Ship::Ship_Flags::NUM_VALUES;
 		auto parse_obj_flag = Mission::Parse_Object_Flags::NUM_VALUES;
 		auto ai_flag = AI::AI_Flags::NUM_VALUES;
 
-		sexp_check_flag_arrays(flag_name[i], object_flag, ship_flag, parse_obj_flag, ai_flag);
+		sexp_check_flag_arrays(flag_name, object_flag, ship_flag, parse_obj_flag, ai_flag);
 		sexp_alter_ship_flag_helper(oswpt, true, object_flag, ship_flag, parse_obj_flag, ai_flag, set_it);
-	}
+
+	// read the next flag
+	internal::Ade_get_args_skip = ++skip_args;
+	} while (ade_get_args(L, "|s", &flag_name) > 0);
 
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(getFlag, l_ParseObject, "string flag_name1, [string flag_name2, string flag_name3, string flag_name4, string flag_name5]", "Checks whether one or more specified flags are set.  The flag name can be any string that the alter-ship-flag SEXP operator accepts.", "boolean", "Returns whether all flags are set, or nil if the ship is not valid")
+ADE_FUNC(getFlag, l_ParseObject, "string flag_name(s)", "Checks whether one or more flags are set - this function can accept an arbitrary number of flag arguments.  The flag names can be any string that the alter-ship-flag SEXP operator supports.", "boolean", "Returns whether all flags are set, or nil if the parsed ship is not valid")
 {
 	parse_object_h *poh = nullptr;
-	const char *flag_name[5];
+	const char *flag_name;
 
-	int num_args = ade_get_args(L, "os|ssss", l_ParseObject.GetPtr(&poh), &flag_name[0], &flag_name[1], &flag_name[2], &flag_name[3], &flag_name[4]);
-	if (num_args < 2)
+	if (!ade_get_args(L, "os", l_ParseObject.GetPtr(&poh), &flag_name))
 		return ADE_RETURN_NIL;
+	int skip_args = 1;	// not 2 because there will be one more below
 
 	if (!poh->isValid())
 		return ADE_RETURN_NIL;
 
 	auto pobjp = poh->getObject();
 
-	for (int i = 0; i < num_args - 1; i++)
-	{
+	do {
 		auto object_flag = Object::Object_Flags::NUM_VALUES;
 		auto ship_flag = Ship::Ship_Flags::NUM_VALUES;
 		auto parse_obj_flag = Mission::Parse_Object_Flags::NUM_VALUES;
 		auto ai_flag = AI::AI_Flags::NUM_VALUES;
 
-		sexp_check_flag_arrays(flag_name[i], object_flag, ship_flag, parse_obj_flag, ai_flag);
+		sexp_check_flag_arrays(flag_name, object_flag, ship_flag, parse_obj_flag, ai_flag);
 
 		// we only check parse flags
 
@@ -126,7 +127,10 @@ ADE_FUNC(getFlag, l_ParseObject, "string flag_name1, [string flag_name2, string 
 			if (!pobjp->flags[parse_obj_flag])
 				return ADE_RETURN_FALSE;
 		}
-	}
+
+	// read the next flag
+	internal::Ade_get_args_skip = ++skip_args;
+	} while (ade_get_args(L, "|s", &flag_name) > 0);
 
 	// if we're still here, all the flags we were looking for were present
 	return ADE_RETURN_TRUE;
