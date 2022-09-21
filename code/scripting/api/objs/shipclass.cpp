@@ -227,6 +227,57 @@ ADE_VIRTVAR(Description, l_Shipclass, "string", "Ship class description", "strin
 		return ade_set_args(L, "s", "");
 }
 
+ADE_VIRTVAR(SelectIconFilename, l_Shipclass, "string", "Ship class select icon filename", "string", "Filename, or empty string if handle is invalid")
+{
+	int idx;
+	const char* s = nullptr;
+	if (!ade_get_args(L, "o|s", l_Shipclass.Get(&idx), &s))
+		return ade_set_error(L, "s", "");
+
+	if (idx < 0 || idx >= ship_info_size())
+		return ade_set_error(L, "s", "");
+
+	if(ADE_SETTING_VAR) {
+		LuaError(L, "Setting Select Icon is not supported");
+	}
+
+	return ade_set_args(L, "s", Ship_info[idx].icon_filename);
+}
+
+ADE_VIRTVAR(SelectAnimFilename, l_Shipclass, "string", "Ship class select animation filename", "string", "Filename, or empty string if handle is invalid")
+{
+	int idx;
+	const char* s = nullptr;
+	if (!ade_get_args(L, "o|s", l_Shipclass.Get(&idx), &s))
+		return ade_set_error(L, "s", "");
+
+	if (idx < 0 || idx >= ship_info_size())
+		return ade_set_error(L, "s", "");
+
+	if(ADE_SETTING_VAR) {
+		LuaError(L, "Setting Select Anim is not supported");
+	}
+
+	return ade_set_args(L, "s", Ship_info[idx].anim_filename);
+}
+
+ADE_VIRTVAR(SelectOverheadFilename, l_Shipclass, "string", "Ship class select overhead filename", "string", "Filename, or empty string if handle is invalid")
+{
+	int idx;
+	const char* s = nullptr;
+	if (!ade_get_args(L, "o|s", l_Shipclass.Get(&idx), &s))
+		return ade_set_error(L, "s", "");
+
+	if (idx < 0 || idx >= ship_info_size())
+		return ade_set_error(L, "s", "");
+
+	if(ADE_SETTING_VAR) {
+		LuaError(L, "Setting Select Overhead Image is not supported");
+	}
+
+	return ade_set_args(L, "s", Ship_info[idx].overhead_filename);
+}
+
 ADE_VIRTVAR(TechDescription, l_Shipclass, "string", "Ship class tech description", "string", "Tech description, or empty string if handle is invalid")
 {
 	int idx;

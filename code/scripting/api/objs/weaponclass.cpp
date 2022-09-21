@@ -165,6 +165,40 @@ ADE_VIRTVAR(TechAnimationFilename, l_Weaponclass, "string", "Weapon class animat
 	return ade_set_args(L, "s", Weapon_info[idx].tech_anim_filename);
 }
 
+ADE_VIRTVAR(SelectIconFilename, l_Weaponclass, "string", "Weapon class select icon filename", "string", "Filename, or empty string if handle is invalid")
+{
+	int idx;
+	const char* s = nullptr;
+	if(!ade_get_args(L, "o|s", l_Weaponclass.Get(&idx), &s))
+		return ade_set_error(L, "s", "");
+
+	if(idx < 0 || idx >= weapon_info_size())
+		return ade_set_error(L, "s", "");
+
+	if(ADE_SETTING_VAR) {
+		LuaError(L, "Setting Select Icon is not supported");
+	}
+
+	return ade_set_args(L, "s", Weapon_info[idx].icon_filename);
+}
+
+ADE_VIRTVAR(SelectAnimFilename, l_Weaponclass, "string", "Weapon class select animation filename", "string", "Filename, or empty string if handle is invalid")
+{
+	int idx;
+	const char* s = nullptr;
+	if(!ade_get_args(L, "o|s", l_Weaponclass.Get(&idx), &s))
+		return ade_set_error(L, "s", "");
+
+	if(idx < 0 || idx >= weapon_info_size())
+		return ade_set_error(L, "s", "");
+
+	if(ADE_SETTING_VAR) {
+		LuaError(L, "Setting Select Anim is not supported");
+	}
+
+	return ade_set_args(L, "s", Weapon_info[idx].anim_filename);
+}
+
 ADE_VIRTVAR(TechDescription, l_Weaponclass, "string", "Weapon class tech description string", "string", "Description string, or empty string if handle is invalid")
 {
 	int idx;
