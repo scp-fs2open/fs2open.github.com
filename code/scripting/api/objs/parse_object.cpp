@@ -5,6 +5,9 @@
 #include "vecmath.h"
 #include "weaponclass.h"
 
+extern bool sexp_check_flag_arrays(const char *flag_name, Object::Object_Flags &object_flag, Ship::Ship_Flags &ship_flags, Mission::Parse_Object_Flags &parse_obj_flag, AI::AI_Flags &ai_flag);
+extern void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future_ships, Object::Object_Flags object_flag, Ship::Ship_Flags ship_flag, Mission::Parse_Object_Flags parse_obj_flag, AI::AI_Flags ai_flag, bool set_flag);
+
 namespace scripting {
 namespace api {
 
@@ -13,10 +16,10 @@ p_object* parse_object_h::getObject() const { return _obj; }
 bool parse_object_h::isValid() const { return _obj != nullptr; }
 
 //**********HANDLE: parse_object
-ADE_OBJ(l_ParseObject, parse_object_h, "parse_object", "Handle to a parse object");
+ADE_OBJ(l_ParseObject, parse_object_h, "parse_object", "Handle to a parsed ship");
 
 ADE_VIRTVAR(Name, l_ParseObject, "string",
-            "The name of the object. If possible, don't set the name but set the display name instead.", "string",
+            "The name of the parsed ship. If possible, don't set the name but set the display name instead.", "string",
             "The name or empty string on error")
 {
 	parse_object_h* poh = nullptr;
@@ -39,7 +42,7 @@ ADE_VIRTVAR(Name, l_ParseObject, "string",
 
 ADE_VIRTVAR(
     DisplayName, l_ParseObject, "string",
-    "The display name of the object. If the name should be shown to the user, use this since it can be translated.",
+    "The display name of the parsed ship. If the name should be shown to the user, use this since it can be translated.",
     "string", "The display name or empty string on error")
 {
 	parse_object_h* poh = nullptr;
@@ -63,8 +66,78 @@ ADE_VIRTVAR(
 	return ade_set_args(L, "s", poh->getObject()->get_display_name());
 }
 
-ADE_VIRTVAR(Position, l_ParseObject, "vector", "The position at which the object will arrive.", "vector",
-            "The position of the object.")
+ADE_FUNC(setFlag, l_ParseObject, "boolean set_it, string flag_name", "Sets or clears one or more flags - this function can accept an arbitrary number of flag arguments.  The flag names can be any string that the alter-ship-flag SEXP operator supports.", nullptr, "Returns nothing")
+{
+	parse_object_h *poh = nullptr;
+	bool set_it;
+	const char *flag_name;
+
+	if (!ade_get_args(L, "obs", l_ParseObject.GetPtr(&poh), &set_it, &flag_name))
+		return ADE_RETURN_NIL;
+	int skip_args = 2;	// not 3 because there will be one more below
+
+	if (!poh->isValid())
+		return ADE_RETURN_NIL;
+
+	auto pobjp = poh->getObject();
+	object_ship_wing_point_team oswpt(pobjp);
+
+	do {
+		auto object_flag = Object::Object_Flags::NUM_VALUES;
+		auto ship_flag = Ship::Ship_Flags::NUM_VALUES;
+		auto parse_obj_flag = Mission::Parse_Object_Flags::NUM_VALUES;
+		auto ai_flag = AI::AI_Flags::NUM_VALUES;
+
+		sexp_check_flag_arrays(flag_name, object_flag, ship_flag, parse_obj_flag, ai_flag);
+		sexp_alter_ship_flag_helper(oswpt, true, object_flag, ship_flag, parse_obj_flag, ai_flag, set_it);
+
+	// read the next flag
+	internal::Ade_get_args_skip = ++skip_args;
+	} while (ade_get_args(L, "|s", &flag_name) > 0);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(getFlag, l_ParseObject, "string flag_name", "Checks whether one or more flags are set - this function can accept an arbitrary number of flag arguments.  The flag names can be any string that the alter-ship-flag SEXP operator supports.", "boolean", "Returns whether all flags are set, or nil if the parsed ship is not valid")
+{
+	parse_object_h *poh = nullptr;
+	const char *flag_name;
+
+	if (!ade_get_args(L, "os", l_ParseObject.GetPtr(&poh), &flag_name))
+		return ADE_RETURN_NIL;
+	int skip_args = 1;	// not 2 because there will be one more below
+
+	if (!poh->isValid())
+		return ADE_RETURN_NIL;
+
+	auto pobjp = poh->getObject();
+
+	do {
+		auto object_flag = Object::Object_Flags::NUM_VALUES;
+		auto ship_flag = Ship::Ship_Flags::NUM_VALUES;
+		auto parse_obj_flag = Mission::Parse_Object_Flags::NUM_VALUES;
+		auto ai_flag = AI::AI_Flags::NUM_VALUES;
+
+		sexp_check_flag_arrays(flag_name, object_flag, ship_flag, parse_obj_flag, ai_flag);
+
+		// we only check parse flags
+
+		if (parse_obj_flag != Mission::Parse_Object_Flags::NUM_VALUES)
+		{
+			if (!pobjp->flags[parse_obj_flag])
+				return ADE_RETURN_FALSE;
+		}
+
+	// read the next flag
+	internal::Ade_get_args_skip = ++skip_args;
+	} while (ade_get_args(L, "|s", &flag_name) > 0);
+
+	// if we're still here, all the flags we were looking for were present
+	return ADE_RETURN_TRUE;
+}
+
+ADE_VIRTVAR(Position, l_ParseObject, "vector", "The position at which the parsed ship will arrive.", "vector",
+            "The position of the parsed ship.")
 {
 	parse_object_h* poh = nullptr;
 	vec3d* newPos       = nullptr;
@@ -84,7 +157,7 @@ ADE_VIRTVAR(Position, l_ParseObject, "vector", "The position at which the object
 	return ade_set_args(L, "o", l_Vector.Set(poh->getObject()->pos));
 }
 
-ADE_VIRTVAR(Orientation, l_ParseObject, "orientation", "The orientation of the object.", "orientation", "The orientation")
+ADE_VIRTVAR(Orientation, l_ParseObject, "orientation", "The orientation of the parsed ship.", "orientation", "The orientation")
 {
 	parse_object_h* poh = nullptr;
 	matrix_h* newMat    = nullptr;
@@ -104,7 +177,7 @@ ADE_VIRTVAR(Orientation, l_ParseObject, "orientation", "The orientation of the o
 	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&poh->getObject()->orient)));
 }
 
-ADE_VIRTVAR(ShipClass, l_ParseObject, "shipclass", "The ship class of the object.", "shipclass", "The ship class")
+ADE_VIRTVAR(ShipClass, l_ParseObject, "shipclass", "The ship class of the parsed ship.", "shipclass", "The ship class")
 {
 	parse_object_h* poh = nullptr;
 	int newClass        = -1;
@@ -124,7 +197,7 @@ ADE_VIRTVAR(ShipClass, l_ParseObject, "shipclass", "The ship class of the object
 	return ade_set_args(L, "o", l_Shipclass.Set(poh->getObject()->ship_class));
 }
 
-ADE_VIRTVAR(InitialHull, l_ParseObject, "number", "The initial hull percentage of this object.", "number",
+ADE_VIRTVAR(InitialHull, l_ParseObject, "number", "The initial hull percentage of this parsed ship.", "number",
             "The initial hull")
 {
 	parse_object_h* poh = nullptr;
@@ -145,7 +218,7 @@ ADE_VIRTVAR(InitialHull, l_ParseObject, "number", "The initial hull percentage o
 	return ade_set_args(L, "i", poh->getObject()->initial_hull);
 }
 
-ADE_VIRTVAR(InitialShields, l_ParseObject, "number", "The initial shields percentage of this object.", "number",
+ADE_VIRTVAR(InitialShields, l_ParseObject, "number", "The initial shields percentage of this parsed ship.", "number",
             "The initial shields")
 {
 	parse_object_h* poh   = nullptr;
@@ -195,8 +268,8 @@ ADE_VIRTVAR(MainStatus, l_ParseObject, nullptr,
 	return ade_set_args(L, "o", l_ParseSubsystem.Set(parse_subsys_h()));
 }
 
-ADE_VIRTVAR(Subsystems, l_ParseObject, nullptr, "Get the list of subsystems of this parse object",
-            "parse_subsystem[]", "An array of the parse subsystems of this object")
+ADE_VIRTVAR(Subsystems, l_ParseObject, nullptr, "Get the list of subsystems of this parsed ship",
+            "parse_subsystem[]", "An array of the parse subsystems of this parsed ship")
 {
 	parse_object_h* poh = nullptr;
 	if (!ade_get_args(L, "o", l_ParseObject.GetPtr(&poh)))
@@ -226,7 +299,7 @@ ADE_VIRTVAR(Subsystems, l_ParseObject, nullptr, "Get the list of subsystems of t
 	return ade_set_args(L, "t", tbl);
 }
 
-ADE_FUNC(isPlayerStart, l_ParseObject, nullptr, "Determines if this parse object is a player start.", "boolean",
+ADE_FUNC(isPlayerStart, l_ParseObject, nullptr, "Determines if this parsed ship is a player start.", "boolean",
          "true if player start, false if not or if invalid")
 {
 	parse_object_h* poh = nullptr;
