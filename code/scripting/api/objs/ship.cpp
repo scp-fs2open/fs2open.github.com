@@ -182,7 +182,7 @@ ADE_FUNC(__len, l_Ship, NULL, "Number of subsystems on ship", "number", "Subsyst
 	return ade_set_args(L, "i", ship_get_num_subsys(&Ships[objh->objp->instance]));
 }
 
-ADE_FUNC(setFlag, l_Ship, "boolean set_it, string flag_name(s)", "Sets or clears one or more flags - this function can accept an arbitrary number of flag arguments.  The flag names can be any string that the alter-ship-flag SEXP operator supports.", nullptr, "Returns nothing")
+ADE_FUNC(setFlag, l_Ship, "boolean set_it, string flag_name", "Sets or clears one or more flags - this function can accept an arbitrary number of flag arguments.  The flag names can be any string that the alter-ship-flag SEXP operator supports.", nullptr, "Returns nothing")
 {
 	object_h *objh;
 	bool set_it;
@@ -214,7 +214,7 @@ ADE_FUNC(setFlag, l_Ship, "boolean set_it, string flag_name(s)", "Sets or clears
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(getFlag, l_Ship, "string flag_name(s)", "Checks whether one or more flags are set - this function can accept an arbitrary number of flag arguments.  The flag names can be any string that the alter-ship-flag SEXP operator supports.", "boolean", "Returns whether all flags are set, or nil if the ship is not valid")
+ADE_FUNC(getFlag, l_Ship, "string flag_name", "Checks whether one or more flags are set - this function can accept an arbitrary number of flag arguments.  The flag names can be any string that the alter-ship-flag SEXP operator supports.", "boolean", "Returns whether all flags are set, or nil if the ship is not valid")
 {
 	object_h *objh;
 	const char *flag_name;

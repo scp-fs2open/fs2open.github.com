@@ -66,7 +66,7 @@ ADE_VIRTVAR(
 	return ade_set_args(L, "s", poh->getObject()->get_display_name());
 }
 
-ADE_FUNC(setFlag, l_ParseObject, "boolean set_it, string flag_name(s)", "Sets or clears one or more flags - this function can accept an arbitrary number of flag arguments.  The flag names can be any string that the alter-ship-flag SEXP operator supports.", nullptr, "Returns nothing")
+ADE_FUNC(setFlag, l_ParseObject, "boolean set_it, string flag_name", "Sets or clears one or more flags - this function can accept an arbitrary number of flag arguments.  The flag names can be any string that the alter-ship-flag SEXP operator supports.", nullptr, "Returns nothing")
 {
 	parse_object_h *poh = nullptr;
 	bool set_it;
@@ -98,7 +98,7 @@ ADE_FUNC(setFlag, l_ParseObject, "boolean set_it, string flag_name(s)", "Sets or
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(getFlag, l_ParseObject, "string flag_name(s)", "Checks whether one or more flags are set - this function can accept an arbitrary number of flag arguments.  The flag names can be any string that the alter-ship-flag SEXP operator supports.", "boolean", "Returns whether all flags are set, or nil if the parsed ship is not valid")
+ADE_FUNC(getFlag, l_ParseObject, "string flag_name", "Checks whether one or more flags are set - this function can accept an arbitrary number of flag arguments.  The flag names can be any string that the alter-ship-flag SEXP operator supports.", "boolean", "Returns whether all flags are set, or nil if the parsed ship is not valid")
 {
 	parse_object_h *poh = nullptr;
 	const char *flag_name;
