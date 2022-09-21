@@ -1203,11 +1203,8 @@ ADE_FUNC(startMission,
 	return ade_set_args(L, "b", false);
 }
 
-ADE_FUNC(getMissionTime, l_Mission, NULL, "Game time in seconds since the mission was started; is affected by time compression", "number", "Mission time (seconds), or 0 if game is not in a mission")
+ADE_FUNC(getMissionTime, l_Mission, nullptr, "Game time in seconds since the mission was started; is affected by time compression", "number", "Mission time (seconds) of the current or most recently played mission.")
 {
-	if(!(Game_mode & GM_IN_MISSION))
-		return ade_set_error(L, "f", 0.0f);
-
 	return ade_set_args(L, "x", Missiontime);
 }
 
@@ -1367,6 +1364,11 @@ ADE_VIRTVAR(ShudderIntensity, l_Mission, "number", "Gets or sets the shudder int
 	}
 
 	return ade_set_args(L, "f", intensity);
+}
+
+ADE_FUNC(isInMission, l_Mission, nullptr, "get whether or not a mission is currently being played", "boolean", "true if in mission, false otherwise")
+{
+	return ade_set_args(L, "b", (Game_mode & GM_IN_MISSION) != 0);
 }
 
 ADE_FUNC(isInCampaign, l_Mission, NULL, "Get whether or not the current mission being played in a campaign (as opposed to the tech room's simulator)", "boolean", "true if in campaign, false if not")
