@@ -17,8 +17,8 @@ struct ss_wing_info_h {
 };
 
 struct ss_slot_info_h {
-	int ss_idx;
 	ss_slot_info* ss_slots;
+	int ss_idx;
 	ss_slot_info_h();
 	explicit ss_slot_info_h(ss_slot_info* l_slots, int l_idx);
 	bool IsValid() const;
