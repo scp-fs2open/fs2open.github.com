@@ -35,6 +35,7 @@
 #include "object/objectshield.h"
 #include "object/objectsnd.h"
 #include "observer/observer.h"
+#include "scripting/api/libs/graphics.h"
 #include "scripting/scripting.h"
 #include "playerman/player.h"
 #include "radar/radar.h"
@@ -1679,11 +1680,18 @@ void obj_queue_render(object* obj, model_draw_list* scene)
 	if ( obj->flags[Object::Object_Flags::Should_be_dead] ) return;
 
 	if (Script_system.IsActiveAction(CHA_OBJECTRENDER)) {
+		// Set the render scene context
+		scripting::api::Current_scene = scene;
+
 		Script_system.SetHookObject("Self", obj);
 		bool skip_render = Script_system.IsConditionOverride(CHA_OBJECTRENDER, obj);
 		// Always execute the hook content
 		Script_system.RunCondition(CHA_OBJECTRENDER, obj);
 		Script_system.RemHookVar("Self");
+
+		// Clear the render scene context
+		scripting::api::Current_scene = nullptr;
+
 		if (skip_render) {
 			// Script said that it want's to skip rendering
 			return;
