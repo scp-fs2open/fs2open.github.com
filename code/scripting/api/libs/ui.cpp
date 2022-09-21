@@ -565,7 +565,7 @@ ADE_FUNC(initBriefing,
 	"Initializes the briefing and prepares the map for drawing.  Also handles various non-UI housekeeping tasks "
 	"and compacts the stages to remove those that should not be shown.",
 	nullptr,
-	"nothing")
+	nullptr)
 {
 	SCP_UNUSED(L);
 
@@ -607,7 +607,7 @@ ADE_FUNC(exitLoop,
 	nullptr,
 	"Skips the current mission, exits the campaign loop, and loads the next non-loop mission in a campaign. Returns to the main hall if the player is not in a campaign.",
 	nullptr,
-	"nothing")
+	nullptr)
 {
 	SCP_UNUSED(L);
 
@@ -625,7 +625,7 @@ ADE_FUNC(skipMission,
 	nullptr,
 	"Skips the current mission, and loads the next mission in a campaign. Returns to the main hall if the player is not in a campaign.",
 	nullptr,
-	"nothing")
+	nullptr)
 {
 	SCP_UNUSED(L);
 
@@ -643,7 +643,7 @@ ADE_FUNC(skipTraining,
 	nullptr,
 	"Skips the current training mission, and loads the next mission in a campaign. Returns to the main hall if the player is not in a campaign.",
 	nullptr,
-	"nothing")
+	nullptr)
 {
 	SCP_UNUSED(L);
 
@@ -677,7 +677,7 @@ ADE_FUNC(commitToMission,
 	nullptr,
 	"Commits to the current mission with current loadout data, and starts the mission. WIP, do not use!",
 	nullptr,
-	"nothing")
+	nullptr)
 {
 	SCP_UNUSED(L);
 	commit_pressed();
@@ -724,7 +724,7 @@ ADE_FUNC(callNextMapStage,
 	nullptr,
 	"Sends the briefing map to the next stage.",
 	nullptr,
-	"nothing")
+	nullptr)
 {
 	SCP_UNUSED(L);
 	brief_do_next_pressed(0);
@@ -748,7 +748,7 @@ ADE_FUNC(callFirstMapStage,
 	nullptr,
 	"Sends the briefing map to the first stage.",
 	nullptr,
-	"nothing")
+	nullptr)
 {
 	SCP_UNUSED(L);
 	brief_do_start_pressed();
