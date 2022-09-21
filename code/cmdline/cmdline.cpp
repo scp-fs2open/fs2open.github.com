@@ -512,7 +512,7 @@ cmdline_parm graphics_debug_output_arg("-gr_debug", nullptr, AT_NONE); // Cmdlin
 cmdline_parm log_to_stdout_arg("-stdout_log", nullptr, AT_NONE); // Cmdline_log_to_stdout
 cmdline_parm slow_frames_ok_arg("-slow_frames_ok", nullptr, AT_NONE);	// Cmdline_slow_frames_ok
 cmdline_parm fixed_seed_rand("-seed", nullptr, AT_INT);	// Cmdline_rng_seed,Cmdline_reuse_rng_seed;
-cmdline_parm luadev_arg("-luadev", "nullptr", AT_NONE);	// Cmdline_slow_frames_ok
+cmdline_parm luadev_arg("-luadev", "nullptr", AT_NONE);	// Cmdline_lua_devmode
 
 
 char *Cmdline_start_mission = NULL;
