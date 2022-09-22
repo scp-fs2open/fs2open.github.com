@@ -326,6 +326,28 @@ ADE_VIRTVAR(NumFirePoints, l_Subsystem, "number", "Number of firepoints", "numbe
 	return ade_set_args(L, "i", sso->ss->system_info->turret_num_firing_points);
 }
 
+ADE_VIRTVAR(FireRateMultiplier, l_Subsystem, "number", "Factor by which turret's rate of fire is multiplied.  This can also be set with the turret-set-rate-of-fire SEXP.  As with the SEXP, assigning a negative value will cause this to be reset to default.", "number", "Firing rate multiplier, or 0 if handle is invalid")
+{
+	ship_subsys_h* sso;
+	float multiplier;
+	if (!ade_get_args(L, "o|f", l_Subsystem.GetPtr(&sso), &multiplier))
+		return ade_set_error(L, "f", 0.0f);
+
+	if (!sso->isSubsystemValid())
+		return ade_set_error(L, "f", 0.0f);
+
+	if (ADE_SETTING_VAR)
+	{
+		// set the rate
+		if (multiplier < 0.0f)
+			sso->ss->rof_scaler = sso->ss->system_info->turret_rof_scaler;
+		else
+			sso->ss->rof_scaler = multiplier;
+	}
+
+	return ade_set_args(L, "f", sso->ss->rof_scaler);
+}
+
 ADE_FUNC(getModelName, l_Subsystem, NULL, "Returns the original name of the subsystem in the model file", "string", "name or empty string on error")
 {
 	ship_subsys_h *sso;

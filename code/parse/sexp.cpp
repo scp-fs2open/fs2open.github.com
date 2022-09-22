@@ -20068,7 +20068,7 @@ void sexp_turret_set_rate_of_fire(int node)
 		auto turret = ship_get_subsys(ship_entry->shipp, CTEXT(node));
 		if (turret != nullptr)
 		{
-			// set the range
+			// set the rate
 			if (rof < 0)
 				turret->rof_scaler = turret->system_info->turret_rof_scaler;
 			else
@@ -35453,6 +35453,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"hide-in-mission-log - Prevents events involving this ship from being viewable in the mission log\r\n"
 		"no-ship-passive-lightning - Turns off ship lightning that is unrelated to damage or EMP\r\n"
 		"glowmaps-disabled - Turns off glowmaps\r\n"
+		"no-thrusters - Turns off thrusters\r\n"
 		"fail-sound-locked-primary - This ship will play a weapon failure sound if trying to shoot primaries when they're locked\r\n"
 		"fail-sound-locked-secondary - This ship will play a weapon failure sound if trying to shoot secondaries when they're locked\r\n"
 		"aspect-immune - This ship cannot be locked onto by aspect seeking weapons\r\n"

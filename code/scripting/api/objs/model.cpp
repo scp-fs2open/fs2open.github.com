@@ -822,7 +822,7 @@ ADE_VIRTVAR(Radius, l_Glowpoint, nullptr, "The radius of the glowpoint", "number
 	return ade_set_args(L, "f", radius);
 }
 
-ADE_FUNC(isValid, l_Glowpoint, NULL, "Returns wether this handle is valid or not", "boolean", "True if handle is valid, false otherwise")
+ADE_FUNC(isValid, l_Glowpoint, NULL, "Returns whether this handle is valid or not", "boolean", "True if handle is valid, false otherwise")
 {
 	glowpoint_h glh = NULL;
 
