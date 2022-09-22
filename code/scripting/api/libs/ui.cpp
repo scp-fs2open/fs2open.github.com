@@ -568,14 +568,27 @@ ADE_FUNC(runBriefingStageHook,
 ADE_FUNC(initBriefing,
 	l_UserInterface_Brief,
 	nullptr,
-	"Initializes the briefing.  Handles various non-UI housekeeping tasks and compacts the stages to remove those that should not be shown.",
+	"Initializes the briefing and prepares the map for drawing.  Also handles various non-UI housekeeping tasks "
+	"and compacts the stages to remove those that should not be shown.",
 	nullptr,
-	"nothing")
+	nullptr)
 {
 	SCP_UNUSED(L);
 
-	// TODO: probably call brief_api_init()
+	brief_api_init();
 
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(closeBriefing,
+	l_UserInterface_Brief,
+	nullptr,
+	"Closes the briefing and pauses the map. Required after using the briefing API!",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+	brief_api_close();
 	return ADE_RETURN_NIL;
 }
 
@@ -600,7 +613,7 @@ ADE_FUNC(exitLoop,
 	nullptr,
 	"Skips the current mission, exits the campaign loop, and loads the next non-loop mission in a campaign. Returns to the main hall if the player is not in a campaign.",
 	nullptr,
-	"nothing")
+	nullptr)
 {
 	SCP_UNUSED(L);
 
@@ -618,7 +631,7 @@ ADE_FUNC(skipMission,
 	nullptr,
 	"Skips the current mission, and loads the next mission in a campaign. Returns to the main hall if the player is not in a campaign.",
 	nullptr,
-	"nothing")
+	nullptr)
 {
 	SCP_UNUSED(L);
 
@@ -636,7 +649,7 @@ ADE_FUNC(skipTraining,
 	nullptr,
 	"Skips the current training mission, and loads the next mission in a campaign. Returns to the main hall if the player is not in a campaign.",
 	nullptr,
-	"nothing")
+	nullptr)
 {
 	SCP_UNUSED(L);
 
@@ -661,14 +674,102 @@ ADE_FUNC(skipTraining,
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(startBriefingMap,
+// For now any loadout error checking needs to happen in the script to prevent FSO from
+// generating a popup that will not be interactible from Librocket. A later update to this
+// method will introduce return values instead of generating popups and those return values
+// can be used to handle loadout popups on the script side
+ADE_FUNC(commitToMission,
 	l_UserInterface_Brief,
 	nullptr,
-	"Starts the briefing map for the current mission. Doesn't currently do anything.",
+	"Commits to the current mission with current loadout data, and starts the mission. WIP, do not use!",
 	nullptr,
-	"nothing")
+	nullptr)
 {
 	SCP_UNUSED(L);
+	commit_pressed();
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(drawBriefingMap,
+	l_UserInterface_Brief,
+	"number x, number y, [number width = 888, number height = 371]",
+	"Draws the briefing map for the current mission at the specified coordinates. Note that the "
+	"width and height must be a specific aspect ratio to match retail. If changed then some icons "
+	"may be clipped from view unexpectedly. Must be called On Frame.",
+	nullptr,
+	nullptr)
+{
+
+	int x1;
+	int y1;
+	int x2 = 888;
+	int y2 = 371;
+
+	if (!ade_get_args(L, "ii|ii", &x1, &y1, &x2, &y2)) {
+		LuaError(L, "X and Y coordinates not provided!");
+		return ADE_RETURN_NIL;
+	}
+
+	// Saving retail coords here for posterity
+	//  GR_640 - 19, 147, 555, 232
+	//  GR_1024 - 30, 235, 888, 371
+
+	bscreen.map_x1 = x1;
+	bscreen.map_x2 = x1 + x2;
+	bscreen.map_y1 = y1;
+	bscreen.map_y2 = y1 + y2;
+	bscreen.resize = GR_RESIZE_NONE;
+
+	brief_api_do_frame(flRealframetime);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(callNextMapStage,
+	l_UserInterface_Brief,
+	nullptr,
+	"Sends the briefing map to the next stage.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+	brief_do_next_pressed(0);
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(callPrevMapStage,
+	l_UserInterface_Brief,
+	nullptr,
+	"Sends the briefing map to the previous stage.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+	brief_do_prev_pressed();
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(callFirstMapStage,
+	l_UserInterface_Brief,
+	nullptr,
+	"Sends the briefing map to the first stage.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+	brief_do_start_pressed();
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(callLastMapStage,
+	l_UserInterface_Brief,
+	nullptr,
+	"Sends the briefing map to the last stage.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+	brief_do_end_pressed();
 	return ADE_RETURN_NIL;
 }
 
