@@ -190,9 +190,9 @@ void virtual_pof_init() {
 // Internal helper functions
 
 #define REPLACE_IF_EQ(data) if ((data) == source) (data) = dest;
-#define REPLACE_IF_STRIEQ(data) if (stricmp(data, source.c_str()) == 0) { strncpy(data, dest.c_str(), dest.size()); data[dest.size()] = '\0'; }
+#define REPLACE_IF_STRIEQ(data) if (stricmp(data, source.c_str()) == 0) { strncpy_s(data, dest.c_str(), dest.size()); data[MIN(dest.size(), sizeof(data) / sizeof(data[0]))] = '\0'; }
 
-//Generates one function for replacing data in a type, which is a map entry of which the key may be replaced. Takes an rvalue reference, used for making a copy and modifying the tempoary to then assign it somewhere
+//Generates one function for replacing data in a type, which is a map entry of which the key may be replaced. Takes an rvalue reference, used for making a copy and modifying the temporary to then assign it somewhere
 #define CHANGE_HELPER_MAP_KEY(name, intype, argtype) template<typename map_t> static typename std::enable_if<std::is_same<typename map_t::value_type, std::pair<const argtype, argtype>>::value, intype>::type name(intype&& pass, map_t replace){ \
 	const auto it = replace.find(pass.first); \
 	intype input = { (it == replace.end() ? pass.first : it->second), pass.second }; \
@@ -201,7 +201,7 @@ void virtual_pof_init() {
 		const argtype& dest = replacement.second;
 #define CHANGE_HELPER_MAP_KEY_END } return input; }
 
-//Generates two functions for replacing data in a type. One that takes an rvalue reference, used for making a copy and modifying the tempoary to then assign it somewhere, and one which takes an lvalue reference for modifying in-place
+//Generates two functions for replacing data in a type. One that takes an rvalue reference, used for making a copy and modifying the temporary to then assign it somewhere, and one which takes an lvalue reference for modifying in-place
 #define CHANGE_HELPER(name, intype, argtype) template<typename map_t> static typename std::enable_if<std::is_same<typename map_t::value_type, std::pair<const argtype, argtype>>::value>::type name(intype& input, map_t replace); \
 template<typename map_t> inline static typename std::enable_if<std::is_same<typename map_t::value_type, std::pair<const argtype, argtype>>::value, intype>::type name(intype&& input, map_t replace){ \
 	name<map_t>(input, replace); \
