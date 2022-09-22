@@ -10,7 +10,7 @@ namespace luacpp {
 
 SCP_unordered_set<LuaThread*> LuaThread::threads;
 SCP_unordered_set<LuaThread*>& LuaThread::registerThreadList(lua_State* mainThread) {
-	script_state::GetScriptState(mainThread)->OnStateDestroy.add([](lua_State* L) {
+	script_state::GetScriptState(mainThread)->OnStateDestroy.add([](lua_State*) {
 		for (LuaThread* thread : threads)
 			thread->getReference()->removeReference();
 		threads.clear();
