@@ -537,6 +537,7 @@ ship_flag_name Ship_flag_names[] = {
 	{ Ship_Flags::Hide_mission_log,				"hide-in-mission-log" },
 	{ Ship_Flags::No_passive_lightning,			"no-ship-passive-lightning" },
 	{ Ship_Flags::Glowmaps_disabled,			"glowmaps-disabled" },
+	{ Ship_Flags::No_thrusters,					"no-thrusters" },
 	{ Ship_Flags::Fail_sound_locked_primary, 	"fail-sound-locked-primary"},
 	{ Ship_Flags::Fail_sound_locked_secondary, 	"fail-sound-locked-secondary"},
 	{ Ship_Flags::Aspect_immune, 				"aspect-immune"}
