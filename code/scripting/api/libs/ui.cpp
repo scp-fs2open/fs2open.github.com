@@ -1093,7 +1093,7 @@ ADE_INDEXER(l_Loadout_Wings, //
 {
 	int idx;
 	if (!ade_get_args(L, "*i", &idx))
-		ade_set_error(L, "o", l_Loadout_Wing.Set(ss_wing_info_h()));
+		return ade_set_error(L, "o", l_Loadout_Wing.Set(ss_wing_info_h()));
 	idx--; //Convert to Lua's 1 based index system
 	return ade_set_args(L, "o", l_Loadout_Wing.Set(ss_wing_info_h(idx)));
 }
