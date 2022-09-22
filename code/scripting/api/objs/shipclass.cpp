@@ -311,7 +311,7 @@ ADE_VIRTVAR(TechDescription, l_Shipclass, "string", "Ship class tech description
 ADE_VIRTVAR(numPrimaryBanks, l_Shipclass, nullptr, "Number of primary banks on this ship class", "number", "number of banks or nil is ship handle is invalid")
 {
 	int idx;
-	if(!ade_get_args(L, "o", l_Shipclass.Get(&idx), &s))
+	if(!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
 		return ADE_RETURN_NIL;
 
 	if(idx < 0 || idx >= ship_info_size())
@@ -329,7 +329,7 @@ ADE_VIRTVAR(numPrimaryBanks, l_Shipclass, nullptr, "Number of primary banks on t
 ADE_VIRTVAR(numSecondaryBanks, l_Shipclass, nullptr, "Number of secondary banks on this ship class", "number", "number of banks or nil is ship handle is invalid")
 {
 	int idx;
-	if(!ade_get_args(L, "o", l_Shipclass.Get(&idx), &s))
+	if(!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
 		return ADE_RETURN_NIL;
 
 	if(idx < 0 || idx >= ship_info_size())
