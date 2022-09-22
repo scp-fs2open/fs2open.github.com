@@ -4,10 +4,24 @@
 
 #include <utility>
 
+#include "scripting/scripting.h"
+
 namespace luacpp {
+
+SCP_unordered_set<LuaThread*> LuaThread::threads;
+SCP_unordered_set<LuaThread*>& LuaThread::registerThreadList(lua_State* mainThread) {
+	script_state::GetScriptState(mainThread)->OnStateDestroy.add([](lua_State* L) {
+		for (LuaThread* thread : threads)
+			thread->getReference()->removeReference();
+		threads.clear();
+		});
+	return threads;
+}
+
 LuaThread LuaThread::create(lua_State* L, const LuaFunction& func)
 {
 	auto luaThread = lua_newthread(L);
+
 	func.pushValue(L);
 	// Move the main function to the thread (I have no idea what this actually does but the Lua code does the same...)
 	lua_xmove(L, luaThread, 1);
@@ -21,16 +35,29 @@ LuaThread LuaThread::create(lua_State* L, const LuaFunction& func)
 }
 
 LuaThread::LuaThread() = default;
-LuaThread::LuaThread(lua_State* luaState, lua_State* thread) : LuaValue(luaState), _thread(thread) {}
+LuaThread::LuaThread(lua_State* luaState, lua_State* thread) : LuaValue(luaState), _thread(thread) {
+	//This is kinda hacky and assumes that the first thread created must always be from the main thread.
+	static auto& threadList = registerThreadList(luaState);
+	threadList.emplace(this);
+}
 
-LuaThread::LuaThread(const LuaThread&) = default;
-LuaThread& LuaThread::operator=(const LuaThread&) = default;
+LuaThread::LuaThread(LuaThread&& other) noexcept : LuaValue(other) {
+	*this = std::move(other);
+}
 
-// These should be noexcept but Visual Studio doesn't like that yet in a recent enough version
-LuaThread::LuaThread(LuaThread&&) = default; // NOLINT(performance-noexcept-move-constructor)
-LuaThread& LuaThread::operator=(LuaThread&&) = default; // NOLINT(performance-noexcept-move-constructor)
+LuaThread& LuaThread::operator=(LuaThread&& other) noexcept {
+	LuaValue::operator=(other);
+	std::swap(_errorCallback, other._errorCallback);
+	std::swap(_thread, other._thread);
+	threads.emplace(this);
+	return *this;
+}
 
-LuaThread::~LuaThread() = default;
+LuaThread::~LuaThread() {
+	//Safety check since erasing from the half-dead threads set is gonna cause segfaults when the whole program deallocates, as dangling threads outlive the static threads map
+	if(!threads.empty())
+		threads.erase(this);
+}
 
 void LuaThread::setReference(const LuaReference& ref)
 {

@@ -5,6 +5,8 @@
 #include "LuaValue.h"
 #include "LuaFunction.h"
 
+#include "globalincs/vmallocator.h"
+
 #include <iterator>
 
 namespace luacpp {
@@ -17,6 +19,9 @@ namespace luacpp {
  * @see LuaConvert
  */
 class LuaThread : public LuaValue {
+
+	static SCP_unordered_set<LuaThread*> threads;
+	static SCP_unordered_set<LuaThread*>& registerThreadList(lua_State* mainThread);
   public:
 	using ErrorCallback = std::function<bool(lua_State* mainState, lua_State* thread)>;
 	struct ResumeState
@@ -35,16 +40,12 @@ class LuaThread : public LuaValue {
 	 */
 	LuaThread();
 
-	/**
-	 * @brief Copy-constructor
-	 * @param other The other thread.
-	 */
-	LuaThread(const LuaThread&);
-	LuaThread& operator=(const LuaThread&);
+	//Copying threads is VERY illegal
+	LuaThread(const LuaThread&) = delete;
+	LuaThread& operator=(const LuaThread&) = delete;
 
-	// These should be noexcept but Visual Studio doesn't like that yet in a recent enough version
-	LuaThread(LuaThread&&); // NOLINT(performance-noexcept-move-constructor)
-	LuaThread& operator=(LuaThread&&); // NOLINT(performance-noexcept-move-constructor)
+	LuaThread(LuaThread&&) noexcept; 
+	LuaThread& operator=(LuaThread&&) noexcept;
 
 	~LuaThread() override;
 
