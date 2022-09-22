@@ -1185,8 +1185,36 @@ ADE_FUNC(initSelect,
 	return ADE_RETURN_NIL;
 }
 
+ADE_FUNC(getNumShipsAvail,
+	l_UserInterface_ShipWepSelect,
+	"number Index",
+	"Gets the amount of a ship available. Index is index into Ship Classes.",
+	"number",
+	"amaount available")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ADE_RETURN_NIL;
+	idx--; // Convert to Lua's 1 based index system
+	return ade_set_args(L, "i", Ss_pool[idx]);
+}
+
+ADE_FUNC(getNumWepsAvail,
+	l_UserInterface_ShipWepSelect,
+	"number Index",
+	"Gets the amount of a weapon available. Index is index into Weapon Classes.",
+	"number",
+	"amaount available")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ADE_RETURN_NIL;
+	idx--; // Convert to Lua's 1 based index system
+	return ade_set_args(L, "i", Wl_pool[idx]);
+}
+
 ADE_LIB_DERIV(l_Loadout_Wings, "Loadout_Wings", nullptr, nullptr, l_UserInterface_ShipWepSelect);
-ADE_INDEXER(l_Loadout_Wings, //
+ADE_INDEXER(l_Loadout_Wings,
 	"number Index",
 	"Array of loadout wing data",
 	"loadout_wing",
