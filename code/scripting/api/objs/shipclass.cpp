@@ -308,6 +308,42 @@ ADE_VIRTVAR(TechDescription, l_Shipclass, "string", "Ship class tech description
 		return ade_set_args(L, "s", "");
 }
 
+ADE_VIRTVAR(numPrimaryBanks, l_Shipclass, nullptr, "Number of primary banks on this ship class", "number", "number of banks or nil is ship handle is invalid")
+{
+	int idx;
+	if(!ade_get_args(L, "o", l_Shipclass.Get(&idx), &s))
+		return ADE_RETURN_NIL;
+
+	if(idx < 0 || idx >= ship_info_size())
+		return ADE_RETURN_NIL;
+
+	ship_info *sip = &Ship_info[idx];
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "Setting number of banks is not supported");
+	}
+
+	return ade_set_args(L, "i", sip->num_primary_banks);
+}
+
+ADE_VIRTVAR(numSecondaryBanks, l_Shipclass, nullptr, "Number of secondary banks on this ship class", "number", "number of banks or nil is ship handle is invalid")
+{
+	int idx;
+	if(!ade_get_args(L, "o", l_Shipclass.Get(&idx), &s))
+		return ADE_RETURN_NIL;
+
+	if(idx < 0 || idx >= ship_info_size())
+		return ADE_RETURN_NIL;
+
+	ship_info *sip = &Ship_info[idx];
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "Setting number of banks is not supported");
+	}
+
+	return ade_set_args(L, "i", sip->num_secondary_banks);
+}
+
 ADE_FUNC(isWeaponAllowedOnShip, l_Shipclass, "number index, [number bank]", "Gets whether or not a weapon is allowed on a ship class. "
 	"Optionally check a specific bank. Banks are 1 to a maximum of 7 where the first banks are Primaries and rest are Secondaries. "
 	"Exact numbering depends on the ship class being checked. Note also that this will consider dogfight weapons only if "
@@ -316,7 +352,7 @@ ADE_FUNC(isWeaponAllowedOnShip, l_Shipclass, "number index, [number bank]", "Get
 	int idx;
 	int wepidx;
 	int bank = 0;
-	if(!ade_get_args(L, "oii", l_Shipclass.Get(&idx), &wepidx, &bank))
+	if(!ade_get_args(L, "oi|i", l_Shipclass.Get(&idx), &wepidx, &bank))
 		return ade_set_error(L, "b", false);
 
 	if(idx < 0 || idx >= ship_info_size())
@@ -331,7 +367,7 @@ ADE_FUNC(isWeaponAllowedOnShip, l_Shipclass, "number index, [number bank]", "Get
 	};
 
 	bool retv = false;
-	if ((bank >= 0) || (eval_weapon_flag_for_game_type(Ship_info[idx].restricted_loadout_flag[bank]))) {
+	if ((bank >= 0) && (eval_weapon_flag_for_game_type(Ship_info[idx].restricted_loadout_flag[bank]))) {
 		if (eval_weapon_flag_for_game_type(Ship_info[idx].allowed_bank_restricted_weapons[bank][wepidx]))
 			retv = true;
 	} else if (eval_weapon_flag_for_game_type(Ship_info[idx].allowed_weapons[wepidx])) {
