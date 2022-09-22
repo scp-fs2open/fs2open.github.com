@@ -16385,39 +16385,29 @@ int sexp_event_status( int n, int want_true )
 int sexp_event_delay_status( int n, int want_true, bool use_msecs = false)
 {
 	bool is_nan, is_nan_forever;
-	fix delay;
+	int delay;
 	int rval = SEXP_FALSE;
 	bool use_as_directive = false;
 
 	auto name = CTEXT(n);
 
-	if (use_msecs) {
-		uint64_t tempDelay = eval_num(CDR(n), is_nan, is_nan_forever);
-		if (is_nan) {
-			return SEXP_FALSE;
-		}
-		else if (is_nan_forever) {
-			return SEXP_KNOWN_FALSE;
-		}
-
-		tempDelay = tempDelay << 16;
-		tempDelay = tempDelay / 1000;
-
-		delay = (fix) tempDelay;
-	} else {
-		delay = i2f(eval_num(CDR(n), is_nan, is_nan_forever));
-		if (is_nan) {
-			return SEXP_FALSE;
-		}
-		else if (is_nan_forever) {
-			return SEXP_KNOWN_FALSE;
-		}
+	delay = eval_num(CDR(n), is_nan, is_nan_forever);
+	if (is_nan) {
+		return SEXP_FALSE;
+	}
+	else if (is_nan_forever) {
+		return SEXP_KNOWN_FALSE;
+	}
+	if (!use_msecs) {
+		delay *= MILLISECONDS_PER_SECOND;
 	}
 
 	for (int i = 0; i < Num_mission_events; ++i) {
-		// look for the event name, check it's status.  If formula is gone, we know the state won't ever change.
+		// look for the event name; check its status.  If formula is gone, we know the state won't ever change.
 		if ( !stricmp(Mission_events[i].name, name) ) {
-			if ( (fix) Mission_events[i].timestamp + delay >= Missiontime ) {
+			// Previous implementations could skip this block if the timestamp wasn't valid yet.  This had no effect
+			// because result, checked below, was still 0; but let's be correct.
+			if ( !Mission_events[i].timestamp.isValid() || timestamp_since(Mission_events[i].timestamp) <= delay ) {
 				rval = SEXP_FALSE;
 				break;
 			}
