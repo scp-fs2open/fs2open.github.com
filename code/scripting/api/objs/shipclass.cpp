@@ -9,6 +9,8 @@
 #include "vecmath.h"
 #include "ship/ship.h"
 #include "playerman/player.h"
+#include "weapon/weapon.h"
+#include "missionui/missionweaponchoice.h"
 #include "graphics/matrix.h"
 #include "missionui/missionscreencommon.h"
 
@@ -304,6 +306,37 @@ ADE_VIRTVAR(TechDescription, l_Shipclass, "string", "Ship class tech description
 		return ade_set_args(L, "s", sip->tech_desc);
 	else
 		return ade_set_args(L, "s", "");
+}
+
+ADE_FUNC(isWeaponAllowedInBank, l_Shipclass, "number index, number bank", "Gets whether or not a weapon is allowed in a particular bank. "
+	"Banks are 1 to a maximum of 7 where the first banks are Primaries and rest are Secondaries. Exact numbering depends on the ship class "
+	"being checked. Note also that this will consider dogfight weapons only if a dogfight mission has been loaded. "
+	"Index is index into Weapon Classes.", "boolean", "True if allowed, false if not.")
+{
+	int idx;
+	int wepidx;
+	int bank;
+	if(!ade_get_args(L, "oii", l_Shipclass.Get(&idx), &wepidx, &bank))
+		return ade_set_error(L, "b", false);
+
+	if(idx < 0 || idx >= ship_info_size())
+		return ade_set_error(L, "b", false);
+	wepidx--; // Convert from Lua
+	if (wepidx < 0|| wepidx >= weapon_info_size())
+		return ade_set_error(L, "b", false);
+	bank--; // Convert from Lua
+	if (bank < 0 || bank >= (Ship_info[idx].num_primary_banks + Ship_info[idx].num_secondary_banks))
+		return ade_set_error(L, "b", false);
+
+	bool retv = false;
+	if (eval_weapon_flag_for_game_type(Ship_info[idx].restricted_loadout_flag[bank])) {
+		if (eval_weapon_flag_for_game_type(Ship_info[idx].allowed_bank_restricted_weapons[bank][wepidx]))
+			retv = true;
+	} else if (eval_weapon_flag_for_game_type(Ship_info[idx].allowed_weapons[wepidx])) {
+		retv = true;
+	}
+
+	return ade_set_args(L, "b", retv);
 }
 
 ADE_VIRTVAR(AfterburnerFuelMax, l_Shipclass, "number", "Afterburner fuel capacity", "number", "Afterburner capacity, or 0 if handle is invalid")
