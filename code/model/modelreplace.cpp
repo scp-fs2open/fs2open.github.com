@@ -275,6 +275,10 @@ VirtualPOFOperationAddSubmodel::VirtualPOFOperationAddSubmodel() {
 		stuff_boolean(&copyChildren);
 	}
 
+	if (optional_string("+Copy Turrets:")) {
+		stuff_boolean(&copyTurrets);
+	}
+
 	if (optional_string("$Rename Subobjects:")) {
 		rename = make_unique<VirtualPOFOperationRenameSubobjects>();
 	}
@@ -397,6 +401,20 @@ void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_
 				pm->maps[usedTexture.second] = appendingPM->maps[usedTexture.first];
 				appendingPMholder->keepTexture(usedTexture.first);
 			}
+
+			if (copyTurrets) {
+				//Copy turrets
+				for (const auto& turretSubsys : appendingSubsys.weapons_subsystems) {
+					//Don't copy turrets that aren't fully contained in data to be copied
+					if (std::find(to_copy_submodels.begin(), to_copy_submodels.end(), turretSubsys.first) == to_copy_submodels.end())
+						continue;
+
+					if (turretSubsys.second.gun_subobj_nr != -1 && std::find(to_copy_submodels.begin(), to_copy_submodels.end(), turretSubsys.second.gun_subobj_nr) == to_copy_submodels.end())
+						continue;
+
+					deferredTasks.weapons_subsystems.emplace(change_submodel_numbers(model_read_deferred_tasks::weapon_subsystem_pair(turretSubsys), replaceSubobjNo));
+				}
+			}
 		}
 		else {
 			Warning(LOCATION, "Failed to add submodel %s of POF %s to virtual POF %s, original POF already has a subsystem with the same name as was supposed to be added.", subobjNameSrc.c_str(), appendingPOF.c_str(), virtualPof.name.c_str());
@@ -405,6 +423,41 @@ void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_
 	else {
 		Warning(LOCATION, "Failed to add submodel %s of POF %s to virtual POF %s, specified subobject was not found. Returning original POF", subobjNameSrc.c_str(), appendingPOF.c_str(), virtualPof.name.c_str());
 	}
+}
+
+VirtualPOFOperationAddTurret::VirtualPOFOperationAddTurret() {
+
+}
+
+void VirtualPOFOperationAddTurret::process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const {
+	auto appendingPM = virtual_pof_build_cache(appendingPOF, depth);
+
+	SCP_unordered_map<int, int> replaceSubmodelNo;
+
+	int base_src_subobj_no = model_find_submodel_index(appendingPM->pm(), baseNameSrc.c_str());
+	int base_dest_subobj_no = model_find_submodel_index(pm, baseNameDest.c_str());
+
+	replaceSubmodelNo.emplace(base_src_subobj_no, base_dest_subobj_no);
+
+	auto it = appendingPM->deferred().weapons_subsystems.find(base_src_subobj_no);
+	if (base_src_subobj_no == -1 || base_dest_subobj_no == -1 || it == appendingPM->deferred().weapons_subsystems.end()) {
+		Warning(LOCATION, "Failed to find turret base %s of POF %s for virtual POF %s. Returning original POF.", baseNameSrc.c_str(), appendingPOF.c_str(), virtualPof.name.c_str());
+		return;
+	}
+
+	if (it->second.gun_subobj_nr != -1) {
+		int gun_dest_subobj_no = -1;
+		if (barrelNameDest) {
+			gun_dest_subobj_no = model_find_submodel_index(pm, barrelNameDest->c_str());
+		}
+		if (gun_dest_subobj_no == -1) {
+			Warning(LOCATION, "Failed to find turret barrel of turret %s of POF %s for virtual POF %s. Returning original POF.", baseNameDest.c_str(), pm->filename, virtualPof.name.c_str());
+			return;
+		}
+		replaceSubmodelNo.emplace(it->second.gun_subobj_nr, gun_dest_subobj_no);
+	}
+
+	deferredTasks.weapons_subsystems.emplace(change_submodel_numbers(model_read_deferred_tasks::weapon_subsystem_pair(*it), replaceSubmodelNo));
 }
 
 VirtualPOFOperationRenameSubobjects::VirtualPOFOperationRenameSubobjects() {

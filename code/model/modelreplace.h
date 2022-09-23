@@ -41,8 +41,18 @@ class VirtualPOFOperationAddSubmodel : public VirtualPOFOperation {
 	SCP_string appendingPOF;
 	std::unique_ptr<VirtualPOFOperationRenameSubobjects> rename = nullptr;
 	bool copyChildren = true;
+	bool copyTurrets = false;
 public:
 	VirtualPOFOperationAddSubmodel();
+	void process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const override;
+};
+
+class VirtualPOFOperationAddTurret : public VirtualPOFOperation {
+	SCP_string baseNameSrc, baseNameDest;
+	tl::optional<SCP_string> barrelNameDest;
+	SCP_string appendingPOF;
+public:
+	VirtualPOFOperationAddTurret();
 	void process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const override;
 };
 
