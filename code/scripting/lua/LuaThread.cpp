@@ -17,6 +17,7 @@ SCP_unordered_set<LuaThread*>& LuaThread::registerThreadList(lua_State* mainThre
 	script_state::GetScriptState(mainThread)->OnStateDestroy.add([](lua_State* L) {
 		for (LuaThread* thread : threads.at(L))
 			thread->getReference()->removeReference();
+
 		threads.erase(L);
 		});
 
@@ -61,11 +62,8 @@ LuaThread::~LuaThread() {
 	if (!threads.empty()) {
 		auto it = threads.find(_luaState);
 
-		if (it != threads.end()) {
+		if (it != threads.end())
 			it->second.erase(this);
-			if (it->second.empty())
-				threads.erase(it);
-		}
 	}
 }
 

@@ -4,13 +4,20 @@
 #include "scripting/lua/LuaFunction.h"
 #include "scripting/lua/LuaThread.h"
 
+#include "scripting/ScriptingTestFixture.h"
+
 using namespace luacpp;
 
-class LuaThreadTest : public LuaStateTest {
+//LuaThreads are no longer valid without a full script_state, as cleanup isn't possible for pure lua
+//hence, this is now a full scriptingtestfixture and not just a Lua Test
+class LuaThreadTest : public test::scripting::ScriptingTestFixture {
+public:
+	LuaThreadTest() : test::scripting::ScriptingTestFixture(INIT_CFILE) {}
 };
 
 TEST_F(LuaThreadTest, CreateYieldFinish)
 {
+	lua_State* L = _state->GetLuaSession();
 	ScopedLuaStackTest stackTest(L);
 
 	const auto mainFunc = LuaFunction::createFromCode(L, R"(
@@ -38,6 +45,7 @@ return yield_val
 
 TEST_F(LuaThreadTest, OnErrorCallbackIsCalled)
 {
+	lua_State* L = _state->GetLuaSession();
 	ScopedLuaStackTest stackTest(L);
 
 	const auto mainFunc = LuaFunction::createFromCode(L, R"(
