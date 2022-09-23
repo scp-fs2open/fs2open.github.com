@@ -203,7 +203,7 @@ namespace os
 			msgStream << "\n";
 			msgStream << Separator;
 
-			nprintf(("lua","Lua Error: %s\n", msgStream.str().c_str()));
+			nprintf(("scripting","Lua Error: %s\n", msgStream.str().c_str()));
 
 			if (running_unittests) {
 				throw LuaErrorException(msgStream.str());
