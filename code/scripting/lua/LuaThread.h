@@ -20,7 +20,7 @@ namespace luacpp {
  */
 class LuaThread : public LuaValue {
 
-	static SCP_unordered_set<LuaThread*> threads;
+	static SCP_unordered_map<lua_State*, SCP_unordered_set<LuaThread*>> threads;
 	static SCP_unordered_set<LuaThread*>& registerThreadList(lua_State* mainThread);
   public:
 	using ErrorCallback = std::function<bool(lua_State* mainState, lua_State* thread)>;

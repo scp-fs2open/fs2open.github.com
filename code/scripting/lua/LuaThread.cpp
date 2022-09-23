@@ -8,14 +8,19 @@
 
 namespace luacpp {
 
-SCP_unordered_set<LuaThread*> LuaThread::threads;
+SCP_unordered_map<lua_State*, SCP_unordered_set<LuaThread*>> LuaThread::threads;
 SCP_unordered_set<LuaThread*>& LuaThread::registerThreadList(lua_State* mainThread) {
-	script_state::GetScriptState(mainThread)->OnStateDestroy.add([](lua_State*) {
-		for (LuaThread* thread : threads)
+	auto it = threads.find(mainThread);
+	if (it != threads.end())
+		return it->second;
+
+	script_state::GetScriptState(mainThread)->OnStateDestroy.add([](lua_State* L) {
+		for (LuaThread* thread : threads.at(L))
 			thread->getReference()->removeReference();
-		threads.clear();
+		threads.erase(L);
 		});
-	return threads;
+
+	return threads.emplace(mainThread, SCP_unordered_set<LuaThread*>{}).first->second;
 }
 
 LuaThread LuaThread::create(lua_State* L, const LuaFunction& func)
@@ -36,9 +41,7 @@ LuaThread LuaThread::create(lua_State* L, const LuaFunction& func)
 
 LuaThread::LuaThread() = default;
 LuaThread::LuaThread(lua_State* luaState, lua_State* thread) : LuaValue(luaState), _thread(thread) {
-	//This is kinda hacky and assumes that the first thread created must always be from the main thread.
-	static auto& threadList = registerThreadList(luaState);
-	threadList.emplace(this);
+	registerThreadList(luaState).emplace(this);
 }
 
 LuaThread::LuaThread(LuaThread&& other) noexcept : LuaValue(other) {
@@ -49,14 +52,21 @@ LuaThread& LuaThread::operator=(LuaThread&& other) noexcept {
 	LuaValue::operator=(other);
 	std::swap(_errorCallback, other._errorCallback);
 	std::swap(_thread, other._thread);
-	threads.emplace(this);
+	threads.at(_luaState).emplace(this);
 	return *this;
 }
 
 LuaThread::~LuaThread() {
 	//Safety check since erasing from the half-dead threads set is gonna cause segfaults when the whole program deallocates, as dangling threads outlive the static threads map
-	if(!threads.empty())
-		threads.erase(this);
+	if (!threads.empty()) {
+		auto it = threads.find(_luaState);
+
+		if (it != threads.end()) {
+			it->second.erase(this);
+			if (it->second.empty())
+				threads.erase(it);
+		}
+	}
 }
 
 void LuaThread::setReference(const LuaReference& ref)
