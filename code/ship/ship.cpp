@@ -7391,7 +7391,9 @@ void ship_render_player_ship(object* objp) {
 	if (!(renderCockpitModel || renderShipModel))
 		return;
 
-	//If we aren't sure whether cockpits and external models can share the same worldspace, we need to pre-render the external ship hull without shadows / deferred and give the cockpit precedence, unless this ship has no cockpit at all
+	//If we aren't sure whether cockpits and external models can share the same worldspace,
+	//we need to pre-render the external ship hull without shadows / deferred and give the cockpit precedence,
+	//unless this ship has no cockpit at all
 	const bool prerenderShipModel = renderShipModel && hasCockpitModel && !Cockpit_shares_coordinate_space;
 	const bool deferredRenderShipModel = renderShipModel && !prerenderShipModel;
 
@@ -7429,8 +7431,9 @@ void ship_render_player_ship(object* objp) {
 		gr_post_process_restore_zbuffer();
 	}
 
-	//We only needed to prerender the ship model. This can occur if the cockpit isn't rendered for some reason but a model exists.
-	//In this case, we still want to not render the ship model with deferred rendering to keep visuals constant for the ship
+	//We only needed to prerender the ship model. This can occur if the cockpit isn't
+	//rendered for some reason but a model exists. In this case, we still want to not
+	//render the ship model with deferred rendering to keep visuals constant for the ship
 	if (!renderCockpitModel && !deferredRenderShipModel) {
 		Proj_fov = fov_backup;
 		return;
@@ -7451,7 +7454,11 @@ void ship_render_player_ship(object* objp) {
 		gr_reset_clip();
 		Shadow_override = false;
 
-		shadows_start_render(&eye_orient, &leaning_position, Proj_fov, gr_screen.clip_aspect, std::get<0>(Shadow_distances_cockpit), std::get<1>(Shadow_distances_cockpit), std::get<2>(Shadow_distances_cockpit), std::get<3>(Shadow_distances_cockpit));
+		shadows_start_render(&eye_orient, &leaning_position, Proj_fov, gr_screen.clip_aspect,
+			std::get<0>(Shadow_distances_cockpit),
+			std::get<1>(Shadow_distances_cockpit),
+			std::get<2>(Shadow_distances_cockpit),
+			std::get<3>(Shadow_distances_cockpit));
 
 		if (deferredRenderShipModel) {
 			model_render_params shadow_render_info;
@@ -13949,8 +13956,8 @@ void ship_get_eye_local(vec3d* eye_pos, matrix* eye_orient, object* obj, bool do
 		return;
 	}
 
-	// eye points are stored in an array -- the normal viewing position for a ship is the current_eye_index
-	// element.
+	// eye points are stored in an array -- the normal viewing position for a ship is
+	// the current_eye_index element.
 	eye* ep = &(pm->view_positions[shipp->current_viewpoint]);
 
 	if (ep->parent >= 0 && pm->submodel[ep->parent].flags[Model::Submodel_flags::Can_move]) {
@@ -13961,7 +13968,7 @@ void ship_get_eye_local(vec3d* eye_pos, matrix* eye_orient, object* obj, bool do
 		*eye_orient = obj->orient;
 	}
 
-	//	Modify the orientation based on head orientation.
+	// Modify the orientation based on head orientation.
 	if (Viewer_obj == obj && do_slew) {
 		// Add the cockpit leaning translation offset
 		vm_vec_add2(eye_pos, &leaning_position);

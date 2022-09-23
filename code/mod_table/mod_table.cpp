@@ -651,7 +651,7 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Show_ship_casts_shadow);
 		}
 
-		if (optional_string("$Cockpit Shares Coordinate Space:")) {
+		if (optional_string("$Ship Model And Cockpit Share Coordinate Space:")) {
 			stuff_boolean(&Cockpit_shares_coordinate_space);
 		}
 
