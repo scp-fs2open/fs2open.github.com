@@ -62,7 +62,8 @@ template< size_t size>
 inline
 errno_t scp_strncpy_s(const char* file, int line, char(&strDest)[size], const char* strSource, size_t count)
 {
-	return scp_strcpy_s(file, line, strDest, MIN(size, count), strSource);
+	//+ 1 to allow for null terminator after source. Still hardlimit by size
+	return scp_strcpy_s(file, line, strDest, MIN(size, count + 1), strSource);
 }
 
 template< size_t size >

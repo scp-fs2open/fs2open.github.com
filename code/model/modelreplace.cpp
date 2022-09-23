@@ -13,6 +13,7 @@
 static SCP_unordered_map<SCP_string, std::vector<VirtualPOFDefinition>, SCP_string_lcase_hash, SCP_string_lcase_equal_to> virtual_pofs;
 static SCP_unordered_map<SCP_string, std::function<std::unique_ptr<VirtualPOFOperation>()>> virtual_pof_operations = {
 	{"$Add Subobject:", &make_unique<VirtualPOFOperationAddSubmodel> },
+	{"$Add Turret:", &make_unique<VirtualPOFOperationAddTurret> },
 	{"$Rename Subobjects:", &make_unique<VirtualPOFOperationRenameSubobjects> },
 	{"$Set Subobject Data:", &make_unique<VirtualPOFOperationChangeData> },
 	{"$Set Header Data:", &make_unique<VirtualPOFOperationHeaderData> }
