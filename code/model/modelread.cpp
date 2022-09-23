@@ -1549,7 +1549,7 @@ void resolve_submodel_index(const polymodel *pm, const char *requester, const ch
 	submodel_index = -1;
 }
 
-int read_model_file_no_subsys(polymodel * pm, const char* filename, int ferror, model_read_deferred_tasks& subsystemParseList)
+modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename, int ferror, model_read_deferred_tasks& subsystemParseList)
 {
 	CFILE *fp;
 	int version;
@@ -1566,7 +1566,7 @@ int read_model_file_no_subsys(polymodel * pm, const char* filename, int ferror, 
 			Warning( LOCATION, "Can't open model file <%s>", filename );
 		}
 
-		return -1;
+		return modelread_status::FAIL;
 	}
 
 	TRACE_SCOPE(tracing::ReadModelFile);
@@ -1607,7 +1607,7 @@ int read_model_file_no_subsys(polymodel * pm, const char* filename, int ferror, 
 	
 	if (version < PM_COMPATIBLE_VERSION || (version/100) > PM_OBJFILE_MAJOR_VERSION)	{
 		Warning(LOCATION,"Bad version (%d) in model file <%s>",version,filename);
-		return 0;
+		return modelread_status::FAIL;
 	}
 	if (version > PM_LATEST_LEGACY_VERSION && version < PM_FIRST_ALIGNED_VERSION) {
 		Warning(LOCATION, "Model file %s is version %d, but the latest supported version on this build of FSO is %d.  The model may not work correctly.", filename, version, PM_LATEST_LEGACY_VERSION);
@@ -2896,16 +2896,16 @@ int read_model_file_no_subsys(polymodel * pm, const char* filename, int ferror, 
 	cfclose(fp);
 
 	// mprintf(("Done processing chunks\n"));
-	return 1;
+	return modelread_status::SUCCESS_REAL;
 }
 
-int read_model_file(polymodel* pm, const char* filename, int ferror, model_read_deferred_tasks& deferredTasks, model_parse_depth depth = {})
+modelread_status read_model_file(polymodel* pm, const char* filename, int ferror, model_read_deferred_tasks& deferredTasks, model_parse_depth depth = {})
 {
-	int status = 0;
+	modelread_status status;
 
 	//See if this is a modular, virtual pof, and if so, parse it from there
 	if (read_virtual_model_file(pm, filename, depth, ferror, deferredTasks)) {
-		status = 1;
+		status = modelread_status::SUCCESS_VIRTUAL;
 	}
 	else {
 		status = read_model_file_no_subsys(pm, filename, ferror, deferredTasks);
@@ -2915,9 +2915,16 @@ int read_model_file(polymodel* pm, const char* filename, int ferror, model_read_
 }
 
 //reads a binary file containing a 3d model
-int read_and_process_model_file(polymodel* pm, const char* filename, int n_subsystems, model_subsystem* subsystems, int ferror, model_read_deferred_tasks& deferredTasks)
+modelread_status read_and_process_model_file(polymodel* pm, const char* filename, int n_subsystems, model_subsystem* subsystems, int ferror, model_read_deferred_tasks& deferredTasks)
 {
-	int status = read_model_file(pm, filename, ferror, deferredTasks);
+	modelread_status status = read_model_file(pm, filename, ferror, deferredTasks);
+
+	//By now, we have finished reading this model. If it was virtual, we might have accumulated cache.
+	//This is now a tradeoff between speed and memory usage. To further accelerate loading, the cache can be kept until all models are loaded, but there is a risk that this cache will be very big.
+	//For safety, also clear if the load failed, who knows when it did so...
+	if (status != modelread_status::SUCCESS_REAL) {
+		virtual_pof_purge_cache();
+	}
 
 	for (const auto& subsystem : deferredTasks.model_subsystems) {
 		auto propBuffer = make_unique<char[]>(subsystem.second.props.size() + 1);
@@ -3246,7 +3253,7 @@ int model_load(const  char* filename, int n_subsystems, model_subsystem* subsyst
 
 	model_read_deferred_tasks deferredTasks;
 
-	if (read_and_process_model_file(pm, filename, n_subsystems, subsystems, ferror, deferredTasks) < 0)	{
+	if (read_and_process_model_file(pm, filename, n_subsystems, subsystems, ferror, deferredTasks) == modelread_status::FAIL)	{
 		if (pm != NULL) {
 			delete pm;
 		}

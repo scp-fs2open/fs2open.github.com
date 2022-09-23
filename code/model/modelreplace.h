@@ -8,10 +8,11 @@
 #include <tl/optional.hpp>
 
 bool model_exists(const SCP_string& filename);
-
 bool read_virtual_model_file(polymodel* pm, const SCP_string& filename, model_parse_depth depth, int ferror, model_read_deferred_tasks& deferredTasks);
+void virtual_pof_purge_cache();
 
 void virtual_pof_init();
+
 
 struct VirtualPOFDefinition;
 
@@ -27,7 +28,9 @@ struct VirtualPOFDefinition {
 };
 
 class VirtualPOFOperationRenameSubobjects : public VirtualPOFOperation {
-	SCP_unordered_map<SCP_string, SCP_string, SCP_string_lcase_hash, SCP_string_lcase_equal_to> replacements;
+	using replacement_map = SCP_unordered_map<SCP_string, SCP_string, SCP_string_lcase_hash, SCP_string_lcase_equal_to>;
+	replacement_map replacements;
+	friend class VirtualPOFOperationAddSubmodel;
 public:
 	VirtualPOFOperationRenameSubobjects();
 	void process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const override;
