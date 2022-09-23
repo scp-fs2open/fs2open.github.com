@@ -2212,6 +2212,7 @@ static void parse_ship_template()
 				sip->clone(Ship_templates[template_id]);
 				strcpy_s(sip->name, buf);
 				sip->animations.changeShipName(sip->name);
+				sip->cockpit_animations.changeShipName(sip->name);
 			}
 			else {
 				Warning(LOCATION, "Unable to find ship template '%s' requested by ship template '%s', ignoring template request...", template_name, buf);
@@ -2840,6 +2841,10 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		}
 
 		sip->displays.push_back(display);
+	}
+
+	if (optional_string("$Cockpit Animations:")) {
+		animation::ModelAnimationParseHelper::parseAnimsetInfo(sip->cockpit_animations, 'c', sip->name);
 	}
 
 	if(optional_string( "$POF file:" ))

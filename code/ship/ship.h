@@ -1425,6 +1425,7 @@ public:
 	SCP_unordered_map<int, void*> glowpoint_bank_override_map;
 
 	animation::ModelAnimationSet animations;
+	animation::ModelAnimationSet cockpit_animations;
 
 	SCP_vector<ship_passive_arc_info> ship_passive_arcs;
 
