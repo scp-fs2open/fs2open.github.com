@@ -31,6 +31,7 @@ class VirtualPOFOperationRenameSubobjects : public VirtualPOFOperation {
 	using replacement_map = SCP_unordered_map<SCP_string, SCP_string, SCP_string_lcase_hash, SCP_string_lcase_equal_to>;
 	replacement_map replacements;
 	friend class VirtualPOFOperationAddSubmodel;
+	friend class VirtualPOFOperationAddTurret;
 public:
 	VirtualPOFOperationRenameSubobjects();
 	void process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const override;
@@ -51,6 +52,7 @@ class VirtualPOFOperationAddTurret : public VirtualPOFOperation {
 	SCP_string baseNameSrc, baseNameDest;
 	tl::optional<SCP_string> barrelNameDest;
 	SCP_string appendingPOF;
+	std::unique_ptr<VirtualPOFOperationRenameSubobjects> rename = nullptr;
 public:
 	VirtualPOFOperationAddTurret();
 	void process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const override;

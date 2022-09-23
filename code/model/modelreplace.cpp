@@ -426,7 +426,58 @@ void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_
 }
 
 VirtualPOFOperationAddTurret::VirtualPOFOperationAddTurret() {
+	required_string("+POF to Add:");
+	stuff_string(appendingPOF, F_FILESPEC);
 
+	required_string("+Source Turret:");
+	stuff_string(baseNameSrc, F_NAME);
+
+	required_string("+Destination Turret:");
+	stuff_string(baseNameDest, F_NAME);
+
+	if (optional_string("+Destination Barrel:")) {
+		SCP_string barrelDest;
+		stuff_string(barrelDest, F_NAME);
+		barrelNameDest = std::move(barrelDest);
+	}
+
+	if (optional_string("$Rename Subobjects:")) {
+		rename = make_unique<VirtualPOFOperationRenameSubobjects>();
+	}
+
+	SCP_string destCpy = baseNameDest;
+	SCP_string destBarrelCpy = barrelNameDest ? *barrelNameDest : SCP_string("");
+	SCP_tolower(destCpy);
+	SCP_tolower(destBarrelCpy);
+
+	bool needBaseTurret = destCpy.find("turret") == SCP_string::npos;
+	bool needBarrelTurret = barrelNameDest && destBarrelCpy.find("turret") == SCP_string::npos;
+
+	if (needBaseTurret || needBarrelTurret) {
+		if (rename) {
+			if (needBaseTurret) {
+				auto it = rename->replacements.find(baseNameDest);
+				if (it != rename->replacements.end()) {
+					destCpy = it->second;
+					SCP_tolower(destCpy);
+					needBaseTurret = destCpy.find("turret") == SCP_string::npos;
+				}
+			}
+			if (needBarrelTurret) {
+				auto it = rename->replacements.find(*barrelNameDest);
+				if (it != rename->replacements.end()) {
+					destCpy = it->second;
+					SCP_tolower(destCpy);
+					needBarrelTurret = destCpy.find("turret") == SCP_string::npos;
+				}
+			}
+			//Submodels were properly renamed, we can quit
+			if (!needBaseTurret && !needBarrelTurret)
+				return;
+
+			error_display(0, "At least one turret destination submodel does not contain turret. This can cause issues. Consider using $Rename Subobjects!");
+		}
+	}
 }
 
 void VirtualPOFOperationAddTurret::process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const {
