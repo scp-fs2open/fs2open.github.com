@@ -376,8 +376,6 @@ static int Allow_arrival_music_timestamp_m[2];
 static int Allow_arrival_message_timestamp_m[2];
 static int Arrival_message_delay_timestamp_m[2];
 
-extern fix game_get_overall_frametime();	// for texture animation
-
 // local prototypes
 void parse_player_info2(mission *pm);
 bool post_process_mission();
@@ -2047,7 +2045,7 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 	}
 
 	// reset texture animations
-	shipp->base_texture_anim_frametime = game_get_overall_frametime();
+	shipp->base_texture_anim_timestamp = _timestamp();
 
 	// handle the replacement textures
 	shipp->apply_replacement_textures(p_objp->replacement_textures);

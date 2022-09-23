@@ -85,7 +85,6 @@ typedef struct vci {
 } vci;
 
 extern fix Missiontime;
-extern fix Skybox_timestamp;
 extern fix Frametime;
 extern int Framecount;
 

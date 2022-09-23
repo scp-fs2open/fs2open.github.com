@@ -17,7 +17,6 @@
 #include "options/Option.h"
 
 fix Missiontime;
-fix Skybox_timestamp;
 fix Frametime;
 int	Framecount=0;
 

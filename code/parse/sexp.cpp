@@ -19379,7 +19379,7 @@ void sexp_set_skybox_model(int n)
 	// check if we need to reset the animated texture timestamp
 	n = CDR(n);
 	if (n == -1 || is_sexp_true(n)) {
-		Skybox_timestamp = game_get_overall_frametime();
+		Skybox_timestamp = _timestamp();
 	}
 
 	if (n != -1) n = CDR(n);

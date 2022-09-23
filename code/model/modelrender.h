@@ -51,7 +51,7 @@ inline int in_sphere(vec3d *pos, float radius, vec3d *view_position)
 		return -1;
 }
 
-extern int model_interp_get_texture(texture_info *tinfo, fix base_frametime);
+extern int model_interp_get_texture(texture_info *tinfo, int elapsed_time);
 
 class model_render_params
 {
@@ -311,7 +311,6 @@ void model_render_queue(model_render_params* render_info, model_draw_list* scene
 void submodel_render_immediate(model_render_params *render_info, polymodel *pm, polymodel_instance *pmi, int submodel_num, matrix *orient, vec3d * pos);
 void submodel_render_queue(model_render_params *render_info, model_draw_list *scene, polymodel *pm, polymodel_instance *pmi, int submodel_num, matrix *orient, vec3d * pos);
 void model_render_buffers(model_draw_list* scene, model_material *rendering_material, model_render_params* interp, vertex_buffer *buffer, polymodel *pm, int mn, int detail_level, uint tmap_flags);
-fix model_render_determine_base_frametime(int objnum, uint flags);
 bool model_render_check_detail_box(vec3d *view_pos, polymodel *pm, int submodel_num, uint flags);
 void model_render_arc(vec3d *v1, vec3d *v2, color *primary, color *secondary, float arc_width);
 void model_render_insignias(insignia_draw_data *insignia);
