@@ -687,7 +687,7 @@ void parse_gamesnd_old(game_snd* gs)
 			{
 				if (stuff_int_optional(&temp_max) == 2)
 				{
-					mprintf(("Dutifully converting retail sound %s, '%s' to a 3D sound...\n", gs->name.c_str(), entry.filename));
+					nprintf(("Sound","Dutifully converting retail sound %s, '%s' to a 3D sound...\n", gs->name.c_str(), entry.filename));
 					is_3d = 1;
 
 					gs->flags |= GAME_SND_USE_DS3D;

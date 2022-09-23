@@ -643,7 +643,7 @@ void anim_read_header(anim *ptr, CFILE *fp)
 
 	if (diff != 0) {
 		if (ptr->height > 16) {
-			mprintf(("ANI %s with size %dx%d (%.1f%% wasted)\n", ptr->name, ptr->width, ptr->height, waste));
+			nprintf(("ANI","ANI %s with size %dx%d (%.1f%% wasted)\n", ptr->name, ptr->width, ptr->height, waste));
 		}
 	}
 #endif

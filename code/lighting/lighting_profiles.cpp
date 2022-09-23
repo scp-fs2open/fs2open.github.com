@@ -276,7 +276,7 @@ void lighting_profile::parse_all()
 {
 	default_profile.reset();
 	if (cf_exists_full("lighting_profiles.tbl", CF_TYPE_TABLES)){
-		mprintf(("TABLES:Starting parse of lighting profiles.tbl"));
+		mprintf(("TABLES: Starting parse of lighting profiles.tbl\n"));
 		lighting_profile::parse_file("lighting_profiles.tbl");
 	}
 
