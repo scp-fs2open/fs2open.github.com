@@ -409,7 +409,7 @@ void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_
 					if (std::find(to_copy_submodels.begin(), to_copy_submodels.end(), turretSubsys.first) == to_copy_submodels.end())
 						continue;
 
-					if (turretSubsys.second.gun_subobj_nr != -1 && std::find(to_copy_submodels.begin(), to_copy_submodels.end(), turretSubsys.second.gun_subobj_nr) == to_copy_submodels.end())
+					if (turretSubsys.second.gun_subobj_nr != turretSubsys.first && std::find(to_copy_submodels.begin(), to_copy_submodels.end(), turretSubsys.second.gun_subobj_nr) == to_copy_submodels.end())
 						continue;
 
 					deferredTasks.weapons_subsystems.emplace(change_submodel_numbers(model_read_deferred_tasks::weapon_subsystem_pair(turretSubsys), replaceSubobjNo));
@@ -496,7 +496,7 @@ void VirtualPOFOperationAddTurret::process(polymodel* pm, model_read_deferred_ta
 		return;
 	}
 
-	if (it->second.gun_subobj_nr != -1) {
+	if (it->second.gun_subobj_nr != base_src_subobj_no) {
 		int gun_dest_subobj_no = -1;
 		if (barrelNameDest) {
 			gun_dest_subobj_no = model_find_submodel_index(pm, barrelNameDest->c_str());
