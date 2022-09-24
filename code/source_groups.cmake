@@ -1397,6 +1397,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/ship.h
 	scripting/api/objs/shiptype.cpp
 	scripting/api/objs/shiptype.h
+	scripting/api/objs/shipwepselect.cpp
+	scripting/api/objs/shipwepselect.h
 	scripting/api/objs/sound.cpp
 	scripting/api/objs/sound.h
 	scripting/api/objs/species.cpp

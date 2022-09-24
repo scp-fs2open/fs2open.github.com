@@ -89,21 +89,6 @@ typedef struct ss_icon_info
 	generic_anim	ss_anim;
 } ss_icon_info;
 
-typedef struct ss_slot_info
-{
-	int status;			// slot status (WING_SLOT_DISABLED, etc)
-	int sa_index;		// index into ship arrival list, -1 if ship is created
-	int original_ship_class;
-} ss_slot_info;
-
-typedef struct ss_wing_info
-{
-	int num_slots;
-	int wingnum;
-	int is_late;
-	ss_slot_info ss_slots[MAX_WING_SLOTS];
-} ss_wing_info;
-
 //ss_icon_info	Ss_icons[MAX_SHIP_CLASSES];		// holds ui info on different ship icons
 //ss_wing_info	Ss_wings[MAX_WING_BLOCKS];		// holds ui info for wings and wing slots
 
