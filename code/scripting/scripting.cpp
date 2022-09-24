@@ -995,7 +995,7 @@ void script_state::ParseChunkSub(script_function& script_func, const char* debug
 		//crash, so this is here just to be on the safe side.
 		strcat(raw_lua, "\n");
 
-		for (auto i = 0; i <= line; ++i) {
+		for (auto i = 1; i <= line; ++i) {
 			source += "\n";
 		}
 		source += raw_lua;
