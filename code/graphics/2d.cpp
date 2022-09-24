@@ -7,6 +7,7 @@
  *
  */
 
+#include "graphics/render.h"
 #ifdef _WIN32
 #include <windows.h>
 #include <windowsx.h>
@@ -2559,7 +2560,9 @@ void gr_flip(bool execute_scripting)
 
 		// WMC - Do conditional hooks. Yippee!
 		if (OnFrameHook->isActive()) {
+			gr_2d_start_buffer(); 
 			OnFrameHook->run();
+			gr_2d_stop_buffer();
 		}
 	}
 

@@ -109,6 +109,11 @@ extern Category MainFrame;
 extern Category PageFlip;
 
 extern Category NanoVGFlushFrame;
+extern Category NanoVGFlushAll;
+extern Category NanoVGFlushFill;
+extern Category NanoVGFlushConvex;
+extern Category NanoVGFlushPath;
+extern Category NanoVGFlushTriangle;
 extern Category NanoVGDrawFill;
 extern Category NanoVGDrawConvexFill;
 extern Category NanoVGDrawStroke;

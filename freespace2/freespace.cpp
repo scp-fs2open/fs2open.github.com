@@ -10,6 +10,7 @@
 
 
 
+#include "graphics/render.h"
 #ifdef _WIN32
  #include <winsock2.h>	// required to prevent winsock 1.1 being used
  #include <direct.h>
@@ -4068,6 +4069,7 @@ void game_frame(bool paused)
 				cid.getCamera()->get_info(&Net_player->s_info.eye_pos, &Net_player->s_info.eye_orient);
 			}
 
+			gr_2d_start_buffer();
 			Scripting_didnt_draw_hud = 1;
 			Script_system.SetHookObject("Self", Viewer_obj);
 			Script_system.SetHookObject("Player", Player_obj);
@@ -4093,6 +4095,7 @@ void game_frame(bool paused)
 
 				Script_system.RunCondition(CHA_HUDDRAW, Viewer_obj);
 			}
+			gr_2d_stop_buffer();
 			Script_system.RemHookVar("Self");
 			Script_system.RemHookVar("Player");
 			

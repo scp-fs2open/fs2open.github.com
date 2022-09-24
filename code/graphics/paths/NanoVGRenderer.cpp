@@ -293,7 +293,7 @@ void NanoVGRenderer::renderFill(NVGpaint* paint,
 		return;
 	}
 
-	auto call = addDrawCall();
+	auto call = addDrawCall(CallType::Fill);
 
 	call->type = CallType::Fill;
 	call->pathOffset = static_cast<uint32_t>(addPaths((size_t) npaths));
@@ -362,7 +362,7 @@ void NanoVGRenderer::renderTriangles(NVGpaint* paint, NVGscissor* scissor, const
 
 	_vertices.insert(_vertices.end(), verts, verts + nverts);
 
-	auto call = addDrawCall();
+	auto call = addDrawCall(CallType::Triangles);
 	call->type = CallType::Triangles;
 	call->triangleCount = static_cast<uint32_t>(nverts);
 	call->triangleOffset = static_cast<uint32_t>(addVertices(verts, static_cast<size_t>(nverts)));
@@ -389,7 +389,7 @@ void NanoVGRenderer::renderStroke(NVGpaint* paint,
 		return;
 	}
 
-	auto call = addDrawCall();
+	auto call = addDrawCall(CallType::Stroke);
 
 	call->type = CallType::Stroke;
 	call->pathOffset = static_cast<uint32_t>(addPaths((size_t) npaths));
@@ -418,7 +418,7 @@ void NanoVGRenderer::renderStroke(NVGpaint* paint,
 	convertPaint(&_uniformData[call->uniformIndex + 1], paint, scissor, strokeWidth, fringe, 1.0f - 0.5f / 255.0f);
 }
 void NanoVGRenderer::renderFlush() {
-	if (_drawCalls.empty()) {
+	if (_drawCalls.empty() && _drawFillCalls.empty() && _drawConvexFillCalls.empty() && _drawStrokeCalls.empty() && _drawTriangleCalls.empty() ) {
 		return;
 	}
 
@@ -435,24 +435,49 @@ void NanoVGRenderer::renderFlush() {
 
 	_uniformBuffer.submitData();
 	gr_update_buffer_data(_vertexBuffer, sizeof(NVGvertex) * _vertices.size(), _vertices.data());
-
-	for (auto& drawCall : _drawCalls) {
-		switch (drawCall.type) {
-		case CallType::Fill:
-			drawFill(drawCall);
-			break;
-		case CallType::ConvexFill:
-			drawConvexFill(drawCall);
-			break;
-		case CallType::Stroke:
-			drawStroke(drawCall);
-			break;
-		case CallType::Triangles:
-			drawTriangles(drawCall);
-			break;
+	{
+		TRACE_SCOPE(tracing::NanoVGFlushAll);
+		for (auto& drawCall : _drawCalls) {
+			switch (drawCall.type) {
+			case CallType::Fill:
+				drawFill(drawCall);
+				break;
+			case CallType::ConvexFill:
+				drawConvexFill(drawCall);
+				break;
+			case CallType::Stroke:
+				drawStroke(drawCall);
+				break;
+			case CallType::Triangles:
+				drawTriangles(drawCall);
+				break;
+			}
 		}
 	}
-
+	{
+		TRACE_SCOPE(tracing::NanoVGFlushFill);
+		for (auto& drawCall : _drawFillCalls) {
+			drawFill(drawCall);
+		}
+	}
+	{
+		TRACE_SCOPE(tracing::NanoVGFlushConvex);
+		for (auto& drawCall : _drawConvexFillCalls) {
+			drawConvexFill(drawCall);
+		}
+    }
+	{
+		TRACE_SCOPE(tracing::NanoVGFlushPath);
+		for (auto& drawCall : _drawStrokeCalls) {
+			drawStroke(drawCall);
+		}
+	}
+	{
+		TRACE_SCOPE(tracing::NanoVGFlushTriangle);
+		for (auto& drawCall : _drawTriangleCalls) {
+			drawTriangles(drawCall);
+		}
+	}
 	// Reset all data again
 	renderCancel();
 }
@@ -462,6 +487,10 @@ void NanoVGRenderer::renderCancel() {
 	_uniformData.clear();
 	_drawCalls.clear();
 	_paths.clear();
+	_drawFillCalls.clear();
+	_drawConvexFillCalls.clear();
+	_drawStrokeCalls.clear();
+	_drawTriangleCalls.clear();
 }
 int NanoVGRenderer::createTexture(int type, int w, int h, int imageFlags, const unsigned char* data) {
 	int bpp;
@@ -542,7 +571,29 @@ NanoVGRenderer::DrawCall* NanoVGRenderer::addDrawCall() {
 	_drawCalls.emplace_back();
 	return &_drawCalls.back();
 }
-
+NanoVGRenderer::DrawCall* NanoVGRenderer::addDrawCall(CallType t) {for (auto& drawCall : _drawCalls) {
+		switch (t) {
+		case CallType::Fill:
+			_drawFillCalls.emplace_back();
+			return  &_drawFillCalls.back();
+			break;
+		case CallType::ConvexFill:
+			_drawConvexFillCalls.emplace_back();
+			return  &_drawConvexFillCalls.back();
+			break;
+		case CallType::Stroke:
+			_drawStrokeCalls.emplace_back();
+			return  &_drawStrokeCalls.back();
+			break;
+		case CallType::Triangles:
+			_drawTriangleCalls.emplace_back();
+			return  &_drawTriangleCalls.back();
+			break;
+		}
+	}
+	_drawCalls.emplace_back();
+	return &_drawCalls.back();
+}
 size_t NanoVGRenderer::addUniformData(size_t num) {
 	nanovg_draw_data data;
 	memset(&data, 0, sizeof(data));
@@ -663,6 +714,15 @@ void NanoVGRenderer::drawTriangles(const DrawCall& call) {
 	                       sizeof(nanovg_draw_data), _uniformBuffer.bufferHandle());
 
 	gr_render_nanovg(&mat, PRIM_TYPE_TRIS, &_vertexLayout, call.triangleOffset, call.triangleCount, _vertexBuffer);
+}
+void NanoVGRenderer::sortCalls( std::vector<DrawCall> calls){
+	std::sort(calls.begin(), calls.end(),
+		[](const DrawCall& a,const DrawCall& b)
+	{ if( a.uniformIndex == b.uniformIndex){
+			return a.uniformIndex > b.uniformIndex;
+		}
+		return a.image > b.image;
+	});
 }
 void NanoVGRenderer::drawFill(const DrawCall& call) {
 	GR_DEBUG_SCOPE("Draw fill");
