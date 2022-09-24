@@ -20,6 +20,8 @@
 #include "globalincs/vmallocator.h"
 #include "utils/strings.h"
 
+#include "imgui.h"
+
 #include <cstdio>    // For NULL, etc
 #include <cstdlib>
 #include <memory.h>
@@ -498,6 +500,12 @@ namespace std
 	// assume memset on a void* is "safe"
 	// only used in cutscene/mveplayer.cpp:mve_video_createbuf()
 	inline void *memset_if_trivial_else_error(void *memset_data, int ch, size_t count)
+	{
+		return ptr_memset(memset_data, ch, count);
+	}
+
+	// Dear ImGui triggers these as well, so we need to let them pass
+	inline void *memset_if_trivial_else_error(ImDrawListSplitter *memset_data, int ch, size_t count)
 	{
 		return ptr_memset(memset_data, ch, count);
 	}

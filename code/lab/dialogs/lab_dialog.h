@@ -10,7 +10,7 @@ public:
 	virtual ~LabDialog() = default;
 
 	// Called when this dialog is opened via the top toolbar
-	virtual void open(Button* caller) = 0;
+	virtual void open() = 0;
 
 	// Called when the dialog's window is closed
 	virtual void close() = 0;

@@ -4,14 +4,14 @@
 #include "ship/shipfx.h"
 #include "weapon/weapon.h"
 
-void Variables::open(Button* /*caller*/) {
-	if (dialogWindow == nullptr) {
+void Variables::open() {
+	/*if (dialogWindow == nullptr) {
 		dialogWindow = (DialogWindow*)getLabManager()->Screen->Add(new DialogWindow("Class Variables", gr_screen.center_offset_x + gr_screen.center_w - 285,
 			gr_screen.center_offset_y + 200));
 		Assert(Opener != nullptr);
 		dialogWindow->SetOwner(Opener->getDialog());
 	}
-	update(getLabManager()->CurrentMode, getLabManager()->CurrentClass);
+	update(getLabManager()->CurrentMode, getLabManager()->CurrentClass);*/
 }
 
 void Variables::update(LabMode newLabMode, int classIndex) {

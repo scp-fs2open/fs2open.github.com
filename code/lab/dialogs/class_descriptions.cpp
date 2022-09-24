@@ -1,8 +1,8 @@
 #include "lab/dialogs/class_descriptions.h"
 #include "lab/labv2_internal.h"
 
-void Descriptions::open(Button* /*caller*/) {
-	if (dialogWindow == nullptr) {
+void Descriptions::open() {
+	/*if (dialogWindow == nullptr) {
 		dialogWindow = (DialogWindow*)getLabManager()->Screen->Add(
 			new DialogWindow("Description", gr_screen.center_offset_x + gr_screen.center_w - gr_screen.center_w / 3 - 50,
 				gr_screen.center_offset_y + gr_screen.center_h - gr_screen.center_h / 6 - 50, gr_screen.center_w / 3,
@@ -15,7 +15,7 @@ void Descriptions::open(Button* /*caller*/) {
 	dialogWindow->DeleteChildren();
 	descriptionText = (Text*)dialogWindow->AddChild(new Text("Description Text", "No description available.", 0, 0));
 
-	update(getLabManager()->CurrentMode, getLabManager()->CurrentClass);
+	update(getLabManager()->CurrentMode, getLabManager()->CurrentClass);*/
 }
 
 void Descriptions::update(LabMode newLabMode, int classIndex) {

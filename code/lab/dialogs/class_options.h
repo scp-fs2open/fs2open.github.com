@@ -14,7 +14,7 @@ public:
 
 private:
 	// Called when this dialog is opened via the top toolbar
-	void open(Button* /*caller*/) override;
+	void open() override;
 
 	// Called when the dialog is closed
 	void close() override {

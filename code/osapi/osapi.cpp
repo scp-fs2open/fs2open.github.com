@@ -215,6 +215,7 @@ namespace
 // Windows specific includes
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <backends/imgui_impl_sdl.h>
 
 // go through all windows and try and find the one that matches the search string
 BOOL __stdcall os_enum_windows( HWND hwnd, LPARAM param )
@@ -723,23 +724,27 @@ void os_defer_events_on_load_screen() {
 
 static void handle_sdl_event(const SDL_Event& event) {
 	using namespace os::events;
-	
-	EventListenerData data;
-	data.type = event.type;
-		
-	auto iter = std::lower_bound(eventListeners.begin(), eventListeners.end(), data, compare_type);
 
-	if (iter != eventListeners.end())
-	{
-		// The vector contains all event listeners, the listeners are sorted for type and weight
-		// -> iterating through all listeners will yield them in increasing weight order
-		// but we can only do this until we have reached the end of the vector or the type has changed
-		for(; iter != eventListeners.end() && iter->type == event.type; ++iter)
-		{
-			if (iter->listener(event))
-			{
-				// Listener has handled the event
-				break;
+	bool imgui_processed_this = false;
+	if (ImGui::GetIO().WantCaptureKeyboard || ImGui::GetIO().WantCaptureMouse) {
+		imgui_processed_this = ImGui_ImplSDL2_ProcessEvent(&event);
+	}
+
+	if (!imgui_processed_this) {
+		EventListenerData data;
+		data.type = event.type;
+
+		auto iter = std::lower_bound(eventListeners.begin(), eventListeners.end(), data, compare_type);
+
+		if (iter != eventListeners.end()) {
+			// The vector contains all event listeners, the listeners are sorted for type and weight
+			// -> iterating through all listeners will yield them in increasing weight order
+			// but we can only do this until we have reached the end of the vector or the type has changed
+			for (; iter != eventListeners.end() && iter->type == event.type; ++iter) {
+				if (iter->listener(event)) {
+					// Listener has handled the event
+					break;
+				}
 			}
 		}
 	}

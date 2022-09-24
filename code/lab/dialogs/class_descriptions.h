@@ -7,7 +7,7 @@ public:
 	~Descriptions() override = default;
 
 private:
-	void open(Button* caller) override;
+	void open() override;
 
 	void close() override {
 		if (dialogWindow != nullptr) {

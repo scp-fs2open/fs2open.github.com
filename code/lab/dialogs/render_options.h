@@ -9,7 +9,7 @@ public:
 
 private:
 	// Called when this dialog is opened via the top toolbar
-	void open(Button* /*caller*/) override;
+	void open() override;
 
 	// Called when the global state changes (e.g. other ship/weapon being selected)
 	void update(LabMode, int) override { /* Do nothing */ };

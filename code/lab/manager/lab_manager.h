@@ -3,9 +3,11 @@
 #include "lab/wmcgui.h"
 #include "globalincs/vmallocator.h"
 #include "lab/dialogs/lab_dialog.h"
+#include "lab/dialogs/lab_ui.h"
 #include "lab/renderer/lab_renderer.h"
-#include <initializer_list>
 #include <gamesequence/gamesequence.h>
+#include "osapi/osapi.h"
+
 
 enum class LabRotationMode { Both, Yaw, Pitch, Roll };
 
@@ -39,9 +41,6 @@ public:
 		gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
 	}
 
-	std::unique_ptr<GUIScreen> Screen;
-	// points to an object inside Screen, so we can't use smart pointer
-	Window* Toolbar;
 	std::unique_ptr<LabRenderer> Renderer;
 
 	LabMode CurrentMode = LabMode::None;
@@ -87,6 +86,10 @@ private:
 	bool Lab_thrust_afterburn = false;
 	bool Weapons_loaded = false;
 	bool CloseThis = false;
+	LabUi labUi;
 
 	void changeShipInternal();
+
+	os::events::ListenerIdentifier keyboardEventListener;
+	os::events::ListenerIdentifier mouseEventListener;
 };

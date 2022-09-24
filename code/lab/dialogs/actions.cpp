@@ -171,8 +171,8 @@ void trigger_turret_fired(Tree* caller) {
 
 /***********************Dialog implementations***************************************/
 
-void Actions::open(Button* /*caller*/) {
-	if (dialogWindow != nullptr)
+void Actions::open() {
+	/* if (dialogWindow != nullptr)
 		return;
 	
 	getLabManager()->loadWeapons();
@@ -194,7 +194,7 @@ void Actions::open(Button* /*caller*/) {
 		y += dgo->GetHeight();
 	}
 
-	update(getLabManager()->CurrentMode, getLabManager()->CurrentClass);
+	update(getLabManager()->CurrentMode, getLabManager()->CurrentClass);*/
 }
 
 void Actions::update(LabMode newLabMode, int classIndex) {
@@ -203,15 +203,15 @@ void Actions::update(LabMode newLabMode, int classIndex) {
 	}
 }
 
-void DestroySubsystems::open(Button* /*caller*/) {
-	if (dialogWindow != nullptr)
-		return;
+void DestroySubsystems::open() {
+	//if (dialogWindow != nullptr)
+	//	return;
 
-	dialogWindow = (DialogWindow*)getLabManager()->Screen->Add(new DialogWindow("Destroy Subsystems", gr_screen.center_offset_x + 400, gr_screen.center_offset_y + 50));
-	Assert(Opener != nullptr);
-	dialogWindow->SetOwner(Opener->getDialog());
+	//dialogWindow = (DialogWindow*)getLabManager()->Screen->Add(new DialogWindow("Destroy Subsystems", gr_screen.center_offset_x + 400, gr_screen.center_offset_y + 50));
+	//Assert(Opener != nullptr);
+	//dialogWindow->SetOwner(Opener->getDialog());
 
-	update(getLabManager()->CurrentMode, getLabManager()->CurrentClass);
+	//update(getLabManager()->CurrentMode, getLabManager()->CurrentClass);
 }
 
 void DestroySubsystems::update(LabMode, int) {
@@ -234,15 +234,15 @@ void DestroySubsystems::update(LabMode, int) {
 	}
 }
 
-void ChangeLoadout::open(Button* /*caller*/) {
-	if (dialogWindow != nullptr)
-		return;
+void ChangeLoadout::open() {
+	//if (dialogWindow != nullptr)
+	//	return;
 
-	dialogWindow = (DialogWindow*)getLabManager()->Screen->Add(new DialogWindow("Change Loadout", gr_screen.center_offset_x + 400, gr_screen.center_offset_y + 50));
-	Assert(Opener != nullptr);
-	dialogWindow->SetOwner(Opener->getDialog());
+	//dialogWindow = (DialogWindow*)getLabManager()->Screen->Add(new DialogWindow("Change Loadout", gr_screen.center_offset_x + 400, gr_screen.center_offset_y + 50));
+	//Assert(Opener != nullptr);
+	//dialogWindow->SetOwner(Opener->getDialog());
 
-	update(getLabManager()->CurrentMode, getLabManager()->CurrentClass);
+	//update(getLabManager()->CurrentMode, getLabManager()->CurrentClass);
 }
 
 void ChangeLoadout::update(LabMode, int) {
@@ -348,17 +348,17 @@ void ChangeLoadout::update(LabMode, int) {
 	}
 }
 
-void WeaponFire::open(Button* /*caller*/) {
-	if (dialogWindow != nullptr)
-		return;
+void WeaponFire::open() {
+	//if (dialogWindow != nullptr)
+	//	return;
 
-	dialogWindow = (DialogWindow*)getLabManager()->Screen->Add(
-		new DialogWindow("Fire weapons", gr_screen.center_offset_x + 400, gr_screen.center_offset_y + 50)
-	);
-	Assert(Opener != nullptr);
-	dialogWindow->SetOwner(Opener->getDialog());
+	//dialogWindow = (DialogWindow*)getLabManager()->Screen->Add(
+	//	new DialogWindow("Fire weapons", gr_screen.center_offset_x + 400, gr_screen.center_offset_y + 50)
+	//);
+	//Assert(Opener != nullptr);
+	//dialogWindow->SetOwner(Opener->getDialog());
 
-	update(getLabManager()->CurrentMode, getLabManager()->CurrentClass);
+	//update(getLabManager()->CurrentMode, getLabManager()->CurrentClass);
 }
 
 void WeaponFire::update(LabMode, int) {
@@ -387,17 +387,17 @@ void WeaponFire::update(LabMode, int) {
 	}
 }
 
-void AnimationTrigger::open(Button* /*caller*/) {
-	if (dialogWindow != nullptr)
-		return;
+void AnimationTrigger::open() {
+	//if (dialogWindow != nullptr)
+	//	return;
 
-	dialogWindow = (DialogWindow*)getLabManager()->Screen->Add(
-		new DialogWindow("Trigger animations", gr_screen.center_offset_x + 400, gr_screen.center_offset_y + 50)
-	);
-	Assert(Opener != nullptr);
-	dialogWindow->SetOwner(Opener->getDialog());
+	//dialogWindow = (DialogWindow*)getLabManager()->Screen->Add(
+	//	new DialogWindow("Trigger animations", gr_screen.center_offset_x + 400, gr_screen.center_offset_y + 50)
+	//);
+	//Assert(Opener != nullptr);
+	//dialogWindow->SetOwner(Opener->getDialog());
 
-	update(getLabManager()->CurrentMode, getLabManager()->CurrentClass);
+	//update(getLabManager()->CurrentMode, getLabManager()->CurrentClass);
 }
 
 void AnimationTrigger::update(LabMode, int) {

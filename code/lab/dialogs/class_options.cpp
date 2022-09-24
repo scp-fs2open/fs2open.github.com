@@ -3,14 +3,14 @@
 #include "ship/ship.h"
 #include "weapon/weapon.h"
 
-void Options::open(Button* /*caller*/) {
-	if (dialogWindow == nullptr) {
+void Options::open() {
+	/*if (dialogWindow == nullptr) {
 		dialogWindow = (DialogWindow*)getLabManager()->Screen->Add(new DialogWindow(
 			"Flags Window", gr_screen.center_offset_x + gr_screen.center_w - 205, gr_screen.center_offset_y + 200));
 		Assert(Opener != nullptr);
 		dialogWindow->SetOwner(Opener->getDialog());
 	}
-	update(getLabManager()->CurrentMode, getLabManager()->CurrentClass);
+	update(getLabManager()->CurrentMode, getLabManager()->CurrentClass);*/
 }
 
 void Options::update(LabMode newLabMode, int classIndex) {

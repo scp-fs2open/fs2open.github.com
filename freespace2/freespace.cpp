@@ -202,6 +202,8 @@
 #include <cinttypes>
 #include <stdexcept>
 
+#include "imgui.h"
+
 #ifdef WIN32
 // According to AMD and NV, these _should_ force their drivers into high-performance mode
 extern "C" {
@@ -1672,6 +1674,8 @@ void game_init()
 
 	// seed the random number generator
 	Random::seed(static_cast<unsigned int>(time(nullptr)));
+
+	ImGui::CreateContext();
 
 	Framerate_delay = 0;
 
@@ -6774,7 +6778,6 @@ void game_shutdown(void)
 
 	scpui::shutdown();				// Deinitialize the new UI system, needs to be done after scripting shutdown to make sure the resources were released properly
 
-
 	control_config_common_close();
 	io::joystick::shutdown();
 
@@ -6800,6 +6803,8 @@ void game_shutdown(void)
 	if (Is_standalone) {
 		std_deinit_standalone();
 	}
+
+	ImGui::DestroyContext();
 
 	os_cleanup();
 

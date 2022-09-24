@@ -681,10 +681,6 @@ add_file_folder("Lab"
 
 add_file_folder("Lab\\\\Dialogs"
 	lab/dialogs/lab_dialog.h
-	lab/dialogs/ship_classes.h
-	lab/dialogs/ship_classes.cpp
-	lab/dialogs/weapon_classes.h
-	lab/dialogs/weapon_classes.cpp
 	lab/dialogs/class_descriptions.h
 	lab/dialogs/class_descriptions.cpp
 	lab/dialogs/class_options.h
@@ -693,10 +689,10 @@ add_file_folder("Lab\\\\Dialogs"
 	lab/dialogs/class_variables.cpp
 	lab/dialogs/render_options.h
 	lab/dialogs/render_options.cpp
-	lab/dialogs/backgrounds.h
-	lab/dialogs/backgrounds.cpp
 	lab/dialogs/actions.h
 	lab/dialogs/actions.cpp
+	lab/dialogs/lab_ui.h
+	lab/dialogs/lab_ui.cpp
 )
 
 add_file_folder("Lab\\\\Manager"

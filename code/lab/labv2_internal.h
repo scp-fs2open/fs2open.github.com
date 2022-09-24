@@ -1,6 +1,9 @@
 #pragma once
 #include "lab/wmcgui.h"
 #include "lab/manager/lab_manager.h"
+#include "imgui.h"
+#include "backends/imgui_impl_opengl3.h"
+#include "backends/imgui_impl_sdl.h"
 
 
 const std::unique_ptr<LabManager> &getLabManager();
@@ -14,7 +17,7 @@ public:
 
 	int DoMouseUp(float frametime) override {
 		if (Dialog != nullptr && Dialog->safeToOpen(getLabManager()->CurrentMode))
-			Dialog->open(this);
+			Dialog->open();
 
 		return Button::DoMouseUp(frametime);
 	}
