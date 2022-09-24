@@ -655,6 +655,8 @@ void VirtualPOFOperationAddGlowpoint::process(polymodel* pm, model_read_deferred
 	pm->glow_point_banks[newGPNumber] = object_copy_including_array_member(appendingPM->pm()->glow_point_banks[sourceId], &glow_point_bank::points, &glow_point_bank::num_points);
 	pm->glow_point_banks[newGPNumber].submodel_parent = dest_subobj_no;
 
+	appendingPM->keepGlowbank(sourceId);
+
 	if (moveGlowpoint) {
 		const vec3d& offset = *moveGlowpoint;
 		for (int i = 0; i < pm->glow_point_banks[newGPNumber].num_points; i++)
