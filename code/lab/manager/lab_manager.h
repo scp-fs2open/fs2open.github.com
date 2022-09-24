@@ -1,14 +1,12 @@
 #pragma once
 
+#include "lab/wmcgui.h"
 #include "globalincs/vmallocator.h"
-#include "lab/labv2.h"
+#include "lab/dialogs/lab_dialog.h"
 #include "lab/dialogs/lab_ui.h"
 #include "lab/renderer/lab_renderer.h"
-#include "model/modelanimation.h"
-
 #include <gamesequence/gamesequence.h>
 #include "osapi/osapi.h"
-#include "ship/ship.h"
 
 
 enum class LabRotationMode { Both, Yaw, Pitch, Roll };
@@ -17,17 +15,6 @@ FLAG_LIST(ManagerFlags) {
 	ModelRotationEnabled,
 
 	NUM_VALUES
-};
-
-struct gfx_options {
-	int bloom_level;
-	float ambient_factor;
-	float light_factor;
-	float emissive_factor;
-	float exposure_level;
-	piecewise_power_curve_values ppcv;
-	AntiAliasMode aa_mode;
-	TonemapperAlgorithm tonemapper;
 };
 
 class LabManager {
@@ -44,7 +31,7 @@ public:
 
 	void close() {
 		animation::ModelAnimationSet::stopAnimations();
-
+  
 		LabRenderer::close();
 
 		Game_mode &= ~GM_LAB;
@@ -92,9 +79,9 @@ public:
 	float RotationSpeedDivisor = 100.0f;
 
 	flagset<ManagerFlags> Flags;
+private:
+	SCP_vector<std::shared_ptr<LabDialog>> Dialogs;
 
-	gfx_options graphicsSettings;
-  private:
 	float Lab_thrust_len = 0.0f;
 	bool Lab_thrust_afterburn = false;
 	bool Weapons_loaded = false;

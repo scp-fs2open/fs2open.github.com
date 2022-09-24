@@ -123,8 +123,3 @@ namespace ImGui
     void MyFunction(const char* name, const MyMatrix44& v);
 }
 */
-
-// FSO-specific overrides
-
-// required for ImGuizmo
-#define USE_IMGUI_API

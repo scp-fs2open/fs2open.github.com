@@ -672,16 +672,27 @@ add_file_folder("JumpNode"
 
 # Lab files
 add_file_folder("Lab"
+	lab/wmcgui.cpp
+	lab/wmcgui.h
 	lab/labv2.h
 	lab/labv2_internal.h
 	lab/labv2.cpp
 )
 
 add_file_folder("Lab\\\\Dialogs"
+	lab/dialogs/lab_dialog.h
+	lab/dialogs/class_descriptions.h
+	lab/dialogs/class_descriptions.cpp
+	lab/dialogs/class_options.h
+	lab/dialogs/class_options.cpp
+	lab/dialogs/class_variables.h
+	lab/dialogs/class_variables.cpp
+	lab/dialogs/render_options.h
+	lab/dialogs/render_options.cpp
+	lab/dialogs/actions.h
+	lab/dialogs/actions.cpp
 	lab/dialogs/lab_ui.h
 	lab/dialogs/lab_ui.cpp
-	lab/dialogs/lab_ui_helpers.h
-	lab/dialogs/lab_ui_helpers.cpp
 )
 
 add_file_folder("Lab\\\\Manager"
@@ -1388,8 +1399,6 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/shields.h
 	scripting/api/objs/ship_bank.cpp
 	scripting/api/objs/ship_bank.h
-	scripting/api/objs/ship_registry_entry.cpp
-	scripting/api/objs/ship_registry_entry.h
 	scripting/api/objs/shipclass.cpp
 	scripting/api/objs/shipclass.h
 	scripting/api/objs/ship.cpp
@@ -1596,8 +1605,6 @@ add_file_folder("Ui"
 )
 
 add_file_folder("Utils"
-	utils/base64.cpp
-	utils/base64.h
 	utils/encoding.cpp
 	utils/encoding.h
 	utils/event.h

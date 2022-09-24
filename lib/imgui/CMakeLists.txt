@@ -15,9 +15,6 @@ SET(IMGUI_SOURCES
     backends/imgui_impl_opengl3.cpp
     backends/imgui_impl_sdl.h
     backends/imgui_impl_sdl.cpp
-    extensions/imgui_sugar.hpp
-    extensions/ImGuizmo.cpp
-    extensions/ImGuizmo.h
 )
 
 ADD_LIBRARY(imgui STATIC ${IMGUI_SOURCES})
@@ -30,5 +27,4 @@ suppress_warnings(imgui)
 set_target_properties(imgui PROPERTIES FOLDER "3rdparty")
 TARGET_LINK_LIBRARIES(imgui PUBLIC sdl2)
 target_link_libraries(imgui PUBLIC compiler)
-
 

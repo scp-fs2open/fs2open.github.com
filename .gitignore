@@ -258,3 +258,4 @@ CMakeSettings.json
 !/code/scripting/lua/LuaConvert.h
 !/code/debugconsole/
 !/docker/build
+/lib/imgui

@@ -1,6 +1,8 @@
 #include "lab/labv2_internal.h"
 #include "lab/manager/lab_manager.h"
 #include "lab/renderer/lab_renderer.h"
+#include "lab/dialogs/render_options.h"
+#include "lab/dialogs/actions.h"
 #include "io/key.h"
 #include "asteroid/asteroid.h"
 #include "missionui/missionscreencommon.h"
@@ -11,12 +13,8 @@
 
 #include "freespace.h"
 
-#include "extensions/ImGuizmo.h"
-#include "io/mouse.h"
-#include "weapon/weapon.h"
 
-
-void lab_exit() {
+void lab_exit(Button* /*caller*/) {
 	getLabManager()->notify_close();
 }
 
@@ -71,19 +69,14 @@ LabManager::LabManager() {
 	teamp->num_weapon_choices = static_cast<int>(Weapon_info.size());
 
 	Game_mode |= GM_LAB;
-
-	graphicsSettings = gfx_options();
-	graphicsSettings.ppcv = lighting_profile::lab_get_ppc();
-	graphicsSettings.ambient_factor = lighting_profile::lab_get_ambient();
-	graphicsSettings.light_factor = lighting_profile::lab_get_light();
-	graphicsSettings.emissive_factor = lighting_profile::lab_get_emissive();
-	graphicsSettings.exposure_level = lighting_profile::current_exposure();
-	graphicsSettings.bloom_level = gr_bloom_intensity();
-	graphicsSettings.aa_mode = Gr_aa_mode;
 }
 
 LabManager::~LabManager()
 {
+	for (auto &dialog : Dialogs) {
+		dialog->close();
+	}
+
 	obj_delete_all();
 }
 
@@ -91,7 +84,6 @@ void LabManager::onFrame(float frametime) {
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplSDL2_NewFrame();
 	ImGui::NewFrame();
-	ImGuizmo::BeginFrame();
 
 	Renderer->onFrame(frametime);
 
@@ -142,6 +134,34 @@ void LabManager::onFrame(float frametime) {
 		// handle any key presses
 		switch (key) {
 			// Adjust AA presets
+		case KEY_0:
+			if (!PostProcessing_override)
+				LabRenderer::setAAMode(AntiAliasMode::FXAA_Low);
+			break;
+		case KEY_1:
+			if (!PostProcessing_override)
+				LabRenderer::setAAMode(AntiAliasMode::FXAA_Medium);
+			break;
+		case KEY_2:
+			if (!PostProcessing_override)
+				LabRenderer::setAAMode(AntiAliasMode::FXAA_High);
+			break;
+		case KEY_3:
+			if (!PostProcessing_override)
+				LabRenderer::setAAMode(AntiAliasMode::SMAA_Low);
+			break;
+		case KEY_4:
+			if (!PostProcessing_override)
+				LabRenderer::setAAMode(AntiAliasMode::SMAA_Medium);
+			break;
+		case KEY_5:
+			if (!PostProcessing_override)
+				LabRenderer::setAAMode(AntiAliasMode::SMAA_High);
+			break;
+		case KEY_6:
+			if (!PostProcessing_override)
+				LabRenderer::setAAMode(AntiAliasMode::SMAA_Ultra);
+			break;
 
 		case KEY_T:
 			Renderer->useNextTeamColorPreset();
@@ -184,8 +204,16 @@ void LabManager::onFrame(float frametime) {
 				RotationSpeedDivisor = 100.f;
 			break;
 
+		case KEY_M:
+			// Dumping the environment map only makes sense if we actually have a background set
+			if (Renderer->currentMissionBackground != LAB_MISSION_NONE_STRING)
+				gr_dump_envmap(Renderer->currentMissionBackground.c_str());
+			break;
+
+			// bail...
 		case KEY_ESC:
-			notify_close();
+			close();
+			break;
 
 		default:
 			// check for game-specific controls
@@ -254,13 +282,13 @@ void LabManager::onFrame(float frametime) {
 		rot_angles.h = PI2 * frametime / rev_rate;
 		vm_rotate_matrix_by_angles(&CurrentOrientation, &rot_angles);
 	}
+
+	if (CloseThis)
+		close();
 	
 	ImGui::ShowDemoWindow();
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-	if (CloseThis)
-		close();
 
 	gr_flip();
 }
@@ -295,6 +323,10 @@ void LabManager::changeDisplayedObject(LabMode mode, int info_index) {
 	}
 
 	Assert(CurrentObject != -1);
+
+	for (auto &dialog : Dialogs) {
+		dialog->update(CurrentMode, CurrentClass);
+	}
 
 	Renderer->getCurrentCamera()->displayedObjectChanged();
 }
