@@ -28,9 +28,10 @@ struct VirtualPOFDefinition {
 	SCP_vector<std::unique_ptr<VirtualPOFOperation>> operationList;
 };
 
+using VirtualPOFNameReplacementMap = SCP_unordered_map<SCP_string, SCP_string, SCP_string_lcase_hash, SCP_string_lcase_equal_to>;
+
 class VirtualPOFOperationRenameSubobjects : public VirtualPOFOperation {
-	using replacement_map = SCP_unordered_map<SCP_string, SCP_string, SCP_string_lcase_hash, SCP_string_lcase_equal_to>;
-	replacement_map replacements;
+	VirtualPOFNameReplacementMap replacements;
 	friend class VirtualPOFOperationAddSubmodel;
 	friend class VirtualPOFOperationAddTurret;
 public:
@@ -44,6 +45,7 @@ class VirtualPOFOperationAddSubmodel : public VirtualPOFOperation {
 	std::unique_ptr<VirtualPOFOperationRenameSubobjects> rename = nullptr;
 	bool copyChildren = true;
 	bool copyTurrets = false;
+	bool copyGlowpoints = false;
 public:
 	VirtualPOFOperationAddSubmodel();
 	void process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const override;
@@ -66,6 +68,25 @@ class VirtualPOFOperationAddEngine : public VirtualPOFOperation {
 	SCP_string appendingPOF;
 public:
 	VirtualPOFOperationAddEngine();
+	void process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const override;
+};
+
+class VirtualPOFOperationAddGlowpoint : public VirtualPOFOperation {
+	int sourceId;
+	SCP_string renameSubmodel;
+	tl::optional<vec3d> moveGlowpoint;
+	SCP_string appendingPOF;
+public:
+	VirtualPOFOperationAddGlowpoint();
+	void process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const override;
+};
+
+class VirtualPOFOperationAddSpecialSubsystem : public VirtualPOFOperation {
+	SCP_string sourceSubsystem;
+	tl::optional<SCP_string> renameSubsystem;
+	SCP_string appendingPOF;
+public:
+	VirtualPOFOperationAddSpecialSubsystem();
 	void process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const override;
 };
 
