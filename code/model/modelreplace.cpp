@@ -641,7 +641,7 @@ VirtualPOFOperationAddGlowpoint::VirtualPOFOperationAddGlowpoint() {
 	stuff_string(renameSubmodel, F_NAME);
 }
 
-void VirtualPOFOperationAddGlowpoint::process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const {
+void VirtualPOFOperationAddGlowpoint::process(polymodel* pm, model_read_deferred_tasks& /*deferredTasks*/, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const {
 	auto appendingPM = virtual_pof_build_cache(appendingPOF, depth);
 
 	int dest_subobj_no = model_find_submodel_index(pm, renameSubmodel.c_str());
@@ -678,7 +678,7 @@ VirtualPOFOperationAddSpecialSubsystem::VirtualPOFOperationAddSpecialSubsystem()
 	}
 }
 
-void VirtualPOFOperationAddSpecialSubsystem::process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const {
+void VirtualPOFOperationAddSpecialSubsystem::process(polymodel* /*pm*/, model_read_deferred_tasks& deferredTasks, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const {
 	auto appendingPM = virtual_pof_build_cache(appendingPOF, depth);
 	const auto& subsystems = appendingPM->deferred().model_subsystems;
 
