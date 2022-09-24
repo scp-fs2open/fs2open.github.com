@@ -804,122 +804,144 @@ ade_indexer::ade_indexer(lua_CFunction func,
 	LibIdx = ade_manager::getInstance()->getEntry(parent.GetIdx()).AddSubentry(ate);
 }
 
-//*************************Lua functions*************************
-//WMC - Spits out the current Lua stack to "stackdump"
-//This includes variable values, but not names
-void ade_stackdump(lua_State *L, char *stackdump)
+SCP_string ade_tostring(lua_State *L, int argnum, bool add_typeinfo)
 {
-	char buf[512];
-	int stacksize = lua_gettop(L);
+	SCP_string buf;
 
 	//Lua temps
 	double d;
 	int b;
-	char *s;
-	for(int argnum = 1; argnum <= stacksize; argnum++)
-	{
-		int type = lua_type(L, argnum);
-		sprintf(buf, "\r\n%d: ", argnum);
-		strcat(stackdump, buf);
-		switch(type)
-		{
-			case LUA_TNIL:
-				strcat(stackdump, "NIL");
-				break;
-			case LUA_TNUMBER:
-				d = lua_tonumber(L, argnum);
-				sprintf(buf, "Number [%f]",d);
-				strcat(stackdump, buf);
-				break;
-			case LUA_TBOOLEAN:
-				b = lua_toboolean(L, argnum);
-				sprintf(buf, "Boolean [%d]",b);
-				strcat(stackdump, buf);
-				break;
-			case LUA_TSTRING:
-				s = (char *)lua_tostring(L, argnum);
-				sprintf(buf, "String [%s]",s);
-				strcat(stackdump, buf);
-				break;
-			case LUA_TTABLE:
-			{
-				if(lua_getmetatable(L, argnum))
-				{
-					lua_pushstring(L, "__adeid");
-					lua_rawget(L, -2);
-					if(lua_isnumber(L, -1))
-					{
-						sprintf(buf, "Table [%s]", getTableEntry((size_t)lua_tonumber(L, -1)).Name);
-						strcat(stackdump, buf);
-					}
-					else
-						strcat(stackdump, "non-default Table");
-					lua_pop(L, 2);	//metatable and nil/adeid
-				}
-				else
-					strcat(stackdump, "Table w/ no metatable");
+	const char *s;
 
+	int type = lua_type(L, argnum);
+	switch(type)
+	{
+		case LUA_TNIL:
+			buf = "nil";
+			break;
+
+		case LUA_TNUMBER:
+			d = lua_tonumber(L, argnum);
+			if (add_typeinfo)
+				sprintf(buf, "Number [%f]", d);
+			else
+				sprintf(buf, "%f", d);
+			break;
+
+		case LUA_TBOOLEAN:
+			b = lua_toboolean(L, argnum);
+			if (add_typeinfo)
+				sprintf(buf, "Boolean [%d]", b);
+			else
+				buf = b != 0 ? "true" : "false";
+			break;
+
+		case LUA_TSTRING:
+			s = lua_tostring(L, argnum);
+			if (add_typeinfo)
+				sprintf(buf, "String [%s]", s);
+			else
+				buf = s;
+			break;
+
+		case LUA_TTABLE:
+		{
+			if (lua_getmetatable(L, argnum))
+			{
+				lua_pushstring(L, "__adeid");
+				lua_rawget(L, -2);
+				if (lua_isnumber(L, -1))
+					sprintf(buf, "Table [%s]", getTableEntry((size_t)lua_tonumber(L, -1)).Name);
+				else
+					buf = "non-default Table";
+				lua_pop(L, 2);	//metatable and nil/adeid
+			}
+			else
+				buf = "Table w/ no metatable";
+
+			if (add_typeinfo)
+			{
 				//Maybe get first key?
-				char *firstkey = NULL;
+				const char* firstkey = nullptr;
 				lua_pushnil(L);
-				if(lua_next(L, argnum))
+				if (lua_next(L, argnum))
 				{
-					firstkey = (char *)lua_tostring(L, -2);
-					if(firstkey != NULL)
+					firstkey = lua_tostring(L, -2);
+					if (firstkey != nullptr)
 					{
-						strcat(stackdump, ", First key: [");
-						strcat(stackdump, firstkey);
-						strcat(stackdump, "]");
+						buf += ", First key: [";
+						buf += firstkey;
+						buf += "]";
 					}
 					lua_pop(L, 1);	//Key
 				}
 				lua_pop(L, 1);	//Nil
 			}
-				break;
-			case LUA_TFUNCTION:
-				strcat(stackdump, "Function");
-				{
-					char *upname = (char*)lua_getupvalue(L, argnum, ADE_FUNCNAME_UPVALUE_INDEX);
-					if(upname != NULL)
-					{
-						strcat(stackdump, " ");
-						strcat(stackdump, lua_tostring(L, -1));
-						strcat(stackdump, "()");
-						lua_pop(L, 1);
-					}
-				}
-				break;
-			case LUA_TUSERDATA:
-				if(lua_getmetatable(L, argnum))
-				{
-					lua_pushstring(L, "__adeid");
-					lua_rawget(L, -2);
-					if(lua_isnumber(L, -1))
-					{
-						sprintf(buf, "Userdata [%s]", getTableEntry((size_t)lua_tonumber(L, -1)).Name);
-					}
-					else
-						sprintf(buf, "non-default Userdata");
-
-					lua_pop(L, 2);	//metatable and nil/adeid
-				}
-				else
-					sprintf(buf, "Userdata w/ no metatable");
-				strcat(stackdump, buf);
-				break;
-			case LUA_TTHREAD:
-				sprintf(buf, "Thread");
-				strcat(stackdump, buf);
-				break;
-			case LUA_TLIGHTUSERDATA:
-				sprintf(buf, "Light userdata");
-				strcat(stackdump, buf);
-				break;
-			default:
-				sprintf(buf, "<UNKNOWN>: %s (%f) (%s)", lua_typename(L, type), lua_tonumber(L, argnum), lua_tostring(L, argnum));
-				strcat(stackdump, buf);
-				break;
+			break;
 		}
+
+		case LUA_TFUNCTION:
+		{
+			buf = "Function";
+			auto upname = lua_getupvalue(L, argnum, ADE_FUNCNAME_UPVALUE_INDEX);
+			if (upname != nullptr)
+			{
+				buf += " ";
+				buf += lua_tostring(L, -1);
+				buf += "()";
+				lua_pop(L, 1);
+			}
+			break;
+		}
+
+		case LUA_TUSERDATA:
+			if (lua_getmetatable(L, argnum))
+			{
+				lua_pushstring(L, "__adeid");
+				lua_rawget(L, -2);
+				if (lua_isnumber(L, -1))
+					sprintf(buf, "Userdata [%s]", getTableEntry((size_t)lua_tonumber(L, -1)).Name);
+				else
+					buf = "non-default Userdata";
+
+				lua_pop(L, 2);	//metatable and nil/adeid
+			}
+			else
+				buf = "Userdata w/ no metatable";
+			break;
+
+		case LUA_TTHREAD:
+			buf = "Thread";
+			break;
+
+		case LUA_TLIGHTUSERDATA:
+			buf = "Light userdata";
+			break;
+
+		default:
+			if (add_typeinfo)
+				sprintf(buf, "<UNKNOWN>: %s (%f) (%s)", lua_typename(L, type), lua_tonumber(L, argnum), lua_tostring(L, argnum));
+			else
+				buf = "Unknown Lua type";
+			break;
+	}
+
+	return buf;
+}
+
+//*************************Lua functions*************************
+//WMC - Spits out the current Lua stack to "stackdump"
+//This includes variable values, but not names
+void ade_stackdump(lua_State *L, char *stackdump)
+{
+	SCP_string buf;
+	int stacksize = lua_gettop(L);
+
+	for(int argnum = 1; argnum <= stacksize; argnum++)
+	{
+		sprintf(buf, "\r\n%d: ", argnum);
+		strcat(stackdump, buf.c_str());
+		strcat(stackdump, ade_tostring(L, argnum, true).c_str());
 	}
 }
 
