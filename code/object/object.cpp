@@ -1530,6 +1530,12 @@ void obj_move_all(float frametime)
 				// physics
 				obj_move_call_physics(objp, frametime);
 			}
+		} else if (objp->flags[Object::Object_Flags::Immobile]) {
+			// make sure velocity is always 0 for immobile things!
+			vm_vec_zero(&objp->phys_info.vel);
+			vm_vec_zero(&objp->phys_info.desired_vel);
+			vm_vec_zero(&objp->phys_info.rotvel);
+			vm_vec_zero(&objp->phys_info.desired_rotvel);
 		}
 
 		// Submodel movement now happens here, right after physics movement.  It's not excluded by the "immobile" flag.
