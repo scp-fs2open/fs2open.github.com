@@ -51,18 +51,24 @@ typedef int errno_t;
 extern errno_t scp_strcpy_s( const char* file, int line, char* strDest, size_t sizeInBytes, const char* strSource );
 extern errno_t scp_strcat_s( const char* file, int line, char* strDest, size_t sizeInBytes, const char* strSource );
 
-template< size_t size>
+template< size_t size >
 inline
 errno_t scp_strcpy_s( const char* file, int line, char (&strDest)[ size ], const char* strSource )
 {
 	return scp_strcpy_s( file, line, strDest, size, strSource );
 }
 
-template< size_t size>
+template< size_t size >
 inline
-errno_t scp_strncpy_s(const char* file, int line, char(&strDest)[size], const char* strSource, size_t count)
+errno_t scp_strncpy_s( const char* file, int line, char(&strDest)[size], const char* strSource, size_t count )
 {
-	return scp_strcpy_s(file, line, strDest, MIN(size, count), strSource);
+	return scp_strcpy_s( file, line, strDest, MIN(size, count), strSource );
+}
+
+inline
+errno_t scp_strncpy_s( const char* file, int line, char* strDest, size_t size, const char* strSource, size_t count )
+{
+	return scp_strcpy_s( file, line, strDest, MIN(size, count), strSource );
 }
 
 template< size_t size >
@@ -81,8 +87,15 @@ errno_t scp_strcat_s( const char* file, int line, char (&strDest)[ size ], const
 #pragma message("safe_strings disabled - this is not good!")
 
 inline errno_t strcpy_s( char* strDest, size_t sizeInBytes, const char* strSource )
-{ 
+{
 	strcpy( strDest, strSource ); 
+	return 0;
+}
+
+inline errno_t strncpy_s( char* strDest, size_t sizeInBytes, const char* strSource, size_t count )
+{
+	strncpy( strDest, strSource, count );
+	strDest[count] = '\0';
 	return 0;
 }
 
@@ -93,13 +106,13 @@ inline errno_t strcat_s( char* strDest, size_t sizeInBytes, const char* strSourc
 }
 
 inline errno_t strcpy_s( char* strDest, const char* strSource )
-{ 
+{
 	strcpy( strDest, strSource );
 	return 0;
 }
 
 inline errno_t strcat_s( char* strDest, const char* strSource )
-{ 
+{
 	strcat( strDest, strSource ); 
 	return 0;
 }
