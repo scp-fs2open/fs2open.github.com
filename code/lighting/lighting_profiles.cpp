@@ -221,6 +221,9 @@ void lighting_profile::reset()
 	ambient_light_brightness.set_multiplier(0.286f); 
 	ambient_light_brightness.stack_multiplier(Cmdline_ambient_power);
 	ambient_light_brightness.set_adjust(MAX(0.0f,Cmdline_emissive_power));
+
+	cockpit_light_radius_modifier.reset();
+	cockpit_light_radius_modifier.set_multiplier(1.0f);
 }
 
 TonemapperAlgorithm lighting_profile::name_to_tonemapper(SCP_string &name)
@@ -346,6 +349,10 @@ void lighting_profile::parse_default_section(const char *filename)
 		}
 
 		parsed |= parse_optional_float_into("$Exposure:",&default_profile.exposure);
+
+		parsed |= lighting_profile_value::parse(filename, "$Cockpit light radius modifier:", profile_name,
+			&default_profile.cockpit_light_radius_modifier);
+
 		if(!parsed){
 			stuff_string(buffer,F_RAW);
 			Warning(LOCATION,"Unhandled line in lighting profile\n\t%s",buffer.c_str());

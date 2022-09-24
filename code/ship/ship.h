@@ -1590,8 +1590,7 @@ extern void change_ship_type(int n, int ship_type, int by_sexp = 0);
 extern void ship_process_pre( object * objp, float frametime );
 extern void ship_process_post( object * objp, float frametime );
 extern void ship_render( object * obj, model_draw_list * scene );
-extern void ship_render_cockpit( object * objp);
-extern void ship_render_show_ship_cockpit( object * objp);
+extern void ship_render_player_ship( object * objp);
 extern void ship_delete( object * objp );
 extern int ship_check_collision_fast( object * obj, object * other_obj, vec3d * hitpos );
 extern int ship_get_num_ships();
@@ -1706,6 +1705,7 @@ extern int ship_find_num_turrets(object *objp);
 
 extern void compute_slew_matrix(matrix *orient, angles *a);
 extern void ship_get_eye( vec3d *eye_pos, matrix *eye_orient, object *obj, bool do_slew = true, bool from_origin = false);		// returns in eye the correct viewing position for the given object
+extern void ship_get_eye_local(vec3d* eye_pos, matrix* eye_orient, object* obj, bool do_slew = true);		// returns the eye data, local to the ship
 
 extern ship_subsys *ship_find_first_subsys(ship *sp, int subsys_type, vec3d *attacker_pos = nullptr);
 extern ship_subsys *ship_get_indexed_subsys(ship *sp, int index);	// returns index'th subsystem of this ship

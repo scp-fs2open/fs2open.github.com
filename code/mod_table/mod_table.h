@@ -82,6 +82,8 @@ extern bool Neb_affects_particles;
 extern bool Neb_affects_fireballs;
 extern std::tuple<float, float, float, float> Shadow_distances;
 extern std::tuple<float, float, float, float> Shadow_distances_cockpit;
+extern bool Show_ship_casts_shadow;
+extern bool Cockpit_shares_coordinate_space;
 extern bool Custom_briefing_icons_always_override_standard_icons;
 extern float Min_pixel_size_thruster;
 extern float Min_pixel_size_beam;
