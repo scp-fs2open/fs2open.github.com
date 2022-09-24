@@ -1530,7 +1530,7 @@ void obj_move_all(float frametime)
 				// physics
 				obj_move_call_physics(objp, frametime);
 			}
-		} else if (objp->flags[Object::Object_Flags::Immobile]) {
+		} else {
 			// make sure velocity is always 0 for immobile things!
 			vm_vec_zero(&objp->phys_info.vel);
 			vm_vec_zero(&objp->phys_info.desired_vel);
