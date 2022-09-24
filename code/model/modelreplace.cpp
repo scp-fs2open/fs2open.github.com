@@ -26,6 +26,10 @@ extern modelread_status read_model_file(polymodel* pm, const char* filename, int
 extern void create_family_tree(polymodel* obj);
 extern void model_calc_bound_box(vec3d* box, vec3d* big_mn, vec3d* big_mx);
 
+/*
+* Caching base-loaded POFs, as well has providing automatic deallocation for loaded models
+*/
+
 static class VirtualPOFBuildCache {
 public:
 	class polymodel_holder;
@@ -190,8 +194,27 @@ void virtual_pof_init() {
 
 // Internal helper functions
 
+template<typename T>
+int reallocate_and_copy_array(T*& array, int& size, int to_add) {
+	//Make sure to keep old data
+	T* oldArray = array;
+
+	int size_before = size;
+
+	//Realloc new submodel array of proper size
+	size += to_add;
+	array = new T[size];
+
+	//Copy over old data. Pointers in the struct can still point to old members, we will just delete the outer bsp_info array
+	for (int i = 0; i < size_before; i++)
+		array[i] = oldArray[i];
+	delete[] oldArray;
+
+	return size_before;
+}
+
 #define REPLACE_IF_EQ(data) if ((data) == source) (data) = dest;
-#define REPLACE_IF_STRIEQ(data) if (stricmp(data, source.c_str()) == 0) { strncpy_s(data, dest.c_str(), dest.size()); data[MIN(dest.size(), sizeof(data) / sizeof(data[0]))] = '\0'; }
+#define REPLACE_IF_STRIEQ(data) if (stricmp(data, source.c_str()) == 0) strncpy_s(data, dest.c_str(), dest.size()); 
 
 //Generates one function for replacing data in a type, which is a map entry of which the key may be replaced. Takes an rvalue reference, used for making a copy and modifying the temporary to then assign it somewhere
 #define CHANGE_HELPER_MAP_KEY(name, intype, argtype) template<typename map_t> static typename std::enable_if<std::is_same<typename map_t::value_type, std::pair<const argtype, argtype>>::value, intype>::type name(intype&& pass, map_t replace){ \
@@ -317,18 +340,7 @@ void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_
 		}
 
 		if (!has_name_collision) {
-			//Make sure to keep old data
-			bsp_info* oldSubmodels = pm->submodel;
-			int old_n_submodel = pm->n_models;
-
-			//Realloc new submodel array of proper size
-			pm->n_models += (int)to_copy_submodels.size();
-			pm->submodel = new bsp_info[pm->n_models];
-
-			//Copy over old data. Pointers in the struct can still point to old members, we will just delete the outer bsp_info array
-			for (int i = 0; i < old_n_submodel; i++)
-				pm->submodel[i] = oldSubmodels[i];
-			delete[] oldSubmodels;
+			int old_n_submodel = reallocate_and_copy_array(pm->submodel, pm->n_models, to_copy_submodels.size());
 
 			SCP_unordered_map<int, int> replaceSubobjNo;
 			for (int i = 0; i < (int)to_copy_submodels.size(); i++)
@@ -445,40 +457,6 @@ VirtualPOFOperationAddTurret::VirtualPOFOperationAddTurret() {
 	if (optional_string("$Rename Subobjects:")) {
 		rename = make_unique<VirtualPOFOperationRenameSubobjects>();
 	}
-
-	SCP_string destCpy = baseNameDest;
-	SCP_string destBarrelCpy = barrelNameDest ? *barrelNameDest : SCP_string("");
-	SCP_tolower(destCpy);
-	SCP_tolower(destBarrelCpy);
-
-	bool needBaseTurret = destCpy.find("turret") == SCP_string::npos;
-	bool needBarrelTurret = barrelNameDest && destBarrelCpy.find("turret") == SCP_string::npos;
-
-	if (needBaseTurret || needBarrelTurret) {
-		if (rename) {
-			if (needBaseTurret) {
-				auto it = rename->replacements.find(baseNameDest);
-				if (it != rename->replacements.end()) {
-					destCpy = it->second;
-					SCP_tolower(destCpy);
-					needBaseTurret = destCpy.find("turret") == SCP_string::npos;
-				}
-			}
-			if (needBarrelTurret) {
-				auto it = rename->replacements.find(*barrelNameDest);
-				if (it != rename->replacements.end()) {
-					destCpy = it->second;
-					SCP_tolower(destCpy);
-					needBarrelTurret = destCpy.find("turret") == SCP_string::npos;
-				}
-			}
-			//Submodels were properly renamed, we can quit
-			if (!needBaseTurret && !needBarrelTurret)
-				return;
-
-			error_display(0, "At least one turret destination submodel does not contain turret. This can cause issues. Consider using $Rename Subobjects!");
-		}
-	}
 }
 
 void VirtualPOFOperationAddTurret::process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const {
@@ -507,7 +485,10 @@ void VirtualPOFOperationAddTurret::process(polymodel* pm, model_read_deferred_ta
 			return;
 		}
 		replaceSubmodelNo.emplace(it->second.gun_subobj_nr, gun_dest_subobj_no);
+
+		pm->submodel[gun_dest_subobj_no].rotation_type = MOVEMENT_TYPE_TURRET;
 	}
+	pm->submodel[base_dest_subobj_no].rotation_type = MOVEMENT_TYPE_TURRET;
 
 	deferredTasks.weapons_subsystems.emplace(change_submodel_numbers(model_read_deferred_tasks::weapon_subsystem_pair(*it), replaceSubmodelNo));
 }
