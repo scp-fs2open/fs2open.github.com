@@ -1108,6 +1108,7 @@ void mod_table_reset()
 	Always_warn_player_about_unbound_keys = false;
 	Lead_indicator_behavior = leadIndicatorBehavior::DEFAULT;
 	Thruster_easing = 0;
+	Always_use_distant_firepoints = false;
 }
 
 void mod_table_set_version_flags()
