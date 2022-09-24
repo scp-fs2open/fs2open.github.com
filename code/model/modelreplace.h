@@ -6,6 +6,7 @@
 #include <memory>
 
 #include <tl/optional.hpp>
+#include <mpark/variant.hpp>
 
 bool model_exists(const SCP_string& filename);
 bool read_virtual_model_file(polymodel* pm, const SCP_string& filename, model_parse_depth depth, int ferror, model_read_deferred_tasks& deferredTasks);
@@ -55,6 +56,16 @@ class VirtualPOFOperationAddTurret : public VirtualPOFOperation {
 	std::unique_ptr<VirtualPOFOperationRenameSubobjects> rename = nullptr;
 public:
 	VirtualPOFOperationAddTurret();
+	void process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const override;
+};
+
+class VirtualPOFOperationAddEngine : public VirtualPOFOperation {
+	mpark::variant<SCP_string, int> sourceId;
+	tl::optional<SCP_string> renameSubsystem;
+	tl::optional<vec3d> moveEngine;
+	SCP_string appendingPOF;
+public:
+	VirtualPOFOperationAddEngine();
 	void process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const override;
 };
 
