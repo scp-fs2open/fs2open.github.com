@@ -146,6 +146,7 @@ namespace AI {
 		Fix_keep_safe_distance,
 		Ignore_aspect_when_leading,
 		Fix_good_rearm_time_bug,
+		No_continuous_turn_on_attack,
 
 		NUM_VALUES
 	};
