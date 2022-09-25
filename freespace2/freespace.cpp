@@ -84,7 +84,6 @@
 #include "io/timer.h"
 #include "jumpnode/jumpnode.h"
 #include "lab/labv2.h"
-#include "lab/wmcgui.h" //So that GUI_System can be initialized
 #include "libs/discord/discord.h"
 #include "libs/ffmpeg/FFmpeg.h"
 #include "lighting/lighting.h"
@@ -1886,12 +1885,6 @@ void game_init()
 		mprintf(( "Using high memory settings...\n" ));
 		bm_set_low_mem(0);		// Use all frames of bitmaps
 	}
-
-	//WMC - Initialize my new GUI system
-	//This may seem scary, but it should take up 0 processing time and very little memory
-	//as long as it's not being used.
-	//Otherwise, it just keeps the parsed interface.tbl in memory.
-	GUI_system.ParseClassInfo("interface.tbl");
 	
 	particle::ParticleManager::init();
 

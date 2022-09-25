@@ -1,6 +1,5 @@
 #include "lab/renderer/lab_renderer.h"
 #include "lab/labv2_internal.h"
-#include "lab/wmcgui.h"
 #include "graphics/2d.h"
 #include "graphics/light.h"
 #include "lighting/lighting_profiles.h"
