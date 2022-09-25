@@ -672,23 +672,12 @@ add_file_folder("JumpNode"
 
 # Lab files
 add_file_folder("Lab"
-	lab/wmcgui.cpp
-	lab/wmcgui.h
 	lab/labv2.h
 	lab/labv2_internal.h
 	lab/labv2.cpp
 )
 
 add_file_folder("Lab\\\\Dialogs"
-	lab/dialogs/lab_dialog.h
-	lab/dialogs/class_descriptions.h
-	lab/dialogs/class_descriptions.cpp
-	lab/dialogs/class_options.h
-	lab/dialogs/class_options.cpp
-	lab/dialogs/class_variables.h
-	lab/dialogs/class_variables.cpp
-	lab/dialogs/actions.h
-	lab/dialogs/actions.cpp
 	lab/dialogs/lab_ui.h
 	lab/dialogs/lab_ui.cpp
 )

@@ -1,12 +1,14 @@
 #pragma once
 
-#include "lab/wmcgui.h"
 #include "globalincs/vmallocator.h"
-#include "lab/dialogs/lab_dialog.h"
+#include "lab/labv2.h"
 #include "lab/dialogs/lab_ui.h"
 #include "lab/renderer/lab_renderer.h"
+#include "model/modelanimation.h"
+
 #include <gamesequence/gamesequence.h>
 #include "osapi/osapi.h"
+#include "ship/ship.h"
 
 
 enum class LabRotationMode { Both, Yaw, Pitch, Roll };
@@ -80,8 +82,6 @@ public:
 
 	flagset<ManagerFlags> Flags;
 private:
-	SCP_vector<std::shared_ptr<LabDialog>> Dialogs;
-
 	float Lab_thrust_len = 0.0f;
 	bool Lab_thrust_afterburn = false;
 	bool Weapons_loaded = false;

@@ -1,8 +1,6 @@
 #include "lab/labv2_internal.h"
 #include "lab/manager/lab_manager.h"
 #include "lab/renderer/lab_renderer.h"
-#include "lab/dialogs/render_options.h"
-#include "lab/dialogs/actions.h"
 #include "io/key.h"
 #include "asteroid/asteroid.h"
 #include "missionui/missionscreencommon.h"
@@ -13,8 +11,11 @@
 
 #include "freespace.h"
 
+#include "io/mouse.h"
+#include "weapon/weapon.h"
 
-void lab_exit(Button* /*caller*/) {
+
+void lab_exit() {
 	getLabManager()->notify_close();
 }
 
@@ -73,10 +74,6 @@ LabManager::LabManager() {
 
 LabManager::~LabManager()
 {
-	for (auto &dialog : Dialogs) {
-		dialog->close();
-	}
-
 	obj_delete_all();
 }
 
@@ -323,10 +320,6 @@ void LabManager::changeDisplayedObject(LabMode mode, int info_index) {
 	}
 
 	Assert(CurrentObject != -1);
-
-	for (auto &dialog : Dialogs) {
-		dialog->update(CurrentMode, CurrentClass);
-	}
 
 	Renderer->getCurrentCamera()->displayedObjectChanged();
 }

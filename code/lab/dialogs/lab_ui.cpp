@@ -1,5 +1,7 @@
 #include "lab_ui.h"
 #include "lab/labv2_internal.h"
+#include "ship/shiphit.h"
+#include "weapon/weapon.h"
 
 
 void LabUi::buildShipList() const
@@ -336,9 +338,9 @@ void LabUi::showRenderOptions() const
 	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowAfterburners, show_afterburners);
 	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowWeapons, show_weapons);
 	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowEmissiveLighting, show_emissive_lighting);
+	getLabManager()->Renderer->setEmissiveFactor(emissive_factor);
 	getLabManager()->Renderer->setAmbientFactor(ambient_factor);
 	getLabManager()->Renderer->setLightFactor(light_factor);
-	getLabManager()->Renderer->setEmissiveFactor(emissive_factor);
 	getLabManager()->Renderer->setBloomLevel(bloom_level);
 	getLabManager()->Renderer->setExposureLevel(exposure_level);
 	getLabManager()->Renderer->setPPCValues(ppcv);
@@ -349,7 +351,17 @@ void LabUi::showObjectOptions() const
 	ImGui::Begin("Object Information");
 
 	if (ImGui::CollapsingHeader("Actions")) {
-		
+		if (getLabManager()->CurrentMode == LabMode::Ship) {
+			if (ImGui::Button("Destroy ship")) {
+				if (Objects[getLabManager()->CurrentObject].type == OBJ_SHIP) {
+					auto obj = &Objects[getLabManager()->CurrentObject];
+
+					obj->flags.remove(Object::Object_Flags::Player_ship);
+					ship_self_destruct(obj);
+				}
+			}
+			
+		}
 	}
 	if (ImGui::CollapsingHeader("Description texts")) {}
 	if (ImGui::CollapsingHeader("Class values")) {}
