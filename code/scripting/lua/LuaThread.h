@@ -5,8 +5,6 @@
 #include "LuaValue.h"
 #include "LuaFunction.h"
 
-#include "globalincs/vmallocator.h"
-
 #include <iterator>
 
 namespace luacpp {

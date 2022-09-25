@@ -5,14 +5,13 @@
 #include <utility>
 
 namespace luacpp {
-
 LuaThread LuaThread::create(lua_State* L, const LuaFunction& func)
 {
 	auto luaThread = lua_newthread(L);
 
 	LuaThread thread(L, luaThread);
-
 	thread.setReference(UniqueLuaReference::create(L));
+
 	lua_pop(L, 1);
 
 	//Make sure that the C++-side reference of the LuaThread is cleared when its parents references are auto-garbage collected by lua for whatever reason (usually due to the parent thread dying).
@@ -52,18 +51,10 @@ LuaThread LuaThread::create(lua_State* L, const LuaFunction& func)
 }
 
 LuaThread::LuaThread() = default;
-LuaThread::LuaThread(lua_State* luaState, lua_State* thread) : LuaValue(luaState), _thread(thread) { }
+LuaThread::LuaThread(lua_State* luaState, lua_State* thread) : LuaValue(luaState), _thread(thread) {}
 
-LuaThread::LuaThread(LuaThread&& other) noexcept : LuaValue(other) {
-	*this = std::move(other);
-}
-
-LuaThread& LuaThread::operator=(LuaThread&& other) noexcept {
-	LuaValue::operator=(other);
-	std::swap(_errorCallback, other._errorCallback);
-	std::swap(_thread, other._thread);
-	return *this;
-}
+LuaThread::LuaThread(LuaThread&& other) noexcept = default;
+LuaThread& LuaThread::operator=(LuaThread&& other) noexcept = default;
 
 LuaThread::~LuaThread() = default;
 
