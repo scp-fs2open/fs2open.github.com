@@ -8,4 +8,5 @@ private:
 	void buildWeaponList() const;
 	void buildBackgroundList() const;
 	void showRenderOptions() const;
+	void showObjectOptions() const;
 };

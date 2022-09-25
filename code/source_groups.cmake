@@ -687,8 +687,6 @@ add_file_folder("Lab\\\\Dialogs"
 	lab/dialogs/class_options.cpp
 	lab/dialogs/class_variables.h
 	lab/dialogs/class_variables.cpp
-	lab/dialogs/render_options.h
-	lab/dialogs/render_options.cpp
 	lab/dialogs/actions.h
 	lab/dialogs/actions.cpp
 	lab/dialogs/lab_ui.h

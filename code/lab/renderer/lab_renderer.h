@@ -175,6 +175,10 @@ public:
 	}
 
 	void setTextureQuality(TextureQuality quality) { textureQuality = quality; }
+	TextureQuality getTextureQuality()
+	{
+		return textureQuality;
+	}
 
 	void setTextureOverride(TextureOverride, bool) {};
 
