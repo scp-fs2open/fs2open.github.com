@@ -592,27 +592,28 @@ void cf_build_root_list(const char *cdrom_dir)
 	if ( !_getcwd(working_directory, CF_MAX_PATHNAME_LENGTH ) ) {
 		Error(LOCATION, "Can't get current working directory -- %d", errno );
 	}
+	if (Cmdline_override_data) {
 
-	//To allow user-override of mod files, this new root takes presecdence over all mod roots.
-	cf_root	*last = nullptr;
-	last = cf_create_root();
+		//To allow user-override of mod files, this new root takes presecdence over all mod roots.
+		cf_root	*last = nullptr;
+		last = cf_create_root();
 
-	last->location_flags |= CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT | CF_LOCATION_TYPE_SECONDARY_MODS;
+		last->location_flags |= CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT | CF_LOCATION_TYPE_SECONDARY_MODS;
 
-	last->path = working_directory;
-	if (last->path.back() != DIR_SEPARATOR_CHAR) {
-		last->path += DIR_SEPARATOR_CHAR;
+		last->path = working_directory;
+		if (last->path.back() != DIR_SEPARATOR_CHAR) {
+			last->path += DIR_SEPARATOR_CHAR;
+		}
+		last->path += "_override";
+		last->path += DIR_SEPARATOR_CHAR; 
+
+		last->roottype = CF_ROOTTYPE_PATH;
+
+		cf_init_root_pathtypes(last);
+
+		cf_build_pack_list(last);
 	}
-	last->path += "load_last";
-	last->path += DIR_SEPARATOR_CHAR; 
-
-	last->roottype = CF_ROOTTYPE_PATH;
-
-	cf_init_root_pathtypes(last);
-
-	cf_build_pack_list(last);
-
-	//now that the load_last root is finished, handle all mods
+	//now that the _override root is finished(or not), handle all mods
 	cf_add_mod_roots(working_directory, CF_LOCATION_ROOT_GAME);
 
 	//finally, handle the default root.
