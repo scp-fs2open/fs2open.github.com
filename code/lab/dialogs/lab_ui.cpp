@@ -124,14 +124,19 @@ void LabUi::createUi() const
 {
 	static bool show_render_options = false;
 	static bool show_object_selector = true;
+	static bool show_object_options = false;
 
 	if (show_render_options)
 		showRenderOptions();
+
+	if (show_object_options)
+		showObjectOptions();
 
 	if (ImGui::BeginMainMenuBar()) {
 		if (ImGui::BeginMenu("Options")) {
 			ImGui::MenuItem("Render options", NULL, &show_render_options);
 			ImGui::MenuItem("Object selector", NULL, &show_object_selector);
+			ImGui::MenuItem("Object options", NULL, &show_object_options);
 			ImGui::EndMenu();
 		}
 
@@ -188,10 +193,7 @@ void LabUi::showRenderOptions() const
 	float light_factor = lighting_profile::lab_get_light();
 	float emissive_factor = lighting_profile::lab_get_emissive();
 	float exposure_level = lighting_profile::current_exposure();
-
-
 	auto ppcv = lighting_profile::lab_get_ppc();
-
 
 	ImGui::Begin("Render options");
 
@@ -218,6 +220,27 @@ void LabUi::showRenderOptions() const
 		ImGui::Checkbox("Height map", &height_map);
 		ImGui::Checkbox("Misc map", &misc_map);
 		ImGui::Checkbox("AO map", &ao_map);
+
+		const char* texture_quality_settings[] = {
+			"Minimum",
+			"Low",
+			"Medium",
+			"High",
+			"Maximum",
+		};
+
+		if (ImGui::BeginCombo("Texture quality", texture_quality_settings[static_cast<int>(getLabManager()->Renderer->getTextureQuality())])) {
+			for (int n=0; n < IM_ARRAYSIZE(texture_quality_settings); n++) {
+				const bool is_selected = n == static_cast<int>(getLabManager()->Renderer->getTextureQuality());
+				if (ImGui::Selectable(texture_quality_settings[n], is_selected))
+					getLabManager()->Renderer->setTextureQuality(static_cast<TextureQuality>(n));
+
+				if (is_selected)
+					ImGui::SetItemDefaultFocus();
+			}
+
+			ImGui::EndCombo();
+		}
 	}
 
 	if (ImGui::CollapsingHeader("Scene rendering options")) {
@@ -230,10 +253,67 @@ void LabUi::showRenderOptions() const
 		ImGui::SliderFloat("Emissive amount", &emissive_factor, 0.0f, 10.0f);
 		ImGui::SliderFloat("Exposure", &exposure_level, 0.0f, 8.0f);
 		ImGui::SliderInt("Bloom level", &bloom_level, 0, 200);
+
+		const char* antialiasing_settings[] = {
+			"None",
+			"FXAA Low",
+			"FXAA Medium",
+			"FXAA High",
+			"SMAA Low",
+			"SMAA Medium",
+			"SMAA High",
+			"SMAA Ultra",
+		};
+		SCP_string tonemappers[] = {
+			"Linear",
+			"Uncharted",
+			"ACES",
+			"ACES Approximate",
+			"Cineon",
+			"Piecewise Power Curve",
+			"Piecewise Power Curve (RGB)",
+			"Reinhard Extended",
+			"Reinhard Jodie",
+		};
+
+		if (ImGui::BeginCombo("Antialiasing method", antialiasing_settings[static_cast<int>(Gr_aa_mode)])) {
+			for (int n=0; n < IM_ARRAYSIZE(antialiasing_settings); n++) {
+				const bool is_selected = static_cast<int>(Gr_aa_mode) == n;
+
+				if (ImGui::Selectable(antialiasing_settings[n], is_selected))
+					getLabManager()->Renderer->setAAMode(static_cast<AntiAliasMode>(n));
+
+				if (is_selected)
+					ImGui::SetItemDefaultFocus();
+
+			}
+
+			ImGui::EndCombo();
+		}
+
+		if (ImGui::BeginCombo("Tonemapper", lighting_profile::tonemapper_to_name(lighting_profile::current_tonemapper()).c_str())) {
+			for (int n = 0; n < IM_ARRAYSIZE(tonemappers); n++) {
+				const bool is_selected =
+					lighting_profile::tonemapper_to_name(lighting_profile::current_tonemapper()) == tonemappers[n];
+				if (ImGui::Selectable(tonemappers[n].c_str(), is_selected)) 
+					lighting_profile::lab_set_tonemapper(lighting_profile::name_to_tonemapper(tonemappers[n]));
+
+				if (is_selected)
+					ImGui::SetItemDefaultFocus();
+			}
+			ImGui::EndCombo();
+		}
+
+		if (lighting_profile::current_tonemapper() == tnm_PPC || lighting_profile::current_tonemapper() == tnm_PPC_RGB) {
+			ImGui::SliderFloat("PPC Toe Strength", &ppcv.toe_strength, 0.0f, 1.0f);
+			ImGui::SliderFloat("PPC Toe Length", &ppcv.toe_length, 0.0f, 1.0f);
+			ImGui::SliderFloat("PPC Shoulder Angle", &ppcv.shoulder_angle, 0.0f, 1.0f);
+			ImGui::SliderFloat("PPC Shoulder Length", &ppcv.shoulder_length, 0.0f, 10.0f);
+			ImGui::SliderFloat("PPC Shoulder Strength", &ppcv.shoulder_strength, 0.0f, 1.0f);
+		}
 	}
 
 	ImGui::End();
-
 
 	getLabManager()->Flags.set(ManagerFlags::ModelRotationEnabled, enable_model_rotation);
 	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowInsignia, show_insignia);
@@ -256,16 +336,23 @@ void LabUi::showRenderOptions() const
 	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowAfterburners, show_afterburners);
 	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowWeapons, show_weapons);
 	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowEmissiveLighting, show_emissive_lighting);
-
 	getLabManager()->Renderer->setAmbientFactor(ambient_factor);
 	getLabManager()->Renderer->setLightFactor(light_factor);
 	getLabManager()->Renderer->setEmissiveFactor(emissive_factor);
 	getLabManager()->Renderer->setBloomLevel(bloom_level);
 	getLabManager()->Renderer->setExposureLevel(exposure_level);
 	getLabManager()->Renderer->setPPCValues(ppcv);
+}
 
+void LabUi::showObjectOptions() const
+{
+	ImGui::Begin("Object Information");
 
-	//getLabManager()->Renderer->setTextureQuality(detail);
-	//LabRenderer::setAAMode(setting);
-	//LabRenderer::setTonemapper(setting);
+	if (ImGui::CollapsingHeader("Actions")) {
+		
+	}
+	if (ImGui::CollapsingHeader("Description texts")) {}
+	if (ImGui::CollapsingHeader("Class values")) {}
+
+	ImGui::End();
 }
