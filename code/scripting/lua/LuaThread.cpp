@@ -4,46 +4,55 @@
 
 #include <utility>
 
-#include "scripting/scripting.h"
-
 namespace luacpp {
-
-SCP_unordered_map<lua_State*, SCP_unordered_set<LuaThread*>> LuaThread::threads;
-SCP_unordered_set<LuaThread*>& LuaThread::registerThreadList(lua_State* mainThread) {
-	auto it = threads.find(mainThread);
-	if (it != threads.end())
-		return it->second;
-
-	script_state::GetScriptState(mainThread)->OnStateDestroy.add([](lua_State* L) {
-		for (LuaThread* thread : threads.at(L))
-			thread->getReference()->removeReference();
-
-		threads.erase(L);
-		});
-
-	return threads.emplace(mainThread, SCP_unordered_set<LuaThread*>{}).first->second;
-}
 
 LuaThread LuaThread::create(lua_State* L, const LuaFunction& func)
 {
 	auto luaThread = lua_newthread(L);
 
+	LuaThread thread(L, luaThread);
+
+	thread.setReference(UniqueLuaReference::create(L));
+	lua_pop(L, 1);
+
+	//Make sure that the C++-side reference of the LuaThread is cleared when its parents references are auto-garbage collected by lua for whatever reason (usually due to the parent thread dying).
+	//To do this, register an object with a __gc method in the thread (usually we'd want to directly attach it to the thread, but only userdata will have __gc methods called).
+	//Usually we'd want to do this when the childs references are GC'd, but creating tables on child threads from C causes tests to fail for some reason.
+	auto threadRef = std::weak_ptr<UniqueLuaReference>(thread.getReference());
+	int stack = lua_gettop(L);
+
+	//Make sure to create the function that clears the LuaThread reference BEFORE creating the userdata value, otherwise the function will be garbage-collected itself before it's called.
+	thread.deleterFunc = LuaFunction::createFromStdFunction(L, [threadRef](lua_State* L, const LuaValueList& params) -> LuaValueList {
+		if(!threadRef.expired())
+			threadRef.lock()->removeReference();
+		return {};
+		});
+
+	//NOW, create the dummy userdata, and its metatable
+	lua_newuserdata(L, sizeof(bool));
+	thread.deleterUserdata = UniqueLuaReference::create(L);
+	thread.deleterTable = LuaTable::create(L);
+
+	//Since we hold references to all we need, tidy up the stack.
+	lua_settop(L, stack);
+
+	//Push the values in the correct order for assembly. Userdata, then table, then func
+	thread.deleterUserdata->pushValue(L);
+	thread.deleterTable.pushValue(L);
+	thread.deleterFunc.pushValue(L);
+	lua_setfield(L, -2, "__gc"); //Takes the top value (func) and assigns it to the second to last one (table) as __gc, and pops the top value
+	lua_setmetatable(L, -2); //Takes the top value (table) and assigns it as the metadata table of the second to last one (userdata), and pops the last value
+	lua_pop(L, 1); //Pop the userdata
+
 	func.pushValue(L);
 	// Move the main function to the thread (I have no idea what this actually does but the Lua code does the same...)
 	lua_xmove(L, luaThread, 1);
-
-	LuaThread thread(L, luaThread);
-	thread.setReference(UniqueLuaReference::create(L));
-
-	lua_pop(L, 1);
 
 	return thread;
 }
 
 LuaThread::LuaThread() = default;
-LuaThread::LuaThread(lua_State* luaState, lua_State* thread) : LuaValue(luaState), _thread(thread) {
-	registerThreadList(luaState).emplace(this);
-}
+LuaThread::LuaThread(lua_State* luaState, lua_State* thread) : LuaValue(luaState), _thread(thread) { }
 
 LuaThread::LuaThread(LuaThread&& other) noexcept : LuaValue(other) {
 	*this = std::move(other);
@@ -53,19 +62,10 @@ LuaThread& LuaThread::operator=(LuaThread&& other) noexcept {
 	LuaValue::operator=(other);
 	std::swap(_errorCallback, other._errorCallback);
 	std::swap(_thread, other._thread);
-	threads.at(_luaState).emplace(this);
 	return *this;
 }
 
-LuaThread::~LuaThread() {
-	//Safety check since erasing from the half-dead threads set is gonna cause segfaults when the whole program deallocates, as dangling threads outlive the static threads map
-	if (!threads.empty()) {
-		auto it = threads.find(_luaState);
-
-		if (it != threads.end())
-			it->second.erase(this);
-	}
-}
+LuaThread::~LuaThread() = default;
 
 void LuaThread::setReference(const LuaReference& ref)
 {
