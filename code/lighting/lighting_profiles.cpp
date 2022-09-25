@@ -96,6 +96,11 @@ bool lighting_profile_value::read_adjust(float *out) const
 	*out = adjust;
 	return has_adjust;
 }
+bool lighting_profile_value::read_multiplier(float *out) const
+{
+	*out = multipier;
+	return has_multiplier;
+}
 /**
  * @brief for use during the parsing of a light profile to attempt to read in an LPV
  *
@@ -457,10 +462,16 @@ piecewise_power_curve_values lighting_profile::lab_get_ppc(){
 }
 
 float lighting_profile::lab_get_light(){
-	return default_profile.overall_brightness.handle(1.0f);
+	float r;
+	default_profile.overall_brightness.read_multiplier(&r);
+
+	return r;
 }
 float lighting_profile::lab_get_ambient(){
-	return default_profile.ambient_light_brightness.handle(1.0f);
+	float r;
+	default_profile.ambient_light_brightness.read_multiplier(&r);
+
+	return r;
 }
 float lighting_profile::lab_get_emissive(){
 	float r;
