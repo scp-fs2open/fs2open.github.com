@@ -1802,7 +1802,7 @@ ADE_FUNC(triggerSpecialSubmodelAnimation, l_Mission, "string target, string type
 	return set->parseScripted(pmi, animtype, trigger).start(forwards ? animation::ModelAnimationDirection::FWD : animation::ModelAnimationDirection::RWD, forced || instant, instant, pause) ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
 }
 
-ADE_FUNC(updateSpecialSubmodelMoveable, l_Ship, "string target, string name, table values",
+ADE_FUNC(updateSpecialSubmodelMoveable, l_Mission, "string target, string name, table values",
 	"Updates a moveable animation. Name is the name of the moveable. For what values needs to contain, please refer to the table below, depending on the type of the moveable:"
 	"Orientation:\r\n"
 	"\tThree numbers, x, y, z rotation respectively, in degrees\r\n"
