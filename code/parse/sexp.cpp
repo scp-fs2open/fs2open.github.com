@@ -18726,7 +18726,7 @@ void sexp_change_ship_class(int n)
 				if (ship_entry->shipp == Player_ship) {
 					// update HUD and RTT cockpit gauges if applicable
 					set_current_hud();
-					ship_clear_cockpit_displays();
+					ship_clear_cockpit_displays(Player_ship);
 					ship_init_cockpit_displays(Player_ship);
 				}
 
@@ -18759,7 +18759,7 @@ void multi_sexp_change_ship_class()
 				if (&Ships[ship_num] == Player_ship) {
 					// update HUD and RTT cockpit gauges if applicable
 					set_current_hud();
-					ship_clear_cockpit_displays();
+					ship_clear_cockpit_displays(Player_ship);
 					ship_init_cockpit_displays(Player_ship);
 				}
 			}

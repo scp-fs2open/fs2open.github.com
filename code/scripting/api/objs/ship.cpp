@@ -421,7 +421,7 @@ ADE_VIRTVAR(Class, l_Ship, "shipclass", "Ship class", "shipclass", "Ship class, 
 		if (shipp == Player_ship) {
 			// update HUD and RTT cockpit gauges if applicable
 			set_current_hud();
-			ship_clear_cockpit_displays();
+			ship_clear_cockpit_displays(Player_ship);
 			ship_init_cockpit_displays(Player_ship);
 		}
 	}

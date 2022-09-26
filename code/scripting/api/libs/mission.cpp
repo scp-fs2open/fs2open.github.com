@@ -1758,6 +1758,45 @@ ADE_FUNC(getLineOfSightFirstIntersect, l_Mission, "vector from, vector to, [tabl
 	return testLineOfSight_internal(L, true);
 }
 
+ADE_FUNC(triggerSpecialSubmodelAnimation, l_Mission, "string target, string type, string triggeredBy, [boolean forwards = true, boolean resetOnStart = false, boolean completeInstant = false, boolean pause = false]",
+	"Triggers an animation. Target is the object that should be animated (one of \"cockpit\", \"skybox\"), type is the string name of the animation type, "
+	"triggeredBy is a closer specification which animation should trigger. See *-anim.tbm specifications. "
+	"Forwards controls the direction of the animation. ResetOnStart will cause the animation to play from its initial state, as opposed to its current state. CompleteInstant will immediately complete the animation. Pause will instead stop the animation at the current state.",
+	"boolean",
+	"True if successful, false or nil otherwise")
+{
+	const char* target = nullptr;
+	const char* type = nullptr;
+	const char* trigger = nullptr;
+	bool forwards = true;
+	bool forced = false;
+	bool instant = false;
+	bool pause = false;
+
+	if (!ade_get_args(L, "sss|bbbb", &target, &type, &trigger, &forwards, &forced, &instant, &pause))
+		return ADE_RETURN_NIL;
+
+	polymodel_instance* pmi;
+
+	if (stricmp(target, "cockpit") == 0) {
+		Player_ship
+	}
+	else if (stricmp(target, "skybox") == 0) {
+		if(Nmodel_instance_num < 0)
+			return ADE_RETURN_NIL;
+		pmi = model_get_instance(Nmodel_instance_num);
+	}
+	else {
+		return ADE_RETURN_NIL;
+	}
+
+	auto animtype = animation::anim_match_type(type);
+	if (animtype == animation::ModelAnimationTriggerType::None)
+		return ADE_RETURN_FALSE;
+
+	return Ship_info[shipp->ship_info_index].animations.parseScripted(model_get_instance(shipp->model_instance_num), animtype, trigger).start(forwards ? animation::ModelAnimationDirection::FWD : animation::ModelAnimationDirection::RWD, forced || instant, instant, pause) ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
+}
+
 ADE_LIB_DERIV(l_Mission_LuaSEXPs, "LuaSEXPs", nullptr, "Lua SEXPs", l_Mission);
 
 ADE_INDEXER(l_Mission_LuaSEXPs, "string Name", "Gets a handle of a Lua SEXP", "LuaSEXP", "Lua SEXP handle or invalid handle on error")
