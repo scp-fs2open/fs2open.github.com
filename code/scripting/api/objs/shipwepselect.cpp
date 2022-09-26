@@ -166,7 +166,7 @@ ADE_INDEXER(l_Loadout_Amount,
 		LuaError(L, "This property is read only.");
 	}
 
-	if (idx < 1 || idx > 7) {
+	if (idx < 1 || idx > MAX_SHIP_WEAPONS) {
 		return ADE_RETURN_NIL;
 	};
 	idx--; // Convert to Lua's 1 based index system
@@ -176,7 +176,7 @@ ADE_INDEXER(l_Loadout_Amount,
 
 ADE_FUNC(__len, l_Loadout_Amount, nullptr, "The number of weapon banks in the slot", "number", "The number of banks.")
 {
-	return ade_set_args(L, "i", MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS);
+	return ade_set_args(L, "i", MAX_SHIP_WEAPONS);
 }
 
 //**********HANDLE: loadout weapon
@@ -200,7 +200,7 @@ ADE_INDEXER(l_Loadout_Weapon,
 		LuaError(L, "This property is read only.");
 	}
 
-	if (idx < 1 || idx > 7) {
+	if (idx < 1 || idx > MAX_SHIP_WEAPONS) {
 		return ADE_RETURN_NIL;
 	};
 	idx--; // Convert to Lua's 1 based index system
@@ -210,7 +210,7 @@ ADE_INDEXER(l_Loadout_Weapon,
 
 ADE_FUNC(__len, l_Loadout_Weapon, nullptr, "The number of weapon banks in the slot", "number", "The number of banks.")
 {
-	return ade_set_args(L, "i", MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS);
+	return ade_set_args(L, "i", MAX_SHIP_WEAPONS);
 }
 
 //**********HANDLE: loadout ship
