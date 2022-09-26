@@ -2776,7 +2776,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		if (optional_string("$Cockpit Animations:")) {
 			animation::ModelAnimationParseHelper::parseAnimsetInfo(sip->cockpit_animations, 'c', sip->name);
 		}
-		if (optional_string("$$Cockpit Moveables:")) {
+		if (optional_string("$Cockpit Moveables:")) {
 			animation::ModelAnimationParseHelper::parseMoveablesetInfo(sip->cockpit_animations);
 		}
 	}
