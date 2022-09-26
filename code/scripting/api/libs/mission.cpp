@@ -2006,6 +2006,74 @@ ADE_FUNC(triggerSpecialSubmodelAnimation, l_Mission, "string target, string type
 	return set->parseScripted(pmi, animtype, trigger).start(forwards ? animation::ModelAnimationDirection::FWD : animation::ModelAnimationDirection::RWD, forced || instant, instant, pause) ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
 }
 
+ADE_FUNC(updateSpecialSubmodelMoveable, l_Ship, "string target, string name, table values",
+	"Updates a moveable animation. Name is the name of the moveable. For what values needs to contain, please refer to the table below, depending on the type of the moveable:"
+	"Orientation:\r\n"
+	"\tThree numbers, x, y, z rotation respectively, in degrees\r\n"
+	"Rotation:\r\n"
+	"\tThree numbers, x, y, z rotation respectively, in degrees\r\n"
+	"Axis Rotation:\r\n"
+	"\tOne number, rotation angle in degrees\r\n"
+	"Inverse Kinematics:\r\n"
+	"\tThree required numbers: x, y, z position target relative to base, in 1/100th meters\r\n"
+	"\tThree optional numbers: x, y, z rotation target relative to base, in degrees\r\n",
+	"boolean",
+	"True if successful, false or nil otherwise")
+{
+	const char* target = nullptr;
+	const char* name = nullptr;
+	luacpp::LuaTable values;
+
+	if (!ade_get_args(L, "sst", &target, &name, &values))
+		return ADE_RETURN_NIL;
+
+	polymodel_instance* pmi;
+	animation::ModelAnimationSet* set;
+
+	if (stricmp(target, "cockpit") == 0) {
+		if (Player_ship->cockpit_model_instance < 0)
+			return ADE_RETURN_NIL;
+		pmi = model_get_instance(Player_ship->cockpit_model_instance);
+		set = &Ship_info[Player_ship_class].cockpit_animations;
+	}
+	else if (stricmp(target, "skybox") == 0) {
+		if (Nmodel_instance_num < 0)
+			return ADE_RETURN_NIL;
+		pmi = model_get_instance(Nmodel_instance_num);
+		set = &The_mission.skybox_model_animations;
+	}
+	else {
+		return ADE_RETURN_NIL;
+	}
+
+	SCP_vector<linb::any> valuesMoveable;
+
+	if (values.isValid()) {
+		for (const auto& object : values) {
+			if (object.second.is(luacpp::ValueType::NUMBER)) {
+				// This'll lua-error internally if it's not fed only objects. Additionally, catch the lua exception and then carry on
+				try {
+					int value;
+					object.second.getValue(&value);
+					valuesMoveable.emplace_back(value);
+				}
+				catch (const luacpp::LuaException& /*e*/) {
+					// We were likely fed a float. 
+					// Since we can't actually tell whether that's the case before we try to get the value, and the attempt to get the value is printing a LuaError itself, just eat the exception here and return
+					return ADE_RETURN_FALSE;
+				}
+			}
+			else {
+				//This happens on a non-userdata value, i.e. a number
+				LuaError(L, "Value table contained non-numbers! Aborting...");
+				return ADE_RETURN_FALSE;
+			}
+		}
+	}
+
+	return set->updateMoveable(pmi, name, valuesMoveable) ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
+}
+
 ADE_LIB_DERIV(l_Mission_LuaSEXPs, "LuaSEXPs", nullptr, "Lua SEXPs", l_Mission);
 
 ADE_INDEXER(l_Mission_LuaSEXPs, "string Name", "Gets a handle of a Lua SEXP", "LuaSEXP", "Lua SEXP handle or invalid handle on error")
