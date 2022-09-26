@@ -301,8 +301,7 @@ ADE_VIRTVAR(ShipClassIndex,
 			} else {
 				Wss_slots[current].ship_class = shipIndex;
 				//Reset all currently loaded weapons here
-				int i;
-				for (i = 0; i < MAX_SHIP_WEAPONS; i++) {
+				for (int i = 0; i < MAX_SHIP_WEAPONS; i++) {
 					Wss_slots[current].wep[i] = -1;
 					Wss_slots[current].wep_count[i] = -1;
 				}
