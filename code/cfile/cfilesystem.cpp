@@ -592,6 +592,7 @@ void cf_build_root_list(const char *cdrom_dir)
 	if ( !_getcwd(working_directory, CF_MAX_PATHNAME_LENGTH ) ) {
 		Error(LOCATION, "Can't get current working directory -- %d", errno );
 	}
+
 	if (Cmdline_override_data) {
 
 		//To allow user-override of mod files, this new root takes presecdence over all mod roots.
@@ -613,6 +614,7 @@ void cf_build_root_list(const char *cdrom_dir)
 
 		cf_build_pack_list(last);
 	}
+
 	//now that the _override root is finished(or not), handle all mods
 	cf_add_mod_roots(working_directory, CF_LOCATION_ROOT_GAME);
 

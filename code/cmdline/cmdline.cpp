@@ -516,7 +516,7 @@ cmdline_parm log_to_stdout_arg("-stdout_log", nullptr, AT_NONE); // Cmdline_log_
 cmdline_parm slow_frames_ok_arg("-slow_frames_ok", nullptr, AT_NONE);	// Cmdline_slow_frames_ok
 cmdline_parm fixed_seed_rand("-seed", nullptr, AT_INT);	// Cmdline_rng_seed,Cmdline_reuse_rng_seed;
 cmdline_parm luadev_arg("-luadev", "nullptr", AT_NONE);	// Cmdline_lua_devmode
-cmdline_parm override_arg("-override", nullptr, AT_NONE);	// Cmdline_override_data
+cmdline_parm override_arg("-override_data", nullptr, AT_NONE);	// Cmdline_override_data
 
 
 char *Cmdline_start_mission = NULL;
