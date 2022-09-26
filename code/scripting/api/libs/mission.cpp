@@ -1981,14 +1981,19 @@ ADE_FUNC(triggerSpecialSubmodelAnimation, l_Mission, "string target, string type
 		return ADE_RETURN_NIL;
 
 	polymodel_instance* pmi;
+	animation::ModelAnimationSet* set;
 
 	if (stricmp(target, "cockpit") == 0) {
-		Player_ship
+		if (Player_ship->cockpit_model_instance < 0)
+			return ADE_RETURN_NIL;
+		pmi = model_get_instance(Player_ship->cockpit_model_instance);
+		set = &Ship_info[Player_ship_class].cockpit_animations;
 	}
 	else if (stricmp(target, "skybox") == 0) {
 		if(Nmodel_instance_num < 0)
 			return ADE_RETURN_NIL;
 		pmi = model_get_instance(Nmodel_instance_num);
+		set = &The_mission.skybox_model_animations;
 	}
 	else {
 		return ADE_RETURN_NIL;
@@ -1998,7 +2003,7 @@ ADE_FUNC(triggerSpecialSubmodelAnimation, l_Mission, "string target, string type
 	if (animtype == animation::ModelAnimationTriggerType::None)
 		return ADE_RETURN_FALSE;
 
-	return Ship_info[shipp->ship_info_index].animations.parseScripted(model_get_instance(shipp->model_instance_num), animtype, trigger).start(forwards ? animation::ModelAnimationDirection::FWD : animation::ModelAnimationDirection::RWD, forced || instant, instant, pause) ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
+	return set->parseScripted(pmi, animtype, trigger).start(forwards ? animation::ModelAnimationDirection::FWD : animation::ModelAnimationDirection::RWD, forced || instant, instant, pause) ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
 }
 
 ADE_LIB_DERIV(l_Mission_LuaSEXPs, "LuaSEXPs", nullptr, "Lua SEXPs", l_Mission);
