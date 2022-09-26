@@ -1886,9 +1886,7 @@ ADE_FUNC(updateSubmodelMoveable, l_Ship, "string name, table values",
 			if (object.second.is(luacpp::ValueType::NUMBER)) {
 				// This'll lua-error internally if it's not fed only objects. Additionally, catch the lua exception and then carry on
 				try {
-					int value;
-					object.second.getValue(&value);
-					valuesMoveable.emplace_back(value);
+					valuesMoveable.emplace_back(object.second.getValue<int>());
 				}
 				catch (const luacpp::LuaException& /*e*/) {
 					// We were likely fed a float. 
