@@ -1855,6 +1855,59 @@ ADE_FUNC(getSubmodelAnimationTime, l_Ship, "string type, string triggeredBy", "G
 	return ade_set_args(L, "f", time_s);
 }
 
+ADE_FUNC(updateSubmodelMoveable, l_Ship, "string name, table values",
+	"Updates a moveable animation. Name is the name of the moveable. For what values needs to contain, please refer to the table below, depending on the type of the moveable:"
+	"Orientation:\r\n"
+	"\tThree numbers, x, y, z rotation respectively, in degrees\r\n"
+	"Rotation:\r\n"
+	"\tThree numbers, x, y, z rotation respectively, in degrees\r\n"
+	"Axis Rotation:\r\n"
+	"\tOne number, rotation angle in degrees\r\n"
+	"Inverse Kinematics:\r\n"
+	"\tThree required numbers: x, y, z position target relative to base, in 1/100th meters\r\n"
+	"\tThree optional numbers: x, y, z rotation target relative to base, in degrees\r\n",
+	"boolean",
+	"True if successful, false or nil otherwise")
+{
+	object_h* objh;
+	const char* name = nullptr;
+	luacpp::LuaTable values;
+
+	if (!ade_get_args(L, "ost", l_Ship.GetPtr(&objh), &name, &values))
+		return ADE_RETURN_NIL;
+
+	if (!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	SCP_vector<linb::any> valuesMoveable;
+
+	if (values.isValid()) {
+		for (const auto& object : values) {
+			if (object.second.is(luacpp::ValueType::NUMBER)) {
+				// This'll lua-error internally if it's not fed only objects. Additionally, catch the lua exception and then carry on
+				try {
+					int value;
+					object.second.getValue(&value);
+					valuesMoveable.emplace_back(value);
+				}
+				catch (const luacpp::LuaException& /*e*/) {
+					// We were likely fed a float. 
+					// Since we can't actually tell whether that's the case before we try to get the value, and the attempt to get the value is printing a LuaError itself, just eat the exception here and return
+					return ADE_RETURN_FALSE;
+				}
+			}
+			else {
+				//This happens on a non-userdata value, i.e. a number
+				LuaError(L, "Value table contained non-numbers! Aborting...");
+				return ADE_RETURN_FALSE;
+			}
+		}
+	}
+
+	ship* shipp = &Ships[objh->objp->instance];
+	return Ship_info[shipp->ship_info_index].animations.updateMoveable(model_get_instance(shipp->model_instance_num), name, valuesMoveable) ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
+}
+
 ADE_FUNC(warpIn, l_Ship, NULL, "Warps ship in", "boolean", "True if successful, or nil if ship handle is invalid")
 {
 	object_h *objh;

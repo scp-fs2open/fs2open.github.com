@@ -2776,6 +2776,9 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		if (optional_string("$Cockpit Animations:")) {
 			animation::ModelAnimationParseHelper::parseAnimsetInfo(sip->cockpit_animations, 'c', sip->name);
 		}
+		if (optional_string("$$Cockpit Moveables:")) {
+			animation::ModelAnimationParseHelper::parseMoveablesetInfo(sip->cockpit_animations);
+		}
 	}
 	if(optional_string( "+Cockpit offset:" ))
 	{
@@ -7564,7 +7567,7 @@ void ship_init_cockpit_displays(ship *shipp)
 		return;
 	}
 
-	shipp->cockpit_model_instance = model_create_instance(shipp->objnum, cockpit_model_num)
+	shipp->cockpit_model_instance = model_create_instance(shipp->objnum, cockpit_model_num);
 
 	// check if we even have cockpit displays
 	if ( sip->displays.empty() ) {
