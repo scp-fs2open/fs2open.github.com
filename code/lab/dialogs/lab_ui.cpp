@@ -1,4 +1,6 @@
 #include "lab_ui.h"
+
+#include "graphics/debug_sphere.h"
 #include "lab/labv2_internal.h"
 #include "ship/shiphit.h"
 #include "weapon/weapon.h"
@@ -346,21 +348,96 @@ void LabUi::showRenderOptions() const
 	getLabManager()->Renderer->setPPCValues(ppcv);
 }
 
+std::map<animation::ModelAnimationTriggerType, std::map<SCP_string, bool>> manual_animation_triggers = {};
+std::map<animation::ModelAnimationTriggerType, bool> manual_animations = {};
+
+std::array<bool, MAX_SHIP_PRIMARY_BANKS> triggered_primary_banks;
+std::array<bool, MAX_SHIP_SECONDARY_BANKS> triggered_secondary_banks;
+
+void do_triggered_anim(animation::ModelAnimationTriggerType type,
+	const SCP_string& name,
+	bool direction,
+	int subtype = animation::ModelAnimationSet::SUBTYPE_DEFAULT)
+{
+	if (getLabManager()->isSafeForShips()) {
+		auto shipp = &Ships[Objects[getLabManager()->CurrentObject].instance];
+
+		if (subtype != animation::ModelAnimationSet::SUBTYPE_DEFAULT)
+			Ship_info[shipp->ship_info_index]
+				.animations.getAll(model_get_instance(shipp->model_instance_num), type, subtype, true)
+				.start(direction ? animation::ModelAnimationDirection::RWD : animation::ModelAnimationDirection::FWD);
+		else
+			Ship_info[shipp->ship_info_index]
+				.animations.get(model_get_instance(shipp->model_instance_num), type, name)
+				.start(direction ? animation::ModelAnimationDirection::RWD : animation::ModelAnimationDirection::FWD);
+	}
+}
+
 void LabUi::showObjectOptions() const
 {
+	ImGuiTreeNodeFlags node_flags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
 	ImGui::Begin("Object Information");
 
-	if (ImGui::CollapsingHeader("Actions")) {
-		if (getLabManager()->CurrentMode == LabMode::Ship) {
-			if (ImGui::Button("Destroy ship")) {
-				if (Objects[getLabManager()->CurrentObject].type == OBJ_SHIP) {
-					auto obj = &Objects[getLabManager()->CurrentObject];
+	if (getLabManager()->CurrentMode == LabMode::Ship) {
+		auto objp = &Objects[getLabManager()->CurrentObject];
+		auto shipp = &Ships[objp->instance];
+		auto sip = &Ship_info[shipp->ship_info_index];
 
-					obj->flags.remove(Object::Object_Flags::Player_ship);
-					ship_self_destruct(obj);
+		if (ImGui::CollapsingHeader(sip->name)) {
+			if (ImGui::TreeNode("Subsystems")) {
+				static ship_subsys* selected_subsys = nullptr;
+				int subsys_index = 0;
+
+				for (auto cur_subsys = GET_FIRST(&shipp->subsys_list); cur_subsys != END_OF_LIST(&shipp->subsys_list);
+					 cur_subsys = GET_NEXT(cur_subsys)) {
+
+					auto leaf_flags = node_flags;
+					if (selected_subsys == cur_subsys) {
+						vec3d pos;
+						vm_vec_unrotate(&pos, &cur_subsys->system_info->pnt, &objp->orient);
+						debug_sphere::add(pos, cur_subsys->system_info->radius);
+						leaf_flags |= ImGuiTreeNodeFlags_Selected;
+					}
+
+					auto subsys_name_tmp = cur_subsys->sub_name;
+					if (strlen(subsys_name_tmp) == 0)
+						subsys_name_tmp = cur_subsys->system_info->name;
+
+					SCP_string subsys_name;
+					sprintf(subsys_name, "%s (%i)", subsys_name_tmp, subsys_index);
+
+					if (ImGui::TreeNode(subsys_name.c_str())) {
+
+						ImGui::TreeNodeEx("Highlight system", leaf_flags);
+						if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
+							selected_subsys = cur_subsys;
+						}
+
+						ImGui::TreePop();
+					}
+
+					subsys_index++;
 				}
+
+				ImGui::TreePop();
 			}
-			
+		}
+	}
+
+	if (ImGui::CollapsingHeader("Object actions")) {
+		if (getLabManager()->CurrentMode == LabMode::Ship) {
+			if (getLabManager()->isSafeForShips()) {
+				if (ImGui::Button("Destroy ship")) {
+					if (Objects[getLabManager()->CurrentObject].type == OBJ_SHIP) {
+						auto obj = &Objects[getLabManager()->CurrentObject];
+
+						obj->flags.remove(Object::Object_Flags::Player_ship);
+						ship_self_destruct(obj);
+					}
+				}
+
+
+			}
 		}
 	}
 	if (ImGui::CollapsingHeader("Description texts")) {}
