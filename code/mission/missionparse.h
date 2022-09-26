@@ -18,6 +18,7 @@
 #include "graphics/2d.h"
 #include "io/keycontrol.h"
 #include "model/model.h"
+#include "model/modelanimation.h"
 #include "object/object.h"
 #include "parse/sexp.h"
 #include "sound/sound.h"
@@ -124,6 +125,7 @@ typedef struct mission {
 	char	squad_name[NAME_LENGTH];				// if the player has been reassigned to a squadron, this is the name of the squadron, otherwise empty string
 	char	loading_screen[GR_NUM_RESOLUTIONS][MAX_FILENAME_LEN];
 	char	skybox_model[MAX_FILENAME_LEN];
+	animation::ModelAnimationSet skybox_model_animations;
 	matrix	skybox_orientation;
 	char	envmap_name[MAX_FILENAME_LEN];
 	int		skybox_flags;

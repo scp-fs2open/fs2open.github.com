@@ -741,6 +741,10 @@ void parse_mission_info(mission *pm, bool basic = false)
 	if (optional_string("$Skybox Model:"))
 	{
 		stuff_string(pm->skybox_model, F_NAME, MAX_FILENAME_LEN);
+
+		if (optional_string("$Skybox Model Animations:")) {
+			animation::ModelAnimationParseHelper::parseAnimsetInfo(pm->skybox_model_animations, 'b', pm->skybox_model);
+		}
 	}
 
 	vm_set_identity(&pm->skybox_orientation);
