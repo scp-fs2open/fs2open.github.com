@@ -1204,6 +1204,26 @@ ADE_FUNC(__len, l_Loadout_Wings, nullptr, "The number of loadout wings", "number
 	return ade_set_args(L, "i", Ss_wings->num_slots);
 }
 
+ADE_LIB_DERIV(l_Loadout_Ships, "Loadout_Ships", nullptr, nullptr, l_UserInterface_ShipWepSelect);
+ADE_INDEXER(l_Loadout_Ships,
+	"number Index",
+	"Array of loadout ship data. Slots are 1-12 where 1-4 is wing 1, 5-8 is wing 2, 9-12 is wing 3. "
+	"This is the array that is used to actually build the mission loadout on Commit.",
+	"loadout_ship",
+	"loadout handle, or nil if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ADE_RETURN_NIL;
+	idx--; // Convert to Lua's 1 based index system
+	return ade_set_args(L, "o", l_Loadout_Ship.Set(idx));
+}
+
+ADE_FUNC(__len, l_Loadout_Ships, nullptr, "The number of loadout ships", "number", "The number of loadout ships.")
+{
+	return ade_set_args(L, "i", MAX_WING_BLOCKS*MAX_WING_SLOTS);
+}
+
 //**********SUBLIBRARY: UserInterface/TechRoom
 ADE_LIB_DERIV(l_UserInterface_TechRoom,
 	"TechRoom",

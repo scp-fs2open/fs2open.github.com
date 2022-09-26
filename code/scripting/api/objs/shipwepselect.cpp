@@ -26,6 +26,30 @@ ss_slot_info* ss_slot_info_h::getSlot() const
 	return &ss_slots[ss_idx];
 }
 
+wss_unit_wep_h::wss_unit_wep_h() : ss_unit(-1) {}
+wss_unit_wep_h::wss_unit_wep_h(int l_unit) : ss_unit(l_unit) {}
+bool wss_unit_wep_h::IsValid() const
+{
+	return ss_unit >= 0;
+	// return ((ss_unit >= 0) && ((ss_bank >= 0) && (ss_bank <= 6)));
+}
+wss_unit* wss_unit_wep_h::getBank() const
+{
+	return &Wss_slots[ss_unit];
+}
+
+wss_unit_count_h::wss_unit_count_h() : ss_unit(-1) {}
+wss_unit_count_h::wss_unit_count_h(int l_unit) : ss_unit(l_unit) {}
+bool wss_unit_count_h::IsValid() const
+{
+	return ss_unit >= 0;
+	// return ((ss_unit >= 0) && ((ss_bank >= 0) && (ss_bank <= 6)));
+}
+wss_unit* wss_unit_count_h::getBank() const
+{
+	return &Wss_slots[ss_unit];
+}
+
 // HERE BE MY NOTES SIR!
 //  create_wings() in missionshipchoice.cpp seems to be what we want to finally use on Commit, maybe
 
@@ -99,7 +123,7 @@ ADE_VIRTVAR(isPlayer, l_Loadout_Wing_Slot, nullptr, "If the slot is a player shi
 
 	return ade_set_args(L, "b", (current.getSlot()->status & WING_SLOT_IS_PLAYER) != 0);
 }
-
+// Probably don't need this one!
 ADE_VIRTVAR(ShipClassIndex,
 	l_Loadout_Wing_Slot,
 	nullptr,
@@ -117,6 +141,137 @@ ADE_VIRTVAR(ShipClassIndex,
 	}
 
 	return ade_set_args(L, "i", (current.getSlot()->original_ship_class + 1));
+}
+
+//**********HANDLE: loadout amount
+ADE_OBJ(l_Loadout_Amount, wss_unit_count_h, "loadout_amount", "Loadout handle");
+
+ADE_INDEXER(l_Loadout_Amount,
+	"number idx",
+	"Array of ship bank weapons. 1-3 are Primary weapons. 4-7 are Secondary weapons. Note that banks "
+	"that do not exist on the ship class are still valid here but should hold nil data. Also note that "
+	"primary banks will also hold the value of 1 even if it is ballistic.",
+	"number",
+	"Amount of the currently loaded weapon, -1 if bank has no weapon, or nil if the ship or index is invalid")
+{
+	wss_unit_count_h current;
+	int idx = -1;
+	if (!ade_get_args(L, "oi", l_Loadout_Amount.Get(&current), &idx))
+		return ADE_RETURN_NIL;
+
+	// Will eventually be writable so that Lua can manipulate the player loadout!
+	// Note may need to do some checking that the bank is valid for the current ship
+	// and that the amount-to-write is the correct size for the weapon/ship cargo size
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	if (idx < 1 || idx > MAX_SHIP_WEAPONS) {
+		return ADE_RETURN_NIL;
+	};
+	idx--; // Convert to Lua's 1 based index system
+
+	return ade_set_args(L, "i", current.getBank()->wep_count[idx]);
+}
+
+ADE_FUNC(__len, l_Loadout_Amount, nullptr, "The number of weapon banks in the slot", "number", "The number of banks.")
+{
+	return ade_set_args(L, "i", MAX_SHIP_WEAPONS);
+}
+
+//**********HANDLE: loadout weapon
+ADE_OBJ(l_Loadout_Weapon, wss_unit_wep_h, "loadout_weapon", "Loadout handle");
+
+ADE_INDEXER(l_Loadout_Weapon,
+	"number idx",
+	"Array of ship bank weapons. 1-3 are Primary weapons. 4-7 are Secondary weapons. Note that banks "
+	"that do not exist on the ship class are still valid here as a loadout slot.",
+	"number",
+	"index into Weapon Classes, 0 if bank is empty, or nil if the ship or index is invalid")
+{
+	wss_unit_wep_h current;
+	int idx = -1;
+	if (!ade_get_args(L, "oi", l_Loadout_Weapon.Get(&current), &idx))
+		return ADE_RETURN_NIL;
+
+	// Will eventually be writable so that Lua can manipulate the player loadout!
+	// Note may need to do some checking that the bank is valid for the current ship
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	if (idx < 1 || idx > MAX_SHIP_WEAPONS) {
+		return ADE_RETURN_NIL;
+	};
+	idx--; // Convert to Lua's 1 based index system
+
+	return ade_set_args(L, "i", current.getBank()->wep[idx] + 1);
+}
+
+ADE_FUNC(__len, l_Loadout_Weapon, nullptr, "The number of weapon banks in the slot", "number", "The number of banks.")
+{
+	return ade_set_args(L, "i", MAX_SHIP_WEAPONS);
+}
+
+//**********HANDLE: loadout ship
+ADE_OBJ(l_Loadout_Ship, int, "loadout_ship", "Loadout handle");
+
+ADE_VIRTVAR(ShipClassIndex,
+	l_Loadout_Ship,
+	nullptr,
+	"The index of the Ship Class",
+	"number",
+	"The index or nil if handle is invalid")
+{
+	int current;
+	if (!ade_get_args(L, "o", l_Loadout_Ship.Get(&current))) {
+		return ADE_RETURN_NIL;
+	}
+
+	// Will eventually be writable so that Lua can manipulate the player loadout!
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "i", (Wss_slots[current].ship_class + 1));
+}
+
+ADE_VIRTVAR(Weapons,
+	l_Loadout_Ship,
+	nullptr,
+	"Array of weapons in the loadout slot",
+	"loadout_weapon",
+	"The weapons array or nil if handle is invalid")
+{
+	int current;
+	if (!ade_get_args(L, "o", l_Loadout_Ship.Get(&current))) {
+		return ADE_RETURN_NIL;
+	}
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "o", l_Loadout_Weapon.Set(wss_unit_wep_h(current)));
+}
+
+ADE_VIRTVAR(Amounts,
+	l_Loadout_Ship,
+	nullptr,
+	"Array of weapon amounts in the loadout slot",
+	"loadout_amount",
+	"The weapon amounts array or nil if handle is invalid")
+{
+	int current;
+	if (!ade_get_args(L, "o", l_Loadout_Ship.Get(&current))) {
+		return ADE_RETURN_NIL;
+	}
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "o", l_Loadout_Amount.Set(wss_unit_count_h(current)));
 }
 
 //**********HANDLE: loadout wing
@@ -156,8 +311,6 @@ ADE_VIRTVAR(Name, l_Loadout_Wing, nullptr, "The name of the wing", "string", "Th
 
 	wing* wp;
 	wp = &Wings[current.getWing()->wingnum];
-
-	//Ss_wings[1].ss_slots[current].status
 
 	return ade_set_args(L, "s", wp->name);
 }
