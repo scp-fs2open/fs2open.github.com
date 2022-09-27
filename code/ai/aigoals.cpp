@@ -308,6 +308,13 @@ void ai_remove_ship_goal( ai_info *aip, int index )
 		if (aip->goals[index].ai_mode == AI_GOAL_REARM_REPAIR)
 			ai_abort_rearm_request(&Objects[Ships[aip->shipnum].objnum]);
 
+		// wookieejedi - play dead needs some extra cleanup, too
+		// there is an early return for AIM_PLAY_DEAD in AI frame, so it needs to be removed
+		if (aip->goals[index].ai_mode == AI_GOAL_PLAY_DEAD || aip->goals[index].ai_mode == AI_GOAL_PLAY_DEAD_PERSISTENT) {
+			aip->mode = AIM_NONE;
+			aip->submode_start_time = Missiontime;
+		}
+
 		aip->active_goal = AI_GOAL_NONE;
 	}
 
