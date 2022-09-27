@@ -1189,24 +1189,29 @@ ADE_FUNC(initSelect,
 
 ADE_LIB_DERIV(l_Ship_Pool, "Ship_Pool", nullptr, nullptr, l_UserInterface_ShipWepSelect);
 ADE_INDEXER(l_Ship_Pool,
-	"number Index",
+	"number Index, number amount",
 	"Array of ship amounts available in the pool for selection in the current mission. Index is index into Ship Classes.",
 	"number",
 	"Amount of the ship that's available")
 {
 	int idx;
-	if (!ade_get_args(L, "*i", &idx))
+	int amount;
+	if (!ade_get_args(L, "*i|i", &idx, &amount))
 		return ADE_RETURN_NIL;
 
 	if (idx < 0 || idx > ship_info_size()) {
 		return ADE_RETURN_NIL;
 	};
 
-	if (ADE_SETTING_VAR) {
-		LuaError(L, "This property is read only.");
-	}
-
 	idx--; // Convert to Lua's 1 based index system
+
+	if (ADE_SETTING_VAR) {
+		if (amount < 0) {
+			Ss_pool[idx] = 0;
+		} else {
+			Ss_pool[idx] = amount;
+		}
+	}
 
 	return ade_set_args(L, "i", Ss_pool[idx]);
 }
@@ -1218,24 +1223,29 @@ ADE_FUNC(__len, l_Ship_Pool, nullptr, "The number of ship classes in the pool", 
 
 ADE_LIB_DERIV(l_Weapon_Pool, "Weapon_Pool", nullptr, nullptr, l_UserInterface_ShipWepSelect);
 ADE_INDEXER(l_Weapon_Pool,
-	"number Index",
+	"number Index, number amount",
 	"Array of weapon amounts available in the pool for selection in the current mission. Index is index into Weapon Classes.",
 	"number",
 	"Amount of the weapon that's available")
 {
 	int idx;
-	if (!ade_get_args(L, "*i", &idx))
+	int amount;
+	if (!ade_get_args(L, "*i|i", &idx, &amount))
 		return ADE_RETURN_NIL;
 
 	if (idx < 0 || idx > weapon_info_size()) {
 		return ADE_RETURN_NIL;
 	};
 
-	if (ADE_SETTING_VAR) {
-		LuaError(L, "This property is read only.");
-	}
-
 	idx--; // Convert to Lua's 1 based index system
+
+	if (ADE_SETTING_VAR) {
+		if (amount < 0) {
+			Wl_pool[idx] = 0;
+		} else {
+			Wl_pool[idx] = amount;
+		}
+	}
 
 	return ade_set_args(L, "i", Wl_pool[idx]);
 }
