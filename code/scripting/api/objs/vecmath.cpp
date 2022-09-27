@@ -164,6 +164,20 @@ ADE_FUNC(__tostring,
 	return ade_set_args(L, "s", buf);
 }
 
+ADE_FUNC(copy,
+		 l_Matrix,
+		 nullptr,
+		 "Returns a copy of the orientation",
+		 "orientation",
+		 "The copy, or null orientation on failure")
+{
+	matrix_h *mh = nullptr;
+	if (!ade_get_args(L, "o", l_Matrix.GetPtr(&mh)))
+		return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
+	
+	return ade_set_args(L, "o", l_Matrix.Set(*mh));
+}
+
 ADE_FUNC(getInterpolated,
 		 l_Matrix,
 		 "orientation Final, number Factor",
@@ -461,6 +475,20 @@ ADE_FUNC(__tostring,
 	sprintf(buf, "(%f,%f,%f)", v3->xyz.x, v3->xyz.y, v3->xyz.z);
 
 	return ade_set_args(L, "s", buf);
+}
+
+ADE_FUNC(copy,
+		 l_Vector,
+		 nullptr,
+		 "Returns a copy of the vector",
+		 "vector",
+		 "The copy, or null vector on failure")
+{
+	vec3d *v = nullptr;
+	if (!ade_get_args(L, "o", l_Vector.GetPtr(&v)))
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+	
+	return ade_set_args(L, "o", l_Vector.Set(*v));
 }
 
 ADE_FUNC(getInterpolated,
