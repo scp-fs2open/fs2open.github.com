@@ -870,6 +870,61 @@ void multi_ship_record_rank_seq_num(object* objp, int seq_num)
 	}
 }
 
+void multi_ship_record_signal_update(int objnum, TIMESTAMP lower_time_limit, TIMESTAMP upper_time_limit, int prev_packet_index, int current_packet_index)
+{
+	// clients can get here, but do not currently use the ship record.
+	if (!MULTIPLAYER_MASTER) {
+		return;
+	}
+
+	Assertion(objnum > -1 && Objects[objnum].type == OBJ_SHIP, "multi_ship_record_signal_update got an invalid object, info: %s%d. Please report to a SCP coder!", (objnum < 0) ? "Object number " : "Object type ", (objnum < 0) ? objnum : Objects[objnum].type);
+
+	int prev_index = -1;
+	int post_index = -1;
+
+	for (int i = 0; i < MAX_FRAMES_RECORDED; i++) {
+		// just continue if we have an invalid timestmap.
+		if (!Oo_info.timestamps[i].isValid()) {
+			continue;
+		}
+
+		if (prev_index < 0 && timestamp_compare(lower_time_limit, Oo_info.timestamps[i]) < 1){
+			prev_index = i;
+		} else if (prev_index > -1 && timestamp_in_between(Oo_info.timestamps[i], Oo_info.timestamps[prev_index], lower_time_limit)){
+			prev_index = i;
+		}
+
+		if (post_index < 0 && timestamp_compare(Oo_info.timestamps[i], upper_time_limit) < 1) {
+			post_index = i;
+		} else if (post_index > -1 && timestamp_in_between(Oo_info.timestamps[i], upper_time_limit, Oo_info.timestamps[post_index])){
+			post_index = i;
+		}
+	}
+
+	if (prev_index < 0 || post_index < 0) { 
+		mprintf(("Getting invalid index while trying to update the ship record. If this happens frequently, please investigate!\n"));
+		return;
+	} else if (prev_index == post_index) {
+		return;
+	}
+
+	auto info = &Oo_info.frame_info[Objects[objnum].net_signature];
+
+	// now that we have valid values, we need to fix the affected values in the record.
+	do {
+		Objects[objnum].interp_info.reinterpolate_previous(
+			Oo_info.timestamps[prev_index], prev_packet_index, current_packet_index,  
+			&info->positions[prev_index], &info->orientations[prev_index], &info->velocities[prev_index], &info->rotational_velocities[prev_index]
+			);
+		++prev_index;
+
+		if (prev_index == MAX_FRAMES_RECORDED) {
+			prev_index = 0;
+		}
+
+	} while (prev_index != post_index);
+}
+
 // Quick lookup for the most recently received ship
 ushort multi_client_lookup_ref_obj_net_sig()
 {	
@@ -1805,7 +1860,7 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num, int time_delt
 			new_phys_info.desired_rotvel = new_phys_info.rotvel;
 		}
 
-		pobjp->interp_info.add_packet(seq_num, time_delta, &new_pos, &new_phys_info.vel, &new_phys_info.rotvel, &new_phys_info.desired_vel, &new_phys_info.desired_rotvel, &new_angles, pl->player_id);
+		pobjp->interp_info.add_packet(OBJ_INDEX(pobjp), seq_num, time_delta, &new_pos, &new_phys_info.vel, &new_phys_info.rotvel, &new_phys_info.desired_vel, &new_phys_info.desired_rotvel, &new_angles, pl->player_id);
 	}
 
 	// Packet processing needs to stop here if the ship is still arriving, leaving, dead or dying to prevent bugs.

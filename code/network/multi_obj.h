@@ -24,7 +24,7 @@ struct net_player;
 class ship;
 struct physics_info;
 struct weapon;
-
+class TIMESTAMP;
 
 // client button info flags
 #define OOC_FIRE_CONTROL_PRESSED	(1<<0)
@@ -96,6 +96,9 @@ void multi_ship_record_add_rollback_wep(int wep_objnum);
 
 // Manage rollback for a frame
 void multi_ship_record_do_rollback();
+
+// Tell the ship record code that it needs to request corrected data
+void multi_ship_record_signal_update(int objnum, TIMESTAMP lower_time_limit, TIMESTAMP higher_time_limit, int prev_packet_index, int current_packet_index);
 
 // ---------------------------------------------------------------------------------------------------
 // Client side frame tracking, for now used only to help lookup info from packets to improve client accuracy.

@@ -1525,11 +1525,17 @@ void obj_move_all(float frametime)
 		if (!(objp->flags[Object::Object_Flags::Immobile] && objp->hull_strength > 0.0f)) {
 			// if this is an object which should be interpolated in multiplayer, do so
 			if (interpolation_object) {
-				objp->interp_info.interpolate(&objp->pos, &objp->orient, &objp->phys_info, &objp->last_pos, &objp->last_orient, objp->flags[Object::Object_Flags::Player_ship]);
+				objp->interp_info.interpolate_main(&objp->pos, &objp->orient, &objp->phys_info, &objp->last_pos, &objp->last_orient, objp->flags[Object::Object_Flags::Player_ship]);
 			} else {
 				// physics
 				obj_move_call_physics(objp, frametime);
 			}
+		} else {
+			// make sure velocity is always 0 for immobile things!
+			vm_vec_zero(&objp->phys_info.vel);
+			vm_vec_zero(&objp->phys_info.desired_vel);
+			vm_vec_zero(&objp->phys_info.rotvel);
+			vm_vec_zero(&objp->phys_info.desired_rotvel);
 		}
 
 		// Submodel movement now happens here, right after physics movement.  It's not excluded by the "immobile" flag.

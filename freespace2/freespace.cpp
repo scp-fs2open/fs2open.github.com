@@ -3436,18 +3436,19 @@ void game_render_frame( camid cid )
 	batching_render_all(true);
 
 	Shadow_override = true;
-	//Draw the viewer 'cause we didn't before.
-	//This is so we can change the minimum clipping distance without messing everything up.
-	if (Viewer_obj && (Viewer_obj->type == OBJ_SHIP)
-		&& (Ship_info[Ships[Viewer_obj->instance].ship_info_index].flags[Ship::Info_Flags::Show_ship_model])
-		&& (!Viewer_mode || (Viewer_mode & VM_PADLOCK_ANY) || (Viewer_mode & VM_OTHER_SHIP) || (Viewer_mode & VM_TRACK)
-			|| !(Viewer_mode & VM_EXTERNAL)))
-	{
-		gr_post_process_save_zbuffer();
-		ship_render_show_ship_cockpit(Viewer_obj);
-		gr_post_process_restore_zbuffer();
-	}
 
+	//Draw the viewer 'cause we didn't before.
+	//This is currently seperate to facilitate deferred rendering on different view/proj matrices and with different settings
+	if (Viewer_obj && Viewer_obj->type == OBJ_SHIP && Viewer_obj->instance > 0) {
+		gr_end_proj_matrix();
+		gr_end_view_matrix();
+
+		GR_DEBUG_SCOPE("Render Cockpit");
+		ship_render_player_ship(Viewer_obj);
+
+		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+		gr_set_view_matrix(&Eye_position, &Eye_matrix);
+	}
 
 #ifndef NDEBUG
 	debug_sphere::render();
@@ -3455,22 +3456,6 @@ void game_render_frame( camid cid )
 	extern void snd_spew_debug_info();
 	snd_spew_debug_info();
 #endif
-
-	gr_end_proj_matrix();
-	gr_end_view_matrix();
-
-	//Draw viewer cockpit
-	if(Viewer_obj != nullptr && Viewer_mode != VM_TOPDOWN && Ship_info[Ships[Viewer_obj->instance].ship_info_index].cockpit_model_num > 0)
-	{
-		GR_DEBUG_SCOPE("Render Cockpit");
-
-		gr_post_process_save_zbuffer();
-		ship_render_cockpit(Viewer_obj);
-		gr_post_process_restore_zbuffer();
-	}
-
-	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
 	// Do the sunspot
 	game_sunspot_process(flFrametime);

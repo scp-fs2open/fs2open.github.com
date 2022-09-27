@@ -7376,59 +7376,118 @@ static void ship_find_warping_ship_helper(object *objp, dock_function_info *info
 //WMC - used for FTL and maneuvering thrusters
 extern bool Rendering_to_shadow_map;
 
-void ship_render_cockpit(object *objp)
-{
-	if(objp->type != OBJ_SHIP || objp->instance < 0)
+void ship_render_player_ship(object* objp) {
+	ship* shipp = &Ships[objp->instance];
+	ship_info* sip = &Ship_info[shipp->ship_info_index];
+
+	const bool hasCockpitModel = sip->cockpit_model_num >= 0;
+
+	const bool renderCockpitModel = Viewer_mode != VM_TOPDOWN && hasCockpitModel;
+	const bool renderShipModel = (sip->flags[Ship::Info_Flags::Show_ship_model])
+		&& (!Viewer_mode || (Viewer_mode & VM_PADLOCK_ANY) || (Viewer_mode & VM_OTHER_SHIP) || (Viewer_mode & VM_TRACK)
+			|| !(Viewer_mode & VM_EXTERNAL));
+
+	//Nothing to do
+	if (!(renderCockpitModel || renderShipModel))
 		return;
 
-	ship *shipp = &Ships[objp->instance];
-	ship_info *sip = &Ship_info[shipp->ship_info_index];
+	//If we aren't sure whether cockpits and external models can share the same worldspace,
+	//we need to pre-render the external ship hull without shadows / deferred and give the cockpit precedence,
+	//unless this ship has no cockpit at all
+	const bool prerenderShipModel = renderShipModel && hasCockpitModel && !Cockpit_shares_coordinate_space;
+	const bool deferredRenderShipModel = renderShipModel && !prerenderShipModel;
 
-	if(sip->cockpit_model_num < 0)
-		return;
-
-	polymodel *pm = model_get(sip->cockpit_model_num);
-	Assert(pm != NULL);
-
-	//Setup
 	gr_reset_clip();
-	hud_save_restore_camera_data(1);
 
-	matrix eye_ori = vmd_identity_matrix;
-	vec3d eye_pos = vmd_zero_vector;
-	ship_get_eye(&eye_pos, &eye_ori, objp, false, true);
-
-	vec3d pos = vmd_zero_vector;
-
-	vm_vec_unrotate(&pos, &sip->cockpit_offset, &eye_ori);
+	vec3d eye_pos, eye_offset;
+	matrix eye_orient;
+	ship_get_eye_local(&eye_pos, &eye_orient, objp);
+	vm_vec_copy_scale(&eye_offset, &eye_pos, -1.0f);
 
 	float fov_backup = Proj_fov;
-
 	g3_set_fov(Sexp_fov <= 0.0f ? COCKPIT_ZOOM_DEFAULT : Sexp_fov);
 
+	if (prerenderShipModel) {
+		gr_post_process_save_zbuffer();
+
+		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 0.05f, Max_draw_distance);
+		gr_set_view_matrix(&leaning_position, &eye_orient);
+
+		model_render_params render_info;
+		render_info.set_object_number(OBJ_INDEX(objp));
+
+		// update any replacement and/or team color textures (wookieejedi), then render
+		render_info.set_replacement_textures(shipp->ship_replacement_textures);
+
+		if (sip->uses_team_colors)
+			render_info.set_team_color(shipp->team_name, shipp->secondary_team_name, 0, 0);
+
+		render_info.set_detail_level_lock(0);
+		model_render_immediate(&render_info, sip->model_num, shipp->model_instance_num, &objp->orient, &eye_offset);
+
+		gr_end_view_matrix();
+		gr_end_proj_matrix();
+
+		gr_post_process_restore_zbuffer();
+	}
+
+	//We only needed to prerender the ship model. This can occur if the cockpit isn't
+	//rendered for some reason but a model exists. In this case, we still want to not
+	//render the ship model with deferred rendering to keep visuals constant for the ship
+	if (!renderCockpitModel && !deferredRenderShipModel) {
+		Proj_fov = fov_backup;
+		return;
+	}
+
+	Lighting_mode = lighting_mode::COCKPIT;
+
+	gr_reset_clip();
+
 	//Deal with the model
-	model_clear_instance(sip->cockpit_model_num);
+	if(renderCockpitModel)
+		model_clear_instance(sip->cockpit_model_num);
+
+	gr_post_process_save_zbuffer();
+
+	//Deal with shadow if we have to
 	if (shadow_maybe_start_frame(Shadow_disable_overrides.disable_cockpit)) {
 		gr_reset_clip();
 		Shadow_override = false;
 
-		shadows_start_render(&Eye_matrix, &leaning_position, Proj_fov, gr_screen.clip_aspect, std::get<0>(Shadow_distances_cockpit), std::get<1>(Shadow_distances_cockpit), std::get<2>(Shadow_distances_cockpit), std::get<3>(Shadow_distances_cockpit));
+		shadows_start_render(&eye_orient, &leaning_position, Proj_fov, gr_screen.clip_aspect,
+			std::get<0>(Shadow_distances_cockpit),
+			std::get<1>(Shadow_distances_cockpit),
+			std::get<2>(Shadow_distances_cockpit),
+			std::get<3>(Shadow_distances_cockpit));
 
-		model_render_params shadow_render_info;
-		shadow_render_info.set_detail_level_lock(0);
-		shadow_render_info.set_flags(MR_NO_TEXTURING | MR_NO_LIGHTING);
-		model_render_immediate(&shadow_render_info, sip->cockpit_model_num, &eye_ori, &pos);
+		if (deferredRenderShipModel) {
+			model_render_params shadow_render_info;
+			shadow_render_info.set_detail_level_lock(0);
+			//If we just want to recieve, we still have to write to the color buffer but not to the zbuffer, otherwise shadow recieving breaks
+			shadow_render_info.set_flags(MR_NO_TEXTURING | MR_NO_LIGHTING | (Show_ship_casts_shadow ? 0 : MR_NO_ZBUFFER));
+			shadow_render_info.set_object_number(OBJ_INDEX(objp));
+			model_render_immediate(&shadow_render_info, sip->model_num, shipp->model_instance_num, &objp->orient, &eye_offset);
+		}
+		if (renderCockpitModel) {
+			model_render_params shadow_render_info;
+			shadow_render_info.set_detail_level_lock(0);
+			shadow_render_info.set_flags(MR_NO_TEXTURING | MR_NO_LIGHTING);
+			shadow_render_info.set_object_number(OBJ_INDEX(objp));
+			vec3d offset = sip->cockpit_offset;
+			vm_vec_unrotate(&offset, &offset, &objp->orient);
+			model_render_immediate(&shadow_render_info, sip->cockpit_model_num, &objp->orient, &offset);
+		}
 
 		shadows_end_render();
 		gr_clear_states();
 	}
 
-	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 0.02f, 10.0f * pm->rad);
-	gr_set_view_matrix(&leaning_position, &Eye_matrix);
+	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 0.02f, Max_draw_distance);
+	gr_set_view_matrix(&leaning_position, &eye_orient);
 
 	Shadow_view_matrix_render = gr_view_matrix;
 
-	if(Cmdline_deferred_lighting_cockpit)
+	if (Cmdline_deferred_lighting_cockpit)
 		gr_deferred_lighting_begin(true);
 
 	uint render_flags = MR_NORMAL;
@@ -7438,12 +7497,29 @@ void ship_render_cockpit(object *objp)
 		render_flags |= MR_NO_GLOWMAPS;
 	}
 
-	model_render_params render_info;
-	render_info.set_detail_level_lock(0);
-	render_info.set_flags(render_flags);
-	render_info.set_replacement_textures(Player_cockpit_textures);
+	//Properly render ship and cockpit model
+	if (deferredRenderShipModel) {
+		model_render_params render_info;
+		render_info.set_detail_level_lock(0);
+		render_info.set_flags(render_flags);
+		render_info.set_replacement_textures(shipp->ship_replacement_textures);
+		render_info.set_object_number(OBJ_INDEX(objp));
+		if (sip->uses_team_colors)
+			render_info.set_team_color(shipp->team_name, shipp->secondary_team_name, 0, 0);
 
-	model_render_immediate(&render_info, sip->cockpit_model_num, &eye_ori, &pos);
+		model_render_immediate(&render_info, sip->model_num, shipp->model_instance_num, &objp->orient, &eye_offset);
+		gr_zbuffer_clear(true);
+	}
+	if (renderCockpitModel) {
+		model_render_params render_info;
+		render_info.set_detail_level_lock(0);
+		render_info.set_flags(render_flags);
+		render_info.set_replacement_textures(Player_cockpit_textures);
+		vec3d offset = sip->cockpit_offset;
+		vm_vec_unrotate(&offset, &offset, &objp->orient);
+		model_render_immediate(&render_info, sip->cockpit_model_num, &objp->orient, &offset);
+	}
+
 
 	if (Cmdline_deferred_lighting_cockpit) {
 		gr_end_view_matrix();
@@ -7459,58 +7535,17 @@ void ship_render_cockpit(object *objp)
 		gr_set_lighting();
 	}
 
+	Lighting_mode = lighting_mode::NORMAL;
+
 	gr_end_view_matrix();
 	gr_end_proj_matrix();
 
 	Proj_fov = fov_backup;
 
-	hud_save_restore_camera_data(0);
-
 	//Restore the Shadow_override
 	shadow_end_frame();
-}
 
-void ship_render_show_ship_cockpit(object *objp)
-{
-	if (objp->type != OBJ_SHIP || objp->instance < 0)
-		return;
-
-	vec3d cockpit_eye_pos;
-	matrix dummy;
-	ship_get_eye(&cockpit_eye_pos, &dummy, objp, true, false); // Get cockpit eye position
-
-	gr_end_view_matrix();
-	gr_end_proj_matrix();
-	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 0.05f, Max_draw_distance);
-	gr_set_view_matrix(&cockpit_eye_pos, &Eye_matrix); // Set Camera to cockpit eye position
-	
-	Glowpoint_override = true; // Turn off glowpoints so they dont get rendered fixed at origin
-
-	model_render_params render_info;
-
-	render_info.set_object_number(OBJ_INDEX(objp));
-
-	// update any replacement and/or team color textures (wookieejedi), then render
-	ship* shipp = &Ships[objp->instance];
-	ship_info* sip = &Ship_info[Ships[objp->instance].ship_info_index];
-
-	render_info.set_replacement_textures(shipp->ship_replacement_textures);
-
-	if (sip->uses_team_colors) {
-		render_info.set_team_color(shipp->team_name, shipp->secondary_team_name, 0, 0);
-	}
-
-	render_info.set_detail_level_lock(0);
-
-	model_render_immediate(&render_info, sip->model_num, &objp->orient,
-	                       &objp->pos); // Render ship model with fixed detail level 0 so its not switching LOD when
-	                                    // moving away from origin
-	Glowpoint_override = false;
-
-	gr_end_view_matrix();
-	gr_end_proj_matrix();
-	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-	gr_set_view_matrix(&Eye_position, &Eye_matrix); // Reset Camera to normal
+	gr_post_process_restore_zbuffer();
 }
 
 void ship_init_cockpit_displays(ship *shipp)
@@ -13902,6 +13937,45 @@ void ship_get_eye( vec3d *eye_pos, matrix *eye_orient, object *obj, bool do_slew
 	}
 }
 
+// calculates the eye position for this ship in the ships reference frame, but rotated along.  Uses the
+// view_positions array in the model.  The 0th element is the normal viewing position.
+// the vector of the eye is returned in the parameter 'eye'.  The orientation of the
+// eye is returned in orient.
+void ship_get_eye_local(vec3d* eye_pos, matrix* eye_orient, object* obj, bool do_slew)
+{
+	Assertion(obj->type == OBJ_SHIP, "Only ships can have eye positions!");
+
+	ship* shipp = &Ships[obj->instance];
+	auto pmi = model_get_instance(shipp->model_instance_num);
+	auto pm = model_get(pmi->model_num);
+
+	// check to be sure that we have a view eye to look at.....spit out nasty debug message
+	if (shipp->current_viewpoint < 0 || pm->n_view_positions == 0 || shipp->current_viewpoint > pm->n_view_positions) {
+		*eye_pos = ZERO_VECTOR;
+		*eye_orient = IDENTITY_MATRIX;
+		return;
+	}
+
+	// eye points are stored in an array -- the normal viewing position for a ship is
+	// the current_eye_index element.
+	eye* ep = &(pm->view_positions[shipp->current_viewpoint]);
+
+	if (ep->parent >= 0 && pm->submodel[ep->parent].flags[Model::Submodel_flags::Can_move]) {
+		model_instance_local_to_global_point_orient(eye_pos, eye_orient, &ep->pnt, &vmd_identity_matrix, pm, pmi, ep->parent, &obj->orient, &vmd_zero_vector);
+	}
+	else {
+		model_local_to_global_point(eye_pos, &ep->pnt, Ship_info[shipp->ship_info_index].model_num, ep->parent, &obj->orient, &vmd_zero_vector);
+		*eye_orient = obj->orient;
+	}
+
+	// Modify the orientation based on head orientation.
+	if (Viewer_obj == obj && do_slew) {
+		// Add the cockpit leaning translation offset
+		vm_vec_add2(eye_pos, &leaning_position);
+		compute_slew_matrix(eye_orient, &Viewer_slew_angles);
+	}
+}
+
 // of attackers to make this decision.
 //
 // NOTE: This function takes into account how many ships are attacking a subsystem, and will 
@@ -19877,22 +19951,26 @@ void ship_render_set_animated_effect(model_render_params *render_info, ship *shi
 	float timer;
 
 	ship_effect* sep = &Ship_effects[shipp->shader_effect_num];
+	int current_time = timer_get_milliseconds();
 	
-	if ( sep->invert_timer ) {
-		timer = 1.0f - ((timer_get_milliseconds() - shipp->shader_effect_start_time) / (float)shipp->shader_effect_duration);
-		timer = MAX(timer,0.0f);
-	} else {
-		timer = ((timer_get_milliseconds() - shipp->shader_effect_start_time) / (float)shipp->shader_effect_duration);
+	if (shipp->shader_effect_duration > 0) {
+		if (sep->invert_timer) {
+			timer = 1.0f - ((current_time - shipp->shader_effect_start_time) / (float)shipp->shader_effect_duration);
+			timer = MAX(timer, 0.0f);
+		}
+		else {
+			timer = ((current_time - shipp->shader_effect_start_time) / (float)shipp->shader_effect_duration);
+		}
+
+		render_info->set_animated_effect(sep->shader_effect, timer);
 	}
 
-	render_info->set_animated_effect(sep->shader_effect, timer);
-
-	if ( sep->disables_rendering && (timer_get_milliseconds() > shipp->shader_effect_start_time + shipp->shader_effect_duration) ) {
+	if ( sep->disables_rendering && (current_time >= shipp->shader_effect_start_time + shipp->shader_effect_duration) ) {
 		shipp->flags.set(Ship_Flags::Cloaked);
 		shipp->shader_effect_active = false;
 	} else {
 		shipp->flags.remove(Ship_Flags::Cloaked);
-		if (timer_get_milliseconds() > shipp->shader_effect_start_time + shipp->shader_effect_duration) {
+		if (current_time >= shipp->shader_effect_start_time + shipp->shader_effect_duration) {
 			shipp->shader_effect_active = false;
 		}
 	}

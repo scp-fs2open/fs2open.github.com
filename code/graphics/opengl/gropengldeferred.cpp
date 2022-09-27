@@ -143,6 +143,8 @@ void gr_opengl_deferred_lighting_finish()
 	{
 		GR_DEBUG_SCOPE("Build buffer data");
 
+		auto lp = lighting_profile::current();
+
 		auto header = uniformAligner.getHeader<deferred_global_data>();
 		if (Shadow_quality != ShadowQuality::Disabled) {
 			// Avoid this overhead when we are not going to use these values
@@ -205,15 +207,19 @@ void gr_opengl_deferred_lighting_finish()
 				light_data->coneInnerAngle = l.cone_inner_angle;
 				light_data->coneDir = l.vec2;
 				FALLTHROUGH;
-			case Light_Type::Point:
-				light_data->lightRadius = MAX(l.rada, l.radb);
+			case Light_Type::Point: {
+				float rad = (Lighting_mode == lighting_mode::COCKPIT) ? lp->cockpit_light_radius_modifier.handle(MAX(l.rada, l.radb)) : MAX(l.rada, l.radb);
+				light_data->lightRadius = rad;
 				//A small padding factor is added to guard against potentially clipping the edges of the light with facets of the volume mesh.
-				light_data->scale.xyz.x = MAX(l.rada, l.radb) * 1.05f;
-				light_data->scale.xyz.y = MAX(l.rada, l.radb) * 1.05f;
-				light_data->scale.xyz.z = MAX(l.rada, l.radb) * 1.05f;
+				light_data->scale.xyz.x = rad * 1.05f;
+				light_data->scale.xyz.y = rad * 1.05f;
+				light_data->scale.xyz.z = rad * 1.05f;
 				break;
+			}
 			case Light_Type::Tube: {
-				light_data->lightRadius = l.radb;
+				float rad = (Lighting_mode == lighting_mode::COCKPIT) ? lp->cockpit_light_radius_modifier.handle(l.radb) : l.radb;
+
+				light_data->lightRadius = rad;
 				light_data->lightType = LT_TUBE;
 
 				vec3d a;
@@ -225,8 +231,8 @@ void gr_opengl_deferred_lighting_finish()
 				length += light_data->lightRadius * 2.0f;
 
 				//A small padding factor is added to guard against potentially clipping the edges of the light with facets of the volume mesh.
-				light_data->scale.xyz.x = l.radb * 1.05f;
-				light_data->scale.xyz.y = l.radb * 1.05f;
+				light_data->scale.xyz.x = rad * 1.05f;
+				light_data->scale.xyz.y = rad * 1.05f;
 				light_data->scale.xyz.z = length;
 
 				break;

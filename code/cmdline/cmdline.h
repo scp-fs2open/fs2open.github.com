@@ -156,6 +156,7 @@ extern bool Cmdline_graphics_debug_output;
 extern bool Cmdline_log_to_stdout;
 extern bool Cmdline_slow_frames_ok;
 extern bool Cmdline_lua_devmode;
+extern bool Cmdline_override_data;
 
 enum class WeaponSpewType { NONE = 0, STANDARD, ALL };
 extern WeaponSpewType Cmdline_spew_weapon_stats;
