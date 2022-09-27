@@ -24,9 +24,9 @@ ADE_OBJ(l_Default_Primary, int, "default_primary", "weapon index");
 
 ADE_INDEXER(l_Default_Primary,
 	"number idx",
-	"Array of ship default primaries for each bank. Returns the index of the weapon from Weapon Classes or "
+	"Array of ship default primaries for each bank. Returns the Weapon Class or "
 	"nil if the bank is invalid for the ship class.",
-	"number",
+	"weaponclass",
 	"The weapon index")
 {
 	int current;
@@ -45,7 +45,6 @@ ADE_INDEXER(l_Default_Primary,
 	};
 	idx--; // Convert to Lua's 1 based index system
 
-	// return ade_set_args(L, "i", sip->primary_bank_weapons[idx] + 1);
 	return ade_set_args(L, "o", l_Weaponclass.Set(sip->primary_bank_weapons[idx]));
 }
 
@@ -67,9 +66,9 @@ ADE_OBJ(l_Default_Secondary, int, "default_secondary", "weapon index");
 
 ADE_INDEXER(l_Default_Secondary,
 	"number idx",
-	"Array of ship default secondaries for each bank. Returns the index of the weapon from Weapon Classes or "
+	"Array of ship default secondaries for each bank. Returns the Weapon Class or "
 	"nil if the bank is invalid for the ship class.",
-	"number",
+	"weaponclass",
 	"The weapon index")
 {
 	int current;
@@ -88,8 +87,7 @@ ADE_INDEXER(l_Default_Secondary,
 	};
 	idx--; // Convert to Lua's 1 based index system
 
-	// return ade_set_args(L, "i", sip->secondary_bank_weapons[idx] + 1);
-	return ade_set_args(L, "o", l_Weaponclass.Set(sip->primary_bank_weapons[idx]));
+	return ade_set_args(L, "o", l_Weaponclass.Set(sip->secondary_bank_weapons[idx]));
 }
 
 ADE_FUNC(__len,
