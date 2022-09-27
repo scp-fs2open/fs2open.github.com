@@ -685,13 +685,14 @@ ADE_FUNC(skipTraining,
 ADE_FUNC(commitToMission,
 	l_UserInterface_Brief,
 	nullptr,
-	"Commits to the current mission with current loadout data, and starts the mission. WIP, do not use!",
-	nullptr,
-	nullptr)
+	"Commits to the current mission with current loadout data, and starts the mission. Returns an integer to represent "
+	"built-in errors or 0 if successful. 1 = general error, 2 = player ship has no weapons, 3 = the required weapon was not found "
+	"loaded on a ship, 4 = 2 or more required weapons were not found loaded on a ship, 5 = a gap in a ship's weapon banks was discovered "
+	"and all empty banks must be at the bottom of the list.",
+	"number error",
+	"the error value")
 {
-	SCP_UNUSED(L);
-	commit_pressed();
-	return ADE_RETURN_NIL;
+	return ade_set_args(L, "i", commit_pressed(1));
 }
 
 ADE_FUNC(drawBriefingMap,
@@ -1254,6 +1255,28 @@ ADE_FUNC(__len,
 	l_Weapon_Pool, nullptr, "The number of weapon classes in the pool", "number", "The number of weapon classes.")
 {
 	return ade_set_args(L, "i", weapon_info_size());
+}
+
+ADE_FUNC(resetSelect,
+	l_UserInterface_ShipWepSelect,
+	nullptr,
+	"Resets selection data to mission defaults including wing slots, ship and weapon pool, and loadout information",
+	nullptr,
+	nullptr)
+{
+	// Note this does all the things from ss_reset_to_default() in missionshipchoice.cpp except
+	// resetting UI elements - Mjn
+
+	SCP_UNUSED(L); // unused parameter
+
+	ss_init_pool(&Team_data[Common_team]);
+	ss_init_units();
+
+	if (!(Game_mode & GM_MULTIPLAYER)) {
+		wl_fill_slots();
+	}
+
+	return ADE_RETURN_NIL;
 }
 
 ADE_LIB_DERIV(l_Loadout_Wings, "Loadout_Wings", nullptr, nullptr, l_UserInterface_ShipWepSelect);

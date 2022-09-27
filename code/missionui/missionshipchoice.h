@@ -14,6 +14,7 @@
 
 #include "gamesnd/gamesnd.h"
 #include "missionui/missionscreencommon.h"
+#include "mission/missionparse.h"
 
 class p_object;
 
@@ -89,6 +90,9 @@ void ship_select_common_init();
 void ship_select_common_close();
 int ss_get_ship_class(int ship_entry_index);
 int ss_get_selected_ship();
+
+void ss_init_pool(team_data *pteam);
+void ss_init_units();
 
 void ss_blit_ship_icon(int x,int y,int ship_class,int bmap_num);
 

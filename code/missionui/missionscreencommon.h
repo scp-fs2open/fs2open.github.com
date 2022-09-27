@@ -79,7 +79,7 @@ void	common_select_close();
 void	common_draw_buttons();
 void	common_check_buttons();
 void	common_check_keys(int k);
-void	commit_pressed();
+int 	commit_pressed(int API_Access = 0);
 void	common_render(float frametime);
 void	common_buttons_init(UI_WINDOW *ui_window);
 void	common_buttons_maybe_reload(UI_WINDOW *ui_window);

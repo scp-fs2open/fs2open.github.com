@@ -1887,7 +1887,7 @@ bool check_for_gaps_in_weapon_slots()
 // ------------------------------------------------------------------------
 // commit_pressed() is called when the commit button from any of the briefing/ship select/ weapon
 // select screens is pressed.  The ship selected is created, and the interface music is stopped.
-void commit_pressed()
+int commit_pressed(int API_Access)
 {
 	int j, player_ship_info_index;
 	
@@ -1897,7 +1897,7 @@ void commit_pressed()
 			rc = create_wings();
 			if (rc != 0) {
 				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
-				return;
+				return 1;
 			}
 		}
 	}
@@ -1913,8 +1913,10 @@ void commit_pressed()
 
 		update_player_ship( player_ship_info_index );
 		if ( wl_update_ship_weapons(Ships[Player_obj->instance].objnum, &Wss_slots[0]) == -1 ) {
-			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR( "Player ship has no weapons", 461));
-			return;
+			if (!API_Access) {
+				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Player ship has no weapons", 461));
+			}
+			return 2;
 		}
 	}
 
@@ -1941,13 +1943,27 @@ void commit_pressed()
 	{
 		if (num_required_weapons == 1)
 		{
-			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("The %s is required for this mission, but it has not been added to any ship loadout.", 1624), weapon_list.c_str());
-			return;
+			if (!API_Access) {
+				popup(PF_USE_AFFIRMATIVE_ICON,
+					1,
+					POPUP_OK,
+					XSTR("The %s is required for this mission, but it has not been added to any ship loadout.", 1624),
+					weapon_list.c_str());
+			} 
+			return 3;
 		}
 		else if (num_required_weapons > 1)
 		{
-			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("The following weapons are required for this mission, but at least one of them has not been added to any ship loadout:\n\n%s", 1625), weapon_list.c_str());
-			return;
+			if (!API_Access) {
+				popup(PF_USE_AFFIRMATIVE_ICON,
+					1,
+					POPUP_OK,
+					XSTR("The following weapons are required for this mission, but at least one of them has not been "
+						 "added to any ship loadout:\n\n%s",
+						1625),
+					weapon_list.c_str());
+			} 
+			return 4;
 		}
 	}
 
@@ -1957,8 +1973,16 @@ void commit_pressed()
 	// Note2: don't check missions without briefings either
 	if (check_for_gaps_in_weapon_slots() && !(The_mission.game_type & MISSION_TYPE_TRAINING) && !The_mission.flags[Mission::Mission_Flags::Scramble, Mission::Mission_Flags::Red_alert, Mission::Mission_Flags::No_briefing])
 	{
-		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("At least one ship has an empty weapon bank before a full weapon bank.\n\nAll weapon banks must have weapons assigned, or if there are any gaps, they must be at the bottom of the set of banks.", 1642), weapon_list.c_str());
-		return;
+		if (!API_Access) {
+			popup(PF_USE_AFFIRMATIVE_ICON,
+				1,
+				POPUP_OK,
+				XSTR("At least one ship has an empty weapon bank before a full weapon bank.\n\nAll weapon banks must "
+					 "have weapons assigned, or if there are any gaps, they must be at the bottom of the set of banks.",
+					1642),
+				weapon_list.c_str());
+		} 
+		return 5;
 	}
 
 	// Check to ensure that the hotkeys are still pointing to valid objects.  It is possible
@@ -2008,6 +2032,8 @@ void commit_pressed()
 		Pilot.save_savefile();
 		gameseq_post_event(GS_EVENT_ENTER_GAME);
 	}
+
+	return 0;
 }
 
 // ------------------------------------------------------------------------
