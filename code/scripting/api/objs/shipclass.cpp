@@ -198,6 +198,97 @@ ADE_VIRTVAR(ManufacturerString, l_Shipclass, "string", "Ship class manufacturer"
 		return ade_set_args(L, "s", "");
 }
 
+ADE_VIRTVAR(LengthString, l_Shipclass, "string", "Ship class length", "string", "Length, or empty string if handle is invalid")
+{
+	int idx;
+	const char* s = nullptr;
+	if(!ade_get_args(L, "o|s", l_Shipclass.Get(&idx), &s))
+		return ade_set_error(L, "s", "");
+
+	if(idx < 0 || idx >= ship_info_size())
+		return ade_set_error(L, "s", "");
+
+	ship_info *sip = &Ship_info[idx];
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "Setting Length is not supported");
+	}
+
+	if(sip->manufacturer_str != NULL)
+		return ade_set_args(L, "s", sip->ship_length);
+	else
+		return ade_set_args(L, "s", "");
+}
+
+ADE_VIRTVAR(GunMountsString, l_Shipclass, "string", "Ship class gun mounts", "string", "Gun mounts, or empty string if handle is invalid")
+{
+	int idx;
+	const char* s = nullptr;
+	if(!ade_get_args(L, "o|s", l_Shipclass.Get(&idx), &s))
+		return ade_set_error(L, "s", "");
+
+	if(idx < 0 || idx >= ship_info_size())
+		return ade_set_error(L, "s", "");
+
+	ship_info *sip = &Ship_info[idx];
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "Setting Gun mounts is not supported");
+	}
+
+	if(sip->manufacturer_str != NULL)
+		return ade_set_args(L, "s", sip->gun_mounts);
+	else
+		return ade_set_args(L, "s", "");
+}
+
+ADE_VIRTVAR(MissileBanksString, l_Shipclass, "string", "Ship class missile banks", "string", "Missile banks, or empty string if handle is invalid")
+{
+	int idx;
+	const char* s = nullptr;
+	if(!ade_get_args(L, "o|s", l_Shipclass.Get(&idx), &s))
+		return ade_set_error(L, "s", "");
+
+	if(idx < 0 || idx >= ship_info_size())
+		return ade_set_error(L, "s", "");
+
+	ship_info *sip = &Ship_info[idx];
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "Setting Missile banks is not supported");
+	}
+
+	if(sip->manufacturer_str != NULL)
+		return ade_set_args(L, "s", sip->missile_banks);
+	else
+		return ade_set_args(L, "s", "");
+}
+
+ADE_VIRTVAR(VelocityString, l_Shipclass, "string", "Ship class velocity", "string", "velocity, or empty string if handle is invalid")
+{
+	int idx;
+	const char* s = nullptr;
+	if(!ade_get_args(L, "o|s", l_Shipclass.Get(&idx), &s))
+		return ade_set_error(L, "s", "");
+
+	if(idx < 0 || idx >= ship_info_size())
+		return ade_set_error(L, "s", "");
+
+	ship_info *sip = &Ship_info[idx];
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "Setting Missile banks is not supported");
+	}
+
+	char str[100];
+	sprintf(str, XSTR("%d m/s", 743), fl2i((float)sip->max_vel.xyz.z * Hud_speed_multiplier));
+
+	if(sip->manufacturer_str != NULL)
+		return ade_set_args(L, "s", str);
+	else
+		return ade_set_args(L, "s", "");
+}
+
 
 ADE_VIRTVAR(Description, l_Shipclass, "string", "Ship class description", "string", "Description, or empty string if handle is invalid")
 {
