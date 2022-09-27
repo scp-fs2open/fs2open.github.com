@@ -1826,7 +1826,7 @@ int opengl_make_render_target( int handle, int *w, int *h, int *bpp, int *mm_lvl
 
 	if ( opengl_check_framebuffer() ) {
 		// Oops!!  reset everything and then bail
-		nprintf(("OpenGL Debug","OpenGL: Unable to create FBO!\n"));
+		mprintf(("OpenGL: Unable to create FBO!\n"));
 		auto fbo_id = ts->fbo_id;
 
 		GL_state.BindFrameBuffer(0);

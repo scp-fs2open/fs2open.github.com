@@ -557,13 +557,13 @@ static bool load_cached_shader_binary(opengl::ShaderProgram* program, const SCP_
 
 	auto metadata_root = json_loads(metadata_content.c_str(), 0, nullptr);
 	if (!metadata_root) {
-		nprintf(("shaders","Loading of cache metadata failed! Falling back to GLSL shader...\n"));
+		mprintf(("Loading of cache metadata failed! Falling back to GLSL shader...\n"));
 		return false;
 	}
 
 	json_int_t format;
 	if (json_unpack(metadata_root, "{sI}", "format", &format) != 0) {
-		nprintf(("shaders","Failed to unpack values from metadata JSON! Falling back to GLSL shader...\n"));
+		mprintf(("Failed to unpack values from metadata JSON! Falling back to GLSL shader...\n"));
 		return false;
 	}
 	auto binary_format = (GLenum) format;
@@ -650,13 +650,13 @@ static void cache_program_binary(GLuint program, const SCP_string& hash) {
 	auto metadata_fp = cfopen(metadata_name.c_str(), "wb", CFILE_NORMAL, CF_TYPE_CACHE, false,
 	                          CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 	if (!metadata_fp) {
-		nprintf(("shaders","Could not open shader cache metadata file!\n"));
+		mprintf(("Could not open shader cache metadata file!\n"));
 		return;
 	}
 
 	auto metadata = json_pack("{sI}", "format", (json_int_t)binary_fmt);
 	if (json_dump_callback(metadata, json_write_callback, metadata_fp, 0) != 0) {
-		nprintf(("shaders","Failed to write shader cache metadata file!\n"));
+		mprintf(("Failed to write shader cache metadata file!\n"));
 		cfclose(metadata_fp);
 		return;
 	}
@@ -666,7 +666,7 @@ static void cache_program_binary(GLuint program, const SCP_string& hash) {
 	auto binary_fp = cfopen(binary_name.c_str(), "wb", CFILE_NORMAL, CF_TYPE_CACHE, false,
 	                        CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 	if (!binary_fp) {
-		nprintf(("shaders","Could not open shader cache binary file!\n"));
+		mprintf(("Could not open shader cache binary file!\n"));
 		return;
 	}
 	cfwrite(binary.data(), 1, (int) binary.size(), binary_fp);
