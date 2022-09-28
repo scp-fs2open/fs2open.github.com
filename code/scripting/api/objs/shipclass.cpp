@@ -393,16 +393,21 @@ ADE_VIRTVAR(TechDescription, l_Shipclass, "string", "Ship class tech description
 		return ade_set_args(L, "s", "");
 }
 
-ADE_VIRTVAR(numPrimaryBanks, l_Shipclass, nullptr, "Number of primary banks on this ship class", "number", "number of banks or nil is ship handle is invalid")
+ADE_VIRTVAR(numPrimaryBanks,
+	l_Shipclass,
+	nullptr,
+	"Number of primary banks on this ship class",
+	"number",
+	"number of banks or nil is ship handle is invalid")
 {
 	int idx;
-	if(!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
+	if (!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
 		return ADE_RETURN_NIL;
 
-	if(idx < 0 || idx >= ship_info_size())
+	if (idx < 0 || idx >= ship_info_size())
 		return ADE_RETURN_NIL;
 
-	ship_info *sip = &Ship_info[idx];
+	ship_info* sip = &Ship_info[idx];
 
 	if (ADE_SETTING_VAR) {
 		LuaError(L, "Setting number of banks is not supported");
@@ -411,16 +416,44 @@ ADE_VIRTVAR(numPrimaryBanks, l_Shipclass, nullptr, "Number of primary banks on t
 	return ade_set_args(L, "i", sip->num_primary_banks);
 }
 
-ADE_VIRTVAR(numSecondaryBanks, l_Shipclass, nullptr, "Number of secondary banks on this ship class", "number", "number of banks or nil is ship handle is invalid")
+ADE_FUNC(getPrimaryBankCapacity,
+	l_Shipclass,
+	"number index",
+	"Returns the capacity of the specified primary bank",
+	"number",
+	"The bank capacity or nil if the index is invalid")
+{
+	int shipIdx;
+	int idx;
+	if (!ade_get_args(L, "ii", &shipIdx, &idx))
+		return ADE_RETURN_NIL;
+
+	ship_info* sip = &Ship_info[shipIdx];
+
+	if (idx < 1 || idx > sip->num_primary_banks) {
+		return ADE_RETURN_NIL;
+	};
+
+	idx--; // Convert from Lua's 1 based index system
+
+	return ade_set_args(L, "f", sip->primary_bank_ammo_capacity[idx]);
+}
+
+ADE_VIRTVAR(numSecondaryBanks,
+	l_Shipclass,
+	nullptr,
+	"Number of secondary banks on this ship class",
+	"number",
+	"number of banks or nil is ship handle is invalid")
 {
 	int idx;
-	if(!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
+	if (!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
 		return ADE_RETURN_NIL;
 
-	if(idx < 0 || idx >= ship_info_size())
+	if (idx < 0 || idx >= ship_info_size())
 		return ADE_RETURN_NIL;
 
-	ship_info *sip = &Ship_info[idx];
+	ship_info* sip = &Ship_info[idx];
 
 	if (ADE_SETTING_VAR) {
 		LuaError(L, "Setting number of banks is not supported");
@@ -494,21 +527,28 @@ ADE_VIRTVAR(defaultSecondaries,
 	return ade_set_args(L, "o", l_Default_Secondary.Set(idx));
 }
 
-ADE_FUNC(isWeaponAllowedOnShip, l_Shipclass, "number index, [number bank]", "Gets whether or not a weapon is allowed on a ship class. "
-	"Optionally check a specific bank. Banks are 1 to a maximum of 7 where the first banks are Primaries and rest are Secondaries. "
-	"Exact numbering depends on the ship class being checked. Note also that this will consider dogfight weapons only if "
-	"a dogfight mission has been loaded. Index is index into Weapon Classes.", "boolean", "True if allowed, false if not.")
+ADE_FUNC(isWeaponAllowedOnShip,
+	l_Shipclass,
+	"number index, [number bank]",
+	"Gets whether or not a weapon is allowed on a ship class. "
+	"Optionally check a specific bank. Banks are 1 to a maximum of 7 where the first banks are Primaries and rest are "
+	"Secondaries. "
+	"Exact numbering depends on the ship class being checked. Note also that this will consider dogfight weapons only "
+	"if "
+	"a dogfight mission has been loaded. Index is index into Weapon Classes.",
+	"boolean",
+	"True if allowed, false if not.")
 {
 	int idx;
 	int wepidx;
 	int bank = 0;
-	if(!ade_get_args(L, "oi|i", l_Shipclass.Get(&idx), &wepidx, &bank))
+	if (!ade_get_args(L, "oi|i", l_Shipclass.Get(&idx), &wepidx, &bank))
 		return ade_set_error(L, "b", false);
 
-	if(idx < 0 || idx >= ship_info_size())
+	if (idx < 0 || idx >= ship_info_size())
 		return ade_set_error(L, "b", false);
 	wepidx--; // Convert from Lua
-	if (wepidx < 0|| wepidx >= weapon_info_size())
+	if (wepidx < 0 || wepidx >= weapon_info_size())
 		return ade_set_error(L, "b", false);
 	if (bank > 0) {
 		bank--; // Convert from Lua
