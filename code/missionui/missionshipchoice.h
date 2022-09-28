@@ -68,6 +68,7 @@ typedef struct ss_slot_info {
 	int status;   // slot status (WING_SLOT_DISABLED, etc)
 	int sa_index; // index into ship arrival list, -1 if ship is created
 	int original_ship_class;
+	bool in_mission = false;
 } ss_slot_info;
 
 typedef struct ss_wing_info {

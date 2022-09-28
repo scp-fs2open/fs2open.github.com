@@ -77,7 +77,7 @@ ADE_VIRTVAR(isWeaponLocked,
 	l_Loadout_Wing_Slot,
 	nullptr,
 	"If the slot's weapons are locked",
-	"string",
+	"boolean",
 	"The slot weapon status")
 {
 	ss_slot_info_h current;
@@ -92,7 +92,7 @@ ADE_VIRTVAR(isWeaponLocked,
 	return ade_set_args(L, "b", (current.getSlot()->status & WING_SLOT_WEAPONS_DISABLED) != 0);
 }
 
-ADE_VIRTVAR(isDisabled, l_Loadout_Wing_Slot, nullptr, "If the slot is disabled", "string", "The slot disabled status")
+ADE_VIRTVAR(isDisabled, l_Loadout_Wing_Slot, nullptr, "If the slot is not used in the current mission", "boolean", "The slot disabled status")
 {
 	ss_slot_info_h current;
 	if (!ade_get_args(L, "o", l_Loadout_Wing_Slot.Get(&current))) {
@@ -103,16 +103,10 @@ ADE_VIRTVAR(isDisabled, l_Loadout_Wing_Slot, nullptr, "If the slot is disabled",
 		LuaError(L, "This property is read only.");
 	}
 
-	//Player ships are marked as disabled for some reason, but scpui needs to assume they aren't
-	bool result = false;
-	if (!((current.getSlot()->status & WING_SLOT_IS_PLAYER) != 0)) {
-		result = !((current.getSlot()->status & WING_SLOT_DISABLED) != 0);
-	};
-
-	return ade_set_args(L, "b", result);
+	return ade_set_args(L, "b", !current.getSlot()->in_mission);
 }
 
-ADE_VIRTVAR(isPlayer, l_Loadout_Wing_Slot, nullptr, "If the slot is a player ship", "string", "The slot player status")
+ADE_VIRTVAR(isPlayer, l_Loadout_Wing_Slot, nullptr, "If the slot is a player ship", "boolean", "The slot player status")
 {
 	ss_slot_info_h current;
 	if (!ade_get_args(L, "o", l_Loadout_Wing_Slot.Get(&current))) {

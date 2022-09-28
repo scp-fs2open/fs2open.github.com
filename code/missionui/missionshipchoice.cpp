@@ -3093,6 +3093,7 @@ void ss_init_units()
 		for ( j = 0; j < ss_wing->num_slots; j++ ) {
 				
 			ss_slot = &ss_wing->ss_slots[j];
+			ss_slot->in_mission = true;
 
 			if ( ss_slot->sa_index == -1 ) {
 				ss_slot->original_ship_class = Ships[wp->ship_index[j]].ship_info_index;
