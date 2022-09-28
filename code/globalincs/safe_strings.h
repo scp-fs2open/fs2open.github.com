@@ -22,6 +22,7 @@
 /* errno_t, EINVAL, ERANGE, etc.. */
 #include <cerrno>
 #include <cstdlib> /* size_t */
+#include "globalincs/pstypes.h"
 
 /* Because errno_t is not (yet) standard, we define it here like this */
 typedef int errno_t;
@@ -57,6 +58,13 @@ errno_t scp_strcpy_s( const char* file, int line, char (&strDest)[ size ], const
 	return scp_strcpy_s( file, line, strDest, size, strSource );
 }
 
+template< size_t size>
+inline
+errno_t scp_strncpy_s(const char* file, int line, char(&strDest)[size], const char* strSource, size_t count)
+{
+	return scp_strcpy_s(file, line, strDest, MIN(size, count), strSource);
+}
+
 template< size_t size >
 inline
 errno_t scp_strcat_s( const char* file, int line, char (&strDest)[ size ], const char* strSource )
@@ -65,6 +73,7 @@ errno_t scp_strcat_s( const char* file, int line, char (&strDest)[ size ], const
 }
 
 #define strcpy_s( ... ) scp_strcpy_s( __FILE__, __LINE__, __VA_ARGS__ )
+#define strncpy_s( ... ) scp_strncpy_s( __FILE__, __LINE__, __VA_ARGS__ )
 #define strcat_s( ... ) scp_strcat_s( __FILE__, __LINE__, __VA_ARGS__ )
 
 #elif defined(_MSC_VER) && _MSC_VER < 1400 || defined(NO_SAFE_STRINGS)

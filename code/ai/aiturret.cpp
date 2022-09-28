@@ -1364,7 +1364,15 @@ int aifft_rotate_turret(object *objp, ship *shipp, ship_subsys *ss, object *lep,
 			vm_vec_scale_sub2(&target_moving_direction, &objp->phys_info.vel, wip->vel_inherit_amount);
 		}
 
-		set_predicted_enemy_pos_turret(predicted_enemy_pos, &gun_pos, objp, &enemy_point, &target_moving_direction, wip->max_speed, ss->turret_time_enemy_in_range * (weapon_system_strength + 1.0f)/2.0f);
+		if (tp->flags[Model::Subsystem_Flags::Turret_distant_firepoint] || Always_use_distant_firepoints) {
+			//The firing point of this turret is so far away from the its center that we should consider this for firing calculations
+			//This will do the enemy position prediction based on their relative position and speed to the firing point, not the turret center.
+			vec3d fire_pos, fire_vec;
+			ship_get_global_turret_gun_info(objp, ss, &fire_pos, &fire_vec, 1, nullptr);
+			set_predicted_enemy_pos_turret(predicted_enemy_pos, &fire_pos, objp, &enemy_point, &target_moving_direction, wip->max_speed, ss->turret_time_enemy_in_range * (weapon_system_strength + 1.0f)/2.0f);
+		} else {
+			set_predicted_enemy_pos_turret(predicted_enemy_pos, &gun_pos, objp, &enemy_point, &target_moving_direction, wip->max_speed, ss->turret_time_enemy_in_range * (weapon_system_strength + 1.0f)/2.0f);
+		}
 
 		//Mess with the turret's accuracy if the weapon system is damaged.
 		if (weapon_system_strength < Weapon_SS_Threshold_Turret_Inaccuracy) {
@@ -2337,6 +2345,15 @@ void ai_turret_execute_behavior(ship *shipp, ship_subsys *ss)
 					weapon_firing_range *= BEAM_NEBULA_RANGE_REDUCE_FACTOR;
 				}
 			}
+		}
+
+		// If the barrel of this turret is long, we shouldn't try to fire if the enemy is under the gun.
+		// Note that this isn't the same thing as min_range, which is unrelated to barrel length.
+		if (tp->flags[Model::Subsystem_Flags::Turret_distant_firepoint] || Always_use_distant_firepoints) {
+			vec3d fpoint, fvec;
+			ship_get_global_turret_gun_info(objp, ss, &fpoint, &fvec, use_angles, &predicted_enemy_pos);
+			auto barrel_length = vm_vec_dist(&fpoint, &gpos);
+			if (dist_to_enemy < barrel_length) continue;
 		}
 
 		// Don't try to fire beyond weapon_limit_range (or within min range)

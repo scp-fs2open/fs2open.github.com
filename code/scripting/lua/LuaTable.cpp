@@ -17,9 +17,6 @@ LuaTable LuaTable::create(lua_State* state) {
 LuaTable::LuaTable() : LuaValue() {
 }
 
-LuaTable::LuaTable(const LuaTable& other) : LuaValue(other) {
-}
-
 LuaTable::~LuaTable() {
 }
 

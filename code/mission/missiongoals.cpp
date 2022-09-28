@@ -175,7 +175,7 @@ int Num_goals = 0;								// number of goals for this mission
 int Event_index = -1;  // used by sexp code to tell what event it came from
 bool Log_event = false;
 bool Snapshot_all_events = false;
-int Mission_goal_timestamp;
+TIMESTAMP Mission_goal_timestamp;
 
 mission_event Mission_events[MAX_MISSION_EVENTS];
 mission_goal Mission_goals[MAX_GOALS];		// structure for the goals of this mission
@@ -186,8 +186,8 @@ SCP_vector<event_annotation> Event_annotations;
 #define DIRECTIVE_SOUND_DELAY			500					// time directive success sound effect is delayed
 #define DIRECTIVE_SPECIAL_DELAY		7000					// mark special directives as true after 7 seconds
 
-static int Mission_directive_sound_timestamp;	// timestamp to control when directive succcess sound gets played
-static int Mission_directive_special_timestamp;	// used to specially mark a directive as true even though it's not
+static TIMESTAMP Mission_directive_sound_timestamp;		// timestamp to control when directive succcess sound gets played
+static TIMESTAMP Mission_directive_special_timestamp;	// used to specially mark a directive as true even though it's not
 
 const char *Goal_type_text(int n)
 {
@@ -378,11 +378,11 @@ void mission_init_goals()
 	Num_mission_events = 0;
 	for (i=0; i<MAX_MISSION_EVENTS; i++) {
 		Mission_events[i].result = 0;
-		Mission_events[i].timestamp = timestamp(-1);
+		Mission_events[i].timestamp = TIMESTAMP::invalid();
 		Mission_events[i].flags = 0;
 		Mission_events[i].count = 0;
-		Mission_events[i].satisfied_time = 0;
-		Mission_events[i].born_on_date = 0;
+		Mission_events[i].satisfied_time = TIMESTAMP::invalid();
+		Mission_events[i].born_on_date = TIMESTAMP::invalid();
 		Mission_events[i].team = -1;
 
 		Mission_events[i].mission_log_flags = 0;
@@ -394,9 +394,9 @@ void mission_init_goals()
 		Mission_events[i].previous_result = 0;
 	}
 
-	Mission_goal_timestamp = timestamp(GOAL_TIMESTAMP);
-	Mission_directive_sound_timestamp = 0;
-	Mission_directive_special_timestamp = timestamp(-1);		// need to make invalid right away
+	Mission_goal_timestamp = _timestamp(GOAL_TIMESTAMP);
+	Mission_directive_sound_timestamp = TIMESTAMP::invalid();
+	Mission_directive_special_timestamp = TIMESTAMP::invalid();		// need to make invalid right away
 }
 
 // called at the end of a mission for cleanup
@@ -834,14 +834,14 @@ int mission_get_event_status(int event)
 
 		// if the timestamp has elapsed, we can "mark" this directive as true although it's really not.
 		if ( timestamp_elapsed(Mission_directive_special_timestamp) ) {
-			Mission_events[event].satisfied_time = Missiontime;
+			Mission_events[event].satisfied_time = _timestamp();
 			Mission_events[event].flags |= MEF_DIRECTIVE_TEMP_TRUE;
 		}
 
 		return EVENT_CURRENT;
 	} else if (Mission_events[event].flags & MEF_CURRENT) {
-		if (!Mission_events[event].born_on_date){
-			Mission_events[event].born_on_date = timestamp();
+		if (!Mission_events[event].born_on_date.isValid()) {
+			Mission_events[event].born_on_date = _timestamp();
 		}
 
 		if (Mission_events[event].result) {
@@ -869,7 +869,7 @@ void mission_event_set_directive_special(int event)
 
 	// start from a known state
 	Mission_events[event].flags &= ~MEF_DIRECTIVE_TEMP_TRUE;
-	Mission_directive_special_timestamp = timestamp(DIRECTIVE_SPECIAL_DELAY);
+	Mission_directive_special_timestamp = _timestamp(DIRECTIVE_SPECIAL_DELAY);
 }
 
 void mission_event_unset_directive_special(int event)
@@ -885,13 +885,13 @@ void mission_event_unset_directive_special(int event)
 	if ( Mission_events[event].flags & MEF_DIRECTIVE_TEMP_TRUE ){
 		Mission_events[event].flags &= ~MEF_DIRECTIVE_TEMP_TRUE;
 	}
-	Mission_events[event].satisfied_time = 0;
-	Mission_directive_special_timestamp = timestamp(-1);
+	Mission_events[event].satisfied_time = TIMESTAMP::invalid();
+	Mission_directive_special_timestamp = TIMESTAMP::invalid();
 }
 
 void mission_event_set_completion_sound_timestamp()
 {
-	Mission_directive_sound_timestamp = timestamp(DIRECTIVE_SOUND_DELAY);
+	Mission_directive_sound_timestamp = _timestamp(DIRECTIVE_SOUND_DELAY);
 }
 
 // function which evaluates and processes the given event
@@ -913,17 +913,17 @@ void mission_process_event( int event )
 
 	// if chained, insure that previous event is true and next event is false
 	if (Mission_events[event].chain_delay >= 0) {  // this indicates it's chained
-		fix offset;
+		int offset;
 		if (Mission_events[event].flags & MEF_USE_MSECS) {
-			offset = fl2f(Mission_events[event].chain_delay * 0.001f);
+			offset = Mission_events[event].chain_delay;
 		} else {
-			offset = i2f(Mission_events[event].chain_delay);
+			offset = Mission_events[event].chain_delay * MILLISECONDS_PER_SECOND;
 		}
 
 		// What everyone expected the chaining behavior to be, as specified in Karajorma's original fix to Mantis #82
 		if (Alternate_chaining_behavior) {
 			if (event > 0){
-				if (!Mission_events[event - 1].result || ((fix) Mission_events[event - 1].satisfied_time + offset > Missiontime)){
+				if (!Mission_events[event - 1].result || !timestamp_elapsed(timestamp_delta(Mission_events[event - 1].satisfied_time, offset))) {
 					sindex = -1;  // bypass evaluation
 				}
 			}
@@ -931,7 +931,33 @@ void mission_process_event( int event )
 		// Volition's original chaining behavior as used in retail and demonstrated in e.g. btm-01.fsm (or btm-01.fs2 in the Port)
 		else {
 			if (event > 0){
-				if (!Mission_events[event - 1].result || ((fix) Mission_events[event - 1].timestamp + offset > Missiontime)){
+				// This flag is needed because of a remarkable coincidence of mistakes that all counteracted each other perfectly to produce an important feature.
+				// It appears that originally mission_event.timestamp was in fix units, like satisfied_time and born_on_date.  At some point this was changed to
+				// a timestamp, but not every assignment was changed.  And since a fix is an int under the hood, there were no type conflicts.  Surprisingly there
+				// were no logic errors either; the fix/Missiontime assignments happened after the timestamps were needed, and the only places where the timestamp
+				// field was treated as a fix (here and in sexp_event_delay_status) happened after the event had been resolved and the Missiontime assignments had
+				// occurred.  The mission_event.timestamp field spent half its life as one unit and half as another, successfully.
+				//
+				// The following chaining behavior check typically occurred during the fix/Missiontime part of the life cycle.  However, for chained events that
+				// repeat, the event is granted a new timestamp and the chain check is performed on mixed units.  Due to the way the condition was written, the
+				// much-too-small comparison evaluated to false successfully and allowed the event subsequent to the chained repeating event to become current.
+				// This is the behavior necessary to allow the "Match Speed 1 1/2" event in btm-01.fsm to activate, display the "Match Speed" directive, and
+				// continue with the mission.  Without this behavior, the mission would break.
+				//
+				// Naturally, upgrading the timestamps caused all evaluations to use consistent units and broke the mission.  Due to the long repeat interval, the
+				// timestamp was evaluated too late when the event was likely to have become false.  The previous mixed-units comparison avoided the repeat interval
+				// precisely at the right time, and then became consistent units when the repeat interval no longer mattered.  In order to restore the expected
+				// behavior while keeping all units consistent, it is necessary to set a flag when a timestamp includes an interval so that the interval can be
+				// deducted from the period of time that evaluation is bypassed.
+				if (Mission_events[event - 1].flags & MEF_TIMESTAMP_HAS_INTERVAL) {
+					if (Mission_events[event - 1].flags & MEF_USE_MSECS) {
+						offset -= Mission_events[event - 1].interval;
+					} else {
+						offset -= Mission_events[event - 1].interval * MILLISECONDS_PER_SECOND;
+					}
+				}
+
+				if (!Mission_events[event - 1].result || !timestamp_elapsed(timestamp_delta(Mission_events[event - 1].timestamp, offset))) {
 					sindex = -1;  // bypass evaluation
 				}
 			}
@@ -986,8 +1012,9 @@ void mission_process_event( int event )
 
 	// if the sexpression is known false, then no need to evaluate anymore
 	if ((sindex >= 0) && (Sexp_nodes[sindex].value == SEXP_KNOWN_FALSE)) {
-		Mission_events[event].timestamp = (int) Missiontime;
-		Mission_events[event].satisfied_time = Missiontime;
+		Mission_events[event].timestamp = _timestamp();
+		Mission_events[event].flags &= ~MEF_TIMESTAMP_HAS_INTERVAL;
+		Mission_events[event].satisfied_time = _timestamp();
 		// _argv[-1] - repeat_count of -1 would mean repeat indefinitely, so set to 0 instead.
 		Mission_events[event].repeat_count = 0;
 		Mission_events[event].formula = -1;
@@ -999,8 +1026,8 @@ void mission_process_event( int event )
 		return;
 	}
 
-	if (result && !Mission_events[event].satisfied_time) {
-		Mission_events[event].satisfied_time = Missiontime;
+	if (result && !Mission_events[event].satisfied_time.isValid()) {
+		Mission_events[event].satisfied_time = _timestamp();
 		if ( Mission_events[event].objective_text ) {
 			mission_event_set_completion_sound_timestamp();
 		}
@@ -1019,12 +1046,13 @@ void mission_process_event( int event )
 	}
 
 	// decrement the repeat count.  When at 0, don't eval this function anymore
-	if ( result || timestamp_valid(Mission_events[event].timestamp) ) {
+	if ( result || Mission_events[event].timestamp.isValid() ) {
 		// _argv[-1] - negative repeat count means repeat indefinitely.
 		if ( Mission_events[event].repeat_count > 0 )
 			Mission_events[event].repeat_count--;
 		if ( Mission_events[event].repeat_count == 0 ) {
-			Mission_events[event].timestamp = (int)Missiontime;
+			Mission_events[event].timestamp = _timestamp();
+			Mission_events[event].flags &= ~MEF_TIMESTAMP_HAS_INTERVAL;
 			Mission_events[event].formula = -1;
 
 			if(Game_mode & GM_MULTIPLAYER){
@@ -1041,10 +1069,11 @@ void mission_process_event( int event )
 		else if (bump_timestamp || (!((Mission_events[event].repeat_count == -1) && (Mission_events[event].flags & MEF_USING_TRIGGER_COUNT) && (Mission_events[event].trigger_count != 0)))) {
 			int interval = Mission_events[event].interval;
 			if (!(Mission_events[event].flags & MEF_USE_MSECS))
-				interval *= 1000;
+				interval *= MILLISECONDS_PER_SECOND;
 
 			// set the timestamp to time out 'interval' milliseconds in the future.
-			Mission_events[event].timestamp = timestamp( interval );
+			Mission_events[event].timestamp = _timestamp( interval );
+			Mission_events[event].flags |= MEF_TIMESTAMP_HAS_INTERVAL;
 		}
 	}
 
@@ -1059,7 +1088,7 @@ void mission_process_event( int event )
 void mission_maybe_play_directive_success_sound()
 {
 	if ( timestamp_elapsed(Mission_directive_sound_timestamp) ) {
-		Mission_directive_sound_timestamp=0;
+		Mission_directive_sound_timestamp = TIMESTAMP::invalid();
 		snd_play( gamesnd_get_game_sound(GameSounds::DIRECTIVE_COMPLETE) );
 	}
 }
@@ -1073,7 +1102,7 @@ void mission_eval_goals()
 	// process any whose timestamp is valid and has expired.  This would catch repeating events only
 	for (i=0; i<Num_mission_events; i++) {
 		if (Mission_events[i].formula != -1) {
-			if ( !timestamp_valid(Mission_events[i].timestamp) || !timestamp_elapsed(Mission_events[i].timestamp) ){
+			if ( !Mission_events[i].timestamp.isValid() || !timestamp_elapsed(Mission_events[i].timestamp) ){
 				continue;
 			}
 
@@ -1113,7 +1142,7 @@ void mission_eval_goals()
 			// only evaluate this event if the timestamp is not valid.  We do this since
 			// we will evaluate repeatable events at the top of the file so we can get
 			// the exact interval that the designer asked for.
-			if ( !timestamp_valid( Mission_events[i].timestamp) ){
+			if ( !Mission_events[i].timestamp.isValid() ){
 				TRACE_SCOPE(tracing::NonrepeatingEvents);
 				mission_process_event( i );
 			}
@@ -1126,9 +1155,9 @@ void mission_eval_goals()
 	}
 
 	if (The_mission.game_type & MISSION_TYPE_TRAINING){
-		Mission_goal_timestamp = timestamp(GOAL_TIMESTAMP_TRAINING);
+		Mission_goal_timestamp = _timestamp(GOAL_TIMESTAMP_TRAINING);
 	} else {
-		Mission_goal_timestamp = timestamp(GOAL_TIMESTAMP);
+		Mission_goal_timestamp = _timestamp(GOAL_TIMESTAMP);
 	}
 
 	if ( !hud_disabled() && hud_gauge_active(HUD_DIRECTIVES_VIEW) ) {
@@ -1519,6 +1548,26 @@ int mission_event_find_sexp_tree(int root_node)
 {
 	for (int i = 0; i < Num_mission_events; ++i)
 		if (Mission_events[i].formula == root_node)
+			return i;
+	return -1;
+}
+
+int mission_goal_lookup(const char *name)
+{
+	Assertion(name != nullptr, "Goal name cannot be null!");
+
+	for (int i = 0; i < Num_goals; ++i)
+		if (!stricmp(Mission_goals[i].name, name))
+			return i;
+	return -1;
+}
+
+int mission_event_lookup(const char *name)
+{
+	Assertion(name != nullptr, "Event name cannot be null!");
+
+	for (int i = 0; i < Num_mission_events; ++i)
+		if (!stricmp(Mission_events[i].name, name))
 			return i;
 	return -1;
 }

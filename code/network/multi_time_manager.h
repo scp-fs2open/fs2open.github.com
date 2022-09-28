@@ -29,6 +29,10 @@ public:
 	// aka reset the class. Needs to be called every time the mission starts.
 	void set_mission_start_time();
 
+	// this was not part of the original design, but is useful when matching up 
+	// timestamps to what is kept internally in this class.
+	int get_mission_start_time() { return _start_time.value(); }
+
 	void update_current_time();
 
 	int get_current_time() { return _current_time; }

@@ -2146,6 +2146,45 @@ ADE_FUNC(vanish, l_Ship, nullptr, "Vanishes this ship from the mission. Works in
 	return ade_set_args(L, "b", true);
 }
 
+ADE_FUNC(setGlowPointBankActive, l_Ship, "boolean active, [number bank]", "Activates or deactivates one or more of a ship's glow point banks - this function can accept an arbitrary number of bank arguments.  Omit the bank number or specify -1 to activate or deactivate all banks.", nullptr, "Returns nothing")
+{
+	object_h* objh = nullptr;
+	bool active, at_least_one = false, do_all = false;
+	int bank_num;
+
+	if (!ade_get_args(L, "ob", l_Ship.GetPtr(&objh), &active))
+		return ADE_RETURN_NIL;
+	int skip_args = 1;	// not 2 because there will be one more before we read the first number
+
+	if (!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	auto shipp = &Ships[objh->objp->instance];
+
+	// read as many bank numbers as we have
+	while (internal::Ade_get_args_skip = ++skip_args, ade_get_args(L, "|i", &bank_num) > 0)
+	{
+		if (bank_num < 0)
+		{
+			do_all = true;
+			break;
+		}
+		at_least_one = true;
+
+		if (static_cast<size_t>(bank_num) < shipp->glow_point_bank_active.size())
+			shipp->glow_point_bank_active[bank_num] = active;
+	}
+
+	// set all banks
+	if (!at_least_one || do_all)
+	{
+		for (size_t i = 0; i < shipp->glow_point_bank_active.size(); ++i)
+			shipp->glow_point_bank_active[i] = active;
+	}
+
+	return ADE_RETURN_NIL;
+}
+
 
 }
 }

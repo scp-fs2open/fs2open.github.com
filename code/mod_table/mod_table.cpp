@@ -92,6 +92,8 @@ bool Neb_affects_particles;
 bool Neb_affects_fireballs;
 std::tuple<float, float, float, float> Shadow_distances;
 std::tuple<float, float, float, float> Shadow_distances_cockpit;
+bool Show_ship_casts_shadow;
+bool Cockpit_shares_coordinate_space;
 bool Custom_briefing_icons_always_override_standard_icons;
 float Min_pixel_size_thruster;
 float Min_pixel_size_beam;
@@ -106,6 +108,7 @@ bool Always_warn_player_about_unbound_keys;
 leadIndicatorBehavior Lead_indicator_behavior;
 shadow_disable_overrides Shadow_disable_overrides {false, false, false, false};
 float Thruster_easing;
+bool Always_use_distant_firepoints;
 
 void mod_table_set_version_flags();
 
@@ -645,6 +648,14 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Shadow_disable_overrides.disable_mission_select_ships);
 		}
 
+		if (optional_string("$Show Ship Casts Shadow:")) {
+			stuff_boolean(&Show_ship_casts_shadow);
+		}
+
+		if (optional_string("$Ship Model And Cockpit Share Coordinate Space:")) {
+			stuff_boolean(&Cockpit_shares_coordinate_space);
+		}
+
 		if (optional_string("$Minimum Pixel Size Thrusters:")) {
 			stuff_float(&Min_pixel_size_thruster);
 		}
@@ -958,6 +969,10 @@ void parse_mod_table(const char *filename)
 			}
 		}
 
+		if (optional_string("$Use distant firepoint for all turrets:")){
+			stuff_boolean(&Always_use_distant_firepoints);
+		}
+
 		required_string("#END");
 	}
 	catch (const parse::ParseException& e)
@@ -1076,6 +1091,8 @@ void mod_table_reset()
 	Neb_affects_fireballs = false;
 	Shadow_distances = std::make_tuple(200.0f, 600.0f, 2500.0f, 8000.0f); // Default values tuned by Swifty and added here by wookieejedi
 	Shadow_distances_cockpit = std::make_tuple(0.25f, 0.75f, 1.5f, 3.0f); // Default values tuned by wookieejedi and added here by Lafiel
+	Show_ship_casts_shadow = false;
+	Cockpit_shares_coordinate_space = false;
 	Custom_briefing_icons_always_override_standard_icons = false;
 	Min_pixel_size_thruster = 0.0f;
 	Min_pixel_size_beam = 0.0f;
@@ -1091,6 +1108,7 @@ void mod_table_reset()
 	Always_warn_player_about_unbound_keys = false;
 	Lead_indicator_behavior = leadIndicatorBehavior::DEFAULT;
 	Thruster_easing = 0;
+	Always_use_distant_firepoints = false;
 }
 
 void mod_table_set_version_flags()

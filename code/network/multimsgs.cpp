@@ -8527,8 +8527,8 @@ void process_event_update_packet(ubyte *data, header *hinfo)
 		mission_event_unset_directive_special(u_event);
 	}	
 
-	if (Mission_events[u_event].result && !Mission_events[u_event].satisfied_time) {
-		Mission_events[u_event].satisfied_time = Missiontime;
+	if (Mission_events[u_event].result && !Mission_events[u_event].satisfied_time.isValid()) {
+		Mission_events[u_event].satisfied_time = _timestamp();
 		if ( Mission_events[u_event].objective_text ) {
 			mission_event_set_completion_sound_timestamp();
 		}

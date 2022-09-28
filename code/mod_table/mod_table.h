@@ -82,6 +82,8 @@ extern bool Neb_affects_particles;
 extern bool Neb_affects_fireballs;
 extern std::tuple<float, float, float, float> Shadow_distances;
 extern std::tuple<float, float, float, float> Shadow_distances_cockpit;
+extern bool Show_ship_casts_shadow;
+extern bool Cockpit_shares_coordinate_space;
 extern bool Custom_briefing_icons_always_override_standard_icons;
 extern float Min_pixel_size_thruster;
 extern float Min_pixel_size_beam;
@@ -98,6 +100,7 @@ extern struct shadow_disable_overrides {
 	bool disable_techroom, disable_mission_select_weapons, disable_mission_select_ships, disable_cockpit;
 } Shadow_disable_overrides;
 extern float Thruster_easing;
+extern bool Always_use_distant_firepoints;
 
 void mod_table_init();
 void mod_table_post_process();

@@ -633,6 +633,7 @@ void brief_init_screen(int  /*multiplayer_flag*/)
 	bscreen.map_x2			= Brief_grid_coords[gr_screen.res][0] + Brief_grid_coords[gr_screen.res][2];
 	bscreen.map_y1			= Brief_grid_coords[gr_screen.res][1];
 	bscreen.map_y2			= Brief_grid_coords[gr_screen.res][1] + Brief_grid_coords[gr_screen.res][3];
+	bscreen.resize          = GR_RESIZE_MENU;
 }
 
 // --------------------------------------------------------------------------------------
@@ -1081,7 +1082,7 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 				//hud_set_iff_color(bi->team);
 				brief_set_icon_color(bi->team);
 
-				hud_anim_render(ha, frametime, 1, 0, 1, 0, GR_RESIZE_MENU, mirror_icon);
+				hud_anim_render(ha, frametime, 1, 0, 1, 0, bscreen.resize, mirror_icon);
 
 				if (!Brief_stage_highlight_sound_handle.isValid()) {
 					if ( !Fred_running) {
@@ -1099,7 +1100,7 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 				ha->sy = by;
 				brief_set_icon_color(bi->team);
 
-				if ( hud_anim_render(ha, frametime, 1, 0, 0, 1, GR_RESIZE_MENU, mirror_icon) == 0 ) {
+				if (hud_anim_render(ha, frametime, 1, 0, 0, 1, bscreen.resize, mirror_icon) == 0) {
 					bi->flags &= ~BI_FADEIN;
 				}
 			} else {
@@ -1109,12 +1110,12 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 
 		if ( !(bi->flags & BI_FADEIN) ) {
 			gr_set_bitmap(icon_bitmap);
-			gr_aabitmap(bx, by, GR_RESIZE_MENU,mirror_icon);
+			gr_aabitmap(bx, by, bscreen.resize, mirror_icon);
 
 			// draw text centered over the icon (make text darker)
 			if ( bi->type == ICON_FIGHTER_PLAYER || bi->type == ICON_BOMBER_PLAYER ) {
 				gr_get_string_size(&w,&h,Players[Player_num].callsign);
-				gr_string(bc - fl2i(w/2.0f), by - h, Players[Player_num].callsign, GR_RESIZE_MENU);
+				gr_string(bc - fl2i(w / 2.0f), by - h, Players[Player_num].callsign, bscreen.resize);
 			}
 			else {
 				if (Lcl_gr && !Disable_built_in_translations) {
@@ -1122,16 +1123,16 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 					strcpy_s(buf, bi->label);
 					lcl_translate_brief_icon_name_gr(buf);
 					gr_get_string_size(&w, &h, buf);
-					gr_string(bc - fl2i(w/2.0f), by - h, buf, GR_RESIZE_MENU);
+					gr_string(bc - fl2i(w / 2.0f), by - h, buf, bscreen.resize);
 				} else if (Lcl_pl && !Disable_built_in_translations) {
 					char buf[128];
 					strcpy_s(buf, bi->label);
 					lcl_translate_brief_icon_name_pl(buf);
 					gr_get_string_size(&w, &h, buf);
-					gr_string(bc - fl2i(w/2.0f), by - h, buf, GR_RESIZE_MENU);
+					gr_string(bc - fl2i(w / 2.0f), by - h, buf, bscreen.resize);
 				} else {
 					gr_get_string_size(&w,&h,bi->label);
-					gr_string(bc - fl2i(w/2.0f), by - h, bi->label, GR_RESIZE_MENU);
+					gr_string(bc - fl2i(w / 2.0f), by - h, bi->label, bscreen.resize);
 				}
 			}
 
@@ -1217,7 +1218,7 @@ void brief_start_highlight_anims(int stage_num)
 //
 void brief_render_map(int stage_num, float frametime)
 {
-	gr_set_clip(bscreen.map_x1 + 1, bscreen.map_y1 + 1, bscreen.map_x2 - bscreen.map_x1 - 1, bscreen.map_y2 - bscreen.map_y1 - 2, GR_RESIZE_MENU);
+	gr_set_clip(bscreen.map_x1 + 1, bscreen.map_y1 + 1, bscreen.map_x2 - bscreen.map_x1 - 1, bscreen.map_y2 - bscreen.map_y1 - 2, bscreen.resize);
 
     if (stage_num >= Briefing->num_stages) {
 		gr_reset_clip();

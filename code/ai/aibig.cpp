@@ -1110,7 +1110,7 @@ void ai_big_chase()
 			}
 		}
 
-		if (aip->target_time < 2.0f)
+		if (!aip->ai_profile_flags[AI::Profile_Flags::No_continuous_turn_on_attack] && aip->target_time < 2.0f)
 			if ((dot_to_enemy < 0.9f) || (dist_to_enemy > 300.0f)) {
 				aip->submode = SM_CONTINUOUS_TURN;
 				aip->submode_start_time = Missiontime - fl2f(2.75f);	//	This backdated start time allows immediate switchout.

@@ -2001,7 +2001,7 @@ ADE_FUNC(openMovie, l_Graphics, "string name, boolean looping = false",
 
 ADE_FUNC(createPersistentParticle,
 	l_Graphics,
-	"vector Position, vector Velocity, number Lifetime, number Radius, enumeration Type, [number TracerLength=-1, "
+	"vector Position, vector Velocity, number Lifetime, number Radius, [enumeration Type=PARTICLE_DEBUG, number TracerLength=-1, "
 	"boolean Reverse=false, texture Texture=Nil, object AttachedObject=Nil]",
 	"Creates a persistent particle. Persistent variables are handled specially by the engine so that this "
 	"function can return a handle to the caller. Only use this if you absolutely need it. Use createParticle if "
@@ -2025,7 +2025,7 @@ ADE_FUNC(createPersistentParticle,
 	bool rev           = false;
 	object_h* objh     = nullptr;
 	texture_h* texture = nullptr;
-	if (!ade_get_args(L, "ooffo|fboo", l_Vector.Get(&pi.pos), l_Vector.Get(&pi.vel), &pi.lifetime, &pi.rad,
+	if (!ade_get_args(L, "ooff|ofboo", l_Vector.Get(&pi.pos), l_Vector.Get(&pi.vel), &pi.lifetime, &pi.rad,
 	                  l_Enum.GetPtr(&type), &temp, &rev, l_Texture.GetPtr(&texture), l_Object.GetPtr(&objh)))
 		return ADE_RETURN_NIL;
 
@@ -2073,7 +2073,7 @@ ADE_FUNC(createPersistentParticle,
 
 ADE_FUNC(createParticle,
 	l_Graphics,
-	"vector Position, vector Velocity, number Lifetime, number Radius, enumeration Type, [number TracerLength=-1, "
+	"vector Position, vector Velocity, number Lifetime, number Radius, [enumeration Type=PARTICLE_DEBUG, number TracerLength=-1, "
 	"boolean Reverse=false, texture Texture=Nil, object AttachedObject=Nil]",
 	"Creates a non-persistent particle. Use PARTICLE_* enumerations for type."
 	"Reverse reverse animation, if one is specified"
@@ -2095,7 +2095,7 @@ ADE_FUNC(createParticle,
 	bool rev           = false;
 	object_h* objh     = nullptr;
 	texture_h* texture = nullptr;
-	if (!ade_get_args(L, "ooffo|fboo", l_Vector.Get(&pi.pos), l_Vector.Get(&pi.vel), &pi.lifetime, &pi.rad,
+	if (!ade_get_args(L, "ooff|ofboo", l_Vector.Get(&pi.pos), l_Vector.Get(&pi.vel), &pi.lifetime, &pi.rad,
 	                  l_Enum.GetPtr(&type), &temp, &rev, l_Texture.GetPtr(&texture), l_Object.GetPtr(&objh)))
 		return ADE_RETURN_FALSE;
 

@@ -215,7 +215,8 @@ void HudGaugeDirectives::pageIn()
 void HudGaugeDirectives::render(float  /*frametime*/)
 {
 	char buf[256], *second_line;
-	int i, t, x, y, z, end, offset, bx, by;
+	int i, x, y, z, end, offset, bx, by;
+	TIMESTAMP t;
 	color *c;
 
 	Training_obj_num_display_lines = 0;
@@ -276,7 +277,8 @@ void HudGaugeDirectives::render(float  /*frametime*/)
 
 			case EVENT_SATISFIED:
 				t = Mission_events[z].satisfied_time;
-				if (t + i2f(2) > Missiontime) {
+				Assertion(t.isValid(), "Since event %s was satisfied, satisfied_time must be valid here", Mission_events[z].name);
+				if (timestamp_since(t) < 2 * MILLISECONDS_PER_SECOND) {
 					if (Missiontime % fl2f(.4f) < fl2f(.2f)){
 						c = &Color_bright_blue;
 					} else {
@@ -361,7 +363,7 @@ void training_mission_init()
 
 int comp_training_lines_by_born_on_date(const int *e1, const int *e2)
 {
-	return (Mission_events[*e1 & 0xffff].born_on_date - Mission_events[*e2 & 0xffff].born_on_date);
+	return timestamp_compare(Mission_events[*e1 & 0xffff].born_on_date, Mission_events[*e2 & 0xffff].born_on_date);
 }
 
 
@@ -390,11 +392,12 @@ void sort_training_objectives()
 	// go through lines 0 to offset-1 and check if there are any CURRENT or	RECENTLY_KNOWN events that should be shown
 	int num_offset_events = 0;
 	for (i=0; i<offset; i++) {
-		event_status = mission_get_event_status(TRAINING_OBJ_LINES_MASK(i));
+		int event_num = TRAINING_OBJ_LINES_MASK(i);
+		event_status = mission_get_event_status(event_num);
 		
 		// if this is a multiplayer tvt game, and this is event is for another team, don't touch it
 		if(MULTI_TEAM && (Net_player != NULL)){
-			if((Mission_events[TRAINING_OBJ_LINES_MASK(i)].team != -1) &&  (Net_player->p_info.team != Mission_events[TRAINING_OBJ_LINES_MASK(i)].team)){
+			if((Mission_events[event_num].team != -1) &&  (Net_player->p_info.team != Mission_events[event_num].team)){
 				continue ;
 			}
 		}
@@ -403,14 +406,16 @@ void sort_training_objectives()
 			Training_obj_lines[i] |= TRAINING_OBJ_STATUS_UNKNOWN;
 			num_offset_events++;
 		} else if (event_status ==	EVENT_SATISFIED) {
-			if (f2i(Missiontime - Mission_events[TRAINING_OBJ_LINES_MASK(i)].satisfied_time) < MIN_SATISFIED_TIME) {
+			Assertion(Mission_events[event_num].satisfied_time.isValid(), "Since event %s was satisfied, satisfied_time must be valid here", Mission_events[event_num].name);
+			if (timestamp_since(Mission_events[event_num].satisfied_time) < MIN_SATISFIED_TIME) {
 				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_UNKNOWN;
 				num_offset_events++;
 			} else {
 				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_KNOWN;
 			}
 		} else if (event_status ==	EVENT_FAILED) {
-			if (f2i(Missiontime - Mission_events[TRAINING_OBJ_LINES_MASK(i)].satisfied_time) < MIN_FAILED_TIME) {
+			Assertion(Mission_events[event_num].satisfied_time.isValid(), "Since event %s failed, satisfied_time must be valid here", Mission_events[event_num].name);
+			if (timestamp_since(Mission_events[event_num].satisfied_time) < MIN_FAILED_TIME) {
 				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_UNKNOWN;
 				num_offset_events++;
 			} else {
@@ -426,11 +431,12 @@ void sort_training_objectives()
 
 	// go through lines offset to Training_obj_num_lines to check which should be shown, since some will need to be bumped
 	for (i=offset; i<Training_obj_num_lines; i++) {
-		event_status = mission_get_event_status(TRAINING_OBJ_LINES_MASK(i));
+		int event_num = TRAINING_OBJ_LINES_MASK(i);
+		event_status = mission_get_event_status(event_num);
 
 		// if this is a multiplayer tvt game, and this is event is for another team, it can be bumped
 		if(MULTI_TEAM && (Net_player != NULL)){
-			if((Mission_events[TRAINING_OBJ_LINES_MASK(i)].team != -1) &&  (Net_player->p_info.team != Mission_events[TRAINING_OBJ_LINES_MASK(i)].team)){
+			if((Mission_events[event_num].team != -1) &&  (Net_player->p_info.team != Mission_events[event_num].team)){
 				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_KNOWN;
 				continue ;
 			}
@@ -439,13 +445,15 @@ void sort_training_objectives()
 		if (event_status == EVENT_CURRENT)  {
 			Training_obj_lines[i] |= TRAINING_OBJ_STATUS_UNKNOWN;
 		} else if (event_status ==	EVENT_SATISFIED) {
-			if (f2i(Missiontime - Mission_events[TRAINING_OBJ_LINES_MASK(i)].satisfied_time) < MIN_SATISFIED_TIME) {
+			Assertion(Mission_events[event_num].satisfied_time.isValid(), "Since event %s was satisfied, satisfied_time must be valid here", Mission_events[event_num].name);
+			if (timestamp_since(Mission_events[event_num].satisfied_time) < MIN_SATISFIED_TIME) {
 				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_UNKNOWN;
 			} else {
 				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_KNOWN;
 			}
 		} else if (event_status ==	EVENT_FAILED) {
-			if (f2i(Missiontime - Mission_events[TRAINING_OBJ_LINES_MASK(i)].satisfied_time) < MIN_FAILED_TIME) {
+			Assertion(Mission_events[event_num].satisfied_time.isValid(), "Since event %s failed, satisfied_time must be valid here", Mission_events[event_num].name);
+			if (timestamp_since(Mission_events[event_num].satisfied_time) < MIN_FAILED_TIME) {
 				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_UNKNOWN;
 			} else {
 				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_KNOWN;
@@ -504,7 +512,7 @@ void training_check_objectives()
 	Training_obj_num_lines = 0;
 	for (event_idx=0; event_idx<Num_mission_events; event_idx++) {
 		event_status = mission_get_event_status(event_idx);
-		if ( (event_status != EVENT_UNBORN) && Mission_events[event_idx].objective_text && (timestamp() > Mission_events[event_idx].born_on_date + Directive_wait_time) ) {
+		if ( (event_status != EVENT_UNBORN) && Mission_events[event_idx].objective_text && (timestamp_since(Mission_events[event_idx].born_on_date) > Directive_wait_time) ) {
 			if (!Training_failure || !strnicmp(Mission_events[event_idx].name, XSTR( "Training failed", 423), 15)) {
 
 				// check for the actual objective

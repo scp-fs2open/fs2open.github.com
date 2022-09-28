@@ -29,6 +29,7 @@
 #include "mission/missioncampaign.h"
 #include "missionui/redalert.h"
 #include "network/multi.h"
+#include "network/multiteamselect.h"
 #include "playerman/managepilot.h"
 #include "radar/radarsetup.h"
 #include "scpui/SoundPlugin.h"
@@ -40,6 +41,7 @@
 #include "scripting/api/objs/cmd_brief.h"
 #include "scripting/api/objs/briefing.h"
 #include "scripting/api/objs/debriefing.h"
+#include "scripting/api/objs/shipwepselect.h"
 #include "scripting/api/objs/color.h"
 #include "scripting/api/objs/enums.h"
 #include "scripting/api/objs/player.h"
@@ -568,14 +570,27 @@ ADE_FUNC(runBriefingStageHook,
 ADE_FUNC(initBriefing,
 	l_UserInterface_Brief,
 	nullptr,
-	"Initializes the briefing.  Handles various non-UI housekeeping tasks and compacts the stages to remove those that should not be shown.",
+	"Initializes the briefing and prepares the map for drawing.  Also handles various non-UI housekeeping tasks "
+	"and compacts the stages to remove those that should not be shown.",
 	nullptr,
-	"nothing")
+	nullptr)
 {
 	SCP_UNUSED(L);
 
-	// TODO: probably call brief_api_init()
+	brief_api_init();
 
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(closeBriefing,
+	l_UserInterface_Brief,
+	nullptr,
+	"Closes the briefing and pauses the map. Required after using the briefing API!",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+	brief_api_close();
 	return ADE_RETURN_NIL;
 }
 
@@ -600,7 +615,7 @@ ADE_FUNC(exitLoop,
 	nullptr,
 	"Skips the current mission, exits the campaign loop, and loads the next non-loop mission in a campaign. Returns to the main hall if the player is not in a campaign.",
 	nullptr,
-	"nothing")
+	nullptr)
 {
 	SCP_UNUSED(L);
 
@@ -618,7 +633,7 @@ ADE_FUNC(skipMission,
 	nullptr,
 	"Skips the current mission, and loads the next mission in a campaign. Returns to the main hall if the player is not in a campaign.",
 	nullptr,
-	"nothing")
+	nullptr)
 {
 	SCP_UNUSED(L);
 
@@ -636,7 +651,7 @@ ADE_FUNC(skipTraining,
 	nullptr,
 	"Skips the current training mission, and loads the next mission in a campaign. Returns to the main hall if the player is not in a campaign.",
 	nullptr,
-	"nothing")
+	nullptr)
 {
 	SCP_UNUSED(L);
 
@@ -661,14 +676,102 @@ ADE_FUNC(skipTraining,
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(startBriefingMap,
+// For now any loadout error checking needs to happen in the script to prevent FSO from
+// generating a popup that will not be interactible from Librocket. A later update to this
+// method will introduce return values instead of generating popups and those return values
+// can be used to handle loadout popups on the script side
+ADE_FUNC(commitToMission,
 	l_UserInterface_Brief,
 	nullptr,
-	"Starts the briefing map for the current mission. Doesn't currently do anything.",
+	"Commits to the current mission with current loadout data, and starts the mission. WIP, do not use!",
 	nullptr,
-	"nothing")
+	nullptr)
 {
 	SCP_UNUSED(L);
+	commit_pressed();
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(drawBriefingMap,
+	l_UserInterface_Brief,
+	"number x, number y, [number width = 888, number height = 371]",
+	"Draws the briefing map for the current mission at the specified coordinates. Note that the "
+	"width and height must be a specific aspect ratio to match retail. If changed then some icons "
+	"may be clipped from view unexpectedly. Must be called On Frame.",
+	nullptr,
+	nullptr)
+{
+
+	int x1;
+	int y1;
+	int x2 = 888;
+	int y2 = 371;
+
+	if (!ade_get_args(L, "ii|ii", &x1, &y1, &x2, &y2)) {
+		LuaError(L, "X and Y coordinates not provided!");
+		return ADE_RETURN_NIL;
+	}
+
+	// Saving retail coords here for posterity
+	//  GR_640 - 19, 147, 555, 232
+	//  GR_1024 - 30, 235, 888, 371
+
+	bscreen.map_x1 = x1;
+	bscreen.map_x2 = x1 + x2;
+	bscreen.map_y1 = y1;
+	bscreen.map_y2 = y1 + y2;
+	bscreen.resize = GR_RESIZE_NONE;
+
+	brief_api_do_frame(flRealframetime);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(callNextMapStage,
+	l_UserInterface_Brief,
+	nullptr,
+	"Sends the briefing map to the next stage.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+	brief_do_next_pressed(0);
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(callPrevMapStage,
+	l_UserInterface_Brief,
+	nullptr,
+	"Sends the briefing map to the previous stage.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+	brief_do_prev_pressed();
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(callFirstMapStage,
+	l_UserInterface_Brief,
+	nullptr,
+	"Sends the briefing map to the first stage.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+	brief_do_start_pressed();
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(callLastMapStage,
+	l_UserInterface_Brief,
+	nullptr,
+	"Sends the briefing map to the last stage.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+	brief_do_end_pressed();
 	return ADE_RETURN_NIL;
 }
 
@@ -1034,6 +1137,91 @@ ADE_FUNC(getFictionMusicName, l_UserInterface_FictionViewer, nullptr,
 	"The file name or empty if no music")
 {
 	return ade_set_args(L, "s", common_music_get_filename(SCORE_FICTION_VIEWER).c_str());
+}
+
+//**********SUBLIBRARY: UserInterface/ShipWepSelect
+ADE_LIB_DERIV(l_UserInterface_ShipWepSelect,
+	"ShipWepSelect",
+	nullptr,
+	"API for accessing data related to the ship and weapon select UIs.<br><b>Warning:</b> This is an internal "
+	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	l_UserInterface);
+
+ADE_FUNC(initSelect,
+	l_UserInterface_ShipWepSelect,
+	nullptr,
+	"Initializes selection data including wing slots, ship and weapon pool, and loadout information",
+	nullptr,
+	nullptr)
+{
+	//Note this does all the things from common_select_init() in missionscreencommon.cpp except load UI
+	//elements into memory - Mjn
+	
+	SCP_UNUSED(L); // unused parameter
+
+	Common_team = 0;
+
+	if ((Game_mode & GM_MULTIPLAYER) && IS_MISSION_MULTI_TEAMS)
+		Common_team = Net_player->p_info.team;
+
+	common_set_team_pointers(Common_team);
+
+	ship_select_common_init();
+	weapon_select_common_init();
+
+	if ( Game_mode & GM_MULTIPLAYER ) {
+		multi_ts_common_init();
+	}
+
+	// restore loadout from Player_loadout if this is the same mission as the one previously played
+	if ( !(Game_mode & GM_MULTIPLAYER) ) {
+		if ( !stricmp(Player_loadout.filename, Game_current_mission_filename) ) {
+			wss_maybe_restore_loadout();
+			ss_synch_interface();
+			wl_synch_interface();
+		}
+	}
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_LIB_DERIV(l_Loadout_Wings, "Loadout_Wings", nullptr, nullptr, l_UserInterface_ShipWepSelect);
+ADE_INDEXER(l_Loadout_Wings, //
+	"number Index",
+	"Array of loadout wing data",
+	"loadout_wing",
+	"loadout handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "o", l_Loadout_Wing.Set(ss_wing_info_h()));
+	idx--; //Convert to Lua's 1 based index system
+	return ade_set_args(L, "o", l_Loadout_Wing.Set(ss_wing_info_h(idx)));
+}
+
+ADE_FUNC(__len, l_Loadout_Wings, nullptr, "The number of loadout wings", "number", "The number of loadout wings.")
+{
+	return ade_set_args(L, "i", Ss_wings->num_slots);
+}
+
+ADE_LIB_DERIV(l_Loadout_Ships, "Loadout_Ships", nullptr, nullptr, l_UserInterface_ShipWepSelect);
+ADE_INDEXER(l_Loadout_Ships,
+	"number Index",
+	"Array of loadout ship data. Slots are 1-12 where 1-4 is wing 1, 5-8 is wing 2, 9-12 is wing 3. "
+	"This is the array that is used to actually build the mission loadout on Commit.",
+	"loadout_ship",
+	"loadout handle, or nil if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ADE_RETURN_NIL;
+	idx--; // Convert to Lua's 1 based index system
+	return ade_set_args(L, "o", l_Loadout_Ship.Set(idx));
+}
+
+ADE_FUNC(__len, l_Loadout_Ships, nullptr, "The number of loadout ships", "number", "The number of loadout ships.")
+{
+	return ade_set_args(L, "i", MAX_WING_BLOCKS*MAX_WING_SLOTS);
 }
 
 //**********SUBLIBRARY: UserInterface/TechRoom

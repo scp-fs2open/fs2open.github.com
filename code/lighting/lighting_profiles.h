@@ -59,6 +59,7 @@ struct lighting_profile_value{
 	void stack_minimum(const float in);
 
 	static bool parse(const char *filename, const char * valuename, const SCP_string &profile_name, lighting_profile_value* value_target, bool required=false);
+	bool read_multiplier(float *out) const;
 	bool read_adjust(float *out) const;
 
 private:
@@ -114,6 +115,7 @@ public:
 	lighting_profile_value ambient_light_brightness;
 	//Strictly speaking this should be handled by postproc but we need something for the non-postproc people.
 	lighting_profile_value overall_brightness;
+	lighting_profile_value cockpit_light_radius_modifier;
 
     void reset();
 
