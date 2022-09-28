@@ -550,11 +550,11 @@ ADE_FUNC(isWeaponAllowedOnShip,
 	wepidx--; // Convert from Lua
 	if (wepidx < 0 || wepidx >= weapon_info_size())
 		return ade_set_error(L, "b", false);
-	if (bank > 0) {
-		bank--; // Convert from Lua
+	if (bank != 0) {
 		if (bank < 0 || bank >= (Ship_info[idx].num_primary_banks + Ship_info[idx].num_secondary_banks))
 			return ade_set_error(L, "b", false);
 	};
+	bank--; // Convert from Lua
 
 	bool retv = false;
 	if ((bank >= 0) && (eval_weapon_flag_for_game_type(Ship_info[idx].restricted_loadout_flag[bank]))) {
