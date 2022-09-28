@@ -214,7 +214,7 @@ ADE_VIRTVAR(LengthString, l_Shipclass, "string", "Ship class length", "string", 
 		LuaError(L, "Setting Length is not supported");
 	}
 
-	if(sip->manufacturer_str != NULL)
+	if (sip->ship_length != nullptr)
 		return ade_set_args(L, "s", sip->ship_length);
 	else
 		return ade_set_args(L, "s", "");
@@ -236,7 +236,7 @@ ADE_VIRTVAR(GunMountsString, l_Shipclass, "string", "Ship class gun mounts", "st
 		LuaError(L, "Setting Gun mounts is not supported");
 	}
 
-	if(sip->manufacturer_str != NULL)
+	if (sip->gun_mounts != nullptr)
 		return ade_set_args(L, "s", sip->gun_mounts);
 	else
 		return ade_set_args(L, "s", "");
@@ -258,7 +258,7 @@ ADE_VIRTVAR(MissileBanksString, l_Shipclass, "string", "Ship class missile banks
 		LuaError(L, "Setting Missile banks is not supported");
 	}
 
-	if(sip->manufacturer_str != NULL)
+	if (sip->missile_banks != nullptr)
 		return ade_set_args(L, "s", sip->missile_banks);
 	else
 		return ade_set_args(L, "s", "");
@@ -283,10 +283,7 @@ ADE_VIRTVAR(VelocityString, l_Shipclass, "string", "Ship class velocity", "strin
 	char str[100];
 	sprintf(str, XSTR("%d m/s", 743), fl2i((float)sip->max_vel.xyz.z * Hud_speed_multiplier));
 
-	if(sip->manufacturer_str != NULL)
-		return ade_set_args(L, "s", str);
-	else
-		return ade_set_args(L, "s", "");
+	return ade_set_args(L, "s", "");
 }
 
 
