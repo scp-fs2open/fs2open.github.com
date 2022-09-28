@@ -283,7 +283,7 @@ ADE_VIRTVAR(VelocityString, l_Shipclass, "string", "Ship class velocity", "strin
 	char str[100];
 	sprintf(str, XSTR("%d m/s", 743), fl2i((float)sip->max_vel.xyz.z * Hud_speed_multiplier));
 
-	return ade_set_args(L, "s", "");
+	return ade_set_args(L, "s", str);
 }
 
 
