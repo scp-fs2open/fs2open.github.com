@@ -108,6 +108,7 @@ bool Always_warn_player_about_unbound_keys;
 leadIndicatorBehavior Lead_indicator_behavior;
 shadow_disable_overrides Shadow_disable_overrides {false, false, false, false};
 float Thruster_easing;
+bool Always_use_distant_firepoints;
 
 void mod_table_set_version_flags();
 
@@ -968,6 +969,10 @@ void parse_mod_table(const char *filename)
 			}
 		}
 
+		if (optional_string("$Use distant firepoint for all turrets:")){
+			stuff_boolean(&Always_use_distant_firepoints);
+		}
+
 		required_string("#END");
 	}
 	catch (const parse::ParseException& e)
@@ -1103,6 +1108,7 @@ void mod_table_reset()
 	Always_warn_player_about_unbound_keys = false;
 	Lead_indicator_behavior = leadIndicatorBehavior::DEFAULT;
 	Thruster_easing = 0;
+	Always_use_distant_firepoints = false;
 }
 
 void mod_table_set_version_flags()
