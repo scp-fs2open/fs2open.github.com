@@ -1887,7 +1887,7 @@ bool check_for_gaps_in_weapon_slots()
 // ------------------------------------------------------------------------
 // commit_pressed() is called when the commit button from any of the briefing/ship select/ weapon
 // select screens is pressed.  The ship selected is created, and the interface music is stopped.
-int commit_pressed(int API_Access)
+commit_pressed_status commit_pressed(bool API_Access)
 {
 	int j, player_ship_info_index;
 	
@@ -1897,7 +1897,7 @@ int commit_pressed(int API_Access)
 			rc = create_wings();
 			if (rc != 0) {
 				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
-				return 1;
+				return commit_pressed_status::GENERAL_FAIL;
 			}
 		}
 	}
@@ -1916,7 +1916,7 @@ int commit_pressed(int API_Access)
 			if (!API_Access) {
 				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Player ship has no weapons", 461));
 			}
-			return 2;
+			return commit_pressed_status::PLAYER_NO_WEAPONS;
 		}
 	}
 
@@ -1950,7 +1950,7 @@ int commit_pressed(int API_Access)
 					XSTR("The %s is required for this mission, but it has not been added to any ship loadout.", 1624),
 					weapon_list.c_str());
 			} 
-			return 3;
+			return commit_pressed_status::NO_REQUIRED_WEAPON;
 		}
 		else if (num_required_weapons > 1)
 		{
@@ -1963,7 +1963,7 @@ int commit_pressed(int API_Access)
 						1625),
 					weapon_list.c_str());
 			} 
-			return 4;
+			return commit_pressed_status::NO_REQUIRED_WEAPON_MULTIPLE;
 		}
 	}
 
@@ -1982,7 +1982,7 @@ int commit_pressed(int API_Access)
 					1642),
 				weapon_list.c_str());
 		} 
-		return 5;
+		return commit_pressed_status::BANK_GAP_ERROR;
 	}
 
 	// Check to ensure that the hotkeys are still pointing to valid objects.  It is possible
@@ -2033,7 +2033,7 @@ int commit_pressed(int API_Access)
 		gameseq_post_event(GS_EVENT_ENTER_GAME);
 	}
 
-	return 0;
+	return commit_pressed_status::SUCCESS;
 }
 
 // ------------------------------------------------------------------------

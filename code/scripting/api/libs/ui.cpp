@@ -692,7 +692,7 @@ ADE_FUNC(commitToMission,
 	"number error",
 	"the error value")
 {
-	return ade_set_args(L, "i", commit_pressed(1));
+	return ade_set_args(L, "i", static_cast<int>(commit_pressed(true)));
 }
 
 ADE_FUNC(drawBriefingMap,
