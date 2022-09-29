@@ -6,6 +6,7 @@
 #include "weapon/weapon.h"
 #include "graphics/matrix.h"
 #include "vecmath.h"
+#include "missionui/missionscreencommon.h"
 
 namespace scripting {
 namespace api {
@@ -850,6 +851,28 @@ ADE_FUNC(isBeam, l_Weaponclass, NULL, "Return true if the weapon is a beam", "bo
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
+}
+
+ADE_FUNC(isWeaponRequired,
+	l_Weaponclass,
+	nullptr,
+	"Checks if a weapon is required for the currently loaded mission",
+	"boolean",
+	"true if required, false if otherwise. Nil if the weapon class is invalid or a mission has not been loaded")
+{
+	int idx = -1;
+	if (!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
+		return ADE_RETURN_NIL;
+
+	if (idx < 0 || idx >= weapon_info_size())
+		return ADE_RETURN_NIL;
+
+	//This could be requested before Common_team has been initialized, so let's check.
+	if (Common_select_inited) {
+		return ade_set_args(L, "b", Team_data[Common_team].weapon_required[idx]);
+	} else {
+		return ADE_RETURN_NIL;
+	}
 }
 
 // Checks if a weapon has been paged in (counted as used)
