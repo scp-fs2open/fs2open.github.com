@@ -71,7 +71,7 @@ extern int Flash_bright;			// state of button to flash
 void common_button_do(int i);
 
 //If new enums are added here be sure to also update the description for the API version in scripting\api\libs\ui.cpp - Mjn
-enum class commit_pressed_status { SUCCESS, GENERAL_FAIL, PLAYER_NO_WEAPONS,  NO_REQUIRED_WEAPON, NO_REQUIRED_WEAPON_MULTIPLE, BANK_GAP_ERROR};
+enum class commit_pressed_status { SUCCESS, GENERAL_FAIL, PLAYER_NO_WEAPONS,  NO_REQUIRED_WEAPON, NO_REQUIRED_WEAPON_MULTIPLE, BANK_GAP_ERROR, PLAYER_NO_SLOT};
 
 // common_select_init() performs initialization common to the briefing/ship select/weapon select
 // screens.  This includes loading/setting the palette, loading the background animation, loading

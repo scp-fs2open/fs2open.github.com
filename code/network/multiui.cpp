@@ -62,6 +62,7 @@
 #include "ship/ship.h"
 #include "osapi/osregistry.h"
 #include "mission/missionbriefcommon.h"
+#include "missionui/missionscreencommon.h"
 #include "parse/parselo.h"
 #include "cfile/cfile.h"
 #include "network/multi_fstracker.h"
@@ -8241,7 +8242,7 @@ void multi_sync_post_init()
 
 #define MULTI_POST_TIMESTAMP			7000
 
-extern int create_wings();
+extern commit_pressed_status create_wings();
 
 void multi_sync_post_do()
 {	

@@ -686,9 +686,9 @@ ADE_FUNC(commitToMission,
 	l_UserInterface_Brief,
 	nullptr,
 	"Commits to the current mission with current loadout data, and starts the mission. Returns an integer to represent "
-	"built-in errors or 0 if successful. 1 = general error, 2 = player ship has no weapons, 3 = the required weapon was not found "
+	"built-in errors or 0 if successful. 1 = general error, 2 = a player ship has no weapons, 3 = the required weapon was not found "
 	"loaded on a ship, 4 = 2 or more required weapons were not found loaded on a ship, 5 = a gap in a ship's weapon banks was discovered "
-	"and all empty banks must be at the bottom of the list.",
+	"and all empty banks must be at the bottom of the list, 6 = a player has no ship selected",
 	"number error",
 	"the error value")
 {
