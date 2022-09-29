@@ -413,9 +413,12 @@ matrix4 getDecalTransform(Decal& decal) {
 	// this will lead to a situation where we would look at the decal texture "from behind" causing the texture to
 	// appear flipped. We fix that here for the graphics transform by inverting the Z scaling.
 
+	// ALSO for some reason the uvec needs to be flipped as well, otherwise the decals render upside-down.  Without
+	// being sure of the root cause, this at least makes it appear correct for modders.
+
 	// Apply scaling
 	vm_vec_scale(&worldOrient.vec.rvec, decal.scale.xyz.x);
-	vm_vec_scale(&worldOrient.vec.uvec, decal.scale.xyz.y);
+	vm_vec_scale(&worldOrient.vec.uvec, -decal.scale.xyz.y);
 	vm_vec_scale(&worldOrient.vec.fvec, -decal.scale.xyz.z);
 
 	matrix4 mat4;
