@@ -3008,6 +3008,7 @@ void ss_clear_slots()
 			slot->status = WING_SLOT_LOCKED;
 			slot->sa_index = -1;
 			slot->original_ship_class = -1;
+			slot->in_mission = false;
 		}
 	}
 }
