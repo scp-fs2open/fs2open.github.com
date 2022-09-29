@@ -32,6 +32,8 @@
 #include "network/multiteamselect.h"
 #include "playerman/managepilot.h"
 #include "radar/radarsetup.h"
+#include "ship/ship.h"
+#include "weapon/weapon.h"
 #include "scpui/SoundPlugin.h"
 #include "scpui/rocket_ui.h"
 #include "scripting/api/objs/techroom.h"
@@ -1185,8 +1187,77 @@ ADE_FUNC(initSelect,
 	return ADE_RETURN_NIL;
 }
 
+ADE_LIB_DERIV(l_Ship_Pool, "Ship_Pool", nullptr, nullptr, l_UserInterface_ShipWepSelect);
+ADE_INDEXER(l_Ship_Pool,
+	"number Index, number amount",
+	"Array of ship amounts available in the pool for selection in the current mission. Index is index into Ship Classes.",
+	"number",
+	"Amount of the ship that's available")
+{
+	int idx;
+	int amount;
+	if (!ade_get_args(L, "*i|i", &idx, &amount))
+		return ADE_RETURN_NIL;
+
+	if (idx < 0 || idx > ship_info_size()) {
+		return ADE_RETURN_NIL;
+	};
+
+	idx--; // Convert to Lua's 1 based index system
+
+	if (ADE_SETTING_VAR) {
+		if (amount < 0) {
+			Ss_pool[idx] = 0;
+		} else {
+			Ss_pool[idx] = amount;
+		}
+	}
+
+	return ade_set_args(L, "i", Ss_pool[idx]);
+}
+
+ADE_FUNC(__len, l_Ship_Pool, nullptr, "The number of ship classes in the pool", "number", "The number of ship classes.")
+{
+	return ade_set_args(L, "i", ship_info_size());
+}
+
+ADE_LIB_DERIV(l_Weapon_Pool, "Weapon_Pool", nullptr, nullptr, l_UserInterface_ShipWepSelect);
+ADE_INDEXER(l_Weapon_Pool,
+	"number Index, number amount",
+	"Array of weapon amounts available in the pool for selection in the current mission. Index is index into Weapon Classes.",
+	"number",
+	"Amount of the weapon that's available")
+{
+	int idx;
+	int amount;
+	if (!ade_get_args(L, "*i|i", &idx, &amount))
+		return ADE_RETURN_NIL;
+
+	if (idx < 0 || idx > weapon_info_size()) {
+		return ADE_RETURN_NIL;
+	};
+
+	idx--; // Convert to Lua's 1 based index system
+
+	if (ADE_SETTING_VAR) {
+		if (amount < 0) {
+			Wl_pool[idx] = 0;
+		} else {
+			Wl_pool[idx] = amount;
+		}
+	}
+
+	return ade_set_args(L, "i", Wl_pool[idx]);
+}
+
+ADE_FUNC(__len,
+	l_Weapon_Pool, nullptr, "The number of weapon classes in the pool", "number", "The number of weapon classes.")
+{
+	return ade_set_args(L, "i", weapon_info_size());
+}
+
 ADE_LIB_DERIV(l_Loadout_Wings, "Loadout_Wings", nullptr, nullptr, l_UserInterface_ShipWepSelect);
-ADE_INDEXER(l_Loadout_Wings, //
+ADE_INDEXER(l_Loadout_Wings,
 	"number Index",
 	"Array of loadout wing data",
 	"loadout_wing",
