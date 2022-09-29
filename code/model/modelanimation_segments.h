@@ -5,6 +5,8 @@
 
 namespace animation {
 
+	enum class ModelAnimationCoordinateRelation { RELATIVE_COORDS, LOCAL_ABSOLUTE, ABSOLUTE_COORDS };
+
 	//This segment handles multiple generic segments chained after one another
 	class ModelAnimationSegmentSerial : public ModelAnimationSegment {
 		//configureables:
@@ -12,7 +14,7 @@ namespace animation {
 		std::vector<std::shared_ptr<ModelAnimationSegment>> m_segments;
 
 	private:
-		void recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) override;
+		void recalculate(ModelAnimationSubmodelBuffer& base, ModelAnimationSubmodelBuffer& currentAnimDelta, polymodel_instance* pmi) override;
 		void calculateAnimation(ModelAnimationSubmodelBuffer& base, float time, int pmi_id) const override;
 		void executeAnimation(const ModelAnimationSubmodelBuffer& state, float timeboundLower, float timeboundUpper, ModelAnimationDirection direction, int pmi_id) override;
 		void exchangeSubmodelPointers(ModelAnimationSet& replaceWith) override;
@@ -31,7 +33,7 @@ namespace animation {
 		std::vector<std::shared_ptr<ModelAnimationSegment>> m_segments;
 
 	private:
-		void recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) override;
+		void recalculate(ModelAnimationSubmodelBuffer& base, ModelAnimationSubmodelBuffer& currentAnimDelta, polymodel_instance* pmi) override;
 		void calculateAnimation(ModelAnimationSubmodelBuffer& base, float time, int pmi_id) const override;
 		void executeAnimation(const ModelAnimationSubmodelBuffer& state, float timeboundLower, float timeboundUpper, ModelAnimationDirection direction, int pmi_id) override;
 		void exchangeSubmodelPointers(ModelAnimationSet& replaceWith) override;
@@ -51,7 +53,7 @@ namespace animation {
 
 	private:
 		ModelAnimationSegment* copy() const override;
-		void recalculate(ModelAnimationSubmodelBuffer& /*base*/, polymodel_instance* pmi) override;
+		void recalculate(ModelAnimationSubmodelBuffer& /*base*/, ModelAnimationSubmodelBuffer& /*currentAnimDelta*/, polymodel_instance* pmi) override;
 		void calculateAnimation(ModelAnimationSubmodelBuffer& /*base*/, float /*time*/, int /*pmi_id*/) const override { };
 		void executeAnimation(const ModelAnimationSubmodelBuffer& /*state*/, float /*timeboundLower*/, float /*timeboundUpper*/, ModelAnimationDirection /*direction*/, int /*pmi_id*/) override { };
 		void exchangeSubmodelPointers(ModelAnimationSet& /*replaceWith*/) override { };
@@ -76,19 +78,19 @@ namespace animation {
 		std::shared_ptr<ModelAnimationSubmodel> m_submodel;
 		tl::optional<angles> m_targetAngle;
 		tl::optional<matrix> m_targetOrientation;
-		bool m_isAngleRelative;
+		ModelAnimationCoordinateRelation m_isAngleRelative;
 
 	private:
 		ModelAnimationSegment* copy() const override;
-		void recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) override;
+		void recalculate(ModelAnimationSubmodelBuffer& base, ModelAnimationSubmodelBuffer& currentAnimDelta, polymodel_instance* pmi) override;
 		void calculateAnimation(ModelAnimationSubmodelBuffer& base, float /*time*/, int pmi_id) const override;
 		void executeAnimation(const ModelAnimationSubmodelBuffer& /*state*/, float /*timeboundLower*/, float /*timeboundUpper*/, ModelAnimationDirection /*direction*/, int /*pmi_id*/) override { };
 		void exchangeSubmodelPointers(ModelAnimationSet& replaceWith) override;
 
 	public:
 		static std::shared_ptr<ModelAnimationSegment> parser(ModelAnimationParseHelper* data);
-		ModelAnimationSegmentSetOrientation(std::shared_ptr<ModelAnimationSubmodel> submodel, const angles& angle, bool isAngleRelative);
-		ModelAnimationSegmentSetOrientation(std::shared_ptr<ModelAnimationSubmodel> submodel, const matrix& orientation, bool isAngleRelative);
+		ModelAnimationSegmentSetOrientation(std::shared_ptr<ModelAnimationSubmodel> submodel, const angles& angle, ModelAnimationCoordinateRelation isAngleRelative);
+		ModelAnimationSegmentSetOrientation(std::shared_ptr<ModelAnimationSubmodel> submodel, const matrix& orientation, ModelAnimationCoordinateRelation isAngleRelative);
 	};
 
 	//This segment rotates a submodels orientation by a certain amount around its defined rotation axis
@@ -101,7 +103,7 @@ namespace animation {
 
 	private:
 		ModelAnimationSegment* copy() const override;
-		void recalculate(ModelAnimationSubmodelBuffer& /*base*/, polymodel_instance* pmi) override;
+		void recalculate(ModelAnimationSubmodelBuffer& /*base*/, ModelAnimationSubmodelBuffer& /*currentAnimDelta*/, polymodel_instance* pmi) override;
 		void calculateAnimation(ModelAnimationSubmodelBuffer& base, float /*time*/, int /*pmi_id*/) const override;
 		void executeAnimation(const ModelAnimationSubmodelBuffer& /*state*/, float /*timeboundLower*/, float /*timeboundUpper*/, ModelAnimationDirection /*direction*/, int /*pmi_id*/) override { };
 		void exchangeSubmodelPointers(ModelAnimationSet& replaceWith) override;
@@ -132,18 +134,18 @@ namespace animation {
 		tl::optional<angles> m_velocity;
 		tl::optional<float> m_time;
 		tl::optional<angles> m_acceleration;
-		bool m_isAbsolute;
+		ModelAnimationCoordinateRelation m_isAbsolute;
 
 	private:
 		ModelAnimationSegment* copy() const override;
-		void recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) override;
+		void recalculate(ModelAnimationSubmodelBuffer& base, ModelAnimationSubmodelBuffer& currentAnimDelta, polymodel_instance* pmi) override;
 		void calculateAnimation(ModelAnimationSubmodelBuffer& base, float time, int pmi_id) const override;
 		void executeAnimation(const ModelAnimationSubmodelBuffer& /*state*/, float /*timeboundLower*/, float /*timeboundUpper*/, ModelAnimationDirection /*direction*/, int /*pmi_id*/) override { };
 		void exchangeSubmodelPointers(ModelAnimationSet& replaceWith) override;
 
 	public:
 		static std::shared_ptr<ModelAnimationSegment> parser(ModelAnimationParseHelper* data);
-		ModelAnimationSegmentRotation(std::shared_ptr<ModelAnimationSubmodel> submodel, tl::optional<angles> targetAngle, tl::optional<angles> velocity, tl::optional<float> time, tl::optional<angles> acceleration, bool isAbsolute = false);
+		ModelAnimationSegmentRotation(std::shared_ptr<ModelAnimationSubmodel> submodel, tl::optional<angles> targetAngle, tl::optional<angles> velocity, tl::optional<float> time, tl::optional<angles> acceleration, ModelAnimationCoordinateRelation isAbsolute = ModelAnimationCoordinateRelation::RELATIVE_COORDS);
 
 	};
 
@@ -172,7 +174,7 @@ namespace animation {
 
 	private:
 		ModelAnimationSegment* copy() const override;
-		void recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) override;
+		void recalculate(ModelAnimationSubmodelBuffer& base, ModelAnimationSubmodelBuffer& /*currentAnimDelta*/, polymodel_instance* pmi) override;
 		void calculateAnimation(ModelAnimationSubmodelBuffer& /*base*/, float time, int pmi_id) const override;
 		void executeAnimation(const ModelAnimationSubmodelBuffer& /*state*/, float /*timeboundLower*/, float /*timeboundUpper*/, ModelAnimationDirection /*direction*/, int /*pmi_id*/) override { };
 		void exchangeSubmodelPointers(ModelAnimationSet& replaceWith) override;
@@ -204,18 +206,18 @@ namespace animation {
 		tl::optional<float> m_time;
 		tl::optional<vec3d> m_acceleration;
 		enum class CoordinateSystem { COORDS_PARENT, COORDS_LOCAL_AT_START, COORDS_LOCAL_CURRENT } m_coordType;
-		bool m_isAbsolute;
+		ModelAnimationCoordinateRelation m_isAbsolute;
 
 	private:
 
 		ModelAnimationSegment* copy() const override;
-		void recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) override;
+		void recalculate(ModelAnimationSubmodelBuffer& base, ModelAnimationSubmodelBuffer& currentAnimDelta, polymodel_instance* pmi) override;
 		void calculateAnimation(ModelAnimationSubmodelBuffer& base, float time, int pmi_id) const override;
 		void executeAnimation(const ModelAnimationSubmodelBuffer& /*state*/, float /*timeboundLower*/, float /*timeboundUpper*/, ModelAnimationDirection /*direction*/, int /*pmi_id*/) override { };
 		void exchangeSubmodelPointers(ModelAnimationSet& replaceWith) override;
 	public:
 		static std::shared_ptr<ModelAnimationSegment> parser(ModelAnimationParseHelper* data);
-		ModelAnimationSegmentTranslation(std::shared_ptr<ModelAnimationSubmodel> submodel, tl::optional<vec3d> target, tl::optional<vec3d> velocity, tl::optional<float> time, tl::optional<vec3d> acceleration, CoordinateSystem coordType = CoordinateSystem::COORDS_PARENT, bool isAbsolute = false);
+		ModelAnimationSegmentTranslation(std::shared_ptr<ModelAnimationSubmodel> submodel, tl::optional<vec3d> target, tl::optional<vec3d> velocity, tl::optional<float> time, tl::optional<vec3d> acceleration, CoordinateSystem coordType = CoordinateSystem::COORDS_PARENT, ModelAnimationCoordinateRelation isAbsolute = ModelAnimationCoordinateRelation::RELATIVE_COORDS);
 
 	};
 
@@ -242,7 +244,7 @@ namespace animation {
 		
 	private:
 		ModelAnimationSegment* copy() const override;
-		void recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) override;
+		void recalculate(ModelAnimationSubmodelBuffer& base, ModelAnimationSubmodelBuffer& currentAnimDelta, polymodel_instance* pmi) override;
 		void calculateAnimation(ModelAnimationSubmodelBuffer& base, float time, int pmi_id) const override;
 		void executeAnimation(const ModelAnimationSubmodelBuffer& state, float timeboundLower, float timeboundUpper, ModelAnimationDirection direction, int pmi_id) override;
 		void exchangeSubmodelPointers(ModelAnimationSet& replaceWith) override;
@@ -278,7 +280,7 @@ namespace animation {
 		tl::optional<matrix> m_targetRotation;
 	private:
 		ModelAnimationSegment* copy() const override;
-		void recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) override;
+		void recalculate(ModelAnimationSubmodelBuffer& base, ModelAnimationSubmodelBuffer& /*currentAnimDelta*/, polymodel_instance* pmi) override;
 		void calculateAnimation(ModelAnimationSubmodelBuffer& base, float time, int pmi_id) const override;
 		void executeAnimation(const ModelAnimationSubmodelBuffer& /*state*/, float /*timeboundLower*/, float /*timeboundUpper*/, ModelAnimationDirection /*direction*/, int /*pmi_id*/) override { };
 		void exchangeSubmodelPointers(ModelAnimationSet& replaceWith) override;

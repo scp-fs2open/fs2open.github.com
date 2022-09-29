@@ -12,17 +12,18 @@ namespace animation {
 		return newCopy;
 	}
 
-	void ModelAnimationSegmentSerial::recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) {
+	void ModelAnimationSegmentSerial::recalculate(ModelAnimationSubmodelBuffer& base, ModelAnimationSubmodelBuffer& currentAnimDelta, polymodel_instance* pmi) {
 		float& duration = m_duration[pmi->id];
 		duration = 0.0f;
 
 		for (const auto& segment : m_segments) {
-			segment->recalculate(base, pmi);
+			segment->recalculate(base, currentAnimDelta, pmi);
 
 			duration += segment->getDuration(pmi->id);
 
 			//To properly recalculate, we actually need to fully calculate the previous' segment's final delta
 			segment->calculateAnimation(base, segment->getDuration(pmi->id), pmi->id);
+			segment->calculateAnimation(currentAnimDelta, segment->getDuration(pmi->id), pmi->id);
 		}
 	}
 
@@ -89,13 +90,13 @@ namespace animation {
 		return newCopy;
 	}
 
-	void ModelAnimationSegmentParallel::recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) {
+	void ModelAnimationSegmentParallel::recalculate(ModelAnimationSubmodelBuffer& base, ModelAnimationSubmodelBuffer& currentAnimDelta, polymodel_instance* pmi) {
 		float& duration = m_duration[pmi->id];
 		duration = 0.0f;
 
 		for (const auto& segment : m_segments) {
 			ModelAnimationSubmodelBuffer baseCopy = base;
-			segment->recalculate(baseCopy, pmi);
+			segment->recalculate(baseCopy, currentAnimDelta, pmi);
 
 			//recalculate total duration if necessary
 			float newDur = segment->getDuration(pmi->id);
@@ -156,7 +157,7 @@ namespace animation {
 		return new ModelAnimationSegmentWait(*this);
 	}
 	
-	void ModelAnimationSegmentWait::recalculate(ModelAnimationSubmodelBuffer& /*base*/, polymodel_instance* pmi) {
+	void ModelAnimationSegmentWait::recalculate(ModelAnimationSubmodelBuffer& /*base*/, ModelAnimationSubmodelBuffer& /*currentAnimDelta*/, polymodel_instance* pmi) {
 		m_duration[pmi->id] = m_time;
 	};
 	
@@ -169,18 +170,18 @@ namespace animation {
 		return segment;
 	}
 
-	ModelAnimationSegmentSetOrientation::ModelAnimationSegmentSetOrientation(std::shared_ptr<ModelAnimationSubmodel> submodel, const angles& angle, bool isAngleRelative) :
+	ModelAnimationSegmentSetOrientation::ModelAnimationSegmentSetOrientation(std::shared_ptr<ModelAnimationSubmodel> submodel, const angles& angle, ModelAnimationCoordinateRelation isAngleRelative) :
 		m_submodel(std::move(submodel)), m_targetAngle(angle), m_isAngleRelative(isAngleRelative) { }
-	ModelAnimationSegmentSetOrientation::ModelAnimationSegmentSetOrientation(std::shared_ptr<ModelAnimationSubmodel> submodel, const matrix& orientation, bool isAngleRelative) :
+	ModelAnimationSegmentSetOrientation::ModelAnimationSegmentSetOrientation(std::shared_ptr<ModelAnimationSubmodel> submodel, const matrix& orientation, ModelAnimationCoordinateRelation isAngleRelative) :
 			m_submodel(std::move(submodel)), m_targetOrientation(orientation), m_isAngleRelative(isAngleRelative) { }
 		
 	ModelAnimationSegment* ModelAnimationSegmentSetOrientation::copy() const {
 		return new ModelAnimationSegmentSetOrientation(*this);
 	}
 
-	void ModelAnimationSegmentSetOrientation::recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) {
+	void ModelAnimationSegmentSetOrientation::recalculate(ModelAnimationSubmodelBuffer& base, ModelAnimationSubmodelBuffer& currentAnimDelta, polymodel_instance* pmi) {
 		int pmi_id = pmi->id;
-		if (m_isAngleRelative) {
+		if (m_isAngleRelative == ModelAnimationCoordinateRelation::RELATIVE_COORDS) {
 			if (m_targetAngle) {
 				vm_angles_2_matrix(&m_instances[pmi_id].rot, &(*m_targetAngle));
 			}
@@ -191,7 +192,7 @@ namespace animation {
 		else {
 			//In Absolute mode we need to undo the previously applied rotation to make sure we actually end up at the target rotation despite having only a delta we output, as opposed to just overwriting the value
 			matrix unrotate, target;
-			const ModelAnimationData<>& submodel = base[m_submodel].data;
+			const ModelAnimationData<>& submodel = (m_isAngleRelative == ModelAnimationCoordinateRelation::ABSOLUTE_COORDS ? base[m_submodel].data : currentAnimDelta[m_submodel].data);
 
 			vm_copy_transpose(&unrotate, &submodel.orientation);
 
@@ -222,16 +223,11 @@ namespace animation {
 	
 	std::shared_ptr<ModelAnimationSegment> ModelAnimationSegmentSetOrientation::parser(ModelAnimationParseHelper* data) {
 		angles angle;
-		bool isRelative = true;
 
 		required_string("+Angle:");
 		stuff_angles_deg_phb(&angle);
-		isRelative &= !optional_string("+Absolute");
-		bool explicitRelative = optional_string("+Relative");
-
-		if (!isRelative && explicitRelative) {
-			error_display(1, "Orientation cannot both be absolute and relative!");
-		}
+		int result = optional_string_one_of(3, "+Relative", "+Local", "+Absolute");
+		ModelAnimationCoordinateRelation isRelative = static_cast<ModelAnimationCoordinateRelation>(result < 0 ? 0 : result);
 
 		auto submodel = ModelAnimationParseHelper::parseSubmodel();
 
@@ -255,7 +251,7 @@ namespace animation {
 		return new ModelAnimationSegmentSetAngle(*this);
 	}
 
-	void ModelAnimationSegmentSetAngle::recalculate(ModelAnimationSubmodelBuffer& /*base*/, polymodel_instance* pmi) {
+	void ModelAnimationSegmentSetAngle::recalculate(ModelAnimationSubmodelBuffer& /*base*/, ModelAnimationSubmodelBuffer& /*currentAnimDelta*/, polymodel_instance* pmi) {
 		angles angs = vmd_zero_angles;
 		auto submodel_info = m_submodel->findSubmodel(pmi).second;
 		if (submodel_info == nullptr) {
@@ -324,14 +320,14 @@ namespace animation {
 
 	static constexpr float angles::*pbh[] = { &angles::p, &angles::b, &angles::h };
 
-	ModelAnimationSegmentRotation::ModelAnimationSegmentRotation(std::shared_ptr<ModelAnimationSubmodel> submodel, tl::optional<angles> targetAngle, tl::optional<angles> velocity, tl::optional<float> time, tl::optional<angles> acceleration, bool isAbsolute) :
+	ModelAnimationSegmentRotation::ModelAnimationSegmentRotation(std::shared_ptr<ModelAnimationSubmodel> submodel, tl::optional<angles> targetAngle, tl::optional<angles> velocity, tl::optional<float> time, tl::optional<angles> acceleration, ModelAnimationCoordinateRelation isAbsolute) :
 		m_submodel(std::move(submodel)), m_targetAngle(targetAngle), m_velocity(velocity), m_time(time), m_acceleration(acceleration), m_isAbsolute(isAbsolute) { }
 
 	ModelAnimationSegment* ModelAnimationSegmentRotation::copy() const {
 		return new ModelAnimationSegmentRotation(*this);
 	}
 
-	void ModelAnimationSegmentRotation::recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) {
+	void ModelAnimationSegmentRotation::recalculate(ModelAnimationSubmodelBuffer& base, ModelAnimationSubmodelBuffer& currentAnimDelta, polymodel_instance* pmi) {
 		Assertion(!(m_targetAngle.has_value() ^ m_velocity.has_value() ^ m_time.has_value()), "Tried to run over- or underdefined rotation. Define exactly two out of 'time', 'velocity', and 'angle'!");
 
 		instance_data& instanceData = m_instances[pmi->id];
@@ -342,8 +338,8 @@ namespace animation {
 		}
 
 		if (m_targetAngle) { //If we have an angle specified, use it.
-			if (m_isAbsolute) {
-				const ModelAnimationData<>& submodel = base[m_submodel].data;
+			if (m_isAbsolute != ModelAnimationCoordinateRelation::RELATIVE_COORDS) {
+				const ModelAnimationData<>& submodel = (m_isAbsolute == ModelAnimationCoordinateRelation::ABSOLUTE_COORDS ? base[m_submodel].data : currentAnimDelta[m_submodel].data);
 
 				matrix orientTransp, target, diff;
 				const angles& targetAngle = *m_targetAngle;
@@ -562,18 +558,14 @@ namespace animation {
 	std::shared_ptr<ModelAnimationSegment> ModelAnimationSegmentRotation::parser(ModelAnimationParseHelper* data) {
 		tl::optional<angles> angle, velocity, acceleration;
 		tl::optional<float> time;
-		bool isAbsolute = false;
+		ModelAnimationCoordinateRelation isAbsolute = ModelAnimationCoordinateRelation::RELATIVE_COORDS;
 
 		if (optional_string("+Angle:")) {
 			angles parse;
 			stuff_angles_deg_phb(&parse);
 			angle = std::move(parse);
-			isAbsolute = optional_string("+Absolute");
-			bool relative = optional_string("+Relative");
-
-			if (isAbsolute && relative) {
-				error_display(1, "Rotation cannot both be absolute and relative!");
-			}
+			int result = optional_string_one_of(3, "+Relative", "+Local", "+Absolute");
+			isAbsolute = static_cast<ModelAnimationCoordinateRelation>(result < 0 ? 0 : result);
 		}
 
 		if (optional_string("+Velocity:")) {
@@ -621,7 +613,7 @@ namespace animation {
 		return new ModelAnimationSegmentAxisRotation(*this);
 	}
 
-	void ModelAnimationSegmentAxisRotation::recalculate(ModelAnimationSubmodelBuffer& /*base*/, polymodel_instance* pmi) {
+	void ModelAnimationSegmentAxisRotation::recalculate(ModelAnimationSubmodelBuffer& /*base*/, ModelAnimationSubmodelBuffer& /*currentAnimDelta*/, polymodel_instance* pmi) {
 		Assertion(!(m_targetAngle.has_value() ^ m_velocity.has_value() ^ m_time.has_value()), "Tried to run over- or underdefined rotation. Define exactly two out of 'time', 'velocity', and 'angle'!");
 
 		instance_data& instanceData = m_instances[pmi->id];
@@ -861,14 +853,14 @@ namespace animation {
 	}
 	
 
-	ModelAnimationSegmentTranslation::ModelAnimationSegmentTranslation(std::shared_ptr<ModelAnimationSubmodel> submodel, tl::optional<vec3d> target, tl::optional<vec3d> velocity, tl::optional<float> time, tl::optional<vec3d> acceleration, CoordinateSystem coordType, bool isAbsolute) :
+	ModelAnimationSegmentTranslation::ModelAnimationSegmentTranslation(std::shared_ptr<ModelAnimationSubmodel> submodel, tl::optional<vec3d> target, tl::optional<vec3d> velocity, tl::optional<float> time, tl::optional<vec3d> acceleration, CoordinateSystem coordType, ModelAnimationCoordinateRelation isAbsolute) :
 		m_submodel(std::move(submodel)), m_target(target), m_velocity(velocity), m_time(time), m_acceleration(acceleration), m_coordType(coordType), m_isAbsolute(isAbsolute) { }
 
 	ModelAnimationSegment* ModelAnimationSegmentTranslation::copy() const {
 		return new ModelAnimationSegmentTranslation(*this);
 	}
 
-	void ModelAnimationSegmentTranslation::recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) {
+	void ModelAnimationSegmentTranslation::recalculate(ModelAnimationSubmodelBuffer& base, ModelAnimationSubmodelBuffer& currentAnimDelta, polymodel_instance* pmi) {
 		Assertion(!(m_target.has_value() ^ m_velocity.has_value() ^ m_time.has_value()), "Tried to run over- or underdefined translation. Define exactly two out of 'time', 'velocity', and 'vector'!");
 
 		instance_data& instanceData = m_instances[pmi->id];
@@ -879,8 +871,8 @@ namespace animation {
 		}
 
 		if (m_target) { //If we have an target specified, use it.
-			if (m_isAbsolute) {
-				const ModelAnimationData<>& submodel = base[m_submodel].data;
+			if (m_isAbsolute != ModelAnimationCoordinateRelation::RELATIVE_COORDS) {
+				const ModelAnimationData<>& submodel = (m_isAbsolute == ModelAnimationCoordinateRelation::ABSOLUTE_COORDS ? base[m_submodel].data : currentAnimDelta[m_submodel].data);
 				instanceData.m_actualTarget = *m_target - submodel.position;
 			}
 			else
@@ -1114,18 +1106,14 @@ namespace animation {
 		tl::optional<vec3d> offset, velocity, acceleration;
 		tl::optional<float> time;
 		CoordinateSystem coordSystem = CoordinateSystem::COORDS_PARENT;
-		bool isAbsolute = false;
+		ModelAnimationCoordinateRelation isAbsolute = ModelAnimationCoordinateRelation::RELATIVE_COORDS;
 
 		if (optional_string("+Vector:")) {
 			vec3d parse;
 			stuff_vec3d(&parse);
 			offset = std::move(parse);
-			isAbsolute = optional_string("+Absolute");
-			bool relative = optional_string("+Relative");
-
-			if (isAbsolute && relative) {
-				error_display(1, "Translation cannot both be absolute and relative!");
-			}
+			int result = optional_string_one_of(3, "+Relative", "+Local", "+Absolute");
+			isAbsolute = static_cast<ModelAnimationCoordinateRelation>(result < 0 ? 0 : result);
 		}
 
 		if (optional_string("+Velocity:")) {
@@ -1190,8 +1178,8 @@ namespace animation {
 		return newCopy;
 	}
 
-	void ModelAnimationSegmentSoundDuring::recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) {
-		m_segment->recalculate(base, pmi);
+	void ModelAnimationSegmentSoundDuring::recalculate(ModelAnimationSubmodelBuffer& base, ModelAnimationSubmodelBuffer& currentAnimDelta, polymodel_instance* pmi) {
+		m_segment->recalculate(base, currentAnimDelta, pmi);
 		m_duration[pmi->id] = m_segment->getDuration(pmi->id);
 	}
 
@@ -1313,7 +1301,7 @@ namespace animation {
 		return copy;
 	};
 	
-	void ModelAnimationSegmentIK::recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) {
+	void ModelAnimationSegmentIK::recalculate(ModelAnimationSubmodelBuffer& base, ModelAnimationSubmodelBuffer& currentAnimDelta, polymodel_instance* pmi) {
 		auto ik = std::unique_ptr<ik_solver>(new ik_solver_fabrik());
 
 		polymodel* pm = model_get(pmi->model_num);
@@ -1341,7 +1329,7 @@ namespace animation {
 			chainlink_it++->animSegment->m_targetAngle = converted;
 		}
 		
-		std::static_pointer_cast<ModelAnimationSegment>(m_segment)->recalculate(base, pmi);
+		std::static_pointer_cast<ModelAnimationSegment>(m_segment)->recalculate(base, currentAnimDelta, pmi);
 		m_duration[pmi->id] = m_segment->getDuration(pmi->id);
 	};
 	
@@ -1427,7 +1415,7 @@ namespace animation {
 			else
 				constraint = std::shared_ptr<ik_constraint>(new ik_constraint());
 			
-			auto rotation = std::shared_ptr<ModelAnimationSegmentRotation>(new ModelAnimationSegmentRotation(submodel, tl::optional<angles>({0,0,0}), tl::optional<angles>(), time, acceleration, true));
+			auto rotation = std::shared_ptr<ModelAnimationSegmentRotation>(new ModelAnimationSegmentRotation(submodel, tl::optional<angles>({0,0,0}), tl::optional<angles>(), time, acceleration, ModelAnimationCoordinateRelation::ABSOLUTE_COORDS));
 			parallel->addSegment(rotation);
 			segment->m_chain.push_back({submodel, constraint, rotation});
 		}
