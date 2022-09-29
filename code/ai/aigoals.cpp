@@ -311,7 +311,7 @@ void ai_remove_ship_goal( ai_info *aip, int index )
 		// wookieejedi - play dead needs some extra cleanup, too
 		// there is an early return for the mode AIM_PLAY_DEAD in AI frame, so it needs to be set back to AIM_NONE
 		if (aip->ai_profile_flags[AI::Profile_Flags::Fixed_removing_play_dead_order] && 
-			aip->goals[index].ai_mode == AI_GOAL_PLAY_DEAD || aip->goals[index].ai_mode == AI_GOAL_PLAY_DEAD_PERSISTENT) {
+			(aip->goals[index].ai_mode == AI_GOAL_PLAY_DEAD || aip->goals[index].ai_mode == AI_GOAL_PLAY_DEAD_PERSISTENT)) {
 			aip->mode = AIM_NONE;
 			aip->submode_start_time = Missiontime;
 		}
