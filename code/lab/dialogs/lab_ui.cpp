@@ -6,12 +6,13 @@
 #include "weapon/weapon.h"
 
 
+
 void LabUi::buildShipList() const
 {
 	int species_idx = 0;
 	ImGuiTreeNodeFlags node_flags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
 	for (auto const& species_def : Species_info) {
-		if (ImGui::TreeNode(species_def.species_name)) {
+		with_TreeNode(species_def.species_name) {
 			int ship_info_idx = 0;
 
 			for (auto const& class_def : Ship_info) {
@@ -23,12 +24,9 @@ void LabUi::buildShipList() const
 				}
 				ship_info_idx++;
 			}
-			ImGui::TreePop();
 		}
 		species_idx++;
 	}
-
-	ImGui::TreePop();
 }
 
 void LabUi::buildWeaponList() const
@@ -36,7 +34,7 @@ void LabUi::buildWeaponList() const
 	ImGuiTreeNodeFlags node_flags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
 
 	for (auto i = 0; i < Num_weapon_subtypes; ++i) {
-		if (ImGui::TreeNode(Weapon_subtype_names[i])) {
+		with_TreeNode(Weapon_subtype_names[i]) {
 			int weapon_idx = 0;
 
 			for (auto const& class_def : Weapon_info) {
@@ -50,12 +48,8 @@ void LabUi::buildWeaponList() const
 				}
 				weapon_idx++;
 			}
-
-			ImGui::TreePop();
 		}
 	}
-
-	ImGui::TreePop();
 }
 
 SCP_string get_directory_or_vp(const char* path)
@@ -110,7 +104,7 @@ void LabUi::buildBackgroundList() const
 	}
 
 	for (auto const& directory : directories) {
-		if (ImGui::TreeNode(directory.first.c_str())) {
+		with_TreeNode(directory.first.c_str()) {
 			for (const auto& mission : directory.second) {
 				ImGui::TreeNodeEx(mission.c_str(), node_flags, "%s", mission.c_str());
 
@@ -118,8 +112,6 @@ void LabUi::buildBackgroundList() const
 					getLabManager()->Renderer->useBackground(mission);
 				}
 			}
-
-			ImGui::TreePop();
 		}
 	}
 }
@@ -136,36 +128,35 @@ void LabUi::createUi() const
 	if (show_object_options)
 		showObjectOptions();
 
-	if (ImGui::BeginMainMenuBar()) {
-		if (ImGui::BeginMenu("Options")) {
+	with_MainMenuBar {
+		with_Menu("Options") {
 			ImGui::MenuItem("Render options", NULL, &show_render_options);
 			ImGui::MenuItem("Object selector", NULL, &show_object_selector);
 			ImGui::MenuItem("Object options", NULL, &show_object_options);
-			ImGui::EndMenu();
 		}
-
-		ImGui::EndMainMenuBar();
 	}
 
 	if (show_object_selector) {
-		ImGui::Begin("Select object and background");
+		with_Window("Select object and background")
+		{
 
-		if (ImGui::CollapsingHeader("Displayed Object")) {
-			if (ImGui::TreeNode("Ship Classes")) {
-				buildShipList();
+			if (ImGui::CollapsingHeader("Displayed Object")) {
+				with_TreeNode("Ship Classes")
+				{
+					buildShipList();
+				}
+
+				with_TreeNode("Weapon Classes")
+				{
+					buildWeaponList();
+				}
 			}
 
-			if (ImGui::TreeNode("Weapon Classes")) {
-				buildWeaponList();
+			if (ImGui::CollapsingHeader("Mission Background")) {
+				buildBackgroundList();
 			}
-		}
-
-		if (ImGui::CollapsingHeader("Mission Background")) {
-			buildBackgroundList();
 		}
 	}
-
-	ImGui::End();
 }
 
 void LabUi::showRenderOptions() const
@@ -199,125 +190,121 @@ void LabUi::showRenderOptions() const
 	float exposure_level = lighting_profile::current_exposure();
 	auto ppcv = lighting_profile::lab_get_ppc();
 
-	ImGui::Begin("Render options");
+	with_Window("Render options")
+	{
+		ImGui::Checkbox("Enable Model Rotation", &enable_model_rotation);
 
-	ImGui::Checkbox("Enable Model Rotation", &enable_model_rotation);
+		if (ImGui::CollapsingHeader("Model features")) {
+			ImGui::Checkbox("Rotate/Translate Subsystems", &animate_subsystems);
+			ImGui::Checkbox("Show full detail", &show_full_detail);
+			ImGui::Checkbox("Show thrusters", &show_thrusters);
+			ImGui::Checkbox("Show afterburners", &show_afterburners);
+			ImGui::Checkbox("Show weapons", &show_weapons);
+			ImGui::Checkbox("Show Insignia", &show_insignia);
+			ImGui::Checkbox("Show damage lightning", &show_damage_lightning);
+			ImGui::Checkbox("No glowpoints", &no_glowpoints);
+		}
 
-	if (ImGui::CollapsingHeader("Model features")) {
-		ImGui::Checkbox("Rotate/Translate Subsystems", &animate_subsystems);
-		ImGui::Checkbox("Show full detail", &show_full_detail);
-		ImGui::Checkbox("Show thrusters", &show_thrusters);
-		ImGui::Checkbox("Show afterburners", &show_afterburners);
-		ImGui::Checkbox("Show weapons", &show_weapons);
-		ImGui::Checkbox("Show Insignia", &show_insignia);
-		ImGui::Checkbox("Show damage lightning", &show_damage_lightning);
-		ImGui::Checkbox("No glowpoints", &no_glowpoints);
-	}
+		if (ImGui::CollapsingHeader("Texture options")) {
+			ImGui::Checkbox("Diffuse map", &diffuse_map);
+			ImGui::Checkbox("Glow map", &glow_map);
+			ImGui::Checkbox("Specular map", &spec_map);
+			ImGui::Checkbox("Reflection map", &reflect_map);
+			ImGui::Checkbox("Environment map", &env_map);
+			ImGui::Checkbox("Normal map", &normal_map);
+			ImGui::Checkbox("Height map", &height_map);
+			ImGui::Checkbox("Misc map", &misc_map);
+			ImGui::Checkbox("AO map", &ao_map);
 
-	if (ImGui::CollapsingHeader("Texture options")) {
-		ImGui::Checkbox("Diffuse map", &diffuse_map);
-		ImGui::Checkbox("Glow map", &glow_map);
-		ImGui::Checkbox("Specular map", &spec_map);
-		ImGui::Checkbox("Reflection map", &reflect_map);
-		ImGui::Checkbox("Environment map", &env_map);
-		ImGui::Checkbox("Normal map", &normal_map);
-		ImGui::Checkbox("Height map", &height_map);
-		ImGui::Checkbox("Misc map", &misc_map);
-		ImGui::Checkbox("AO map", &ao_map);
+			const char* texture_quality_settings[] = {
+				"Minimum",
+				"Low",
+				"Medium",
+				"High",
+				"Maximum",
+			};
 
-		const char* texture_quality_settings[] = {
-			"Minimum",
-			"Low",
-			"Medium",
-			"High",
-			"Maximum",
-		};
+			with_Combo("Texture quality",
+					texture_quality_settings[static_cast<int>(getLabManager()->Renderer->getTextureQuality())]) {
+				for (int n = 0; n < IM_ARRAYSIZE(texture_quality_settings); n++) {
+					const bool is_selected = n == static_cast<int>(getLabManager()->Renderer->getTextureQuality());
+					if (ImGui::Selectable(texture_quality_settings[n], is_selected))
+						getLabManager()->Renderer->setTextureQuality(static_cast<TextureQuality>(n));
 
-		if (ImGui::BeginCombo("Texture quality", texture_quality_settings[static_cast<int>(getLabManager()->Renderer->getTextureQuality())])) {
-			for (int n=0; n < IM_ARRAYSIZE(texture_quality_settings); n++) {
-				const bool is_selected = n == static_cast<int>(getLabManager()->Renderer->getTextureQuality());
-				if (ImGui::Selectable(texture_quality_settings[n], is_selected))
-					getLabManager()->Renderer->setTextureQuality(static_cast<TextureQuality>(n));
+					if (is_selected)
+						ImGui::SetItemDefaultFocus();
+				}
+			}
+		}
 
-				if (is_selected)
-					ImGui::SetItemDefaultFocus();
+		if (ImGui::CollapsingHeader("Scene rendering options")) {
+			ImGui::Checkbox("Hide Post Processing", &hide_post_processing);
+			ImGui::Checkbox("Render as wireframe", &use_wireframe_rendering);
+			ImGui::Checkbox("Render without light", &no_lighting);
+			ImGui::Checkbox("Render with emissive lighting", &show_emissive_lighting);
+			ImGui::SliderFloat("Light brightness", &light_factor, 0.0f, 10.0f);
+			ImGui::SliderFloat("Ambient factor", &ambient_factor, 0.0f, 10.0f);
+			ImGui::SliderFloat("Emissive amount", &emissive_factor, 0.0f, 10.0f);
+			ImGui::SliderFloat("Exposure", &exposure_level, 0.0f, 8.0f);
+			ImGui::SliderInt("Bloom level", &bloom_level, 0, 200);
+
+			const char* antialiasing_settings[] = {
+				"None",
+				"FXAA Low",
+				"FXAA Medium",
+				"FXAA High",
+				"SMAA Low",
+				"SMAA Medium",
+				"SMAA High",
+				"SMAA Ultra",
+			};
+			SCP_string tonemappers[] = {
+				"Linear",
+				"Uncharted",
+				"ACES",
+				"ACES Approximate",
+				"Cineon",
+				"Piecewise Power Curve",
+				"Piecewise Power Curve (RGB)",
+				"Reinhard Extended",
+				"Reinhard Jodie",
+			};
+
+			with_Combo("Antialiasing method", antialiasing_settings[static_cast<int>(Gr_aa_mode)]) {
+				for (int n = 0; n < IM_ARRAYSIZE(antialiasing_settings); n++) {
+					const bool is_selected = static_cast<int>(Gr_aa_mode) == n;
+
+					if (ImGui::Selectable(antialiasing_settings[n], is_selected))
+						getLabManager()->Renderer->setAAMode(static_cast<AntiAliasMode>(n));
+
+					if (is_selected)
+						ImGui::SetItemDefaultFocus();
+				}
 			}
 
-			ImGui::EndCombo();
-		}
-	}
+			with_Combo("Tonemapper",
+					lighting_profile::tonemapper_to_name(lighting_profile::current_tonemapper()).c_str()) {
+				for (int n = 0; n < IM_ARRAYSIZE(tonemappers); n++) {
+					const bool is_selected =
+						lighting_profile::tonemapper_to_name(lighting_profile::current_tonemapper()) == tonemappers[n];
+					if (ImGui::Selectable(tonemappers[n].c_str(), is_selected))
+						lighting_profile::lab_set_tonemapper(lighting_profile::name_to_tonemapper(tonemappers[n]));
 
-	if (ImGui::CollapsingHeader("Scene rendering options")) {
-		ImGui::Checkbox("Hide Post Processing", &hide_post_processing);
-		ImGui::Checkbox("Render as wireframe", &use_wireframe_rendering);
-		ImGui::Checkbox("Render without light", &no_lighting);
-		ImGui::Checkbox("Render with emissive lighting", &show_emissive_lighting);
-		ImGui::SliderFloat("Light brightness", &light_factor, 0.0f, 10.0f);
-		ImGui::SliderFloat("Ambient factor", &ambient_factor, 0.0f, 10.0f);
-		ImGui::SliderFloat("Emissive amount", &emissive_factor, 0.0f, 10.0f);
-		ImGui::SliderFloat("Exposure", &exposure_level, 0.0f, 8.0f);
-		ImGui::SliderInt("Bloom level", &bloom_level, 0, 200);
-
-		const char* antialiasing_settings[] = {
-			"None",
-			"FXAA Low",
-			"FXAA Medium",
-			"FXAA High",
-			"SMAA Low",
-			"SMAA Medium",
-			"SMAA High",
-			"SMAA Ultra",
-		};
-		SCP_string tonemappers[] = {
-			"Linear",
-			"Uncharted",
-			"ACES",
-			"ACES Approximate",
-			"Cineon",
-			"Piecewise Power Curve",
-			"Piecewise Power Curve (RGB)",
-			"Reinhard Extended",
-			"Reinhard Jodie",
-		};
-
-		if (ImGui::BeginCombo("Antialiasing method", antialiasing_settings[static_cast<int>(Gr_aa_mode)])) {
-			for (int n=0; n < IM_ARRAYSIZE(antialiasing_settings); n++) {
-				const bool is_selected = static_cast<int>(Gr_aa_mode) == n;
-
-				if (ImGui::Selectable(antialiasing_settings[n], is_selected))
-					getLabManager()->Renderer->setAAMode(static_cast<AntiAliasMode>(n));
-
-				if (is_selected)
-					ImGui::SetItemDefaultFocus();
-
+					if (is_selected)
+						ImGui::SetItemDefaultFocus();
+				}
 			}
 
-			ImGui::EndCombo();
-		}
-
-		if (ImGui::BeginCombo("Tonemapper", lighting_profile::tonemapper_to_name(lighting_profile::current_tonemapper()).c_str())) {
-			for (int n = 0; n < IM_ARRAYSIZE(tonemappers); n++) {
-				const bool is_selected =
-					lighting_profile::tonemapper_to_name(lighting_profile::current_tonemapper()) == tonemappers[n];
-				if (ImGui::Selectable(tonemappers[n].c_str(), is_selected)) 
-					lighting_profile::lab_set_tonemapper(lighting_profile::name_to_tonemapper(tonemappers[n]));
-
-				if (is_selected)
-					ImGui::SetItemDefaultFocus();
+			if (lighting_profile::current_tonemapper() == tnm_PPC ||
+				lighting_profile::current_tonemapper() == tnm_PPC_RGB) {
+				ImGui::SliderFloat("PPC Toe Strength", &ppcv.toe_strength, 0.0f, 1.0f);
+				ImGui::SliderFloat("PPC Toe Length", &ppcv.toe_length, 0.0f, 1.0f);
+				ImGui::SliderFloat("PPC Shoulder Angle", &ppcv.shoulder_angle, 0.0f, 1.0f);
+				ImGui::SliderFloat("PPC Shoulder Length", &ppcv.shoulder_length, 0.0f, 10.0f);
+				ImGui::SliderFloat("PPC Shoulder Strength", &ppcv.shoulder_strength, 0.0f, 1.0f);
 			}
-			ImGui::EndCombo();
-		}
-
-		if (lighting_profile::current_tonemapper() == tnm_PPC || lighting_profile::current_tonemapper() == tnm_PPC_RGB) {
-			ImGui::SliderFloat("PPC Toe Strength", &ppcv.toe_strength, 0.0f, 1.0f);
-			ImGui::SliderFloat("PPC Toe Length", &ppcv.toe_length, 0.0f, 1.0f);
-			ImGui::SliderFloat("PPC Shoulder Angle", &ppcv.shoulder_angle, 0.0f, 1.0f);
-			ImGui::SliderFloat("PPC Shoulder Length", &ppcv.shoulder_length, 0.0f, 10.0f);
-			ImGui::SliderFloat("PPC Shoulder Strength", &ppcv.shoulder_strength, 0.0f, 1.0f);
 		}
 	}
-
-	ImGui::End();
 
 	getLabManager()->Flags.set(ManagerFlags::ModelRotationEnabled, enable_model_rotation);
 	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowInsignia, show_insignia);
@@ -376,72 +363,68 @@ void do_triggered_anim(animation::ModelAnimationTriggerType type,
 void LabUi::showObjectOptions() const
 {
 	ImGuiTreeNodeFlags node_flags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
-	ImGui::Begin("Object Information");
+	with_Window("Object Information")
+	{
+		if (getLabManager()->CurrentMode == LabMode::Ship) {
+			auto objp = &Objects[getLabManager()->CurrentObject];
+			auto shipp = &Ships[objp->instance];
+			auto sip = &Ship_info[shipp->ship_info_index];
 
-	if (getLabManager()->CurrentMode == LabMode::Ship) {
-		auto objp = &Objects[getLabManager()->CurrentObject];
-		auto shipp = &Ships[objp->instance];
-		auto sip = &Ship_info[shipp->ship_info_index];
+			if (ImGui::CollapsingHeader(sip->name)) {
+				with_TreeNode("Subsystems") {
+					static ship_subsys* selected_subsys = nullptr;
+					int subsys_index = 0;
 
-		if (ImGui::CollapsingHeader(sip->name)) {
-			if (ImGui::TreeNode("Subsystems")) {
-				static ship_subsys* selected_subsys = nullptr;
-				int subsys_index = 0;
+					for (auto cur_subsys = GET_FIRST(&shipp->subsys_list);
+						 cur_subsys != END_OF_LIST(&shipp->subsys_list);
+						 cur_subsys = GET_NEXT(cur_subsys)) {
 
-				for (auto cur_subsys = GET_FIRST(&shipp->subsys_list); cur_subsys != END_OF_LIST(&shipp->subsys_list);
-					 cur_subsys = GET_NEXT(cur_subsys)) {
-
-					auto leaf_flags = node_flags;
-					if (selected_subsys == cur_subsys) {
-						vec3d pos;
-						vm_vec_unrotate(&pos, &cur_subsys->system_info->pnt, &objp->orient);
-						debug_sphere::add(pos, cur_subsys->system_info->radius);
-						leaf_flags |= ImGuiTreeNodeFlags_Selected;
-					}
-
-					auto subsys_name_tmp = cur_subsys->sub_name;
-					if (strlen(subsys_name_tmp) == 0)
-						subsys_name_tmp = cur_subsys->system_info->name;
-
-					SCP_string subsys_name;
-					sprintf(subsys_name, "%s (%i)", subsys_name_tmp, subsys_index);
-
-					if (ImGui::TreeNode(subsys_name.c_str())) {
-
-						ImGui::TreeNodeEx("Highlight system", leaf_flags);
-						if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
-							selected_subsys = cur_subsys;
+						auto leaf_flags = node_flags;
+						if (selected_subsys == cur_subsys) {
+							vec3d pos;
+							vm_vec_unrotate(&pos, &cur_subsys->system_info->pnt, &objp->orient);
+							debug_sphere::add(pos, cur_subsys->system_info->radius);
+							leaf_flags |= ImGuiTreeNodeFlags_Selected;
 						}
 
-						ImGui::TreePop();
-					}
+						auto subsys_name_tmp = cur_subsys->sub_name;
+						if (strlen(subsys_name_tmp) == 0)
+							subsys_name_tmp = cur_subsys->system_info->name;
 
-					subsys_index++;
-				}
+						SCP_string subsys_name;
+						sprintf(subsys_name, "%s (%i)", subsys_name_tmp, subsys_index);
 
-				ImGui::TreePop();
-			}
-		}
-	}
+						with_TreeNode(subsys_name.c_str()) {
 
-	if (ImGui::CollapsingHeader("Object actions")) {
-		if (getLabManager()->CurrentMode == LabMode::Ship) {
-			if (getLabManager()->isSafeForShips()) {
-				if (ImGui::Button("Destroy ship")) {
-					if (Objects[getLabManager()->CurrentObject].type == OBJ_SHIP) {
-						auto obj = &Objects[getLabManager()->CurrentObject];
+							ImGui::TreeNodeEx("Highlight system", leaf_flags);
+							if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
+								selected_subsys = cur_subsys;
+							}
+						}
 
-						obj->flags.remove(Object::Object_Flags::Player_ship);
-						ship_self_destruct(obj);
+						subsys_index++;
 					}
 				}
-
-
 			}
 		}
-	}
-	if (ImGui::CollapsingHeader("Description texts")) {}
-	if (ImGui::CollapsingHeader("Class values")) {}
 
-	ImGui::End();
+		if (ImGui::CollapsingHeader("Object actions")) {
+			if (getLabManager()->CurrentMode == LabMode::Ship) {
+				if (getLabManager()->isSafeForShips()) {
+					if (ImGui::Button("Destroy ship")) {
+						if (Objects[getLabManager()->CurrentObject].type == OBJ_SHIP) {
+							auto obj = &Objects[getLabManager()->CurrentObject];
+
+							obj->flags.remove(Object::Object_Flags::Player_ship);
+							ship_self_destruct(obj);
+						}
+					}
+				}
+			}
+		}
+		if (ImGui::CollapsingHeader("Description texts")) {
+		}
+		if (ImGui::CollapsingHeader("Class values")) {
+		}
+	}
 }
