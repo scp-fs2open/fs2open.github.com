@@ -52,6 +52,7 @@ void	wl_bash_ship_weapons(ship_weapon *swp, wss_unit *slot);
 
 void wl_set_default_weapons(int index, int ship_class);
 void wl_reset_to_defaults();
+void wl_fill_slots();
 
 // Set selected slot to first placed ship
 void wl_reset_selected_slot();
