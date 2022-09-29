@@ -147,6 +147,7 @@ namespace AI {
 		Ignore_aspect_when_leading,
 		Fix_good_rearm_time_bug,
 		No_continuous_turn_on_attack,
+		Fixed_removing_play_dead_order,
 
 		NUM_VALUES
 	};
