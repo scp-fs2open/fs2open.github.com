@@ -339,16 +339,16 @@ SCP_string png_b64_bitmap(size_t width, size_t height, bool y_flip, const uint8_
 		[](png_structp png_ptr, png_const_charp msg) {
 			mprintf(("PNG warning while generating base64: %s\n", msg));
 		}, 
-		[](png_structp png_ptr, png_bytep data, png_size_t length) {
-			auto& buffer = *static_cast<b64_buffer*>(png_get_io_ptr(png_ptr));
+		[](png_structp png_ptr, png_bytep datap, png_size_t length) {
+			auto& buf = *static_cast<b64_buffer*>(png_get_io_ptr(png_ptr));
 
-			while (buffer.i != 0 && length != 0) {
+			while (buf.i != 0 && length != 0) {
 				length--;
-				buffer.buffer[buffer.i] = *(data++);
+				buf.buffer[buf.i] = *(datap++);
 
-				if (++buffer.i >= 3) {
-					buffer.i = 0;
-					base64_encode(buffer.b64, buffer.buffer.data(), 3);
+				if (++buf.i >= 3) {
+					buf.i = 0;
+					base64_encode(buf.b64, buf.buffer.data(), 3);
 				}
 			}
 
@@ -357,11 +357,11 @@ SCP_string png_b64_bitmap(size_t width, size_t height, bool y_flip, const uint8_
 
 			size_t rem = length % 3;
 
-			base64_encode(buffer.b64, data, (unsigned int) length - (unsigned int) rem);
-			data = &data[length - rem];
+			base64_encode(buf.b64, datap, (unsigned int) length - (unsigned int) rem);
+			datap = &datap[length - rem];
 
-			for (; buffer.i < rem; buffer.i++) {
-				buffer.buffer[buffer.i] = *(data++);
+			for (; buf.i < rem; buf.i++) {
+				buf.buffer[buf.i] = *(datap++);
 			}
 		},
 		[](png_structp png_ptr) {
