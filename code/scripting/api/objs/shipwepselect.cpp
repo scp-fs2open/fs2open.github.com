@@ -106,6 +106,31 @@ ADE_VIRTVAR(isDisabled, l_Loadout_Wing_Slot, nullptr, "If the slot is not used i
 	return ade_set_args(L, "b", !current.getSlot()->in_mission);
 }
 
+ADE_VIRTVAR(isFilled, l_Loadout_Wing_Slot, "boolean", "If the slot is empty or filled. true if filled, false if empty", "boolean", "The slot filled status")
+{
+	ss_slot_info_h current;
+	bool setv;
+	if (!ade_get_args(L, "o|b", l_Loadout_Wing_Slot.Get(&current), &setv)) {
+		return ADE_RETURN_NIL;
+	}
+
+	if (ADE_SETTING_VAR) {
+		if (!(current.getSlot()->status & WING_SLOT_DISABLED)) {
+			if (setv) {
+				current.getSlot()->status &= ~WING_SLOT_EMPTY;
+				current.getSlot()->status |= WING_SLOT_FILLED;
+			} else {
+				current.getSlot()->status &= ~WING_SLOT_FILLED;
+				current.getSlot()->status |= WING_SLOT_EMPTY;
+			}
+		} else {
+			LuaError(L, "You cannot empty a slot that is ship or weapon locked!");
+		}
+	}
+
+	return ade_set_args(L, "b", (current.getSlot()->status & WING_SLOT_EMPTY) == 0);
+}
+
 ADE_VIRTVAR(isPlayer, l_Loadout_Wing_Slot, nullptr, "If the slot is a player ship", "boolean", "The slot player status")
 {
 	ss_slot_info_h current;
@@ -275,7 +300,8 @@ ADE_VIRTVAR(ShipClassIndex,
 	l_Loadout_Ship,
 	"number",
 	"The index of the Ship Class. When setting the ship class this will also set the weapons to empty slots. Use "
-	".Weapons and .Amounts to set those afterwards. Set to -1 to empty the slot.",
+	".Weapons and .Amounts to set those afterwards. Set to -1 to empty the slot and be sure to set the slot to empty "
+	"using Loadout_Wings[slot].isFilled.",
 	"number",
 	"The index or nil if handle is invalid")
 {
