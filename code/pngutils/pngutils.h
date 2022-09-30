@@ -19,6 +19,7 @@ extern int png_read_header(const char *real_filename, CFILE *img_cfp = NULL, int
 extern int png_read_bitmap(const char *real_filename, ubyte *image_data, int *bpp, int dest_size, int cf_type = CF_TYPE_ANY);
 
 extern bool png_write_bitmap(const char* filename, size_t width, size_t height, bool y_flip, const uint8_t* data);
+extern SCP_string png_b64_bitmap(size_t width, size_t height, bool y_flip, const uint8_t* data);
 
 namespace apng {
 

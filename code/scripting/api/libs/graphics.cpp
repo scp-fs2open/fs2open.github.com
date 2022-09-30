@@ -2138,5 +2138,13 @@ ADE_FUNC(createParticle,
 	return ADE_RETURN_TRUE;
 }
 
+ADE_FUNC(screenToBlob, l_Graphics, nullptr, "Captures the current render target and encodes it into a blob-PNG", "string", "The png blob string")
+{
+	if (!Gr_inited)
+		return ade_set_error(L, "s", "");
+
+	return ade_set_args(L, "s", gr_blob_screen().c_str());
+}
+
 } // namespace api
 } // namespace scripting

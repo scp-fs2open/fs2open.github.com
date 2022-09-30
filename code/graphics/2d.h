@@ -719,6 +719,9 @@ typedef struct screen {
 	// dumps the current screen to a file
 	std::function<void(const char* filename)> gf_print_screen;
 
+	// dumps the current screen to a html blob string
+	std::function<SCP_string()> gf_blob_screen;
+
 	// transforms and dumps the current environment map to a file
 	std::function<void(const char* filename)> gf_dump_envmap;
 
@@ -1009,6 +1012,7 @@ extern void gr_activate(int active);
 // old Descent-style gr_xxx calls.
 
 #define gr_print_screen		GR_CALL(gr_screen.gf_print_screen)
+#define gr_blob_screen		GR_CALL(gr_screen.gf_blob_screen)
 #define gr_dump_envmap		GR_CALL(gr_screen.gf_dump_envmap)
 
 //#define gr_flip				GR_CALL(gr_screen.gf_flip)

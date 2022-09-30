@@ -6,6 +6,7 @@
 #include "globalincs/pstypes.h"
 #include "graphics/2d.h"
 #include "pngutils/pngutils.h"
+#include "utils/base64.h"
 
 struct png_status {
 	CFILE* cfp = nullptr;
@@ -277,18 +278,8 @@ int png_read_bitmap(const char *real_filename, ubyte *image_data, int *bpp, int 
 	return PNG_ERROR_NONE;
 }
 
-bool png_write_bitmap(const char* filename, size_t width, size_t height, bool y_flip, const uint8_t* data) {
-	png_status status;
-
-	status.writing = true;
-	status.filename = filename;
-	status.cfp = cfopen(filename, "wb");
-
-	if (!status.cfp) {
-		return false;
-	}
-
-	auto png_ptr = png_create_write_struct_2(PNG_LIBPNG_VER_STRING, &status, png_error_fn, png_warning_fn, &status, png_malloc_fn, png_free_fn);
+static bool png_write_bitmap_data(size_t width, size_t height, bool y_flip, const uint8_t* data, png_voidp status, png_error_ptr error, png_error_ptr warning, png_rw_ptr writeFunc, png_flush_ptr flushFnc) {
+	auto png_ptr = png_create_write_struct_2(PNG_LIBPNG_VER_STRING, status, error, warning, status, png_malloc_fn, png_free_fn);
 
 	auto info_ptr = png_create_info_struct(png_ptr);
 	png_set_IHDR(png_ptr, info_ptr, (png_uint_32)width, (png_uint_32)height, 8, PNG_COLOR_TYPE_RGBA,
@@ -306,13 +297,82 @@ bool png_write_bitmap(const char* filename, size_t width, size_t height, bool y_
 	// According to the documentation level 6 should perform reasonably well for us
 	png_set_compression_level(png_ptr, 6);
 #endif
-	png_set_write_fn(png_ptr, &status, png_scp_write_data, png_scp_flush);
+	png_set_write_fn(png_ptr, status, writeFunc, flushFnc);
 	png_write_png(png_ptr, info_ptr, PNG_TRANSFORM_IDENTITY, nullptr);
 
 	png_destroy_write_struct(&png_ptr, &info_ptr);
+
+	return true;
+}
+
+bool png_write_bitmap(const char* filename, size_t width, size_t height, bool y_flip, const uint8_t* data) {
+	png_status status;
+
+	status.writing = true;
+	status.filename = filename;
+	status.cfp = cfopen(filename, "wb");
+
+	if (!status.cfp) {
+		return false;
+	}
+
+	png_write_bitmap_data(width, height, y_flip, data, &status, png_error_fn, png_warning_fn, png_scp_write_data, png_scp_flush);
+
 	cfclose(status.cfp);
 
 	return true;
+}
+
+SCP_string png_b64_bitmap(size_t width, size_t height, bool y_flip, const uint8_t* data) {
+	struct b64_buffer {
+		size_t i = 0;
+		std::array<png_byte, 3> buffer;
+		std::stringstream b64;
+
+	} buffer;
+
+	png_write_bitmap_data(width, height, y_flip, data, &buffer,
+		[](png_structp png_ptr, png_const_charp msg) {
+		mprintf(("PNG error while generating base64: %s\n", msg));
+		longjmp(png_jmpbuf(png_ptr), 1);
+		},
+		[](png_structp png_ptr, png_const_charp msg) {
+			mprintf(("PNG warning while generating base64: %s\n", msg));
+		}, 
+		[](png_structp png_ptr, png_bytep data, png_size_t length) {
+			auto& buffer = *static_cast<b64_buffer*>(png_get_io_ptr(png_ptr));
+
+			while (buffer.i != 0 && length != 0) {
+				length--;
+				buffer.buffer[buffer.i] = *(data++);
+
+				if (++buffer.i >= 3) {
+					buffer.i = 0;
+					base64_encode(buffer.b64, buffer.buffer.data(), 3);
+				}
+			}
+
+			if (length == 0)
+				return;
+
+			size_t rem = length % 3;
+
+			base64_encode(buffer.b64, data, (unsigned int) length - (unsigned int) rem);
+			data = &data[length - rem];
+
+			for (; buffer.i < rem; buffer.i++) {
+				buffer.buffer[buffer.i] = *(data++);
+			}
+		},
+		[](png_structp png_ptr) {
+			auto& buffer = *static_cast<b64_buffer*>(png_get_io_ptr(png_ptr));
+
+			if (buffer.i != 0) {
+				base64_encode(buffer.b64, buffer.buffer.data(), (unsigned int) buffer.i);
+			}
+		});
+
+	return buffer.b64.str();
 }
 
 /*
