@@ -336,7 +336,7 @@ SCP_string png_b64_bitmap(size_t width, size_t height, bool y_flip, const uint8_
 		mprintf(("PNG error while generating base64: %s\n", msg));
 		longjmp(png_jmpbuf(png_ptr), 1);
 		},
-		[](png_structp png_ptr, png_const_charp msg) {
+		[](png_structp, png_const_charp msg) {
 			mprintf(("PNG warning while generating base64: %s\n", msg));
 		}, 
 		[](png_structp png_ptr, png_bytep datap, png_size_t length) {
