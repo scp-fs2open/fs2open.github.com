@@ -3,7 +3,8 @@
 class LabUi {
   public:
 	void createUi() const;
-private:
+
+  private:
 	void buildShipList() const;
 	void buildWeaponList() const;
 	void buildBackgroundList() const;

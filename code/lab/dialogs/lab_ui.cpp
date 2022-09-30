@@ -84,15 +84,17 @@ void LabUi::buildBackgroundList() const
 
 	cf_get_file_list(missions, CF_TYPE_MISSIONS, NOX("*.fs2"));
 
-	SCP_map<SCP_string, SCP_vector<SCP_string>> directories;
+	static SCP_map<SCP_string, SCP_vector<SCP_string>> directories;
 
-	for (const auto& filename : missions) {
-		auto res = cf_find_file_location((filename + ".fs2").c_str(), CF_TYPE_MISSIONS);
+	if (directories.empty()) {
+		for (const auto& filename : missions) {
+			auto res = cf_find_file_location((filename + ".fs2").c_str(), CF_TYPE_MISSIONS);
 
-		if (res.found) {
-			auto location = get_directory_or_vp(res.full_name.c_str());
+			if (res.found) {
+				auto location = get_directory_or_vp(res.full_name.c_str());
 
-			directories[location].push_back(filename);
+				directories[location].push_back(filename);
+			}
 		}
 	}
 
@@ -227,7 +229,7 @@ void LabUi::showRenderOptions() const
 			with_Combo("Texture quality",
 					texture_quality_settings[static_cast<int>(getLabManager()->Renderer->getTextureQuality())]) {
 				for (int n = 0; n < IM_ARRAYSIZE(texture_quality_settings); n++) {
-					const bool is_selected = n == static_cast<int>(getLabManager()->Renderer->getTextureQuality());
+					bool is_selected = n == static_cast<int>(getLabManager()->Renderer->getTextureQuality());
 					if (ImGui::Selectable(texture_quality_settings[n], is_selected))
 						getLabManager()->Renderer->setTextureQuality(static_cast<TextureQuality>(n));
 
@@ -272,7 +274,7 @@ void LabUi::showRenderOptions() const
 
 			with_Combo("Antialiasing method", antialiasing_settings[static_cast<int>(Gr_aa_mode)]) {
 				for (int n = 0; n < IM_ARRAYSIZE(antialiasing_settings); n++) {
-					const bool is_selected = static_cast<int>(Gr_aa_mode) == n;
+					bool is_selected = static_cast<int>(Gr_aa_mode) == n;
 
 					if (ImGui::Selectable(antialiasing_settings[n], is_selected))
 						getLabManager()->Renderer->setAAMode(static_cast<AntiAliasMode>(n));
@@ -360,8 +362,17 @@ void do_triggered_anim(animation::ModelAnimationTriggerType type,
 	}
 }
 
+#define IMGUI_TABLE_ENTRY(colA, colB)     \
+	ImGui::TableNextRow();                \
+	ImGui::TableSetColumnIndex(0);        \
+	ImGui::TextUnformatted(colA);		  \
+	ImGui::TableSetColumnIndex(1);		  \
+	ImGui::TextUnformatted(colB);         \
+	
+
 void LabUi::showObjectOptions() const
 {
+	ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg;
 	ImGuiTreeNodeFlags node_flags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
 	with_Window("Object Information")
 	{
@@ -369,8 +380,28 @@ void LabUi::showObjectOptions() const
 			auto objp = &Objects[getLabManager()->CurrentObject];
 			auto shipp = &Ships[objp->instance];
 			auto sip = &Ship_info[shipp->ship_info_index];
+			auto pm = model_get(sip->model_num);
 
 			if (ImGui::CollapsingHeader(sip->name)) {
+				with_TreeNode("Table information"){
+					with_Table("table info", 2, flags) {
+						IMGUI_TABLE_ENTRY("Species", Species_info[sip->species].species_name)
+					}
+				}
+
+				with_TreeNode("Model information") {
+					
+					static bool display_headers = false;
+
+					with_Table("model info", 2, flags) {
+						IMGUI_TABLE_ENTRY("Model File", sip->pof_file)
+						IMGUI_TABLE_ENTRY("Target model", sip->pof_file_hud)
+						IMGUI_TABLE_ENTRY("Techroom model", sip->pof_file_tech)
+						IMGUI_TABLE_ENTRY("Cockpit model", sip->cockpit_pof_file)
+						IMGUI_TABLE_ENTRY("POF version", std::to_string(pm->version).c_str())
+					}
+				}
+				
 				with_TreeNode("Subsystems") {
 					static ship_subsys* selected_subsys = nullptr;
 					int subsys_index = 0;
