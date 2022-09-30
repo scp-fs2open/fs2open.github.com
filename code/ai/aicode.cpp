@@ -13320,7 +13320,10 @@ void ai_bay_emerge()
 	ai_path();
 
 	// New test: must have been in AI_EMERGE mode for at least 10 seconds, and be a minimum distance from the start point
-	if ( ( (Missiontime - aip->submode_start_time) > 10*F1_0 ) && (vm_vec_dist_quick(&Pl_objp->pos, &Objects[aip->goal_objnum].pos) > 0.75f * Objects[aip->goal_objnum].radius)) {
+	// This timeout results in AI not completing bay paths that take longer than 10 seconds, so disable with a flag with mods that need it --wookieejedi
+	if ( !(aip->ai_profile_flags[AI::Profile_Flags::Disable_bay_emerge_timeout]) &&
+		( (Missiontime - aip->submode_start_time) > 10 * F1_0) &&
+		( (vm_vec_dist_quick(&Pl_objp->pos, &Objects[aip->goal_objnum].pos) > 0.75f * Objects[aip->goal_objnum].radius) ) ) {
 		// erase path
 		ai_emerge_bay_path_cleanup(aip);
 		// deal with model animations
