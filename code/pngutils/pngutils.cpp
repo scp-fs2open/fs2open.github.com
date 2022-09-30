@@ -365,10 +365,10 @@ SCP_string png_b64_bitmap(size_t width, size_t height, bool y_flip, const uint8_
 			}
 		},
 		[](png_structp png_ptr) {
-			auto& buffer = *static_cast<b64_buffer*>(png_get_io_ptr(png_ptr));
+			auto& buf = *static_cast<b64_buffer*>(png_get_io_ptr(png_ptr));
 
-			if (buffer.i != 0) {
-				base64_encode(buffer.b64, buffer.buffer.data(), (unsigned int) buffer.i);
+			if (buf.i != 0) {
+				base64_encode(buf.b64, buf.buffer.data(), (unsigned int) buf.i);
 			}
 		});
 
