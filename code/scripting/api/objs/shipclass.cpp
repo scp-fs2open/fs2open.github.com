@@ -1145,6 +1145,75 @@ ADE_FUNC(renderTechModel2, l_Shipclass, "number X1, number Y1, number X2, number
 	return ade_set_args(L, "b", true);
 }
 
+ADE_FUNC(renderSelectModel,
+	l_Shipclass,
+	"shipclass, boolean restart, number x, number y, [number width = 629, number height = 355, selection effect = current mod setting]",
+	"Draws the 3D select ship model with the chosen effect at the specified coordinates. Restart should "
+	"be true on the first frame this is called and false on subsequent frames. Valid selection effects are 1 (fs1) or 2 (fs2).",
+	"boolean",
+	"true if rendered, false if error")
+{
+	int idx;
+	bool restart;
+	int x1;
+	int y1;
+	int x2 = 629;
+	int y2 = 355;
+	int effect = -1;
+	if (!ade_get_args(L, "obii|iii", l_Shipclass.Get(&idx), &restart, &x1, &y1, &x2, &y2, &effect))
+		return ADE_RETURN_NIL;
+
+	if (idx < 0 || idx >= ship_info_size())
+		return ade_set_args(L, "b", false);
+
+	if (restart) {
+		anim_timer_start = timer_get_milliseconds();
+	}
+
+	ship_info* sip = &Ship_info[idx];
+	
+	if (effect == -1) {
+		effect = sip->selection_effect;
+	}
+
+	float rev_rate = REVOLUTION_RATE;
+	if (sip->is_big_ship()) {
+		rev_rate *= 1.7f;
+	}
+	if (sip->is_huge_ship()) {
+		rev_rate *= 3.0f;
+	}
+
+	int modelNum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+	static float ShipRot = 0.0f;
+
+	model_render_params render_info;
+
+	if (sip->uses_team_colors) {
+		render_info.set_team_color(sip->default_team_name, "none", 0, 0);
+	}
+
+	if (sip->replacement_textures.size() > 0) {
+		render_info.set_replacement_textures(modelNum, sip->replacement_textures);
+	}
+
+	draw_model_rotating(&render_info,
+		modelNum,
+		x1,
+		y1,
+		x2,
+		y2,
+		&ShipRot,
+		&sip->closeup_pos,
+		sip->closeup_zoom * 1.3f,
+		rev_rate,
+		MR_AUTOCENTER | MR_NO_FOGGING,
+		GR_RESIZE_NONE,
+		effect);
+
+	return ade_set_args(L, "b", true);
+}
+
 ADE_FUNC(isModelLoaded, l_Shipclass, "[boolean Load = false]", "Checks if the model used for this shipclass is loaded or not and optionally loads the model, which might be a slow operation.", "boolean", "If the model is loaded or not")
 {
 	int idx;
