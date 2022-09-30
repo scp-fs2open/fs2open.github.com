@@ -226,8 +226,7 @@ namespace animation {
 
 		required_string("+Angle:");
 		stuff_angles_deg_phb(&angle);
-		int result = optional_string_one_of(3, "+Relative", "+Local", "+Absolute");
-		ModelAnimationCoordinateRelation isRelative = static_cast<ModelAnimationCoordinateRelation>(result < 0 ? 0 : result);
+		ModelAnimationCoordinateRelation isAbsolute = ModelAnimationParseHelper::parseCoordinateRelation();
 
 		auto submodel = ModelAnimationParseHelper::parseSubmodel();
 
@@ -238,7 +237,7 @@ namespace animation {
 				error_display(1, "Set Orientation has no target submodel!");
 		}
 
-		auto segment = std::shared_ptr<ModelAnimationSegmentSetOrientation>(new ModelAnimationSegmentSetOrientation(submodel, angle, isRelative));
+		auto segment = std::shared_ptr<ModelAnimationSegmentSetOrientation>(new ModelAnimationSegmentSetOrientation(submodel, angle, isAbsolute));
 
 		return segment;
 	}
@@ -564,8 +563,7 @@ namespace animation {
 			angles parse;
 			stuff_angles_deg_phb(&parse);
 			angle = std::move(parse);
-			int result = optional_string_one_of(3, "+Relative", "+Local", "+Absolute");
-			isAbsolute = static_cast<ModelAnimationCoordinateRelation>(result < 0 ? 0 : result);
+			isAbsolute = ModelAnimationParseHelper::parseCoordinateRelation();
 		}
 
 		if (optional_string("+Velocity:")) {
@@ -1112,8 +1110,7 @@ namespace animation {
 			vec3d parse;
 			stuff_vec3d(&parse);
 			offset = std::move(parse);
-			int result = optional_string_one_of(3, "+Relative", "+Local", "+Absolute");
-			isAbsolute = static_cast<ModelAnimationCoordinateRelation>(result < 0 ? 0 : result);
+			isAbsolute = ModelAnimationParseHelper::parseCoordinateRelation();
 		}
 
 		if (optional_string("+Velocity:")) {

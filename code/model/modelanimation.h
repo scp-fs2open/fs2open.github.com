@@ -391,6 +391,7 @@ namespace animation {
 		std::shared_ptr<ModelAnimationSubmodel> parentSubmodel = nullptr;
 
 		static std::shared_ptr<ModelAnimationSubmodel> parseSubmodel();
+		static ModelAnimationCoordinateRelation parseCoordinateRelation();
 
 		static void parseTables();
 		static void parseAnimsetInfo(ModelAnimationSet& set, ship_info* sip);

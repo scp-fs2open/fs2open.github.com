@@ -1150,6 +1150,11 @@ namespace animation {
 
 	}
 
+	ModelAnimationCoordinateRelation ModelAnimationParseHelper::parseCoordinateRelation() {
+		int result = optional_string_one_of(3, "+Relative", "+Local", "+Absolute");
+		return static_cast<ModelAnimationCoordinateRelation>(result < 0 ? 0 : result);
+	}
+
 	void ModelAnimationParseHelper::parseSingleAnimation() {
 
 		ModelAnimationParseHelper helper;
