@@ -74,9 +74,11 @@ namespace animation {
 			}
 
 			/* fall-thru */
-		case ModelAnimationState::NEED_RECALC:
+		case ModelAnimationState::NEED_RECALC: {
+			ModelAnimationSubmodelBuffer currentAnimationDelta;
+			m_set->initializeSubmodelBuffer(pmi, currentAnimationDelta);
 			//Store the submodels current data as the base for this animation and calculate this animations parameters
-			m_animation->recalculate(applyBuffer, pmi);
+			m_animation->recalculate(applyBuffer, currentAnimationDelta, pmi);
 
 			instanceData.duration = m_animation->getDuration(pmi->id);
 			instanceData.state = ModelAnimationState::RUNNING_FWD;
@@ -87,8 +89,9 @@ namespace animation {
 				if (m_flags[Animation_Flags::Loop, Animation_Flags::Auto_Reverse] && !m_flags[Animation_Flags::Reset_at_completion] && util::Random::flip_coin()) {
 					instanceData.state = ModelAnimationState::RUNNING_RWD;
 					break; //In this case, we must delay for a frame
-				}		
+				}
 			}
+		}
 
 			/* fall-thru */
 		case ModelAnimationState::RUNNING_FWD:
@@ -1147,6 +1150,11 @@ namespace animation {
 
 	}
 
+	ModelAnimationCoordinateRelation ModelAnimationParseHelper::parseCoordinateRelation() {
+		int result = optional_string_one_of(3, "+Relative", "+Local", "+Absolute");
+		return static_cast<ModelAnimationCoordinateRelation>(result < 0 ? 0 : result);
+	}
+
 	void ModelAnimationParseHelper::parseSingleAnimation() {
 
 		ModelAnimationParseHelper helper;
@@ -1463,7 +1471,7 @@ namespace animation {
 			}
 			else {
 				auto subsys = sip->animations.getSubmodel(sp->subobj_name);
-				auto rot = std::shared_ptr<ModelAnimationSegmentSetOrientation>(new ModelAnimationSegmentSetOrientation(subsys, angle, isRelative));
+				auto rot = std::shared_ptr<ModelAnimationSegmentSetOrientation>(new ModelAnimationSegmentSetOrientation(subsys, angle, isRelative ? ModelAnimationCoordinateRelation::RELATIVE_COORDS : ModelAnimationCoordinateRelation::ABSOLUTE_COORDS));
 				anim->setAnimation(std::move(rot));
 			}
 
@@ -1533,7 +1541,7 @@ namespace animation {
 				//Hence, throw time away, and let the segment handle calculating how long it actually takes
 			}
 
-			auto rotation = std::shared_ptr<ModelAnimationSegmentRotation>(new ModelAnimationSegmentRotation(subsys, target, velocity, tl::nullopt, acceleration, absolute));
+			auto rotation = std::shared_ptr<ModelAnimationSegmentRotation>(new ModelAnimationSegmentRotation(subsys, target, velocity, tl::nullopt, acceleration, absolute ? ModelAnimationCoordinateRelation::ABSOLUTE_COORDS : ModelAnimationCoordinateRelation::RELATIVE_COORDS));
 
 			if (optional_string("$Sound:")) {
 				gamesnd_id start_sound;

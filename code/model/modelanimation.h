@@ -70,6 +70,8 @@ namespace animation {
 		NUM_VALUES
 	};
 
+	enum class ModelAnimationCoordinateRelation : int { RELATIVE_COORDS, LOCAL_ABSOLUTE, ABSOLUTE_COORDS };
+
 	template <bool is_optional = false>
 	struct ModelAnimationData {
 	private:
@@ -193,7 +195,7 @@ namespace animation {
 		//This function needs to provide a deep copy operation that returns a copy of this segment, including with all potential child segments copied as well.
 		virtual ModelAnimationSegment* copy() const = 0;
 		//Will be called to give the animations an opportunity to recalculate based on current ship data, as well as animation data up to that point.
-		virtual void recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) = 0;
+		virtual void recalculate(ModelAnimationSubmodelBuffer& base, ModelAnimationSubmodelBuffer& currentAnimDelta, polymodel_instance* pmi) = 0;
 		//This function needs to contain anything that manipulates ModelAnimationData (such as any movement)
 		virtual void calculateAnimation(ModelAnimationSubmodelBuffer& base, float time, int pmi_id) const = 0;
 		//This function needs to contain any animation parts that do not change ModelAnimationData (such as sound or particles)
@@ -391,6 +393,7 @@ namespace animation {
 		std::shared_ptr<ModelAnimationSubmodel> parentSubmodel = nullptr;
 
 		static std::shared_ptr<ModelAnimationSubmodel> parseSubmodel();
+		static ModelAnimationCoordinateRelation parseCoordinateRelation();
 
 		static void parseTables();
 		static void parseAnimsetInfo(ModelAnimationSet& set, ship_info* sip);
