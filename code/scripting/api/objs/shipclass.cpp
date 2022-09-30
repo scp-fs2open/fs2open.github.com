@@ -639,7 +639,7 @@ ADE_FUNC(isWeaponAllowedOnShip,
 	if (wepidx < 0 || wepidx >= weapon_info_size())
 		return ade_set_error(L, "b", false);
 	if (bank != 0) {
-		if (bank < 0 || bank >= (Ship_info[idx].num_primary_banks + Ship_info[idx].num_secondary_banks))
+		if (bank < 0 || bank > (Ship_info[idx].num_primary_banks + Ship_info[idx].num_secondary_banks))
 			return ade_set_error(L, "b", false);
 	};
 	bank--; // Convert from Lua
