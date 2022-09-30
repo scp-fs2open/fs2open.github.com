@@ -6,6 +6,7 @@
 #include "weapon/weapon.h"
 #include "graphics/matrix.h"
 #include "vecmath.h"
+#include "missionui/missionscreencommon.h"
 
 namespace scripting {
 namespace api {
