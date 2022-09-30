@@ -318,7 +318,7 @@ void maybe_change_selected_wing_ship(int wb_num, int ws_num);
 
 // init functions
 void ss_init_pool(team_data *pteam);
-int create_wings();
+commit_pressed_status create_wings(bool API_Access = false);
 
 // loading/unloading
 void ss_unload_all_icons();
@@ -1893,11 +1893,13 @@ commit_pressed_status commit_pressed(bool API_Access)
 	
 	if ( Wss_num_wings > 0 ) {
 		if(!(Game_mode & GM_MULTIPLAYER)){
-			int rc;
-			rc = create_wings();
-			if (rc != 0) {
-				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
-				return commit_pressed_status::GENERAL_FAIL;
+			commit_pressed_status rc;
+			rc = create_wings(API_Access);
+			if (rc != commit_pressed_status::SUCCESS) {
+				if (!API_Access) {
+					gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
+				}
+				return rc;
 			}
 		}
 	}
@@ -2423,7 +2425,7 @@ void unload_wing_icons()
 //
 // returns:   0 ==> success
 //           !0 ==> failure
-int create_wings()
+commit_pressed_status create_wings(bool API_Access)
 {
 	ss_wing_info		*wb;
 	ss_slot_info		*ws;
@@ -2456,8 +2458,10 @@ int create_wings()
 					update_player_ship(Wss_slots[slot_index].ship_class);
 
 					if ( wl_update_ship_weapons(Ships[Player_obj->instance].objnum, &Wss_slots[i*MAX_WING_SLOTS+j]) == -1 ) {
-						popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR( "Player ship has no weapons", 461));
-						return -1;
+						if (!API_Access) {
+							popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Player ship has no weapons", 461));
+						}
+						return commit_pressed_status::PLAYER_NO_WEAPONS;
 					}
 
 					objnum = OBJ_INDEX(Player_obj);
@@ -2492,8 +2496,14 @@ int create_wings()
 			}
 			else if (ws->status & WING_SLOT_EMPTY) {
 				if ( ws->status & WING_SLOT_IS_PLAYER ) {						
-					popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR( "Player %s must select a place in player wing", 462), Player->callsign);
-					return -1;
+					if (!API_Access) {
+						popup(PF_USE_AFFIRMATIVE_ICON,
+							1,
+							POPUP_OK,
+							XSTR("Player %s must select a place in player wing", 462),
+							Player->callsign);
+					}
+					return commit_pressed_status::PLAYER_NO_SLOT;
 				}
 			}
 		}	// end for (wing slot)	
@@ -2546,7 +2556,7 @@ int create_wings()
 
 	}	// end for (wing block)
 	
-	return 0;
+	return commit_pressed_status::SUCCESS;
 }
 
 // ----------------------------------------------------------------------------
