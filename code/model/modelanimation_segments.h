@@ -5,8 +5,6 @@
 
 namespace animation {
 
-	enum class ModelAnimationCoordinateRelation { RELATIVE_COORDS, LOCAL_ABSOLUTE, ABSOLUTE_COORDS };
-
 	//This segment handles multiple generic segments chained after one another
 	class ModelAnimationSegmentSerial : public ModelAnimationSegment {
 		//configureables:
@@ -78,7 +76,7 @@ namespace animation {
 		std::shared_ptr<ModelAnimationSubmodel> m_submodel;
 		tl::optional<angles> m_targetAngle;
 		tl::optional<matrix> m_targetOrientation;
-		ModelAnimationCoordinateRelation m_isAngleRelative;
+		ModelAnimationCoordinateRelation m_relationType;
 
 	private:
 		ModelAnimationSegment* copy() const override;
@@ -89,8 +87,8 @@ namespace animation {
 
 	public:
 		static std::shared_ptr<ModelAnimationSegment> parser(ModelAnimationParseHelper* data);
-		ModelAnimationSegmentSetOrientation(std::shared_ptr<ModelAnimationSubmodel> submodel, const angles& angle, ModelAnimationCoordinateRelation isAngleRelative);
-		ModelAnimationSegmentSetOrientation(std::shared_ptr<ModelAnimationSubmodel> submodel, const matrix& orientation, ModelAnimationCoordinateRelation isAngleRelative);
+		ModelAnimationSegmentSetOrientation(std::shared_ptr<ModelAnimationSubmodel> submodel, const angles& angle, ModelAnimationCoordinateRelation relationType);
+		ModelAnimationSegmentSetOrientation(std::shared_ptr<ModelAnimationSubmodel> submodel, const matrix& orientation, ModelAnimationCoordinateRelation relationType);
 	};
 
 	//This segment rotates a submodels orientation by a certain amount around its defined rotation axis
@@ -134,7 +132,7 @@ namespace animation {
 		tl::optional<angles> m_velocity;
 		tl::optional<float> m_time;
 		tl::optional<angles> m_acceleration;
-		ModelAnimationCoordinateRelation m_isAbsolute;
+		ModelAnimationCoordinateRelation m_relationType;
 
 	private:
 		ModelAnimationSegment* copy() const override;
@@ -145,7 +143,7 @@ namespace animation {
 
 	public:
 		static std::shared_ptr<ModelAnimationSegment> parser(ModelAnimationParseHelper* data);
-		ModelAnimationSegmentRotation(std::shared_ptr<ModelAnimationSubmodel> submodel, tl::optional<angles> targetAngle, tl::optional<angles> velocity, tl::optional<float> time, tl::optional<angles> acceleration, ModelAnimationCoordinateRelation isAbsolute = ModelAnimationCoordinateRelation::RELATIVE_COORDS);
+		ModelAnimationSegmentRotation(std::shared_ptr<ModelAnimationSubmodel> submodel, tl::optional<angles> targetAngle, tl::optional<angles> velocity, tl::optional<float> time, tl::optional<angles> acceleration, ModelAnimationCoordinateRelation relationType = ModelAnimationCoordinateRelation::RELATIVE_COORDS);
 
 	};
 
@@ -206,7 +204,7 @@ namespace animation {
 		tl::optional<float> m_time;
 		tl::optional<vec3d> m_acceleration;
 		enum class CoordinateSystem { COORDS_PARENT, COORDS_LOCAL_AT_START, COORDS_LOCAL_CURRENT } m_coordType;
-		ModelAnimationCoordinateRelation m_isAbsolute;
+		ModelAnimationCoordinateRelation m_relationType;
 
 	private:
 
@@ -217,7 +215,7 @@ namespace animation {
 		void exchangeSubmodelPointers(ModelAnimationSet& replaceWith) override;
 	public:
 		static std::shared_ptr<ModelAnimationSegment> parser(ModelAnimationParseHelper* data);
-		ModelAnimationSegmentTranslation(std::shared_ptr<ModelAnimationSubmodel> submodel, tl::optional<vec3d> target, tl::optional<vec3d> velocity, tl::optional<float> time, tl::optional<vec3d> acceleration, CoordinateSystem coordType = CoordinateSystem::COORDS_PARENT, ModelAnimationCoordinateRelation isAbsolute = ModelAnimationCoordinateRelation::RELATIVE_COORDS);
+		ModelAnimationSegmentTranslation(std::shared_ptr<ModelAnimationSubmodel> submodel, tl::optional<vec3d> target, tl::optional<vec3d> velocity, tl::optional<float> time, tl::optional<vec3d> acceleration, CoordinateSystem coordType = CoordinateSystem::COORDS_PARENT, ModelAnimationCoordinateRelation relationType = ModelAnimationCoordinateRelation::RELATIVE_COORDS);
 
 	};
 

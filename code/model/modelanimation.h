@@ -70,6 +70,8 @@ namespace animation {
 		NUM_VALUES
 	};
 
+	enum class ModelAnimationCoordinateRelation : int { RELATIVE_COORDS, LOCAL_ABSOLUTE, ABSOLUTE_COORDS };
+
 	template <bool is_optional = false>
 	struct ModelAnimationData {
 	private:
