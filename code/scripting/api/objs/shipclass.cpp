@@ -1147,9 +1147,10 @@ ADE_FUNC(renderTechModel2, l_Shipclass, "number X1, number Y1, number X2, number
 
 ADE_FUNC(renderSelectModel,
 	l_Shipclass,
-	"shipclass, boolean restart, number x, number y, [number width = 629, number height = 355, selection effect = current mod setting]",
+	"shipclass, boolean restart, number x, number y, [number width = 629, number height = 355, number = currentEffectSetting]",
 	"Draws the 3D select ship model with the chosen effect at the specified coordinates. Restart should "
-	"be true on the first frame this is called and false on subsequent frames. Valid selection effects are 1 (fs1) or 2 (fs2).",
+	"be true on the first frame this is called and false on subsequent frames. Valid selection effects are 1 (fs1) or 2 (fs2), "
+	"defaults to the mod setting or the model's setting.",
 	"boolean",
 	"true if rendered, false if error")
 {
