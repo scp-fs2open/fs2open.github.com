@@ -513,7 +513,7 @@ ADE_FUNC(getPrimaryBankCapacity,
 {
 	int shipIdx;
 	int idx;
-	if (!ade_get_args(L, "ii", &shipIdx, &idx))
+	if (!ade_get_args(L, "oi", l_Shipclass.Get(&shipIdx), &idx))
 		return ADE_RETURN_NIL;
 
 	ship_info* sip = &Ship_info[shipIdx];
@@ -524,7 +524,7 @@ ADE_FUNC(getPrimaryBankCapacity,
 
 	idx--; // Convert from Lua's 1 based index system
 
-	return ade_set_args(L, "f", sip->primary_bank_ammo_capacity[idx]);
+	return ade_set_args(L, "i", sip->primary_bank_ammo_capacity[idx]);
 }
 
 ADE_VIRTVAR(numSecondaryBanks,
@@ -559,7 +559,7 @@ ADE_FUNC(getSecondaryBankCapacity,
 {
 	int shipIdx;
 	int idx;
-	if (!ade_get_args(L, "ii", &shipIdx, &idx))
+	if (!ade_get_args(L, "oi", l_Shipclass.Get(&shipIdx), &idx))
 		return ADE_RETURN_NIL;
 
 	ship_info* sip = &Ship_info[shipIdx];
@@ -570,7 +570,7 @@ ADE_FUNC(getSecondaryBankCapacity,
 
 	idx--; // Convert from Lua's 1 based index system
 
-	return ade_set_args(L, "f", sip->secondary_bank_ammo_capacity[idx]);
+	return ade_set_args(L, "i", sip->secondary_bank_ammo_capacity[idx]);
 }
 
 ADE_VIRTVAR(defaultPrimaries,
