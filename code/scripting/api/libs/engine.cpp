@@ -121,7 +121,7 @@ ADE_FUNC(createTracingCategory,
 
 ADE_FUNC(restartLog,
 	l_Engine,
-	"Closes and reopens the fs2_open.log",nullptr,nullptr,nullptr)
+	"","Closes and reopens the fs2_open.log",nullptr,nullptr)
 {
 	if (Log_debug_output_to_file) {
 		outwnd_close();
