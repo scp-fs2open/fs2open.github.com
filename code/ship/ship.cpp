@@ -135,6 +135,7 @@ ship	Ships[MAX_SHIPS];
 ship	*Player_ship;
 int		*Player_cockpit_textures;
 SCP_vector<cockpit_display> Player_displays;
+bool disableCockpits = false;
 
 wing	Wings[MAX_WINGS];
 bool	Ships_inited = false;
@@ -7578,7 +7579,7 @@ void ship_render_player_ship(object* objp) {
 		model_render_immediate(&render_info, sip->model_num, shipp->model_instance_num, &objp->orient, &eye_offset);
 		gr_zbuffer_clear(true);
 	}
-	if (renderCockpitModel) {
+	if (renderCockpitModel && !disableCockpits) {
 		model_render_params render_info;
 		render_info.set_detail_level_lock(0);
 		render_info.set_flags(render_flags);
