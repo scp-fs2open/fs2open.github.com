@@ -100,11 +100,6 @@ void LabUi::buildBackgroundList() const
 
 void LabUi::createUi()
 {
-	static bool show_render_options = false;
-	static bool show_object_selector = true;
-	static bool show_object_options = false;
-	static bool close_lab = false;
-
 	if (show_render_options)
 		showRenderOptions();
 
@@ -150,30 +145,31 @@ void LabUi::createUi()
 	rebuildAfterObjectChange = false;
 }
 
-void LabUi::showRenderOptions() const
+const char* antialiasing_settings[] = {
+	"None",
+	"FXAA Low",
+	"FXAA Medium",
+	"FXAA High",
+	"SMAA Low",
+	"SMAA Medium",
+	"SMAA High",
+	"SMAA Ultra",
+};
+
+SCP_string tonemappers[] = {
+	"Linear",
+	"Uncharted",
+	"ACES",
+	"ACES Approximate",
+	"Cineon",
+	"Piecewise Power Curve",
+	"Piecewise Power Curve (RGB)",
+	"Reinhard Extended",
+	"Reinhard Jodie",
+};
+
+void LabUi::showRenderOptions()
 {
-	static bool enable_model_rotation = false;
-	static bool show_insignia = false;
-	static bool show_damage_lightning = false;
-	static bool animate_subsystems = false;
-	static bool hide_post_processing = false;
-	static bool diffuse_map = true;
-	static bool glow_map = true;
-	static bool spec_map = true;
-	static bool reflect_map = true;
-	static bool env_map = true;
-	static bool normal_map = true;
-	static bool height_map = true;
-	static bool misc_map = true;
-	static bool ao_map = true;
-	static bool no_glowpoints = false;
-	static bool use_wireframe_rendering = false;
-	static bool no_lighting = false;
-	static bool show_full_detail = false;
-	static bool show_thrusters = false;
-	static bool show_afterburners = false;
-	static bool show_weapons = false;
-	static bool show_emissive_lighting = false;
 	int bloom_level = gr_bloom_intensity();
 	float ambient_factor = lighting_profile::lab_get_ambient();
 	float light_factor = lighting_profile::lab_get_light();
@@ -239,28 +235,6 @@ void LabUi::showRenderOptions() const
 			ImGui::SliderFloat("Exposure", &exposure_level, 0.0f, 8.0f);
 			ImGui::SliderInt("Bloom level", &bloom_level, 0, 200);
 
-			const char* antialiasing_settings[] = {
-				"None",
-				"FXAA Low",
-				"FXAA Medium",
-				"FXAA High",
-				"SMAA Low",
-				"SMAA Medium",
-				"SMAA High",
-				"SMAA Ultra",
-			};
-			SCP_string tonemappers[] = {
-				"Linear",
-				"Uncharted",
-				"ACES",
-				"ACES Approximate",
-				"Cineon",
-				"Piecewise Power Curve",
-				"Piecewise Power Curve (RGB)",
-				"Reinhard Extended",
-				"Reinhard Jodie",
-			};
-
 			with_Combo("Antialiasing method", antialiasing_settings[static_cast<int>(Gr_aa_mode)]) {
 				for (int n = 0; n < IM_ARRAYSIZE(antialiasing_settings); n++) {
 					bool is_selected = static_cast<int>(Gr_aa_mode) == n;
@@ -297,7 +271,7 @@ void LabUi::showRenderOptions() const
 		}
 
 		if (getLabManager()->Renderer->currentMissionBackground != LAB_MISSION_NONE_STRING) {
-			if (ImGui::Button("Export environment cubemap", ImVec2(-FLT_MIN, ImGui::GetTextLineHeight()))) {
+			if (ImGui::Button("Export environment cubemap", ImVec2(-FLT_MIN, ImGui::GetTextLineHeight()*2))) {
 				gr_dump_envmap(getLabManager()->Renderer->currentMissionBackground.c_str());
 			}
 		}
