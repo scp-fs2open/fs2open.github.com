@@ -80,9 +80,9 @@ void LabUi::buildBackgroundList() const
 
 	ImGuiTreeNodeFlags node_flags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
 
-	ImGui::TreeNodeEx("None", node_flags, "None");
+	ImGui::TreeNodeEx(LAB_MISSION_NONE_STRING, node_flags, LAB_MISSION_NONE_STRING);
 	if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
-		getLabManager()->Renderer->useBackground("None");
+		getLabManager()->Renderer->useBackground(LAB_MISSION_NONE_STRING);
 	}
 
 	for (auto const& directory : directories) {
@@ -111,7 +111,7 @@ void LabUi::createUi()
 			ImGui::MenuItem("Render options", NULL, &show_render_options);
 			ImGui::MenuItem("Object selector", NULL, &show_object_selector);
 			ImGui::MenuItem("Object options", NULL, &show_object_options);
-			ImGui::MenuItem("Close lab", NULL, &close_lab);
+			ImGui::MenuItem("Close lab", "ESC", &close_lab);
 		}
 	}
 

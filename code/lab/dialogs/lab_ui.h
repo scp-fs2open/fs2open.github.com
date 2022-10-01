@@ -13,13 +13,20 @@ class LabUi {
 	void showRenderOptions();
 	void showObjectOptions() const;
 
+	// if this is true, the displayed object has changed and so every piece of cached data related to
+	// the object must be invalidated
 	bool rebuildAfterObjectChange = false;
 
+	// these flags track the state of open windows. We start with the object selector open and all other
+	// subdialogs closed
 	bool show_render_options = false;
 	bool show_object_selector = true;
 	bool show_object_options = false;
+
+	// used to track the "Close Lab" function
 	bool close_lab = false;
 
+	// various settings from the graphics dialog
 	bool enable_model_rotation = false;
 	bool show_insignia = false;
 	bool show_damage_lightning = false;
