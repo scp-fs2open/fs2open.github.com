@@ -1195,9 +1195,6 @@ ADE_FUNC(saveLoadout,
 	nullptr,
 	nullptr)
 {
-	// Note this does all the things from common_select_init() in missionscreencommon.cpp except load UI
-	// elements into memory - Mjn
-
 	SCP_UNUSED(L); // unused parameter
 
 	// This could be requested before Common_team has been initialized, so let's check.
