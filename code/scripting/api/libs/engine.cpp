@@ -3,6 +3,7 @@
 
 #include "engine.h"
 
+#include "osapi/outwnd.h"
 #include "scripting/api/objs/tracing_category.h"
 #include "scripting/scripting.h"
 
@@ -116,6 +117,17 @@ ADE_FUNC(createTracingCategory,
 	}
 
 	return ade_set_args(L, "o", l_TracingCategory.Set(tracing::Category(name, gpu_category)));
+}
+
+ADE_FUNC(restartLog,
+	l_Engine,
+	"Closes and reopens the fs2_open.log",nullptr,nullptr,nullptr)
+{
+	if (Log_debug_output_to_file) {
+		outwnd_close();
+		outwnd_init();
+	}
+	return ADE_RETURN_NIL;
 }
 
 } // namespace api
