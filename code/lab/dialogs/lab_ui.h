@@ -2,7 +2,8 @@
 
 class LabUi {
   public:
-	void createUi() const;
+	void createUi();
+	void objectChanged();
 
   private:
 	void buildShipList() const;
@@ -10,4 +11,6 @@ class LabUi {
 	void buildBackgroundList() const;
 	void showRenderOptions() const;
 	void showObjectOptions() const;
+
+	bool rebuildAfterObjectChange = false;
 };
