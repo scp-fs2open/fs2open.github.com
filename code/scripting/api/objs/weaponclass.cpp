@@ -789,6 +789,11 @@ ADE_FUNC(renderSelectModel,
 	if (idx < 0 || idx >= weapon_info_size())
 		return ade_set_args(L, "b", false);
 
+	if (effect == 0 || effect > 2) {
+		LuaError(L, "Valid effect values are 1 or 2, got %i", effect);
+		return ade_set_args(L, "b", false);
+	}
+
 	if (restart) {
 		anim_timer_start = timer_get_milliseconds();
 	}
