@@ -70,6 +70,15 @@ LabManager::LabManager() {
 	teamp->num_weapon_choices = static_cast<int>(Weapon_info.size());
 
 	Game_mode |= GM_LAB;
+
+	graphicsSettings = gfx_options();
+	graphicsSettings.ppcv = lighting_profile::lab_get_ppc();
+	graphicsSettings.ambient_factor = lighting_profile::lab_get_ambient();
+	graphicsSettings.light_factor = lighting_profile::lab_get_light();
+	graphicsSettings.emissive_factor = lighting_profile::lab_get_emissive();
+	graphicsSettings.exposure_level = lighting_profile::current_exposure();
+	graphicsSettings.bloom_level = gr_bloom_intensity();
+	graphicsSettings.aa_mode = Gr_aa_mode;
 }
 
 LabManager::~LabManager()
@@ -173,11 +182,6 @@ void LabManager::onFrame(float frametime) {
 				RotationSpeedDivisor = 100.f;
 			break;
 
-			// bail...
-		case KEY_ESC:
-			close();
-			break;
-
 		default:
 			// check for game-specific controls
 			if (CurrentMode == LabMode::Ship) {
@@ -245,13 +249,13 @@ void LabManager::onFrame(float frametime) {
 		rot_angles.h = PI2 * frametime / rev_rate;
 		vm_rotate_matrix_by_angles(&CurrentOrientation, &rot_angles);
 	}
-
-	if (CloseThis)
-		close();
 	
 	ImGui::ShowDemoWindow();
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+	if (CloseThis)
+		close();
 
 	gr_flip();
 }

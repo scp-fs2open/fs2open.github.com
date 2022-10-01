@@ -19,6 +19,17 @@ FLAG_LIST(ManagerFlags) {
 	NUM_VALUES
 };
 
+struct gfx_options {
+	int bloom_level;
+	float ambient_factor;
+	float light_factor;
+	float emissive_factor;
+	float exposure_level;
+	piecewise_power_curve_values ppcv;
+	AntiAliasMode aa_mode;
+	TonemapperAlgorithm tonemapper;
+};
+
 class LabManager {
 public:
 	LabManager();
@@ -33,7 +44,7 @@ public:
 
 	void close() {
 		animation::ModelAnimationSet::stopAnimations();
-  
+
 		LabRenderer::close();
 
 		Game_mode &= ~GM_LAB;
@@ -81,7 +92,9 @@ public:
 	float RotationSpeedDivisor = 100.0f;
 
 	flagset<ManagerFlags> Flags;
-private:
+
+	gfx_options graphicsSettings;
+  private:
 	float Lab_thrust_len = 0.0f;
 	bool Lab_thrust_afterburn = false;
 	bool Weapons_loaded = false;
