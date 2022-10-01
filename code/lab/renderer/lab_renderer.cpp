@@ -7,6 +7,8 @@
 #include "starfield/nebula.h"
 #include "nebula/neb.h"
 #include "freespace.h"
+
+#include "missionui/missionscreencommon.h"
 #include "tracing/tracing.h"
 
 void LabRenderer::onFrame(float frametime) {
@@ -46,6 +48,10 @@ void LabRenderer::renderModel(float frametime) {
 	auto lab_emissive_light_save = Cmdline_emissive;
 
 	light_reset();
+
+	if (currentMissionBackground == LAB_MISSION_NONE_STRING) {
+		common_setup_room_lights();
+	}
 
 	Cmdline_emissive = renderFlags[LabRenderFlag::ShowEmissiveLighting];
 
