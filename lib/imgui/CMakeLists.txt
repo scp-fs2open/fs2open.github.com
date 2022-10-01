@@ -16,6 +16,8 @@ SET(IMGUI_SOURCES
     backends/imgui_impl_sdl.h
     backends/imgui_impl_sdl.cpp
     extensions/imgui_sugar.hpp
+    extensions/ImGuizmo.cpp
+    extensions/ImGuizmo.h
 )
 
 ADD_LIBRARY(imgui STATIC ${IMGUI_SOURCES})
