@@ -288,6 +288,12 @@ void LabUi::showRenderOptions() const
 				ImGui::SliderFloat("PPC Shoulder Strength", &ppcv.shoulder_strength, 0.0f, 1.0f);
 			}
 		}
+
+		if (getLabManager()->Renderer->currentMissionBackground != LAB_MISSION_NONE_STRING) {
+			if (ImGui::Button("Export environment cubemap", ImVec2(-FLT_MIN, ImGui::GetTextLineHeight()))) {
+				gr_dump_envmap(getLabManager()->Renderer->currentMissionBackground.c_str());
+			}
+		}
 	}
 
 	getLabManager()->Flags.set(ManagerFlags::ModelRotationEnabled, enable_model_rotation);

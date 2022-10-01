@@ -131,34 +131,6 @@ void LabManager::onFrame(float frametime) {
 		// handle any key presses
 		switch (key) {
 			// Adjust AA presets
-		case KEY_0:
-			if (!PostProcessing_override)
-				LabRenderer::setAAMode(AntiAliasMode::FXAA_Low);
-			break;
-		case KEY_1:
-			if (!PostProcessing_override)
-				LabRenderer::setAAMode(AntiAliasMode::FXAA_Medium);
-			break;
-		case KEY_2:
-			if (!PostProcessing_override)
-				LabRenderer::setAAMode(AntiAliasMode::FXAA_High);
-			break;
-		case KEY_3:
-			if (!PostProcessing_override)
-				LabRenderer::setAAMode(AntiAliasMode::SMAA_Low);
-			break;
-		case KEY_4:
-			if (!PostProcessing_override)
-				LabRenderer::setAAMode(AntiAliasMode::SMAA_Medium);
-			break;
-		case KEY_5:
-			if (!PostProcessing_override)
-				LabRenderer::setAAMode(AntiAliasMode::SMAA_High);
-			break;
-		case KEY_6:
-			if (!PostProcessing_override)
-				LabRenderer::setAAMode(AntiAliasMode::SMAA_Ultra);
-			break;
 
 		case KEY_T:
 			Renderer->useNextTeamColorPreset();
@@ -199,12 +171,6 @@ void LabManager::onFrame(float frametime) {
 			RotationSpeedDivisor *= 10.f;
 			if (RotationSpeedDivisor > 10000.f)
 				RotationSpeedDivisor = 100.f;
-			break;
-
-		case KEY_M:
-			// Dumping the environment map only makes sense if we actually have a background set
-			if (Renderer->currentMissionBackground != LAB_MISSION_NONE_STRING)
-				gr_dump_envmap(Renderer->currentMissionBackground.c_str());
 			break;
 
 			// bail...
