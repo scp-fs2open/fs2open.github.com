@@ -11,6 +11,7 @@
 
 #include "freespace.h"
 
+#include "extensions/ImGuizmo.h"
 #include "io/mouse.h"
 #include "weapon/weapon.h"
 
@@ -90,6 +91,7 @@ void LabManager::onFrame(float frametime) {
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplSDL2_NewFrame();
 	ImGui::NewFrame();
+	ImGuizmo::BeginFrame();
 
 	Renderer->onFrame(frametime);
 
@@ -181,6 +183,9 @@ void LabManager::onFrame(float frametime) {
 			if (RotationSpeedDivisor > 10000.f)
 				RotationSpeedDivisor = 100.f;
 			break;
+
+		case KEY_ESC:
+			notify_close();
 
 		default:
 			// check for game-specific controls
