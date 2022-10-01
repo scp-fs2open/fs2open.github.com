@@ -856,8 +856,8 @@ ADE_FUNC(draw3dLine, l_Graphics, "vector origin, vector destination, [boolean tr
 
 // Aardwolf's test code to render a model, supposed to emulate WMC's gr.drawModel function
 ADE_FUNC(drawModel, l_Graphics, "model model, vector position, orientation orientation",
-         "Draws the given model with the specified position and orientation - Use with extreme care, may not work "
-         "properly in all scripting hooks.  Note: this method does NOT use CurrentResizeMode.",
+         "Draws the given model with the specified position and orientation.  "
+	     "Note: this method does NOT use CurrentResizeMode.",
          "number", "Zero if successful, otherwise an integer error code")
 {
 	model_h *mdl = NULL;
@@ -874,7 +874,8 @@ ADE_FUNC(drawModel, l_Graphics, "model model, vector position, orientation orien
 		return ade_set_args(L, "i", 3);
 
 	// Make sure we have a scene to use
-	if (!Current_scene)
+	// Note that this is only relevant, and thus only expected to be set, in OBJECTRENDER hooks
+	if (Script_system.IsActiveAction(CHA_OBJECTRENDER) && !Current_scene)
 		return ade_set_args(L, "i", 4);
 
 	//Handle angles
@@ -914,7 +915,14 @@ ADE_FUNC(drawModel, l_Graphics, "model model, vector position, orientation orien
 
 	render_info.set_detail_level_lock(0);
 
-	model_render_queue(&render_info, Current_scene, model_num, orient, v);
+	// If this function executes in OBJECTRENDER, and if the Current_scene is set, we can take advantage
+	// of some optimizations by adding this model to the global render queue.
+	// In all other circumstances, we need to render the model in immediate mode, which may be slow but
+	// is guaranteed to work.
+	if (Script_system.IsActiveAction(CHA_OBJECTRENDER))
+		model_render_queue(&render_info, Current_scene, model_num, orient, v);
+	else
+		model_render_immediate(&render_info, model_num, orient, v);
 
 	//OK we're done
 	gr_end_view_matrix();
@@ -929,8 +937,7 @@ ADE_FUNC(drawModel, l_Graphics, "model model, vector position, orientation orien
 
 // Wanderer
 ADE_FUNC(drawModelOOR, l_Graphics, "model Model, vector Position, orientation Orientation, [number Flags]",
-         "Draws the given model with the specified position and orientation - Use with extreme care, designed to "
-         "operate properly only in On Object Render hooks.",
+         "Draws the given model with the specified position and orientation",
          "number", "Zero if successful, otherwise an integer error code")
 {
 	model_h *mdl = NULL;
@@ -954,7 +961,8 @@ ADE_FUNC(drawModelOOR, l_Graphics, "model Model, vector Position, orientation Or
 		return ade_set_args(L, "i", 3);
 
 	// Make sure we have a scene to use
-	if (!Current_scene)
+	// Note that this is only relevant, and thus only expected to be set, in OBJECTRENDER hooks
+	if (Script_system.IsActiveAction(CHA_OBJECTRENDER) && !Current_scene)
 		return ade_set_args(L, "i", 4);
 
 	//Handle angles
@@ -966,8 +974,14 @@ ADE_FUNC(drawModelOOR, l_Graphics, "model Model, vector Position, orientation Or
 	model_render_params render_info;
 	render_info.set_flags(flags);
 
-	model_render_queue(&render_info, Current_scene, model_num, orient, v);
-
+	// If this function executes in OBJECTRENDER, and if the Current_scene is set, we can take advantage
+	// of some optimizations by adding this model to the global render queue.
+	// In all other circumstances, we need to render the model in immediate mode, which may be slow but
+	// is guaranteed to work.
+	if (Script_system.IsActiveAction(CHA_OBJECTRENDER))
+		model_render_queue(&render_info, Current_scene, model_num, orient, v);
+	else
+		model_render_immediate(&render_info, model_num, orient, v);
 	return ade_set_args(L, "i", 0);
 }
 
