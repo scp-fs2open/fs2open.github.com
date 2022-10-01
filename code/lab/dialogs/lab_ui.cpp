@@ -1,10 +1,16 @@
 #include "lab_ui.h"
 
+#include "lab_ui_helpers.h"
+
 #include "graphics/debug_sphere.h"
 #include "lab/labv2_internal.h"
 #include "ship/shiphit.h"
 #include "weapon/weapon.h"
 
+void LabUi::objectChanged()
+{
+	rebuildAfterObjectChange = true;
+}
 
 
 void LabUi::buildShipList() const
@@ -52,32 +58,6 @@ void LabUi::buildWeaponList() const
 	}
 }
 
-SCP_string get_directory_or_vp(const char* path)
-{
-	SCP_string result(path);
-
-	// Is this a mission in a directory?
-	size_t found = result.find("data" DIR_SEPARATOR_STR "missions");
-
-	if (found == std::string::npos) // Guess not
-	{
-		found = result.find(".vp");
-	}
-
-	const auto directory_name_pos = result.rfind(DIR_SEPARATOR_CHAR, found - strlen(DIR_SEPARATOR_STR) - 1);
-
-	result = result.substr(directory_name_pos, found - directory_name_pos);
-
-	found = result.find(DIR_SEPARATOR_CHAR);
-	// Strip directory separators
-	while (found != std::string::npos) {
-		result.erase(found, strlen(DIR_SEPARATOR_STR));
-		found = result.find(DIR_SEPARATOR_CHAR);
-	}
-
-	return result;
-}
-
 void LabUi::buildBackgroundList() const
 {
 	SCP_vector<SCP_string> missions;
@@ -118,7 +98,7 @@ void LabUi::buildBackgroundList() const
 	}
 }
 
-void LabUi::createUi() const
+void LabUi::createUi()
 {
 	static bool show_render_options = false;
 	static bool show_object_selector = true;
@@ -159,6 +139,8 @@ void LabUi::createUi() const
 			}
 		}
 	}
+
+	rebuildAfterObjectChange = false;
 }
 
 void LabUi::showRenderOptions() const
@@ -382,17 +364,22 @@ void LabUi::showObjectOptions() const
 			auto sip = &Ship_info[shipp->ship_info_index];
 			auto pm = model_get(sip->model_num);
 
+
 			if (ImGui::CollapsingHeader(sip->name)) {
 				with_TreeNode("Table information"){
-					with_Table("table info", 2, flags) {
-						IMGUI_TABLE_ENTRY("Species", Species_info[sip->species].species_name)
-					}
+					static SCP_string table_text;
+
+					if (table_text.length() == 0 || rebuildAfterObjectChange)
+						table_text = get_ship_table_text(sip);
+
+					ImGui::InputTextMultiline("##table_text",
+						const_cast<char*>(table_text.c_str()),
+						table_text.length(),
+						ImVec2(-FLT_MIN, ImGui::GetTextLineHeight() * 16),
+						ImGuiInputTextFlags_ReadOnly);
 				}
 
 				with_TreeNode("Model information") {
-					
-					static bool display_headers = false;
-
 					with_Table("model info", 2, flags) {
 						IMGUI_TABLE_ENTRY("Model File", sip->pof_file)
 						IMGUI_TABLE_ENTRY("Target model", sip->pof_file_hud)
@@ -452,10 +439,6 @@ void LabUi::showObjectOptions() const
 					}
 				}
 			}
-		}
-		if (ImGui::CollapsingHeader("Description texts")) {
-		}
-		if (ImGui::CollapsingHeader("Class values")) {
 		}
 	}
 }

@@ -1,7 +1,6 @@
 #include "lab_ui_helpers.h"
 
 #include "cfile/cfile.h"
-#include "lab/labv2_internal.h"
 
 
 SCP_string get_ship_table_text(ship_info* sip)
@@ -155,47 +154,4 @@ SCP_string get_directory_or_vp(const char* path)
 	}
 
 	return result;
-}
-
-bool graphics_options_changed()
-{
-	auto stored_settings = getLabManager()->graphicsSettings;
-
-	if (stored_settings.ambient_factor != lighting_profile::lab_get_ambient())
-		return true;
-
-	if (stored_settings.light_factor != lighting_profile::lab_get_light())
-		return true;
-
-	if (stored_settings.emissive_factor != lighting_profile::lab_get_emissive())
-		return true;
-
-	if (stored_settings.exposure_level != lighting_profile::current_exposure())
-		return true;
-
-	if (stored_settings.tonemapper != lighting_profile::current_tonemapper())
-		return true;
-
-	if (stored_settings.bloom_level != gr_bloom_intensity())
-		return true;
-
-	if (stored_settings.aa_mode != Gr_aa_mode)
-		return true;
-
-	if (stored_settings.ppcv.shoulder_angle != lighting_profile::lab_get_ppc().shoulder_angle)
-		return true;
-
-	if (stored_settings.ppcv.shoulder_length != lighting_profile::lab_get_ppc().shoulder_length)
-		return true;
-
-	if (stored_settings.ppcv.shoulder_strength != lighting_profile::lab_get_ppc().shoulder_strength)
-		return true;
-
-	if (stored_settings.ppcv.toe_length != lighting_profile::lab_get_ppc().toe_length)
-		return true;
-
-	if (stored_settings.ppcv.toe_strength != lighting_profile::lab_get_ppc().toe_strength)
-		return true;
-
-	return false;
 }
