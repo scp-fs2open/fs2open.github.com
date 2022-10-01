@@ -564,7 +564,7 @@ ADE_FUNC(getSecondaryBankCapacity,
 
 	ship_info* sip = &Ship_info[shipIdx];
 
-	if (idx < 1 || idx > sip->num_primary_banks) {
+	if (idx < 1 || idx > sip->num_secondary_banks) {
 		return ADE_RETURN_NIL;
 	};
 
