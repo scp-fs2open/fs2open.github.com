@@ -148,6 +148,7 @@ namespace AI {
 		Fix_good_rearm_time_bug,
 		No_continuous_turn_on_attack,
 		Fixed_removing_play_dead_order,
+		Disable_bay_emerge_timeout,
 
 		NUM_VALUES
 	};
