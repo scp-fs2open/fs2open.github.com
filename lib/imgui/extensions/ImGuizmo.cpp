@@ -1033,7 +1033,7 @@ namespace IMGUIZMO_NAMESPACE
       gContext.mModelLocal = *(matrix_t*)matrix;
       gContext.mModelLocal.OrthoNormalize();
 
-      if (mode == LOCAL)
+      if (mode == IMGUIZMO_LOCAL)
       {
          gContext.mModel = gContext.mModelLocal;
       }
@@ -2072,7 +2072,7 @@ namespace IMGUIZMO_NAMESPACE
         return false;
       }
       const ImGuiIO& io = ImGui::GetIO();
-      const bool applyRotationLocaly = gContext.mMode == LOCAL || type == MT_MOVE_SCREEN;
+      const bool applyRotationLocaly = gContext.mMode == IMGUIZMO_LOCAL || type == MT_MOVE_SCREEN;
       bool modified = false;
 
       // move
@@ -2315,7 +2315,7 @@ namespace IMGUIZMO_NAMESPACE
         return false;
       }
       ImGuiIO& io = ImGui::GetIO();
-      bool applyRotationLocaly = gContext.mMode == LOCAL;
+      bool applyRotationLocaly = gContext.mMode == IMGUIZMO_LOCAL;
       bool modified = false;
 
       if (!gContext.mbUsing)
@@ -2479,7 +2479,7 @@ namespace IMGUIZMO_NAMESPACE
    bool Manipulate(const float* view, const float* projection, OPERATION operation, MODE mode, float* matrix, float* deltaMatrix, const float* snap, const float* localBounds, const float* boundsSnap)
    {
       // Scale is always local or matrix will be skewed when applying world scale or oriented matrix
-      ComputeContext(view, projection, matrix, (operation & SCALE) ? LOCAL : mode);
+      ComputeContext(view, projection, matrix, (operation & SCALE) ? IMGUIZMO_LOCAL : mode);
 
       // set delta to identity
       if (deltaMatrix)
@@ -2741,7 +2741,7 @@ namespace IMGUIZMO_NAMESPACE
    void ViewManipulate(float* view, const float* projection, OPERATION operation, MODE mode, float* matrix, float length, ImVec2 position, ImVec2 size, ImU32 backgroundColor)
    {
       // Scale is always local or matrix will be skewed when applying world scale or oriented matrix
-      ComputeContext(view, projection, matrix, (operation & SCALE) ? LOCAL : mode);
+      ComputeContext(view, projection, matrix, (operation & SCALE) ? IMGUIZMO_LOCAL : mode);
       ViewManipulate(view, length, position, size, backgroundColor);
    }
 
