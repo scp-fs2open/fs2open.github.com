@@ -103,6 +103,7 @@ void LabUi::createUi()
 	static bool show_render_options = false;
 	static bool show_object_selector = true;
 	static bool show_object_options = false;
+	static bool close_lab = false;
 
 	if (show_render_options)
 		showRenderOptions();
@@ -115,7 +116,13 @@ void LabUi::createUi()
 			ImGui::MenuItem("Render options", NULL, &show_render_options);
 			ImGui::MenuItem("Object selector", NULL, &show_object_selector);
 			ImGui::MenuItem("Object options", NULL, &show_object_options);
+			ImGui::MenuItem("Close lab", NULL, &close_lab);
 		}
+	}
+
+	if (close_lab) {
+		getLabManager()->notify_close();
+		close_lab = false;
 	}
 
 	if (show_object_selector) {
@@ -448,3 +455,4 @@ void LabUi::showObjectOptions() const
 		}
 	}
 }
+

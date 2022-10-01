@@ -4,6 +4,7 @@ class LabUi {
   public:
 	void createUi();
 	void objectChanged();
+	void closeUi();
 
   private:
 	void buildShipList() const;

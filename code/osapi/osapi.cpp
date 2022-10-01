@@ -726,7 +726,7 @@ static void handle_sdl_event(const SDL_Event& event) {
 	using namespace os::events;
 
 	bool imgui_processed_this = false;
-	if (ImGui::GetIO().WantCaptureKeyboard || ImGui::GetIO().WantCaptureMouse) {
+	if (gameseq_get_state() == GS_STATE_LAB && (ImGui::GetIO().WantCaptureKeyboard || ImGui::GetIO().WantCaptureMouse)) {
 		imgui_processed_this = ImGui_ImplSDL2_ProcessEvent(&event);
 	}
 
