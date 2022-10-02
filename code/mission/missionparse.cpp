@@ -7187,12 +7187,12 @@ void mission_parse_mark_reinforcement_available(char *name)
  * @return -1 if not created.  
  * @return objnum of created ship otherwise
  */
-int mission_did_ship_arrive(p_object *objp)
+int mission_did_ship_arrive(p_object *objp, bool force_arrival)
 {
-	int should_arrive;
+	bool should_arrive;
 
-	// find out in the arrival cue became true
-	should_arrive = eval_sexp(objp->arrival_cue);
+	// find out if the arrival cue became true
+	should_arrive = force_arrival || eval_sexp(objp->arrival_cue);
 
 	// we must first check to see if this ship is a reinforcement or not.  If so, then don't
 	// process
@@ -7207,8 +7207,6 @@ int mission_did_ship_arrive(p_object *objp)
 	}
 
 	if ( should_arrive ) { 		// has the arrival criteria been met?
-		int object_num;
-
 		// check to see if the delay field <= 0.  if so, then create a timestamp and then maybe
 		// create the object
 		if ( objp->arrival_delay <= 0 ) {
@@ -7256,10 +7254,7 @@ int mission_did_ship_arrive(p_object *objp)
 		}
 
 		// create the ship
-		object_num = parse_create_object(objp);
-
-		// since this ship is not in a wing, create a SHIP_ARRIVE entry
-		//mission_log_add_entry( LOG_SHIP_ARRIVE, objp->name, NULL );
+		int object_num = parse_create_object(objp);
 		Assert(object_num >= 0 && object_num < MAX_OBJECTS);
 		
 		// Play the music track for an arrival
@@ -7275,18 +7270,19 @@ int mission_did_ship_arrive(p_object *objp)
 }
 
 // Goober5000
-void mission_maybe_make_ship_arrive(p_object *p_objp)
+void mission_maybe_make_ship_arrive(p_object *p_objp, bool force_arrival = false)
 {
+	Assertion(p_objp->wingnum < 0, "Parse objects belonging to wings must arrive through the wing code!");
+
 	// try to create ship
-	int objnum = mission_did_ship_arrive(p_objp);
+	int objnum = mission_did_ship_arrive(p_objp, force_arrival);
 	if (objnum < 0)
 		return;
 
-	// remove from arrival list
 	if (p_objp == Arriving_support_ship)
-		mission_parse_support_arrived(objnum);
-	else
-		list_remove(&Ship_arrival_list, p_objp);
+		mission_parse_support_arrived(objnum);		// support ships have some unique housekeeping and are never on the arrival list
+	else if (parse_object_on_arrival_list(p_objp))
+		list_remove(&Ship_arrival_list, p_objp);	// remove from arrival list
 }
 
 // Goober5000

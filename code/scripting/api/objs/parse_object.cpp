@@ -5,6 +5,7 @@
 #include "vecmath.h"
 #include "weaponclass.h"
 
+extern void mission_maybe_make_ship_arrive(p_object* p_objp, bool force_arrival = false);
 extern bool sexp_check_flag_arrays(const char *flag_name, Object::Object_Flags &object_flag, Ship::Ship_Flags &ship_flags, Mission::Parse_Object_Flags &parse_obj_flag, AI::AI_Flags &ai_flag);
 extern void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future_ships, Object::Object_Flags object_flag, Ship::Ship_Flags ship_flag, Mission::Parse_Object_Flags parse_obj_flag, AI::AI_Flags ai_flag, bool set_flag);
 
@@ -313,6 +314,24 @@ ADE_FUNC(isPlayerStart, l_ParseObject, nullptr, "Determines if this parsed ship 
 		return ade_set_error(L, "b", false);
 
 	return ade_set_args(L, "b", poh->getObject()->flags[Mission::Parse_Object_Flags::OF_Player_start]);
+}
+
+ADE_FUNC(makeShipArrive, l_ParseObject, nullptr, "Causes this parsed ship to arrive as if its arrival cue had become true.", nullptr, nullptr)
+{
+	parse_object_h* poh = nullptr;
+	if (!ade_get_args(L, "o", l_ParseObject.GetPtr(&poh)))
+		return ade_set_error(L, "b", false);
+
+	if (poh == nullptr)
+		return ade_set_error(L, "b", false);
+
+	if (!poh->isValid())
+		return ade_set_error(L, "b", false);
+
+	poh->getObject()->arrival_delay = 0;
+	mission_maybe_make_ship_arrive(poh->getObject(), true);
+
+	return ADE_RETURN_TRUE;
 }
 
 parse_subsys_h::parse_subsys_h() = default;
