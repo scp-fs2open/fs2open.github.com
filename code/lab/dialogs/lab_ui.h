@@ -1,5 +1,7 @@
 #pragma once
 
+#include "species_defs/species_defs.h"
+
 class LabUi {
   public:
 	void createUi();
@@ -8,14 +10,21 @@ class LabUi {
 
   private:
 	void buildShipList() const;
+	void buildSpeciesEntry(species_info species_def, int species_idx) const;
 	void buildWeaponList() const;
+	void buildWeaponSubtypeList() const;
 	void buildBackgroundList() const;
 	void showRenderOptions();
 	void showObjectOptions() const;
+	void buildToolbarEntries();
+	void buildTextureQualityCombobox();
+	void buildAntialiasingCombobox();
+	void buildToneMapperCombobox();
+	void buildTableInfoTxtbox(ship_info* sip) const;
 
 	// if this is true, the displayed object has changed and so every piece of cached data related to
 	// the object must be invalidated
-	bool rebuildAfterObjectChange = false;
+	bool rebuild_after_object_change = false;
 
 	// these flags track the state of open windows. We start with the object selector open and all other
 	// subdialogs closed

@@ -9,44 +9,54 @@
 
 void LabUi::objectChanged()
 {
-	rebuildAfterObjectChange = true;
+	rebuild_after_object_change = true;
 }
 
-
-void LabUi::buildShipList() const
+void LabUi::buildSpeciesEntry(species_info species_def, int species_idx) const
 {
-	int species_idx = 0;
-	ImGuiTreeNodeFlags node_flags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
-	for (auto const& species_def : Species_info) {
-		with_TreeNode(species_def.species_name) {
-			int ship_info_idx = 0;
+	with_TreeNode(species_def.species_name)
+	{
+		int ship_info_idx = 0;
 
-			for (auto const& class_def : Ship_info) {
-				if (class_def.species == species_idx) {
-					ImGui::TreeNodeEx((void*)(intptr_t)ship_info_idx, node_flags, class_def.name);
-					if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
-						getLabManager()->changeDisplayedObject(LabMode::Ship, ship_info_idx);
-					}
+		for (auto const& class_def : Ship_info) {
+			if (class_def.species == species_idx) {
+				ImGui::TreeNodeEx((void*)(intptr_t)ship_info_idx,
+					ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen,
+					class_def.name);
+				if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
+					getLabManager()->changeDisplayedObject(LabMode::Ship, ship_info_idx);
 				}
-				ship_info_idx++;
 			}
+			ship_info_idx++;
 		}
-		species_idx++;
 	}
 }
 
-void LabUi::buildWeaponList() const
+void LabUi::buildShipList() const
 {
-	ImGuiTreeNodeFlags node_flags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
+	with_TreeNode("Ship Classes")
+	{
+		int species_idx = 0;
+		for (auto const& species_def : Species_info) {
+			buildSpeciesEntry(species_def, species_idx);
+			species_idx++;
+		}
+	}
+}
 
-	for (auto i = 0; i < Num_weapon_subtypes; ++i) {
-		with_TreeNode(Weapon_subtype_names[i]) {
+void LabUi::buildWeaponSubtypeList() const
+{
+	for (auto weapon_subtype_idx = 0; weapon_subtype_idx < Num_weapon_subtypes; ++weapon_subtype_idx) {
+		with_TreeNode(Weapon_subtype_names[weapon_subtype_idx])
+		{
 			int weapon_idx = 0;
 
 			for (auto const& class_def : Weapon_info) {
-				if ((i == 2 && class_def.wi_flags[Weapon::Info_Flags::Beam]) ||
-					(class_def.subtype == i && !class_def.wi_flags[Weapon::Info_Flags::Beam])) {
-					ImGui::TreeNodeEx((void*)(intptr_t)weapon_idx, node_flags, class_def.name);
+				if ((weapon_subtype_idx == 2 && class_def.wi_flags[Weapon::Info_Flags::Beam]) ||
+					(class_def.subtype == weapon_subtype_idx && !class_def.wi_flags[Weapon::Info_Flags::Beam])) {
+					ImGui::TreeNodeEx((void*)(intptr_t)weapon_idx,
+						ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen,
+						class_def.name);
 
 					if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
 						getLabManager()->changeDisplayedObject(LabMode::Weapon, weapon_idx);
@@ -55,6 +65,14 @@ void LabUi::buildWeaponList() const
 				weapon_idx++;
 			}
 		}
+	}
+}
+
+void LabUi::buildWeaponList() const
+{
+	with_TreeNode("Weapon Classes")
+	{
+		buildWeaponSubtypeList();
 	}
 }
 
@@ -98,16 +116,12 @@ void LabUi::buildBackgroundList() const
 	}
 }
 
-void LabUi::createUi()
+void LabUi::buildToolbarEntries()
 {
-	if (show_render_options)
-		showRenderOptions();
-
-	if (show_object_options)
-		showObjectOptions();
-
-	with_MainMenuBar {
-		with_Menu("Options") {
+	with_MainMenuBar
+	{
+		with_Menu("Options")
+		{
 			ImGui::MenuItem("Render options", NULL, &show_render_options);
 			ImGui::MenuItem("Object selector", NULL, &show_object_selector);
 			ImGui::MenuItem("Object options", NULL, &show_object_options);
@@ -119,21 +133,26 @@ void LabUi::createUi()
 		getLabManager()->notify_close();
 		close_lab = false;
 	}
+}
+
+void LabUi::createUi()
+{
+	if (show_render_options)
+		showRenderOptions();
+
+	if (show_object_options)
+		showObjectOptions();
+
+	buildToolbarEntries();
 
 	if (show_object_selector) {
 		with_Window("Select object and background")
 		{
 
 			if (ImGui::CollapsingHeader("Displayed Object")) {
-				with_TreeNode("Ship Classes")
-				{
-					buildShipList();
-				}
+				buildShipList();
 
-				with_TreeNode("Weapon Classes")
-				{
-					buildWeaponList();
-				}
+				buildWeaponList();
 			}
 
 			if (ImGui::CollapsingHeader("Mission Background")) {
@@ -142,7 +161,7 @@ void LabUi::createUi()
 		}
 	}
 
-	rebuildAfterObjectChange = false;
+	rebuild_after_object_change = false;
 }
 
 const char* antialiasing_settings[] = {
@@ -167,6 +186,62 @@ SCP_string tonemappers[] = {
 	"Reinhard Extended",
 	"Reinhard Jodie",
 };
+
+const char* texture_quality_settings[] = {
+	"Minimum",
+	"Low",
+	"Medium",
+	"High",
+	"Maximum",
+};
+
+void LabUi::buildTextureQualityCombobox()
+{
+	with_Combo("Texture quality",
+		texture_quality_settings[static_cast<int>(getLabManager()->Renderer->getTextureQuality())])
+	{
+		for (int n = 0; n < IM_ARRAYSIZE(texture_quality_settings); n++) {
+			bool is_selected = n == static_cast<int>(getLabManager()->Renderer->getTextureQuality());
+			if (ImGui::Selectable(texture_quality_settings[n], is_selected))
+				getLabManager()->Renderer->setTextureQuality(static_cast<TextureQuality>(n));
+
+			if (is_selected)
+				ImGui::SetItemDefaultFocus();
+		}
+	}
+}
+
+void LabUi::buildAntialiasingCombobox()
+{
+	with_Combo("Antialiasing method", antialiasing_settings[static_cast<int>(Gr_aa_mode)])
+	{
+		for (int n = 0; n < IM_ARRAYSIZE(antialiasing_settings); n++) {
+			bool is_selected = static_cast<int>(Gr_aa_mode) == n;
+
+			if (ImGui::Selectable(antialiasing_settings[n], is_selected))
+				getLabManager()->Renderer->setAAMode(static_cast<AntiAliasMode>(n));
+
+			if (is_selected)
+				ImGui::SetItemDefaultFocus();
+		}
+	}
+}
+
+void LabUi::buildToneMapperCombobox()
+{
+	with_Combo("Tonemapper", lighting_profile::tonemapper_to_name(lighting_profile::current_tonemapper()).c_str())
+	{
+		for (int n = 0; n < IM_ARRAYSIZE(tonemappers); n++) {
+			const bool is_selected =
+				lighting_profile::tonemapper_to_name(lighting_profile::current_tonemapper()) == tonemappers[n];
+			if (ImGui::Selectable(tonemappers[n].c_str(), is_selected))
+				lighting_profile::lab_set_tonemapper(lighting_profile::name_to_tonemapper(tonemappers[n]));
+
+			if (is_selected)
+				ImGui::SetItemDefaultFocus();
+		}
+	}
+}
 
 void LabUi::showRenderOptions()
 {
@@ -205,25 +280,7 @@ void LabUi::showRenderOptions()
 			ImGui::Checkbox("Misc map", &misc_map);
 			ImGui::Checkbox("AO map", &ao_map);
 
-			const char* texture_quality_settings[] = {
-				"Minimum",
-				"Low",
-				"Medium",
-				"High",
-				"Maximum",
-			};
-
-			with_Combo("Texture quality",
-					texture_quality_settings[static_cast<int>(getLabManager()->Renderer->getTextureQuality())]) {
-				for (int n = 0; n < IM_ARRAYSIZE(texture_quality_settings); n++) {
-					bool is_selected = n == static_cast<int>(getLabManager()->Renderer->getTextureQuality());
-					if (ImGui::Selectable(texture_quality_settings[n], is_selected))
-						getLabManager()->Renderer->setTextureQuality(static_cast<TextureQuality>(n));
-
-					if (is_selected)
-						ImGui::SetItemDefaultFocus();
-				}
-			}
+			buildTextureQualityCombobox();
 		}
 
 		if (ImGui::CollapsingHeader("Scene rendering options")) {
@@ -237,30 +294,9 @@ void LabUi::showRenderOptions()
 			ImGui::SliderFloat("Exposure", &exposure_level, 0.0f, 8.0f);
 			ImGui::SliderInt("Bloom level", &bloom_level, 0, 200);
 
-			with_Combo("Antialiasing method", antialiasing_settings[static_cast<int>(Gr_aa_mode)]) {
-				for (int n = 0; n < IM_ARRAYSIZE(antialiasing_settings); n++) {
-					bool is_selected = static_cast<int>(Gr_aa_mode) == n;
+			buildAntialiasingCombobox();
 
-					if (ImGui::Selectable(antialiasing_settings[n], is_selected))
-						getLabManager()->Renderer->setAAMode(static_cast<AntiAliasMode>(n));
-
-					if (is_selected)
-						ImGui::SetItemDefaultFocus();
-				}
-			}
-
-			with_Combo("Tonemapper",
-					lighting_profile::tonemapper_to_name(lighting_profile::current_tonemapper()).c_str()) {
-				for (int n = 0; n < IM_ARRAYSIZE(tonemappers); n++) {
-					const bool is_selected =
-						lighting_profile::tonemapper_to_name(lighting_profile::current_tonemapper()) == tonemappers[n];
-					if (ImGui::Selectable(tonemappers[n].c_str(), is_selected))
-						lighting_profile::lab_set_tonemapper(lighting_profile::name_to_tonemapper(tonemappers[n]));
-
-					if (is_selected)
-						ImGui::SetItemDefaultFocus();
-				}
-			}
+			buildToneMapperCombobox();
 
 			if (lighting_profile::current_tonemapper() == tnm_PPC ||
 				lighting_profile::current_tonemapper() == tnm_PPC_RGB) {
@@ -353,7 +389,24 @@ void do_triggered_anim(animation::ModelAnimationTriggerType type,
 	ImGui::TextUnformatted(colA);		  \
 	ImGui::TableSetColumnIndex(1);		  \
 	ImGui::TextUnformatted(colB);         \
-	
+
+
+void LabUi::buildTableInfoTxtbox(ship_info* sip) const
+{
+	with_TreeNode("Table information")
+	{
+		static SCP_string table_text;
+
+		if (table_text.length() == 0 || rebuild_after_object_change)
+			table_text = get_ship_table_text(sip);
+
+		ImGui::InputTextMultiline("##table_text",
+			const_cast<char*>(table_text.c_str()),
+			table_text.length(),
+			ImVec2(-FLT_MIN, ImGui::GetTextLineHeight() * 16),
+			ImGuiInputTextFlags_ReadOnly);
+	}
+}
 
 void LabUi::showObjectOptions() const
 {
@@ -369,18 +422,7 @@ void LabUi::showObjectOptions() const
 
 
 			if (ImGui::CollapsingHeader(sip->name)) {
-				with_TreeNode("Table information"){
-					static SCP_string table_text;
-
-					if (table_text.length() == 0 || rebuildAfterObjectChange)
-						table_text = get_ship_table_text(sip);
-
-					ImGui::InputTextMultiline("##table_text",
-						const_cast<char*>(table_text.c_str()),
-						table_text.length(),
-						ImVec2(-FLT_MIN, ImGui::GetTextLineHeight() * 16),
-						ImGuiInputTextFlags_ReadOnly);
-				}
+				buildTableInfoTxtbox(sip);
 
 				with_TreeNode("Model information") {
 					with_Table("model info", 2, flags) {
