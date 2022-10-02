@@ -1188,6 +1188,28 @@ ADE_FUNC(initSelect,
 	return ADE_RETURN_NIL;
 }
 
+ADE_FUNC(saveLoadout,
+	l_UserInterface_ShipWepSelect,
+	nullptr,
+	"Saves the current loadout to the player file. Only should be used when a mission is loaded but has not been started.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L); // unused parameter
+
+	// This could be requested before Common_team has been initialized, so let's check.
+	// Freespace.cpp will clear Common_select_inited if the player ever leaves a valid
+	// "briefing" game state, so this should be a pretty safe check to avoid the assert
+	// contained within. - Mjn
+	if (Common_select_inited) {
+		wss_save_loadout();
+	} else {
+		return ADE_RETURN_NIL;
+	}
+
+	return ADE_RETURN_NIL;
+}
+
 ADE_LIB_DERIV(l_Ship_Pool, "Ship_Pool", nullptr, nullptr, l_UserInterface_ShipWepSelect);
 ADE_INDEXER(l_Ship_Pool,
 	"number Index, number amount",
