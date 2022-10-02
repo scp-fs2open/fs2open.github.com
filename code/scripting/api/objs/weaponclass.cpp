@@ -766,6 +766,74 @@ ADE_FUNC(renderTechModel2,
 	return ade_set_args(L, "b", true);
 }
 
+ADE_FUNC(renderSelectModel,
+	l_Weaponclass,
+	"number x, number y, [number width = 629, number height = 355, number = currentEffectSetting]",
+	"Draws the 3D select weapon model with the chosen effect at the specified coordinates. Restart should "
+	"be true on the first frame this is called and false on subsequent frames. Note that primary weapons "
+	"will not render anything if they do not have a valid pof model defined! Valid selection effects are 1 (fs1) or 2 (fs2), "
+	"defaults to the mod setting or the model's setting.",
+	"boolean",
+	"true if rendered, false if error")
+{
+	int idx;
+	bool restart;
+	int x1;
+	int y1;
+	int x2 = 629;
+	int y2 = 355;
+	int effect = -1;
+	if (!ade_get_args(L, "obii|iii", l_Weaponclass.Get(&idx), &restart, &x1, &y1, &x2, &y2, &effect))
+		return ADE_RETURN_NIL;
+
+	if (idx < 0 || idx >= weapon_info_size())
+		return ade_set_args(L, "b", false);
+
+	if (effect == 0 || effect > 2) {
+		LuaError(L, "Valid effect values are 1 or 2, got %i", effect);
+		return ade_set_args(L, "b", false);
+	}
+
+	if (restart) {
+		anim_timer_start = timer_get_milliseconds();
+	}
+
+	weapon_info* wip = &Weapon_info[idx];
+
+	if (effect == -1) {
+		effect = wip->selection_effect;
+	}
+
+	int modelNum;
+	if (VALID_FNAME(wip->tech_model)) {
+		modelNum = model_load(wip->tech_model, 0, nullptr, 0);
+	} else if (wip->render_type != WRT_LASER) {
+		modelNum = model_load(wip->pofbitmap_name, 0, nullptr);
+	} else {
+		return ade_set_args(L, "b", false);
+	}
+
+	static float WepRot = 0.0f;
+
+	model_render_params render_info;
+
+	draw_model_rotating(&render_info,
+		modelNum,
+		x1,
+		y1,
+		x2,
+		y2,
+		&WepRot,
+		&wip->closeup_pos,
+		wip->closeup_zoom * 0.65f,
+		REVOLUTION_RATE,
+		MR_IS_MISSILE | MR_AUTOCENTER | MR_NO_FOGGING,
+		GR_RESIZE_NONE,
+		effect);
+
+	return ade_set_args(L, "b", true);
+}
+
 ADE_FUNC(getWeaponClassIndex, l_Weaponclass, NULL, "Gets the index value of the weapon class", "number", "index value of the weapon class")
 {
 	int idx;

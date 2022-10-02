@@ -68,6 +68,8 @@ extern UI_TIMESTAMP Flash_timer;	// timestamp used to start flashing
 extern UI_TIMESTAMP Flash_toggle;	// timestamp used to toggle flashing
 extern int Flash_bright;			// state of button to flash
 
+extern int anim_timer_start;
+
 void common_button_do(int i);
 
 //If new enums are added here be sure to also update the description for the API version in scripting\api\libs\ui.cpp - Mjn

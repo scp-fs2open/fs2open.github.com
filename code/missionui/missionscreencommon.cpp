@@ -104,7 +104,6 @@ extern void ss_set_team_pointers(int team);
 extern void ss_reset_team_pointers();
 extern void wl_set_team_pointers(int team);
 extern void wl_reset_team_pointers();
-extern int anim_timer_start;
 extern void ss_reset_selected_ship();
 
 //////////////////////////////////////////////////////////////////
