@@ -10102,6 +10102,9 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 	objnum = obj_create(OBJ_SHIP, -1, n, orient, pos, model_get_radius(sip->model_num), default_ship_object_flags);
 	Assert( objnum >= 0 );
 
+	// Init multiplayer interpolation info
+	Objects[objnum].interp_info.reset(sip->n_subsystems); 
+
 	shipp->model_instance_num = model_create_instance(objnum, sip->model_num);
 
 	shipp->ai_index = ai_get_slot(n);

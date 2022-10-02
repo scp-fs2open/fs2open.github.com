@@ -534,11 +534,6 @@ int obj_create(ubyte type,int parent_obj,int instance, matrix * orient,
 	obj->n_quadrants = DEFAULT_SHIELD_SECTIONS; // Might be changed by the ship creation code
 	obj->shield_quadrant.resize(obj->n_quadrants);
 
-	// only ships are interpolated
-	if (obj->type == OBJ_SHIP){
-		obj->interp_info.reset(); // Multiplayer Interpolation info
-	}
-
 	return objnum;
 }
 
