@@ -1588,6 +1588,8 @@ add_file_folder("Ui"
 )
 
 add_file_folder("Utils"
+	utils/base64.cpp
+	utils/base64.h
 	utils/encoding.cpp
 	utils/encoding.h
 	utils/event.h
