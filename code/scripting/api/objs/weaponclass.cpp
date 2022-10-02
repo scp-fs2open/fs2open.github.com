@@ -768,7 +768,7 @@ ADE_FUNC(renderTechModel2,
 
 ADE_FUNC(renderSelectModel,
 	l_Weaponclass,
-	"weaponclass, number x, number y, [number width = 629, number height = 355, number = currentEffectSetting]",
+	"number x, number y, [number width = 629, number height = 355, number = currentEffectSetting]",
 	"Draws the 3D select weapon model with the chosen effect at the specified coordinates. Restart should "
 	"be true on the first frame this is called and false on subsequent frames. Note that primary weapons "
 	"will not render anything if they do not have a valid pof model defined! Valid selection effects are 1 (fs1) or 2 (fs2), "
