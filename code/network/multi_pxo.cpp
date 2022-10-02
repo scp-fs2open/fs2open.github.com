@@ -3875,7 +3875,10 @@ int Multi_pxo_searching = 0;
 void multi_pxo_com_init(int input_len)
 {
 	int idx;
-	
+
+	// drop focus from main window
+	Multi_pxo_window.clear_focus();
+
 	// create the interface window
 	Multi_pxo_com_window.create(0, 0, gr_screen.max_w_unscaled,gr_screen.max_h_unscaled, 0);
 	Multi_pxo_com_window.set_mask_bmap(Multi_pxo_com_mask_fname[gr_screen.res]);	
@@ -3917,6 +3920,9 @@ void multi_pxo_com_close()
 {
 	// destroy the UI_WINDOW
 	Multi_pxo_com_window.destroy();
+
+	// back on main window, set focus on chat input
+	Multi_pxo_chat_input.set_focus();
 }
 
 /**

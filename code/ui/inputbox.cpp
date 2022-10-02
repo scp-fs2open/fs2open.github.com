@@ -81,7 +81,6 @@ void UI_INPUTBOX::init_cursor()
 void UI_INPUTBOX::create(UI_WINDOW *wnd, int _x, int _y, int _w, int _text_len, const char *_text, int _flags, int pixel_lim, color *clr)
 {
 	textListener = os::events::addEventListener(SDL_TEXTINPUT, 10000, std::bind(&UI_INPUTBOX::handle_textInputEvent, this, std::placeholders::_1));
-	SDL_StartTextInput();
 
 	int tw, th;
 
@@ -156,8 +155,6 @@ void UI_INPUTBOX::set_invalid_chars(const char *ichars)
 
 void UI_INPUTBOX::destroy()
 {
-
-	SDL_StopTextInput();
 	os::events::removeEventListener(textListener);
 
 	if (text) {
