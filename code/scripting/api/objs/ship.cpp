@@ -628,7 +628,6 @@ ADE_VIRTVAR(PrimaryTriggerDown, l_Ship, "boolean", "Determines if primary trigge
 		return ADE_RETURN_FALSE;
 }
 
-
 ADE_VIRTVAR(PrimaryBanks, l_Ship, "weaponbanktype", "Array of primary weapon banks", "weaponbanktype", "Primary weapon banks, or invalid weaponbanktype handle if ship handle is invalid")
 {
 	object_h *objh;
@@ -1071,6 +1070,30 @@ ADE_VIRTVAR(Orders, l_Ship, "shiporders", "Array of ship orders", "shiporders", 
 	}
 
 	return ade_set_args(L, "o", l_ShipOrders.Set(object_h(objh->objp)));
+}
+
+ADE_VIRTVAR(WaypointSpeedCap, l_Ship, "number", "Waypoint speed cap", "number", "The limit on the ship's speed for traversing waypoints.  -1 indicates no speed cap.  0 will be returned if handle is invalid.")
+{
+	object_h* objh;
+	int speed_cap = -1;
+	if (!ade_get_args(L, "o|i", l_Ship.GetPtr(&objh), &speed_cap))
+		return ade_set_error(L, "i", 0);
+
+	if (!objh->IsValid())
+		return ade_set_error(L, "i", 0);
+
+	ship* shipp = &Ships[objh->objp->instance];
+	ai_info* aip = &Ai_info[shipp->ai_index];
+
+	if (ADE_SETTING_VAR)
+	{
+		// cap speed to range (-1, 32767) to store within int
+		CLAMP(speed_cap, -1, 32767);
+
+		aip->waypoint_speed_cap = speed_cap;
+	}
+
+	return ade_set_args(L, "i", aip->waypoint_speed_cap);
 }
 
 ADE_FUNC(turnTowardsPoint,
