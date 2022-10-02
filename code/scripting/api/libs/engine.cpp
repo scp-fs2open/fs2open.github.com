@@ -4,6 +4,7 @@
 #include "engine.h"
 
 #include "osapi/outwnd.h"
+#include "scripting/ade_api.h"
 #include "scripting/api/objs/tracing_category.h"
 #include "scripting/scripting.h"
 
@@ -123,11 +124,13 @@ ADE_FUNC(restartLog,
 	l_Engine,
 	"","Closes and reopens the fs2_open.log",nullptr,nullptr)
 {
+	//These returns are very crude, but if we return nil then l_Engine isn't use and tidy gets cranky.
 	if (Log_debug_output_to_file) {
 		outwnd_close();
 		outwnd_init();
+		return ADE_RETURN_TRUE;
 	}
-	return ADE_RETURN_NIL;
+	return ADE_RETURN_FALSE;
 }
 
 } // namespace api
