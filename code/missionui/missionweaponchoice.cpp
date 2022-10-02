@@ -707,6 +707,298 @@ void weapon_buttons_init()
 }
 
 // ---------------------------------------------------------------------------------
+// draw_3d_overhead_view()
+//
+void draw_3d_overhead_view(int model_num,
+	int ship_class,
+	float* rotation_buffer,
+	float frametime,
+	int selected_ship_slot,
+	int selected_weapon_class,
+	int hovered_weapon_slot,
+	int x1,
+	int y1,
+	int x2,
+	int y2,
+	int resize_mode,
+	int bank1_x,
+	int bank1_y,
+	int bank2_x,
+	int bank2_y,
+	int bank3_x,
+	int bank3_y,
+	int bank4_x,
+	int bank4_y,
+	int bank5_x,
+	int bank5_y,
+	int bank6_x,
+	int bank6_y,
+	int bank7_x,
+	int bank7_y,
+	int bank_prim_offset,
+	int bank_sec_offset,
+	int bank_y_offset)
+{
+	ship_info* sip = &Ship_info[ship_class];
+
+	if (model_num < 0) {
+		mprintf(("Couldn't load model file '%s' in missionweaponchoice.cpp\n", sip->pof_file));
+	} else {
+		matrix object_orient = IDENTITY_MATRIX;
+		angles rot_angles;
+		float zoom;
+		zoom = sip->closeup_zoom * 1.3f;
+
+		if (!Cmdline_ship_choice_3d) {
+			rot_angles.p = -(PI_2);
+			rot_angles.b = 0.0f;
+			rot_angles.h = 0.0f;
+			vm_angles_2_matrix(&object_orient, &rot_angles);
+		} else {
+			float rev_rate;
+			rev_rate = REVOLUTION_RATE;
+			if (sip->is_big_ship()) {
+				rev_rate *= 1.7f;
+			}
+			if (sip->is_huge_ship()) {
+				rev_rate *= 3.0f;
+			}
+
+			*rotation_buffer += PI2 * frametime / rev_rate;
+			while (*rotation_buffer > PI2) {
+				*rotation_buffer -= PI2;
+			}
+
+			rot_angles.p = -0.6f;
+			rot_angles.b = 0.0f;
+			rot_angles.h = 0.0f;
+			vm_angles_2_matrix(&object_orient, &rot_angles);
+
+			rot_angles.p = 0.0f;
+			rot_angles.b = 0.0f;
+			rot_angles.h = *rotation_buffer;
+			vm_rotate_matrix_by_angles(&object_orient, &rot_angles);
+		}
+		model_render_params render_info;
+
+		gr_set_clip(x1, y1, x2, y2, resize_mode);
+		g3_start_frame(1);
+		g3_set_view_matrix(&sip->closeup_pos, &vmd_identity_matrix, zoom);
+		render_info.set_detail_level_lock(0);
+
+		// setup lights
+		common_setup_room_lights();
+
+		Glowpoint_use_depth_buffer = false;
+
+		model_clear_instance(model_num);
+		polymodel* pm = model_get(model_num);
+
+		if (sip->replacement_textures.size() > 0) {
+			render_info.set_replacement_textures(model_num, sip->replacement_textures);
+		}
+
+		if (shadow_maybe_start_frame(Shadow_disable_overrides.disable_mission_select_weapons)) {
+			gr_reset_clip();
+			shadows_start_render(&vmd_identity_matrix,
+				&Eye_position,
+				Proj_fov,
+				gr_screen.clip_aspect,
+				-sip->closeup_pos.xyz.z + pm->rad,
+				-sip->closeup_pos.xyz.z + pm->rad + 200.0f,
+				-sip->closeup_pos.xyz.z + pm->rad + 2000.0f,
+				-sip->closeup_pos.xyz.z + pm->rad + 10000.0f);
+
+			render_info.set_flags(MR_NO_TEXTURING | MR_NO_LIGHTING | MR_AUTOCENTER);
+
+			model_render_immediate(&render_info, model_num, &object_orient, &vmd_zero_vector);
+			shadows_end_render();
+			gr_set_clip(x1, y1, x2, y2, resize_mode);
+		}
+
+		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+		gr_set_view_matrix(&Eye_position, &vmd_identity_matrix);
+
+		render_info.set_flags(MR_AUTOCENTER | MR_NO_FOGGING);
+
+		model_render_immediate(&render_info, model_num, &object_orient, &vmd_zero_vector);
+
+		Glowpoint_use_depth_buffer = true;
+
+		batching_render_all();
+
+		shadow_end_frame();
+
+		// NOW render the lines for weapons
+		gr_reset_clip();
+		vertex draw_point;
+		vec3d subobj_pos;
+		int x, y;
+		int xc, yc;
+		int num_found = 2;
+
+		int bank_coords[MAX_SHIP_WEAPONS][2] = {
+			{bank1_x, bank1_y},
+			{bank2_x, bank2_y},
+			{bank3_x, bank3_y},
+			{bank4_x, bank4_y},
+			{bank5_x, bank5_y},
+			{bank6_x, bank6_y},
+			{bank7_x, bank7_y},
+		};
+
+		// Render selected primary lines
+		for (x = 0; x < pm->n_guns; x++) {
+			if ((Wss_slots[selected_ship_slot].wep[x] == selected_weapon_class && hovered_weapon_slot < 0) ||
+				x == hovered_weapon_slot) {
+				Assert(num_found < NUM_ICON_FRAMES);
+				gr_set_color_fast(&Icon_colors[ICON_FRAME_NORMAL + num_found]);
+				gr_circle(bank_coords[x][0] + bank_prim_offset, bank_coords[x][1] + bank_y_offset, 5, resize_mode);
+				for (y = 0; y < pm->gun_banks[x].num_slots; y++) {
+					// Stuff
+					vm_vec_unrotate(&subobj_pos, &pm->gun_banks[x].pnt[y], &object_orient);
+					g3_rotate_vertex(&draw_point, &subobj_pos);
+					g3_project_vertex(&draw_point);
+					int resize = resize_mode;
+					if (resize_mode == GR_RESIZE_MENU) {
+						resize = GR_RESIZE_MENU_NO_OFFSET;
+					}
+					gr_unsize_screen_posf(&draw_point.screen.xyw.x, &draw_point.screen.xyw.y, nullptr, nullptr, resize);
+
+					xc = fl2i(draw_point.screen.xyw.x + x1);
+					yc = fl2i(draw_point.screen.xyw.y + y1);
+
+					// get the curve right.
+					int curve;
+					if ((xc > bank_coords[x][0] + bank_prim_offset) && (bank_coords[x][1] + bank_y_offset < yc))
+						curve = 1;
+					else if ((xc < bank_coords[x][0] + bank_prim_offset) && (bank_coords[x][1] + bank_y_offset < yc))
+						curve = 0;
+					else if ((xc > bank_coords[x][0] + bank_prim_offset) && (bank_coords[x][1] + bank_y_offset > yc))
+						curve = 3;
+					else
+						curve = 2;
+
+					int lineendx;
+					int lineendy;
+					if (curve == 0) {
+						lineendx = xc + 4;
+					} else {
+						lineendx = xc - 4;
+					}
+
+					gr_line(bank_coords[x][0] + bank_prim_offset,
+						bank_coords[x][1] + bank_y_offset,
+						lineendx,
+						bank_coords[x][1] + bank_y_offset,
+						resize_mode);
+
+					if (curve == 0 || curve == 2)
+						lineendx = xc;
+
+					if (curve == 0 || curve == 1) {
+						lineendy = bank_coords[x][1] + bank_y_offset;
+					} else {
+						lineendy = bank_coords[x][1] + (bank_y_offset / 2);
+					}
+
+					gr_curve(lineendx, lineendy, 5, curve, resize_mode);
+
+					if (curve == 0 || curve == 1) {
+						lineendy = bank_coords[x][1] + lround(bank_y_offset * 1.5);
+					} else {
+						lineendy = bank_coords[x][1] + (bank_y_offset / 2);
+					}
+
+					gr_line(xc, lineendy, xc, yc, resize_mode);
+					gr_circle(xc, yc, 5, resize_mode);
+				}
+				num_found++;
+			}
+		}
+
+		num_found = 2;
+		// Render selected secondary lines
+		for (x = 0; x < pm->n_missiles; x++) {
+			if ((Wss_slots[selected_ship_slot].wep[x + MAX_SHIP_PRIMARY_BANKS] == selected_weapon_class &&
+					hovered_weapon_slot < 0) ||
+				x + MAX_SHIP_PRIMARY_BANKS == hovered_weapon_slot) {
+				Assert(num_found < NUM_ICON_FRAMES);
+				gr_set_color_fast(&Icon_colors[ICON_FRAME_NORMAL + num_found]);
+				gr_circle(bank_coords[x + MAX_SHIP_PRIMARY_BANKS][0] + bank_sec_offset,
+					bank_coords[x + MAX_SHIP_PRIMARY_BANKS][1] + bank_y_offset,
+					5,
+					resize_mode);
+				for (y = 0; y < pm->missile_banks[x].num_slots; y++) {
+					vm_vec_unrotate(&subobj_pos, &pm->missile_banks[x].pnt[y], &object_orient);
+					g3_rotate_vertex(&draw_point, &subobj_pos);
+					g3_project_vertex(&draw_point);
+					int resize = resize_mode;
+					if (resize_mode == GR_RESIZE_MENU) {
+						resize = GR_RESIZE_MENU_NO_OFFSET;
+					}
+					gr_unsize_screen_posf(&draw_point.screen.xyw.x, &draw_point.screen.xyw.y, nullptr, nullptr, resize);
+
+					xc = fl2i(draw_point.screen.xyw.x + x1);
+					yc = fl2i(draw_point.screen.xyw.y + y1);
+
+					// get the curve right.
+					int curve;
+					if ((xc > bank_coords[x + MAX_SHIP_PRIMARY_BANKS][0] + bank_sec_offset) &&
+						(bank_coords[x + MAX_SHIP_PRIMARY_BANKS][1] + bank_y_offset < yc))
+						curve = 1;
+					else if ((xc < bank_coords[x + MAX_SHIP_PRIMARY_BANKS][0] + bank_sec_offset) &&
+							 (bank_coords[x + MAX_SHIP_PRIMARY_BANKS][1] + bank_y_offset < yc))
+						curve = 0;
+					else if ((xc > bank_coords[x + MAX_SHIP_PRIMARY_BANKS][0] + bank_sec_offset) &&
+							 (bank_coords[x + MAX_SHIP_PRIMARY_BANKS][1] + bank_y_offset > yc))
+						curve = 3;
+					else
+						curve = 2;
+
+					int lineendx;
+					int lineendy;
+					if (curve == 1 || curve == 3)
+						lineendx = xc - 4;
+					else
+						lineendx = xc + 4;
+
+					gr_line(bank_coords[x + MAX_SHIP_PRIMARY_BANKS][0] + bank_sec_offset,
+						bank_coords[x + MAX_SHIP_PRIMARY_BANKS][1] + bank_y_offset,
+						lineendx,
+						bank_coords[x + MAX_SHIP_PRIMARY_BANKS][1] + bank_y_offset,
+						resize_mode);
+
+					if (curve == 1 || curve == 2) {
+						lineendy = bank_coords[x + MAX_SHIP_PRIMARY_BANKS][1] + (bank_y_offset / 2);
+					} else {
+						lineendy = bank_coords[x + MAX_SHIP_PRIMARY_BANKS][1] + bank_y_offset;
+					}
+					gr_curve(xc, lineendy, 5, curve, resize_mode);
+
+					if (curve == 1 || curve == 2) {
+						lineendy = bank_coords[x + MAX_SHIP_PRIMARY_BANKS][1] + (bank_y_offset / 2);
+					} else {
+						lineendy = bank_coords[x + MAX_SHIP_PRIMARY_BANKS][1] + lround(bank_y_offset * 1.5);
+					}
+
+					gr_line(xc, lineendy, xc, yc, resize_mode);
+					gr_circle(xc, yc, 5, resize_mode);
+				}
+
+				num_found++;
+			}
+		}
+
+		// Cleanup
+		gr_end_view_matrix();
+		gr_end_proj_matrix();
+
+		g3_end_frame();
+	}
+}
+
+// ---------------------------------------------------------------------------------
 // wl_render_overhead_view()
 //
 void wl_render_overhead_view(float frametime)
@@ -824,249 +1116,32 @@ void wl_render_overhead_view(float frametime)
 	}
 	else
 	{
-		// Load the necessary model file, if necessary
-		if (wl_ship->model_num < 0)
-		{
-			if (sip->pof_file_tech[0] != '\0') {
-				//This cannot load into sip->subsystems, as this will overwrite the subsystems model_num to the techroom model, which is decidedly wrong for the mission itself.
-				wl_ship->model_num = model_load(sip->pof_file_tech, 0, nullptr);
-			}
-			else {
-				wl_ship->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
-			}
-			model_page_in_textures(wl_ship->model_num, ship_class);
-		}
-		
-		if (wl_ship->model_num < 0)
-		{
-			mprintf(("Couldn't load model file '%s' in missionweaponchoice.cpp\n", sip->pof_file));
-		}
-		else
-		{
-			matrix	object_orient	= IDENTITY_MATRIX;
-			angles rot_angles;
-			float zoom;
-			zoom = sip->closeup_zoom * 1.3f;
-
-			if(!Cmdline_ship_choice_3d)
-			{
-				rot_angles.p = -(PI_2);
-				rot_angles.b = 0.0f;
-				rot_angles.h = 0.0f;
-				vm_angles_2_matrix(&object_orient, &rot_angles);
-			}
-			else
-			{
-				float rev_rate;
-				rev_rate = REVOLUTION_RATE;
-				if (sip->is_big_ship()) {
-					rev_rate *= 1.7f;
-				}
-				if (sip->is_huge_ship()) {
-					rev_rate *= 3.0f;
-				}
-
-				WeapSelectScreenShipRot += PI2 * frametime / rev_rate;
-				while (WeapSelectScreenShipRot > PI2){
-					WeapSelectScreenShipRot -= PI2;	
-				}
-
-				rot_angles.p = -0.6f;
-				rot_angles.b = 0.0f;
-				rot_angles.h = 0.0f;
-				vm_angles_2_matrix(&object_orient, &rot_angles);
-
-				rot_angles.p = 0.0f;
-				rot_angles.b = 0.0f;
-				rot_angles.h = WeapSelectScreenShipRot;
-				vm_rotate_matrix_by_angles(&object_orient, &rot_angles);
-			}
-
-			model_render_params render_info;
-
-			gr_set_clip(Wl_overhead_coords[gr_screen.res][0], Wl_overhead_coords[gr_screen.res][1], gr_screen.res == 0 ? 291 : 467, gr_screen.res == 0 ? 226 : 362, GR_RESIZE_MENU);
-			g3_start_frame(1);
-			g3_set_view_matrix( &sip->closeup_pos, &Eye_matrix, zoom);
-			render_info.set_detail_level_lock(0);
-			
-			//setup lights
-			common_setup_room_lights();
-
-            Glowpoint_use_depth_buffer = false;
-            
-			model_clear_instance(wl_ship->model_num);
-			polymodel *pm = model_get(wl_ship->model_num);
-
-			if (sip->replacement_textures.size() > 0) 
-			{
-				render_info.set_replacement_textures(wl_ship->model_num, sip->replacement_textures);
-			}
-
-			if (shadow_maybe_start_frame(Shadow_disable_overrides.disable_mission_select_weapons))
-			{
-				gr_reset_clip();
-				shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, gr_screen.clip_aspect, -sip->closeup_pos.xyz.z + pm->rad, 
-					-sip->closeup_pos.xyz.z + pm->rad + 200.0f, -sip->closeup_pos.xyz.z + pm->rad + 2000.0f, -sip->closeup_pos.xyz.z + pm->rad + 10000.0f);
-
-				render_info.set_flags(MR_NO_TEXTURING | MR_NO_LIGHTING | MR_AUTOCENTER);
-
-				model_render_immediate(&render_info, wl_ship->model_num, &object_orient, &vmd_zero_vector);
-				shadows_end_render();
-				gr_set_clip(Wl_overhead_coords[gr_screen.res][0], Wl_overhead_coords[gr_screen.res][1], gr_screen.res == 0 ? 291 : 467, gr_screen.res == 0 ? 226 : 362, GR_RESIZE_MENU);
-			}
-			
-			gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-			gr_set_view_matrix(&Eye_position, &Eye_matrix);
-
-			render_info.set_flags(MR_AUTOCENTER | MR_NO_FOGGING);
-
-			model_render_immediate(&render_info, wl_ship->model_num, &object_orient, &vmd_zero_vector);
-
-            Glowpoint_use_depth_buffer = true;
-            
-			batching_render_all();
-
-			shadow_end_frame();
-
-			//NOW render the lines for weapons
-			gr_reset_clip();
-			vertex draw_point;
-			vec3d subobj_pos;
-			int x, y;
-			int xc, yc;
-			int num_found = 2;
-
-			//Render selected primary lines
-			for(x = 0; x < pm->n_guns; x++)
-			{
-				if((Wss_slots[Selected_wl_slot].wep[x] == Selected_wl_class && Hot_weapon_bank < 0) || x == Hot_weapon_bank)
-				{
-					Assert(num_found < NUM_ICON_FRAMES);
-					gr_set_color_fast(&Icon_colors[ICON_FRAME_NORMAL + num_found]);
-					gr_circle(Wl_bank_coords[gr_screen.res][x][0] + 106, Wl_bank_coords[gr_screen.res][x][1] + 12, 5, GR_RESIZE_MENU);
-					for(y = 0; y < pm->gun_banks[x].num_slots; y++)
-					{
-						//Stuff
-						vm_vec_unrotate(&subobj_pos,&pm->gun_banks[x].pnt[y],&object_orient);
-						g3_rotate_vertex(&draw_point, &subobj_pos);
-						g3_project_vertex(&draw_point);
-						gr_unsize_screen_posf(&draw_point.screen.xyw.x, &draw_point.screen.xyw.y, NULL, NULL, GR_RESIZE_MENU_NO_OFFSET);
-
-						xc = fl2i(draw_point.screen.xyw.x + Wl_overhead_coords[gr_screen.res][0]);
-						yc = fl2i(draw_point.screen.xyw.y +Wl_overhead_coords[gr_screen.res][1]);
-
-						//get the curve right.
-						int curve;
-						if ((xc > Wl_bank_coords[gr_screen.res][x][0] + 106) && (Wl_bank_coords[gr_screen.res][x][1] + 12 < yc))
-							curve = 1;
-						else if ((xc < Wl_bank_coords[gr_screen.res][x][0] + 106) && (Wl_bank_coords[gr_screen.res][x][1] + 12 < yc))
-							curve = 0;
-						else if ((xc > Wl_bank_coords[gr_screen.res][x][0] + 106) && (Wl_bank_coords[gr_screen.res][x][1] + 12 > yc))
-							curve = 3;
-						else
-							curve = 2;
-
-						int lineendx;
-						int lineendy;
-						if (curve == 0) {
-							lineendx = xc + 4;
-						} else {
-							lineendx = xc - 4;
-						}
-
-						gr_line(Wl_bank_coords[gr_screen.res][x][0] + 106, Wl_bank_coords[gr_screen.res][x][1] + 12, lineendx, Wl_bank_coords[gr_screen.res][x][1] + 12, GR_RESIZE_MENU);
-						
-						if (curve == 0 || curve == 2)
-							lineendx = xc;
-
-						if (curve == 0 || curve == 1) {
-							lineendy = Wl_bank_coords[gr_screen.res][x][1] + 12;
-						} else {
-							lineendy = Wl_bank_coords[gr_screen.res][x][1] + 7;
-						}
-						
-						gr_curve(lineendx, lineendy, 5, curve, GR_RESIZE_MENU);
-						
-						if (curve == 0 || curve == 1) {
-							lineendy = Wl_bank_coords[gr_screen.res][x][1] + 17;
-						} else {
-							lineendy = Wl_bank_coords[gr_screen.res][x][1] + 7;
-						}
-
-						gr_line(xc, lineendy, xc, yc, GR_RESIZE_MENU);
-						gr_circle(xc, yc, 5, GR_RESIZE_MENU);
-					}
-					num_found++;
-				}
-			}
-
-			num_found = 2;
-			//Render selected secondary lines
-			for(x = 0; x < pm->n_missiles; x++)
-			{
-				if((Wss_slots[Selected_wl_slot].wep[x + MAX_SHIP_PRIMARY_BANKS] == Selected_wl_class && Hot_weapon_bank < 0) || x + MAX_SHIP_PRIMARY_BANKS == Hot_weapon_bank)
-				{
-					Assert(num_found < NUM_ICON_FRAMES);
-					gr_set_color_fast(&Icon_colors[ICON_FRAME_NORMAL + num_found]);
-					gr_circle(Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][0] - 50, Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][1] + 12, 5, GR_RESIZE_MENU);
-					for(y = 0; y < pm->missile_banks[x].num_slots; y++)
-					{
-						vm_vec_unrotate(&subobj_pos,&pm->missile_banks[x].pnt[y],&object_orient);
-						g3_rotate_vertex(&draw_point, &subobj_pos);
-						g3_project_vertex(&draw_point);
-						gr_unsize_screen_posf(&draw_point.screen.xyw.x, &draw_point.screen.xyw.y, NULL, NULL, GR_RESIZE_MENU_NO_OFFSET);
-
-						xc = fl2i(draw_point.screen.xyw.x + Wl_overhead_coords[gr_screen.res][0]);
-						yc = fl2i(draw_point.screen.xyw.y +Wl_overhead_coords[gr_screen.res][1]);
-
-						//get the curve right.
-						int curve;
-						if ((xc > Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][0] - 50) && (Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][1] + 12 < yc))
-							curve = 1;
-						else if ((xc < Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][0] - 50) && (Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][1] + 12 < yc))
-							curve = 0;
-						else if ((xc > Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][0] - 50) && (Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][1] + 12 > yc))
-							curve = 3;
-						else
-							curve = 2;
-
-						int lineendx;
-						int lineendy;
-						if (curve == 1 || curve == 3)
-							lineendx = xc - 4;
-						else
-							lineendx = xc + 4;
-
-						gr_line(Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][0] - 50, Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][1] + 12, lineendx, Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][1] + 12, GR_RESIZE_MENU);
-						
-						if (curve == 1 || curve == 2) {
-							lineendy = Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][1] + 7;
-						} else {
-							lineendy = Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][1] + 12;
-						}
-						gr_curve(xc, lineendy, 5, curve, GR_RESIZE_MENU);
-						
-						if (curve == 1 || curve == 2) {
-							lineendy = Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][1] + 7;
-						} else {
-							lineendy = Wl_bank_coords[gr_screen.res][x + MAX_SHIP_PRIMARY_BANKS][1] + 17;
-						}
-						
-						gr_line(xc, lineendy, xc, yc, GR_RESIZE_MENU);
-						gr_circle(xc, yc, 5, GR_RESIZE_MENU);
-					}
-
-					num_found++;
-				}
-			}
-
-			//Cleanup
-			gr_end_view_matrix();
-			gr_end_proj_matrix();
-
-			g3_end_frame();
-			
-		}
+		draw_3d_overhead_view(wl_ship->model_num,
+			ship_class,
+			&WeapSelectScreenShipRot,
+			frametime,
+			Selected_wl_slot,
+			Selected_wl_class,
+			Hot_weapon_bank,
+			Wl_overhead_coords[gr_screen.res][0],
+			Wl_overhead_coords[gr_screen.res][1],
+			gr_screen.res == 0 ? 291 : 467,
+			gr_screen.res == 0 ? 226 : 362,
+			GR_RESIZE_MENU,
+			Wl_bank_coords[gr_screen.res][0][0],
+			Wl_bank_coords[gr_screen.res][0][1],
+			Wl_bank_coords[gr_screen.res][1][0],
+			Wl_bank_coords[gr_screen.res][1][1],
+			Wl_bank_coords[gr_screen.res][2][0],
+			Wl_bank_coords[gr_screen.res][2][1],
+			Wl_bank_coords[gr_screen.res][3][0],
+			Wl_bank_coords[gr_screen.res][3][1],
+			Wl_bank_coords[gr_screen.res][4][0],
+			Wl_bank_coords[gr_screen.res][4][1],
+			Wl_bank_coords[gr_screen.res][5][0],
+			Wl_bank_coords[gr_screen.res][5][1],
+			Wl_bank_coords[gr_screen.res][6][0],
+			Wl_bank_coords[gr_screen.res][6][1]);
 	}
 
 	//Draw ship name

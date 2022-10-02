@@ -1,6 +1,8 @@
 //
 //
 
+#include "freespace.h" //For frametime
+
 #include "shipclass.h"
 #include "model.h"
 #include "cockpit_display.h"
@@ -1216,6 +1218,129 @@ ADE_FUNC(renderSelectModel,
 		MR_AUTOCENTER | MR_NO_FOGGING,
 		GR_RESIZE_NONE,
 		effect);
+
+	return ade_set_args(L, "b", true);
+}
+
+ADE_FUNC(renderOverheadModel,
+	l_Shipclass,
+	"number x, number y, [number width = 467, number height = 362, number selectedSlot = -1, number selectedWeapon = -1, number hoverSlot = -1, "
+	"number bank1_x = 170, number bank1_y = 203, number bank2_x = 170, number bank2_y = 246, number bank3_x = 170, number bank3_y = 290, "
+	"number bank4_x = 552, number bank4_y = 203, number bank5_x = 552, number bank5_y = 246, number bank6_x = 552, number bank6_y = 290, "
+	"number bank7_x = 552, number bank7_y = 333]",
+	"Draws the 3D overhead ship model with the lines pointing from bank weapon selections to bank firepoints. SelectedSlot refers to loadout "
+	"ship slots 1-12 where wing 1 is 1-4, wing 2 is 5-8, and wing 3 is 5-9. SelectedWeapon is the index into weapon classes. HoverSlot refers "
+	"to the bank slots 1-7 where 1-3 are primaries and 4-6 are secondaries. Lines will be drawn from any bank containing the SelectedWeapon to "
+	"the firepoints on the model of that bank. Similarly, lines will be drawn from the bank defined by HoverSlot to the firepoints on the model "
+	"of that slot. Line drawing for HoverSlot takes precedence of line drawing for SelectedWeapon. Set either or both to -1 to stop line drawing. "
+	"The bank coordinates are the coordinates from which the lines for that bank will be drawn. It is expected that primary slots will be on the "
+	"left of the ship model and secondaries will be on the right. The lines have a hard-coded curve expecing to be drawn from those directions.",
+	"boolean",
+	"true if rendered, false if error")
+{
+	int idx;
+	int x1;
+	int y1;
+	int x2 = 467;
+	int y2 = 362;
+	int selectedSlot = -1;
+	int selectedWeapon = -1;
+	int hoverSlot = -1;
+
+	//Bank coords
+	int bank1_x = 170;
+	int bank1_y = 203;
+	int bank2_x = 170;
+	int bank2_y = 246;
+	int bank3_x = 170;
+	int bank3_y = 290;
+	int bank4_x = 552;
+	int bank4_y = 203;
+	int bank5_x = 552;
+	int bank5_y = 246;
+	int bank6_x = 552;
+	int bank6_y = 290;
+	int bank7_x = 552;
+	int bank7_y = 333;
+
+	if (!ade_get_args(L,
+			"oii|iiiiiiiiiiiiiiiiiii",
+			l_Shipclass.Get(&idx),
+			&x1,
+			&y1,
+			&x2,
+			&y2,
+			&selectedSlot,
+			&selectedWeapon,
+			&hoverSlot,
+			&bank1_x,
+			&bank1_y,
+			&bank2_x,
+			&bank2_y,
+			&bank3_x,
+			&bank3_y,
+			&bank4_x,
+			&bank4_y,
+			&bank5_x,
+			&bank5_y,
+			&bank6_x,
+			&bank6_y,
+			&bank7_x,
+			&bank7_y))
+		return ADE_RETURN_NIL;
+
+	if (idx < 0 || idx >= ship_info_size())
+		return ade_set_args(L, "b", false);
+
+	//Convert these from Lua indecies
+	selectedSlot--;
+	selectedWeapon--;
+	hoverSlot--;
+
+	if (selectedSlot < 0)
+		return ade_set_args(L, "b", false);
+
+	if (selectedWeapon < 0 || selectedWeapon >= weapon_info_size())
+		selectedWeapon = -1;
+
+	if (hoverSlot < 0 || hoverSlot >= (MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS))
+		hoverSlot = -1;
+
+	ship_info* sip = &Ship_info[idx];
+
+	int modelNum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+	model_page_in_textures(modelNum, idx);
+	static float ShipRot = 0.0f;
+
+	draw_3d_overhead_view(modelNum,
+		idx,
+		&ShipRot,
+		flFrametime,
+		selectedSlot,
+		selectedWeapon,
+		hoverSlot,
+		x1,
+		y1,
+		x2,
+		y2,
+		GR_RESIZE_NONE,
+		bank1_x,
+		bank1_y,
+		bank2_x,
+		bank2_y,
+		bank3_x,
+		bank3_y,
+		bank4_x,
+		bank4_y,
+		bank5_x,
+		bank5_y,
+		bank6_x,
+		bank6_y,
+		bank7_x,
+		bank7_y,
+		0,
+		0,
+		0);
 
 	return ade_set_args(L, "b", true);
 }
