@@ -10,6 +10,7 @@
 
 #include <climits>
 #include <cctype>
+#include <vector>
 
 #include "freespace.h"
 #include "cfile/cfile.h"
@@ -1379,7 +1380,7 @@ int Player_tips_shown = 0;
 void player_tips_init()
 {
 	Num_player_tips = 0;
-	
+
 	try
 	{
 		read_file_text("tips.tbl", CF_TYPE_TABLES);
@@ -1391,7 +1392,17 @@ void player_tips_init()
 			if (Num_player_tips >= MAX_PLAYER_TIPS) {
 				break;
 			}
-			Player_tips[Num_player_tips++] = stuff_and_malloc_string(F_NAME, NULL);
+
+			//SCP_string str =  message_translate_tokens(stuff_and_malloc_string(F_NAME, NULL));  
+			//char* tmp = &str[0];
+			//Player_tips[Num_player_tips++] = tmp;
+		    //std:: vector<char> v(str.begin(), str.end());
+			// char* ca = &v[0]; // pointer to start of vector
+		    //char* chr = const_cast<char*>(str.c_str());
+			// Player_tips[Num_player_tips++] = chr; 
+
+			 Player_tips[Num_player_tips++] = stuff_and_malloc_string(F_NAME, NULL); 
+
 		}
 	}
 	catch (const parse::ParseException& e)
@@ -1430,7 +1441,7 @@ void player_tips_popup()
 
 	// randomly pick one
 	tip = (int)frand_range(0.0f, (float)Num_player_tips - 1.0f);
-
+	// int tip2= rand()%Num_player_tips;                   //"randomly" pick one tip, used for de-bug; 
 	char all_txt[2048];
 
 	do {

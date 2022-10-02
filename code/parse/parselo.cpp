@@ -13,6 +13,8 @@
 #include <cassert>
 #include <cstdarg>
 #include <csetjmp>
+#include <stack>
+#include <iostream>
 
 #include <cctype>
 #include "globalincs/version.h"
@@ -25,7 +27,8 @@
 #include "ship/ship.h"
 #include "weapon/weapon.h"
 #include "mod_table/mod_table.h"
-
+#include "mission/missiontraining.h"
+#include "controlconfig/controlsconfig.h"
 #include "utils/encoding.h"
 #include "utils/unicode.h"
 
@@ -1381,7 +1384,7 @@ void stuff_string_line(SCP_string &outstr)
 	// if the hash localized text hash table is active and we have a valid external string - hash it
 	if(fhash_active() && (tag_id > -2)){
 		fhash_add_str(outstr.c_str(), tag_id);
-	}
+	} 
 
 	diag_printf("Stuffed string = [%.30s]\n", outstr.c_str());
 }
@@ -1391,16 +1394,66 @@ void stuff_string_line(SCP_string &outstr)
 // the default string length if using the F_NAME case.
 char *stuff_and_malloc_string(int type, const char *terminators)
 {
-	SCP_string tmp_result;
-
+	SCP_string tmp_result;  
 	stuff_string(tmp_result, type, terminators);
-	drop_white_space(tmp_result);
-
+	tmp_result=message_translate_tokens(tmp_result.c_str()); 
+   // Deal_with_Delimiters(tmp_result); 
+	drop_white_space(tmp_result); 
 	if (tmp_result.empty())
 		return NULL;
-
 	return vm_strdup(tmp_result.c_str());
 }
+
+void Deal_with_Delimiters(SCP_string &str) 
+{   
+
+	std::stack<int> dels;
+	SCP_string ans; 
+	for (int i = 0; i < str.size(); i++) {
+		// If opening delimiter
+		// is encountered
+		if (str[i] == '[') {
+			dels.push(i);
+		}
+
+		// If closing delimiter
+		// is encountered
+		else if (str[i] == ']' && !dels.empty()) {
+			int pos = dels.top();
+			dels.pop();
+			// Length of substring
+			int len = i - 1 - pos;
+			// Extract the substring 
+		      ans = str.substr(pos + 1, len);          
+			size_t pos2 = 0;
+			 
+
+		    auto& default_preset = Control_config_presets[0];
+		    auto& default_bindings = default_preset.bindings;
+			CC_preset new_preset;
+
+			new_preset.bindings.clear();
+			new_preset.type = Preset_t::tbl;
+			auto& new_bindings=new_preset.bindings;  
+
+		    std::vector<CCB> diff;                                  // compare current key config and default config;
+			//std::sort(new_bindings.begin(), new_bindings.end());
+			//std::sort(default_bindings.begin(), default_bindings.end());
+		    //std::set_difference(new_bindings.begin(),
+			//	new_bindings.end(),
+			//	default_bindings.begin(),
+			//	default_bindings.end(),
+			//	std::back_inserter(diff));                         // find remaped keys; 
+
+				SCP_string rep = "you've remaped this key";        //replace the remaped key into tips; 
+			
+			while ((pos2 = str.find(ans, pos2)) != SCP_string::npos) {
+				str.replace(pos2, ans.length(), rep);
+				pos2 += rep.length();
+			}
+			}
+		}
+} 
 
 void stuff_malloc_string(char **dest, int type, const char *terminators)
 {
