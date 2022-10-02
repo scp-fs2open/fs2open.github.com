@@ -286,13 +286,6 @@ static size_t cf_get_list_of_files(SCP_string &path, SCP_vector<_file_list_t> &f
 	return files.size();
 }
 
-static size_t cf_get_list_of_files(const char *path, SCP_vector<_file_list_t> &files, const char *filter = nullptr)
-{
-	SCP_string t_path = path;
-
-	return cf_get_list_of_files(t_path, files, filter);
-}
-
 
 static void cf_init_root_pathtypes(cf_root *root)
 {
@@ -1060,8 +1053,9 @@ CFileLocation cf_find_file_location(const char* filespec, int pathtype, bool loc
 		}
  
 		if (cfs_slow_search) {
-			cf_create_default_path_string(longname, sizeof(longname) - 1, search_order[ui], filespec, localize,
-			                              location_flags);
+			if ( !cf_create_default_path_string(longname, sizeof(longname) - 1, search_order[ui], filespec, localize, location_flags) ) {
+				continue;
+			}
 
 			FILE *fp = fopen(longname, "rb" );
 
@@ -1251,7 +1245,9 @@ CFileLocationExt cf_find_file_location_ext( const char *filename, const int ext_
 
 			strcat_s( filespec, ext_list[cur_ext] );
  
-			cf_create_default_path_string( longname, sizeof(longname)-1, search_order[ui], filespec, localize );
+			if ( !cf_create_default_path_string(longname, sizeof(longname)-1, search_order[ui], filespec, localize) ) {
+				continue;
+			}
 
 			FILE *fp = fopen(longname, "rb" );
 
@@ -1533,7 +1529,7 @@ int cf_get_file_list(SCP_vector<SCP_string>& list, int pathtype, const char* fil
 		own_flag = 1;
 	}
 
-	char filespec[MAX_PATH_LEN];
+	SCP_string filespec;
 
 	bool check_duplicates = !list.empty();
 
@@ -1546,8 +1542,7 @@ int cf_get_file_list(SCP_vector<SCP_string>& list, int pathtype, const char* fil
 		Get_file_list_child = nullptr;
 	}
 
-	cf_create_default_path_string(filespec, sizeof(filespec) - 1, pathtype, (char*)Get_file_list_child, false,
-	                              location_flags);
+	cf_create_default_path_string(filespec, pathtype, (char*)Get_file_list_child, false, location_flags);
 
 	SCP_vector<_file_list_t> files;
 
@@ -1693,14 +1688,13 @@ int cf_get_file_list(int max, char** list, int pathtype, const char* filter, int
 		own_flag = 1;
 	}
 
-	char filespec[MAX_PATH_LEN];
+	SCP_string filespec;
 
 	if (Get_file_list_child && !verify_file_list_child() ) {
 		Get_file_list_child = nullptr;
 	}
 
-	cf_create_default_path_string(filespec, sizeof(filespec) - 1, pathtype, (char*)Get_file_list_child, false,
-	                              location_flags);
+	cf_create_default_path_string(filespec, pathtype, (char*)Get_file_list_child, false, location_flags);
 
 	SCP_vector<_file_list_t> files;
 
@@ -1870,15 +1864,14 @@ int cf_get_file_list_preallocated(int max, char arr[][MAX_FILENAME_LEN], char** 
 			own_flag = 1;
 	}
 
-	char filespec[MAX_PATH_LEN];
+	SCP_string filespec;
 
 	if (Get_file_list_child && !verify_file_list_child() ) {
 		Get_file_list_child = nullptr;
 	}
 
 	// Search the default directories
-	cf_create_default_path_string(filespec, sizeof(filespec) - 1, pathtype, (char*)Get_file_list_child, false,
-	                              location_flags);
+	cf_create_default_path_string(filespec, pathtype, (char*)Get_file_list_child, false, location_flags);
 
 	SCP_vector<_file_list_t> files;
 
@@ -2007,83 +2000,20 @@ int cf_get_file_list_preallocated(int max, char arr[][MAX_FILENAME_LEN], char** 
 int cf_create_default_path_string(char* path, uint path_max, int pathtype, const char* filename, bool localize,
                                   uint32_t _location_flags)
 {
-	uint32_t location_flags = _location_flags;
+	SCP_string fullpath;
 
-	if ( filename && strchr(filename, DIR_SEPARATOR_CHAR) ) {
-		// Already has full path
-		strncpy( path, filename, path_max );
+	cf_create_default_path_string(fullpath, pathtype, filename, localize, _location_flags);
 
-	} else {
-		cf_root* root = nullptr;
-
-		// override location flags for path types which should always come from the root (NOT mod directories)
-		// NOTE: cache directories should NOT be added here to avoid possible mod breakage
-		switch(pathtype) {
-			case CF_TYPE_PLAYERS:
-			case CF_TYPE_MULTI_PLAYERS:
-			case CF_TYPE_SINGLE_PLAYERS:
-				location_flags = CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT;
-				break;
+	// if truncation would occur, return error
+	if (fullpath.length() >= path_max) {
+		if (path_max > 0) {
+			*path = '\0';
 		}
 
-		for (auto i = 0; i < Num_roots; ++i) {
-			auto current_root = cf_get_root(i);
-
-			if (current_root->roottype != CF_ROOTTYPE_PATH) {
-				// We want a "real" path here so only path roots are valid
-				continue;
-			}
-
-			if (cf_check_location_flags(current_root->location_flags, location_flags)) {
-				// We found a valid root
-				root = current_root;
-				break;
-			}
-		}
-
-		if (!root) {
-			Assert( filename != NULL );
-			strncpy(path, filename, path_max);
-			return 1;
-		}
-
-		Assert(CF_TYPE_SPECIFIED(pathtype));
-
-		strncpy(path, root->path.c_str(), path_max);
-
-		SCP_string real_path = cf_get_root_pathtype(root, pathtype);
-
-		strcat_s(path, path_max, real_path.c_str());
-
-		// Don't add slash for root directory
-		if (Pathtypes[pathtype].path[0] != '\0') {
-			if ( path[strlen(path)-1] != DIR_SEPARATOR_CHAR ) {
-				strcat_s(path, path_max, DIR_SEPARATOR_STR);
-			}
-		}
-
-		// add filename
-		if (filename) {
-			strcat_s(path, path_max, filename);
-
-			// localize filename
-			if (localize) {
-				// create copy of path
-				char path_tmp[MAX_PATH_LEN] = { 0 };
-				strncpy( path_tmp, path, MAX_PATH_LEN - 1 );
-
-				// localize the path
-				if(lcl_add_dir_to_path_with_filename(path_tmp, MAX_PATH_LEN - 1)) {
-					// verify localized path
-					FILE *fp = fopen(path, "rb");
-					if (fp) {
-						fclose(fp);
-						return 1;
-					}
-				}
-			}
-		}
+		return 0;
 	}
+
+	strcpy_s(path, path_max, fullpath.c_str());
 
 	return 1;
 }
@@ -2098,14 +2028,26 @@ int cf_create_default_path_string(char* path, uint path_max, int pathtype, const
 // Output:  path      - Fully qualified pathname.
 //Returns 0 if the result would be too long (invalid result)
 int cf_create_default_path_string(SCP_string& path, int pathtype, const char* filename, bool /*localize*/,
-                                  uint32_t location_flags)
+                                  uint32_t _location_flags)
 {
+	uint32_t location_flags = _location_flags;
+
 	if ( filename && strchr(filename, DIR_SEPARATOR_CHAR) ) {
 		// Already has full path
 		path.assign(filename);
 
 	} else {
 		cf_root* root = nullptr;
+
+		// override location flags for path types which should always come from the root (NOT mod directories)
+		// NOTE: cache directories should NOT be added here to avoid possible mod breakage
+		switch(pathtype) {
+			case CF_TYPE_PLAYERS:
+			case CF_TYPE_MULTI_PLAYERS:
+			case CF_TYPE_SINGLE_PLAYERS:
+				location_flags = CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT;
+				break;
+		}
 
 		for (auto i = 0; i < Num_roots; ++i) {
 			auto current_root = cf_get_root(i);
