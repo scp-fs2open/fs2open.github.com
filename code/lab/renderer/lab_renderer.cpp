@@ -40,6 +40,17 @@ void LabRenderer::onFrame(float frametime) {
 	// the LabManager::onFrame method
 }
 
+void LabRenderer::resetGraphicsSettings(gfx_options settings) {
+	lighting_profile::lab_set_ambient(settings.ambient_factor);
+	lighting_profile::lab_set_emissive(settings.emissive_factor);
+	lighting_profile::lab_set_exposure(settings.exposure_level);
+	lighting_profile::lab_set_light(settings.light_factor);
+	lighting_profile::lab_set_ppc(settings.ppcv);
+	lighting_profile::lab_set_tonemapper(settings.tonemapper);
+	gr_set_bloom_intensity(settings.bloom_level);
+	Gr_aa_mode = settings.aa_mode;
+}
+
 void LabRenderer::renderModel(float frametime) {
 	GR_DEBUG_SCOPE("Lab Render Model");
 

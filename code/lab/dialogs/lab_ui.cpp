@@ -177,6 +177,8 @@ void LabUi::showRenderOptions()
 	float exposure_level = lighting_profile::current_exposure();
 	auto ppcv = lighting_profile::lab_get_ppc();
 
+	bool skip_setting_light_options_this_frame = false;
+
 	with_Window("Render options")
 	{
 		ImGui::Checkbox("Enable Model Rotation", &enable_model_rotation);
@@ -275,35 +277,49 @@ void LabUi::showRenderOptions()
 				gr_dump_envmap(getLabManager()->Renderer->currentMissionBackground.c_str());
 			}
 		}
+
+		if (graphics_options_changed()) {
+			if (ImGui::Button("Reset graphics settings", ImVec2(-FLT_MIN, ImGui::GetTextLineHeight() * 2))) {
+				getLabManager()->resetGraphicsSettings();
+
+				// In order to make the reset button work, we can't set anything here this frame; we'll wait until
+				// the next run through this method to update the state then.
+				skip_setting_light_options_this_frame = true;
+			}
+		}
 	}
 
-	getLabManager()->Flags.set(ManagerFlags::ModelRotationEnabled, enable_model_rotation);
-	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowInsignia, show_insignia);
-	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowDamageLightning, show_damage_lightning);
-	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::HidePostProcessing, hide_post_processing);
-	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoDiffuseMap, !diffuse_map);
-	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoGlowMap, !glow_map);
-	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoSpecularMap, !spec_map);
-	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoReflectMap, !reflect_map);
-	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoEnvMap, !env_map);
-	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoNormalMap, !normal_map);
-	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoHeightMap, !height_map);
-	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoMiscMap, !misc_map);
-	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoAOMap, !ao_map);
-	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoGlowpoints, no_glowpoints);
-	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowWireframe, use_wireframe_rendering);
-	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoLighting, no_lighting);
-	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowFullDetail, show_full_detail);
-	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowThrusters, show_thrusters);
-	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowAfterburners, show_afterburners);
-	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowWeapons, show_weapons);
-	getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowEmissiveLighting, show_emissive_lighting);
-	getLabManager()->Renderer->setEmissiveFactor(emissive_factor);
-	getLabManager()->Renderer->setAmbientFactor(ambient_factor);
-	getLabManager()->Renderer->setLightFactor(light_factor);
-	getLabManager()->Renderer->setBloomLevel(bloom_level);
-	getLabManager()->Renderer->setExposureLevel(exposure_level);
-	getLabManager()->Renderer->setPPCValues(ppcv);
+	if (!skip_setting_light_options_this_frame) {
+		getLabManager()->Flags.set(ManagerFlags::ModelRotationEnabled, enable_model_rotation);
+		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowInsignia, show_insignia);
+		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowDamageLightning, show_damage_lightning);
+		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::HidePostProcessing, hide_post_processing);
+		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoDiffuseMap, !diffuse_map);
+		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoGlowMap, !glow_map);
+		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoSpecularMap, !spec_map);
+		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoReflectMap, !reflect_map);
+		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoEnvMap, !env_map);
+		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoNormalMap, !normal_map);
+		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoHeightMap, !height_map);
+		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoMiscMap, !misc_map);
+		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoAOMap, !ao_map);
+		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoGlowpoints, no_glowpoints);
+		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowWireframe, use_wireframe_rendering);
+		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoLighting, no_lighting);
+		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowFullDetail, show_full_detail);
+		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowThrusters, show_thrusters);
+		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowAfterburners, show_afterburners);
+		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowWeapons, show_weapons);
+		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowEmissiveLighting, show_emissive_lighting);
+		getLabManager()->Renderer->setEmissiveFactor(emissive_factor);
+		getLabManager()->Renderer->setAmbientFactor(ambient_factor);
+		getLabManager()->Renderer->setLightFactor(light_factor);
+		getLabManager()->Renderer->setBloomLevel(bloom_level);
+		getLabManager()->Renderer->setExposureLevel(exposure_level);
+		getLabManager()->Renderer->setPPCValues(ppcv);
+	} else {
+		skip_setting_light_options_this_frame = false;
+	}
 }
 
 std::map<animation::ModelAnimationTriggerType, std::map<SCP_string, bool>> manual_animation_triggers = {};

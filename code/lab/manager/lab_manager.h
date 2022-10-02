@@ -19,17 +19,6 @@ FLAG_LIST(ManagerFlags) {
 	NUM_VALUES
 };
 
-struct gfx_options {
-	int bloom_level;
-	float ambient_factor;
-	float light_factor;
-	float emissive_factor;
-	float exposure_level;
-	piecewise_power_curve_values ppcv;
-	AntiAliasMode aa_mode;
-	TonemapperAlgorithm tonemapper;
-};
-
 class LabManager {
 public:
 	LabManager();
@@ -84,6 +73,8 @@ public:
 	void notify_close() {
 		CloseThis = true;
 	}
+	
+	void resetGraphicsSettings();
 
 	int FirePrimaries = 0;
 	int FireSecondaries = 0;

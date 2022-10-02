@@ -78,6 +78,7 @@ LabManager::LabManager() {
 	graphicsSettings.light_factor = lighting_profile::lab_get_light();
 	graphicsSettings.emissive_factor = lighting_profile::lab_get_emissive();
 	graphicsSettings.exposure_level = lighting_profile::current_exposure();
+	graphicsSettings.tonemapper = lighting_profile::current_tonemapper();
 	graphicsSettings.bloom_level = gr_bloom_intensity();
 	graphicsSettings.aa_mode = Gr_aa_mode;
 }
@@ -85,6 +86,10 @@ LabManager::LabManager() {
 LabManager::~LabManager()
 {
 	obj_delete_all();
+}
+
+void LabManager::resetGraphicsSettings() {
+	Renderer->resetGraphicsSettings(graphicsSettings);
 }
 
 void LabManager::onFrame(float frametime) {
