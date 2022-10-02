@@ -1229,10 +1229,10 @@ ADE_FUNC(renderOverheadModel,
 	"number bank4_x = 552, number bank4_y = 203, number bank5_x = 552, number bank5_y = 246, number bank6_x = 552, number bank6_y = 290, "
 	"number bank7_x = 552, number bank7_y = 333]",
 	"Draws the 3D overhead ship model with the lines pointing from bank weapon selections to bank firepoints. SelectedSlot refers to loadout "
-	"ship slots 1-12 where wing 1 is 1-4, wing 2 is 5-8, and wing 3 is 5-9. SelectedWeapon is the index into weapon classes. HoverSlot refers "
+	"ship slots 1-12 where wing 1 is 1-4, wing 2 is 5-8, and wing 3 is 9-12. SelectedWeapon is the index into weapon classes. HoverSlot refers "
 	"to the bank slots 1-7 where 1-3 are primaries and 4-6 are secondaries. Lines will be drawn from any bank containing the SelectedWeapon to "
 	"the firepoints on the model of that bank. Similarly, lines will be drawn from the bank defined by HoverSlot to the firepoints on the model "
-	"of that slot. Line drawing for HoverSlot takes precedence of line drawing for SelectedWeapon. Set either or both to -1 to stop line drawing. "
+	"of that slot. Line drawing for HoverSlot takes precedence over line drawing for SelectedWeapon. Set either or both to -1 to stop line drawing. "
 	"The bank coordinates are the coordinates from which the lines for that bank will be drawn. It is expected that primary slots will be on the "
 	"left of the ship model and secondaries will be on the right. The lines have a hard-coded curve expecing to be drawn from those directions.",
 	"boolean",
