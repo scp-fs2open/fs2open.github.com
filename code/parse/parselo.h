@@ -135,7 +135,7 @@ extern void stuff_string_white(SCP_string &outstr);
 extern void stuff_string_until(SCP_string &outstr, const char *endstr);
 extern void stuff_string(SCP_string &outstr, int type, const char *terminators = NULL);
 extern void stuff_string_line(SCP_string &outstr);
-extern void Deal_with_Delimiters(SCP_string& str);  
+extern void deal_with_delimiters(SCP_string& str);  
 	//alloc
 extern char* alloc_block(const char* startstr, const char* endstr, int extra_chars = 0);
 

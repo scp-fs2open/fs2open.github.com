@@ -13,7 +13,6 @@
 #include <cassert>
 #include <cstdarg>
 #include <csetjmp>
-#include <stack>
 #include <iostream>
 
 #include <cctype>
@@ -1396,7 +1395,6 @@ char *stuff_and_malloc_string(int type, const char *terminators)
 {
 	SCP_string tmp_result;  
 	stuff_string(tmp_result, type, terminators);
-	tmp_result=message_translate_tokens(tmp_result.c_str()); 
    // Deal_with_Delimiters(tmp_result); 
 	drop_white_space(tmp_result); 
 	if (tmp_result.empty())
@@ -1404,10 +1402,10 @@ char *stuff_and_malloc_string(int type, const char *terminators)
 	return vm_strdup(tmp_result.c_str());
 }
 
-void Deal_with_Delimiters(SCP_string &str) 
+void deal_with_delimiters(SCP_string &str) 
 {   
 
-	std::stack<int> dels;
+	SCP_stack<int> dels; 
 	SCP_string ans; 
 	for (int i = 0; i < str.size(); i++) {
 		// If opening delimiter
@@ -1427,7 +1425,7 @@ void Deal_with_Delimiters(SCP_string &str)
 		      ans = str.substr(pos + 1, len);          
 			size_t pos2 = 0;
 			 
-
+			/*
 		    auto& default_preset = Control_config_presets[0];
 		    auto& default_bindings = default_preset.bindings;
 			CC_preset new_preset;
@@ -1436,16 +1434,19 @@ void Deal_with_Delimiters(SCP_string &str)
 			new_preset.type = Preset_t::tbl;
 			auto& new_bindings=new_preset.bindings;  
 
-		    std::vector<CCB> diff;                                  // compare current key config and default config;
-			//std::sort(new_bindings.begin(), new_bindings.end());
-			//std::sort(default_bindings.begin(), default_bindings.end());
-		    //std::set_difference(new_bindings.begin(),
-			//	new_bindings.end(),
-			//	default_bindings.begin(),
-			//	default_bindings.end(),
-			//	std::back_inserter(diff));                         // find remaped keys; 
+		    std::vector<CCB> diff;                                  
+			// compare current key config and default config;
+			std::sort(new_bindings.begin(), new_bindings.end());
+			std::sort(default_bindings.begin(), default_bindings.end());
+		    std::set_difference(new_bindings.begin(),
+			new_bindings.end(),
+			default_bindings.begin(),
+			default_bindings.end(),
+			std::back_inserter(diff));                             
+			// find remaped keys; */
 
-				SCP_string rep = "you've remaped this key";        //replace the remaped key into tips; 
+			SCP_string rep = "you've remaped this key";        
+			//replace the remaped key into tips; 
 			
 			while ((pos2 = str.find(ans, pos2)) != SCP_string::npos) {
 				str.replace(pos2, ans.length(), rep);

@@ -16,6 +16,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include <stack>
 
 template <typename T>
 using SCP_vector = std::vector<T, std::allocator<T>>;
@@ -24,6 +25,9 @@ template <typename T>
 bool SCP_vector_contains(SCP_vector<T>& vector, T item) {
 	return std::find(vector.begin(), vector.end(), item) != vector.end();
 }
+
+template <typename T>
+using SCP_stack = std::stack<T, std::allocator<T>>;
 
 template <typename T>
 using SCP_list = std::list<T, std::allocator<T>>;
