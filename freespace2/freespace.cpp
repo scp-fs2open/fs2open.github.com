@@ -132,6 +132,7 @@
 #include "network/multi_pxo.h"
 #include "network/multi_rate.h"
 #include "network/multi_respawn.h"
+#include "network/multi_turret_manager.h"
 #include "network/multi_voice.h"
 #include "network/multimsgs.h"
 #include "network/multiteamselect.h"
@@ -912,6 +913,7 @@ void game_level_close()
 		stars_level_close();
 
 		multi_close_oo_and_ship_tracker();
+		Multi_Turret_Manager.reset(); // Cyborg, this can safely be done after everything else.  At some point, I'll probably consolidate these.
 
 		Pilot.save_savefile();
 

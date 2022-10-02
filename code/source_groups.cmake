@@ -941,6 +941,8 @@ add_file_folder("Network"
 	network/multi_sw.h
 	network/multi_team.cpp
 	network/multi_team.h
+	network/multi_turret_manager.cpp
+	network/multi_turret_manager.h
 	network/multi_time_manager.cpp
 	network/multi_time_manager.h
 	network/multi_update.cpp

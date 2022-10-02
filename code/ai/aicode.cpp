@@ -49,6 +49,7 @@
 #include "model/model.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
+#include "network/multi_turret_manager.h"
 #include "network/multiutil.h"
 #include "object/deadobjectdock.h"
 #include "object/objcollide.h"
@@ -11704,54 +11705,88 @@ void ai_process_subobjects(int objnum)
 
 		switch (psub->type) {
 		case SUBSYSTEM_TURRET:
-			// Don't process multipart turrets if we can't rotate.
-			if ((psub->subobj_num != psub->turret_gun_sobj) && (psub->turret_gun_sobj >= 0) && shipp->flags[Ship::Ship_Flags::Subsystem_movement_locked])
+			{ // brace so that we can declare a variable in a case statement.
+
+				// Don't process multipart turrets if we can't rotate.
+				if ((psub->subobj_num != psub->turret_gun_sobj) && (psub->turret_gun_sobj >= 0) && shipp->flags[Ship::Ship_Flags::Subsystem_movement_locked])
+					break;
+
+				int old_target = pss->turret_enemy_objnum;
+
+				// Don't process a turret for a ship being repaired, if the support ship is close
+				// (previously in ship_evaluate_ai (previously in ship_process_post))
+				// Cyborg -- Unfortunately Ai info is not reliable and should just not be accessed here.
+				// It will have no real effect on gameplay, since the server decides when turrets fire
+				if (!MULTIPLAYER_CLIENT && (aip->ai_flags[AI::AI_Flags::Being_repaired, AI::AI_Flags::Awaiting_repair]))
+				{
+					if (aip->support_ship_objnum >= 0)
+					{
+						if (vm_vec_dist_quick(&objp->pos, &Objects[aip->support_ship_objnum].pos) < (objp->radius + Objects[aip->support_ship_objnum].radius) * 1.25f)
+							break;
+					}
+				}
+
+				// we need to update client data here.
+				if (MULTIPLAYER_CLIENT) {
+					turret_packet network_turret_data;
+					
+					if (Multi_Turret_Manager.get_latest_packet(objp->net_signature, ship_get_subsys_index(pss), &network_turret_data)) {
+						pss->info_from_server_stamp = network_turret_data.time;
+						pss->turret_enemy_objnum = network_turret_data.target_objnum;
+						pss->turret_enemy_sig = (pss->turret_enemy_objnum > -1) ? Objects[pss->turret_enemy_objnum].signature : 0;
+
+						// if the remote instance had a nullptr, first will be false. second holds the actual angle.
+						if (network_turret_data.angle1.first && pss->submodel_instance_1 != nullptr){
+							pss->submodel_instance_1->cur_angle = network_turret_data.angle1.second;
+						}
+
+						if (network_turret_data.angle2.first && pss->submodel_instance_2 != nullptr){
+							pss->submodel_instance_2->cur_angle = network_turret_data.angle2.second;
+						}
+
+					}
+				}
+
+				// handle ending animations
+				if ( (pss->turret_animation_position == MA_POS_READY) && timestamp_elapsed(pss->turret_animation_done_time) ) {
+					//For legacy animations using subtype for turret number
+					bool started = (Ship_info[shipp->ship_info_index].animations.getAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::TurretFiring, pss->system_info->subobj_num, true)
+						//For modern animations using proper triggered-by-subsys name
+						+ Ship_info[shipp->ship_info_index].animations.get(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::TurretFiring, animation::anim_name_from_subsys(pss->system_info)))
+						.start(animation::ModelAnimationDirection::RWD);
+					
+					if (started) {
+						pss->turret_animation_position = MA_POS_NOT_SET;
+					}
+				}
+
+				if ( psub->turret_num_firing_points > 0 )
+				{
+					ai_turret_execute_behavior(shipp, pss);
+				} else {
+					Warning( LOCATION, "Turret %s on ship %s has no firing points assigned to it.\nThis needs to be fixed in the model.\n", psub->name, shipp->ship_name );
+				}
+
+				// If we're not using FIT, the AI stuff will happen after the object and its submodels move,
+				// so in that case be sure to keep the turret submodels up to date
+				if (!Framerate_independent_turning) {
+					if (psub->subobj_num >= 0) {
+						model_replicate_submodel_instance(pm, pmi, psub->subobj_num, pss->flags);
+					}
+
+					if ((psub->subobj_num != psub->turret_gun_sobj) && (psub->turret_gun_sobj >= 0)) {
+						model_replicate_submodel_instance(pm, pmi, psub->turret_gun_sobj, pss->flags);
+					}
+				}
+
+				// For multi, if there's a new target for this turret on the server, send an update to clients.
+				if (MULTIPLAYER_MASTER && old_target != pss->turret_enemy_objnum){
+					Multi_Turret_Manager.add_packet_to_queue(objp->net_signature, ship_get_subsys_index(pss));
+				}
+
 				break;
 
-			// Don't process a turret for a ship being repaired, if the support ship is close
-			// (previously in ship_evaluate_ai (previously in ship_process_post))
-			if (aip->ai_flags[AI::AI_Flags::Being_repaired, AI::AI_Flags::Awaiting_repair])
-			{
-				if (aip->support_ship_objnum >= 0)
-				{
-					if (vm_vec_dist_quick(&objp->pos, &Objects[aip->support_ship_objnum].pos) < (objp->radius + Objects[aip->support_ship_objnum].radius) * 1.25f)
-						break;
-				}
 			}
-
-			// handle ending animations
-			if ( (pss->turret_animation_position == MA_POS_READY) && timestamp_elapsed(pss->turret_animation_done_time) ) {
-				//For legacy animations using subtype for turret number
-				bool started = (Ship_info[shipp->ship_info_index].animations.getAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::TurretFiring, pss->system_info->subobj_num, true)
-					//For modern animations using proper triggered-by-subsys name
-					+ Ship_info[shipp->ship_info_index].animations.get(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::TurretFiring, animation::anim_name_from_subsys(pss->system_info)))
-					.start(animation::ModelAnimationDirection::RWD);
-				
-				if (started) {
-					pss->turret_animation_position = MA_POS_NOT_SET;
-				}
-			}
-
-			if ( psub->turret_num_firing_points > 0 )
-			{
-				ai_turret_execute_behavior(shipp, pss);
-			} else {
-				Warning( LOCATION, "Turret %s on ship %s has no firing points assigned to it.\nThis needs to be fixed in the model.\n", psub->name, shipp->ship_name );
-			}
-
-			// If we're not using FIT, the AI stuff will happen after the object and its submodels move,
-			// so in that case be sure to keep the turret submodels up to date
-			if (!Framerate_independent_turning) {
-				if (psub->subobj_num >= 0) {
-					model_replicate_submodel_instance(pm, pmi, psub->subobj_num, pss->flags);
-				}
-
-				if ((psub->subobj_num != psub->turret_gun_sobj) && (psub->turret_gun_sobj >= 0)) {
-					model_replicate_submodel_instance(pm, pmi, psub->turret_gun_sobj, pss->flags);
-				}
-			}
-			break;
-
 		case SUBSYSTEM_ENGINE:
 		case SUBSYSTEM_NAVIGATION:
 		case SUBSYSTEM_COMMUNICATION:
@@ -11770,6 +11805,11 @@ void ai_process_subobjects(int objnum)
 		}
 
 		// NOTE: Subsystem submodels are no longer rotated here.  See ship_move_subsystems().
+	}
+
+	// Clients must not make actual AI changes! So bail here.
+	if (MULTIPLAYER_CLIENT) {
+		return;
 	}
 
 	//	Deal with a ship with blown out engines.

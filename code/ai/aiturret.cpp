@@ -2243,6 +2243,12 @@ void ai_turret_execute_behavior(ship *shipp, ship_subsys *ss)
 	// Rotate the turret even if time hasn't elapsed, since it needs to turn to face its target.
 	int use_angles = aifft_rotate_turret(objp, shipp, ss, lep, &predicted_enemy_pos, &gvec);
 
+	// Multiplayer clients are now able to try to track their targets and also reset to their idle positions.
+	// But everything after this point is turret firing, so we need to bail here.
+	if (MULTIPLAYER_CLIENT) {
+		return;
+	}
+
 	if ((tp->flags[Model::Subsystem_Flags::Fire_on_target]) && (ss->points_to_target >= 0.0f))
 	{
 		// value probably needs tweaking... could perhaps be made into table option?

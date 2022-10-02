@@ -71,10 +71,10 @@ class player;
 // version 55 - 8/28/2021 - Adding multi-compatible animations
 // version 56 - 8/28/2021 - Fix animations for 22_0 release
 // version 57 - 6/5/2022 - Upgrade interpolation, fix multiplayer sexp handling, and enable player orders to exceed 16
-// version 58 - ??/??/?? - Submodel translation and a fixed multi_pack_unpack_subsystem_list
+// Version 58 - ?/?/2022 - Enable turret movement on clients
 // STANDALONE_ONLY
 
-#define MULTI_FS_SERVER_VERSION							57
+#define MULTI_FS_SERVER_VERSION							58
 
 #define MULTI_FS_SERVER_COMPATIBLE_VERSION			MULTI_FS_SERVER_VERSION
 
@@ -217,6 +217,7 @@ class player;
 #define FLAK_FIRED					0xAA		// flak gun fired
 #define SELF_DESTRUCT				0xAB		// self destruct
 #define ANIMATION_TRIGGERED			0xAC		// Lafiel - Anytime an animation starts
+#define TURRET_TRACK				0xAD		// Cyborg - When a turret's target has changed.
 
 #define JOIN							0xB1		// a join request to a server
 #define ACCEPT							0xB2		// acceptance of a join packet

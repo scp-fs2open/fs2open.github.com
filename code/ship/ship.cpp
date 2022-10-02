@@ -7072,6 +7072,8 @@ void ship_subsys::clear()
 
 	turret_max_bomb_ownage = -1; 
 	turret_max_target_ownage = -1;
+
+	info_from_server_stamp = TIMESTAMP::never();
 }
 
 /**
@@ -7264,6 +7266,8 @@ static int subsys_set(int objnum, int ignore_subsys_info)
 
 		ship_system->turret_max_bomb_ownage = model_system->turret_max_bomb_ownage;
 		ship_system->turret_max_target_ownage = model_system->turret_max_target_ownage;
+
+		ship_system->info_from_server_stamp = TIMESTAMP::never();
 
 		// Make turret flag checks and warnings
 		if ((ship_system->system_info->flags[Model::Subsystem_Flags::Turret_salvo]) && (ship_system->system_info->flags[Model::Subsystem_Flags::Turret_fixed_fp]))
@@ -9542,9 +9546,18 @@ void ship_evaluate_ai(object* obj, float frametime) {
 
 void ship_process_pre(object *obj, float frametime)
 {
+	// Cyborg, to enable turrets movement on clients, we need to process them here before  bailing
+	if (MULTIPLAYER_CLIENT)
+	{
+		// But only with Framerate_independent_turning
+		if (Framerate_independent_turning)
+			ai_process_subobjects(OBJ_INDEX(obj));
+
+		return;
+	}
+
 	// If Framerate_independent_turning is false everything following is evaluated in ship_process_post()
-	// Also only multi masters do ai
-	if ( (obj == nullptr) || !frametime || MULTIPLAYER_CLIENT || !Framerate_independent_turning)
+	if ( (obj == nullptr) || !frametime || !Framerate_independent_turning)
 		return;
 
 	if (obj->type != OBJ_SHIP) {
@@ -9753,8 +9766,14 @@ void ship_process_post(object * obj, float frametime)
 	{
 		//	Do AI.
 
-		// for multiplayer people.  return here if in multiplay and not the host
+		// Cyborg: Mutliplayer clients do not do AI locally.
 		if ( MULTIPLAYER_CLIENT ) {
+
+			// But to enable turrets movement on clients, we need to process them here before bailing
+			// And this section will do it if Framerate_independent_turning is off
+			if (!Framerate_independent_turning)
+				ai_process_subobjects(OBJ_INDEX(obj));
+			
 			return;
 		}
 
