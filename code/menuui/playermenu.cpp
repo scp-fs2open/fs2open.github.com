@@ -1391,7 +1391,7 @@ void player_tips_init()
 			if (Num_player_tips >= MAX_PLAYER_TIPS) {
 				break;
 			}
-			Player_tips[Num_player_tips++] = message_translate_tokens(transstuff_and_malloc_string(F_NAME, NULL));
+			Player_tips[Num_player_tips++] = message_translate_tokens(stuff_and_malloc_string(F_NAME, NULL));
 		}
 	}
 	catch (const parse::ParseException& e)
