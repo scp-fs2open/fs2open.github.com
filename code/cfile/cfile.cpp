@@ -1848,28 +1848,56 @@ int cfile_get_path_type(const SCP_string& dir)
 {
 	SCP_string buf = dir;
 
-	// Remove trailing slashes; avoid buffer overflow on 1-char strings
-	while (buf.size() > 0 && (buf[buf.size() - 1] == '\\' || buf[buf.size() - 1] == '/')) {
-		buf.resize(buf.size() - 1);
+	// remove leading and trailing slashes
+	if ( !buf.empty() ) {
+		auto start = buf.find_first_not_of("\\/");
+		auto end = buf.find_last_not_of("\\/");
+
+		if ( (start > 0) || (end < buf.length()-1) ) {
+			buf = buf.substr(start, end-start+1);
+		}
 	}
 
-	// Remove leading slashes
-	while (buf.size() > 0 && (buf[0] == '\\' || buf[0] == '/')) {
-		buf = buf.substr(1);
+	if (buf.empty()) {
+		return CF_TYPE_ROOT;
 	}
 
 	// Use official DIR_SEPARATOR_CHAR
-	for (char& c : buf) {
-		if (c == '\\' || c == '/') {
-			c = DIR_SEPARATOR_CHAR;
-		}
+	char bad_sep = '/';
+
+	if (bad_sep == DIR_SEPARATOR_CHAR) {
+		bad_sep = '\\';
 	}
+
+	std::replace(buf.begin(), buf.end(), bad_sep, DIR_SEPARATOR_CHAR);
+
+	// identify path type
+	auto best_match = CF_TYPE_INVALID;
 
 	for (auto& Pathtype : Pathtypes) {
-		if (Pathtype.path != nullptr && buf == Pathtype.path) {
-			return Pathtype.index;
+		if ( !Pathtype.path ) {
+			continue;
+		}
+
+		// skip root, it should have been detected before getting here
+		if (Pathtype.index == CF_TYPE_ROOT) {
+			continue;
+		}
+
+		// don't allow unknown subdirs directly under data
+		if (Pathtype.index == CF_TYPE_DATA) {
+			if (buf == Pathtype.path) {
+				best_match = CF_TYPE_DATA;
+			}
+
+			continue;
+		}
+
+		// for everything else just find closest match, allowing for unknown subdirectories
+		if ( !buf.compare(0, strlen(Pathtype.path), Pathtype.path) ) {
+			best_match = Pathtype.index;
 		}
 	}
 
-	return CF_TYPE_INVALID;
+	return best_match;
 }
