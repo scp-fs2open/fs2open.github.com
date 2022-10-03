@@ -244,7 +244,22 @@ extern void stuff_boolean(int *i, bool a_to_eol=true);
 extern void stuff_boolean(bool *b, bool a_to_eol=true);
 extern void stuff_boolean_flag(int *i, int flag, bool a_to_eol=true);
 
-int string_lookup(const char *str1, const char* const *strlist, size_t max, const char *description = NULL, bool say_errors = false);
+template <class T>
+int string_lookup(const char* str1, T strlist, size_t max, const char* description = nullptr, bool say_errors = false)
+{
+	for (size_t i=0; i<max; i++)
+	{
+		Assert(strlen(strlist[i]) != 0); //-V805
+
+		if (!stricmp(str1, strlist[i]))
+			return (int)i;
+	}
+
+	if (say_errors)
+		error_display(0, "Unable to find [%s] in %s list.\n", str1, description);
+
+	return -1;
+}
 
 template<class Flags, class Flagset>
 void stuff_boolean_flag(Flagset& destination, Flags flag, bool a_to_eol = true)

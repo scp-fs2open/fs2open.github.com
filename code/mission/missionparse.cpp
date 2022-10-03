@@ -152,7 +152,7 @@ p_object *Player_start_pobject;
 // name of all ships to use while parsing a mission (since a ship might be referenced by
 // something before that ship has even been loaded yet)
 char Parse_names[MAX_SHIPS + MAX_WINGS][NAME_LENGTH];
-int Num_parse_names;
+size_t Num_parse_names;
 
 SCP_vector<texture_replace> Fred_texture_replacements;
 
@@ -6207,7 +6207,7 @@ bool post_process_mission()
 
 	// convert all ship name indices to ship indices now that mission has been loaded
 	if (Fred_running) {
-		for (i=0; i<Num_parse_names; i++) {
+		for (i=0; i<(int)Num_parse_names; i++) {
 			indices[i] = ship_name_lookup(Parse_names[i], 1);
 			if (indices[i] < 0)
 				Warning(LOCATION, "Ship name \"%s\" referenced, but this ship doesn't exist", Parse_names[i]);
@@ -7896,7 +7896,7 @@ int get_parse_name_index(const char *name)
 {
 	int i;
 
-	for (i=0; i<Num_parse_names; i++)
+	for (i=0; i<(int)Num_parse_names; i++)
 		if (!stricmp(name, Parse_names[i]))
 			return i;
 
