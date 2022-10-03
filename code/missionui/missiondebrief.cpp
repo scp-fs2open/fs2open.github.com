@@ -1874,13 +1874,13 @@ int debrief_select_music()
 
 	if (Turned_traitor || ((Game_mode & GM_CAMPAIGN_MODE) && (Campaign.next_mission == Campaign.current_mission))) {
 		// you failed the mission, so you get the fail music
-		return SCORE_DEBRIEF_FAIL;
+		return SCORE_DEBRIEFING_FAILURE;
 	} else if (mission_goals_met()) {
 		// you completed all primaries and secondaries, so you get the win music
-		return SCORE_DEBRIEF_SUCCESS;
+		return SCORE_DEBRIEFING_SUCCESS;
 	} else {
 		// you somehow passed the mission, so you get a little something for your efforts.
-		return SCORE_DEBRIEF_AVERAGE;
+		return SCORE_DEBRIEFING_AVERAGE;
 	}
 
 }
@@ -1899,7 +1899,7 @@ static void debrief_init_music()
 
 	// if multi client then give a slight delay before playing average music
 	// since we'd like to eval the goals once more for slow clients
-	if ( MULTIPLAYER_CLIENT && (score == SCORE_DEBRIEF_AVERAGE) ) {
+	if ( MULTIPLAYER_CLIENT && (score == SCORE_DEBRIEFING_AVERAGE) ) {
 		Debrief_music_timeout = ui_timestamp(2000);
 		return;
 	}
@@ -1996,9 +1996,9 @@ void debrief_init()
 
 	/*
 	if (mission_evaluate_primary_goals() == PRIMARY_GOALS_COMPLETE) {
-		common_music_init(SCORE_DEBRIEF_SUCCESS);
+		common_music_init(SCORE_DEBRIEFING_SUCCESS);
 	} else {
-		common_music_init(SCORE_DEBRIEF_FAIL);
+		common_music_init(SCORE_DEBRIEFING_FAILURE);
 	}
 	*/
 
@@ -2398,9 +2398,9 @@ void debrief_do_frame(float frametime)
 			Debrief_music_timeout = UI_TIMESTAMP::invalid();
 
 			if ( mission_goals_met() ) {
-				common_music_init(SCORE_DEBRIEF_SUCCESS);
+				common_music_init(SCORE_DEBRIEFING_SUCCESS);
 			} else {
-				common_music_init(SCORE_DEBRIEF_AVERAGE);
+				common_music_init(SCORE_DEBRIEFING_AVERAGE);
 			}
 
 			common_music_do();
