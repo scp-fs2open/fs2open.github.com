@@ -738,7 +738,8 @@ void control_config_common_init()
 	}
 
 	for (int i = 0; i < Action::NUM_VALUES; i++) {
-		Control_config[i + JOY_AXIS_BEGIN].used = JOY_AXIS_CENTER;
+		Control_config[i + JOY_AXIS_BEGIN].analog_value = JOY_AXIS_CENTER;
+		Control_config[i + JOY_AXIS_BEGIN].digital_used = TIMESTAMP::invalid();
 	}
 	
 	// TODO It's not memory efficient to keep the presets loaded into memory all the time, but we do need to know which
@@ -2759,7 +2760,8 @@ CCI& CCI::operator=(const CCI& A) {
 	indexXSTR = A.indexXSTR;
 	text = A.text;
 	type = A.type;
-	used = A.used;
+	analog_value = A.analog_value;
+	digital_used = A.digital_used;
 	disabled = A.disabled;
 	locked = A.locked;
 	scriptEnabledByDefault = A.scriptEnabledByDefault;

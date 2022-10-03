@@ -17486,7 +17486,7 @@ int sexp_key_pressed(int node)
 		return SEXP_FALSE;
 	}
 
-	if (!Control_config[z].used){
+	if (!Control_config[z].digital_used.isValid()){
 		return SEXP_FALSE;
 	}
 
@@ -17500,7 +17500,7 @@ int sexp_key_pressed(int node)
 	if (is_nan_forever)
 		return SEXP_KNOWN_FALSE;
 
-	return timestamp_since(Control_config[z].used) >= t * MILLISECONDS_PER_SECOND;
+	return timestamp_since(Control_config[z].digital_used) >= t * MILLISECONDS_PER_SECOND;
 }
 
 void sexp_key_reset(int node)
@@ -17511,7 +17511,11 @@ void sexp_key_reset(int node)
 	{
 		z = translate_key_to_index(CTEXT(n), false);
 		if (z >= 0)
-			Control_config[z].used = 0;
+		{
+			// note: this is only for digital controls like button presses,
+			// so we don't need to clear the analog value
+			Control_config[z].digital_used = TIMESTAMP::invalid();
+		}
 	}
 }
 				

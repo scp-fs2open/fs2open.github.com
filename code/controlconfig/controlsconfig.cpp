@@ -2794,7 +2794,7 @@ void control_get_axes_readings(int *axis_v, float frame_time)
 
 			switch (item.type) {
 			case CC_TYPE_AXIS_ABS:
-				axis_v[action] = item.used;
+				axis_v[action] = item.analog_value;
 				break;
 			case CC_TYPE_AXIS_REL:
 				axis_v[action] = 0;
@@ -2803,12 +2803,13 @@ void control_get_axes_readings(int *axis_v, float frame_time)
 			case CC_TYPE_AXIS_BTN_POS:
 			default:
 				//This should never happen, especially with the above Assertion. This is required as incomplete switches on an enum generate warnings
+				UNREACHABLE("Unhandled control item type");
 				break;
 			}
 		}
 
 		//Store values for possible lua override
-		item.used = axis_v[action];
+		item.analog_value = axis_v[action];
 	}
 }
 
@@ -2821,7 +2822,7 @@ void control_used(int id)
 
 	// This check needs to be done because the control code might call this function more than once per frame,
 	// and we don't want to run the hooks more than once per frame
-	if (Control_config[id].used < Last_frame_timestamp) {
+	if (!Control_config[id].digital_used.isValid() || timestamp_compare(Control_config[id].digital_used, Last_frame_timestamp) < 0) {
 		if (!Control_config[id].continuous_ongoing) {
 			Script_system.SetHookVar("Action", 's', Control_config[id].text);
 			Script_system.RunCondition(CHA_ONACTION, nullptr, nullptr, id);
@@ -2831,14 +2832,16 @@ void control_used(int id)
 				Control_config[id].continuous_ongoing = true;
 		}
 
-		Control_config[id].used = timestamp();
+		Control_config[id].digital_used = Last_frame_timestamp;
 	}
 }
 
 void control_config_clear_used_status()
 {
+	// note: this is only for digital controls like button presses,
+	// so we don't need to clear the analog value
 	for (auto &item : Control_config) {
-		item.used = 0;
+		item.digital_used = TIMESTAMP::invalid();
 	}
 }
 
