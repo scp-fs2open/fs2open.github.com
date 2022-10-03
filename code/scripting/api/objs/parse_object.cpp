@@ -315,7 +315,7 @@ ADE_FUNC(isPlayerStart, l_ParseObject, nullptr, "Determines if this parsed ship 
 	return ade_set_args(L, "b", poh->getObject()->flags[Mission::Parse_Object_Flags::OF_Player_start]);
 }
 
-ADE_FUNC(makeShipArrive, l_ParseObject, nullptr, "Causes this parsed ship to arrive as if its arrival cue had become true.", nullptr, nullptr)
+ADE_FUNC(makeShipArrive, l_ParseObject, nullptr, "Causes this parsed ship to arrive as if its arrival cue had become true.  Note that reinforcements are only marked as available, not actually created.", "boolean", "true if created, false otherwise")
 {
 	parse_object_h* poh = nullptr;
 	if (!ade_get_args(L, "o", l_ParseObject.GetPtr(&poh)))
@@ -328,9 +328,7 @@ ADE_FUNC(makeShipArrive, l_ParseObject, nullptr, "Causes this parsed ship to arr
 		return ADE_RETURN_NIL;
 
 	poh->getObject()->arrival_delay = 0;
-	mission_maybe_make_ship_arrive(poh->getObject(), true);
-
-	return ADE_RETURN_TRUE;
+	return mission_maybe_make_ship_arrive(poh->getObject(), true) ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
 }
 
 parse_subsys_h::parse_subsys_h() = default;

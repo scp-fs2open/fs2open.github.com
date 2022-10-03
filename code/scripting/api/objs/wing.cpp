@@ -71,7 +71,7 @@ ADE_FUNC(isValid, l_Wing, NULL, "Detects whether handle is valid", "boolean", "t
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(makeWingArrive, l_Wing, nullptr, "Causes this wing to arrive as if its arrival cue had become true.", nullptr, nullptr)
+ADE_FUNC(makeWingArrive, l_Wing, nullptr, "Causes this wing to arrive as if its arrival cue had become true.  Note that reinforcements are only marked as available, not actually created.", "boolean", "true if created, false otherwise")
 {
 	int wingnum = -1;
 	if (!ade_get_args(L, "o", l_Wing.Get(&wingnum)))
@@ -81,9 +81,7 @@ ADE_FUNC(makeWingArrive, l_Wing, nullptr, "Causes this wing to arrive as if its 
 		return ADE_RETURN_NIL;
 
 	Wings[wingnum].arrival_delay = 0;
-	mission_maybe_make_wing_arrive(wingnum, true);
-
-	return ADE_RETURN_TRUE;
+	return mission_maybe_make_wing_arrive(wingnum, true) ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
 }
 
 

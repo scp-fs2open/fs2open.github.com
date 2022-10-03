@@ -7261,19 +7261,31 @@ int mission_did_ship_arrive(p_object *objp, bool force_arrival)
 }
 
 // Goober5000
-void mission_maybe_make_ship_arrive(p_object *p_objp, bool force_arrival)
+bool mission_maybe_make_ship_arrive(p_object *p_objp, bool force_arrival)
 {
-	Assertion(p_objp->wingnum < 0, "Parse objects belonging to wings must arrive through the wing code!");
+	if (p_objp->wingnum >= 0)
+	{
+		Warning(LOCATION, "Parse objects (%s) belonging to wings must arrive through the wing code!", p_objp->name);
+		return false;
+	}
+
+	if (p_objp != nullptr)
+	{
+		Warning(LOCATION, "Cannot create a parse object (%s) more than once!", p_objp->name);
+		return false;
+	}
 
 	// try to create ship
 	int objnum = mission_did_ship_arrive(p_objp, force_arrival);
 	if (objnum < 0)
-		return;
+		return false;
 
 	if (p_objp == Arriving_support_ship)
 		mission_parse_support_arrived(objnum);		// support ships have some unique housekeeping and are never on the arrival list
 	else if (parse_object_on_arrival_list(p_objp))
 		list_remove(&Ship_arrival_list, p_objp);	// remove from arrival list
+
+	return true;
 }
 
 // Goober5000
@@ -7418,35 +7430,35 @@ void mission_eval_arrivals()
 	}
 }
 
-void mission_maybe_make_wing_arrive(int wingnum, bool force_arrival)
+bool mission_maybe_make_wing_arrive(int wingnum, bool force_arrival)
 {
 	int rship = -1;
 	auto wingp = &Wings[wingnum];
 
 	// should we process this wing anymore
 	if (wingp->flags[Ship::Wing_Flags::Gone])
-		return;
+		return false;
 
 	// if we have a reinforcement wing, then don't try to create new ships automatically.
 	if (wingp->flags[Ship::Wing_Flags::Reinforcement])
 	{
 		// check to see in the wings arrival cue is true, and if so, then mark the reinforcement
 		// as available
-		if (eval_sexp(wingp->arrival_cue))
+		if (force_arrival || eval_sexp(wingp->arrival_cue))
 			mission_parse_mark_reinforcement_available(wingp->name);
 
 		// reinforcement wings skip the rest of the function
-		return;
+		return false;
 	}
 		
 	// don't do evaluations for departing wings
 	if (wingp->flags[Ship::Wing_Flags::Departing])
-		return;
+		return false;
 
 	// must check to see if we are at the last wave.  Code above to determine when a wing is gone only
 	// gets run when a ship is destroyed (not every N seconds like it used to).  Do a quick check here.
 	if (wingp->current_wave == wingp->num_waves)
-		return;
+		return false;
 
 	// If the current wave of this wing is 0, then we haven't created the ships in the wing yet.
 	// If the threshold of the wing has been reached, then we need to create more ships.
@@ -7458,7 +7470,7 @@ void mission_maybe_make_wing_arrive(int wingnum, bool force_arrival)
 
 		// if we didn't create any ships, nothing more to do for this wing
 		if (created <= 0)
-			return;
+			return false;
 
 		// If this wing was a reinforcement wing, then we need to reset the reinforcement flag for the wing
 		// so the user can call in another set if need be.
@@ -7471,7 +7483,7 @@ void mission_maybe_make_wing_arrive(int wingnum, bool force_arrival)
 		// probably send a message to the player when this wing arrives.
 		// if no message, nothing more to do for this wing
 		if (wingp->flags[Ship::Wing_Flags::No_arrival_message])
-			return;
+			return true;
 
 		// multiplayer team vs. team
 		if(MULTI_TEAM)
@@ -7531,7 +7543,11 @@ void mission_maybe_make_wing_arrive(int wingnum, bool force_arrival)
 				}
 			}
 		}
+
+		return true;
 	}
+
+	return false;
 }
 
 
