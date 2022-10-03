@@ -35,8 +35,8 @@ extern fix Frametime;
 extern float flRealframetime;
 extern float flFrametime;
 extern fix Missiontime;
-extern TIMESTAMP Last_frame_timestamp;			// A timestamp for when the previous frame ended
-extern UI_TIMESTAMP Last_frame_ui_timestamp;	// Ditto
+extern TIMESTAMP Last_frame_timestamp;			// A timestamp for when the previous frame ended, in mission time
+extern UI_TIMESTAMP Last_frame_ui_timestamp;	// Ditto, in real time (independent of pause and time compression)
 extern fix Skybox_timestamp;	// A timestamp for animated skyboxes -MageKing17
 
 // 0 - 4
