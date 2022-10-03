@@ -353,13 +353,7 @@ matrix Parse_viewer_orient;
 
 int Loading_screen_bm_index=-1;
 
-// definitions for timestamps for eval'ing arrival/departure cues
-int Mission_arrival_timestamp;
-int Mission_departure_timestamp;
 fix Mission_end_time;
-
-#define ARRIVAL_TIMESTAMP		2000		// every 2 seconds
-#define DEPARTURE_TIMESTAMP	2200		// every 2.2 seconds -- just to be a little different
 
 // calculates a "unique" file signature as a ushort (checksum) and an int (file length)
 // the amount of The_mission we're going to checksum
@@ -6359,8 +6353,6 @@ bool post_process_mission()
 	ets_init_ship(Player_obj);	// init ETS data for the player
 
 	// put the timestamp stuff here for now
-	Mission_arrival_timestamp = timestamp( ARRIVAL_TIMESTAMP );
-	Mission_departure_timestamp = timestamp( DEPARTURE_TIMESTAMP );
 	Mission_end_time = -1;
 
 	Allow_arrival_music_timestamp=timestamp(0);
@@ -7424,8 +7416,6 @@ void mission_eval_arrivals()
 		// make it arrive
 		mission_maybe_make_wing_arrive(i);
 	}
-
-	Mission_arrival_timestamp = timestamp(ARRIVAL_TIMESTAMP);
 }
 
 void mission_maybe_make_wing_arrive(int wingnum, bool force_arrival)
@@ -7764,7 +7754,6 @@ void mission_eval_departures()
 			}
 		}
 	}
-	Mission_departure_timestamp = timestamp(DEPARTURE_TIMESTAMP);
 }
 
 /**

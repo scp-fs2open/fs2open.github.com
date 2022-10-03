@@ -469,8 +469,6 @@ extern int Subsys_index;
 extern vec3d Parse_viewer_pos;
 extern matrix Parse_viewer_orient;
 
-extern int Mission_arrival_timestamp;
-extern int Mission_departure_timestamp;
 extern fix Mission_end_time;
 
 extern char Parse_names[MAX_SHIPS + MAX_WINGS][NAME_LENGTH];
