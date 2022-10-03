@@ -1252,7 +1252,7 @@ void process_ingame_wings_packet( ubyte *data, header *hinfo )
 				// assign it here.
 
 				wingp->current_wave = 0;						// make it the first wave.  Ensures that ships don't get removed off the list
-				parse_wing_create_ships( wingp, 1, 1, specific_instance );
+				parse_wing_create_ships( wingp, 1, true, false, specific_instance );
 				shipnum = wingp->ship_index[wingp->current_count-1];
 				Ingame_ships_to_delete[shipnum] = 0;			// "unmark" this ship so it doesn't get deleted.
 

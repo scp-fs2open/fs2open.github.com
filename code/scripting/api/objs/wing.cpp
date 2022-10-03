@@ -71,6 +71,21 @@ ADE_FUNC(isValid, l_Wing, NULL, "Detects whether handle is valid", "boolean", "t
 	return ADE_RETURN_TRUE;
 }
 
+ADE_FUNC(makeWingArrive, l_Wing, nullptr, "Causes this wing to arrive as if its arrival cue had become true.", nullptr, nullptr)
+{
+	int wingnum = -1;
+	if (!ade_get_args(L, "o", l_Wing.Get(&wingnum)))
+		return ADE_RETURN_NIL;
+
+	if (wingnum < 0 || wingnum >= Num_wings)
+		return ADE_RETURN_NIL;
+
+	Wings[wingnum].arrival_delay = 0;
+	mission_maybe_make_wing_arrive(wingnum, true);
+
+	return ADE_RETURN_TRUE;
+}
+
 
 }
 }

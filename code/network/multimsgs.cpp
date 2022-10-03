@@ -2890,7 +2890,7 @@ void process_wing_create_packet( ubyte *data, header *hinfo )
 	// need to set some timestamps and cues correctly to be sure that these things get created on
 	// the clients correctly
 	multi_set_network_signature( signature, MULTI_SIG_SHIP );
-	parse_wing_create_ships( &Wings[index], num_to_create, 1 );
+	parse_wing_create_ships( &Wings[index], num_to_create, true );
 }
 
 // packet indicating a ship is departing
