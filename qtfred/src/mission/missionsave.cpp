@@ -2687,34 +2687,34 @@ int CFred_mission_save::save_music()
 	bypass_comment(";;FSO 3.6.8;; $Substitute Music:");
 
 	// old stuff
-	if (Mission_music[SCORE_DEBRIEF_SUCCESS] != event_music_get_spooled_music_index("Success")) {
+	if (Mission_music[SCORE_DEBRIEFING_SUCCESS] != event_music_get_spooled_music_index("Success")) {
 		if (optional_string_fred("$Debriefing Success Music:")) {
 			parse_comments(1);
 		} else {
 			fout("\n$Debriefing Success Music:");
 		}
 		fout(" %s",
-			 Mission_music[SCORE_DEBRIEF_SUCCESS] < 0 ? "None"
-													  : Spooled_music[Mission_music[SCORE_DEBRIEF_SUCCESS]].name);
+			 Mission_music[SCORE_DEBRIEFING_SUCCESS] < 0 ? "None"
+													  : Spooled_music[Mission_music[SCORE_DEBRIEFING_SUCCESS]].name);
 	}
-	if (save_format != MissionFormat::RETAIL && Mission_music[SCORE_DEBRIEF_AVERAGE] != event_music_get_spooled_music_index("Average")) {
+	if (save_format != MissionFormat::RETAIL && Mission_music[SCORE_DEBRIEFING_AVERAGE] != event_music_get_spooled_music_index("Average")) {
 		if (optional_string_fred("$Debriefing Average Music:")) {
 			parse_comments(1);
 		} else {
 			fout("\n$Debriefing Average Music:");
 		}
 		fout(" %s",
-			 Mission_music[SCORE_DEBRIEF_AVERAGE] < 0 ? "None"
-													  : Spooled_music[Mission_music[SCORE_DEBRIEF_AVERAGE]].name);
+			 Mission_music[SCORE_DEBRIEFING_AVERAGE] < 0 ? "None"
+													  : Spooled_music[Mission_music[SCORE_DEBRIEFING_AVERAGE]].name);
 	}
-	if (Mission_music[SCORE_DEBRIEF_FAIL] != event_music_get_spooled_music_index("Failure")) {
+	if (Mission_music[SCORE_DEBRIEFING_FAILURE] != event_music_get_spooled_music_index("Failure")) {
 		if (optional_string_fred("$Debriefing Fail Music:")) {
 			parse_comments(1);
 		} else {
 			fout("\n$Debriefing Fail Music:");
 		}
 		fout(" %s",
-			 Mission_music[SCORE_DEBRIEF_FAIL] < 0 ? "None" : Spooled_music[Mission_music[SCORE_DEBRIEF_FAIL]].name);
+			 Mission_music[SCORE_DEBRIEFING_FAILURE] < 0 ? "None" : Spooled_music[Mission_music[SCORE_DEBRIEFING_FAILURE]].name);
 	}
 
 	// Goober5000 - save using the special comment prefix

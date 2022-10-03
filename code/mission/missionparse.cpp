@@ -1146,7 +1146,7 @@ void parse_music(mission *pm, int flags)
 		stuff_string(temp, F_NAME, NAME_LENGTH);
 		index = event_music_get_spooled_music_index(temp);
 		if ((index >= 0) && ((Spooled_music[index].flags & SMF_VALID) || Fred_running)) {
-			event_music_set_score(SCORE_DEBRIEF_SUCCESS, temp);
+			event_music_set_score(SCORE_DEBRIEFING_SUCCESS, temp);
 		}
 	}
 
@@ -1156,17 +1156,17 @@ void parse_music(mission *pm, int flags)
 		stuff_string(temp, F_NAME, NAME_LENGTH);
 		index = event_music_get_spooled_music_index(temp);
 		if ((index >= 0) && ((Spooled_music[index].flags & SMF_VALID) || Fred_running)) {
-			event_music_set_score(SCORE_DEBRIEF_AVERAGE, temp);
+			event_music_set_score(SCORE_DEBRIEFING_AVERAGE, temp);
 		}
 	}
 
 	// old stuff
-	if (optional_string("$Debriefing Fail Music:"))
+	if (optional_string("$Debriefing Fail Music:") || optional_string("$Debriefing Failure Music:"))
 	{
 		stuff_string(temp, F_NAME, NAME_LENGTH);
 		index = event_music_get_spooled_music_index(temp);
 		if ((index >= 0) && ((Spooled_music[index].flags & SMF_VALID) || Fred_running)) {
-			event_music_set_score(SCORE_DEBRIEF_FAIL, temp);
+			event_music_set_score(SCORE_DEBRIEFING_FAILURE, temp);
 		}
 	}
 

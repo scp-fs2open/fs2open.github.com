@@ -98,7 +98,7 @@ const int32_t LE_CONTEXT_INVALID             = 85;
 const int32_t LE_FIREBALL_MEDIUM_EXPLOSION   = 86;
 const int32_t LE_FIREBALL_LARGE_EXPLOSION    = 87;
 const int32_t LE_FIREBALL_WARP_EFFECT        = 88;
-const int32_t LE_GR_RESIZE_NONE              = 89;
+const int32_t LE_GR_RESIZE_NONE              = 89; // the sequence and offsets of the LE_GR_* #defines should correspond to the GR_* #defines
 const int32_t LE_GR_RESIZE_FULL              = 90;
 const int32_t LE_GR_RESIZE_FULL_CENTER       = 91;
 const int32_t LE_GR_RESIZE_MENU              = 92;
@@ -112,15 +112,20 @@ const int32_t LE_TBOX_FLASH_SUBSYS           = 99;
 const int32_t LE_LUAAI_ACHIEVABLE			 = 100;
 const int32_t LE_LUAAI_NOT_YET_ACHIEVABLE	 = 101;
 const int32_t LE_LUAAI_UNACHIEVABLE			 = 102;
-const int32_t LE_MOVIE_PRE_FICTION           = 103;
+const int32_t LE_MOVIE_PRE_FICTION           = 103; // the sequence and offsets of the LE_MOVIE_* #defines should correspond to the MOVIE_* #defines
 const int32_t LE_MOVIE_PRE_CMD_BRIEF         = 104;
 const int32_t LE_MOVIE_PRE_BRIEF             = 105;
 const int32_t LE_MOVIE_PRE_GAME              = 106;
 const int32_t LE_MOVIE_PRE_DEBRIEF           = 107;
 const int32_t LE_MOVIE_POST_DEBRIEF          = 108;
 const int32_t LE_MOVIE_END_CAMPAIGN          = 109;
+const int32_t LE_SCORE_BRIEFING              = 110; // the sequence and offsets of the LE_SCORE_* #defines should correspond to the SCORE_* #defines
+const int32_t LE_SCORE_DEBRIEFING_SUCCESS    = 111;
+const int32_t LE_SCORE_DEBRIEFING_AVERAGE    = 112;
+const int32_t LE_SCORE_DEBRIEFING_FAILURE    = 113;
+const int32_t LE_SCORE_FICTION_VIEWER        = 114;
 
-const int ENUM_NEXT_INDEX = 110; // <<<<<<<<<<<<<<<<<<<<<<
+const int ENUM_NEXT_INDEX = 115; // <<<<<<<<<<<<<<<<<<<<<<
 extern flag_def_list Enumerations[];
 extern size_t Num_enumerations;
 

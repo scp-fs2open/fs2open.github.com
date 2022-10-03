@@ -12,6 +12,7 @@
 #include "executor/GameStateExecutionContext.h"
 #include "executor/global_executors.h"
 #include "gamesequence/gamesequence.h"
+#include "gamesnd/eventmusic.h"
 #include "hud/hudescort.h"
 #include "hud/hudmessage.h"
 #include "iff_defs/iff_defs.h"
@@ -1694,6 +1695,45 @@ ADE_FUNC(hasDebriefing,
 	"true if debriefing, false otherwise.")
 {
 	return ade_set_args(L, "b", !(The_mission.flags[Mission::Mission_Flags::Toggle_debriefing]));
+}
+
+ADE_FUNC(getMusicScore, l_Mission, "enumeration score", "Returns the music.tbl entry name for the specified mission music score", "string", "The name, or nil if the score is invalid")
+{
+	enum_h score;
+	if (!ade_get_args(L, "o", l_Enum.Get(&score)))
+		return ADE_RETURN_NIL;
+
+	if (!score.IsValid() || score.index < LE_SCORE_BRIEFING || score.index > LE_SCORE_FICTION_VIEWER)
+	{
+		Warning(LOCATION, "Invalid music score index %d", score.index);
+		return ADE_RETURN_NIL;
+	}
+
+	int spooled_index = Mission_music[score.index - LE_SCORE_BRIEFING];
+
+	const char *name = nullptr;
+	if (spooled_index >= 0 && (size_t)spooled_index < Spooled_music.size())
+		name = Spooled_music[spooled_index].name;
+
+	return ade_set_args(L, "s", name);
+}
+
+ADE_FUNC(setMusicScore, l_Mission, "enumeration score, string name", "Sets the music.tbl entry for the specified mission music score", nullptr, nullptr)
+{
+	enum_h score;
+	const char *name;
+	if (!ade_get_args(L, "os", l_Enum.Get(&score), &name))
+		return ADE_RETURN_NIL;
+
+	if (!score.IsValid() || score.index < LE_SCORE_BRIEFING || score.index > LE_SCORE_FICTION_VIEWER)
+	{
+		Warning(LOCATION, "Invalid music score index %d", score.index);
+		return ADE_RETURN_NIL;
+	}
+
+	event_music_set_score(score.index - LE_SCORE_BRIEFING, name);
+
+	return ADE_RETURN_TRUE;
 }
 
 int testLineOfSight_internal(lua_State* L, bool returnDist_and_Obj) {

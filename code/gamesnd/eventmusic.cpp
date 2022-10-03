@@ -1684,7 +1684,7 @@ int event_music_get_spooled_music_index(const char *name)
 int event_music_get_spooled_music_index(const SCP_string& name)
 {
 	return event_music_get_spooled_music_index(name.c_str());
-	}
+}
 
 // set a score based on name
 void event_music_set_score(int score_index, const char *name)
@@ -1702,9 +1702,9 @@ void event_music_reset_choices()
 	mprintf(("Current soundtrack set to -1 in event_music_reset_choices\n"));
 	Mission_music[SCORE_BRIEFING] = -1;
 	Mission_music[SCORE_FICTION_VIEWER] = -1;
-	event_music_set_score(SCORE_DEBRIEF_SUCCESS, "Success");
-	event_music_set_score(SCORE_DEBRIEF_AVERAGE, "Average");
-	event_music_set_score(SCORE_DEBRIEF_FAIL, "Failure");
+	event_music_set_score(SCORE_DEBRIEFING_SUCCESS, "Success");
+	event_music_set_score(SCORE_DEBRIEFING_AVERAGE, "Average");
+	event_music_set_score(SCORE_DEBRIEFING_FAILURE, "Failure");
 
 	// Goober5000
 	strcpy_s(The_mission.substitute_briefing_music_name, "None");
