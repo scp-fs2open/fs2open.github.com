@@ -155,7 +155,8 @@ bool RocketRenderingInterface::LoadTexture(TextureHandle& texture_handle, Vector
 			memset(rawdata, 0, w * h * d_size);
 			png_read_bitmap(data, rawdata, &bpp);
 
-			bool success = RocketRenderingInterface::GenerateTexture(texture_handle, rawdata, { w, h });
+			texture_dimensions = { w, h };
+			bool success = RocketRenderingInterface::GenerateTexture(texture_handle, rawdata, texture_dimensions);
 			
 			delete[] rawdata;
 
