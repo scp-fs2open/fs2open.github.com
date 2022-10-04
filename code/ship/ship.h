@@ -874,10 +874,10 @@ extern int ship_find_exited_ship_by_name( const char *name );
 extern int ship_find_exited_ship_by_signature( int signature);
 
 // Stuff for overall ship status, useful for reference by sexps and scripts.  Status changes occur in the same frame as mission log entries.
-enum ShipStatus
+enum class ShipStatus
 {
 	// A ship is on the arrival list as a parse object
-	NOT_YET_PRESENT,
+	NOT_YET_PRESENT = 0,
 
 	// A ship is currently in-mission, and its objp and shipp pointers are valid
 	PRESENT,

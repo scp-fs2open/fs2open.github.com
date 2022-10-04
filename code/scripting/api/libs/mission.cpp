@@ -50,6 +50,7 @@
 #include "scripting/api/objs/parse_object.h"
 #include "scripting/api/objs/promise.h"
 #include "scripting/api/objs/sexpvar.h"
+#include "scripting/api/objs/ship_registry_entry.h"
 #include "scripting/api/objs/ship.h"
 #include "scripting/api/objs/shipclass.h"
 #include "scripting/api/objs/sound.h"
@@ -335,6 +336,35 @@ ADE_INDEXER(l_Mission_SEXPVariables, "number/string IndexOrName", "Array of SEXP
 ADE_FUNC(__len, l_Mission_SEXPVariables, NULL, "Current number of SEXP variables", "number", "Counts number of loaded SEXP Variables. May be slow.")
 {
 	return ade_set_args(L, "i", sexp_variable_count());
+}
+
+//****SUBLIBRARY: Mission/ShipRegistry
+ADE_LIB_DERIV(l_Mission_ShipRegistry, "ShipRegistry", nullptr, "The mission's ship registry: all ships parsed, created, or exited that the mission knows about", l_Mission);
+
+ADE_INDEXER(l_Mission_ShipRegistry, "number/string IndexOrName", "Gets ship registry entry", "ship_registry_entry", "Ship registry entry handle, or invalid handle if index was invalid")
+{
+	const char* name;
+	if(!ade_get_args(L, "*s", &name))
+		return ade_set_error(L, "o", l_ShipRegistryEntry.Set(-1));
+
+	int idx = ship_registry_get_index(name);
+	if (idx < 0)
+	{
+		idx = atoi(name);	// will return 0 if not parseable
+
+		//Lua-->FS2
+		idx--;
+	}
+
+	return ade_set_args(L, "o", l_ShipRegistryEntry.Set(idx));
+}
+
+ADE_FUNC(__len, l_Mission_ShipRegistry, nullptr,
+		 "Number of ship registry entries in the mission.  The value returned is generally stable but will change if a ship is created using ship-create.",
+		 "number",
+		 "Number of ship registry entries in the mission")
+{
+	return ade_set_args(L, "i", (int)Ship_registry.size());
 }
 
 //****SUBLIBRARY: Mission/Ships

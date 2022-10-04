@@ -6081,7 +6081,7 @@ object_ship_wing_point_team::object_ship_wing_point_team(ship* sp)
 : object_name(sp->ship_name), type(OSWPT_TYPE_SHIP), objp(&Objects[sp->objnum])
 {
 	ship_entry = ship_registry_get(sp->ship_name);
-	if (ship_entry->status == EXITED)
+	if (ship_entry->status == ShipStatus::EXITED)
 	{
 		type = OSWPT_TYPE_EXITED;
 	}
@@ -6198,15 +6198,15 @@ void eval_object_ship_wing_point_team(object_ship_wing_point_team *oswpt, int no
 
 		switch (ship_entry->status)
 		{
-			case NOT_YET_PRESENT:
+			case ShipStatus::NOT_YET_PRESENT:
 				oswpt->type = OSWPT_TYPE_PARSE_OBJECT;
 				break;
 
-			case PRESENT:
+			case ShipStatus::PRESENT:
 				oswpt->type = OSWPT_TYPE_SHIP;
 				break;
 
-			case EXITED:
+			case ShipStatus::EXITED:
 				oswpt->type = OSWPT_TYPE_EXITED;
 				break;
 
@@ -18095,10 +18095,10 @@ int sexp_time_to_goal(int n)
 	if (!ship_entry || !ship_entry->shipp)
 		return SEXP_NAN;
 
-	if (ship_entry->status == NOT_YET_PRESENT)
+	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_CANT_EVAL;
 	
-	if (ship_entry->status == EXITED)
+	if (ship_entry->status == ShipStatus::EXITED)
 		return SEXP_NAN_FOREVER;
 
 	auto shipp = ship_entry->shipp;
