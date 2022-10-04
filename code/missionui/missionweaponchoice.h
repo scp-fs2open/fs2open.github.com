@@ -46,6 +46,36 @@ void weapon_select_do(float frametime);
 void weapon_select_close();
 void weapon_select_close_team();
 
+void draw_3d_overhead_view(int model_num,
+	int ship_class,
+	float* rotation_buffer,
+	float frametime,
+	int selected_ship_slot,
+	int selected_weapon_class,
+	int hovered_weapon_slot,
+	int x1,
+	int y1,
+	int x2,
+	int y2,
+	int resize_mode,
+	int bank1_x,
+	int bank1_y,
+	int bank2_x,
+	int bank2_y,
+	int bank3_x,
+	int bank3_y,
+	int bank4_x,
+	int bank4_y,
+	int bank5_x,
+	int bank5_y,
+	int bank6_x,
+	int bank6_y,
+	int bank7_x,
+	int bank7_y,
+	int bank_prim_offset = 106,
+	int bank_sec_offset = -50,
+	int bank_y_offset = 12);
+
 void	wl_update_parse_object_weapons(p_object *pobjp, wss_unit *slot);
 int	wl_update_ship_weapons(int objnum, wss_unit *slot);
 void	wl_bash_ship_weapons(ship_weapon *swp, wss_unit *slot);
