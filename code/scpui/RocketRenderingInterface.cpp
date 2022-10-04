@@ -148,11 +148,11 @@ bool RocketRenderingInterface::LoadTexture(TextureHandle& texture_handle, Vector
 			int d_size = bpp >> 3;
 
 			//we waste memory if it turns out to be 24-bit, but the way this whole thing works is dodgy anyway
-			ubyte* rawdata = new ubyte[w * h * (bpp >> 3)];
+			ubyte* rawdata = new ubyte[w * h * d_size];
 			if (rawdata == nullptr)
 				return false;
 
-			memset(rawdata, 0, w * h * (bpp >> 3));
+			memset(rawdata, 0, w * h * d_size);
 			png_read_bitmap(data, rawdata, &bpp);
 
 			delete[] rawdata;
