@@ -344,7 +344,7 @@ int png_read_bitmap(const SCP_string& b64, ubyte* image_data, int* bpp)
 		[](png_structp png_ptr, png_bytep datap, png_size_t length) {
 			b64_dec_buffer& buf = *static_cast<b64_dec_buffer*>(png_get_io_ptr(png_ptr));
 
-			for (size_t finalPos = buf.pos + length; buf.pos < finalPos; buf.pos++) {
+			for (size_t finalPos = std::min(buf.pos + length, buf.decoded.size()); buf.pos < finalPos; buf.pos++) {
 				*(datap++) = buf.decoded.at(buf.pos);
 			}
 		}, []() {});
@@ -443,6 +443,9 @@ SCP_string png_b64_bitmap(size_t width, size_t height, bool y_flip, const uint8_
 				base64_encode(buf.b64, buf.buffer.data(), (unsigned int) buf.i);
 			}
 		});
+
+	if (buffer.i != 0)
+		base64_encode(buffer.b64, buffer.buffer.data(), (unsigned int)buffer.i);
 
 	return buffer.b64.str();
 }
