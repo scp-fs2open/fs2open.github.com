@@ -136,6 +136,30 @@ ADE_FUNC(getFlag, l_ParseObject, "string flag_name", "Checks whether one or more
 	return ADE_RETURN_TRUE;
 }
 
+static int parse_object_getset_helper(lua_State* L, int p_object::* field, bool canSet = false, bool canBeNegative = false)
+{
+	parse_object_h* poh;
+	int value;
+	if (!ade_get_args(L, "o|i", l_ParseObject.GetPtr(&poh), &value))
+		return ADE_RETURN_NIL;
+
+	if (!poh || !poh->isValid())
+		return ADE_RETURN_NIL;
+
+	if (ADE_SETTING_VAR)
+	{
+		if (canSet)
+		{
+			if (canBeNegative || value >= 0)
+				poh->getObject()->*field = value;
+		}
+		else
+			LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "i", poh->getObject()->*field);
+}
+
 ADE_VIRTVAR(Position, l_ParseObject, "vector", "The position at which the parsed ship will arrive.", "vector",
             "The position of the parsed ship.")
 {
@@ -297,6 +321,93 @@ ADE_VIRTVAR(Subsystems, l_ParseObject, nullptr, "Get the list of subsystems of t
 	}
 
 	return ade_set_args(L, "t", tbl);
+}
+
+static int parse_object_getset_location_helper(lua_State* L, int p_object::* field, const char* location_type, const char** location_names, size_t location_names_size)
+{
+	parse_object_h* poh;
+	const char* s = nullptr;
+	if (!ade_get_args(L, "o|s", l_ParseObject.GetPtr(&poh), &s))
+		return ADE_RETURN_NIL;
+
+	if (!poh || !poh->isValid())
+		return ADE_RETURN_NIL;
+
+	if (ADE_SETTING_VAR && s != nullptr)
+	{
+		int location = string_lookup(s, location_names, location_names_size);
+		if (location < 0)
+		{
+			Warning(LOCATION, "%s location '%s' not found.", location_type, s);
+			return ADE_RETURN_NIL;
+		}
+		poh->getObject()->*field = location;
+	}
+
+	return ade_set_args(L, "s", location_names[poh->getObject()->*field]);
+}
+
+ADE_VIRTVAR(ArrivalLocation, l_ParseObject, "string", "The ship's arrival location", "string", "Arrival location, or nil if handle is invalid")
+{
+	return parse_object_getset_location_helper(L, &p_object::arrival_location, "Arrival", Arrival_location_names, MAX_ARRIVAL_NAMES);
+}
+
+ADE_VIRTVAR(DepartureLocation, l_ParseObject, "string", "The ship's departure location", "string", "Departure location, or nil if handle is invalid")
+{
+	return parse_object_getset_location_helper(L, &p_object::departure_location, "Departure", Departure_location_names, MAX_DEPARTURE_NAMES);
+}
+
+static int parse_object_getset_anchor_helper(lua_State* L, int p_object::* field)
+{
+	parse_object_h* poh;
+	const char* s = nullptr;
+	if (!ade_get_args(L, "o|s", l_ParseObject.GetPtr(&poh), &s))
+		return ADE_RETURN_NIL;
+
+	if (!poh || !poh->isValid())
+		return ADE_RETURN_NIL;
+
+	if (ADE_SETTING_VAR && s != nullptr)
+	{
+		poh->getObject()->*field = (stricmp(s, "<no anchor>") == 0) ? -1 : get_parse_name_index(s);
+	}
+
+	return ade_set_args(L, "s", (poh->getObject()->*field >= 0) ? Parse_names[poh->getObject()->*field] : "<no anchor>");
+}
+
+ADE_VIRTVAR(ArrivalAnchor, l_ParseObject, "string", "The ship's arrival anchor", "string", "Arrival anchor, or nil if handle is invalid")
+{
+	return parse_object_getset_anchor_helper(L, &p_object::arrival_anchor);
+}
+
+ADE_VIRTVAR(DepartureAnchor, l_ParseObject, "string", "The ship's departure anchor", "string", "Departure anchor, or nil if handle is invalid")
+{
+	return parse_object_getset_anchor_helper(L, &p_object::departure_anchor);
+}
+
+ADE_VIRTVAR(ArrivalPathMask, l_ParseObject, "number", "The ship's arrival path mask", "number", "Arrival path mask, or nil if handle is invalid")
+{
+	return parse_object_getset_helper(L, &p_object::arrival_path_mask, true);
+}
+
+ADE_VIRTVAR(DeparturePathMask, l_ParseObject, "number", "The ship's departure path mask", "number", "Departure path mask, or nil if handle is invalid")
+{
+	return parse_object_getset_helper(L, &p_object::departure_path_mask, true);
+}
+
+ADE_VIRTVAR(ArrivalDelay, l_ParseObject, "number", "The ship's arrival delay", "number", "Arrival delay, or nil if handle is invalid")
+{
+	return parse_object_getset_helper(L, &p_object::arrival_delay, true);
+}
+
+ADE_VIRTVAR(DepartureDelay, l_ParseObject, "number", "The ship's departure delay", "number", "Departure delay, or nil if handle is invalid")
+{
+	return parse_object_getset_helper(L, &p_object::departure_delay, true);
+}
+
+ADE_VIRTVAR(ArrivalDistance, l_ParseObject, "number", "The ship's arrival distance", "number", "Arrival distance, or nil if handle is invalid")
+{
+	return parse_object_getset_helper(L, &p_object::arrival_distance, true);
 }
 
 ADE_FUNC(isPlayerStart, l_ParseObject, nullptr, "Determines if this parsed ship is a player start.", "boolean",
