@@ -7269,7 +7269,7 @@ bool mission_maybe_make_ship_arrive(p_object *p_objp, bool force_arrival)
 		return false;
 	}
 
-	if (p_objp != nullptr)
+	if (p_objp->created_object != nullptr)
 	{
 		Warning(LOCATION, "Cannot create a parse object (%s) more than once!", p_objp->name);
 		return false;
