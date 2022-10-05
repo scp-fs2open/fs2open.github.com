@@ -9134,11 +9134,11 @@ static void ship_auto_repair_frame(int shipnum, float frametime)
 	// Repair the hull...or maybe unrepair?
 	if (!fl_equal(sip->hull_repair_rate, 0.0f))
 	{
-		float max_hull_repair = sp->ship_max_hull_strength * sip->hull_repair_max;
-		objp->hull_strength += max_hull_repair * sip->hull_repair_rate * frametime;
+		float max_hull_repair_strength = sp->ship_max_hull_strength * sip->hull_repair_max;
+		objp->hull_strength += max_hull_repair_strength * sip->hull_repair_rate * frametime;
 
-		if (objp->hull_strength > max_hull_repair)
-			objp->hull_strength = max_hull_repair;
+		if (objp->hull_strength > max_hull_repair_strength)
+			objp->hull_strength = max_hull_repair_strength;
 		else if (objp->hull_strength < 0)
 			ship_hit_kill(objp, nullptr, nullptr, 0, true);
 	}
@@ -9166,9 +9166,9 @@ static void ship_auto_repair_frame(int shipnum, float frametime)
 		Assert(ssp->system_info->type >= 0 && ssp->system_info->type < SUBSYSTEM_MAX);
 		ssip = &sp->subsys_info[ssp->system_info->type];
 
-		float max_subsys_repair = ssp->max_hits * sip->subsys_repair_max;
+		float max_subsys_repair_hits = ssp->max_hits * sip->subsys_repair_max;
 
-		if (ssp->current_hits < max_subsys_repair) {
+		if (ssp->current_hits < max_subsys_repair_hits) {
 
 			// only repair those subsystems which can be destroyed
 			if ( ssp->max_hits <= 0 )
@@ -9186,9 +9186,9 @@ static void ship_auto_repair_frame(int shipnum, float frametime)
 
 			// do incremental repair on the subsystem
 			// check for overflow of current_hits
-			ssp->current_hits += max_subsys_repair * real_repair_rate * frametime;
-			if (ssp->current_hits > max_subsys_repair) {
-				ssp->current_hits = max_subsys_repair;
+			ssp->current_hits += max_subsys_repair_hits * real_repair_rate * frametime;
+			if (ssp->current_hits > max_subsys_repair_hits) {
+				ssp->current_hits = max_subsys_repair_hits;
 			}
 
 			// aggregate repair
