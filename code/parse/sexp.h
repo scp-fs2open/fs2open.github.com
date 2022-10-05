@@ -129,6 +129,7 @@ struct ship_obj;
 #define OPF_DATA_OR_STR_CONTAINER	98	// jg18 - any data, or a container that is accessed via strings
 #define OPF_TRANSLATING_SUBSYSTEM	99	// Goober5000 - a translating subsystem
 #define OPF_ANY_HUD_GAUGE		100		// Goober5000 - both custom and builtin
+#define OPF_WING_FLAG			101		// Goober5000 - The name of a wing flag
 
 // Operand return types
 #define	OPR_NUMBER				1	// returns number
@@ -424,6 +425,8 @@ struct ship_obj;
 #define OP_MAP_HAS_KEY						(0x005d | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Karajorma/jg18
 #define OP_MAP_HAS_DATA_ITEM				(0x005e | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Karajorma/jg18
 #define OP_ANGLE_FVEC_TARGET				(0x005f | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Lafiel
+
+#define OP_ARE_WING_FLAGS_SET				(0x0060 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Goober5000
 
 // conditional sexpressions
 #define OP_WHEN								(0x0000 | OP_CATEGORY_CONDITIONAL)
@@ -827,6 +830,7 @@ struct ship_obj;
 #define OP_FREE_TRANSLATING_SUBSYSTEM		(0x0055 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_REVERSE_TRANSLATING_SUBSYSTEM	(0x0056 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_TRANSLATING_SUBSYS_SET_SPEED		(0x0057 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_ALTER_WING_FLAG					(0x0058 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
 
 // defined for AI goals
@@ -1134,6 +1138,7 @@ const char *CTEXT(int n);
 #define SEXP_CHECK_INVALID_ROTATING_SUBSYS		-175
 #define SEXP_CHECK_INVALID_TRANSLATING_SUBSYS	-176
 #define SEXP_CHECK_INVALID_ANY_HUD_GAUGE		-177
+#define SEXP_CHECK_INVALID_WING_FLAG			-178
 
 
 #define TRAINING_CONTEXT_SPEED		(1<<0)

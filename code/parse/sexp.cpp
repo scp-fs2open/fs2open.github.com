@@ -254,6 +254,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "is_tagged",						OP_IS_TAGGED,							1,	1,			SEXP_BOOLEAN_OPERATOR,	},
 	{ "has-been-tagged-delay",			OP_HAS_BEEN_TAGGED_DELAY,				2,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},
 	{ "are-ship-flags-set",				OP_ARE_SHIP_FLAGS_SET,					2,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},	// Karajorma
+	{ "are-wing-flags-set",				OP_ARE_WING_FLAGS_SET,					2,	INT_MAX,	SEXP_BOOLEAN_OPERATOR, },	// Goober5000
 
 	//Shields, Engines and Weapons Sub-Category
 	{ "has-primary-weapon",				OP_HAS_PRIMARY_WEAPON,					3,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},	// Karajorma
@@ -498,6 +499,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "ship-subsys-ignore_if_dead",		OP_SHIP_SUBSYS_IGNORE_IF_DEAD,			3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// FUBAR
 	{ "awacs-set-radius",				OP_AWACS_SET_RADIUS,					3,	3,			SEXP_ACTION_OPERATOR,	},
 	{ "alter-ship-flag",				OP_ALTER_SHIP_FLAG,						3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma 
+	{ "alter-wing-flag",				OP_ALTER_WING_FLAG,						2,	INT_MAX,	SEXP_ACTION_OPERATOR, },	// Goober5000
 	{ "cancel-future-waves",			OP_CANCEL_FUTURE_WAVES,						1,	INT_MAX,	SEXP_ACTION_OPERATOR,	}, // naomimyselfandi
 
 	//Cargo Sub-Category
@@ -3302,6 +3304,15 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				}
 
 				if (!found) {
+					for ( i = 0; i < (int)Num_parse_object_flags; i++) {
+						if (!stricmp(Parse_object_flags[i].name, CTEXT(node))) {
+							found = true;
+							break;
+						}
+					}
+				}
+
+				if (!found) {
 					for ( i = 0; i < Num_ai_flag_names; i++) {
 						if (!stricmp(Ai_flag_names[i].flag_name, CTEXT(node))) {
 							found = true;
@@ -3312,6 +3323,23 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 				if (!found) {
 					return SEXP_CHECK_INVALID_SHIP_FLAG;
+				}
+
+				break;
+				}
+
+			case OPF_WING_FLAG:
+				{
+				bool found = false;
+				for ( i = 0; i < (int)Num_wing_flag_names; i++) {
+					if (!stricmp(Wing_flag_names[i].flag_name, CTEXT(node))) {
+						found = true;
+						break;
+					}
+				}
+
+				if (!found) {
+					return SEXP_CHECK_INVALID_WING_FLAG;
 				}
 
 				break;
@@ -15598,7 +15626,7 @@ void alter_flag_for_all_ships(bool future_ships, Object::Object_Flags object_fla
 	}
 }
 
-bool sexp_check_flag_arrays(const char *flag_name, Object::Object_Flags &object_flag, Ship::Ship_Flags &ship_flags, Mission::Parse_Object_Flags &parse_obj_flag, AI::AI_Flags &ai_flag)
+bool sexp_check_flag_arrays(const char *flag_name, Object::Object_Flags &object_flag, Ship::Ship_Flags &ship_flag, Mission::Parse_Object_Flags &parse_obj_flag, AI::AI_Flags &ai_flag)
 {
 	size_t i;
 	bool send_multi = false;
@@ -15616,7 +15644,7 @@ bool sexp_check_flag_arrays(const char *flag_name, Object::Object_Flags &object_
 	for ( i = 0; i < Num_ship_flag_names; i++) {
 		if (!stricmp(Ship_flag_names[i].flag_name, flag_name)) {
 			// make sure the list writes to the correct list of flags!
-			ship_flags = Ship_flag_names[i].flag;
+			ship_flag = Ship_flag_names[i].flag;
 			send_multi = true;
 			break;
 		}
@@ -15659,7 +15687,7 @@ bool sexp_check_flag_array(const char *flag_name, Ship::Wing_Flags &wing_flag)
 int sexp_are_ship_flags_set(int node)
 {
 	Object::Object_Flags object_flag = Object::Object_Flags::NUM_VALUES;
-	Ship::Ship_Flags ship_flags = Ship::Ship_Flags::NUM_VALUES;
+	Ship::Ship_Flags ship_flag = Ship::Ship_Flags::NUM_VALUES;
 	Mission::Parse_Object_Flags parse_obj_flag = Mission::Parse_Object_Flags::NUM_VALUES;
 	AI::AI_Flags ai_flag = AI::AI_Flags::NUM_VALUES;
 
@@ -15676,7 +15704,7 @@ int sexp_are_ship_flags_set(int node)
 
 	while (node != -1) {
 		auto flag_name = CTEXT(node); 
-		sexp_check_flag_arrays(flag_name, object_flag, ship_flags, parse_obj_flag, ai_flag);
+		sexp_check_flag_arrays(flag_name, object_flag, ship_flag, parse_obj_flag, ai_flag);
 
 		// now check the flags
 		if (object_flag != Object::Object_Flags::NUM_VALUES) {
@@ -15684,8 +15712,8 @@ int sexp_are_ship_flags_set(int node)
 				return SEXP_FALSE;
 		}
 
-		if (ship_flags != Ship::Ship_Flags::NUM_VALUES) {
-			if (!(shipp->flags[ship_flags]))
+		if (ship_flag != Ship::Ship_Flags::NUM_VALUES) {
+			if (!(shipp->flags[ship_flag]))
 				return SEXP_FALSE;
 		}
 
@@ -15703,10 +15731,38 @@ int sexp_are_ship_flags_set(int node)
 	return SEXP_TRUE; 
 }
 
+int sexp_are_wing_flags_set(int node)
+{
+	Ship::Wing_Flags wing_flag = Ship::Wing_Flags::NUM_VALUES;
+
+	auto wingp = eval_wing(node);
+	if (!wingp)
+		return SEXP_NAN_FOREVER;
+	node = CDR(node);
+
+	while (node != -1)
+	{
+		auto flag_name = CTEXT(node); 
+		sexp_check_flag_array(flag_name, wing_flag);
+
+		// now check the flags
+		if (wing_flag != Ship::Wing_Flags::NUM_VALUES)
+		{
+			if (!(wingp->flags[wing_flag]))
+				return SEXP_FALSE;
+		}
+
+		node = CDR(node); 
+	}
+
+	// if we're still here, all the flags we were looking for were present
+	return SEXP_TRUE; 
+}
+
 void sexp_alter_ship_flag(int node)
 {
 	Object::Object_Flags object_flag = Object::Object_Flags::NUM_VALUES;
-	Ship::Ship_Flags ship_flags = Ship::Ship_Flags::NUM_VALUES;
+	Ship::Ship_Flags ship_flag = Ship::Ship_Flags::NUM_VALUES;
 	Mission::Parse_Object_Flags parse_obj_flag = Mission::Parse_Object_Flags::NUM_VALUES;
 	AI::AI_Flags ai_flag = AI::AI_Flags::NUM_VALUES;
 	bool set_flag = false; 
@@ -15715,7 +15771,7 @@ void sexp_alter_ship_flag(int node)
 
 	auto flag_name = CTEXT(node); 
 
-	sexp_check_flag_arrays(flag_name, object_flag, ship_flags, parse_obj_flag, ai_flag);
+	sexp_check_flag_arrays(flag_name, object_flag, ship_flag, parse_obj_flag, ai_flag);
 
 	node = CDR(node); 
 	if (is_sexp_true(node)) {
@@ -15730,7 +15786,7 @@ void sexp_alter_ship_flag(int node)
 	// start the multiplayer packet
 	Current_sexp_network_packet.start_callback();
 	Current_sexp_network_packet.send_flag(object_flag);
-	Current_sexp_network_packet.send_flag(ship_flags);
+	Current_sexp_network_packet.send_flag(ship_flag);
 	Current_sexp_network_packet.send_flag(parse_obj_flag);
 	Current_sexp_network_packet.send_flag(ai_flag);
 	Current_sexp_network_packet.send_bool(set_flag);
@@ -15743,7 +15799,7 @@ void sexp_alter_ship_flag(int node)
 		// send a message to the clients saying there were no more arguments
 		Current_sexp_network_packet.send_bool(false);
 
-		alter_flag_for_all_ships(future_ships, object_flag, ship_flags, parse_obj_flag, ai_flag, set_flag);
+		alter_flag_for_all_ships(future_ships, object_flag, ship_flag, parse_obj_flag, ai_flag, set_flag);
 	}
 	else {
 		// send a message to the clients saying there are more arguments
@@ -15757,7 +15813,7 @@ void sexp_alter_ship_flag(int node)
 				continue; 
 			}
 
-			sexp_alter_ship_flag_helper(oswpt, future_ships, object_flag, ship_flags, parse_obj_flag, ai_flag, set_flag);
+			sexp_alter_ship_flag_helper(oswpt, future_ships, object_flag, ship_flag, parse_obj_flag, ai_flag, set_flag);
 
 			Current_sexp_network_packet.send_int(oswpt.type);
 
@@ -15869,6 +15925,87 @@ void multi_sexp_alter_ship_flag()
 
 			if (oswptp)
 				sexp_alter_ship_flag_helper(*oswptp, future_ships, object_flag, ship_flag, parse_obj_flag, ai_flag, set_flag);
+		}
+	}
+}
+
+void sexp_alter_wing_flag(int node)
+{
+	Ship::Wing_Flags wing_flag = Ship::Wing_Flags::NUM_VALUES;
+	bool set_flag = false; 
+
+	auto flag_name = CTEXT(node); 
+	node = CDR(node);
+
+	sexp_check_flag_array(flag_name, wing_flag);
+
+	if (is_sexp_true(node))
+		set_flag = true;
+	node = CDR(node);
+
+	// start the multiplayer packet
+	Current_sexp_network_packet.start_callback();
+	Current_sexp_network_packet.send_flag(wing_flag);
+	Current_sexp_network_packet.send_bool(set_flag);
+
+	// no 3rd argument means do this to every wing in the mission
+	if (node < 0)
+	{
+		// send a message to the clients saying there were no more arguments
+		Current_sexp_network_packet.send_bool(false);
+
+		for (int i = 0; i < Num_wings; i++)
+			Wings[i].flags.set(wing_flag, set_flag);
+	}
+	else
+	{
+		// send a message to the clients saying there are more arguments
+		Current_sexp_network_packet.send_bool(true);
+
+		for (; node != -1; node = CDR(node))
+		{
+			auto wingp = eval_wing(node);
+			if (!wingp)
+				continue;
+
+			wingp->flags.set(wing_flag, set_flag);
+
+			Current_sexp_network_packet.send_wing(wingp);
+		}
+	}
+	Current_sexp_network_packet.end_callback();
+}
+
+void multi_sexp_alter_wing_flag() 
+{
+	Ship::Wing_Flags wing_flag = Ship::Wing_Flags::NUM_VALUES; 
+	bool set_flag = false;
+	bool process_data = false;
+
+	Current_sexp_network_packet.get_flag(wing_flag);
+	Current_sexp_network_packet.get_bool(set_flag);
+ 
+	// if any of the above failed so will this loop
+	if (!Current_sexp_network_packet.get_bool(process_data)) 
+	{
+		return;
+	}
+
+	// no more data means do this to every wing in the mission
+	if (!process_data)
+	{
+		for (int i = 0; i < Num_wings; i++)
+			Wings[i].flags.set(wing_flag, set_flag);
+	}
+	else
+	{
+		wing *wingp;
+		while (Current_sexp_network_packet.get_wing(wingp))
+		{
+			if (!wingp)
+				continue;
+
+			wingp->flags.set(wing_flag, set_flag);
 		}
 	}
 }
@@ -25536,6 +25673,10 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_are_ship_flags_set(node);
 				break;
 
+			case OP_ARE_WING_FLAGS_SET:
+				sexp_val = sexp_are_wing_flags_set(node);
+				break;
+
 			case OP_CAP_SUBSYS_CARGO_KNOWN_DELAY:
 				sexp_val = sexp_cap_subsys_cargo_known_delay(node);
 				break;
@@ -25772,6 +25913,11 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			case OP_ALTER_SHIP_FLAG:
 				sexp_alter_ship_flag(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			case OP_ALTER_WING_FLAG:
+				sexp_alter_wing_flag(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -27537,7 +27683,11 @@ void multi_sexp_eval()
 				multi_sexp_alter_ship_flag();
 				break;
 
-			case OP_SET_AFTERBURNER_ENERGY: 
+			case OP_ALTER_WING_FLAG:
+				multi_sexp_alter_wing_flag();
+				break;
+
+			case OP_SET_AFTERBURNER_ENERGY:
 				multi_sexp_set_energy_pct();
 				break;
 
@@ -28009,6 +28159,7 @@ int query_operator_return_type(int op)
 		case OP_IS_DOCKED:
 		case OP_PLAYER_IS_CHEATING_BASTARD:
 		case OP_ARE_SHIP_FLAGS_SET:
+		case OP_ARE_WING_FLAGS_SET:
 		case OP_IS_IN_TURRET_FOV:
 		case OP_IS_LANGUAGE:
 		case OP_FUNCTIONAL_WHEN:
@@ -28457,6 +28608,7 @@ int query_operator_return_type(int op)
 		case OP_HUD_SET_CUSTOM_GAUGE_ACTIVE:
 		case OP_HUD_SET_BUILTIN_GAUGE_ACTIVE:
 		case OP_ALTER_SHIP_FLAG:
+		case OP_ALTER_WING_FLAG:
 		case OP_CANCEL_FUTURE_WAVES:
 		case OP_CHANGE_TEAM_COLOR:
 		case OP_NEBULA_CHANGE_PATTERN:
@@ -28791,6 +28943,15 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_BOOL;
 			else
 				return OPF_SHIP_WING_WHOLETEAM;
+
+		case OP_ALTER_WING_FLAG:
+			if(argnum == 0)
+				return OPF_WING_FLAG;
+			if(argnum == 1)
+				return OPF_BOOL;
+			else
+				return OPF_WING;
+
 		case OP_CANCEL_FUTURE_WAVES:
 			return OPF_WING;
 		
@@ -29883,6 +30044,13 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_SHIP;
 			} else {
 				return OPF_SHIP_FLAG;
+			}
+
+		case OP_ARE_WING_FLAGS_SET:
+			if (argnum == 0) {
+				return OPF_WING;
+			} else {
+				return OPF_WING_FLAG;
 			}
 
 		case OP_CAP_SUBSYS_CARGO_KNOWN_DELAY:
@@ -31623,6 +31791,9 @@ const char *sexp_error_message(int num)
 		case SEXP_CHECK_INVALID_SHIP_FLAG:
 			return "Invalid ship flag";
 
+		case SEXP_CHECK_INVALID_WING_FLAG:
+			return "Invalid wing flag";
+
 		case SEXP_CHECK_INVALID_TEAM_COLOR:
 			return "Not a valid Team Color setting";
 
@@ -32646,6 +32817,7 @@ int get_subcategory(int sexp_id)
 			return CHANGE_SUBCATEGORY_AI_CONTROL;
 
 		case OP_ALTER_SHIP_FLAG:
+		case OP_ALTER_WING_FLAG:
 		case OP_PROTECT_SHIP:
 		case OP_UNPROTECT_SHIP:
 		case OP_BEAM_PROTECT_SHIP:
@@ -33046,6 +33218,7 @@ int get_subcategory(int sexp_id)
 		case OP_IS_DOCKED:
 		case OP_NAV_ISLINKED:
 		case OP_ARE_SHIP_FLAGS_SET:
+		case OP_ARE_WING_FLAGS_SET:
 			return STATUS_SUBCATEGORY_SHIP_STATUS;
 
 		case OP_SHIELD_RECHARGE_PCT:
@@ -35237,7 +35410,13 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tReturns true if all of the specified flags have been set for this particular ship.\r\n\r\n"
 		"Takes 2 or more arguments...\r\n"
 		"\t1:\tName of the ship."
-		"\tRest:\tShip, object or ai flags which might be set for this ship.." },
+		"\tRest:\tShip, object, parse object, or ai flags which might be set for this ship." },
+
+	{ OP_ARE_WING_FLAGS_SET, "Are wing flags set (Boolean operator)\r\n"
+		"\tReturns true if all of the specified flags have been set for this particular wing.\r\n\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tName of the wing."
+		"\tRest:\tWing flags which might be set for this wing." },
 
 	{ OP_CAP_SUBSYS_CARGO_KNOWN_DELAY, "Is capital ship subsystem cargo known (delay) (Boolean operator)\r\n"
 		"\tReturns true if all of the specified subsystem cargo is known by the player.\r\n"
@@ -35424,52 +35603,20 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tName of hud gauge to flash." },
 		
 	{ OP_ALTER_SHIP_FLAG, "alter-ship-flag\r\n"
-		"\tSets a ships flag and/or parse flag.\r\n\r\n"
-		"Takes 4 or more arguments...\r\n"
+		"\tSets or unsets a ship's flag, object flag, parse flag, or AI flag.\r\n\r\n"
+		"Takes 3 or more arguments...\r\n"
 		"\t1:\tShip flag name\r\n"
 		"\t2:\tTrue if turning on, false if turning off\r\n"
-		"\t3:\tTrue\\False - Apply this flag to future waves of this wing. Apply to ship if not present\r\n"
+		"\t3:\tTrue/False - Apply this flag to future waves of this wing. Apply to ship if not present\r\n"
 		"\tRest:\t (optional) Name of ships, wings, or entire teams. If not supplied, will work on all ships in the mission\r\n\r\n"
-		"Ship Flags:\r\n"
-		"invulnerable - Stops ship from taking any damage\r\n"
-		"protect-ship - Ship and Turret AI will ignore and not attack ship\r\n"
-		"beam-protect-ship - Turrets with beam weapons will ignore and not attack ship\r\n"
-		"no-shields - Ship will have no shields (ETS will be rebalanced if shields were off and are enabled)\r\n"
-		"targetable-as-bomb - Allows ship to be targeted with the bomb targeting key\r\n"
-		"flak-protect-ship - Turrets with flak weapons will ignore and not attack ship\r\n"
-		"laser-protect-ship - Turrets with laser weapons will ignore and not attack ship\r\n"
-		"missile-protect-ship - Turrets with missile weapons will ignore and not attack ship\r\n"
-		"immobile - Will not let a ship move or rotate in any fashion\r\n"
-		"collides - Whether this ship can collide with anything\r\n"
-		"vaporize - Causes a ship to vanish (no death roll, no debris, no explosion) when destroyed\r\n"
-		"break-warp - Causes a ship's subspace drive to break. Can be repaired by a support ship\r\n"
-		"never-warp - Causes a ship's subspace drive to never work. Cannot be repaired by a support ship\r\n"
-		"scannable - Whether or not the ship can be scanned\r\n"
-		"cargo-known - If set, the ships cargo can be seen without scanning the ship\r\n"
-		"hidden-from-sensors - If set, the ship can't be targeted and appears on radar as a blinking dot\r\n"
-		"stealth - If set, the ship can't be targeted, is invisible on radar, and is ignored by AI unless firing\r\n"
-		"friendly-stealth-invisible - If set, the ship can't be targeted even by ships on the same team\r\n"
-		"hide-ship-name - If set, the ship name can't be seen when the ship is targeted\r\n"
-		"primitive-sensors - Whether this ship has primitive sensors (sensors that can't use the target display)\r\n"
-		"afterburner-locked - Will stop a ship from firing their afterburner\r\n"
-		"primaries-locked - Will stop a ship from firing their primary weapons\r\n"
-		"secondaries-locked - Will stop a ship from firing their secondary weapons\r\n"
-		"no-subspace-drive - Will not allow a ship to jump into subspace\r\n"
-		"don't-collide-invisible - Will cause polygons with an invisible texture to stop colliding with objects\r\n"
-		"no-ets - Will not allow a ship to alter its ETS system\r\n"
-		"toggle-subsystem-scanning - Switches between being able to scan a whole ship or individual subsystems\r\n"
-		"no-secondary-lock-on - Will disable target acquisition for secondaries of all types (does not affect turrets)\r\n"
-		"no-disabled-self-destruct - Prevents the ship from self-destructing after 90 seconds if its weapons or engines are destroyed\r\n"
-		"hide-in-mission-log - Prevents events involving this ship from being viewable in the mission log\r\n"
-		"no-ship-passive-lightning - Turns off ship lightning that is unrelated to damage or EMP\r\n"
-		"glowmaps-disabled - Turns off glowmaps\r\n"
-		"no-thrusters - Turns off thrusters\r\n"
-		"fail-sound-locked-primary - This ship will play a weapon failure sound if trying to shoot primaries when they're locked\r\n"
-		"fail-sound-locked-secondary - This ship will play a weapon failure sound if trying to shoot secondaries when they're locked\r\n"
-		"aspect-immune - This ship cannot be locked onto by aspect seeking weapons\r\n"
-		"no-dynamic - Will stop allowing the AI to pursue dynamic goals (e.g.: chasing ships it was not ordered to)\r\n"
-		"free-afterburner-use - Allows the ship to use afterburners to follow waypoints\r\n"
-		"ai-attackable-if-no-collide - AI will still attack this ship even if collisions are disabled\r\n"
+	},
+
+	{ OP_ALTER_WING_FLAG, "alter-wing-flag\r\n"
+		"\tSets or unsets a wing's flag.\r\n\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tWing flag name\r\n"
+		"\t2:\tTrue if turning on, false if turning off\r\n"
+		"\tRest:\t (optional) Name of wings. If not supplied, will work on all wings in the mission\r\n\r\n"
 	},
 
 	{ OP_CANCEL_FUTURE_WAVES, "cancel-future-waves\r\n"
