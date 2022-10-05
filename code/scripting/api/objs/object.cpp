@@ -593,6 +593,7 @@ ADE_FUNC(removeSoundByIndex, l_Object, "number index", "Removes an assigned soun
 		return ADE_RETURN_NIL;
 
 	auto objp = objh->objp;
+	snd_idx--;	// Lua -> C++
 
 	if (snd_idx < 0 || snd_idx >= (int)objp->objsnd_num.size())
 	{
