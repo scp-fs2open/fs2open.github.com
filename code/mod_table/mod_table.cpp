@@ -31,6 +31,12 @@ bool Damage_impacted_subsystem_first;
 bool Cutscene_camera_displays_hud;
 bool Alternate_chaining_behavior;
 bool Use_host_orientation_for_set_camera_facing;
+bool Use_3d_ship_select;
+bool Use_3d_ship_icons;
+bool Use_3d_weapon_select;
+bool Use_3d_weapon_icons;
+bool Use_3d_overhead_ship;
+int Default_overhead_ship_style;
 int Default_ship_select_effect;
 int Default_weapon_select_effect;
 int Default_fiction_viewer_ui;
@@ -767,6 +773,10 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Damage_impacted_subsystem_first);
 		}
 
+		if (optional_string("$Use 3d ship select:")) {
+			stuff_boolean(&Use_3d_ship_select);
+		}
+
 		if (optional_string("$Default ship select effect:")) {
 			char effect[NAME_LENGTH];
 			stuff_string(effect, F_NAME, NAME_LENGTH);
@@ -778,6 +788,14 @@ void parse_mod_table(const char *filename)
 				Default_ship_select_effect = 0;
 		}
 
+		if (optional_string("$Use 3d ship icons:")) {
+			stuff_boolean(&Use_3d_ship_icons);
+		}
+
+		if (optional_string("$Use 3d weapon select:")) {
+			stuff_boolean(&Use_3d_weapon_select);
+		}
+
 		if (optional_string("$Default weapon select effect:")) {
 			char effect[NAME_LENGTH];
 			stuff_string(effect, F_NAME, NAME_LENGTH);
@@ -787,6 +805,23 @@ void parse_mod_table(const char *filename)
 				Default_weapon_select_effect = 1;
 			else if (!stricmp(effect, "off"))
 				Default_weapon_select_effect = 0;
+		}
+
+		if (optional_string("$Use 3d weapon icons:")) {
+			stuff_boolean(&Use_3d_weapon_icons);
+		}
+
+		if (optional_string("$Use 3d overhead ship:")) {
+			stuff_boolean(&Use_3d_overhead_ship);
+		}
+
+		if (optional_string("$Default overhead ship style:")) {
+			char effect[NAME_LENGTH];
+			stuff_string(effect, F_NAME, NAME_LENGTH);
+			if (!stricmp(effect, "ROTATE"))
+				Default_overhead_ship_style = 1;
+			else if (!stricmp(effect, "STILL"))
+				Default_overhead_ship_style = 0;
 		}
 
 		if (optional_string("$Weapons inherit parent collision group:")) {
