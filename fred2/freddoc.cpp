@@ -99,7 +99,10 @@ bool CFREDDoc::autoload() {
 	bool r;
 	FILE *fp;
 
-	cf_create_default_path_string(name, sizeof(name) - 1, CF_TYPE_MISSIONS);
+	if ( !cf_create_default_path_string(name, sizeof(name) - 1, CF_TYPE_MISSIONS) ) {
+		return 0;
+	}
+
 	strcat_s(name, MISSION_BACKUP_NAME);
 	strcpy_s(backup_name, name);
 	strcat_s(name, ".002");
@@ -181,7 +184,10 @@ int CFREDDoc::check_undo() {
 		return 0;
 	}
 
-	cf_create_default_path_string(name, sizeof(name) - 1, CF_TYPE_MISSIONS);
+	if ( !cf_create_default_path_string(name, sizeof(name) - 1, CF_TYPE_MISSIONS) ) {
+		return 0;
+	}
+
 	strcat_s(name, MISSION_BACKUP_NAME);
 	strcat_s(name, ".002");
 

@@ -329,7 +329,7 @@ static int _cfile_chdir(const char *new_dir, const char *cur_dir __UNUSED)
  */
 int cfile_push_chdir(int type)
 {
-	char dir[CFILE_ROOT_DIRECTORY_LEN];
+	SCP_string dir;
 	char OriginalDirectory[CFILE_ROOT_DIRECTORY_LEN];
 
 	_getcwd(OriginalDirectory, CFILE_ROOT_DIRECTORY_LEN - 1);
@@ -342,9 +342,9 @@ int cfile_push_chdir(int type)
 
 	strcpy_s(Cfile_stack[Cfile_stack_pos++], OriginalDirectory);
 
-	cf_create_default_path_string(dir, sizeof(dir) - 1, type, NULL);
+	cf_create_default_path_string(dir, type, NULL);
 
-	return _cfile_chdir(dir, OriginalDirectory);
+	return _cfile_chdir(dir.c_str(), OriginalDirectory);
 }
 
 /**
@@ -469,26 +469,26 @@ char *cf_add_ext(const char *filename, const char *ext)
  */
 int cf_delete(const char *filename, int path_type, uint32_t location_flags)
 {
-	char longname[MAX_PATH_LEN];
+	SCP_string longname;
 
 	Assert(CF_TYPE_SPECIFIED(path_type));
 
-	cf_create_default_path_string(longname, sizeof(longname) - 1, path_type, filename, false, location_flags);
+	cf_create_default_path_string(longname, path_type, filename, false, location_flags);
 
-	return (_unlink(longname) != -1);
+	return (_unlink(longname.c_str()) != -1);
 }
 
 
 // Same as _access function to read a file's access bits
 int cf_access(const char *filename, int dir_type, int mode)
 {
-	char longname[MAX_PATH_LEN];
+	SCP_string longname;
 
 	Assert( CF_TYPE_SPECIFIED(dir_type) );
 
-	cf_create_default_path_string( longname, sizeof(longname)-1, dir_type, filename );
+	cf_create_default_path_string(longname, dir_type, filename);
 
-	return access(longname,mode);
+	return access(longname.c_str(), mode);
 }
 
 
@@ -533,18 +533,18 @@ int cf_exists_full_ext(const char *filename, int dir_type, const int num_ext, co
 #ifdef _WIN32
 void cf_attrib(const char *filename, int set, int clear, int dir_type)
 {
-	char longname[MAX_PATH_LEN];
+	SCP_string longname;
 
 	Assert( CF_TYPE_SPECIFIED(dir_type) );
 
-	cf_create_default_path_string( longname, sizeof(longname)-1, dir_type, filename );
+	cf_create_default_path_string(longname, dir_type, filename);
 
-	FILE *fp = fopen(longname, "rb");
+	FILE *fp = fopen(longname.c_str(), "rb");
 	if (fp) {
 		fclose(fp);
 
-		DWORD z = GetFileAttributes(longname);
-		SetFileAttributes(longname, z | (set & ~clear));
+		DWORD z = GetFileAttributes(longname.c_str());
+		SetFileAttributes(longname.c_str(), z | (set & ~clear));
 	}
 
 }
@@ -555,13 +555,13 @@ int cf_rename(const char *old_name, const char *name, int dir_type)
 	Assert( CF_TYPE_SPECIFIED(dir_type) );
 
 	int ret_code;
-	char old_longname[_MAX_PATH];
-	char new_longname[_MAX_PATH];
+	SCP_string old_longname;
+	SCP_string new_longname;
 	
-	cf_create_default_path_string( old_longname, sizeof(old_longname)-1, dir_type, old_name );
-	cf_create_default_path_string( new_longname, sizeof(old_longname)-1, dir_type, name );
+	cf_create_default_path_string(old_longname, dir_type, old_name);
+	cf_create_default_path_string(new_longname, dir_type, name);
 
-	ret_code = rename(old_longname, new_longname );		
+	ret_code = rename(old_longname.c_str(), new_longname.c_str());
 	if(ret_code != 0){
 		switch(errno){
 		case EACCES :
@@ -605,7 +605,7 @@ void cf_create_directory(int dir_type, uint32_t location_flags)
 {
 	int num_dirs = 0;
 	int dir_tree[CF_MAX_PATH_TYPES];
-	char longname[MAX_PATH_LEN];
+	SCP_string longname;
 	struct stat statbuf;
 
 	Assertion( CF_TYPE_SPECIFIED(dir_type), "Invalid dir_type passed to cf_create_directory." );
@@ -623,10 +623,10 @@ void cf_create_directory(int dir_type, uint32_t location_flags)
 	int i;
 
 	for (i=num_dirs-1; i>=0; i-- )	{
-		cf_create_default_path_string(longname, sizeof(longname) - 1, dir_tree[i], nullptr, false, location_flags);
-		if (stat(longname, &statbuf) != 0) {
-			mprintf(( "CFILE: Creating new directory '%s'\n", longname ));
-			mkdir_recursive(longname);
+		cf_create_default_path_string(longname, dir_tree[i], nullptr, false, location_flags);
+		if (stat(longname.c_str(), &statbuf) != 0) {
+			mprintf(( "CFILE: Creating new directory '%s'\n", longname.c_str() ));
+			mkdir_recursive(longname.c_str());
 		}
 	}
 }
@@ -675,13 +675,13 @@ CFILE* _cfopen(const char* source, int line, const char* file_path, const char* 
 	// the harddisk.  No fancy packfile stuff here!
 	
 	if ( strchr(mode,'w') || strchr(mode,'+') || strchr(mode,'a') )	{
-		char longname[_MAX_PATH];
+		SCP_string longname;
 		auto last_separator = strrchr(file_path, DIR_SEPARATOR_CHAR);
 
 		// For write-only files, require a full path or a path type
 		if ( last_separator ) {
 			// Full path given?
-			strcpy_s(longname, file_path );
+			longname = file_path;
 		} else {
 			// Path type given?
 			Assert( dir_type != CF_TYPE_ANY );
@@ -689,7 +689,7 @@ CFILE* _cfopen(const char* source, int line, const char* file_path, const char* 
 			// Create the directory if necessary
 			cf_create_directory(dir_type, location_flags);
 
-			cf_create_default_path_string(longname, sizeof(longname) - 1, dir_type, file_path, false, location_flags);
+			cf_create_default_path_string(longname, dir_type, file_path, false, location_flags);
 		}
 		Assert( !(type & CFILE_MEMORY_MAPPED) );
 
@@ -728,7 +728,7 @@ CFILE* _cfopen(const char* source, int line, const char* file_path, const char* 
 			strcpy_s(happy_mode, mode);
 		}
 
-		FILE *fp = fopen(longname, happy_mode);
+		FILE *fp = fopen(longname.c_str(), happy_mode);
 		if (fp)	{
 			return cf_open_fill_cfblock(source, line, last_separator ? (last_separator + 1) : file_path, fp, dir_type);
  		}
