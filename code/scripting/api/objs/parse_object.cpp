@@ -315,6 +315,22 @@ ADE_FUNC(isPlayerStart, l_ParseObject, nullptr, "Determines if this parsed ship 
 	return ade_set_args(L, "b", poh->getObject()->flags[Mission::Parse_Object_Flags::OF_Player_start]);
 }
 
+ADE_FUNC(makeShipArrive, l_ParseObject, nullptr, "Causes this parsed ship to arrive as if its arrival cue had become true.  Note that reinforcements are only marked as available, not actually created.", "boolean", "true if created, false otherwise")
+{
+	parse_object_h* poh = nullptr;
+	if (!ade_get_args(L, "o", l_ParseObject.GetPtr(&poh)))
+		return ADE_RETURN_NIL;
+
+	if (poh == nullptr)
+		return ADE_RETURN_NIL;
+
+	if (!poh->isValid())
+		return ADE_RETURN_NIL;
+
+	poh->getObject()->arrival_delay = 0;
+	return mission_maybe_make_ship_arrive(poh->getObject(), true) ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
+}
+
 parse_subsys_h::parse_subsys_h() = default;
 parse_subsys_h::parse_subsys_h(p_object* obj, int subsys_offset) : _obj(obj), _subsys_offset(subsys_offset) {}
 subsys_status* parse_subsys_h::getSubsys() const { return &Subsys_status[_obj->subsys_index + _subsys_offset]; }

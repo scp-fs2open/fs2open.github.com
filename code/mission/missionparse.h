@@ -469,8 +469,6 @@ extern int Subsys_index;
 extern vec3d Parse_viewer_pos;
 extern matrix Parse_viewer_orient;
 
-extern int Mission_arrival_timestamp;
-extern int Mission_departure_timestamp;
 extern fix Mission_end_time;
 
 extern char Parse_names[MAX_SHIPS + MAX_WINGS][NAME_LENGTH];
@@ -501,8 +499,11 @@ void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> &par
 
 void mission_parse_close();
 
+bool mission_maybe_make_ship_arrive(p_object *p_objp, bool force_arrival = false);
+bool mission_maybe_make_wing_arrive(int wingnum, bool force_arrival = false);
+
 // used in squadmate messaging stuff to create wings from reinforcements.
-int parse_wing_create_ships(wing *wingp, int num_to_create, int force = 0, int specific_instance = -1 );
+int parse_wing_create_ships(wing *wingp, int num_to_create, bool force_create = false, bool force_arrival = false, int specific_instance = -1 );
 
 // function for getting basic mission data without loading whole mission
 int mission_parse_is_multi(const char *filename, char *mission_name );
