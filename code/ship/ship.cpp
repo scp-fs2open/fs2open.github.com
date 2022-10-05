@@ -6427,8 +6427,7 @@ void ship::clear()
 
 	shader_effect_num = 0;
 	shader_effect_duration = 0;
-	shader_effect_start_time = 0;
-	shader_effect_active = false;
+	shader_effect_timestamp = TIMESTAMP::invalid();
 
 	alpha_mult = 1.0f;
 
@@ -19948,35 +19947,30 @@ int ship_render_get_insignia(object* obj, ship* shipp)
 
 void ship_render_set_animated_effect(model_render_params *render_info, ship *shipp, uint * /*render_flags*/)
 {
-	if ( !shipp->shader_effect_active || Rendering_to_shadow_map ) {
+	if ( !shipp->shader_effect_timestamp.isValid() || Rendering_to_shadow_map ) {
 		return;
 	}
 
 	float timer;
 
 	ship_effect* sep = &Ship_effects[shipp->shader_effect_num];
-	int current_time = timer_get_milliseconds();
+	int elapsed_time = shipp->shader_effect_duration - timestamp_until(shipp->shader_effect_timestamp);
 	
 	if (shipp->shader_effect_duration > 0) {
 		if (sep->invert_timer) {
-			timer = 1.0f - ((current_time - shipp->shader_effect_start_time) / (float)shipp->shader_effect_duration);
+			timer = 1.0f - (elapsed_time / (float)shipp->shader_effect_duration);
 			timer = MAX(timer, 0.0f);
 		}
 		else {
-			timer = ((current_time - shipp->shader_effect_start_time) / (float)shipp->shader_effect_duration);
+			timer = (elapsed_time / (float)shipp->shader_effect_duration);
 		}
 
 		render_info->set_animated_effect(sep->shader_effect, timer);
 	}
 
-	if ( sep->disables_rendering && (current_time >= shipp->shader_effect_start_time + shipp->shader_effect_duration) ) {
-		shipp->flags.set(Ship_Flags::Cloaked);
-		shipp->shader_effect_active = false;
-	} else {
-		shipp->flags.remove(Ship_Flags::Cloaked);
-		if (current_time >= shipp->shader_effect_start_time + shipp->shader_effect_duration) {
-			shipp->shader_effect_active = false;
-		}
+	if ( timestamp_elapsed(shipp->shader_effect_timestamp) ) {
+		shipp->flags.set(Ship_Flags::Cloaked, sep->disables_rendering);
+		shipp->shader_effect_timestamp = TIMESTAMP::invalid();
 	}
 }
 

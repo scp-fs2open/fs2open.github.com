@@ -1220,10 +1220,9 @@ ADE_FUNC(addShipEffect, l_Ship, "string name, number durationMillis", "Activates
 
 	ship* shipp = &Ships[shiph->objp->instance];
 
-	shipp->shader_effect_active = true;
 	shipp->shader_effect_num = effect_num;
 	shipp->shader_effect_duration = duration;
-	shipp->shader_effect_start_time = timer_get_milliseconds();
+	shipp->shader_effect_timestamp = _timestamp(duration);
 
 	return ade_set_args(L, "b", true);
 }
