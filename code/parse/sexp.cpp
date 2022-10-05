@@ -24608,10 +24608,9 @@ void sexp_ship_effect(int n)
 			case OSWPT_TYPE_SHIP:
 			{
 				auto sp = oswpt.ship_entry->shipp;
-				sp->shader_effect_active = true;
 				sp->shader_effect_num = effect_num;
 				sp->shader_effect_duration = effect_duration;
-				sp->shader_effect_start_time = timer_get_milliseconds();
+				sp->shader_effect_timestamp = _timestamp(effect_duration);
 				break;
 			}
 
@@ -24623,10 +24622,9 @@ void sexp_ship_effect(int n)
 					if (wp->ship_index[i] >= 0)
 					{
 						auto sp = &Ships[wp->ship_index[i]];
-						sp->shader_effect_active = true;
 						sp->shader_effect_num = effect_num;
 						sp->shader_effect_duration = effect_duration;
-						sp->shader_effect_start_time = timer_get_milliseconds();
+						sp->shader_effect_timestamp = _timestamp(effect_duration);
 					}
 				}
 				break;

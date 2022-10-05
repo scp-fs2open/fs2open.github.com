@@ -746,8 +746,7 @@ public:
 	//Animated Shader effects
 	int shader_effect_num;
 	int shader_effect_duration;
-	int shader_effect_start_time;
-	bool shader_effect_active;
+	TIMESTAMP shader_effect_timestamp;
 
 	float alpha_mult;
 
