@@ -119,8 +119,6 @@ extern bool splodeing;
 extern float splode_level;
 extern int splodeingtexture;
 
-#define SHIP_REPAIR_SUBSYSTEM_RATE	0.01f
-
 // The minimum required fuel to engage afterburners
 static const float DEFAULT_MIN_AFTERBURNER_FUEL_TO_ENGAGE = 10.0f;
 
@@ -1011,6 +1009,9 @@ void ship_info::clone(const ship_info& other)
 	hull_repair_rate = other.hull_repair_rate;
 	subsys_repair_rate = other.subsys_repair_rate;
 
+	hull_repair_max = other.hull_repair_max;
+	subsys_repair_max = other.subsys_repair_max;
+
 	sup_hull_repair_rate = other.sup_hull_repair_rate;
 	sup_shield_repair_rate = other.sup_shield_repair_rate;
 	sup_subsys_repair_rate = other.sup_subsys_repair_rate;
@@ -1330,6 +1331,9 @@ void ship_info::move(ship_info&& other)
 
 	hull_repair_rate = other.hull_repair_rate;
 	subsys_repair_rate = other.subsys_repair_rate;
+
+	hull_repair_max = other.hull_repair_max;
+	subsys_repair_max = other.subsys_repair_max;
 
 	sup_hull_repair_rate = other.sup_hull_repair_rate;
 	sup_shield_repair_rate = other.sup_shield_repair_rate;
@@ -1753,8 +1757,11 @@ ship_info::ship_info()
 	}
 
 	hull_repair_rate = 0.0f;
-	//-2 represents not set, in which case the default is used for the ship (if it is small)
+	// -2 represents not set, in which case the default is used for the ship (if it is small)
 	subsys_repair_rate = -2.0f;
+
+	hull_repair_max = 1.0f;
+	subsys_repair_max = 1.0f;
 
 	sup_hull_repair_rate = 0.15f;
 	sup_shield_repair_rate = 0.20f;
@@ -3681,43 +3688,92 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		}
 	}
 
-	//Hull rep rate
-	
-	if(optional_string("$Hull Repair Rate:"))
+	// Hull rep rate
+	if (optional_string("$Hull Repair Rate:"))
 	{
-		stuff_float(&sip->hull_repair_rate);
-		sip->hull_repair_rate *= 0.01f;
+		float temp;
+		stuff_float(&temp);
+		temp *= 0.01f;
 		
 		//Sanity checking
-		if(sip->hull_repair_rate > 1.0f)
-			sip->hull_repair_rate = 1.0f;
-		else if(sip->hull_repair_rate < -1.0f)
-			sip->hull_repair_rate = -1.0f;
+		if (temp > 1.0f) {
+			mprintf(("$Hull Repair Rate: value of %f for ship class '%s' is > 1.0, setting to 1.0!\n", temp, sip->name));
+			temp = 1.0f;
+		} else if (temp < -1.0f) {
+			mprintf(("$Hull Repair Rate: value of %f for ship class '%s' is < -1.0, setting to -1.0!\n", temp, sip->name));
+			temp = -1.0f;
+		}
+
+		sip->hull_repair_rate = temp;
+	}
+
+	// Maximum percent that hull can be self repaired
+	if (optional_string("$Hull Self Repair Maximum:")) 
+	{
+		float temp;
+		stuff_float(&temp);
+		temp *= 0.01f;
+
+		// Sanity checking
+		if (temp < 0.0f) {
+			mprintf(("$Hull Self Repair Maximum: value of %f for ship class '%s' is < 0.0, setting to 0.0!\n", temp, sip->name));
+			temp = 0.0f;
+		} else if (temp > 1.0f) {
+			mprintf(("$Hull Self Repair Maximum: value of %f for ship class '%s' is > 1.0, setting to 1.0!\n", temp, sip->name));
+			temp = 1.0f;
+		}
+
+		sip->hull_repair_max = temp;
 	}
 
 	// Support ship hull repair rate - if allowed
-	if(optional_string("$Support Hull Repair Rate:"))
+	if (optional_string("$Support Hull Repair Rate:"))
 	{
 		stuff_float(&sip->sup_hull_repair_rate);
 		sip->sup_hull_repair_rate *= 0.01f;
 		CLAMP(sip->sup_hull_repair_rate, 0.0f, 1.0f);
 	}
 
-	//Subsys rep rate
-	if(optional_string("$Subsystem Repair Rate:"))
+	// Subsys rep rate
+	if (optional_string("$Subsystem Repair Rate:"))
 	{
-		stuff_float(&sip->subsys_repair_rate);
-		sip->subsys_repair_rate *= 0.01f;
+		float temp;
+		stuff_float(&temp);
+		temp *= 0.01f;
 		
 		//Sanity checking
-		if(sip->subsys_repair_rate > 1.0f)
-			sip->subsys_repair_rate = 1.0f;
-		else if(sip->subsys_repair_rate < -1.0f)
-			sip->subsys_repair_rate = -1.0f;
+		if (temp > 1.0f) {
+			mprintf(("$Subsystem Repair Rate: value of %f for ship class '%s' is > 1.0, setting to 1.0!\n", temp, sip->name));
+			temp = 1.0f;
+		} else if (temp < -1.0f) {
+			mprintf(("$Subsystem Repair Rate: value of %f for ship class '%s' is < -1.0, setting to -1.0!\n", temp, sip->name));
+			temp = -1.0f;
+		}
+
+		sip->subsys_repair_rate = temp;
+	}
+
+	// Maximum percent that subsystems can be self repaired
+	if (optional_string("$Subsystem Self Repair Maximum:")) 
+	{
+		float temp;
+		stuff_float(&temp);
+		temp *= 0.01f;
+
+		// Sanity checking
+		if (temp < 0.0f) {
+			mprintf(("$Subsystem Self Repair Maximum: value of %f for ship class '%s' is < 0.0, setting to 0.0!\n", temp, sip->name));
+			temp = 0.0f;
+		} else if (temp > 1.0f) {
+			mprintf(("$Subsystem Self Repair Maximum: value of %f for ship class '%s' is > 1.0, setting to 1.0!\n", temp, sip->name));
+			temp = 1.0f;
+		}
+
+		sip->subsys_repair_max = temp;
 	}
 
 	// Support ship hull repair rate
-	if(optional_string("$Support Subsystem Repair Rate:"))
+	if (optional_string("$Support Subsystem Repair Rate:"))
 	{
 		stuff_float(&sip->sup_subsys_repair_rate);
 		sip->sup_subsys_repair_rate *= 0.01f;
@@ -9051,8 +9107,6 @@ void ship_do_weapon_thruster_frame( weapon *weaponp, object *objp, float frameti
 //
 // NOTE: need to update current_hits in the sp->subsys_list element, and the sp->subsys_info[]
 // element.
-#define SHIP_REPAIR_SUBSYSTEM_RATE	0.01f	// percent repair per second for a subsystem
-#define SUBSYS_REPAIR_THRESHOLD		0.1	// only repair subsystems that have > 10% strength
 static void ship_auto_repair_frame(int shipnum, float frametime)
 {
 	ship_subsys		*ssp;
@@ -9063,7 +9117,8 @@ static void ship_auto_repair_frame(int shipnum, float frametime)
 	float			real_repair_rate;
 
 	#ifndef NDEBUG
-	if ( !Ship_auto_repair )	// only repair subsystems if Ship_auto_repair flag is set
+	// only repair subsystems if Ship_auto_repair flag is set
+	if (!Ship_auto_repair)
 		return;
 	#endif
 	
@@ -9072,32 +9127,38 @@ static void ship_auto_repair_frame(int shipnum, float frametime)
 	sip = &Ship_info[sp->ship_info_index];
 	objp = &Objects[sp->objnum];
 
-	if (sp->flags[Ship::Ship_Flags::Dying]) // do not repair if already dead 
+	// do not repair if already dead 
+	if (sp->flags[Ship::Ship_Flags::Dying])
 		return;
 
-	//Repair the hull...or maybe unrepair?
-	if(sip->hull_repair_rate != 0.0f)
+	// Repair the hull...or maybe unrepair?
+	if (!fl_equal(sip->hull_repair_rate, 0.0f))
 	{
-		objp->hull_strength += sp->ship_max_hull_strength * sip->hull_repair_rate * frametime;
+		float max_hull_repair = sp->ship_max_hull_strength * sip->hull_repair_max;
+		objp->hull_strength += max_hull_repair * sip->hull_repair_rate * frametime;
 
-		if (objp->hull_strength > sp->ship_max_hull_strength)
-			objp->hull_strength = sp->ship_max_hull_strength;
+		if (objp->hull_strength > max_hull_repair)
+			objp->hull_strength = max_hull_repair;
 		else if (objp->hull_strength < 0)
 			ship_hit_kill(objp, nullptr, nullptr, 0, true);
 	}
 
-	// only allow for the auto-repair of subsystems on small ships
-	//...NOT. Check if var has been changed from def -C
-	if ( !(sip->is_small_ship()) && sip->subsys_repair_rate == -2.0f)
+	// do not repair if it is a large ship with a default repair rate
+	if (!(sip->is_small_ship()) && sip->subsys_repair_rate == -2.0f)
 		return;
 	
-	if(sip->subsys_repair_rate == -2.0f)
-		real_repair_rate = SHIP_REPAIR_SUBSYSTEM_RATE;
+	// determine if repair rate is default or specified
+	if (sip->subsys_repair_rate == -2.0f)
+		real_repair_rate = 0.01f;
 	else
 		real_repair_rate = sip->subsys_repair_rate;
 
+	// do not bother repairing if rate equals 0 --wookieejedi
+	if (fl_equal(real_repair_rate, 0.0f))
+		return;
+
 	// AL 3-14-98: only allow auto-repair if power output not zero
-	if (sip->power_output <= 0)
+	if ( sip->power_output <= 0 )
 		return;
 	
 	// iterate through subsystems, repair as needed based on elapsed frametime
@@ -9105,13 +9166,15 @@ static void ship_auto_repair_frame(int shipnum, float frametime)
 		Assert(ssp->system_info->type >= 0 && ssp->system_info->type < SUBSYSTEM_MAX);
 		ssip = &sp->subsys_info[ssp->system_info->type];
 
-		if ( ssp->current_hits < ssp->max_hits ) {
+		float max_subsys_repair = ssp->max_hits * sip->subsys_repair_max;
 
-			// only repair those subsystems which are not destroyed
+		if (ssp->current_hits < max_subsys_repair) {
+
+			// only repair those subsystems which can be destroyed
 			if ( ssp->max_hits <= 0 )
 				continue;
 
-			if ( ssp->current_hits <= 0 ) {
+			if (ssp->current_hits <= 0) {
 				if (sip->flags[Ship::Info_Flags::Subsys_repair_when_disabled]) {
 					if (ssp->flags[Ship::Subsystem_Flags::No_autorepair_if_disabled]) {
 						continue;
@@ -9123,9 +9186,9 @@ static void ship_auto_repair_frame(int shipnum, float frametime)
 
 			// do incremental repair on the subsystem
 			// check for overflow of current_hits
-			ssp->current_hits += ssp->max_hits * real_repair_rate * frametime;
-			if ( ssp->current_hits > ssp->max_hits ) {
-				ssp->current_hits = ssp->max_hits;
+			ssp->current_hits += max_subsys_repair * real_repair_rate * frametime;
+			if (ssp->current_hits > max_subsys_repair) {
+				ssp->current_hits = max_subsys_repair;
 			}
 
 			// aggregate repair
@@ -9138,7 +9201,7 @@ static void ship_auto_repair_frame(int shipnum, float frametime)
 
 			// check to see if this subsystem was totally non functional before -- if so, then
 			// reset the flags
-			if ( (ssp->system_info->type == SUBSYSTEM_ENGINE) && (sp->flags[Ship_Flags::Disabled]) ) {
+			if ((ssp->system_info->type == SUBSYSTEM_ENGINE) && (sp->flags[Ship_Flags::Disabled])) {
 				sp->flags.remove(Ship_Flags::Disabled);
 				ship_reset_disabled_physics(objp, sp->ship_info_index);
 			}
@@ -14294,7 +14357,7 @@ float ship_calculate_rearm_duration( object *objp )
 		hull_rep_time = (max_hull_repair - objp->hull_strength) / (sp->ship_max_hull_strength * sip->sup_hull_repair_rate);
 	}
 
-	//caluclate subsystem repair time
+	//calculate subsystem repair time
 	ssp = GET_FIRST(&sp->subsys_list);
 	while (ssp != END_OF_LIST(&sp->subsys_list))
 	{
