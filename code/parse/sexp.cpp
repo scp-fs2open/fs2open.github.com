@@ -3293,7 +3293,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				}
 
 				if (!found) {
-					for ( i = 0; i < Num_ship_flag_names; i++) {
+					for ( i = 0; i < (int)Num_ship_flag_names; i++) {
 						if (!stricmp(Ship_flag_names[i].flag_name, CTEXT(node))) {
 							found = true;
 							break;
@@ -15600,10 +15600,10 @@ void alter_flag_for_all_ships(bool future_ships, Object::Object_Flags object_fla
 
 bool sexp_check_flag_arrays(const char *flag_name, Object::Object_Flags &object_flag, Ship::Ship_Flags &ship_flags, Mission::Parse_Object_Flags &parse_obj_flag, AI::AI_Flags &ai_flag)
 {
-	int i;
+	size_t i;
 	bool send_multi = false;
 
-	for ( i = 0; i < Num_object_flag_names; i++) {
+	for ( i = 0; i < (size_t)Num_object_flag_names; i++) {
 		if (!stricmp(Object_flag_names[i].flag_name, flag_name)) {
 			// make sure the list writes to the correct list of flags!
 			if (Object_flag_names[i].flag_list == 1) {
@@ -15623,14 +15623,14 @@ bool sexp_check_flag_arrays(const char *flag_name, Object::Object_Flags &object_
 	}
 
 	// parse files already have a list of names in the same order as the flags, so we can do something slightly different here.
-	for (i = 0; i < (int)num_parse_object_flags; i++) {
+	for (i = 0; i < Num_parse_object_flags; i++) {
 		if (!stricmp(Parse_object_flags[i].name, flag_name)) {
 			parse_obj_flag = Parse_object_flags[i].def;
 			break;
 		}
 	}
 
-	for ( i = 0; i < Num_ai_flag_names; i++) {
+	for ( i = 0; i < (size_t)Num_ai_flag_names; i++) {
 		if (!stricmp(Ai_flag_names[i].flag_name, flag_name)) {
 			ai_flag = Ai_flag_names[i].flag;
 			break;

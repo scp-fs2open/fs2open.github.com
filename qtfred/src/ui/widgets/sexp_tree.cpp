@@ -4793,10 +4793,10 @@ sexp_list_item* sexp_tree::get_listing_opf_mission_moods() {
 }
 
 sexp_list_item* sexp_tree::get_listing_opf_ship_flags() {
-	int i;
+	size_t i;
 	sexp_list_item head;
 	// object flags
-	for (i = 0; i < Num_object_flag_names; i++) {
+	for (i = 0; i < (size_t)Num_object_flag_names; i++) {
 		head.add_data(Object_flag_names[i].flag_name);
 	}
 	// ship flags
@@ -4804,7 +4804,7 @@ sexp_list_item* sexp_tree::get_listing_opf_ship_flags() {
 		head.add_data(Ship_flag_names[i].flag_name);
 	}
 	// ai flags
-	for (i = 0; i < Num_ai_flag_names; i++) {
+	for (i = 0; i < (size_t)Num_ai_flag_names; i++) {
 		head.add_data(Ai_flag_names[i].flag_name);
 	}
 

@@ -71,6 +71,70 @@ ADE_FUNC(isValid, l_Wing, NULL, "Detects whether handle is valid", "boolean", "t
 	return ADE_RETURN_TRUE;
 }
 
+ADE_FUNC(setFlag, l_Wing, "boolean set_it, string flag_name", "Sets or clears one or more flags - this function can accept an arbitrary number of flag arguments.  The flag names are currently limited to the arrival and departure parseable flags.", nullptr, "Returns nothing")
+{
+	int wingnum;
+	bool set_it;
+	const char *flag_name;
+
+	if (!ade_get_args(L, "obs", l_Wing.Get(&wingnum), &set_it, &flag_name))
+		return ADE_RETURN_NIL;
+	int skip_args = 2;	// not 3 because there will be one more below
+
+	if (wingnum < 0 || wingnum >= Num_wings)
+		return ADE_RETURN_NIL;
+
+	auto wingp = &Wings[wingnum];
+
+	do {
+		for (size_t i = 0; i < Num_wing_flag_names; i++)
+		{
+			if (!stricmp(Wing_flag_names[i].flag_name, flag_name))
+			{
+				wingp->flags.set(Wing_flag_names[i].flag, set_it);
+				break;
+			}
+		}
+
+	// read the next flag
+	internal::Ade_get_args_skip = ++skip_args;
+	} while (ade_get_args(L, "|s", &flag_name) > 0);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(getFlag, l_Wing, "string flag_name", "Checks whether one or more flags are set - this function can accept an arbitrary number of flag arguments.  The flag names are currently limited to the arrival and departure parseable flags.", "boolean", "Returns whether all flags are set, or nil if the wing is not valid")
+{
+	int wingnum;
+	const char *flag_name;
+
+	if (!ade_get_args(L, "os", l_Wing.Get(&wingnum), &flag_name))
+		return ADE_RETURN_NIL;
+	int skip_args = 1;	// not 2 because there will be one more below
+
+	if (wingnum < 0 || wingnum >= Num_wings)
+		return ADE_RETURN_NIL;
+
+	auto wingp = &Wings[wingnum];
+
+	do {
+		for (size_t i = 0; i < Num_wing_flag_names; i++)
+		{
+			if (!stricmp(Wing_flag_names[i].flag_name, flag_name))
+			{
+				if (!wingp->flags[Wing_flag_names[i].flag])
+					return ADE_RETURN_FALSE;
+			}
+		}
+
+	// read the next flag
+	internal::Ade_get_args_skip = ++skip_args;
+	} while (ade_get_args(L, "|s", &flag_name) > 0);
+
+	// if we're still here, all the flags we were looking for were present
+	return ADE_RETURN_TRUE;
+}
+
 ADE_FUNC(makeWingArrive, l_Wing, nullptr, "Causes this wing to arrive as if its arrival cue had become true.  Note that reinforcements are only marked as available, not actually created.", "boolean", "true if created, false otherwise")
 {
 	int wingnum = -1;
