@@ -6,6 +6,8 @@
 #include "object/object.h"
 #include "ship/ship.h"
 
+extern bool sexp_check_flag_array(const char *flag_name, Ship::Wing_Flags &wing_flag);
+
 namespace scripting {
 namespace api {
 
@@ -87,14 +89,17 @@ ADE_FUNC(setFlag, l_Wing, "boolean set_it, string flag_name", "Sets or clears on
 	auto wingp = &Wings[wingnum];
 
 	do {
-		for (size_t i = 0; i < Num_wing_flag_names; i++)
+		auto wing_flag = Ship::Wing_Flags::NUM_VALUES;
+
+		sexp_check_flag_array(flag_name, wing_flag);
+
+		if (wing_flag == Ship::Wing_Flags::NUM_VALUES)
 		{
-			if (!stricmp(Wing_flag_names[i].flag_name, flag_name))
-			{
-				wingp->flags.set(Wing_flag_names[i].flag, set_it);
-				break;
-			}
+			Warning(LOCATION, "Wing flag '%s' not found!", flag_name);
+			return ADE_RETURN_NIL;
 		}
+
+		wingp->flags.set(wing_flag, set_it);
 
 	// read the next flag
 	internal::Ade_get_args_skip = ++skip_args;
@@ -118,14 +123,18 @@ ADE_FUNC(getFlag, l_Wing, "string flag_name", "Checks whether one or more flags 
 	auto wingp = &Wings[wingnum];
 
 	do {
-		for (size_t i = 0; i < Num_wing_flag_names; i++)
+		auto wing_flag = Ship::Wing_Flags::NUM_VALUES;
+
+		sexp_check_flag_array(flag_name, wing_flag);
+
+		if (wing_flag == Ship::Wing_Flags::NUM_VALUES)
 		{
-			if (!stricmp(Wing_flag_names[i].flag_name, flag_name))
-			{
-				if (!wingp->flags[Wing_flag_names[i].flag])
-					return ADE_RETURN_FALSE;
-			}
+			Warning(LOCATION, "Wing flag '%s' not found!", flag_name);
+			return ADE_RETURN_FALSE;
 		}
+
+		if (!wingp->flags[wing_flag])
+			return ADE_RETURN_FALSE;
 
 	// read the next flag
 	internal::Ade_get_args_skip = ++skip_args;

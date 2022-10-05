@@ -205,6 +205,13 @@ ADE_FUNC(setFlag, l_Ship, "boolean set_it, string flag_name", "Sets or clears on
 		auto ai_flag = AI::AI_Flags::NUM_VALUES;
 
 		sexp_check_flag_arrays(flag_name, object_flag, ship_flag, parse_obj_flag, ai_flag);
+
+		if (object_flag == Object::Object_Flags::NUM_VALUES && ship_flag == Ship::Ship_Flags::NUM_VALUES && ai_flag == AI::AI_Flags::NUM_VALUES)
+		{
+			Warning(LOCATION, "Ship/object/ai flag '%s' not found!", flag_name);
+			return ADE_RETURN_NIL;
+		}
+
 		sexp_alter_ship_flag_helper(oswpt, true, object_flag, ship_flag, parse_obj_flag, ai_flag, set_it);
 
 	// read the next flag
@@ -237,6 +244,12 @@ ADE_FUNC(getFlag, l_Ship, "string flag_name", "Checks whether one or more flags 
 		auto ai_flag = AI::AI_Flags::NUM_VALUES;
 
 		sexp_check_flag_arrays(flag_name, object_flag, ship_flag, parse_obj_flag, ai_flag);
+
+		if (object_flag == Object::Object_Flags::NUM_VALUES && ship_flag == Ship::Ship_Flags::NUM_VALUES && ai_flag == AI::AI_Flags::NUM_VALUES)
+		{
+			Warning(LOCATION, "Ship/object/ai flag '%s' not found!", flag_name);
+			return ADE_RETURN_FALSE;
+		}
 
 		// now check the flags
 		if (object_flag != Object::Object_Flags::NUM_VALUES)

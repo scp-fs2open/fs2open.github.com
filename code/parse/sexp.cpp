@@ -15640,6 +15640,22 @@ bool sexp_check_flag_arrays(const char *flag_name, Object::Object_Flags &object_
 	return send_multi;
 }
 
+bool sexp_check_flag_array(const char *flag_name, Ship::Wing_Flags &wing_flag)
+{
+	size_t i;
+	bool send_multi = false;
+
+	for ( i = 0; i < Num_wing_flag_names; i++) {
+		if (!stricmp(Wing_flag_names[i].flag_name, flag_name)) {
+			wing_flag = Wing_flag_names[i].flag;
+			send_multi = true;
+			break;
+		}
+	}
+
+	return send_multi;
+}
+
 int sexp_are_ship_flags_set(int node)
 {
 	Object::Object_Flags object_flag = Object::Object_Flags::NUM_VALUES;

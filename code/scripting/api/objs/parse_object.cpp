@@ -89,6 +89,13 @@ ADE_FUNC(setFlag, l_ParseObject, "boolean set_it, string flag_name", "Sets or cl
 		auto ai_flag = AI::AI_Flags::NUM_VALUES;
 
 		sexp_check_flag_arrays(flag_name, object_flag, ship_flag, parse_obj_flag, ai_flag);
+
+		if (parse_obj_flag == Mission::Parse_Object_Flags::NUM_VALUES)
+		{
+			Warning(LOCATION, "Parsed ship flag '%s' not found!", flag_name);
+			return ADE_RETURN_NIL;
+		}
+
 		sexp_alter_ship_flag_helper(oswpt, true, object_flag, ship_flag, parse_obj_flag, ai_flag, set_it);
 
 	// read the next flag
@@ -119,6 +126,12 @@ ADE_FUNC(getFlag, l_ParseObject, "string flag_name", "Checks whether one or more
 		auto ai_flag = AI::AI_Flags::NUM_VALUES;
 
 		sexp_check_flag_arrays(flag_name, object_flag, ship_flag, parse_obj_flag, ai_flag);
+
+		if (parse_obj_flag == Mission::Parse_Object_Flags::NUM_VALUES)
+		{
+			Warning(LOCATION, "Parsed ship flag '%s' not found!", flag_name);
+			return ADE_RETURN_FALSE;
+		}
 
 		// we only check parse flags
 
