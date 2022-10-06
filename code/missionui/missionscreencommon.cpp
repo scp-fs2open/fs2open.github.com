@@ -14,7 +14,6 @@
 #include <type_traits>
 
 #include "anim/animplay.h"
-#include "cmdline/cmdline.h"
 #include "cutscene/cutscenes.h"
 #include "cutscene/movie.h"
 #include "gamehelp/contexthelp.h"

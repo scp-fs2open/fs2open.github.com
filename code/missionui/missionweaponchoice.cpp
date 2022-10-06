@@ -12,7 +12,6 @@
 #include "anim/animplay.h"
 #include "anim/packunpack.h"
 #include "cfile/cfile.h"
-#include "cmdline/cmdline.h"
 #include "gamehelp/contexthelp.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
