@@ -9107,6 +9107,7 @@ void ship_do_weapon_thruster_frame( weapon *weaponp, object *objp, float frameti
 //
 // NOTE: need to update current_hits in the sp->subsys_list element, and the sp->subsys_info[]
 // element.
+#define SHIP_REPAIR_SUBSYSTEM_RATE 0.01f // percent repair per second for a subsystem
 static void ship_auto_repair_frame(int shipnum, float frametime)
 {
 	ship_subsys		*ssp;
@@ -9132,14 +9133,21 @@ static void ship_auto_repair_frame(int shipnum, float frametime)
 		return;
 
 	// Repair the hull...or maybe unrepair?
-	if (!fl_equal(sip->hull_repair_rate, 0.0f))
+	if (sip->hull_repair_rate != 0.0f)
 	{
-		float max_hull_repair_strength = sp->ship_max_hull_strength * sip->hull_repair_max;
-		objp->hull_strength += max_hull_repair_strength * sip->hull_repair_rate * frametime;
+		float repaired_delta = sp->ship_max_hull_strength * sip->hull_repair_rate * frametime;
+		float repair_threshold_strength = sp->ship_max_hull_strength * sip->hull_repair_max;
 
-		if (objp->hull_strength > max_hull_repair_strength)
-			objp->hull_strength = max_hull_repair_strength;
-		else if (objp->hull_strength < 0)
+		if ((objp->hull_strength + repaired_delta) < repair_threshold_strength) {
+			objp->hull_strength += repaired_delta;
+		} else {
+			repaired_delta = repair_threshold_strength - objp->hull_strength;
+			CLAMP(repaired_delta, 0.0f, repair_threshold_strength); // this will be negative if it is already way above the threshold
+			if (repaired_delta != 0.0f)
+				objp->hull_strength += repaired_delta;
+		}
+
+		if (objp->hull_strength < 0)
 			ship_hit_kill(objp, nullptr, nullptr, 0, true);
 	}
 
@@ -9149,12 +9157,12 @@ static void ship_auto_repair_frame(int shipnum, float frametime)
 	
 	// determine if repair rate is default or specified
 	if (sip->subsys_repair_rate == -2.0f)
-		real_repair_rate = 0.01f;
+		real_repair_rate = SHIP_REPAIR_SUBSYSTEM_RATE;
 	else
 		real_repair_rate = sip->subsys_repair_rate;
 
 	// do not bother repairing if rate equals 0 --wookieejedi
-	if (fl_equal(real_repair_rate, 0.0f))
+	if (real_repair_rate == 0.0f)
 		return;
 
 	// AL 3-14-98: only allow auto-repair if power output not zero
@@ -9166,9 +9174,7 @@ static void ship_auto_repair_frame(int shipnum, float frametime)
 		Assert(ssp->system_info->type >= 0 && ssp->system_info->type < SUBSYSTEM_MAX);
 		ssip = &sp->subsys_info[ssp->system_info->type];
 
-		float max_subsys_repair_hits = ssp->max_hits * sip->subsys_repair_max;
-
-		if (ssp->current_hits < max_subsys_repair_hits) {
+		if (ssp->current_hits < ssp->max_hits) {
 
 			// only repair those subsystems which can be destroyed
 			if ( ssp->max_hits <= 0 )
@@ -9186,9 +9192,16 @@ static void ship_auto_repair_frame(int shipnum, float frametime)
 
 			// do incremental repair on the subsystem
 			// check for overflow of current_hits
-			ssp->current_hits += max_subsys_repair_hits * real_repair_rate * frametime;
-			if (ssp->current_hits > max_subsys_repair_hits) {
-				ssp->current_hits = max_subsys_repair_hits;
+			float repaired_delta = ssp->max_hits * real_repair_rate * frametime;
+			float repair_threshold_hits = ssp->max_hits * sip->subsys_repair_max;
+
+			if ((ssp->current_hits + repaired_delta) < repair_threshold_hits) {
+				ssp->current_hits += repaired_delta;
+			} else {
+				repaired_delta = repair_threshold_hits - ssp->current_hits;
+				CLAMP(repaired_delta, 0.0f, repair_threshold_hits); // this will be negative if it is already way above the threshold
+				if (repaired_delta != 0.0f)
+					ssp->current_hits += repaired_delta;
 			}
 
 			// aggregate repair
