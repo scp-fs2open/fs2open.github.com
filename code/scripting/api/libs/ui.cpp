@@ -28,6 +28,7 @@
 #include "mission/missiongoals.h"
 #include "mission/missioncampaign.h"
 #include "missionui/redalert.h"
+#include "mod_table/mod_table.h"
 #include "network/multi.h"
 #include "network/multiteamselect.h"
 #include "playerman/managepilot.h"
@@ -1208,6 +1209,52 @@ ADE_FUNC(saveLoadout,
 	}
 
 	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(get3dShipChoices,
+	l_UserInterface_ShipWepSelect,
+	nullptr,
+	"Gets the 3d select choices from game_settings.tbl relating to ships.",
+	"boolean, number, boolean",
+	"3d ship select choice(true for on, false for off), default ship select effect(0 = off, 1 = FS1, 2 = FS2), 3d ship "
+	"icons choice(true for on, false for off)")
+{
+
+	return ade_set_args(L,
+		"bib",
+		Use_3d_ship_select,
+		Default_ship_select_effect,
+		Use_3d_ship_icons);
+}
+
+ADE_FUNC(get3dWeaponChoices,
+	l_UserInterface_ShipWepSelect,
+	nullptr,
+	"Gets the 3d select choices from game_settings.tbl relating to weapons.",
+	"boolean, number, boolean",
+	"3d weapon select choice(true for on, false for off), default weapon select effect(0 = off, 1 = FS1, 2 = FS2), 3d weapon "
+	"icons choice(true for on, false for off)")
+{
+
+	return ade_set_args(L,
+		"bib",
+		Use_3d_weapon_select,
+		Default_weapon_select_effect,
+		Use_3d_weapon_icons);
+}
+
+ADE_FUNC(get3dOverheadChoices,
+	l_UserInterface_ShipWepSelect,
+	nullptr,
+	"Gets the 3d select choices from game_settings.tbl relating to weapon select overhead view.",
+	"boolean, number",
+	"3d overhead select choice(true for on, false for off), default overhead style(0 for still, 1 for rotate)")
+{
+
+	return ade_set_args(L,
+		"bi",
+		Use_3d_overhead_ship,
+		Default_overhead_ship_style);
 }
 
 ADE_LIB_DERIV(l_Ship_Pool, "Ship_Pool", nullptr, nullptr, l_UserInterface_ShipWepSelect);
