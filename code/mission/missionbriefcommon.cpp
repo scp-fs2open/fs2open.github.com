@@ -1052,7 +1052,11 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 
 		float sx = tv.screen.xyw.x;
 		float sy = tv.screen.xyw.y;
-		gr_unsize_screen_posf( &sx, &sy, NULL, NULL, GR_RESIZE_MENU_NO_OFFSET );
+		int this_resize = bscreen.resize;
+		if (bscreen.resize == GR_RESIZE_MENU) {
+			this_resize = GR_RESIZE_MENU_NO_OFFSET;
+		}
+		gr_unsize_screen_posf(&sx, &sy, NULL, NULL, this_resize);
 	
 		scaled_w = icon_w * w_scale_factor;
 		scaled_h = icon_h * h_scale_factor;
