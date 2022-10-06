@@ -43,7 +43,7 @@ ADE_FUNC(print, l_Base, "string Message", "Prints a string", NULL, NULL)
 ADE_FUNC(warning, l_Base, "string Message", "Displays a FreeSpace warning (debug build-only) message with the string provided", NULL, NULL)
 {
 	if (Cmdline_lua_devmode) {
-		nprintf(("scripting","WARNING: %s", lua_tostring(L, -1)));
+		nprintf(("scripting","WARNING: %s\n", lua_tostring(L, -1)));
 	}
 	else {
 		Warning(LOCATION, "%s", lua_tostring(L, -1));
@@ -55,7 +55,7 @@ ADE_FUNC(warning, l_Base, "string Message", "Displays a FreeSpace warning (debug
 ADE_FUNC(error, l_Base, "string Message", "Displays a FreeSpace error message with the string provided", NULL, NULL)
 {
 	if (Cmdline_lua_devmode) {
-		nprintf(("scripting","ERROR: %s", lua_tostring(L, -1)));
+		nprintf(("scripting","ERROR: %s\n", lua_tostring(L, -1)));
 	}
 	else {
 		Error(LOCATION, "%s", lua_tostring(L, -1));

@@ -1875,7 +1875,7 @@ int opengl_make_render_target( int handle, int *w, int *h, int *bpp, int *mm_lvl
 
 	opengl_set_texture_target();
 
-	mprintf(("OpenGL: Created %ix%i FBO!\n", ts->w, ts->h));
+	nprintf(("OpenGL Debug","OpenGL: Created %ix%i FBO!\n", ts->w, ts->h));
 
 	return 1;
 }

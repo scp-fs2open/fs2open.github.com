@@ -3218,7 +3218,7 @@ int model_load(const  char* filename, int n_subsystems, model_subsystem* subsyst
 
 	TRACE_SCOPE(tracing::LoadModelFile);
 
-	mprintf(( "Loading model '%s' into slot '%i'\n", filename, num ));
+	nprintf(("Model", "Loading model '%s' into slot '%i'\n", filename, num ));
 
 	pm = new polymodel;	
 	Polygon_models[num] = pm;
