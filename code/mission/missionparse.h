@@ -259,7 +259,7 @@ extern const char *Goal_type_names[MAX_GOAL_TYPE_NAMES];
 extern const char *Reinforcement_type_names[];
 extern char *Object_flags[];
 extern flag_def_list_new<Mission::Parse_Object_Flags> Parse_object_flags[];
-extern const size_t num_parse_object_flags;
+extern const size_t Num_parse_object_flags;
 extern const char *Icon_names[];
 extern const char *Mission_event_log_flags[];
 

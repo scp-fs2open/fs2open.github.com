@@ -324,7 +324,7 @@ flag_def_list_new<Mission::Parse_Object_Flags> Parse_object_flags[] = {
     { "aspect-immune",						Mission::Parse_Object_Flags::SF_Aspect_immune, true, false }
 };
 
-const size_t num_parse_object_flags = sizeof(Parse_object_flags) / sizeof(flag_def_list_new<Mission::Parse_Object_Flags>);
+const size_t Num_parse_object_flags = sizeof(Parse_object_flags) / sizeof(flag_def_list_new<Mission::Parse_Object_Flags>);
 
 // These are only the flags that are saved to the mission file.  See the MEF_ #defines.
 flag_def_list Mission_event_flags[] = {
@@ -3132,7 +3132,7 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
     if (optional_string("+Flags:"))
     {
         SCP_vector<SCP_string> unparsed;
-        parse_string_flag_list(p_objp->flags, Parse_object_flags, num_parse_object_flags, &unparsed);
+        parse_string_flag_list(p_objp->flags, Parse_object_flags, Num_parse_object_flags, &unparsed);
         if (!unparsed.empty()) {
             for (size_t k = 0; k < unparsed.size(); ++k) {
                 WarningEx(LOCATION, "Unknown flag in parse object flags: %s", unparsed[k].c_str());
@@ -3144,7 +3144,7 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
     if (optional_string("+Flags2:"))
     {
         SCP_vector<SCP_string> unparsed;
-        parse_string_flag_list(p_objp->flags, Parse_object_flags, num_parse_object_flags, &unparsed);
+        parse_string_flag_list(p_objp->flags, Parse_object_flags, Num_parse_object_flags, &unparsed);
         if (!unparsed.empty()) {
             for (size_t k = 0; k < unparsed.size(); ++k) {
 				// catch typos or deprecations

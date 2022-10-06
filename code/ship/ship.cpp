@@ -544,7 +544,19 @@ ship_flag_name Ship_flag_names[] = {
 	{ Ship_Flags::Aspect_immune, 				"aspect-immune"}
 };
 
-extern const int Num_ship_flag_names = sizeof(Ship_flag_names) / sizeof(ship_flag_name);
+extern const size_t Num_ship_flag_names = sizeof(Ship_flag_names) / sizeof(ship_flag_name);
+
+// Ditto for wings
+wing_flag_name Wing_flag_names[] = {
+	{ Wing_Flags::No_arrival_music,					"no-arrival-music" },
+	{ Wing_Flags::No_arrival_message,				"no-arrival-message" },
+	{ Wing_Flags::No_arrival_warp,					"no-arrival-warp" },
+	{ Wing_Flags::No_departure_warp,				"no-departure-warp" },
+	{ Wing_Flags::Same_arrival_warp_when_docked,	"same-arrival-warp-when-docked" },
+	{ Wing_Flags::Same_departure_warp_when_docked,	"same-departure-warp-when-docked" }
+};
+
+extern const size_t Num_wing_flag_names = sizeof(Wing_flag_names) / sizeof(wing_flag_name);
 
 static int Laser_energy_out_snd_timer;	// timer so we play out of laser sound effect periodically
 static int Missile_out_snd_timer;	// timer so we play out of laser sound effect periodically

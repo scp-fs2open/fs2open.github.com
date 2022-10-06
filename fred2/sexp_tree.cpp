@@ -3361,6 +3361,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_SHIP_EFFECT:
 		case OPF_ANIMATION_TYPE:
 		case OPF_SHIP_FLAG:
+		case OPF_WING_FLAG:
 		case OPF_NEBULA_PATTERN:
 		case OPF_NAV_POINT:
 		case OPF_TEAM_COLOR:
@@ -5350,6 +5351,10 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = get_listing_opf_ship_flags();
 			break;
 
+		case OPF_WING_FLAG:
+			list = get_listing_opf_wing_flags();
+			break;
+
 		case OPF_TEAM_COLOR:
 			list = get_listing_opf_team_colors();
 			break;
@@ -7011,19 +7016,35 @@ sexp_list_item *sexp_tree::get_listing_opf_mission_moods()
 
 sexp_list_item *sexp_tree::get_listing_opf_ship_flags()
 {
-	int i;
+	size_t i;
 	sexp_list_item head;
 	// object flags
-	for ( i = 0; i < Num_object_flag_names; i++) {
+	for ( i = 0; i < (size_t)Num_object_flag_names; i++) {
 		head.add_data(Object_flag_names[i].flag_name);
 	}
 	// ship flags
 	for ( i = 0; i < Num_ship_flag_names; i++) {
 		head.add_data(Ship_flag_names[i].flag_name);
 	}
+	// parse object flags
+	for (i = 0; i < Num_parse_object_flags; i++) {
+		head.add_data(Parse_object_flags[i].name);
+	}
 	// ai flags
-	for ( i = 0; i < Num_ai_flag_names; i++) {
+	for ( i = 0; i < (size_t)Num_ai_flag_names; i++) {
 		head.add_data(Ai_flag_names[i].flag_name);
+	}
+
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_wing_flags()
+{
+	size_t i;
+	sexp_list_item head;
+	// wing flags
+	for ( i = 0; i < Num_wing_flag_names; i++) {
+		head.add_data(Wing_flag_names[i].flag_name);
 	}
 
 	return head.next;

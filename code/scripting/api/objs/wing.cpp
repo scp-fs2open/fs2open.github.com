@@ -6,6 +6,8 @@
 #include "object/object.h"
 #include "ship/ship.h"
 
+extern bool sexp_check_flag_array(const char *flag_name, Ship::Wing_Flags &wing_flag);
+
 namespace scripting {
 namespace api {
 
@@ -68,6 +70,77 @@ ADE_FUNC(isValid, l_Wing, NULL, "Detects whether handle is valid", "boolean", "t
 	if (idx < 0 || idx >= Num_wings)
 		return ADE_RETURN_FALSE;
 
+	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(setFlag, l_Wing, "boolean set_it, string flag_name", "Sets or clears one or more flags - this function can accept an arbitrary number of flag arguments.  The flag names are currently limited to the arrival and departure parseable flags.", nullptr, "Returns nothing")
+{
+	int wingnum;
+	bool set_it;
+	const char *flag_name;
+
+	if (!ade_get_args(L, "obs", l_Wing.Get(&wingnum), &set_it, &flag_name))
+		return ADE_RETURN_NIL;
+	int skip_args = 2;	// not 3 because there will be one more below
+
+	if (wingnum < 0 || wingnum >= Num_wings)
+		return ADE_RETURN_NIL;
+
+	auto wingp = &Wings[wingnum];
+
+	do {
+		auto wing_flag = Ship::Wing_Flags::NUM_VALUES;
+
+		sexp_check_flag_array(flag_name, wing_flag);
+
+		if (wing_flag == Ship::Wing_Flags::NUM_VALUES)
+		{
+			Warning(LOCATION, "Wing flag '%s' not found!", flag_name);
+			return ADE_RETURN_NIL;
+		}
+
+		wingp->flags.set(wing_flag, set_it);
+
+	// read the next flag
+	internal::Ade_get_args_skip = ++skip_args;
+	} while (ade_get_args(L, "|s", &flag_name) > 0);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(getFlag, l_Wing, "string flag_name", "Checks whether one or more flags are set - this function can accept an arbitrary number of flag arguments.  The flag names are currently limited to the arrival and departure parseable flags.", "boolean", "Returns whether all flags are set, or nil if the wing is not valid")
+{
+	int wingnum;
+	const char *flag_name;
+
+	if (!ade_get_args(L, "os", l_Wing.Get(&wingnum), &flag_name))
+		return ADE_RETURN_NIL;
+	int skip_args = 1;	// not 2 because there will be one more below
+
+	if (wingnum < 0 || wingnum >= Num_wings)
+		return ADE_RETURN_NIL;
+
+	auto wingp = &Wings[wingnum];
+
+	do {
+		auto wing_flag = Ship::Wing_Flags::NUM_VALUES;
+
+		sexp_check_flag_array(flag_name, wing_flag);
+
+		if (wing_flag == Ship::Wing_Flags::NUM_VALUES)
+		{
+			Warning(LOCATION, "Wing flag '%s' not found!", flag_name);
+			return ADE_RETURN_FALSE;
+		}
+
+		if (!wingp->flags[wing_flag])
+			return ADE_RETURN_FALSE;
+
+	// read the next flag
+	internal::Ade_get_args_skip = ++skip_args;
+	} while (ade_get_args(L, "|s", &flag_name) > 0);
+
+	// if we're still here, all the flags we were looking for were present
 	return ADE_RETURN_TRUE;
 }
 
