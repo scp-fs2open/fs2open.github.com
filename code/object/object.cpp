@@ -103,17 +103,17 @@ const char *Object_type_names[MAX_OBJECT_TYPES] = {
 };
 
 obj_flag_name Object_flag_names[] = {
-    { Object::Object_Flags::Invulnerable,			"invulnerable",				1,	},
-	{ Object::Object_Flags::Protected,				"protect-ship",				1,	},
-	{ Object::Object_Flags::Beam_protected,			"beam-protect-ship",		1,	},
-	{ Object::Object_Flags::No_shields,				"no-shields",				1,	},
-	{ Object::Object_Flags::Targetable_as_bomb,		"targetable-as-bomb",		1,	},
-	{ Object::Object_Flags::Flak_protected,			"flak-protect-ship",		1,	},
-	{ Object::Object_Flags::Laser_protected,		"laser-protect-ship",		1,	},
-	{ Object::Object_Flags::Missile_protected,		"missile-protect-ship",		1,	},
-	{ Object::Object_Flags::Immobile,				"immobile",					1,	},
-	{ Object::Object_Flags::Collides,				"collides",					1,  },
-	{ Object::Object_Flags::Attackable_if_no_collide, "ai-attackable-if-no-collide", 1,},
+    { Object::Object_Flags::Invulnerable,			"invulnerable",						},
+	{ Object::Object_Flags::Protected,				"protect-ship",						},
+	{ Object::Object_Flags::Beam_protected,			"beam-protect-ship",				},
+	{ Object::Object_Flags::No_shields,				"no-shields",						},
+	{ Object::Object_Flags::Targetable_as_bomb,		"targetable-as-bomb",				},
+	{ Object::Object_Flags::Flak_protected,			"flak-protect-ship",				},
+	{ Object::Object_Flags::Laser_protected,		"laser-protect-ship",				},
+	{ Object::Object_Flags::Missile_protected,		"missile-protect-ship",				},
+	{ Object::Object_Flags::Immobile,				"immobile",							},
+	{ Object::Object_Flags::Collides,				"collides",							},
+	{ Object::Object_Flags::Attackable_if_no_collide, "ai-attackable-if-no-collide",	},
 };
 
 extern const int Num_object_flag_names = sizeof(Object_flag_names) / sizeof(obj_flag_name);

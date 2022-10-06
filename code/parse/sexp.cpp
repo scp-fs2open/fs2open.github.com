@@ -15633,17 +15633,13 @@ bool sexp_check_flag_arrays(const char *flag_name, Object::Object_Flags &object_
 
 	for ( i = 0; i < (size_t)Num_object_flag_names; i++) {
 		if (!stricmp(Object_flag_names[i].flag_name, flag_name)) {
-			// make sure the list writes to the correct list of flags!
-			if (Object_flag_names[i].flag_list == 1) {
-				object_flag = Object_flag_names[i].flag;
-			}
+			object_flag = Object_flag_names[i].flag;
 			break;
 		}
 	}
 
 	for ( i = 0; i < Num_ship_flag_names; i++) {
 		if (!stricmp(Ship_flag_names[i].flag_name, flag_name)) {
-			// make sure the list writes to the correct list of flags!
 			ship_flag = Ship_flag_names[i].flag;
 			send_multi = true;
 			break;
