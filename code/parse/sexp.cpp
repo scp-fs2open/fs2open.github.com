@@ -20973,21 +20973,8 @@ void sexp_set_support_ship(int n)
 	}
 	else
 	{
-		// anchor must exist - look for it
-		temp_val = -1;
-		for (i = 0; i < Num_parse_names; i++)
-		{
-			if (!stricmp(CTEXT(n), Parse_names[i]))
-				temp_val = i;
-		}
-		// if not found, make a new entry
-		if (temp_val < 0)
-		{
-			strcpy_s(Parse_names[Num_parse_names], CTEXT(n));
-			temp_val = Num_parse_names;
-			Num_parse_names++;
-		}
-		The_mission.support_ships.arrival_anchor = temp_val;
+		// find or create the anchor
+		The_mission.support_ships.arrival_anchor = get_parse_name_index(CTEXT(n));
 	}
 
 	// get departure location
@@ -21014,21 +21001,8 @@ void sexp_set_support_ship(int n)
 	}
 	else
 	{
-		// anchor must exist - look for it
-		temp_val = -1;
-		for (i = 0; i < Num_parse_names; i++)
-		{
-			if (!stricmp(CTEXT(n), Parse_names[i]))
-				temp_val = i;
-		}
-		// if not found, make a new entry
-		if (temp_val < 0)
-		{
-			strcpy_s(Parse_names[Num_parse_names], CTEXT(n));
-			temp_val = Num_parse_names;
-			Num_parse_names++;
-		}
-		The_mission.support_ships.departure_anchor = temp_val;
+		// find or create the anchor
+		The_mission.support_ships.departure_anchor = get_parse_name_index(CTEXT(n));
 	}
 
 	// get ship class
@@ -21100,19 +21074,8 @@ void sexp_set_arrival_info(int node)
 	}
 	else
 	{
-		// anchor must exist - look for it
-		for (i=0; i<Num_parse_names; i++)
-		{
-			if (!stricmp(CTEXT(n), Parse_names[i]))
-				arrival_anchor = i;
-		}
-		// if not found, make a new entry
-		if (arrival_anchor < 0)
-		{
-			strcpy_s(Parse_names[Num_parse_names], CTEXT(n));
-			arrival_anchor = Num_parse_names;
-			Num_parse_names++;
-		}
+		// find or create the anchor
+		arrival_anchor = get_parse_name_index(CTEXT(n));
 	}
 	n = CDR(n);
 
@@ -21207,19 +21170,8 @@ void sexp_set_departure_info(int node)
 	}
 	else
 	{
-		// anchor must exist - look for it
-		for (i=0; i<Num_parse_names; i++)
-		{
-			if (!stricmp(CTEXT(n), Parse_names[i]))
-				departure_anchor = i;
-		}
-		// if not found, make a new entry
-		if (departure_anchor < 0)
-		{
-			strcpy_s(Parse_names[Num_parse_names], CTEXT(n));
-			departure_anchor = Num_parse_names;
-			Num_parse_names++;
-		}
+		// find or create the anchor
+		departure_anchor = get_parse_name_index(CTEXT(n));
 	}
 	n = CDR(n);
 

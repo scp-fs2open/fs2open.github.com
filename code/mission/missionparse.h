@@ -472,7 +472,7 @@ extern matrix Parse_viewer_orient;
 extern fix Mission_end_time;
 
 extern char Parse_names[MAX_SHIPS + MAX_WINGS][NAME_LENGTH];
-extern int Num_parse_names;
+extern size_t Num_parse_names;
 extern int Num_teams;
 
 extern char			Player_start_shipname[NAME_LENGTH];
