@@ -1262,8 +1262,10 @@ public:
 
 	float	max_shield_recharge;
 
-	float	hull_repair_rate;				//How much of the hull is repaired every second
-	float	subsys_repair_rate;		//How fast 
+	float	hull_repair_rate;				// How much of the hull is repaired every second
+	float	subsys_repair_rate;				// How much of the subsystem is repaired every second
+	float   hull_repair_max;                // Maximum percent that hull can self repair --wookieejedi
+	float   subsys_repair_max;              // Maximum percent that subsystems can self repair --wookieejedi
 
 	float	sup_hull_repair_rate;
 	float	sup_shield_repair_rate;
