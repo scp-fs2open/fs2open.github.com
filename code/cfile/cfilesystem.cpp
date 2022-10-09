@@ -192,6 +192,10 @@ struct _file_list_t {
 	SCP_string sub_path;
 	time_t m_time;
 	size_t size;
+	int pathtype;
+	int offset;
+
+	_file_list_t() : m_time(0), size(0), pathtype(CF_TYPE_INVALID), offset(0) {}
 };
 
 static bool sort_file_list(const _file_list_t &a, const _file_list_t &b)
@@ -821,6 +825,29 @@ typedef struct VP_FILE {
 	_fs_time_t write_time;
 } VP_FILE;
 
+static int cf_add_pack_files(const int root_index, SCP_vector<_file_list_t> &files)
+{
+	if (files.empty()) {
+		return 0;
+	}
+
+	std::sort(files.begin(), files.end(), sort_file_list);
+
+	for (auto &file : files) {
+		cf_file *pf = cf_create_file();
+
+		pf->name_ext = file.name;
+		pf->root_index = root_index;
+		pf->pathtype_index = file.pathtype;
+		pf->write_time = file.m_time;
+		pf->size = file.size;
+		pf->pack_offset = file.offset;			// Mark as a packed file
+		pf->sub_path = file.sub_path;
+	}
+
+	return static_cast<int>(files.size());
+}
+
 void cf_search_root_pack(int root_index)
 {
 	int num_files = 0;
@@ -864,6 +891,10 @@ void cf_search_root_pack(int root_index)
 	SCP_string sub_path;
 	int path_type = CF_TYPE_INVALID;
 
+	SCP_vector<_file_list_t> files;
+
+	files.reserve(256);		// should be set to a good baseline of files per path
+
 	// Go through all the files
 	int i;
 	for (i=0; i<VP_header.num_files; i++ )	{
@@ -896,7 +927,15 @@ void cf_search_root_pack(int root_index)
 				search_path += find.filename;
 			}
 
-			path_type = cfile_get_path_type(search_path);
+			auto rval = cfile_get_path_type(search_path);
+
+			// if the pathtype root changed then add all of the files
+			if (rval != path_type) {
+				num_files += cf_add_pack_files(root_index, files);
+				files.clear();
+			}
+
+			path_type = rval;
 
 			if ( (path_type > CF_TYPE_DATA) && Pathtypes[path_type].path &&
 				 (search_path.length() > strlen(Pathtypes[path_type].path)) )
@@ -913,23 +952,27 @@ void cf_search_root_pack(int root_index)
 				if ( ext )	{
 					if ( is_ext_in_list( Pathtypes[path_type].extensions, ext ) )	{
 						// Found a file!!!!
-						cf_file *file = cf_create_file();
+						_file_list_t file;
 
-						file->name_ext = find.filename;
-						file->root_index = root_index;
-						file->pathtype_index = path_type;
-						file->write_time = (time_t)find.write_time;
-						file->size = find.size;
-						file->pack_offset = find.offset;			// Mark as a packed file
-						file->sub_path = sub_path;
+						file.name = find.filename;
+						file.m_time = find.write_time;
+						file.size = find.size;
+						file.sub_path = sub_path;
+						file.pathtype = path_type;
+						file.offset = find.offset;
 
-						num_files++;
-						//mprintf(( "Found pack file '%s'\n", file->name_ext ));
+						files.push_back(file);
+
+						//mprintf(( "Found pack file '%s'\n", find.filename ));
 					}
 				}
 			}
 		}
 	}
+
+	// add final set of files
+	num_files += cf_add_pack_files(root_index, files);
+	files.clear();
 
 	fclose(fp);
 
