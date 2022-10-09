@@ -48,6 +48,7 @@ multiplayer_timing_info::multiplayer_timing_info()
     _current_time = 0;
     _last_time = 0;
     _skipped_time = 0;
+    _in_game_time_set = false;
 
     for (auto& frame : _most_recent_frame) {
         frame = NO_PACKET_RECEIVED;
@@ -62,4 +63,12 @@ void multiplayer_timing_info::set_mission_start_time()
     _current_time = 0;
     _last_time = 0;
     _skipped_time = 0;
+}
+
+void multiplayer_timing_info::in_game_set_skip_time(int time_in)
+{
+    if (!_in_game_time_set){
+        _skipped_time = time_in;
+        _in_game_time_set = true;
+    }
 }

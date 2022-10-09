@@ -2591,6 +2591,12 @@ void multi_oo_process_update(ubyte *data, header *hinfo)
 	GET_INT(timestamp);
 	GET_DATA(stop);
 	
+	// If this is an in-game joiner and this is the first regular object update,
+	// then adjust the local time (as tracked by the multi timing manager) to
+	// take into account the server time
+	if (Net_player->flags & NETINFO_FLAG_ACCEPT_INGAME)
+		Multi_Timing_Info.in_game_set_skip_time(timestamp);
+
 	while(stop == 0xff){
 		// process the data
 		offset += multi_oo_unpack_data(pl, data + offset, seq_num, timestamp);
