@@ -182,9 +182,9 @@ ADE_VIRTVAR(isVisible,
 	if (current.getStage()->flags[Cutscene::Cutscene_Flags::Viewable, Cutscene::Cutscene_Flags::Always_viewable] &&
 		!current.getStage()->flags[Cutscene::Cutscene_Flags::Never_viewable]) 
 	{
-		return ade_set_args(L, "b", false);
-	} else {
 		return ade_set_args(L, "b", true);
+	} else {
+		return ade_set_args(L, "b", false);
 	}
 
 }
