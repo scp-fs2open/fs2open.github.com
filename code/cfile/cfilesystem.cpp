@@ -246,7 +246,17 @@ static size_t cf_get_list_of_files(const SCP_string &in_path, SCP_vector<_file_l
 
 	do {
 		if (find.attrib & _A_SUBDIR) {
-			cf_get_list_of_files(path, files, filter, recursive, find.name);
+			SCP_string sub;
+
+			if (subpath) {
+				sub = subpath;
+				sub += DIR_SEPARATOR_CHAR;
+			}
+
+			sub += find.name;
+
+			cf_get_list_of_files(in_path, files, filter, recursive, sub.c_str());
+
 			continue;
 		}
 
@@ -291,7 +301,17 @@ static size_t cf_get_list_of_files(const SCP_string &in_path, SCP_vector<_file_l
 		}
 
 		if ( recursive && S_ISDIR(buf.st_mode) && strcmp(dir->d_name, ".") && strcmp(dir->d_name, "..") ) {
-			cf_get_list_of_files(path, files, filter, recursive, dir->d_name);
+			SCP_string sub;
+
+			if (subpath) {
+				sub = subpath;
+				sub += DIR_SEPARATOR_CHAR;
+			}
+
+			sub += dir->d_name;
+
+			cf_get_list_of_files(in_path, files, filter, recursive, sub.c_str());
+
 			continue;
 		}
 
