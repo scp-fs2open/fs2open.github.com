@@ -356,8 +356,18 @@ static bool cf_should_scan_subdirs(int pathtype)
 		return false;
 	}
 
-	if (pathtype == CF_TYPE_PLAYERS) {
-		return false;
+	switch (pathtype) {
+		// all pilot file related directories, except for images, should be ignored
+		case CF_TYPE_PLAYERS:
+		case CF_TYPE_SINGLE_PLAYERS:
+		case CF_TYPE_MULTI_PLAYERS:
+		case CF_TYPE_PLAYER_BINDS:
+		// voice, missing extensions, has no automatic subfolder support
+		case CF_TYPE_VOICE:
+			return false;
+
+		default:
+			break;
 	}
 
 	return true;
