@@ -198,7 +198,7 @@ static credits_screen_buttons Buttons[NUM_BUTTONS][GR_NUM_RESOLUTIONS] = {
 //XSTR:ON
 };
 
-char Credits_music_name[NAME_LENGTH];
+char Credits_music_name[NAME_LENGTH] = "Cinema";
 static int	Credits_music_handle = -1;
 static UI_TIMESTAMP	Credits_music_begin_timestamp;
 
@@ -470,9 +470,6 @@ void credits_init()
 	// pre-initialize
 	Credits_num_images = DEFAULT_NUM_IMAGES;
 	Credits_artwork_index = -1;
-
-	// this is moved up here so we can override it if desired
-	strcpy_s(Credits_music_name, "Cinema");
 
 	// parse credits early so as to set up any overrides (for music and such)
 	Credits_parsed = false;
