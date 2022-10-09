@@ -240,7 +240,7 @@ void credits_stop_music(bool fade)
 	}
 }
 
-void credits_load_music(char* fname)
+void credits_load_music(const char* fname)
 {
 	if ( Credits_music_handle != -1 ){
 		return;
@@ -266,12 +266,7 @@ const char* credits_get_music_filename(const char* music)
 {
 	int credits_spooled_music_index = event_music_get_spooled_music_index(music);
 	if (credits_spooled_music_index != -1) {
-		char* credits_wavfile_name = Spooled_music[credits_spooled_music_index].filename;
-		if (credits_wavfile_name != NULL) {
-			credits_load_music(credits_wavfile_name);
-			return credits_wavfile_name;
-		}
-		return nullptr;
+		return Spooled_music[credits_spooled_music_index].filename;
 	}
 	return nullptr;
 }
@@ -484,7 +479,10 @@ void credits_init()
 		Credits_artwork_index = Random::next(Credits_num_images);
 	}
 
-	credits_get_music_filename(Credits_music_name);
+	auto credits_wavfile_name = credits_get_music_filename(Credits_music_name);
+	if (credits_wavfile_name != nullptr) {
+		credits_load_music(credits_wavfile_name);
+	}
 
 	// Use this id to trigger the start of music playing on the briefing screen
 	Credits_music_begin_timestamp = ui_timestamp(Credits_music_delay);
