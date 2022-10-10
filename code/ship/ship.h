@@ -287,6 +287,7 @@ typedef struct cockpit_display {
 } cockpit_display;
 
 extern bool disableCockpits;
+extern bool cockpitActive;
 
 extern SCP_vector<cockpit_display> Player_displays;
 

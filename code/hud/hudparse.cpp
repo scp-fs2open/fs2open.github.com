@@ -220,6 +220,7 @@ void parse_hud_gauges_tbl(const char *filename)
 	color *ship_clr_p = NULL;
 	bool scale_gauge = true;
 	bool chase_view_only = false;
+	int cockpit_view_choice = 0;
 
 	try
 	{
@@ -508,6 +509,7 @@ void parse_hud_gauges_tbl(const char *filename)
 				settings.ship_idx = &ship_classes;
 				settings.use_clr = use_clr_p;
 				settings.chase_view_only = chase_view_only;
+				settings.cockpit_view_choice = cockpit_view_choice;
 
 				// if "default" is specified, then the base resolution is {-1, -1},
 				// indicating GR_640 or GR_1024 to the handlers. otherwise, change it
@@ -1326,6 +1328,15 @@ std::unique_ptr<T> gauge_load_common(gauge_settings* settings, T* preAllocated =
 		stuff_boolean(&settings->chase_view_only);
 	}
 
+	if (optional_string("Cockpit View Choice:")) {
+		int choice;
+		stuff_int(&choice);
+		if (choice < 0 || choice > 2) {
+			choice = 0;
+		}
+		settings->cockpit_view_choice = choice;
+	}
+
 	if (settings->set_position) {
 		if(optional_string("Slew:")) {
 			stuff_boolean(&settings->slew);
@@ -1345,6 +1356,7 @@ std::unique_ptr<T> gauge_load_common(gauge_settings* settings, T* preAllocated =
 	instance->initCoords(settings->use_coords, settings->coords[0], settings->coords[1]);
 
 	instance->initChase_view_only(settings->chase_view_only);
+	instance->initCockpit_view_choice(settings->cockpit_view_choice);
 	if (settings->set_position) {
 		instance->initPosition(settings->coords[0], settings->coords[1]);
 		instance->initSlew(settings->slew);
@@ -1473,6 +1485,15 @@ void load_gauge_custom(gauge_settings* settings)
 			stuff_boolean(&settings->chase_view_only);
 		}
 
+		if (optional_string("Cockpit View Choice:")) {
+			int choice;
+			stuff_int(&choice);
+			if (choice < 0 || choice > 2) {
+				choice = 0;
+			}
+			settings->cockpit_view_choice = choice;
+		}
+
 		required_string("Name:");
 		stuff_string(name, F_NAME, MAX_FILENAME_LEN);
 
@@ -1529,6 +1550,7 @@ void load_gauge_custom(gauge_settings* settings)
 	hud_gauge->lockConfigColor(lock_color);
 	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 	hud_gauge->initChase_view_only(settings->chase_view_only);
+	hud_gauge->initCockpit_view_choice(settings->cockpit_view_choice);
 
 	gauge_assign_common(settings, std::move(hud_gauge));
 }
@@ -3073,6 +3095,7 @@ void load_gauge_radar_dradis(gauge_settings* settings)
 	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 	hud_gauge->initSound(loop_snd, loop_snd_volume, arrival_beep_snd, departure_beep_snd, stealth_arrival_snd, stealth_departure_snd, arrival_beep_delay, departure_beep_delay);
 	hud_gauge->initChase_view_only(settings->chase_view_only);
+	hud_gauge->initCockpit_view_choice(settings->cockpit_view_choice);
 
 	gauge_assign_common(settings, std::move(hud_gauge));
 }
