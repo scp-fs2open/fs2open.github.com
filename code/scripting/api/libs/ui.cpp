@@ -1470,7 +1470,12 @@ ADE_VIRTVAR(StartIndex, l_UserInterface_Credits, nullptr, "The image index to be
 		LuaError(L, "This property is read only.");
 	}
 
-	return ade_set_args(L, "i", Credits_artwork_index);
+	int retv = Credits_artwork_index;
+	if (retv < 0) {
+		retv = Random::next(Credits_num_images);
+	}
+
+	return ade_set_args(L, "i", retv);
 }
 
 ADE_VIRTVAR(DisplayTime, l_UserInterface_Credits, nullptr, "The display time for each image", "number", "The display time")

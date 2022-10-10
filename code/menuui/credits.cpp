@@ -207,7 +207,7 @@ static int	Credits_last_time;		// timestamp used to calc frametime (in ms)
 static float Credits_counter;
 
 int Credits_num_images = DEFAULT_NUM_IMAGES;
-int Credits_artwork_index = 0;
+int Credits_artwork_index = -1;
 static SCP_vector<int> Credits_bmps;
 
 // Positions for credits...
