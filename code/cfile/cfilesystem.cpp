@@ -21,6 +21,7 @@
 #include <direct.h>
 #include <windows.h>
 #include <winbase.h>		/* needed for memory mapping of file functions */
+#include <shlwapi.h>
 #endif
 
 #ifdef SCP_UNIX
@@ -870,7 +871,7 @@ static int cf_add_pack_files(const int root_index, SCP_vector<_file_list_t> &fil
 		pf->root_index = root_index;
 		pf->pathtype_index = file.pathtype;
 		pf->write_time = file.m_time;
-		pf->size = file.size;
+		pf->size = static_cast<int>(file.size);
 		pf->pack_offset = file.offset;			// Mark as a packed file
 		pf->sub_path = file.sub_path;
 	}
