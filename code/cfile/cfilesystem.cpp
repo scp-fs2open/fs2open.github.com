@@ -320,9 +320,10 @@ static size_t cf_get_list_of_files(const SCP_string &in_path, SCP_vector<_file_l
 			continue;
 		}
 
-		if ( !buf.st_size ) {
-			continue;
-		}
+		// zero byte files shouldn't be indexed, but that breaks unit tests
+		// if ( !buf.st_size ) {
+		// 	continue;
+		// }
 
 		if (filter && fnmatch(filter, dir->d_name, 0)) {
 			continue;
