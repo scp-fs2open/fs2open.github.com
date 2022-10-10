@@ -1329,12 +1329,19 @@ std::unique_ptr<T> gauge_load_common(gauge_settings* settings, T* preAllocated =
 	}
 
 	if (optional_string("Cockpit View Choice:")) {
-		int choice;
-		stuff_int(&choice);
-		if (choice < 0 || choice > 2) {
-			choice = 0;
+		char choice[NAME_LENGTH];
+		stuff_string(choice, F_NAME, NAME_LENGTH);
+
+		if (!stricmp(choice, "cockpitactive")) {
+			settings->cockpit_view_choice = 1;
+		} else if (!stricmp(choice, "cockpitinactive")) {
+			settings->cockpit_view_choice = 2;
+		} else {
+			if (stricmp(choice, "both")) {
+				Warning(LOCATION, "Unrecognized cockpit view choice: %s", choice);
+			}
+			settings->cockpit_view_choice = 0;
 		}
-		settings->cockpit_view_choice = choice;
 	}
 
 	if (settings->set_position) {
@@ -1486,12 +1493,19 @@ void load_gauge_custom(gauge_settings* settings)
 		}
 
 		if (optional_string("Cockpit View Choice:")) {
-			int choice;
-			stuff_int(&choice);
-			if (choice < 0 || choice > 2) {
-				choice = 0;
+			char choice[NAME_LENGTH];
+			stuff_string(choice, F_NAME, NAME_LENGTH);
+
+			if (!stricmp(choice, "cockpitactive")) {
+				settings->cockpit_view_choice = 1;
+			} else if (!stricmp(choice, "cockpitinactive")) {
+				settings->cockpit_view_choice = 2;
+			} else {
+				if (stricmp(choice, "both")) {
+					Warning(LOCATION, "Unrecognized cockpit view choice: %s", choice);
+				}
+				settings->cockpit_view_choice = 0;
 			}
-			settings->cockpit_view_choice = choice;
 		}
 
 		required_string("Name:");
