@@ -46,6 +46,7 @@
 #include "scripting/api/objs/fireball.h"
 #include "scripting/api/objs/fireballclass.h"
 #include "scripting/api/objs/message.h"
+#include "scripting/api/objs/model.h"
 #include "scripting/api/objs/object.h"
 #include "scripting/api/objs/parse_object.h"
 #include "scripting/api/objs/promise.h"
@@ -1029,6 +1030,88 @@ ADE_FUNC(createShip,
 		return ade_set_args(L, "o", l_Ship.Set(object_h(&Objects[obj_idx])));
 	} else
 		return ade_set_error(L, "o", l_Ship.Set(object_h()));
+}
+
+ADE_FUNC(createDebris,
+	l_Mission,
+	"[model, submodel, vector position, orientation, enumeration create_flags, number hitpoints, number spark_timeout_seconds, team, shipclass source_class, ship source_ship, vector explosion_center, number explosion_force_multiplier]",
+	"Creates a chunk or shard of debris with the specified parameters.  Vectors are in world coordinates.  Any parameter can be nil or negative to specify defaults.  Create flags can be any combination of DC_IS_HULL, DC_VAPORIZE, DC_IS_PERSISTENT, DC_SET_VELOCITY, or DC_FIRE_HOOK.",
+	"debris",
+	"Debris handle, or invalid handle if the debris couldn't be created")
+{
+	model_h *mh = nullptr;
+	submodel_h *smh = nullptr;
+	vec3d *pos = nullptr, *explosion_center = nullptr;
+	matrix_h *orient_h = nullptr;
+	enum_h *create_flags = nullptr;
+	float hitpoints = -1.0f, spark_timeout = -1.0f, explosion_force_multiplier = 1.0f;
+	int team = -1, source_class = -1;
+	object_h *source_ship = nullptr;
+	ship *source_shipp = nullptr;
+	bool is_hull = false;
+	bool vaporize = false;
+	bool set_velocity = false;
+	bool fire_hook = false;
+
+	ade_get_args(L, "|oooooffoooof",
+		l_Model.GetPtr(&mh),
+		l_Submodel.GetPtr(&smh),
+		l_Vector.GetPtr(&pos),
+		l_Matrix.GetPtr(&orient_h),
+		l_Enum.GetPtr(&create_flags),
+		&hitpoints,
+		&spark_timeout,
+		l_Team.Get(&team),
+		l_Shipclass.Get(&source_class),
+		l_Ship.GetPtr(&source_ship),
+		l_Vector.GetPtr(&explosion_center),
+		&explosion_force_multiplier);
+
+	// validate some arguments
+
+	if (mh != nullptr && !mh->IsValid() || smh != nullptr && !smh->IsValid() || create_flags != nullptr && !create_flags->IsValid())
+		return ade_set_args(L, "o", l_Debris.Set(object_h()));
+
+	if (source_ship != nullptr)
+	{
+		if (source_ship->IsValid())
+			source_shipp = &Ships[source_ship->objp->instance];
+		else
+			return ade_set_args(L, "o", l_Debris.Set(object_h()));
+	}
+
+	if (create_flags != nullptr)
+	{
+		is_hull = (create_flags->index & LE_DC_IS_HULL);
+		vaporize = (create_flags->index & LE_DC_VAPORIZE);
+		set_velocity = (create_flags->index & LE_DC_SET_VELOCITY);
+		fire_hook = (create_flags->index & LE_DC_FIRE_HOOK);
+	}
+
+	int spark_timeout_millis = spark_timeout < 0.0f ? -1 : fl2i(spark_timeout * MILLISECONDS_PER_SECOND);
+
+	int source_objnum = source_shipp == nullptr ? -1 : source_shipp->objnum;
+	int model_num = mh == nullptr ? -1 : mh->GetID();
+	int submodel_num = smh == nullptr ? -1 : smh->GetSubmodelIndex();
+	matrix *orient = orient_h == nullptr ? nullptr : orient_h->GetMatrix();
+
+	// a submodel and a ship class imply hull debris
+	if (submodel_num >= 0 && source_class >= 0)
+		is_hull = true;
+
+	// now call the relevant functions
+
+	auto obj = debris_create_only(source_objnum, source_class, -1, team, hitpoints, spark_timeout_millis, model_num, submodel_num, pos, orient, is_hull, vaporize, -1);
+	if (obj == nullptr)
+		return ade_set_args(L, "o", l_Debris.Set(object_h()));
+
+	if (set_velocity)
+		debris_create_set_velocity(&Debris[obj->instance], source_shipp, explosion_center, explosion_force_multiplier);
+
+	if (fire_hook)
+		debris_create_fire_hook(obj, source_shipp == nullptr ? nullptr : &Objects[source_objnum]);
+
+	return ade_set_args(L, "o", l_Debris.Set(object_h(obj)));
 }
 
 ADE_FUNC(createWaypoint, l_Mission, "[vector Position, waypointlist List]",

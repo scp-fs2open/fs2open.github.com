@@ -147,6 +147,10 @@ flag_def_list Enumerations[] = {
 	{"NOT_YET_PRESENT", LE_NOT_YET_PRESENT, 0},
 	{"PRESENT", LE_PRESENT, 0},
 	{"EXITED", LE_EXITED, 0},
+	{"DC_IS_HULL", LE_DC_IS_HULL, 0},
+	{"DC_VAPORIZE", LE_DC_VAPORIZE, 0},
+	{"DC_SET_VELOCITY", LE_DC_SET_VELOCITY, 0},
+	{"DC_FIRE_HOOK", LE_DC_FIRE_HOOK, 0}
 };
 // clang-format on
 
