@@ -1090,8 +1090,16 @@ void techroom_intel_init()
 
 	Intel_info.clear();
 
+	//Allow intel.tbl to be a alias of species.tbl, but only load one or the other.
+	//Intel.tbl would be newer so assume intended, but print to the log to be sure - Mjn
+	char filename[MAX_FILENAME_LEN] = "species.tbl";
+	if (cf_exists_full("intel.tbl", CF_TYPE_TABLES)){
+		mprintf(("Intel.tbl was found! Using that instead of Species.tbl...\n"));
+		strcpy_s(filename, "intel.tbl");
+	}
+
 	// first parse the default table
-	parse_intel_table("species.tbl");
+	parse_intel_table(filename);
 
 	// parse any modular tables
 	parse_modular_table("*-intl.tbm", parse_intel_table);
