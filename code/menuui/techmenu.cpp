@@ -993,20 +993,15 @@ int techroom_load_ani(anim ** /*animpp*/, char *name)
 	return 0;
 }
 
-
-void techroom_intel_init()
+void parse_intel_table(const char* filename)
 {
 	int  temp;
-
-	if (Intel_inited)
-		return;
 		
 	try
 	{
-		read_file_text("species.tbl", CF_TYPE_TABLES);
+		read_file_text(filename, CF_TYPE_TABLES);
 		reset_parse();
 
-		Intel_info.clear();
 		while (optional_string("$Entry:")) {
 			intel_data entry;
 			entry.flags = IIF_DEFAULT_VALUE;
@@ -1034,13 +1029,28 @@ void techroom_intel_init()
 				Intel_info.push_back(entry);
 		}
 
-		Intel_inited = true;
 	}
 	catch (const parse::ParseException& e)
 	{
 		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "species.tbl", e.what()));
 		return;
 	}
+}
+
+void techroom_intel_init()
+{
+	if (Intel_inited)
+		return;
+
+	Intel_info.clear();
+
+	// first parse the default table
+	parse_intel_table("species.tbl");
+
+	// parse any modular tables
+	parse_modular_table("*-int.tbm", parse_intel_table);
+
+	Intel_inited = true;
 }
 
 void techroom_intel_reset()
