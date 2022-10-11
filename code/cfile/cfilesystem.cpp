@@ -239,6 +239,9 @@ static size_t cf_get_list_of_files(const SCP_string &in_path, SCP_vector<_file_l
 	intptr_t find_handle;
 	_finddata_t find;
 
+	// make sure we return all entries by default
+	path += "*";
+
 	find_handle = _findfirst(path.c_str(), &find);
 
 	if (find_handle == -1) {
@@ -246,17 +249,20 @@ static size_t cf_get_list_of_files(const SCP_string &in_path, SCP_vector<_file_l
 	}
 
 	do {
+
 		if (find.attrib & _A_SUBDIR) {
-			SCP_string sub;
+			if ( recursive && strcmp(find.name, ".") && strcmp(find.name, "..") ) {
+				SCP_string sub;
 
-			if (subpath) {
-				sub = subpath;
-				sub += DIR_SEPARATOR_CHAR;
+				if (subpath) {
+					sub = subpath;
+					sub += DIR_SEPARATOR_CHAR;
+				}
+
+				sub += find.name;
+
+				cf_get_list_of_files(in_path, files, filter, recursive, sub.c_str());
 			}
-
-			sub += find.name;
-
-			cf_get_list_of_files(in_path, files, filter, recursive, sub.c_str());
 
 			continue;
 		}
@@ -449,7 +455,7 @@ static void cf_init_root_pathtypes(cf_root *root)
 #endif
 }
 
-static SCP_string cf_get_root_pathtype(const cf_root *root, const int type)
+static SCP_string cf_get_root_pathtype(__UNUSED const cf_root *root, const int type)
 {
 #ifdef SCP_UNIX
 	auto parentPathIter = root->pathTypeToRealPath.find(type);
