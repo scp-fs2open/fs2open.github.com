@@ -152,3 +152,20 @@ TEST_F(CFileTest, test_get_path_type)
 	ASSERT_EQ(CF_TYPE_INTERFACE_MARKUP, cfile_get_path_type("data/interface/markup\\\\\\"));
 	ASSERT_EQ(CF_TYPE_INTERFACE_MARKUP, cfile_get_path_type("////data/interface/markup\\\\\\"));
 }
+
+TEST_F(CFileTest, subfolders)
+{
+	// base check for all files
+	ASSERT_TRUE(cf_exists("file.tbl", CF_TYPE_TABLES));
+	ASSERT_TRUE(cf_exists("file2.tbl", CF_TYPE_TABLES));
+	ASSERT_TRUE(cf_exists("file3.tbl", CF_TYPE_TABLES));
+
+	// good direct subfolder check
+	ASSERT_TRUE(cf_exists("sub/file2.tbl", CF_TYPE_TABLES));
+
+	// bad direct subfolder check
+	ASSERT_FALSE(cf_exists("sub/file3.tbl", CF_TYPE_TABLES));
+
+	// sub-subfolder check
+	ASSERT_TRUE(cf_exists("sub/folder/file3.tbl", CF_TYPE_TABLES));
+}
