@@ -198,7 +198,7 @@ static credits_screen_buttons Buttons[NUM_BUTTONS][GR_NUM_RESOLUTIONS] = {
 //XSTR:ON
 };
 
-char Credits_music_name[NAME_LENGTH];
+char Credits_music_name[NAME_LENGTH] = "Cinema";
 static int	Credits_music_handle = -1;
 static UI_TIMESTAMP	Credits_music_begin_timestamp;
 
@@ -206,8 +206,8 @@ static int	Credits_frametime;		// frametime of credits_do_frame() loop in ms
 static int	Credits_last_time;		// timestamp used to calc frametime (in ms)
 static float Credits_counter;
 
-int Credits_num_images;
-int Credits_artwork_index;
+int Credits_num_images = DEFAULT_NUM_IMAGES;
+int Credits_artwork_index = -1;
 static SCP_vector<int> Credits_bmps;
 
 // Positions for credits...
@@ -461,13 +461,6 @@ void credits_init()
 {
 	int i;
 	credits_screen_buttons *b;
-
-	// pre-initialize
-	Credits_num_images = DEFAULT_NUM_IMAGES;
-	Credits_artwork_index = -1;
-
-	// this is moved up here so we can override it if desired
-	strcpy_s(Credits_music_name, "Cinema");
 
 	// parse credits early so as to set up any overrides (for music and such)
 	Credits_parsed = false;
