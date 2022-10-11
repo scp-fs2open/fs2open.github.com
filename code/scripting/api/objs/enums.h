@@ -124,8 +124,11 @@ const int32_t LE_SCORE_DEBRIEFING_SUCCESS    = 111;
 const int32_t LE_SCORE_DEBRIEFING_AVERAGE    = 112;
 const int32_t LE_SCORE_DEBRIEFING_FAILURE    = 113;
 const int32_t LE_SCORE_FICTION_VIEWER        = 114;
+const int32_t LE_NOT_YET_PRESENT             = 115; // the sequence and offsets of these three #defines should correspond to the ShipStatus enums
+const int32_t LE_PRESENT                     = 116;
+const int32_t LE_EXITED                      = 117;
 
-const int ENUM_NEXT_INDEX = 115; // <<<<<<<<<<<<<<<<<<<<<<
+const int ENUM_NEXT_INDEX = 118; // <<<<<<<<<<<<<<<<<<<<<<
 extern flag_def_list Enumerations[];
 extern size_t Num_enumerations;
 
