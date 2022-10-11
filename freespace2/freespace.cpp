@@ -4341,6 +4341,14 @@ void game_set_frametime(int state)
 	}
 
 	Last_time = thistime;
+
+	// Unlike Last_frame_ui_timestamp, it's probably ok to leave this here for the following reasons:
+	// 1) Frametime-related values have always been updated in this specific function
+	// 2) The only time this function is not called during a frame is when the game is paused, which is a state
+	//    wherein timestamps don't need to be updated anyway (the internal Timestamp_paused_at_counter variable
+	//    only needs to be set when the pause starts)
+	// 3) The only place Last_frame_timestamp is used is for checking control key or button presses, and in that
+	//    situation there is no check for duration, only whether the timestamp has changed
 	Last_frame_timestamp = _timestamp();
 
 	flFrametime = f2fl(Frametime);
