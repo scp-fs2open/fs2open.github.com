@@ -360,7 +360,7 @@ ADE_INDEXER(l_Mission_ShipRegistry, "number/string IndexOrName", "Gets ship regi
 }
 
 ADE_FUNC(__len, l_Mission_ShipRegistry, nullptr,
-		 "Number of ship registry entries in the mission.  The value returned is generally stable but will change if a ship is created using ship-create.",
+		 "Number of ship registry entries in the mission.  The value returned is generally stable but will change if a ship is created using ship-create or if additional wing waves arrive.",
 		 "number",
 		 "Number of ship registry entries in the mission")
 {

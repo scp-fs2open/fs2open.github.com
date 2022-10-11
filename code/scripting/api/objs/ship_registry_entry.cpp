@@ -56,7 +56,7 @@ ADE_VIRTVAR(Status, l_ShipRegistryEntry, nullptr, "Status of ship", "enumeration
 	return ade_set_args(L, "o", l_Enum.Set(enum_h(LE_NOT_YET_PRESENT + (int)Ship_registry[idx].status)));
 }
 
-ADE_FUNC(getParsedShip, l_ShipRegistryEntry, nullptr, "Return the parsed ship associated with this ship registry entry", "parse_object", "The parsed ship, or nil if handle is invalid")
+ADE_FUNC(getParsedShip, l_ShipRegistryEntry, nullptr, "Return the parsed ship associated with this ship registry entry", "parse_object", "The parsed ship, or nil if handle is invalid.  If this ship entry is for a ship-create'd ship, the returned handle may be invalid.")
 {
 	int idx;
 	if (!ade_get_args(L, "o", l_ShipRegistryEntry.Get(&idx)))
@@ -68,7 +68,7 @@ ADE_FUNC(getParsedShip, l_ShipRegistryEntry, nullptr, "Return the parsed ship as
 	return ade_set_args(L, "o", l_ParseObject.Set(parse_object_h(Ship_registry[idx].p_objp)));
 }
 
-ADE_FUNC(getShip, l_ShipRegistryEntry, nullptr, "Return the ship associated with this ship registry entry", "ship", "The ship, or nil if handle is invalid")
+ADE_FUNC(getShip, l_ShipRegistryEntry, nullptr, "Return the ship associated with this ship registry entry", "ship", "The ship, or nil if handle is invalid.  The returned handle will be invalid if the ship has not yet arrived in-mission.")
 {
 	int idx;
 	if (!ade_get_args(L, "o", l_ShipRegistryEntry.Get(&idx)))
