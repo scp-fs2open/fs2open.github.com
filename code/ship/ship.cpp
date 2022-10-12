@@ -7456,20 +7456,17 @@ void ship_render_player_ship(object* objp) {
 	const bool renderShipModel = (sip->flags[Ship::Info_Flags::Show_ship_model])
 		&& (!Viewer_mode || (Viewer_mode & VM_PADLOCK_ANY) || (Viewer_mode & VM_OTHER_SHIP) || (Viewer_mode & VM_TRACK)
 			|| !(Viewer_mode & VM_EXTERNAL));
+	cockpitActive = renderCockpitModel;
 
 	//Nothing to do
 	if (!(renderCockpitModel || renderShipModel)) {
-		cockpitActive = false;
 		return;
 	}
-
-	cockpitActive = true;
 
 	//If we aren't sure whether cockpits and external models can share the same worldspace,
 	//we need to pre-render the external ship hull without shadows / deferred and give the cockpit precedence,
 	//unless this ship has no cockpit at all
-	const bool prerenderShipModel =
-		renderShipModel && hasCockpitModel && !Cockpit_shares_coordinate_space && !disableCockpits;
+	const bool prerenderShipModel = renderShipModel && hasCockpitModel && !Cockpit_shares_coordinate_space;
 	const bool deferredRenderShipModel = renderShipModel && !prerenderShipModel;
 
 	gr_reset_clip();
