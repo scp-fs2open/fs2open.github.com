@@ -7903,7 +7903,7 @@ int get_parse_name_index(const char *name)
 	Assert(i < MAX_SHIPS + MAX_WINGS);
 	Assert(strlen(name) < NAME_LENGTH);
 	strcpy_s(Parse_names[i], name);
-	return Num_parse_names++;
+	return (int)Num_parse_names++;
 }
 
 // Goober5000

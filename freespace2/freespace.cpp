@@ -4312,18 +4312,6 @@ void game_set_frametime(int state)
 		Frametime = MAX_FRAMETIME;
 	}
 
-#ifndef NDEBUG
-	// If the frame took more than 5 seconds, assume we're tracing through a debugger.  If timestamps are running, correct the elapsed time.
-	if (!Cmdline_slow_frames_ok && !timestamp_is_paused() && (Last_frame_ui_timestamp.isValid())) {
-		auto delta_timestamp = ui_timestamp_since(Last_frame_ui_timestamp);
-		if (delta_timestamp > 5 * MILLISECONDS_PER_SECOND) {
-			delta_timestamp -= 20;	// suppose last frame was 50 FPS
-			mprintf(("Too much time passed between frames.  Adjusting timestamp by %i milliseconds to compensate\n", delta_timestamp));
-			timestamp_adjust_pause_offset(delta_timestamp);
-		}
-	}
-#endif
-
 	flRealframetime = f2fl(Frametime);
 
 	//Handle changes in time compression
@@ -4353,8 +4341,15 @@ void game_set_frametime(int state)
 	}
 
 	Last_time = thistime;
+
+	// Unlike Last_frame_ui_timestamp, it's probably ok to leave this here for the following reasons:
+	// 1) Frametime-related values have always been updated in this specific function
+	// 2) The only time this function is not called during a frame is when the game is paused, which is a state
+	//    wherein timestamps don't need to be updated anyway (the internal Timestamp_paused_at_counter variable
+	//    only needs to be set when the pause starts)
+	// 3) The only place Last_frame_timestamp is used is for checking control key or button presses, and in that
+	//    situation there is no check for duration, only whether the timestamp has changed
 	Last_frame_timestamp = _timestamp();
-	Last_frame_ui_timestamp = ui_timestamp();
 
 	flFrametime = f2fl(Frametime);
 
@@ -6092,6 +6087,20 @@ void mouse_force_pos(int x, int y);
 // do stuff that may need to be done regardless of state
 void game_do_state_common(int state,int no_networking)
 {
+#ifndef NDEBUG
+	// If the frame took more than 5 seconds, assume we're tracing through a debugger.  If timestamps are running, correct the elapsed time.
+	if (!Cmdline_slow_frames_ok && !timestamp_is_paused() && Last_frame_ui_timestamp.isValid()) {
+		auto delta_timestamp = ui_timestamp_since(Last_frame_ui_timestamp);
+		if (delta_timestamp > 5 * MILLISECONDS_PER_SECOND) {
+			delta_timestamp -= 20;	// suppose last frame was 50 FPS
+			mprintf(("Too much time passed between frames.  Adjusting timestamp by %i milliseconds to compensate\n", delta_timestamp));
+			timestamp_adjust_pause_offset(delta_timestamp);
+		}
+	}
+#endif
+	Last_frame_ui_timestamp = ui_timestamp();
+
+
 	io::mouse::CursorManager::doFrame();		// determine if to draw the mouse this frame
 	snd_do_frame();								// update sound system
 	event_music_do_frame();						// music needs to play across many states
