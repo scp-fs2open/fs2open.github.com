@@ -2242,6 +2242,7 @@ int cf_create_default_path_string(SCP_string& path, int pathtype, const char* fi
 			case CF_TYPE_PLAYERS:
 			case CF_TYPE_MULTI_PLAYERS:
 			case CF_TYPE_SINGLE_PLAYERS:
+			case CF_TYPE_PLAYER_BINDS:
 				location_flags = CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT;
 				break;
 		}
