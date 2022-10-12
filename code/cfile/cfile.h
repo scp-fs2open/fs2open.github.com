@@ -67,22 +67,20 @@ typedef struct {
 #define CF_TYPE_SQUAD_IMAGES		23
 #define CF_TYPE_SINGLE_PLAYERS		24
 #define CF_TYPE_MULTI_PLAYERS		25
-#define CF_TYPE_CACHE				26
-#define CF_TYPE_MULTI_CACHE			27
-#define CF_TYPE_MISSIONS			28
-#define CF_TYPE_CONFIG				29
-#define CF_TYPE_DEMOS				30
-#define CF_TYPE_CBANIMS				31
-#define CF_TYPE_INTEL_ANIMS			32
-#define CF_TYPE_SCRIPTS				33
-#define CF_TYPE_FICTION				34
-#define CF_TYPE_FREDDOCS			35
-#define CF_TYPE_INTERFACE_MARKUP	36
-#define CF_TYPE_INTERFACE_CSS		37
-#define CF_TYPE_PLAYER_BINDS		38
+#define CF_TYPE_PLAYER_BINDS		26
+#define CF_TYPE_CACHE				27
+#define CF_TYPE_MULTI_CACHE			28
+#define CF_TYPE_MISSIONS			29
+#define CF_TYPE_CONFIG				30
+#define CF_TYPE_DEMOS				31
+#define CF_TYPE_CBANIMS				32
+#define CF_TYPE_INTEL_ANIMS			33
+#define CF_TYPE_SCRIPTS				34
+#define CF_TYPE_FICTION				35
+#define CF_TYPE_FREDDOCS			36
 
 #define CF_MAX_PATH_TYPES                                                                                              \
-	39 // Can be as high as you'd like //DTP; yeah but beware alot of things uses CF_MAX_PATH_TYPES
+	37 // Can be as high as you'd like //DTP; yeah but beware alot of things uses CF_MAX_PATH_TYPES
 
 // TRUE if type is specified and valid
 #define CF_TYPE_SPECIFIED(path_type) (((path_type)>CF_TYPE_INVALID) && ((path_type)<CF_MAX_PATH_TYPES))

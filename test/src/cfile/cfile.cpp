@@ -141,16 +141,16 @@ TEST_F(CFileTest, test_get_path_type)
 	ASSERT_EQ(CF_TYPE_DATA, cfile_get_path_type("////data\\\\\\"));
 
 	// Test single subdirectory case
-	ASSERT_EQ(CF_TYPE_INTERFACE, cfile_get_path_type("data/interface"));
-	ASSERT_EQ(CF_TYPE_INTERFACE, cfile_get_path_type("///data/interface"));
-	ASSERT_EQ(CF_TYPE_INTERFACE, cfile_get_path_type("data/interface\\\\\\"));
-	ASSERT_EQ(CF_TYPE_INTERFACE, cfile_get_path_type("////data/interface\\\\\\"));
+	ASSERT_EQ(CF_TYPE_VOICE, cfile_get_path_type("data/voice"));
+	ASSERT_EQ(CF_TYPE_VOICE, cfile_get_path_type("///data/voice"));
+	ASSERT_EQ(CF_TYPE_VOICE, cfile_get_path_type("data/voice\\\\\\"));
+	ASSERT_EQ(CF_TYPE_VOICE, cfile_get_path_type("////data/voice\\\\\\"));
 
 	// Test nested subdirectory case
-	ASSERT_EQ(CF_TYPE_INTERFACE_MARKUP, cfile_get_path_type("data/interface/markup"));
-	ASSERT_EQ(CF_TYPE_INTERFACE_MARKUP, cfile_get_path_type("///data/interface/markup"));
-	ASSERT_EQ(CF_TYPE_INTERFACE_MARKUP, cfile_get_path_type("data/interface/markup\\\\\\"));
-	ASSERT_EQ(CF_TYPE_INTERFACE_MARKUP, cfile_get_path_type("////data/interface/markup\\\\\\"));
+	ASSERT_EQ(CF_TYPE_VOICE_SPECIAL, cfile_get_path_type("data/voice/special"));
+	ASSERT_EQ(CF_TYPE_VOICE_SPECIAL, cfile_get_path_type("///data/voice/special"));
+	ASSERT_EQ(CF_TYPE_VOICE_SPECIAL, cfile_get_path_type("data/voice/special\\\\\\"));
+	ASSERT_EQ(CF_TYPE_VOICE_SPECIAL, cfile_get_path_type("////data/voice/special\\\\\\"));
 }
 
 TEST_F(CFileTest, subfolders)
