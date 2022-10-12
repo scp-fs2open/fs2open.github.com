@@ -402,7 +402,6 @@ cmdline_parm deadzone("-deadzone",
 
 int Cmdline_ship_choice_3d = 0;
 int Cmdline_weapon_choice_3d = 0;
-int Cmdline_warp_flash = 0;
 int Cmdline_autopilot_interruptable = 1;
 int Cmdline_stretch_menu = 0;
 int Cmdline_no_screenshake = 0;
@@ -1838,7 +1837,7 @@ bool SetCmdlineParams()
 	}
 
 	if ( use_warp_flash.found() ) {
-		Cmdline_warp_flash = 1;
+		Fireball_warp_flash = true;
 	}
 
 	if ( allow_autpilot_interrupt.found() )	{
