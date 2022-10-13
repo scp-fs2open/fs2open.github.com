@@ -4797,25 +4797,30 @@ sexp_list_item* sexp_tree::get_listing_opf_mission_moods() {
 	return head.next;
 }
 
-sexp_list_item* sexp_tree::get_listing_opf_ship_flags() {
-	size_t i;
+template <typename M, typename T, typename PTM>
+static void add_flag_name_helper(M& flag_name_map, sexp_list_item& head, T flag_name_array[], PTM T::* member, size_t flag_name_count)
+{
+	for (size_t i = 0; i < flag_name_count; i++)
+	{
+		auto name = flag_name_array[i].*member;
+		if (flag_name_map.count(name) == 0)
+		{
+			head.add_data(name);
+			flag_name_map.insert(name);
+		}
+	}
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_ship_flags()
+{
 	sexp_list_item head;
-	// object flags
-	for (i = 0; i < (size_t)Num_object_flag_names; i++) {
-		head.add_data(Object_flag_names[i].flag_name);
-	}
-	// ship flags
-	for (i = 0; i < Num_ship_flag_names; i++) {
-		head.add_data(Ship_flag_names[i].flag_name);
-	}
-	// parse object flags
-	for (i = 0; i < Num_parse_object_flags; i++) {
-		head.add_data(Parse_object_flags[i].name);
-	}
-	// ai flags
-	for (i = 0; i < (size_t)Num_ai_flag_names; i++) {
-		head.add_data(Ai_flag_names[i].flag_name);
-	}
+	// prevent duplicate names, comparing case-insensitively
+	SCP_unordered_set<SCP_string, SCP_string_lcase_hash, SCP_string_lcase_equal_to> all_flags;
+
+	add_flag_name_helper(all_flags, head, Object_flag_names, &obj_flag_name::flag_name, (size_t)Num_object_flag_names);
+	add_flag_name_helper(all_flags, head, Ship_flag_names, &ship_flag_name::flag_name, Num_ship_flag_names);
+	add_flag_name_helper(all_flags, head, Parse_object_flags, &flag_def_list_new<Mission::Parse_Object_Flags>::name, Num_parse_object_flags);
+	add_flag_name_helper(all_flags, head, Ai_flag_names, &ai_flag_name::flag_name, (size_t)Num_ai_flag_names);
 
 	return head.next;
 }
