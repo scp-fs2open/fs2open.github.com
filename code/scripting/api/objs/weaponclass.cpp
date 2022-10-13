@@ -630,7 +630,7 @@ ADE_FUNC(renderTechModel,
 	int modelNum;
 	//Load the model if it exists or exit early
 	if (VALID_FNAME(wip->tech_model)) {
-		modelNum = model_load(wip->tech_model, 0, NULL, 0);
+		modelNum = model_load(wip->tech_model, 0, nullptr, 0);
 	} else {
 		return ade_set_args(L, "b", false);
 	}
@@ -700,7 +700,7 @@ ADE_FUNC(renderTechModel2,
 	int x1, y1, x2, y2;
 	int idx;
 	float zoom = 1.3f;
-	matrix_h* mh = NULL;
+	matrix_h* mh = nullptr;
 	if (!ade_get_args(L, "oiiiio|f", l_Weaponclass.Get(&idx), &x1, &y1, &x2, &y2, l_Matrix.GetPtr(&mh), &zoom))
 		return ade_set_error(L, "b", false);
 
@@ -716,7 +716,7 @@ ADE_FUNC(renderTechModel2,
 	int modelNum;
 	// Load the model if it exists or exit early
 	if (VALID_FNAME(wip->tech_model)) {
-		modelNum = model_load(wip->tech_model, 0, NULL, 0);
+		modelNum = model_load(wip->tech_model, 0, nullptr, 0);
 	} else {
 		return ade_set_args(L, "b", false);
 	}
