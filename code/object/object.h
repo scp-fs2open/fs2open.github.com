@@ -107,7 +107,6 @@ extern const char	*Object_type_names[MAX_OBJECT_TYPES];
 typedef struct obj_flag_name {
 	Object::Object_Flags flag;
 	char flag_name[TOKEN_LENGTH];
-	int flag_list;
 } obj_flag_name;
 
 extern obj_flag_name Object_flag_names[];
