@@ -627,14 +627,15 @@ ADE_FUNC(renderTechModel,
 	weapon_info* wip = &Weapon_info[idx];
 	model_render_params render_info;
 
+	int modelNum;
 	//Load the model if it exists or exit early
 	if (VALID_FNAME(wip->tech_model)) {
-		wip->model_num = model_load(wip->tech_model, 0, NULL, 0);
+		modelNum = model_load(wip->tech_model, 0, NULL, 0);
 	} else {
 		return ade_set_args(L, "b", false);
 	}
 
-	if (wip->model_num < 0)
+	if (modelNum < 0)
 		return ade_set_args(L, "b", false);
 
 	// Handle angles
@@ -665,7 +666,7 @@ ADE_FUNC(renderTechModel,
 	light_rotate_all();
 
 	// Draw the ship!!
-	model_clear_instance(wip->model_num);
+	model_clear_instance(modelNum);
 	render_info.set_detail_level_lock(0);
 
 	uint render_flags = MR_AUTOCENTER | MR_NO_FOGGING;
@@ -675,7 +676,7 @@ ADE_FUNC(renderTechModel,
 
 	render_info.set_flags(render_flags);
 
-	model_render_immediate(&render_info, wip->model_num, &orient, &vmd_zero_vector);
+	model_render_immediate(&render_info, modelNum, &orient, &vmd_zero_vector);
 
 	// OK we're done
 	gr_end_view_matrix();
@@ -712,14 +713,15 @@ ADE_FUNC(renderTechModel2,
 	weapon_info* wip = &Weapon_info[idx];
 	model_render_params render_info;
 
+	int modelNum;
 	// Load the model if it exists or exit early
 	if (VALID_FNAME(wip->tech_model)) {
-		wip->model_num = model_load(wip->tech_model, 0, NULL, 0);
+		modelNum = model_load(wip->tech_model, 0, NULL, 0);
 	} else {
 		return ade_set_args(L, "b", false);
 	}
 
-	if (wip->model_num < 0)
+	if (modelNum < 0)
 		return ade_set_args(L, "b", false);
 
 	// Handle angles
@@ -743,7 +745,7 @@ ADE_FUNC(renderTechModel2,
 	light_rotate_all();
 
 	// Draw the ship!!
-	model_clear_instance(wip->model_num);
+	model_clear_instance(modelNum);
 	render_info.set_detail_level_lock(0);
 
 	uint render_flags = MR_AUTOCENTER | MR_NO_FOGGING;
@@ -753,7 +755,7 @@ ADE_FUNC(renderTechModel2,
 
 	render_info.set_flags(render_flags);
 
-	model_render_immediate(&render_info, wip->model_num, orient, &vmd_zero_vector);
+	model_render_immediate(&render_info, modelNum, orient, &vmd_zero_vector);
 
 	// OK we're done
 	gr_end_view_matrix();
