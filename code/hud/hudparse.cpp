@@ -4710,6 +4710,9 @@ void load_gauge_brackets(gauge_settings* settings)
 	if(optional_string("Dot Filename:")) {
 		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
 	}
+	if (optional_string("Enable Target Info:")) {
+		stuff_boolean(&Extra_target_info);
+	}
 
 	hud_gauge->initBitmaps(fname);
 	hud_gauge->initMinSubTargetBoxSizes(min_subtarget_box[0], min_subtarget_box[1]);

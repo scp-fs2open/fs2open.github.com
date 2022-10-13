@@ -387,7 +387,6 @@ int Cmdline_ballistic_gauge = 0;	// WMCoolmon's gauge thingy
 int Cmdline_dualscanlines = 0;
 int Cmdline_orb_radar = 0;
 int Cmdline_rearm_timer = 0;
-int Cmdline_targetinfo = 0;
 
 // Gameplay related
 cmdline_parm use_3dwarp("-3dwarp", nullptr, AT_NONE);			// Is now Fireball_use_3d_warp
@@ -1731,7 +1730,7 @@ bool SetCmdlineParams()
 
 	if(targetinfo_arg.found())
 	{
-		Cmdline_targetinfo = 1;
+		Extra_target_info = true;
 	}
 
 	if(nomovies_arg.found() ) {

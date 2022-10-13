@@ -185,7 +185,7 @@ void draw_brackets_diamond_quick(graphics::line_draw_list* draw_list, int x1, in
 
 extern int HUD_drew_selection_bracket_on_target;
 //Do we want to show the ship & class name?
-extern int Cmdline_targetinfo;
+extern bool Extra_target_info;
 
 // Display the current target distance, right justified at (x,y)
 void hud_target_show_dist_on_bracket(int x, int y, float distance, int font_num)
