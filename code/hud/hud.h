@@ -244,6 +244,7 @@ protected:
 	int flash_next;
 	bool flash_status;
 	bool only_render_in_chase_view;
+	int render_for_cockpit_toggle;
 
 	// custom gauge specific stuff
 	bool custom_gauge;
@@ -303,6 +304,7 @@ public:
 	void updatePopUp(bool pop_up_flag);
 	void updateSexpOverride(bool sexp);
 	void initChase_view_only(bool chase_view_only);
+	void initCockpit_view_choice(int cockpit_view_choice);
 
 	// SEXP interfacing functions
 	// For flashing gauges in training missions

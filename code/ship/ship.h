@@ -286,6 +286,9 @@ typedef struct cockpit_display {
 	char name[MAX_FILENAME_LEN];
 } cockpit_display;
 
+extern bool disableCockpits;
+extern bool cockpitActive;
+
 extern SCP_vector<cockpit_display> Player_displays;
 
 typedef struct cockpit_display_info {
