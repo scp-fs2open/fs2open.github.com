@@ -284,6 +284,13 @@ void parse_hud_gauges_tbl(const char *filename)
 			}
 		}
 
+		if (optional_string("$Wireframe Color Override:")) {
+			int rgb[3];
+			stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+			gr_init_color(&Targetbox_color, rgb[0], rgb[1], rgb[2]);
+			Targetbox_color_override = true;
+		}
+
 		if (optional_string("$Targetbox Shader Effect:")) {
 			stuff_int(&Targetbox_shader_effect);
 			if (Targetbox_shader_effect < 0) {
@@ -3161,6 +3168,10 @@ void load_gauge_target_monitor(gauge_settings* settings)
 
 	bool desaturate = false;
 
+	int wireframe = Targetbox_wire;
+	bool wirecoloroverride = Targetbox_color_override;
+	color wirecolor = Targetbox_color;
+
 	char fname_monitor[MAX_FILENAME_LEN] = "targetview1";
 	char fname_integrity[MAX_FILENAME_LEN] = "targetview2";
 	char fname_static[MAX_FILENAME_LEN] = "TargetStatic";
@@ -3289,6 +3300,15 @@ void load_gauge_target_monitor(gauge_settings* settings)
 	if ( optional_string("Desaturate:") ) {
 		stuff_boolean(&desaturate);
 	}
+	if (optional_string("Wireframe:")) {
+		stuff_int(&wireframe);
+	}
+	if (optional_string("Wireframe Color:")) {
+		int rgb[3];
+		stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+		gr_init_color(&wirecolor, rgb[0], rgb[1], rgb[2]);
+		wirecoloroverride = true;
+	}
 
 	hud_gauge->initViewportOffsets(Viewport_offsets[0], Viewport_offsets[1]);
 	hud_gauge->initViewportSize(Viewport_size[0], Viewport_size[1]);
@@ -3308,6 +3328,9 @@ void load_gauge_target_monitor(gauge_settings* settings)
 	hud_gauge->initSubsysIntegrityOffsets(Subsys_integrity_offsets[0], Subsys_integrity_offsets[1], Use_subsys_integrity_offsets);
 	hud_gauge->initDisabledStatusOffsets(Disabled_status_offsets[0], Disabled_status_offsets[1], Use_disabled_status_offsets);
 	hud_gauge->initDesaturate(desaturate);
+	hud_gauge->initGaugeWireframe(wireframe);
+	hud_gauge->initGaugeWirecolor(wirecolor);
+	hud_gauge->initGaugeWirecolorOverride(wirecoloroverride);
 	hud_gauge->initBitmaps(fname_monitor, fname_monitor_mask, fname_integrity, fname_static);
 
 	gauge_assign_common(settings, std::move(hud_gauge));
