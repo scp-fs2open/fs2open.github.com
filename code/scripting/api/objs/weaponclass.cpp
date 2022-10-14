@@ -439,7 +439,7 @@ ADE_VIRTVAR(Speed, l_Weaponclass, "number", "Weapon max speed, aka $Velocity in 
 ADE_VIRTVAR(EnergyConsumed, l_Weaponclass, nullptr, nullptr, "number", "Energy Consumed, or 0 if handle is invalid")
 {
 	int idx;
-	if(!ade_get_args(L, "o|f", l_Weaponclass.Get(&idx)))
+	if(!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
 		return ade_set_error(L, "f", 0.0f);
 
 	if(idx < 0 || idx >= weapon_info_size())
