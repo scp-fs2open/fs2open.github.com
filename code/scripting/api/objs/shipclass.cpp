@@ -996,8 +996,8 @@ ADE_FUNC(isInTechroom, l_Shipclass, NULL, "Gets whether or not the ship class is
 ADE_FUNC(renderTechModel,
 	l_Shipclass,
 	"number X1, number Y1, number X2, number Y2, [number RotationPercent =0, number PitchPercent =0, number "
-	"BankPercent=40, number Zoom=1.3]",
-	"Draws ship model as if in techroom",
+	"BankPercent=40, number Zoom=1.3, number Lighting=0]",
+	"Draws ship model as if in techroom. 0 for regular lighting 1 for flat lighting.",
 	"boolean",
 	"Whether ship was rendered")
 {
@@ -1005,7 +1005,8 @@ ADE_FUNC(renderTechModel,
 	angles rot_angles = {0.0f, 0.0f, 40.0f};
 	int idx;
 	float zoom = 1.3f;
-	if(!ade_get_args(L, "oiiii|ffff", l_Shipclass.Get(&idx), &x1, &y1, &x2, &y2, &rot_angles.h, &rot_angles.p, &rot_angles.b, &zoom))
+	int lighting = 0;
+	if(!ade_get_args(L, "oiiii|ffffi", l_Shipclass.Get(&idx), &x1, &y1, &x2, &y2, &rot_angles.h, &rot_angles.p, &rot_angles.b, &zoom, &lighting))
 		return ade_set_error(L, "b", false);
 
 	if(idx < 0 || idx >= ship_info_size())
@@ -1060,7 +1061,7 @@ ADE_FUNC(renderTechModel,
 
 	uint render_flags = MR_AUTOCENTER | MR_NO_FOGGING;
 
-	if(sip->flags[Ship::Info_Flags::No_lighting])
+	if((lighting > 0) || (sip->flags[Ship::Info_Flags::No_lighting]))
 		render_flags |= MR_NO_LIGHTING;
 
 	render_info.set_flags(render_flags);
