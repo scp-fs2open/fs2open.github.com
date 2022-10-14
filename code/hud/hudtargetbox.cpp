@@ -779,8 +779,8 @@ void HudGaugeTargetBox::renderTargetDebris(object *target_objp)
 
 		render_info.set_flags(flags | MR_NO_FOGGING);
 
-		auto pmi = model_get_instance(debrisp->model_instance_num);
-		auto pm = model_get(pmi->model_num);
+		auto pm = model_get(debrisp->model_num);
+		auto pmi = debrisp->model_instance_num < 0 ? nullptr : model_get_instance(debrisp->model_instance_num);
 
 		// This calls the colour that doesn't get reset
 		submodel_render_immediate( &render_info, pm, pmi, debrisp->submodel_num, &target_objp->orient, &obj_pos);

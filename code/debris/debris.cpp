@@ -189,7 +189,9 @@ void debris_delete( object * obj )
 
 	db = &Debris[num];
 
-	model_delete_instance(db->model_instance_num);
+	if (db->model_instance_num >= 0) {
+		model_delete_instance(db->model_instance_num);
+	}
 
 	if ( db->is_hull ) {
 		debris_remove_from_hull_list(db);
@@ -609,7 +611,7 @@ object *debris_create_only(int parent_objnum, int parent_ship_class, int alt_typ
 	db->objnum = objnum;
 	obj = &Objects[objnum];
 
-	db->model_instance_num = model_create_instance(objnum, db->model_num);
+	db->model_instance_num = hull_flag ? model_create_instance(objnum, db->model_num) : -1;
 
 	// assign the network signature.  The signature will be 0 for non-hull pieces, but since that
 	// is our invalid signature, it should be okay.
@@ -1148,11 +1150,8 @@ void debris_render(object * obj, model_draw_list *scene)
 
 	texture_info *tbase = nullptr;
 
-	auto pmi = model_get_instance(db->model_instance_num);
-	auto pm = model_get(pmi->model_num);
-
+	auto pm = model_get(db->model_num);
 	model_clear_instance( db->model_num );
-	model_instance_clear_arcs(pm, pmi);
 
 	// Swap in a different texture depending on the species
 	if (db->species >= 0)
@@ -1165,11 +1164,18 @@ void debris_render(object * obj, model_draw_list *scene)
 		}
 	}
 
-	// Only render electrical arcs if within 500m of the eye (for a 10m piece)
-	if ( vm_vec_dist_quick( &obj->pos, &Eye_position ) < obj->radius*50.0f )	{
-		for (i=0; i<MAX_DEBRIS_ARCS; i++ )	{
-			if ( db->arc_timestamp[i].isValid() )	{
-				model_instance_add_arc( pm, pmi, db->submodel_num, &db->arc_pts[i][0], &db->arc_pts[i][1], MARC_TYPE_DAMAGED );
+	polymodel_instance *pmi = nullptr;
+	if (db->model_instance_num >= 0)
+	{
+		pmi = model_get_instance(db->model_instance_num);
+		model_instance_clear_arcs(pm, pmi);
+
+		// Only render electrical arcs if within 500m of the eye (for a 10m piece)
+		if ( vm_vec_dist_quick( &obj->pos, &Eye_position ) < obj->radius*50.0f )	{
+			for (i=0; i<MAX_DEBRIS_ARCS; i++ )	{
+				if ( db->arc_timestamp[i].isValid() )	{
+					model_instance_add_arc( pm, pmi, db->submodel_num, &db->arc_pts[i][0], &db->arc_pts[i][1], MARC_TYPE_DAMAGED );
+				}
 			}
 		}
 	}
