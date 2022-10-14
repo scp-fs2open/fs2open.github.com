@@ -334,7 +334,7 @@ ADE_VIRTVAR(FreeFlightTime, l_Weaponclass, "number", "The time the weapon will f
 	return ade_set_args(L, "f", Weapon_info[idx].free_flight_time);
 }
 
-ADE_VIRTVAR(SwarmInfo, l_Weaponclass, nullptr, nullptr, "number, number", "The number of swarm missiles, the swarm wait; nil if not defined.")
+ADE_VIRTVAR(SwarmInfo, l_Weaponclass, nullptr, nullptr, "boolean, number, number", "If the weapon has the swarm flag (true/false), the number of swarm missiles (0 or value), the swarm wait (0 or value).")
 {
 	int idx;
 	if (!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
@@ -347,11 +347,15 @@ ADE_VIRTVAR(SwarmInfo, l_Weaponclass, nullptr, nullptr, "number, number", "The n
 		LuaError(L, "Setting Swarm Info is not supported");
 	}
 
-	return ade_set_args(L, "if", Weapon_info[idx].swarm_count, Weapon_info[idx].SwarmWait);
+	bool flag = false;
+	if (Weapon_info[idx].wi_flags[Weapon::Info_Flags::Swarm])
+		flag = true;
+
+	return ade_set_args(L, "bif", flag, Weapon_info[idx].swarm_count, Weapon_info[idx].SwarmWait);
 }
 
-ADE_VIRTVAR(CorkscrewInfo, l_Weaponclass, nullptr, nullptr, "number, number, number, boolean, number", 
-	"The number of corkscrew missiles fired, the radius, the fire delay, counter rotate settings, the twist value; nil if not defined.")
+ADE_VIRTVAR(CorkscrewInfo, l_Weaponclass, nullptr, nullptr, "boolean, number, number, number, boolean, number", 
+	"If the weapon has the corkscrew flag (true/false), the number of corkscrew missiles fired (0 or value), the radius (0 or value), the fire delay (0 or value), counter rotate settings (true/false), the twist value (0 or value).")
 {
 	int idx;
 	if (!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
@@ -368,8 +372,13 @@ ADE_VIRTVAR(CorkscrewInfo, l_Weaponclass, nullptr, nullptr, "number, number, num
 	if (Weapon_info[idx].cs_crotate)
 		crotate = true;
 
+	bool flag = false;
+	if (Weapon_info[idx].wi_flags[Weapon::Info_Flags::Corkscrew])
+		flag = true;
+
 	return ade_set_args(L,
-		"ifibf",
+		"bifibf",
+		flag,
 		Weapon_info[idx].cs_num_fired,
 		Weapon_info[idx].cs_radius,
 		Weapon_info[idx].cs_delay,
