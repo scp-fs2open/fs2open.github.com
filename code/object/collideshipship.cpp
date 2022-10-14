@@ -1222,16 +1222,16 @@ int collide_ship_ship( obj_pair * pair )
 				// Moved here to properly handle ship-ship collision overrides and not process their physics when overridden by lua
 				//
 
-				ship *light_shipp = &Ships[ship_ship_hit_info.heavy->instance];
+				ship *light_shipp = &Ships[ship_ship_hit_info.light->instance];
 				ship *heavy_shipp = &Ships[ship_ship_hit_info.heavy->instance];
 
 				object* heavy_obj = ship_ship_hit_info.heavy;
 				object* light_obj = ship_ship_hit_info.light;
 				// Update ai to deal with collisions
-				if (heavy_obj - Objects == Ai_info[light_shipp->ai_index].target_objnum) {
+				if (OBJ_INDEX(heavy_obj) == Ai_info[light_shipp->ai_index].target_objnum) {
 					Ai_info[light_shipp->ai_index].ai_flags.set(AI::AI_Flags::Target_collision);
 				}
-				if (light_obj - Objects == Ai_info[heavy_shipp->ai_index].target_objnum) {
+				if (OBJ_INDEX(light_obj) == Ai_info[heavy_shipp->ai_index].target_objnum) {
 					Ai_info[heavy_shipp->ai_index].ai_flags.set(AI::AI_Flags::Target_collision);
 				}
 
