@@ -441,6 +441,9 @@ ADE_INDEXER(l_ModelSubmodels, "submodel", "number|string IndexOrName", "submodel
 		index = model_find_submodel_index(msh->GetID(), name);
 	}
 
+	if (!msh->IsValid())
+		return ade_set_error(L, "o", l_Submodel.Set(submodel_h()));
+
 	polymodel *pm = msh->Get();
 
 	if (index < 0 || index >= pm->n_models)
