@@ -580,6 +580,10 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 		model_render_params render_info;
 		render_info.set_object_number(OBJ_INDEX(target_objp));
 
+		if (target_sip->uses_team_colors) {
+			render_info.set_team_color(target_shipp->team_name, target_shipp->secondary_team_name, target_shipp->team_change_timestamp, target_shipp->team_change_time);
+		}
+
 		switch (Targetbox_wire) {
 			case 0:
 				flags |= MR_NO_LIGHTING;
@@ -590,10 +594,6 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 					render_info.set_color(*iff_get_color(IFF_COLOR_TAGGED, 1));
 				else
 					render_info.set_color(*iff_get_color_by_team_and_object(target_shipp->team, Player_ship->team, 1, target_objp));
-
-				if (target_sip->uses_team_colors) {
-					render_info.set_team_color(target_shipp->team_name, target_shipp->secondary_team_name, target_shipp->team_change_timestamp, target_shipp->team_change_time);
-				}
 
 				flags = MR_SHOW_OUTLINE_HTL | MR_NO_POLYS | MR_NO_LIGHTING | MR_NO_TEXTURING;
 
