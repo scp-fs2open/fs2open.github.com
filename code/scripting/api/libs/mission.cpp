@@ -1069,7 +1069,7 @@ ADE_FUNC(createDebris,
 
 	// validate some arguments
 
-	if (mh != nullptr && !mh->IsValid() || smh != nullptr && !smh->IsValid() || create_flags != nullptr && !create_flags->IsValid())
+	if ((mh != nullptr && !mh->IsValid()) || (smh != nullptr && !smh->IsValid()) || (create_flags != nullptr && !create_flags->IsValid()))
 		return ade_set_args(L, "o", l_Debris.Set(object_h()));
 
 	if (source_ship != nullptr)
