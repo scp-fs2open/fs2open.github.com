@@ -62,6 +62,7 @@ ADE_FUNC(println, l_Base, "string Message", "Prints a string with a newline", nu
 
 ADE_FUNC(warning, l_Base, "string Message", "Displays a FreeSpace warning (debug build-only) message with the string provided", nullptr, nullptr)
 {
+#ifndef NDEBUG
 	auto str = ade_tostring(L, -1, false);
 
 	if (Cmdline_lua_devmode) {
@@ -69,6 +70,10 @@ ADE_FUNC(warning, l_Base, "string Message", "Displays a FreeSpace warning (debug
 	} else {
 		Warning(LOCATION, "%s", str.c_str());
 	}
+#else
+	SCP_UNUSED(L);
+	Global_warning_count++;
+#endif
 
 	return ADE_RETURN_NIL;
 }
