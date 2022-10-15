@@ -952,7 +952,7 @@ void model_free(polymodel* pm);
 void model_free_all();
 void model_instance_free_all();
 
-// Alias to model_looad, checks if a pof tech model exists and loads it if specified, otherwise loads the default pof. --wookieejedi
+// Alias to model_load, checks if a pof tech model exists and loads it if specified, otherwise loads the default pof. --wookieejedi
 int model_load(ship_info* sip, bool prefer_tech_model);
 
 // Loads a model from disk and returns the model number it loaded into.
