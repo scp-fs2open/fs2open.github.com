@@ -1495,15 +1495,7 @@ void ship_select_do(float frametime)
 		{
 			ship_info *sip = &Ship_info[Carried_ss_icon.ship_class];
 			if(Ss_icons[Carried_ss_icon.ship_class].model_index == -1) {
-
-				if (sip->pof_file_tech[0] != '\0') {
-					// This cannot load into sip->subsystems, as this will overwrite the subsystems model_num to
-					// the techroom model, which is decidedly wrong for the mission itself.
-					Ss_icons[Carried_ss_icon.ship_class].model_index = model_load(sip->pof_file_tech, 0, nullptr);
-				} else {
-					Ss_icons[Carried_ss_icon.ship_class].model_index = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
-				}
-
+				Ss_icons[Carried_ss_icon.ship_class].model_index = model_load(sip, true);
 				mprintf(("SL WARNING: Had to attempt to page in model for %s paged in manually! Result: %d\n", sip->name, Ss_icons[Carried_ss_icon.ship_class].model_index));
 			}
 			gr_set_color_fast(&Icon_colors[ICON_FRAME_SELECTED]);
@@ -1696,15 +1688,7 @@ void draw_ship_icon_with_number(int screen_offset, int ship_class)
 	{
 		ship_info *sip = &Ship_info[ship_class];
 		if(ss_icon->model_index == -1) {
-
-			if (sip->pof_file_tech[0] != '\0') {
-				// This cannot load into sip->subsystems, as this will overwrite the subsystems model_num to
-				// the techroom model, which is decidedly wrong for the mission itself.
-				ss_icon->model_index = model_load(sip->pof_file_tech, 0, nullptr);
-			} else {
-				ss_icon->model_index = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
-			}
-
+			ss_icon->model_index = model_load(sip, true);
 			mprintf(("SL WARNING: Had to attempt to page in model for %s paged in manually! Result: %d\n", sip->name, ss_icon->model_index));
 		}
 		gr_set_color_fast(color_to_draw);
@@ -1760,13 +1744,7 @@ void start_ship_animation(int ship_class, int  /*play_sound*/)
 		}
 
 		// Load the necessary model file
-		if (sip->pof_file_tech[0] != '\0') {
-			// This cannot load into sip->subsystems, as this will overwrite the subsystems model_num to
-			// the techroom model, which is decidedly wrong for the mission itself.
-			ShipSelectModelNum = model_load(sip->pof_file_tech, 0, nullptr);
-		} else {
-			ShipSelectModelNum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
-		}
+		ShipSelectModelNum = model_load(sip, true);
 		
 		// page in ship textures properly (takes care of nondimming pixels)
 		model_page_in_textures(ShipSelectModelNum, ship_class);
@@ -2403,15 +2381,7 @@ void ss_blit_ship_icon(int x,int y,int ship_class,int bmap_num)
 		{
 			ship_info *sip = &Ship_info[ship_class];
 			if(icon->model_index == -1) {
-
-				if (sip->pof_file_tech[0] != '\0') {
-					// This cannot load into sip->subsystems, as this will overwrite the subsystems model_num to
-					// the techroom model, which is decidedly wrong for the mission itself.
-					icon->model_index = model_load(sip->pof_file_tech, 0, nullptr);
-				} else {
-					icon->model_index = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
-				}
-
+				icon->model_index = model_load(sip, true);
 				mprintf(("SL WARNING: Had to attempt to page in model for %s paged in manually! Result: %d\n", sip->name, icon->model_index));
 			}
 			if(icon->model_index != -1)
@@ -2959,14 +2929,7 @@ void ss_load_icons(int ship_class)
 	}
 	else
 	{
-		if (sip->pof_file_tech[0] != '\0') {
-			// This cannot load into sip->subsystems, as this will overwrite the subsystems model_num to
-			// the techroom model, which is decidedly wrong for the mission itself.
-			icon->model_index = model_load(sip->pof_file_tech, 0, nullptr);
-		} else {
-			icon->model_index = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
-		}
-
+		icon->model_index = model_load(sip, true);
 		model_page_in_textures(icon->model_index, ship_class);
 	}
 }

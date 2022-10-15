@@ -1373,13 +1373,7 @@ int brief_setup_closeup(brief_icon *bi)
 		if ( sip == nullptr ) {
 			Closeup_icon->modelnum = model_load(pof_filename, 0, nullptr);
 		} else {
-			if (sip->pof_file_tech[0] != '\0') {
-				// This cannot load into sip->subsystems, as this will overwrite the subsystems model_num to the
-				// techroom model, which is decidedly wrong for the mission itself.
-				Closeup_icon->modelnum = model_load(sip->pof_file_tech, 0, nullptr);
-			} else {
-				Closeup_icon->modelnum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
-			}
+			Closeup_icon->modelnum = model_load(sip, true);
 			Closeup_icon->model_instance_num = model_create_instance(-1, Closeup_icon->modelnum);
 			model_set_up_techroom_instance(sip, Closeup_icon->model_instance_num);
 		}
@@ -1604,13 +1598,7 @@ void brief_do_frame(float frametime)
 
 					ship_info *sip = &Ship_info[Closeup_icon->ship_class];
 					if (sip->model_num < 0) {
-						if (sip->pof_file_tech[0] != '\0') {
-							// This cannot load into sip->subsystems, as this will overwrite the subsystems model_num to
-							// the techroom model, which is decidedly wrong for the mission itself.
-							sip->model_num = model_load(sip->pof_file_tech, 0, nullptr);
-						} else {
-							sip->model_num = model_load(sip->pof_file, 0, nullptr);
-						}
+						sip->model_num = model_load(sip, true);
 					}
 
 					mprintf(("Shiptype = %d (%s)\n", Closeup_icon->ship_class, sip->name));
@@ -1627,13 +1615,7 @@ void brief_do_frame(float frametime)
 
 					ship_info *sip = &Ship_info[Closeup_icon->ship_class];
 					if (sip->model_num < 0) {
-						if (sip->pof_file_tech[0] != '\0') {
-							// This cannot load into sip->subsystems, as this will overwrite the subsystems model_num to
-							// the techroom model, which is decidedly wrong for the mission itself.
-							sip->model_num = model_load(sip->pof_file_tech, 0, nullptr);
-						} else {
-							sip->model_num = model_load(sip->pof_file, 0, nullptr);
-						}
+						sip->model_num = model_load(sip, true);
 					}
 
 					mprintf(("Shiptype = %d (%s)\n", Closeup_icon->ship_class, sip->name));

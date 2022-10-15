@@ -330,13 +330,7 @@ void techroom_select_new_entry()
 			i++;
 		}
 
-		if (sip->pof_file_tech[0] != '\0') {
-			// This cannot load into sip->subsystems, as this will overwrite the subsystems model_num to the
-			// techroom model, which is decidedly wrong for the mission itself.
-			Techroom_ship_modelnum = model_load(sip->pof_file_tech, 0, nullptr);
-		} else {
-			Techroom_ship_modelnum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
-		}
+		Techroom_ship_modelnum = model_load(sip, true);
 
 		if (Techroom_ship_model_instance >= 0) {
 			model_delete_instance(Techroom_ship_model_instance);
