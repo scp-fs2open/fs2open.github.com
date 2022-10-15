@@ -1774,13 +1774,18 @@ void hud_squadmsg_call_reinforcement(int reinforcement_num, int  /*player_num*/)
 
 	// safety net mainly for multiplayer servers in case some odd data desync occurs between 
 	// server and clients
-	if ( MULTIPLAYER_MASTER && (rp->num_uses == rp->uses) ) {
+	if ( MULTIPLAYER_MASTER && (rp->num_uses >= rp->uses) ) {
 		return;
 	}
 
 	// check to see if the reinforcement called was a wing.
 	for (i = 0; i < Num_wings; i++ ) {
 		if ( !stricmp(rp->name, Wings[i].name) ) {
+			// if the wing is currently present, skip this request so we don't waste a "use"
+			if (Wings[i].current_count > 0) {
+				return;
+			}
+
 			// found a wingname.  Call the parse function to create all the ships in this wing
 			// we must set the arrival cue of the wing to true, otherwise, this won't work!!
             Wings[i].flags.remove(Ship::Wing_Flags::Reinforcement);
@@ -1848,7 +1853,7 @@ void hud_squadmsg_reinforcement_select()
 			SCP_string rp_name = rp->name;
 
 			// don't put reinforcements onto the list that have already been used up.
-			if ( rp->num_uses == rp->uses ){
+			if ( rp->num_uses >= rp->uses ){
 				continue;
 			}
 
