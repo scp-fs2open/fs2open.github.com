@@ -391,7 +391,7 @@ struct CFileLocation {
 //         size        - File size
 //         offset      - Offset into pack file.  0 if not a packfile.
 // Returns: If not found returns 0.
-CFileLocation cf_find_file_location(const char* filespec, int pathtype, bool localize = false,
+CFileLocation cf_find_file_location(const char* filespec, int pathtype,
                                     uint32_t location_flags = CF_LOCATION_ALL);
 
 struct CFileLocationExt : public CFileLocation {
@@ -415,8 +415,7 @@ struct CFileLocationExt : public CFileLocation {
 //         offset      - Offset into pack file.  0 if not a packfile.
 // Returns: If not found returns -1, else returns offset into ext_list.
 // (NOTE: This function is exponentially slow, so don't use it unless truely needed!!)
-CFileLocationExt cf_find_file_location_ext(const char* filename, const int ext_num, const char** ext_list, int pathtype,
-                                           bool localize = false);
+CFileLocationExt cf_find_file_location_ext(const char* filename, const int ext_num, const char** ext_list, int pathtype);
 
 // Functions to change directories
 int cfile_chdir(const char *dir);

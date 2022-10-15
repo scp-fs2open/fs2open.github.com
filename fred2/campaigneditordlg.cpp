@@ -139,7 +139,7 @@ void campaign_editor::OnLoad()
 		}
 	}
 
-	auto res = cf_find_file_location(Campaign.missions[Cur_campaign_mission].name, CF_TYPE_MISSIONS, false);
+	auto res = cf_find_file_location(Campaign.missions[Cur_campaign_mission].name, CF_TYPE_MISSIONS);
 
 	if (res.found) {
 		FREDDoc_ptr->SetPathName(res.full_name.c_str());

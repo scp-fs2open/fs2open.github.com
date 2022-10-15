@@ -469,7 +469,7 @@ int cf_delete(const char *filename, int path_type, uint32_t location_flags)
 
 	Assert(CF_TYPE_SPECIFIED(path_type));
 
-	cf_create_default_path_string(longname, path_type, filename, false, location_flags);
+	cf_create_default_path_string(longname, path_type, filename, location_flags);
 
 	return (_unlink(longname.c_str()) != -1);
 }
@@ -619,7 +619,7 @@ void cf_create_directory(int dir_type, uint32_t location_flags)
 	int i;
 
 	for (i=num_dirs-1; i>=0; i-- )	{
-		cf_create_default_path_string(longname, dir_tree[i], nullptr, false, location_flags);
+		cf_create_default_path_string(longname, dir_tree[i], nullptr, location_flags);
 		if (stat(longname.c_str(), &statbuf) != 0) {
 			mprintf(( "CFILE: Creating new directory '%s'\n", longname.c_str() ));
 			mkdir_recursive(longname.c_str());
@@ -644,7 +644,7 @@ void cf_create_directory(int dir_type, uint32_t location_flags)
 //
 
 CFILE* _cfopen(const char* source, int line, const char* file_path, const char* mode, int type, int dir_type,
-               bool localize, uint32_t location_flags)
+               bool /* localize */, uint32_t location_flags)
 {
 	/* Bobboau, what is this doing here? 31 is way too short... - Goober5000
 	if( strlen(file_path) > 31 )
@@ -685,7 +685,7 @@ CFILE* _cfopen(const char* source, int line, const char* file_path, const char* 
 			// Create the directory if necessary
 			cf_create_directory(dir_type, location_flags);
 
-			cf_create_default_path_string(longname, dir_type, file_path, false, location_flags);
+			cf_create_default_path_string(longname, dir_type, file_path, location_flags);
 		}
 		Assert( !(type & CFILE_MEMORY_MAPPED) );
 
@@ -735,10 +735,8 @@ CFILE* _cfopen(const char* source, int line, const char* file_path, const char* 
 	//================================================
 	// Search for file on disk, on cdrom, or in a packfile
 
-	char copy_file_path[MAX_PATH_LEN];  // FIX change in memory from cf_find_file_location
-	strcpy_s(copy_file_path, file_path);
+	auto find_res = cf_find_file_location(file_path, dir_type, location_flags);
 
-	auto find_res = cf_find_file_location( copy_file_path, dir_type, localize, location_flags );
 	if ( find_res.found ) {
 
 		// Fount it, now create a cfile out of it
