@@ -168,4 +168,16 @@ TEST_F(CFileTest, subfolders)
 
 	// sub-subfolder check
 	ASSERT_TRUE(cf_exists("sub/folder/file3.tbl", CF_TYPE_TABLES));
+
+	// check cf_find_file_location() with and without subfolders
+	auto loc = cf_find_file_location("file2.tbl", CF_TYPE_TABLES);
+	ASSERT_TRUE(loc.found);
+
+	loc = cf_find_file_location("sub/file2.tbl", CF_TYPE_ANY);
+	ASSERT_TRUE(loc.found);
+
+	// check that cf_find_file_location_ext() works with subfolders
+	const char *exts[] = { ".tbl", ".cfg" };
+	loc = cf_find_file_location_ext("sub/folder/file3.tbl", 2, exts, CF_TYPE_TABLES);
+	ASSERT_TRUE(loc.found);
 }
