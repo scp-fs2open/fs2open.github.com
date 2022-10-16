@@ -330,7 +330,7 @@ void techroom_select_new_entry()
 			i++;
 		}
 
-		Techroom_ship_modelnum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+		Techroom_ship_modelnum = model_load(sip, true);
 
 		if (Techroom_ship_model_instance >= 0) {
 			model_delete_instance(Techroom_ship_model_instance);

@@ -1370,10 +1370,10 @@ int brief_setup_closeup(brief_icon *bi)
 	}
 	
 	if ( Closeup_icon->modelnum < 0 ) {
-		if ( sip == NULL ) {
-			Closeup_icon->modelnum = model_load(pof_filename, 0, NULL);
+		if ( sip == nullptr ) {
+			Closeup_icon->modelnum = model_load(pof_filename, 0, nullptr);
 		} else {
-			Closeup_icon->modelnum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+			Closeup_icon->modelnum = model_load(sip, true);
 			Closeup_icon->model_instance_num = model_create_instance(-1, Closeup_icon->modelnum);
 			model_set_up_techroom_instance(sip, Closeup_icon->model_instance_num);
 		}
@@ -1597,8 +1597,9 @@ void brief_do_frame(float frametime)
 					Closeup_icon->ship_class--;
 
 					ship_info *sip = &Ship_info[Closeup_icon->ship_class];
-					if (sip->model_num < 0)
-						sip->model_num = model_load(sip->pof_file, 0, NULL);
+					if (sip->model_num < 0) {
+						sip->model_num = model_load(sip, true);
+					}
 
 					mprintf(("Shiptype = %d (%s)\n", Closeup_icon->ship_class, sip->name));
 					mprintf(("Modelnum = %d (%s)\n", sip->model_num, sip->pof_file));
@@ -1613,8 +1614,9 @@ void brief_do_frame(float frametime)
 					Closeup_icon->ship_class++;
 
 					ship_info *sip = &Ship_info[Closeup_icon->ship_class];
-					if (sip->model_num < 0)
-						sip->model_num = model_load(sip->pof_file, 0, NULL);
+					if (sip->model_num < 0) {
+						sip->model_num = model_load(sip, true);
+					}
 
 					mprintf(("Shiptype = %d (%s)\n", Closeup_icon->ship_class, sip->name));
 					mprintf(("Modelnum = %d (%s)\n", sip->model_num, sip->pof_file));

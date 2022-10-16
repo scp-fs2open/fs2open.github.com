@@ -1045,13 +1045,7 @@ void wl_render_overhead_view(float frametime)
 		{
 			if (wl_ship->model_num < 0)
 			{
-				if (sip->pof_file_tech[0] != '\0') {
-					//This cannot load into sip->subsystems, as this will overwrite the subsystems model_num to the techroom model, which is decidedly wrong for the mission itself.
-					wl_ship->model_num = model_load(sip->pof_file_tech, 0, nullptr);
-				}
-				else {
-					wl_ship->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
-				}
+				wl_ship->model_num = model_load(sip, true);
 				model_page_in_textures(wl_ship->model_num, ship_class);
 			}
 
