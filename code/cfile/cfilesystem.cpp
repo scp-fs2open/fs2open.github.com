@@ -1335,21 +1335,19 @@ extern char *stristr(char *str, const char *substr);
  *
  * @return A structure containing information about the found file
  */
-CFileLocationExt cf_find_file_location_ext( const char *filename, const int ext_num, const char **ext_list, int pathtype)
+CFileLocationExt cf_find_file_location_ext(const char *filename, const int ext_num, const char **ext_list, int pathtype)
 {
 	int cur_ext, i;
     uint ui;
 	int cfs_slow_search = 0;
 	SCP_string longname;
-	char filespec[MAX_FILENAME_LEN];
-	char *p = NULL;
-	
+
 	Assert( (filename != NULL) && (strlen(filename) < MAX_FILENAME_LEN) );
 	Assert( (ext_list != NULL) && (ext_num > 1) );	// if we are searching for just one ext
 													// then this is the wrong function to use
 
 	// if we have a full path already then fail.  this function if for searching via filter only!
-	if ( strchr(filename, DIR_SEPARATOR_CHAR) ) {		// do we have a full path already?
+	if (is_absolute_path(filename)) {		// do we have a full path already?
 		Int3();
 		return CFileLocationExt();
 	}
@@ -1365,10 +1363,38 @@ CFileLocationExt cf_find_file_location_ext( const char *filename, const int ext_
 			search_order[num_search_dirs++] = i;
 	}
 
-	memset( filespec, 0, sizeof(filespec) );
+	// fixup filename and sub directory path, if needed
+	SCP_string filespec = filename;
+	SCP_string sub_path;
+
+	auto seperator = filespec.find_last_of("\\/");
+
+	if (seperator != SCP_string::npos) {
+		sub_path = filespec.substr(0, seperator);
+		sub_path += DIR_SEPARATOR_STR;
+
+		filespec.erase(0, seperator+1);
+
+		// fix separators in sub path
+		char bad_sep = '/';
+
+		if (bad_sep == DIR_SEPARATOR_CHAR) {
+			bad_sep = '\\';
+		}
+
+		std::replace(sub_path.begin(), sub_path.end(), bad_sep, DIR_SEPARATOR_CHAR);
+	}
 
 	// strip any existing extension
-	strncpy(filespec, filename, MAX_FILENAME_LEN-1);
+	// (NOTE: to be fully retail compatible, we need to support multiple periods for something like *_1.5.wav,
+	//        which means that we need to strip a length of >2 only, assuming that all valid ext are at least 2 chars)
+	auto dot = filespec.find_last_of(".");
+
+	if ( (dot != SCP_string::npos) && ((filespec.length() - dot) > 2) ) {
+		filespec.erase(dot);
+	}
+
+	SCP_string filespec_ext;
 
 	for (ui = 0; ui < num_search_dirs; ui++) {
 		cfs_slow_search = 0;
@@ -1398,16 +1424,9 @@ CFileLocationExt cf_find_file_location_ext( const char *filename, const int ext_
 			continue;
 
 		for (cur_ext = 0; cur_ext < ext_num; cur_ext++) {
-			// strip any extension and add the one we want to check for
-			// (NOTE: to be fully retail compatible, we need to support multiple periods for something like *_1.5.wav,
-			//        which means that we need to strip a length of >2 only, assuming that all valid ext are at least 2 chars)
-			p = strrchr(filespec, '.');
-			if ( p && (strlen(p) > 2) )
-				(*p) = 0;
+			filespec_ext = filespec + ext_list[cur_ext];
 
-			strcat_s( filespec, ext_list[cur_ext] );
- 
-			if ( !cf_create_default_path_string(longname, search_order[ui], filespec) ) {
+			if ( !cf_create_default_path_string(longname, search_order[ui], filespec_ext.c_str()) ) {
 				continue;
 			}
 
@@ -1422,7 +1441,7 @@ CFileLocationExt cf_find_file_location_ext( const char *filename, const int ext_
 
 				res.offset = 0;
 				res.full_name = longname;
-				res.name_ext = filespec;
+				res.name_ext = filespec_ext;
 
 				return res;
 			}
@@ -1431,19 +1450,9 @@ CFileLocationExt cf_find_file_location_ext( const char *filename, const int ext_
 
 	// Search the pak files and CD-ROM.
 
-	// first off, make sure that we don't have an extension
-	// (NOTE: to be fully retail compatible, we need to support multiple periods for something like *_1.5.wav,
-	//        which means that we need to strip a length of >2 only, assuming that all valid ext are at least 2 chars)
-	p = strrchr(filespec, '.');
-	if ( p && (strlen(p) > 2) )
-		(*p) = 0;
-
-	// go ahead and get our length, which is used to test with later
-	size_t filespec_len = strlen(filespec);
-
-	// get total legnth, with extension, which is iused to test with later
+	// get total length, with extension, which is used to test with later
 	// (FIXME: this assumes that everything in ext_list[] is the same length!)
-	size_t filespec_len_big = filespec_len + strlen(ext_list[0]);
+	size_t filespec_len_big = filespec.length() + strlen(ext_list[0]);
 
 	SCP_vector< cf_file* > file_list_index;
 	int last_root_index = -1;
@@ -1459,12 +1468,17 @@ CFileLocationExt cf_find_file_location_ext( const char *filename, const int ext_
 		if ( (num_search_dirs == 1) && (pathtype != f->pathtype_index) )
 			continue;
 
+		// ... match subdirectories (if specified)
+		if ( !sub_path_match(sub_path, f->sub_path) ) {
+			continue;
+		}
+
 		// ... check that our names are the same length (accounting for the missing extension on our own name)
 		if (f->name_ext.length() != filespec_len_big )
 			continue;
 
 		// ... check that we match the base filename
-		if ( strnicmp(f->name_ext.c_str(), filespec, filespec_len) != 0 )
+		if ( strnicmp(f->name_ext.c_str(), filespec.c_str(), filespec.length()) != 0 )
 			continue;
 
 		// ... make sure that it's one of our supported types
@@ -1499,11 +1513,11 @@ CFileLocationExt cf_find_file_location_ext( const char *filename, const int ext_
 	for (cur_ext = 0; cur_ext < ext_num; cur_ext++) {
 		for (SCP_vector<cf_file*>::iterator fli = file_list_index.begin(); fli != file_list_index.end(); ++fli) {
 			cf_file *f = *fli;
-	
-			strcat_s( filespec, ext_list[cur_ext] );
+
+			filespec_ext = filespec + ext_list[cur_ext];
 
 			// file either not localized or localized version not found
-			if ( !stricmp(filespec, f->name_ext.c_str()) ) {
+			if ( !stricmp(filespec_ext.c_str(), f->name_ext.c_str()) ) {
 				CFileLocationExt res(cur_ext);
 				res.found = true;
 				res.size = static_cast<size_t>(f->size);
@@ -1532,12 +1546,6 @@ CFileLocationExt cf_find_file_location_ext( const char *filename, const int ext_
 
 				return res;
 			}
-
-			// ok, we're still here, so strip off the extension again in order to
-			// prepare for the next run
-			p = strrchr(filespec, '.');
-			if ( p && (strlen(p) > 2) )
-				(*p) = 0;
 		}
 	}
 
