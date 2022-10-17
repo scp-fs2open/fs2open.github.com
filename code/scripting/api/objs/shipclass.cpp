@@ -996,7 +996,7 @@ ADE_FUNC(isInTechroom, l_Shipclass, NULL, "Gets whether or not the ship class is
 ADE_FUNC(renderTechModel,
 	l_Shipclass,
 	"number X1, number Y1, number X2, number Y2, [number RotationPercent =0, number PitchPercent =0, number "
-	"BankPercent=40, number Zoom=1.3, number Lighting=true]",
+	"BankPercent=40, number Zoom=1.3, boolean Lighting=true]",
 	"Draws ship model as if in techroom. True for regular lighting, false for flat lighting.",
 	"boolean",
 	"Whether ship was rendered")
