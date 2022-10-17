@@ -839,7 +839,7 @@ ADE_VIRTVAR(AltName, l_Shipclass, "string", "Alternate name for ship class", "st
 	return ade_set_args(L, "s", Ship_info[idx].display_name);
 }
 
-ADE_VIRTVAR(VelocityMax, l_Physics, "vector", "Ship's lateral and forward speeds", "vector", "Maximum velocity, or null vector if handle is invalid")
+ADE_VIRTVAR(VelocityMax, l_Shipclass, "vector", "Ship's lateral and forward speeds", "vector", "Maximum velocity, or null vector if handle is invalid")
 {
 	int idx;
 	vec3d* vec = NULL;
@@ -856,7 +856,7 @@ ADE_VIRTVAR(VelocityMax, l_Physics, "vector", "Ship's lateral and forward speeds
 	return ade_set_args(L, "o", l_Vector.Set(Ship_info[idx].max_vel));
 }
 
-ADE_VIRTVAR(VelocityDamping, l_Physics, "number", "Damping, the natural period (1 / omega) of the dampening effects on top of the acceleration model. Called 'side_slip_time_const' in code base. ", "number", "Damping, or 0 if handle is invalid")
+ADE_VIRTVAR(VelocityDamping, l_Shipclass, "number", "Damping, the natural period (1 / omega) of the dampening effects on top of the acceleration model. Called 'side_slip_time_const' in code base. ", "number", "Damping, or 0 if handle is invalid")
 {
 	int idx;
 	float f = 0.0f;
@@ -873,7 +873,7 @@ ADE_VIRTVAR(VelocityDamping, l_Physics, "number", "Damping, the natural period (
 	return ade_set_args(L, "f", Ship_info[idx].damp);
 }
 
-ADE_VIRTVAR(RearVelocityMax, l_Physics, "number", "The maximum rear velocity of the ship", "number", "Speed, or 0 if handle is invalid")
+ADE_VIRTVAR(RearVelocityMax, l_Shipclass, "number", "The maximum rear velocity of the ship", "number", "Speed, or 0 if handle is invalid")
 {
 	int idx;
 	float f = 0.0f;
@@ -907,7 +907,7 @@ ADE_VIRTVAR(ForwardAccelerationTime, l_Shipclass, "number", "Forward acceleratio
 	return ade_set_args(L, "f", Ship_info[idx].forward_accel);
 }
 
-ADE_VIRTVAR(ForwardDecelerationTime, l_Physics, "number", "Forward deceleration time", "number", "Forward decleration time, or 0 if handle is invalid")
+ADE_VIRTVAR(ForwardDecelerationTime, l_Shipclass, "number", "Forward deceleration time", "number", "Forward decleration time, or 0 if handle is invalid")
 {
 	int idx;
 	float f = 0.0f;
@@ -924,7 +924,7 @@ ADE_VIRTVAR(ForwardDecelerationTime, l_Physics, "number", "Forward deceleration 
 	return ade_set_args(L, "f", Ship_info[idx].forward_decel);
 }
 
-ADE_VIRTVAR(RotationTime, l_Physics, "vector", "Maximum rotation time on each axis", "vector", "Full rotation time for each axis, or null vector if handle is invalid")
+ADE_VIRTVAR(RotationTime, l_Shipclass, "vector", "Maximum rotation time on each axis", "vector", "Full rotation time for each axis, or null vector if handle is invalid")
 {
 	int idx;
 	vec3d* vec = NULL;
@@ -941,7 +941,7 @@ ADE_VIRTVAR(RotationTime, l_Physics, "vector", "Maximum rotation time on each ax
 	return ade_set_args(L, "o", l_Vector.Set(Ship_info[idx].rotation_time));
 }
 
-ADE_VIRTVAR(RotationalVelocityDamping, l_Physics, "number", "Rotational damping, ie derivative of rotational speed", "number", "Rotational damping, or 0 if handle is invalid")
+ADE_VIRTVAR(RotationalVelocityDamping, l_Shipclass, "number", "Rotational damping, ie derivative of rotational speed", "number", "Rotational damping, or 0 if handle is invalid")
 {
 	int idx;
 	float f = 0.0f;
@@ -958,7 +958,7 @@ ADE_VIRTVAR(RotationalVelocityDamping, l_Physics, "number", "Rotational damping,
 	return ade_set_args(L, "f", Ship_info[idx].rotdamp);
 }
 
-ADE_VIRTVAR(AfterburnerAccelerationTime, l_Physics, "number", "Afterburner acceleration time", "number", "Afterburner acceleration time, or 0 if handle is invalid")
+ADE_VIRTVAR(AfterburnerAccelerationTime, l_Shipclass, "number", "Afterburner acceleration time", "number", "Afterburner acceleration time, or 0 if handle is invalid")
 {
 	int idx;
 	float f = 0.0f;
@@ -975,7 +975,7 @@ ADE_VIRTVAR(AfterburnerAccelerationTime, l_Physics, "number", "Afterburner accel
 	return ade_set_args(L, "f", Ship_info[idx].afterburner_forward_accel);
 }
 
-ADE_VIRTVAR(AfterburnerVelocityMax, l_Physics, "vector", "Afterburner max velocity", "vector", "Afterburner max velocity, or null vector if handle is invalid")
+ADE_VIRTVAR(AfterburnerVelocityMax, l_Shipclass, "vector", "Afterburner max velocity", "vector", "Afterburner max velocity, or null vector if handle is invalid")
 {
 	int idx;
 	vec3d* vec = NULL;
@@ -992,7 +992,7 @@ ADE_VIRTVAR(AfterburnerVelocityMax, l_Physics, "vector", "Afterburner max veloci
 	return ade_set_args(L, "o", l_Vector.Set(Ship_info[idx].afterburner_max_vel));
 }
 
-ADE_VIRTVAR(AfterburnerRearVelocityMax, l_Physics, "number", "Afterburner maximum rear velocity", "number", "Rear velocity, or 0 if handle is invalid")
+ADE_VIRTVAR(AfterburnerRearVelocityMax, l_Shipclass, "number", "Afterburner maximum rear velocity", "number", "Rear velocity, or 0 if handle is invalid")
 {
 	int idx;
 	float f = 0.0f;
