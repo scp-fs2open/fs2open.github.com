@@ -592,8 +592,8 @@ ADE_FUNC(isValid, l_Weaponclass, NULL, "Detects whether handle is valid", "boole
 ADE_FUNC(renderTechModel,
 	l_Weaponclass,
 	"number X1, number Y1, number X2, number Y2, [number RotationPercent =0, number PitchPercent =0, number "
-	"BankPercent=40, number Zoom=1.3, number Lighting=0]",
-	"Draws weapon tech model. 0 for regular lighting 1 for flat lighting.",
+	"BankPercent=40, number Zoom=1.3, number Lighting=true]",
+	"Draws weapon tech model. True for regular lighting, false for flat lighting.",
 	"boolean",
 	"Whether weapon was rendered")
 {
@@ -601,9 +601,9 @@ ADE_FUNC(renderTechModel,
 	angles rot_angles = {0.0f, 0.0f, 40.0f};
 	int idx;
 	float zoom = 1.3f;
-	int lighting = 0;
+	bool lighting = true;
 	if (!ade_get_args(L,
-			"oiiii|ffffi",
+			"oiiii|ffffb",
 			l_Weaponclass.Get(&idx),
 			&x1,
 			&y1,
@@ -673,7 +673,7 @@ ADE_FUNC(renderTechModel,
 
 	uint render_flags = MR_AUTOCENTER | MR_NO_FOGGING;
 
-	if ((lighting > 0) || (wip->wi_flags[Weapon::Info_Flags::Mr_no_lighting]))
+	if (!lighting || (wip->wi_flags[Weapon::Info_Flags::Mr_no_lighting]))
 		render_flags |= MR_NO_LIGHTING;
 
 	render_info.set_flags(render_flags);
