@@ -499,7 +499,8 @@ void vm_matrix_to_rot_axis_and_angle(const matrix *m, float *theta, vec3d *rot_a
 // If the axis is equal or very close to the orientation of the matrix, returns a distance of Pi/2 and an angle of 0
 float vm_closest_angle_to_matrix(const matrix* mat, const vec3d* rot_axis, float* angle);
 
-// interpolate between 2 vectors. t goes from 0.0 to 1.0. at
+// interpolate between 2 vectors. t goes from 0.0 to 1.0
+// out, v1 and v2 may all safely alias
 void vm_vec_interp_constant(vec3d *out, const vec3d *v1, const vec3d *v2, float t);
 
 // randomly perturb a vector around a given (normalized vector) or optional orientation matrix

@@ -1019,6 +1019,8 @@ void ai_big_switch_to_chase_mode(ai_info *aip)
 	aip->submode_start_time = Missiontime;
 }
 
+extern weapon_info* ai_get_weapon(ship_weapon* swp);
+
 // Make object Pl_objp chase object En_objp, which is a big ship, not a small ship.
 void ai_big_chase()
 {
@@ -1038,16 +1040,37 @@ void ai_big_chase()
 	player_pos = Pl_objp->pos;
 	ai_big_pick_attack_point(En_objp, Pl_objp, &enemy_pos, 0.8f);
 
-	//	Compute the predicted position of the center of the ship, then add the delta to the goal pos.
-	if (En_objp->phys_info.speed > 3.0f) {
-		set_predicted_enemy_pos(&predicted_enemy_pos, Pl_objp, &En_objp->pos, &En_objp->phys_info.vel, aip);
-		vm_vec_add2(&enemy_pos, &predicted_enemy_pos);
-		vm_vec_sub2(&enemy_pos, &En_objp->pos);
-	}	else
-		predicted_enemy_pos = En_objp->pos;
+	weapon_info* wip = ai_get_weapon(&shipp->weapons);
+	bool ballistic_aiming = !IS_VEC_NULL(&The_mission.gravity) && wip->gravity_const != 0.0f;
+	bool valid_ballistic_trajectory = true;
+	if (!ballistic_aiming) {
+		//	Compute the predicted position of the center of the ship, then add the delta to the goal pos.
+		if (En_objp->phys_info.speed > 3.0f) {
+			set_predicted_enemy_pos(&predicted_enemy_pos, Pl_objp, &En_objp->pos, &En_objp->phys_info.vel, aip);
+			vm_vec_add2(&enemy_pos, &predicted_enemy_pos);
+			vm_vec_sub2(&enemy_pos, &En_objp->pos);
+		} else
+			predicted_enemy_pos = En_objp->pos;
 
-	if (aip->targeted_subsys != NULL) {
-		get_subsystem_pos(&enemy_pos, En_objp, aip->targeted_subsys);
+		if (aip->targeted_subsys != NULL) {
+			get_subsystem_pos(&enemy_pos, En_objp, aip->targeted_subsys);
+		}
+	} else {
+		if (aip->targeted_subsys != NULL) {
+			get_subsystem_pos(&enemy_pos, En_objp, aip->targeted_subsys);
+		}
+
+		vec3d gravity = The_mission.gravity * wip->gravity_const;
+		vec3d target;
+		valid_ballistic_trajectory = 
+			physics_lead_ballistic_trajectory(&player_pos, &enemy_pos, &En_objp->phys_info.vel, wip->max_speed, &gravity, &target);
+
+		if (valid_ballistic_trajectory) {
+			enemy_pos = Pl_objp->pos + target * vm_vec_dist(&Pl_objp->pos, &enemy_pos);
+			predicted_enemy_pos = enemy_pos;
+		} else {
+			set_predicted_enemy_pos(&predicted_enemy_pos, Pl_objp, &En_objp->pos, &En_objp->phys_info.vel, aip);
+		}
 	}
 
 	dist_to_enemy = vm_vec_normalized_dir(&vec_to_enemy, &enemy_pos, &player_pos); // - En_objp->radius;
@@ -1078,7 +1101,7 @@ void ai_big_chase()
 	//	If just acquired target, or target is not in reasonable cone, don't refine believed enemy position.
 	if ((dot_to_enemy < 0.25f) || (aip->target_time < 1.0f) || (aip->ai_flags[AI::AI_Flags::Seek_lock])) {
 		update_aspect_lock_information(aip, &vec_to_enemy, dist_to_enemy - En_objp->radius, En_objp->radius);
-	} else if (aip->targeted_subsys != NULL) {		
+	} else if (aip->targeted_subsys != NULL && !ballistic_aiming) {
 		Assert(aip->targeted_subsys != NULL);
 		get_subsystem_pos(&enemy_pos, En_objp, aip->targeted_subsys);
 		vm_vec_add2(&enemy_pos, &predicted_enemy_pos);
@@ -1318,7 +1341,7 @@ void ai_big_chase()
 	//     I noticed AI ships firing inappropriately when following a path near a big ship.
 	//		 TODO: investigate why ships fire (and aren't close to hitting ship) when following a path near
 	//				 a big ship
-	if (aip->mode != AIM_EVADE && aip->path_start == -1 ) {
+	if (aip->mode != AIM_EVADE && aip->path_start == -1 && (!ballistic_aiming || valid_ballistic_trajectory)) {
 		ai_big_maybe_fire_weapons(dist_to_enemy, dot_to_enemy);
 	} else {
 		if (flFrametime < 1.0f)

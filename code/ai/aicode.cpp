@@ -8655,6 +8655,9 @@ void ai_chase()
 		aip->ai_flags.remove(AI::AI_Flags::Seek_lock);
 	}
 
+	// only ever false for failed ballistic trajectories, to prevent firing, true for everything else
+	bool has_valid_ballistic_trajectory = true;
+
 	//	If seeking lock, try to point directly at ship, else predict position so lasers can hit it.
 	//	If just acquired target, or target is not in reasonable cone, don't refine believed enemy position.
 	if ((real_dot_to_enemy < 0.25f) || (aip->target_time < 1.0f)) {
@@ -8672,23 +8675,40 @@ void ai_chase()
 	} else {
 		//	Set predicted_enemy_pos.
 		//	See if attacking a subsystem.
-		if (aip->targeted_subsys != NULL) {
+		weapon_info* wip = ai_get_weapon(&shipp->weapons);
+		bool ballistic = !IS_VEC_NULL(&The_mission.gravity) && wip->gravity_const != 0.0f;
+		if (aip->targeted_subsys != NULL && get_shield_pct(En_objp) < HULL_DAMAGE_THRESHOLD_PERCENT) {
 			Assert(En_objp->type == OBJ_SHIP);
-			if (get_shield_pct(En_objp) < HULL_DAMAGE_THRESHOLD_PERCENT) {
-				if (aip->targeted_subsys != NULL) {
-					get_subsystem_pos(&enemy_pos, En_objp, aip->targeted_subsys);
-					predicted_enemy_pos = enemy_pos;
-					predicted_vec_to_enemy = real_vec_to_enemy;
-				} else {
-					set_predicted_enemy_pos(&predicted_enemy_pos, Pl_objp, &aip->last_aim_enemy_pos, &aip->last_aim_enemy_vel, aip);
-					set_target_objnum(aip, -1);
-				}
+			vec3d target_pos;
+			get_subsystem_pos(&target_pos, En_objp, aip->targeted_subsys);
 
-			} else {
-				set_predicted_enemy_pos(&predicted_enemy_pos, Pl_objp, &aip->last_aim_enemy_pos, &aip->last_aim_enemy_vel, aip);
+			if (!ballistic)
+				predicted_enemy_pos = target_pos;
+			else {
+				vec3d gravity_vec = The_mission.gravity * wip->gravity_const;
+				has_valid_ballistic_trajectory =
+					physics_lead_ballistic_trajectory(&Pl_objp->pos, &target_pos, &aip->last_aim_enemy_vel, wip->max_speed, &gravity_vec, &predicted_enemy_pos);
+
+				if (has_valid_ballistic_trajectory)
+					predicted_enemy_pos = Pl_objp->pos + predicted_enemy_pos * vm_vec_dist(&Pl_objp->pos, &target_pos);
+				else
+					predicted_enemy_pos = target_pos;
 			}
+
+			predicted_vec_to_enemy = real_vec_to_enemy;			
 		} else {
-			set_predicted_enemy_pos(&predicted_enemy_pos, Pl_objp, &aip->last_aim_enemy_pos, &aip->last_aim_enemy_vel, aip);
+			if (!ballistic)
+				set_predicted_enemy_pos(&predicted_enemy_pos, Pl_objp, &aip->last_aim_enemy_pos, &aip->last_aim_enemy_vel, aip);
+			else {
+				vec3d gravity_vec = The_mission.gravity * wip->gravity_const;
+				has_valid_ballistic_trajectory =
+					physics_lead_ballistic_trajectory(&Pl_objp->pos, &aip->last_aim_enemy_pos, &aip->last_aim_enemy_vel, wip->max_speed, &gravity_vec, &predicted_enemy_pos);			
+				
+				if (has_valid_ballistic_trajectory)
+					predicted_enemy_pos = Pl_objp->pos + predicted_enemy_pos * vm_vec_dist(&Pl_objp->pos, &aip->last_aim_enemy_pos);
+				else
+					set_predicted_enemy_pos(&predicted_enemy_pos, Pl_objp, &aip->last_aim_enemy_pos, &aip->last_aim_enemy_vel, aip);
+			}
 		}
 	}
 
@@ -9176,7 +9196,9 @@ void ai_chase()
 
 				temp_shipp = &Ships[Pl_objp->instance];
 				tswp = &temp_shipp->weapons;
-				if ( tswp->num_primary_banks > 0 ) {
+				// if this is a ballistic weapon has_valid_ballistic_trajectory will stop us from firing if we dont have a trajectory
+				// will allow in all other cases
+				if ( tswp->num_primary_banks > 0 && has_valid_ballistic_trajectory) {
 					float	scale;
 					Assert(tswp->current_primary_bank < tswp->num_primary_banks);
 					weapon_info	*pwip = &Weapon_info[tswp->primary_bank_weapons[tswp->current_primary_bank]];

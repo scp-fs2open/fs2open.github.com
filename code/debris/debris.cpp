@@ -651,8 +651,8 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 	vm_vec_rand_vec_quick(&rotvel);
 	vm_vec_scale(&rotvel, scale);
 
-	pi->flags |= PF_DEAD_DAMP;
 	pi->rotvel = rotvel;
+	pi->flags |= (PF_DEAD_DAMP | PF_BALLISTIC);
 	check_rotvel_limit( &obj->phys_info );
 
 	// check that debris is not created with too high a velocity
@@ -663,8 +663,7 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 
 	// blow out his reverse thrusters. Or drag, same thing.
 	pi->rotdamp = 10000.0f;
-	pi->side_slip_time_const = 10000.0f;
-	pi->flags |= (PF_REDUCED_DAMP | PF_DEAD_DAMP);	// set damping equal for all axis and not changable
+	pi->gravity_const = sip->debris_gravity_const;
 
 	vm_vec_zero(&pi->max_vel);		// make so he can't turn on his own VOLITION anymore.
 	vm_vec_zero(&pi->max_rotvel);	// make so he can't change speed on his own VOLITION anymore.

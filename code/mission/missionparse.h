@@ -132,6 +132,7 @@ typedef struct mission {
 	float	neb_far_multi;
 	float	neb_near_multi;
 	sound_env	sound_environment;
+	vec3d   gravity;
 
 	// Goober5000
 	int	command_persona;
@@ -186,6 +187,7 @@ typedef struct mission {
 		substitute_briefing_music_name[ 0 ] = '\0';
 		ai_profile = NULL;
 		cutscenes.clear( );
+		gravity = {0.0f, 0.0f, 0.0f};
 	}
 
 	mission( )

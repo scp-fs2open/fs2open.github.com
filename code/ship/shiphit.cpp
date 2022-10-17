@@ -1629,6 +1629,7 @@ void ship_generic_kill_stuff( object *objp, float percent_killed )
 
     sp->flags.set(Ship::Ship_Flags::Dying);
     objp->phys_info.flags |= (PF_DEAD_DAMP | PF_REDUCED_DAMP);
+	objp->phys_info.gravity_const = sip->dying_gravity_const;
 	delta_time = (int) (sip->death_roll_base_time);
 
 	//	For smaller ships, subtract off time proportional to excess damage delivered.

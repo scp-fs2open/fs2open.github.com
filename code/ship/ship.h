@@ -1139,6 +1139,8 @@ public:
 	float		forward_decel;
 	float		slide_accel;
 	float		slide_decel;
+	float	gravity_const;						// multiplies the affect of gravity, if any
+	float	dying_gravity_const;				// as above, when death rolling
 
 	int warpin_params_index;
 	int warpout_params_index;
@@ -1190,6 +1192,7 @@ public:
 	float			debris_max_hitpoints;
 	float			debris_damage_mult;
 	float			debris_arc_percent;
+	float			debris_gravity_const;			// see gravity_const above
 	gamesnd_id		debris_ambient_sound;
 	gamesnd_id		debris_collision_sound_light;
 	gamesnd_id		debris_collision_sound_heavy;
