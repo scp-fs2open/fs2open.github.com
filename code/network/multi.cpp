@@ -90,7 +90,13 @@
 #define MULTI_SERVER_SLOW_PING_TIME					700					// when average ping time to server reaches this -- display hud icon
 
 // update times for clients ships based on object update level
-#define MULTI_CLIENT_UPDATE_TIME						333
+int Multi_client_update_intervals[MAX_OBJ_UPDATE_LEVELS]	= 
+{
+	333,				// Dialup, 3x a second
+	166,				// Medium, 6x a second
+	80,					// High, 12.5x a second
+	30,					// LAN, 33x a second
+};					
 
 int Multi_display_netinfo = 1;
 
@@ -1304,7 +1310,7 @@ void multi_do_frame()
 					
 					send_client_update_packet(&Net_players[idx]);
 					
-					Multi_client_update_times[idx] = ui_timestamp(MULTI_CLIENT_UPDATE_TIME);
+					Multi_client_update_times[idx] = ui_timestamp(Multi_client_update_intervals[Net_players[idx].p_info.options.obj_update_level]);
 				}
 			}
 		}
@@ -1404,7 +1410,7 @@ void multi_pause_do_frame()
 					
 					send_client_update_packet(&Net_players[idx]);
 					
-					Multi_client_update_times[idx] = ui_timestamp(MULTI_CLIENT_UPDATE_TIME);
+					Multi_client_update_times[idx] = ui_timestamp(Multi_client_update_intervals[Net_players[idx].p_info.options.obj_update_level]);
 				}
 			}				
 		}
