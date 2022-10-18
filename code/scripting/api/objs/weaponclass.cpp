@@ -334,14 +334,15 @@ ADE_VIRTVAR(FreeFlightTime, l_Weaponclass, "number", "The time the weapon will f
 	return ade_set_args(L, "f", Weapon_info[idx].free_flight_time);
 }
 
-ADE_VIRTVAR(SwarmInfo, l_Weaponclass, nullptr, nullptr, "boolean, number, number", "If the weapon has the swarm flag (true/false), the number of swarm missiles (0 or value), the swarm wait (0 or value).")
+ADE_VIRTVAR(SwarmInfo, l_Weaponclass, nullptr, nullptr, "boolean, number, number", 
+	"If the weapon has the swarm flag , the number of swarm missiles, the swarm wait. Returns nil if the handle is invalid.")
 {
 	int idx;
 	if (!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
-		return ade_set_error(L, "i", 0);
+		return ADE_RETURN_NIL;
 
 	if (idx < 0 || idx >= weapon_info_size())
-		return ade_set_error(L, "i", 0);
+		return ADE_RETURN_NIL;
 
 	if (ADE_SETTING_VAR) {
 		LuaError(L, "Setting Swarm Info is not supported");
@@ -355,14 +356,14 @@ ADE_VIRTVAR(SwarmInfo, l_Weaponclass, nullptr, nullptr, "boolean, number, number
 }
 
 ADE_VIRTVAR(CorkscrewInfo, l_Weaponclass, nullptr, nullptr, "boolean, number, number, number, boolean, number", 
-	"If the weapon has the corkscrew flag (true/false), the number of corkscrew missiles fired (0 or value), the radius (0 or value), the fire delay (0 or value), counter rotate settings (true/false), the twist value (0 or value).")
+	"If the weapon has the corkscrew flag, the number of corkscrew missiles fired, the radius, the fire delay, counter rotate settings, the twist value. Returns nil if the handle is invalid.")
 {
 	int idx;
 	if (!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
-		return ade_set_error(L, "i", 0);
+		return ADE_RETURN_NIL;
 
 	if (idx < 0 || idx >= weapon_info_size())
-		return ade_set_error(L, "i", 0);
+		return ADE_RETURN_NIL;
 
 	if (ADE_SETTING_VAR) {
 		LuaError(L, "Setting Corkscrew Info is not supported");
