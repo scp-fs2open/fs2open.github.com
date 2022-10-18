@@ -856,7 +856,7 @@ ADE_VIRTVAR(VelocityMax, l_Shipclass, "vector", "Ship's lateral and forward spee
 	return ade_set_args(L, "o", l_Vector.Set(Ship_info[idx].max_vel));
 }
 
-ADE_VIRTVAR(VelocityDamping, l_Shipclass, "number", "Damping, the natural period (1 / omega) of the dampening effects on top of the acceleration model. Called 'side_slip_time_const' in code base. ", "number", "Damping, or 0 if handle is invalid")
+ADE_VIRTVAR(VelocityDamping, l_Shipclass, "number", "Damping, the natural period (1 / omega) of the dampening effects on top of the acceleration model. ", "number", "Damping, or 0 if handle is invalid")
 {
 	int idx;
 	float f = 0.0f;
