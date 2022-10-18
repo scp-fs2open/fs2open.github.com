@@ -2936,6 +2936,11 @@ void HudGaugeSupport::initTextDockValueOffsetX(int x)
 	text_dock_val_offset_x = x;
 }
 
+void HudGaugeSupport::initRearmTimer(bool choice)
+{
+	enable_rearm_timer = choice;
+}
+
 void HudGaugeSupport::initBitmaps(const char *fname)
 {
 	background.first_frame = bm_load_animation(fname, &background.num_frames);
@@ -2994,7 +2999,7 @@ void HudGaugeSupport::render(float  /*frametime*/)
 	if (Player_ai->ai_flags[AI::AI_Flags::Being_repaired]) {
 		Assert(Player_ship->ship_max_hull_strength > 0);
 		
-		if (!Cmdline_rearm_timer)
+		if (!enable_rearm_timer)
 		{
 			int i;
 			bool repairing = false;

@@ -4191,6 +4191,7 @@ void load_gauge_support(gauge_settings* settings)
 	int text_val_offset_y;
 	int text_dock_offset_x;
 	int text_dock_val_offset_x;
+	bool rearm_timer_choice = Cmdline_rearm_timer;
 	char fname[MAX_FILENAME_LEN] = "support1";
 	
 	settings->origin[0] = 0.5f;
@@ -4233,12 +4234,16 @@ void load_gauge_support(gauge_settings* settings)
 	if(optional_string("Dock Time X-offset:")) {
 		stuff_int(&text_dock_val_offset_x);
 	}
+	if (optional_string("Enable Rearm Timer:")) {
+		stuff_boolean(&rearm_timer_choice);
+	}
 
 	hud_gauge->initBitmaps(fname);
 	hud_gauge->initHeaderOffsets(header_offsets[0], header_offsets[1]);
 	hud_gauge->initTextDockOffsetX(text_dock_offset_x);
 	hud_gauge->initTextDockValueOffsetX(text_dock_val_offset_x);
 	hud_gauge->initTextValueOffsetY(text_val_offset_y);
+	hud_gauge->initRearmTimer(rearm_timer_choice);
 
 	gauge_assign_common(settings, std::move(hud_gauge));
 }

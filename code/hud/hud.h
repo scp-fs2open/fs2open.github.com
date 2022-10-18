@@ -517,6 +517,7 @@ protected:
 	int text_val_offset_y;
 	int text_dock_offset_x;
 	int text_dock_val_offset_x;
+	bool enable_rearm_timer;
 public:
 	HudGaugeSupport();
 	void initBitmaps(const char *fname);
@@ -524,6 +525,7 @@ public:
 	void initTextValueOffsetY(int y);
 	void initTextDockOffsetX(int x);
 	void initTextDockValueOffsetX(int x);
+	void initRearmTimer(bool choice);
 	void render(float frametime) override;
 	void pageIn() override;
 };
