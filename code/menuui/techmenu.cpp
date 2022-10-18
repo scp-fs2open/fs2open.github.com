@@ -993,7 +993,7 @@ int techroom_load_ani(anim ** /*animpp*/, char *name)
 	return 0;
 }
 
-static intel_data* get_intel_pointer(char* intel_name)
+static intel_data* get_intel_pointer(const char* intel_name)
 {
 	for (int i = 0; i < (int)Intel_info.size(); i++) {
 		if (!stricmp(intel_name, Intel_info[i].name)) {
