@@ -581,5 +581,7 @@ extern SCP_vector<std::unique_ptr<HudGauge>> default_hud_gauges;
 extern flag_def_list Hud_gauge_types[];
 extern int Num_hud_gauge_types;
 
+extern bool Extra_target_info;
+
 #endif	/* __HUD_H__ */
 

@@ -80,7 +80,6 @@ extern int Cmdline_ballistic_gauge;
 extern int Cmdline_dualscanlines;
 extern int Cmdline_orb_radar;
 extern int Cmdline_rearm_timer;
-extern int Cmdline_targetinfo;
 
 // Gameplay related
 extern int Cmdline_ship_choice_3d;

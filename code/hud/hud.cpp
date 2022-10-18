@@ -182,6 +182,7 @@ static int					Pl_hud_is_bright;
 #define SUBSYS_DAMAGE_FLASH_INTERVAL	100
 
 float Player_rearm_eta = 0;
+bool Extra_target_info = false;
 
 // forward declarations
 void update_throttle_sound();

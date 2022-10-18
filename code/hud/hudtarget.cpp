@@ -3408,7 +3408,7 @@ void hud_show_selection_set()
 			if ( OBJ_INDEX(targetp) == Player_ai->target_objnum ) {
 				hud_target_add_display_list(targetp, &target_point, &targetp->pos, 5, iff_get_color(IFF_COLOR_SELECTION, 1), NULL, 0);
 				HUD_drew_selection_bracket_on_target = 1;
-			} else if ( Cmdline_targetinfo ) {		//Backslash -- show the distance and a lead indicator
+			} else if ( Extra_target_info ) {		//Backslash -- show the distance and a lead indicator
 				hud_target_add_display_list(targetp, &target_point, &targetp->pos, 5, iff_get_color(IFF_COLOR_SELECTION, 1), NULL, TARGET_DISPLAY_DIST | TARGET_DISPLAY_LEAD);
 			} else {
 				hud_target_add_display_list(targetp, &target_point, &targetp->pos, 5, iff_get_color(IFF_COLOR_SELECTION, 1), NULL, 0);
@@ -3471,7 +3471,7 @@ void hud_show_targeting_gauges(float frametime)
 		if (target_point.codes == 0) { // target center is not on screen
 			int target_display_flags;
 
-			if(Cmdline_targetinfo) {
+			if(Extra_target_info) {
 				target_display_flags = TARGET_DISPLAY_DIST | TARGET_DISPLAY_DOTS | TARGET_DISPLAY_SUBSYS | TARGET_DISPLAY_NAME | TARGET_DISPLAY_CLASS;
 			} else {
 				target_display_flags = TARGET_DISPLAY_DIST | TARGET_DISPLAY_DOTS | TARGET_DISPLAY_SUBSYS;
