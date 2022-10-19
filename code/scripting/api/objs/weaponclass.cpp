@@ -283,6 +283,23 @@ ADE_VIRTVAR(Damage, l_Weaponclass, "number", "Amount of damage that weapon deals
 	return ade_set_args(L, "f", Weapon_info[idx].damage);
 }
 
+ADE_VIRTVAR(DamageType, l_Weaponclass, nullptr, nullptr, "number", "Damage Type index, or 0 if handle is invalid. Index is index into armor.tbl")
+{
+	int idx;
+	if (!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
+		return ade_set_error(L, "i", 0);
+
+	if (idx < 0 || idx >= weapon_info_size())
+		return ade_set_error(L, "i", 0);
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "Setting Damage Type is not supported");
+	}
+
+	//Convert to Lua's 1 based index here
+	return ade_set_args(L, "i", Weapon_info[idx].damage_type_idx_sav + 1);
+}
+
 ADE_VIRTVAR(FireWait, l_Weaponclass, "number", "Weapon fire wait (cooldown time) in seconds", "number", "Fire wait time, or 0 if handle is invalid")
 {
 	int idx;
@@ -315,6 +332,59 @@ ADE_VIRTVAR(FreeFlightTime, l_Weaponclass, "number", "The time the weapon will f
 	}
 
 	return ade_set_args(L, "f", Weapon_info[idx].free_flight_time);
+}
+
+ADE_VIRTVAR(SwarmInfo, l_Weaponclass, nullptr, nullptr, "boolean, number, number", 
+	"If the weapon has the swarm flag , the number of swarm missiles, the swarm wait. Returns nil if the handle is invalid.")
+{
+	int idx;
+	if (!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
+		return ADE_RETURN_NIL;
+
+	if (idx < 0 || idx >= weapon_info_size())
+		return ADE_RETURN_NIL;
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "Setting Swarm Info is not supported");
+	}
+
+	bool flag = false;
+	if (Weapon_info[idx].wi_flags[Weapon::Info_Flags::Swarm])
+		flag = true;
+
+	return ade_set_args(L, "bif", flag, Weapon_info[idx].swarm_count, Weapon_info[idx].SwarmWait);
+}
+
+ADE_VIRTVAR(CorkscrewInfo, l_Weaponclass, nullptr, nullptr, "boolean, number, number, number, boolean, number", 
+	"If the weapon has the corkscrew flag, the number of corkscrew missiles fired, the radius, the fire delay, counter rotate settings, the twist value. Returns nil if the handle is invalid.")
+{
+	int idx;
+	if (!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
+		return ADE_RETURN_NIL;
+
+	if (idx < 0 || idx >= weapon_info_size())
+		return ADE_RETURN_NIL;
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "Setting Corkscrew Info is not supported");
+	}
+
+	bool crotate = false;
+	if (Weapon_info[idx].cs_crotate)
+		crotate = true;
+
+	bool flag = false;
+	if (Weapon_info[idx].wi_flags[Weapon::Info_Flags::Corkscrew])
+		flag = true;
+
+	return ade_set_args(L,
+		"bifibf",
+		flag,
+		Weapon_info[idx].cs_num_fired,
+		Weapon_info[idx].cs_radius,
+		Weapon_info[idx].cs_delay,
+		crotate,
+		Weapon_info[idx].cs_twist);
 }
 
 ADE_VIRTVAR(LifeMax, l_Weaponclass, "number", "Life of weapon in seconds", "number", "Life of weapon, or 0 if handle is invalid")
