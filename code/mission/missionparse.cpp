@@ -798,7 +798,11 @@ void parse_mission_info(mission *pm, bool basic = false)
 		}
 	}
 
-	pm->gravity = vm_vec_new(0.0f, -9.8f, 0.0f);
+	float gravity_accel = 0.0f;
+	if (optional_string("$Gravity Acceleration:")) {
+		stuff_float(&gravity_accel);
+	}
+	pm->gravity = vm_vec_new(0.0f, -gravity_accel, 0.0f);
 }
 
 void parse_player_info(mission *pm)

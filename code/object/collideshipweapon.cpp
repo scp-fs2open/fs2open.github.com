@@ -204,6 +204,7 @@ static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, f
 		// So just for collision purposes, we offset these points slightly in the opposite direction of gravity
 		// at least to ensure the *average* position at all interpolated points is on the parabola
 		weapon_start_pos -= The_mission.gravity * flFrametime * flFrametime * (1. / 12);
+		weapon_end_pos -= The_mission.gravity * flFrametime * flFrametime * (1. / 12);
 	}
 
 	// Goober5000 - I tried to make collision code here much saner... here begin the (major) changes
