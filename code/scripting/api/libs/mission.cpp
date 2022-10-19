@@ -61,6 +61,7 @@
 #include "scripting/api/objs/weapon.h"
 #include "scripting/api/objs/weaponclass.h"
 #include "scripting/api/objs/wing.h"
+#include "scripting/lua/LuaConvert.h"
 #include "scripting/lua/LuaFunction.h"
 #include "scripting/lua/LuaTable.h"
 #include "scripting/scripting.h"
@@ -1034,8 +1035,13 @@ ADE_FUNC(createShip,
 
 ADE_FUNC(createDebris,
 	l_Mission,
-	"[model, submodel, vector position, orientation, enumeration create_flags, number hitpoints, number spark_timeout_seconds, team, shipclass source_class, ship source_ship, vector explosion_center, number explosion_force_multiplier]",
-	"Creates a chunk or shard of debris with the specified parameters.  Vectors are in world coordinates.  Any parameter can be nil or negative to specify defaults.  Create flags can be any combination of DC_IS_HULL, DC_VAPORIZE, DC_IS_PERSISTENT, DC_SET_VELOCITY, or DC_FIRE_HOOK.",
+	"[ship | shipclass | model | submodel | nil source, string | nil submodel_index_or_name, vector position, orientation, enumeration create_flags, "
+	"number hitpoints, number spark_timeout_seconds, team, vector explosion_center, number explosion_force_multiplier]",
+	"Creates a chunk or shard of debris with the specified parameters.  Vectors are in world coordinates.  Any parameter can be nil or negative to specify defaults.  "
+	"A nil source will create generic or vaporized debris; submodel_index_or_name will be disregarded if source is submodel and can be nil to spawn random generic or "
+	"vaporized debris; position defaults to 0,0,0; orientation defaults to the source orientation or a random orientation for non-ship sources or for generic/vaporized "
+	"debris; create_flags can be any combination of DC_IS_HULL, DC_VAPORIZE, DC_SET_VELOCITY, or DC_FIRE_HOOK; hitpoints defaults to 1/8 source ship hitpoints or 10 "
+	"hitpoints if there is no source ship; explosion_center and explosion_force_multiplier are only applicable for DC_SET_VELOCITY",
 	"debris",
 	"Debris handle, or invalid handle if the debris couldn't be created")
 {
@@ -1053,35 +1059,86 @@ ADE_FUNC(createDebris,
 	bool set_velocity = false;
 	bool fire_hook = false;
 
-	ade_get_args(L, "|oooooffoooof",
-		l_Model.GetPtr(&mh),
-		l_Submodel.GetPtr(&smh),
+	int source_objnum = -1, model_num = -1, submodel_num = -1;
+
+	// get first variant parameter
+	if (luacpp::convert::ade_odata_is_userdata_type(L, 1, l_Ship))
+	{
+		ade_get_args(L, "|o", l_Ship.GetPtr(&source_ship));
+
+		if (source_ship == nullptr || !source_ship->IsValid())
+			return ade_set_args(L, "o", l_Debris.Set(object_h()));
+
+		source_shipp = &Ships[source_ship->objp->instance];
+		source_objnum = source_shipp->objnum;
+		source_class = source_shipp->ship_info_index;
+		model_num = Ship_info[source_class].model_num;
+	}
+	else if (luacpp::convert::ade_odata_is_userdata_type(L, 1, l_Shipclass))
+	{
+		ade_get_args(L, "|o", l_Shipclass.Get(&source_class));
+
+		if (source_class < 0 || source_class >= ship_info_size())
+			return ade_set_args(L, "o", l_Debris.Set(object_h()));
+
+		model_num = Ship_info[source_class].model_num;
+	}
+	else if (luacpp::convert::ade_odata_is_userdata_type(L, 1, l_Model))
+	{
+		ade_get_args(L, "|o", l_Model.GetPtr(&mh));
+
+		if (mh == nullptr || !mh->IsValid())
+			return ade_set_args(L, "o", l_Debris.Set(object_h()));
+
+		model_num = mh->GetID();
+	}
+	else if (luacpp::convert::ade_odata_is_userdata_type(L, 1, l_Submodel))
+	{
+		ade_get_args(L, "|o", l_Submodel.GetPtr(&smh));
+
+		if (smh == nullptr || !smh->IsValid())
+			return ade_set_args(L, "o", l_Debris.Set(object_h()));
+
+		model_num = smh->GetModelID();
+		submodel_num = smh->GetSubmodelIndex();
+	}
+
+	// get second variant parameter
+	if (submodel_num < 0 && model_num >= 0)
+	{
+		if (lua_isnumber(L, 2))
+		{
+			ade_get_args(L, "|i", &submodel_num);
+			submodel_num--; // Lua --> C/C++
+		}
+		else
+		{
+			const char *name = nullptr;
+			ade_get_args(L, "|s", &name);
+			submodel_num = model_find_submodel_index(model_num, name);
+		}
+	}
+
+	internal::Ade_get_args_skip += 2;
+	ade_get_args(L, "|oooffoof",
 		l_Vector.GetPtr(&pos),
 		l_Matrix.GetPtr(&orient_h),
 		l_Enum.GetPtr(&create_flags),
 		&hitpoints,
 		&spark_timeout,
 		l_Team.Get(&team),
-		l_Shipclass.Get(&source_class),
-		l_Ship.GetPtr(&source_ship),
 		l_Vector.GetPtr(&explosion_center),
 		&explosion_force_multiplier);
 
 	// validate some arguments
 
-	if ((mh != nullptr && !mh->IsValid()) || (smh != nullptr && !smh->IsValid()) || (create_flags != nullptr && !create_flags->IsValid()))
-		return ade_set_args(L, "o", l_Debris.Set(object_h()));
-
-	if (source_ship != nullptr)
-	{
-		if (source_ship->IsValid())
-			source_shipp = &Ships[source_ship->objp->instance];
-		else
-			return ade_set_args(L, "o", l_Debris.Set(object_h()));
-	}
+	matrix *orient = orient_h == nullptr ? nullptr : orient_h->GetMatrix();
 
 	if (create_flags != nullptr)
 	{
+		if (!create_flags->IsValid())
+			return ade_set_args(L, "o", l_Debris.Set(object_h()));
+
 		is_hull = (create_flags->index & LE_DC_IS_HULL);
 		vaporize = (create_flags->index & LE_DC_VAPORIZE);
 		set_velocity = (create_flags->index & LE_DC_SET_VELOCITY);
@@ -1089,11 +1146,6 @@ ADE_FUNC(createDebris,
 	}
 
 	int spark_timeout_millis = spark_timeout < 0.0f ? -1 : fl2i(spark_timeout * MILLISECONDS_PER_SECOND);
-
-	int source_objnum = source_shipp == nullptr ? -1 : source_shipp->objnum;
-	int model_num = mh == nullptr ? -1 : mh->GetID();
-	int submodel_num = smh == nullptr ? -1 : smh->GetSubmodelIndex();
-	matrix *orient = orient_h == nullptr ? nullptr : orient_h->GetMatrix();
 
 	// a submodel and a ship class imply hull debris
 	if (submodel_num >= 0 && source_class >= 0)
@@ -1109,7 +1161,7 @@ ADE_FUNC(createDebris,
 		debris_create_set_velocity(&Debris[obj->instance], source_shipp, explosion_center, explosion_force_multiplier);
 
 	if (fire_hook)
-		debris_create_fire_hook(obj, source_shipp == nullptr ? nullptr : &Objects[source_objnum]);
+		debris_create_fire_hook(obj, source_objnum < 0 ? nullptr : &Objects[source_objnum]);
 
 	return ade_set_args(L, "o", l_Debris.Set(object_h(obj)));
 }
