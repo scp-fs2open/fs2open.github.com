@@ -100,8 +100,11 @@ int Cargo_scan_coords[GR_NUM_RESOLUTIONS][4] = {
 // first element is time flashing expires
 int Targetbox_flash_timers[NUM_TBOX_FLASH_TIMERS];
 
+int CurrentWire = 0;
 int Targetbox_wire = 0;
 int Targetbox_shader_effect = -1;
+color Targetbox_color;
+bool Targetbox_color_override = false;
 bool Lock_targetbox_mode = false;
 
 // Different target states.  This drives the text display right below the hull integrity on the targetbox.
@@ -320,6 +323,21 @@ void HudGaugeTargetBox::initDesaturate(bool desaturate)
 	Desaturated = desaturate;
 }
 
+void HudGaugeTargetBox::initGaugeWireframe(int wireframe)
+{
+	GaugeWireframe = wireframe;
+}
+
+void HudGaugeTargetBox::initGaugeWirecolor(color wirecolor)
+{
+	GaugeWirecolor = wirecolor;
+}
+
+void HudGaugeTargetBox::initGaugeWirecolorOverride(bool wirecoloroverride)
+{
+	GaugeWirecolorOverride = wirecoloroverride;
+}
+
 void HudGaugeTargetBox::initBitmaps(char *fname_monitor, char *fname_monitor_mask, char *fname_integrity, char *fname_static)
 {
 	Monitor_frame.first_frame = bm_load_animation(fname_monitor, &Monitor_frame.num_frames);
@@ -350,6 +368,8 @@ void HudGaugeTargetBox::initialize()
 	for(int i = 0; i < NUM_TBOX_FLASH_TIMERS; i++) {
 		initFlashTimer(i);
 	}
+
+	CurrentWire = GaugeWireframe;
 
 	HudGauge::initialize();
 }
@@ -580,20 +600,28 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 		model_render_params render_info;
 		render_info.set_object_number(OBJ_INDEX(target_objp));
 
+		color thisColor = GaugeWirecolor;
+		bool thisOverride = GaugeWirecolorOverride;
+
 		if (target_sip->uses_team_colors) {
 			render_info.set_team_color(target_shipp->team_name, target_shipp->secondary_team_name, target_shipp->team_change_timestamp, target_shipp->team_change_time);
 		}
 
-		switch (Targetbox_wire) {
+		switch (CurrentWire) {
 			case 0:
 				flags |= MR_NO_LIGHTING;
 
 				break;
 			case 1:
-				if (ship_is_tagged(target_objp))
-					render_info.set_color(*iff_get_color(IFF_COLOR_TAGGED, 1));
-				else
-					render_info.set_color(*iff_get_color_by_team_and_object(target_shipp->team, Player_ship->team, 1, target_objp));
+				if (thisOverride) {
+					render_info.set_color(thisColor);
+				} else {
+					if (ship_is_tagged(target_objp))
+						render_info.set_color(*iff_get_color(IFF_COLOR_TAGGED, 1));
+					else
+						render_info.set_color(
+							*iff_get_color_by_team_and_object(target_shipp->team, Player_ship->team, 1, target_objp));
+				}
 
 				flags = MR_SHOW_OUTLINE_HTL | MR_NO_POLYS | MR_NO_LIGHTING | MR_NO_TEXTURING;
 
@@ -601,10 +629,14 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 			case 2:
 				break;
 			case 3:
-				if (ship_is_tagged(target_objp))
-					render_info.set_color(*iff_get_color(IFF_COLOR_TAGGED, 1));
-				else
-					render_info.set_color(*iff_get_color_by_team_and_object(target_shipp->team, Player_ship->team, 1, target_objp));
+				if (thisOverride) {
+					render_info.set_color(thisColor);
+				} else {
+					if (ship_is_tagged(target_objp))
+						render_info.set_color(*iff_get_color(IFF_COLOR_TAGGED, 1));
+					else
+						render_info.set_color(*iff_get_color_by_team_and_object(target_shipp->team, Player_ship->team, 1, target_objp));
+					}
 
 				flags |= MR_NO_LIGHTING | MR_NO_TEXTURING;
 
@@ -743,13 +775,20 @@ void HudGaugeTargetBox::renderTargetDebris(object *target_objp)
 
 		model_render_params render_info;
 
-		switch (Targetbox_wire) {
+		color thisColor = GaugeWirecolor;
+		bool thisOverride = GaugeWirecolorOverride;
+
+		switch (CurrentWire) {
 			case 0:
 				flags |= MR_NO_LIGHTING;
 
 				break;
 			case 1:
-				render_info.set_color(255, 255, 255);
+				if (thisOverride) {
+					render_info.set_color(thisColor);
+				} else {
+					render_info.set_color(255, 255, 255);
+				}
 
 				flags = MR_SHOW_OUTLINE_HTL | MR_NO_POLYS | MR_NO_LIGHTING | MR_NO_TEXTURING;
 
@@ -757,7 +796,11 @@ void HudGaugeTargetBox::renderTargetDebris(object *target_objp)
 			case 2:
 				break;
 			case 3:
-				render_info.set_color(255, 255, 255);
+				if (thisOverride) {
+					render_info.set_color(thisColor);
+				} else {
+					render_info.set_color(255, 255, 255);
+				}
 
 				flags |= MR_NO_LIGHTING | MR_NO_TEXTURING;
 
@@ -903,45 +946,23 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 		
 		model_render_params render_info;
 
+		color thisColor = GaugeWirecolor;
+		bool thisOverride = GaugeWirecolorOverride;
+
 		// IMPORTANT NOTE! Code handling the rendering when 'missile_view == TRUE' is largely copied over from
 		//                 renderTargetShip(). To keep the codes similar please update both if and when needed
 		if (missile_view == FALSE) {
-			switch (Targetbox_wire) {
+			switch (CurrentWire) {
 				case 0:
 					flags |= MR_NO_LIGHTING;
 
 					break;
 				case 1:
-					render_info.set_color(*iff_get_color_by_team_and_object(target_team, Player_ship->team, 0, target_objp));
-
-					flags = MR_SHOW_OUTLINE_HTL | MR_NO_POLYS | MR_NO_LIGHTING | MR_NO_TEXTURING;
-
-					break;
-				case 2:
-					break;
-				case 3:
-					render_info.set_color(*iff_get_color_by_team_and_object(target_team, Player_ship->team, 0, target_objp));
-
-					flags |= MR_NO_LIGHTING | MR_NO_TEXTURING;
-
-					break;
-			}
-		} else {
-			render_info.set_object_number(OBJ_INDEX(viewed_obj));
-
-			switch (Targetbox_wire) {
-				case 0:
-					flags |= MR_NO_LIGHTING;
-
-					break;
-				case 1:
-					if (ship_is_tagged(viewed_obj))
-						render_info.set_color(*iff_get_color(IFF_COLOR_TAGGED, 1));
-					else
-						render_info.set_color(*iff_get_color_by_team_and_object(homing_shipp->team, Player_ship->team, 1, viewed_obj));
-
-					if (homing_sip->uses_team_colors) {
-						render_info.set_team_color(homing_shipp->team_name, homing_shipp->secondary_team_name, homing_shipp->team_change_timestamp, homing_shipp->team_change_time);
+					if (thisOverride) {
+						render_info.set_color(thisColor);
+					} else {
+						render_info.set_color(
+							*iff_get_color_by_team_and_object(target_team, Player_ship->team, 0, target_objp));
 					}
 
 					flags = MR_SHOW_OUTLINE_HTL | MR_NO_POLYS | MR_NO_LIGHTING | MR_NO_TEXTURING;
@@ -950,10 +971,52 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 				case 2:
 					break;
 				case 3:
-					if (ship_is_tagged(viewed_obj))
-						render_info.set_color(*iff_get_color(IFF_COLOR_TAGGED, 1));
-					else
-						render_info.set_color(*iff_get_color_by_team_and_object(homing_shipp->team, Player_ship->team, 1, viewed_obj));
+					if (thisOverride) {
+						render_info.set_color(thisColor);
+					} else {
+						render_info.set_color(*iff_get_color_by_team_and_object(target_team, Player_ship->team, 0, target_objp));
+					}
+
+					flags |= MR_NO_LIGHTING | MR_NO_TEXTURING;
+
+					break;
+			}
+		} else {
+			render_info.set_object_number(OBJ_INDEX(viewed_obj));
+
+			switch (CurrentWire) {
+				case 0:
+					flags |= MR_NO_LIGHTING;
+
+					break;
+				case 1:
+					if (thisOverride) {
+						render_info.set_color(thisColor);
+					} else {
+						if (ship_is_tagged(viewed_obj))
+							render_info.set_color(*iff_get_color(IFF_COLOR_TAGGED, 1));
+						else
+							render_info.set_color(*iff_get_color_by_team_and_object(homing_shipp->team, Player_ship->team, 1, viewed_obj));
+
+						if (homing_sip->uses_team_colors) {
+							render_info.set_team_color(homing_shipp->team_name, homing_shipp->secondary_team_name, homing_shipp->team_change_timestamp, homing_shipp->team_change_time);
+						}
+					}
+
+					flags = MR_SHOW_OUTLINE_HTL | MR_NO_POLYS | MR_NO_LIGHTING | MR_NO_TEXTURING;
+
+					break;
+				case 2:
+					break;
+				case 3:
+					if (thisOverride) {
+						render_info.set_color(thisColor);
+					} else {
+						if (ship_is_tagged(viewed_obj))
+							render_info.set_color(*iff_get_color(IFF_COLOR_TAGGED, 1));
+						else
+							render_info.set_color(*iff_get_color_by_team_and_object(homing_shipp->team, Player_ship->team, 1, viewed_obj));
+					}
 
 					flags |= MR_NO_LIGHTING | MR_NO_TEXTURING;
 
@@ -1105,16 +1168,23 @@ void HudGaugeTargetBox::renderTargetAsteroid(object *target_objp)
 		
 		model_render_params render_info;
 
-		switch (Targetbox_wire) {
+		color thisColor = GaugeWirecolor;
+		bool thisOverride = GaugeWirecolorOverride;
+
+		switch (CurrentWire) {
 			case 0:
 				flags |= MR_NO_LIGHTING;
 
 				break;
 			case 1:
-				if (time_to_impact>=0)
-					render_info.set_color(255,255,255);
-				else
-					render_info.set_color(64,64,0);
+				if (thisOverride) {
+					render_info.set_color(thisColor);
+				} else {
+					if (time_to_impact >= 0)
+						render_info.set_color(255, 255, 255);
+					else
+						render_info.set_color(64, 64, 0);
+				}
 
 				flags = MR_SHOW_OUTLINE_HTL | MR_NO_POLYS | MR_NO_LIGHTING | MR_NO_TEXTURING;
 
@@ -1122,10 +1192,14 @@ void HudGaugeTargetBox::renderTargetAsteroid(object *target_objp)
 			case 2:
 				break;
 			case 3:
-				if (time_to_impact>=0)
-					render_info.set_color(255,255,255);
-				else
-					render_info.set_color(64,64,0);
+				if (thisOverride) {
+					render_info.set_color(thisColor);
+				} else {
+					if (time_to_impact >= 0)
+						render_info.set_color(255, 255, 255);
+					else
+						render_info.set_color(64, 64, 0);
+				}
 
 				flags |= MR_NO_LIGHTING | MR_NO_TEXTURING;
 
@@ -1276,10 +1350,9 @@ void HudGaugeTargetBox::renderTargetJumpNode(object *target_objp)
  */
 void hud_targetbox_switch_wireframe_mode()
 {
-
-	Targetbox_wire++;
-		if (Targetbox_wire==3)
-			Targetbox_wire=0;
+	CurrentWire++;
+		if (CurrentWire==3)
+			CurrentWire=0;
 }
 
 /**

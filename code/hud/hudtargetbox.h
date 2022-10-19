@@ -38,6 +38,8 @@ extern int Target_window_coords[GR_NUM_RESOLUTIONS][4];
 //used to track if the player has wireframe hud target box turned on
 extern int Targetbox_wire;
 extern int Targetbox_shader_effect;
+extern bool Targetbox_color_override;
+extern color Targetbox_color;
 extern bool Lock_targetbox_mode;
 
 enum class CargoScanType { DEFAULT, DUAL_SCAN_LINES, DISCO_SCAN_LINES };
@@ -84,6 +86,10 @@ class HudGaugeTargetBox: public HudGauge // HUD_TARGET_MONITOR
 
 	bool Desaturated;
 
+	int GaugeWireframe;
+	color GaugeWirecolor;
+	bool GaugeWirecolorOverride;
+
 	// first element is time flashing expires, second element is time of next flash
 	int Next_flash_timers[NUM_TBOX_FLASH_TIMERS];
 
@@ -110,6 +116,9 @@ public:
 	void initSubsysIntegrityOffsets(int x, int y, bool activate);
 	void initDisabledStatusOffsets(int x, int y, bool activate);
 	void initDesaturate(bool desaturate);
+	void initGaugeWireframe(int wireframe);
+	void initGaugeWirecolor(color wirecolor);
+	void initGaugeWirecolorOverride(bool wirecoloroverride);
 
 	void initialize() override;
 	void pageIn() override;
