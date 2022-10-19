@@ -1192,7 +1192,7 @@ bool physics_lead_ballistic_trajectory(const vec3d* start, const vec3d* end_pos,
 	float best_guess_time = 0.0f;
 	*out_direction = vmd_zero_vector;
 	float time = 0.0f;
-	for (int i = 0; i < 10; i++) {
+	for (int i = 0; i < 6; i++) {
 		vec3d target = *end_pos - *start;
 		target += *target_vel * time;
 
