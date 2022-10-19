@@ -770,8 +770,8 @@ ADE_FUNC(setMissionShipclassKills,
 	"shipclass class, number kills",
 	"Sets the number of kills of a specific ship class recorded in this statistics structure for the current "
 	"mission. Returns true if successful.",
-	"number",
-	"The kills for that specific ship class")
+	"boolean",
+	"True if successful")
 {
 	using namespace luacpp;
 
