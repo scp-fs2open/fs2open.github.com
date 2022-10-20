@@ -18179,10 +18179,10 @@ void sexp_send_training_message(int node)
 	Current_sexp_network_packet.send_int(delay);
 
 	if ((Mission_events[Event_index].repeat_count > 1) || (secondary_message == nullptr)) {
-		message_training_queue(primary_message, timestamp(delay), duration);
+		message_training_queue(primary_message, _timestamp(delay), duration);
 		Current_sexp_network_packet.send_string(primary_message);
 	} else {
-		message_training_queue(secondary_message, timestamp(delay), duration);
+		message_training_queue(secondary_message, _timestamp(delay), duration);
 		Current_sexp_network_packet.send_string(secondary_message);
 	}
 	Current_sexp_network_packet.end_callback();
@@ -18196,7 +18196,7 @@ void multi_sexp_send_training_message()
 	Current_sexp_network_packet.get_int(duration);
 	Current_sexp_network_packet.get_int(delay);
 	if (Current_sexp_network_packet.get_string(message)) {
-		message_training_queue(message, timestamp(delay), duration);
+		message_training_queue(message, _timestamp(delay), duration);
 	}
 }
 

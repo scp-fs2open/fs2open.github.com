@@ -941,7 +941,7 @@ ADE_FUNC(sendTrainingMessage, l_Mission, "message message, number time, [number 
 		return ADE_RETURN_FALSE;
 	}
 
-	message_training_queue(Messages[messageIdx].name, timestamp(fl2i(delay * 1000.0f)), time);
+	message_training_queue(Messages[messageIdx].name, _timestamp(fl2i(delay * MILLISECONDS_PER_SECOND)), time);
 
 	return ADE_RETURN_TRUE;
 }
