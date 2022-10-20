@@ -779,15 +779,15 @@ ADE_FUNC(setMissionShipclassKills,
 	int ship_idx;
 	int setv;
 	if (!ade_get_args(L, "ooi", l_ScoringStats.GetPtr(&ssh), l_Shipclass.Get(&ship_idx), &setv)) {
-		return ade_set_error(L, "i", -1);
+		return ADE_RETURN_FALSE;
 	}
 
 	if (!ssh->isValid()) {
-		return ade_set_error(L, "i", -1);
+		return ADE_RETURN_FALSE;
 	}
 
 	if (ship_idx < 0 || ship_idx >= (int)Ship_info.size()) {
-		return ade_set_error(L, "i", -1);
+		return ADE_RETURN_FALSE;
 	}
 
 	if (setv < 0) {
