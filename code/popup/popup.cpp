@@ -24,6 +24,7 @@
 #include "playerman/player.h"
 #include "popup/popup.h"
 #include "popup/popupdead.h"
+#include "scripting/global_hooks.h"
 #include "ui/ui.h"
 
 
@@ -487,6 +488,53 @@ int popup_init(popup_info *pi, int flags)
 		}
 	}
 
+	Popup_default_choice = 0;
+	Popup_should_die = 0;
+
+	if (flags & PF_RUN_STATE) {
+		Popup_running_state = 1;
+	}
+	else {
+		Popup_running_state = 0;
+	}
+
+	if (scripting::hooks::OnDialogInit->isActive())
+	{
+		luacpp::LuaTable buttons = luacpp::LuaTable::create(Script_system.GetLuaSession());
+		for (size_t cnt = 0; cnt < pi->nchoices; cnt++) {
+			luacpp::LuaTable button = luacpp::LuaTable::create(Script_system.GetLuaSession());
+			int positivity = 0;
+			switch (pi->nchoices) {
+			case 1:
+				if (!(flags & PF_NO_SPECIAL_BUTTONS)) {
+					if (flags & PF_USE_AFFIRMATIVE_ICON)
+						positivity = 1;
+					else if (flags & PF_USE_NEGATIVE_ICON)
+						positivity = 2;
+				}
+			case 2:
+				if (flags & PF_USE_NEGATIVE_ICON && cnt == 0)
+					positivity = 2;
+				if (flags & PF_USE_AFFIRMATIVE_ICON && cnt == 1)
+					positivity = 1;
+			}
+			button.addValue("IsPositive", luacpp::LuaValue::createValue(Script_system.GetLuaSession(), positivity));
+			button.addValue("Text", luacpp::LuaValue::createValue(Script_system.GetLuaSession(), pi->button_text[cnt]));
+			buttons.addValue(cnt + 1, button);
+		}
+
+		auto paramList = scripting::hook_param_list(
+			scripting::hook_param("Choices", 't', buttons),
+			scripting::hook_param("IsTimeStopped", 'b', Popup_time_was_stopped_in_init),
+			scripting::hook_param("IsStateRunning", 'b', static_cast<bool>(Popup_running_state)),
+			scripting::hook_param("IsInputPopup", 'b', static_cast<bool>(flags & PF_INPUT)),
+			scripting::hook_param("AllowedInput", 's', pi->valid_chars, flags & PF_INPUT));
+
+		scripting::hooks::OnDialogInit->run(paramList, nullptr, nullptr);
+		if (scripting::hooks::OnDialogInit->isOverride(paramList, nullptr, nullptr))
+			return 0;
+	}
+
 	// create base window
 	Popup_window.create(pbg->coords[0], pbg->coords[1], Popup_text_coords[gr_screen.res][2]+100, Popup_text_coords[gr_screen.res][3]+50, 0);
 	Popup_window.set_foreground_bmap(pbg->filename);
@@ -541,15 +589,6 @@ int popup_init(popup_info *pi, int flags)
 		Popup_input.set_focus();
 		Popup_input.set_valid_chars(pi->valid_chars);
 	}	
-	
-	Popup_default_choice=0;
-	Popup_should_die = 0;
-
-	if (flags & PF_RUN_STATE) {
-		Popup_running_state = 1;
-	} else {
-		Popup_running_state = 0;
-	}
 
 	popup_split_lines(pi, flags);
 
