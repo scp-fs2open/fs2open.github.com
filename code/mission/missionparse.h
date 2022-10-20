@@ -187,7 +187,7 @@ typedef struct mission {
 		substitute_briefing_music_name[ 0 ] = '\0';
 		ai_profile = NULL;
 		cutscenes.clear( );
-		gravity = {0.0f, 0.0f, 0.0f};
+		gravity = vmd_zero_vector;
 	}
 
 	mission( )
