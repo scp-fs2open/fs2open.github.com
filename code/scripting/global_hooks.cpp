@@ -85,18 +85,22 @@ const std::shared_ptr<OverridableHook> OnDialogInit = OverridableHook::Factory("
 			"A table containing the different choices for this dialog. Contains subtables, each consisting of "
 			"Positivity (an int, 0 if neutral, 1 if positive, and 2 if negative) and "
 			"Text (s string, the text of the button)."},
-		{"IsTimeStopped", "boolean", "True if mission time was interrupted for this popup"},
-		{"IsStateRunning", "boolean", "True if the underlying state is still being processed and rendered"},
-		{"IsInputPopup", "boolean", "True if this popup is for entering text"},
-		{"AllowedInput", "string", "A string of characters allowed to be present in the input popup. Nil if not an input popup"}
+		{"Title", "string", "The title of the popup window."},
+		{"Text", "string", "The text to be displayed in the popup window."},
+		{"IsTimeStopped", "boolean", "True if mission time was interrupted for this popup."},
+		{"IsStateRunning", "boolean", "True if the underlying state is still being processed and rendered."},
+		{"IsInputPopup", "boolean", "True if this popup is for entering text."},
+		{"AllowedInput", "string", "A string of characters allowed to be present in the input popup. Nil if not an input popup."}
 	 });
 
 const std::shared_ptr<OverridableHook> OnDialogFrame = OverridableHook::Factory("On Dialog Frame",
-	"Invoked when a dialog closes. Override to prevent the system dialog from rendering and evaluating.",
-	{});
+	"Invoked each frame for a system dialog. Override to prevent the system dialog from rendering and evaluating.",
+	{
+		{"Submit", "function(number | string | nil result) -> nil", "A callback function that should be called if the popup resolves. Should be string only if it is an input popup. Pass nil to abort."}
+	});
 
 const std::shared_ptr<Hook> OnDialogClose = Hook::Factory("On Dialog Close",
-	"Invoked each frame for a system dialog.",
+	"Invoked when a dialog closes.",
 	{});
 
 // ========== DEPRECATED ==========
