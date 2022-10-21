@@ -501,7 +501,7 @@ int popup_init(popup_info *pi, int flags)
 	if (scripting::hooks::OnDialogInit->isActive())
 	{
 		luacpp::LuaTable buttons = luacpp::LuaTable::create(Script_system.GetLuaSession());
-		for (size_t cnt = 0; cnt < pi->nchoices; cnt++) {
+		for (int cnt = 0; cnt < pi->nchoices; cnt++) {
 			luacpp::LuaTable button = luacpp::LuaTable::create(Script_system.GetLuaSession());
 			int positivity = 0;
 			switch (pi->nchoices) {
