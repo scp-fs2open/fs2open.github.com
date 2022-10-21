@@ -1111,7 +1111,7 @@ ADE_FUNC(createDebris,
 			ade_get_args(L, "|*i", &submodel_num);
 			submodel_num--; // Lua --> C/C++
 		}
-		else
+		else if (lua_isstring(L, 2))
 		{
 			const char *name = nullptr;
 			ade_get_args(L, "|*s", &name);

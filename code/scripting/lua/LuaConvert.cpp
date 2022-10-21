@@ -29,18 +29,15 @@ bool ade_odata_helper(lua_State* L, int stackposition, size_t idx) {
 }
 
 bool ade_odata_is_userdata_type(lua_State* L, int stackposition, size_t typeIdx) {
+	// it needs to be userdata before we narrow down the specific type of userdata
+	if (lua_type(L, stackposition) != LUA_TUSERDATA) {
+		return false;
+	}
+
 	// WMC - Get metatable
 	lua_getmetatable(L, stackposition);
 	int mtb_ldx = lua_gettop(L);
-
-	if (lua_isnil(L, -1)) {
-		return false;
-	}
-
-	// make sure the argument actually exists
-	if (mtb_ldx < stackposition) {
-		return false;
-	}
+	Assert(!lua_isnil(L, -1));
 
 	// Get ID
 	lua_pushstring(L, "__adeid");
