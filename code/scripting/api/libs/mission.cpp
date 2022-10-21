@@ -1108,19 +1108,18 @@ ADE_FUNC(createDebris,
 	{
 		if (lua_isnumber(L, 2))
 		{
-			ade_get_args(L, "|i", &submodel_num);
+			ade_get_args(L, "|*i", &submodel_num);
 			submodel_num--; // Lua --> C/C++
 		}
 		else
 		{
 			const char *name = nullptr;
-			ade_get_args(L, "|s", &name);
+			ade_get_args(L, "|*s", &name);
 			submodel_num = model_find_submodel_index(model_num, name);
 		}
 	}
 
-	internal::Ade_get_args_skip += 2;
-	ade_get_args(L, "|oooffoof",
+	ade_get_args(L, "|**oooffoof",
 		l_Vector.GetPtr(&pos),
 		l_Matrix.GetPtr(&orient_h),
 		l_Enum.GetPtr(&create_flags),

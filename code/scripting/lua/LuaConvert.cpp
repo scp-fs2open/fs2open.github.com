@@ -32,7 +32,15 @@ bool ade_odata_is_userdata_type(lua_State* L, int stackposition, size_t typeIdx)
 	// WMC - Get metatable
 	lua_getmetatable(L, stackposition);
 	int mtb_ldx = lua_gettop(L);
-	Assert(!lua_isnil(L, -1));
+
+	if (lua_isnil(L, -1)) {
+		return false;
+	}
+
+	// make sure the argument actually exists
+	if (mtb_ldx < stackposition) {
+		return false;
+	}
 
 	// Get ID
 	lua_pushstring(L, "__adeid");
