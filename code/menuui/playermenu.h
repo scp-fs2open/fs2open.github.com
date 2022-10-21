@@ -39,7 +39,6 @@ int player_select_get_last_pilot();
 
 // tooltips
 void player_tips_init();
-void player_tips_close();
 void player_tips_popup();
 bool player_tips_controls();
 
