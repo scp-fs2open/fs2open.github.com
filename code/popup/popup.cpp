@@ -512,11 +512,16 @@ int popup_init(popup_info *pi, int flags)
 					else if (flags & PF_USE_NEGATIVE_ICON)
 						positivity = 2;
 				}
+				break;
 			case 2:
 				if (flags & PF_USE_NEGATIVE_ICON && cnt == 0)
 					positivity = 2;
 				if (flags & PF_USE_AFFIRMATIVE_ICON && cnt == 1)
 					positivity = 1;
+				break;
+			default:
+				//For 0 or 3 buttons, all buttons are netural
+				break;
 			}
 			button.addValue("Positivity", luacpp::LuaValue::createValue(Script_system.GetLuaSession(), positivity));
 			button.addValue("Text", luacpp::LuaValue::createValue(Script_system.GetLuaSession(), pi->button_text[cnt]));
