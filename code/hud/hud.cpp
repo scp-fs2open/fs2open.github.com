@@ -1178,7 +1178,9 @@ bool HudGauge::canRender()
 	}
 	
 	if (render_for_cockpit_toggle > 0) {
-		if (cockpitActive && (render_for_cockpit_toggle == 2)) {
+		if ((Viewer_mode & VM_CHASE) && (render_for_cockpit_toggle == 2)) {
+			return true;
+		} else if (cockpitActive && (render_for_cockpit_toggle == 2)) {
 			return false;
 		} else if (!cockpitActive && (render_for_cockpit_toggle == 1)) {
 			return false;
