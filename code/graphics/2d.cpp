@@ -1553,7 +1553,8 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 	if (gr_get_resolution_class(width, height) != GR_640) {
 		// check for hi-res interface files so that we can verify our width/height is correct
 		// if we don't have it then fall back to 640x480 mode instead
-		if ( !cf_exists_full("2_ChoosePilot-m.pcx", CF_TYPE_ANY)) {
+		// Lafiel: BUT! Only do this if the "low res graphic" ACTUALLY exists. Using SCPUI, not having this file is not a sufficient indicator for being on forced low-res.
+		if ( !cf_exists_full("2_ChoosePilot-m.pcx", CF_TYPE_ANY) && cf_exists_full("ChoosePilot-m.pcx", CF_TYPE_ANY)) {
 			if ( (width == 1024) && (height == 768) ) {
 				width = 640;
 				height = 480;
