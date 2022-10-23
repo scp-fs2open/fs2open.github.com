@@ -18,7 +18,7 @@ struct PresenceInfo {
 
 bool initialized        = false;
 bool discord_ready      = false;
-int next_mission_update = -1;
+UI_TIMESTAMP next_mission_update = UI_TIMESTAMP::invalid();
 
 bool in_mission = false;
 
@@ -113,8 +113,7 @@ void set_game_play_presence()
 	set_presence(state, (int64_t)time(nullptr) - f2i(Missiontime));
 
 	// Update this every 20 seconds since Discord already has a 15 second rate-limit
-	// This will update the "elapsed" time even if time compression is active but the clock will jump forward
-	next_mission_update = timestamp(20000);
+	next_mission_update = ui_timestamp(20 * MILLISECONDS_PER_SECOND);
 }
 
 void update_discord()
@@ -124,10 +123,11 @@ void update_discord()
 
 	Discord_RunCallbacks();
 
-	if (gameseq_get_state() == GS_STATE_GAME_PLAY && timestamp_elapsed(next_mission_update)) {
+	if (gameseq_get_state() == GS_STATE_GAME_PLAY && ui_timestamp_elapsed(next_mission_update)) {
 		set_game_play_presence();
 	}
 }
+
 void shutdown_discord()
 {
 	if (!initialized)
@@ -166,7 +166,7 @@ void handleEnterState(int old_state, int new_state)
 
 	switch (new_state) {
 	case GS_STATE_MAIN_MENU:
-		set_presence("In Mainhall");
+		set_presence("In main hall");
 		break;
 	case GS_STATE_BRIEFING:
 		set_presence("In mission briefing");
@@ -181,7 +181,7 @@ void handleEnterState(int old_state, int new_state)
 		set_presence("Paused");
 		break;
 	case GS_STATE_RED_ALERT:
-		set_presence("Red alert briefing");
+		set_presence("In red-alert briefing");
 		break;
 	case GS_STATE_INITIAL_PLAYER_SELECT:
 		set_presence("Selecting player");
@@ -203,7 +203,7 @@ void handleLeaveState(int old_state, int /*new_state*/)
 
 	if (old_state == GS_STATE_GAME_PLAY) {
 		in_mission          = false;
-		next_mission_update = -1;
+		next_mission_update = UI_TIMESTAMP::invalid();
 	}
 }
 

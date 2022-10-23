@@ -46,7 +46,7 @@
 // Red Alert Mission-Level
 /////////////////////////////////////////////////////////////////////////////
 
-static int Red_alert_new_mission_timestamp;		// timestamp used to give user a little warning for red alerts
+static TIMESTAMP Red_alert_new_mission_timestamp;		// timestamp used to give user a little warning for red alerts
 //static int Red_alert_num_slots_used = 0;
 static int Red_alert_voice_started;
 
@@ -454,7 +454,7 @@ void red_alert_do_frame(float frametime)
 // set the red alert status for the current mission
 void red_alert_invalidate_timestamp()
 {
-	Red_alert_new_mission_timestamp = timestamp(-1);		// make invalid
+	Red_alert_new_mission_timestamp = TIMESTAMP::invalid();
 }
 
 // Store a ships weapons into a wingman status structure
@@ -1082,7 +1082,7 @@ void red_alert_start_mission()
 		}
 
 		// do normal red alert stuff
-		Red_alert_new_mission_timestamp = timestamp(RED_ALERT_WARN_TIME);
+		Red_alert_new_mission_timestamp = _timestamp(RED_ALERT_WARN_TIME);
 
 		// throw down a sound here to make the warning seem ultra-important
 		// gamesnd_play_iface(SND_USER_SELECT);
@@ -1094,14 +1094,14 @@ void red_alert_start_mission()
 int red_alert_in_progress()
 {
 	// it is specifically a question of whether the timestamp is running
-	return timestamp_valid(Red_alert_new_mission_timestamp);
+	return Red_alert_new_mission_timestamp.isValid();
 }
 
 // called from the game loop to check if we should actually do the red-alert
 void red_alert_maybe_move_to_next_mission()
 {
 	// if the timestamp is invalid, do nothing.
-	if ( !timestamp_valid(Red_alert_new_mission_timestamp) )
+	if ( !Red_alert_new_mission_timestamp.isValid() )
 		return;
 
 	// return if the timestamp hasn't elapsed yet

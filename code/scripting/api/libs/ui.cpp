@@ -1153,7 +1153,10 @@ ADE_LIB_DERIV(l_UserInterface_ShipWepSelect,
 ADE_FUNC(initSelect,
 	l_UserInterface_ShipWepSelect,
 	nullptr,
-	"Initializes selection data including wing slots, ship and weapon pool, and loadout information",
+	"Initializes selection data including wing slots, ship and weapon pool, and loadout information. "
+	"Must be called before every mission regardless if ship or weapon select is actually used! "
+	"Should also be called on initialization of relevant briefing UIs such as briefing and red alert "
+	"to ensure that the ships and weapons are properly set for the current mission.",
 	nullptr,
 	nullptr)
 {

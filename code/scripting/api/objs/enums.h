@@ -127,6 +127,10 @@ const int32_t LE_SCORE_FICTION_VIEWER        = 114;
 const int32_t LE_NOT_YET_PRESENT             = 115; // the sequence and offsets of these three #defines should correspond to the ShipStatus enums
 const int32_t LE_PRESENT                     = 116;
 const int32_t LE_EXITED                      = 117;
+const int32_t LE_DC_IS_HULL                  = (1<<0); // the following definitions are bitfields independent of the usual indexing
+const int32_t LE_DC_VAPORIZE                 = (1<<1);
+const int32_t LE_DC_SET_VELOCITY             = (1<<2);
+const int32_t LE_DC_FIRE_HOOK                = (1<<3);
 
 const int ENUM_NEXT_INDEX = 118; // <<<<<<<<<<<<<<<<<<<<<<
 extern flag_def_list Enumerations[];

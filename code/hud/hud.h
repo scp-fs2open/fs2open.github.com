@@ -244,6 +244,7 @@ protected:
 	int flash_next;
 	bool flash_status;
 	bool only_render_in_chase_view;
+	int render_for_cockpit_toggle;
 
 	// custom gauge specific stuff
 	bool custom_gauge;
@@ -303,6 +304,7 @@ public:
 	void updatePopUp(bool pop_up_flag);
 	void updateSexpOverride(bool sexp);
 	void initChase_view_only(bool chase_view_only);
+	void initCockpit_view_choice(int cockpit_view_choice);
 
 	// SEXP interfacing functions
 	// For flashing gauges in training missions
@@ -515,6 +517,7 @@ protected:
 	int text_val_offset_y;
 	int text_dock_offset_x;
 	int text_dock_val_offset_x;
+	bool enable_rearm_timer;
 public:
 	HudGaugeSupport();
 	void initBitmaps(const char *fname);
@@ -522,6 +525,7 @@ public:
 	void initTextValueOffsetY(int y);
 	void initTextDockOffsetX(int x);
 	void initTextDockValueOffsetX(int x);
+	void initRearmTimer(bool choice);
 	void render(float frametime) override;
 	void pageIn() override;
 };
@@ -578,6 +582,8 @@ extern SCP_vector<std::unique_ptr<HudGauge>> default_hud_gauges;
 
 extern flag_def_list Hud_gauge_types[];
 extern int Num_hud_gauge_types;
+
+extern bool Extra_target_info;
 
 #endif	/* __HUD_H__ */
 

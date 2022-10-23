@@ -2159,7 +2159,7 @@ void asteroid_init()
 	asteroid_parse_tbl();
 }
 
-extern int Cmdline_targetinfo;
+extern bool Extra_target_info;
 
 /**
  * Draw brackets around on-screen asteroids that are about to collide, otherwise draw an offscreen indicator
@@ -2195,7 +2195,7 @@ void asteroid_show_brackets()
 		g3_rotate_vertex(&asteroid_vertex,&asteroid_objp->pos);
 		g3_project_vertex(&asteroid_vertex);
 
-		if ( Cmdline_targetinfo ) {
+		if ( Extra_target_info ) {
 			hud_target_add_display_list(asteroid_objp, &asteroid_vertex, &asteroid_objp->pos, 0, NULL, NULL, TARGET_DISPLAY_DIST | TARGET_DISPLAY_LEAD);
 		} else {
 			hud_target_add_display_list(asteroid_objp, &asteroid_vertex, &asteroid_objp->pos, 0, NULL, NULL, TARGET_DISPLAY_DIST);

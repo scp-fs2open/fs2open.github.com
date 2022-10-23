@@ -7200,7 +7200,19 @@ int mission_did_ship_arrive(p_object *objp, bool force_arrival)
 		if ( should_arrive ) {
 			mission_parse_mark_reinforcement_available(objp->name);
 		}
-		return -1;
+
+		// if we're forcing the arrival, then "use" the reinforcement; otherwise don't process anything else
+		if (force_arrival) {
+			for (int i = 0; i < Num_reinforcements; i++) {
+				auto rp = &Reinforcements[i];
+				if (!stricmp(rp->name, objp->name)) {
+					rp->num_uses++;
+					break;
+				}
+			}
+		} else {
+			return -1;
+		}
 	}
 
 	if ( should_arrive ) { 		// has the arrival criteria been met?
@@ -7453,8 +7465,19 @@ bool mission_maybe_make_wing_arrive(int wingnum, bool force_arrival)
 		if (force_arrival || eval_sexp(wingp->arrival_cue))
 			mission_parse_mark_reinforcement_available(wingp->name);
 
-		// reinforcement wings skip the rest of the function
-		return false;
+		// if we're forcing the arrival, then "use" the reinforcement; otherwise don't process anything else
+		if (force_arrival && wingp->current_count == 0) {
+			for (int i = 0; i < Num_reinforcements; i++) {
+				auto rp = &Reinforcements[i];
+				if (!stricmp(rp->name, wingp->name)) {
+					rp->num_uses++;
+					break;
+				}
+			}
+		} else {
+			// reinforcement wings skip the rest of the function
+			return false;
+		}
 	}
 		
 	// don't do evaluations for departing wings

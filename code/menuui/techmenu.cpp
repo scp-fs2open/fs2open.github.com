@@ -330,7 +330,7 @@ void techroom_select_new_entry()
 			i++;
 		}
 
-		Techroom_ship_modelnum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+		Techroom_ship_modelnum = model_load(sip, true);
 
 		if (Techroom_ship_model_instance >= 0) {
 			model_delete_instance(Techroom_ship_model_instance);
@@ -993,54 +993,138 @@ int techroom_load_ani(anim ** /*animpp*/, char *name)
 	return 0;
 }
 
+static intel_data* get_intel_pointer(const char* intel_name)
+{
+	for (int i = 0; i < (int)Intel_info.size(); i++) {
+		if (!stricmp(intel_name, Intel_info[i].name)) {
+			return &Intel_info[i];
+		}
+	}
+
+	// Didn't find anything.
+	return nullptr;
+}
+
+static void intel_info_init(intel_data* inteli)
+{
+	inteli->name[0] = '\0';
+	inteli->desc = "";
+	inteli->anim_filename[0] = '\0';
+	inteli->flags = IIF_DEFAULT_VALUE;
+}
+
+void parse_intel_table(const char* filename)
+{
+
+	try {
+		read_file_text(filename, CF_TYPE_TABLES);
+		reset_parse();
+
+		//retail doesn't have this so it can't be required, but it's here for absent minded modders -Mjn
+		optional_string("#Intel");
+
+		while (optional_string("$Entry:")) {
+			
+			bool create_new_entry = true;
+			intel_data intel_t;
+			intel_info_init(&intel_t);
+
+			intel_data* intel_p;
+
+			required_string("$Name:");
+			stuff_string(intel_t.name, F_NAME, NAME_LENGTH);
+
+			if (optional_string("+nocreate")) {
+				if (!Parsing_modular_table) {
+					Warning(LOCATION, "+nocreate flag used for intel entry in non-modular table\n");
+				} else {
+					create_new_entry = false;
+				}
+			}
+
+			//Check if we're creating a new entry.
+			intel_p = get_intel_pointer(intel_t.name);
+			if (create_new_entry) {
+
+				// Current behavior is to warn about a duplicate entry, but append it to the list anyway
+				// So do that here - Mjn
+				if (intel_p != nullptr) {
+					error_display(0, "Duplicate entry %s in %s!", intel_t.name, filename);
+				}
+				Intel_info.push_back(intel_t);
+				intel_p = &Intel_info[Intel_info.size() - 1];
+			} else {
+				if (intel_p == nullptr) {
+					mprintf(("Partial entry for [%s] found, but it does not already exist. Skipping!\n", intel_t.name));
+					if (!skip_to_start_of_string("$Entry:")) {
+						return;
+					}
+				}
+			}
+
+			if (optional_string("$Anim:")) {
+				stuff_string(intel_p->anim_filename, F_NAME, NAME_LENGTH);
+			}
+
+			if (optional_string("$AlwaysInTechRoom:")) {
+				//Change this from stuff_int to stuff_boolean because it can only ever be 1 or 0 here - Mjn
+				int temp;
+				stuff_boolean(&temp);
+				//If we are modifying an existing entry, then reset the flags first
+				if (!create_new_entry) {
+					intel_p->flags = IIF_DEFAULT_VALUE;
+				}
+				if (temp) {
+					// set default to align with what we read - Goober5000
+					intel_p->flags |= IIF_IN_TECH_DATABASE;
+					intel_p->flags |= IIF_DEFAULT_IN_TECH_DATABASE;
+				}
+			}
+
+			if (optional_string("$Description:")) {
+				stuff_string(intel_p->desc, F_MULTITEXT);
+			}
+
+			//retail table doesn't have #end so we have to check for the start of the next entry
+			//or for the end of the file instead. I have also Added #end compatibility here to 
+			//bring the table in line with other tables for absent minded modders - Mjn
+			if (check_for_string("$Entry:") || check_for_string("#end") || check_for_eof()) {
+				continue;
+			} else {
+				error_display(0, "Missing required token: [$Entry]. Found [%.32s] instead.\n", next_tokens());
+				return;
+			}
+
+		}
+
+	} catch (const parse::ParseException& e) {
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
+		return;
+	}
+}
 
 void techroom_intel_init()
 {
-	int  temp;
-
 	if (Intel_inited)
 		return;
-		
-	try
-	{
-		read_file_text("species.tbl", CF_TYPE_TABLES);
-		reset_parse();
 
-		Intel_info.clear();
-		while (optional_string("$Entry:")) {
-			intel_data entry;
-			entry.flags = IIF_DEFAULT_VALUE;
+	Intel_info.clear();
 
-			required_string("$Name:");
-			stuff_string(entry.name, F_NAME, NAME_LENGTH);
-
-			required_string("$Anim:");
-			stuff_string(entry.anim_filename, F_NAME, NAME_LENGTH);
-
-			required_string("$AlwaysInTechRoom:");
-			stuff_int(&temp);
-			if (temp) {
-				// set default to align with what we read - Goober5000
-				entry.flags |= IIF_IN_TECH_DATABASE;
-				entry.flags |= IIF_DEFAULT_IN_TECH_DATABASE;
-			}
-
-			required_string("$Description:");
-			stuff_string(entry.desc, F_MULTITEXT);
-
-			if (intel_info_lookup(entry.name) >= 0)
-				error_display(0, "Duplicate entry %s in species.tbl!", entry.name);
-			else
-				Intel_info.push_back(entry);
-		}
-
-		Intel_inited = true;
+	//Allow intel.tbl to be a alias of species.tbl, but only load one or the other.
+	//Intel.tbl would be newer so assume intended, but print to the log to be sure - Mjn
+	char filename[MAX_FILENAME_LEN] = "species.tbl";
+	if (cf_exists_full("intel.tbl", CF_TYPE_TABLES)){
+		mprintf(("Intel.tbl was found! Using that instead of Species.tbl...\n"));
+		strcpy_s(filename, "intel.tbl");
 	}
-	catch (const parse::ParseException& e)
-	{
-		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "species.tbl", e.what()));
-		return;
-	}
+
+	// first parse the default table
+	parse_intel_table(filename);
+
+	// parse any modular tables
+	parse_modular_table("*-intl.tbm", parse_intel_table);
+
+	Intel_inited = true;
 }
 
 void techroom_intel_reset()

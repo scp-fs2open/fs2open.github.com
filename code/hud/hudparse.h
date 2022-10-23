@@ -41,8 +41,12 @@ typedef struct gauge_settings {
 	bool set_colour;
 	bool slew;
 	bool chase_view_only;
+	int cockpit_view_choice;
 
-	gauge_settings() : font_num(Hud_font), scale_gauge(Scale_retail_gauges), ship_idx(nullptr), use_clr(nullptr), use_coords(false), set_position(true), set_colour(true), slew(false), chase_view_only(Chase_view_only_ex) {
+	gauge_settings()
+		: font_num(Hud_font), scale_gauge(Scale_retail_gauges), ship_idx(nullptr), use_clr(nullptr), use_coords(false),
+		  set_position(true), set_colour(true), slew(false), chase_view_only(Chase_view_only_ex), cockpit_view_choice(0)
+	{
 		base_res[0] = -1;
 		base_res[1] = -1;
 		memcpy(force_scaling_above_res, Force_scaling_above_res_global, sizeof(force_scaling_above_res));

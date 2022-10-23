@@ -61,7 +61,7 @@ typedef struct {
 
 typedef struct {
 	int num;
-	int timestamp;
+	TIMESTAMP timestamp;
 	int length;
 	char *special_message;
 } training_message_queue;
@@ -72,7 +72,7 @@ int Training_line_lengths[MAX_TRAINING_MESSAGE_LINES];
 
 char Training_voice_filename[NAME_LENGTH];
 int Max_directives = TRAINING_OBJ_DISPLAY_LINES;
-int Training_message_timestamp;
+TIMESTAMP Training_message_timestamp;
 int Training_message_method = 1;
 int Training_num_lines = 0;
 int Training_voice = -1;
@@ -832,18 +832,18 @@ void message_training_setup(int m, int length, char *special_message)
 
 	if ((message_play_training_voice(Messages[m].wave_info.index) < 0) || (Master_voice_volume <= 0)) {
 		if (length > 0)
-			Training_message_timestamp = timestamp(length * 1000);
+			Training_message_timestamp = _timestamp(length * MILLISECONDS_PER_SECOND);
 		else
-			Training_message_timestamp = timestamp(TRAINING_TIMING_BASE + (int)strlen(Messages[m].message) * TRAINING_TIMING);  // no voice file playing
+			Training_message_timestamp = _timestamp(TRAINING_TIMING_BASE + (int)strlen(Messages[m].message) * TRAINING_TIMING);  // no voice file playing
 
 	} else
-		Training_message_timestamp = 0;
+		Training_message_timestamp = TIMESTAMP::invalid();
 }
 
 /**
  * Add a message to the queue to be sent later
  */
-void message_training_queue(const char *text, int timestamp, int length)
+void message_training_queue(const char *text, TIMESTAMP timestamp, int length)
 {
 	int m;
 	SCP_string temp_buf;
@@ -907,7 +907,7 @@ void message_training_remove_from_queue(int idx)
 	Training_message_queue_count--;
 	Training_message_queue[Training_message_queue_count].length = -1;
 	Training_message_queue[Training_message_queue_count].num = -1;
-	Training_message_queue[Training_message_queue_count].timestamp = -1;
+	Training_message_queue[Training_message_queue_count].timestamp = TIMESTAMP::invalid();
 	Training_message_queue[Training_message_queue_count].special_message = NULL;	// not a memory leak because we copied the pointer
 }
 
@@ -983,14 +983,14 @@ void message_training_update_frame()
 
 	Training_message_visible = 1;
 
-	if ((Training_voice >= 0) && (Training_num_lines > 0) && !(Training_message_timestamp)) {
+	if ((Training_voice >= 0) && (Training_num_lines > 0) && !(Training_message_timestamp.isValid())) {
 		if (Training_voice_type)
 			z = audiostream_is_playing(Training_voice_soundstream);
 		else
 			z = snd_is_playing(Training_voice_snd_handle);
 
 		if (!z)
-			Training_message_timestamp = timestamp(2000);  // 2 second delay
+			Training_message_timestamp = _timestamp(2 * MILLISECONDS_PER_SECOND);  // 2 second delay
  	}
 
 	Training_message_method = 0;

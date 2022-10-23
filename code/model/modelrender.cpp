@@ -1490,7 +1490,7 @@ bool model_render_check_detail_box(vec3d *view_pos, polymodel *pm, int submodel_
 
 void submodel_render_immediate(model_render_params *render_info, polymodel *pm, polymodel_instance *pmi, int submodel_num, matrix *orient, vec3d * pos)
 {
-	Assert(pm->id == pmi->model_num);
+	Assert(!pmi || pm->id == pmi->model_num);
 
 	model_draw_list model_list;
 	
@@ -1513,7 +1513,7 @@ void submodel_render_immediate(model_render_params *render_info, polymodel *pm, 
 
 void submodel_render_queue(model_render_params *render_info, model_draw_list *scene, polymodel *pm, polymodel_instance *pmi, int submodel_num, matrix *orient, vec3d * pos)
 {
-	Assert(pm->id == pmi->model_num);
+	Assert(!pmi || pm->id == pmi->model_num);
 
 	model_material rendering_material;
 
@@ -1625,7 +1625,7 @@ void submodel_render_queue(model_render_params *render_info, model_draw_list *sc
 		}
 	}
 	
-	if ( pmi->submodel[submodel_num].num_arcs > 0 )	{
+	if ( pmi && pmi->submodel[submodel_num].num_arcs > 0 )	{
 		model_render_add_lightning( scene, render_info, pm, &pmi->submodel[submodel_num] );
 	}
 

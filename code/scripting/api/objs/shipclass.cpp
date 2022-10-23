@@ -839,6 +839,176 @@ ADE_VIRTVAR(AltName, l_Shipclass, "string", "Alternate name for ship class", "st
 	return ade_set_args(L, "s", Ship_info[idx].display_name);
 }
 
+ADE_VIRTVAR(VelocityMax, l_Shipclass, "vector", "Ship's lateral and forward speeds", "vector", "Maximum velocity, or null vector if handle is invalid")
+{
+	int idx;
+	vec3d* vec = NULL;
+	if (!ade_get_args(L, "o|o", l_Shipclass.Get(&idx), l_Vector.GetPtr(&vec)))
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	if (idx < 0 || idx >= ship_info_size())
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "Setting VelocityMax is not supported");
+	}
+
+	return ade_set_args(L, "o", l_Vector.Set(Ship_info[idx].max_vel));
+}
+
+ADE_VIRTVAR(VelocityDamping, l_Shipclass, "number", "Damping, the natural period (1 / omega) of the dampening effects on top of the acceleration model. ", "number", "Damping, or 0 if handle is invalid")
+{
+	int idx;
+	float f = 0.0f;
+	if (!ade_get_args(L, "o|f", l_Shipclass.Get(&idx), &f))
+		return ade_set_error(L, "f", 0.0f);
+
+	if (idx < 0 || idx >= ship_info_size())
+		return ade_set_error(L, "f", 0.0f);
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "Setting VelocityDamping is not supported");
+	}
+
+	return ade_set_args(L, "f", Ship_info[idx].damp);
+}
+
+ADE_VIRTVAR(RearVelocityMax, l_Shipclass, "number", "The maximum rear velocity of the ship", "number", "Speed, or 0 if handle is invalid")
+{
+	int idx;
+	float f = 0.0f;
+	if (!ade_get_args(L, "o|f", l_Shipclass.Get(&idx), &f))
+		return ade_set_error(L, "f", 0.0f);
+
+	if (idx < 0 || idx >= ship_info_size())
+		return ade_set_error(L, "f", 0.0f);
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "Setting RearVelocityMax is not supported");
+	}
+
+	return ade_set_args(L, "f", Ship_info[idx].max_rear_vel);
+}
+
+ADE_VIRTVAR(ForwardAccelerationTime, l_Shipclass, "number", "Forward acceleration time", "number", "Forward acceleration time, or 0 if handle is invalid")
+{
+	int idx;
+	float f = 0.0f;
+	if (!ade_get_args(L, "o|f", l_Shipclass.Get(&idx), &f))
+		return ade_set_error(L, "f", 0.0f);
+
+	if (idx < 0 || idx >= ship_info_size())
+		return ade_set_error(L, "f", 0.0f);
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "Setting ForwardAccelerationTime is not supported");
+	}
+
+	return ade_set_args(L, "f", Ship_info[idx].forward_accel);
+}
+
+ADE_VIRTVAR(ForwardDecelerationTime, l_Shipclass, "number", "Forward deceleration time", "number", "Forward decleration time, or 0 if handle is invalid")
+{
+	int idx;
+	float f = 0.0f;
+	if (!ade_get_args(L, "o|f", l_Shipclass.Get(&idx), &f))
+		return ade_set_error(L, "f", 0.0f);
+
+	if (idx < 0 || idx >= ship_info_size())
+		return ade_set_error(L, "f", 0.0f);
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "Setting ForwardDecelerationTime is not supported");
+	}
+
+	return ade_set_args(L, "f", Ship_info[idx].forward_decel);
+}
+
+ADE_VIRTVAR(RotationTime, l_Shipclass, "vector", "Maximum rotation time on each axis", "vector", "Full rotation time for each axis, or null vector if handle is invalid")
+{
+	int idx;
+	vec3d* vec = NULL;
+	if (!ade_get_args(L, "o|o", l_Shipclass.Get(&idx), l_Vector.GetPtr(&vec)))
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	if (idx < 0 || idx >= ship_info_size())
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "Setting RotationTime is not supported");
+	}
+
+	return ade_set_args(L, "o", l_Vector.Set(Ship_info[idx].rotation_time));
+}
+
+ADE_VIRTVAR(RotationalVelocityDamping, l_Shipclass, "number", "Rotational damping, ie derivative of rotational speed", "number", "Rotational damping, or 0 if handle is invalid")
+{
+	int idx;
+	float f = 0.0f;
+	if (!ade_get_args(L, "o|f", l_Shipclass.Get(&idx), &f))
+		return ade_set_error(L, "f", 0.0f);
+
+	if (idx < 0 || idx >= ship_info_size())
+		return ade_set_error(L, "f", 0.0f);
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "Setting RotationalVelocityDamping is not supported");
+	}
+
+	return ade_set_args(L, "f", Ship_info[idx].rotdamp);
+}
+
+ADE_VIRTVAR(AfterburnerAccelerationTime, l_Shipclass, "number", "Afterburner acceleration time", "number", "Afterburner acceleration time, or 0 if handle is invalid")
+{
+	int idx;
+	float f = 0.0f;
+	if (!ade_get_args(L, "o|f", l_Shipclass.Get(&idx), &f))
+		return ade_set_error(L, "f", 0.0f);
+
+	if (idx < 0 || idx >= ship_info_size())
+		return ade_set_error(L, "f", 0.0f);
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "Setting AfterburnerAccelerationTime is not supported");
+	}
+
+	return ade_set_args(L, "f", Ship_info[idx].afterburner_forward_accel);
+}
+
+ADE_VIRTVAR(AfterburnerVelocityMax, l_Shipclass, "vector", "Afterburner max velocity", "vector", "Afterburner max velocity, or null vector if handle is invalid")
+{
+	int idx;
+	vec3d* vec = NULL;
+	if (!ade_get_args(L, "o|o", l_Shipclass.Get(&idx), l_Vector.GetPtr(&vec)))
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	if (idx < 0 || idx >= ship_info_size())
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "Setting AfterburnerVelocityMax is not supported");
+	}
+
+	return ade_set_args(L, "o", l_Vector.Set(Ship_info[idx].afterburner_max_vel));
+}
+
+ADE_VIRTVAR(AfterburnerRearVelocityMax, l_Shipclass, "number", "Afterburner maximum rear velocity", "number", "Rear velocity, or 0 if handle is invalid")
+{
+	int idx;
+	float f = 0.0f;
+	if (!ade_get_args(L, "o|f", l_Shipclass.Get(&idx), &f))
+		return ade_set_error(L, "f", 0.0f);
+
+	if (idx < 0 || idx >= ship_info_size())
+		return ade_set_error(L, "f", 0.0f);
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "Setting AfterburnerRearVelocityMax is not supported");
+	}
+
+	return ade_set_args(L, "f", Ship_info[idx].afterburner_max_reverse_vel);
+}
+
 ADE_VIRTVAR(Score, l_Shipclass, "string", "The score of this ship class", "number", "The score or -1 on invalid ship class")
 {
 	int idx;
@@ -996,8 +1166,8 @@ ADE_FUNC(isInTechroom, l_Shipclass, NULL, "Gets whether or not the ship class is
 ADE_FUNC(renderTechModel,
 	l_Shipclass,
 	"number X1, number Y1, number X2, number Y2, [number RotationPercent =0, number PitchPercent =0, number "
-	"BankPercent=40, number Zoom=1.3]",
-	"Draws ship model as if in techroom",
+	"BankPercent=40, number Zoom=1.3, boolean Lighting=true]",
+	"Draws ship model as if in techroom. True for regular lighting, false for flat lighting.",
 	"boolean",
 	"Whether ship was rendered")
 {
@@ -1005,7 +1175,8 @@ ADE_FUNC(renderTechModel,
 	angles rot_angles = {0.0f, 0.0f, 40.0f};
 	int idx;
 	float zoom = 1.3f;
-	if(!ade_get_args(L, "oiiii|ffff", l_Shipclass.Get(&idx), &x1, &y1, &x2, &y2, &rot_angles.h, &rot_angles.p, &rot_angles.b, &zoom))
+	bool lighting = true;
+	if(!ade_get_args(L, "oiiii|ffffb", l_Shipclass.Get(&idx), &x1, &y1, &x2, &y2, &rot_angles.h, &rot_angles.p, &rot_angles.b, &zoom, &lighting))
 		return ade_set_error(L, "b", false);
 
 	if(idx < 0 || idx >= ship_info_size())
@@ -1060,7 +1231,7 @@ ADE_FUNC(renderTechModel,
 
 	uint render_flags = MR_AUTOCENTER | MR_NO_FOGGING;
 
-	if(sip->flags[Ship::Info_Flags::No_lighting])
+	if(!lighting || (sip->flags[Ship::Info_Flags::No_lighting]))
 		render_flags |= MR_NO_LIGHTING;
 
 	render_info.set_flags(render_flags);

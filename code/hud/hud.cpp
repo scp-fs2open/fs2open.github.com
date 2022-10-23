@@ -182,6 +182,7 @@ static int					Pl_hud_is_bright;
 #define SUBSYS_DAMAGE_FLASH_INTERVAL	100
 
 float Player_rearm_eta = 0;
+bool Extra_target_info = false;
 
 // forward declarations
 void update_throttle_sound();
@@ -250,7 +251,7 @@ static int Damage_flash_timer;
 
 HudGauge::HudGauge():
 base_w(0), base_h(0), gauge_config(-1), font_num(font::FONT1), lock_color(false), sexp_lock_color(false), reticle_follow(false),
-active(false), off_by_default(false), sexp_override(false), pop_up(false), disabled_views(0), only_render_in_chase_view(false), custom_gauge(false),
+active(false), off_by_default(false), sexp_override(false), pop_up(false), disabled_views(0), only_render_in_chase_view(false), render_for_cockpit_toggle(0), custom_gauge(false),
 texture_target(-1), canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 {
 	position[0] = 0;
@@ -275,7 +276,7 @@ texture_target(-1), canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 HudGauge::HudGauge(int _gauge_object, int _gauge_config, bool _slew, bool _message, int _disabled_views, int r, int g, int b):
 base_w(0), base_h(0), gauge_config(_gauge_config), gauge_object(_gauge_object), font_num(font::FONT1), lock_color(false), sexp_lock_color(false),
 reticle_follow(_slew), active(false), off_by_default(false), sexp_override(false), pop_up(false), message_gauge(_message),
-disabled_views(_disabled_views), only_render_in_chase_view(false), custom_gauge(false), textoffset_x(0), textoffset_y(0), texture_target(-1),
+disabled_views(_disabled_views), only_render_in_chase_view(false), render_for_cockpit_toggle(0), custom_gauge(false), textoffset_x(0), textoffset_y(0), texture_target(-1),
 canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 {
 	Assert(gauge_config <= NUM_HUD_GAUGES && gauge_config >= 0);
@@ -311,7 +312,7 @@ canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 HudGauge::HudGauge(int _gauge_config, bool _slew, int r, int g, int b, char* _custom_name, char* _custom_text, char* frame_fname, int txtoffset_x, int txtoffset_y):
 base_w(0), base_h(0), gauge_config(_gauge_config), gauge_object(HUD_OBJECT_CUSTOM), font_num(font::FONT1), lock_color(false), sexp_lock_color(false),
 reticle_follow(_slew), active(false), off_by_default(false), sexp_override(false), pop_up(false), message_gauge(false),
-disabled_views(VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY), only_render_in_chase_view(false), custom_gauge(true), textoffset_x(txtoffset_x),
+disabled_views(VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY), only_render_in_chase_view(false), render_for_cockpit_toggle(0), custom_gauge(true), textoffset_x(txtoffset_x),
 textoffset_y(txtoffset_y), texture_target(-1), canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 {
 	position[0] = 0;
@@ -608,6 +609,11 @@ void HudGauge::initRenderStatus(bool do_render)
 void HudGauge::initChase_view_only(bool chase_view_only) 
 { 
 	only_render_in_chase_view = chase_view_only; 
+}
+
+void HudGauge::initCockpit_view_choice(int cockpit_view_choice)
+{
+	render_for_cockpit_toggle = cockpit_view_choice;
 }
 
 bool HudGauge::isOffbyDefault()
@@ -1169,6 +1175,16 @@ bool HudGauge::canRender()
 
 	if ((Viewer_mode & (VM_CHASE)) == 0 && only_render_in_chase_view) {
 		return false;
+	}
+	
+	if (render_for_cockpit_toggle > 0) {
+		if ((Viewer_mode & VM_CHASE) && (render_for_cockpit_toggle == 2)) {
+			return true;
+		} else if (cockpitActive && (render_for_cockpit_toggle == 2)) {
+			return false;
+		} else if (!cockpitActive && (render_for_cockpit_toggle == 1)) {
+			return false;
+		}
 	}
 
 	if(pop_up) {
@@ -2922,6 +2938,11 @@ void HudGaugeSupport::initTextDockValueOffsetX(int x)
 	text_dock_val_offset_x = x;
 }
 
+void HudGaugeSupport::initRearmTimer(bool choice)
+{
+	enable_rearm_timer = choice;
+}
+
 void HudGaugeSupport::initBitmaps(const char *fname)
 {
 	background.first_frame = bm_load_animation(fname, &background.num_frames);
@@ -2980,7 +3001,7 @@ void HudGaugeSupport::render(float  /*frametime*/)
 	if (Player_ai->ai_flags[AI::AI_Flags::Being_repaired]) {
 		Assert(Player_ship->ship_max_hull_strength > 0);
 		
-		if (!Cmdline_rearm_timer)
+		if (!enable_rearm_timer)
 		{
 			int i;
 			bool repairing = false;

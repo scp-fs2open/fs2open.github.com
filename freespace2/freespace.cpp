@@ -3439,7 +3439,7 @@ void game_render_frame( camid cid )
 
 	//Draw the viewer 'cause we didn't before.
 	//This is currently seperate to facilitate deferred rendering on different view/proj matrices and with different settings
-	if (Viewer_obj && Viewer_obj->type == OBJ_SHIP && Viewer_obj->instance > 0) {
+	if (Viewer_obj && Viewer_obj->type == OBJ_SHIP && Viewer_obj->instance >= 0) {
 		gr_end_proj_matrix();
 		gr_end_view_matrix();
 

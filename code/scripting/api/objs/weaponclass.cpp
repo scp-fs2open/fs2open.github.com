@@ -283,6 +283,23 @@ ADE_VIRTVAR(Damage, l_Weaponclass, "number", "Amount of damage that weapon deals
 	return ade_set_args(L, "f", Weapon_info[idx].damage);
 }
 
+ADE_VIRTVAR(DamageType, l_Weaponclass, nullptr, nullptr, "number", "Damage Type index, or 0 if handle is invalid. Index is index into armor.tbl")
+{
+	int idx;
+	if (!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
+		return ade_set_error(L, "i", 0);
+
+	if (idx < 0 || idx >= weapon_info_size())
+		return ade_set_error(L, "i", 0);
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "Setting Damage Type is not supported");
+	}
+
+	//Convert to Lua's 1 based index here
+	return ade_set_args(L, "i", Weapon_info[idx].damage_type_idx_sav + 1);
+}
+
 ADE_VIRTVAR(FireWait, l_Weaponclass, "number", "Weapon fire wait (cooldown time) in seconds", "number", "Fire wait time, or 0 if handle is invalid")
 {
 	int idx;
@@ -315,6 +332,59 @@ ADE_VIRTVAR(FreeFlightTime, l_Weaponclass, "number", "The time the weapon will f
 	}
 
 	return ade_set_args(L, "f", Weapon_info[idx].free_flight_time);
+}
+
+ADE_VIRTVAR(SwarmInfo, l_Weaponclass, nullptr, nullptr, "boolean, number, number", 
+	"If the weapon has the swarm flag , the number of swarm missiles, the swarm wait. Returns nil if the handle is invalid.")
+{
+	int idx;
+	if (!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
+		return ADE_RETURN_NIL;
+
+	if (idx < 0 || idx >= weapon_info_size())
+		return ADE_RETURN_NIL;
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "Setting Swarm Info is not supported");
+	}
+
+	bool flag = false;
+	if (Weapon_info[idx].wi_flags[Weapon::Info_Flags::Swarm])
+		flag = true;
+
+	return ade_set_args(L, "bif", flag, Weapon_info[idx].swarm_count, Weapon_info[idx].SwarmWait);
+}
+
+ADE_VIRTVAR(CorkscrewInfo, l_Weaponclass, nullptr, nullptr, "boolean, number, number, number, boolean, number", 
+	"If the weapon has the corkscrew flag, the number of corkscrew missiles fired, the radius, the fire delay, counter rotate settings, the twist value. Returns nil if the handle is invalid.")
+{
+	int idx;
+	if (!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
+		return ADE_RETURN_NIL;
+
+	if (idx < 0 || idx >= weapon_info_size())
+		return ADE_RETURN_NIL;
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "Setting Corkscrew Info is not supported");
+	}
+
+	bool crotate = false;
+	if (Weapon_info[idx].cs_crotate)
+		crotate = true;
+
+	bool flag = false;
+	if (Weapon_info[idx].wi_flags[Weapon::Info_Flags::Corkscrew])
+		flag = true;
+
+	return ade_set_args(L,
+		"bifibf",
+		flag,
+		Weapon_info[idx].cs_num_fired,
+		Weapon_info[idx].cs_radius,
+		Weapon_info[idx].cs_delay,
+		crotate,
+		Weapon_info[idx].cs_twist);
 }
 
 ADE_VIRTVAR(LifeMax, l_Weaponclass, "number", "Life of weapon in seconds", "number", "Life of weapon, or 0 if handle is invalid")
@@ -434,6 +504,22 @@ ADE_VIRTVAR(Speed, l_Weaponclass, "number", "Weapon max speed, aka $Velocity in 
 	}
 
 	return ade_set_args(L, "f", Weapon_info[idx].max_speed);
+}
+
+ADE_VIRTVAR(EnergyConsumed, l_Weaponclass, nullptr, nullptr, "number", "Energy Consumed, or 0 if handle is invalid")
+{
+	int idx;
+	if(!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
+		return ade_set_error(L, "f", 0.0f);
+
+	if(idx < 0 || idx >= weapon_info_size())
+		return ade_set_error(L, "f", 0.0f);
+
+	if(ADE_SETTING_VAR) {
+		LuaError(L, "Setting Energy Consumed is not supported");
+	}
+
+	return ade_set_args(L, "f", Weapon_info[idx].energy_consumed);
 }
 
 
@@ -592,8 +678,8 @@ ADE_FUNC(isValid, l_Weaponclass, NULL, "Detects whether handle is valid", "boole
 ADE_FUNC(renderTechModel,
 	l_Weaponclass,
 	"number X1, number Y1, number X2, number Y2, [number RotationPercent =0, number PitchPercent =0, number "
-	"BankPercent=40, number Zoom=1.3]",
-	"Draws weapon tech model",
+	"BankPercent=40, number Zoom=1.3, boolean Lighting=true]",
+	"Draws weapon tech model. True for regular lighting, false for flat lighting.",
 	"boolean",
 	"Whether weapon was rendered")
 {
@@ -601,8 +687,9 @@ ADE_FUNC(renderTechModel,
 	angles rot_angles = {0.0f, 0.0f, 40.0f};
 	int idx;
 	float zoom = 1.3f;
+	bool lighting = true;
 	if (!ade_get_args(L,
-			"oiiii|ffff",
+			"oiiii|ffffb",
 			l_Weaponclass.Get(&idx),
 			&x1,
 			&y1,
@@ -611,7 +698,8 @@ ADE_FUNC(renderTechModel,
 			&rot_angles.h,
 			&rot_angles.p,
 			&rot_angles.b,
-			&zoom))
+			&zoom,
+			&lighting))
 		return ade_set_error(L, "b", false);
 
 	if (idx < 0 || idx >= weapon_info_size())
@@ -627,14 +715,15 @@ ADE_FUNC(renderTechModel,
 	weapon_info* wip = &Weapon_info[idx];
 	model_render_params render_info;
 
+	int modelNum;
 	//Load the model if it exists or exit early
 	if (VALID_FNAME(wip->tech_model)) {
-		wip->model_num = model_load(wip->tech_model, 0, NULL, 0);
+		modelNum = model_load(wip->tech_model, 0, nullptr, 0);
 	} else {
 		return ade_set_args(L, "b", false);
 	}
 
-	if (wip->model_num < 0)
+	if (modelNum < 0)
 		return ade_set_args(L, "b", false);
 
 	// Handle angles
@@ -665,17 +754,17 @@ ADE_FUNC(renderTechModel,
 	light_rotate_all();
 
 	// Draw the ship!!
-	model_clear_instance(wip->model_num);
+	model_clear_instance(modelNum);
 	render_info.set_detail_level_lock(0);
 
 	uint render_flags = MR_AUTOCENTER | MR_NO_FOGGING;
 
-	if (wip->wi_flags[Weapon::Info_Flags::Mr_no_lighting])
+	if (!lighting || (wip->wi_flags[Weapon::Info_Flags::Mr_no_lighting]))
 		render_flags |= MR_NO_LIGHTING;
 
 	render_info.set_flags(render_flags);
 
-	model_render_immediate(&render_info, wip->model_num, &orient, &vmd_zero_vector);
+	model_render_immediate(&render_info, modelNum, &orient, &vmd_zero_vector);
 
 	// OK we're done
 	gr_end_view_matrix();
@@ -699,7 +788,7 @@ ADE_FUNC(renderTechModel2,
 	int x1, y1, x2, y2;
 	int idx;
 	float zoom = 1.3f;
-	matrix_h* mh = NULL;
+	matrix_h* mh = nullptr;
 	if (!ade_get_args(L, "oiiiio|f", l_Weaponclass.Get(&idx), &x1, &y1, &x2, &y2, l_Matrix.GetPtr(&mh), &zoom))
 		return ade_set_error(L, "b", false);
 
@@ -712,14 +801,15 @@ ADE_FUNC(renderTechModel2,
 	weapon_info* wip = &Weapon_info[idx];
 	model_render_params render_info;
 
+	int modelNum;
 	// Load the model if it exists or exit early
 	if (VALID_FNAME(wip->tech_model)) {
-		wip->model_num = model_load(wip->tech_model, 0, NULL, 0);
+		modelNum = model_load(wip->tech_model, 0, nullptr, 0);
 	} else {
 		return ade_set_args(L, "b", false);
 	}
 
-	if (wip->model_num < 0)
+	if (modelNum < 0)
 		return ade_set_args(L, "b", false);
 
 	// Handle angles
@@ -743,7 +833,7 @@ ADE_FUNC(renderTechModel2,
 	light_rotate_all();
 
 	// Draw the ship!!
-	model_clear_instance(wip->model_num);
+	model_clear_instance(modelNum);
 	render_info.set_detail_level_lock(0);
 
 	uint render_flags = MR_AUTOCENTER | MR_NO_FOGGING;
@@ -753,7 +843,7 @@ ADE_FUNC(renderTechModel2,
 
 	render_info.set_flags(render_flags);
 
-	model_render_immediate(&render_info, wip->model_num, orient, &vmd_zero_vector);
+	model_render_immediate(&render_info, modelNum, orient, &vmd_zero_vector);
 
 	// OK we're done
 	gr_end_view_matrix();
