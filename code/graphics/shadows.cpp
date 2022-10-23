@@ -492,8 +492,8 @@ void shadows_render_all(float fov, matrix *eye_orient, vec3d *eye_pos)
 					continue;
 				}
 								
-				auto pmi = model_get_instance(db->model_instance_num);
-				auto pm = model_get(pmi->model_num);
+				auto pm = model_get(db->model_num);
+				auto pmi = db->model_instance_num < 0 ? nullptr : model_get_instance(db->model_instance_num);
 
 				objp = &Objects[db->objnum];
 
