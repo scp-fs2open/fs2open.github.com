@@ -219,11 +219,11 @@ void outwnd_print(const char *id, const char *tmp)
 			return;
 
 		Assert( strlen(id)+1 < NAME_LENGTH );
+
 		outwnd_filter_struct new_filter;
-
 		new_filter.enabled = false;
-
 		strcpy_s(new_filter.name, id);
+
 		for (const char *name : FILTERS_ENABLED_BY_DEFAULT){
 			if (stricmp(new_filter.name, name) == 0)
 			{
