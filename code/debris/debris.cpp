@@ -743,7 +743,12 @@ void debris_create_set_velocity(debris *db, ship *source_shipp, vec3d *exp_cente
 
 	// blow out his reverse thrusters. Or drag, same thing.
 	pi->rotdamp = 10000.0f;
-	pi->gravity_const = sip->debris_gravity_const;
+	if (source_shipp != nullptr) {
+		pi->gravity_const = Ship_info[source_shipp->ship_info_index].debris_gravity_const;
+	} else {
+		pi->gravity_const = 1.0f;
+	}
+	
 
 	vm_vec_zero(&pi->max_vel);		// make so he can't turn on his own VOLITION anymore.
 	vm_vec_zero(&pi->max_rotvel);	// make so he can't change speed on his own VOLITION anymore.
