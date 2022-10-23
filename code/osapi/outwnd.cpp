@@ -221,9 +221,15 @@ void outwnd_print(const char *id, const char *tmp)
 		Assert( strlen(id)+1 < NAME_LENGTH );
 		outwnd_filter_struct new_filter;
 
+		new_filter.enabled = false;
+
 		strcpy_s(new_filter.name, id);
 		for (const char *name : FILTERS_ENABLED_BY_DEFAULT){
-			new_filter.enabled = new_filter.enabled || stricmp(new_filter.name, name) == 0;
+			if (stricmp(new_filter.name, name) == 0)
+			{
+				new_filter.enabled = true;
+				break;
+			}
 		}
 		filter_vector().push_back( new_filter );
 		save_filter_info();
