@@ -1359,8 +1359,7 @@ static int drawString_sub(lua_State *L, bool use_resize_arg)
 			//Contrary to WMC's previous comment, let's make a new string each line
 			int len = linelengths[i];
 			char *buf = new char[len+1];
-			strncpy(buf, linestarts[i], len);
-			buf[len] = '\0';
+			strncpy_s(buf, len+1, linestarts[i], len);
 
 			//Draw the string
 			gr_string(x,curr_y,buf,resize_mode);

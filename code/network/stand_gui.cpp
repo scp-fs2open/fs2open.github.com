@@ -409,10 +409,10 @@ void std_connect_handle_name_change()
 		SendMessage(Multi_std_name,EM_GETLINE,(WPARAM)0,(LPARAM)(LPCSTR)buf);
 
 		// just copy it over for now. we may want to process this more later on
-		strncpy(Netgame.name, buf, sizeof(Netgame.name));
+		strncpy_s(Netgame.name, buf, sizeof(Netgame.name)-1);
 
 		// copy it to the permanent name
-		strncpy(Multi_options_g.std_pname, buf, sizeof(Multi_options_g.std_pname));
+		strncpy_s(Multi_options_g.std_pname, buf, sizeof(Multi_options_g.std_pname)-1);
 
 		// update systray icon
 		standalone_do_systray(ST_MODE_UPDATE);
@@ -432,7 +432,7 @@ void std_connect_handle_passwd_change()
 	SendMessage(Multi_std_host_passwd,EM_GETLINE,(WPARAM)0,(LPARAM)(LPCSTR)buf);
 
 	// just copy it over for now. we may want to process this more later on
-	strncpy(Multi_options_g.std_passwd, buf, sizeof(Multi_options_g.std_passwd));
+	strncpy_s(Multi_options_g.std_passwd, buf, sizeof(Multi_options_g.std_passwd)-1);
 }
 
 // convert the index of an item in the list box into an index into the net players array
@@ -2285,7 +2285,7 @@ static void standalone_do_systray(int mode)
 	nid.uID = 999;
 	nid.uCallbackMessage = MSG_SYSTRAYICON;
 	nid.hIcon = LoadIcon( GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_APP_ICON) );
-	strncpy(nid.szTip, Netgame.name, sizeof(nid.szTip));
+	strncpy_s(nid.szTip, Netgame.name, sizeof(nid.szTip)-1);
 	nid.uFlags = (NIF_MESSAGE | NIF_ICON | NIF_TIP);
 
 	if (mode == ST_MODE_CREATE) {

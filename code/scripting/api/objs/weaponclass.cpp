@@ -54,9 +54,8 @@ ADE_VIRTVAR(Name, l_Weaponclass, "string", "Weapon class name. This is the possi
 		return ade_set_error(L, "s", "");
 
 	if(ADE_SETTING_VAR && s != nullptr) {
-		auto len = sizeof(Weapon_info[idx].name);
-		strncpy(Weapon_info[idx].name, s, len);
-		Weapon_info[idx].name[len - 1] = 0;
+		auto size = sizeof(Weapon_info[idx].name);
+		strncpy_s(Weapon_info[idx].name, s, size-1);
 	}
 
 	return ade_set_args(L, "s", Weapon_info[idx].name);
@@ -73,9 +72,8 @@ ADE_VIRTVAR(AltName, l_Weaponclass, "string", "The alternate weapon class name."
 		return ade_set_error(L, "s", "");
 
 	if(ADE_SETTING_VAR && s != nullptr) {
-		auto len = sizeof(Weapon_info[idx].display_name);
-		strncpy(Weapon_info[idx].display_name, s, len);
-		Weapon_info[idx].display_name[len - 1] = 0;
+		auto size = sizeof(Weapon_info[idx].display_name);
+		strncpy_s(Weapon_info[idx].display_name, s, size-1);
 	}
 
 	return ade_set_args(L, "s", Weapon_info[idx].display_name);
@@ -92,9 +90,8 @@ ADE_VIRTVAR(Title, l_Weaponclass, "string", "Weapon class title", "string", "Wea
 		return ade_set_error(L, "s", "");
 
 	if(ADE_SETTING_VAR && s != nullptr) {
-		auto len = sizeof(Weapon_info[idx].title);
-		strncpy(Weapon_info[idx].title, s, len);
-		Weapon_info[idx].title[len - 1] = 0;
+		auto size = sizeof(Weapon_info[idx].title);
+		strncpy_s(Weapon_info[idx].title, s, size-1);
 	}
 
 	return ade_set_args(L, "s", Weapon_info[idx].title);
@@ -139,9 +136,8 @@ ADE_VIRTVAR(TechTitle, l_Weaponclass, "string", "Weapon class tech title", "stri
 		return ade_set_error(L, "s", "");
 
 	if(ADE_SETTING_VAR && s != nullptr) {
-		auto len = sizeof(Weapon_info[idx].tech_title);
-		strncpy(Weapon_info[idx].tech_title, s, len);
-		Weapon_info[idx].tech_title[len - 1] = 0;
+		auto size = sizeof(Weapon_info[idx].tech_title);
+		strncpy_s(Weapon_info[idx].tech_title, s, size-1);
 	}
 
 	return ade_set_args(L, "s", Weapon_info[idx].tech_title);
@@ -158,9 +154,8 @@ ADE_VIRTVAR(TechAnimationFilename, l_Weaponclass, "string", "Weapon class animat
 		return ade_set_error(L, "s", "");
 
 	if(ADE_SETTING_VAR && s != nullptr) {
-		auto len = sizeof(Weapon_info[idx].tech_anim_filename);
-		strncpy(Weapon_info[idx].tech_anim_filename, s, len);
-		Weapon_info[idx].tech_anim_filename[len - 1] = 0;
+		auto size = sizeof(Weapon_info[idx].tech_anim_filename);
+		strncpy_s(Weapon_info[idx].tech_anim_filename, s, size-1);
 	}
 
 	return ade_set_args(L, "s", Weapon_info[idx].tech_anim_filename);

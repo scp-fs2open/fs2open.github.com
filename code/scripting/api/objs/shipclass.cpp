@@ -148,9 +148,8 @@ ADE_VIRTVAR(Name, l_Shipclass, "string", "Ship class name", "string", "Ship clas
 		return ade_set_error(L, "s", "");
 
 	if(ADE_SETTING_VAR && s != NULL) {
-		auto len = sizeof(Ship_info[idx].name);
-		strncpy(Ship_info[idx].name, s, len);
-		Ship_info[idx].name[len - 1] = 0;
+		auto size = sizeof(Ship_info[idx].name);
+		strncpy_s(Ship_info[idx].name, s, size-1);
 	}
 
 	return ade_set_args(L, "s", Ship_info[idx].name);
@@ -167,9 +166,8 @@ ADE_VIRTVAR(ShortName, l_Shipclass, "string", "Ship class short name", "string",
 		return ade_set_error(L, "s", "");
 
 	if(ADE_SETTING_VAR && s != NULL) {
-		auto len = sizeof(Ship_info[idx].short_name);
-		strncpy(Ship_info[idx].short_name, s, len);
-		Ship_info[idx].short_name[len - 1] = 0;
+		auto size = sizeof(Ship_info[idx].short_name);
+		strncpy_s(Ship_info[idx].short_name, s, size-1);
 	}
 
 	return ade_set_args(L, "s", Ship_info[idx].short_name);

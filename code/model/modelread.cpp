@@ -5709,7 +5709,7 @@ void parse_glowpoint_table(const char *filename)
 					}
 
 					char glow_texture_neb_name[256];
-					strncpy(glow_texture_neb_name, glow_texture_name, 256);
+					strncpy_s(glow_texture_neb_name, glow_texture_name, 255);
 					strcat(glow_texture_neb_name, "-neb");
 					gpo.glow_neb_bitmap = bm_load(glow_texture_neb_name);
 

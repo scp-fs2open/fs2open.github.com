@@ -26,9 +26,8 @@ ADE_VIRTVAR(Name, l_Shiptype, "string", "Ship type name", "string", "Ship type n
 		return ade_set_error(L, "s", "");
 
 	if(ADE_SETTING_VAR && s != NULL) {
-		auto len = sizeof(Ship_types[idx].name);
-		strncpy(Ship_types[idx].name, s, len);
-		Ship_types[idx].name[len - 1] = 0;
+		auto size = sizeof(Ship_types[idx].name);
+		strncpy_s(Ship_types[idx].name, s, size-1);
 	}
 
 	return ade_set_args(L, "s", Ship_types[idx].name);

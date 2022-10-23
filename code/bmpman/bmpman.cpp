@@ -1137,8 +1137,7 @@ int bm_load(const char *real_filename, int dir_type) {
 		return -1;
 
 	// make sure no one passed an extension
-	memset(filename, 0, MAX_FILENAME_LEN);
-	strncpy(filename, real_filename, MAX_FILENAME_LEN - 1);
+	strncpy_s(filename, real_filename, MAX_FILENAME_LEN - 1);
 	char *p = strrchr(filename, '.');
 	if (p) {
 		mprintf(("Someone passed an extension to bm_load for file '%s'\n", real_filename));
@@ -1452,8 +1451,7 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 	if (total_time != nullptr)
 		*total_time = 0.0f;
 
-	memset(filename, 0, MAX_FILENAME_LEN);
-	strncpy(filename, real_filename, MAX_FILENAME_LEN - 1);
+	strncpy_s(filename, real_filename, MAX_FILENAME_LEN - 1);
 	char *p = strchr(filename, '.');
 	if (p) {
 		mprintf(("Someone passed an extension to bm_load_animation for file '%s'\n", real_filename));

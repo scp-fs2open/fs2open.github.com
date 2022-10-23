@@ -613,8 +613,7 @@ void parse_ai_profiles_tbl(const char *filename)
 				if (saved_Mp && (saved_Mp == Mp))
 				{
 					char tmp[60];
-					memset(tmp, 0, 60);
-					strncpy(tmp, Mp, 59);
+					strncpy_s(tmp, Mp, 59);
 					mprintf(("WARNING: Unrecognized parameter in ai_profiles: %s\n", tmp));
 
 					Mp++;

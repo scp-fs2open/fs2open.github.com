@@ -2795,11 +2795,8 @@ void sexp_tree::update_help(QTreeWidgetItem* h) {
 					//Find EOL
 					loc2 = strpbrk(loc, "\r\n");
 					if (loc2 != NULL) {
-						size_t size = loc2 - loc;
-						strncpy(buffer, loc, size);
-						if (size < sizeof(buffer)) {
-							buffer[size] = '\0';
-						}
+						size_t len = loc2 - loc;
+						strncpy_s(buffer, loc, len);
 						display_number = false;
 					} else {
 						strcpy_s(buffer, loc);

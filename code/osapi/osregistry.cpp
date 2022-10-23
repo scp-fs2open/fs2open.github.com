@@ -899,7 +899,7 @@ const char *os_config_read_string(const char *section, const char *name, const c
 	char *ptr = profile_get_value(Osreg_profile, section, name);
 
 	if (ptr != NULL) {
-		strncpy(tmp_string_data, ptr, 1023);
+		strncpy_s(tmp_string_data, ptr, 1023);
 		default_value = tmp_string_data;
 	}
 

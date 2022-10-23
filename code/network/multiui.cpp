@@ -3695,8 +3695,8 @@ void multi_create_game_do()
 			netgame_info *ng; 
 			ng = &Netgame;
 
-			char almissionname[256]; // needed, for the strncpy below
-			strncpy(almissionname, Cmdline_almission,MAX_FILENAME_LEN); //DTP; copying name from cmd_almission line
+			char almissionname[MAX_FILENAME_LEN]; // needed, for the strncpy below
+			strncpy_s(almissionname, Cmdline_almission, MAX_FILENAME_LEN-1); //DTP; copying name from cmd_almission line
 
 			Netgame.options.respawn = 99; //override anything //for debugging, i often forget this.
 			ng->respawn = Netgame.options.respawn;

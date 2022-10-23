@@ -106,14 +106,14 @@ void multi_options_read_config()
 					Multi_options_g.protocol = NET_TCP;
 					NEXT_TOKEN();
 					if (tok != NULL) {
-						strncpy(Multi_fs_tracker_channel, tok, MAX_PATH-1);
+						strncpy_s(Multi_fs_tracker_channel, tok, MAX_PATH-1);
 					}
 				} else
 				// set the standalone server's permanent name
 				if	( SETTING("+name") ) {
 					NEXT_TOKEN();
 					if (tok != NULL) {
-						strncpy(Multi_options_g.std_pname, tok, STD_NAME_LEN);
+						strncpy_s(Multi_options_g.std_pname, tok, STD_NAME_LEN);
 					}
 				} else
 				// standalone won't allow voice transmission
@@ -140,7 +140,7 @@ void multi_options_read_config()
 				if ( SETTING("+passwd") ) {
 					NEXT_TOKEN();
 					if (tok != NULL) {
-						strncpy(Multi_options_g.std_passwd, tok, STD_PASSWD_LEN);
+						strncpy_s(Multi_options_g.std_passwd, tok, STD_PASSWD_LEN);
 #ifdef _WIN32
 						// yuck
 						extern HWND Multi_std_host_passwd;
