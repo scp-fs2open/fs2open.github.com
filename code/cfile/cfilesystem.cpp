@@ -1248,16 +1248,15 @@ CFileLocation cf_find_file_location(const char* filespec, int pathtype, uint32_t
 	SCP_string filename = filespec;
 	SCP_string sub_path;
 
-	auto seperator = filename.find_last_of("\\/");
+	normalize_directory_separators(filename);
+
+	auto seperator = filename.rfind(DIR_SEPARATOR_CHAR);
 
 	if (seperator != SCP_string::npos) {
 		sub_path = filename.substr(0, seperator);
-		sub_path += DIR_SEPARATOR_STR;
+		sub_path += DIR_SEPARATOR_CHAR;
 
 		filename.erase(0, seperator+1);
-
-		// fix separators in sub path
-		normalize_directory_separators(sub_path);
 	}
 
 	// Search the pak files and CD-ROM.
@@ -1362,16 +1361,15 @@ CFileLocationExt cf_find_file_location_ext(const char *filename, const int ext_n
 	SCP_string filespec = filename;
 	SCP_string sub_path;
 
-	auto seperator = filespec.find_last_of("\\/");
+	normalize_directory_separators(filespec);
+
+	auto seperator = filespec.rfind(DIR_SEPARATOR_CHAR);
 
 	if (seperator != SCP_string::npos) {
 		sub_path = filespec.substr(0, seperator);
-		sub_path += DIR_SEPARATOR_STR;
+		sub_path += DIR_SEPARATOR_CHAR;
 
 		filespec.erase(0, seperator+1);
-
-		// fix separators in sub path
-		normalize_directory_separators(sub_path);
 	}
 
 	// strip any existing extension
@@ -1640,7 +1638,7 @@ static int cf_file_already_in_list( SCP_vector<SCP_string> &list, const char *fi
 // Note that filesystem listing is always sorted by name *before* sorting by the
 // provided sort order. This isn't strictly needed on NTFS, which always provides the list
 // sorted by name. But on mac/linux it's always needed.
-int cf_get_file_list(SCP_vector<SCP_string>& list, int pathtype, const char* filter, int sort,
+int cf_get_file_list(SCP_vector<SCP_string>& list, int pathtype, const char* _filter, int sort,
                      SCP_vector<file_list_info>* info, uint32_t location_flags)
 {
 	uint i;
@@ -1668,23 +1666,53 @@ int cf_get_file_list(SCP_vector<SCP_string>& list, int pathtype, const char* fil
 
 	cf_create_default_path_string(filespec, pathtype, (char*)Get_file_list_child, location_flags);
 
+	// fixup filter and sub directory path, if needed
+	SCP_string filter = _filter;
+	SCP_string sub_path;
+	bool glob = false;
+
+	normalize_directory_separators(filter);
+
+	auto seperator = filter.rfind(DIR_SEPARATOR_CHAR);
+
+	if (seperator != SCP_string::npos) {
+		sub_path = filter.substr(0, seperator);
+
+		if (sub_path == "*") {
+			glob = true;
+		} else {
+			sub_path += DIR_SEPARATOR_CHAR;
+		}
+
+		filter.erase(0, seperator+1);
+	}
+
+	SCP_string fullname;
 	SCP_vector<_file_list_t> files;
 
-	cf_get_list_of_files(filespec, files, filter);
+	cf_get_list_of_files(filespec, files, filter.c_str());
 
 	for (auto &file : files) {
+		if ( !glob && !sub_path_match(sub_path, file.sub_path) ) {
+			continue;
+		}
+
 		if ( !Get_file_list_filter || (*Get_file_list_filter)(file.name.c_str()) ) {
-			if (check_duplicates && cf_file_already_in_list(list, file.name.c_str())) {
+			auto pos = file.name.rfind('.');
+
+			if ( !sub_path.empty() ) {
+				// prepend file name with sub directory path
+				// allows us to open the specific file and allows duplicate filenames in different paths
+				fullname = file.sub_path + file.name.substr(0, pos);
+			} else {
+				fullname = file.name.substr(0, pos);
+			}
+
+			if (check_duplicates && cf_file_already_in_list(list, fullname.c_str())) {
 				continue;
 			}
 
-			SCP_string::size_type pos = file.name.find_last_of('.');
-
-			if (pos != SCP_string::npos) {
-				list.push_back(file.name.substr(0, pos));
-			} else {
-				list.push_back(file.name);
-			}
+			list.push_back(fullname);
 
 			if (info) {
 				tinfo.write_time = file.m_time;
@@ -1705,6 +1733,16 @@ int cf_get_file_list(SCP_vector<SCP_string>& list, int pathtype, const char* fil
 		for (i=0; i<Num_files; i++ )	{
 			cf_file * f = cf_get_file(i);
 
+			if (Skip_packfile_search && f->pack_offset != 0) {
+				// If the packfile skip flag is set we skip files in VPs but still search in directories
+				continue;
+			}
+
+			if (Skip_memory_files && f->data != nullptr) {
+				// If we want to skip memory files and this is a memory file then ignore it
+				continue;
+			}
+
 			// only search paths we're supposed to...
 			if ( (pathtype != CF_TYPE_ANY) && (pathtype != f->pathtype_index)  )	{
 				continue;
@@ -1720,30 +1758,32 @@ int cf_get_file_list(SCP_vector<SCP_string>& list, int pathtype, const char* fil
 				}
 			}
 
-			if ( !cf_matches_spec(filter, f->name_ext.c_str()) ) {
+			if ( !glob && !sub_path_match(sub_path, f->sub_path) ) {
 				continue;
 			}
 
-			if ( cf_file_already_in_list(list, f->name_ext.c_str()) ) {
-				continue;
-			}
-
-			if (Skip_packfile_search && f->pack_offset != 0) {
-				// If the packfile skip flag is set we skip files in VPs but still search in directories
-				continue;
-			}
-
-			if (Skip_memory_files && f->data != nullptr) {
-				// If we want to skip memory files and this is a memory file then ignore it
+			if ( !cf_matches_spec(filter.c_str(), f->name_ext.c_str()) ) {
 				continue;
 			}
 
 			if ( !Get_file_list_filter || (*Get_file_list_filter)(f->name_ext.c_str()) ) {
-				//mprintf(( "Found '%s' in root %d path %d\n", f->name_ext, f->root_index, f->pathtype_index ));
-
 				auto pos = f->name_ext.rfind('.');
 
-				list.push_back( f->name_ext.substr(0, pos) );
+				if ( !sub_path.empty() ) {
+					// prepend file name with sub directory path
+					// allows us to open the specific file and allows duplicate filenames in different paths
+					fullname = f->sub_path + f->name_ext.substr(0, pos);
+				} else {
+					fullname = f->name_ext.substr(0, pos);
+				}
+
+				if ( cf_file_already_in_list(list, fullname.c_str()) ) {
+					continue;
+				}
+
+				//mprintf(( "Found '%s' in root %d path %d\n", f->name_ext, f->root_index, f->pathtype_index ));
+
+				list.push_back(fullname);
 
 				if (info) {
 					tinfo.write_time = f->write_time;
@@ -1792,12 +1832,11 @@ int cf_file_already_in_list( int num_files, char **list, const char *filename )
 // This one has a 'type', which is a CF_TYPE_* value.  Because this specifies the directory
 // location, 'filter' only needs to be the filter itself, with no path information.
 // See above descriptions of cf_get_file_list() for more information about how it all works.
-int cf_get_file_list(int max, char** list, int pathtype, const char* filter, int sort, file_list_info* info,
+int cf_get_file_list(int max, char** list, int pathtype, const char* _filter, int sort, file_list_info* info,
                      uint32_t location_flags)
 {
 	uint i;
 	int num_files = 0, own_flag = 0;
-	size_t l;
 
 	if (max < 1) {
 		Get_file_list_filter = NULL;
@@ -1820,26 +1859,56 @@ int cf_get_file_list(int max, char** list, int pathtype, const char* filter, int
 
 	cf_create_default_path_string(filespec, pathtype, (char*)Get_file_list_child, location_flags);
 
+	// fixup filter and sub directory path, if needed
+	SCP_string filter = _filter;
+	SCP_string sub_path;
+	bool glob = false;
+
+	normalize_directory_separators(filter);
+
+	auto seperator = filter.rfind(DIR_SEPARATOR_CHAR);
+
+	if (seperator != SCP_string::npos) {
+		sub_path = filter.substr(0, seperator);
+
+		if (sub_path == "*") {
+			glob = true;
+		} else {
+			sub_path += DIR_SEPARATOR_CHAR;
+		}
+
+		filter.erase(0, seperator+1);
+	}
+
+	SCP_string fullname;
 	SCP_vector<_file_list_t> files;
 
-	cf_get_list_of_files(filespec, files, filter);
+	cf_get_list_of_files(filespec, files, filter.c_str());
 
 	for (auto &file : files) {
 		if (num_files >= max) {
 			break;
 		}
 
+		if ( !glob && !sub_path_match(sub_path, file.sub_path) ) {
+			continue;
+		}
+
 		if ( !Get_file_list_filter || (*Get_file_list_filter)(file.name.c_str()) ) {
 			auto pos = file.name.rfind('.');
 
-			if (pos != SCP_string::npos) {
-				l = pos;
+			if (glob) {
+				// prepend file name with sub directory path
+				// allows us to open the specific file and allows duplicate filenames in different paths
+				fullname = file.sub_path + file.name.substr(0, pos);
 			} else {
-				l = file.name.length();
+				fullname = file.name.substr(0, pos);
 			}
 
-			list[num_files] = reinterpret_cast<char *>(vm_malloc(l + 1));
-			SDL_strlcpy(list[num_files], file.name.substr(0, l).c_str(), l+1);
+			auto len = fullname.length();
+
+			list[num_files] = reinterpret_cast<char *>(vm_malloc(len + 1));
+			SDL_strlcpy(list[num_files], fullname.c_str(), len+1);
 
 			if (info) {
 				info[num_files].write_time = file.m_time;
@@ -1862,6 +1931,20 @@ int cf_get_file_list(int max, char** list, int pathtype, const char* filter, int
 		for (i=0; i<Num_files; i++ )	{
 			cf_file * f = cf_get_file(i);
 
+			if (num_files >= max) {
+				break;
+			}
+
+			if (Skip_packfile_search && f->pack_offset != 0) {
+				// If the packfile skip flag is set we skip files in VPs but still search in directories
+				continue;
+			}
+
+			if (Skip_memory_files && f->data != nullptr) {
+				// If we want to skip memory files and this is a memory file then ignore it
+				continue;
+			}
+
 			// only search paths we're supposed to...
 			if ( (pathtype != CF_TYPE_ANY) && (pathtype != f->pathtype_index)  )	{
 				continue;
@@ -1877,42 +1960,36 @@ int cf_get_file_list(int max, char** list, int pathtype, const char* filter, int
 				}
 			}
 
-			if (num_files >= max)
-				break;
-			
-			if ( !cf_matches_spec(filter, f->name_ext.c_str())) {
+			if ( !glob && !sub_path_match(sub_path, f->sub_path) ) {
 				continue;
 			}
 
-			if ( cf_file_already_in_list(num_files, list, f->name_ext.c_str()) ) {
-				continue;
-			}
-
-			if (Skip_packfile_search && f->pack_offset != 0) {
-				// If the packfile skip flag is set we skip files in VPs but still search in directories
-				continue;
-			}
-
-			if (Skip_memory_files && f->data != nullptr) {
-				// If we want to skip memory files and this is a memory file then ignore it
+			if ( !cf_matches_spec(filter.c_str(), f->name_ext.c_str())) {
 				continue;
 			}
 
 			if ( !Get_file_list_filter || (*Get_file_list_filter)(f->name_ext.c_str()) ) {
+				auto pos = f->name_ext.rfind('.');
+
+				if (glob) {
+					// prepend file name with sub directory path
+					// allows us to open the specific file and allows duplicate filenames in different paths
+					fullname = f->sub_path + f->name_ext.substr(0, pos);
+				} else {
+					fullname = f->name_ext.substr(0, pos);
+				}
+
+				if ( cf_file_already_in_list(num_files, list, fullname.c_str()) ) {
+					continue;
+				}
 
 				//mprintf(( "Found '%s' in root %d path %d\n", f->name_ext, f->root_index, f->pathtype_index ));
 
-					auto pos = f->name_ext.rfind('.');
+				auto len = fullname.length();
 
-					if (pos != SCP_string::npos) {
-						l = pos;
-					} else {
-						l = f->name_ext.length();
-					}
-
-					list[num_files] = (char *)vm_malloc(l + 1);
-					strncpy(list[num_files], f->name_ext.c_str(), l);
-					list[num_files][l] = 0;
+				list[num_files] = (char *)vm_malloc(len + 1);
+				strncpy(list[num_files], f->name_ext.c_str(), len);
+				list[num_files][len] = 0;
 
 				if (info)	{
 					info[num_files].write_time = f->write_time;
@@ -1962,7 +2039,7 @@ int cf_file_already_in_list_preallocated( int num_files, char arr[][MAX_FILENAME
 // This one has a 'type', which is a CF_TYPE_* value.  Because this specifies the directory
 // location, 'filter' only needs to be the filter itself, with no path information.
 // See above descriptions of cf_get_file_list() for more information about how it all works.
-int cf_get_file_list_preallocated(int max, char arr[][MAX_FILENAME_LEN], char** list, int pathtype, const char* filter,
+int cf_get_file_list_preallocated(int max, char arr[][MAX_FILENAME_LEN], char** list, int pathtype, const char* _filter,
                                   int sort, file_list_info* info, uint32_t location_flags)
 {
 	int num_files = 0, own_flag = 0;
@@ -1997,9 +2074,31 @@ int cf_get_file_list_preallocated(int max, char arr[][MAX_FILENAME_LEN], char** 
 	// Search the default directories
 	cf_create_default_path_string(filespec, pathtype, (char*)Get_file_list_child, location_flags);
 
+	// fixup filter and sub directory path, if needed
+	SCP_string filter = _filter;
+	SCP_string sub_path;
+
+	normalize_directory_separators(filter);
+
+	auto seperator = filter.rfind(DIR_SEPARATOR_CHAR);
+
+	if (seperator != SCP_string::npos) {
+		sub_path = filter.substr(0, seperator);
+
+		if (sub_path != "*") {
+			sub_path += DIR_SEPARATOR_CHAR;
+		}
+
+		filter.erase(0, seperator+1);
+
+		// due to the limited filename length we can't reliably add sub paths to it
+		// so we just strip off the sub path and do a regular search instead, after a warning
+		Warning(LOCATION, "Subdirectory searches aren't available for cf_get_file_list_preallocated()!");
+	}
+
 	SCP_vector<_file_list_t> files;
 
-	cf_get_list_of_files(filespec, files, filter);
+	cf_get_list_of_files(filespec, files, filter.c_str());
 
 	for (auto &file : files) {
 		if (num_files >= max) {
@@ -2059,7 +2158,7 @@ int cf_get_file_list_preallocated(int max, char arr[][MAX_FILENAME_LEN], char** 
 						
 				break;
 
-			if ( !cf_matches_spec(filter, f->name_ext.c_str()) ) {
+			if ( !cf_matches_spec(filter.c_str(), f->name_ext.c_str()) ) {
 				continue;
 			}
 
