@@ -553,14 +553,15 @@ void cf_build_pack_list( cf_root *root )
 	}
 }
 
-static char normalize_directory_separator(char in)
+static void normalize_directory_separators(SCP_string &str)
 {
-	if (in == '/')
-	{
-		return DIR_SEPARATOR_CHAR;
+	char bad_sep = '/';
+
+	if (bad_sep == DIR_SEPARATOR_CHAR) {
+		bad_sep = '\\';
 	}
 
-	return in;
+	std::replace(str.begin(), str.end(), bad_sep, DIR_SEPARATOR_CHAR);
 }
 
 static void cf_add_mod_roots(const char* rootDirectory, uint32_t basic_location)
@@ -586,7 +587,7 @@ static void cf_add_mod_roots(const char* rootDirectory, uint32_t basic_location)
 			}
 
 			// normalize the path to the native path format
-			std::transform(rootPath.begin(), rootPath.end(), rootPath.begin(), normalize_directory_separator);
+			normalize_directory_separators(rootPath);
 
 			cf_root* root = cf_create_root();
 
@@ -1256,13 +1257,7 @@ CFileLocation cf_find_file_location(const char* filespec, int pathtype, uint32_t
 		filename.erase(0, seperator+1);
 
 		// fix separators in sub path
-		char bad_sep = '/';
-
-		if (bad_sep == DIR_SEPARATOR_CHAR) {
-			bad_sep = '\\';
-		}
-
-		std::replace(sub_path.begin(), sub_path.end(), bad_sep, DIR_SEPARATOR_CHAR);
+		normalize_directory_separators(sub_path);
 	}
 
 	// Search the pak files and CD-ROM.
@@ -1376,13 +1371,7 @@ CFileLocationExt cf_find_file_location_ext(const char *filename, const int ext_n
 		filespec.erase(0, seperator+1);
 
 		// fix separators in sub path
-		char bad_sep = '/';
-
-		if (bad_sep == DIR_SEPARATOR_CHAR) {
-			bad_sep = '\\';
-		}
-
-		std::replace(sub_path.begin(), sub_path.end(), bad_sep, DIR_SEPARATOR_CHAR);
+		normalize_directory_separators(sub_path);
 	}
 
 	// strip any existing extension
