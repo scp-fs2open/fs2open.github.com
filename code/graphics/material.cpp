@@ -760,7 +760,7 @@ uint model_material::get_shader_flags() const
 		Shader_flags |= SDR_FLAG_MODEL_ANIMATED;
 	}
 
-	if ( get_texture_map(TM_BASE_TYPE) > 0 && !Basemap_override ) {
+	if ( get_texture_map(TM_BASE_TYPE) > 0) {
 		Shader_flags |= SDR_FLAG_MODEL_DIFFUSE_MAP;
 	}
 
@@ -768,18 +768,18 @@ uint model_material::get_shader_flags() const
 		Shader_flags |= SDR_FLAG_MODEL_GLOW_MAP;
 	}
 
-	if ( (get_texture_map(TM_SPECULAR_TYPE) > 0 || get_texture_map(TM_SPEC_GLOSS_TYPE) > 0) && !Specmap_override ) {
+	if ( get_texture_map(TM_SPECULAR_TYPE) > 0 || get_texture_map(TM_SPEC_GLOSS_TYPE) > 0 ) {
 		Shader_flags |= SDR_FLAG_MODEL_SPEC_MAP;
 	}
 	if ( (ENVMAP > 0) && !Envmap_override ) {
 		Shader_flags |= SDR_FLAG_MODEL_ENV_MAP;
 	}
 
-	if ( (get_texture_map(TM_NORMAL_TYPE) > 0) && !Normalmap_override ) {
+	if ( get_texture_map(TM_NORMAL_TYPE) > 0 ) {
 		Shader_flags |= SDR_FLAG_MODEL_NORMAL_MAP;
 	}
 
-	if ( (get_texture_map(TM_HEIGHT_TYPE) > 0) && !Heightmap_override ) {
+	if ( get_texture_map(TM_HEIGHT_TYPE) > 0 ) {
 		Shader_flags |= SDR_FLAG_MODEL_HEIGHT_MAP;
 	}
 

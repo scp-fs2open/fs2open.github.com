@@ -66,11 +66,7 @@ char Processing_filename[MAX_PATH_LEN];
 #endif
 
 // override states to skip rendering of certain elements, but without disabling them completely
-bool Basemap_override = false;
 bool Envmap_override = false;
-bool Specmap_override = false;
-bool Normalmap_override = false;
-bool Heightmap_override = false;
 bool Glowpoint_override = false;
 bool Glowpoint_use_depth_buffer = true;
 bool PostProcessing_override = false;

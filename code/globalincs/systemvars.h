@@ -138,14 +138,9 @@ extern float Noise[NOISE_NUM_FRAMES];
 
 
 // override states to skip rendering of certain elements, but without disabling them completely
-extern bool Basemap_override;
 extern bool Envmap_override;
-extern bool Specmap_override;
-extern bool Normalmap_override;
-extern bool Heightmap_override;
 extern bool Glowpoint_override;
 extern bool Glowpoint_use_depth_buffer;
-extern bool GLSL_override;
 extern bool PostProcessing_override;
 extern bool Shadow_override;
 extern bool Trail_render_override;

@@ -49,11 +49,7 @@ extern int G3_user_clip;
 extern vec3d G3_user_clip_normal;
 extern vec3d G3_user_clip_point;
 
-extern bool Basemap_override;
 extern bool Envmap_override;
-extern bool Specmap_override;
-extern bool Normalmap_override;
-extern bool Heightmap_override;
 extern bool Shadow_override;
 
 size_t GL_vertex_data_in = 0;
