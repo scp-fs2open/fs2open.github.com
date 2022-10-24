@@ -6744,10 +6744,6 @@ void game_shutdown(void)
 	main_hall_close();
 	training_menu_close();
 
-	// free left over memory from table parsing
-	player_tips_close();
-
-
 	// more fundamental shutdowns begin here ----------
 
 	sexp_shutdown();				// Free SEXP resources

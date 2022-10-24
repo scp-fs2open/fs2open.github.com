@@ -24,6 +24,7 @@
 #include "menuui/mainhallmenu.h"
 #include "menuui/playermenu.h"
 #include "mission/missioncampaign.h"
+#include "mission/missiontraining.h"
 #include "mod_table/mod_table.h"
 #include "network/multi.h"
 #include "osapi/osregistry.h"
@@ -1371,7 +1372,7 @@ DCF(bastion, "Temporarily sets the player to be on the Bastion (or any other mai
 
 #define MAX_PLAYER_TIPS			40
 
-char *Player_tips[MAX_PLAYER_TIPS];
+SCP_string Player_tips[MAX_PLAYER_TIPS];
 int Num_player_tips;
 int Player_tips_shown = 0;
 
@@ -1391,26 +1392,18 @@ void player_tips_init()
 			if (Num_player_tips >= MAX_PLAYER_TIPS) {
 				break;
 			}
-			Player_tips[Num_player_tips++] = stuff_and_malloc_string(F_NAME, NULL);
+
+			SCP_string buf;
+			stuff_string(buf, F_MESSAGE);
+
+			Player_tips[Num_player_tips++] = message_translate_tokens(buf.c_str());
+
 		}
 	}
 	catch (const parse::ParseException& e)
 	{
 		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "tips.tbl", e.what()));
 		return;
-	}
-}
-
-// close out player tips - *only call from game_shutdown()*
-void player_tips_close()
-{
-	int i;
-
-	for (i=0; i<MAX_PLAYER_TIPS; i++) {
-		if (Player_tips[i] != NULL) {
-			vm_free(Player_tips[i]);
-			Player_tips[i] = NULL;
-		}
 	}
 }
 
@@ -1434,7 +1427,7 @@ void player_tips_popup()
 	char all_txt[2048];
 
 	do {
-		sprintf(all_txt, XSTR("NEW USER TIP\n\n%s", 1565), Player_tips[tip]);
+		sprintf(all_txt, XSTR("NEW USER TIP\n\n%s", 1565), Player_tips[tip].c_str());
 		ret = popup(PF_NO_SPECIAL_BUTTONS | PF_TITLE | PF_TITLE_WHITE, 3, XSTR("&Ok", 669), XSTR("&Next", 1444), XSTR("Don't show me this again", 1443), all_txt);
 	
 		// now what?
