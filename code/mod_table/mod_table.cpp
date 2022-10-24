@@ -45,6 +45,7 @@ int FS2NetD_port;
 int Default_multi_object_update_level;
 float Briefing_window_FOV;
 bool Disable_hc_message_ani;
+SCP_vector<SCP_string> Custom_head_anis;
 bool Red_alert_applies_to_delayed_ships;
 bool Beams_use_damage_factors;
 float Generic_pain_flash_factor;
@@ -740,6 +741,20 @@ void parse_mod_table(const char *filename)
 			else {
 				mprintf(("Game Settings Table: FRED - Using Hard Coded Message Ani Files\n"));
 
+			}
+		}
+
+		if (optional_string("$Add Message Head Ani Files:")) {
+			SCP_string head_name;
+			while (optional_string("+Head:")) {
+				stuff_string(head_name, F_NAME);
+
+				// remove extension?
+				if (drop_extension(head_name)) {
+					mprintf(("Game Settings Table: Removed extension on head ani file name %s\n", head_name.c_str()));
+				}
+
+				Custom_head_anis.push_back(head_name);
 			}
 		}
 

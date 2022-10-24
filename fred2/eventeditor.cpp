@@ -172,7 +172,7 @@ END_MESSAGE_MAP()
 /////////////////////////////////////////////////////////////////////////////
 // event_editor message handlers
 
-void maybe_add_head(CComboBox *box, char* name)
+void maybe_add_head(CComboBox *box, const char* name)
 {
 	if (box->FindStringExact(-1, name) == CB_ERR) {
 		box->AddString(name);
@@ -274,6 +274,10 @@ BOOL event_editor::OnInitDialog()
 		maybe_add_head(box, "Head-CM5");
 		maybe_add_head(box, "Head-BSH");
 		
+	}
+
+	for (auto &thisHead : Custom_head_anis) {
+		maybe_add_head(box, thisHead.c_str());
 	}
 
 /*
