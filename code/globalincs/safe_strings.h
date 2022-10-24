@@ -49,6 +49,7 @@ typedef int errno_t;
 #endif
 
 extern errno_t scp_strcpy_s( const char* file, int line, char* strDest, size_t sizeInBytes, const char* strSource );
+extern errno_t scp_strncpy_s( const char* file, int line, char* strDest, size_t sizeInBytes, const char* strSource, size_t inputSizeInBytes );
 extern errno_t scp_strcat_s( const char* file, int line, char* strDest, size_t sizeInBytes, const char* strSource );
 
 template< size_t size>
@@ -62,7 +63,7 @@ template< size_t size>
 inline
 errno_t scp_strncpy_s(const char* file, int line, char(&strDest)[size], const char* strSource, size_t count)
 {
-	return scp_strcpy_s(file, line, strDest, MIN(size, count), strSource);
+	return scp_strncpy_s(file, line, strDest, size, strSource, count);
 }
 
 template< size_t size >
