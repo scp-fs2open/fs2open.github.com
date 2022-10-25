@@ -1519,6 +1519,7 @@ ADE_FUNC(createTexture, l_Graphics, "[number Width=512, number Height=512, enume
 	if(idx < 0)
 		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
 
+	//Since creating a render target does not increase load count, we need to still do so even though we just created the texture
 	return ade_set_args(L, "o", l_Texture.Set(texture_h(idx)));
 }
 
@@ -1547,8 +1548,9 @@ ADE_FUNC(loadTexture, l_Graphics, "string Filename, [boolean LoadIfAnimation, bo
 
 	if(idx < 0)
 		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
-
-	return ade_set_args(L, "o", l_Texture.Set(texture_h(idx)));
+	
+	//Loading increases load count, so don't on texture init
+	return ade_set_args(L, "o", l_Texture.Set(texture_h(idx, false)));
 }
 
 ADE_FUNC(drawImage,
