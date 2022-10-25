@@ -683,7 +683,7 @@ public:
 
 	int	next_engine_stutter;				// timestamp to time the engine stuttering when a ship dies
 
-	fix base_texture_anim_frametime;		// Goober5000 - zero mark for texture animations
+	TIMESTAMP base_texture_anim_timestamp;	// Goober5000 - zero mark for texture animations
 
 	float total_damage_received;        // total damage received (for scoring purposes)
 	float damage_ship[MAX_DAMAGE_SLOTS];    // damage applied from each player

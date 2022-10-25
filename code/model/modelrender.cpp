@@ -48,6 +48,8 @@ color Wireframe_color;
 
 extern void interp_render_arc_segment( vec3d *v1, vec3d *v2, int depth );
 
+int model_render_determine_elapsed_time(int objnum, uint flags);
+
 model_batch_buffer TransformBufferHandler;
 
 model_render_params::model_render_params() :
@@ -1012,7 +1014,7 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 		return;
 	}
 
-	fix base_frametime = model_render_determine_base_frametime(obj_num, model_flags);
+	int elapsed_time = model_render_determine_elapsed_time(obj_num, model_flags);
 
 	texture_info tex_replace[TM_NUM_TYPES];
 
@@ -1077,10 +1079,10 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 			} else if ( (replacement_textures != NULL) && (replacement_textures[rt_begin_index + TM_BASE_TYPE] >= 0) ) {
 				// an underlying texture is replaced with a real new texture
 				tex_replace[TM_BASE_TYPE] = texture_info(replacement_textures[rt_begin_index + TM_BASE_TYPE]);
-				texture_maps[TM_BASE_TYPE] = model_interp_get_texture(&tex_replace[TM_BASE_TYPE], base_frametime);
+				texture_maps[TM_BASE_TYPE] = model_interp_get_texture(&tex_replace[TM_BASE_TYPE], elapsed_time);
 			} else {
 				// we just use the underlying texture
-				texture_maps[TM_BASE_TYPE] = model_interp_get_texture(&tmap->textures[TM_BASE_TYPE], base_frametime);
+				texture_maps[TM_BASE_TYPE] = model_interp_get_texture(&tmap->textures[TM_BASE_TYPE], elapsed_time);
 			}
 
 			if ( texture_maps[TM_BASE_TYPE] < 0 ) {
@@ -1093,13 +1095,13 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 
 				if ( (replacement_textures != NULL) && (replacement_textures[rt_begin_index + TM_GLOW_TYPE] >= 0) ) {
 					tex_replace[TM_GLOW_TYPE] = texture_info(replacement_textures[rt_begin_index + TM_GLOW_TYPE]);
-					texture_maps[TM_GLOW_TYPE] = model_interp_get_texture(&tex_replace[TM_GLOW_TYPE], base_frametime);
+					texture_maps[TM_GLOW_TYPE] = model_interp_get_texture(&tex_replace[TM_GLOW_TYPE], elapsed_time);
 				} else if (tglow->GetTexture() >= 0) {
 					// shockwaves are special, their current frame has to come out of the shockwave code to get the timing correct
 					if ( (obj_num >= 0) && (Objects[obj_num].type == OBJ_SHOCKWAVE) && (tglow->GetNumFrames() > 1) ) {
 						texture_maps[TM_GLOW_TYPE] = tglow->GetTexture() + shockwave_get_framenum(Objects[obj_num].instance, tglow->GetTexture());
 					} else {
-						texture_maps[TM_GLOW_TYPE] = model_interp_get_texture(tglow, base_frametime);
+						texture_maps[TM_GLOW_TYPE] = model_interp_get_texture(tglow, elapsed_time);
 					}
 				}
 			}
@@ -1107,18 +1109,18 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 			if (!(debug_flags & MR_DEBUG_NO_SPEC)) {
 				if (replacement_textures != NULL && replacement_textures[rt_begin_index + TM_SPECULAR_TYPE] >= 0) {
 					tex_replace[TM_SPECULAR_TYPE] = texture_info(replacement_textures[rt_begin_index + TM_SPECULAR_TYPE]);
-					texture_maps[TM_SPECULAR_TYPE] = model_interp_get_texture(&tex_replace[TM_SPECULAR_TYPE], base_frametime);
+					texture_maps[TM_SPECULAR_TYPE] = model_interp_get_texture(&tex_replace[TM_SPECULAR_TYPE], elapsed_time);
 				}
 				else {
-					texture_maps[TM_SPECULAR_TYPE] = model_interp_get_texture(&tmap->textures[TM_SPECULAR_TYPE], base_frametime);
+					texture_maps[TM_SPECULAR_TYPE] = model_interp_get_texture(&tmap->textures[TM_SPECULAR_TYPE], elapsed_time);
 				}
 			}
 
 			if ( replacement_textures != NULL && replacement_textures[rt_begin_index + TM_SPEC_GLOSS_TYPE] >= 0 ) {
 				tex_replace[TM_SPEC_GLOSS_TYPE] = texture_info(replacement_textures[rt_begin_index + TM_SPEC_GLOSS_TYPE]);
-				texture_maps[TM_SPEC_GLOSS_TYPE] = model_interp_get_texture(&tex_replace[TM_SPEC_GLOSS_TYPE], base_frametime);
+				texture_maps[TM_SPEC_GLOSS_TYPE] = model_interp_get_texture(&tex_replace[TM_SPEC_GLOSS_TYPE], elapsed_time);
 			} else {
-				texture_maps[TM_SPEC_GLOSS_TYPE] = model_interp_get_texture(&tmap->textures[TM_SPEC_GLOSS_TYPE], base_frametime);
+				texture_maps[TM_SPEC_GLOSS_TYPE] = model_interp_get_texture(&tmap->textures[TM_SPEC_GLOSS_TYPE], elapsed_time);
 			}
 
 			if (detail_level < 2) {
@@ -1154,10 +1156,10 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 				if (debug_flags & MR_DEBUG_NO_GLOW)		  texture_maps[TM_GLOW_TYPE] = -1;
 				if (debug_flags & MR_DEBUG_NO_SPEC)		  texture_maps[TM_SPECULAR_TYPE] = -1;
 				if (debug_flags & MR_DEBUG_NO_REFLECT)	  texture_maps[TM_SPEC_GLOSS_TYPE] = -1;
-				if (!(debug_flags & MR_DEBUG_NO_MISC))    texture_maps[TM_MISC_TYPE] = model_interp_get_texture(misc_map, base_frametime);
-				if (!(debug_flags & MR_DEBUG_NO_NORMAL) && Detail.lighting > 0)  texture_maps[TM_NORMAL_TYPE] = model_interp_get_texture(norm_map, base_frametime);
-				if (!(debug_flags & MR_DEBUG_NO_AMBIENT) && Detail.lighting > 0) texture_maps[TM_AMBIENT_TYPE] = model_interp_get_texture(ambient_map, base_frametime);
-				if (!(debug_flags & MR_DEBUG_NO_HEIGHT) && Detail.lighting > 1)  texture_maps[TM_HEIGHT_TYPE] = model_interp_get_texture(height_map, base_frametime);
+				if (!(debug_flags & MR_DEBUG_NO_MISC))    texture_maps[TM_MISC_TYPE] = model_interp_get_texture(misc_map, elapsed_time);
+				if (!(debug_flags & MR_DEBUG_NO_NORMAL) && Detail.lighting > 0)  texture_maps[TM_NORMAL_TYPE] = model_interp_get_texture(norm_map, elapsed_time);
+				if (!(debug_flags & MR_DEBUG_NO_AMBIENT) && Detail.lighting > 0) texture_maps[TM_AMBIENT_TYPE] = model_interp_get_texture(ambient_map, elapsed_time);
+				if (!(debug_flags & MR_DEBUG_NO_HEIGHT) && Detail.lighting > 1)  texture_maps[TM_HEIGHT_TYPE] = model_interp_get_texture(height_map, elapsed_time);
 			}
 		} else {
 			alpha = forced_alpha;
@@ -1166,9 +1168,9 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 			if ( Rendering_to_shadow_map ) {
 				if ( (replacement_textures != NULL) && (replacement_textures[rt_begin_index + TM_BASE_TYPE] >= 0) ) {
 					tex_replace[TM_BASE_TYPE] = texture_info(replacement_textures[rt_begin_index + TM_BASE_TYPE]);
-					texture_maps[TM_BASE_TYPE] = model_interp_get_texture(&tex_replace[TM_BASE_TYPE], base_frametime);
+					texture_maps[TM_BASE_TYPE] = model_interp_get_texture(&tex_replace[TM_BASE_TYPE], elapsed_time);
 				} else {
-					texture_maps[TM_BASE_TYPE] = model_interp_get_texture(&tmap->textures[TM_BASE_TYPE], base_frametime);
+					texture_maps[TM_BASE_TYPE] = model_interp_get_texture(&tmap->textures[TM_BASE_TYPE], elapsed_time);
 				}
 
 				if ( texture_maps[TM_BASE_TYPE] <= 0 ) {
@@ -1372,22 +1374,21 @@ float model_render_determine_box_scale()
 	return box_scale;
 }
 
-fix model_render_determine_base_frametime(int objnum, uint flags)
+// Goober5000
+// Returns milliseconds since texture animation started.
+int model_render_determine_elapsed_time(int objnum, uint flags)
 {
-	// Goober5000
-	fix base_frametime = 0;
-
 	if ( objnum >= 0 ) {
 		object *objp = &Objects[objnum];
 
 		if ( objp->type == OBJ_SHIP ) {
-			base_frametime = Ships[objp->instance].base_texture_anim_frametime;
+			return timestamp_since(Ships[objp->instance].base_texture_anim_timestamp);
 		}
 	} else if ( flags & MR_SKYBOX ) {
-		base_frametime = Skybox_timestamp;
+		return timestamp_since(Skybox_timestamp);
 	}
 
-	return base_frametime;
+	return 0;
 }
 
 bool model_render_determine_autocenter(vec3d *auto_back, polymodel *pm, int detail_level, uint flags)

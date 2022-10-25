@@ -6431,7 +6431,7 @@ void ship::clear()
 
 	next_engine_stutter = timestamp(0);
 
-	base_texture_anim_frametime = 0;
+	base_texture_anim_timestamp = _timestamp();
 
 	total_damage_received = 0.0f;
 	memset(&damage_ship, 0, MAX_DAMAGE_SLOTS * sizeof(float));
@@ -10454,7 +10454,7 @@ static void ship_model_change(int n, int ship_type)
 	objp->shield_quadrant.resize(objp->n_quadrants);
 
 	// reset texture animations
-	sp->base_texture_anim_frametime = game_get_overall_frametime();
+	sp->base_texture_anim_timestamp = _timestamp();
 }
 
 /**
