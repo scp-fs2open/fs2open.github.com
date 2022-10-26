@@ -2013,8 +2013,9 @@ void game_init()
 #ifdef WITH_FFMPEG
 		libs::ffmpeg::initialize();
 #endif
-
-		libs::discord::init();
+		if (Discord_presence) {
+			libs::discord::init();
+		}
 	}
 
 	mod_table_post_process();

@@ -101,6 +101,7 @@ extern struct shadow_disable_overrides {
 } Shadow_disable_overrides;
 extern float Thruster_easing;
 extern bool Always_use_distant_firepoints;
+extern bool Discord_presence;
 
 void mod_table_init();
 void mod_table_post_process();
