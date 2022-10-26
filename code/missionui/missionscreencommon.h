@@ -78,7 +78,7 @@ enum class commit_pressed_status { SUCCESS, GENERAL_FAIL, PLAYER_NO_WEAPONS,  NO
 // common_select_init() performs initialization common to the briefing/ship select/weapon select
 // screens.  This includes loading/setting the palette, loading the background animation, loading
 // the screen switching animations, loading the button animation frames
-void	common_select_init();	
+void common_select_init(bool API_Access = false);
 int	common_select_do(float frametime);
 void	common_select_close();
 void	common_draw_buttons();
@@ -92,7 +92,7 @@ void 	common_render_selected_screen_button();
 void	common_reset_buttons();
 void	common_redraw_pressed_buttons();
 void  common_maybe_clear_focus();
-void ship_select_common_init();
+void ship_select_common_init(bool API_Access = false);
 void common_setup_room_lights();
 
 int mission_ui_background_load(const char *custom_background, const char *single_background, const char *multi_background = NULL);

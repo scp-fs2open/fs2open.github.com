@@ -86,7 +86,7 @@ void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_sele
 void ship_select_init();
 void ship_select_do(float frametime);
 void ship_select_close();
-void ship_select_common_init();
+void ship_select_common_init(bool API_Access);
 void ship_select_common_close();
 int ss_get_ship_class(int ship_entry_index);
 int ss_get_selected_ship();
