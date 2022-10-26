@@ -83,8 +83,8 @@ const std::shared_ptr<OverridableHook> OnDialogInit = OverridableHook::Factory("
 		{"Choices",
 			"table",
 			"A table containing the different choices for this dialog. Contains subtables, each consisting of "
-			"Positivity (an int, 0 if neutral, 1 if positive, and 2 if negative) and "
-			"Text (s string, the text of the button)."},
+			"Positivity (an int, 0 if neutral, 1 if positive, and -1 if negative) and "
+			"Text (a string, the text of the button)."},
 		{"Title", "string", "The title of the popup window."},
 		{"Text", "string", "The text to be displayed in the popup window."},
 		{"IsTimeStopped", "boolean", "True if mission time was interrupted for this popup."},

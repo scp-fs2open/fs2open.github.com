@@ -510,12 +510,12 @@ int popup_init(popup_info *pi, int flags)
 					if (flags & PF_USE_AFFIRMATIVE_ICON)
 						positivity = 1;
 					else if (flags & PF_USE_NEGATIVE_ICON)
-						positivity = 2;
+						positivity = -1;
 				}
 				break;
 			case 2:
 				if (flags & PF_USE_NEGATIVE_ICON && cnt == 0)
-					positivity = 2;
+					positivity = -1;
 				if (flags & PF_USE_AFFIRMATIVE_ICON && cnt == 1)
 					positivity = 1;
 				break;
