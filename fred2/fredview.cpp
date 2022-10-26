@@ -3078,9 +3078,9 @@ int CFREDView::global_error_check()
 	}*/
 
 	// do error checking for asteroid targets
-	for (const auto& target_ship : Asteroid_target_ships) {
-		if (ship_name_lookup(target_ship.c_str(), 1) < 0) {
-			if (error("Asteroid target '%s' is not a valid ship", target_ship.c_str())) {
+	for (const auto& name : Asteroid_field.target_names) {
+		if (ship_name_lookup(name.c_str(), 1) < 0) {
+			if (error("Asteroid target '%s' is not a valid ship", name.c_str())) {
 				return 1;
 			}
 		}

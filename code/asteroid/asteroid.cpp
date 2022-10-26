@@ -71,9 +71,6 @@ float	Asteroid_icon_closeup_zoom;
 #define	ASTEROID_UPDATE_COLLIDE_TIMESTAMP	2000	// how often asteroid is checked for impending collisions with escort ships
 #define	ASTEROID_MIN_COLLIDE_TIME				24		// time in seconds to check for asteroid colliding
 
-SCP_vector<SCP_string> Asteroid_target_ships;
-bool Default_asteroid_throwing_behavior = true;
-
 typedef struct asteroid_target {
 	int objnum;
 	int signature;
@@ -636,15 +633,30 @@ void asteroid_create_all()
  */
 void asteroid_level_init()
 {
-	Asteroid_field.num_initial_asteroids=0;
-	Num_asteroids = 0;
-	Asteroid_targets.clear();
-	Default_asteroid_throwing_behavior = true;
-	asteroid_obj_list_init();
-	SCP_vector<asteroid_info>::iterator ast;
-	for (ast = Asteroid_info.begin(); ast != Asteroid_info.end(); ++ast)
-		ast->damage_type_idx = ast->damage_type_idx_sav;
+	Asteroid_field.num_initial_asteroids = 0;  // disable asteroid field by default.
+	Asteroid_field.speed = 0.0f;
+	vm_vec_make(&Asteroid_field.min_bound, -1000.0f, -1000.0f, -1000.0f);
+	vm_vec_make(&Asteroid_field.max_bound, 1000.0f, 1000.0f, 1000.0f);
+	vm_vec_make(&Asteroid_field.inner_min_bound, -500.0f, -500.0f, -500.0f);
+	vm_vec_make(&Asteroid_field.inner_max_bound, 500.0f, 500.0f, 500.0f);
+	Asteroid_field.has_inner_bound = 0;
+	Asteroid_field.field_type = FT_ACTIVE;
+	Asteroid_field.debris_genre = DG_ASTEROID;
+	Asteroid_field.field_debris_type[0] = -1;
+	Asteroid_field.field_debris_type[1] = -1;
+	Asteroid_field.field_debris_type[2] = -1;
 	Asteroid_field.num_used_field_debris_types = 0;
+	Asteroid_field.target_names.clear();
+
+	if (!Fred_running)
+	{
+		for (auto& ast : Asteroid_info)
+			ast.damage_type_idx = ast.damage_type_idx_sav;
+
+		Num_asteroids = 0;
+		asteroid_obj_list_init();
+		Asteroid_targets.clear();
+	}
 }
 
 /**
@@ -2133,7 +2145,7 @@ void asteroid_frame()
 		return;
 	}
 
-	if (Default_asteroid_throwing_behavior) {
+	if (Asteroid_field.target_names.empty()) {
 		int objnum = set_asteroid_throw_objnum();
 		if (Asteroid_targets.empty() || Asteroid_targets[0].objnum != objnum) {
 			Asteroid_targets.clear();

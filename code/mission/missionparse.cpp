@@ -2476,7 +2476,7 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 	}
 
 	// if this is an asteroid target, add it to the list
-	for (SCP_string& name : Asteroid_target_ships) {
+	for (SCP_string& name : Asteroid_field.target_names) {
 		if (stricmp(name.c_str(), shipp->ship_name) == 0) {
 			asteroid_add_target(&Objects[objnum]);
 			break;
@@ -5807,7 +5807,7 @@ void parse_asteroid_fields(mission *pm)
 		Asteroid_field.bound_rad = MAX(3000.0f, b_rad);
 
 		if (optional_string("+Inner Bound:")) {
-			Asteroid_field.has_inner_bound = 1;
+			Asteroid_field.has_inner_bound = true;
 
 			required_string("$Minimum:");
 			stuff_vec3d(&Asteroid_field.inner_min_bound);
@@ -5815,12 +5815,11 @@ void parse_asteroid_fields(mission *pm)
 			required_string("$Maximum:");
 			stuff_vec3d(&Asteroid_field.inner_max_bound);
 		} else {
-			Asteroid_field.has_inner_bound = 0;
+			Asteroid_field.has_inner_bound = false;
 		}
 
 		if (optional_string("$Asteroid Targets:")) {
-			stuff_string_list(Asteroid_target_ships);
-			Default_asteroid_throwing_behavior = false;
+			stuff_string_list(Asteroid_field.target_names);
 		}
 		i++;
 	}
