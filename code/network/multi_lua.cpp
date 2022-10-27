@@ -20,7 +20,7 @@ union lua_packet_header {
 };
 static_assert(sizeof(lua_packet_header) == 2, "Lua Packet Header is not properly packed!");
 
-static luacpp::LuaValue process_lua_userdata(ubyte* data, header* hinfo, int& offset, lua_State* L) {
+static luacpp::LuaValue process_lua_userdata(ubyte* data, int& offset, lua_State* L) {
 	luacpp::LuaValue retVal(L);
 	uint16_t adeIdx;
 	GET_USHORT(adeIdx);
@@ -38,7 +38,7 @@ static luacpp::LuaValue process_lua_userdata(ubyte* data, header* hinfo, int& of
 		) {
 		//There is a case to be made for this to be an assert.
 		//This happens when the scripting API changes but no multi bump occurs.
-		Error(LOCATION, "Lua Network packet with Userdata has bad adeidx! Make sure every placer is using the same game version as the host.");
+		LuaError(L, "Lua Network packet with Userdata has bad adeidx! Make sure every placer is using the same game version as the host.");
 		return luacpp::LuaValue::createNil(L); //TODO replace with throw. Due to (potentially) bad size, we're now unable to decode the rest of the packet as well
 	}
 	
@@ -60,7 +60,7 @@ static luacpp::LuaValue process_lua_userdata(ubyte* data, header* hinfo, int& of
 	return retVal;
 }
 
-static luacpp::LuaValue process_lua_data(ubyte* data, header* hinfo, int& offset, lua_State* L) {
+static luacpp::LuaValue process_lua_data(ubyte* data, int& offset, lua_State* L) {
 	uint8_t dataType = static_cast<uint8_t>(lua_net_data_type::NIL);
 	GET_DATA(dataType);
 
@@ -88,17 +88,18 @@ static luacpp::LuaValue process_lua_data(ubyte* data, header* hinfo, int& offset
 		return luacpp::LuaValue::createValue(L, text);
 	}
 	case lua_net_data_type::USERDATA:
-		return process_lua_userdata(data, hinfo, offset, L);
+		return process_lua_userdata(data, offset, L);
 	case lua_net_data_type::TABLE: {
 		luacpp::LuaTable table = luacpp::LuaTable::create(L);
 		uint8_t entries = 0;
 		GET_DATA(entries);
 		for(uint8_t i = 0; i < entries; i++)
-			table.addValue(process_lua_data(data, hinfo, offset, L), process_lua_data(data, hinfo, offset, L));
+			table.addValue(process_lua_data(data, offset, L), process_lua_data(data, offset, L));
 		return table;
 	}
 	default:
 		UNREACHABLE("Got invalid lua multi packet data type %d!", dataType);
+		return luacpp::LuaValue::createNil(L);
 	}
 }
 
@@ -111,8 +112,7 @@ void process_lua_packet(ubyte* data, header* hinfo) {
 	lua_packet_header header;
 	GET_USHORT(header.packed);
 	
-
+	luacpp::LuaValue value = process_lua_data(data, offset, L);
 
 	PACKET_SET_SIZE();
-
 }

@@ -38,6 +38,7 @@ namespace internal {
 
 	inline void ade_multi_deserialize_unsupported(lua_State* L, const scripting::ade_table_entry& tableEntry, char* /*data_ptr*/, ubyte* /*data*/, int& /*offset*/) {
 		LuaError(L, "Cannot deserialize data of type %s from network! Make sure all players are running the same version!", tableEntry.GetName());
+		//TODO throw here, as we're decoding but can't support this, and have no clue how much bytes this'll take
 	}
 
 	enum class ade_multi_serialize_mode : size_t { NATIVE, FUNDAMENTAL, UNSUPPORTED };
@@ -151,10 +152,10 @@ class ade_obj : public ade_lib_handle {
 /**
  * @warning Utility macro. DO NOT USE!
  */
-#define ADE_OBJ_DERIV_IMPL(field, type, name, desc, deriv)                                                             \
+#define ADE_OBJ_DERIV_IMPL(field, type, name, desc, deriv, ...)                                                 \
 	const ::scripting::ade_obj<type>& SCP_TOKEN_CONCAT(get_, field)()                                                  \
 	{                                                                                                                  \
-		static ::scripting::ade_obj<type> obj(name, desc, deriv, sizeof(type), ade_multi_serializer<type>::serialize, ade_multi_serializer<type>::deserialize);\
+		static ::scripting::ade_obj<type> obj(name, desc, deriv, sizeof(type), __VA_ARGS__::serialize, __VA_ARGS__::deserialize);\
 		return obj;                                                                                                    \
 	}                                                                                                                  \
 	const ::scripting::ade_obj<type>& field = SCP_TOKEN_CONCAT(get_, field)()
@@ -172,7 +173,23 @@ class ade_obj : public ade_lib_handle {
  *
  * @ingroup ade_api
  */
-#define ADE_OBJ(field, type, name, desc) ADE_OBJ_DERIV_IMPL(field, type, name, desc, nullptr)
+#define ADE_OBJ(field, type, name, desc) ADE_OBJ_DERIV_IMPL(field, type, name, desc, nullptr, ade_multi_serializer<type>)
+
+ /**
+  * @brief Define an API object that cannot be serialized for multi, despite a serialization handler existing
+  *
+  * An object is similar to a C++ class. Use this if you want to return a special type from a function that should be
+  * able to do more on its own.
+  *
+  * @param field The name of the field by which the class should be accessible
+  * @param type The type of the data the class contains
+  * @param name The name the class should have in the documentation
+  * @param desc Documentation about what this class is
+  *
+  * @ingroup ade_api
+  */
+#define ADE_OBJ_NO_MULTI(field, type, name, desc) ADE_OBJ_DERIV_IMPL(field, type, name, desc, nullptr, internal::ade_multi_serialize_dispatcher<type, internal::ade_multi_serialize_mode::UNSUPPORTED>)
+
 
 /**
  * @brief Define an API object that derives from another
@@ -188,7 +205,7 @@ class ade_obj : public ade_lib_handle {
  * @ingroup ade_api
  */
 #define ADE_OBJ_DERIV(field, type, name, desc, deriv)                                                                  \
-	ADE_OBJ_DERIV_IMPL(field, type, name, desc, &SCP_TOKEN_CONCAT(get_, deriv)())
+	ADE_OBJ_DERIV_IMPL(field, type, name, desc, &SCP_TOKEN_CONCAT(get_, deriv)(), ade_multi_serializer<type>)
 
 /**
  * @brief Declare an API object but don't define it
