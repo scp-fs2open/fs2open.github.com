@@ -463,6 +463,8 @@ typedef struct ai_info {
 	ai_lua_parameters lua_ai_target;
 } ai_info;
 
+int ai_get_autoscale_index(int absolute_index = -1);
+
 // Goober5000
 typedef struct {
 	vec3d docker_point;

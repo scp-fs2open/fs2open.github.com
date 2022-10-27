@@ -1651,11 +1651,21 @@ void turret_set_next_fire_timestamp(int weapon_num, weapon_info *wip, ship_subsy
 			if (wip->wi_flags[Weapon::Info_Flags::Flak]) {
 				wait *= aip->ai_ship_fire_delay_scale_friendly * 0.5f;
 				if (aip->ai_class_autoscale)
-					wait += (Num_ai_classes - aip->ai_class - 1) * 40.0f;
+				{
+					if (The_mission.ai_profile->flags[AI::Profile_Flags::Adjusted_AI_class_autoscale])
+						wait += (ai_get_autoscale_index(Num_ai_classes) - ai_get_autoscale_index(aip->ai_class) - 1) * 40.0f;
+					else
+						wait += (Num_ai_classes - aip->ai_class - 1) * 40.0f;
+				}
 			} else {
 				wait *= aip->ai_ship_fire_delay_scale_friendly;
 				if (aip->ai_class_autoscale)
-					wait += (Num_ai_classes - aip->ai_class - 1) * 100.0f;
+				{
+					if (The_mission.ai_profile->flags[AI::Profile_Flags::Adjusted_AI_class_autoscale])
+						wait += (ai_get_autoscale_index(Num_ai_classes) - ai_get_autoscale_index(aip->ai_class) - 1) * 100.0f;
+					else
+						wait += (Num_ai_classes - aip->ai_class - 1) * 100.0f;
+				}
 			}
 		} else {
 			// flak guns need to fire more rapidly
@@ -1666,13 +1676,23 @@ void turret_set_next_fire_timestamp(int weapon_num, weapon_info *wip, ship_subsy
 					wait *= aip->ai_ship_fire_delay_scale_hostile * 0.5f;
 				}	
 				if (aip->ai_class_autoscale)
-					wait += (Num_ai_classes - aip->ai_class - 1) * 40.0f;
+				{
+					if (The_mission.ai_profile->flags[AI::Profile_Flags::Adjusted_AI_class_autoscale])
+						wait += (ai_get_autoscale_index(Num_ai_classes) - ai_get_autoscale_index(aip->ai_class) - 1) * 40.0f;
+					else
+						wait += (Num_ai_classes - aip->ai_class - 1) * 40.0f;
+				}
 
 			} else if (wip->wi_flags[Weapon::Info_Flags::Huge]) {
 				// make huge weapons fire independently of team
 				wait *= aip->ai_ship_fire_delay_scale_friendly;
 				if (aip->ai_class_autoscale)
-					wait += (Num_ai_classes - aip->ai_class - 1) * 100.0f;
+				{
+					if (The_mission.ai_profile->flags[AI::Profile_Flags::Adjusted_AI_class_autoscale])
+						wait += (ai_get_autoscale_index(Num_ai_classes) - ai_get_autoscale_index(aip->ai_class) - 1) * 100.0f;
+					else
+						wait += (Num_ai_classes - aip->ai_class - 1) * 100.0f;
+				}
 			} else {
 				// give team friendly an advantage
 				if (Ships[aip->shipnum].team == Player_ship->team) {
@@ -1681,7 +1701,12 @@ void turret_set_next_fire_timestamp(int weapon_num, weapon_info *wip, ship_subsy
 					wait *= aip->ai_ship_fire_delay_scale_hostile;
 				}	
 				if (aip->ai_class_autoscale)
-					wait += (Num_ai_classes - aip->ai_class - 1) * 100.0f;
+				{
+					if (The_mission.ai_profile->flags[AI::Profile_Flags::Adjusted_AI_class_autoscale])
+						wait += (ai_get_autoscale_index(Num_ai_classes) - ai_get_autoscale_index(aip->ai_class) - 1) * 100.0f;
+					else
+						wait += (Num_ai_classes - aip->ai_class - 1) * 100.0f;
+				}
 			}
 		}
 		// vary wait time +/- 10%
