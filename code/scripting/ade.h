@@ -86,8 +86,8 @@ struct ade_odata_setter {
 
 class ade_table_entry;
 
-using ade_serialize_func = void(*)(lua_State*, const scripting::ade_table_entry&);
-using ade_deserialize_func = void(*)(lua_State*, const scripting::ade_table_entry&);
+using ade_serialize_func = void(*)(lua_State*, const scripting::ade_table_entry&, const luacpp::LuaValue&, ubyte*, int&);
+using ade_deserialize_func = void(*)(lua_State*, const scripting::ade_table_entry&, char*, ubyte*, int&);
 
 //WMC - 'Type' is the same as ade_set_args,
 //plus some extra

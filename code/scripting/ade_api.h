@@ -28,21 +28,15 @@ class ade_lib_handle {
 };
 
 namespace internal {
-	template<typename T>
-	void ade_multi_serialize_fundamental(lua_State* L, const scripting::ade_table_entry& tableEntry) {
+	template<typename T> void ade_multi_serialize_fundamental(lua_State* L, const scripting::ade_table_entry& tableEntry, const luacpp::LuaValue& value, ubyte* data, int& packet_size);
 
-	}
+	template<typename T> void ade_multi_deserialize_fundamental(lua_State* L, const scripting::ade_table_entry& tableEntry, char* data_ptr, ubyte* data, int& offset);
 
-	template<typename T>
-	void ade_multi_deserialize_fundamental(lua_State* L, const scripting::ade_table_entry& tableEntry) {
-
-	}
-
-	inline void ade_multi_serialize_unsupported(lua_State* L, const scripting::ade_table_entry& tableEntry) {
+	inline void ade_multi_serialize_unsupported(lua_State* L, const scripting::ade_table_entry& tableEntry, const luacpp::LuaValue& /*value*/, ubyte* /*data*/, int& /*packet_size*/) {
 		LuaError(L, "Cannot serialize data of type %s for sending over network!", tableEntry.GetName());
 	}
 
-	inline void ade_multi_deserialize_unsupported(lua_State* L, const scripting::ade_table_entry& tableEntry) {
+	inline void ade_multi_deserialize_unsupported(lua_State* L, const scripting::ade_table_entry& tableEntry, char* /*data_ptr*/, ubyte* /*data*/, int& /*offset*/) {
 		LuaError(L, "Cannot deserialize data of type %s from network! Make sure all players are running the same version!", tableEntry.GetName());
 	}
 

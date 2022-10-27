@@ -4,6 +4,11 @@
 #include "scripting/ade.h"
 #include "scripting/ade_api.h"
 
+//This will send a byte more per userdata, but catch more faults due to players having different APIs
+//Also, it makes the remaining faults safer, since this way we'll only get invalid data, not accessing potentially invalid memory
+#define SAFE_MULTI_LUA_USERDATA_SIZES true
+
+
 enum class lua_net_data_type : uint8_t { NIL, BOOL, NUMBER, STRING8, STRING16, USERDATA, TABLE };
 
 union lua_packet_header {
@@ -20,12 +25,21 @@ static luacpp::LuaValue process_lua_userdata(ubyte* data, header* hinfo, int& of
 	uint16_t adeIdx;
 	GET_USHORT(adeIdx);
 
+#if SAFE_MULTI_LUA_USERDATA_SIZES
+	uint8_t size;
+	GET_DATA(size);
+#endif
+
 	const auto& objType = scripting::ade_manager::getInstance()->getEntry(adeIdx);
-	if (objType.Type != 'o' || objType.Instanced) {
+	if (objType.Type != 'o' || objType.Instanced || objType.Deserializer == nullptr
+#if SAFE_MULTI_LUA_USERDATA_SIZES
+		|| size != objType.Size
+#endif
+		) {
 		//There is a case to be made for this to be an assert.
 		//This happens when the scripting API changes but no multi bump occurs.
 		Error(LOCATION, "Lua Network packet with Userdata has bad adeidx! Make sure every placer is using the same game version as the host.");
-		return luacpp::LuaValue::createNil(L);
+		return luacpp::LuaValue::createNil(L); //TODO replace with throw. Due to (potentially) bad size, we're now unable to decode the rest of the packet as well
 	}
 	
 	//Create new LUA object and get handle
@@ -35,8 +49,8 @@ static luacpp::LuaValue process_lua_userdata(ubyte* data, header* hinfo, int& of
 	//Set the metatable for the object
 	lua_setmetatable(L, -2);
 
-	//Copy the actual object data to the Lua object
-	//new(newod) T(std::move(value.value));
+	//Deserialize and fill newod space
+	objType.Deserializer(L, objType, newod, data, offset);
 
 	retVal.setReference(luacpp::UniqueLuaReference::create(L));
 

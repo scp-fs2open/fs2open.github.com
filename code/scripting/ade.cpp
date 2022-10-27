@@ -15,6 +15,8 @@
 
 #include "def_files/def_files.h"
 #include "mod_table/mod_table.h"
+#include "network/multi.h"
+#include "network/multimsgs.h"
 #include "scripting/api/objs/asteroid.h"
 #include "scripting/api/objs/beam.h"
 #include "scripting/api/objs/debris.h"
@@ -1063,5 +1065,39 @@ const string_conv* ade_get_operator(const char *funcname)
 }
 
 ade_table_entry& internal::getTableEntry(size_t idx) { return ade_manager::getInstance()->getEntry(idx); }
+
+namespace internal {
+
+#define DEFINE_MULTI_SERIALIZERS_FUNDAMENTAL(type, multi_accessor) \
+template<> \
+void ade_multi_deserialize_fundamental<type>(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, char* data_ptr, ubyte* data, int& offset) { \
+	type temp; \
+	GET_##multi_accessor(temp); \
+	new(data_ptr) type(std::move(temp)); \
+} \
+template<> \
+void ade_multi_serialize_fundamental<type>(lua_State* L, const scripting::ade_table_entry& /*tableEntry*/, const luacpp::LuaValue& value, ubyte* data, int& packet_size) { \
+	value.pushValue(L); \
+	type temp = *reinterpret_cast<type*>(lua_touserdata(L, -1)); \
+	lua_remove(L, -1); \
+	ADD_##multi_accessor(temp); \
+}
+
+//These are all fundamental data types supported by our multi code. If you get an unresolved function error
+//for ade_multi_(de)serialize_fundamental, you need to add an endinaness-safe multi GET_/ADD_ function and 
+//the corresponding DEFINE_MULTI_SERIALIZERS_FUNDAMENTAL macro
+DEFINE_MULTI_SERIALIZERS_FUNDAMENTAL(char, DATA)
+DEFINE_MULTI_SERIALIZERS_FUNDAMENTAL(unsigned char, DATA)
+DEFINE_MULTI_SERIALIZERS_FUNDAMENTAL(short, SHORT)
+DEFINE_MULTI_SERIALIZERS_FUNDAMENTAL(unsigned short, USHORT)
+DEFINE_MULTI_SERIALIZERS_FUNDAMENTAL(int, INT)
+DEFINE_MULTI_SERIALIZERS_FUNDAMENTAL(unsigned int, UINT)
+DEFINE_MULTI_SERIALIZERS_FUNDAMENTAL(long long, LONG)
+DEFINE_MULTI_SERIALIZERS_FUNDAMENTAL(unsigned long long, ULONG)
+DEFINE_MULTI_SERIALIZERS_FUNDAMENTAL(float, FLOAT)
+
+#undef DEFINE_MULTI_SERIALIZERS_FUNDAMENTAL
+
+}
 
 }
