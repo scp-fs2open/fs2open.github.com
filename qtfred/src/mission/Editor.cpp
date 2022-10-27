@@ -375,18 +375,7 @@ void Editor::clearMission() {
 	cmd_brief_reset();
 	mission_event_shutdown();
 
-	Asteroid_field.num_initial_asteroids = 0;  // disable asteroid field by default.
-	Asteroid_field.speed = 0.0f;
-	vm_vec_make(&Asteroid_field.min_bound, -1000.0f, -1000.0f, -1000.0f);
-	vm_vec_make(&Asteroid_field.max_bound, 1000.0f, 1000.0f, 1000.0f);
-	vm_vec_make(&Asteroid_field.inner_min_bound, -500.0f, -500.0f, -500.0f);
-	vm_vec_make(&Asteroid_field.inner_max_bound, 500.0f, 500.0f, 500.0f);
-	Asteroid_field.has_inner_bound = 0;
-	Asteroid_field.field_type = FT_ACTIVE;
-	Asteroid_field.debris_genre = DG_ASTEROID;
-	Asteroid_field.field_debris_type[0] = -1;
-	Asteroid_field.field_debris_type[1] = -1;
-	Asteroid_field.field_debris_type[2] = -1;
+	asteroid_level_init();
 
 	strcpy_s(Mission_parse_storm_name, "none");
 
