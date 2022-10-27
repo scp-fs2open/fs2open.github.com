@@ -159,6 +159,11 @@ private:
 	object& operator= (const object & other); // no implementation
 };
 
+struct lua_State;
+namespace scripting {
+	class ade_table_entry;
+}
+
 struct object_h {
 	object *objp;
 	int sig;
@@ -166,6 +171,9 @@ struct object_h {
 	bool IsValid() const {return (objp != NULL && objp->signature == sig && sig > 0);}
 	object_h(object *in){objp=in; if(objp!=NULL){sig=in->signature;}}
 	object_h(){objp=NULL;sig=-1;}
+
+	static void serialize(lua_State* L, const scripting::ade_table_entry& tableEntry);
+	static void deserialize(lua_State* L, const scripting::ade_table_entry& tableEntry);
 };
 
 // object backup struct used by Fred.

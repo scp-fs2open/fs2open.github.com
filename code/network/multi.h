@@ -276,6 +276,7 @@ class player;
 
 #define VARIABLE_UPDATE				0xF0		// Karajorma - a variable update packet from server to all clients
 #define SEXP						0xF1		// Karajorma - a general packet which can be used to update clients with changes caused by SEXPs
+#define LUA_DATA_PACKET				0xF2		// Lafiel - any generic data sent by lua
 
 #define MAX_TYPE_ID					0xFF		// better not try to send > 255 in a single byte buddy
 

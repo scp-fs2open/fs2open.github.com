@@ -20,6 +20,14 @@
 #include "ship/ship.h"
 #include "weapon/weapon.h"
 
+void object_h::serialize(lua_State* L, const scripting::ade_table_entry& tableEntry) {
+
+}
+
+void object_h::deserialize(lua_State* L, const scripting::ade_table_entry& tableEntry) {
+
+}
+
 namespace scripting {
 namespace api {
 

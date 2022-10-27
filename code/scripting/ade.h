@@ -84,6 +84,11 @@ struct ade_odata_setter {
 	ade_odata_setter(size_t idx_in, T value_in) : idx(idx_in), value(std::move(value_in)) {}
 };
 
+class ade_table_entry;
+
+using ade_serialize_func = void(*)(lua_State*, const scripting::ade_table_entry&);
+using ade_deserialize_func = void(*)(lua_State*, const scripting::ade_table_entry&);
+
 //WMC - 'Type' is the same as ade_set_args,
 //plus some extra
 //b - boolean
@@ -127,6 +132,8 @@ class ade_table_entry {
 	lua_CFunction Destructor = nullptr;
 
 	size_t Size = 0;
+	ade_serialize_func Serializer = nullptr;
+	ade_deserialize_func Deserializer = nullptr;
 
 	//Metadata
 	ade_overload_list Arguments;

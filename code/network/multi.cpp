@@ -42,6 +42,7 @@
 #include "mission/missiongoals.h"
 #include "network/multi_log.h"
 #include "network/multi_rate.h"
+#include "network/multi_lua.h"
 #include "hud/hudescort.h"
 #include "hud/hudmessage.h"
 #include "globalincs/alphacolors.h"
@@ -935,6 +936,10 @@ void process_packet_normal(ubyte* data, header *header_info)
 		case SEXP:
 			process_sexp_packet(data, header_info);
 			break; 
+
+		case LUA_DATA_PACKET:
+			process_lua_packet(data, header_info);
+			break;
 
 		default:
 			mprintf(("Received packet with unknown type %d\n", data[0] ));

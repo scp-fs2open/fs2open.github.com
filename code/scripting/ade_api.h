@@ -27,6 +27,60 @@ class ade_lib_handle {
 	size_t GetIdx() const { return LibIdx; }
 };
 
+namespace internal {
+	template<typename T>
+	void ade_multi_serialize_fundamental(lua_State* L, const scripting::ade_table_entry& tableEntry) {
+
+	}
+
+	template<typename T>
+	void ade_multi_deserialize_fundamental(lua_State* L, const scripting::ade_table_entry& tableEntry) {
+
+	}
+
+	inline void ade_multi_serialize_unsupported(lua_State* L, const scripting::ade_table_entry& tableEntry) {
+		LuaError(L, "Cannot serialize data of type %s for sending over network!", tableEntry.GetName());
+	}
+
+	inline void ade_multi_deserialize_unsupported(lua_State* L, const scripting::ade_table_entry& tableEntry) {
+		LuaError(L, "Cannot deserialize data of type %s from network! Make sure all players are running the same version!", tableEntry.GetName());
+	}
+
+	enum class ade_multi_serialize_mode : size_t { NATIVE, FUNDAMENTAL, UNSUPPORTED };
+
+	template <typename T, typename = int>
+	struct ade_serializable : std::false_type { };
+
+	template <typename T>
+	struct ade_serializable <T, decltype((void)T::serialize, 0)> : std::true_type { };
+
+	template<typename T, ade_multi_serialize_mode mode>
+	struct ade_multi_serialize_dispatcher {};
+
+	template<typename T>
+	struct ade_multi_serialize_dispatcher<T, ade_multi_serialize_mode::NATIVE> {
+		static constexpr ade_serialize_func serialize = &T::serialize;
+		static constexpr ade_deserialize_func deserialize = &T::deserialize;
+	};
+
+	template<typename T>
+	struct ade_multi_serialize_dispatcher<T, ade_multi_serialize_mode::FUNDAMENTAL> {
+		static constexpr ade_serialize_func serialize = &ade_multi_serialize_fundamental<T>;
+		static constexpr ade_deserialize_func deserialize = &ade_multi_deserialize_fundamental<T>;
+	};
+
+	template<typename T>
+	struct ade_multi_serialize_dispatcher<T, ade_multi_serialize_mode::UNSUPPORTED> {
+		static constexpr ade_serialize_func serialize = &ade_multi_serialize_unsupported;
+		static constexpr ade_deserialize_func deserialize = &ade_multi_deserialize_unsupported;
+	};
+}
+
+template<typename T>
+struct ade_multi_serializer : public internal::ade_multi_serialize_dispatcher<T,
+	internal::ade_serializable<T>::value ? internal::ade_multi_serialize_mode::NATIVE :
+	(std::is_fundamental<T>::value ? internal::ade_multi_serialize_mode::FUNDAMENTAL : internal::ade_multi_serialize_mode::UNSUPPORTED)> {};
+
 /**
  * @ingroup ade_api
  */
@@ -50,7 +104,7 @@ class ade_obj : public ade_lib_handle {
 	}
 
   public:
-	ade_obj(const char* in_name, const char* in_desc, const ade_lib_handle* in_deriv = nullptr)
+	ade_obj(const char* in_name, const char* in_desc, const ade_lib_handle* in_deriv = nullptr, size_t size = 0, ade_serialize_func serializer = nullptr, ade_deserialize_func deserializer = nullptr)
 	{
 		ade_table_entry ate;
 
@@ -61,6 +115,9 @@ class ade_obj : public ade_lib_handle {
 		}
 		ate.Type        = 'o';
 		ate.Description = in_desc;
+		ate.Size = size;
+		ate.Serializer = serializer;
+		ate.Deserializer = deserializer;
 
 		if (!std::is_trivially_destructible<StoreType>::value) {
 			// If this type is not trivial then we need to have a destructor
@@ -103,7 +160,7 @@ class ade_obj : public ade_lib_handle {
 #define ADE_OBJ_DERIV_IMPL(field, type, name, desc, deriv)                                                             \
 	const ::scripting::ade_obj<type>& SCP_TOKEN_CONCAT(get_, field)()                                                  \
 	{                                                                                                                  \
-		static ::scripting::ade_obj<type> obj(name, desc, deriv);                                                      \
+		static ::scripting::ade_obj<type> obj(name, desc, deriv, sizeof(type), ade_multi_serializer<type>::serialize, ade_multi_serializer<type>::deserialize);\
 		return obj;                                                                                                    \
 	}                                                                                                                  \
 	const ::scripting::ade_obj<type>& field = SCP_TOKEN_CONCAT(get_, field)()
