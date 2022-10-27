@@ -2145,6 +2145,7 @@ void asteroid_frame()
 		return;
 	}
 
+	// If there are no explicit targets, fall back to default retail targeting behavior
 	if (Asteroid_field.target_names.empty()) {
 		int objnum = set_asteroid_throw_objnum();
 		if (Asteroid_targets.empty() || Asteroid_targets[0].objnum != objnum) {
