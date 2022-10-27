@@ -17,6 +17,10 @@ extern const std::shared_ptr<Hook>            OnMissileDeath;
 extern const std::shared_ptr<Hook>            OnAsteroidDeath;
 extern const std::shared_ptr<Hook>            OnDebrisDeath;
 
+extern const std::shared_ptr<OverridableHook> OnDialogInit;
+extern const std::shared_ptr<OverridableHook> OnDialogFrame;
+extern const std::shared_ptr<Hook> OnDialogClose;
+
 // deprecated
 extern const std::shared_ptr<OverridableHook> OnDeath;
 

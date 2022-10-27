@@ -24,6 +24,7 @@
 #include "playerman/player.h"
 #include "popup/popup.h"
 #include "popup/popupdead.h"
+#include "scripting/global_hooks.h"
 #include "ui/ui.h"
 
 
@@ -487,6 +488,60 @@ int popup_init(popup_info *pi, int flags)
 		}
 	}
 
+	Popup_default_choice = 0;
+	Popup_should_die = 0;
+
+	if (flags & PF_RUN_STATE) {
+		Popup_running_state = 1;
+	}
+	else {
+		Popup_running_state = 0;
+	}
+
+	if (scripting::hooks::OnDialogInit->isActive())
+	{
+		luacpp::LuaTable buttons = luacpp::LuaTable::create(Script_system.GetLuaSession());
+		for (int cnt = 0; cnt < pi->nchoices; cnt++) {
+			luacpp::LuaTable button = luacpp::LuaTable::create(Script_system.GetLuaSession());
+			int positivity = 0;
+			switch (pi->nchoices) {
+			case 1:
+				if (!(flags & PF_NO_SPECIAL_BUTTONS)) {
+					if (flags & PF_USE_AFFIRMATIVE_ICON)
+						positivity = 1;
+					else if (flags & PF_USE_NEGATIVE_ICON)
+						positivity = -1;
+				}
+				break;
+			case 2:
+				if (flags & PF_USE_NEGATIVE_ICON && cnt == 0)
+					positivity = -1;
+				if (flags & PF_USE_AFFIRMATIVE_ICON && cnt == 1)
+					positivity = 1;
+				break;
+			default:
+				//For 0 or 3 buttons, all buttons are netural
+				break;
+			}
+			button.addValue("Positivity", luacpp::LuaValue::createValue(Script_system.GetLuaSession(), positivity));
+			button.addValue("Text", luacpp::LuaValue::createValue(Script_system.GetLuaSession(), pi->button_text[cnt]));
+			buttons.addValue(cnt + 1, button);
+		}
+
+		auto paramList = scripting::hook_param_list(
+			scripting::hook_param("Choices", 't', buttons),
+			scripting::hook_param("IsTimeStopped", 'b', Popup_time_was_stopped_in_init),
+			scripting::hook_param("IsStateRunning", 'b', static_cast<bool>(Popup_running_state)),
+			scripting::hook_param("IsInputPopup", 'b', static_cast<bool>(flags & PF_INPUT)),
+			scripting::hook_param("Title", 's', pi->title),
+			scripting::hook_param("Text", 's', pi->raw_text),
+			scripting::hook_param("AllowedInput", 's', pi->valid_chars, flags & PF_INPUT));
+
+		scripting::hooks::OnDialogInit->run(paramList);
+		if (scripting::hooks::OnDialogInit->isOverride(paramList))
+			return 0;
+	}
+
 	// create base window
 	Popup_window.create(pbg->coords[0], pbg->coords[1], Popup_text_coords[gr_screen.res][2]+100, Popup_text_coords[gr_screen.res][3]+50, 0);
 	Popup_window.set_foreground_bmap(pbg->filename);
@@ -541,15 +596,6 @@ int popup_init(popup_info *pi, int flags)
 		Popup_input.set_focus();
 		Popup_input.set_valid_chars(pi->valid_chars);
 	}	
-	
-	Popup_default_choice=0;
-	Popup_should_die = 0;
-
-	if (flags & PF_RUN_STATE) {
-		Popup_running_state = 1;
-	} else {
-		Popup_running_state = 0;
-	}
 
 	popup_split_lines(pi, flags);
 
@@ -587,6 +633,10 @@ void popup_close(popup_info *pi, int screen_id)
 	// if we had previously stopped time, go ahead and resume time
 	if ( Popup_time_was_stopped_in_init )
 		game_start_time();
+
+
+	if (scripting::hooks::OnDialogClose->isActive())
+		scripting::hooks::OnDialogClose->run();
 }
 
 // set the popup text color
@@ -818,6 +868,36 @@ void popup_force_draw_buttons(popup_info *pi)
 	}
 }
 
+bool popup_resolve_scripting(lua_State* L, int& choice, char(&input)[POPUP_INPUT_MAX_CHARS], const luacpp::LuaValueList& arguments) {
+	if (arguments.empty() || !arguments[0].isValid()) {
+		choice = POPUP_ABORT;
+		return true;
+	}
+
+	auto type = arguments[0].getValueType();
+	
+	if (type == luacpp::ValueType::NUMBER) {
+		choice = arguments[0].getValue<int>();
+	}
+	else if (type == luacpp::ValueType::STRING) {
+		const SCP_string& text = arguments[0].getValue<SCP_string>();
+		if (text.size() >= POPUP_INPUT_MAX_CHARS) {
+			LuaError(L, "String %s is too long for a dialog result! Maximum length is %d.", text.c_str(), POPUP_INPUT_MAX_CHARS - 1);
+			return false;
+		}
+		strcpy_s(input, text.c_str());
+	}
+	else if (type == luacpp::ValueType::NIL) {
+		choice = POPUP_ABORT;
+	}
+	else {
+		LuaError(L, "Invalid type supplied to dialog submit function!");
+		return false;
+	}
+
+	return true;
+}
+
 // exit: -1						=>	error
 //			0..nchoices-1		=> choice
 int popup_do(popup_info *pi, int flags)
@@ -860,34 +940,49 @@ int popup_do(popup_info *pi, int flags)
 			game_do_state_common(gameseq_get_state(),flags & PF_NO_NETWORKING);	// do stuff common to all states 
 		}
 
-		k = Popup_window.process();						// poll for input, handle mouse
-		choice = popup_process_keys(pi, k, flags);
-		if ( choice != POPUP_NOCHANGE ) {
-			done=1;
-		}
-
-		if ( !done ) {
-			choice = popup_check_buttons(pi);
-			if ( choice != POPUP_NOCHANGE ) {
-				done=1;
-			}
-		}
-
 		// don't draw anything 
-		if ( !(flags & PF_RUN_STATE) ) {
+		if (!(flags & PF_RUN_STATE)) {
 			//gr_clear();
 			gr_restore_screen(screen_id);
 		}
 
-		// if this is an input popup, store the input text
-		if(flags & PF_INPUT){
-			Popup_input.get_text(pi->input_text);
+		bool isScriptingOverride = false;
+		if (scripting::hooks::OnDialogFrame->isActive()) {
+			auto paramList = scripting::hook_param_list(
+				scripting::hook_param("Submit", 'u', luacpp::LuaFunction::createFromStdFunction(Script_system.GetLuaSession(), [&done, &choice, pi](lua_State* L, const luacpp::LuaValueList& resolveVals) {
+					done = popup_resolve_scripting(L, choice, pi->input_text, resolveVals) ? 1 : 0;
+					return luacpp::LuaValueList{};
+					})));
+
+			scripting::hooks::OnDialogFrame->run(paramList);
+			isScriptingOverride = scripting::hooks::OnDialogFrame->isOverride(paramList);
 		}
 
-		Popup_window.draw();
-		popup_force_draw_buttons(pi);
-		popup_draw_msg_text(pi, flags);
-		popup_draw_button_text(pi, flags);
+		if (!isScriptingOverride) {
+			k = Popup_window.process();						// poll for input, handle mouse
+			choice = popup_process_keys(pi, k, flags);
+			if ( choice != POPUP_NOCHANGE ) {
+				done=1;
+			}
+
+			if ( !done ) {
+				choice = popup_check_buttons(pi);
+				if ( choice != POPUP_NOCHANGE ) {
+					done=1;
+				}
+			}
+
+			// if this is an input popup, store the input text
+			if(flags & PF_INPUT){
+				Popup_input.get_text(pi->input_text);
+			}
+
+			Popup_window.draw();
+			popup_force_draw_buttons(pi);
+			popup_draw_msg_text(pi, flags);
+			popup_draw_button_text(pi, flags);
+		}
+
 		gr_flip();
 	}
 
@@ -921,31 +1016,49 @@ int popup_do_with_condition(popup_info *pi, int flags, int(*condition)())
 		game_do_state_common(gameseq_get_state());	// do stuff common to all states 
 		gr_restore_screen(screen_id);
 
-		// draw one frame first
-		Popup_window.draw();
-		popup_force_draw_buttons(pi);
-		popup_draw_msg_text(pi, flags);
-		popup_draw_button_text(pi, flags);
-		gr_flip();
+		bool isScriptingOverride = false;
+		if (scripting::hooks::OnDialogFrame->isActive()) {
+			auto paramList = scripting::hook_param_list(
+				scripting::hook_param("Submit", 'u', luacpp::LuaFunction::createFromStdFunction(Script_system.GetLuaSession(), [&done, &choice, pi](lua_State* L, const luacpp::LuaValueList& resolveVals) {
+					done = popup_resolve_scripting(L, choice, pi->input_text, resolveVals) ? 1 : 0;
+					return luacpp::LuaValueList{};
+					})));
 
-		// test the condition function or process for the window
-		if ((test = condition()) > 0) {
-			done = 1;
-			choice = test;
-		} else {
-			k = Popup_window.process();						// poll for input, handle mouse
-			choice = popup_process_keys(pi, k, flags);
-			if ( choice != POPUP_NOCHANGE ) {
-				done=1;
-			}
+			scripting::hooks::OnDialogFrame->run(paramList);
+			isScriptingOverride = scripting::hooks::OnDialogFrame->isOverride(paramList);
+		}
 
-			if ( !done ) {
-				choice = popup_check_buttons(pi);
+		if (!isScriptingOverride) {
+			// draw one frame first
+			Popup_window.draw();
+			popup_force_draw_buttons(pi);
+			popup_draw_msg_text(pi, flags);
+			popup_draw_button_text(pi, flags);
+			gr_flip();
+
+			// test the condition function or process for the window
+			if ((test = condition()) > 0) {
+				done = 1;
+				choice = test;
+			} else {
+				k = Popup_window.process();						// poll for input, handle mouse
+				choice = popup_process_keys(pi, k, flags);
 				if ( choice != POPUP_NOCHANGE ) {
 					done=1;
 				}
+
+				if ( !done ) {
+					choice = popup_check_buttons(pi);
+					if ( choice != POPUP_NOCHANGE ) {
+						done=1;
+					}
+				}
 			}
-		}		
+		}
+		else if ((test = condition()) > 0) {
+			done = 1;
+			choice = test;
+		}
 	}
 
 	gr_set_screen_scale(old_max_w_unscaled, old_max_h_unscaled, old_max_w_unscaled_zoomed, old_max_h_unscaled_zoomed);
