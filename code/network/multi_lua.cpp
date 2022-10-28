@@ -132,7 +132,13 @@ if(MAX_PACKET_SIZE - packet_size < (requiredSpace)) { \
 	LuaError(value.getLuaState(), "Tried to add too much data to a lua packet. Please reduce the amount of data to send. Maximum %d bytes supported!", MAX_PACKET_SIZE); \
 	/*TODO throw here*/ \
 }
-#define USERDATA_REQUIRED_ESTIMATE 17 /*I suspect all userdata objects will fit into 17 bytes. The largest is likely an orientation matrix if not sent as angles. */
+
+//17 Bytes is likely the largest userdata object (orientation matrices) we might need to send, so we want to make sure it will fit into the buffer if we try to add one.
+#if SAFE_MULTI_LUA_USERDATA_SIZES
+#define MAX_USERDATA_REQUIRED_ESTIMATE 17 + 2
+#else
+#define MAX_USERDATA_REQUIRED_ESTIMATE 17 + 1
+#endif
 
 static void send_lua_data(ubyte* data, int& packet_size, const luacpp::LuaValue& value) {
 	switch (value.getValueType()) {
@@ -172,7 +178,7 @@ static void send_lua_data(ubyte* data, int& packet_size, const luacpp::LuaValue&
 		break;
 	}
 	case luacpp::ValueType::USERDATA: {
-		SEND_LUA_DATA_CHECK_SPACE(1 + USERDATA_REQUIRED_ESTIMATE);
+		SEND_LUA_DATA_CHECK_SPACE(1 + MAX_USERDATA_REQUIRED_ESTIMATE);
 		uint8_t type = static_cast<uint8_t>(lua_net_data_type::USERDATA);
 		ADD_DATA(type);
 		send_lua_userdata(data, packet_size, value);
@@ -209,7 +215,7 @@ static void send_lua_data(ubyte* data, int& packet_size, const luacpp::LuaValue&
 }
 
 #undef SEND_LUA_DATA_CHECK_SPACE
-#undef USERDATA_REQUIRED_ESTIMATE
+#undef MAX_USERDATA_REQUIRED_ESTIMATE
 
 void process_lua_packet(ubyte* data, header* hinfo) {
 	int offset; 
