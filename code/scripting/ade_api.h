@@ -10,6 +10,10 @@
 #include "scripting/ade_args.h"
 #include "scripting/ade_doc.h"
 
+class lua_net_exception : public std::exception {
+	using std::exception::exception;
+};
+
 namespace scripting {
 
 const size_t INVALID_ID = (size_t) -1; // Use -1 to get highest possible unsigned number
@@ -34,11 +38,12 @@ namespace internal {
 
 	inline void ade_multi_serialize_unsupported(lua_State* L, const scripting::ade_table_entry& tableEntry, const luacpp::LuaValue& /*value*/, ubyte* /*data*/, int& /*packet_size*/) {
 		LuaError(L, "Cannot serialize data of type %s for sending over network!", tableEntry.GetName());
+		throw lua_net_exception("Cannot serialize data of given userdata type to network");
 	}
 
 	inline void ade_multi_deserialize_unsupported(lua_State* L, const scripting::ade_table_entry& tableEntry, char* /*data_ptr*/, ubyte* /*data*/, int& /*offset*/) {
 		LuaError(L, "Cannot deserialize data of type %s from network! Make sure all players are running the same version!", tableEntry.GetName());
-		//TODO throw here, as we're decoding but can't support this, and have no clue how much bytes this'll take
+		throw lua_net_exception("Cannot deserialize data of recieved userdata type from network");
 	}
 
 	enum class ade_multi_serialize_mode : size_t { NATIVE, FUNDAMENTAL, UNSUPPORTED };

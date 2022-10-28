@@ -39,7 +39,7 @@ static luacpp::LuaValue process_lua_userdata(ubyte* data, int& offset, lua_State
 		//There is a case to be made for this to be an assert.
 		//This happens when the scripting API changes but no multi bump occurs.
 		LuaError(L, "Lua Network packet with Userdata has bad adeidx! Make sure every placer is using the same game version as the host.");
-		return luacpp::LuaValue::createNil(L); //TODO replace with throw. Due to (potentially) bad size, we're now unable to decode the rest of the packet as well
+		throw lua_net_exception("Lua Network packet with Userdata has bad adeidx.");
 	}
 	
 	//Create new LUA object and get handle
@@ -130,7 +130,7 @@ static void send_lua_userdata(ubyte* data, int& packet_size, const luacpp::LuaVa
 #define SEND_LUA_DATA_CHECK_SPACE(requiredSpace) \
 if(MAX_PACKET_SIZE - packet_size < (requiredSpace)) { \
 	LuaError(value.getLuaState(), "Tried to add too much data to a lua packet. Please reduce the amount of data to send. Maximum %d bytes supported!", MAX_PACKET_SIZE); \
-	/*TODO throw here*/ \
+	throw lua_net_exception("Tried to add too much data to a lua packet."); \
 }
 
 //17 Bytes is likely the largest userdata object (orientation matrices) we might need to send, so we want to make sure it will fit into the buffer if we try to add one.
@@ -195,7 +195,7 @@ static void send_lua_data(ubyte* data, int& packet_size, const luacpp::LuaValue&
 			//Since we can't rely on getLength / # to get a non-numeric-key length of a table, we need to count what we can actually emplace
 			if (++size == 0xff) {
 				LuaError(value.getLuaState(), "Tried to send a table with too many keys over the network. Maximum %d supported!", 0xff);
-				//TODO throw here
+				throw lua_net_exception("Tried to send a table with too many keys over the network.");
 			}
 			SCP_UNUSED(value_pair);
 		}
@@ -209,8 +209,7 @@ static void send_lua_data(ubyte* data, int& packet_size, const luacpp::LuaValue&
 	}
 	default:
 		LuaError(value.getLuaState(), "Tried to send an invalid type of lua data over the network. Support are only nil, boolean, number, string, tables and certain FSO userdata!");
-		//TODO throw here
-		break;
+		throw lua_net_exception("Tried to send an invalid type of lua data over the network.");
 	}
 }
 
@@ -236,13 +235,21 @@ void process_lua_packet(ubyte* data, header* hinfo) {
 		GET_USHORT(packetTime);
 	}
 	
-	luacpp::LuaValue value = process_lua_data(data, offset, L);
+	try {
+		luacpp::LuaValue value = process_lua_data(data, offset, L);
 
-	PACKET_SET_SIZE();
+		
+	}
+	catch (const lua_net_exception& e) {
+		//At this point, we don't have the slightest idea how big this packet should have been. To make sure we don't parse trash, tell the multi API that we read basically the entire remainder of the buffer
+		offset = 0xfffff;
+		nprintf(("Network", "Failed to decode multi packet.\nReason: %s\nPotentially tossing following packets...\n", e.what()));
+	}
 	
+	PACKET_SET_SIZE();
 }
 
-void send_lua_packet(const luacpp::LuaValue& value, ushort target, lua_net_mode mode, net_player* reciever) {
+bool send_lua_packet(const luacpp::LuaValue& value, ushort target, lua_net_mode mode, net_player* reciever) {
 	int packet_size;
 	ubyte data[MAX_PACKET_SIZE];
 
@@ -260,18 +267,26 @@ void send_lua_packet(const luacpp::LuaValue& value, ushort target, lua_net_mode 
 		ADD_USHORT(time);
 	}
 
-	send_lua_data(data, packet_size, value);
+	try {
+		send_lua_data(data, packet_size, value);
 
-	if (mode == lua_net_mode::RELIABLE) {
-		if (reciever == nullptr)
-			multi_io_send_to_all_reliable(data, packet_size);
-		else
-			multi_io_send_reliable(reciever, data, packet_size);
+		if (mode == lua_net_mode::RELIABLE) {
+			if (reciever == nullptr)
+				multi_io_send_to_all_reliable(data, packet_size);
+			else
+				multi_io_send_reliable(reciever, data, packet_size);
+		}
+		else {
+			if (reciever == nullptr)
+				multi_io_send_to_all(data, packet_size);
+			else
+				multi_io_send(reciever, data, packet_size);
+		}
+
+		return true;
 	}
-	else {
-		if (reciever == nullptr)
-			multi_io_send_to_all(data, packet_size);
-		else
-			multi_io_send(reciever, data, packet_size);
+	catch (const lua_net_exception& e) {
+		nprintf(("Network", "Failed to send multi packet.\nReason: %s..\n", e.what()));
+		return false;
 	}
 }
