@@ -218,5 +218,6 @@ protected:
 extern CMainFrame *Fred_main_wnd;   //!< The main FRED window
 
 extern color_combo_box m_new_ship_type_combo_box;  //!< The combo box
+extern size_t num_ships_in_combo_box;
 
 #endif // _MAINFRM_H

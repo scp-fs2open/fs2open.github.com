@@ -77,6 +77,7 @@ static UINT indicators[] =
 
 CMainFrame *Fred_main_wnd;
 color_combo_box m_new_ship_type_combo_box;
+size_t num_ships_in_combo_box = 0;
 int Toggle1_var = 0;
 CPoint Global_point2;
 
@@ -118,12 +119,17 @@ void CMainFrame::init_tools() {
     for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
         // don't add the pirate ship
         if (it->flags[Ship::Info_Flags::No_fred]) {
-            m_new_ship_type_combo_box.AddString("");
+            //m_new_ship_type_combo_box.AddString("");
             continue;
-        }
-
-        m_new_ship_type_combo_box.AddString(it->name);
+		} else {
+			m_new_ship_type_combo_box.AddString(it->name);
+			num_ships_in_combo_box++;
+		}
     }
+
+	Id_select_type_start = (int)(num_ships_in_combo_box + 2);
+	Id_select_type_jump_node = (int)(num_ships_in_combo_box + 1);
+	Id_select_type_waypoint = (int)(num_ships_in_combo_box);
 
 	//	m_new_ship_type_combo_box.AddString("Player Start");		
 	m_new_ship_type_combo_box.AddString("Jump Node");
@@ -400,7 +406,7 @@ void color_combo_box::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct) {
 	CDC* pDC = CDC::FromHandle(lpDrawItemStruct->hDC);
 
 	// I think we need to do a lookup by ship name here	
-	if (lpDrawItemStruct->itemID >= Ship_info.size()) {
+	if (lpDrawItemStruct->itemID >= num_ships_in_combo_box) {
 		z = lpDrawItemStruct->itemID;
 	} else {
 		memset(ship_name, 0, 256);
@@ -414,7 +420,7 @@ void color_combo_box::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct) {
 
 		COLORREF newTextColor = RGB(0x80, 0x80, 0x80);  // light gray
 		if (!fDisabled) {
-			if (z >= ship_info_size())
+			if (z >= num_ships_in_combo_box)
 				newTextColor = RGB(0, 0, 0);
 			else {
 				species_info *sinfo = &Species_info[Ship_info[z].species];
@@ -467,7 +473,7 @@ int color_combo_box::GetCurSelNEW() {
 
 	// see if we have a special item (>= Ship_info.size())
 	cur_sel = GetCurSel();
-	if (cur_sel >= ship_info_size()) {
+	if (cur_sel >= num_ships_in_combo_box) {
 		return cur_sel;
 	}
 
@@ -490,7 +496,7 @@ void color_combo_box::MeasureItem(LPMEASUREITEMSTRUCT) {
 }
 
 int color_combo_box::SetCurSelNEW(int model_index) {
-	if ((model_index < 0) || (model_index >= ship_info_size())) {
+	if ((model_index < 0) || (model_index >= num_ships_in_combo_box)) {
 		return SetCurSel(model_index);
 	}
 
