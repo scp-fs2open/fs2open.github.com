@@ -1387,6 +1387,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/promise.h
 	scripting/api/objs/redalert.cpp
 	scripting/api/objs/redalert.h
+	scripting/api/objs/rpc.cpp
+	scripting/api/objs/rpc.h
 	scripting/api/objs/sexpvar.cpp
 	scripting/api/objs/sexpvar.h
 	scripting/api/objs/shields.cpp

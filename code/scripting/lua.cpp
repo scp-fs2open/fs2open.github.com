@@ -42,6 +42,7 @@ extern "C" {
 #include "scripting/api/objs/physics_info.h"
 #include "scripting/api/objs/player.h"
 #include "scripting/api/objs/promise.h"
+#include "scripting/api/objs/rpc.h"
 #include "scripting/api/objs/sexpvar.h"
 #include "scripting/api/objs/shields.h"
 #include "scripting/api/objs/ship.h"

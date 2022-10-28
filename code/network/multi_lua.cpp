@@ -263,7 +263,7 @@ bool send_lua_packet(const luacpp::LuaValue& value, ushort target, lua_net_mode 
 	ADD_USHORT(header.packed);
 
 	if (isOrdered) {
-		ushort time = static_cast<ushort>(ui_timestamp().value());
+		ushort time = static_cast<ushort>(ui_timestamp().value() & 0xffffU);
 		ADD_USHORT(time);
 	}
 
