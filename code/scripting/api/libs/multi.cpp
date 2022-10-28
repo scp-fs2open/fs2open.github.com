@@ -19,7 +19,7 @@ namespace scripting {
 			"In this case, each client will run their registered method when a different client calls the RPC with the corresponding name. "
 			"Passing nil as the execution function means that the RPC can be called from this client, but not on this client.", "rpc", "An RPC object.")
 		{
-			return ade_set_args(L, "o", l_RPC.Set(rpc_h()));
+			return ade_set_args(L, "o", l_RPC.Set(rpc_h_impl::create(L, "")));
 		}
 	}
 }

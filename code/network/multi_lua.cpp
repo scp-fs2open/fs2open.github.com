@@ -9,6 +9,7 @@
 //Also, it makes the remaining faults safer, since this way we'll only get invalid data, not accessing potentially invalid memory
 #define SAFE_MULTI_LUA_USERDATA_SIZES true
 
+static SCP_unordered_map<ushort, scripting::api::rpc_h_ref> rpc_map;
 
 enum class lua_net_data_type : uint8_t { NIL, BOOL, NUMBER, STRING8, STRING16, USERDATA, TABLE };
 
@@ -22,6 +23,46 @@ union lua_packet_header {
 	unsigned short packed;
 };
 static_assert(sizeof(lua_packet_header) == 2, "Lua Packet Header is not properly packed!");
+
+
+static bool need_toss_packet(ushort target, short packet_source, ushort packetTime, UI_TIMESTAMP localTime) {
+	//Ordering is enforced for packet source and execution targets. Meaning we neither order packets form different sources
+	//(due to incomparibility of timestamps) or to different targets (due to semantic insignificance)
+	static SCP_map<std::pair<ushort, short>, std::pair<ushort, UI_TIMESTAMP>> recieved_packets;
+
+	//The idea is, that we reject packets which are in the past, unless the last packet we actually got is so far in the past, we're not sure if it might have overflowed
+	//Basically, assume that if packetTime - lastPacketTime < 1000, then it's either delayed over 60 seconds, or not a past packet. If it's larger than that, compare it to
+	//the difference of local timestamps. If the local timestamp is over 2^16, it's also safe, otherwise, allow a 10% delay margin.
+
+	auto& channel = recieved_packets[{target, packet_source}];
+	std::pair<ushort, UI_TIMESTAMP> newTimestamp = { std::move(packetTime), std::move(localTime) };
+
+	if (!channel.second.isValid()) {
+		//First packet for this channel
+		channel = std::move(newTimestamp);
+		return false;
+	}
+
+	if (newTimestamp.first - channel.first < 1000) {
+		//The previous packet is less than a second ago. If this were a delayed packet, as a ushort, it'd have to be >60 seconds late, so effectively impossible.
+		channel = std::move(newTimestamp);
+		return false;
+	}
+
+	if (static_cast<int>(newTimestamp.first - channel.first) * 110 < ui_timestamp_get_delta(channel.second, newTimestamp.second)) {
+		//The previous packet is, at most, 10% older than its age when it arrived. We expect that most delayed packets will happen when sent in quick succession,
+		//so what needs to be guarded here are underflows, which produce very large values but will have very small timestamps. So as long as local and remote timestamp
+		//somewhat agree, the packet's good. In addition, once ui_timestamp_get_delta exceeds 65 seconds, we can't tell anymore due to the remote timestamp being uint16,
+		//but at that point we can just accept the packet as likely new.
+		channel = std::move(newTimestamp);
+		return false;
+	}
+
+	//If we're still here, then we've got a packet that has a very high remote time but a very short local time, so likely a packet whose high remote time indicates a
+	//negative remote time. Toss is then. Also, since we toss the packet, we DON'T update the recieved packet index.
+	return true;
+}
+
 
 static luacpp::LuaValue process_lua_userdata(ubyte* data, int& offset, lua_State* L) {
 	luacpp::LuaValue retVal(L);
@@ -129,6 +170,7 @@ static void send_lua_userdata(ubyte* data, int& packet_size, const luacpp::LuaVa
 	//Serialize
 	objType.Serializer(L, objType, value, data, packet_size);
 }
+
 
 #define SEND_LUA_DATA_CHECK_SPACE(requiredSpace) \
 if(MAX_PACKET_SIZE - packet_size < (requiredSpace)) { \
@@ -270,7 +312,19 @@ void process_lua_packet(ubyte* data, header* hinfo, bool reliable) {
 	try {
 		luacpp::LuaValue value = process_lua_data(data, offset, L);
 		
-		//Process value and timestamps
+		//Let's find the actual function to call.
+		const auto it = rpc_map.find(header.data.target);
+		if (it == rpc_map.end() || it->second.expired()) {
+			//No RPC available. Since, in very rare case, this can be intentional, just log this.
+			nprintf(("Network", "Failed to find an RPC handler for packet with hash %#04X.\n", header.data.target));
+		}
+		else {
+			const scripting::api::rpc_h rpc_ptr = it->second.lock();
+			if (rpc_ptr == nullptr || !rpc_ptr->func.isValid())
+				LuaError(L, "Tried to invoke RPC handler %s but the function was not valid.", rpc_ptr->name.c_str());
+			else
+				rpc_ptr->func.call(L, luacpp::LuaValueList{ std::move(value) });
+		}
 	}
 	catch (const lua_net_exception& e) {
 		offset = packet_size;
@@ -337,40 +391,27 @@ bool send_lua_packet(const luacpp::LuaValue& value, ushort target, lua_net_mode 
 	}
 }
 
-bool need_toss_packet(ushort target, short packet_source, ushort packetTime, UI_TIMESTAMP localTime) {
-	//Ordering is enforced for packet source and execution targets. Meaning we neither order packets form different sources
-	//(due to incomparibility of timestamps) or to different targets (due to semantic insignificance)
-	static SCP_map<std::pair<ushort, short>, std::pair<ushort, UI_TIMESTAMP>> recieved_packets;
 
-	//The idea is, that we reject packets which are in the past, unless the last packet we actually got is so far in the past, we're not sure if it might have overflowed
-	//Basically, assume that if packetTime - lastPacketTime < 1000, then it's either delayed over 60 seconds, or not a past packet. If it's larger than that, compare it to
-	//the difference of local timestamps. If the local timestamp is over 2^16, it's also safe, otherwise, allow a 10% delay margin.
+bool add_rpc(scripting::api::rpc_h_ref ref) {
+	//Make sure we don't have an errant RPC hash lying around
+	clean_rpc_refs();
 
-	auto& channel = recieved_packets[{target, packet_source}];
-	std::pair<ushort, UI_TIMESTAMP> newTimestamp = { std::move(packetTime), std::move(localTime) };
+	const ushort hash = ref.lock()->hash;
 
-	if (!channel.second.isValid()) {
-		//First packet for this channel
-		channel = std::move(newTimestamp);
+	if (rpc_map.find(hash) != rpc_map.end()) {
+		//Something with this hash already exists, bail
 		return false;
 	}
 
-	if (newTimestamp.first - channel.first < 1000) {
-		//The previous packet is less than a second ago. If this were a delayed packet, as a ushort, it'd have to be >60 seconds late, so effectively impossible.
-		channel = std::move(newTimestamp);
-		return false;
-	}
-
-	if (static_cast<int>(newTimestamp.first - channel.first) * 110 < ui_timestamp_get_delta(channel.second, newTimestamp.second)) {
-		//The previous packet is, at most, 10% older than its age when it arrived. We expect that most delayed packets will happen when sent in quick succession,
-		//so what needs to be guarded here are underflows, which produce very large values but will have very small timestamps. So as long as local and remote timestamp
-		//somewhat agree, the packet's good. In addition, once ui_timestamp_get_delta exceeds 65 seconds, we can't tell anymore due to the remote timestamp being uint16,
-		//but at that point we can just accept the packet as likely new.
-		channel = std::move(newTimestamp);
-		return false;
-	}
-
-	//If we're still here, then we've got a packet that has a very high remote time but a very short local time, so likely a packet whose high remote time indicates a
-	//negative remote time. Toss is then. Also, since we toss the packet, we DON'T update the recieved packet index.
+	rpc_map.emplace(hash, ref);
 	return true;
+}
+
+void clean_rpc_refs() {
+	for (auto it = rpc_map.begin(); it != rpc_map.end();) {
+		if (it->second.expired())
+			it = rpc_map.erase(it);
+		else
+			it++;
+	}
 }
