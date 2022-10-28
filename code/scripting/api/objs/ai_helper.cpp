@@ -13,7 +13,7 @@ namespace scripting {
 namespace api {
 
 //**********HANDLE: AI Helper
-ADE_OBJ(l_AI_Helper, object_h, "ai_helper", "A helper object to access functions for ship manipulation during AI phase");
+ADE_OBJ_NO_MULTI(l_AI_Helper, object_h, "ai_helper", "A helper object to access functions for ship manipulation during AI phase");
 
 ADE_VIRTVAR(Ship, l_AI_Helper, nullptr, "The ship this AI runs for", "ship", "The ship, or invalid ship if the handle is invalid")
 {

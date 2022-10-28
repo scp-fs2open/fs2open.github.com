@@ -72,7 +72,7 @@ ADE_VIRTVAR(AudioFilename,
 }
 
 //**********HANDLE: cmd_briefing
-ADE_OBJ(l_CmdBrief, int, "cmd_briefing", "Command briefing handle");
+ADE_OBJ_NO_MULTI(l_CmdBrief, int, "cmd_briefing", "Command briefing handle");
 
 ADE_INDEXER(l_CmdBrief,
 	"number index",

@@ -6,6 +6,12 @@
 #include "weaponclass.h"
 #include "wing.h"
 
+#include "mission/missionparse.h"
+
+#include "network/multi.h"
+#include "network/multimsgs.h"
+#include "network/multiutil.h"
+
 extern bool sexp_check_flag_arrays(const char *flag_name, Object::Object_Flags &object_flag, Ship::Ship_Flags &ship_flags, Mission::Parse_Object_Flags &parse_obj_flag, AI::AI_Flags &ai_flag);
 extern void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future_ships, Object::Object_Flags object_flag, Ship::Ship_Flags ship_flag, Mission::Parse_Object_Flags parse_obj_flag, AI::AI_Flags ai_flag, bool set_flag);
 
@@ -15,6 +21,19 @@ namespace api {
 parse_object_h::parse_object_h(p_object* obj) : _obj(obj) {}
 p_object* parse_object_h::getObject() const { return _obj; }
 bool parse_object_h::isValid() const { return _obj != nullptr; }
+
+void parse_object_h::serialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, const luacpp::LuaValue& value, ubyte* data, int& packet_size) {
+	parse_object_h pobj(nullptr);
+	value.getValue(l_ParseObject.Get(&pobj));
+	ADD_USHORT(pobj._obj->net_signature);
+}
+
+void parse_object_h::deserialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, char* data_ptr, ubyte* data, int& offset) {
+	ushort net_signature;
+	GET_USHORT(net_signature);
+	new(data_ptr) parse_object_h(mission_parse_get_arrival_ship(net_signature));
+}
+
 
 //**********HANDLE: parse_object
 ADE_OBJ(l_ParseObject, parse_object_h, "parse_object", "Handle to a parsed ship");
@@ -475,6 +494,21 @@ parse_subsys_h::parse_subsys_h() = default;
 parse_subsys_h::parse_subsys_h(p_object* obj, int subsys_offset) : _obj(obj), _subsys_offset(subsys_offset) {}
 subsys_status* parse_subsys_h::getSubsys() const { return &Subsys_status[_obj->subsys_index + _subsys_offset]; }
 bool parse_subsys_h::isValid() const { return _obj != nullptr && _subsys_offset < _obj->subsys_count; }
+
+void parse_subsys_h::serialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, const luacpp::LuaValue& value, ubyte* data, int& packet_size) {
+	parse_subsys_h pobj;
+	value.getValue(l_ParseSubsystem.Get(&pobj));
+	ADD_USHORT(pobj._obj->net_signature);
+	ADD_INT(pobj._subsys_offset);
+}
+
+void parse_subsys_h::deserialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, char* data_ptr, ubyte* data, int& offset) {
+	ushort net_signature;
+	int ss;
+	GET_USHORT(net_signature);
+	GET_INT(ss);
+	new(data_ptr) parse_subsys_h(mission_parse_get_arrival_ship(net_signature), ss);
+}
 
 //**********HANDLE: parse_object
 ADE_OBJ(l_ParseSubsystem, parse_subsys_h, "parse_subsystem", "Handle to a parse subsystem");

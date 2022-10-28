@@ -153,6 +153,9 @@ struct enum_h {
 	SCP_string getName() const;
 
 	bool IsValid() const;
+
+	void serialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, const luacpp::LuaValue& value, ubyte* data, int& packet_size);
+	void deserialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, char* data_ptr, ubyte* data, int& offset);
 };
 
 DECLARE_ADE_OBJ(l_Enum, enum_h);

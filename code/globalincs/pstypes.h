@@ -99,6 +99,14 @@ struct ivec2 {
 	int x, y;
 };
 
+namespace scripting {
+	class ade_table_entry;
+}
+namespace luacpp {
+	class LuaValue;
+}
+struct lua_State;
+
 /** Represents a point in 3d space.
 
 Note: this is a struct, not a class, so no member functions. */
@@ -109,6 +117,9 @@ typedef struct vec3d {
 		} xyz;
 		float a1d[3];
 	};
+
+	void serialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, const luacpp::LuaValue& value, ubyte* data, int& packet_size);
+	void deserialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, char* data_ptr, ubyte* data, int& offset);
 } vec3d;
 
 typedef struct vec2d {

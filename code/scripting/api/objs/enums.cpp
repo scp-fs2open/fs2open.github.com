@@ -5,6 +5,10 @@
 #include "object/objectsnd.h"
 #include "scripting/ade.h"
 
+#include "network/multi.h"
+#include "network/multimsgs.h"
+#include "network/multiutil.h"
+
 namespace scripting {
 namespace api {
 
@@ -185,6 +189,18 @@ SCP_string enum_h::getName() const
 	return SCP_string();
 }
 bool enum_h::IsValid() const { return (index > -1 && index < ENUM_NEXT_INDEX); }
+
+void enum_h::serialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, const luacpp::LuaValue& value, ubyte* data, int& packet_size) {
+	enum_h enumeration;
+	value.getValue(l_Enum.Get(&enumeration));
+	ADD_INT(enumeration.index);
+}
+
+void enum_h::deserialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, char* data_ptr, ubyte* data, int& offset) {
+	int index;
+	GET_INT(index);
+	new(data_ptr) enum_h(index); //Transmitted enums are never constant, so don't bother
+}
 
 ADE_OBJ(l_Enum, enum_h, "enumeration", "Enumeration object");
 

@@ -5,9 +5,23 @@
 #include "render/3d.h"
 #include "render/3dinternal.h"
 
+#include "network/multi.h"
+#include "network/multimsgs.h"
+
+void vec3d::serialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, const luacpp::LuaValue& value, ubyte* data, int& packet_size) {
+	vec3d vec;
+	value.getValue(scripting::api::l_Vector.Get(&vec));
+	ADD_VECTOR(vec);
+}
+
+void vec3d::deserialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, char* data_ptr, ubyte* data, int& offset) {
+	vec3d vec;
+	GET_VECTOR(vec);
+	new(data_ptr) vec3d(std::move(vec));
+}
+
 namespace scripting {
 namespace api {
-
 
 //**********OBJECT: orientation matrix
 //WMC - So matrix can use vector, I define it up here.
@@ -51,6 +65,19 @@ matrix* matrix_h::GetMatrix() {
 }
 void matrix_h::SetStatus(MatrixState n_status) {
 	status = n_status;
+}
+
+void matrix_h::serialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, const luacpp::LuaValue& value, ubyte* data, int& packet_size) {
+	matrix_h mat;
+	value.getValue(l_Matrix.Get(&mat));
+	vec3d vec = *reinterpret_cast<vec3d*>(mat.GetAngles());
+	ADD_VECTOR(vec);
+}
+
+void matrix_h::deserialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, char* data_ptr, ubyte* data, int& offset) {
+	vec3d ang;
+	GET_VECTOR(ang);
+	new(data_ptr) matrix_h(reinterpret_cast<angles*>(&ang));
 }
 
 //LOOK LOOK LOOK LOOK LOOK LOOK

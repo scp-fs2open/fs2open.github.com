@@ -10,6 +10,10 @@
 #include "hud/hudtarget.h"
 #include "ship/shiphit.h"
 
+#include "network/multi.h"
+#include "network/multimsgs.h"
+#include "network/multiutil.h"
+
 bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, vec3d *turret_pos, vec3d *firing_vec, vec3d *predicted_pos = nullptr, float flak_range_override = 100.0f);
 
 namespace scripting {
@@ -22,6 +26,22 @@ ship_subsys_h::ship_subsys_h(object* objp_in, ship_subsys* sub) : object_h(objp_
 	ss = sub;
 }
 bool ship_subsys_h::isSubsystemValid() const { return object_h::IsValid() && objp->type == OBJ_SHIP && ss != nullptr; }
+
+void ship_subsys_h::serialize(lua_State* L, const scripting::ade_table_entry& tableEntry, const luacpp::LuaValue& value, ubyte* data, int& packet_size) {
+	ship_subsys_h subsys;
+	value.getValue(l_Subsystem.Get(&subsys));
+	ADD_USHORT(subsys.objp->net_signature);
+	ADD_INT(subsys.ss->parent_subsys_index);
+}
+
+void ship_subsys_h::deserialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, char* data_ptr, ubyte* data, int& offset) {
+	ushort net_signature;
+	int subsys;
+	GET_USHORT(net_signature);
+	GET_INT(subsys);
+	object* obj = multi_get_network_object(net_signature);
+	new(data_ptr) ship_subsys_h(obj, ship_get_indexed_subsys(&Ships[obj->instance], subsys));
+}
 
 //**********HANDLE: Subsystem
 ADE_OBJ(l_Subsystem, ship_subsys_h, "subsystem", "Ship subsystem handle");

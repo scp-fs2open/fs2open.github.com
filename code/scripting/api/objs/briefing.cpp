@@ -102,7 +102,7 @@ ADE_VIRTVAR(hasBackwardCut,
 }
 
 //**********HANDLE: briefing
-ADE_OBJ(l_Brief, int, "briefing", "Briefing handle");
+ADE_OBJ_NO_MULTI(l_Brief, int, "briefing", "Briefing handle");
 
 ADE_INDEXER(l_Brief,
 	"number index",
@@ -145,7 +145,7 @@ ADE_FUNC(__len, l_Brief, nullptr, "The number of stages in the briefing", "numbe
 }
 
 //**********HANDLE: mission goals
-ADE_OBJ(l_Goals, int, "mission_goal", "Mission objective handle");
+ADE_OBJ_NO_MULTI(l_Goals, int, "mission_goal", "Mission objective handle");
 
 ADE_VIRTVAR(Name, l_Goals, nullptr, "The name of the goal", "string", "The goal name")
 {

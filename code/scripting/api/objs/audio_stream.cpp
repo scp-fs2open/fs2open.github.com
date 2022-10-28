@@ -7,7 +7,7 @@ namespace scripting {
 namespace api {
 
 //**********HANDLE: Asteroid
-ADE_OBJ(l_AudioStream, int, "audio_stream", "An audio stream handle");
+ADE_OBJ_NO_MULTI(l_AudioStream, int, "audio_stream", "An audio stream handle");
 
 ADE_FUNC(play,
 	l_AudioStream,
