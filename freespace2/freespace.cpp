@@ -3332,7 +3332,7 @@ camid game_render_frame_setup()
 
 	if (OnCameraSetUpHook->isActive())	{
 		OnCameraSetUpHook->run(scripting::hook_param_list(
-			scripting::hook_param("Camera", 'o', scripting::api::l_Camera.Set(Main_camera)));
+			scripting::hook_param("Camera", 'o', scripting::api::l_Camera.Set(Main_camera))));
 	}
 
 	// setup neb2 rendering
