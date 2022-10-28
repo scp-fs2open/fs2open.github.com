@@ -420,7 +420,7 @@ void color_combo_box::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct) {
 
 		COLORREF newTextColor = RGB(0x80, 0x80, 0x80);  // light gray
 		if (!fDisabled) {
-			if (z >= ship_type_combo_box_size)
+			if (z >= (int)ship_type_combo_box_size)
 				newTextColor = RGB(0, 0, 0);
 			else {
 				species_info *sinfo = &Species_info[Ship_info[z].species];
@@ -473,7 +473,7 @@ int color_combo_box::GetCurSelNEW() {
 
 	// see if we have a special item (>= Ship_info.size())
 	cur_sel = GetCurSel();
-	if (cur_sel >= ship_type_combo_box_size) {
+	if (cur_sel >= (int)ship_type_combo_box_size) {
 		return cur_sel;
 	}
 
@@ -496,7 +496,7 @@ void color_combo_box::MeasureItem(LPMEASUREITEMSTRUCT) {
 }
 
 int color_combo_box::SetCurSelNEW(int model_index) {
-	if ((model_index < 0) || (model_index >= ship_type_combo_box_size)) {
+	if ((model_index < 0) || (model_index >= (int)ship_type_combo_box_size)) {
 		return SetCurSel(model_index);
 	}
 

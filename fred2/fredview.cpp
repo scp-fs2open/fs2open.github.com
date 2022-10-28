@@ -1639,7 +1639,7 @@ BOOL CFREDView::OnCmdMsg(UINT nID, int nCode, void* pExtra, AFX_CMDHANDLERINFO* 
 	int id = (int) nID;
 
 	if (!pHandlerInfo) {
-		if ((id >= SHIP_TYPES) && (id < SHIP_TYPES + ship_type_combo_box_size + 3)) {
+		if ((id >= SHIP_TYPES) && (id < SHIP_TYPES + (int)ship_type_combo_box_size + 3)) {
 			if (nCode == CN_COMMAND) {
 				cur_model_index = id - SHIP_TYPES;
 				m_new_ship_type_combo_box.SetCurSelNEW(cur_model_index);
