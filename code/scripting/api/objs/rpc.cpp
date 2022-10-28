@@ -42,5 +42,13 @@ ADE_FUNC(__call, l_RPC, "[any = nil, enumeration recipient = default /* as set o
 	return ADE_RETURN_NIL;
 }
 
+ADE_FUNC(waitAsync,
+	l_RPC,
+	nullptr,
+	"Performs an asynchronous wait until this RPC has been evoked on this client and the RPC function has finished running. Does NOT trigger when the RPC is called from this client.",
+	"promise",
+	"A promise with no return value that resolves when this RPC has been called the next time.")
+{
+
 }
 }
