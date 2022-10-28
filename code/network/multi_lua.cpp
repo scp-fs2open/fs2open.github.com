@@ -316,7 +316,7 @@ void process_lua_packet(ubyte* data, header* hinfo, bool reliable) {
 		const auto it = rpc_map.find(header.data.target);
 		if (it == rpc_map.end() || it->second.expired()) {
 			//No RPC available. Since, in very rare case, this can be intentional, just log this.
-			nprintf(("Network", "Failed to find an RPC handler for packet with hash %#04X.\n", header.data.target));
+			nprintf(("Network", "Failed to find an RPC handler for packet with hash %#06X.\n", header.data.target));
 		}
 		else {
 			const scripting::api::rpc_h rpc_ptr = it->second.lock();
@@ -348,7 +348,7 @@ bool send_lua_packet(const luacpp::LuaValue& value, ushort target, lua_net_mode 
 	bool isOrdered = mode == lua_net_mode::ORDERED;
 
 	lua_packet_header header;
-	header.data.target = target & 0b0111111111111111U;
+	header.data.target = target & 0b0001111111111111U; // : 13
 	header.data.isOrdered = isOrdered ? 1 : 0;
 	header.data.toClient = reciever != lua_net_reciever::SERVER ? 1 : 0;
 	header.data.toServer = reciever != lua_net_reciever::CLIENTS ? 1 : 0;

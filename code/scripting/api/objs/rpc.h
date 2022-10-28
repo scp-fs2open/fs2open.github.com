@@ -2,6 +2,7 @@
 
 #include "scripting/ade_api.h"
 #include "object/object.h"
+#include "scripting/api/objs/enums.h"
 
 #include <memory>
 
@@ -12,7 +13,6 @@ namespace scripting {
 		using rpc_h_ref = std::weak_ptr<rpc_h_impl>;
 
 		class rpc_h_impl {
-
 			explicit rpc_h_impl(SCP_string _name);
 		public:
 			static rpc_h create(lua_State* L, SCP_string name);
@@ -21,6 +21,7 @@ namespace scripting {
 			const ushort hash : 13;
 			const SCP_string name;
 			luacpp::LuaFunction func;
+			enum_h mode, recipient;
 		};
 
 		DECLARE_ADE_OBJ(l_RPC, rpc_h);

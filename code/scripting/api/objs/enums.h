@@ -131,8 +131,14 @@ const int32_t LE_DC_IS_HULL                  = (1<<0); // the following definiti
 const int32_t LE_DC_VAPORIZE                 = (1<<1);
 const int32_t LE_DC_SET_VELOCITY             = (1<<2);
 const int32_t LE_DC_FIRE_HOOK                = (1<<3);
+const int32_t LE_RPC_SERVER					 = 118;
+const int32_t LE_RPC_CLIENTS				 = 119;
+const int32_t LE_RPC_BOTH					 = 120;
+const int32_t LE_RPC_RELIABLE				 = 121;
+const int32_t LE_RPC_ORDERED				 = 122;
+const int32_t LE_RPC_UNRELIABLE				 = 123;
 
-const int ENUM_NEXT_INDEX = 118; // <<<<<<<<<<<<<<<<<<<<<<
+const int ENUM_NEXT_INDEX = 124; // <<<<<<<<<<<<<<<<<<<<<<
 extern flag_def_list Enumerations[];
 extern size_t Num_enumerations;
 
