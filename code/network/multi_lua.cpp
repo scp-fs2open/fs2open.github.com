@@ -322,8 +322,10 @@ void process_lua_packet(ubyte* data, header* hinfo, bool reliable) {
 			const scripting::api::rpc_h rpc_ptr = it->second.lock();
 			if (rpc_ptr == nullptr || !rpc_ptr->func.isValid())
 				LuaError(L, "Tried to invoke RPC handler %s but the function was not valid.", rpc_ptr->name.c_str());
-			else
+			else {
 				rpc_ptr->func.call(L, luacpp::LuaValueList{ std::move(value) });
+				rpc_ptr->lastCalled = ui_timestamp();
+			}
 		}
 	}
 	catch (const lua_net_exception& e) {

@@ -22,6 +22,7 @@ namespace scripting {
 			const SCP_string name;
 			luacpp::LuaFunction func;
 			enum_h mode, recipient;
+			UI_TIMESTAMP lastCalled = UI_TIMESTAMP::never();
 		};
 
 		DECLARE_ADE_OBJ(l_RPC, rpc_h);
