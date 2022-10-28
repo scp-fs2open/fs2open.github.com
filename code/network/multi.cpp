@@ -498,7 +498,7 @@ void multi_client_check_server()
 //	Prelimiary verification of the magic number and checksum are done here.  
 //
 
-void process_packet_normal(ubyte* data, header *header_info)
+void process_packet_normal(ubyte* data, header *header_info, bool reliable)
 {
 	// this is for helping to diagnose misaligned packets.  The last sensible packet 
 	// is usually the culprit that needs to be analyzed.
@@ -938,7 +938,7 @@ void process_packet_normal(ubyte* data, header *header_info)
 			break; 
 
 		case LUA_DATA_PACKET:
-			process_lua_packet(data, header_info);
+			process_lua_packet(data, header_info, reliable);
 			break;
 
 		default:
@@ -1008,7 +1008,7 @@ void multi_process_bigdata(ubyte *data, int len, net_addr *from_addr, int reliab
 		}		
 
 		// perform any special processing checks here		
-		process_packet_normal(buf,&header_info);
+		process_packet_normal(buf,&header_info, reliable != 0);
 		 
 		// MWA -- magic number was removed from header on 8/4/97.  Replaced with bytes_processed
 		// variable which gets stuffed whenever a packet is processed.

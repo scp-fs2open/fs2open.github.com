@@ -1,6 +1,7 @@
 #include "multi_lua.h"
 
-#include "multimsgs.h"
+#include "network/multimsgs.h"
+#include "network/multiutil.h"
 #include "scripting/ade.h"
 #include "scripting/ade_api.h"
 
@@ -13,8 +14,10 @@ enum class lua_net_data_type : uint8_t { NIL, BOOL, NUMBER, STRING8, STRING16, U
 
 union lua_packet_header {
 	struct {
-		unsigned short target : 15;
+		unsigned short target : 13;
 		unsigned short isOrdered : 1;
+		unsigned short toServer : 1;
+		unsigned short toClient : 1;
 	} data;
 	unsigned short packed;
 };
@@ -216,40 +219,73 @@ static void send_lua_data(ubyte* data, int& packet_size, const luacpp::LuaValue&
 #undef SEND_LUA_DATA_CHECK_SPACE
 #undef MAX_USERDATA_REQUIRED_ESTIMATE
 
-void process_lua_packet(ubyte* data, header* hinfo) {
+void process_lua_packet(ubyte* data, header* hinfo, bool reliable) {
 	int offset; 
 	lua_State* L = Script_system.GetLuaSession();
 
 	offset = HEADER_LENGTH;
 
 	lua_packet_header header;
+	ushort packet_size;
 	
-	//The idea is, that we reject packets which are in the past, unless the last packet we actually got is so far in the past, we're not sure if it might have overflowed
-	//Basically, assume that if packetTime - lastPacketTime < 1000, then it's either delayed over 60 seconds, or not a past packet. If it's larger than that, compare it to
-	//the difference of local timestamps. If the local timestamp is over 2^16, it's also safe, otherwise, allow a 10% delay margin.
-	ushort packetTime = 0U;
-	UI_TIMESTAMP packetLocalTime = ui_timestamp();
-
 	GET_USHORT(header.packed);
+	GET_USHORT(packet_size);
 	if (header.data.isOrdered != 0) {
+		ushort packetTime;
+		UI_TIMESTAMP packetLocalTime = ui_timestamp();
+
+		const int timeOffset = offset;
 		GET_USHORT(packetTime);
+
+		if (need_toss_packet(header.data.target, hinfo->id, packetTime, packetLocalTime)) {
+			//If this packet has elapsed, toss it. Don't send it on either.
+			hinfo->bytes_processed = packet_size;
+			return;
+		}
+
+		if (MULTIPLAYER_MASTER) {
+			//We MUST replace the time data here, since clients would recieve timestamps from different clients, which aren't comparable
+			ushort swap = INTEL_SHORT(static_cast<ushort>(packetLocalTime.value()));
+			memcpy(data + timeOffset, &swap, sizeof(swap));
+		}
 	}
-	
+
+	//Before we keep ourselves busy with any sort of deserialization, check who this packet is for and potentially forward it first.
+	//Clients don't need to worry though. Neither will they have to forward, not will they recieve packets not meant for them.
+	if (MULTIPLAYER_MASTER) {
+		if (header.data.toClient != 0) {
+			//Need to send to all clients, except the one we got it from.
+			if (reliable)
+				multi_io_send_to_all_reliable(data, packet_size, &Net_players[find_player_index(hinfo->id)]);
+			else
+				multi_io_send_to_all(data, packet_size, &Net_players[find_player_index(hinfo->id)]);
+		}
+		if (header.data.toServer) {
+			//And it wasn't even meant for the server. Very sad.
+			hinfo->bytes_processed = packet_size;
+			return; 
+		}
+	}
+
 	try {
 		luacpp::LuaValue value = process_lua_data(data, offset, L);
-
 		
+		//Process value and timestamps
 	}
 	catch (const lua_net_exception& e) {
-		//At this point, we don't have the slightest idea how big this packet should have been. To make sure we don't parse trash, tell the multi API that we read basically the entire remainder of the buffer
-		offset = 0xfffff;
+		offset = packet_size;
 		nprintf(("Network", "Failed to decode multi packet.\nReason: %s\nPotentially tossing following packets...\n", e.what()));
 	}
 	
+	Assertion(offset == packet_size, "Lua network packet had bad size! Decoded %d bytes, but was advertised %d bytes!", offset, packet_size);
 	PACKET_SET_SIZE();
 }
 
-bool send_lua_packet(const luacpp::LuaValue& value, ushort target, lua_net_mode mode, net_player* reciever) {
+bool send_lua_packet(const luacpp::LuaValue& value, ushort target, lua_net_mode mode, lua_net_reciever reciever) {
+	//Sanity check
+	if (reciever == lua_net_reciever::SERVER && MULTIPLAYER_MASTER)
+		return false;
+
 	int packet_size;
 	ubyte data[MAX_PACKET_SIZE];
 
@@ -260,7 +296,12 @@ bool send_lua_packet(const luacpp::LuaValue& value, ushort target, lua_net_mode 
 	lua_packet_header header;
 	header.data.target = target & 0b0111111111111111U;
 	header.data.isOrdered = isOrdered ? 1 : 0;
+	header.data.toClient = reciever != lua_net_reciever::SERVER ? 1 : 0;
+	header.data.toServer = reciever != lua_net_reciever::CLIENTS ? 1 : 0;
 	ADD_USHORT(header.packed);
+
+	const int size_loc = packet_size;
+	ADD_USHORT(static_cast<ushort>(0U));
 
 	if (isOrdered) {
 		ushort time = static_cast<ushort>(ui_timestamp().value() & 0xffffU);
@@ -270,17 +311,22 @@ bool send_lua_packet(const luacpp::LuaValue& value, ushort target, lua_net_mode 
 	try {
 		send_lua_data(data, packet_size, value);
 
-		if (mode == lua_net_mode::RELIABLE) {
-			if (reciever == nullptr)
+		ushort swap = INTEL_SHORT(static_cast<ushort>(packet_size));
+		memcpy(data + size_loc, &swap, sizeof(swap));
+
+		if (MULTIPLAYER_MASTER) {
+			//Due to the sanity check, we're already guaranteed that this must go to all clients
+			if (mode == lua_net_mode::RELIABLE)
 				multi_io_send_to_all_reliable(data, packet_size);
 			else
-				multi_io_send_reliable(reciever, data, packet_size);
+				multi_io_send_to_all(data, packet_size);
 		}
 		else {
-			if (reciever == nullptr)
-				multi_io_send_to_all(data, packet_size);
+			//Even if this is just for other clients, it has to be transferred through the server
+			if (mode == lua_net_mode::RELIABLE)
+				multi_io_send_reliable(Net_player, data, packet_size);
 			else
-				multi_io_send(reciever, data, packet_size);
+				multi_io_send(Net_player, data, packet_size);
 		}
 
 		return true;
@@ -289,4 +335,42 @@ bool send_lua_packet(const luacpp::LuaValue& value, ushort target, lua_net_mode 
 		nprintf(("Network", "Failed to send multi packet.\nReason: %s..\n", e.what()));
 		return false;
 	}
+}
+
+bool need_toss_packet(ushort target, short packet_source, ushort packetTime, UI_TIMESTAMP localTime) {
+	//Ordering is enforced for packet source and execution targets. Meaning we neither order packets form different sources
+	//(due to incomparibility of timestamps) or to different targets (due to semantic insignificance)
+	static SCP_map<std::pair<ushort, short>, std::pair<ushort, UI_TIMESTAMP>> recieved_packets;
+
+	//The idea is, that we reject packets which are in the past, unless the last packet we actually got is so far in the past, we're not sure if it might have overflowed
+	//Basically, assume that if packetTime - lastPacketTime < 1000, then it's either delayed over 60 seconds, or not a past packet. If it's larger than that, compare it to
+	//the difference of local timestamps. If the local timestamp is over 2^16, it's also safe, otherwise, allow a 10% delay margin.
+
+	auto& channel = recieved_packets[{target, packet_source}];
+	std::pair<ushort, UI_TIMESTAMP> newTimestamp = { std::move(packetTime), std::move(localTime) };
+
+	if (!channel.second.isValid()) {
+		//First packet for this channel
+		channel = std::move(newTimestamp);
+		return false;
+	}
+
+	if (newTimestamp.first - channel.first < 1000) {
+		//The previous packet is less than a second ago. If this were a delayed packet, as a ushort, it'd have to be >60 seconds late, so effectively impossible.
+		channel = std::move(newTimestamp);
+		return false;
+	}
+
+	if (static_cast<int>(newTimestamp.first - channel.first) * 110 < ui_timestamp_get_delta(channel.second, newTimestamp.second)) {
+		//The previous packet is, at most, 10% older than its age when it arrived. We expect that most delayed packets will happen when sent in quick succession,
+		//so what needs to be guarded here are underflows, which produce very large values but will have very small timestamps. So as long as local and remote timestamp
+		//somewhat agree, the packet's good. In addition, once ui_timestamp_get_delta exceeds 65 seconds, we can't tell anymore due to the remote timestamp being uint16,
+		//but at that point we can just accept the packet as likely new.
+		channel = std::move(newTimestamp);
+		return false;
+	}
+
+	//If we're still here, then we've got a packet that has a very high remote time but a very short local time, so likely a packet whose high remote time indicates a
+	//negative remote time. Toss is then. Also, since we toss the packet, we DON'T update the recieved packet index.
+	return true;
 }
