@@ -142,7 +142,7 @@ uniform sampler2DArray sAmbientmap;
 uniform sampler2D sFramebuffer;
 #endif
 #ifdef FLAG_TEAMCOLOR
-vec2 teamMask = vec2(0.0, 0.0);
+vec4 teamMask;
 #endif
 #ifdef FLAG_MISC_MAP
 uniform sampler2DArray sMiscmap;
@@ -307,7 +307,6 @@ void main()
 
 #ifdef FLAG_MISC_MAP
  #ifdef FLAG_TEAMCOLOR
-	vec4 teamMask = vec4(0.0, 0.0, 0.0, 0.0);
 	teamMask = texture(sMiscmap, vec3(texCoord, float(sMiscmapIndex)));
 
 	//For team colors applied to a diffuse or spec map, we assume that the base color of the diffuse 
