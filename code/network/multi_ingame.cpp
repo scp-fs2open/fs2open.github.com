@@ -1694,7 +1694,7 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 		Net_player->m_player->objnum = OBJ_INDEX(objp);			
 		Player_obj = objp;
 		Player_obj->flags.remove(Object::Object_Flags::Could_be_player);
-        Player_obj->flags.set(Object::Object_Flags::Player_ship);
+		Player_obj->flags.set(Object::Object_Flags::Player_ship);
 		Player_obj->flags.set(Object::Object_Flags::Physics);
 		multi_assign_player_ship( MY_NET_PLAYER_NUM, objp, Ships[objp->instance].ship_info_index );
 
