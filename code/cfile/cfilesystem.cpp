@@ -768,6 +768,63 @@ int is_ext_in_list( const char *ext_list, const char *ext )
 	return 0;
 }
 
+// Run a basic test for indexed files that may be shadowed
+#ifndef NDEBUG
+	#define ENABLE_SHADOW_CHECK		1
+#endif
+
+static void check_file_shadows(const int root_index __UNUSED, const int pathtype __UNUSED, const SCP_string &name __UNUSED, const SCP_string sub_path __UNUSED)
+{
+#if ENABLE_SHADOW_CHECK
+	if ( !cf_should_scan_subdirs(pathtype) ) {
+		return;
+	}
+
+	SCP_string curfile, newfile;
+
+	const auto root = cf_get_root(root_index);
+
+	newfile = root->path + ((root->roottype == CF_ROOTTYPE_PACK) ? "::" : "");
+	newfile += cf_get_root_pathtype(root, pathtype) + DIR_SEPARATOR_CHAR;
+	newfile += sub_path + name;
+
+	for (uint i = 0; i < Num_files; ++i) {
+		const auto f = cf_get_file(i);
+		const auto r = cf_get_root(f->root_index);
+
+		// skip memory roots, no subdirs there
+		if (r->roottype == CF_ROOTTYPE_MEMORY) {
+			continue;
+		}
+
+		// if basic path type doesn't match then skip
+		if (pathtype != f->pathtype_index) {
+			continue;
+		}
+
+		if (name != f->name_ext) {
+			continue;
+		}
+
+		// if the subpath matches then consider it an override rather than shadow
+		if (sub_path == f->sub_path) {
+			continue;
+		}
+
+		curfile = r->path + ((r->roottype == CF_ROOTTYPE_PACK) ? "::" : "");
+		curfile += cf_get_root_pathtype(r, pathtype) + DIR_SEPARATOR_CHAR;
+		curfile += f->sub_path + f->name_ext;
+
+		// this log message occurs in the middle of an existing line, hence the extra new lines
+		mprintf(("\nWARNING! A file being indexed may be shadowed by an existing file!\n New:\n  %s\n Existing:\n  %s\n",
+				newfile.c_str(), curfile.c_str()));
+
+		break;
+	}
+#endif
+}
+
+
 void cf_search_root_path(int root_index)
 {
 	int i;
@@ -830,6 +887,8 @@ void cf_search_root_path(int root_index)
 				continue;
 			}
 
+			check_file_shadows(root_index, i, file.name, file.sub_path);
+
 			cf_file *cfile = cf_create_file();
 
 			cfile->name_ext = file.name;
@@ -872,6 +931,8 @@ static int cf_add_pack_files(const int root_index, SCP_vector<_file_list_t> &fil
 	std::sort(files.begin(), files.end(), sort_file_list);
 
 	for (auto &file : files) {
+		check_file_shadows(root_index, file.pathtype, file.name, file.sub_path);
+
 		cf_file *pf = cf_create_file();
 
 		pf->name_ext = file.name;
