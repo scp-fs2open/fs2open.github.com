@@ -248,11 +248,6 @@ void convert_model_material(model_uniform_data* data_out,
 		}
 	}
 
-	if (shader_flags & SDR_FLAG_MODEL_NORMAL_ALPHA) {
-		data_out->normalAlphaMinMax.x = material.get_normal_alpha_min();
-		data_out->normalAlphaMinMax.y = material.get_normal_alpha_max();
-	}
-
 	if ( shader_flags & SDR_FLAG_MODEL_THICK_OUTLINES ) {
 		data_out->outlineWidth = material.get_outline_thickness();
 	}

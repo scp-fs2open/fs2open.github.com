@@ -466,10 +466,6 @@ void main()
  #endif
    }
 #endif
-#ifdef FLAG_NORMAL_ALPHA
-	float normViewOffset = dot(vec3(0.0, 0.0, 1.0), normal);
-	baseColor.a = smoothstep(min(normalAlphaMinMax.x, normalAlphaMinMax.y), max(normalAlphaMinMax.x, normalAlphaMinMax.y), clamp(normalAlphaMinMax.x > normalAlphaMinMax.y ? normViewOffset : 1.0 - normViewOffset, 0.0, 1.0));
-#endif
 #ifndef FLAG_DEFERRED
 	// emissive colors won't be added later when we are using forward rendering so we need to do that here
 	baseColor.rgb += emissiveColor.rgb;

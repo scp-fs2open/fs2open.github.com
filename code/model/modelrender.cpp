@@ -70,7 +70,6 @@ model_render_params::model_render_params() :
 	Animated_effect(-1),
 	Animated_timer(0.0f),
 	Thruster_info(),
-	Normal_alpha(false),
 	Use_alpha_mult(false),
 	Alpha_mult(1.0f)
 {
@@ -318,28 +317,6 @@ void model_render_params::set_thruster_info(mst_info &info)
 const mst_info& model_render_params::get_thruster_info()
 {
 	return Thruster_info;
-}
-
-void model_render_params::set_normal_alpha(float min, float max)
-{
-	Normal_alpha = true;
-	Normal_alpha_min = min;
-	Normal_alpha_max = max;
-}
-
-bool model_render_params::is_normal_alpha_set()
-{
-	return Normal_alpha;
-}
-
-float model_render_params::get_normal_alpha_min()
-{
-	return Normal_alpha_min;
-}
-
-float model_render_params::get_normal_alpha_max()
-{
-	return Normal_alpha_max;
 }
 
 void model_render_params::set_outline_thickness(float thickness) {
@@ -2848,10 +2825,6 @@ void model_render_queue(model_render_params* interp, model_draw_list* scene, int
 		rendering_material.set_center_alpha(1);
 	} else {
 		rendering_material.set_center_alpha(0);
-	}
-
-	if ( interp->is_normal_alpha_set() ) {
-		rendering_material.set_normal_alpha(interp->get_normal_alpha_min(), interp->get_normal_alpha_max());
 	}
 
 	if ( interp->uses_thick_outlines() ) {
