@@ -63,6 +63,7 @@ void multiplayer_timing_info::set_mission_start_time()
     _current_time = 0;
     _last_time = 0;
     _skipped_time = 0;
+    _in_game_time_set = false;
 }
 
 void multiplayer_timing_info::in_game_set_skip_time(int time_in)
