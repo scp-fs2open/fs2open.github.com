@@ -229,10 +229,7 @@ void main()
 	vec4 specColor = vec4(0.0, 0.0, 0.0, 1.0);
 	vec4 emissiveColor = vec4(0.0, 0.0, 0.0, 1.0);
 	float fresnelFactor = 0.0;
-	float glossData = 0.6;
-#ifdef FLAG_LIGHT
-	glossData = defaultGloss;
-#endif
+	float glossData = defaultGloss;
 	vec2 aoFactors = vec2(1.0, 1.0);
 #ifdef	FLAG_AMBIENT_MAP
 	// red channel is ambient occlusion factor which only affects ambient lighting.
