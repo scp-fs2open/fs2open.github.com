@@ -2776,23 +2776,24 @@ void ss_reset_selected_ship()
 	for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
 		if ( Wss_slots[i].ship_class >= 0 ) {
 			Selected_ss_class = Wss_slots[i].ship_class;
-			break;
+			return;
 		}
 	}
 
-	if ( Selected_ss_class == -1 ) {
-		Int3();
-		for ( i = 0; i < ship_info_size(); i++ ) {
-			if ( Ss_pool[i] > 0 ) {
-				Selected_ss_class = i;
-			}
+	// get the first ship class found in the pool
+	for ( i = 0; i < ship_info_size(); i++ ) {
+		if ( Ss_pool[i] > 0 ) {
+			Selected_ss_class = i;
+			return;
 		}
 	}
 
-	if ( Selected_ss_class == -1 ) {
+	// If we still haven't found a ship to display, then leave it as -1. This results in no ship info
+	// being displayed in the UI, but is not a game breaking issue. -Mjn
+	/*if ( Selected_ss_class == -1 ) {
 		Int3();
 		return;
-	}
+	}*/
 }
 
 // There may be ships that are in wings but not in Team_data[0].  Since we still want to show those
