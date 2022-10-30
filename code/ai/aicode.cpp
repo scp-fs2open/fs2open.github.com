@@ -537,6 +537,26 @@ void free_ai_stuff()
 		vm_free(Ai_class_names);
 }
 
+int ai_get_autoscale_index(int absolute_index)
+{
+	int index = 0;
+
+	// getting the total number of autoscale classes uses the same logic but with the size in place of absolute_index
+	if (absolute_index < 0)
+		absolute_index = Num_ai_classes;
+
+	for (int i = 0; i < absolute_index; i++)
+	{
+		if (Ai_classes[i].ai_class_autoscale)
+			index++;
+	}
+
+	// sanity check
+	Assertion(index > 0 || absolute_index != Num_ai_classes, "When called for autoscaling calculations, there must be at least one autoscaling AI class!");
+
+	return index;
+}
+
 /**
  * Initialize an AI class's nonrequired values to defaults
  * Boolean overrides are unset, others initialized to FLT_MIN or INT_MIN (used as the "not set" state)
@@ -8179,7 +8199,12 @@ float set_secondary_fire_delay(ai_info *aip, ship *shipp, weapon_info *swip, boo
 	}
 
 	if (aip->ai_class_autoscale)
-		t += (Num_ai_classes - aip->ai_class + 1) * 0.5f;
+	{
+		if (The_mission.ai_profile->flags[AI::Profile_Flags::Adjusted_AI_class_autoscale])
+			t += (ai_get_autoscale_index(Num_ai_classes) - ai_get_autoscale_index(aip->ai_class) + 1) * 0.5f;
+		else
+			t += (Num_ai_classes - aip->ai_class + 1) * 0.5f;
+	}
 
 	t *= frand_range(0.8f, 1.2f);
 
@@ -12619,10 +12644,16 @@ void ai_maybe_launch_cmeasure(object *objp, ai_info *aip)
 		return;
 
 	//	If not on player's team and Skill_level + ai_class is low, never fire a countermeasure.  The ship is too dumb.
-	if (iff_x_attacks_y(Player_ship->team, shipp->team)) {
-		//SUSHI: Only bail if autoscale is on...
-		if (aip->ai_class_autoscale && Game_skill_level + aip->ai_class < 4){
-			return;
+	//SUSHI: Only bail if autoscale is on...
+	if (iff_x_attacks_y(Player_ship->team, shipp->team) && aip->ai_class_autoscale) {
+		if (The_mission.ai_profile->flags[AI::Profile_Flags::Adjusted_AI_class_autoscale]) {
+			if (Game_skill_level + ai_get_autoscale_index(aip->ai_class) < 4) {
+				return;
+			}
+		} else {
+			if (Game_skill_level + aip->ai_class < 4) {
+				return;
+			}
 		}
 	}
 
@@ -12656,7 +12687,12 @@ void ai_maybe_launch_cmeasure(object *objp, ai_info *aip)
 
 			//	Decrease chance to fire at lower ai class (SUSHI: Only if autoscale is on)
 			if (aip->ai_class_autoscale)
-				fire_chance *= (float) aip->ai_class/Num_ai_classes;
+			{
+				if (The_mission.ai_profile->flags[AI::Profile_Flags::Adjusted_AI_class_autoscale])
+					fire_chance *= (float)ai_get_autoscale_index(aip->ai_class) / ai_get_autoscale_index(Num_ai_classes);
+				else
+					fire_chance *= (float)aip->ai_class / Num_ai_classes;
+			}
 
 			float r = frand();
 			if (fire_chance < r) {
@@ -12805,7 +12841,12 @@ void ai_manage_shield(object *objp, ai_info *aip)
 
 		//	Scale between 1x and 3x based on ai_class (SUSHI: only if autoscale is on)
 		if (aip->ai_class_autoscale)
-			delay = delay + delay * (float) (3*(Num_ai_classes - aip->ai_class - 1) / (Num_ai_classes - 1));
+		{
+			if (The_mission.ai_profile->flags[AI::Profile_Flags::Adjusted_AI_class_autoscale])
+				delay = delay + delay * (float)(3 * (ai_get_autoscale_index(Num_ai_classes) - ai_get_autoscale_index(aip->ai_class) - 1) / (ai_get_autoscale_index(Num_ai_classes) - 1));
+			else
+				delay = delay + delay * (float)(3 * (Num_ai_classes - aip->ai_class - 1) / (Num_ai_classes - 1));
+		}
 
 		// set timestamp
 		aip->shield_manage_timestamp = timestamp((int) (delay * 1000.0f));
