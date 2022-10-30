@@ -17879,6 +17879,10 @@ void object_jettison_cargo(object *objp, object *cargo_objp, float jettison_spee
 	// physics stuff
 	if (jettison_new)
 	{
+		// we might not need to do any calculations
+		if (whack_below_limit(jettison_speed * cargo_objp->phys_info.mass))
+			return;
+
 		// new method uses dockpoint normals and user-specified force
 		extern void find_adjusted_dockpoint_info(vec3d *global_dock_point, matrix *dock_orient, object *objp, polymodel *pm, int submodel, int dock_index);
 		extern int find_parent_moving_submodel(polymodel *pm, int dock_index);
