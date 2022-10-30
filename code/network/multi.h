@@ -299,7 +299,7 @@ class player;
 #define JOIN_DENY_JR_INGAME_JOIN		11		// join request is denied because someone else is already ingame joining
 #define JOIN_DENY_JR_BAD_VERSION		12		// incompatible version types
 #define JOIN_QUERY_RESTRICTED			13		// poll the host of the game to see if he accepts this player
-#define JOIN_DENY_JR_TYPE				14		// cannot ingame join anything but dogfight games
+#define JOIN_DENY_JR_TYPE				14		// cannot ingame join Squadwar games
 
 // repair info codes
 #define REPAIR_INFO_BEGIN			0x1		// server to client - set your REPAIRING flags

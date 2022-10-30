@@ -2051,6 +2051,11 @@ int multi_eval_join_request(join_request *jr, net_addr *addr)
 		return JOIN_DENY_JR_TYPE;
 	}	*/
 
+	// can't ingame join a squadwar match
+	if ( (Netgame.game_state != NETGAME_STATE_FORMING) && (Netgame.type_flags & NG_TYPE_SW) ) {
+		return JOIN_DENY_JR_TYPE;
+	}
+
 	// if the player was banned by the standalone
 	if ( (Game_mode & GM_STANDALONE_SERVER) && std_player_is_banned(jr->callsign) ) {
 		// maybe we should log this
