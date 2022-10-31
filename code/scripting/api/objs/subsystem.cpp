@@ -30,6 +30,8 @@ bool ship_subsys_h::isSubsystemValid() const { return object_h::IsValid() && obj
 void ship_subsys_h::serialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, const luacpp::LuaValue& value, ubyte* data, int& packet_size) {
 	ship_subsys_h subsys;
 	value.getValue(l_Subsystem.Get(&subsys));
+	const ushort& netsig = subsys.IsValid() ? subsys.objp->net_signature : 0;
+	const int& subsys_index = subsys.isSubsystemValid() ? subsys.ss->parent_subsys_index : -1;
 	ADD_USHORT(subsys.objp->net_signature);
 	ADD_INT(subsys.ss->parent_subsys_index);
 }
@@ -40,7 +42,7 @@ void ship_subsys_h::deserialize(lua_State* /*L*/, const scripting::ade_table_ent
 	GET_USHORT(net_signature);
 	GET_INT(subsys);
 	object* obj = multi_get_network_object(net_signature);
-	new(data_ptr) ship_subsys_h(obj, ship_get_indexed_subsys(&Ships[obj->instance], subsys));
+	new(data_ptr) ship_subsys_h(obj, obj == nullptr || subsys == -1 ? nullptr : ship_get_indexed_subsys(&Ships[obj->instance], subsys));
 }
 
 //**********HANDLE: Subsystem

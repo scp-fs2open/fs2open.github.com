@@ -164,7 +164,8 @@ static void send_lua_userdata(ubyte* data, int& packet_size, const luacpp::LuaVa
 	ADD_USHORT(adeIdx);
 
 #if SAFE_MULTI_LUA_USERDATA_SIZES
-	ADD_DATA(objType.Size);
+	uint8_t size = static_cast<uint8_t>(objType.Size);
+	ADD_DATA(size);
 #endif
 
 	//Serialize

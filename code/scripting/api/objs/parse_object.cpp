@@ -25,7 +25,8 @@ bool parse_object_h::isValid() const { return _obj != nullptr; }
 void parse_object_h::serialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, const luacpp::LuaValue& value, ubyte* data, int& packet_size) {
 	parse_object_h pobj(nullptr);
 	value.getValue(l_ParseObject.Get(&pobj));
-	ADD_USHORT(pobj._obj->net_signature);
+	const ushort& netsig = pobj.isValid() ? pobj._obj->net_signature : 0;
+	ADD_USHORT(netsig);
 }
 
 void parse_object_h::deserialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, char* data_ptr, ubyte* data, int& offset) {
@@ -498,7 +499,8 @@ bool parse_subsys_h::isValid() const { return _obj != nullptr && _subsys_offset 
 void parse_subsys_h::serialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, const luacpp::LuaValue& value, ubyte* data, int& packet_size) {
 	parse_subsys_h pobj;
 	value.getValue(l_ParseSubsystem.Get(&pobj));
-	ADD_USHORT(pobj._obj->net_signature);
+	const ushort& netsig = pobj.isValid() ? pobj._obj->net_signature : 0;
+	ADD_USHORT(netsig);
 	ADD_INT(pobj._subsys_offset);
 }
 
