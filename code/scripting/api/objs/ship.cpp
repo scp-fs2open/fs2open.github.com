@@ -781,6 +781,7 @@ ADE_VIRTVAR(Target, l_Ship, "object", "Target of ship. Value may also be a deriv
 			aip->target_objnum = OBJ_INDEX(newh->objp);
 			aip->target_signature = newh->sig;
 			aip->target_time = 0.0f;
+			set_targeted_subsys(aip, nullptr, -1);
 
 			if (aip == Player_ai)
 				hud_shield_hit_reset(newh->objp);
@@ -788,9 +789,8 @@ ADE_VIRTVAR(Target, l_Ship, "object", "Target of ship. Value may also be a deriv
 			aip->target_objnum = -1;
 			aip->target_signature = -1;
 			aip->target_time = 0.0f;
+			set_targeted_subsys(aip, nullptr, -1);
 		}
-
-		set_targeted_subsys(aip, NULL, -1);
 	}
 
 	return ade_set_object_with_breed(L, aip->target_objnum);
