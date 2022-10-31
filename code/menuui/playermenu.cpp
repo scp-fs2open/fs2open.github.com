@@ -1374,12 +1374,12 @@ SCP_vector<SCP_string> Player_tips;
 int Player_tips_shown = 0;
 
 // tooltips
-void player_tips_init()
+void parse_tips_table(const char* filename)
 {
 	
 	try
 	{
-		read_file_text("tips.tbl", CF_TYPE_TABLES);
+		read_file_text(filename, CF_TYPE_TABLES);
 		reset_parse();
 
 		while (!optional_string("#end")) {
@@ -1397,6 +1397,15 @@ void player_tips_init()
 		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "tips.tbl", e.what()));
 		return;
 	}
+}
+
+void player_tips_init()
+{
+	// first parse the default table
+	parse_tips_table("tips.tbl");
+
+	// parse any modular tables
+	parse_modular_table("*-tip.tbm", parse_tips_table);
 }
 
 void player_tips_popup()
