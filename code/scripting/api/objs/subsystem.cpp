@@ -32,8 +32,8 @@ void ship_subsys_h::serialize(lua_State* /*L*/, const scripting::ade_table_entry
 	value.getValue(l_Subsystem.Get(&subsys));
 	const ushort& netsig = subsys.IsValid() ? subsys.objp->net_signature : 0;
 	const int& subsys_index = subsys.isSubsystemValid() ? subsys.ss->parent_subsys_index : -1;
-	ADD_USHORT(subsys.objp->net_signature);
-	ADD_INT(subsys.ss->parent_subsys_index);
+	ADD_USHORT(netsig);
+	ADD_INT(subsys_index);
 }
 
 void ship_subsys_h::deserialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, char* data_ptr, ubyte* data, int& offset) {
