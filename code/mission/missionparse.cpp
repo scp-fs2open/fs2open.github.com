@@ -5614,9 +5614,9 @@ void parse_bitmaps(mission *pm)
 			SCP_vector<SCP_string> poofs_list;
 			stuff_string_list(poofs_list);
 
-			for (const SCP_string &poof : poofs_list) {
+			for (const SCP_string &thisPoof : poofs_list) {
 				for (size_t i = 0; i < Poof_info.size(); i++) {
-					if (Poof_info[i].name == poof) {
+					if (Poof_info[i].name == thisPoof) {
 						Neb2_poof_flags |= (1 << i);
 					}
 				}
