@@ -1035,8 +1035,7 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 			p_objp = mission_parse_get_arrival_ship(ship_name);
 		}
 		if(p_objp == NULL){
-			Int3();
-			nprintf(("Network", "Couldn't find ship %s in either arrival list or in mission", ship_name));
+			mprintf(("ABORTING in-game join since FSO couldn't find ship %s in either arrival list or in mission!\n", ship_name));
 			multi_quit_game(PROMPT_NONE, MULTI_END_NOTIFY_NONE, MULTI_END_ERROR_INGAME_BOGUS);
 			return;
 		}
