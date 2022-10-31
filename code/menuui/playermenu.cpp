@@ -1370,16 +1370,12 @@ DCF(bastion, "Temporarily sets the player to be on the Bastion (or any other mai
 	}
 }
 
-#define MAX_PLAYER_TIPS			40
-
-SCP_string Player_tips[MAX_PLAYER_TIPS];
-int Num_player_tips;
+SCP_vector<SCP_string> Player_tips;
 int Player_tips_shown = 0;
 
 // tooltips
 void player_tips_init()
 {
-	Num_player_tips = 0;
 	
 	try
 	{
@@ -1389,14 +1385,10 @@ void player_tips_init()
 		while (!optional_string("#end")) {
 			required_string("+Tip:");
 
-			if (Num_player_tips >= MAX_PLAYER_TIPS) {
-				break;
-			}
-
 			SCP_string buf;
 			stuff_string(buf, F_MESSAGE);
-
-			Player_tips[Num_player_tips++] = message_translate_tokens(buf.c_str());
+			
+			Player_tips.push_back(message_translate_tokens(buf.c_str()));
 
 		}
 	}
@@ -1422,7 +1414,7 @@ void player_tips_popup()
 	Player_tips_shown = 1;
 
 	// randomly pick one
-	tip = (int)frand_range(0.0f, (float)Num_player_tips - 1.0f);
+	tip = (int)frand_range(0.0f, (float)Player_tips.size() - 1.0f);
 
 	char all_txt[2048];
 
@@ -1434,7 +1426,7 @@ void player_tips_popup()
 		switch(ret){
 		// next
 		case 1:
-			if(tip >= Num_player_tips - 1) {
+			if (tip >= (int)Player_tips.size() - 1) {
 				tip = 0;
 			} else {
 				tip++;
