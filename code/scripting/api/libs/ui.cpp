@@ -248,7 +248,7 @@ ADE_FUNC(linkTexture, l_UserInterface, "texture texture", "Links a texture direc
 	if (!ade_get_args(L, "o", l_Texture.GetPtr(&tex)))
 		return ade_set_error(L, "s", "");
 
-	if(!tex->isValid())
+	if(tex == nullptr || !tex->isValid())
 		return ade_set_error(L, "s", "");
 	
 	return ade_set_args(L, "s", "data:image/bmpman," + std::to_string(tex->handle));
