@@ -1758,21 +1758,21 @@ int cf_get_file_list(SCP_vector<SCP_string>& list, int pathtype, const char* _fi
 			continue;
 		}
 
+		auto pos = file.name.rfind('.');
+
+		if ( !sub_path.empty() ) {
+			// prepend file name with sub directory path
+			// allows us to open the specific file and allows duplicate filenames in different paths
+			fullname = file.sub_path + file.name.substr(0, pos);
+		} else {
+			fullname = file.name.substr(0, pos);
+		}
+
+		if (check_duplicates && cf_file_already_in_list(list, fullname.c_str())) {
+			continue;
+		}
+
 		if ( !Get_file_list_filter || (*Get_file_list_filter)(file.name.c_str()) ) {
-			auto pos = file.name.rfind('.');
-
-			if ( !sub_path.empty() ) {
-				// prepend file name with sub directory path
-				// allows us to open the specific file and allows duplicate filenames in different paths
-				fullname = file.sub_path + file.name.substr(0, pos);
-			} else {
-				fullname = file.name.substr(0, pos);
-			}
-
-			if (check_duplicates && cf_file_already_in_list(list, fullname.c_str())) {
-				continue;
-			}
-
 			list.push_back(fullname);
 
 			if (info) {
@@ -1827,21 +1827,21 @@ int cf_get_file_list(SCP_vector<SCP_string>& list, int pathtype, const char* _fi
 				continue;
 			}
 
+			auto pos = f->name_ext.rfind('.');
+
+			if ( !sub_path.empty() ) {
+				// prepend file name with sub directory path
+				// allows us to open the specific file and allows duplicate filenames in different paths
+				fullname = f->sub_path + f->name_ext.substr(0, pos);
+			} else {
+				fullname = f->name_ext.substr(0, pos);
+			}
+
+			if ( cf_file_already_in_list(list, fullname.c_str()) ) {
+				continue;
+			}
+
 			if ( !Get_file_list_filter || (*Get_file_list_filter)(f->name_ext.c_str()) ) {
-				auto pos = f->name_ext.rfind('.');
-
-				if ( !sub_path.empty() ) {
-					// prepend file name with sub directory path
-					// allows us to open the specific file and allows duplicate filenames in different paths
-					fullname = f->sub_path + f->name_ext.substr(0, pos);
-				} else {
-					fullname = f->name_ext.substr(0, pos);
-				}
-
-				if ( cf_file_already_in_list(list, fullname.c_str()) ) {
-					continue;
-				}
-
 				//mprintf(( "Found '%s' in root %d path %d\n", f->name_ext, f->root_index, f->pathtype_index ));
 
 				list.push_back(fullname);
@@ -1955,17 +1955,17 @@ int cf_get_file_list(int max, char** list, int pathtype, const char* _filter, in
 			continue;
 		}
 
+		auto pos = file.name.rfind('.');
+
+		if ( !sub_path.empty() ) {
+			// prepend file name with sub directory path
+			// allows us to open the specific file and allows duplicate filenames in different paths
+			fullname = file.sub_path + file.name.substr(0, pos);
+		} else {
+			fullname = file.name.substr(0, pos);
+		}
+
 		if ( !Get_file_list_filter || (*Get_file_list_filter)(file.name.c_str()) ) {
-			auto pos = file.name.rfind('.');
-
-			if (glob) {
-				// prepend file name with sub directory path
-				// allows us to open the specific file and allows duplicate filenames in different paths
-				fullname = file.sub_path + file.name.substr(0, pos);
-			} else {
-				fullname = file.name.substr(0, pos);
-			}
-
 			auto len = fullname.length();
 
 			list[num_files] = reinterpret_cast<char *>(vm_malloc(len + 1));
@@ -2029,21 +2029,21 @@ int cf_get_file_list(int max, char** list, int pathtype, const char* _filter, in
 				continue;
 			}
 
+			auto pos = f->name_ext.rfind('.');
+
+			if ( !sub_path.empty() ) {
+				// prepend file name with sub directory path
+				// allows us to open the specific file and allows duplicate filenames in different paths
+				fullname = f->sub_path + f->name_ext.substr(0, pos);
+			} else {
+				fullname = f->name_ext.substr(0, pos);
+			}
+
+			if ( cf_file_already_in_list(num_files, list, fullname.c_str()) ) {
+				continue;
+			}
+
 			if ( !Get_file_list_filter || (*Get_file_list_filter)(f->name_ext.c_str()) ) {
-				auto pos = f->name_ext.rfind('.');
-
-				if (glob) {
-					// prepend file name with sub directory path
-					// allows us to open the specific file and allows duplicate filenames in different paths
-					fullname = f->sub_path + f->name_ext.substr(0, pos);
-				} else {
-					fullname = f->name_ext.substr(0, pos);
-				}
-
-				if ( cf_file_already_in_list(num_files, list, fullname.c_str()) ) {
-					continue;
-				}
-
 				//mprintf(( "Found '%s' in root %d path %d\n", f->name_ext, f->root_index, f->pathtype_index ));
 
 				auto len = fullname.length();
