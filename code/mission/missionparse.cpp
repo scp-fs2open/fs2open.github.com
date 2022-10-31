@@ -5588,7 +5588,7 @@ void parse_bitmaps(mission *pm)
 
 	// neb2 info
 	strcpy_s(Neb2_texture_name, "");
-	Neb2_poof_flags = ((1<<0) | (1<<1) | (1<<2) | (1<<3) | (1<<4) | (1<<5));
+	Neb2_poof_flags = 0;
 	bool nebula = false;
 	if (optional_string("+Neb2:")) {
 		nebula = true;
@@ -5604,8 +5604,24 @@ void parse_bitmaps(mission *pm)
 		pm->flags |= Mission::Mission_Flags::Neb2_fog_color_override;
 	}
 	if (nebula) {
-		required_string("+Neb2Flags:");			
-		stuff_int(&Neb2_poof_flags);
+		// Obsolete and only for backwards compatibility
+		if (optional_string("+Neb2Flags:")) {
+			stuff_int(&Neb2_poof_flags);
+		}
+
+		// Get poofs by name
+		if (optional_string("+Neb2 Poofs List:")) {
+			SCP_vector<SCP_string> poofs_list;
+			stuff_string_list(poofs_list);
+
+			for (const SCP_string &poof : poofs_list) {
+				for (size_t i = 0; i < Poof_info.size(); i++) {
+					if (Poof_info[i].name == poof) {
+						Neb2_poof_flags |= (1 << i);
+					}
+				}
+			}
+		}
 
 		// initialize neb effect. its gross to do this here, but Fred is dumb so I have no choice ... :(
 		if(Fred_running && (pm->flags[Mission::Mission_Flags::Fullneb])){

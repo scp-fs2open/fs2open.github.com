@@ -855,9 +855,27 @@ int CFred_mission_save::save_bitmaps()
 			fout(" )");
 		}
 
-		required_string_fred("+Neb2Flags:");
-		parse_comments();
-		fout(" %d", Neb2_poof_flags);
+		if (Mission_save_format == FSO_FORMAT_RETAIL) {
+			if (optional_string_fred("+Neb2Flags:")) {
+				parse_comments();
+			} else {
+				fout("\n+Neb2Flags:");
+			}
+			fout(" %d", Neb2_poof_flags);
+		} else {
+			if (optional_string_fred("+Neb2 Poofs List:")) {
+				parse_comments();
+			} else {
+				fout("\n+Neb2 Poofs List:");
+			}
+			fout(" (");
+			for (i = 0; i < (int)Poof_info.size(); ++i) {
+				if (Neb2_poof_flags & (1 << i)) {
+					fout(" \"%s\" ", Poof_info[i].name);
+				}
+			}
+			fout(") ");
+		}
 	}
 		// neb 1 stuff
 	else {
