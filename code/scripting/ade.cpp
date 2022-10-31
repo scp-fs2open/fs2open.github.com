@@ -1101,3 +1101,5 @@ DEFINE_MULTI_SERIALIZERS_FUNDAMENTAL(float, FLOAT)
 }
 
 }
+
+lua_net_exception::lua_net_exception(const char* msg) : std::exception(msg) { }

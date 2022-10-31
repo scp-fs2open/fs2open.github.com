@@ -12,7 +12,7 @@
 
 class lua_net_exception : public std::exception {
 public:
-	using std::exception::exception;
+	lua_net_exception(const char* msg);
 };
 
 namespace scripting {
