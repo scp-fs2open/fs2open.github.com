@@ -10,7 +10,7 @@
 #include "scripting/ade_args.h"
 #include "scripting/ade_doc.h"
 
-class lua_net_exception : public std::exception {
+class lua_net_exception : public std::runtime_error {
 public:
 	lua_net_exception(const char* msg);
 };

@@ -27,7 +27,7 @@ ship_subsys_h::ship_subsys_h(object* objp_in, ship_subsys* sub) : object_h(objp_
 }
 bool ship_subsys_h::isSubsystemValid() const { return object_h::IsValid() && objp->type == OBJ_SHIP && ss != nullptr; }
 
-void ship_subsys_h::serialize(lua_State* L, const scripting::ade_table_entry& tableEntry, const luacpp::LuaValue& value, ubyte* data, int& packet_size) {
+void ship_subsys_h::serialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, const luacpp::LuaValue& value, ubyte* data, int& packet_size) {
 	ship_subsys_h subsys;
 	value.getValue(l_Subsystem.Get(&subsys));
 	ADD_USHORT(subsys.objp->net_signature);

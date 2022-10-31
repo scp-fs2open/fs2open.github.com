@@ -75,9 +75,9 @@ void matrix_h::serialize(lua_State* /*L*/, const scripting::ade_table_entry& /*t
 }
 
 void matrix_h::deserialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, char* data_ptr, ubyte* data, int& offset) {
-	vec3d ang;
-	GET_VECTOR(ang);
-	new(data_ptr) matrix_h(reinterpret_cast<angles*>(&ang));
+	vec3d orientationAngles;
+	GET_VECTOR(orientationAngles);
+	new(data_ptr) matrix_h(reinterpret_cast<angles*>(&orientationAngles));
 }
 
 //LOOK LOOK LOOK LOOK LOOK LOOK

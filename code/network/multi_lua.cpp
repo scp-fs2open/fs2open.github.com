@@ -267,19 +267,19 @@ void process_lua_packet(ubyte* data, header* hinfo, bool reliable) {
 
 	offset = HEADER_LENGTH;
 
-	lua_packet_header header;
+	lua_packet_header packet_header;
 	ushort packet_size;
 	
-	GET_USHORT(header.packed);
+	GET_USHORT(packet_header.packed);
 	GET_USHORT(packet_size);
-	if (header.data.isOrdered != 0) {
+	if (packet_header.data.isOrdered != 0) {
 		ushort packetTime;
 		UI_TIMESTAMP packetLocalTime = ui_timestamp();
 
 		const int timeOffset = offset;
 		GET_USHORT(packetTime);
 
-		if (need_toss_packet(header.data.target, hinfo->id, packetTime, packetLocalTime)) {
+		if (need_toss_packet(packet_header.data.target, hinfo->id, packetTime, packetLocalTime)) {
 			//If this packet has elapsed, toss it. Don't send it on either.
 			hinfo->bytes_processed = packet_size;
 			return;
@@ -295,14 +295,14 @@ void process_lua_packet(ubyte* data, header* hinfo, bool reliable) {
 	//Before we keep ourselves busy with any sort of deserialization, check who this packet is for and potentially forward it first.
 	//Clients don't need to worry though. Neither will they have to forward, not will they recieve packets not meant for them.
 	if (MULTIPLAYER_MASTER) {
-		if (header.data.toClient != 0) {
+		if (packet_header.data.toClient != 0) {
 			//Need to send to all clients, except the one we got it from.
 			if (reliable)
 				multi_io_send_to_all_reliable(data, packet_size, &Net_players[find_player_index(hinfo->id)]);
 			else
 				multi_io_send_to_all(data, packet_size, &Net_players[find_player_index(hinfo->id)]);
 		}
-		if (header.data.toServer) {
+		if (packet_header.data.toServer) {
 			//And it wasn't even meant for the server. Very sad.
 			hinfo->bytes_processed = packet_size;
 			return; 
@@ -313,10 +313,10 @@ void process_lua_packet(ubyte* data, header* hinfo, bool reliable) {
 		luacpp::LuaValue value = process_lua_data(data, offset, L);
 		
 		//Let's find the actual function to call.
-		const auto it = rpc_map.find(header.data.target);
+		const auto it = rpc_map.find(packet_header.data.target);
 		if (it == rpc_map.end() || it->second.expired()) {
 			//No RPC available. Since, in very rare case, this can be intentional, just log this.
-			nprintf(("Network", "Failed to find an RPC handler for packet with hash %#06X.\n", header.data.target));
+			nprintf(("Network", "Failed to find an RPC handler for packet with hash %#06X.\n", packet_header.data.target));
 		}
 		else {
 			const scripting::api::rpc_h rpc_ptr = it->second.lock();
@@ -349,12 +349,12 @@ bool send_lua_packet(const luacpp::LuaValue& value, ushort target, lua_net_mode 
 
 	bool isOrdered = mode == lua_net_mode::ORDERED;
 
-	lua_packet_header header;
-	header.data.target = target & 0b0001111111111111U; // : 13
-	header.data.isOrdered = isOrdered ? 1 : 0;
-	header.data.toClient = reciever != lua_net_reciever::SERVER ? 1 : 0;
-	header.data.toServer = reciever != lua_net_reciever::CLIENTS ? 1 : 0;
-	ADD_USHORT(header.packed);
+	lua_packet_header packet_header;
+	packet_header.data.target = target & 0b0001111111111111U; // : 13
+	packet_header.data.isOrdered = isOrdered ? 1 : 0;
+	packet_header.data.toClient = reciever != lua_net_reciever::SERVER ? 1 : 0;
+	packet_header.data.toServer = reciever != lua_net_reciever::CLIENTS ? 1 : 0;
+	ADD_USHORT(packet_header.packed);
 
 	const int size_loc = packet_size;
 	ADD_USHORT(static_cast<ushort>(0U));

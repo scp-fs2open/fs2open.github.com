@@ -44,14 +44,15 @@ void object_ship_wing_point_team::serialize(lua_State* /*L*/, const scripting::a
 }
 
 void object_ship_wing_point_team::deserialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, char* data_ptr, ubyte* data, int& offset) {
-	object_ship_wing_point_team oswpt;
-	GET_INT(oswpt.type);
-	switch (oswpt.type) {
+	int oswpt_type;
+	GET_INT(oswpt_type);
+	switch (oswpt_type) {
 	case OSWPT_TYPE_SHIP:
 	case OSWPT_TYPE_WAYPOINT: {
 		ushort net_signature;
 		GET_USHORT(net_signature);
 		object_ship_wing_point_team oswpt;
+		oswpt.type = oswpt_type;
 		//This doesn't constitute a valid waypoint oswpt, but it will work for everything that lua has access to, so it's fine
 		oswpt.objp = multi_get_network_object(net_signature);
 		new(data_ptr) object_ship_wing_point_team(std::move(oswpt));
@@ -77,6 +78,7 @@ void object_ship_wing_point_team::deserialize(lua_State* /*L*/, const scripting:
 		GET_INT(oswpt_team);
 		object_ship_wing_point_team oswpt;
 		oswpt.team = oswpt_team;
+		oswpt.type = oswpt_type;
 		new(data_ptr) object_ship_wing_point_team(std::move(oswpt));
 		break;
 	}

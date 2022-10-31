@@ -197,9 +197,9 @@ void enum_h::serialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tab
 }
 
 void enum_h::deserialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, char* data_ptr, ubyte* data, int& offset) {
-	int index;
-	GET_INT(index);
-	new(data_ptr) enum_h(index); //Transmitted enums are never constant, so don't bother
+	int enum_index;
+	GET_INT(enum_index);
+	new(data_ptr) enum_h(enum_index); //Transmitted enums are never constant, so don't bother
 }
 
 ADE_OBJ(l_Enum, enum_h, "enumeration", "Enumeration object");

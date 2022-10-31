@@ -17,11 +17,11 @@ const SCP_vector<uint8_t>& bytearray_h::data() const
 void bytearray_h::serialize(lua_State* L, const scripting::ade_table_entry& /*tableEntry*/, const luacpp::LuaValue& value, ubyte* data, int& packet_size) {
 	bytearray_h arr;
 	value.getValue(l_Bytearray.Get(&arr));
-	if (arr.m_data.size() > 0xff) {
+	if (arr.m_data.size() > 0xffU) {
 		LuaError(L, "bytearray too large to be network serialized. Maxium size is %d bytes!", 0xff);
 		throw lua_net_exception("Bytearray too large to be network serialized.");
 	}
-	else if (MAX_PACKET_SIZE - packet_size < arr.m_data.size()) {
+	else if (MAX_PACKET_SIZE - packet_size < static_cast<int>(arr.m_data.size())) {
 		LuaError(L, "Packet is too full to accomodate bytearray. Put less into one RPC call!");
 		throw lua_net_exception("Packet is too full to accomodate bytearray.");
 	}
