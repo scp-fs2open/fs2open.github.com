@@ -1509,7 +1509,12 @@ void send_ingame_ship_request_packet(int code,int rdata,net_player *pl)
 		if(shipp->flags[Ship::Ship_Flags::Secondary_dual_fire]){
 			val |= (1<<1);
 		}
-		ADD_DATA(val);		
+		ADD_DATA(val);
+
+		// now that we have multilock missiles tracked by the ship object, we need to clear this
+		// on the server to be safe.
+		shipp->missile_locks.clear();
+
 		break;
 	}
 
@@ -1770,6 +1775,8 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 		obj_reset_all_collisions();
 		// obj_reset_pairs();
 		// obj_add_pairs( OBJ_INDEX(Player_obj) );
+
+		Multi_Timing_Info.in_game_set_skip_time();
 
 		mission_hotkey_set_defaults();
 

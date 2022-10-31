@@ -150,28 +150,23 @@ class flagset {
 	void set_from_vector(const SCP_vector<ubyte>& vector_in) 
 	{
 		size_t flag = 0; 
-		int bitshift = 0;
 
 		// just iterate through the entries, and set flags as appropriate.
 		for (auto& entry : vector_in) {
 
-			if (entry & (1 << bitshift)) {
-				values.set(flag, true);
-			}
+			for (uint bitshift = 0; bitshift < UBYTE_SIZE; bitshift++){
+				if (entry & (1 << bitshift)) {
+					values.set(flag, true);
+				}
 
-			++flag;
+				++flag;
 
-			// this function is used in multi where the size of flagsets can be different
-			// on server and client.  Small differences in flagset sizes should not affect
-			// gameplay, but we have to make sure not to exceed the size of the flagset.
-			if (flag >= SIZE){
-				return;
-			} 
-
-			++bitshift;
-
-			if (bitshift == UBYTE_SIZE){
-				bitshift = 0;
+				// this function is used in multi where the size of flagsets can be different
+				// on server and client.  Small differences in flagset sizes should not affect
+				// gameplay, but we have to make sure not to exceed the size of the flagset.
+				if (flag >= SIZE){
+					return;
+				} 
 			}
 		}
 	}
