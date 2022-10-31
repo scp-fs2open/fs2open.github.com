@@ -1157,11 +1157,11 @@ void send_ingame_ships_packet(net_player *player)
 			ADD_DATA(item);
 		} 
 
-		check = shipp->flags.to_ubyte_vector(ship_flags_out);
+		check = Objects[so->objnum].flags.to_ubyte_vector(obj_flags_out);
 
 		Assertion(check <= 255, "Somehow FSO thinks there are too many object flags, %d * 8 to be exact. Please report!", static_cast<int>(check));
 
-		temp_size = static_cast<ubyte>(Objects[so->objnum].flags.to_ubyte_vector(obj_flags_out));
+		temp_size = static_cast<ubyte>(check);
 
 		ADD_DATA(temp_size);
 		for (auto& item : obj_flags_out){
