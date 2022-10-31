@@ -2338,7 +2338,7 @@ ADE_FUNC(setGlowPointBankActive, l_Ship, "boolean active, [number bank]", "Activ
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(setDocked, l_Ship, "ship dockee_ship, [string | number docker_point, string | number dockee_point]", "Immediately docks this ship with another ship.", nullptr, "Returns nothing")
+ADE_FUNC(setDocked, l_Ship, "ship dockee_ship, [string | number docker_point, string | number dockee_point]", "Immediately docks this ship with another ship.", "boolean", "Returns whether the docking was successful, or nil if an input was invalid")
 {
 	object_h *docker_objh = nullptr, *dockee_objh = nullptr;
 	int docker_point = -1, dockee_point = -1;
@@ -2348,6 +2348,10 @@ ADE_FUNC(setDocked, l_Ship, "ship dockee_ship, [string | number docker_point, st
 
 	if (docker_objh == nullptr || dockee_objh == nullptr || !docker_objh->IsValid() || !dockee_objh->IsValid())
 		return ADE_RETURN_NIL;
+
+	// cannot dock an object to itself
+	if (docker_objh->objp->instance == dockee_objh->objp->instance)
+		return ADE_RETURN_FALSE;
 
 	auto docker_shipp = &Ships[docker_objh->objp->instance];
 	auto dockee_shipp = &Ships[dockee_objh->objp->instance];
@@ -2403,21 +2407,22 @@ ADE_FUNC(setDocked, l_Ship, "ship dockee_ship, [string | number docker_point, st
 	if (dock_find_object_at_dockpoint(docker_objh->objp, docker_point) != nullptr ||
 		dock_find_object_at_dockpoint(dockee_objh->objp, dockee_point) != nullptr)
 	{
-		nprintf(("scripting", "Cannot dock %s to %s because at least one of the specified dockpoints is occupied", docker_shipp->ship_name, dockee_shipp->ship_name));
-		return ADE_RETURN_NIL;
+		// at least one of the specified dockpoints is occupied
+		return ADE_RETURN_FALSE;
 	}
 
 	//Set docked
 	dock_orient_and_approach(docker_objh->objp, docker_point, dockee_objh->objp, dockee_point, DOA_DOCK_STAY);
 	ai_do_objects_docked_stuff(docker_objh->objp, docker_point, dockee_objh->objp, dockee_point, true);
 
-	return ADE_RETURN_NIL;
+	return ADE_RETURN_TRUE;
 }
 
 static int jettison_helper(lua_State *L, object_h *docker_objh, float jettison_speed, int skip_args)
 {
 	object_h *dockee_objh = nullptr;
-	int num_ship_args = 0;
+	bool found_arg = false;
+	int num_ships_undocked = 0;
 
 	while (true)
 	{
@@ -2425,7 +2430,7 @@ static int jettison_helper(lua_State *L, object_h *docker_objh, float jettison_s
 		internal::Ade_get_args_skip = skip_args++;
 		if (ade_get_args(L, "|o", l_Ship.GetPtr(&dockee_objh)) == 0)
 			break;
-		num_ship_args++;
+		found_arg = true;
 
 		// make sure ship exists
 		if (dockee_objh == nullptr || !dockee_objh->IsValid())
@@ -2436,23 +2441,25 @@ static int jettison_helper(lua_State *L, object_h *docker_objh, float jettison_s
 			continue;
 
 		object_jettison_cargo(docker_objh->objp, dockee_objh->objp, jettison_speed, true);
+		num_ships_undocked++;
 	}
 
 	// if we didn't find any specified ships, then we need to jettison all of them
-	if (num_ship_args == 0)
+	if (!found_arg)
 	{
 		// Goober5000 - as with ai_deathroll_start, we can't simply iterate through the dock list while we're
 		// undocking things.  So just repeatedly jettison the first object.
 		while (object_is_docked(docker_objh->objp))
 		{
 			object_jettison_cargo(docker_objh->objp, dock_get_first_docked_object(docker_objh->objp), jettison_speed, true);
+			num_ships_undocked++;
 		}
 	}
 
-	return ADE_RETURN_NIL;
+	return ade_set_args(L, "i", num_ships_undocked);
 }
 
-ADE_FUNC(setUndocked, l_Ship, "[ship dockee_ship]", "Immediately undocks this ship from another ship or from an arbitrary number of ships - this function can accept an arbitrary number of ship arguments.", nullptr, "Returns nothing")
+ADE_FUNC(setUndocked, l_Ship, "[ship... dockee_ships /* All docked ships by default */]", "Immediately undocks one or more dockee ships from this ship.", "number", "Returns the number of ships undocked")
 {
 	object_h *docker_objh = nullptr;
 
@@ -2465,7 +2472,7 @@ ADE_FUNC(setUndocked, l_Ship, "[ship dockee_ship]", "Immediately undocks this sh
 	return jettison_helper(L, docker_objh, 0.0f, 1);
 }
 
-ADE_FUNC(jettison, l_Ship, "number jettison_speed, [ship dockee_ship]", "Jettisons one or more ships at the specified speed - this function can accept an arbitrary number of ship arguments.", nullptr, "Returns nothing")
+ADE_FUNC(jettison, l_Ship, "number jettison_speed, [ship... dockee_ships /* All docked ships by default */]", "Jettisons one or more dockee ships from this ship at the specified speed.", "number", "Returns the number of ships jettisoned")
 {
 	object_h *docker_objh = nullptr;
 	float jettison_speed = 0.0f;
