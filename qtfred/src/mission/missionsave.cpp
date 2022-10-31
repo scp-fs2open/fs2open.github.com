@@ -855,7 +855,7 @@ int CFred_mission_save::save_bitmaps()
 			fout(" )");
 		}
 
-		if (Mission_save_format == FSO_FORMAT_RETAIL) {
+		if (save_format == MissionFormat::RETAIL) {
 			if (optional_string_fred("+Neb2Flags:")) {
 				parse_comments();
 			} else {
