@@ -217,7 +217,7 @@ void parse_nebula_table(const char* filename)
 				if (Poof_info.size() < MAX_NEB2_POOFS) {
 					Poof_info.push_back(pooft);
 				} else {
-					mprintf(("Warning: more than 32 poofs are defined! Skipping poof %s\n", pooft.name));
+					Warning(LOCATION, "More than 32 poofs are defined! Skipping poof %s\n", pooft.name);
 				}
 			} else if (optional_string("$Name:")) { // new style
 				stuff_string(pooft.name, F_NAME, NAME_LENGTH);
@@ -252,7 +252,7 @@ void parse_nebula_table(const char* filename)
 						Poof_info.push_back(pooft);
 						poofp = &Poof_info[Poof_info.size() - 1];
 					} else {
-						mprintf(("Warning: more than 32 poofs are defined! Skipping poof %s\n", pooft.name));
+						Warning(LOCATION, "More than 32 poofs are defined! Skipping poof %s\n", pooft.name);
 						if (!skip_to_start_of_string_either("$Name:", "#end")) {
 							error_display(1, "Missing [#end] or [$Name] after nebula poof %s", pooft.name);
 						}
