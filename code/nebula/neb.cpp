@@ -172,7 +172,7 @@ static poof_info* get_nebula_poof_pointer(char* nebula_name)
 	}
 
 	// Didn't find anything.
-	return NULL;
+	return nullptr;
 }
 
 void parse_nebula_table(const char* filename)
@@ -232,7 +232,7 @@ void parse_nebula_table(const char* filename)
 				// Does this poof exist already?
 				// If so, load this new info into it
 				poofp = get_nebula_poof_pointer(pooft.name);
-				if (poofp != NULL) {
+				if (poofp != nullptr) {
 					if (!Parsing_modular_table) {
 						error_display(1,
 							"Error:  Nebula Poof %s already exists.  All nebula poof names must be unique.",
@@ -263,13 +263,15 @@ void parse_nebula_table(const char* filename)
 				if (poof_new) {
 					required_string("$Bitmap:");
 					stuff_string(name, F_NAME, MAX_FILENAME_LEN);
+					strcpy_s(poofp->bitmap_filename, name);
+					generic_anim_init(&poofp->bitmap, name);
 				} else {
-					optional_string("$Bitmap:");
-					stuff_string(name, F_NAME, MAX_FILENAME_LEN);
+					if (optional_string("$Bitmap:")) {
+						stuff_string(name, F_NAME, MAX_FILENAME_LEN);
+						strcpy_s(poofp->bitmap_filename, name);
+						generic_anim_init(&poofp->bitmap, name);
+					}
 				}
-
-				strcpy_s(poofp->bitmap_filename, name);
-				generic_anim_init(&poofp->bitmap, name);
 
 				if (optional_string("$Scale:"))
 					poofp->scale = ::util::parseUniformRange<float>(0.01f, 100000.0f);
