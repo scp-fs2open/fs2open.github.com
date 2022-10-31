@@ -139,7 +139,7 @@ static luacpp::LuaValue process_lua_data(ubyte* data, int& offset, lua_State* L)
 		GET_DATA(entries);
 		for(uint8_t i = 0; i < entries; i++)
 			table.addValue(process_lua_data(data, offset, L), process_lua_data(data, offset, L));
-		return table;
+		return std::move(table);
 	}
 	default:
 		UNREACHABLE("Got invalid lua multi packet data type %d!", dataType);
