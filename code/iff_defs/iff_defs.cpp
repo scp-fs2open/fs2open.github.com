@@ -98,15 +98,16 @@ int iff_init_color(int r, int g, int b)
 	return idx;
 }
 
-char traitor_name[NAME_LENGTH];
-SCP_vector<SCP_vector<SCP_string>> attack_names;
+//Initialize this as the retail default - Mjn
+static char traitor_name[NAME_LENGTH] = "Traitor";
+static SCP_vector<SCP_vector<SCP_string>> attack_names;
 
 struct observed_color_t {
 	char iff_name[NAME_LENGTH];
 	int color_index;
 };
 
-SCP_vector<SCP_vector<observed_color_t>> observed_color_table;
+static SCP_vector<SCP_vector<observed_color_t>> observed_color_table;
 
 void resolve_iff_data()
 {
@@ -183,12 +184,40 @@ void resolve_iff_data()
 	}
 }
 
+static iff_info* get_iff_pointer(char* name)
+{
+	for (int i = 0; i < (int)Iff_info.size(); i++) {
+		if (!stricmp(name, Iff_info[i].iff_name)) {
+			return &Iff_info[i];
+		}
+	}
+
+	// Didn't find anything.
+	return nullptr;
+}
+
+static int get_iff_position(char* name)
+{
+	for (int i = 0; i < (int)Iff_info.size(); i++) {
+		if (!stricmp(name, Iff_info[i].iff_name)) {
+			return i;
+		}
+	}
+
+	return -1;
+}
+
 /**
  * Parse the table
  */
 void parse_iff_table(const char* filename)
 {
 	int i, j, k;
+
+	iff_info ifft;
+	iff_info* iffp;
+	int cur_iff;
+	bool create_if_not_found = true;
 
 	try
 	{
@@ -209,8 +238,9 @@ void parse_iff_table(const char* filename)
 		required_string("#IFFs");
 
 		// get the traitor
-		required_string("$Traitor IFF:");
-		stuff_string(traitor_name, F_NAME, NAME_LENGTH);
+		if (optional_string("$Traitor IFF:")) {
+			stuff_string(traitor_name, F_NAME, NAME_LENGTH);
+		}
 
 		int rgb[3];
 
@@ -369,30 +399,56 @@ void parse_iff_table(const char* filename)
 		// begin reading data
 		while (required_string_either("#End", "$IFF Name:"))
 		{
-			iff_info *iff;
-			int cur_iff;
-
-			// add new IFF
-			cur_iff = (int) Iff_info.size();
-			Iff_info.push_back(iff_info());
-			attack_names.emplace_back();
-			observed_color_table.emplace_back();
-			iff = &Iff_info[cur_iff];
-
-
-			// get required IFF info ----------------------------------------------
 
 			// get the iff name
 			required_string("$IFF Name:");
-			stuff_string(iff->iff_name, F_NAME, NAME_LENGTH);
+			stuff_string(ifft.iff_name, F_NAME, NAME_LENGTH);
+			mprintf(("IFFs got to name %s\n", ifft.iff_name));
+			if (optional_string("+nocreate")) {
+				if (!Parsing_modular_table) {
+					Warning(LOCATION, "+nocreate flag used for iff in non-modular table\n");
+				}
+				create_if_not_found = false;
+			}
+
+			// Does this iff exist already?
+			// If so, load this new info into it
+			iffp = get_iff_pointer(ifft.iff_name);
+			if (iffp != nullptr) {
+				if (!Parsing_modular_table) {
+					error_display(1,
+						"Error:  IFF %s already exists.  All IFF names must be unique.",
+						ifft.iff_name);
+				}
+			} else {
+				// Don't create iff if it has +nocreate and is in a modular table.
+				if (!create_if_not_found && Parsing_modular_table) {
+					if (!skip_to_start_of_string_either("$IFF Name:", "#End")) {
+						error_display(1, "Missing [#End] or [$IFF Name] after IFF %s", ifft.iff_name);
+					}
+					continue;
+				}
+				Iff_info.push_back(ifft);
+				attack_names.emplace_back();
+				observed_color_table.emplace_back();
+				iffp = &Iff_info[Iff_info.size() - 1];
+				//Initialize this to white for new IFFs
+				iffp->color_index = iff_init_color(255, 255, 255);
+				//Make sure flags are reset for new IFFs
+				iffp->default_parse_flags.reset();
+			}
+
+			cur_iff = get_iff_position(ifft.iff_name);
 
 			// get the iff color
-			if (check_for_string("$Colour:"))
-				required_string("$Colour:");
-			else
-				required_string("$Color:");
-			stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
-			iff->color_index = iff_init_color(rgb[0], rgb[1], rgb[2]);
+			if (optional_string("$Colour:")) {
+				stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+				iffp->color_index = iff_init_color(rgb[0], rgb[1], rgb[2]);
+			}
+			if (optional_string("$Color:")) {
+				stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+				iffp->color_index = iff_init_color(rgb[0], rgb[1], rgb[2]);
+			}
 
 
 			// get relationships between IFFs -------------------------------------
@@ -415,18 +471,18 @@ void parse_iff_table(const char* filename)
 			}
 
 			// get F3 override
-			iff->hotkey_team = IFF_hotkey_team::Default;
+			iffp->hotkey_team = IFF_hotkey_team::Default;
 			if (optional_string("+Hotkey Team:"))
 			{
 				char temp[NAME_LENGTH];
 				stuff_string(temp, F_NAME, NAME_LENGTH);
 
 				if (!stricmp(temp, "Friendly"))
-					iff->hotkey_team = IFF_hotkey_team::Friendly;
+					iffp->hotkey_team = IFF_hotkey_team::Friendly;
 				else if (!stricmp(temp, "Hostile") || !stricmp(temp, "Enemy"))
-					iff->hotkey_team = IFF_hotkey_team::Hostile;
+					iffp->hotkey_team = IFF_hotkey_team::Hostile;
 				else if (!stricmp(temp, "None"))
-					iff->hotkey_team = IFF_hotkey_team::None;
+					iffp->hotkey_team = IFF_hotkey_team::None;
 				else
 					Warning(LOCATION, "Unrecognized +Hotkey Tean: %s\n", temp);
 			}
@@ -435,7 +491,7 @@ void parse_iff_table(const char* filename)
 			// get flags ----------------------------------------------------------
 
 			// get iff flags
-			iff->flags = 0;
+			iffp->flags = 0;
 			if (optional_string("$Flags:"))
 			{
 				SCP_vector<SCP_string> flag_strings;
@@ -446,35 +502,34 @@ void parse_iff_table(const char* filename)
 					auto flag_string = item.c_str();
 
 					if (!stricmp(NOX("support allowed"), flag_string))
-						iff->flags |= IFFF_SUPPORT_ALLOWED;
+						iffp->flags |= IFFF_SUPPORT_ALLOWED;
 					else if (!stricmp(NOX("exempt from all teams at war"), flag_string))
-						iff->flags |= IFFF_EXEMPT_FROM_ALL_TEAMS_AT_WAR;
+						iffp->flags |= IFFF_EXEMPT_FROM_ALL_TEAMS_AT_WAR;
 					else if (!stricmp(NOX("orders hidden"), flag_string))
-						iff->flags |= IFFF_ORDERS_HIDDEN;
+						iffp->flags |= IFFF_ORDERS_HIDDEN;
 					else if (!stricmp(NOX("orders shown"), flag_string))
-						iff->flags |= IFFF_ORDERS_SHOWN;
+						iffp->flags |= IFFF_ORDERS_SHOWN;
 					else if (!stricmp(NOX("wing name hidden"), flag_string))
-						iff->flags |= IFFF_WING_NAME_HIDDEN;
+						iffp->flags |= IFFF_WING_NAME_HIDDEN;
 					else
 						Warning(LOCATION, "Bogus string in iff flags: %s\n", flag_string);
 				}
 			}
 
             // get default ship flags
-            iff->default_parse_flags.reset();
             if (optional_string("$Default Ship Flags:"))
             {
-                parse_string_flag_list(iff->default_parse_flags, Parse_object_flags, Num_parse_object_flags, nullptr);
+                parse_string_flag_list(iffp->default_parse_flags, Parse_object_flags, Num_parse_object_flags, nullptr);
             }
 
             // again, for compatibility reasons
             if (optional_string("$Default Ship Flags2:"))
             {
-                parse_string_flag_list(iff->default_parse_flags, Parse_object_flags, Num_parse_object_flags, nullptr);
+                parse_string_flag_list(iffp->default_parse_flags, Parse_object_flags, Num_parse_object_flags, nullptr);
             }
 
 			// this is cleared between each level but let's just set it here for thoroughness
-			iff->ai_rearm_timestamp = TIMESTAMP::invalid();
+			iffp->ai_rearm_timestamp = TIMESTAMP::invalid();
 		}
 
 		required_string("#End");
@@ -491,6 +546,9 @@ void iff_init()
 {
 	// first parse the default table
 	parse_iff_table("iff_defs.tbl");
+
+	// parse any modular tables
+	parse_modular_table("*-iff.tbm", parse_iff_table);
 
 	// now resolve the relationships
 	resolve_iff_data();
