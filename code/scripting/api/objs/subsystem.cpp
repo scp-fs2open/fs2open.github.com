@@ -689,6 +689,18 @@ ADE_FUNC(isTurret, l_Subsystem, NULL, "Determines if this subsystem is a turret"
 	return ade_set_args(L, "b", sso->ss->system_info->type == SUBSYSTEM_TURRET);
 }
 
+ADE_FUNC(isMultipartTurret, l_Subsystem, NULL, "Determines if this subsystem is a multi-part turret", "boolean", "true if subsystem is multi-part turret, false otherwise or nil on error")
+{
+	ship_subsys_h* sso;
+	if (!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
+		return ADE_RETURN_NIL;
+
+	if (!sso->isSubsystemValid())
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "b", sso->ss->system_info->type == SUBSYSTEM_TURRET && sso->ss->system_info->turret_gun_sobj != sso->ss->system_info->subobj_num);
+}
+
 ADE_FUNC(isTargetInFOV, l_Subsystem, "object Target", "Determines if the object is in the turrets FOV", "boolean", "true if in FOV, false if not, nil on error or if subsystem is not a turret ")
 {
 	ship_subsys_h *sso;
