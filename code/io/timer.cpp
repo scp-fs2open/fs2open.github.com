@@ -437,7 +437,7 @@ bool timestamp_in_between(TIMESTAMP stamp, TIMESTAMP before, TIMESTAMP after)
 	if (!stamp.isValid() || !before.isValid() || !after.isValid())
 		return false;
 
-	return timestamp_compare(before, stamp) >= 0 && timestamp_compare(stamp, after) >= 0;
+	return timestamp_compare(before, stamp) <= 0 && timestamp_compare(stamp, after) <= 0;
 }
 
 bool ui_timestamp_in_between(UI_TIMESTAMP stamp, UI_TIMESTAMP before, UI_TIMESTAMP after)
@@ -449,7 +449,7 @@ bool ui_timestamp_in_between(UI_TIMESTAMP stamp, UI_TIMESTAMP before, UI_TIMESTA
 	if (!stamp.isValid() || !before.isValid() || !after.isValid())
 		return false;
 
-	return ui_timestamp_compare(before, stamp) >= 0 && ui_timestamp_compare(stamp, after) >= 0;
+	return ui_timestamp_compare(before, stamp) <= 0 && ui_timestamp_compare(stamp, after) <= 0;
 }
 
 bool timestamp_elapsed(int stamp) {

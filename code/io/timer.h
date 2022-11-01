@@ -182,7 +182,9 @@ int timestamp_since(TIMESTAMP stamp);
 //	Returns milliseconds after timestamp has elapsed.  This will Assert against Invalid or Never timestamps but fail gracefully by returning INT_MIN.
 int ui_timestamp_since(UI_TIMESTAMP stamp);
 
+// A standard comparison function that returns <0, 0, or >0 as the left item is less than, equal to, or greater than the right item.
 int timestamp_compare(TIMESTAMP t1, TIMESTAMP t2);
+// A standard comparison function that returns <0, 0, or >0 as the left item is less than, equal to, or greater than the right item.
 int ui_timestamp_compare(UI_TIMESTAMP t1, UI_TIMESTAMP t2);
 
 // Checks that a timestamp occurs between the "before" and "after" timestamps.
