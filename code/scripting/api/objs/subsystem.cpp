@@ -650,6 +650,9 @@ ADE_FUNC(getModelFlag,
 		if (subsys_flag == Model::Subsystem_Flags::NUM_VALUES) {
 			Warning(LOCATION, "Subsystem flag '%s' not found!", flag_name);
 			return ADE_RETURN_FALSE;
+		} else {
+			if (!(sso->ss->system_info->flags[subsys_flag]))
+				return ADE_RETURN_FALSE;
 		}
 
 		// read the next flag
