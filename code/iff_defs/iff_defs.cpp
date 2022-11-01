@@ -98,29 +98,109 @@ int iff_init_color(int r, int g, int b)
 	return idx;
 }
 
+char traitor_name[NAME_LENGTH];
+SCP_vector<SCP_vector<SCP_string>> attack_names;
+
+struct observed_color_t {
+	char iff_name[NAME_LENGTH];
+	int color_index;
+};
+
+SCP_vector<SCP_vector<observed_color_t>> observed_color_table;
+
+void resolve_iff_data()
+{
+	// first get the traitor
+	Iff_traitor = iff_lookup(traitor_name);
+	if (Iff_traitor < 0) {
+		Iff_traitor = 0;
+		Warning(LOCATION,
+			"Traitor IFF %s not found in iff_defs.tbl!  Defaulting to %s.\n",
+			traitor_name,
+			Iff_info[Iff_traitor].iff_name);
+	}
+
+	// next get the attackees and colors
+	for (int cur_iff = 0; cur_iff < (int)Iff_info.size(); cur_iff++) {
+		iff_info* iff = &Iff_info[cur_iff];
+
+		// clear the iffs to be attacked
+		iff->attackee_bitmask = 0;
+		iff->attackee_bitmask_all_teams_at_war = 0;
+
+		// clear the observed colors
+		iff->observed_color_map.clear();
+
+		// resolve the attacking list names
+		for (const SCP_string& attacks : attack_names[cur_iff]) {
+			// find out who
+			int target_iff = iff_lookup(attacks.c_str());
+
+			// valid?
+			if (target_iff >= 0)
+				iff->attackee_bitmask |= iff_get_mask(target_iff);
+			else
+				Warning(LOCATION,
+					"Attack target IFF %s not found for IFF %s in iff_defs.tbl!\n",
+					attacks.c_str(),
+					iff->iff_name);
+		}
+
+		// resolve the observed color list names
+		for (const auto& observed_color : observed_color_table[cur_iff]) {
+			// find out who
+			int target_iff = iff_lookup(observed_color.iff_name);
+
+			// valid?
+			if (target_iff >= 0)
+				iff->observed_color_map[target_iff] = observed_color.color_index;
+			else
+				Warning(LOCATION,
+					"Observed color IFF %s not found for IFF %s in iff_defs.tbl!\n",
+					observed_color.iff_name,
+					iff->iff_name);
+		}
+
+		// resolve the all teams at war relationships
+		if (iff->flags & IFFF_EXEMPT_FROM_ALL_TEAMS_AT_WAR) {
+			// exempt, so use standard attacks
+			iff->attackee_bitmask_all_teams_at_war = iff->attackee_bitmask;
+		} else {
+			// nonexempt, so build bitmask of all other nonexempt teams
+			for (int other_iff = 0; other_iff < (int)Iff_info.size(); other_iff++) {
+				// skip myself (unless I attack myself normally)
+				if ((other_iff == cur_iff) && !iff_x_attacks_y(cur_iff, cur_iff))
+					continue;
+
+				// skip anyone exempt
+				if (Iff_info[other_iff].flags & IFFF_EXEMPT_FROM_ALL_TEAMS_AT_WAR)
+					continue;
+
+				// add everyone else
+				iff->attackee_bitmask_all_teams_at_war |= iff_get_mask(other_iff);
+			}
+		}
+	}
+}
+
 /**
  * Parse the table
  */
-void iff_init()
+void parse_iff_table(const char* filename)
 {
-	char traitor_name[NAME_LENGTH];
-	SCP_vector<SCP_vector<SCP_string>> attack_names;
-
-	struct observed_color_t {
-		char iff_name[NAME_LENGTH];
-		int color_index;
-	};
-
-	SCP_vector<SCP_vector<observed_color_t>> observed_color_table;
 	int i, j, k;
 
 	try
 	{
-		// Goober5000 - if table doesn't exist, use the default table
-		if (cf_exists_full("iff_defs.tbl", CF_TYPE_TABLES))
-			read_file_text("iff_defs.tbl", CF_TYPE_TABLES);
-		else
-			read_file_text_from_default(defaults_get_file("iff_defs.tbl"));
+		if (!Parsing_modular_table) {
+			// Goober5000 - if table doesn't exist, use the default table
+			if (cf_exists_full(filename, CF_TYPE_TABLES))
+				read_file_text(filename, CF_TYPE_TABLES);
+			else
+				read_file_text_from_default(defaults_get_file("iff_defs.tbl"));
+		} else {
+			read_file_text(filename, CF_TYPE_TABLES);
+		}
 
 		reset_parse();
 
@@ -398,84 +478,22 @@ void iff_init()
 		}
 
 		required_string("#End");
-
-
-		// now resolve the relationships ------------------------------------------
-
-		// first get the traitor
-		Iff_traitor = iff_lookup(traitor_name);
-		if (Iff_traitor < 0)
-		{
-			Iff_traitor = 0;
-			Warning(LOCATION, "Traitor IFF %s not found in iff_defs.tbl!  Defaulting to %s.\n", traitor_name, Iff_info[Iff_traitor].iff_name);
-		}
-
-		// next get the attackees and colors
-		for (int cur_iff = 0; cur_iff < (int) Iff_info.size(); cur_iff++)
-		{
-			iff_info* iff = &Iff_info[cur_iff];
-
-			// clear the iffs to be attacked
-			iff->attackee_bitmask = 0;
-			iff->attackee_bitmask_all_teams_at_war = 0;
-
-			// clear the observed colors
-			iff->observed_color_map.clear();
-
-			// resolve the attacking list names
-			for (const SCP_string& attacks : attack_names[cur_iff]) {
-				// find out who
-				int target_iff = iff_lookup(attacks.c_str());
-
-				// valid?
-				if (target_iff >= 0)
-					iff->attackee_bitmask |= iff_get_mask(target_iff);
-				else
-					Warning(LOCATION, "Attack target IFF %s not found for IFF %s in iff_defs.tbl!\n", attacks.c_str(), iff->iff_name);
-			}
-
-			// resolve the observed color list names
-			for (const auto& observed_color : observed_color_table[cur_iff]) {
-				// find out who
-				int target_iff = iff_lookup(observed_color.iff_name);
-
-				// valid?
-				if (target_iff >= 0)
-					iff->observed_color_map[target_iff] = observed_color.color_index;
-				else
-					Warning(LOCATION, "Observed color IFF %s not found for IFF %s in iff_defs.tbl!\n", observed_color.iff_name, iff->iff_name);
-			}
-
-			// resolve the all teams at war relationships
-			if (iff->flags & IFFF_EXEMPT_FROM_ALL_TEAMS_AT_WAR)
-			{
-				// exempt, so use standard attacks
-				iff->attackee_bitmask_all_teams_at_war = iff->attackee_bitmask;
-			}
-			else
-			{
-				// nonexempt, so build bitmask of all other nonexempt teams
-				for (int other_iff = 0; other_iff < (int) Iff_info.size(); other_iff++)
-				{
-					// skip myself (unless I attack myself normally)
-					if ((other_iff == cur_iff) && !iff_x_attacks_y(cur_iff, cur_iff))
-						continue;
-
-					// skip anyone exempt
-					if (Iff_info[other_iff].flags & IFFF_EXEMPT_FROM_ALL_TEAMS_AT_WAR)
-						continue;
-
-					// add everyone else
-					iff->attackee_bitmask_all_teams_at_war |= iff_get_mask(other_iff);
-				}
-			}
-		}
+		
 	}
 	catch (const parse::ParseException& e)
 	{
 		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "iff_defs.tbl", e.what()));
 		return;
 	}
+}
+
+void iff_init()
+{
+	// first parse the default table
+	parse_iff_table("iff_defs.tbl");
+
+	// now resolve the relationships
+	resolve_iff_data();
 }
 
 /**
