@@ -41,7 +41,7 @@ class ship_weapon;
 extern int Weapon_select_overlay_id;
 
 void weapon_select_init();
-void weapon_select_common_init();
+void weapon_select_common_init(bool API_Access = false);
 void weapon_select_do(float frametime);
 void weapon_select_close();
 void weapon_select_close_team();

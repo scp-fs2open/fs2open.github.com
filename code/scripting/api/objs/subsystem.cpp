@@ -422,7 +422,7 @@ ADE_VIRTVAR(SecondaryBanks, l_Subsystem, "weaponbanktype", "Array of secondary w
 }
 
 
-ADE_VIRTVAR(Target, l_Subsystem, "object", "Object targeted by this subsystem. If used to set a new target, AI targeting will be switched off.", "object", "Targeted object, or invalid object handle if subsystem handle is invalid")
+ADE_VIRTVAR(Target, l_Subsystem, "object", "Object targeted by this subsystem. If used to set a new target or clear it, AI targeting will be switched off.", "object", "Targeted object, or invalid object handle if subsystem handle is invalid")
 {
 	ship_subsys_h *sso;
 	object_h *objh = nullptr;
@@ -434,12 +434,18 @@ ADE_VIRTVAR(Target, l_Subsystem, "object", "Object targeted by this subsystem. I
 
 	ship_subsys *ss = sso->ss;
 
-	if(ADE_SETTING_VAR && objh && objh->IsValid())
-	{
-		ss->turret_enemy_objnum = OBJ_INDEX(objh->objp);
-		ss->turret_enemy_sig = objh->sig;
-		ss->targeted_subsys = NULL;
-		ss->scripting_target_override = true;
+	if(ADE_SETTING_VAR)	{
+		if (objh && objh->IsValid()) {
+			ss->turret_enemy_objnum = OBJ_INDEX(objh->objp);
+			ss->turret_enemy_sig = objh->sig;
+			ss->targeted_subsys = nullptr;
+			ss->scripting_target_override = true;
+		} else if (lua_isnil(L, 2)) {
+			ss->turret_enemy_objnum = -1;
+			ss->turret_enemy_sig = -1;
+			ss->targeted_subsys = nullptr;
+			ss->scripting_target_override = true;
+		}
 	}
 
 	return ade_set_object_with_breed(L, ss->turret_enemy_objnum);

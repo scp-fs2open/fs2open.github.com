@@ -153,6 +153,7 @@ extern void physics_sim_editor(vec3d *position, matrix * orient, physics_info * 
 extern void physics_sim_vel(vec3d * position, physics_info * pi, float sim_time, matrix * orient);
 extern void physics_sim_rot(matrix * orient, physics_info * pi, float sim_time );
 extern bool whack_below_limit(const vec3d* impulse);
+extern bool whack_below_limit(float impulse);
 extern void physics_calculate_and_apply_whack(vec3d *force, vec3d *pos, physics_info *pi, matrix *orient, matrix *inv_moi);
 extern void physics_apply_whack(float orig_impulse, physics_info* pi, vec3d *delta_rotvel, vec3d* delta_vel, matrix* orient);
 extern void physics_apply_shock(vec3d *direction_vec, float pressure, physics_info *pi, matrix *orient, vec3d *min, vec3d *max, float radius);
