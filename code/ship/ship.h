@@ -1464,6 +1464,9 @@ private:
 extern flag_def_list_new<Ship::Info_Flags> Ship_flags[];
 extern const size_t Num_ship_flags;
 
+extern flag_def_list_new<Model::Subsystem_Flags> Subsystem_flags[];
+extern const size_t Num_subsystem_flags;
+
 extern int Num_wings;
 extern ship Ships[MAX_SHIPS];
 extern ship	*Player_ship;

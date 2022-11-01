@@ -620,6 +620,46 @@ ADE_FUNC(targetingOverride, l_Subsystem, "boolean", "If set to true, AI targetin
 	return ADE_RETURN_TRUE;
 }
 
+ADE_FUNC(getModelFlag, 
+	l_Subsystem, 
+	"string flag_name", 
+	"Checks whether one or more model subsystem flags  <a href=\"https://www.w3schools.com/\">Visit W3Schools.com!</a>  are set - this function can accept an arbitrary number of flag arguments.  The flag names can be any string that the alter-ship-flag SEXP operator supports.", 
+	"boolean", 
+	"Returns whether all flags are set, or nil if the subsystem is not valid")
+{
+	ship_subsys_h* sso;
+	const char* flag_name;
+
+	if (!ade_get_args(L, "os", l_Subsystem.GetPtr(&sso), &flag_name))
+		return ADE_RETURN_NIL;
+	int skip_args = 1;	// not 2 because there will be one more below
+
+	if (!sso->IsValid())
+		return ADE_RETURN_NIL;
+
+	do {
+		auto subsys_flag = Model::Subsystem_Flags::NUM_VALUES;
+
+		for (size_t i = 0; i < (size_t)Num_subsystem_flags; i++) {
+			if (!stricmp(Subsystem_flags[i].name, flag_name)) {
+				subsys_flag = Subsystem_flags[i].def;
+				break;
+			}
+		}
+
+		if (subsys_flag == Model::Subsystem_Flags::NUM_VALUES) {
+			Warning(LOCATION, "Subsystem flag '%s' not found!", flag_name);
+			return ADE_RETURN_FALSE;
+		}
+
+		// read the next flag
+		internal::Ade_get_args_skip = ++skip_args;
+	} while (ade_get_args(L, "|s", &flag_name) > 0);
+
+	// if we're still here, all the flags we were looking for were present
+	return ADE_RETURN_TRUE;
+}
+
 ADE_FUNC(hasFired, l_Subsystem, NULL, "Determine if a subsystem has fired", "boolean", "true if if fired, false if not fired, or nil if invalid. resets fired flag when called.")
 {
 	ship_subsys_h *sso;
