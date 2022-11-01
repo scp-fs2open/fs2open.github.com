@@ -1010,9 +1010,7 @@ void brief_api_init()
 	// init the scene-cut data
 	brief_transition_reset();
 
-	//This will need to be replaced with an API version in a later PR that deals with
-	//weapon and ship select APIs - Mjn
-	common_select_init();
+	common_select_init(true);
 
 	// init the briefing map
 	brief_init_map();

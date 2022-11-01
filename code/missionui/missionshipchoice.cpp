@@ -311,7 +311,7 @@ void pick_from_wing(int wb_num, int ws_num);
 
 // ui related
 void ship_select_button_do(int i);
-void ship_select_common_init();
+void ship_select_common_init(bool API_Access);
 void ss_reset_selected_ship();
 void ss_restore_loadout();
 void maybe_change_selected_wing_ship(int wb_num, int ws_num);
@@ -3269,7 +3269,7 @@ void ship_select_init_team_data(int team_num)
 }
 
 // called when the briefing is entered
-void ship_select_common_init()
+void ship_select_common_init(bool API_Access)
 {		
 	// initialize team critical data for all teams
 	int idx;
@@ -3286,13 +3286,15 @@ void ship_select_common_init()
 		ship_select_init_team_data(Common_team);
 	}
 	
-	init_active_list();
+	if (!API_Access) {
+		init_active_list();
 
-	// load the necessary icons/animations
-	ss_load_all_icons();
+		// load the necessary icons/animations
+		ss_load_all_icons();
 
-	ss_reset_selected_ship();
-	ss_reset_carried_icon();
+		ss_reset_selected_ship();
+		ss_reset_carried_icon();
+	}
 }
 
 void ship_select_common_close()

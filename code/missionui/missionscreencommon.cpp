@@ -522,7 +522,7 @@ void common_reset_team_pointers()
 // is called.  This prevents multiple loadings of animations/bitmaps.
 //
 // This function also sets the palette based on the file palette01.pcx
-void common_select_init()
+void common_select_init(bool API_Access)
 {
 	if ( Common_select_inited ) {
 		nprintf(("Alan","common_select_init() returning without doing anything\n"));
@@ -560,9 +560,11 @@ void common_select_init()
 
 	common_set_team_pointers(Common_team);
 
-	ship_select_common_init();	
-	weapon_select_common_init();
-	common_flash_button_init();
+	ship_select_common_init(API_Access);	
+	weapon_select_common_init(API_Access);
+	if (!API_Access) {
+		common_flash_button_init();
+	}
 
 	if ( Game_mode & GM_MULTIPLAYER ) {
 		multi_ts_common_init();
@@ -577,25 +579,27 @@ void common_select_init()
 		}
 	}
 	
-	ss_reset_selected_ship();
+	if (!API_Access) {
+		ss_reset_selected_ship();
 
-	Drop_icon_mflag = 0;
-	Drop_on_wing_mflag = 0;
+		Drop_icon_mflag = 0;
+		Drop_on_wing_mflag = 0;
 
-	//init colors
-	gr_init_alphacolor(&Icon_colors[ICON_FRAME_NORMAL], 32, 128, 128, 255);
-	gr_init_alphacolor(&Icon_colors[ICON_FRAME_HOT], 48, 160, 160, 255);
-	gr_init_alphacolor(&Icon_colors[ICON_FRAME_SELECTED], 64, 192, 192, 255);
-	gr_init_alphacolor(&Icon_colors[ICON_FRAME_PLAYER], 192, 128, 64, 255);
-	gr_init_alphacolor(&Icon_colors[ICON_FRAME_DISABLED], 175, 175, 175, 255);
-	gr_init_alphacolor(&Icon_colors[ICON_FRAME_DISABLED_HIGH], 100, 100, 100, 255);
-	//init shaders
-	gr_create_shader(&Icon_shaders[ICON_FRAME_NORMAL], 32, 128, 128, 255);
-	gr_create_shader(&Icon_shaders[ICON_FRAME_HOT], 48, 160, 160, 255);
-	gr_create_shader(&Icon_shaders[ICON_FRAME_SELECTED], 64, 192, 192, 255);
-	gr_create_shader(&Icon_shaders[ICON_FRAME_PLAYER], 192, 128, 64, 255);
-	gr_create_shader(&Icon_shaders[ICON_FRAME_DISABLED], 175, 175, 175, 255);
-	gr_create_shader(&Icon_shaders[ICON_FRAME_DISABLED_HIGH], 100, 100, 100, 255);
+		// init colors
+		gr_init_alphacolor(&Icon_colors[ICON_FRAME_NORMAL], 32, 128, 128, 255);
+		gr_init_alphacolor(&Icon_colors[ICON_FRAME_HOT], 48, 160, 160, 255);
+		gr_init_alphacolor(&Icon_colors[ICON_FRAME_SELECTED], 64, 192, 192, 255);
+		gr_init_alphacolor(&Icon_colors[ICON_FRAME_PLAYER], 192, 128, 64, 255);
+		gr_init_alphacolor(&Icon_colors[ICON_FRAME_DISABLED], 175, 175, 175, 255);
+		gr_init_alphacolor(&Icon_colors[ICON_FRAME_DISABLED_HIGH], 100, 100, 100, 255);
+		// init shaders
+		gr_create_shader(&Icon_shaders[ICON_FRAME_NORMAL], 32, 128, 128, 255);
+		gr_create_shader(&Icon_shaders[ICON_FRAME_HOT], 48, 160, 160, 255);
+		gr_create_shader(&Icon_shaders[ICON_FRAME_SELECTED], 64, 192, 192, 255);
+		gr_create_shader(&Icon_shaders[ICON_FRAME_PLAYER], 192, 128, 64, 255);
+		gr_create_shader(&Icon_shaders[ICON_FRAME_DISABLED], 175, 175, 175, 255);
+		gr_create_shader(&Icon_shaders[ICON_FRAME_DISABLED_HIGH], 100, 100, 100, 255);
+	}
 }
 
 void common_reset_buttons()

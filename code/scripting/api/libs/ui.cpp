@@ -1172,8 +1172,8 @@ ADE_FUNC(initSelect,
 
 	common_set_team_pointers(Common_team);
 
-	ship_select_common_init();
-	weapon_select_common_init();
+	ship_select_common_init(true);
+	weapon_select_common_init(true);
 
 	if ( Game_mode & GM_MULTIPLAYER ) {
 		multi_ts_common_init();

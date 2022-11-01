@@ -1988,7 +1988,7 @@ void weapon_select_close_team()
  * This init is called even before the weapons loadout screen is entered.  It is called when the
  * briefing state is entered.
  */
-void weapon_select_common_init()
+void weapon_select_common_init(bool API_Access)
 {
 	int idx;
 
@@ -2005,9 +2005,11 @@ void weapon_select_common_init()
 		weapon_select_init_team(Common_team);
 	}
 
-	wl_reset_selected_slot();
-	wl_reset_carried_icon();
-	wl_maybe_reset_selected_weapon_class();
+	if (!API_Access) {
+		wl_reset_selected_slot();
+		wl_reset_carried_icon();
+		wl_maybe_reset_selected_weapon_class();
+	}
 }
 
 /**
