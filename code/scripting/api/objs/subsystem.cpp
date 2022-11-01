@@ -629,7 +629,7 @@ ADE_FUNC(targetingOverride, l_Subsystem, "boolean", "If set to true, AI targetin
 ADE_FUNC(getModelFlag, 
 	l_Subsystem, 
 	"string flag_name", 
-	"Checks whether one or more model subsystem flags  <a href=\"https://www.w3schools.com/\">Visit W3Schools.com!</a>  are set - this function can accept an arbitrary number of flag arguments.  The flag names can be any string that the alter-ship-flag SEXP operator supports.", 
+	"Checks whether one or more <a href=\"https://wiki.hard-light.net/index.php/Subsystem#.24Flags:\">model subsystem flags</a> are set - this function can accept an arbitrary number of flag arguments.  The flag names can be any string that the alter-ship-flag SEXP operator supports.", 
 	"boolean", 
 	"Returns whether all flags are set, or nil if the subsystem is not valid")
 {
