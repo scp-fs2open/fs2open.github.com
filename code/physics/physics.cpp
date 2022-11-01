@@ -767,6 +767,11 @@ bool whack_below_limit(const vec3d* impulse)
 		   (fl_abs(impulse->xyz.z) < WHACK_LIMIT);
 }
 
+bool whack_below_limit(float impulse)
+{
+	return fl_abs(impulse) < WHACK_LIMIT;
+}
+
 // ----------------------------------------------------------------------------
 // physics_calculate_and_apply_whack changes the rotaional and linear velocites of a ship due to
 // an instantaneous whack.
