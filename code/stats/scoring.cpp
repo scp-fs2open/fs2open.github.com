@@ -198,7 +198,7 @@ void scoring_struct::init()
 	score = 0;
 	rank = RANK_ENSIGN;
 
-	medal_counts.assign(Num_medals, 0);
+	medal_counts.assign((int)Medals.size(), 0);
 
 	memset(kills, 0, sizeof(kills));
 	assists = 0;
@@ -420,7 +420,7 @@ void scoring_eval_badges(scoring_struct *sc)
 	// total_kills should now reflect the number of kills on hostile fighters/bombers.  Check this number
 	// against badge kill numbers, and award the appropriate badges as neccessary.
 	int last_badge_kills = 0;
-	for (auto i = 0; i < Num_medals; i++ ) {
+	for (auto i = 0; i < (int)Medals.size(); i++) {
 		if ( total_kills >= Medals[i].kills_needed
 			&& Medals[i].kills_needed > last_badge_kills
 			&& Medals[i].kills_needed > 0 )

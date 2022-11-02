@@ -27,8 +27,6 @@
 #include "cmdline/cmdline.h"
 #endif
 
-int Num_medals = 0;
-
 // define for the medal information
 SCP_vector<medal_stuff> Medals;
 
@@ -484,8 +482,6 @@ void medals_init()
 	manage_badges();
 
 	Rank_medal_index = get_medal_position("Rank");
-	Num_medals = (int)Medals.size();
-	mprintf(("MEDALS count of num_medals is %i while push_back is %i\n", Num_medals, Medals.size()));
 
 	// be sure that we know where the rank is
 	if (Rank_medal_index < 0) {
@@ -512,7 +508,7 @@ DCF(medals, "Grant or revoke medals")
 	{
 		dc_printf("You have the following medals:\n");
 
-		for (i = 0; i < Num_medals; i++)
+		for (i = 0; i < (int)Medals.size(); i++)
 		{
 			if (Player->stats.medal_counts[i] > 0)
 				dc_printf("%d %s\n", Player->stats.medal_counts[i], Medals[i].name);
@@ -522,14 +518,14 @@ DCF(medals, "Grant or revoke medals")
 	}
 
 	if (dc_optional_string("all")) {
-		for (i = 0; i < Num_medals; i++) {
+		for (i = 0; i < (int)Medals.size(); i++) {
 			Player->stats.medal_counts[i]++;
 		}
 		dc_printf("Granted all medals\n");
 		return;
 
 	} else if (dc_optional_string("clear")) {
-		for (i = 0; i < Num_medals; i++) {
+		for (i = 0; i < (int)Medals.size(); i++) {
 			Player->stats.medal_counts[i] = 0;
 		}
 		dc_printf("Cleared all medals\n");
@@ -551,7 +547,7 @@ DCF(medals, "Grant or revoke medals")
 	}
 
 	if (dc_maybe_stuff_int(&idx)) {
-		if (idx < 0 || idx >= Num_medals)
+		if (idx < 0 || idx >= (int)Medals.size())
 		{
 			dc_printf("Medal index %d is out of range\n", idx);
 			return;
@@ -563,7 +559,7 @@ DCF(medals, "Grant or revoke medals")
 	}
 
 	dc_printf("The following medals are available:\n");
-	for (i = 0; i < Num_medals; i++) {
+	for (i = 0; i < (int)Medals.size(); i++) {
 		dc_printf("%d: %s\n", i, Medals[i].name);
 	}
 }
@@ -580,13 +576,13 @@ void medal_main_init(player *pl, int mode)
 
 #ifndef NDEBUG
 	if (Cmdline_gimme_all_medals){
-		for (idx=0; idx < Num_medals; idx++){
+		for (idx = 0; idx < (int)Medals.size(); idx++) {
 			Medals_player->stats.medal_counts[idx] = 1;
 		}
 	}
 #endif
 
-	for (idx=0; idx < Num_medals; idx++) {
+	for (idx = 0; idx < (int)Medals.size(); idx++) {
 		if ((Medals[idx].available_from_start) && (Medals_player->stats.medal_counts[idx] < 1)) {
 			Medals_player->stats.medal_counts[idx] = 1;
 		}
@@ -776,7 +772,12 @@ int medal_main_do()
 	blit_medals();
 	blit_callsign();
 
-	region = snazzy_menu_do((ubyte*)Medals_mask->data, Medals_mask_w, Medals_mask_h, Num_medals, Medal_regions, &selected);
+	region = snazzy_menu_do((ubyte*)Medals_mask->data,
+		Medals_mask_w,
+		Medals_mask_h,
+		(int)Medals.size(),
+		Medal_regions,
+		&selected);
 	if (region == Rank_medal_index)
 	{
 		blit_label(Ranks[Player_score->rank].name, 1);
@@ -847,7 +848,7 @@ void init_medal_bitmaps()
 	int idx;
 	Assert(Player_score);
 
-	for (idx=0; idx<Num_medals; idx++) {
+	for (idx = 0; idx < (int)Medals.size(); idx++) {
 		Medal_display_info[idx].bitmap = -1;
 
 		if (Player_score->medal_counts[idx] > 0) {
@@ -907,10 +908,10 @@ void init_snazzy_regions()
 
 	// well, we need regions in an array (versus a vector), so...
 	Assert(Medal_regions == NULL);
-	Medal_regions = new MENU_REGION[Num_medals];
+	Medal_regions = new MENU_REGION[(int)Medals.size()];
 
 	// snazzy regions for the medals/ranks, etc.
-	for (idx=0; idx<Num_medals; idx++) {
+	for (idx = 0; idx < (int)Medals.size(); idx++) {
 		snazzy_menu_add_region(&Medal_regions[idx], "", idx, 0);
 	}
 }
@@ -920,7 +921,7 @@ void blit_medals()
 {
 	int idx;
 
-	for (idx=0; idx<Num_medals; idx++) {
+	for (idx = 0; idx < (int)Medals.size(); idx++) {
 		if (idx != Rank_medal_index && Player_score->medal_counts[idx] > 0) {
 #ifndef NDEBUG
 			// this can happen if gimmemedals was used on the medal screen
@@ -944,7 +945,7 @@ int medals_info_lookup(const char *name)
 		return -1;
 	}
 
-	for (int i = 0; i < Num_medals; i++) {
+	for (int i = 0; i < (int)Medals.size(); i++) {
 		if ( !stricmp(name, Medals[i].name) ) {
 			return i;
 		}

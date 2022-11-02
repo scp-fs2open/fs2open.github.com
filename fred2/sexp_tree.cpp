@@ -6718,7 +6718,7 @@ sexp_list_item *sexp_tree::get_listing_opf_medal_name()
 	int i;
 	sexp_list_item head;
 
-	for (i=0; i<Num_medals; i++)
+	for (i = 0; i < (int)Medals.size(); i++)
 	{
 		// don't add Rank or the Ace badges
 		if ((i == Rank_medal_index) || (Medals[i].kills_needed > 0))

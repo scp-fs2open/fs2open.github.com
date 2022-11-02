@@ -3485,12 +3485,12 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				if ( type2 != SEXP_ATOM_STRING)
 					return SEXP_CHECK_TYPE_MISMATCH;
 
-				for (i = 0; i < Num_medals; i++) {
+				for (i = 0; i < (int)Medals.size(); i++) {
 					if ( !stricmp(CTEXT(node), Medals[i].name) )
 						break;
 				}
 
-				if ( i == Num_medals )
+				if (i == (int)Medals.size())
 					return SEXP_CHECK_INVALID_MEDAL_NAME;
 				break;
 
@@ -9090,7 +9090,7 @@ int sexp_was_medal_granted(int n)
 
 	auto medal_name = CTEXT(n);
 
-	for (int i=0; i<Num_medals; ++i) {
+	for (int i = 0; i < (int)Medals.size(); ++i) {
 		if (!stricmp(medal_name, Medals[i].name)) {
 			if (Player->stats.m_medal_earned == i) {
 				return SEXP_TRUE;
@@ -15083,12 +15083,12 @@ void sexp_grant_medal(int n)
 		Warning(LOCATION, "Cannot grant more than one medal per mission!  New medal '%s' will replace old medal '%s'!", medal_name, Medals[Player->stats.m_medal_earned].name);
 	}
 
-	for (i = 0; i < Num_medals; i++ ) {
+	for (i = 0; i < (int)Medals.size(); i++) {
 		if ( !stricmp(medal_name, Medals[i].name) )
 			break;
 	}
 
-	if ( i < Num_medals ) {
+	if (i < (int)Medals.size()) {
 		Player->stats.m_medal_earned = i;
 
 		if ( Game_mode & GM_MULTIPLAYER ) {
