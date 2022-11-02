@@ -81,9 +81,6 @@ float Glowmap_color_override[3] = {0.0f, 0.0f, 0.0f};
 bool Specmap_color_override_set = false;
 float Specmap_color_override[3] = {0.0f, 0.0f, 0.0f};
 
-bool Gloss_override_set = false;
-float Gloss_override = 0.0f;
-
 // Values used for noise for thruster animations
 float Noise[NOISE_NUM_FRAMES] = { 
 	0.468225f,

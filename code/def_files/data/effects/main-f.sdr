@@ -142,7 +142,7 @@ uniform sampler2DArray sAmbientmap;
 uniform sampler2D sFramebuffer;
 #endif
 #ifdef FLAG_TEAMCOLOR
-vec2 teamMask = vec2(0.0, 0.0);
+vec4 teamMask;
 #endif
 #ifdef FLAG_MISC_MAP
 uniform sampler2DArray sMiscmap;
@@ -229,10 +229,7 @@ void main()
 	vec4 specColor = vec4(0.0, 0.0, 0.0, 1.0);
 	vec4 emissiveColor = vec4(0.0, 0.0, 0.0, 1.0);
 	float fresnelFactor = 0.0;
-	float glossData = 0.6;
-#ifdef FLAG_LIGHT
-	glossData = defaultGloss;
-#endif
+	float glossData = defaultGloss;
 	vec2 aoFactors = vec2(1.0, 1.0);
 #ifdef	FLAG_AMBIENT_MAP
 	// red channel is ambient occlusion factor which only affects ambient lighting.
@@ -310,7 +307,6 @@ void main()
 
 #ifdef FLAG_MISC_MAP
  #ifdef FLAG_TEAMCOLOR
-	vec4 teamMask = vec4(0.0, 0.0, 0.0, 0.0);
 	teamMask = texture(sMiscmap, vec3(texCoord, float(sMiscmapIndex)));
 
 	//For team colors applied to a diffuse or spec map, we assume that the base color of the diffuse 
@@ -469,10 +465,6 @@ void main()
       baseColor.rgb = mix(texture(sFramebuffer, screenPos + distort*anim_timer + anim_timer*0.1*vertIn.normal.xy).rgb,baseColor.rgb,clamp(cloak_interp+anim_timer*2.0,0.0,1.0));
  #endif
    }
-#endif
-#ifdef FLAG_NORMAL_ALPHA
-	float normViewOffset = dot(vec3(0.0, 0.0, 1.0), normal);
-	baseColor.a = smoothstep(min(normalAlphaMinMax.x, normalAlphaMinMax.y), max(normalAlphaMinMax.x, normalAlphaMinMax.y), clamp(normalAlphaMinMax.x > normalAlphaMinMax.y ? normViewOffset : 1.0 - normViewOffset, 0.0, 1.0));
 #endif
 #ifndef FLAG_DEFERRED
 	// emissive colors won't be added later when we are using forward rendering so we need to do that here

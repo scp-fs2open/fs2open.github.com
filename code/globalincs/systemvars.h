@@ -153,9 +153,6 @@ extern float Glowmap_color_override[3];
 extern bool Specmap_color_override_set;
 extern float Specmap_color_override[3];
 
-extern bool Gloss_override_set;
-extern float Gloss_override;
-
 // game skill levels 
 #define	NUM_SKILL_LEVELS	5
 
