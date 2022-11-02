@@ -209,7 +209,7 @@ static medal_stuff* get_medal_pointer(char* medal_name)
 	return nullptr;
 }
 
-static int get_medal_position(char* medal_name)
+static int get_medal_position(const char* medal_name)
 {
 	for (int i = 0; i < (int)Medals.size(); i++) {
 		if (!stricmp(medal_name, Medals[i].name)) {
