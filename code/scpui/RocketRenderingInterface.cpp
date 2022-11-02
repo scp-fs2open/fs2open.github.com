@@ -24,6 +24,8 @@
 #include "graphics/material.h"
 #include "tracing/categories.h"
 #include "tracing/tracing.h"
+#define BMPMAN_INTERNAL
+#include "bmpman/bm_internal.h"
 
 using namespace Rocket::Core;
 
@@ -161,6 +163,22 @@ bool RocketRenderingInterface::LoadTexture(TextureHandle& texture_handle, Vector
 			delete[] rawdata;
 
 			return success;
+		}
+		else if (submode.Find("bmpman,") == 0) {
+			int handle = std::atoi(submode.Substring(7).CString());
+
+			auto* entry = bm_get_entry(handle);
+			if (entry->handle != handle)
+				return false;
+
+			entry->load_count++;
+
+			bm_get_info(handle, &texture_dimensions.x, &texture_dimensions.y);
+
+			std::unique_ptr<Texture> tex(new Texture());
+			tex->bm_handle = handle;
+			texture_handle = get_texture_handle(tex.release());
+			return true;
 		}
 		else {
 			return false;

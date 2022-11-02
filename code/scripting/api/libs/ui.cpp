@@ -47,6 +47,7 @@
 #include "scripting/api/objs/color.h"
 #include "scripting/api/objs/enums.h"
 #include "scripting/api/objs/player.h"
+#include "scripting/api/objs/texture.h"
 #include "scripting/lua/LuaTable.h"
 #include "stats/medals.h"
 #include "stats/stats.h"
@@ -238,6 +239,19 @@ ADE_FUNC(playCutscene, l_UserInterface, "string Filename, boolean RestartMusic, 
 
 	common_play_cutscene(filename, restart_music, score_index);
 	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(linkTexture, l_UserInterface, "texture texture", "Links a texture directly to librocket.", "string", "The url string for librocket, or an empty string if invalid.")
+{
+	texture_h* tex;
+
+	if (!ade_get_args(L, "o", l_Texture.GetPtr(&tex)))
+		return ade_set_error(L, "s", "");
+
+	if(tex == nullptr || !tex->isValid())
+		return ade_set_error(L, "s", "");
+	
+	return ade_set_args(L, "s", "data:image/bmpman," + std::to_string(tex->handle));
 }
 
 //**********SUBLIBRARY: UserInterface/PilotSelect

@@ -1519,7 +1519,8 @@ ADE_FUNC(createTexture, l_Graphics, "[number Width=512, number Height=512, enume
 	if(idx < 0)
 		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
 
-	return ade_set_args(L, "o", l_Texture.Set(texture_h(idx)));
+	//Since creating a render target does not increase load count, when creating the scripting texture object we need to pass true to the constructor so that the constructor will increase the load count for us.
+	return ade_set_args(L, "o", l_Texture.Set(texture_h(idx, true)));
 }
 
 ADE_FUNC(loadTexture, l_Graphics, "string Filename, [boolean LoadIfAnimation, boolean NoDropFrames]",
@@ -1547,8 +1548,9 @@ ADE_FUNC(loadTexture, l_Graphics, "string Filename, [boolean LoadIfAnimation, bo
 
 	if(idx < 0)
 		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
-
-	return ade_set_args(L, "o", l_Texture.Set(texture_h(idx)));
+	
+	//Loading increases load count, so we must pass false to the texture scripting object, so that the constructor doesn't increase the load count by itself again.
+	return ade_set_args(L, "o", l_Texture.Set(texture_h(idx, false)));
 }
 
 ADE_FUNC(drawImage,
