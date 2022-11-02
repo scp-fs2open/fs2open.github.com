@@ -18,7 +18,6 @@
 class scoring_struct;
 class player;
 
-#define MAX_BADGES				3
 extern int Rank_medal_index;
 
 extern scoring_struct *Player_score;
@@ -48,7 +47,7 @@ public:
 
 extern SCP_vector<medal_stuff> Medals;
 
-extern void parse_medal_tbl();
+extern void medals_init();
 
 // modes for this screen
 #define MM_NORMAL				0		// normal - run through the state code

@@ -1905,7 +1905,7 @@ void game_init()
 
 	parse_rank_tbl();
 	parse_traitor_tbl();
-	parse_medal_tbl();
+	medals_init();
 
 	cutscene_init();
 	key_init();

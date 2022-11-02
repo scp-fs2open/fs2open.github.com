@@ -417,7 +417,7 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	ai_profiles_init();
 	armor_init();
 	weapon_init();
-	parse_medal_tbl();			// get medal names for sexpression usage
+	medals_init();			// get medal names for sexpression usage
 	glowpoint_init();
 	ship_init();
 	parse_init();
