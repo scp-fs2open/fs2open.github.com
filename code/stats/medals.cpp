@@ -283,7 +283,6 @@ void parse_medals_table(const char* filename)
 			medal_display_info display_t;
 			medal_display_info* display_p;
 			bool create_if_not_found = true;
-			bool new_medal = true;
 
 			required_string("$Name:");
 			stuff_string(medal_t.name, F_NAME, NAME_LENGTH);
@@ -295,7 +294,7 @@ void parse_medals_table(const char* filename)
 				create_if_not_found = false;
 			}
 
-			// Does this poof exist already?
+			// Does this medal exist already?
 			// If so, load this new info into it
 			medal_p = get_medal_pointer(medal_t.name);
 			if (medal_p != nullptr) {
@@ -303,7 +302,6 @@ void parse_medals_table(const char* filename)
 					error_display(1,
 						"Error:  Medal %s already exists.  All medal names must be unique.", medal_t.name);
 				}
-				new_medal = false;
 				display_p = &Medal_display_info[get_medal_position(medal_p->name)];
 			} else {
 				// Don't create poof if it has +nocreate and is in a modular table.
@@ -360,6 +358,12 @@ void parse_medals_table(const char* filename)
 				display_p->coords[GR_1024].y = 0;
 			}
 
+			if (optional_string("+Mask index:")) {
+				stuff_int(&medal_p->mask_index);
+			} else {
+				medal_p->mask_index = get_medal_position(medal_p->name);
+			}
+
 			if (optional_string("+Debriefing Bitmap:")) {
 				stuff_string(medal_p->debrief_bitmap, F_NAME, MAX_FILENAME_LEN);
 			}
@@ -378,6 +382,8 @@ void parse_medals_table(const char* filename)
 			}
 
 			// this is dumb
+			//this setting only exists because Volition started the numbering 
+			//for Rank images at DebriefRank01 and for Wings images at DebriefWings00.
 			medal_p->version_starts_at_1 = (!stricmp(medal_p->name, "Rank"));
 			if (optional_string("+Version starts at 1:")) {
 				stuff_boolean(&medal_p->version_starts_at_1);
@@ -437,24 +443,6 @@ void parse_medals_table(const char* filename)
 	}
 }
 
-void manage_badges()
-{
-	//  be sure that the badges kill numbers show up in order
-	// WMC - I don't think this is needed anymore due to my changes to post-mission functions
-	// but I'm keeping it here to be sure.
-
-	int i;
-	int prev_badge_kills = 0;
-	for (i = 0; i < Medals.size(); i++) {
-		if (Medals[i].kills_needed < prev_badge_kills && Medals[i].kills_needed != 0)
-			Error(LOCATION,
-				"Badges must appear sorted by lowest kill # first in medals.tbl\nFind Allender for most information.");
-
-		if (Medals[i].kills_needed > 0)
-			prev_badge_kills = Medals[i].kills_needed;
-	}
-}
-
 void medals_init()
 {
 	//Set the retail defaults here - Mjn
@@ -478,8 +466,6 @@ void medals_init()
 	// parse any modular tables
 	parse_modular_table("*-mdl.tbm", parse_medals_table);
 
-	//Can possibly remove this - Mjn
-	manage_badges();
 
 	Rank_medal_index = get_medal_position("Rank");
 
@@ -732,6 +718,7 @@ void blit_callsign()
 int medal_main_do()
 {
 	int region,selected, k;
+	int medal_index = -1;
 
 	// If we don't have a mask, we don't have enough data to do anything with this screen.
 	if (Medals_bitmap_mask == -1) {
@@ -778,7 +765,14 @@ int medal_main_do()
 		(int)Medals.size(),
 		Medal_regions,
 		&selected);
-	if (region == Rank_medal_index)
+
+	for (int i = 0; i < (int)Medals.size(); i++) {
+		if (region == Medals[i].mask_index) {
+			medal_index = i;
+		}
+	}
+
+	if (medal_index == Rank_medal_index)
 	{
 		blit_label(Ranks[Player_score->rank].name, 1);
 	}
@@ -797,8 +791,8 @@ int medal_main_do()
 			break;
 
 		default:
-			if (Player_score->medal_counts[region] > 0) {
-				blit_label(Medals[region].get_display_name(), Player_score->medal_counts[region]);
+			if (Player_score->medal_counts[medal_index] > 0) {
+				blit_label(Medals[medal_index].get_display_name(), Player_score->medal_counts[medal_index]);
 			}
 			break;
 	} // end switch
