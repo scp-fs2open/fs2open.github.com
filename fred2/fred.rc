@@ -219,6 +219,7 @@ BEGIN
         POPUP "&Import"
         BEGIN
             MENUITEM "&FreeSpace 1 mission...",     33074
+            MENUITEM "&X-Wing mission...",          33102
         END
         MENUITEM SEPARATOR
         MENUITEM "&Run FreeSpace",              32985

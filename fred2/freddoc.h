@@ -174,6 +174,12 @@ protected:
 	 * @author Goober5000
 	 */
 	afx_msg void OnFileImportFSM();
+
+	/**
+	 * @brief Handler for File->Import XWI Mission
+	 * @author vazor222
+	 */
+	afx_msg void OnFileImportXWI();
 	//}}AFX_MSG
 
 	DECLARE_MESSAGE_MAP()

@@ -823,6 +823,12 @@ add_file_folder("Mission"
 	mission/missiontraining.cpp
 	mission/missiontraining.h
 	mission/mission_flags.h
+	mission/xwingbrflib.cpp
+	mission/xwingbrflib.h
+	mission/xwinglib.cpp
+	mission/xwinglib.h
+	mission/xwingmissionparse.cpp
+	mission/xwingmissionparse.h
 )
 
 # MissionUI files

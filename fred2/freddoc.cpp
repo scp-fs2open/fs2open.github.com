@@ -61,6 +61,7 @@ BEGIN_MESSAGE_MAP(CFREDDoc, CDocument)
 	//{{AFX_MSG_MAP(CFREDDoc)
 	ON_COMMAND(ID_EDIT_UNDO, OnEditUndo)
 	ON_COMMAND(ID_FILE_IMPORT_FSM, OnFileImportFSM)
+	ON_COMMAND(ID_IMPORT_XWIMISSION, OnFileImportXWI)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -230,7 +231,7 @@ bool CFREDDoc::load_mission(char *pathname, int flags) {
 
 	// message 1: required version
 	if (!parse_main(pathname, flags)) {
-		auto term = (flags & MPF_IMPORT_FSM) ? "import" : "load";
+		auto term = ((flags & MPF_IMPORT_FSM) || (flags & MPF_IMPORT_XWI)) ? "import" : "load";
 
 		// the version will have been assigned before loading was aborted
 		if (!gameversion::check_at_least(The_mission.required_fso_version)) {
@@ -540,6 +541,132 @@ void CFREDDoc::OnFileImportFSM() {
 		SetTitle((LPCTSTR)Mission_filename);
 	}
 
+	recreate_dialogs();
+}
+
+void CFREDDoc::OnFileImportXWI()
+{
+	char dest_directory[MAX_PATH + 1];
+
+	// if mission has been modified, offer to save before continuing.
+	if (!SaveModified())
+		return;
+
+
+	// get location to import from
+	CFileDialog dlgFile(TRUE, "xwi", NULL, OFN_HIDEREADONLY | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR | OFN_ALLOWMULTISELECT, "XWI Missions (*.xwi)|*.xwi|All files (*.*)|*.*||");
+	dlgFile.m_ofn.lpstrTitle = "Select one or more missions to import";
+	dlgFile.m_ofn.lpstrInitialDir = NULL;
+
+	// get XWI files
+	if (dlgFile.DoModal() != IDOK)
+		return;
+
+	memset(dest_directory, 0, sizeof(dest_directory));
+	
+	// get location to save to    
+#if ( _MFC_VER >= 0x0700 )
+	BROWSEINFO bi;
+	bi.hwndOwner = theApp.GetMainWnd()->GetSafeHwnd();
+	bi.pidlRoot = nullptr;
+	bi.pszDisplayName = dest_directory;
+	bi.lpszTitle = "Select a location to save in";
+	bi.ulFlags = 0;
+	bi.lpfn = NULL;
+	bi.lParam = NULL;
+	bi.iImage = NULL;
+
+	LPCITEMIDLIST ret_val = SHBrowseForFolder(&bi);
+
+	if (ret_val == NULL)
+		return;
+
+	SHGetPathFromIDList(ret_val, dest_directory);
+#else
+	CFolderDialog dlgFolder(_T("Select a location to save in"), fs2_mission_path, NULL);
+	if (dlgFolder.DoModal() != IDOK)
+		return;
+
+	strcpy_s(dest_directory, dlgFolder.GetFolderPath());
+#endif
+
+	// clean things up first
+	if (Briefing_dialog)
+		Briefing_dialog->icon_select(-1);
+
+	clear_mission();
+
+	// process all missions
+	POSITION pos(dlgFile.GetStartPosition());
+	while (pos) {
+		char *ch;
+		char filename[1024];
+		char xwi_path[MAX_PATH_LEN];
+		char dest_path[MAX_PATH_LEN];
+
+		CString xwi_path_mfc(dlgFile.GetNextPathName(pos));
+		CFred_mission_save save;
+
+		DWORD attrib;
+		FILE *fp;
+
+
+		// path name too long?
+		if (strlen(xwi_path_mfc) > MAX_PATH_LEN - 1)
+			continue;
+
+		// nothing here?
+		if (!strlen(xwi_path_mfc))
+			continue;
+
+		// get our mission
+		strcpy_s(xwi_path, xwi_path_mfc);
+
+		// load mission into memory
+		if (load_mission(xwi_path, MPF_IMPORT_XWI))
+			continue;
+
+		// get filename
+		ch = strrchr(xwi_path, DIR_SEPARATOR_CHAR) + 1;
+		if (ch != NULL)
+			strcpy_s(filename, ch);
+		else
+			strcpy_s(filename, xwi_path);
+
+		// truncate extension
+		ch = strrchr(filename, '.');
+		if (ch != NULL)
+			*ch = '\0';
+
+		// add new extension
+		strcat_s(filename, ".fs2");
+
+		strcpy_s(Mission_filename, filename);
+
+		// get new path
+		strcpy_s(dest_path, dest_directory);
+		strcat_s(dest_path, "\\");
+		strcat_s(dest_path, filename);
+
+		// check attributes
+		fp = fopen(dest_path, "r");
+		if (fp) {
+			fclose(fp);
+			attrib = GetFileAttributes(dest_path);
+			if (attrib & FILE_ATTRIBUTE_READONLY)
+				continue;
+		}
+
+		// try to save it
+		if (save.save_mission_file(dest_path))
+			continue;
+
+		// success
+	}
+
+	create_new_mission();
+
+	MessageBox(NULL, "Import complete.  Please check the destination folder to verify all missions were imported successfully.", "Status", MB_OK);
 	recreate_dialogs();
 }
 
