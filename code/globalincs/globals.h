@@ -13,7 +13,6 @@
 // from parselo.h
 #define	PATHNAME_LENGTH			192
 #define	NAME_LENGTH				32
-#define	SEXP_LENGTH				128
 #define	DATE_LENGTH				32
 #define	TIME_LENGTH				16
 #define	DATE_TIME_LENGTH		48

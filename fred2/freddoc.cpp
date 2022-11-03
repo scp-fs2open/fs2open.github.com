@@ -425,7 +425,7 @@ void CFREDDoc::OnFileImportFSM() {
 
 	memset(dest_directory, 0, sizeof(dest_directory));
 
-	// get location to save to    
+	// get location to save to
 	BROWSEINFO bi;
 	bi.hwndOwner = theApp.GetMainWnd()->GetSafeHwnd();
 	//bi.pidlRoot = &fs2_mission_pidl;
@@ -450,15 +450,18 @@ void CFREDDoc::OnFileImportFSM() {
 
 	clear_mission();
 
+	int num_files = 0;
+	char dest_path[MAX_PATH_LEN];
+
 	// process all missions
 	POSITION pos(dlgFile.GetStartPosition());
 	while (pos) {
 		char *ch;
 		char filename[1024];
 		char fs1_path[MAX_PATH_LEN];
-		char dest_path[MAX_PATH_LEN];
 
 		CString fs1_path_mfc(dlgFile.GetNextPathName(pos));
+		num_files++;
 		CFred_mission_save save;
 
 		DWORD attrib;
@@ -518,9 +521,25 @@ void CFREDDoc::OnFileImportFSM() {
 		// success
 	}
 
-	create_new_mission();
+	if (num_files > 1)
+	{
+		create_new_mission();
+		MessageBox(NULL, "Import complete.  Please check the destination folder to verify all missions were imported successfully.", "Status", MB_OK);
+	}
+	else if (num_files == 1)
+	{
+		SetModifiedFlag(FALSE);
 
-	MessageBox(NULL, "Import complete.  Please check the destination folder to verify all missions were imported successfully.", "Status", MB_OK);
+		if (Briefing_dialog) {
+			Briefing_dialog->restore_editor_state();
+			Briefing_dialog->update_data(1);
+		}
+
+		// these aren't done automatically for imports
+		theApp.AddToRecentFileList((LPCTSTR)dest_path);
+		SetTitle((LPCTSTR)Mission_filename);
+	}
+
 	recreate_dialogs();
 }
 
@@ -625,7 +644,6 @@ BOOL CFREDDoc::OnSaveDocument(LPCTSTR pathname) {
 	}
 
 	return TRUE;
-	//	return CDocument::OnSaveDocument(pathname);
 }
 
 void CFREDDoc::Serialize(CArchive& ar) {

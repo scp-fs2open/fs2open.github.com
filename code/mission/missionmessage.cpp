@@ -2119,7 +2119,9 @@ int get_builtin_message_inner(int type, int persona, ship* sender, ship* subject
 	}
 
 	int matches = (int) matching_builtins.size();
-	if (matches != 0) {
+	if (matches == 1) {
+		return matching_builtins[0];
+	} else if (matches > 0) {
 		return matching_builtins[Random::next(matches)];
 	}
 

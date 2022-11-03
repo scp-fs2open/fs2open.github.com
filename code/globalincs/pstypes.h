@@ -332,6 +332,7 @@ constexpr bool LoggingEnabled = false;
 const float PI2			= (PI*2.0f);
 // half values
 const float PI_2		= (PI/2.0f);
+const float PI_4		= (PI/4.0f);
 
 
 extern int Fred_running;  // Is Fred running, or FreeSpace?
