@@ -699,7 +699,7 @@ ADE_FUNC(isPositionInFOV, l_Subsystem, "vector Target", "Determines if a positio
 		return ADE_RETURN_FALSE;
 }
 
-ADE_FUNC(fireWeapon, l_Subsystem, "[number TurretWeaponIndex = 1, number FlakRange = 100]", "Fires weapon on turret", nullptr, nullptr)
+ADE_FUNC(fireWeapon, l_Subsystem, "[number TurretWeaponIndex = 1, number FlakRange = 100, vector OverrideFiringVec = (The turret's current gun normal)]", "Fires weapon on turret", nullptr, nullptr)
 {
 	ship_subsys_h *sso;
 	int wnum = 1;
