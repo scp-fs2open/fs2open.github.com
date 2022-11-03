@@ -57,6 +57,18 @@ float Scoring_scale_factors[NUM_SKILL_LEVELS] = {
 	1.25f					// insane
 };
 
+static rank_stuff* get_rank_pointer(char* rank_name)
+{
+	for (int i = 0; i < (int)Ranks.size(); i++) {
+		if (!stricmp(rank_name, Ranks[i].name)) {
+			return &Ranks[i];
+		}
+	}
+
+	// Didn't find anything.
+	return nullptr;
+}
+
 static void rank_stuff_init(rank_stuff* ranki)
 {
 	ranki->name[0] = '\0';
@@ -86,36 +98,63 @@ void parse_rank_table(const char* filename)
 		ignore_white_space();
 		while (required_string_either("#End", "$Name:"))
 		{
-			//Assert(idx < NUM_RANKS);
 
 			rank_stuff rank_t;
 			rank_stuff_init(&rank_t);
 
-			//rank_stuff* rank_p;
-			// bool create_if_not_found = true;
+			rank_stuff* rank_p;
+			bool create_if_not_found = true;
 
 			required_string("$Name:");
 			stuff_string(rank_t.name, F_NAME, NAME_LENGTH);
 
-			if (optional_string("$Points:")) {
-				stuff_int(&rank_t.points);
+			if (optional_string("+nocreate")) {
+				if (!Parsing_modular_table) {
+					Warning(LOCATION, "+nocreate flag used for rank in non-modular table\n");
+				}
+				create_if_not_found = false;
+			}
+
+			// Does this rank exist already?
+			// If so, load this new info into it
+			rank_p = get_rank_pointer(rank_t.name);
+			if (rank_p != nullptr) {
+				if (!Parsing_modular_table) {
+					error_display(1,
+						"Error:  Rank %s already exists.  All rank names must be unique.",
+						rank_t.name);
+				}
 			} else {
-				rank_t.points = ((int)Ranks.size() + 1);
+				// Don't create rank if it has +nocreate and is in a modular table.
+				if (!create_if_not_found && Parsing_modular_table) {
+					if (!skip_to_start_of_string_either("$Name:", "#end")) {
+						error_display(1, "Missing [#end] or [$Name] after rank %s", rank_t.name);
+					}
+					continue;
+				}
+				Ranks.push_back(rank_t);
+				rank_p = &Ranks[Ranks.size() - 1];
+			}
+
+			if (optional_string("$Points:")) {
+				stuff_int(&rank_p->points);
+			} else {
+				rank_p->points = ((int)Ranks.size() + 1);
 			}
 
 			if (optional_string("$Bitmap:")) {
-				stuff_string(rank_t.bitmap, F_NAME, MAX_FILENAME_LEN);
+				stuff_string(rank_p->bitmap, F_NAME, MAX_FILENAME_LEN);
 			}
 
 			// Check here that the rank has a bitmap. If not, then error out
-			if (!stricmp(rank_t.bitmap, "")) {
-				error_display(1, "Missing valid bitmap file for rank %s", rank_t.name);
+			if (!stricmp(rank_p->bitmap, "")) {
+				error_display(1, "Missing valid bitmap file for rank %s", rank_p->name);
 			}
 
 			if (optional_string("$Promotion Voice Base:")) {
-				stuff_string(rank_t.promotion_voice_base, F_NAME, MAX_FILENAME_LEN);
+				stuff_string(rank_p->promotion_voice_base, F_NAME, MAX_FILENAME_LEN);
 			} else {
-				strcpy(rank_t.promotion_voice_base, rank_t.name);
+				strcpy(rank_p->promotion_voice_base, rank_p->name);
 			}
 
 			while (check_for_string("$Promotion Text:"))
@@ -136,21 +175,19 @@ void parse_rank_table(const char* filename)
 						Warning(LOCATION,
 							"Debriefing text for %s rank is assigned to an invalid persona: %i (must be 0 or "
 							"greater).\n",
-							rank_t.name,
+							rank_p->name,
 							persona);
 						continue;
 					}
 				}
-				rank_t.promotion_text[persona] = buf;
+				rank_p->promotion_text[persona] = buf;
 			}
 
-			if (rank_t.promotion_text.find(-1) == rank_t.promotion_text.end())
+			if (rank_p->promotion_text.find(-1) == rank_p->promotion_text.end())
 			{
-				Warning(LOCATION, "%s rank is missing default debriefing text.\n", rank_t.name);
-				rank_t.promotion_text[-1] = "";
+				Warning(LOCATION, "%s rank is missing default debriefing text.\n", rank_p->name);
+				rank_p->promotion_text[-1] = "";
 			}
-
-			Ranks.push_back(rank_t);
 
 		}
 
@@ -210,7 +247,7 @@ void rank_init()
 	parse_rank_table("rank.tbl");
 
 	// parse any modular tables
-	//parse_modular_table("*-rnk.tbm", parse_rank_table);
+	parse_modular_table("*-rnk.tbm", parse_rank_table);
 
 	if ((int)Ranks.size() <= 0) {
 		error_display(1, "No ranks have been defined in ranks.tbl. Must define at least one rank!");
