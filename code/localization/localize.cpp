@@ -676,7 +676,7 @@ void lcl_replace_stuff(SCP_string &text, bool force)
 	if (!Fred_running && Player != nullptr)
 	{
 		replace_all(text, "$callsign", Player->callsign);
-		replace_all(text, "$rank", Ranks[Player->stats.rank].name);
+		replace_all(text, "$rank", Ranks[verify_rank(Player->stats.rank)].name);
 	}
 
 	replace_all(text, "$quote", "\"");

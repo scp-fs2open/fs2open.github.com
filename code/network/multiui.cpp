@@ -2305,7 +2305,7 @@ void multi_sg_select_rank_default();
 int multi_start_game_rank_from_name( char *rank ) {
 	int i;
 
-	for ( i = 0; i <= MAX_FREESPACE2_RANK; i++ ) {
+	for ( i = 0; i <= ((int)Ranks.size() - 1); i++ ) {
 		if ( !stricmp(Ranks[i].name, rank) ) {
 			return i;
 		}
@@ -2731,7 +2731,7 @@ void multi_sg_init_gamenet()
 
 	Multi_sg_netgame->security = Random::next(1, 32766);			// get some random security number	
 	Multi_sg_netgame->mode = NG_MODE_OPEN;
-	Multi_sg_netgame->rank_base = RANK_ENSIGN;
+	Multi_sg_netgame->rank_base = 0;
 	if(Multi_sg_netgame->security < 16){
 		Multi_sg_netgame->security += 16;
 	}
@@ -2860,7 +2860,7 @@ void multi_sg_rank_scroll_down()
 		return;
 	}
 	
-	if((NUM_RANKS - Multi_sg_rank_start) > Multi_sg_rank_max_display[gr_screen.res]){
+	if(((int)Ranks.size() - Multi_sg_rank_start) > Multi_sg_rank_max_display[gr_screen.res]){
 		Multi_sg_rank_start++;
 		gamesnd_play_iface(InterfaceSounds::SCROLL);
 	} else {
@@ -2883,7 +2883,7 @@ void multi_sg_rank_display_stuff()
 	line_height = gr_get_font_height() + 1;
 	idx = Multi_sg_rank_start;
 	count = 0;
-	while((count < NUM_RANKS) && (count < Multi_sg_rank_max_display[gr_screen.res]) && (idx < NUM_RANKS)){	
+	while ((count < (int)Ranks.size()) && (count < Multi_sg_rank_max_display[gr_screen.res]) && (idx < (int)Ranks.size())) {	
 		// if its the selected item, then color it differently
 		if(idx == Multi_sg_rank_select){
 			gr_set_color_fast(&Color_text_selected);
@@ -2924,7 +2924,7 @@ void multi_sg_rank_process_select()
 		Multi_sg_rank_button.get_mouse_pos(NULL,&y);
 		item = y / (gr_get_font_height() + 1);
 		
-		if(item + Multi_sg_rank_start < NUM_RANKS){		
+		if (item + Multi_sg_rank_start < (int)Ranks.size()) {		
 			// evaluate whether this rank is valid for the guy to pick		
 			if(multi_sg_rank_select_valid(item + Multi_sg_rank_start)){
 				gamesnd_play_iface(InterfaceSounds::USER_SELECT);
@@ -2937,7 +2937,7 @@ void multi_sg_rank_process_select()
 				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 
 				memset(string,0,255);
-				sprintf(string,XSTR("Illegal value for a host of your rank (%s)\n",784),Ranks[Net_player->m_player->stats.rank].name);
+				sprintf(string,XSTR("Illegal value for a host of your rank (%s)\n",784),Ranks[verify_rank(Net_player->m_player->stats.rank)].name);
 				multi_common_add_notify(string);
 			}
 		}		

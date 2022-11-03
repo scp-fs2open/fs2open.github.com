@@ -1903,7 +1903,7 @@ void game_init()
 
 	control_config_common_init();				// sets up localization stuff in the control config
 
-	parse_rank_tbl();
+	rank_init();
 	parse_traitor_tbl();
 	parse_medal_tbl();
 

@@ -143,7 +143,7 @@ void init_new_pilot(player *p, int reset)
 	Pilot.reset_stats();
 	
 	p->stats.score = 0;
-	p->stats.rank = RANK_ENSIGN;	
+	p->stats.rank = 0;	
 
 	p->tips = 1;
 

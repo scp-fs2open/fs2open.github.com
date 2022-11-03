@@ -48,7 +48,7 @@ typedef struct index_list_t {
 // special stats struct, since our use here is not content specific
 typedef struct scoring_special_t {
 	int score{ 0 };
-	int rank{ RANK_ENSIGN };
+	int rank{ 0 };
 	int assists{ 0 };
 	int kill_count{ 0 };
 	int kill_count_ok{ 0 };

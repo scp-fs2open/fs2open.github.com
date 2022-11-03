@@ -25,8 +25,6 @@ class object;
 #define NUM_MEDALS_FS1		16
 extern int Num_medals;
 
-#define NUM_RANKS				10
-
 #define RANK_ENSIGN				0
 #define RANK_LT_JUNIOR			1
 #define RANK_LT					2
@@ -142,10 +140,12 @@ public:
 	bool operator!=(const scoring_struct& rhs) const;
 };
 
-extern rank_stuff Ranks[NUM_RANKS];
+extern SCP_vector<rank_stuff> Ranks;
 extern traitor_stuff Traitor;
 
-void parse_rank_tbl();
+int verify_rank(int rank);
+
+void rank_init();
 void parse_traitor_tbl();
 void scoring_close();
 

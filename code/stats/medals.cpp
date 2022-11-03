@@ -435,7 +435,7 @@ DCF(medals, "Grant or revoke medals")
 			if (Player->stats.medal_counts[i] > 0)
 				dc_printf("%d %s\n", Player->stats.medal_counts[i], Medals[i].name);
 		}
-		dc_printf("%s\n", Ranks[Player->stats.rank].name);
+		dc_printf("%s\n", Ranks[verify_rank(Player->stats.rank)].name);
 		return;
 	}
 
@@ -454,17 +454,17 @@ DCF(medals, "Grant or revoke medals")
 		return;
 
 	} else if (dc_optional_string("promote")) {
-		if (Player->stats.rank < MAX_FREESPACE2_RANK) {
+		if (Player->stats.rank < ((int)Ranks.size() - 1)) {
 			Player->stats.rank++;
 		}
-		dc_printf("Promoted to %s\n", Ranks[Player->stats.rank].name);
+		dc_printf("Promoted to %s\n", Ranks[verify_rank(Player->stats.rank)].name);
 		return;
 
 	} else if (dc_optional_string("demote")) {
 		if (Player->stats.rank > 0) {
 			Player->stats.rank--;
 		}
-		dc_printf("Demoted to %s\n", Ranks[Player->stats.rank].name);
+		dc_printf("Demoted to %s\n", Ranks[verify_rank(Player->stats.rank)].name);
 		return;
 	}
 
@@ -697,7 +697,7 @@ int medal_main_do()
 	region = snazzy_menu_do((ubyte*)Medals_mask->data, Medals_mask_w, Medals_mask_h, Num_medals, Medal_regions, &selected);
 	if (region == Rank_medal_index)
 	{
-		blit_label(Ranks[Player_score->rank].name, 1);
+		blit_label(Ranks[verify_rank(Player_score->rank)].name, 1);
 	}
 	else switch (region)
 	{
@@ -809,13 +809,13 @@ void init_medal_bitmaps()
 	// load up rank insignia
 	if (gr_screen.res == GR_1024) {
 		char filename[NAME_LENGTH];
-		if (snprintf(filename, NAME_LENGTH, "2_%s", Ranks[Player_score->rank].bitmap) >= NAME_LENGTH) {
+		if (snprintf(filename, NAME_LENGTH, "2_%s", Ranks[verify_rank(Player_score->rank)].bitmap) >= NAME_LENGTH) {
 			// Make sure the string is null terminated
 			filename[NAME_LENGTH - 1] = '\0';
 		}
 		Rank_bm = bm_load(filename);
 	} else {
-		Rank_bm = bm_load(Ranks[Player_score->rank].bitmap);
+		Rank_bm = bm_load(Ranks[verify_rank((int)Player_score->rank)].bitmap);
 	}
 }
 
