@@ -938,7 +938,7 @@ ADE_FUNC(getEarnedBadge,
 		debrief_choose_medal_variant(filename,
 			Player->stats.m_badge_earned.back(),
 			Player->stats.medal_counts[Player->stats.m_badge_earned.back()] - 1);
-		displayname = Ranks[Promoted].name;
+		displayname = Medals[Player->stats.m_badge_earned.back()].get_display_name();
 
 		return ade_set_args(L, "oss", l_DebriefStage.Set(debrief_stage_h(&Badge_stage)), displayname, filename);
 	} else {
