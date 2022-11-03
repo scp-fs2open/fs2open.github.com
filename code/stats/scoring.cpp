@@ -516,7 +516,7 @@ void scoring_eval_rank( scoring_struct *sc )
 	
 		// if the player does indeed get promoted, we should change his mission score
 		// to reflect the difference between all time and new rank score
-		if (old_rank < (Ranks.size() -1)) {
+		if (old_rank < ((int)Ranks.size() -1)) {
 			new_rank++;
 			if ( (sc->m_score + sc->score) < Ranks[new_rank].points )
 				sc->m_score = (Ranks[new_rank].points - sc->score);
@@ -1502,7 +1502,7 @@ float scoring_get_scale_factor()
 void scoring_bash_rank(player *pl,int rank)
 {	
 	// if this is an invalid rank, do nothing
-	if((rank < 0) || (rank > Ranks.size())){
+	if((rank < 0) || (rank > (int)Ranks.size())){
 		nprintf(("General","Could not bash player rank - invalid value!!!\n"));
 		return;
 	}
