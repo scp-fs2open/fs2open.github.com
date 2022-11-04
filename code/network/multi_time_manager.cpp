@@ -66,18 +66,13 @@ void multiplayer_timing_info::set_mission_start_time()
     _in_game_time_set = false;
 }
 
-void multiplayer_timing_info::in_game_set_skip_time()
+void multiplayer_timing_info::in_game_set_skip_time(float mission_time)
 {
     // This function is specifically for in-game joiners, and in-game joiners
     // receive Missiontime from the server as their are told to jump into the mission.
 
     if (!_in_game_time_set){
-        extern fix Missiontime;
-
-        // do a manual conversion, since we need milliseconds, not seconds. (Multiply first to avoid loss of data)
-        auto time = (static_cast<std::int64_t>(Missiontime) * MILLISECONDS_PER_SECOND) / F1_0;
-        // yeah, I know, a hack to subtract here, but if the client gets ahead of the server bad things happen
-        _skipped_time = static_cast<int>(time) - 100;
+        _skipped_time = static_cast<int>(mission_time * MILLISECONDS_PER_SECOND);
         _in_game_time_set = true;
     }
 }

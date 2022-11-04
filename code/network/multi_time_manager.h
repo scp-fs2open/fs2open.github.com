@@ -47,7 +47,7 @@ public:
 
 	bool is_most_recent_frame(int player_index, int frame);
 
-	void in_game_set_skip_time();
+	void in_game_set_skip_time(float mission_time);
 };
 
 extern multiplayer_timing_info Multi_Timing_Info;

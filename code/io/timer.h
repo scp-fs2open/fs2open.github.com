@@ -246,4 +246,7 @@ void timestamp_start_mission();
 fix timestamp_get_mission_time();
 uint64_t timestamp_get_mission_time_in_microseconds();
 
+// Advance mission time by specific offset (for in-game joining)
+void timestamp_offset_mission_time(float offset);
+
 #endif

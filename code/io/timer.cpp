@@ -634,3 +634,10 @@ uint64_t timestamp_get_mission_time_in_microseconds()
 {
 	return timestamp_get_microseconds() - Timestamp_microseconds_at_mission_start;
 }
+
+void timestamp_offset_mission_time(float offset)
+{
+	auto time = static_cast<uint64_t>(static_cast<long double>(offset) * MICROSECONDS_PER_SECOND);
+
+	Timestamp_microseconds_at_mission_start -= time;
+}

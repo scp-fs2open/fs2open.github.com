@@ -1435,6 +1435,7 @@ void send_ingame_ship_request_packet(int code,int rdata,net_player *pl)
 	int i, packet_size = 0;
 	ushort signature;
 	p_object *pobj;
+	short sval;
 
 	// add the data
 	BUILD_HEADER(INGAME_SHIP_REQUEST);
@@ -1461,7 +1462,7 @@ void send_ingame_ship_request_packet(int code,int rdata,net_player *pl)
 		// add the # of respawns this ship has left
 		pobj = mission_parse_get_arrival_ship( Objects[rdata].net_signature );
 		Assert(pobj != NULL);
-		ADD_DATA(pobj->respawn_count);
+		ADD_UINT(pobj->respawn_count);
 
 		// add the ships ets settings
 		val = (ubyte)shipp->weapon_recharge_index;
@@ -1471,33 +1472,26 @@ void send_ingame_ship_request_packet(int code,int rdata,net_player *pl)
 		val = (ubyte)shipp->engine_recharge_index;
 		ADD_DATA(val);
 
-		// dummy field to replace ballistic primary flag
-		val = 0;
-		ADD_DATA(val);
-
 		// add current primary and secondary banks, and add link status
 		val = (ubyte)shipp->weapons.current_primary_bank;
 		ADD_DATA(val);
 		val = (ubyte)shipp->weapons.current_secondary_bank;
 		ADD_DATA(val);		
 
+		// add the current ammo count for primary banks
+		val = (ubyte)shipp->weapons.num_primary_banks;		// for sanity checking
+		ADD_DATA(val);
+		for ( i = 0; i < shipp->weapons.num_primary_banks; i++ ) {
+			sval = static_cast<short>(shipp->weapons.primary_bank_ammo[i]);
+			ADD_SHORT(sval);
+		}
+
 		// add the current ammo count for secondary banks;
 		val = (ubyte)shipp->weapons.num_secondary_banks;		// for sanity checking
 		ADD_DATA(val);
 		for ( i = 0; i < shipp->weapons.num_secondary_banks; i++ ) {
-			Assert( shipp->weapons.secondary_bank_ammo[i] < UCHAR_MAX );
-			val = (ubyte)shipp->weapons.secondary_bank_ammo[i];
-			ADD_DATA(val);
-		}
-
-		// add the current ammo count for primary banks - copied from above - Goober5000
-		val = (ubyte)shipp->weapons.num_primary_banks;		// for sanity checking
-		ADD_DATA(val);
-		for ( i = 0; i < shipp->weapons.num_primary_banks; i++ )
-		{
-			Assert( shipp->weapons.primary_bank_ammo[i] < UCHAR_MAX );
-			val = (ubyte)shipp->weapons.primary_bank_ammo[i];
-			ADD_DATA(val);
+			sval = static_cast<short>(shipp->weapons.secondary_bank_ammo[i]);
+			ADD_SHORT(sval);
 		}
 
 		// add the link status of weapons
@@ -1594,6 +1588,8 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 	ubyte val, num_secondary_banks, num_primary_banks;
 	p_object *pobj;
 	int player_num;
+	short sval;
+	fix mission_time;
 
 	// get the code
 	GET_INT(code);
@@ -1671,7 +1667,7 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 		break;
 
 	// a confirmation that we can use the selected ship
-	case INGAME_SR_CONFIRM:
+	case INGAME_SR_CONFIRM: {
 		// object *temp_objp;
 
 		// delete the ship this ingame joiner was using.  Unassign Player_obj so that this object
@@ -1687,9 +1683,9 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 		// get its most recent position and orientation
 		GET_VECTOR(objp->pos);
 		GET_ORIENT(objp->orient);
-		GET_INT( Missiontime ); // NOTE: this is a long so careful with swapping in 64-bit platforms - taylor
+		GET_INT(mission_time);
 		GET_UINT( respawn_count );
-				
+
 		// tell the server I'm in the mission
 		Net_player->state = NETPLAYER_STATE_IN_MISSION;
 		send_netplayer_update_packet();
@@ -1723,30 +1719,26 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 		GET_DATA(val);
 		Player_ship->engine_recharge_index = val;		
 
-		// handle the dummy value that used to be the ballistic primary flag
-		GET_DATA(val);
-
 		// get current primary and secondary banks, and add link status
 		GET_DATA(val);
 		Player_ship->weapons.current_primary_bank = val;
 		GET_DATA(val);
 		Player_ship->weapons.current_secondary_bank = val;				
 
-		// secondary bank ammo data
-		GET_DATA( num_secondary_banks );
-		Assert( num_secondary_banks == Player_ship->weapons.num_secondary_banks );
-		for ( i = 0; i < Player_ship->weapons.num_secondary_banks; i++ ) {
-			GET_DATA(val);
-			Player_ship->weapons.secondary_bank_ammo[i] = val;
+		// primary bank ammo data
+		GET_DATA( num_primary_banks );
+		Player_ship->weapons.num_primary_banks = num_primary_banks;
+		for ( i = 0; i < Player_ship->weapons.num_primary_banks; i++ ) {
+			GET_SHORT(sval);
+			Player_ship->weapons.primary_bank_ammo[i] = sval;
 		}
 
-		// primary bank ammo data - copied from above - Goober5000
-		GET_DATA( num_primary_banks );
-		Assert( num_primary_banks == Player_ship->weapons.num_primary_banks );
-		for ( i = 0; i < Player_ship->weapons.num_primary_banks; i++ )
-		{
-			GET_DATA(val);
-			Player_ship->weapons.primary_bank_ammo[i] = val;
+		// secondary bank ammo data
+		GET_DATA( num_secondary_banks );
+		Player_ship->weapons.num_secondary_banks = num_secondary_banks;
+		for ( i = 0; i < Player_ship->weapons.num_secondary_banks; i++ ) {
+			GET_SHORT(sval);
+			Player_ship->weapons.secondary_bank_ammo[i] = sval;
 		}
 
 		// get the link status of weapons
@@ -1776,7 +1768,14 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 		// obj_reset_pairs();
 		// obj_add_pairs( OBJ_INDEX(Player_obj) );
 
-		Multi_Timing_Info.in_game_set_skip_time();
+		// use server time to sync up mission time and multi timer, taking average ping into account
+		float fl_mission_time = f2fl(mission_time);
+
+		auto ping_offset = static_cast<float>(Netgame.server->s_info.ping.ping_avg / 2000.0f);	// half avg ping in seconds
+		fl_mission_time += ping_offset;
+
+		timestamp_offset_mission_time(fl_mission_time);
+		Multi_Timing_Info.in_game_set_skip_time(fl_mission_time);
 
 		mission_hotkey_set_defaults();
 
@@ -1790,6 +1789,7 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 			gameseq_post_event(GS_EVENT_ENTER_GAME);								
 		} 
 		break;
+	}
 
 	case INGAME_PLAYER_CHOICE: {
 		ushort net_signature;
