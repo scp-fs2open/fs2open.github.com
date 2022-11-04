@@ -492,6 +492,10 @@ static void asteroid_load(int asteroid_info_index, int asteroid_subtype)
 	if ( !VALID_FNAME(asip->pof_files[asteroid_subtype]) )
 		return;
 
+	//Check if the model is already loaded
+	if (asip->model_num[asteroid_subtype] >= 0)
+		return;
+
 	asip->model_num[asteroid_subtype] = model_load( asip->pof_files[asteroid_subtype], 0, NULL );
 
 	if (asip->model_num[asteroid_subtype] >= 0)
@@ -543,6 +547,32 @@ void asteroid_create_all()
 
 	if (Asteroid_field.num_used_field_debris_types <= 0) {
 		Warning(LOCATION, "An asteroid field is enabled, but no asteroid types were enabled.");
+		return;
+	}
+
+	//Check that the asteroid field bounds are valid - Mjn
+	if (Asteroid_field.min_bound.xyz.x >= Asteroid_field.max_bound.xyz.x) {
+		Warning(LOCATION, "Asteroid field Outer Bound Min X is greater than or equal to Max X. Aborting asteroid creation!");
+		return;
+	}
+	if (Asteroid_field.min_bound.xyz.y >= Asteroid_field.max_bound.xyz.y) {
+		Warning(LOCATION, "Asteroid field Outer Bound Min Y is greater than or equal to Max Y. Aborting asteroid creation!");
+		return;
+	}
+	if (Asteroid_field.min_bound.xyz.z >= Asteroid_field.max_bound.xyz.z) {
+		Warning(LOCATION, "Asteroid field Outer Bound Min Z is greater than or equal to Max Z. Aborting asteroid creation!");
+		return;
+	}
+	if (Asteroid_field.inner_min_bound.xyz.x >= Asteroid_field.inner_max_bound.xyz.x) {
+		Warning(LOCATION, "Asteroid field Inner Bound Min X is greater than or equal to Max X. Aborting asteroid creation!");
+		return;
+	}
+	if (Asteroid_field.inner_min_bound.xyz.y >= Asteroid_field.inner_max_bound.xyz.y) {
+		Warning(LOCATION, "Asteroid field Inner Bound Min Y is greater than or equal to Max Y. Aborting asteroid creation!");
+		return;
+	}
+	if (Asteroid_field.inner_min_bound.xyz.z >= Asteroid_field.inner_max_bound.xyz.z) {
+		Warning(LOCATION, "Asteroid field Inner Bound Min Z is greater than or equal to Max Z. Aborting asteroid creation!");
 		return;
 	}
 
@@ -1491,6 +1521,14 @@ void asteroid_level_close()
 			Asteroids[i].flags &= ~AF_USED;
 			Assert(Asteroids[i].objnum >=0 && Asteroids[i].objnum < MAX_OBJECTS);
 			Objects[Asteroids[i].objnum].flags.set(Object::Object_Flags::Should_be_dead);
+		}
+	}
+
+	//when a level is closed, all models are cleared, so let's make sure that
+	//is tracked for asteroids as well -Mjn
+	for (int i = 0; i < Asteroid_info.size(); i++) {
+		for (int j = 0; j < NUM_DEBRIS_POFS; j++) {
+			Asteroid_info[i].model_num[j] = -1;
 		}
 	}
 
