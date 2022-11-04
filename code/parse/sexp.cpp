@@ -714,6 +714,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "set-skybox-model",				OP_SET_SKYBOX_MODEL,					1,	8,			SEXP_ACTION_OPERATOR,	},	// taylor
 	{ "set-skybox-orientation",			OP_SET_SKYBOX_ORIENT,					3,	3,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-ambient-light",				OP_SET_AMBIENT_LIGHT,					3,	3,			SEXP_ACTION_OPERATOR,	},	// Karajorma
+	{ "toggle-asteroid-field",			OP_TOGGLE_ASTEROID_FIELD,				1,	1,			SEXP_ACTION_OPERATOR,	},	// MjnMixael
 
 	//Jump Node Sub-Category
 	{ "set-jumpnode-name",				OP_JUMP_NODE_SET_JUMPNODE_NAME,			2,	2,			SEXP_ACTION_OPERATOR,	},	//CommanderDJ
@@ -14967,6 +14968,11 @@ void sexp_nebula_change_fog_color(int node)
 	The_mission.flags |= Mission::Mission_Flags::Neb2_fog_color_override;
 }
 
+void sexp_toggle_asteroid_field(int n)
+{
+	Asteroids_enabled = is_sexp_true(n);
+}
+
 /**
  * End the mission.
  *
@@ -26285,6 +26291,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_TOGGLE_ASTEROID_FIELD:
+				sexp_toggle_asteroid_field(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_END_MISSION:
 				sexp_end_mission(node);
 				sexp_val = SEXP_TRUE;
@@ -28497,6 +28508,7 @@ int query_operator_return_type(int op)
 		case OP_REMOVE_SUN_BITMAP:
 		case OP_NEBULA_CHANGE_STORM:
 		case OP_NEBULA_TOGGLE_POOF:
+		case OP_TOGGLE_ASTEROID_FIELD:
 		case OP_SET_PRIMARY_AMMO:
 		case OP_SET_SECONDARY_AMMO:
 		case OP_SET_PRIMARY_WEAPON:
@@ -31025,6 +31037,9 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_NEBULA_CHANGE_FOG_COLOR:
 			return OPF_POSITIVE;
 
+		case OP_TOGGLE_ASTEROID_FIELD:
+			return OPF_BOOL;
+
 		case OP_SCRIPT_EVAL_BOOL:
 		case OP_SCRIPT_EVAL_NUM:
 		case OP_SCRIPT_EVAL_BLOCK:
@@ -33063,6 +33078,7 @@ int get_subcategory(int sexp_id)
 		case OP_NEBULA_CHANGE_PATTERN:
 		case OP_NEBULA_CHANGE_FOG_COLOR:
 		case OP_SET_AMBIENT_LIGHT:
+		case OP_TOGGLE_ASTEROID_FIELD:
 			return CHANGE_SUBCATEGORY_BACKGROUND_AND_NEBULA;
 
 		case OP_JUMP_NODE_SET_JUMPNODE_NAME: //CommanderDJ
@@ -37661,6 +37677,12 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"Inverse Kinematics:\r\n"
 		"\tThree required numbers: x, y, z position target relative to base, in 1/100th meters\r\n"
 		"\tThree optional numbers: x, y, z rotation target relative to base, in degrees\r\n"
+	},
+
+	{ OP_TOGGLE_ASTEROID_FIELD, "toggle-asteroid-field\r\n" 
+		"\tTurns an existing asteroid field on/off. Will do nothing if no asteroid field is defined in the mission file!\r\n"
+		"\tTakes 1 argument...\r\n"
+		"\t1:\ttrue for asteroid field on, false for asteroid field off\r\n" 
 	}
 };
 // clang-format on
