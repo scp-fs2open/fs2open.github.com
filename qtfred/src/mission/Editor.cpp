@@ -571,12 +571,16 @@ int Editor::create_player(int  /*num*/, vec3d* pos, matrix* orient, int type, in
 	if (type == -1) {
 		type = Default_player_model;
 	}
-
 	Assert(type >= 0);
-	Assert(Player_starts < MAX_PLAYERS);
-	Player_starts++;
+
 	obj = create_ship(orient, pos, type);
 	Objects[obj].type = OBJ_START;
+
+	Assert(Player_starts < MAX_PLAYERS);
+	Player_starts++;
+	if (Player_start_shipnum < 0) {
+		Player_start_shipnum = Objects[obj].instance;
+	}
 
 	// be sure arrival/departure cues are set
 	Ships[Objects[obj].instance].arrival_cue = Locked_sexp_true;
