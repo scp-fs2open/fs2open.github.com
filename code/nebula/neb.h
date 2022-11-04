@@ -132,6 +132,8 @@ void neb2_init();
 //init neb stuff  - WMC
 void neb2_level_init();
 
+void neb2_pre_level_init();
+
 // initialize nebula stuff - call from game_post_level_init(), so the mission has been loaded
 void neb2_post_level_init(bool fog_color_override);
 

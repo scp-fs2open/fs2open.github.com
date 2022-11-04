@@ -149,44 +149,7 @@ typedef struct mission {
 
 	SCP_vector<mission_cutscene> cutscenes;
 
-	void Reset( )
-	{
-		int i = 0;
-		name[ 0 ] = '\0';
-		author[ 0 ] = '\0';
-		version = 0.;
-		created[ 0 ] = '\0';
-		modified[ 0 ] = '\0';
-		notes[ 0 ] = '\0';
-		mission_desc[ 0 ] = '\0';
-		game_type = 0;
-		flags.reset();
-		num_players = 0;
-		num_respawns = 0;
-		max_respawn_delay = 0;
-		memset(&Ignored_keys, 0, sizeof(int)*CCFG_MAX);
-		memset( &support_ships, 0, sizeof( support_ships ) );
-		squad_filename[ 0 ] = '\0';
-		squad_name[ 0 ] = '\0';
-		for ( i = 0; i < GR_NUM_RESOLUTIONS; i++ )
-			loading_screen[ i ][ 0 ] = '\0';
-		skybox_model[ 0 ] = '\0';
-		vm_set_identity(&skybox_orientation);
-		skybox_flags = 0;
-		envmap_name[ 0 ] = '\0';
-		contrail_threshold = 0;
-		ambient_light_level = DEFAULT_AMBIENT_LIGHT_LEVEL;
-		sound_environment.id = -1;
-		command_persona = 0;
-		command_sender[ 0 ] = '\0';
-		debriefing_persona = -1;
-		event_music_name[ 0 ] = '\0';
-		briefing_music_name[ 0 ] = '\0';
-		substitute_event_music_name[ 0 ] = '\0';
-		substitute_briefing_music_name[ 0 ] = '\0';
-		ai_profile = NULL;
-		cutscenes.clear( );
-	}
+	void Reset( );
 
 	mission( )
 	{
@@ -488,6 +451,7 @@ extern p_object *Arriving_support_ship;
 extern char Neb2_texture_name[MAX_FILENAME_LEN];
 
 
+void mission_init(mission *pm);
 bool parse_main(const char *mission_name, int flags = 0);
 p_object *mission_parse_get_arrival_ship(ushort net_signature);
 p_object *mission_parse_get_arrival_ship(const char *name);
