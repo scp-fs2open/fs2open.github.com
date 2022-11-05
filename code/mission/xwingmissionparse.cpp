@@ -1,7 +1,9 @@
+#include "iff_defs/iff_defs.h"
 #include "mission/missionparse.h"
 #include "missionui/redalert.h"
 #include "nebula/neb.h"
 #include "parse/parselo.h"
+#include "ship/ship.h"
 #include "species_defs/species_defs.h"
 #include "starfield/starfield.h"
 
@@ -9,123 +11,270 @@
 #include "xwinglib.h"
 #include "xwingmissionparse.h"
 
+static int Player_flight_group = 0;
+
 // vazor222
 void parse_xwi_mission_info(mission *pm, XWingMission *xwim, bool basic)
 {
-	// XWI file version is checked on load, just use latest here
-	pm->version = MISSION_VERSION;
-
 	// XWI missions will be assigned names in the briefing
 	strcpy_s(pm->name, "XWI Mission");
 
 	strcpy_s(pm->author, "XWIConverter");
 
-	// XWI missions don't track these timestamps, just use now 
-	char time_string[DATE_TIME_LENGTH];
-	time_t rawtime;
-	time(&rawtime);
-	strftime(time_string, DATE_TIME_LENGTH, "%D %T", localtime(&rawtime));
-	strcpy_s(pm->created, time_string);
+	Parse_viewer_pos.xyz.x = xwim->flightgroups[Player_flight_group]->start1_x;
+	Parse_viewer_pos.xyz.y = xwim->flightgroups[Player_flight_group]->start1_y + 100;
+	Parse_viewer_pos.xyz.z = xwim->flightgroups[Player_flight_group]->start1_z - 100;
+}
 
-	strcpy_s(pm->modified, time_string);
-
-	strcpy_s(pm->notes, "This is a FRED2_OPEN created mission, imported from XWI.");
-
-	strcpy_s(pm->mission_desc, NOX("No description\n"));
-
-	pm->game_type = MISSION_TYPE_SINGLE;  // assume all XWI missions are single player
-
-	pm->flags.reset();
-
-	// nebula mission stuff
-	Neb2_awacs = -1.0f;
-	Neb2_fog_near_mult = 1.0f;
-	Neb2_fog_far_mult = 1.0f;
-	
-	// Goober5000 - ship contrail speed threshold
-	pm->contrail_threshold = CONTRAIL_THRESHOLD_DEFAULT;
-
-	pm->num_players = 1;
-	pm->num_respawns = 0;
-	The_mission.max_respawn_delay = -1;
-
-	red_alert_invalidate_timestamp();
-
-	// if we are just requesting basic info then skip everything else.  the reason
-	// for this is to make sure that we don't modify things outside of the mission struct
-	// that might not get reset afterwards (like what can happen in the techroom) - taylor
-	//
-	// NOTE: this can be dangerous so be sure that any get_mission_info() call (defaults to basic info) will
-	//       only reference data parsed before this point!! (like current FRED2 and game code does)
-	if (basic)
-		return;
-
-	// this is part of mission info but derived from the campaign file rather than parsed
-	extern int debrief_find_persona_index();
-	pm->debriefing_persona = debrief_find_persona_index();
-
-	// set up support ships
-	pm->support_ships.arrival_location = ARRIVE_AT_LOCATION;
-	pm->support_ships.arrival_anchor = -1;
-	pm->support_ships.departure_location = DEPART_AT_LOCATION;
-	pm->support_ships.departure_anchor = -1;
-	pm->support_ships.max_hull_repair_val = 0.0f;
-	pm->support_ships.max_subsys_repair_val = 100.0f;	//ASSUMPTION: full repair capabilities
-	pm->support_ships.max_support_ships = -1;	// infinite
-	pm->support_ships.max_concurrent_ships = 1;
-	pm->support_ships.ship_class = -1;
-	pm->support_ships.tally = 0;
-	pm->support_ships.support_available_for_species = 0;
-
-	// for each species, store whether support is available
-	for (int species = 0; species < (int)Species_info.size(); species++) {
-		if (Species_info[species].support_ship_index >= 0) {
-			pm->support_ships.support_available_for_species |= (1 << species);
-		}
-	}
-
-	// disallow support in XWI missions unless specifically enabled
-	pm->support_ships.max_support_ships = 0;
-
-	Mission_all_attack = 0;
-
-	//	Maybe delay the player's entry.
-	// TODO find player's Flight Group and use arrival delay value from that?
-	// TODO convert from 0 = 0?, 1 = one minute, 2D = 2 minutes, 30 seconds.. hmm, strange encoding
-	if (xwim->flightgroups[0]->arrivalDelay > 0) {
-		Entry_delay_time = xwim->flightgroups[0]->arrivalDelay;
-	}
-	else
+bool is_fighter_or_bomber(XWMFlightGroup *fg)
+{
+	switch (fg->flightGroupType)
 	{
-		Entry_delay_time = 0;
+		case XWMFlightGroup::fg_X_Wing:
+		case XWMFlightGroup::fg_Y_Wing:
+		case XWMFlightGroup::fg_A_Wing:
+		case XWMFlightGroup::fg_B_Wing:
+		case XWMFlightGroup::fg_TIE_Fighter:
+		case XWMFlightGroup::fg_TIE_Interceptor:
+		case XWMFlightGroup::fg_TIE_Bomber:
+		case XWMFlightGroup::fg_Gunboat:
+		case XWMFlightGroup::fg_TIE_Advanced:
+			return true;
+	}
+	return false;
+}
+
+int xwi_determine_anchor(XWingMission *xwim, XWMFlightGroup *fg)
+{
+	int mothership_number = fg->mothership;
+
+	if (mothership_number != 0xffff)
+	{
+		if (mothership_number >= 0 && mothership_number < (int)xwim->flightgroups.size())
+			return get_parse_name_index(xwim->flightgroups[mothership_number]->designation.c_str());
+		else
+			Warning(LOCATION, "Mothership number %d is out of range for Flight Group %s", mothership_number, fg->designation.c_str());
 	}
 
-	// player is always flight group 0
-	Parse_viewer_pos.xyz.x = xwim->flightgroups[0]->start1_x;
-	Parse_viewer_pos.xyz.y = xwim->flightgroups[0]->start1_y + 100;
-	Parse_viewer_pos.xyz.z = xwim->flightgroups[0]->start1_z - 100;
-	
-	// possible squadron reassignment
-	strcpy_s(pm->squad_name, "");
-	strcpy_s(pm->squad_filename, "");
+	return -1;
+}
 
-	// XWI missions are always single player
-	Num_teams = 1;				// assume 1
+const char *xwi_determine_ship_class(XWMFlightGroup *fg)
+{
+	int flightGroupType = fg->flightGroupType;
 
-	// TODO load deathstar surface skybox model when specified?
-	strcpy_s(pm->skybox_model, "");
+	switch (flightGroupType)
+	{
+		case XWMFlightGroup::fg_X_Wing:
+			return "T-65c X-wing";
+		case XWMFlightGroup::fg_Y_Wing:
+			return "BTL-A4 Y-wing";
+		case XWMFlightGroup::fg_A_Wing:
+			return "RZ-1 A-wing";
+		case XWMFlightGroup::fg_TIE_Fighter:
+			return "TIE/ln Fighter";
+		case XWMFlightGroup::fg_TIE_Interceptor:
+			return "TIE/In Interceptor";
+		case XWMFlightGroup::fg_TIE_Bomber:
+			return "TIE/sa Bomber";
+		case XWMFlightGroup::fg_Gunboat:
+			return nullptr;
+		case XWMFlightGroup::fg_Transport:
+			return "DX-9 Stormtrooper Transport";
+		case XWMFlightGroup::fg_Shuttle:
+			return "Lambda-class T-4a Shuttle";
+		case XWMFlightGroup::fg_Tug:
+			return nullptr;
+		case XWMFlightGroup::fg_Container:
+			return nullptr;
+		case XWMFlightGroup::fg_Frieghter:
+			return "BFF-1 Bulk Freighter";
+		case XWMFlightGroup::fg_Calamari_Cruiser:
+			return "Liberty Type Star Cruiser";
+		case XWMFlightGroup::fg_Nebulon_B_Frigate:
+			return "EF76 Nebulon-B Escort Frigate";
+		case XWMFlightGroup::fg_Corellian_Corvette:
+			return "CR90 Corvette";
+		case XWMFlightGroup::fg_Imperial_Star_Destroyer:
+			return "Imperial Star Destroyer";
+		case XWMFlightGroup::fg_TIE_Advanced:
+			return nullptr;
+		case XWMFlightGroup::fg_B_Wing:
+			return "B-wing Starfighter";
+	}
 
-	vm_set_identity(&pm->skybox_orientation);
-	pm->skybox_flags = DEFAULT_NMODEL_FLAGS;
+	return nullptr;
+}
 
-	// Goober5000 - AI on a per-mission basis
-	The_mission.ai_profile = &Ai_profiles[Default_ai_profile];
+const char *xwi_determine_team(XWingMission *xwim, XWMFlightGroup *fg, ship_info *sip)
+{
+	auto player_iff = xwim->flightgroups[Player_flight_group]->craftIFF;
 
-	pm->sound_environment.id = -1;
+	if (fg->craftIFF == XWMFlightGroup::iff_imperial)
+	{
+		if (player_iff == XWMFlightGroup::iff_imperial)
+			return "Friendly";
+		if (player_iff == XWMFlightGroup::iff_rebel)
+			return "Hostile";
+	}
+
+	if (fg->craftIFF == XWMFlightGroup::iff_rebel)
+	{
+		if (player_iff == XWMFlightGroup::iff_imperial)
+			return "Hostile";
+		if (player_iff == XWMFlightGroup::iff_rebel)
+			return "Friendly";
+	}
+
+	if (fg->craftIFF == XWMFlightGroup::iff_neutral)
+		return "True Neutral";
+
+	return nullptr;
+}
+
+int xwi_lookup_cargo(const char *cargo_name)
+{
+	int index = string_lookup(cargo_name, Cargo_names, Num_cargo);
+	if (index < 0)
+	{
+		if (Num_cargo == MAX_CARGO)
+		{
+			Warning(LOCATION, "Can't add any more cargo!");
+			return 0;
+		}
+
+		index = Num_cargo++;
+		strcpy(Cargo_names[index], cargo_name);
+	}
+	return index;
+}
+
+void parse_xwi_flightgroup(mission *pm, XWingMission *xwim, XWMFlightGroup *fg)
+{
+	wing *wingp = nullptr;
+	int wingnum = -1;
+	if (fg->numberInWave > 1 || fg->numberOfWaves > 1 || is_fighter_or_bomber(fg))
+	{
+		wingnum = Num_wings++;
+		wingp = &Wings[wingnum];
+
+		strcpy_s(wingp->name, fg->designation.c_str());
+		wingp->num_waves = fg->numberOfWaves;
+		wingp->formation = -1;	// TODO
+
+		wingp->arrival_location = fg->arriveByHyperspace ? ARRIVE_AT_LOCATION : ARRIVE_FROM_DOCK_BAY;
+		wingp->arrival_anchor = xwi_determine_anchor(xwim, fg);
+		wingp->departure_location = fg->departByHyperspace ? DEPART_AT_LOCATION : DEPART_AT_DOCK_BAY;
+		wingp->departure_anchor = wingp->arrival_anchor;
+
+		wingp->wave_count = fg->numberInWave;
+	}
+
+	for (int i = 0; i < fg->numberInWave; i++)
+	{
+		p_object pobj;
+
+		if (wingp)
+		{
+			wing_bash_ship_name(pobj.name, fg->designation.c_str(), i + 1, nullptr);
+			pobj.wingnum = wingnum;
+			pobj.pos_in_wing = i;
+		}
+		else
+		{
+			strcpy_s(pobj.name, fg->designation.c_str());
+
+			pobj.arrival_location = fg->arriveByHyperspace ? ARRIVE_AT_LOCATION : ARRIVE_FROM_DOCK_BAY;
+			pobj.arrival_anchor = xwi_determine_anchor(xwim, fg);
+			pobj.departure_location = fg->departByHyperspace ? DEPART_AT_LOCATION : DEPART_AT_DOCK_BAY;
+			pobj.departure_anchor = pobj.arrival_anchor;
+		}
+
+		auto ship_class_name = xwi_determine_ship_class(fg);
+		int ship_class = 0;
+		if (ship_class_name)
+		{
+			int index = ship_info_lookup(ship_class_name);
+			if (index >= 0)
+				ship_class = index;
+			else
+				Warning(LOCATION, "Could not find ship class %s", ship_class_name);
+		}
+		else
+			Warning(LOCATION, "Unable to determine ship class for Flight Group %s", fg->designation.c_str());
+		auto sip = &Ship_info[ship_class];
+		pobj.ship_class = ship_class;
+
+		pobj.warpin_params_index = sip->warpin_params_index;
+		pobj.warpout_params_index = sip->warpout_params_index;
+
+		auto team_name = xwi_determine_team(xwim, fg, sip);
+		int team = Species_info[sip->species].default_iff;
+		if (team_name)
+		{
+			int index = iff_lookup(team_name);
+			if (index >= 0)
+				team = index;
+			else
+				Warning(LOCATION, "Could not find iff %s", team_name);
+		}
+		pobj.team = team;
+
+		auto start1 = vm_vec_new(fg->start1_x, fg->start1_y, fg->start1_z);
+		auto start2 = vm_vec_new(fg->start2_x, fg->start2_y, fg->start2_z);
+		auto start3 = vm_vec_new(fg->start3_x, fg->start3_y, fg->start3_z);
+		auto waypoint1 = vm_vec_new(fg->wp1_x, fg->wp1_y, fg->wp1_z);
+		auto waypoint2 = vm_vec_new(fg->wp2_x, fg->wp2_y, fg->wp2_z);
+		auto waypoint3 = vm_vec_new(fg->wp3_x, fg->wp3_y, fg->wp3_z);
+		auto hyp = vm_vec_new(fg->hyperspace_x, fg->hyperspace_y, fg->hyperspace_z);
+
+		pobj.pos = start1;
+		vec3d fvec;
+		vm_vec_normalized_dir(&fvec, &start1, &hyp);
+		vm_vector_2_matrix_norm(&pobj.orient, &fvec);
+
+		if (wingp && i == fg->specialShipNumber)
+			pobj.cargo1 = (char)xwi_lookup_cargo(fg->specialCargo.c_str());
+		else
+			pobj.cargo1 = (char)xwi_lookup_cargo(fg->cargo.c_str());
+
+		pobj.initial_velocity = 100;
+		pobj.initial_hull = 100;
+		pobj.initial_shields = 100;
+
+		if (fg->playerPos == i + 1)
+		{
+			pobj.flags.set(Mission::Parse_Object_Flags::OF_Player_start);
+			pobj.flags.set(Mission::Parse_Object_Flags::SF_Cargo_known);
+			Player_starts++;
+		}
+
+		pobj.score = sip->score;
+	}
 }
 
 void parse_xwi_mission(mission *pm, XWingMission *xwim)
 {
+	int index = -1;
+
+	for (int i = 0; i < xwim->flightgroups.size(); i++)
+	{
+		if (xwim->flightgroups[i]->playerPos > 0)
+		{
+			index = i;
+			break;
+		}
+	}
+	if (index >= 0)
+		Player_flight_group = index;
+	else
+	{
+		Warning(LOCATION, "Player flight group not found?");
+		Player_flight_group = 0;
+	}
+
+	for (auto fg : xwim->flightgroups)
+		parse_xwi_flightgroup(pm, xwim, fg);
 }
 
 /**
@@ -139,8 +288,6 @@ void parse_xwi_briefing(mission *pm, XWingBriefing *xwBrief)
 	brief_stage *bs;
 	briefing *bp;
 
-	brief_reset();
-
 	bp = &Briefings[0];
 	bp->num_stages = 1;  // xwing briefings only have one stage
 	bs = &bp->stages[0];
@@ -153,7 +300,7 @@ void parse_xwi_briefing(mission *pm, XWingBriefing *xwBrief)
 	}
 	else
 	{
-		bs->text = "Prepare for the next xwing mission!";
+		bs->text = "Prepare for the next X-Wing mission!";
 		strcpy_s(bs->voice, "none.wav");
 		vm_vec_zero(&bs->camera_pos);
 		bs->camera_orient = SCALE_IDENTITY_VECTOR;
