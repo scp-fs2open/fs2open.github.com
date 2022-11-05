@@ -596,15 +596,18 @@ void CFREDDoc::OnFileImportXWI()
 
 	clear_mission();
 
+	int num_files = 0;
+	char dest_path[MAX_PATH_LEN];
+
 	// process all missions
 	POSITION pos(dlgFile.GetStartPosition());
 	while (pos) {
 		char *ch;
 		char filename[1024];
 		char xwi_path[MAX_PATH_LEN];
-		char dest_path[MAX_PATH_LEN];
 
 		CString xwi_path_mfc(dlgFile.GetNextPathName(pos));
+		num_files++;
 		CFred_mission_save save;
 
 		DWORD attrib;
@@ -623,7 +626,7 @@ void CFREDDoc::OnFileImportXWI()
 		strcpy_s(xwi_path, xwi_path_mfc);
 
 		// load mission into memory
-		if (load_mission(xwi_path, MPF_IMPORT_XWI))
+		if (!load_mission(xwi_path, MPF_IMPORT_XWI))
 			continue;
 
 		// get filename
@@ -637,6 +640,9 @@ void CFREDDoc::OnFileImportXWI()
 		ch = strrchr(filename, '.');
 		if (ch != NULL)
 			*ch = '\0';
+
+		// assign this as the mission name
+		strcpy_s(The_mission.name, filename);
 
 		// add new extension
 		strcat_s(filename, ".fs2");
@@ -664,9 +670,25 @@ void CFREDDoc::OnFileImportXWI()
 		// success
 	}
 
-	create_new_mission();
+	if (num_files > 1)
+	{
+		create_new_mission();
+		MessageBox(NULL, "Import complete.  Please check the destination folder to verify all missions were imported successfully.", "Status", MB_OK);
+	}
+	else if (num_files == 1)
+	{
+		SetModifiedFlag(FALSE);
 
-	MessageBox(NULL, "Import complete.  Please check the destination folder to verify all missions were imported successfully.", "Status", MB_OK);
+		if (Briefing_dialog) {
+			Briefing_dialog->restore_editor_state();
+			Briefing_dialog->update_data(1);
+		}
+
+		// these aren't done automatically for imports
+		theApp.AddToRecentFileList((LPCTSTR)dest_path);
+		SetTitle((LPCTSTR)Mission_filename);
+	}
+
 	recreate_dialogs();
 }
 

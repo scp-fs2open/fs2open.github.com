@@ -6652,8 +6652,6 @@ bool parse_main(const char *mission_name, int flags)
 
 		try
 		{
-			The_mission.Reset();
-
 			// import FS1 mission
 			if (flags & MPF_IMPORT_FSM) {
 				read_file_text(mission_name, CF_TYPE_ANY);
