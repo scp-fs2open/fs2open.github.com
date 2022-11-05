@@ -93,8 +93,8 @@ void convert_model_material(model_uniform_data* data_out,
 			data_out->emissionFactor.xyz.z = gr_light_zero[2];
 		}
 
-		data_out->defaultGloss = 0.6f;
 	}
+	data_out->defaultGloss = 0.6f;
 
 	if (shader_flags & SDR_FLAG_MODEL_DIFFUSE_MAP) {
 		if (material.is_desaturated()) {
