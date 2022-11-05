@@ -2430,7 +2430,7 @@ void parse_bring_in_docked_wing(p_object *p_objp, int wingnum, int shipnum)
 	{
 		wingp->current_wave++;
 		mission_log_add_entry( LOG_WING_ARRIVED, wingp->name, NULL, wingp->current_wave );
-		wingp->wave_delay_timestamp = timestamp(-1);
+		wingp->wave_delay_timestamp = TIMESTAMP::invalid();
 	}
 	// how did we get more than one wave here?
 	else if (wingp->current_wave > 1)
@@ -4082,7 +4082,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 		// check the wave_delay_timestamp field.  If it is not valid, make it valid (based on wave delay min
 		// and max values).  If it is valid, and not elapsed, then return.  If it is valid and elasped, then
 		// continue on.
-		if ( !timestamp_valid(wingp->wave_delay_timestamp) ) {
+		if ( !wingp->wave_delay_timestamp.isValid() ) {
 
 			// if at least one of these is valid, then reset the timestamp.  If they are both zero, we will create the
 			// wave
@@ -4098,7 +4098,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 				if ( Game_mode & GM_MULTIPLAYER ){
 					time_to_arrive += 7;
 				}
-				wingp->wave_delay_timestamp = timestamp(time_to_arrive * 1000);
+				wingp->wave_delay_timestamp = _timestamp(time_to_arrive * MILLISECONDS_PER_SECOND);
 				return 0;
 			}
 
@@ -4106,8 +4106,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 			time_to_arrive = 0;
 			if ( Game_mode & GM_MULTIPLAYER )
 				time_to_arrive += 7;
-			time_to_arrive *= 1000;
-			wingp->wave_delay_timestamp = timestamp(time_to_arrive);
+			wingp->wave_delay_timestamp = _timestamp(time_to_arrive * MILLISECONDS_PER_SECOND);
 		}
 
 		// now check to see if the wave_delay_timestamp is elapsed or not
@@ -4395,7 +4394,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 
 	}
 
-	wingp->wave_delay_timestamp = timestamp(-1);		// we will need to set this up properly for the next wave
+	wingp->wave_delay_timestamp = TIMESTAMP::invalid();		// we will need to set this up properly for the next wave
 	return num_create_save;
 }
 
@@ -4416,13 +4415,6 @@ void parse_wing(mission *pm)
 	if (wingnum != -1)
 		error_display(0, NOX("Redundant wing name: %s\n"), wingp->name);
 	wingnum = Num_wings;
-
-	wingp->total_arrived_count = 0;
-	wingp->red_alert_skipped_ships = 0;
-	wingp->total_destroyed = 0;
-	wingp->total_departed = 0;	// Goober5000
-	wingp->total_vanished = 0;	// Goober5000
-    wingp->flags.reset();
 
 	// squad logo - Goober5000
 	if (optional_string("+Squad Logo:"))
@@ -4465,8 +4457,6 @@ void parse_wing(mission *pm)
 	stuff_int(&wingp->num_waves);
 	Assert ( wingp->num_waves >= 1 );		// there must be at least 1 wave
 
-	wingp->current_wave = 0;
-
 	required_string("$Wave Threshold:");
 	stuff_int(&wingp->threshold);
 
@@ -4483,13 +4473,6 @@ void parse_wing(mission *pm)
 			Warning(LOCATION, "Invalid Formation %s.", f);
 		}
 	}
-	else {
-		wingp->formation = -1;
-	}
-
-	wingp->arrival_anchor = -1;
-	wingp->arrival_distance = 0;
-	wingp->arrival_path_mask = -1;	// -1 only until resolved
 
 	find_and_stuff("$Arrival Location:", &wingp->arrival_location, F_NAME, Arrival_location_names, Num_arrival_names, "Arrival Location");
 
@@ -4535,9 +4518,6 @@ void parse_wing(mission *pm)
 	required_string("$Arrival Cue:");
 	wingp->arrival_cue = get_sexp_main();
 	
-	wingp->departure_anchor = -1;
-	wingp->departure_path_mask = -1;	// -1 only until resolved
-
 	find_and_stuff("$Departure Location:", &wingp->departure_location, F_NAME, Departure_location_names, Num_arrival_names, "Departure Location");
 
 	if ( wingp->departure_location != DEPART_AT_LOCATION )
@@ -4571,14 +4551,12 @@ void parse_wing(mission *pm)
 	// stores a list of all names of ships in the wing
 	required_string("$Ships:");
 	wingp->wave_count = (int)stuff_string_list( ship_names, MAX_SHIPS_PER_WING );
-	wingp->current_count = 0;
 
 	// get the wings goals, if any
 	wing_goals = -1;
 	if ( optional_string("$AI Goals:") )
 		wing_goals = get_sexp_main();
 
-	wingp->hotkey = -1;
 	if (optional_string("+Hotkey:")) {
 		stuff_int(&wingp->hotkey);
 		Assert((wingp->hotkey >= 0) && (wingp->hotkey < 10));
@@ -4615,21 +4593,10 @@ void parse_wing(mission *pm)
 
 	// get the wave arrival delay bounds (if present).  Used as lower and upper bounds (in seconds)
 	// which determine when new waves of a wing should arrive.
-	wingp->wave_delay_min = 0;
-	wingp->wave_delay_max = 0;
 	if ( optional_string("+Wave Delay Min:") )
 		stuff_int( &(wingp->wave_delay_min) );
 	if ( optional_string("+Wave Delay Max:") )
 		stuff_int( &(wingp->wave_delay_max) );
-
-	// be sure to set the wave arrival timestamp of this wing to pop right away so that the
-	// wing could be created if it needs to be
-	wingp->wave_delay_timestamp = timestamp(0);
-
-	// initialize wing goals
-	for (i=0; i<MAX_AI_GOALS; i++) {
-		ai_goal_reset(&wingp->ai_goals[i]);
-	}
 
 	// 7/13/98 -- MWA
 	// error checking against the player ship wings (i.e. starting & tvt) to be sure that wave count doesn't exceed one for
@@ -4671,9 +4638,6 @@ void parse_wing(mission *pm)
 			Error(LOCATION, "Too many total ships in mission (%d) for network signature assignment", SHIP_SIG_MAX);
 		multi_set_network_signature( (ushort)next_signature, MULTI_SIG_SHIP );
 	}
-
-	for (i=0; i<MAX_SHIPS_PER_WING; i++)
-		wingp->ship_index[i] = -1;
 
 	// set up the ai_goals for this wing -- all ships created from this wing will inherit these goals
 	// goals for the wing are stored slightly differently than for ships.  We simply store the index
@@ -6462,11 +6426,8 @@ void mission_init(mission *pm)
 	}
 
 	Num_wings = 0;
-	for (int i = 0; i < MAX_WINGS; i++) {
-		Wings[i].wave_count = 0;
-		Wings[i].wing_squad_filename[0] = '\0';
-		Wings[i].wing_insignia_texture = -1;
-	}
+	for (int i = 0; i < MAX_WINGS; i++)
+		Wings[i].clear();
 	
 	Num_reinforcements = 0;
 
