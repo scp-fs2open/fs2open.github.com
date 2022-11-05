@@ -5497,11 +5497,7 @@ void parse_bitmaps(mission *pm)
 			}						
 		}
 
-		if (Nebula_index >= 0){		
-			nebula_init(Nebula_filenames[Nebula_index], Nebula_pitch, Nebula_bank, Nebula_heading);
-		} else {
-			nebula_close();		
-		}
+		nebula_init(Nebula_index, Nebula_pitch, Nebula_bank, Nebula_heading);
 	}	
 
 	// Goober5000

@@ -400,12 +400,7 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 					}
 				}
 
-				if (Nebula_index >= 0) {
-					nebula_init(Nebula_filenames[Nebula_index], Nebula_pitch, Nebula_bank, Nebula_heading);
-				}
-				else {
-					nebula_close();
-				}
+				nebula_init(Nebula_index, Nebula_pitch, Nebula_bank, Nebula_heading);
 			}
 
 			stars_load_debris(flags[Mission::Mission_Flags::Fullneb]);

@@ -839,7 +839,7 @@ void clear_mission()
 	ai_init();
 	asteroid_level_init();
 	ship_level_init();
-	nebula_init(Nebula_filenames[Nebula_index], Nebula_pitch, Nebula_bank, Nebula_heading);
+	nebula_init(Nebula_index, Nebula_pitch, Nebula_bank, Nebula_heading);
 
 	Shield_sys_teams.clear();
 	Shield_sys_teams.resize(Iff_info.size(), 0);
