@@ -699,12 +699,13 @@ ADE_FUNC(isPositionInFOV, l_Subsystem, "vector Target", "Determines if a positio
 		return ADE_RETURN_FALSE;
 }
 
-ADE_FUNC(fireWeapon, l_Subsystem, "[number TurretWeaponIndex = 1, number FlakRange = 100]", "Fires weapon on turret", nullptr, nullptr)
+ADE_FUNC(fireWeapon, l_Subsystem, "[number TurretWeaponIndex = 1, number FlakRange = 100, vector OverrideFiringVec]", "Fires weapon on turret", nullptr, nullptr)
 {
 	ship_subsys_h *sso;
 	int wnum = 1;
 	float flak_range = 100.0f;
-	if(!ade_get_args(L, "o|if", l_Subsystem.GetPtr(&sso), &wnum, &flak_range))
+	vec3d* override_gvec = nullptr;
+	if (!ade_get_args(L, "o|ifo", l_Subsystem.GetPtr(&sso), &wnum, &flak_range, l_Vector.GetPtr(&override_gvec)))
 		return ADE_RETURN_NIL;
 
 	if (!sso->isSubsystemValid())
@@ -733,6 +734,8 @@ ADE_FUNC(fireWeapon, l_Subsystem, "[number TurretWeaponIndex = 1, number FlakRan
 	vec3d gpos, gvec;
 
 	ship_get_global_turret_gun_info(sso->objp, sso->ss, &gpos, &gvec, 1, NULL);
+	if (override_gvec != nullptr)
+		gvec = *override_gvec;
 
 	bool rtn = turret_fire_weapon(wnum, sso->ss, OBJ_INDEX(sso->objp), &gpos, &gvec, NULL, flak_range);
 
