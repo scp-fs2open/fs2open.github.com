@@ -1526,7 +1526,7 @@ void asteroid_level_close()
 
 	//when a level is closed, all models are cleared, so let's make sure that
 	//is tracked for asteroids as well -Mjn
-	for (int i = 0; i < Asteroid_info.size(); i++) {
+	for (int i = 0; i < (int)Asteroid_info.size(); i++) {
 		for (int j = 0; j < NUM_DEBRIS_POFS; j++) {
 			Asteroid_info[i].model_num[j] = -1;
 		}

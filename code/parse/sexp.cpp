@@ -14977,7 +14977,7 @@ void sexp_toggle_asteroid_field(int n)
 
 void sexp_set_asteroid_field(int n)
 {
-	int field_type, num_asteroids, asteroid_speed;
+	int field_type = 0, num_asteroids = 0, asteroid_speed = 0;
 	bool brown = true, blue = false, orange = false, inner_box = false;
 	int o_minx = -1000, o_miny = -1000, o_minz = -1000;
 	int o_maxx = 1000, o_maxy = 1000, o_maxz = 1000;
