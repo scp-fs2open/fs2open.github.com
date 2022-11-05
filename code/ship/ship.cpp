@@ -6695,13 +6695,13 @@ void wing::clear()
 	arrival_location = ARRIVE_AT_LOCATION;
 	arrival_distance = 0;
 	arrival_anchor = -1;
-	arrival_path_mask = -1;		// -1 only until resolved
+	arrival_path_mask = 0;
 	arrival_cue = Locked_sexp_true;
 	arrival_delay = 0;
 
 	departure_location = DEPART_AT_LOCATION;
 	departure_anchor = -1;
-	departure_path_mask = -1;	// -1 only until resolved
+	departure_path_mask = 0;
 	departure_cue = Locked_sexp_false;
 	departure_delay = 0;
 

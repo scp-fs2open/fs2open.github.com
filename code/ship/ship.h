@@ -614,7 +614,7 @@ public:
 	int	departure_delay;		// time in seconds after sexp is true that we delay.
 
 	int	wingnum;								// wing number this ship is in.  -1 if in no wing, Wing array index otherwise
-	std::set<size_t> orders_accepted;					// set of orders this ship will accept from the player.
+	SCP_set<size_t> orders_accepted;				// set of orders this ship will accept from the player.
 
 	// Subsystem fields.  The subsys_list is a list of all subsystems (which might include multiple types
 	// of a particular subsystem, like engines).  The subsys_info struct is information for particular

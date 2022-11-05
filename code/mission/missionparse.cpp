@@ -2708,15 +2708,12 @@ void fix_old_special_hits(p_object *p_objp, int variable_index)
 	p_objp->special_shield = atoi(Block_variables[variable_index+SHIELD_STRENGTH].text);
 }
 
-p_object::p_object()
-	: next(NULL), prev(NULL), dock_list(NULL), created_object(NULL)
-{}
-
 // this will be called when Parse_objects is cleared between missions and upon shutdown
 p_object::~p_object()
 {
 	dock_free_dock_list(this);
 }
+
 const char* p_object::get_display_name() {
 	if (has_display_name()) {
 		return display_name.c_str();
@@ -2741,17 +2738,11 @@ extern int parse_warp_params(const WarpParams *inherit_from, WarpDirection direc
  */
 int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 {
-	int	i, count, delay;
+	int	i;
     char name[NAME_LENGTH];
 	ship_info *sip;
 
 	Assert(pm != NULL);
-
-	// Goober5000
-	p_objp->created_object = NULL;
-	p_objp->next = NULL;
-	p_objp->prev = NULL;
-	p_objp->flags.reset();
 
 	required_string("$Name:");
 	stuff_string(p_objp->name, F_NAME, NAME_LENGTH);
@@ -2785,8 +2776,17 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 	}
 	sip = &Ship_info[p_objp->ship_class];
 
+	// initialize class-specific fields
+	p_objp->ai_class = sip->ai_class;
+	p_objp->warpin_params_index = sip->warpin_params_index;
+	p_objp->warpout_params_index = sip->warpout_params_index;
+	p_objp->ship_max_shield_strength = sip->max_shield_strength;
+	p_objp->ship_max_hull_strength = sip->max_hull_strength;
+	Assert(p_objp->ship_max_hull_strength > 0.0f);	// Goober5000: div-0 check (not shield because we might not have one)
+	p_objp->max_shield_recharge = sip->max_shield_recharge;
+	p_objp->replacement_textures = sip->replacement_textures;	// initialize our set with the ship class set, which may be empty
+
 	// Karajorma - See if there are any alternate classes specified for this ship. 
-	p_objp->alt_classes.clear();
 	// The alt class can either be a variable or a ship class name
 	char alt_ship_class[TOKEN_LENGTH > NAME_LENGTH ? TOKEN_LENGTH : NAME_LENGTH];
 	int is_variable; 
@@ -2843,7 +2843,6 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 		return 0;
 
 	// optional alternate name type
-	p_objp->alt_type_index = -1;
 	if(optional_string("$Alt:"))
 	{
 		// alternate name
@@ -2858,7 +2857,6 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 	}
 
 	// optional callsign
-	p_objp->callsign_index = -1;
 	if(optional_string("$Callsign:"))
 	{
 		// alternate callsign
@@ -2906,7 +2904,6 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 	}
 
 	find_and_stuff("$AI Behavior:",	&p_objp->behavior, F_NAME, Ai_behavior_names, Num_ai_behaviors, "AI behavior");
-	p_objp->ai_goals = -1;
 
 	if (optional_string("+AI Class:")) 
 	{
@@ -2918,10 +2915,6 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 			p_objp->ai_class = 0;
 		}		
 	}
-	else
-	{
-		p_objp->ai_class = sip->ai_class;
-	}
 
 	if (optional_string("$AI Goals:"))
 		p_objp->ai_goals = get_sexp_main();
@@ -2932,7 +2925,6 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 		p_objp->ai_goals = get_sexp_main();
 	}
 
-	p_objp->cargo1 = -1;
 	int temp;
 	find_and_stuff_or_add("$Cargo 1:", &temp, F_NAME, Cargo_names, &Num_cargo, MAX_CARGO, "cargo");
 	p_objp->cargo1 = char(temp);
@@ -2942,20 +2934,6 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 	}
 
 	parse_common_object_data(p_objp);  // get initial conditions and subsys status
-	count = 0;
-	while (required_string_either("$Arrival Location:", "$Status Description:"))	{
-		Assert(count < MAX_OBJECT_STATUS);
-
-		find_and_stuff("$Status Description:", &p_objp->status_type[count], F_NAME, Status_desc_names, Num_status_names, "Status Description");
-		find_and_stuff("$Status:", &p_objp->status[count], F_NAME, Status_type_names, Num_status_names, "Status Type");
-		find_and_stuff("$Target:", &p_objp->target[count], F_NAME, Status_target_names, Num_status_names, "Target");
-		count++;
-	}
-	p_objp->status_count = count;
-
-	p_objp->arrival_anchor = -1;
-	p_objp->arrival_distance = 0;
-	p_objp->arrival_path_mask = -1;	// -1 only until resolved
 
 	find_and_stuff("$Arrival Location:", &p_objp->arrival_location, F_NAME, Arrival_location_names, Num_arrival_names, "Arrival Location");
 
@@ -2984,24 +2962,24 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 		p_objp->arrival_path_mask = add_path_restriction();
 	}
 
-	delay = 0;
 	if (optional_string("+Arrival Delay:"))
 	{
+		int delay;
 		stuff_int(&delay);
 		if (delay < 0)
-			Error(LOCATION, "Cannot have arrival delay < 0 (ship %s)", p_objp->name);
-	}
+		{
+			Warning(LOCATION, "Cannot have arrival delay < 0 on ship %s", p_objp->name);
+			delay = 0;
+		}
 
-	if (!Fred_running)
-		p_objp->arrival_delay = -delay;			// use negative numbers to mean we haven't set up a timer yet
-	else
-		p_objp->arrival_delay = delay;
+		if (!Fred_running)
+			p_objp->arrival_delay = -delay;			// use negative numbers to mean we haven't set up a timer yet
+		else
+			p_objp->arrival_delay = delay;
+	}
 
 	required_string("$Arrival Cue:");
 	p_objp->arrival_cue = get_sexp_main();
-
-	p_objp->departure_anchor = -1;
-	p_objp->departure_path_mask = -1;	// -1 only until resolved
 
 	find_and_stuff("$Departure Location:", &p_objp->departure_location, F_NAME, Departure_location_names, Num_arrival_names, "Departure Location");
 
@@ -3018,28 +2996,32 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 		p_objp->departure_path_mask = add_path_restriction();
 	}
 
-	delay = 0;
 	if (optional_string("+Departure Delay:"))
 	{
+		int delay;
 		stuff_int(&delay);
 		if (delay < 0)
-			Error(LOCATION, "Cannot have departure delay < 0 (ship %s)", p_objp->name);
-	}
+		{
+			Warning(LOCATION, "Cannot have departure delay < 0 (ship %s)", p_objp->name);
+			delay = 0;
+		}
 
-	if (!Fred_running)
-		p_objp->departure_delay = -delay;
-	else
-		p_objp->departure_delay = delay;
+		if (!Fred_running)
+			p_objp->departure_delay = -delay;		// use negative numbers to mean that delay timer not yet set
+		else
+			p_objp->departure_delay = delay;
+	}
 
 	required_string("$Departure Cue:");
 	p_objp->departure_cue = get_sexp_main();
 
 	// look for warp parameters
-	p_objp->warpin_params_index = parse_warp_params(&Warp_params[sip->warpin_params_index], WarpDirection::WARP_IN, "Ship", p_objp->name);
-	p_objp->warpout_params_index = parse_warp_params(&Warp_params[sip->warpout_params_index], WarpDirection::WARP_OUT, "Ship", p_objp->name);
+	p_objp->warpin_params_index = parse_warp_params(&Warp_params[p_objp->warpin_params_index], WarpDirection::WARP_IN, "Ship", p_objp->name);
+	p_objp->warpout_params_index = parse_warp_params(&Warp_params[p_objp->warpout_params_index], WarpDirection::WARP_OUT, "Ship", p_objp->name);
 
+	// dummy string; not used
 	if (optional_string("$Misc Properties:"))
-		stuff_string(p_objp->misc, F_NAME, NAME_LENGTH);
+		stuff_string(name, F_NAME, NAME_LENGTH);
 
 	required_string("$Determination:");
 	int dummy; 
@@ -3077,11 +3059,9 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 
 
 	// always store respawn priority, just for ease of implementation
-	p_objp->respawn_priority = 0;
 	if(optional_string("+Respawn Priority:"))
 		stuff_int(&p_objp->respawn_priority);	
 
-	p_objp->escort_priority = 0;
     if (optional_string("+Escort Priority:"))
     {
         stuff_int(&p_objp->escort_priority);
@@ -3092,18 +3072,6 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
         p_objp->flags.set(Mission::Parse_Object_Flags::SF_Cargo_known);	// make cargo known for players
         Player_starts++;
     }
-
-	p_objp->use_special_explosion = false;
-	p_objp->special_exp_damage = -1;
-	p_objp->special_exp_blast = -1;
-	p_objp->special_exp_inner = -1;
-	p_objp->special_exp_outer = -1;
-	p_objp->use_shockwave = false;
-	p_objp->special_exp_shockwave_speed = 0;
-	p_objp->special_exp_deathroll_time = 0;
-
-	p_objp->special_hitpoints = 0;
-	p_objp->special_shield = -1;
 
 	if (optional_string("$Special Explosion:")) {
 		p_objp->use_special_explosion = true;
@@ -3188,21 +3156,11 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 	if (p_objp->special_shield != -1) {
 		p_objp->ship_max_shield_strength = (float) p_objp->special_shield; 
 	}
-	else {
-		p_objp->ship_max_shield_strength = sip->max_shield_strength;
-	}
 	
 	// set custom hitpoint value
 	if (p_objp->special_hitpoints > 0) {
 		p_objp->ship_max_hull_strength = (float) p_objp->special_hitpoints; 
 	}
-	else {
-		p_objp->ship_max_hull_strength = sip->max_hull_strength;
-	}
-
-	Assert(p_objp->ship_max_hull_strength > 0.0f);	// Goober5000: div-0 check (not shield because we might not have one)
-	p_objp->max_shield_recharge = sip->max_shield_recharge;
-
 
 	// if the kamikaze flag is set, we should have the next flag
 	if (optional_string("+Kamikaze Damage:"))
@@ -3213,7 +3171,6 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 		p_objp->kamikaze_damage = damage;
 	}
 
-	p_objp->hotkey = -1;
 	if (optional_string("+Hotkey:"))
 	{
 		stuff_int(&p_objp->hotkey);
@@ -3221,7 +3178,6 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 	}
 
 	// Goober5000
-	p_objp->dock_list = NULL;
 	while (optional_string("+Docked With:"))
 	{
 		char docked_with[NAME_LENGTH];
@@ -3256,7 +3212,6 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 	// here, then we need to destroy the ship N seconds before the mission starts (for debris purposes).
 	// store the time value here.  We want to create this object for sure.  Set the arrival cue and arrival
 	// delay to bogus values
-	p_objp->destroy_before_mission_time = -1;
 	if (optional_string("+Destroy At:"))
 	{
 		stuff_int(&p_objp->destroy_before_mission_time);
@@ -3270,8 +3225,6 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 	// Obsolete and only for backwards compatibility
     if (optional_string("+Orders Accepted:"))
     {
-		p_objp->orders_accepted.clear();
-		
 		int tmp_orders;
         stuff_int(&tmp_orders);
 		
@@ -3288,8 +3241,6 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 
 	if (optional_string("+Orders Accepted List:"))
 	{
-		p_objp->orders_accepted.clear();
-
 		SCP_vector<SCP_string> accepted_flags;
 		stuff_string_list(accepted_flags);
 
@@ -3303,7 +3254,6 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 		p_objp->flags.set(Mission::Parse_Object_Flags::SF_Use_unique_orders);
 	}
 
-	p_objp->group = 0;
 	if (optional_string("+Group:"))
 		stuff_int(&p_objp->group);
 
@@ -3340,17 +3290,12 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 			p_objp->assist_score_pct = 1;
 		}
 	}
-	else {
-		p_objp->assist_score_pct = 0;
-	}
 
 	// parse the persona index if present
-	p_objp->persona_index = -1;
 	if (optional_string("+Persona Index:"))
 		stuff_int(&p_objp->persona_index);
 
 	// texture replacement - Goober5000
-	p_objp->replacement_textures = sip->replacement_textures;	// initialize our set with the ship class set, which may be empty
 	if (optional_string("$Texture Replace:") || optional_string("$Duplicate Model Texture Replace:"))
 	{
 		texture_replace tr;
@@ -3389,62 +3334,11 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 		}
 	}
 
-	// now load the textures (do this outside the parse loop because we may have ship class replacements too)
-	for (SCP_vector<texture_replace>::iterator tr = p_objp->replacement_textures.begin(); tr != p_objp->replacement_textures.end(); ++tr)
-	{
-		// load the texture
-		if (!stricmp(tr->new_texture, "invisible"))
-		{
-			// invisible is a special case
-			tr->new_texture_id = REPLACE_WITH_INVISIBLE;
-		}
-		else
-		{
-			// try to load texture or anim as normal
-			tr->new_texture_id = bm_load_either(tr->new_texture);
-		}
-
-		// not found?
-		if (tr->new_texture_id < 0)
-		{
-			mprintf(("Could not load replacement texture %s for ship %s\n", tr->new_texture, p_objp->name));
-		}
-
-		// account for FRED
-		if (Fred_running)
-		{
-			Fred_texture_replacements.push_back(*tr);
-			Fred_texture_replacements.back().new_texture_id = -1;
-		}
-	}
-
-	p_objp->wingnum = -1;					// set the wing number to -1 -- possibly to be set later
-	p_objp->pos_in_wing = -1;				// Goober5000
-	
-	p_objp->alt_iff_color.clear();
-
 	// for multiplayer, assign a network signature to this parse object.  Doing this here will
 	// allow servers to use the signature with clients when creating new ships, instead of having
 	// to pass ship names all the time
 	if (Game_mode & GM_MULTIPLAYER)
 		p_objp->net_signature = multi_assign_network_signature(MULTI_SIG_SHIP);
-
-	// set the wing_status position to be -1 for all objects.  This will get set to an appropriate
-	// value when the wing positions are finally determined.
-	p_objp->wing_status_wing_index = -1;
-	p_objp->wing_status_wing_pos = -1;
-	p_objp->respawn_count = 0;
-
-	// Goober5000 - preload stuff for certain object flags
-	// (done after parsing object, but before creating it)
-	if (p_objp->flags[Mission::Parse_Object_Flags::Knossos_warp_in])
-		Knossos_warp_ani_used = true;
-
-	// check the warp parameters too
-	if (p_objp->warpin_params_index >= 0 && (Warp_params[p_objp->warpin_params_index].warp_type == WT_KNOSSOS || Warp_params[p_objp->warpin_params_index].warp_type == WT_DEFAULT_THEN_KNOSSOS))
-		Knossos_warp_ani_used = true;
-	if (p_objp->warpout_params_index >= 0 && (Warp_params[p_objp->warpout_params_index].warp_type == WT_KNOSSOS || Warp_params[p_objp->warpout_params_index].warp_type == WT_DEFAULT_THEN_KNOSSOS))
-		Knossos_warp_ani_used = true;
 
 	// this is a valid/legal ship to create
 	return 1;
@@ -3580,23 +3474,15 @@ void parse_common_object_data(p_object *p_objp)
 	// Genghis: used later for subsystem checking
 	auto sip = &Ship_info[p_objp->ship_class];
 
-	// set some defaults..
-	p_objp->initial_velocity = 0;
-	p_objp->initial_hull = 100;
-	p_objp->initial_shields = 100;
-
 	// now change defaults if present
-	if (optional_string("+Initial Velocity:")) {
+	if (optional_string("+Initial Velocity:"))
 		stuff_int(&p_objp->initial_velocity);
-	}
-
 	if (optional_string("+Initial Hull:"))
 		stuff_int(&p_objp->initial_hull);
 	if (optional_string("+Initial Shields:"))
 		stuff_int(&p_objp->initial_shields);
 
 	p_objp->subsys_index = Subsys_index;
-	p_objp->subsys_count = 0;
 	while (optional_string("+Subsystem:")) {
 		i = allocate_subsys_status();
 
@@ -3658,7 +3544,6 @@ void parse_common_object_data(p_object *p_objp)
 
 		if (optional_string("+Sbank Ammo:"))
 			stuff_int_list(Subsys_status[i].secondary_ammo, MAX_SHIP_SECONDARY_BANKS, RAW_INTEGER_TYPE);
-
 	}
 }
 
@@ -4400,7 +4285,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 
 void parse_wing(mission *pm)
 {
-	int wingnum, i, wing_goals, delay, saved_arrival_delay;
+	int wingnum, i, wing_goals;
 	char name[NAME_LENGTH], ship_names[MAX_SHIPS_PER_WING][NAME_LENGTH];
     char wing_flag_strings[PARSEABLE_WING_FLAGS][NAME_LENGTH];
 	wing *wingp;
@@ -4501,18 +4386,20 @@ void parse_wing(mission *pm)
 		wingp->arrival_path_mask = add_path_restriction();
 	}
 
-	if (optional_string("+Arrival delay:")) {
+	if (optional_string("+Arrival delay:"))
+	{
+		int delay;
 		stuff_int(&delay);
-		if ( delay < 0 )
-			Error(LOCATION, "Cannot have arrival delay < 0 on wing %s", wingp->name );
-	} else
-		delay = 0;
-	saved_arrival_delay = delay;
+		if (delay < 0)
+		{
+			Warning(LOCATION, "Cannot have arrival delay < 0 on wing %s", wingp->name);
+			delay = 0;
+		}
 
-	if ( !Fred_running ){
-		wingp->arrival_delay = -delay;
-	} else {
-		wingp->arrival_delay = delay;
+		if (!Fred_running)
+			wingp->arrival_delay = -delay;			// use negative numbers to mean we haven't set up a timer yet
+		else
+			wingp->arrival_delay = delay;
 	}
 
 	required_string("$Arrival Cue:");
@@ -4533,17 +4420,21 @@ void parse_wing(mission *pm)
 		wingp->departure_path_mask = add_path_restriction();
 	}
 
-	if (optional_string("+Departure delay:")) {
+	if (optional_string("+Departure delay:"))
+	{
+		int delay;
 		stuff_int(&delay);
-		if ( delay < 0 )
-			Error(LOCATION, "Cannot have departure delay < 0 on wing %s", wingp->name );
-	} else
-		delay = 0;
+		if (delay < 0)
+		{
+			Warning(LOCATION, "Cannot have departure delay < 0 on wing %s", wingp->name);
+			delay = 0;
+		}
 
-	if ( !Fred_running )
-		wingp->departure_delay = -delay;		// use negative numbers to mean that delay timer not yet set
-	else
-		wingp->departure_delay = delay;
+		if (!Fred_running)
+			wingp->departure_delay = -delay;		// use negative numbers to mean that delay timer not yet set
+		else
+			wingp->departure_delay = delay;
+	}
 
 	required_string("$Departure Cue:");
 	wingp->departure_cue = get_sexp_main();
@@ -4674,8 +4565,8 @@ void parse_wing(mission *pm)
 				assigned++;
 
 				// Goober5000 - if this is a player start object, there shouldn't be a wing arrival delay (Mantis #2678)
-				if ((p_objp->flags[Mission::Parse_Object_Flags::OF_Player_start]) && (saved_arrival_delay != 0)) {
-					Warning(LOCATION, "Wing %s specifies an arrival delay of %ds, but it also contains a player.  The arrival delay will be reset to 0.", wingp->name, saved_arrival_delay);
+				if ((p_objp->flags[Mission::Parse_Object_Flags::OF_Player_start]) && (wingp->arrival_delay != 0)) {
+					Warning(LOCATION, "Wing %s specifies an arrival delay of %ds, but it also contains a player.  The arrival delay will be reset to 0.", wingp->name, abs(wingp->arrival_delay));
 					if (!Fred_running && wingp->arrival_delay > 0) {
 						// timestamp has been set, so set it again
 						wingp->arrival_delay = timestamp(0);
@@ -4683,8 +4574,6 @@ void parse_wing(mission *pm)
 						// no timestamp, or timestamp invalid
 						wingp->arrival_delay = 0;
 					}
-					// prevent message from reappearing
-					saved_arrival_delay = 0;
 				}
 			}
 		}
@@ -4802,6 +4691,7 @@ void post_process_ships_wings()
 
 	// Goober5000 - now add all the parse objects to the ship registry.  This must be done before
 	// any ships are created from the parse objects.
+	// Might as well do any post-processing for parse objects here too.
 	for (auto &p_obj : Parse_objects)
 	{
 		ship_registry_entry entry(p_obj.name);
@@ -4809,6 +4699,44 @@ void post_process_ships_wings()
 
 		Ship_registry.push_back(entry);
 		Ship_registry_map[p_obj.name] = static_cast<int>(Ship_registry.size() - 1);
+
+		// also load any replacement textures (do this outside the parse loop because we may have ship class replacements too)
+		for (SCP_vector<texture_replace>::iterator tr = p_obj.replacement_textures.begin(); tr != p_obj.replacement_textures.end(); ++tr)
+		{
+			// load the texture
+			if (!stricmp(tr->new_texture, "invisible"))
+			{
+				// invisible is a special case
+				tr->new_texture_id = REPLACE_WITH_INVISIBLE;
+			}
+			else
+			{
+				// try to load texture or anim as normal
+				tr->new_texture_id = bm_load_either(tr->new_texture);
+			}
+
+			// not found?
+			if (tr->new_texture_id < 0)
+				mprintf(("Could not load replacement texture %s for ship %s\n", tr->new_texture, p_obj.name));
+
+			// account for FRED
+			if (Fred_running)
+			{
+				Fred_texture_replacements.push_back(*tr);
+				Fred_texture_replacements.back().new_texture_id = -1;
+			}
+		}
+
+		// Goober5000 - preload stuff for certain object flags
+		// (done after parsing object, but before creating it)
+		if (p_obj.flags[Mission::Parse_Object_Flags::Knossos_warp_in])
+			Knossos_warp_ani_used = true;
+
+		// check the warp parameters too
+		if (p_obj.warpin_params_index >= 0 && (Warp_params[p_obj.warpin_params_index].warp_type == WT_KNOSSOS || Warp_params[p_obj.warpin_params_index].warp_type == WT_DEFAULT_THEN_KNOSSOS))
+			Knossos_warp_ani_used = true;
+		if (p_obj.warpout_params_index >= 0 && (Warp_params[p_obj.warpout_params_index].warp_type == WT_KNOSSOS || Warp_params[p_obj.warpout_params_index].warp_type == WT_DEFAULT_THEN_KNOSSOS))
+			Knossos_warp_ani_used = true;
 	}
 
 	// Goober5000 - now create all objects that we can.  This must be done before any ship stuff
@@ -5286,8 +5214,17 @@ void parse_reinforcement(mission *pm)
 	// reset the flags to 0
 	ptr->flags = 0;
 
-	if ( optional_string("+Arrival delay:") ){
-		stuff_int( &(ptr->arrival_delay) );
+	if ( optional_string("+Arrival delay:") )
+	{
+		int delay;
+		stuff_int(&delay);
+		if (delay < 0)
+		{
+			Warning(LOCATION, "Cannot have arrival delay < 0 on reinforcement %s", ptr->name);
+			delay = 0;
+		}
+
+		ptr->arrival_delay = delay;
 	}
 
 	if ( optional_string("+No Messages:") ){
@@ -8144,9 +8081,22 @@ void mission_bring_in_support_ship( object *requester_objp )
 	// object since I'm no longer working with a mission file.  These exceptions will be noted with
 	// comments
 
+	Support_ship_pobj = p_object();		// get a fresh p_object with default fields
 	Arriving_support_ship = &Support_ship_pobj;
 	pobj = Arriving_support_ship;
 	pobj->ship_class = ship_class;
+	auto sip = &Ship_info[ship_class];
+
+	// initialize class-specific fields
+	pobj->ai_class = sip->ai_class;
+	pobj->warpin_params_index = sip->warpin_params_index;
+	pobj->warpout_params_index = sip->warpout_params_index;
+	pobj->ship_max_shield_strength = sip->max_shield_strength;
+	pobj->ship_max_hull_strength = sip->max_hull_strength;
+	Assert(pobj->ship_max_hull_strength > 0.0f);	// Goober5000: div-0 check (not shield because we might not have one)
+	pobj->max_shield_recharge = sip->max_shield_recharge;
+	pobj->replacement_textures = sip->replacement_textures;	// initialize our set with the ship class set, which may be empty
+	pobj->score = sip->score;
 
 	// get average position of all ships
 	obj_get_average_ship_pos( &center );
@@ -8176,40 +8126,14 @@ void mission_bring_in_support_ship( object *requester_objp )
 		if ( (ship_name_lookup(pobj->name) == -1) && (ship_find_exited_ship_by_name(pobj->name) == -1) )
 			break;
 		i++;
-	} while(1);
-
-	vm_set_identity( &(pobj->orient) );
-
-	// set support ship hitpoints
-	pobj->ship_max_hull_strength = Ship_info[i].max_hull_strength;
-	pobj->ship_max_shield_strength = Ship_info[i].max_shield_strength;
-	pobj->max_shield_recharge = Ship_info[i].max_shield_recharge;
+	} while(true);
 
 	pobj->team = requester_shipp->team;
 
-	pobj->alt_iff_color.clear();
-
-	pobj->behavior = AIM_NONE;		// ASSUMPTION:  the mission file has the string "None" which maps to AIM_NONE
-
-	// set the ai_goals to -1.  We will put the requester object shipname in repair target array and then take
+	// We will put the requester object shipname in repair target array and then take
 	// care of setting up the goal when creating the ship!!!!
-	pobj->ai_goals = -1;
 	Num_arriving_repair_targets = 0;
 	mission_add_to_arriving_support( requester_objp );
-
-	// need to set ship's cargo to nothing.  scan the cargo_names array looking for the string nothing.
-	// add it if not found
-	for (i = 0; i < Num_cargo; i++ )
-		if ( !stricmp(Cargo_names[i], NOX("nothing")) )
-			break;
-
-	if ( i == Num_cargo ) {
-		strcpy(Cargo_names[i], NOX("Nothing"));
-		Num_cargo++;
-	}
-	pobj->cargo1 = char(i);
-
-	pobj->status_count = 0;
 
 	// Goober5000 - take some stuff from mission flags
 	pobj->arrival_location = The_mission.support_ships.arrival_location;
@@ -8217,48 +8141,15 @@ void mission_bring_in_support_ship( object *requester_objp )
 	pobj->departure_location = The_mission.support_ships.departure_location;
 	pobj->departure_anchor = The_mission.support_ships.departure_anchor;
 
-	pobj->arrival_path_mask = 0;
-	pobj->departure_path_mask = 0;
-
-	pobj->arrival_distance = 0;
-	pobj->arrival_cue = Locked_sexp_true;
 	pobj->arrival_delay = timestamp_rand(WARP_IN_TIME_MIN, WARP_IN_TIME_MAX);
 
-	pobj->subsys_count = 0;				// number of elements used in subsys_status array
 	pobj->initial_velocity = 100;		// start at 100% velocity
-	pobj->initial_hull = 100;			// start at 100% hull	
-	pobj->initial_shields = 100;		// and 100% shields
-
-	pobj->departure_cue = Locked_sexp_false;
-	pobj->departure_delay = 0;
-
-	pobj->warpin_params_index = -1;
-	pobj->warpout_params_index = -1;
-
-	pobj->wingnum = -1;
-
-    pobj->flags.reset();
 
     if (Player_obj->flags[Object::Object_Flags::No_shields])  {
 		pobj->flags.set(Mission::Parse_Object_Flags::OF_No_shields);	// support ships have no shields when player has not shields
 	}
 
-	pobj->ai_class = Ship_info[pobj->ship_class].ai_class;
-	pobj->hotkey = -1;
-	pobj->score = 0;
-	pobj->assist_score_pct = 0;
-
-	pobj->dock_list = NULL;
-	pobj->created_object = NULL;
-	pobj->group = -1;
-	pobj->persona_index = -1;
 	pobj->net_signature = multi_assign_network_signature(MULTI_SIG_SHIP);
-	pobj->wing_status_wing_index = -1;
-	pobj->wing_status_wing_pos = -1;
-	pobj->respawn_count = 0;
-	pobj->alt_type_index = -1;
-	pobj->callsign_index = -1;
-	pobj->replacement_textures.clear();
 }
 
 /**

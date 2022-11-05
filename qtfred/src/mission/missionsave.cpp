@@ -1506,20 +1506,6 @@ int CFred_mission_save::save_common_object_data(object* objp, ship* shipp)
 		fso_comment_pop();
 	}
 
-	/*	for (j=0; j<shipp->status_count; j++) {
-	required_string_fred("$Status Description:");
-	parse_comments(-1);
-	fout(" %s", Status_desc_names[shipp->status_type[j]]);
-
-	required_string_fred("$Status:");
-	parse_comments(-1);
-	fout(" %s", Status_type_names[shipp->status[j]]);
-
-	required_string_fred("$Target:");
-	parse_comments(-1);
-	fout(" %s", Status_target_names[shipp->target[j]]);
-	}*/
-
 	fso_comment_pop(true);
 
 	return err;
