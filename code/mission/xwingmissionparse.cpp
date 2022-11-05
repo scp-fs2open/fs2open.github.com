@@ -11,6 +11,8 @@
 #include "xwinglib.h"
 #include "xwingmissionparse.h"
 
+extern int allocate_subsys_status();
+
 static int Player_flight_group = 0;
 
 // vazor222
@@ -59,7 +61,7 @@ int xwi_determine_anchor(XWingMission *xwim, XWMFlightGroup *fg)
 	return -1;
 }
 
-const char *xwi_determine_ship_class(XWMFlightGroup *fg)
+const char *xwi_determine_base_ship_class(XWMFlightGroup *fg)
 {
 	int flightGroupType = fg->flightGroupType;
 
@@ -106,6 +108,48 @@ const char *xwi_determine_ship_class(XWMFlightGroup *fg)
 	return nullptr;
 }
 
+int xwi_determine_ship_class(XWMFlightGroup *fg)
+{
+	char ship_class_buffer[NAME_LENGTH];
+
+	// base ship class must exist
+	auto class_name = xwi_determine_base_ship_class(fg);
+	if (class_name == nullptr)
+		return -1;
+
+	strcpy_s(ship_class_buffer, class_name);
+	bool variant = false;
+
+	// now see if we have any variants
+	if (fg->craftColor == XWMFlightGroup::c_Red)
+	{
+		strcat_s(ship_class_buffer, "#red");
+		variant = true;
+	}
+	else if (fg->craftColor == XWMFlightGroup::c_Gold)
+	{
+		strcat_s(ship_class_buffer, "#gold");
+		variant = true;
+	}
+	else if (fg->craftColor == XWMFlightGroup::c_Blue)
+	{
+		strcat_s(ship_class_buffer, "#blue");
+		variant = true;
+	}
+
+	if (variant)
+	{
+		int ship_class = ship_info_lookup(ship_class_buffer);
+		if (ship_class >= 0)
+			return ship_class;
+
+		Warning(LOCATION, "Could not find variant ship class for flight group %s", fg->designation.c_str());
+	}
+
+	// no variant, or we're just going with the base class
+	return ship_info_lookup(class_name);
+}
+
 const char *xwi_determine_team(XWingMission *xwim, XWMFlightGroup *fg, ship_info *sip)
 {
 	auto player_iff = xwim->flightgroups[Player_flight_group]->craftIFF;
@@ -127,7 +171,7 @@ const char *xwi_determine_team(XWingMission *xwim, XWMFlightGroup *fg, ship_info
 	}
 
 	if (fg->craftIFF == XWMFlightGroup::iff_neutral)
-		return "True Neutral";
+		return "Civilian";
 
 	return nullptr;
 }
@@ -151,6 +195,7 @@ int xwi_lookup_cargo(const char *cargo_name)
 
 void parse_xwi_flightgroup(mission *pm, XWingMission *xwim, XWMFlightGroup *fg)
 {
+	// see if this flight group is what FreeSpace would treat as a wing
 	wing *wingp = nullptr;
 	int wingnum = -1;
 	if (fg->numberInWave > 1 || fg->numberOfWaves > 1 || is_fighter_or_bomber(fg))
@@ -170,15 +215,46 @@ void parse_xwi_flightgroup(mission *pm, XWingMission *xwim, XWMFlightGroup *fg)
 		wingp->wave_count = fg->numberInWave;
 	}
 
-	for (int i = 0; i < fg->numberInWave; i++)
+	// all ships in the flight group share a class, so determine that here
+	int ship_class = xwi_determine_ship_class(fg);
+	if (ship_class < 0)
+	{
+		Warning(LOCATION, "Unable to determine ship class for Flight Group %s", fg->designation.c_str());
+		ship_class = 0;
+	}
+	auto sip = &Ship_info[ship_class];
+
+	// similarly for the team
+	auto team_name = xwi_determine_team(xwim, fg, sip);
+	int team = Species_info[sip->species].default_iff;
+	if (team_name)
+	{
+		int index = iff_lookup(team_name);
+		if (index >= 0)
+			team = index;
+		else
+			Warning(LOCATION, "Could not find iff %s", team_name);
+	}
+
+	// similarly for any waypoints
+	auto start1 = vm_vec_new(fg->start1_x, fg->start1_y, fg->start1_z);
+	auto start2 = vm_vec_new(fg->start2_x, fg->start2_y, fg->start2_z);
+	auto start3 = vm_vec_new(fg->start3_x, fg->start3_y, fg->start3_z);
+	auto waypoint1 = vm_vec_new(fg->wp1_x, fg->wp1_y, fg->wp1_z);
+	auto waypoint2 = vm_vec_new(fg->wp2_x, fg->wp2_y, fg->wp2_z);
+	auto waypoint3 = vm_vec_new(fg->wp3_x, fg->wp3_y, fg->wp3_z);
+	auto hyp = vm_vec_new(fg->hyperspace_x, fg->hyperspace_y, fg->hyperspace_z);
+
+	// now configure each ship in the flight group
+	for (int wave_index = 0; wave_index < fg->numberInWave; wave_index++)
 	{
 		p_object pobj;
 
 		if (wingp)
 		{
-			wing_bash_ship_name(pobj.name, fg->designation.c_str(), i + 1, nullptr);
+			wing_bash_ship_name(pobj.name, fg->designation.c_str(), wave_index + 1, nullptr);
 			pobj.wingnum = wingnum;
-			pobj.pos_in_wing = i;
+			pobj.pos_in_wing = wave_index;
 		}
 		else
 		{
@@ -190,66 +266,57 @@ void parse_xwi_flightgroup(mission *pm, XWingMission *xwim, XWMFlightGroup *fg)
 			pobj.departure_anchor = pobj.arrival_anchor;
 		}
 
-		auto ship_class_name = xwi_determine_ship_class(fg);
-		int ship_class = 0;
-		if (ship_class_name)
-		{
-			int index = ship_info_lookup(ship_class_name);
-			if (index >= 0)
-				ship_class = index;
-			else
-				Warning(LOCATION, "Could not find ship class %s", ship_class_name);
-		}
-		else
-			Warning(LOCATION, "Unable to determine ship class for Flight Group %s", fg->designation.c_str());
-		auto sip = &Ship_info[ship_class];
 		pobj.ship_class = ship_class;
 
+		// initialize class-specific fields
+		pobj.ai_class = sip->ai_class;
 		pobj.warpin_params_index = sip->warpin_params_index;
 		pobj.warpout_params_index = sip->warpout_params_index;
+		pobj.ship_max_shield_strength = sip->max_shield_strength;
+		pobj.ship_max_hull_strength = sip->max_hull_strength;
+		Assert(pobj.ship_max_hull_strength > 0.0f);	// Goober5000: div-0 check (not shield because we might not have one)
+		pobj.max_shield_recharge = sip->max_shield_recharge;
+		pobj.replacement_textures = sip->replacement_textures;	// initialize our set with the ship class set, which may be empty
+		pobj.score = sip->score;
 
-		auto team_name = xwi_determine_team(xwim, fg, sip);
-		int team = Species_info[sip->species].default_iff;
-		if (team_name)
-		{
-			int index = iff_lookup(team_name);
-			if (index >= 0)
-				team = index;
-			else
-				Warning(LOCATION, "Could not find iff %s", team_name);
-		}
 		pobj.team = team;
-
-		auto start1 = vm_vec_new(fg->start1_x, fg->start1_y, fg->start1_z);
-		auto start2 = vm_vec_new(fg->start2_x, fg->start2_y, fg->start2_z);
-		auto start3 = vm_vec_new(fg->start3_x, fg->start3_y, fg->start3_z);
-		auto waypoint1 = vm_vec_new(fg->wp1_x, fg->wp1_y, fg->wp1_z);
-		auto waypoint2 = vm_vec_new(fg->wp2_x, fg->wp2_y, fg->wp2_z);
-		auto waypoint3 = vm_vec_new(fg->wp3_x, fg->wp3_y, fg->wp3_z);
-		auto hyp = vm_vec_new(fg->hyperspace_x, fg->hyperspace_y, fg->hyperspace_z);
 
 		pobj.pos = start1;
 		vec3d fvec;
 		vm_vec_normalized_dir(&fvec, &start1, &hyp);
 		vm_vector_2_matrix_norm(&pobj.orient, &fvec);
 
-		if (wingp && i == fg->specialShipNumber)
+		if (wingp && wave_index == fg->specialShipNumber)
 			pobj.cargo1 = (char)xwi_lookup_cargo(fg->specialCargo.c_str());
 		else
 			pobj.cargo1 = (char)xwi_lookup_cargo(fg->cargo.c_str());
 
 		pobj.initial_velocity = 100;
-		pobj.initial_hull = 100;
-		pobj.initial_shields = 100;
 
-		if (fg->playerPos == i + 1)
+		if (fg->playerPos == wave_index + 1)
 		{
 			pobj.flags.set(Mission::Parse_Object_Flags::OF_Player_start);
 			pobj.flags.set(Mission::Parse_Object_Flags::SF_Cargo_known);
 			Player_starts++;
 		}
 
-		pobj.score = sip->score;
+		if (fg->craftStatus == XWMFlightGroup::cs_no_shields)
+			pobj.flags.set(Mission::Parse_Object_Flags::OF_No_shields);
+
+		if (fg->craftStatus == XWMFlightGroup::cs_no_missiles || fg->craftStatus == XWMFlightGroup::cs_half_missiles)
+		{
+			// the only subsystem we actually need is Pilot, because everything else uses defaults
+			pobj.subsys_index = Subsys_index;
+			int subsys_index = allocate_subsys_status();
+			pobj.subsys_count++;
+			strcpy_s(Subsys_status[subsys_index].name, NOX("Pilot"));
+
+			for (int bank = 0; bank < MAX_SHIP_SECONDARY_BANKS; bank++)
+			{
+				Subsys_status[Subsys_index].secondary_banks[bank] = SUBSYS_STATUS_NO_CHANGE;
+				Subsys_status[Subsys_index].secondary_ammo[bank] = (fg->craftStatus == XWMFlightGroup::cs_no_missiles) ? 0 : 50;
+			}
+		}
 	}
 }
 
