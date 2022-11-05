@@ -1514,9 +1514,8 @@ void asteroid_hit( object * pasteroid_obj, object * other_obj, vec3d * hitpos, f
  */
 void asteroid_level_close()
 {
-	int	i;
 
-	for (i=0; i<MAX_ASTEROIDS; i++) {
+	for (int i=0; i<MAX_ASTEROIDS; i++) {
 		if (Asteroids[i].flags & AF_USED) {
 			Asteroids[i].flags &= ~AF_USED;
 			Assert(Asteroids[i].objnum >=0 && Asteroids[i].objnum < MAX_OBJECTS);
