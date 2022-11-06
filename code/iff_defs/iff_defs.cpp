@@ -184,7 +184,7 @@ void resolve_iff_data()
 	}
 }
 
-static iff_info* get_iff_pointer(char* name)
+static iff_info* get_iff_pointer(const char* name)
 {
 	for (int i = 0; i < (int)Iff_info.size(); i++) {
 		if (!stricmp(name, Iff_info[i].iff_name)) {
@@ -196,7 +196,7 @@ static iff_info* get_iff_pointer(char* name)
 	return nullptr;
 }
 
-static int get_iff_position(char* name)
+static int get_iff_position(const char* name)
 {
 	for (int i = 0; i < (int)Iff_info.size(); i++) {
 		if (!stricmp(name, Iff_info[i].iff_name)) {
@@ -406,7 +406,7 @@ void parse_iff_table(const char* filename)
 			mprintf(("IFFs got to name %s\n", ifft.iff_name));
 			if (optional_string("+nocreate")) {
 				if (!Parsing_modular_table) {
-					Warning(LOCATION, "+nocreate flag used for iff in non-modular table\n");
+					error_display(0, "+nocreate flag used for iff in non-modular table\n");
 				}
 				create_if_not_found = false;
 			}
@@ -441,11 +441,7 @@ void parse_iff_table(const char* filename)
 			cur_iff = get_iff_position(ifft.iff_name);
 
 			// get the iff color
-			if (optional_string("$Colour:")) {
-				stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
-				iffp->color_index = iff_init_color(rgb[0], rgb[1], rgb[2]);
-			}
-			if (optional_string("$Color:")) {
+			if (optional_string_either("$Colour:", "$Color:") != -1) {
 				stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
 				iffp->color_index = iff_init_color(rgb[0], rgb[1], rgb[2]);
 			}
