@@ -440,13 +440,16 @@ void parse_xwi_flightgroup(mission *pm, XWingMission *xwim, XWMFlightGroup *fg)
 
 		if (fg->arriveByHyperspace)
 		{
-			// YOGEME: When a craft arrives via hyperspace, it will be oriented such that it will pass through HYP and be pointing towards SP1
+			// RandomStarfighter says:
+			// It arrives from start point and points toward waypoint 1, if waypoint 1 is enabled.
+			// This also matches FG Red orientation in STARSNDB
 			vec3d fvec;
-			vm_vec_normalized_dir(&fvec, &start1, &hyp);
+			vm_vec_normalized_dir(&fvec, &waypoint1, &start1);
 			vm_vector_2_matrix_norm(&pobj.orient, &fvec);
 		}
 		else
 		{
+			// This matches the Intrepid's orientation in STARSNDB
 			vec3d fvec;
 			vm_vec_normalized_dir(&fvec, &hyp, &start1);
 			vm_vector_2_matrix_norm(&pobj.orient, &fvec);
