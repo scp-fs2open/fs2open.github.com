@@ -19,6 +19,7 @@
 
 #define MODEL_LIB
 
+#include "mod_table/mod_table.h"
 #include "asteroid/asteroid.h"
 #include "bmpman/bmpman.h"
 #include "cfile/cfile.h"
@@ -3004,7 +3005,7 @@ modelread_status read_and_process_model_file(polymodel* pm, const char* filename
 	return status;
 }
 
-
+//extern int blank_reflect_texture;
 //Goober
 void model_load_texture(polymodel *pm, int i, char *file)
 {
@@ -3053,7 +3054,11 @@ void model_load_texture(polymodel *pm, int i, char *file)
 	texture_info *tglow = &tmap->textures[TM_GLOW_TYPE];
 	if ( (!Cmdline_glow && !Fred_running) || (tbase->GetTexture() < 0))
 	{
-		tglow->clear();
+		if ( blank_glow_texture >= 0) {
+			tglow->SetTexture(blank_glow_texture);
+			bm_use(blank_reflect_texture); //Evil hack: the techroom drops use count twice, so to keep the defaults from being cleaned up...
+			bm_use(blank_reflect_texture);
+		}
 	}
 	else
 	{
@@ -3062,6 +3067,12 @@ void model_load_texture(polymodel *pm, int i, char *file)
 		strlwr(tmp_name);
 
 		tglow->LoadTexture(tmp_name, pm->filename);
+
+		if ( tglow->GetTexture() < 0 && blank_glow_texture >= 0) {
+			tglow->SetTexture(blank_glow_texture);
+			bm_use(blank_reflect_texture); //Evil hack: the techroom drops use count twice, so to keep the defaults from being cleaned up...
+			bm_use(blank_reflect_texture);
+		}
 	}
 	// -------------------------------------------------------------------------
 
@@ -3071,7 +3082,11 @@ void model_load_texture(polymodel *pm, int i, char *file)
 	if ( (!Cmdline_spec && !Fred_running) || (tbase->GetTexture() < 0))
 	{
 		tspec->clear();
-		tspecgloss->clear();
+		if ( blank_reflect_texture >= 0) {
+			tspecgloss->SetTexture(blank_reflect_texture);
+			bm_use(blank_reflect_texture); //Evil hack: the techroom drops use count twice, so to keep the defaults from being cleaned up...
+			bm_use(blank_reflect_texture);
+		}
 	}
 	else
 	{
@@ -3088,6 +3103,12 @@ void model_load_texture(polymodel *pm, int i, char *file)
 		strlwr(tmp_name);
 
 		tspec->LoadTexture(tmp_name, pm->filename);
+		//If we can't load a specular texture here, use the default
+		if ((tspec->GetTexture() < 0 && tspecgloss->GetTexture() < 0 && blank_reflect_texture >= 0)){
+			tspecgloss->SetTexture(blank_reflect_texture);
+			bm_use(blank_reflect_texture); //Evil hack: the techroom drops use count twice, so to keep the defaults from being cleaned up...
+			bm_use(blank_reflect_texture);
+		}
 	}
 	//tmap->spec_map.original_texture = tmap->spec_map.texture;
 	// -------------------------------------------------------------------------
@@ -3096,12 +3117,22 @@ void model_load_texture(polymodel *pm, int i, char *file)
 	texture_info *tnorm = &tmap->textures[TM_NORMAL_TYPE];
 	if ( (!Cmdline_normal && !Fred_running) || (tbase->GetTexture() < 0) ) {
 		tnorm->clear();
+		if (blank_normal_texture >= 0) {
+			tnorm->SetTexture(blank_normal_texture);
+			bm_use(blank_normal_texture); //Evil hack: the techroom drops use count twice, so to keep the defaults from being cleaned up...
+			bm_use(blank_normal_texture);
+		}
 	} else {
 		strcpy_s(tmp_name, file);
 		strcat_s(tmp_name, "-normal");
 		strlwr(tmp_name);
 
 		tnorm->LoadTexture(tmp_name, pm->filename);
+		if (tnorm->GetTexture() < 0 && blank_normal_texture >= 0){
+			tnorm->SetTexture(blank_normal_texture);
+			bm_use(blank_normal_texture); //Evil hack: the techroom drops use count twice, so to keep the defaults from being cleaned up...
+			bm_use(blank_normal_texture);
+		}
 	}
 
 	// try to get a height map too
@@ -3125,6 +3156,12 @@ void model_load_texture(polymodel *pm, int i, char *file)
 
 	tambient->LoadTexture(tmp_name, pm->filename);
 
+	if (tambient->GetTexture() < 0 && blank_ao_texture >= 0){
+		tambient->SetTexture(blank_ao_texture);
+		bm_use(blank_ao_texture); //Evil hack: the techroom drops use count twice, so to keep the defaults from being cleaned up...
+		bm_use(blank_ao_texture);
+	}
+
 	// Utility map -------------------------------------------------------------
 	texture_info *tmisc = &tmap->textures[TM_MISC_TYPE];
 
@@ -3134,6 +3171,11 @@ void model_load_texture(polymodel *pm, int i, char *file)
 
 	tmisc->LoadTexture(tmp_name, pm->filename);
 
+	if (tmisc->GetTexture() < 0 && blank_misc_texture >= 0){
+		tmisc->SetTexture(blank_misc_texture);
+		bm_use(blank_misc_texture); //Evil hack: the techroom drops use count twice, so to keep the defaults from being cleaned up...
+		bm_use(blank_misc_texture);
+	}
 	// -------------------------------------------------------------------------
 
 	// See if we need to compile a new shader for this material
@@ -3143,19 +3185,21 @@ void model_load_texture(polymodel *pm, int i, char *file)
 		shader_flags |= SDR_FLAG_MODEL_DIFFUSE_MAP;
 	if (tglow->GetTexture() > 0 && Cmdline_glow)
 		shader_flags |= SDR_FLAG_MODEL_GLOW_MAP;
-	if ((tspec->GetTexture() > 0 || tspecgloss->GetTexture() > 0) && Cmdline_spec)
-		shader_flags |= SDR_FLAG_MODEL_SPEC_MAP;
-	if (tnorm->GetTexture() > 0 && Cmdline_normal)
-		shader_flags |= SDR_FLAG_MODEL_NORMAL_MAP;
+	//Specular is always true now, to be removed next.
+	//if ((tspec->GetTexture() > 0 || tspecgloss->GetTexture() > 0) && Cmdline_spec)
+	shader_flags |= SDR_FLAG_MODEL_SPEC_MAP;
+//	if (tnorm->GetTexture() > 0 && Cmdline_normal)
+	shader_flags |= SDR_FLAG_MODEL_NORMAL_MAP;
+
 	if (theight->GetTexture() > 0 && Cmdline_height)
 		shader_flags |= SDR_FLAG_MODEL_HEIGHT_MAP;
 	if (Cmdline_env) // always render envmaps, they contribue lightning no matter what textures are avaliable.
 		shader_flags |= SDR_FLAG_MODEL_ENV_MAP;
-	if (tmisc->GetTexture() > 0)
-		shader_flags |= SDR_FLAG_MODEL_MISC_MAP;
-	if (tambient->GetTexture() >0)
-		shader_flags |= SDR_FLAG_MODEL_AMBIENT_MAP;
-	
+	//if (tmisc->GetTexture() > 0)
+	shader_flags |= SDR_FLAG_MODEL_MISC_MAP;
+	//if (tambient->GetTexture() >0)
+	shader_flags |= SDR_FLAG_MODEL_AMBIENT_MAP;
+
 	gr_maybe_create_shader(SDR_TYPE_MODEL, SDR_FLAG_MODEL_SHADOW_MAP);
 
 	shader_flags |= SDR_FLAG_MODEL_CLIP;

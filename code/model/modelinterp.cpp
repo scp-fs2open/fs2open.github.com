@@ -9,6 +9,7 @@
 
 
 
+#include "bmpman/bm_internal.h"
 #define MODEL_LIB
 
 #include "bmpman/bmpman.h"
@@ -2932,8 +2933,24 @@ int texture_info::SetTexture(int n_tex)
 	if(n_tex != -1 && !bm_is_valid(n_tex))
 		return texture;
 
+	//if there already is a texture and it isn't what we're switching to, release it.
+	if (texture >= 0 && texture != original_texture && texture != n_tex) {
+		//bm_release(texture);
+	}
+
+	//If the new texture isn't the original texture, then we did not go through
+	//LoadTexture(), and need t o claim this texture.
+	if ( n_tex != original_texture && texture != n_tex) {
+		//bm_use(n_tex);
+	}
+
 	//Set the new texture
 	texture = n_tex;
+
+
+	//if this is being used to set a currently blank texture, now set original 
+	if(original_texture < 0)
+		original_texture = texture;
 
 	//If it is intentionally invalid, blank everything else
 	if(n_tex == -1)
@@ -2951,7 +2968,7 @@ int texture_info::SetTexture(int n_tex)
 
 		this->total_time = (num_frames / ((fps > 0) ? (float)fps : 1.0f));
 	}
-
+	
 	return texture;
 }
 

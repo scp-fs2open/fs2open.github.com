@@ -6,6 +6,7 @@
 #include "light.h"
 #include "globalincs/systemvars.h"
 #include "shadows.h"
+#include "mod_table/mod_table.h"
 
 namespace {
 void scale_matrix(matrix4& mat, const vec3d& scale) {
@@ -94,7 +95,8 @@ void convert_model_material(model_uniform_data* data_out,
 		}
 
 	}
-	data_out->defaultGloss = 0.6f;
+
+	data_out->defaultGloss = int(blank_gloss_value*255.0f);
 
 	if (shader_flags & SDR_FLAG_MODEL_DIFFUSE_MAP) {
 		if (material.is_desaturated()) {
@@ -102,7 +104,6 @@ void convert_model_material(model_uniform_data* data_out,
 		} else {
 			data_out->desaturate = 0;
 		}
-
 
 		switch (material.get_blend_mode()) {
 		case ALPHA_BLEND_PREMULTIPLIED:
@@ -125,26 +126,20 @@ void convert_model_material(model_uniform_data* data_out,
 
 	if (shader_flags & SDR_FLAG_MODEL_SPEC_MAP) {
 
+
 		if (material.get_texture_map(TM_SPEC_GLOSS_TYPE) > 0) {
 			data_out->sSpecmapIndex = bm_get_array_index(material.get_texture_map(TM_SPEC_GLOSS_TYPE));
 
-			data_out->gammaSpec = 1;
 			data_out->alphaGloss = 1;
 
 		} else {
 			data_out->sSpecmapIndex = bm_get_array_index(material.get_texture_map(TM_SPECULAR_TYPE));
 
-			data_out->gammaSpec = 0;
 			data_out->alphaGloss = 0;
 		}
 	}
 
 	if (shader_flags & SDR_FLAG_MODEL_ENV_MAP) {
-		if (material.get_texture_map(TM_SPEC_GLOSS_TYPE) > 0) {
-			data_out->envGloss = 1;
-		} else {
-			data_out->envGloss = 0;
-		}
 
 		data_out->envMatrix = gr_env_texture_matrix;
 	}
