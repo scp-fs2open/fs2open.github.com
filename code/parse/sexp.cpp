@@ -715,7 +715,8 @@ SCP_vector<sexp_oper> Operators = {
 	{ "set-skybox-orientation",			OP_SET_SKYBOX_ORIENT,					3,	3,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-ambient-light",				OP_SET_AMBIENT_LIGHT,					3,	3,			SEXP_ACTION_OPERATOR,	},	// Karajorma
 	{ "toggle-asteroid-field",			OP_TOGGLE_ASTEROID_FIELD,				1,	1,			SEXP_ACTION_OPERATOR,	},	// MjnMixael
-	{ "set-asteroid-field",				OP_SET_ASTEROID_FIELD,					3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// MjnMixael
+	{ "set-asteroid-field",				OP_SET_ASTEROID_FIELD,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// MjnMixael
+	{ "set-debris-field",				OP_SET_DEBRIS_FIELD,					1,	11,			SEXP_ACTION_OPERATOR,	},	// MjnMixael
 
 	//Jump Node Sub-Category
 	{ "set-jumpnode-name",				OP_JUMP_NODE_SET_JUMPNODE_NAME,			2,	2,			SEXP_ACTION_OPERATOR,	},	//CommanderDJ
@@ -14989,10 +14990,14 @@ void sexp_set_asteroid_field(int n)
 	bool is_nan, is_nan_forever;
 
 	for (int i = 0; i < MAX_ASTEROIDS; i++) {
-		if (Num_asteroids > 0) {
-			obj_delete(Asteroids[i].objnum);
+		if (Asteroids[i].flags & AF_USED) {
+			Asteroids[i].flags &= ~AF_USED;
+			Assert(Asteroids[i].objnum >= 0 && Asteroids[i].objnum < MAX_OBJECTS);
+			Objects[Asteroids[i].objnum].flags.set(Object::Object_Flags::Should_be_dead);
 		}
 	}
+	//This feels hackish, but we need to make sure all the asteroids are actually gone before we continue-Mjn
+	obj_delete_all_that_should_be_dead();
 
 	for (int i = 0; i < 3; i++) {
 
@@ -15023,6 +15028,9 @@ void sexp_set_asteroid_field(int n)
 		orange = is_sexp_true(n);
 		n = CDR(n);
 	}
+
+	if (!brown && !blue && !orange)
+		return;
 
 	if (n >= 0) {
 		for (int i = 0; i < 6; i++) {
@@ -15087,8 +15095,6 @@ void sexp_set_asteroid_field(int n)
 		}
 	}
 
-	asteroid_level_init();
-
 	if (num_asteroids == 0) {
 		return;
 	} else if (num_asteroids > MAX_ASTEROIDS) {
@@ -15146,6 +15152,148 @@ void sexp_set_asteroid_field(int n)
 
 	asteroid_create_all();
 
+}
+
+void sexp_set_debris_field(int n)
+{
+	int num_asteroids = 0, asteroid_speed = 0;
+	int debris1 = -1, debris2 = -1, debris3 = -1;
+	int o_minx = -1000, o_miny = -1000, o_minz = -1000;
+	int o_maxx = 1000, o_maxy = 1000, o_maxz = 1000;
+
+	SCP_vector<SCP_string> targets;
+
+	bool is_nan, is_nan_forever;
+
+	for (int i = 0; i < MAX_ASTEROIDS; i++) {
+		if (Asteroids[i].flags & AF_USED) {
+			Asteroids[i].flags &= ~AF_USED;
+			Assert(Asteroids[i].objnum >= 0 && Asteroids[i].objnum < MAX_OBJECTS);
+			Objects[Asteroids[i].objnum].flags.set(Object::Object_Flags::Should_be_dead);
+		}
+	}
+	// This feels hackish, but we need to make sure all the debris pieces are actually gone before we continue-Mjn
+	obj_delete_all_that_should_be_dead();
+
+	for (int i = 0; i < 2; i++) {
+
+		int temp = eval_num(n, is_nan, is_nan_forever);
+		if (is_nan || is_nan_forever)
+			return;
+
+		if (i == 0)
+			num_asteroids = temp;
+		else
+			asteroid_speed = temp;
+		n = CDR(n);
+	}
+
+	if (n >= 0) {
+		debris1 = get_asteroid_position(CTEXT(n));
+		n = CDR(n);
+	}
+
+	if (n >= 0) {
+		debris2 = get_asteroid_position(CTEXT(n));
+		n = CDR(n);
+	}
+
+	if (n >= 0) {
+		debris3 = get_asteroid_position(CTEXT(n));
+		n = CDR(n);
+	}
+
+	if ((debris1 == -1) && (debris2 == -1) && (debris3 == -1))
+		return;
+
+	if (n >= 0) {
+		for (int i = 0; i < 6; i++) {
+
+			int temp = eval_num(n, is_nan, is_nan_forever);
+			if (is_nan || is_nan_forever)
+				return;
+
+			if (i == 0)
+				o_minx = temp;
+			else if (i == 1)
+				o_maxx = temp;
+			else if (i == 2)
+				o_miny = temp;
+			else if (i == 3)
+				o_maxy = temp;
+			else if (i == 4)
+				o_minz = temp;
+			else
+				o_maxz = temp;
+			n = CDR(n);
+		}
+	}
+
+	if (n >= 0) {
+		int i = 0;
+		for (; n >= 0; true ? n = CDR(n) : n = -1) {
+			auto ship_entry = eval_ship(n);
+			if (!ship_entry)
+				continue;
+
+			targets[i] = ship_entry->name;
+			i++;
+		}
+	}
+
+	if (num_asteroids == 0) {
+		return;
+	} else if (num_asteroids > MAX_ASTEROIDS) {
+		num_asteroids = MAX_ASTEROIDS;
+	}
+	Asteroid_field.num_initial_asteroids = num_asteroids;
+
+	Asteroid_field.field_type = FT_PASSIVE;
+
+	vm_vec_rand_vec_quick(&Asteroid_field.vel);
+	vm_vec_scale(&Asteroid_field.vel, (float)asteroid_speed);
+	Asteroid_field.speed = (float)asteroid_speed;
+	Asteroid_field.debris_genre = DG_SHIP;
+
+	Asteroid_field.field_debris_type[0] = -1;
+	Asteroid_field.field_debris_type[1] = -1;
+	Asteroid_field.field_debris_type[2] = -1;
+
+	int count = 0;
+	for (int i = 0; i < MAX_ACTIVE_DEBRIS_TYPES; i++) {
+		if (debris1 >= 0) {
+			Asteroid_field.field_debris_type[i] = debris1;
+			debris1 = -1;
+			count++;
+			continue;
+		}
+		if (debris2 >= 0) {
+			Asteroid_field.field_debris_type[i] = debris2;
+			debris2 = -1;
+			count++;
+			continue;
+		}
+		if (debris3 >= 0) {
+			Asteroid_field.field_debris_type[i] = debris3;
+			debris3 = -1;
+			count++;
+			continue;
+		}
+	}
+
+	Asteroid_field.num_used_field_debris_types = count;
+
+	Asteroid_field.min_bound = vm_vec_new((float)o_minx, (float)o_miny, (float)o_minz);
+	Asteroid_field.max_bound = vm_vec_new((float)o_maxx, (float)o_maxy, (float)o_maxz);
+
+	vec3d a_rad;
+	vm_vec_sub(&a_rad, &Asteroid_field.max_bound, &Asteroid_field.min_bound);
+	vm_vec_scale(&a_rad, 0.5f);
+	float b_rad = vm_vec_mag(&a_rad);
+
+	Asteroid_field.bound_rad = MAX(3000.0f, b_rad);
+
+	asteroid_create_all();
 }
 
 /**
@@ -26477,6 +26625,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_SET_DEBRIS_FIELD:
+				sexp_set_debris_field(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_END_MISSION:
 				sexp_end_mission(node);
 				sexp_val = SEXP_TRUE;
@@ -28691,6 +28844,7 @@ int query_operator_return_type(int op)
 		case OP_NEBULA_TOGGLE_POOF:
 		case OP_TOGGLE_ASTEROID_FIELD:
 		case OP_SET_ASTEROID_FIELD:
+		case OP_SET_DEBRIS_FIELD:
 		case OP_SET_PRIMARY_AMMO:
 		case OP_SET_SECONDARY_AMMO:
 		case OP_SET_PRIMARY_WEAPON:
@@ -31236,6 +31390,14 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_SHIP;
 
+		case OP_SET_DEBRIS_FIELD:
+			if (argnum <= 1)
+				return OPF_POSITIVE;
+			else if (argnum <= 4)
+				return OPF_ASTEROID_DEBRIS;
+			else
+				return OPF_NUMBER;
+
 		case OP_SCRIPT_EVAL_BOOL:
 		case OP_SCRIPT_EVAL_NUM:
 		case OP_SCRIPT_EVAL_BLOCK:
@@ -33276,6 +33438,7 @@ int get_subcategory(int sexp_id)
 		case OP_SET_AMBIENT_LIGHT:
 		case OP_TOGGLE_ASTEROID_FIELD:
 		case OP_SET_ASTEROID_FIELD:
+		case OP_SET_DEBRIS_FIELD:
 			return CHANGE_SUBCATEGORY_BACKGROUND_AND_NEBULA;
 
 		case OP_JUMP_NODE_SET_JUMPNODE_NAME: //CommanderDJ
@@ -37884,10 +38047,10 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_SET_ASTEROID_FIELD, "set-asteroid-field\r\n" 
 		"\tCreates or overwrites the asteroid field. \r\n"
-		"\tTakes 3 or more arguments...\r\n"
+		"\tTakes 1 or more arguments...\r\n"
 		"\t1:\tNumber of asteroids in the field, or 0 to remove an existing field\r\n" 
-		"\t2:\t0 for active field, 1 for passive field\r\n"
-		"\t3:\tThe speed of the asteroids\r\n"
+		"\t2:\t0 for active field, 1 for passive field, defaults to 0\r\n"
+		"\t3:\tThe speed of the asteroids, defaults to 0\r\n"
 		"\t4:\tTrue to enable brown asteroids, defaults to true\r\n"
 		"\t5:\tTrue to enable blue asteroids, defaults to false\r\n"
 		"\t6:\tTrue to enable orange asteroids, defaults to false\r\n"
@@ -37905,6 +38068,22 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t18:\tInnerbox Min Z, defaults to -500\r\n"
 		"\t19:\tInnerbox Max Z, defaults to 500\r\n"
 		"\tRest:\tThe ships the asteroid field will target if it's an active field\r\n"
+	},
+
+	{ OP_SET_DEBRIS_FIELD, "set-debris-field\r\n" 
+		"\tCreates or overwrites the debris field. \r\n"
+		"\tTakes 1 or more arguments...\r\n"
+		"\t1:\tNumber of debris in the field, or 0 to remove an existing field\r\n" 
+		"\t2:\tThe speed of the asteroids, defaults to 0\r\n"
+		"\t3:\tThe type of debris, defaults to none\r\n"
+		"\t4:\tThe type of debris, defaults to none\r\n"
+		"\t5:\tThe type of debris, defaults to none\r\n"
+		"\t6:\tOuterbox Min X, defaults to -1000\r\n"
+		"\t7:\tOuterbox Max X, defaults to 1000\r\n"
+		"\t8:\tOuterbox Min Y, defaults to -1000\r\n"
+		"\t9:\tOuterbox Max Y, defaults to 1000\r\n"
+		"\t10:\tOuterbox Min Z, defaults to -1000\r\n"
+		"\t11:\tOuterbox Max Z, defaults to 1000\r\n"
 	}
 };
 // clang-format on

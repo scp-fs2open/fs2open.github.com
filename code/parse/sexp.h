@@ -130,6 +130,7 @@ struct ship_obj;
 #define OPF_TRANSLATING_SUBSYSTEM	99	// Goober5000 - a translating subsystem
 #define OPF_ANY_HUD_GAUGE		100		// Goober5000 - both custom and builtin
 #define OPF_WING_FLAG			101		// Goober5000 - The name of a wing flag
+#define OPF_ASTEROID_DEBRIS		102		// MjnMixael - Debris types as defined in asteroids.tbl
 
 // Operand return types
 #define	OPR_NUMBER				1	// returns number
@@ -833,6 +834,7 @@ struct ship_obj;
 #define OP_ALTER_WING_FLAG					(0x0058 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_TOGGLE_ASTEROID_FIELD			(0x0059 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// MjnMixael
 #define OP_SET_ASTEROID_FIELD				(0x005a | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// MjnMixael
+#define OP_SET_DEBRIS_FIELD					(0x005b | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// MjnMixael
 
 
 // defined for AI goals

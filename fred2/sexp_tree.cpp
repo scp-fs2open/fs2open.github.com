@@ -46,6 +46,7 @@
 #include "globalincs/alphacolors.h"
 #include "localization/localize.h"
 #include "AddModifyContainerDlg.h"
+#include "asteroid/asteroid.h"
 
 #define TREE_NODE_INCREMENT	100
 
@@ -5407,6 +5408,10 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = nullptr;
 			break;
 
+		case OPF_ASTEROID_DEBRIS:
+			list = get_listing_opf_asteroid_debris();
+			break;
+
 		default:
 			Int3();  // unknown OPF code
 			list = NULL;
@@ -7074,6 +7079,22 @@ sexp_list_item *sexp_tree::get_listing_opf_nebula_patterns()
 	for (int i = 0; i < MAX_NEB2_BITMAPS; i++) {
 		if (strlen(Neb2_bitmap_filenames[i]) > 0) {
 			head.add_data(Neb2_bitmap_filenames[i]);
+		}
+	}
+
+	return head.next;
+}
+
+sexp_list_item* sexp_tree::get_listing_opf_asteroid_debris()
+{
+	sexp_list_item head;
+
+	head.add_data(SEXP_NONE_STRING);
+
+	for (int i = 0; i < (int)Asteroid_info.size(); i++) {
+		//first three asteroids are not debris-Mjn
+		if (i > 2) {
+			head.add_data(Asteroid_info[i].name);
 		}
 	}
 

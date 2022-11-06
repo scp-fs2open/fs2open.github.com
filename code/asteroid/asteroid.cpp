@@ -1885,6 +1885,17 @@ float asteroid_time_to_impact(object *asteroid_objp)
 	return time;
 }
 
+int get_asteroid_position(const char* name)
+{
+	for (int i = 0; i < (int)Asteroid_info.size(); i++) {
+		if (!stricmp(name, Asteroid_info[i].name)) {
+			return i;
+		}
+	}
+
+	return -1;
+}
+
 /**
  * Read in a single asteroid section from asteroid.tbl
  */
@@ -1992,7 +2003,8 @@ static void asteroid_parse_section(asteroid_info *asip)
 }
 
 // changes the name to "[species] Debris" if it had a name like "[species] debris #"
-void maybe_change_asteroid_name(asteroid_info* asip) {
+/*void maybe_change_asteroid_name(asteroid_info* asip)
+{
 
 	SCP_string name = asip->name;
 	size_t split = std::string::npos;
@@ -2032,7 +2044,7 @@ void maybe_change_asteroid_name(asteroid_info* asip) {
 		strcat(asip->name, " ");
 		strcat(asip->name, XSTR("debris", 348));
 	}
-}
+}*/
 
 /**
 Read in data from asteroid.tbl into Asteroid_info[] array.
@@ -2073,7 +2085,9 @@ static void asteroid_parse_tbl()
 
 			asteroid_parse_section(&new_asteroid);
 
-			maybe_change_asteroid_name(&new_asteroid);
+			// I really don't think this is needed and actually causes a bug in FRED
+			// making it impossible to select some debris types-Mjn
+			//maybe_change_asteroid_name(&new_asteroid);
 
 #ifndef NDEBUG
 			SCP_string msg;
