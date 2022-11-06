@@ -45,6 +45,89 @@ bool is_fighter_or_bomber(XWMFlightGroup *fg)
 	return false;
 }
 
+bool is_wing(XWMFlightGroup *fg)
+{
+	return (fg->numberInWave > 1 || fg->numberOfWaves > 1 || is_fighter_or_bomber(fg));
+}
+
+int xwi_arrival_delay_to_seconds(int delay)
+{
+	// If the arrival delay is less than or equal to 20, it's in minutes. If it's over 20, it's in 6 second blocks. So 21 is 6 seconds, for example
+	if (delay <= 20)
+		return delay * 60;
+	return delay * 6;
+}
+
+int xwi_determine_arrival_cue(XWingMission *xwim, XWMFlightGroup *fg)
+{
+	char name[NAME_LENGTH] = "";
+	char sexp_buf[1024];
+
+	bool check_wing = false;
+	if (fg->arrivalFlightGroup >= 0)
+	{
+		strcpy_s(name, xwim->flightgroups[fg->arrivalFlightGroup]->designation.c_str());
+		SCP_totitle(name);
+		check_wing = is_wing(xwim->flightgroups[fg->arrivalFlightGroup]);
+	}
+
+	if (fg->arrivalEvent == XWMFlightGroup::ae_afg_arrives)
+	{
+		sprintf(sexp_buf, "( has-arrived-delay 0 \"%s\" )", name);
+		Mp = sexp_buf;
+		return get_sexp_main();
+	}
+
+	if (fg->arrivalEvent == XWMFlightGroup::ae_afg_attacked)
+	{
+		if (check_wing)
+			sprintf(sexp_buf, "( lua-is-wing-attacked \"%s\" )", name);
+		else
+			sprintf(sexp_buf, "( lua-is-ship-attacked \"%s\" )", name);
+		Mp = sexp_buf;
+		return get_sexp_main();
+	}
+
+	if (fg->arrivalEvent == XWMFlightGroup::ae_afg_boarded)
+	{
+		if (check_wing)
+			sprintf(sexp_buf, "( lua-is-wing-boarded \"%s\" )", name);
+		else
+			sprintf(sexp_buf, "( lua-is-ship-boarded \"%s\" )", name);
+		Mp = sexp_buf;
+		return get_sexp_main();
+	}
+
+	if (fg->arrivalEvent == XWMFlightGroup::ae_afg_destroyed)
+	{
+		sprintf(sexp_buf, "( is-destroyed-delay 0 \"%s\" )", name);
+		Mp = sexp_buf;
+		return get_sexp_main();
+	}
+
+	if (fg->arrivalEvent == XWMFlightGroup::ae_afg_disabled)
+	{
+		if (check_wing)
+			sprintf(sexp_buf, "( lua-is-wing-disabled \"%s\" )", name);
+		else
+			sprintf(sexp_buf, "( lua-is-ship-disabled \"%s\" )", name);
+		Mp = sexp_buf;
+		return get_sexp_main();
+	}
+
+	if (fg->arrivalEvent == XWMFlightGroup::ae_afg_identified)
+	{
+		if (check_wing)
+			sprintf(sexp_buf, "( lua-is-wing-identified \"%s\" )", name);
+		else
+			sprintf(sexp_buf, "( lua-is-ship-identified \"%s\" )", name);
+		Mp = sexp_buf;
+		return get_sexp_main();
+	}
+
+	return Locked_sexp_true;
+}
+
 int xwi_determine_anchor(XWingMission *xwim, XWMFlightGroup *fg)
 {
 	int mothership_number = fg->mothership;
@@ -219,20 +302,15 @@ const char *xwi_determine_ai_class(XWMFlightGroup *fg)
 	return nullptr;
 }
 
-int xwi_arrival_delay_to_seconds(int delay)
-{
-	// If the arrival delay is less than or equal to 20, it's in minutes. If it's over 20, it's in 6 second blocks. So 21 is 6 seconds, for example
-	if (delay <= 20)
-		return delay * 60;
-	return delay * 6;
-}
-
 void parse_xwi_flightgroup(mission *pm, XWingMission *xwim, XWMFlightGroup *fg)
 {
+	int arrival_cue = xwi_determine_arrival_cue(xwim, fg);
+	int arrival_delay = xwi_arrival_delay_to_seconds(fg->arrivalDelay);
+
 	// see if this flight group is what FreeSpace would treat as a wing
 	wing *wingp = nullptr;
 	int wingnum = -1;
-	if (fg->numberInWave > 1 || fg->numberOfWaves > 1 || is_fighter_or_bomber(fg))
+	if (is_wing(fg))
 	{
 		wingnum = Num_wings++;
 		wingp = &Wings[wingnum];
@@ -242,6 +320,8 @@ void parse_xwi_flightgroup(mission *pm, XWingMission *xwim, XWMFlightGroup *fg)
 		wingp->num_waves = fg->numberOfWaves;
 		wingp->formation = -1;	// TODO
 
+		wingp->arrival_cue = arrival_cue;
+		wingp->arrival_delay = -arrival_delay;
 		wingp->arrival_location = fg->arriveByHyperspace ? ARRIVE_AT_LOCATION : ARRIVE_FROM_DOCK_BAY;
 		wingp->arrival_anchor = xwi_determine_anchor(xwim, fg);
 		wingp->departure_location = fg->departByHyperspace ? DEPART_AT_LOCATION : DEPART_AT_DOCK_BAY;
@@ -318,12 +398,15 @@ void parse_xwi_flightgroup(mission *pm, XWingMission *xwim, XWMFlightGroup *fg)
 			wing_bash_ship_name(pobj.name, wingp->name, wave_index + 1, nullptr);
 			pobj.wingnum = wingnum;
 			pobj.pos_in_wing = wave_index;
+			pobj.arrival_cue = Locked_sexp_false;
 		}
 		else
 		{
 			strcpy_s(pobj.name, fg->designation.c_str());
 			SCP_totitle(pobj.name);
 
+			pobj.arrival_cue = arrival_cue;
+			pobj.arrival_delay = -arrival_delay;
 			pobj.arrival_location = fg->arriveByHyperspace ? ARRIVE_AT_LOCATION : ARRIVE_FROM_DOCK_BAY;
 			pobj.arrival_anchor = xwi_determine_anchor(xwim, fg);
 			pobj.departure_location = fg->departByHyperspace ? DEPART_AT_LOCATION : DEPART_AT_DOCK_BAY;
