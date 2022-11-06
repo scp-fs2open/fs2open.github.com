@@ -113,10 +113,10 @@ struct model_uniform_data {
 	int overrideSpec_; //Unused, to be removed.
 
 	vec3d specClr_; //Unused, to be removed.
-	int alphaGloss;
+	int alphaGloss; //Unused, to be removed.
 
-	int gammaSpec;
-	int envGloss;
+	int gammaSpec_; //Unused, to be removed.
+	int envGloss_; //Unused, to be removed.
 	int alpha_spec_; //Unused, to be removed.
 	int effect_num;
 

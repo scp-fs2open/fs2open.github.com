@@ -122,31 +122,18 @@ mat3 tangentMatrix;
 #ifdef FLAG_DIFFUSE_MAP
 uniform sampler2DArray sBasemap;
 #endif
-#ifdef FLAG_GLOW_MAP
 uniform sampler2DArray sGlowmap;
-#endif
-#ifdef FLAG_SPEC_MAP
 uniform sampler2DArray sSpecmap;
-#endif
 #ifdef FLAG_ENV_MAP
 uniform samplerCube sEnvmap;
 uniform samplerCube sIrrmap;
 #endif
-#ifdef FLAG_NORMAL_MAP
 uniform sampler2DArray sNormalmap;
-#endif
-#ifdef FLAG_AMBIENT_MAP
 uniform sampler2DArray sAmbientmap;
-#endif
 #ifdef FLAG_ANIMATED
 uniform sampler2D sFramebuffer;
 #endif
-#ifdef FLAG_TEAMCOLOR
-vec4 teamMask;
-#endif
-#ifdef FLAG_MISC_MAP
 uniform sampler2DArray sMiscmap;
-#endif
 #ifdef FLAG_SHADOWS
 uniform sampler2DArray shadow_map;
 #endif
@@ -188,7 +175,7 @@ void GetLightInfo(int i, out vec3 lightDir, out float attenuation)
 		attenuation = 1.0 / (1.0 + lights[i].attenuation * dist);
 	}
 }
-vec3 CalculateLighting(vec3 normal, vec3 diffuseMaterial, vec3 specularMaterial, float gloss, float fresnel, float shadow, float aoFactor)
+vec3 CalculateLighting(vec3 normal, vec3 diffuseMaterial, vec3 specularMaterial, float gloss, float shadow, float aoFactor)
 {
 	vec3 eyeDir = vec3(normalize(-vertIn.position).xyz);
 	vec3 lightAmbient = (emissionFactor + ambientFactor * ambientFactor) * aoFactor; // ambientFactor^2 due to legacy OpenGL compatibility behavior
@@ -209,7 +196,7 @@ vec3 CalculateLighting(vec3 normal, vec3 diffuseMaterial, vec3 specularMaterial,
 		float NdotL = clamp(dot(normal, lightDir), 0.0f, 1.0f);
 		// Ambient, Diffuse, and Specular
 		lightDiffuse += (lights[i].diffuse_color.rgb * diffuseFactor * NdotL * attenuation) * shadow;
-		lightSpecular += lights[i].diffuse_color.rgb * computeLighting(specularMaterial, diffuseMaterial, lightDir, normal, halfVec, eyeDir, roughness, fresnel, NdotL) * attenuation * shadow;
+		lightSpecular += lights[i].diffuse_color.rgb * computeLighting(specularMaterial, diffuseMaterial, lightDir, normal, halfVec, eyeDir, roughness, NdotL) * attenuation * shadow;
 	}
 	return diffuseMaterial * lightAmbient + lightSpecular;
 }
@@ -228,17 +215,15 @@ void main()
 	vec4 baseColor = color;
 	vec4 specColor = vec4(0.0, 0.0, 0.0, 1.0);
 	vec4 emissiveColor = vec4(0.0, 0.0, 0.0, 1.0);
-	float fresnelFactor = 0.0;
 	float glossData = defaultGloss;
-	vec2 aoFactors = vec2(1.0, 1.0);
-#ifdef	FLAG_AMBIENT_MAP
+
+	//AO map handling
 	// red channel is ambient occlusion factor which only affects ambient lighting.
 	// green is cavity occlusion factor which only affects diffuse and specular lighting.
-	aoFactors = texture(sAmbientmap, vec3(texCoord, float(sAmbientmapIndex))).xy;
-#endif
+	vec2 aoFactors = texture(sAmbientmap, vec3(texCoord, float(sAmbientmapIndex))).xy;
+
 	vec3 unitNormal = normalize(vertIn.normal);
-	vec3 normal = unitNormal;
-#ifdef FLAG_NORMAL_MAP
+	vec3 normal = unitNormal; 
    // Normal map - convert from DXT5nm
    vec2 normalSample;
    normal.rg = normalSample = (texture(sNormalmap, vec3(texCoord, float(sNormalmapIndex))).ag * 2.0) - 1.0;
@@ -249,8 +234,7 @@ void main()
    if (norm > 0.0)
       normal /= norm;
    else
-      normal = unitNormal;
-#endif
+      normal = unitNormal; 
 
 #ifdef FLAG_ANIMATED
    vec2 distort = vec2(cos(vertIn.position.x*vertIn.position.w*0.005+anim_timer*20.0)*sin(vertIn.position.y*vertIn.position.w*0.005),sin(vertIn.position.x*vertIn.position.w*0.005+anim_timer*20.0)*cos(vertIn.position.y*vertIn.position.w*0.005))*0.03;
@@ -275,22 +259,14 @@ void main()
 	if(blend_alpha == 1) baseColor.rgb = baseColor.rgb * baseColor.a;
 #endif
 	specColor = vec4(baseColor.rgb * SPEC_FACTOR_NO_SPEC_MAP, glossData);
-#ifdef FLAG_HDR
-	baseColor.rgb = srgb_to_linear(baseColor.rgb);
-#endif
-#ifdef FLAG_SPEC_MAP
+	//SPEC map handling
 	specColor = texture(sSpecmap, vec3(texCoord, float(sSpecmapIndex)));
 	if(alphaGloss) glossData = specColor.a;
-	if(gammaSpec) {
-		specColor.rgb = max(specColor.rgb, vec3(0.03f)); // hardcoded minimum specular value. read John Hable's blog post titled 'Everything Is Shiny'. 
-		fresnelFactor = 1.0;
-	}
-   #ifdef FLAG_HDR
-	specColor.rgb = srgb_to_linear(specColor.rgb);
-   #endif
-#endif
-	baseColor.rgb *= aoFactors.y;
-	specColor.rgb *= aoFactors.y;
+
+
+	//mundane materials should be roughly 0.03 at minimum, but allowing lower values enables
+	//exotic or non-physical material possibilites.
+	specColor.rgb = max(specColor.rgb, vec3(0.00001f)); 
 
 	// Anti-glint "trick" based on Valve's "Advanced VR Rendering" talk at GDC2015:
 	// http://media.steampowered.com/apps/valve/2015/Alex_Vlachos_Advanced_VR_Rendering_GDC2015.pdf Page 43
@@ -299,9 +275,10 @@ void main()
 	vec2 normDy = dFdy(unitNormal.xy);
 	float glossGeo = 1.0f - pow(clamp(max(dot(normDx,normDx), dot(normDy,normDy)),0.0,1.0),0.33);
 	glossData = min(glossData, glossGeo);
-
-#ifdef FLAG_MISC_MAP
- #ifdef FLAG_TEAMCOLOR
+	
+	//MISC map handling
+	//TEAMCOLOR
+	vec4 teamMask = vec4(0.0, 0.0, 0.0, 0.0);
 	teamMask = texture(sMiscmap, vec3(texCoord, float(sMiscmapIndex)));
 
 	//For team colors applied to a diffuse or spec map, we assume that the base color of the diffuse 
@@ -311,49 +288,42 @@ void main()
 	vec3 team_color = base_color * teamMask.x + stripe_color * teamMask.y + color_offset;
 	vec3 team_color_glow = (base_color * teamMask.b) + (stripe_color * teamMask.a);
 
-	#ifdef FLAG_HDR
-	baseColor.rgb = linear_to_srgb(baseColor.rgb);
-	specColor.rgb = linear_to_srgb(specColor.rgb);
-	#endif
-
-	baseColor.rgb += team_color;					
-	baseColor.rgb = max(baseColor.rgb, vec3(0.0));	// We need to make sure that nothing here ever goes negative
+	baseColor.rgb += team_color;
 	specColor.rgb += team_color;
-	specColor.rgb = max(specColor.rgb, vec3(0.03));
 
-	#ifdef FLAG_HDR
+	baseColor.rgb = max(baseColor.rgb, vec3(0.0));	// We need to make sure that nothing here ever goes negative
+	specColor.rgb = max(specColor.rgb, vec3(0.00001f)); 
+
+    #ifdef FLAG_HDR
 	baseColor.rgb = srgb_to_linear(baseColor.rgb);
 	specColor.rgb = srgb_to_linear(specColor.rgb);
-	#endif
+    #endif
 
- #endif
-#endif
-	// Lights aren't applied when we are rendering to the G-buffers since that gets handled later
-#ifdef FLAG_DEFERRED
- #ifdef FLAG_LIGHT
-	// Ambient lighting still needs to be done since that counts as an "emissive" color
-	vec3 lightAmbient = (emissionFactor + ambientFactor * ambientFactor) * aoFactors.x; // ambientFactor^2 due to legacy OpenGL compatibility behavior
-	emissiveColor.rgb += baseColor.rgb * lightAmbient;
- #else
-  #ifdef FLAG_SPEC_MAP
-	baseColor.rgb += pow(1.0 - clamp(dot(eyeDir, normal), 0.0, 1.0), 5.0 * clamp(glossData, 0.01, 1.0)) * specColor.rgb;
+	baseColor.rgb *= aoFactors.y;
+	specColor.rgb *= aoFactors.y;
+
+#ifdef FLAG_LIGHT
+  #ifdef FLAG_DEFERRED
+		// Lights aren't applied when we are rendering to the G-buffers since that gets handled later
+	  // Ambient lighting still needs to be done since that counts as an "emissive" color
+		// ambientFactor^2 due to legacy OpenGL compatibility behavior
+    emissiveColor.rgb += baseColor.rgb * (emissionFactor + ambientFactor * ambientFactor) * aoFactors.x;
+  #else
+    float shadow = 1.0;
+    #ifdef FLAG_SHADOWS
+      shadow = getShadowValue(shadow_map, -vertIn.position.z, vertIn.shadowPos.z, vertIn.shadowUV, fardist, middist, neardist, veryneardist);
+    #endif
+    baseColor.rgb = CalculateLighting(normal, baseColor.rgb, specColor.rgb, glossData, shadow, aoFactors.x);
   #endif
-	// If there is no lighting then we copy the color data so far into the
-	emissiveColor.rgb += baseColor.rgb;
- #endif
 #else
- #ifdef FLAG_LIGHT
-	float shadow = 1.0;
-  #ifdef FLAG_SHADOWS
-	shadow = getShadowValue(shadow_map, -vertIn.position.z, vertIn.shadowPos.z, vertIn.shadowUV, fardist, middist, neardist, veryneardist);
-  #endif
-	baseColor.rgb = CalculateLighting(normal, baseColor.rgb, specColor.rgb, glossData, fresnelFactor, shadow, aoFactors.x);
- #else
-  #ifdef FLAG_SPEC_MAP
+	//Unlit objects are given a specular shine for the niche cases where they appear.
 	baseColor.rgb += pow(1.0 - clamp(dot(eyeDir, normal), 0.0, 1.0), 5.0 * clamp(glossData, 0.01, 1.0)) * specColor.rgb;
+  #ifdef FLAG_DEFERRED
+	  // If there is no lighting then we copy the color data so far into emissive
+    emissiveColor.rgb += baseColor.rgb;
   #endif
- #endif
 #endif
+
 #ifdef FLAG_ENV_MAP
 	#ifdef FLAG_LIGHT
 	// Bit of a hack here, pretend we're doing blinn-phong shading and use a (modified version of) the derivation from
@@ -401,19 +371,14 @@ void main()
 	emissiveColor.rgb += (specEnvLighting + diffEnvLighting) * baseColor.a;
 	#endif
 #endif
-#ifdef FLAG_GLOW_MAP
+	//Glowmap handling
 	vec3 glowColor = texture(sGlowmap, vec3(texCoord, float(sGlowmapIndex))).rgb;
  #ifdef FLAG_HDR
 	glowColor = srgb_to_linear(glowColor) * GLOW_MAP_SRGB_MULTIPLIER;
  #endif
- #ifdef FLAG_MISC_MAP
-  #ifdef FLAG_TEAMCOLOR
 	float glowColorLuminance = dot(glowColor, vec3(0.299, 0.587, 0.114));
 	glowColor = team_glow_enabled ? mix(max(team_color_glow, vec3(0.0)), glowColor, clamp(glowColorLuminance - teamMask.b - teamMask.a, 0.0, 1.0)) : glowColor;
-  #endif
- #endif
    emissiveColor.rgb += glowColor * GLOW_MAP_INTENSITY;
-#endif
 
 #ifdef FLAG_FOG
 	vec3 finalFogColor = fogColor.rgb;
@@ -469,7 +434,7 @@ void main()
 #ifdef FLAG_DEFERRED
 	fragOut1 = vec4(vertIn.position.xyz, 1.0);
 	fragOut2 = vec4(normal, glossData);
-	fragOut3 = vec4(specColor.rgb, fresnelFactor);
+	fragOut3 = vec4(specColor.rgb, 0.0);
 	fragOut4 = emissiveColor;
 #endif
 }

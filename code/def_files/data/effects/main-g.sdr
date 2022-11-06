@@ -186,9 +186,7 @@ void main(void)
 #ifdef FLAG_ENV_MAP
 		vertOut.envReflect = vertIn[vert].envReflect;
 #endif
-#ifdef FLAG_NORMAL_MAP
 		vertOut.tangentMatrix = vertIn[vert].tangentMatrix;
-#endif
 #ifdef FLAG_FOG
 		vertOut.fogDist = vertIn[vert].fogDist;
 #endif
@@ -239,9 +237,7 @@ void main(void)
 #ifdef FLAG_ENV_MAP
 			vertOut.envReflect = vertIn[vert].envReflect;
 #endif
-#ifdef FLAG_NORMAL_MAP
 			vertOut.tangentMatrix = vertIn[vert].tangentMatrix;
-#endif
 #ifdef FLAG_FOG
 			vertOut.fogDist = vertIn[vert].fogDist;
 #endif

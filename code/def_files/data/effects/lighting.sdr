@@ -24,7 +24,7 @@ float GeometrySchlickGGX(float dotAB, float k)
 {
     return dotAB / (dotAB * (1.0f - k) + k);
 }
-vec3 ComputeGGX(vec3 specColor, vec3 diffColor, vec3 light, vec3 normal, vec3 halfVec, vec3 view, float roughness, float fresnelFactor, float dotNL)
+vec3 ComputeGGX(vec3 specColor, vec3 diffColor, vec3 light, vec3 normal, vec3 halfVec, vec3 view, float roughness, float dotNL)
 {
 	float alpha = roughness * roughness;
 	float alphaSqr = alpha * alpha;
@@ -41,7 +41,7 @@ vec3 ComputeGGX(vec3 specColor, vec3 diffColor, vec3 light, vec3 normal, vec3 ha
 	float distribution = alphaSqr / (PI * denom * denom);
 
 	// Fresnel Term - Fresnel-Schlick
-	vec3 fresnel = mix(specColor, FresnelSchlick(halfVec, view, specColor), fresnelFactor);
+	vec3 fresnel = FresnelSchlick(halfVec, view, specColor);
 
 	// Geometry Term - Schlick-GGX approximation
 	float r = roughness + 1.0;
@@ -66,12 +66,12 @@ vec3 ComputeGGX(vec3 specColor, vec3 diffColor, vec3 light, vec3 normal, vec3 ha
 	return (specular + diffuse) * dotNL;
 }
 
-vec3 computeLighting(vec3 specColor, vec3 diffColor, vec3 light, vec3 normal, vec3 halfVec, vec3 view, float roughness, float fresnelFactor, float dotNL) 
+vec3 computeLighting(vec3 specColor, vec3 diffColor, vec3 light, vec3 normal, vec3 halfVec, vec3 view, float roughness, float dotNL) 
 {
 	#ifdef FLAG_LIGHT_MODEL_BLINN_PHONG
-	return SpecularBlinnPhong(specColor, light, normal, halfVec, 32, fresnelFactor, dotNL);
+	return SpecularBlinnPhong(specColor, light, normal, halfVec, 32, dotNL);
 	#else
-	return ComputeGGX(specColor, diffColor, light, normal, halfVec, view, roughness, fresnelFactor, dotNL);
+	return ComputeGGX(specColor, diffColor, light, normal, halfVec, view, roughness,  dotNL);
 	#endif
 }
 

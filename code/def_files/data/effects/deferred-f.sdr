@@ -197,6 +197,6 @@ void main()
 	vec3 halfVec = normalize(lightDir + eyeDir);
 	float NdotL = clamp(dot(normal, lightDir), 0.0, 1.0);
 	vec4 fragmentColor = vec4(1.0);
-	fragmentColor.rgb = computeLighting(specColor.rgb, diffColor, lightDir, normal.xyz, halfVec, eyeDir, roughness, fresnel, NdotL).rgb * diffuseLightColor * attenuation * area_normalisation;
+	fragmentColor.rgb = computeLighting(specColor.rgb, diffColor, lightDir, normal.xyz, halfVec, eyeDir, roughness, NdotL).rgb * diffuseLightColor * attenuation * area_normalisation;
 	fragOut0 = max(fragmentColor, vec4(0.0));
 }
