@@ -68,13 +68,13 @@ void xwi_add_attack_check(const XWingMission *xwim, const XWMFlightGroup *fg)
 	char event_name[NAME_LENGTH];
 	char sexp_buf[SEXP_LENGTH];
 
-	int index = xwi_flightgroup_lookup(xwim, fg);
-	Assert(index >= 0);
+	int fg_index = xwi_flightgroup_lookup(xwim, fg);
+	Assertion(fg_index >= 0, "Flight Group index must be valid");
 
 	strcpy_s(fg_name, fg->designation.c_str());
 	SCP_totitle(fg_name);
 
-	sprintf(event_name, "FG %d Attack Check", index);
+	sprintf(event_name, "FG %d Attack Check", fg_index);
 
 	if (mission_event_lookup(event_name) >= 0)
 		return;
@@ -524,6 +524,21 @@ void parse_xwi_flightgroup(mission *pm, const XWingMission *xwim, const XWMFligh
 
 		if (fg->playerPos == wing_index + 1)
 		{
+			// undo any previously set player
+			if (Player_starts > 0)
+			{
+				auto prev_player_pobjp = mission_parse_get_parse_object(Player_start_shipname);
+				if (prev_player_pobjp)
+				{
+					Warning(LOCATION, "This mission specifies multiple player starting ships.  Skipping %s.", Player_start_shipname);
+					prev_player_pobjp->flags.remove(Mission::Parse_Object_Flags::OF_Player_start);
+					prev_player_pobjp->flags.remove(Mission::Parse_Object_Flags::SF_Cargo_known);
+					Player_starts--;
+				}
+				else
+					Warning(LOCATION, "Multiple player starts specified, but previous player start %s couldn't be found!", Player_start_shipname);
+			}
+
 			strcpy_s(Player_start_shipname, pobj.name);
 			pobj.flags.set(Mission::Parse_Object_Flags::OF_Player_start);
 			pobj.flags.set(Mission::Parse_Object_Flags::SF_Cargo_known);
@@ -562,7 +577,7 @@ void parse_xwi_mission(mission *pm, const XWingMission *xwim)
 		if (xwim->flightgroups[i].playerPos > 0)
 		{
 			index = i;
-			break;
+			// don't break in case multiple FGs set a player - we will use the last one assigned
 		}
 	}
 	if (index >= 0)
