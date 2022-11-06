@@ -197,7 +197,7 @@ const char* medal_stuff::get_display_name() const {
 	}
 }
 
-static medal_stuff* get_medal_pointer(char* medal_name)
+static medal_stuff* get_medal_pointer(const char* medal_name)
 {
 	for (int i = 0; i < (int)Medals.size(); i++) {
 		if (!stricmp(medal_name, Medals[i].name)) {
@@ -340,7 +340,7 @@ void parse_medals_table(const char* filename)
 				display_p->coords[GR_640].y = Default_medal_coords[GR_640][Medals.size()][1];
 			}
 			else {
-				Warning(LOCATION, "No default GR_640 position for medal '%s'!", medal_p->name);
+				error_display(0, "No default GR_640 position for medal '%s'!", medal_p->name);
 				display_p->coords[GR_640].x = 0;
 				display_p->coords[GR_640].y = 0;
 			}
@@ -353,7 +353,7 @@ void parse_medals_table(const char* filename)
 				display_p->coords[GR_1024].y = Default_medal_coords[GR_1024][Medals.size()][1];
 			}
 			else {
-				Warning(LOCATION, "No default GR_1024 position for medal '%s'!", medal_p->name);
+				error_display(0, "No default GR_1024 position for medal '%s'!", medal_p->name);
 				display_p->coords[GR_1024].x = 0;
 				display_p->coords[GR_1024].y = 0;
 			}
@@ -371,7 +371,7 @@ void parse_medals_table(const char* filename)
 				strcpy_s(medal_p->debrief_bitmap, Default_debriefing_bitmaps[Medals.size()]);
 			}
 			else {
-				Warning(LOCATION, "No default debriefing bitmap for medal '%s'!", medal_p->name);
+				error_display(0, "No default debriefing bitmap for medal '%s'!", medal_p->name);
 				strcpy_s(medal_p->debrief_bitmap, "");
 			}
 
@@ -416,7 +416,7 @@ void parse_medals_table(const char* filename)
 					if (optional_string("+Persona:")) {
 						stuff_int(&persona);
 						if (persona < 0) {
-							Warning(LOCATION,
+							error_display(0,
 								"Debriefing text for %s is assigned to an invalid persona: %i (must be 0 or "
 								"greater).\n",
 								medal_p->name,
@@ -427,7 +427,7 @@ void parse_medals_table(const char* filename)
 					medal_p->promotion_text[persona] = SCP_string(buf);
 				}
 				if (medal_p->promotion_text.find(-1) == medal_p->promotion_text.end()) {
-					Warning(LOCATION, "%s medal is missing default debriefing text.\n", medal_p->name);
+					error_display(0, "%s medal is missing default debriefing text.\n", medal_p->name);
 					medal_p->promotion_text[-1] = "";
 				}
 			}
