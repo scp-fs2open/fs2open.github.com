@@ -21,6 +21,8 @@ public:
 	void set_rgb(const color* const new_rgb);
 	void set_rgb(const int* const new_rgb);
 
+	void fill_rgba_8bpp(ubyte * r_io, ubyte * b_io, ubyte * g_io, ubyte * a_io);
+
 	float r() const;
 	float r(const float in);
 	float r(const int in);

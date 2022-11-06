@@ -87,6 +87,17 @@ void hdr_color::set_rgb(const int* const new_rgb)
 	this->set_rgb(new_rgb[0], new_rgb[1], new_rgb[2]);
 }
 
+/**
+ * @brief fill a set of ubytes with the current colors
+ */
+void hdr_color::fill_rgba_8bpp(ubyte * r_io, ubyte * g_io, ubyte * b_io,  ubyte * a_io)
+{
+	*r_io = (ubyte (MIN(MAX(0.0f,(red * intensity)),1.0f) * 255.0f) );
+	*b_io = (ubyte (MIN(MAX(0.0f,(green * intensity)),1.0f) * 255.0f));
+	*g_io = (ubyte (MIN(MAX(0.0f,(blue * intensity)),1.0f) * 255.0f));
+	*a_io = (ubyte (MIN(MAX(0.0f,alpha),1.0f) * 255.0f));
+}
+
 
 /**
  * @brief retreives unmultiplied 0.0f-1.0f color component.
