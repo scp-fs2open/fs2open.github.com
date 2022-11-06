@@ -54,20 +54,20 @@ layout (std140) uniform modelData {
 	int blend_alpha;
 
 	vec3 emissionFactor;
-	bool overrideDiffuse;
+	bool overrideDiffuse_;
 
-	vec3 diffuseClr;
-	bool overrideGlow;
+	vec3 diffuseClr_;
+	bool overrideGlow_;
 
-	vec3 glowClr;
-	bool overrideSpec;
+	vec3 glowClr_;
+	bool overrideSpec_;
 
-	vec3 specClr;
+	vec3 specClr_;
 	bool alphaGloss;
 
 	bool gammaSpec;
 	bool envGloss;
-	bool alpha_spec;
+	bool alpha_spec_;
 	int effect_num;
 
 	vec4 fogColor;
@@ -88,7 +88,7 @@ layout (std140) uniform modelData {
 	float middist;
 	float fardist;
 
-	vec2 normalAlphaMinMax;
+	vec2 normalAlphaMinMax_;
 	int sBasemapIndex;
 	int sGlowmapIndex;
 
@@ -273,7 +273,6 @@ void main()
 	// premultiply alpha if blend_alpha is 1. assume that our blend function is srcColor + (1-Alpha)*destColor.
 	// if blend_alpha is 2, assume blend func is additive and don't modify color
 	if(blend_alpha == 1) baseColor.rgb = baseColor.rgb * baseColor.a;
-	if(overrideDiffuse) baseColor.rgb = diffuseClr;
 #endif
 	specColor = vec4(baseColor.rgb * SPEC_FACTOR_NO_SPEC_MAP, glossData);
 #ifdef FLAG_HDR
@@ -282,10 +281,6 @@ void main()
 #ifdef FLAG_SPEC_MAP
 	specColor = texture(sSpecmap, vec3(texCoord, float(sSpecmapIndex)));
 	if(alphaGloss) glossData = specColor.a;
-	if(overrideSpec) {
-		specColor.rgb = specClr;
-		fresnelFactor = 1.0;
-	}
 	if(gammaSpec) {
 		specColor.rgb = max(specColor.rgb, vec3(0.03f)); // hardcoded minimum specular value. read John Hable's blog post titled 'Everything Is Shiny'. 
 		fresnelFactor = 1.0;
@@ -408,7 +403,6 @@ void main()
 #endif
 #ifdef FLAG_GLOW_MAP
 	vec3 glowColor = texture(sGlowmap, vec3(texCoord, float(sGlowmapIndex))).rgb;
-	if(overrideGlow) glowColor = glowClr;
  #ifdef FLAG_HDR
 	glowColor = srgb_to_linear(glowColor) * GLOW_MAP_SRGB_MULTIPLIER;
  #endif
