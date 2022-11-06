@@ -18,6 +18,7 @@
 #include "bmpman/bm_internal.h"
 #include "ddsutils/ddsutils.h"
 #include "debugconsole/console.h"
+#include "globalincs/pstypes.h"
 #include "globalincs/systemvars.h"
 #include "graphics/2d.h"
 #include "graphics/matrix.h"
@@ -1236,6 +1237,14 @@ int bm_load(const char *real_filename, int dir_type) {
 
 int bm_load(const SCP_string& filename, int dir_type) {
 	return bm_load(filename.c_str(), dir_type);
+}
+
+void bm_use(const int handle){
+	bitmap_entry *be;
+	be = bm_get_entry(handle);
+	be->load_count++;
+	//be->ref_count++;
+	nprintf(("BmpMan", "Handle %i bm_use() %s increasing load count to %d\n", handle, be->filename, be->load_count));
 }
 
 bool bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int *nfps, int *key, BM_TYPE *type) {
@@ -3343,4 +3352,22 @@ SDL_Surface* bm_to_sdl_surface(int handle) {
 
 	return bitmapSurface;
 
+}
+
+ubyte* bm_generate(int* handle, ubyte r, ubyte g, ubyte b, ubyte a, const vec2d& source_dimensions)
+{
+	auto size = (size_t)(source_dimensions.x * source_dimensions.y * 4); // RGBA format
+
+	auto buffer = new ubyte[size];
+	for(size_t i=0;i<size;i+=4){
+		buffer[i] = r;
+		buffer[i+1] = g;
+		buffer[i+2] = b;
+		buffer[i+3] = a;
+	}
+
+	auto id = bm_create(32, source_dimensions.x, source_dimensions.y, buffer,BMP_TEX_OTHER);
+	*handle =id;
+	nprintf(("bmpman","Handle %i bm_generate() bmpman asked to generate a texture %ix%i\n",id,(int) source_dimensions.x,(int) source_dimensions.y));
+	return buffer;
 }

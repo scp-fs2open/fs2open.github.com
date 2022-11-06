@@ -618,6 +618,13 @@ bool bm_set_render_target(int handle, int face = -1);
 bool bm_load_and_parse_eff(const char *filename, int dir_type, int *nframes, int *nfps, int *key, BM_TYPE *type);
 
 /**
+ * @brief Signals that a texture is being used, for use when a texture handle is being assigned but not loaded.
+ *
+ * @param handle of texture
+ */
+
+void bm_use(const int handle);
+/**
  * @brief Calculates & returns the current frame of an animation
  *
  * @param[in] frame1_handle  Handle of the animation
@@ -697,5 +704,7 @@ int bmpman_count_available_slots();
 bool bm_validate_filename(const SCP_string& file, bool single_frame, bool animation);
 
 SDL_Surface* bm_to_sdl_surface(int handle);
+
+ubyte* bm_generate(int* handle, ubyte r, ubyte g, ubyte b, ubyte a, const vec2d& source_dimensions);
 
 #endif
