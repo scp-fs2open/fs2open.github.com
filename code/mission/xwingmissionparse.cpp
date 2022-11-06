@@ -18,14 +18,13 @@ static int Player_flight_group = 0;
 // vazor222
 void parse_xwi_mission_info(mission *pm, XWingMission *xwim, bool basic)
 {
-	// XWI missions will be assigned names in the briefing
-	strcpy_s(pm->name, "XWI Mission");
+	strcpy_s(pm->author, "X-Wing");
+	strcpy_s(pm->created, "00/00/00 at 00:00:00");
 
-	strcpy_s(pm->author, "XWIConverter");
-
-	Parse_viewer_pos.xyz.x = xwim->flightgroups[Player_flight_group]->start1_x;
-	Parse_viewer_pos.xyz.y = xwim->flightgroups[Player_flight_group]->start1_y + 100;
-	Parse_viewer_pos.xyz.z = xwim->flightgroups[Player_flight_group]->start1_z - 100;
+	Parse_viewer_pos.xyz.x = 1000 * xwim->flightgroups[Player_flight_group]->start1_x;
+	Parse_viewer_pos.xyz.y = 1000 * xwim->flightgroups[Player_flight_group]->start1_y + 100;
+	Parse_viewer_pos.xyz.z = 1000 * xwim->flightgroups[Player_flight_group]->start1_z - 100;
+	vm_angle_2_matrix(&Parse_viewer_orient, PI_4, 0);
 }
 
 bool is_fighter_or_bomber(XWMFlightGroup *fg)
@@ -50,9 +49,9 @@ int xwi_determine_anchor(XWingMission *xwim, XWMFlightGroup *fg)
 {
 	int mothership_number = fg->mothership;
 
-	if (mothership_number != 0xffff)
+	if (mothership_number >= 0)
 	{
-		if (mothership_number >= 0 && mothership_number < (int)xwim->flightgroups.size())
+		if (mothership_number < (int)xwim->flightgroups.size())
 			return get_parse_name_index(xwim->flightgroups[mothership_number]->designation.c_str());
 		else
 			Warning(LOCATION, "Mothership number %d is out of range for Flight Group %s", mothership_number, fg->designation.c_str());
@@ -110,40 +109,38 @@ const char *xwi_determine_base_ship_class(XWMFlightGroup *fg)
 
 int xwi_determine_ship_class(XWMFlightGroup *fg)
 {
-	char ship_class_buffer[NAME_LENGTH];
-
 	// base ship class must exist
 	auto class_name = xwi_determine_base_ship_class(fg);
 	if (class_name == nullptr)
 		return -1;
 
-	strcpy_s(ship_class_buffer, class_name);
+	SCP_string variant_class = class_name;
 	bool variant = false;
 
 	// now see if we have any variants
 	if (fg->craftColor == XWMFlightGroup::c_Red)
 	{
-		strcat_s(ship_class_buffer, "#red");
+		variant_class += "#red";
 		variant = true;
 	}
 	else if (fg->craftColor == XWMFlightGroup::c_Gold)
 	{
-		strcat_s(ship_class_buffer, "#gold");
+		variant_class += "#gold";
 		variant = true;
 	}
 	else if (fg->craftColor == XWMFlightGroup::c_Blue)
 	{
-		strcat_s(ship_class_buffer, "#blue");
+		variant_class += "#blue";
 		variant = true;
 	}
 
 	if (variant)
 	{
-		int ship_class = ship_info_lookup(ship_class_buffer);
+		int ship_class = ship_info_lookup(variant_class.c_str());
 		if (ship_class >= 0)
 			return ship_class;
 
-		Warning(LOCATION, "Could not find variant ship class for flight group %s", fg->designation.c_str());
+		Warning(LOCATION, "Could not find variant ship class %s for flight group %s.  Using base class instead.", variant_class.c_str(), fg->designation.c_str());
 	}
 
 	// no variant, or we're just going with the base class
@@ -178,6 +175,10 @@ const char *xwi_determine_team(XWingMission *xwim, XWMFlightGroup *fg, ship_info
 
 int xwi_lookup_cargo(const char *cargo_name)
 {
+	// empty cargo is the same as Nothing
+	if (!*cargo_name)
+		return 0;
+
 	int index = string_lookup(cargo_name, Cargo_names, Num_cargo);
 	if (index < 0)
 	{
@@ -204,6 +205,7 @@ void parse_xwi_flightgroup(mission *pm, XWingMission *xwim, XWMFlightGroup *fg)
 		wingp = &Wings[wingnum];
 
 		strcpy_s(wingp->name, fg->designation.c_str());
+		SCP_totitle(wingp->name);
 		wingp->num_waves = fg->numberOfWaves;
 		wingp->formation = -1;	// TODO
 
@@ -211,6 +213,13 @@ void parse_xwi_flightgroup(mission *pm, XWingMission *xwim, XWMFlightGroup *fg)
 		wingp->arrival_anchor = xwi_determine_anchor(xwim, fg);
 		wingp->departure_location = fg->departByHyperspace ? DEPART_AT_LOCATION : DEPART_AT_DOCK_BAY;
 		wingp->departure_anchor = wingp->arrival_anchor;
+
+		// if a wing doesn't have an anchor, make sure it is at-location
+		// (flight groups present at mission start will have arriveByHyperspace set to false)
+		if (wingp->arrival_anchor < 0)
+			wingp->arrival_location = ARRIVE_AT_LOCATION;
+		if (wingp->departure_anchor < 0)
+			wingp->departure_location = DEPART_AT_LOCATION;
 
 		wingp->wave_count = fg->numberInWave;
 	}
@@ -245,6 +254,15 @@ void parse_xwi_flightgroup(mission *pm, XWingMission *xwim, XWMFlightGroup *fg)
 	auto waypoint3 = vm_vec_new(fg->wp3_x, fg->wp3_y, fg->wp3_z);
 	auto hyp = vm_vec_new(fg->hyperspace_x, fg->hyperspace_y, fg->hyperspace_z);
 
+	// waypoint units are in kilometers (after processing by xwinglib which handles the factor of 160), so scale them up
+	vm_vec_scale(&start1, 1000);
+	vm_vec_scale(&start2, 1000);
+	vm_vec_scale(&start3, 1000);
+	vm_vec_scale(&waypoint1, 1000);
+	vm_vec_scale(&waypoint2, 1000);
+	vm_vec_scale(&waypoint3, 1000);
+	vm_vec_scale(&hyp, 1000);
+
 	// now configure each ship in the flight group
 	for (int wave_index = 0; wave_index < fg->numberInWave; wave_index++)
 	{
@@ -252,18 +270,26 @@ void parse_xwi_flightgroup(mission *pm, XWingMission *xwim, XWMFlightGroup *fg)
 
 		if (wingp)
 		{
-			wing_bash_ship_name(pobj.name, fg->designation.c_str(), wave_index + 1, nullptr);
+			wing_bash_ship_name(pobj.name, wingp->name, wave_index + 1, nullptr);
 			pobj.wingnum = wingnum;
 			pobj.pos_in_wing = wave_index;
 		}
 		else
 		{
 			strcpy_s(pobj.name, fg->designation.c_str());
+			SCP_totitle(pobj.name);
 
 			pobj.arrival_location = fg->arriveByHyperspace ? ARRIVE_AT_LOCATION : ARRIVE_FROM_DOCK_BAY;
 			pobj.arrival_anchor = xwi_determine_anchor(xwim, fg);
 			pobj.departure_location = fg->departByHyperspace ? DEPART_AT_LOCATION : DEPART_AT_DOCK_BAY;
 			pobj.departure_anchor = pobj.arrival_anchor;
+
+			// if a ship doesn't have an anchor, make sure it is at-location
+			// (flight groups present at mission start will have arriveByHyperspace set to false)
+			if (pobj.arrival_anchor < 0)
+				pobj.arrival_location = ARRIVE_AT_LOCATION;
+			if (pobj.departure_anchor < 0)
+				pobj.departure_location = DEPART_AT_LOCATION;
 		}
 
 		pobj.ship_class = ship_class;
@@ -282,19 +308,32 @@ void parse_xwi_flightgroup(mission *pm, XWingMission *xwim, XWMFlightGroup *fg)
 		pobj.team = team;
 
 		pobj.pos = start1;
-		vec3d fvec;
-		vm_vec_normalized_dir(&fvec, &start1, &hyp);
-		vm_vector_2_matrix_norm(&pobj.orient, &fvec);
+
+		if (fg->arriveByHyperspace)
+		{
+			// YOGEME: When a craft arrives via hyperspace, it will be oriented such that it will pass through HYP and be pointing towards SP1
+			vec3d fvec;
+			vm_vec_normalized_dir(&fvec, &start1, &hyp);
+			vm_vector_2_matrix_norm(&pobj.orient, &fvec);
+		}
+		else
+		{
+			vec3d fvec;
+			vm_vec_normalized_dir(&fvec, &hyp, &start1);
+			vm_vector_2_matrix_norm(&pobj.orient, &fvec);
+		}
 
 		if (wingp && wave_index == fg->specialShipNumber)
 			pobj.cargo1 = (char)xwi_lookup_cargo(fg->specialCargo.c_str());
 		else
 			pobj.cargo1 = (char)xwi_lookup_cargo(fg->cargo.c_str());
 
-		pobj.initial_velocity = 100;
+		if (fg->order != XWMFlightGroup::o_Hold_Steady && fg->order != XWMFlightGroup::o_Starship_Sit_And_Fire)
+			pobj.initial_velocity = 100;
 
 		if (fg->playerPos == wave_index + 1)
 		{
+			strcpy_s(Player_start_shipname, pobj.name);
 			pobj.flags.set(Mission::Parse_Object_Flags::OF_Player_start);
 			pobj.flags.set(Mission::Parse_Object_Flags::SF_Cargo_known);
 			Player_starts++;
@@ -307,16 +346,18 @@ void parse_xwi_flightgroup(mission *pm, XWingMission *xwim, XWMFlightGroup *fg)
 		{
 			// the only subsystem we actually need is Pilot, because everything else uses defaults
 			pobj.subsys_index = Subsys_index;
-			int subsys_index = allocate_subsys_status();
+			int this_subsys = allocate_subsys_status();
 			pobj.subsys_count++;
-			strcpy_s(Subsys_status[subsys_index].name, NOX("Pilot"));
+			strcpy_s(Subsys_status[this_subsys].name, NOX("Pilot"));
 
 			for (int bank = 0; bank < MAX_SHIP_SECONDARY_BANKS; bank++)
 			{
-				Subsys_status[Subsys_index].secondary_banks[bank] = SUBSYS_STATUS_NO_CHANGE;
-				Subsys_status[Subsys_index].secondary_ammo[bank] = (fg->craftStatus == XWMFlightGroup::cs_no_missiles) ? 0 : 50;
+				Subsys_status[this_subsys].secondary_banks[bank] = SUBSYS_STATUS_NO_CHANGE;
+				Subsys_status[this_subsys].secondary_ammo[bank] = (fg->craftStatus == XWMFlightGroup::cs_no_missiles) ? 0 : 50;
 			}
 		}
+
+		Parse_objects.push_back(pobj);
 	}
 }
 
@@ -324,6 +365,7 @@ void parse_xwi_mission(mission *pm, XWingMission *xwim)
 {
 	int index = -1;
 
+	// find player flight group
 	for (int i = 0; i < xwim->flightgroups.size(); i++)
 	{
 		if (xwim->flightgroups[i]->playerPos > 0)
@@ -340,6 +382,21 @@ void parse_xwi_mission(mission *pm, XWingMission *xwim)
 		Player_flight_group = 0;
 	}
 
+	// clear out wings by default
+	for (int i = 0; i < MAX_STARTING_WINGS; i++)
+		sprintf(Starting_wing_names[i], "Hidden %d", i);
+	for (int i = 0; i < MAX_SQUADRON_WINGS; i++)
+		sprintf(Squadron_wing_names[i], "Hidden %d", i);
+	for (int i = 0; i < MAX_TVT_WINGS; i++)
+		sprintf(TVT_wing_names[i], "Hidden %d", i);
+
+	// put the player's flight group in the default spot
+	strcpy_s(Starting_wing_names[0], xwim->flightgroups[Player_flight_group]->designation.c_str());
+	SCP_totitle(Starting_wing_names[0]);
+	strcpy_s(Squadron_wing_names[0], Starting_wing_names[0]);
+	strcpy_s(TVT_wing_names[0], Starting_wing_names[0]);
+
+	// load flight groups
 	for (auto fg : xwim->flightgroups)
 		parse_xwi_flightgroup(pm, xwim, fg);
 }
@@ -359,6 +416,7 @@ void parse_xwi_briefing(mission *pm, XWingBriefing *xwBrief)
 	bp->num_stages = 1;  // xwing briefings only have one stage
 	bs = &bp->stages[0];
 
+	/*
 	if (xwBrief != NULL)
 	{
 		bs->text = xwBrief->message1;  // this?
@@ -366,6 +424,7 @@ void parse_xwi_briefing(mission *pm, XWingBriefing *xwBrief)
 		bs->num_icons = xwBrief->header.icon_count;  // VZTODO is this the right place to store this?
 	}
 	else
+	*/
 	{
 		bs->text = "Prepare for the next X-Wing mission!";
 		strcpy_s(bs->voice, "none.wav");
