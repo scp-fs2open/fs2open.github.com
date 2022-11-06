@@ -38040,13 +38040,14 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	},
 
 	{ OP_TOGGLE_ASTEROID_FIELD, "toggle-asteroid-field\r\n" 
-		"\tTurns an existing asteroid field on/off. Will do nothing if no asteroid field is defined in the mission file!\r\n"
+		"\tTurns an existing asteroid or debris field on/off. Will do nothing if no field is defined in the mission file or set with sexps.\r\n"
+		"\tNote that this differs from actually removing and adding a field in that it only toggles a field from being rendered or calculated.\r\n"
 		"\tTakes 1 argument...\r\n"
-		"\t1:\ttrue for asteroid field on, false for asteroid field off\r\n" 
+		"\t1:\ttrue for field on, false for field off\r\n" 
 	},
 
 	{ OP_SET_ASTEROID_FIELD, "set-asteroid-field\r\n" 
-		"\tCreates or overwrites the asteroid field. \r\n"
+		"\tCreates or overwrites the asteroid or debris field with an asteroid field. \r\n"
 		"\tTakes 1 or more arguments...\r\n"
 		"\t1:\tNumber of asteroids in the field, or 0 to remove an existing field\r\n" 
 		"\t2:\t0 for active field, 1 for passive field, defaults to 0\r\n"
@@ -38071,7 +38072,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	},
 
 	{ OP_SET_DEBRIS_FIELD, "set-debris-field\r\n" 
-		"\tCreates or overwrites the debris field. \r\n"
+		"\tCreates or overwrites the asteroid or debris field with a debris field. \r\n"
 		"\tTakes 1 or more arguments...\r\n"
 		"\t1:\tNumber of debris in the field, or 0 to remove an existing field\r\n" 
 		"\t2:\tThe speed of the asteroids, defaults to 0\r\n"
