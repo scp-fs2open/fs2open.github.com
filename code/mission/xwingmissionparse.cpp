@@ -194,6 +194,39 @@ int xwi_lookup_cargo(const char *cargo_name)
 	return index;
 }
 
+const char *xwi_determine_ai_class(XWMFlightGroup *fg)
+{
+	// Rookie = Cadet
+	// Officer = Officer
+	// Veteran = Captain
+	// Ace = Commander
+	// Top Ace = General
+
+	switch (fg->craftAI)
+	{
+		case XWMFlightGroup::ai_Rookie:
+			return "Cadet";
+		case XWMFlightGroup::ai_Officer:
+			return "Officer";
+		case XWMFlightGroup::ai_Veteran:
+			return "Captain";
+		case XWMFlightGroup::ai_Ace:
+			return "Commander";
+		case XWMFlightGroup::ai_Top_Ace:
+			return "General";
+	}
+
+	return nullptr;
+}
+
+int xwi_arrival_delay_to_seconds(int delay)
+{
+	// If the arrival delay is less than or equal to 20, it's in minutes. If it's over 20, it's in 6 second blocks. So 21 is 6 seconds, for example
+	if (delay <= 20)
+		return delay * 60;
+	return delay * 6;
+}
+
 void parse_xwi_flightgroup(mission *pm, XWingMission *xwim, XWMFlightGroup *fg)
 {
 	// see if this flight group is what FreeSpace would treat as a wing
@@ -243,6 +276,18 @@ void parse_xwi_flightgroup(mission *pm, XWingMission *xwim, XWMFlightGroup *fg)
 			team = index;
 		else
 			Warning(LOCATION, "Could not find iff %s", team_name);
+	}
+
+	// similarly for the AI
+	auto ai_name = xwi_determine_ai_class(fg);
+	int ai_class = 0;
+	if (ai_name)
+	{
+		int index = string_lookup(ai_name, Ai_class_names, Num_ai_classes);
+		if (index >= 0)
+			ai_class = index;
+		else
+			Warning(LOCATION, "Could not find AI class %s", ai_name);
 	}
 
 	// similarly for any waypoints
@@ -306,6 +351,7 @@ void parse_xwi_flightgroup(mission *pm, XWingMission *xwim, XWMFlightGroup *fg)
 		pobj.score = sip->score;
 
 		pobj.team = team;
+		pobj.ai_class = ai_class;
 
 		pobj.pos = start1;
 
