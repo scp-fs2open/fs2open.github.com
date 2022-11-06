@@ -6673,17 +6673,18 @@ bool parse_main(const char *mission_name, int flags)
 
 				// import the mission proper, followed by the briefing
 				read_file_bytes(temp_filename, CF_TYPE_ANY);
-				auto xwim = XWingMission::load(Parse_text_raw);
-				if (!xwim)
+				XWingMission xwim;
+				if (!XWingMission::load(&xwim, Parse_text_raw))
 					throw parse::ParseException("Could not parse XWI mission!");
-				rval = parse_mission(&The_mission, xwim, flags);
+				rval = parse_mission(&The_mission, &xwim, flags);
 
 				if (rval)
 				{
 					strcpy(ch, ".BRF");
 					read_file_bytes(temp_filename, CF_TYPE_ANY);
-					auto xwib = XWingBriefing::load(Parse_text_raw);
-					parse_xwi_briefing(&The_mission, xwib);
+					XWingBriefing xwib;
+					XWingBriefing::load(&xwib, Parse_text_raw);
+					parse_xwi_briefing(&The_mission, &xwib);
 				}
 			}
 			// regular mission load

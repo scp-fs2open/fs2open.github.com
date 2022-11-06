@@ -1,30 +1,18 @@
-#include <stdio.h>
-#include <tchar.h>
+
 #include <vector>
 #include <string>
-#include <assert.h>
 #include "xwingbrflib.h"
 
 
-XWingBriefing::XWingBriefing()
-{
-}
-
-XWingBriefing::~XWingBriefing()
-{
-}
-
-XWingBriefing *XWingBriefing::load(const char *data)
+bool XWingBriefing::load(XWingBriefing *b, const char *data)
 {
 	// parse header
-	struct xwi_brf_header *h = (struct xwi_brf_header *)data;
+	xwi_brf_header *h = (xwi_brf_header *)data;
 	if (h->version != 2)
-		return NULL;
-
-	XWingBriefing *b = new XWingBriefing();
+		return false;
 
 	// h->icon_count == numShips
-	b->ships = *new std::vector<xwi_brf_ship>(h->icon_count);
+	b->ships.resize(h->icon_count);
 
 	return b;
 }

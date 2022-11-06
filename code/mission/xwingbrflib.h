@@ -1,8 +1,6 @@
 #pragma once
 #include <map>
 #include <array>
-#include "globalincs/pstypes.h"
-
 
 std::map<int, std::vector<std::string> > create_animation_map();
 
@@ -19,7 +17,7 @@ struct xwi_brf_header {
 
 
 struct xwi_brf_ship {
-	vec3d coordinates;
+	float coordinates_x, coordinates_y, coordinates_z;
 	short icon_type;
 	short iff;
 	short wave_size;
@@ -37,10 +35,7 @@ class XWingBriefing
 {
 public:
 
-	XWingBriefing();
-	~XWingBriefing();
-
-	static 	XWingBriefing *load(const char *data);
+	static bool load(XWingBriefing *b, const char *data);
 
 	std::string message1;
 	xwi_brf_header header;

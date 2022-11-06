@@ -16,49 +16,41 @@ extern int allocate_subsys_status();
 static int Player_flight_group = 0;
 
 // vazor222
-void parse_xwi_mission_info(mission *pm, XWingMission *xwim, bool basic)
+void parse_xwi_mission_info(mission *pm, const XWingMission *xwim)
 {
 	strcpy_s(pm->author, "X-Wing");
 	strcpy_s(pm->created, "00/00/00 at 00:00:00");
 
-	Parse_viewer_pos.xyz.x = 1000 * xwim->flightgroups[Player_flight_group]->start1_x;
-	Parse_viewer_pos.xyz.y = 1000 * xwim->flightgroups[Player_flight_group]->start1_y + 100;
-	Parse_viewer_pos.xyz.z = 1000 * xwim->flightgroups[Player_flight_group]->start1_z - 100;
+	Parse_viewer_pos.xyz.x = 1000 * xwim->flightgroups[Player_flight_group].start1_x;
+	Parse_viewer_pos.xyz.y = 1000 * xwim->flightgroups[Player_flight_group].start1_y + 100;
+	Parse_viewer_pos.xyz.z = 1000 * xwim->flightgroups[Player_flight_group].start1_z - 100;
 	vm_angle_2_matrix(&Parse_viewer_orient, PI_4, 0);
 }
 
-bool is_fighter_or_bomber(XWMFlightGroup *fg)
+bool is_fighter_or_bomber(const XWMFlightGroup *fg)
 {
 	switch (fg->flightGroupType)
 	{
-		case XWMFlightGroup::fg_X_Wing:
-		case XWMFlightGroup::fg_Y_Wing:
-		case XWMFlightGroup::fg_A_Wing:
-		case XWMFlightGroup::fg_B_Wing:
-		case XWMFlightGroup::fg_TIE_Fighter:
-		case XWMFlightGroup::fg_TIE_Interceptor:
-		case XWMFlightGroup::fg_TIE_Bomber:
-		case XWMFlightGroup::fg_Gunboat:
-		case XWMFlightGroup::fg_TIE_Advanced:
+		case XWMFlightGroupType::fg_X_Wing:
+		case XWMFlightGroupType::fg_Y_Wing:
+		case XWMFlightGroupType::fg_A_Wing:
+		case XWMFlightGroupType::fg_B_Wing:
+		case XWMFlightGroupType::fg_TIE_Fighter:
+		case XWMFlightGroupType::fg_TIE_Interceptor:
+		case XWMFlightGroupType::fg_TIE_Bomber:
+		case XWMFlightGroupType::fg_Gunboat:
+		case XWMFlightGroupType::fg_TIE_Advanced:
 			return true;
 	}
 	return false;
 }
 
-bool is_wing(XWMFlightGroup *fg)
+bool is_wing(const XWMFlightGroup *fg)
 {
 	return (fg->numberInWave > 1 || fg->numberOfWaves > 1 || is_fighter_or_bomber(fg));
 }
 
-int xwi_arrival_delay_to_seconds(int delay)
-{
-	// If the arrival delay is less than or equal to 20, it's in minutes. If it's over 20, it's in 6 second blocks. So 21 is 6 seconds, for example
-	if (delay <= 20)
-		return delay * 60;
-	return delay * 6;
-}
-
-int xwi_determine_arrival_cue(XWingMission *xwim, XWMFlightGroup *fg)
+int xwi_determine_arrival_cue(const XWingMission *xwim, const XWMFlightGroup *fg)
 {
 	char name[NAME_LENGTH] = "";
 	char sexp_buf[1024];
@@ -66,19 +58,19 @@ int xwi_determine_arrival_cue(XWingMission *xwim, XWMFlightGroup *fg)
 	bool check_wing = false;
 	if (fg->arrivalFlightGroup >= 0)
 	{
-		strcpy_s(name, xwim->flightgroups[fg->arrivalFlightGroup]->designation.c_str());
+		strcpy_s(name, xwim->flightgroups[fg->arrivalFlightGroup].designation.c_str());
 		SCP_totitle(name);
-		check_wing = is_wing(xwim->flightgroups[fg->arrivalFlightGroup]);
+		check_wing = is_wing(&xwim->flightgroups[fg->arrivalFlightGroup]);
 	}
 
-	if (fg->arrivalEvent == XWMFlightGroup::ae_afg_arrives)
+	if (fg->arrivalEvent == XWMArrivalEvent::ae_afg_arrives)
 	{
 		sprintf(sexp_buf, "( has-arrived-delay 0 \"%s\" )", name);
 		Mp = sexp_buf;
 		return get_sexp_main();
 	}
 
-	if (fg->arrivalEvent == XWMFlightGroup::ae_afg_attacked)
+	if (fg->arrivalEvent == XWMArrivalEvent::ae_afg_attacked)
 	{
 		if (check_wing)
 			sprintf(sexp_buf, "( fotg-is-wing-attacked \"%s\" )", name);
@@ -88,7 +80,7 @@ int xwi_determine_arrival_cue(XWingMission *xwim, XWMFlightGroup *fg)
 		return get_sexp_main();
 	}
 
-	if (fg->arrivalEvent == XWMFlightGroup::ae_afg_boarded)
+	if (fg->arrivalEvent == XWMArrivalEvent::ae_afg_boarded)
 	{
 		if (check_wing)
 			sprintf(sexp_buf, "( fotg-is-wing-boarded \"%s\" )", name);
@@ -98,14 +90,14 @@ int xwi_determine_arrival_cue(XWingMission *xwim, XWMFlightGroup *fg)
 		return get_sexp_main();
 	}
 
-	if (fg->arrivalEvent == XWMFlightGroup::ae_afg_destroyed)
+	if (fg->arrivalEvent == XWMArrivalEvent::ae_afg_destroyed)
 	{
 		sprintf(sexp_buf, "( is-destroyed-delay 0 \"%s\" )", name);
 		Mp = sexp_buf;
 		return get_sexp_main();
 	}
 
-	if (fg->arrivalEvent == XWMFlightGroup::ae_afg_disabled)
+	if (fg->arrivalEvent == XWMArrivalEvent::ae_afg_disabled)
 	{
 		if (check_wing)
 			sprintf(sexp_buf, "( fotg-is-wing-disabled \"%s\" )", name);
@@ -115,7 +107,7 @@ int xwi_determine_arrival_cue(XWingMission *xwim, XWMFlightGroup *fg)
 		return get_sexp_main();
 	}
 
-	if (fg->arrivalEvent == XWMFlightGroup::ae_afg_identified)
+	if (fg->arrivalEvent == XWMArrivalEvent::ae_afg_identified)
 	{
 		if (check_wing)
 			sprintf(sexp_buf, "( fotg-is-wing-identified \"%s\" )", name);
@@ -128,14 +120,14 @@ int xwi_determine_arrival_cue(XWingMission *xwim, XWMFlightGroup *fg)
 	return Locked_sexp_true;
 }
 
-int xwi_determine_anchor(XWingMission *xwim, XWMFlightGroup *fg)
+int xwi_determine_anchor(const XWingMission *xwim, const XWMFlightGroup *fg)
 {
 	int mothership_number = fg->mothership;
 
 	if (mothership_number >= 0)
 	{
 		if (mothership_number < (int)xwim->flightgroups.size())
-			return get_parse_name_index(xwim->flightgroups[mothership_number]->designation.c_str());
+			return get_parse_name_index(xwim->flightgroups[mothership_number].designation.c_str());
 		else
 			Warning(LOCATION, "Mothership number %d is out of range for Flight Group %s", mothership_number, fg->designation.c_str());
 	}
@@ -143,54 +135,52 @@ int xwi_determine_anchor(XWingMission *xwim, XWMFlightGroup *fg)
 	return -1;
 }
 
-const char *xwi_determine_base_ship_class(XWMFlightGroup *fg)
+const char *xwi_determine_base_ship_class(const XWMFlightGroup *fg)
 {
-	int flightGroupType = fg->flightGroupType;
-
-	switch (flightGroupType)
+	switch (fg->flightGroupType)
 	{
-		case XWMFlightGroup::fg_X_Wing:
+		case XWMFlightGroupType::fg_X_Wing:
 			return "T-65c X-wing";
-		case XWMFlightGroup::fg_Y_Wing:
+		case XWMFlightGroupType::fg_Y_Wing:
 			return "BTL-A4 Y-wing";
-		case XWMFlightGroup::fg_A_Wing:
+		case XWMFlightGroupType::fg_A_Wing:
 			return "RZ-1 A-wing";
-		case XWMFlightGroup::fg_TIE_Fighter:
+		case XWMFlightGroupType::fg_TIE_Fighter:
 			return "TIE/ln Fighter";
-		case XWMFlightGroup::fg_TIE_Interceptor:
+		case XWMFlightGroupType::fg_TIE_Interceptor:
 			return "TIE/In Interceptor";
-		case XWMFlightGroup::fg_TIE_Bomber:
+		case XWMFlightGroupType::fg_TIE_Bomber:
 			return "TIE/sa Bomber";
-		case XWMFlightGroup::fg_Gunboat:
+		case XWMFlightGroupType::fg_Gunboat:
 			return nullptr;
-		case XWMFlightGroup::fg_Transport:
+		case XWMFlightGroupType::fg_Transport:
 			return "DX-9 Stormtrooper Transport";
-		case XWMFlightGroup::fg_Shuttle:
+		case XWMFlightGroupType::fg_Shuttle:
 			return "Lambda-class T-4a Shuttle";
-		case XWMFlightGroup::fg_Tug:
+		case XWMFlightGroupType::fg_Tug:
 			return nullptr;
-		case XWMFlightGroup::fg_Container:
+		case XWMFlightGroupType::fg_Container:
 			return nullptr;
-		case XWMFlightGroup::fg_Frieghter:
+		case XWMFlightGroupType::fg_Freighter:
 			return "BFF-1 Bulk Freighter";
-		case XWMFlightGroup::fg_Calamari_Cruiser:
+		case XWMFlightGroupType::fg_Calamari_Cruiser:
 			return "Liberty Type Star Cruiser";
-		case XWMFlightGroup::fg_Nebulon_B_Frigate:
+		case XWMFlightGroupType::fg_Nebulon_B_Frigate:
 			return "EF76 Nebulon-B Escort Frigate";
-		case XWMFlightGroup::fg_Corellian_Corvette:
+		case XWMFlightGroupType::fg_Corellian_Corvette:
 			return "CR90 Corvette";
-		case XWMFlightGroup::fg_Imperial_Star_Destroyer:
+		case XWMFlightGroupType::fg_Imperial_Star_Destroyer:
 			return "Imperial Star Destroyer";
-		case XWMFlightGroup::fg_TIE_Advanced:
+		case XWMFlightGroupType::fg_TIE_Advanced:
 			return nullptr;
-		case XWMFlightGroup::fg_B_Wing:
+		case XWMFlightGroupType::fg_B_Wing:
 			return "B-wing Starfighter";
 	}
 
 	return nullptr;
 }
 
-int xwi_determine_ship_class(XWMFlightGroup *fg)
+int xwi_determine_ship_class(const XWMFlightGroup *fg)
 {
 	// base ship class must exist
 	auto class_name = xwi_determine_base_ship_class(fg);
@@ -201,17 +191,17 @@ int xwi_determine_ship_class(XWMFlightGroup *fg)
 	bool variant = false;
 
 	// now see if we have any variants
-	if (fg->craftColor == XWMFlightGroup::c_Red)
+	if (fg->craftColor == XWMCraftColor::c_Red)
 	{
 		variant_class += "#red";
 		variant = true;
 	}
-	else if (fg->craftColor == XWMFlightGroup::c_Gold)
+	else if (fg->craftColor == XWMCraftColor::c_Gold)
 	{
 		variant_class += "#gold";
 		variant = true;
 	}
-	else if (fg->craftColor == XWMFlightGroup::c_Blue)
+	else if (fg->craftColor == XWMCraftColor::c_Blue)
 	{
 		variant_class += "#blue";
 		variant = true;
@@ -230,27 +220,27 @@ int xwi_determine_ship_class(XWMFlightGroup *fg)
 	return ship_info_lookup(class_name);
 }
 
-const char *xwi_determine_team(XWingMission *xwim, XWMFlightGroup *fg, ship_info *sip)
+const char *xwi_determine_team(const XWingMission *xwim, const XWMFlightGroup *fg, const ship_info *sip)
 {
-	auto player_iff = xwim->flightgroups[Player_flight_group]->craftIFF;
+	auto player_iff = xwim->flightgroups[Player_flight_group].craftIFF;
 
-	if (fg->craftIFF == XWMFlightGroup::iff_imperial)
+	if (fg->craftIFF == XWMCraftIFF::iff_imperial)
 	{
-		if (player_iff == XWMFlightGroup::iff_imperial)
+		if (player_iff == XWMCraftIFF::iff_imperial)
 			return "Friendly";
-		if (player_iff == XWMFlightGroup::iff_rebel)
+		if (player_iff == XWMCraftIFF::iff_rebel)
 			return "Hostile";
 	}
 
-	if (fg->craftIFF == XWMFlightGroup::iff_rebel)
+	if (fg->craftIFF == XWMCraftIFF::iff_rebel)
 	{
-		if (player_iff == XWMFlightGroup::iff_imperial)
+		if (player_iff == XWMCraftIFF::iff_imperial)
 			return "Hostile";
-		if (player_iff == XWMFlightGroup::iff_rebel)
+		if (player_iff == XWMCraftIFF::iff_rebel)
 			return "Friendly";
 	}
 
-	if (fg->craftIFF == XWMFlightGroup::iff_neutral)
+	if (fg->craftIFF == XWMCraftIFF::iff_neutral)
 		return "Civilian";
 
 	return nullptr;
@@ -278,7 +268,7 @@ int xwi_lookup_cargo(const char *cargo_name)
 	return index;
 }
 
-const char *xwi_determine_ai_class(XWMFlightGroup *fg)
+const char *xwi_determine_ai_class(const XWMFlightGroup *fg)
 {
 	// Rookie = Cadet
 	// Officer = Officer
@@ -288,25 +278,50 @@ const char *xwi_determine_ai_class(XWMFlightGroup *fg)
 
 	switch (fg->craftAI)
 	{
-		case XWMFlightGroup::ai_Rookie:
+		case XWMCraftAI::ai_Rookie:
 			return "Cadet";
-		case XWMFlightGroup::ai_Officer:
+		case XWMCraftAI::ai_Officer:
 			return "Officer";
-		case XWMFlightGroup::ai_Veteran:
+		case XWMCraftAI::ai_Veteran:
 			return "Captain";
-		case XWMFlightGroup::ai_Ace:
+		case XWMCraftAI::ai_Ace:
 			return "Commander";
-		case XWMFlightGroup::ai_Top_Ace:
+		case XWMCraftAI::ai_Top_Ace:
 			return "General";
 	}
 
 	return nullptr;
 }
 
-void parse_xwi_flightgroup(mission *pm, XWingMission *xwim, XWMFlightGroup *fg)
+void xwi_determine_orientation(matrix *orient, const XWMFlightGroup *fg, const vec3d *start1, const vec3d *start2, const vec3d *start3,
+	const vec3d *waypoint1, const vec3d *waypoint2, const vec3d *waypoint3, const vec3d *hyperspace)
+{
+	vec3d fvec;
+
+	// RandomStarfighter says:
+	// It arrives from start point and points toward waypoint 1, if waypoint 1 is enabled.
+	// This also matches FG Red orientation in STARSNDB
+	vm_vec_normalized_dir(&fvec, waypoint1, start1);
+	vm_vector_2_matrix_norm(orient, &fvec);
+
+	if (!fg->arriveByHyperspace && fg->craftOrder == XWMCraftOrder::o_Starship_Sit_And_Fire)
+	{
+		// This matches the Intrepid's orientation in STARSNDB
+		vm_vec_normalized_dir(&fvec, hyperspace, start1);
+		vm_vector_2_matrix_norm(orient, &fvec);
+	}
+}
+
+void parse_xwi_flightgroup(mission *pm, const XWingMission *xwim, const XWMFlightGroup *fg)
 {
 	int arrival_cue = xwi_determine_arrival_cue(xwim, fg);
-	int arrival_delay = xwi_arrival_delay_to_seconds(fg->arrivalDelay);
+
+	int number_in_wave = fg->numberInWave;
+	if (number_in_wave > MAX_SHIPS_PER_WING)
+	{
+		Warning(LOCATION, "Too many ships in Flight Group %s.  FreeSpace supports up to a maximum of %d.", fg->designation.c_str(), MAX_SHIPS_PER_WING);
+		number_in_wave = MAX_SHIPS_PER_WING;
+	}
 
 	// see if this flight group is what FreeSpace would treat as a wing
 	wing *wingp = nullptr;
@@ -322,7 +337,7 @@ void parse_xwi_flightgroup(mission *pm, XWingMission *xwim, XWMFlightGroup *fg)
 		wingp->formation = -1;	// TODO
 
 		wingp->arrival_cue = arrival_cue;
-		wingp->arrival_delay = arrival_delay;
+		wingp->arrival_delay = fg->arrivalDelay;
 		wingp->arrival_location = fg->arriveByHyperspace ? ARRIVE_AT_LOCATION : ARRIVE_FROM_DOCK_BAY;
 		wingp->arrival_anchor = xwi_determine_anchor(xwim, fg);
 		wingp->departure_location = fg->departByHyperspace ? DEPART_AT_LOCATION : DEPART_AT_DOCK_BAY;
@@ -335,13 +350,7 @@ void parse_xwi_flightgroup(mission *pm, XWingMission *xwim, XWMFlightGroup *fg)
 		if (wingp->departure_anchor < 0)
 			wingp->departure_location = DEPART_AT_LOCATION;
 
-		if (fg->numberInWave > MAX_SHIPS_PER_WING)
-		{
-			Warning(LOCATION, "Too many ships in Flight Group %s.  FreeSpace supports up to a maximum of %d.", fg->designation.c_str(), MAX_SHIPS_PER_WING);
-			fg->numberInWave = MAX_SHIPS_PER_WING;
-		}
-
-		wingp->wave_count = fg->numberInWave;
+		wingp->wave_count = number_in_wave;
 	}
 
 	// all ships in the flight group share a class, so determine that here
@@ -381,10 +390,10 @@ void parse_xwi_flightgroup(mission *pm, XWingMission *xwim, XWMFlightGroup *fg)
 	auto start1 = vm_vec_new(fg->start1_x, fg->start1_y, fg->start1_z);
 	auto start2 = vm_vec_new(fg->start2_x, fg->start2_y, fg->start2_z);
 	auto start3 = vm_vec_new(fg->start3_x, fg->start3_y, fg->start3_z);
-	auto waypoint1 = vm_vec_new(fg->wp1_x, fg->wp1_y, fg->wp1_z);
-	auto waypoint2 = vm_vec_new(fg->wp2_x, fg->wp2_y, fg->wp2_z);
-	auto waypoint3 = vm_vec_new(fg->wp3_x, fg->wp3_y, fg->wp3_z);
-	auto hyp = vm_vec_new(fg->hyperspace_x, fg->hyperspace_y, fg->hyperspace_z);
+	auto waypoint1 = vm_vec_new(fg->waypoint1_x, fg->waypoint1_y, fg->waypoint1_z);
+	auto waypoint2 = vm_vec_new(fg->waypoint2_x, fg->waypoint2_y, fg->waypoint2_z);
+	auto waypoint3 = vm_vec_new(fg->waypoint3_x, fg->waypoint3_y, fg->waypoint3_z);
+	auto hyperspace = vm_vec_new(fg->hyperspace_x, fg->hyperspace_y, fg->hyperspace_z);
 
 	// waypoint units are in kilometers (after processing by xwinglib which handles the factor of 160), so scale them up
 	vm_vec_scale(&start1, 1000);
@@ -393,19 +402,23 @@ void parse_xwi_flightgroup(mission *pm, XWingMission *xwim, XWMFlightGroup *fg)
 	vm_vec_scale(&waypoint1, 1000);
 	vm_vec_scale(&waypoint2, 1000);
 	vm_vec_scale(&waypoint3, 1000);
-	vm_vec_scale(&hyp, 1000);
+	vm_vec_scale(&hyperspace, 1000);
 
 	// now configure each ship in the flight group
-	for (int wave_index = 0; wave_index < fg->numberInWave; wave_index++)
+	int wing_leader_pobj_index = -1;
+	for (int wing_index = 0; wing_index < number_in_wave; wing_index++)
 	{
 		p_object pobj;
 
 		if (wingp)
 		{
-			wing_bash_ship_name(pobj.name, wingp->name, wave_index + 1, nullptr);
+			wing_bash_ship_name(pobj.name, wingp->name, wing_index + 1, nullptr);
 			pobj.wingnum = wingnum;
-			pobj.pos_in_wing = wave_index;
+			pobj.pos_in_wing = wing_index;
 			pobj.arrival_cue = Locked_sexp_false;
+
+			if (wing_index == 0)
+				wing_leader_pobj_index = (int)Parse_objects.size();
 		}
 		else
 		{
@@ -413,7 +426,7 @@ void parse_xwi_flightgroup(mission *pm, XWingMission *xwim, XWMFlightGroup *fg)
 			SCP_totitle(pobj.name);
 
 			pobj.arrival_cue = arrival_cue;
-			pobj.arrival_delay = arrival_delay;
+			pobj.arrival_delay = fg->arrivalDelay;
 			pobj.arrival_location = fg->arriveByHyperspace ? ARRIVE_AT_LOCATION : ARRIVE_FROM_DOCK_BAY;
 			pobj.arrival_anchor = xwi_determine_anchor(xwim, fg);
 			pobj.departure_location = fg->departByHyperspace ? DEPART_AT_LOCATION : DEPART_AT_DOCK_BAY;
@@ -444,33 +457,20 @@ void parse_xwi_flightgroup(mission *pm, XWingMission *xwim, XWMFlightGroup *fg)
 		pobj.ai_class = ai_class;
 
 		pobj.pos = start1;
-
-		if (fg->arriveByHyperspace)
-		{
-			// RandomStarfighter says:
-			// It arrives from start point and points toward waypoint 1, if waypoint 1 is enabled.
-			// This also matches FG Red orientation in STARSNDB
-			vec3d fvec;
-			vm_vec_normalized_dir(&fvec, &waypoint1, &start1);
-			vm_vector_2_matrix_norm(&pobj.orient, &fvec);
-		}
+		if (wing_index == 0)
+			xwi_determine_orientation(&pobj.orient, fg, &start1, &start2, &start3, &waypoint1, &waypoint2, &waypoint3, &hyperspace);
 		else
-		{
-			// This matches the Intrepid's orientation in STARSNDB
-			vec3d fvec;
-			vm_vec_normalized_dir(&fvec, &hyp, &start1);
-			vm_vector_2_matrix_norm(&pobj.orient, &fvec);
-		}
+			pobj.orient = Parse_objects[wing_leader_pobj_index].orient;
 
-		if (wingp && wave_index == fg->specialShipNumber)
+		if (wingp && wing_index == fg->specialShipNumber)
 			pobj.cargo1 = (char)xwi_lookup_cargo(fg->specialCargo.c_str());
 		else
 			pobj.cargo1 = (char)xwi_lookup_cargo(fg->cargo.c_str());
 
-		if (fg->order != XWMFlightGroup::o_Hold_Steady && fg->order != XWMFlightGroup::o_Starship_Sit_And_Fire)
+		if (fg->craftOrder != XWMCraftOrder::o_Hold_Steady && fg->craftOrder != XWMCraftOrder::o_Starship_Sit_And_Fire)
 			pobj.initial_velocity = 100;
 
-		if (fg->playerPos == wave_index + 1)
+		if (fg->playerPos == wing_index + 1)
 		{
 			strcpy_s(Player_start_shipname, pobj.name);
 			pobj.flags.set(Mission::Parse_Object_Flags::OF_Player_start);
@@ -478,10 +478,10 @@ void parse_xwi_flightgroup(mission *pm, XWingMission *xwim, XWMFlightGroup *fg)
 			Player_starts++;
 		}
 
-		if (fg->craftStatus == XWMFlightGroup::cs_no_shields)
+		if (fg->craftStatus == XWMCraftStatus::cs_no_shields)
 			pobj.flags.set(Mission::Parse_Object_Flags::OF_No_shields);
 
-		if (fg->craftStatus == XWMFlightGroup::cs_no_missiles || fg->craftStatus == XWMFlightGroup::cs_half_missiles)
+		if (fg->craftStatus == XWMCraftStatus::cs_no_missiles || fg->craftStatus == XWMCraftStatus::cs_half_missiles)
 		{
 			// the only subsystem we actually need is Pilot, because everything else uses defaults
 			pobj.subsys_index = Subsys_index;
@@ -492,7 +492,7 @@ void parse_xwi_flightgroup(mission *pm, XWingMission *xwim, XWMFlightGroup *fg)
 			for (int bank = 0; bank < MAX_SHIP_SECONDARY_BANKS; bank++)
 			{
 				Subsys_status[this_subsys].secondary_banks[bank] = SUBSYS_STATUS_NO_CHANGE;
-				Subsys_status[this_subsys].secondary_ammo[bank] = (fg->craftStatus == XWMFlightGroup::cs_no_missiles) ? 0 : 50;
+				Subsys_status[this_subsys].secondary_ammo[bank] = (fg->craftStatus == XWMCraftStatus::cs_no_missiles) ? 0 : 50;
 			}
 		}
 
@@ -500,14 +500,14 @@ void parse_xwi_flightgroup(mission *pm, XWingMission *xwim, XWMFlightGroup *fg)
 	}
 }
 
-void parse_xwi_mission(mission *pm, XWingMission *xwim)
+void parse_xwi_mission(mission *pm, const XWingMission *xwim)
 {
 	int index = -1;
 
 	// find player flight group
 	for (int i = 0; i < xwim->flightgroups.size(); i++)
 	{
-		if (xwim->flightgroups[i]->playerPos > 0)
+		if (xwim->flightgroups[i].playerPos > 0)
 		{
 			index = i;
 			break;
@@ -530,14 +530,14 @@ void parse_xwi_mission(mission *pm, XWingMission *xwim)
 		sprintf(TVT_wing_names[i], "Hidden %d", i);
 
 	// put the player's flight group in the default spot
-	strcpy_s(Starting_wing_names[0], xwim->flightgroups[Player_flight_group]->designation.c_str());
+	strcpy_s(Starting_wing_names[0], xwim->flightgroups[Player_flight_group].designation.c_str());
 	SCP_totitle(Starting_wing_names[0]);
 	strcpy_s(Squadron_wing_names[0], Starting_wing_names[0]);
 	strcpy_s(TVT_wing_names[0], Starting_wing_names[0]);
 
 	// load flight groups
-	for (auto fg : xwim->flightgroups)
-		parse_xwi_flightgroup(pm, xwim, fg);
+	for (const auto &fg : xwim->flightgroups)
+		parse_xwi_flightgroup(pm, xwim, &fg);
 }
 
 /**
@@ -546,7 +546,7 @@ void parse_xwi_mission(mission *pm, XWingMission *xwim)
 *
 * NOTE: This updates the global Briefing struct with all the data necessary to drive the briefing
 */
-void parse_xwi_briefing(mission *pm, XWingBriefing *xwBrief)
+void parse_xwi_briefing(mission *pm, const XWingBriefing *xwBrief)
 {
 	brief_stage *bs;
 	briefing *bp;
