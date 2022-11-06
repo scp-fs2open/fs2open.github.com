@@ -6252,8 +6252,15 @@ bool post_process_mission()
 			int result, bad_node, op;
 
 			op = get_operator_index(i);
-			Assert(op != -1);  // need to make sure it is an operator before we treat it like one..
-			result = check_sexp_syntax( i, query_operator_return_type(op), 1, &bad_node);
+
+			// need to make sure it is an operator before we treat it like one..
+			if (op < 0)
+			{
+				result = SEXP_CHECK_UNKNOWN_OP;
+				bad_node = i;
+			}
+			else
+				result = check_sexp_syntax(i, query_operator_return_type(op), 1, &bad_node);
 
 			// entering this if statement will result in program termination!!!!!
 			// print out an error based on the return value from check_sexp_syntax()

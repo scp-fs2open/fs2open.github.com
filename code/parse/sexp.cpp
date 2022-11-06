@@ -1972,6 +1972,11 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 	Assert(node >= 0 && node < Num_sexp_nodes);
 	Assert(Sexp_nodes[node].type != SEXP_NOT_USED);
+
+	op_node = node;		// save the node of the operator since we need to get to other args.
+	if (bad_node)
+		*bad_node = op_node;
+
 	if (Sexp_nodes[node].subtype == SEXP_ATOM_NUMBER && return_type == OPR_BOOL) {
 		// special case Mark seems to want supported
 		Assert(Sexp_nodes[node].first == -1);  // only lists should have a first pointer
@@ -1980,10 +1985,6 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 		return 0;
 	}
-
-	op_node = node;		// save the node of the operator since we need to get to other args.
-	if (bad_node)
-		*bad_node = op_node;
 
 	if (Sexp_nodes[op_node].subtype != SEXP_ATOM_OPERATOR)
 		return SEXP_CHECK_OP_EXPECTED;  // not an operator, which it should always be
