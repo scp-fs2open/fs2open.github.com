@@ -81,9 +81,9 @@ int xwi_determine_arrival_cue(XWingMission *xwim, XWMFlightGroup *fg)
 	if (fg->arrivalEvent == XWMFlightGroup::ae_afg_attacked)
 	{
 		if (check_wing)
-			sprintf(sexp_buf, "( lua-is-wing-attacked \"%s\" )", name);
+			sprintf(sexp_buf, "( fotg-is-wing-attacked \"%s\" )", name);
 		else
-			sprintf(sexp_buf, "( lua-is-ship-attacked \"%s\" )", name);
+			sprintf(sexp_buf, "( fotg-is-ship-attacked \"%s\" )", name);
 		Mp = sexp_buf;
 		return get_sexp_main();
 	}
@@ -91,9 +91,9 @@ int xwi_determine_arrival_cue(XWingMission *xwim, XWMFlightGroup *fg)
 	if (fg->arrivalEvent == XWMFlightGroup::ae_afg_boarded)
 	{
 		if (check_wing)
-			sprintf(sexp_buf, "( lua-is-wing-boarded \"%s\" )", name);
+			sprintf(sexp_buf, "( fotg-is-wing-boarded \"%s\" )", name);
 		else
-			sprintf(sexp_buf, "( lua-is-ship-boarded \"%s\" )", name);
+			sprintf(sexp_buf, "( fotg-is-ship-boarded \"%s\" )", name);
 		Mp = sexp_buf;
 		return get_sexp_main();
 	}
@@ -108,9 +108,9 @@ int xwi_determine_arrival_cue(XWingMission *xwim, XWMFlightGroup *fg)
 	if (fg->arrivalEvent == XWMFlightGroup::ae_afg_disabled)
 	{
 		if (check_wing)
-			sprintf(sexp_buf, "( lua-is-wing-disabled \"%s\" )", name);
+			sprintf(sexp_buf, "( fotg-is-wing-disabled \"%s\" )", name);
 		else
-			sprintf(sexp_buf, "( lua-is-ship-disabled \"%s\" )", name);
+			sprintf(sexp_buf, "( fotg-is-ship-disabled \"%s\" )", name);
 		Mp = sexp_buf;
 		return get_sexp_main();
 	}
@@ -118,9 +118,9 @@ int xwi_determine_arrival_cue(XWingMission *xwim, XWMFlightGroup *fg)
 	if (fg->arrivalEvent == XWMFlightGroup::ae_afg_identified)
 	{
 		if (check_wing)
-			sprintf(sexp_buf, "( lua-is-wing-identified \"%s\" )", name);
+			sprintf(sexp_buf, "( fotg-is-wing-identified \"%s\" )", name);
 		else
-			sprintf(sexp_buf, "( lua-is-ship-identified \"%s\" )", name);
+			sprintf(sexp_buf, "( fotg-is-ship-identified \"%s\" )", name);
 		Mp = sexp_buf;
 		return get_sexp_main();
 	}
@@ -223,7 +223,7 @@ int xwi_determine_ship_class(XWMFlightGroup *fg)
 		if (ship_class >= 0)
 			return ship_class;
 
-		Warning(LOCATION, "Could not find variant ship class %s for flight group %s.  Using base class instead.", variant_class.c_str(), fg->designation.c_str());
+		Warning(LOCATION, "Could not find variant ship class %s for Flight Group %s.  Using base class instead.", variant_class.c_str(), fg->designation.c_str());
 	}
 
 	// no variant, or we're just going with the base class
@@ -273,6 +273,7 @@ int xwi_lookup_cargo(const char *cargo_name)
 
 		index = Num_cargo++;
 		strcpy(Cargo_names[index], cargo_name);
+		SCP_totitle(Cargo_names[index]);
 	}
 	return index;
 }
@@ -321,7 +322,7 @@ void parse_xwi_flightgroup(mission *pm, XWingMission *xwim, XWMFlightGroup *fg)
 		wingp->formation = -1;	// TODO
 
 		wingp->arrival_cue = arrival_cue;
-		wingp->arrival_delay = -arrival_delay;
+		wingp->arrival_delay = arrival_delay;
 		wingp->arrival_location = fg->arriveByHyperspace ? ARRIVE_AT_LOCATION : ARRIVE_FROM_DOCK_BAY;
 		wingp->arrival_anchor = xwi_determine_anchor(xwim, fg);
 		wingp->departure_location = fg->departByHyperspace ? DEPART_AT_LOCATION : DEPART_AT_DOCK_BAY;
@@ -333,6 +334,12 @@ void parse_xwi_flightgroup(mission *pm, XWingMission *xwim, XWMFlightGroup *fg)
 			wingp->arrival_location = ARRIVE_AT_LOCATION;
 		if (wingp->departure_anchor < 0)
 			wingp->departure_location = DEPART_AT_LOCATION;
+
+		if (fg->numberInWave > MAX_SHIPS_PER_WING)
+		{
+			Warning(LOCATION, "Too many ships in Flight Group %s.  FreeSpace supports up to a maximum of %d.", fg->designation.c_str(), MAX_SHIPS_PER_WING);
+			fg->numberInWave = MAX_SHIPS_PER_WING;
+		}
 
 		wingp->wave_count = fg->numberInWave;
 	}
@@ -406,7 +413,7 @@ void parse_xwi_flightgroup(mission *pm, XWingMission *xwim, XWMFlightGroup *fg)
 			SCP_totitle(pobj.name);
 
 			pobj.arrival_cue = arrival_cue;
-			pobj.arrival_delay = -arrival_delay;
+			pobj.arrival_delay = arrival_delay;
 			pobj.arrival_location = fg->arriveByHyperspace ? ARRIVE_AT_LOCATION : ARRIVE_FROM_DOCK_BAY;
 			pobj.arrival_anchor = xwi_determine_anchor(xwim, fg);
 			pobj.departure_location = fg->departByHyperspace ? DEPART_AT_LOCATION : DEPART_AT_DOCK_BAY;
