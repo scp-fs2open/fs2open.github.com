@@ -79,7 +79,7 @@ int XWingMission::arrival_delay_to_seconds(int delay)
 	// If the arrival delay is less than or equal to 20, it's in minutes. If it's over 20, it's in 6 second blocks. So 21 is 6 seconds, for example
 	if (delay <= 20)
 		return delay * 60;
-	return delay * 6;
+	return (delay - 20) * 6;
 }
 
 bool XWingMission::load(XWingMission *m, const char *data)
@@ -142,6 +142,19 @@ bool XWingMission::load(XWingMission *m, const char *data)
 				break;
 			case 2:
 				nfg->flightGroupType = XWMFlightGroupType::fg_Y_Wing;
+
+				// There is a special case for Y-wings.  If
+				// the status is 10 (decimal) or higher, the FG is interpreted as a B-wing
+				// CraftType instead.  The status list repeats in the same order.  For example, a
+				// Y-Wing with a status of 1 has no warheads, but with a status of 11 becomes a
+				// B-Wing with no warheads.
+				if (fg->craft_status >= 10)
+				{
+					fg->flight_group_type = 18;	// B-Wing
+					fg->craft_status -= 10;
+					nfg->flightGroupType = XWMFlightGroupType::fg_B_Wing;
+				}
+
 				break;
 			case 3:
 				nfg->flightGroupType = XWMFlightGroupType::fg_A_Wing;

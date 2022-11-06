@@ -1,5 +1,6 @@
 #include "iff_defs/iff_defs.h"
 #include "mission/missionparse.h"
+#include "mission/missiongoals.h"
 #include "missionui/redalert.h"
 #include "nebula/neb.h"
 #include "parse/parselo.h"
@@ -21,9 +22,10 @@ void parse_xwi_mission_info(mission *pm, const XWingMission *xwim)
 	strcpy_s(pm->author, "X-Wing");
 	strcpy_s(pm->created, "00/00/00 at 00:00:00");
 
+	// NOTE: Y and Z are swapped and the units are in km
 	Parse_viewer_pos.xyz.x = 1000 * xwim->flightgroups[Player_flight_group].start1_x;
-	Parse_viewer_pos.xyz.y = 1000 * xwim->flightgroups[Player_flight_group].start1_y + 100;
-	Parse_viewer_pos.xyz.z = 1000 * xwim->flightgroups[Player_flight_group].start1_z - 100;
+	Parse_viewer_pos.xyz.y = 1000 * xwim->flightgroups[Player_flight_group].start1_z + 100;
+	Parse_viewer_pos.xyz.z = 1000 * xwim->flightgroups[Player_flight_group].start1_y - 100;
 	vm_angle_2_matrix(&Parse_viewer_orient, PI_4, 0);
 }
 
@@ -50,32 +52,76 @@ bool is_wing(const XWMFlightGroup *fg)
 	return (fg->numberInWave > 1 || fg->numberOfWaves > 1 || is_fighter_or_bomber(fg));
 }
 
+int xwi_flightgroup_lookup(const XWingMission *xwim, const XWMFlightGroup *fg)
+{
+	for (size_t i = 0; i < xwim->flightgroups.size(); i++)
+	{
+		if (xwim->flightgroups[i].designation == fg->designation)
+			return (int)i;
+	}
+	return -1;
+}
+
+void xwi_add_attack_check(const XWingMission *xwim, const XWMFlightGroup *fg)
+{
+	char fg_name[NAME_LENGTH] = "";
+	char event_name[NAME_LENGTH];
+	char sexp_buf[SEXP_LENGTH];
+
+	int index = xwi_flightgroup_lookup(xwim, fg);
+	Assert(index >= 0);
+
+	strcpy_s(fg_name, fg->designation.c_str());
+	SCP_totitle(fg_name);
+
+	sprintf(event_name, "FG %d Attack Check", index);
+
+	if (mission_event_lookup(event_name) >= 0)
+		return;
+
+	auto event = &Mission_events[Num_mission_events++];
+	strcpy_s(event->name, event_name);
+
+	if (is_wing(fg))
+		sprintf(sexp_buf, "( when ( true ) ( fotg-wing-attacked-init \"%s\" ) )", fg_name);
+	else
+		sprintf(sexp_buf, "( when ( true ) ( fotg-ship-attacked-init \"%s\" ) )", fg_name);
+	Mp = sexp_buf;
+	event->formula = get_sexp_main();
+}
+
 int xwi_determine_arrival_cue(const XWingMission *xwim, const XWMFlightGroup *fg)
 {
-	char name[NAME_LENGTH] = "";
-	char sexp_buf[1024];
+	const XWMFlightGroup *arrival_fg = nullptr;
+	char arrival_fg_name[NAME_LENGTH] = "";
+	char sexp_buf[SEXP_LENGTH];
 
 	bool check_wing = false;
 	if (fg->arrivalFlightGroup >= 0)
 	{
-		strcpy_s(name, xwim->flightgroups[fg->arrivalFlightGroup].designation.c_str());
-		SCP_totitle(name);
-		check_wing = is_wing(&xwim->flightgroups[fg->arrivalFlightGroup]);
+		arrival_fg = &xwim->flightgroups[fg->arrivalFlightGroup];
+		check_wing = is_wing(arrival_fg);
+		strcpy_s(arrival_fg_name, arrival_fg->designation.c_str());
+		SCP_totitle(arrival_fg_name);
 	}
+	else
+		return Locked_sexp_true;
 
 	if (fg->arrivalEvent == XWMArrivalEvent::ae_afg_arrives)
 	{
-		sprintf(sexp_buf, "( has-arrived-delay 0 \"%s\" )", name);
+		sprintf(sexp_buf, "( has-arrived-delay 0 \"%s\" )", arrival_fg_name);
 		Mp = sexp_buf;
 		return get_sexp_main();
 	}
 
 	if (fg->arrivalEvent == XWMArrivalEvent::ae_afg_attacked)
 	{
+		xwi_add_attack_check(xwim, arrival_fg);
+
 		if (check_wing)
-			sprintf(sexp_buf, "( fotg-is-wing-attacked \"%s\" )", name);
+			sprintf(sexp_buf, "( fotg-is-wing-attacked \"%s\" )", arrival_fg_name);
 		else
-			sprintf(sexp_buf, "( fotg-is-ship-attacked \"%s\" )", name);
+			sprintf(sexp_buf, "( fotg-is-ship-attacked \"%s\" )", arrival_fg_name);
 		Mp = sexp_buf;
 		return get_sexp_main();
 	}
@@ -83,16 +129,16 @@ int xwi_determine_arrival_cue(const XWingMission *xwim, const XWMFlightGroup *fg
 	if (fg->arrivalEvent == XWMArrivalEvent::ae_afg_boarded)
 	{
 		if (check_wing)
-			sprintf(sexp_buf, "( fotg-is-wing-boarded \"%s\" )", name);
+			sprintf(sexp_buf, "( fotg-is-wing-boarded \"%s\" )", arrival_fg_name);
 		else
-			sprintf(sexp_buf, "( fotg-is-ship-boarded \"%s\" )", name);
+			sprintf(sexp_buf, "( fotg-is-ship-boarded \"%s\" )", arrival_fg_name);
 		Mp = sexp_buf;
 		return get_sexp_main();
 	}
 
 	if (fg->arrivalEvent == XWMArrivalEvent::ae_afg_destroyed)
 	{
-		sprintf(sexp_buf, "( is-destroyed-delay 0 \"%s\" )", name);
+		sprintf(sexp_buf, "( is-destroyed-delay 0 \"%s\" )", arrival_fg_name);
 		Mp = sexp_buf;
 		return get_sexp_main();
 	}
@@ -100,9 +146,9 @@ int xwi_determine_arrival_cue(const XWingMission *xwim, const XWMFlightGroup *fg
 	if (fg->arrivalEvent == XWMArrivalEvent::ae_afg_disabled)
 	{
 		if (check_wing)
-			sprintf(sexp_buf, "( fotg-is-wing-disabled \"%s\" )", name);
+			sprintf(sexp_buf, "( fotg-is-wing-disabled \"%s\" )", arrival_fg_name);
 		else
-			sprintf(sexp_buf, "( fotg-is-ship-disabled \"%s\" )", name);
+			sprintf(sexp_buf, "( fotg-is-ship-disabled \"%s\" )", arrival_fg_name);
 		Mp = sexp_buf;
 		return get_sexp_main();
 	}
@@ -110,9 +156,9 @@ int xwi_determine_arrival_cue(const XWingMission *xwim, const XWMFlightGroup *fg
 	if (fg->arrivalEvent == XWMArrivalEvent::ae_afg_identified)
 	{
 		if (check_wing)
-			sprintf(sexp_buf, "( fotg-is-wing-identified \"%s\" )", name);
+			sprintf(sexp_buf, "( fotg-is-wing-identified \"%s\" )", arrival_fg_name);
 		else
-			sprintf(sexp_buf, "( fotg-is-ship-identified \"%s\" )", name);
+			sprintf(sexp_buf, "( fotg-is-ship-identified \"%s\" )", arrival_fg_name);
 		Mp = sexp_buf;
 		return get_sexp_main();
 	}
@@ -299,17 +345,22 @@ void xwi_determine_orientation(matrix *orient, const XWMFlightGroup *fg, const v
 	vec3d fvec;
 
 	// RandomStarfighter says:
+	// If WP1 is disabled, it has 45 degree pitch and yaw.
+	if (!fg->waypoint1_enabled)
+	{
+		angles a;
+		a.p = PI_4;
+		a.b = 0;
+		a.h = PI_4;
+		vm_angles_2_matrix(orient, &a);
+		return;
+	}
+
+	// RandomStarfighter says:
 	// It arrives from start point and points toward waypoint 1, if waypoint 1 is enabled.
 	// This also matches FG Red orientation in STARSNDB
 	vm_vec_normalized_dir(&fvec, waypoint1, start1);
 	vm_vector_2_matrix_norm(orient, &fvec);
-
-	if (!fg->arriveByHyperspace && fg->craftOrder == XWMCraftOrder::o_Starship_Sit_And_Fire)
-	{
-		// This matches the Intrepid's orientation in STARSNDB
-		vm_vec_normalized_dir(&fvec, hyperspace, start1);
-		vm_vector_2_matrix_norm(orient, &fvec);
-	}
 }
 
 void parse_xwi_flightgroup(mission *pm, const XWingMission *xwim, const XWMFlightGroup *fg)
@@ -387,13 +438,14 @@ void parse_xwi_flightgroup(mission *pm, const XWingMission *xwim, const XWMFligh
 	}
 
 	// similarly for any waypoints
-	auto start1 = vm_vec_new(fg->start1_x, fg->start1_y, fg->start1_z);
-	auto start2 = vm_vec_new(fg->start2_x, fg->start2_y, fg->start2_z);
-	auto start3 = vm_vec_new(fg->start3_x, fg->start3_y, fg->start3_z);
-	auto waypoint1 = vm_vec_new(fg->waypoint1_x, fg->waypoint1_y, fg->waypoint1_z);
-	auto waypoint2 = vm_vec_new(fg->waypoint2_x, fg->waypoint2_y, fg->waypoint2_z);
-	auto waypoint3 = vm_vec_new(fg->waypoint3_x, fg->waypoint3_y, fg->waypoint3_z);
-	auto hyperspace = vm_vec_new(fg->hyperspace_x, fg->hyperspace_y, fg->hyperspace_z);
+	// NOTE: Y and Z are swapped
+	auto start1 = vm_vec_new(fg->start1_x, fg->start1_z, fg->start1_y);
+	auto start2 = vm_vec_new(fg->start2_x, fg->start2_z, fg->start2_y);
+	auto start3 = vm_vec_new(fg->start3_x, fg->start3_z, fg->start3_y);
+	auto waypoint1 = vm_vec_new(fg->waypoint1_x, fg->waypoint1_z, fg->waypoint1_y);
+	auto waypoint2 = vm_vec_new(fg->waypoint2_x, fg->waypoint2_z, fg->waypoint2_y);
+	auto waypoint3 = vm_vec_new(fg->waypoint3_x, fg->waypoint3_z, fg->waypoint3_y);
+	auto hyperspace = vm_vec_new(fg->hyperspace_x, fg->hyperspace_z, fg->hyperspace_y);
 
 	// waypoint units are in kilometers (after processing by xwinglib which handles the factor of 160), so scale them up
 	vm_vec_scale(&start1, 1000);
