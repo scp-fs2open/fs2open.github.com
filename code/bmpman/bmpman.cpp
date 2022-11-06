@@ -1339,12 +1339,12 @@ static int bm_load_image_data(int handle, int bpp, ushort flags, bool nodebug)
 
 		if (be->type != BM_TYPE_USER && !nodebug) {
 			if (bmp->data == 0)
-				nprintf(("BmpMan", "Loading %s for the first time.\n", be->filename));
+				nprintf(("BmpMan", "Handle %i bm_load_image_data() Loading %s for the first time\n", handle, be->filename ));
 		}
 
 		if (!Bm_paging) {
 			if (be->type != BM_TYPE_USER && !nodebug)
-				nprintf(("Paging", "Loading %s (%dx%dx%d)\n", be->filename, bmp->w, bmp->h, true_bpp));
+				nprintf(("Paging", "Handle %i bm_load_image_data() Loading %s (%dx%dx%d)\n", handle, be->filename, bmp->w, bmp->h, true_bpp));
 		}
 
 		// select proper format
@@ -2767,13 +2767,13 @@ int bm_release(int handle, int clear_render_targets) {
 	Assertion(be->handle == handle, "Invalid bitmap handle number %d (expected %d) for %s passed to bm_release()\n", be->handle, handle, be->filename);
 
 	if (!clear_render_targets && ((be->type == BM_TYPE_RENDER_TARGET_STATIC) || (be->type == BM_TYPE_RENDER_TARGET_DYNAMIC))) {
-		nprintf(("BmpMan", "Tried to release a render target!\n"));
+		nprintf(("BmpMan", "Handle %i bm_release() Tried to release a render target!\n", handle));
 		return 0;
 	}
 
 	// If it is locked, cannot free it.
 	if (be->ref_count != 0) {
-		nprintf(("BmpMan", "Tried to release %s that has a lock count of %d.. not releasing\n", be->filename, be->ref_count));
+		nprintf(("BmpMan", "Handle %i bm_release() Tried to release %s that has a lock count of %d.. not releasing\n", handle, be->filename, be->ref_count));
 		return 0;
 	}
 
@@ -2784,13 +2784,12 @@ int bm_release(int handle, int clear_render_targets) {
 		be->load_count--;
 
 	if (be->load_count != 0) {
-		nprintf(("BmpMan", "Tried to release %s that has a load count of %d.. not releasing\n", be->filename, be->load_count + 1));
+		nprintf(("BmpMan", "Handle %i bm_release() Tried to release %s that had a load count of %d.. not releasing, reducing load count. \n", handle, be->filename, be->load_count + 1));
 		return 0;
 	}
 
-	if (be->type != BM_TYPE_USER) {
-		nprintf(("BmpMan", "Releasing bitmap %s with handle %i\n", be->filename, handle));
-	}
+
+	nprintf(("BmpMan", "Handle %i bm_release() Releasing bitmap %s\n", handle, be->filename));
 
 	// be sure that all frames of an ani are unloaded - taylor
 	if (bm_is_anim(be)) {
@@ -2868,7 +2867,7 @@ bool bm_release_rendertarget(int handle) {
 	Assertion(!bm_is_anim(be), "Cannot release a render target of an animation (bitmap handle number %d for %s)!\n", be->handle, be->filename);
 
 	if (!((be->type == BM_TYPE_RENDER_TARGET_STATIC) || (be->type == BM_TYPE_RENDER_TARGET_DYNAMIC))) {
-		nprintf(("BmpMan", "Tried to release a render target of a non-rendered bitmap!\n"));
+		nprintf(("BmpMan", "Handle %i bm_release_rendertarget() Tried to release a render target of a non-rendered bitmap!\n", handle ));
 		return false;
 	}
 
@@ -2890,7 +2889,7 @@ int bm_reload(int bitmap_handle, const char* filename) {
 		return -1;
 
 	if (entry->ref_count) {
-		nprintf(("BmpMan", "Trying to reload a bitmap that is still locked. Filename: %s, ref_count: %d", entry->filename, entry->ref_count));
+		nprintf(("BmpMan", "Handle %i bm_reload() Trying to reload a bitmap that is still locked. Filename: %s, ref_count: %d", bitmap_handle, entry->filename, entry->ref_count));
 		return -1;
 	}
 
@@ -3061,7 +3060,7 @@ int bm_unload(int handle, int clear_render_targets, bool nodebug) {
 
 	// If it is locked, cannot free it.
 	if (be->ref_count != 0 && !nodebug) {
-		nprintf(("BmpMan", "Tried to unload %s that has a lock count of %d.. not unloading\n", be->filename, be->ref_count));
+		nprintf(("BmpMan", "Handle %i bm_unload() Tried to unload %s that has a lock count of %d.. not unloading\n", handle, be->filename, be->ref_count));
 		return 0;
 	}
 
@@ -3073,7 +3072,7 @@ int bm_unload(int handle, int clear_render_targets, bool nodebug) {
 			be->load_count--;
 
 		if (be->load_count != 0 && !nodebug) {
-			nprintf(("BmpMan", "Tried to unload %s that has a load count of %d.. not unloading\n", be->filename, be->load_count + 1));
+			nprintf(("BmpMan", "Handle %i bm_unload() Tried to unload %s that had a load count of %d.. not unloading, decrementing load count\n", handle, be->filename, be->load_count + 1));
 			return 0;
 		}
 	}
@@ -3091,12 +3090,12 @@ int bm_unload(int handle, int clear_render_targets, bool nodebug) {
 
 		for (i = 0; i < first_entry->info.ani.num_frames; i++) {
 			if (!nodebug)
-				nprintf(("BmpMan", "Unloading %s frame %d.  %dx%dx%d\n", be->filename, i, bmp->w, bmp->h, bmp->bpp));
+				nprintf(("BmpMan", "Handle %i bm_unload() Unloading %s frame %d.  %dx%dx%d\n", handle, be->filename, i, bmp->w, bmp->h, bmp->bpp));
 			bm_free_data(bm_get_slot(first + i));		// clears flags, bbp, data, etc
 		}
 	} else {
 		if (!nodebug)
-			nprintf(("BmpMan", "Unloading %s.  %dx%dx%d\n", be->filename, bmp->w, bmp->h, bmp->bpp));
+			nprintf(("BmpMan", "Handle %i bm_unload() Unloading %s.  %dx%dx%d\n",handle, be->filename, bmp->w, bmp->h, bmp->bpp));
 		bm_free_data(bm_get_slot(handle));		// clears flags, bbp, data, etc
 	}
 
@@ -3141,14 +3140,14 @@ int bm_unload_fast(int handle, int clear_render_targets) {
 
 	// If it is locked, cannot free it.
 	if (be->ref_count != 0) {
-		nprintf(("BmpMan", "Tried to unload_fast %s that has a lock count of %d.. not unloading\n", be->filename, be->ref_count));
+		nprintf(("BmpMan", "Handle %i bm_unload_fast() Tried to unload_fast %s that has a lock count of %d.. not unloading\n", handle, be->filename, be->ref_count));
 		return 0;
 	}
 
 	Assert(be->handle == handle);		// INVALID BITMAP HANDLE!
 
 	// unlike bm_unload(), we handle each frame of an animation separately, for safer use in the graphics API
-	nprintf(("BmpMan", "Fast-unloading %s.  %dx%dx%d\n", be->filename, bmp->w, bmp->h, bmp->bpp));
+	nprintf(("BmpMan", "Handle %i bm_unload_fast() Fast-unloading %s.  %dx%dx%d\n", handle, be->filename, bmp->w, bmp->h, bmp->bpp));
 	bm_free_data_fast(handle);		// clears flags, bbp, data, etc
 
 	return 1;
@@ -3160,8 +3159,8 @@ void bm_unlock(int handle) {
 	Assertion(bm_inited, "bmpman must be initialized before this function can be called!");
 
 	be = bm_get_entry(handle);
-
 	be->ref_count--;
+	nprintf(("BmpMan", "Handle %i bm_unlock() Reducing lock count of %s to %i\n", handle, be->filename, be->ref_count));
 	Assert(be->ref_count >= 0);		// Trying to unlock data more times than lock was called!!!
 }
 
