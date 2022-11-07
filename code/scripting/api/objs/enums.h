@@ -152,8 +152,8 @@ enum lua_enum : int32_t {
 
 struct lua_enum_def_list : public flag_def_list_new<lua_enum> {
 	tl::optional<int32_t> value;
-	lua_enum_def_list(const char* enum_name, lua_enum flag, bool used) : flag_def_list_new<lua_enum>{ enum_name, flag, used, false }, value(tl::nullopt) {}
-	lua_enum_def_list(const char* enum_name, lua_enum flag, int32_t val, bool used) : flag_def_list_new<lua_enum>{ enum_name, flag, used, false }, value(val) {}
+	constexpr lua_enum_def_list(const char* enum_name, lua_enum flag, bool used) : flag_def_list_new<lua_enum>{ enum_name, flag, used, false }, value(tl::nullopt) {}
+	constexpr lua_enum_def_list(const char* enum_name, lua_enum flag, int32_t val, bool used) : flag_def_list_new<lua_enum>{ enum_name, flag, used, false }, value(val) {}
 };
 
 extern const lua_enum_def_list Enumerations[];
