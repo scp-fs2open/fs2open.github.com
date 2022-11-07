@@ -335,7 +335,7 @@ void parse_medals_table(const char* filename)
 				stuff_int(&display_p->coords[GR_640].x);
 				stuff_int(&display_p->coords[GR_640].y);
 			}
-			else if (Medals.size() < NUM_MEDALS_FS2) {
+			else if (Medals.size() <= NUM_MEDALS_FS2) {
 				display_p->coords[GR_640].x = Default_medal_coords[GR_640][Medals.size()][0];
 				display_p->coords[GR_640].y = Default_medal_coords[GR_640][Medals.size()][1];
 			}
@@ -348,7 +348,7 @@ void parse_medals_table(const char* filename)
 				stuff_int(&display_p->coords[GR_1024].x);
 				stuff_int(&display_p->coords[GR_1024].y);
 			}
-			else if (Medals.size() < NUM_MEDALS_FS2) {
+			else if (Medals.size() <= NUM_MEDALS_FS2) {
 				display_p->coords[GR_1024].x = Default_medal_coords[GR_1024][Medals.size()][0];
 				display_p->coords[GR_1024].y = Default_medal_coords[GR_1024][Medals.size()][1];
 			}
@@ -367,7 +367,7 @@ void parse_medals_table(const char* filename)
 			if (optional_string("+Debriefing Bitmap:")) {
 				stuff_string(medal_p->debrief_bitmap, F_NAME, MAX_FILENAME_LEN);
 			}
-			else if (Medals.size() < NUM_MEDALS_FS2) {
+			else if (Medals.size() <= NUM_MEDALS_FS2) {
 				strcpy_s(medal_p->debrief_bitmap, Default_debriefing_bitmaps[Medals.size()]);
 			}
 			else {
