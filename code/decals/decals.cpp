@@ -327,12 +327,15 @@ void parseDecalReference(creation_info& dest_info, bool is_new_entry) {
 	SCP_string name;
 	stuff_string(name, F_NAME);
 
-	auto decalRef = findDecalDefinition(name);
+	// decals are not initialized in FRED, so no decal definitions are known
+	if (!Fred_running) {
+		auto decalRef = findDecalDefinition(name);
 
-	if (decalRef < 0) {
-		error_display(0, "Decal definition '%s' is unknown!", name.c_str());
+		if (decalRef < 0) {
+			error_display(0, "Decal definition '%s' is unknown!", name.c_str());
+		}
+		dest_info.definition_handle = decalRef;
 	}
-	dest_info.definition_handle = decalRef;
 
 	if (required_string_if_new("+Radius:", is_new_entry)) {
 		stuff_float(&dest_info.radius);
