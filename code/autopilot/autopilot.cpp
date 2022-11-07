@@ -401,7 +401,7 @@ bool StartAutopilot()
 				&& Autopilot_flight_leader != &Objects[Ships[i].objnum]) //only if not flight leader's object
 			{	
 				ai_info	*aip = &Ai_info[Ships[i].ai_index];
-				int wingnum = aip->wing, wing_index = get_wing_index(&Objects[Ships[i].objnum], wingnum);
+				int wingnum = Ships[i].wingnum, wing_index = get_wing_index(&Objects[Ships[i].objnum], wingnum);
 				vec3d goal_point;
 				object *leader_objp = get_wing_leader(wingnum);
 				
