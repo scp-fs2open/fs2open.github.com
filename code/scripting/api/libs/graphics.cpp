@@ -2068,6 +2068,9 @@ ADE_FUNC(createPersistentParticle,
 				pi.type          = particle::PARTICLE_BITMAP;
 			}
 			break;
+		default:
+			LuaError(L, "Invalid particle enum for createParticle(). Can only support PARTICLE_* enums!");
+			return ADE_RETURN_NIL;
 		}
 	}
 
@@ -2138,6 +2141,9 @@ ADE_FUNC(createParticle,
 				pi.type          = particle::PARTICLE_BITMAP;
 			}
 			break;
+		default:
+			LuaError(L, "Invalid particle enum for createParticle(). Can only support PARTICLE_* enums!");
+			return ADE_RETURN_NIL;
 		}
 	}
 
