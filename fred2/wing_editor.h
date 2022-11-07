@@ -110,12 +110,12 @@ protected:
 	afx_msg void OnSquadLogo();
 	afx_msg void OnRestrictArrival();
 	afx_msg void OnRestrictDeparture();
+	afx_msg void OnBnClickedCustomWarpinParams();
+	afx_msg void OnBnClickedCustomWarpoutParams();
+	afx_msg void OnWingFormationAlign();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 
 	// Aux functions
 	int calc_max_wave_treshold();
-public:
-	afx_msg void OnBnClickedCustomWarpinParams();
-	afx_msg void OnBnClickedCustomWarpoutParams();
 };

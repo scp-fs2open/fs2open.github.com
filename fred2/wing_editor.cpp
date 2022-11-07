@@ -24,6 +24,7 @@
 #include "restrictpaths.h"
 #include "iff_defs/iff_defs.h"
 #include "warpparamsdlg.h"
+#include "ship/ship.h"
 
 #define ID_WING_MENU 9000
 
@@ -172,6 +173,7 @@ BEGIN_MESSAGE_MAP(wing_editor, CDialog)
 	ON_BN_CLICKED(IDC_RESTRICT_DEPARTURE, OnRestrictDeparture)
 	ON_BN_CLICKED(IDC_CUSTOM_WARPIN_PARAMS, OnBnClickedCustomWarpinParams)
 	ON_BN_CLICKED(IDC_CUSTOM_WARPOUT_PARAMS, OnBnClickedCustomWarpoutParams)
+	ON_BN_CLICKED(IDC_WING_FORMATION_ALIGN, OnWingFormationAlign)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -438,6 +440,7 @@ void wing_editor::initialize_data_safe(int full_update)
 	GetDlgItem(IDC_SPIN_WAVE_THRESHOLD)->EnableWindow(player_enabled);
 
 	GetDlgItem(IDC_WING_FORMATION)->EnableWindow(enable);
+	GetDlgItem(IDC_WING_FORMATION_ALIGN)->EnableWindow(enable);
 
 	GetDlgItem(IDC_ARRIVAL_LOCATION)->EnableWindow(enable);
 	GetDlgItem(IDC_ARRIVAL_DELAY)->EnableWindow(player_enabled);
@@ -1416,4 +1419,26 @@ void wing_editor::OnBnClickedCustomWarpoutParams()
 	warp_params_dlg dlg;
 	dlg.m_warp_in = false;
 	dlg.DoModal();
+}
+
+void wing_editor::OnWingFormationAlign()
+{
+	auto wingp = &Wings[cur_wing];
+	auto leader_objp = &Objects[Ships[wingp->ship_index[0]].objnum];
+
+	// temporarily set formation in case it isn't set yet (since changes don't take effect until dialog is closed)
+	auto old_formation = wingp->formation;
+	UpdateData(TRUE);	// read controls
+	wingp->formation = m_formation - 1;
+
+	for (int i = 1; i < wingp->wave_count; i++)
+	{
+		auto objp = &Objects[Ships[wingp->ship_index[i]].objnum];
+
+		get_absolute_wing_pos(&objp->pos, leader_objp, cur_wing, i, false);
+		objp->orient = leader_objp->orient;
+	}
+
+	// roll back temporary formation
+	wingp->formation = old_formation;
 }
