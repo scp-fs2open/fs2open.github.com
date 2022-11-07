@@ -289,7 +289,7 @@ object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int asteroi
 		return NULL;
 	}
 
-	if((asteroid_subtype < 0) || (asteroid_subtype >= NUM_DEBRIS_POFS)) {
+	if((asteroid_subtype < 0) || (asteroid_subtype >= NUM_ASTEROID_POFS)) {
 		return NULL;
 	}
 
@@ -481,9 +481,9 @@ static void asteroid_load(int asteroid_info_index, int asteroid_subtype)
 	asteroid_info	*asip;
 
 	Assert( asteroid_info_index < (int)Asteroid_info.size() );
-	Assert( asteroid_subtype < NUM_DEBRIS_POFS );
+	Assert( asteroid_subtype < NUM_ASTEROID_POFS );
 
-	if ( (asteroid_info_index >= (int)Asteroid_info.size()) || (asteroid_subtype >= NUM_DEBRIS_POFS) ) {
+	if ( (asteroid_info_index >= (int)Asteroid_info.size()) || (asteroid_subtype >= NUM_ASTEROID_POFS) ) {
 		return;
 	}
 
@@ -581,7 +581,7 @@ void asteroid_create_all()
 	int num_debris_types = 0;
 
 	// get number of ship debris types
-	if (Asteroid_field.debris_genre == DG_SHIP) {
+	if (Asteroid_field.debris_genre == DG_DEBRIS) {
 		for (idx=0; idx<MAX_ACTIVE_DEBRIS_TYPES; idx++) {
 			if (Asteroid_field.field_debris_type[idx] != -1) {
 				num_debris_types++;
@@ -598,7 +598,7 @@ void asteroid_create_all()
 	}
 
 	// Load Asteroid/ship models
-	if (Asteroid_field.debris_genre == DG_SHIP) {
+	if (Asteroid_field.debris_genre == DG_DEBRIS) {
 		for (idx=0; idx<num_debris_types; idx++) {
 			asteroid_load(Asteroid_field.field_debris_type[idx], 0);
 		}
@@ -630,7 +630,7 @@ void asteroid_create_all()
 			// get a valid subtype
 			int counter = Random::next(Asteroid_field.num_used_field_debris_types);
 			int subtype = -1;
-			for (int j = 0; j < NUM_DEBRIS_POFS; j++) {
+			for (int j = 0; j < NUM_ASTEROID_POFS; j++) {
 				if (Asteroid_field.field_debris_type[j] >= 0) {
 					if (counter == 0) {
 						subtype = j;
@@ -861,7 +861,7 @@ static void maybe_throw_asteroid()
 
 		int counter = Random::next(Asteroid_field.num_used_field_debris_types);
 		int subtype = -1;
-		for (int i = 0; i < NUM_DEBRIS_POFS; i++) {
+		for (int i = 0; i < NUM_ASTEROID_POFS; i++) {
 			if (Asteroid_field.field_debris_type[i] >= 0) {
 				if (counter == 0) {
 					subtype = i;
@@ -1393,7 +1393,7 @@ static void asteroid_explode_sound(object *objp, int type, int play_loud)
 	gamesnd_id sound_index;
 	float range_factor = 1.0f;		// how many times sound should traver farther than normal
 
-	if (type % NUM_DEBRIS_SIZES <= 1)
+	if (type % NUM_ASTEROID_SIZES <= 1)
 	{
 		sound_index = gamesnd_id(GameSounds::ASTEROID_EXPLODE_SMALL);
 		range_factor = 5.0;
@@ -1526,7 +1526,7 @@ void asteroid_level_close()
 	//when a level is closed, all models are cleared, so let's make sure that
 	//is tracked for asteroids as well -Mjn
 	for (int i = 0; i < (int)Asteroid_info.size(); i++) {
-		for (int j = 0; j < NUM_DEBRIS_POFS; j++) {
+		for (int j = 0; j < NUM_ASTEROID_POFS; j++) {
 			Asteroid_info[i].model_num[j] = -1;
 		}
 	}
@@ -1896,64 +1896,43 @@ int get_asteroid_position(const char* name)
 	return -1;
 }
 
-// changes the name to "[species] Debris" if it had a name like "[species] debris #"
-void setup_display_name(asteroid_info* asip)
+static SCP_string setup_display_name(SCP_string name)
 {
 
-	SCP_string name = asip->name;
 	size_t split = std::string::npos;
+	char thisSpecies[NAME_LENGTH];
 
 	for (species_info species : Species_info) {
 		if (name.compare(0, strlen(species.species_name), species.species_name) == 0) {
 			split = strlen(species.species_name);
+			strcpy_s(thisSpecies, species.species_name);
 			break;
 		}
 	}
 
 	if (split == std::string::npos)
-		return;
+		return XSTR("Asteroid", 431);
 
-	SCP_string remaining_name = name.substr(split + 1, name.length());
+	char newName[NAME_LENGTH];
+	strcpy_s(newName, thisSpecies);
+	strcat(newName, " ");
+	strcat(newName, XSTR("debris", 348));
+	return newName;
 
-	split = remaining_name.find(' ');
-
-	if (split == std::string::npos)
-		return;
-
-	SCP_string debris = remaining_name.substr(0, split);
-	SCP_string num = remaining_name.substr(split + 1, remaining_name.length());
-
-	if (stricmp(debris.c_str(), "Debris") != 0)
-		return;
-
-	if (num.empty() ||
-		std::find_if(num.begin(), num.end(), [](char c) { return !std::isdigit(c, SCP_default_locale); }) != num.end())
-		return;
-
-	// make sure this asteroid would correspond the 'species section' of the old style retail asteroids
-	if (Asteroid_info.size() < NUM_DEBRIS_SIZES + Species_info.size() * NUM_DEBRIS_SIZES &&
-		Asteroid_info.size() >= NUM_DEBRIS_SIZES) {
-		int idx = (int)(Asteroid_info.size()) / NUM_DEBRIS_SIZES - 1;
-		char newName[NAME_LENGTH];
-		strcpy_s(newName, Species_info[idx].species_name);
-		strcat(newName, " ");
-		strcat(newName, XSTR("debris", 348));
-		asip->display_name = newName;
-	}
 }
 
 /**
  * Read in a single asteroid section from asteroid.tbl
  */
-static void asteroid_parse_section(asteroid_info *asip)
+static void asteroid_parse_section(asteroid_info *asip, int counter)
 {
 	required_string("$Name:");
 	stuff_string(asip->name, F_NAME, NAME_LENGTH);
 
-	setup_display_name(asip);
-
 	if (optional_string("$Display Name:")) {
 		stuff_string(asip->display_name, F_NAME);
+	} else {
+		asip->display_name = setup_display_name(asip->name);
 	}
 
 	if (optional_string("$Type:")) {
@@ -2020,7 +1999,7 @@ static void asteroid_parse_section(asteroid_info *asip)
 
 		stuff_int(&split_type);
 
-		if (split_type>=0 && split_type<NUM_DEBRIS_SIZES) {
+		if (split_type>=0 && split_type<NUM_ASTEROID_SIZES) {
 			asteroid_split_info new_split;
 
 			new_split.asteroid_type = split_type;
@@ -2047,7 +2026,7 @@ static void asteroid_parse_section(asteroid_info *asip)
 			asip->spawn_weight = 1.0f;
 		}
 	} else {
-		switch (Asteroid_info.size() % NUM_DEBRIS_SIZES)
+		switch (Asteroid_info.size() % NUM_ASTEROID_SIZES)
 		{
 			case ASTEROID_TYPE_SMALL:
 				asip->spawn_weight = SMALL_DEBRIS_WEIGHT;
@@ -2092,23 +2071,25 @@ static void asteroid_parse_tbl()
 
 		required_string("#Asteroid Types");
 
+		int counter = 0;
+
 		// parse and tally each asteroid
 		while (required_string_either("#End", "$Name:"))
 		{
 			asteroid_info new_asteroid;
 
-			asteroid_parse_section(&new_asteroid);
-
+			asteroid_parse_section(&new_asteroid, counter);
+			counter++;
 			asteroid_list.push_back(new_asteroid);
 		}
 		mprintf(("ASTEROID begining setting of types\n"));
 		
 		//Set the three asteroid sizes
-		for (int i = 0; i < NUM_DEBRIS_SIZES; i++) {
+		for (int i = 0; i < NUM_ASTEROID_SIZES; i++) {
 
 			bool found = false;
 
-			char* debris_size[NUM_DEBRIS_SIZES] = {"Small", "Medium", "Large"};
+			char* debris_size[NUM_ASTEROID_SIZES] = {"Small", "Medium", "Large"};
 
 			for (int j = 0; j < (int)asteroid_list.size(); j++) {
 				if (asteroid_list[j].type == i) {
@@ -2331,7 +2312,7 @@ void asteroid_page_in()
 
 			if (Asteroid_field.debris_genre == DG_ASTEROID) {
 				// asteroid
-				Assert(i < NUM_DEBRIS_SIZES);
+				Assert(i < NUM_ASTEROID_SIZES);
 				asip = &Asteroid_info[i];
 			} else {
 				// ship debris - always full until empty
@@ -2343,10 +2324,10 @@ void asteroid_page_in()
 			}
 
 
-			for (k=0; k<NUM_DEBRIS_POFS; k++) {
+			for (k=0; k<NUM_ASTEROID_POFS; k++) {
 
 				// SHIP DEBRIS - use subtype 0
-				if (Asteroid_field.debris_genre == DG_SHIP) {
+				if (Asteroid_field.debris_genre == DG_DEBRIS) {
 					if (k > 0) {
 						break;
 					}

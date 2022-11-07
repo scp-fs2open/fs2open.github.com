@@ -738,7 +738,7 @@ int CFred_mission_save::save_asteroid_fields()
 		fout(" %d", Asteroid_field.debris_genre);
 
 		// field_debris_type (only if ship genre)
-		if (Asteroid_field.debris_genre == DG_SHIP) {
+		if (Asteroid_field.debris_genre == DG_DEBRIS) {
 			for (int idx = 0; idx < 3; idx++) {
 				if (Asteroid_field.field_debris_type[idx] != -1) {
 					if (optional_string_fred("+Field Debris Type:")) {

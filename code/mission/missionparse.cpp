@@ -5750,7 +5750,7 @@ void parse_asteroid_fields(mission *pm)
 		Asteroid_field.field_debris_type[0] = -1;
 		Asteroid_field.field_debris_type[1] = -1;
 		Asteroid_field.field_debris_type[2] = -1;
-		if (Asteroid_field.debris_genre == DG_SHIP) {
+		if (Asteroid_field.debris_genre == DG_DEBRIS) {
 			if (optional_string("+Field Debris Type:")) {
 				stuff_int(&Asteroid_field.field_debris_type[0]);
 				count++;

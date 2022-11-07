@@ -15253,7 +15253,7 @@ void sexp_set_debris_field(int n)
 	vm_vec_rand_vec_quick(&Asteroid_field.vel);
 	vm_vec_scale(&Asteroid_field.vel, (float)asteroid_speed);
 	Asteroid_field.speed = (float)asteroid_speed;
-	Asteroid_field.debris_genre = DG_SHIP;
+	Asteroid_field.debris_genre = DG_DEBRIS;
 
 	Asteroid_field.field_debris_type[0] = -1;
 	Asteroid_field.field_debris_type[1] = -1;
