@@ -12,12 +12,14 @@
 #include "globalincs/version.h"
 #include "graphics/shadows.h"
 #include "localization/localize.h"
+#include "libs/discord/discord.h"
 #include "mission/missioncampaign.h"
 #include "mission/missionload.h"
 #include "mission/missionmessage.h"
 #include "missionui/fictionviewer.h"
 #include "nebula/neb.h"
 #include "mod_table/mod_table.h"
+#include "options/Option.h"
 #include "parse/parselo.h"
 #include "sound/sound.h"
 #include "starfield/supernova.h"
@@ -110,6 +112,30 @@ leadIndicatorBehavior Lead_indicator_behavior;
 shadow_disable_overrides Shadow_disable_overrides {false, false, false, false};
 float Thruster_easing;
 bool Always_use_distant_firepoints;
+bool Discord_presence;
+
+static auto DiscordOption = options::OptionBuilder<bool>("Other.Discord", "Discord Presence", "Toggle Discord Rich Presence")
+							 .category("Other")
+							 .default_val(Discord_presence)
+							 .level(options::ExpertLevel::Advanced)
+							 .importance(55)
+		                     .change_listener([](bool val, bool) {
+									if(Discord_presence){
+										if (!val) {
+											Discord_presence = false;
+											libs::discord::shutdown();
+											return true;
+										}
+									} else {
+										if (val) {
+											Discord_presence = true;
+											libs::discord::init();
+											return true;
+										}
+									}
+									return false;
+								})
+							 .finish();
 
 void mod_table_set_version_flags();
 
@@ -987,6 +1013,9 @@ void parse_mod_table(const char *filename)
 		if (optional_string("$Use distant firepoint for all turrets:")){
 			stuff_boolean(&Always_use_distant_firepoints);
 		}
+		if (optional_string("$Enable discord rich presence:")) {
+			stuff_boolean(&Discord_presence);
+		}
 
 		required_string("#END");
 	}
@@ -1124,6 +1153,7 @@ void mod_table_reset()
 	Lead_indicator_behavior = leadIndicatorBehavior::DEFAULT;
 	Thruster_easing = 0;
 	Always_use_distant_firepoints = false;
+	Discord_presence = true;
 }
 
 void mod_table_set_version_flags()
