@@ -214,7 +214,7 @@ ADE_VIRTVAR(CurrentOpacityType, l_Graphics, "enumeration", "Current alpha blendi
 			lua_Opacity_type = GR_ALPHABLEND_NONE;
 	}
 
-	int rtn;
+	lua_enum rtn;
 	switch(lua_Opacity_type)
 	{
 		case GR_ALPHABLEND_FILTER:
@@ -270,7 +270,7 @@ ADE_VIRTVAR(CurrentResizeMode, l_Graphics, "enumeration ResizeMode", "Current re
 		lua_ResizeMode = resize_arg.index - LE_GR_RESIZE_NONE;
 	}
 
-	return ade_set_args(L, "o", l_Enum.Set(enum_h(LE_GR_RESIZE_NONE + lua_ResizeMode)));
+	return ade_set_args(L, "o", l_Enum.Set(enum_h(static_cast<lua_enum>(LE_GR_RESIZE_NONE + lua_ResizeMode))));
 }
 
 ADE_FUNC(clear, l_Graphics, nullptr, "Calls gr_clear(), which fills the entire screen with the currently active color.  Useful if you want to have a fresh start for drawing things.  (Call this between setClip and resetClip if you only want to clear part of the screen.)", nullptr, nullptr)

@@ -82,7 +82,7 @@ ADE_FUNC(remove, l_Order, NULL, "Removes the given order from the ship's priorit
 ADE_FUNC(getType, l_Order, NULL, "Gets the type of the order.", "enumeration", "The type of the order as one of the ORDER_* enumerations.")
 {
 	order_h *ohp = NULL;
-	int eh_idx = -1;
+	lua_enum eh_idx = ENUM_INVALID;
 	if(!ade_get_args(L, "o", l_Order.GetPtr(&ohp)))
 		return ade_set_error(L, "o", l_Enum.Set(enum_h()));
 
