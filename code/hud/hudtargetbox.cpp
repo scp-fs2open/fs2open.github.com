@@ -1243,7 +1243,7 @@ void HudGaugeTargetBox::renderTargetAsteroid(object *target_objp)
 			break;
 
 		default:
-			strcpy_s(hud_name, Asteroid_info[asteroidp->asteroid_type].name);
+			strcpy_s(hud_name, Asteroid_info[asteroidp->asteroid_type].display_name.c_str());
 			break;
 	}
 

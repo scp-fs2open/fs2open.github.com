@@ -56,6 +56,7 @@ class asteroid_info
 {
 public:
 	char		name[NAME_LENGTH];								// name for the asteroid
+	int			type;											// type of asteroid, 0 = small, 1 = medium, 2 = large, -1 = debris
 	char		pof_files[NUM_DEBRIS_POFS][MAX_FILENAME_LEN];	// POF files to load/associate with ship
 	int			num_detail_levels;								// number of detail levels for this ship
 	int			detail_distance[MAX_ASTEROID_DETAIL_LEVELS];	// distance to change detail levels at
@@ -79,9 +80,10 @@ public:
 		: num_detail_levels( 0 ), max_speed( 0 ), damage_type_idx( 0 ),
 		  damage_type_idx_sav( -1 ), inner_rad( 0 ), outer_rad( 0 ),
 		  damage( 0 ), blast( 0 ), initial_asteroid_strength( 0 ),
-		  fireball_radius_multiplier( -1 )
+		  fireball_radius_multiplier( -1 ), type( -1 ), spawn_weight( 0.0)
 	{
 		name[ 0 ] = 0;
+		display_name = "";
 		memset( detail_distance, 0, sizeof( detail_distance ) );
 
 		for (int i = 0; i < NUM_DEBRIS_POFS; i++)
