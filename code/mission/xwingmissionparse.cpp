@@ -138,7 +138,11 @@ int xwi_determine_arrival_cue(const XWingMission *xwim, const XWMFlightGroup *fg
 
 	if (fg->arrivalEvent == XWMArrivalEvent::ae_afg_destroyed)
 	{
-		sprintf(sexp_buf, "( is-destroyed-delay 0 \"%s\" )", arrival_fg_name);
+		// X-Wing treats destruction for arrivals slightly differently
+		if (check_wing)
+			sprintf(sexp_buf, "( and ( percent-ships-destroyed 1 \"%s\" ) ( destroyed-or-departed-delay 0 \"%s\" ) )", arrival_fg_name, arrival_fg_name);
+		else
+			sprintf(sexp_buf, "( is-destroyed-delay 0 \"%s\" )", arrival_fg_name);
 		Mp = sexp_buf;
 		return get_sexp_main();
 	}
