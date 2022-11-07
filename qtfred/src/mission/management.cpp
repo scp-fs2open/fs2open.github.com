@@ -195,7 +195,7 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 	weapon_init();
 
 	listener(SubSystem::Medals);
-	parse_medal_tbl();            // get medal names for sexpression usage
+	medals_init();            // get medal names for sexpression usage
 
 	listener(SubSystem::Glowpoints);
 	glowpoint_init();

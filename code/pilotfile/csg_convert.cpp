@@ -204,7 +204,7 @@ void pilotfile_convert::csg_import_ships_weapons()
 	}
 
 	// create list of medals (since it's missing from the old files)
-	list_size = Num_medals;
+	list_size = (int)Medals.size();
 
 	for (idx = 0; idx < list_size; idx++) {
 		ilist.name = Medals[idx].name;

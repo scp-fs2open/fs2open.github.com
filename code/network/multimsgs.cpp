@@ -49,6 +49,7 @@
 #include "network/multi_pmsg.h"
 #include "object/object.h"
 #include "object/objectshield.h"
+#include "stats/medals.h"
 #include "ship/ship.h"
 #include "weapon/weapon.h"
 #include "hud/hudreticle.h"
@@ -6572,11 +6573,11 @@ void send_player_stats_block_packet(net_player *pl, int stats_code, net_player *
 			idx += MAX_SHIPS_PER_PACKET;
 		}
 
-		Assert( (Num_medals >= 0) && (Num_medals < USHRT_MAX) );
-		ADD_USHORT( (ushort)Num_medals );
+		Assert( ((int)Medals.size() >= 0) && ((int)Medals.size() < USHRT_MAX) );
+		ADD_USHORT( (ushort)Medals.size() );
 
 		// medal information
-		for(idx=0;idx<Num_medals;idx++){
+		for(idx=0;idx<(int)Medals.size();idx++){
 			i_tmp = sc->medal_counts[idx];
 			ADD_INT(i_tmp);
 		}
@@ -6748,7 +6749,7 @@ void process_player_stats_block_packet(ubyte *data, header *hinfo)
 		for (idx = 0; idx < num_medals; idx++) {
 			GET_INT(i_tmp);
 
-			if (idx < Num_medals) {
+			if (idx < (int)Medals.size()) {
 				sc->medal_counts[idx] = i_tmp;
 			}
 		}

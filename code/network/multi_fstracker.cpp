@@ -29,6 +29,7 @@
 #include "network/multi_pmsg.h"
 #include "playerman/player.h"
 #include "pilotfile/pilotfile.h"
+#include "stats/medals.h"
 
 // -----------------------------------------------------------------------------------
 // FREESPACE MASTER TRACKER DEFINES/VARS
@@ -882,8 +883,8 @@ void multi_stats_fs_to_tracker(scoring_struct *fs, vmt_stats_struct *vmt, player
 	vmt->last_flown = static_cast<unsigned int>(fs->last_flown);
 
 	// medals and ship kills are stored in a single array, medals first
-	Assert(fs->medal_counts.size() >= static_cast<size_t>(Num_medals));
-	vmt->num_medals = static_cast<unsigned char>(Num_medals);
+	Assert(fs->medal_counts.size() >= Medals.size());
+	vmt->num_medals = static_cast<unsigned char>(Medals.size());
 
 	if (vmt->num_medals > MAX_FS2OPEN_COUNTS) {
 		vmt->num_medals = MAX_FS2OPEN_COUNTS;
@@ -948,7 +949,7 @@ void multi_stats_tracker_to_fs(vmt_stats_struct *vmt,scoring_struct *fs)
 
 	Assert(count <= MAX_FS2OPEN_COUNTS);
 
-	const size_t max_medals = std::max(static_cast<size_t>(Num_medals), static_cast<size_t>(vmt->num_medals));
+	const size_t max_medals = std::max(Medals.size(), static_cast<size_t>(vmt->num_medals));
 	fs->medal_counts.assign(max_medals, 0);
 
 	for (size_t idx = 0, idx2 = 0; idx < count; ++idx) {

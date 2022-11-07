@@ -215,9 +215,9 @@ void pilotfile::csg_write_info()
 	}
 
 	// medals list
-	cfwrite_int(Num_medals, cfp);
+	cfwrite_int((int)Medals.size(), cfp);
 
-	for (idx = 0; idx < Num_medals; idx++) {
+	for (idx = 0; idx < (int)Medals.size(); idx++) {
 		cfwrite_string_len(Medals[idx].name, cfp);
 	}
 
@@ -417,7 +417,7 @@ void pilotfile::csg_write_missions()
 			}
 
 			// medals earned (scoring)
-			for (j = 0; j < Num_medals; j++) {
+			for (j = 0; j < (int)Medals.size(); j++) {
 				cfwrite_int(missionp->stats.medal_counts[j], cfp);
 			}
 		}
@@ -799,7 +799,7 @@ void pilotfile::csg_write_stats()
 	}
 
 	// medals earned (scoring)
-	for (idx = 0; idx < Num_medals; idx++) {
+	for (idx = 0; idx < (int)Medals.size(); idx++) {
 		cfwrite_int(p->stats.medal_counts[idx], cfp);
 	}
 

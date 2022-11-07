@@ -23,7 +23,6 @@ class object;
 
 #define NUM_MEDALS_FS2		18
 #define NUM_MEDALS_FS1		16
-extern int Num_medals;
 
 #define NUM_RANKS				10
 
