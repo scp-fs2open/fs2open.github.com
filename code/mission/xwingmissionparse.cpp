@@ -430,8 +430,8 @@ void parse_xwi_flightgroup(mission *pm, const XWingMission *xwim, const XWMFligh
 			if (wingp->formation < 0)
 				Warning(LOCATION, "Formation %s from Flight Group %s was not found", formation_name, fg->designation.c_str());
 		}
-		if (wingp->formation >= 0 && is_fighter_or_bomber(fg))
-			wingp->formation_scale = 0.25f;
+		if (wingp->formation >= 0 && !is_fighter_or_bomber(fg))
+			wingp->formation_scale = 4.0f;
 
 		wingp->arrival_cue = arrival_cue;
 		wingp->arrival_delay = fg->arrivalDelay;
