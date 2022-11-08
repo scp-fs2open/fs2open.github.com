@@ -23,9 +23,10 @@ class model_draw_list;
 
 #define	MAX_ASTEROIDS			512
 
-#define NUM_ASTEROID_SIZES		3
+#define	NUM_ASTEROID_SIZES		3
 #define	NUM_ASTEROID_POFS		3				// Number of POFs per debris size
 
+#define	ASTEROID_TYPE_DEBRIS    -1
 #define	ASTEROID_TYPE_SMALL		0
 #define	ASTEROID_TYPE_MEDIUM	1
 #define	ASTEROID_TYPE_LARGE		2
@@ -90,7 +91,7 @@ public:
 		{
 			modelp[i] = NULL;
 			model_num[i] = -1;
-			pof_files[i][0] = 0;
+			pof_files[i][0] = '\0';
 		}
 	}
 };

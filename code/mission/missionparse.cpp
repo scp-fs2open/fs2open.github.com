@@ -5716,8 +5716,8 @@ void parse_asteroid_fields(mission *pm)
 	int i, count, subtype;
 
 	Assert(pm != NULL);
-	for (i=0; i<MAX_ASTEROID_FIELDS; i++)
-		Asteroid_field.num_initial_asteroids = 0;
+
+	Asteroid_field.num_initial_asteroids = 0;
 
 	i = 0;
 	count = 0;
