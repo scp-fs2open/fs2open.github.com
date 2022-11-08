@@ -6672,7 +6672,7 @@ void wing::clear()
 	reinforcement_index = -1;
 	hotkey = -1;
 
-	num_waves = 0;
+	num_waves = 1;
 	current_wave = 0;
 	threshold = 0;
 
