@@ -1032,7 +1032,7 @@ int event_music_primary_goals_met()
 
 		// If the mission goals aren't met (or there are no goals), or if victory 2 music has already played, then go
 		// to the next default track
-		if ( !mission_goals_met() || Victory2_music_played || (Num_goals == 0)) {
+		if ( !mission_goals_met() || Victory2_music_played || Mission_goals.empty()) {
 			Patterns[next_pattern].next_pattern = Patterns[next_pattern].default_next_pattern;
 		} else {
 			Victory2_music_played = true;

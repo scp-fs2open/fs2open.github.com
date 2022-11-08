@@ -567,8 +567,11 @@ void campaign_tree_view::OnLButtonDown(UINT nFlags, CPoint point)
 				Dragging_rect = Elements[i].box;
 				Rect_offset = Dragging_rect.TopLeft() - point;
 				Last_draw_size = CSize(4, 4);
-				if (Campaign.missions[Cur_campaign_mission].num_goals < 0)  // haven't loaded goal names yet (or notes)
+				if (Campaign.missions[Cur_campaign_mission].flags & CMISSION_FLAG_FRED_LOAD_PENDING)  // haven't loaded goal names yet (or notes)
+				{
 					read_mission_goal_list(Cur_campaign_mission);
+					Campaign.missions[Cur_campaign_mission].flags &= ~CMISSION_FLAG_FRED_LOAD_PENDING;
+				}
 
 				if (Campaign.missions[Cur_campaign_mission].notes) {
 					convert_multiline_string(str, Campaign.missions[Cur_campaign_mission].notes);
@@ -961,7 +964,7 @@ BOOL campaign_tree_view::OnDrop(COleDataObject* pDataObject, DROPEFFECT dropEffe
 	cm = &(Campaign.missions[Campaign.num_missions++]);
 	cm->name = strdup(pData);
 	cm->formula = Locked_sexp_true;
-	cm->num_goals = -1;
+	cm->flags |= CMISSION_FLAG_FRED_LOAD_PENDING;
 	cm->notes = NULL;
 	cm->briefing_cutscene[0] = 0;
 	for (i=0; i<Campaign.num_missions - 1; i++)
@@ -1059,7 +1062,7 @@ void campaign_tree_view::drop_mission(int m, CPoint point)
 	cm = &(Campaign.missions[Campaign.num_missions++]);
 	cm->name = strdup(name);
 	cm->formula = Locked_sexp_true;
-	cm->num_goals = -1;
+	cm->flags |= CMISSION_FLAG_FRED_LOAD_PENDING;
 	cm->notes = NULL;
 	cm->briefing_cutscene[0] = 0;
 	for (i=0; i<Campaign.num_missions - 1; i++)

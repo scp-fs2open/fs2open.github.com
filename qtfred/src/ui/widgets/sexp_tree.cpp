@@ -153,8 +153,10 @@ SCP_vector<SCP_string> SexpTreeEditorInterface::getMessages() {
 SCP_vector<SCP_string> SexpTreeEditorInterface::getMissionGoals(const SCP_string&  /*reference_name*/) {
 	SCP_vector<SCP_string> list;
 
-	for (auto i = 0; i < Num_goals; i++) {
-		list.emplace_back(Mission_goals[i].name);
+	for (const auto &goal: Mission_goals) {
+		auto temp_name = goal.name;
+		SCP_truncate(temp_name, NAME_LENGTH);
+		list.emplace_back(temp_name);
 	}
 
 	return list;
@@ -162,8 +164,10 @@ SCP_vector<SCP_string> SexpTreeEditorInterface::getMissionGoals(const SCP_string
 SCP_vector<SCP_string> SexpTreeEditorInterface::getMissionEvents(const SCP_string&  /*reference_name*/) {
 	SCP_vector<SCP_string> list;
 
-	for (auto i = 0; i < Num_mission_events; i++) {
-		list.emplace_back(Mission_events[i].name);
+	for (const auto &event: Mission_events) {
+		auto temp_name = event.name;
+		SCP_truncate(temp_name, NAME_LENGTH);
+		list.emplace_back(temp_name);
 	}
 
 	return list;
@@ -176,11 +180,11 @@ bool SexpTreeEditorInterface::hasDefaultMissionName() {
 }
 bool SexpTreeEditorInterface::hasDefaultGoal(int operator_value) {
 	return (operator_value == OP_PREVIOUS_GOAL_TRUE) || (operator_value == OP_PREVIOUS_GOAL_FALSE)
-		|| (operator_value == OP_PREVIOUS_GOAL_INCOMPLETE) || Num_goals;
+		|| (operator_value == OP_PREVIOUS_GOAL_INCOMPLETE) || !Mission_goals.empty();
 }
 bool SexpTreeEditorInterface::hasDefaultEvent(int operator_value) {
 	return (operator_value == OP_PREVIOUS_EVENT_TRUE) || (operator_value == OP_PREVIOUS_EVENT_FALSE)
-		|| (operator_value == OP_PREVIOUS_EVENT_INCOMPLETE) || Num_mission_events;
+		|| (operator_value == OP_PREVIOUS_EVENT_INCOMPLETE) || !Mission_events.empty();
 
 }
 const flagset<TreeFlags>& SexpTreeEditorInterface::getFlags() const {
@@ -1622,7 +1626,7 @@ int sexp_tree::query_default_argument_available(int op, int i) {
 
 			// need to be sure that previous-goal functions are available.  (i.e. we are providing a default argument for them)
 		} else if ((value == OP_PREVIOUS_GOAL_TRUE) || (value == OP_PREVIOUS_GOAL_FALSE)
-			|| (value == OP_PREVIOUS_GOAL_INCOMPLETE) || Num_goals) {
+			|| (value == OP_PREVIOUS_GOAL_INCOMPLETE) || !Mission_goals.empty()) {
 				return 1;
 		}
 
@@ -1643,7 +1647,7 @@ int sexp_tree::query_default_argument_available(int op, int i) {
 
 			// need to be sure that previous-event functions are available.  (i.e. we are providing a default argument for them)
 		} else if ((value == OP_PREVIOUS_EVENT_TRUE) || (value == OP_PREVIOUS_EVENT_FALSE)
-			|| (value == OP_PREVIOUS_EVENT_INCOMPLETE) || Num_mission_events) {
+			|| (value == OP_PREVIOUS_EVENT_INCOMPLETE) || !Mission_events.empty()) {
 			return 1;
 		}
 
@@ -4384,16 +4388,18 @@ sexp_list_item* sexp_tree::get_listing_opf_goal_name(int parent_node) {
 				break;
 
 		if (m < Campaign.num_missions) {
-			if (Campaign.missions[m].num_goals < 0)  // haven't loaded goal names yet.
+			if (Campaign.missions[m].flags & CMISSION_FLAG_FRED_LOAD_PENDING)  // haven't loaded goal names yet.
+			{
 				read_mission_goal_list(m);
+				Campaign.missions[m].flags &= ~CMISSION_FLAG_FRED_LOAD_PENDING;
+			}
 
-			for (i = 0; i < Campaign.missions[m].num_goals; i++)
+			for (i = 0; i < (int)Campaign.missions[m].goals.size(); i++)
 				head.add_data(Campaign.missions[m].goals[i].name);
 		}
-
 	} else {
-		for (i = 0; i < Num_goals; i++)
-			head.add_data(Mission_goals[i].name);
+		for (i = 0; i < (int)Mission_goals.size(); i++)
+			head.add_data(Mission_goals[i].name.c_str());
 	}
 	 */
 
@@ -4473,15 +4479,18 @@ sexp_list_item* sexp_tree::get_listing_opf_event_name(int parent_node) {
 				break;
 
 		if (m < Campaign.num_missions) {
-			if (Campaign.missions[m].num_events < 0)  // haven't loaded goal names yet.
+			if (Campaign.missions[m].flags & CMISSION_FLAG_FRED_LOAD_PENDING)  // haven't loaded goal names yet.
+			{
 				read_mission_goal_list(m);
+				Campaign.missions[m].flags &= ~CMISSION_FLAG_FRED_LOAD_PENDING;
+			}
 
-			for (i = 0; i < Campaign.missions[m].num_events; i++)
+			for (i = 0; i < (int)Campaign.missions[m].events.size(); i++)
 				head.add_data(Campaign.missions[m].events[i].name);
 		}
 	} else {
-		for (i = 0; i < Num_mission_events; i++)
-			head.add_data(Mission_events[i].name);
+		for (i = 0; i < (int)Mission_events.size(); i++)
+			head.add_data(Mission_events[i].name.c_str());
 	}
 	 */
 

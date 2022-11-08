@@ -318,13 +318,13 @@ public:
 	int	arrival_distance = 0;					// used when arrival location is near or in front of some ship
 	int	arrival_anchor = -1;						// ship used for anchoring an arrival point
 	int arrival_path_mask = 0;					// Goober5000
-	int	arrival_cue = Locked_sexp_true;				//	Index in Sexp_nodes of this sexp.
+	int	arrival_cue = -1;				//	Index in Sexp_nodes of this sexp.
 	int	arrival_delay = 0;
 
 	int	departure_location = DEPART_AT_LOCATION;
 	int	departure_anchor = -1;
 	int departure_path_mask = 0;				// Goober5000
-	int	departure_cue = Locked_sexp_false;			//	Index in Sexp_nodes of this sexp.
+	int	departure_cue = -1;			//	Index in Sexp_nodes of this sexp.
 	int	departure_delay = 0;
 
 	int warpin_params_index = -1;

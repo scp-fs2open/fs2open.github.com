@@ -6784,13 +6784,13 @@ void wing::clear()
 	arrival_distance = 0;
 	arrival_anchor = -1;
 	arrival_path_mask = 0;
-	arrival_cue = Locked_sexp_true;
+	arrival_cue = -1;
 	arrival_delay = 0;
 
 	departure_location = DEPART_AT_LOCATION;
 	departure_anchor = -1;
 	departure_path_mask = 0;
-	departure_cue = Locked_sexp_false;
+	departure_cue = -1;
 	departure_delay = 0;
 
 	wave_delay_min = 0;

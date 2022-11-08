@@ -4914,22 +4914,18 @@ void post_process_ships_wings()
 // of other events in a mission.  Essentially scripting the different things that can happen
 // in a mission
 
-void parse_event(mission * /*pm*/)
+void parse_event(mission *pm)
 {
-	char buf[NAME_LENGTH];
-	mission_event *event;
+	SCP_UNUSED(pm);
 
-	event = &Mission_events[Num_mission_events];
-	// Need to set this to zero so that we don't accidentally reuse old data.
-	event->flags = 0;
+	Mission_events.emplace_back();
+	auto event = &Mission_events.back();
 
 	required_string( "$Formula:" );
 	event->formula = get_sexp_main();
 
 	if (optional_string("+Name:")){
-		stuff_string(event->name, F_NAME, NAME_LENGTH);
-	} else {
-		event->name[0] = 0;
+		stuff_string(event->name, F_NAME);
 	}
 
 	if ( optional_string("+Repeat Count:")){
@@ -4938,11 +4934,9 @@ void parse_event(mission * /*pm*/)
 		// sanity check on the repeat count variable
 		// _argv[-1] - negative repeat count is now legal; means repeat indefinitely.
 		if ( event->repeat_count == 0 ){
-			Warning(LOCATION, "Repeat count for mission event %s is 0.\nMust be >= 1 or negative!  Setting to 1.", event->name );
+			Warning(LOCATION, "Repeat count for mission event %s is 0.\nMust be >= 1 or negative!  Setting to 1.", event->name.c_str() );
 			event->repeat_count = 1;
 		}
-	} else {
-		event->repeat_count = 1;
 	}
 
 	if ( optional_string("+Trigger Count:")){
@@ -4957,43 +4951,31 @@ void parse_event(mission * /*pm*/)
 		// sanity check on the trigger count variable
 		// negative trigger count is also legal
 		if ( event->trigger_count == 0 ){
-			Warning(LOCATION, "Trigger count for mission event %s is 0.\nMust be >= 1 or negative!  Setting to 1.", event->name );
+			Warning(LOCATION, "Trigger count for mission event %s is 0.\nMust be >= 1 or negative!  Setting to 1.", event->name.c_str() );
 			event->trigger_count = 1;
 		}
-	} else {
-		event->trigger_count = 1;
 	}
 
-	event->interval = -1;
 	if ( optional_string("+Interval:")){
 		stuff_int( &(event->interval) );
 	}
 
-	event->score = 0;
 	if ( optional_string("+Score:") ){
 		stuff_int(&event->score);
 	}
 
-	event->chain_delay = -1;
 	if ( optional_string("+Chained:") ){
 		stuff_int(&event->chain_delay);
 	}
 
 	if ( optional_string("+Objective:") ) {
-		stuff_string(buf, F_NAME, NAME_LENGTH);
-		event->objective_text = vm_strdup(buf);
-	} else {
-		event->objective_text = NULL;
+		stuff_string(event->objective_text, F_NAME);
 	}
 
 	if ( optional_string("+Objective key:") ) {
-		stuff_string(buf, F_NAME, NAME_LENGTH);
-		event->objective_key_text = vm_strdup(buf);
-	} else {
-		event->objective_key_text = NULL;
+		stuff_string(event->objective_key_text, F_NAME);
 	}
 
-	event->team = -1;
 	if( optional_string("+Team:") ) {
 		stuff_int(&event->team);
 
@@ -5033,7 +5015,7 @@ void parse_event(mission * /*pm*/)
 		if (Fred_running) {
 			while (check_for_string("+Comment:") || check_for_string("+Background Color:") || check_for_string("+Path:")) {
 				event_annotation ea;
-				ea.path.push_back(Num_mission_events);
+				ea.path.push_back(event - &Mission_events[0]);
 
 				if (optional_string("+Comment:")) {
 					stuff_string(ea.comment, F_MULTITEXT);
@@ -5075,34 +5057,29 @@ void parse_events(mission *pm)
 	required_string("#Events");
 
 	while (required_string_either( "#Goals", "$Formula:")) {
-		Assert( Num_mission_events < MAX_MISSION_EVENTS );
 		parse_event(pm);
-		Num_mission_events++;
 	}
 }
 
 void parse_goal(mission *pm)
 {
+	SCP_UNUSED(pm);
 	int dummy;
 
-	mission_goal	*goalp;
-
-	goalp = &Mission_goals[Num_goals++];
-
-	Assert(Num_goals < MAX_GOALS);
-	Assert(pm != NULL);
+	Mission_goals.emplace_back();
+	auto goalp = &Mission_goals.back();
 
 	find_and_stuff("$Type:", &goalp->type, F_NAME, Goal_type_names, Num_goal_type_names, "goal type");
 
 	required_string("+Name:");
-	stuff_string(goalp->name, F_NAME, NAME_LENGTH);
+	stuff_string(goalp->name, F_NAME);
 
 	// backwards compatibility for old Fred missions - all new missions should use $MessageNew
 	if(optional_string("$Message:")){
-		stuff_string(goalp->message, F_NAME, MAX_GOAL_TEXT);
+		stuff_string(goalp->message, F_NAME);
 	} else {
 		required_string("$MessageNew:");
-		stuff_string(goalp->message, F_MULTITEXT, MAX_GOAL_TEXT);
+		stuff_string(goalp->message, F_MULTITEXT);
 	}
 
 	if (optional_string("$Rating:")){
@@ -5112,7 +5089,6 @@ void parse_goal(mission *pm)
 	required_string("$Formula:");
 	goalp->formula = get_sexp_main();
 
-	goalp->flags = 0;
 	if ( optional_string("+Invalid:") )
 		goalp->type |= INVALID_GOAL;
 	if ( optional_string("+Invalid") )
@@ -5120,12 +5096,10 @@ void parse_goal(mission *pm)
 	if ( optional_string("+No music") )
 		goalp->flags |= MGF_NO_MUSIC;
 
-	goalp->score = 0;
 	if ( optional_string("+Score:") ){
 		stuff_int(&goalp->score);
 	}
 
-	goalp->team = 0;
 	if ( optional_string("+Team:") ){
 		stuff_int( &goalp->team );
 
@@ -5147,6 +5121,9 @@ void parse_goals(mission *pm)
 	while (required_string_either("#Waypoints", "$Type:")){
 		parse_goal(pm);
 	}
+
+	if ((pm->game_type & MISSION_TYPE_MULTI) && Mission_goals.size() > UINT8_MAX)
+		throw parse::ParseException("Number of goals is too high and breaks multi!");
 }
 
 void parse_waypoint_list(mission *pm)
@@ -5870,6 +5847,11 @@ bool parse_mission(mission *pm, int flags)
 	int saved_warning_count = Global_warning_count;
 	int saved_error_count = Global_error_count;
 
+	// reset parse error stuff
+	Num_unknown_ship_classes = 0;
+	Num_unknown_weapon_classes = 0;
+	Num_unknown_loadout_classes = 0;
+
 	Warned_about_team_out_of_range = false;
 
 	reset_parse();
@@ -6118,9 +6100,13 @@ bool post_process_mission(mission *pm)
 					// it's helpful to point out the goal/event, so do that if we can
 					int index;
 					if ((index = mission_event_find_sexp_tree(i)) >= 0) {
-						sprintf(location_str, "Error in mission event: \"%s\": ", Mission_events[index].name);
+						location_str = "Error in mission event: \"";
+						location_str += Mission_events[index].name;
+						location_str += "\": ";
 					} else if ((index = mission_goal_find_sexp_tree(i)) >= 0) {
-						sprintf(location_str, "Error in mission goal: \"%s\": ", Mission_goals[index].name);
+						location_str = "Error in mission goal: \"";
+						location_str += Mission_goals[index].name;
+						location_str += "\": ";
 					}
 
 					convert_sexp_to_string(sexp_str, i, SEXP_ERROR_CHECK_MODE);
@@ -6130,8 +6116,13 @@ bool post_process_mission(mission *pm)
 					if (!bad_node_str.empty()) {	// the previous function adds a space at the end
 						bad_node_str.pop_back();
 					}
-					
-					sprintf(error_msg, "%s%s.\n\nIn sexpression: %s\n\n(Bad node appears to be: %s)\n", location_str.c_str(), sexp_error_message(result), sexp_str.c_str(), bad_node_str.c_str());
+				
+					error_msg = location_str + sexp_error_message(result);
+					error_msg += ".\n\nIn sexpression: ";
+					error_msg += sexp_str;
+					error_msg += "\n\n(Bad node appears to be: ";
+					error_msg += bad_node_str;
+					error_msg += ")\n";
 					Warning(LOCATION, "%s", error_msg.c_str());
 
 					// syntax errors are recoverable in Fred but not FS
@@ -6374,8 +6365,7 @@ void mission_init(mission *pm)
 	Num_teams = 1;				// assume 1
 
 	init_sexp();
-	Num_mission_events = 0;
-	Num_goals = 0;
+	mission_goals_and_events_init();
 
 	fiction_viewer_reset();
 	cmd_brief_reset();
@@ -6386,6 +6376,8 @@ void mission_init(mission *pm)
 	mission_parse_reset_alt();
 	mission_parse_reset_callsign();
 
+	Num_parse_names = 0;
+	Num_path_restrictions = 0;
 	Num_ai_dock_names = 0;
 	ai_clear_goal_target_names();
 
@@ -6453,16 +6445,9 @@ bool parse_main(const char *mission_name, int flags)
 	int i;
 	bool rval;
 
-	// reset parse error stuff
-	Num_unknown_ship_classes = 0;
-	Num_unknown_weapon_classes = 0;
-	Num_unknown_loadout_classes = 0;
-
-	// fill in Ship_class_names array with the names from the ship_info struct;
-	Num_parse_names = 0;
-	Num_path_restrictions = 0;
 	Assert(Ship_info.size() <= MAX_SHIP_CLASSES);
 
+	// fill in Ship_class_names array with the names from the ship_info struct
 	i = 0;
 	for (auto it = Ship_info.begin(); it != Ship_info.end(); i++, ++it)
 		Ship_class_names[i] = it->name;
@@ -8215,6 +8200,8 @@ void mission_bring_in_support_ship( object *requester_objp )
 	pobj->departure_anchor = The_mission.support_ships.departure_anchor;
 
 	pobj->arrival_delay = timestamp_rand(WARP_IN_TIME_MIN, WARP_IN_TIME_MAX);
+	pobj->arrival_cue = Locked_sexp_true;
+	pobj->departure_cue = Locked_sexp_false;
 
 	pobj->initial_velocity = 100;		// start at 100% velocity
 

@@ -78,7 +78,7 @@ void EventEditorDialog::initEventWidgets() {
 			this,
 			[this](const QString& help) { ui->helpBox->setPlainText(help); });
 	connect(ui->eventTree, &sexp_tree::selectedRootChanged, this, [this](int formula) {
-		for (auto i = 0; i < m_num_events; i++) {
+		for (auto i = 0; i < (int)m_events.size(); i++) {
 			if (m_events[i].formula == formula) {
 				set_current_event(i);
 				return;
@@ -127,16 +127,7 @@ void EventEditorDialog::initEventWidgets() {
 		if (cur_event < 0) {
 			return;
 		}
-
-		if (m_events[cur_event].objective_text) {
-			free(m_events[cur_event].objective_text);
-		}
-
-		if (value.isEmpty()) {
-			m_events[cur_event].objective_text = nullptr;
-		} else {
-			m_events[cur_event].objective_text = strdup(value.toUtf8().constData());
-		}
+		m_events[cur_event].objective_text = value.toUtf8().constData();
 
 		updateEventBitmap();
 	});
@@ -144,16 +135,7 @@ void EventEditorDialog::initEventWidgets() {
 		if (cur_event < 0) {
 			return;
 		}
-
-		if (m_events[cur_event].objective_key_text) {
-			free(m_events[cur_event].objective_key_text);
-		}
-
-		if (value.isEmpty()) {
-			m_events[cur_event].objective_key_text = NULL;
-		} else {
-			m_events[cur_event].objective_key_text = strdup(value.toUtf8().constData());
-		}
+		m_events[cur_event].objective_key_text = value.toUtf8().constData();
 	});
 	connectLogState(ui->checkLogTrue, MLF_SEXP_TRUE);
 	connectLogState(ui->checkLogFalse, MLF_SEXP_FALSE);
@@ -237,7 +219,7 @@ void EventEditorDialog::initMessageWidgets() {
 			}
 		}
 
-		for (auto i = 0; i < m_num_messages; i++) {
+		for (auto i = 0; i < (int)m_messages.size(); i++) {
 			if ((i != m_cur_msg) && (!stricmp(ptr, m_messages[i].name))) {
 				conflict = true;
 				break;
@@ -304,25 +286,14 @@ void EventEditorDialog::initEventTree() {
 }
 void EventEditorDialog::load_tree() {
 	ui->eventTree->clear_tree();
+	m_events.clear();
+	m_sig.clear();
+	for (auto i = 0; i < (int)Mission_events.size(); i++) {
+		m_events.push_back(Mission_events[i]);
+		m_sig.push_back(i);
 
-	m_num_events = Num_mission_events;
-	for (auto i = 0; i < m_num_events; i++) {
-		m_events[i] = Mission_events[i];
-		if (Mission_events[i].objective_text) {
-			m_events[i].objective_text = strdup(Mission_events[i].objective_text);
-		} else {
-			m_events[i].objective_text = NULL;
-		}
-
-		if (Mission_events[i].objective_key_text) {
-			m_events[i].objective_key_text = strdup(Mission_events[i].objective_key_text);
-		} else {
-			m_events[i].objective_key_text = NULL;
-		}
-
-		m_sig[i] = i;
-		if (!(*m_events[i].name)) {
-			strcpy_s(m_events[i].name, "<Unnamed>");
+		if (m_events[i].name.empty()) {
+			m_events[i].name = "<Unnamed>";
 		}
 
 		m_events[i].formula = ui->eventTree->load_sub_tree(Mission_events[i].formula, false, "do-nothing");
@@ -339,22 +310,22 @@ void EventEditorDialog::load_tree() {
 }
 void EventEditorDialog::create_tree() {
 	ui->eventTree->clear();
-	for (auto i = 0; i < m_num_events; i++) {
+	for (auto i = 0; i < (int)m_events.size(); i++) {
 		// set the proper bitmap
 		NodeImage image;
 		if (m_events[i].chain_delay >= 0) {
 			image = NodeImage::CHAIN;
-			if (m_events[i].objective_text) {
+			if (!m_events[i].objective_text.empty()) {
 				image = NodeImage::CHAIN_DIRECTIVE;
 			}
 		} else {
 			image = NodeImage::ROOT;
-			if (m_events[i].objective_text) {
+			if (!m_events[i].objective_text.empty()) {
 				image = NodeImage::ROOT_DIRECTIVE;
 			}
 		}
 
-		auto h = ui->eventTree->insert(m_events[i].name, image);
+		auto h = ui->eventTree->insert(m_events[i].name.c_str(), image);
 		h->setData(0, sexp_tree::FormulaDataRole, m_events[i].formula);
 		ui->eventTree->add_sub_tree(m_events[i].formula, h);
 	}
@@ -363,47 +334,40 @@ void EventEditorDialog::create_tree() {
 }
 void EventEditorDialog::rootNodeDeleted(int node) {
 	int i;
-	for (i = 0; i < m_num_events; i++) {
+	for (i = 0; i < (int)m_events.size(); i++) {
 		if (m_events[i].formula == node) {
 			break;
 		}
 	}
 
-	Assert(i < m_num_events);
-	auto index = i;
-	while (i < m_num_events - 1) {
-		m_events[i] = m_events[i + 1];
-		m_sig[i] = m_sig[i + 1];
-		i++;
-	}
+	Assert(i < (int)m_events.size());
+	m_events.erase(m_events.begin() + i);
+	m_sig.erase(m_sig.begin() + i);
 
-	m_num_events--;
-	ui->btnNewEvent->setEnabled(true);
+	if (i >= (int)m_events.size())	// if we have deleted the last event,
+		i--;						// i will be set to -1 which is what we want
 
-	set_current_event(index);
+	set_current_event(i);
 }
 void EventEditorDialog::rootNodeRenamed(int /*node*/) {
 }
 void EventEditorDialog::rootNodeFormulaChanged(int old, int node) {
 	int i;
 
-	for (i = 0; i < m_num_events; i++) {
+	for (i = 0; i < (int)m_events.size(); i++) {
 		if (m_events[i].formula == old) {
 			break;
 		}
 	}
 
-	Assert(i < m_num_events);
+	Assert(i < (int)m_events.size());
 	m_events[i].formula = node;
 }
 void EventEditorDialog::initMessageList() {
-	if (m_num_events >= MAX_MISSION_EVENTS) {
-		ui->btnNewMsg->setEnabled(false);
-	}
-	m_num_messages = Num_messages - Num_builtin_messages;
+	int num_messages = Num_messages - Num_builtin_messages;
 	m_messages.clear();
-	m_messages.reserve(m_num_messages);
-	for (auto i = 0; i < m_num_messages; i++) {
+	m_messages.reserve(num_messages);
+	for (auto i = 0; i < num_messages; i++) {
 		auto msg = Messages[i + Num_builtin_messages];
 		m_messages.push_back(msg);
 		if (m_messages[i].avi_info.name) {
@@ -476,17 +440,8 @@ void EventEditorDialog::set_current_event(int evt) {
 		ui->chainDelayBox->setEnabled(false);
 	}
 
-	if (m_events[cur_event].objective_text){
-		ui->editDirectiveText->setText(QString::fromUtf8(m_events[cur_event].objective_text));
-	} else {
-		ui->editDirectiveText->setText("");
-	}
-
-	if (m_events[cur_event].objective_key_text){
-		ui->editDirectiveKeypressText->setText(QString::fromUtf8(m_events[cur_event].objective_key_text));
-	} else {
-		ui->editDirectiveKeypressText->setText("");
-	}
+	ui->editDirectiveText->setText(QString::fromUtf8(m_events[cur_event].objective_text.c_str()));
+	ui->editDirectiveKeypressText->setText(QString::fromUtf8(m_events[cur_event].objective_key_text.c_str()));
 
 	ui->repeatCountBox->setEnabled(true);
 	ui->triggerCountBox->setEnabled(true);
@@ -615,50 +570,49 @@ void EventEditorDialog::set_current_message(int msg) {
 }
 void EventEditorDialog::applyChanges()
 {
+	SCP_vector<std::pair<SCP_string, SCP_string>> names;
+
 	audiostream_close_file(m_wave_id, 0);
 	m_wave_id = -1;
 
 	auto changes_detected = query_modified();
 
-	for (int i = 0; i < Num_mission_events; i++) {
-		free_sexp2(Mission_events[i].formula);
-		if (Mission_events[i].objective_text)
-			free(Mission_events[i].objective_text);
-		if (Mission_events[i].objective_key_text)
-			free(Mission_events[i].objective_key_text);
+	for (auto &event: Mission_events) {
+		free_sexp2(event.formula);
+		event.result = 0;  // use this as a processed flag
 	}
 
-	SCP_vector<std::pair<SCP_string, SCP_string>> names;
-
-	for (int i = 0; i < Num_mission_events; i++)
-		Mission_events[i].result = 0; // use this as a processed flag
-
 	// rename all sexp references to old events
-	for (int i = 0; i < m_num_events; i++)
+	for (int i = 0; i < (int)m_events.size(); i++) {
 		if (m_sig[i] >= 0) {
 			names.emplace_back(Mission_events[m_sig[i]].name, m_events[i].name);
 			Mission_events[m_sig[i]].result = 1;
 		}
+	}
 
 	// invalidate all sexp references to deleted events.
-	for (int i = 0; i < Num_mission_events; i++)
-		if (!Mission_events[i].result) {
-			names.emplace_back(Mission_events[i].name, SCP_string("<") + Mission_events[i].name + ">");
-		}
+	for (const auto &event: Mission_events) {
+		if (!event.result) {
+			SCP_string buf = "<" + event.name + ">";
 
-	Num_mission_events = m_num_events;
-	for (int i = 0; i < m_num_events; i++) {
-		Mission_events[i]                    = m_events[i];
-		Mission_events[i].formula            = ui->eventTree->save_tree(m_events[i].formula);
-		Mission_events[i].objective_text     = m_events[i].objective_text;
-		Mission_events[i].objective_key_text = m_events[i].objective_key_text;
-		Mission_events[i].mission_log_flags  = m_events[i].mission_log_flags;
+			// force it to not be too long
+			if (SCP_truncate(buf, NAME_LENGTH))
+				buf.back() = '>';
+
+			names.emplace_back(event.name, buf);
+		}
+	}
+
+	// copy all dialog events to the mission
+	Mission_events.clear();
+	for (const auto &dialog_event: m_events) {
+		Mission_events.push_back(dialog_event);
+		Mission_events.back().formula = ui->eventTree->save_tree(dialog_event.formula);
 	}
 
 	// now update all sexp references
-	for (const auto& entry : names) {
-		update_sexp_references(entry.first.c_str(), entry.second.c_str(), OPF_EVENT_NAME);
-	}
+	for (const auto &name_pair: names)
+		update_sexp_references(name_pair.first.c_str(), name_pair.second.c_str(), OPF_EVENT_NAME);
 
 	for (int i = Num_builtin_messages; i < Num_messages; i++) {
 		if (Messages[i].avi_info.name)
@@ -668,9 +622,9 @@ void EventEditorDialog::applyChanges()
 			free(Messages[i].wave_info.name);
 	}
 
-	Num_messages = m_num_messages + Num_builtin_messages;
+	Num_messages = (int)m_messages.size() + Num_builtin_messages;
 	Messages.resize(Num_messages);
-	for (int i = 0; i < m_num_messages; i++)
+	for (int i = 0; i < (int)m_messages.size(); i++)
 		Messages[i + Num_builtin_messages] = m_messages[i];
 
 	// Only fire the signal after the changes have been applied to make sure the other parts of the code see the updated
@@ -713,12 +667,12 @@ bool EventEditorDialog::query_modified() {
 		return true;
 	}
 
-	if (Num_mission_events != m_num_events) {
+	if (Mission_events.size() != m_events.size()) {
 		return true;
 	}
 
-	for (auto i = 0; i < m_num_events; i++) {
-		if (stricmp(m_events[i].name, Mission_events[i].name) != 0) {
+	for (auto i = 0; i < (int)m_events.size(); i++) {
+		if (!SCP_string_lcase_equal_to()(m_events[i].name, Mission_events[i].name)) {
 			return true;
 		}
 		if (m_events[i].repeat_count != Mission_events[i].repeat_count) {
@@ -736,10 +690,10 @@ bool EventEditorDialog::query_modified() {
 		if (m_events[i].chain_delay != Mission_events[i].chain_delay) {
 			return true;
 		}
-		if (safe_stricmp(m_events[i].objective_text, Mission_events[i].objective_text)) {
+		if (!SCP_string_lcase_equal_to()(m_events[i].objective_text, Mission_events[i].objective_text)) {
 			return true;
 		}
-		if (safe_stricmp(m_events[i].objective_key_text, Mission_events[i].objective_key_text)) {
+		if (!SCP_string_lcase_equal_to()(m_events[i].objective_key_text, Mission_events[i].objective_key_text)) {
 			return true;
 		}
 		if (m_events[i].mission_log_flags != Mission_events[i].mission_log_flags) {
@@ -747,11 +701,11 @@ bool EventEditorDialog::query_modified() {
 		}
 	}
 
-	if (m_num_messages != Num_messages) {
+	if ((int)m_messages.size() != Num_messages - Num_builtin_messages) {
 		return true;
 	}
 
-	for (auto i = 0; i < m_num_messages; ++i) {
+	for (auto i = 0; i < (int)m_messages.size(); ++i) {
 		auto& local = m_messages[i];
 		auto& ref = Messages[i];
 
@@ -778,14 +732,14 @@ bool EventEditorDialog::query_modified() {
 	return false;
 }
 bool EventEditorDialog::hasDefaultMessageParamter() {
-	return m_num_messages > 0;
+	return !m_messages.empty();
 }
 SCP_vector<SCP_string> EventEditorDialog::getMessages() {
 	SCP_vector<SCP_string> messages;
-	messages.reserve(m_num_messages);
+	messages.reserve(m_messages.size());
 
-	for (auto i = 0; i < m_num_messages; ++i) {
-		messages.push_back(m_messages[i].name);
+	for (const auto &msg: m_messages) {
+		messages.push_back(msg.name);
 	}
 
 	return messages;
@@ -850,7 +804,7 @@ void EventEditorDialog::createNewMessage() {
 	msg.persona_index = -1;
 	msg.multi_team = -1;
 	m_messages.push_back(msg);
-	auto id = m_num_messages++;
+	auto id = (int)m_messages.size() - 1;
 
 	modified = true;
 
@@ -859,11 +813,11 @@ void EventEditorDialog::createNewMessage() {
 }
 void EventEditorDialog::deleteMessage() {
 	// handle this case somewhat gracefully
-	Assertion((m_cur_msg >= -1) && (m_cur_msg < m_num_messages),
+	Assertion((m_cur_msg >= -1) && (m_cur_msg < (int)m_messages.size()),
 			  "Unexpected m_cur_msg value (%d); expected either -1, or between 0-%d. Get a coder!\n",
 			  m_cur_msg,
-			  m_num_messages - 1);
-	if ((m_cur_msg < 0) || (m_cur_msg >= m_num_messages)) {
+			  (int)m_messages.size() - 1);
+	if ((m_cur_msg < 0) || (m_cur_msg >= (int)m_messages.size())) {
 		return;
 	}
 
@@ -882,10 +836,9 @@ void EventEditorDialog::deleteMessage() {
 	update_sexp_references(m_messages[m_cur_msg].name, buf.c_str(), OPF_MESSAGE_OR_STRING);
 
 	m_messages.erase(m_messages.begin() + m_cur_msg);
-	m_num_messages--;
 
-	if (m_cur_msg >= m_num_messages) {
-		m_cur_msg = m_num_messages - 1;
+	if (m_cur_msg >= (int)m_messages.size()) {
+		m_cur_msg = (int)m_messages.size() - 1;
 	}
 
 	rebuildMessageList();
@@ -898,7 +851,7 @@ void EventEditorDialog::deleteMessage() {
 	ui->messageList->setFocus();
 }
 void EventEditorDialog::browseAni() {
-	if (m_cur_msg < 0 || m_cur_msg >= m_num_messages) {
+	if (m_cur_msg < 0 || m_cur_msg >= (int)m_messages.size()) {
 		return;
 	}
 
@@ -931,7 +884,7 @@ void EventEditorDialog::browseAni() {
 	modified = true;
 }
 void EventEditorDialog::browseWave() {
-	if (m_cur_msg < 0 || m_cur_msg >= m_num_messages) {
+	if (m_cur_msg < 0 || m_cur_msg >= (int)m_messages.size()) {
 		return;
 	}
 
@@ -971,7 +924,7 @@ void EventEditorDialog::browseWave() {
 	modified = true;
 }
 void EventEditorDialog::updatePersona() {
-	if (m_cur_msg < 0 || m_cur_msg >= m_num_messages) {
+	if (m_cur_msg < 0 || m_cur_msg >= (int)m_messages.size()) {
 		return;
 	}
 
@@ -1040,8 +993,7 @@ void EventEditorDialog::updateStuff() {
 }
 void EventEditorDialog::updateEventBitmap() {
 	auto chained = m_events[cur_event].chain_delay != -1;
-	auto hasObjectiveText =
-		m_events[cur_event].objective_text != nullptr ? strlen(m_events[cur_event].objective_text) > 0 : false;
+	auto hasObjectiveText = !m_events[cur_event].objective_text.empty();
 
 	NodeImage bitmap;
 	if (chained) {
@@ -1081,29 +1033,17 @@ void EventEditorDialog::connectLogState(QCheckBox* box, uint32_t flag) {
 	});
 }
 void EventEditorDialog::newEventHandler() {
-	if (m_num_events >= MAX_MISSION_EVENTS) {
-		QMessageBox::critical(this, "Too many events", "You have reached the limit on mission events.\n"
-													   "Can't add any more.");
-		return;
-	}
-
-	reset_event(m_num_events++, nullptr);
+	m_events.emplace_back();
+	m_sig.push_back(-1);
+	reset_event((int)m_events.size() - 1, nullptr);
 }
 void EventEditorDialog::insertEventHandler() {
-	if (m_num_events >= MAX_MISSION_EVENTS) {
-		QMessageBox::critical(this, "Too many events", "You have reached the limit on mission events.\n"
-													   "Can't add any more.");
-		return;
-	}
-
-	if (cur_event < 0 || m_num_events == 0) {
+	if (cur_event < 0 || m_events.empty()) {
 		//There are no events yet, so just create one
-		reset_event(m_num_events++, nullptr);
+		newEventHandler();
 	} else {
-		for (auto i = m_num_events; i > cur_event; i--) {
-			m_events[i] = m_events[i - 1];
-			m_sig[i] = m_sig[i - 1];
-		}
+		m_events.insert(m_events.begin() + cur_event, mission_event());
+		m_sig.insert(m_sig.begin() + cur_event, -1);
 
 		if (cur_event != 0) {
 			reset_event(cur_event, get_event_handle(cur_event - 1));
@@ -1116,8 +1056,6 @@ void EventEditorDialog::insertEventHandler() {
 			ui->eventTree->takeTopLevelItem(index);
 			ui->eventTree->insertTopLevelItem(0, new_item);
 		}
-
-		m_num_events++;
 	}
 }
 void EventEditorDialog::deleteEventHandler() {
@@ -1147,19 +1085,9 @@ QTreeWidgetItem* EventEditorDialog::get_event_handle(int num)
 	return nullptr;
 }
 void EventEditorDialog::reset_event(int num, QTreeWidgetItem* after) {
-	strcpy_s(m_events[num].name, "Event name");
-	auto h = ui->eventTree->insert(m_events[num].name, NodeImage::ROOT, nullptr, after);
-
-	m_events[num].repeat_count = 1;
-	m_events[num].trigger_count = 1;
-	m_events[num].interval = 1;
-	m_events[num].score = 0;
-	m_events[num].chain_delay = -1;
-	m_events[num].objective_text = NULL;
-	m_events[num].objective_key_text = NULL;
-	m_events[num].team = -1;
-	m_events[num].mission_log_flags = 0;
-	m_sig[num] = -1;
+	// this is always called for a freshly constructed event, so all we have to do is set the name
+	m_events[num].name = "Event name";
+	auto h = ui->eventTree->insert(m_events[num].name.c_str(), NodeImage::ROOT, nullptr, after);
 
 	ui->eventTree->setCurrentItemIndex(-1);
 	auto index = m_events[num].formula = ui->eventTree->add_operator("when", h);
@@ -1172,10 +1100,6 @@ void EventEditorDialog::reset_event(int num, QTreeWidgetItem* after) {
 	ui->eventTree->clearSelection();
 	// This will automatically call set_cur_event
 	h->setSelected(true);
-
-	if (num >= MAX_MISSION_EVENTS) {
-		ui->btnNewEvent->setEnabled(false);
-	}
 }
 void EventEditorDialog::keyPressEvent(QKeyEvent* event) {
 	if (event->key() == Qt::Key_Escape) {

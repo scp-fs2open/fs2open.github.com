@@ -3442,7 +3442,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 				return 1;
 
 			// need to be sure that previous-goal functions are available.  (i.e. we are providing a default argument for them)
-			else if ((value == OP_PREVIOUS_GOAL_TRUE) || (value == OP_PREVIOUS_GOAL_FALSE) || (value == OP_PREVIOUS_GOAL_INCOMPLETE) || Num_goals)
+			else if ((value == OP_PREVIOUS_GOAL_TRUE) || (value == OP_PREVIOUS_GOAL_FALSE) || (value == OP_PREVIOUS_GOAL_INCOMPLETE) || !Mission_goals.empty())
 				return 1;
 
 			return 0;
@@ -3456,7 +3456,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 				return 1;
 
 			// need to be sure that previous-event functions are available.  (i.e. we are providing a default argument for them)
-			else if ((value == OP_PREVIOUS_EVENT_TRUE) || (value == OP_PREVIOUS_EVENT_FALSE) || (value == OP_PREVIOUS_EVENT_INCOMPLETE) || Num_mission_events)
+			else if ((value == OP_PREVIOUS_EVENT_TRUE) || (value == OP_PREVIOUS_EVENT_FALSE) || (value == OP_PREVIOUS_EVENT_INCOMPLETE) || !Mission_events.empty())
 				return 1;
 
 			return 0;
@@ -6592,7 +6592,7 @@ sexp_list_item *sexp_tree::get_listing_opf_mission_name()
 
 sexp_list_item *sexp_tree::get_listing_opf_goal_name(int parent_node)
 {
-	int i, m;
+	int m;
 	sexp_list_item head;
 
 	if (m_mode == MODE_CAMPAIGN) {
@@ -6607,16 +6607,21 @@ sexp_list_item *sexp_tree::get_listing_opf_goal_name(int parent_node)
 				break;
 
 		if (m < Campaign.num_missions) {
-			if (Campaign.missions[m].num_goals < 0)  // haven't loaded goal names yet.
+			if (Campaign.missions[m].flags & CMISSION_FLAG_FRED_LOAD_PENDING)  // haven't loaded goal names yet.
+			{
 				read_mission_goal_list(m);
+				Campaign.missions[m].flags &= ~CMISSION_FLAG_FRED_LOAD_PENDING;
+			}
 
-			for (i=0; i<Campaign.missions[m].num_goals; i++)
-				head.add_data(Campaign.missions[m].goals[i].name);
+			for (const auto &stored_goal: Campaign.missions[m].goals)
+				head.add_data(stored_goal.name);
 		}
-
 	} else {
-		for (i=0; i<Num_goals; i++)
-			head.add_data(Mission_goals[i].name);
+		for (const auto &goal: Mission_goals) {
+			auto temp_name = goal.name;
+			SCP_truncate(temp_name, NAME_LENGTH);
+			head.add_data(temp_name.c_str());
+		}
 	}
 
 	return head.next;
@@ -6673,7 +6678,7 @@ sexp_list_item *sexp_tree::get_listing_opf_keypress()
 
 sexp_list_item *sexp_tree::get_listing_opf_event_name(int parent_node)
 {
-	int i, m;
+	int m;
 	sexp_list_item head;
 
 
@@ -6689,16 +6694,21 @@ sexp_list_item *sexp_tree::get_listing_opf_event_name(int parent_node)
 				break;
 
 		if (m < Campaign.num_missions) {
-			if (Campaign.missions[m].num_events < 0)  // haven't loaded goal names yet.
+			if (Campaign.missions[m].flags & CMISSION_FLAG_FRED_LOAD_PENDING)  // haven't loaded goal names yet.
+			{
 				read_mission_goal_list(m);
+				Campaign.missions[m].flags &= ~CMISSION_FLAG_FRED_LOAD_PENDING;
+			}
 
-			for (i=0; i<Campaign.missions[m].num_events; i++)
-				head.add_data(Campaign.missions[m].events[i].name);
+			for (const auto &stored_event: Campaign.missions[m].events)
+				head.add_data(stored_event.name);
 		}
-
 	} else {
-		for (i=0; i<Num_mission_events; i++)
-			head.add_data(Mission_events[i].name);
+		for (const auto &event: Mission_events) {
+			auto temp_name = event.name;
+			SCP_truncate(temp_name, NAME_LENGTH);
+			head.add_data(temp_name.c_str());
+		}
 	}
 
 	return head.next;

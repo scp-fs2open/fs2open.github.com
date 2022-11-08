@@ -620,34 +620,16 @@ int mission_campaign_load(const char* filename, const char* full_path, player* p
 			else
 				Campaign.realign_required = 1;
 
-			if (Fred_running) {
-				cm->num_goals = -1;
-				cm->num_events = -1;
-				cm->num_variables = -1;
-
-			} else {
-				cm->num_goals = 0;
-				cm->num_events = 0;
-				cm->num_variables = 0;
-			}
-
-			// it's possible to have data already loaded from the pilotfile
-			// if so free it to avoid memory leaks
-			if (cm->goals != nullptr) {
-				vm_free(cm->goals);
-				cm->goals = nullptr;
-			}
-			if (cm->events != nullptr) {
-				vm_free(cm->events);
-				cm->events = nullptr;
-			}
-			if (cm->variables != nullptr) {
-				vm_free(cm->variables);
-				cm->variables = nullptr;
-			}
+			cm->goals.clear();
+			cm->events.clear();
+			cm->variables.clear();
+			cm->flags |= CMISSION_FLAG_FRED_LOAD_PENDING;
 
 			Campaign.num_missions++;
 		}
+
+		if ((Game_mode & GM_MULTIPLAYER) && Campaign.num_missions > UINT8_MAX)
+			throw parse::ParseException("Number of campaign missions is too high and breaks multi!");
 	}
 	catch (const parse::ParseException& e)
 	{
@@ -935,15 +917,13 @@ void mission_campaign_eval_next_mission()
  */
 void mission_campaign_store_goals_and_events()
 {
-	char *name;
-	int cur, i;
+	int cur;
 	cmission *mission_obj;
 
 	if (!(Game_mode & GM_CAMPAIGN_MODE) || (Campaign.current_mission < 0))
 		return;
 
 	cur = Campaign.current_mission;
-	name = Campaign.missions[cur].name;
 
 	mission_obj = &Campaign.missions[cur];
 
@@ -951,65 +931,48 @@ void mission_campaign_store_goals_and_events()
 	// After that, we can determine which mission is tagged as the next mission.  Finally, we
 	// can save the campaign save file
 	// we might have goal and event status if the player replayed a mission
-	if ( mission_obj->goals != NULL ) {
-		vm_free( mission_obj->goals );
-		mission_obj->goals = NULL;
-	}
-
-	mission_obj->num_goals = Num_goals;
-	if ( mission_obj->num_goals > 0 ) {
-		mission_obj->goals = (mgoal *)vm_malloc( sizeof(mgoal) * Num_goals );
-		Assert( mission_obj->goals != NULL );
-	}
+	mission_obj->goals.clear();
 
 	// copy the needed info from the Mission_goal struct to our internal structure
-	for (i = 0; i < Num_goals; i++ ) {
-		if (Mission_goals[i].name[0] == '\0') {
-			char goal_name[NAME_LENGTH];
+	for (const auto& goal: Mission_goals) {
+		mission_obj->goals.emplace_back();
+		auto& stored_goal = mission_obj->goals.back();
 
-			sprintf(goal_name, NOX("Goal #%d"), i);
-			strcpy_s( mission_obj->goals[i].name, goal_name);
-		} else
-			strcpy_s( mission_obj->goals[i].name, Mission_goals[i].name );
-		Assert ( Mission_goals[i].satisfied != GOAL_INCOMPLETE );		// should be true or false at this point!!!
-		mission_obj->goals[i].status = (char)Mission_goals[i].satisfied;
+		if (goal.name.empty())
+			sprintf(stored_goal.name, NOX("Goal #" SIZE_T_ARG), &goal - &Mission_goals[0] + 1);
+		else
+			strncpy_s(stored_goal.name, goal.name.c_str(), NAME_LENGTH - 1);
+
+		Assert ( goal.satisfied != GOAL_INCOMPLETE );		// should be true or false at this point!!!
+		stored_goal.status = (char)goal.satisfied;
 	}
 
 	// do the same thing for events as we did for goals
 	// we might have goal and event status if the player replayed a mission
-	if ( mission_obj->events != NULL ) {
-		vm_free( mission_obj->events );
-		mission_obj->events = NULL;
-	}
-
-	mission_obj->num_events = Num_mission_events;
-	if ( mission_obj->num_events > 0 ) {
-		mission_obj->events = (mevent *)vm_malloc( sizeof(mevent) * Num_mission_events );
-		Assert( mission_obj->events != NULL );
-	}
+	mission_obj->events.clear();
 
 	// copy the needed info from the Mission_goal struct to our internal structure
-	for (i = 0; i < Num_mission_events; i++ ) {
-		if (Mission_events[i].name[0] == '\0') {
-			char event_name[NAME_LENGTH];
+	for (const auto& event: Mission_events) {
+		mission_obj->events.emplace_back();
+		auto& stored_event = mission_obj->events.back();
 
-			sprintf(event_name, NOX("Event #%d"), i);
-			nprintf(("Warning", "Mission goal in mission %s must have a +Name field! using %s for campaign save file\n", mission_obj->name, name));
-			strcpy_s( mission_obj->events[i].name, event_name);
+		if (event.name.empty()) {
+			sprintf(stored_event.name, NOX("Event #" SIZE_T_ARG), &event - &Mission_events[0] + 1);
+			nprintf(("Warning", "Mission event in mission %s must have a +Name field! using %s for campaign save file\n", mission_obj->name, stored_event.name));
 		} else
-			strcpy_s( mission_obj->events[i].name, Mission_events[i].name );
+			strncpy_s(stored_event.name, event.name.c_str(), NAME_LENGTH - 1);
 
 		// getting status for the events is a little different.  If the formula value for the event entry
 		// is -1, then we know the value of the result field will never change.  If the formula is
 		// not -1 (i.e. still being evaluated at mission end time), we will write "incomplete" for the
 		// event evaluation
-		if ( Mission_events[i].formula == -1 ) {
-			if ( Mission_events[i].result )
-				mission_obj->events[i].status = EVENT_SATISFIED;
+		if ( event.formula == -1 ) {
+			if ( event.result )
+				stored_event.status = EVENT_SATISFIED;
 			else
-				mission_obj->events[i].status = EVENT_FAILED;
+				stored_event.status = EVENT_FAILED;
 		} else
-			Int3();
+			UNREACHABLE("Mission event formula should be -1 at end-of-mission");
 	}
 }
 
@@ -1025,10 +988,7 @@ void mission_campaign_store_variables(int persistence_type, bool store_red_alert
 	mission_obj = &Campaign.missions[cur];
 
 	// handle variables that are saved on mission victory -------------------------------------
-	if (mission_obj->variables != NULL) {
-		vm_free( mission_obj->variables );
-		mission_obj->variables = NULL;
-	}
+	mission_obj->variables.clear();
 
 	int num_mission_variables = sexp_campaign_file_variable_count();
 
@@ -1210,24 +1170,9 @@ void mission_campaign_mission_over(bool do_next_mission)
 	} else {
 		// free up the goals and events which were just malloced.  It's kind of like erasing any fact
 		// that the player played this mission in the campaign.
-		if (mission_obj->goals != NULL) {
-			vm_free( mission_obj->goals );
-			mission_obj->goals = NULL;
-		}
-		mission_obj->num_goals = 0;
-
-		if (mission_obj->events != NULL) {
-			vm_free( mission_obj->events );
-			mission_obj->events = NULL;
-		}
-		mission_obj->num_events = 0;
-
-		// Goober5000
-		if (mission_obj->variables != NULL) {
-			vm_free( mission_obj->variables );
-			mission_obj->variables = NULL;
-		}
-		mission_obj->num_variables = 0;
+		mission_obj->goals.clear();
+		mission_obj->events.clear();
+		mission_obj->variables.clear();
 
 		Sexp_nodes[mission_obj->formula].value = SEXP_UNKNOWN;
 	}
@@ -1262,21 +1207,9 @@ void mission_campaign_clear()
 			Campaign.missions[i].notes = NULL;
 		}
 
-		if ( Campaign.missions[i].goals != NULL ) {
-			vm_free ( Campaign.missions[i].goals );
-			Campaign.missions[i].goals = NULL;
-		}
-
-		if ( Campaign.missions[i].events != NULL ) {
-			vm_free ( Campaign.missions[i].events );
-			Campaign.missions[i].events = NULL;
-		}
-
-		// Goober5000
-		if ( Campaign.missions[i].variables != NULL ) {
-			vm_free ( Campaign.missions[i].variables );
-			Campaign.missions[i].variables = NULL;
-		}
+		Campaign.missions[i].goals.clear();
+		Campaign.missions[i].events.clear();
+		Campaign.missions[i].variables.clear();
 
 		// the next three are strdup'd return values from parselo.cpp - taylor
 		if (Campaign.missions[i].mission_branch_desc != NULL) {
@@ -1301,9 +1234,6 @@ void mission_campaign_clear()
 		memset(Campaign.missions[i].briefing_cutscene, 0, NAME_LENGTH);
 		Campaign.missions[i].formula = 0;
 		Campaign.missions[i].completed = 0;
-		Campaign.missions[i].num_goals = 0;
-		Campaign.missions[i].num_events = 0;
-		Campaign.missions[i].num_variables = 0;	// Goober5000
 		Campaign.missions[i].mission_loop_formula = 0;
 		Campaign.missions[i].level = 0;
 		Campaign.missions[i].pos = 0;
@@ -1406,13 +1336,20 @@ SCP_string mission_campaign_get_name(const char* filename)
  */
 void read_mission_goal_list(int num)
 {
-	char *filename, notes[NOTES_LENGTH], goals[MAX_GOALS][NAME_LENGTH];
-	char events[MAX_MISSION_EVENTS][NAME_LENGTH];
-	int i, z, event_count, count = 0;
+	char *filename, notes[NOTES_LENGTH];
+	int z;
 
 	Assertion(num >= 0 && num < Campaign.num_missions, "mission number out of range!");
 	filename = Campaign.missions[num].name;
-	
+
+	if (Campaign.missions[num].notes) {
+		vm_free(Campaign.missions[num].notes);
+		Campaign.missions[num].notes = nullptr;
+	}
+	Campaign.missions[num].events.clear();
+	Campaign.missions[num].goals.clear();
+	Campaign.missions[num].variables.clear();
+
 	try
 	{
 		read_file_text(filename);
@@ -1423,19 +1360,14 @@ void read_mission_goal_list(int num)
 		if (skip_to_string("#Mission Info")) {
 			if (skip_to_string("$Notes:")) {
 				stuff_string(notes, F_NOTES, NOTES_LENGTH);
-				if (Campaign.missions[num].notes){
-					vm_free(Campaign.missions[num].notes);
-				}
-
 				Campaign.missions[num].notes = (char *)vm_malloc(strlen(notes) + 1);
 				strcpy(Campaign.missions[num].notes, notes);
 			}
 		}
 
-		event_count = 0;
 		// skip to events section in the mission file.  Events come before goals, so we process them first
 		if (skip_to_string("#Events")) {
-			while (1) {
+			while (true) {
 				if (skip_to_string("$Formula:", "#Goals") != 1){
 					break;
 				}
@@ -1445,25 +1377,18 @@ void read_mission_goal_list(int num)
 					break;
 				}
 
-				if (z == 1){
-					stuff_string(events[event_count], F_NAME, NAME_LENGTH);
-				}
-				else {
-					sprintf(events[event_count], NOX("Event #%d"), event_count + 1);
-				}
+				Campaign.missions[num].events.emplace_back();
+				auto& stored_event = Campaign.missions[num].events.back();
 
-				event_count++;
-				if (event_count > MAX_MISSION_EVENTS) {
-					Warning(LOCATION, "Maximum number of events exceeded (%d)!", MAX_MISSION_EVENTS);
-					event_count = MAX_MISSION_EVENTS;
-					break;
-				}
+				if (z == 1)
+					stuff_string(stored_event.name, F_NAME, NAME_LENGTH);
+				else
+					sprintf(stored_event.name, NOX("Event #" SIZE_T_ARG), &stored_event - &Campaign.missions[num].events[0] + 1);
 			}
 		}
 
-		count = 0;
 		if (skip_to_string("#Goals")) {
-			while (1) {
+			while (true) {
 				if (skip_to_string("$Type:", "#End") != 1){
 					break;
 				}
@@ -1473,41 +1398,13 @@ void read_mission_goal_list(int num)
 					break;
 				}
 
-				if (z == 1){
-					stuff_string(goals[count], F_NAME, NAME_LENGTH);
-				}
-				else {
-					sprintf(goals[count], NOX("Goal #%d"), count + 1);
-				}
+				Campaign.missions[num].goals.emplace_back();
+				auto& stored_goal = Campaign.missions[num].goals.back();
 
-				count++;
-				if (count > MAX_GOALS) {
-					Warning(LOCATION, "Maximum number of goals exceeded (%d)!", MAX_GOALS);
-					count = MAX_GOALS;
-					break;
-				}
-			}
-		}
-
-		Campaign.missions[num].num_goals = count;
-		if (count) {
-			Campaign.missions[num].goals = (mgoal *)vm_malloc(count * sizeof(mgoal));
-			Assert(Campaign.missions[num].goals);  // make sure we got the memory
-			memset(Campaign.missions[num].goals, 0, count * sizeof(mgoal));
-
-			for (i = 0; i < count; i++){
-				strcpy_s(Campaign.missions[num].goals[i].name, goals[i]);
-			}
-		}
-		// copy the events
-		Campaign.missions[num].num_events = event_count;
-		if (event_count) {
-			Campaign.missions[num].events = (mevent *)vm_malloc(event_count * sizeof(mevent));
-			Assert(Campaign.missions[num].events);
-			memset(Campaign.missions[num].events, 0, event_count * sizeof(mevent));
-
-			for (i = 0; i < event_count; i++){
-				strcpy_s(Campaign.missions[num].events[i].name, events[i]);
+				if (z == 1)
+					stuff_string(stored_goal.name, F_NAME, NAME_LENGTH);
+				else
+					sprintf(stored_goal.name, NOX("Goal #" SIZE_T_ARG), &stored_goal - &Campaign.missions[num].goals[0] + 1);
 			}
 		}
 

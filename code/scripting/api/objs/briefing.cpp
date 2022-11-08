@@ -158,7 +158,7 @@ ADE_VIRTVAR(Name, l_Goals, nullptr, "The name of the goal", "string", "The goal 
 		LuaError(L, "This property is read only.");
 	}
 
-	return ade_set_args(L, "s", Mission_goals[current].name);
+	return ade_set_args(L, "s", Mission_goals[current].name.c_str());
 }
 
 ADE_VIRTVAR(Message, l_Goals, nullptr, "The message of the goal", "string", "The goal message")
@@ -172,7 +172,7 @@ ADE_VIRTVAR(Message, l_Goals, nullptr, "The message of the goal", "string", "The
 		LuaError(L, "This property is read only.");
 	}
 
-	return ade_set_args(L, "s", Mission_goals[current].message);
+	return ade_set_args(L, "s", Mission_goals[current].message.c_str());
 }
 
 ADE_VIRTVAR(Type, l_Goals, nullptr, "The goal type", "string", "primary, secondary, bonus, or none")

@@ -1376,7 +1376,6 @@ int Player_tips_shown = 0;
 // tooltips
 void parse_tips_table(const char* filename)
 {
-	
 	try
 	{
 		read_file_text(filename, CF_TYPE_TABLES);
