@@ -1857,13 +1857,8 @@ int cfile_get_path_type(const SCP_string& dir)
 	}
 
 	// Use official DIR_SEPARATOR_CHAR
-	char bad_sep = '/';
-
-	if (bad_sep == DIR_SEPARATOR_CHAR) {
-		bad_sep = '\\';
-	}
-
-	std::replace(buf.begin(), buf.end(), bad_sep, DIR_SEPARATOR_CHAR);
+	extern void normalize_directory_separators(SCP_string &str);
+	normalize_directory_separators(buf);
 
 	// identify path type
 	auto best_match = CF_TYPE_INVALID;

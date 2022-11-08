@@ -553,7 +553,7 @@ void cf_build_pack_list( cf_root *root )
 	}
 }
 
-static void normalize_directory_separators(SCP_string &str)
+void normalize_directory_separators(SCP_string &str)
 {
 	char bad_sep = '/';
 
@@ -1011,7 +1011,7 @@ void cf_search_root_pack(int root_index)
 
 		if ( find.size == 0 )	{
 			if ( !stricmp(find.filename, "..")) {
-				auto end = search_path.find_last_of(DIR_SEPARATOR_CHAR);
+				auto end = search_path.rfind(DIR_SEPARATOR_CHAR);
 
 				if (end != SCP_string::npos) {
 					search_path.erase(end);
@@ -1436,7 +1436,7 @@ CFileLocationExt cf_find_file_location_ext(const char *filename, const int ext_n
 	// strip any existing extension
 	// (NOTE: to be fully retail compatible, we need to support multiple periods for something like *_1.5.wav,
 	//        which means that we need to strip a length of >2 only, assuming that all valid ext are at least 2 chars)
-	auto dot = filespec.find_last_of(".");
+	auto dot = filespec.rfind('.');
 
 	if ( (dot != SCP_string::npos) && ((filespec.length() - dot) > 2) ) {
 		filespec.erase(dot);
@@ -1966,10 +1966,7 @@ int cf_get_file_list(int max, char** list, int pathtype, const char* _filter, in
 		}
 
 		if ( !Get_file_list_filter || (*Get_file_list_filter)(file.name.c_str()) ) {
-			auto len = fullname.length();
-
-			list[num_files] = reinterpret_cast<char *>(vm_malloc(len + 1));
-			SDL_strlcpy(list[num_files], fullname.c_str(), len+1);
+			list[num_files] = vm_strdup(fullname.c_str());
 
 			if (info) {
 				info[num_files].write_time = file.m_time;
@@ -2046,11 +2043,7 @@ int cf_get_file_list(int max, char** list, int pathtype, const char* _filter, in
 			if ( !Get_file_list_filter || (*Get_file_list_filter)(f->name_ext.c_str()) ) {
 				//mprintf(( "Found '%s' in root %d path %d\n", f->name_ext, f->root_index, f->pathtype_index ));
 
-				auto len = fullname.length();
-
-				list[num_files] = (char *)vm_malloc(len + 1);
-				strncpy(list[num_files], f->name_ext.c_str(), len);
-				list[num_files][len] = 0;
+				list[num_files] = vm_strdup(fullname.c_str());
 
 				if (info)	{
 					info[num_files].write_time = f->write_time;
