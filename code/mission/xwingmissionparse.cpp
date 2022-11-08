@@ -651,18 +651,28 @@ void parse_xwi_mission(mission *pm, const XWingMission *xwim)
 
 void post_process_xwi_mission(mission *pm, const XWingMission *xwim)
 {
-	// we need to arrange all the flight groups into their formations, but this can't be done until the FRED objects are created from the parse objects
 	for (int wingnum = 0; wingnum < Num_wings; wingnum++)
 	{
 		auto wingp = &Wings[wingnum];
 		auto leader_objp = &Objects[Ships[wingp->ship_index[0]].objnum];
 
+		// we need to arrange all the flight groups into their formations, but this can't be done until the FRED objects are created from the parse objects
 		for (int i = 1; i < wingp->wave_count; i++)
 		{
 			auto objp = &Objects[Ships[wingp->ship_index[i]].objnum];
 
 			get_absolute_wing_pos(&objp->pos, leader_objp, wingnum, i, false);
 			objp->orient = leader_objp->orient;
+		}
+
+		// set the hotkeys for the starting wings
+		for (int i = 0; i < MAX_STARTING_WINGS; i++)
+		{
+			if (!stricmp(wingp->name, Starting_wing_names[i]))
+			{
+				wingp->hotkey = i;
+				break;
+			}
 		}
 	}
 }
