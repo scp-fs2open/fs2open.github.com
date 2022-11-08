@@ -739,6 +739,8 @@ void stars_pre_level_init(bool clear_backgrounds)
 	uint idx, i;
 	starfield_bitmap *sb = NULL;
 
+	Num_stars = 500;
+
 	// we used to clear all the array entries, but now we can just wipe the vector
 	if (clear_backgrounds)
 		Backgrounds.clear();

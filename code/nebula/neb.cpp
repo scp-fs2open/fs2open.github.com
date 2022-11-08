@@ -323,8 +323,8 @@ void parse_nebula_table(const char* filename)
 // initialize neb2 stuff at game startup
 void neb2_init()
 {
-
 	Neb2_bitmap_count = 0;
+
 	// first parse the default table
 	parse_nebula_table("nebula.tbl");
 
@@ -341,6 +341,22 @@ void neb2_get_fog_color(ubyte *r, ubyte *g, ubyte *b)
 	if (r) *r = Neb2_fog_color[0];
 	if (g) *g = Neb2_fog_color[1];
 	if (b) *b = Neb2_fog_color[2];
+}
+
+void neb2_pre_level_init()
+{
+	Neb2_awacs = -1.0f;
+	Neb2_fog_near_mult = 1.0f;
+	Neb2_fog_far_mult = 1.0f;
+
+	strcpy_s(Neb2_texture_name, "");
+	Neb2_poof_flags = 0;
+
+	for (int i = 0; i < (int)MAX_NEB2_POOFS; i++) {
+		Neb2_poof_flags |= (1 << i);
+	}
+
+	strcpy_s(Mission_parse_storm_name, "none");
 }
 
 void neb2_level_init()

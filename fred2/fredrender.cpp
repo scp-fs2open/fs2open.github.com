@@ -89,7 +89,6 @@ int Last_cursor_over = -1;
 int last_x = 0;
 int last_y = 0;
 int Lookat_mode = 0;
-int player_start1;
 int rendering_order[MAX_SHIPS];
 int render_count = 0;
 int Show_asteroid_field = 1;

@@ -149,44 +149,7 @@ typedef struct mission {
 
 	SCP_vector<mission_cutscene> cutscenes;
 
-	void Reset( )
-	{
-		int i = 0;
-		name[ 0 ] = '\0';
-		author[ 0 ] = '\0';
-		version = 0.;
-		created[ 0 ] = '\0';
-		modified[ 0 ] = '\0';
-		notes[ 0 ] = '\0';
-		mission_desc[ 0 ] = '\0';
-		game_type = 0;
-		flags.reset();
-		num_players = 0;
-		num_respawns = 0;
-		max_respawn_delay = 0;
-		memset(&Ignored_keys, 0, sizeof(int)*CCFG_MAX);
-		memset( &support_ships, 0, sizeof( support_ships ) );
-		squad_filename[ 0 ] = '\0';
-		squad_name[ 0 ] = '\0';
-		for ( i = 0; i < GR_NUM_RESOLUTIONS; i++ )
-			loading_screen[ i ][ 0 ] = '\0';
-		skybox_model[ 0 ] = '\0';
-		vm_set_identity(&skybox_orientation);
-		skybox_flags = 0;
-		envmap_name[ 0 ] = '\0';
-		contrail_threshold = 0;
-		ambient_light_level = DEFAULT_AMBIENT_LIGHT_LEVEL;
-		sound_environment.id = -1;
-		command_persona = 0;
-		command_sender[ 0 ] = '\0';
-		debriefing_persona = -1;
-		event_music_name[ 0 ] = '\0';
-		briefing_music_name[ 0 ] = '\0';
-		substitute_event_music_name[ 0 ] = '\0';
-		substitute_briefing_music_name[ 0 ] = '\0';
-		ai_profile = NULL;
-		cutscenes.clear( );
-	}
+	void Reset( );
 
 	mission( )
 	{
@@ -323,110 +286,98 @@ typedef struct alt_class {
 	bool default_to_this_class;
 }alt_class;
 
-#define MAX_OBJECT_STATUS	10
-
 //	a parse object
 //	information from a $OBJECT: definition is read into this struct to
 // be copied into the real object, ship, etc. structs
 class p_object
 {
 public:
-	char	name[NAME_LENGTH];
+	char	name[NAME_LENGTH] = "";
 	SCP_string display_name;
-	p_object *next, *prev;
+	p_object *next = nullptr, *prev = nullptr;
 
-	vec3d	pos;
-	matrix	orient;
-	int	ship_class;
-	int	team;
-	int loadout_team;						// original team, should never be changed after being set!!
-	int	behavior;							// ai_class;
-	int	ai_goals;							// sexp of lists of goals that this ship should try and do
-	char	cargo1;
+	vec3d	pos = vmd_zero_vector;
+	matrix	orient = vmd_identity_matrix;
+	int	ship_class = -1;
+	int	team = -1;
+	int loadout_team = -1;						// original team, should never be changed after being set!!
+	int	behavior = AIM_NONE;					// ai_class;
+	int	ai_goals = -1;							// sexp of lists of goals that this ship should try and do
+	char	cargo1 = '\0';
 	SCP_string team_color_setting;
 
-	int	status_count;
-	int	status_type[MAX_OBJECT_STATUS];
-	int	status[MAX_OBJECT_STATUS];
-	int	target[MAX_OBJECT_STATUS];
+	int	subsys_index = -1;						// index into subsys_status array
+	int	subsys_count = 0;						// number of elements used in subsys_status array
+	int	initial_velocity = 0;
+	int	initial_hull = 100;
+	int	initial_shields = 100;
 
-	int	subsys_index;						// index into subsys_status array
-	int	subsys_count;						// number of elements used in subsys_status array
-	int	initial_velocity;
-	int	initial_hull;
-	int	initial_shields;
+	int	arrival_location = ARRIVE_AT_LOCATION;
+	int	arrival_distance = 0;					// used when arrival location is near or in front of some ship
+	int	arrival_anchor = -1;						// ship used for anchoring an arrival point
+	int arrival_path_mask = 0;					// Goober5000
+	int	arrival_cue = Locked_sexp_true;				//	Index in Sexp_nodes of this sexp.
+	int	arrival_delay = 0;
 
-	int	arrival_location;
-	int	arrival_distance;					// used when arrival location is near or in front of some ship
-	int	arrival_anchor;						// ship used for anchoring an arrival point
-	int arrival_path_mask;					// Goober5000
-	int	arrival_cue;						//	Index in Sexp_nodes of this sexp.
-	int	arrival_delay;
+	int	departure_location = DEPART_AT_LOCATION;
+	int	departure_anchor = -1;
+	int departure_path_mask = 0;				// Goober5000
+	int	departure_cue = Locked_sexp_false;			//	Index in Sexp_nodes of this sexp.
+	int	departure_delay = 0;
 
-	int	departure_location;
-	int	departure_anchor;
-	int departure_path_mask;				// Goober5000
-	int	departure_cue;						//	Index in Sexp_nodes of this sexp.
-	int	departure_delay;
+	int warpin_params_index = -1;
+	int warpout_params_index = -1;
 
-	int warpin_params_index;
-	int warpout_params_index;
-
-	char	misc[NAME_LENGTH];
-
-	int	wingnum;							// set to -1 if not in a wing -- Wing array index otherwise
-	int pos_in_wing;						// Goober5000 - needed for FRED with the new way things work
+	int	wingnum = -1;							// set to -1 if not in a wing -- Wing array index otherwise
+	int pos_in_wing = -1;						// Goober5000 - needed for FRED with the new way things work
 
 	flagset<Mission::Parse_Object_Flags>	flags;								// mission savable flags
-	int	escort_priority;					// priority in escort list
-	int	ai_class;
-	int	hotkey;								// hotkey number (between 0 and 9) -1 means no hotkey
-	int	score;
-	float assist_score_pct;					// percentage of the score which players who gain an assist will get when this ship is killed
-	std::set<size_t> orders_accepted;					// which orders this ship will accept from the player
-	p_dock_instance	*dock_list;				// Goober5000 - parse objects this parse object is docked to
-	object *created_object;					// Goober5000
-	int	group;								// group object is within or -1 if none.
-	int	persona_index;
-	int	kamikaze_damage;					// base damage for a kamikaze attack
+	int	escort_priority = 0;					// priority in escort list
+	int	ai_class = -1;
+	int	hotkey = -1;								// hotkey number (between 0 and 9) -1 means no hotkey
+	int	score = 0;
+	float assist_score_pct = 0.0f;					// percentage of the score which players who gain an assist will get when this ship is killed
+	SCP_set<size_t> orders_accepted;		// which orders this ship will accept from the player
+	p_dock_instance	*dock_list = nullptr;				// Goober5000 - parse objects this parse object is docked to
+	object *created_object = nullptr;					// Goober5000
+	int	group = -1;								// group object is within or -1 if none.
+	int	persona_index = -1;
+	int	kamikaze_damage = 0;					// base damage for a kamikaze attack
 
-	bool use_special_explosion;				// new special explosion/hitpoints system 
-	int special_exp_damage;
-	int special_exp_blast;
-	int special_exp_inner;
-	int special_exp_outer;
-	bool use_shockwave;
-	int special_exp_shockwave_speed;
-	int special_exp_deathroll_time;
+	bool use_special_explosion = false;				// new special explosion/hitpoints system 
+	int special_exp_damage = -1;
+	int special_exp_blast = -1;
+	int special_exp_inner = -1;
+	int special_exp_outer = -1;
+	bool use_shockwave = false;
+	int special_exp_shockwave_speed = 0;
+	int special_exp_deathroll_time = 0;
 
-	int	special_hitpoints;
-	int	special_shield;
+	int	special_hitpoints = 0;
+	int	special_shield = -1;
 
-	ushort net_signature;					// network signature this object can have
-	int destroy_before_mission_time;
+	ushort net_signature = 0;					// network signature this object can have
+	int destroy_before_mission_time = -1;
 
-	char	wing_status_wing_index;			// wing index (0-4) in wingman status gauge
-	char	wing_status_wing_pos;			// wing position (0-5) in wingman status gauge
+	char	wing_status_wing_index = -1;			// wing index (0-4) in wingman status gauge
+	char	wing_status_wing_pos = -1;			// wing position (0-5) in wingman status gauge
 
-	uint	respawn_count;						// number of respawns for this object.  Applies only to player wing ships in multiplayer
-	int	respawn_priority;					// priority this ship has for controlling respawn points
+	uint	respawn_count = 0;						// number of respawns for this object.  Applies only to player wing ships in multiplayer
+	int	respawn_priority = 0;					// priority this ship has for controlling respawn points
 
-	int		alt_type_index;					// optional alt type index
-	int		callsign_index;					// optional callsign index
+	int		alt_type_index = -1;					// optional alt type index
+	int		callsign_index = -1;					// optional callsign index
 
-	float ship_max_hull_strength;			// Needed to deal with special hitpoints
-	float ship_max_shield_strength;
-
-	float max_shield_recharge;
+	float ship_max_hull_strength = 0.0f;			// Needed to deal with special hitpoints
+	float ship_max_shield_strength = 0.0f;
+	float max_shield_recharge = 0.0f;
 
 	// Goober5000
 	SCP_vector<texture_replace> replacement_textures;
 
 	SCP_vector<alt_class> alt_classes;	
-
 	SCP_map<std::pair<int, int>, int> alt_iff_color;
 
-	p_object();
 	~p_object();
 
 	const char* get_display_name();
@@ -488,6 +439,7 @@ extern p_object *Arriving_support_ship;
 extern char Neb2_texture_name[MAX_FILENAME_LEN];
 
 
+void mission_init(mission *pm);
 bool parse_main(const char *mission_name, int flags = 0);
 p_object *mission_parse_get_arrival_ship(ushort net_signature);
 p_object *mission_parse_get_arrival_ship(const char *name);
