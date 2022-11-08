@@ -6096,6 +6096,8 @@ bool parse_mission(mission *pm, XWingMission *xwim, int flags)
 
 	if (!post_process_mission(pm))
 		return false;
+	if (flags & MPF_IMPORT_XWI)
+		post_process_xwi_mission(pm, xwim);
 
 	if ((saved_warning_count - Global_warning_count) > 10 || (saved_error_count - Global_error_count) > 0) {
 		char text[512];

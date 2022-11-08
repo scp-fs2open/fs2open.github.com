@@ -185,6 +185,39 @@ int xwi_determine_anchor(const XWingMission *xwim, const XWMFlightGroup *fg)
 	return -1;
 }
 
+const char *xwi_determine_formation(const XWMFlightGroup *fg)
+{
+	switch (fg->formation)
+	{
+		case XWMFormation::f_Vic:
+			return "Double Vic";
+		case XWMFormation::f_Finger_Four:
+			return "Finger Four";
+		case XWMFormation::f_Line_Astern:
+			return "Line Astern";
+		case XWMFormation::f_Line_Abreast:
+			return "Line Abreast";
+		case XWMFormation::f_Echelon_Right:
+			return "Echelon Right";
+		case XWMFormation::f_Echelon_Left:
+			return "Echelon Left";
+		case XWMFormation::f_Double_Astern:
+			return "Double Astern";
+		case XWMFormation::f_Diamond:
+			return "Diamond";
+		case XWMFormation::f_Stacked:
+			return "Stacked";
+		case XWMFormation::f_Spread:
+			return "Spread";
+		case XWMFormation::f_Hi_Lo:
+			return "Hi-Lo";
+		case XWMFormation::f_Spiral:
+			return "Spiral";
+	}
+
+	return nullptr;
+}
+
 const char *xwi_determine_base_ship_class(const XWMFlightGroup *fg)
 {
 	switch (fg->flightGroupType)
@@ -389,7 +422,16 @@ void parse_xwi_flightgroup(mission *pm, const XWingMission *xwim, const XWMFligh
 		strcpy_s(wingp->name, fg->designation.c_str());
 		SCP_totitle(wingp->name);
 		wingp->num_waves = fg->numberOfWaves;
-		wingp->formation = -1;	// TODO
+
+		auto formation_name = xwi_determine_formation(fg);
+		if (formation_name)
+		{
+			wingp->formation = wing_formation_lookup(formation_name);
+			if (wingp->formation < 0)
+				Warning(LOCATION, "Formation %s from Flight Group %s was not found", formation_name, fg->designation.c_str());
+		}
+		if (wingp->formation >= 0 && is_fighter_or_bomber(fg))
+			wingp->formation_scale = 0.25f;
 
 		wingp->arrival_cue = arrival_cue;
 		wingp->arrival_delay = fg->arrivalDelay;
@@ -460,8 +502,10 @@ void parse_xwi_flightgroup(mission *pm, const XWingMission *xwim, const XWMFligh
 	vm_vec_scale(&waypoint3, 1000);
 	vm_vec_scale(&hyperspace, 1000);
 
+	matrix orient;
+	xwi_determine_orientation(&orient, fg, &start1, &start2, &start3, &waypoint1, &waypoint2, &waypoint3, &hyperspace);
+
 	// now configure each ship in the flight group
-	int wing_leader_pobj_index = -1;
 	for (int wing_index = 0; wing_index < number_in_wave; wing_index++)
 	{
 		p_object pobj;
@@ -472,9 +516,6 @@ void parse_xwi_flightgroup(mission *pm, const XWingMission *xwim, const XWMFligh
 			pobj.wingnum = wingnum;
 			pobj.pos_in_wing = wing_index;
 			pobj.arrival_cue = Locked_sexp_false;
-
-			if (wing_index == 0)
-				wing_leader_pobj_index = (int)Parse_objects.size();
 		}
 		else
 		{
@@ -513,10 +554,7 @@ void parse_xwi_flightgroup(mission *pm, const XWingMission *xwim, const XWMFligh
 		pobj.ai_class = ai_class;
 
 		pobj.pos = start1;
-		if (wing_index == 0)
-			xwi_determine_orientation(&pobj.orient, fg, &start1, &start2, &start3, &waypoint1, &waypoint2, &waypoint3, &hyperspace);
-		else
-			pobj.orient = Parse_objects[wing_leader_pobj_index].orient;
+		pobj.orient = orient;
 
 		if (wingp && wing_index == fg->specialShipNumber)
 			pobj.cargo1 = (char)xwi_lookup_cargo(fg->specialCargo.c_str());
@@ -609,6 +647,24 @@ void parse_xwi_mission(mission *pm, const XWingMission *xwim)
 	// load flight groups
 	for (const auto &fg : xwim->flightgroups)
 		parse_xwi_flightgroup(pm, xwim, &fg);
+}
+
+void post_process_xwi_mission(mission *pm, const XWingMission *xwim)
+{
+	// we need to arrange all the flight groups into their formations, but this can't be done until the FRED objects are created from the parse objects
+	for (int wingnum = 0; wingnum < Num_wings; wingnum++)
+	{
+		auto wingp = &Wings[wingnum];
+		auto leader_objp = &Objects[Ships[wingp->ship_index[0]].objnum];
+
+		for (int i = 1; i < wingp->wave_count; i++)
+		{
+			auto objp = &Objects[Ships[wingp->ship_index[i]].objnum];
+
+			get_absolute_wing_pos(&objp->pos, leader_objp, wingnum, i, false);
+			objp->orient = leader_objp->orient;
+		}
+	}
 }
 
 /**
