@@ -533,6 +533,7 @@
 #define IDC_FILTER_STARTS               1212
 #define IDC_FILTER_SHIPS                1213
 #define IDC_IFF_LIST                    1214
+#define IDC_WING_FORMATION_SCALE        1215
 #define IDC_ALL                         1218
 #define IDC_CLEAR                       1219
 #define IDC_INVERT                      1220

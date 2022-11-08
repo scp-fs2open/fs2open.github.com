@@ -4358,6 +4358,9 @@ void parse_wing(mission *pm)
 			Warning(LOCATION, "Invalid Formation %s.", f);
 		}
 	}
+	if (optional_string("+Formation Scale:")) {
+		stuff_float(&wingp->formation_scale);
+	}
 
 	find_and_stuff("$Arrival Location:", &wingp->arrival_location, F_NAME, Arrival_location_names, Num_arrival_names, "Arrival Location");
 

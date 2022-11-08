@@ -51,6 +51,7 @@ public:
 	int		m_waves;
 	int		m_threshold;
 	int		m_formation;
+	CString	m_formation_scale;
 	int		m_arrival_location;
 	int		m_departure_location;
 	int		m_arrival_delay;
