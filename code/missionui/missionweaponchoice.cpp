@@ -1145,7 +1145,6 @@ void wl_render_overhead_view(float frametime)
 			Wl_bank_coords[gr_screen.res][5][1],
 			Wl_bank_coords[gr_screen.res][6][0],
 			Wl_bank_coords[gr_screen.res][6][1]);
-			Default_overhead_ship_style;
 	}
 
 	//Draw ship name
