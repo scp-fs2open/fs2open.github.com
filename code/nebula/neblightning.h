@@ -88,6 +88,7 @@ typedef struct bolt_type {
 typedef struct storm_type {
 	char		name[NAME_LENGTH];
 	int			num_bolt_types;							// how many different bolt types you'll see in the nebula
+	char		bolt_types_n[MAX_BOLT_TYPES_PER_STORM][NAME_LENGTH];	// names of bolts. only used to verify bolts after all parsing is done
 	int			bolt_types[MAX_BOLT_TYPES_PER_STORM];	// indices into Bolt types	
 	vec3d		flavor;									// flavor of the storm
 	
@@ -99,7 +100,10 @@ typedef struct storm_type {
 	{
 		name[0] = '\0';
 		flavor = vm_vec_new(0.0f, 0.0f, 0.0f);
-		for (int i = 0; i <= MAX_BOLT_TYPES_PER_STORM; i++) {
+		for (int i = 0; i < MAX_BOLT_TYPES_PER_STORM; i++) {
+			bolt_types_n[i][0] = '\0';
+		}
+		for (int i = 0; i < MAX_BOLT_TYPES_PER_STORM; i++) {
 			bolt_types[i] = -1;
 		}
 	}

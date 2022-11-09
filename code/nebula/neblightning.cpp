@@ -152,122 +152,245 @@ DCF(lightning_intensity, "Sets lightning intensity between 0.0 and 1.0 (Default 
 // NEBULA LIGHTNING FUNCTIONS
 //
 
+static bolt_type* get_bolt_type_pointer(const char* bolt)
+{
+	for (int i = 0; i < (int)Bolt_types.size(); i++) {
+		if (!stricmp(bolt, Bolt_types[i].name)) {
+			return &Bolt_types[i];
+		}
+	}
+
+	// Didn't find anything.
+	return nullptr;
+}
+
+static storm_type* get_storm_type_pointer(const char* storm)
+{
+	for (int i = 0; i < (int)Storm_types.size(); i++) {
+		if (!stricmp(storm, Storm_types[i].name)) {
+			return &Storm_types[i];
+		}
+	}
+
+	// Didn't find anything.
+	return nullptr;
+}
+
 // initialize nebula lightning at game startup
-void nebl_init()
+void parse_lightning_table(const char* filename)
 {
 	char name[MAX_FILENAME_LEN];
 
 	try
 	{
 		// parse the lightning table
-		read_file_text("lightning.tbl", CF_TYPE_TABLES);
+		read_file_text(filename, CF_TYPE_TABLES);
 		reset_parse();
 
 		// parse the individual lightning bolt types
 		required_string("#Bolts begin");
 		while (!optional_string("#Bolts end")){
-			bolt_type new_bolt_type;
+
+			bool create_if_not_found = true;
+			bolt_type bolt_t;
+			bolt_type* bolt_p;
 
 			// bolt title
 			required_string("$Bolt:");
-			stuff_string(new_bolt_type.name, F_NAME, NAME_LENGTH);
+			stuff_string(bolt_t.name, F_NAME, NAME_LENGTH);
+
+			if (optional_string("+nocreate")) {
+				if (!Parsing_modular_table) {
+					Warning(LOCATION, "+nocreate flag used for lightning bolt in non-modular table\n");
+				}
+				create_if_not_found = false;
+			}
+
+			// Does this bolt exist already?
+			// If so, load this new info into it
+			bolt_p = get_bolt_type_pointer(bolt_t.name);
+			if (bolt_p != nullptr) {
+				if (!Parsing_modular_table) {
+					error_display(1,
+						"Error:  Lightning Bolt %s already exists.  All bolt names must be unique.",
+						bolt_t.name);
+				}
+			} else {
+				// Don't create bolt if it has +nocreate and is in a modular table.
+				if (!create_if_not_found && Parsing_modular_table) {
+					if (!skip_to_start_of_string_either("$Bolt:", "#Bolts end")) {
+						error_display(1, "Missing [#Bolts end] or [$Bolt] after lightning bolt %s", bolt_t.name);
+					}
+					continue;
+				}
+
+				Bolt_types.push_back(bolt_t);
+				bolt_p = &Bolt_types[Bolt_types.size() - 1];
+			}
 
 			// b_scale
-			required_string("+b_scale:");
-			stuff_float(&new_bolt_type.b_scale);
+			if (optional_string("+b_scale:")) {
+				stuff_float(&bolt_p->b_scale);
+			}
 
 			// b_shrink
-			required_string("+b_shrink:");
-			stuff_float(&new_bolt_type.b_shrink);
+			if (optional_string("+b_shrink:")) {
+				stuff_float(&bolt_p->b_shrink);
+			}
 
 			// b_poly_pct
-			required_string("+b_poly_pct:");
-			stuff_float(&new_bolt_type.b_poly_pct);
+			if (optional_string("+b_poly_pct:")) {
+				stuff_float(&bolt_p->b_poly_pct);
+			}
 
-			// child rand
-			required_string("+b_rand:");
-			stuff_float(&new_bolt_type.b_rand);
+			// child rand, omg not the chilren!
+			if (optional_string("+b_rand:")) {
+				stuff_float(&bolt_p->b_rand);
+			}
 
 			// z add
-			required_string("+b_add:");
-			stuff_float(&new_bolt_type.b_add);
+			if (optional_string("+b_add:")) {
+				stuff_float(&bolt_p->b_add);
+			}
 
 			// # strikes
-			required_string("+b_strikes:");
-			stuff_int(&new_bolt_type.num_strikes);
+			if (optional_string("+b_strikes:")) {
+				stuff_int(&bolt_p->num_strikes);
+			}
 
 			// lifetime
-			required_string("+b_lifetime:");
-			stuff_int(&new_bolt_type.lifetime);
+			if (optional_string("+b_lifetime:")) {
+				stuff_int(&bolt_p->lifetime);
+			}
 
 			// noise
-			required_string("+b_noise:");
-			stuff_float(&new_bolt_type.noise);
+			if (optional_string("+b_noise:")) {
+				stuff_float(&bolt_p->noise);
+			}
 
 			// emp effect
-			required_string("+b_emp:");
-			stuff_float(&new_bolt_type.emp_intensity);
-			stuff_float(&new_bolt_type.emp_time);
+			if (optional_string("+b_emp:")) {
+				stuff_float(&bolt_p->emp_intensity);
+				stuff_float(&bolt_p->emp_time);
+			}
 
 			// texture
-			required_string("+b_texture:");
-			stuff_string(name, F_NAME, sizeof(name));
-			if (!Fred_running){
-				new_bolt_type.texture = bm_load(name);
+			if (optional_string("+b_texture:")) {
+				stuff_string(name, F_NAME, sizeof(name));
+				if (!Fred_running) {
+					bolt_p->texture = bm_load(name);
+				}
 			}
+
+			if (bolt_p->texture < 0)
+				error_display(1, "Bolt %s has no texture defined.", bolt_p->name);
 
 			// glow
-			required_string("+b_glow:");
-			stuff_string(name, F_NAME, sizeof(name));
-			if (!Fred_running){
-				new_bolt_type.glow = bm_load(name);
+			if (optional_string("+b_glow:")) {
+				stuff_string(name, F_NAME, sizeof(name));
+				if (!Fred_running) {
+					bolt_p->glow = bm_load(name);
+				}
 			}
 
-			// brightness
-			required_string("+b_bright:");
-			stuff_float(&new_bolt_type.b_bright);
+			if (bolt_p->glow < 0)
+				error_display(1, "Bolt %s has no glow texture defined.", bolt_p->name);
 
-			Bolt_types.push_back(new_bolt_type);
+			// brightness
+			if (optional_string("+b_bright:")) {
+				stuff_float(&bolt_p->b_bright);
+			}
+
 		}
 
 		// parse lightning storm types
 		required_string("#Storms begin");
 		while (!optional_string("#Storms end")){
-			storm_type new_storm_type;
+
+			bool create_if_not_found = true;
+			storm_type storm_t;
+			storm_type* storm_p;
 
 			// bolt title
 			required_string("$Storm:");
-			stuff_string(new_storm_type.name, F_NAME, NAME_LENGTH);
+			stuff_string(storm_t.name, F_NAME, NAME_LENGTH);
 
-			// bolt types
-			while (optional_string("+bolt:")){
-				if (new_storm_type.num_bolt_types < MAX_BOLT_TYPES_PER_STORM){
-					stuff_string(name, F_NAME, sizeof(name));
+			if (optional_string("+nocreate")) {
+				if (!Parsing_modular_table) {
+					Warning(LOCATION, "+nocreate flag used for lightning storm in non-modular table\n");
+				}
+				create_if_not_found = false;
+			}
 
-					new_storm_type.bolt_types[new_storm_type.num_bolt_types] = nebl_get_bolt_index(name);
-					Assert(new_storm_type.bolt_types[new_storm_type.num_bolt_types] != -1);
+			// Does this storm exist already?
+			// If so, load this new info into it
+			storm_p = get_storm_type_pointer(storm_t.name);
+			if (storm_p != nullptr) {
+				if (!Parsing_modular_table) {
+					error_display(1,
+						"Error:  Lightning Storm %s already exists.  All bolt names must be unique.",
+						storm_t.name);
+				}
+			} else {
+				// Don't create storm if it has +nocreate and is in a modular table.
+				if (!create_if_not_found && Parsing_modular_table) {
+					if (!skip_to_start_of_string_either("$Storm:", "#Storms end")) {
+						error_display(1, "Missing [#Storms end] or [$Storm] after lightning storm %s", storm_t.name);
+					}
+					continue;
+				}
 
-					new_storm_type.num_bolt_types++;
+				Storm_types.push_back(storm_t);
+				storm_p = &Storm_types[Storm_types.size() - 1];
+			}
+
+			if (optional_string("+Clear bolts")) {
+				if (Parsing_modular_table) {
+					mprintf(("Got argument to clear the bolts list for storm %s", storm_p->name));
+					for (int i = 0; i < MAX_BOLT_TYPES_PER_STORM; i++) {
+						storm_p->bolt_types[i] = -1;
+					}
+					storm_p->num_bolt_types = 0;
+				} else {
+					error_display(0,
+						"Got argument to clear bolts list for storm %s in non-modular table. Ignoring!",
+						storm_p->name);
 				}
 			}
 
+			// bolt types
+			while (optional_string("+bolt:")){
+				if (storm_p->num_bolt_types < MAX_BOLT_TYPES_PER_STORM) {
+					stuff_string(storm_p->bolt_types_n[storm_p->num_bolt_types], F_NAME, NAME_LENGTH);
+					storm_p->num_bolt_types++;
+				} else {
+					error_display(0, "Storm %s already has %i bolts. Ignoring bolt %s!", storm_p->name, MAX_BOLT_TYPES_PER_STORM, name);
+				}
+			}
+
+			//Check that we have at least one bolt
+			if (storm_p->num_bolt_types < 1)
+				error_display(1, "Storm %s has no bolts defined!", storm_p->name);
+
 			// flavor
-			required_string("+flavor:");
-			stuff_float(&new_storm_type.flavor.xyz.x);
-			stuff_float(&new_storm_type.flavor.xyz.y);
-			stuff_float(&new_storm_type.flavor.xyz.z);
+			if (optional_string("+flavor:")) {
+				stuff_float(&storm_p->flavor.xyz.x);
+				stuff_float(&storm_p->flavor.xyz.y);
+				stuff_float(&storm_p->flavor.xyz.z);
+			}
 
 			// frequencies
-			required_string("+random_freq:");
-			stuff_int(&new_storm_type.min);
-			stuff_int(&new_storm_type.max);
+			if (optional_string("+random_freq:")) {
+				stuff_int(&storm_p->min);
+				stuff_int(&storm_p->max);
+			}
 
 			// counts
-			required_string("+random_count:");
-			stuff_int(&new_storm_type.min_count);
-			stuff_int(&new_storm_type.max_count);
+			if (optional_string("+random_count:")) {
+				stuff_int(&storm_p->min_count);
+				stuff_int(&storm_p->max_count);
+			}
 
-			Storm_types.push_back(new_storm_type);
 		}
 	}
 	catch (const parse::ParseException& e)
@@ -275,6 +398,51 @@ void nebl_init()
 		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "lightning.tbl", e.what()));
 		return;
 	}
+}
+
+// the storm effect chooses a bolt by index using a rand number 
+// Generator. Means we cant do any Bolt error checking at the time 
+// Of parsing, And we would need to Update the array
+// Of bolts, so Keys are filled. This Grouped "for" method verifies
+// Bolts by name. Each bolt in all the Storms saves the index in the
+// bolts array var So it meets that requirement - Mjn
+static void verify_storm_bolts()
+{
+	for (int i = 0; i < (int)Storm_types.size(); i++) {
+		//Count the number of errored bolts so we can adjust the array to leave no blank slots-Mjn
+		int error_count = 0;
+		for (int j = 0; j < Storm_types[i].num_bolt_types; j++) {
+			int bolt_idx = nebl_get_bolt_index(Storm_types[i].bolt_types_n[j]);
+			if (bolt_idx < 0) {
+				Warning(LOCATION,
+					"Unknown bolt %s defined in storm %s. Skipping!",
+					Storm_types[i].bolt_types_n[j],
+					Storm_types[i].name);
+				error_count++;
+			} else {
+				Storm_types[i].bolt_types[j - error_count] = bolt_idx;
+			}
+		}
+		//Correct the bolt count
+		Storm_types[i].num_bolt_types = (Storm_types[i].num_bolt_types - error_count);
+
+		//Semi duplicate error message, but relevant in case all bolts were removed
+		if (Storm_types[i].num_bolt_types = 0)
+			Error(LOCATION, "Storm %s has no bolts defined!", Storm_types[i].name);
+	}
+}
+
+void nebl_init()
+{
+
+	// first parse the default table
+	parse_lightning_table("lightning.tbl");
+
+	// parse any modular tables
+	parse_modular_table("*-ltng.tbm", parse_lightning_table);
+
+	//Verify the bolts after all parsing is done to make sure that load order isn't a factor
+	verify_storm_bolts();
 }
 
 // initialize lightning before entering a level
