@@ -2958,6 +2958,7 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 		p_objp->arrival_anchor = get_anchor(name);
 	}
 
+	p_objp->arrival_path_mask = -1;		// -1 only until resolved
 	if (optional_string("+Arrival Paths:"))
 	{
 		// temporarily use mask to point to the restriction index
@@ -2992,6 +2993,7 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 		p_objp->departure_anchor = get_anchor(name);
 	}
 
+	p_objp->departure_path_mask = -1;		// -1 only until resolved
 	if (optional_string("+Departure Paths:"))
 	{
 		// temporarily use mask to point to the restriction index
@@ -4380,6 +4382,7 @@ void parse_wing(mission *pm)
 		wingp->arrival_anchor = get_anchor(name);
 	}
 
+	wingp->arrival_path_mask = -1;		// -1 only until resolved
 	if (optional_string("+Arrival Paths:"))
 	{
 		// temporarily use mask to point to the restriction index
@@ -4414,6 +4417,7 @@ void parse_wing(mission *pm)
 		wingp->departure_anchor = get_anchor(name);
 	}
 
+	wingp->departure_path_mask = -1;		// -1 only until resolved
 	if (optional_string("+Departure Paths:"))
 	{
 		// temporarily use mask to point to the restriction index
