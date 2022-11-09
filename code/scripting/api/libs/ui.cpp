@@ -1248,13 +1248,13 @@ ADE_FUNC(get3dOverheadChoices,
 	nullptr,
 	"Gets the 3d select choices from game_settings.tbl relating to weapon select overhead view.",
 	"boolean, number",
-	"3d overhead select choice(true for on, false for off), default overhead style(0 for still, 1 for rotate)")
+	"3d overhead select choice(true for on, false for off), default overhead style(0 for top view, 1 for rotate)")
 {
 
 	return ade_set_args(L,
 		"bi",
 		Use_3d_overhead_ship,
-		Default_overhead_ship_style);
+		(int)Default_overhead_ship_style);
 }
 
 ADE_LIB_DERIV(l_Ship_Pool, "Ship_Pool", nullptr, nullptr, l_UserInterface_ShipWepSelect);

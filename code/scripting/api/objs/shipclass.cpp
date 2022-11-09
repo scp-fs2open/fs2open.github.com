@@ -1347,7 +1347,7 @@ ADE_FUNC(renderOverheadModel,
 		0,
 		0,
 		0,
-		style);
+		(overhead_style)style);
 
 	return ade_set_args(L, "b", true);
 }

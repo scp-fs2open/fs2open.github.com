@@ -738,13 +738,9 @@ void draw_3d_overhead_view(int model_num,
 	int bank_prim_offset,
 	int bank_sec_offset,
 	int bank_y_offset,
-	int style)
+	overhead_style style)
 {
 	ship_info* sip = &Ship_info[ship_class];
-
-	if (style == -1) {
-		style = Default_overhead_ship_style;
-	}
 
 	if (model_num < 0) {
 		mprintf(("Couldn't load model file '%s' in missionweaponchoice.cpp\n", sip->pof_file));
@@ -754,12 +750,12 @@ void draw_3d_overhead_view(int model_num,
 		float zoom;
 		zoom = sip->closeup_zoom * 1.3f;
 
-		if (!style) {
+		if (style == OH_TOP_VIEW) {
 			rot_angles.p = -(PI_2);
 			rot_angles.b = 0.0f;
 			rot_angles.h = 0.0f;
 			vm_angles_2_matrix(&object_orient, &rot_angles);
-		} else {
+		} else if (style == OH_ROTATING) {
 			float rev_rate;
 			rev_rate = REVOLUTION_RATE;
 			if (sip->is_big_ship()) {
@@ -783,6 +779,8 @@ void draw_3d_overhead_view(int model_num,
 			rot_angles.b = 0.0f;
 			rot_angles.h = *rotation_buffer;
 			vm_rotate_matrix_by_angles(&object_orient, &rot_angles);
+		} else {
+			Error(LOCATION, "Got call to draw overhead ship with invalid style!");
 		}
 		model_render_params render_info;
 
@@ -1147,6 +1145,7 @@ void wl_render_overhead_view(float frametime)
 			Wl_bank_coords[gr_screen.res][5][1],
 			Wl_bank_coords[gr_screen.res][6][0],
 			Wl_bank_coords[gr_screen.res][6][1]);
+			Default_overhead_ship_style;
 	}
 
 	//Draw ship name

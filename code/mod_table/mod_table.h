@@ -14,6 +14,12 @@
 #include "graphics/2d.h"
 #include "hud/hudtarget.h"
 
+// Typedef for Overhead View styles
+typedef enum {
+	OH_TOP_VIEW,
+	OH_ROTATING
+} overhead_style;
+
 extern int Directive_wait_time;
 extern bool True_loop_argument_sexps;
 extern bool Fixed_turret_collisions;
@@ -29,7 +35,7 @@ extern bool Use_3d_weapon_select;
 extern int Default_weapon_select_effect;
 extern bool Use_3d_weapon_icons;
 extern bool Use_3d_overhead_ship;
-extern int Default_overhead_ship_style;
+extern overhead_style Default_overhead_ship_style;
 extern int Default_fiction_viewer_ui;
 extern bool Enable_external_shaders;
 extern bool Enable_external_default_scripts;

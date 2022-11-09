@@ -36,7 +36,7 @@ bool Use_3d_ship_icons;
 bool Use_3d_weapon_select;
 bool Use_3d_weapon_icons;
 bool Use_3d_overhead_ship;
-int Default_overhead_ship_style;
+overhead_style Default_overhead_ship_style;
 int Default_ship_select_effect;
 int Default_weapon_select_effect;
 int Default_fiction_viewer_ui;
@@ -815,13 +815,17 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Use_3d_overhead_ship);
 		}
 
+		Default_overhead_ship_style = OH_TOP_VIEW;
 		if (optional_string("$Default overhead ship style:")) {
 			char effect[NAME_LENGTH];
 			stuff_string(effect, F_NAME, NAME_LENGTH);
-			if (!stricmp(effect, "ROTATE"))
-				Default_overhead_ship_style = 1;
-			else if (!stricmp(effect, "STILL"))
-				Default_overhead_ship_style = 0;
+			if (!stricmp(effect, "ROTATE")) {
+				Default_overhead_ship_style = OH_ROTATING;
+			} else if (!stricmp(effect, "TOPVIEW")) {
+				Default_overhead_ship_style = OH_TOP_VIEW;
+			} else {
+				error_display(0, "Unknown Select Overhead Ship Style %s, using TOPVIEW instead.", effect);
+			}
 		}
 
 		if (optional_string("$Weapons inherit parent collision group:")) {
