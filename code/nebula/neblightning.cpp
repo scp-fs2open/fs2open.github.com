@@ -245,7 +245,7 @@ void nebl_init()
 					stuff_string(name, F_NAME, sizeof(name));
 
 					new_storm_type.bolt_types[new_storm_type.num_bolt_types] = nebl_get_bolt_index(name);
-					Assert(new_storm_type.bolt_types[new_storm_type.num_bolt_types] != (size_t)-1);
+					Assert(new_storm_type.bolt_types[new_storm_type.num_bolt_types] != -1);
 
 					new_storm_type.num_bolt_types++;
 				}
@@ -312,9 +312,9 @@ void nebl_set_storm(const char *name)
 	// sanity
 	Storm = NULL;
 	
-	size_t index = nebl_get_storm_index(name);
+	int index = nebl_get_storm_index(name);
 	
-	if(index == (size_t)-1)
+	if(index == -1)
 		return;
 	
 	Storm = &Storm_types[index];
@@ -536,7 +536,7 @@ void nebl_process()
 				vm_vec_add(&strike, &start, &the_mixture);
 			}
 
-			size_t type = (size_t)frand_range(0.0f, (float)(Storm->num_bolt_types-1));
+			int type = (int)frand_range(0.0f, (float)(Storm->num_bolt_types-1));
 			nebl_bolt(Storm->bolt_types[type], &start, &strike);
 		}
 
@@ -546,12 +546,12 @@ void nebl_process()
 }
 
 // create a lightning bolt
-void nebl_bolt(size_t type, vec3d *start, vec3d *strike)
+void nebl_bolt(int type, vec3d *start, vec3d *strike)
 {
 	vec3d dir;
 	l_bolt *bolt;
 	l_node *tail;
-	size_t idx;
+	int idx;
 	bool found;		
 	bolt_type *bi;
 	float bolt_len;
@@ -572,7 +572,7 @@ void nebl_bolt(size_t type, vec3d *start, vec3d *strike)
 		return;
 	}
 
-	if( type >= Bolt_types.size() ){
+	if( type >= (int)Bolt_types.size() ){
 		return;
 	}
 	bi = &Bolt_types[type];	
@@ -630,7 +630,7 @@ void nebl_bolt(size_t type, vec3d *start, vec3d *strike)
 
 	// if i'm a multiplayer master, send a bolt packet
 	if(MULTIPLAYER_MASTER){
-		send_lightning_packet((int)type, start, strike);
+		send_lightning_packet(type, start, strike);
 	}
 }
 
@@ -1070,28 +1070,28 @@ void nebl_jitter(l_bolt *b)
 }
 
 // return the index of a given bolt type by name
-size_t nebl_get_bolt_index(const char *name)
+int nebl_get_bolt_index(const char *name)
 {
-	for(size_t idx=0; idx<Bolt_types.size(); idx++){
+	for(int idx=0; idx<(int)Bolt_types.size(); idx++){
 		if(!strcmp(name, Bolt_types[idx].name)){
 			return idx;
 		}
 	}
 
-	return (size_t)-1;
+	return -1;
 }
 
 // return the index of a given storm type by name
-size_t nebl_get_storm_index(const char *name)
+int nebl_get_storm_index(const char *name)
 {
 	if (name == NULL)
-		return (size_t)-1;
+		return -1;
 
-	for(size_t idx=0; idx<Storm_types.size(); idx++){
+	for(int idx=0; idx<(int)Storm_types.size(); idx++){
 		if(!strcmp(name, Storm_types[idx].name)){
 			return idx;
 		}
 	}
 
-	return (size_t)-1;
+	return -1;
 }

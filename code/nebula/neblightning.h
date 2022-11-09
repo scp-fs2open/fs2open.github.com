@@ -57,36 +57,52 @@ typedef struct l_section {
 typedef struct bolt_type {
 	char		name[NAME_LENGTH];
 	
-	float		b_scale;
-	float		b_shrink;
-	float		b_poly_pct;	
-	float		b_add;
-	float		b_rand;
+	float		b_scale;				//Defines the 'spread' of the child forks. Smaller values cause tighter bolts.
+	float		b_shrink;				//Defines the percentual value (from 0 to 1) that is for the lenght of the 'child' forks
+	float		b_poly_pct;				//Defines the width of the lightning compared to the lenght of the lightning in percents.
+	float		b_add;					//Sets the drawing distance (in meters) of the lightning glow from the actual lightning towards the viewpoint
+	float		b_rand;					//Sets the probability (from 0 to 1) of generating 'child lightnings' for the 'nodes' of the main lightning
 	
-	float		noise;
-	int			lifetime;
-	int			num_strikes;
+	float		noise;					//Defines the 'noise' of a multi striking lightning (from 0 to 1). Cause the lightning to 'imitate' movement
+	int			lifetime;				//Defines the total lifetime of the bolt in milliseconds
+	int			num_strikes;			//Defines the number of times the bolt strikes
 	
-	float		emp_intensity;
-	float		emp_time;
+	float		emp_intensity;			//Sets the EMP intesity caused by the lightning
+	float		emp_time;				//Sets the length of time of the EMP effect caused by the lightning
 	
-	int			texture;
-	int			glow;	
+	int			texture;				//the main bolt texture
+	int			glow;					//the main bolt glow texture
 	
-	float		b_bright;
+	float		b_bright;				//the brightness of the bolts
+
+	// Set some reasonable default values based on retail -Mjn
+	bolt_type()
+		: b_scale(0.5f), b_shrink(0.3f), b_poly_pct(0.005f), b_add(2.0f), b_rand(0.3f), noise(0.03f), lifetime(250),
+		  num_strikes(3), emp_intensity(0.0f), emp_time(0.0f), b_bright(0.2f), texture(-1), glow(-1)
+	{
+		name[0] = '\0';
+	}
 } bolt_type;
 
 // storm_type - see lightning.tbl for explanations of these values
 typedef struct storm_type {
 	char		name[NAME_LENGTH];
-	ubyte		num_bolt_types;							// how many different bolt types you'll see in the nebula
-	size_t		bolt_types[MAX_BOLT_TYPES_PER_STORM];	// indices into Bolt types	
+	int			num_bolt_types;							// how many different bolt types you'll see in the nebula
+	int			bolt_types[MAX_BOLT_TYPES_PER_STORM];	// indices into Bolt types	
 	vec3d		flavor;									// flavor of the storm
 	
 	int			min, max;								// min and max delay between bolt firing.	
 	int			min_count, max_count;					// # of bolts spewed
 	
-	storm_type() : num_bolt_types(0) {}
+	// Set some reasonable default values based on retail -Mjn
+	storm_type() : num_bolt_types(0), min(600), max(1200), min_count(1), max_count(3)
+	{
+		name[0] = '\0';
+		flavor = vm_vec_new(0.0f, 0.0f, 0.0f);
+		for (int i = 0; i <= MAX_BOLT_TYPES_PER_STORM; i++) {
+			bolt_types[i] = -1;
+		}
+	}
 } storm_type;
 
 extern SCP_vector<storm_type>	Storm_types;
@@ -115,7 +131,7 @@ void nebl_render_all();
 void nebl_process();
 
 // create a lightning bolt
-void nebl_bolt(size_t type, vec3d *start, vec3d *strike);
+void nebl_bolt(int type, vec3d *start, vec3d *strike);
 
 // "new" a lightning node
 l_node *nebl_new();
@@ -148,9 +164,9 @@ void nebl_render(bolt_type *bi, l_node *whee, float width, l_section *prev = NUL
 void nebl_jitter(l_bolt *b);
 
 // return the index of a given bolt type by name
-size_t nebl_get_bolt_index(const char *name);
+int nebl_get_bolt_index(const char *name);
 
 // return the index of a given storm type by name
-size_t nebl_get_storm_index(const char *name);
+int nebl_get_storm_index(const char *name);
 
 #endif
