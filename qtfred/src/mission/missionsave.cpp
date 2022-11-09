@@ -2843,7 +2843,6 @@ int CFred_mission_save::save_objects()
 {
 	SCP_string sexp_out;
 	int i, z;
-	ai_info* aip;
 	object* objp;
 	ship* shipp;
 
@@ -2936,14 +2935,11 @@ int CFred_mission_save::save_objects()
 			required_string_fred("$IFF:");
 			parse_comments();
 			fout(" %s", "IFF 1");
+
+			required_string_fred("$AI Behavior:");
+			parse_comments();
+			fout(" %s", Ai_behavior_names[AIM_NONE]);
 		}
-
-		Assert(shipp->ai_index >= 0);
-		aip = &Ai_info[shipp->ai_index];
-
-		required_string_fred("$AI Behavior:");
-		parse_comments();
-		fout(" %s", Ai_behavior_names[aip->behavior]);
 
 		if (shipp->weapons.ai_class != Ship_info[shipp->ship_info_index].ai_class) {
 			if (optional_string_fred("+AI Class:", "$Name:")) {

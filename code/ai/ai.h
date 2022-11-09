@@ -233,8 +233,6 @@ extern pnode	*Ppfp;			//	Free pointer in path points.
 typedef struct ai_info {
 	flagset<AI::AI_Flags> ai_flags;				//	Special flags for AI behavior.
 	int		shipnum;					// Ship using this slot, -1 means none.
-	int		type;						//	
-	int		wing;						//	Member of what wing? -1 means none. 
 
 	int		behavior;				//	AI behavior; vestigial field from early development of FS1
 	int		mode;
@@ -522,9 +520,6 @@ void ai_object_init(object * obj, int ai_index);
 // Called once a frame
 void ai_process( object * obj, int ai_index, float frametime );
 
-int get_wingnum(int objnum);
-
-void set_wingnum(int objnum, int wingnum);
 const char *ai_get_goal_target_name(const char *name, int *index);
 void ai_clear_goal_target_names();
 

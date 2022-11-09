@@ -301,7 +301,6 @@ public:
 	int	ship_class = -1;
 	int	team = -1;
 	int loadout_team = -1;						// original team, should never be changed after being set!!
-	int	behavior = AIM_NONE;					// ai_class;
 	int	ai_goals = -1;							// sexp of lists of goals that this ship should try and do
 	char	cargo1 = '\0';
 	SCP_string team_color_setting;

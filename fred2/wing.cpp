@@ -58,13 +58,6 @@ int check_wing_dependencies(int wing_num);
 void initialize_wings(void);
 
 /**
- * @brief Doesn't seem to do anything useful
- *
- * @TODO verify
- */
-void create_wings_from_objects(void);
-
-/**
  * @brief Gets the index of the first available object slot
  *
  *
@@ -295,24 +288,6 @@ int create_wing() {
 	update_custom_wing_indexes();
 
 	return 0;
-}
-
-void create_wings_from_objects(void) {
-	int	i;
-
-	for (i = 0; i<MAX_WINGS; i++)
-		Wings[i].wave_count = 0;
-
-	for (i = 0; i<MAX_OBJECTS; i++)
-		if (Objects[i].type != OBJ_NONE)
-			if (get_wingnum(i) != -1) {
-				int	wingnum = get_wingnum(i);
-
-				Assert((wingnum >= 0) && (wingnum < MAX_WINGS));
-				Assert(Wings[wingnum].wave_count < MAX_SHIPS_PER_WING);
-				// JEH			strcpy_s(Wings[wingnum].ship_names[Wings[wingnum].count++], i;
-			}
-
 }
 
 int delete_wing(int wing_num, int bypass) {

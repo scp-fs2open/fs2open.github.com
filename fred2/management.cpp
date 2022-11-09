@@ -661,7 +661,6 @@ int dup_object(object *objp)
 
 		aip1 = &Ai_info[Ships[n].ai_index];
 		aip2 = &Ai_info[Ships[inst].ai_index];
-		aip1->behavior = aip2->behavior;
 		aip1->ai_class = aip2->ai_class;
 		for (i=0; i<MAX_AI_GOALS; i++)
 			aip1->goals[i] = aip2->goals[i];

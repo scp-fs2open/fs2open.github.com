@@ -210,6 +210,8 @@ const char *Ai_behavior_names[MAX_AI_BEHAVIORS] = {
 	"Bay Depart",
 	"Sentry Gun",
 	"Warp Out",
+	"Fly To Ship",
+	"Lua AI",
 };
 
 char *Cargo_names[MAX_CARGO];
@@ -1924,8 +1926,7 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 	if (The_mission.ai_profile->flags[AI::Profile_Flags::Fix_ai_class_bug])
 		ship_set_new_ai_class(shipp, p_objp->ai_class);
 
-	aip->behavior = p_objp->behavior;
-	aip->mode = aip->behavior;
+	aip->mode = AIM_NONE;
 
 	// make sure aim_safety has its submode defined
 	if (aip->mode == AIM_SAFETY) {
@@ -2460,7 +2461,6 @@ void parse_bring_in_docked_wing(p_object *p_objp, int wingnum, int shipnum)
 
 	// handle AI
 	ai_info *aip = &Ai_info[Ships[shipnum].ai_index];
-	aip->wing = wingnum;
 
 	if (wingp->flags[Ship::Wing_Flags::No_dynamic])
 		aip->ai_flags.set(AI::AI_Flags::No_dynamic);
@@ -2902,8 +2902,10 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 	{
 		stuff_string(name, F_NAME, NAME_LENGTH);
 	}
-
-	find_and_stuff("$AI Behavior:",	&p_objp->behavior, F_NAME, Ai_behavior_names, Num_ai_behaviors, "AI behavior");
+	if (optional_string("$AI Behavior:"))
+	{
+		stuff_string(name, F_NAME, NAME_LENGTH);
+	}
 
 	if (optional_string("+AI Class:")) 
 	{
@@ -4123,8 +4125,6 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 			if (wingp->ai_goals[index].ai_mode != AI_GOAL_NONE)
 				ai_copy_mission_wing_goal(&wingp->ai_goals[index], aip);
 		}
-
-		Ai_info[Ships[Objects[objnum].instance].ai_index].wing = wingnum;
 
 		if (wingp->flags[Ship::Wing_Flags::No_dynamic])
 			aip->ai_flags.set(AI::AI_Flags::No_dynamic);
