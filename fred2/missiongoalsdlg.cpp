@@ -577,7 +577,7 @@ void CMissionGoalsDlg::OnNoMusic()
 
 void CMissionGoalsDlg::swap_handler(int node1, int node2)
 {
-	int index1, index2;
+	int index1, index2, s;
 	mission_goal m;
 
 	for (index1=0; index1<m_num_goals; index1++){
@@ -585,23 +585,23 @@ void CMissionGoalsDlg::swap_handler(int node1, int node2)
 			break;
 		}
 	}
-
 	Assert(index1 < m_num_goals);
+
 	for (index2=0; index2<m_num_goals; index2++){
 		if (m_goals[index2].formula == node2){
 			break;
 		}
 	}
-
 	Assert(index2 < m_num_goals);
+
 	m = m_goals[index1];
-//	m_goals[index1] = m_goals[index2];
+	s = m_sig[index1];
+
 	while (index1 < index2) {
 		m_goals[index1] = m_goals[index1 + 1];
 		m_sig[index1] = m_sig[index1 + 1];
 		index1++;
 	}
-
 	while (index1 > index2 + 1) {
 		m_goals[index1] = m_goals[index1 - 1];
 		m_sig[index1] = m_sig[index1 - 1];
@@ -609,6 +609,7 @@ void CMissionGoalsDlg::swap_handler(int node1, int node2)
 	}
 
 	m_goals[index1] = m;
+	m_sig[index1] = s;
 }
 
 void CMissionGoalsDlg::OnChangeGoalScore() 
