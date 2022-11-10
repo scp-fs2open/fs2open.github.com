@@ -3503,8 +3503,8 @@ int CFred_mission_save::save_objects()
 				fout(" \"fail-sound-locked-secondary\"");
 			if (shipp->flags[Ship::Ship_Flags::Aspect_immune])
 				fout(" \"aspect-immune\"");
-			if (shipp->flags[Ship::Ship_Flags::No_nebula_targeting_limits])
-				fout(" \"no-nebula-targeting-limits\"");
+			if (shipp->flags[Ship::Ship_Flags::No_targeting_limits])
+				fout(" \"no-targeting-limits\"");
 			fout(" )");
 		}
 		// -----------------------------------------------------------

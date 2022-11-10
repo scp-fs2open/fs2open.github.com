@@ -135,7 +135,7 @@ namespace Ship {
 		Fail_sound_locked_secondary,		// Kiloku -- Play the firing fail sound when the weapon is locked.
 		Subsystem_cache_valid,		// Goober5000 - whether the subsystem list index caches can be used
 		Aspect_immune,						// Kiloku -- Ship cannot be targeted by Aspect Seekers.
-		No_nebula_targeting_limits,		//MjnMixael -- Ship is always targetable in a nebula regardless of AWACS range
+		No_targeting_limits,				//MjnMixael -- Ship is always targetable regardless of AWACS or targeting range limits
 
 		NUM_VALUES
 

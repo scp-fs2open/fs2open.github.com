@@ -203,11 +203,6 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 	if ((viewer == Player_ship) && (Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && MULTI_OBSERVER(Net_players[MY_NET_PLAYER_NUM]))
 		return ALWAYS_TARGETABLE;
 
-	// check the targeting threshold
-	if ((Hud_max_targeting_range > 0) && (distance > Hud_max_targeting_range)) {
-		return UNTARGETABLE;
-	}
-
 	if (target->type == OBJ_SHIP) {
 		// if no valid target then bail as never viewable
 		if (target->instance < 0)
@@ -221,6 +216,19 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 
 		check_huge_ship = (sip->is_huge_ship());
 	}
+
+	// check for an exempt ship. Exempt ships are _always_ visible
+	if (target->type == OBJ_SHIP) {
+		Assert(shipp != NULL);
+		int target_is_exempt = (shipp->flags[Ship::Ship_Flags::No_targeting_limits]);
+		if (target_is_exempt)
+			return FULLY_TARGETABLE;
+	}
+
+	// check the targeting threshold
+	if ((Hud_max_targeting_range > 0) && (distance > Hud_max_targeting_range)) {
+		return UNTARGETABLE;
+	}
 	
 	int nebula_enabled = (The_mission.flags[Mission::Mission_Flags::Fullneb]);
 
@@ -229,15 +237,6 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 	{
 		// not necessarily now! -- Goober5000
 		if ( !(stealth_ship && friendly_stealth_invisible) )
-			return FULLY_TARGETABLE;
-	}
-
-	// check for an exempt ship. Exempt ships are _always_ visible
-	if (target->type == OBJ_SHIP)
-	{
-		Assert( shipp != NULL );
-		int target_is_exempt = (shipp->flags[Ship::Ship_Flags::No_nebula_targeting_limits]);
-		if (target_is_exempt)
 			return FULLY_TARGETABLE;
 	}
 

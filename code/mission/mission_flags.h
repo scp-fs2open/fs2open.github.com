@@ -106,7 +106,7 @@ namespace Mission {
 		SF_Fail_sound_locked_primary, 	// Kiloku - Plays fail sound when firing with locked weapons
 		SF_Fail_sound_locked_secondary,	// Kiloku - Plays fail sound when firing with locked weapons
 		SF_Aspect_immune,				// Kiloku - Ship cannot be locked onto by aspect seeking weapons
-		SF_No_nebula_targeting_limits,	// MjnMixael - Ship is always targetable in a nebula regardless of AWACS range
+		SF_No_targeting_limits,			// MjnMixael - Ship is always targetable regardless of AWACS or targeting range limits
 
 		NUM_VALUES
 	};
