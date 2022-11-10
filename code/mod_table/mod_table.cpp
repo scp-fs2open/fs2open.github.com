@@ -113,6 +113,7 @@ shadow_disable_overrides Shadow_disable_overrides {false, false, false, false};
 float Thruster_easing;
 bool Always_use_distant_firepoints;
 bool Discord_presence;
+bool hotkey_always_hide_ships;
 
 static auto DiscordOption = options::OptionBuilder<bool>("Other.Discord", "Discord Presence", "Toggle Discord Rich Presence")
 							 .category("Other")
@@ -1017,6 +1018,11 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Discord_presence);
 		}
 
+		if (optional_string("$Always hide hidden ships in hotkey list:")) {
+			stuff_boolean(&hotkey_always_hide_ships);
+		}
+
+
 		required_string("#END");
 	}
 	catch (const parse::ParseException& e)
@@ -1154,6 +1160,7 @@ void mod_table_reset()
 	Thruster_easing = 0;
 	Always_use_distant_firepoints = false;
 	Discord_presence = true;
+	hotkey_always_hide_ships = false;
 }
 
 void mod_table_set_version_flags()
