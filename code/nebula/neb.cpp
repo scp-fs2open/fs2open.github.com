@@ -333,12 +333,12 @@ void neb2_init()
 }
 
 // set the bits for poofs from a list of poof names
-void neb2_set_poof_bits(SCP_vector<SCP_string> list)
+void neb2_set_poof_bits(const SCP_vector<SCP_string>& list)
 {
 	Neb2_poof_flags = 0; //Make absolutely sure flags are zero'd before we start adding to it-Mjn
 	for (const SCP_string& thisPoof : list) {
 		for (int i = 0; i < (int)Poof_info.size(); i++) {
-			if (Poof_info[i].name == thisPoof) {
+			if (SCP_string_lcase_equal_to()(Poof_info[i].name, thisPoof)) {
 				Neb2_poof_flags |= (1 << i);
 			}
 		}

@@ -130,7 +130,7 @@ typedef struct neb2_detail {
 void neb2_init();
 
 // set poof bits using a list of poof names
-void neb2_set_poof_bits(SCP_vector<SCP_string> list);
+void neb2_set_poof_bits(const SCP_vector<SCP_string>& list);
 
 //init neb stuff  - WMC
 void neb2_level_init();
