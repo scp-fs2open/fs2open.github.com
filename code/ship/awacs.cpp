@@ -232,6 +232,15 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 			return FULLY_TARGETABLE;
 	}
 
+	// check for an exempt ship. Exempt ships are _always_ visible
+	if (target->type == OBJ_SHIP)
+	{
+		Assert( shipp != NULL );
+		int target_is_exempt = (shipp->flags[Ship::Ship_Flags::No_nebula_targeting_limits]);
+		if (target_is_exempt)
+			return FULLY_TARGETABLE;
+	}
+
 	// check for a tagged ship. TAG'd ships are _always_ visible
 	if (target->type == OBJ_SHIP)
 	{

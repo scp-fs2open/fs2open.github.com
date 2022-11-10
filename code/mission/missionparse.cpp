@@ -325,7 +325,8 @@ flag_def_list_new<Mission::Parse_Object_Flags> Parse_object_flags[] = {
     { "ai-attackable-if-no-collide",		Mission::Parse_Object_Flags::OF_Attackable_if_no_collide, true, false },
     { "fail-sound-locked-primary",			Mission::Parse_Object_Flags::SF_Fail_sound_locked_primary, true, false },
     { "fail-sound-locked-secondary",		Mission::Parse_Object_Flags::SF_Fail_sound_locked_secondary, true, false },
-    { "aspect-immune",						Mission::Parse_Object_Flags::SF_Aspect_immune, true, false }
+    { "aspect-immune",						Mission::Parse_Object_Flags::SF_Aspect_immune, true, false },
+	{ "no-nebula-targeting-limits",			Mission::Parse_Object_Flags::SF_No_nebula_targeting_limits, true, false},
 };
 
 const size_t Num_parse_object_flags = sizeof(Parse_object_flags) / sizeof(flag_def_list_new<Mission::Parse_Object_Flags>);
