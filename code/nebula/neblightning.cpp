@@ -427,7 +427,7 @@ static void verify_storm_bolts()
 		Storm_types[i].num_bolt_types = (Storm_types[i].num_bolt_types - error_count);
 
 		//Semi duplicate error message, but relevant in case all bolts were removed
-		if (Storm_types[i].num_bolt_types = 0)
+		if (Storm_types[i].num_bolt_types == 0)
 			Error(LOCATION, "Storm %s has no bolts defined!", Storm_types[i].name);
 	}
 }

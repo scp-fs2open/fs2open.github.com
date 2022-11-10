@@ -78,7 +78,7 @@ typedef struct bolt_type {
 	// Set some reasonable default values based on retail -Mjn
 	bolt_type()
 		: b_scale(0.5f), b_shrink(0.3f), b_poly_pct(0.005f), b_add(2.0f), b_rand(0.3f), noise(0.03f), lifetime(250),
-		  num_strikes(3), emp_intensity(0.0f), emp_time(0.0f), b_bright(0.2f), texture(-1), glow(-1)
+		  num_strikes(3), emp_intensity(0.0f), emp_time(0.0f), texture(-1), glow(-1), b_bright(0.2f)
 	{
 		name[0] = '\0';
 	}
