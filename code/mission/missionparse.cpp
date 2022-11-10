@@ -5428,14 +5428,7 @@ void parse_bitmaps(mission *pm)
 		if (optional_string("+Neb2 Poofs List:")) {
 			SCP_vector<SCP_string> poofs_list;
 			stuff_string_list(poofs_list);
-
-			for (const SCP_string &thisPoof : poofs_list) {
-				for (size_t i = 0; i < Poof_info.size(); i++) {
-					if (Poof_info[i].name == thisPoof) {
-						Neb2_poof_flags |= (1 << i);
-					}
-				}
-			}
+			neb2_set_poof_bits(poofs_list);
 		}
 
 		// initialize neb effect. its gross to do this here, but Fred is dumb so I have no choice ... :(

@@ -332,6 +332,19 @@ void neb2_init()
 	parse_modular_table("*-neb.tbm", parse_nebula_table);
 }
 
+// set the bits for poofs from a list of poof names
+void neb2_set_poof_bits(SCP_vector<SCP_string> list)
+{
+	Neb2_poof_flags = 0; //Make absolutely sure flags are zero'd before we start adding to it-Mjn
+	for (const SCP_string& thisPoof : list) {
+		for (int i = 0; i < (int)Poof_info.size(); i++) {
+			if (Poof_info[i].name == thisPoof) {
+				Neb2_poof_flags |= (1 << i);
+			}
+		}
+	}
+}
+
 bool poof_is_used(size_t idx) {
 	return (Neb2_poof_flags & (1 << idx)) != 0;
 }
@@ -351,10 +364,6 @@ void neb2_pre_level_init()
 
 	strcpy_s(Neb2_texture_name, "");
 	Neb2_poof_flags = 0;
-
-	for (int i = 0; i < (int)MAX_NEB2_POOFS; i++) {
-		Neb2_poof_flags |= (1 << i);
-	}
 
 	strcpy_s(Mission_parse_storm_name, "none");
 }
