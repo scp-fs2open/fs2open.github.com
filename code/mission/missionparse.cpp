@@ -2404,6 +2404,14 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 		}
 	}
 
+	// assign/update parse object in ship registry entry if needed
+	auto ship_it = Ship_registry_map.find(shipp->ship_name);
+
+	if (ship_it != Ship_registry_map.end()) {
+		auto entry = &Ship_registry[ship_it->second];
+		entry->p_objp = p_objp;
+	}
+
 	return objnum;
 }
 
