@@ -6241,6 +6241,22 @@ const std::set<size_t>& ship_get_default_orders_accepted( ship_info *sip )
 	}
 }
 
+/**
+ * Set the orders allowed against a ship -- all allowed by default
+ *
+ * This value might get overridden by a value in the mission file.
+ */
+const std::set<size_t> ship_set_default_orders_against()
+{
+	SCP_set<size_t> orders;
+	
+	for (int i = 0; i <= Player_orders.size(); i++) {
+		orders.insert(i);
+	}
+
+	return orders;
+}
+
 vec3d get_submodel_offset(int model, int submodel){
 	polymodel*pm = model_get(model);
 	if(pm->submodel[submodel].parent == -1)
@@ -6344,6 +6360,7 @@ void ship::clear()
 
 	wingnum = -1;
 	orders_accepted.clear();
+	orders_allowed_against.clear();
 
 	subsys_list_indexer.reset();
 	subsys_list.clear();
@@ -10186,6 +10203,7 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 	sip = &(Ship_info[ship_type]);
 	shipp = &Ships[n];
 	shipp->clear();
+	shipp->orders_allowed_against = ship_set_default_orders_against();
 
 	sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);		// use the highest detail level
 

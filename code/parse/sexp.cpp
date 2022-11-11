@@ -406,6 +406,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "player-not-use-ai",				OP_PLAYER_NOT_USE_AI,					0,	0,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-player-orders",				OP_SET_PLAYER_ORDERS,					3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma
 	{ "cap-waypoint-speed",				OP_CAP_WAYPOINT_SPEED,					2,	2,			SEXP_ACTION_OPERATOR,	},
+	{ "set-order-allowed-for-target",	OP_SET_ORDER_ALLOWED_TARGET,			3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma
 
 	//Ship Status Sub-Category
 	{ "protect-ship",					OP_PROTECT_SHIP,						1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
@@ -12382,6 +12383,12 @@ void sexp_set_player_orders(int n)
 	n = CDR(n);
 	do {
 		for( size_t order : default_orders){
+			// Once we exceed the number of valid orders, break and warn
+			if ((order < 0) || (order >= Player_orders.size())) {
+				Warning(LOCATION, "Invalid order name %s found in sexp!", CTEXT(n));
+				break;
+			}
+			// OPF_AI_ORDER returns hud_name, so we must compare to that instead of parse_name
 			if (!stricmp(CTEXT(n), Player_orders[order].hud_name.c_str())) {
 				orders.insert(order);
 				break;
@@ -12400,6 +12407,50 @@ void sexp_set_player_orders(int n)
 		std::set_difference(shipp->orders_accepted.begin(), shipp->orders_accepted.end(), orders.begin(), orders.end(),
 							std::inserter(diff, diff.end()));
 		shipp->orders_accepted = diff;
+	}
+}
+
+void sexp_set_order_allowed_target(int n)
+{
+	bool allow_order;
+	std::set<size_t> orders;
+
+	auto ship_entry = eval_ship(n);
+	if (!ship_entry || !ship_entry->shipp) {
+		return;
+	}
+	auto shipp = ship_entry->shipp;
+
+	const std::set<size_t>& default_orders = ship_set_default_orders_against();
+	n = CDR(n);
+	allow_order = is_sexp_true(n);
+	n = CDR(n);
+	do {
+		for( size_t order : default_orders){
+			//Once we exceed the number of valid orders, break and warn
+			if ((order < 0) || (order >= Player_orders.size())) {
+				Warning(LOCATION, "Invalid order name %s found in sexp!", CTEXT(n));
+				break;
+			}
+			// OPF_AI_ORDER returns hud_name, so we must compare to that instead of parse_name
+			if (!stricmp(CTEXT(n), Player_orders[order].hud_name.c_str())) {
+				orders.insert(order);
+				break;
+			}
+		}
+
+		n = CDR(n);
+	}while (n >= 0);
+		
+	// set or unset the orders
+	if (allow_order) {
+		shipp->orders_allowed_against.insert(orders.begin(), orders.end());
+	}
+	else {
+		std::set<size_t> diff;
+		std::set_difference(shipp->orders_allowed_against.begin(), shipp->orders_allowed_against.end(), orders.begin(), orders.end(),
+							std::inserter(diff, diff.end()));
+		shipp->orders_allowed_against = diff;
 	}
 }
 
@@ -26114,6 +26165,12 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break; 
 
+			//MjnMixael
+			case OP_SET_ORDER_ALLOWED_TARGET:
+				sexp_set_order_allowed_target(node);
+				sexp_val = SEXP_TRUE;
+				break; 
+
 			// Goober5000
 			case OP_EXPLOSION_EFFECT:
 				sexp_explosion_effect(node);
@@ -28436,6 +28493,7 @@ int query_operator_return_type(int op)
 		case OP_PLAYER_NOT_USE_AI:
 		case OP_ALLOW_TREASON:
 		case OP_SET_PLAYER_ORDERS:
+		case OP_SET_ORDER_ALLOWED_TARGET:
 		case OP_NAV_ADD_WAYPOINT:
 		case OP_NAV_ADD_SHIP:
 		case OP_NAV_DEL:
@@ -29655,6 +29713,7 @@ int query_operator_argument_type(int op, int argnum)
 			return OPF_POSITIVE;
 
 		case OP_SET_PLAYER_ORDERS:
+		case OP_SET_ORDER_ALLOWED_TARGET:
 			if (argnum==0)
 				return OPF_SHIP;
 			if (argnum==1)
@@ -32777,6 +32836,7 @@ int get_subcategory(int sexp_id)
 		case OP_PLAYER_NOT_USE_AI:
 		case OP_SET_PLAYER_ORDERS:
 		case OP_CAP_WAYPOINT_SPEED:
+		case OP_SET_ORDER_ALLOWED_TARGET:
 			return CHANGE_SUBCATEGORY_AI_CONTROL;
 
 		case OP_ALTER_SHIP_FLAG:
@@ -36924,6 +36984,14 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	// Karajorma
 	{ OP_SET_PLAYER_ORDERS, "set-player-orders\r\n"
 		"\tChanges the orders friendly AI will accept. Takes 3 or more arguments.\r\n"
+		"\t1:\tShip Name\r\n"
+		"\t2:\tTrue/False as to whether this order is allowed or not\r\n"
+		"\tRest:\tOrder"
+	},
+
+		// MjnMixael
+	{ OP_SET_ORDER_ALLOWED_TARGET, "set-order-allowed-for-target\r\n"
+		"\tChanges the orders that can be issued against a ship. Takes 3 or more arguments.\r\n"
 		"\t1:\tShip Name\r\n"
 		"\t2:\tTrue/False as to whether this order is allowed or not\r\n"
 		"\tRest:\tOrder"

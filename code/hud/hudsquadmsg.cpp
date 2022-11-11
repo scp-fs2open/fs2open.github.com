@@ -822,6 +822,11 @@ bool hud_squadmsg_is_target_order_valid(size_t order, ai_info *aip )
 		return false;
 	}
 
+	// check if this order can be issued against the target
+	if (shipp->orders_allowed_against.find(order) == shipp->orders_allowed_against.end()) {
+		return false;
+	}
+
 	// if the order is a disable order or depart, and the ship is disabled, order isn't active
 	if ( (order == DISABLE_TARGET_ITEM) && (shipp->flags[Ship::Ship_Flags::Disabled]) ){
 		return false;
