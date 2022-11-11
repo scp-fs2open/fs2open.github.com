@@ -12384,7 +12384,7 @@ void sexp_set_player_orders(int n)
 	do {
 		for( size_t order : default_orders){
 			// Once we exceed the number of valid orders, break and warn
-			if ((order < 0) || (order >= Player_orders.size())) {
+			if (order >= Player_orders.size()) {
 				Warning(LOCATION, "Invalid order name %s found in sexp!", CTEXT(n));
 				break;
 			}
@@ -12428,7 +12428,7 @@ void sexp_set_order_allowed_target(int n)
 	do {
 		for( size_t order : default_orders){
 			//Once we exceed the number of valid orders, break and warn
-			if ((order < 0) || (order >= Player_orders.size())) {
+			if (order >= Player_orders.size()) {
 				Warning(LOCATION, "Invalid order name %s found in sexp!", CTEXT(n));
 				break;
 			}

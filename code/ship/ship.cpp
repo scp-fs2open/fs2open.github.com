@@ -6250,7 +6250,7 @@ const std::set<size_t> ship_set_default_orders_against()
 {
 	SCP_set<size_t> orders;
 	
-	for (int i = 0; i <= Player_orders.size(); i++) {
+	for (int i = 0; i <= (int)Player_orders.size(); i++) {
 		orders.insert(i);
 	}
 
