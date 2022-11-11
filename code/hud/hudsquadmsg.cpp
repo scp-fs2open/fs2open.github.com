@@ -770,7 +770,7 @@ bool hud_squadmsg_is_target_order_valid(size_t order, ai_info *aip )
 
 	//If it's a lua order, defer to luaai
 	if (Player_orders[order].lua_id != -1) {
-		return ai_lua_is_valid_target(Player_orders[order].lua_id, target_objnum, ordering_shipp);
+		return ai_lua_is_valid_target(Player_orders[order].lua_id, target_objnum, ordering_shipp, order);
 	}
 
 	// orders which don't operate on targets are always valid
