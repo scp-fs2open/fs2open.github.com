@@ -4448,6 +4448,16 @@ int CFred_mission_save::save_wings()
 
 				fout(" %s", Wing_formations[Wings[i].formation].name);
 			}
+			if (!fl_equal(Wings[i].formation_scale, 1.0f, 0.001f))
+			{
+				if (optional_string_fred("+Formation Scale:", "$Name:")) {
+					parse_comments();
+				}
+				else {
+					fout("\n+Formation Scale:");
+				}
+				fout(" %f", Wings[i].formation_scale);
+			}
 		}
 
 		required_string_fred("$Arrival Location:");

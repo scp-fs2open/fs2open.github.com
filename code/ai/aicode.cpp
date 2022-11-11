@@ -12013,7 +12013,7 @@ void get_absolute_wing_pos(vec3d *result_pos, object *leader_objp, int wingnum, 
 	}
 
 	float scale_factor = autopilot ? 1.5f : (1.0f + leader_objp->phys_info.speed / 70.0f);
-	vm_vec_scale(&wing_delta, wing_spread_size * scale_factor);
+	vm_vec_scale(&wing_delta, wing_spread_size * scale_factor * Wings[wingnum].formation_scale);
 
 	vm_vec_unrotate(&rotated_wing_delta, &wing_delta, &leader_objp->orient);	//	Rotate into leader's reference.
 	vm_vec_add(result_pos, &leader_objp->pos, &rotated_wing_delta);	//	goal_point is absolute 3-space point.

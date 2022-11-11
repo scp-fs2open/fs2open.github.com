@@ -6723,6 +6723,7 @@ void wing::clear()
 	wing_insignia_texture = -1;
 
 	formation = -1;
+	formation_scale = 1.0f;
 }
 
 // NOTE: Now that the clear() member function exists, this function only sets the stuff associated with the object and ship class.
