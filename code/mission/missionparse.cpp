@@ -6216,18 +6216,22 @@ bool post_process_mission(mission *pm)
 	return true;
 }
 
-int get_mission_info(const char *filename, mission *mission_p, bool basic)
+int get_mission_info(const char *filename, mission *mission_p, bool basic, bool filename_is_full_path)
 {
-	char real_fname[MAX_FILENAME_LEN];
-	
-	strncpy(real_fname, filename, MAX_FILENAME_LEN-1);
-	real_fname[sizeof(real_fname)-1] = '\0';
-	
-	char *p = strrchr(real_fname, '.');
-	if (p) *p = 0; // remove any extension
-	strcat_s(real_fname, FS_MISSION_FILE_EXT);  // append mission extension
-
 	int filelength;
+	char real_fname_buf[MAX_FILENAME_LEN];
+	const char *real_fname = real_fname_buf;
+	
+	if (filename_is_full_path) {
+		real_fname = filename;
+	} else {
+		strncpy(real_fname_buf, filename, MAX_FILENAME_LEN-1);
+		real_fname_buf[sizeof(real_fname_buf)-1] = '\0';
+	
+		char *p = strrchr(real_fname_buf, '.');
+		if (p) *p = 0; // remove any extension
+		strcat_s(real_fname_buf, FS_MISSION_FILE_EXT);  // append mission extension
+	}
 
 	// if mission_p is NULL, make it point to The_mission
 	if ( mission_p == NULL )

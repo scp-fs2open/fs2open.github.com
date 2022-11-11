@@ -55,6 +55,8 @@ campaign_editor::campaign_editor()
 	m_num_links = 0;
 	m_tree.link_modified(&Campaign_modified);
 	m_last_mission = -1;
+
+	m_current_campaign_path = _T("");
 }
 
 campaign_editor::~campaign_editor()
@@ -139,11 +141,17 @@ void campaign_editor::OnLoad()
 		}
 	}
 
-	auto res = cf_find_file_location(Campaign.missions[Cur_campaign_mission].name, CF_TYPE_MISSIONS);
+	// try to open the file from the same folder as the campaign
+	if (!m_current_campaign_path.IsEmpty()) {
+		auto full_mission_path = GetPathWithoutFile();
+		full_mission_path.Append(Campaign.missions[Cur_campaign_mission].name);
 
-	if (res.found) {
-		FREDDoc_ptr->SetPathName(res.full_name.c_str());
+		auto res = cf_find_file_location((LPCTSTR)full_mission_path, CF_TYPE_MISSIONS, false);
+		if (res.found) {
+			FREDDoc_ptr->SetPathName(res.full_name.c_str());
+		}
 	}
+
 	Campaign_wnd->DestroyWindow();
 }
 
@@ -165,15 +173,20 @@ BOOL campaign_editor::Create(LPCTSTR lpszClassName, LPCTSTR lpszWindowName, DWOR
 	return r;
 }
 
-void campaign_editor::load_campaign()
+void campaign_editor::load_campaign(const char *filename, const char *full_path)
 {
 	Cur_campaign_mission = Cur_campaign_link = -1;
 	load_tree(0);
 
-	if (!strlen(Campaign.filename))
-		strcpy_s(Campaign.filename, Default_campaign_file_name);
+	if (!filename || !strlen(filename))
+		filename = Default_campaign_file_name;
 
-	if (mission_campaign_load(Campaign.filename, NULL, 0)) {
+	if (full_path && strlen(full_path))
+		m_current_campaign_path = full_path;
+	else
+		m_current_campaign_path = _T("");
+
+	if (mission_campaign_load(filename, full_path, nullptr, 0)) {
 		MessageBox("Couldn't open Campaign file!", "Error");
 		Campaign_wnd->OnCpgnFileNew();
 		return;
@@ -181,7 +194,7 @@ void campaign_editor::load_campaign()
 
 	Campaign_modified = 0;
 	Campaign_tree_viewp->construct_tree();
-	initialize();
+	initialize(true, false);
 }
 
 void campaign_editor::OnAlign() 
@@ -191,17 +204,20 @@ void campaign_editor::OnAlign()
 	Campaign_tree_viewp->Invalidate();
 }
 
-void campaign_editor::initialize( int init_files )
+void campaign_editor::initialize( bool init_files, bool clear_path )
 {
 	Cur_campaign_mission = Cur_campaign_link = -1;
 	m_tree.setup((CEdit *) GetDlgItem(IDC_HELP_BOX));
 	load_tree(0);
 	Campaign_tree_viewp->initialize();
 
+	if (clear_path)
+		m_current_campaign_path = _T("");
+
 	// only initialize the file dialog box when the parameter says to.  This should
 	// only happen when a campaign type changes
 	if ( init_files ){
-		m_filelist.initialize();
+		m_filelist.initialize(GetPathWithoutFile());
 	}
 
 	m_name = Campaign.name;
@@ -634,7 +650,7 @@ void campaign_editor::OnSelchangeType()
 {
 	// if campaign type is single player, then disable the multiplayer items
 	update();
-	initialize();
+	initialize(true, false);
 	Campaign_modified = 1;
 }
 
@@ -882,4 +898,18 @@ void campaign_editor::OnCustomTechDB()
 		Campaign.flags |= CF_CUSTOM_TECH_DATABASE;
 	else
 		Campaign.flags &= ~CF_CUSTOM_TECH_DATABASE;
+}
+
+CString campaign_editor::GetPathWithoutFile()
+{
+	if (m_current_campaign_path.IsEmpty())
+		return m_current_campaign_path;
+
+	CString path = m_current_campaign_path;
+	int pos = path.ReverseFind(DIR_SEPARATOR_CHAR);
+	if (pos >= 0) {
+		path.Truncate(pos + 1);
+	}
+
+	return path;
 }

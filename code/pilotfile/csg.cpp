@@ -1510,7 +1510,7 @@ void pilotfile::csg_reset_data()
 
 	// reset campaign status
 	Campaign.prev_mission = -1;
-	Campaign.next_mission = -1;
+	Campaign.next_mission = 0;
 	Campaign.num_missions_completed = 0;
 
 	// techroom reset
