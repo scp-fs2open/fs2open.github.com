@@ -85,14 +85,13 @@ int check_wing_dependencies(int wing_num) {
 int create_wing() {
 	char msg[1024];
 	int i, ship, wing = -1, waypoints = 0, count = 0, illegal_ships = 0;
-	int leader, leader_team;
+	int leader_team;
 	object *ptr;
 	create_wing_dlg dlg;
 
 	if (!query_valid_object())
 		return -1;
 
-	leader = cur_object_index;
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
 		if (( (ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START) ) && (ptr->flags[Object::Object_Flags::Marked])) {
@@ -248,8 +247,6 @@ int create_wing() {
 			Ships[ship].departure_cue = Locked_sexp_false;
 
 			wing_objects[wing][i] = OBJ_INDEX(ptr);
-			if (OBJ_INDEX(ptr) == leader)
-				Wings[wing].special_ship = i;
 		}
 
 		ptr = GET_NEXT(ptr);
@@ -277,7 +274,7 @@ int create_wing() {
 		"Error", MB_ICONEXCLAMATION);
 
 
-	leader_team = Ships[Wings[wing].ship_index[Wings[wing].special_ship]].team;
+	leader_team = Ships[Wings[wing].ship_index[0]].team;
 	for (i = 0; i < Wings[wing].wave_count; i++) {
 		if (Ships[Wings[wing].ship_index[i]].team != leader_team) {
 			Fred_main_wnd->MessageBox("Wing contains ships on different teams", "Warning");
@@ -368,8 +365,7 @@ void mark_wing(int wing)
 	int i;
 
 	unmark_all();
-	Assert(Wings[wing].special_ship >= 0 && Wings[wing].special_ship < Wings[wing].wave_count);
-	set_cur_object_index(wing_objects[wing][Wings[wing].special_ship]);
+	set_cur_object_index(wing_objects[wing][0]);
 	for (i=0; i<Wings[wing].wave_count; i++)
 		mark_object(wing_objects[wing][i]);
 }
@@ -397,8 +393,6 @@ void remove_ship_from_wing(int ship, int min) {
 					break;
 
 			Assert(i != -1);  // Error, object should be in wing.
-			if (Wings[wing].special_ship == i)
-				Wings[wing].special_ship = 0;
 
 			// if not last element, move last element to position to fill gap
 			if (i != end) {

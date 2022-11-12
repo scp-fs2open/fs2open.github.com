@@ -6957,8 +6957,7 @@ void wing::clear()
 	total_departed = 0;
 	total_vanished = 0;
 
-	special_ship = 0;
-	special_ship_ship_info_index = -1;
+	wing_leader_ship_class = -1;
 
 	arrival_location = ARRIVE_AT_LOCATION;
 	arrival_distance = 0;
@@ -8293,21 +8292,6 @@ void ship_wing_cleanup( int shipnum, wing *wingp )
 	wingp->current_count--;
 	Assert ( wingp->current_count >= 0 );
 	wingp->ship_index[wingp->current_count] = -1;
-
-	// adjust the special ship if necessary
-	if (wingp->special_ship > 0 && wingp->special_ship >= index){
-		wingp->special_ship--;
-
-		// sorry to have make this a little convoluted, if I put this after this if statement, then I introduce edge case bugs.
-		// if there are ships in the wing, and the special ship changed, make sure the special_ship_ship_info_index is updated too
-		if (wingp->current_count > 0){
-			wingp->special_ship_ship_info_index = Ships[wingp->ship_index[wingp->special_ship]].ship_info_index;
-		}
-	
-	// if the special ship *variable* didn't change, but the wing leader did because index was 0, adjust special_ship_ship_info_index 
-	} else if (wingp->current_count > 0 && index == 0) {
-			wingp->special_ship_ship_info_index = Ships[wingp->ship_index[0]].ship_info_index;
-	}
 
 	// if the current count is 0, check to see if the wing departed or was destroyed.
 	if (wingp->current_count == 0)
@@ -11108,8 +11092,8 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	ph_inf = objp->phys_info;
 
 	// if this ship is the wing leader, update the ship info index that the wing keeps track of.
-	if (!Fred_running && p_objp != nullptr && p_objp->wingnum > -1 && p_objp->pos_in_wing == 0) {
-		Wings[p_objp->wingnum].special_ship_ship_info_index = ship_type;
+	if (!Fred_running && p_objp != nullptr && p_objp->wingnum >= 0 && p_objp->pos_in_wing == 0) {
+		Wings[p_objp->wingnum].wing_leader_ship_class = ship_type;
 	}
 
 	// MageKing17 - See if any AIs are doing anything with subsystems of this ship (targeting, goal to destroy)

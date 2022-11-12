@@ -2785,10 +2785,6 @@ int CFREDView::global_error_check()
 				}
 			}
 
-			if ((Wings[i].special_ship < 0) || (Wings[i].special_ship >= Wings[i].wave_count)){
-				return internal_error("Special ship out of range for \"%s\"", Wings[i].name);
-			}
-
 			if (Wings[i].num_waves < 0){
 				return internal_error("Number of waves for \"%s\" is negative", Wings[i].name);
 			}
@@ -4376,8 +4372,7 @@ void CFREDView::OnMarkWing()
 		for (i=0; i<Wings[wing].wave_count; i++)
 			mark_object(wing_objects[wing][i]);
 
-		Assert(Wings[wing].special_ship >= 0 && Wings[wing].special_ship < Wings[wing].wave_count);
-		set_cur_object_index(wing_objects[wing][Wings[wing].special_ship]);
+		set_cur_object_index(wing_objects[wing][0]);
 	}
 }
 

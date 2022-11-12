@@ -884,9 +884,9 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num )
 			continue;
 
 		// get the first ship on the wing list and look at its team and then its type
-		shipnum = Wings[i].ship_index[Wings[i].special_ship];
+		shipnum = Wings[i].ship_index[0];
 
-		// if special ship isn't valid then just move on
+		// if wing leader isn't valid then just move on
 		if (shipnum < 0)
 			continue;
 
@@ -897,7 +897,7 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num )
 			continue;
 
 		// can't message if ship not fighter/bomber if the command isn't to everyone.
-		if ( !(Ship_info[Wings[i].special_ship_ship_info_index].is_fighter_bomber()) )
+		if ( !(Ship_info[Wings[i].wing_leader_ship_class].is_fighter_bomber()) )
 			continue;
 
 		// don't send the command if the "wing" won't accept the command.  We do this by looking at
@@ -2126,8 +2126,8 @@ void hud_squadmsg_wing_command()
 	default_orders.erase(CAPTURE_TARGET_ITEM); // we cannot capture any target with a wing.
 
 	Num_menu_items = 0;
-	shipnum = wingp->ship_index[wingp->special_ship];
-	Assertion(shipnum >= 0, "Special ship (%d) for wing '%s' has a negative ship_index (%d). This should not happen; get a coder!\n", wingp->special_ship, wingp->name, shipnum);
+	shipnum = wingp->ship_index[0];
+	Assertion(shipnum >= 0, "Wing leader for wing '%s' has a negative ship_index (%d). This should not happen; get a coder!\n", wingp->name, shipnum);
 	orders = Ships[shipnum].orders_accepted;		// get the orders that the wing leader will accept
 	
 	for ( size_t order_id : default_orders ) {

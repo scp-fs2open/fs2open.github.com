@@ -6504,17 +6504,8 @@ object_ship_wing_point_team::object_ship_wing_point_team(wing* wp)
 	else
 		type = OSWPT_TYPE_WING_NOT_PRESENT;
 
-	// point to wing leader if he is valid
-	if ((wingp->special_ship >= 0) && (wingp->ship_index[wingp->special_ship] >= 0))
-	{
-		objp = &Objects[Ships[wingp->ship_index[wingp->special_ship]].objnum];
-	}
-	// boo... well, just point to ship at index 0
-	else
-	{
-		objp = &Objects[Ships[wingp->ship_index[0]].objnum];
-		Warning(LOCATION, "Substituting ship '%s' at index 0 for nonexistent wing leader at index %d!", Ships[objp->instance].ship_name, wingp->special_ship);
-	}
+	// point to wing leader
+	objp = &Objects[Ships[wingp->ship_index[0]].objnum];
 }
 
 void object_ship_wing_point_team::clear()
@@ -6632,17 +6623,8 @@ void eval_object_ship_wing_point_team(object_ship_wing_point_team *oswpt, int no
 		{
 			oswpt->type = OSWPT_TYPE_WING;
 
-			// point to wing leader if he is valid
-			if ((wingp->special_ship >= 0) && (wingp->ship_index[wingp->special_ship] >= 0))
-			{
-				oswpt->objp = &Objects[Ships[wingp->ship_index[wingp->special_ship]].objnum];
-			}
-			// boo... well, just point to ship at index 0
-			else
-			{
-				oswpt->objp = &Objects[Ships[wingp->ship_index[0]].objnum];
-				Warning(LOCATION, "Substituting ship '%s' at index 0 for nonexistent wing leader at index %d!", Ships[oswpt->objp->instance].ship_name, wingp->special_ship);
-			}
+			// point to wing leader
+			oswpt->objp = &Objects[Ships[wingp->ship_index[0]].objnum];
 		}
 		// it's still a valid wing even if nobody is here
 		else

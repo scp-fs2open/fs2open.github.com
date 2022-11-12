@@ -215,10 +215,10 @@ void ai_maybe_add_form_goal(wing* wingp)
 				if (Netgame.type_flags & NG_TYPE_TEAM) {
 					const ship_registry_entry* ship_regp = ship_registry_get(Ships[wingp->ship_index[j]].ship_name);
 					wingnum = TVT_wings[ship_regp->p_objp->team];
-					ai_add_ship_goal_player(AIG_TYPE_PLAYER_SHIP, AI_GOAL_FORM_ON_WING, -1, Ships[Wings[wingnum].ship_index[Wings[wingnum].special_ship]].ship_name, aip);
+					ai_add_ship_goal_player(AIG_TYPE_PLAYER_SHIP, AI_GOAL_FORM_ON_WING, -1, Ships[Wings[wingnum].ship_index[0]].ship_name, aip);
 				} else {
 					wingnum = Starting_wings[0];
-					ai_add_ship_goal_player(AIG_TYPE_PLAYER_SHIP, AI_GOAL_FORM_ON_WING, -1, Ships[Wings[wingnum].ship_index[Wings[wingnum].special_ship]].ship_name, aip);
+					ai_add_ship_goal_player(AIG_TYPE_PLAYER_SHIP, AI_GOAL_FORM_ON_WING, -1, Ships[Wings[wingnum].ship_index[0]].ship_name, aip);
 				}
 			} else if (!(Game_mode & GM_MULTIPLAYER)) {
 				ai_add_ship_goal_player(AIG_TYPE_PLAYER_SHIP, AI_GOAL_FORM_ON_WING, -1, Player_ship->ship_name, aip);
@@ -549,7 +549,7 @@ void ai_goal_purge_invalid_goals( ai_goal *aigp, ai_goal *goal_list, ai_info *ai
 
 					// for wings we grab the ship type of the wing leader
 					if (ai_wingnum >= 0) {
-						ai_ship_type = Ship_info[Wings[ai_wingnum].special_ship_ship_info_index].class_type;
+						ai_ship_type = Ship_info[Wings[ai_wingnum].wing_leader_ship_class].class_type;
 					}
 					// otherwise we simply grab it from the ship itself
 					else {

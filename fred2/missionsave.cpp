@@ -4912,10 +4912,12 @@ int CFred_mission_save::save_wings()
 		parse_comments();
 		fout(" %d", Wings[i].threshold);
 
-		required_string_fred("$Special Ship:");
-		parse_comments();
-		fout(" %d\t\t;! %s", Wings[i].special_ship,
-			 Ships[Wings[i].ship_index[Wings[i].special_ship]].ship_name);
+		if (Mission_save_format == FSO_FORMAT_RETAIL) {
+			if (optional_string_fred("$Special Ship:")) {
+				parse_comments();
+				fout(" %d\t\t;! %s", 0, Ships[Wings[i].ship_index[0]].ship_name);
+			}
+		}
 
 		if (Mission_save_format != FSO_FORMAT_RETAIL) {
 			if (Wings[i].formation >= 0 && Wings[i].formation < (int)Wing_formations.size())
