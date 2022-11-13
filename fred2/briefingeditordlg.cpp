@@ -854,7 +854,7 @@ void briefing_editor_dlg::draw_icon(object *objp)
 		return;
 
 	brief_render_icon(m_cur_stage, objp->instance, 1.0f/30.0f, objp->flags[Object::Object_Flags::Marked],
-		(float) True_rw / Briefing_window_width, (float) True_rh / Briefing_window_height);
+		(float) True_rw / Briefing_window_resolution[0], (float) True_rh / Briefing_window_resolution[1]);
 }
 
 void briefing_editor_dlg::batch_render()

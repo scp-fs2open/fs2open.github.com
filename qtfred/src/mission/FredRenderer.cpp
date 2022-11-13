@@ -1006,17 +1006,17 @@ void FredRenderer::render_frame(int cur_object_index,
         True_rw = rect.Width();
         True_rh = rect.Height();
         if (Fixed_briefing_size) {
-            True_rw = Briefing_window_width;
-            True_rh = Briefing_window_height;
+            True_rw = Briefing_window_resolution[0];
+            True_rh = Briefing_window_resolution[1];
 
         }
         else {
-            if ((float)True_rh / (float)True_rw > (float)Briefing_window_height / (float)Briefing_window_width) {
-                True_rh = (int)((float)Briefing_window_height * (float)True_rw / (float)Briefing_window_width);
+            if ((float)True_rh / (float)True_rw > (float)Briefing_window_resolution[1] / (float)Briefing_window_resolution[0]) {
+                True_rh = (int)((float)Briefing_window_resolution[1] * (float)True_rw / (float)Briefing_window_resolution[0]);
 
             }
             else {  // Fred is wider than briefing window
-                True_rw = (int)((float)Briefing_window_width * (float)True_rh / (float)Briefing_window_height);
+                True_rw = (int)((float)Briefing_window_resolution[0] * (float)True_rh / (float)Briefing_window_resolution[1]);
             }
         }
 

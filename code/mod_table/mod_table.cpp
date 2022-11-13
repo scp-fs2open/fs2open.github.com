@@ -46,8 +46,7 @@ bool Flight_controls_follow_eyepoint_orientation;
 int FS2NetD_port;
 int Default_multi_object_update_level;
 float Briefing_window_FOV;
-int Briefing_window_width;
-int Briefing_window_height;
+int Briefing_window_resolution[2];
 bool Disable_hc_message_ani;
 SCP_vector<SCP_string> Custom_head_anis;
 bool Red_alert_applies_to_delayed_ships;
@@ -796,26 +795,19 @@ void parse_mod_table(const char *filename)
 			}
 		}
 
-		if (optional_string("$Briefing Window Width:")) {
-			int width;
-
-			stuff_int(&width);
-
-			mprintf(
-				("Game Settings Table: Setting FRED briefing window width from %i to %i\n", Briefing_window_width, width));
-
-			Briefing_window_width = width;
-		}
-
-		if (optional_string("$Briefing Window Height:")) {
-			int height;
-
-			stuff_int(&height);
-
-			mprintf(
-				("Game Settings Table: Setting FRED briefing window width from %i to %i\n", Briefing_window_height, height));
-
-			Briefing_window_width = height;
+		if (optional_string("$FRED Briefing window resolution:")) {
+			int res[2];
+			if (stuff_int_list(res, 2) == 2) {
+				Briefing_window_resolution[0] = res[0];
+				Briefing_window_resolution[1] = res[1];
+				mprintf(("Game Settings Table: Setting FRED briefing window resolution from (%ix%i) to (%ix%i)\n",
+					res[0],
+					res[1],
+					Briefing_window_resolution[0],
+					Briefing_window_resolution[1]));
+			} else {
+				Warning(LOCATION, "$FRED Briefing window resolution: must specify two arguments");
+			}
 		}
 
 		optional_string("#OTHER SETTINGS");
@@ -1111,8 +1103,8 @@ void mod_table_reset()
 	FS2NetD_port = 0;
 	Default_multi_object_update_level = OBJ_UPDATE_HIGH;
 	Briefing_window_FOV = 0.29375f;
-	Briefing_window_width = 888;
-	Briefing_window_height = 371;
+	Briefing_window_resolution[0] = 888;
+	Briefing_window_resolution[1] = 371;
 	Disable_hc_message_ani = false;
 	Red_alert_applies_to_delayed_ships = false;
 	Beams_use_damage_factors = false;
