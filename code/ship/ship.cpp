@@ -540,7 +540,8 @@ ship_flag_name Ship_flag_names[] = {
 	{ Ship_Flags::No_thrusters,					"no-thrusters" },
 	{ Ship_Flags::Fail_sound_locked_primary, 	"fail-sound-locked-primary"},
 	{ Ship_Flags::Fail_sound_locked_secondary, 	"fail-sound-locked-secondary"},
-	{ Ship_Flags::Aspect_immune, 				"aspect-immune"}
+	{ Ship_Flags::Aspect_immune, 				"aspect-immune"},
+	{ Ship_Flags::Cannot_perform_scan,			"cannot-perform-scan"},
 };
 
 extern const size_t Num_ship_flag_names = sizeof(Ship_flag_names) / sizeof(ship_flag_name);
