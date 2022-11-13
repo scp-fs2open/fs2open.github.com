@@ -798,13 +798,14 @@ void parse_mod_table(const char *filename)
 		if (optional_string("$FRED Briefing window resolution:")) {
 			int res[2];
 			if (stuff_int_list(res, 2) == 2) {
+				mprintf(("Game Settings Table: Setting FRED briefing window resolution from (%ix%i) to (%ix%i)\n",
+					Briefing_window_resolution[0],
+					Briefing_window_resolution[1],
+					res[0],
+					res[1]));
+
 				Briefing_window_resolution[0] = res[0];
 				Briefing_window_resolution[1] = res[1];
-				mprintf(("Game Settings Table: Setting FRED briefing window resolution from (%ix%i) to (%ix%i)\n",
-					res[0],
-					res[1],
-					Briefing_window_resolution[0],
-					Briefing_window_resolution[1]));
 			} else {
 				Warning(LOCATION, "$FRED Briefing window resolution: must specify two arguments");
 			}
