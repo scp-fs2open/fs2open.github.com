@@ -1515,15 +1515,15 @@ void render_frame() {
 		True_rw = rect.Width();
 		True_rh = rect.Height();
 		if (Fixed_briefing_size) {
-			True_rw = BRIEF_GRID_W;
-			True_rh = BRIEF_GRID_H;
+			True_rw = Briefing_window_width;
+			True_rh = Briefing_window_height;
 
 		} else {
-			if ((float) True_rh / (float) True_rw > (float) BRIEF_GRID_H / (float) BRIEF_GRID_W) {
-				True_rh = (int) ((float) BRIEF_GRID_H * (float) True_rw / (float) BRIEF_GRID_W);
+			if ((float) True_rh / (float) True_rw > (float) Briefing_window_height / (float) Briefing_window_width) {
+				True_rh = (int) ((float) Briefing_window_height * (float) True_rw / (float) Briefing_window_width);
 
 			} else {  // Fred is wider than briefing window
-				True_rw = (int) ((float) BRIEF_GRID_W * (float) True_rh / (float) BRIEF_GRID_H);
+				True_rw = (int) ((float) Briefing_window_width * (float) True_rh / (float) Briefing_window_height);
 			}
 		}
 

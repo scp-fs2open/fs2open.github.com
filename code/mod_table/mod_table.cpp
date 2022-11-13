@@ -46,6 +46,8 @@ bool Flight_controls_follow_eyepoint_orientation;
 int FS2NetD_port;
 int Default_multi_object_update_level;
 float Briefing_window_FOV;
+int Briefing_window_width;
+int Briefing_window_height;
 bool Disable_hc_message_ani;
 SCP_vector<SCP_string> Custom_head_anis;
 bool Red_alert_applies_to_delayed_ships;
@@ -794,6 +796,28 @@ void parse_mod_table(const char *filename)
 			}
 		}
 
+		if (optional_string("$Briefing Window Width:")) {
+			int width;
+
+			stuff_int(&width);
+
+			mprintf(
+				("Game Settings Table: Setting FRED briefing window width from %i to %i\n", Briefing_window_width, width));
+
+			Briefing_window_width = width;
+		}
+
+		if (optional_string("$Briefing Window Height:")) {
+			int height;
+
+			stuff_int(&height);
+
+			mprintf(
+				("Game Settings Table: Setting FRED briefing window width from %i to %i\n", Briefing_window_height, height));
+
+			Briefing_window_width = height;
+		}
+
 		optional_string("#OTHER SETTINGS");
 
 		if (optional_string("$Fixed Turret Collisions:")) {
@@ -1087,6 +1111,8 @@ void mod_table_reset()
 	FS2NetD_port = 0;
 	Default_multi_object_update_level = OBJ_UPDATE_HIGH;
 	Briefing_window_FOV = 0.29375f;
+	Briefing_window_width = 888;
+	Briefing_window_height = 371;
 	Disable_hc_message_ani = false;
 	Red_alert_applies_to_delayed_ships = false;
 	Beams_use_damage_factors = false;
