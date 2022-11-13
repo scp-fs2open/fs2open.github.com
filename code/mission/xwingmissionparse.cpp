@@ -107,7 +107,7 @@ int xwi_determine_arrival_cue(const XWingMission *xwim, const XWMFlightGroup *fg
 	else
 		return Locked_sexp_true;
 
-	if (fg->arrivalEvent == XWMArrivalEvent::ae_afg_arrives)
+	if (fg->arrivalEvent == XWMArrivalEvent::ae_afg_arrived)
 	{
 		sprintf(sexp_buf, "( has-arrived-delay 0 \"%s\" )", arrival_fg_name);
 		Mp = sexp_buf;
@@ -126,12 +126,12 @@ int xwi_determine_arrival_cue(const XWingMission *xwim, const XWMFlightGroup *fg
 		return get_sexp_main();
 	}
 
-	if (fg->arrivalEvent == XWMArrivalEvent::ae_afg_boarded)
+	if (fg->arrivalEvent == XWMArrivalEvent::ae_afg_captured)
 	{
 		if (check_wing)
-			sprintf(sexp_buf, "( fotg-is-wing-boarded \"%s\" )", arrival_fg_name);
+			sprintf(sexp_buf, "( fotg-is-wing-captured \"%s\" )", arrival_fg_name);
 		else
-			sprintf(sexp_buf, "( fotg-is-ship-boarded \"%s\" )", arrival_fg_name);
+			sprintf(sexp_buf, "( fotg-is-ship-captured \"%s\" )", arrival_fg_name);
 		Mp = sexp_buf;
 		return get_sexp_main();
 	}
@@ -575,6 +575,7 @@ void parse_xwi_flightgroup(mission *pm, const XWingMission *xwim, const XWMFligh
 					Warning(LOCATION, "This mission specifies multiple player starting ships.  Skipping %s.", Player_start_shipname);
 					prev_player_pobjp->flags.remove(Mission::Parse_Object_Flags::OF_Player_start);
 					prev_player_pobjp->flags.remove(Mission::Parse_Object_Flags::SF_Cargo_known);
+					prev_player_pobjp->flags.remove(Mission::Parse_Object_Flags::SF_Cannot_perform_scan);
 					Player_starts--;
 				}
 				else
@@ -584,6 +585,7 @@ void parse_xwi_flightgroup(mission *pm, const XWingMission *xwim, const XWMFligh
 			strcpy_s(Player_start_shipname, pobj.name);
 			pobj.flags.set(Mission::Parse_Object_Flags::OF_Player_start);
 			pobj.flags.set(Mission::Parse_Object_Flags::SF_Cargo_known);
+			pobj.flags.set(Mission::Parse_Object_Flags::SF_Cannot_perform_scan);
 			Player_starts++;
 		}
 
@@ -643,6 +645,12 @@ void parse_xwi_mission(mission *pm, const XWingMission *xwim)
 	SCP_totitle(Starting_wing_names[0]);
 	strcpy_s(Squadron_wing_names[0], Starting_wing_names[0]);
 	strcpy_s(TVT_wing_names[0], Starting_wing_names[0]);
+
+	// indicate we are using X-Wing options
+	auto config_event = &Mission_events[Num_mission_events++];
+	strcpy_s(config_event->name, "XWI Import");
+	Mp = "( when ( true ) ( do-nothing ) )";
+	config_event->formula = get_sexp_main();
 
 	// load flight groups
 	for (const auto &fg : xwim->flightgroups)

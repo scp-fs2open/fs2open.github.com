@@ -41,10 +41,10 @@ enum class XWMCraftIFF : short
 enum class XWMArrivalEvent : short
 {
 	ae_mission_start = 0,
-	ae_afg_arrives,
+	ae_afg_arrived,
 	ae_afg_destroyed,
 	ae_afg_attacked,
-	ae_afg_boarded,
+	ae_afg_captured,
 	ae_afg_identified,
 	ae_afg_disabled
 };

@@ -264,7 +264,7 @@ bool XWingMission::load(XWingMission *m, const char *data)
 				nfg->arrivalEvent = XWMArrivalEvent::ae_mission_start;
 				break;
 			case 1:
-				nfg->arrivalEvent = XWMArrivalEvent::ae_afg_arrives;
+				nfg->arrivalEvent = XWMArrivalEvent::ae_afg_arrived;
 				break;
 			case 2:
 				nfg->arrivalEvent = XWMArrivalEvent::ae_afg_destroyed;
@@ -273,7 +273,7 @@ bool XWingMission::load(XWingMission *m, const char *data)
 				nfg->arrivalEvent = XWMArrivalEvent::ae_afg_attacked;
 				break;
 			case 4:
-				nfg->arrivalEvent = XWMArrivalEvent::ae_afg_boarded;
+				nfg->arrivalEvent = XWMArrivalEvent::ae_afg_captured;
 				break;
 			case 5:
 				nfg->arrivalEvent = XWMArrivalEvent::ae_afg_identified;
