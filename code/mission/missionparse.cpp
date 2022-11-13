@@ -325,7 +325,8 @@ flag_def_list_new<Mission::Parse_Object_Flags> Parse_object_flags[] = {
     { "ai-attackable-if-no-collide",		Mission::Parse_Object_Flags::OF_Attackable_if_no_collide, true, false },
     { "fail-sound-locked-primary",			Mission::Parse_Object_Flags::SF_Fail_sound_locked_primary, true, false },
     { "fail-sound-locked-secondary",		Mission::Parse_Object_Flags::SF_Fail_sound_locked_secondary, true, false },
-    { "aspect-immune",						Mission::Parse_Object_Flags::SF_Aspect_immune, true, false }
+    { "aspect-immune",						Mission::Parse_Object_Flags::SF_Aspect_immune, true, false },
+	{ "cannot-perform-scan",			Mission::Parse_Object_Flags::SF_Cannot_perform_scan,	true, false },
 };
 
 const size_t Num_parse_object_flags = sizeof(Parse_object_flags) / sizeof(flag_def_list_new<Mission::Parse_Object_Flags>);
@@ -2663,6 +2664,18 @@ void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> &par
 
     if (parse_flags[Mission::Parse_Object_Flags::OF_Attackable_if_no_collide])
 		objp->flags.set(Object::Object_Flags::Attackable_if_no_collide);
+
+	if (parse_flags[Mission::Parse_Object_Flags::SF_Fail_sound_locked_primary])
+		shipp->flags.set(Ship::Ship_Flags::Fail_sound_locked_primary);
+
+	if (parse_flags[Mission::Parse_Object_Flags::SF_Fail_sound_locked_secondary])
+		shipp->flags.set(Ship::Ship_Flags::Fail_sound_locked_secondary);
+
+	if (parse_flags[Mission::Parse_Object_Flags::SF_Aspect_immune])
+		shipp->flags.set(Ship::Ship_Flags::Aspect_immune);
+
+	if (parse_flags[Mission::Parse_Object_Flags::SF_Cannot_perform_scan])
+		shipp->flags.set(Ship::Ship_Flags::Cannot_perform_scan);
 }
 
 void fix_old_special_explosions(p_object *p_objp, int variable_index) 

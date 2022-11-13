@@ -1525,7 +1525,7 @@ int player_inspect_cargo(float frametime, char *outstr)
 
 	outstr[0] = 0;
 
-	if ( Player_ai->target_objnum < 0 ) {
+	if ( Player_ai->target_objnum < 0 || Player_ship->flags[Ship::Ship_Flags::Cannot_perform_scan] ) {
 		return 0;
 	}
 
@@ -1640,7 +1640,7 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 	outstr[0] = 0;
 	subsys = Player_ai->targeted_subsys;
 
-	if ( subsys == NULL ) {
+	if ( subsys == NULL || Player_ship->flags[Ship::Ship_Flags::Cannot_perform_scan] ) {
 		return 0;
 	} 
 
