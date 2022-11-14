@@ -78,6 +78,7 @@
 #include "network/multi_mdns.h"
 #include "mission/missiongoals.h"
 #include "network/multi_interpolate.h"
+#include "network/multi_turret_manager.h"
 
 // #define _MULTI_SUPER_WACKY_COMPRESSION
 
@@ -9114,4 +9115,142 @@ void process_sexp_packet(ubyte *data, header *hinfo)
 	PACKET_SET_SIZE();
 
 	sexp_packet_received(received_packet, num_ubytes);
+}
+
+
+// sends as many turrets as possible, and returns those it can not yet send because of packet size.
+SCP_vector<int> send_turret_tracking_packet(ushort parent_sig, SCP_vector<int>& subsys_indexes) 
+{
+
+	Assertion(MULTIPLAYER_MASTER, "A non-server is trying to send a turret tracking packet. This is a coder mistake, please report!");
+
+	// Max size, minus some bytes for easy handling and safety.
+	constexpr int MAX_TURRET_PACKET_SIZE = MAX_PACKET_SIZE - 20;
+	SCP_vector<int> overflow_list;
+
+	Assertion (parent_sig != 0, "The turret tracking packet manager is trying to send a packet with a net signature of 0. This is nonsense and a coder mistake, please report!");
+
+	// somehow trying to send for an an invalid or non-network object
+	if (parent_sig == 0) {
+		// returning an empty list will signal the manager to clear its entries
+		return overflow_list;
+	}
+
+	auto temp = multi_get_network_object(parent_sig);
+
+	// this means that the ship may have been destroyed before being able to send the packet.  Ignore.
+	if (temp == nullptr){
+		// returning an empty list will signal the manager to clear its entries
+		return overflow_list;
+	}
+
+	ship* shipp = &Ships[temp->instance];
+
+	// Required for all send functions
+	ubyte data[MAX_PACKET_SIZE];
+	int packet_size = 0;
+
+	BUILD_HEADER(TURRET_TRACK);
+
+	ubyte last_index = 0;
+
+	// this is not usually done, but if the number of subsystems actually ends up being different than the expected,
+	// this ubyte in the packet will get overwritten at the end of this function.
+	ADD_DATA(last_index);
+
+	// send the time that this happened.
+	int time_out = Multi_Timing_Info.get_current_time();
+	ADD_INT(time_out);
+	ADD_USHORT(parent_sig);
+
+	ubyte count = 0;
+
+	// no, I don't expect to send UINT turrets, but I don't want to be stuck
+	// in an infinite loop with a smaller word size.
+	for (uint i = 0; i < subsys_indexes.size(); i++){
+
+		// pre count is now being switched to a limiter to ensure that we do not exceed MAX_TURRET_PACKET_SIZE
+		if (packet_size < MAX_TURRET_PACKET_SIZE) {
+			auto ssp = ship_get_indexed_subsys( shipp, subsys_indexes[i]);
+
+			// make sure the subsytem is valid.  If not, just continue.
+			if (ssp != nullptr){
+				// Add the data for the valid entry
+				ADD_SHORT( static_cast<short>(subsys_indexes[i]));
+
+				ushort target_netsig = (ssp->turret_enemy_objnum > -1) ? Objects[ssp->turret_enemy_objnum].net_signature : 0;
+				ADD_USHORT(target_netsig);
+
+				packet_size += multi_pack_turret_angles(data + packet_size, ssp);
+				++count;
+			} else {
+				// if we don't have a valid subsystem.
+				++last_index;
+			}
+
+		} else {
+			overflow_list.push_back(subsys_indexes[i]);
+		}
+	}
+
+	// nothing to send means that we should not send the packet, and just send back the overflow list.
+	if (count < 1) {
+		return overflow_list;
+	}
+
+	// and now, actually place the number of turrets we are updating
+	// this is a little hacky, but it's best to work through the serialization macros to rewrite the data.
+	int packet_size_record = packet_size;
+	packet_size = HEADER_LENGTH;
+	ADD_DATA(count);
+	packet_size = packet_size_record;
+
+	// The packet is now finished, so send.
+	multi_io_send_to_all(data, packet_size);
+
+	return overflow_list;
+}
+
+void process_turret_tracking_packet(ubyte *data, header *hinfo) 
+{
+	Assertion(MULTIPLAYER_CLIENT, "A non-client is receiving a turret tracking packet. This is a coder mistake, please report!");
+
+	int offset = HEADER_LENGTH;
+
+	int time_in;
+	ushort parent_netsig;
+	ubyte last_index;
+
+	GET_DATA(last_index);
+	GET_INT(time_in);
+	GET_USHORT(parent_netsig);
+
+	auto parent = multi_get_network_object(parent_netsig);
+
+	std::pair<bool, float> angle1;
+	std::pair<bool, float> angle2;
+
+	angle1.first = false;
+	angle1.second = 0.0f;
+	angle2.first = false;
+	angle2.second = 0.0f; 
+
+	for (ubyte index = 0; index < last_index; index++){
+		short subsystem_index;
+		ushort target_netsig;
+		GET_SHORT(subsystem_index);
+		GET_USHORT(target_netsig);
+
+		offset += multi_unpack_turret_angles(data + offset, angle1, angle2);
+
+		// even if the ship does not exist 
+		if (parent != nullptr){
+			Multi_Turret_Manager.add_incoming_packet(time_in, OBJ_INDEX(parent), subsystem_index, target_netsig, angle1, angle2);
+		}
+
+		angle1.first = false;
+		angle2.first = false;
+	}
+
+	PACKET_SET_SIZE();
 }

@@ -3679,10 +3679,124 @@ int multi_pack_unpack_desired_vel_and_desired_rotvel( int write, bool full_physi
 	}
 }
 
+// changed these names since they are used for more than one packet now
+#define MULTI_PACKER_TRUE  1
+#define MULTI_PACKER_FALSE 0
+
+// pack cur_angle data from turrets
+int multi_pack_turret_angles(ubyte* data, ship_subsys* ssp) 
+{
+	bitbuffer buf;
+
+	bitbuffer_init(&buf, data);
+
+	uint contains_section;
+	bool section1 = false; 
+	bool section2 = false;
+
+	// if the first section is valid 
+	if (ssp->submodel_instance_1 != nullptr){
+		contains_section = MULTI_PACKER_TRUE;
+		section1 = true;
+	} else { 
+		contains_section = MULTI_PACKER_FALSE;
+	}
+
+	// place the flag in the packet
+	bitbuffer_put(&buf, contains_section, 1);
+
+	// if the second section is valid 
+	if (ssp->submodel_instance_1 != nullptr){
+		contains_section = MULTI_PACKER_TRUE;
+		section2 = true;
+	} else {
+		contains_section = MULTI_PACKER_FALSE;
+	}
+
+	// place the flag in the packet
+	bitbuffer_put(&buf, contains_section, 1);
+
+	if (!section1 && !section2){
+		return bitbuffer_write_flush(&buf);
+	}
+
+	bool both = (section1 && section2);
+
+	// how much data we can send per angle depends on whether we're sending both
+	// so figure it out here, to be used below. (accuracy is now at least 1/3 of a degree)
+	float factor = both ? 1024.0f : 8192.0f ;
+	int size = both ? 11 : 14;
+
+	if (section1) {
+		int out = fl2i(round(ssp->submodel_instance_1->cur_angle * factor));
+		CAP(out, static_cast<int>(-factor * PI2), static_cast<int>(factor * PI2));
+		bitbuffer_put(&buf, static_cast<uint>(out), size);
+	}
+
+	if (section2) {
+		int out = fl2i(round(ssp->submodel_instance_2->cur_angle * factor));
+		CAP(out, static_cast<int>(-factor * PI2), static_cast<int>(factor * PI2));
+		bitbuffer_put(&buf, static_cast<uint>(out), size);
+	}
+
+	return bitbuffer_write_flush(&buf);
+}
+
+// unpack cur_angle data to store in the engine for use.
+int multi_unpack_turret_angles(ubyte* data, std::pair<bool, float>& angle1, std::pair<bool, float>& angle2) 
+{
+	bitbuffer buf;
+
+	bitbuffer_init(&buf, data);
+
+	uint contains_section;
+	bool section1 = false; 
+	bool section2 = false;
+
+	contains_section = bitbuffer_get_unsigned(&buf, 1);
+
+	if (contains_section == MULTI_PACKER_TRUE) {
+		section1 = true;
+	}
+
+	contains_section = bitbuffer_get_unsigned(&buf, 1);
+
+	if (contains_section == MULTI_PACKER_TRUE){
+		section2 = true;
+	}
+
+	// literally nothing to see here
+	if (!section1 && !section2){
+		return bitbuffer_read_flush(&buf);
+	}
+
+	bool both = (section1 && section2);
+
+	// how much data we receive per angle depends on whether we're sending both
+	// so figure it out here, to be used below. (accuracy is at least .35 degrees)
+	float factor = both ? 1024.0f : 8192.0f ;
+	int size = both ? 11 : 14;
+
+	// we are *not* writing directly to the subsystem, because the timing is stored in the packet,
+	// and things will sync better if we take that into account.  Writing directly to game info is 
+	// hacky (although 90% of our multi code does it).  So shunt it to two parameters passed by pointer.
+	if (section1) {
+		int angle_in = bitbuffer_get_signed(&buf, size);
+		angle1.first = true;
+		angle1.second = static_cast<float>(angle_in) / factor;
+	}
+
+	if (section2) {
+		int angle_in = bitbuffer_get_signed(&buf, size);
+		angle2.first = true;
+		angle2.second = static_cast<float>(angle_in) / factor;
+	}
+
+	return bitbuffer_read_flush(&buf);
+}
+
 #define SUBSYSTEM_LIST_MINI_PACKET_SIZE 7
 #define SUBSYSTEM_PACKER_CUTOFF 128
-#define SUBSYSTEM_PACKER_TRUE  1
-#define SUBSYSTEM_PACKER_FALSE 0
 
 // Cyborg17 - A packing function to manage subsystem info.
 int multi_pack_unpack_subsystem_list(bool write, ubyte* data, SCP_vector<ubyte>* flags, SCP_vector<float>* subsys_data)
@@ -3729,12 +3843,12 @@ int multi_pack_unpack_subsystem_list(bool write, ubyte* data, SCP_vector<ubyte>*
 
 			// mark this if there are things to store for this subsystem
 			if (current_flags > 0) {
-				a = SUBSYSTEM_PACKER_TRUE;
+				a = MULTI_PACKER_TRUE;
 				bitbuffer_put( &buf, (uint)a,1);
 
 				// is there health stored?
 				if (current_flags & OO_SUBSYS_HEALTH) {
-					a = SUBSYSTEM_PACKER_TRUE;
+					a = MULTI_PACKER_TRUE;
 					bitbuffer_put( &buf, (uint)a,1);
 
 					// stuff the health of the subsystem.  
@@ -3747,18 +3861,18 @@ int multi_pack_unpack_subsystem_list(bool write, ubyte* data, SCP_vector<ubyte>*
 					// because a lot of times we do not have both health and animation marked.
 					current_flags &= ~OO_SUBSYS_HEALTH;
 					if (current_flags > 0) {
-						a = SUBSYSTEM_PACKER_TRUE;
+						a = MULTI_PACKER_TRUE;
 						bitbuffer_put( &buf, (uint)a,1);
 
 					} // if no other flags, mark as done and go to the next subsystem
 					else {
-						a = SUBSYSTEM_PACKER_FALSE;
+						a = MULTI_PACKER_FALSE;
 						bitbuffer_put( &buf, (uint)a,1);
 						done = true;
 					}					
 				} // no new health info for this subsystem.
 				else {
-					a = SUBSYSTEM_PACKER_FALSE;
+					a = MULTI_PACKER_FALSE;
 					bitbuffer_put(&buf, (uint)a, 1);
 				}
 
@@ -3768,7 +3882,7 @@ int multi_pack_unpack_subsystem_list(bool write, ubyte* data, SCP_vector<ubyte>*
 					// (other types need to be dealt with in other ways.i.e. Dumb rotate needs time syncing, not constant updates)
 					if (current_flags & (OO_SUBSYS_ROTATION_1b)) {
 						// mark as present
-						a = SUBSYSTEM_PACKER_TRUE;
+						a = MULTI_PACKER_TRUE;
 						bitbuffer_put(&buf, (uint)a, 1);
 						// stuff value
 						a = (int)(subsys_data->at(subsys_data_index) * 511);
@@ -3780,13 +3894,13 @@ int multi_pack_unpack_subsystem_list(bool write, ubyte* data, SCP_vector<ubyte>*
 
 					} // no rotation in this axis
 					else {
-						a = SUBSYSTEM_PACKER_FALSE;
+						a = MULTI_PACKER_FALSE;
 						bitbuffer_put(&buf, (uint)a, 1);
 					}
 
 					if (current_flags & (OO_SUBSYS_ROTATION_1h)) {
 						// mark as present
-						a = SUBSYSTEM_PACKER_TRUE;
+						a = MULTI_PACKER_TRUE;
 						bitbuffer_put(&buf, (uint)a, 1);
 						// stuff value
 						a = (int)(subsys_data->at(subsys_data_index) * 511);
@@ -3798,13 +3912,13 @@ int multi_pack_unpack_subsystem_list(bool write, ubyte* data, SCP_vector<ubyte>*
 
 					} // no rotation in this axis
 					else {
-						a = SUBSYSTEM_PACKER_FALSE;
+						a = MULTI_PACKER_FALSE;
 						bitbuffer_put(&buf, (uint)a, 1);
 					}
 
 					if (current_flags & (OO_SUBSYS_ROTATION_1p)) {
 						// mark as present
-						a = SUBSYSTEM_PACKER_TRUE;
+						a = MULTI_PACKER_TRUE;
 						bitbuffer_put(&buf, (uint)a, 1);
 						// stuff value
 						a = (int)(subsys_data->at(subsys_data_index) * 511);
@@ -3816,13 +3930,13 @@ int multi_pack_unpack_subsystem_list(bool write, ubyte* data, SCP_vector<ubyte>*
 
 					} // no rotation in this axis
 					else {
-						a = SUBSYSTEM_PACKER_FALSE;
+						a = MULTI_PACKER_FALSE;
 						bitbuffer_put(&buf, (uint)a, 1);
 					}
 
 					if (current_flags & (OO_SUBSYS_ROTATION_2b)) {
 						// mark as present
-						a = SUBSYSTEM_PACKER_TRUE;
+						a = MULTI_PACKER_TRUE;
 						bitbuffer_put(&buf, (uint)a, 1);
 						// stuff value
 						a = (int)(subsys_data->at(subsys_data_index) * 511);
@@ -3834,13 +3948,13 @@ int multi_pack_unpack_subsystem_list(bool write, ubyte* data, SCP_vector<ubyte>*
 
 					} // no rotation in this axis
 					else {
-						a = SUBSYSTEM_PACKER_FALSE;
+						a = MULTI_PACKER_FALSE;
 						bitbuffer_put(&buf, (uint)a, 1);
 					}
 
 					if (current_flags & (OO_SUBSYS_ROTATION_2h)) {
 						// mark as present
-						a = SUBSYSTEM_PACKER_TRUE;
+						a = MULTI_PACKER_TRUE;
 						bitbuffer_put(&buf, (uint)a, 1);
 						// stuff value
 						a = (int)(subsys_data->at(subsys_data_index) * 511);
@@ -3852,13 +3966,13 @@ int multi_pack_unpack_subsystem_list(bool write, ubyte* data, SCP_vector<ubyte>*
 
 					} // no rotation in this axis
 					else {
-						a = SUBSYSTEM_PACKER_FALSE;
+						a = MULTI_PACKER_FALSE;
 						bitbuffer_put(&buf, (uint)a, 1);
 					}
 
 					if (current_flags & (OO_SUBSYS_ROTATION_2p)) {
 						// mark as present
-						a = SUBSYSTEM_PACKER_TRUE;
+						a = MULTI_PACKER_TRUE;
 						bitbuffer_put(&buf, (uint)a, 1);
 						// stuff value
 						a = (int)(subsys_data->at(subsys_data_index) * 511);
@@ -3870,7 +3984,7 @@ int multi_pack_unpack_subsystem_list(bool write, ubyte* data, SCP_vector<ubyte>*
 
 					} // no rotation in this axis
 					else {
-						a = SUBSYSTEM_PACKER_FALSE;
+						a = MULTI_PACKER_FALSE;
 						bitbuffer_put(&buf, (uint)a, 1);
 					}
 
@@ -3881,7 +3995,7 @@ int multi_pack_unpack_subsystem_list(bool write, ubyte* data, SCP_vector<ubyte>*
 
 			} // if there was no info to pack, mark it as so, and move on.
 			else {
-				a = SUBSYSTEM_PACKER_FALSE;
+				a = MULTI_PACKER_FALSE;
 				bitbuffer_put( &buf, (uint)a,1);
 			}
 
@@ -3890,12 +4004,12 @@ int multi_pack_unpack_subsystem_list(bool write, ubyte* data, SCP_vector<ubyte>*
 			if (( (i + 1) % 7 == 0) && (i != 0)) {
 				// and if we're at the end or have gone too far, mark it as the end.
 				if ((i >= (last_index - 1)) || (bitbuffer_read_flush(&buf) >= SUBSYSTEM_PACKER_CUTOFF) ){
-					a = SUBSYSTEM_PACKER_FALSE;
+					a = MULTI_PACKER_FALSE;
 					bitbuffer_put( &buf, (uint)a,1);
 					break;
 				} // start a new section right after this bit.
 				else {
-					a = SUBSYSTEM_PACKER_TRUE;
+					a = MULTI_PACKER_TRUE;
 					bitbuffer_put( &buf, (uint)a,1);
 				}
 			}
@@ -3918,11 +4032,11 @@ int multi_pack_unpack_subsystem_list(bool write, ubyte* data, SCP_vector<ubyte>*
 				a = bitbuffer_get_unsigned(&buf, 1);
 			
 				// check to see if there is info to unpack
-				if (a == SUBSYSTEM_PACKER_TRUE) {
+				if (a == MULTI_PACKER_TRUE) {
 
 					// is there health info?
 					a = bitbuffer_get_unsigned(&buf, 1);
-					if (a == SUBSYSTEM_PACKER_TRUE) {
+					if (a == MULTI_PACKER_TRUE) {
 						flags->at(current_subsystem_index) |= OO_SUBSYS_HEALTH;
 
 						a = bitbuffer_get_unsigned(&buf, 7);
@@ -3930,7 +4044,7 @@ int multi_pack_unpack_subsystem_list(bool write, ubyte* data, SCP_vector<ubyte>*
 
 						// check for additional info for this subsystem.
 						a = bitbuffer_get_unsigned(&buf, 1);
-						if (a == SUBSYSTEM_PACKER_FALSE) {
+						if (a == MULTI_PACKER_FALSE) {
 							// no further info, continue.
 							done = true;
 						}
@@ -3939,42 +4053,42 @@ int multi_pack_unpack_subsystem_list(bool write, ubyte* data, SCP_vector<ubyte>*
 					if (!done) {
 						//  now check for each type of subsystem rotation before going on to the next subsystem
 						a = bitbuffer_get_unsigned(&buf, 1);
-						if (a == SUBSYSTEM_PACKER_TRUE) {
+						if (a == MULTI_PACKER_TRUE) {
 							flags->at(current_subsystem_index) |= OO_SUBSYS_ROTATION_1b;
 							a = bitbuffer_get_unsigned(&buf, 9);
 							subsys_data->push_back( ((float) a) / 511.0f);	
 						}
 
 						a = bitbuffer_get_unsigned(&buf, 1);
-						if (a == SUBSYSTEM_PACKER_TRUE) {
+						if (a == MULTI_PACKER_TRUE) {
 							flags->at(current_subsystem_index) |= OO_SUBSYS_ROTATION_1h;
 							a = bitbuffer_get_unsigned(&buf, 9);
 							subsys_data->push_back( ((float) a) / 511.0f);	
 						}
 
 						a = bitbuffer_get_unsigned(&buf, 1);
-						if (a == SUBSYSTEM_PACKER_TRUE) {
+						if (a == MULTI_PACKER_TRUE) {
 							flags->at(current_subsystem_index) |= OO_SUBSYS_ROTATION_1p;
 							a = bitbuffer_get_unsigned(&buf, 9);
 							subsys_data->push_back( ((float) a) / 511.0f);	
 						}
 
 						a = bitbuffer_get_unsigned(&buf, 1);
-						if (a == SUBSYSTEM_PACKER_TRUE) {
+						if (a == MULTI_PACKER_TRUE) {
 							flags->at(current_subsystem_index) |= OO_SUBSYS_ROTATION_2b;
 							a = bitbuffer_get_unsigned(&buf, 9);
 							subsys_data->push_back( ((float) a) / 511.0f);	
 						}
 
 						a = bitbuffer_get_unsigned(&buf, 1);
-						if (a == SUBSYSTEM_PACKER_TRUE) {
+						if (a == MULTI_PACKER_TRUE) {
 							flags->at(current_subsystem_index) |= OO_SUBSYS_ROTATION_2h;
 							a = bitbuffer_get_unsigned(&buf, 9);
 							subsys_data->push_back( ((float) a) / 511.0f);	
 						}
 
 						a = bitbuffer_get_unsigned(&buf, 1);
-						if (a == SUBSYSTEM_PACKER_TRUE) {
+						if (a == MULTI_PACKER_TRUE) {
 							flags->at(current_subsystem_index) |= OO_SUBSYS_ROTATION_2p;
 							a = bitbuffer_get_unsigned(&buf, 9);
 							subsys_data->push_back( ((float) a) / 511.0f);	
@@ -3987,7 +4101,7 @@ int multi_pack_unpack_subsystem_list(bool write, ubyte* data, SCP_vector<ubyte>*
 			}
 
 			a = bitbuffer_get_unsigned(&buf, 1);
-		} while (a == SUBSYSTEM_PACKER_TRUE);
+		} while (a == MULTI_PACKER_TRUE);
 		
 		return bitbuffer_read_flush(&buf);
 	}

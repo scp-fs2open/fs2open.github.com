@@ -341,7 +341,7 @@ public:
 	model_subsystem *system_info;					// pointer to static data for this subsystem -- see model.h for definition
 
 	int			parent_objnum;						// objnum of the parent ship
-	int			parent_subsys_index;				// index of this subsystem in the parent ship's linked list
+	int			parent_subsys_index;				// index of this subsystem in the parent ship's linked list -- Do not access manually, use parent_subsys_index() as this may not yet be cached.
 
 	char		sub_name[NAME_LENGTH];					//WMC - Name that overrides name of original
 	float		current_hits;							// current number of hits this subsystem has left.
@@ -429,6 +429,9 @@ public:
 	//Per-turret ownage settings - SUSHI
 	int turret_max_bomb_ownage; 
 	int turret_max_target_ownage;
+
+	// multiplayer
+	TIMESTAMP info_from_server_stamp;
 
 	ship_subsys()
 		: next(NULL), prev(NULL)
