@@ -1751,6 +1751,8 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem Ta
 			}
 			break;
 		}
+		default:
+			return ade_set_error(L, "b", false);
 	}
 
 	//Nothing got set!
