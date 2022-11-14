@@ -191,6 +191,11 @@ void parse_nebula_table(const char* filename)
 			optional_string("+Nebula:");
 			stuff_string(name, F_NAME, MAX_FILENAME_LEN);
 
+			if (!(generic_bitmap_exists(name))) {
+				error_display(0, "Nebula bitmap %s was not found!, skipping!", name);
+				continue;
+			}
+
 			if (Neb2_bitmap_count < MAX_NEB2_BITMAPS) {
 				strcpy_s(Neb2_bitmap_filenames[Neb2_bitmap_count++], name);
 			}
@@ -211,6 +216,11 @@ void parse_nebula_table(const char* filename)
 				strcpy_s(pooft.bitmap_filename, name);
 
 				strcpy_s(pooft.name, name);
+
+				if (!(generic_bitmap_exists(pooft.bitmap_filename))) {
+					error_display(0, "Bitmap defined for nebula poof %s was not found. Skipping!", pooft.name);
+					continue;
+				}
 
 				generic_anim_init(&pooft.bitmap, name);
 
@@ -272,6 +282,10 @@ void parse_nebula_table(const char* filename)
 						generic_anim_init(&poofp->bitmap, name);
 					}
 				}
+
+				//We can't skip here because we'd have to back out the entire poof from the vector-Mjn
+				if (!(generic_bitmap_exists(poofp->bitmap_filename)))
+					error_display(0, "Bitmap defined for nebula poof %s was not found!", poofp->name);
 
 				if (optional_string("$Scale:"))
 					poofp->scale = ::util::parseUniformRange<float>(0.01f, 100000.0f);
