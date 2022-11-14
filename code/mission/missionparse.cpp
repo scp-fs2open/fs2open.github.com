@@ -326,6 +326,7 @@ flag_def_list_new<Mission::Parse_Object_Flags> Parse_object_flags[] = {
     { "fail-sound-locked-primary",			Mission::Parse_Object_Flags::SF_Fail_sound_locked_primary, true, false },
     { "fail-sound-locked-secondary",		Mission::Parse_Object_Flags::SF_Fail_sound_locked_secondary, true, false },
     { "aspect-immune",						Mission::Parse_Object_Flags::SF_Aspect_immune, true, false },
+	{ "cannot-perform-scan",			Mission::Parse_Object_Flags::SF_Cannot_perform_scan,	true, false },
 	{ "no-targeting-limits",				Mission::Parse_Object_Flags::SF_No_targeting_limits, true, false},
 };
 
@@ -2664,6 +2665,21 @@ void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> &par
 
     if (parse_flags[Mission::Parse_Object_Flags::OF_Attackable_if_no_collide])
 		objp->flags.set(Object::Object_Flags::Attackable_if_no_collide);
+
+	if (parse_flags[Mission::Parse_Object_Flags::SF_Fail_sound_locked_primary])
+		shipp->flags.set(Ship::Ship_Flags::Fail_sound_locked_primary);
+
+	if (parse_flags[Mission::Parse_Object_Flags::SF_Fail_sound_locked_secondary])
+		shipp->flags.set(Ship::Ship_Flags::Fail_sound_locked_secondary);
+
+	if (parse_flags[Mission::Parse_Object_Flags::SF_Aspect_immune])
+		shipp->flags.set(Ship::Ship_Flags::Aspect_immune);
+
+	if (parse_flags[Mission::Parse_Object_Flags::SF_Cannot_perform_scan])
+		shipp->flags.set(Ship::Ship_Flags::Cannot_perform_scan);
+
+	if (parse_flags[Mission::Parse_Object_Flags::SF_No_targeting_limits])
+		shipp->flags.set(Ship::Ship_Flags::Cannot_perform_scan);
 }
 
 void fix_old_special_explosions(p_object *p_objp, int variable_index) 
@@ -4361,6 +4377,9 @@ void parse_wing(mission *pm)
 			Warning(LOCATION, "Invalid Formation %s.", f);
 		}
 	}
+	if (optional_string("+Formation Scale:")) {
+		stuff_float(&wingp->formation_scale);
+	}
 
 	find_and_stuff("$Arrival Location:", &wingp->arrival_location, F_NAME, Arrival_location_names, Num_arrival_names, "Arrival Location");
 
@@ -5429,14 +5448,7 @@ void parse_bitmaps(mission *pm)
 		if (optional_string("+Neb2 Poofs List:")) {
 			SCP_vector<SCP_string> poofs_list;
 			stuff_string_list(poofs_list);
-
-			for (const SCP_string &thisPoof : poofs_list) {
-				for (size_t i = 0; i < Poof_info.size(); i++) {
-					if (Poof_info[i].name == thisPoof) {
-						Neb2_poof_flags |= (1 << i);
-					}
-				}
-			}
+			neb2_set_poof_bits(poofs_list);
 		}
 
 		// initialize neb effect. its gross to do this here, but Fred is dumb so I have no choice ... :(

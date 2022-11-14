@@ -310,7 +310,7 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 				(ambient_light_level >> 16) & 0xff);
 
 			strcpy_s(Neb2_texture_name, "");
-			Neb2_poof_flags = ((1 << 0) | (1 << 1) | (1 << 2) | (1 << 3) | (1 << 4) | (1 << 5));
+			Neb2_poof_flags = 0;
 			bool nebula = false;
 			if (optional_string("+Neb2:")) {
 				nebula = true;
@@ -327,8 +327,15 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 			}
 
 			if (nebula){
-				required_string("+Neb2Flags:");
-				stuff_int(&Neb2_poof_flags);
+				if (optional_string("+Neb2Flags:")) {
+					stuff_int(&Neb2_poof_flags);
+				}
+				// Get poofs by name
+				if (optional_string("+Neb2 Poofs List:")) {
+					SCP_vector<SCP_string> poofs_list;
+					stuff_string_list(poofs_list);
+					neb2_set_poof_bits(poofs_list);
+				}
 
 				if (flags[Mission::Mission_Flags::Fullneb]) {
 					neb2_post_level_init(flags[Mission::Mission_Flags::Neb2_fog_color_override]);

@@ -3503,6 +3503,8 @@ int CFred_mission_save::save_objects()
 				fout(" \"fail-sound-locked-secondary\"");
 			if (shipp->flags[Ship::Ship_Flags::Aspect_immune])
 				fout(" \"aspect-immune\"");
+			if (shipp->flags[Ship::Ship_Flags::Cannot_perform_scan])
+				fout(" \"cannot-perform-scan\"");
 			if (shipp->flags[Ship::Ship_Flags::No_targeting_limits])
 				fout(" \"no-targeting-limits\"");
 			fout(" )");
@@ -4477,8 +4479,17 @@ int CFred_mission_save::save_wings()
 				else {
 					fout("\n+Formation:");
 				}
-
 				fout(" %s", Wing_formations[Wings[i].formation].name);
+			}
+			if (!fl_equal(Wings[i].formation_scale, 1.0f, 0.001f))
+			{
+				if (optional_string_fred("+Formation Scale:", "$Name:")) {
+					parse_comments();
+				}
+				else {
+					fout("\n+Formation Scale:");
+				}
+				fout(" %f", Wings[i].formation_scale);
 			}
 		}
 

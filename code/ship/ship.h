@@ -1549,6 +1549,7 @@ typedef struct wing {
 
 	// if -1, retail formation, else a custom one defined in ships.tbl
 	int formation;
+	float formation_scale;
 
 	// reset to a completely blank wing
 	void clear();

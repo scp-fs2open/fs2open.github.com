@@ -31542,6 +31542,11 @@ bool sexp_recoverable_error(int num)
 		// as all places which call hud_get_gauge() or hud_get_custom_gauge() check its return value for NULL.
 		case SEXP_CHECK_INVALID_CUSTOM_HUD_GAUGE:
 		case SEXP_CHECK_INVALID_ANY_HUD_GAUGE:
+
+		// Trying to set an invalid sound environment has no effect, and all sound enviroments are invalid if EFX is disabled.
+		// Invalid sound environment options are simiarly harmless.
+		case SEXP_CHECK_INVALID_SOUND_ENVIRONMENT:
+		case SEXP_CHECK_INVALID_SOUND_ENVIRONMENT_OPTION:
 			return true;
 
 		// most errors will halt mission loading

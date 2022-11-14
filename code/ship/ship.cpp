@@ -541,6 +541,7 @@ ship_flag_name Ship_flag_names[] = {
 	{ Ship_Flags::Fail_sound_locked_primary, 	"fail-sound-locked-primary"},
 	{ Ship_Flags::Fail_sound_locked_secondary, 	"fail-sound-locked-secondary"},
 	{ Ship_Flags::Aspect_immune, 				"aspect-immune"},
+	{ Ship_Flags::Cannot_perform_scan,			"cannot-perform-scan"},
 	{ Ship_Flags::No_targeting_limits,			"no-targeting-limits"}
 };
 
@@ -6724,6 +6725,7 @@ void wing::clear()
 	wing_insignia_texture = -1;
 
 	formation = -1;
+	formation_scale = 1.0f;
 }
 
 // NOTE: Now that the clear() member function exists, this function only sets the stuff associated with the object and ship class.
