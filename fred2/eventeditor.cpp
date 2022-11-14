@@ -1210,32 +1210,33 @@ void event_editor::OnUpdateTriggerCount()
 }
 void event_editor::swap_handler(int node1, int node2)
 {
-	int index1, index2;
+	int index1, index2, s;
 	mission_event m;
 
 	save();
+
 	for (index1=0; index1<m_num_events; index1++){
 		if (m_events[index1].formula == node1){
 			break;
 		}
 	}
-
 	Assert(index1 < m_num_events);
+
 	for (index2=0; index2<m_num_events; index2++){
 		if (m_events[index2].formula == node2){
 			break;
 		}
 	}
-
 	Assert(index2 < m_num_events);
+
 	m = m_events[index1];
-//	m_events[index1] = m_events[index2];
+	s = m_sig[index1];
+
 	while (index1 < index2) {
 		m_events[index1] = m_events[index1 + 1];
 		m_sig[index1] = m_sig[index1 + 1];
 		index1++;
 	}
-
 	while (index1 > index2 + 1) {
 		m_events[index1] = m_events[index1 - 1];
 		m_sig[index1] = m_sig[index1 - 1];
@@ -1243,6 +1244,8 @@ void event_editor::swap_handler(int node1, int node2)
 	}
 
 	m_events[index1] = m;
+	m_sig[index1] = s;
+
 	cur_event = index1;
 	update_cur_event();
 }

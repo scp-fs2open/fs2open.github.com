@@ -556,31 +556,30 @@ void campaign_editor::swap_handler(int node1, int node2)
 			break;
 		}
 	}
-
 	Assert(index1 < Total_links);
+
 	for (index2=0; index2<Total_links; index2++){
 		if ((Links[index2].from == Cur_campaign_mission) && (Links[index2].node == node2)){
 			break;
 		}
 	}
-
 	Assert(index2 < Total_links);
+
 	temp = Links[index1];
-//	Links[index1] = Links[index2];
+
 	while (index1 < index2) {
 		Links[index1] = Links[index1 + 1];
 		index1++;
 	}
-
 	while (index1 > index2 + 1) {
 		Links[index1] = Links[index1 - 1];
 		index1--;
 	}
 
+	Links[index1] = temp;
+
 	// update Cur_campaign_link
 	Cur_campaign_link = index1;
-
-	Links[index1] = temp;
 }
 
 void campaign_editor::insert_handler(int old, int node)
