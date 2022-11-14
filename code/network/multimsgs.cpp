@@ -5909,7 +5909,7 @@ void process_deny_packet(ubyte *data, header *hinfo)
 		popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,XSTR("You cannot join this game because you are running an older version of FreeSpace than the server.  Exit FreeSpace, and choose the 'Update FreeSpace' button in the FreeSpace launcher to download the latest version of FreeSpace.",734));
 		break;	
 	case JOIN_DENY_JR_TYPE :
-		popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,XSTR("You cannot join a game in progress unless it is a dogfight mission.",1433));
+		popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,XSTR("You cannot join an in progress squadwar mission.",1433));
 		break;			
 	}	
 
