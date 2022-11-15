@@ -3711,7 +3711,7 @@ int multi_pack_turret_angles(ubyte* data, ship_subsys* ssp)
 	bitbuffer_put(&buf, contains_section, 1);
 
 	// if the second section is valid 
-	if (ssp->submodel_instance_1 != nullptr){
+	if (ssp->submodel_instance_2 != nullptr){
 		contains_section = MULTI_PACKER_TRUE;
 		section2 = true;
 	} else {
