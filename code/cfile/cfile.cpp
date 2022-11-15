@@ -59,8 +59,6 @@ cf_pathtype Pathtypes[CF_MAX_PATH_TYPES]  = {
 	{ CF_TYPE_MODELS,				"data" DIR_SEPARATOR_STR "models",											".pof",								CF_TYPE_DATA	},
 	{ CF_TYPE_TABLES,				"data" DIR_SEPARATOR_STR "tables",											".tbl .tbm .lua",						CF_TYPE_DATA	},
 	{ CF_TYPE_SOUNDS,				"data" DIR_SEPARATOR_STR "sounds",											".wav .ogg",						CF_TYPE_DATA	},
-	{ CF_TYPE_SOUNDS_8B22K,			"data" DIR_SEPARATOR_STR "sounds" DIR_SEPARATOR_STR "8b22k",				".wav .ogg",						CF_TYPE_SOUNDS	},
-	{ CF_TYPE_SOUNDS_16B11K,		"data" DIR_SEPARATOR_STR "sounds" DIR_SEPARATOR_STR "16b11k",				".wav .ogg",						CF_TYPE_SOUNDS	},
 	{ CF_TYPE_VOICE,				"data" DIR_SEPARATOR_STR "voice",											"",									CF_TYPE_DATA	},
 	{ CF_TYPE_VOICE_BRIEFINGS,		"data" DIR_SEPARATOR_STR "voice" DIR_SEPARATOR_STR "briefing",				".wav .ogg",						CF_TYPE_VOICE	},
 	{ CF_TYPE_VOICE_CMD_BRIEF,		"data" DIR_SEPARATOR_STR "voice" DIR_SEPARATOR_STR "command_briefings",		".wav .ogg",						CF_TYPE_VOICE	},
@@ -70,7 +68,7 @@ cf_pathtype Pathtypes[CF_MAX_PATH_TYPES]  = {
 	{ CF_TYPE_VOICE_TRAINING,		"data" DIR_SEPARATOR_STR "voice" DIR_SEPARATOR_STR "training",				".wav .ogg",						CF_TYPE_VOICE	},
 	{ CF_TYPE_MUSIC,				"data" DIR_SEPARATOR_STR "music",											".wav .ogg",						CF_TYPE_DATA	},
 	{ CF_TYPE_MOVIES,				"data" DIR_SEPARATOR_STR "movies",											".mve .msb .ogg .mp4 .srt .webm .png",CF_TYPE_DATA	},
-	{ CF_TYPE_INTERFACE,			"data" DIR_SEPARATOR_STR "interface",										".pcx .ani .dds .tga .eff .png .jpg",	CF_TYPE_DATA	},
+	{ CF_TYPE_INTERFACE,			"data" DIR_SEPARATOR_STR "interface",										".pcx .ani .dds .tga .eff .png .jpg .rml .rcss",	CF_TYPE_DATA	},
 	{ CF_TYPE_FONT,					"data" DIR_SEPARATOR_STR "fonts",											".vf .ttf .otf",						CF_TYPE_DATA	},
 	{ CF_TYPE_EFFECTS,				"data" DIR_SEPARATOR_STR "effects",											".ani .eff .pcx .neb .tga .jpg .png .dds .sdr",	CF_TYPE_DATA	},
 	{ CF_TYPE_HUD,					"data" DIR_SEPARATOR_STR "hud",												".pcx .ani .eff .tga .jpg .png .dds",	CF_TYPE_DATA	},
@@ -79,6 +77,7 @@ cf_pathtype Pathtypes[CF_MAX_PATH_TYPES]  = {
 	{ CF_TYPE_SQUAD_IMAGES,			"data" DIR_SEPARATOR_STR "players" DIR_SEPARATOR_STR "squads",				".pcx .png .dds",						CF_TYPE_PLAYERS	},
 	{ CF_TYPE_SINGLE_PLAYERS,		"data" DIR_SEPARATOR_STR "players" DIR_SEPARATOR_STR "single",				".pl2 .cs2 .plr .csg .css .json",	CF_TYPE_PLAYERS	},
 	{ CF_TYPE_MULTI_PLAYERS,		"data" DIR_SEPARATOR_STR "players" DIR_SEPARATOR_STR "multi",				".plr .json",						CF_TYPE_PLAYERS	},
+	{ CF_TYPE_PLAYER_BINDS,			"data" DIR_SEPARATOR_STR "players" DIR_SEPARATOR_STR "presets",				".json",							CF_TYPE_PLAYERS	},
 	{ CF_TYPE_CACHE,				"data" DIR_SEPARATOR_STR "cache",											".clr .tmp .bx",					CF_TYPE_DATA	}, 	//clr=cached color
 	{ CF_TYPE_MULTI_CACHE,			"data" DIR_SEPARATOR_STR "multidata",										".pcx .png .jpg .dds .fs2 .txt",		CF_TYPE_DATA	},
 	{ CF_TYPE_MISSIONS,				"data" DIR_SEPARATOR_STR "missions",										".fs2 .fc2 .ntl .ssv",				CF_TYPE_DATA	},
@@ -88,10 +87,7 @@ cf_pathtype Pathtypes[CF_MAX_PATH_TYPES]  = {
 	{ CF_TYPE_INTEL_ANIMS,			"data" DIR_SEPARATOR_STR "intelanims",										".pcx .ani .eff .tga .jpg .png .dds",	CF_TYPE_DATA	},
 	{ CF_TYPE_SCRIPTS,				"data" DIR_SEPARATOR_STR "scripts",											".lua .lc .fnl",						CF_TYPE_DATA	},
 	{ CF_TYPE_FICTION,				"data" DIR_SEPARATOR_STR "fiction",											".txt",								CF_TYPE_DATA	}, 
-	{ CF_TYPE_FREDDOCS,				"data" DIR_SEPARATOR_STR "freddocs",										".html",							CF_TYPE_DATA	},
-	{ CF_TYPE_INTERFACE_MARKUP,		"data" DIR_SEPARATOR_STR "interface" DIR_SEPARATOR_STR "markup",			".rml",								CF_TYPE_INTERFACE	},
-	{ CF_TYPE_INTERFACE_CSS,		"data" DIR_SEPARATOR_STR "interface" DIR_SEPARATOR_STR "css",				".rcss",							CF_TYPE_INTERFACE	},
-	{ CF_TYPE_PLAYER_BINDS,			"data" DIR_SEPARATOR_STR "players" DIR_SEPARATOR_STR "presets",				".json",							CF_TYPE_PLAYERS	},
+	{ CF_TYPE_FREDDOCS,				"data" DIR_SEPARATOR_STR "freddocs",										".html",							CF_TYPE_DATA	}
 };
 // clang-format on
 
@@ -473,7 +469,7 @@ int cf_delete(const char *filename, int path_type, uint32_t location_flags)
 
 	Assert(CF_TYPE_SPECIFIED(path_type));
 
-	cf_create_default_path_string(longname, path_type, filename, false, location_flags);
+	cf_create_default_path_string(longname, path_type, filename, location_flags);
 
 	return (_unlink(longname.c_str()) != -1);
 }
@@ -623,7 +619,7 @@ void cf_create_directory(int dir_type, uint32_t location_flags)
 	int i;
 
 	for (i=num_dirs-1; i>=0; i-- )	{
-		cf_create_default_path_string(longname, dir_tree[i], nullptr, false, location_flags);
+		cf_create_default_path_string(longname, dir_tree[i], nullptr, location_flags);
 		if (stat(longname.c_str(), &statbuf) != 0) {
 			mprintf(( "CFILE: Creating new directory '%s'\n", longname.c_str() ));
 			mkdir_recursive(longname.c_str());
@@ -648,7 +644,7 @@ void cf_create_directory(int dir_type, uint32_t location_flags)
 //
 
 CFILE* _cfopen(const char* source, int line, const char* file_path, const char* mode, int type, int dir_type,
-               bool localize, uint32_t location_flags)
+               bool /* localize */, uint32_t location_flags)
 {
 	/* Bobboau, what is this doing here? 31 is way too short... - Goober5000
 	if( strlen(file_path) > 31 )
@@ -689,7 +685,7 @@ CFILE* _cfopen(const char* source, int line, const char* file_path, const char* 
 			// Create the directory if necessary
 			cf_create_directory(dir_type, location_flags);
 
-			cf_create_default_path_string(longname, dir_type, file_path, false, location_flags);
+			cf_create_default_path_string(longname, dir_type, file_path, location_flags);
 		}
 		Assert( !(type & CFILE_MEMORY_MAPPED) );
 
@@ -739,10 +735,8 @@ CFILE* _cfopen(const char* source, int line, const char* file_path, const char* 
 	//================================================
 	// Search for file on disk, on cdrom, or in a packfile
 
-	char copy_file_path[MAX_PATH_LEN];  // FIX change in memory from cf_find_file_location
-	strcpy_s(copy_file_path, file_path);
+	auto find_res = cf_find_file_location(file_path, dir_type, location_flags);
 
-	auto find_res = cf_find_file_location( copy_file_path, dir_type, localize, location_flags );
 	if ( find_res.found ) {
 
 		// Fount it, now create a cfile out of it
@@ -1848,28 +1842,51 @@ int cfile_get_path_type(const SCP_string& dir)
 {
 	SCP_string buf = dir;
 
-	// Remove trailing slashes; avoid buffer overflow on 1-char strings
-	while (buf.size() > 0 && (buf[buf.size() - 1] == '\\' || buf[buf.size() - 1] == '/')) {
-		buf.resize(buf.size() - 1);
+	// remove leading and trailing slashes
+	if ( !buf.empty() ) {
+		auto start = buf.find_first_not_of("\\/");
+		auto end = buf.find_last_not_of("\\/");
+
+		if ( (start > 0) || (end < buf.length()-1) ) {
+			buf = buf.substr(start, end-start+1);
+		}
 	}
 
-	// Remove leading slashes
-	while (buf.size() > 0 && (buf[0] == '\\' || buf[0] == '/')) {
-		buf = buf.substr(1);
+	if (buf.empty()) {
+		return CF_TYPE_ROOT;
 	}
 
 	// Use official DIR_SEPARATOR_CHAR
-	for (char& c : buf) {
-		if (c == '\\' || c == '/') {
-			c = DIR_SEPARATOR_CHAR;
-		}
-	}
+	extern void normalize_directory_separators(SCP_string &str);
+	normalize_directory_separators(buf);
+
+	// identify path type
+	auto best_match = CF_TYPE_INVALID;
 
 	for (auto& Pathtype : Pathtypes) {
-		if (Pathtype.path != nullptr && buf == Pathtype.path) {
-			return Pathtype.index;
+		if ( !Pathtype.path ) {
+			continue;
+		}
+
+		// skip root, it should have been detected before getting here
+		if (Pathtype.index == CF_TYPE_ROOT) {
+			continue;
+		}
+
+		// don't allow unknown subdirs directly under data
+		if (Pathtype.index == CF_TYPE_DATA) {
+			if (buf == Pathtype.path) {
+				best_match = CF_TYPE_DATA;
+			}
+
+			continue;
+		}
+
+		// for everything else just find closest match, allowing for unknown subdirectories
+		if ( !buf.compare(0, strlen(Pathtype.path), Pathtype.path) ) {
+			best_match = Pathtype.index;
 		}
 	}
 
-	return CF_TYPE_INVALID;
+	return best_match;
 }
