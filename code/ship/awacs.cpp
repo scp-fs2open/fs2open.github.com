@@ -184,8 +184,8 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 	float test;
 	int closest_index = -1;
 	int idx, stealth_ship = 0, check_huge_ship = 0, friendly_stealth_invisible = 0;
-	ship *shipp = NULL;
-	ship_info *sip = NULL;
+	ship *shipp = nullptr;
+	ship_info *sip = nullptr;
 
 	int viewer_has_primitive_sensors = (viewer->flags[Ship::Ship_Flags::Primitive_sensors]);
 
@@ -219,7 +219,7 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 
 	// check for an exempt ship. Exempt ships are _always_ visible
 	if (target->type == OBJ_SHIP) {
-		Assert(shipp != NULL);
+		Assert(shipp != nullptr);
 		int target_is_exempt = (shipp->flags[Ship::Ship_Flags::No_targeting_limits]);
 		if (target_is_exempt)
 			return FULLY_TARGETABLE;
@@ -243,7 +243,7 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 	// check for a tagged ship. TAG'd ships are _always_ visible
 	if (target->type == OBJ_SHIP)
 	{
-		Assert( shipp != NULL );
+		Assert( shipp != nullptr );
 		if (shipp->tag_left > 0.0f || shipp->level2_tag_left > 0.0f)
 			return FULLY_TARGETABLE;
 	}
