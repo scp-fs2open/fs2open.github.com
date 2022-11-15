@@ -2357,7 +2357,7 @@ void hud_update_target_static()
 	float	sensors_str;
 
 	// on lowest skill level, don't show static on target monitor
-	if ( Game_skill_level == 0 ) 
+	if ( (Game_skill_level == 0) && !Target_static_forced ) 
 		return;
 
 	// if multiplayer observer, don't show static
@@ -2370,7 +2370,7 @@ void hud_update_target_static()
 		sensors_str = SENSOR_STR_TARGET_NO_EFFECTS-1;
 	}
 
-	if ( sensors_str > SENSOR_STR_TARGET_NO_EFFECTS ) {
+	if ( (sensors_str > SENSOR_STR_TARGET_NO_EFFECTS) && !Target_static_forced ) {
 		Target_static_playing = 0;
 		Target_static_next = 0;
 	} else {

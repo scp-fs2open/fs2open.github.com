@@ -497,7 +497,7 @@ void HudGaugeRadarDradis::render(float  /*frametime*/)
 		sensors_str = MIN_SENSOR_STR_TO_RADAR - 1;
 
 	// note that on lowest skill level, there is no radar effects due to sensors damage
-	if ((Game_skill_level == 0) || (sensors_str > SENSOR_STR_RADAR_NO_EFFECTS))
+	if ( ((Game_skill_level == 0) || (sensors_str > SENSOR_STR_RADAR_NO_EFFECTS)) && !Target_static_forced )
 	{
 		Radar_static_playing = 0;
 		Radar_static_next = 0;
