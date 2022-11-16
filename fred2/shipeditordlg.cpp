@@ -2191,6 +2191,13 @@ void CShipEditorDlg::ship_alt_name_close(int base_ship)
 		return;
 	}
 
+	if (strlen(str) > NAME_LENGTH - 1) {
+		//strcpy_s(Fred_alt_names[base_ship], "");
+		str[31] = '\0';
+		MessageBox("Alt Names cannot be longer than 31 characters!");
+		//return;
+	}
+
 	// otherwise see if it already exists
 	if(mission_parse_lookup_alt(str) >= 0){
 		strcpy_s(Fred_alt_names[base_ship], str);
@@ -2285,6 +2292,13 @@ void CShipEditorDlg::ship_callsign_close(int base_ship)
 			strcpy_s(Fred_callsigns[base_ship], "");
 		}
 		return;
+	}
+
+	if (strlen(str) > NAME_LENGTH - 1) {
+		//strcpy_s(Fred_callsigns[base_ship], "");
+		str[31] = '\0';
+		MessageBox("Callsign cannot be longer than 31 characters!");
+		//return;
 	}
 
 	// otherwise see if it already exists
