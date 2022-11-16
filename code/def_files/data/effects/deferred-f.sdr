@@ -138,6 +138,8 @@ void GetLightInfo(vec3 position, in float alpha, in vec3 reflectDir, out vec3 li
 			float coneDot = dot(normalize(-lightDir), coneDir);
 			float dist = length(lightDir);
 			attenuation = 1.0 - clamp(sqrt(dist / lightRadius), 0.0, 1.0);
+			area_normalisation = 1.0;
+
 			if(dualCone) {
 				if(abs(coneDot) < coneAngle) {
 					discard;
