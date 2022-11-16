@@ -873,7 +873,6 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Use_3d_overhead_ship);
 		}
 
-		Default_overhead_ship_style = OH_TOP_VIEW;
 		if (optional_string("$Default overhead ship style:")) {
 			char effect[NAME_LENGTH];
 			stuff_string(effect, F_NAME, NAME_LENGTH);
@@ -1132,6 +1131,7 @@ void mod_table_reset()
 	Use_host_orientation_for_set_camera_facing = false;
 	Default_ship_select_effect = 2;
 	Default_weapon_select_effect = 2;
+	Default_overhead_ship_style = OH_TOP_VIEW;
 	Default_fiction_viewer_ui = -1;
 	Enable_external_shaders = false;
 	Enable_external_default_scripts = false;
