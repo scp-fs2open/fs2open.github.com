@@ -564,8 +564,10 @@ void ai_goal_purge_all_invalid_goals(ai_goal *aigp)
 
 	// we must do the same for the wing goals
 	for (i = 0; i < Num_wings; i++)
-	{
-		ai_goal_purge_invalid_goals(aigp, Wings[i].ai_goals, NULL, i);
+	{		
+		// only purge goals for wings that are present --wookieejedi
+		if (Wings[i].current_count > 0)
+			ai_goal_purge_invalid_goals(aigp, Wings[i].ai_goals, NULL, i);
 	}
 }
 
