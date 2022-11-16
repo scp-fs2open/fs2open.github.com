@@ -2192,10 +2192,10 @@ void CShipEditorDlg::ship_alt_name_close(int base_ship)
 	}
 
 	if (strlen(str) > NAME_LENGTH - 1) {
-		//strcpy_s(Fred_alt_names[base_ship], "");
-		str[31] = '\0';
-		MessageBox("Alt Names cannot be longer than 31 characters!");
-		//return;
+		str[NAME_LENGTH - 1] = '\0';
+		SCP_string name;
+		sprintf(name, "Alt Names cannot be longer than %i characters!", NAME_LENGTH - 1);
+		MessageBox(name.c_str());
 	}
 
 	// otherwise see if it already exists
@@ -2295,10 +2295,10 @@ void CShipEditorDlg::ship_callsign_close(int base_ship)
 	}
 
 	if (strlen(str) > NAME_LENGTH - 1) {
-		//strcpy_s(Fred_callsigns[base_ship], "");
-		str[31] = '\0';
-		MessageBox("Callsign cannot be longer than 31 characters!");
-		//return;
+		str[NAME_LENGTH - 1] = '\0';
+		SCP_string name;
+		sprintf(name, "Alt Names cannot be longer than %i characters!", NAME_LENGTH - 1);
+		MessageBox(name.c_str());
 	}
 
 	// otherwise see if it already exists
