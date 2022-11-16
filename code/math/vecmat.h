@@ -595,12 +595,6 @@ vec4 vm_vec3_to_ve4(const vec3d& vec, float w = 1.0f);
 // calculates the best rvec to match another orient while maintaining a given fvec
 void vm_match_bank(vec3d* out_rvec, const vec3d* goal_fvec, const matrix* match_orient);
 
-// Cyborg17 - Rotational interpolation between two angle structs in radians, given a rotational velocity, in radians.
-// src0 is the starting angle struct, src1 is the ending angle struct, interp_perc must be a float between 0.0f and 1.0f.
-// rot_vel is only used to determine the rotation direction. Assumes that it is not a full 2PI rotation in any axis.  
-// You will get strange results otherwise.
-void vm_interpolate_angles_quick(angles* dest0, angles* src0, angles* src1, float interp_perc);
-
 // Interpolate between two matrices, using t as a percentage progress between them.
 // Intended values for t are [0.0f, 1.0f], but values outside this range are allowed,
 // as you could conceivably use these calculations to find a rotation that is outside 
