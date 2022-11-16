@@ -156,3 +156,7 @@ public:
 		_source_player_index = -1;
 	}
 };
+
+void multi_interpolate_clear_all();
+
+extern SCP_unordered_map<int, interpolation_manager> Interp_info;

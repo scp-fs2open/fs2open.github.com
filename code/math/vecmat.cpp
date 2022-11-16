@@ -417,6 +417,16 @@ void vm_vec_scale2(vec3d *dest, float n, float d)
 	dest->xyz.z = dest->xyz.z* n * d;
 }
 
+// interpolate between two vectors
+// dest = src0 + (k * (src1 - src0))
+// Might be helpful to think of vec0 as the before, and vec1 as the after
+void vm_vec_linear_interpolate(vec3d* dest, const vec3d* src0, const vec3d* src1, const float k)
+{
+	dest->xyz.x = ((src1->xyz.x - src0->xyz.x) * k) + src0->xyz.x;
+	dest->xyz.y = ((src1->xyz.y - src0->xyz.y) * k) + src0->xyz.y;
+	dest->xyz.z = ((src1->xyz.z - src0->xyz.z) * k) + src0->xyz.z;
+}
+
 //returns dot product of 2 vectors
 float vm_vec_dot(const vec3d *v0, const vec3d *v1)
 {

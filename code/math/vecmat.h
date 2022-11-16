@@ -179,6 +179,11 @@ void vm_vec_scale_add2(vec3d *dest, const vec3d *src, float k);
 //dest *= n/d
 void vm_vec_scale2(vec3d *dest, float n, float d);
 
+// interpolate between two vectors
+// dest = k * (src1 - src0)
+// Might be helpful to think of vec0 as the before, and vec1 as the after
+void vm_vec_linear_interpolate(vec3d* dest, const vec3d* src0, const vec3d* src1, float k);
+
 bool vm_vec_equal(const vec2d &self, const vec2d &other);
 
 bool vm_vec_equal(const vec3d &self, const vec3d &other);

@@ -280,3 +280,10 @@ void interpolation_manager::replace_packet(int index, vec3d* pos, matrix* orient
 	_packets[index].desired_rotational_velocity = pip->desired_rotvel; 
 	_packets[index].orientation = *orient;
 }
+
+// the contained vectors have been cleared during object shut down.
+void multi_interpolate_clear_all()
+{
+	// clear the main container.
+	Interp_info.clear();
+}
