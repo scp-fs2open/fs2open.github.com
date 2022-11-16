@@ -12096,7 +12096,7 @@ void sexp_hud_set_message(int n)
 
 void sexp_hud_force_static(int n)
 {
-	Target_static_forced = is_sexp_true(n);
+	Sensor_static_forced = is_sexp_true(n);
 }
 
 void sexp_hud_set_directive(int n)
@@ -37539,8 +37539,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{OP_HUD_FORCE_SENSOR_STATIC, "hud-force-sensor-static\r\n"
 		"\tActivates or deactivates hud static as if sensors are damaged."
-		"Takes 1 Arguments...\r\n"
-		"\t1:\tBoolean, whether or not to display this gauge\r\n"
+		"Takes 1 Argument...\r\n"
+		"\t1:\tBoolean, whether or not to enable sensor static\r\n"
 	},
 
 	{OP_ADD_TO_COLGROUP, "add-to-collision-group\r\n"

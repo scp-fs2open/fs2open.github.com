@@ -399,7 +399,7 @@ void HudGaugeRadarOrb::render(float  /*frametime*/)
 	}
 
 	// note that on lowest skill level, there is no radar effects due to sensors damage
-	if (((Game_skill_level == 0) || (sensors_str > SENSOR_STR_RADAR_NO_EFFECTS)) && !Target_static_forced) {
+	if (((Game_skill_level == 0) || (sensors_str > SENSOR_STR_RADAR_NO_EFFECTS)) && !Sensor_static_forced) {
 		Radar_static_playing = 0;
 		Radar_static_next = 0;
 		Radar_death_timer = 0;

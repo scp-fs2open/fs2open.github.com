@@ -40,7 +40,7 @@
 #define SENSOR_STR_RADAR_NO_EFFECTS		0.4f	// % strength of sensors at which no negative effects on radar
 #define MIN_SENSOR_STR_TO_RADAR			0.1f	// % strength of sensors at which radar ceases to function
 
-extern bool Target_static_forced;				// For forcing damaged radar effect by sexp - Mjn
+extern bool Sensor_static_forced;				// For forcing damaged radar effect by sexp - Mjn
 
 /////////////////////////////////////////
 // communications
