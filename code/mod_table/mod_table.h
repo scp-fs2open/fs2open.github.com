@@ -47,6 +47,7 @@ extern bool Flight_controls_follow_eyepoint_orientation;
 extern int FS2NetD_port;
 extern int Default_multi_object_update_level;
 extern float Briefing_window_FOV;
+extern int Briefing_window_resolution[2];
 extern bool Disable_hc_message_ani;
 extern SCP_vector<SCP_string> Custom_head_anis;
 extern bool Red_alert_applies_to_delayed_ships;

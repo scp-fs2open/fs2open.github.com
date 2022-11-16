@@ -28,6 +28,7 @@
 #include "iff_defs/iff_defs.h"
 #include "sound/audiostr.h"
 #include "localization/localize.h"
+#include "mod_table/mod_table.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -853,7 +854,7 @@ void briefing_editor_dlg::draw_icon(object *objp)
 		return;
 
 	brief_render_icon(m_cur_stage, objp->instance, 1.0f/30.0f, objp->flags[Object::Object_Flags::Marked],
-		(float) True_rw / BRIEF_GRID_W, (float) True_rh / BRIEF_GRID_H);
+		(float) True_rw / Briefing_window_resolution[0], (float) True_rh / Briefing_window_resolution[1]);
 }
 
 void briefing_editor_dlg::batch_render()
