@@ -1365,7 +1365,8 @@ int model_render_determine_elapsed_time(int objnum, uint flags)
 		return timestamp_since(Skybox_timestamp);
 	}
 
-	return 0;
+	// by default, assume texture animation started at the beginning of the mission
+	return timestamp_get_mission_time_in_milliseconds();
 }
 
 bool model_render_determine_autocenter(vec3d *auto_back, polymodel *pm, int detail_level, uint flags)
