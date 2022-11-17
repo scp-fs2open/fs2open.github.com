@@ -6692,6 +6692,7 @@ void wing::clear()
 	total_vanished = 0;
 
 	special_ship = 0;
+	special_ship_ship_info_index = -1;
 
 	arrival_location = ARRIVE_AT_LOCATION;
 	arrival_distance = 0;

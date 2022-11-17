@@ -522,7 +522,7 @@ void ai_goal_purge_invalid_goals( ai_goal *aigp, ai_goal *goal_list, ai_info *ai
 
 					// for wings we grab the ship type of the wing leader
 					if (ai_wingnum >= 0) {
-						ai_ship_type = Ship_info[Ships[Wings[ai_wingnum].ship_index[Wings[ai_wingnum].special_ship]].ship_info_index].class_type;
+						ai_ship_type = Wings[ai_wingnum].special_ship_ship_info_index;
 					}
 					// otherwise we simply grab it from the ship itself
 					else {

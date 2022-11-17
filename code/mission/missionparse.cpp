@@ -2074,6 +2074,11 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 
 		if (wingp->flags[Ship::Wing_Flags::Nav_carry])
 			shipp->flags.set(Ship::Ship_Flags::Navpoint_carry);
+
+		// if it's wing leader, take the opportunity to set the wing leader's info index in the wing struct
+		if (!Fred_running && p_obj->pos_in_wing == 0) {
+			wingp->special_ship_ship_info_index = p_objp->ship_class;
+		}
 	}
 
 	// if the wing index and wing pos are set for this parse object, set them for the ship.  This
