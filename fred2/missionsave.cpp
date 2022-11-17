@@ -3505,6 +3505,8 @@ int CFred_mission_save::save_objects()
 				fout(" \"aspect-immune\"");
 			if (shipp->flags[Ship::Ship_Flags::Cannot_perform_scan])
 				fout(" \"cannot-perform-scan\"");
+			if (shipp->flags[Ship::Ship_Flags::No_targeting_limits])
+				fout(" \"no-targeting-limits\"");
 			fout(" )");
 		}
 		// -----------------------------------------------------------

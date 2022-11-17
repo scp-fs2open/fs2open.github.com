@@ -136,6 +136,7 @@ namespace Ship {
 		Subsystem_cache_valid,		// Goober5000 - whether the subsystem list index caches can be used
 		Aspect_immune,						// Kiloku -- Ship cannot be targeted by Aspect Seekers.
 		Cannot_perform_scan,		// Goober5000 - ship cannot scan other ships
+		No_targeting_limits,				//MjnMixael -- Ship is always targetable regardless of AWACS or targeting range limits
 
 		NUM_VALUES
 
