@@ -1520,6 +1520,7 @@ typedef struct wing {
 	int total_vanished;						// total number of ships vanished in this wing (including all waves)
 
 	int	special_ship;							// the leader of the wing.  An index into ship_index[].
+	int special_ship_ship_info_index;					// the ship info index of the special ship
 
 	int	arrival_location;						// arrival and departure information for wings -- similar to info for ships
 	int	arrival_distance;						// distance from some ship where this ship arrives
