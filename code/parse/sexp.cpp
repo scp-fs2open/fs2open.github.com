@@ -92,6 +92,7 @@
 #include "ship/shipfx.h"
 #include "ship/shiphit.h"
 #include "ship/ship_flags.h"
+#include "ship/subsysdamage.h"		// for sensor effect sexp
 #include "sound/audiostr.h"
 #include "sound/ds.h"
 #include "sound/sound.h"
@@ -647,6 +648,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "hud-activate-gauge-type",		OP_HUD_ACTIVATE_GAUGE_TYPE,				2,	2,			SEXP_ACTION_OPERATOR,	},	//Deprecated
 	{ "hud-clear-messages",				OP_HUD_CLEAR_MESSAGES,					0,	0,			SEXP_ACTION_OPERATOR,	},	// swifty
 	{ "hud-set-max-targeting-range",	OP_HUD_SET_MAX_TARGETING_RANGE,			1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "hud-force-sensor-static",		OP_HUD_FORCE_SENSOR_STATIC,				1,	1,			SEXP_ACTION_OPERATOR,	},	// MjnMixael
 
 	//Nav Sub-Category
 	{ "add-nav-waypoint",				OP_NAV_ADD_WAYPOINT,					3,	4,			SEXP_ACTION_OPERATOR,	},	//kazan
@@ -12090,6 +12092,11 @@ void sexp_hud_set_message(int n)
 	}
 
 	WarningEx(LOCATION, "sexp_hud_set_message couldn't find a message by the name of %s in the mission\n", text);
+}
+
+void sexp_hud_force_static(int n)
+{
+	Sensor_static_forced = is_sexp_true(n);
 }
 
 void sexp_hud_set_directive(int n)
@@ -26095,6 +26102,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_HUD_FORCE_SENSOR_STATIC:
+				sexp_hud_force_static(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			// Goober5000
 			case OP_PLAYER_USE_AI:
 			case OP_PLAYER_NOT_USE_AI:
@@ -28463,6 +28475,7 @@ int query_operator_return_type(int op)
 		case OP_HUD_SET_COLOR:
 		case OP_HUD_SET_MAX_TARGETING_RANGE:
 		case OP_HUD_CLEAR_MESSAGES:
+		case OP_HUD_FORCE_SENSOR_STATIC:
 		case OP_SHIP_CHANGE_ALT_NAME:
 		case OP_SHIP_CHANGE_CALLSIGN:
 		case OP_SET_DEATH_MESSAGE:
@@ -29736,6 +29749,9 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_HUD_CLEAR_MESSAGES:
 			return OPF_NONE;
+
+		case OP_HUD_FORCE_SENSOR_STATIC:
+			return OPF_BOOL;
 
 		case OP_PLAYER_USE_AI:
 		case OP_PLAYER_NOT_USE_AI:
@@ -33019,6 +33035,7 @@ int get_subcategory(int sexp_id)
 		case OP_HUD_ACTIVATE_GAUGE_TYPE:
 		case OP_HUD_CLEAR_MESSAGES:
 		case OP_HUD_SET_MAX_TARGETING_RANGE:
+		case OP_HUD_FORCE_SENSOR_STATIC:
 			return CHANGE_SUBCATEGORY_HUD;
 
 		case OP_NAV_ADD_WAYPOINT:
@@ -37518,6 +37535,12 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"Takes 2 Arguments...\r\n"
 		"\t1:\tBoolean, whether or not to display this gauge\r\n"
 		"\tRest:\tHUD Gauge Group name\r\n"
+	},
+
+	{OP_HUD_FORCE_SENSOR_STATIC, "hud-force-sensor-static\r\n"
+		"\tActivates or deactivates hud static as if sensors are damaged."
+		"Takes 1 Argument...\r\n"
+		"\t1:\tBoolean, whether or not to enable sensor static\r\n"
 	},
 
 	{OP_ADD_TO_COLGROUP, "add-to-collision-group\r\n"
