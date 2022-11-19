@@ -2459,13 +2459,13 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 				object* parent = &Objects[other_obj->parent];
 
 				if ((parent->type == OBJ_SHIP) && (parent->signature == other_obj->parent_sig)) {
-					ship* shipparent = &Ships[parent->instance];
+					ship* shipp_parent = &Ships[parent->instance];
 
 					if (!parent->flags[Object::Object_Flags::Should_be_dead]) {
 						parent->hull_strength += damage * wip->vamp_regen;
 
-						if (parent->hull_strength > shipparent->ship_max_hull_strength) {
-							parent->hull_strength = shipparent->ship_max_hull_strength;
+						if (parent->hull_strength > shipp_parent->ship_max_hull_strength) {
+							parent->hull_strength = shipp_parent->ship_max_hull_strength;
 						}
 					}
 				}
