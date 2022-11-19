@@ -92,6 +92,7 @@
 #include "ship/shipfx.h"
 #include "ship/shiphit.h"
 #include "ship/ship_flags.h"
+#include "ship/subsysdamage.h"		// for sensor effect sexp
 #include "sound/audiostr.h"
 #include "sound/ds.h"
 #include "sound/sound.h"
@@ -647,6 +648,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "hud-activate-gauge-type",		OP_HUD_ACTIVATE_GAUGE_TYPE,				2,	2,			SEXP_ACTION_OPERATOR,	},	//Deprecated
 	{ "hud-clear-messages",				OP_HUD_CLEAR_MESSAGES,					0,	0,			SEXP_ACTION_OPERATOR,	},	// swifty
 	{ "hud-set-max-targeting-range",	OP_HUD_SET_MAX_TARGETING_RANGE,			1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "hud-force-sensor-static",		OP_HUD_FORCE_SENSOR_STATIC,				1,	1,			SEXP_ACTION_OPERATOR,	},	// MjnMixael
 
 	//Nav Sub-Category
 	{ "add-nav-waypoint",				OP_NAV_ADD_WAYPOINT,					3,	4,			SEXP_ACTION_OPERATOR,	},	//kazan
@@ -714,6 +716,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "set-skybox-model",				OP_SET_SKYBOX_MODEL,					1,	8,			SEXP_ACTION_OPERATOR,	},	// taylor
 	{ "set-skybox-orientation",			OP_SET_SKYBOX_ORIENT,					3,	3,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-ambient-light",				OP_SET_AMBIENT_LIGHT,					3,	3,			SEXP_ACTION_OPERATOR,	},	// Karajorma
+	{ "toggle-asteroid-field",			OP_TOGGLE_ASTEROID_FIELD,				1,	1,			SEXP_ACTION_OPERATOR,	},	// MjnMixael
 
 	//Jump Node Sub-Category
 	{ "set-jumpnode-name",				OP_JUMP_NODE_SET_JUMPNODE_NAME,			2,	2,			SEXP_ACTION_OPERATOR,	},	//CommanderDJ
@@ -1973,6 +1976,11 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 	Assert(node >= 0 && node < Num_sexp_nodes);
 	Assert(Sexp_nodes[node].type != SEXP_NOT_USED);
+
+	op_node = node;		// save the node of the operator since we need to get to other args.
+	if (bad_node)
+		*bad_node = op_node;
+
 	if (Sexp_nodes[node].subtype == SEXP_ATOM_NUMBER && return_type == OPR_BOOL) {
 		// special case Mark seems to want supported
 		Assert(Sexp_nodes[node].first == -1);  // only lists should have a first pointer
@@ -1981,10 +1989,6 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 		return 0;
 	}
-
-	op_node = node;		// save the node of the operator since we need to get to other args.
-	if (bad_node)
-		*bad_node = op_node;
 
 	if (Sexp_nodes[op_node].subtype != SEXP_ATOM_OPERATOR)
 		return SEXP_CHECK_OP_EXPECTED;  // not an operator, which it should always be
@@ -3486,12 +3490,12 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				if ( type2 != SEXP_ATOM_STRING)
 					return SEXP_CHECK_TYPE_MISMATCH;
 
-				for (i = 0; i < Num_medals; i++) {
+				for (i = 0; i < (int)Medals.size(); i++) {
 					if ( !stricmp(CTEXT(node), Medals[i].name) )
 						break;
 				}
 
-				if ( i == Num_medals )
+				if (i == (int)Medals.size())
 					return SEXP_CHECK_INVALID_MEDAL_NAME;
 				break;
 
@@ -9091,7 +9095,7 @@ int sexp_was_medal_granted(int n)
 
 	auto medal_name = CTEXT(n);
 
-	for (int i=0; i<Num_medals; ++i) {
+	for (int i = 0; i < (int)Medals.size(); ++i) {
 		if (!stricmp(medal_name, Medals[i].name)) {
 			if (Player->stats.m_medal_earned == i) {
 				return SEXP_TRUE;
@@ -12091,6 +12095,11 @@ void sexp_hud_set_message(int n)
 	WarningEx(LOCATION, "sexp_hud_set_message couldn't find a message by the name of %s in the mission\n", text);
 }
 
+void sexp_hud_force_static(int n)
+{
+	Sensor_static_forced = is_sexp_true(n);
+}
+
 void sexp_hud_set_directive(int n)
 {
 	auto gaugename = CTEXT(n);
@@ -14997,6 +15006,11 @@ void sexp_nebula_change_fog_color(int node)
 	The_mission.flags |= Mission::Mission_Flags::Neb2_fog_color_override;
 }
 
+void sexp_toggle_asteroid_field(int n)
+{
+	Asteroids_enabled = is_sexp_true(n);
+}
+
 /**
  * End the mission.
  *
@@ -15113,12 +15127,12 @@ void sexp_grant_medal(int n)
 		Warning(LOCATION, "Cannot grant more than one medal per mission!  New medal '%s' will replace old medal '%s'!", medal_name, Medals[Player->stats.m_medal_earned].name);
 	}
 
-	for (i = 0; i < Num_medals; i++ ) {
+	for (i = 0; i < (int)Medals.size(); i++) {
 		if ( !stricmp(medal_name, Medals[i].name) )
 			break;
 	}
 
-	if ( i < Num_medals ) {
+	if (i < (int)Medals.size()) {
 		Player->stats.m_medal_earned = i;
 
 		if ( Game_mode & GM_MULTIPLAYER ) {
@@ -19409,7 +19423,7 @@ void sexp_set_skybox_model(int n)
 	// check if we need to reset the animated texture timestamp
 	n = CDR(n);
 	if (n == -1 || is_sexp_true(n)) {
-		Skybox_timestamp = game_get_overall_frametime();
+		Skybox_timestamp = _timestamp();
 	}
 
 	if (n != -1) n = CDR(n);
@@ -19581,6 +19595,7 @@ void sexp_beam_fire(int node, bool at_coords)
 		fire_info.fire_method = BFM_TURRET_FORCE_FIRED;
 
 		beam_fire(&fire_info);
+		fire_info.turret->turret_next_fire_pos++;
 	} else {
 		// it would appear the turret doesn't have any beam weapons
 		Warning(LOCATION, "Couldn't fire turret on ship %s; subsystem %s has no beam weapons", CTEXT(node), CTEXT(CDR(node)));
@@ -26117,6 +26132,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_HUD_FORCE_SENSOR_STATIC:
+				sexp_hud_force_static(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			// Goober5000
 			case OP_PLAYER_USE_AI:
 			case OP_PLAYER_NOT_USE_AI:
@@ -26312,6 +26332,11 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			case OP_NEBULA_CHANGE_FOG_COLOR:
 				sexp_nebula_change_fog_color(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			case OP_TOGGLE_ASTEROID_FIELD:
+				sexp_toggle_asteroid_field(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -28485,6 +28510,7 @@ int query_operator_return_type(int op)
 		case OP_HUD_SET_COLOR:
 		case OP_HUD_SET_MAX_TARGETING_RANGE:
 		case OP_HUD_CLEAR_MESSAGES:
+		case OP_HUD_FORCE_SENSOR_STATIC:
 		case OP_SHIP_CHANGE_ALT_NAME:
 		case OP_SHIP_CHANGE_CALLSIGN:
 		case OP_SET_DEATH_MESSAGE:
@@ -28532,6 +28558,7 @@ int query_operator_return_type(int op)
 		case OP_REMOVE_SUN_BITMAP:
 		case OP_NEBULA_CHANGE_STORM:
 		case OP_NEBULA_TOGGLE_POOF:
+		case OP_TOGGLE_ASTEROID_FIELD:
 		case OP_SET_PRIMARY_AMMO:
 		case OP_SET_SECONDARY_AMMO:
 		case OP_SET_PRIMARY_WEAPON:
@@ -29758,6 +29785,9 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_HUD_CLEAR_MESSAGES:
 			return OPF_NONE;
+
+		case OP_HUD_FORCE_SENSOR_STATIC:
+			return OPF_BOOL;
 
 		case OP_PLAYER_USE_AI:
 		case OP_PLAYER_NOT_USE_AI:
@@ -31061,6 +31091,9 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_NEBULA_CHANGE_FOG_COLOR:
 			return OPF_POSITIVE;
 
+		case OP_TOGGLE_ASTEROID_FIELD:
+			return OPF_BOOL;
+
 		case OP_SCRIPT_EVAL_BOOL:
 		case OP_SCRIPT_EVAL_NUM:
 		case OP_SCRIPT_EVAL_BLOCK:
@@ -31564,6 +31597,11 @@ bool sexp_recoverable_error(int num)
 		// as all places which call hud_get_gauge() or hud_get_custom_gauge() check its return value for NULL.
 		case SEXP_CHECK_INVALID_CUSTOM_HUD_GAUGE:
 		case SEXP_CHECK_INVALID_ANY_HUD_GAUGE:
+
+		// Trying to set an invalid sound environment has no effect, and all sound enviroments are invalid if EFX is disabled.
+		// Invalid sound environment options are simiarly harmless.
+		case SEXP_CHECK_INVALID_SOUND_ENVIRONMENT:
+		case SEXP_CHECK_INVALID_SOUND_ENVIRONMENT_OPTION:
 			return true;
 
 		// most errors will halt mission loading
@@ -33036,6 +33074,7 @@ int get_subcategory(int sexp_id)
 		case OP_HUD_ACTIVATE_GAUGE_TYPE:
 		case OP_HUD_CLEAR_MESSAGES:
 		case OP_HUD_SET_MAX_TARGETING_RANGE:
+		case OP_HUD_FORCE_SENSOR_STATIC:
 			return CHANGE_SUBCATEGORY_HUD;
 
 		case OP_NAV_ADD_WAYPOINT:
@@ -33102,6 +33141,7 @@ int get_subcategory(int sexp_id)
 		case OP_NEBULA_CHANGE_PATTERN:
 		case OP_NEBULA_CHANGE_FOG_COLOR:
 		case OP_SET_AMBIENT_LIGHT:
+		case OP_TOGGLE_ASTEROID_FIELD:
 			return CHANGE_SUBCATEGORY_BACKGROUND_AND_NEBULA;
 
 		case OP_JUMP_NODE_SET_JUMPNODE_NAME: //CommanderDJ
@@ -37543,6 +37583,12 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tRest:\tHUD Gauge Group name\r\n"
 	},
 
+	{OP_HUD_FORCE_SENSOR_STATIC, "hud-force-sensor-static\r\n"
+		"\tActivates or deactivates hud static as if sensors are damaged."
+		"Takes 1 Argument...\r\n"
+		"\t1:\tBoolean, whether or not to enable sensor static\r\n"
+	},
+
 	{OP_ADD_TO_COLGROUP, "add-to-collision-group\r\n"
 		"\tAdds a ship to the specified collision group(s). Note that there are 32 collision groups, "
 		"and that an object may be in several collision groups at the same time\r\n"
@@ -37707,6 +37753,12 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"Inverse Kinematics:\r\n"
 		"\tThree required numbers: x, y, z position target relative to base, in 1/100th meters\r\n"
 		"\tThree optional numbers: x, y, z rotation target relative to base, in degrees\r\n"
+	},
+
+	{ OP_TOGGLE_ASTEROID_FIELD, "toggle-asteroid-field\r\n" 
+		"\tTurns an existing asteroid field on/off. Will do nothing if no asteroid field is defined in the mission file!\r\n"
+		"\tTakes 1 argument...\r\n"
+		"\t1:\ttrue for asteroid field on, false for asteroid field off\r\n" 
 	}
 };
 // clang-format on

@@ -663,6 +663,30 @@ ADE_VIRTVAR(CargoSize, l_Weaponclass, "number", "The cargo size of this weapon c
 	return ade_set_args(L, "f", info->cargo_size);
 }
 
+ADE_VIRTVAR(BurstShots, l_Weaponclass, "number", "The number of shots in a burst from this weapon.", "number", "Burst shots, 1 for non-burst weapons, or 0 if handle is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
+		return ade_set_error(L, "i", 0);
+
+	if (idx < 0 || idx >= weapon_info_size())
+		return ade_set_error(L, "i", 0);
+
+	return ade_set_args(L, "i", Weapon_info[idx].burst_shots + 1);
+}
+
+ADE_VIRTVAR(BurstDelay, l_Weaponclass, "number", "The time in seconds between shots in a burst.", "number", "Burst delay, or 0 if handle is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
+		return ade_set_error(L, "f", 0.0f);
+
+	if (idx < 0 || idx >= weapon_info_size())
+		return ade_set_error(L, "f", 0.0f);
+
+	return ade_set_args(L, "f", Weapon_info[idx].burst_delay);
+}
+
 ADE_FUNC(isValid, l_Weaponclass, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
 {
 	int idx;

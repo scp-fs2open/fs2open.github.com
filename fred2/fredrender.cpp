@@ -89,7 +89,6 @@ int Last_cursor_over = -1;
 int last_x = 0;
 int last_y = 0;
 int Lookat_mode = 0;
-int player_start1;
 int rendering_order[MAX_SHIPS];
 int render_count = 0;
 int Show_asteroid_field = 1;
@@ -1516,15 +1515,15 @@ void render_frame() {
 		True_rw = rect.Width();
 		True_rh = rect.Height();
 		if (Fixed_briefing_size) {
-			True_rw = BRIEF_GRID_W;
-			True_rh = BRIEF_GRID_H;
+			True_rw = Briefing_window_resolution[0];
+			True_rh = Briefing_window_resolution[1];
 
 		} else {
-			if ((float) True_rh / (float) True_rw > (float) BRIEF_GRID_H / (float) BRIEF_GRID_W) {
-				True_rh = (int) ((float) BRIEF_GRID_H * (float) True_rw / (float) BRIEF_GRID_W);
+			if ((float) True_rh / (float) True_rw > (float) Briefing_window_resolution[1] / (float) Briefing_window_resolution[0]) {
+				True_rh = (int) ((float) Briefing_window_resolution[1] * (float) True_rw / (float) Briefing_window_resolution[0]);
 
 			} else {  // Fred is wider than briefing window
-				True_rw = (int) ((float) BRIEF_GRID_W * (float) True_rh / (float) BRIEF_GRID_H);
+				True_rw = (int) ((float) Briefing_window_resolution[0] * (float) True_rh / (float) Briefing_window_resolution[1]);
 			}
 		}
 

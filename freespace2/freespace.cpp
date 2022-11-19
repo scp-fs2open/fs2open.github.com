@@ -132,6 +132,7 @@
 #include "network/multi_pxo.h"
 #include "network/multi_rate.h"
 #include "network/multi_respawn.h"
+#include "network/multi_turret_manager.h"
 #include "network/multi_voice.h"
 #include "network/multimsgs.h"
 #include "network/multiteamselect.h"
@@ -164,6 +165,7 @@
 #include "render/batching.h"
 #include "scpui/rocket_ui.h"
 #include "scripting/api/objs/gamestate.h"
+#include "scripting/api/objs/camera.h"
 #include "scripting/global_hooks.h"
 #include "scripting/hook_api.h"
 #include "scripting/scripting.h"
@@ -372,6 +374,12 @@ const auto OnStateEndHook = scripting::OverridableHook::Factory(
 	{
 		{"OldState", "gamestate", "The game state that has ended."},
 		{"NewState", "gamestate", "The game state that will begin next."},
+	});
+
+const auto OnCameraSetUpHook = scripting::Hook::Factory(
+	"On Camera Set Up", "Called every frame when the camera is positioned and oriented for rendering.",
+	{
+		{"Camera", "camera", "The camera about to be used for rendering."},
 	});
 
 
@@ -912,6 +920,7 @@ void game_level_close()
 		stars_level_close();
 
 		multi_close_oo_and_ship_tracker();
+		Multi_Turret_Manager.reset(); // Cyborg, this can safely be done after everything else.  At some point, I'll probably consolidate these.
 
 		Pilot.save_savefile();
 
@@ -1029,7 +1038,6 @@ void game_level_init()
 	control_config_clear_used_status();
 	collide_ship_ship_sounds_init();
 
-	Skybox_timestamp = game_get_overall_frametime();
 	Pre_player_entry = 1;			//	Means the player has not yet entered.
 	Entry_delay_time = 0;			//	Could get overwritten in mission read.
 
@@ -1899,7 +1907,7 @@ void game_init()
 
 	parse_rank_tbl();
 	parse_traitor_tbl();
-	parse_medal_tbl();
+	medals_init();
 
 	cutscene_init();
 	key_init();
@@ -2014,8 +2022,9 @@ void game_init()
 #ifdef WITH_FFMPEG
 		libs::ffmpeg::initialize();
 #endif
-
-		libs::discord::init();
+		if (Discord_presence) {
+			libs::discord::init();
+		}
 	}
 
 	mod_table_post_process();
@@ -3188,6 +3197,12 @@ camid game_render_frame_setup()
 
 			if(Viewer_mode & VM_FREECAMERA) {
 				Viewer_obj = nullptr;
+
+				if (OnCameraSetUpHook->isActive()) {
+					OnCameraSetUpHook->run(scripting::hook_param_list(
+						scripting::hook_param("Camera", 'o', scripting::api::l_Camera.Set(cam_get_current()))));
+				}
+
 				return cam_get_current();
 			} else if (Viewer_mode & VM_EXTERNAL) {
 				matrix	tm, tm2;
@@ -3317,6 +3332,11 @@ camid game_render_frame_setup()
 
 	main_cam->set_position(&eye_pos);
 	main_cam->set_rotation(&eye_orient);
+
+	if (OnCameraSetUpHook->isActive())	{
+		OnCameraSetUpHook->run(scripting::hook_param_list(
+			scripting::hook_param("Camera", 'o', scripting::api::l_Camera.Set(Main_camera))));
+	}
 
 	// setup neb2 rendering
 	neb2_render_setup(Main_camera);
@@ -6743,10 +6763,6 @@ void game_shutdown(void)
 	// the menu close functions will unload the bitmaps if they were displayed during the game
 	main_hall_close();
 	training_menu_close();
-
-	// free left over memory from table parsing
-	player_tips_close();
-
 
 	// more fundamental shutdowns begin here ----------
 

@@ -2517,7 +2517,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 
 									nprintf(("wash", "Ship %s with engine wash associated with subsys %s\n", filename, engine_subsys_name));
 
-									subsystemParseList.engine_subsystems.emplace(engine_subsys_name, model_read_deferred_tasks::engine_subsystem_parse{ i });
+									subsystemParseList.engine_subsystems.emplace(i, model_read_deferred_tasks::engine_subsystem_parse{ engine_subsys_name });
 								}
 							}
 						}
@@ -2936,10 +2936,10 @@ modelread_status read_and_process_model_file(polymodel* pm, const char* filename
 	for (const auto& subsystem : deferredTasks.engine_subsystems) {
 		// start off assuming the subsys is invalid
 		int table_error = 1;
-		auto bank = &pm->thrusters[subsystem.second.thruster_nr];
+		auto bank = &pm->thrusters[subsystem.first];
 
 		for (int k = 0; k < n_subsystems; k++) {
-			if (!subsystem_stricmp(subsystems[k].subobj_name, subsystem.first.c_str())) {
+			if (!subsystem_stricmp(subsystems[k].subobj_name, subsystem.second.subsystem_name.c_str())) {
 				bank->submodel_num = subsystems[k].subobj_num;
 
 				bank->wash_info_pointer = subsystems[k].engine_wash_pointer;
@@ -4415,9 +4415,22 @@ int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, ship_
 	if (turret->flags[Model::Subsystem_Flags::Turret_base_restricted_fov])
 		limited_base_rotation = true;
 
+	// figure out how much time we need to account for.  This only varies in mulitplayer
+	// in singleplayer or multiplayer servers info_from_server_stamp will always be Timestamp::never()
+	float calc_time;
+
+	if ((Game_mode & GM_MULTIPLAYER) && !ss->info_from_server_stamp.isNever()){
+		calc_time = static_cast<float>(ss->info_from_server_stamp.value()) / MILLISECONDS_PER_SECOND;
+
+		// this timestamp will only be used once, so discard it.
+		ss->info_from_server_stamp = TIMESTAMP::never();
+	} else {
+		calc_time = flFrametime;
+	}
+
 	//------------
 	// Gradually turn the turret towards the desired angles
-	float step_size = turret->turret_turning_rate * flFrametime;
+	float step_size = turret->turret_turning_rate * calc_time;
 	float base_delta, gun_delta;
 
 	if (reset)

@@ -35,7 +35,7 @@ bool isValidIndex(lua_State* state, int index);
 bool ade_odata_helper(lua_State* L, int stackposition, size_t idx);
 }
 
-bool ade_odata_is_userdata_type(lua_State* L, int stackposition, size_t typeIdx);
+bool ade_odata_is_userdata_type(lua_State* L, int stackposition, size_t typeIdx, bool cleanup = true);
 
 template<typename T>
 bool ade_odata_is_userdata_type(lua_State* L, int stackposition, const T& obj_type) {

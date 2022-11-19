@@ -103,6 +103,7 @@ ubyte lcl_get_font_index(int font_num);
 
 // maybe add localized directory to full path with file name when opening a localized file
 int lcl_add_dir_to_path_with_filename(char *current_path, size_t path_max);
+int lcl_add_dir_to_path_with_filename(SCP_string &current_path);
 
 // Goober5000
 void lcl_replace_stuff(char *text, size_t max_len, bool force = false);

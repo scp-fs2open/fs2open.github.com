@@ -28,6 +28,7 @@
 #include "mission/missiongoals.h"
 #include "mission/missioncampaign.h"
 #include "missionui/redalert.h"
+#include "mod_table/mod_table.h"
 #include "network/multi.h"
 #include "network/multiteamselect.h"
 #include "playerman/managepilot.h"
@@ -47,6 +48,7 @@
 #include "scripting/api/objs/color.h"
 #include "scripting/api/objs/enums.h"
 #include "scripting/api/objs/player.h"
+#include "scripting/api/objs/texture.h"
 #include "scripting/lua/LuaTable.h"
 #include "stats/medals.h"
 #include "stats/stats.h"
@@ -238,6 +240,19 @@ ADE_FUNC(playCutscene, l_UserInterface, "string Filename, boolean RestartMusic, 
 
 	common_play_cutscene(filename, restart_music, score_index);
 	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(linkTexture, l_UserInterface, "texture texture", "Links a texture directly to librocket.", "string", "The url string for librocket, or an empty string if invalid.")
+{
+	texture_h* tex;
+
+	if (!ade_get_args(L, "o", l_Texture.GetPtr(&tex)))
+		return ade_set_error(L, "s", "");
+
+	if(tex == nullptr || !tex->isValid())
+		return ade_set_error(L, "s", "");
+	
+	return ade_set_args(L, "s", "data:image/bmpman," + std::to_string(tex->handle));
 }
 
 //**********SUBLIBRARY: UserInterface/PilotSelect
@@ -924,7 +939,7 @@ ADE_FUNC(getEarnedBadge,
 		debrief_choose_medal_variant(filename,
 			Player->stats.m_badge_earned.back(),
 			Player->stats.medal_counts[Player->stats.m_badge_earned.back()] - 1);
-		displayname = Ranks[Promoted].name;
+		displayname = Medals[Player->stats.m_badge_earned.back()].get_display_name();
 
 		return ade_set_args(L, "oss", l_DebriefStage.Set(debrief_stage_h(&Badge_stage)), displayname, filename);
 	} else {
@@ -1172,8 +1187,8 @@ ADE_FUNC(initSelect,
 
 	common_set_team_pointers(Common_team);
 
-	ship_select_common_init();
-	weapon_select_common_init();
+	ship_select_common_init(true);
+	weapon_select_common_init(true);
 
 	if ( Game_mode & GM_MULTIPLAYER ) {
 		multi_ts_common_init();
@@ -1211,6 +1226,52 @@ ADE_FUNC(saveLoadout,
 	}
 
 	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(get3dShipChoices,
+	l_UserInterface_ShipWepSelect,
+	nullptr,
+	"Gets the 3d select choices from game_settings.tbl relating to ships.",
+	"boolean, number, boolean",
+	"3d ship select choice(true for on, false for off), default ship select effect(0 = off, 1 = FS1, 2 = FS2), 3d ship "
+	"icons choice(true for on, false for off)")
+{
+
+	return ade_set_args(L,
+		"bib",
+		Use_3d_ship_select,
+		Default_ship_select_effect,
+		Use_3d_ship_icons);
+}
+
+ADE_FUNC(get3dWeaponChoices,
+	l_UserInterface_ShipWepSelect,
+	nullptr,
+	"Gets the 3d select choices from game_settings.tbl relating to weapons.",
+	"boolean, number, boolean",
+	"3d weapon select choice(true for on, false for off), default weapon select effect(0 = off, 1 = FS1, 2 = FS2), 3d weapon "
+	"icons choice(true for on, false for off)")
+{
+
+	return ade_set_args(L,
+		"bib",
+		Use_3d_weapon_select,
+		Default_weapon_select_effect,
+		Use_3d_weapon_icons);
+}
+
+ADE_FUNC(get3dOverheadChoices,
+	l_UserInterface_ShipWepSelect,
+	nullptr,
+	"Gets the 3d select choices from game_settings.tbl relating to weapon select overhead view.",
+	"boolean, number",
+	"3d overhead select choice(true for on, false for off), default overhead style(0 for top view, 1 for rotate)")
+{
+
+	return ade_set_args(L,
+		"bi",
+		Use_3d_overhead_ship,
+		(int)Default_overhead_ship_style);
 }
 
 ADE_LIB_DERIV(l_Ship_Pool, "Ship_Pool", nullptr, nullptr, l_UserInterface_ShipWepSelect);

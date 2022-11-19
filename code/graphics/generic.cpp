@@ -162,7 +162,7 @@ int generic_anim_stream(generic_anim *ga, const bool cache)
 
 	ga->type = BM_TYPE_NONE;
 
-	auto res = cf_find_file_location_ext(ga->filename, BM_ANI_NUM_TYPES, bm_ani_ext_list, CF_TYPE_ANY, false);
+	auto res = cf_find_file_location_ext(ga->filename, BM_ANI_NUM_TYPES, bm_ani_ext_list, CF_TYPE_ANY);
 
 	// could not be found, or is invalid for some reason
 	if ( !res.found )

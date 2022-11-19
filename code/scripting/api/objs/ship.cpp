@@ -24,6 +24,7 @@
 #include "ship/shipfx.h"
 #include "hud/hudets.h"
 #include "object/object.h"
+#include "object/objectdock.h"
 #include "model/model.h"
 #include "ship/ship.h"
 #include "parse/parselo.h"
@@ -775,27 +776,21 @@ ADE_VIRTVAR(Target, l_Ship, "object", "Target of ship. Value may also be a deriv
 	else
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
-	if(ADE_SETTING_VAR && newh)
-	{
-		if(aip->target_signature != newh->sig)
-		{
-			if(newh->IsValid())
-			{
-				aip->target_objnum = OBJ_INDEX(newh->objp);
-				aip->target_signature = newh->sig;
-				aip->target_time = 0.0f;
+	if(ADE_SETTING_VAR && !(newh && aip->target_signature == newh->sig)) {
+		// we have a different target, or are clearng the target
+		if(newh && newh->IsValid())	{
+			aip->target_objnum = OBJ_INDEX(newh->objp);
+			aip->target_signature = newh->sig;
+			aip->target_time = 0.0f;
+			set_targeted_subsys(aip, nullptr, -1);
 
-				if (aip == Player_ai)
-					hud_shield_hit_reset(newh->objp);
-			}
-			else
-			{
-				aip->target_objnum = -1;
-				aip->target_signature = -1;
-				aip->target_time = 0.0f;
-			}
-
-			set_targeted_subsys(aip, NULL, -1);
+			if (aip == Player_ai)
+				hud_shield_hit_reset(newh->objp);
+		} else if (lua_isnil(L, 2)) {
+			aip->target_objnum = -1;
+			aip->target_signature = -1;
+			aip->target_time = 0.0f;
+			set_targeted_subsys(aip, nullptr, -1);
 		}
 	}
 
@@ -1756,6 +1751,8 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem Ta
 			}
 			break;
 		}
+		default:
+			return ade_set_error(L, "b", false);
 	}
 
 	//Nothing got set!
@@ -2335,6 +2332,204 @@ ADE_FUNC(setGlowPointBankActive, l_Ship, "boolean active, [number bank]", "Activ
 	}
 
 	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(numDocked, l_Ship, nullptr, "Returns the number of ships this ship is directly docked with", "number", "The number of ships")
+{
+	object_h *docker_objh = nullptr;
+
+	if (!ade_get_args(L, "o", l_Ship.GetPtr(&docker_objh)))
+		return ADE_RETURN_NIL;
+
+	if (docker_objh == nullptr || !docker_objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "i", dock_count_direct_docked_objects(docker_objh->objp));
+}
+
+ADE_FUNC(isDocked, l_Ship, "[ship... dockee_ships]", "Returns whether this ship is docked to all of the specified dockee ships, or is docked at all if no ships are specified", "boolean", "Returns whether the ship is docked")
+{
+	bool found_arg = false;
+	int skip_args = 1;
+	object_h *docker_objh = nullptr, *dockee_objh = nullptr;
+
+	if (!ade_get_args(L, "o", l_Ship.GetPtr(&docker_objh)))
+		return ADE_RETURN_NIL;
+
+	if (docker_objh == nullptr || !docker_objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	while (true)
+	{
+		// read the next ship
+		internal::Ade_get_args_skip = skip_args++;
+		if (ade_get_args(L, "|o", l_Ship.GetPtr(&dockee_objh)) == 0)
+			break;
+		found_arg = true;
+
+		// make sure ship exists
+		if (dockee_objh == nullptr || !dockee_objh->IsValid())
+			continue;
+
+		// see if we are docked to it
+		if (!dock_check_find_direct_docked_object(docker_objh->objp, dockee_objh->objp))
+			return ADE_RETURN_FALSE;
+	}
+
+	// all ships passed
+	if (found_arg)
+		return ADE_RETURN_TRUE;
+
+	// if we didn't find any specified ships, then see if we are docked at all
+	return object_is_docked(docker_objh->objp) ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
+}
+
+ADE_FUNC(setDocked, l_Ship, "ship dockee_ship, [string | number docker_point, string | number dockee_point]", "Immediately docks this ship with another ship.", "boolean", "Returns whether the docking was successful, or nil if an input was invalid")
+{
+	object_h *docker_objh = nullptr, *dockee_objh = nullptr;
+	int docker_point = -1, dockee_point = -1;
+
+	if (!ade_get_args(L, "oo", l_Ship.GetPtr(&docker_objh), l_Ship.GetPtr(&dockee_objh)))
+		return ADE_RETURN_NIL;
+
+	if (docker_objh == nullptr || dockee_objh == nullptr || !docker_objh->IsValid() || !dockee_objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	// cannot dock an object to itself
+	if (docker_objh->objp->instance == dockee_objh->objp->instance)
+		return ADE_RETURN_FALSE;
+
+	auto docker_shipp = &Ships[docker_objh->objp->instance];
+	auto dockee_shipp = &Ships[dockee_objh->objp->instance];
+
+	auto docker_pm = model_get(Ship_info[docker_shipp->ship_info_index].model_num);
+	auto dockee_pm = model_get(Ship_info[dockee_shipp->ship_info_index].model_num);
+
+	if (lua_isnumber(L, 3))
+	{
+		ade_get_args(L, "**i", &docker_point);
+		docker_point--;	// Lua --> C/C++
+	}
+	else if (lua_isstring(L, 3))
+	{
+		const char *name = nullptr;
+		ade_get_args(L, "**s", &name);
+		docker_point = model_find_dock_name_index(Ship_info[docker_shipp->ship_info_index].model_num, name);
+	}
+	else
+	{
+		docker_point = 0;
+	}
+
+	if (lua_isnumber(L, 4))
+	{
+		ade_get_args(L, "***i", &dockee_point);
+		dockee_point--;	// Lua --> C/C++
+	}
+	else if (lua_isstring(L, 4))
+	{
+		const char* name = nullptr;
+		ade_get_args(L, "***s", &name);
+		dockee_point = model_find_dock_name_index(Ship_info[dockee_shipp->ship_info_index].model_num, name);
+	}
+	else
+	{
+		dockee_point = 0;
+	}
+
+	if (docker_point < 0 || docker_point >= docker_pm->n_docks)
+	{
+		Warning(LOCATION, "Invalid docker point specified for ship '%s'", docker_shipp->ship_name);
+		return ADE_RETURN_NIL;
+	}
+
+	if (dockee_point < 0 || dockee_point >= dockee_pm->n_docks)
+	{
+		Warning(LOCATION, "Invalid dockee point specified for ship '%s'", dockee_shipp->ship_name);
+		return ADE_RETURN_NIL;
+	}
+
+	//Make sure that the specified dockpoints are all free (if not, do nothing)
+	if (dock_find_object_at_dockpoint(docker_objh->objp, docker_point) != nullptr ||
+		dock_find_object_at_dockpoint(dockee_objh->objp, dockee_point) != nullptr)
+	{
+		// at least one of the specified dockpoints is occupied
+		return ADE_RETURN_FALSE;
+	}
+
+	//Set docked
+	dock_orient_and_approach(docker_objh->objp, docker_point, dockee_objh->objp, dockee_point, DOA_DOCK_STAY);
+	ai_do_objects_docked_stuff(docker_objh->objp, docker_point, dockee_objh->objp, dockee_point, true);
+
+	return ADE_RETURN_TRUE;
+}
+
+static int jettison_helper(lua_State *L, object_h *docker_objh, float jettison_speed, int skip_args)
+{
+	object_h *dockee_objh = nullptr;
+	bool found_arg = false;
+	int num_ships_undocked = 0;
+
+	while (true)
+	{
+		// read the next ship
+		internal::Ade_get_args_skip = skip_args++;
+		if (ade_get_args(L, "|o", l_Ship.GetPtr(&dockee_objh)) == 0)
+			break;
+		found_arg = true;
+
+		// make sure ship exists
+		if (dockee_objh == nullptr || !dockee_objh->IsValid())
+			continue;
+
+		// make sure we are docked to it
+		if (!dock_check_find_direct_docked_object(docker_objh->objp, dockee_objh->objp))
+			continue;
+
+		object_jettison_cargo(docker_objh->objp, dockee_objh->objp, jettison_speed, true);
+		num_ships_undocked++;
+	}
+
+	// if we didn't find any specified ships, then we need to jettison all of them
+	if (!found_arg)
+	{
+		// Goober5000 - as with ai_deathroll_start, we can't simply iterate through the dock list while we're
+		// undocking things.  So just repeatedly jettison the first object.
+		while (object_is_docked(docker_objh->objp))
+		{
+			object_jettison_cargo(docker_objh->objp, dock_get_first_docked_object(docker_objh->objp), jettison_speed, true);
+			num_ships_undocked++;
+		}
+	}
+
+	return ade_set_args(L, "i", num_ships_undocked);
+}
+
+ADE_FUNC(setUndocked, l_Ship, "[ship... dockee_ships /* All docked ships by default */]", "Immediately undocks one or more dockee ships from this ship.", "number", "Returns the number of ships undocked")
+{
+	object_h *docker_objh = nullptr;
+
+	if (!ade_get_args(L, "o", l_Ship.GetPtr(&docker_objh)))
+		return ADE_RETURN_NIL;
+
+	if (docker_objh == nullptr || !docker_objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	return jettison_helper(L, docker_objh, 0.0f, 1);
+}
+
+ADE_FUNC(jettison, l_Ship, "number jettison_speed, [ship... dockee_ships /* All docked ships by default */]", "Jettisons one or more dockee ships from this ship at the specified speed.", "number", "Returns the number of ships jettisoned")
+{
+	object_h *docker_objh = nullptr;
+	float jettison_speed = 0.0f;
+
+	if (!ade_get_args(L, "of", l_Ship.GetPtr(&docker_objh), &jettison_speed))
+		return ADE_RETURN_NIL;
+
+	if (docker_objh == nullptr || !docker_objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	return jettison_helper(L, docker_objh, jettison_speed, 2);
 }
 
 

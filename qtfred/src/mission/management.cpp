@@ -36,8 +36,6 @@ extern bool Xstr_inited;
 
 extern void allocate_parse_text(size_t size);
 
-extern void parse_init(bool basic = false);
-
 extern void brief_init_colors();
 
 extern void ssm_init();    // Need this to populate Ssm_info so OPF_SSM_CLASS does something. -MageKing17
@@ -195,7 +193,7 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 	weapon_init();
 
 	listener(SubSystem::Medals);
-	parse_medal_tbl();            // get medal names for sexpression usage
+	medals_init();            // get medal names for sexpression usage
 
 	listener(SubSystem::Glowpoints);
 	glowpoint_init();
@@ -204,7 +202,6 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 	ship_init();
 
 	listener(SubSystem::Parse);
-	parse_init();
 
 	listener(SubSystem::TechroomIntel);
 	techroom_intel_init();

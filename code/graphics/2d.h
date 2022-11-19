@@ -232,7 +232,7 @@ enum shader_type {
 #define SDR_FLAG_MODEL_CLIP			(1<<17)
 #define SDR_FLAG_MODEL_HDR			(1<<18)
 #define SDR_FLAG_MODEL_AMBIENT_MAP	(1<<19)
-#define SDR_FLAG_MODEL_NORMAL_ALPHA	(1<<20)
+#define SDR_FLAG_MODEL_UNUSED20		(1<<20)
 #define SDR_FLAG_MODEL_THICK_OUTLINES (1<<21) // Renders the model geometry as an outline with configurable line width
 #define SDR_FLAG_MODEL_ALPHA_MULT (1<<22) 
 

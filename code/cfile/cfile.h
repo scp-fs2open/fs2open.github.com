@@ -49,42 +49,38 @@ typedef struct {
 #define CF_TYPE_MODELS				5
 #define CF_TYPE_TABLES				6
 #define CF_TYPE_SOUNDS				7
-#define CF_TYPE_SOUNDS_8B22K		8
-#define CF_TYPE_SOUNDS_16B11K		9
-#define CF_TYPE_VOICE				10
-#define CF_TYPE_VOICE_BRIEFINGS		11
-#define CF_TYPE_VOICE_CMD_BRIEF		12
-#define CF_TYPE_VOICE_DEBRIEFINGS	13
-#define CF_TYPE_VOICE_PERSONAS		14
-#define CF_TYPE_VOICE_SPECIAL		15
-#define CF_TYPE_VOICE_TRAINING		16
-#define CF_TYPE_MUSIC				17
-#define CF_TYPE_MOVIES				18
-#define CF_TYPE_INTERFACE			19
-#define CF_TYPE_FONT				20
-#define CF_TYPE_EFFECTS				21
-#define CF_TYPE_HUD					22
-#define CF_TYPE_PLAYERS				23
-#define CF_TYPE_PLAYER_IMAGES		24
-#define CF_TYPE_SQUAD_IMAGES		25
-#define CF_TYPE_SINGLE_PLAYERS		26
-#define CF_TYPE_MULTI_PLAYERS		27
-#define CF_TYPE_CACHE				28
-#define CF_TYPE_MULTI_CACHE			29
-#define CF_TYPE_MISSIONS			30
-#define CF_TYPE_CONFIG				31
-#define CF_TYPE_DEMOS				32
-#define CF_TYPE_CBANIMS				33
-#define CF_TYPE_INTEL_ANIMS			34
-#define CF_TYPE_SCRIPTS				35
-#define CF_TYPE_FICTION				36
-#define CF_TYPE_FREDDOCS			37
-#define CF_TYPE_INTERFACE_MARKUP 38
-#define CF_TYPE_INTERFACE_CSS 39
-#define CF_TYPE_PLAYER_BINDS 40
+#define CF_TYPE_VOICE				8
+#define CF_TYPE_VOICE_BRIEFINGS		9
+#define CF_TYPE_VOICE_CMD_BRIEF		10
+#define CF_TYPE_VOICE_DEBRIEFINGS	11
+#define CF_TYPE_VOICE_PERSONAS		12
+#define CF_TYPE_VOICE_SPECIAL		13
+#define CF_TYPE_VOICE_TRAINING		14
+#define CF_TYPE_MUSIC				15
+#define CF_TYPE_MOVIES				16
+#define CF_TYPE_INTERFACE			17
+#define CF_TYPE_FONT				18
+#define CF_TYPE_EFFECTS				19
+#define CF_TYPE_HUD					20
+#define CF_TYPE_PLAYERS				21
+#define CF_TYPE_PLAYER_IMAGES		22
+#define CF_TYPE_SQUAD_IMAGES		23
+#define CF_TYPE_SINGLE_PLAYERS		24
+#define CF_TYPE_MULTI_PLAYERS		25
+#define CF_TYPE_PLAYER_BINDS		26
+#define CF_TYPE_CACHE				27
+#define CF_TYPE_MULTI_CACHE			28
+#define CF_TYPE_MISSIONS			29
+#define CF_TYPE_CONFIG				30
+#define CF_TYPE_DEMOS				31
+#define CF_TYPE_CBANIMS				32
+#define CF_TYPE_INTEL_ANIMS			33
+#define CF_TYPE_SCRIPTS				34
+#define CF_TYPE_FICTION				35
+#define CF_TYPE_FREDDOCS			36
 
 #define CF_MAX_PATH_TYPES                                                                                              \
-	41 // Can be as high as you'd like //DTP; yeah but beware alot of things uses CF_MAX_PATH_TYPES
+	37 // Can be as high as you'd like //DTP; yeah but beware alot of things uses CF_MAX_PATH_TYPES
 
 // TRUE if type is specified and valid
 #define CF_TYPE_SPECIFIED(path_type) (((path_type)>CF_TYPE_INVALID) && ((path_type)<CF_MAX_PATH_TYPES))
@@ -395,7 +391,7 @@ struct CFileLocation {
 //         size        - File size
 //         offset      - Offset into pack file.  0 if not a packfile.
 // Returns: If not found returns 0.
-CFileLocation cf_find_file_location(const char* filespec, int pathtype, bool localize = false,
+CFileLocation cf_find_file_location(const char* filespec, int pathtype,
                                     uint32_t location_flags = CF_LOCATION_ALL);
 
 struct CFileLocationExt : public CFileLocation {
@@ -419,8 +415,7 @@ struct CFileLocationExt : public CFileLocation {
 //         offset      - Offset into pack file.  0 if not a packfile.
 // Returns: If not found returns -1, else returns offset into ext_list.
 // (NOTE: This function is exponentially slow, so don't use it unless truely needed!!)
-CFileLocationExt cf_find_file_location_ext(const char* filename, const int ext_num, const char** ext_list, int pathtype,
-                                           bool localize = false);
+CFileLocationExt cf_find_file_location_ext(const char* filename, const int ext_num, const char** ext_list, int pathtype);
 
 // Functions to change directories
 int cfile_chdir(const char *dir);

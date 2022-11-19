@@ -17,7 +17,6 @@
 #include "options/Option.h"
 
 fix Missiontime;
-fix Skybox_timestamp;
 fix Frametime;
 int	Framecount=0;
 
@@ -66,11 +65,7 @@ char Processing_filename[MAX_PATH_LEN];
 #endif
 
 // override states to skip rendering of certain elements, but without disabling them completely
-bool Basemap_override = false;
 bool Envmap_override = false;
-bool Specmap_override = false;
-bool Normalmap_override = false;
-bool Heightmap_override = false;
 bool Glowpoint_override = false;
 bool Glowpoint_use_depth_buffer = true;
 bool PostProcessing_override = false;
@@ -85,9 +80,6 @@ float Glowmap_color_override[3] = {0.0f, 0.0f, 0.0f};
 
 bool Specmap_color_override_set = false;
 float Specmap_color_override[3] = {0.0f, 0.0f, 0.0f};
-
-bool Gloss_override_set = false;
-float Gloss_override = 0.0f;
 
 // Values used for noise for thruster animations
 float Noise[NOISE_NUM_FRAMES] = { 

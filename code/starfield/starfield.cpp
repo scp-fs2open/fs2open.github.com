@@ -62,7 +62,9 @@ static int Subspace_model_outer = -1;
 static int Rendering_to_env = 0;
 
 int Num_stars = 500;
-fix starfield_timestamp = 0;
+
+// A timestamp for animated skyboxes -MageKing17
+TIMESTAMP Skybox_timestamp;
 
 #define MAX_FLARE_COUNT 10
 #define MAX_FLARE_BMP 6
@@ -737,6 +739,8 @@ void stars_pre_level_init(bool clear_backgrounds)
 	uint idx, i;
 	starfield_bitmap *sb = NULL;
 
+	Num_stars = 500;
+
 	// we used to clear all the array entries, but now we can just wipe the vector
 	if (clear_backgrounds)
 		Backgrounds.clear();
@@ -799,6 +803,9 @@ void stars_pre_level_init(bool clear_backgrounds)
 
 	Env_cubemap_drawn = false;
 	Irr_cubemap_drawn = false;
+
+	// reset the skybox timestamp, used for animated textures
+	Skybox_timestamp = _timestamp();
 }
 
 // setup the render target ready for this mission's environment map

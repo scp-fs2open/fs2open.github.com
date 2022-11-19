@@ -879,7 +879,7 @@ struct model_read_deferred_tasks {
 	};
 
 	struct engine_subsystem_parse {
-		int thruster_nr;
+		SCP_string subsystem_name;
 	};
 
 	struct weapon_subsystem_parse {
@@ -897,8 +897,8 @@ struct model_read_deferred_tasks {
 	//Key: Subsystem Name
 	SCP_unordered_map<SCP_string, model_subsystem_parse, SCP_string_lcase_hash, SCP_string_lcase_equal_to> model_subsystems;
 	using model_subsystem_pair = decltype(model_subsystems)::value_type;
-	//Key: Subsystem Name
-	SCP_unordered_map<SCP_string, engine_subsystem_parse, SCP_string_lcase_hash, SCP_string_lcase_equal_to> engine_subsystems;
+	//Key: Engine Nr
+	SCP_unordered_map<int, engine_subsystem_parse> engine_subsystems;
 	using engine_subsystem_pair = decltype(engine_subsystems)::value_type;
 	//Key: Parent Subobject Nr
 	SCP_unordered_map<int, weapon_subsystem_parse> weapons_subsystems;

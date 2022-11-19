@@ -30,6 +30,8 @@ class campaign_editor : public CFormView
 private:
 	int m_num_links;
 	int m_last_mission;
+	CString	m_current_campaign_path;
+	CString GetPathWithoutFile();
 
 protected:
 	campaign_editor();           // protected constructor used by dynamic creation
@@ -44,8 +46,8 @@ public:
 	void load_tree(int save = 1);
 	void save_tree(int clear = 1);
 	int handler(int code, int node, char *str = NULL);
-	void initialize( int init_files = 1 );
-	void load_campaign();
+	void initialize( bool init_files, bool clear_path );
+	void load_campaign(const char *filename, const char *full_path);
 	void update_loop_desc_window();
 	void campaign_editor::save_loop_desc_window();
 	//{{AFX_DATA(campaign_editor)

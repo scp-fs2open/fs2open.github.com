@@ -93,12 +93,8 @@ void convert_model_material(model_uniform_data* data_out,
 			data_out->emissionFactor.xyz.z = gr_light_zero[2];
 		}
 
-		if (Gloss_override_set) {
-			data_out->defaultGloss = Gloss_override;
-		} else {
-			data_out->defaultGloss = 0.6f;
-		}
 	}
+	data_out->defaultGloss = 0.6f;
 
 	if (shader_flags & SDR_FLAG_MODEL_DIFFUSE_MAP) {
 		if (material.is_desaturated()) {
@@ -157,12 +153,8 @@ void convert_model_material(model_uniform_data* data_out,
 			data_out->sSpecmapIndex = bm_get_array_index(material.get_texture_map(TM_SPEC_GLOSS_TYPE));
 
 			data_out->gammaSpec = 1;
+			data_out->alphaGloss = 1;
 
-			if (Gloss_override_set) {
-				data_out->alphaGloss = 0;
-			} else {
-				data_out->alphaGloss = 1;
-			}
 		} else {
 			data_out->sSpecmapIndex = bm_get_array_index(material.get_texture_map(TM_SPECULAR_TYPE));
 
@@ -172,7 +164,7 @@ void convert_model_material(model_uniform_data* data_out,
 	}
 
 	if (shader_flags & SDR_FLAG_MODEL_ENV_MAP) {
-		if (material.get_texture_map(TM_SPEC_GLOSS_TYPE) > 0 || Gloss_override_set) {
+		if (material.get_texture_map(TM_SPEC_GLOSS_TYPE) > 0) {
 			data_out->envGloss = 1;
 		} else {
 			data_out->envGloss = 0;
@@ -254,11 +246,6 @@ void convert_model_material(model_uniform_data* data_out,
 			data_out->fogColor.xyzw.z = i2fl(fog_params.b) / 255.0f;
 			data_out->fogColor.xyzw.w = 1.0f;
 		}
-	}
-
-	if (shader_flags & SDR_FLAG_MODEL_NORMAL_ALPHA) {
-		data_out->normalAlphaMinMax.x = material.get_normal_alpha_min();
-		data_out->normalAlphaMinMax.y = material.get_normal_alpha_max();
 	}
 
 	if ( shader_flags & SDR_FLAG_MODEL_THICK_OUTLINES ) {

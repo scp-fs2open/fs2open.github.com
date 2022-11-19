@@ -341,7 +341,7 @@ public:
 	model_subsystem *system_info;					// pointer to static data for this subsystem -- see model.h for definition
 
 	int			parent_objnum;						// objnum of the parent ship
-	int			parent_subsys_index;				// index of this subsystem in the parent ship's linked list
+	int			parent_subsys_index;				// index of this subsystem in the parent ship's linked list -- Do not access manually, use parent_subsys_index() as this may not yet be cached.
 
 	char		sub_name[NAME_LENGTH];					//WMC - Name that overrides name of original
 	float		current_hits;							// current number of hits this subsystem has left.
@@ -429,6 +429,9 @@ public:
 	//Per-turret ownage settings - SUSHI
 	int turret_max_bomb_ownage; 
 	int turret_max_target_ownage;
+
+	// multiplayer
+	TIMESTAMP info_from_server_stamp;
 
 	ship_subsys()
 		: next(NULL), prev(NULL)
@@ -614,7 +617,7 @@ public:
 	int	departure_delay;		// time in seconds after sexp is true that we delay.
 
 	int	wingnum;								// wing number this ship is in.  -1 if in no wing, Wing array index otherwise
-	std::set<size_t> orders_accepted;					// set of orders this ship will accept from the player.
+	SCP_set<size_t> orders_accepted;				// set of orders this ship will accept from the player.
 
 	// Subsystem fields.  The subsys_list is a list of all subsystems (which might include multiple types
 	// of a particular subsystem, like engines).  The subsys_info struct is information for particular
@@ -683,7 +686,7 @@ public:
 
 	int	next_engine_stutter;				// timestamp to time the engine stuttering when a ship dies
 
-	fix base_texture_anim_frametime;		// Goober5000 - zero mark for texture animations
+	TIMESTAMP base_texture_anim_timestamp;	// Goober5000 - zero mark for texture animations
 
 	float total_damage_received;        // total damage received (for scoring purposes)
 	float damage_ship[MAX_DAMAGE_SLOTS];    // damage applied from each player
@@ -1467,6 +1470,9 @@ private:
 extern flag_def_list_new<Ship::Info_Flags> Ship_flags[];
 extern const size_t Num_ship_flags;
 
+extern flag_def_list_new<Model::Subsystem_Flags> Subsystem_flags[];
+extern const size_t Num_subsystem_flags;
+
 extern int Num_wings;
 extern ship Ships[MAX_SHIPS];
 extern ship	*Player_ship;
@@ -1517,6 +1523,7 @@ typedef struct wing {
 	int total_vanished;						// total number of ships vanished in this wing (including all waves)
 
 	int	special_ship;							// the leader of the wing.  An index into ship_index[].
+	int special_ship_ship_info_index;					// the ship info index of the special ship
 
 	int	arrival_location;						// arrival and departure information for wings -- similar to info for ships
 	int	arrival_distance;						// distance from some ship where this ship arrives
@@ -1533,7 +1540,7 @@ typedef struct wing {
 
 	int	wave_delay_min;						// minimum number of seconds before new wave can arrive
 	int	wave_delay_max;						// maximum number of seconds before new wave can arrive
-	int	wave_delay_timestamp;				// timestamp used for delaying arrival of next wave
+	TIMESTAMP	wave_delay_timestamp;				// timestamp used for delaying arrival of next wave
 
 	flagset<Ship::Wing_Flags> flags;
 
@@ -1549,6 +1556,10 @@ typedef struct wing {
 
 	// if -1, retail formation, else a custom one defined in ships.tbl
 	int formation;
+	float formation_scale;
+
+	// reset to a completely blank wing
+	void clear();
 } wing;
 
 extern wing Wings[MAX_WINGS];
@@ -1559,7 +1570,6 @@ extern int TVT_wings[MAX_TVT_WINGS];
 
 extern char Starting_wing_names[MAX_STARTING_WINGS][NAME_LENGTH];
 extern char Squadron_wing_names[MAX_SQUADRON_WINGS][NAME_LENGTH];
-extern bool Squadron_wing_names_found[MAX_SQUADRON_WINGS];
 extern char TVT_wing_names[MAX_TVT_WINGS][NAME_LENGTH];
 
 extern int ai_paused;

@@ -462,10 +462,6 @@ void multi_team_handle_join(net_player *pl)
 			else if(Net_players[idx].p_info.team == 1){
 				team1_count++;
 			} 
-			// some other case - should never happen
-			else {
-				Int3();
-			}
 		}
 	}
 
@@ -482,9 +478,6 @@ void multi_team_handle_join(net_player *pl)
 
 	// send a team update
 	multi_team_send_update();
-
-	// verify that we have valid team stuff
-	multi_team_verify();
 }
 
 // set all ships in the mission to be marked as the proper team (TEAM_HOSTILE, TEAM_FRIENLY)

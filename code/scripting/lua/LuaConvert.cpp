@@ -14,7 +14,7 @@ bool isValidIndex(lua_State* state, int index) {
 }
 
 bool ade_odata_helper(lua_State* L, int stackposition, size_t idx) {
-	if (!ade_odata_is_userdata_type(L, stackposition, idx)) {
+	if (!ade_odata_is_userdata_type(L, stackposition, idx, false)) {
 		// Issue the LuaError here since this is the only place where we have all relevant information
 		LuaError(L, "Argument %d is the wrong type of userdata; '%s' given, but '%s' expected", stackposition,
 			::scripting::internal::getTableEntry((size_t)lua_tointeger(L, -2)).Name,
@@ -28,7 +28,7 @@ bool ade_odata_helper(lua_State* L, int stackposition, size_t idx) {
 
 }
 
-bool ade_odata_is_userdata_type(lua_State* L, int stackposition, size_t typeIdx) {
+bool ade_odata_is_userdata_type(lua_State* L, int stackposition, size_t typeIdx, bool cleanup) {
 	// it needs to be userdata before we narrow down the specific type of userdata
 	if (lua_type(L, stackposition) != LUA_TUSERDATA) {
 		return false;
@@ -47,6 +47,8 @@ bool ade_odata_is_userdata_type(lua_State* L, int stackposition, size_t typeIdx)
 		lua_pushstring(L, "__adederivid");
 		lua_rawget(L, mtb_ldx);
 		if ((size_t)lua_tointeger(L, -1) != typeIdx) {
+			if(cleanup)
+				lua_pop(L, 3);
 			return false;
 		}
 		lua_pop(L, 1);

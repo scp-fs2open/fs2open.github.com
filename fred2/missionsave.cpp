@@ -762,7 +762,7 @@ int CFred_mission_save::save_asteroid_fields()
 		parse_comments();
 		save_vector(Asteroid_field.max_bound);
 
-		if (Asteroid_field.has_inner_bound == 1) {
+		if (Asteroid_field.has_inner_bound) {
 			if (optional_string_fred("+Inner Bound:")) {
 				parse_comments();
 			} else {
@@ -778,7 +778,7 @@ int CFred_mission_save::save_asteroid_fields()
 			save_vector(Asteroid_field.inner_max_bound);
 		}
 
-		if (!Asteroid_target_ships.empty()) {
+		if (!Asteroid_field.target_names.empty()) {
 			fso_comment_push(";;FSO 22.0.0;;");
 			if (optional_string_fred("$Asteroid Targets:")) {
 				parse_comments();
@@ -787,7 +787,7 @@ int CFred_mission_save::save_asteroid_fields()
 				fout_version("\n$Asteroid Targets: (");
 			}
 
-			for (SCP_string& name : Asteroid_target_ships) {				
+			for (SCP_string& name : Asteroid_field.target_names) {
 				fout(" \"%s\"", name.c_str());
 			}
 
@@ -841,9 +841,27 @@ int CFred_mission_save::save_bitmaps()
 			fout(" )");
 		}
 
-		required_string_fred("+Neb2Flags:");
-		parse_comments();
-		fout(" %d", Neb2_poof_flags);
+		if (Mission_save_format == FSO_FORMAT_RETAIL) {
+			if (optional_string_fred("+Neb2Flags:")) {
+				parse_comments();
+			} else {
+				fout("\n+Neb2Flags:");
+			}
+			fout(" %d", Neb2_poof_flags);
+		} else {
+			if (optional_string_fred("+Neb2 Poofs List:")) {
+				parse_comments();
+			} else {
+				fout("\n+Neb2 Poofs List:");
+			}
+			fout(" (");
+			for (i = 0; i < (int)Poof_info.size(); ++i) {
+				if (Neb2_poof_flags & (1 << i)) {
+					fout(" \"%s\" ", Poof_info[i].name);
+				}
+			}
+			fout(") ");
+		}
 	}
 	// neb 1 stuff
 	else {
@@ -1698,20 +1716,6 @@ int CFred_mission_save::save_common_object_data(object *objp, ship *shipp)
 
 		fso_comment_pop();
 	}
-
-	/*	for (j=0; j<shipp->status_count; j++) {
-	required_string_fred("$Status Description:");
-	parse_comments(-1);
-	fout(" %s", Status_desc_names[shipp->status_type[j]]);
-
-	required_string_fred("$Status:");
-	parse_comments(-1);
-	fout(" %s", Status_type_names[shipp->status[j]]);
-
-	required_string_fred("$Target:");
-	parse_comments(-1);
-	fout(" %s", Status_target_names[shipp->target[j]]);
-	}*/
 
 	fso_comment_pop(true);
 
@@ -3115,7 +3119,6 @@ int CFred_mission_save::save_objects()
 {
 	SCP_string sexp_out;
 	int i, z;
-	ai_info *aip;
 	object *objp;
 	ship *shipp;
 	ship_info *sip;
@@ -3209,14 +3212,11 @@ int CFred_mission_save::save_objects()
 			required_string_fred("$IFF:");
 			parse_comments();
 			fout(" %s", "IFF 1");
+
+			required_string_fred("$AI Behavior:");
+			parse_comments();
+			fout(" %s", Ai_behavior_names[AIM_NONE]);
 		}
-
-		Assert(shipp->ai_index >= 0);
-		aip = &Ai_info[shipp->ai_index];
-
-		required_string_fred("$AI Behavior:");
-		parse_comments();
-		fout(" %s", Ai_behavior_names[aip->behavior]);
 
 		if (shipp->weapons.ai_class != Ship_info[shipp->ship_info_index].ai_class) {
 			if (optional_string_fred("+AI Class:", "$Name:"))
@@ -3503,6 +3503,10 @@ int CFred_mission_save::save_objects()
 				fout(" \"fail-sound-locked-secondary\"");
 			if (shipp->flags[Ship::Ship_Flags::Aspect_immune])
 				fout(" \"aspect-immune\"");
+			if (shipp->flags[Ship::Ship_Flags::Cannot_perform_scan])
+				fout(" \"cannot-perform-scan\"");
+			if (shipp->flags[Ship::Ship_Flags::No_targeting_limits])
+				fout(" \"no-targeting-limits\"");
 			fout(" )");
 		}
 		// -----------------------------------------------------------
@@ -4475,8 +4479,17 @@ int CFred_mission_save::save_wings()
 				else {
 					fout("\n+Formation:");
 				}
-
 				fout(" %s", Wing_formations[Wings[i].formation].name);
+			}
+			if (!fl_equal(Wings[i].formation_scale, 1.0f, 0.001f))
+			{
+				if (optional_string_fred("+Formation Scale:", "$Name:")) {
+					parse_comments();
+				}
+				else {
+					fout("\n+Formation Scale:");
+				}
+				fout(" %f", Wings[i].formation_scale);
 			}
 		}
 

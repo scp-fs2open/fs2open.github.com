@@ -18,6 +18,7 @@ struct PresenceInfo {
 
 bool initialized        = false;
 bool discord_ready      = false;
+bool events_added       = false;
 UI_TIMESTAMP next_mission_update = UI_TIMESTAMP::invalid();
 
 bool in_mission = false;
@@ -140,6 +141,9 @@ void shutdown_discord()
 
 void handleEnterState(int old_state, int new_state)
 {
+	if (!initialized)
+		return;
+	
 	if (old_state == new_state) {
 		return;
 	}
@@ -196,6 +200,9 @@ void handleEnterState(int old_state, int new_state)
 
 void handleLeaveState(int old_state, int /*new_state*/)
 {
+	if (!initialized)
+		return;
+	
 	if (old_state == GS_STATE_GAME_PAUSED) {
 		// Reset the game play state immediately
 		set_game_play_presence();
@@ -209,6 +216,9 @@ void handleLeaveState(int old_state, int /*new_state*/)
 
 void handleMissionLoad(const char* /*filename*/)
 {
+	if (!initialized)
+		return;
+	
 	set_presence("Loading mission");
 	in_mission = true;
 }
@@ -220,7 +230,9 @@ namespace discord {
 
 void init()
 {
-	Assertion(!initialized, "Discord integration can only be initialized once!");
+	//If we've already initialized then just return
+	if (initialized)
+		return;
 
 	DiscordEventHandlers handlers;
 	memset(&handlers, 0, sizeof(handlers));
@@ -241,13 +253,23 @@ void init()
 
 	Discord_Initialize(APPLICATION_ID, &handlers, 0, nullptr);
 
-	events::EngineUpdate.add(update_discord);
-	events::EngineShutdown.add(shutdown_discord);
-	events::GameEnterState.add(handleEnterState);
-	events::GameLeaveState.add(handleLeaveState);
-	events::GameMissionLoad.add(handleMissionLoad);
+	//Only ever register these events once even if discord presence is toggled back on during the same game instance -Mjn
+	if (!events_added) {
+		events::EngineUpdate.add(update_discord);
+		events::EngineShutdown.add(shutdown_discord);
+		events::GameEnterState.add(handleEnterState);
+		events::GameLeaveState.add(handleLeaveState);
+		events::GameMissionLoad.add(handleMissionLoad);
+
+		events_added = true;
+	}
 
 	initialized = true;
+}
+
+void shutdown()
+{
+	shutdown_discord();
 }
 
 } // namespace discord

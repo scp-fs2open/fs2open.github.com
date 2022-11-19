@@ -387,12 +387,12 @@ void AsteroidEditorDialogModel::update_init()
 			modify(_a_field.field_debris_type[_AST_ORANGE], getAsteroidEnabled(_AST_ORANGE) == true ? 1 : -1);
 		}
 
-		modify(_a_field.has_inner_bound, static_cast<int>(_enable_inner_bounds));
+		modify(_a_field.has_inner_bound, _enable_inner_bounds);
 	}
 
 	// get from temp asteroid field into class
 	_enable_asteroids = _a_field.num_initial_asteroids ? true : false;
-	_enable_inner_bounds = _a_field.has_inner_bound ? true : false;
+	_enable_inner_bounds = _a_field.has_inner_bound;
 	_num_asteroids = _a_field.num_initial_asteroids;
 	if (!_enable_asteroids) {
 		_num_asteroids = 10;

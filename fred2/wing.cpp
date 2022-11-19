@@ -58,13 +58,6 @@ int check_wing_dependencies(int wing_num);
 void initialize_wings(void);
 
 /**
- * @brief Doesn't seem to do anything useful
- *
- * @TODO verify
- */
-void create_wings_from_objects(void);
-
-/**
  * @brief Gets the index of the first available object slot
  *
  *
@@ -174,25 +167,7 @@ int create_wing() {
 			return -1;
 		}
 
-		Wings[wing].num_waves = 1;
-		Wings[wing].threshold = 0;
-		Wings[wing].formation = -1;
-		Wings[wing].arrival_location = Wings[wing].departure_location = 0;
-		Wings[wing].arrival_distance = 0;
-		Wings[wing].arrival_anchor = -1;
-		Wings[wing].arrival_delay = 0;
-		Wings[wing].arrival_cue = Locked_sexp_true;
-		Wings[wing].departure_delay = 0;
-		Wings[wing].departure_cue = Locked_sexp_false;
-		Wings[wing].hotkey = -1;
-        Wings[wing].flags.reset();
-		Wings[wing].wave_delay_min = 0;
-		Wings[wing].wave_delay_max = 0;
-
-		for (i = 0; i<MAX_AI_GOALS; i++) {
-			Wings[wing].ai_goals[i].ai_mode = AI_GOAL_NONE;
-			Wings[wing].ai_goals[i].priority = -1;				// this sets up the priority field to be like ships
-		}
+		Wings[wing].clear();
 
 		if (dlg.DoModal() == IDCANCEL)
 			return -1;
@@ -313,24 +288,6 @@ int create_wing() {
 	update_custom_wing_indexes();
 
 	return 0;
-}
-
-void create_wings_from_objects(void) {
-	int	i;
-
-	for (i = 0; i<MAX_WINGS; i++)
-		Wings[i].wave_count = 0;
-
-	for (i = 0; i<MAX_OBJECTS; i++)
-		if (Objects[i].type != OBJ_NONE)
-			if (get_wingnum(i) != -1) {
-				int	wingnum = get_wingnum(i);
-
-				Assert((wingnum >= 0) && (wingnum < MAX_WINGS));
-				Assert(Wings[wingnum].wave_count < MAX_SHIPS_PER_WING);
-				// JEH			strcpy_s(Wings[wingnum].ship_names[Wings[wingnum].count++], i;
-			}
-
 }
 
 int delete_wing(int wing_num, int bypass) {

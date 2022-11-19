@@ -311,7 +311,14 @@ void HudGaugeEscort::renderIcon(int x, int y, int index)
 		if (np_index >= 0) {
 			pl = Net_players[np_index].m_player;
 			objnum = pl->objnum;
+
+			// this can occassionally happen in multi when a player still needs to respawn.
+			if (objnum < 0 || Objects[objnum].type != OBJ_SHIP){
+				return;
+			}
+			
 		}
+
 	} else {
 		objnum = eship->objnum;
 	}

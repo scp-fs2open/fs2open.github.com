@@ -151,7 +151,6 @@ int TVT_wings[MAX_TVT_WINGS];
 // Goober5000
 char Starting_wing_names[MAX_STARTING_WINGS][NAME_LENGTH];
 char Squadron_wing_names[MAX_SQUADRON_WINGS][NAME_LENGTH];
-bool Squadron_wing_names_found[MAX_SQUADRON_WINGS];
 char TVT_wing_names[MAX_TVT_WINGS][NAME_LENGTH];
 
 SCP_vector<engine_wash_info> Engine_wash_info;
@@ -203,6 +202,8 @@ int	Num_engine_wash_types;
 int	Num_ship_subobj_types;
 int	Num_ship_subobjects;
 int	Player_ship_class;	// needs to be player specific, move to player structure	
+
+bool Sensor_static_forced = false; //forced static effect sexp initialization
 
 #define		SHIP_OBJ_USED	(1<<0)				// flag used in ship_obj struct
 #define		MAX_SHIP_OBJS	MAX_SHIPS			// max number of ships tracked in ship list
@@ -541,7 +542,9 @@ ship_flag_name Ship_flag_names[] = {
 	{ Ship_Flags::No_thrusters,					"no-thrusters" },
 	{ Ship_Flags::Fail_sound_locked_primary, 	"fail-sound-locked-primary"},
 	{ Ship_Flags::Fail_sound_locked_secondary, 	"fail-sound-locked-secondary"},
-	{ Ship_Flags::Aspect_immune, 				"aspect-immune"}
+	{ Ship_Flags::Aspect_immune, 				"aspect-immune"},
+	{ Ship_Flags::Cannot_perform_scan,			"cannot-perform-scan"},
+	{ Ship_Flags::No_targeting_limits,			"no-targeting-limits"}
 };
 
 extern const size_t Num_ship_flag_names = sizeof(Ship_flag_names) / sizeof(ship_flag_name);
@@ -5917,8 +5920,6 @@ void ship_init()
 		// We shouldn't already have any subsystem pointers at this point.
 		Assertion(Ship_subsystems.empty(), "Some pre-allocated subsystems didn't get cleared out: " SIZE_T_ARG " batches present during ship_init(); get a coder!\n", Ship_subsystems.size());
 	}
-
-	ship_level_init();	// needed for FRED
 }
 
 static int Man_thruster_reset_timestamp = 0;
@@ -5999,14 +6000,7 @@ void ship_level_init()
 
 	Num_wings = 0;
 	for (i = 0; i < MAX_WINGS; i++ )
-	{
-		Wings[i].num_waves = -1;
-		Wings[i].wing_squad_filename[0] = '\0';
-		Wings[i].wing_insignia_texture = -1;	// Goober5000 - default to no wing insignia
-												// don't worry about releasing textures because
-												// they are released automatically when the model
-												// is unloaded (because they are part of the model)
-	}
+		Wings[i].clear();
 
 	for (i=0; i<MAX_STARTING_WINGS; i++)
 		Starting_wings[i] = -1;
@@ -6456,7 +6450,7 @@ void ship::clear()
 
 	next_engine_stutter = timestamp(0);
 
-	base_texture_anim_frametime = 0;
+	base_texture_anim_timestamp = _timestamp();
 
 	total_damage_received = 0.0f;
 	memset(&damage_ship, 0, MAX_DAMAGE_SLOTS * sizeof(float));
@@ -6697,6 +6691,69 @@ void ship_weapon::clear()
 
 ship_weapon::ship_weapon() {
 	clear();
+}
+
+// Reset all wing values to empty/unused.
+void wing::clear()
+{
+	name[0] = '\0';
+	wing_squad_filename[0] = '\0';
+	reinforcement_index = -1;
+	hotkey = -1;
+
+	num_waves = 1;
+	current_wave = 0;
+	threshold = 0;
+
+	time_gone = 0;
+
+	wave_count = 0;
+	total_arrived_count = 0;
+	red_alert_skipped_ships = 0;
+	current_count = 0;
+
+	for (int i = 0; i < MAX_SHIPS_PER_WING; i++)
+		ship_index[i] = -1;
+
+	total_destroyed = 0;
+	total_departed = 0;
+	total_vanished = 0;
+
+	special_ship = 0;
+	special_ship_ship_info_index = -1;
+
+	arrival_location = ARRIVE_AT_LOCATION;
+	arrival_distance = 0;
+	arrival_anchor = -1;
+	arrival_path_mask = 0;
+	arrival_cue = Locked_sexp_true;
+	arrival_delay = 0;
+
+	departure_location = DEPART_AT_LOCATION;
+	departure_anchor = -1;
+	departure_path_mask = 0;
+	departure_cue = Locked_sexp_false;
+	departure_delay = 0;
+
+	wave_delay_min = 0;
+	wave_delay_max = 0;
+
+	// be sure to set the wave arrival timestamp of this wing to pop right away so that the
+	// wing could be created if it needs to be
+	wave_delay_timestamp = TIMESTAMP::immediate();
+
+	flags.reset();
+
+	// initialize wing goals
+	for (int i = 0; i < MAX_AI_GOALS; i++)
+		ai_goal_reset(&ai_goals[i]);
+
+	net_signature = 0;
+
+	wing_insignia_texture = -1;
+
+	formation = -1;
+	formation_scale = 1.0f;
 }
 
 // NOTE: Now that the clear() member function exists, this function only sets the stuff associated with the object and ship class.
@@ -7099,6 +7156,8 @@ void ship_subsys::clear()
 
 	turret_max_bomb_ownage = -1; 
 	turret_max_target_ownage = -1;
+
+	info_from_server_stamp = TIMESTAMP::never();
 }
 
 /**
@@ -7291,6 +7350,8 @@ static int subsys_set(int objnum, int ignore_subsys_info)
 
 		ship_system->turret_max_bomb_ownage = model_system->turret_max_bomb_ownage;
 		ship_system->turret_max_target_ownage = model_system->turret_max_target_ownage;
+
+		ship_system->info_from_server_stamp = TIMESTAMP::never();
 
 		// Make turret flag checks and warnings
 		if ((ship_system->system_info->flags[Model::Subsystem_Flags::Turret_salvo]) && (ship_system->system_info->flags[Model::Subsystem_Flags::Turret_fixed_fp]))
@@ -9571,9 +9632,18 @@ void ship_evaluate_ai(object* obj, float frametime) {
 
 void ship_process_pre(object *obj, float frametime)
 {
+	// Cyborg, to enable turrets movement on clients, we need to process them here before  bailing
+	if (MULTIPLAYER_CLIENT)
+	{
+		// But only with Framerate_independent_turning
+		if (Framerate_independent_turning)
+			ai_process_subobjects(OBJ_INDEX(obj));
+
+		return;
+	}
+
 	// If Framerate_independent_turning is false everything following is evaluated in ship_process_post()
-	// Also only multi masters do ai
-	if ( (obj == nullptr) || !frametime || MULTIPLAYER_CLIENT || !Framerate_independent_turning)
+	if ( (obj == nullptr) || !frametime || !Framerate_independent_turning)
 		return;
 
 	if (obj->type != OBJ_SHIP) {
@@ -9782,8 +9852,14 @@ void ship_process_post(object * obj, float frametime)
 	{
 		//	Do AI.
 
-		// for multiplayer people.  return here if in multiplay and not the host
+		// Cyborg: Mutliplayer clients do not do AI locally.
 		if ( MULTIPLAYER_CLIENT ) {
+
+			// But to enable turrets movement on clients, we need to process them here before bailing
+			// And this section will do it if Framerate_independent_turning is off
+			if (!Framerate_independent_turning)
+				ai_process_subobjects(OBJ_INDEX(obj));
+			
 			return;
 		}
 
@@ -10479,7 +10555,7 @@ static void ship_model_change(int n, int ship_type)
 	objp->shield_quadrant.resize(objp->n_quadrants);
 
 	// reset texture animations
-	sp->base_texture_anim_frametime = game_get_overall_frametime();
+	sp->base_texture_anim_timestamp = _timestamp();
 }
 
 /**
@@ -10518,6 +10594,11 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	objp = &Objects[objnum];
 	p_objp = mission_parse_get_parse_object(sp->ship_name);
 	ph_inf = objp->phys_info;
+
+	// if this ship is the wing leader, update the ship info index that the wing keeps track of.
+	if (p_objp->wingnum > -1 && p_objp->pos_in_wing == 0) {
+		Wings[p_objp->wingnum].special_ship_ship_info_index = ship_type;
+	}
 
 	// MageKing17 - See if any AIs are doing anything with subsystems of this ship (targeting, goal to destroy)
 	// keep track of those subsystems and transfer the target/goal if the subsystem still exists, delete otherwise
@@ -11754,7 +11835,7 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 		//doing that time scale thing on enemy fighter is just ugly with beams, especaly ones that have careful timeing
 		if (!((obj->flags[Object::Object_Flags::Player_ship]) || fast_firing || winfo_p->wi_flags[Weapon::Info_Flags::Beam])) {
 			// When testing weapons fire in the lab, we do not have a player object available.
-			if ((Game_mode & GM_LAB) || shipp->team == Ships[Player_obj->instance].team){
+			if ((Game_mode & GM_LAB) || (Player_obj == nullptr) || (shipp->team == Ships[Player_obj->instance].team)){
 				next_fire_delay *= aip->ai_ship_fire_delay_scale_friendly;
 			} else {
 				next_fire_delay *= aip->ai_ship_fire_delay_scale_hostile;
@@ -12795,9 +12876,15 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 					shipp->missile_locks_firing.pop_back();
 				}
 
-				target_objnum = OBJ_INDEX(lock_data.obj);
-				target_subsys = lock_data.subsys;
-				locked = 1;
+				if (lock_data.obj != nullptr) {
+					target_objnum = OBJ_INDEX(lock_data.obj);
+					target_subsys = lock_data.subsys;
+					locked = 1;
+				} else {
+					target_objnum = -1;
+					target_subsys = nullptr;
+					locked = 0;
+				}
 			} else if (wip->wi_flags[Weapon::Info_Flags::Homing_heat]) {
 				target_objnum = aip->target_objnum;
 				target_subsys = aip->targeted_subsys;
@@ -17907,6 +17994,10 @@ void object_jettison_cargo(object *objp, object *cargo_objp, float jettison_spee
 	// physics stuff
 	if (jettison_new)
 	{
+		// we might not need to do any calculations
+		if (whack_below_limit(jettison_speed * cargo_objp->phys_info.mass))
+			return;
+
 		// new method uses dockpoint normals and user-specified force
 		extern void find_adjusted_dockpoint_info(vec3d *global_dock_point, matrix *dock_orient, object *objp, polymodel *pm, int submodel, int dock_index);
 		extern int find_parent_moving_submodel(polymodel *pm, int dock_index);
@@ -18365,7 +18456,6 @@ void ship_set_new_ai_class(ship *shipp, int new_ai_class)
 
 	// we hafta change a bunch of stuff here...
 	aip->ai_class = new_ai_class;
-	aip->behavior = AIM_NONE;
 	init_aip_from_class_and_profile(aip, &Ai_classes[new_ai_class], The_mission.ai_profile);
 
 	shipp->weapons.ai_class = new_ai_class;

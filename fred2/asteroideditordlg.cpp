@@ -64,8 +64,6 @@ asteroid_editor::asteroid_editor(CWnd* pParent /*=NULL*/)
 	i=0;
 //	for (i=0; i<MAX_ASTEROID_FIELDS; i++)
 		a_field[i] = Asteroid_field;	//	Only supporting one field per mission.
-
-	m_field_targets = Asteroid_target_ships;
 }
 
 void asteroid_editor::DoDataExchange(CDataExchange* pDX)
@@ -193,6 +191,8 @@ int asteroid_editor::query_modified()
 				return 1;
 		}
 
+		if (a_field[i].target_names != Asteroid_field.target_names)
+			return 1;
 	}
 
 	return 0;
@@ -307,9 +307,6 @@ void asteroid_editor::OnOK()
 	for (i=0; i<1 /*MAX_ASTEROID_FIELDS*/; i++)
 		Asteroid_field = a_field[i];
 
-	// asteroid field targets are handled separately
-	Asteroid_target_ships = m_field_targets;
-
 	update_map_window();
 	theApp.record_window_data(&Asteroid_wnd_data, this);
 	CDialog::OnOK();
@@ -403,7 +400,7 @@ void asteroid_editor::update_init()
 			MODIFY(a_field[cur_field].field_debris_type[2], cur_choice);
 		}
 
-		MODIFY(a_field[last_field].has_inner_bound, m_enable_inner_bounds);
+		MODIFY(a_field[last_field].has_inner_bound, (bool)m_enable_inner_bounds);
 
 		MODIFY(a_field[last_field].inner_min_bound.xyz.x, (float) atof(m_box_min_x));
 		MODIFY(a_field[last_field].inner_min_bound.xyz.y, (float) atof(m_box_min_y));
@@ -412,14 +409,7 @@ void asteroid_editor::update_init()
 		MODIFY(a_field[last_field].inner_max_bound.xyz.y, (float) atof(m_box_max_y));
 		MODIFY(a_field[last_field].inner_max_bound.xyz.z, (float) atof(m_box_max_z));
 
-		// store current targets
-		auto targetList = ((CListBox*)GetDlgItem(IDC_FIELD_TARGET_LIST));
-		m_field_targets.clear();
-		for (int i = 0; i < targetList->GetCount(); ++i)
-		{
-			targetList->GetText(i, str);
-			m_field_targets.push_back((LPCSTR)str);
-		}
+		MODIFY(a_field[last_field].target_names, m_field_targets);
 	}
 
 	Assert(cur_field >= 0);
@@ -449,6 +439,8 @@ void asteroid_editor::update_init()
 	m_box_max_x.Format("%.1f", a_field[cur_field].inner_max_bound.xyz.x);
 	m_box_max_y.Format("%.1f", a_field[cur_field].inner_max_bound.xyz.y);
 	m_box_max_z.Format("%.1f", a_field[cur_field].inner_max_bound.xyz.z);
+
+	m_field_targets = a_field[cur_field].target_names;
 
 	// set up combo boxes
 	uint i;
