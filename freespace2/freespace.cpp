@@ -130,6 +130,7 @@
 #include "network/multi_endgame.h"
 #include "network/multi_fstracker.h"
 #include "network/multi_ingame.h"
+#include "network/multi_interpolate.h"
 #include "network/multi_log.h"
 #include "network/multi_pause.h"
 #include "network/multi_pxo.h"

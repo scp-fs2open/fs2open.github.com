@@ -18,8 +18,9 @@
 #include "object/object.h"
 #include "object/object_flags.h"
 #include "physics/physics.h"
+#include "physics/physics_state.h"
+#include "io/timer.h"					// prevents some include issues with files in the actions folder
 #include "utils/event.h"
-#include "network/multi_interpolate.h"
 
 #include <functional>
 
@@ -153,8 +154,6 @@ public:
 
 	util::event<void, object*> pre_move_event;
 	util::event<void, object*> post_move_event;
-
-	interpolation_manager interp_info;
 
 	object();
 	~object();
@@ -384,5 +383,31 @@ void obj_render_queue_all();
  * @return @c true if the two pointers refer to the same object
  */
 bool obj_compare(object *left, object *right);
+
+////////////////////////////////////////////////////////////
+// physics_state api functions that require the object type
+
+/**
+ * @brief Populate a physics snapshot directly from the info in an object
+ *
+ * @param[in,out] snapshot Destination physics snapshot
+ * @param[in]     objp The object pointer that we are pulling information from
+ *
+ * @author J Fernandez
+ */
+void physics_populate_snapshot(physics_snapshot& snapshot, object* objp);
+
+/**
+ * @brief Change the object's physics info to match the info contained in a snapshot.
+ *
+ * @param[in,out] objp Destination object pointer
+ * @param[in]     source The physics snapshot we are pulling information from
+ *
+ * @details To be used when interpolating or restoring a game state.
+ * 
+ * @author J Fernandez
+ */
+void physics_apply_pstate_to_object(object* objp, const physics_snapshot& source);
+
 
 #endif

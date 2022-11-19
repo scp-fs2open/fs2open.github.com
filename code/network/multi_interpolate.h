@@ -1,6 +1,8 @@
 #pragma once
 
+#include "globalincs/pstypes.h"
 #include "network/multi_time_manager.h"
+#include "physics/physics_state.h"
 
 struct physics_info;
 
@@ -10,12 +12,7 @@ typedef struct packet_info {
 
 	int frame;							// this allows us to directly compare one packet to another.  
 	int remote_missiontime;				// the remote timestamp that matches this packet.
-	vec3d 	position;						// what it says on the tin
-	vec3d 	velocity;						// what it says on the tin
-	vec3d 	rotational_velocity;			// what it says on the tin
-	vec3d 	desired_velocity;				// what it says on the tin
-	vec3d 	desired_rotational_velocity;	// this one is only actually from the packet when we are dealing with a player ship.
-	matrix	orientation;					// the orientation as transmitted by the other instance
+	physics_snapshot snapshot;			// the received physics info translated into the physics snapshot type for easy interpolation
 
 	packet_info(int frame_in = 0, int time_in = 0, const vec3d* position_in = &vmd_zero_vector, const vec3d* velocity_in = &vmd_zero_vector, 
 		const vec3d* rotational_velocity_in = &vmd_zero_vector, const vec3d* desired_velocity_in = &vmd_zero_vector, const vec3d* desired_rotational_velocity_in = &vmd_zero_vector,
@@ -23,12 +20,12 @@ typedef struct packet_info {
 	{	
 		frame = frame_in;
 		remote_missiontime = time_in;
-		position = *position_in;
-		velocity = *velocity_in;
-		rotational_velocity = *rotational_velocity_in;
-		desired_velocity = *desired_velocity_in;
-		desired_rotational_velocity = *desired_rotational_velocity_in;
-		vm_angles_2_matrix(&orientation, angles_in);
+		snapshot.position = *position_in;
+		snapshot.velocity = *velocity_in;
+		snapshot.rotational_velocity = *rotational_velocity_in;
+		snapshot.desired_velocity = *desired_velocity_in;
+		snapshot.desired_rotational_velocity = *desired_rotational_velocity_in;
+		vm_angles_2_matrix(&snapshot.orientation, angles_in);
 	}
 
 } packet_info;
@@ -60,7 +57,7 @@ public:
 	// adds a new packet, whilst also manually sorting the relevant entries
 	void add_packet(int objnum, int frame, int time_delta, vec3d* position, vec3d* velocity, vec3d* rotational_velocity, vec3d* desired_velocity, vec3d* desired_rotational_velocity, angles* angles, int player_index);
 	void interpolate_main(vec3d* pos, matrix* ori, physics_info* pip, vec3d* last_pos, matrix* last_orient, vec3d* gravity, bool player_ship);
-	void reinterpolate_previous(TIMESTAMP stamp, int prev_packet_index, int next_packet_index,  vec3d* position, matrix* orientation, vec3d* velocity, vec3d* rotational_velocity);
+	void reinterpolate_previous(TIMESTAMP stamp, int prev_packet_index, int next_packet_index,  vec3d& position, matrix& orientation, vec3d& velocity, vec3d& rotational_velocity);
 
 	int get_hull_comparison_frame() { return _hull_comparison_frame; }
 	int get_shields_comparison_frame() { return _shields_comparison_frame; }
@@ -158,5 +155,9 @@ public:
 };
 
 void multi_interpolate_clear_all();
+
+void multi_interpolate_clear_helper(int objnum);
+
+void interpolate_main_helper(int objnum, vec3d* pos, matrix* ori, physics_info* pip, vec3d* last_pos, matrix* last_orient, vec3d* gravity, bool player_ship);
 
 extern SCP_unordered_map<int, interpolation_manager> Interp_info;

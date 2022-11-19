@@ -20,6 +20,7 @@
 #include "io/joy_ff.h"
 #include "io/timer.h"
 #include "network/multi.h"
+#include "network/multi_interpolate.h"
 #include "object/objcollide.h"
 #include "object/object.h"
 #include "object/objectdock.h"
@@ -1391,8 +1392,10 @@ int collide_ship_ship( obj_pair * pair )
 									if ((LightOne == &Objects[current_player.m_player->objnum]) || (HeavyOne == &Objects[current_player.m_player->objnum])) {
 										// finally if the host is also a player, ignore making these adjustments for him because he is in a pure simulation.
 										if (&Ships[Objects[current_player.m_player->objnum].instance] != Player_ship) {
+											Assertion(Interp_info.find(current_player.m_player->objnum) != Interp_info.end(), "Somehow the collision code thinks there is not a player ship interp record in multi when there really *should* be.  This is a coder mistake, please report!");
+
 											// temp set this as an uninterpolated ship, to make the collision look more natural until the next update comes in.
-											Objects[current_player.m_player->objnum].interp_info.force_interpolation_mode();
+											Interp_info[current_player.m_player->objnum].force_interpolation_mode();
 
 											// check to see if it has been long enough since the last collision, if not, negate the damage
 											if (!timestamp_elapsed(current_player.s_info.player_collision_timestamp)) {
