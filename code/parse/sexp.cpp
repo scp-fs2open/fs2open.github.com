@@ -13473,7 +13473,7 @@ void sexp_set_gravity_accel(int node)
 	if (is_nan || is_nan_forever)
 		return;
 
-	float fl_accel = (float)(-accel) / 10.0f;
+	float fl_accel = (float)(-accel) / 100.0f;
 	The_mission.gravity = vm_vec_new(0.0f, fl_accel, 0.0f);
 
 	// do the multiplayer callback
@@ -36909,8 +36909,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	},
 
 	{ OP_SET_GRAVITY_ACCEL, "set-gravity-accel\r\n"
-		"\tSets the gravity acceleration rate in units of 0.1 m/s^2\r\n"
-		"\te.g. '98' would be earth gravity, 9.8 m/s^2.\r\n"
+		"\tSets the gravity acceleration rate in units of 0.01 m/s^2\r\n"
+		"\te.g. '981' would be earth gravity, 9.81 m/s^2.\r\n"
 		"\t1: Acceleration rate"
 	},
 

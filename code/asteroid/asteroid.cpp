@@ -409,7 +409,7 @@ object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int asteroi
 
 	// blow out his reverse thrusters. Or drag, same thing.
 	objp->phys_info.rotdamp = 10000.0f;
-	objp->phys_info.flags |= PF_BALLISTIC;
+	objp->phys_info.flags |= (PF_DEAD_DAMP | PF_BALLISTIC);
 	objp->phys_info.gravity_const = asip->gravity_const;
 
 	// Fill in the max_vel field, so the collision pair stuff knows

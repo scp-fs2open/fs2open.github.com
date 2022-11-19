@@ -1043,6 +1043,7 @@ void ai_big_chase()
 	weapon_info* wip = ai_get_weapon(&shipp->weapons);
 	bool ballistic_aiming = !IS_VEC_NULL(&The_mission.gravity) && wip->gravity_const != 0.0f;
 	bool valid_ballistic_trajectory = true;
+
 	if (!ballistic_aiming) {
 		//	Compute the predicted position of the center of the ship, then add the delta to the goal pos.
 		if (En_objp->phys_info.speed > 3.0f) {

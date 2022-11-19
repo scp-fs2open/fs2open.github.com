@@ -736,8 +736,8 @@ void parse_mission_info(mission *pm, bool basic = false)
 	float gravity_accel = 0.0f;
 	if (optional_string("$Gravity Acceleration:")) {
 		stuff_float(&gravity_accel);
+		pm->gravity = vm_vec_new(0.0f, -gravity_accel, 0.0f);
 	}
-	pm->gravity = vm_vec_new(0.0f, -gravity_accel, 0.0f);
 }
 
 void parse_player_info(mission *pm)
@@ -6341,6 +6341,8 @@ void mission::Reset()
 
 	ai_profile = &Ai_profiles[Default_ai_profile];
 	cutscenes.clear( );
+
+	gravity = vmd_zero_vector;
 }
 
 /**
