@@ -2451,14 +2451,19 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 
 		// if weapon is vampiric, slap healing on shooter instead of target
 		weapon_info_index = shiphit_get_damage_weapon(other_obj);
+
 		if (weapon_info_index >= 0) {
 			weapon_info* wip = &Weapon_info[weapon_info_index];
+
 			if ((wip->wi_flags[Weapon::Info_Flags::Vampiric]) && (other_obj->parent > 0)) {
 				object* parent = &Objects[other_obj->parent];
+
 				if ((parent->type == OBJ_SHIP) && (parent->signature == other_obj->parent_sig)) {
 					ship* shipparent = &Ships[parent->instance];
+
 					if (!parent->flags[Object::Object_Flags::Should_be_dead]) {
 						parent->hull_strength += damage * wip->vamp_regen;
+
 						if (parent->hull_strength > shipparent->ship_max_hull_strength) {
 							parent->hull_strength = shipparent->ship_max_hull_strength;
 						}
