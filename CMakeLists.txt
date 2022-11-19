@@ -39,7 +39,13 @@ endif(NOT CMAKE_BUILD_TYPE AND NOT DEFINED CMAKE_CONFIGURATION_TYPES)
 # Override standard CMake configurations
 set(CMAKE_CONFIGURATION_TYPES Debug Release FastDebug CACHE STRING "Available configurations" FORCE)
 
-PROJECT(FS2_Open LANGUAGES C CXX OBJC OBJCXX)
+set(FSO_LANGUAGES C CXX)
+
+if(APPLE)
+	set(FSO_LANGUAGES ${FSO_LANGUAGES} OBJC OBJCXX)
+endif()
+
+PROJECT(FS2_Open LANGUAGES ${FSO_LANGUAGES})
 
 find_program(CCACHE_PROGRAM ccache)
 # Currently only GCC support ccache properly without generating additional warnings
