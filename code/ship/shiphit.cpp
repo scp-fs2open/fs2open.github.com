@@ -2448,6 +2448,26 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 				apply_diff_scale = false;
 			}
 		}
+
+		// if weapon is vampiric, slap healing on shooter instead of target
+		weapon_info_index = shiphit_get_damage_weapon(other_obj);
+		if (weapon_info_index >= 0) {
+			weapon_info* wip = &Weapon_info[weapon_info_index];
+			if ((wip->wi_flags[Weapon::Info_Flags::Vampiric]) && (other_obj->parent > 0)) {
+				object* parent = &Objects[other_obj->parent];
+				if ((parent->type == OBJ_SHIP) && (parent->signature == other_obj->parent_sig)) {
+					ship* shipparent = &Ships[parent->instance];
+					if (!parent->flags[Object::Object_Flags::Should_be_dead]) {
+						parent->hull_strength += damage * wip->vamp_regen;
+						if (parent->hull_strength > shipparent->ship_max_hull_strength) {
+							parent->hull_strength = shipparent->ship_max_hull_strength;
+						}
+					}
+				}
+			}
+		}
+
+
 		// Nuke: this is done incase difficulty scaling is not applied into damage by getDamage() above
 		if (apply_diff_scale) {
 			damage *= difficulty_scale_factor; // Nuke: we can finally stop doing this now
@@ -2455,7 +2475,6 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 
 		// continue with damage?
 		if (damage > 0.0f) {
-			weapon_info_index = shiphit_get_damage_weapon(other_obj);	// Goober5000 - a NULL other_obj returns -1
 			if ( weapon_info_index >= 0 ) {
 				if (Weapon_info[weapon_info_index].wi_flags[Weapon::Info_Flags::Puncture]) {
 					damage /= 4;
@@ -2480,7 +2499,6 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 			if (((Game_mode & GM_MULTIPLAYER) && MULTIPLAYER_CLIENT)) {
 			} else {
 				// Check if this is simulated damage.
-				weapon_info_index = shiphit_get_damage_weapon(other_obj);
 				if ( weapon_info_index >= 0 ) {
 					if (Weapon_info[weapon_info_index].wi_flags[Weapon::Info_Flags::Training]) {
 //						diag_printf2("Simulated Hull for Ship %s hit, dropping from %.32f to %d.\n", shipp->ship_name, (int) ( ship_objp->sim_hull_strength * 100 ), (int) ( ( ship_objp->sim_hull_strength - damage ) * 100 ) );

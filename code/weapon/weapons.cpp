@@ -236,6 +236,7 @@ special_flag_def_list_new<Weapon::Info_Flags, weapon_info*, flagset<Weapon::Info
 	{ "require exact los",				Weapon::Info_Flags::Require_exact_los,					true },
 	{ "can damage shooter",				Weapon::Info_Flags::Can_damage_shooter,					true },
 	{ "heals",							Weapon::Info_Flags::Heals,						        true },
+	{"vampiric",						Weapon::Info_Flags::Vampiric,							true },
 	{ "secondary no ammo",				Weapon::Info_Flags::SecondaryNoAmmo,					true },
 	{ "no collide",						Weapon::Info_Flags::No_collide,						    true },
 	{ "multilock target dead subsys",   Weapon::Info_Flags::Multilock_target_dead_subsys,		true },
@@ -2223,6 +2224,23 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		stuff_float(&wip->afterburner_reduce);
 	}
 
+	// Multiplier for the healing done to the shooter of the weapon.
+	if (optional_string("$Vampiric Healing Factor:")) {
+		stuff_float(&wip->vamp_regen);
+		if (!(wip->wi_flags[Weapon::Info_Flags::Vampiric])) {
+			Warning(LOCATION,
+				"$Vampiric Healing Factor specified for weapon %s but this weapon does not have the \"Vampiric\" "
+				"weapon flag set. Automatically setting the flag",
+				wip->name);
+			wip->wi_flags.set(Weapon::Info_Flags::Vampiric);
+		}
+		if (wip->vamp_regen <= 0) {
+			Warning(LOCATION,
+				"Vampiric Healing Factor \'%s\' must be greater than zero\nResetting value to default.",
+				wip->name);
+			wip->vamp_regen = 1.0f;
+		}
+	}
 	if (optional_string("$Corkscrew:"))
 	{
 		if(optional_string("+Num Fired:")) {
@@ -8936,6 +8954,8 @@ void weapon_info::reset()
 
 	this->weapon_reduce = ESUCK_DEFAULT_WEAPON_REDUCE;
 	this->afterburner_reduce = ESUCK_DEFAULT_AFTERBURNER_REDUCE;
+
+	this->vamp_regen = 1.0f;
 
 	this->tag_time = -1.0f;
 	this->tag_level = -1;
