@@ -8012,6 +8012,14 @@ void ship_wing_cleanup( int shipnum, wing *wingp )
 	if (wingp->special_ship > 0 && wingp->special_ship >= index)
 		wingp->special_ship--;
 
+	if (wingp->current_count > 0) {
+		if (wingp->special_ship >= index) {
+			wingp->special_ship_ship_info_index = Ships[wingp->ship_index[wingp->special_ship]].ship_info_index;
+		} else {
+			wingp->special_ship_ship_info_index = Ships[wingp->ship_index[0]].ship_info_index;
+		}
+	}
+
 	// if the current count is 0, check to see if the wing departed or was destroyed.
 	if (wingp->current_count == 0)
 	{
