@@ -1504,6 +1504,7 @@ add_file_folder("Sound"
 	sound/sound.cpp
 	sound/sound.h
 	sound/speech.cpp
+	sound/speech.mm
 	sound/speech.h
 	sound/voicerec.cpp
 	sound/voicerec.h
