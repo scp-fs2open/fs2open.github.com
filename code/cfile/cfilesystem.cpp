@@ -1713,6 +1713,41 @@ int cf_get_file_list(SCP_vector<SCP_string>& list, int pathtype, const char* _fi
 	}
 
 	SCP_string filespec;
+	SCP_vector<_file_list_t> files;
+
+	// do we have a full path already?
+	if (is_absolute_path(_filter)) {
+		// check for full path and only grab matching files from it if specified
+		auto last_separator = strrchr(_filter, DIR_SEPARATOR_CHAR);
+
+		Assertion(Get_file_list_filter == nullptr, "File list filter not supported with absolute paths!");
+
+		const char *fltr = last_separator + 1;
+		filespec = SCP_string(_filter, strlen(_filter) - strlen(last_separator));
+
+		cf_get_list_of_files(filespec, files, fltr);
+
+		for (auto &file : files) {
+			SCP_string::size_type pos = file.name.find_last_of('.');
+
+			if (pos != SCP_string::npos) {
+				list.push_back(file.name.substr(0, pos));
+			} else {
+				list.push_back(file.name);
+			}
+
+			if (info) {
+				tinfo.write_time = file.m_time;
+				info->push_back(tinfo);
+			}
+		}
+
+		if (sort != CF_SORT_NONE)	{
+			cf_sort_filenames(list, sort, info);
+		}
+
+		return (int)list.size();
+	}
 
 	bool check_duplicates = !list.empty();
 
@@ -1749,7 +1784,6 @@ int cf_get_file_list(SCP_vector<SCP_string>& list, int pathtype, const char* _fi
 	}
 
 	SCP_string fullname;
-	SCP_vector<_file_list_t> files;
 
 	cf_get_list_of_files(filespec, files, filter.c_str());
 

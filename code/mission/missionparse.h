@@ -499,7 +499,7 @@ void mission_parse_reset_callsign();
 int is_training_mission();
 
 // code to save/restore mission parse stuff
-int get_mission_info(const char *filename, mission *missionp = NULL, bool basic = true);
+int get_mission_info(const char *filename, mission *missionp = nullptr, bool basic = true, bool filename_is_full_path = false);
 
 // Goober5000
 void parse_dock_one_docked_object(p_object *pobjp, p_object *parent_pobjp);
