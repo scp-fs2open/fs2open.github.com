@@ -2692,7 +2692,7 @@ void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> &par
 		shipp->flags.set(Ship::Ship_Flags::Cannot_perform_scan);
 
 	if (parse_flags[Mission::Parse_Object_Flags::SF_No_targeting_limits])
-		shipp->flags.set(Ship::Ship_Flags::Cannot_perform_scan);
+		shipp->flags.set(Ship::Ship_Flags::No_targeting_limits);
 }
 
 void fix_old_special_explosions(p_object *p_objp, int variable_index) 
