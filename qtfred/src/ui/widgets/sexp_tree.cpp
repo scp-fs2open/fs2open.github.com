@@ -279,9 +279,11 @@ void sexp_tree::load_tree(int index, const char* deflt) {
 
 void get_combined_variable_name(char* combined_name, const char* sexp_var_name) {
 	int sexp_var_index = get_index_sexp_variable_name(sexp_var_name);
-	Assert(sexp_var_index > -1);
 
-	sprintf(combined_name, "%s(%s)", Sexp_variables[sexp_var_index].variable_name, Sexp_variables[sexp_var_index].text);
+	if (sexp_var_index >= 0)
+		sprintf(combined_name, "%s(%s)", Sexp_variables[sexp_var_index].variable_name, Sexp_variables[sexp_var_index].text);
+	else
+		sprintf(combined_name, "%s(undefined)", sexp_var_name);
 }
 
 // creates a tree from a given Sexp_nodes[] point under a given parent.  Recursive.
@@ -2092,11 +2094,9 @@ int sexp_tree::get_modify_variable_type(int parent) {
 
 	if (op_const == OP_MODIFY_VARIABLE) {
 		sexp_var_index = get_tree_name_to_sexp_variable_index(node_text);
-		Assert(sexp_var_index >= 0);
 	} else if (op_const == OP_SET_VARIABLE_BY_INDEX) {
 		if (can_construe_as_integer(node_text)) {
 			sexp_var_index = atoi(node_text);
-			Assert(sexp_var_index >= 0);
 		} else if (strchr(node_text, '(') && strchr(node_text, ')')) {
 			// the variable index is itself a variable!
 			return OPF_AMBIGUOUS;
@@ -2105,7 +2105,11 @@ int sexp_tree::get_modify_variable_type(int parent) {
 		Int3();  // should not be called otherwise
 	}
 
-	if (sexp_var_index < 0 || Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_BLOCK
+	// if we don't have a valid variable, allow replacement with anything
+	if (sexp_var_index < 0)
+		return OPF_AMBIGUOUS;
+
+	if (Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_BLOCK
 		|| Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_NOT_USED) {
 		// assume number so that we can allow tree display of number operators
 		return OPF_NUMBER;
