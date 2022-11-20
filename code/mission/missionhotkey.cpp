@@ -22,6 +22,7 @@
 #include "io/timer.h"
 #include "mission/missionhotkey.h"
 #include "missionui/missionscreencommon.h"
+#include "mod_table/mod_table.h"
 #include "object/object.h"
 #include "parse/parselo.h"
 #include "playerman/player.h"
@@ -623,7 +624,7 @@ int hotkey_build_team_listing(int enemy_team_mask, int y, bool list_enemies)
 		// if a ship's hotkey is the last hotkey on the list, then maybe make the hotkey -1 if
 		// we are now in mission.  Otherwise, skip this ship
 		if ( shipp->hotkey == MAX_KEYED_TARGETS ) {
-			if ( !(Game_mode & GM_IN_MISSION) )
+			if ((!(Game_mode & GM_IN_MISSION)) || hotkey_always_hide_ships)
 				continue;										// skip to next ship
 			shipp->hotkey = -1;
 		}
