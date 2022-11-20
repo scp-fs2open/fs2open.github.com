@@ -104,7 +104,14 @@ void LabUi::buildBackgroundList() const
 	}
 
 	for (auto const& directory : directories) {
-		with_TreeNode(directory.first.c_str()) {
+		auto directory_name = directory.first.c_str();
+		// if the directory name is empty, this indicates loose files in the root data directory
+		// since imgui requires tree nodes to have non-empty names, we substitute a static string here
+		if (!strlen(directory_name))
+			directory_name = "Root";
+
+		with_TreeNode(directory_name)
+		{
 			for (const auto& mission : directory.second) {
 				ImGui::TreeNodeEx(mission.c_str(), node_flags, "%s", mission.c_str());
 
