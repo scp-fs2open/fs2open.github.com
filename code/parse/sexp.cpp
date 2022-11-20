@@ -4610,11 +4610,20 @@ void stuff_sexp_text_string(SCP_string &dest, int node, int mode)
 			if (can_construe_as_integer(Sexp_nodes[node].text))
 				sexp_variables_index = atoi(Sexp_nodes[node].text);
 		}
-		Assertion(sexp_variables_index != -1, "Couldn't find variable: %s\n", Sexp_nodes[node].text);
-		Assert((Sexp_variables[sexp_variables_index].type & SEXP_VARIABLE_NUMBER) || (Sexp_variables[sexp_variables_index].type & SEXP_VARIABLE_STRING));
 
-		auto var_name = (Fred_running) ? Sexp_nodes[node].text : Sexp_variables[sexp_variables_index].variable_name;
-		auto var_contents = Sexp_variables[sexp_variables_index].text;
+		const char *var_name, *var_contents;
+		if (sexp_variables_index < 0)
+		{
+			Warning(LOCATION, "Couldn't find variable: %s\n", Sexp_nodes[node].text);
+			var_name = Sexp_nodes[node].text;
+			var_contents = "undefined";
+		}
+		else
+		{
+			var_name = (Fred_running) ? Sexp_nodes[node].text : Sexp_variables[sexp_variables_index].variable_name;
+			var_contents = Sexp_variables[sexp_variables_index].text;
+			Assertion((Sexp_variables[sexp_variables_index].type & SEXP_VARIABLE_NUMBER) || (Sexp_variables[sexp_variables_index].type & SEXP_VARIABLE_STRING), "Variable %s must be either a number or a string!", var_name);
+		}
 
 		// number
 		if (Sexp_nodes[node].subtype == SEXP_ATOM_NUMBER)
@@ -31936,7 +31945,6 @@ const char *CTEXT(int n)
 		if (Fred_running)
 		{
 			sexp_variable_index = get_index_sexp_variable_name(Sexp_nodes[n].text);
-			Assert(sexp_variable_index != -1);
 		}
 		else
 		{
@@ -31944,6 +31952,10 @@ const char *CTEXT(int n)
 		}
 		// Reference a Sexp_variable
 		// string format -- "Sexp_variables[xx]=number" or "Sexp_variables[xx]=string", where xx is the index
+
+		// if variable not found, just return the node text
+		if (sexp_variable_index < 0)
+			return Sexp_nodes[n].text;
 
 		Assert( !(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_NOT_USED) );
 		Assert(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_SET);
