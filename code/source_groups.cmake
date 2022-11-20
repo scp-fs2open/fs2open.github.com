@@ -1394,6 +1394,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/ship.h
 	scripting/api/objs/shiptype.cpp
 	scripting/api/objs/shiptype.h
+	scripting/api/objs/ship_registry_entry.cpp
+	scripting/api/objs/ship_registry_entry.h
 	scripting/api/objs/shipwepselect.cpp
 	scripting/api/objs/shipwepselect.h
 	scripting/api/objs/sound.cpp
@@ -1594,6 +1596,8 @@ add_file_folder("Ui"
 )
 
 add_file_folder("Utils"
+	utils/base64.cpp
+	utils/base64.h
 	utils/encoding.cpp
 	utils/encoding.h
 	utils/event.h
