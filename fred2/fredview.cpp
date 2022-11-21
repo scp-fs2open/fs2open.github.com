@@ -1568,12 +1568,12 @@ BOOL CFREDView::OnCmdMsg(UINT nID, int nCode, void* pExtra, AFX_CMDHANDLERINFO* 
 	if (!pHandlerInfo) {
 		if ((id >= SHIP_TYPES) && (id < SHIP_TYPES + (int)ship_type_combo_box_size + 3)) {
 			if (nCode == CN_COMMAND) {
-				cur_model_index = id - SHIP_TYPES;
-				m_new_ship_type_combo_box.SetCurSelNEW(cur_model_index);
+				cur_ship_type_combo_index = id - SHIP_TYPES;
+				m_new_ship_type_combo_box.SetCurSel(cur_ship_type_combo_index);
 
 			} else if (nCode == CN_UPDATE_COMMAND_UI)	{
 				// Update UI element state
-				((CCmdUI*) pExtra)->SetCheck(cur_model_index + SHIP_TYPES == id);
+				((CCmdUI*) pExtra)->SetCheck(cur_ship_type_combo_index + SHIP_TYPES == id);
 				((CCmdUI*) pExtra)->Enable(TRUE);
 			}
 
@@ -3748,11 +3748,11 @@ void CFREDView::OnUpdateNewShipType(CCmdUI* pCmdUI)
 	int z;
 	CWnd *bar;
 
-	z = m_new_ship_type_combo_box.GetCurSelNEW();
+	z = m_new_ship_type_combo_box.GetCurSel();
 	if (z == CB_ERR)
-		m_new_ship_type_combo_box.SetCurSelNEW(cur_model_index);
+		m_new_ship_type_combo_box.SetCurSel(cur_ship_type_combo_index);
 	else
-		cur_model_index = z;
+		cur_ship_type_combo_index = z;
 
 	bar = GetDlgItem(pCmdUI->m_nID);
 	if (!bar) {
