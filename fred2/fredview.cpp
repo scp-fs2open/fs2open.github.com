@@ -1479,8 +1479,8 @@ void CFREDView::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
 			// create a popup menu based on the ship models read in ship.cpp.
 			shipPopup.CreatePopupMenu();
 			shipPopup.AppendMenu(MF_STRING | MF_ENABLED, SHIP_TYPES + Id_select_type_waypoint, "Waypoint");
-			shipPopup.AppendMenu(MF_STRING | MF_ENABLED, SHIP_TYPES + Id_select_type_start, "Player Start");
 			shipPopup.AppendMenu(MF_STRING | MF_ENABLED, SHIP_TYPES + Id_select_type_jump_node, "Jump Node");
+			shipPopup.AppendMenu(MF_STRING | MF_ENABLED, SHIP_TYPES + Id_select_type_start, "Player Start");
 			for (i=0; i<(int)Species_info.size(); i++) {
 				species_submenu[i].CreatePopupMenu();
 				shipPopup.AppendMenu(MF_STRING | MF_POPUP | MF_ENABLED,

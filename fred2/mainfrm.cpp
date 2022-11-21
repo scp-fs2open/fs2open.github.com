@@ -127,13 +127,13 @@ void CMainFrame::init_tools() {
         }
     }
 
-	Id_select_type_start = (int)(ship_type_combo_box_size + 2);
-	Id_select_type_jump_node = (int)(ship_type_combo_box_size + 1);
 	Id_select_type_waypoint = (int)(ship_type_combo_box_size);
+	Id_select_type_jump_node = (int)(ship_type_combo_box_size + 1);
+	Id_select_type_start = (int)(ship_type_combo_box_size + 2);
 
-	//	m_new_ship_type_combo_box.AddString("Player Start");		
-	m_new_ship_type_combo_box.AddString("Jump Node");
 	m_new_ship_type_combo_box.AddString("Waypoint");
+	m_new_ship_type_combo_box.AddString("Jump Node");
+	//	m_new_ship_type_combo_box.AddString("Player Start");
 
 	/*
 	// now we want to sort special ships (mission disk) ----------------------
