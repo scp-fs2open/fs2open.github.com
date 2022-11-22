@@ -66,47 +66,27 @@ void warpin_queue_render(model_draw_list *scene, object *obj, matrix *orient, ve
 	verts[1] = verts[2] = verts[3] = verts[4] = verts[0];
 
 	if (warp_glow_bitmap >= 0) {
+
 		float r = radius;
-		bool render_it = true;
+		// Add in noise 
+		int noise_frame = fl2i(Missiontime/15.0f) % NOISE_NUM_FRAMES;
 
-#define OUT_PERCENT1 0.80f
-#define OUT_PERCENT2 0.90f
+		r *= (0.40f + Noise[noise_frame] * 0.30f);
 
-#define IN_PERCENT1 0.10f
-#define IN_PERCENT2 0.20f
-
-		if (Fireball_warp_flash)
-		{
-			if ( (life_percent >= IN_PERCENT1) && (life_percent < IN_PERCENT2) ) {
-				r *= (life_percent - IN_PERCENT1) / (IN_PERCENT2 - IN_PERCENT1);
-				//render_it = true;
-			} else if ( (life_percent >= OUT_PERCENT1) && (life_percent < OUT_PERCENT2) ) {
-				r *= (OUT_PERCENT2 - life_percent) / (OUT_PERCENT2 - OUT_PERCENT1);
-				//render_it = true;
-			}
+		// Bobboau's warp thingie, toggled by cmdline
+		if (Fireball_warp_flash) {
+			r += powf((2.0f * life_percent) - 1.0f, 24.0f) * max_radius * 1.5f;
 		}
 
-		if (render_it) {
-			// Add in noise 
-			int noise_frame = fl2i(Missiontime/15.0f) % NOISE_NUM_FRAMES;
+		vecs[4] = center;
+		verts[4].texture_position.u = 0.5f; verts[4].texture_position.v = 0.5f; 
 
-			r *= (0.40f + Noise[noise_frame] * 0.30f);
+		g3_transfer_vertex( &verts[4], &vecs[4] );
 
-			// Bobboau's warp thingie, toggled by cmdline
-			if (Fireball_warp_flash) {
-				r += powf((2.0f * life_percent) - 1.0f, 24.0f) * max_radius * 1.5f;
-			}
+		float alpha = (The_mission.flags[Mission::Mission_Flags::Fullneb]) ? neb2_get_fog_visibility(&obj->pos, 1.0f) : 1.0f;
 
-			vecs[4] = center;
-			verts[4].texture_position.u = 0.5f; verts[4].texture_position.v = 0.5f; 
-
-			g3_transfer_vertex( &verts[4], &vecs[4] );
-
-			float alpha = (The_mission.flags[Mission::Mission_Flags::Fullneb]) ? neb2_get_fog_visibility(&obj->pos, 1.0f) : 1.0f;
-
-			//batch_add_bitmap(warp_glow_bitmap, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT, &verts[4], 0, r, alpha);
-			batching_add_bitmap(warp_glow_bitmap, &verts[4], 0, r, alpha);
-		}
+		//batch_add_bitmap(warp_glow_bitmap, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT, &verts[4], 0, r, alpha);
+		batching_add_bitmap(warp_glow_bitmap, &verts[4], 0, r, alpha);
 	}
 
 	if ( (warp_model_id >= 0) && (warp_3d) ) {
