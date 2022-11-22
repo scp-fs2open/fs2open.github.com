@@ -1319,7 +1319,7 @@ int aifft_rotate_turret(object *objp, ship *shipp, ship_subsys *ss, object *lep,
 
 	if (ss->turret_enemy_objnum != -1) {
 		model_subsystem *tp = ss->system_info;
-		vec3d	gun_pos, gun_vec, target_moving_direction;
+		vec3d	gun_pos, gun_vec, target_vel;
 		//float		weapon_speed;
 		float		weapon_system_strength;
 		//HACK HACK HACK -WMC
@@ -1357,21 +1357,32 @@ int aifft_rotate_turret(object *objp, ship *shipp, ship_subsys *ss, object *lep,
 			}
 		}
 
-		target_moving_direction = ss->last_aim_enemy_vel;
+		target_vel = ss->last_aim_enemy_vel;
 
 		//Try to guess where the enemy will be, and store that spot in predicted_enemy_pos
 		if (The_mission.ai_profile->flags[AI::Profile_Flags::Use_additive_weapon_velocity]) {
-			vm_vec_scale_sub2(&target_moving_direction, &objp->phys_info.vel, wip->vel_inherit_amount);
+			vm_vec_scale_sub2(&target_vel, &objp->phys_info.vel, wip->vel_inherit_amount);
 		}
 
 		if (tp->flags[Model::Subsystem_Flags::Turret_distant_firepoint] || Always_use_distant_firepoints) {
 			//The firing point of this turret is so far away from the its center that we should consider this for firing calculations
 			//This will do the enemy position prediction based on their relative position and speed to the firing point, not the turret center.
-			vec3d fire_pos, fire_vec;
-			ship_get_global_turret_gun_info(objp, ss, &fire_pos, &fire_vec, 1, nullptr);
-			set_predicted_enemy_pos_turret(predicted_enemy_pos, &fire_pos, objp, &enemy_point, &target_moving_direction, wip->max_speed, ss->turret_time_enemy_in_range * (weapon_system_strength + 1.0f)/2.0f);
-		} else {
-			set_predicted_enemy_pos_turret(predicted_enemy_pos, &gun_pos, objp, &enemy_point, &target_moving_direction, wip->max_speed, ss->turret_time_enemy_in_range * (weapon_system_strength + 1.0f)/2.0f);
+			vec3d temp;
+			ship_get_global_turret_gun_info(objp, ss, &gun_pos, &temp, 1, nullptr);
+		} 
+
+		if (IS_VEC_NULL(&The_mission.gravity) || wip->gravity_const == 0.0f)
+			set_predicted_enemy_pos_turret(predicted_enemy_pos, &gun_pos, objp, &enemy_point, &target_vel, wip->max_speed, ss->turret_time_enemy_in_range * (weapon_system_strength + 1.0f)/2.0f);
+		else {
+			vec3d shoot_vec;
+			if (physics_lead_ballistic_trajectory(&gun_pos, &enemy_point, &target_vel, wip->max_speed, &The_mission.gravity, &shoot_vec)) {
+				*predicted_enemy_pos = gun_pos + shoot_vec * 1000.0f;
+			} else {
+				if ((ss->system_info->flags[Model::Subsystem_Flags::Turret_reset_idle]) && (timestamp_elapsed(ss->rotation_timestamp))) {
+					ret_val = model_rotate_gun(objp, pm, pmi, ss, predicted_enemy_pos, true);
+				}
+				return ret_val;
+			}
 		}
 
 		//Mess with the turret's accuracy if the weapon system is damaged.
@@ -2575,7 +2586,9 @@ void ai_turret_execute_behavior(ship *shipp, ship_subsys *ss)
 	bool in_fov = turret_fov_test(ss, &gvec, &v2e);
 	bool something_was_ok_to_fire = false;
 
-	if (in_fov && num_valid) {
+	// the only reason predicted_enemy_pos might be zero, while everything else is valid is if
+	// its a ballistic trajectory with no valid path
+	if (in_fov && num_valid && predicted_enemy_pos != vmd_zero_vector) {
 
 		// Do salvo thing separately - to prevent messing up things
 		int number_of_firings;

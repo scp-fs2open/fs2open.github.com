@@ -742,6 +742,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "set-time-compression",			OP_CUTSCENES_SET_TIME_COMPRESSION,		1,	3,			SEXP_ACTION_OPERATOR,	},
 	{ "reset-time-compression",			OP_CUTSCENES_RESET_TIME_COMPRESSION,	0,	0,			SEXP_ACTION_OPERATOR,	},
 	{ "call-ssm-strike",				OP_CALL_SSM_STRIKE,						3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// X3N0-Life-Form
+	{ "set-gravity-accel",				OP_SET_GRAVITY_ACCEL,					1,	1,			SEXP_ACTION_OPERATOR, },	// Asteroth
 
 	//Variable Category
 	{ "modify-variable",				OP_MODIFY_VARIABLE,						2,	2,			SEXP_ACTION_OPERATOR,	},
@@ -13461,6 +13462,35 @@ void sexp_warp_effect(int n)
 	// create fireball -----------------------------
 
 	fireball_create(&origin, fireball_type, FIREBALL_WARP_EFFECT, -1, radius, false, nullptr, duration, -1, &m_orient, 0, extra_flags, warp_open_sound_index, warp_close_sound_index, warp_open_duration, warp_close_duration);
+}
+
+void sexp_set_gravity_accel(int node)
+{
+	Assert(node >= 0);
+
+	bool is_nan, is_nan_forever;
+	int accel = eval_num(node, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
+
+	float fl_accel = (float)(-accel) / 100.0f;
+	The_mission.gravity = vm_vec_new(0.0f, fl_accel, 0.0f);
+
+	// do the multiplayer callback
+	if (MULTIPLAYER_MASTER) {
+		Current_sexp_network_packet.start_callback();
+		Current_sexp_network_packet.send_float(fl_accel);
+		Current_sexp_network_packet.end_callback();
+	}
+}
+
+void multi_sexp_set_gravity_accel()
+{
+	float accel = 0.0f;
+
+	Current_sexp_network_packet.get_float(accel);
+
+	The_mission.gravity = vm_vec_new(0.0f, accel, 0.0f);
 }
 
 // this function get called by send-message or send-message random with the name of the message, sender,
@@ -27458,6 +27488,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_stop_looping_animation(node);
 				break;
 
+			case OP_SET_GRAVITY_ACCEL:
+				sexp_set_gravity_accel(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			default:{
 				// Check if we have a dynamic SEXP with this operator and if there is, execute that
 				auto dynamicSEXP = sexp::get_dynamic_sexp(op_num);
@@ -28610,6 +28645,7 @@ int query_operator_return_type(int op)
 		case OP_CLEAR_CONTAINER:
 		case OP_COPY_CONTAINER:
 		case OP_APPLY_CONTAINER_FILTER:
+		case OP_SET_GRAVITY_ACCEL:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -31256,6 +31292,9 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_NONE;
 			}
 
+		case OP_SET_GRAVITY_ACCEL:
+			return OPF_POSITIVE;
+
 		default: {
 			auto dynamicSEXP = sexp::get_dynamic_sexp(op);
 			if (dynamicSEXP != nullptr) {
@@ -33128,6 +33167,7 @@ int get_subcategory(int sexp_id)
 		case OP_CUTSCENES_SET_TIME_COMPRESSION:
 		case OP_CUTSCENES_RESET_TIME_COMPRESSION:
 		case OP_CALL_SSM_STRIKE:
+		case OP_SET_GRAVITY_ACCEL:
 			return CHANGE_SUBCATEGORY_SPECIAL_EFFECTS;
 
 		case OP_MODIFY_VARIABLE:
@@ -36866,6 +36906,12 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1: Red (0 - 255).\r\n"
 		"\t2: Green (0 - 255).\r\n"
 		"\t3: Blue (0 - 255)."
+	},
+
+	{ OP_SET_GRAVITY_ACCEL, "set-gravity-accel\r\n"
+		"\tSets the gravity acceleration rate in units of 0.01 m/s^2\r\n"
+		"\te.g. '981' would be earth gravity, 9.81 m/s^2.\r\n"
+		"\t1: Acceleration rate"
 	},
 
 	{ OP_SET_POST_EFFECT, "set-post-effect\r\n"

@@ -1571,6 +1571,18 @@ ADE_VIRTVAR(ShudderIntensity, l_Mission, "number", "Gets or sets the shudder int
 	return ade_set_args(L, "f", intensity);
 }
 
+ADE_VIRTVAR(Gravity, l_Mission, "vector", "Gravity acceleration vector in meters / second^2", "vector", "gravity vector")
+{
+	vec3d* gravity_vec = &The_mission.gravity;
+
+	if (ADE_SETTING_VAR && ade_get_args(L, "*o", l_Vector.GetPtr(&gravity_vec)))
+	{
+		The_mission.gravity = *gravity_vec;
+	}
+
+	return ade_set_args(L, "o", l_Vector.Set(The_mission.gravity));
+}
+
 ADE_FUNC(isInMission, l_Mission, nullptr, "get whether or not a mission is currently being played", "boolean", "true if in mission, false otherwise")
 {
 	return ade_set_args(L, "b", (Game_mode & GM_IN_MISSION) != 0);

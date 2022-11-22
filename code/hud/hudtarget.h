@@ -172,7 +172,7 @@ float hud_find_target_distance( object *targetee, const vec3d *targeter_pos );
 extern object* Player_obj;
 
 extern void polish_predicted_target_pos(weapon_info *wip, object *targetp, vec3d *enemy_pos, vec3d *predicted_enemy_pos, float dist_to_enemy, vec3d *last_delta_vec, int num_polish_steps, object *reference_obj = Player_obj);
-void hud_calculate_lead_pos(vec3d *lead_target_pos, vec3d *target_pos, object *targetp, weapon_info	*wip, float dist_to_target, vec3d *rel_pos = NULL);
+bool hud_calculate_lead_pos(vec3d* shooter_pos, vec3d *lead_target_pos, vec3d *target_pos, object *targetp, weapon_info	*wip, float dist_to_target, vec3d *rel_pos = NULL);
 
 void hud_stuff_ship_name(char *ship_name_text, const ship *shipp);
 void hud_stuff_ship_callsign(char *ship_callsign_text, const ship *shipp);

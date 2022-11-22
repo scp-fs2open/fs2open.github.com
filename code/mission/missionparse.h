@@ -132,6 +132,7 @@ typedef struct mission {
 	float	neb_far_multi;
 	float	neb_near_multi;
 	sound_env	sound_environment;
+	vec3d   gravity;
 
 	// Goober5000
 	int	command_persona;

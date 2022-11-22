@@ -732,6 +732,12 @@ void parse_mission_info(mission *pm, bool basic = false)
 			stuff_float(&pm->sound_environment.decay);
 		}
 	}
+
+	float gravity_accel = 0.0f;
+	if (optional_string("$Gravity Acceleration:")) {
+		stuff_float(&gravity_accel);
+		pm->gravity = vm_vec_new(0.0f, -gravity_accel, 0.0f);
+	}
 }
 
 void parse_player_info(mission *pm)
@@ -3487,7 +3493,7 @@ void mission_parse_maybe_create_parse_object(p_object *pobjp)
 
 					// now move the debris along its path for N seconds
 					objp = &Objects[db.objnum];
-					physics_sim(&objp->pos, &objp->orient, &objp->phys_info, (float) pobjp->destroy_before_mission_time);
+					physics_sim(&objp->pos, &objp->orient, &objp->phys_info, &The_mission.gravity, (float) pobjp->destroy_before_mission_time);
 				}
 			}
 			// FRED
@@ -6341,6 +6347,8 @@ void mission::Reset()
 
 	ai_profile = &Ai_profiles[Default_ai_profile];
 	cutscenes.clear( );
+
+	gravity = vmd_zero_vector;
 }
 
 /**
