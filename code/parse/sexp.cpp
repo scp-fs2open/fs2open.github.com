@@ -12442,6 +12442,7 @@ void sexp_set_order_allowed_for_target(int n)
 				Warning(LOCATION, "Invalid order name %s found in sexp!", CTEXT(n));
 				break;
 			}
+
 			// OPF_AI_ORDER returns hud_name, so we must compare to that instead of parse_name
 			if (!stricmp(CTEXT(n), Player_orders[order].hud_name.c_str())) {
 				orders.insert(order);
