@@ -1509,6 +1509,13 @@ add_file_folder("Sound"
 	sound/voicerec.h
 )
 
+if (APPLE)
+	add_file_folder("Sound"
+		${file_root_sound}
+		sound/speech.mm
+	)
+endif()
+
 if (FSO_BUILD_WITH_FFMPEG)
 	# Sound -> ffmpeg files
 	add_file_folder("Sound\\\\FFmpeg"
