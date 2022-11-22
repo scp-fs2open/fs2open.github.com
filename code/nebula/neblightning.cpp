@@ -293,9 +293,6 @@ void parse_lightning_table(const char* filename)
 				}
 			}
 
-			if (bolt_p->glow < 0)
-				error_display(1, "Bolt %s has no glow texture defined.", bolt_p->name);
-
 			// brightness
 			if (optional_string("+b_bright:")) {
 				stuff_float(&bolt_p->b_bright);
