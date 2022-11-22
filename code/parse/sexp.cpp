@@ -14978,15 +14978,6 @@ void sexp_toggle_asteroid_field(int n)
 
 void sexp_set_asteroid_field(int n)
 {
-	int field_type = 0, num_asteroids = 0, asteroid_speed = 0;
-	bool brown = true, blue = false, orange = false, inner_box = false;
-	int o_minx = -1000, o_miny = -1000, o_minz = -1000;
-	int o_maxx = 1000, o_maxy = 1000, o_maxz = 1000;
-	int i_minx = -500, i_miny = -500, i_minz = -500;
-	int i_maxx = 500, i_maxy = 500, i_maxz = 500;
-
-	SCP_vector<SCP_string> targets;
-
 	bool is_nan, is_nan_forever;
 
 	for (int i = 0; i < MAX_ASTEROIDS; i++) {
@@ -14999,6 +14990,7 @@ void sexp_set_asteroid_field(int n)
 	//This feels hackish, but we need to make sure all the asteroids are actually gone before we continue-Mjn
 	obj_delete_all_that_should_be_dead();
 
+	int field_type = 0, num_asteroids = 0, asteroid_speed = 0;
 	for (int i = 0; i < 3; i++) {
 
 		int temp = eval_num(n, is_nan, is_nan_forever);
@@ -15014,16 +15006,19 @@ void sexp_set_asteroid_field(int n)
 		n = CDR(n);
 	}
 
+	bool brown = true;
 	if (n >= 0) {
 		brown = is_sexp_true(n);
 		n = CDR(n);
 	}
 
+	bool blue = false;
 	if (n >= 0) {
 		blue = is_sexp_true(n);
 		n = CDR(n);
 	}
 
+	bool orange = false;
 	if (n >= 0) {
 		orange = is_sexp_true(n);
 		n = CDR(n);
@@ -15032,6 +15027,8 @@ void sexp_set_asteroid_field(int n)
 	if (!brown && !blue && !orange)
 		return;
 
+	int o_minx = -1000, o_miny = -1000, o_minz = -1000;
+	int o_maxx = 1000, o_maxy = 1000, o_maxz = 1000;
 	if (n >= 0) {
 		for (int i = 0; i < 6; i++) {
 
@@ -15055,11 +15052,14 @@ void sexp_set_asteroid_field(int n)
 		}
 	}
 
+	bool inner_box = false;
 	if (n >= 0) {
 		inner_box = is_sexp_true(n);
 		n = CDR(n);
 	}
 
+	int i_minx = -500, i_miny = -500, i_minz = -500;
+	int i_maxx = 500, i_maxy = 500, i_maxz = 500;
 	if (n >= 0) {
 		for (int i = 0; i < 6; i++) {
 
@@ -15083,6 +15083,7 @@ void sexp_set_asteroid_field(int n)
 		}
 	}
 
+	SCP_vector<SCP_string> targets;
 	if (n >= 0) {
 		int i = 0;
 		for (; n >= 0; true ? n = CDR(n) : n = -1) {
@@ -15156,13 +15157,6 @@ void sexp_set_asteroid_field(int n)
 
 void sexp_set_debris_field(int n)
 {
-	int num_asteroids = 0, asteroid_speed = 0;
-	int debris1 = -1, debris2 = -1, debris3 = -1;
-	int o_minx = -1000, o_miny = -1000, o_minz = -1000;
-	int o_maxx = 1000, o_maxy = 1000, o_maxz = 1000;
-
-	SCP_vector<SCP_string> targets;
-
 	bool is_nan, is_nan_forever;
 
 	for (int i = 0; i < MAX_ASTEROIDS; i++) {
@@ -15175,6 +15169,7 @@ void sexp_set_debris_field(int n)
 	// This feels hackish, but we need to make sure all the debris pieces are actually gone before we continue-Mjn
 	obj_delete_all_that_should_be_dead();
 
+	int num_asteroids = 0, asteroid_speed = 0;
 	for (int i = 0; i < 2; i++) {
 
 		int temp = eval_num(n, is_nan, is_nan_forever);
@@ -15188,16 +15183,19 @@ void sexp_set_debris_field(int n)
 		n = CDR(n);
 	}
 
+	int debris1 = -1;
 	if (n >= 0) {
 		debris1 = get_asteroid_position(CTEXT(n));
 		n = CDR(n);
 	}
 
+	int debris2 = -1;
 	if (n >= 0) {
 		debris2 = get_asteroid_position(CTEXT(n));
 		n = CDR(n);
 	}
 
+	int debris3 = -1;
 	if (n >= 0) {
 		debris3 = get_asteroid_position(CTEXT(n));
 		n = CDR(n);
@@ -15206,6 +15204,8 @@ void sexp_set_debris_field(int n)
 	if ((debris1 == -1) && (debris2 == -1) && (debris3 == -1))
 		return;
 
+	int o_minx = -1000, o_miny = -1000, o_minz = -1000;
+	int o_maxx = 1000, o_maxy = 1000, o_maxz = 1000;
 	if (n >= 0) {
 		for (int i = 0; i < 6; i++) {
 
@@ -15229,6 +15229,7 @@ void sexp_set_debris_field(int n)
 		}
 	}
 
+	SCP_vector<SCP_string> targets;
 	if (n >= 0) {
 		int i = 0;
 		for (; n >= 0; true ? n = CDR(n) : n = -1) {
