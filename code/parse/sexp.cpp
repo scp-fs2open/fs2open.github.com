@@ -12410,21 +12410,23 @@ void sexp_set_player_orders(int n)
 	}
 }
 
-void sexp_set_order_allowed_target(int n)
+void sexp_set_order_allowed_for_target(int n)
 {
-	bool allow_order;
-	std::set<size_t> orders;
 
 	auto ship_entry = eval_ship(n);
+
 	if (!ship_entry || !ship_entry->shipp) {
 		return;
 	}
+
 	auto shipp = ship_entry->shipp;
 
 	const std::set<size_t>& default_orders = ship_set_default_orders_against();
 	n = CDR(n);
+	bool allow_order;
 	allow_order = is_sexp_true(n);
 	n = CDR(n);
+	std::set<size_t> orders;
 	do {
 		for( size_t order : default_orders){
 			//Once we exceed the number of valid orders, break and warn
@@ -12438,7 +12440,6 @@ void sexp_set_order_allowed_target(int n)
 				break;
 			}
 		}
-
 		n = CDR(n);
 	}while (n >= 0);
 		
@@ -26167,7 +26168,7 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			//MjnMixael
 			case OP_SET_ORDER_ALLOWED_TARGET:
-				sexp_set_order_allowed_target(node);
+				sexp_set_order_allowed_for_target(node);
 				sexp_val = SEXP_TRUE;
 				break; 
 
