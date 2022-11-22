@@ -38,6 +38,7 @@
 #include "scripting/api/objs/LuaSEXP.h"
 #include "scripting/api/objs/luaaisexp.h"
 #include "scripting/api/objs/asteroid.h"
+#include "scripting/api/objs/animation_handle.h"
 #include "scripting/api/objs/background_element.h"
 #include "scripting/api/objs/beam.h"
 #include "scripting/api/objs/debris.h"
@@ -1962,22 +1963,17 @@ ADE_FUNC(getLineOfSightFirstIntersect, l_Mission, "vector from, vector to, [tabl
 	return testLineOfSight_internal(L, true);
 }
 
-ADE_FUNC(triggerSpecialSubmodelAnimation, l_Mission, "string target, string type, string triggeredBy, [boolean forwards = true, boolean resetOnStart = false, boolean completeInstant = false, boolean pause = false]",
-	"Triggers an animation. Target is the object that should be animated (one of \"cockpit\", \"skybox\"), type is the string name of the animation type, "
-	"triggeredBy is a closer specification which animation should trigger. See *-anim.tbm specifications. "
-	"Forwards controls the direction of the animation. ResetOnStart will cause the animation to play from its initial state, as opposed to its current state. CompleteInstant will immediately complete the animation. Pause will instead stop the animation at the current state.",
-	"boolean",
-	"True if successful, false or nil otherwise")
+ADE_FUNC(getSpecialSubmodelAnimation, l_Mission, "string target, string type, string triggeredBy",
+	"Gets an animation handle. Target is the object that should be animated (one of \"cockpit\", \"skybox\"), type is the string name of the animation type, "
+	"triggeredBy is a closer specification which animation should trigger. See *-anim.tbm specifications. ",
+	"animation_handle",
+	"The animation handle for the specified animation, nil if invalid arguments.")
 {
 	const char* target = nullptr;
 	const char* type = nullptr;
 	const char* trigger = nullptr;
-	bool forwards = true;
-	bool forced = false;
-	bool instant = false;
-	bool pause = false;
 
-	if (!ade_get_args(L, "sss|bbbb", &target, &type, &trigger, &forwards, &forced, &instant, &pause))
+	if (!ade_get_args(L, "sss", &target, &type, &trigger))
 		return ADE_RETURN_NIL;
 
 	polymodel_instance* pmi;
@@ -1985,13 +1981,13 @@ ADE_FUNC(triggerSpecialSubmodelAnimation, l_Mission, "string target, string type
 
 	if (stricmp(target, "cockpit") == 0) {
 		if (Player_ship->cockpit_model_instance < 0)
-			return ADE_RETURN_NIL;
+			return ade_set_args(L, "o", l_AnimationHandle.Set(animation::ModelAnimationSet::AnimationList{}));
 		pmi = model_get_instance(Player_ship->cockpit_model_instance);
 		set = &Ship_info[Player_ship_class].cockpit_animations;
 	}
 	else if (stricmp(target, "skybox") == 0) {
 		if(Nmodel_instance_num < 0)
-			return ADE_RETURN_NIL;
+			return ade_set_args(L, "o", l_AnimationHandle.Set(animation::ModelAnimationSet::AnimationList{}));
 		pmi = model_get_instance(Nmodel_instance_num);
 		set = &The_mission.skybox_model_animations;
 	}
@@ -2001,9 +1997,9 @@ ADE_FUNC(triggerSpecialSubmodelAnimation, l_Mission, "string target, string type
 
 	auto animtype = animation::anim_match_type(type);
 	if (animtype == animation::ModelAnimationTriggerType::None)
-		return ADE_RETURN_FALSE;
+		return ade_set_args(L, "o", l_AnimationHandle.Set(animation::ModelAnimationSet::AnimationList{}));
 
-	return set->parseScripted(pmi, animtype, trigger).start(forwards ? animation::ModelAnimationDirection::FWD : animation::ModelAnimationDirection::RWD, forced || instant, instant, pause) ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
+	return ade_set_args(L, "o", l_AnimationHandle.Set(set->parseScripted(pmi, animtype, trigger)));
 }
 
 ADE_FUNC(updateSpecialSubmodelMoveable, l_Mission, "string target, string name, table values",

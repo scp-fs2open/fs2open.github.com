@@ -839,6 +839,7 @@ namespace animation {
 	};
 
 	bool ModelAnimationSet::AnimationList::start(ModelAnimationDirection direction, bool forced, bool instant, bool pause) const {
+		polymodel_instance* pmi = model_get_instance(pmi_id);
 		for(auto anim : animations)
 			anim->start(pmi, direction, forced, instant, pause);
 
@@ -849,9 +850,9 @@ namespace animation {
 		float duration = 0.0f;
 
 		for (const auto& anim : animations) {
-			if (anim->m_instances[pmi->id].state == ModelAnimationState::UNTRIGGERED)
+			if (anim->m_instances[pmi_id].state == ModelAnimationState::UNTRIGGERED)
 				continue;
-			float localDur = anim->m_instances[pmi->id].duration;
+			float localDur = anim->m_instances[pmi_id].duration;
 			duration = duration < localDur ? localDur : duration;
 		}
 
@@ -860,22 +861,22 @@ namespace animation {
 
 	void ModelAnimationSet::AnimationList::setFlag(Animation_Instance_Flags flag, bool set) const {
 		for (const auto& anim : animations)
-			anim->m_instances[pmi->id].instance_flags.set(flag, set);
+			anim->m_instances[pmi_id].instance_flags.set(flag, set);
 	}
 
 	void ModelAnimationSet::AnimationList::setSpeed(float speed) const {
 		for (const auto& anim : animations)
-			anim->m_instances[pmi->id].speed = speed;
+			anim->m_instances[pmi_id].speed = speed;
 	};
 
 	ModelAnimationSet::AnimationList& ModelAnimationSet::AnimationList::operator+=(const AnimationList& rhs) {
-		Assertion(pmi == rhs.pmi, "Tried to concatenate two AnimationLists of different model instances!");
+		Assertion(pmi_id == rhs.pmi_id, "Tried to concatenate two AnimationLists of different model instances!");
 		animations.insert(animations.end(), rhs.animations.cbegin(), rhs.animations.cend());
 		return *this;
 	}
 
 	ModelAnimationSet::AnimationList ModelAnimationSet::AnimationList::operator+(const AnimationList& rhs) {
-		Assertion(pmi == rhs.pmi, "Tried to concatenate two AnimationLists of different model instances!");
+		Assertion(pmi_id == rhs.pmi_id, "Tried to concatenate two AnimationLists of different model instances!");
 		AnimationList result = *this;
 		result.animations.insert(result.animations.end(), rhs.animations.cbegin(), rhs.animations.cend());
 		return result;

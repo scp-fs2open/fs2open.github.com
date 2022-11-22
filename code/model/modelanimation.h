@@ -322,10 +322,12 @@ namespace animation {
 
 		class AnimationList {
 			std::vector<std::shared_ptr<ModelAnimation>> animations;
-			polymodel_instance* pmi = nullptr;
-			AnimationList(polymodel_instance* pmi_ = nullptr) : pmi(pmi_) {}
+			int pmi_id;
+			AnimationList(polymodel_instance* pmi_) : pmi_id(pmi_ == nullptr ? -1 : pmi_->id) {}
+			AnimationList(int pmi_id_) : pmi_id(pmi_id_) {}
 			friend class ModelAnimationSet;
 		public:
+			inline AnimationList() : AnimationList(-1) {}
 			bool start(ModelAnimationDirection direction, bool forced = false, bool instant = false, bool pause = false) const;
 			int getTime() const;
 			void setFlag(Animation_Instance_Flags flag, bool set = true) const;

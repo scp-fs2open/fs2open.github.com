@@ -2,6 +2,7 @@
 //
 
 
+#include "animation_handle.h"
 #include "ship.h"
 #include "texture.h"
 #include "object.h"
@@ -1898,8 +1899,8 @@ ADE_FUNC_DEPRECATED(triggerAnimation, l_Ship, "string Type, [number Subtype, boo
 }
 
 ADE_FUNC(triggerSubmodelAnimation, l_Ship, "string type, string triggeredBy, [boolean forwards = true, boolean resetOnStart = false, boolean completeInstant = false, boolean pause = false]",
-	"Triggers an animation. Type is the string name of the animation type, "
-	"triggeredBy is a closer specification which animation should trigger. See *-anim.tbm specifications. "
+	"Triggers an animation. If used often with the same type / triggeredBy, consider using getSubmodelAnimation for performance reasons. "
+	"Type is the string name of the animation type, triggeredBy is a closer specification which animation should trigger. See *-anim.tbm specifications. "
 	"Forwards controls the direction of the animation. ResetOnStart will cause the animation to play from its initial state, as opposed to its current state. CompleteInstant will immediately complete the animation. Pause will instead stop the animation at the current state.",
 	"boolean",
 	"True if successful, false or nil otherwise")
@@ -1927,8 +1928,32 @@ ADE_FUNC(triggerSubmodelAnimation, l_Ship, "string type, string triggeredBy, [bo
 	return Ship_info[shipp->ship_info_index].animations.parseScripted(model_get_instance(shipp->model_instance_num), animtype, trigger).start(forwards ? animation::ModelAnimationDirection::FWD : animation::ModelAnimationDirection::RWD, forced || instant, instant, pause) ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
 }
 
+ADE_FUNC(getSubmodelAnimation, l_Ship, "string type, string triggeredBy",
+	"Gets an animation handle. Type is the string name of the animation type, triggeredBy is a closer specification which animation should trigger. See *-anim.tbm specifications. ",
+	"animation_handle",
+	"The animation handle for the specified animation, nil if invalid arguments.")
+{
+	object_h* objh;
+	const char* type = nullptr;
+	const char* trigger = nullptr;
+
+	if (!ade_get_args(L, "oss", l_Ship.GetPtr(&objh), &type, &trigger))
+		return ADE_RETURN_NIL;
+
+	if (!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	auto animtype = animation::anim_match_type(type);
+	if (animtype == animation::ModelAnimationTriggerType::None)
+		return ade_set_args(L, "o", l_AnimationHandle.Set(animation::ModelAnimationSet::AnimationList{}));
+
+	ship* shipp = &Ships[objh->objp->instance];
+
+	return ade_set_args(L, "o", l_AnimationHandle.Set(Ship_info[shipp->ship_info_index].animations.parseScripted(model_get_instance(shipp->model_instance_num), animtype, trigger)));
+}
+
 ADE_FUNC(stopLoopingSubmodelAnimation, l_Ship, "string type, string triggeredBy",
-	"Stops a currently looping animation after it has finished its current loop. Type is the string name of the animation type, "
+	"Stops a currently looping animation after it has finished its current loop. If used often with the same type / triggeredBy, consider using getSubmodelAnimation for performance reasons. Type is the string name of the animation type, "
 	"triggeredBy is a closer specification which animation was triggered. See *-anim.tbm specifications. ",
 	"boolean",
 	"True if successful, false or nil otherwise")
@@ -1954,7 +1979,7 @@ ADE_FUNC(stopLoopingSubmodelAnimation, l_Ship, "string type, string triggeredBy"
 }
 
 ADE_FUNC(setAnimationSpeed, l_Ship, "string type, string triggeredBy, [number speedMultiplier = 1.0]",
-	"Sets the speed multiplier at which an animation runs. Anything other than 1 will not work in multiplayer. Type is the string name of the animation type, "
+	"Sets the speed multiplier at which an animation runs. If used often with the same type / triggeredBy, consider using getSubmodelAnimation for performance reasons. Anything other than 1 will not work in multiplayer. Type is the string name of the animation type, "
 	"triggeredBy is a closer specification which animation should trigger. See *-anim.tbm specifications.",
 	nullptr,
 	nullptr)
@@ -1981,7 +2006,7 @@ ADE_FUNC(setAnimationSpeed, l_Ship, "string type, string triggeredBy, [number sp
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(getSubmodelAnimationTime, l_Ship, "string type, string triggeredBy", "Gets time that animation will be done", "number", "Time (seconds), or 0 if ship handle is invalid")
+ADE_FUNC(getSubmodelAnimationTime, l_Ship, "string type, string triggeredBy", "Gets time that animation will be done. If used often with the same type / triggeredBy, consider using getSubmodelAnimation for performance reasons.", "number", "Time (seconds), or 0 if ship handle is invalid")
 {
 	object_h* objh;
 	const char* type = nullptr;
