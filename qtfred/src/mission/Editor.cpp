@@ -466,8 +466,8 @@ void Editor::initialSetup() {
 	// Get the default player ship
 	Default_player_model = get_default_player_ship_index();
 
-	Id_select_type_jump_node = (int) (Ship_info.size() + 1);
 	Id_select_type_waypoint = (int) (Ship_info.size());
+	Id_select_type_jump_node = (int) (Ship_info.size() + 1);
 
 	createNewMission();
 }

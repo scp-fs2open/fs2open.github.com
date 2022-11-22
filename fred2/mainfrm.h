@@ -27,23 +27,14 @@ class color_combo_box : public CComboBox
 {
 public:
 	/**
-	 * @brief Sets the given item index as the selected item
-	 *
-	 * @param[in] model_index The index of the item within the combobox
-	 *
-	 * @returns The item index if successful, or
-	 * @returns CB_ERR otherwise
+	 * Gets the ship class corresponding to the item index
 	 */
-	int SetCurSelNEW(int model_index);
+	int GetShipClass(int item_index);
 
 	/**
-	 * @brief Gets an index of the current selection
-	 *
-	 * @returns The ship_info index of the ship/object, or
-	 * @returns The current selection if it is a special item, or
-	 * @returns CB_ERR if an error occured
+	 * Gets the item index corresponding to the ship class
 	 */
-	int GetCurSelNEW();
+	int GetItemIndex(int ship_class);
 
 private:
 	/**
