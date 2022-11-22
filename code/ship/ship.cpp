@@ -3536,6 +3536,8 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		stuff_string( sci->name, F_NAME, NAME_LENGTH);
 	}
 
+	parse_game_sound("$Shockwave Sound:", &sci->blast_sound_id);
+
 	if(optional_string("$Explosion Animations:")){
 		int temp[MAX_FIREBALL_TYPES];
 		auto parsed_ints = stuff_int_list(temp, MAX_FIREBALL_TYPES, RAW_INTEGER_TYPE);
@@ -4123,7 +4125,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	//Parse optional sound to be used for end of a glide
 	parse_game_sound("$GlideEndSnd:", &sip->glide_end_snd);
 
-	// Parse optional sound to be used for bfly-by sound
+	// Parse optional sound to be used for flyby sound
 	parse_game_sound("$Flyby Sound:", &sip->flyby_snd);
 
 	parse_ship_sounds(sip);

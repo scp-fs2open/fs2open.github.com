@@ -133,6 +133,8 @@ int shockwave_create(int parent_objnum, vec3d* pos, shockwave_create_info* sci, 
 	sw->shockwave_info_index = info_index;		// only one type for now... type could be passed is as a parameter
 	sw->current_bitmap = -1;
 
+	sw->blast_sound_id = sci->blast_sound_id;
+
 	sw->time_elapsed=0.0f;
 	sw->delay_stamp = delay;
 
@@ -371,7 +373,9 @@ void shockwave_move(object *shockwave_objp, float frametime)
 			} else {
 				vol_scale = 1.0f;
 			}
-			snd_play( gamesnd_get_game_sound(GameSounds::SHOCKWAVE_IMPACT), 0.0f, vol_scale );
+			if (sw->blast_sound_id.isValid()) {
+				snd_play(gamesnd_get_game_sound(sw->blast_sound_id), 0.0f, vol_scale);
+			}
 		}
 
 	}	// end for
@@ -723,6 +727,8 @@ void shockwave_create_info_init(shockwave_create_info *sci)
 	sci->rot_defined = false;
 	sci->damage_type_idx = sci->damage_type_idx_sav = -1;
 	sci->damage_overidden = false;
+
+	sci->blast_sound_id = GameSounds::SHOCKWAVE_IMPACT;
 }
 
 /**

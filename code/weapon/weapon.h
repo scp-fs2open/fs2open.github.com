@@ -458,7 +458,8 @@ struct weapon_info
 	int	pre_launch_snd_min_interval;	//Minimum interval in ms between the last time the pre-launch sound was played and the next time it can play, as a limiter in case the player is pumping the trigger
 	gamesnd_id	launch_snd;
 	gamesnd_id	impact_snd;
-	gamesnd_id disarmed_impact_snd;
+	gamesnd_id  disarmed_impact_snd;
+	gamesnd_id  shield_impact_snd;
 	gamesnd_id	flyby_snd;							//	whizz-by sound, transmitted through weapon's portable atmosphere.
 	gamesnd_id	ambient_snd;
 	

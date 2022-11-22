@@ -778,6 +778,9 @@ void parse_shockwave_info(shockwave_create_info *sci, const char *pre_char)
 	if(optional_string(buf)) {
 		stuff_string(sci->name, F_NAME, MAX_FILENAME_LEN);
 	}
+
+	sprintf(buf, "%sShockwave Sound:", pre_char);
+	parse_game_sound(buf, &sci->blast_sound_id);
 }
 
 static SCP_vector<SCP_string> Removed_weapons;
@@ -1718,6 +1721,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 	//Disarmed impact sound
 	parse_game_sound("$Disarmed ImpactSnd:", &wip->disarmed_impact_snd);
+
+	//Shield Impact sound --wookieejedi
+	parse_game_sound("$Shield ImpactSnd:", &wip->shield_impact_snd);
 
 	parse_game_sound("$FlyBySnd:", &wip->flyby_snd);
 
@@ -6796,10 +6802,14 @@ void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos, bool 
 				snd_play_3d( gamesnd_get_game_sound(GameSounds::SHIELD_HIT_YOU), hitpos, &Eye_position );
 				// AL 12-15-97: Add missile impact sound even when shield is hit
 				if ( wip->subtype == WP_MISSILE ) {
-					snd_play_3d( gamesnd_get_game_sound(GameSounds::PLAYER_HIT_MISSILE), hitpos, &Eye_position);
+					snd_play_3d( gamesnd_get_game_sound(GameSounds::PLAYER_HIT_MISSILE), hitpos, &Eye_position );
 				}
 			} else {
-				snd_play_3d( gamesnd_get_game_sound(GameSounds::SHIELD_HIT), hitpos, &Eye_position );
+				if (wip->shield_impact_snd.isValid()) {
+					snd_play_3d( gamesnd_get_game_sound(wip->shield_impact_snd), hitpos, &Eye_position );
+				} else {
+					snd_play_3d( gamesnd_get_game_sound(GameSounds::SHIELD_HIT), hitpos, &Eye_position );
+				}
 			}
 		} else {
 			// Play a hull impact sound effect
@@ -6813,7 +6823,7 @@ void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos, bool 
 					break;
 				case WP_MISSILE:
 					if ( !(Use_weapon_class_sounds_for_hits_to_player) && (hit_obj == Player_obj)) 
-						snd_play_3d( gamesnd_get_game_sound(GameSounds::PLAYER_HIT_MISSILE), hitpos, &Eye_position);
+						snd_play_3d( gamesnd_get_game_sound(GameSounds::PLAYER_HIT_MISSILE), hitpos, &Eye_position );
 					else {
 						weapon_play_impact_sound(wip, hitpos, is_armed);
 					}
@@ -8936,6 +8946,7 @@ void weapon_info::reset()
 	this->launch_snd = gamesnd_id();
 	this->impact_snd = gamesnd_id();
 	this->disarmed_impact_snd = gamesnd_id();
+	this->shield_impact_snd = gamesnd_id();
 	this->flyby_snd = gamesnd_id();
 
 	this->hud_tracking_snd = gamesnd_id();
