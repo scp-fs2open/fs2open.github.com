@@ -6792,7 +6792,7 @@ void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos, bool 
 		// play a shield hit if shields are above 10% max in this quadrant
 		if ( shield_str > 0.1f ) {
 			// Play a shield impact sound effect
-			if ( hit_obj == Player_obj ) {
+			if ( !(Use_weapon_class_sounds_for_hits_to_player) && (hit_obj == Player_obj)) {
 				snd_play_3d( gamesnd_get_game_sound(GameSounds::SHIELD_HIT_YOU), hitpos, &Eye_position );
 				// AL 12-15-97: Add missile impact sound even when shield is hit
 				if ( wip->subtype == WP_MISSILE ) {
@@ -6805,14 +6805,14 @@ void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos, bool 
 			// Play a hull impact sound effect
 			switch ( wip->subtype ) {
 				case WP_LASER:
-					if ( hit_obj == Player_obj )
+					if ( !(Use_weapon_class_sounds_for_hits_to_player) && (hit_obj == Player_obj))
 						snd_play_3d( gamesnd_get_game_sound(GameSounds::PLAYER_HIT_LASER), hitpos, &Eye_position );
 					else {
 						weapon_play_impact_sound(wip, hitpos, is_armed);
 					}
 					break;
 				case WP_MISSILE:
-					if ( hit_obj == Player_obj ) 
+					if ( !(Use_weapon_class_sounds_for_hits_to_player) && (hit_obj == Player_obj)) 
 						snd_play_3d( gamesnd_get_game_sound(GameSounds::PLAYER_HIT_MISSILE), hitpos, &Eye_position);
 					else {
 						weapon_play_impact_sound(wip, hitpos, is_armed);
