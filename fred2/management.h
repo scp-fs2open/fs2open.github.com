@@ -23,7 +23,7 @@ extern int cur_object_index;
 extern int cur_ship;
 extern int cur_wing;
 extern int cur_wing_index;
-extern int cur_model_index;
+extern int cur_ship_type_combo_index;
 extern waypoint* cur_waypoint;
 extern waypoint_list* cur_waypoint_list;
 extern int Update_ship;

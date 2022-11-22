@@ -912,7 +912,7 @@ void obj_move_call_physics(object *objp, float frametime)
 
 		if (physics_paused)	{
 			if (objp==Player_obj){
-				physics_sim(&objp->pos, &objp->orient, &objp->phys_info, frametime );		// simulate the physics
+				physics_sim(&objp->pos, &objp->orient, &objp->phys_info, &The_mission.gravity, frametime );		// simulate the physics
 			}
 		} else {
 			//	Hack for dock mode.
@@ -941,7 +941,7 @@ void obj_move_call_physics(object *objp, float frametime)
 			}			
 
 			// simulate the physics
-			physics_sim(&objp->pos, &objp->orient, &objp->phys_info, frametime);		
+			physics_sim(&objp->pos, &objp->orient, &objp->phys_info, &The_mission.gravity,  frametime);
 
 			// if the object is the player object, do things that need to be done after the ship
 			// is moved (like firing weapons, etc).  This routine will get called either single
@@ -1520,7 +1520,7 @@ void obj_move_all(float frametime)
 		if (!(objp->flags[Object::Object_Flags::Immobile] && objp->hull_strength > 0.0f)) {
 			// if this is an object which should be interpolated in multiplayer, do so
 			if (interpolation_object) {
-				objp->interp_info.interpolate_main(&objp->pos, &objp->orient, &objp->phys_info, &objp->last_pos, &objp->last_orient, objp->flags[Object::Object_Flags::Player_ship]);
+				objp->interp_info.interpolate_main(&objp->pos, &objp->orient, &objp->phys_info, &objp->last_pos, &objp->last_orient, &The_mission.gravity, objp->flags[Object::Object_Flags::Player_ship]);
 			} else {
 				// physics
 				obj_move_call_physics(objp, frametime);

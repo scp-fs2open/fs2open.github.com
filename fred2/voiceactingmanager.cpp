@@ -435,6 +435,7 @@ void VoiceActingManager::OnGenerateScript()
 			entry.Replace("$message", stage->text.c_str());
 			entry.Replace("$persona", "<no persona specified>");
 			entry.Replace("$sender", "<no sender specified>");
+			entry.Replace("$name", "<no name specified>");
 
 			fout("%s\n\n\n", (char *) (LPCTSTR) entry);
 		}
@@ -454,6 +455,7 @@ void VoiceActingManager::OnGenerateScript()
 			entry.Replace("$message", stage->text.c_str());
 			entry.Replace("$persona", "<no persona specified>");
 			entry.Replace("$sender", "<no sender specified>");
+			entry.Replace("$name", "<no name specified>");
 
 			fout("%s\n\n\n", (char *) (LPCTSTR) entry);
 		}
@@ -473,6 +475,7 @@ void VoiceActingManager::OnGenerateScript()
 			entry.Replace("$message", stage->text.c_str());
 			entry.Replace("$persona", "<no persona specified>");
 			entry.Replace("$sender", "<no sender specified>");
+			entry.Replace("$name", "<no name specified>");
 	
 			fout("%s\n\n\n", (char *) (LPCTSTR) entry);
 		}
@@ -516,6 +519,8 @@ void VoiceActingManager::export_one_message(const MMessage *message)
 {
 	CString entry = m_script_entry_format;
 	entry.Replace("\r\n", "\n");
+
+	entry.Replace("$name", message->name);
 
 	// replace file name
 	entry.Replace("$filename", message->wave_info.name);

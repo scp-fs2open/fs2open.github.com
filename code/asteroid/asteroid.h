@@ -74,12 +74,13 @@ public:
 	float		fireball_radius_multiplier;						// the model radius is multiplied by this to determine the fireball size
 	SCP_string	display_name;									// only used for hud targeting display and for 'ship' asteroids
 	float		spawn_weight;									// ship asteroids only, relative proportion to spawn compared to other types in its asteroid field
+	float		gravity_const;									// multiplier for mission gravity
 
 	asteroid_info( )
 		: num_detail_levels( 0 ), max_speed( 0 ), damage_type_idx( 0 ),
 		  damage_type_idx_sav( -1 ), inner_rad( 0 ), outer_rad( 0 ),
 		  damage( 0 ), blast( 0 ), initial_asteroid_strength( 0 ),
-		  fireball_radius_multiplier( -1 )
+		  fireball_radius_multiplier( -1 ), spawn_weight( 1 ), gravity_const( 0 )
 	{
 		name[ 0 ] = 0;
 		memset( detail_distance, 0, sizeof( detail_distance ) );

@@ -87,7 +87,7 @@ int cur_wing = -1;
 int cur_wing_index;
 int cur_object_index = -1;
 int cur_ship = -1;
-int cur_model_index = 0;
+int cur_ship_type_combo_index = 0;
 waypoint *cur_waypoint = NULL;
 waypoint_list *cur_waypoint_list = NULL;
 int delete_flag;
@@ -464,7 +464,7 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	g3_set_view_matrix(&eye_pos, &eye_orient, 0.5f);
 	
 	// Get the default player ship
-	Default_player_model = cur_model_index = get_default_player_ship_index();
+	Default_player_model = get_default_player_ship_index();
 
 	Fred_main_wnd -> init_tools();
 
@@ -718,10 +718,10 @@ int create_object(vec3d *pos, int waypoint_instance)
 {
 	int obj, n;
 
-	if (cur_model_index == Id_select_type_waypoint)
+	if (cur_ship_type_combo_index == Id_select_type_waypoint)
 		obj = create_waypoint(pos, waypoint_instance);
 
-	else if (cur_model_index == Id_select_type_start) {
+	else if (cur_ship_type_combo_index == Id_select_type_start) {
 		if (Player_starts >= MAX_PLAYERS) {
 			Fred_main_wnd->MessageBox("Unable to create new player start point.\n"
 				"You have reached the maximum limit.", NULL, MB_OK | MB_ICONEXCLAMATION);
@@ -740,14 +740,16 @@ int create_object(vec3d *pos, int waypoint_instance)
 		} else
 			obj = create_player(Player_starts, pos, NULL, Default_player_model);
 
-	} else if (cur_model_index == Id_select_type_jump_node) {
+	} else if (cur_ship_type_combo_index == Id_select_type_jump_node) {
 		CJumpNode jnp(pos);
 		obj = jnp.GetSCPObjectNumber();
 		Jump_nodes.push_back(std::move(jnp));
-	} else if(Ship_info[cur_model_index].flags[Ship::Info_Flags::No_fred]){		
-		obj = -1;
 	} else {  // creating a ship
-		obj = create_ship(NULL, pos, cur_model_index);
+		int ship_class = m_new_ship_type_combo_box.GetShipClass(cur_ship_type_combo_index);
+		if (ship_class < 0 || ship_class >= ship_info_size())
+			return -1;
+
+		obj = create_ship(nullptr, pos, ship_class);
 		if (obj == -1)
 			return -1;
 

@@ -341,7 +341,7 @@ public:
 	model_subsystem *system_info;					// pointer to static data for this subsystem -- see model.h for definition
 
 	int			parent_objnum;						// objnum of the parent ship
-	int			parent_subsys_index;				// index of this subsystem in the parent ship's linked list
+	int			parent_subsys_index;				// index of this subsystem in the parent ship's linked list -- Do not access manually, use parent_subsys_index() as this may not yet be cached.
 
 	char		sub_name[NAME_LENGTH];					//WMC - Name that overrides name of original
 	float		current_hits;							// current number of hits this subsystem has left.
@@ -429,6 +429,9 @@ public:
 	//Per-turret ownage settings - SUSHI
 	int turret_max_bomb_ownage; 
 	int turret_max_target_ownage;
+
+	// multiplayer
+	TIMESTAMP info_from_server_stamp;
 
 	ship_subsys()
 		: next(NULL), prev(NULL)
@@ -1143,6 +1146,8 @@ public:
 	float		forward_decel;
 	float		slide_accel;
 	float		slide_decel;
+	float	gravity_const;						// multiplies the affect of gravity, if any
+	float	dying_gravity_const;				// as above, when death rolling
 
 	int warpin_params_index;
 	int warpout_params_index;
@@ -1194,6 +1199,7 @@ public:
 	float			debris_max_hitpoints;
 	float			debris_damage_mult;
 	float			debris_arc_percent;
+	float			debris_gravity_const;			// see gravity_const above
 	gamesnd_id		debris_ambient_sound;
 	gamesnd_id		debris_collision_sound_light;
 	gamesnd_id		debris_collision_sound_heavy;
@@ -1518,6 +1524,7 @@ typedef struct wing {
 	int total_vanished;						// total number of ships vanished in this wing (including all waves)
 
 	int	special_ship;							// the leader of the wing.  An index into ship_index[].
+	int special_ship_ship_info_index;					// the ship info index of the special ship
 
 	int	arrival_location;						// arrival and departure information for wings -- similar to info for ships
 	int	arrival_distance;						// distance from some ship where this ship arrives

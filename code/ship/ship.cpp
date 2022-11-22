@@ -203,6 +203,8 @@ int	Num_ship_subobj_types;
 int	Num_ship_subobjects;
 int	Player_ship_class;	// needs to be player specific, move to player structure	
 
+bool Sensor_static_forced = false; //forced static effect sexp initialization
+
 #define		SHIP_OBJ_USED	(1<<0)				// flag used in ship_obj struct
 #define		MAX_SHIP_OBJS	MAX_SHIPS			// max number of ships tracked in ship list
 ship_obj		Ship_objs[MAX_SHIP_OBJS];		// array used to store ship object indexes
@@ -540,7 +542,9 @@ ship_flag_name Ship_flag_names[] = {
 	{ Ship_Flags::No_thrusters,					"no-thrusters" },
 	{ Ship_Flags::Fail_sound_locked_primary, 	"fail-sound-locked-primary"},
 	{ Ship_Flags::Fail_sound_locked_secondary, 	"fail-sound-locked-secondary"},
-	{ Ship_Flags::Aspect_immune, 				"aspect-immune"}
+	{ Ship_Flags::Aspect_immune, 				"aspect-immune"},
+	{ Ship_Flags::Cannot_perform_scan,			"cannot-perform-scan"},
+	{ Ship_Flags::No_targeting_limits,			"no-targeting-limits"}
 };
 
 extern const size_t Num_ship_flag_names = sizeof(Ship_flag_names) / sizeof(ship_flag_name);
@@ -890,6 +894,8 @@ void ship_info::clone(const ship_info& other)
 	forward_decel = other.forward_decel;
 	slide_accel = other.slide_accel;
 	slide_decel = other.slide_decel;
+	gravity_const = other.gravity_const;
+	dying_gravity_const = other.dying_gravity_const;
 
 	warpin_params_index = other.warpin_params_index;
 	warpout_params_index = other.warpout_params_index;
@@ -940,6 +946,7 @@ void ship_info::clone(const ship_info& other)
 	debris_max_hitpoints = other.debris_max_hitpoints;
 	debris_damage_mult = other.debris_damage_mult;
 	debris_arc_percent = other.debris_arc_percent;
+	debris_gravity_const = other.debris_gravity_const;
 	debris_ambient_sound = other.debris_ambient_sound;
 	debris_collision_sound_light = other.debris_collision_sound_light;
 	debris_collision_sound_heavy = other.debris_collision_sound_heavy;
@@ -1229,6 +1236,8 @@ void ship_info::move(ship_info&& other)
 	forward_decel = other.forward_decel;
 	slide_accel = other.slide_accel;
 	slide_decel = other.slide_decel;
+	gravity_const = other.gravity_const;
+	dying_gravity_const = other.dying_gravity_const;
 
 	warpin_params_index = other.warpin_params_index;
 	warpout_params_index = other.warpout_params_index;
@@ -1279,6 +1288,7 @@ void ship_info::move(ship_info&& other)
 	debris_max_hitpoints = other.debris_max_hitpoints;
 	debris_damage_mult = other.debris_damage_mult;
 	debris_arc_percent = other.debris_arc_percent;
+	debris_gravity_const = other.debris_gravity_const;
 	debris_ambient_sound = other.debris_ambient_sound;
 	debris_collision_sound_light = other.debris_collision_sound_light;
 	debris_collision_sound_heavy = other.debris_collision_sound_heavy;
@@ -1588,6 +1598,8 @@ ship_info::ship_info()
 	forward_decel = 0.0f;
 	slide_accel = 0.0f;
 	slide_decel = 0.0f;
+	gravity_const = 0.0f;
+	dying_gravity_const = 0.0f;
 
 	warpin_params_index = -1;
 	warpout_params_index = -1;
@@ -1694,6 +1706,7 @@ ship_info::ship_info()
 	debris_max_hitpoints = -1.0f;
 	debris_damage_mult = 1.0f;
 	debris_arc_percent = 0.5f;
+	debris_gravity_const = 1.0f;
 	debris_ambient_sound = GameSounds::DEBRIS;
 	debris_collision_sound_light = gamesnd_id();
 	debris_collision_sound_heavy = gamesnd_id();
@@ -3113,6 +3126,15 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		parse_game_sound("+Collision Sound Shielded:", &sip->collision_physics.collision_sound_shielded_idx);
 	}
 
+	if (optional_string("$Gravity Const:")) {
+		stuff_float(&sip->gravity_const);
+	}
+
+	if (optional_string("$Dying Gravity Const:")) {
+		stuff_float(&sip->dying_gravity_const);
+	} else if (first_time) {
+		sip->dying_gravity_const = sip->gravity_const;
+	}
 
 	if(optional_string("$Debris:"))
 	{
@@ -3173,6 +3195,11 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			}
 			//Percent is nice for modders, but here in the code we want it betwwen 0 and 1.0
 			sip->debris_arc_percent /= 100.0;
+		}
+		if (optional_string("+Debris Gravity Const:")) {
+			stuff_float(&sip->debris_gravity_const);
+		} else if (first_time) {
+			sip->debris_gravity_const = sip->dying_gravity_const;
 		}
 		gamesnd_id ambient_snd, collision_snd_light, collision_snd_heavy, explosion_snd;
 		if (parse_game_sound("+Ambient Sound:", &ambient_snd))
@@ -6210,6 +6237,8 @@ void physics_ship_init(object *objp)
 	//SparK: setting the reverse burners
 	pi->afterburner_max_reverse_vel = sinfo->afterburner_max_reverse_vel;
 	pi->afterburner_reverse_accel = sinfo->afterburner_reverse_accel;
+
+	pi->gravity_const = sinfo->gravity_const;
 }
 
 /**
@@ -6708,6 +6737,7 @@ void wing::clear()
 	total_vanished = 0;
 
 	special_ship = 0;
+	special_ship_ship_info_index = -1;
 
 	arrival_location = ARRIVE_AT_LOCATION;
 	arrival_distance = 0;
@@ -7143,6 +7173,8 @@ void ship_subsys::clear()
 
 	turret_max_bomb_ownage = -1; 
 	turret_max_target_ownage = -1;
+
+	info_from_server_stamp = TIMESTAMP::never();
 }
 
 /**
@@ -7335,6 +7367,8 @@ static int subsys_set(int objnum, int ignore_subsys_info)
 
 		ship_system->turret_max_bomb_ownage = model_system->turret_max_bomb_ownage;
 		ship_system->turret_max_target_ownage = model_system->turret_max_target_ownage;
+
+		ship_system->info_from_server_stamp = TIMESTAMP::never();
 
 		// Make turret flag checks and warnings
 		if ((ship_system->system_info->flags[Model::Subsystem_Flags::Turret_salvo]) && (ship_system->system_info->flags[Model::Subsystem_Flags::Turret_fixed_fp]))
@@ -8017,8 +8051,19 @@ void ship_wing_cleanup( int shipnum, wing *wingp )
 	wingp->ship_index[wingp->current_count] = -1;
 
 	// adjust the special ship if necessary
-	if (wingp->special_ship > 0 && wingp->special_ship >= index)
+	if (wingp->special_ship > 0 && wingp->special_ship >= index){
 		wingp->special_ship--;
+
+		// sorry to have make this a little convoluted, if I put this after this if statement, then I introduce edge case bugs.
+		// if there are ships in the wing, and the special ship changed, make sure the special_ship_ship_info_index is updated too
+		if (wingp->current_count > 0){
+			wingp->special_ship_ship_info_index = Ships[wingp->ship_index[wingp->special_ship]].ship_info_index;
+		}
+	
+	// if the special ship *variable* didn't change, but the wing leader did because index was 0, adjust special_ship_ship_info_index 
+	} else if (wingp->current_count > 0 && index == 0) {
+			wingp->special_ship_ship_info_index = Ships[wingp->ship_index[0]].ship_info_index;
+	}
 
 	// if the current count is 0, check to see if the wing departed or was destroyed.
 	if (wingp->current_count == 0)
@@ -9615,9 +9660,18 @@ void ship_evaluate_ai(object* obj, float frametime) {
 
 void ship_process_pre(object *obj, float frametime)
 {
+	// Cyborg, to enable turrets movement on clients, we need to process them here before  bailing
+	if (MULTIPLAYER_CLIENT)
+	{
+		// But only with Framerate_independent_turning
+		if (Framerate_independent_turning)
+			ai_process_subobjects(OBJ_INDEX(obj));
+
+		return;
+	}
+
 	// If Framerate_independent_turning is false everything following is evaluated in ship_process_post()
-	// Also only multi masters do ai
-	if ( (obj == nullptr) || !frametime || MULTIPLAYER_CLIENT || !Framerate_independent_turning)
+	if ( (obj == nullptr) || !frametime || !Framerate_independent_turning)
 		return;
 
 	if (obj->type != OBJ_SHIP) {
@@ -9826,8 +9880,14 @@ void ship_process_post(object * obj, float frametime)
 	{
 		//	Do AI.
 
-		// for multiplayer people.  return here if in multiplay and not the host
+		// Cyborg: Mutliplayer clients do not do AI locally.
 		if ( MULTIPLAYER_CLIENT ) {
+
+			// But to enable turrets movement on clients, we need to process them here before bailing
+			// And this section will do it if Framerate_independent_turning is off
+			if (!Framerate_independent_turning)
+				ai_process_subobjects(OBJ_INDEX(obj));
+			
 			return;
 		}
 
@@ -10563,6 +10623,11 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	objp = &Objects[objnum];
 	p_objp = mission_parse_get_parse_object(sp->ship_name);
 	ph_inf = objp->phys_info;
+
+	// if this ship is the wing leader, update the ship info index that the wing keeps track of.
+	if (!Fred_running && p_objp->wingnum > -1 && p_objp->pos_in_wing == 0) {
+		Wings[p_objp->wingnum].special_ship_ship_info_index = ship_type;
+	}
 
 	// MageKing17 - See if any AIs are doing anything with subsystems of this ship (targeting, goal to destroy)
 	// keep track of those subsystems and transfer the target/goal if the subsystem still exists, delete otherwise
@@ -11558,7 +11623,10 @@ bool in_autoaim_fov(ship *shipp, int bank_to_fire, object *obj)
 
 	dist_to_target = vm_vec_dist_quick(&Objects[shipp->objnum].pos, &target_position);
 
-	hud_calculate_lead_pos(&plr_to_target_vec, &target_position, obj, winfo_p, dist_to_target);
+	if (!hud_calculate_lead_pos(&Objects[shipp->objnum].pos, &plr_to_target_vec, &target_position, obj, winfo_p, dist_to_target)) {
+		// no ballistic trajectory, also counts for no autoaim
+		return false;
+	}
 	vm_vec_sub2(&plr_to_target_vec, &Objects[shipp->objnum].pos);
 
 	float angle_to_target = vm_vec_delta_ang(&player_forward_vec, &plr_to_target_vec, nullptr);
@@ -11796,7 +11864,7 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 		//doing that time scale thing on enemy fighter is just ugly with beams, especaly ones that have careful timeing
 		if (!((obj->flags[Object::Object_Flags::Player_ship]) || fast_firing || winfo_p->wi_flags[Weapon::Info_Flags::Beam])) {
 			// When testing weapons fire in the lab, we do not have a player object available.
-			if ((Game_mode & GM_LAB) || shipp->team == Ships[Player_obj->instance].team){
+			if ((Game_mode & GM_LAB) || (Player_obj == nullptr) || (shipp->team == Ships[Player_obj->instance].team)){
 				next_fire_delay *= aip->ai_ship_fire_delay_scale_friendly;
 			} else {
 				next_fire_delay *= aip->ai_ship_fire_delay_scale_hostile;
@@ -12837,9 +12905,15 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 					shipp->missile_locks_firing.pop_back();
 				}
 
-				target_objnum = OBJ_INDEX(lock_data.obj);
-				target_subsys = lock_data.subsys;
-				locked = 1;
+				if (lock_data.obj != nullptr) {
+					target_objnum = OBJ_INDEX(lock_data.obj);
+					target_subsys = lock_data.subsys;
+					locked = 1;
+				} else {
+					target_objnum = -1;
+					target_subsys = nullptr;
+					locked = 0;
+				}
 			} else if (wip->wi_flags[Weapon::Info_Flags::Homing_heat]) {
 				target_objnum = aip->target_objnum;
 				target_subsys = aip->targeted_subsys;

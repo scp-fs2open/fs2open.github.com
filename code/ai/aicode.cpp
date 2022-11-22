@@ -49,6 +49,7 @@
 #include "model/model.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
+#include "network/multi_turret_manager.h"
 #include "network/multiutil.h"
 #include "object/deadobjectdock.h"
 #include "object/objcollide.h"
@@ -8672,6 +8673,9 @@ void ai_chase()
 		aip->ai_flags.remove(AI::AI_Flags::Seek_lock);
 	}
 
+	// only ever false for failed ballistic trajectories, to prevent firing, true for everything else
+	bool has_valid_ballistic_trajectory = true;
+
 	//	If seeking lock, try to point directly at ship, else predict position so lasers can hit it.
 	//	If just acquired target, or target is not in reasonable cone, don't refine believed enemy position.
 	if ((real_dot_to_enemy < 0.25f) || (aip->target_time < 1.0f)) {
@@ -8689,23 +8693,40 @@ void ai_chase()
 	} else {
 		//	Set predicted_enemy_pos.
 		//	See if attacking a subsystem.
-		if (aip->targeted_subsys != NULL) {
+		weapon_info* wip = ai_get_weapon(&shipp->weapons);
+		bool ballistic = !IS_VEC_NULL(&The_mission.gravity) && wip->gravity_const != 0.0f;
+		if (aip->targeted_subsys != NULL && get_shield_pct(En_objp) < HULL_DAMAGE_THRESHOLD_PERCENT) {
 			Assert(En_objp->type == OBJ_SHIP);
-			if (get_shield_pct(En_objp) < HULL_DAMAGE_THRESHOLD_PERCENT) {
-				if (aip->targeted_subsys != NULL) {
-					get_subsystem_pos(&enemy_pos, En_objp, aip->targeted_subsys);
-					predicted_enemy_pos = enemy_pos;
-					predicted_vec_to_enemy = real_vec_to_enemy;
-				} else {
-					set_predicted_enemy_pos(&predicted_enemy_pos, Pl_objp, &aip->last_aim_enemy_pos, &aip->last_aim_enemy_vel, aip);
-					set_target_objnum(aip, -1);
-				}
+			vec3d target_pos;
+			get_subsystem_pos(&target_pos, En_objp, aip->targeted_subsys);
 
-			} else {
-				set_predicted_enemy_pos(&predicted_enemy_pos, Pl_objp, &aip->last_aim_enemy_pos, &aip->last_aim_enemy_vel, aip);
+			if (!ballistic)
+				predicted_enemy_pos = target_pos;
+			else {
+				vec3d gravity_vec = The_mission.gravity * wip->gravity_const;
+				has_valid_ballistic_trajectory =
+					physics_lead_ballistic_trajectory(&Pl_objp->pos, &target_pos, &aip->last_aim_enemy_vel, wip->max_speed, &gravity_vec, &predicted_enemy_pos);
+
+				if (has_valid_ballistic_trajectory)
+					predicted_enemy_pos = Pl_objp->pos + predicted_enemy_pos * vm_vec_dist(&Pl_objp->pos, &target_pos);
+				else
+					predicted_enemy_pos = target_pos;
 			}
+
+			predicted_vec_to_enemy = real_vec_to_enemy;			
 		} else {
-			set_predicted_enemy_pos(&predicted_enemy_pos, Pl_objp, &aip->last_aim_enemy_pos, &aip->last_aim_enemy_vel, aip);
+			if (!ballistic)
+				set_predicted_enemy_pos(&predicted_enemy_pos, Pl_objp, &aip->last_aim_enemy_pos, &aip->last_aim_enemy_vel, aip);
+			else {
+				vec3d gravity_vec = The_mission.gravity * wip->gravity_const;
+				has_valid_ballistic_trajectory =
+					physics_lead_ballistic_trajectory(&Pl_objp->pos, &aip->last_aim_enemy_pos, &aip->last_aim_enemy_vel, wip->max_speed, &gravity_vec, &predicted_enemy_pos);			
+				
+				if (has_valid_ballistic_trajectory)
+					predicted_enemy_pos = Pl_objp->pos + predicted_enemy_pos * vm_vec_dist(&Pl_objp->pos, &aip->last_aim_enemy_pos);
+				else
+					set_predicted_enemy_pos(&predicted_enemy_pos, Pl_objp, &aip->last_aim_enemy_pos, &aip->last_aim_enemy_vel, aip);
+			}
 		}
 	}
 
@@ -9193,7 +9214,9 @@ void ai_chase()
 
 				temp_shipp = &Ships[Pl_objp->instance];
 				tswp = &temp_shipp->weapons;
-				if ( tswp->num_primary_banks > 0 ) {
+				// if this is a ballistic weapon has_valid_ballistic_trajectory will stop us from firing if we dont have a trajectory
+				// will allow in all other cases
+				if ( tswp->num_primary_banks > 0 && has_valid_ballistic_trajectory) {
 					float	scale;
 					Assert(tswp->current_primary_bank < tswp->num_primary_banks);
 					weapon_info	*pwip = &Weapon_info[tswp->primary_bank_weapons[tswp->current_primary_bank]];
@@ -11721,54 +11744,88 @@ void ai_process_subobjects(int objnum)
 
 		switch (psub->type) {
 		case SUBSYSTEM_TURRET:
-			// Don't process multipart turrets if we can't rotate.
-			if ((psub->subobj_num != psub->turret_gun_sobj) && (psub->turret_gun_sobj >= 0) && shipp->flags[Ship::Ship_Flags::Subsystem_movement_locked])
+			{ // brace so that we can declare a variable in a case statement.
+
+				// Don't process multipart turrets if we can't rotate.
+				if ((psub->subobj_num != psub->turret_gun_sobj) && (psub->turret_gun_sobj >= 0) && shipp->flags[Ship::Ship_Flags::Subsystem_movement_locked])
+					break;
+
+				int old_target = pss->turret_enemy_objnum;
+
+				// Don't process a turret for a ship being repaired, if the support ship is close
+				// (previously in ship_evaluate_ai (previously in ship_process_post))
+				// Cyborg -- Unfortunately Ai info is not reliable and should just not be accessed here.
+				// It will have no real effect on gameplay, since the server decides when turrets fire
+				if (!MULTIPLAYER_CLIENT && (aip->ai_flags[AI::AI_Flags::Being_repaired, AI::AI_Flags::Awaiting_repair]))
+				{
+					if (aip->support_ship_objnum >= 0)
+					{
+						if (vm_vec_dist_quick(&objp->pos, &Objects[aip->support_ship_objnum].pos) < (objp->radius + Objects[aip->support_ship_objnum].radius) * 1.25f)
+							break;
+					}
+				}
+
+				// we need to update client data here.
+				if (MULTIPLAYER_CLIENT) {
+					turret_packet network_turret_data;
+					
+					if (Multi_Turret_Manager.get_latest_packet(objp->net_signature, ship_get_subsys_index(pss), &network_turret_data)) {
+						pss->info_from_server_stamp = network_turret_data.time;
+						pss->turret_enemy_objnum = network_turret_data.target_objnum;
+						pss->turret_enemy_sig = (pss->turret_enemy_objnum > -1) ? Objects[pss->turret_enemy_objnum].signature : 0;
+
+						// if the remote instance had a nullptr, first will be false. second holds the actual angle.
+						if (network_turret_data.angle1.first && pss->submodel_instance_1 != nullptr){
+							pss->submodel_instance_1->cur_angle = network_turret_data.angle1.second;
+						}
+
+						if (network_turret_data.angle2.first && pss->submodel_instance_2 != nullptr){
+							pss->submodel_instance_2->cur_angle = network_turret_data.angle2.second;
+						}
+
+					}
+				}
+
+				// handle ending animations
+				if ( (pss->turret_animation_position == MA_POS_READY) && timestamp_elapsed(pss->turret_animation_done_time) ) {
+					//For legacy animations using subtype for turret number
+					bool started = (Ship_info[shipp->ship_info_index].animations.getAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::TurretFiring, pss->system_info->subobj_num, true)
+						//For modern animations using proper triggered-by-subsys name
+						+ Ship_info[shipp->ship_info_index].animations.get(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::TurretFiring, animation::anim_name_from_subsys(pss->system_info)))
+						.start(animation::ModelAnimationDirection::RWD);
+					
+					if (started) {
+						pss->turret_animation_position = MA_POS_NOT_SET;
+					}
+				}
+
+				if ( psub->turret_num_firing_points > 0 )
+				{
+					ai_turret_execute_behavior(shipp, pss);
+				} else {
+					Warning( LOCATION, "Turret %s on ship %s has no firing points assigned to it.\nThis needs to be fixed in the model.\n", psub->name, shipp->ship_name );
+				}
+
+				// If we're not using FIT, the AI stuff will happen after the object and its submodels move,
+				// so in that case be sure to keep the turret submodels up to date
+				if (!Framerate_independent_turning) {
+					if (psub->subobj_num >= 0) {
+						model_replicate_submodel_instance(pm, pmi, psub->subobj_num, pss->flags);
+					}
+
+					if ((psub->subobj_num != psub->turret_gun_sobj) && (psub->turret_gun_sobj >= 0)) {
+						model_replicate_submodel_instance(pm, pmi, psub->turret_gun_sobj, pss->flags);
+					}
+				}
+
+				// For multi, if there's a new target for this turret on the server, send an update to clients.
+				if (MULTIPLAYER_MASTER && old_target != pss->turret_enemy_objnum){
+					Multi_Turret_Manager.add_packet_to_queue(objp->net_signature, ship_get_subsys_index(pss));
+				}
+
 				break;
 
-			// Don't process a turret for a ship being repaired, if the support ship is close
-			// (previously in ship_evaluate_ai (previously in ship_process_post))
-			if (aip->ai_flags[AI::AI_Flags::Being_repaired, AI::AI_Flags::Awaiting_repair])
-			{
-				if (aip->support_ship_objnum >= 0)
-				{
-					if (vm_vec_dist_quick(&objp->pos, &Objects[aip->support_ship_objnum].pos) < (objp->radius + Objects[aip->support_ship_objnum].radius) * 1.25f)
-						break;
-				}
 			}
-
-			// handle ending animations
-			if ( (pss->turret_animation_position == MA_POS_READY) && timestamp_elapsed(pss->turret_animation_done_time) ) {
-				//For legacy animations using subtype for turret number
-				bool started = (Ship_info[shipp->ship_info_index].animations.getAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::TurretFiring, pss->system_info->subobj_num, true)
-					//For modern animations using proper triggered-by-subsys name
-					+ Ship_info[shipp->ship_info_index].animations.get(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::TurretFiring, animation::anim_name_from_subsys(pss->system_info)))
-					.start(animation::ModelAnimationDirection::RWD);
-				
-				if (started) {
-					pss->turret_animation_position = MA_POS_NOT_SET;
-				}
-			}
-
-			if ( psub->turret_num_firing_points > 0 )
-			{
-				ai_turret_execute_behavior(shipp, pss);
-			} else {
-				Warning( LOCATION, "Turret %s on ship %s has no firing points assigned to it.\nThis needs to be fixed in the model.\n", psub->name, shipp->ship_name );
-			}
-
-			// If we're not using FIT, the AI stuff will happen after the object and its submodels move,
-			// so in that case be sure to keep the turret submodels up to date
-			if (!Framerate_independent_turning) {
-				if (psub->subobj_num >= 0) {
-					model_replicate_submodel_instance(pm, pmi, psub->subobj_num, pss->flags);
-				}
-
-				if ((psub->subobj_num != psub->turret_gun_sobj) && (psub->turret_gun_sobj >= 0)) {
-					model_replicate_submodel_instance(pm, pmi, psub->turret_gun_sobj, pss->flags);
-				}
-			}
-			break;
-
 		case SUBSYSTEM_ENGINE:
 		case SUBSYSTEM_NAVIGATION:
 		case SUBSYSTEM_COMMUNICATION:
@@ -11787,6 +11844,11 @@ void ai_process_subobjects(int objnum)
 		}
 
 		// NOTE: Subsystem submodels are no longer rotated here.  See ship_move_subsystems().
+	}
+
+	// Clients must not make actual AI changes! So bail here.
+	if (MULTIPLAYER_CLIENT) {
+		return;
 	}
 
 	//	Deal with a ship with blown out engines.
@@ -15611,13 +15673,14 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hit_normal)
 		Assertion((hitter_objnum >= 0) && (hitter_objnum < MAX_OBJECTS), "hitter_objnum in this function is an invalid index of %d.  This can cause random behavior, and is a coder mistake.  Please report!", hitter_objnum);
 		objp_hitter = &Objects[hitter_objnum];
 
-		// These are the types that can legally do damage.  OBJ_GHOST is a dead player. The player's weapons can do damage after they are dead.  Having that get here is a rare, but acceptable result, but we'll ignore it right after this.
-		Assertion((objp_hitter->type == OBJ_SHIP) || (objp_hitter->type == OBJ_WEAPON) || (objp_hitter->type == OBJ_ASTEROID) || (objp_hitter->type == OBJ_BEAM) || (objp_hitter->type == OBJ_DEBRIS) || (objp_hitter->type == OBJ_GHOST),
-		"The ai code is passing an invalid object type of %d to a function when trying to decide how to respond to something hitting it.  This is a bug in the code, please report!", objp_hitter->type);
-
 		// Only work through hits by objects that are still in the game
-		if(objp_hitter->type != OBJ_SHIP && objp_hitter->type != OBJ_WEAPON && objp_hitter->type != OBJ_ASTEROID && objp_hitter->type != OBJ_BEAM && objp_hitter->type != OBJ_DEBRIS)
+		if(objp_hitter->type != OBJ_SHIP && objp_hitter->type != OBJ_WEAPON && objp_hitter->type != OBJ_ASTEROID && objp_hitter->type != OBJ_BEAM && objp_hitter->type != OBJ_DEBRIS) {
+			// if the object was not in the game anymore, the only valid type should be OBJ_GHOST here.
+			// OBJ_GHOST is a dead player. The player's weapons can do damage after they are dead.  Having that get here is acceptable
+			// OBJ_NONE should be excluded above when it checks that the instance number matches.
+			Assertion(objp_hitter->type == OBJ_GHOST, "FSO's AI code is passing an invalid object type of %d to a function when trying to decide how to respond to something hitting a ship.  This is a bug in the code, please report!", objp_hitter->type);
 			return;
+		}
 		
 		//	Hit by a protected ship, don't attack it.
 		if (objp_hitter->flags[Object::Object_Flags::Protected]) {

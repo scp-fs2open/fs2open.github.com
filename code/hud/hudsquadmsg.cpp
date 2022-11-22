@@ -917,7 +917,7 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num )
 			continue;
 
 		// can't message if ship not fighter/bomber if the command isn't to everyone.
-		if ( !(Ship_info[shipp->ship_info_index].is_fighter_bomber()) )
+		if ( !(Ship_info[Wings[i].special_ship_ship_info_index].is_fighter_bomber()) )
 			continue;
 
 		// don't send the command if the "wing" won't accept the command.  We do this by looking at

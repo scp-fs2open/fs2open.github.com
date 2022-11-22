@@ -196,6 +196,17 @@ static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, f
 	if (The_mission.ai_profile->flags[AI::Profile_Flags::Fixed_ship_weapon_collision])
 		weapon_start_pos += ship_objp->phys_info.vel * flFrametime;
 
+	if (!IS_VEC_NULL(&The_mission.gravity) && wip->gravity_const != 0.0f) {
+		// subtle point about simulating collisions against a parabola
+		// every simulated point, the positions every frame, are perfectly on the correct parabola
+		// however this means collision is checking *the lines inbetween* those points, which will always be undernearth the parabola
+		// the grater the frametime, the greater the discrepancy, and can cause erroneous misses
+		// So just for collision purposes, we offset these points slightly in the opposite direction of gravity
+		// at least to ensure the *average* position at all interpolated points is on the parabola
+		weapon_start_pos -= The_mission.gravity * flFrametime * flFrametime * (1. / 12);
+		weapon_end_pos -= The_mission.gravity * flFrametime * flFrametime * (1. / 12);
+	}
+
 	// Goober5000 - I tried to make collision code here much saner... here begin the (major) changes
 	mc_info_init(&mc);
 
@@ -620,10 +631,13 @@ static int check_inside_radius_for_big_ships( object *ship, object *weapon_obj, 
 	if (max_error < 2)
 		max_error = 2.0f;
 
-	time_to_exit_sphere = (ship->radius + vm_vec_dist(&ship->pos, &weapon_obj->pos)) / (weapon_obj->phys_info.max_vel.xyz.z - ship->phys_info.max_vel.xyz.z);
+	float weapon_max_vel = weapon_obj->phys_info.max_vel.xyz.z;
+	Assertion(IS_VEC_NULL(&The_mission.gravity) || weapon_obj->phys_info.gravity_const == 0.0f, "check_inside_radius_for_big_ships being used for a ballistic weapon");
+
+	time_to_exit_sphere = (ship->radius + vm_vec_dist(&ship->pos, &weapon_obj->pos)) / (weapon_max_vel - ship->phys_info.max_vel.xyz.z);
 	ship_speed_at_exit_sphere = estimate_ship_speed_upper_limit( ship, time_to_exit_sphere );
 	// update estimated time to exit sphere
-	time_to_exit_sphere = (ship->radius + vm_vec_dist(&ship->pos, &weapon_obj->pos)) / (weapon_obj->phys_info.max_vel.xyz.z - ship_speed_at_exit_sphere);
+	time_to_exit_sphere = (ship->radius + vm_vec_dist(&ship->pos, &weapon_obj->pos)) / (weapon_max_vel - ship_speed_at_exit_sphere);
 	vm_vec_scale_add( &error_vel, &ship->phys_info.vel, &weapon_obj->orient.vec.fvec, -vm_vec_dot(&ship->phys_info.vel, &weapon_obj->orient.vec.fvec) );
 	error_vel_mag = vm_vec_mag_quick( &error_vel );
 	error_vel_mag += 0.5f * (ship->phys_info.max_vel.xyz.z - error_vel_mag)*(time_to_exit_sphere/ship->phys_info.forward_accel_time_const);

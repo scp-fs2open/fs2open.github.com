@@ -1398,14 +1398,15 @@ ADE_FUNC(renderOverheadModel,
 	"number x, number y, [number width = 467, number height = 362, number selectedSlot = -1, number selectedWeapon = -1, number hoverSlot = -1, "
 	"number bank1_x = 170, number bank1_y = 203, number bank2_x = 170, number bank2_y = 246, number bank3_x = 170, number bank3_y = 290, "
 	"number bank4_x = 552, number bank4_y = 203, number bank5_x = 552, number bank5_y = 246, number bank6_x = 552, number bank6_y = 290, "
-	"number bank7_x = 552, number bank7_y = 333]",
+	"number bank7_x = 552, number bank7_y = 333, number style = 0]",
 	"Draws the 3D overhead ship model with the lines pointing from bank weapon selections to bank firepoints. SelectedSlot refers to loadout "
 	"ship slots 1-12 where wing 1 is 1-4, wing 2 is 5-8, and wing 3 is 9-12. SelectedWeapon is the index into weapon classes. HoverSlot refers "
 	"to the bank slots 1-7 where 1-3 are primaries and 4-6 are secondaries. Lines will be drawn from any bank containing the SelectedWeapon to "
 	"the firepoints on the model of that bank. Similarly, lines will be drawn from the bank defined by HoverSlot to the firepoints on the model "
 	"of that slot. Line drawing for HoverSlot takes precedence over line drawing for SelectedWeapon. Set either or both to -1 to stop line drawing. "
 	"The bank coordinates are the coordinates from which the lines for that bank will be drawn. It is expected that primary slots will be on the "
-	"left of the ship model and secondaries will be on the right. The lines have a hard-coded curve expecing to be drawn from those directions.",
+	"left of the ship model and secondaries will be on the right. The lines have a hard-coded curve expecing to be drawn from those directions. "
+	"Style can be 0 or 1. 0 for the ship to be drawn stationary from top down, 1 for the ship to be rotating.",
 	"boolean",
 	"true if rendered, false if error")
 {
@@ -1433,9 +1434,10 @@ ADE_FUNC(renderOverheadModel,
 	int bank6_y = 290;
 	int bank7_x = 552;
 	int bank7_y = 333;
+	int style = 0;
 
 	if (!ade_get_args(L,
-			"oii|iiiiiiiiiiiiiiiiiii",
+			"oii|iiiiiiiiiiiiiiiiiiii",
 			l_Shipclass.Get(&idx),
 			&x1,
 			&y1,
@@ -1457,7 +1459,8 @@ ADE_FUNC(renderOverheadModel,
 			&bank6_x,
 			&bank6_y,
 			&bank7_x,
-			&bank7_y))
+			&bank7_y,
+			&style))
 		return ADE_RETURN_NIL;
 
 	if (idx < 0 || idx >= ship_info_size())
@@ -1470,6 +1473,9 @@ ADE_FUNC(renderOverheadModel,
 
 	if (selectedSlot < 0)
 		return ade_set_args(L, "b", false);
+
+	if ((style < 0) || (style > 1))
+		LuaError(L, "Overhead style can only be 0 or 1!");
 
 	if (selectedWeapon < 0 || selectedWeapon >= weapon_info_size())
 		selectedWeapon = -1;
@@ -1511,7 +1517,8 @@ ADE_FUNC(renderOverheadModel,
 		bank7_y,
 		0,
 		0,
-		0);
+		0,
+		(overhead_style)style);
 
 	return ade_set_args(L, "b", true);
 }

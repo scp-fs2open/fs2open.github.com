@@ -10,6 +10,7 @@
 
 #include "bmpman/bmpman.h"
 #include "cfile/cfile.h"
+#include "localization/localize.h"
 
 namespace font
 {
@@ -115,9 +116,20 @@ namespace font
 			return data;
 		}
 
-		bool localize = true;
+		// try localized version first
+		CFILE* fp = nullptr;
+		SCP_string typeface_lcl = typeface;
 
-		CFILE* fp = cfopen(typeface.c_str(), "rb", CFILE_NORMAL, CF_TYPE_ANY, localize);
+		lcl_add_dir_to_path_with_filename(typeface_lcl);
+
+		fp = cfopen(typeface_lcl.c_str(), "rb", CFILE_NORMAL, CF_TYPE_ANY);
+
+		// fallback if not found
+		if ( !fp )
+		{
+			fp = cfopen(typeface.c_str(), "rb", CFILE_NORMAL, CF_TYPE_ANY);
+		}
+
 		if (fp == NULL)
 		{
 			mprintf(("Unable to find font file \"%s\"\n", typeface.c_str()));

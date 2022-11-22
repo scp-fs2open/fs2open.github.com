@@ -325,7 +325,9 @@ flag_def_list_new<Mission::Parse_Object_Flags> Parse_object_flags[] = {
     { "ai-attackable-if-no-collide",		Mission::Parse_Object_Flags::OF_Attackable_if_no_collide, true, false },
     { "fail-sound-locked-primary",			Mission::Parse_Object_Flags::SF_Fail_sound_locked_primary, true, false },
     { "fail-sound-locked-secondary",		Mission::Parse_Object_Flags::SF_Fail_sound_locked_secondary, true, false },
-    { "aspect-immune",						Mission::Parse_Object_Flags::SF_Aspect_immune, true, false }
+    { "aspect-immune",						Mission::Parse_Object_Flags::SF_Aspect_immune, true, false },
+	{ "cannot-perform-scan",			Mission::Parse_Object_Flags::SF_Cannot_perform_scan,	true, false },
+	{ "no-targeting-limits",				Mission::Parse_Object_Flags::SF_No_targeting_limits, true, false},
 };
 
 const size_t Num_parse_object_flags = sizeof(Parse_object_flags) / sizeof(flag_def_list_new<Mission::Parse_Object_Flags>);
@@ -729,6 +731,12 @@ void parse_mission_info(mission *pm, bool basic = false)
 		if (optional_string("+Decay Time:")) {
 			stuff_float(&pm->sound_environment.decay);
 		}
+	}
+
+	float gravity_accel = 0.0f;
+	if (optional_string("$Gravity Acceleration:")) {
+		stuff_float(&gravity_accel);
+		pm->gravity = vm_vec_new(0.0f, -gravity_accel, 0.0f);
 	}
 }
 
@@ -2073,6 +2081,11 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 
 		if (wingp->flags[Ship::Wing_Flags::Nav_carry])
 			shipp->flags.set(Ship::Ship_Flags::Navpoint_carry);
+
+		// if it's wing leader, take the opportunity to set the wing leader's info index in the wing struct
+		if (!Fred_running && p_objp->pos_in_wing == 0 && wingp->special_ship_ship_info_index != -1) {
+			wingp->special_ship_ship_info_index = p_objp->ship_class;
+		}
 	}
 
 	// if the wing index and wing pos are set for this parse object, set them for the ship.  This
@@ -2403,6 +2416,14 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 		}
 	}
 
+	// assign/update parse object in ship registry entry if needed
+	auto ship_it = Ship_registry_map.find(shipp->ship_name);
+
+	if (ship_it != Ship_registry_map.end()) {
+		auto entry = &Ship_registry[ship_it->second];
+		entry->p_objp = p_objp;
+	}
+
 	return objnum;
 }
 
@@ -2663,6 +2684,21 @@ void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> &par
 
     if (parse_flags[Mission::Parse_Object_Flags::OF_Attackable_if_no_collide])
 		objp->flags.set(Object::Object_Flags::Attackable_if_no_collide);
+
+	if (parse_flags[Mission::Parse_Object_Flags::SF_Fail_sound_locked_primary])
+		shipp->flags.set(Ship::Ship_Flags::Fail_sound_locked_primary);
+
+	if (parse_flags[Mission::Parse_Object_Flags::SF_Fail_sound_locked_secondary])
+		shipp->flags.set(Ship::Ship_Flags::Fail_sound_locked_secondary);
+
+	if (parse_flags[Mission::Parse_Object_Flags::SF_Aspect_immune])
+		shipp->flags.set(Ship::Ship_Flags::Aspect_immune);
+
+	if (parse_flags[Mission::Parse_Object_Flags::SF_Cannot_perform_scan])
+		shipp->flags.set(Ship::Ship_Flags::Cannot_perform_scan);
+
+	if (parse_flags[Mission::Parse_Object_Flags::SF_No_targeting_limits])
+		shipp->flags.set(Ship::Ship_Flags::No_targeting_limits);
 }
 
 void fix_old_special_explosions(p_object *p_objp, int variable_index) 
@@ -3457,7 +3493,7 @@ void mission_parse_maybe_create_parse_object(p_object *pobjp)
 
 					// now move the debris along its path for N seconds
 					objp = &Objects[db.objnum];
-					physics_sim(&objp->pos, &objp->orient, &objp->phys_info, (float) pobjp->destroy_before_mission_time);
+					physics_sim(&objp->pos, &objp->orient, &objp->phys_info, &The_mission.gravity, (float) pobjp->destroy_before_mission_time);
 				}
 			}
 			// FRED
@@ -3764,6 +3800,10 @@ void swap_parse_object(p_object *p_obj, int new_ship_class)
 	// Class
 	// First things first. Change the class of the p_object
 	p_obj->ship_class = new_ship_class;
+
+	if (p_obj->wingnum > -1 && p_obj->pos_in_wing == 0) {
+		Wings[p_obj->wingnum].special_ship_ship_info_index = new_ship_class;
+	}
 
 	// Hitpoints
 	// We need to take into account that the ship might have been assigned special hitpoints so we can't 
@@ -4569,6 +4609,12 @@ void parse_wing(mission *pm)
 				// assign wingnum
 				p_objp->wingnum = wingnum;
 				p_objp->pos_in_wing = i;
+
+				// we have found our "special ship" (our wing leader)
+				if (!Fred_running && i == 0){
+					wingp->special_ship_ship_info_index = p_objp->ship_class;
+				}
+
 				assigned++;
 
 				// Goober5000 - if this is a player start object, there shouldn't be a wing arrival delay (Mantis #2678)
@@ -6003,7 +6049,7 @@ bool post_process_mission(mission *pm)
 	mission_parse_set_arrival_locations();
 
 	// clear out information about arriving support ships
-	Arriving_support_ship = NULL;
+	Arriving_support_ship = nullptr;
 	Num_arriving_repair_targets = 0;
 
 	// convert all ship name indices to ship indices now that mission has been loaded
@@ -6034,53 +6080,57 @@ bool post_process_mission(mission *pm)
 
 	// before doing anything else, we must validate all of the sexpressions that were loaded into the mission.
 	// Loop through the Sexp_nodes array and send the top level functions to the check_sexp_syntax parser
+	// Cyborg -- If you are a ingame joiner, your sexps will be taken care of by the server, and checking will 
+	// actually crash mission load, since a list of objects present are also given to them only after this point.
 
-	for (i = 0; i < Num_sexp_nodes; i++) {
-		if (is_sexp_top_level(i) && (!Fred_running || (i != Sexp_clipboard))) {
-			int result, bad_node, op;
+	if (!((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_INGAME_JOIN))) {
+		for (i = 0; i < Num_sexp_nodes; i++) {
+			if (is_sexp_top_level(i) && (!Fred_running || (i != Sexp_clipboard))) {
+				int result, bad_node, op;
 
-			op = get_operator_index(i);
+				op = get_operator_index(i);
 
-			// need to make sure it is an operator before we treat it like one..
-			if (op < 0)
-			{
-				result = SEXP_CHECK_UNKNOWN_OP;
-				bad_node = i;
-			}
-			else
-				result = check_sexp_syntax(i, query_operator_return_type(op), 1, &bad_node);
-
-			// entering this if statement will result in program termination!!!!!
-			// print out an error based on the return value from check_sexp_syntax()
-			// G5K: now entering this statement simply aborts the mission load
-			if ( result ) {
-				SCP_string location_str;
-				SCP_string sexp_str;
-				SCP_string error_msg;
-				SCP_string bad_node_str;
-
-				// it's helpful to point out the goal/event, so do that if we can
-				int index;
-				if ((index = mission_event_find_sexp_tree(i)) >= 0) {
-					sprintf(location_str, "Error in mission event: \"%s\": ", Mission_events[index].name);
-				} else if ((index = mission_goal_find_sexp_tree(i)) >= 0) {
-					sprintf(location_str, "Error in mission goal: \"%s\": ", Mission_goals[index].name);
+				// need to make sure it is an operator before we treat it like one..
+				if (op < 0)
+				{
+					result = SEXP_CHECK_UNKNOWN_OP;
+					bad_node = i;
 				}
+				else
+					result = check_sexp_syntax(i, query_operator_return_type(op), 1, &bad_node);
 
-				convert_sexp_to_string(sexp_str, i, SEXP_ERROR_CHECK_MODE);
-				truncate_message_lines(sexp_str, 30);
+				// entering this if statement will result in program termination!!!!!
+				// print out an error based on the return value from check_sexp_syntax()
+				// G5K: now entering this statement simply aborts the mission load
+				if ( result ) {
+					SCP_string location_str;
+					SCP_string sexp_str;
+					SCP_string error_msg;
+					SCP_string bad_node_str;
 
-				stuff_sexp_text_string(bad_node_str, bad_node, SEXP_ERROR_CHECK_MODE);
-				if (!bad_node_str.empty()) {	// the previous function adds a space at the end
-					bad_node_str.pop_back();
-				}
-				
-				sprintf(error_msg, "%s%s.\n\nIn sexpression: %s\n\n(Bad node appears to be: %s)\n", location_str.c_str(), sexp_error_message(result), sexp_str.c_str(), bad_node_str.c_str());
-				Warning(LOCATION, "%s", error_msg.c_str());
+					// it's helpful to point out the goal/event, so do that if we can
+					int index;
+					if ((index = mission_event_find_sexp_tree(i)) >= 0) {
+						sprintf(location_str, "Error in mission event: \"%s\": ", Mission_events[index].name);
+					} else if ((index = mission_goal_find_sexp_tree(i)) >= 0) {
+						sprintf(location_str, "Error in mission goal: \"%s\": ", Mission_goals[index].name);
+					}
 
-				// syntax errors are recoverable in Fred but not FS
-				if (!Fred_running && !sexp_recoverable_error(result)) {
-					return false;
+					convert_sexp_to_string(sexp_str, i, SEXP_ERROR_CHECK_MODE);
+					truncate_message_lines(sexp_str, 30);
+
+					stuff_sexp_text_string(bad_node_str, bad_node, SEXP_ERROR_CHECK_MODE);
+					if (!bad_node_str.empty()) {	// the previous function adds a space at the end
+						bad_node_str.pop_back();
+					}
+					
+					sprintf(error_msg, "%s%s.\n\nIn sexpression: %s\n\n(Bad node appears to be: %s)\n", location_str.c_str(), sexp_error_message(result), sexp_str.c_str(), bad_node_str.c_str());
+					Warning(LOCATION, "%s", error_msg.c_str());
+
+					// syntax errors are recoverable in Fred but not FS
+					if (!Fred_running && !sexp_recoverable_error(result)) {
+						return false;
+					}
 				}
 			}
 		}
@@ -6191,18 +6241,22 @@ bool post_process_mission(mission *pm)
 	return true;
 }
 
-int get_mission_info(const char *filename, mission *mission_p, bool basic)
+int get_mission_info(const char *filename, mission *mission_p, bool basic, bool filename_is_full_path)
 {
-	char real_fname[MAX_FILENAME_LEN];
-	
-	strncpy(real_fname, filename, MAX_FILENAME_LEN-1);
-	real_fname[sizeof(real_fname)-1] = '\0';
-	
-	char *p = strrchr(real_fname, '.');
-	if (p) *p = 0; // remove any extension
-	strcat_s(real_fname, FS_MISSION_FILE_EXT);  // append mission extension
-
 	int filelength;
+	char real_fname_buf[MAX_FILENAME_LEN];
+	const char *real_fname = real_fname_buf;
+	
+	if (filename_is_full_path) {
+		real_fname = filename;
+	} else {
+		strncpy(real_fname_buf, filename, MAX_FILENAME_LEN-1);
+		real_fname_buf[sizeof(real_fname_buf)-1] = '\0';
+	
+		char *p = strrchr(real_fname_buf, '.');
+		if (p) *p = 0; // remove any extension
+		strcat_s(real_fname_buf, FS_MISSION_FILE_EXT);  // append mission extension
+	}
 
 	// if mission_p is NULL, make it point to The_mission
 	if ( mission_p == NULL )
@@ -6293,6 +6347,8 @@ void mission::Reset()
 
 	ai_profile = &Ai_profiles[Default_ai_profile];
 	cutscenes.clear( );
+
+	gravity = vmd_zero_vector;
 }
 
 /**

@@ -1224,7 +1224,7 @@ typedef struct mc_info {
 	vec3d	*p0;					// The starting point of the ray (sphere) to check
 	vec3d	*p1;					// The ending point of the ray (sphere) to check
 	int		flags;				// Flags that the model_collide code looks at.  See MC_??? defines
-	float		radius;				// If MC_CHECK_THICK is set, checks a sphere moving with the radius.
+	float	radius;				// If MC_CHECK_THICK is set, checks a sphere moving with the radius.
 	int		lod;				// Which detail level of the submodel to check instead
 	
 	// Return values
