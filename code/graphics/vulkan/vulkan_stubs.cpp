@@ -35,6 +35,8 @@ void stub_get_region(int /*front*/, int /*w*/, int /*h*/, ubyte* /*data*/) {}
 
 void stub_print_screen(const char* /*filename*/) {}
 
+SCP_string stub_blob_screen() { return ""; }
+
 void stub_reset_clip() {}
 
 void stub_restore_screen(int /*id*/) {}
@@ -86,7 +88,7 @@ void stub_scene_texture_end() {}
 
 void stub_copy_effect_texture() {}
 
-void stub_deferred_lighting_begin() {}
+void stub_deferred_lighting_begin(bool /*clearNonColorBufs*/) {}
 
 void stub_deferred_lighting_end() {}
 
@@ -239,6 +241,7 @@ void init_stub_pointers()
 	gr_screen.gf_clear = stub_clear;
 
 	gr_screen.gf_print_screen = stub_print_screen;
+	gr_screen.gf_blob_screen = stub_blob_screen;
 
 	gr_screen.gf_zbuffer_get = stub_zbuffer_get;
 	gr_screen.gf_zbuffer_set = stub_zbuffer_set;

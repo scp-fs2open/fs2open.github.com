@@ -10,11 +10,13 @@
 #include <iff_defs/iff_defs.h>
 #include <weapon/weapon.h>
 #include <stats/medals.h>
+#include <model/modelreplace.h>
 #include <nebula/neb.h>
 #include <starfield/starfield.h>
 #include <sound/audiostr.h>
 #include <project.h>
 #include <scripting/scripting.h>
+#include <scripting/global_hooks.h>
 #include <hud/hudsquadmsg.h>
 #include <globalincs/alphacolors.h>
 
@@ -33,8 +35,6 @@
 extern bool Xstr_inited;
 
 extern void allocate_parse_text(size_t size);
-
-extern void parse_init(bool basic = false);
 
 extern void brief_init_colors();
 
@@ -168,12 +168,17 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 	listener(SubSystem::MissionBrief);
 	mission_brief_common_init();
 
+	// Initialize dynamic SEXPs. Must happen before ship init for LuaAI
+	listener(SubSystem::DynamicSEXPs);
+	sexp::dynamic_sexp_init();
+
 	listener(SubSystem::Objects);
 	obj_init();
 
 	listener(SubSystem::Models);
 	model_init();
 	model_free_all();                // Free all existing models
+	virtual_pof_init();
 
 	listener(SubSystem::AI);
 	ai_init();
@@ -188,7 +193,7 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 	weapon_init();
 
 	listener(SubSystem::Medals);
-	parse_medal_tbl();            // get medal names for sexpression usage
+	medals_init();            // get medal names for sexpression usage
 
 	listener(SubSystem::Glowpoints);
 	glowpoint_init();
@@ -197,7 +202,6 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 	ship_init();
 
 	listener(SubSystem::Parse);
-	parse_init();
 
 	listener(SubSystem::TechroomIntel);
 	techroom_intel_init();
@@ -245,9 +249,6 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 	listener(SubSystem::FFmpeg);
 	libs::ffmpeg::initialize();
 
-	listener(SubSystem::DynamicSEXPs);
-	sexp::dynamic_sexp_init();
-
 	// wookieejedi
 	// load in the controls and defaults including the controlconfigdefault.tbl
 	// this allows the sexp tree in key-pressed to actually match what the game will use
@@ -256,7 +257,9 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 
 	listener(SubSystem::ScriptingInitHook);
 	Script_system.RunInitFunctions();
-	Script_system.RunCondition(CHA_GAMEINIT);
+	if (scripting::hooks::OnGameInit->isActive()) {
+		scripting::hooks::OnGameInit->run();
+	}
 
 	return true;
 }

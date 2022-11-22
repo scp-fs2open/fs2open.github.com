@@ -85,7 +85,7 @@ ADE_FUNC(openAudioStreamMem,
 
 ADE_FUNC(avdTest, l_Testing, NULL, "Test the AVD Physics code", NULL, NULL)
 {
-	(void)L; // unused parameter
+	SCP_UNUSED(L); // unused parameter
 
 	static bool initialized = false;
 	static avd_movement avd;
@@ -168,6 +168,9 @@ ADE_FUNC_DEPRECATED(createParticle,
 				    pi.type          = particle::PARTICLE_BITMAP;
 			    }
 			    break;
+			default:
+				LuaError(L, "Invalid particle enum for createParticle(). Can only support PARTICLE_* enums!");
+				return ADE_RETURN_NIL;
 		}
 	}
 

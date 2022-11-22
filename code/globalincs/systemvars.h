@@ -31,23 +31,23 @@
 #define	GM_CAMPAIGN_MODE				(1 << 10)			// are we currently in a campaign.
 #define GM_LAB							(1 << 11)			// We are currently in the F3 lab
 
-#define	VM_EXTERNAL						(1 << 0)				//	Set if not viewing from player position.
-#define	VM_TRACK						(1 << 1)				//	Set if viewer is tracking target.
-#define	VM_DEAD_VIEW					(1 << 2)				//	Set if viewer is watching from dead view.
-#define	VM_CHASE							(1 << 3)				//	Chase view.
-#define	VM_OTHER_SHIP					(1 << 4)				//	View from another ship.
-#define	VM_CAMERA_LOCKED			(1 << 5)				// Set if player does not have control of the camera
-#define	VM_WARP_CHASE					(1	<< 6)				// View while warping out (form normal view mode)
-#define	VM_PADLOCK_UP					(1 << 7)
-#define	VM_PADLOCK_REAR				(1 << 8)
-#define	VM_PADLOCK_LEFT				(1 << 9)
-#define	VM_PADLOCK_RIGHT				(1 << 10)
-#define	VM_WARPIN_ANCHOR				(1 << 11)			// special warpin camera mode
-#define VM_TOPDOWN					(1 << 12)				//Camera is looking down on ship
-#define VM_FREECAMERA				(1 << 13)				//Camera is not attached to any particular object, probably under SEXP control
-#define VM_CENTERING				(1 << 14)				// View is springing to center
+#define VM_EXTERNAL         (1 <<  0)   // Set if not viewing from player position.
+#define VM_TRACK            (1 <<  1)   // Set if viewer is tracking target.
+#define VM_DEAD_VIEW        (1 <<  2)   // Set if viewer is watching from dead view.
+#define VM_CHASE            (1 <<  3)   // Chase view.
+#define VM_OTHER_SHIP       (1 <<  4)   // View from another ship.
+#define VM_CAMERA_LOCKED    (1 <<  5)   // Set if player does not have control of the camera
+#define VM_WARP_CHASE       (1 <<  6)   // View while warping out (form normal view mode)
+#define VM_PADLOCK_UP       (1 <<  7)   // Set when player is looking up
+#define VM_PADLOCK_REAR     (1 <<  8)   // Set when player is looking behind
+#define VM_PADLOCK_LEFT     (1 <<  9)   // Set when player is looking left
+#define VM_PADLOCK_RIGHT    (1 << 10)   // Set when player is looking right
+#define VM_WARPIN_ANCHOR    (1 << 11)   // special warpin camera mode
+#define VM_TOPDOWN          (1 << 12)   // Camera is looking down on ship
+#define VM_FREECAMERA       (1 << 13)   // Camera is not attached to any particular object, probably under SEXP control
+#define VM_CENTERING        (1 << 14)   // View is springing to center
 
-#define	VM_PADLOCK_ANY (VM_PADLOCK_UP|VM_PADLOCK_REAR|VM_PADLOCK_LEFT|VM_PADLOCK_RIGHT)
+#define VM_PADLOCK_ANY (VM_PADLOCK_UP | VM_PADLOCK_REAR | VM_PADLOCK_LEFT | VM_PADLOCK_RIGHT)
 
 //-----Cutscene stuff
 //No bars
@@ -85,7 +85,6 @@ typedef struct vci {
 } vci;
 
 extern fix Missiontime;
-extern fix Skybox_timestamp;
 extern fix Frametime;
 extern int Framecount;
 
@@ -138,14 +137,9 @@ extern float Noise[NOISE_NUM_FRAMES];
 
 
 // override states to skip rendering of certain elements, but without disabling them completely
-extern bool Basemap_override;
 extern bool Envmap_override;
-extern bool Specmap_override;
-extern bool Normalmap_override;
-extern bool Heightmap_override;
 extern bool Glowpoint_override;
 extern bool Glowpoint_use_depth_buffer;
-extern bool GLSL_override;
 extern bool PostProcessing_override;
 extern bool Shadow_override;
 extern bool Trail_render_override;
@@ -158,9 +152,6 @@ extern float Glowmap_color_override[3];
 
 extern bool Specmap_color_override_set;
 extern float Specmap_color_override[3];
-
-extern bool Gloss_override_set;
-extern float Gloss_override;
 
 // game skill levels 
 #define	NUM_SKILL_LEVELS	5
@@ -225,7 +216,7 @@ void insertion_sort(T* array_base, int array_size, int (*fncompare)(const T*, co
 
 	// allocate space for the element being moved
 	// (Taylor says that for optimization purposes malloc/free should be used rather than vm_malloc/vm_free here)
-	current_buf = (T*)malloc(sizeof(T));
+	current_buf = new T();
 	if (current_buf == nullptr)
 	{
 		UNREACHABLE("Malloc failed!");
@@ -264,7 +255,7 @@ void insertion_sort(T* array_base, int array_size, int (*fncompare)(const T*, co
 	}
 
 	// free the allocated space
-	free(current_buf);
+	delete current_buf;
 }
 
 #endif

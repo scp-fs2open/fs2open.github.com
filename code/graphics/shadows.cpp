@@ -23,13 +23,16 @@
 
 extern vec3d check_offsets[8];
 
-matrix4 Shadow_view_matrix;
+matrix4 Shadow_view_matrix_light;
+matrix4 Shadow_view_matrix_render;
 matrix4 Shadow_proj_matrix[MAX_SHADOW_CASCADES];
 float Shadow_cascade_distances[MAX_SHADOW_CASCADES];
 
 light_frustum_info Shadow_frustums[MAX_SHADOW_CASCADES];
 
 ShadowQuality Shadow_quality = ShadowQuality::Disabled;
+
+bool Shadow_quality_uses_mod_option = false; 
 
 auto ShadowQualityOption =
     options::OptionBuilder<ShadowQuality>("Graphics.Shadows", "Shadow Quality", "The quality of the shadows")
@@ -406,7 +409,7 @@ matrix shadows_start_render(matrix *eye_orient, vec3d *eye_pos, float fov, float
 	Shadow_proj_matrix[2] = Shadow_frustums[2].proj_matrix;
 	Shadow_proj_matrix[3] = Shadow_frustums[3].proj_matrix;
 
-	gr_shadow_map_start(&Shadow_view_matrix, &light_matrix, eye_pos);
+	gr_shadow_map_start(&Shadow_view_matrix_light, &light_matrix, eye_pos);
 
 	return light_matrix;
 }
@@ -418,6 +421,10 @@ void shadows_end_render()
 
 void shadows_render_all(float fov, matrix *eye_orient, vec3d *eye_pos)
 {
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	GR_DEBUG_SCOPE("Render shadows");
 	TRACE_SCOPE(tracing::BuildShadowMap);
 
@@ -430,6 +437,8 @@ void shadows_render_all(float fov, matrix *eye_orient, vec3d *eye_pos)
 	}
 
 	//shadows_debug_show_frustum(&Player_obj->orient, &Player_obj->pos, fov, gr_screen.clip_aspect, Min_draw_distance, 3000.0f);
+
+	Shadow_view_matrix_render = gr_view_matrix;
 
 	gr_end_proj_matrix();
 	gr_end_view_matrix();
@@ -483,8 +492,8 @@ void shadows_render_all(float fov, matrix *eye_orient, vec3d *eye_pos)
 					continue;
 				}
 								
-				auto pmi = model_get_instance(db->model_instance_num);
-				auto pm = model_get(pmi->model_num);
+				auto pm = model_get(db->model_num);
+				auto pmi = db->model_instance_num < 0 ? nullptr : model_get_instance(db->model_instance_num);
 
 				objp = &Objects[db->objnum];
 
@@ -511,4 +520,24 @@ void shadows_render_all(float fov, matrix *eye_orient, vec3d *eye_pos)
 
 	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
 	gr_set_view_matrix(&Eye_position, &Eye_matrix);
+}
+
+static bool shadow_override_backup = false;
+static bool last_override = false;
+
+bool shadow_maybe_start_frame(const bool& override) {
+	last_override = override;
+	if (last_override) {
+		shadow_override_backup = Shadow_override;
+		Shadow_override = true;
+		return false;
+	}
+	return Shadow_quality != ShadowQuality::Disabled;
+}
+
+void shadow_end_frame() {
+	if (last_override) {
+		Shadow_override = shadow_override_backup;
+		last_override = false;
+	}
 }

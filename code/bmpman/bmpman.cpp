@@ -53,6 +53,7 @@ MONITOR(SizeBitmapPage)
 // --------------------------------------------------------------------------------------------------------------------
 // Definition of public variables (declared as extern in bmpman.h).
 int ENVMAP = -1;
+int IRRMAP = -1;
 
 size_t bm_texture_ram = 0;
 int Bm_paging = 0;
@@ -592,12 +593,9 @@ void bm_convert_format(bitmap *bmp, ushort flags) {
 		return;
 
 	if (Is_standalone) {
-		Assert(bmp->bpp == 8);
 		return;
 	} else {
-		if (flags & BMP_AABITMAP)
-			Assert(bmp->bpp == 8);
-		else
+		if(!(flags & BMP_AABITMAP))
 			Assert((bmp->bpp == 16) || (bmp->bpp == 32));
 	}
 
@@ -1533,7 +1531,7 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 				cfclose(img_cfp);
 			return -1;
 		} else {
-			mprintf(("BMPMAN: Found EFF (%s) with %d frames at %d fps.\n", filename, anim_frames, anim_fps));
+			nprintf(("BmpMan","BMPMAN: Found EFF (%s) with %d frames at %d fps.\n", filename, anim_frames, anim_fps));
 		}
 		if (anim_fps == 0) {
 			Error(LOCATION, "animation (%s) has invalid fps of 0, fix this!", filename);
@@ -1602,7 +1600,7 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 				throw e;
 			}
 			else {
-				mprintf(("Failed to load apng: %s\n", e.what()));
+				nprintf(("apng","Failed to load apng: %s\n", e.what()));
 				return -1;
 			}
 		}
@@ -1837,7 +1835,7 @@ int bm_load_sub_fast(const char *real_filename, int *handle, int dir_type, bool 
 }
 
 int bm_load_sub_slow(const char *real_filename, const int num_ext, const char **ext_list, CFILE **img_cfp, int dir_type) {
-	auto res = cf_find_file_location_ext(real_filename, num_ext, ext_list, dir_type, false);
+	auto res = cf_find_file_location_ext(real_filename, num_ext, ext_list, dir_type);
 
 	// could not be found, or is invalid for some reason
 	if (!res.found)
@@ -1875,9 +1873,7 @@ bitmap * bm_lock(int handle, int bpp, ushort flags, bool nodebug) {
 	}
 	// otherwise do it as normal
 	else {
-		if (flags & BMP_AABITMAP) {
-			Assert(bpp == 8);
-		} else if ((flags & BMP_TEX_NONCOMP) && (!(flags & BMP_TEX_COMP))) {
+		if ((flags & BMP_TEX_NONCOMP) && (!(flags & BMP_TEX_COMP))) {
 			Assert(bpp >= 16);  // cheating but bpp passed isn't what we normally end up with
 		} else if ((flags & BMP_TEX_DXT1) || (flags & BMP_TEX_DXT3) || (flags & BMP_TEX_DXT5) || (flags & BMP_TEX_BC7)) {
 			Assert(bpp >= 16); // cheating but bpp passed isn't what we normally end up with
@@ -1887,8 +1883,6 @@ bitmap * bm_lock(int handle, int bpp, ushort flags, bool nodebug) {
 				(be->type == BM_TYPE_CUBEMAP_DXT3) ||
 				(be->type == BM_TYPE_CUBEMAP_DXT5));
 			Assert(bpp >= 16);
-		} else {
-			Assert(0);		//?
 		}
 	}
 
@@ -2629,7 +2623,7 @@ void bm_page_in_stop() {
 		}
 	}
 
-	mprintf(("Bmpman: %d/%d bitmap slots in use.\n", total_bitmaps, total_slots));
+	nprintf(("BmpMan","BMPMAN: %d/%d bitmap slots in use.\n", total_bitmaps, total_slots));
 #endif
 
 	Bm_paging = 0;

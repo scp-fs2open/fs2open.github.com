@@ -68,9 +68,9 @@ void physics_init( physics_info * pi )
 	pi->slide_decel_time_const=pi->side_slip_time_const;	// slide using max_vel.xyz.x & .xyz.y
 
 	pi->afterburner_decay = 1;
-	pi->forward_thrust = 0.0f;
-	pi->vert_thrust = 0.0f;	//added these two in order to get side and forward thrusters
-	pi->side_thrust = 0.0f;	//to glow brighter when the ship is moving in the right direction -Bobboau
+
+	vm_vec_zero(&pi->linear_thrust);
+	vm_vec_zero(&pi->rotational_thrust);
 
 	pi->flags = 0;
 
@@ -168,7 +168,7 @@ void physics_sim_rot(matrix * orient, physics_info * pi, float sim_time )
 			shock_amplitude = pi->shockwave_shake_amp * shock_fraction_time_left;
 		}
 	}
-	else if (pi->flags & PF_NO_DAMP) {
+	else if (pi->flags & PF_MANEUVER_NO_DAMP) {
 		rotdamp = 0.0f;
 	}
 	else {
@@ -305,7 +305,7 @@ void physics_sim_vel(vec3d * position, physics_info * pi, float sim_time, matrix
 		}
 	}
 	// no damping at all
-	else if (pi->flags & PF_NO_DAMP) {
+	else if (pi->flags & PF_MANEUVER_NO_DAMP) {
 		damp = vmd_zero_vector;
 	}
 	// newtonian
@@ -516,9 +516,24 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 		pi->desired_rotvel.xyz.z = ci->bank * pi->max_rotvel.xyz.z + delta_bank;
 	}
 
-	pi->forward_thrust = ci->forward;
-	pi->vert_thrust = ci->vertical;	//added these two in order to get side and forward thrusters
-	pi->side_thrust = ci->sideways;	//to glow brighter when the ship is moving in the right direction -Bobboau
+	// update 'thrust values' (these are cosmetic and do not affect physical behavior)
+	if (Thruster_easing > 0.0f) {
+		pi->linear_thrust.xyz.z = ci->forward +  (pi->linear_thrust.xyz.z - ci->forward) *  exp2f(-Thruster_easing * sim_time);
+		pi->linear_thrust.xyz.y = ci->vertical + (pi->linear_thrust.xyz.y - ci->vertical) * exp2f(-Thruster_easing * sim_time);
+		pi->linear_thrust.xyz.x = ci->sideways + (pi->linear_thrust.xyz.x - ci->sideways) * exp2f(-Thruster_easing * sim_time);
+
+		pi->rotational_thrust.xyz.z = ci->bank +    (pi->rotational_thrust.xyz.z - ci->bank) *    exp2f(-Thruster_easing * sim_time);
+		pi->rotational_thrust.xyz.y = ci->heading + (pi->rotational_thrust.xyz.y - ci->heading) * exp2f(-Thruster_easing * sim_time);
+		pi->rotational_thrust.xyz.x = ci->pitch +   (pi->rotational_thrust.xyz.x - ci->pitch) *   exp2f(-Thruster_easing * sim_time);
+	} else {
+		pi->linear_thrust.xyz.z = ci->forward;
+		pi->linear_thrust.xyz.y = ci->vertical;
+		pi->linear_thrust.xyz.x = ci->sideways;
+
+		pi->rotational_thrust.xyz.z = ci->bank;
+		pi->rotational_thrust.xyz.y = ci->heading;
+		pi->rotational_thrust.xyz.x = ci->pitch;
+	}
 
 	if ( pi->flags & PF_AFTERBURNER_ON ) {
 		goal_vel.xyz.x = ci->sideways*pi->afterburner_max_vel.xyz.x;
@@ -655,7 +670,7 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 		}
 		else {
 			//Use the maximum value in X, Y, and Z (including overclocking)
-			dynamic_glide_cap_goal = MAX(MAX(pi->max_vel.xyz.x,pi->max_vel.xyz.y), pi->max_vel.xyz.z);
+			dynamic_glide_cap_goal = std::max({ pi->max_vel.xyz.x,pi->max_vel.xyz.y, pi->max_vel.xyz.z });
 		}
 		pi->cur_glide_cap = velocity_ramp(pi->cur_glide_cap, dynamic_glide_cap_goal, ramp_time_const, sim_time);
 
@@ -750,6 +765,11 @@ bool whack_below_limit(const vec3d* impulse)
 {
 	return (fl_abs(impulse->xyz.x) < WHACK_LIMIT) && (fl_abs(impulse->xyz.y) < WHACK_LIMIT) &&
 		   (fl_abs(impulse->xyz.z) < WHACK_LIMIT);
+}
+
+bool whack_below_limit(float impulse)
+{
+	return fl_abs(impulse) < WHACK_LIMIT;
 }
 
 // ----------------------------------------------------------------------------

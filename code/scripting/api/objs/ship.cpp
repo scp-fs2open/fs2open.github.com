@@ -24,11 +24,14 @@
 #include "ship/shipfx.h"
 #include "hud/hudets.h"
 #include "object/object.h"
+#include "object/objectdock.h"
 #include "model/model.h"
 #include "ship/ship.h"
 #include "parse/parselo.h"
 
 extern void ship_reset_disabled_physics(object *objp, int ship_class);
+extern bool sexp_check_flag_arrays(const char *flag_name, Object::Object_Flags &object_flag, Ship::Ship_Flags &ship_flags, Mission::Parse_Object_Flags &parse_obj_flag, AI::AI_Flags &ai_flag);
+extern void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future_ships, Object::Object_Flags object_flag, Ship::Ship_Flags ship_flag, Mission::Parse_Object_Flags parse_obj_flag, AI::AI_Flags ai_flag, bool set_flag);
 
 namespace scripting {
 namespace api {
@@ -178,6 +181,130 @@ ADE_FUNC(__len, l_Ship, NULL, "Number of subsystems on ship", "number", "Subsyst
 		return ade_set_error(L, "i", 0);
 
 	return ade_set_args(L, "i", ship_get_num_subsys(&Ships[objh->objp->instance]));
+}
+
+ADE_FUNC(setFlag, l_Ship, "boolean set_it, string flag_name", "Sets or clears one or more flags - this function can accept an arbitrary number of flag arguments.  The flag names can be any string that the alter-ship-flag SEXP operator supports.", nullptr, "Returns nothing")
+{
+	object_h *objh;
+	bool set_it;
+	const char *flag_name;
+
+	if (!ade_get_args(L, "obs", l_Ship.GetPtr(&objh), &set_it, &flag_name))
+		return ADE_RETURN_NIL;
+	int skip_args = 2;	// not 3 because there will be one more below
+
+	if (!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	auto shipp = &Ships[objh->objp->instance];
+	object_ship_wing_point_team oswpt(shipp);
+
+	do {
+		auto object_flag = Object::Object_Flags::NUM_VALUES;
+		auto ship_flag = Ship::Ship_Flags::NUM_VALUES;
+		auto parse_obj_flag = Mission::Parse_Object_Flags::NUM_VALUES;
+		auto ai_flag = AI::AI_Flags::NUM_VALUES;
+
+		sexp_check_flag_arrays(flag_name, object_flag, ship_flag, parse_obj_flag, ai_flag);
+
+		if (object_flag == Object::Object_Flags::NUM_VALUES && ship_flag == Ship::Ship_Flags::NUM_VALUES && ai_flag == AI::AI_Flags::NUM_VALUES)
+		{
+			Warning(LOCATION, "Ship/object/ai flag '%s' not found!", flag_name);
+			return ADE_RETURN_NIL;
+		}
+
+		sexp_alter_ship_flag_helper(oswpt, true, object_flag, ship_flag, parse_obj_flag, ai_flag, set_it);
+
+	// read the next flag
+	internal::Ade_get_args_skip = ++skip_args;
+	} while (ade_get_args(L, "|s", &flag_name) > 0);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(getFlag, l_Ship, "string flag_name", "Checks whether one or more flags are set - this function can accept an arbitrary number of flag arguments.  The flag names can be any string that the alter-ship-flag SEXP operator supports.", "boolean", "Returns whether all flags are set, or nil if the ship is not valid")
+{
+	object_h *objh;
+	const char *flag_name;
+
+	if (!ade_get_args(L, "os", l_Ship.GetPtr(&objh), &flag_name))
+		return ADE_RETURN_NIL;
+	int skip_args = 1;	// not 2 because there will be one more below
+
+	if (!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	auto shipp = &Ships[objh->objp->instance];
+	auto objp = objh->objp;
+	auto aip = &Ai_info[shipp->ai_index];
+
+	do {
+		auto object_flag = Object::Object_Flags::NUM_VALUES;
+		auto ship_flag = Ship::Ship_Flags::NUM_VALUES;
+		auto parse_obj_flag = Mission::Parse_Object_Flags::NUM_VALUES;
+		auto ai_flag = AI::AI_Flags::NUM_VALUES;
+
+		sexp_check_flag_arrays(flag_name, object_flag, ship_flag, parse_obj_flag, ai_flag);
+
+		if (object_flag == Object::Object_Flags::NUM_VALUES && ship_flag == Ship::Ship_Flags::NUM_VALUES && ai_flag == AI::AI_Flags::NUM_VALUES)
+		{
+			Warning(LOCATION, "Ship/object/ai flag '%s' not found!", flag_name);
+			return ADE_RETURN_FALSE;
+		}
+
+		// now check the flags
+		if (object_flag != Object::Object_Flags::NUM_VALUES)
+		{
+			if (!(objp->flags[object_flag]))
+				return ADE_RETURN_FALSE;
+		}
+
+		if (ship_flag != Ship::Ship_Flags::NUM_VALUES)
+		{
+			if (!(shipp->flags[ship_flag]))
+				return ADE_RETURN_FALSE;
+		}
+
+		// we don't check parse flags
+
+		if (ai_flag != AI::AI_Flags::NUM_VALUES)
+		{
+			if (!(aip->ai_flags[ai_flag]))
+				return ADE_RETURN_FALSE;
+		}
+
+	// read the next flag
+	internal::Ade_get_args_skip = ++skip_args;
+	} while (ade_get_args(L, "|s", &flag_name) > 0);
+
+	// if we're still here, all the flags we were looking for were present
+	return ADE_RETURN_TRUE;
+}
+
+static int ship_getset_helper(lua_State* L, int ship::* field, bool canSet = false, bool canBeNegative = false)
+{
+	object_h* objh;
+	int value;
+	if (!ade_get_args(L, "o|i", l_Ship.GetPtr(&objh), &value))
+		return ADE_RETURN_NIL;
+
+	if (!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	ship* shipp = &Ships[objh->objp->instance];
+
+	if (ADE_SETTING_VAR)
+	{
+		if (canSet)
+		{
+			if (canBeNegative || value >= 0)
+				shipp->*field = value;
+		}
+		else
+			LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "i", shipp->*field);
 }
 
 ADE_VIRTVAR(ShieldArmorClass, l_Ship, "string", "Current Armor class of the ships' shield", "string", "Armor class name, or empty string if none is set")
@@ -541,7 +668,6 @@ ADE_VIRTVAR(PrimaryTriggerDown, l_Ship, "boolean", "Determines if primary trigge
 		return ADE_RETURN_FALSE;
 }
 
-
 ADE_VIRTVAR(PrimaryBanks, l_Ship, "weaponbanktype", "Array of primary weapon banks", "weaponbanktype", "Primary weapon banks, or invalid weaponbanktype handle if ship handle is invalid")
 {
 	object_h *objh;
@@ -650,27 +776,21 @@ ADE_VIRTVAR(Target, l_Ship, "object", "Target of ship. Value may also be a deriv
 	else
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
-	if(ADE_SETTING_VAR && newh)
-	{
-		if(aip->target_signature != newh->sig)
-		{
-			if(newh->IsValid())
-			{
-				aip->target_objnum = OBJ_INDEX(newh->objp);
-				aip->target_signature = newh->sig;
-				aip->target_time = 0.0f;
+	if(ADE_SETTING_VAR && !(newh && aip->target_signature == newh->sig)) {
+		// we have a different target, or are clearng the target
+		if(newh && newh->IsValid())	{
+			aip->target_objnum = OBJ_INDEX(newh->objp);
+			aip->target_signature = newh->sig;
+			aip->target_time = 0.0f;
+			set_targeted_subsys(aip, nullptr, -1);
 
-				if (aip == Player_ai)
-					hud_shield_hit_reset(newh->objp);
-			}
-			else
-			{
-				aip->target_objnum = -1;
-				aip->target_signature = -1;
-				aip->target_time = 0.0f;
-			}
-
-			set_targeted_subsys(aip, NULL, -1);
+			if (aip == Player_ai)
+				hud_shield_hit_reset(newh->objp);
+		} else if (lua_isnil(L, 2)) {
+			aip->target_objnum = -1;
+			aip->target_signature = -1;
+			aip->target_time = 0.0f;
+			set_targeted_subsys(aip, nullptr, -1);
 		}
 	}
 
@@ -740,6 +860,24 @@ ADE_VIRTVAR(Team, l_Ship, "team", "Ship's team", "team", "Ship team, or invalid 
 	}
 
 	return ade_set_args(L, "o", l_Team.Set(shipp->team));
+}
+
+ADE_VIRTVAR(PersonaIndex, l_Ship, "number", "Persona index", "number", "The index of the persona from messages.tbl, 0 if no persona is set")
+{
+	object_h *objh;
+	int p_index = -1;
+	if(!ade_get_args(L, "o|i", l_Ship.GetPtr(&objh), &p_index))
+		return ade_set_error(L, "i", 0);
+
+	if(!objh->IsValid())
+		return ade_set_error(L, "i", 0);
+
+	ship *shipp = &Ships[objh->objp->instance];
+
+	if(ADE_SETTING_VAR && p_index > 0)
+		shipp->persona_index = p_index - 1;
+
+	return ade_set_args(L, "i", shipp->persona_index + 1);
 }
 
 ADE_VIRTVAR(Textures, l_Ship, "shiptextures", "Gets ship textures", "shiptextures", "Ship textures, or invalid shiptextures handle if ship handle is invalid")
@@ -968,6 +1106,167 @@ ADE_VIRTVAR(Orders, l_Ship, "shiporders", "Array of ship orders", "shiporders", 
 	return ade_set_args(L, "o", l_ShipOrders.Set(object_h(objh->objp)));
 }
 
+ADE_VIRTVAR(WaypointSpeedCap, l_Ship, "number", "Waypoint speed cap", "number", "The limit on the ship's speed for traversing waypoints.  -1 indicates no speed cap.  0 will be returned if handle is invalid.")
+{
+	object_h* objh;
+	int speed_cap = -1;
+	if (!ade_get_args(L, "o|i", l_Ship.GetPtr(&objh), &speed_cap))
+		return ade_set_error(L, "i", 0);
+
+	if (!objh->IsValid())
+		return ade_set_error(L, "i", 0);
+
+	ship* shipp = &Ships[objh->objp->instance];
+	ai_info* aip = &Ai_info[shipp->ai_index];
+
+	if (ADE_SETTING_VAR)
+	{
+		// cap speed to range (-1, 32767) to store within int
+		CLAMP(speed_cap, -1, 32767);
+
+		aip->waypoint_speed_cap = speed_cap;
+	}
+
+	return ade_set_args(L, "i", aip->waypoint_speed_cap);
+}
+
+static int ship_getset_location_helper(lua_State* L, int ship::* field, const char* location_type, const char** location_names, size_t location_names_size)
+{
+	object_h* objh;
+	const char* s = nullptr;
+	if (!ade_get_args(L, "o|s", l_Ship.GetPtr(&objh), &s))
+		return ADE_RETURN_NIL;
+
+	if (!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	ship* shipp = &Ships[objh->objp->instance];
+
+	if (ADE_SETTING_VAR && s != nullptr)
+	{
+		int location = string_lookup(s, location_names, location_names_size);
+		if (location < 0)
+		{
+			Warning(LOCATION, "%s location '%s' not found.", location_type, s);
+			return ADE_RETURN_NIL;
+		}
+		shipp->*field = location;
+	}
+
+	return ade_set_args(L, "s", location_names[shipp->*field]);
+}
+
+ADE_VIRTVAR(ArrivalLocation, l_Ship, "string", "The ship's arrival location", "string", "Arrival location, or nil if handle is invalid")
+{
+	return ship_getset_location_helper(L, &ship::arrival_location, "Arrival", Arrival_location_names, MAX_ARRIVAL_NAMES);
+}
+
+ADE_VIRTVAR(DepartureLocation, l_Ship, "string", "The ship's departure location", "string", "Departure location, or nil if handle is invalid")
+{
+	return ship_getset_location_helper(L, &ship::departure_location, "Departure", Departure_location_names, MAX_DEPARTURE_NAMES);
+}
+
+static int ship_getset_anchor_helper(lua_State* L, int ship::* field)
+{
+	object_h* objh;
+	const char* s = nullptr;
+	if (!ade_get_args(L, "o|s", l_Ship.GetPtr(&objh), &s))
+		return ADE_RETURN_NIL;
+
+	if (!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	ship* shipp = &Ships[objh->objp->instance];
+
+	if (ADE_SETTING_VAR && s != nullptr)
+	{
+		shipp->*field = (stricmp(s, "<no anchor>") == 0) ? -1 : get_parse_name_index(s);
+	}
+
+	return ade_set_args(L, "s", (shipp->*field >= 0) ? Parse_names[shipp->*field] : "<no anchor>");
+}
+
+ADE_VIRTVAR(ArrivalAnchor, l_Ship, "string", "The ship's arrival anchor", "string", "Arrival anchor, or nil if handle is invalid")
+{
+	return ship_getset_anchor_helper(L, &ship::arrival_anchor);
+}
+
+ADE_VIRTVAR(DepartureAnchor, l_Ship, "string", "The ship's departure anchor", "string", "Departure anchor, or nil if handle is invalid")
+{
+	return ship_getset_anchor_helper(L, &ship::departure_anchor);
+}
+
+ADE_VIRTVAR(ArrivalPathMask, l_Ship, "number", "The ship's arrival path mask", "number", "Arrival path mask, or nil if handle is invalid")
+{
+	return ship_getset_helper(L, &ship::arrival_path_mask, true);
+}
+
+ADE_VIRTVAR(DeparturePathMask, l_Ship, "number", "The ship's departure path mask", "number", "Departure path mask, or nil if handle is invalid")
+{
+	return ship_getset_helper(L, &ship::departure_path_mask, true);
+}
+
+ADE_VIRTVAR(ArrivalDelay, l_Ship, "number", "The ship's arrival delay", "number", "Arrival delay, or nil if handle is invalid")
+{
+	return ship_getset_helper(L, &ship::arrival_delay, true);
+}
+
+ADE_VIRTVAR(DepartureDelay, l_Ship, "number", "The ship's departure delay", "number", "Departure delay, or nil if handle is invalid")
+{
+	return ship_getset_helper(L, &ship::departure_delay, true);
+}
+
+ADE_VIRTVAR(ArrivalDistance, l_Ship, "number", "The ship's arrival distance", "number", "Arrival distance, or nil if handle is invalid")
+{
+	return ship_getset_helper(L, &ship::arrival_distance, true);
+}
+
+ADE_FUNC(turnTowardsPoint,
+	l_Ship,
+	"vector target, [boolean respectDifficulty = true, vector turnrateModifier /* 100% of tabled values in all rotation axes by default */, number bank /* native bank-on-heading by default */ ]",
+	"turns the ship towards the specified point during this frame",
+	nullptr,
+	nullptr)
+{
+	object_h shiph;
+	vec3d* target;
+	bool diffTurn = true;
+	vec3d* modifier = nullptr;
+	float bank = 0.0f;
+
+	int argnum = ade_get_args(L, "oo|bof", l_Ship.Get(&shiph), l_Vector.GetPtr(&target), &diffTurn, l_Vector.GetPtr(&modifier), &bank);
+	if (argnum == 0) {
+		return ADE_RETURN_NIL;
+	}
+
+	ai_turn_towards_vector(target, shiph.objp, nullptr, nullptr, bank, (diffTurn ? 0 : AITTV_FAST) | (argnum >= 5 ? AITTV_FORCE_DELTA_BANK : 0), nullptr, modifier);
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(turnTowardsOrientation,
+	l_Ship,
+	"orientation target, [boolean respectDifficulty = true, vector turnrateModifier /* 100% of tabled values in all rotation axes by default */]",
+	"turns the ship towards the specified orientation during this frame",
+	nullptr,
+	nullptr)
+{
+	object_h ship;
+	matrix_h* target;
+	bool diffTurn = true;
+	vec3d* modifier = nullptr;
+
+	int argnum = ade_get_args(L, "oo|bo", l_Ship.Get(&ship), l_Matrix.GetPtr(&target), &diffTurn, l_Vector.GetPtr(&modifier));
+	if (argnum == 0) {
+		return ADE_RETURN_NIL;
+	}
+
+	matrix* mat = target->GetMatrix();
+	vec3d targetVec = mat->vec.fvec + ship.objp->pos;
+
+	ai_turn_towards_vector(&targetVec, ship.objp, nullptr, nullptr, 0.0f, (diffTurn ? 0 : AITTV_FAST), &mat->vec.rvec, modifier);
+	return ADE_RETURN_NIL;
+}
+
 ADE_FUNC(getCenterPosition, l_Ship, nullptr, "Returns the position of the ship's physical center, which may not be the position of the origin of the model", "vector", "World position of the center of the ship, or nil if an error occurred")
 {
 	object_h *shiph;
@@ -1046,10 +1345,9 @@ ADE_FUNC(addShipEffect, l_Ship, "string name, number durationMillis", "Activates
 
 	ship* shipp = &Ships[shiph->objp->instance];
 
-	shipp->shader_effect_active = true;
 	shipp->shader_effect_num = effect_num;
 	shipp->shader_effect_duration = duration;
-	shipp->shader_effect_start_time = timer_get_milliseconds();
+	shipp->shader_effect_timestamp = _timestamp(duration);
 
 	return ade_set_args(L, "b", true);
 }
@@ -1176,7 +1474,7 @@ ADE_FUNC_DEPRECATED(getAnimationDoneTime, l_Ship, "number Type, number Subtype",
 	if(type == animation::ModelAnimationTriggerType::None)
 		return ADE_RETURN_FALSE;
 
-	int time_ms = Ship_info[Ships[objh->objp->instance].ship_info_index].animations.getTimeAll(model_get_instance(Ships[objh->objp->instance].model_instance_num), type, subtype);
+	int time_ms = Ship_info[Ships[objh->objp->instance].ship_info_index].animations.getAll(model_get_instance(Ships[objh->objp->instance].model_instance_num), type, subtype).getTime();
 	float time_s = (float)time_ms / 1000.0f;
 
 	return ade_set_args(L, "f", time_s);
@@ -1214,8 +1512,8 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem Ta
 	if(priority < 0.0f)
 		return ade_set_error(L, "b", false);
 
-	if(priority > 1.0f)
-		priority = 1.0f;
+	if(priority > 2.0f)
+		priority = 2.0f;
 
 	bool tgh_valid = tgh && tgh->IsValid();
 	bool tgsh_valid = tgsh && tgsh->isSubsystemValid();
@@ -1230,7 +1528,7 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem Ta
 			{
 				ai_mode = AI_GOAL_DESTROY_SUBSYSTEM;
 				ai_shipname = Ships[tgh->objp->instance].ship_name;
-				ai_submode = ship_get_subsys_index( &Ships[tgsh->objp->instance], tgsh->ss->system_info->subobj_name );
+				ai_submode = ship_find_subsys( &Ships[tgsh->objp->instance], tgsh->ss->system_info->subobj_name );
 			}
 			else if(tgh_valid && tgh->objp->type == OBJ_WEAPON)
 			{
@@ -1453,6 +1751,8 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem Ta
 			}
 			break;
 		}
+		default:
+			return ade_set_error(L, "b", false);
 	}
 
 	//Nothing got set!
@@ -1592,7 +1892,7 @@ ADE_FUNC_DEPRECATED(triggerAnimation, l_Ship, "string Type, [number Subtype, boo
 	if(type == animation::ModelAnimationTriggerType::None)
 		return ADE_RETURN_FALSE;
 
-	Ship_info[Ships[objh->objp->instance].ship_info_index].animations.startAll(model_get_instance(Ships[objh->objp->instance].model_instance_num), type, b ? animation::ModelAnimationDirection::FWD : animation::ModelAnimationDirection::RWD, instant, instant, false, subtype);
+	Ship_info[Ships[objh->objp->instance].ship_info_index].animations.getAll(model_get_instance(Ships[objh->objp->instance].model_instance_num), type, subtype).start(b ? animation::ModelAnimationDirection::FWD : animation::ModelAnimationDirection::RWD, instant, instant);
 
 	return ADE_RETURN_TRUE;
 }
@@ -1623,9 +1923,62 @@ ADE_FUNC(triggerSubmodelAnimation, l_Ship, "string type, string triggeredBy, [bo
 		return ADE_RETURN_FALSE;
 
 	ship* shipp = &Ships[objh->objp->instance];
-	auto animationStartFunc = animation::anim_parse_scripted_start(Ship_info[shipp->ship_info_index].animations, model_get_instance(shipp->model_instance_num), animtype, trigger).first;
 
-	return animationStartFunc(forwards ? animation::ModelAnimationDirection::FWD : animation::ModelAnimationDirection::RWD, forced || instant, instant, pause) ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
+	return Ship_info[shipp->ship_info_index].animations.parseScripted(model_get_instance(shipp->model_instance_num), animtype, trigger).start(forwards ? animation::ModelAnimationDirection::FWD : animation::ModelAnimationDirection::RWD, forced || instant, instant, pause) ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
+}
+
+ADE_FUNC(stopLoopingSubmodelAnimation, l_Ship, "string type, string triggeredBy",
+	"Stops a currently looping animation after it has finished its current loop. Type is the string name of the animation type, "
+	"triggeredBy is a closer specification which animation was triggered. See *-anim.tbm specifications. ",
+	"boolean",
+	"True if successful, false or nil otherwise")
+{
+	object_h* objh;
+	const char* type = nullptr;
+	const char* trigger = nullptr;
+
+	if (!ade_get_args(L, "oss", l_Ship.GetPtr(&objh), &type, &trigger))
+		return ADE_RETURN_NIL;
+
+	if (!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	auto animtype = animation::anim_match_type(type);
+	if (animtype == animation::ModelAnimationTriggerType::None)
+		return ADE_RETURN_FALSE;
+
+	ship* shipp = &Ships[objh->objp->instance];
+
+	Ship_info[shipp->ship_info_index].animations.parseScripted(model_get_instance(shipp->model_instance_num), animtype, trigger).setFlag(animation::Animation_Instance_Flags::Stop_after_next_loop);
+	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(setAnimationSpeed, l_Ship, "string type, string triggeredBy, [number speedMultiplier = 1.0]",
+	"Sets the speed multiplier at which an animation runs. Anything other than 1 will not work in multiplayer. Type is the string name of the animation type, "
+	"triggeredBy is a closer specification which animation should trigger. See *-anim.tbm specifications.",
+	nullptr,
+	nullptr)
+{
+	object_h* objh;
+	const char* type = nullptr;
+	const char* trigger = nullptr;
+	float speed = 1.0f;
+
+	if (!ade_get_args(L, "oss|f", l_Ship.GetPtr(&objh), &type, &trigger, &speed))
+		return ADE_RETURN_NIL;
+
+	if (!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	auto animtype = animation::anim_match_type(type);
+	if (animtype == animation::ModelAnimationTriggerType::None)
+		return ADE_RETURN_NIL;
+
+	ship* shipp = &Ships[objh->objp->instance];
+
+	Ship_info[shipp->ship_info_index].animations.parseScripted(model_get_instance(shipp->model_instance_num), animtype, trigger).setSpeed(speed);
+
+	return ADE_RETURN_NIL;
 }
 
 ADE_FUNC(getSubmodelAnimationTime, l_Ship, "string type, string triggeredBy", "Gets time that animation will be done", "number", "Time (seconds), or 0 if ship handle is invalid")
@@ -1644,9 +1997,8 @@ ADE_FUNC(getSubmodelAnimationTime, l_Ship, "string type, string triggeredBy", "G
 		return ade_set_error(L, "f", 0.0f);
 
 	ship* shipp = &Ships[objh->objp->instance];
-	auto animationTimeFunc = animation::anim_parse_scripted_start(Ship_info[shipp->ship_info_index].animations, model_get_instance(shipp->model_instance_num), animtype, trigger).second;
 
-	int time_ms = animationTimeFunc();
+	int time_ms = Ship_info[shipp->ship_info_index].animations.parseScripted(model_get_instance(shipp->model_instance_num), animtype, trigger).getTime();
 	float time_s = (float)time_ms / 1000.0f;
 
 	return ade_set_args(L, "f", time_s);
@@ -1930,7 +2282,6 @@ ADE_FUNC(getDisplayString, l_Ship, nullptr, "Returns the string which should be 
 
 ADE_FUNC(vanish, l_Ship, nullptr, "Vanishes this ship from the mission. Works in Singleplayer only and will cause the ship exit to not be logged.", "boolean", "True if the deletion was successful, false otherwise.")
 {
-
 	object_h* objh = nullptr;
 
 	if (!ade_get_args(L, "o", l_Ship.GetPtr(&objh)))
@@ -1942,6 +2293,243 @@ ADE_FUNC(vanish, l_Ship, nullptr, "Vanishes this ship from the mission. Works in
 	ship_actually_depart(objh->objp->instance, SHIP_VANISHED);
 
 	return ade_set_args(L, "b", true);
+}
+
+ADE_FUNC(setGlowPointBankActive, l_Ship, "boolean active, [number bank]", "Activates or deactivates one or more of a ship's glow point banks - this function can accept an arbitrary number of bank arguments.  Omit the bank number or specify -1 to activate or deactivate all banks.", nullptr, "Returns nothing")
+{
+	object_h* objh = nullptr;
+	bool active, at_least_one = false, do_all = false;
+	int bank_num;
+
+	if (!ade_get_args(L, "ob", l_Ship.GetPtr(&objh), &active))
+		return ADE_RETURN_NIL;
+	int skip_args = 1;	// not 2 because there will be one more before we read the first number
+
+	if (!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	auto shipp = &Ships[objh->objp->instance];
+
+	// read as many bank numbers as we have
+	while (internal::Ade_get_args_skip = ++skip_args, ade_get_args(L, "|i", &bank_num) > 0)
+	{
+		if (bank_num < 0)
+		{
+			do_all = true;
+			break;
+		}
+		at_least_one = true;
+
+		if (static_cast<size_t>(bank_num) < shipp->glow_point_bank_active.size())
+			shipp->glow_point_bank_active[bank_num] = active;
+	}
+
+	// set all banks
+	if (!at_least_one || do_all)
+	{
+		for (size_t i = 0; i < shipp->glow_point_bank_active.size(); ++i)
+			shipp->glow_point_bank_active[i] = active;
+	}
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(numDocked, l_Ship, nullptr, "Returns the number of ships this ship is directly docked with", "number", "The number of ships")
+{
+	object_h *docker_objh = nullptr;
+
+	if (!ade_get_args(L, "o", l_Ship.GetPtr(&docker_objh)))
+		return ADE_RETURN_NIL;
+
+	if (docker_objh == nullptr || !docker_objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "i", dock_count_direct_docked_objects(docker_objh->objp));
+}
+
+ADE_FUNC(isDocked, l_Ship, "[ship... dockee_ships]", "Returns whether this ship is docked to all of the specified dockee ships, or is docked at all if no ships are specified", "boolean", "Returns whether the ship is docked")
+{
+	bool found_arg = false;
+	int skip_args = 1;
+	object_h *docker_objh = nullptr, *dockee_objh = nullptr;
+
+	if (!ade_get_args(L, "o", l_Ship.GetPtr(&docker_objh)))
+		return ADE_RETURN_NIL;
+
+	if (docker_objh == nullptr || !docker_objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	while (true)
+	{
+		// read the next ship
+		internal::Ade_get_args_skip = skip_args++;
+		if (ade_get_args(L, "|o", l_Ship.GetPtr(&dockee_objh)) == 0)
+			break;
+		found_arg = true;
+
+		// make sure ship exists
+		if (dockee_objh == nullptr || !dockee_objh->IsValid())
+			continue;
+
+		// see if we are docked to it
+		if (!dock_check_find_direct_docked_object(docker_objh->objp, dockee_objh->objp))
+			return ADE_RETURN_FALSE;
+	}
+
+	// all ships passed
+	if (found_arg)
+		return ADE_RETURN_TRUE;
+
+	// if we didn't find any specified ships, then see if we are docked at all
+	return object_is_docked(docker_objh->objp) ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
+}
+
+ADE_FUNC(setDocked, l_Ship, "ship dockee_ship, [string | number docker_point, string | number dockee_point]", "Immediately docks this ship with another ship.", "boolean", "Returns whether the docking was successful, or nil if an input was invalid")
+{
+	object_h *docker_objh = nullptr, *dockee_objh = nullptr;
+	int docker_point = -1, dockee_point = -1;
+
+	if (!ade_get_args(L, "oo", l_Ship.GetPtr(&docker_objh), l_Ship.GetPtr(&dockee_objh)))
+		return ADE_RETURN_NIL;
+
+	if (docker_objh == nullptr || dockee_objh == nullptr || !docker_objh->IsValid() || !dockee_objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	// cannot dock an object to itself
+	if (docker_objh->objp->instance == dockee_objh->objp->instance)
+		return ADE_RETURN_FALSE;
+
+	auto docker_shipp = &Ships[docker_objh->objp->instance];
+	auto dockee_shipp = &Ships[dockee_objh->objp->instance];
+
+	auto docker_pm = model_get(Ship_info[docker_shipp->ship_info_index].model_num);
+	auto dockee_pm = model_get(Ship_info[dockee_shipp->ship_info_index].model_num);
+
+	if (lua_isnumber(L, 3))
+	{
+		ade_get_args(L, "**i", &docker_point);
+		docker_point--;	// Lua --> C/C++
+	}
+	else if (lua_isstring(L, 3))
+	{
+		const char *name = nullptr;
+		ade_get_args(L, "**s", &name);
+		docker_point = model_find_dock_name_index(Ship_info[docker_shipp->ship_info_index].model_num, name);
+	}
+	else
+	{
+		docker_point = 0;
+	}
+
+	if (lua_isnumber(L, 4))
+	{
+		ade_get_args(L, "***i", &dockee_point);
+		dockee_point--;	// Lua --> C/C++
+	}
+	else if (lua_isstring(L, 4))
+	{
+		const char* name = nullptr;
+		ade_get_args(L, "***s", &name);
+		dockee_point = model_find_dock_name_index(Ship_info[dockee_shipp->ship_info_index].model_num, name);
+	}
+	else
+	{
+		dockee_point = 0;
+	}
+
+	if (docker_point < 0 || docker_point >= docker_pm->n_docks)
+	{
+		Warning(LOCATION, "Invalid docker point specified for ship '%s'", docker_shipp->ship_name);
+		return ADE_RETURN_NIL;
+	}
+
+	if (dockee_point < 0 || dockee_point >= dockee_pm->n_docks)
+	{
+		Warning(LOCATION, "Invalid dockee point specified for ship '%s'", dockee_shipp->ship_name);
+		return ADE_RETURN_NIL;
+	}
+
+	//Make sure that the specified dockpoints are all free (if not, do nothing)
+	if (dock_find_object_at_dockpoint(docker_objh->objp, docker_point) != nullptr ||
+		dock_find_object_at_dockpoint(dockee_objh->objp, dockee_point) != nullptr)
+	{
+		// at least one of the specified dockpoints is occupied
+		return ADE_RETURN_FALSE;
+	}
+
+	//Set docked
+	dock_orient_and_approach(docker_objh->objp, docker_point, dockee_objh->objp, dockee_point, DOA_DOCK_STAY);
+	ai_do_objects_docked_stuff(docker_objh->objp, docker_point, dockee_objh->objp, dockee_point, true);
+
+	return ADE_RETURN_TRUE;
+}
+
+static int jettison_helper(lua_State *L, object_h *docker_objh, float jettison_speed, int skip_args)
+{
+	object_h *dockee_objh = nullptr;
+	bool found_arg = false;
+	int num_ships_undocked = 0;
+
+	while (true)
+	{
+		// read the next ship
+		internal::Ade_get_args_skip = skip_args++;
+		if (ade_get_args(L, "|o", l_Ship.GetPtr(&dockee_objh)) == 0)
+			break;
+		found_arg = true;
+
+		// make sure ship exists
+		if (dockee_objh == nullptr || !dockee_objh->IsValid())
+			continue;
+
+		// make sure we are docked to it
+		if (!dock_check_find_direct_docked_object(docker_objh->objp, dockee_objh->objp))
+			continue;
+
+		object_jettison_cargo(docker_objh->objp, dockee_objh->objp, jettison_speed, true);
+		num_ships_undocked++;
+	}
+
+	// if we didn't find any specified ships, then we need to jettison all of them
+	if (!found_arg)
+	{
+		// Goober5000 - as with ai_deathroll_start, we can't simply iterate through the dock list while we're
+		// undocking things.  So just repeatedly jettison the first object.
+		while (object_is_docked(docker_objh->objp))
+		{
+			object_jettison_cargo(docker_objh->objp, dock_get_first_docked_object(docker_objh->objp), jettison_speed, true);
+			num_ships_undocked++;
+		}
+	}
+
+	return ade_set_args(L, "i", num_ships_undocked);
+}
+
+ADE_FUNC(setUndocked, l_Ship, "[ship... dockee_ships /* All docked ships by default */]", "Immediately undocks one or more dockee ships from this ship.", "number", "Returns the number of ships undocked")
+{
+	object_h *docker_objh = nullptr;
+
+	if (!ade_get_args(L, "o", l_Ship.GetPtr(&docker_objh)))
+		return ADE_RETURN_NIL;
+
+	if (docker_objh == nullptr || !docker_objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	return jettison_helper(L, docker_objh, 0.0f, 1);
+}
+
+ADE_FUNC(jettison, l_Ship, "number jettison_speed, [ship... dockee_ships /* All docked ships by default */]", "Jettisons one or more dockee ships from this ship at the specified speed.", "number", "Returns the number of ships jettisoned")
+{
+	object_h *docker_objh = nullptr;
+	float jettison_speed = 0.0f;
+
+	if (!ade_get_args(L, "of", l_Ship.GetPtr(&docker_objh), &jettison_speed))
+		return ADE_RETURN_NIL;
+
+	if (docker_objh == nullptr || !docker_objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	return jettison_helper(L, docker_objh, jettison_speed, 2);
 }
 
 

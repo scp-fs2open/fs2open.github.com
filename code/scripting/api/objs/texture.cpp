@@ -11,7 +11,10 @@ namespace scripting {
 namespace api {
 
 texture_h::texture_h() = default;
-texture_h::texture_h(int bm) : handle(bm) {}
+texture_h::texture_h(int bm, bool refcount) : handle(bm) {
+	if (refcount)
+		bm_get_entry(bm)->load_count++;
+}
 texture_h::~texture_h()
 {
 	if (!isValid()) {
@@ -19,12 +22,13 @@ texture_h::~texture_h()
 		return;
 	}
 
-	// Note: due to some unknown reason, in some circumstances this function
-	// might get called even for handles to bitmaps which are actually still in
-	// use, and in order to prevent that we want to double-check the load count
-	// here before unloading the bitmap. -zookeeper
-	if (bm_get_entry(handle)->load_count < 1)
-		bm_release(handle);
+	//Note: We previously checked the load count here to make sure we don't unload the texture if it is in use otherwise.
+	//That is dangerous, as if anything else locks a lua-created texture while lua loses scope of the texture, we leak
+	//the texture as the load_count from the creation in lua will never decrease. To fix this, we need to properly refcount
+	//the textures using load_count. Anything that creates a texture object must also increase load count, unless it is
+	//created in a way that already increases load_count (like bm_load). That way, a texture going out of scope needs to be
+	//released and is safed against memleaks. -Lafiel
+	bm_release(handle);
 }
 bool texture_h::isValid() const { return bm_is_valid(handle) != 0; }
 texture_h::texture_h(texture_h&& other) noexcept {

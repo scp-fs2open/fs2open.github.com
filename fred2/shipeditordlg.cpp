@@ -1199,7 +1199,7 @@ int CShipEditorDlg::update_data(int redraw)
 			return z;
 
 		strcpy_s(old_name, Ships[single_ship].ship_name);
-		string_copy(Ships[single_ship].ship_name, m_ship_name, NAME_LENGTH, 1);
+		string_copy(Ships[single_ship].ship_name, m_ship_name, NAME_LENGTH - 1, 1);
 		str = Ships[single_ship].ship_name;
 		if (strcmp(old_name, str)) {
 			update_sexp_references(old_name, str);
@@ -2191,6 +2191,13 @@ void CShipEditorDlg::ship_alt_name_close(int base_ship)
 		return;
 	}
 
+	if (strlen(str) > NAME_LENGTH - 1) {
+		str[NAME_LENGTH - 1] = '\0';
+		SCP_string name;
+		sprintf(name, "Alt Names cannot be longer than %i characters!", NAME_LENGTH - 1);
+		MessageBox(name.c_str());
+	}
+
 	// otherwise see if it already exists
 	if(mission_parse_lookup_alt(str) >= 0){
 		strcpy_s(Fred_alt_names[base_ship], str);
@@ -2285,6 +2292,13 @@ void CShipEditorDlg::ship_callsign_close(int base_ship)
 			strcpy_s(Fred_callsigns[base_ship], "");
 		}
 		return;
+	}
+
+	if (strlen(str) > NAME_LENGTH - 1) {
+		str[NAME_LENGTH - 1] = '\0';
+		SCP_string name;
+		sprintf(name, "Alt Names cannot be longer than %i characters!", NAME_LENGTH - 1);
+		MessageBox(name.c_str());
 	}
 
 	// otherwise see if it already exists

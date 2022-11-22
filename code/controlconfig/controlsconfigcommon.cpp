@@ -26,6 +26,7 @@
 #include "options/Option.h"
 #include "osapi/dialogs.h"
 #include "parse/parselo.h"
+#include "scripting/scripting.h"
 
 #include <map>
 
@@ -75,6 +76,13 @@ SCP_vector<CCI> Control_config;
 
 //! Vector of presets. Each preset is a collection of bindings that can be copied into Control_config's bindings. [0] is the default preset.
 SCP_vector<CC_preset> Control_config_presets;
+
+struct LuaHook {
+	bool enabled = false;
+	luacpp::LuaFunction hook;
+	luacpp::LuaFunction override;
+};
+SCP_map<IoActionId, LuaHook> Lua_hooks;
 
 /**
  * Initializes the Control_config vector and the hardcoded defaults preset
@@ -206,7 +214,7 @@ void control_config_common_init_bindings() {
 
 	(RADAR_RANGE_CYCLE,                            KEY_RAPOSTRO, -1, COMPUTER_TAB, 1, "Cycle Radar Range",                 CC_TYPE_TRIGGER)
 	(SQUADMSG_MENU,                                       KEY_C, -1, COMPUTER_TAB, 1, "Communications Menu",               CC_TYPE_TRIGGER)
-	(SHOW_GOALS,                                             -1, -1, NO_TAB,       1, "Show Objectives",                   CC_TYPE_TRIGGER)
+	(SHOW_GOALS,                                             -1, -1, NO_TAB,       1, "Show Objectives",                   CC_TYPE_TRIGGER, true)
 	(END_MISSION,                             KEY_ALTED | KEY_J, -1, COMPUTER_TAB, 1, "Enter Subspace (End Mission)",      CC_TYPE_TRIGGER)
 
 	(INCREASE_WEAPON,                                KEY_INSERT, -1, COMPUTER_TAB, 1, "Weapon Energy Increase",            CC_TYPE_TRIGGER)
@@ -226,7 +234,7 @@ void control_config_common_init_bindings() {
 	(XFER_LASER,                    KEY_SHIFTED | KEY_SCROLLOCK, -1, COMPUTER_TAB, 1, "Transfer Energy Shield->Laser",     CC_TYPE_TRIGGER)
 
 	// Navigation and Autopilot
-	(SHOW_NAVMAP,                                            -1, -1, NO_TAB,       1, "Show Nav Map",       CC_TYPE_TRIGGER)
+	(SHOW_NAVMAP,                                            -1, -1, NO_TAB,       1, "Show Nav Map",       CC_TYPE_TRIGGER, true)
 	(AUTO_PILOT_TOGGLE,                       KEY_ALTED | KEY_A, -1, COMPUTER_TAB, 0, "Toggle Auto Pilot",  CC_TYPE_TRIGGER)
 	(NAV_CYCLE,                               KEY_ALTED | KEY_N, -1, COMPUTER_TAB, 0, "Cycle Nav Points",   CC_TYPE_TRIGGER)
 
@@ -250,6 +258,7 @@ void control_config_common_init_bindings() {
 	// HUD
 	(TOGGLE_HUD,                                    KEY_SHIFTED | KEY_O, -1, COMPUTER_TAB, 1, "Toggle HUD",                       CC_TYPE_TRIGGER)
 	(TOGGLE_HUD_CONTRAST,                                         KEY_L, -1, COMPUTER_TAB, 1, "Toggle High HUD Contrast",         CC_TYPE_TRIGGER)
+	(TOGGLE_HUD_SHADOWS,                              KEY_ALTED | KEY_L, -1, COMPUTER_TAB, 0, "Toggle HUD Drop Shadows",          CC_TYPE_TRIGGER)
 	(HUD_TARGETBOX_TOGGLE_WIREFRAME,    KEY_ALTED | KEY_SHIFTED | KEY_Q, -1, COMPUTER_TAB, 1, "Toggle HUD Wireframe Target View", CC_TYPE_TRIGGER)
 
 	// Custom Controls
@@ -266,6 +275,7 @@ void control_config_common_init_bindings() {
 	CC_preset preset;
 	preset.bindings.reserve(Control_config.size());
 	preset.name = "default";
+	preset.type = Preset_t::hardcode;
 
 	for (auto &item : Control_config) {
 		preset.bindings.push_back(CCB(item));
@@ -400,6 +410,7 @@ SCP_unordered_map<SCP_string, IoActionId> old_text = {
 	{"Increase Time Compression",               TIME_SPEED_UP},
 	{"Decrease Time Compression",               TIME_SLOW_DOWN},
 	{"Toggle High HUD Contrast",                TOGGLE_HUD_CONTRAST},
+	{"Toggle HUD Drop Shadows",                 TOGGLE_HUD_SHADOWS},
 	{"(Multiplayer) Toggle Network Info",       MULTI_TOGGLE_NETINFO},
 	{"(Multiplayer) Self Destruct",             MULTI_SELF_DESTRUCT},
 
@@ -423,48 +434,6 @@ SCP_unordered_map<SCP_string, IoActionId> old_text = {
 	{"Custom Control 5",                        CUSTOM_CONTROL_5},
 };
 
-const char* Scan_code_text_german_u[] = {
-	"",				"Esc",				"1",				"2",				"3",				"4",				"5",				"6",
-	"7",				"8",				"9",				"0",				"Akzent '",				"Eszett",				"R\xc3\xbc""cktaste",		"Tab", // NOLINT
-	"Q",				"W",				"E",				"R",				"T",				"Z",				"U",				"I",
-	"O",				"P",				"\xc3\x9c",				"+",				"Eingabe",			"Strg Links",			"A",				"S",
-
-	"D",				"F",				"G",				"H",				"J",				"K",				"L",				"\xc3\x96",
-	"\xc3\x84",				"`",				"Shift",			"#",				"Y",				"X",				"C",				"V",
-	"B",				"N",				"M",				",",				".",				"-",				"Shift",			"Num *",
-	"Alt",				"Leertaste",			"Hochstell",			"F1",				"F2",				"F3",				"F4",				"F5",
-
-	"F6",				"F7",				"F8",				"F9",				"F10",				"Pause",			"Rollen",			"Num 7",
-	"Num 8",			"Num 9",			"Num -",			"Num 4",			"Num 5",			"Num 6",			"Num +",			"Num 1",
-	"Num 2",			"Num 3",			"Num 0",			"Num ,",			"",				"",				"",				"F11",
-	"F12",				"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"Num Eingabe",			"Strg Rechts",			"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"Num /",			"",				"Druck",
-	"Alt",				"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"Num Lock",			"",				"Pos 1",
-	"Pfeil Hoch",			"Bild Hoch",			"",				"Pfeil Links",			"",				"Pfeil Rechts",			"",				"Ende",
-	"Pfeil Runter", 			"Bild Runter",			"Einfg",			"Entf",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-};
-
 const char* Joy_button_text_german_u[] = {
 	"Knopf 1",		"Knopf 2",		"Knopf 3",		"Knopf 4",		"Knopf 5",		"Knopf 6",
 	"Knopf 7",		"Knopf 8",		"Knopf 9",		"Knopf 10",		"Knopf 11",		"Knopf 12",
@@ -472,48 +441,6 @@ const char* Joy_button_text_german_u[] = {
 	"Knopf 19",		"Knopf 20",		"Knopf 21",		"Knopf 22",		"Knopf 23",		"Knopf 24",
 	"Knopf 25",		"Knopf 26",		"Knopf 27",		"Knopf 28",		"Knopf 29",		"Knopf 30",
 	"Knopf 31",		"Knopf 32",		"Hut Hinten",	"Hut Vorne",	"Hut Links",	"Hut Rechts"
-};
-
-const char* Scan_code_text_french_u[] = {
-	"",				"\xc3\x89""chap",			"1",				"2",				"3",				"4",				"5",				"6", // NOLINT
-	"7",				"8",				"9",				"0",				"-",				"=",				"Fl\xc3\xa9""che Ret.",			"Tab",  // NOLINT
-	"Q",				"W",				"E",				"R",				"T",				"Y",				"U",				"I",
-	"O",				"P",				"[",				"]",				"Entr\xc3\xa9""e",			"Ctrl Gauche",			"A",				"S",
-
-	"D",				"F",				"G",				"H",				"J",				"K",				"L",				";",
-	"'",				"`",				"Maj.",			"\\",				"Z",				"X",				"C",				"V",
-	"B",				"N",				"M",				",",				".",				"/",				"Maj.",			"Pav\xc3\xa9"" *",
-	"Alt",				"Espace",			"Verr. Maj.",			"F1",				"F2",				"F3",				"F4",				"F5",
-
-	"F6",				"F7",				"F8",				"F9",				"F10",				"Pause",			"Arret defil",		"Pav\xc3\xa9"" 7",
-	"Pav\xc3\xa9"" 8",			"Pav\xc3\xa9"" 9",			"Pav\xc3\xa9"" -",			"Pav\xc3\xa9"" 4",			"Pav\xc3\xa9"" 5",			"Pav\xc3\xa9"" 6",			"Pav\xc3\xa9"" +",			"Pav\xc3\xa9"" 1",
-	"Pav\xc3\xa9"" 2",			"Pav\xc3\xa9"" 3",			"Pav\xc3\xa9"" 0",			"Pav\xc3\xa9"" .",			"",				"",				"",				"F11",
-	"F12",				"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"Pav\xc3\xa9"" Entr",			"Ctrl Droite",		"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"Pav\xc3\xa9"" /",			"",				"Impr \xc3\xa9""cran",
-	"Alt",				"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"Verr num",			"",				"Orig.",
-	"Fl\xc3\xa9""che Haut",			"Page Haut",			"",				"Fl\xc3\xa9""che Gauche",			"",				"Fl\xc3\xa9""che Droite",			"",			"Fin",
-	"Fl\xc3\xa9""che Bas", 			"Page Bas",			"Inser",			"Suppr",			"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
 };
 
 const char* Joy_button_text_french_u[] = {
@@ -525,48 +452,6 @@ const char* Joy_button_text_french_u[] = {
 	"Bouton 31",		"Bouton 32",		"Chapeau Arri\xc3\xa8""re",		"Chapeau Avant",		"Chapeau Gauche",		"Chapeau Droite"
 };
 
-const char* Scan_code_text_polish_u[] = {
-	"",				"Esc",			"1",				"2",				"3",				"4",				"5",				"6",
-	"7",				"8",				"9",				"0",				"-",				"=",				"Backspace",	"Tab",
-	"Q",				"W",				"E",				"R",				"T",				"Y",				"U",				"I",
-	"O",				"P",				"[",				"]",				"Enter",			"Lewy Ctrl",	"A",				"S",
-
-	"D",				"F",				"G",				"H",				"J",				"K",				"L",				";",
-	"'",				"`",				"LShift",			"\\",				"Z",				"X",				"C",				"V",
-	"B",				"N",				"M",				",",				".",				"/",				"PShift",			"Num *",
-	"Alt",			"Spacja",		"CapsLock",	"F1",				"F2",				"F3",				"F4",				"F5",
-
-	"F6",				"F7",				"F8",				"F9",				"F10",			"Pause",			"Scrlock",	"Num 7",
-	"Num 8",			"Num 9",			"Num -",			"Num 4",			"Num 5",			"Num 6",			"Num +",			"Num 1",
-	"Num 2",			"Num 3",			"Num 0",			"Num .",			"",				"",				"",				"F11",
-	"F12",			"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"Num Enter",	"Prawy Ctrl",	"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"Num /",			"",				"PrntScr",
-	"Alt",			"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"Num Lock",		"",				"Home",
-	"Kursor G\xc3\xb3""ra",		"Page Up",		"",				"Kursor Lewo",	"",				"Kursor Prawo",	"",				"End",
-	"Kursor D\xc3\xb3\xc5\x82",  "Page Down",	"Insert",		"Delete",		"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-};
-
 const char* Joy_button_text_polish_u[] = {
 	"Przyc.1",		"Przyc.2",		"Przyc.3",		"Przyc.4",		"Przyc.5",		"Przyc.6",
 	"Przyc.7",		"Przyc.8",		"Przyc.9",		"Przyc.10",	"Przyc.11",	"Przyc.12",
@@ -574,49 +459,6 @@ const char* Joy_button_text_polish_u[] = {
 	"Przyc.19",	"Przyc.20",	"Przyc.21",	"Przyc.22",	"Przyc.23",	"Przyc.24",
 	"Przyc.25",	"Przyc.26",	"Przyc.27",	"Przyc.28",	"Przyc.29",	"Przyc.30",
 	"Przyc.31",	"Przyc.32",	"Hat Ty\xc5\x82",		"Hat Prz\xc3\xb3""d",	"Hat Lewo",		"Hat Prawo"
-};
-
-//!	This is the text that is displayed on the screen for the keys a player selects
-const char* Scan_code_text_english_u[] = {
-	"",				"Esc",			"1",				"2",				"3",				"4",				"5",				"6",
-	"7",				"8",				"9",				"0",				"-",				"=",				"Backspace",	"Tab",
-	"Q",				"W",				"E",				"R",				"T",				"Y",				"U",				"I",
-	"O",				"P",				"[",				"]",				"Enter",			"Left Ctrl",	"A",				"S",
-
-	"D",				"F",				"G",				"H",				"J",				"K",				"L",				";",
-	"'",				"`",				"Shift",			"\\",				"Z",				"X",				"C",				"V",
-	"B",				"N",				"M",				",",				".",				"/",				"Shift",			"Pad *",
-	"Alt",			"Spacebar",		"Caps Lock",	"F1",				"F2",				"F3",				"F4",				"F5",
-
-	"F6",				"F7",				"F8",				"F9",				"F10",			"Pause",			"Scroll Lock",	"Pad 7",
-	"Pad 8",			"Pad 9",			"Pad -",			"Pad 4",			"Pad 5",			"Pad 6",			"Pad +",			"Pad 1",
-	"Pad 2",			"Pad 3",			"Pad 0",			"Pad .",			"",				"",				"",				"F11",
-	"F12",			"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"Pad Enter",	"Right Ctrl",	"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"Pad /",			"",				"Print Scrn",
-	"Alt",			"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"Num Lock",		"",				"Home",
-	"Up Arrow",		"Page Up",		"",				"Left Arrow",	"",				"Right Arrow",	"",				"End",
-	"Down Arrow",  "Page Down",	"Insert",		"Delete",		"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
 };
 
 const char* Joy_button_text_english_u[] = {
@@ -628,48 +470,6 @@ const char* Joy_button_text_english_u[] = {
 	"Button 31",	"Button 32",	"Hat Back",		"Hat Forward",	"Hat Left",		"Hat Right"
 };
 
-const char* Scan_code_text_german[] = {
-	"",				"Esc",				"1",				"2",				"3",				"4",				"5",				"6",
-	"7",				"8",				"9",				"0",				"Akzent '",				"Eszett",				"R\x81""cktaste",		"Tab", // NOLINT
-	"Q",				"W",				"E",				"R",				"T",				"Z",				"U",				"I",
-	"O",				"P",				"\x9A",				"+",				"Eingabe",			"Strg Links",			"A",				"S",
-
-	"D",				"F",				"G",				"H",				"J",				"K",				"L",				"\x99",
-	"\x8E",				"`",				"Shift",			"#",				"Y",				"X",				"C",				"V",
-	"B",				"N",				"M",				",",				".",				"-",				"Shift",			"Num *",
-	"Alt",				"Leertaste",			"Hochstell",			"F1",				"F2",				"F3",				"F4",				"F5",
-
-	"F6",				"F7",				"F8",				"F9",				"F10",				"Pause",			"Rollen",			"Num 7",
-	"Num 8",			"Num 9",			"Num -",			"Num 4",			"Num 5",			"Num 6",			"Num +",			"Num 1",
-	"Num 2",			"Num 3",			"Num 0",			"Num ,",			"",				"",				"",				"F11",
-	"F12",				"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"Num Eingabe",			"Strg Rechts",			"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"Num /",			"",				"Druck",
-	"Alt",				"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"Num Lock",			"",				"Pos 1",
-	"Pfeil Hoch",			"Bild Hoch",			"",				"Pfeil Links",			"",				"Pfeil Rechts",			"",				"Ende",
-	"Pfeil Runter", 			"Bild Runter",			"Einfg",			"Entf",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-};
-
 const char* Joy_button_text_german[] = {
 	"Knopf 1",		"Knopf 2",		"Knopf 3",		"Knopf 4",		"Knopf 5",		"Knopf 6",
 	"Knopf 7",		"Knopf 8",		"Knopf 9",		"Knopf 10",		"Knopf 11",		"Knopf 12",
@@ -677,48 +477,6 @@ const char* Joy_button_text_german[] = {
 	"Knopf 19",		"Knopf 20",		"Knopf 21",		"Knopf 22",		"Knopf 23",		"Knopf 24",
 	"Knopf 25",		"Knopf 26",		"Knopf 27",		"Knopf 28",		"Knopf 29",		"Knopf 30",
 	"Knopf 31",		"Knopf 32",		"Hut Hinten",	"Hut Vorne",	"Hut Links",	"Hut Rechts"
-};
-
-const char* Scan_code_text_french[] = {
-	"",				"\x90""chap",			"1",				"2",				"3",				"4",				"5",				"6", // NOLINT
-	"7",				"8",				"9",				"0",				"-",				"=",				"Fl\x82""che Ret.",			"Tab",  // NOLINT
-	"Q",				"W",				"E",				"R",				"T",				"Y",				"U",				"I",
-	"O",				"P",				"[",				"]",				"Entr\x82""e",			"Ctrl Gauche",			"A",				"S",
-
-	"D",				"F",				"G",				"H",				"J",				"K",				"L",				";",
-	"'",				"`",				"Maj.",			"\\",				"Z",				"X",				"C",				"V",
-	"B",				"N",				"M",				",",				".",				"/",				"Maj.",			"Pav\x82 *",
-	"Alt",				"Espace",			"Verr. Maj.",			"F1",				"F2",				"F3",				"F4",				"F5",
-
-	"F6",				"F7",				"F8",				"F9",				"F10",				"Pause",			"Arret defil",		"Pav\x82 7",
-	"Pav\x82 8",			"Pav\x82 9",			"Pav\x82 -",			"Pav\x82 4",			"Pav\x82 5",			"Pav\x82 6",			"Pav\x82 +",			"Pav\x82 1",
-	"Pav\x82 2",			"Pav\x82 3",			"Pav\x82 0",			"Pav\x82 .",			"",				"",				"",				"F11",
-	"F12",				"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"Pav\x82 Entr",			"Ctrl Droite",		"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"Pav\x82 /",			"",				"Impr \x82""cran",
-	"Alt",				"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"Verr num",			"",				"Orig.",
-	"Fl\x82""che Haut",			"Page Haut",			"",				"Fl\x82""che Gauche",			"",				"Fl\x82""che Droite",			"",			"Fin",
-	"Fl\x82""che Bas", 			"Page Bas",			"Inser",			"Suppr",			"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
 };
 
 const char* Joy_button_text_french[] = {
@@ -730,48 +488,6 @@ const char* Joy_button_text_french[] = {
 	"Bouton 31",		"Bouton 32",		"Chapeau Arri\x8Are",		"Chapeau Avant",		"Chapeau Gauche",		"Chapeau Droite"
 };
 
-const char* Scan_code_text_polish[] = {
-	"",				"Esc",			"1",				"2",				"3",				"4",				"5",				"6",
-	"7",				"8",				"9",				"0",				"-",				"=",				"Backspace",	"Tab",
-	"Q",				"W",				"E",				"R",				"T",				"Y",				"U",				"I",
-	"O",				"P",				"[",				"]",				"Enter",			"Lewy Ctrl",	"A",				"S",
-
-	"D",				"F",				"G",				"H",				"J",				"K",				"L",				";",
-	"'",				"`",				"LShift",			"\\",				"Z",				"X",				"C",				"V",
-	"B",				"N",				"M",				",",				".",				"/",				"PShift",			"Num *",
-	"Alt",			"Spacja",		"CapsLock",	"F1",				"F2",				"F3",				"F4",				"F5",
-
-	"F6",				"F7",				"F8",				"F9",				"F10",			"Pause",			"Scrlock",	"Num 7",
-	"Num 8",			"Num 9",			"Num -",			"Num 4",			"Num 5",			"Num 6",			"Num +",			"Num 1",
-	"Num 2",			"Num 3",			"Num 0",			"Num .",			"",				"",				"",				"F11",
-	"F12",			"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"Num Enter",	"Prawy Ctrl",	"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"Num /",			"",				"PrntScr",
-	"Alt",			"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"Num Lock",		"",				"Home",
-	"Kursor G\xF3ra",		"Page Up",		"",				"Kursor Lewo",	"",				"Kursor Prawo",	"",				"End",
-	"Kursor D\xF3\xB3",  "Page Down",	"Insert",		"Delete",		"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-	"",				"",				"",				"",				"",				"",				"",				"",
-};
-
 const char* Joy_button_text_polish[] = {
 	"Przyc.1",		"Przyc.2",		"Przyc.3",		"Przyc.4",		"Przyc.5",		"Przyc.6",
 	"Przyc.7",		"Przyc.8",		"Przyc.9",		"Przyc.10",	"Przyc.11",	"Przyc.12",
@@ -781,8 +497,8 @@ const char* Joy_button_text_polish[] = {
 	"Przyc.31",	"Przyc.32",	"Hat Ty\xB3",		"Hat Prz\xF3\x64",	"Hat Lewo",		"Hat Prawo"
 };
 
-//!	This is the text that is displayed on the screen for the keys a player selects
-const char* Scan_code_text_english[] = {
+//English scancodes are still needed eclusively for the scripting API, as we need to give generic and stable scan code names to the API that are neither translated nor localized to keyboard layout.
+const char *Scan_code_text_english[] = {
 	"",				"Esc",			"1",				"2",				"3",				"4",				"5",				"6",
 	"7",				"8",				"9",				"0",				"-",				"=",				"Backspace",	"Tab",
 	"Q",				"W",				"E",				"R",				"T",				"Y",				"U",				"I",
@@ -833,8 +549,11 @@ const char* Joy_button_text_english[] = {
 	"Button 31",	"Button 32",	"Hat Back",		"Hat Forward",	"Hat Left",		"Hat Right"
 };
 
-const char **Scan_code_text = Scan_code_text_english;
 const char **Joy_button_text = Joy_button_text_english;
+
+bool Generate_controlconfig_table = false;
+
+int sections_read = 0;	// Number of sections read within the controlconfigdefaults.tbl
 
 const int BTN_MSG_LEN = 40;	//! Max length of textified keys and buttons.  Used in key/button translation functions
 
@@ -940,7 +659,7 @@ const char *translate_key(char *key)
 	return text;
 }
 
-const char *textify_scancode(int code, bool use_default_locale)
+const char *textify_scancode(int code)
 {
 	static char text[BTN_MSG_LEN];
 
@@ -949,7 +668,7 @@ const char *textify_scancode(int code, bool use_default_locale)
 
 	int keycode = code & KEY_MASK;
 
-	*text = 0;
+	text[0] = '\0';
 	if (code & KEY_ALTED && !(keycode == KEY_LALT || keycode == KEY_RALT)) {
 		if(Lcl_gr){
 			strcat_s(text, "Alt-");
@@ -970,14 +689,31 @@ const char *textify_scancode(int code, bool use_default_locale)
 		}
 	}
 
-	if (use_default_locale) {
-		// Use default locale (English)
-		strcat_s(text, Scan_code_text_english[keycode]);
+	SCP_string name;
+	unicode::convert_encoding(name, SDL_GetKeyName(SDL_GetKeyFromScancode(fs2_to_sdl(keycode))), unicode::Encoding::Encoding_utf8);
+	strcat_s(text, name.c_str());
+	return text;
+}
 
-	} else {
-		// Use user locale
-		strcat_s(text, Scan_code_text[keycode]);
+const char *textify_scancode_universal(int code)
+{
+	static char text[BTN_MSG_LEN];
+
+	if (code < 0)
+		return "None";
+
+	int keycode = code & KEY_MASK;
+
+	text[0] = '\0';
+	if (code & KEY_ALTED && !(keycode == KEY_LALT || keycode == KEY_RALT)) {
+		strcat_s(text, "Alt-");
 	}
+
+	if (code & KEY_SHIFTED && !(keycode == KEY_LSHIFT || keycode == KEY_RSHIFT)) {
+		strcat_s(text, "Shift-");
+	}
+
+	strcat_s(text, Scan_code_text_english[keycode]);
 	
 	return text;
 }
@@ -1000,6 +736,11 @@ void control_config_common_init()
 	for (int i=0; i<CCFG_MAX; i++) {
 		Control_config[i].continuous_ongoing = false;
 	}
+
+	for (int i = 0; i < Action::NUM_VALUES; i++) {
+		Control_config[i + JOY_AXIS_BEGIN].analog_value = JOY_AXIS_CENTER;
+		Control_config[i + JOY_AXIS_BEGIN].digital_used = TIMESTAMP::invalid();
+	}
 	
 	// TODO It's not memory efficient to keep the presets loaded into memory all the time, but we do need to know which
 	// preset we're currently using for .plr and .csg
@@ -1012,37 +753,29 @@ void control_config_common_init()
 	// Init control label localization
 	if (Unicode_text_mode) {
 		if (Lcl_gr) {
-			Scan_code_text = Scan_code_text_german_u;
 			Joy_button_text = Joy_button_text_german_u;
 		}
 		else if (Lcl_fr) {
-			Scan_code_text = Scan_code_text_french_u;
 			Joy_button_text = Joy_button_text_french_u;
 		}
 		else if (Lcl_pl) {
-			Scan_code_text = Scan_code_text_polish_u;
 			Joy_button_text = Joy_button_text_polish_u;
 		}
 		else {
-			Scan_code_text = Scan_code_text_english_u;
 			Joy_button_text = Joy_button_text_english_u;
 		}
 	}
 	else {
 		if (Lcl_gr) {
-			Scan_code_text = Scan_code_text_german;
 			Joy_button_text = Joy_button_text_german;
 		}
 		else if (Lcl_fr) {
-			Scan_code_text = Scan_code_text_french;
 			Joy_button_text = Joy_button_text_french;
 		}
 		else if (Lcl_pl) {
-			Scan_code_text = Scan_code_text_polish;
 			Joy_button_text = Joy_button_text_polish;
 		}
 		else {
-			Scan_code_text = Scan_code_text_english;
 			Joy_button_text = Joy_button_text_english;
 		}
 	}
@@ -1392,6 +1125,7 @@ void LoadEnumsIntoActionMap() {
 	ADD_ENUM_TO_ACTION_MAP(TIME_SLOW_DOWN)
 
 	ADD_ENUM_TO_ACTION_MAP(TOGGLE_HUD_CONTRAST)
+	ADD_ENUM_TO_ACTION_MAP(TOGGLE_HUD_SHADOWS)
 
 	ADD_ENUM_TO_ACTION_MAP(MULTI_TOGGLE_NETINFO)
 
@@ -1428,7 +1162,7 @@ void LoadEnumsIntoActionMap() {
 
 #undef ADD_ENUM_TO_ACTION_MAP
 
-	Assertion(mActionToVal.size() == CCFG_MAX, "Missing or unknown IoActionId's detected.");
+	Assertion(mActionToVal.size() == CCFG_MAX, "Missing or unknown IoActionId's detected. mActionToVal.size()=%i; CCFG_MAX=%i", static_cast<int>(mActionToVal.size()), CCFG_MAX);
 }
 
 void LoadEnumsIntoCIDMap() {
@@ -1499,7 +1233,7 @@ void LoadEnumsIntoMaps() {
  * by controlconfigdefaults.tbl, any references to the new hardcoded names may fail after they've been changed in the
  * default preset
  */
-size_t find_control_by_text(SCP_string& text) {
+size_t find_control_by_text(SCP_string &text) {
 	size_t item_id;
 
 	// Search the current ::text
@@ -1523,41 +1257,435 @@ size_t find_control_by_text(SCP_string& text) {
 }
 
 /**
+ * @brief LUA Controls Override cache
+ *
+ * @details:
+ *  Button hooks can happen more than once a frame, and that is intended;  Axis hooks happen exactly once a frame.
+ *  However, due to implementation, continuous hooks could happen an unspecified number of times.  So we need to cache
+ *  if a hook occurred, and what its override setting was.
+ 
+ *   `lua_was_called[IoActionId]`        sets if this action has been run before
+ *   `lua_override_cache[IoActionId]`    sets the cached value for the action
+ */
+class controls_lua_override_cache {
+	std::bitset<IoActionId::CCFG_MAX> lua_was_called; //!< The cache storing if an id had been cached before
+	std::bitset<IoActionId::CCFG_MAX> lua_override_cache; //!< The cache storing the actual cached value
+
+public:
+	/**
+	* @brief Resets the override cache and clears all values
+	*/
+	void reset() {
+		lua_was_called.reset();
+		lua_override_cache.reset();
+	}
+
+	/**
+	* @returns true if there is a cached value for this id, false otherwise
+	*/
+	bool isCached(IoActionId id) const {
+		return lua_was_called[id];
+	}
+
+	/**
+	* @returns the cached value for this id
+	*/
+	bool operator[](IoActionId id) const {
+		Assertion(isCached(id), "A lua override check for IoActionId %d's hook was requested, but the hook hasn't been cached.", id);
+		return lua_override_cache[id];
+	}
+
+	/**
+	* @brief Adds a new value to the cache
+	*/
+	void emplace(IoActionId id, bool override) {
+		lua_was_called[id] = true;
+		lua_override_cache[id] = override;
+	}
+
+} Controls_lua_override_cache;
+
+void control_reset_lua_cache() {
+	Controls_lua_override_cache.reset();
+}
+
+bool control_run_lua(IoActionId id, int value) {
+
+	auto hook_it = Lua_hooks.find(id);
+
+	if (hook_it == Lua_hooks.end() || !hook_it->second.enabled) {
+		return false;
+	}
+	
+	const LuaHook& hook = hook_it->second;
+	const bool isAxis = Control_config[id].is_axis();
+	const bool isContinuous = Control_config[id].type == CC_TYPE_CONTINUOUS;
+
+	if (isContinuous) {
+		if (Controls_lua_override_cache.isCached(id)) {
+			//Found a cached value. Return and stop evaluating
+			return Controls_lua_override_cache[id];
+		}
+
+		Script_system.SetHookVar("Pressed", 'b', value != 0);
+	}
+
+	//Load hv.Value if it is an Axis
+	if(isAxis)
+		Script_system.SetHookVar("Value", 'f', f2fl(value));
+
+	//Check Override if it exists
+	bool override = false;
+	if (hook.override.isValid()) {
+		auto return_vals = hook.override.call(Script_system.GetLuaSession());
+
+		if (return_vals.size() != 1) {
+			Warning(LOCATION,
+				"Wrong number of return values for Lua keybinding override '%s'! Expected 1, got " SIZE_T_ARG ".",
+				ValToAction(id),
+				return_vals.size());
+		}
+		else if (return_vals[0].getValueType() != luacpp::ValueType::BOOLEAN) {
+			Warning(LOCATION, "Wrong return type detected for Lua keybinding override '%s', expected a boolean.", ValToAction(id));
+		}
+		else {
+			override = return_vals[0].getValue<bool>();
+		}
+	}
+
+	//Run Main Hook
+	if (hook.hook.isValid()) {
+		hook.hook.call(Script_system.GetLuaSession());
+	}
+
+	if(isAxis)
+		Script_system.RemHookVars({ "Value" });
+
+	if (isContinuous) {
+		Script_system.RemHookVars({ "Pressed" });
+
+		Controls_lua_override_cache.emplace(id, override);
+	}
+
+	return override;
+}
+
+void control_register_hook(IoActionId id, const luacpp::LuaFunction& hook, bool is_override, bool enabledByDefault) {
+	Control_config[id].scriptEnabledByDefault = enabledByDefault;
+
+	LuaHook* hook_entry = &Lua_hooks[id];
+	
+	hook_entry->enabled = enabledByDefault;
+
+	if(!is_override)
+		hook_entry->hook = hook;
+	else
+		hook_entry->override = hook;
+}
+
+void control_reset_hook() {
+	for (auto& hook : Lua_hooks) {
+		hook.second.enabled = Control_config[hook.first].scriptEnabledByDefault;
+	}
+}
+
+void control_enable_hook(IoActionId id, bool enable) {
+	auto hook_it = Lua_hooks.find(id);
+
+	if (hook_it == Lua_hooks.end()) {
+		return;
+	}
+
+	hook_it->second.enabled = enable;
+}
+
+/**
+ * Stuffs the CCF flags into the given char.  Needs item_id for validation
+ */
+void stuff_CCF(char& flags, size_t item_id) {
+	Assert(item_id < Control_config.size());
+
+	SCP_string szTempBuffer;
+	flags = 0;
+
+	stuff_string(szTempBuffer, F_NAME);
+
+#ifndef NDEBUG
+	SCP_string flag_str;
+	size_t pos = 0;
+	size_t len = 0;
+
+	auto ADD_FLAG = [&](char id) {
+		flag_str = ValToCCF(id);
+		pos = szTempBuffer.find(flag_str);
+		len = flag_str.length();
+		if (pos != SCP_string::npos) {
+			flags |= id;
+			szTempBuffer.erase(pos, len);
+		}
+	};
+#else
+	auto ADD_FLAG = [&](char id) {
+		if (szTempBuffer.find(ValToCCF(id)) != SCP_string::npos)
+			flags |= id;
+	};
+#endif
+
+	ADD_FLAG(CCF_AXIS_BTN);
+	ADD_FLAG(CCF_RELATIVE);
+	ADD_FLAG(CCF_INVERTED);
+	ADD_FLAG(CCF_AXIS);
+	ADD_FLAG(CCF_HAT);
+	ADD_FLAG(CCF_BALL);
+
+#ifndef NDEBUG
+	// Complain about any unknown flag strings
+	replace_all(szTempBuffer, ",", " ");
+	drop_white_space(szTempBuffer);
+
+	if (!szTempBuffer.empty()) {
+		error_display(0, "Unknown flags passed to config item %i, ignoring: \n'%s'", static_cast<int>(item_id), szTempBuffer.c_str());
+	}
+#endif
+
+	// Validate Flags
+	// This should all be recoverable, but complaining to the modder enforces the good practice of
+	// associating the binding with the input type (digital or analog)
+	char mask = 0;
+	switch (Control_config[item_id].type) {
+	case CC_TYPE_TRIGGER:
+	case CC_TYPE_CONTINUOUS:
+		// Digital control. May not have:
+		mask = flags & (CCF_AXIS | CCF_BALL);
+		if (mask != 0) {
+			error_display(0, "Illegal analog flags passed to digital config item %i, ignoring:\n'%s'", static_cast<int>(item_id), ValToCCF(mask).c_str());
+			flags &= ~(CCF_AXIS | CCF_BALL);
+		}
+		break;
+
+	case CC_TYPE_AXIS_ABS:
+		// Absolute Analog control. Must not have:
+		mask = flags & (CCF_AXIS_BTN | CCF_HAT);
+		if (mask != 0) {
+			error_display(0, "Illegal digital flags passed to analog config item %i, ignoring:\n'%s'", static_cast<int>(item_id), ValToCCF(mask).c_str());
+			flags &= ~(CCF_AXIS_BTN | CCF_HAT);
+		}
+
+		mask = flags & CCF_RELATIVE;
+		if (mask != 0) {
+			error_display(0, "Illegal RELATIVE flag passed to absolute analog config item %i, ignoring:\n'%s'", static_cast<int>(item_id), ValToCCF(mask).c_str());
+			flags &= ~CCF_RELATIVE;
+		}
+
+		// Must have
+		mask = flags & (CCF_AXIS | CCF_BALL);
+		if (mask == 0) {
+			error_display(0, "Missing analog flag 'AXIS' or 'BALL'! Assuming it is an axis...");
+			flags |= CCF_AXIS;
+		}
+		break;
+
+	case CC_TYPE_AXIS_REL:
+		// Relative Analog control. Must not have:
+		mask = flags & (CCF_AXIS_BTN | CCF_HAT);
+		if (mask != 0) {
+			error_display(0, "Illegal digital flags passed to analog config item %i, ignoring:\n'%s'", static_cast<int>(item_id), ValToCCF(mask).c_str());
+			flags &= ~(CCF_AXIS_BTN | CCF_HAT);
+		}
+
+		// Must have
+		mask = flags & (CCF_AXIS | CCF_BALL);
+		if (mask == 0) {
+			error_display(0, "Missing analog flag 'AXIS' or 'BALL'! Assuming it is an axis...");
+			flags |= CCF_AXIS;
+		}
+
+		mask = flags & CCF_RELATIVE;
+		if (mask == 0) {
+			error_display(0, "Missing RELATIVE flag for relative analog config item %i, adding...", static_cast<int>(item_id));
+			flags |= CCF_RELATIVE;
+		}
+		break;
+
+	case CC_TYPE_AXIS_BTN_NEG:
+	case CC_TYPE_AXIS_BTN_POS:
+		// Not implemented yet, just ignore
+		break;
+	}
+}
+
+// Legacy reading method for parsing keyboard and joystick/mouse bindings
+// Will overwrite/override the given preset for all options found within the .tbl section
+size_t read_bind_0(CC_preset &new_preset) {
+	SCP_string szTempBuffer;
+
+	stuff_string(szTempBuffer, F_NAME);
+
+	// Find the control
+	size_t item_id = find_control_by_text(szTempBuffer);
+
+	if (item_id == Control_config.size()) {
+		// Control wasn't found
+		// Warning: Not Found
+		error_display(0, "Unknown Bind Name: %s\n", szTempBuffer.c_str());
+
+		return item_id;
+	}
+
+	// Assign the various attributes to this control
+	auto& new_binding = new_preset.bindings[item_id];
+	int iTemp;
+	short key = new_binding.get_btn(CID_KEYBOARD);
+
+	// Key assignment and modifiers
+	if (optional_string("$Key Default:")) {
+		if (optional_string("NONE")) {
+			key = -1;
+		} else {
+			stuff_string(szTempBuffer, F_NAME);
+			key = mKeyNameToVal[szTempBuffer];
+		}
+	}
+
+	if (optional_string("$Key Mod Shift:")) {
+		stuff_int(&iTemp);
+		key |= (iTemp == 1) ? KEY_SHIFTED : 0;
+	}
+
+	if (optional_string("$Key Mod Alt:")) {
+		stuff_int(&iTemp);
+		key |= (iTemp == 1) ? KEY_ALTED : 0;
+	}
+
+	if (optional_string("$Key Mod Ctrl:")) {
+		stuff_int(&iTemp);
+		key |= (iTemp == 1) ? KEY_CTRLED : 0;
+	}
+
+	if (key > 0) {
+		new_binding.take(CC_bind(CID_KEYBOARD, key), 0);
+	} else {
+		new_binding.take(CC_bind(CID_KEYBOARD, static_cast<short>(-1)), -1);
+	}
+
+	// Joy btn assignment
+	if (optional_string("$Joy Default:")) {
+		stuff_int(&iTemp);
+		new_binding.take(CC_bind(CID_JOY0, static_cast<short>(iTemp)), 1);
+	}
+
+	return item_id;
+}
+
+// Reading method for parsing keyboard, mouse, and multi-joy bindings
+// Will override/overwrite the given preset for all options found within the .tbl section
+size_t read_bind_1(CC_preset &preset) {
+	CCB* item = nullptr;
+	SCP_string szTempBuffer;
+	int item_id = 0;
+
+	// $Bind:
+	stuff_string(szTempBuffer, F_NAME);
+	item_id = ActionToVal(szTempBuffer.c_str());
+
+	if (item_id >= 0) {
+		item = &preset.bindings[item_id];
+
+	} else {
+		// Control wasn't found
+		error_display(0, "Unknown Bind: %s\n", szTempBuffer.c_str());
+
+		return Control_config.size();
+	}
+	
+	if (optional_string("$Primary:")) {
+		CID cid = CID_NONE;
+		char flags = '\0';
+		short btn = 0;
+		if (required_string("$Controller:")) {
+			stuff_string(szTempBuffer, F_NAME);
+			cid = CIDToVal(szTempBuffer.c_str());
+		}
+		
+		// These items are required if the controller is defined
+		if (cid != CID_NONE) {
+			if (required_string("$Flags:")) {
+				stuff_CCF(flags, item_id);
+			}
+
+			if (required_string("$Input:")) {
+				stuff_string(szTempBuffer, F_NAME);
+				btn = InputToVal(cid, szTempBuffer.c_str());
+			}
+		}
+
+		item->first.take(cid, btn, flags);
+	}
+
+	// Second verse, same as the first
+	if (optional_string("$Secondary:")) {
+		CID cid = CID_NONE;
+		char flags = '\0';
+		short btn = 0;
+		if (required_string("$Controller:")) {
+			stuff_string(szTempBuffer, F_NAME);
+			cid = CIDToVal(szTempBuffer.c_str());
+		}
+
+		// These items are required if the controller is defined
+		if (cid != CID_NONE) {
+			if (required_string("$Flags:")) {
+				stuff_CCF(flags, item_id);
+			}
+
+			if (required_string("$Input:")) {
+				stuff_string(szTempBuffer, F_NAME);
+				btn = InputToVal(cid, szTempBuffer.c_str());
+			}
+		}
+
+		item->second.take(cid, btn, flags);
+	}
+
+	return static_cast<size_t>(item_id);
+}
+
+/**
  * @brief Reads a section in controlconfigdefaults.tbl.
  *
  * @param[in] s Value of a call to optional_string_either(); 0 = "ControlConfigOverride" 1 = "ControlConfigPreset"
  * @param[in] first_override Legacy support for unnamed #ControlConfigOverrides.  If this is the first unnamed
- *   override, then overwrite the default preset, else, save it as an "unnamed preset"
- *
- * @details ControlConfigPresets are read in the exact same manner as ControlConfigOverrides, however only the
- *   bindings are available for modification
+ *   override, then overwrite the default preset, else, save it as an "<unnamed preset>"
+ * 
+ * @details ControlConfigPresets are read in the exact same manner as ControlConfigOverrides, however only the bindings are available for modification.
+ *  There may be only one #Override section, since it is in charge of non-binding members of the Control_config items
  */
 void control_config_common_read_section(int s, bool first_override) {
+	Assertion((s == 0) || (s == 1), "Expected value of s to be either 0 or 1, found %i instead.", s);
 	CC_preset new_preset;
 
-	// Init the new preset with the default (which is the 0th element Control_config_preset vector
+	// Set references to the default preset and bindings
 	auto& default_preset = Control_config_presets[0];
 	auto& default_bindings = default_preset.bindings;
 
 	new_preset.bindings.clear();
+	new_preset.type = Preset_t::tbl;
 
 	if (s == 0) {
-		// ControlConfigOverride
+		// #ControlConfigOverride
 		// Copy in defaults to have them overridden
 		std::copy(default_bindings.begin(), default_bindings.end(), std::back_inserter(new_preset.bindings));
 
 	} else {
-		// ControlConfigPreset
+		// #ControlConfigPreset
 		// Start with clean slate
 		new_preset.bindings.resize(default_bindings.size());
 	}
-	
 
 	// Assign name to the preset
 	if (optional_string("$Name:")) {
 		SCP_string name;
-		stuff_string_line(name);
-		drop_leading_white_space(name);
+		stuff_string(name, F_NAME);
 		new_preset.name = name;
 
 		auto it = std::find_if(Control_config_presets.begin(), Control_config_presets.end(), [&name](CC_preset& S) {return S.name == name;});
@@ -1575,74 +1703,43 @@ void control_config_common_read_section(int s, bool first_override) {
 	}
 
 	// Read the section
-	while (required_string_either("#End", "$Bind Name:")) {
-		SCP_string szTempBuffer;
+	// Break if -1 (error) or 0 (#End found)
+	while (required_string_one_of(3, "#End", "$Bind Name:", "$Bind") > 0) {
+		size_t item_id;
 
-		required_string("$Bind Name:");
-		stuff_string(szTempBuffer, F_NAME);
+		switch (required_string_either("$Bind Name:", "$Bind:")) {
+		case 0:
+			// Old bindings
+			required_string("$Bind Name:");
+			item_id = read_bind_0(new_preset);
+			break;
 
-		// Find the control
-		size_t item_id = find_control_by_text(szTempBuffer);
+		case 1:
+			// New bindings
+			required_string("$Bind:");
+			item_id = read_bind_1(new_preset);
+			break;
+
+		default:
+			UNREACHABLE("[controlconfigdefaults.tbl] required_string_either passed something other than 0 or 1!");
+			item_id = Control_config.size();
+		}
 
 		if (item_id == Control_config.size()) {
-			// Control wasn't found
-			// Warning: Not Found
-			error_display(0, "Unknown Bind Name: %s\n", szTempBuffer.c_str());
-
+			// Bind not found.
 			// Try to resume
-			if (!skip_to_start_of_string_either("#End", "$Bind Name:")) {
-				// Couldn't find next binding or end. Fail
-				throw parse::ParseException("Could not find #End or $Bind Name");
-
-			}; // Found next binding or end, continue loop
+			if (!skip_to_start_of_string_either("$Bind Name:", "$Bind", "#End")) {
+				Warning(LOCATION, "Could not find next binding in section `%s`, canceling read of section.", new_preset.name.c_str());
+				return;
+			} // Found next binding or end, continue loop
 			continue;
 		}
-
-		// Assign the various attributes to this control
-		int iTemp;
-		auto  item = &Control_config[item_id];
-		auto& new_binding = new_preset.bindings[item_id];
-		short key = new_binding.get_btn(CID_KEYBOARD);
-
-		// Key assignment and modifiers
-		if (optional_string("$Key Default:")) {
-			if (optional_string("NONE")) {
-				key = -1;
-			} else {
-				stuff_string(szTempBuffer, F_NAME);
-				try {
-					key = mKeyNameToVal.at(szTempBuffer);
-				} catch (std::out_of_range&) {
-					Warning(LOCATION,"Table tried to set '$Key Default' for a key that doesn't exist: %s",szTempBuffer.c_str());
-				}
-			}
-		}
-
-		if (optional_string("$Key Mod Shift:")) {
-			stuff_int(&iTemp);
-			key |= (iTemp == 1) ? KEY_SHIFTED : 0;
-		}
-
-		if (optional_string("$Key Mod Alt:")) {
-			stuff_int(&iTemp);
-			key |= (iTemp == 1) ? KEY_ALTED : 0;
-		}
-
-		if (optional_string("$Key Mod Ctrl:")) {
-			stuff_int(&iTemp);
-			key |= (iTemp == 1) ? KEY_CTRLED : 0;
-		}
-
-		new_binding.take(CC_bind(CID_KEYBOARD, key), 0);
-
-		// Joy btn assignment
-		if (optional_string("$Joy Default:")) {
-			stuff_int(&iTemp);
-			new_binding.take(CC_bind(CID_JOY0, static_cast<short>(iTemp)), 1);
-		}
+		auto item = &Control_config[item_id];
+		SCP_string szTempBuffer;
+		int iTemp = 0;
 
 		// Section is #ControlConfigOverride
-		// If the section is #ControlConfigPreset, then any of these options will throw an error
+		// If the section is #ControlConfigPreset, then any of these options would cause problems
 		if (s == 0) {
 			// Config menu options
 			if (optional_string("$Category:")) {
@@ -1674,40 +1771,61 @@ void control_config_common_read_section(int s, bool first_override) {
 			}
 
 			// Gameplay options
-			if (optional_string("+Disable")) {
-				item->disabled = true;
-			}
-
 			if (optional_string("$Disable:")) {
 				stuff_boolean(&item->disabled);
+
+			} else if (optional_string("+Disable")) {
+				item->disabled = true;
+
+			} else {
+				item->disabled = false;
 			}
+
+			if (optional_string("$Locked:")) {
+				stuff_boolean(&item->locked);
+
+			} else if (optional_string("+Locked")) {
+				item->locked = true;
+
+			} else {
+				item->locked = false;
+			}
+
+			
 		}
 	}
 
 	required_string("#End");
 
-	if ((s == 0) && (new_preset.name == default_preset.name)) {
-		// If this is an override section, and the preset name is the same as the hardcoded defaults, override the defaults
-		auto& new_bindings = new_preset.bindings;
-		std::copy(new_bindings.begin(), new_bindings.end(), default_bindings.begin());
-
-	} else {
-		// Add new preset, if it is unique
-		bool unique = true;
-		auto it = Control_config_presets.begin();
-		for (; it != Control_config_presets.end(); ++it) {
-			if (new_preset.is_duplicate_of(*it)) {
-				unique = false;
-				break;
-			}
-		}
-
-		if (unique) {
-			Control_config_presets.push_back(new_preset);
-		} else if (!running_unittests) {
-			Warning(LOCATION, "Preset '%s' found in 'controlconfigdefaults.tbl' is a duplicate of existing preset '%s', ignoring", new_preset.name.c_str(), it->name.c_str());
-		}
+	// Override the hardcoded defaults if this is an override section and the preset name is "default"
+	// Error case of preset sections named "default" is handled in the beginning of this function
+	if ((s == 0) && (new_preset.name == "default")) {
+		Control_config_presets[0] = new_preset;
+		mprintf(("[controlconfigdefaults.tbl] Overrode default preset.\n"));
 	}
+
+	auto duplicate = preset_find_duplicate(new_preset);
+
+	if (duplicate == Control_config_presets.end()) {
+		// No duplicate, add new preset
+		Control_config_presets.push_back(new_preset);
+		mprintf(("[controlconfigdefaults.tbl] Added Preset '%s'\n", new_preset.name.c_str()));
+
+	} else if (duplicate->name != new_preset.name) {
+		if (s == 0) {
+			// Rename the duplicate with the new_preset name
+			// The .tbl takes precedence over any player presets
+			duplicate->name = new_preset.name;
+			mprintf(("[controlconfigdefaults.tbl] Renamed duplicate '%s' preset to '%s'\n", duplicate->name.c_str(), new_preset.name.c_str()));
+		
+		} else {
+			// Presets are not allowed to rename
+			Warning(LOCATION, "Ignoring Preset '%s'. (Duplicate of '%s' and is not an Override)", new_preset.name.c_str(), duplicate->name.c_str());
+			mprintf(("[controlconfigdefaults.tbl] Ignoring Preset '%s'. (Duplicate of '%s' and is not an Override)\n", new_preset.name.c_str(), duplicate->name.c_str()));
+		}
+	} // Else, silently ignore the duplicate since it has the same name
+
+	mprintf(("[controlconfigdefaults.tbl] Ignoring duplicate Preset '%s'\n", new_preset.name.c_str()));
 };
 
 /**
@@ -1721,19 +1839,19 @@ void control_config_common_read_tbl() {
 	}
 
 	reset_parse();
+	sections_read = 0;
 
 	// start parsing
-	bool found_override = false;
 	int s = optional_string_either("#ControlConfigOverride", "#ControlConfigPreset");
 	while (s != -1) {
+		sections_read++;
 		// Found section header, parse it
-		control_config_common_read_section(s, s == 0 && !found_override);
-		if (s == 0 && !found_override) {
-			found_override = true;
-		}
+		control_config_common_read_section(s, sections_read == 1);
 
 		s = optional_string_either("#ControlConfigOverride", "#ControlConfigPreset");
 	}
+
+	mprintf(("[controlconfigdefaults.tbl] found %i sections\n", sections_read));
 }
 
 /**
@@ -1744,7 +1862,58 @@ void control_config_common_read_tbl() {
  * @returns 0 if successful
  * @returns 1 if not successful - nothing was saved
  */
-int control_config_common_write_tbl(bool overwrite = false) {
+template<class FILETYPE>
+int control_config_common_write_tbl_segment(FILETYPE* cfile, int preset, int (* puts)(const char *, FILETYPE*) ) {
+
+	if (preset == 0) {
+		puts("#ControlConfigOverride\n", cfile);
+
+	} else {
+		puts("#ControlConfigPreset\n", cfile);
+	}
+	
+	puts(("$Name: " + Control_config_presets[preset].name + "\n").c_str(), cfile);
+
+	// Write bindings for all controls
+	for (size_t i = 0; i < Control_config.size(); ++i) {
+		auto& item = Control_config[i];
+		auto& bindings = Control_config_presets[preset].bindings[i];
+		auto& first = bindings.first;
+		auto& second = bindings.second;
+
+		puts(("$Bind: " + SCP_string(ValToAction(static_cast<int>(i))) + "\n").c_str(), cfile);
+		
+		// Primary binding
+		puts("  $Primary:\n", cfile);
+		puts(("    $Controller: " + ValToCID(first.get_cid()) + "\n").c_str(), cfile);
+		if (first.get_cid() != CID_NONE) {
+			puts(("    $Flags: " + ValToCCF(first.get_flags()) + "\n").c_str(), cfile);
+			puts(("    $Input: " + ValToInput(first) + "\n").c_str(), cfile);
+		}
+
+		// Secondary binding
+		puts("  $Secondary:\n", cfile);
+		puts(("    $Controller: " + ValToCID(second.get_cid()) + "\n").c_str(), cfile);
+		if (second.get_cid() != CID_NONE) {
+			puts(("    $Flags: " + ValToCCF(second.get_flags()) + "\n").c_str(), cfile);
+			puts(("    $Input: " + ValToInput(second) + "\n").c_str(), cfile);
+		}
+
+		// Config menu options (default #Override Only)
+		if (preset == 0) {
+			puts(("  $Category: " + ValToCCTab(item.tab) + "\n").c_str(), cfile);
+			puts(("  $Text: " + item.text + "\n").c_str(), cfile);
+			puts(("  $Has XStr: " + std::to_string(item.indexXSTR) + "\n").c_str(), cfile);
+			puts(("  $Type: " + ValToCCType(item.type) + "\n").c_str(), cfile);
+		}
+	}
+
+	puts("#End\n", cfile);
+
+	return 0;
+}
+
+int control_config_common_write_tbl(bool overwrite = false, bool all = false) {
 	if (cf_exists_full("controlconfigdefaults.tbl", CF_TYPE_TABLES) && !overwrite) {
 		// File exists, and we're told to not overwrite it. Bail
 		return 1;
@@ -1756,95 +1925,65 @@ int control_config_common_write_tbl(bool overwrite = false) {
 		return 1;
 	}
 
-	cfputs("#ControlConfigOverride\n", cfile);
-	cfputs(("$Name: " + Control_config_presets[0].name + "\n").c_str(), cfile);
+	if(all)
+		load_preset_files();
 
-	// Write bindings for all controls
-	for (size_t i = 0; i < Control_config.size(); ++i) {
-		auto& item = Control_config[i];
-		auto& bindings = Control_config_presets[0].bindings[i];
+	control_config_common_write_tbl_segment(cfile, 0, &cfputs);
 
-		short key = -1;
-		int key_shift = 0;
-		int key_alt = 0;
-		int key_ctrl = 0;
-
-		const short btn1 = bindings.first.get_btn();
-		const short btn2 = bindings.second.get_btn();
-
-		SCP_string buf_str;
-		
-		if (btn1 != -1) {
-			// Translate the key into string form
-			key = btn1 & KEY_MASK;
-			key_shift = (btn1 & KEY_SHIFTED) ? 1 : 0;
-			key_alt = (btn1 & KEY_ALTED) ? 1 : 0;
-			key_ctrl = (btn1 & KEY_CTRLED) ? 1 : 0;
-
-			for (const auto& pair : mKeyNameToVal) {
-				if (pair.second == key) {
-					buf_str = pair.first;
-					break;
-				}
-			}
-			Assertion(buf_str != "", "Unknown key found during ccfg.tbl write: 0x%X", key);
-		} else {
-			// Not bound
-			buf_str = "NONE";
+	if (all) {
+		for (size_t i = 1; i < Control_config_presets.size(); i++) {
+			control_config_common_write_tbl_segment(cfile, (int)i, &cfputs);
 		}
-
-		cfputs(("$Bind Name: " + item.text + "\n").c_str(), cfile);
-		
-		cfputs(("  $Key Default: " + buf_str + "\n").c_str(), cfile);
-		cfputs(("  $Key Mod Shift: " + std::to_string(key_shift) + "\n").c_str(), cfile);
-		cfputs(("  $Key Mod Alt: " + std::to_string(key_alt) + "\n").c_str(), cfile);
-		cfputs(("  $Key Mod Ctrl: " + std::to_string(key_ctrl) + "\n").c_str(), cfile);
-
-		cfputs(("  $Joy Default: " + std::to_string(btn2) + "\n").c_str(), cfile);
-
-		// Config menu options
-		buf_str = "";
-		for (const auto& pair : mCCTabNameToVal) {
-			if (pair.second == item.tab) {
-				buf_str = pair.first;
-				break;
-			}
-		}
-		Assertion(buf_str != "", "Unknown tab found during ccfg.tbl write: %i", static_cast<int>(item.tab));
-		cfputs(("  $Category: " + buf_str + "\n").c_str(), cfile);
-
-		cfputs(("  $Text: " + item.text + "\n").c_str(), cfile);
-		
-		cfputs(("  $Has XStr: " + std::to_string(item.indexXSTR) + "\n").c_str(), cfile);
-		
-		buf_str = "";
-		for (const auto& pair : mCCTypeNameToVal) {
-			if (pair.second == item.type) {
-				buf_str = pair.first;
-				break;
-			}
-		}
-		Assertion(buf_str != "", "Unknown CC_type found during ccfg.tbl write: %i", static_cast<int>(item.type));
-		cfputs(("  $Type: " + buf_str + "\n").c_str(), cfile);
 	}
 
-	cfputs("#End\n", cfile);
 	cfclose(cfile);
 
 	return 0;
 }
 
+int control_config_common_write_tbl_root(bool overwrite = true) {
+	if (cf_exists_full("controlconfigdefaults.tbl", CF_TYPE_ROOT) && !overwrite) {
+		// File exists, and we're told to not overwrite it. Bail
+		return 1;
+	}
+
+	FILE* fp = fopen("controlconfigdefaults.tbl", "w");
+	if (fp == nullptr) {
+		// Could not open. Bail.
+		return 1;
+	}
+
+	for (size_t i = 0; i < Control_config_presets.size(); i++) {
+		control_config_common_write_tbl_segment(fp, (int)i, &fputs);
+	}
+
+	fclose(fp);
+
+	return 0;
+} 
+
 DCF(save_ccd, "Save the current Control Configuration Defaults to .tbl") {
-	if (!control_config_common_write_tbl(true)) {
-		dc_printf("Default bindings saved to controlconfigdefaults.tbl");
+	if (dc_optional_string_either("help", "--help")) {
+		dc_printf("Will write (and overwrite) a controlconfigdefault.tbl in root/tables with the current profile. Use --all to export all profiles.\n");
+		return;
+	}
+
+	bool createAll = false;
+
+	if (dc_optional_string_either("all", "--all")) {
+		createAll = true;
+	}
+
+	if (!control_config_common_write_tbl(true, createAll)) {
+		dc_printf("Default bindings saved to controlconfigdefaults.tbl\n");
 	} else {
-		dc_printf("Error: Unable to save Control Configuration Defaults.");
+		dc_printf("Error: Unable to save Control Configuration Defaults.\n");
 	}
 }
 
 DCF(load_ccd, "Reloads Control Configuration Defaults and Presets from .tbl") {
 	control_config_common_read_tbl();
-	dc_printf("Default bindings and presets loaded.");
+	dc_printf("Default bindings and presets loaded.\n");
 }
 
 /**
@@ -1854,12 +1993,17 @@ void control_config_common_load_overrides()
 {
 	LoadEnumsIntoMaps();
 
+	if (Generate_controlconfig_table) {
+		load_preset_files();
+		control_config_common_write_tbl_root();
+	}
+
 	try {
 		control_config_common_read_tbl();
 	}
 	catch (const parse::ParseException& e)
 	{
-		mprintf(("TABLES: Unable to parse 'controlconfigdefaults.tbl'!  Error message = %s.\n", e.what()));
+		mprintf(("TABLES: Unable to parse 'controlconfigdefaults.tbl'!  Error message = '%s'.\n", e.what()));
 		return;
 	}
 }
@@ -1899,6 +2043,29 @@ char CCFToVal(const char * str) {
 	}
 
 	return val;
+}
+
+char CCTabToVal(const char *str) {
+	Assert(str != nullptr);
+	auto it = mCCTabNameToVal.find(str);
+
+	if (it == mCCTabNameToVal.end()) {
+		return CC_tab::NO_TAB;
+	} // else
+
+	// TODO: make the CCTabToVal map use the CC_tab enum instead of chars.
+	return static_cast<CC_tab>(it->second);
+}
+
+CC_type CCTypeToVal(const char *str) {
+	Assert(str != nullptr);
+	auto it = mCCTypeNameToVal.find(str);
+
+	if (it == mCCTypeNameToVal.end()) {
+		return CC_type::CC_TYPE_TRIGGER;
+	} // else
+
+	return it->second;
 }
 
 CID CIDToVal(const char * str) {
@@ -2116,7 +2283,35 @@ SCP_string ValToCCF(char id) {
 	return str;
 }
 
-const char * ValToCID(CID id) {
+SCP_string ValToCCTab(char tab) {
+	auto it = std::find_if(mCCTabNameToVal.cbegin(), mCCTabNameToVal.cend(),
+		[tab](const std::pair<SCP_string, char>& pair) {return pair.second == static_cast<char>(tab); });
+
+	if (it == mCCTabNameToVal.cend()) {
+		// Shouldn't happen
+		UNREACHABLE("Unknown Tab value %i", static_cast<int>(tab));
+		return "NONE";
+
+	} else {
+		return it->first;
+	}
+}
+
+SCP_string ValToCCType(CC_type type) {
+	auto it = std::find_if(mCCTypeNameToVal.cbegin(), mCCTypeNameToVal.cend(),
+						   [type](const std::pair<SCP_string, CC_type>& pair) { return pair.second == type; });
+
+	if (it == mCCTypeNameToVal.cend()) {
+		// Shouldn't happen
+		UNREACHABLE("Unknown CC_type value %i", static_cast<int>(type));
+		return "NONE";
+
+	} else {
+		return it->first;
+	}
+}
+
+SCP_string ValToCID(CID id) {
 	auto it = std::find_if(mCIDNameToVal.cbegin(), mCIDNameToVal.cend(),
 		[id](const std::pair<SCP_string, CID>& pair) {return pair.second == id; });
 
@@ -2130,7 +2325,7 @@ const char * ValToCID(CID id) {
 	}
 }
 
-const char * ValToCID(int id) {
+SCP_string ValToCID(int id) {
 	if ((id < 0) || (id >= CID_JOY_MAX)) {
 		return "NONE";
 	}
@@ -2170,23 +2365,20 @@ SCP_string ValToInput(const CC_bind &bind) {
 }
 
 SCP_string ValToMouse(const CC_bind &bind) {
-	const auto cid = bind.get_cid();
-	const auto btn = bind.get_btn();
-	const auto flags = bind.get_flags();
-	Assert(cid == CID_MOUSE);
+	Assert(bind.get_cid() == CID_MOUSE);
 
-	if (flags & CCF_AXIS) {
+	if (bind.get_flags() & CCF_AXIS) {
 		// is an axis
-		if (btn >= MOUSE_NUM_AXES) {
-			Error(LOCATION, "Invalid mouse axis '%i'", btn);
+		if (bind.get_btn() >= MOUSE_NUM_AXES) {
+			Error(LOCATION, "Invalid mouse axis '%i'", bind.get_btn());
 			return "NONE";
 		}
 
 		auto it = std::find_if(mAxisNameToVal.begin(), mAxisNameToVal.end(),
-		[btn](const std::pair<SCP_string, short>& pair) { return pair.second == btn; });
+		[bind](const std::pair<SCP_string, short>& pair) { return pair.second == bind.get_btn(); });
 
 		if (it == mAxisNameToVal.end()) {
-			Error(LOCATION, "Unknown input value for Mouse axis '%i'", btn);
+			Error(LOCATION, "Unknown input value for Mouse axis '%i'", bind.get_btn());
 			return "NONE";
 		}
 
@@ -2194,10 +2386,10 @@ SCP_string ValToMouse(const CC_bind &bind) {
 	} // else, its a button
 
 	auto it = std::find_if(mMouseNameToVal.begin(), mMouseNameToVal.end(),
-		[btn](const std::pair<SCP_string, short>& pair) { return pair.second == (1 << btn); });
+		[bind](const std::pair<SCP_string, short>& pair) { return pair.second == (1 << bind.get_btn()); });
 
 	if (it == mMouseNameToVal.end()) {
-		Error(LOCATION, "Unknown input value for Mouse button: '%i'", btn);
+		Error(LOCATION, "Unknown input value for Mouse button: '%i'", bind.get_btn());
 		return "NONE";
 
 	} else {
@@ -2243,6 +2435,7 @@ SCP_string ValToJoy(const CC_bind &bind) {
 	const auto cid = bind.get_cid();
 	const auto flags = bind.get_flags();
 
+
 	Assert((cid == CID_JOY0) || (cid == CID_JOY1) ||
 	       (cid == CID_JOY2) || (cid == CID_JOY3));
 
@@ -2253,16 +2446,16 @@ SCP_string ValToJoy(const CC_bind &bind) {
 
 		if (it == mAxisNameToVal.end()) {
 			// should never happen
-			Error(LOCATION, "Unknown error occured during reverse lookup of joy input string.");
+			UNREACHABLE("Unknown error occured during reverse lookup of joy input string.");
 		} // else print out value
 
 		str = it->first;
 
-/*	} else if (flags & CCF_HAT) {
+/*	} else if (bind.flags & CCF_HAT) {
 		// TODO Still currently encoded as buttons
 		// Is a hat
-		int hat_id = btn / 4;
-		int hat_pos = btn % 4;
+		int hat_id = bind.btn / 4;
+		int hat_pos = bind.btn % 4;
 
 		auto it = std::find_if(mJoyNameToVal.begin(), mJoyNameToVal.end(),
 			[hat_pos](std::pair<SCP_string, int> pair) { return pair.second == hat_pos; });
@@ -2544,11 +2737,11 @@ short CCB::get_btn(CID cid) const {
 	}
 }
 
-bool CCB::operator==(const CCB& A) {
+bool CCB::operator==(const CCB& A) const {
 	return (first == A.first) && (second == A.second);
 }
 
-bool CCB::operator!=(const CCB& A) {
+bool CCB::operator!=(const CCB& A) const {
 	return !this->operator==(A);
 }
 
@@ -2567,8 +2760,11 @@ CCI& CCI::operator=(const CCI& A) {
 	indexXSTR = A.indexXSTR;
 	text = A.text;
 	type = A.type;
-	used = A.used;
+	analog_value = A.analog_value;
+	digital_used = A.digital_used;
 	disabled = A.disabled;
+	locked = A.locked;
+	scriptEnabledByDefault = A.scriptEnabledByDefault;
 	continuous_ongoing = A.continuous_ongoing;
 
 	return *this;
@@ -2614,6 +2810,20 @@ CC_bind* CCB::find_flags(const char mask) {
 	}
 
 	return nullptr;
+}
+
+void CCB::invert(bool inv) {
+	first.invert(inv);
+	second.invert(inv);
+}
+
+void CCB::invert_toggle() {
+	first.invert_toggle();
+	second.invert_toggle();
+}
+
+bool CCB::is_inverted() const {
+	return first.is_inverted() && second.is_inverted();
 }
 
 bool CCI::is_axis() {
@@ -2678,6 +2888,15 @@ CCI_builder& CCI_builder::operator()(IoActionId action_id, short primary, short 
 
 	return *this;
 }
+
+CC_preset& CC_preset::operator=(const CC_preset& A) {
+	name = A.name;
+	type = A.type;
+
+	std::copy(A.bindings.begin(), A.bindings.end(), bindings.begin());
+
+	return *this;
+};
 
 bool CC_preset::is_duplicate_of(CC_preset& A) {
 	for (size_t i = 0; i < A.bindings.size(); ++i) {

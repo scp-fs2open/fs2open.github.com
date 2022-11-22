@@ -164,10 +164,24 @@ ADE_FUNC(__tostring,
 	return ade_set_args(L, "s", buf);
 }
 
+ADE_FUNC(copy,
+		 l_Matrix,
+		 nullptr,
+		 "Returns a copy of the orientation",
+		 "orientation",
+		 "The copy, or null orientation on failure")
+{
+	matrix_h *mh = nullptr;
+	if (!ade_get_args(L, "o", l_Matrix.GetPtr(&mh)))
+		return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
+	
+	return ade_set_args(L, "o", l_Matrix.Set(*mh));
+}
+
 ADE_FUNC(getInterpolated,
 		 l_Matrix,
 		 "orientation Final, number Factor",
-		 "Returns orientation that has been interpolated to Final by Factor (0.0-1.0)",
+		 "Returns orientation that has been interpolated to Final by Factor (0.0-1.0).  This is a pure linear interpolation with no consideration given to matrix validity or normalization.  You may want 'rotationalInterpolate' instead.",
 		 "orientation",
 		 "Interpolated orientation, or null orientation on failure") {
 	matrix_h* oriA = NULL;
@@ -187,6 +201,24 @@ ADE_FUNC(getInterpolated,
 	}
 
 	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&final)));
+}
+
+ADE_FUNC(rotationalInterpolate,
+	l_Matrix,
+	"orientation final, number t",
+	"Interpolates between this (initial) orientation and a second one, using t as the multiplier of progress between them.  Intended values for t are [0.0f, 1.0f], but values outside this range are allowed.",
+	"orientation",
+	"The interpolated orientation, or NIL if any handle is invalid")
+{
+	matrix_h *initial_h, *final_h;
+	float t;
+	if (!ade_get_args(L, "oof", l_Matrix.GetPtr(&initial_h), l_Matrix.GetPtr(&final_h), &t))
+		return ADE_RETURN_NIL;
+
+	matrix interpolated;
+	vm_interpolate_matrices(&interpolated, initial_h->GetMatrix(), final_h->GetMatrix(), t);
+
+	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&interpolated)));
 }
 
 ADE_FUNC(getTranspose,
@@ -445,6 +477,20 @@ ADE_FUNC(__tostring,
 	return ade_set_args(L, "s", buf);
 }
 
+ADE_FUNC(copy,
+		 l_Vector,
+		 nullptr,
+		 "Returns a copy of the vector",
+		 "vector",
+		 "The copy, or null vector on failure")
+{
+	vec3d *v = nullptr;
+	if (!ade_get_args(L, "o", l_Vector.GetPtr(&v)))
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+	
+	return ade_set_args(L, "o", l_Vector.Set(*v));
+}
+
 ADE_FUNC(getInterpolated,
 	l_Vector,
 	"vector Final, number Factor",
@@ -466,6 +512,24 @@ ADE_FUNC(getInterpolated,
 	}
 
 	return ade_set_args(L, "o", l_Vector.Set(final));
+}
+
+ADE_FUNC(rotationalInterpolate,
+	l_Vector,
+	"vector final, number t",
+	"Interpolates between this (initial) vector and a second one, using t as the multiplier of progress between them, rotating around their cross product vector.  Intended values for t are [0.0f, 1.0f], but values outside this range are allowed.",
+	"vector",
+	"The interpolated vector, or NIL if any handle is invalid")
+{
+	vec3d *initial, *final;
+	float t;
+	if (!ade_get_args(L, "oof", l_Vector.GetPtr(&initial), l_Vector.GetPtr(&final), &t))
+		return ADE_RETURN_NIL;
+
+	vec3d interpolated;
+	vm_vec_interp_constant(&interpolated, initial, final, t);
+
+	return ade_set_args(L, "o", l_Vector.Set(interpolated));
 }
 
 ADE_FUNC(getOrientation,

@@ -32,7 +32,7 @@
 #define PF_GLIDING				(1 << 14)
 #define PF_FORCE_GLIDE			(1 << 15)
 #define PF_NEWTONIAN_DAMP		(1 << 16)	// SUSHI: Whether or not to use newtonian dampening
-#define PF_NO_DAMP				(1 << 17)	// Goober5000 - don't damp velocity changes in physics; used for instantaneous acceleration
+#define PF_MANEUVER_NO_DAMP				(1 << 17)	// Goober5000 - don't damp velocity changes in physics; used for instantaneous acceleration
 
 //information for physics sim for an object
 typedef struct physics_info {
@@ -74,9 +74,11 @@ typedef struct physics_info {
 	vec3d	desired_vel;				// in world coord, (possibly) damped by side_slip_time_const to get final vel
 	vec3d	desired_rotvel;				// in local coords, damped by rotdamp to get final rotvel
 										// With framerate_independent_turning, the AI are not damped, see physics_sim_rot
-	float		forward_thrust;			// How much the forward thruster is applied.  0-1.
-	float		side_thrust;			// How much the forward thruster is +x.  0-1.
-	float		vert_thrust;			// How much the forward thruster is +y.  0-1.
+
+	vec3d  linear_thrust;				// -1 through 1, how much thrust is being applied in the lateral directions
+										// COSMETIC ONLY, this should not be used for physical behavior
+	vec3d  rotational_thrust;			// -1 through 1, how much thrust is being applied rotationally
+										// COSMETIC ONLY, this should not be used for physical behavior
 		
 	// Data that changes each frame.  Physics fills these in each frame.
 	vec3d	vel;						// The current velocity vector of this object
@@ -84,7 +86,6 @@ typedef struct physics_info {
 	float		speed;					// Yes, this can be derived from velocity, but that's expensive!
 	float		fspeed;					//	Speed in the forward direction.
 	float		heading;
-	vec3d	prev_fvec;				//	Used in AI for momentum.
 	matrix	last_rotmat;			//	Used for moving two objects together and for editor.
 
 	int		afterburner_decay;	// timestamp used to control how long ship shakes after afterburner released
@@ -152,6 +153,7 @@ extern void physics_sim_editor(vec3d *position, matrix * orient, physics_info * 
 extern void physics_sim_vel(vec3d * position, physics_info * pi, float sim_time, matrix * orient);
 extern void physics_sim_rot(matrix * orient, physics_info * pi, float sim_time );
 extern bool whack_below_limit(const vec3d* impulse);
+extern bool whack_below_limit(float impulse);
 extern void physics_calculate_and_apply_whack(vec3d *force, vec3d *pos, physics_info *pi, matrix *orient, matrix *inv_moi);
 extern void physics_apply_whack(float orig_impulse, physics_info* pi, vec3d *delta_rotvel, vec3d* delta_vel, matrix* orient);
 extern void physics_apply_shock(vec3d *direction_vec, float pressure, physics_info *pi, matrix *orient, vec3d *min, vec3d *max, float radius);

@@ -112,6 +112,7 @@ flag_def_list plr_commands[] = {
 	{	"TIME_SPEED_UP",						TIME_SPEED_UP,							3	},
 	{	"TIME_SLOW_DOWN",						TIME_SLOW_DOWN,							3	},
 	{	"TOGGLE_HUD_CONTRAST",					TOGGLE_HUD_CONTRAST,					3	},
+	{	"TOGGLE_HUD_SHADOWS",					TOGGLE_HUD_SHADOWS,						3	},
 	{	"MULTI_TOGGLE_NETINFO",					MULTI_TOGGLE_NETINFO,					3	},
 	{	"MULTI_SELF_DESTRUCT",					MULTI_SELF_DESTRUCT,					3	},
 	{	"TOGGLE_HUD",							TOGGLE_HUD,								3	},
@@ -289,7 +290,7 @@ ADE_VIRTVAR(CountermeasureCount, l_Control_Info, "number", "Number of countermea
 
 ADE_FUNC(clearLuaButtonInfo, l_Control_Info, NULL, "Clears the lua button control info", NULL, NULL)
 {
-	(void)L; // unused parameter
+	SCP_UNUSED(L); // unused parameter
 
 	if (Player != nullptr) {
 		button_info_clear(&Player->lua_bi);

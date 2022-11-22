@@ -48,7 +48,9 @@ void Variables::update(LabMode newLabMode, int classIndex) {
 			addVariable(&y, "Shields", sip->max_shield_strength);
 			addVariable(&y, "Hull", sip->max_hull_strength);
 			addVariable(&y, "Subsys repair rate", sip->subsys_repair_rate);
+			addVariable(&y, "Subsys repair max", sip->subsys_repair_max);
 			addVariable(&y, "Hull repair rate", sip->hull_repair_rate);
+			addVariable(&y, "Hull repair max", sip->hull_repair_max);
 			addVariable(&y, "Countermeasures", sip->cmeasure_max);
 			addVariable(&y, "HUD Icon", sip->shield_icon_index);
 

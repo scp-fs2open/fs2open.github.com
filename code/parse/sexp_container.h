@@ -87,11 +87,34 @@ struct map_container_hash
 	uint32_t operator()(const SCP_string &str) const;
 };
 
+struct list_modifier {
+	enum class Modifier
+	{
+		INVALID = 0,
+		GET_FIRST,
+		GET_LAST,
+		REMOVE_FIRST,
+		REMOVE_LAST,
+		GET_RANDOM,
+		REMOVE_RANDOM,
+		AT_INDEX
+	};
+
+	const char *name;
+	const Modifier modifier;
+};
+
+using ListModifier = list_modifier::Modifier;
+
+ListModifier get_list_modifier(const char *text, bool accept_prefix = false);
+const char *get_list_modifier_name(ListModifier modifier);
+
 struct sexp_container
 {
 	// meta-character for containers in text replacement, etc.
 	static constexpr char DELIM = '&';
 	static const SCP_string DELIM_STR;
+	static const SCP_string NAME_NODE_PREFIX;
 	// applies to list data, map keys, and map data
 	static constexpr int VALUE_MAX_LENGTH = NAME_LENGTH - 1; // leave space for null char
 	// leave space for leading/trailing '&' for container multidimensionality
@@ -100,6 +123,7 @@ struct sexp_container
 	SCP_string container_name;
 	ContainerType type = ContainerType::LIST | ContainerType::STRING_DATA;
 	int opf_type = OPF_STRING;
+	bool used_in_special_arg = false;
 
 	SCP_list<SCP_string> list_data;
 	SCP_unordered_map<SCP_string, SCP_string, map_container_hash> map_data;
@@ -126,37 +150,39 @@ struct sexp_container
 		return any(type & (ContainerType::SAVE_ON_MISSION_PROGRESS | ContainerType::SAVE_ON_MISSION_CLOSE));
 	}
 
+	ContainerType get_data_type() const;
+
 	bool name_matches(const sexp_container &container) const;
 	bool empty() const;
 	int size() const;
+	// for detecting attempted concurrent modification
+	bool is_being_used_in_special_arg() const
+	{
+		return used_in_special_arg;
+	}
 
 	// get type without persistence flags
 	ContainerType get_non_persistent_type() const;
 	// matching is performed only on non-persistence flags
 	bool type_matches(const sexp_container &container) const;
+
+	// checks whether accessed via strings
+	// meaning string data if a list or string keys if a map
+	// but map data doesn't have to be strings
+	bool is_of_string_type() const;
+	// returns data for list container or key for map container
+	const SCP_string &get_value_at_index(int index) const;
+
+	// list modifier operations
+	SCP_string apply_list_modifier(ListModifier modifier, int data_index = -1);
+
+private:
+	SCP_string list_get_first(bool remove);
+	SCP_string list_get_last(bool remove);
+	SCP_string list_get_random(bool remove);
+	SCP_string list_get_at(int index);
+	SCP_string list_apply_iterator(SCP_list<SCP_string>::iterator list_it, const char *location, bool remove);
 };
-
-struct list_modifier {
-	enum class Modifier
-	{
-		INVALID = 0,
-		GET_FIRST,
-		GET_LAST,
-		REMOVE_FIRST,
-		REMOVE_LAST,
-		GET_RANDOM,
-		REMOVE_RANDOM,
-		AT_INDEX
-	};
-
-	const char *name;
-	const Modifier modifier;
-};
-
-using ListModifier = list_modifier::Modifier;
-
-ListModifier get_list_modifier(const char *text, bool accept_prefix = false);
-const char *get_list_modifier_name(ListModifier modifier);
 
 // management functions
 void init_sexp_containers();
@@ -179,9 +205,32 @@ sexp_container *get_sexp_container(const char *name);
 
 // text replacement
 bool sexp_container_replace_refs_with_values(SCP_string &text);
-bool sexp_container_replace_refs_with_values(char *text, size_t max_size);
+bool sexp_container_replace_refs_with_values(char *text, size_t max_len);
 
 const char *sexp_container_CTEXT(int node);
 
 // persistence
 bool sexp_container_has_persistent_non_eternal_containers();
+
+// SEXPs
+int sexp_container_eval_status_sexp(int op_num, int node);
+int sexp_container_eval_change_sexp(int op_num, int node);
+
+// collect argument values for the "for-container" SEXPs
+// if just_count is true, then argument_vector is left unmodified
+// returns the number of arguments
+int sexp_container_collect_data_arguments(int node,
+	SCP_vector<std::pair<const char*, int>> &argument_vector,
+	bool just_count = false);
+int sexp_container_collect_map_key_arguments(int node,
+	SCP_vector<std::pair<const char*, int>> &argument_vector,
+	bool just_count = false);
+
+// version of query_sexp_args_count() when we need to select an element within a range
+// and containers are valid arguments
+int sexp_container_query_sexp_args_count(int node,
+	SCP_vector<int> &cumulative_arg_countss,
+	bool only_valid_args = false);
+
+// mark containers when they're being used as SEXP special arguments
+void sexp_container_set_special_arg_status(int arg_handler_node, bool status);

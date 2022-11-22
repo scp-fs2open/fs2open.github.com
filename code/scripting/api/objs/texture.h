@@ -11,7 +11,7 @@ struct texture_h {
 	int handle = -1;
 
 	texture_h();
-	explicit texture_h(int bm);
+	explicit texture_h(int bm, bool refcount = true);
 
 	~texture_h();
 

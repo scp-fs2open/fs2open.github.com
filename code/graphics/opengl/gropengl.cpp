@@ -7,7 +7,7 @@
 #endif
 
 #include "gropengl.h"
-
+#include "ShaderProgram.h"
 #include "gropenglbmpman.h"
 #include "gropengldeferred.h"
 #include "gropengldraw.h"
@@ -286,6 +286,108 @@ void gr_opengl_print_screen(const char *filename)
 	}
 
 	if (pixels != NULL) {
+		vm_free(pixels);
+	}
+}
+
+SCP_string gr_opengl_blob_screen()
+{
+	GLubyte* pixels = nullptr;
+	GLuint pbo = 0;
+
+	// now for the data
+	if (Use_PBOs) {
+		Assert(!pbo);
+		glGenBuffers(1, &pbo);
+
+		if (!pbo) {
+			return "";
+		}
+
+		glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo);
+		glBufferData(GL_PIXEL_PACK_BUFFER, (gr_screen.max_w * gr_screen.max_h * 4), NULL, GL_STATIC_READ);
+
+		glReadBuffer(GL_FRONT);
+		glReadPixels(0, 0, gr_screen.max_w, gr_screen.max_h, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+
+		// map the image data so that we can save it to file
+		pixels = (GLubyte*)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
+	}
+	else {
+		pixels = (GLubyte*)vm_malloc(gr_screen.max_w * gr_screen.max_h * 4, memory::quiet_alloc);
+
+		if (pixels == nullptr) {
+			return "";
+		}
+
+		glReadPixels(0, 0, gr_screen.max_w, gr_screen.max_h, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, pixels);
+		glFlush();
+	}
+
+	SCP_string result = png_b64_bitmap(gr_screen.max_w, gr_screen.max_h, true, pixels);
+
+	if (pbo) {
+		glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
+		pixels = NULL;
+		glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+		glDeleteBuffers(1, &pbo);
+	}
+
+	if (pixels != nullptr) {
+		vm_free(pixels);
+	}
+
+	return "data:image/png;base64," + result;
+}
+
+void gr_opengl_dump_envmap(const char* filename)
+{
+	char tmp[MAX_PATH_LEN];
+	GLubyte* pixels = nullptr;
+
+	_mkdir(os_get_config_path("envmaps").c_str());
+
+	auto width = 512; // These are the hardcoded envmap dimensions
+	auto height = 512; // in future envmap resolution should be dynamic, or at least extracted from envmap_render_target
+	auto sphere_width = 4 * width;
+	auto sphere_height = 2 * height;
+	auto env_tex = bm_get_gr_info<tcache_slot_opengl>(ENVMAP);
+	glBindTexture(env_tex->texture_target, env_tex->texture_id);
+
+	// Save the previous render target so we can reset it once we are done here
+	auto previous_target = gr_screen.rendering_to_texture;
+
+	// New render target
+	int sm_flags = (BMP_FLAG_RENDER_TARGET_STATIC);
+	int spheremap_render_target = bm_make_render_target(sphere_width, sphere_height, sm_flags);
+	bm_set_render_target(spheremap_render_target);
+	
+	// Set up cubemap to spherical shader and draw
+	int env_shader = gr_opengl_maybe_create_shader(SDR_TYPE_ENVMAP_SPHERE_WARP, 0);
+	opengl_shader_set_current(env_shader);
+	GL_state.Texture.Enable(0, GL_TEXTURE_CUBE_MAP, env_tex->texture_id);
+	Current_shader->program->Uniforms.setTextureUniform("envmap", 0);
+	gr_clear();
+	opengl_draw_full_screen_textured(0.0f, 0.0f, Scene_texture_u_scale, Scene_texture_v_scale);
+
+	bm_set_render_target(previous_target);
+
+	// load texture info and write to file
+	auto sphere_tex = bm_get_gr_info<tcache_slot_opengl>(spheremap_render_target);
+	glBindTexture(sphere_tex->texture_target, sphere_tex->texture_id);
+	pixels = (GLubyte*)vm_malloc(sphere_width * sphere_height * 4, memory::quiet_alloc);
+	glGetTexImage(sphere_tex->texture_target, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+	snprintf(tmp, MAX_PATH_LEN - 1, "envmaps/%s.png", filename);
+	if (!png_write_bitmap(os_get_config_path(tmp).c_str(), 4 * width, 2 * height, true, pixels)) {
+		ReleaseWarning(LOCATION, "Failed to write envmap to \"%s\".", os_get_config_path(tmp).c_str());
+	}
+
+	// cleanup
+	if (!bm_release(spheremap_render_target, 1)) {
+		Warning(LOCATION, "Unable to release environment map render target.");
+	}
+	
+	if (pixels != nullptr) {
 		vm_free(pixels);
 	}
 }
@@ -807,6 +909,9 @@ void opengl_setup_function_pointers()
 //	gr_screen.gf_rect				= gr_opengl_rect;
 
 	gr_screen.gf_print_screen		= gr_opengl_print_screen;
+	gr_screen.gf_blob_screen		= gr_opengl_blob_screen;
+	gr_screen.gf_dump_envmap		= gr_opengl_dump_envmap;
+	gr_screen.gf_calculate_irrmap	= gr_opengl_calculate_irrmap;
 
 	gr_screen.gf_zbuffer_get		= gr_opengl_zbuffer_get;
 	gr_screen.gf_zbuffer_set		= gr_opengl_zbuffer_set;

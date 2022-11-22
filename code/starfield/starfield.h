@@ -67,10 +67,12 @@ int stars_add_sun_entry(starfield_list_entry *sun_ptr);
 int stars_add_bitmap_entry(starfield_list_entry *bitmap);
 
 // transform legacy angles, which used incorrect math in older versions, to correct angles
-void stars_correct_background_angles(angles *angs_to_correct);
+void stars_correct_background_bitmap_angles(angles *angs_to_correct);
+void stars_correct_background_sun_angles(angles* angs_to_correct);
 
 // transform correct angles to legacy angles
-void stars_uncorrect_background_angles(angles *angs_to_uncorrect);
+void stars_uncorrect_background_bitmap_angles(angles *angs_to_uncorrect);
+void stars_uncorrect_background_sun_angles(angles* angs_to_uncorrect);
 
 // get the number of entries that each vector contains
 // "is_a_sun" will get sun instance counts, otherwise it gets normal starfield bitmap instance counts
@@ -95,6 +97,7 @@ const char *stars_get_name_from_instance(int index, bool is_a_sun);
 
 extern const int MAX_STARS;
 extern int Num_stars;
+extern TIMESTAMP Skybox_timestamp;
 
 // call on game startup
 void stars_init();

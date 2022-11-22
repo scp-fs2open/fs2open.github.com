@@ -103,7 +103,6 @@ BOOL campaign_tree_wnd::OnCreateClient(LPCREATESTRUCT, CCreateContext* pContext)
 	// activate the input view
 	SetActiveView(Campaign_tree_formp);
 	OnCpgnFileNew();
-//	Campaign_tree_formp->load_campaign();
 	Fred_main_wnd->EnableWindow(FALSE);
 	return TRUE;
 }
@@ -115,7 +114,7 @@ void campaign_tree_wnd::OnUpdateCpgnFileOpen(CCmdUI* pCmdUI)
 
 void campaign_tree_wnd::OnCpgnFileOpen() 
 {
-	CString name;
+	CString name, full_path;
 
 	if (Campaign_modified)
 		if (save_modified())
@@ -133,8 +132,9 @@ void campaign_tree_wnd::OnCpgnFileOpen()
 		if (!strlen(name))
 			return;
 
-		string_copy(Campaign.filename, name, MAX_FILENAME_LEN);
-		Campaign_tree_formp->load_campaign();
+		full_path = dlg.GetPathName();
+
+		Campaign_tree_formp->load_campaign((LPCTSTR)name, (LPCTSTR)full_path);
 	}
 }
 
@@ -219,11 +219,11 @@ void campaign_tree_wnd::OnCpgnFileSaveAs()
 		}
 
 		if (!strlen(name)){
-			return;		
+			return;
 		}
 
-		string_copy(Campaign.filename, name, MAX_FILENAME_LEN);
-		string_copy(campaign_path, dlg.GetPathName(), 256);
+		string_copy(Campaign.filename, name, MAX_FILENAME_LEN - 1);
+		string_copy(campaign_path, dlg.GetPathName(), 256 - 1);
 		if (save.save_campaign_file(campaign_path))
 		{
 			MessageBox("An error occured while saving!", "Error", MB_OK | MB_ICONEXCLAMATION);
@@ -246,7 +246,7 @@ void campaign_tree_wnd::OnCpgnFileNew()
 	strcpy_s(Campaign.name, "Unnamed");
 	Campaign.desc = NULL;
 	Campaign_tree_viewp->free_links();
-	Campaign_tree_formp->initialize();
+	Campaign_tree_formp->initialize(true, true);
 	Campaign_modified = 0;
 	Campaign.flags = CF_DEFAULT_VALUE;
 	((CButton *) (Campaign_tree_formp->GetDlgItem(IDC_CUSTOM_TECH_DB)))->SetCheck(0);
@@ -320,10 +320,23 @@ int campaign_tree_wnd::error_checker()
 			return -1;
 
 		z = Links[i].from;
+
+		if (Links[i].is_mission_loop || Links[i].is_mission_fork) {
+			if (Links[i].sexp == Locked_sexp_true) {
+				if (error("Mission \"%s\" has a loop branch that is always true", Campaign.missions[z].name))
+					return 1;
+			}
+			// no further checking for loop links - in particular, a loop link isn't a regular link
+			continue;
+		}
+
+		// total number of regular links
 		mcount[z]++;
-		if (Links[i].sexp == Locked_sexp_false)
+
+		if (Links[i].sexp == Locked_sexp_false) {
 			if (error("Mission \"%s\" branch %d is always false", Campaign.missions[z].name, mcount[z]))
 				return 1;
+		}
 
 		if (Links[i].sexp == Locked_sexp_true) {
 			if (true_at[z] >= 0)
@@ -410,7 +423,7 @@ int campaign_tree_wnd::internal_error(const char *msg, ...)
 
 int campaign_tree_wnd::fred_check_sexp(int sexp, int type, char *msg, ...)
 {
-	SCP_string buf, sexp_buf, error_buf;
+	SCP_string buf, sexp_buf, error_buf, bad_node_str;
 	int err = 0, z, faulty_node;
 	va_list args;
 
@@ -427,7 +440,13 @@ int campaign_tree_wnd::fred_check_sexp(int sexp, int type, char *msg, ...)
 
 	convert_sexp_to_string(sexp_buf, sexp, SEXP_ERROR_CHECK_MODE);
 	truncate_message_lines(sexp_buf, 30);
-	sprintf(error_buf, "Error in %s: %s\n\nIn sexpression: %s\n\n(Bad node appears to be: %s)", buf.c_str(), sexp_error_message(z), sexp_buf.c_str(), Sexp_nodes[faulty_node].text);
+
+	stuff_sexp_text_string(bad_node_str, faulty_node, SEXP_ERROR_CHECK_MODE);
+	if (!bad_node_str.empty()) {	// the previous function adds a space at the end
+		bad_node_str.pop_back();
+	}
+
+	sprintf(error_buf, "Error in %s: %s\n\nIn sexpression: %s\n\n(Bad node appears to be: %s)", buf.c_str(), sexp_error_message(z), sexp_buf.c_str(), bad_node_str.c_str());
 
 	if (z < 0 && z > -100)
 		err = 1;

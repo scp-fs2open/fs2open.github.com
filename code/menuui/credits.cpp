@@ -56,13 +56,16 @@ const char *fs2_open_credit_text =
 	"Hassan \"Karajorma\" Kazmi\n"
 	"Derek \"Kazan\" Meek\n"
 	"Nick \"phreak\" Iannetta\n"
+	"David \"EatThePath\" Gibson\n"
 	"argv[-1], Backslash, Baezon\n"
 	"CommanderDJ, Cyborg, DTP\n"
 	"Echelon9, EdrickV, Eternal1\n"
 	"Flaming_Sword, Fry_Day, FUBAR\n"
 	"Hery, Iss Mneur, jg18\n"
-	"m!m, MageKing17, mrduckman\n"
-	"niffiwan, penguin, portej05\n"
+	"Kiloku, Lafiel, m!m\n"
+	"MageKing17, MjnMixael, mrduckman\n"
+	"naomimyselfandi, niffiwan, penguin\n"
+	"Phantom Hoover, portej05, qazwsxal\n"
 	"RandomTiger, Righteous1, Sesquipedalian\n"
 	"Shade, Sticks, Sushi\n"
 	"Swifty, UnknownPlayer, Valathil\n"
@@ -198,7 +201,7 @@ static credits_screen_buttons Buttons[NUM_BUTTONS][GR_NUM_RESOLUTIONS] = {
 //XSTR:ON
 };
 
-static char Credits_music_name[NAME_LENGTH];
+char Credits_music_name[NAME_LENGTH] = "Cinema";
 static int	Credits_music_handle = -1;
 static UI_TIMESTAMP	Credits_music_begin_timestamp;
 
@@ -206,19 +209,21 @@ static int	Credits_frametime;		// frametime of credits_do_frame() loop in ms
 static int	Credits_last_time;		// timestamp used to calc frametime (in ms)
 static float Credits_counter;
 
-static int Credits_num_images;
-static int Credits_artwork_index;
+int Credits_num_images = DEFAULT_NUM_IMAGES;
+int Credits_artwork_index = -1;
 static SCP_vector<int> Credits_bmps;
 
 // Positions for credits...
 float Credit_start_pos, Credit_stop_pos, Credit_position = 0.0f;
 
 static int Credits_music_delay				= 2000;
-static float Credits_scroll_rate			= 15.0f;
-static float Credits_artwork_display_time	= 9.0f;
-static float Credits_artwork_fade_time		= 1.0f;
+float Credits_scroll_rate					= 15.0f;
+float Credits_artwork_display_time			= 9.0f;
+float Credits_artwork_fade_time				= 1.0f;
 
-static SCP_vector<SCP_string> Credit_text_parts;
+SCP_string credits_complete;
+
+SCP_vector<SCP_string> Credit_text_parts;
 
 static bool Credits_parsed;
 
@@ -238,7 +243,7 @@ void credits_stop_music(bool fade)
 	}
 }
 
-void credits_load_music(char* fname)
+void credits_load_music(const char* fname)
 {
 	if ( Credits_music_handle != -1 ){
 		return;
@@ -258,6 +263,15 @@ void credits_start_music()
 	} else {
 		nprintf(("Warning", "Cannot play credits music\n"));
 	}
+}
+
+const char* credits_get_music_filename(const char* music)
+{
+	int credits_spooled_music_index = event_music_get_spooled_music_index(music);
+	if (credits_spooled_music_index != -1) {
+		return Spooled_music[credits_spooled_music_index].filename;
+	}
+	return nullptr;
 }
 
 int credits_screen_button_pressed(int n)
@@ -304,7 +318,7 @@ void credits_parse_table(const char* filename)
 		{
 			int temp;
 			stuff_int(&temp);
-			if (temp > 0)
+			if (temp > 0) 
 				Credits_num_images = temp;
 		}
 		if (optional_string("$Start Image Index:"))
@@ -330,8 +344,9 @@ void credits_parse_table(const char* filename)
 		if (optional_string("$Artworks display time:"))
 		{
 			stuff_float(&Credits_artwork_display_time);
-			if (Credits_artwork_display_time < 0.01f)
+			if (Credits_artwork_display_time < 0.01f) {
 				Credits_artwork_display_time = 0.01f;
+			}
 		}
 		if (optional_string("$Artworks fade time:"))
 		{
@@ -418,8 +433,26 @@ void credits_parse_table(const char* filename)
 	}
 }
 
+void credits_scp_position()
+{
+	switch (SCP_credits_position) {
+	case START:
+		Credit_text_parts.insert(Credit_text_parts.begin(), fs2_open_credit_text);
+		break;
+
+	case END:
+		Credit_text_parts.push_back(fs2_open_credit_text);
+		break;
+
+	default:
+		Error(LOCATION, "Unimplemented credits position %d. Get a coder!", (int)SCP_credits_position);
+		break;
+	}
+}
+
 void credits_parse()
 {
+
 	// Parse main table
 	credits_parse_table("credits.tbl");
 
@@ -432,13 +465,6 @@ void credits_init()
 	int i;
 	credits_screen_buttons *b;
 
-	// pre-initialize
-	Credits_num_images = DEFAULT_NUM_IMAGES;
-	Credits_artwork_index = -1;
-
-	// this is moved up here so we can override it if desired
-	strcpy_s(Credits_music_name, "Cinema");
-
 	// parse credits early so as to set up any overrides (for music and such)
 	Credits_parsed = false;
 	credits_parse();
@@ -449,12 +475,9 @@ void credits_init()
 		Credits_artwork_index = Random::next(Credits_num_images);
 	}
 
-	int credits_spooled_music_index = event_music_get_spooled_music_index(Credits_music_name);	
-	if(credits_spooled_music_index != -1){
-		char *credits_wavfile_name = Spooled_music[credits_spooled_music_index].filename;		
-		if(credits_wavfile_name != NULL){
-			credits_load_music(credits_wavfile_name);
-		}
+	auto credits_wavfile_name = credits_get_music_filename(Credits_music_name);
+	if (credits_wavfile_name != nullptr) {
+		credits_load_music(credits_wavfile_name);
 	}
 
 	// Use this id to trigger the start of music playing on the briefing screen
@@ -469,20 +492,7 @@ void credits_init()
 	}
 	else
 	{
-		switch (SCP_credits_position)
-		{
-			case START:
-				Credit_text_parts.insert(Credit_text_parts.begin(), fs2_open_credit_text);
-				break;
-
-			case END:
-				Credit_text_parts.push_back(fs2_open_credit_text);
-				break;
-
-			default:
-				Error(LOCATION, "Unimplemented credits position %d. Get a coder!", (int) SCP_credits_position);
-				break;
-		}
+		credits_scp_position();
 	}
 
 	int ch;

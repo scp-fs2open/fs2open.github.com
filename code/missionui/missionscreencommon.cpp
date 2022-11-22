@@ -14,7 +14,6 @@
 #include <type_traits>
 
 #include "anim/animplay.h"
-#include "cmdline/cmdline.h"
 #include "cutscene/cutscenes.h"
 #include "cutscene/movie.h"
 #include "gamehelp/contexthelp.h"
@@ -22,7 +21,10 @@
 #include "gamesnd/eventmusic.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/linklist.h"
+#include "globalincs/vmallocator.h"
 #include "graphics/2d.h"
+#include "graphics/color.h"
+#include "graphics/light.h"
 #include "graphics/matrix.h"
 #include "graphics/shadows.h"
 #include "hud/hudwingmanstatus.h"
@@ -101,7 +103,6 @@ extern void ss_set_team_pointers(int team);
 extern void ss_reset_team_pointers();
 extern void wl_set_team_pointers(int team);
 extern void wl_reset_team_pointers();
-extern int anim_timer_start;
 extern void ss_reset_selected_ship();
 
 //////////////////////////////////////////////////////////////////
@@ -414,6 +415,19 @@ void common_maybe_play_cutscene(int movie_type, bool restart_music, int music)
 	}
 }
 
+void common_play_cutscene(const char* filename, bool restart_music, int music)
+{
+	bool music_off = false;
+
+	common_music_close();
+	music_off = true;
+	movie::play(filename); // Play the movie!
+
+	if (music_off && restart_music) {
+		common_music_init(music);
+	}
+};
+
 // function that sets the current palette to the interface palette.  This function
 // needs to be followed by common_free_interface_palette() to restore the game palette.
 void common_set_interface_palette(const char *filename)
@@ -507,7 +521,7 @@ void common_reset_team_pointers()
 // is called.  This prevents multiple loadings of animations/bitmaps.
 //
 // This function also sets the palette based on the file palette01.pcx
-void common_select_init()
+void common_select_init(bool API_Access)
 {
 	if ( Common_select_inited ) {
 		nprintf(("Alan","common_select_init() returning without doing anything\n"));
@@ -545,9 +559,11 @@ void common_select_init()
 
 	common_set_team_pointers(Common_team);
 
-	ship_select_common_init();	
-	weapon_select_common_init();
-	common_flash_button_init();
+	ship_select_common_init(API_Access);	
+	weapon_select_common_init(API_Access);
+	if (!API_Access) {
+		common_flash_button_init();
+	}
 
 	if ( Game_mode & GM_MULTIPLAYER ) {
 		multi_ts_common_init();
@@ -562,19 +578,21 @@ void common_select_init()
 		}
 	}
 	
-	ss_reset_selected_ship();
+	if (!API_Access) {
+		ss_reset_selected_ship();
 
-	Drop_icon_mflag = 0;
-	Drop_on_wing_mflag = 0;
+		Drop_icon_mflag = 0;
+		Drop_on_wing_mflag = 0;
+	}
 
-	//init colors
+	// init colors
 	gr_init_alphacolor(&Icon_colors[ICON_FRAME_NORMAL], 32, 128, 128, 255);
 	gr_init_alphacolor(&Icon_colors[ICON_FRAME_HOT], 48, 160, 160, 255);
 	gr_init_alphacolor(&Icon_colors[ICON_FRAME_SELECTED], 64, 192, 192, 255);
 	gr_init_alphacolor(&Icon_colors[ICON_FRAME_PLAYER], 192, 128, 64, 255);
 	gr_init_alphacolor(&Icon_colors[ICON_FRAME_DISABLED], 175, 175, 175, 255);
 	gr_init_alphacolor(&Icon_colors[ICON_FRAME_DISABLED_HIGH], 100, 100, 100, 255);
-	//init shaders
+	// init shaders
 	gr_create_shader(&Icon_shaders[ICON_FRAME_NORMAL], 32, 128, 128, 255);
 	gr_create_shader(&Icon_shaders[ICON_FRAME_HOT], 48, 160, 160, 255);
 	gr_create_shader(&Icon_shaders[ICON_FRAME_SELECTED], 64, 192, 192, 255);
@@ -1614,13 +1632,8 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 
 	if(!(flags & MR_NO_LIGHTING))
 	{
-		light_reset();
-		vec3d light_dir = vmd_zero_vector;
-		light_dir.xyz.x = -0.5;
-		light_dir.xyz.y = 2.0f;
-		light_dir.xyz.z = -2.0f;	
-		light_add_directional(&light_dir, 0.65f, 1.0f, 1.0f, 1.0f);
-		light_rotate_all();
+		//setup lights
+		common_setup_room_lights();
 	}
 
 	if (sip != NULL && sip->replacement_textures.size() > 0) 
@@ -1652,6 +1665,8 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 	float time = (timer_get_milliseconds()-anim_timer_start)/1000.0f;
 	angles rot_angles, view_angles;
 	matrix model_orient;
+
+	const bool& shadow_disable_override = flags & MR_IS_MISSILE ? Shadow_disable_overrides.disable_mission_select_weapons : Shadow_disable_overrides.disable_mission_select_ships;
 
 	if (effect == 2) {  // FS2 Effect; Phase 0 Expand scanline, Phase 1 scan the grid and wireframe, Phase 2 scan up and reveal the ship, Phase 3 tilt the camera, Phase 4 start rotating the ship
 		// rotate the ship as much as required for this frame
@@ -1769,21 +1784,16 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 
 			g3_done_instance(true);
 
-			// lighting for techroom
-			light_reset();
-			vec3d light_dir = vmd_zero_vector;
-			light_dir.xyz.y = 1.0f;
-			light_dir.xyz.x = 0.0000001f;
-			light_add_directional(&light_dir, 0.65f, 1.0f, 1.0f, 1.0f);
-			light_rotate_all();
-			// lighting for techroom
+			//setup lights
+			common_setup_room_lights();
 
 			// render the ships
 			model_clear_instance(model_id);
 			render_info->set_detail_level_lock(0);
 
 			gr_zbuffer_set(true);
-			if(Shadow_quality != ShadowQuality::Disabled)
+
+			if(shadow_maybe_start_frame(shadow_disable_override))
             {
 				gr_end_view_matrix();
 				gr_end_proj_matrix();
@@ -1885,19 +1895,14 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 			g3_set_view_matrix(&pos, &vmd_identity_matrix, closeup_zoom);
 		}
 
-		// lighting for techroom
-		light_reset();
-		vec3d light_dir = vmd_zero_vector;
-		light_dir.xyz.y = 1.0f;
-		light_add_directional(&light_dir, 0.65f, 1.0f, 1.0f, 1.0f);
-		light_rotate_all();
-		// lighting for techroom
+		//setup lights
+		common_setup_room_lights();
 
 		model_clear_instance(model_id);
 
 		render_info->set_detail_level_lock(0);
 
-		if(Shadow_quality != ShadowQuality::Disabled)
+		if(shadow_maybe_start_frame(shadow_disable_override))
 		{
 			if ( flags & MR_IS_MISSILE )  {
 				shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, gr_screen.clip_aspect, -closeup_pos->xyz.z + pm->rad, -closeup_pos->xyz.z + pm->rad + 20.0f, -closeup_pos->xyz.z + pm->rad + 200.0f, -closeup_pos->xyz.z + pm->rad + 1000.0f);
@@ -1937,6 +1942,27 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 		g3_end_frame();
 		gr_reset_clip();
 	}
+
+	shadow_end_frame();
+}
+
+/**
+ * @brief add and rotate lights for all the non-gameplay ship rendering instances
+ */
+void common_setup_room_lights()
+{
+	light_reset();
+	auto tempv = vm_vec_new(-1.0f,0.3f,-1.0f);
+	auto tempc = hdr_color(1.0f,0.95f,0.9f, 0.0f, 1.5f);
+	light_add_directional(&tempv,&tempc);
+	tempv.xyz={-0.4f,0.4f,1.1f};
+	tempc = hdr_color(0.788f,0.886f,1.0f,0.0f,1.5f);
+	light_add_directional(&tempv,&tempc);
+	tempv.xyz={0.4f,0.1f,0.4f};
+	tempc = hdr_color(1.0f,1.0f,1.0f,0.0f,0.4f);
+	light_add_directional(&tempv,&tempc);
+	gr_set_ambient_light(53, 53, 53);
+	light_rotate_all();
 }
 
 // NEWSTUFF END

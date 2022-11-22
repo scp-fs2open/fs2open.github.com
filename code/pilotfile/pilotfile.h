@@ -93,6 +93,7 @@ class pilotfile {
 		// updating stats, multi and/or all-time
 		void update_stats(scoring_struct *stats, bool training = false);
 		void update_stats_backout(scoring_struct *stats, bool training = false);
+		void set_multi_stats(const scoring_struct *stats);
 		void reset_stats();
 
 		/**
@@ -156,6 +157,17 @@ class pilotfile {
 		// file offset of the size value for the current section (set with startSection())
 		size_t m_size_offset;
 
+		SCP_string clamped_range_warnings = "";
+
+		template <typename T> void clamp_value_with_warn(T* value, T min, T max, const char* name) {
+			if (*value < min) {
+				clamped_range_warnings += SCP_string(name) + ": too low (" + std::to_string(*value) + "). Will reset to minimum (" + std::to_string(min) + ")\n";
+				*value = min;
+			} else if (*value > max) {
+				clamped_range_warnings += SCP_string(name) + ": too high (" + std::to_string(*value) + "). Will reset to maximum (" + std::to_string(max) + ")\n"; 
+				*value = max;
+			}
+		}
 
 		// --------------------------------------------------------------------
 		// PLR specific

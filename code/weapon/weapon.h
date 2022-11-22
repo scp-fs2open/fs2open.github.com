@@ -14,11 +14,13 @@
 
 #include "globalincs/globals.h"
 #include "globalincs/systemvars.h"
+#include "globalincs/pstypes.h"
 
 #include "actions/Program.h"
 #include "decals/decals.h"
 #include "gamesnd/gamesnd.h"
 #include "graphics/2d.h"
+#include "graphics/color.h"
 #include "graphics/generic.h"
 #include "model/model.h"
 #include "model/modelanimation.h"
@@ -28,6 +30,8 @@
 #include "weapon/swarm.h"
 #include "weapon/trails.h"
 #include "weapon/weapon_flags.h"
+#include "model/modelrender.h"
+#include "render/3d.h"
 
 class object;
 class ship_subsys;
@@ -251,6 +255,8 @@ typedef struct beam_weapon_info {
 	float range;						// how far it will shoot-Bobboau
 	float damage_threshold;				// point at wich damage will start being atenuated from 0.0 to 1.0
 	float beam_width;					// width of the beam (for certain collision checks)
+	bool beam_light_flicker;			// If beam light is affected by the flickering
+	bool beam_light_as_multiplier;		// If beam light is used directly or multiplies the section width
 	flagset<Weapon::Beam_Info_Flags> flags;
 	type5_beam_info t5info;              // type 5 beams only
 } beam_weapon_info;
@@ -318,6 +324,7 @@ struct weapon_info
 	char	display_name[NAME_LENGTH];		// display name of this weapon
 	char	title[WEAPON_TITLE_LEN];		// official title of weapon (used by tooltips)
 	char	*desc;								// weapon's description (used by tooltips)
+	char	altSubsysName[NAME_LENGTH];        // rename turret to this if this is the turrets first weapon
 
 	char	pofbitmap_name[MAX_FILENAME_LEN];	// Name of the pof representing this if POF, or bitmap filename if bitmap
 	int		model_num;							// modelnum of weapon -- -1 if no model
@@ -353,6 +360,10 @@ struct weapon_info
 	color	laser_color_2;						// for cycling between glow colors
 	float	laser_head_radius, laser_tail_radius;
 	float	collision_radius_override;          // overrides the radius for the purposes of collision
+
+	bool 		light_color_set;
+	hdr_color 	light_color;		//For the light cast by the projectile
+	float 		light_radius;
 
 	float	max_speed;							// max speed of the weapon
 	float	acceleration_time;					// how many seconds to reach max speed (secondaries only)
@@ -485,6 +496,9 @@ struct weapon_info
 	float weapon_reduce;					// how much energy removed from weapons systems
 	float afterburner_reduce;			// how much energy removed from weapons systems
 
+	// Vampirism Effect Multiplier
+	float vamp_regen;					// Factor by which a vampiric weapon will multiply the healing done to the shooter
+
 	// tag stuff
 	float	tag_time;						// how long the tag lasts		
 	int tag_level;							// tag level (1 - 3)
@@ -609,7 +623,8 @@ public:
 	void reset();
 };
 
-extern flag_def_list_new<Weapon::Info_Flags> Weapon_Info_Flags[];
+extern special_flag_def_list_new<Weapon::Info_Flags, weapon_info*, flagset<Weapon::Info_Flags>&> Weapon_Info_Flags[];
+
 extern const size_t num_weapon_info_flags;
 
 // Data structure to track the active missiles

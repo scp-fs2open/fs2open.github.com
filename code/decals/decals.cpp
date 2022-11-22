@@ -293,6 +293,11 @@ float smoothstep(float edge0, float edge1, float x) {
 namespace decals {
 
 void initialize() {
+	if (gr_screen.mode == GR_STUB) {
+		Decal_system_active = false;
+		return;
+	}
+
 	DecalDefinitions.clear();
 	graphics::decal_draw_list::globalInit();
 
@@ -322,12 +327,15 @@ void parseDecalReference(creation_info& dest_info, bool is_new_entry) {
 	SCP_string name;
 	stuff_string(name, F_NAME);
 
-	auto decalRef = findDecalDefinition(name);
+	// decals are not initialized in FRED, so no decal definitions are known
+	if (!Fred_running) {
+		auto decalRef = findDecalDefinition(name);
 
-	if (decalRef < 0) {
-		error_display(0, "Decal definition '%s' is unknown!", name.c_str());
+		if (decalRef < 0) {
+			error_display(0, "Decal definition '%s' is unknown!", name.c_str());
+		}
+		dest_info.definition_handle = decalRef;
 	}
-	dest_info.definition_handle = decalRef;
 
 	if (required_string_if_new("+Radius:", is_new_entry)) {
 		stuff_float(&dest_info.radius);
@@ -408,9 +416,12 @@ matrix4 getDecalTransform(Decal& decal) {
 	// this will lead to a situation where we would look at the decal texture "from behind" causing the texture to
 	// appear flipped. We fix that here for the graphics transform by inverting the Z scaling.
 
+	// ALSO for some reason the uvec needs to be flipped as well, otherwise the decals render upside-down.  Without
+	// being sure of the root cause, this at least makes it appear correct for modders.
+
 	// Apply scaling
 	vm_vec_scale(&worldOrient.vec.rvec, decal.scale.xyz.x);
-	vm_vec_scale(&worldOrient.vec.uvec, decal.scale.xyz.y);
+	vm_vec_scale(&worldOrient.vec.uvec, -decal.scale.xyz.y);
 	vm_vec_scale(&worldOrient.vec.fvec, -decal.scale.xyz.z);
 
 	matrix4 mat4;

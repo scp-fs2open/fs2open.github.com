@@ -82,7 +82,7 @@ ADE_FUNC(remove, l_Order, NULL, "Removes the given order from the ship's priorit
 ADE_FUNC(getType, l_Order, NULL, "Gets the type of the order.", "enumeration", "The type of the order as one of the ORDER_* enumerations.")
 {
 	order_h *ohp = NULL;
-	int eh_idx = -1;
+	lua_enum eh_idx = ENUM_INVALID;
 	if(!ade_get_args(L, "o", l_Order.GetPtr(&ohp)))
 		return ade_set_error(L, "o", l_Enum.Set(enum_h()));
 
@@ -344,7 +344,7 @@ ADE_VIRTVAR(TargetSubsystem, l_Order, "subsystem", "Target subsystem of the orde
 					set_target_objnum(aip, OBJ_INDEX(objp));
 				}
 			}
-			ohp->aigp->ai_submode = ship_get_subsys_index( &Ships[objp->instance], newh->ss->system_info->subobj_name );
+			ohp->aigp->ai_submode = ship_find_subsys( &Ships[objp->instance], newh->ss->system_info->subobj_name );
 			if(ohp->odx == 0) {
 				set_targeted_subsys(aip, newh->ss, OBJ_INDEX(objp));
 			}

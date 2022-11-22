@@ -64,6 +64,7 @@
 #include "parse/sexp_container.h"
 #include "scripting/hook_api.h"
 #include "scripting/scripting.h"
+#include "species_defs/species_defs.h"
 #include "playerman/player.h"
 #include "popup/popup.h"
 #include "popup/popupdead.h"
@@ -151,12 +152,14 @@ p_object *Player_start_pobject;
 // name of all ships to use while parsing a mission (since a ship might be referenced by
 // something before that ship has even been loaded yet)
 char Parse_names[MAX_SHIPS + MAX_WINGS][NAME_LENGTH];
-int Num_parse_names;
+size_t Num_parse_names;
 
 SCP_vector<texture_replace> Fred_texture_replacements;
 
 int Num_path_restrictions;
 path_restriction_t Path_restrictions[MAX_PATH_RESTRICTIONS];
+
+extern int debrief_find_persona_index();
 
 //XSTR:OFF
 
@@ -207,6 +210,8 @@ const char *Ai_behavior_names[MAX_AI_BEHAVIORS] = {
 	"Bay Depart",
 	"Sentry Gun",
 	"Warp Out",
+	"Fly To Ship",
+	"Lua AI",
 };
 
 char *Cargo_names[MAX_CARGO];
@@ -319,10 +324,13 @@ flag_def_list_new<Mission::Parse_Object_Flags> Parse_object_flags[] = {
     { "same-departure-warp-when-docked",	Mission::Parse_Object_Flags::SF_Same_departure_warp_when_docked,	true, false },
     { "ai-attackable-if-no-collide",		Mission::Parse_Object_Flags::OF_Attackable_if_no_collide, true, false },
     { "fail-sound-locked-primary",			Mission::Parse_Object_Flags::SF_Fail_sound_locked_primary, true, false },
-    { "fail-sound-locked-secondary",		Mission::Parse_Object_Flags::SF_Fail_sound_locked_secondary, true, false }
+    { "fail-sound-locked-secondary",		Mission::Parse_Object_Flags::SF_Fail_sound_locked_secondary, true, false },
+    { "aspect-immune",						Mission::Parse_Object_Flags::SF_Aspect_immune, true, false },
+	{ "cannot-perform-scan",			Mission::Parse_Object_Flags::SF_Cannot_perform_scan,	true, false },
+	{ "no-targeting-limits",				Mission::Parse_Object_Flags::SF_No_targeting_limits, true, false},
 };
 
-const size_t num_parse_object_flags = sizeof(Parse_object_flags) / sizeof(flag_def_list_new<Mission::Parse_Object_Flags>);
+const size_t Num_parse_object_flags = sizeof(Parse_object_flags) / sizeof(flag_def_list_new<Mission::Parse_Object_Flags>);
 
 // These are only the flags that are saved to the mission file.  See the MEF_ #defines.
 flag_def_list Mission_event_flags[] = {
@@ -351,13 +359,7 @@ matrix Parse_viewer_orient;
 
 int Loading_screen_bm_index=-1;
 
-// definitions for timestamps for eval'ing arrival/departure cues
-int Mission_arrival_timestamp;
-int Mission_departure_timestamp;
 fix Mission_end_time;
-
-#define ARRIVAL_TIMESTAMP		2000		// every 2 seconds
-#define DEPARTURE_TIMESTAMP	2200		// every 2.2 seconds -- just to be a little different
 
 // calculates a "unique" file signature as a ushort (checksum) and an int (file length)
 // the amount of The_mission we're going to checksum
@@ -380,11 +382,9 @@ static int Allow_arrival_music_timestamp_m[2];
 static int Allow_arrival_message_timestamp_m[2];
 static int Arrival_message_delay_timestamp_m[2];
 
-extern fix game_get_overall_frametime();	// for texture animation
-
 // local prototypes
 void parse_player_info2(mission *pm);
-bool post_process_mission();
+bool post_process_mission(mission *pm);
 int allocate_subsys_status();
 void parse_common_object_data(p_object	*objp);
 void parse_asteroid_fields(mission *pm);
@@ -393,7 +393,6 @@ int get_anchor(const char *name);
 void mission_parse_set_up_initial_docks();
 void mission_parse_set_arrival_locations();
 void mission_set_wing_arrival_location( wing *wingp, int num_to_set );
-void parse_init(bool basic = false);
 void parse_object_set_handled_flag_helper(p_object *pobjp, p_dock_function_info *infop);
 void parse_object_clear_all_handled_flags();
 int parse_object_on_arrival_list(p_object *pobjp);
@@ -420,22 +419,23 @@ const std::shared_ptr<scripting::Hook> OnDepartureStartedHook = scripting::Hook:
 		{"Ship", "ship", "The ship that has begun the departure process."},
 	});
 
+ const std::shared_ptr<scripting::Hook> OnLoadoutAboutToParseHook = scripting::Hook::Factory("On Loadout About To Parse",
+	"Called during mission load just before parsing the team loadout.",{});
+
 // Goober5000
 void parse_custom_bitmap(const char *expected_string_640, const char *expected_string_1024, char *string_field_640, char *string_field_1024)
 {
-	int found640 = 0, found1024 = 0;
-	strcpy(string_field_640, "");
-	strcpy(string_field_1024, "");
+	bool found640 = false, found1024 = false;
 
 	// custom mission loading background, or whatever
 	if (optional_string(expected_string_640))
 	{
-		found640 = 1;
+		found640 = true;
 		stuff_string(string_field_640, F_NAME, MAX_FILENAME_LEN);
 	}
 	if (optional_string(expected_string_1024))
 	{
-		found1024 = 1;
+		found1024 = true;
 		stuff_string(string_field_1024, F_NAME, MAX_FILENAME_LEN);
 	}
 
@@ -480,11 +480,8 @@ void parse_mission_info(mission *pm, bool basic = false)
 	stuff_string(pm->notes, F_NOTES, NOTES_LENGTH);
 
 	if (optional_string("$Mission Desc:"))
-		stuff_string(pm->mission_desc, F_MULTITEXT, MISSION_DESC_LENGTH);
-	else
-		strcpy_s(pm->mission_desc, NOX("No description\n"));
+		stuff_string(pm->mission_desc, F_MULTITEXT, MISSION_DESC_LENGTH);		
 
-	pm->game_type = MISSION_TYPE_SINGLE;				// default to single player only
 	if ( optional_string("+Game Type:")) {
 		// HACK HACK HACK -- stuff_string was changed to *not* ignore carriage returns.  Since the
 		// old style missions may have carriage returns, deal with it here.
@@ -518,13 +515,17 @@ void parse_mission_info(mission *pm, bool basic = false)
 		stuff_int(&pm->game_type);
 	}
 
-    pm->flags.reset();
+	// multiplayer team v. team games have two teams.  If we have three teams, we need to use
+	// a new mission mode!
+	if ( (pm->game_type & MISSION_TYPE_MULTI) && (pm->game_type & MISSION_TYPE_MULTI_TEAMS) ){
+		Num_teams = 2;
+	}
+
 	if (optional_string("+Flags:")){
         stuff_flagset(&pm->flags);
 	}
 
 	// nebula mission stuff
-	Neb2_awacs = -1.0f;
 	if(optional_string("+NebAwacs:")){
 		stuff_float(&Neb2_awacs);
 	}
@@ -534,8 +535,6 @@ void parse_mission_info(mission *pm, bool basic = false)
 		if (!basic)
 			nebl_set_storm(Mission_parse_storm_name);
 	}
-	Neb2_fog_near_mult = 1.0f;
-	Neb2_fog_far_mult = 1.0f;
 	if(optional_string("+Fog Near Mult:")){
 		stuff_float(&Neb2_fog_near_mult);
 	}
@@ -544,13 +543,11 @@ void parse_mission_info(mission *pm, bool basic = false)
 	}
 
 	// Goober5000 - ship contrail speed threshold
-	pm->contrail_threshold = CONTRAIL_THRESHOLD_DEFAULT;
 	if (optional_string("$Contrail Speed Threshold:")){
 		stuff_int(&pm->contrail_threshold);
 	}
 
 	// get the number of players if in a multiplayer mission
-	pm->num_players = 1;
 	if ( pm->game_type & MISSION_TYPE_MULTI ) {
 		if ( optional_string("+Num Players:") ) {
 			stuff_int( &(pm->num_players) );
@@ -558,14 +555,12 @@ void parse_mission_info(mission *pm, bool basic = false)
 	}
 
 	// get the number of respawns
-	pm->num_respawns = 0;
 	if ( pm->game_type & MISSION_TYPE_MULTI ) {
 		if ( optional_string("+Num Respawns:") ){
 			stuff_int( (int*)&(pm->num_respawns) );
 		}
 	}
 
-	The_mission.max_respawn_delay = -1;
 	if ( pm->game_type & MISSION_TYPE_MULTI ) {
 		if ( optional_string("+Max Respawn Time:") ){
 			stuff_int( &The_mission.max_respawn_delay );
@@ -578,7 +573,6 @@ void parse_mission_info(mission *pm, bool basic = false)
 
         pm->flags.set(Mission::Mission_Flags::Red_alert, temp != 0);    
     } 
-	red_alert_invalidate_timestamp();
 
 	if ( optional_string("+Scramble:")) {
 		int temp;
@@ -595,36 +589,6 @@ void parse_mission_info(mission *pm, bool basic = false)
 	//       only reference data parsed before this point!! (like current FRED2 and game code does)
 	if (basic)
 		return;
-
-	// this is part of mission info but derived from the campaign file rather than parsed
-	extern int debrief_find_persona_index();
-	pm->debriefing_persona = debrief_find_persona_index();
-
-	// set up support ships
-	pm->support_ships.arrival_location = ARRIVE_AT_LOCATION;
-	pm->support_ships.arrival_anchor = -1;
-	pm->support_ships.departure_location = DEPART_AT_LOCATION;
-	pm->support_ships.departure_anchor = -1;
-	pm->support_ships.max_hull_repair_val = 0.0f;
-	pm->support_ships.max_subsys_repair_val = 100.0f;	//ASSUMPTION: full repair capabilities
-	pm->support_ships.max_support_ships = -1;	// infinite
-	pm->support_ships.max_concurrent_ships = 1;
-	pm->support_ships.ship_class = -1;
-	pm->support_ships.tally = 0;
-	pm->support_ships.support_available_for_species = 0;
-
-	// for each species, store whether support is available
-	for (int species = 0; species < (int)Species_info.size(); species++)
-	{
-        for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it)
-		{
-			if ((it->flags[Ship::Info_Flags::Support]) && (it->species == species))
-			{
-				pm->support_ships.support_available_for_species |= (1 << species);
-				break;
-			}
-		}
-	}
 
 	if ( optional_string("+Disallow Support:"))
 	{
@@ -658,8 +622,6 @@ void parse_mission_info(mission *pm, bool basic = false)
 
 	if (optional_string("+All Teams Attack")){
 		Mission_all_attack = 1;
-	} else {
-		Mission_all_attack = 0;
 	}
 
 	//	Maybe delay the player's entry.
@@ -670,10 +632,6 @@ void parse_mission_info(mission *pm, bool basic = false)
 		Assert(temp >= 0.0f);
 		Entry_delay_time = fl2f(temp);
 	}
-	else
-	{
-		Entry_delay_time = 0;
-	}
 
 	if (optional_string("+Viewer pos:")){
 		stuff_vec3d(&Parse_viewer_pos);
@@ -683,29 +641,20 @@ void parse_mission_info(mission *pm, bool basic = false)
 		stuff_matrix(&Parse_viewer_orient);
 	}
 
-	// possible squadron reassignment
-	strcpy_s(pm->squad_name, "");
-	strcpy_s(pm->squad_filename, "");
+	// possible squadron reassignment (only in single player)
 	if(optional_string("+SquadReassignName:")){
-		stuff_string(pm->squad_name, F_NAME, NAME_LENGTH);
-		if(optional_string("+SquadReassignLogo:")){
-			stuff_string(pm->squad_filename, F_NAME, MAX_FILENAME_LEN);
-		}
-	}	
-	// always clear out squad reassignments if not single player
-	if(Game_mode & GM_MULTIPLAYER){
-		strcpy_s(pm->squad_name, "");
-		strcpy_s(pm->squad_filename, "");
-	}
-	// reassign the player
-	else {		
-		if(!Fred_running && (Player != NULL) && (pm->squad_name[0] != '\0') && (Game_mode & GM_CAMPAIGN_MODE)){
-			mprintf(("Reassigning player to squadron %s\n", pm->squad_name));
-			player_set_squad(Player, pm->squad_name);
-			player_set_squad_bitmap(Player, pm->squad_filename, false);
-		}
-	}
+		char buf[std::max(NAME_LENGTH, MAX_FILENAME_LEN)];
 
+		stuff_string(buf, F_NAME, NAME_LENGTH);
+		if (!(Game_mode & GM_MULTIPLAYER))
+			strcpy_s(pm->squad_name, buf);
+
+		if(optional_string("+SquadReassignLogo:")){
+			stuff_string(buf, F_NAME, MAX_FILENAME_LEN);
+			if (!(Game_mode & GM_MULTIPLAYER))
+				strcpy_s(pm->squad_filename, buf);
+		}
+	}
 
 	// wing stuff by Goober5000 ------------------------------------------
 	// the wing name arrays are initialized in ship_level_init
@@ -726,25 +675,14 @@ void parse_mission_info(mission *pm, bool basic = false)
 	// end of wing stuff -------------------------------------------------
 
 
-	// set up the Num_teams variable accoriding to the game_type variable'
-	Num_teams = 1;				// assume 1
-
-	// multiplayer team v. team games have two teams.  If we have three teams, we need to use
-	// a new mission mode!
-	if ( (pm->game_type & MISSION_TYPE_MULTI) && (pm->game_type & MISSION_TYPE_MULTI_TEAMS) ){
-		Num_teams = 2;
-	}
-
 	// Goober5000 - made this into a function since we use much the same technique for the briefing background
 	parse_custom_bitmap("$Load Screen 640:", "$Load Screen 1024:", pm->loading_screen[GR_640], pm->loading_screen[GR_1024]);
 
-	strcpy_s(pm->skybox_model, "");
 	if (optional_string("$Skybox Model:"))
 	{
 		stuff_string(pm->skybox_model, F_NAME, MAX_FILENAME_LEN);
 	}
 
-	vm_set_identity(&pm->skybox_orientation);
 	if (optional_string("+Skybox Orientation:"))
 	{
 		stuff_matrix(&pm->skybox_orientation);
@@ -753,12 +691,9 @@ void parse_mission_info(mission *pm, bool basic = false)
 	if (optional_string("+Skybox Flags:")){
 		pm->skybox_flags = 0;
 		stuff_int(&pm->skybox_flags); 
-	}else{
-		pm->skybox_flags = DEFAULT_NMODEL_FLAGS;
 	}
 
 	// Goober5000 - AI on a per-mission basis
-	The_mission.ai_profile = &Ai_profiles[Default_ai_profile];
 	if (optional_string("$AI Profile:"))
 	{
 		int index;
@@ -773,13 +708,6 @@ void parse_mission_info(mission *pm, bool basic = false)
 			WarningEx(LOCATION, "Mission: %s\nUnknown AI profile %s!", pm->name, temp );
 	}
 
-	Assert( The_mission.ai_profile != NULL );
-
-	// Kazan - player use AI at start?
-	if (pm->flags[Mission::Mission_Flags::Player_start_ai])
-		Player_use_ai = 1;
-
-	pm->sound_environment.id = -1;
 	if (optional_string("$Sound Environment:")) {
 		char preset[65] = { '\0' };
 		stuff_string(preset, F_NAME, sizeof(preset)-1);
@@ -811,8 +739,7 @@ void parse_player_info(mission *pm)
 	char temp[NAME_LENGTH];
 	Assert(pm != NULL);
 
-	// alternate type names begin here	
-	mission_parse_reset_alt();
+	// alternate type names begin here
 	if(optional_string("#Alternate Types:")){		
 		// read them all in
 		while(!optional_string("#end")){
@@ -824,8 +751,7 @@ void parse_player_info(mission *pm)
 		}
 	}
 	
-	// callsigns begin here	
-	mission_parse_reset_callsign();
+	// callsigns begin here
 	if(optional_string("#Callsigns:")){		
 		// read them all in
 		while(!optional_string("#end")){
@@ -837,7 +763,6 @@ void parse_player_info(mission *pm)
 		}
 	}
 	
-	Player_starts = 0;
 	required_string("#Players");
 
 	while (required_string_either("#Objects", "$")){
@@ -850,6 +775,10 @@ void parse_player_info2(mission *pm)
 	int nt, i;
 	SCP_vector<loadout_row> list, list2;
 	team_data *ptr;
+
+	if (OnLoadoutAboutToParseHook->isActive()) {
+		OnLoadoutAboutToParseHook->run();
+	}
 
 	// read in a ship/weapon pool for each team.
 	for ( nt = 0; nt < Num_teams; nt++ ) {
@@ -994,8 +923,6 @@ void parse_player_info2(mission *pm)
 
 void parse_cutscenes(mission *pm) 
 {
-	pm->cutscenes.clear(); 
-
 	if (optional_string("#Cutscenes"))
 	{
 		mission_cutscene scene;
@@ -1003,17 +930,24 @@ void parse_cutscenes(mission *pm)
 		while (!optional_string("#end"))
 		{
 			// this list should correspond to the MOVIE_* #defines
-			scene.type = optional_string_one_of(6,
+			scene.type = optional_string_one_of(8,
 				"$Fiction Viewer Cutscene:",
 				"$Command Brief Cutscene:",
 				"$Briefing Cutscene:",
 				"$Pre-game Cutscene:",
 				"$Debriefing Cutscene:",
-				"$Campaign End Cutscene:");
+				"$Post-debriefing Cutscene:",
+				"$Campaign End Cutscene:",
+				// this is not a #define, but a synonym for one
+				"$Post-briefing Cutscene:");
 
 			// no more cutscenes specified?
 			if (scene.type < 0)
 				break;
+
+			// post-briefing is the same as pre-game
+			if (scene.type == 7)
+				scene.type = MOVIE_PRE_GAME;
 
 			// get the cutscene file
 			stuff_string(scene.filename, F_NAME, NAME_LENGTH);
@@ -1110,8 +1044,6 @@ void parse_music(mission *pm, int flags)
 	char *ch;
 	char temp[NAME_LENGTH];
 
-	event_music_reset_choices();
-
 	if ( !optional_string("#Music") ) {
 		return;
 	}
@@ -1136,7 +1068,7 @@ void parse_music(mission *pm, int flags)
 		stuff_string(temp, F_NAME, NAME_LENGTH);
 		index = event_music_get_spooled_music_index(temp);
 		if ((index >= 0) && ((Spooled_music[index].flags & SMF_VALID) || Fred_running)) {
-			event_music_set_score(SCORE_DEBRIEF_SUCCESS, temp);
+			event_music_set_score(SCORE_DEBRIEFING_SUCCESS, temp);
 		}
 	}
 
@@ -1146,17 +1078,17 @@ void parse_music(mission *pm, int flags)
 		stuff_string(temp, F_NAME, NAME_LENGTH);
 		index = event_music_get_spooled_music_index(temp);
 		if ((index >= 0) && ((Spooled_music[index].flags & SMF_VALID) || Fred_running)) {
-			event_music_set_score(SCORE_DEBRIEF_AVERAGE, temp);
+			event_music_set_score(SCORE_DEBRIEFING_AVERAGE, temp);
 		}
 	}
 
 	// old stuff
-	if (optional_string("$Debriefing Fail Music:"))
+	if (optional_string("$Debriefing Fail Music:") || optional_string("$Debriefing Failure Music:"))
 	{
 		stuff_string(temp, F_NAME, NAME_LENGTH);
 		index = event_music_get_spooled_music_index(temp);
 		if ((index >= 0) && ((Spooled_music[index].flags & SMF_VALID) || Fred_running)) {
-			event_music_set_score(SCORE_DEBRIEF_FAIL, temp);
+			event_music_set_score(SCORE_DEBRIEFING_FAILURE, temp);
 		}
 	}
 
@@ -1281,8 +1213,6 @@ done_briefing_music:
  */
 void parse_fiction(mission * /*pm*/)
 {
-	fiction_viewer_reset();
-
 	if (optional_string("#Fiction Viewer"))
 	{
 		bool fiction_viewer_loaded = false;
@@ -1367,7 +1297,6 @@ void parse_cmd_briefs(mission *pm)
 {
 	int i;
 
-	cmd_brief_reset();
 	// a hack follows because old missions don't have a command briefing
 	if (required_string_either("#Command Briefing", "#Briefing"))
 		return;
@@ -1392,8 +1321,6 @@ void parse_briefing(mission * /*pm*/, int flags)
 
 	char not_used_text[MAX_ICON_TEXT_LEN];
 	
-	brief_reset();
-
 	// MWA -- 2/3/98.  we can now have multiple briefing and debriefings in a mission
 	for ( nt = 0; nt < Num_teams; nt++ ) {
 		if ( !optional_string("#Briefing") )
@@ -1638,8 +1565,6 @@ void parse_debriefing_new(mission * /*pm*/)
 	debriefing		*db;
 	debrief_stage	*dbs;
 	
-	debrief_reset();
-
 	// 2/3/98 -- MWA.  We can now have multiple briefings and debriefings on a team
 	for ( nt = 0; nt < Num_teams; nt++ ) {
 
@@ -1798,7 +1723,7 @@ void parse_dock_one_docked_object(p_object *pobjp, p_object *parent_pobjp)
 	ai_dock_with_object(objp, dockpoint, parent_objp, parent_dockpoint, AIDO_DOCK_NOW);
 }
 
-int parse_create_object_sub(p_object *objp);
+int parse_create_object_sub(p_object *objp, bool standalone_ship = false);
 
 // Goober5000
 void parse_create_docked_object_helper(p_object *pobjp, p_dock_function_info *infop)
@@ -1825,7 +1750,7 @@ void parse_create_docked_object_helper(p_object *pobjp, p_dock_function_info *in
  * This is a bit tricky because of the way initial docking is now handled.
  * Docking groups require special treatment.
  */
-int parse_create_object(p_object *pobjp)
+int parse_create_object(p_object *pobjp, bool standalone_ship)
 {
 	object *objp;
 
@@ -1861,7 +1786,7 @@ int parse_create_object(p_object *pobjp)
 	// create normally
 	else
 	{
-		parse_create_object_sub(pobjp);
+		parse_create_object_sub(pobjp, standalone_ship);
 	}
 
 	// get the main object
@@ -1894,7 +1819,7 @@ void parse_bring_in_docked_wing(p_object *p_objp, int wingnum, int shipnum);
  * Given a stuffed p_object struct, create an object and fill in the necessary fields.
  * @return object number.
  */
-int parse_create_object_sub(p_object *p_objp)
+int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 {
 	int	i, j, k, objnum, shipnum;
 	int anchor_objnum = -1;
@@ -1912,7 +1837,7 @@ int parse_create_object_sub(p_object *p_objp)
 	MONITOR_INC(NumShipArrivals, 1);
 
 	// base level creation - need ship name in case of duplicate textures
-	objnum = ship_create(&p_objp->orient, &p_objp->pos, p_objp->ship_class, p_objp->name);
+	objnum = ship_create(&p_objp->orient, &p_objp->pos, p_objp->ship_class, p_objp->name, standalone_ship);
 	Assert(objnum != -1);
 	shipnum = Objects[objnum].instance;
 
@@ -2003,8 +1928,7 @@ int parse_create_object_sub(p_object *p_objp)
 	if (The_mission.ai_profile->flags[AI::Profile_Flags::Fix_ai_class_bug])
 		ship_set_new_ai_class(shipp, p_objp->ai_class);
 
-	aip->behavior = p_objp->behavior;
-	aip->mode = aip->behavior;
+	aip->mode = AIM_NONE;
 
 	// make sure aim_safety has its submode defined
 	if (aip->mode == AIM_SAFETY) {
@@ -2043,7 +1967,7 @@ int parse_create_object_sub(p_object *p_objp)
 	}
 
 	// reset texture animations
-	shipp->base_texture_anim_frametime = game_get_overall_frametime();
+	shipp->base_texture_anim_timestamp = _timestamp();
 
 	// handle the replacement textures
 	shipp->apply_replacement_textures(p_objp->replacement_textures);
@@ -2151,6 +2075,11 @@ int parse_create_object_sub(p_object *p_objp)
 
 		if (wingp->flags[Ship::Wing_Flags::Nav_carry])
 			shipp->flags.set(Ship::Ship_Flags::Navpoint_carry);
+
+		// if it's wing leader, take the opportunity to set the wing leader's info index in the wing struct
+		if (!Fred_running && p_objp->pos_in_wing == 0 && wingp->special_ship_ship_info_index != -1) {
+			wingp->special_ship_ship_info_index = p_objp->ship_class;
+		}
 	}
 
 	// if the wing index and wing pos are set for this parse object, set them for the ship.  This
@@ -2458,7 +2387,7 @@ int parse_create_object_sub(p_object *p_objp)
 				send_ship_create_packet(&Objects[objnum], (p_objp == Arriving_support_ship));
 		}
 		// also add this ship to the multi ship tracking and interpolation struct
-		multi_ship_record_add_ship(objnum);
+		multi_rollback_ship_record_add_ship(objnum);
 	}
 
 	// If the ship is in a wing, this will be done in mission_set_wing_arrival_location() instead
@@ -2474,11 +2403,19 @@ int parse_create_object_sub(p_object *p_objp)
 	}
 
 	// if this is an asteroid target, add it to the list
-	for (SCP_string& name : Asteroid_target_ships) {
+	for (SCP_string& name : Asteroid_field.target_names) {
 		if (stricmp(name.c_str(), shipp->ship_name) == 0) {
 			asteroid_add_target(&Objects[objnum]);
 			break;
 		}
+	}
+
+	// assign/update parse object in ship registry entry if needed
+	auto ship_it = Ship_registry_map.find(shipp->ship_name);
+
+	if (ship_it != Ship_registry_map.end()) {
+		auto entry = &Ship_registry[ship_it->second];
+		entry->p_objp = p_objp;
 	}
 
 	return objnum;
@@ -2509,7 +2446,7 @@ void parse_bring_in_docked_wing(p_object *p_objp, int wingnum, int shipnum)
 	{
 		wingp->current_wave++;
 		mission_log_add_entry( LOG_WING_ARRIVED, wingp->name, NULL, wingp->current_wave );
-		wingp->wave_delay_timestamp = timestamp(-1);
+		wingp->wave_delay_timestamp = TIMESTAMP::invalid();
 	}
 	// how did we get more than one wave here?
 	else if (wingp->current_wave > 1)
@@ -2539,7 +2476,6 @@ void parse_bring_in_docked_wing(p_object *p_objp, int wingnum, int shipnum)
 
 	// handle AI
 	ai_info *aip = &Ai_info[Ships[shipnum].ai_index];
-	aip->wing = wingnum;
 
 	if (wingp->flags[Ship::Wing_Flags::No_dynamic])
 		aip->ai_flags.set(AI::AI_Flags::No_dynamic);
@@ -2742,6 +2678,21 @@ void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> &par
 
     if (parse_flags[Mission::Parse_Object_Flags::OF_Attackable_if_no_collide])
 		objp->flags.set(Object::Object_Flags::Attackable_if_no_collide);
+
+	if (parse_flags[Mission::Parse_Object_Flags::SF_Fail_sound_locked_primary])
+		shipp->flags.set(Ship::Ship_Flags::Fail_sound_locked_primary);
+
+	if (parse_flags[Mission::Parse_Object_Flags::SF_Fail_sound_locked_secondary])
+		shipp->flags.set(Ship::Ship_Flags::Fail_sound_locked_secondary);
+
+	if (parse_flags[Mission::Parse_Object_Flags::SF_Aspect_immune])
+		shipp->flags.set(Ship::Ship_Flags::Aspect_immune);
+
+	if (parse_flags[Mission::Parse_Object_Flags::SF_Cannot_perform_scan])
+		shipp->flags.set(Ship::Ship_Flags::Cannot_perform_scan);
+
+	if (parse_flags[Mission::Parse_Object_Flags::SF_No_targeting_limits])
+		shipp->flags.set(Ship::Ship_Flags::No_targeting_limits);
 }
 
 void fix_old_special_explosions(p_object *p_objp, int variable_index) 
@@ -2787,15 +2738,12 @@ void fix_old_special_hits(p_object *p_objp, int variable_index)
 	p_objp->special_shield = atoi(Block_variables[variable_index+SHIELD_STRENGTH].text);
 }
 
-p_object::p_object()
-	: next(NULL), prev(NULL), dock_list(NULL), created_object(NULL)
-{}
-
 // this will be called when Parse_objects is cleared between missions and upon shutdown
 p_object::~p_object()
 {
 	dock_free_dock_list(this);
 }
+
 const char* p_object::get_display_name() {
 	if (has_display_name()) {
 		return display_name.c_str();
@@ -2820,17 +2768,11 @@ extern int parse_warp_params(const WarpParams *inherit_from, WarpDirection direc
  */
 int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 {
-	int	i, count, delay;
+	int	i;
     char name[NAME_LENGTH];
 	ship_info *sip;
 
 	Assert(pm != NULL);
-
-	// Goober5000
-	p_objp->created_object = NULL;
-	p_objp->next = NULL;
-	p_objp->prev = NULL;
-	p_objp->flags.reset();
 
 	required_string("$Name:");
 	stuff_string(p_objp->name, F_NAME, NAME_LENGTH);
@@ -2864,8 +2806,17 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 	}
 	sip = &Ship_info[p_objp->ship_class];
 
+	// initialize class-specific fields
+	p_objp->ai_class = sip->ai_class;
+	p_objp->warpin_params_index = sip->warpin_params_index;
+	p_objp->warpout_params_index = sip->warpout_params_index;
+	p_objp->ship_max_shield_strength = sip->max_shield_strength;
+	p_objp->ship_max_hull_strength = sip->max_hull_strength;
+	Assert(p_objp->ship_max_hull_strength > 0.0f);	// Goober5000: div-0 check (not shield because we might not have one)
+	p_objp->max_shield_recharge = sip->max_shield_recharge;
+	p_objp->replacement_textures = sip->replacement_textures;	// initialize our set with the ship class set, which may be empty
+
 	// Karajorma - See if there are any alternate classes specified for this ship. 
-	p_objp->alt_classes.clear();
 	// The alt class can either be a variable or a ship class name
 	char alt_ship_class[TOKEN_LENGTH > NAME_LENGTH ? TOKEN_LENGTH : NAME_LENGTH];
 	int is_variable; 
@@ -2922,7 +2873,6 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 		return 0;
 
 	// optional alternate name type
-	p_objp->alt_type_index = -1;
 	if(optional_string("$Alt:"))
 	{
 		// alternate name
@@ -2937,7 +2887,6 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 	}
 
 	// optional callsign
-	p_objp->callsign_index = -1;
 	if(optional_string("$Callsign:"))
 	{
 		// alternate callsign
@@ -2983,9 +2932,10 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 	{
 		stuff_string(name, F_NAME, NAME_LENGTH);
 	}
-
-	find_and_stuff("$AI Behavior:",	&p_objp->behavior, F_NAME, Ai_behavior_names, Num_ai_behaviors, "AI behavior");
-	p_objp->ai_goals = -1;
+	if (optional_string("$AI Behavior:"))
+	{
+		stuff_string(name, F_NAME, NAME_LENGTH);
+	}
 
 	if (optional_string("+AI Class:")) 
 	{
@@ -2997,10 +2947,6 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 			p_objp->ai_class = 0;
 		}		
 	}
-	else
-	{
-		p_objp->ai_class = sip->ai_class;
-	}
 
 	if (optional_string("$AI Goals:"))
 		p_objp->ai_goals = get_sexp_main();
@@ -3011,7 +2957,6 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 		p_objp->ai_goals = get_sexp_main();
 	}
 
-	p_objp->cargo1 = -1;
 	int temp;
 	find_and_stuff_or_add("$Cargo 1:", &temp, F_NAME, Cargo_names, &Num_cargo, MAX_CARGO, "cargo");
 	p_objp->cargo1 = char(temp);
@@ -3021,20 +2966,6 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 	}
 
 	parse_common_object_data(p_objp);  // get initial conditions and subsys status
-	count = 0;
-	while (required_string_either("$Arrival Location:", "$Status Description:"))	{
-		Assert(count < MAX_OBJECT_STATUS);
-
-		find_and_stuff("$Status Description:", &p_objp->status_type[count], F_NAME, Status_desc_names, Num_status_names, "Status Description");
-		find_and_stuff("$Status:", &p_objp->status[count], F_NAME, Status_type_names, Num_status_names, "Status Type");
-		find_and_stuff("$Target:", &p_objp->target[count], F_NAME, Status_target_names, Num_status_names, "Target");
-		count++;
-	}
-	p_objp->status_count = count;
-
-	p_objp->arrival_anchor = -1;
-	p_objp->arrival_distance = 0;
-	p_objp->arrival_path_mask = -1;	// -1 only until resolved
 
 	find_and_stuff("$Arrival Location:", &p_objp->arrival_location, F_NAME, Arrival_location_names, Num_arrival_names, "Arrival Location");
 
@@ -3057,30 +2988,31 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 		p_objp->arrival_anchor = get_anchor(name);
 	}
 
+	p_objp->arrival_path_mask = -1;		// -1 only until resolved
 	if (optional_string("+Arrival Paths:"))
 	{
 		// temporarily use mask to point to the restriction index
 		p_objp->arrival_path_mask = add_path_restriction();
 	}
 
-	delay = 0;
 	if (optional_string("+Arrival Delay:"))
 	{
+		int delay;
 		stuff_int(&delay);
 		if (delay < 0)
-			Error(LOCATION, "Cannot have arrival delay < 0 (ship %s)", p_objp->name);
-	}
+		{
+			Warning(LOCATION, "Cannot have arrival delay < 0 on ship %s", p_objp->name);
+			delay = 0;
+		}
 
-	if (!Fred_running)
-		p_objp->arrival_delay = -delay;			// use negative numbers to mean we haven't set up a timer yet
-	else
-		p_objp->arrival_delay = delay;
+		if (!Fred_running)
+			p_objp->arrival_delay = -delay;			// use negative numbers to mean we haven't set up a timer yet
+		else
+			p_objp->arrival_delay = delay;
+	}
 
 	required_string("$Arrival Cue:");
 	p_objp->arrival_cue = get_sexp_main();
-
-	p_objp->departure_anchor = -1;
-	p_objp->departure_path_mask = -1;	// -1 only until resolved
 
 	find_and_stuff("$Departure Location:", &p_objp->departure_location, F_NAME, Departure_location_names, Num_arrival_names, "Departure Location");
 
@@ -3091,34 +3023,39 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 		p_objp->departure_anchor = get_anchor(name);
 	}
 
+	p_objp->departure_path_mask = -1;		// -1 only until resolved
 	if (optional_string("+Departure Paths:"))
 	{
 		// temporarily use mask to point to the restriction index
 		p_objp->departure_path_mask = add_path_restriction();
 	}
 
-	delay = 0;
 	if (optional_string("+Departure Delay:"))
 	{
+		int delay;
 		stuff_int(&delay);
 		if (delay < 0)
-			Error(LOCATION, "Cannot have departure delay < 0 (ship %s)", p_objp->name);
-	}
+		{
+			Warning(LOCATION, "Cannot have departure delay < 0 (ship %s)", p_objp->name);
+			delay = 0;
+		}
 
-	if (!Fred_running)
-		p_objp->departure_delay = -delay;
-	else
-		p_objp->departure_delay = delay;
+		if (!Fred_running)
+			p_objp->departure_delay = -delay;		// use negative numbers to mean that delay timer not yet set
+		else
+			p_objp->departure_delay = delay;
+	}
 
 	required_string("$Departure Cue:");
 	p_objp->departure_cue = get_sexp_main();
 
 	// look for warp parameters
-	p_objp->warpin_params_index = parse_warp_params(&Warp_params[sip->warpin_params_index], WarpDirection::WARP_IN, "Ship", p_objp->name);
-	p_objp->warpout_params_index = parse_warp_params(&Warp_params[sip->warpout_params_index], WarpDirection::WARP_OUT, "Ship", p_objp->name);
+	p_objp->warpin_params_index = parse_warp_params(&Warp_params[p_objp->warpin_params_index], WarpDirection::WARP_IN, "Ship", p_objp->name);
+	p_objp->warpout_params_index = parse_warp_params(&Warp_params[p_objp->warpout_params_index], WarpDirection::WARP_OUT, "Ship", p_objp->name);
 
+	// dummy string; not used
 	if (optional_string("$Misc Properties:"))
-		stuff_string(p_objp->misc, F_NAME, NAME_LENGTH);
+		stuff_string(name, F_NAME, NAME_LENGTH);
 
 	required_string("$Determination:");
 	int dummy; 
@@ -3128,7 +3065,7 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
     if (optional_string("+Flags:"))
     {
         SCP_vector<SCP_string> unparsed;
-        parse_string_flag_list(p_objp->flags, Parse_object_flags, num_parse_object_flags, &unparsed);
+        parse_string_flag_list(p_objp->flags, Parse_object_flags, Num_parse_object_flags, &unparsed);
         if (!unparsed.empty()) {
             for (size_t k = 0; k < unparsed.size(); ++k) {
                 WarningEx(LOCATION, "Unknown flag in parse object flags: %s", unparsed[k].c_str());
@@ -3140,7 +3077,7 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
     if (optional_string("+Flags2:"))
     {
         SCP_vector<SCP_string> unparsed;
-        parse_string_flag_list(p_objp->flags, Parse_object_flags, num_parse_object_flags, &unparsed);
+        parse_string_flag_list(p_objp->flags, Parse_object_flags, Num_parse_object_flags, &unparsed);
         if (!unparsed.empty()) {
             for (size_t k = 0; k < unparsed.size(); ++k) {
 				// catch typos or deprecations
@@ -3156,14 +3093,11 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 
 
 	// always store respawn priority, just for ease of implementation
-	p_objp->respawn_priority = 0;
 	if(optional_string("+Respawn Priority:"))
 		stuff_int(&p_objp->respawn_priority);	
 
-	p_objp->escort_priority = 0;
     if (optional_string("+Escort Priority:"))
     {
-        Assert(p_objp->flags[Mission::Parse_Object_Flags::SF_Escort]);
         stuff_int(&p_objp->escort_priority);
     }
 
@@ -3172,18 +3106,6 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
         p_objp->flags.set(Mission::Parse_Object_Flags::SF_Cargo_known);	// make cargo known for players
         Player_starts++;
     }
-
-	p_objp->use_special_explosion = false;
-	p_objp->special_exp_damage = -1;
-	p_objp->special_exp_blast = -1;
-	p_objp->special_exp_inner = -1;
-	p_objp->special_exp_outer = -1;
-	p_objp->use_shockwave = false;
-	p_objp->special_exp_shockwave_speed = 0;
-	p_objp->special_exp_deathroll_time = 0;
-
-	p_objp->special_hitpoints = 0;
-	p_objp->special_shield = -1;
 
 	if (optional_string("$Special Explosion:")) {
 		p_objp->use_special_explosion = true;
@@ -3268,21 +3190,11 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 	if (p_objp->special_shield != -1) {
 		p_objp->ship_max_shield_strength = (float) p_objp->special_shield; 
 	}
-	else {
-		p_objp->ship_max_shield_strength = sip->max_shield_strength;
-	}
 	
 	// set custom hitpoint value
 	if (p_objp->special_hitpoints > 0) {
 		p_objp->ship_max_hull_strength = (float) p_objp->special_hitpoints; 
 	}
-	else {
-		p_objp->ship_max_hull_strength = sip->max_hull_strength;
-	}
-
-	Assert(p_objp->ship_max_hull_strength > 0.0f);	// Goober5000: div-0 check (not shield because we might not have one)
-	p_objp->max_shield_recharge = sip->max_shield_recharge;
-
 
 	// if the kamikaze flag is set, we should have the next flag
 	if (optional_string("+Kamikaze Damage:"))
@@ -3293,7 +3205,6 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 		p_objp->kamikaze_damage = damage;
 	}
 
-	p_objp->hotkey = -1;
 	if (optional_string("+Hotkey:"))
 	{
 		stuff_int(&p_objp->hotkey);
@@ -3301,7 +3212,6 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 	}
 
 	// Goober5000
-	p_objp->dock_list = NULL;
 	while (optional_string("+Docked With:"))
 	{
 		char docked_with[NAME_LENGTH];
@@ -3336,7 +3246,6 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 	// here, then we need to destroy the ship N seconds before the mission starts (for debris purposes).
 	// store the time value here.  We want to create this object for sure.  Set the arrival cue and arrival
 	// delay to bogus values
-	p_objp->destroy_before_mission_time = -1;
 	if (optional_string("+Destroy At:"))
 	{
 		stuff_int(&p_objp->destroy_before_mission_time);
@@ -3347,24 +3256,38 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 
 	// check for the optional "orders accepted" string which contains the orders from the default
     // set that this ship will actually listen to
+	// Obsolete and only for backwards compatibility
     if (optional_string("+Orders Accepted:"))
     {
-		p_objp->orders_accepted.clear();
-		
 		int tmp_orders;
         stuff_int(&tmp_orders);
 		
         if (tmp_orders != -1) {
 			p_objp->flags.set(Mission::Parse_Object_Flags::SF_Use_unique_orders);
 
-			for(size_t j = 0; j < Player_orders.size(); j++){
-				if(Player_orders[j].id & tmp_orders)
-					p_objp->orders_accepted.insert(j);
+			//Iterate over all player orders for the bitfield, but restrict to those that the integer could actually provide
+			for(size_t j = 0; j < Player_orders.size() && j < std::numeric_limits<decltype(tmp_orders)>::digits; j++) {
+				if((1 << j) & tmp_orders)
+					p_objp->orders_accepted.insert(j + 1); //The first "true" order starts at idx 1, since 0 can be "no order"
 			}
 		}
     }
 
-	p_objp->group = 0;
+	if (optional_string("+Orders Accepted List:"))
+	{
+		SCP_vector<SCP_string> accepted_flags;
+		stuff_string_list(accepted_flags);
+
+		for (const SCP_string& accepted : accepted_flags) {
+			for (size_t j = 0; j < Player_orders.size(); j++) {
+				if (Player_orders[j].parse_name == accepted)
+					p_objp->orders_accepted.insert(j);
+			}
+		}
+
+		p_objp->flags.set(Mission::Parse_Object_Flags::SF_Use_unique_orders);
+	}
+
 	if (optional_string("+Group:"))
 		stuff_int(&p_objp->group);
 
@@ -3401,17 +3324,12 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 			p_objp->assist_score_pct = 1;
 		}
 	}
-	else {
-		p_objp->assist_score_pct = 0;
-	}
 
 	// parse the persona index if present
-	p_objp->persona_index = -1;
 	if (optional_string("+Persona Index:"))
 		stuff_int(&p_objp->persona_index);
 
 	// texture replacement - Goober5000
-	p_objp->replacement_textures = sip->replacement_textures;	// initialize our set with the ship class set, which may be empty
 	if (optional_string("$Texture Replace:") || optional_string("$Duplicate Model Texture Replace:"))
 	{
 		texture_replace tr;
@@ -3450,62 +3368,11 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 		}
 	}
 
-	// now load the textures (do this outside the parse loop because we may have ship class replacements too)
-	for (SCP_vector<texture_replace>::iterator tr = p_objp->replacement_textures.begin(); tr != p_objp->replacement_textures.end(); ++tr)
-	{
-		// load the texture
-		if (!stricmp(tr->new_texture, "invisible"))
-		{
-			// invisible is a special case
-			tr->new_texture_id = REPLACE_WITH_INVISIBLE;
-		}
-		else
-		{
-			// try to load texture or anim as normal
-			tr->new_texture_id = bm_load_either(tr->new_texture);
-		}
-
-		// not found?
-		if (tr->new_texture_id < 0)
-		{
-			mprintf(("Could not load replacement texture %s for ship %s\n", tr->new_texture, p_objp->name));
-		}
-
-		// account for FRED
-		if (Fred_running)
-		{
-			Fred_texture_replacements.push_back(*tr);
-			Fred_texture_replacements.back().new_texture_id = -1;
-		}
-	}
-
-	p_objp->wingnum = -1;					// set the wing number to -1 -- possibly to be set later
-	p_objp->pos_in_wing = -1;				// Goober5000
-	
-	p_objp->alt_iff_color.clear();
-
 	// for multiplayer, assign a network signature to this parse object.  Doing this here will
 	// allow servers to use the signature with clients when creating new ships, instead of having
 	// to pass ship names all the time
 	if (Game_mode & GM_MULTIPLAYER)
 		p_objp->net_signature = multi_assign_network_signature(MULTI_SIG_SHIP);
-
-	// set the wing_status position to be -1 for all objects.  This will get set to an appropriate
-	// value when the wing positions are finally determined.
-	p_objp->wing_status_wing_index = -1;
-	p_objp->wing_status_wing_pos = -1;
-	p_objp->respawn_count = 0;
-
-	// Goober5000 - preload stuff for certain object flags
-	// (done after parsing object, but before creating it)
-	if (p_objp->flags[Mission::Parse_Object_Flags::Knossos_warp_in])
-		Knossos_warp_ani_used = true;
-
-	// check the warp parameters too
-	if (p_objp->warpin_params_index >= 0 && (Warp_params[p_objp->warpin_params_index].warp_type == WT_KNOSSOS || Warp_params[p_objp->warpin_params_index].warp_type == WT_DEFAULT_THEN_KNOSSOS))
-		Knossos_warp_ani_used = true;
-	if (p_objp->warpout_params_index >= 0 && (Warp_params[p_objp->warpout_params_index].warp_type == WT_KNOSSOS || Warp_params[p_objp->warpout_params_index].warp_type == WT_DEFAULT_THEN_KNOSSOS))
-		Knossos_warp_ani_used = true;
 
 	// this is a valid/legal ship to create
 	return 1;
@@ -3641,23 +3508,15 @@ void parse_common_object_data(p_object *p_objp)
 	// Genghis: used later for subsystem checking
 	auto sip = &Ship_info[p_objp->ship_class];
 
-	// set some defaults..
-	p_objp->initial_velocity = 0;
-	p_objp->initial_hull = 100;
-	p_objp->initial_shields = 100;
-
 	// now change defaults if present
-	if (optional_string("+Initial Velocity:")) {
+	if (optional_string("+Initial Velocity:"))
 		stuff_int(&p_objp->initial_velocity);
-	}
-
 	if (optional_string("+Initial Hull:"))
 		stuff_int(&p_objp->initial_hull);
 	if (optional_string("+Initial Shields:"))
 		stuff_int(&p_objp->initial_shields);
 
 	p_objp->subsys_index = Subsys_index;
-	p_objp->subsys_count = 0;
 	while (optional_string("+Subsystem:")) {
 		i = allocate_subsys_status();
 
@@ -3719,7 +3578,6 @@ void parse_common_object_data(p_object *p_objp)
 
 		if (optional_string("+Sbank Ammo:"))
 			stuff_int_list(Subsys_status[i].secondary_ammo, MAX_SHIP_SECONDARY_BANKS, RAW_INTEGER_TYPE);
-
 	}
 }
 
@@ -3884,7 +3742,6 @@ void parse_objects(mission *pm, int flag)
 	required_string("#Objects");	
 
 	// parse in objects
-	Parse_objects.clear();
 	while (required_string_either("#Wings", "$Name:"))
 	{
 		p_object pobj;
@@ -3937,6 +3794,10 @@ void swap_parse_object(p_object *p_obj, int new_ship_class)
 	// Class
 	// First things first. Change the class of the p_object
 	p_obj->ship_class = new_ship_class;
+
+	if (p_obj->wingnum > -1 && p_obj->pos_in_wing == 0) {
+		Wings[p_obj->wingnum].special_ship_ship_info_index = new_ship_class;
+	}
 
 	// Hitpoints
 	// We need to take into account that the ship might have been assigned special hitpoints so we can't 
@@ -4054,12 +3915,13 @@ int find_wing_name(char *name)
 * @brief						Tries to create a wing of ships
 * @param[inout]	wingp			Pointer to the wing structure of the wing to be created
 * @param[in] num_to_create		Number of ships to create
-* @param[in] force				If set to 1, the wing will be created regardless of whether or not the arrival conditions
+* @param[in] force_create		If true, the wing will be created regardless of whether or not the arrival conditions
 *								have been met yet.
+* @param[in] force_arrival		If true, the wing will assume its arrival cue is true
 * @param[in] specific_instance	Set this to create a specific ship from this wing
 * @returns						Number of ships created
 */
-int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int specific_instance )
+int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, bool force_arrival, int specific_instance )
 {
 	int wingnum, objnum, num_create_save;
 	int time_to_arrive;
@@ -4069,14 +3931,14 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 	// we need to send this in multiplayer
 	pre_create_count = wingp->total_arrived_count;
 
-	// force is used to force creation of the wing -- used for multiplayer
-	if ( !force ) {
+	// force_create is used to force creation of the wing -- used for multiplayer
+	if ( !force_create ) {
 		// we only want to evaluate the arrival cue of the wing if:
 		// 1) single player
 		// 2) multiplayer and I am the host of the game
 		// can't create any ships if the arrival cue is false or the timestamp has not elapsed.
 
-		if ( !eval_sexp(wingp->arrival_cue) ) /* || !timestamp_elapsed(wingp->arrival_delay) ) */
+		if ( !force_arrival && !eval_sexp(wingp->arrival_cue) )
 			return 0;
 
 		// once the sexpressions becomes true, then check the arrival delay on the wing.  The first time, the
@@ -4143,7 +4005,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 		// check the wave_delay_timestamp field.  If it is not valid, make it valid (based on wave delay min
 		// and max values).  If it is valid, and not elapsed, then return.  If it is valid and elasped, then
 		// continue on.
-		if ( !timestamp_valid(wingp->wave_delay_timestamp) ) {
+		if ( !wingp->wave_delay_timestamp.isValid() ) {
 
 			// if at least one of these is valid, then reset the timestamp.  If they are both zero, we will create the
 			// wave
@@ -4159,7 +4021,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 				if ( Game_mode & GM_MULTIPLAYER ){
 					time_to_arrive += 7;
 				}
-				wingp->wave_delay_timestamp = timestamp(time_to_arrive * 1000);
+				wingp->wave_delay_timestamp = _timestamp(time_to_arrive * MILLISECONDS_PER_SECOND);
 				return 0;
 			}
 
@@ -4167,8 +4029,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 			time_to_arrive = 0;
 			if ( Game_mode & GM_MULTIPLAYER )
 				time_to_arrive += 7;
-			time_to_arrive *= 1000;
-			wingp->wave_delay_timestamp = timestamp(time_to_arrive);
+			wingp->wave_delay_timestamp = _timestamp(time_to_arrive * MILLISECONDS_PER_SECOND);
 		}
 
 		// now check to see if the wave_delay_timestamp is elapsed or not
@@ -4300,8 +4161,6 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 			if (wingp->ai_goals[index].ai_mode != AI_GOAL_NONE)
 				ai_copy_mission_wing_goal(&wingp->ai_goals[index], aip);
 		}
-
-		Ai_info[Ships[Objects[objnum].instance].ai_index].wing = wingnum;
 
 		if (wingp->flags[Ship::Wing_Flags::No_dynamic])
 			aip->ai_flags.set(AI::AI_Flags::No_dynamic);
@@ -4456,13 +4315,13 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 
 	}
 
-	wingp->wave_delay_timestamp = timestamp(-1);		// we will need to set this up properly for the next wave
+	wingp->wave_delay_timestamp = TIMESTAMP::invalid();		// we will need to set this up properly for the next wave
 	return num_create_save;
 }
 
 void parse_wing(mission *pm)
 {
-	int wingnum, i, wing_goals, delay, saved_arrival_delay;
+	int wingnum, i, wing_goals;
 	char name[NAME_LENGTH], ship_names[MAX_SHIPS_PER_WING][NAME_LENGTH];
     char wing_flag_strings[PARSEABLE_WING_FLAGS][NAME_LENGTH];
 	wing *wingp;
@@ -4473,27 +4332,10 @@ void parse_wing(mission *pm)
 	required_string("$Name:");
 	stuff_string(wingp->name, F_NAME, NAME_LENGTH);
 
-	// quickly look through the squadron wing names to see if we have to warn the modder about this mission
-	// to avoid them avoid the multi missing wing bug.
-	if (pm->game_type & (MISSION_TYPE_MULTI | MISSION_TYPE_MULTI_COOP)) {
-		for (int j = 0; j < MAX_SQUADRON_WINGS; j++) {
-			if (!strcmp(wingp->name, Squadron_wing_names[j])) {
-				Squadron_wing_names_found[j] = true;
-			}
-		}
-	}
-
 	wingnum = find_wing_name(wingp->name);
 	if (wingnum != -1)
 		error_display(0, NOX("Redundant wing name: %s\n"), wingp->name);
 	wingnum = Num_wings;
-
-	wingp->total_arrived_count = 0;
-	wingp->red_alert_skipped_ships = 0;
-	wingp->total_destroyed = 0;
-	wingp->total_departed = 0;	// Goober5000
-	wingp->total_vanished = 0;	// Goober5000
-    wingp->flags.reset();
 
 	// squad logo - Goober5000
 	if (optional_string("+Squad Logo:"))
@@ -4536,8 +4378,6 @@ void parse_wing(mission *pm)
 	stuff_int(&wingp->num_waves);
 	Assert ( wingp->num_waves >= 1 );		// there must be at least 1 wave
 
-	wingp->current_wave = 0;
-
 	required_string("$Wave Threshold:");
 	stuff_int(&wingp->threshold);
 
@@ -4554,13 +4394,9 @@ void parse_wing(mission *pm)
 			Warning(LOCATION, "Invalid Formation %s.", f);
 		}
 	}
-	else {
-		wingp->formation = -1;
+	if (optional_string("+Formation Scale:")) {
+		stuff_float(&wingp->formation_scale);
 	}
-
-	wingp->arrival_anchor = -1;
-	wingp->arrival_distance = 0;
-	wingp->arrival_path_mask = -1;	// -1 only until resolved
 
 	find_and_stuff("$Arrival Location:", &wingp->arrival_location, F_NAME, Arrival_location_names, Num_arrival_names, "Arrival Location");
 
@@ -4583,32 +4419,32 @@ void parse_wing(mission *pm)
 		wingp->arrival_anchor = get_anchor(name);
 	}
 
+	wingp->arrival_path_mask = -1;		// -1 only until resolved
 	if (optional_string("+Arrival Paths:"))
 	{
 		// temporarily use mask to point to the restriction index
 		wingp->arrival_path_mask = add_path_restriction();
 	}
 
-	if (optional_string("+Arrival delay:")) {
+	if (optional_string("+Arrival delay:"))
+	{
+		int delay;
 		stuff_int(&delay);
-		if ( delay < 0 )
-			Error(LOCATION, "Cannot have arrival delay < 0 on wing %s", wingp->name );
-	} else
-		delay = 0;
-	saved_arrival_delay = delay;
+		if (delay < 0)
+		{
+			Warning(LOCATION, "Cannot have arrival delay < 0 on wing %s", wingp->name);
+			delay = 0;
+		}
 
-	if ( !Fred_running ){
-		wingp->arrival_delay = -delay;
-	} else {
-		wingp->arrival_delay = delay;
+		if (!Fred_running)
+			wingp->arrival_delay = -delay;			// use negative numbers to mean we haven't set up a timer yet
+		else
+			wingp->arrival_delay = delay;
 	}
 
 	required_string("$Arrival Cue:");
 	wingp->arrival_cue = get_sexp_main();
 	
-	wingp->departure_anchor = -1;
-	wingp->departure_path_mask = -1;	// -1 only until resolved
-
 	find_and_stuff("$Departure Location:", &wingp->departure_location, F_NAME, Departure_location_names, Num_arrival_names, "Departure Location");
 
 	if ( wingp->departure_location != DEPART_AT_LOCATION )
@@ -4618,23 +4454,28 @@ void parse_wing(mission *pm)
 		wingp->departure_anchor = get_anchor(name);
 	}
 
+	wingp->departure_path_mask = -1;		// -1 only until resolved
 	if (optional_string("+Departure Paths:"))
 	{
 		// temporarily use mask to point to the restriction index
 		wingp->departure_path_mask = add_path_restriction();
 	}
 
-	if (optional_string("+Departure delay:")) {
+	if (optional_string("+Departure delay:"))
+	{
+		int delay;
 		stuff_int(&delay);
-		if ( delay < 0 )
-			Error(LOCATION, "Cannot have departure delay < 0 on wing %s", wingp->name );
-	} else
-		delay = 0;
+		if (delay < 0)
+		{
+			Warning(LOCATION, "Cannot have departure delay < 0 on wing %s", wingp->name);
+			delay = 0;
+		}
 
-	if ( !Fred_running )
-		wingp->departure_delay = -delay;		// use negative numbers to mean that delay timer not yet set
-	else
-		wingp->departure_delay = delay;
+		if (!Fred_running)
+			wingp->departure_delay = -delay;		// use negative numbers to mean that delay timer not yet set
+		else
+			wingp->departure_delay = delay;
+	}
 
 	required_string("$Departure Cue:");
 	wingp->departure_cue = get_sexp_main();
@@ -4642,14 +4483,12 @@ void parse_wing(mission *pm)
 	// stores a list of all names of ships in the wing
 	required_string("$Ships:");
 	wingp->wave_count = (int)stuff_string_list( ship_names, MAX_SHIPS_PER_WING );
-	wingp->current_count = 0;
 
 	// get the wings goals, if any
 	wing_goals = -1;
 	if ( optional_string("$AI Goals:") )
 		wing_goals = get_sexp_main();
 
-	wingp->hotkey = -1;
 	if (optional_string("+Hotkey:")) {
 		stuff_int(&wingp->hotkey);
 		Assert((wingp->hotkey >= 0) && (wingp->hotkey < 10));
@@ -4686,24 +4525,10 @@ void parse_wing(mission *pm)
 
 	// get the wave arrival delay bounds (if present).  Used as lower and upper bounds (in seconds)
 	// which determine when new waves of a wing should arrive.
-	wingp->wave_delay_min = 0;
-	wingp->wave_delay_max = 0;
 	if ( optional_string("+Wave Delay Min:") )
 		stuff_int( &(wingp->wave_delay_min) );
 	if ( optional_string("+Wave Delay Max:") )
 		stuff_int( &(wingp->wave_delay_max) );
-
-	// be sure to set the wave arrival timestamp of this wing to pop right away so that the
-	// wing could be created if it needs to be
-	wingp->wave_delay_timestamp = timestamp(0);
-
-	// initialize wing goals
-	for (i=0; i<MAX_AI_GOALS; i++) {
-		wingp->ai_goals[i].ai_mode = AI_GOAL_NONE;
-		wingp->ai_goals[i].signature = -1;
-		wingp->ai_goals[i].priority = -1;
-		wingp->ai_goals[i].flags.reset();
-	}
 
 	// 7/13/98 -- MWA
 	// error checking against the player ship wings (i.e. starting & tvt) to be sure that wave count doesn't exceed one for
@@ -4746,9 +4571,6 @@ void parse_wing(mission *pm)
 		multi_set_network_signature( (ushort)next_signature, MULTI_SIG_SHIP );
 	}
 
-	for (i=0; i<MAX_SHIPS_PER_WING; i++)
-		wingp->ship_index[i] = -1;
-
 	// set up the ai_goals for this wing -- all ships created from this wing will inherit these goals
 	// goals for the wing are stored slightly differently than for ships.  We simply store the index
 	// into the sexpression array of each goal (max 10).  When a ship in this wing is created, each
@@ -4781,11 +4603,17 @@ void parse_wing(mission *pm)
 				// assign wingnum
 				p_objp->wingnum = wingnum;
 				p_objp->pos_in_wing = i;
+
+				// we have found our "special ship" (our wing leader)
+				if (!Fred_running && i == 0){
+					wingp->special_ship_ship_info_index = p_objp->ship_class;
+				}
+
 				assigned++;
 
 				// Goober5000 - if this is a player start object, there shouldn't be a wing arrival delay (Mantis #2678)
-				if ((p_objp->flags[Mission::Parse_Object_Flags::OF_Player_start]) && (saved_arrival_delay != 0)) {
-					Warning(LOCATION, "Wing %s specifies an arrival delay of %ds, but it also contains a player.  The arrival delay will be reset to 0.", wingp->name, saved_arrival_delay);
+				if ((p_objp->flags[Mission::Parse_Object_Flags::OF_Player_start]) && (wingp->arrival_delay != 0)) {
+					Warning(LOCATION, "Wing %s specifies an arrival delay of %ds, but it also contains a player.  The arrival delay will be reset to 0.", wingp->name, abs(wingp->arrival_delay));
 					if (!Fred_running && wingp->arrival_delay > 0) {
 						// timestamp has been set, so set it again
 						wingp->arrival_delay = timestamp(0);
@@ -4793,8 +4621,6 @@ void parse_wing(mission *pm)
 						// no timestamp, or timestamp invalid
 						wingp->arrival_delay = 0;
 					}
-					// prevent message from reappearing
-					saved_arrival_delay = 0;
 				}
 			}
 		}
@@ -4812,43 +4638,12 @@ void parse_wing(mission *pm)
 
 void parse_wings(mission* pm)
 {
-	// reset this for the missing wing bug.
-	for (int i = 0; i < MAX_SQUADRON_WINGS; i++) {
-		Squadron_wing_names_found[i] = false;
-	}
-
 	required_string("#Wings");
 	while (required_string_either("#Events", "$Name:"))
 	{
 		Assert(Num_wings < MAX_WINGS);
 		parse_wing(pm);
 		Num_wings++;
-	}
-
-	bool found = false;
-
-	static_assert(MAX_TVT_WINGS_PER_TEAM == 1, "Unless you also update the section of code below or redo the loadout code, for TvT, there should be just one player wing, otherwise, wings may start disappearing in game.");
-
-	// now see if we found the missing wing.  We're looking for a wing that is there after a wing that is not.
-	// for now TvT mission do not have enough player wings to be affected by this bug.
-	if (pm->game_type & (MISSION_TYPE_MULTI | MISSION_TYPE_MULTI_COOP)) {
-		do {
-			found = false;
-			// we only search up to the MAX_STARTING_WINGS because non-starting wings should not be in starting wing indices (0-2)
-			for (int i = 1; i < MAX_STARTING_WINGS; i++) {
-				// If there was a wing for this squadron entry, check the last one. If it's empty, we found a mistake, so move the wing names over.
-				if (Squadron_wing_names_found[i] && !Squadron_wing_names_found[i - 1]) {
-					Warning(LOCATION, "Squadron wings are not in the correct order and may cause wings to disappear in multi.\n\nEither wing %s should exist or the %s entry needs to come before it in the list.\n\nPlease go back and fix the mission.", Squadron_wing_names[i - 1], Squadron_wing_names[i]);
-					char temp_chars[NAME_LENGTH];
-					strcpy_s(temp_chars, Squadron_wing_names[i - 1]);
-					strcpy_s(Squadron_wing_names[i - 1], Squadron_wing_names[i]);
-					strcpy_s(Squadron_wing_names[i], temp_chars);
-					Squadron_wing_names_found[i] = !Squadron_wing_names_found[i];
-					Squadron_wing_names_found[i - 1] = !Squadron_wing_names_found[i - 1];
-					found = true;
-				}
-			}
-		} while (found);
 	}
 }
 
@@ -4932,8 +4727,6 @@ void post_process_path_stuff()
 // Goober5000
 void post_process_ships_wings()
 {
-	int i;
-
 	// Goober5000 - first, resolve the path masks.  Needs to be done first because
 	// mission_parse_maybe_create_parse_object relies on it.
 	post_process_path_stuff();
@@ -4945,6 +4738,7 @@ void post_process_ships_wings()
 
 	// Goober5000 - now add all the parse objects to the ship registry.  This must be done before
 	// any ships are created from the parse objects.
+	// Might as well do any post-processing for parse objects here too.
 	for (auto &p_obj : Parse_objects)
 	{
 		ship_registry_entry entry(p_obj.name);
@@ -4952,6 +4746,44 @@ void post_process_ships_wings()
 
 		Ship_registry.push_back(entry);
 		Ship_registry_map[p_obj.name] = static_cast<int>(Ship_registry.size() - 1);
+
+		// also load any replacement textures (do this outside the parse loop because we may have ship class replacements too)
+		for (SCP_vector<texture_replace>::iterator tr = p_obj.replacement_textures.begin(); tr != p_obj.replacement_textures.end(); ++tr)
+		{
+			// load the texture
+			if (!stricmp(tr->new_texture, "invisible"))
+			{
+				// invisible is a special case
+				tr->new_texture_id = REPLACE_WITH_INVISIBLE;
+			}
+			else
+			{
+				// try to load texture or anim as normal
+				tr->new_texture_id = bm_load_either(tr->new_texture);
+			}
+
+			// not found?
+			if (tr->new_texture_id < 0)
+				mprintf(("Could not load replacement texture %s for ship %s\n", tr->new_texture, p_obj.name));
+
+			// account for FRED
+			if (Fred_running)
+			{
+				Fred_texture_replacements.push_back(*tr);
+				Fred_texture_replacements.back().new_texture_id = -1;
+			}
+		}
+
+		// Goober5000 - preload stuff for certain object flags
+		// (done after parsing object, but before creating it)
+		if (p_obj.flags[Mission::Parse_Object_Flags::Knossos_warp_in])
+			Knossos_warp_ani_used = true;
+
+		// check the warp parameters too
+		if (p_obj.warpin_params_index >= 0 && (Warp_params[p_obj.warpin_params_index].warp_type == WT_KNOSSOS || Warp_params[p_obj.warpin_params_index].warp_type == WT_DEFAULT_THEN_KNOSSOS))
+			Knossos_warp_ani_used = true;
+		if (p_obj.warpout_params_index >= 0 && (Warp_params[p_obj.warpout_params_index].warp_type == WT_KNOSSOS || Warp_params[p_obj.warpout_params_index].warp_type == WT_DEFAULT_THEN_KNOSSOS))
+			Knossos_warp_ani_used = true;
 	}
 
 	// Goober5000 - now create all objects that we can.  This must be done before any ship stuff
@@ -5011,7 +4843,7 @@ void post_process_ships_wings()
 	// Goober5000 - for FS2, the wings are initialized first, so all we have to do is create their ships
 	else
 	{
-		for (i = 0; i < Num_wings; i++)
+		for (int i = 0; i < Num_wings; i++)
 		{
 			wing *wingp = &Wings[i];
 
@@ -5019,6 +4851,49 @@ void post_process_ships_wings()
 			if (!(wingp->flags[Ship::Wing_Flags::Reinforcement]))
 				parse_wing_create_ships(wingp, wingp->wave_count);
 		}
+	}
+
+	
+	// ----------------- at this point wings and ships should both be valid -----------------
+	// Now do some error checking for multi
+
+	static_assert(MAX_TVT_WINGS_PER_TEAM == 1, "Unless you also update the section of code below or redo the loadout code, for TvT, there should be just one player wing, otherwise, wings may start disappearing in game.");
+
+	// now see if we found the missing wing.  We're looking for a wing that is there after a wing that is not.
+	// for now TvT mission do not have enough player wings to be affected by this bug.
+	if (The_mission.game_type & (MISSION_TYPE_MULTI | MISSION_TYPE_MULTI_COOP)) {
+		bool Squadron_wing_names_found[MAX_SQUADRON_WINGS];
+
+		// quickly look through the squadron wing names to see if we have to warn the modder about this mission
+		// to avoid them avoid the multi missing wing bug.
+		for (int i = 0; i < MAX_SQUADRON_WINGS; i++) {
+			Squadron_wing_names_found[i] = false;
+
+			for (int j = 0; j < Num_wings; j++) {
+				if (!strcmp(Wings[j].name, Squadron_wing_names[i])) {
+					Squadron_wing_names_found[i] = true;
+				}
+			}
+		}
+
+		bool found = false;
+		do {
+			found = false;
+			// we only search up to the MAX_STARTING_WINGS because non-starting wings should not be in starting wing indices (0-2)
+			for (int i = 1; i < MAX_STARTING_WINGS; i++) {
+				// If there was a wing for this squadron entry, check the last one. If it's empty, we found a mistake, so move the wing names over.
+				if (Squadron_wing_names_found[i] && !Squadron_wing_names_found[i - 1]) {
+					Warning(LOCATION, "Squadron wings are not in the correct order and may cause wings to disappear in multi.\n\nEither wing %s should exist or the %s entry needs to come before it in the list.\n\nPlease go back and fix the mission.", Squadron_wing_names[i - 1], Squadron_wing_names[i]);
+					char temp_chars[NAME_LENGTH];
+					strcpy_s(temp_chars, Squadron_wing_names[i - 1]);
+					strcpy_s(Squadron_wing_names[i - 1], Squadron_wing_names[i]);
+					strcpy_s(Squadron_wing_names[i], temp_chars);
+					Squadron_wing_names_found[i] = !Squadron_wing_names_found[i];
+					Squadron_wing_names_found[i - 1] = !Squadron_wing_names_found[i - 1];
+					found = true;
+				}
+			}
+		} while (found);
 	}
 }
 
@@ -5326,7 +5201,6 @@ void parse_messages(mission *pm, int flags)
 	required_string("#Messages");
 
 	// command stuff by Goober5000 ---------------------------------------
-	strcpy_s(pm->command_sender, DEFAULT_COMMAND);
 	if (optional_string("$Command Sender:"))
 	{
 		char temp[NAME_LENGTH];
@@ -5338,7 +5212,6 @@ void parse_messages(mission *pm, int flags)
 			strcpy_s(pm->command_sender, temp);
 	}
 
-	pm->command_persona = Default_command_persona;
 	if (optional_string("$Command Persona:"))
 	{
 		int idx;
@@ -5388,8 +5261,17 @@ void parse_reinforcement(mission *pm)
 	// reset the flags to 0
 	ptr->flags = 0;
 
-	if ( optional_string("+Arrival delay:") ){
-		stuff_int( &(ptr->arrival_delay) );
+	if ( optional_string("+Arrival delay:") )
+	{
+		int delay;
+		stuff_int(&delay);
+		if (delay < 0)
+		{
+			Warning(LOCATION, "Cannot have arrival delay < 0 on reinforcement %s", ptr->name);
+			delay = 0;
+		}
+
+		ptr->arrival_delay = delay;
 	}
 
 	if ( optional_string("+No Messages:") ){
@@ -5432,7 +5314,6 @@ void parse_reinforcement(mission *pm)
 
 void parse_reinforcements(mission *pm)
 {
-	Num_reinforcements = 0;
 	required_string("#Reinforcements");
 
 	while (required_string_either("#Background bitmaps", "$Name:"))
@@ -5477,7 +5358,7 @@ void parse_one_background(background_t *background)
 
 		// correct legacy bitmap angles which used incorrect math in older versions
 		if (!background->flags[Starfield::Background_Flags::Corrected_angles_in_mission_file])
-			stars_correct_background_angles(&sle.ang);
+			stars_correct_background_sun_angles(&sle.ang);
 
 		// scale
 		required_string("+Scale:");
@@ -5506,7 +5387,7 @@ void parse_one_background(background_t *background)
 
 		// correct legacy bitmap angles which used incorrect math in older versions
 		if (!background->flags[Starfield::Background_Flags::Corrected_angles_in_mission_file])
-			stars_correct_background_angles(&sle.ang);
+			stars_correct_background_bitmap_angles(&sle.ang);
 
 		// scale
 		if (optional_string("+Scale:"))
@@ -5565,12 +5446,7 @@ void parse_bitmaps(mission *pm)
 	// This should call light_set_ambient() to
 	// set the ambient light
 
-	Nebula_index = -1;
-	Mission_palette = 1;
-
 	// neb2 info
-	strcpy_s(Neb2_texture_name, "");
-	Neb2_poof_flags = ((1<<0) | (1<<1) | (1<<2) | (1<<3) | (1<<4) | (1<<5));
 	bool nebula = false;
 	if (optional_string("+Neb2:")) {
 		nebula = true;
@@ -5586,8 +5462,17 @@ void parse_bitmaps(mission *pm)
 		pm->flags |= Mission::Mission_Flags::Neb2_fog_color_override;
 	}
 	if (nebula) {
-		required_string("+Neb2Flags:");			
-		stuff_int(&Neb2_poof_flags);
+		// Obsolete and only for backwards compatibility
+		if (optional_string("+Neb2Flags:")) {
+			stuff_int(&Neb2_poof_flags);
+		}
+
+		// Get poofs by name
+		if (optional_string("+Neb2 Poofs List:")) {
+			SCP_vector<SCP_string> poofs_list;
+			stuff_string_list(poofs_list);
+			neb2_set_poof_bits(poofs_list);
+		}
 
 		// initialize neb effect. its gross to do this here, but Fred is dumb so I have no choice ... :(
 		if(Fred_running && (pm->flags[Mission::Mission_Flags::Fullneb])){
@@ -5652,11 +5537,7 @@ void parse_bitmaps(mission *pm)
 			}						
 		}
 
-		if (Nebula_index >= 0){		
-			nebula_init(Nebula_filenames[Nebula_index], Nebula_pitch, Nebula_bank, Nebula_heading);
-		} else {
-			nebula_close();		
-		}
+		nebula_init(Nebula_index, Nebula_pitch, Nebula_bank, Nebula_heading);
 	}	
 
 	// Goober5000
@@ -5665,9 +5546,6 @@ void parse_bitmaps(mission *pm)
 		stars_add_blank_background(false);
 		parse_one_background(&Backgrounds.back());
 	}
-
-	// Goober5000
-	stars_load_first_valid_background();
 
 	if (optional_string("$Environment Map:")) {
 		stuff_string(pm->envmap_name, F_NAME, MAX_FILENAME_LEN);
@@ -5682,8 +5560,6 @@ void parse_asteroid_fields(mission *pm)
 	int i, count, subtype;
 
 	Assert(pm != NULL);
-	for (i=0; i<MAX_ASTEROID_FIELDS; i++)
-		Asteroid_field.num_initial_asteroids = 0;
 
 	i = 0;
 	count = 0;
@@ -5789,7 +5665,7 @@ void parse_asteroid_fields(mission *pm)
 		Asteroid_field.bound_rad = MAX(3000.0f, b_rad);
 
 		if (optional_string("+Inner Bound:")) {
-			Asteroid_field.has_inner_bound = 1;
+			Asteroid_field.has_inner_bound = true;
 
 			required_string("$Minimum:");
 			stuff_vec3d(&Asteroid_field.inner_min_bound);
@@ -5797,12 +5673,11 @@ void parse_asteroid_fields(mission *pm)
 			required_string("$Maximum:");
 			stuff_vec3d(&Asteroid_field.inner_max_bound);
 		} else {
-			Asteroid_field.has_inner_bound = 0;
+			Asteroid_field.has_inner_bound = false;
 		}
 
 		if (optional_string("$Asteroid Targets:")) {
-			stuff_string_list(Asteroid_target_ships);
-			Default_asteroid_throwing_behavior = false;
+			stuff_string_list(Asteroid_field.target_names);
 		}
 		i++;
 	}
@@ -5982,36 +5857,10 @@ bool parse_mission(mission *pm, int flags)
 	int saved_warning_count = Global_warning_count;
 	int saved_error_count = Global_error_count;
 
-	int i;
 	Warned_about_team_out_of_range = false;
 
-	waypoint_parse_init();
-
-	Player_starts = Num_cargo = Num_goals = Num_wings = 0;
-	Player_start_shipnum = -1;
-	*Player_start_shipname = 0;		// make the string 0 length for checking later
-	clear_texture_replacements();
-
-	// initialize the initially_docked array.
-	for ( i = 0; i < MAX_SHIPS; i++ ) {
-		Initially_docked[i].docker[0] = '\0';
-		Initially_docked[i].dockee[0] = '\0';
-		Initially_docked[i].docker_point[0] = '\0';
-		Initially_docked[i].dockee_point[0] = '\0';
-	}
-	Total_initially_docked = 0;
-
-	list_init(&Ship_arrival_list);	// init list for arrival ships
-
-	parse_init();
-
-	Subsys_index = 0;
-	Subsys_status_size = 0;
-
-	if (Subsys_status != NULL) {
-		vm_free( Subsys_status );
-		Subsys_status = NULL;
-	}
+	reset_parse();
+	mission_init(pm);
 
 	parse_mission_info(pm); 
 
@@ -6094,7 +5943,7 @@ bool parse_mission(mission *pm, int flags)
 		}
 	}
 
-	if (!post_process_mission()) {
+	if (!post_process_mission(pm)) {
 		return false;
 	}
 
@@ -6110,7 +5959,7 @@ bool parse_mission(mission *pm, int flags)
 	return true;
 }
 
-bool post_process_mission()
+bool post_process_mission(mission *pm)
 {
 	int			i;
 	int			indices[MAX_SHIPS], objnum;
@@ -6144,6 +5993,18 @@ bool post_process_mission()
 	// this should check prev_ramp_vel because that is in local coordinates --wookieejedi
 	if ( Player_obj->phys_info.prev_ramp_vel.xyz.z > 0.0f )
 		Player->ci.forward_cruise_percent = Player_obj->phys_info.prev_ramp_vel.xyz.z / Player_ship->current_max_speed * 100.0f;
+
+	// Kazan - player use AI at start?
+	if (pm->flags[Mission::Mission_Flags::Player_start_ai])
+		Player_use_ai = 1;
+
+
+	// Assign squadron information
+	if (!Fred_running && (Player != nullptr) && (pm->squad_name[0] != '\0') && (Game_mode & GM_CAMPAIGN_MODE) && !(Game_mode & GM_MULTIPLAYER)) {
+		mprintf(("Reassigning player to squadron %s\n", pm->squad_name));
+		player_set_squad(Player, pm->squad_name);
+		player_set_squad_bitmap(Player, pm->squad_filename, false);
+	}
 
 	// set up wing indexes
 	for (i = 0; i < MAX_STARTING_WINGS; i++ ) {
@@ -6182,12 +6043,12 @@ bool post_process_mission()
 	mission_parse_set_arrival_locations();
 
 	// clear out information about arriving support ships
-	Arriving_support_ship = NULL;
+	Arriving_support_ship = nullptr;
 	Num_arriving_repair_targets = 0;
 
 	// convert all ship name indices to ship indices now that mission has been loaded
 	if (Fred_running) {
-		for (i=0; i<Num_parse_names; i++) {
+		for (i=0; i<(int)Num_parse_names; i++) {
 			indices[i] = ship_name_lookup(Parse_names[i], 1);
 			if (indices[i] < 0)
 				Warning(LOCATION, "Ship name \"%s\" referenced, but this ship doesn't exist", Parse_names[i]);
@@ -6213,40 +6074,57 @@ bool post_process_mission()
 
 	// before doing anything else, we must validate all of the sexpressions that were loaded into the mission.
 	// Loop through the Sexp_nodes array and send the top level functions to the check_sexp_syntax parser
+	// Cyborg -- If you are a ingame joiner, your sexps will be taken care of by the server, and checking will 
+	// actually crash mission load, since a list of objects present are also given to them only after this point.
 
-	for (i = 0; i < Num_sexp_nodes; i++) {
-		if (is_sexp_top_level(i) && (!Fred_running || (i != Sexp_clipboard))) {
-			int result, bad_node, op;
+	if (!((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_INGAME_JOIN))) {
+		for (i = 0; i < Num_sexp_nodes; i++) {
+			if (is_sexp_top_level(i) && (!Fred_running || (i != Sexp_clipboard))) {
+				int result, bad_node, op;
 
-			op = get_operator_index(i);
-			Assert(op != -1);  // need to make sure it is an operator before we treat it like one..
-			result = check_sexp_syntax( i, query_operator_return_type(op), 1, &bad_node);
+				op = get_operator_index(i);
 
-			// entering this if statement will result in program termination!!!!!
-			// print out an error based on the return value from check_sexp_syntax()
-			// G5K: now entering this statement simply aborts the mission load
-			if ( result ) {
-				SCP_string location_str;
-				SCP_string sexp_str;
-				SCP_string error_msg;
-
-				// it's helpful to point out the goal/event, so do that if we can
-				int index;
-				if ((index = mission_event_find_sexp_tree(i)) >= 0) {
-					sprintf(location_str, "Error in mission event: \"%s\": ", Mission_events[index].name);
-				} else if ((index = mission_goal_find_sexp_tree(i)) >= 0) {
-					sprintf(location_str, "Error in mission goal: \"%s\": ", Mission_goals[index].name);
+				// need to make sure it is an operator before we treat it like one..
+				if (op < 0)
+				{
+					result = SEXP_CHECK_UNKNOWN_OP;
+					bad_node = i;
 				}
+				else
+					result = check_sexp_syntax(i, query_operator_return_type(op), 1, &bad_node);
 
-				convert_sexp_to_string(sexp_str, i, SEXP_ERROR_CHECK_MODE);
-				truncate_message_lines(sexp_str, 30);
-				
-				sprintf(error_msg, "%s%s.\n\nIn sexpression: %s\n\n(Bad node appears to be: %s)\n", location_str.c_str(), sexp_error_message(result), sexp_str.c_str(), Sexp_nodes[bad_node].text);
-				Warning(LOCATION, "%s", error_msg.c_str());
+				// entering this if statement will result in program termination!!!!!
+				// print out an error based on the return value from check_sexp_syntax()
+				// G5K: now entering this statement simply aborts the mission load
+				if ( result ) {
+					SCP_string location_str;
+					SCP_string sexp_str;
+					SCP_string error_msg;
+					SCP_string bad_node_str;
 
-				// syntax errors are recoverable in Fred but not FS
-				if (!Fred_running && !sexp_recoverable_error(result)) {
-					return false;
+					// it's helpful to point out the goal/event, so do that if we can
+					int index;
+					if ((index = mission_event_find_sexp_tree(i)) >= 0) {
+						sprintf(location_str, "Error in mission event: \"%s\": ", Mission_events[index].name);
+					} else if ((index = mission_goal_find_sexp_tree(i)) >= 0) {
+						sprintf(location_str, "Error in mission goal: \"%s\": ", Mission_goals[index].name);
+					}
+
+					convert_sexp_to_string(sexp_str, i, SEXP_ERROR_CHECK_MODE);
+					truncate_message_lines(sexp_str, 30);
+
+					stuff_sexp_text_string(bad_node_str, bad_node, SEXP_ERROR_CHECK_MODE);
+					if (!bad_node_str.empty()) {	// the previous function adds a space at the end
+						bad_node_str.pop_back();
+					}
+					
+					sprintf(error_msg, "%s%s.\n\nIn sexpression: %s\n\n(Bad node appears to be: %s)\n", location_str.c_str(), sexp_error_message(result), sexp_str.c_str(), bad_node_str.c_str());
+					Warning(LOCATION, "%s", error_msg.c_str());
+
+					// syntax errors are recoverable in Fred but not FS
+					if (!Fred_running && !sexp_recoverable_error(result)) {
+						return false;
+					}
 				}
 			}
 		}
@@ -6326,9 +6204,10 @@ bool post_process_mission()
 
 	ets_init_ship(Player_obj);	// init ETS data for the player
 
+	// Goober5000
+	stars_load_first_valid_background();
+
 	// put the timestamp stuff here for now
-	Mission_arrival_timestamp = timestamp( ARRIVAL_TIMESTAMP );
-	Mission_departure_timestamp = timestamp( DEPARTURE_TIMESTAMP );
 	Mission_end_time = -1;
 
 	Allow_arrival_music_timestamp=timestamp(0);
@@ -6356,18 +6235,22 @@ bool post_process_mission()
 	return true;
 }
 
-int get_mission_info(const char *filename, mission *mission_p, bool basic)
+int get_mission_info(const char *filename, mission *mission_p, bool basic, bool filename_is_full_path)
 {
-	char real_fname[MAX_FILENAME_LEN];
-	
-	strncpy(real_fname, filename, MAX_FILENAME_LEN-1);
-	real_fname[sizeof(real_fname)-1] = '\0';
-	
-	char *p = strrchr(real_fname, '.');
-	if (p) *p = 0; // remove any extension
-	strcat_s(real_fname, FS_MISSION_FILE_EXT);  // append mission extension
-
 	int filelength;
+	char real_fname_buf[MAX_FILENAME_LEN];
+	const char *real_fname = real_fname_buf;
+	
+	if (filename_is_full_path) {
+		real_fname = filename;
+	} else {
+		strncpy(real_fname_buf, filename, MAX_FILENAME_LEN-1);
+		real_fname_buf[sizeof(real_fname_buf)-1] = '\0';
+	
+		char *p = strrchr(real_fname_buf, '.');
+		if (p) *p = 0; // remove any extension
+		strcat_s(real_fname_buf, FS_MISSION_FILE_EXT);  // append mission extension
+	}
 
 	// if mission_p is NULL, make it point to The_mission
 	if ( mission_p == NULL )
@@ -6389,7 +6272,7 @@ int get_mission_info(const char *filename, mission *mission_p, bool basic)
 	{
 		read_file_text(real_fname, CF_TYPE_MISSIONS);
 		mission_p->Reset();
-		parse_init(basic);
+		reset_parse();
 		parse_mission_info(mission_p, basic);
 	}
 	catch (const parse::ParseException& e)
@@ -6401,25 +6284,150 @@ int get_mission_info(const char *filename, mission *mission_p, bool basic)
 	return 0;
 }
 
-/**
- * Initialize the mission parse process.
- */
-void parse_init(bool basic)
+void mission::Reset()
 {
-	reset_parse();
+	name[ 0 ] = '\0';
+	author[ 0 ] = '\0';
+	version = 0.;
+	created[ 0 ] = '\0';
+	modified[ 0 ] = '\0';
+	notes[ 0 ] = '\0';
+	mission_desc[ 0 ] = '\0';
+	game_type = MISSION_TYPE_SINGLE;				// default to single player only
+	flags.reset();
 
-	// if we just want basic info then we don't need some of this initialization
-	if (!basic)
-	{
-		for (int i = 0; i < MAX_CARGO; i++)
-			Cargo_names[i] = Cargo_names_buf[i]; // make a pointer array for compatibility
+	num_players = 1;
+	num_respawns = 3;
+	max_respawn_delay = -1;
+	memset(&Ignored_keys, 0, sizeof(int)*CCFG_MAX);
 
-		ai_clear_goal_target_names();
+	memset( &support_ships, 0, sizeof( support_ships ) );
+	support_ships.arrival_anchor = -1;
+	support_ships.departure_anchor = -1;
+	support_ships.max_subsys_repair_val = 100.0f;	//ASSUMPTION: full repair capabilities
+	support_ships.max_support_ships = -1;	// infinite
+	support_ships.max_concurrent_ships = 1;
+	support_ships.ship_class = -1;
 
-		// if we are just wanting basic info then we shouldn't need sexps
-		// (prevents memory fragmentation with the now dynamic Sexp_nodes[])
-		init_sexp();
+	// for each species, store whether support is available
+	for (int species = 0; species < (int)Species_info.size(); species++) {
+		if (Species_info[species].support_ship_index >= 0) {
+			support_ships.support_available_for_species |= (1 << species);
+		}
 	}
+
+	squad_filename[ 0 ] = '\0';
+	squad_name[ 0 ] = '\0';
+	for ( int i = 0; i < GR_NUM_RESOLUTIONS; i++ )
+		loading_screen[ i ][ 0 ] = '\0';
+
+	skybox_model[ 0 ] = '\0';
+	vm_set_identity(&skybox_orientation);
+	skybox_flags = DEFAULT_NMODEL_FLAGS;
+
+	envmap_name[ 0 ] = '\0';
+	contrail_threshold = CONTRAIL_THRESHOLD_DEFAULT;
+	ambient_light_level = DEFAULT_AMBIENT_LIGHT_LEVEL;
+	sound_environment.id = -1;
+
+	command_persona = Default_command_persona;
+	strcpy_s(command_sender, DEFAULT_COMMAND);
+	debriefing_persona = debrief_find_persona_index();
+
+	event_music_name[ 0 ] = '\0';
+	briefing_music_name[ 0 ] = '\0';
+	substitute_event_music_name[ 0 ] = '\0';
+	substitute_briefing_music_name[ 0 ] = '\0';
+
+	ai_profile = &Ai_profiles[Default_ai_profile];
+	cutscenes.clear( );
+}
+
+/**
+ * Initialize the mission and related data structures.
+ */
+void mission_init(mission *pm)
+{
+	pm->Reset();
+
+	Player_starts = 0;
+	Player_start_shipnum = -1;
+	*Player_start_shipname = 0;		// make the string 0 length for checking later
+	Entry_delay_time = 0;
+
+	Mission_all_attack = 0;
+	Num_teams = 1;				// assume 1
+
+	init_sexp();
+	Num_mission_events = 0;
+	Num_goals = 0;
+
+	fiction_viewer_reset();
+	cmd_brief_reset();
+	brief_reset();
+	debrief_reset();
+	messages_init();
+
+	mission_parse_reset_alt();
+	mission_parse_reset_callsign();
+
+	Num_ai_dock_names = 0;
+	ai_clear_goal_target_names();
+
+	for (int i = 0; i < MAX_CARGO; i++)
+		Cargo_names[i] = Cargo_names_buf[i]; // make a pointer array for compatibility
+	strcpy(Cargo_names[0], "Nothing");
+	Num_cargo = 1;
+
+	jumpnode_level_close();
+	waypoint_level_close();
+
+	red_alert_invalidate_timestamp();
+	event_music_reset_choices();
+	clear_texture_replacements();
+
+	// initialize the initially_docked array.
+	for (int i = 0; i < MAX_SHIPS; i++) {
+		Initially_docked[i].docker[0] = '\0';
+		Initially_docked[i].dockee[0] = '\0';
+		Initially_docked[i].docker_point[0] = '\0';
+		Initially_docked[i].dockee_point[0] = '\0';
+	}
+	Total_initially_docked = 0;
+
+	Parse_objects.clear();
+	list_init(&Ship_arrival_list);	// init list for arrival ships
+
+	Subsys_index = 0;
+	Subsys_status_size = 0;
+
+	if (Subsys_status != nullptr) {
+		vm_free( Subsys_status );
+		Subsys_status = nullptr;
+	}
+
+	Num_wings = 0;
+	for (int i = 0; i < MAX_WINGS; i++)
+		Wings[i].clear();
+	
+	Num_reinforcements = 0;
+
+	for (int i = 0; i < MAX_ASTEROID_FIELDS; i++)
+		Asteroid_field.num_initial_asteroids = 0;
+
+	// reset background bitmaps and suns
+	stars_pre_level_init();
+	neb2_pre_level_init();
+
+	ENVMAP = -1;
+
+	// FS1 nebula
+	nebula_close();
+	Nebula_pitch = (int)((float)(Random::next() & 0x0fff) * 360.0f / 4096.0f);
+	Nebula_bank = (int)((float)(Random::next() & 0x0fff) * 360.0f / 4096.0f);
+	Nebula_heading = (int)((float)(Random::next() & 0x0fff) * 360.0f / 4096.0f);
+	Nebula_index = -1;
+	Mission_palette = 1;
 }
 
 // main parse routine for parsing a mission.  The default parameter flags tells us which information
@@ -7156,12 +7164,10 @@ void mission_parse_mark_reinforcement_available(char *name)
  * @return -1 if not created.  
  * @return objnum of created ship otherwise
  */
-int mission_did_ship_arrive(p_object *objp)
+int mission_did_ship_arrive(p_object *objp, bool force_arrival)
 {
-	int should_arrive;
-
-	// find out in the arrival cue became true
-	should_arrive = eval_sexp(objp->arrival_cue);
+	// find out if the arrival cue became true
+	bool should_arrive = force_arrival || eval_sexp(objp->arrival_cue);
 
 	// we must first check to see if this ship is a reinforcement or not.  If so, then don't
 	// process
@@ -7172,12 +7178,22 @@ int mission_did_ship_arrive(p_object *objp)
 		if ( should_arrive ) {
 			mission_parse_mark_reinforcement_available(objp->name);
 		}
-		return -1;
+
+		// if we're forcing the arrival, then "use" the reinforcement; otherwise don't process anything else
+		if (force_arrival) {
+			for (int i = 0; i < Num_reinforcements; i++) {
+				auto rp = &Reinforcements[i];
+				if (!stricmp(rp->name, objp->name)) {
+					rp->num_uses++;
+					break;
+				}
+			}
+		} else {
+			return -1;
+		}
 	}
 
 	if ( should_arrive ) { 		// has the arrival criteria been met?
-		int object_num;
-
 		// check to see if the delay field <= 0.  if so, then create a timestamp and then maybe
 		// create the object
 		if ( objp->arrival_delay <= 0 ) {
@@ -7225,10 +7241,7 @@ int mission_did_ship_arrive(p_object *objp)
 		}
 
 		// create the ship
-		object_num = parse_create_object(objp);
-
-		// since this ship is not in a wing, create a SHIP_ARRIVE entry
-		//mission_log_add_entry( LOG_SHIP_ARRIVE, objp->name, NULL );
+		int object_num = parse_create_object(objp);
 		Assert(object_num >= 0 && object_num < MAX_OBJECTS);
 		
 		// Play the music track for an arrival
@@ -7244,18 +7257,31 @@ int mission_did_ship_arrive(p_object *objp)
 }
 
 // Goober5000
-void mission_maybe_make_ship_arrive(p_object *p_objp)
+bool mission_maybe_make_ship_arrive(p_object *p_objp, bool force_arrival)
 {
-	// try to create ship
-	int objnum = mission_did_ship_arrive(p_objp);
-	if (objnum < 0)
-		return;
+	if (p_objp->wingnum >= 0)
+	{
+		Warning(LOCATION, "Parse objects (%s) belonging to wings must arrive through the wing code!", p_objp->name);
+		return false;
+	}
 
-	// remove from arrival list
+	if (p_objp->created_object != nullptr)
+	{
+		Warning(LOCATION, "Cannot create a parse object (%s) more than once!", p_objp->name);
+		return false;
+	}
+
+	// try to create ship
+	int objnum = mission_did_ship_arrive(p_objp, force_arrival);
+	if (objnum < 0)
+		return false;
+
 	if (p_objp == Arriving_support_ship)
-		mission_parse_support_arrived(objnum);
-	else
-		list_remove(&Ship_arrival_list, p_objp);
+		mission_parse_support_arrived(objnum);		// support ships have some unique housekeeping and are never on the arrival list
+	else if (parse_object_on_arrival_list(p_objp))
+		list_remove(&Ship_arrival_list, p_objp);	// remove from arrival list
+
+	return true;
 }
 
 // Goober5000
@@ -7343,9 +7369,7 @@ int parse_object_on_arrival_list(p_object *pobjp)
  */
 void mission_eval_arrivals()
 {
-	int i;
 	int rship = -1;
-	wing *wingp;
 
 	// before checking arrivals, check to see if we should play a message concerning arrivals
 	// of other wings.  We use the timestamps to delay the arrival message slightly for
@@ -7355,9 +7379,9 @@ void mission_eval_arrivals()
 		int use_terran_cmd;
 
 		// use terran command 25% of time
-		use_terran_cmd = ((frand() - 0.75) > 0.0f)?1:0;
+		use_terran_cmd = ((frand() - 0.75) > 0.0f) ? 1 : 0;
 
-		rship = ship_get_random_player_wing_ship( SHIP_GET_UNSILENCED );
+		rship = ship_get_random_player_wing_ship(SHIP_GET_UNSILENCED);
 		if ((rship < 0) || use_terran_cmd)
 			message_send_builtin_to_player(MESSAGE_ARRIVE_ENEMY, NULL, MESSAGE_PRIORITY_LOW, MESSAGE_TIME_SOON, 0, 0, -1, -1);
 		else if (rship >= 0)
@@ -7371,7 +7395,7 @@ void mission_eval_arrivals()
 	// remove a bunch of objects and completely screw up the list linkage
 	for (SCP_vector<p_object>::iterator ii = Parse_objects.begin(); ii != Parse_objects.end(); ++ii)
 	{
-		p_object *pobjp = &(*ii);
+		p_object* pobjp = &(*ii);
 
 		// make sure we're on the arrival list
 		if (!parse_object_on_arrival_list(pobjp))
@@ -7395,123 +7419,142 @@ void mission_eval_arrivals()
 	// we must also check to see if there are waves of a wing that must
 	// reappear if all the ships of the current wing have been destroyed or
 	// have departed. If this is the case, then create the next wave.
-	for (i = 0; i < Num_wings; i++)
+	for (int i = 0; i < Num_wings; i++)
 	{
-		wingp = &Wings[i];
+		// make it arrive
+		mission_maybe_make_wing_arrive(i);
+	}
+}
 
-		// should we process this wing anymore
-		if (wingp->flags[Ship::Wing_Flags::Gone])
-			continue;
+bool mission_maybe_make_wing_arrive(int wingnum, bool force_arrival)
+{
+	int rship = -1;
+	auto wingp = &Wings[wingnum];
 
-		// if we have a reinforcement wing, then don't try to create new ships automatically.
-		if (wingp->flags[Ship::Wing_Flags::Reinforcement])
-		{
-			// check to see in the wings arrival cue is true, and if so, then mark the reinforcement
-			// as available
-			if (eval_sexp(wingp->arrival_cue))
-				mission_parse_mark_reinforcement_available(wingp->name);
+	// should we process this wing anymore
+	if (wingp->flags[Ship::Wing_Flags::Gone])
+		return false;
 
-			// reinforcement wings skip the rest of the loop
-			continue;
-		}
-		
-		// don't do evaluations for departing wings
-		if (wingp->flags[Ship::Wing_Flags::Departing])
-			continue;
+	// if we have a reinforcement wing, then don't try to create new ships automatically.
+	if (wingp->flags[Ship::Wing_Flags::Reinforcement])
+	{
+		// check to see in the wings arrival cue is true, and if so, then mark the reinforcement
+		// as available
+		if (force_arrival || eval_sexp(wingp->arrival_cue))
+			mission_parse_mark_reinforcement_available(wingp->name);
 
-		// must check to see if we are at the last wave.  Code above to determine when a wing is gone only
-		// gets run when a ship is destroyed (not every N seconds like it used to).  Do a quick check here.
-		if (wingp->current_wave == wingp->num_waves)
-			continue;
-
-		// If the current wave of this wing is 0, then we haven't created the ships in the wing yet.
-		// If the threshold of the wing has been reached, then we need to create more ships.
-		if ((wingp->current_wave == 0) || (wingp->current_count <= wingp->threshold))
-		{
-			// Call parse_wing_create_ships to try and create it.  That function will eval the arrival
-			// cue of the wing and create the ships if necessary.
-			int created = parse_wing_create_ships(wingp, wingp->wave_count);
-
-			// if we didn't create any ships, nothing more to do for this wing
-			if (created <= 0)
-				continue;
-
-			// If this wing was a reinforcement wing, then we need to reset the reinforcement flag for the wing
-			// so the user can call in another set if need be.
-			if (wingp->flags[Ship::Wing_Flags::Reset_reinforcement])
-			{
-                wingp->flags.remove(Ship::Wing_Flags::Reset_reinforcement);
-                wingp->flags.set(Ship::Wing_Flags::Reinforcement);
-			}
-
-			// probably send a message to the player when this wing arrives.
-			// if no message, nothing more to do for this wing
-			if (wingp->flags[Ship::Wing_Flags::No_arrival_message])
-				continue;
-
-			// multiplayer team vs. team
-			if(MULTI_TEAM)
-			{
-				// send a hostile wing arrived message
-				rship = wingp->ship_index[wingp->special_ship];
-
-				int multi_team_filter = Ships[rship].team;
-
-				// there are two timestamps at work here.  One to control how often the player receives
-				// messages about incoming hostile waves, and the other to control how long after
-				// the wing arrives does the player actually get the message.
-				if (timestamp_elapsed(Allow_arrival_message_timestamp_m[multi_team_filter]))
-				{
-					if (!timestamp_valid(Arrival_message_delay_timestamp_m[multi_team_filter]))
-					{
-						Arrival_message_delay_timestamp_m[multi_team_filter] = timestamp_rand(ARRIVAL_MESSAGE_DELAY_MIN, ARRIVAL_MESSAGE_DELAY_MAX);
-					}
-					Allow_arrival_message_timestamp_m[multi_team_filter] = timestamp(ARRIVAL_MESSAGE_MIN_SEPARATION);
-						
-					// send to the proper team
-					message_send_builtin_to_player(MESSAGE_ARRIVE_ENEMY, NULL, MESSAGE_PRIORITY_LOW, MESSAGE_TIME_SOON, 0, 0, -1, multi_team_filter);
+		// if we're forcing the arrival, then "use" the reinforcement; otherwise don't process anything else
+		if (force_arrival && wingp->current_count == 0) {
+			for (int i = 0; i < Num_reinforcements; i++) {
+				auto rp = &Reinforcements[i];
+				if (!stricmp(rp->name, wingp->name)) {
+					rp->num_uses++;
+					break;
 				}
 			}
-			// does the player attack this ship?
-			else if (iff_x_attacks_y(Player_ship->team, Ships[wingp->ship_index[0]].team))
-			{
-				// there are two timestamps at work here.  One to control how often the player receives
-				// messages about incoming hostile waves, and the other to control how long after
-				// the wing arrives does the player actually get the message.
-				if (timestamp_elapsed(Allow_arrival_message_timestamp))
-				{
-					if (!timestamp_valid(Arrival_message_delay_timestamp))
-					{
-						Arrival_message_delay_timestamp = timestamp_rand(ARRIVAL_MESSAGE_DELAY_MIN, ARRIVAL_MESSAGE_DELAY_MAX);
-					}
-					Allow_arrival_message_timestamp = timestamp(ARRIVAL_MESSAGE_MIN_SEPARATION);
-				}
-			}
-			// everything else
-			else
-			{
-				rship = ship_get_random_ship_in_wing(i, SHIP_GET_UNSILENCED);
-				if (rship >= 0)
-				{
-					int j;
-					SCP_string message_name;
-					sprintf(message_name, "%s Arrived", wingp->name);
-
-					// see if this wing has an arrival message associated with it
-					for (j = 0; j < MAX_BUILTIN_MESSAGE_TYPES; j++)
-					{
-						if (!stricmp(message_name.c_str(), Builtin_messages[j].name))
-						{
-							message_send_builtin_to_player(j, &Ships[rship], MESSAGE_PRIORITY_LOW, MESSAGE_TIME_SOON, 0, 0, -1, -1);
-							break;
-						}
-					}
-				}
-			}
+		} else {
+			// reinforcement wings skip the rest of the function
+			return false;
 		}
 	}
+		
+	// don't do evaluations for departing wings
+	if (wingp->flags[Ship::Wing_Flags::Departing])
+		return false;
 
-	Mission_arrival_timestamp = timestamp(ARRIVAL_TIMESTAMP);
+	// must check to see if we are at the last wave.  Code above to determine when a wing is gone only
+	// gets run when a ship is destroyed (not every N seconds like it used to).  Do a quick check here.
+	if (wingp->current_wave == wingp->num_waves)
+		return false;
+
+	// If the current wave of this wing is 0, then we haven't created the ships in the wing yet.
+	// If the threshold of the wing has been reached, then we need to create more ships.
+	if ((wingp->current_wave == 0) || (wingp->current_count <= wingp->threshold))
+	{
+		// Call parse_wing_create_ships to try and create it.  That function will eval the arrival
+		// cue of the wing and create the ships if necessary.
+		int created = parse_wing_create_ships(wingp, wingp->wave_count, false, force_arrival);
+
+		// if we didn't create any ships, nothing more to do for this wing
+		if (created <= 0)
+			return false;
+
+		// If this wing was a reinforcement wing, then we need to reset the reinforcement flag for the wing
+		// so the user can call in another set if need be.
+		if (wingp->flags[Ship::Wing_Flags::Reset_reinforcement])
+		{
+            wingp->flags.remove(Ship::Wing_Flags::Reset_reinforcement);
+            wingp->flags.set(Ship::Wing_Flags::Reinforcement);
+		}
+
+		// probably send a message to the player when this wing arrives.
+		// if no message, nothing more to do for this wing
+		if (wingp->flags[Ship::Wing_Flags::No_arrival_message])
+			return true;
+
+		// multiplayer team vs. team
+		if(MULTI_TEAM)
+		{
+			// send a hostile wing arrived message
+			rship = wingp->ship_index[wingp->special_ship];
+
+			int multi_team_filter = Ships[rship].team;
+
+			// there are two timestamps at work here.  One to control how often the player receives
+			// messages about incoming hostile waves, and the other to control how long after
+			// the wing arrives does the player actually get the message.
+			if (timestamp_elapsed(Allow_arrival_message_timestamp_m[multi_team_filter]))
+			{
+				if (!timestamp_valid(Arrival_message_delay_timestamp_m[multi_team_filter]))
+				{
+					Arrival_message_delay_timestamp_m[multi_team_filter] = timestamp_rand(ARRIVAL_MESSAGE_DELAY_MIN, ARRIVAL_MESSAGE_DELAY_MAX);
+				}
+				Allow_arrival_message_timestamp_m[multi_team_filter] = timestamp(ARRIVAL_MESSAGE_MIN_SEPARATION);
+						
+				// send to the proper team
+				message_send_builtin_to_player(MESSAGE_ARRIVE_ENEMY, NULL, MESSAGE_PRIORITY_LOW, MESSAGE_TIME_SOON, 0, 0, -1, multi_team_filter);
+			}
+		}
+		// does the player attack this ship?
+		else if (iff_x_attacks_y(Player_ship->team, Ships[wingp->ship_index[0]].team))
+		{
+			// there are two timestamps at work here.  One to control how often the player receives
+			// messages about incoming hostile waves, and the other to control how long after
+			// the wing arrives does the player actually get the message.
+			if (timestamp_elapsed(Allow_arrival_message_timestamp))
+			{
+				if (!timestamp_valid(Arrival_message_delay_timestamp))
+				{
+					Arrival_message_delay_timestamp = timestamp_rand(ARRIVAL_MESSAGE_DELAY_MIN, ARRIVAL_MESSAGE_DELAY_MAX);
+				}
+				Allow_arrival_message_timestamp = timestamp(ARRIVAL_MESSAGE_MIN_SEPARATION);
+			}
+		}
+		// everything else
+		else
+		{
+			rship = ship_get_random_ship_in_wing(wingnum, SHIP_GET_UNSILENCED);
+			if (rship >= 0)
+			{
+				SCP_string message_name;
+				sprintf(message_name, "%s Arrived", wingp->name);
+
+				// see if this wing has an arrival message associated with it
+				for (int j = 0; j < MAX_BUILTIN_MESSAGE_TYPES; j++)
+				{
+					if (!stricmp(message_name.c_str(), Builtin_messages[j].name))
+					{
+						message_send_builtin_to_player(j, &Ships[rship], MESSAGE_PRIORITY_LOW, MESSAGE_TIME_SOON, 0, 0, -1, -1);
+						break;
+					}
+				}
+			}
+		}
+
+		return true;
+	}
+
+	return false;
 }
 
 
@@ -7527,10 +7570,13 @@ int mission_do_departure(object *objp, bool goal_is_to_warp)
 
 	mprintf(("Entered mission_do_departure() for %s\n", shipp->ship_name));
 
-	// add scripting hook for 'On Departure Started' --wookieejedi
-	// hook is placed at the beginning of this function to allow the scripter to
-	// actually have access to the ship's departure decisions before they are all executed
-	OnDepartureStartedHook->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp), scripting::hook_param("Ship", 'o', objp)));
+	if (OnDepartureStartedHook->isActive())
+	{
+		// add scripting hook for 'On Departure Started' --wookieejedi
+		// hook is placed at the beginning of this function to allow the scripter to
+		// actually have access to the ship's departure decisions before they are all executed
+		OnDepartureStartedHook->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp), scripting::hook_param("Ship", 'o', objp)));
+	}
 
 	// abort rearm, because if we entered this function we're either going to depart via hyperspace, depart via bay,
 	// or revert to our default behavior
@@ -7731,7 +7777,6 @@ void mission_eval_departures()
 			}
 		}
 	}
-	Mission_departure_timestamp = timestamp(DEPARTURE_TIMESTAMP);
 }
 
 /**
@@ -7858,14 +7903,14 @@ int get_parse_name_index(const char *name)
 {
 	int i;
 
-	for (i=0; i<Num_parse_names; i++)
+	for (i=0; i<(int)Num_parse_names; i++)
 		if (!stricmp(name, Parse_names[i]))
 			return i;
 
 	Assert(i < MAX_SHIPS + MAX_WINGS);
 	Assert(strlen(name) < NAME_LENGTH);
 	strcpy_s(Parse_names[i], name);
-	return Num_parse_names++;
+	return (int)Num_parse_names++;
 }
 
 // Goober5000
@@ -8052,7 +8097,7 @@ void mission_bring_in_support_ship( object *requester_objp )
 	vec3d center, warp_in_pos;
 	p_object *pobj;
 	ship *requester_shipp;
-	int i, requester_species;
+	int i;
 
 	Assert ( requester_objp->type == OBJ_SHIP );
 	requester_shipp = &Ships[requester_objp->instance];	//	MK, 10/23/97, used to be ->type, bogus, no?
@@ -8062,6 +8107,17 @@ void mission_bring_in_support_ship( object *requester_objp )
 		mission_add_to_arriving_support( requester_objp );
 		return;
 	}
+
+	// If the support ship class was set via SEXP, use it. Otherwise, look it up by the requester's species.
+	int ship_class = The_mission.support_ships.ship_class;
+	if (ship_class < 0) {
+		int requester_species = Ship_info[requester_shipp->ship_info_index].species;
+		ship_class = Species_info[requester_species].support_ship_index;
+		if ( ship_class < 0 ) {
+			Warning(LOCATION, "Couldn't determine the support ship class to bring in\n");
+			return;
+		}
+	}
 	
 	// create a parse object, and put it onto the ship arrival list.  This whole thing kind of stinks.
 	// I want to put it into a parse object since it needs to arrive just a little later than
@@ -8069,8 +8125,22 @@ void mission_bring_in_support_ship( object *requester_objp )
 	// object since I'm no longer working with a mission file.  These exceptions will be noted with
 	// comments
 
+	Support_ship_pobj = p_object();		// get a fresh p_object with default fields
 	Arriving_support_ship = &Support_ship_pobj;
 	pobj = Arriving_support_ship;
+	pobj->ship_class = ship_class;
+	auto sip = &Ship_info[ship_class];
+
+	// initialize class-specific fields
+	pobj->ai_class = sip->ai_class;
+	pobj->warpin_params_index = sip->warpin_params_index;
+	pobj->warpout_params_index = sip->warpout_params_index;
+	pobj->ship_max_shield_strength = sip->max_shield_strength;
+	pobj->ship_max_hull_strength = sip->max_hull_strength;
+	Assert(pobj->ship_max_hull_strength > 0.0f);	// Goober5000: div-0 check (not shield because we might not have one)
+	pobj->max_shield_recharge = sip->max_shield_recharge;
+	pobj->replacement_textures = sip->replacement_textures;	// initialize our set with the ship class set, which may be empty
+	pobj->score = sip->score;
 
 	// get average position of all ships
 	obj_get_average_ship_pos( &center );
@@ -8100,67 +8170,14 @@ void mission_bring_in_support_ship( object *requester_objp )
 		if ( (ship_name_lookup(pobj->name) == -1) && (ship_find_exited_ship_by_name(pobj->name) == -1) )
 			break;
 		i++;
-	} while(1);
-
-	vm_set_identity( &(pobj->orient) );
-
-	// *sigh*.  Gotta get the ship class.  For now, this will amount to finding a ship in the ship_info
-	// array with the same team as the requester of type SIF_SUPPORT.  Might need to be changed, but who knows
-
-	// Goober5000 - who knew of the SCP release? ;) only determine ship class if not set by SEXP
-	pobj->ship_class = The_mission.support_ships.ship_class;
-	if (pobj->ship_class < 0)
-	{
-		requester_species = Ship_info[requester_shipp->ship_info_index].species;
-
-		// 5/6/98 -- MWA  Don't need to do anything for multiplayer.  I think that we always want to use
-		// the species of the caller ship.
-
-		i = -1;
-		// get index of correct species support ship
-		for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
-            if ((it->species == requester_species) && (it->flags[Ship::Info_Flags::Support])) {
-				i = (int)std::distance(Ship_info.cbegin(), it);
-				break;
-			}
-		}
-
-		if ( i != -1 )
-			pobj->ship_class = i;
-		else
-			Int3();				// BOGUS!!!!  gotta figure something out here
-	}
-
-	// set support ship hitpoints
-	pobj->ship_max_hull_strength = Ship_info[i].max_hull_strength;
-	pobj->ship_max_shield_strength = Ship_info[i].max_shield_strength;
-	pobj->max_shield_recharge = Ship_info[i].max_shield_recharge;
+	} while(true);
 
 	pobj->team = requester_shipp->team;
 
-	pobj->alt_iff_color.clear();
-
-	pobj->behavior = AIM_NONE;		// ASSUMPTION:  the mission file has the string "None" which maps to AIM_NONE
-
-	// set the ai_goals to -1.  We will put the requester object shipname in repair target array and then take
+	// We will put the requester object shipname in repair target array and then take
 	// care of setting up the goal when creating the ship!!!!
-	pobj->ai_goals = -1;
 	Num_arriving_repair_targets = 0;
 	mission_add_to_arriving_support( requester_objp );
-
-	// need to set ship's cargo to nothing.  scan the cargo_names array looking for the string nothing.
-	// add it if not found
-	for (i = 0; i < Num_cargo; i++ )
-		if ( !stricmp(Cargo_names[i], NOX("nothing")) )
-			break;
-
-	if ( i == Num_cargo ) {
-		strcpy(Cargo_names[i], NOX("Nothing"));
-		Num_cargo++;
-	}
-	pobj->cargo1 = char(i);
-
-	pobj->status_count = 0;
 
 	// Goober5000 - take some stuff from mission flags
 	pobj->arrival_location = The_mission.support_ships.arrival_location;
@@ -8168,48 +8185,15 @@ void mission_bring_in_support_ship( object *requester_objp )
 	pobj->departure_location = The_mission.support_ships.departure_location;
 	pobj->departure_anchor = The_mission.support_ships.departure_anchor;
 
-	pobj->arrival_path_mask = 0;
-	pobj->departure_path_mask = 0;
-
-	pobj->arrival_distance = 0;
-	pobj->arrival_cue = Locked_sexp_true;
 	pobj->arrival_delay = timestamp_rand(WARP_IN_TIME_MIN, WARP_IN_TIME_MAX);
 
-	pobj->subsys_count = 0;				// number of elements used in subsys_status array
 	pobj->initial_velocity = 100;		// start at 100% velocity
-	pobj->initial_hull = 100;			// start at 100% hull	
-	pobj->initial_shields = 100;		// and 100% shields
-
-	pobj->departure_cue = Locked_sexp_false;
-	pobj->departure_delay = 0;
-
-	pobj->warpin_params_index = -1;
-	pobj->warpout_params_index = -1;
-
-	pobj->wingnum = -1;
-
-    pobj->flags.reset();
 
     if (Player_obj->flags[Object::Object_Flags::No_shields])  {
 		pobj->flags.set(Mission::Parse_Object_Flags::OF_No_shields);	// support ships have no shields when player has not shields
 	}
 
-	pobj->ai_class = Ship_info[pobj->ship_class].ai_class;
-	pobj->hotkey = -1;
-	pobj->score = 0;
-	pobj->assist_score_pct = 0;
-
-	pobj->dock_list = NULL;
-	pobj->created_object = NULL;
-	pobj->group = -1;
-	pobj->persona_index = -1;
 	pobj->net_signature = multi_assign_network_signature(MULTI_SIG_SHIP);
-	pobj->wing_status_wing_index = -1;
-	pobj->wing_status_wing_pos = -1;
-	pobj->respawn_count = 0;
-	pobj->alt_type_index = -1;
-	pobj->callsign_index = -1;
-	pobj->replacement_textures.clear();
 }
 
 /**
@@ -8487,7 +8471,7 @@ void conv_fix_punctuation_section(char *str, const char *section_start, const ch
 		t2 = strstr(t1, text_end);
 		if (!t2 || t2 > s2) return;
 
-		replace_all(t1, "\"", "$quote", PARSE_TEXT_SIZE - (str - Parse_text), (t2 - t1));
+		replace_all(t1, "\"", "$quote", PARSE_TEXT_SIZE - (str - Parse_text) - 1, (t2 - t1));
 	}	
 }
 	

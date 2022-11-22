@@ -1,5 +1,7 @@
 #include "model/modelanimation_segments.h"
 
+#include "render/3d.h"
+
 namespace animation {
 
 	ModelAnimationSegment* ModelAnimationSegmentSerial::copy() const {
@@ -10,17 +12,18 @@ namespace animation {
 		return newCopy;
 	}
 
-	void ModelAnimationSegmentSerial::recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) {
+	void ModelAnimationSegmentSerial::recalculate(ModelAnimationSubmodelBuffer& base, ModelAnimationSubmodelBuffer& currentAnimDelta, polymodel_instance* pmi) {
 		float& duration = m_duration[pmi->id];
 		duration = 0.0f;
 
 		for (const auto& segment : m_segments) {
-			segment->recalculate(base, pmi);
+			segment->recalculate(base, currentAnimDelta, pmi);
 
 			duration += segment->getDuration(pmi->id);
 
 			//To properly recalculate, we actually need to fully calculate the previous' segment's final delta
 			segment->calculateAnimation(base, segment->getDuration(pmi->id), pmi->id);
+			segment->calculateAnimation(currentAnimDelta, segment->getDuration(pmi->id), pmi->id);
 		}
 	}
 
@@ -87,13 +90,13 @@ namespace animation {
 		return newCopy;
 	}
 
-	void ModelAnimationSegmentParallel::recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) {
+	void ModelAnimationSegmentParallel::recalculate(ModelAnimationSubmodelBuffer& base, ModelAnimationSubmodelBuffer& currentAnimDelta, polymodel_instance* pmi) {
 		float& duration = m_duration[pmi->id];
 		duration = 0.0f;
 
 		for (const auto& segment : m_segments) {
 			ModelAnimationSubmodelBuffer baseCopy = base;
-			segment->recalculate(baseCopy, pmi);
+			segment->recalculate(baseCopy, currentAnimDelta, pmi);
 
 			//recalculate total duration if necessary
 			float newDur = segment->getDuration(pmi->id);
@@ -154,7 +157,7 @@ namespace animation {
 		return new ModelAnimationSegmentWait(*this);
 	}
 	
-	void ModelAnimationSegmentWait::recalculate(ModelAnimationSubmodelBuffer& /*base*/, polymodel_instance* pmi) {
+	void ModelAnimationSegmentWait::recalculate(ModelAnimationSubmodelBuffer& /*base*/, ModelAnimationSubmodelBuffer& /*currentAnimDelta*/, polymodel_instance* pmi) {
 		m_duration[pmi->id] = m_time;
 	};
 	
@@ -167,38 +170,38 @@ namespace animation {
 		return segment;
 	}
 
-	ModelAnimationSegmentSetOrientation::ModelAnimationSegmentSetOrientation(std::shared_ptr<ModelAnimationSubmodel> submodel, const angles& angle, bool isAngleRelative) :
-		m_submodel(std::move(submodel)), m_targetAngle(angle), m_isAngleRelative(isAngleRelative) { }
-	ModelAnimationSegmentSetOrientation::ModelAnimationSegmentSetOrientation(std::shared_ptr<ModelAnimationSubmodel> submodel, const matrix& orientation, bool isAngleRelative) :
-			m_submodel(std::move(submodel)), m_targetOrientation(orientation), m_isAngleRelative(isAngleRelative) { }
+	ModelAnimationSegmentSetOrientation::ModelAnimationSegmentSetOrientation(std::shared_ptr<ModelAnimationSubmodel> submodel, const angles& angle, ModelAnimationCoordinateRelation isAngleRelative) :
+		m_submodel(std::move(submodel)), m_targetAngle(angle), m_relationType(isAngleRelative) { }
+	ModelAnimationSegmentSetOrientation::ModelAnimationSegmentSetOrientation(std::shared_ptr<ModelAnimationSubmodel> submodel, const matrix& orientation, ModelAnimationCoordinateRelation isAngleRelative) :
+			m_submodel(std::move(submodel)), m_targetOrientation(orientation), m_relationType(isAngleRelative) { }
 		
 	ModelAnimationSegment* ModelAnimationSegmentSetOrientation::copy() const {
 		return new ModelAnimationSegmentSetOrientation(*this);
 	}
 
-	void ModelAnimationSegmentSetOrientation::recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) {
+	void ModelAnimationSegmentSetOrientation::recalculate(ModelAnimationSubmodelBuffer& base, ModelAnimationSubmodelBuffer& currentAnimDelta, polymodel_instance* pmi) {
 		int pmi_id = pmi->id;
-		if (m_isAngleRelative) {
-			m_targetAngle.if_filled([this, pmi_id](const angles& targetAngle) -> void {
-				vm_angles_2_matrix(&m_instances[pmi_id].rot, &targetAngle);
-			});
-			m_targetOrientation.if_filled([this, pmi_id](const matrix& targetOrient) -> void {
-				m_instances[pmi_id].rot = targetOrient;
-			});
+		if (m_relationType == ModelAnimationCoordinateRelation::RELATIVE_COORDS) {
+			if (m_targetAngle) {
+				vm_angles_2_matrix(&m_instances[pmi_id].rot, &(*m_targetAngle));
+			}
+			else if (m_targetOrientation) {
+				m_instances[pmi_id].rot = *m_targetOrientation;
+			}
 		}
 		else {
 			//In Absolute mode we need to undo the previously applied rotation to make sure we actually end up at the target rotation despite having only a delta we output, as opposed to just overwriting the value
 			matrix unrotate, target;
-			const ModelAnimationData<>& submodel = base[m_submodel].data;
+			const ModelAnimationData<>& submodel = (m_relationType == ModelAnimationCoordinateRelation::ABSOLUTE_COORDS ? base[m_submodel].data : currentAnimDelta[m_submodel].data);
 
 			vm_copy_transpose(&unrotate, &submodel.orientation);
 
-			m_targetAngle.if_filled([&target](const angles& targetAngle) -> void {
-				vm_angles_2_matrix(&target, &targetAngle);
-			});
-			m_targetOrientation.if_filled([&target](const matrix& targetOrient) -> void {
-				target = targetOrient;
-			});
+			if (m_targetAngle) {
+				vm_angles_2_matrix(&target, &(*m_targetAngle));
+			}
+			else if (m_targetOrientation) {
+				target = *m_targetOrientation;
+			}
 
 			vm_matrix_x_matrix(&m_instances[pmi_id].rot, &target, &unrotate);
 		}
@@ -220,16 +223,10 @@ namespace animation {
 	
 	std::shared_ptr<ModelAnimationSegment> ModelAnimationSegmentSetOrientation::parser(ModelAnimationParseHelper* data) {
 		angles angle;
-		bool isRelative = true;
 
 		required_string("+Angle:");
 		stuff_angles_deg_phb(&angle);
-		isRelative &= !optional_string("+Absolute");
-		bool explicitRelative = optional_string("+Relative");
-
-		if (!isRelative && explicitRelative) {
-			error_display(1, "Orientation cannot both be absolute and relative!");
-		}
+		ModelAnimationCoordinateRelation relationType = ModelAnimationParseHelper::parseCoordinateRelation();
 
 		auto submodel = ModelAnimationParseHelper::parseSubmodel();
 
@@ -240,7 +237,7 @@ namespace animation {
 				error_display(1, "Set Orientation has no target submodel!");
 		}
 
-		auto segment = std::shared_ptr<ModelAnimationSegmentSetOrientation>(new ModelAnimationSegmentSetOrientation(submodel, angle, isRelative));
+		auto segment = std::shared_ptr<ModelAnimationSegmentSetOrientation>(new ModelAnimationSegmentSetOrientation(submodel, angle, relationType));
 
 		return segment;
 	}
@@ -253,7 +250,7 @@ namespace animation {
 		return new ModelAnimationSegmentSetAngle(*this);
 	}
 
-	void ModelAnimationSegmentSetAngle::recalculate(ModelAnimationSubmodelBuffer& /*base*/, polymodel_instance* pmi) {
+	void ModelAnimationSegmentSetAngle::recalculate(ModelAnimationSubmodelBuffer& /*base*/, ModelAnimationSubmodelBuffer& /*currentAnimDelta*/, polymodel_instance* pmi) {
 		angles angs = vmd_zero_angles;
 		auto submodel_info = m_submodel->findSubmodel(pmi).second;
 		if (submodel_info == nullptr) {
@@ -322,15 +319,15 @@ namespace animation {
 
 	static constexpr float angles::*pbh[] = { &angles::p, &angles::b, &angles::h };
 
-	ModelAnimationSegmentRotation::ModelAnimationSegmentRotation(std::shared_ptr<ModelAnimationSubmodel> submodel, optional<angles> targetAngle, optional<angles> velocity, optional<float> time, optional<angles> acceleration, bool isAbsolute) :
-		m_submodel(std::move(submodel)), m_targetAngle(targetAngle), m_velocity(velocity), m_time(time), m_acceleration(acceleration), m_isAbsolute(isAbsolute) { }
+	ModelAnimationSegmentRotation::ModelAnimationSegmentRotation(std::shared_ptr<ModelAnimationSubmodel> submodel, tl::optional<angles> targetAngle, tl::optional<angles> velocity, tl::optional<float> time, tl::optional<angles> acceleration, ModelAnimationCoordinateRelation relationType) :
+		m_submodel(std::move(submodel)), m_targetAngle(targetAngle), m_velocity(velocity), m_time(time), m_acceleration(acceleration), m_relationType(relationType) { }
 
 	ModelAnimationSegment* ModelAnimationSegmentRotation::copy() const {
 		return new ModelAnimationSegmentRotation(*this);
 	}
 
-	void ModelAnimationSegmentRotation::recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) {
-		Assertion(!(m_targetAngle.has() ^ m_velocity.has() ^ m_time.has()), "Tried to run over- or underdefined rotation. Define exactly two out of 'time', 'velocity', and 'angle'!");
+	void ModelAnimationSegmentRotation::recalculate(ModelAnimationSubmodelBuffer& base, ModelAnimationSubmodelBuffer& currentAnimDelta, polymodel_instance* pmi) {
+		Assertion(!(m_targetAngle.has_value() ^ m_velocity.has_value() ^ m_time.has_value()), "Tried to run over- or underdefined rotation. Define exactly two out of 'time', 'velocity', and 'angle'!");
 
 		instance_data& instanceData = m_instances[pmi->id];
 		auto submodel_info = m_submodel->findSubmodel(pmi).second;
@@ -339,32 +336,32 @@ namespace animation {
 			return;
 		}
 
-		if (m_targetAngle.has()) { //If we have an angle specified, use it.
-			if (m_isAbsolute) {
-				const ModelAnimationData<>& submodel = base[m_submodel].data;
+		if (m_targetAngle) { //If we have an angle specified, use it.
+			if (m_relationType != ModelAnimationCoordinateRelation::RELATIVE_COORDS) {
+				const ModelAnimationData<>& submodel = (m_relationType == ModelAnimationCoordinateRelation::ABSOLUTE_COORDS ? base[m_submodel].data : currentAnimDelta[m_submodel].data);
 
 				matrix orientTransp, target, diff;
-				const angles& targetAngle = m_targetAngle;
+				const angles& targetAngle = *m_targetAngle;
 				vm_copy_transpose(&orientTransp, &submodel.orientation);
 				vm_angles_2_matrix(&target, &targetAngle);
 				vm_matrix_x_matrix(&diff, &target, &orientTransp);
 				vm_extract_angles_matrix_alternate(&instanceData.m_actualTarget, &diff);
 			}
 			else
-				instanceData.m_actualTarget = m_targetAngle;
+				instanceData.m_actualTarget = *m_targetAngle;
 		}
 		else { //If we don't have an angle specified, calculate it. This implies we must have velocity and time.
-			const angles& v = m_velocity;
-			const float& t = m_time;
+			const angles& v = *m_velocity;
+			const float& t = *m_time;
 
-			if (m_acceleration.has()) { //Consider acceleration to calculate the angle
+			if (m_acceleration) { //Consider acceleration to calculate the angle
 				//Let the following equations define our accelerated and braked movement, under the assumption that 2 * ta <= t.
 				//d : distance, v : max velocity, a : acceleration, t : total time, ta : time spent accelerating (and breaking)
 				//v = a * ta
 				//d = v * (t - 2 * ta) + 1/2 * 2 * a * ta^2
 				//this simplifies to d = (v(a * t - v))/a and ta = v / a
 				//if 2 * ta <= t does not hold, it's just d = 1/2 * 2 * a * (t/2)^2 -> this implies that the acceleration is too small to reach the target velocity within the specified time.
-				angles a = m_acceleration;
+				angles a = *m_acceleration;
 				angles at;
 
 				for (float angles::* i : pbh) {
@@ -384,19 +381,19 @@ namespace animation {
 			}
 		}
 
-		if (m_velocity.has()) { //If we have velocity specified, use it.
-			instanceData.m_actualVelocity = m_velocity;
+		if (m_velocity) { //If we have velocity specified, use it.
+			instanceData.m_actualVelocity = *m_velocity;
 		}
 		else { //If we don't have velocity specified, calculate it. This implies we must have an angle and time.
-			const float& t = m_time;
+			const float& t = *m_time;
 			const angles& d = instanceData.m_actualTarget;
 
-			if (m_acceleration.has()) { //Consider acceleration to calculate the velocity
+			if (m_acceleration) { //Consider acceleration to calculate the velocity
 				//Assume equations from calc angles case, but solve for ta and v now, under the assumption that these roots have a real solution.
 				//v = 1/2*(|a|*t-sqrt(|a|)*sqrt(|a|*t^2-4*|d|))*sign(d) and ta = 1/2*(t-(sqrt(|a|*t^2-4*|d|)/sqrt(|a|)))
 				//If the roots don't have a real solution, it's v = a * t/2, and ta = 1/2*t -> this implies that the acceleration is too small to reach the target distance within the specified time.
 
-				angles a = m_acceleration;
+				angles a = *m_acceleration;
 				for (float angles::* i : pbh)
 					a.*i = copysignf(a.*i, d.*i);
 				instanceData.m_actualAccel = a;
@@ -425,8 +422,8 @@ namespace animation {
 
 		}
 
-		if (m_time.has()) { //If we have time specified, use it.
-			const float& time = m_time;
+		if (m_time) { //If we have time specified, use it.
+			const float& time = *m_time;
 			m_duration[pmi->id] = time;
 
 			angles actualTime{ 0,0,0 };
@@ -461,11 +458,11 @@ namespace animation {
 
 					float durationAxis = 0.0f;
 
-					if (m_acceleration.has()) { //Consider acceleration to calculate the time
+					if (m_acceleration) { //Consider acceleration to calculate the time
 						//Assume equations from calc angles case, but solve for ta and t now, with the resulting ta <= t / 2.
 						//t = v/a+d/v and ta = v/a
 						//If thus d/v < v/a, it's t = 2*sqrt(d/a), and ta = 1/2*t -> this implies that the acceleration is too small to reach the target velocity within the specified distance.
-						float a = copysignf(((angles)m_acceleration).*i, d.*i);
+						float a = copysignf((*m_acceleration).*i, d.*i);
 						actualAccel.*i = a;
 
 						float va = v.*i / a;
@@ -489,7 +486,7 @@ namespace animation {
 				}
 			}
 			
-			if (m_acceleration.has()) {
+			if (m_acceleration) {
 				instanceData.m_actualAccel = actualAccel;
 				instanceData.m_accelTime = accelTime;
 			}
@@ -503,9 +500,9 @@ namespace animation {
 
 		angles currentRot{ 0,0,0 };
 
-		if (instanceData.m_actualAccel.has()) {
-			const angles& a = instanceData.m_actualAccel;
-			const angles& at = instanceData.m_accelTime;
+		if (instanceData.m_actualAccel) {
+			const angles& a = *instanceData.m_actualAccel;
+			const angles& at = *instanceData.m_accelTime;
 			const angles& v = instanceData.m_actualVelocity;
 			const angles& t = instanceData.m_actualTime;
 
@@ -558,26 +555,21 @@ namespace animation {
 	}
 	
 	std::shared_ptr<ModelAnimationSegment> ModelAnimationSegmentRotation::parser(ModelAnimationParseHelper* data) {
-		optional<angles> angle, velocity, acceleration;
-		optional<float> time;
-		bool isAbsolute = false;
+		tl::optional<angles> angle, velocity, acceleration;
+		tl::optional<float> time;
+		ModelAnimationCoordinateRelation relationType = ModelAnimationCoordinateRelation::RELATIVE_COORDS;
 
 		if (optional_string("+Angle:")) {
 			angles parse;
 			stuff_angles_deg_phb(&parse);
-			angle = parse;
-			isAbsolute = optional_string("+Absolute");
-			bool relative = optional_string("+Relative");
-
-			if (isAbsolute && relative) {
-				error_display(1, "Rotation cannot both be absolute and relative!");
-			}
+			angle = std::move(parse);
+			relationType = ModelAnimationParseHelper::parseCoordinateRelation();
 		}
 
 		if (optional_string("+Velocity:")) {
 			angles parse;
 			stuff_angles_deg_phb(&parse);
-			velocity = parse;
+			velocity = std::move(parse);
 		}
 
 		if (optional_string("+Time:")) {
@@ -586,14 +578,14 @@ namespace animation {
 			time = parse;
 		}
 
-		if (angle.has() ^ velocity.has() ^ time.has()) {
+		if (angle.has_value() ^ velocity.has_value() ^ time.has_value()) {
 			error_display(1, "Rotation must have exactly two values out of angle, velocity and time specified!");
 		}
 
 		if (optional_string("+Acceleration:")) {
 			angles parse;
 			stuff_angles_deg_phb(&parse);
-			acceleration = parse;
+			acceleration = std::move(parse);
 		}
 
 		auto submodel = ModelAnimationParseHelper::parseSubmodel();
@@ -604,13 +596,13 @@ namespace animation {
 				error_display(1, "Rotation has no target submodel!");
 		}
 
-		auto segment = std::shared_ptr<ModelAnimationSegmentRotation>(new ModelAnimationSegmentRotation(submodel, angle, velocity, time, acceleration, isAbsolute));
+		auto segment = std::shared_ptr<ModelAnimationSegmentRotation>(new ModelAnimationSegmentRotation(submodel, angle, velocity, time, acceleration, relationType));
 
 		return segment;
 	}
 
 
-	ModelAnimationSegmentAxisRotation::ModelAnimationSegmentAxisRotation(std::shared_ptr<ModelAnimationSubmodel> submodel, optional<float> targetAngle, optional<float> velocity, optional<float> time, optional<float> acceleration, const vec3d& axis) :
+	ModelAnimationSegmentAxisRotation::ModelAnimationSegmentAxisRotation(std::shared_ptr<ModelAnimationSubmodel> submodel, tl::optional<float> targetAngle, tl::optional<float> velocity, tl::optional<float> time, tl::optional<float> acceleration, const vec3d& axis) :
 			m_submodel(std::move(submodel)), m_targetAngle(targetAngle), m_velocity(velocity), m_time(time), m_acceleration(acceleration) {
 		vm_vec_copy_normalize(&m_axis, &axis);
 	}
@@ -619,8 +611,8 @@ namespace animation {
 		return new ModelAnimationSegmentAxisRotation(*this);
 	}
 
-	void ModelAnimationSegmentAxisRotation::recalculate(ModelAnimationSubmodelBuffer& /*base*/, polymodel_instance* pmi) {
-		Assertion(!(m_targetAngle.has() ^ m_velocity.has() ^ m_time.has()), "Tried to run over- or underdefined rotation. Define exactly two out of 'time', 'velocity', and 'angle'!");
+	void ModelAnimationSegmentAxisRotation::recalculate(ModelAnimationSubmodelBuffer& /*base*/, ModelAnimationSubmodelBuffer& /*currentAnimDelta*/, polymodel_instance* pmi) {
+		Assertion(!(m_targetAngle.has_value() ^ m_velocity.has_value() ^ m_time.has_value()), "Tried to run over- or underdefined rotation. Define exactly two out of 'time', 'velocity', and 'angle'!");
 
 		instance_data& instanceData = m_instances[pmi->id];
 		auto submodel_info = m_submodel->findSubmodel(pmi).second;
@@ -629,21 +621,21 @@ namespace animation {
 			return;
 		}
 
-		if (m_targetAngle.has()) { //If we have an angle specified, use it.
-			instanceData.m_actualTarget = m_targetAngle;
+		if (m_targetAngle) { //If we have an angle specified, use it.
+			instanceData.m_actualTarget = *m_targetAngle;
 		}
 		else { //If we don't have an angle specified, calculate it. This implies we must have velocity and time.
-			const float& v = m_velocity;
-			const float& t = m_time;
+			const float& v = *m_velocity;
+			const float& t = *m_time;
 
-			if (m_acceleration.has()) { //Consider acceleration to calculate the angle
+			if (m_acceleration) { //Consider acceleration to calculate the angle
 				//Let the following equations define our accelerated and braked movement, under the assumption that 2 * ta <= t.
 				//d : distance, v : max velocity, a : acceleration, t : total time, ta : time spent accelerating (and breaking)
 				//v = a * ta
 				//d = v * (t - 2 * ta) + 1/2 * 2 * a * ta^2
 				//this simplifies to d = (v(a * t - v))/a and ta = v / a
 				//if 2 * ta <= t does not hold, it's just d = 1/2 * 2 * a * (t/2)^2 -> this implies that the acceleration is too small to reach the target velocity within the specified time.
-				float a = m_acceleration;
+				float a = *m_acceleration;
 				a = copysignf(a, v);
 				instanceData.m_actualAccel = a;
 				instanceData.m_accelTime = fmaxf(v / a, t / 2.0f);
@@ -656,19 +648,19 @@ namespace animation {
 			}
 		}
 
-		if (m_velocity.has()) { //If we have velocity specified, use it.
-			instanceData.m_actualVelocity = m_velocity;
+		if (m_velocity) { //If we have velocity specified, use it.
+			instanceData.m_actualVelocity = *m_velocity;
 		}
 		else { //If we don't have velocity specified, calculate it. This implies we must have an angle and time.
-			const float& t = m_time;
+			const float& t = *m_time;
 			const float& d = instanceData.m_actualTarget;
 
-			if (m_acceleration.has()) { //Consider acceleration to calculate the velocity
+			if (m_acceleration) { //Consider acceleration to calculate the velocity
 				//Assume equations from calc angles case, but solve for ta and v now, under the assumption that these roots have a real solution.
 				//v = 1/2*(|a|*t-sqrt(|a|)*sqrt(|a|*t^2-4*|d|))*sign(d) and ta = 1/2*(t-(sqrt(|a|*t^2-4*|d|)/sqrt(|a|)))
 				//If the roots don't have a real solution, it's v = a * t/2, and ta = 1/2*t -> this implies that the acceleration is too small to reach the target distance within the specified time.
 
-				float a = m_acceleration;
+				float a = *m_acceleration;
 				float at;
 				a = copysignf(a, d);
 				instanceData.m_actualAccel = a;
@@ -692,8 +684,8 @@ namespace animation {
 
 		}
 
-		if (m_time.has()) { //If we have time specified, use it.
-			const float& time = m_time;
+		if (m_time) { //If we have time specified, use it.
+			const float& time = *m_time;
 			m_duration[pmi->id] = time;
 
 			instanceData.m_actualTime = time;
@@ -719,11 +711,11 @@ namespace animation {
 
 				v = copysignf(v, d);
 
-				if (m_acceleration.has()) { //Consider acceleration to calculate the time
+				if (m_acceleration) { //Consider acceleration to calculate the time
 					//Assume equations from calc angles case, but solve for ta and t now, with the resulting ta <= t / 2.
 					//t = v/a+d/v and ta = v/a
 					//If thus d/v < v/a, it's t = 2*sqrt(d/a), and ta = 1/2*t -> this implies that the acceleration is too small to reach the target velocity within the specified distance.
-					float a = copysignf(m_acceleration, d);
+					float a = copysignf(*m_acceleration, d);
 					actualAccel = a;
 
 					float va = v / a;
@@ -744,7 +736,7 @@ namespace animation {
 			}
 			
 
-			if (m_acceleration.has()) {
+			if (m_acceleration) {
 				instanceData.m_actualAccel = actualAccel;
 				instanceData.m_accelTime = accelTime;
 			}
@@ -758,9 +750,9 @@ namespace animation {
 
 		float currentRot = 0;
 
-		if (instanceData.m_actualAccel.has()) {
-			const float& a = instanceData.m_actualAccel;
-			const float& at = instanceData.m_accelTime;
+		if (instanceData.m_actualAccel) {
+			const float& a = *instanceData.m_actualAccel;
+			const float& at = *instanceData.m_accelTime;
 			const float& v = instanceData.m_actualVelocity;
 			const float& t = instanceData.m_actualTime;
 
@@ -811,7 +803,7 @@ namespace animation {
 	}
 
 	std::shared_ptr<ModelAnimationSegment> ModelAnimationSegmentAxisRotation::parser(ModelAnimationParseHelper* data) {
-		optional<float> angle, velocity, acceleration, time;
+		tl::optional<float> angle, velocity, acceleration, time;
 		vec3d axis;
 
 		required_string("+Axis:");
@@ -835,7 +827,7 @@ namespace animation {
 			time = parse;
 		}
 
-		if (angle.has() ^ velocity.has() ^ time.has()) {
+		if (angle.has_value() ^ velocity.has_value() ^ time.has_value()) {
 			error_display(1, "Axis Rotation must have exactly two values out of angle, velocity and time specified!");
 		}
 
@@ -859,15 +851,15 @@ namespace animation {
 	}
 	
 
-	ModelAnimationSegmentTranslation::ModelAnimationSegmentTranslation(std::shared_ptr<ModelAnimationSubmodel> submodel, optional<vec3d> target, optional<vec3d> velocity, optional<float> time, optional<vec3d> acceleration, CoordinateSystem coordType) :
-		m_submodel(std::move(submodel)), m_target(target), m_velocity(velocity), m_time(time), m_acceleration(acceleration), m_coordType(coordType) { }
+	ModelAnimationSegmentTranslation::ModelAnimationSegmentTranslation(std::shared_ptr<ModelAnimationSubmodel> submodel, tl::optional<vec3d> target, tl::optional<vec3d> velocity, tl::optional<float> time, tl::optional<vec3d> acceleration, CoordinateSystem coordType, ModelAnimationCoordinateRelation relationType) :
+		m_submodel(std::move(submodel)), m_target(target), m_velocity(velocity), m_time(time), m_acceleration(acceleration), m_coordType(coordType), m_relationType(relationType) { }
 
 	ModelAnimationSegment* ModelAnimationSegmentTranslation::copy() const {
 		return new ModelAnimationSegmentTranslation(*this);
 	}
 
-	void ModelAnimationSegmentTranslation::recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) {
-		Assertion(!(m_target.has() ^ m_velocity.has() ^ m_time.has()), "Tried to run over- or underdefined translation. Define exactly two out of 'time', 'velocity', and 'vector'!");
+	void ModelAnimationSegmentTranslation::recalculate(ModelAnimationSubmodelBuffer& base, ModelAnimationSubmodelBuffer& currentAnimDelta, polymodel_instance* pmi) {
+		Assertion(!(m_target.has_value() ^ m_velocity.has_value() ^ m_time.has_value()), "Tried to run over- or underdefined translation. Define exactly two out of 'time', 'velocity', and 'vector'!");
 
 		instance_data& instanceData = m_instances[pmi->id];
 		auto submodel_info = m_submodel->findSubmodel(pmi).second;
@@ -876,21 +868,26 @@ namespace animation {
 			return;
 		}
 
-		if (m_target.has()) { //If we have an target specified, use it.
-			instanceData.m_actualTarget = m_target;
+		if (m_target) { //If we have an target specified, use it.
+			if (m_relationType != ModelAnimationCoordinateRelation::RELATIVE_COORDS) {
+				const ModelAnimationData<>& submodel = (m_relationType == ModelAnimationCoordinateRelation::ABSOLUTE_COORDS ? base[m_submodel].data : currentAnimDelta[m_submodel].data);
+				instanceData.m_actualTarget = *m_target - submodel.position;
+			}
+			else
+				instanceData.m_actualTarget = *m_target;
 		}
 		else { //If we don't have a target specified, calculate it. This implies we must have velocity and time.
-			const vec3d& v = m_velocity;
-			const float& t = m_time;
+			const vec3d& v = *m_velocity;
+			const float& t = *m_time;
 
-			if (m_acceleration.has()) { //Consider acceleration to calculate the angle
+			if (m_acceleration) { //Consider acceleration to calculate the angle
 				//Let the following equations define our accelerated and braked movement, under the assumption that 2 * ta <= t.
 				//d : distance, v : max velocity, a : acceleration, t : total time, ta : time spent accelerating (and breaking)
 				//v = a * ta
 				//d = v * (t - 2 * ta) + 1/2 * 2 * a * ta^2
 				//this simplifies to d = (v(a * t - v))/a and ta = v / a
 				//if 2 * ta <= t does not hold, it's just d = 1/2 * 2 * a * (t/2)^2 -> this implies that the acceleration is too small to reach the target velocity within the specified time.
-				vec3d a = m_acceleration;
+				vec3d a = *m_acceleration;
 				vec3d at;
 
 				for (size_t i = 0; i < 3; i++) {
@@ -910,19 +907,19 @@ namespace animation {
 			}
 		}
 
-		if (m_velocity.has()) { //If we have velocity specified, use it.
-			instanceData.m_actualVelocity = m_velocity;
+		if (m_velocity) { //If we have velocity specified, use it.
+			instanceData.m_actualVelocity = *m_velocity;
 		}
 		else { //If we don't have velocity specified, calculate it. This implies we must have an angle and time.
-			const float& t = m_time;
+			const float& t = *m_time;
 			const vec3d& d = instanceData.m_actualTarget;
 
-			if (m_acceleration.has()) { //Consider acceleration to calculate the velocity
+			if (m_acceleration) { //Consider acceleration to calculate the velocity
 				//Assume equations from calc angles case, but solve for ta and v now, under the assumption that these roots have a real solution.
 				//v = 1/2*(|a|*t-sqrt(|a|)*sqrt(|a|*t^2-4*|d|))*sign(d) and ta = 1/2*(t-(sqrt(|a|*t^2-4*|d|)/sqrt(|a|)))
 				//If the roots don't have a real solution, it's v = a * t/2, and ta = 1/2*t -> this implies that the acceleration is too small to reach the target distance within the specified time.
 
-				vec3d a = m_acceleration;
+				vec3d a = *m_acceleration;
 				for (size_t i = 0; i < 3; i++)
 					a.a1d[i] = copysignf(a.a1d[i], d.a1d[i]);
 				instanceData.m_actualAccel = a;
@@ -951,8 +948,8 @@ namespace animation {
 
 		}
 
-		if (m_time.has()) { //If we have time specified, use it.
-			const float& time = m_time;
+		if (m_time) { //If we have time specified, use it.
+			const float& time = *m_time;
 			m_duration[pmi->id] = time;
 
 			vec3d actualTime{ {{ 0,0,0 }} };
@@ -987,11 +984,11 @@ namespace animation {
 
 					float durationAxis = 0.0f;
 
-					if (m_acceleration.has()) { //Consider acceleration to calculate the time
+					if (m_acceleration) { //Consider acceleration to calculate the time
 						//Assume equations from calc angles case, but solve for ta and t now, with the resulting ta <= t / 2.
 						//t = v/a+d/v and ta = v/a
 						//If thus d/v < v/a, it's t = 2*sqrt(d/a), and ta = 1/2*t -> this implies that the acceleration is too small to reach the target velocity within the specified distance.
-						float a = copysignf(((vec3d)m_acceleration).a1d[i], d.a1d[i]);
+						float a = copysignf((*m_acceleration).a1d[i], d.a1d[i]);
 						actualAccel.a1d[i] = a;
 
 						float va = v.a1d[i] / a;
@@ -1015,7 +1012,7 @@ namespace animation {
 				}
 			}
 
-			if (m_acceleration.has()) {
+			if (m_acceleration) {
 				instanceData.m_actualAccel = actualAccel;
 				instanceData.m_accelTime = accelTime;
 			}
@@ -1033,9 +1030,9 @@ namespace animation {
 
 		vec3d currentOffset{ {{ 0,0,0 }} };
 
-		if (instanceData.m_actualAccel.has()) {
-			const vec3d& a = instanceData.m_actualAccel;
-			const vec3d& at = instanceData.m_accelTime;
+		if (instanceData.m_actualAccel) {
+			const vec3d& a = *instanceData.m_actualAccel;
+			const vec3d& at = *instanceData.m_accelTime;
 			const vec3d& v = instanceData.m_actualVelocity;
 			const vec3d& t = instanceData.m_actualTime;
 
@@ -1103,23 +1100,23 @@ namespace animation {
 		m_submodel = replaceWith.getSubmodel(m_submodel);
 	}
 
-	//ToDo: DIsabled Translation for now until the backend becomes completed.
-	//ModelAnimationParseHelper::Segment ModelAnimationSegmentTranslation::reg("$Translation:", &parser);
 	std::shared_ptr<ModelAnimationSegment> ModelAnimationSegmentTranslation::parser(ModelAnimationParseHelper* data) {
-		optional<vec3d> offset, velocity, acceleration;
-		optional<float> time;
+		tl::optional<vec3d> offset, velocity, acceleration;
+		tl::optional<float> time;
 		CoordinateSystem coordSystem = CoordinateSystem::COORDS_PARENT;
+		ModelAnimationCoordinateRelation relationType = ModelAnimationCoordinateRelation::RELATIVE_COORDS;
 
 		if (optional_string("+Vector:")) {
 			vec3d parse;
 			stuff_vec3d(&parse);
-			offset = parse;
+			offset = std::move(parse);
+			relationType = ModelAnimationParseHelper::parseCoordinateRelation();
 		}
 
 		if (optional_string("+Velocity:")) {
 			vec3d parse;
 			stuff_vec3d(&parse);
-			velocity = parse;
+			velocity = std::move(parse);
 		}
 
 		if (optional_string("+Time:")) {
@@ -1128,14 +1125,14 @@ namespace animation {
 			time = parse;
 		}
 
-		if (offset.has() ^ velocity.has() ^ time.has()) {
+		if (offset.has_value() ^ velocity.has_value() ^ time.has_value()) {
 			error_display(1, "Translation must have exactly two values out of vector, velocity and time specified!");
 		}
 
 		if (optional_string("+Acceleration:")) {
 			vec3d parse;
 			stuff_vec3d(&parse);
-			acceleration = parse;
+			acceleration = std::move(parse);
 		}
 
 		if (optional_string("+Coordinate System:")) {
@@ -1163,14 +1160,14 @@ namespace animation {
 				error_display(1, "Translation has no target submodel!");
 		}
 
-		auto segment = std::shared_ptr<ModelAnimationSegmentTranslation>(new ModelAnimationSegmentTranslation(submodel, offset, velocity, time, acceleration, coordSystem));
+		auto segment = std::shared_ptr<ModelAnimationSegmentTranslation>(new ModelAnimationSegmentTranslation(submodel, offset, velocity, time, acceleration, coordSystem, relationType));
 
 		return segment;
 	}
 
 
-	ModelAnimationSegmentSoundDuring::ModelAnimationSegmentSoundDuring(std::shared_ptr<ModelAnimationSegment> segment, gamesnd_id start, gamesnd_id end, gamesnd_id during, bool flipIfReversed) :
-		m_segment(std::move(segment)), m_start(start), m_end(end), m_during(during), m_flipIfReversed(flipIfReversed) { }
+	ModelAnimationSegmentSoundDuring::ModelAnimationSegmentSoundDuring(std::shared_ptr<ModelAnimationSegment> segment, gamesnd_id start, gamesnd_id end, gamesnd_id during, bool flipIfReversed, float radius, std::shared_ptr<ModelAnimationSubmodel> submodel, tl::optional<vec3d> position) :
+		m_segment(std::move(segment)), m_submodel(submodel), m_position(std::move(position)), m_radius(radius), m_start(start), m_end(end), m_during(during), m_flipIfReversed(flipIfReversed) { }
 
 	ModelAnimationSegment* ModelAnimationSegmentSoundDuring::copy() const {
 		auto newCopy = new ModelAnimationSegmentSoundDuring(*this);
@@ -1178,8 +1175,8 @@ namespace animation {
 		return newCopy;
 	}
 
-	void ModelAnimationSegmentSoundDuring::recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) {
-		m_segment->recalculate(base, pmi);
+	void ModelAnimationSegmentSoundDuring::recalculate(ModelAnimationSubmodelBuffer& base, ModelAnimationSubmodelBuffer& currentAnimDelta, polymodel_instance* pmi) {
+		m_segment->recalculate(base, currentAnimDelta, pmi);
 		m_duration[pmi->id] = m_segment->getDuration(pmi->id);
 	}
 
@@ -1188,23 +1185,25 @@ namespace animation {
 	}
 
 	void ModelAnimationSegmentSoundDuring::executeAnimation(const ModelAnimationSubmodelBuffer& state, float timeboundLower, float timeboundUpper, ModelAnimationDirection direction, int pmi_id) {
+		polymodel_instance* pmi = model_get_instance(pmi_id);
+
 		if (timeboundLower <= 0.0f && 0.0f <= timeboundUpper) {
 			if (!m_flipIfReversed || direction == ModelAnimationDirection::FWD)
-				playStartSnd(pmi_id);
+				playStartSnd(pmi);
 			else
-				playEndSnd(pmi_id);
+				playEndSnd(pmi);
 		}
 
 		if (0.0f < timeboundLower && timeboundUpper < m_duration.at(pmi_id)) {
 			if (m_during.isValid() && (!m_instances[pmi_id].currentlyPlaying.isValid() || !snd_is_playing(m_instances[pmi_id].currentlyPlaying)))
-				m_instances[pmi_id].currentlyPlaying = snd_play_looping(gamesnd_get_game_sound(m_during));
+				m_instances[pmi_id].currentlyPlaying = playSnd(pmi, m_during, true);
 		}
 
 		if (timeboundLower <= m_duration.at(pmi_id) && m_duration.at(pmi_id) <= timeboundUpper) {
 			if (!m_flipIfReversed || direction == ModelAnimationDirection::FWD)
-				playEndSnd(pmi_id);
+				playEndSnd(pmi);
 			else
-				playStartSnd(pmi_id);
+				playStartSnd(pmi);
 		}
 		m_segment->executeAnimation(state, timeboundLower, timeboundUpper, direction, pmi_id);
 	}
@@ -1213,43 +1212,79 @@ namespace animation {
 		m_segment->exchangeSubmodelPointers(replaceWith);
 	}
 
-	void ModelAnimationSegmentSoundDuring::playStartSnd(int pmi_id) {
-		if (snd_is_playing(m_instances[pmi_id].currentlyPlaying))
-			snd_stop(m_instances[pmi_id].currentlyPlaying);
+	void ModelAnimationSegmentSoundDuring::playStartSnd(polymodel_instance* pmi) {
+		if (snd_is_playing(m_instances[pmi->id].currentlyPlaying))
+			snd_stop(m_instances[pmi->id].currentlyPlaying);
 		
 		if(m_start.isValid())
-			m_instances[pmi_id].currentlyPlaying = snd_play(gamesnd_get_game_sound(m_start));
+			m_instances[pmi->id].currentlyPlaying = playSnd(pmi, m_start, false);
 	}
-	void ModelAnimationSegmentSoundDuring::playEndSnd(int pmi_id) {
-		if (snd_is_playing(m_instances[pmi_id].currentlyPlaying))
-			snd_stop(m_instances[pmi_id].currentlyPlaying);
+	void ModelAnimationSegmentSoundDuring::playEndSnd(polymodel_instance* pmi) {
+		if (snd_is_playing(m_instances[pmi->id].currentlyPlaying))
+			snd_stop(m_instances[pmi->id].currentlyPlaying);
 
 		if (m_end.isValid()) 
-			m_instances[pmi_id].currentlyPlaying = snd_play(gamesnd_get_game_sound(m_end));
+			m_instances[pmi->id].currentlyPlaying = playSnd(pmi, m_end, false);
+	}
+
+	sound_handle ModelAnimationSegmentSoundDuring::playSnd(polymodel_instance* pmi, const gamesnd_id& sound, bool loop) {
+		if (m_submodel != nullptr && pmi->objnum >= 0) {
+			auto submodel = m_submodel->findSubmodel(pmi);
+			if (submodel.first != nullptr) {
+				const object& obj = Objects[pmi->objnum];
+
+				vec3d pnt;
+				model_instance_local_to_global_point(&pnt, m_position ? &(*m_position) : &vmd_zero_vector, pmi->id, (int)(submodel.first - pmi->submodel), &obj.orient, &obj.pos);
+
+				return snd_play_3d(gamesnd_get_game_sound(sound), &pnt, &View_position, m_radius, nullptr, loop ? 1 : 0);
+			}
+		}
+
+		if(loop)
+			return snd_play_looping(gamesnd_get_game_sound(sound));
+		else
+			return snd_play(gamesnd_get_game_sound(sound));
 	}
 	
 	std::shared_ptr<ModelAnimationSegment> ModelAnimationSegmentSoundDuring::parser(ModelAnimationParseHelper* data) {
 		gamesnd_id start_sound;
 		gamesnd_id loop_sound;
 		gamesnd_id end_sound;
-		float snd_rad;
+		float snd_rad = 0.0f;
+		
+		auto submodel = ModelAnimationParseHelper::parseSubmodel();
+		if (!submodel) {
+			if (data->parentSubmodel)
+				submodel = data->parentSubmodel;
+		}
 
 		parse_game_sound("+Start:", &start_sound);
 		parse_game_sound("+Loop:", &loop_sound);
 		parse_game_sound("+End:", &end_sound);
 
-		required_string("+Radius:");
-		stuff_float(&snd_rad);
+		if (optional_string("+Radius:")) {
+			stuff_float(&snd_rad);
+		}
+
+		tl::optional<vec3d> position = tl::nullopt;
+		if (optional_string("+Position:")) {
+			if (!submodel)
+				error_display(1, "Supplied sound position for animation but no parent submodel. Cannot play sound as 3D without attachment to submodel.");
+
+			vec3d parse;
+			stuff_vec3d(&parse);
+			position = std::move(parse);
+		}
 
 		bool flipIfReversed = optional_string("+Flip When Reversed");
 
-		auto segment = std::shared_ptr<ModelAnimationSegmentSoundDuring>(new ModelAnimationSegmentSoundDuring(data->parseSegment(), start_sound, end_sound, loop_sound, flipIfReversed));
+		auto segment = std::shared_ptr<ModelAnimationSegmentSoundDuring>(new ModelAnimationSegmentSoundDuring(data->parseSegment(), start_sound, end_sound, loop_sound, flipIfReversed, snd_rad, submodel, position));
 
 		return segment;
 	}
 
 
-	ModelAnimationSegmentIK::ModelAnimationSegmentIK(const vec3d& targetPosition, const optional<matrix>& targetRotation)
+	ModelAnimationSegmentIK::ModelAnimationSegmentIK(const vec3d& targetPosition, const tl::optional<matrix>& targetRotation)
 		: m_targetPosition(targetPosition), m_targetRotation(targetRotation) { }
 	
 	ModelAnimationSegment* ModelAnimationSegmentIK::copy() const {
@@ -1263,7 +1298,7 @@ namespace animation {
 		return copy;
 	};
 	
-	void ModelAnimationSegmentIK::recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) {
+	void ModelAnimationSegmentIK::recalculate(ModelAnimationSubmodelBuffer& base, ModelAnimationSubmodelBuffer& currentAnimDelta, polymodel_instance* pmi) {
 		auto ik = std::unique_ptr<ik_solver>(new ik_solver_fabrik());
 
 		polymodel* pm = model_get(pmi->model_num);
@@ -1282,7 +1317,7 @@ namespace animation {
 			ik->addNode(submodel, chainlink.constraint.get());
 		}
 		
-		ik->solve(m_targetPosition, &m_targetRotation);
+		ik->solve(m_targetPosition, &(*m_targetRotation));
 		
 		auto chainlink_it = m_chain.cbegin();
 		for(const auto& solvedlink : *ik){
@@ -1291,7 +1326,7 @@ namespace animation {
 			chainlink_it++->animSegment->m_targetAngle = converted;
 		}
 		
-		std::static_pointer_cast<ModelAnimationSegment>(m_segment)->recalculate(base, pmi);
+		std::static_pointer_cast<ModelAnimationSegment>(m_segment)->recalculate(base, currentAnimDelta, pmi);
 		m_duration[pmi->id] = m_segment->getDuration(pmi->id);
 	};
 	
@@ -1309,7 +1344,7 @@ namespace animation {
 	std::shared_ptr<ModelAnimationSegment> ModelAnimationSegmentIK::parser(ModelAnimationParseHelper* data) {		
 		
 		vec3d targetPosition;
-		optional<matrix> targetRotation;
+		tl::optional<matrix> targetRotation;
 		
 		required_string("+Target Position:");
 		stuff_vec3d(&targetPosition);
@@ -1341,7 +1376,7 @@ namespace animation {
 					error_display(1, "IK chain link has no target submodel!");
 			}
 
-			optional<angles> acceleration;
+			tl::optional<angles> acceleration;
 			if(optional_string("+Acceleration:")){
 				angles accel;
 				stuff_angles_deg_phb(&accel);
@@ -1377,7 +1412,7 @@ namespace animation {
 			else
 				constraint = std::shared_ptr<ik_constraint>(new ik_constraint());
 			
-			auto rotation = std::shared_ptr<ModelAnimationSegmentRotation>(new ModelAnimationSegmentRotation(submodel, optional<angles>({0,0,0}), optional<angles>(), time, acceleration, true));
+			auto rotation = std::shared_ptr<ModelAnimationSegmentRotation>(new ModelAnimationSegmentRotation(submodel, tl::optional<angles>({0,0,0}), tl::optional<angles>(), time, acceleration, ModelAnimationCoordinateRelation::ABSOLUTE_COORDS));
 			parallel->addSegment(rotation);
 			segment->m_chain.push_back({submodel, constraint, rotation});
 		}

@@ -22,10 +22,10 @@ struct model_light {
 	vec3 diffuse_color;
 	int light_type;
 
-	vec3 spec_color;
+	vec3 direction;
 	float attenuation;
 
-	vec3 direction;
+	float ml_sourceRadius;
 };
 
 layout (std140) uniform modelData {
@@ -111,9 +111,9 @@ in VertexOutput {
 #ifdef FLAG_ENV_MAP
 	vec3 envReflect;
 #endif
-#ifdef FLAG_NORMAL_MAP
-	mat3 tangentMatrix;
-#endif
+
+mat3 tangentMatrix;
+
 #ifdef FLAG_FOG
 	float fogDist;
 #endif
@@ -139,9 +139,9 @@ out VertexOutput {
 #ifdef FLAG_ENV_MAP
 	vec3 envReflect;
 #endif
-#ifdef FLAG_NORMAL_MAP
-	mat3 tangentMatrix;
-#endif
+
+mat3 tangentMatrix;
+
 #ifdef FLAG_FOG
 	float fogDist;
 #endif

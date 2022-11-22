@@ -12,62 +12,8 @@
 #include <memory>
 #include <map>
 
+#include <tl/optional.hpp>
 #include <linb/any.hpp>
-
-//Since we don't have C++17, this is a small (actually not std conform) implementation of an optional that works for objects with complex constructors
-template<typename T>
-class optional {
-	union data {
-		T t;
-		bool dummy;
-		constexpr data(T other_t) : t(other_t) {}
-		constexpr data() : dummy(false) {}
-	} data;
-	bool filled = false;
-
-public:
-	constexpr optional(const T& other_data) : data(other_data), filled(true) { }
-	constexpr optional() : data() { }
-
-	operator T() const {
-		if (filled)
-			return data.t;
-		else {
-			UNREACHABLE("Tried access a non-filled optional.");
-			return T();
-		}
-	}
-	
-	inline const T* operator&() const {
-		return filled ? &data.t : nullptr;
-	}
-
-	inline bool has() const {
-		return filled;
-	}
-
-	inline void if_filled(const std::function<void(const T&)>& fnc) const {
-		if (filled)
-			fnc(data.t);
-	}
-
-	inline void if_filled_or_set(const std::function<void(const T&)>& fnc, const T* orSet = nullptr) {
-		if (filled)
-			fnc(data.t);
-		else if (orSet != nullptr) {
-			data = *orSet;
-			filled = true;
-		}
-	}
-
-	inline bool operator==(const optional<T>& rhs) {
-		if (filled != rhs.filled)
-			return false;
-		else if (!filled)
-			return true;
-		return data.t == rhs.data.t;
-	}
-};
 
 class ship;
 class ship_info;
@@ -114,23 +60,34 @@ namespace animation {
 		Loop,					//Will automatically loop the animation once it completes. Is compatible with Reset_at_completion to loop back from the start instead of reversing. Incompatible with Auto_reverse
 		Random_starting_phase,  //When an animation is started from an untriggered state, will randomize its time to any possible time of the animation + possibly on the reverse, if the animation would automatically enter that
 		Pause_on_reverse,		//Will cause any start in RWD direction to behave as a call to pause the animation. Required (and also only really useful) when a looping animation is supposed to be triggered by an internal engine trigger
+		Seamless_with_startup,	//Provides automatic handling of animations that loop with an initialization part (effectively looping from a specific time)
 		NUM_VALUES
 	};
+
+	FLAG_LIST(Animation_Instance_Flags) {
+		Stop_after_next_loop,	//Once a looping animation would start the next loop, stop the animation instead. Only valid for looping animations
+		Seamless_loop_shutdown, //Set whenever a seamlessly looping animation is in its final shutdown phase
+		NUM_VALUES
+	};
+
+	enum class ModelAnimationCoordinateRelation : int { RELATIVE_COORDS, LOCAL_ABSOLUTE, ABSOLUTE_COORDS };
 
 	template <bool is_optional = false>
 	struct ModelAnimationData {
 	private:
 		template<typename T>
-		using maybe_optional = typename std::conditional<is_optional, optional<T>, T>::type;
+		using maybe_optional = typename std::conditional<is_optional, tl::optional<T>, T>::type;
 
 	public:
 		ModelAnimationData() = default;
-		ModelAnimationData(const ModelAnimationData<!is_optional>& other) :
-			position(other.position),
-			orientation(other.orientation) {};
+
 		ModelAnimationData(const vec3d& copy_position, const matrix& copy_orientation) :
 			position(copy_position),
 			orientation(copy_orientation) {};
+		ModelAnimationData(const tl::optional<vec3d>& copy_position, const tl::optional<matrix>& copy_orientation) :
+			position(*copy_position),
+			orientation(*copy_orientation) {};
+		ModelAnimationData(const ModelAnimationData<!is_optional>& other) : ModelAnimationData(other.position, other.orientation) {};
 
 		maybe_optional<vec3d> position;
 		maybe_optional<matrix> orientation;
@@ -139,21 +96,27 @@ namespace animation {
 		void applyDelta(const ModelAnimationData<true>& delta) {
 			ModelAnimationData<true> data = *this;
 
-			delta.orientation.if_filled([&data](const matrix& other) -> void {
-				data.orientation.if_filled_or_set([&data, &other](const matrix& current) -> void {
+			if(delta.orientation) {
+				if (data.orientation) {
 					matrix tmp;
-					vm_matrix_x_matrix(&tmp, &other, &current);
-					data.orientation = tmp;
-				}, &other);
-			});
+					vm_matrix_x_matrix(&tmp, &(*delta.orientation), &(*data.orientation));
+					data.orientation = std::move(tmp);
+				}
+				else {
+					data.orientation = delta.orientation;
+				}
+			}
 
-			delta.position.if_filled([&data](const vec3d& other) -> void {
-				data.position.if_filled_or_set([&data, &other](const vec3d& current) -> void {
+			if (delta.position) {
+				if (data.position) {
 					vec3d tmp;
-					vm_vec_add(&tmp, &current, &other);
-					data.position = tmp;
-				}, &other);
-			});
+					vm_vec_add(&tmp, &(*delta.position), &(*data.position));
+					data.position = std::move(tmp);
+				}
+				else {
+					data.position = delta.position;
+				}
+			}
 
 			*this = data;
 		}
@@ -164,7 +127,7 @@ namespace animation {
 	class ModelAnimationSubmodel {
 	protected:
 		SCP_string m_name;
-		optional<int> m_submodel;
+		tl::optional<int> m_submodel;
 		bool is_turret = false;
 
 	private:
@@ -232,7 +195,7 @@ namespace animation {
 		//This function needs to provide a deep copy operation that returns a copy of this segment, including with all potential child segments copied as well.
 		virtual ModelAnimationSegment* copy() const = 0;
 		//Will be called to give the animations an opportunity to recalculate based on current ship data, as well as animation data up to that point.
-		virtual void recalculate(ModelAnimationSubmodelBuffer& base, polymodel_instance* pmi) = 0;
+		virtual void recalculate(ModelAnimationSubmodelBuffer& base, ModelAnimationSubmodelBuffer& currentAnimDelta, polymodel_instance* pmi) = 0;
 		//This function needs to contain anything that manipulates ModelAnimationData (such as any movement)
 		virtual void calculateAnimation(ModelAnimationSubmodelBuffer& base, float time, int pmi_id) const = 0;
 		//This function needs to contain any animation parts that do not change ModelAnimationData (such as sound or particles)
@@ -246,6 +209,8 @@ namespace animation {
 			ModelAnimationState state = ModelAnimationState::UNTRIGGERED;
 			float time = 0.0f;
 			float duration = 0.0f;
+			flagset<animation::Animation_Instance_Flags> instance_flags;
+			float speed = 1.0f;
 		};
 		//PMI ID -> Instance Data
 		std::map<int, instance_data> m_instances;
@@ -259,8 +224,14 @@ namespace animation {
 		//True if the animation can externally have its state changed. Needs special handling
 		bool m_canChangeState;
 
+	public:
 		flagset<animation::Animation_Flags>	m_flags;
+		struct {
+			//Seamless_with_startup
+			float loopsFrom = 0.0f;
+		} m_flagData;
 
+	private:
 		ModelAnimationState play(float frametime, polymodel_instance* pmi, ModelAnimationSubmodelBuffer& applyBuffer, bool applyOnly = false);
 
 		friend class ModelAnimationSet;
@@ -349,14 +320,29 @@ namespace animation {
 
 		void clearShipData(polymodel_instance* pmi);
 
-		bool start(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& name, ModelAnimationDirection direction, bool forced = false, bool instant = false, bool pause = false, int subtype = SUBTYPE_DEFAULT) const;
-		bool startAll(polymodel_instance* pmi, ModelAnimationTriggerType type, ModelAnimationDirection direction, bool forced = false, bool instant = false, bool pause = false, int subtype = SUBTYPE_DEFAULT, bool strict = false) const;
-		bool startBlanket(polymodel_instance* pmi, ModelAnimationTriggerType type, ModelAnimationDirection direction, bool forced = false, bool instant = false, bool pause = false) const;
-		bool startDockBayDoors(polymodel_instance* pmi, ModelAnimationDirection direction, bool forced, bool instant, bool pause, int subtype) const;
-
-		int getTime(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& name, int subtype = SUBTYPE_DEFAULT) const;
-		int getTimeAll(polymodel_instance* pmi, ModelAnimationTriggerType type, int subtype = SUBTYPE_DEFAULT, bool strict = false) const;
-		int getTimeDockBayDoors(polymodel_instance* pmi, int subtype) const;
+		class AnimationList {
+			std::vector<std::shared_ptr<ModelAnimation>> animations;
+			polymodel_instance* pmi = nullptr;
+			AnimationList(polymodel_instance* pmi_ = nullptr) : pmi(pmi_) {}
+			friend class ModelAnimationSet;
+		public:
+			bool start(ModelAnimationDirection direction, bool forced = false, bool instant = false, bool pause = false) const;
+			int getTime() const;
+			void setFlag(Animation_Instance_Flags flag, bool set = true) const;
+			void setSpeed(float speed = 1.0f) const;
+			AnimationList& operator+=(const AnimationList& rhs);
+			AnimationList operator+(const AnimationList& rhs);
+		};
+		//Get Animations of the specified type, with a specified name, and optionally specified subtype. Will always find corresponding animations that have the default subtype
+		AnimationList get(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& name, int subtype = SUBTYPE_DEFAULT) const;
+		//Get Animations of the specified type and optionally specified subtype regardless of the name. Will find corresponding animations that have the default subtype if strict is false
+		AnimationList getAll(polymodel_instance* pmi, ModelAnimationTriggerType type, int subtype = SUBTYPE_DEFAULT, bool strict = false) const;
+		//Get all Animations of the specified type
+		AnimationList getBlanket(polymodel_instance* pmi, ModelAnimationTriggerType type) const;
+		//Get DockBayDoor Animations with proper handling for dock bay door subtypes
+		AnimationList getDockBayDoors(polymodel_instance* pmi, int subtype) const;
+		//Get Animations from SEXP/Scripting specifiers using the TriggeredBy field. Parses TriggeredBy and defers to getX functions depending on animation type
+		AnimationList parseScripted(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& triggeredBy) const;
 
 		struct RegisteredTrigger { ModelAnimationTriggerType type; int subtype; const SCP_string& name; };
 		std::vector<RegisteredTrigger> getRegisteredTriggers() const;
@@ -407,6 +393,7 @@ namespace animation {
 		std::shared_ptr<ModelAnimationSubmodel> parentSubmodel = nullptr;
 
 		static std::shared_ptr<ModelAnimationSubmodel> parseSubmodel();
+		static ModelAnimationCoordinateRelation parseCoordinateRelation();
 
 		static void parseTables();
 		static void parseAnimsetInfo(ModelAnimationSet& set, ship_info* sip);

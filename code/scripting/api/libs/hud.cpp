@@ -4,10 +4,16 @@
 #include "hud.h"
 #include "scripting/api/objs/enums.h"
 #include "scripting/api/objs/hudgauge.h"
+#include "scripting/api/objs/object.h"
+#include "scripting/api/objs/vecmath.h"
 
 #include "hud/hud.h"
 #include "hud/hudconfig.h"
 #include "hud/hudtargetbox.h"
+#include "hud/hudtarget.h"
+#include "ship/ship.h"
+
+extern int Training_obj_num_display_lines;
 
 namespace scripting {
 namespace api {
@@ -178,14 +184,7 @@ ADE_FUNC(getHUDGaugeHandle, l_HUD, "string Name", "Returns a handle to a specifi
 		return ADE_RETURN_NIL;
 	HudGauge* gauge = nullptr;
 
-	gauge = hud_get_custom_gauge(name);
-	if (gauge == nullptr)
-	{
-		int idx = hud_get_default_gauge_index(name);
-		if (idx >= 0 && idx < (int)default_hud_gauges.size())
-			gauge = default_hud_gauges[idx].get();
-	}
-
+	gauge = hud_get_gauge(name);
 	if (gauge == nullptr)
 		return ADE_RETURN_NIL;
 	else
@@ -235,6 +234,49 @@ ADE_FUNC(flashTargetBox, l_HUD, "enumeration section, [number duration_in_millis
 	hud_targetbox_start_flash(section_index, duration);
 
 	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(getTargetDistance, l_HUD, "object targetee, [vector targeter_position]", "Returns the distance as displayed on the HUD, that is, the distance from a position to the bounding box of a target.  If targeter_position is nil, the function will use the player's position.", "number", "The distance, or nil if invalid")
+{
+	object_h *targetee_h;
+	vec3d *targeter_pos = nullptr;
+
+	if (!ade_get_args(L, "o|o", l_Object.GetPtr(&targetee_h), l_Vector.GetPtr(&targeter_pos)))
+		return ADE_RETURN_NIL;
+
+	if (targetee_h == nullptr || !targetee_h->IsValid())
+		return ADE_RETURN_NIL;
+
+	if (targeter_pos == nullptr)
+	{
+		if (Player_obj)
+			targeter_pos = &Player_obj->pos;
+		else
+		{
+			Warning(LOCATION, "Player_obj is NULL; cannot assign position!");
+			targeter_pos = &vmd_zero_vector;
+		}
+	}
+
+	auto dist = hud_find_target_distance(targetee_h->objp, targeter_pos);
+	return ade_set_args(L, "f", dist);
+}
+
+ADE_FUNC(getDirectiveLines, l_HUD, nullptr, "Returns the number of lines displayed by the currently active directives", "number", "The number of lines")
+{
+	return ade_set_args(L, "i", Training_obj_num_display_lines);
+}
+
+ADE_VIRTVAR(toggleCockpits, l_HUD, "boolean", "Gets or sets whether the the cockpit model will be rendered.", "boolean", "true if being rendered, false otherwise")
+{
+	bool choice = !disableCockpits;
+
+	if (ADE_SETTING_VAR && ade_get_args(L, "*b", &choice))
+	{
+		disableCockpits = !choice;
+	}
+
+	return ade_set_args(L, "b", choice);
 }
 
 

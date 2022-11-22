@@ -100,12 +100,6 @@ class LuaTable: public LuaValue {
 	LuaTable();
 
 	/**
-     * @brief Copy-constructor
-     * @param other The other table.
-     */
-	LuaTable(const LuaTable& other);
-
-	/**
      * Dereferences the stored reference to the table if it exists.
      */
 	~LuaTable() override;

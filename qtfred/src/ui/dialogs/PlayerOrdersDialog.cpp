@@ -7,25 +7,34 @@
 namespace fso {
 	namespace fred {
 		namespace dialogs {
-			PlayerOrdersDialog::PlayerOrdersDialog(QDialog* parent, EditorViewport* viewport, bool multi)
-				: QDialog(parent), ui(new Ui::PlayerOrdersDialog()), _model(new PlayerOrdersDialogModel(this, viewport, multi)),
+			PlayerOrdersDialog::PlayerOrdersDialog(QDialog* parent, EditorViewport* viewport)
+				: QDialog(parent), ui(new Ui::PlayerOrdersDialog()),
 				_viewport(viewport)
 			{
+				parentDialog = dynamic_cast<ShipEditorDialog*>(parent);
+				Assert(parentDialog);
+				_model = std::unique_ptr<PlayerOrdersDialogModel>(new PlayerOrdersDialogModel(this,
+					viewport,
+					parentDialog->getIfMultipleShips()));
+
 				ui->setupUi(this);
 				connect(this, &QDialog::accepted, _model.get(), &PlayerOrdersDialogModel::apply);
 				connect(this, &QDialog::rejected, _model.get(), &PlayerOrdersDialogModel::reject);
 				for (int i = 0; i < (int)_model->getAcceptedOrders().size(); i++) {
-					if (_model->getAcceptedOrders()[i]) {
+					//i == 0 check added to avoid culling first entry where getAcceptedOrders returns 0
+					if (_model->getAcceptedOrders()[i] || i == 0) {
 						check_boxes.push_back(new ShipFlagCheckbox(nullptr));
-						check_boxes[i]->setText(_model->getOrderNames()[i].c_str());
-						connect(check_boxes[i], QOverload<int>::of(&ShipFlagCheckbox::stateChanged), [=](int value) {
+						check_boxes.back()->setText(_model->getOrderNames()[i].c_str());
+						connect(check_boxes.back(),
+							QOverload<int>::of(&ShipFlagCheckbox::stateChanged),
+							[=](int value) {
 							int state = value;
 							if (state == Qt::Checked) {
 								state = 1;
 							}
 							_model->setCurrentOrder(state, i);
 							});
-						ui->verticalLayout_2->addWidget(check_boxes[i]);
+						ui->verticalLayout_2->addWidget(check_boxes.back());
 					}
 				}
 
@@ -52,6 +61,12 @@ namespace fso {
 				}
 
 				QDialog::closeEvent(event);
+			}
+			void PlayerOrdersDialog::showEvent(QShowEvent* e)
+			{
+				_model->initialiseData(parentDialog->getIfMultipleShips());
+
+				QDialog::showEvent(e);
 			}
 			void PlayerOrdersDialog::updateUI()
 			{

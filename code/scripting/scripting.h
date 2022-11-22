@@ -18,6 +18,7 @@
 
 namespace scripting {
 struct ScriptingDocumentation;
+class Hook;
 }
 
 struct image_desc
@@ -62,14 +63,13 @@ enum ConditionalType {
 	CHC_ACTION      = 9,
 	CHC_VERSION     = 10,
 	CHC_APPLICATION = 11,
+	CHC_MULTI_SERVER = 12,
 };
 
 //Actions
 enum ConditionalActions : int32_t {
 	CHA_NONE    = -1,
-	CHA_DEATH,
 	CHA_ONFRAME,
-	CHA_COLLIDESHIP,
 	CHA_COLLIDEWEAPON,
 	CHA_COLLIDEDEBRIS,
 	CHA_COLLIDEASTEROID,
@@ -156,9 +156,9 @@ public:
 	bool AddCondition(script_condition *sc);
 	bool AddAction(script_action *sa);
 
-	bool ConditionsValid(int action, class object *objp1 = nullptr, class object *objp2 = nullptr, int more_data = -1);
-	bool IsOverride(class script_state *sys, int action);
-	bool Run(class script_state* sys, int action);
+	bool ConditionsValid(int action_type, class object *objp1 = nullptr, class object *objp2 = nullptr, int more_data = -1);
+	bool IsOverride(class script_state *sys, int action_type);
+	bool Run(class script_state* sys, int action_type);
 };
 
 //**********Main script_state function
@@ -174,6 +174,9 @@ class script_state
 	//Utility variables
 	SCP_vector<image_desc> ScriptImages;
 	SCP_vector<ConditionedHook> ConditionalHooks;
+	// Scripts can add new hooks at runtime; we collect all hooks to be added here and add them at the end of the current
+	// frame to avoid corrupting any iterators that the script system may be using.
+	SCP_vector<ConditionedHook> AddedHooks;
 
 	SCP_vector<script_function> GameInitFunctions;
 
@@ -182,9 +185,10 @@ class script_state
 	// values are a vector to provide a stack of values. This is necessary to ensure consistent behavior if a scripting
 	// hook is called from within another script (e.g. calls to createShip)
 	SCP_unordered_map<SCP_string, SCP_vector<luacpp::LuaReference>> HookVariableValues;
+
 	// ActiveActions lets code that might run scripting hooks know whether any scripts are even registered for it.
 	// AssayActions is responsible for keeping it up to date.
-	bool ActiveActions[ConditionalActions::CHA_LAST+1];
+	SCP_unordered_map<int, bool> ActiveActions;
 
 	void ParseChunkSub(script_function& out_func, const char* debug_str=NULL);
 
@@ -192,9 +196,6 @@ class script_state
 
 	static void OutputLuaDocumentation(scripting::ScriptingDocumentation& doc,
 		const scripting::DocumentationErrorReporter& errorReporter);
-
-	//Internal Lua helper functions
-	void EndLuaFrame();
 
 public:
 	//***Init/Deinit
@@ -244,7 +245,7 @@ public:
 	bool ParseCondition(const char *filename="<Unknown>");
 	void AddConditionedHook(ConditionedHook hook);
 	void AssayActions();
-	bool IsActiveAction(ConditionalActions action_id);
+	bool IsActiveAction(int hookId);
 
 	void AddGameInitFunction(script_function func);
 
@@ -253,16 +254,15 @@ public:
 	int RunBytecode(script_function& hd, char format = '\0', T* data = nullptr);
 	int RunBytecode(script_function& hd);
 	bool IsOverride(script_hook &hd);
-	int RunCondition(int condition, object *objp1 = nullptr, object *objp2 = nullptr, int more_data = -1);
-	bool IsConditionOverride(int action, object *objp1 = nullptr, object *objp2 = nullptr, int more_data = -1);
+	int RunCondition(int action_type, object *objp1 = nullptr, object *objp2 = nullptr, int more_data = -1);
+	bool IsConditionOverride(int action_type, object *objp1 = nullptr, object *objp2 = nullptr, int more_data = -1);
 
 	void RunInitFunctions();
 
+	void ProcessAddedHooks();
+
 	//*****Other functions
-	void EndFrame();
-
 	static script_state* GetScriptState(lua_State* L);
-
 	util::event<void, lua_State*> OnStateDestroy;
 };
 
@@ -337,13 +337,19 @@ bool script_state::EvalStringWithReturn(const char* string, const char* format, 
 				scripting::ade_get_args(LuaState, format, rtn);
 			}
 		} catch (const LuaException&) {
+			lua_pop(LuaState, 1);
+
 			return false;
 		}
 	} catch (const LuaException& e) {
 		LuaError(GetLuaSession(), "%s", e.what());
 
+		lua_pop(LuaState, 1);
+
 		return false;
 	}
+
+	lua_pop(LuaState, 1);
 
 	return true;
 }

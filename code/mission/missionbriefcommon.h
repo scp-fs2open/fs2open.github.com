@@ -67,13 +67,14 @@ typedef struct briefing_icon_info {
 	generic_anim	regular;
 	hud_anim		fade;
 	hud_anim		highlight;
-} briefing_icon_type;
+} briefing_icon_info;
 
 extern SCP_vector<briefing_icon_info> Briefing_icon_info;
 
 struct brief_icon;
 extern briefing_icon_info *brief_get_icon_info(brief_icon *bi);
 
+extern bool brief_special_closeup(int briefing_icon_type);
 
 
 // Moving out of missionbriefcommon.cpp so it can be referenced elsewhere -MageKing17
@@ -234,14 +235,14 @@ extern int Brief_text_max_lines[GR_NUM_RESOLUTIONS];
 extern const char *Brief_static_name[GR_NUM_RESOLUTIONS];
 extern int Brief_static_coords[GR_NUM_RESOLUTIONS][2];
 
-// Needed for Fred
+/* Needed for Fred
 #define BRIEF_GRID3_X1						42
 #define BRIEF_GRID3_Y1						122
 #define BRIEF_GRID0_X2						585
 #define BRIEF_GRID0_Y2						371
 #define BRIEF_GRID_W							(BRIEF_GRID0_X2-BRIEF_GRID3_X1+1)
 #define BRIEF_GRID_H							(BRIEF_GRID0_Y2-BRIEF_GRID3_Y1+1)
-/*
+
 #define BRIEF_GRID0_X1						63
 #define BRIEF_GRID0_Y1						122
 #define BRIEF_GRID1_X1						575
@@ -261,7 +262,7 @@ extern int Brief_static_coords[GR_NUM_RESOLUTIONS][2];
 
 typedef struct brief_screen
 {
-	int map_x1, map_x2, map_y1, map_y2;
+	int map_x1, map_x2, map_y1, map_y2, resize;
 /*	int btext_x1, btext_x2, btext_y1, btext_y2;
 	int cup_x1, cup_x2, cup_y1, cup_y2;
 	int cupinfo_x1, cupinfo_x2, cupinfo_y1, cupinfo_y2;*/

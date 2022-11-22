@@ -13,12 +13,8 @@
 #define _FLOATING_H
 
 #include <cmath>
-#include <cmath>
 #include <cfloat>
-
-#include "globalincs/pstypes.h"
-
-#include <cfloat>
+#include <limits>
 
 extern float frand();
 extern int rand_chance(float frametime, float chance = 1.0f);
@@ -96,22 +92,29 @@ float fl_isqrt( float x )
 } 
 */
 
-// sees if two floating point numbers are within the minimum tolerance
+// sees if a floating point number is within a certain threshold (by default, epsilon) of zero
+inline bool fl_near_zero(float a, float e = std::numeric_limits<float>::epsilon())
+{
+	return a < e && a > -e;
+}
+
+// sees if two floating point numbers are approximately equal, taking into account the argument magnitudes
+// see commit c62037
+// and see also this article, because fl_equal may need to be rewritten if it is recruited into more demanding situations:
+// https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/
 inline bool fl_equal(float a, float b)
 {
-	return fl_abs(a - b) <= FLT_EPSILON * MAX(1.0f, MAX(fl_abs(a), fl_abs(b)));
+	return fl_abs(a - b) <= FLT_EPSILON * std::max({ 1.0f, fl_abs(a), fl_abs(b) });
+}
+
+// sees if two floating point numbers are approximately equal, with a user-specifiable epsilon
+inline bool fl_equal(float a, float b, float epsilon)
+{
+	return fl_abs(a - b) <= epsilon;
 }
 
 // rounds off a floating point number to a multiple of some number
 extern float fl_roundoff(float x, int multiple);
-
-/**
- * @brief Determines if @a x falls between +/- @a e
- *
- * @param x Value to test
- * @param e Value to test against (must be positive)
- */
-#define IS_NEAR_ZERO(x, e) (fl_abs(x) < (float)(e))
 
 const float GOLDEN_RATIO = 0.618033989f;
 

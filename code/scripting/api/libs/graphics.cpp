@@ -30,6 +30,7 @@
 #include <parse/parselo.h>
 #include <render/3d.h>
 #include <render/3dinternal.h>
+#include <render/batching.h>
 #include <scripting/scripting.h>
 #include <ship/ship.h>
 #include <weapon/weapon.h>
@@ -39,22 +40,23 @@ namespace {
 
 static const int NextDrawStringPosInitial[] = {0, 0};
 static int NextDrawStringPos[] = {NextDrawStringPosInitial[0], NextDrawStringPosInitial[1]};
+static fix PreviousFrametimeOverall = 0;
+
+static bool WarnedBadThicknessLine = false;
 
 }
 
 namespace scripting {
 namespace api {
 
+model_draw_list *Current_scene = nullptr;
 
 //**********LIBRARY: Graphics
 ADE_LIB(l_Graphics, "Graphics", "gr", "Graphics Library");
 
-void graphics_on_frame() {
-	memcpy(NextDrawStringPos, NextDrawStringPosInitial, sizeof(NextDrawStringPos));
-}
-
 static float lua_Opacity = 1.0f;
 static int lua_Opacity_type = GR_ALPHABLEND_FILTER;
+static int lua_ResizeMode = GR_RESIZE_NONE;
 
 //****SUBLIBRARY: Graphics/Cameras
 ADE_LIB_DERIV(l_Graphics_Cameras, "Cameras", NULL, "Cameras", l_Graphics);
@@ -212,7 +214,7 @@ ADE_VIRTVAR(CurrentOpacityType, l_Graphics, "enumeration", "Current alpha blendi
 			lua_Opacity_type = GR_ALPHABLEND_NONE;
 	}
 
-	int rtn;
+	lua_enum rtn;
 	switch(lua_Opacity_type)
 	{
 		case GR_ALPHABLEND_FILTER:
@@ -250,11 +252,33 @@ ADE_VIRTVAR(CurrentRenderTarget, l_Graphics, "texture", "Current rendering targe
 	}
 }
 
+ADE_VIRTVAR(CurrentResizeMode, l_Graphics, "enumeration ResizeMode", "Current resize mode; uses GR_RESIZE_* enumerations.  This resize mode will be used by the gr.* drawing methods.", "enumeration", nullptr)
+{
+	enum_h resize_arg;
+
+	if (!ade_get_args(L, "*|o", l_Enum.Get(&resize_arg)))
+		return ADE_RETURN_NIL;
+
+	if (ADE_SETTING_VAR)
+	{
+		if (!resize_arg.IsValid() || resize_arg.index < LE_GR_RESIZE_NONE || resize_arg.index > LE_GR_RESIZE_MENU_NO_OFFSET)
+		{
+			Warning(LOCATION, "Invalid resize mode index %d", resize_arg.index);
+			return ADE_RETURN_NIL;
+		}
+
+		lua_ResizeMode = resize_arg.index - LE_GR_RESIZE_NONE;
+	}
+
+	return ade_set_args(L, "o", l_Enum.Set(enum_h(static_cast<lua_enum>(LE_GR_RESIZE_NONE + lua_ResizeMode))));
+}
+
 ADE_FUNC(clear, l_Graphics, nullptr, "Calls gr_clear(), which fills the entire screen with the currently active color.  Useful if you want to have a fresh start for drawing things.  (Call this between setClip and resetClip if you only want to clear part of the screen.)", nullptr, nullptr)
 {
 	gr_clear();
 
-	(void)(L);	// avoid unused parameter warning
+	SCP_UNUSED(L);	// avoid unused parameter warning
+
 	return ADE_RETURN_NIL;
 }
 
@@ -535,9 +559,9 @@ ADE_FUNC(drawCircle, l_Graphics, "number Radius, number X, number Y, [boolean Fi
 
 	if (fill) {
 		//WMC - Circle takes...diameter.
-		gr_circle(x,y, ra*2, GR_RESIZE_NONE);
+		gr_circle(x,y, ra*2, lua_ResizeMode);
 	} else {
-		gr_unfilled_circle(x,y, ra*2, GR_RESIZE_NONE);
+		gr_unfilled_circle(x,y, ra*2, lua_ResizeMode);
 	}
 
 	return ADE_RETURN_NIL;
@@ -556,7 +580,7 @@ ADE_FUNC(drawArc, l_Graphics, "number Radius, number X, number Y, number StartAn
 		return ADE_RETURN_NIL;
 	}
 
-	gr_arc(x,y, ra, angle_start, angle_end, fill, GR_RESIZE_NONE);
+	gr_arc(x,y, ra, angle_start, angle_end, fill, lua_ResizeMode);
 
 	return ADE_RETURN_NIL;
 }
@@ -573,7 +597,7 @@ ADE_FUNC(drawCurve, l_Graphics, "number X, number Y, number Radius", "Draws a cu
 
 	//WMC - direction should be settable at a certain point via enumerations.
 	//Not gonna deal with it now.
-	gr_curve(x, y, ra, dir, GR_RESIZE_NONE);
+	gr_curve(x, y, ra, dir, lua_ResizeMode);
 
 	return ADE_RETURN_NIL;
 }
@@ -588,7 +612,7 @@ ADE_FUNC(drawGradientLine, l_Graphics, "number X1, number Y1, number X2, number 
 	if(!ade_get_args(L, "iiii", &x1, &y1, &x2, &y2))
 		return ADE_RETURN_NIL;
 
-	gr_gradient(x1,y1,x2,y2,GR_RESIZE_NONE);
+	gr_gradient(x1,y1,x2,y2,lua_ResizeMode);
 
 	return ADE_RETURN_NIL;
 }
@@ -603,7 +627,7 @@ ADE_FUNC(drawLine, l_Graphics, "number X1, number Y1, number X2, number Y2", "Dr
 	if(!ade_get_args(L, "iiii", &x1, &y1, &x2, &y2))
 		return ADE_RETURN_NIL;
 
-	gr_line(x1,y1,x2,y2,GR_RESIZE_NONE);
+	gr_line(x1,y1,x2,y2,lua_ResizeMode);
 
 	return ADE_RETURN_NIL;
 }
@@ -618,7 +642,7 @@ ADE_FUNC(drawPixel, l_Graphics, "number X, number Y", "Sets pixel to CurrentColo
 	if(!ade_get_args(L, "ii", &x, &y))
 		return ADE_RETURN_NIL;
 
-	gr_pixel(x,y,GR_RESIZE_NONE);
+	gr_pixel(x,y,lua_ResizeMode);
 
 	return ADE_RETURN_NIL;
 }
@@ -669,7 +693,7 @@ void drawRectInternal(int x1, int x2, int y1, int y2, bool f = true, float a = 0
 	if(f)
 	{
 		gr_set_bitmap(0);  // gr_rect will use the last bitmaps info, so set to zero to flush any previous alpha state
-		gr_rect(x1, y1, x2-x1, y2-y1, GR_RESIZE_NONE, a);
+		gr_rect(x1, y1, x2-x1, y2-y1, lua_ResizeMode, a);
 	}
 	else
 	{
@@ -692,17 +716,17 @@ void drawRectInternal(int x1, int x2, int y1, int y2, bool f = true, float a = 0
 			float DY = sinf(a) * (x1 - centerX) + cosf(a) * (y2 - centerY) + centerY;
 
 
-			gr_line(fl2i(AX), fl2i(AY), fl2i(BX), fl2i(BY), GR_RESIZE_NONE);
-			gr_line(fl2i(BX), fl2i(BY), fl2i(CX), fl2i(CY), GR_RESIZE_NONE);
-			gr_line(fl2i(CX), fl2i(CY), fl2i(DX), fl2i(DY), GR_RESIZE_NONE);
-			gr_line(fl2i(DX), fl2i(DY), fl2i(AX), fl2i(AY), GR_RESIZE_NONE);
+			gr_line(fl2i(AX), fl2i(AY), fl2i(BX), fl2i(BY), lua_ResizeMode);
+			gr_line(fl2i(BX), fl2i(BY), fl2i(CX), fl2i(CY), lua_ResizeMode);
+			gr_line(fl2i(CX), fl2i(CY), fl2i(DX), fl2i(DY), lua_ResizeMode);
+			gr_line(fl2i(DX), fl2i(DY), fl2i(AX), fl2i(AY), lua_ResizeMode);
 		}
 		else {
 
-			gr_line(x1, y1, x2, y1, GR_RESIZE_NONE);	//Top
-			gr_line(x1, y2, x2, y2, GR_RESIZE_NONE);	//Bottom
-			gr_line(x1, y1, x1, y2, GR_RESIZE_NONE);	//Left
-			gr_line(x2, y1, x2, y2, GR_RESIZE_NONE);	//Right
+			gr_line(x1, y1, x2, y1, lua_ResizeMode);	//Top
+			gr_line(x1, y2, x2, y2, lua_ResizeMode);	//Bottom
+			gr_line(x1, y1, x1, y2, lua_ResizeMode);	//Left
+			gr_line(x2, y1, x2, y2, lua_ResizeMode);	//Right
 		}
 	}
 
@@ -795,10 +819,45 @@ ADE_FUNC(drawSphere, l_Graphics, "[number Radius = 1.0, vector Position]", "Draw
 	return ADE_RETURN_TRUE;
 }
 
+ADE_FUNC(draw3dLine, l_Graphics, "vector origin, vector destination, [boolean translucent=true, number thickness=1.0, number thicknessEnd=thickness]", "Draws a line from origin to destination. "
+"The line may be translucent or solid. Translucent lines will NOT use the alpha value, instead being more transparent the darker the color is. "
+"The thickness at the start can be different from the thickness at the end, to draw a line that tapers or expands.", nullptr, nullptr)
+{
+	vec3d *v1 = &vmd_zero_vector;
+	vec3d *v2 = &vmd_zero_vector;
+	bool translucent = true;
+	float thickness = 1.0f;
+	float thicknessEnd = -1.0f;
+
+	if (!ade_get_args(L, "oo|bff", l_Vector.GetPtr(&v1), l_Vector.GetPtr(&v2), &translucent, &thickness, &thicknessEnd))
+		return ADE_RETURN_NIL;
+
+	if (thickness < 0) thickness = 0;
+	if (thicknessEnd < 0) thicknessEnd = thickness;
+	
+	if (thickness <= 0 && thicknessEnd <= 0)
+	{
+		if (!WarnedBadThicknessLine)
+		{
+			LuaError(L, "At least one end of a 3D line must be greater than zero! The line won't be drawn!\nThis warning won't be shown again this play session.");
+			WarnedBadThicknessLine = true;
+		}
+
+		//While the batching_add_line function would also do this check, I feel that its good to return early here.
+		return ADE_RETURN_NIL;
+	}
+
+	color &clr = gr_screen.current_color;
+
+	batching_add_line(v1, v2, thickness, thicknessEnd, clr, translucent);
+
+	return ADE_RETURN_NIL;
+}
+
 // Aardwolf's test code to render a model, supposed to emulate WMC's gr.drawModel function
 ADE_FUNC(drawModel, l_Graphics, "model model, vector position, orientation orientation",
-         "Draws the given model with the specified position and orientation - Use with extreme care, may not work "
-         "properly in all scripting hooks.",
+         "Draws the given model with the specified position and orientation.  "
+	     "Note: this method does NOT use CurrentResizeMode.",
          "number", "Zero if successful, otherwise an integer error code")
 {
 	model_h *mdl = NULL;
@@ -814,11 +873,16 @@ ADE_FUNC(drawModel, l_Graphics, "model model, vector position, orientation orien
 	if(model_num < 0)
 		return ade_set_args(L, "i", 3);
 
+	// Make sure we have a scene to use
+	// Note that this is only relevant, and thus only expected to be set, in OBJECTRENDER hooks
+	if (Script_system.IsActiveAction(CHA_OBJECTRENDER) && !Current_scene)
+		return ade_set_args(L, "i", 4);
+
 	//Handle angles
 	matrix *orient = mh->GetMatrix();
 
 	//Clip
-	gr_set_clip(0, 0, gr_screen.max_w, gr_screen.max_h, GR_RESIZE_NONE);
+	gr_set_clip(0, 0, gr_screen.max_w, gr_screen.max_h, GR_RESIZE_NONE);	// don't use lua_ResizeMode here since this function handles its own resizing
 
 	//Handle 3D init stuff
 	g3_start_frame(1);
@@ -851,7 +915,14 @@ ADE_FUNC(drawModel, l_Graphics, "model model, vector position, orientation orien
 
 	render_info.set_detail_level_lock(0);
 
-	model_render_immediate(&render_info, model_num, orient, v);
+	// If this function executes in OBJECTRENDER, and if the Current_scene is set, we can take advantage
+	// of some optimizations by adding this model to the global render queue.
+	// In all other circumstances, we need to render the model in immediate mode, which may be slow but
+	// is guaranteed to work.
+	if (Script_system.IsActiveAction(CHA_OBJECTRENDER))
+		model_render_queue(&render_info, Current_scene, model_num, orient, v);
+	else
+		model_render_immediate(&render_info, model_num, orient, v);
 
 	//OK we're done
 	gr_end_view_matrix();
@@ -866,8 +937,7 @@ ADE_FUNC(drawModel, l_Graphics, "model model, vector position, orientation orien
 
 // Wanderer
 ADE_FUNC(drawModelOOR, l_Graphics, "model Model, vector Position, orientation Orientation, [number Flags]",
-         "Draws the given model with the specified position and orientation - Use with extreme care, designed to "
-         "operate properly only in On Object Render hooks.",
+         "Draws the given model with the specified position and orientation",
          "number", "Zero if successful, otherwise an integer error code")
 {
 	model_h *mdl = NULL;
@@ -890,6 +960,11 @@ ADE_FUNC(drawModelOOR, l_Graphics, "model Model, vector Position, orientation Or
 	if(model_num < 0)
 		return ade_set_args(L, "i", 3);
 
+	// Make sure we have a scene to use
+	// Note that this is only relevant, and thus only expected to be set, in OBJECTRENDER hooks
+	if (Script_system.IsActiveAction(CHA_OBJECTRENDER) && !Current_scene)
+		return ade_set_args(L, "i", 4);
+
 	//Handle angles
 	matrix *orient = mh->GetMatrix();
 
@@ -899,8 +974,14 @@ ADE_FUNC(drawModelOOR, l_Graphics, "model Model, vector Position, orientation Or
 	model_render_params render_info;
 	render_info.set_flags(flags);
 
-	model_render_immediate(&render_info, model_num, orient, v);
-
+	// If this function executes in OBJECTRENDER, and if the Current_scene is set, we can take advantage
+	// of some optimizations by adding this model to the global render queue.
+	// In all other circumstances, we need to render the model in immediate mode, which may be slow but
+	// is guaranteed to work.
+	if (Script_system.IsActiveAction(CHA_OBJECTRENDER))
+		model_render_queue(&render_info, Current_scene, model_num, orient, v);
+	else
+		model_render_immediate(&render_info, model_num, orient, v);
 	return ade_set_args(L, "i", 0);
 }
 
@@ -908,7 +989,8 @@ ADE_FUNC(drawModelOOR, l_Graphics, "model Model, vector Position, orientation Or
 ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, number padding=5]",
          "Gets the edge positions of targeting brackets for the specified object. The brackets will only be drawn if "
          "draw is true or the default value of draw is used. Brackets are drawn with the current color. The brackets "
-         "will have a padding (distance from the actual bounding box); the default value (used elsewhere in FS2) is 5.",
+         "will have a padding (distance from the actual bounding box); the default value (used elsewhere in FS2) is 5.  "
+         "Note: this method does NOT use CurrentResizeMode.",
          "number, number, number, number",
          "Left, top, right, and bottom positions of the brackets, or nil if invalid")
 {
@@ -1004,7 +1086,7 @@ ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, 
 	y2 += padding;
 	if ( draw_box ) {
 		graphics::line_draw_list line_draw_list;
-		draw_brackets_square(&line_draw_list, x1, y1, x2, y2, GR_RESIZE_NONE);
+		draw_brackets_square(&line_draw_list, x1, y1, x2, y2, GR_RESIZE_NONE);	// don't use lua_ResizeMode here since this function handles its own resizing
 		line_draw_list.flush();
 	}
 
@@ -1167,8 +1249,14 @@ static int drawString_sub(lua_State *L, bool use_resize_arg)
 	if(!Gr_inited)
 		return ade_set_error(L, "i", 0);
 
-	enum_h resize_arg;
-	int resize_mode = use_resize_arg ? GR_RESIZE_FULL : GR_RESIZE_NONE;
+	int resize_mode = lua_ResizeMode;
+
+	// if the frame has changed since the last drawString call, reset the string position
+	if (PreviousFrametimeOverall != game_get_overall_frametime())
+	{
+		PreviousFrametimeOverall = game_get_overall_frametime();
+		memcpy(NextDrawStringPos, NextDrawStringPosInitial, sizeof(NextDrawStringPos));
+	}
 
 	int x = NextDrawStringPos[0];
 	int y = NextDrawStringPos[1];
@@ -1179,39 +1267,20 @@ static int drawString_sub(lua_State *L, bool use_resize_arg)
 
 	if (use_resize_arg)
 	{
+		enum_h resize_arg;
 		if (!ade_get_args(L, "o", l_Enum.Get(&resize_arg)))
 			return ade_set_error(L, "i", 0);
 
+		if (!resize_arg.IsValid() || resize_arg.index < LE_GR_RESIZE_NONE || resize_arg.index > LE_GR_RESIZE_MENU_NO_OFFSET)
+		{
+			Warning(LOCATION, "Invalid resize mode index %d", resize_arg.index);
+			return ade_set_error(L, "i", 0);
+		}
+
+		resize_mode = resize_arg.index - LE_GR_RESIZE_NONE;
+
 		// so that ade_get_args below will read the correct positions
 		internal::Ade_get_args_skip++;
-
-		if (resize_arg.IsValid())
-		{
-			switch (resize_arg.index)
-			{
-				case LE_GR_RESIZE_NONE:
-					resize_mode = GR_RESIZE_NONE;
-					break;
-				case LE_GR_RESIZE_FULL:
-					resize_mode = GR_RESIZE_FULL;
-					break;
-				case LE_GR_RESIZE_FULL_CENTER:
-					resize_mode = GR_RESIZE_FULL_CENTER;
-					break;
-				case LE_GR_RESIZE_MENU:
-					resize_mode = GR_RESIZE_MENU;
-					break;
-				case LE_GR_RESIZE_MENU_ZOOMED:
-					resize_mode = GR_RESIZE_MENU_ZOOMED;
-					break;
-				case LE_GR_RESIZE_MENU_NO_OFFSET:
-					resize_mode = GR_RESIZE_MENU_NO_OFFSET;
-					break;
-				default:
-					Warning(LOCATION, "Invalid resize index %d in gr.drawStringResized", resize_arg.index);
-					break;
-			}
-		}
 	}
 
 	if (lua_isboolean(L, 1 + internal::Ade_get_args_skip))
@@ -1250,20 +1319,38 @@ static int drawString_sub(lua_State *L, bool use_resize_arg)
 		SCP_vector<int> linelengths;
 		SCP_vector<const char*> linestarts;
 
-		if (y2 >= 0 && y2 < y)
+		// This would pass a <=0 value to split_str
+		if (x2 <= x)
 		{
-			// Invalid y2 value
-			Warning(LOCATION, "Illegal y2 value passed to drawString. Got %d y2 value but %d for y.", y2, y);
+			static bool Warned_drawString_x_x2 = false;
+			if (!Warned_drawString_x_x2)
+			{
+				Warning(LOCATION, "Illegal values passed to gr.drawString: x2 (%d) must be greater than x (%d).", x2, x);
+				Warned_drawString_x_x2 = true;
+			}
 
-			int temp = y;
-			y = y2;
-			y2 = temp;
+			std::swap(x, x2);
+		}
+		// Invalid y2 value
+		if (y2 >= 0 && y2 <= y)
+		{
+			static bool Warned_drawString_y_y2 = false;
+			if (!Warned_drawString_y_y2)
+			{
+				Warning(LOCATION, "Illegal y2 value passed to gr.drawString: y2 (%d) must be greater than y (%d).", y2, y);
+				Warned_drawString_y_y2 = true;
+			}
+
+			std::swap(y, y2);
 		}
 
 		num_lines = split_str(s, x2-x, linelengths, linestarts, INT_MAX, (unicode::codepoint_t)-1, false);
 
-		//Make sure we don't go over size
 		int line_ht = gr_get_font_height();
+		if (y2 < 0)
+			y2 = y + line_ht;
+
+		//Make sure we don't go over size
 		num_lines = MIN(num_lines, (y2 - y) / line_ht);
 
 		int curr_y = y;
@@ -1298,7 +1385,7 @@ static int drawString_sub(lua_State *L, bool use_resize_arg)
 }
 
 ADE_FUNC(drawString, l_Graphics, "string|boolean Message, [number X1, number Y1, number X2, number Y2]",
-	"Draws a string at its native size (not scaled for screen resolution). Use x1/y1 to control position, x2/y2 to limit textbox size."
+	"Draws a string. Use x1/y1 to control position, x2/y2 to limit textbox size."
 	"Text will automatically move onto new lines, if x2/y2 is specified."
 	"Additionally, calling drawString with only a string argument will automatically"
 	"draw that string below the previously drawn string (or 0,0 if no strings"
@@ -1432,7 +1519,8 @@ ADE_FUNC(createTexture, l_Graphics, "[number Width=512, number Height=512, enume
 	if(idx < 0)
 		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
 
-	return ade_set_args(L, "o", l_Texture.Set(texture_h(idx)));
+	//Since creating a render target does not increase load count, when creating the scripting texture object we need to pass true to the constructor so that the constructor will increase the load count for us.
+	return ade_set_args(L, "o", l_Texture.Set(texture_h(idx, true)));
 }
 
 ADE_FUNC(loadTexture, l_Graphics, "string Filename, [boolean LoadIfAnimation, boolean NoDropFrames]",
@@ -1460,8 +1548,9 @@ ADE_FUNC(loadTexture, l_Graphics, "string Filename, [boolean LoadIfAnimation, bo
 
 	if(idx < 0)
 		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
-
-	return ade_set_args(L, "o", l_Texture.Set(texture_h(idx)));
+	
+	//Loading increases load count, so we must pass false to the texture scripting object, so that the constructor doesn't increase the load count by itself again.
+	return ade_set_args(L, "o", l_Texture.Set(texture_h(idx, false)));
 }
 
 ADE_FUNC(drawImage,
@@ -1547,9 +1636,9 @@ ADE_FUNC(drawImage,
 	bitmap_rect_list brl = bitmap_rect_list(x1, y1, w, h, uv_x1, uv_y1, uv_x2, uv_y2);
 
 	if (aabitmap) {
-		gr_aabitmap_list(&brl, 1, GR_RESIZE_NONE, angle);
+		gr_aabitmap_list(&brl, 1, lua_ResizeMode, angle);
 	} else {
-		gr_bitmap_list(&brl, 1, GR_RESIZE_NONE, angle);
+		gr_bitmap_list(&brl, 1, lua_ResizeMode, angle);
 	}
 
 	return ADE_RETURN_TRUE;
@@ -1601,8 +1690,8 @@ ADE_FUNC(drawImageCentered,
 				l_Texture.GetPtr(&th),
 				&x,
 				&y,
-				&h,
 				&w,
+				&h,
 				&uv_x1,
 				&uv_y1,
 				&uv_x2,
@@ -1637,9 +1726,9 @@ ADE_FUNC(drawImageCentered,
 	bitmap_rect_list brl = bitmap_rect_list(x-(w/2), y-(h/2), w, h, uv_x1, uv_y1, uv_x2, uv_y2);
 
 	if (aabitmap) {
-		gr_aabitmap_list(&brl, 1, GR_RESIZE_NONE, angle);
+		gr_aabitmap_list(&brl, 1, lua_ResizeMode, angle);
 	} else {
-		gr_bitmap_list(&brl, 1, GR_RESIZE_NONE, angle);
+		gr_bitmap_list(&brl, 1, lua_ResizeMode, angle);
 	}
 
 	return ADE_RETURN_TRUE;
@@ -1713,7 +1802,7 @@ ADE_FUNC_DEPRECATED(drawMonochromeImage,
 		h = y2-y;
 
 	gr_set_bitmap(idx, lua_Opacity_type, GR_BITBLT_MODE_NORMAL,alpha);
-	gr_aabitmap_ex(x, y, w, h, sx, sy, GR_RESIZE_NONE, m);
+	gr_aabitmap_ex(x, y, w, h, sx, sy, lua_ResizeMode, m);
 
 	return ADE_RETURN_TRUE;
 }
@@ -1889,7 +1978,7 @@ ADE_FUNC(setClip, l_Graphics, "number x, number y, number width, number height",
 	if (!ade_get_args(L, "iiii", &x, &y, &width, &height))
 		return ADE_RETURN_FALSE;
 
-	gr_set_clip(x, y, width, height, GR_RESIZE_NONE);
+	gr_set_clip(x, y, width, height, lua_ResizeMode);
 
 	return ADE_RETURN_TRUE;
 }
@@ -1928,7 +2017,7 @@ ADE_FUNC(openMovie, l_Graphics, "string name, boolean looping = false",
 
 ADE_FUNC(createPersistentParticle,
 	l_Graphics,
-	"vector Position, vector Velocity, number Lifetime, number Radius, enumeration Type, [number TracerLength=-1, "
+	"vector Position, vector Velocity, number Lifetime, number Radius, [enumeration Type=PARTICLE_DEBUG, number TracerLength=-1, "
 	"boolean Reverse=false, texture Texture=Nil, object AttachedObject=Nil]",
 	"Creates a persistent particle. Persistent variables are handled specially by the engine so that this "
 	"function can return a handle to the caller. Only use this if you absolutely need it. Use createParticle if "
@@ -1952,7 +2041,7 @@ ADE_FUNC(createPersistentParticle,
 	bool rev           = false;
 	object_h* objh     = nullptr;
 	texture_h* texture = nullptr;
-	if (!ade_get_args(L, "ooffo|fboo", l_Vector.Get(&pi.pos), l_Vector.Get(&pi.vel), &pi.lifetime, &pi.rad,
+	if (!ade_get_args(L, "ooff|ofboo", l_Vector.Get(&pi.pos), l_Vector.Get(&pi.vel), &pi.lifetime, &pi.rad,
 	                  l_Enum.GetPtr(&type), &temp, &rev, l_Texture.GetPtr(&texture), l_Object.GetPtr(&objh)))
 		return ADE_RETURN_NIL;
 
@@ -1979,6 +2068,9 @@ ADE_FUNC(createPersistentParticle,
 				pi.type          = particle::PARTICLE_BITMAP;
 			}
 			break;
+		default:
+			LuaError(L, "Invalid particle enum for createParticle(). Can only support PARTICLE_* enums!");
+			return ADE_RETURN_NIL;
 		}
 	}
 
@@ -2000,7 +2092,7 @@ ADE_FUNC(createPersistentParticle,
 
 ADE_FUNC(createParticle,
 	l_Graphics,
-	"vector Position, vector Velocity, number Lifetime, number Radius, enumeration Type, [number TracerLength=-1, "
+	"vector Position, vector Velocity, number Lifetime, number Radius, [enumeration Type=PARTICLE_DEBUG, number TracerLength=-1, "
 	"boolean Reverse=false, texture Texture=Nil, object AttachedObject=Nil]",
 	"Creates a non-persistent particle. Use PARTICLE_* enumerations for type."
 	"Reverse reverse animation, if one is specified"
@@ -2022,7 +2114,7 @@ ADE_FUNC(createParticle,
 	bool rev           = false;
 	object_h* objh     = nullptr;
 	texture_h* texture = nullptr;
-	if (!ade_get_args(L, "ooffo|fboo", l_Vector.Get(&pi.pos), l_Vector.Get(&pi.vel), &pi.lifetime, &pi.rad,
+	if (!ade_get_args(L, "ooff|ofboo", l_Vector.Get(&pi.pos), l_Vector.Get(&pi.vel), &pi.lifetime, &pi.rad,
 	                  l_Enum.GetPtr(&type), &temp, &rev, l_Texture.GetPtr(&texture), l_Object.GetPtr(&objh)))
 		return ADE_RETURN_FALSE;
 
@@ -2049,6 +2141,9 @@ ADE_FUNC(createParticle,
 				pi.type          = particle::PARTICLE_BITMAP;
 			}
 			break;
+		default:
+			LuaError(L, "Invalid particle enum for createParticle(). Can only support PARTICLE_* enums!");
+			return ADE_RETURN_NIL;
 		}
 	}
 
@@ -2063,6 +2158,14 @@ ADE_FUNC(createParticle,
 	particle::create(&pi);
 
 	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(screenToBlob, l_Graphics, nullptr, "Captures the current render target and encodes it into a blob-PNG", "string", "The png blob string")
+{
+	if (!Gr_inited)
+		return ade_set_error(L, "s", "");
+
+	return ade_set_args(L, "s", gr_blob_screen().c_str());
 }
 
 } // namespace api

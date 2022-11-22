@@ -243,7 +243,16 @@ void camera::set_rotation_facing(vec3d *in_target, float in_rotation_time, float
 	{
 		vec3d position;
 		matrix orient_buf;
-		auto orient = Use_host_orientation_for_set_camera_facing ? &orient_buf : nullptr;
+		matrix *orient = nullptr;
+
+		if (Use_host_orientation_for_set_camera_facing)
+		{
+			// we want to retrieve the camera's orientation, so provide a buffer for it
+			orient = &orient_buf;
+
+			// reset the camera's orientation state because if we have no host object, that is what the camera will default to
+			c_ori = vmd_identity_matrix;
+		}
 
 		this->get_info(&position, orient, false);
 
@@ -822,7 +831,10 @@ void subtitle::do_frame(float frametime)
 
 	auto sizing_mode = do_screen_scaling ? GR_RESIZE_FULL : GR_RESIZE_NONE;
 	if (do_screen_scaling)
+	{
 		gr_set_screen_scale(Show_subtitle_screen_adjusted_res[0], Show_subtitle_screen_adjusted_res[1]);
+		gr_set_clip(0, 0, Show_subtitle_screen_adjusted_res[0], Show_subtitle_screen_adjusted_res[1]);
+	}
 
 	// do the actual drawing ---------------------
 
@@ -870,7 +882,10 @@ void subtitle::do_frame(float frametime)
 	// finished the actual drawing ---------------
 
 	if (do_screen_scaling)
+	{
 		gr_reset_screen_scale();
+		gr_reset_clip();
+	}
 
 	// restore old font
 	if (old_fontnum >= 0)

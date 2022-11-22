@@ -29,7 +29,7 @@ namespace Mission {
 		All_attack,					// all teams at war - Goober5000
 		Use_ap_cinematics,			// use autopilot cinematics - Kazan
 		Deactivate_ap,				// deactivate autopilot - KeldorKatarn (patch approved by Kazan)
-		Always_show_goals,			// Show the mission goals, even for training missions - Karajorma
+		Toggle_showing_goals,			// Show mission goals for training missions, hide otherwise - Karajorma/naomimyselfandi
 		End_to_mainhall,			// Return to the mainhall after debrief - niffiwan
 		Override_hashcommand,		// Override #Command with the Command info in Mission Specs - Goober5000
 		Player_start_chase_view,	// Player starts mission in chase view - Goober5000
@@ -105,6 +105,9 @@ namespace Mission {
 		OF_Attackable_if_no_collide, // Cyborg - keeps turrets from ignoring ships that have no_collide set
 		SF_Fail_sound_locked_primary, 	// Kiloku - Plays fail sound when firing with locked weapons
 		SF_Fail_sound_locked_secondary,	// Kiloku - Plays fail sound when firing with locked weapons
+		SF_Aspect_immune,				// Kiloku - Ship cannot be locked onto by aspect seeking weapons
+		SF_Cannot_perform_scan,			// Goober5000 - ship cannot scan other ships
+		SF_No_targeting_limits,			// MjnMixael - Ship is always targetable regardless of AWACS or targeting range limits
 
 		NUM_VALUES
 	};

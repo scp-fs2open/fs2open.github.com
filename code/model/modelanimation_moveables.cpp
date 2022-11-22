@@ -34,7 +34,7 @@ namespace animation {
 
 		anim = std::shared_ptr<ModelAnimation>(new ModelAnimation(false, false, true, parentSet));
 
-		anim->setAnimation(std::shared_ptr<ModelAnimationSegment>(new ModelAnimationSegmentSetOrientation(parentSet->getSubmodel(m_submodel), m_defaultPosOrient, true)));
+		anim->setAnimation(std::shared_ptr<ModelAnimationSegment>(new ModelAnimationSegmentSetOrientation(parentSet->getSubmodel(m_submodel), m_defaultPosOrient, ModelAnimationCoordinateRelation::RELATIVE_COORDS)));
 
 		anim->start(pmi,ModelAnimationDirection::FWD);
 	}
@@ -52,7 +52,7 @@ namespace animation {
 	}
 
 
-	ModelAnimationMoveableRotation::ModelAnimationMoveableRotation(std::shared_ptr<ModelAnimationSubmodel> submodel, const angles& defaultOrient, const angles& velocity, const optional<angles>& acceleration) :
+	ModelAnimationMoveableRotation::ModelAnimationMoveableRotation(std::shared_ptr<ModelAnimationSubmodel> submodel, const angles& defaultOrient, const angles& velocity, const tl::optional<angles>& acceleration) :
 			m_submodel(std::move(submodel)), m_defaultPosOrient(defaultOrient), m_velocity(velocity), m_acceleration(acceleration) { }
 
 	void ModelAnimationMoveableRotation::update(polymodel_instance* pmi, const std::vector<linb::any>& args) {
@@ -100,8 +100,8 @@ namespace animation {
 		auto submodel = parentSet->getSubmodel(m_submodel);
 		
 		auto sequence = std::shared_ptr<ModelAnimationSegmentSerial>(new ModelAnimationSegmentSerial());
-		sequence->addSegment(std::shared_ptr<ModelAnimationSegment>(new ModelAnimationSegmentSetOrientation(submodel, orient, true)));
-		sequence->addSegment(std::shared_ptr<ModelAnimationSegment>(new ModelAnimationSegmentRotation(submodel, m_defaultPosOrient, m_velocity, optional<float>(), m_acceleration, true)));
+		sequence->addSegment(std::shared_ptr<ModelAnimationSegment>(new ModelAnimationSegmentSetOrientation(submodel, orient, ModelAnimationCoordinateRelation::RELATIVE_COORDS)));
+		sequence->addSegment(std::shared_ptr<ModelAnimationSegment>(new ModelAnimationSegmentRotation(submodel, m_defaultPosOrient, m_velocity, tl::nullopt, m_acceleration, ModelAnimationCoordinateRelation::ABSOLUTE_COORDS)));
 		
 		anim->setAnimation(sequence);
 
@@ -117,7 +117,7 @@ namespace animation {
 		angles velocity;
 		stuff_angles_deg_phb(&velocity);
 
-		optional<angles> acceleration;
+		tl::optional<angles> acceleration;
 		if (optional_string("+Acceleration:")) {
 			angles parse;
 			stuff_angles_deg_phb(&parse);
@@ -132,7 +132,7 @@ namespace animation {
 	}
 
 
-	ModelAnimationMoveableAxisRotation::ModelAnimationMoveableAxisRotation(std::shared_ptr<ModelAnimationSubmodel> submodel, const float& velocity, const optional<float>& acceleration, const vec3d& axis) :
+	ModelAnimationMoveableAxisRotation::ModelAnimationMoveableAxisRotation(std::shared_ptr<ModelAnimationSubmodel> submodel, const float& velocity, const tl::optional<float>& acceleration, const vec3d& axis) :
 			m_submodel(std::move(submodel)), m_velocity(velocity), m_acceleration(acceleration), m_axis(axis) { }
 
 	void ModelAnimationMoveableAxisRotation::update(polymodel_instance* pmi, const std::vector<linb::any>& args) {
@@ -157,7 +157,7 @@ namespace animation {
 
 			anim->forceRecalculate(pmi);
 
-			matrix startOrient = setOrientation.m_targetOrientation;
+			matrix startOrient = *setOrientation.m_targetOrientation;
 			matrix newOrient;
 			//Apply rotation to old default state
 			vm_matrix_x_matrix(&newOrient, &startOrient, &buffer[rotation.m_submodel].data.orientation);
@@ -186,8 +186,8 @@ namespace animation {
 		auto submodel = parentSet->getSubmodel(m_submodel);
 
 		auto sequence = std::shared_ptr<ModelAnimationSegmentSerial>(new ModelAnimationSegmentSerial());
-		sequence->addSegment(std::shared_ptr<ModelAnimationSegment>(new ModelAnimationSegmentSetOrientation(submodel, vmd_identity_matrix, true)));
-		sequence->addSegment(std::shared_ptr<ModelAnimationSegment>(new ModelAnimationSegmentAxisRotation(submodel, 0, m_velocity, optional<float>(), m_acceleration, m_axis)));
+		sequence->addSegment(std::shared_ptr<ModelAnimationSegment>(new ModelAnimationSegmentSetOrientation(submodel, vmd_identity_matrix, ModelAnimationCoordinateRelation::RELATIVE_COORDS)));
+		sequence->addSegment(std::shared_ptr<ModelAnimationSegment>(new ModelAnimationSegmentAxisRotation(submodel, 0.0f, m_velocity, tl::nullopt, m_acceleration, m_axis)));
 
 		anim->setAnimation(sequence);
 
@@ -204,7 +204,7 @@ namespace animation {
 		stuff_float(&velocity);
 		velocity = fl_radians(velocity);
 
-		optional<float> acceleration;
+		tl::optional<float> acceleration;
 		if (optional_string("+Acceleration:")) {
 			float parse;
 			stuff_float(&parse);
@@ -233,7 +233,7 @@ namespace animation {
 		try {
 			auto x = linb::any_cast<int>(args[0]), y = linb::any_cast<int>(args[1]), z = linb::any_cast<int>(args[2]);
 
-			optional<matrix> orient;
+			tl::optional<matrix> orient;
 			if(args.size() >= 6 && args[3].type() == typeid(int)) {
 				auto p = linb::any_cast<int>(args[3]), h = linb::any_cast<int>(args[4]), b = linb::any_cast<int>(args[5]);
 				
@@ -282,7 +282,7 @@ namespace animation {
 		auto parallelSetOrient = std::shared_ptr<ModelAnimationSegmentParallel>(new ModelAnimationSegmentParallel());
 		for(const auto& link : m_chain) {
 			auto submodel = parentSet->getSubmodel(link.submodel);
-			parallelSetOrient->addSegment(std::shared_ptr<ModelAnimationSegment>(new ModelAnimationSegmentSetOrientation(submodel, vmd_identity_matrix, true)));
+			parallelSetOrient->addSegment(std::shared_ptr<ModelAnimationSegment>(new ModelAnimationSegmentSetOrientation(submodel, vmd_identity_matrix, ModelAnimationCoordinateRelation::RELATIVE_COORDS)));
 		}
 		sequence->addSegment(parallelSetOrient);
 		
@@ -293,12 +293,12 @@ namespace animation {
 			startPos += parentSet->getSubmodel(m_chain[i].submodel)->findSubmodel(pmi).second->offset;
 		}
 		
-		auto segment = std::shared_ptr<ModelAnimationSegmentIK>(new ModelAnimationSegmentIK(startPos, optional<matrix>()));
+		auto segment = std::shared_ptr<ModelAnimationSegmentIK>(new ModelAnimationSegmentIK(startPos, tl::nullopt));
 		segment->m_segment = parallelIK;
 		
 		for(const auto& link : m_chain) {
 			auto submodel = parentSet->getSubmodel(link.submodel);
-			auto rotation = std::shared_ptr<ModelAnimationSegmentRotation>(new ModelAnimationSegmentRotation(submodel, optional<angles>({0,0,0}), optional<angles>(), m_time, link.acceleration, true));
+			auto rotation = std::shared_ptr<ModelAnimationSegmentRotation>(new ModelAnimationSegmentRotation(submodel, tl::optional<angles>({0,0,0}), tl::nullopt, m_time, link.acceleration, ModelAnimationCoordinateRelation::ABSOLUTE_COORDS));
 			parallelIK->addSegment(rotation);
 			segment->m_chain.push_back({submodel, link.constraint, rotation});
 		}
@@ -320,7 +320,7 @@ namespace animation {
 		while (optional_string("$Chain Link:")) {
 			auto submodel = ModelAnimationParseHelper::parseSubmodel();
 
-			optional<angles> acceleration;
+			tl::optional<angles> acceleration;
 			if (optional_string("+Acceleration:")) {
 				angles accel;
 				stuff_angles_deg_phb(&accel);

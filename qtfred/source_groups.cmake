@@ -64,6 +64,8 @@ add_file_folder("Source/Mission/Dialogs"
 	src/mission/dialogs/ShieldSystemDialogModel.h
 	src/mission/dialogs/WaypointEditorDialogModel.cpp
 	src/mission/dialogs/WaypointEditorDialogModel.h
+)
+add_file_folder("Source/Mission/Dialogs/ShipEditor"
 	src/mission/dialogs/ShipEditorDialogModel.h
 	src/mission/dialogs/ShipEditorDialogModel.cpp
 	src/mission/dialogs/ShipInitialStatusDialogModel.cpp
@@ -78,6 +80,8 @@ add_file_folder("Source/Mission/Dialogs"
 	src/mission/dialogs/ShipSpecialStatsDialogModel.cpp
 	src/mission/dialogs/ShipTextureReplacementDialogModel.h
 	src/mission/dialogs/ShipTextureReplacementDialogModel.cpp
+	src/mission/dialogs/ShipTBLViewerModel.cpp
+	src/mission/dialogs/ShipTBLViewerModel.h
 )
 
 add_file_folder("Source/UI"
@@ -124,6 +128,8 @@ add_file_folder("Source/UI/Dialogs"
 	src/ui/dialogs/VoiceActingManager.cpp
 	src/ui/dialogs/WaypointEditorDialog.cpp
 	src/ui/dialogs/WaypointEditorDialog.h
+)
+add_file_folder("Source/UI/Dialogs/ShipEditor"
 	src/ui/dialogs/ShipEditorDialog.h
 	src/ui/dialogs/ShipEditorDialog.cpp
 	src/ui/dialogs/ShipInitialStatusDialog.h
@@ -138,6 +144,8 @@ add_file_folder("Source/UI/Dialogs"
 	src/ui/dialogs/ShipSpecialStatsDialog.h
 	src/ui/dialogs/ShipTextureReplacementDialog.h
 	src/ui/dialogs/ShipTextureReplacementDialog.cpp
+	src/ui/dialogs/ShipTBLViewer.h
+	src/ui/dialogs/ShipTBLViewer.cpp
 )
 
 add_file_folder("Source/UI/Util"
@@ -185,6 +193,7 @@ add_file_folder("UI"
 	ui/ShipFlagsDialog.ui
 	ui/PlayerOrdersDialog.ui
 	ui/ShipTextureReplacementDialog.ui
+	ui/ShipTBLViewer.ui
 )
 
 add_file_folder("Resources"

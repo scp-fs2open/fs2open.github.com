@@ -246,9 +246,8 @@ void pilotfile::update_stats_backout(scoring_struct *stats, bool training)
 	if (stats->m_promotion_earned >= 0) {
 		// deal with a multi-rank promotion mission
 		for (i = 0; i < MAX_FREESPACE2_RANK; ++i) {
-			if (p_stats->score <= Ranks[i].points) {
-				p_stats->rank = i-1;
-				break;
+			if (p_stats->score >= Ranks[i].points) {
+				p_stats->rank = i;
 			}
 		}
 		Assertion (p_stats->rank >= 0, "Rank became negative.");
@@ -296,6 +295,76 @@ void pilotfile::update_stats_backout(scoring_struct *stats, bool training)
 				UNREACHABLE("Ship kills of '%s' not found, should have been added by pilotfile::update_stats.", Ship_info[i].name);
 			}
 		}
+	}
+}
+
+/**
+ * @brief Clear and set multi stats from given scoring struct
+ * @note This is really just for use by PXO to set multi stats from tracker
+ * 
+ * @param stats 
+ */
+void pilotfile::set_multi_stats(const scoring_struct *stats)
+{
+	size_t idx;
+	index_list_t ilist;
+
+
+	multi_stats.score = stats->score;
+	multi_stats.rank = stats->rank;
+	multi_stats.assists = stats->assists;
+	multi_stats.kill_count = stats->kill_count;
+	multi_stats.kill_count_ok = stats->kill_count_ok;
+	multi_stats.bonehead_kills = stats->bonehead_kills;
+
+	multi_stats.p_shots_fired = stats->p_shots_fired;
+	multi_stats.p_shots_hit = stats->p_shots_hit;
+	multi_stats.p_bonehead_hits = stats->p_bonehead_hits;
+
+	multi_stats.s_shots_fired = stats->s_shots_fired;
+	multi_stats.s_shots_hit = stats->s_shots_hit;
+	multi_stats.s_bonehead_hits = stats->s_bonehead_hits;
+
+	multi_stats.flight_time = stats->flight_time;
+	multi_stats.missions_flown = stats->missions_flown;
+	multi_stats.last_flown = stats->last_flown;
+	multi_stats.last_backup = stats->last_backup;
+
+
+	// ship kills
+	multi_stats.ship_kills.clear();
+	multi_stats.ship_kills.shrink_to_fit();
+
+	auto kills_size = std::min(SDL_arraysize(stats->kills), Ship_info.size());
+
+	for (idx = 0; idx < kills_size; ++idx) {
+		if (stats->kills[idx] <= 0) {
+			continue;
+		}
+
+		ilist.name = Ship_info[idx].name;
+		ilist.index = static_cast<int>(idx);
+		ilist.val = stats->kills[idx];
+
+		multi_stats.ship_kills.push_back(ilist);
+	}
+
+	// medals
+	multi_stats.medals_earned.clear();
+	multi_stats.medals_earned.shrink_to_fit();
+
+	auto medals_size = std::min(stats->medal_counts.size(), Medals.size());
+
+	for (idx = 0; idx < medals_size; ++idx) {
+		if (stats->medal_counts[idx] <= 0) {
+			continue;
+		}
+
+		ilist.name = Medals[idx].name;
+		ilist.index = static_cast<int>(idx);
+		ilist.val = stats->medal_counts[idx];
+
+		multi_stats.medals_earned.push_back(ilist);
 	}
 }
 

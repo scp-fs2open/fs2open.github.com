@@ -40,7 +40,7 @@ struct deferred_light_data {
 	vec3d diffuseLightColor;
 	float coneAngle;
 
-	vec3d specLightColor;
+	vec3d lightDir;
 	float coneInnerAngle;
 
 	vec3d coneDir;
@@ -49,23 +49,24 @@ struct deferred_light_data {
 	vec3d scale;
 	float lightRadius;
 
-	vec3d lightDir;
 	int lightType;
-
 	int enable_shadows;
+	float sourceRadius;
 
-	float pad0[3]; // Struct size must be 16-bytes aligned because we use vec3s
+	float pad0[1]; // Struct size must be 16-bytes aligned because we use vec3s
 };
 
 struct model_light {
 	vec4 position;
+
 	vec3d diffuse_color;
 	int light_type;
-	vec3d spec_color;
-	float attenuation;
-	vec3d direction;
 
-	float pad;
+	vec3d direction;
+	float attenuation;
+
+	float ml_sourceRadius;
+	float pad0[3]; 
 };
 
 const size_t MAX_UNIFORM_LIGHTS = 8;
@@ -216,6 +217,11 @@ struct matrix_uniforms {
 	matrix4 projMatrix;
 };
 
+struct movie_uniforms {
+	float alpha;
+	float pad[3];
+};
+
 namespace generic_data {
 
 struct passthrough_data {
@@ -360,6 +366,10 @@ struct post_data {
 
 	vec3d tint;
 	float dither;
+};
+
+struct irrmap_data {
+	int face;
 };
 
 } // namespace generic_data

@@ -60,7 +60,7 @@ bool *Lcl_unexpected_tstring_check = nullptr;
 // add a new string to the code, you must assign it a new index.  Use the number below for
 // that index and increase the number below by one.
 // retail XSTR_SIZE = 1570
-#define XSTR_SIZE	1667
+#define XSTR_SIZE	1671
 
 
 // struct to allow for strings.tbl-determined x offset
@@ -641,6 +641,37 @@ int lcl_add_dir_to_path_with_filename(char *current_path, size_t path_max)
 	strcat_s(current_path, path_max, temp);
 
 	delete [] temp;
+	return 1;
+}
+
+int lcl_add_dir_to_path_with_filename(SCP_string &current_path)
+{
+	int lang = lcl_get_current_lang_index();
+
+	// if the disk extension is 0 length, don't add anything
+	if (strlen(Lcl_languages[lang].lang_ext) <= 0) {
+		return 1;
+	}
+
+	SCP_string filename;
+
+	auto sep = current_path.find_last_of(DIR_SEPARATOR_CHAR);
+
+	if (sep == SCP_string::npos) {
+		filename = current_path;
+		current_path.clear();
+	} else {
+		filename = current_path.substr(sep+1);
+		current_path.erase(sep+1);
+	}
+
+	// add extension
+	current_path += Lcl_languages[lang].lang_ext;
+	current_path += DIR_SEPARATOR_STR;
+
+	// copy rest of filename
+	current_path += filename;
+
 	return 1;
 }
 

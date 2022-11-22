@@ -49,6 +49,14 @@ extern int Briefing_paused;	// for stopping audio and stage progression
 
 struct brief_icon;
 
+void brief_api_init();
+void brief_api_do_frame(float frametime);
+void brief_do_next_pressed(int play_sound);
+void brief_do_prev_pressed();
+void brief_do_start_pressed();
+void brief_do_end_pressed();
+void brief_api_close();
+
 void brief_init();
 void brief_close();
 void brief_do_frame(float frametime);

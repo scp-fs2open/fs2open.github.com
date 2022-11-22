@@ -17,10 +17,13 @@
 #include "fireball/fireballs.h"
 #include "freespace.h"
 #include "globalincs/linklist.h"
+#include "globalincs/pstypes.h"
+#include "globalincs/vmallocator.h"
 #include "iff_defs/iff_defs.h"
 #include "io/timer.h"
 #include "jumpnode/jumpnode.h"
 #include "lighting/lighting.h"
+#include "lighting/lighting_profiles.h"
 #include "mission/missionparse.h" //For 2D Mode
 #include "network/multi.h"
 #include "network/multiutil.h"
@@ -32,6 +35,7 @@
 #include "object/objectshield.h"
 #include "object/objectsnd.h"
 #include "observer/observer.h"
+#include "scripting/api/libs/graphics.h"
 #include "scripting/scripting.h"
 #include "playerman/player.h"
 #include "radar/radar.h"
@@ -46,6 +50,7 @@
 #include "weapon/weapon.h"
 #include "tracing/Monitor.h"
 #include "graphics/light.h"
+#include "graphics/color.h"
 
 
 
@@ -74,6 +79,7 @@ int Object_next_signature = 1;	//0 is bogus, start at 1
 int Object_inited = 0;
 int Show_waypoints = 0;
 
+
 //WMC - Made these prettier
 const char *Object_type_names[MAX_OBJECT_TYPES] = {
 //XSTR:OFF
@@ -97,18 +103,20 @@ const char *Object_type_names[MAX_OBJECT_TYPES] = {
 };
 
 obj_flag_name Object_flag_names[] = {
-    { Object::Object_Flags::Invulnerable,			"invulnerable",				1,	},
-	{ Object::Object_Flags::Protected,				"protect-ship",				1,	},
-	{ Object::Object_Flags::Beam_protected,			"beam-protect-ship",		1,	},
-	{ Object::Object_Flags::No_shields,				"no-shields",				1,	},
-	{ Object::Object_Flags::Targetable_as_bomb,		"targetable-as-bomb",		1,	},
-	{ Object::Object_Flags::Flak_protected,			"flak-protect-ship",		1,	},
-	{ Object::Object_Flags::Laser_protected,		"laser-protect-ship",		1,	},
-	{ Object::Object_Flags::Missile_protected,		"missile-protect-ship",		1,	},
-	{ Object::Object_Flags::Immobile,				"immobile",					1,	},
-	{ Object::Object_Flags::Collides,				"collides",					1,  },
-	{ Object::Object_Flags::Attackable_if_no_collide, "ai-attackable-if-no-collide", 1,},
+    { Object::Object_Flags::Invulnerable,			"invulnerable",						},
+	{ Object::Object_Flags::Protected,				"protect-ship",						},
+	{ Object::Object_Flags::Beam_protected,			"beam-protect-ship",				},
+	{ Object::Object_Flags::No_shields,				"no-shields",						},
+	{ Object::Object_Flags::Targetable_as_bomb,		"targetable-as-bomb",				},
+	{ Object::Object_Flags::Flak_protected,			"flak-protect-ship",				},
+	{ Object::Object_Flags::Laser_protected,		"laser-protect-ship",				},
+	{ Object::Object_Flags::Missile_protected,		"missile-protect-ship",				},
+	{ Object::Object_Flags::Immobile,				"immobile",							},
+	{ Object::Object_Flags::Collides,				"collides",							},
+	{ Object::Object_Flags::Attackable_if_no_collide, "ai-attackable-if-no-collide",	},
 };
+
+extern const int Num_object_flag_names = sizeof(Object_flag_names) / sizeof(obj_flag_name);
 
 #ifdef OBJECT_CHECK
 checkobject::checkobject() 
@@ -584,6 +592,7 @@ void obj_delete(int objnum)
 
 			physics_init(&objp->phys_info);
 			obj_snd_delete_type(OBJ_INDEX(objp));
+
 			return;
 		} else
 			ship_delete( objp );
@@ -631,6 +640,9 @@ void obj_delete(int objnum)
 	default:
 		Error( LOCATION, "Unhandled object type %d in obj_delete_all_that_should_be_dead", objp->type );
 	}
+
+	// clean up interpolation info
+	objp->interp_info.clean_up();
 
 	// delete any dock information we still have
 	dock_free_dock_list(objp);
@@ -1210,25 +1222,36 @@ void obj_move_all_post(object *objp, float frametime)
 						cast_light = 0;
 					}
 				}
-
-				if ( cast_light )	{
-					weapon_info * wi = &Weapon_info[Weapons[objp->instance].weapon_info_index];
-
-					if ( wi->render_type == WRT_LASER )	{
+				if (cast_light) {
+					weapon_info* wi = &Weapon_info[Weapons[objp->instance].weapon_info_index];
+					auto lp = lighting_profile::current();
+					hdr_color light_color;
+					// If there is no specific color set in the table, laser render weapons have a dynamic color.
+					if (!wi->light_color_set && wi->render_type == WRT_LASER) {
+						// intensity is stored in the light color even if no user setting is done.
+						light_color = hdr_color(&wi->light_color);
+						// Classic dynamic laser color is handled with an old color object
 						color c;
-						float r,g,b;
-
-						// get the laser color
 						weapon_get_laser_color(&c, objp);
-
-						r = i2fl(c.red)/255.0f;
-						g = i2fl(c.green)/255.0f;
-						b = i2fl(c.blue)/255.0f;
-
-						light_add_point( &objp->pos, 10.0f, 100.0f, 1.0f, r, g, b);
+						light_color.set_rgb(&c);
 					} else {
-						light_add_point( &objp->pos, 10.0f, 20.0f, 1.0f, 1.0f, 1.0f, 1.0f);
-					} 
+						// If not a laser then all default information needed is stored in the weapon light color
+						light_color = hdr_color(&wi->light_color);
+					}
+					//handles both defaults and adjustments.
+					float r = wi->light_radius;
+					float source_radius = objp->radius;
+					if (wi->render_type == WRT_LASER) {
+						r = lp->laser_light_radius.handle(r);
+						light_color.i(lp->laser_light_brightness.handle(light_color.i()));
+					} else {
+						//Missiles should typically not be treated as lights for their whole radius. TODO: make configurable.
+						source_radius *= 0.05f;
+						r = lp->missile_light_radius.handle(r);
+						light_color.i(lp->missile_light_brightness.handle(light_color.i()));
+					}
+					if(r > 0.0f && light_color.i() > 0.0f)
+						light_add_point(&objp->pos, r, r, &light_color,source_radius);
 				}
 			}
 
@@ -1251,7 +1274,7 @@ void obj_move_all_post(object *objp, float frametime)
 					shipp = &Ships[objp->instance];
 
 					for (i=0; i<MAX_SHIP_ARCS; i++ )	{
-						if ( timestamp_valid( shipp->arc_timestamp[i] ) )	{
+						if ( shipp->arc_timestamp[i].isValid() )	{
 							// Move arc endpoints into world coordinates	
 							vec3d tmp1, tmp2;
 							vm_vec_unrotate(&tmp1,&shipp->arc_pts[i][0],&objp->orient);
@@ -1320,8 +1343,9 @@ void obj_move_all_post(object *objp, float frametime)
 					}
 					// P goes from 0 to 1 to 0 over the life of the explosion
 					// Only do this if rad is > 0.0000001f
+					// TODO: Make fireball source radius configurable, currently sized based on modern subspace portal textures as that will be a very prominent case of it
 					if (rad > 0.0001f)
-						light_add_point( &objp->pos, rad * 2.0f, rad * 5.0f, intensity, r, g, b);
+						light_add_point( &objp->pos, rad * 2.0f, rad * 5.0f, intensity, r, g, b,rad * 0.3f);
 				}
 			}
 
@@ -1348,7 +1372,7 @@ void obj_move_all_post(object *objp, float frametime)
 
 					if (db->arc_frequency > 0) {
 						for (i=0; i<MAX_DEBRIS_ARCS; i++ )	{
-							if ( timestamp_valid( db->arc_timestamp[i] ) )	{
+							if ( db->arc_timestamp[i].isValid() )	{
 								// Move arc endpoints into world coordinates	
 								vec3d tmp1, tmp2;
 								vm_vec_unrotate(&tmp1,&db->arc_pts[i][0],&objp->orient);
@@ -1482,19 +1506,31 @@ void obj_move_all(float frametime)
 		// pre-move
 		obj_move_all_pre(objp, frametime);
 
-		// store last pos and orient
-		objp->last_pos = cur_pos;
-		objp->last_orient = objp->orient;
+		bool interpolation_object = multi_oo_is_interp_object(objp);
+
+		// store last pos and orient, but only for non-interpolation objects
+		// interpolation objects will need to to work backwards from the last good position
+		// to prevent collision issues
+		if (!interpolation_object){
+			objp->last_pos = cur_pos;
+			objp->last_orient = objp->orient;
+		}
 
 		// Goober5000 - skip objects which don't move, but only until they're destroyed
 		if (!(objp->flags[Object::Object_Flags::Immobile] && objp->hull_strength > 0.0f)) {
 			// if this is an object which should be interpolated in multiplayer, do so
-			if (multi_oo_is_interp_object(objp)) {
-				multi_oo_interp(objp);
+			if (interpolation_object) {
+				objp->interp_info.interpolate_main(&objp->pos, &objp->orient, &objp->phys_info, &objp->last_pos, &objp->last_orient, objp->flags[Object::Object_Flags::Player_ship]);
 			} else {
 				// physics
 				obj_move_call_physics(objp, frametime);
 			}
+		} else {
+			// make sure velocity is always 0 for immobile things!
+			vm_vec_zero(&objp->phys_info.vel);
+			vm_vec_zero(&objp->phys_info.desired_vel);
+			vm_vec_zero(&objp->phys_info.rotvel);
+			vm_vec_zero(&objp->phys_info.desired_rotvel);
 		}
 
 		// Submodel movement now happens here, right after physics movement.  It's not excluded by the "immobile" flag.
@@ -1645,11 +1681,18 @@ void obj_queue_render(object* obj, model_draw_list* scene)
 	if ( obj->flags[Object::Object_Flags::Should_be_dead] ) return;
 
 	if (Script_system.IsActiveAction(CHA_OBJECTRENDER)) {
+		// Set the render scene context
+		scripting::api::Current_scene = scene;
+
 		Script_system.SetHookObject("Self", obj);
 		bool skip_render = Script_system.IsConditionOverride(CHA_OBJECTRENDER, obj);
 		// Always execute the hook content
 		Script_system.RunCondition(CHA_OBJECTRENDER, obj);
 		Script_system.RemHookVar("Self");
+
+		// Clear the render scene context
+		scripting::api::Current_scene = nullptr;
+
 		if (skip_render) {
 			// Script said that it want's to skip rendering
 			return;

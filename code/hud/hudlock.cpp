@@ -194,7 +194,8 @@ void HudGaugeLock::renderOld(float frametime)
 		return;
 	}
 
-	if (Player->target_is_dying) {
+	// 1 is the only value for which your target is actually dying
+	if (Player->target_is_dying == 1) {
 		return;
 	}
 
@@ -1547,6 +1548,12 @@ void hud_do_lock_indicators(float frametime)
 		}
 
 		if ( lock_slot->obj->type == OBJ_SHIP && Ships[lock_slot->obj->instance].flags[Ship::Ship_Flags::Dying] ) {
+			ship_clear_lock(lock_slot);
+			continue;
+		}
+
+		// Target ship is protected from Aspect Locks. Since this flag can be given mid mission, we need to cut short a lock attempt.
+		if ( wip->is_locked_homing() && lock_slot->obj->type == OBJ_SHIP && Ships[lock_slot->obj->instance].flags[Ship::Ship_Flags::Aspect_immune] ) {
 			ship_clear_lock(lock_slot);
 			continue;
 		}

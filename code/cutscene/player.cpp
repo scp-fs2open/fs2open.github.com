@@ -355,7 +355,8 @@ void Player::stopPlayback() {
 	audioPlaybackClose(&m_state);
 	videoPlaybackClose(&m_state);
 
-	m_decoderThread->join();
+	if(m_decoderThread->joinable())
+		m_decoderThread->join();
 }
 
 void Player::decoderThread() {
@@ -385,13 +386,13 @@ const PlayerState& Player::getInternalState() const {
 const MovieProperties& Player::getMovieProperties() const {
 	return m_state.props;
 }
-void Player::draw(float x1, float y1, float x2, float y2) {
+void Player::draw(float x1, float y1, float x2, float y2, float alpha) {
 	if (!m_state.currentFrame) {
 		return;
 	}
 
 	if (m_state.videoPresenter) {
-		m_state.videoPresenter->displayFrame(x1, y1, x2, y2);
+		m_state.videoPresenter->displayFrame(x1, y1, x2, y2, alpha);
 	}
 }
 SCP_string Player::getCurrentSubtitle() {

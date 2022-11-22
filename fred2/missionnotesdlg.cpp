@@ -72,7 +72,7 @@ CMissionNotesDlg::CMissionNotesDlg(CWnd* pParent /*=NULL*/) : CDialog(CMissionNo
 	m_autpilot_cinematics = FALSE;
 	m_no_autpilot = FALSE;
 	m_2d_mission = FALSE;
-	m_always_show_goals = FALSE;
+	m_toggle_showing_goals = FALSE;
 	m_end_to_mainhall = FALSE;
 	m_override_hashcommand = FALSE;
 	m_max_hull_repair_val = 0.0f;
@@ -125,7 +125,7 @@ void CMissionNotesDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_USE_AUTOPILOT_CINEMATICS, m_autpilot_cinematics);
 	DDX_Check(pDX, IDC_2D_MISSION, m_2d_mission);
 	DDX_Check(pDX, IDC_DEACTIVATE_AUTOPILOT, m_no_autpilot);
-	DDX_Check(pDX, IDC_ALWAYS_SHOW_GOALS, m_always_show_goals);
+	DDX_Check(pDX, IDC_TOGGLE_SHOWING_GOALS, m_toggle_showing_goals);
 	DDX_Check(pDX, IDC_END_TO_MAINHALL, m_end_to_mainhall);
 	DDX_Check(pDX, IDC_OVERRIDE_HASHCOMMAND, m_override_hashcommand);
 	DDX_Text(pDX, IDC_MAX_HULL_REPAIR_VAL, m_max_hull_repair_val);
@@ -288,8 +288,8 @@ void CMissionNotesDlg::OnOK()
 	// set autopilot disabled
     The_mission.flags.set(Mission::Mission_Flags::Deactivate_ap, m_no_autpilot != 0);
 	
-	// always show mission goals
-    The_mission.flags.set(Mission::Mission_Flags::Always_show_goals, m_always_show_goals != 0);
+	// toggle showing the mission goals in the briefing
+    The_mission.flags.set(Mission::Mission_Flags::Toggle_showing_goals, m_toggle_showing_goals != 0);
 
     // End to mainhall
     The_mission.flags.set(Mission::Mission_Flags::End_to_mainhall, m_end_to_mainhall != 0);
@@ -313,20 +313,20 @@ void CMissionNotesDlg::OnOK()
 	// puts "$End Notes:" on a different line to ensure it's not interpreted as part of a comment
 	pad_with_newline(m_mission_notes, NOTES_LENGTH - 1);
 
-	string_copy(The_mission.name, m_mission_title, NAME_LENGTH, 1);
-	string_copy(The_mission.author, m_designer_name, NAME_LENGTH, 1);
-	string_copy(The_mission.loading_screen[GR_640], m_loading_640, NAME_LENGTH,1);
-	string_copy(The_mission.loading_screen[GR_1024], m_loading_1024, NAME_LENGTH,1);
-	deconvert_multiline_string(The_mission.notes, m_mission_notes, NOTES_LENGTH);
-	deconvert_multiline_string(The_mission.mission_desc, m_mission_desc, MISSION_DESC_LENGTH);
+	string_copy(The_mission.name, m_mission_title, NAME_LENGTH - 1, 1);
+	string_copy(The_mission.author, m_designer_name, NAME_LENGTH - 1, 1);
+	string_copy(The_mission.loading_screen[GR_640], m_loading_640, NAME_LENGTH - 1, 1);
+	string_copy(The_mission.loading_screen[GR_1024], m_loading_1024, NAME_LENGTH - 1, 1);
+	deconvert_multiline_string(The_mission.notes, m_mission_notes, NOTES_LENGTH - 1);
+	deconvert_multiline_string(The_mission.mission_desc, m_mission_desc, MISSION_DESC_LENGTH - 1);
 
 	// copy squad stuff
 	if(m_squad_name == CString(NO_SQUAD)){
 		strcpy_s(The_mission.squad_name, "");
 		strcpy_s(The_mission.squad_filename, "");
 	} else {
-		string_copy(The_mission.squad_name, m_squad_name, NAME_LENGTH);
-		string_copy(The_mission.squad_filename, m_squad_filename, MAX_FILENAME_LEN);
+		string_copy(The_mission.squad_name, m_squad_name, NAME_LENGTH - 1);
+		string_copy(The_mission.squad_filename, m_squad_filename, MAX_FILENAME_LEN - 1);
 	}
 
 	The_mission.ai_profile = &Ai_profiles[m_ai_profile];
@@ -399,7 +399,7 @@ BOOL CMissionNotesDlg::OnInitDialog()
 	m_autpilot_cinematics = (The_mission.flags[Mission::Mission_Flags::Use_ap_cinematics]) ? 1 : 0;
 	m_2d_mission = (The_mission.flags[Mission::Mission_Flags::Mission_2d]) ? 1 : 0;
 	m_no_autpilot = (The_mission.flags[Mission::Mission_Flags::Deactivate_ap]) ? 1 : 0;
-	m_always_show_goals = (The_mission.flags[Mission::Mission_Flags::Always_show_goals]) ? 1 : 0;
+	m_toggle_showing_goals = (The_mission.flags[Mission::Mission_Flags::Toggle_showing_goals]) ? 1 : 0;
 	m_end_to_mainhall = (The_mission.flags[Mission::Mission_Flags::End_to_mainhall]) ? 1 : 0;
 	m_override_hashcommand = (The_mission.flags[Mission::Mission_Flags::Override_hashcommand]) ? 1 : 0;
 

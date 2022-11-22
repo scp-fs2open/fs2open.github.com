@@ -12,15 +12,21 @@ extern float flFrametime;
 
 namespace animation {
 
-	flag_def_list_new<animation::Animation_Flags> Animation_flags[] = {
-		{ "auto reverse",				animation::Animation_Flags::Auto_Reverse,						true, false },
-		{ "reset at completion",		animation::Animation_Flags::Reset_at_completion,		        true, false },
-		{ "loop",						animation::Animation_Flags::Loop,						        true, false },
-		{ "random starting phase",		animation::Animation_Flags::Random_starting_phase,				true, false },
-		{ "pause on reverse",			animation::Animation_Flags::Pause_on_reverse,					true, false },
-	};
+	special_flag_def_list_new<animation::Animation_Flags, ModelAnimation&> Animation_flags[] = {
+		{ "auto reverse",				animation::Animation_Flags::Auto_Reverse,						true },
+		{ "reset at completion",		animation::Animation_Flags::Reset_at_completion,		        true },
+		{ "loop",						animation::Animation_Flags::Loop,						        true },
+		{ "random starting phase",		animation::Animation_Flags::Random_starting_phase,				true },
+		{ "pause on reverse",			animation::Animation_Flags::Pause_on_reverse,					true },
+		{ "seamless with startup",		animation::Animation_Flags::Seamless_with_startup,				true, [](const SCP_string& from, ModelAnimation& anim) {
+			anim.m_flagData.loopsFrom = static_cast<float>(std::atof(from.c_str()));
+			anim.m_flags.set(animation::Animation_Flags::Loop);
+			anim.m_flags.set(animation::Animation_Flags::Seamless_with_startup);
 
-	const size_t Num_animation_flags = sizeof(Animation_flags) / sizeof(flag_def_list_new<animation::Animation_Flags>);
+			//While this flag implies Reset_at_completion semantically, it's implemented in a conflicting manner. Hence, make sure that seamless will take priority, and force-disable reset at completion if set
+			anim.m_flags.set(animation::Animation_Flags::Reset_at_completion, false);
+		}}
+	};
 
 	std::map<int, ModelAnimationSet::RunningAnimationList> ModelAnimationSet::s_runningAnimations;
 	std::map<unsigned int, std::shared_ptr<ModelAnimation>> ModelAnimationSet::s_animationById;
@@ -68,9 +74,11 @@ namespace animation {
 			}
 
 			/* fall-thru */
-		case ModelAnimationState::NEED_RECALC:
+		case ModelAnimationState::NEED_RECALC: {
+			ModelAnimationSubmodelBuffer currentAnimationDelta;
+			m_set->initializeSubmodelBuffer(pmi, currentAnimationDelta);
 			//Store the submodels current data as the base for this animation and calculate this animations parameters
-			m_animation->recalculate(applyBuffer, pmi);
+			m_animation->recalculate(applyBuffer, currentAnimationDelta, pmi);
 
 			instanceData.duration = m_animation->getDuration(pmi->id);
 			instanceData.state = ModelAnimationState::RUNNING_FWD;
@@ -81,8 +89,9 @@ namespace animation {
 				if (m_flags[Animation_Flags::Loop, Animation_Flags::Auto_Reverse] && !m_flags[Animation_Flags::Reset_at_completion] && util::Random::flip_coin()) {
 					instanceData.state = ModelAnimationState::RUNNING_RWD;
 					break; //In this case, we must delay for a frame
-				}		
+				}
 			}
+		}
 
 			/* fall-thru */
 		case ModelAnimationState::RUNNING_FWD:
@@ -98,6 +107,20 @@ namespace animation {
 					if (m_flags[Animation_Flags::Reset_at_completion]) {
 						//Loop from start
 						instanceData.time = 0;
+
+						//Reset at completion triggers count as a full next loop, so we need to stop here.
+						if (instanceData.instance_flags[Animation_Instance_Flags::Stop_after_next_loop])
+							stop(pmi, false);
+					}
+					else if (m_flags[Animation_Flags::Seamless_with_startup]) {
+						//Loop from start
+						instanceData.time = m_flagData.loopsFrom;
+
+						//We need to go into final shutdown mode. Go to start of seamless segment, and play backwards
+						if (instanceData.instance_flags[Animation_Instance_Flags::Stop_after_next_loop]) {
+							instanceData.state = ModelAnimationState::RUNNING_RWD;
+							instanceData.instance_flags.set(Animation_Instance_Flags::Seamless_loop_shutdown);
+						}
 					}
 					else {
 						//Loop back
@@ -130,14 +153,28 @@ namespace animation {
 						//Loop from end. This happens when a Loop + Reset at completion animation is started in reverse.
 						instanceData.time = instanceData.duration;
 					}
+					else if (m_flags[Animation_Flags::Seamless_with_startup]) {
+						//We're either in final shutdown, or reversed before we reached the seamless part. Either way, ensure the stop flag is set to fully stop
+						instanceData.instance_flags.set(Animation_Instance_Flags::Stop_after_next_loop);
+					}
 					else {
 						//Loop back
 						instanceData.time = 0;
 						instanceData.state = ModelAnimationState::RUNNING_FWD;
 					}
+					//For backwards, ALL completion triggers are considered finishes, so always stop if we need to
+					if (instanceData.instance_flags[Animation_Instance_Flags::Stop_after_next_loop])
+						stop(pmi, false);
 				}
 				else
 					stop(pmi, false);
+			}
+			else if (m_flags[Animation_Flags::Seamless_with_startup] && !instanceData.instance_flags[Animation_Instance_Flags::Seamless_loop_shutdown] && instanceData.time < m_flagData.loopsFrom) {
+				//Loop from end. This happens when a seamless loop is reversed after entering the seamless part. If stop is set, set the shutdown flag instead
+				if (instanceData.instance_flags[Animation_Instance_Flags::Stop_after_next_loop])
+					instanceData.instance_flags.set(Animation_Instance_Flags::Seamless_loop_shutdown);
+				else
+					instanceData.time = instanceData.duration;
 			}
 
 			m_animation->calculateAnimation(applyBuffer, instanceData.time, pmi->id);
@@ -179,6 +216,12 @@ namespace animation {
 				instanceData.state = ModelAnimationState::PAUSED;
 			return;
 		}
+		else if (instanceData.state == ModelAnimationState::PAUSED) {
+			if (direction == ModelAnimationDirection::FWD)
+				instanceData.state = ModelAnimationState::RUNNING_FWD;
+			else
+				instanceData.state = ModelAnimationState::RUNNING_RWD;
+		}
 
 		float timeOffset = multiOverrideTime != nullptr ? *multiOverrideTime : 0.0f;
 
@@ -186,6 +229,11 @@ namespace animation {
 		//Don't apply just yet if it's a non-initial type, as there might be other animations this'd need to depend upon
 		ModelAnimationSubmodelBuffer applyBuffer;
 		m_set->initializeSubmodelBuffer(pmi, applyBuffer);
+		auto runningAnims = m_set->s_runningAnimations.find(pmi->id);
+		if (runningAnims != m_set->s_runningAnimations.end()) {
+			for (const auto& anim : runningAnims->second.animationList)
+				anim->play(0, pmi, applyBuffer, true);
+		}
 		play(0, pmi, applyBuffer);
 		
 		if (direction == ModelAnimationDirection::RWD) {
@@ -227,6 +275,7 @@ namespace animation {
 		instance_data& instanceData = m_instances[pmi->id];
 		instanceData.time = 0.0f;
 		instanceData.state = ModelAnimationState::UNTRIGGERED;
+		instanceData.instance_flags.reset();
 
 		if (cleanup)
 			ModelAnimationSet::cleanRunning();
@@ -251,11 +300,12 @@ namespace animation {
 		animList.parentSet->initializeSubmodelBuffer(pmi, applyBuffer);
 
 		for (const auto& anim : animList.animationList) {
-			switch (anim->m_instances[pmi->id].state) {
+			const auto& instanceData = anim->m_instances[pmi->id];
+			switch (instanceData.state) {
 			case ModelAnimationState::RUNNING_FWD:
 			case ModelAnimationState::RUNNING_RWD:
 			case ModelAnimationState::NEED_RECALC:
-				anim->play(frametime, pmi, applyBuffer);
+				anim->play(frametime * instanceData.speed, pmi, applyBuffer);
 				break;
 			case ModelAnimationState::COMPLETED:
 			case ModelAnimationState::PAUSED:
@@ -298,7 +348,7 @@ namespace animation {
 	}
 
 	void ModelAnimationSubmodel::reset(polymodel_instance* pmi) {
-		if(!m_submodel.has())
+		if(!m_submodel)
 			findSubmodel(pmi);
 
 		auto dataIt = m_initialData.find({ pmi->id });
@@ -314,6 +364,8 @@ namespace animation {
 		if (!submodel)
 			return;
 
+		// rotation -----
+
 		submodel->canonical_prev_orient = submodel->canonical_orient;
 		submodel->canonical_orient = data.orientation;
 
@@ -325,8 +377,19 @@ namespace animation {
 		vm_matrix_to_rot_axis_and_angle(&delta, &deltaAngle, &submodel->rotation_axis);
 		submodel->current_turn_rate = deltaAngle / flFrametime;
 
-		//TODO: Once translation is a thing
-		//m_subsys->submodel_instance_1->offset = data.position;
+		// translation -----
+
+		submodel->canonical_prev_offset = submodel->canonical_offset;
+		submodel->canonical_offset = data.position;
+		
+		vec3d delta_vec;
+		vm_vec_sub(&delta_vec, &submodel->canonical_offset, &submodel->canonical_prev_offset);
+
+		// figure out the sign of the displacement based on whether it is along or against the axis
+		int sign = (vm_vec_dot(&delta_vec, &submodel->translation_axis) < 0.0f) ? -1 : 1;
+
+		float deltaMag = sign * vm_vec_mag(&delta_vec);
+		submodel->current_shift_rate = deltaMag / flFrametime;
 	}
 
 	void ModelAnimationSubmodel::resetPhysicsData(polymodel_instance* pmi) {
@@ -353,15 +416,19 @@ namespace animation {
 			if (submodel.second->rotation_type == MOVEMENT_TYPE_NONE) {
 				submodel.second->rotation_type = MOVEMENT_TYPE_TRIGGERED;
 			}
+			if (submodel.second->translation_type == MOVEMENT_TYPE_NONE) {
+				submodel.second->translation_type = MOVEMENT_TYPE_TRIGGERED;
+			}
 		}
 		
 		data.orientation = submodel.first->canonical_orient;
-		//TODO: Once translation is a thing
-		//data.position = m_subsys->submodel_instance_1->offset;
+		data.position = submodel.first->canonical_offset;
 
 		//In this case, we just initial-type initialized the submodel. Properly set its last frame data as well
-		if(isInitialType)
+		if (isInitialType) {
 			submodel.first->canonical_prev_orient = submodel.first->canonical_orient;
+			submodel.first->canonical_prev_offset = submodel.first->canonical_offset;
+		}
 
 		return true;
 	}
@@ -376,8 +443,8 @@ namespace animation {
 		polymodel* pm = model_get(pmi->model_num);
 
 		//Do we have a submodel number already cached?
-		if (m_submodel.has())
-			submodelNumber = m_submodel;
+		if (m_submodel)
+			submodelNumber = *m_submodel;
 		//We seem to have a submodel name
 		else {
 			for (int i = 0; i < pm->n_models; i++) {
@@ -420,8 +487,8 @@ namespace animation {
 		polymodel* pm = model_get(pmi->model_num);
 
 		//Do we have a submodel number already cached?
-		if (m_submodel.has())
-			submodelNumber = m_submodel;
+		if (m_submodel)
+			submodelNumber = *m_submodel;
 		//Do we know if we were told to find the barrel submodel or not? This implies we have a subsystem name, not a submodel name
 		else {
 			ship_info* sip = nullptr;
@@ -473,15 +540,30 @@ namespace animation {
 		if (!submodel)
 			return;
 
+		// rotation -----
+
 		submodel->canonical_prev_orient = submodel->canonical_orient;
 		submodel->canonical_orient = data.orientation;
 
+		submodel->rotation_axis = sm->rotation_axis;
+
 		float angle = 0.0f;
 		vm_closest_angle_to_matrix(&submodel->canonical_orient, &sm->rotation_axis, &angle);
-		submodel->rotation_axis = sm->rotation_axis;
 
 		submodel->cur_angle = angle;
 		submodel->turret_idle_angle = angle;
+
+		// translation -----
+
+		submodel->canonical_prev_offset = submodel->canonical_offset;
+		submodel->canonical_offset = data.position;
+
+		submodel->translation_axis = sm->translation_axis;
+
+		// figure out the sign of the displacement based on whether it is along or against the axis
+		int sign = (vm_vec_dot(&submodel->canonical_offset, &submodel->translation_axis) < 0.0f) ? -1 : 1;
+
+		submodel->cur_offset = sign * vm_vec_mag(&submodel->canonical_offset);
 	}
 
 
@@ -523,7 +605,7 @@ namespace animation {
 
 		for (const auto& submodel : other.m_submodels) {
 			auto newSubmodel = std::shared_ptr<ModelAnimationSubmodel>(submodel->copy());
-			newSubmodel->m_submodel = optional<int>();
+			newSubmodel->m_submodel = tl::nullopt;
 			m_submodels.push_back(newSubmodel);
 		}
 
@@ -643,97 +725,85 @@ namespace animation {
 		}
 	}
 
-	bool ModelAnimationSet::start(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& name, ModelAnimationDirection direction, bool forced, bool instant, bool pause, int subtype) const {
+	ModelAnimationSet::AnimationList ModelAnimationSet::get(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& name, int subtype) const {
 		if (pmi == nullptr)
-			return false;
+			return ModelAnimationSet::AnimationList();
 
-		bool started = false;
+		ModelAnimationSet::AnimationList list{ pmi };
+
 		auto animations = m_animationSet.find({ type, subtype });
 		if (animations != m_animationSet.end()) {
 			auto namedAnimations = animations->second.find(name);
 			if (namedAnimations != animations->second.end()) {
-				for (const auto& namedAnimation : namedAnimations->second) {
-					namedAnimation->start(pmi, direction, forced, instant, pause);
-					started = true;
-				}
+				list.animations.insert(list.animations.end(), namedAnimations->second.cbegin(), namedAnimations->second.cend());
 			}
 		}
 
 		//Only search for default anims again if these weren't looked for in the first place
 		if (subtype == SUBTYPE_DEFAULT)
-			return started;
+			return list;
 
 		animations = m_animationSet.find({ type, SUBTYPE_DEFAULT });
 		if (animations != m_animationSet.end()) {
 			auto namedAnimations = animations->second.find(name);
 			if (namedAnimations != animations->second.end()) {
-				for (const auto& namedAnimation : namedAnimations->second) {
-					namedAnimation->start(pmi, direction, forced, instant, pause);
-					started = true;
-				}
+				list.animations.insert(list.animations.end(), namedAnimations->second.cbegin(), namedAnimations->second.cend());
 			}
 		}
-		return started;
+
+		return list;
 	}
 
-	bool ModelAnimationSet::startAll(polymodel_instance* pmi, ModelAnimationTriggerType type, ModelAnimationDirection direction, bool forced, bool instant, bool pause, int subtype, bool strict) const {
+	ModelAnimationSet::AnimationList ModelAnimationSet::getAll(polymodel_instance* pmi, ModelAnimationTriggerType type, int subtype, bool strict) const {
 		if (pmi == nullptr)
-			return false;
+			return ModelAnimationSet::AnimationList();
 
-		bool started = false;
+		ModelAnimationSet::AnimationList list{ pmi };
+
 		auto animations = m_animationSet.find({ type, subtype });
 		if (animations != m_animationSet.end()) {
 			for (auto& namedAnimations : animations->second) {
-				for (const auto& namedAnimation : namedAnimations.second) {
-					namedAnimation->start(pmi, direction, forced, instant, pause);
-					started = true;
-				}
+				list.animations.insert(list.animations.end(), namedAnimations.second.cbegin(), namedAnimations.second.cend());
 			}
 		}
 
 		//Only search for default anims again if these weren't looked for in the first place
 		if (strict || subtype == SUBTYPE_DEFAULT)
-			return started;
+			return list;
 
 		animations = m_animationSet.find({ type, SUBTYPE_DEFAULT });
 		if (animations != m_animationSet.end()) {
 			for (auto& namedAnimations : animations->second) {
-				for (const auto& namedAnimation : namedAnimations.second) {
-					namedAnimation->start(pmi, direction, forced, instant, pause);
-					started = true;
-				}
+				list.animations.insert(list.animations.end(), namedAnimations.second.cbegin(), namedAnimations.second.cend());
 			}
 		}
-		return started;
+		return list;
 	}
 
-	bool ModelAnimationSet::startBlanket(polymodel_instance* pmi, ModelAnimationTriggerType type, ModelAnimationDirection direction, bool forced, bool instant, bool pause) const {
+	ModelAnimationSet::AnimationList ModelAnimationSet::getBlanket(polymodel_instance* pmi, ModelAnimationTriggerType type) const {
 		if (pmi == nullptr)
-			return false;
+			return ModelAnimationSet::AnimationList();
 
-		bool started = false;
-		
-		for(const auto& animations : m_animationSet) {
-			if(animations.first.type != type)
+		ModelAnimationSet::AnimationList list{ pmi };
+
+		for (const auto& animations : m_animationSet) {
+			if (animations.first.type != type)
 				continue;
-			
-			for (const auto& namedAnimation : animations.second){
-				for(const auto& animation : namedAnimation.second){
-					animation->start(pmi, direction, forced, instant, pause);
-					started = true;
-				}
+
+			for (const auto& namedAnimation : animations.second) {
+				list.animations.insert(list.animations.end(), namedAnimation.second.cbegin(), namedAnimation.second.cend());
 			}
 		}
-		
-		return started;
+
+		return list;
 	}
 
 	//Yes why of course does this need special handling...
-	bool ModelAnimationSet::startDockBayDoors(polymodel_instance* pmi, ModelAnimationDirection direction, bool forced, bool instant, bool pause, int subtype) const {
+	ModelAnimationSet::AnimationList ModelAnimationSet::getDockBayDoors(polymodel_instance* pmi, int subtype) const {
 		if (pmi == nullptr)
-			return false;
+			return ModelAnimationSet::AnimationList();
 
-		bool started = false;
+		ModelAnimationSet::AnimationList list{ pmi };
 		subtype++;
 
 		for (const auto& animList : m_animationSet) {
@@ -750,113 +820,10 @@ namespace animation {
 					continue;
 			}
 			for (auto& namedAnimations : animList.second) {
-				for (const auto& namedAnimation : namedAnimations.second) {
-					namedAnimation->start(pmi, direction, forced, instant, pause);
-					started = true;
-				}
+				list.animations.insert(list.animations.end(), namedAnimations.second.cbegin(), namedAnimations.second.cend());
 			}
 		}
-		return started;
-	}
-
-	int ModelAnimationSet::getTimeDockBayDoors(polymodel_instance* pmi, int subtype) const {
-		float duration = 0.0f;
-		subtype++;
-
-		for (const auto& animList : m_animationSet) {
-			if (animList.first.type != ModelAnimationTriggerType::DockBayDoor)
-				continue;
-
-			if (animList.first.subtype != ModelAnimationSet::SUBTYPE_DEFAULT) {
-				//Trigger on all but x type
-				if (animList.first.subtype < 0 && animList.first.subtype == subtype)
-					continue;
-
-				//Trigger only on x type. For the record, animsubtype 0 cannot happen here.
-				if (animList.first.subtype > 0 && animList.first.subtype != subtype)
-					continue;
-			}
-			for (auto& namedAnimations : animList.second) {
-				for (const auto& namedAnimation : namedAnimations.second) {
-					if (namedAnimation->m_instances[pmi->id].state == ModelAnimationState::UNTRIGGERED)
-						continue;
-
-					float localDur = namedAnimation->m_instances[pmi->id].duration;
-					duration = duration < localDur ? localDur : duration;
-				}
-			}
-		}
-
-		return (int) (duration * 1000);
-	}
-
-	int ModelAnimationSet::getTime(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& name, int subtype) const {
-		float duration = 0.0f;
-
-		auto animations = m_animationSet.find({ type, subtype });
-		if (animations != m_animationSet.end()) {
-			auto namedAnimations = animations->second.find(name);
-			if (namedAnimations != animations->second.end()){
-				for (const auto& namedAnimation : namedAnimations->second) {
-					if (namedAnimation->m_instances[pmi->id].state != ModelAnimationState::UNTRIGGERED) {
-						float localDur = namedAnimation->m_instances[pmi->id].duration;
-						duration = duration < localDur ? localDur : duration;
-					}
-				}
-			}
-		}
-
-		//Only search for default anims again if these weren't looked for in the first place
-		if (subtype == SUBTYPE_DEFAULT)
-			return (int) (duration * 1000);
-
-		animations = m_animationSet.find({ type, SUBTYPE_DEFAULT });
-		if (animations != m_animationSet.end()) {
-			auto namedAnimations = animations->second.find(name);
-			if (namedAnimations != animations->second.end()) {
-				for (const auto& namedAnimation : namedAnimations->second) {
-					if (namedAnimation->m_instances[pmi->id].state != ModelAnimationState::UNTRIGGERED) {
-						float localDur = namedAnimation->m_instances[pmi->id].duration;
-						duration = duration < localDur ? localDur : duration;
-					}
-				}
-			}
-		}
-
-		return (int) (duration * 1000);
-	}
-
-	int ModelAnimationSet::getTimeAll(polymodel_instance* pmi, ModelAnimationTriggerType type, int subtype, bool strict) const {
-		float duration = 0.0f;
-		auto animations = m_animationSet.find({ type, subtype });
-		if (animations != m_animationSet.end()) {
-			for (const auto& namedAnimations : animations->second) {
-				for (const auto& namedAnimation : namedAnimations.second) {
-					if (namedAnimation->m_instances[pmi->id].state == ModelAnimationState::UNTRIGGERED)
-						continue;
-					float localDur = namedAnimation->m_instances[pmi->id].duration;
-					duration = duration < localDur ? localDur : duration;
-				}
-			}
-		}
-
-		//Only search for default anims again if these weren't looked for in the first place
-		if (strict || subtype == SUBTYPE_DEFAULT)
-			return (int) (duration * 1000);
-
-		animations = m_animationSet.find({ type, SUBTYPE_DEFAULT });
-		if (animations != m_animationSet.end()) {
-			for (const auto& namedAnimations : animations->second) {
-				for (const auto& namedAnimation : namedAnimations.second) {
-					if (namedAnimation->m_instances[pmi->id].state == ModelAnimationState::UNTRIGGERED)
-						continue;
-					float localDur = namedAnimation->m_instances[pmi->id].duration;
-					duration = duration < localDur ? localDur : duration;
-				}
-			}
-		}
-
-		return (int) (duration * 1000);
+		return list;
 	}
 
 	std::vector<ModelAnimationSet::RegisteredTrigger> ModelAnimationSet::getRegisteredTriggers() const {
@@ -870,6 +837,110 @@ namespace animation {
 
 		return ret;
 	};
+
+	bool ModelAnimationSet::AnimationList::start(ModelAnimationDirection direction, bool forced, bool instant, bool pause) const {
+		for(auto anim : animations)
+			anim->start(pmi, direction, forced, instant, pause);
+
+		return !animations.empty();
+	}
+
+	int ModelAnimationSet::AnimationList::getTime() const {
+		float duration = 0.0f;
+
+		for (const auto& anim : animations) {
+			if (anim->m_instances[pmi->id].state == ModelAnimationState::UNTRIGGERED)
+				continue;
+			float localDur = anim->m_instances[pmi->id].duration;
+			duration = duration < localDur ? localDur : duration;
+		}
+
+		return (int)(duration * 1000.0f);
+	}
+
+	void ModelAnimationSet::AnimationList::setFlag(Animation_Instance_Flags flag, bool set) const {
+		for (const auto& anim : animations)
+			anim->m_instances[pmi->id].instance_flags.set(flag, set);
+	}
+
+	void ModelAnimationSet::AnimationList::setSpeed(float speed) const {
+		for (const auto& anim : animations)
+			anim->m_instances[pmi->id].speed = speed;
+	};
+
+	ModelAnimationSet::AnimationList& ModelAnimationSet::AnimationList::operator+=(const AnimationList& rhs) {
+		Assertion(pmi == rhs.pmi, "Tried to concatenate two AnimationLists of different model instances!");
+		animations.insert(animations.end(), rhs.animations.cbegin(), rhs.animations.cend());
+		return *this;
+	}
+
+	ModelAnimationSet::AnimationList ModelAnimationSet::AnimationList::operator+(const AnimationList& rhs) {
+		Assertion(pmi == rhs.pmi, "Tried to concatenate two AnimationLists of different model instances!");
+		AnimationList result = *this;
+		result.animations.insert(result.animations.end(), rhs.animations.cbegin(), rhs.animations.cend());
+		return result;
+	}
+	
+	ModelAnimationSet::AnimationList ModelAnimationSet::parseScripted(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& triggeredBy) const {
+		int subtype = ModelAnimationSet::SUBTYPE_DEFAULT;
+
+		switch (type) {
+		case ModelAnimationTriggerType::Docking_Stage1:
+		case ModelAnimationTriggerType::Docking_Stage2:
+		case ModelAnimationTriggerType::Docking_Stage3:
+		case ModelAnimationTriggerType::Docked: {
+			//The index of the dock port or name of the dock port.
+			if (can_construe_as_integer(triggeredBy.c_str()))
+				subtype = atoi(triggeredBy.c_str());
+			else
+				subtype = model_find_dock_name_index(pmi->model_num, triggeredBy.c_str());
+
+			SCP_string dock_name = model_get_dock_name(pmi->model_num, subtype);
+
+			ModelAnimationSet::AnimationList list = get(pmi, type, dock_name);
+			list += get(pmi, type, "");
+			list += getAll(pmi, type, subtype, true);
+			
+			return list;
+		}
+		case ModelAnimationTriggerType::PrimaryBank:
+		case ModelAnimationTriggerType::SecondaryBank:
+		case ModelAnimationTriggerType::PrimaryFired:
+		case ModelAnimationTriggerType::SecondaryFired:
+			//The index of the bank
+			subtype = atoi(triggeredBy.c_str());
+
+			return getAll(pmi, type, subtype);
+
+		case ModelAnimationTriggerType::DockBayDoor:
+			//Index of the dock bay door
+			subtype = atoi(triggeredBy.c_str());
+
+			return getDockBayDoors(pmi, subtype);
+
+		case ModelAnimationTriggerType::Scripted:
+			//More accurate name of scripted animation
+		case ModelAnimationTriggerType::TurretFired:
+		case ModelAnimationTriggerType::TurretFiring: {
+			//Name of the turret subsys that needs to be firing
+			std::string name(triggeredBy);
+			SCP_tolower(name);
+
+			return get(pmi, type, name);
+		}
+
+		case ModelAnimationTriggerType::Afterburner:
+		case ModelAnimationTriggerType::OnSpawn:
+			//No triggered by specialization
+			return getAll(pmi, type);
+
+		case ModelAnimationTriggerType::Initial:
+		default:
+			// Can't trigger by script
+			Warning(LOCATION, "Initial-type animations cannot be triggered by script/SEXP!");
+			return ModelAnimationSet::AnimationList{};
+		}
+	}
 
 	bool ModelAnimationSet::updateMoveable(polymodel_instance* pmi, const SCP_string& name, const std::vector<linb::any>& args) const {
 		SCP_string lowername = name;
@@ -952,9 +1023,9 @@ namespace animation {
 		polymodel_instance* pmi = model_get_instance(shipp->model_instance_num);
 
 		sip->animations.clearShipData(pmi);
-		sip->animations.startAll(pmi, animation::ModelAnimationTriggerType::Initial, ModelAnimationDirection::FWD, true, true);
+		sip->animations.getAll(pmi, animation::ModelAnimationTriggerType::Initial).start(ModelAnimationDirection::FWD, true, true);
 		sip->animations.initializeMoveables(pmi);
-		sip->animations.startAll(pmi, animation::ModelAnimationTriggerType::OnSpawn, ModelAnimationDirection::FWD);
+		sip->animations.getAll(pmi, animation::ModelAnimationTriggerType::OnSpawn).start(ModelAnimationDirection::FWD);
 	}
 
 	const std::map<ModelAnimationTriggerType, std::pair<const char*, bool>> Animation_types = {
@@ -1039,108 +1110,6 @@ namespace animation {
 		return namelower;
 	}
 
-	std::pair<std::function<bool(ModelAnimationDirection, bool, bool, bool)>, std::function<int()>> anim_parse_scripted_start(const ModelAnimationSet& set, polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& triggeredBy) {
-		int subtype = ModelAnimationSet::SUBTYPE_DEFAULT;
-
-		switch (type) {
-		case ModelAnimationTriggerType::Docking_Stage1:
-		case ModelAnimationTriggerType::Docking_Stage2:
-		case ModelAnimationTriggerType::Docking_Stage3:
-		case ModelAnimationTriggerType::Docked: {
-			//The index of the dock port or name of the dock port.
-			if (can_construe_as_integer(triggeredBy.c_str()))
-				subtype = atoi(triggeredBy.c_str());
-			else 
-				subtype = model_find_dock_name_index(pmi->model_num, triggeredBy.c_str());
-
-			SCP_string dock_name = model_get_dock_name(pmi->model_num, subtype);
-
-			return {
-				[&set, pmi, type, dock_name, subtype](ModelAnimationDirection direction, bool forced, bool instant, bool pause) -> bool {
-					bool started = false;
-					started |= set.start(pmi, type, dock_name, direction, forced, instant, pause);
-					started |= set.start(pmi, type, "", direction, forced, instant, pause);
-					started |= set.startAll(pmi, type, direction, forced, instant, pause, subtype, true);
-					return started;
-				},
-				[&set, pmi, type, dock_name, subtype]() -> int {
-					int time1 = set.getTime(pmi, type, dock_name);
-					int time2 = set.getTime(pmi, type, "");
-					int time3 = set.getTimeAll(pmi, type, subtype, true);
-					return std::max({ time1, time2, time3 });
-				}
-			};
-		}
-		case ModelAnimationTriggerType::PrimaryBank:
-		case ModelAnimationTriggerType::SecondaryBank:
-		case ModelAnimationTriggerType::PrimaryFired:
-		case ModelAnimationTriggerType::SecondaryFired:
-			//The index of the bank
-			subtype = atoi(triggeredBy.c_str());
-
-			return {
-				[&set, pmi, type, subtype](ModelAnimationDirection direction, bool forced, bool instant, bool pause) -> bool {
-					return set.startAll(pmi, type, direction, forced, instant, pause, subtype);
-				},
-				[&set, pmi, type, subtype]() -> int {
-					return set.getTimeAll(pmi, type, subtype);
-				}
-			};
-
-		case ModelAnimationTriggerType::DockBayDoor: 
-			//Index of the dock bay door
-			subtype = atoi(triggeredBy.c_str());
-
-			return {
-				[&set, pmi, subtype](ModelAnimationDirection direction, bool forced, bool instant, bool pause) -> bool {
-					return set.startDockBayDoors(pmi, direction, forced, instant, pause, subtype);
-				},
-				[&set, pmi, subtype]() -> int {
-					return set.getTimeDockBayDoors(pmi, subtype);
-				}
-			};
-
-		case ModelAnimationTriggerType::Scripted:
-			//More accurate name of scripted animation
-		case ModelAnimationTriggerType::TurretFired:
-		case ModelAnimationTriggerType::TurretFiring: {
-			//Name of the turret subsys that needs to be firing
-			std::string name(triggeredBy);
-			SCP_tolower(name);
-
-			return {
-				[&set, pmi, type, name](ModelAnimationDirection direction, bool forced, bool instant, bool pause) -> bool {
-					return set.start(pmi, type, name, direction, forced, instant, pause);
-				},
-				[&set, pmi, type, name]() -> int {
-					return set.getTime(pmi, type, name);
-				}
-			};
-		}
-
-		case ModelAnimationTriggerType::Afterburner:
-		case ModelAnimationTriggerType::OnSpawn:
-			//No triggered by specialization
-			return {
-				[&set, type, pmi](ModelAnimationDirection direction, bool forced, bool instant, bool pause) -> bool {
-					return set.startAll(pmi, type, direction, forced, instant, pause);
-				},
-				[&set, type, pmi]() -> int {
-					return set.getTimeAll(pmi, type);
-				}
-			};
-
-		case ModelAnimationTriggerType::Initial:
-		default:
-			// Can't trigger by script
-			Warning(LOCATION, "Initial-type animations cannot be triggered by script/SEXP!");
-			return {
-				[](ModelAnimationDirection /*direction*/, bool /*forced*/, bool /*instant*/, bool /*pause*/) -> bool { return false; },
-				[]() -> int { return 0; }
-			};
-		}
-	}
-
 	//Parsing functions
 	std::map<SCP_string, ModelAnimationParseHelper::ParsedModelAnimation> ModelAnimationParseHelper::s_animationsById;
 	std::map<SCP_string, std::shared_ptr<ModelAnimationMoveable>> ModelAnimationParseHelper::s_moveablesById;
@@ -1179,6 +1148,11 @@ namespace animation {
 			return nullptr;
 		}
 
+	}
+
+	ModelAnimationCoordinateRelation ModelAnimationParseHelper::parseCoordinateRelation() {
+		int result = optional_string_one_of(3, "+Relative", "+Local", "+Absolute");
+		return static_cast<ModelAnimationCoordinateRelation>(result < 0 ? 0 : result);
 	}
 
 	void ModelAnimationParseHelper::parseSingleAnimation() {
@@ -1267,7 +1241,10 @@ namespace animation {
 
 		if (optional_string("$Flags:")) {
 			SCP_vector<SCP_string> unparsed;
-			parse_string_flag_list(animation->m_flags, Animation_flags, Num_animation_flags, &unparsed);
+			parse_string_flag_list_special(animation->m_flags, Animation_flags, &unparsed, *animation);
+			for (const auto& flag : unparsed) {
+				error_display(0, "Unknown flag %s in flag list!", flag.c_str());
+			}
 		}
 
 		if (Animation_types.find(type)->second.second) {
@@ -1290,7 +1267,7 @@ namespace animation {
 
 	void ModelAnimationParseHelper::parseSingleMoveable() {
 		volatile ModelAnimationMoveableOrientation o = ModelAnimationMoveableOrientation(nullptr, angles{ 0,0,0 });
-		volatile ModelAnimationMoveableRotation r = ModelAnimationMoveableRotation(nullptr, angles{ 0,0,0 }, angles{0,0,0}, optional<angles>());
+		volatile ModelAnimationMoveableRotation r = ModelAnimationMoveableRotation(nullptr, angles{ 0,0,0 }, angles{0,0,0}, tl::nullopt);
 		
 		required_string("$Name:");
 		char animID[NAME_LENGTH];
@@ -1494,7 +1471,7 @@ namespace animation {
 			}
 			else {
 				auto subsys = sip->animations.getSubmodel(sp->subobj_name);
-				auto rot = std::shared_ptr<ModelAnimationSegmentSetOrientation>(new ModelAnimationSegmentSetOrientation(subsys, angle, isRelative));
+				auto rot = std::shared_ptr<ModelAnimationSegmentSetOrientation>(new ModelAnimationSegmentSetOrientation(subsys, angle, isRelative ? ModelAnimationCoordinateRelation::RELATIVE_COORDS : ModelAnimationCoordinateRelation::ABSOLUTE_COORDS));
 				anim->setAnimation(std::move(rot));
 			}
 
@@ -1544,7 +1521,7 @@ namespace animation {
 			required_string("+velocity:");
 			stuff_angles_deg_phb(&velocity);
 
-			optional<angles> acceleration;
+			tl::optional<angles> acceleration;
 
 			if (optional_string("+acceleration:")) {
 				angles accel{ 0,0,0 };
@@ -1553,7 +1530,7 @@ namespace animation {
 				bool allZero = accel.p == 0 && accel.b == 0 && accel.h == 0;
 
 				if (!allZero) {
-					acceleration = accel;
+					acceleration = std::move(accel);
 				}
 			}
 
@@ -1564,7 +1541,7 @@ namespace animation {
 				//Hence, throw time away, and let the segment handle calculating how long it actually takes
 			}
 
-			auto rotation = std::shared_ptr<ModelAnimationSegmentRotation>(new ModelAnimationSegmentRotation(subsys, target, velocity, optional<float>(), acceleration, absolute));
+			auto rotation = std::shared_ptr<ModelAnimationSegmentRotation>(new ModelAnimationSegmentRotation(subsys, target, velocity, tl::nullopt, acceleration, absolute ? ModelAnimationCoordinateRelation::ABSOLUTE_COORDS : ModelAnimationCoordinateRelation::RELATIVE_COORDS));
 
 			if (optional_string("$Sound:")) {
 				gamesnd_id start_sound;
@@ -1609,7 +1586,7 @@ namespace animation {
 		{"$Set Angle:", 			ModelAnimationSegmentSetAngle::parser},
 		{"$Rotation:",		 	ModelAnimationSegmentRotation::parser},
 		{"$Axis Rotation:", 	ModelAnimationSegmentAxisRotation::parser},
-	//	{"$Translation:", 		ModelAnimationSegmentTranslation::parser},
+		{"$Translation:", 		ModelAnimationSegmentTranslation::parser},
 		{"$Sound During:", 		ModelAnimationSegmentSoundDuring::parser},
 		{"$Inverse Kinematics:", 	ModelAnimationSegmentIK::parser}
 	};

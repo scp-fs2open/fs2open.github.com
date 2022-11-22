@@ -52,11 +52,8 @@ int modelstats_num_sortnorms = 0;
 int modelstats_num_boxes = 0;
 #endif
 
-extern fix game_get_overall_frametime();	// for texture animation
-
 typedef struct model_light {
 	ubyte r, g, b;
-	ubyte spec_r, spec_g, spec_b;
 } model_light;
 
 // a lighting object
@@ -115,6 +112,9 @@ public:
 
 	void generate_triangles(int texture, vertex *vert_ptr, vec3d* norm_ptr);
 	void generate_lines(int texture, vertex *vert_ptr);
+
+	SCP_set<int> get_textures_used() const;
+	void replace_textures_used(const SCP_map<int, int>& replacementMap);
 };
 
 /**
@@ -205,7 +205,6 @@ int Interp_detail_level = 0;
 
 // forward references
 int model_should_render_engine_glow(int objnum, int bank_obj);
-int model_interp_get_texture(texture_info *tinfo, fix base_frametime);
 
 void model_deallocate_interp_data()
 {
@@ -1618,8 +1617,6 @@ void model_page_in_textures(int modelnum, int ship_info_index)
 // "release" should only be set if called from model_unload()!!!
 void model_page_out_textures(int model_num, bool release)
 {
-	int i, j;
-
 	if (model_num < 0)
 		return;
 
@@ -1631,14 +1628,23 @@ void model_page_out_textures(int model_num, bool release)
 	if (release && (pm->used_this_mission > 0))
 		return;
 
+	model_page_out_textures(pm, release);
+}
 
+void model_page_out_textures(polymodel* pm, bool release, const SCP_set<int>& skipTextures, const SCP_set<int>& skipGlowBanks)
+{
+	int i, j;
 	for (i = 0; i < pm->n_textures; i++) {
+		if (skipTextures.count(i) > 0)
+			continue;
 		pm->maps[i].PageOut(release);
 	}
 
 	// NOTE: "release" doesn't work here for some, as of yet unknown, reason - taylor
 	for (j = 0; j < pm->n_glow_point_banks; j++) {
-		glow_point_bank *bank = &pm->glow_point_banks[j];
+		if(skipGlowBanks.count(j) > 0)
+			continue;
+		glow_point_bank* bank = &pm->glow_point_banks[j];
 
 		if (bank->glow_bitmap >= 0) {
 		//	if (release) {
@@ -1716,12 +1722,7 @@ void parse_tmap(int offset, ubyte *bsp_data)
 	int pof_tex = w(bsp_data+offset+TMAP_TEXNUM);
 	uint n_vert = uw(bsp_data+offset+TMAP_NVERTS);
 	ubyte *p = &bsp_data[offset+TMAP_NORMAL];
-	auto vs = reinterpret_cast<model_tmap_vert_old*>(&bsp_data[offset + TMAP_VERTS]);
-	auto tverts = new model_tmap_vert[n_vert];
-
-	for (uint i = 0; i < n_vert; i++) {
-		tverts[i] = model_tmap_vert(vs[i]);
-	}
+	auto tverts = reinterpret_cast<model_tmap_vert_old*>(&bsp_data[offset + TMAP_VERTS]);
 
 	vertex *V;
 	vec3d *v;
@@ -1739,7 +1740,7 @@ void parse_tmap(int offset, ubyte *bsp_data)
 		V->texture_position.u = tverts[0].u;
 		V->texture_position.v = tverts[0].v;
 
-		*N = *Interp_norms[(int)tverts[0].normnum];
+		*N = *Interp_norms[tverts[0].normnum];
 
 		if ( IS_VEC_NULL(N) )
 			*N = *vp(p);
@@ -1756,7 +1757,7 @@ void parse_tmap(int offset, ubyte *bsp_data)
 		V->texture_position.u = tverts[i].u;
 		V->texture_position.v = tverts[i].v;
 
-		*N = *Interp_norms[(int)tverts[i].normnum];
+		*N = *Interp_norms[tverts[i].normnum];
 
 		if ( IS_VEC_NULL(N) )
 			*N = *vp(p);
@@ -2287,7 +2288,7 @@ bool model_interp_config_buffer(indexed_vertex_source *vert_src, vertex_buffer *
 	return true;
 }
 
-void interp_configure_vertex_buffers(polymodel *pm, int mn)
+void interp_configure_vertex_buffers(polymodel *pm, int mn, const model_read_deferred_tasks& deferredTasks)
 {
 	TRACE_SCOPE(tracing::ModelConfigureVertexBuffers);
 
@@ -2307,6 +2308,10 @@ void interp_configure_vertex_buffers(polymodel *pm, int mn)
 	int milliseconds = timer_get_milliseconds();
 
 	bsp_polygon_data *bsp_polies = new bsp_polygon_data(model->bsp_data);
+
+	auto textureReplace = deferredTasks.texture_replacements.find(mn);
+	if (textureReplace != deferredTasks.texture_replacements.end())
+		bsp_polies->replace_textures_used(textureReplace->second.replacementIds);
 
 	for (i = 0; i < MAX_MODEL_TEXTURES; i++) {
 		int vert_count = bsp_polies->get_num_triangles(i) * 3;
@@ -2766,10 +2771,10 @@ int model_should_render_engine_glow(int objnum, int bank_obj)
 
 // Goober5000
 // uses same algorithms as in ship_do_thruster_frame
-int model_interp_get_texture(texture_info *tinfo, fix base_frametime)
+int model_interp_get_texture(texture_info *tinfo, int elapsed_time)
 {
-	int texture, frame, num_frames;
-	float cur_time, total_time;
+	int texture, frame, cur_time, num_frames;
+	float total_time;
 
 	// get texture
 	num_frames = tinfo->GetNumFrames();
@@ -2781,11 +2786,12 @@ int model_interp_get_texture(texture_info *tinfo, fix base_frametime)
 	{
 		// sanity check total_time first thing
 		Assert(total_time > 0.0f);
+		total_time *= MILLISECONDS_PER_SECOND;
 
-		cur_time = f2fl((game_get_overall_frametime() - base_frametime) % fl2f(total_time));
+		cur_time = elapsed_time % fl2i(total_time);
 
 		// get animation frame
-		frame = fl2i((cur_time * num_frames) / total_time);
+		frame = fl2i((cur_time * num_frames) / total_time + 0.5f);
 		CLAMP(frame, 0, num_frames - 1);
 
 		// advance to the correct frame
@@ -3142,7 +3148,6 @@ void bsp_polygon_data::process_tmap(int offset, ubyte* bsp_data)
 	int pof_tex = w(bsp_data + offset + TMAP_TEXNUM);
 	uint n_vert = uw(bsp_data + offset + TMAP_NVERTS);
 	ubyte* p;
-	model_tmap_vert* tverts;
 
 	if ( n_vert < 3 ) {
 		// don't parse degenerate polygons
@@ -3151,11 +3156,7 @@ void bsp_polygon_data::process_tmap(int offset, ubyte* bsp_data)
 
 	p = &bsp_data[offset + TMAP_NORMAL];
 
-	auto vs = reinterpret_cast<model_tmap_vert_old*>(&bsp_data[offset + TMAP_VERTS]);
-	tverts = new model_tmap_vert[n_vert];
-	for (uint i = 0; i < n_vert; i++) {
-		tverts[i] = model_tmap_vert(vs[i]);
-	}
+	auto tverts = reinterpret_cast<model_tmap_vert_old*>(&bsp_data[offset + TMAP_VERTS]);
 
 	// Copy the verts manually since they aren't aligned with the struct
 	//unpack_tmap_verts(&bsp_data[offset + 44], tverts, n_vert);
@@ -3401,4 +3402,28 @@ void bsp_polygon_data::generate_lines(int texture, vertex *vert_ptr)
 			num_verts += 2;
 		}
 	}
+}
+
+SCP_set<int> bsp_polygon_data::get_textures_used() const {
+	SCP_set<int> textures;
+	for (const auto& poly : Polygons)
+		textures.emplace(poly.texture);
+	return textures;
+}
+
+void bsp_polygon_data::replace_textures_used(const SCP_map<int, int>& replacementMap) {
+	for (auto& poly : Polygons) {
+		auto it = replacementMap.find(poly.texture);
+		if (it != replacementMap.end()) {
+			poly.texture = it->second;
+			Num_verts[it->first] -= poly.Num_verts;
+			Num_verts[it->second] += poly.Num_verts;
+			--Num_polies[it->first];
+			++Num_polies[it->first];
+		}
+	}
+}
+
+SCP_set<int> model_get_textures_used(const polymodel* pm, int submodel) {
+	return bsp_polygon_data{ pm->submodel[submodel].bsp_data }.get_textures_used();
 }

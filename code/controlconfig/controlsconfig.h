@@ -12,6 +12,7 @@
 #define CONTROLS_CONFIG_H
 
 #include "globalincs/pstypes.h"
+#include "scripting/scripting.h"
 
 #define CONTROL_CONFIG_XSTR	507
 
@@ -21,6 +22,7 @@
 #define CCF_AXIS        0x08    //!< btn is an axis
 #define CCF_HAT         0x04    //!< btn is a hat
 #define CCF_BALL        0x02    //!< btn is a ball
+#define CCF_BUTTON      0x01    //!< btn is actually a button
 
 /*!
  * These are used to index a corresponding axis value from an array.
@@ -292,6 +294,8 @@ enum IoActionId : int {
 	JOY_ABS_THROTTLE_AXIS							= 127,
 	JOY_REL_THROTTLE_AXIS							= 128,
 
+	TOGGLE_HUD_SHADOWS,
+
 	/*!
 	 * This must always be below the last defined item
 	 */
@@ -319,6 +323,15 @@ enum {
 	NUM_VALUES
 };
 }
+
+/*!
+ * Where the preset is located in memory
+ */
+enum class Preset_t {
+	hardcode,	// Preset is defined hardcode
+	tbl,		// Preset is defined in controlconfigdefaults.tbl
+	pst			// Preset is defined in a .json
+};
 
 class CCB;
 
@@ -361,6 +374,16 @@ public:
 	 */
 	bool empty() const;
 
+	/**
+	 * Takes the given binding.
+	 */
+	void take(CID _cid, short _btn, char _flags = 0);
+
+	/**
+	 * Validates the binding, clearing it if necassary
+	 */
+	void validate();
+
 	/*!
 	 * Returns a copy of ::btn
 	 */
@@ -375,16 +398,6 @@ public:
 	 * Returns a copy of ::flags
 	 */
 	char get_flags() const;
-
-	/**
-	 * Takes the given binding.
-	 */
-	void take(CID _cid, short _btn, char _flags = 0);
-
-	/**
-	 * Validates the binding, clearing it if necassary
-	 */
-	void validate();
 
 	/*!
 	 * Returns a human-readable string of this binding
@@ -468,12 +481,12 @@ public:
 	/*!
 	 * Checks if the given CCB is exactly equal to this
 	 */
-	bool operator==(const CCB&);
+	bool operator==(const CCB&) const;
 
 	/*!
 	 * Checks if the given CCB differs from this
 	 */
-	bool operator!=(const CCB&);
+	bool operator!=(const CCB&) const;
 
 	/*!
 	 * Returns True if this CCB's first isn't empty and the given CCB has a binding that can conflict with it
@@ -499,6 +512,21 @@ public:
 	 * Returns a pointer to first, or second, whichever has *all* flags in the given mask
 	 */
 	CC_bind* find_flags(const char);
+
+	/*!
+	 * Sets the inversion state of both bindings
+	 */
+	void invert(bool);
+
+	/*!
+	 * Toggles the inversion state of Primary and copies it to Secondary
+	 */
+	void invert_toggle();
+
+	/*!
+	 * Is true if both bindings are inverted, false otherwise
+	 */
+	bool is_inverted() const;
 };
 
 /*!
@@ -508,8 +536,13 @@ class CC_preset {
 public:
 	SCP_vector<CCB> bindings;
 	SCP_string name;
+	Preset_t type;
 
 public:
+	CC_preset() = default;
+	CC_preset(const CC_preset& A) = default;
+
+	CC_preset& operator=(const CC_preset&);
 	/*!
 	 * Checks if the given preset is a duplicate of this one
 	 */
@@ -534,8 +567,12 @@ public:
 	CC_type type;           //!< manner control should be checked in
 
 // Items used during gameplay
-	int  used;                  //!< has control been used yet in mission?  If so, this is the timestamp
+	TIMESTAMP digital_used;     //!< has control been used yet in mission?  If so, this is the timestamp.
+	                            // Note this is not a UI timestamp because this is purely for mission timing purposes.
+	int  analog_value;          // For axes, this denotes the last frame's value
 	bool disabled = true;       //!< whether this action should be available at all
+	bool locked = false;		//!< whether this action will be triggered by the respectively bound key
+	bool scriptEnabledByDefault = false; //!< whether this binding will execute it's registered hooks if triggered. Resets each mission
 	bool continuous_ongoing;    //!< whether this action is a continuous one and is currently ongoing
 
 public:
@@ -613,8 +650,9 @@ extern int Control_config_overlay_id;
 
 extern SCP_vector<CCI> Control_config;		//!< Stores the keyboard configuration
 extern SCP_vector<CC_preset> Control_config_presets; // tabled control presets; pointers to config_item arrays
-extern const char **Scan_code_text;
 extern const char **Joy_button_text;			// String table of button labels.  XSTR'd on init.
+
+extern bool Generate_controlconfig_table;
 
 // string table constants for labels and stuff.
 #define NUM_AXIS_TEXT			JOY_NUM_AXES
@@ -690,7 +728,10 @@ bool control_config_use_preset_by_name(const SCP_string &name);
  * 
  * @returns an iterator to the current preset, or
  * @returns ::iterator Control_config_presets.end() if current bindings are not in a preset
+ * 
+ * @note Similar to preset_find_duplicate, this function has additional logic in its search to ignore disabled controls
  */
+
 SCP_vector<CC_preset>::iterator control_config_get_current_preset(bool invert_agnostic = false);
 
 /*!
@@ -726,10 +767,9 @@ int translate_key_to_index(const char *key, bool find_override=true);
 const char *translate_key(char *key);
 
 /**
- * @brief Converts the specified key code to a human readable string, according to the selected locale
+ * @brief Converts the specified key code to a human readable string, according to the selected locale and keyboard layout
  *
- * @param[in]   code    The key code to convert
- * @param[in]   use_default_locale  If true, return the default locale (English) translation of the key
+ * @param[in]   code    The key scancode to convert
  *
  * @return  The text representation of the code.
  *
@@ -737,7 +777,18 @@ const char *translate_key(char *key);
  *
  * @note The return value is translated according to localization settings
  */
-const char *textify_scancode(int code, bool use_default_locale = false);
+const char *textify_scancode(int code);
+
+/**
+ * @brief Converts the specified key code to a human readable string.  Uses the English locale and QWERTY layout.
+ * 
+ * @param[in]    code   The key scancode to convert
+ * 
+ * @return The text representation of the code
+ * 
+ * @note Not thread safe.  Has an internal buffer for the return value which is overwritten on each call.
+ */
+const char *textify_scancode_universal(int code);
 
 /*!
  * @brief Checks how long a control has been active
@@ -783,6 +834,35 @@ void control_get_axes_readings(int *axis_v, float frame_time);
  * @details Updates the ::used timestamp, triggers a script hook, and marks ::continous_ongoing as true
  */
 void control_used(int id);
+
+/**
+ * @brief Runs a given controlbindings lua hook added in ccd.tbl
+ *
+ * @return Whether the control should be overridden
+ */
+bool control_run_lua(IoActionId id, int value);
+
+/**
+ * @brief Resets the cache for script evaluations for continuous buttons. Should be called once per frame.
+ *
+*/
+void control_reset_lua_cache();
+
+/**
+ * @brief Registers a new hook for the keybinding action system.
+ * Parameters set if it is a normal or an override function, as well as if it is enabled by default or needs to be enabled manually each mission
+ */
+void control_register_hook(IoActionId id, const luacpp::LuaFunction& hook, bool is_override, bool enabledByDefault);
+
+/**
+ * @brief Enables or disables the respective Lua hook
+ */
+void control_enable_hook(IoActionId id, bool enable);
+
+/**
+ * @brief Resets every hooks enable state to the tabled value. Call on Mission start
+ */
+void control_reset_hook();
 
 /**
  * @brief Clears the bindings of all controls
@@ -836,18 +916,17 @@ CID CIDToVal(const char * str);
 
 /**
  * Reverse lookups the CID to get its stringified name
- * @return  Pointer to the stringified name of the CID, or
- * @return  nullptr if not found
+ * @return  The stringified name of the CID, or
+ * @return  "NONE" if not found
  */
-const char * ValToCID(CID id);
+SCP_string ValToCID(CID id);
 
 /**
  * Reverse lookups the CID to get its stringified name
- * @return Pointer to the stringified name of the CID, or
- * @return nullptr if not found, or invalid id
+ * @return The stringified name of the CID, or
+ * @return "NONE" if not found, or invalid id
  */
-const char * ValToCID(int id);
-
+SCP_string ValToCID(int id);
 /**
  * Lookups the given stringified enum to find its value
  */
@@ -855,8 +934,8 @@ char CCFToVal(const char * str);
 
 /**
  * Constructs a enum string from the CCF_FLAGS
- * @return Pointer to the stringified name of the CCF, or
- * @return nullptr if not found, or invalid id
+ * @return The stringified name of the CCF, or
+ * @return "NONE" if not found, or invalid id
  */
 SCP_string ValToCCF(char id);
 
@@ -868,8 +947,8 @@ short InputToVal(CID cid, const char * str);
 /**
  * Constructs a enumstring from the input binding, depending on the CID
  *
- * @return Pointer to the stringified name of the input, or
- * @return nullptr if not found, or invalid CC_bind
+ * @return The stringified name of the input, or
+ * @return "NONE" if not found, or invalid CC_bind
  *
  * @note This requires a CCB due to the way things are encoded
  */
@@ -883,8 +962,8 @@ short MouseToVal(const char * str);
 /**
  * Constructs a enum string from the mouse input
  *
- * @return Pointer to the stringified name of the input, or
- * @return nullptr if not found, or invalid CC_bind
+ * @return The stringified name of the input, or
+ * @return "NONE" if not found, or invalid CC_bind
  * TODO XSTR
  *
  * @note This requires a CCB due to the way things are encoded
@@ -899,8 +978,8 @@ short KeyboardToVal(const char * str);
 /**
  * Constructs an enum string from the key binding
  *
- * @return Pointer to the stringified name of the input, or
- * @return nullptr if not found, or invalid CC_bind
+ * @return The stringified name of the input, or
+ * @return "NONE" f not found, or invalid CC_bind
  *
  * @note This requires a CCB due to the way things are encoded
  * TODO XSTR
@@ -915,11 +994,37 @@ short JoyToVal(const char * str);
 /**
  * Constructs a enum string from the Joystick input
  *
- * @return Pointer to the stringified name of the input, or
- * @return nullptr if not found, or invalid CC_bind
+ * @return The stringified name of the input, or
+ * @return "NONE" if not found, or invalid CC_bind
  *
  * @note This requires a CCB due to the way things are encoded
  * TODO XSTR
  */
 SCP_string ValToJoy(const CC_bind &bind);
+
+/**
+ * Lookups the given string to find its tab value
+ */
+char CCTabToVal(const char *str);
+
+/**
+ * Reverse lookups the given tab in mCCTabToVal to retrieve the string name
+ *
+ * @return The stringified name of the input, or
+ * @return nullptr if not found, or invalid tab
+ *
+ */
+SCP_string ValToCCTab(char tab);
+
+/**
+ * Lookups the given string to find its CC_type value. =
+ */
+CC_type CCTypeToVal(const char *str);
+
+/**
+ * Reverse lookups the given CC_type to retrieve the string name
+
+ */
+SCP_string ValToCCType(CC_type type);
+
 #endif

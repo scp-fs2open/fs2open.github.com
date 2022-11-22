@@ -203,15 +203,19 @@ namespace os
 			msgStream << "\n";
 			msgStream << Separator;
 
-			mprintf(("Lua Error: %s\n", msgStream.str().c_str()));
-
-			if (Cmdline_noninteractive) {
-				abort();
-				return;
-			}
+			nprintf(("scripting","Lua Error: %s\n", msgStream.str().c_str()));
 
 			if (running_unittests) {
 				throw LuaErrorException(msgStream.str());
+			}
+
+			if (Cmdline_lua_devmode) {
+				return;
+			}
+
+			if (Cmdline_noninteractive) {
+				throw LuaErrorException(msgStream.str());
+				return;
 			}
 
 			set_clipboard_text(msgStream.str().c_str());
@@ -289,13 +293,13 @@ namespace os
 		{
 			mprintf(("\n%s\n", text));
 
+			if (running_unittests) {
+				throw ErrorException(text);
+			}
+
 			if (Cmdline_noninteractive) {
 				abort();
 				return;
-			}
-
-			if (running_unittests) {
-				throw ErrorException(text);
 			}
 
 			SCP_stringstream messageStream;
@@ -355,13 +359,13 @@ namespace os
 			// output to the debug log before anything else (so that we have a complete record)
 			mprintf(("WARNING: \"%s\" at %s:%d\n", text.c_str(), filename, line));
 
+			if (running_unittests) {
+				throw WarningException(text);
+			}
+
 			// now go for the additional popup window, if we want it ...
 			if (Cmdline_noninteractive) {
 				return;
-			}
-
-			if (running_unittests) {
-				throw WarningException(text);
 			}
 
 			SCP_stringstream boxMsgStream;

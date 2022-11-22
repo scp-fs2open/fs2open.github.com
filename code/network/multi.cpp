@@ -27,6 +27,7 @@
 #include "network/multi_ingame.h"
 #include "popup/popup.h"
 #include "missionui/chatbox.h"
+#include "model/modelreplace.h"
 #include "network/multiteamselect.h"
 #include "network/multi_data.h"
 #include "network/multi_kick.h"
@@ -49,6 +50,7 @@
 #include "network/multi_fstracker.h"
 #include "network/multi_sw.h"
 #include "network/multi_portfwd.h"
+#include "network/multi_turret_manager.h"
 #include "pilotfile/pilotfile.h"
 #include "debugconsole/console.h"
 #include "network/psnet2.h"
@@ -89,7 +91,13 @@
 #define MULTI_SERVER_SLOW_PING_TIME					700					// when average ping time to server reaches this -- display hud icon
 
 // update times for clients ships based on object update level
-#define MULTI_CLIENT_UPDATE_TIME						333
+int Multi_client_update_intervals[MAX_OBJ_UPDATE_LEVELS]	= 
+{
+	333,				// Dialup, 3x a second
+	166,				// Medium, 6x a second
+	80,					// High, 12.5x a second
+	30,					// LAN, 33x a second
+};					
 
 int Multi_display_netinfo = 1;
 
@@ -130,13 +138,13 @@ int Multi_server_check_count = 0;					// var to keep track of reentrancy when ch
 int Next_bytes_time = -1;								// bytes sent
 
 // how often each player gets updated
-int Multi_client_update_times[MAX_PLAYERS];	// client update packet timestamp
+UI_TIMESTAMP Multi_client_update_times[MAX_PLAYERS];	// client update packet timestamp
 
 // local network buffer data
 LOCAL ubyte net_buffer[NUM_REENTRANT_LEVELS][MAX_NET_BUFFER];
 LOCAL ubyte Multi_read_count;
 
-int Multi_restr_query_timestamp = -1;
+UI_TIMESTAMP Multi_restr_query_timestamp;
 join_request Multi_restr_join_request;
 net_addr Multi_restr_addr;
 int Multi_join_restr_mode = -1;
@@ -172,8 +180,8 @@ void multi_init()
 	Multi_id_num = 0;
 
 	// clear out all netplayers
-	memset(Net_players, 0, sizeof(net_player) * MAX_PLAYERS);
 	for(idx=0; idx<MAX_PLAYERS; idx++){
+		Net_players[idx].init();
 		Net_players[idx].reliable_socket = PSNET_INVALID_SOCKET;
 	}
 
@@ -229,7 +237,7 @@ void multi_vars_init()
 	Multi_mission_loaded = 0;   // client side		
 
 	// restricted game stuff
-	Multi_restr_query_timestamp = -1;	
+	Multi_restr_query_timestamp = UI_TIMESTAMP::invalid();
 
 	// respawn stuff	
 	Multi_server_check_count = 0;
@@ -270,7 +278,7 @@ void multi_level_init()
 		// close all sockets down just for good measure
 		psnet_rel_close_socket(Net_players[idx].reliable_socket);
 
-		memset(&Net_players[idx],0,sizeof(net_player));
+		Net_players[idx].init();
 		Net_players[idx].reliable_socket = PSNET_INVALID_SOCKET;
 
 		Net_players[idx].s_info.xfer_handle = -1;
@@ -929,6 +937,10 @@ void process_packet_normal(ubyte* data, header *header_info)
 			process_sexp_packet(data, header_info);
 			break; 
 
+		case TURRET_TRACK:
+			process_turret_tracking_packet(data, header_info);
+			break;
+
 		default:
 			mprintf(("Received packet with unknown type %d\n", data[0] ));
 			header_info->bytes_processed = 10000;
@@ -1233,10 +1245,10 @@ void multi_do_frame()
 	}
 
 	// check to see if we're waiting on confirmation for a restricted ingame join
-	if(Multi_restr_query_timestamp != -1){
+	if(Multi_restr_query_timestamp.isValid()){
 		// if it has elapsed, unset the ingame join flag
-		if(timestamp_elapsed(Multi_restr_query_timestamp)){
-			Multi_restr_query_timestamp = -1;
+		if(ui_timestamp_elapsed(Multi_restr_query_timestamp)){
+			Multi_restr_query_timestamp = UI_TIMESTAMP::invalid();
 			Netgame.flags &= ~(NG_FLAG_INGAME_JOINING);		
 		}	
 	}
@@ -1279,7 +1291,10 @@ void multi_do_frame()
 
 			// sending new objects from here is dependent on having objects only created after
 			// the game is done moving the objects.  I think that I can enforce this.				
-			multi_oo_process();			
+			multi_oo_process();
+
+			// send updates for turret tracking.
+			Multi_Turret_Manager.send_queued_packets();			
 
 			// evaluate whether the time limit has been reached or max kills has been reached
 			// Commented out by Sandeep 4/12/98, was causing problems with testing.
@@ -1299,11 +1314,11 @@ void multi_do_frame()
 		int idx;
 		for(idx=0;idx<MAX_PLAYERS;idx++){
 			if(MULTI_CONNECTED(Net_players[idx]) && (Net_player != &Net_players[idx])){
-				if((Multi_client_update_times[idx] < 0) || timestamp_elapsed_safe(Multi_client_update_times[idx], 1000)){
+				if ( !Multi_client_update_times[idx].isValid() || ui_timestamp_elapsed_safe(Multi_client_update_times[idx], MILLISECONDS_PER_SECOND) ) {
 					
 					send_client_update_packet(&Net_players[idx]);
 					
-					Multi_client_update_times[idx] = timestamp(MULTI_CLIENT_UPDATE_TIME);
+					Multi_client_update_times[idx] = ui_timestamp(Multi_client_update_intervals[Net_players[idx].p_info.options.obj_update_level]);
 				}
 			}
 		}
@@ -1399,11 +1414,11 @@ void multi_pause_do_frame()
 
 		for(idx=0;idx<MAX_PLAYERS;idx++){
 			if(MULTI_CONNECTED(Net_players[idx]) && (Net_player != &Net_players[idx])){			
-				if((Multi_client_update_times[idx] < 0) || timestamp_elapsed_safe(Multi_client_update_times[idx], 1000)){
+				if ( !Multi_client_update_times[idx].isValid() || ui_timestamp_elapsed_safe(Multi_client_update_times[idx], MILLISECONDS_PER_SECOND) ) {
 					
 					send_client_update_packet(&Net_players[idx]);
 					
-					Multi_client_update_times[idx] = timestamp(MULTI_CLIENT_UPDATE_TIME);
+					Multi_client_update_times[idx] = ui_timestamp(Multi_client_update_intervals[Net_players[idx].p_info.options.obj_update_level]);
 				}
 			}				
 		}
@@ -1491,7 +1506,7 @@ void standalone_main_init()
 
 	// clear out the Netgame structure and start filling in the values
 	// NOTE : these values are not incredibly important since they will be overwritten by the host when he joins
-	memset( &Netgame, 0, sizeof(Netgame) );	
+	Netgame.init();
 	Netgame.game_state = NETGAME_STATE_FORMING;		// game is currently starting up
 	Netgame.security = 0;
 	Netgame.server_addr = Psnet_my_addr;
@@ -1571,6 +1586,7 @@ void standalone_main_init()
 	animation::ModelAnimationParseHelper::parseTables();
 	psnet_flush();
 	game_flush();
+	virtual_pof_init();
 	ship_init();
 
 	// setup port forwarding
@@ -1798,7 +1814,7 @@ void multi_reset_timestamps()
 	int i;
 
 	for ( i = 0 ; i < MAX_PLAYERS; i++ ){
-		Multi_client_update_times[i] = -1;
+		Multi_client_update_times[i] = UI_TIMESTAMP::invalid();
 	}
 	Netgame_send_time = -1;
 	Gameinfo_send_time = -1;	
@@ -1813,8 +1829,8 @@ void multi_reset_timestamps()
 		Players[i].update_dumbfire_time = timestamp(0);
 		Players[i].update_lock_time = timestamp(0);
 
-		Net_players[i].s_info.voice_token_timestamp = -1;
-		Net_players[i].s_info.player_collision_timestamp = timestamp(0);
+		Net_players[i].s_info.voice_token_timestamp = UI_TIMESTAMP::invalid();
+		Net_players[i].s_info.player_collision_timestamp = TIMESTAMP::immediate();
 	}
 
 	// reset standalone gui timestamps (these are not game critical, so there is not much danger)

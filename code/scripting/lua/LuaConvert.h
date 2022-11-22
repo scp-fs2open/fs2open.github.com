@@ -31,6 +31,15 @@ namespace convert {
 
 namespace internal {
 bool isValidIndex(lua_State* state, int index);
+
+bool ade_odata_helper(lua_State* L, int stackposition, size_t idx);
+}
+
+bool ade_odata_is_userdata_type(lua_State* L, int stackposition, size_t typeIdx, bool cleanup = true);
+
+template<typename T>
+bool ade_odata_is_userdata_type(lua_State* L, int stackposition, const T& obj_type) {
+	return ade_odata_is_userdata_type(L, stackposition, obj_type.GetIdx());
 }
 
 void pushValue(lua_State* luaState, const double& value);
@@ -94,10 +103,6 @@ bool popValue(lua_State* luaState, std::string& target, int stackposition = -1, 
 bool popValue(lua_State* luaState, bool& target, int stackposition = -1, bool remove = true);
 
 bool popValue(lua_State* luaState, lua_CFunction& target, int stackposition = -1, bool remove = true);
-
-namespace internal {
-bool ade_odata_helper(lua_State* L, int stackposition, size_t idx);
-}
 
 template <typename T>
 bool popValue(lua_State* L, scripting::ade_odata_getter<T>&& od, int stackposition = -1, bool remove = true)

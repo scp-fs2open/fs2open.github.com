@@ -14,14 +14,14 @@
 
 #include "globalincs/globals.h"		// for NAME_LENGTH
 #include "globalincs/pstypes.h"
-
+#include "io/timer.h"
 
 class object;
 class polymodel;
 struct collision_info_struct;
 class model_draw_list;
 
-#define	MAX_ASTEROIDS			512
+#define	MAX_ASTEROIDS			2000	//Increased from 512 to 2000 in 2022
 
 #define NUM_DEBRIS_SIZES		3
 #define	NUM_DEBRIS_POFS			3				// Number of POFs per debris size
@@ -35,12 +35,6 @@ class model_draw_list;
 
 // Goober5000 - currently same as MAX_SHIP_DETAIL_LEVELS (put here to avoid an #include)
 #define MAX_ASTEROID_DETAIL_LEVELS	5
-
-// whether to do retail behavior, just throw at the first big ship in the field
-// must be explicitly opted out of by the mission
-extern bool Default_asteroid_throwing_behavior;
-
-extern SCP_vector<SCP_string> Asteroid_target_ships;
 
 // Data structure to track the active asteroids
 typedef struct asteroid_obj {
@@ -108,9 +102,9 @@ typedef	struct asteroid {
 	int		model_instance_num;
 	int		asteroid_type;		// 0..MAX_DEBRIS_TYPES
 	int		asteroid_subtype;	// Index in asteroid_info for modelnum and modelp
-	int		check_for_wrap;		// timestamp to check for asteroid wrapping around field
-	int		check_for_collide;	// timestamp to check for asteroid colliding with escort ships
-	int		final_death_time;	// timestamp to swap in new models after explosion starts
+	TIMESTAMP	check_for_wrap;		// timestamp to check for asteroid wrapping around field
+	TIMESTAMP	check_for_collide;	// timestamp to check for asteroid colliding with escort ships
+	TIMESTAMP	final_death_time;	// timestamp to swap in new models after explosion starts
 	int		collide_objnum;		// set to objnum that asteroid will be impacting soon
 	int		collide_objsig;		// object signature corresponding to collide_objnum
 	vec3d	death_hit_pos;		// hit pos that caused death
@@ -134,7 +128,7 @@ typedef	struct asteroid_field {
 	vec3d	min_bound;					// Minimum range of field.
 	vec3d	max_bound;					// Maximum range of field.
 	float	bound_rad;
-	int		has_inner_bound;
+	bool	has_inner_bound;
 	vec3d	inner_min_bound;
 	vec3d	inner_max_bound;
 	vec3d	vel;						// Average asteroid moves at this velocity.
@@ -144,6 +138,8 @@ typedef	struct asteroid_field {
 	debris_genre_t	debris_genre;		// type of debris (ship or asteroid)  [generic type]
 	int				field_debris_type[MAX_ACTIVE_DEBRIS_TYPES];	// one of the debris type defines above
 	int				num_used_field_debris_types;	// how many of the above are used
+
+	SCP_vector<SCP_string> target_names;	// default retail behavior is to just throw at the first big ship in the field
 } asteroid_field;
 
 extern SCP_vector< asteroid_info > Asteroid_info;

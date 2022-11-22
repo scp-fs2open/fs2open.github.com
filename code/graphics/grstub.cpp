@@ -91,6 +91,11 @@ void gr_stub_print_screen(const char * /*filename*/)
 {
 }
 
+SCP_string gr_stub_blob_screen()
+{
+	return "";
+}
+
 void gr_stub_rect(int  /*x*/, int  /*y*/, int  /*w*/, int  /*h*/, int  /*resize_mode*/)
 {
 }
@@ -217,7 +222,7 @@ void gr_stub_copy_effect_texture()
 {
 }
 
-void gr_stub_deferred_lighting_begin()
+void gr_stub_deferred_lighting_begin(bool /*clearNonColorBufs*/)
 {
 }
 
@@ -449,6 +454,7 @@ bool gr_stub_init()
 //	gr_screen.gf_shade				= gr_stub_shade;
 
 	gr_screen.gf_print_screen		= gr_stub_print_screen;
+	gr_screen.gf_blob_screen		= gr_stub_blob_screen;
 
 	gr_screen.gf_zbuffer_get		= gr_stub_zbuffer_get;
 	gr_screen.gf_zbuffer_set		= gr_stub_zbuffer_set;

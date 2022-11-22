@@ -39,7 +39,7 @@
 #include "object/objectsnd.h"
 #include "parse/parselo.h"
 #include "scripting/hook_api.h"
-#include "scripting/scripting.h"
+#include "scripting/global_hooks.h"
 #include "scripting/api/objs/subsystem.h"
 #include "scripting/api/objs/vecmath.h"
 #include "playerman/player.h"
@@ -78,14 +78,6 @@ const std::shared_ptr<scripting::Hook> OnPainFlashHook = scripting::Hook::Factor
 	"On Pain Flash", "Called when a pain flash is displayed.",
 	{ 		
 		{"Pain_Type", "number", "The type of pain flash displayed: shield = 0 and hull = 1."},
-	});
-
-const std::shared_ptr<scripting::Hook> OnShipDeathStartedHook = scripting::Hook::Factory(
-	"On Ship Death Started", "Called when a ship starts the death process.",
-	{
-		{"Ship", "ship", "The ship that has begun the death process."},
-		{"Killer", "object", "The object responsible for killing the ship.  Could be null."},
-		{"Hitpos", "vector", "The world coordinates of the killing blow.  Could be null."},
 	});
 
 
@@ -215,7 +207,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 	if ( MULTIPLAYER_MASTER ) {
 		int index;
 
-		index = ship_get_index_from_subsys(subsys, ship_p->objnum);
+		index = ship_get_subsys_index(subsys);
 		
 		vec3d hit;
 		if (hitpos) {
@@ -1794,25 +1786,52 @@ void ship_hit_kill(object *ship_objp, object *other_obj, vec3d *hitpos, float pe
 {
 	Assert(ship_objp);	// Goober5000 - but not other_obj, not only for sexp but also for self-destruct
 
-	// add scripting hook for 'On Ship Death Started' -- Goober5000
-	// hook is placed at the beginning of this function to allow the scripter to
-	// actually have access to the ship before any death routines (such as mission logging) are executed
-	if (hitpos)
-		OnShipDeathStartedHook->run(scripting::hook_param_list(scripting::hook_param("Ship", 'o', ship_objp), scripting::hook_param("Killer", 'o', other_obj), scripting::hook_param("Hitpos", 'o', scripting::api::l_Vector.Set(*hitpos))));
-	else
-		OnShipDeathStartedHook->run(scripting::hook_param_list(scripting::hook_param("Ship", 'o', ship_objp), scripting::hook_param("Killer", 'o', other_obj)));
-
-	if(Script_system.IsActiveAction(CHA_DEATH) && Script_system.IsConditionOverride(CHA_DEATH, ship_objp))
+	if (scripting::hooks::OnShipDeathStarted->isActive())
 	{
-		//WMC - Do scripting stuff
-		Script_system.SetHookObjects(3, "Self", ship_objp, "Ship", ship_objp, "Killer", other_obj);
-		if (hitpos)
-			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(*hitpos));
-		Script_system.RunCondition(CHA_DEATH, ship_objp);
-		Script_system.RemHookVars({"Self", "Ship", "Killer"});
-		if (hitpos)
-			Script_system.RemHookVar("Hitpos");
-		return;
+		// add scripting hook for 'On Ship Death Started' -- Goober5000
+		// hook is placed at the beginning of this function to allow the scripter to
+		// actually have access to the ship before any death routines (such as mission logging) are executed
+		scripting::hooks::OnShipDeathStarted->run(scripting::hook_param_list(
+			scripting::hook_param("Ship", 'o', ship_objp),
+			scripting::hook_param("Killer", 'o', other_obj),
+			scripting::hook_param("Hitpos",
+				'o',
+				scripting::api::l_Vector.Set(hitpos ? *hitpos : vmd_zero_vector),
+				hitpos != nullptr)));
+	}
+
+	// if the OnDeath override is enabled, run the hook and then exit
+	if (scripting::hooks::OnDeath->isActive())
+	{
+		auto onDeathParamList = scripting::hook_param_list(scripting::hook_param("Self", 'o', ship_objp),
+			scripting::hook_param("Ship", 'o', ship_objp),
+			scripting::hook_param("Killer", 'o', other_obj),
+			scripting::hook_param("Hitpos",
+				'o',
+				scripting::api::l_Vector.Set(hitpos ? *hitpos : vmd_zero_vector),
+				hitpos != nullptr));
+
+		if (scripting::hooks::OnDeath->isOverride(onDeathParamList, ship_objp)) {
+			scripting::hooks::OnDeath->run(onDeathParamList, ship_objp);
+			return;
+		}
+	}
+
+	// if the OnShipDeath override is enabled, run the hook and then exit
+	if (scripting::hooks::OnShipDeath->isActive())
+	{
+		auto onDeathParamList = scripting::hook_param_list(
+			scripting::hook_param("Ship", 'o', ship_objp),
+			scripting::hook_param("Killer", 'o', other_obj),
+			scripting::hook_param("Hitpos",
+				'o',
+				scripting::api::l_Vector.Set(hitpos ? *hitpos : vmd_zero_vector),
+				hitpos != nullptr));
+
+		if (scripting::hooks::OnShipDeath->isOverride(onDeathParamList, ship_objp)) {
+			scripting::hooks::OnShipDeath->run(onDeathParamList, ship_objp);
+			return;
+		}
 	}
 
 	ship *sp;
@@ -1964,14 +1983,27 @@ void ship_hit_kill(object *ship_objp, object *other_obj, vec3d *hitpos, float pe
 		ship_maybe_lament();
 	}
 
-	if (Script_system.IsActiveAction(CHA_DEATH)) {
-		Script_system.SetHookObjects(3, "Self", ship_objp, "Ship", ship_objp, "Killer", other_obj);
-		if (hitpos)
-			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(*hitpos));
-		Script_system.RunCondition(CHA_DEATH, ship_objp);
-		Script_system.RemHookVars({"Self", "Ship", "Killer"});
-		if (hitpos)
-			Script_system.RemHookVar("Hitpos");
+	if (scripting::hooks::OnDeath->isActive()) {
+		auto onDeathParamList = scripting::hook_param_list(scripting::hook_param("Self", 'o', ship_objp),
+			scripting::hook_param("Ship", 'o', ship_objp),
+			scripting::hook_param("Killer", 'o', other_obj),
+			scripting::hook_param("Hitpos",
+				'o',
+				scripting::api::l_Vector.Set(hitpos ? *hitpos : vmd_zero_vector),
+				hitpos != nullptr));
+
+		scripting::hooks::OnDeath->run(onDeathParamList, ship_objp);
+	}
+	if (scripting::hooks::OnShipDeath->isActive()) {
+		auto onDeathParamList = scripting::hook_param_list(
+			scripting::hook_param("Ship", 'o', ship_objp),
+			scripting::hook_param("Killer", 'o', other_obj),
+			scripting::hook_param("Hitpos",
+				'o',
+				scripting::api::l_Vector.Set(hitpos ? *hitpos : vmd_zero_vector),
+				hitpos != nullptr));
+
+		scripting::hooks::OnShipDeath->run(onDeathParamList, ship_objp);
 	}
 }
 
@@ -2416,6 +2448,31 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 				apply_diff_scale = false;
 			}
 		}
+
+		// if weapon is vampiric, slap healing on shooter instead of target
+		weapon_info_index = shiphit_get_damage_weapon(other_obj);
+
+		if (weapon_info_index >= 0) {
+			weapon_info* wip = &Weapon_info[weapon_info_index];
+
+			if ((wip->wi_flags[Weapon::Info_Flags::Vampiric]) && (other_obj->parent > 0)) {
+				object* parent = &Objects[other_obj->parent];
+
+				if ((parent->type == OBJ_SHIP) && (parent->signature == other_obj->parent_sig)) {
+					ship* shipp_parent = &Ships[parent->instance];
+
+					if (!parent->flags[Object::Object_Flags::Should_be_dead]) {
+						parent->hull_strength += damage * wip->vamp_regen;
+
+						if (parent->hull_strength > shipp_parent->ship_max_hull_strength) {
+							parent->hull_strength = shipp_parent->ship_max_hull_strength;
+						}
+					}
+				}
+			}
+		}
+
+
 		// Nuke: this is done incase difficulty scaling is not applied into damage by getDamage() above
 		if (apply_diff_scale) {
 			damage *= difficulty_scale_factor; // Nuke: we can finally stop doing this now
@@ -2423,7 +2480,6 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 
 		// continue with damage?
 		if (damage > 0.0f) {
-			weapon_info_index = shiphit_get_damage_weapon(other_obj);	// Goober5000 - a NULL other_obj returns -1
 			if ( weapon_info_index >= 0 ) {
 				if (Weapon_info[weapon_info_index].wi_flags[Weapon::Info_Flags::Puncture]) {
 					damage /= 4;
@@ -2448,7 +2504,6 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 			if (((Game_mode & GM_MULTIPLAYER) && MULTIPLAYER_CLIENT)) {
 			} else {
 				// Check if this is simulated damage.
-				weapon_info_index = shiphit_get_damage_weapon(other_obj);
 				if ( weapon_info_index >= 0 ) {
 					if (Weapon_info[weapon_info_index].wi_flags[Weapon::Info_Flags::Training]) {
 //						diag_printf2("Simulated Hull for Ship %s hit, dropping from %.32f to %d.\n", shipp->ship_name, (int) ( ship_objp->sim_hull_strength * 100 ), (int) ( ( ship_objp->sim_hull_strength - damage ) * 100 ) );
@@ -2970,8 +3025,12 @@ void ship_hit_pain(float damage, int quadrant)
 			game_flash(damage * Generic_pain_flash_factor / 15.0f, -damage * Generic_pain_flash_factor / 30.0f, -damage * Generic_pain_flash_factor / 30.0f);
 			pain_type = 1;
 		}
-		// add scripting hook for 'On Pain Flash' --wookieejedi
-		OnPainFlashHook->run(scripting::hook_param_list(scripting::hook_param("Pain_Type", 'i', pain_type)));
+
+		if (OnPainFlashHook->isActive())
+		{
+			// add scripting hook for 'On Pain Flash' --wookieejedi
+			OnPainFlashHook->run(scripting::hook_param_list(scripting::hook_param("Pain_Type", 'i', pain_type)));
+		}
     }
 
 	// kill any active popups when you get hit.

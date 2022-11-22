@@ -161,7 +161,7 @@ BEGIN_MESSAGE_MAP(event_editor, CDialog)
 	ON_BN_CLICKED(IDC_BROWSE_WAVE, OnBrowseWave)
 	ON_CBN_SELCHANGE(IDC_WAVE_FILENAME, OnSelchangeWaveFilename)
 	ON_BN_CLICKED(IDC_PLAY, OnPlay)
-	ON_BN_CLICKED(IDC_UPDATE, OnUpdate)
+	ON_BN_CLICKED(IDC_UPDATE, OnUpdateStuff)
 	ON_BN_CLICKED(ID_CANCEL, OnButtonCancel)
 	ON_CBN_SELCHANGE(IDC_EVENT_TEAM, OnSelchangeTeam)
 	ON_CBN_SELCHANGE(IDC_MESSAGE_TEAM, OnSelchangeMessageTeam)
@@ -172,7 +172,7 @@ END_MESSAGE_MAP()
 /////////////////////////////////////////////////////////////////////////////
 // event_editor message handlers
 
-void maybe_add_head(CComboBox *box, char* name)
+void maybe_add_head(CComboBox *box, const char* name)
 {
 	if (box->FindStringExact(-1, name) == CB_ERR) {
 		box->AddString(name);
@@ -274,6 +274,10 @@ BOOL event_editor::OnInitDialog()
 		maybe_add_head(box, "Head-CM5");
 		maybe_add_head(box, "Head-BSH");
 		
+	}
+
+	for (auto &thisHead : Custom_head_anis) {
+		maybe_add_head(box, thisHead.c_str());
 	}
 
 /*
@@ -1206,32 +1210,33 @@ void event_editor::OnUpdateTriggerCount()
 }
 void event_editor::swap_handler(int node1, int node2)
 {
-	int index1, index2;
+	int index1, index2, s;
 	mission_event m;
 
 	save();
+
 	for (index1=0; index1<m_num_events; index1++){
 		if (m_events[index1].formula == node1){
 			break;
 		}
 	}
-
 	Assert(index1 < m_num_events);
+
 	for (index2=0; index2<m_num_events; index2++){
 		if (m_events[index2].formula == node2){
 			break;
 		}
 	}
-
 	Assert(index2 < m_num_events);
+
 	m = m_events[index1];
-//	m_events[index1] = m_events[index2];
+	s = m_sig[index1];
+
 	while (index1 < index2) {
 		m_events[index1] = m_events[index1 + 1];
 		m_sig[index1] = m_sig[index1 + 1];
 		index1++;
 	}
-
 	while (index1 > index2 + 1) {
 		m_events[index1] = m_events[index1 - 1];
 		m_sig[index1] = m_sig[index1 - 1];
@@ -1239,6 +1244,8 @@ void event_editor::swap_handler(int node1, int node2)
 	}
 
 	m_events[index1] = m;
+	m_sig[index1] = s;
+
 	cur_event = index1;
 	update_cur_event();
 }
@@ -1574,8 +1581,13 @@ void event_editor::OnPlay()
 	}
 }
 
-void event_editor::OnUpdate() 
+void event_editor::OnUpdateStuff() 
 {
+	int z = MessageBox("This will set the head ANIs according to the FS1 personas.  Do you want to proceed?\n\n(Consider using the 'Sync Personas' buttons in the Voice Acting Manager instead.)", "Update Stuff", MB_ICONQUESTION | MB_YESNO);
+	if (z != IDYES) {
+		return;
+	}
+
 //	GetDlgItem(IDC_WAVE_FILENAME)->GetWindowText(m_wave_filename);
 	UpdateData(TRUE);
 	update_persona();

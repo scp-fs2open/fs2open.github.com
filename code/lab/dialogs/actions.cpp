@@ -55,10 +55,12 @@ void change_secondary(Tree* caller) {
 
 void destroy_ship(Button* /*caller*/) {
 	if (getLabManager()->isSafeForShips()) {
-		auto obj = &Objects[getLabManager()->CurrentObject];
+		if (Objects[getLabManager()->CurrentObject].type == OBJ_SHIP) {
+			auto obj = &Objects[getLabManager()->CurrentObject];
 
-		obj->flags.remove(Object::Object_Flags::Player_ship);
-		ship_self_destruct(obj);
+			obj->flags.remove(Object::Object_Flags::Player_ship);
+			ship_self_destruct(obj);
+		}
 	}
 }
 
@@ -76,28 +78,28 @@ void reset_animations(Tree*) {
 
 		for (auto i = 0; i < MAX_SHIP_PRIMARY_BANKS; ++i) {
 			if (triggered_primary_banks[i]) {
-				Ship_info[shipp->ship_info_index].animations.startAll(shipp_pmi, animation::ModelAnimationTriggerType::PrimaryBank, animation::ModelAnimationDirection::RWD, false, false, false, i);
+				Ship_info[shipp->ship_info_index].animations.getAll(shipp_pmi, animation::ModelAnimationTriggerType::PrimaryBank, i).start(animation::ModelAnimationDirection::RWD);
 				triggered_primary_banks[i] = false;
 			}
 		}
 
 		for (auto i = 0; i < MAX_SHIP_SECONDARY_BANKS; ++i) {
 			if (triggered_secondary_banks[i]) {
-				Ship_info[shipp->ship_info_index].animations.startAll(shipp_pmi, animation::ModelAnimationTriggerType::SecondaryBank, animation::ModelAnimationDirection::RWD, false, false, false, i);
+				Ship_info[shipp->ship_info_index].animations.getAll(shipp_pmi, animation::ModelAnimationTriggerType::SecondaryBank, i).start(animation::ModelAnimationDirection::RWD);
 				triggered_secondary_banks[i] = false;
 			}
 		}
 
 		for (auto entry : manual_animations) {
 			if (manual_animations[entry.first]) {
-				Ship_info[shipp->ship_info_index].animations.startAll(shipp_pmi, entry.first, animation::ModelAnimationDirection::RWD);
+				Ship_info[shipp->ship_info_index].animations.getAll(shipp_pmi, entry.first).start(animation::ModelAnimationDirection::RWD);
 				manual_animations[entry.first] = false;
 			}
 		}
 
 		for (const auto& entry : manual_animation_triggers) {
 			auto animation_type = entry.first;
-			Ship_info[shipp->ship_info_index].animations.startAll(shipp_pmi, animation_type, animation::ModelAnimationDirection::RWD);
+			Ship_info[shipp->ship_info_index].animations.getAll(shipp_pmi, animation_type).start(animation::ModelAnimationDirection::RWD);
 		}
 	}
 }
@@ -106,7 +108,7 @@ void trigger_primary_bank(Tree* caller) {
 	if (getLabManager()->isSafeForShips()) {
 		auto shipp = &Ships[Objects[getLabManager()->CurrentObject].instance];
 		auto bank = caller->GetSelectedItem()->GetData();
-		Ship_info[shipp->ship_info_index].animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::PrimaryBank, triggered_primary_banks[bank] ? animation::ModelAnimationDirection::RWD : animation::ModelAnimationDirection::FWD, false, false, false, bank);
+		Ship_info[shipp->ship_info_index].animations.getAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::PrimaryBank, bank).start(triggered_primary_banks[bank] ? animation::ModelAnimationDirection::RWD : animation::ModelAnimationDirection::FWD);
 		triggered_primary_banks[bank] = !triggered_primary_banks[bank];
 	}
 }
@@ -115,7 +117,7 @@ void trigger_secondary_bank(Tree* caller) {
 	if (getLabManager()->isSafeForShips()) {
 		auto shipp = &Ships[Objects[getLabManager()->CurrentObject].instance];
 		auto bank = caller->GetSelectedItem()->GetData();
-		Ship_info[shipp->ship_info_index].animations.startAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::SecondaryBank, triggered_primary_banks[bank] ? animation::ModelAnimationDirection::RWD : animation::ModelAnimationDirection::FWD, false, false, false, bank);
+		Ship_info[shipp->ship_info_index].animations.getAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::SecondaryBank, bank).start(triggered_primary_banks[bank] ? animation::ModelAnimationDirection::RWD : animation::ModelAnimationDirection::FWD);
 		triggered_primary_banks[bank] = !triggered_primary_banks[bank];
 	}
 }
@@ -125,9 +127,9 @@ void labviewer_actions_do_triggered_anim(animation::ModelAnimationTriggerType ty
 		auto shipp = &Ships[Objects[getLabManager()->CurrentObject].instance];
 
 		if(subtype != animation::ModelAnimationSet::SUBTYPE_DEFAULT)
-			Ship_info[shipp->ship_info_index].animations.startAll(model_get_instance(shipp->model_instance_num), type, direction ? animation::ModelAnimationDirection::RWD : animation::ModelAnimationDirection::FWD, false, false, false, subtype, true);
+			Ship_info[shipp->ship_info_index].animations.getAll(model_get_instance(shipp->model_instance_num), type, subtype, true).start(direction ? animation::ModelAnimationDirection::RWD : animation::ModelAnimationDirection::FWD);
 		else
-			Ship_info[shipp->ship_info_index].animations.start(model_get_instance(shipp->model_instance_num), type, name, direction ? animation::ModelAnimationDirection::RWD : animation::ModelAnimationDirection::FWD);
+			Ship_info[shipp->ship_info_index].animations.get(model_get_instance(shipp->model_instance_num), type, name).start(direction ? animation::ModelAnimationDirection::RWD : animation::ModelAnimationDirection::FWD);
 	}
 }
 
@@ -137,7 +139,7 @@ void trigger_animation(Tree* caller) {
 
 		auto anim_type = static_cast<animation::ModelAnimationTriggerType>(caller->GetSelectedItem()->GetData());
 
-		Ship_info[shipp->ship_info_index].animations.startBlanket(model_get_instance(shipp->model_instance_num), anim_type, manual_animations[anim_type] ? animation::ModelAnimationDirection::RWD : animation::ModelAnimationDirection::FWD);
+		Ship_info[shipp->ship_info_index].animations.getBlanket(model_get_instance(shipp->model_instance_num), anim_type).start(manual_animations[anim_type] ? animation::ModelAnimationDirection::RWD : animation::ModelAnimationDirection::FWD);
 		manual_animations[anim_type] = !manual_animations[anim_type];
 	}
 }

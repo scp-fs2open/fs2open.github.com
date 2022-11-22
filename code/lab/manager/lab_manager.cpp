@@ -53,6 +53,7 @@ LabManager::LabManager() {
 	debris_page_in();
 	asteroid_level_init();
 	shockwave_level_init();
+	ship_level_init();
 	shipfx_flash_init();
 	mflash_page_in(true);
 	weapon_level_init();
@@ -215,12 +216,18 @@ void LabManager::onFrame(float frametime) {
 					RotationMode = LabRotationMode::Both;
 					break;
 				}
-
 				break;
+
 			case KEY_S:
 				RotationSpeedDivisor *= 10.f;
 				if (RotationSpeedDivisor > 10000.f)
 					RotationSpeedDivisor = 100.f;
+				break;
+
+			case KEY_M:
+				// Dumping the environment map only makes sense if we actually have a background set
+				if (Renderer->currentMissionBackground != LAB_MISSION_NONE_STRING)
+					gr_dump_envmap(Renderer->currentMissionBackground.c_str());
 				break;
 
 				// bail...

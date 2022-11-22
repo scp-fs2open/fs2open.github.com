@@ -81,6 +81,7 @@ int HUD_color_alpha = HUD_COLOR_ALPHA_DEFAULT;		// 1 -> HUD_COLOR_ALPHA_USER_MAX
 
 int HUD_draw     = 1;
 int HUD_contrast = 0;										// high or lo contrast (for nebula, etc)
+bool HUD_shadows = false;
 
 // Goober5000
 int HUD_disable_except_messages = 0;
@@ -181,6 +182,7 @@ static int					Pl_hud_is_bright;
 #define SUBSYS_DAMAGE_FLASH_INTERVAL	100
 
 float Player_rearm_eta = 0;
+bool Extra_target_info = false;
 
 // forward declarations
 void update_throttle_sound();
@@ -249,7 +251,7 @@ static int Damage_flash_timer;
 
 HudGauge::HudGauge():
 base_w(0), base_h(0), gauge_config(-1), font_num(font::FONT1), lock_color(false), sexp_lock_color(false), reticle_follow(false),
-active(false), off_by_default(false), sexp_override(false), pop_up(false), disabled_views(0), only_render_in_chase_view(false), custom_gauge(false),
+active(false), off_by_default(false), sexp_override(false), pop_up(false), disabled_views(0), only_render_in_chase_view(false), render_for_cockpit_toggle(0), custom_gauge(false),
 texture_target(-1), canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 {
 	position[0] = 0;
@@ -274,7 +276,7 @@ texture_target(-1), canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 HudGauge::HudGauge(int _gauge_object, int _gauge_config, bool _slew, bool _message, int _disabled_views, int r, int g, int b):
 base_w(0), base_h(0), gauge_config(_gauge_config), gauge_object(_gauge_object), font_num(font::FONT1), lock_color(false), sexp_lock_color(false),
 reticle_follow(_slew), active(false), off_by_default(false), sexp_override(false), pop_up(false), message_gauge(_message),
-disabled_views(_disabled_views), only_render_in_chase_view(false), custom_gauge(false), textoffset_x(0), textoffset_y(0), texture_target(-1),
+disabled_views(_disabled_views), only_render_in_chase_view(false), render_for_cockpit_toggle(0), custom_gauge(false), textoffset_x(0), textoffset_y(0), texture_target(-1),
 canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 {
 	Assert(gauge_config <= NUM_HUD_GAUGES && gauge_config >= 0);
@@ -310,7 +312,7 @@ canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 HudGauge::HudGauge(int _gauge_config, bool _slew, int r, int g, int b, char* _custom_name, char* _custom_text, char* frame_fname, int txtoffset_x, int txtoffset_y):
 base_w(0), base_h(0), gauge_config(_gauge_config), gauge_object(HUD_OBJECT_CUSTOM), font_num(font::FONT1), lock_color(false), sexp_lock_color(false),
 reticle_follow(_slew), active(false), off_by_default(false), sexp_override(false), pop_up(false), message_gauge(false),
-disabled_views(VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY), only_render_in_chase_view(false), custom_gauge(true), textoffset_x(txtoffset_x),
+disabled_views(VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY), only_render_in_chase_view(false), render_for_cockpit_toggle(0), custom_gauge(true), textoffset_x(txtoffset_x),
 textoffset_y(txtoffset_y), texture_target(-1), canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 {
 	position[0] = 0;
@@ -438,22 +440,14 @@ const char* HudGauge::getCustomGaugeText()
 	return custom_text.c_str();
 }
 
-void HudGauge::updateCustomGaugeCoords(int _x, int _y)
+void HudGauge::setGaugeCoords(int _x, int _y)
 {
-	if(!custom_gauge) {
-		return;
-	}
-
 	position[0] = _x;
 	position[1] = _y;
 }
 
-void HudGauge::updateCustomGaugeFrame(int frame_offset)
+void HudGauge::setGaugeFrame(int frame_offset)
 {
-	if(!custom_gauge) {
-		return;
-	}
-	
 	if (frame_offset < 0 ||frame_offset > custom_frame.num_frames) {
 		return;
 	}
@@ -617,6 +611,11 @@ void HudGauge::initChase_view_only(bool chase_view_only)
 	only_render_in_chase_view = chase_view_only; 
 }
 
+void HudGauge::initCockpit_view_choice(int cockpit_view_choice)
+{
+	render_for_cockpit_toggle = cockpit_view_choice;
+}
+
 bool HudGauge::isOffbyDefault()
 {
 	return off_by_default;
@@ -753,6 +752,12 @@ void HudGauge::renderString(int x, int y, const char *str)
 		}
 	}
 
+	if (HUD_shadows) {
+		gr_set_color_fast(&Color_black);
+		gr_string(x + nx + 1, y + ny + 1, str);
+		gr_set_color_fast(&gauge_color);
+	}
+
 	gr_string(x + nx, y + ny, str);
 	gr_reset_screen_scale();
 }
@@ -776,9 +781,20 @@ void HudGauge::renderString(int x, int y, int gauge_id, const char *str)
 		}
 	}
 
+
 	if ( gauge_id > -2 ) {
+		if (HUD_shadows) {
+			gr_set_color_fast(&Color_black);
+			emp_hud_string(x + nx + 1, y + ny + 1, gauge_id, str, GR_RESIZE_FULL);
+			gr_set_color_fast(&gauge_color);
+		}
 		emp_hud_string(x + nx, y + ny, gauge_id, str, GR_RESIZE_FULL);
 	} else {
+		if (HUD_shadows) {
+			gr_set_color_fast(&Color_black);
+			gr_string(x + nx + 1, y + ny + 1, str);
+			gr_set_color_fast(&gauge_color);
+		}
 		gr_string(x + nx, y + ny, str);
 	}
 
@@ -1160,6 +1176,16 @@ bool HudGauge::canRender()
 	if ((Viewer_mode & (VM_CHASE)) == 0 && only_render_in_chase_view) {
 		return false;
 	}
+	
+	if (render_for_cockpit_toggle > 0) {
+		if ((Viewer_mode & VM_CHASE) && (render_for_cockpit_toggle == 2)) {
+			return true;
+		} else if (cockpitActive && (render_for_cockpit_toggle == 2)) {
+			return false;
+		} else if (!cockpitActive && (render_for_cockpit_toggle == 1)) {
+			return false;
+		}
+	}
 
 	if(pop_up) {
 		if(!popUpActive()) {
@@ -1515,6 +1541,7 @@ void hud_update_frame(float  /*frametime*/)
 	}
 
 	if (Player_ai->target_objnum == -1) {
+		Player->target_is_dying = -1; // according to comments elsewhere in the code, set to -1 when no target
 		hud_target_change_check();
 		return;
 	}
@@ -1592,6 +1619,7 @@ void hud_update_frame(float  /*frametime*/)
 	if (Player->target_is_dying) {
 		hud_stop_looped_locking_sounds();
 		if ( Players[Player_num].flags & PLAYER_FLAGS_AUTO_TARGETING ) {
+			Player_ai->target_objnum = -1;
 			hud_target_auto_target_next();
 		}
 	}
@@ -1947,7 +1975,7 @@ void update_throttle_sound()
 		throttle_sound_check_id = timestamp(THROTTLE_SOUND_CHECK_INTERVAL);
 	
 		if ( object_get_gliding(Player_obj) ) {	// Backslash
-			percent_throttle = Player_obj->phys_info.forward_thrust;
+			percent_throttle = Player_obj->phys_info.linear_thrust.xyz.z;
 		} else {
 			percent_throttle = Player_obj->phys_info.fspeed / Ship_info[Ships[Player_obj->instance].ship_info_index].max_speed;
 		}
@@ -2465,7 +2493,7 @@ void hud_start_text_flash(const char *txt, int t, int interval)
 	// HACK. don't override EMP if its still going    :)
 	// An additional hack: don't interrupt other warnings if this is a missile launch alert (Swifty)
 	if(!timestamp_elapsed(Hud_text_flash_timer))
-		if( !stricmp(Hud_text_flash, NOX("Emp")) || !stricmp(txt, NOX("Launch")) )
+		if(!stricmp(Hud_text_flash, XSTR("Emp", 1670)) || !stricmp(txt, XSTR("Launch", 1507)))
 			return;
 
 	strncpy(Hud_text_flash, txt, 500);
@@ -2910,6 +2938,11 @@ void HudGaugeSupport::initTextDockValueOffsetX(int x)
 	text_dock_val_offset_x = x;
 }
 
+void HudGaugeSupport::initRearmTimer(bool choice)
+{
+	enable_rearm_timer = choice;
+}
+
 void HudGaugeSupport::initBitmaps(const char *fname)
 {
 	background.first_frame = bm_load_animation(fname, &background.num_frames);
@@ -2968,7 +3001,7 @@ void HudGaugeSupport::render(float  /*frametime*/)
 	if (Player_ai->ai_flags[AI::AI_Flags::Being_repaired]) {
 		Assert(Player_ship->ship_max_hull_strength > 0);
 		
-		if (!Cmdline_rearm_timer)
+		if (!enable_rearm_timer)
 		{
 			int i;
 			bool repairing = false;
@@ -3865,6 +3898,11 @@ void hud_set_contrast(int high)
 	HUD_contrast = high;
 }
 
+void hud_toggle_shadows()
+{
+	HUD_shadows = !HUD_shadows;
+}
+
 // Paging functions for the rest of the HUD code
 extern void hudtarget_page_in();
 
@@ -3957,6 +3995,18 @@ int hud_get_default_gauge_index(const char *name)
 	}
 
 	return -1;
+}
+
+HudGauge *hud_get_gauge(const char *name)
+{
+	auto gauge = hud_get_custom_gauge(name);
+	if (gauge == nullptr)
+	{
+		int idx = hud_get_default_gauge_index(name);
+		if (idx >= 0 && idx < (int)default_hud_gauges.size())
+			gauge = default_hud_gauges[idx].get();
+	}
+	return gauge;
 }
 
 HudGaugeMultiMsg::HudGaugeMultiMsg():

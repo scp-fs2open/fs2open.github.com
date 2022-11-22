@@ -376,9 +376,6 @@ void mission_campaign_get_sw_info()
 {
     int i, count, ship_list[MAX_SHIP_CLASSES], weapon_list[MAX_WEAPON_TYPES];
 
-	memset(Campaign.ships_allowed, 0, sizeof(Campaign.ships_allowed));
-	memset(Campaign.weapons_allowed, 0, sizeof(Campaign.weapons_allowed));
-
     if (optional_string("+Starting Ships:")) {
         count = (int)stuff_int_list(ship_list, MAX_SHIP_CLASSES, SHIP_INFO_TYPE);
 
@@ -422,7 +419,7 @@ void mission_campaign_get_sw_info()
  * this file.  If you change the format of the campaign file, you should be sure these related
  * functions work properly and update them if it breaks them.
  */
-int mission_campaign_load(const char* filename, player* pl, int load_savefile, bool reset_stats)
+int mission_campaign_load(const char* filename, const char* full_path, player* pl, int load_savefile, bool reset_stats)
 {
 	int i;
 	char name[NAME_LENGTH], type[NAME_LENGTH], temp[NAME_LENGTH];
@@ -443,15 +440,15 @@ int mission_campaign_load(const char* filename, player* pl, int load_savefile, b
 		load_savefile = 0;
 	}
 
+	// be sure to remove all old malloced strings of Mission_names
+	// we must also free any goal stuff that was from a previous campaign
+	// this also frees sexpressions so the next call to init_sexp will be able to reclaim
+	// nodes previously used by another campaign.
+	mission_campaign_clear();
+
 	// read the mission file and get the list of mission filenames
 	try
 	{
-		// be sure to remove all old malloced strings of Mission_names
-		// we must also free any goal stuff that was from a previous campaign
-		// this also frees sexpressions so the next call to init_sexp will be able to reclaim
-		// nodes previously used by another campaign.
-		mission_campaign_clear();
-
 		strcpy_s( Campaign.filename, filename );
 
 		// only initialize the sexpression stuff when Fred isn't running.  It'll screw things up major
@@ -460,7 +457,7 @@ int mission_campaign_load(const char* filename, player* pl, int load_savefile, b
 			init_sexp();		// must initialize the sexpression stuff
 		}
 
-		read_file_text( filename );
+		read_file_text( full_path ? full_path : filename );
 		reset_parse();
 
 		// copy filename to campaign structure minus the extension
@@ -488,19 +485,16 @@ int mission_campaign_load(const char* filename, player* pl, int load_savefile, b
 		if ( i == MAX_CAMPAIGN_TYPES )
 			Error(LOCATION, "Unknown campaign type %s!", type);
 
-		Campaign.desc = NULL;
 		if (optional_string("+Description:"))
 			Campaign.desc = stuff_and_malloc_string(F_MULTITEXT, NULL);
 
 		// if the type is multiplayer -- get the number of players
-		Campaign.num_players = 0;
 		if ( Campaign.type != CAMPAIGN_TYPE_SINGLE) {
 			required_string("+Num players:");
 			stuff_int( &(Campaign.num_players) );
 		}		
 
 		// parse flags - Goober5000
-		Campaign.flags = CF_DEFAULT_VALUE;
 		if (optional_string("$Flags:"))
 		{
 			stuff_int( &(Campaign.flags) );
@@ -510,7 +504,6 @@ int mission_campaign_load(const char* filename, player* pl, int load_savefile, b
 		mission_campaign_get_sw_info();
 
 		// parse the mission file and actually read in the mission stuff
-		Campaign.num_missions = 0;
 		while ( required_string_either("#End", "$Mission:") ) {
 			cmission *cm;
 
@@ -677,11 +670,6 @@ int mission_campaign_load(const char* filename, player* pl, int load_savefile, b
 	// the campaign save file for this player.  Since all campaign loads go through this routine, I
 	// think this place should be the only necessary place to load the campaign save stuff.  The campaign
 	// save file will get written when a mission has ended by player choice.
-	Campaign.next_mission = 0;
-	Campaign.prev_mission = -1;
-	Campaign.current_mission = -1;
-	Campaign.loop_mission = CAMPAIGN_LOOP_MISSION_UNINITIALIZED;
-	Campaign.num_missions_completed = 0;
 
 	// loading the campaign will get us to the current and next mission that the player must fly
 	// plus load all of the old goals that future missions might rely on.
@@ -951,6 +939,9 @@ void mission_campaign_store_goals_and_events()
 	int cur, i;
 	cmission *mission_obj;
 
+	if (!(Game_mode & GM_CAMPAIGN_MODE) || (Campaign.current_mission < 0))
+		return;
+
 	cur = Campaign.current_mission;
 	name = Campaign.missions[cur].name;
 
@@ -1027,6 +1018,9 @@ void mission_campaign_store_variables(int persistence_type, bool store_red_alert
 	int cur, i, j;
 	cmission *mission_obj;
 
+	if (!(Game_mode & GM_CAMPAIGN_MODE) || (Campaign.current_mission < 0))
+		return;
+
 	cur = Campaign.current_mission;
 	mission_obj = &Campaign.missions[cur];
 
@@ -1092,6 +1086,9 @@ void mission_campaign_store_variables(int persistence_type, bool store_red_alert
 // jg18 - adapted from mission_campaign_store_variables()
 void mission_campaign_store_containers(ContainerType persistence_type, bool store_red_alert)
 {
+	if (!(Game_mode & GM_CAMPAIGN_MODE) || (Campaign.current_mission < 0))
+		return;
+
 	if (!sexp_container_has_persistent_non_eternal_containers()) {
 		// nothing to do
 		return;
@@ -1320,11 +1317,11 @@ void mission_campaign_clear()
 	memset(Campaign.name, 0, NAME_LENGTH);
 	memset(Campaign.filename, 0, MAX_FILENAME_LEN);
 	Campaign.type = 0;
-	Campaign.flags = 0;
+	Campaign.flags = CF_DEFAULT_VALUE;
 	Campaign.num_missions = 0;
 	Campaign.num_missions_completed = 0;
 	Campaign.current_mission = -1;
-	Campaign.next_mission = -1;
+	Campaign.next_mission = 0;
 	Campaign.prev_mission = -1;
 	Campaign.loop_enabled = 0;
 	Campaign.loop_mission = CAMPAIGN_LOOP_MISSION_UNINITIALIZED;
@@ -1679,7 +1676,7 @@ int mission_load_up_campaign( player *pl )
 	// last used...
 	if ( strlen(pl->current_campaign) ) {
 		if (!campaign_is_ignored(pl->current_campaign)) {
-			return mission_campaign_load(pl->current_campaign, pl);
+			return mission_campaign_load(pl->current_campaign, nullptr, pl);
 		}
 		else {
 			Campaign_file_missing = 1;
@@ -1687,7 +1684,7 @@ int mission_load_up_campaign( player *pl )
 	}
 
 	// builtin...
-	rc = mission_campaign_load(Default_campaign_file_name, pl);
+	rc = mission_campaign_load(Default_campaign_file_name, nullptr, pl);
 
 	// everything else...
 	if (rc < 0) {
@@ -1709,7 +1706,7 @@ int mission_load_up_campaign( player *pl )
 			}
 
 			// try to load it, whatever "it" is
-			rc = mission_campaign_load(Campaign_file_names[idx], pl);
+			rc = mission_campaign_load(Campaign_file_names[idx], nullptr, pl);
 		}
 
 		mission_campaign_free_list();
@@ -1822,7 +1819,12 @@ void mission_campaign_exit_loop()
 
 	// set things up for next mission
 	mission_campaign_next_mission();
-	gameseq_post_event(GS_EVENT_START_GAME);
+
+	if ( Campaign.next_mission == -1 || (The_mission.flags[Mission::Mission_Flags::End_to_mainhall]) ) {
+		gameseq_post_event( GS_EVENT_MAIN_MENU );
+	} else {
+		gameseq_post_event( GS_EVENT_START_GAME );
+	}
 }
 
 
@@ -1886,12 +1888,8 @@ void mission_campaign_save_on_close_variables()
 {
 	int i;
 
-	// make sure we are actually playing a campaign
-	if (!(Game_mode & GM_CAMPAIGN_MODE))
-		return;
-
-	// make sure this is a single-player campaign
-	if (!(Campaign.type == CAMPAIGN_TYPE_SINGLE))
+	// make sure we are actually playing a single-player campaign
+	if (!(Game_mode & GM_CAMPAIGN_MODE) || (Campaign.type != CAMPAIGN_TYPE_SINGLE) || (Campaign.current_mission < 0))
 		return;
 
 	// now save variables
@@ -1931,7 +1929,7 @@ void mission_campaign_save_on_close_variables()
 void mission_campaign_save_on_close_containers()
 {
 	// make sure we are actually playing a single-player campaign
-	if (!(Game_mode & GM_CAMPAIGN_MODE) || (Campaign.type != CAMPAIGN_TYPE_SINGLE))
+	if (!(Game_mode & GM_CAMPAIGN_MODE) || (Campaign.type != CAMPAIGN_TYPE_SINGLE) || (Campaign.current_mission < 0))
 		return;
 
 	// now save containers

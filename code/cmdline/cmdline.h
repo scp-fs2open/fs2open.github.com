@@ -53,10 +53,9 @@ extern char *Cmdline_center_res;
 
 // Graphics related
 extern float Cmdline_clip_dist;
-extern float static_light_factor;
-extern float static_point_factor;
-extern float static_tube_factor;
-extern int Cmdline_ambient_factor;
+extern float Cmdline_ambient_power;
+extern float Cmdline_emissive_power;
+extern float Cmdline_light_power;
 extern int Cmdline_env;
 extern int Cmdline_glow;
 extern int Cmdline_noscalevid;	// disables fit-to-window for movies - taylor
@@ -68,6 +67,7 @@ extern int Cmdline_softparticles;
 extern int Cmdline_bloom_intensity;
 extern bool Cmdline_force_lightshaft_off;
 extern int Cmdline_no_deferred_lighting;
+extern bool Cmdline_deferred_lighting_cockpit;
 extern int Cmdline_emissive;
 extern int Cmdline_aniso_level;
 
@@ -80,12 +80,10 @@ extern int Cmdline_ballistic_gauge;
 extern int Cmdline_dualscanlines;
 extern int Cmdline_orb_radar;
 extern int Cmdline_rearm_timer;
-extern int Cmdline_targetinfo;
 
 // Gameplay related
 extern int Cmdline_ship_choice_3d;
 extern int Cmdline_weapon_choice_3d;
-extern int Cmdline_warp_flash;
 extern int Cmdline_autopilot_interruptable;
 extern int Cmdline_stretch_menu;
 extern int Cmdline_no_screenshake;
@@ -155,6 +153,8 @@ extern bool Cmdline_debug_window;
 extern bool Cmdline_graphics_debug_output;
 extern bool Cmdline_log_to_stdout;
 extern bool Cmdline_slow_frames_ok;
+extern bool Cmdline_lua_devmode;
+extern bool Cmdline_override_data;
 
 enum class WeaponSpewType { NONE = 0, STANDARD, ALL };
 extern WeaponSpewType Cmdline_spew_weapon_stats;

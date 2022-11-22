@@ -448,36 +448,30 @@ void model_collide_parse_bsp_tmappoly(bsp_collision_leaf *leaf, SCP_vector<model
 
 	uint i;
 	uint nv;
-	model_tmap_vert *verts;
 
-	nv = uw(p+36);
+	nv = uw(p + TMAP_NVERTS);
 
 	if ( nv > TMAP_MAX_VERTS ) {
 		Int3();
 		return;
 	}
 
-	int tmap_num = w(p+40);
+	int tmap_num = w(p + TMAP_TEXNUM);
 
 	Assert(tmap_num >= 0 && tmap_num < MAX_MODEL_TEXTURES);
 
-	verts = new model_tmap_vert[nv];
-	auto vs = reinterpret_cast<model_tmap_vert_old*>(&p[44]);
-
-	for (i = 0; i < nv; i++) {
-		verts[i] = model_tmap_vert(vs[i]);
-	}
+	auto verts = reinterpret_cast<model_tmap_vert_old*>(&p[TMAP_VERTS]);
 
 	leaf->tmap_num = (ubyte)tmap_num;
 	leaf->num_verts = (ubyte)nv;
 	leaf->vert_start = (int)vert_buffer->size();
 
-	vec3d *plane_norm = vp(p+8);
+	vec3d *plane_norm = vp(p + TMAP_NORMAL);
 
 	leaf->plane_norm = *plane_norm;
 
 	for ( i = 0; i < nv; ++i ) {
-		vert_buffer->push_back(verts[i]);
+		vert_buffer->push_back(model_tmap_vert(verts[i]));
 	}
 }
 
@@ -1066,25 +1060,25 @@ NoHit:
 	// Check all of this subobject's children
 	i = sm->first_child;
 	while ( i >= 0 )	{
-		matrix instance_orient;
-		bool blown_off;
-		bool collision_checked;
-		bsp_info * csm = &Mc_pm->submodel[i];
+		auto csm = &Mc_pm->submodel[i];
+		matrix instance_orient = vmd_identity_matrix;
+		vec3d instance_offset = csm->offset;
+		bool blown_off = false;
+		bool collision_checked = false;
 		
 		if ( Mc_pmi ) {
-			instance_orient = Mc_pmi->submodel[i].canonical_orient;
-			blown_off = Mc_pmi->submodel[i].blown_off;
-			collision_checked = Mc_pmi->submodel[i].collision_checked;
-		} else {
-			instance_orient = vmd_identity_matrix;
-			blown_off = false;
-			collision_checked = false;
+			auto csmi = &Mc_pmi->submodel[i];
+			instance_orient = csmi->canonical_orient;
+			vm_vec_add2(&instance_offset, &csmi->canonical_offset);
+
+			blown_off = csmi->blown_off;
+			collision_checked = csmi->collision_checked;
 		}
 
 		// Don't check it or its children if it is destroyed
 		// or if it's set to no collision
 		if ( !blown_off && !collision_checked && !csm->flags[Model::Submodel_flags::No_collisions] )	{
-			vm_vec_unrotate(&Mc_base, &csm->offset, &saved_orient);
+			vm_vec_unrotate(&Mc_base, &instance_offset, &saved_orient);
 			vm_vec_add2(&Mc_base, &saved_base);
 
 			vm_matrix_x_matrix(&Mc_orient, &saved_orient, &instance_orient);

@@ -10,6 +10,7 @@
 namespace sexp {
 
 class LuaSEXP : public DynamicSEXP {
+protected:
 	luacpp::LuaFunction _action;
 
 	int _min_args;
@@ -30,13 +31,18 @@ class LuaSEXP : public DynamicSEXP {
 	static bool parseCheckEndOfDescription();
 
  public:
+	static std::pair<SCP_string, int> get_parameter_type(const SCP_string& name);
+	static int get_return_type(const SCP_string& name);
+	static int get_category(const SCP_string& name);
+	static int get_subcategory(const SCP_string& name, int category);
+
 	explicit LuaSEXP(const SCP_string& name);
 
 	void initialize() override;
 
-	int getMinimumArguments() override;
+	int getMinimumArguments() const override;
 
-	int getMaximumArguments() override;
+	int getMaximumArguments() const override;
 
 	int getArgumentType(int argnum) const override;
 
@@ -54,6 +60,8 @@ class LuaSEXP : public DynamicSEXP {
 
 	luacpp::LuaFunction getAction() const;
 	int getSexpReturnValue(const luacpp::LuaValueList& retVals) const;
+
+	luacpp::LuaValueList getSEXPArgumentList(int node) const;
 };
 
 }

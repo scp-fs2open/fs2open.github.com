@@ -61,7 +61,7 @@ typedef struct {
 
 typedef struct {
 	int num;
-	int timestamp;
+	TIMESTAMP timestamp;
 	int length;
 	char *special_message;
 } training_message_queue;
@@ -72,7 +72,7 @@ int Training_line_lengths[MAX_TRAINING_MESSAGE_LINES];
 
 char Training_voice_filename[NAME_LENGTH];
 int Max_directives = TRAINING_OBJ_DISPLAY_LINES;
-int Training_message_timestamp;
+TIMESTAMP Training_message_timestamp;
 int Training_message_method = 1;
 int Training_num_lines = 0;
 int Training_voice = -1;
@@ -100,15 +100,14 @@ int Training_obj_window_coords[GR_NUM_RESOLUTIONS][2] = {
 
 
 // training objectives global vars.
-int Training_obj_num_lines;
+int Training_obj_num_lines = 0;
+int Training_obj_num_display_lines = 0;
 int Training_obj_lines[TRAINING_OBJ_LINES];
 training_message_mods Training_message_mods[MAX_TRAINING_MESSAGE_MODS];
 
 // local module prototypes
 void training_process_message();
 
-
-static int Directive_frames_loaded = 0;
 
 HudGaugeDirectives::HudGaugeDirectives():
 HudGauge(HUD_OBJECT_DIRECTIVES, HUD_DIRECTIVES_VIEW, false, true, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP), 255, 255, 255)
@@ -216,8 +215,11 @@ void HudGaugeDirectives::pageIn()
 void HudGaugeDirectives::render(float  /*frametime*/)
 {
 	char buf[256], *second_line;
-	int i, t, x, y, z, end, offset, bx, by, y_count;
+	int i, x, y, z, end, offset, bx, by;
+	TIMESTAMP t;
 	color *c;
+
+	Training_obj_num_display_lines = 0;
 
 	if (!Training_obj_num_lines){
 		return;
@@ -241,10 +243,9 @@ void HudGaugeDirectives::render(float  /*frametime*/)
 	bx = position[0];
 	by = position[1] + middle_frame_offset_y;
 
-	y_count = 0;
 	for (i=0; i<end; i++) {
 		x = position[0] + text_start_offsets[0];
-		y = position[1] + text_start_offsets[1] + y_count * text_h;
+		y = position[1] + text_start_offsets[1] + Training_obj_num_display_lines * text_h;
 		z = TRAINING_OBJ_LINES_MASK(i + offset);
 
 		c = &Color_normal;
@@ -276,7 +277,8 @@ void HudGaugeDirectives::render(float  /*frametime*/)
 
 			case EVENT_SATISFIED:
 				t = Mission_events[z].satisfied_time;
-				if (t + i2f(2) > Missiontime) {
+				Assertion(t.isValid(), "Since event %s was satisfied, satisfied_time must be valid here", Mission_events[z].name);
+				if (timestamp_since(t) < 2 * MILLISECONDS_PER_SECOND) {
 					if (Missiontime % fl2f(.4f) < fl2f(.2f)){
 						c = &Color_bright_blue;
 					} else {
@@ -315,14 +317,14 @@ void HudGaugeDirectives::render(float  /*frametime*/)
 		
 		renderString(x, y, EG_OBJ1 + i, buf);
 		
-		y_count++;
+		Training_obj_num_display_lines++;
 
 		if ( second_line ) {
-			y = position[1] + text_start_offsets[1] + y_count * text_h;
+			y = position[1] + text_start_offsets[1] + Training_obj_num_display_lines * text_h;
 			
 			renderString(x+12, y, EG_OBJ1 + i + 1, second_line);
 			
-			y_count++;
+			Training_obj_num_display_lines++;
 		}
 	}
 
@@ -353,9 +355,6 @@ void training_mission_init()
 	for (i = 0; i < TRAINING_MESSAGE_QUEUE_MAX; i++)
 		Training_message_queue[i].special_message = NULL;
 
-	// The E: This is now handled by the new HUD code. No need to check here.
-	Directive_frames_loaded = 1;
-	
 	// only clear player flags if this is actually a training mission
 	if ( The_mission.game_type & MISSION_TYPE_TRAINING ) {
 		Player->flags &= ~(PLAYER_FLAGS_MATCH_TARGET | PLAYER_FLAGS_MSG_MODE | PLAYER_FLAGS_AUTO_TARGETING | PLAYER_FLAGS_AUTO_MATCH_SPEED | PLAYER_FLAGS_LINK_PRIMARY | PLAYER_FLAGS_LINK_SECONDARY );
@@ -364,7 +363,7 @@ void training_mission_init()
 
 int comp_training_lines_by_born_on_date(const int *e1, const int *e2)
 {
-	return (Mission_events[*e1 & 0xffff].born_on_date - Mission_events[*e2 & 0xffff].born_on_date);
+	return timestamp_compare(Mission_events[*e1 & 0xffff].born_on_date, Mission_events[*e2 & 0xffff].born_on_date);
 }
 
 
@@ -393,11 +392,12 @@ void sort_training_objectives()
 	// go through lines 0 to offset-1 and check if there are any CURRENT or	RECENTLY_KNOWN events that should be shown
 	int num_offset_events = 0;
 	for (i=0; i<offset; i++) {
-		event_status = mission_get_event_status(TRAINING_OBJ_LINES_MASK(i));
+		int event_num = TRAINING_OBJ_LINES_MASK(i);
+		event_status = mission_get_event_status(event_num);
 		
 		// if this is a multiplayer tvt game, and this is event is for another team, don't touch it
 		if(MULTI_TEAM && (Net_player != NULL)){
-			if((Mission_events[TRAINING_OBJ_LINES_MASK(i)].team != -1) &&  (Net_player->p_info.team != Mission_events[TRAINING_OBJ_LINES_MASK(i)].team)){
+			if((Mission_events[event_num].team != -1) &&  (Net_player->p_info.team != Mission_events[event_num].team)){
 				continue ;
 			}
 		}
@@ -406,14 +406,16 @@ void sort_training_objectives()
 			Training_obj_lines[i] |= TRAINING_OBJ_STATUS_UNKNOWN;
 			num_offset_events++;
 		} else if (event_status ==	EVENT_SATISFIED) {
-			if (f2i(Missiontime - Mission_events[TRAINING_OBJ_LINES_MASK(i)].satisfied_time) < MIN_SATISFIED_TIME) {
+			Assertion(Mission_events[event_num].satisfied_time.isValid(), "Since event %s was satisfied, satisfied_time must be valid here", Mission_events[event_num].name);
+			if (timestamp_since(Mission_events[event_num].satisfied_time) < MIN_SATISFIED_TIME) {
 				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_UNKNOWN;
 				num_offset_events++;
 			} else {
 				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_KNOWN;
 			}
 		} else if (event_status ==	EVENT_FAILED) {
-			if (f2i(Missiontime - Mission_events[TRAINING_OBJ_LINES_MASK(i)].satisfied_time) < MIN_FAILED_TIME) {
+			Assertion(Mission_events[event_num].satisfied_time.isValid(), "Since event %s failed, satisfied_time must be valid here", Mission_events[event_num].name);
+			if (timestamp_since(Mission_events[event_num].satisfied_time) < MIN_FAILED_TIME) {
 				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_UNKNOWN;
 				num_offset_events++;
 			} else {
@@ -429,11 +431,12 @@ void sort_training_objectives()
 
 	// go through lines offset to Training_obj_num_lines to check which should be shown, since some will need to be bumped
 	for (i=offset; i<Training_obj_num_lines; i++) {
-		event_status = mission_get_event_status(TRAINING_OBJ_LINES_MASK(i));
+		int event_num = TRAINING_OBJ_LINES_MASK(i);
+		event_status = mission_get_event_status(event_num);
 
 		// if this is a multiplayer tvt game, and this is event is for another team, it can be bumped
 		if(MULTI_TEAM && (Net_player != NULL)){
-			if((Mission_events[TRAINING_OBJ_LINES_MASK(i)].team != -1) &&  (Net_player->p_info.team != Mission_events[TRAINING_OBJ_LINES_MASK(i)].team)){
+			if((Mission_events[event_num].team != -1) &&  (Net_player->p_info.team != Mission_events[event_num].team)){
 				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_KNOWN;
 				continue ;
 			}
@@ -442,13 +445,15 @@ void sort_training_objectives()
 		if (event_status == EVENT_CURRENT)  {
 			Training_obj_lines[i] |= TRAINING_OBJ_STATUS_UNKNOWN;
 		} else if (event_status ==	EVENT_SATISFIED) {
-			if (f2i(Missiontime - Mission_events[TRAINING_OBJ_LINES_MASK(i)].satisfied_time) < MIN_SATISFIED_TIME) {
+			Assertion(Mission_events[event_num].satisfied_time.isValid(), "Since event %s was satisfied, satisfied_time must be valid here", Mission_events[event_num].name);
+			if (timestamp_since(Mission_events[event_num].satisfied_time) < MIN_SATISFIED_TIME) {
 				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_UNKNOWN;
 			} else {
 				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_KNOWN;
 			}
 		} else if (event_status ==	EVENT_FAILED) {
-			if (f2i(Missiontime - Mission_events[TRAINING_OBJ_LINES_MASK(i)].satisfied_time) < MIN_FAILED_TIME) {
+			Assertion(Mission_events[event_num].satisfied_time.isValid(), "Since event %s failed, satisfied_time must be valid here", Mission_events[event_num].name);
+			if (timestamp_since(Mission_events[event_num].satisfied_time) < MIN_FAILED_TIME) {
 				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_UNKNOWN;
 			} else {
 				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_KNOWN;
@@ -507,7 +512,7 @@ void training_check_objectives()
 	Training_obj_num_lines = 0;
 	for (event_idx=0; event_idx<Num_mission_events; event_idx++) {
 		event_status = mission_get_event_status(event_idx);
-		if ( (event_status != EVENT_UNBORN) && Mission_events[event_idx].objective_text && (timestamp() > Mission_events[event_idx].born_on_date + Directive_wait_time) ) {
+		if ( (event_status != EVENT_UNBORN) && Mission_events[event_idx].objective_text && (timestamp_since(Mission_events[event_idx].born_on_date) > Directive_wait_time) ) {
 			if (!Training_failure || !strnicmp(Mission_events[event_idx].name, XSTR( "Training failed", 423), 15)) {
 
 				// check for the actual objective
@@ -658,7 +663,8 @@ SCP_string message_translate_tokens(const char *text)
 				ptr = translate_key(temp);  // try and translate key
 				if (ptr != nullptr) {  // was key translated properly?
 					if (!stricmp(ptr, NOX("none")) && (Training_bind_warning != Missiontime)) {
-						if ( The_mission.game_type & MISSION_TYPE_TRAINING ) {
+						// check if a warning message should be displayed if the key is unbound
+						if ( (The_mission.game_type & MISSION_TYPE_TRAINING) || (Always_warn_player_about_unbound_keys && (The_mission.game_type & MISSION_TYPE_SINGLE)) ) {
 							r = popup(PF_TITLE_BIG | PF_TITLE_RED, 2, XSTR( "&Bind Control", 424), XSTR( "&Abort mission", 425),
 								XSTR( "Warning\nYou have no control bound to the action \"%s\".  You must do so before you can continue with your training.", 426),
 								XSTR(Control_config[Failed_key_index].text.c_str(), CONTROL_CONFIG_XSTR + Failed_key_index));
@@ -826,18 +832,18 @@ void message_training_setup(int m, int length, char *special_message)
 
 	if ((message_play_training_voice(Messages[m].wave_info.index) < 0) || (Master_voice_volume <= 0)) {
 		if (length > 0)
-			Training_message_timestamp = timestamp(length * 1000);
+			Training_message_timestamp = _timestamp(length * MILLISECONDS_PER_SECOND);
 		else
-			Training_message_timestamp = timestamp(TRAINING_TIMING_BASE + (int)strlen(Messages[m].message) * TRAINING_TIMING);  // no voice file playing
+			Training_message_timestamp = _timestamp(TRAINING_TIMING_BASE + (int)strlen(Messages[m].message) * TRAINING_TIMING);  // no voice file playing
 
 	} else
-		Training_message_timestamp = 0;
+		Training_message_timestamp = TIMESTAMP::invalid();
 }
 
 /**
  * Add a message to the queue to be sent later
  */
-void message_training_queue(const char *text, int timestamp, int length)
+void message_training_queue(const char *text, TIMESTAMP timestamp, int length)
 {
 	int m;
 	SCP_string temp_buf;
@@ -901,7 +907,7 @@ void message_training_remove_from_queue(int idx)
 	Training_message_queue_count--;
 	Training_message_queue[Training_message_queue_count].length = -1;
 	Training_message_queue[Training_message_queue_count].num = -1;
-	Training_message_queue[Training_message_queue_count].timestamp = -1;
+	Training_message_queue[Training_message_queue_count].timestamp = TIMESTAMP::invalid();
 	Training_message_queue[Training_message_queue_count].special_message = NULL;	// not a memory leak because we copied the pointer
 }
 
@@ -977,14 +983,14 @@ void message_training_update_frame()
 
 	Training_message_visible = 1;
 
-	if ((Training_voice >= 0) && (Training_num_lines > 0) && !(Training_message_timestamp)) {
+	if ((Training_voice >= 0) && (Training_num_lines > 0) && !(Training_message_timestamp.isValid())) {
 		if (Training_voice_type)
 			z = audiostream_is_playing(Training_voice_soundstream);
 		else
 			z = snd_is_playing(Training_voice_snd_handle);
 
 		if (!z)
-			Training_message_timestamp = timestamp(2000);  // 2 second delay
+			Training_message_timestamp = _timestamp(2 * MILLISECONDS_PER_SECOND);  // 2 second delay
  	}
 
 	Training_message_method = 0;

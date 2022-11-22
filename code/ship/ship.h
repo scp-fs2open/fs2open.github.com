@@ -185,7 +185,7 @@ public:
 //**************************************************************
 //WMC - Damage type handling code
 
-int damage_type_add(char *name);
+int damage_type_add(const char *name);
 
 //**************************************************************
 //WMC - Armor stuff
@@ -286,6 +286,9 @@ typedef struct cockpit_display {
 	char name[MAX_FILENAME_LEN];
 } cockpit_display;
 
+extern bool disableCockpits;
+extern bool cockpitActive;
+
 extern SCP_vector<cockpit_display> Player_displays;
 
 typedef struct cockpit_display_info {
@@ -338,6 +341,7 @@ public:
 	model_subsystem *system_info;					// pointer to static data for this subsystem -- see model.h for definition
 
 	int			parent_objnum;						// objnum of the parent ship
+	int			parent_subsys_index;				// index of this subsystem in the parent ship's linked list -- Do not access manually, use parent_subsys_index() as this may not yet be cached.
 
 	char		sub_name[NAME_LENGTH];					//WMC - Name that overrides name of original
 	float		current_hits;							// current number of hits this subsystem has left.
@@ -426,6 +430,9 @@ public:
 	int turret_max_bomb_ownage; 
 	int turret_max_target_ownage;
 
+	// multiplayer
+	TIMESTAMP info_from_server_stamp;
+
 	ship_subsys()
 		: next(NULL), prev(NULL)
 	{}
@@ -448,8 +455,16 @@ typedef struct ship_flag_name {
 	char flag_name[TOKEN_LENGTH];		// the name written to the mission file for its corresponding parse_object flag
 } ship_flag_name;
 
-#define MAX_SHIP_FLAG_NAMES					23
 extern ship_flag_name Ship_flag_names[];
+extern const size_t Num_ship_flag_names;
+
+typedef struct wing_flag_name {
+	Ship::Wing_Flags flag;
+	char flag_name[TOKEN_LENGTH];
+} wing_flag_name;
+
+extern wing_flag_name Wing_flag_names[];
+extern const size_t Num_wing_flag_names;
 
 #define DEFAULT_SHIP_PRIMITIVE_SENSOR_RANGE		10000	// Goober5000
 
@@ -602,13 +617,14 @@ public:
 	int	departure_delay;		// time in seconds after sexp is true that we delay.
 
 	int	wingnum;								// wing number this ship is in.  -1 if in no wing, Wing array index otherwise
-	std::set<size_t> orders_accepted;					// set of orders this ship will accept from the player.
+	SCP_set<size_t> orders_accepted;				// set of orders this ship will accept from the player.
 
 	// Subsystem fields.  The subsys_list is a list of all subsystems (which might include multiple types
 	// of a particular subsystem, like engines).  The subsys_info struct is information for particular
 	// types of subsystems.  (i.e. the list might contain 3 engines.  There will be one subsys_info entry
 	// describing the state of all engines combined) -- MWA 4/1/97
 	ship_subsys	subsys_list;									//	linked list of subsystems for this ship.
+	std::unique_ptr<ship_subsys*[]> subsys_list_indexer;		//	provides random-access lookup to the linked list
 	ship_subsys	*last_targeted_subobject[MAX_PLAYERS];	// Last subobject that has been targeted.  NULL if none;(player specific)
 	ship_subsys_info	subsys_info[SUBSYSTEM_MAX];		// info on particular generic types of subsystems	
 
@@ -670,7 +686,7 @@ public:
 
 	int	next_engine_stutter;				// timestamp to time the engine stuttering when a ship dies
 
-	fix base_texture_anim_frametime;		// Goober5000 - zero mark for texture animations
+	TIMESTAMP base_texture_anim_timestamp;	// Goober5000 - zero mark for texture animations
 
 	float total_damage_received;        // total damage received (for scoring purposes)
 	float damage_ship[MAX_DAMAGE_SLOTS];    // damage applied from each player
@@ -690,7 +706,7 @@ public:
 
 	// Stuff for showing electrical arcs on damaged ships
 	vec3d	arc_pts[MAX_SHIP_ARCS][2];			// The endpoints of each arc
-	int		arc_timestamp[MAX_SHIP_ARCS];		// When this times out, the spark goes away.  -1 is not used
+	TIMESTAMP	arc_timestamp[MAX_SHIP_ARCS];		// When this times out, the spark goes away.  Invalid is not used
 	ubyte		arc_type[MAX_SHIP_ARCS];			// see MARC_TYPE_* defines in model.h
 	int		arc_next_time;							// When the next damage/emp arc will be created.	
 	SCP_vector<int>		passive_arc_next_times;		// When the next passive ship arc will be created.	
@@ -744,8 +760,7 @@ public:
 	//Animated Shader effects
 	int shader_effect_num;
 	int shader_effect_duration;
-	int shader_effect_start_time;
-	bool shader_effect_active;
+	TIMESTAMP shader_effect_timestamp;
 
 	float alpha_mult;
 
@@ -796,6 +811,8 @@ public:
 	int team_change_time;
 
 	float autoaim_fov;
+
+	TIMESTAMP	multi_client_collision_timestamp;
 
 	enum warpstage {
 		STAGE1 = 0,
@@ -863,10 +880,10 @@ extern int ship_find_exited_ship_by_name( const char *name );
 extern int ship_find_exited_ship_by_signature( int signature);
 
 // Stuff for overall ship status, useful for reference by sexps and scripts.  Status changes occur in the same frame as mission log entries.
-enum ShipStatus
+enum class ShipStatus
 {
 	// A ship is on the arrival list as a parse object
-	NOT_YET_PRESENT,
+	NOT_YET_PRESENT = 0,
 
 	// A ship is currently in-mission, and its objp and shipp pointers are valid
 	PRESENT,
@@ -898,6 +915,7 @@ struct ship_registry_entry
 extern SCP_vector<ship_registry_entry> Ship_registry;
 extern SCP_unordered_map<SCP_string, int, SCP_string_lcase_hash, SCP_string_lcase_equal_to> Ship_registry_map;
 
+extern int ship_registry_get_index(const char *name);
 extern const ship_registry_entry *ship_registry_get(const char *name);
 
 #define REGULAR_WEAPON	(1<<0)
@@ -1250,8 +1268,10 @@ public:
 
 	float	max_shield_recharge;
 
-	float	hull_repair_rate;				//How much of the hull is repaired every second
-	float	subsys_repair_rate;		//How fast 
+	float	hull_repair_rate;				// How much of the hull is repaired every second
+	float	subsys_repair_rate;				// How much of the subsystem is repaired every second
+	float   hull_repair_max;                // Maximum percent that hull can self repair --wookieejedi
+	float   subsys_repair_max;              // Maximum percent that subsystems can self repair --wookieejedi
 
 	float	sup_hull_repair_rate;
 	float	sup_shield_repair_rate;
@@ -1447,6 +1467,9 @@ private:
 extern flag_def_list_new<Ship::Info_Flags> Ship_flags[];
 extern const size_t Num_ship_flags;
 
+extern flag_def_list_new<Model::Subsystem_Flags> Subsystem_flags[];
+extern const size_t Num_subsystem_flags;
+
 extern int Num_wings;
 extern ship Ships[MAX_SHIPS];
 extern ship	*Player_ship;
@@ -1479,7 +1502,9 @@ typedef struct wing {
 	int	reinforcement_index;					// index in reinforcement struct or -1
 	int	hotkey;
 
-	int	num_waves, current_wave;			// members for dealing with waves
+	// members for dealing with waves
+	int	num_waves;
+	int current_wave;							// NOTE: this is 1-based!  As each wave arrives, this will reflect the counting number: Wave 1, Wave 2, etc.
 	int	threshold;								// when number of ships in the wing reaches this number -- new wave
 
 	fix	time_gone;								// time into the mission when this wing is officially gone.
@@ -1495,6 +1520,7 @@ typedef struct wing {
 	int total_vanished;						// total number of ships vanished in this wing (including all waves)
 
 	int	special_ship;							// the leader of the wing.  An index into ship_index[].
+	int special_ship_ship_info_index;					// the ship info index of the special ship
 
 	int	arrival_location;						// arrival and departure information for wings -- similar to info for ships
 	int	arrival_distance;						// distance from some ship where this ship arrives
@@ -1511,7 +1537,7 @@ typedef struct wing {
 
 	int	wave_delay_min;						// minimum number of seconds before new wave can arrive
 	int	wave_delay_max;						// maximum number of seconds before new wave can arrive
-	int	wave_delay_timestamp;				// timestamp used for delaying arrival of next wave
+	TIMESTAMP	wave_delay_timestamp;				// timestamp used for delaying arrival of next wave
 
 	flagset<Ship::Wing_Flags> flags;
 
@@ -1527,6 +1553,10 @@ typedef struct wing {
 
 	// if -1, retail formation, else a custom one defined in ships.tbl
 	int formation;
+	float formation_scale;
+
+	// reset to a completely blank wing
+	void clear();
 } wing;
 
 extern wing Wings[MAX_WINGS];
@@ -1537,7 +1567,6 @@ extern int TVT_wings[MAX_TVT_WINGS];
 
 extern char Starting_wing_names[MAX_STARTING_WINGS][NAME_LENGTH];
 extern char Squadron_wing_names[MAX_SQUADRON_WINGS][NAME_LENGTH];
-extern bool Squadron_wing_names_found[MAX_SQUADRON_WINGS];
 extern char TVT_wing_names[MAX_TVT_WINGS][NAME_LENGTH];
 
 extern int ai_paused;
@@ -1578,13 +1607,12 @@ extern void ship_init();				// called once	at game start
 extern void ship_level_init();		// called before the start of each level
 
 //returns -1 if failed
-extern int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name = nullptr);
+extern int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name = nullptr, bool standalone_ship = false);
 extern void change_ship_type(int n, int ship_type, int by_sexp = 0);
 extern void ship_process_pre( object * objp, float frametime );
 extern void ship_process_post( object * objp, float frametime );
 extern void ship_render( object * obj, model_draw_list * scene );
-extern void ship_render_cockpit( object * objp);
-extern void ship_render_show_ship_cockpit( object * objp);
+extern void ship_render_player_ship( object * objp);
 extern void ship_delete( object * objp );
 extern int ship_check_collision_fast( object * obj, object * other_obj, vec3d * hitpos );
 extern int ship_get_num_ships();
@@ -1614,8 +1642,6 @@ extern void ship_cleanup(int shipnum, int cleanup_mode);
 // Goober5000
 extern void ship_destroy_instantly(object *ship_obj, bool with_debris = false);
 extern void ship_actually_depart(int shipnum, int method = SHIP_DEPARTED_WARP);
-
-extern const std::shared_ptr<scripting::Hook> OnShipDeathStartedHook;
 
 extern bool in_autoaim_fov(ship *shipp, int bank_to_fire, object *obj);
 extern int ship_stop_fire_primary(object * obj);
@@ -1701,11 +1727,13 @@ extern int ship_find_num_turrets(object *objp);
 
 extern void compute_slew_matrix(matrix *orient, angles *a);
 extern void ship_get_eye( vec3d *eye_pos, matrix *eye_orient, object *obj, bool do_slew = true, bool from_origin = false);		// returns in eye the correct viewing position for the given object
-//extern camid ship_get_followtarget_eye(object *obj);
-extern ship_subsys *ship_get_indexed_subsys( ship *sp, int index, vec3d *attacker_pos = NULL );	// returns index'th subsystem of this ship
-extern int ship_get_index_from_subsys(ship_subsys *ssp, int objnum);
-extern int ship_get_subsys_index(ship *sp, const char* ss_name);		// returns numerical index in linked list of subsystems
-extern int ship_get_subsys_index(ship *shipp, ship_subsys *subsys);
+extern void ship_get_eye_local(vec3d* eye_pos, matrix* eye_orient, object* obj, bool do_slew = true);		// returns the eye data, local to the ship
+
+extern ship_subsys *ship_find_first_subsys(ship *sp, int subsys_type, vec3d *attacker_pos = nullptr);
+extern ship_subsys *ship_get_indexed_subsys(ship *sp, int index);	// returns index'th subsystem of this ship
+extern int ship_find_subsys(ship *sp, const char *ss_name);		// returns numerical index in linked list of subsystems
+extern int ship_get_subsys_index(ship_subsys *subsys);
+
 extern float ship_get_subsystem_strength( ship *shipp, int type, bool skip_dying_check = false );
 extern ship_subsys *ship_get_subsys(const ship *shipp, const char *subsys_name);
 extern int ship_get_num_subsys(ship *shipp);

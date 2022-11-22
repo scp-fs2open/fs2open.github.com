@@ -40,7 +40,7 @@ namespace Weapon {
 		Lockarm,							// if the missile was fired without a lock, it does significanlty less damage on impact
 		Ballistic,							// ballistic primaries - Goober5000
 		Pierce_shields,						// shield pierceing -Bobboau
-		Default_in_tech_database,			// default in tech database - Goober5000
+		Default_in_tech_database,			// this entry's default tech database status, as specified in weapons.tbl; used when the tech db is "reset to default" - Goober5000
 		Local_ssm,							// localized ssm. ship that fires ssm is in mission.  ssms also warp back in during mission
 		Tagged_only,						// can only fire if target is tagged
 		Cycle,								// will only fire from (shots (defalts to 1)) points at a time
@@ -86,10 +86,12 @@ namespace Weapon {
 		Require_exact_los,					// If secondary or in turret, will only fire if ship has line of sight to target
 		Can_damage_shooter,					// this weapon and any of its descendants can damage its shooter - Asteroth
 		Heals,								// 'damage' heals instead of actually damaging - Asteroth
+		Vampiric,						    // damage applied also brings back health to the shooter - Strygon
 		SecondaryNoAmmo,					// Secondaries that only use energy
 		No_collide,
 		Multilock_target_dead_subsys,
 		No_evasion,							// AI will not attempt to dodge this weapon - Asteroth
+		Dont_merge_indicators,				// This secondary lead indicator won't be merged with the primary lead indicator even if this is a homing weapon.
 
         NUM_VALUES
 	};

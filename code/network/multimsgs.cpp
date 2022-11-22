@@ -49,6 +49,7 @@
 #include "network/multi_pmsg.h"
 #include "object/object.h"
 #include "object/objectshield.h"
+#include "stats/medals.h"
 #include "ship/ship.h"
 #include "weapon/weapon.h"
 #include "hud/hudreticle.h"
@@ -76,6 +77,8 @@
 #include "network/multi_sexp.h"
 #include "network/multi_mdns.h"
 #include "mission/missiongoals.h"
+#include "network/multi_interpolate.h"
+#include "network/multi_turret_manager.h"
 
 // #define _MULTI_SUPER_WACKY_COMPRESSION
 
@@ -956,7 +959,7 @@ void process_join_packet(ubyte* data, header* hinfo)
 			}
 
 			// set the query timestamp
-			Multi_restr_query_timestamp = timestamp(MULTI_QUERY_RESTR_STAMP);
+			Multi_restr_query_timestamp = ui_timestamp(MULTI_QUERY_RESTR_STAMP);
 			Netgame.flags |= NG_FLAG_INGAME_JOINING;
 
 			// determine what mode we're in
@@ -2889,7 +2892,7 @@ void process_wing_create_packet( ubyte *data, header *hinfo )
 	// need to set some timestamps and cues correctly to be sure that these things get created on
 	// the clients correctly
 	multi_set_network_signature( signature, MULTI_SIG_SHIP );
-	parse_wing_create_ships( &Wings[index], num_to_create, 1 );
+	parse_wing_create_ships( &Wings[index], num_to_create, true );
 }
 
 // packet indicating a ship is departing
@@ -3111,7 +3114,7 @@ void send_secondary_fired_packet( ship *shipp, ushort starting_sig, int  /*start
 	if ( aip->target_objnum != -1) {
 		target_net_signature = Objects[aip->target_objnum].net_signature;
 		if ( (Objects[aip->target_objnum].type == OBJ_SHIP) && (aip->targeted_subsys != NULL) ) {
-			s_index = ship_get_index_from_subsys( aip->targeted_subsys, aip->target_objnum );
+			s_index = ship_get_subsys_index( aip->targeted_subsys );
 		}
 
 		if ( Objects[aip->target_objnum].type == OBJ_WEAPON ) {
@@ -3351,7 +3354,7 @@ void send_turret_fired_packet( int ship_objnum, int subsys_index, int weapon_obj
 
 	pnet_signature = Objects[ship_objnum].net_signature;
 
-	ssp = ship_get_indexed_subsys( &Ships[Objects[ship_objnum].instance], subsys_index, NULL );
+	ssp = ship_get_indexed_subsys( &Ships[Objects[ship_objnum].instance], subsys_index );
 	if(ssp == NULL){
 		return;
 	}
@@ -3443,7 +3446,7 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 	// find this turret, and set the position of the turret that just fired to be where it fired.  Quite a
 	// hack, but should be suitable.
 	shipp = &Ships[objp->instance];
-	ssp = ship_get_indexed_subsys( shipp, turret_index, NULL );
+	ssp = ship_get_indexed_subsys( shipp, turret_index );
 	if(ssp == NULL){
 		return;
 	}
@@ -4437,7 +4440,7 @@ void send_player_order_packet(int type, int index, int cmd)
 	ADD_USHORT( target_net_signature );
 
 	if ( (Player_ai->target_objnum != -1) && (Player_ai->targeted_subsys != NULL) ) {
-		s_index = ship_get_index_from_subsys( Player_ai->targeted_subsys, Player_ai->target_objnum );
+		s_index = ship_get_subsys_index( Player_ai->targeted_subsys );
 	}
 
 	ADD_SHORT(static_cast<short>(s_index));
@@ -5906,7 +5909,7 @@ void process_deny_packet(ubyte *data, header *hinfo)
 		popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,XSTR("You cannot join this game because you are running an older version of FreeSpace than the server.  Exit FreeSpace, and choose the 'Update FreeSpace' button in the FreeSpace launcher to download the latest version of FreeSpace.",734));
 		break;	
 	case JOIN_DENY_JR_TYPE :
-		popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,XSTR("You cannot join a game in progress unless it is a dogfight mission.",1433));
+		popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,XSTR("You cannot join an in progress squadwar mission.",1433));
 		break;			
 	}	
 
@@ -6571,11 +6574,11 @@ void send_player_stats_block_packet(net_player *pl, int stats_code, net_player *
 			idx += MAX_SHIPS_PER_PACKET;
 		}
 
-		Assert( (Num_medals >= 0) && (Num_medals < USHRT_MAX) );
-		ADD_USHORT( (ushort)Num_medals );
+		Assert( ((int)Medals.size() >= 0) && ((int)Medals.size() < USHRT_MAX) );
+		ADD_USHORT( (ushort)Medals.size() );
 
 		// medal information
-		for(idx=0;idx<Num_medals;idx++){
+		for(idx=0;idx<(int)Medals.size();idx++){
 			i_tmp = sc->medal_counts[idx];
 			ADD_INT(i_tmp);
 		}
@@ -6747,7 +6750,7 @@ void process_player_stats_block_packet(ubyte *data, header *hinfo)
 		for (idx = 0; idx < num_medals; idx++) {
 			GET_INT(i_tmp);
 
-			if (idx < Num_medals) {
+			if (idx < (int)Medals.size()) {
 				sc->medal_counts[idx] = i_tmp;
 			}
 		}
@@ -7051,7 +7054,7 @@ void process_host_restr_packet(ubyte *data, header *hinfo)
 			Multi_join_restr_mode = mode;
 
 			// set the timestamp
-			Multi_restr_query_timestamp = timestamp(MULTI_QUERY_RESTR_STAMP);
+			Multi_restr_query_timestamp = ui_timestamp(MULTI_QUERY_RESTR_STAMP);
 
 			// notify the host of the event
 			gamesnd_play_iface(InterfaceSounds::BRIEF_STAGE_CHG_FAIL);
@@ -7063,7 +7066,7 @@ void process_host_restr_packet(ubyte *data, header *hinfo)
 			Assert(Game_mode & GM_STANDALONE_SERVER);		
 
 			// let the player join if the timestamp has not already elapsed on the server
-			if(Multi_restr_query_timestamp != -1){
+			if(Multi_restr_query_timestamp.isValid()){
 				multi_process_valid_join_request(&Multi_restr_join_request,&Multi_restr_addr,(int)mode);
 			}
 			break;	
@@ -7072,7 +7075,7 @@ void process_host_restr_packet(ubyte *data, header *hinfo)
 		case 2 :
 			Assert(Game_mode & GM_STANDALONE_SERVER);
 			Netgame.flags &= ~(NG_FLAG_INGAME_JOINING);
-			Multi_restr_query_timestamp = -1;
+			Multi_restr_query_timestamp = UI_TIMESTAMP::invalid();
 			break;
 	}
 }
@@ -7522,7 +7525,7 @@ void send_homing_weapon_info( int weapon_num )
 
 		// get the subsystem index.
 		if ( (homing_object->type == OBJ_SHIP) && (wp->homing_subsys != NULL) ) {
-			s_index = ship_get_index_from_subsys( wp->homing_subsys, OBJ_INDEX(homing_object) );
+			s_index = ship_get_subsys_index( wp->homing_subsys );
 		}
 	}
 
@@ -7821,8 +7824,8 @@ void send_non_homing_fired_packet(ship* shipp, int banks_or_number_of_missiles_f
 	}
 
 	object* ref_objp = multi_get_network_object(multi_client_lookup_ref_obj_net_sig());
-	if (ref_objp == nullptr) {
-		mprintf(("Unable to get accurate reference object for non-homing packet.\n"));
+	if (ref_objp == nullptr || ref_objp->type != OBJ_SHIP) {
+		mprintf(("Unable to get accurate reference object for non-homing packet, because %s\n", (ref_objp == nullptr) ? "it was null." : "it was not a ship!"));
 		if (!secondary) {
 			send_NEW_primary_fired_packet(shipp, banks_or_number_of_missiles_fired);
 		}
@@ -7842,7 +7845,7 @@ void send_non_homing_fired_packet(ship* shipp, int banks_or_number_of_missiles_f
 
 	// We need the time elpased, so send the last frame we got from the server and how much time has happened since then.
 	int last_received_frame = multi_client_lookup_frame_idx();
-	auto time_elapsed = (ushort)(timestamp() - multi_client_lookup_frame_timestamp());
+	auto time_elapsed = static_cast<ushort>(timestamp_since(multi_client_lookup_frame_timestamp()));
 
 	ADD_INT(last_received_frame);
 	ADD_USHORT(time_elapsed);
@@ -7936,8 +7939,13 @@ void process_non_homing_fired_packet(ubyte* data, header* hinfo)
 
 	object* objp_ref = multi_get_network_object(target_ref);
 
-	if (objp_ref == nullptr) {
+	if (objp_ref == nullptr || objp_ref->type != OBJ_SHIP) {
 		// new way failed, use the old new way.
+
+		if (objp_ref != nullptr){
+			mprintf(("Rollback's reference object was not a ship! It was a %d. Get Cyborg!!!\n", objp_ref->type));
+		}
+
 		if (secondary) {
 			// if this is a rollback shot from a dumbfire secondary, we have to mark this as a 
 			// rollback shot so the client doesn't get an extra shot.
@@ -7950,11 +7958,11 @@ void process_non_homing_fired_packet(ubyte* data, header* hinfo)
 	}
 
 	// figure out correct start frame
-	int frame = multi_ship_record_find_frame(client_frame, (int)time_elapsed);
+	int frame = multi_ship_record_find_frame(client_frame, static_cast<int>(time_elapsed));
 
 	if (frame > -1) {
 		// adjust time so that we can interpolate the position and orientation that was seen on the client.
-		int time_after_frame = multi_ship_record_find_time_after_frame(client_frame, frame, (int)time_elapsed);
+		int time_after_frame = multi_ship_record_find_time_after_frame(client_frame, frame, static_cast<int>(time_elapsed));
 		Assertion(time_after_frame >= 0, "Primary fire packet processor found an invalid time_after_frame of %d", time_after_frame);
 
 		vec3d new_tar_pos = multi_ship_record_lookup_position(objp_ref, frame);
@@ -8196,7 +8204,7 @@ void send_beam_fired_packet(const beam_fire_info *fire_info, const beam_info *ov
 			return;
 		}
 	} else if (fire_info->shooter && fire_info->turret) {
-		shooter_subsys_index = ship_get_index_from_subsys(fire_info->turret, OBJ_INDEX(fire_info->shooter));
+		shooter_subsys_index = ship_get_subsys_index(fire_info->turret);
 
 		Assertion(shooter_subsys_index >= 0, "BEAM fired from unknown subsystem!");
 		Assertion(shooter_subsys_index < SHRT_MAX, "BEAM fired from a subsystem beyond max limits!");
@@ -8210,7 +8218,7 @@ void send_beam_fired_packet(const beam_fire_info *fire_info, const beam_info *ov
 	target_sig = (fire_info->target) ? fire_info->target->net_signature : 0;
 
 	if (fire_info->target && fire_info->target_subsys) {
-		target_subsys_index = ship_get_index_from_subsys(fire_info->target_subsys, OBJ_INDEX(fire_info->target));
+		target_subsys_index = ship_get_subsys_index(fire_info->target_subsys);
 	}
 
 	u_beam_info = static_cast<short>(fire_info->beam_info_index);
@@ -8521,8 +8529,8 @@ void process_event_update_packet(ubyte *data, header *hinfo)
 		mission_event_unset_directive_special(u_event);
 	}	
 
-	if (Mission_events[u_event].result && !Mission_events[u_event].satisfied_time) {
-		Mission_events[u_event].satisfied_time = Missiontime;
+	if (Mission_events[u_event].result && !Mission_events[u_event].satisfied_time.isValid()) {
+		Mission_events[u_event].satisfied_time = _timestamp();
 		if ( Mission_events[u_event].objective_text ) {
 			mission_event_set_completion_sound_timestamp();
 		}
@@ -8640,7 +8648,7 @@ void send_flak_fired_packet(int ship_objnum, int subsys_index, int weapon_objnum
 	Assert ( objp->type == OBJ_WEAPON );	
 	pnet_signature = Objects[ship_objnum].net_signature;
 
-	ssp = ship_get_indexed_subsys( &Ships[Objects[ship_objnum].instance], subsys_index, NULL );
+	ssp = ship_get_indexed_subsys( &Ships[Objects[ship_objnum].instance], subsys_index );
 	if(ssp == NULL){
 		return;
 	}
@@ -8724,7 +8732,7 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 	// find this turret, and set the position of the turret that just fired to be where it fired.  Quite a
 	// hack, but should be suitable.
 	shipp = &Ships[objp->instance];
-	ssp = ship_get_indexed_subsys( shipp, turret_index, NULL );
+	ssp = ship_get_indexed_subsys( shipp, turret_index );
 	if(ssp == NULL){
 		return;
 	}
@@ -9107,4 +9115,142 @@ void process_sexp_packet(ubyte *data, header *hinfo)
 	PACKET_SET_SIZE();
 
 	sexp_packet_received(received_packet, num_ubytes);
+}
+
+
+// sends as many turrets as possible, and returns those it can not yet send because of packet size.
+SCP_vector<int> send_turret_tracking_packet(ushort parent_sig, SCP_vector<int>& subsys_indexes) 
+{
+
+	Assertion(MULTIPLAYER_MASTER, "A non-server is trying to send a turret tracking packet. This is a coder mistake, please report!");
+
+	// Max size, minus some bytes for easy handling and safety.
+	constexpr int MAX_TURRET_PACKET_SIZE = MAX_PACKET_SIZE - 20;
+	SCP_vector<int> overflow_list;
+
+	Assertion (parent_sig != 0, "The turret tracking packet manager is trying to send a packet with a net signature of 0. This is nonsense and a coder mistake, please report!");
+
+	// somehow trying to send for an an invalid or non-network object
+	if (parent_sig == 0) {
+		// returning an empty list will signal the manager to clear its entries
+		return overflow_list;
+	}
+
+	auto temp = multi_get_network_object(parent_sig);
+
+	// this means that the ship may have been destroyed before being able to send the packet.  Ignore.
+	if (temp == nullptr){
+		// returning an empty list will signal the manager to clear its entries
+		return overflow_list;
+	}
+
+	ship* shipp = &Ships[temp->instance];
+
+	// Required for all send functions
+	ubyte data[MAX_PACKET_SIZE];
+	int packet_size = 0;
+
+	BUILD_HEADER(TURRET_TRACK);
+
+	ubyte last_index = 0;
+
+	// this is not usually done, but if the number of subsystems actually ends up being different than the expected,
+	// this ubyte in the packet will get overwritten at the end of this function.
+	ADD_DATA(last_index);
+
+	// send the time that this happened.
+	int time_out = Multi_Timing_Info.get_current_time();
+	ADD_INT(time_out);
+	ADD_USHORT(parent_sig);
+
+	ubyte count = 0;
+
+	// no, I don't expect to send UINT turrets, but I don't want to be stuck
+	// in an infinite loop with a smaller word size.
+	for (uint i = 0; i < subsys_indexes.size(); i++){
+
+		// pre count is now being switched to a limiter to ensure that we do not exceed MAX_TURRET_PACKET_SIZE
+		if (packet_size < MAX_TURRET_PACKET_SIZE) {
+			auto ssp = ship_get_indexed_subsys( shipp, subsys_indexes[i]);
+
+			// make sure the subsytem is valid.  If not, just continue.
+			if (ssp != nullptr){
+				// Add the data for the valid entry
+				ADD_SHORT( static_cast<short>(subsys_indexes[i]));
+
+				ushort target_netsig = (ssp->turret_enemy_objnum > -1) ? Objects[ssp->turret_enemy_objnum].net_signature : 0;
+				ADD_USHORT(target_netsig);
+
+				packet_size += multi_pack_turret_angles(data + packet_size, ssp);
+				++count;
+			} else {
+				// if we don't have a valid subsystem.
+				++last_index;
+			}
+
+		} else {
+			overflow_list.push_back(subsys_indexes[i]);
+		}
+	}
+
+	// nothing to send means that we should not send the packet, and just send back the overflow list.
+	if (count < 1) {
+		return overflow_list;
+	}
+
+	// and now, actually place the number of turrets we are updating
+	// this is a little hacky, but it's best to work through the serialization macros to rewrite the data.
+	int packet_size_record = packet_size;
+	packet_size = HEADER_LENGTH;
+	ADD_DATA(count);
+	packet_size = packet_size_record;
+
+	// The packet is now finished, so send.
+	multi_io_send_to_all(data, packet_size);
+
+	return overflow_list;
+}
+
+void process_turret_tracking_packet(ubyte *data, header *hinfo) 
+{
+	Assertion(MULTIPLAYER_CLIENT, "A non-client is receiving a turret tracking packet. This is a coder mistake, please report!");
+
+	int offset = HEADER_LENGTH;
+
+	int time_in;
+	ushort parent_netsig;
+	ubyte last_index;
+
+	GET_DATA(last_index);
+	GET_INT(time_in);
+	GET_USHORT(parent_netsig);
+
+	auto parent = multi_get_network_object(parent_netsig);
+
+	std::pair<bool, float> angle1;
+	std::pair<bool, float> angle2;
+
+	angle1.first = false;
+	angle1.second = 0.0f;
+	angle2.first = false;
+	angle2.second = 0.0f; 
+
+	for (ubyte index = 0; index < last_index; index++){
+		short subsystem_index;
+		ushort target_netsig;
+		GET_SHORT(subsystem_index);
+		GET_USHORT(target_netsig);
+
+		offset += multi_unpack_turret_angles(data + offset, angle1, angle2);
+
+		// even if the ship does not exist 
+		if (parent != nullptr){
+			Multi_Turret_Manager.add_incoming_packet(time_in, OBJ_INDEX(parent), subsystem_index, target_netsig, angle1, angle2);
+		}
+
+		angle1.first = false;
+		angle2.first = false;
+	}
+
+	PACKET_SET_SIZE();
 }

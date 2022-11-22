@@ -19,6 +19,7 @@
 #include "io/mouse.h"
 #include "options/Option.h"
 #include "scripting/scripting.h"
+#include "scripting/hook_api.h"
 
 #define THREADED	// to use the proper set of macros
 #include "osapi/osapi.h"
@@ -66,13 +67,23 @@ static auto MouseSensitivityOption =
 
 bool Use_mouse_to_fly = false;
 
+static SCP_string mouse_mode_display(bool mode) { return mode ? "Joy-0" : "Mouse"; }
+
 static auto UseMouseOption = options::OptionBuilder<bool>("Input.UseMouse", "Mouse", "Use the mouse for flying")
                                  .category("Input")
+				 .display(mouse_mode_display) 
                                  .level(options::ExpertLevel::Beginner)
                                  .default_val(false)
                                  .bind_to(&Use_mouse_to_fly)
                                  .importance(1)
                                  .finish();
+
+const std::shared_ptr<scripting::Hook> OnMouseWheelHook = scripting::Hook::Factory(
+	"On Mouse Wheel", "Called when the mouse wheel is moved in any direction.",
+	{
+		{"MouseWheelY", "number", "Positive if moved up, negative if moved down."},
+		{"MouseWheelX", "number", "Positive if moved right, negative if moved left."},
+	});
 
 namespace
 {
@@ -632,6 +643,8 @@ void mousewheel_motion(int x, int y, bool reversed) {
 	} else {
 		mouse_flags &= ~(MOUSE_WHEEL_RIGHT | MOUSE_WHEEL_LEFT);
 	}
+
+	OnMouseWheelHook->run(scripting::hook_param_list(scripting::hook_param("MouseWheelY", 'i', y), scripting::hook_param("MouseWheelX", 'i', x)));
 }
 
 void mousewheel_decay(int btn) {

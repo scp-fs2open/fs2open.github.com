@@ -13,6 +13,7 @@
 #include "graphics/util/UniformBuffer.h"
 #include "graphics/util/uniform_structs.h"
 #include "lighting/lighting.h"
+#include "lighting/lighting_profiles.h"
 #include "mission/mission_flags.h"
 #include "mission/missionparse.h"
 #include "nebula/neb.h"
@@ -53,7 +54,7 @@ void opengl_clear_deferred_buffers()
 	GL_state.CullFace(cull);
 }
 
-void gr_opengl_deferred_lighting_begin()
+void gr_opengl_deferred_lighting_begin(bool clearNonColorBufs)
 {
 	if ( Cmdline_no_deferred_lighting)
 		return;
@@ -73,7 +74,13 @@ void gr_opengl_deferred_lighting_begin()
 	glDrawBuffers(5, buffers);
 
 	static const float black[] = { 0, 0, 0, 1.0f };
+
 	glClearBufferfv(GL_COLOR, 0, black);
+	if (clearNonColorBufs) {
+		glClearBufferfv(GL_COLOR, 1, black);
+		glClearBufferfv(GL_COLOR, 2, black);
+		glClearBufferfv(GL_COLOR, 3, black);
+	}
 }
 
 void gr_opengl_deferred_lighting_end()
@@ -91,9 +98,6 @@ void gr_opengl_deferred_lighting_end()
 
 extern SCP_vector<light> Lights;
 extern int Num_lights;
-extern float static_point_factor;
-extern float static_light_factor;
-extern float static_tube_factor;
 
 void gr_opengl_deferred_lighting_finish()
 {
@@ -139,10 +143,12 @@ void gr_opengl_deferred_lighting_finish()
 	{
 		GR_DEBUG_SCOPE("Build buffer data");
 
+		auto lp = lighting_profile::current();
+
 		auto header = uniformAligner.getHeader<deferred_global_data>();
 		if (Shadow_quality != ShadowQuality::Disabled) {
 			// Avoid this overhead when we are not going to use these values
-			header->shadow_mv_matrix = Shadow_view_matrix;
+			header->shadow_mv_matrix = Shadow_view_matrix_light;
 			for (size_t i = 0; i < MAX_SHADOW_CASCADES; ++i) {
 				header->shadow_proj_matrix[i] = Shadow_proj_matrix[i];
 			}
@@ -151,7 +157,7 @@ void gr_opengl_deferred_lighting_finish()
 			header->middist = Shadow_cascade_distances[2];
 			header->fardist = Shadow_cascade_distances[3];
 
-			vm_inverse_matrix4(&header->inv_view_matrix, &gr_view_matrix);
+			vm_inverse_matrix4(&header->inv_view_matrix, &Shadow_view_matrix_render);
 		}
 
 		header->invScreenWidth = 1.0f / gr_screen.max_w;
@@ -169,16 +175,11 @@ void gr_opengl_deferred_lighting_finish()
 			diffuse.xyz.y = l.g * l.intensity;
 			diffuse.xyz.z = l.b * l.intensity;
 
-			vec3d spec;
-			spec.xyz.x = l.spec_r * l.intensity;
-			spec.xyz.y = l.spec_g * l.intensity;
-			spec.xyz.z = l.spec_b * l.intensity;
-
 			light_data->diffuseLightColor = diffuse;
-			light_data->specLightColor = spec;
 
 			// Set a default value for all lights. Only the first directional light will change this.
 			light_data->enable_shadows = false;
+			light_data->sourceRadius = l.source_radius;
 
 			switch (l.type) {
 			case Light_Type::Directional:
@@ -198,8 +199,6 @@ void gr_opengl_deferred_lighting_finish()
 				light_data->lightDir.xyz.y = view_dir.xyzw.y;
 				light_data->lightDir.xyz.z = view_dir.xyzw.z;
 
-				vm_vec_scale(&light_data->specLightColor, static_light_factor);
-
 				first_directional = false;
 				break;
 			case Light_Type::Cone:
@@ -208,16 +207,19 @@ void gr_opengl_deferred_lighting_finish()
 				light_data->coneInnerAngle = l.cone_inner_angle;
 				light_data->coneDir = l.vec2;
 				FALLTHROUGH;
-			case Light_Type::Point:
-				vm_vec_scale(&light_data->specLightColor, static_point_factor);
-
-				light_data->lightRadius = MAX(l.rada, l.radb) * 1.25f;
-				light_data->scale.xyz.x = MAX(l.rada, l.radb) * 1.28f;
-				light_data->scale.xyz.y = MAX(l.rada, l.radb) * 1.28f;
-				light_data->scale.xyz.z = MAX(l.rada, l.radb) * 1.28f;
+			case Light_Type::Point: {
+				float rad = (Lighting_mode == lighting_mode::COCKPIT) ? lp->cockpit_light_radius_modifier.handle(MAX(l.rada, l.radb)) : MAX(l.rada, l.radb);
+				light_data->lightRadius = rad;
+				//A small padding factor is added to guard against potentially clipping the edges of the light with facets of the volume mesh.
+				light_data->scale.xyz.x = rad * 1.05f;
+				light_data->scale.xyz.y = rad * 1.05f;
+				light_data->scale.xyz.z = rad * 1.05f;
 				break;
+			}
 			case Light_Type::Tube: {
-				light_data->lightRadius = l.radb * 1.5f;
+				float rad = (Lighting_mode == lighting_mode::COCKPIT) ? lp->cockpit_light_radius_modifier.handle(l.radb) : l.radb;
+
+				light_data->lightRadius = rad;
 				light_data->lightType = LT_TUBE;
 
 				vec3d a;
@@ -228,11 +230,11 @@ void gr_opengl_deferred_lighting_finish()
 				//origin we must extend it here. Later the position will be adjusted as well.
 				length += light_data->lightRadius * 2.0f;
 
-				light_data->scale.xyz.x = l.radb * 1.53f;
-				light_data->scale.xyz.y = l.radb * 1.53f;
+				//A small padding factor is added to guard against potentially clipping the edges of the light with facets of the volume mesh.
+				light_data->scale.xyz.x = rad * 1.05f;
+				light_data->scale.xyz.y = rad * 1.05f;
 				light_data->scale.xyz.z = length;
 
-				vm_vec_scale(&light_data->specLightColor, static_tube_factor);
 				break;
 			}
 			}
@@ -276,8 +278,7 @@ void gr_opengl_deferred_lighting_finish()
 				//to allow smooth fall-off from all angles. Since the light volume starts at the mesh
 				//origin we must extend it, which has been done above, and then move it backwards one radius.
 				vm_vec_normalize(&dir);
-				//1.5 multiplier matches scaling used earlier to scale light radius for all tubes
-				vm_vec_scale_sub(&newPos, &l.vec2, &dir, l.radb * 1.5f);
+				vm_vec_scale_sub(&newPos, &l.vec2, &dir, l.radb);
 				gr_opengl_draw_deferred_light_cylinder(&newPos, &orient);
 				++element_index;
 				break;

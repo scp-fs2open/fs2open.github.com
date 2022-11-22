@@ -26,6 +26,7 @@
 #include <cstdio>
 #include <climits>
 #include <algorithm>
+#include <sstream>
 
 #include "globalincs/pstypes.h"
 #include "network/psnet2.h"
@@ -181,6 +182,13 @@ static float Last_sent_iamhere = 0;
 
 unsigned int Serverconn = 0xffffffff;
 
+// bad packet type debugging
+static constexpr size_t MAX_BAD_PACKETS_WINDOW = 3600;		// in seconds, 1 hour
+static constexpr size_t MAX_BAD_PACKETS_PER_WINDOW = 20;
+
+static size_t Psnet_bad_packet_count = 0;
+static time_t Psnet_bad_packet_time = 0;
+
 //*******************************
 
 // top layer buffers
@@ -212,7 +220,7 @@ void psnet_rel_close();
 void psnet_buffer_init(network_packet_buffer_list *l);
 
 // buffer a packet (maintain order!)
-void psnet_buffer_packet(network_packet_buffer_list *l, ubyte *data, SSIZE_T length, SOCKADDR_IN6 *from);
+static void psnet_buffer_packet(network_packet_buffer_list *l, const ubyte *data, const SSIZE_T length, const SOCKADDR_IN6 *from);
 
 // get the index of the next packet in order!
 int psnet_buffer_get_next(network_packet_buffer_list *l, ubyte *data, SSIZE_T *length, SOCKADDR_IN6 *from);
@@ -224,6 +232,9 @@ static bool psnet_explode_ip_string(const char *ip_string, SCP_string &host, SCP
 // conversions
 static void psnet_sockaddr_to_addr(const SOCKADDR_IN6 *sockaddr, net_addr *addr);
 static void psnet_addr_to_sockaddr(const net_addr *addr, SOCKADDR_IN6 *sockaddr);
+
+// debugging / testing
+static void psnet_debug_bad_packet(const int packet_type, const uint8_t *packet_data, const SSIZE_T read_len, const SOCKADDR_IN6 *from_addr);
 
 // -------------------------------------------------------------------------------------------------------
 // PSNET 2 TOP LAYER FUNCTIONS - these functions simply buffer and store packets based upon type (see PSNET_TYPE_* defines)
@@ -321,8 +332,14 @@ int SENDTO(SOCKET s, char * buf, int len, int flags, SOCKADDR *to, int tolen, in
 	outbuf[0] = static_cast<char>(psnet_type);
 	memcpy(&outbuf[1], buf, static_cast<size_t>(len));
 
+	SOCKLEN_T addrlen = tolen;
+
+	if (addrlen == sizeof(SOCKADDR_STORAGE)) {
+		addrlen = psnet_get_sockaddr_len(reinterpret_cast<SOCKADDR_STORAGE*>(to));
+	}
+
 	// send it
-	return static_cast<int>( sendto(s, outbuf, len + 1, flags, reinterpret_cast<LPSOCKADDR>(to), tolen) );
+	return static_cast<int>( sendto(s, outbuf, len + 1, flags, reinterpret_cast<LPSOCKADDR>(to), addrlen) );
 }
 
 /**
@@ -379,11 +396,13 @@ void PSNET_TOP_LAYER_PROCESS()
 
 		// determine the packet type
 		int packet_type = packet_data[0];
-		Assertion(( (packet_type >= 0) && (packet_type < PSNET_NUM_TYPES) ), "Invalid packet_type found. Packet type %d does not exist", packet_type);
 
 		if ( (packet_type >= 0) && (packet_type < PSNET_NUM_TYPES) ) {
 			// buffer the packet
 			psnet_buffer_packet(&Psnet_top_buffers[packet_type], packet_data + 1, read_len - 1, &from_addr);
+		} else {
+			// got something that's definitely not from a psnet client, so dump it
+			psnet_debug_bad_packet(packet_type, packet_data, from_len, &from_addr);
 		}
 	}
 }
@@ -534,7 +553,7 @@ bool psnet_init_my_addr()
 				continue;
 			}
 
-			rval = connect(tsock, reinterpret_cast<LPSOCKADDR>(&remote_addr), sizeof(remote_addr));
+			rval = connect(tsock, reinterpret_cast<LPSOCKADDR>(&remote_addr), psnet_get_sockaddr_len(&remote_addr));
 
 			if (rval) {
 				continue;
@@ -573,7 +592,7 @@ bool psnet_init_my_addr()
 				continue;
 			}
 
-			rval = connect(tsock, reinterpret_cast<LPSOCKADDR>(&remote_addr), sizeof(remote_addr));
+			rval = connect(tsock, reinterpret_cast<LPSOCKADDR>(&remote_addr), psnet_get_sockaddr_len(&remote_addr));
 
 			if (rval) {
 				continue;
@@ -907,6 +926,25 @@ static void psnet_sockaddr_storage_to_in6(const SOCKADDR_STORAGE *addr, SOCKADDR
 }
 
 /**
+ * @brief Helper to get the exact length of a specific protocol struct from
+ *        a generic storage struct
+ *
+ * @param addr
+ * @return SOCKLEN_T
+ */
+SOCKLEN_T psnet_get_sockaddr_len(const SOCKADDR_STORAGE *addr)
+{
+	// internally we should always use IPv6, but cover the bases
+	if (addr->ss_family == AF_INET6) {
+		return static_cast<SOCKLEN_T>(sizeof(SOCKADDR_IN6));
+	} else if (addr->ss_family == AF_INET) {
+		return static_cast<SOCKLEN_T>(sizeof(SOCKADDR_IN));
+	} else {
+		return static_cast<SOCKLEN_T>(sizeof(SOCKADDR_STORAGE));
+	}
+}
+
+/**
  * Helper to map IPv4 to IPv6
  */
 void psnet_map4to6(const in_addr *in4, in6_addr *in6)
@@ -1113,6 +1151,11 @@ bool psnet_get_addr(const char *host, const char *port, SOCKADDR_STORAGE *addr, 
 	SOCKADDR_IN6 si4to6;
 	int rval;
 
+	if (addr) {
+		// by the spec, sockaddr_in6 must be zero'd, so just do that always
+		memset(addr, 0, sizeof(*addr));
+	}
+
 	memset(&si4to6, 0, sizeof(si4to6));
 
 	memset(&hints, 0, sizeof(hints));
@@ -1233,6 +1276,54 @@ const in6_addr *psnet_get_local_ip(int af_type)
 	}
 
 	return nullptr;
+}
+
+/**
+ * Log invalid packets for debug purposes.
+ */
+static void psnet_debug_bad_packet(const int packet_type, const uint8_t *packet_data, const SSIZE_T read_len, const SOCKADDR_IN6 *from_addr)
+{
+	// this could just be harmless junk, or not, but let's try to deal with it as gracefully as we can
+	// to avoid log spam from bad actors we restrict logging to a limited number of packets per time window
+
+	const time_t thistime = time(nullptr);
+
+	++Psnet_bad_packet_count;
+
+	if ( (Psnet_bad_packet_count > MAX_BAD_PACKETS_PER_WINDOW) && (Psnet_bad_packet_time >= thistime) ) {
+		// packet flood, break!
+		return;
+	}
+
+	// in case of flooding, log number of packets we've skipped during the previous window
+	if (Psnet_bad_packet_count > MAX_BAD_PACKETS_PER_WINDOW) {
+		ml_printf("WARNING: Invalid packet log window reset ... %lu non-logged packets received during previous window!", Psnet_bad_packet_count - MAX_BAD_PACKETS_PER_WINDOW);
+
+		// reset count
+		Psnet_bad_packet_count = 1;
+	}
+
+	if (Psnet_bad_packet_time <= thistime) {
+		Psnet_bad_packet_time = thistime + MAX_BAD_PACKETS_WINDOW;
+	}
+
+	char from_string[INET6_ADDRSTRLEN] = "";
+	std::stringstream dbg_string;
+
+	inet_ntop(AF_INET6, &from_addr->sin6_addr, from_string, INET6_ADDRSTRLEN);
+
+	dbg_string << "WARNING: Invalid packet type " << packet_type << " with length " << read_len << " received from [" << from_string << "]:" << ntohs(from_addr->sin6_port) << " ... ";
+
+	// dump first 11 bytes for debugging (packet_type + 10 bytes)
+	for (auto i = 0; (i < read_len) && (i < 11); ++i) {
+		dbg_string << std::setfill('0') << std::setw(2) << std::hex << static_cast<int>(packet_data[i]);
+	}
+
+	ml_string(dbg_string.str().c_str());
+
+	if (Psnet_bad_packet_count == MAX_BAD_PACKETS_PER_WINDOW) {
+		ml_string("WARNING: Max invalid packet limit reached for this log window!");
+	}
 }
 
 // -------------------------------------------------------------------------------------------------------
@@ -2112,7 +2203,7 @@ void psnet_buffer_init(network_packet_buffer_list *l)
 /**
  * Buffer a packet (maintain order!)
  */
-void psnet_buffer_packet(network_packet_buffer_list *l, ubyte *data, SSIZE_T length, SOCKADDR_IN6 *from)
+static void psnet_buffer_packet(network_packet_buffer_list *l, const ubyte *data, const SSIZE_T length, const SOCKADDR_IN6 *from)
 {
 	int idx;
 	bool found_buf = false;
@@ -2256,9 +2347,12 @@ bool psnet_init_socket()
 	psnet_set_socket_options();
 
 	// bind the socket
-	psnet_get_addr(nullptr, Psnet_default_port, &sockaddr);
+	if ( !psnet_get_addr(nullptr, Psnet_default_port, &sockaddr) ) {
+		ml_printf("Failed to get bind addr!");
+		return false;
+	}
 
-	if ( bind(Psnet_socket, reinterpret_cast<LPSOCKADDR>(&sockaddr), sizeof(sockaddr)) == SOCKET_ERROR) {
+	if ( bind(Psnet_socket, reinterpret_cast<LPSOCKADDR>(&sockaddr), psnet_get_sockaddr_len(&sockaddr)) == SOCKET_ERROR) {
 		Psnet_failure_code = WSAGetLastError();
 
 		if (Psnet_failure_code == WSAEADDRINUSE) {

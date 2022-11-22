@@ -24,6 +24,7 @@
 #include "menuui/mainhallmenu.h"
 #include "menuui/playermenu.h"
 #include "mission/missioncampaign.h"
+#include "mission/missiontraining.h"
 #include "mod_table/mod_table.h"
 #include "network/multi.h"
 #include "osapi/osregistry.h"
@@ -1369,29 +1370,26 @@ DCF(bastion, "Temporarily sets the player to be on the Bastion (or any other mai
 	}
 }
 
-#define MAX_PLAYER_TIPS			40
-
-char *Player_tips[MAX_PLAYER_TIPS];
-int Num_player_tips;
+SCP_vector<SCP_string> Player_tips;
 int Player_tips_shown = 0;
 
 // tooltips
-void player_tips_init()
+void parse_tips_table(const char* filename)
 {
-	Num_player_tips = 0;
 	
 	try
 	{
-		read_file_text("tips.tbl", CF_TYPE_TABLES);
+		read_file_text(filename, CF_TYPE_TABLES);
 		reset_parse();
 
 		while (!optional_string("#end")) {
 			required_string("+Tip:");
 
-			if (Num_player_tips >= MAX_PLAYER_TIPS) {
-				break;
-			}
-			Player_tips[Num_player_tips++] = stuff_and_malloc_string(F_NAME, NULL);
+			SCP_string buf;
+			stuff_string(buf, F_MESSAGE);
+			
+			Player_tips.push_back(message_translate_tokens(buf.c_str()));
+
 		}
 	}
 	catch (const parse::ParseException& e)
@@ -1401,17 +1399,13 @@ void player_tips_init()
 	}
 }
 
-// close out player tips - *only call from game_shutdown()*
-void player_tips_close()
+void player_tips_init()
 {
-	int i;
+	// first parse the default table
+	parse_tips_table("tips.tbl");
 
-	for (i=0; i<MAX_PLAYER_TIPS; i++) {
-		if (Player_tips[i] != NULL) {
-			vm_free(Player_tips[i]);
-			Player_tips[i] = NULL;
-		}
-	}
+	// parse any modular tables
+	parse_modular_table("*-tip.tbm", parse_tips_table);
 }
 
 void player_tips_popup()
@@ -1429,19 +1423,19 @@ void player_tips_popup()
 	Player_tips_shown = 1;
 
 	// randomly pick one
-	tip = (int)frand_range(0.0f, (float)Num_player_tips - 1.0f);
+	tip = (int)frand_range(0.0f, (float)Player_tips.size() - 1.0f);
 
 	char all_txt[2048];
 
 	do {
-		sprintf(all_txt, XSTR("NEW USER TIP\n\n%s", 1565), Player_tips[tip]);
+		sprintf(all_txt, XSTR("NEW USER TIP\n\n%s", 1565), Player_tips[tip].c_str());
 		ret = popup(PF_NO_SPECIAL_BUTTONS | PF_TITLE | PF_TITLE_WHITE, 3, XSTR("&Ok", 669), XSTR("&Next", 1444), XSTR("Don't show me this again", 1443), all_txt);
 	
 		// now what?
 		switch(ret){
 		// next
 		case 1:
-			if(tip >= Num_player_tips - 1) {
+			if (tip >= (int)Player_tips.size() - 1) {
 				tip = 0;
 			} else {
 				tip++;
@@ -1459,7 +1453,10 @@ void player_tips_popup()
 	} while(ret > 0);
 }
 
-void player_tips_controls() {
+/**
+ * Displays a popup notification if the pilot was converted from pre-22.0 which might disrupt control settings.  Returns true if the popup was shown.
+ */
+bool player_tips_controls() {
 	if (Player->save_flags & PLAYER_FLAGS_PLR_VER_PRE_CONTROLS5) {
 		// Special case. Since the Controls5 PR is significantly different from retail, users must be informed
 		// of changes regarding their bindings
@@ -1476,7 +1473,11 @@ void player_tips_controls() {
 			Pilot.save_player(Player);
 			Pilot.save_savefile();
 		}
+
+		return true;
 	}
+
+	return false;
 }
 
 SCP_vector<SCP_string> player_select_enumerate_pilots() {

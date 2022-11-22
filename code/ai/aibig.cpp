@@ -900,7 +900,7 @@ static void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy)
 		
 		//	Chance of hitting ship is based on dot product of firing ship's forward vector with vector to ship
 		//	and also the size of the target relative to distance to target.
-		if (dot_to_enemy > MAX(0.5f, 0.90f + aip->ai_accuracy/10.0f - En_objp->radius/MAX(1.0f,dist_to_enemy))) {
+		if (dot_to_enemy > std::max(0.5f, 0.90f + aip->ai_accuracy / 10.0f - En_objp->radius / std::max(1.0f, dist_to_enemy))) {
 
 			ship *temp_shipp;
 			temp_shipp = &Ships[Pl_objp->instance];
@@ -1110,7 +1110,7 @@ void ai_big_chase()
 			}
 		}
 
-		if (aip->target_time < 2.0f)
+		if (!aip->ai_profile_flags[AI::Profile_Flags::No_continuous_turn_on_attack] && aip->target_time < 2.0f)
 			if ((dot_to_enemy < 0.9f) || (dist_to_enemy > 300.0f)) {
 				aip->submode = SM_CONTINUOUS_TURN;
 				aip->submode_start_time = Missiontime - fl2f(2.75f);	//	This backdated start time allows immediate switchout.

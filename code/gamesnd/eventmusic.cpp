@@ -73,19 +73,20 @@ SCP_vector<SOUNDTRACK_INFO> Soundtracks;
 int Current_soundtrack_num;	// Active soundtrack for the current mission.. index into Soundtracks[]
 
 int Current_pattern = -1;		// currently playing part of track
-int Pattern_timer_id = 0;
+TIMESTAMP Pattern_timer_id = TIMESTAMP::invalid();
 
 // File Globals
 static int Num_enemy_arrivals;
 static int Num_friendly_arrivals;
 
-#define ARRIVAL_INTERVAL_TIMESTAMP  5000
-#define BATTLE_CHECK_INTERVAL			15000
-static int Battle_over_timestamp;
-static int Mission_over_timestamp;
-static int Victory2_music_played;
-static int Next_arrival_timestamp;
-static int Check_for_battle_music;
+constexpr int ARRIVAL_INTERVAL_TIMESTAMP =			5 * MILLISECONDS_PER_SECOND;
+constexpr int BATTLE_CHECK_INTERVAL =				15 * MILLISECONDS_PER_SECOND;
+
+static TIMESTAMP Battle_over_timestamp;
+static TIMESTAMP Mission_over_timestamp;
+static bool Victory2_music_played;
+static TIMESTAMP Next_arrival_timestamp;
+static TIMESTAMP Check_for_battle_music;	// this timestamp is actually never set
 
 typedef struct pattern_info
 {
@@ -409,7 +410,7 @@ void event_music_do_frame()
 
 	// start off the music delayed
 	if ( timestamp_elapsed(Pattern_timer_id) ) {
-		Pattern_timer_id = 0;
+		Pattern_timer_id = TIMESTAMP::invalid();
 		Event_music_begun = TRUE;
 		if ( Current_pattern != -1  && Patterns[Current_pattern].handle >= 0) {
 			//WMC - removed in favor of if
@@ -457,7 +458,7 @@ void event_music_do_frame()
 		if (Event_Music_battle_started == 0) {
 			if (Current_pattern == SONG_NRML_1 || Current_pattern == SONG_NRML_2 || Current_pattern == SONG_NRML_3 ) {
 				if (timestamp_elapsed(Check_for_battle_music)) {
-					Check_for_battle_music = timestamp(1000);
+					Check_for_battle_music = _timestamp(1 * MILLISECONDS_PER_SECOND);
 					if (hostile_ships_present() == TRUE) {
 						Patterns[Current_pattern].next_pattern = SONG_BTTL_1;
 						Patterns[Current_pattern].force_pattern = TRUE;
@@ -465,7 +466,7 @@ void event_music_do_frame()
 				}
 			} else if (Current_pattern == SONG_BTTL_1 || Current_pattern == SONG_BTTL_2 || Current_pattern == SONG_BTTL_3) {
 				if (timestamp_elapsed(Battle_over_timestamp)) {
-					Battle_over_timestamp = timestamp(BATTLE_CHECK_INTERVAL);
+					Battle_over_timestamp = _timestamp(BATTLE_CHECK_INTERVAL);
 					if (hostile_ships_present() == FALSE) {
 						Patterns[Current_pattern].force_pattern = TRUE;
 
@@ -501,11 +502,11 @@ void event_music_do_frame()
 
 		if ( !Victory2_music_played ) {
 			if ( timestamp_elapsed(Mission_over_timestamp) ) {
-				Mission_over_timestamp = timestamp(BATTLE_CHECK_INTERVAL);
+				Mission_over_timestamp = _timestamp(BATTLE_CHECK_INTERVAL);
 				if ( mission_goals_met() && (!hostile_ships_present()) ) {
 					Patterns[Current_pattern].next_pattern = SONG_VICT_2;
 					Patterns[Current_pattern].force_pattern = TRUE;
-					Victory2_music_played = 1;
+					Victory2_music_played = true;
 				}
 			}
 		}
@@ -596,11 +597,11 @@ void event_music_level_start(int force_soundtrack)
 
 	Num_enemy_arrivals = 0;
 	Num_friendly_arrivals = 0;
-	Battle_over_timestamp = timestamp(BATTLE_CHECK_INTERVAL);
-	Mission_over_timestamp = timestamp(BATTLE_CHECK_INTERVAL);
-	Next_arrival_timestamp = timestamp(1);
-	Victory2_music_played = 0;
-	Check_for_battle_music = 0;
+	Battle_over_timestamp = _timestamp(BATTLE_CHECK_INTERVAL);
+	Mission_over_timestamp = _timestamp(BATTLE_CHECK_INTERVAL);
+	Next_arrival_timestamp = TIMESTAMP::immediate();
+	Victory2_music_played = false;
+	Check_for_battle_music = TIMESTAMP::invalid();		// this should probably be immediate; we might introduce a flag later
 
 	if (Event_music_level_inited)
 	{
@@ -642,9 +643,9 @@ void event_music_first_pattern()
 
 	// if we really are initializing the level
 	if (Missiontime == 0) {
-		Pattern_timer_id = timestamp(-1);	// don't let this start quite yet; see event_music_set_start_delay()
+		Pattern_timer_id = TIMESTAMP::invalid();	// don't let this start quite yet; see event_music_set_start_delay()
 	} else {
-		Pattern_timer_id = timestamp(0);	// start immediately
+		Pattern_timer_id = TIMESTAMP::immediate();	// start immediately
 	}
 	
 	Event_music_begun = FALSE;
@@ -660,7 +661,19 @@ void event_music_first_pattern()
 // this yields a relative start time of 1 second.  Mission start will now use relative rather than absolute delay.
 void event_music_set_start_delay()
 {
-	Pattern_timer_id = timestamp(1000);
+	if (Event_music_inited == FALSE) {
+		return;
+	}
+
+	if (Event_music_enabled == FALSE) {
+		return;
+	}
+
+	if (Event_music_level_inited == FALSE) {
+		return;
+	}
+
+	Pattern_timer_id = _timestamp(1 * MILLISECONDS_PER_SECOND);
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -740,7 +753,7 @@ int event_music_battle_start()
 	}
 
 	Event_Music_battle_started = 1;	// keep track of this state though, need on restore
-	Battle_over_timestamp = timestamp(BATTLE_CHECK_INTERVAL);
+	Battle_over_timestamp = _timestamp(BATTLE_CHECK_INTERVAL);
 
 	return 0;
 }
@@ -835,7 +848,7 @@ int event_music_enemy_arrival()
 		Patterns[Current_pattern].force_pattern = TRUE;
 	}
 
-	Battle_over_timestamp = timestamp(BATTLE_CHECK_INTERVAL);
+	Battle_over_timestamp = _timestamp(BATTLE_CHECK_INTERVAL);
 
 	return 0;
 }
@@ -922,9 +935,9 @@ int event_music_friendly_arrival()
 		}
 	}
 
-	Next_arrival_timestamp = timestamp(ARRIVAL_INTERVAL_TIMESTAMP);
+	Next_arrival_timestamp = _timestamp(ARRIVAL_INTERVAL_TIMESTAMP);
 
-	Battle_over_timestamp = timestamp(BATTLE_CHECK_INTERVAL);
+	Battle_over_timestamp = _timestamp(BATTLE_CHECK_INTERVAL);
 
 	return 0;
 }
@@ -1022,7 +1035,7 @@ int event_music_primary_goals_met()
 		if ( !mission_goals_met() || Victory2_music_played || (Num_goals == 0)) {
 			Patterns[next_pattern].next_pattern = Patterns[next_pattern].default_next_pattern;
 		} else {
-			Victory2_music_played = 1;
+			Victory2_music_played = true;
 		}
 	}
 
@@ -1282,7 +1295,7 @@ void parse_soundtrack()
 			continue;
 
 		// check for file
-		if (!cf_exists_full(Soundtracks[strack_idx].patterns[i].fname, CF_TYPE_MUSIC))
+		if (!cf_exists_full_ext(Soundtracks[strack_idx].patterns[i].fname, CF_TYPE_MUSIC, NUM_AUDIO_EXT, audio_ext_list))
 			return;
 	}
 
@@ -1462,7 +1475,7 @@ void event_music_enable()
 	else {
 		// start a new pattern
 		Event_music_begun = FALSE;
-		Pattern_timer_id = timestamp(150);
+		Pattern_timer_id = _timestamp(150);
 		event_music_start_default();
 	}
 }
@@ -1672,7 +1685,7 @@ int event_music_get_spooled_music_index(const char *name)
 int event_music_get_spooled_music_index(const SCP_string& name)
 {
 	return event_music_get_spooled_music_index(name.c_str());
-	}
+}
 
 // set a score based on name
 void event_music_set_score(int score_index, const char *name)
@@ -1690,9 +1703,9 @@ void event_music_reset_choices()
 	mprintf(("Current soundtrack set to -1 in event_music_reset_choices\n"));
 	Mission_music[SCORE_BRIEFING] = -1;
 	Mission_music[SCORE_FICTION_VIEWER] = -1;
-	event_music_set_score(SCORE_DEBRIEF_SUCCESS, "Success");
-	event_music_set_score(SCORE_DEBRIEF_AVERAGE, "Average");
-	event_music_set_score(SCORE_DEBRIEF_FAIL, "Failure");
+	event_music_set_score(SCORE_DEBRIEFING_SUCCESS, "Success");
+	event_music_set_score(SCORE_DEBRIEFING_AVERAGE, "Average");
+	event_music_set_score(SCORE_DEBRIEFING_FAILURE, "Failure");
 
 	// Goober5000
 	strcpy_s(The_mission.substitute_briefing_music_name, "None");
@@ -1701,7 +1714,7 @@ void event_music_reset_choices()
 
 void event_music_hostile_ship_destroyed()
 {
-	Battle_over_timestamp = timestamp(BATTLE_CHECK_INTERVAL);
+	Battle_over_timestamp = _timestamp(BATTLE_CHECK_INTERVAL);
 }
 
 void event_music_set_volume(float volume)

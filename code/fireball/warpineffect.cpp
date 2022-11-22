@@ -17,9 +17,20 @@
 #include "mission/missionparse.h"
 #include "model/model.h"
 #include "nebula/neb.h"
+#include "options/Option.h"
 #include "render/3d.h"
 #include "render/batching.h"
 #include "ship/ship.h"
+
+bool Fireball_warp_flash = false;
+
+static auto WarpFlashOption = options::OptionBuilder<bool>("Graphics.WarpFlash", "Warp Flash", "Show flash upon warp open or close")
+							 .category("Graphics")
+							 .default_val(true)
+							 .level(options::ExpertLevel::Advanced)
+							 .bind_to_once(&Fireball_warp_flash)
+							 .importance(65)
+							 .finish();
 
 void warpin_batch_draw_face( int texture, vertex *v1, vertex *v2, vertex *v3 )
 {
@@ -63,7 +74,7 @@ void warpin_queue_render(model_draw_list *scene, object *obj, matrix *orient, ve
 		r *= (0.40f + Noise[noise_frame] * 0.30f);
 
 		// Bobboau's warp thingie, toggled by cmdline
-		if (Cmdline_warp_flash) {
+		if (Fireball_warp_flash) {
 			r += powf((2.0f * life_percent) - 1.0f, 24.0f) * max_radius * 1.5f;
 		}
 
@@ -145,7 +156,7 @@ void warpin_queue_render(model_draw_list *scene, object *obj, matrix *orient, ve
 		warpin_batch_draw_face( texture_bitmap_num, &verts[0], &verts[3], &verts[4] );
 	}
 
-	if (warp_ball_bitmap >= 0 && Cmdline_warp_flash) {
+	if (warp_ball_bitmap >= 0 && Fireball_warp_flash) {
 		flash_ball warp_ball(20, .1f,.25f, &orient->vec.fvec, pos, 4.0f, 0.5f);
 
 		float adg = (2.0f * life_percent) - 1.0f;

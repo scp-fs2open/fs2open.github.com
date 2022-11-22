@@ -25,6 +25,7 @@
 #include "mission/missionmessage.h"
 #include "mission/missiongoals.h"
 #include "mission/missionbriefcommon.h"
+#include "model/modelreplace.h"
 #include "Management.h"
 #include "cfile/cfile.h"
 #include "graphics/2d.h"
@@ -67,6 +68,7 @@
 #include "mod_table/mod_table.h"
 #include "libs/ffmpeg/FFmpeg.h"
 #include "scripting/scripting.h"
+#include "scripting/global_hooks.h"
 #include "utils/Random.h"
 
 #include <direct.h>
@@ -99,6 +101,8 @@ char Fred_base_dir[512] = "";
 
 char Fred_alt_names[MAX_SHIPS][NAME_LENGTH+1];
 char Fred_callsigns[MAX_SHIPS][NAME_LENGTH+1];
+
+extern void allocate_parse_text(size_t size);
 
 // object numbers for ships in a wing.
 int wing_objects[MAX_WINGS][MAX_SHIPS_PER_WING];
@@ -146,6 +150,7 @@ int create_ship(matrix *orient, vec3d *pos, int ship_type);
 int query_ship_name_duplicate(int ship);
 char *reg_read_string( char *section, char *name, char *default_value );
 
+// Note that the parameter here is max *length*, not max buffer size.  Leave room for the null-terminator!
 void string_copy(char *dest, const CString &src, size_t max_len, int modify)
 {
 	if (modify)
@@ -153,8 +158,8 @@ void string_copy(char *dest, const CString &src, size_t max_len, int modify)
 			set_modified();
 
 	auto len = strlen(src);
-	if (len >= max_len)
-		len = max_len - 1;
+	if (len > max_len)
+		len = max_len;
 
 	strncpy(dest, src, len);
 	dest[len] = 0;
@@ -186,11 +191,11 @@ void convert_multiline_string(CString &dest, const char *src)
 }
 
 // Converts a windows format multiline CString back into a normal multiline string.
-void deconvert_multiline_string(char *dest, const CString &str, int max_len)
+void deconvert_multiline_string(char *dest, const CString &str, size_t max_len)
 {
 	// leave room for the null terminator
-	memset(dest, 0, max_len);
-	strncpy(dest, (LPCTSTR) str, max_len - 1);
+	memset(dest, 0, max_len + 1);
+	strncpy(dest, (LPCTSTR) str, max_len);
 
 	replace_all(dest, "\r\n", "\n", max_len);
 }
@@ -273,7 +278,6 @@ void parse_medal_tbl()
 }
 */
 
-void parse_init(bool basic = false);
 void brief_init_colors();
 
 void fred_preload_all_briefing_icons()
@@ -404,17 +408,19 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	gamesnd_parse_soundstbl();		// needs to be loaded after species stuff but before interface/weapon/ship stuff - taylor
 	mission_brief_common_init();	
 
+	sexp::dynamic_sexp_init(); // Must happen before ship init for LuaAI
+
 	animation::ModelAnimationParseHelper::parseTables();
 	obj_init();
 	model_free_all();				// Free all existing models
+	virtual_pof_init();
 	ai_init();
 	ai_profiles_init();
 	armor_init();
 	weapon_init();
-	parse_medal_tbl();			// get medal names for sexpression usage
+	medals_init();			// get medal names for sexpression usage
 	glowpoint_init();
 	ship_init();
-	parse_init();
 	techroom_intel_init();
 	hud_positions_init();
 	asteroid_init();
@@ -446,7 +452,6 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 
 	libs::ffmpeg::initialize();
 
-	sexp::dynamic_sexp_init();
 
 	// wookieejedi
 	// load in the controls and defaults including the controlconfigdefault.tbl
@@ -461,13 +466,12 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	// Get the default player ship
 	Default_player_model = cur_model_index = get_default_player_ship_index();
 
-	Id_select_type_start = (int)(Ship_info.size() + 2);
-	Id_select_type_jump_node = (int)(Ship_info.size() + 1);
-	Id_select_type_waypoint = (int)(Ship_info.size());
 	Fred_main_wnd -> init_tools();
 
 	Script_system.RunInitFunctions();
-	Script_system.RunCondition(CHA_GAMEINIT);
+	if (scripting::hooks::OnGameInit->isActive()) {
+		scripting::hooks::OnGameInit->run();
+	}
 
 	return true;
 }
@@ -582,11 +586,7 @@ int create_ship(matrix *orient, vec3d *pos, int ship_type)
 			if (!(sip->is_small_ship()))
 			{
 				shipp->orders_accepted = ship_get_default_orders_accepted( sip );
-
-				for(size_t i = 0; i < Player_orders.size(); i++) {
-					if (Player_orders[i].id & DEPART_ITEM)
-						shipp->orders_accepted.erase(i);
-				}
+				shipp->orders_accepted.erase(DEPART_ITEM);
 			}
 		}
 		else
@@ -661,7 +661,6 @@ int dup_object(object *objp)
 
 		aip1 = &Ai_info[Ships[n].ai_index];
 		aip2 = &Ai_info[Ships[inst].ai_index];
-		aip1->behavior = aip2->behavior;
 		aip1->ai_class = aip2->ai_class;
 		for (i=0; i<MAX_AI_GOALS; i++)
 			aip1->goals[i] = aip2->goals[i];
@@ -774,12 +773,16 @@ int create_player(int num, vec3d *pos, matrix *orient, int type, int init)
 	if (type == -1){
 		type = Default_player_model;
 	}
-
 	Assert(type >= 0);
-	Assert(Player_starts < MAX_PLAYERS);
-	Player_starts++;
+
 	obj = create_ship(orient, pos, type);
 	Objects[obj].type = OBJ_START;
+
+	Assert(Player_starts < MAX_PLAYERS);
+	Player_starts++;
+	if (Player_start_shipnum < 0) {
+		Player_start_shipnum = Objects[obj].instance;
+	}
 
 	// be sure arrival/departure cues are set
 	Ships[Objects[obj].instance].arrival_cue = Locked_sexp_true;
@@ -808,7 +811,8 @@ void reset_mission()
 {
 	clear_mission();
 
-	player_start1 = create_player(0, &vmd_zero_vector, &vmd_identity_matrix);
+	create_player(0, &vmd_zero_vector, &vmd_identity_matrix);
+
 	stars_post_level_init();
 }
 
@@ -822,56 +826,27 @@ void clear_mission()
 	if (Briefing_dialog){
 		Briefing_dialog->reset_editor();
 	}
-
-	extern void allocate_parse_text(size_t size);
-	allocate_parse_text( PARSE_TEXT_SIZE );
-
-	The_mission.cutscenes.clear(); 
-	fiction_viewer_reset();
-	cmd_brief_reset();
 	mission_event_shutdown();
 
-	Asteroid_field.num_initial_asteroids = 0;  // disable asteroid field by default.
-	Asteroid_field.speed = 0.0f;
-	vm_vec_make(&Asteroid_field.min_bound, -1000.0f, -1000.0f, -1000.0f);
-	vm_vec_make(&Asteroid_field.max_bound,  1000.0f,  1000.0f,  1000.0f);
-	vm_vec_make(&Asteroid_field.inner_min_bound, -500.0f, -500.0f, -500.0f);
-	vm_vec_make(&Asteroid_field.inner_max_bound,  500.0f,  500.0f,  500.0f);
-	Asteroid_field.has_inner_bound = 0;
-	Asteroid_field.field_type = FT_ACTIVE;
-	Asteroid_field.debris_genre = DG_ASTEROID;
-	Asteroid_field.field_debris_type[0] = -1;
-	Asteroid_field.field_debris_type[1] = -1;
-	Asteroid_field.field_debris_type[2] = -1;
 
-	strcpy_s(Mission_parse_storm_name, "none");
+	allocate_parse_text( PARSE_TEXT_SIZE );
 
-	animation::ModelAnimationParseHelper::parseTables();
+	mission_init(&The_mission);
+
 	obj_init();
 	model_free_all();				// Free all existing models
 	ai_init();
-	ship_init();
-	jumpnode_level_close();
-	waypoint_level_close();
-
-	Num_wings = 0;
-	for (i=0; i<MAX_WINGS; i++){
-		Wings[i].wave_count = 0;
-		Wings[i].wing_squad_filename[0] = '\0';
-		Wings[i].wing_insignia_texture = -1;
-	}
+	asteroid_level_init();
+	ship_level_init();
+	nebula_init(Nebula_index, Nebula_pitch, Nebula_bank, Nebula_heading);
 
 	Shield_sys_teams.clear();
-	for (i=0; i< (int)Iff_info.size(); i++){
-		Shield_sys_teams.push_back(0);
-	}
+	Shield_sys_teams.resize(Iff_info.size(), 0);
 
 	for (i=0; i<MAX_SHIP_CLASSES; i++){
 		Shield_sys_types[i] = 0;
 	}
 
-	Num_ai_dock_names = 0;
-	Num_reinforcements = 0;
 	set_cur_indices(-1);
 
 	str = reg_read_string("SOFTWARE\\Microsoft\\Windows\\CurrentVersion", "RegisteredOwner", NULL);
@@ -884,8 +859,8 @@ void clear_mission()
 			}
 		}
 	}
-
 	t = CTime::GetCurrentTime();
+
 	strcpy_s(The_mission.name, "Untitled");
 	strncpy(The_mission.author, str, NAME_LENGTH - 1);
 	The_mission.author[NAME_LENGTH - 1] = 0;
@@ -893,14 +868,6 @@ void clear_mission()
 	strcpy_s(The_mission.modified, The_mission.created);
 	strcpy_s(The_mission.notes, "This is a FRED2_OPEN created mission.\n");
 	strcpy_s(The_mission.mission_desc, "Put mission description here\n");
-	The_mission.game_type = MISSION_TYPE_SINGLE;
-	strcpy_s(The_mission.squad_name, "");
-	strcpy_s(The_mission.squad_filename, "");
-	The_mission.num_respawns = 3;
-	The_mission.max_respawn_delay = -1;
-
-	Player_starts = 0;
-	Num_teams = 1;
 
 	// reset alternate name & callsign stuff
 	for(i=0; i<MAX_SHIPS; i++){
@@ -941,79 +908,16 @@ void clear_mission()
 		Team_data[i].num_weapon_choices = count; 
 	}
 
-	*Parse_text = *Parse_text_raw = '\0';
-	Parse_text[1] = Parse_text_raw[1] = 0;
-
-	waypoint_parse_init();
-	Num_mission_events = 0;
-	Num_goals = 0;
 	unmark_all();
-	obj_init();
-	model_free_all();				// Free all existing models
 	fred_render_init();
-	init_sexp();
-	messages_init();
-	brief_reset();
-	debrief_reset();
-	ship_init();
-	event_music_reset_choices();
-	clear_texture_replacements();
+	set_physics_controls();
 
 	Event_annotations.clear();
 
-	mission_parse_reset_alt();		// alternate ship type names
-	mission_parse_reset_callsign();
-
-	strcpy(Cargo_names[0], "Nothing");
-	Num_cargo = 1;
-	set_physics_controls();
-
-	// reset background bitmaps and suns
-	stars_pre_level_init();
-	Nebula_index = 0;
-	Mission_palette = 1;
-	Nebula_pitch = (int) ((float) (Random::next() & 0x0fff) * 360.0f / 4096.0f);
-	Nebula_bank = (int) ((float) (Random::next() & 0x0fff) * 360.0f / 4096.0f);
-	Nebula_heading = (int) ((float) (Random::next() & 0x0fff) * 360.0f / 4096.0f);
-	Neb2_awacs = -1.0f;
-	Neb2_poof_flags = 0;
-	strcpy_s(Neb2_texture_name, "");
-	for(i=0; i<(int)MAX_NEB2_POOFS; i++){
-		Neb2_poof_flags |= (1<<i);
-	}
-
-	Nmodel_flags = DEFAULT_NMODEL_FLAGS;
-	Nmodel_num = -1;
-	Nmodel_instance_num = -1;
-	vm_set_identity(&Nmodel_orient);
-	Nmodel_bitmap = -1;
-
-	The_mission.contrail_threshold = CONTRAIL_THRESHOLD_DEFAULT;
-
-	// Goober5000
-	The_mission.command_persona = Default_command_persona;
-	strcpy_s(The_mission.command_sender, DEFAULT_COMMAND); 
-
-	// Goober5000: reset ALL mission flags, not just nebula!
-	The_mission.flags.reset();
-	The_mission.support_ships.max_support_ships = -1;	// negative means infinite
-	The_mission.support_ships.max_hull_repair_val = 0.0f;
-	The_mission.support_ships.max_subsys_repair_val = 100.0f;
-	The_mission.ai_profile = &Ai_profiles[Default_ai_profile];
-	
-	nebula_init(Nebula_filenames[Nebula_index], Nebula_pitch, Nebula_bank, Nebula_heading);
-
-	strcpy_s(The_mission.loading_screen[GR_640],"");
-	strcpy_s(The_mission.loading_screen[GR_1024],"");
-	strcpy_s(The_mission.skybox_model, "");
-	vm_set_identity(&The_mission.skybox_orientation);
-	strcpy_s(The_mission.envmap_name, "");
-	The_mission.skybox_flags = DEFAULT_NMODEL_FLAGS;
-
-	// no sound environment
-	The_mission.sound_environment.id = -1;
-
-	ENVMAP = -1;
+	// free memory from all parsing so far -- see also the stop_parse() in player_select_close() which frees all tbls found during game_init()
+	stop_parse();
+	// however, FRED expects to parse comments from the raw buffer, so we need a nominal string for that
+	allocate_parse_text(1);
 
 	set_modified(FALSE);
 	Update_window = 1;

@@ -25,9 +25,9 @@
 
 using namespace luacpp;
 
-namespace {
+namespace sexp {
 
-SCP_unordered_map<SCP_string, int> parameter_type_mapping{{ "boolean",      OPF_BOOL },
+static SCP_unordered_map<SCP_string, int> parameter_type_mapping{{ "boolean",      OPF_BOOL },
 														  { "number",       OPF_NUMBER },
 														  { "ship",         OPF_SHIP },
 														  { "shipname",     OPF_SHIP },
@@ -47,7 +47,7 @@ SCP_unordered_map<SCP_string, int> parameter_type_mapping{{ "boolean",      OPF_
 														  { "ship+wing+waypoint",   OPF_SHIP_WING_POINT },
 														  { "ship+wing+waypoint+none",   OPF_SHIP_WING_POINT_OR_NONE }, };
 
-std::pair<SCP_string, int> get_parameter_type(const SCP_string& name)
+std::pair<SCP_string, int> LuaSEXP::get_parameter_type(const SCP_string& name)
 {
 	SCP_string copy = name;
 	SCP_tolower(copy);
@@ -60,10 +60,10 @@ std::pair<SCP_string, int> get_parameter_type(const SCP_string& name)
 	}
 }
 
-SCP_unordered_map<SCP_string, int> return_type_mapping{{ "number",  OPR_NUMBER },
+static SCP_unordered_map<SCP_string, int> return_type_mapping{{ "number",  OPR_NUMBER },
 													   { "boolean", OPR_BOOL },
 													   { "nothing", OPR_NULL }, };
-int get_return_type(const SCP_string& name)
+int LuaSEXP::get_return_type(const SCP_string& name)
 {
 	SCP_string copy = name;
 	SCP_tolower(copy);
@@ -76,7 +76,7 @@ int get_return_type(const SCP_string& name)
 	}
 }
 
-int get_category(const SCP_string& name) {
+int LuaSEXP::get_category(const SCP_string& name) {
 	for (auto& subcat : op_menu) {
 		if (subcat.name == name) {
 			return subcat.id;
@@ -86,7 +86,7 @@ int get_category(const SCP_string& name) {
 	return -1;
 }
 
-int get_subcategory(const SCP_string& name, int category) {
+int LuaSEXP::get_subcategory(const SCP_string& name, int category) {
 	for (auto& subcat : op_submenu) {
 		if (subcat.name == name && (subcat.id & OP_CATEGORY_MASK) == category) {
 			return subcat.id;
@@ -96,19 +96,15 @@ int get_subcategory(const SCP_string& name, int category) {
 	return -1;
 }
 
-}
-
-namespace sexp {
-
 LuaSEXP::LuaSEXP(const SCP_string& name) : DynamicSEXP(name) {
 }
 void LuaSEXP::initialize() {
 	// Nothing to do for this type
 }
-int LuaSEXP::getMinimumArguments() {
+int LuaSEXP::getMinimumArguments() const {
 	return _min_args;
 }
-int LuaSEXP::getMaximumArguments() {
+int LuaSEXP::getMaximumArguments() const {
 	return _max_args;
 }
 std::pair<SCP_string, int> LuaSEXP::getArgumentInternalType(int argnum) const {
@@ -293,26 +289,22 @@ int LuaSEXP::getSexpReturnValue(const LuaValueList& retVals) const {
 		return SEXP_TRUE;
 	}
 }
-int LuaSEXP::execute(int node) {
-	if (!_action.isValid()) {
-		Error(LOCATION,
-			  "Lua SEXP called without a valid action function! A script probably failed to set the action for some reason.");
-		return SEXP_CANT_EVAL;
-	}
 
+luacpp::LuaValueList LuaSEXP::getSEXPArgumentList(int node) const {
 	LuaValueList luaParameters;
 
 	// We need to adapt how we handle parameters based on their type. We use this variable to keep track of which parameter
 	// we are currently looking at
 	int argnum = 0;
 	while (node != -1) {
-		if (argnum < (int) _argument_types.size()) {
+		if (argnum < (int)_argument_types.size()) {
 			// This is a parameter in the normal list so we add it to the normal parameter list
 			luaParameters.push_back(sexpToLua(node, argnum));
 
 			node = CDR(node);
 			++argnum;
-		} else {
+		}
+		else {
 			// The varargs part is handled in chunks so that scripts can use the data more easily
 			// Every repeat pattern instance is put into its own table
 			LuaTable varargs_part = LuaTable::create(_action.getLuaState());
@@ -330,6 +322,18 @@ int LuaSEXP::execute(int node) {
 			luaParameters.push_back(varargs_part);
 		}
 	}
+
+	return luaParameters;
+}
+
+int LuaSEXP::execute(int node) {
+	if (!_action.isValid()) {
+		Error(LOCATION,
+			  "Lua SEXP called without a valid action function! A script probably failed to set the action for some reason.");
+		return SEXP_CANT_EVAL;
+	}
+
+	LuaValueList luaParameters = getSEXPArgumentList(node);
 
 	// All parameters are now in LuaValues, time to call our function
 	try {

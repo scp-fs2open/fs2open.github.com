@@ -229,6 +229,10 @@ void bg_bitmap_dlg::create()
 
 	CDialog::Create(bg_bitmap_dlg::IDD);
 	theApp.init_window(&Bg_wnd_data, this);
+
+	// disable the sun bank controls because, per Asteroth, setting the bank is no longer meaningful
+	GetDlgItem(IDC_SUN1_B)->EnableWindow(FALSE);
+	GetDlgItem(IDC_SUN1_B_SPIN)->EnableWindow(FALSE);
 	
 	box = (CComboBox *) GetDlgItem(IDC_NEBCOLOR);
 	for (i=0; i<NUM_NEBULA_COLORS; i++){
@@ -450,16 +454,12 @@ void bg_bitmap_dlg::OnClose()
 	Nebula_pitch = m_pitch;
 	Nebula_bank = m_bank;
 	Nebula_heading = m_heading;
-	if (Nebula_index >= 0){
-		nebula_init(Nebula_filenames[Nebula_index], m_pitch, m_bank, m_heading);
-	} else {
-		nebula_close();
-	}
+	nebula_init(Nebula_index, m_pitch, m_bank, m_heading);
 
     The_mission.flags.set(Mission::Mission_Flags::Subspace, m_subspace != 0);
 
-	string_copy(The_mission.skybox_model, m_skybox_model, NAME_LENGTH, 1);
-	string_copy(The_mission.envmap_name, m_envmap, NAME_LENGTH, 1);
+	string_copy(The_mission.skybox_model, m_skybox_model, NAME_LENGTH - 1, 1);
+	string_copy(The_mission.envmap_name, m_envmap, NAME_LENGTH - 1, 1);
 
 	angles skybox_angles;
 	skybox_angles.p = fl_radians(m_skybox_pitch);
@@ -539,11 +539,7 @@ void bg_bitmap_dlg::OnSelchangeNebpattern()
 	Nebula_index = m_nebula_index - 1;			
 
 	GetDlgItem(IDC_NEBCOLOR)->EnableWindow(m_nebula_index ? TRUE : FALSE);
-	if (Nebula_index >= 0){		
-		nebula_init(Nebula_filenames[Nebula_index], m_pitch, m_bank, m_heading);		
-	} else {
-		nebula_close();
-	}
+	nebula_init(Nebula_index, m_pitch, m_bank, m_heading);
 
 	Update_window = 1;
 }

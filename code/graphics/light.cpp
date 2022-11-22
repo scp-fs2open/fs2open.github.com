@@ -15,6 +15,8 @@
 
 #include "cmdline/cmdline.h"
 #include "graphics/2d.h"
+#include "lighting/lighting.h"
+#include "lighting/lighting_profiles.h"
 #include "math/bitarray.h"
 #include "render/3d.h"
 #include "util/uniform_structs.h"
@@ -24,7 +26,6 @@ struct gr_light
 {
 	vec4 Ambient;
 	vec4 Diffuse;
-	vec4 Specular;
 
 	// light position
 	vec4 Position;
@@ -34,6 +35,7 @@ struct gr_light
 
 	float SpotCutOff;
 	float ConstantAtten, LinearAtten, QuadraticAtten;
+	float SourceRadius;
 
 	int type;
 };
@@ -49,7 +51,7 @@ const float gr_light_color[4] = { 0.8f, 0.8f, 0.8f, 1.0f };
 const float gr_light_zero[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 const float gr_light_emission[4] = { 0.09f, 0.09f, 0.09f, 1.0f };
 float gr_light_ambient[4] = { 0.47f, 0.47f, 0.47f, 1.0f };
-float gr_user_ambient = 0.0f;
+
 
 void FSLight2GLLight(light* FSLight, gr_light* GLLight) {
 	GLLight->Ambient.xyzw.x = 0.0f;
@@ -61,11 +63,6 @@ void FSLight2GLLight(light* FSLight, gr_light* GLLight) {
 	GLLight->Diffuse.xyzw.y = FSLight->g * FSLight->intensity;
 	GLLight->Diffuse.xyzw.z = FSLight->b * FSLight->intensity;
 	GLLight->Diffuse.xyzw.w = 1.0f;
-
-	GLLight->Specular.xyzw.x = FSLight->spec_r * FSLight->intensity;
-	GLLight->Specular.xyzw.y = FSLight->spec_g * FSLight->intensity;
-	GLLight->Specular.xyzw.z = FSLight->spec_b * FSLight->intensity;
-	GLLight->Specular.xyzw.w = 1.0f;
 
 	GLLight->type = static_cast<int>(FSLight->type);
 
@@ -85,6 +82,7 @@ void FSLight2GLLight(light* FSLight, gr_light* GLLight) {
 	GLLight->Position.xyzw.y = FSLight->vec.xyz.y;
 	GLLight->Position.xyzw.z = FSLight->vec.xyz.z; // flipped axis for FS2
 	GLLight->Position.xyzw.w = 1.0f;
+	GLLight->SourceRadius = FSLight->source_radius;
 
 
 	switch (FSLight->type) {
@@ -93,9 +91,6 @@ void FSLight2GLLight(light* FSLight, gr_light* GLLight) {
 		GLLight->ConstantAtten = 1.0f;
 		GLLight->LinearAtten = (1.0f / MAX(FSLight->rada, FSLight->radb)) * 1.25f;
 
-		GLLight->Specular.xyzw.x *= static_point_factor;
-		GLLight->Specular.xyzw.y *= static_point_factor;
-		GLLight->Specular.xyzw.z *= static_point_factor;
 
 		break;
 	}
@@ -104,10 +99,6 @@ void FSLight2GLLight(light* FSLight, gr_light* GLLight) {
 		GLLight->ConstantAtten = 1.0f;
 		GLLight->LinearAtten = (1.0f / MAX(FSLight->rada, FSLight->radb)) * 1.25f;
 		GLLight->QuadraticAtten = (1.0f / MAX(FSLight->rada_squared, FSLight->radb_squared)) * 1.25f;
-
-		GLLight->Specular.xyzw.x *= static_tube_factor;
-		GLLight->Specular.xyzw.y *= static_tube_factor;
-		GLLight->Specular.xyzw.z *= static_tube_factor;
 
 		GLLight->Position.xyzw.x = FSLight->vec2.xyz.x; // Valathil: Use endpoint of tube as light position
 		GLLight->Position.xyzw.y = FSLight->vec2.xyz.y;
@@ -130,10 +121,6 @@ void FSLight2GLLight(light* FSLight, gr_light* GLLight) {
 		GLLight->Position.xyzw.z = -FSLight->vec.xyz.z;
 		GLLight->Position.xyzw.w = 0.0f; // This is a direction so the w part must be 0
 
-		GLLight->Specular.xyzw.x *= static_light_factor;
-		GLLight->Specular.xyzw.y *= static_light_factor;
-		GLLight->Specular.xyzw.z *= static_light_factor;
-
 		break;
 	}
 
@@ -154,11 +141,10 @@ static void set_light(int light_num, gr_light* ltp) {
 
 	gr_light_uniforms[light_num].diffuse_color = vm_vec4_to_vec3(ltp->Diffuse);
 
-	gr_light_uniforms[light_num].spec_color = vm_vec4_to_vec3(ltp->Specular);
-
 	gr_light_uniforms[light_num].light_type = ltp->type;
 
 	gr_light_uniforms[light_num].attenuation = ltp->LinearAtten;
+	gr_light_uniforms[light_num].ml_sourceRadius = ltp->SourceRadius;
 }
 
 static bool sort_active_lights(const gr_light& la, const gr_light& lb) {
@@ -205,6 +191,10 @@ static void pre_render_init_lights() {
 }
 
 void gr_set_light(light* fs_light) {
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	// init the light
 	gr_light grl;
 	FSLight2GLLight(fs_light, &grl);
@@ -213,6 +203,10 @@ void gr_set_light(light* fs_light) {
 }
 
 void gr_set_center_alpha(int type) {
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	if (!type) {
 		return;
 	}
@@ -240,11 +234,6 @@ void gr_set_center_alpha(int type) {
 		glight.Ambient.xyzw.z = 0.0f;
 	}
 	glight.type = type;
-
-	glight.Specular.xyzw.x = 0.0f;
-	glight.Specular.xyzw.y = 0.0f;
-	glight.Specular.xyzw.z = 0.0f;
-	glight.Specular.xyzw.w = 0.0f;
 
 	glight.Ambient.xyzw.w = 1.0f;
 	glight.Diffuse.xyzw.w = 1.0f;
@@ -275,12 +264,12 @@ void gr_set_center_alpha(int type) {
 }
 
 void gr_reset_lighting() {
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	gr_lights.clear();
 	Num_active_gr_lights = 0;
-}
-
-void gr_calculate_ambient_factor(int ambient_factor) {
-	gr_user_ambient = (float) ((ambient_factor * 2) - 255) / 255.0f;
 }
 
 void gr_light_shutdown() {
@@ -288,16 +277,20 @@ void gr_light_shutdown() {
 }
 
 void gr_light_init() {
-	gr_calculate_ambient_factor();
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
 
 	// allocate memory for enabled lights
 	gr_lights.reserve(1024);
 }
 
 void gr_set_lighting() {
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
 
 	//Valathil: Sort lights by priority
-	extern bool Deferred_lighting;
 	if (!Deferred_lighting) {
 		pre_render_init_lights();
 	}
@@ -326,15 +319,28 @@ void gr_set_lighting() {
 }
 
 void gr_set_ambient_light(int red, int green, int blue) {
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	gr_light_ambient[0] = i2fl(red) / 255.0f;
 	gr_light_ambient[1] = i2fl(green) / 255.0f;
 	gr_light_ambient[2] = i2fl(blue) / 255.0f;
 	gr_light_ambient[3] = 1.0f;
-
-	gr_calculate_ambient_factor();
+}
+void gr_get_ambient_light(vec3d* light_vector) {
+	auto abv = lighting_profile::current()->ambient_light_brightness;
+	auto over = lighting_profile::current()->overall_brightness;
+	light_vector->xyz.x = over.handle(abv.handle(gr_light_ambient[0]));
+	light_vector->xyz.y = over.handle(abv.handle(gr_light_ambient[1]));
+	light_vector->xyz.z = over.handle(abv.handle(gr_light_ambient[2]));
 }
 
 void gr_lighting_fill_uniforms(void* data_out, size_t buffer_size) {
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
 	Assertion(sizeof(gr_light_uniforms) <= buffer_size, "Insufficient buffer supplied.");
 
 	memcpy(reinterpret_cast<graphics::model_light*>(data_out), gr_light_uniforms, sizeof(gr_light_uniforms));

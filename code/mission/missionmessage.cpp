@@ -34,6 +34,7 @@
 #include "scripting/scripting.h"
 #include "ship/ship.h"
 #include "ship/subsysdamage.h"
+#include "sound/audiostr.h"
 #include "sound/fsspeech.h"
 #include "species_defs/species_defs.h"
 #include "utils/Random.h"
@@ -1046,6 +1047,13 @@ bool message_filename_has_fs1_wingman_prefix(const char *filename)
 		&& filename[2] != '\0');
 }
 
+void message_filename_convert_to_command(char *buf, const char *filename)
+{
+	// prepend the command name, and then the rest of the filename.
+	strcpy(buf, COMMAND_WAVE_PREFIX);
+	strcat(buf, &filename[2]);
+}
+
 // Play wave file associated with message
 // input: m		=>		pointer to message description
 //
@@ -1070,13 +1078,10 @@ bool message_play_wave( message_q *q )
 		// Look for "[1-6]_" at the front of the message.  If found, then convert to TC_*
 		if ( q->flags & MQF_CONVERT_TO_COMMAND && message_filename_has_fs1_wingman_prefix(filename) ) {
 			char temp[MAX_FILENAME_LEN];
+			message_filename_convert_to_command(temp, filename);
+			strcpy_s(filename, temp);
 
 			Message_waves[index].num = sound_load_id::invalid(); // forces us to reload the message
-
-			// prepend the command name, and then the rest of the filename.
-			strcpy_s( temp, COMMAND_WAVE_PREFIX );
-			strcat_s( temp, &filename[2] );
-			strcpy_s( filename, temp );
 		}
 
 		// load the sound file into memory
@@ -1629,13 +1634,15 @@ void message_queue_process()
 	if (Message_shipnum >= 0) {
 		sender = &Objects[Ships[Message_shipnum].objnum];
 	}
-	OnMessageReceivedHook->run(scripting::hook_param_list(
-		scripting::hook_param("Name", 's', m->name),
-		scripting::hook_param("MessageHandle", 'o', scripting::api::l_Message.Set(q->message_num)),
-		scripting::hook_param("Message", 's', buf),
-		scripting::hook_param("SenderString", 's', who_from),
-		scripting::hook_param("Builtin", 'b', builtinMessage),
-		scripting::hook_param("Sender", 'o', sender)));
+	if (OnMessageReceivedHook->isActive()) {
+		OnMessageReceivedHook->run(scripting::hook_param_list(
+			scripting::hook_param("Name", 's', m->name),
+			scripting::hook_param("MessageHandle", 'o', scripting::api::l_Message.Set(q->message_num)),
+			scripting::hook_param("Message", 's', buf),
+			scripting::hook_param("SenderString", 's', who_from),
+			scripting::hook_param("Builtin", 'b', builtinMessage),
+			scripting::hook_param("Sender", 'o', sender)));
+	}
 
 	Num_messages_playing++;		// this has to be done at the end because some sound functions use it to index into the array
 all_done:
@@ -1705,8 +1712,8 @@ void message_queue_message( int message_num, int priority, int timing, const cha
 	// Goober5000 - replace variables if necessary
 	// karajorma/jg18 - replace container references if necessary
 	strcpy_s(temp_buf, Messages[message_num].message);
-	const bool replace_var = sexp_replace_variable_names_with_values(temp_buf, MESSAGE_LENGTH);
-	const bool replace_con = sexp_container_replace_refs_with_values(temp_buf, MESSAGE_LENGTH);
+	const bool replace_var = sexp_replace_variable_names_with_values(temp_buf, MESSAGE_LENGTH - 1);
+	const bool replace_con = sexp_container_replace_refs_with_values(temp_buf, MESSAGE_LENGTH - 1);
 	if (replace_var || replace_con)
 		MessageQ[i].special_message = vm_strdup(temp_buf);
 
@@ -1714,12 +1721,29 @@ void message_queue_message( int message_num, int priority, int timing, const cha
 
 	// wingman personas have their alive status checked
 	if ( (m_persona != -1) && (Personas[m_persona].flags & PERSONA_FLAG_WINGMAN) ) {
+		bool convert_to_command = false;
+
 		// SPECIAL HACK -- if the who_from is terran command, and there is a wingman persona attached
 		// to this message, then set a bit to tell the wave/anim playing code to play the command version
 		// of the wave and head
 		// ADDENDUM -- Since the special hack is specifically for mission-unique messages, don't
 		// convert built-in messages to Command
 		if ( builtin_type < 0 && !stricmp(who_from, The_mission.command_sender) ) {
+			// ADDENDUM 2 -- perform an additional check: only convert this message if a WAV exists for it
+			auto m = &Messages[message_num];
+			if (m->wave_info.index >= 0) {
+				auto filename = Message_waves[m->wave_info.index].name;
+				if (message_filename_has_fs1_wingman_prefix(filename)) {
+					char converted[MAX_FILENAME_LEN];
+					message_filename_convert_to_command(converted, filename);
+					if (cf_exists_full_ext(converted, CF_TYPE_VOICE_SPECIAL, NUM_AUDIO_EXT, audio_ext_list)) {
+						convert_to_command = true;
+					}
+				}
+			}
+		}
+
+		if (convert_to_command) {
 			MessageQ[i].flags |= MQF_CONVERT_TO_COMMAND;
 			MessageQ[i].source = HUD_SOURCE_TERRAN_CMD;
 		} else {

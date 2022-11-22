@@ -48,6 +48,7 @@ multi_global_options Multi_options_g;
 
 char Multi_options_proxy[512] = "";
 ushort Multi_options_proxy_port = 0;
+bool Multi_cfg_missing = true;
 
 // ----------------------------------------------------------------------------------
 // MULTI OPTIONS FUNCTIONS
@@ -76,6 +77,8 @@ void multi_options_read_config()
 	if (in == NULL) {
 		nprintf(("Network","Failed to open network config file, using default settings\n"));		
 	} else {
+		Multi_cfg_missing = false;
+
 		while ( !cfeof(in) ) {
 			// read in the game info
 			memset(str, 0, 512);
@@ -346,7 +349,7 @@ void multi_options_set_local_defaults(multi_local_options *options)
 	if ( Psnet_connection == NETWORK_CONNECTION_DIALUP ) {
 		options->obj_update_level = OBJ_UPDATE_LOW;
 	} else {
-		options->obj_update_level = OBJ_UPDATE_HIGH;
+		options->obj_update_level = Default_multi_object_update_level;
 	}
 }
 
@@ -628,12 +631,10 @@ void multi_options_process_packet(unsigned char *data, header *hinfo)
 		break;
 
 	// get mission choice options
-	case MULTI_OPTION_MISSION:
+	case MULTI_OPTION_MISSION: {
 		netgame_info ng;
 		char title[NAME_LENGTH+1];
 		int campaign_type,max_players;
-		
-		memset(&ng,0,sizeof(netgame_info));
 
 		Assert(Game_mode & GM_STANDALONE_SERVER);
 
@@ -706,6 +707,7 @@ void multi_options_process_packet(unsigned char *data, header *hinfo)
 
 		send_netgame_update_packet();	   
 		break;
+	}
 
 	// get the netgame options
 	case MULTI_OPTION_SERVER:		

@@ -14,6 +14,7 @@
 #include "hud/hud.h"
 #include "io/key.h"
 #include "mission/missioncampaign.h"
+#include "network/multi.h"
 #include "parse/parselo.h"
 #include "scripting/doc_html.h"
 #include "scripting/doc_json.h"
@@ -44,6 +45,7 @@ flag_def_list Script_conditions[] =
 	{"Action", CHC_ACTION, 0},
 	{"Version", CHC_VERSION, 0},
 	{"Application", CHC_APPLICATION, 0},
+	{"Multi type", CHC_MULTI_SERVER, 0},
 };
 
 int Num_script_conditions = sizeof(Script_conditions) / sizeof(flag_def_list);
@@ -56,13 +58,17 @@ class BuiltinHook : public scripting::HookBase {
 	}
 	~BuiltinHook() override = default;
 
+	bool isActive() const override
+	{
+		return Script_system.IsActiveAction(_hookId);
+	}
+
 	bool isOverridable() const override { return true; }
 };
 
 // clang-format off
 static USED_VARIABLE SCP_vector<std::shared_ptr<BuiltinHook>> Script_actions
 {
-	std::make_shared<BuiltinHook>("On Game Init",			CHA_GAMEINIT ),
 	std::make_shared<BuiltinHook>("On Splash Screen",		CHA_SPLASHSCREEN ),
 	std::make_shared<BuiltinHook>("On State Start",			CHA_ONSTATESTART ),
 	std::make_shared<BuiltinHook>("On Action",				CHA_ONACTION ),
@@ -74,12 +80,10 @@ static USED_VARIABLE SCP_vector<std::shared_ptr<BuiltinHook>> Script_actions
 	std::make_shared<BuiltinHook>("On Mouse Released",		CHA_MOUSERELEASED ),
 	std::make_shared<BuiltinHook>("On Mission Start",		CHA_MISSIONSTART ),
 	std::make_shared<BuiltinHook>("On HUD Draw",			CHA_HUDDRAW ),
-	std::make_shared<BuiltinHook>("On Ship Collision",		CHA_COLLIDESHIP ),
 	std::make_shared<BuiltinHook>("On Weapon Collision",	CHA_COLLIDEWEAPON ),
 	std::make_shared<BuiltinHook>("On Debris Collision",	CHA_COLLIDEDEBRIS ),
 	std::make_shared<BuiltinHook>("On Asteroid Collision",	CHA_COLLIDEASTEROID ),
 	std::make_shared<BuiltinHook>("On Object Render",		CHA_OBJECTRENDER ),
-	std::make_shared<BuiltinHook>("On Death",				CHA_DEATH ),
 	std::make_shared<BuiltinHook>("On Weapon Delete",		CHA_ONWEAPONDELETE ),
 	std::make_shared<BuiltinHook>("On Weapon Equipped",		CHA_ONWPEQUIPPED ),
 	std::make_shared<BuiltinHook>("On Weapon Fired",		CHA_ONWPFIRED ),
@@ -310,6 +314,18 @@ bool ConditionedHook::AddCondition(script_condition *sc)
 		}
 		break;
 	}
+	case CHC_MULTI_SERVER:
+	{
+		if (stricmp("Server", sc->condition_string.c_str()) == 0 || stricmp("Master", sc->condition_string.c_str()) == 0)
+		{
+			sc->condition_cached_value = 1;
+		}
+		else
+		{
+			sc->condition_cached_value = 0;
+		}
+		break;
+	}
 	default:
 		break;
 	}
@@ -323,12 +339,18 @@ bool ConditionedHook::AddAction(script_action *sa)
 	if(!script_hook_valid(&sa->hook))
 		return false;
 
+	if (sa->action_type == CHA_NONE)
+	{
+		Warning(LOCATION, "Cannot add an action of type CHA_NONE");
+		return false;
+	}
+
 	Actions.push_back(*sa);
 
 	return true;
 }
 
-bool ConditionedHook::ConditionsValid(int action, object *objp1, object *objp2, int more_data)
+bool ConditionedHook::ConditionsValid(int action_type, object *objp1, object *objp2, int more_data)
 {
 	object *objp_array[2];
 	objp_array[0] = objp1;
@@ -349,6 +371,8 @@ bool ConditionedHook::ConditionsValid(int action, object *objp1, object *objp2, 
 
 			case CHC_SHIPTYPE:
 			{
+				bool found_ship = false;
+
 				for (auto objp : objp_array)
 				{
 					if (objp != nullptr && objp->type == OBJ_SHIP)
@@ -356,41 +380,63 @@ bool ConditionedHook::ConditionsValid(int action, object *objp1, object *objp2, 
 						auto sip = &Ship_info[Ships[objp->instance].ship_info_index];
 						if (sip->class_type >= 0)
 						{
+							found_ship = true;
 							if (stricmp(Ship_types[sip->class_type].name, scp.condition_string.c_str()) != 0)
 								return false;
 						}
 						break;
 					}
 				}
+
+				// If a ship type is specified, but none of the objects was even any ship, the hook must not evaluate.
+				if (!found_ship)
+					return false;
+
 				break;
 			}
 
 			case CHC_SHIPCLASS:
 			{
+				bool found_ship = false;
+
 				for (auto objp : objp_array)
 				{
 					if (objp != nullptr && objp->type == OBJ_SHIP)
 					{
+						found_ship = true;
 						// scp.condition_cached_value holds the ship_info_index of the requested ship class
 						if (Ships[objp->instance].ship_info_index != scp.condition_cached_value)
 							return false;
 						break;
 					}
 				}
+
+				// If a ship class is specified, but none of the objects was even any ship, the hook must not evaluate.
+				if (!found_ship)
+					return false;
+
 				break;
 			}
 
 			case CHC_SHIP:
 			{
+				bool found_ship = false;
+
 				for (auto objp : objp_array)
 				{
 					if (objp != nullptr && objp->type == OBJ_SHIP)
 					{
+						found_ship = true;
 						if (stricmp(Ships[objp->instance].ship_name, scp.condition_string.c_str()) != 0)
 							return false;
 						break;
 					}
 				}
+
+				// If a ship is specified, but none of the objects was even any ship, the hook must not evaluate.
+				if (!found_ship)
+					return false;
+
 				break;
 			}
 
@@ -423,6 +469,8 @@ bool ConditionedHook::ConditionsValid(int action, object *objp1, object *objp2, 
 
 			case CHC_WEAPONCLASS:
 			{
+				bool found_weapon = false;
+
 				for (auto objp : objp_array)
 				{
 					if (objp == nullptr)
@@ -433,6 +481,8 @@ bool ConditionedHook::ConditionsValid(int action, object *objp1, object *objp2, 
 						// scp.condition_cached_value holds the weapon_info_index of the requested weapon class
 						if (Weapons[objp->instance].weapon_info_index != scp.condition_cached_value)
 							return false;
+
+						found_weapon = true;
 						break;
 					}
 					else if (objp->type == OBJ_BEAM)
@@ -440,16 +490,22 @@ bool ConditionedHook::ConditionsValid(int action, object *objp1, object *objp2, 
 						// scp.condition_cached_value holds the weapon_info_index of the requested weapon class
 						if (Beams[objp->instance].weapon_info_index != scp.condition_cached_value)
 							return false;
+
+						found_weapon = true;
 						break;
 					}
 				}
+
+				//If a weaponclass is specified, but none of the objects was even any weapon, the hook must not evaluate.
+				if (!found_weapon)
+					return false;
 
 				if (objp1 == nullptr || objp1->type != OBJ_SHIP)
 					break;
 				auto shipp = &Ships[objp1->instance];
 				bool primary = false, secondary = false, prev_primary = false, prev_secondary = false;
 
-				switch (action)
+				switch (action_type)
 				{
 					case CHA_ONWPSELECTED:
 					{
@@ -632,6 +688,13 @@ bool ConditionedHook::ConditionsValid(int action, object *objp1, object *objp2, 
 				{
 					return false;
 				}
+				break;
+			}
+			
+			case CHC_MULTI_SERVER:
+			{
+				//condition_cached_value is 0 if we execute on clients, 1 on servers
+				return static_cast<bool>(scp.condition_cached_value == 1) == static_cast<bool>(MULTIPLAYER_MASTER);
 			}
 
 			default:
@@ -642,7 +705,7 @@ bool ConditionedHook::ConditionsValid(int action, object *objp1, object *objp2, 
 	return true;
 }
 
-bool ConditionedHook::IsOverride(script_state* sys, int action)
+bool ConditionedHook::IsOverride(script_state* sys, int action_type)
 {
 	Assert(sys != NULL);
 	// bool b = false;
@@ -650,7 +713,7 @@ bool ConditionedHook::IsOverride(script_state* sys, int action)
 	//Do the actions
 	for(SCP_vector<script_action>::iterator sap = Actions.begin(); sap != Actions.end(); ++sap)
 	{
-		if (sap->action_type == action) {
+		if (sap->action_type == action_type) {
 			if (sys->IsOverride(sap->hook))
 				return true;
 		}
@@ -659,13 +722,13 @@ bool ConditionedHook::IsOverride(script_state* sys, int action)
 	return false;
 }
 
-bool ConditionedHook::Run(class script_state* sys, int action)
+bool ConditionedHook::Run(class script_state* sys, int action_type)
 {
 	Assert(sys != NULL);
 
 	// Do the actions
 	for (auto & Action : Actions) {
-		if (Action.action_type == action) {
+		if (Action.action_type == action_type) {
 			sys->RunBytecode(Action.hook.hook_function);
 		}
 	}
@@ -757,7 +820,7 @@ void script_state::UnloadImages()
 	ScriptImages.clear();
 }
 
-int script_state::RunCondition(int action, object *objp1, object *objp2, int more_data)
+int script_state::RunCondition(int action_type, object *objp1, object *objp2, int more_data)
 {
 	TRACE_SCOPE(tracing::LuaHooks);
 	int num = 0;
@@ -768,31 +831,28 @@ int script_state::RunCondition(int action, object *objp1, object *objp2, int mor
 
 	for(SCP_vector<ConditionedHook>::iterator chp = ConditionalHooks.begin(); chp != ConditionalHooks.end(); ++chp) 
 	{
-		if(chp->ConditionsValid(action, objp1, objp2, more_data))
+		if (chp->ConditionsValid(action_type, objp1, objp2, more_data))
 		{
-			chp->Run(this, action);
+			chp->Run(this, action_type);
 			num++;
 		}
 	}
+
+	ProcessAddedHooks();
 	return num;
 }
 
-bool script_state::IsConditionOverride(int action, object *objp1, object *objp2, int more_data)
+bool script_state::IsConditionOverride(int action_type, object *objp1, object *objp2, int more_data)
 {
 	for(SCP_vector<ConditionedHook>::iterator chp = ConditionalHooks.begin(); chp != ConditionalHooks.end(); ++chp)
 	{
-		if(chp->ConditionsValid(action, objp1, objp2, more_data))
+		if (chp->ConditionsValid(action_type, objp1, objp2, more_data))
 		{
-			if(chp->IsOverride(this, action))
+			if(chp->IsOverride(this, action_type))
 				return true;
 		}
 	}
 	return false;
-}
-
-void script_state::EndFrame()
-{
-	EndLuaFrame();
 }
 
 void script_state::Clear()
@@ -935,7 +995,7 @@ void script_state::ParseChunkSub(script_function& script_func, const char* debug
 		//crash, so this is here just to be on the safe side.
 		strcat(raw_lua, "\n");
 
-		for (auto i = 0; i <= line; ++i) {
+		for (auto i = 1; i <= line; ++i) {
 			source += "\n";
 		}
 		source += raw_lua;
@@ -1136,6 +1196,7 @@ bool script_state::ParseCondition(const char *filename)
 			case CHC_OBJECTTYPE:
 			case CHC_VERSION:
 			case CHC_APPLICATION:
+			case CHC_MULTI_SERVER:
 			default:
 				stuff_string(sct.condition_string, F_NAME);
 				break;
@@ -1185,7 +1246,14 @@ bool script_state::ParseCondition(const char *filename)
 }
 
 void script_state::AddConditionedHook(ConditionedHook hook) {
-	ConditionalHooks.push_back(std::move(hook));
+	AddedHooks.push_back(std::move(hook));
+}
+
+void script_state::ProcessAddedHooks() {
+	for (auto& hook : AddedHooks) {
+		ConditionalHooks.push_back(std::move(hook));
+	}
+	AddedHooks.clear();
 	AssayActions();
 }
 
@@ -1195,21 +1263,21 @@ void script_state::AddGameInitFunction(script_function func) { GameInitFunctions
 // This allows us to avoid significant overhead from checking everything at the potential hook sites, but you must call
 // AssayActions() after modifying ConditionalHooks before returning to normal operation of the scripting system!
 void script_state::AssayActions() {
-	for (bool &i : ActiveActions) {
-		i = false;
-	}
+	ActiveActions.clear();
 
 	for (const auto &hook : ConditionalHooks) {
 		for (const auto &action : hook.Actions) {
-			if (action.action_type >= -1 && action.action_type <= CHA_LAST) {
-				ActiveActions[action.action_type] = true;
-			}
+			ActiveActions[action.action_type] = true;
 		}
 	}
 }
 
-bool script_state::IsActiveAction(ConditionalActions action_id) {
-	return ActiveActions[action_id];
+bool script_state::IsActiveAction(int action_id) {
+	auto entry = ActiveActions.find(action_id);
+	if (entry != ActiveActions.end())
+		return entry->second;
+	else
+		return false;
 }
 
 //*************************CLASS: script_state*************************

@@ -13,8 +13,10 @@
 #include "debugconsole/console.h"
 #include "globalincs/systemvars.h"
 #include "graphics/2d.h"
+#include "graphics/color.h"
 #include "graphics/light.h"
 #include "lighting/lighting.h"
+#include "lighting/lighting_profiles.h"
 #include "math/vecmat.h"
 #include "model/modelrender.h"
 #include "render/3d.h"
@@ -38,6 +40,8 @@ static float Reflective_light = REFLECTIVE_LIGHT_DEFAULT;
 
 int Lighting_flag = 1;
 int Num_lights = 0;
+
+lighting_mode Lighting_mode = lighting_mode::NORMAL;
 
 DCF(light,"Changes lighting parameters")
 {
@@ -148,15 +152,15 @@ static void light_rotate(light * l)
 	}
 }
 
-void light_add_directional(const vec3d *dir, float intensity, float r, float g, float b, float spec_r, float spec_g, float spec_b, bool specular)
+void light_add_directional(const vec3d* dir, const hdr_color* new_color, const float source_radius)
+{
+	Assert(new_color!= nullptr);
+	light_add_directional(dir, new_color->i(), new_color->r(), new_color->g(), new_color->b(), source_radius);
+}
+
+void light_add_directional(const vec3d *dir, float intensity, float r, float g, float b, const float source_radius)
 {
 	if (Lighting_off) return;
-
-	if(!specular){
-		spec_r = r;
-		spec_g = g;
-		spec_b = b;
-	}
 
 	Num_lights++;
 
@@ -169,22 +173,30 @@ void light_add_directional(const vec3d *dir, float intensity, float r, float g, 
 	l.r = r;
 	l.g = g;
 	l.b = b;
-	l.spec_r = spec_r;
-	l.spec_g = spec_g;
-	l.spec_b = spec_b;
-	l.intensity = intensity;
+
+	//configurable global tuning of light qualities
+	auto lp = lighting_profile::current();
+	l.intensity = lp->overall_brightness.handle(lp->directional_light_brightness.handle(intensity));
 	l.rada = 0.0f;
 	l.radb = 0.0f;
 	l.rada_squared = l.rada*l.rada;
 	l.radb_squared = l.radb*l.radb;
 	l.instance = Num_lights-1;
 
+	l.source_radius = MAX(0.0f,source_radius);
+
 	Lights.push_back(l);
 	Static_light.push_back(l);
 }
 
 
-void light_add_point(const vec3d *pos, float r1, float r2, float intensity, float r, float g, float b, float spec_r, float spec_g, float spec_b, bool specular)
+void light_add_point(const vec3d* pos, float r1, float r2, const hdr_color* new_color, float source_radius)
+{
+	Assert(new_color!= nullptr);
+	light_add_point(pos, r1, r2, new_color->i(), new_color->r(), new_color->g(), new_color->b(), source_radius);
+}
+
+void light_add_point(const vec3d *pos, float r1, float r2, float intensity, float r, float g, float b, const float source_radius)
 {
 	Assertion( r1 > 0.0f, "Invalid radius r1 specified for light: %f. Radius must be > 0.0f. Examine stack trace to determine culprit.\n", r1 );
 	Assertion( r2 > 0.0f, "Invalid radius r2 specified for light: %f. Radius must be > 0.0f. Examine stack trace to determine culprit.\n", r2 );
@@ -193,36 +205,36 @@ void light_add_point(const vec3d *pos, float r1, float r2, float intensity, floa
 
 	if (!Lighting_flag) return;
 
-	if(!specular){
-		spec_r = r;
-		spec_g = g;
-		spec_b = b;
-	}
-
 	light l;
-	
-	Num_lights++;
 
+	Num_lights++;
 	l.type = Light_Type::Point;
 	l.vec = *pos;
 	l.r = r;
 	l.g = g;
 	l.b = b;
-	l.spec_r = spec_r;
-	l.spec_g = spec_g;
-	l.spec_b = spec_b;
-	l.intensity = intensity;
-	l.rada = r1;
-	l.radb = r2;
+
+	//configurable global tuning of light qualities
+	auto lp = lighting_profile::current();
+	l.intensity = lp->overall_brightness.handle(lp->point_light_brightness.handle(intensity));
+	l.rada = lp->point_light_radius.handle(r1);
+	l.radb = lp->point_light_radius.handle(r2);
 	l.rada_squared = l.rada*l.rada;
 	l.radb_squared = l.radb*l.radb;
 	l.instance = Num_lights-1;
 
+	l.source_radius = MAX(0.0f,source_radius);
+
 	Lights.push_back(l);
 }
 
-// beams affect every ship except the firing ship
-void light_add_tube(const vec3d *p0, const vec3d *p1, float r1, float r2, float intensity, float r, float g, float b, float spec_r, float spec_g, float spec_b, bool specular)
+void light_add_tube(const vec3d* p0, const vec3d* p1, float r1, float r2, const hdr_color* new_color, const float source_radius)
+{
+	Assert(new_color!= nullptr);
+	light_add_tube(p0, p1, r1, r2, new_color->i(), new_color->r(), new_color->g(), new_color->b(), source_radius);
+}
+
+void light_add_tube(const vec3d *p0, const vec3d *p1, float r1, float r2, float intensity, float r, float g, float b, const float source_radius)
 {
 	Assertion(r1 > 0.0f, "Invalid radius r1 specified for light: %f. Radius must be > 0.0f. Examine stack trace to determine culprit.\n", r1);
 	Assertion(r2 > 0.0f, "Invalid radius r2 specified for light: %f. Radius must be > 0.0f. Examine stack trace to determine culprit.\n", r2);
@@ -230,12 +242,6 @@ void light_add_tube(const vec3d *p0, const vec3d *p1, float r1, float r2, float 
 	if (Lighting_off) return;
 
 	if (!Lighting_flag) return;
-
-	if(!specular){
-		spec_r = r;
-		spec_g = g;
-		spec_b = b;
-	}
 
 	light l;
 
@@ -247,15 +253,17 @@ void light_add_tube(const vec3d *p0, const vec3d *p1, float r1, float r2, float 
 	l.r = r;
 	l.g = g;
 	l.b = b;
-	l.spec_r = spec_r;
-	l.spec_g = spec_g;
-	l.spec_b = spec_b;
-	l.intensity = intensity;
-	l.rada = r1;
-	l.radb = r2;
+
+	//configurable global tuning of light qualities
+	auto lp = lighting_profile::current();
+	l.intensity = lp->overall_brightness.handle(lp->tube_light_brightness.handle(intensity));
+	l.rada = lp->tube_light_radius.handle(r1);
+	l.radb = lp->tube_light_radius.handle(r2);
 	l.rada_squared = l.rada*l.rada;
 	l.radb_squared = l.radb*l.radb;
 	l.instance = Num_lights-1;
+
+	l.source_radius = MAX(0.0f,source_radius);
 
 	Lights.push_back(l);
 }
@@ -264,7 +272,7 @@ void light_add_tube(const vec3d *p0, const vec3d *p1, float r1, float r2, float 
 void light_rotate_all()
 {
 	if ( Lighting_off ) return;
-	
+
 	for (auto& l : Lights)
 		light_rotate(&l);
 }
@@ -297,10 +305,6 @@ int light_get_global_dir(vec3d *pos, int n)
 	}
 	return 1;
 }
-
-float static_light_factor = 1.0f;
-float static_tube_factor = 1.0f;
-float static_point_factor = 1.0f;
 
 void light_apply_rgb( ubyte *param_r, ubyte *param_g, ubyte *param_b, const vec3d *pos, const vec3d *norm, float static_light_level )
 {
@@ -427,16 +431,17 @@ void light_apply_rgb( ubyte *param_r, ubyte *param_g, ubyte *param_b, const vec3
 	*param_b = ubyte(fl2i(bval*255.0f));
 }
 
-void light_add_cone(const vec3d *pos, const vec3d *dir, float angle, float inner_angle, bool dual_cone, float r1, float r2, float intensity, float r, float g, float b, float spec_r, float spec_g, float spec_b, bool specular)
+
+void light_add_cone(const vec3d *pos, const vec3d *dir, float angle, float inner_angle, bool dual_cone, float r1, float r2, const hdr_color* new_color, const float source_radius)
+{
+	Assert(new_color!= nullptr);
+	light_add_cone(pos, dir, angle, inner_angle, dual_cone, r1, r2, new_color->i(), new_color->r(), new_color->g(), new_color->b(), source_radius);
+}
+
+void light_add_cone(const vec3d *pos, const vec3d *dir, float angle, float inner_angle, bool dual_cone, float r1, float r2, float intensity, float r, float g, float b, const float source_radius )
 {
 	Assertion( r1 > 0.0f, "Invalid radius r1 specified for light: %f. Radius must be > 0.0f. Examine stack trace to determine culprit.\n", r1 );
 	Assertion( r2 > 0.0f, "Invalid radius r2 specified for light: %f. Radius must be > 0.0f. Examine stack trace to determine culprit.\n", r2 );
-
-	if(!specular){
-		spec_r = r;
-		spec_g = g;
-		spec_b = b;
-	}
 
 	if ( Lighting_off ) return;
 
@@ -455,15 +460,16 @@ void light_add_cone(const vec3d *pos, const vec3d *dir, float angle, float inner
 	l.r = r;
 	l.g = g;
 	l.b = b;
-	l.spec_r = spec_r;
-	l.spec_g = spec_g;
-	l.spec_b = spec_b;
-	l.intensity = intensity;
-	l.rada = r1;
-	l.radb = r2;
+
+	auto lp = lighting_profile::current();
+	l.intensity = lp->overall_brightness.handle(lp->cone_light_brightness.handle(intensity));
+	l.rada = lp->cone_light_radius.handle(r1);
+	l.radb = lp->cone_light_radius.handle(r2);
 	l.rada_squared = l.rada*l.rada;
 	l.radb_squared = l.radb*l.radb;
 	l.instance = Num_lights-1;
+
+	l.source_radius = MAX(0.0f,source_radius);
 
 	Lights.push_back(l);
 }

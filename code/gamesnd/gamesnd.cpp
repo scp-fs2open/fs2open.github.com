@@ -642,6 +642,9 @@ void parse_gamesnd_old(game_snd* gs)
 
 	stuff_string(entry.filename, F_NAME, MAX_FILENAME_LEN, ",");
 
+	// since we have a new filename, first assume it's valid
+	gs->flags &= ~GAME_SND_NOT_VALID;
+
 	if (!stricmp(entry.filename, NOX("empty")) || !stricmp(entry.filename, NOX("none")))
 	{
 		entry.filename[0] = 0;
@@ -684,7 +687,7 @@ void parse_gamesnd_old(game_snd* gs)
 			{
 				if (stuff_int_optional(&temp_max) == 2)
 				{
-					mprintf(("Dutifully converting retail sound %s, '%s' to a 3D sound...\n", gs->name.c_str(), entry.filename));
+					nprintf(("Sound","Dutifully converting retail sound %s, '%s' to a 3D sound...\n", gs->name.c_str(), entry.filename));
 					is_3d = 1;
 
 					gs->flags |= GAME_SND_USE_DS3D;
@@ -854,12 +857,15 @@ void parse_gamesnd_new(game_snd* gs, bool no_create)
 		entry = &gs->sound_entries.back();
 	}
 
+	// Default pitch is 1.0. This is set here in case we don't have a valid file name
+	gs->pitch_range = util::UniformFloatRange(1.0f);
+
 	char name[MAX_FILENAME_LEN];
 	// New extended format found
 	stuff_string(name, F_NAME, MAX_FILENAME_LEN);
 
-	// Default pitch is 1.0. This is set here in case we don't have a valid file name
-	gs->pitch_range = util::UniformFloatRange(1.0f);
+	// since we have a new filename, first assume it's valid
+	gs->flags &= ~GAME_SND_NOT_VALID;
 
 	if (!stricmp(name, NOX("empty")) || !stricmp(name, NOX("none")))
 	{
@@ -1183,8 +1189,6 @@ void parse_sound_environments()
 	required_string("#Sound Environments End");
 }
 
-static SCP_vector<species_info> missingFlybySounds;
-
 void parse_sound_table(const char* filename)
 {
 	try
@@ -1285,20 +1289,14 @@ void gamesnd_parse_soundstbl()
 
 	parse_modular_table("*-snd.tbm", parse_sound_table);
 
-	// if we are missing any species then report
-	if (!missingFlybySounds.empty())
-	{
-		SCP_string errorString;
-		for (size_t i = 0; i < missingFlybySounds.size(); i++)
-		{
-			errorString.append(missingFlybySounds[i].species_name);
-			errorString.append("\n");
+	//Set any flyby sounds for species that use the borrowed feature
+	for (size_t i = 0; i < Species_info.size(); i++) {
+		if (Species_info[i].borrows_flyby_sounds_species >= 0) {
+			int idx = Species_info[i].borrows_flyby_sounds_species;
+			Species_info[i].snd_flyby_fighter = Species_info[idx].snd_flyby_fighter;
+			Species_info[i].snd_flyby_bomber = Species_info[idx].snd_flyby_bomber;
 		}
-
-		Error(LOCATION, "The following species are missing flyby sounds in sounds.tbl:\n%s", errorString.c_str());
 	}
-
-	missingFlybySounds.clear();
 }
 
 /**

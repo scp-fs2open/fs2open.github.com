@@ -59,6 +59,7 @@
 #include "gamesequence/gamesequence.h"
 #include "gamesnd/eventmusic.h"
 #include "gamesnd/gamesnd.h"
+#include "graphics/debug_sphere.h"
 #include "graphics/font.h"
 #include "graphics/light.h"
 #include "graphics/matrix.h"
@@ -118,6 +119,7 @@
 #include "missionui/missionweaponchoice.h"
 #include "missionui/redalert.h"
 #include "mod_table/mod_table.h"
+#include "model/modelreplace.h"
 #include "nebula/neb.h"
 #include "nebula/neblightning.h"
 #include "network/multi.h"
@@ -130,6 +132,7 @@
 #include "network/multi_pxo.h"
 #include "network/multi_rate.h"
 #include "network/multi_respawn.h"
+#include "network/multi_turret_manager.h"
 #include "network/multi_voice.h"
 #include "network/multimsgs.h"
 #include "network/multiteamselect.h"
@@ -162,6 +165,8 @@
 #include "render/batching.h"
 #include "scpui/rocket_ui.h"
 #include "scripting/api/objs/gamestate.h"
+#include "scripting/api/objs/camera.h"
+#include "scripting/global_hooks.h"
 #include "scripting/hook_api.h"
 #include "scripting/scripting.h"
 #include "ship/afterburner.h"
@@ -371,6 +376,12 @@ const auto OnStateEndHook = scripting::OverridableHook::Factory(
 		{"NewState", "gamestate", "The game state that will begin next."},
 	});
 
+const auto OnCameraSetUpHook = scripting::Hook::Factory(
+	"On Camera Set Up", "Called every frame when the camera is positioned and oriented for rendering.",
+	{
+		{"Camera", "camera", "The camera about to be used for rendering."},
+	});
+
 
 // builtin mission list stuff
 int Game_builtin_mission_count = 92;
@@ -539,7 +550,9 @@ float Sun_spot = 0.0f;
 big_expl_flash Big_expl_flash = {0.0f, 0.0f, 0};
 
 // game shudder stuff (in ms)
-int Game_shudder_time = -1;
+bool Game_shudder_perpetual = false;
+bool Game_shudder_everywhere = false;
+TIMESTAMP Game_shudder_time = TIMESTAMP::invalid();
 int Game_shudder_total = 0;
 float Game_shudder_intensity = 0.0f;			// should be between 0.0 and 100.0
 
@@ -846,11 +859,14 @@ static void game_flash_diminish(float frametime)
 
 void game_level_close()
 {
-	OnMissionAboutToEndHook->run();
+	if (OnMissionAboutToEndHook->isActive())
+	{
+		OnMissionAboutToEndHook->run();
+	}
 
 	//WMC - this is actually pretty damn dangerous, but I don't want a modder
 	//to accidentally use an override here without realizing it.
-	if(!OnMissionEndHook->isOverride())
+	if (!OnMissionEndHook->isActive() || !OnMissionEndHook->isOverride())
 	{
 		// save player-persistent variables and containers
 		mission_campaign_save_on_close_variables();	// Goober5000
@@ -897,12 +913,14 @@ void game_level_close()
 		lock_time_compression(false);
 
 		audiostream_unpause_all();
+		snd_aav_init();
 
 		gr_set_ambient_light(120, 120, 120);
 
 		stars_level_close();
 
 		multi_close_oo_and_ship_tracker();
+		Multi_Turret_Manager.reset(); // Cyborg, this can safely be done after everything else.  At some point, I'll probably consolidate these.
 
 		Pilot.save_savefile();
 
@@ -929,13 +947,17 @@ void game_level_close()
 		Error(LOCATION, "Scripting Mission End override is not fully supported yet.");
 	}
 
-	OnMissionEndHook->run();
+	if (OnMissionEndHook->isActive())
+	{
+		OnMissionEndHook->run();
+	}
 }
 
 uint load_gl_init;
 uint load_mission_load;
 uint load_post_level_init;
-
+extern bool Cmdline_reuse_rng_seed;
+extern uint Cmdline_rng_seed;
 /**
  * Intializes game stuff.  
  *
@@ -954,6 +976,8 @@ void game_level_init()
 
 		// semirand function needs to get re-initted every time in multiplayer
 		init_semirand();
+	} else if(Cmdline_reuse_rng_seed) {
+		Random::seed( Cmdline_rng_seed );
 	}
 
 	Framecount = 0;
@@ -963,7 +987,7 @@ void game_level_init()
 	Key_normal_game = (Game_mode & GM_NORMAL);
 	Cheats_enabled = 0;
 
-	Game_shudder_time = -1;
+	Game_shudder_time = TIMESTAMP::invalid();
 
 	Perspective_locked = false;
 
@@ -1014,7 +1038,6 @@ void game_level_init()
 	control_config_clear_used_status();
 	collide_ship_ship_sounds_init();
 
-	Skybox_timestamp = game_get_overall_frametime();
 	Pre_player_entry = 1;			//	Means the player has not yet entered.
 	Entry_delay_time = 0;			//	Could get overwritten in mission read.
 
@@ -1184,7 +1207,7 @@ void game_loading_callback(int count)
 
 	Script_system.RemHookVar("Progress");
 
-	os_ignore_events();
+	os_defer_events_on_load_screen();
 
 	if (do_flip)
 		gr_flip();
@@ -1884,7 +1907,7 @@ void game_init()
 
 	parse_rank_tbl();
 	parse_traitor_tbl();
-	parse_medal_tbl();
+	medals_init();
 
 	cutscene_init();
 	key_init();
@@ -1921,7 +1944,11 @@ void game_init()
 
 	animation::ModelAnimationParseHelper::parseTables();
 
+	// Initialize dynamic SEXPs. Must happen before ship init for LuaAI
+	sexp::dynamic_sexp_init();
+
 	obj_init();	
+	virtual_pof_init();
 	mflash_game_init();	
 	armor_init();
 	ai_init();
@@ -1970,8 +1997,6 @@ void game_init()
 	}
 
 	script_init();			//WMC
-	// Initialize dynamic SEXPs
-	sexp::dynamic_sexp_init();
 
 	// This needs to be done after the dynamic SEXP init so that our documentation contains the dynamic sexps
 	if (Cmdline_output_sexp_info) {
@@ -1984,7 +2009,9 @@ void game_init()
 	scpui::initialize();
 
 	Script_system.RunInitFunctions();
-	Script_system.RunCondition(CHA_GAMEINIT);
+	if (scripting::hooks::OnGameInit->isActive()) {
+		scripting::hooks::OnGameInit->run();
+	}
 
 	game_title_screen_close();
 
@@ -1995,8 +2022,9 @@ void game_init()
 #ifdef WITH_FFMPEG
 		libs::ffmpeg::initialize();
 #endif
-
-		libs::discord::init();
+		if (Discord_presence) {
+			libs::discord::init();
+		}
 	}
 
 	mod_table_post_process();
@@ -2909,9 +2937,11 @@ void game_whack_apply( float x, float y )
 }
 
 // call to apply a "shudder"
-void game_shudder_apply(int time, float intensity)
+void game_shudder_apply(int time, float intensity, bool perpetual, bool everywhere)
 {
-	Game_shudder_time = timestamp(time);
+	Game_shudder_perpetual = perpetual;
+	Game_shudder_everywhere = everywhere;
+	Game_shudder_time = _timestamp(time);
 	Game_shudder_total = time;
 	Game_shudder_intensity = intensity;
 }
@@ -2922,8 +2952,7 @@ float get_shake(float intensity, int decay_time, int max_decay_time)
 
 	float shake = intensity * (float)(r-Random::HALF_MAX_VALUE) * Random::INV_F_MAX_VALUE;
 	
-	if (decay_time >= 0) {
-		Assert(max_decay_time > 0);
+	if (decay_time >= 0 && max_decay_time > 0) {
 		shake *= (0.5f - fl_abs(0.5f - (float) decay_time / (float) max_decay_time));
 	}
 
@@ -2935,6 +2964,7 @@ extern int Wash_on;
 extern float sn_shudder;
 void apply_view_shake(matrix *eye_orient)
 {
+	bool do_global_shudder = false;
 	angles tangles;
 	tangles.p = 0.0f;
 	tangles.h = 0.0f;
@@ -2963,15 +2993,7 @@ void apply_view_shake(matrix *eye_orient)
 			joy_ff_play_dir_effect(FF_SCALE * wash_intensity * rand_vec.xyz.x, FF_SCALE * wash_intensity * rand_vec.xyz.y);
 		}
 
-		// Make eye shake due to shuddering
-		if (Game_shudder_time != -1) {
-			if (timestamp_elapsed(Game_shudder_time)) {
-				Game_shudder_time = -1;
-			} else {
-				tangles.p += get_shake(Game_shudder_intensity * 0.005f, timestamp_until(Game_shudder_time), Game_shudder_total);
-				tangles.h += get_shake(Game_shudder_intensity * 0.005f, timestamp_until(Game_shudder_time), Game_shudder_total);
-			}
-		}
+		do_global_shudder = true;
 	}
 	// do shakes that affect external cameras
 	else {
@@ -2981,10 +3003,29 @@ void apply_view_shake(matrix *eye_orient)
 			tangles.p += get_shake(0.07f * cut_pct * sn_shudder, -1, 0);
 			tangles.h += get_shake(0.07f * cut_pct * sn_shudder, -1, 0);
 		}
+
+		if (Game_shudder_everywhere) {
+			do_global_shudder = true;
+		}
+	}
+
+	if (do_global_shudder) {	
+		// Make eye shake due to shuddering
+		if (Game_shudder_perpetual) {
+			tangles.p += get_shake(Game_shudder_intensity * 0.005f, -1, 0);
+			tangles.h += get_shake(Game_shudder_intensity * 0.005f, -1, 0);
+		} else if (Game_shudder_time.isValid()) {
+			if (timestamp_elapsed(Game_shudder_time)) {
+				Game_shudder_time = TIMESTAMP::invalid();
+			} else {
+				tangles.p += get_shake(Game_shudder_intensity * 0.005f, timestamp_until(Game_shudder_time), Game_shudder_total);
+				tangles.h += get_shake(Game_shudder_intensity * 0.005f, timestamp_until(Game_shudder_time), Game_shudder_total);
+			}
+		}
 	}
 
 	// maybe bail
-	if (tangles.p == 0.0f && tangles.h == 0.0f && tangles.b == 0.0f)
+	if (fl_near_zero(tangles.p) && fl_near_zero(tangles.h) && fl_near_zero(tangles.b))
 		return;
 
 	matrix	tm, tm2;
@@ -3156,6 +3197,12 @@ camid game_render_frame_setup()
 
 			if(Viewer_mode & VM_FREECAMERA) {
 				Viewer_obj = nullptr;
+
+				if (OnCameraSetUpHook->isActive()) {
+					OnCameraSetUpHook->run(scripting::hook_param_list(
+						scripting::hook_param("Camera", 'o', scripting::api::l_Camera.Set(cam_get_current()))));
+				}
+
 				return cam_get_current();
 			} else if (Viewer_mode & VM_EXTERNAL) {
 				matrix	tm, tm2;
@@ -3286,6 +3333,11 @@ camid game_render_frame_setup()
 	main_cam->set_position(&eye_pos);
 	main_cam->set_rotation(&eye_orient);
 
+	if (OnCameraSetUpHook->isActive())	{
+		OnCameraSetUpHook->run(scripting::hook_param_list(
+			scripting::hook_param("Camera", 'o', scripting::api::l_Camera.Set(Main_camera))));
+	}
+
 	// setup neb2 rendering
 	neb2_render_setup(Main_camera);
 
@@ -3404,40 +3456,26 @@ void game_render_frame( camid cid )
 	batching_render_all(true);
 
 	Shadow_override = true;
+
 	//Draw the viewer 'cause we didn't before.
-	//This is so we can change the minimum clipping distance without messing everything up.
-	if (Viewer_obj && (Viewer_obj->type == OBJ_SHIP)
-		&& (Ship_info[Ships[Viewer_obj->instance].ship_info_index].flags[Ship::Info_Flags::Show_ship_model])
-		&& (!Viewer_mode || (Viewer_mode & VM_PADLOCK_ANY) || (Viewer_mode & VM_OTHER_SHIP) || (Viewer_mode & VM_TRACK)
-			|| !(Viewer_mode & VM_EXTERNAL)))
-	{
-		gr_post_process_save_zbuffer();
-		ship_render_show_ship_cockpit(Viewer_obj);
-		gr_post_process_restore_zbuffer();
+	//This is currently seperate to facilitate deferred rendering on different view/proj matrices and with different settings
+	if (Viewer_obj && Viewer_obj->type == OBJ_SHIP && Viewer_obj->instance >= 0) {
+		gr_end_proj_matrix();
+		gr_end_view_matrix();
+
+		GR_DEBUG_SCOPE("Render Cockpit");
+		ship_render_player_ship(Viewer_obj);
+
+		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+		gr_set_view_matrix(&Eye_position, &Eye_matrix);
 	}
 
-
 #ifndef NDEBUG
+	debug_sphere::render();
 	ai_debug_render_stuff();
 	extern void snd_spew_debug_info();
 	snd_spew_debug_info();
 #endif
-
-	gr_end_proj_matrix();
-	gr_end_view_matrix();
-
-	//Draw viewer cockpit
-	if(Viewer_obj != nullptr && Viewer_mode != VM_TOPDOWN && Ship_info[Ships[Viewer_obj->instance].ship_info_index].cockpit_model_num > 0)
-	{
-		GR_DEBUG_SCOPE("Render Cockpit");
-
-		gr_post_process_save_zbuffer();
-		ship_render_cockpit(Viewer_obj);
-		gr_post_process_restore_zbuffer();
-	}
-
-	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
 	// Do the sunspot
 	game_sunspot_process(flFrametime);
@@ -3464,9 +3502,6 @@ void game_render_frame( camid cid )
 	extern int OO_update_index;	
 	multi_rate_display(OO_update_index, gr_screen.center_offset_x + 375, gr_screen.center_offset_y);
 
-	// test
-	extern void oo_display();
-	oo_display();			
 #endif
 	
 	g3_end_frame();
@@ -4147,7 +4182,8 @@ void game_frame(bool paused)
 
 fix Last_time = 0;						// The absolute time of game at end of last frame (beginning of this frame)
 fix Last_delta_time = 0;				// While game is paused, this keeps track of how much elapsed in the frame before paused.
-int Last_frame_timestamp = 0;
+TIMESTAMP Last_frame_timestamp = TIMESTAMP::invalid();
+UI_TIMESTAMP Last_frame_ui_timestamp = UI_TIMESTAMP::invalid();
 static bool Time_paused = false;
 
 void game_time_level_init()
@@ -4292,16 +4328,6 @@ void game_set_frametime(int state)
 	if (Frametime > MAX_FRAMETIME)	{
 #ifndef NDEBUG
 		mprintf(("Frame %2i too long!!: frametime = %.3f (%.3f)\n", Framecount, f2fl(Frametime), f2fl(debug_frametime)));
-
-		// If the frame took more than 5 seconds, assume we're tracing through a debugger.  If timestamps are running, correct the elapsed time.
-		if (!Cmdline_slow_frames_ok && !timestamp_is_paused() && (Last_frame_timestamp != 0) && (f2fl(Frametime) > 5.0f)) {
-			auto delta_timestamp = timestamp() - Last_frame_timestamp;
-			// could be 0 if we have time compression slowed to a crawl
-			if (delta_timestamp > 0) {
-				mprintf(("Adjusting timestamp by %2i milliseconds to compensate\n", delta_timestamp));
-				timestamp_adjust_pause_offset(delta_timestamp);
-			}
-		}
 #endif
 		Frametime = MAX_FRAMETIME;
 	}
@@ -4335,7 +4361,15 @@ void game_set_frametime(int state)
 	}
 
 	Last_time = thistime;
-	Last_frame_timestamp = timestamp();
+
+	// Unlike Last_frame_ui_timestamp, it's probably ok to leave this here for the following reasons:
+	// 1) Frametime-related values have always been updated in this specific function
+	// 2) The only time this function is not called during a frame is when the game is paused, which is a state
+	//    wherein timestamps don't need to be updated anyway (the internal Timestamp_paused_at_counter variable
+	//    only needs to be set when the pause starts)
+	// 3) The only place Last_frame_timestamp is used is for checking control key or button presses, and in that
+	//    situation there is no check for duration, only whether the timestamp has changed
+	Last_frame_timestamp = _timestamp();
 
 	flFrametime = f2fl(Frametime);
 
@@ -4571,8 +4605,6 @@ int game_poll()
 				static int counter = os_config_read_uint(nullptr, "ScreenshotNum", 0);
 				char tmp_name[MAX_FILENAME_LEN];
 
-				game_stop_time();
-
 				// we could probably go with .3 here for 1,000 shots but people really need to clean out
 				// their directories better than that so it's 100 for now.
 				sprintf( tmp_name, NOX("screen%.4i"), counter );
@@ -4590,7 +4622,6 @@ int game_poll()
 				mprintf(( "Dumping screen to '%s'\n", tmp_name ));
 				gr_print_screen(tmp_name);
 
-				game_start_time();
 				os_config_write_uint(nullptr, "ScreenshotNum", counter);
 			}
 
@@ -5076,16 +5107,20 @@ void game_leave_state( int old_state, int new_state )
 			break;
 	}
 
-	auto script_param_list = scripting::hook_param_list(
-		scripting::hook_param("OldState", 'o', scripting::api::l_GameState.Set(scripting::api::gamestate_h(old_state))),
-		scripting::hook_param("NewState", 'o', scripting::api::l_GameState.Set(scripting::api::gamestate_h(new_state))));
-
-	OnStateAboutToEndHook->run(script_param_list);
-
-	if (OnStateEndHook->isOverride(script_param_list))
+	if (OnStateAboutToEndHook->isActive() || OnStateEndHook->isActive())
 	{
-		OnStateEndHook->run(script_param_list);
-		return;
+		auto script_param_list = scripting::hook_param_list(
+			scripting::hook_param("OldState", 'o', scripting::api::l_GameState.Set(scripting::api::gamestate_h(old_state))),
+			scripting::hook_param("NewState", 'o', scripting::api::l_GameState.Set(scripting::api::gamestate_h(new_state))));
+
+		if (OnStateAboutToEndHook->isActive())
+			OnStateAboutToEndHook->run(script_param_list);
+
+		if (OnStateEndHook->isActive() && OnStateEndHook->isOverride(script_param_list))
+		{
+			OnStateEndHook->run(script_param_list);
+			return;
+		}
 	}
 
 	//WMC - Clear scripting bitmaps
@@ -5114,6 +5149,7 @@ void game_leave_state( int old_state, int new_state )
 			if ( (new_state != GS_STATE_VIEW_MEDALS) && (new_state != GS_STATE_OPTIONS_MENU) ) {
 				debrief_close();				
 				fsspeech_stop();
+				common_maybe_play_cutscene(MOVIE_POST_DEBRIEF);
 			}
 			break;
 
@@ -5214,7 +5250,11 @@ void game_leave_state( int old_state, int new_state )
 				if (Game_mode & GM_IN_MISSION) {
 					weapon_unpause_sounds();
 					audiostream_unpause_all();
-					game_start_time();
+
+					// multi doesn't pause here so time keeps going
+					if ( !(Game_mode & GM_MULTIPLAYER) ) {
+						game_start_time();
+					}
 				}
 			}
 			break;
@@ -5258,7 +5298,6 @@ void game_leave_state( int old_state, int new_state )
 				if ( (Game_mode & GM_MULTIPLAYER) && (new_state == GS_STATE_MAIN_MENU) ){
 					multi_quit_game(PROMPT_NONE);
 				}
-				snd_aav_init();
 
 				freespace_stop_mission();
 
@@ -5503,7 +5542,14 @@ void game_leave_state( int old_state, int new_state )
 	}
 
 	//WMC - Now run scripting stuff
-	OnStateEndHook->run(script_param_list);
+	if (OnStateEndHook->isActive())
+	{
+		auto script_param_list = scripting::hook_param_list(
+			scripting::hook_param("OldState", 'o', scripting::api::l_GameState.Set(scripting::api::gamestate_h(old_state))),
+			scripting::hook_param("NewState", 'o', scripting::api::l_GameState.Set(scripting::api::gamestate_h(new_state))));
+
+		OnStateEndHook->run(script_param_list);
+	}
 }
 
 // variable used for automatic netgame starting/joining
@@ -5712,7 +5758,11 @@ void game_enter_state( int old_state, int new_state )
 				if (Game_mode & GM_IN_MISSION) {
 					weapon_pause_sounds();
 					audiostream_pause_all();
-					game_stop_time();
+
+					// multi doesn't pause here so time needs to keep going
+					if ( !(Game_mode & GM_MULTIPLAYER) ) {
+						game_stop_time();
+					}
 				}
 			}
 			break;
@@ -5812,7 +5862,8 @@ void mouse_force_pos(int x, int y);
 					) || (
 						(Game_mode & GM_MULTIPLAYER) && (
 							(old_state == GS_STATE_MULTI_PAUSED) ||
-							(old_state == GS_STATE_MULTI_MISSION_SYNC)
+							(old_state == GS_STATE_MULTI_MISSION_SYNC) ||
+							(old_state == GS_STATE_INGAME_PRE_JOIN)
 						)
 					)
 				) {
@@ -6056,6 +6107,20 @@ void mouse_force_pos(int x, int y);
 // do stuff that may need to be done regardless of state
 void game_do_state_common(int state,int no_networking)
 {
+#ifndef NDEBUG
+	// If the frame took more than 5 seconds, assume we're tracing through a debugger.  If timestamps are running, correct the elapsed time.
+	if (!Cmdline_slow_frames_ok && !timestamp_is_paused() && Last_frame_ui_timestamp.isValid()) {
+		auto delta_timestamp = ui_timestamp_since(Last_frame_ui_timestamp);
+		if (delta_timestamp > 5 * MILLISECONDS_PER_SECOND) {
+			delta_timestamp -= 20;	// suppose last frame was 50 FPS
+			mprintf(("Too much time passed between frames.  Adjusting timestamp by %i milliseconds to compensate\n", delta_timestamp));
+			timestamp_adjust_pause_offset(delta_timestamp);
+		}
+	}
+#endif
+	Last_frame_ui_timestamp = ui_timestamp();
+
+
 	io::mouse::CursorManager::doFrame();		// determine if to draw the mouse this frame
 	snd_do_frame();								// update sound system
 	event_music_do_frame();						// music needs to play across many states
@@ -6103,7 +6168,7 @@ void game_do_state(int state)
 		return;
 	}
 
-	if (OnFrameHook->isOverride()) {
+	if (OnFrameHook->isActive() && OnFrameHook->isOverride()) {
 		game_set_frametime(state);
 
 		game_check_key();
@@ -6657,17 +6722,7 @@ void game_shutdown(void)
 		gr_clear();
 		gr_flip();
 	}
-
-	// Free the scripting resources of the new UI first
-	scpui::shutdown_scripting();
-
-	// Everything after this should be done without scripting so we can free those resources here
-	Script_system.Clear();
-
-	// Deinitialize the new UI system, needs to be done after scripting shutdown to make sure the resources were
-	// released properly
-	scpui::shutdown();
-
+	
 	// if the player has left the "player select" screen and quit the game without actually choosing
 	// a player, Player will be nullptr, in which case we shouldn't write the player file out!
 	if (!(Game_mode & GM_STANDALONE_SERVER) && (Player!=nullptr) && !Is_standalone){
@@ -6703,17 +6758,23 @@ void game_shutdown(void)
 
 	scoring_close();
 
-	// Free SEXP resources
-	sexp_shutdown();
-
 	stars_close();			// clean out anything used by stars code
 
 	// the menu close functions will unload the bitmaps if they were displayed during the game
 	main_hall_close();
 	training_menu_close();
 
-	// free left over memory from table parsing
-	player_tips_close();
+	// more fundamental shutdowns begin here ----------
+
+	sexp_shutdown();				// Free SEXP resources
+
+	scpui::shutdown_scripting();	// Free the scripting resources of the new UI first
+
+	Script_system.Clear();			// Everything after this should be done without scripting so we can free those resources here.
+									// By this point, all things that hold Lua References must be destroyed (such as Lua SEXPs)
+
+	scpui::shutdown();				// Deinitialize the new UI system, needs to be done after scripting shutdown to make sure the resources were released properly
+
 
 	control_config_common_close();
 	io::joystick::shutdown();
@@ -6753,7 +6814,6 @@ void game_shutdown(void)
 	}
 
 	lcl_xstr_close();
-
 }
 
 // game_stop_looped_sounds()

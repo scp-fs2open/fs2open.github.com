@@ -112,7 +112,7 @@ extern void skip_token();
 
 // optional
 extern int optional_string(const char *pstr);
-extern int optional_string_either(const char *str1, const char *str2);
+extern int optional_string_either(const char *str1, const char *str2, bool advance = true);
 extern int optional_string_one_of(int arg_count, ...);
 
 // required
@@ -157,9 +157,10 @@ extern void parse_string_flag_list(int *dest, flag_def_list defs[], size_t defs_
 
 // A templated version of parse_string_flag_list, to go along with the templated flag_def_list_new.
 // If the "is_special" flag is set, or a string was not found in the def list, it will be added to the unparsed_or_special_strings Vector
-// so that you can process it properly later
-template<class T, class Flagset>
-void parse_string_flag_list(Flagset& dest, flag_def_list_new<T> defs [], size_t n_defs, SCP_vector<SCP_string>* unparsed_or_special_strings)
+// so that you can process it properly later. If you just want to handle special flags (that is, flags with arguments or special code on parse),
+// consider using parse_string_flag_list_special and a special_flag_def_list_new instead.
+template<class Flagdef, class Flagset>
+void parse_string_flag_list(Flagset& dest, const Flagdef defs[], size_t n_defs, SCP_vector<SCP_string>* unparsed_or_special_strings)
 {
 	SCP_vector<SCP_string> slp;
     stuff_string_list(slp);
@@ -171,7 +172,7 @@ void parse_string_flag_list(Flagset& dest, flag_def_list_new<T> defs [], size_t 
         {
             if (!stricmp(item.c_str(), defs[j].name)) {
 				if (defs[j].in_use) {
-					Assertion(defs[j].def != T::NUM_VALUES, "Error in definition for flag_def_list, flag '%s' has been given an invalid value but is still marked as in use.\n", defs[j].name);
+					Assertion(defs[j].def != decltype(Flagdef::def)::NUM_VALUES, "Error in definition for flag_def_list, flag '%s' has been given an invalid value but is still marked as in use.\n", defs[j].name);
 					dest.set(defs[j].def);
 				}
 
@@ -183,6 +184,29 @@ void parse_string_flag_list(Flagset& dest, flag_def_list_new<T> defs [], size_t 
             unparsed_or_special_strings->push_back(item);
         }
     }
+}
+
+// Like parse_string_flag_list, but capable of automatically handling special flags registered in the special_flag_def_list_new
+template<class T, class Flagset, size_t n, typename... additional_args, typename... additional_args_fwd>
+void parse_string_flag_list_special(Flagset& dest, const special_flag_def_list_new<T, additional_args...>(&defs)[n], SCP_vector<SCP_string>* unparsed_strings, additional_args_fwd&&... args) {
+	SCP_vector<SCP_string> unparsed;
+	parse_string_flag_list<special_flag_def_list_new<T, additional_args...>, Flagset>(dest, defs, n, &unparsed);
+	for (const auto& special : unparsed) {
+		const auto* const it = std::find_if(&defs[0], &defs[n], [&special](const special_flag_def_list_new<T, additional_args...>& flag) {
+			if (!flag.is_special || !flag.parse_special)
+				return false;
+			return strnicmp(special.c_str(), flag.name, strlen(flag.name)) == 0;
+			});
+
+		if (it != &defs[n]) {
+			const size_t flag_length = strlen(it->name);
+			const size_t skip_length = flag_length + strspn(&special.c_str()[flag_length], NOX(" \t"));
+			it->parse_special(special.substr(skip_length), std::forward<additional_args_fwd>(args)...);
+		}
+		else if (unparsed_strings != nullptr) {
+			unparsed_strings->emplace_back(special);
+		}
+	}
 }
 
 template<class T>
@@ -220,7 +244,22 @@ extern void stuff_boolean(int *i, bool a_to_eol=true);
 extern void stuff_boolean(bool *b, bool a_to_eol=true);
 extern void stuff_boolean_flag(int *i, int flag, bool a_to_eol=true);
 
-int string_lookup(const char *str1, const char* const *strlist, size_t max, const char *description = NULL, bool say_errors = false);
+template <class T>
+int string_lookup(const char* str1, T strlist, size_t max, const char* description = nullptr, bool say_errors = false)
+{
+	for (size_t i=0; i<max; i++)
+	{
+		Assert(strlen(strlist[i]) != 0); //-V805
+
+		if (!stricmp(str1, strlist[i]))
+			return (int)i;
+	}
+
+	if (say_errors)
+		error_display(0, "Unable to find [%s] in %s list.\n", str1, description);
+
+	return -1;
+}
 
 template<class Flags, class Flagset>
 void stuff_boolean_flag(Flagset& destination, Flags flag, bool a_to_eol = true)
@@ -286,15 +325,15 @@ extern int required_string_fred(const char *pstr, const char *end = NULL);
 extern int required_string_either_fred(const char *str1, const char *str2);
 extern int optional_string_fred(const char *pstr, const char *end = NULL, const char *end2 = NULL);
 
-// Goober5000 - returns position of replacement or -1 for exceeded length (SCP_string variants return the result)
+// Goober5000
 extern ptrdiff_t replace_one(char *str, const char *oldstr, const char *newstr, size_t max_len, ptrdiff_t range = 0);
-extern SCP_string& replace_one(SCP_string& context, const SCP_string& from, const SCP_string& to);
-extern SCP_string& replace_one(SCP_string& context, const char* from, const char* to);
+extern ptrdiff_t replace_one(SCP_string& context, const SCP_string& from, const SCP_string& to);
+extern ptrdiff_t replace_one(SCP_string& context, const char* from, const char* to);
 
-// Goober5000 - returns number of replacements or -1 for exceeded length (SCP_string variants return the result)
-extern ptrdiff_t replace_all(char *str, const char *oldstr, const char *newstr, size_t max_len, ptrdiff_t range = 0);
-extern SCP_string& replace_all(SCP_string& context, const SCP_string& from, const SCP_string& to);
-extern SCP_string& replace_all(SCP_string& context, const char* from, const char* to);
+// Goober5000
+extern int replace_all(char *str, const char *oldstr, const char *newstr, size_t max_len, ptrdiff_t range = 0);
+extern int replace_all(SCP_string& context, const SCP_string& from, const SCP_string& to);
+extern int replace_all(SCP_string& context, const char* from, const char* to);
 
 // Goober5000 (why is this not in the C library?)
 extern const char *stristr(const char *str, const char *substr);

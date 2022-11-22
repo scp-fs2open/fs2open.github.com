@@ -114,8 +114,7 @@ static void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, ship *s
 		model_get_rotating_submodel_axis(&model_axis, &world_axis, pm, pmi, submodel_num, &ship_objp->orient);
 		vm_vec_copy_scale(&rotvel, &world_axis, smi->current_turn_rate);
 
-		//TODO replace zero_vector with translation offset of submodel
-		model_instance_local_to_global_point(&world_axis_pt, &vmd_zero_vector, pm, pmi, submodel_num, &ship_objp->orient, &ship_objp->pos);
+		model_instance_local_to_global_point(&world_axis_pt, &smi->canonical_offset, pm, pmi, submodel_num, &ship_objp->orient, &ship_objp->pos);
 
 		vm_quaternion_rotate(&m_rot, smi->cur_angle, &model_axis);
 	} else {
@@ -475,6 +474,7 @@ void shipfx_actually_warpin(ship *shipp, object *objp)
 {
 	shipp->flags.remove(Ship::Ship_Flags::Arriving_stage_1);
 	shipp->flags.remove(Ship::Ship_Flags::Arriving_stage_2);
+
 	// dock leader needs to handle dockees
 	if (object_is_docked(objp)) {
 		Assertion(shipp->flags[Ship::Ship_Flags::Dock_leader], "The docked ship warping in (%s) should only be the dock leader at this point!\n", shipp->ship_name);
@@ -536,23 +536,30 @@ void shipfx_warpin_start( object *objp )
 	}
 
 	//WMC - Check if scripting handles this.
-	if(OnWarpInHook->isOverride(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp)), objp))
+	if (OnWarpInHook->isActive())
 	{
-		OnWarpInHook->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp)), objp);
-		return;
+		if (OnWarpInHook->isOverride(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp)), objp))
+		{
+			OnWarpInHook->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp)), objp);
+			return;
+		}
 	}
 
-	// if there is no arrival warp, then skip the whole thing
+	// if there is no arrival warp, set the flag but don't create the effect
 	if (shipp->flags[Ship::Ship_Flags::No_arrival_warp])
 	{
-		shipfx_actually_warpin(shipp,objp);
+		shipp->flags.set(Ship::Ship_Flags::Arriving_stage_1);
+		// we don't actually need to set the flag on docked ships, since the flag will be immediately removed
 		return;
 	}
 
 	Assertion(shipp->warpin_effect != nullptr, "shipfx_warpin_start() was fed a ship with an uninitialized warpin_effect.");
 	shipp->warpin_effect->warpStart();
 
-	OnWarpInHook->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp)), objp);
+	if (OnWarpInHook->isActive())
+	{
+		OnWarpInHook->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp)), objp);
+	}
 }
 
 void shipfx_warpin_frame( object *objp, float frametime )
@@ -563,16 +570,25 @@ void shipfx_warpin_frame( object *objp, float frametime )
 
 	if ( shipp->flags[Ship::Ship_Flags::Dying] ) return;
 
-	shipp->warpin_effect->warpFrame(frametime);
+	// for ships with no warp effect, skip to the end
+	if (shipp->flags[Ship::Ship_Flags::No_arrival_warp])
+		shipfx_actually_warpin(shipp, objp);
+	else
+		shipp->warpin_effect->warpFrame(frametime);
 }
- 
+
 // This is called to actually warp this object out
 // after all the flashy fx are done, or if the flashy fx
 // don't work for some reason.  OR to skip the flashy fx.
-static void shipfx_actually_warpout(int shipnum)
+static void shipfx_actually_warpout(ship *shipp, object *objp)
 {
+	shipp->flags.remove(Ship::Ship_Flags::Depart_warp);
+
+	// let physics in on it too.
+	objp->phys_info.flags &= (~PF_WARP_OUT);
+
 	// Once we get through effect, make the ship go away
-	ship_actually_depart(shipnum);
+	ship_actually_depart(objp->instance);
 }
 
 void WE_Default::compute_warpout_stuff(float *warp_time, vec3d *warp_pos)
@@ -662,9 +678,11 @@ void shipfx_warpout_start( object *objp )
 		return;
 	}
 
-	if (OnWarpOutHook->isOverride(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp)), objp)) {
-		OnWarpOutHook->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp)), objp);
-		return;
+	if (OnWarpOutHook->isActive()) {
+		if (OnWarpOutHook->isOverride(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp)), objp)) {
+			OnWarpOutHook->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp)), objp);
+			return;
+		}
 	}
 
 	// if we're dying return
@@ -691,9 +709,9 @@ void shipfx_warpout_start( object *objp )
 	if (shipp->flags[Ship::Ship_Flags::No_departure_warp]) {
 		// DKA 5/25/99 If he's going to warpout, set it.
 		// Next line fixes assert in wing cleanup code when no warp effect.
+		// NOTE: It also causes shipfx_warpout_frame to be run in ship_process_post
+		//   which will make the ship actually depart
 		shipp->flags.set(Ship::Ship_Flags::Depart_warp);
-
-		shipfx_actually_warpout(objp->instance);
 		return;
 	}
 
@@ -701,7 +719,9 @@ void shipfx_warpout_start( object *objp )
 			  "shipfx_warpout_start() was fed a ship with an uninitialized warpout_effect.");
 	shipp->warpout_effect->warpStart();
 
-	OnWarpOutHook->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp)), objp);
+	if (OnWarpOutHook->isActive()) {
+		OnWarpOutHook->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp)), objp);
+	}
 }
 
 void shipfx_warpout_frame( object *objp, float frametime )
@@ -719,7 +739,11 @@ void shipfx_warpout_frame( object *objp, float frametime )
 		return;
 	}
 
-	shipp->warpout_effect->warpFrame(frametime);
+	// for ships with no warp effect, skip to the end
+	if (shipp->flags[Ship::Ship_Flags::No_departure_warp])
+		shipfx_actually_warpout(shipp, objp);
+	else
+		shipp->warpout_effect->warpFrame(frametime);
 }
 
 
@@ -2098,8 +2122,8 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 			if (submodel_1 >= 0 && submodel_2 >= 0) {
 				// spawn the arc in the first unused slot
 				for (int j = 0; j < MAX_SHIP_ARCS; j++) {
-					if (!timestamp_valid(shipp->arc_timestamp[j])) {
-						shipp->arc_timestamp[j] = timestamp((int)(arc_info->duration * 1000));
+					if (!shipp->arc_timestamp[j].isValid()) {
+						shipp->arc_timestamp[j] = _timestamp((int)(arc_info->duration * MILLISECONDS_PER_SECOND));
 
 						vec3d v1, v2, offset;
 						// subtract away the submodel's offset, since these positions were in frame of ref of the whole ship
@@ -2157,9 +2181,9 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 	}
 
 	// Kill off old sparks
-	for(int &arc_stamp : shipp->arc_timestamp){
-		if(timestamp_valid(arc_stamp) && timestamp_elapsed(arc_stamp)){
-			arc_stamp = timestamp(-1);
+	for (auto &arc_stamp : shipp->arc_timestamp) {
+		if (arc_stamp.isValid() && timestamp_elapsed(arc_stamp)) {
+			arc_stamp = TIMESTAMP::invalid();
 		}
 	}
 
@@ -2235,8 +2259,8 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 
 		// Create the arc effects
 		for (int i=0; i<MAX_SHIP_ARCS; i++ )	{
-			if ( !timestamp_valid( shipp->arc_timestamp[i] ) )	{
-				shipp->arc_timestamp[i] = timestamp(lifetime);	// live up to a second
+			if ( !shipp->arc_timestamp[i].isValid() )	{
+				shipp->arc_timestamp[i] = _timestamp(lifetime);	// live up to a second
 
 				switch( n )	{
 				case 0:
@@ -2297,7 +2321,7 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 
 	// maybe move arc points around
 	for (int i=0; i<MAX_SHIP_ARCS; i++ )	{
-		if ( timestamp_valid( shipp->arc_timestamp[i] ) )	{
+		if ( shipp->arc_timestamp[i].isValid() )	{
 			if ( !timestamp_elapsed( shipp->arc_timestamp[i] ) )	{							
 				// Maybe move a vertex....  20% of the time maybe?
 				int mr = Random::next();
@@ -3322,22 +3346,10 @@ int WarpEffect::warpEnd()
 	if(!this->isValid())
 		return 0;
 
-	shipp->flags.remove(Ship::Ship_Flags::Arriving_stage_1);
-	shipp->flags.remove(Ship::Ship_Flags::Arriving_stage_2);
-	shipp->flags.remove(Ship::Ship_Flags::Depart_warp);
-	// dock leader needs to handle dockees
-	if (object_is_docked(objp)) {
-		dock_function_info dfi;
-		dock_evaluate_all_docked_objects(objp, &dfi, object_remove_arriving_stage1_ndl_flag_helper);
-		dock_evaluate_all_docked_objects(objp, &dfi, object_remove_arriving_stage2_ndl_flag_helper);
-	}
-
-	// let physics in on it too.
-	objp->phys_info.flags &= (~PF_WARP_IN);
-	objp->phys_info.flags &= (~PF_WARP_OUT);
-
-	if(direction == WarpDirection::WARP_OUT)
-		ship_actually_depart(objp->instance);
+	if (direction == WarpDirection::WARP_IN)
+		shipfx_actually_warpin(&Ships[objp->instance], objp);
+	else if (direction == WarpDirection::WARP_OUT)
+		shipfx_actually_warpout(&Ships[objp->instance], objp);
 
 	return 1;
 }
@@ -3450,6 +3462,11 @@ int WE_Default::warpStart()
 	{
 		compute_warpout_stuff(&effect_time, &pos);
 		effect_time += SHIPFX_WARP_DELAY;
+
+		if (sip->flags[Ship::Info_Flags::Supercap]) {
+			// turn off warpin physics in case we're jumping out immediately
+			objp->phys_info.flags &= ~PF_SPECIAL_WARP_IN;
+		}
 	}
 
 	radius = shipfx_calculate_effect_radius(objp, direction);
@@ -3522,7 +3539,7 @@ int WE_Default::warpStart()
 			objp->phys_info.prev_ramp_vel.xyz.x = 0.0f;
 			objp->phys_info.prev_ramp_vel.xyz.y = 0.0f;
 			objp->phys_info.prev_ramp_vel.xyz.z = warping_speed;
-			objp->phys_info.forward_thrust = 1.0f;		// How much the forward thruster is applied.  0-1.
+			objp->phys_info.linear_thrust.xyz.z = 1.0f;		// How much the forward thruster is applied.  -1 - 1.
 		}
 	}
 
@@ -3557,7 +3574,7 @@ int WE_Default::warpFrame(float frametime)
 			objp->phys_info.prev_ramp_vel.xyz.x = 0.0f;
 			objp->phys_info.prev_ramp_vel.xyz.y = 0.0f;
 			objp->phys_info.prev_ramp_vel.xyz.z = warping_speed;
-			objp->phys_info.forward_thrust = 0.0f;		// How much the forward thruster is applied.  0-1.
+			objp->phys_info.linear_thrust.xyz.z = 0.0f;		// How much the forward thruster is applied.  -1 - 1.
 
 			stage_time_end = timestamp(fl2i(warping_time*1000.0f));
 		}
@@ -3607,11 +3624,11 @@ int WE_Default::warpFrame(float frametime)
 		} else {
 			// Code for all non-player ships warpout frame
 
-			int timed_out = timestamp_elapsed(total_time_end);
+			bool timed_out = timestamp_elapsed(total_time_end);
 			if ( timed_out )	{
-				int	delta_ms = timestamp_until(total_time_end);
+				int	delta_ms = timestamp_since(total_time_end);
 				if (delta_ms > 1000.0f * frametime ) {
-					nprintf(("AI", "Frame %i: Ship %s missed departue cue by %7.3f seconds.\n", Framecount, shipp->ship_name, - (float) delta_ms/1000.0f));
+					nprintf(("AI", "Frame %i: Ship %s missed departure cue by %7.3f seconds.\n", Framecount, shipp->ship_name, (float) delta_ms/1000.0f));
 				}
 			}
 
