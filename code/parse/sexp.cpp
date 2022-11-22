@@ -407,7 +407,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "player-not-use-ai",				OP_PLAYER_NOT_USE_AI,					0,	0,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-player-orders",				OP_SET_PLAYER_ORDERS,					3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma
 	{ "cap-waypoint-speed",				OP_CAP_WAYPOINT_SPEED,					2,	2,			SEXP_ACTION_OPERATOR,	},
-	{ "set-order-allowed-for-target",	OP_SET_ORDER_ALLOWED_TARGET,			3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma
+	{ "set-order-allowed-for-target",	OP_SET_ORDER_ALLOWED_TARGET,			3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// MjnMixael
 
 	//Ship Status Sub-Category
 	{ "protect-ship",					OP_PROTECT_SHIP,						1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
