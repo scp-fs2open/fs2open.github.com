@@ -12431,8 +12431,7 @@ void sexp_set_order_allowed_for_target(int n)
 
 	const std::set<size_t>& default_orders = ship_set_default_orders_against();
 	n = CDR(n);
-	bool allow_order;
-	allow_order = is_sexp_true(n);
+	bool allow_order = is_sexp_true(n);
 	n = CDR(n);
 	std::set<size_t> orders;
 	do {
