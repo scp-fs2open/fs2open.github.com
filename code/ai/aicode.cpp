@@ -558,6 +558,14 @@ int ai_get_autoscale_index(int absolute_index)
 	return index;
 }
 
+int ai_maybe_autoscale(int absolute_index)
+{
+	if (The_mission.ai_profile->flags[AI::Profile_Flags::Adjusted_AI_class_autoscale])
+		return ai_get_autoscale_index(absolute_index);
+	else
+		return absolute_index;
+}
+
 /**
  * Initialize an AI class's nonrequired values to defaults
  * Boolean overrides are unset, others initialized to FLT_MIN or INT_MIN (used as the "not set" state)
@@ -4989,8 +4997,8 @@ int ai_maybe_fire_afterburner(object *objp, ai_info *aip)
 	if (!(Ship_info[Ships[objp->instance].ship_info_index].flags[Ship::Info_Flags::Afterburner])) {
 		return 0;
 	}
-	if (aip->ai_aburn_use_factor == INT_MIN && aip->ai_class == 0) {
-		return 0;		//	Lowest level never aburners away (unless ai_aburn_use_factor is specified)
+	if (aip->ai_aburn_use_factor == INT_MIN && ai_maybe_autoscale(aip->ai_class) == 0) {
+		return 0;		//	Lowest [autoscaled] level never aburners away (unless ai_aburn_use_factor is specified)
 	} 
 	else {
 		//	Maybe don't afterburner because of a potential collision with the player.
@@ -5015,15 +5023,28 @@ int ai_maybe_fire_afterburner(object *objp, ai_info *aip)
 			}
 		}
 
-		if (aip->ai_aburn_use_factor == INT_MIN && aip->ai_class >= Num_ai_classes-2)
-			return 1;		//	Highest two levels always aburner away (unless ai_aburn_use_factor is specified).
-		else {
-			//If ai_aburn_use_factor is not specified, calculate a number based on the AI class. Otherwise, use that value.
-			if (aip->ai_aburn_use_factor == INT_MIN)
-				return static_rand_timed(OBJ_INDEX(objp), Num_ai_classes - aip->ai_class);
+		//If ai_aburn_use_factor is not specified, calculate a number based on the AI class. Otherwise, use that value.
+		if (aip->ai_aburn_use_factor == INT_MIN)
+		{
+			if (The_mission.ai_profile->flags[AI::Profile_Flags::Adjusted_AI_class_autoscale])
+			{
+				//	Highest two levels always aburner away
+				if (ai_get_autoscale_index(aip->ai_class) >= ai_get_autoscale_index(Num_ai_classes) - 2)
+					return 1;
+
+				return static_rand_timed(OBJ_INDEX(objp), ai_get_autoscale_index(Num_ai_classes) - ai_get_autoscale_index(aip->ai_class));
+			}
 			else
-				return static_rand_timed(OBJ_INDEX(objp), aip->ai_aburn_use_factor);
+			{
+				//	Highest two levels always aburner away
+				if (aip->ai_class >= Num_ai_classes-2)
+					return 1;
+
+				return static_rand_timed(OBJ_INDEX(objp), Num_ai_classes - aip->ai_class);
+			}
 		}
+		else
+			return static_rand_timed(OBJ_INDEX(objp), aip->ai_aburn_use_factor);
 	}
 }
 
@@ -8906,7 +8927,7 @@ void ai_chase()
 			aip->submode_start_time = Missiontime;
         } else if ( enemy_sip != NULL && (enemy_sip->is_small_ship()) && (dist_to_enemy < 150.0f) && (dot_from_enemy > dot_to_enemy + 0.5f + aip->ai_courage*.002)) {
 			float get_away_chance = (aip->ai_get_away_chance == FLT_MIN)
-				? (float)(aip->ai_class + Game_skill_level)/(Num_ai_classes + NUM_SKILL_LEVELS)
+				? (float)(ai_maybe_autoscale(aip->ai_class) + Game_skill_level)/(ai_maybe_autoscale(Num_ai_classes) + NUM_SKILL_LEVELS)
 				: aip->ai_get_away_chance;
 			if ((Missiontime - aip->last_hit_target_time > i2f(5)) && (frand() < get_away_chance)) {
 				aip->submode = SM_GET_AWAY;
@@ -9001,7 +9022,7 @@ void ai_chase()
 			aip->ai_flags.remove(AI::AI_Flags::Attack_slowly);	//	Just in case, clear here.
 
 			float get_away_chance = (aip->ai_get_away_chance == FLT_MIN)
-				? (float)(aip->ai_class + Game_skill_level)/(Num_ai_classes + NUM_SKILL_LEVELS)
+				? (float)(ai_maybe_autoscale(aip->ai_class) + Game_skill_level)/(ai_maybe_autoscale(Num_ai_classes) + NUM_SKILL_LEVELS)
 				: aip->ai_get_away_chance;
 
 			switch (Random::next(5)) {
@@ -9246,7 +9267,7 @@ void ai_chase()
 									else
 									{
 										float secondary_range_mult = (aip->ai_secondary_range_mult == FLT_MIN)
-											? (float)(Game_skill_level + 1 + (3 * aip->ai_class/(Num_ai_classes - 1)))/NUM_SKILL_LEVELS
+											? (float)(Game_skill_level + 1 + (3 * ai_maybe_autoscale(aip->ai_class)/(ai_maybe_autoscale(Num_ai_classes) - 1)))/NUM_SKILL_LEVELS
 											: aip->ai_secondary_range_mult;
 
 										firing_range = MIN((swip->max_speed * swip->lifetime * secondary_range_mult), swip->weapon_range);
@@ -14313,7 +14334,7 @@ int ai_avoid_shockwave(object *objp, ai_info *aip)
 	//	Don't all react right away.
 	if (!(aip->ai_flags[AI::AI_Flags::Avoid_shockwave_started])) {
 		float evadeChance = (aip->ai_shockwave_evade_chance == FLT_MIN) 
-			? ((float) aip->ai_class/4.0f + 0.25f)
+			? ((float) ai_maybe_autoscale(aip->ai_class)/4.0f + 0.25f)
 			: aip->ai_shockwave_evade_chance;
 		if (!rand_chance(flFrametime, evadeChance))	//	Chance to avoid in 1 second is 0.25 + ai_class/4
 			return 0;

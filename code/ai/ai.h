@@ -461,6 +461,7 @@ typedef struct ai_info {
 	ai_lua_parameters lua_ai_target;
 } ai_info;
 
+int ai_maybe_autoscale(int absolute_index = -1);
 int ai_get_autoscale_index(int absolute_index = -1);
 
 // Goober5000
