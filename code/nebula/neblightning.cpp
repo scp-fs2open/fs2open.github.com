@@ -282,7 +282,7 @@ void parse_lightning_table(const char* filename)
 				}
 			}
 
-			if (bolt_p->texture < 0)
+			if (!Fred_running && (bolt_p->texture < 0))
 				error_display(1, "Bolt %s has no texture defined.", bolt_p->name);
 
 			// glow
