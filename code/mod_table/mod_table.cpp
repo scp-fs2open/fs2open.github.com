@@ -766,7 +766,7 @@ void parse_mod_table(const char *filename)
 			}
 		}
 
-		if (optional_string("$Use per-weapon impact sounds for hits to player:")) {
+		if (optional_string("$Use weapon class impact sounds for hits to player:")) {
 			stuff_boolean(&Use_weapon_class_sounds_for_hits_to_player);
 		}
 
