@@ -345,7 +345,7 @@ void brief_icon_parse_cleanup() {
 	}
 }
 
-int Num_icons_in_table = 0;
+static int Num_icons_in_table = 0;
 
 // This is explicitely used to count the number of icons listed in the tbl
 // so that we can correctly parse each icon into a species without any off-by-N errors.
