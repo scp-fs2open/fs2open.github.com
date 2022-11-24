@@ -121,6 +121,7 @@ float Thruster_easing;
 bool Always_use_distant_firepoints;
 bool Discord_presence;
 bool Hotkey_always_hide_hidden_ships;
+bool Use_weapon_class_sounds_for_hits_to_player;
 
 static auto DiscordOption = options::OptionBuilder<bool>("Other.Discord", "Discord Presence", "Toggle Discord Rich Presence")
 							 .category("Other")
@@ -765,6 +766,10 @@ void parse_mod_table(const char *filename)
 			}
 		}
 
+		if (optional_string("$Use weapon class impact sounds for hits to player:")) {
+			stuff_boolean(&Use_weapon_class_sounds_for_hits_to_player);
+		}
+
 		optional_string("#FRED SETTINGS");
 
 		if (optional_string("$Disable Hard Coded Message Head Ani Files:")) {
@@ -1219,6 +1224,7 @@ void mod_table_reset()
 	Always_use_distant_firepoints = false;
 	Discord_presence = true;
 	Hotkey_always_hide_hidden_ships = false;
+	Use_weapon_class_sounds_for_hits_to_player = false;
 }
 
 void mod_table_set_version_flags()
