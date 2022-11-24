@@ -4444,16 +4444,22 @@ void sexp_tree::copy_branch(HTREEITEM source, HTREEITEM parent, HTREEITEM after)
 	}
 }
 
-void sexp_tree::swap_roots(HTREEITEM one, HTREEITEM two)
+void sexp_tree::move_root(HTREEITEM source, HTREEITEM dest, bool insert_before)
 {
-	HTREEITEM h;
+	HTREEITEM h, after = dest;
 
-	Assert(!GetParentItem(one));
-	Assert(!GetParentItem(two));
-//	copy_branch(one, TVI_ROOT, two);
-//	move_branch(two, TVI_ROOT, one);
-//	DeleteItem(one);
-	h = move_branch(one, TVI_ROOT, two);
+	Assert(!GetParentItem(source));
+	Assert(!GetParentItem(dest));
+
+	if (insert_before)
+	{
+		// since we can only insert after something, find the item previous to the destination; or indicate the first item if there is no previous item
+		after = GetNextItem(dest, TVGN_PREVIOUS);
+		if (after == nullptr)
+			after = TVI_FIRST;
+	}
+
+	h = move_branch(source, TVI_ROOT, after);
 	SelectItem(h);
 	SelectItem(h);
 	*modified = 1;
@@ -4513,7 +4519,7 @@ void sexp_tree::OnMouseMove(UINT nFlags, CPoint point)
 
 void sexp_tree::OnLButtonUp(UINT nFlags, CPoint point) 
 {
-	int index1, index2;
+	int node1, node2;
 
 	if (m_dragging) {
 		ASSERT(m_p_image_list != NULL);
@@ -4524,22 +4530,37 @@ void sexp_tree::OnLButtonUp(UINT nFlags, CPoint point)
 
 		if (m_h_drop && m_h_drag != m_h_drop) {
 			Assert(m_h_drag);
-			index1 = (int)GetItemData(m_h_drag);
-			index2 = (int)GetItemData(m_h_drop);
-			swap_roots(m_h_drag, m_h_drop);
+			node1 = (int)GetItemData(m_h_drag);
+			node2 = (int)GetItemData(m_h_drop);
+
+			// If we're moving up, insert before the dropped item.  If we're moving down,
+			// insert after the dropped item.  The idea is to always end up where we dropped.
+			bool insert_before = false;
+			for (auto h = m_h_drag; h != nullptr; h = GetNextItem(h, TVGN_PREVIOUS))
+			{
+				if (h == m_h_drop)
+				{
+					insert_before = true;
+					break;
+				}
+			}
+
+			move_root(m_h_drag, m_h_drop, insert_before);
+
 			if (m_mode == MODE_GOALS) {
 				Assert(Goal_editor_dlg);
-				Goal_editor_dlg->swap_handler(index1, index2);
+				Goal_editor_dlg->move_handler(node1, node2, insert_before);
 
 			} else if (m_mode == MODE_EVENTS) {
 				Assert(Event_editor_dlg);
-				Event_editor_dlg->swap_handler(index1, index2);
+				Event_editor_dlg->move_handler(node1, node2, insert_before);
 
 			} else if (m_mode == MODE_CAMPAIGN) {
-				Campaign_tree_formp->swap_handler(index1, index2);
+				Assert(Campaign_tree_formp);
+				Campaign_tree_formp->move_handler(node1, node2, insert_before);
 
 			} else
-				Assert(0);
+				UNREACHABLE("Unhandled dialog mode!");
 
 		} else
 			MessageBeep(0);
