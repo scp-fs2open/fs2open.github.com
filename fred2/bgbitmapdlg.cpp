@@ -454,11 +454,7 @@ void bg_bitmap_dlg::OnClose()
 	Nebula_pitch = m_pitch;
 	Nebula_bank = m_bank;
 	Nebula_heading = m_heading;
-	if (Nebula_index >= 0){
-		nebula_init(Nebula_filenames[Nebula_index], m_pitch, m_bank, m_heading);
-	} else {
-		nebula_close();
-	}
+	nebula_init(Nebula_index, m_pitch, m_bank, m_heading);
 
     The_mission.flags.set(Mission::Mission_Flags::Subspace, m_subspace != 0);
 
@@ -543,11 +539,7 @@ void bg_bitmap_dlg::OnSelchangeNebpattern()
 	Nebula_index = m_nebula_index - 1;			
 
 	GetDlgItem(IDC_NEBCOLOR)->EnableWindow(m_nebula_index ? TRUE : FALSE);
-	if (Nebula_index >= 0){		
-		nebula_init(Nebula_filenames[Nebula_index], m_pitch, m_bank, m_heading);		
-	} else {
-		nebula_close();
-	}
+	nebula_init(Nebula_index, m_pitch, m_bank, m_heading);
 
 	Update_window = 1;
 }

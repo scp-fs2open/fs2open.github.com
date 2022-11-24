@@ -558,4 +558,8 @@ void process_self_destruct_packet(ubyte *data, header *hinfo);
 void send_sexp_packet(ubyte *sexp_packet, int num_ubytes);
 void process_sexp_packet(ubyte *data, header *hinfo);
 
+// Turret is tracking new object.
+void send_turret_tracking_packet(int ship_objnum, int subsys_index);
+void process_turret_tracking_packet(ubyte *data, header *hinfo);
+
 #endif

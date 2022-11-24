@@ -129,8 +129,13 @@ typedef struct neb2_detail {
 // initialize neb2 stuff at game startup
 void neb2_init();
 
+// set poof bits using a list of poof names
+void neb2_set_poof_bits(const SCP_vector<SCP_string>& list);
+
 //init neb stuff  - WMC
 void neb2_level_init();
+
+void neb2_pre_level_init();
 
 // initialize nebula stuff - call from game_post_level_init(), so the mission has been loaded
 void neb2_post_level_init(bool fog_color_override);

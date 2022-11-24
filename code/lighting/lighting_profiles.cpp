@@ -339,6 +339,10 @@ void lighting_profile::parse_default_section(const char *filename)
 										&default_profile.point_light_radius);
 		parsed |= lighting_profile_value::parse(filename,"$Directional light brightness:",profile_name,
 										&default_profile.directional_light_brightness);
+		parsed |= lighting_profile_value::parse(filename,"$Cone light radius:",profile_name,
+										&default_profile.cone_light_radius);
+		parsed |= lighting_profile_value::parse(filename,"$Cone light brightness:",profile_name,
+										&default_profile.cone_light_brightness);
 		if(lighting_profile_value::parse(filename,"$Ambient light brightness:",profile_name, &default_profile.ambient_light_brightness))
 		{
 			parsed = true;

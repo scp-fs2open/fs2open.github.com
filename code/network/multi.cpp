@@ -50,6 +50,7 @@
 #include "network/multi_fstracker.h"
 #include "network/multi_sw.h"
 #include "network/multi_portfwd.h"
+#include "network/multi_turret_manager.h"
 #include "pilotfile/pilotfile.h"
 #include "debugconsole/console.h"
 #include "network/psnet2.h"
@@ -936,6 +937,10 @@ void process_packet_normal(ubyte* data, header *header_info)
 			process_sexp_packet(data, header_info);
 			break; 
 
+		case TURRET_TRACK:
+			process_turret_tracking_packet(data, header_info);
+			break;
+
 		default:
 			mprintf(("Received packet with unknown type %d\n", data[0] ));
 			header_info->bytes_processed = 10000;
@@ -1286,7 +1291,10 @@ void multi_do_frame()
 
 			// sending new objects from here is dependent on having objects only created after
 			// the game is done moving the objects.  I think that I can enforce this.				
-			multi_oo_process();			
+			multi_oo_process();
+
+			// send updates for turret tracking.
+			Multi_Turret_Manager.send_queued_packets();			
 
 			// evaluate whether the time limit has been reached or max kills has been reached
 			// Commented out by Sandeep 4/12/98, was causing problems with testing.

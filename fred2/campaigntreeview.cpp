@@ -1078,7 +1078,7 @@ void campaign_tree_view::drop_mission(int m, CPoint point)
 	// update and reinitialize dialog items
 	if ( Campaign.type != CAMPAIGN_TYPE_SINGLE ) {
 		Campaign_tree_formp->update();
-		Campaign_tree_formp->initialize(0);
+		Campaign_tree_formp->initialize(false, false);
 	}
 
 	listbox->DeleteString(item);
@@ -1242,7 +1242,7 @@ void campaign_tree_view::OnRemoveMission()
 	// in the mission might have changed because of deletion of the first mission
 	if ( Campaign.type != CAMPAIGN_TYPE_SINGLE ) {
 		Campaign_tree_formp->update();
-		Campaign_tree_formp->initialize();
+		Campaign_tree_formp->initialize(true, false);
 	}
 }
 

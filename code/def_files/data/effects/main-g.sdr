@@ -61,20 +61,20 @@ layout (std140) uniform modelData {
 	int blend_alpha;
 
 	vec3 emissionFactor;
-	bool overrideDiffuse;
+	bool overrideDiffuse_;
 
-	vec3 diffuseClr;
-	bool overrideGlow;
+	vec3 diffuseClr_;
+	bool overrideGlow_;
 
-	vec3 glowClr;
-	bool overrideSpec;
+	vec3 glowClr_;
+	bool overrideSpec_;
 
-	vec3 specClr;
+	vec3 specClr_;
 	bool alphaGloss;
 
 	bool gammaSpec;
 	bool envGloss;
-	bool alpha_spec;
+	bool alpha_spec_;
 	int effect_num;
 
 	vec4 fogColor;
@@ -95,7 +95,7 @@ layout (std140) uniform modelData {
 	float middist;
 	float fardist;
 
-	vec2 normalAlphaMinMax;
+	vec2 normalAlphaMinMax_;
 	int sBasemapIndex;
 	int sGlowmapIndex;
 

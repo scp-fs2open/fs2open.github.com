@@ -30,5 +30,5 @@ const ai_mode_lua* ai_lua_find_mode(int sexp_op);
 const player_order_lua* ai_lua_find_player_order(int sexp_op);
 void ai_lua(ai_info* aip);
 void ai_lua_start(ai_goal* aigp, object* objp);
-bool ai_lua_is_valid_target(int sexp_op, int target_objnum, ship* self);
+bool ai_lua_is_valid_target(int sexp_op, int target_objnum, ship* self, size_t order);
 ai_achievability ai_lua_is_achievable(const ai_goal* aigp, int objnum);

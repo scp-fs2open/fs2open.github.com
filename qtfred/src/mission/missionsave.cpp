@@ -1506,20 +1506,6 @@ int CFred_mission_save::save_common_object_data(object* objp, ship* shipp)
 		fso_comment_pop();
 	}
 
-	/*	for (j=0; j<shipp->status_count; j++) {
-	required_string_fred("$Status Description:");
-	parse_comments(-1);
-	fout(" %s", Status_desc_names[shipp->status_type[j]]);
-
-	required_string_fred("$Status:");
-	parse_comments(-1);
-	fout(" %s", Status_type_names[shipp->status[j]]);
-
-	required_string_fred("$Target:");
-	parse_comments(-1);
-	fout(" %s", Status_target_names[shipp->target[j]]);
-	}*/
-
 	fso_comment_pop(true);
 
 	return err;
@@ -2857,7 +2843,6 @@ int CFred_mission_save::save_objects()
 {
 	SCP_string sexp_out;
 	int i, z;
-	ai_info* aip;
 	object* objp;
 	ship* shipp;
 
@@ -2950,14 +2935,11 @@ int CFred_mission_save::save_objects()
 			required_string_fred("$IFF:");
 			parse_comments();
 			fout(" %s", "IFF 1");
+
+			required_string_fred("$AI Behavior:");
+			parse_comments();
+			fout(" %s", Ai_behavior_names[AIM_NONE]);
 		}
-
-		Assert(shipp->ai_index >= 0);
-		aip = &Ai_info[shipp->ai_index];
-
-		required_string_fred("$AI Behavior:");
-		parse_comments();
-		fout(" %s", Ai_behavior_names[aip->behavior]);
 
 		if (shipp->weapons.ai_class != Ship_info[shipp->ship_info_index].ai_class) {
 			if (optional_string_fred("+AI Class:", "$Name:")) {
@@ -3308,6 +3290,12 @@ int CFred_mission_save::save_objects()
 			}
 			if (shipp->flags[Ship::Ship_Flags::Aspect_immune]) {
 				fout(" \"aspect-immune\"");
+			}
+			if (shipp->flags[Ship::Ship_Flags::Cannot_perform_scan]) {
+				fout(" \"cannot-perform-scan\"");
+			}
+			if (shipp->flags[Ship::Ship_Flags::No_targeting_limits]) {
+				fout(" \"no-targeting-limits\"");
 			}
 			fout(" )");
 		}
@@ -4465,6 +4453,16 @@ int CFred_mission_save::save_wings()
 				}
 
 				fout(" %s", Wing_formations[Wings[i].formation].name);
+			}
+			if (!fl_equal(Wings[i].formation_scale, 1.0f, 0.001f))
+			{
+				if (optional_string_fred("+Formation Scale:", "$Name:")) {
+					parse_comments();
+				}
+				else {
+					fout("\n+Formation Scale:");
+				}
+				fout(" %f", Wings[i].formation_scale);
 			}
 		}
 

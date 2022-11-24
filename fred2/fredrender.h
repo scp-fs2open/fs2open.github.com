@@ -14,7 +14,6 @@
 #define BRIEFING_LOOKAT_POINT_ID	99999
 
 extern int Aa_gridlines;    //!< Bool. If nonzero, draw anti-aliased gridlines
-extern int player_start1;   //!< Object index of the player start
 extern int Editing_mode;    //!< Enum. The edit mode. 0 = Select; 1 = Select and Move; 2 = Select and Rotate
 extern int Control_mode;    //!< Bool. Control mode. 0 = Camera/Viewpoint control. 1 = Object control
 extern int Show_grid;       //!< Bool. If nonzero, draw the grid

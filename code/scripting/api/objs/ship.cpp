@@ -1751,6 +1751,8 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem Ta
 			}
 			break;
 		}
+		default:
+			return ade_set_error(L, "b", false);
 	}
 
 	//Nothing got set!
@@ -2330,6 +2332,56 @@ ADE_FUNC(setGlowPointBankActive, l_Ship, "boolean active, [number bank]", "Activ
 	}
 
 	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(numDocked, l_Ship, nullptr, "Returns the number of ships this ship is directly docked with", "number", "The number of ships")
+{
+	object_h *docker_objh = nullptr;
+
+	if (!ade_get_args(L, "o", l_Ship.GetPtr(&docker_objh)))
+		return ADE_RETURN_NIL;
+
+	if (docker_objh == nullptr || !docker_objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "i", dock_count_direct_docked_objects(docker_objh->objp));
+}
+
+ADE_FUNC(isDocked, l_Ship, "[ship... dockee_ships]", "Returns whether this ship is docked to all of the specified dockee ships, or is docked at all if no ships are specified", "boolean", "Returns whether the ship is docked")
+{
+	bool found_arg = false;
+	int skip_args = 1;
+	object_h *docker_objh = nullptr, *dockee_objh = nullptr;
+
+	if (!ade_get_args(L, "o", l_Ship.GetPtr(&docker_objh)))
+		return ADE_RETURN_NIL;
+
+	if (docker_objh == nullptr || !docker_objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	while (true)
+	{
+		// read the next ship
+		internal::Ade_get_args_skip = skip_args++;
+		if (ade_get_args(L, "|o", l_Ship.GetPtr(&dockee_objh)) == 0)
+			break;
+		found_arg = true;
+
+		// make sure ship exists
+		if (dockee_objh == nullptr || !dockee_objh->IsValid())
+			continue;
+
+		// see if we are docked to it
+		if (!dock_check_find_direct_docked_object(docker_objh->objp, dockee_objh->objp))
+			return ADE_RETURN_FALSE;
+	}
+
+	// all ships passed
+	if (found_arg)
+		return ADE_RETURN_TRUE;
+
+	// if we didn't find any specified ships, then see if we are docked at all
+	return object_is_docked(docker_objh->objp) ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
 }
 
 ADE_FUNC(setDocked, l_Ship, "ship dockee_ship, [string | number docker_point, string | number dockee_point]", "Immediately docks this ship with another ship.", "boolean", "Returns whether the docking was successful, or nil if an input was invalid")

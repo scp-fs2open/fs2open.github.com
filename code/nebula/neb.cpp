@@ -191,6 +191,11 @@ void parse_nebula_table(const char* filename)
 			optional_string("+Nebula:");
 			stuff_string(name, F_NAME, MAX_FILENAME_LEN);
 
+			if (!(generic_bitmap_exists(name))) {
+				error_display(0, "Nebula bitmap %s was not found!, skipping!", name);
+				continue;
+			}
+
 			if (Neb2_bitmap_count < MAX_NEB2_BITMAPS) {
 				strcpy_s(Neb2_bitmap_filenames[Neb2_bitmap_count++], name);
 			}
@@ -211,6 +216,11 @@ void parse_nebula_table(const char* filename)
 				strcpy_s(pooft.bitmap_filename, name);
 
 				strcpy_s(pooft.name, name);
+
+				if (!(generic_bitmap_exists(pooft.bitmap_filename))) {
+					error_display(0, "Bitmap defined for nebula poof %s was not found. Skipping!", pooft.name);
+					continue;
+				}
 
 				generic_anim_init(&pooft.bitmap, name);
 
@@ -273,6 +283,10 @@ void parse_nebula_table(const char* filename)
 					}
 				}
 
+				//We can't skip here because we'd have to back out the entire poof from the vector-Mjn
+				if (!(generic_bitmap_exists(poofp->bitmap_filename)))
+					error_display(0, "Bitmap defined for nebula poof %s was not found!", poofp->name);
+
 				if (optional_string("$Scale:"))
 					poofp->scale = ::util::parseUniformRange<float>(0.01f, 100000.0f);
 
@@ -323,13 +337,26 @@ void parse_nebula_table(const char* filename)
 // initialize neb2 stuff at game startup
 void neb2_init()
 {
-
 	Neb2_bitmap_count = 0;
+
 	// first parse the default table
 	parse_nebula_table("nebula.tbl");
 
 	// parse any modular tables
 	parse_modular_table("*-neb.tbm", parse_nebula_table);
+}
+
+// set the bits for poofs from a list of poof names
+void neb2_set_poof_bits(const SCP_vector<SCP_string>& list)
+{
+	Neb2_poof_flags = 0; //Make absolutely sure flags are zero'd before we start adding to it-Mjn
+	for (const SCP_string& thisPoof : list) {
+		for (int i = 0; i < (int)Poof_info.size(); i++) {
+			if (SCP_string_lcase_equal_to()(Poof_info[i].name, thisPoof)) {
+				Neb2_poof_flags |= (1 << i);
+			}
+		}
+	}
 }
 
 bool poof_is_used(size_t idx) {
@@ -341,6 +368,18 @@ void neb2_get_fog_color(ubyte *r, ubyte *g, ubyte *b)
 	if (r) *r = Neb2_fog_color[0];
 	if (g) *g = Neb2_fog_color[1];
 	if (b) *b = Neb2_fog_color[2];
+}
+
+void neb2_pre_level_init()
+{
+	Neb2_awacs = -1.0f;
+	Neb2_fog_near_mult = 1.0f;
+	Neb2_fog_far_mult = 1.0f;
+
+	strcpy_s(Neb2_texture_name, "");
+	Neb2_poof_flags = 0;
+
+	strcpy_s(Mission_parse_storm_name, "none");
 }
 
 void neb2_level_init()

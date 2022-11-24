@@ -119,7 +119,6 @@ bool CFREDDoc::autoload() {
 	}
 
 	// Load Backup.002
-	//	editor_init_mission();  
 	r = load_mission(name);
 	Update_window = 1;
 

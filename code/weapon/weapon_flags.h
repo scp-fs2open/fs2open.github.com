@@ -86,11 +86,13 @@ namespace Weapon {
 		Require_exact_los,					// If secondary or in turret, will only fire if ship has line of sight to target
 		Can_damage_shooter,					// this weapon and any of its descendants can damage its shooter - Asteroth
 		Heals,								// 'damage' heals instead of actually damaging - Asteroth
+		Vampiric,						    // damage applied also brings back health to the shooter - Strygon
 		SecondaryNoAmmo,					// Secondaries that only use energy
 		No_collide,
 		Multilock_target_dead_subsys,
 		No_evasion,							// AI will not attempt to dodge this weapon - Asteroth
 		Dont_merge_indicators,				// This secondary lead indicator won't be merged with the primary lead indicator even if this is a homing weapon.
+		No_fred,							// not available in fred
 
         NUM_VALUES
 	};

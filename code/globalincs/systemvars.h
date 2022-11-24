@@ -144,16 +144,7 @@ extern bool PostProcessing_override;
 extern bool Shadow_override;
 extern bool Trail_render_override;
 
-extern bool Basemap_color_override_set;
-extern float Basemap_color_override[4];
-
-extern bool Glowmap_color_override_set;
-extern float Glowmap_color_override[3];
-
-extern bool Specmap_color_override_set;
-extern float Specmap_color_override[3];
-
-// game skill levels 
+// game skill levels
 #define	NUM_SKILL_LEVELS	5
 
 //====================================================================================

@@ -370,6 +370,7 @@ struct weapon_info
 	float	vel_inherit_amount;					// how much of the parent ship's velocity is inherited (0.0..1.0)
 	float	free_flight_time;
 	float	free_flight_speed_factor;
+	float gravity_const;						// multiplier applied to gravity, if any in the mission
 	float mass;									// mass of the weapon
 	float fire_wait;							// fire rate -- amount of time before you can refire the weapon
 	float max_delay;							// max time to delay a shot (DahBlount)
@@ -495,6 +496,9 @@ struct weapon_info
 	// Energy suck effect
 	float weapon_reduce;					// how much energy removed from weapons systems
 	float afterburner_reduce;			// how much energy removed from weapons systems
+
+	// Vampirism Effect Multiplier
+	float vamp_regen;					// Factor by which a vampiric weapon will multiply the healing done to the shooter
 
 	// tag stuff
 	float	tag_time;						// how long the tag lasts		

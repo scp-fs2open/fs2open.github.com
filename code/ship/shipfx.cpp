@@ -1502,10 +1502,10 @@ static void split_ship_init( ship* shipp, split_ship* split_shipp )
 	// set up physics 
 	physics_init( &split_shipp->front_ship.phys_info );
 	physics_init( &split_shipp->back_ship.phys_info );
-	split_shipp->front_ship.phys_info.flags  |= (PF_ACCELERATES | PF_DEAD_DAMP);
-	split_shipp->back_ship.phys_info.flags |= (PF_ACCELERATES | PF_DEAD_DAMP);
-	split_shipp->front_ship.phys_info.side_slip_time_const = 10000.0f;
-	split_shipp->back_ship.phys_info.side_slip_time_const =  10000.0f;
+	split_shipp->front_ship.phys_info.flags  |= PF_BALLISTIC;
+	split_shipp->back_ship.phys_info.flags |= PF_BALLISTIC;
+	split_shipp->front_ship.phys_info.gravity_const = parent_ship_obj->phys_info.gravity_const;
+	split_shipp->back_ship.phys_info.gravity_const = parent_ship_obj->phys_info.gravity_const;
 	split_shipp->front_ship.phys_info.rotdamp = 10000.0f;
 	split_shipp->back_ship.phys_info.rotdamp =  10000.0f;
 
@@ -2037,9 +2037,8 @@ int shipfx_large_blowup_do_frame(ship *shipp, float frametime)
 			the_split_ship->explosion_flash_started = 1;
 		}
 	}
-
-	physics_sim(&the_split_ship->front_ship.local_pivot, &the_split_ship->front_ship.orient, &the_split_ship->front_ship.phys_info, frametime);
-	physics_sim(&the_split_ship->back_ship.local_pivot,  &the_split_ship->back_ship.orient,  &the_split_ship->back_ship.phys_info,  frametime);
+	physics_sim(&the_split_ship->front_ship.local_pivot, &the_split_ship->front_ship.orient, &the_split_ship->front_ship.phys_info, &The_mission.gravity, frametime);
+	physics_sim(&the_split_ship->back_ship.local_pivot,  &the_split_ship->back_ship.orient,  &the_split_ship->back_ship.phys_info, &The_mission.gravity, frametime);
 	the_split_ship->front_ship.length_left -= the_split_ship->front_ship.explosion_vel*frametime;
 	the_split_ship->back_ship.length_left  += the_split_ship->back_ship.explosion_vel *frametime;
 	the_split_ship->front_ship.cur_clip_plane_pt += the_split_ship->front_ship.explosion_vel*frametime;

@@ -341,7 +341,7 @@ public:
 	model_subsystem *system_info;					// pointer to static data for this subsystem -- see model.h for definition
 
 	int			parent_objnum;						// objnum of the parent ship
-	int			parent_subsys_index;				// index of this subsystem in the parent ship's linked list
+	int			parent_subsys_index;				// index of this subsystem in the parent ship's linked list -- Do not access manually, use parent_subsys_index() as this may not yet be cached.
 
 	char		sub_name[NAME_LENGTH];					//WMC - Name that overrides name of original
 	float		current_hits;							// current number of hits this subsystem has left.
@@ -429,6 +429,9 @@ public:
 	//Per-turret ownage settings - SUSHI
 	int turret_max_bomb_ownage; 
 	int turret_max_target_ownage;
+
+	// multiplayer
+	TIMESTAMP info_from_server_stamp;
 
 	ship_subsys()
 		: next(NULL), prev(NULL)
@@ -614,7 +617,8 @@ public:
 	int	departure_delay;		// time in seconds after sexp is true that we delay.
 
 	int	wingnum;								// wing number this ship is in.  -1 if in no wing, Wing array index otherwise
-	std::set<size_t> orders_accepted;					// set of orders this ship will accept from the player.
+	SCP_set<size_t> orders_accepted;				// set of orders this ship will accept from the player.
+	SCP_set<size_t> orders_allowed_against;		// set of orders for which this ship cannot be a target.
 
 	// Subsystem fields.  The subsys_list is a list of all subsystems (which might include multiple types
 	// of a particular subsystem, like engines).  The subsys_info struct is information for particular
@@ -1142,6 +1146,8 @@ public:
 	float		forward_decel;
 	float		slide_accel;
 	float		slide_decel;
+	float	gravity_const;						// multiplies the affect of gravity, if any
+	float	dying_gravity_const;				// as above, when death rolling
 
 	int warpin_params_index;
 	int warpout_params_index;
@@ -1193,6 +1199,7 @@ public:
 	float			debris_max_hitpoints;
 	float			debris_damage_mult;
 	float			debris_arc_percent;
+	float			debris_gravity_const;			// see gravity_const above
 	gamesnd_id		debris_ambient_sound;
 	gamesnd_id		debris_collision_sound_light;
 	gamesnd_id		debris_collision_sound_heavy;
@@ -1517,6 +1524,7 @@ typedef struct wing {
 	int total_vanished;						// total number of ships vanished in this wing (including all waves)
 
 	int	special_ship;							// the leader of the wing.  An index into ship_index[].
+	int special_ship_ship_info_index;					// the ship info index of the special ship
 
 	int	arrival_location;						// arrival and departure information for wings -- similar to info for ships
 	int	arrival_distance;						// distance from some ship where this ship arrives
@@ -1533,7 +1541,7 @@ typedef struct wing {
 
 	int	wave_delay_min;						// minimum number of seconds before new wave can arrive
 	int	wave_delay_max;						// maximum number of seconds before new wave can arrive
-	int	wave_delay_timestamp;				// timestamp used for delaying arrival of next wave
+	TIMESTAMP	wave_delay_timestamp;				// timestamp used for delaying arrival of next wave
 
 	flagset<Ship::Wing_Flags> flags;
 
@@ -1549,6 +1557,10 @@ typedef struct wing {
 
 	// if -1, retail formation, else a custom one defined in ships.tbl
 	int formation;
+	float formation_scale;
+
+	// reset to a completely blank wing
+	void clear();
 } wing;
 
 extern wing Wings[MAX_WINGS];
@@ -1559,7 +1571,6 @@ extern int TVT_wings[MAX_TVT_WINGS];
 
 extern char Starting_wing_names[MAX_STARTING_WINGS][NAME_LENGTH];
 extern char Squadron_wing_names[MAX_SQUADRON_WINGS][NAME_LENGTH];
-extern bool Squadron_wing_names_found[MAX_SQUADRON_WINGS];
 extern char TVT_wing_names[MAX_TVT_WINGS][NAME_LENGTH];
 
 extern int ai_paused;
@@ -1758,6 +1769,7 @@ extern void ship_add_ship_type_count( int ship_info_index, int num );
 
 extern int ship_get_type(char* output, ship_info* sip);
 extern const std::set<size_t>& ship_get_default_orders_accepted( ship_info *sip );
+extern const std::set<size_t> ship_set_default_orders_against();
 extern int ship_query_general_type(int ship);
 extern int ship_class_query_general_type(int ship_class);
 extern int ship_query_general_type(ship *shipp);

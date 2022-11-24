@@ -39,7 +39,13 @@ endif(NOT CMAKE_BUILD_TYPE AND NOT DEFINED CMAKE_CONFIGURATION_TYPES)
 # Override standard CMake configurations
 set(CMAKE_CONFIGURATION_TYPES Debug Release FastDebug CACHE STRING "Available configurations" FORCE)
 
-PROJECT(FS2_Open)
+set(FSO_LANGUAGES C CXX)
+
+if(APPLE)
+	set(FSO_LANGUAGES ${FSO_LANGUAGES} OBJC OBJCXX)
+endif()
+
+PROJECT(FS2_Open LANGUAGES ${FSO_LANGUAGES})
 
 find_program(CCACHE_PROGRAM ccache)
 # Currently only GCC support ccache properly without generating additional warnings
@@ -83,9 +89,11 @@ IF(RESET_INSTALL_PREFIX)
 	ENDIF(NOT $ENV{FS2PATH} STREQUAL "")
 ENDIF(RESET_INSTALL_PREFIX)
 
-IF (WIN32)
-	OPTION(FSO_USE_SPEECH "Use Windows specific text-to-speach libraries" ON)
+IF(WIN32 OR APPLE)
+	OPTION(FSO_USE_SPEECH "Use text-to-speach libraries" ON)
+ENDIF(WIN32 OR APPLE)
 
+IF (WIN32)
 	OPTION(FSO_USE_VOICEREC "Enable voice recognition support" ON)
 
 	OPTION(FSO_BUILD_FRED2 "Build FRED2 binary" ON)
@@ -208,8 +216,10 @@ include(package)
 include(doxygen)
 
 # Print used options to log
-IF (WIN32)
+IF(WIN32 OR APPLE)
 	message(STATUS "Using text to speech: ${FSO_USE_SPEECH}")
+ENDIF()
+IF (WIN32)
 	message(STATUS "Using voice recogition: ${FSO_USE_VOICEREC}")
 	message(STATUS "Building FRED2: ${FSO_BUILD_FRED2}")
 elseif(UNIX)

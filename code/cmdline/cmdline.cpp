@@ -187,8 +187,6 @@ Flag exe_params[] =
 	{ "-stretch_menu",		"Stretch interface to fill screen",			true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-stretch_menu", },
 	{ "-noscalevid",		"Disable scale-to-window for movies",		true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-noscalevid", },
 	{ "-nomotiondebris",	"Disable motion debris",					true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nomotiondebris",},
-	{ "-ship_choice_3d",	"Use 3D models for ship selection",			true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-ship_choice_3d", },
-	{ "-weapon_choice_3d",	"Use 3D models for weapon selection",		true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-weapon_choice_3d", },
 	{ "-3dwarp",			"Enable 3D warp",							true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-3dwarp", },
 	{ "-warp_flash",		"Enable flash upon warp",					true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-warp_flash", },
 	{ "-no_ap_interrupt",	"Disable interrupting autopilot",			true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_ap_interrupt", },
@@ -209,6 +207,7 @@ Flag exe_params[] =
 	{ "-clientdamage",		"",											false,	0,									EASY_DEFAULT,					"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-clientdamage", },
 	{ "-mpnoreturn",		"Disable flight deck option",				true,	0,									EASY_DEFAULT,					"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-mpnoreturn", },
 	{ "-gateway_ip",		"Set gateway IP address",					false,	0,									EASY_DEFAULT,					"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-gateway_ip", },
+	{ "-ingame_join",		"Disable in-game joining",					true,	0,									EASY_DEFAULT,					"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-ingame_join", },
 
 	{ "-no_set_gamma",		"Disable setting of gamma",					true,	0,									EASY_DEFAULT,					"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_set_gamma", },
 	{ "-nomovies",			"Disable video playback",					true,	0,									EASY_DEFAULT,					"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nomovies", },
@@ -232,7 +231,6 @@ Flag exe_params[] =
 	{ "-fix_registry",	"Use a different registry path",				true,	0,									EASY_DEFAULT,					"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-fix_registry", },
 #endif
 
-	{ "-ingame_join",		"Allow in-game joining",					true,	0,									EASY_DEFAULT,					"Experimental",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-ingame_join", },
 	{ "-voicer",			"Enable voice recognition",					true,	0,									EASY_DEFAULT,					"Experimental",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-voicer", },
 
 	{ "-bmpmanusage",		"Show how many BMPMAN slots are in use",	false,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-bmpmanusage", },
@@ -390,8 +388,6 @@ int Cmdline_rearm_timer = 0;
 
 // Gameplay related
 cmdline_parm use_3dwarp("-3dwarp", nullptr, AT_NONE);			// Is now Fireball_use_3d_warp
-cmdline_parm ship_choice_3d_arg("-ship_choice_3d", nullptr, AT_NONE);	// Cmdline_ship_choice_3d
-cmdline_parm weapon_choice_3d_arg("-weapon_choice_3d", nullptr, AT_NONE);	// Cmdline_weapon_choice_3d
 cmdline_parm use_warp_flash("-warp_flash", nullptr, AT_NONE);	// Cmdline_warp_flash
 cmdline_parm allow_autpilot_interrupt("-no_ap_interrupt", nullptr, AT_NONE);
 cmdline_parm stretch_menu("-stretch_menu", nullptr, AT_NONE);	// Cmdline_stretch_menu
@@ -424,8 +420,8 @@ cmdline_parm mpnoreturn_arg("-mpnoreturn", NULL, AT_NONE);	// Cmdline_mpnoreturn
 cmdline_parm objupd_arg("-cap_object_update", "Multiplayer object update cap (0-3)", AT_INT);
 cmdline_parm gateway_ip_arg("-gateway_ip", "Set gateway IP address", AT_STRING);
 
-char *Cmdline_almission = NULL;	//DTP for autoload multi mission.
-int Cmdline_ingamejoin = 0;
+char *Cmdline_almission = nullptr;	//DTP for autoload multi mission.
+int Cmdline_ingamejoin = 1;
 int Cmdline_mpnoreturn = 0;
 int Cmdline_objupd = 3;		// client object updates on LAN by default
 char *Cmdline_gateway_ip = nullptr;
@@ -575,6 +571,8 @@ cmdline_parm deprecated_spec_static_arg("-spec_static", "Deprecated", AT_NONE);
 cmdline_parm deprecated_spec_point_arg("-spec_point", "Deprecated", AT_NONE);
 cmdline_parm deprecated_spec_tube_arg("-spec_tube", "Deprecated", AT_NONE);
 cmdline_parm deprecated_ambient_factor_arg("-ambient_factor", "Deprecated", AT_NONE);	//
+cmdline_parm deprecated_ship_choice_3d_arg("-ship_choice_3d", "Deprecated", AT_NONE);
+cmdline_parm deprecated_weapon_choice_3d_arg("-weapon_choice_3d", "Deprecated", AT_NONE);
 
 #ifndef NDEBUG
 // NOTE: this assumes that os_init() has already been called but isn't a fatal error if it hasn't
@@ -1923,14 +1921,8 @@ bool SetCmdlineParams()
 	if ( glow_arg.found() )
 		Cmdline_glow = 0;
 
-	if ( ship_choice_3d_arg.found() )
-		Cmdline_ship_choice_3d = 1;
-
-	if ( weapon_choice_3d_arg.found() )
-		Cmdline_weapon_choice_3d = 1;
-
 	if (ingamejoin_arg.found() )
-		Cmdline_ingamejoin = 1;
+		Cmdline_ingamejoin = 0;
 
 	if ( start_mission_arg.found() ) {
 		Cmdline_start_mission = start_mission_arg.str();

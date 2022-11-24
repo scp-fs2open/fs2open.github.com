@@ -51,12 +51,12 @@ QStandardItemModel* ColorComboBox::getShipClassModel() {
 	item->setData("separator", Qt::AccessibleDescriptionRole);
 	itemModel->appendRow(item);
 
-	item = new QStandardItem("Jump Node");
-	item->setData(_viewport->editor->Id_select_type_jump_node, Qt::UserRole);
-	itemModel->appendRow(item);
-
 	item = new QStandardItem("Waypoint");
 	item->setData(_viewport->editor->Id_select_type_waypoint, Qt::UserRole);
+	itemModel->appendRow(item);
+
+	item = new QStandardItem("Jump Node");
+	item->setData(_viewport->editor->Id_select_type_jump_node, Qt::UserRole);
 	itemModel->appendRow(item);
 
 	return itemModel;

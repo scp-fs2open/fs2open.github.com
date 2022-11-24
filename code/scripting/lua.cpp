@@ -169,6 +169,7 @@ int script_state::CreateLuaState()
 	for(i = 0; i < Num_enumerations; i++)
 	{
 		eh.index = Enumerations[i].def;
+		eh.value = Enumerations[i].value;
 		eh.is_constant = true;
 
 		ade_set_args(L, "o", l_Enum.Set(eh));

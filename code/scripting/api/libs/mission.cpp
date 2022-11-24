@@ -1135,13 +1135,13 @@ ADE_FUNC(createDebris,
 
 	if (create_flags != nullptr)
 	{
-		if (!create_flags->IsValid())
+		if (!create_flags->IsValid() || !create_flags->value)
 			return ade_set_args(L, "o", l_Debris.Set(object_h()));
 
-		is_hull = (create_flags->index & LE_DC_IS_HULL);
-		vaporize = (create_flags->index & LE_DC_VAPORIZE);
-		set_velocity = (create_flags->index & LE_DC_SET_VELOCITY);
-		fire_hook = (create_flags->index & LE_DC_FIRE_HOOK);
+		is_hull = (*create_flags->value & LE_DC_IS_HULL);
+		vaporize = (*create_flags->value & LE_DC_VAPORIZE);
+		set_velocity = (*create_flags->value & LE_DC_SET_VELOCITY);
+		fire_hook = (*create_flags->value & LE_DC_FIRE_HOOK);
 	}
 
 	int spark_timeout_millis = spark_timeout < 0.0f ? -1 : fl2i(spark_timeout * MILLISECONDS_PER_SECOND);
@@ -1569,6 +1569,18 @@ ADE_VIRTVAR(ShudderIntensity, l_Mission, "number", "Gets or sets the shudder int
 	}
 
 	return ade_set_args(L, "f", intensity);
+}
+
+ADE_VIRTVAR(Gravity, l_Mission, "vector", "Gravity acceleration vector in meters / second^2", "vector", "gravity vector")
+{
+	vec3d* gravity_vec = &The_mission.gravity;
+
+	if (ADE_SETTING_VAR && ade_get_args(L, "*o", l_Vector.GetPtr(&gravity_vec)))
+	{
+		The_mission.gravity = *gravity_vec;
+	}
+
+	return ade_set_args(L, "o", l_Vector.Set(The_mission.gravity));
 }
 
 ADE_FUNC(isInMission, l_Mission, nullptr, "get whether or not a mission is currently being played", "boolean", "true if in mission, false otherwise")

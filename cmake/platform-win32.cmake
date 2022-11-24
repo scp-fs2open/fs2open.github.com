@@ -10,6 +10,7 @@ SET(WIN32_LIBS
 	winmm
 	ws2_32
 	psapi
+	shlwapi
 )
 
 IF (MINGW)

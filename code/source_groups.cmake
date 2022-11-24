@@ -941,6 +941,8 @@ add_file_folder("Network"
 	network/multi_sw.h
 	network/multi_team.cpp
 	network/multi_team.h
+	network/multi_turret_manager.cpp
+	network/multi_turret_manager.h
 	network/multi_time_manager.cpp
 	network/multi_time_manager.h
 	network/multi_update.cpp
@@ -1506,6 +1508,13 @@ add_file_folder("Sound"
 	sound/voicerec.cpp
 	sound/voicerec.h
 )
+
+if (APPLE)
+	add_file_folder("Sound"
+		${file_root_sound}
+		sound/speech.mm
+	)
+endif()
 
 if (FSO_BUILD_WITH_FFMPEG)
 	# Sound -> ffmpeg files
