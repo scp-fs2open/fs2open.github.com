@@ -770,7 +770,7 @@ bool hud_squadmsg_is_target_order_valid(size_t order, ai_info *aip )
 
 	//If it's a lua order, defer to luaai
 	if (Player_orders[order].lua_id != -1) {
-		return ai_lua_is_valid_target(Player_orders[order].lua_id, target_objnum, ordering_shipp);
+		return ai_lua_is_valid_target(Player_orders[order].lua_id, target_objnum, ordering_shipp, order);
 	}
 
 	// orders which don't operate on targets are always valid
@@ -819,6 +819,11 @@ bool hud_squadmsg_is_target_order_valid(size_t order, ai_info *aip )
 
 	// if we are messaging a ship, and that ship is our target, no target type orders are ever active
 	if ( (Squad_msg_mode == SM_MODE_SHIP_COMMAND) && (Objects[target_objnum].instance == Msg_instance) ){
+		return false;
+	}
+
+	// check if this order can be issued against the target
+	if (shipp->orders_allowed_against.find(order) == shipp->orders_allowed_against.end()) {
 		return false;
 	}
 
