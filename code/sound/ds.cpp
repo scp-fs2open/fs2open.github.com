@@ -1108,7 +1108,8 @@ ds_sound_handle ds_play(int sid, int snd_id, int priority, const EnhancedSoundDa
 	OpenAL_ErrorPrint( alSourcei(Channels[ch_idx].source_id, AL_LOOPING, (looping) ? AL_TRUE : AL_FALSE) );
 
 	if (Ds_eax_inited) {
-		OpenAL_ErrorPrint( alSource3i(Channels[ch_idx].source_id, AL_AUXILIARY_SEND_FILTER, AL_EFX_aux_id, 0, AL_FILTER_NULL) );
+		OpenAL_ErrorPrint( alSource3i(Channels[ch_idx].source_id, AL_AUXILIARY_SEND_FILTER,
+								is_voice_msg ? AL_EFFECTSLOT_NULL : AL_EFX_aux_id, 0, AL_FILTER_NULL) );
 	}
 
 	OpenAL_ErrorPrint( alSourcePlay(Channels[ch_idx].source_id) );

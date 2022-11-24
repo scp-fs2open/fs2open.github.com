@@ -116,7 +116,7 @@ extern struct shadow_disable_overrides {
 extern float Thruster_easing;
 extern bool Always_use_distant_firepoints;
 extern bool Discord_presence;
-extern bool hotkey_always_hide_ships;
+extern bool Hotkey_always_hide_hidden_ships;
 extern bool Use_weapon_class_sounds_for_hits_to_player;
 
 void mod_table_init();

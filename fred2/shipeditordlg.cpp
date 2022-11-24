@@ -114,7 +114,7 @@ CShipEditorDlg::CShipEditorDlg(CWnd* pParent /*=NULL*/)
 	//{{AFX_DATA_INIT(CShipEditorDlg)
 	m_ship_name = _T("");
 	m_cargo1 = _T("");
-	m_ship_class = -1;
+	m_ship_class_combo_index = -1;
 	m_team = -1;
 	m_arrival_location = -1;
 	m_departure_location = -1;
@@ -159,7 +159,7 @@ void CShipEditorDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_PLAYER_SHIP, m_player_ship);
 	DDX_Text(pDX, IDC_SHIP_NAME, m_ship_name);
 	DDX_CBString(pDX, IDC_SHIP_CARGO1, m_cargo1);
-	DDX_CBIndex(pDX, IDC_SHIP_CLASS, m_ship_class);
+	DDX_CBIndex(pDX, IDC_SHIP_CLASS, m_ship_class_combo_index);
 	DDX_CBIndex(pDX, IDC_SHIP_TEAM, m_team);
 	DDX_CBIndex(pDX, IDC_ARRIVAL_LOCATION, m_arrival_location);
 	DDX_CBIndex(pDX, IDC_DEPARTURE_LOCATION, m_departure_location);
@@ -249,7 +249,7 @@ END_MESSAGE_MAP()
 
 BOOL CShipEditorDlg::Create()
 {
-	int i;
+	int i, combo_index;
 	BOOL r;
 	CComboBox *ptr;
 
@@ -269,8 +269,13 @@ BOOL CShipEditorDlg::Create()
 
 	ptr = (CComboBox *) GetDlgItem(IDC_SHIP_CLASS);
 	ptr->ResetContent();
-	for (auto it = Ship_info.cbegin(); it != Ship_info.end(); ++it){
-		ptr->AddString(it->name);
+	combo_index = 0;
+	for (i=0; i < ship_info_size(); i++){
+		if (!Ship_info[i].flags[Ship::Info_Flags::No_fred]){
+			ptr->AddString(Ship_info[i].name);
+			ptr->SetItemData(combo_index, i);
+			combo_index++;
+		}
 	}
 
 	ptr = (CComboBox *) GetDlgItem(IDC_AI_CLASS);
@@ -503,14 +508,14 @@ void CShipEditorDlg::initialize_data(int full_update)
 					// do processing for both ships and players
 					auto i = get_ship_from_obj(objp);
 					if (base_player >= 0) {
-						m_ship_class = Ships[i].ship_info_index;
+						m_ship_class_combo_index = ship_class_to_combo_index(Ships[i].ship_info_index);
 						m_team = Ships[i].team;
 						pship = (objp->type == OBJ_START) ? 1 : 0;
 						base_player = -1;
 
 					} else {
-						if (Ships[i].ship_info_index != m_ship_class)
-							m_ship_class = -1;
+						if (Ships[i].ship_info_index != combo_index_to_ship_class(m_ship_class_combo_index))
+							m_ship_class_combo_index = -1;
 						if (Ships[i].team != m_team)
 							m_team = -1;
 
@@ -709,13 +714,13 @@ void CShipEditorDlg::initialize_data(int full_update)
 				if ((objp->type == OBJ_START) && (objp->flags[Object::Object_Flags::Marked])) {
 					auto i = objp->instance;
 					if (base_player >= 0) {
-						m_ship_class = Ships[i].ship_info_index;
+						m_ship_class_combo_index = ship_class_to_combo_index(Ships[i].ship_info_index);
 						m_team = Ships[i].team;
 						base_player = -1;
 
 					} else {
-						if (Ships[i].ship_info_index != m_ship_class)
-							m_ship_class = -1;
+						if (Ships[i].ship_info_index != combo_index_to_ship_class(m_ship_class_combo_index))
+							m_ship_class_combo_index = -1;
 						if (Ships[i].team != m_team)
 							m_team = -1;
 					}
@@ -729,13 +734,13 @@ void CShipEditorDlg::initialize_data(int full_update)
 			Assert((player_count == 1) && !multi_edit);
 			player_ship = Objects[cur_object_index].instance;
 			m_ship_name = Ships[player_ship].ship_name;
-			m_ship_class = Ships[player_ship].ship_info_index;
+			m_ship_class_combo_index = ship_class_to_combo_index(Ships[player_ship].ship_info_index);
 			m_team = Ships[player_ship].team;
 			m_player_ship.SetCheck(TRUE);
 
 		} else {  // no ships or players selected..
 			m_ship_name = _T("");
-			m_ship_class = -1;
+			m_ship_class_combo_index = -1;
 			m_team = -1;
 			m_persona = -1;
 			m_player_ship.SetCheck(FALSE);
@@ -909,7 +914,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 		GetDlgItem(IDC_SHIP_CLASS)->EnableWindow(TRUE);
 		GetDlgItem(IDC_SHIP_ALT)->EnableWindow(TRUE);
 		GetDlgItem(IDC_INITIAL_STATUS)->EnableWindow(TRUE);
-		GetDlgItem(IDC_WEAPONS)->EnableWindow(m_ship_class >= 0);
+		GetDlgItem(IDC_WEAPONS)->EnableWindow(m_ship_class_combo_index >= 0);
 		GetDlgItem(IDC_FLAGS)->EnableWindow(TRUE);
 		GetDlgItem(IDC_TEXTURES)->EnableWindow(TRUE);
 		GetDlgItem(IDC_ALT_SHIP_CLASS)->EnableWindow(TRUE);	
@@ -937,7 +942,8 @@ void CShipEditorDlg::initialize_data(int full_update)
 	GetDlgItem(IDC_AI_CLASS)->EnableWindow(enable);
 	GetDlgItem(IDC_SHIP_CARGO1)->EnableWindow(enable);
 	GetDlgItem(IDC_HOTKEY)->EnableWindow(enable);
-    if ((m_ship_class >= 0) && !(Ship_info[m_ship_class].flags[Ship::Info_Flags::Cargo]) && !(Ship_info[m_ship_class].flags[Ship::Info_Flags::No_ship_type]))
+	auto ship_class = combo_index_to_ship_class(m_ship_class_combo_index);
+	if ((ship_class >= 0) && !(Ship_info[ship_class].flags[Ship::Info_Flags::Cargo]) && !(Ship_info[ship_class].flags[Ship::Info_Flags::No_ship_type]))
 		GetDlgItem(IDC_GOALS)->EnableWindow(enable);
 	else if (multi_edit)
 		GetDlgItem(IDC_GOALS)->EnableWindow(enable);
@@ -973,7 +979,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 	GetDlgItem(IDC_ASSIST_SCORE)->EnableWindow(enable);
 
 //#ifndef NDEBUG
-	GetDlgItem(IDC_SHIP_TBL)->EnableWindow(m_ship_class >= 0);
+	GetDlgItem(IDC_SHIP_TBL)->EnableWindow(m_ship_class_combo_index >= 0);
 //#else
 //	GetDlgItem(IDC_SHIP_TBL)->EnableWindow(0);
 //	GetDlgItem(IDC_SHIP_TBL)->ShowWindow(SW_HIDE);
@@ -1257,8 +1263,10 @@ int CShipEditorDlg::update_ship(int ship)
 	ship_alt_name_close(ship);
 	ship_callsign_close(ship);
 
-	if ((Ships[ship].ship_info_index != m_ship_class) && (m_ship_class != -1)) {
-		change_ship_type(ship, m_ship_class);
+	auto ship_class = combo_index_to_ship_class(m_ship_class_combo_index);
+
+	if ((Ships[ship].ship_info_index != ship_class) && (ship_class != -1)) {
+		change_ship_type(ship, ship_class);
 		set_modified();
 	}
 
@@ -1603,11 +1611,14 @@ void CShipEditorDlg::OnSelchangeShipClass()
 
 	UpdateData(TRUE);
 	UpdateData(TRUE);
+
+	auto ship_class = combo_index_to_ship_class(m_ship_class_combo_index);
+
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
 		if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (ptr->flags[Object::Object_Flags::Marked]))
-			if (Ships[ptr->instance].ship_info_index != m_ship_class) {
-				change_ship_type(ptr->instance, m_ship_class);
+			if (Ships[ptr->instance].ship_info_index != ship_class) {
+				change_ship_type(ptr->instance, ship_class);
 				set_modified();
 			}
 
@@ -1676,10 +1687,12 @@ void CShipEditorDlg::OnShipReset()
 	ship_weapon *wp;
 	model_subsystem *sp;
 
+	auto ship_class = combo_index_to_ship_class(m_ship_class_combo_index);
+
 	m_cargo1 = "Nothing";
 	m_ai_class = AI_DEFAULT_CLASS;
-	if (m_ship_class) {
-		m_team = Species_info[Ship_info[m_ship_class].species].default_iff;
+	if (ship_class >= 0) {
+		m_team = Species_info[Ship_info[ship_class].species].default_iff;
 	}
 
 	objp = GET_FIRST(&obj_used_list);
@@ -1761,9 +1774,11 @@ void CShipEditorDlg::OnShipTbl()
 {
 	TextViewDlg dlg;
 
-	if (m_ship_class < 0)
+	auto ship_class = combo_index_to_ship_class(m_ship_class_combo_index);
+
+	if (ship_class < 0)
 		return;
-	auto sip = &Ship_info[m_ship_class];
+	auto sip = &Ship_info[ship_class];
 
 	dlg.LoadShipsTblText(sip);
 	dlg.DoModal();
@@ -2488,4 +2503,28 @@ void CShipEditorDlg::OnBnClickedCustomWarpoutParams()
 	warp_params_dlg dlg;
 	dlg.m_warp_in = false;
 	dlg.DoModal();
+}
+
+int CShipEditorDlg::combo_index_to_ship_class(int combo_index)
+{
+	auto ptr = (CComboBox*)GetDlgItem(IDC_SHIP_CLASS);
+
+	if (combo_index < 0 || combo_index >= ptr->GetCount())
+		return -1;
+
+	return (int)ptr->GetItemData(combo_index);
+}
+
+int CShipEditorDlg::ship_class_to_combo_index(int ship_class)
+{
+	if (ship_class < 0 || ship_class >= ship_info_size())
+		return -1;
+
+	auto ptr = (CComboBox*)GetDlgItem(IDC_SHIP_CLASS);
+
+	for (int i = 0; i < ptr->GetCount(); i++)
+		if ((int)ptr->GetItemData(i) == ship_class)
+			return i;
+
+	return -1;	// will not display anything
 }

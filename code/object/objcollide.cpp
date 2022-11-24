@@ -274,7 +274,7 @@ int weapon_will_never_hit( object *obj_weapon, object *other, obj_pair * current
 		// look for two time solutions to Xw = Xs, where Xw = Xw0 + Vwt*t  Xs = Xs + Vs*(t+dt), where Vs*dt = radius of ship 
 		// Since direction of Vs is unknown, solve for (Vs*t) and find norm of both sides
 		if ( !(wip->wi_flags[Weapon::Info_Flags::Turns]) && (obj_weapon->phys_info.flags & PF_CONST_VEL) ) {
-			vec3d delta_x, weapon_vel;
+			vec3d delta_x;
 			float a,b,c, delta_x_dot_vl, delta_t;
 			float root1, root2, root, earliest_time;
 
@@ -288,7 +288,7 @@ int weapon_will_never_hit( object *obj_weapon, object *other, obj_pair * current
 
 			// vm_vec_copy_scale( &laser_vel, &weapon->orient.vec.fvec, max_vel_weapon );
 			delta_t = (other->radius + 10.0f) / max_vel_other;		// time to get from center to radius of other obj
-			delta_x_dot_vl = vm_vec_dot( &delta_x, &weapon_vel);
+			delta_x_dot_vl = vm_vec_dot( &delta_x, &obj_weapon->phys_info.vel);
 
 			a = max_vel_weapon * max_vel_weapon - max_vel_other*max_vel_other;
 			b = 2.0f * (delta_x_dot_vl - max_vel_other*max_vel_other*delta_t);

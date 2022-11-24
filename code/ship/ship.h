@@ -618,6 +618,7 @@ public:
 
 	int	wingnum;								// wing number this ship is in.  -1 if in no wing, Wing array index otherwise
 	SCP_set<size_t> orders_accepted;				// set of orders this ship will accept from the player.
+	SCP_set<size_t> orders_allowed_against;		// set of orders for which this ship cannot be a target.
 
 	// Subsystem fields.  The subsys_list is a list of all subsystems (which might include multiple types
 	// of a particular subsystem, like engines).  The subsys_info struct is information for particular
@@ -1768,6 +1769,7 @@ extern void ship_add_ship_type_count( int ship_info_index, int num );
 
 extern int ship_get_type(char* output, ship_info* sip);
 extern const std::set<size_t>& ship_get_default_orders_accepted( ship_info *sip );
+extern const std::set<size_t> ship_set_default_orders_against();
 extern int ship_query_general_type(int ship);
 extern int ship_class_query_general_type(int ship_class);
 extern int ship_query_general_type(ship *shipp);

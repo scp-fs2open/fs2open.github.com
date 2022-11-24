@@ -239,6 +239,7 @@ namespace animation {
 		gamesnd_id m_end;
 		gamesnd_id m_during;
 		bool m_flipIfReversed;
+		bool m_abortSoundIfRunning;
 		
 	private:
 		ModelAnimationSegment* copy() const override;
@@ -253,7 +254,7 @@ namespace animation {
 
 	public:
 		static std::shared_ptr<ModelAnimationSegment> parser(ModelAnimationParseHelper* data);
-		ModelAnimationSegmentSoundDuring(std::shared_ptr<ModelAnimationSegment> segment, gamesnd_id start, gamesnd_id end, gamesnd_id during, bool flipIfReversed = false, float radius = 0.0f, std::shared_ptr<ModelAnimationSubmodel> submodel = nullptr, tl::optional<vec3d> position = tl::nullopt);
+		ModelAnimationSegmentSoundDuring(std::shared_ptr<ModelAnimationSegment> segment, gamesnd_id start, gamesnd_id end, gamesnd_id during, bool flipIfReversed = false, bool abortPlayingSounds = false, float radius = 0.0f, std::shared_ptr<ModelAnimationSubmodel> submodel = nullptr, tl::optional<vec3d> position = tl::nullopt);
 
 	};
 	

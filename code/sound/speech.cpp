@@ -11,12 +11,12 @@
 
 
 #ifndef FS2_SPEECH
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__APPLE__)
 #if NDEBUG
 	#pragma message( "WARNING: You have not compiled speech into this build (use FS2_SPEECH)" )
 #endif // NDEBUG
-#endif // _WIN32
-#else // to end-of-file ...
+#endif // _WIN32 or __APPLE__
+#elif !defined(__APPLE__) // to end-of-file ...
 
 
 #ifdef LAUNCHER
