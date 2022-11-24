@@ -24,35 +24,26 @@ public:
 	void OnOK();
 	WeaponEditorDlg(CWnd* pParent = NULL);   // standard constructor
 
-	int m_ammo_max1;
-	int m_ammo_max2;
-	int m_ammo_max3;
-	int m_ammo_max4;
+	std::array<int, MAX_SHIP_SECONDARY_BANKS> m_ammo_max;
 	int m_last_item;
 	int m_ship;
 	int m_ship_class;
 	int m_multi_edit;
 	ship_weapon pilot, *cur_weapon;
 
+	std::array<int, MAX_SHIP_PRIMARY_BANKS> m_IDC_GUN;
+	std::array<int, MAX_SHIP_SECONDARY_BANKS> m_IDC_MISSILE;
+	std::array<int, MAX_SHIP_SECONDARY_BANKS> m_IDC_AMMO;
+	std::array<int, MAX_SHIP_SECONDARY_BANKS> m_IDC_SPIN;
+
 // Dialog Data
 	//{{AFX_DATA(WeaponEditorDlg)
 	enum { IDD = IDD_WEAPON_EDITOR };
-	CSpinButtonCtrl	m_spin4;
-	CSpinButtonCtrl	m_spin3;
-	CSpinButtonCtrl	m_spin2;
-	CSpinButtonCtrl	m_spin1;
+	std::array<int, MAX_SHIP_SECONDARY_BANKS> m_ammo;
+	std::array<CSpinButtonCtrl, MAX_SHIP_SECONDARY_BANKS> m_spin;
 	int		m_ai_class;
-	int		m_ammo1;
-	int		m_ammo2;
-	int		m_ammo3;
-	int		m_ammo4;
-	int		m_gun1;
-	int		m_gun2;
-	int		m_gun3;
-	int		m_missile1;
-	int		m_missile2;
-	int		m_missile3;
-	int		m_missile4;
+	std::array<int, MAX_SHIP_PRIMARY_BANKS> m_gun;
+	std::array<int, MAX_SHIP_SECONDARY_BANKS> m_missile;
 	int		m_cur_item;
 	//}}AFX_DATA
 
@@ -76,6 +67,10 @@ protected:
 	afx_msg void OnSelchangeMissile2();
 	afx_msg void OnSelchangeMissile3();
 	afx_msg void OnSelchangeMissile4();
+	afx_msg void OnSelchangeMissile(int secondary_index);
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
+
+	int combo_index_to_weapon_class(int dialog_id, int combo_index);
+	int weapon_class_to_combo_index(int dialog_id, int weapon_class);
 };
