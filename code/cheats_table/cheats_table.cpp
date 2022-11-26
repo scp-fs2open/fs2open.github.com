@@ -93,7 +93,7 @@ bool checkForCustomCheats(char buffer[], int buffer_length) {
 	// We don't just check for equality, as the player may have typed other characters before the cheat.
 	for (auto &ccheat : customCheats) {
 		auto found = std::strstr(check_buffer, ccheat.first.c_str());
-		if (found) {
+		if (found != nullptr) {
 			ccheat.second->runCheat();
 			return true;
 		}
