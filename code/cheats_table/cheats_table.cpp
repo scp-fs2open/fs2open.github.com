@@ -157,7 +157,7 @@ void parse_cheat_table(const char* filename) {
 	}
 }
 
-bool checkForCustomCheats(char buffer[], int buffer_length) {
+bool checkForCustomCheats(const char* buffer, int buffer_length) {
 	const char* check_buffer = buffer;
 	for (int i = 0; i < buffer_length; i++) {
 		if (*check_buffer == '\0') {
