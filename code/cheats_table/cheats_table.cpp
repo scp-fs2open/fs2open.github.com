@@ -30,7 +30,7 @@ void parse_cheat_table(const char* filename) {
 			}
 
 			required_string("+Message:");
-			stuff_string(msg, F_RAW);
+			stuff_string(msg, F_MESSAGE);
 
 			if (optional_string("+RequireCheats:")) {
 				stuff_boolean(&requireCheats);
@@ -39,9 +39,9 @@ void parse_cheat_table(const char* filename) {
 			if (optional_string("+SpawnShip:")) {
 				shipSpawn = true;
 				required_string("+Name:");
-				stuff_string(shipName, F_RAW);
+				stuff_string(shipName, F_NAME);
 				required_string("+Class:");
-				stuff_string(shipClass, F_RAW);
+				stuff_string(shipClass, F_NAME);
 
 				int shipClassInfo = ship_info_lookup(shipClass.c_str());
 				if (shipClassInfo < 0) {
