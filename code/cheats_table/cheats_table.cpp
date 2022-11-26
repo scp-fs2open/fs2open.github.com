@@ -79,15 +79,13 @@ void parse_cheat_table(const char* filename) {
 }
 
 bool checkForCustomCheats(char buffer[], int buffer_length) {
-	char* check_buffer = new char[buffer_length];
-	memset (check_buffer, 0, buffer_length * sizeof(char));
-
-	// We construct a checking buffer from the original.
-	int idx = 0;
+	const char* check_buffer = buffer;
 	for (int i = 0; i < buffer_length; i++) {
-		if (buffer[i] != '\0') {
-			check_buffer[idx] = buffer[i];
-			idx++;
+		if (*check_buffer == '\0') {
+			check_buffer++;
+		}
+		else {
+			break;
 		}
 	}
 
