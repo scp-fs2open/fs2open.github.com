@@ -37778,8 +37778,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	},
 
 	{ OP_USED_CHEAT, "used-cheat\r\n"
-		"\tReturns true if the give cheat has been used during this mission.  Takes 1 argument.\r\n"
-		"\t1:\tA cheat string. This can be any string; the SEXP will return true if and only if the string matches the cheat used.  "
+		"\tReturns true if the given cheat has been used during this mission and there has not been another cheat used since.  Takes 1 argument.\r\n"
+		"\t1:\tA cheat string. This can be any string; the SEXP will return true if and only if the string matches the last cheat used.  "
 		"All original FS2 cheats are supported, and more can be defined in the cheats.tbl file.\r\n"
 	},
 
