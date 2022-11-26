@@ -1660,7 +1660,7 @@ void campaign_reset(const SCP_string& campaign_file)
 
 	mission_campaign_savefile_delete(filename.c_str());
 
-	const int load_status = mission_campaign_load(filename.c_str(), nullptr, 1 , false);	// retail doesn't reset stats when resetting the campaign
+	const int load_status = mission_campaign_load(filename.c_str(), nullptr, nullptr, 1 , false);	// retail doesn't reset stats when resetting the campaign
 
 	// see if we successfully loaded this campaign
 	if (load_status == 0) {

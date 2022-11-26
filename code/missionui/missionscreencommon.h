@@ -68,18 +68,23 @@ extern UI_TIMESTAMP Flash_timer;	// timestamp used to start flashing
 extern UI_TIMESTAMP Flash_toggle;	// timestamp used to toggle flashing
 extern int Flash_bright;			// state of button to flash
 
+extern int anim_timer_start;
+
 void common_button_do(int i);
+
+//If new enums are added here be sure to also update the description for the API version in scripting\api\libs\ui.cpp - Mjn
+enum class commit_pressed_status { SUCCESS, GENERAL_FAIL, PLAYER_NO_WEAPONS,  NO_REQUIRED_WEAPON, NO_REQUIRED_WEAPON_MULTIPLE, BANK_GAP_ERROR, PLAYER_NO_SLOT};
 
 // common_select_init() performs initialization common to the briefing/ship select/weapon select
 // screens.  This includes loading/setting the palette, loading the background animation, loading
 // the screen switching animations, loading the button animation frames
-void	common_select_init();	
+void common_select_init(bool API_Access = false);
 int	common_select_do(float frametime);
 void	common_select_close();
 void	common_draw_buttons();
 void	common_check_buttons();
 void	common_check_keys(int k);
-void	commit_pressed();
+commit_pressed_status commit_pressed(bool API_Access = false);
 void	common_render(float frametime);
 void	common_buttons_init(UI_WINDOW *ui_window);
 void	common_buttons_maybe_reload(UI_WINDOW *ui_window);
@@ -87,7 +92,7 @@ void 	common_render_selected_screen_button();
 void	common_reset_buttons();
 void	common_redraw_pressed_buttons();
 void  common_maybe_clear_focus();
-void ship_select_common_init();
+void ship_select_common_init(bool API_Access = false);
 void common_setup_room_lights();
 
 int mission_ui_background_load(const char *custom_background, const char *single_background, const char *multi_background = NULL);

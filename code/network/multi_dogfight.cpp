@@ -201,7 +201,7 @@ void multi_df_debrief_init()
 	chatbox_create();
 
 	// always play success music
-	common_music_init(SCORE_DEBRIEF_SUCCESS);
+	common_music_init(SCORE_DEBRIEFING_SUCCESS);
 
 	// setup kill matrix
 	multi_df_setup_kill_matrix();

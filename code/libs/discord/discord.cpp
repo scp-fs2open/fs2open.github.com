@@ -18,7 +18,8 @@ struct PresenceInfo {
 
 bool initialized        = false;
 bool discord_ready      = false;
-int next_mission_update = -1;
+bool events_added       = false;
+UI_TIMESTAMP next_mission_update = UI_TIMESTAMP::invalid();
 
 bool in_mission = false;
 
@@ -113,8 +114,7 @@ void set_game_play_presence()
 	set_presence(state, (int64_t)time(nullptr) - f2i(Missiontime));
 
 	// Update this every 20 seconds since Discord already has a 15 second rate-limit
-	// This will update the "elapsed" time even if time compression is active but the clock will jump forward
-	next_mission_update = timestamp(20000);
+	next_mission_update = ui_timestamp(20 * MILLISECONDS_PER_SECOND);
 }
 
 void update_discord()
@@ -124,10 +124,11 @@ void update_discord()
 
 	Discord_RunCallbacks();
 
-	if (gameseq_get_state() == GS_STATE_GAME_PLAY && timestamp_elapsed(next_mission_update)) {
+	if (gameseq_get_state() == GS_STATE_GAME_PLAY && ui_timestamp_elapsed(next_mission_update)) {
 		set_game_play_presence();
 	}
 }
+
 void shutdown_discord()
 {
 	if (!initialized)
@@ -140,6 +141,9 @@ void shutdown_discord()
 
 void handleEnterState(int old_state, int new_state)
 {
+	if (!initialized)
+		return;
+	
 	if (old_state == new_state) {
 		return;
 	}
@@ -166,7 +170,7 @@ void handleEnterState(int old_state, int new_state)
 
 	switch (new_state) {
 	case GS_STATE_MAIN_MENU:
-		set_presence("In Mainhall");
+		set_presence("In main hall");
 		break;
 	case GS_STATE_BRIEFING:
 		set_presence("In mission briefing");
@@ -181,7 +185,7 @@ void handleEnterState(int old_state, int new_state)
 		set_presence("Paused");
 		break;
 	case GS_STATE_RED_ALERT:
-		set_presence("Red alert briefing");
+		set_presence("In red-alert briefing");
 		break;
 	case GS_STATE_INITIAL_PLAYER_SELECT:
 		set_presence("Selecting player");
@@ -196,6 +200,9 @@ void handleEnterState(int old_state, int new_state)
 
 void handleLeaveState(int old_state, int /*new_state*/)
 {
+	if (!initialized)
+		return;
+	
 	if (old_state == GS_STATE_GAME_PAUSED) {
 		// Reset the game play state immediately
 		set_game_play_presence();
@@ -203,12 +210,15 @@ void handleLeaveState(int old_state, int /*new_state*/)
 
 	if (old_state == GS_STATE_GAME_PLAY) {
 		in_mission          = false;
-		next_mission_update = -1;
+		next_mission_update = UI_TIMESTAMP::invalid();
 	}
 }
 
 void handleMissionLoad(const char* /*filename*/)
 {
+	if (!initialized)
+		return;
+	
 	set_presence("Loading mission");
 	in_mission = true;
 }
@@ -220,7 +230,9 @@ namespace discord {
 
 void init()
 {
-	Assertion(!initialized, "Discord integration can only be initialized once!");
+	//If we've already initialized then just return
+	if (initialized)
+		return;
 
 	DiscordEventHandlers handlers;
 	memset(&handlers, 0, sizeof(handlers));
@@ -241,13 +253,23 @@ void init()
 
 	Discord_Initialize(APPLICATION_ID, &handlers, 0, nullptr);
 
-	events::EngineUpdate.add(update_discord);
-	events::EngineShutdown.add(shutdown_discord);
-	events::GameEnterState.add(handleEnterState);
-	events::GameLeaveState.add(handleLeaveState);
-	events::GameMissionLoad.add(handleMissionLoad);
+	//Only ever register these events once even if discord presence is toggled back on during the same game instance -Mjn
+	if (!events_added) {
+		events::EngineUpdate.add(update_discord);
+		events::EngineShutdown.add(shutdown_discord);
+		events::GameEnterState.add(handleEnterState);
+		events::GameLeaveState.add(handleLeaveState);
+		events::GameMissionLoad.add(handleMissionLoad);
+
+		events_added = true;
+	}
 
 	initialized = true;
+}
+
+void shutdown()
+{
+	shutdown_discord();
 }
 
 } // namespace discord

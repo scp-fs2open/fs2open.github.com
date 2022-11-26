@@ -135,6 +135,8 @@ namespace Ship {
 		Fail_sound_locked_secondary,		// Kiloku -- Play the firing fail sound when the weapon is locked.
 		Subsystem_cache_valid,		// Goober5000 - whether the subsystem list index caches can be used
 		Aspect_immune,						// Kiloku -- Ship cannot be targeted by Aspect Seekers.
+		Cannot_perform_scan,		// Goober5000 - ship cannot scan other ships
+		No_targeting_limits,				//MjnMixael -- Ship is always targetable regardless of AWACS or targeting range limits
 
 		NUM_VALUES
 
@@ -271,7 +273,7 @@ namespace Ship {
     // ignore_count, reinforcement, no_arrival_music, no_arrival_message, no_arrival_warp, no_departure_warp,
 	// same_arrival_warp_when_docked, same_departure_warp_when_docked, no_dynamic, and nav_carry_status
     // Should that change, bump this variable and make sure to make the necessary changes to parse_wing (in missionparse)
-#define PARSEABLE_WING_FLAGS 9
+#define PARSEABLE_WING_FLAGS 10
 	
     FLAG_LIST(Wing_Flags) {
 		Gone,					// all ships were either destroyed or departed

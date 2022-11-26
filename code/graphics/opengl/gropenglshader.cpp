@@ -73,6 +73,7 @@ opengl_uniform_block_binding GL_uniform_blocks[] = {
     {uniform_block_type::DecalGlobals, "decalGlobalData"},
     {uniform_block_type::DeferredGlobals, "globalDeferredData"},
     {uniform_block_type::Matrices, "matrixData"},
+	{uniform_block_type::MovieData, "movieData"},
     {uniform_block_type::GenericData, "genericData"},
 };
 
@@ -208,8 +209,6 @@ static opengl_shader_variant_t GL_shader_variants[] = {
 
 	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_AMBIENT_MAP, "FLAG_AMBIENT_MAP",
 		{  }, "Ambient Occlusion Map"},
-
-	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_NORMAL_ALPHA, "FLAG_NORMAL_ALPHA", {}, "Normal Alpha"},
 
 	{SDR_TYPE_MODEL, true, SDR_FLAG_MODEL_THICK_OUTLINES, "FLAG_THICK_OUTLINE", {}, "Thick outlines"},
 
@@ -392,7 +391,7 @@ static SCP_string opengl_load_shader(const char* filename) {
 	}
 
 	//If we're still here, proceed with internals
-	mprintf(("   Loading built-in default shader for: %s\n", filename));
+	nprintf(("shaders","   Loading built-in default shader for: %s\n", filename));
 	auto def_shader = defaults_get_file(filename);
 	content.assign(reinterpret_cast<const char*>(def_shader.data), def_shader.size);
 
@@ -698,8 +697,8 @@ void opengl_compile_shader_actual(shader_type sdr, const uint &flags, opengl_sha
 	opengl_shader_type_t *sdr_info = &GL_shader_types[sdr];
 
 	Assert(sdr_info->type_id == sdr);
-	mprintf(("Compiling new shader:\n"));
-	mprintf(("	%s\n", sdr_info->description));
+	nprintf(("shaders","Compiling new shader:\n"));
+	nprintf(("shaders","	%s\n", sdr_info->description));
 
 	// figure out if the variant requested needs a geometry shader
 	bool use_geo_sdr = false;
@@ -789,7 +788,7 @@ void opengl_compile_shader_actual(shader_type sdr, const uint &flags, opengl_sha
 		}
 	}
 
-	mprintf(("Shader Variant Features:\n"));
+	nprintf(("shaders","Shader Variant Features:\n"));
 
 	// initialize all uniforms and attributes that are specific to this variant
 	for (int i = 0; i < GL_num_shader_variants; ++i) {
@@ -801,7 +800,7 @@ void opengl_compile_shader_actual(shader_type sdr, const uint &flags, opengl_sha
 				new_shader.program->initAttribute(attr_info.name, attr_info.attribute_id, attr_info.default_value);
 			}
 
-			mprintf(("	%s\n", variant.description));
+			nprintf(("shaders","	%s\n", variant.description));
 		}
 	}
 
@@ -961,10 +960,10 @@ void opengl_shader_init()
 	gr_opengl_maybe_create_shader(SDR_TYPE_DEFERRED_CLEAR, 0);
 
 	// compile passthrough shader
-	mprintf(("Compiling passthrough shader...\n"));
+	nprintf(("shaders","Compiling passthrough shader...\n"));
 	gr_opengl_maybe_create_shader(SDR_TYPE_PASSTHROUGH_RENDER, 0);
 
-	mprintf(("\n"));
+	nprintf(("shaders","\n"));
 }
 
 /**

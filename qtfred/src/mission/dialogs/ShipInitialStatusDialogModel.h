@@ -19,8 +19,6 @@ bool set_cue_to_false(int* cue);
 class ShipInitialStatusDialogModel : public AbstractDialogModel {
 
   private:
-	void initializeData();
-
 	template <typename T>
 	void modify(T& a, const T& b);
 
@@ -58,78 +56,77 @@ class ShipInitialStatusDialogModel : public AbstractDialogModel {
 	void dock_evaluate_all_docked_objects(object* objp,
 		dock_function_info* infop,
 		void (*function)(object*, dock_function_info*, EditorViewport*));
-	void dock_evaluate_all_docked_objects(object* objp,
-		dock_function_info* infop,
-		void (*function)(object*));
+	void dock_evaluate_all_docked_objects(object* objp, dock_function_info* infop, void (*function)(object*));
 	void dock_evaluate_tree(object* objp,
 		dock_function_info* infop,
 		void (*function)(object*, dock_function_info*, EditorViewport*),
 		ubyte* visited_bitstring);
-	void dock_evaluate_tree(object* objp,
-		dock_function_info* infop,
-		void (*function)(object*),
-		ubyte* visited_bitstring);
-
-  public:
-	ShipInitialStatusDialogModel(QObject* parent, EditorViewport* viewport, bool multi);
-
-	bool apply() override;
-	void reject() override;
-	 bool query_modified();
-
-	void setVelocity(int);
-	 int getVelocity();
-
-	void setHull(int);
-	 int getHull();
-
-	void setHasShield(int);
-	int getHasShield();
-
-	void setShieldHull(int);
-	 int getShieldHull();
-
-	void setForceShield(int);
-	 int getForceShield();
-
-	void setShipLocked(int);
-	 int getShipLocked();
-
-	void setWeaponLocked(int);
-	 int getWeaponLocked();
-
-	void setPrimariesDisabled(int);
-	 int getPrimariesDisabled();
-
-	void setSecondariesDisabled(int);
-	 int getSecondariesDisabled();
-
-	void setTurretsDisabled(int);
-	 int getTurretsDisabled();
-
-	void setAfterburnerDisabled(int);
-	 int getAfterburnerDisabled();
-
-	void setDamage(int);
-	 int getDamage();
-
-	SCP_string getCargo();
-	void setCargo(const SCP_string&);
-
-	SCP_string getColour();
-	void setColour(const SCP_string&);
-
+	void
+	dock_evaluate_tree(object* objp, dock_function_info* infop, void (*function)(object*), ubyte* visited_bitstring);
 	bool m_multi_edit;
 	bool m_use_teams = false;
 
-	void change_subsys(int);
+  public:
+	ShipInitialStatusDialogModel(QObject* parent, EditorViewport* viewport, bool multi);
+	void initializeData(bool);
 
-	 int getShip();
-	 int getnum_dock_points();
-	 int getShip_has_scannable_subsystems();
-	 dockpoint_information* getdockpoint_array();
-	void setDockee(int, int);
-	void setDockeePoint(int, int);
+	bool apply() override;
+	void reject() override;
+	bool query_modified();
+
+	void setVelocity(const int);
+	int getVelocity() const;
+
+	void setHull(const int);
+	int getHull() const;
+
+	void setHasShield(const int);
+	int getHasShield() const;
+
+	void setShieldHull(const int);
+	int getShieldHull() const;
+
+	void setForceShield(const int);
+	int getForceShield() const;
+
+	void setShipLocked(const int);
+	int getShipLocked() const;
+
+	void setWeaponLocked(const int);
+	int getWeaponLocked() const;
+
+	void setPrimariesDisabled(const int);
+	int getPrimariesDisabled() const;
+
+	void setSecondariesDisabled(const int);
+	int getSecondariesDisabled() const;
+
+	void setTurretsDisabled(const int);
+	int getTurretsDisabled() const;
+
+	void setAfterburnerDisabled(const int);
+	int getAfterburnerDisabled() const;
+
+	void setDamage(const int);
+	int getDamage() const;
+
+	SCP_string getCargo() const;
+	void setCargo(const SCP_string&);
+
+	SCP_string getColour() const;
+	void setColour(const SCP_string&);
+
+	void change_subsys(const int);
+
+	int getShip() const;
+	int getnum_dock_points() const;
+	int getShip_has_scannable_subsystems() const;
+	dockpoint_information* getdockpoint_array() const;
+	void setDockee(const int, const int);
+	void setDockeePoint(const int, const int);
+
+	bool getUseTeamcolours() const;
+	bool getIfMultpleShips() const;
 };
 
 /**
@@ -138,6 +135,7 @@ class ShipInitialStatusDialogModel : public AbstractDialogModel {
  * This is necessary in case multiple ships with inconsistent object flags have been selected in which case
  * that flag may not be edited since it would corrupt the value of that flag. This function simplifies handling
  * that case.
+ * @warning Contains QT code. Will need refactor if migrated to non QT environment
  */
 template <typename T>
 static void handle_inconsistent_flag(flagset<T>& flags, T flag, int value)

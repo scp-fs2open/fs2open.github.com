@@ -104,20 +104,20 @@ struct model_uniform_data {
 	int blend_alpha;
 
 	vec3d emissionFactor;
-	int overrideDiffuse;
+	int overrideDiffuse_; //Unused, to be removed.
 
-	vec3d diffuseClr;
-	int overrideGlow;
+	vec3d diffuseClr_; //Unused, to be removed.
+	int overrideGlow_; //Unused, to be removed.
 
-	vec3d glowClr;
-	int overrideSpec;
+	vec3d glowClr_; //Unused, to be removed.
+	int overrideSpec_; //Unused, to be removed.
 
-	vec3d specClr;
+	vec3d specClr_; //Unused, to be removed.
 	int alphaGloss;
 
 	int gammaSpec;
 	int envGloss;
-	int alpha_spec;
+	int alpha_spec_; //Unused, to be removed.
 	int effect_num;
 
 	vec4 fogColor;
@@ -138,7 +138,7 @@ struct model_uniform_data {
 	float middist;
 	float fardist;
 
-	vec2d normalAlphaMinMax;
+	vec2d normalAlphaMinMax_;
 	int sBasemapIndex;
 	int sGlowmapIndex;
 
@@ -215,6 +215,11 @@ struct decal_info {
 struct matrix_uniforms {
 	matrix4 modelViewMatrix;
 	matrix4 projMatrix;
+};
+
+struct movie_uniforms {
+	float alpha;
+	float pad[3];
 };
 
 namespace generic_data {

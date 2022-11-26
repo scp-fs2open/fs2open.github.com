@@ -54,20 +54,20 @@ layout (std140) uniform modelData {
 	int blend_alpha;
 
 	vec3 emissionFactor;
-	bool overrideDiffuse;
+	bool overrideDiffuse_;
 
-	vec3 diffuseClr;
-	bool overrideGlow;
+	vec3 diffuseClr_;
+	bool overrideGlow_;
 
-	vec3 glowClr;
-	bool overrideSpec;
+	vec3 glowClr_;
+	bool overrideSpec_;
 
-	vec3 specClr;
+	vec3 specClr_;
 	bool alphaGloss;
 
 	bool gammaSpec;
 	bool envGloss;
-	bool alpha_spec;
+	bool alpha_spec_;
 	int effect_num;
 
 	vec4 fogColor;
@@ -88,7 +88,7 @@ layout (std140) uniform modelData {
 	float middist;
 	float fardist;
 
-	vec2 normalAlphaMinMax;
+	vec2 normalAlphaMinMax_;
 	int sBasemapIndex;
 	int sGlowmapIndex;
 
@@ -142,7 +142,7 @@ uniform sampler2DArray sAmbientmap;
 uniform sampler2D sFramebuffer;
 #endif
 #ifdef FLAG_TEAMCOLOR
-vec2 teamMask = vec2(0.0, 0.0);
+vec4 teamMask;
 #endif
 #ifdef FLAG_MISC_MAP
 uniform sampler2DArray sMiscmap;
@@ -209,7 +209,7 @@ vec3 CalculateLighting(vec3 normal, vec3 diffuseMaterial, vec3 specularMaterial,
 		float NdotL = clamp(dot(normal, lightDir), 0.0f, 1.0f);
 		// Ambient, Diffuse, and Specular
 		lightDiffuse += (lights[i].diffuse_color.rgb * diffuseFactor * NdotL * attenuation) * shadow;
-		lightSpecular += lights[i].diffuse_color.rgb * computeLighting(specularMaterial, diffuseMaterial, lightDir, normal, halfVec, eyeDir, alpha, 1.0, fresnel, NdotL) * attenuation * shadow;
+		lightSpecular += lights[i].diffuse_color.rgb * computeLighting(specularMaterial, diffuseMaterial, lightDir, normal, halfVec, eyeDir, roughness, fresnel, NdotL) * attenuation * shadow;
 	}
 	return diffuseMaterial * lightAmbient + lightSpecular;
 }
@@ -229,10 +229,7 @@ void main()
 	vec4 specColor = vec4(0.0, 0.0, 0.0, 1.0);
 	vec4 emissiveColor = vec4(0.0, 0.0, 0.0, 1.0);
 	float fresnelFactor = 0.0;
-	float glossData = 0.6;
-#ifdef FLAG_LIGHT
-	glossData = defaultGloss;
-#endif
+	float glossData = defaultGloss;
 	vec2 aoFactors = vec2(1.0, 1.0);
 #ifdef	FLAG_AMBIENT_MAP
 	// red channel is ambient occlusion factor which only affects ambient lighting.
@@ -276,7 +273,6 @@ void main()
 	// premultiply alpha if blend_alpha is 1. assume that our blend function is srcColor + (1-Alpha)*destColor.
 	// if blend_alpha is 2, assume blend func is additive and don't modify color
 	if(blend_alpha == 1) baseColor.rgb = baseColor.rgb * baseColor.a;
-	if(overrideDiffuse) baseColor.rgb = diffuseClr;
 #endif
 	specColor = vec4(baseColor.rgb * SPEC_FACTOR_NO_SPEC_MAP, glossData);
 #ifdef FLAG_HDR
@@ -285,10 +281,6 @@ void main()
 #ifdef FLAG_SPEC_MAP
 	specColor = texture(sSpecmap, vec3(texCoord, float(sSpecmapIndex)));
 	if(alphaGloss) glossData = specColor.a;
-	if(overrideSpec) {
-		specColor.rgb = specClr;
-		fresnelFactor = 1.0;
-	}
 	if(gammaSpec) {
 		specColor.rgb = max(specColor.rgb, vec3(0.03f)); // hardcoded minimum specular value. read John Hable's blog post titled 'Everything Is Shiny'. 
 		fresnelFactor = 1.0;
@@ -310,7 +302,6 @@ void main()
 
 #ifdef FLAG_MISC_MAP
  #ifdef FLAG_TEAMCOLOR
-	vec4 teamMask = vec4(0.0, 0.0, 0.0, 0.0);
 	teamMask = texture(sMiscmap, vec3(texCoord, float(sMiscmapIndex)));
 
 	//For team colors applied to a diffuse or spec map, we assume that the base color of the diffuse 
@@ -412,7 +403,6 @@ void main()
 #endif
 #ifdef FLAG_GLOW_MAP
 	vec3 glowColor = texture(sGlowmap, vec3(texCoord, float(sGlowmapIndex))).rgb;
-	if(overrideGlow) glowColor = glowClr;
  #ifdef FLAG_HDR
 	glowColor = srgb_to_linear(glowColor) * GLOW_MAP_SRGB_MULTIPLIER;
  #endif
@@ -469,10 +459,6 @@ void main()
       baseColor.rgb = mix(texture(sFramebuffer, screenPos + distort*anim_timer + anim_timer*0.1*vertIn.normal.xy).rgb,baseColor.rgb,clamp(cloak_interp+anim_timer*2.0,0.0,1.0));
  #endif
    }
-#endif
-#ifdef FLAG_NORMAL_ALPHA
-	float normViewOffset = dot(vec3(0.0, 0.0, 1.0), normal);
-	baseColor.a = smoothstep(min(normalAlphaMinMax.x, normalAlphaMinMax.y), max(normalAlphaMinMax.x, normalAlphaMinMax.y), clamp(normalAlphaMinMax.x > normalAlphaMinMax.y ? normViewOffset : 1.0 - normViewOffset, 0.0, 1.0));
 #endif
 #ifndef FLAG_DEFERRED
 	// emissive colors won't be added later when we are using forward rendering so we need to do that here

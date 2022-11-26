@@ -52,37 +52,55 @@ private:
 	// we already received a newer packet than this one for that type of info.
 	int _hull_comparison_frame;						// what frame was the last hull information received?
 	int _shields_comparison_frame;					// what frame was the last shield information received?
-	SCP_vector<int> _subsystems_comparison_frame;	// what frame was the last subsystem information received? (for each subsystem)
+	SCP_vector<std::pair<int,int>> _subsystems_comparison_frame;	// what frame was the last subsystem information received? (for each subsystem) First is health, second is animation
 	int _ai_comparison_frame;						// what frame was the last ai information received?
 
 public:
 
 	// adds a new packet, whilst also manually sorting the relevant entries
-	void add_packet(int frame, int time_delta, vec3d* position, vec3d* velocity, vec3d* rotational_velocity, vec3d* desired_velocity, vec3d* desired_rotational_velocity, angles* angles, int player_index);
-	void interpolate(vec3d* pos, matrix* ori, physics_info* pip, vec3d* last_pos, matrix* last_orient, bool player_ship);
+	void add_packet(int objnum, int frame, int time_delta, vec3d* position, vec3d* velocity, vec3d* rotational_velocity, vec3d* desired_velocity, vec3d* desired_rotational_velocity, angles* angles, int player_index);
+	void interpolate_main(vec3d* pos, matrix* ori, physics_info* pip, vec3d* last_pos, matrix* last_orient, vec3d* gravity, bool player_ship);
+	void reinterpolate_previous(TIMESTAMP stamp, int prev_packet_index, int next_packet_index,  vec3d* position, matrix* orientation, vec3d* velocity, vec3d* rotational_velocity);
 
 	int get_hull_comparison_frame() { return _hull_comparison_frame; }
 	int get_shields_comparison_frame() { return _shields_comparison_frame; }
 	
-	int get_subsystem_comparison_frame(int i) 
+	int get_subsystem_health_frame(int i) 
 	{ 
 		if (i < static_cast<int>(_subsystems_comparison_frame.size()) && i >= 0) {
-			return _subsystems_comparison_frame[i]; 
+			return _subsystems_comparison_frame[i].first; 
 		} // if it somehow got passed nonsense, chances are what it is is trying to read is nonsense, and INT_MAX will keep it from doing anything crazy.
 		else {
 			return INT_MAX;
 		}
 	}
 
+	int get_subsystem_animation_frame(int i) {
+		if (i < static_cast<int>(_subsystems_comparison_frame.size()) && i >= 0) {
+			return _subsystems_comparison_frame[i].second; 
+		} // if it somehow got passed nonsense, chances are what it is is trying to read is nonsense, and INT_MAX will keep it from doing anything crazy.
+		else {
+			return INT_MAX;
+		}
+	}
+
+
 	int get_ai_comparison_frame() { return _ai_comparison_frame; }
 
 	void set_hull_comparison_frame(int frame) { _hull_comparison_frame = frame; }
 	void set_shields_comparison_frame(int frame) { _shields_comparison_frame = frame; }
 
-	void set_subsystem_comparison_frames(int i, int frame)
+	void set_subsystem_health_frame(int i, int frame)
 	{ 
 		if (i < static_cast<int>(_subsystems_comparison_frame.size()) && i >= 0) {
-			_subsystems_comparison_frame[i] = frame;
+			_subsystems_comparison_frame[i].first = frame;
+		} 
+	}
+
+	void set_subsystem_animation_frame(int i, int frame)
+	{
+		if (i < static_cast<int>(_subsystems_comparison_frame.size()) && i >= 0) {
+			_subsystems_comparison_frame[i].second = frame;
 		} 
 	}
 
@@ -90,7 +108,7 @@ public:
 
 	void force_interpolation_mode() { _simulation_mode = true; }
 
-	void reset() 
+	void reset(int subsystem_count) 
 	{
 		if (!(Game_mode & GM_MULTIPLAYER)){
 			return;
@@ -107,9 +125,11 @@ public:
 		_shields_comparison_frame = -1;
 		_source_player_index = -1;
 
-		// if we are resetting, that means that the ship may be respawning, so don't clear it out, just set the values to invalid.
-		for (auto& frame : _subsystems_comparison_frame) {
-			frame = -1;
+
+		_subsystems_comparison_frame.clear();
+
+		for (int i = 0; i < subsystem_count; i++) {
+			_subsystems_comparison_frame.emplace_back(-1, -1);
 		}
 
 		_ai_comparison_frame = -1;

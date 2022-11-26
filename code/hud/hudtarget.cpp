@@ -3408,7 +3408,7 @@ void hud_show_selection_set()
 			if ( OBJ_INDEX(targetp) == Player_ai->target_objnum ) {
 				hud_target_add_display_list(targetp, &target_point, &targetp->pos, 5, iff_get_color(IFF_COLOR_SELECTION, 1), NULL, 0);
 				HUD_drew_selection_bracket_on_target = 1;
-			} else if ( Cmdline_targetinfo ) {		//Backslash -- show the distance and a lead indicator
+			} else if ( Extra_target_info ) {		//Backslash -- show the distance and a lead indicator
 				hud_target_add_display_list(targetp, &target_point, &targetp->pos, 5, iff_get_color(IFF_COLOR_SELECTION, 1), NULL, TARGET_DISPLAY_DIST | TARGET_DISPLAY_LEAD);
 			} else {
 				hud_target_add_display_list(targetp, &target_point, &targetp->pos, 5, iff_get_color(IFF_COLOR_SELECTION, 1), NULL, 0);
@@ -3471,7 +3471,7 @@ void hud_show_targeting_gauges(float frametime)
 		if (target_point.codes == 0) { // target center is not on screen
 			int target_display_flags;
 
-			if(Cmdline_targetinfo) {
+			if(Extra_target_info) {
 				target_display_flags = TARGET_DISPLAY_DIST | TARGET_DISPLAY_DOTS | TARGET_DISPLAY_SUBSYS | TARGET_DISPLAY_NAME | TARGET_DISPLAY_CLASS;
 			} else {
 				target_display_flags = TARGET_DISPLAY_DIST | TARGET_DISPLAY_DOTS | TARGET_DISPLAY_SUBSYS;
@@ -3636,11 +3636,12 @@ void HudGaugeHostileTriangle::render(float  /*frametime*/)
 	}
 }
 
-void hud_calculate_lead_pos(vec3d *lead_target_pos, vec3d *target_pos, object *targetp, weapon_info	*wip, float dist_to_target, vec3d *rel_pos)
+bool hud_calculate_lead_pos(vec3d* shooter_pos, vec3d *lead_target_pos, vec3d *target_pos, object *targetp, weapon_info	*wip, float dist_to_target, vec3d *rel_pos)
 {
-	vec3d target_moving_direction;
+	vec3d target_speed;
 	vec3d last_delta_vector;
 	float time_to_target, target_moved_dist;
+	bool valid_lead_pos = true;
 
 	if(wip->max_speed != 0) {
 		time_to_target = dist_to_target / wip->max_speed;
@@ -3650,24 +3651,36 @@ void hud_calculate_lead_pos(vec3d *lead_target_pos, vec3d *target_pos, object *t
 
 	target_moved_dist = targetp->phys_info.speed * time_to_target;
 
-	target_moving_direction = targetp->phys_info.vel;
+	target_speed = targetp->phys_info.vel;
+
+	if (!IS_VEC_NULL(&The_mission.gravity) && wip->gravity_const != 0.0f) {
+		if (physics_lead_ballistic_trajectory(shooter_pos, target_pos, &targetp->phys_info.vel, wip->max_speed, &The_mission.gravity, lead_target_pos)) {
+			*lead_target_pos = *shooter_pos + *lead_target_pos * 1000.0f;
+			return true;
+		} else {
+			valid_lead_pos = false;
+			// continue, in case the caller wants to get a lead pos either way
+		}
+	}
 
 	if(The_mission.ai_profile->flags[AI::Profile_Flags::Use_additive_weapon_velocity])
-		vm_vec_scale_sub2(&target_moving_direction, &Player_obj->phys_info.vel, wip->vel_inherit_amount);
+		vm_vec_scale_sub2(&target_speed, &Player_obj->phys_info.vel, wip->vel_inherit_amount);
 
 	// test if the target is moving at all
-	if ( vm_vec_mag_quick(&target_moving_direction) < 0.1f ) { // Find distance!
+	if ( vm_vec_mag_quick(&target_speed) < 0.1f ) { // Find distance!
 		*lead_target_pos =  *target_pos;
 	} else {
-		vm_vec_normalize(&target_moving_direction);
-		vm_vec_scale(&target_moving_direction, target_moved_dist);
-		vm_vec_add(lead_target_pos, target_pos, &target_moving_direction );
+		vm_vec_normalize(&target_speed);
+		vm_vec_scale(&target_speed, target_moved_dist);
+		vm_vec_add(lead_target_pos, target_pos, &target_speed);
 		polish_predicted_target_pos(wip, targetp, target_pos, lead_target_pos, dist_to_target, &last_delta_vector, 1); // Not used:, float time_to_enemy)
 
 		if(rel_pos) { // needed for quick lead indicators, not needed for normal lead indicators.
 			vm_vec_add2(lead_target_pos, rel_pos);
 		}
 	}
+
+	return valid_lead_pos;
 }
 
 // Return the bank number for the primary weapon that can fire the farthest, from
@@ -3996,10 +4009,13 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 			if (weapon_range < dist_to_target)
 				continue;
 
+			if (!hud_calculate_lead_pos(&Player_obj->pos, &lead_target_pos, &target_pos, targetp, wip, dist_to_target)) {
+				continue;
+			}
+
 			frame_offset = pickFrame(weapon_range, srange, dist_to_target);
 
 			if (frame_offset >= 0) {
-				hud_calculate_lead_pos(&lead_target_pos, &target_pos, targetp, wip, dist_to_target);
 				if (Lead_indicator_behavior == leadIndicatorBehavior::MULTIPLE) {
 					renderIndicator(frame_offset, targetp, &lead_target_pos);
 				}
@@ -4015,13 +4031,16 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 		}
 	}
 	else if (bank_to_fire >= 0) { //leadIndicatorBehavior::DEFAULT
+		if (!hud_calculate_lead_pos(&Player_obj->pos, &lead_target_pos, &target_pos, targetp, wip, dist_to_target)) {
+			prange = 0.0f; // no ballistic trajectory, primary is 'always out of range'
+		}
+
 		frame_offset = pickFrame(prange, srange, dist_to_target);
 		if ( frame_offset < 0 && srange != -1.0f ) {
 			return;
 		}
 
 		if (frame_offset >= 0) {
-			hud_calculate_lead_pos(&lead_target_pos, &target_pos, targetp, wip, dist_to_target);
 			renderIndicator(frame_offset, targetp, &lead_target_pos);
 		}
 	}
@@ -4042,8 +4061,8 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 		if (dist_to_target > max_dist)
 			return;
 
-		hud_calculate_lead_pos(&lead_target_pos, &target_pos, targetp, wip, dist_to_target);
-		renderIndicator(0, targetp, &lead_target_pos);
+		if (hud_calculate_lead_pos(&Player_obj->pos, &lead_target_pos, &target_pos, targetp, wip, dist_to_target))
+			renderIndicator(0, targetp, &lead_target_pos);
 	}
 }
 
@@ -4125,7 +4144,7 @@ void HudGaugeLeadIndicator::renderLeadQuick(vec3d *target_world_pos, object *tar
 		return;
 	}
 
-	hud_calculate_lead_pos(&lead_target_pos, target_world_pos, targetp, wip, dist_to_target, rel_pos);
+	hud_calculate_lead_pos(&source_pos , &lead_target_pos, target_world_pos, targetp, wip, dist_to_target, rel_pos);
 	renderIndicator(frame_offset, targetp, &lead_target_pos);
 }
 
@@ -4291,7 +4310,7 @@ void HudGaugeLeadSight::render(float  /*frametime*/)
 			g3_start_frame(0);
 		}
 
-		hud_calculate_lead_pos(&lead_target_pos, &target_pos, targetp, wip, dist_to_target);
+		hud_calculate_lead_pos(&source_pos, &lead_target_pos, &target_pos, targetp, wip, dist_to_target);
 		renderSight(1, &target_pos, &lead_target_pos); // render the primary weapon lead sight
 
 		if(!in_frame) {
@@ -4328,7 +4347,7 @@ void HudGaugeLeadSight::render(float  /*frametime*/)
 
 	//give it the "in secondary range frame
 
-	hud_calculate_lead_pos(&lead_target_pos, &target_pos, targetp, wip, dist_to_target);
+	hud_calculate_lead_pos(&source_pos, &lead_target_pos, &target_pos, targetp, wip, dist_to_target);
 	renderSight(0, &target_pos, &lead_target_pos); // now render the secondary weapon lead sight
 
 	if(!in_frame) {

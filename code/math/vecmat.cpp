@@ -2268,7 +2268,7 @@ bool is_valid_matrix(const matrix *m)
 	return is_valid_vec(&m->vec.fvec) && is_valid_vec(&m->vec.uvec) && is_valid_vec(&m->vec.rvec);
 }
 
-// interpolate between 2 vectors. t goes from 0.0 to 1.0. at
+// interpolate between 2 vectors. t goes from 0.0 to 1.0.
 void vm_vec_interp_constant(vec3d *out, const vec3d *v0, const vec3d *v1, float t)
 {
 	vec3d cross;

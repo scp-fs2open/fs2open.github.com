@@ -51,7 +51,7 @@ inline int in_sphere(vec3d *pos, float radius, vec3d *view_position)
 		return -1;
 }
 
-extern int model_interp_get_texture(texture_info *tinfo, fix base_frametime);
+extern int model_interp_get_texture(texture_info *tinfo, int elapsed_time);
 
 class model_render_params
 {
@@ -93,10 +93,6 @@ class model_render_params
 
 	mst_info Thruster_info;
 
-	bool Normal_alpha;
-	float Normal_alpha_min;
-	float Normal_alpha_max;
-
 	float Outline_thickness = -1.0f;
 
 	bool Use_alpha_mult;
@@ -126,13 +122,11 @@ public:
 	void set_clip_plane(vec3d &pos, vec3d &normal);
 	void set_animated_effect(int effect_num, float timer);
 	void set_thruster_info(mst_info &info);
-	void set_normal_alpha(float min, float max);
 	void set_outline_thickness(float thick);
 	void set_alpha_mult(float alpha);
 
 	bool is_clip_plane_set();
 	bool is_team_color_set();
-	bool is_normal_alpha_set();
 	bool is_alpha_mult_set();
 	bool uses_thick_outlines();
 
@@ -155,8 +149,6 @@ public:
 	int get_animated_effect_num();
 	float get_animated_effect_timer();
 	const mst_info& get_thruster_info();
-	float get_normal_alpha_min();
-	float get_normal_alpha_max();
 	float get_outline_thickness();
 	float get_alpha_mult();
 };
@@ -311,7 +303,6 @@ void model_render_queue(model_render_params* render_info, model_draw_list* scene
 void submodel_render_immediate(model_render_params *render_info, polymodel *pm, polymodel_instance *pmi, int submodel_num, matrix *orient, vec3d * pos);
 void submodel_render_queue(model_render_params *render_info, model_draw_list *scene, polymodel *pm, polymodel_instance *pmi, int submodel_num, matrix *orient, vec3d * pos);
 void model_render_buffers(model_draw_list* scene, model_material *rendering_material, model_render_params* interp, vertex_buffer *buffer, polymodel *pm, int mn, int detail_level, uint tmap_flags);
-fix model_render_determine_base_frametime(int objnum, uint flags);
 bool model_render_check_detail_box(vec3d *view_pos, polymodel *pm, int submodel_num, uint flags);
 void model_render_arc(vec3d *v1, vec3d *v2, color *primary, color *secondary, float arc_width);
 void model_render_insignias(insignia_draw_data *insignia);

@@ -162,12 +162,12 @@ void material_set_rocket_interface(interface_material* mat_info,
 	mat_info->set_texture_type(material::TEX_TYPE_INTERFACE);
 }
 
-void material_set_movie(movie_material* mat_info, int y_bm, int u_bm, int v_bm) {
+void material_set_movie(movie_material* mat_info, int y_bm, int u_bm, int v_bm, float alpha) {
 	mat_info->set_depth_mode(ZBUFFER_TYPE_NONE);
 	mat_info->set_blend_mode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
 
 	mat_info->set_cull_mode(false);
-	mat_info->set_color(1.0f, 1.0f, 1.0f, 1.0f);
+	mat_info->set_color(1.0f, 1.0f, 1.0f, alpha);
 
 	mat_info->setYtex(y_bm);
 	mat_info->setUtex(u_bm);
@@ -653,33 +653,6 @@ bool model_material::is_batched() const
 	return Batched;
 }
 
-void model_material::set_normal_alpha(float min, float max)
-{
-	Normal_alpha = true;
-	Normal_alpha_min = min;
-	Normal_alpha_max = max;
-}
-
-void model_material::set_normal_alpha()
-{
-	Normal_alpha = false;
-}
-
-bool model_material::is_normal_alpha_active() const
-{
-	return Normal_alpha;
-}
-
-float model_material::get_normal_alpha_min() const
-{
-	return Normal_alpha_min;
-}
-
-float model_material::get_normal_alpha_max() const
-{
-	return Normal_alpha_max;
-}
-
 void model_material::set_fog(int r, int g, int b, float _near, float _far)
 {
 	Fog_params.enabled = true;
@@ -760,7 +733,7 @@ uint model_material::get_shader_flags() const
 		Shader_flags |= SDR_FLAG_MODEL_ANIMATED;
 	}
 
-	if ( get_texture_map(TM_BASE_TYPE) > 0 && !Basemap_override ) {
+	if ( get_texture_map(TM_BASE_TYPE) > 0) {
 		Shader_flags |= SDR_FLAG_MODEL_DIFFUSE_MAP;
 	}
 
@@ -768,18 +741,18 @@ uint model_material::get_shader_flags() const
 		Shader_flags |= SDR_FLAG_MODEL_GLOW_MAP;
 	}
 
-	if ( (get_texture_map(TM_SPECULAR_TYPE) > 0 || get_texture_map(TM_SPEC_GLOSS_TYPE) > 0) && !Specmap_override ) {
+	if ( get_texture_map(TM_SPECULAR_TYPE) > 0 || get_texture_map(TM_SPEC_GLOSS_TYPE) > 0 ) {
 		Shader_flags |= SDR_FLAG_MODEL_SPEC_MAP;
 	}
 	if ( (ENVMAP > 0) && !Envmap_override ) {
 		Shader_flags |= SDR_FLAG_MODEL_ENV_MAP;
 	}
 
-	if ( (get_texture_map(TM_NORMAL_TYPE) > 0) && !Normalmap_override ) {
+	if ( get_texture_map(TM_NORMAL_TYPE) > 0 ) {
 		Shader_flags |= SDR_FLAG_MODEL_NORMAL_MAP;
 	}
 
-	if ( (get_texture_map(TM_HEIGHT_TYPE) > 0) && !Heightmap_override ) {
+	if ( get_texture_map(TM_HEIGHT_TYPE) > 0 ) {
 		Shader_flags |= SDR_FLAG_MODEL_HEIGHT_MAP;
 	}
 
@@ -813,10 +786,6 @@ uint model_material::get_shader_flags() const
 
 	if ( Thrust_scale > 0.0f ) {
 		Shader_flags |= SDR_FLAG_MODEL_THRUSTER;
-	}
-
-	if ( Normal_alpha ) {
-		Shader_flags |= SDR_FLAG_MODEL_NORMAL_ALPHA;
 	}
 
 	if ( uses_thick_outlines() ) {

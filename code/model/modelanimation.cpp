@@ -12,15 +12,21 @@ extern float flFrametime;
 
 namespace animation {
 
-	flag_def_list_new<animation::Animation_Flags> Animation_flags[] = {
-		{ "auto reverse",				animation::Animation_Flags::Auto_Reverse,						true, false },
-		{ "reset at completion",		animation::Animation_Flags::Reset_at_completion,		        true, false },
-		{ "loop",						animation::Animation_Flags::Loop,						        true, false },
-		{ "random starting phase",		animation::Animation_Flags::Random_starting_phase,				true, false },
-		{ "pause on reverse",			animation::Animation_Flags::Pause_on_reverse,					true, false },
-	};
+	special_flag_def_list_new<animation::Animation_Flags, ModelAnimation&> Animation_flags[] = {
+		{ "auto reverse",				animation::Animation_Flags::Auto_Reverse,						true },
+		{ "reset at completion",		animation::Animation_Flags::Reset_at_completion,		        true },
+		{ "loop",						animation::Animation_Flags::Loop,						        true },
+		{ "random starting phase",		animation::Animation_Flags::Random_starting_phase,				true },
+		{ "pause on reverse",			animation::Animation_Flags::Pause_on_reverse,					true },
+		{ "seamless with startup",		animation::Animation_Flags::Seamless_with_startup,				true, [](const SCP_string& from, ModelAnimation& anim) {
+			anim.m_flagData.loopsFrom = static_cast<float>(std::atof(from.c_str()));
+			anim.m_flags.set(animation::Animation_Flags::Loop);
+			anim.m_flags.set(animation::Animation_Flags::Seamless_with_startup);
 
-	const size_t Num_animation_flags = sizeof(Animation_flags) / sizeof(flag_def_list_new<animation::Animation_Flags>);
+			//While this flag implies Reset_at_completion semantically, it's implemented in a conflicting manner. Hence, make sure that seamless will take priority, and force-disable reset at completion if set
+			anim.m_flags.set(animation::Animation_Flags::Reset_at_completion, false);
+		}}
+	};
 
 	std::map<int, ModelAnimationSet::RunningAnimationList> ModelAnimationSet::s_runningAnimations;
 	std::map<unsigned int, std::shared_ptr<ModelAnimation>> ModelAnimationSet::s_animationById;
@@ -68,9 +74,11 @@ namespace animation {
 			}
 
 			/* fall-thru */
-		case ModelAnimationState::NEED_RECALC:
+		case ModelAnimationState::NEED_RECALC: {
+			ModelAnimationSubmodelBuffer currentAnimationDelta;
+			m_set->initializeSubmodelBuffer(pmi, currentAnimationDelta);
 			//Store the submodels current data as the base for this animation and calculate this animations parameters
-			m_animation->recalculate(applyBuffer, pmi);
+			m_animation->recalculate(applyBuffer, currentAnimationDelta, pmi);
 
 			instanceData.duration = m_animation->getDuration(pmi->id);
 			instanceData.state = ModelAnimationState::RUNNING_FWD;
@@ -81,8 +89,9 @@ namespace animation {
 				if (m_flags[Animation_Flags::Loop, Animation_Flags::Auto_Reverse] && !m_flags[Animation_Flags::Reset_at_completion] && util::Random::flip_coin()) {
 					instanceData.state = ModelAnimationState::RUNNING_RWD;
 					break; //In this case, we must delay for a frame
-				}		
+				}
 			}
+		}
 
 			/* fall-thru */
 		case ModelAnimationState::RUNNING_FWD:
@@ -102,6 +111,16 @@ namespace animation {
 						//Reset at completion triggers count as a full next loop, so we need to stop here.
 						if (instanceData.instance_flags[Animation_Instance_Flags::Stop_after_next_loop])
 							stop(pmi, false);
+					}
+					else if (m_flags[Animation_Flags::Seamless_with_startup]) {
+						//Loop from start
+						instanceData.time = m_flagData.loopsFrom;
+
+						//We need to go into final shutdown mode. Go to start of seamless segment, and play backwards
+						if (instanceData.instance_flags[Animation_Instance_Flags::Stop_after_next_loop]) {
+							instanceData.state = ModelAnimationState::RUNNING_RWD;
+							instanceData.instance_flags.set(Animation_Instance_Flags::Seamless_loop_shutdown);
+						}
 					}
 					else {
 						//Loop back
@@ -134,6 +153,10 @@ namespace animation {
 						//Loop from end. This happens when a Loop + Reset at completion animation is started in reverse.
 						instanceData.time = instanceData.duration;
 					}
+					else if (m_flags[Animation_Flags::Seamless_with_startup]) {
+						//We're either in final shutdown, or reversed before we reached the seamless part. Either way, ensure the stop flag is set to fully stop
+						instanceData.instance_flags.set(Animation_Instance_Flags::Stop_after_next_loop);
+					}
 					else {
 						//Loop back
 						instanceData.time = 0;
@@ -145,6 +168,13 @@ namespace animation {
 				}
 				else
 					stop(pmi, false);
+			}
+			else if (m_flags[Animation_Flags::Seamless_with_startup] && !instanceData.instance_flags[Animation_Instance_Flags::Seamless_loop_shutdown] && instanceData.time < m_flagData.loopsFrom) {
+				//Loop from end. This happens when a seamless loop is reversed after entering the seamless part. If stop is set, set the shutdown flag instead
+				if (instanceData.instance_flags[Animation_Instance_Flags::Stop_after_next_loop])
+					instanceData.instance_flags.set(Animation_Instance_Flags::Seamless_loop_shutdown);
+				else
+					instanceData.time = instanceData.duration;
 			}
 
 			m_animation->calculateAnimation(applyBuffer, instanceData.time, pmi->id);
@@ -186,6 +216,12 @@ namespace animation {
 				instanceData.state = ModelAnimationState::PAUSED;
 			return;
 		}
+		else if (instanceData.state == ModelAnimationState::PAUSED) {
+			if (direction == ModelAnimationDirection::FWD)
+				instanceData.state = ModelAnimationState::RUNNING_FWD;
+			else
+				instanceData.state = ModelAnimationState::RUNNING_RWD;
+		}
 
 		float timeOffset = multiOverrideTime != nullptr ? *multiOverrideTime : 0.0f;
 
@@ -193,6 +229,11 @@ namespace animation {
 		//Don't apply just yet if it's a non-initial type, as there might be other animations this'd need to depend upon
 		ModelAnimationSubmodelBuffer applyBuffer;
 		m_set->initializeSubmodelBuffer(pmi, applyBuffer);
+		auto runningAnims = m_set->s_runningAnimations.find(pmi->id);
+		if (runningAnims != m_set->s_runningAnimations.end()) {
+			for (const auto& anim : runningAnims->second.animationList)
+				anim->play(0, pmi, applyBuffer, true);
+		}
 		play(0, pmi, applyBuffer);
 		
 		if (direction == ModelAnimationDirection::RWD) {
@@ -234,6 +275,7 @@ namespace animation {
 		instance_data& instanceData = m_instances[pmi->id];
 		instanceData.time = 0.0f;
 		instanceData.state = ModelAnimationState::UNTRIGGERED;
+		instanceData.instance_flags.reset();
 
 		if (cleanup)
 			ModelAnimationSet::cleanRunning();
@@ -1108,6 +1150,11 @@ namespace animation {
 
 	}
 
+	ModelAnimationCoordinateRelation ModelAnimationParseHelper::parseCoordinateRelation() {
+		int result = optional_string_one_of(3, "+Relative", "+Local", "+Absolute");
+		return static_cast<ModelAnimationCoordinateRelation>(result < 0 ? 0 : result);
+	}
+
 	void ModelAnimationParseHelper::parseSingleAnimation() {
 
 		ModelAnimationParseHelper helper;
@@ -1194,7 +1241,10 @@ namespace animation {
 
 		if (optional_string("$Flags:")) {
 			SCP_vector<SCP_string> unparsed;
-			parse_string_flag_list(animation->m_flags, Animation_flags, Num_animation_flags, &unparsed);
+			parse_string_flag_list_special(animation->m_flags, Animation_flags, &unparsed, *animation);
+			for (const auto& flag : unparsed) {
+				error_display(0, "Unknown flag %s in flag list!", flag.c_str());
+			}
 		}
 
 		if (Animation_types.find(type)->second.second) {
@@ -1421,7 +1471,7 @@ namespace animation {
 			}
 			else {
 				auto subsys = sip->animations.getSubmodel(sp->subobj_name);
-				auto rot = std::shared_ptr<ModelAnimationSegmentSetOrientation>(new ModelAnimationSegmentSetOrientation(subsys, angle, isRelative));
+				auto rot = std::shared_ptr<ModelAnimationSegmentSetOrientation>(new ModelAnimationSegmentSetOrientation(subsys, angle, isRelative ? ModelAnimationCoordinateRelation::RELATIVE_COORDS : ModelAnimationCoordinateRelation::ABSOLUTE_COORDS));
 				anim->setAnimation(std::move(rot));
 			}
 
@@ -1491,7 +1541,7 @@ namespace animation {
 				//Hence, throw time away, and let the segment handle calculating how long it actually takes
 			}
 
-			auto rotation = std::shared_ptr<ModelAnimationSegmentRotation>(new ModelAnimationSegmentRotation(subsys, target, velocity, tl::nullopt, acceleration, absolute));
+			auto rotation = std::shared_ptr<ModelAnimationSegmentRotation>(new ModelAnimationSegmentRotation(subsys, target, velocity, tl::nullopt, acceleration, absolute ? ModelAnimationCoordinateRelation::ABSOLUTE_COORDS : ModelAnimationCoordinateRelation::RELATIVE_COORDS));
 
 			if (optional_string("$Sound:")) {
 				gamesnd_id start_sound;

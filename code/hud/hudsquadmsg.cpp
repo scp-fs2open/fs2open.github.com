@@ -770,7 +770,7 @@ bool hud_squadmsg_is_target_order_valid(size_t order, ai_info *aip )
 
 	//If it's a lua order, defer to luaai
 	if (Player_orders[order].lua_id != -1) {
-		return ai_lua_is_valid_target(Player_orders[order].lua_id, target_objnum, ordering_shipp);
+		return ai_lua_is_valid_target(Player_orders[order].lua_id, target_objnum, ordering_shipp, order);
 	}
 
 	// orders which don't operate on targets are always valid
@@ -819,6 +819,11 @@ bool hud_squadmsg_is_target_order_valid(size_t order, ai_info *aip )
 
 	// if we are messaging a ship, and that ship is our target, no target type orders are ever active
 	if ( (Squad_msg_mode == SM_MODE_SHIP_COMMAND) && (Objects[target_objnum].instance == Msg_instance) ){
+		return false;
+	}
+
+	// check if this order can be issued against the target
+	if (shipp->orders_allowed_against.find(order) == shipp->orders_allowed_against.end()) {
 		return false;
 	}
 
@@ -912,7 +917,7 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num )
 			continue;
 
 		// can't message if ship not fighter/bomber if the command isn't to everyone.
-		if ( !(Ship_info[shipp->ship_info_index].is_fighter_bomber()) )
+		if ( !(Ship_info[Wings[i].special_ship_ship_info_index].is_fighter_bomber()) )
 			continue;
 
 		// don't send the command if the "wing" won't accept the command.  We do this by looking at
@@ -1774,13 +1779,18 @@ void hud_squadmsg_call_reinforcement(int reinforcement_num, int  /*player_num*/)
 
 	// safety net mainly for multiplayer servers in case some odd data desync occurs between 
 	// server and clients
-	if ( MULTIPLAYER_MASTER && (rp->num_uses == rp->uses) ) {
+	if ( MULTIPLAYER_MASTER && (rp->num_uses >= rp->uses) ) {
 		return;
 	}
 
 	// check to see if the reinforcement called was a wing.
 	for (i = 0; i < Num_wings; i++ ) {
 		if ( !stricmp(rp->name, Wings[i].name) ) {
+			// if the wing is currently present, skip this request so we don't waste a "use"
+			if (Wings[i].current_count > 0) {
+				return;
+			}
+
 			// found a wingname.  Call the parse function to create all the ships in this wing
 			// we must set the arrival cue of the wing to true, otherwise, this won't work!!
             Wings[i].flags.remove(Ship::Wing_Flags::Reinforcement);
@@ -1848,7 +1858,7 @@ void hud_squadmsg_reinforcement_select()
 			SCP_string rp_name = rp->name;
 
 			// don't put reinforcements onto the list that have already been used up.
-			if ( rp->num_uses == rp->uses ){
+			if ( rp->num_uses >= rp->uses ){
 				continue;
 			}
 

@@ -26,6 +26,7 @@
 #include "gamesnd/eventmusic.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
+#include "graphics/light.h"
 #include "graphics/matrix.h"
 #include "graphics/shadows.h"
 #include "def_files/def_files.h"
@@ -118,8 +119,6 @@ extern bool splodeing;
 extern float splode_level;
 extern int splodeingtexture;
 
-#define SHIP_REPAIR_SUBSYSTEM_RATE	0.01f
-
 // The minimum required fuel to engage afterburners
 static const float DEFAULT_MIN_AFTERBURNER_FUEL_TO_ENGAGE = 10.0f;
 
@@ -136,6 +135,8 @@ ship	Ships[MAX_SHIPS];
 ship	*Player_ship;
 int		*Player_cockpit_textures;
 SCP_vector<cockpit_display> Player_displays;
+bool disableCockpits = false;
+bool cockpitActive = false;
 
 wing	Wings[MAX_WINGS];
 bool	Ships_inited = false;
@@ -150,7 +151,6 @@ int TVT_wings[MAX_TVT_WINGS];
 // Goober5000
 char Starting_wing_names[MAX_STARTING_WINGS][NAME_LENGTH];
 char Squadron_wing_names[MAX_SQUADRON_WINGS][NAME_LENGTH];
-bool Squadron_wing_names_found[MAX_SQUADRON_WINGS];
 char TVT_wing_names[MAX_TVT_WINGS][NAME_LENGTH];
 
 SCP_vector<engine_wash_info> Engine_wash_info;
@@ -202,6 +202,8 @@ int	Num_engine_wash_types;
 int	Num_ship_subobj_types;
 int	Num_ship_subobjects;
 int	Player_ship_class;	// needs to be player specific, move to player structure	
+
+bool Sensor_static_forced = false; //forced static effect sexp initialization
 
 #define		SHIP_OBJ_USED	(1<<0)				// flag used in ship_obj struct
 #define		MAX_SHIP_OBJS	MAX_SHIPS			// max number of ships tracked in ship list
@@ -277,6 +279,7 @@ flag_def_list_new<Model::Subsystem_Flags> Subsystem_flags[] = {
 	{ "no damage spew",             Model::Subsystem_Flags::No_sparks,                          true, false },
 	{ "no impact debris",           Model::Subsystem_Flags::No_impact_debris,                   true, false },
 	{ "hide turret from loadout stats", Model::Subsystem_Flags::Hide_turret_from_loadout_stats, true, false },
+	{ "turret has distant firepoint", Model::Subsystem_Flags::Turret_distant_firepoint,         true, false },
 };
 
 const size_t Num_subsystem_flags = sizeof(Subsystem_flags)/sizeof(flag_def_list_new<Model::Subsystem_Flags>);
@@ -535,12 +538,28 @@ ship_flag_name Ship_flag_names[] = {
 	{ Ship_Flags::No_disabled_self_destruct,	"no-disabled-self-destruct" },
 	{ Ship_Flags::Hide_mission_log,				"hide-in-mission-log" },
 	{ Ship_Flags::No_passive_lightning,			"no-ship-passive-lightning" },
+	{ Ship_Flags::Glowmaps_disabled,			"glowmaps-disabled" },
+	{ Ship_Flags::No_thrusters,					"no-thrusters" },
 	{ Ship_Flags::Fail_sound_locked_primary, 	"fail-sound-locked-primary"},
 	{ Ship_Flags::Fail_sound_locked_secondary, 	"fail-sound-locked-secondary"},
-	{ Ship_Flags::Aspect_immune, 				"aspect-immune"}
+	{ Ship_Flags::Aspect_immune, 				"aspect-immune"},
+	{ Ship_Flags::Cannot_perform_scan,			"cannot-perform-scan"},
+	{ Ship_Flags::No_targeting_limits,			"no-targeting-limits"}
 };
 
-extern const int Num_ship_flag_names = sizeof(Ship_flag_names) / sizeof(ship_flag_name);
+extern const size_t Num_ship_flag_names = sizeof(Ship_flag_names) / sizeof(ship_flag_name);
+
+// Ditto for wings
+wing_flag_name Wing_flag_names[] = {
+	{ Wing_Flags::No_arrival_music,					"no-arrival-music" },
+	{ Wing_Flags::No_arrival_message,				"no-arrival-message" },
+	{ Wing_Flags::No_arrival_warp,					"no-arrival-warp" },
+	{ Wing_Flags::No_departure_warp,				"no-departure-warp" },
+	{ Wing_Flags::Same_arrival_warp_when_docked,	"same-arrival-warp-when-docked" },
+	{ Wing_Flags::Same_departure_warp_when_docked,	"same-departure-warp-when-docked" }
+};
+
+extern const size_t Num_wing_flag_names = sizeof(Wing_flag_names) / sizeof(wing_flag_name);
 
 static int Laser_energy_out_snd_timer;	// timer so we play out of laser sound effect periodically
 static int Missile_out_snd_timer;	// timer so we play out of laser sound effect periodically
@@ -875,6 +894,8 @@ void ship_info::clone(const ship_info& other)
 	forward_decel = other.forward_decel;
 	slide_accel = other.slide_accel;
 	slide_decel = other.slide_decel;
+	gravity_const = other.gravity_const;
+	dying_gravity_const = other.dying_gravity_const;
 
 	warpin_params_index = other.warpin_params_index;
 	warpout_params_index = other.warpout_params_index;
@@ -925,6 +946,7 @@ void ship_info::clone(const ship_info& other)
 	debris_max_hitpoints = other.debris_max_hitpoints;
 	debris_damage_mult = other.debris_damage_mult;
 	debris_arc_percent = other.debris_arc_percent;
+	debris_gravity_const = other.debris_gravity_const;
 	debris_ambient_sound = other.debris_ambient_sound;
 	debris_collision_sound_light = other.debris_collision_sound_light;
 	debris_collision_sound_heavy = other.debris_collision_sound_heavy;
@@ -1006,6 +1028,9 @@ void ship_info::clone(const ship_info& other)
 
 	hull_repair_rate = other.hull_repair_rate;
 	subsys_repair_rate = other.subsys_repair_rate;
+
+	hull_repair_max = other.hull_repair_max;
+	subsys_repair_max = other.subsys_repair_max;
 
 	sup_hull_repair_rate = other.sup_hull_repair_rate;
 	sup_shield_repair_rate = other.sup_shield_repair_rate;
@@ -1211,6 +1236,8 @@ void ship_info::move(ship_info&& other)
 	forward_decel = other.forward_decel;
 	slide_accel = other.slide_accel;
 	slide_decel = other.slide_decel;
+	gravity_const = other.gravity_const;
+	dying_gravity_const = other.dying_gravity_const;
 
 	warpin_params_index = other.warpin_params_index;
 	warpout_params_index = other.warpout_params_index;
@@ -1261,6 +1288,7 @@ void ship_info::move(ship_info&& other)
 	debris_max_hitpoints = other.debris_max_hitpoints;
 	debris_damage_mult = other.debris_damage_mult;
 	debris_arc_percent = other.debris_arc_percent;
+	debris_gravity_const = other.debris_gravity_const;
 	debris_ambient_sound = other.debris_ambient_sound;
 	debris_collision_sound_light = other.debris_collision_sound_light;
 	debris_collision_sound_heavy = other.debris_collision_sound_heavy;
@@ -1326,6 +1354,9 @@ void ship_info::move(ship_info&& other)
 
 	hull_repair_rate = other.hull_repair_rate;
 	subsys_repair_rate = other.subsys_repair_rate;
+
+	hull_repair_max = other.hull_repair_max;
+	subsys_repair_max = other.subsys_repair_max;
 
 	sup_hull_repair_rate = other.sup_hull_repair_rate;
 	sup_shield_repair_rate = other.sup_shield_repair_rate;
@@ -1567,6 +1598,8 @@ ship_info::ship_info()
 	forward_decel = 0.0f;
 	slide_accel = 0.0f;
 	slide_decel = 0.0f;
+	gravity_const = 0.0f;
+	dying_gravity_const = 0.0f;
 
 	warpin_params_index = -1;
 	warpout_params_index = -1;
@@ -1673,6 +1706,7 @@ ship_info::ship_info()
 	debris_max_hitpoints = -1.0f;
 	debris_damage_mult = 1.0f;
 	debris_arc_percent = 0.5f;
+	debris_gravity_const = 1.0f;
 	debris_ambient_sound = GameSounds::DEBRIS;
 	debris_collision_sound_light = gamesnd_id();
 	debris_collision_sound_heavy = gamesnd_id();
@@ -1749,8 +1783,11 @@ ship_info::ship_info()
 	}
 
 	hull_repair_rate = 0.0f;
-	//-2 represents not set, in which case the default is used for the ship (if it is small)
+	// -2 represents not set, in which case the default is used for the ship (if it is small)
 	subsys_repair_rate = -2.0f;
+
+	hull_repair_max = 1.0f;
+	subsys_repair_max = 1.0f;
 
 	sup_hull_repair_rate = 0.15f;
 	sup_shield_repair_rate = 0.20f;
@@ -3089,6 +3126,15 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		parse_game_sound("+Collision Sound Shielded:", &sip->collision_physics.collision_sound_shielded_idx);
 	}
 
+	if (optional_string("$Gravity Const:")) {
+		stuff_float(&sip->gravity_const);
+	}
+
+	if (optional_string("$Dying Gravity Const:")) {
+		stuff_float(&sip->dying_gravity_const);
+	} else if (first_time) {
+		sip->dying_gravity_const = sip->gravity_const;
+	}
 
 	if(optional_string("$Debris:"))
 	{
@@ -3149,6 +3195,11 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			}
 			//Percent is nice for modders, but here in the code we want it betwwen 0 and 1.0
 			sip->debris_arc_percent /= 100.0;
+		}
+		if (optional_string("+Debris Gravity Const:")) {
+			stuff_float(&sip->debris_gravity_const);
+		} else if (first_time) {
+			sip->debris_gravity_const = sip->dying_gravity_const;
 		}
 		gamesnd_id ambient_snd, collision_snd_light, collision_snd_heavy, explosion_snd;
 		if (parse_game_sound("+Ambient Sound:", &ambient_snd))
@@ -3485,6 +3536,8 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		stuff_string( sci->name, F_NAME, NAME_LENGTH);
 	}
 
+	parse_game_sound("$Shockwave Sound:", &sci->blast_sound_id);
+
 	if(optional_string("$Explosion Animations:")){
 		int temp[MAX_FIREBALL_TYPES];
 		auto parsed_ints = stuff_int_list(temp, MAX_FIREBALL_TYPES, RAW_INTEGER_TYPE);
@@ -3677,43 +3730,92 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		}
 	}
 
-	//Hull rep rate
-	
-	if(optional_string("$Hull Repair Rate:"))
+	// Hull rep rate
+	if (optional_string("$Hull Repair Rate:"))
 	{
-		stuff_float(&sip->hull_repair_rate);
-		sip->hull_repair_rate *= 0.01f;
+		float temp;
+		stuff_float(&temp);
+		temp *= 0.01f;
 		
 		//Sanity checking
-		if(sip->hull_repair_rate > 1.0f)
-			sip->hull_repair_rate = 1.0f;
-		else if(sip->hull_repair_rate < -1.0f)
-			sip->hull_repair_rate = -1.0f;
+		if (temp > 1.0f) {
+			mprintf(("$Hull Repair Rate: value of %f for ship class '%s' is > 1.0, setting to 1.0!\n", temp, sip->name));
+			temp = 1.0f;
+		} else if (temp < -1.0f) {
+			mprintf(("$Hull Repair Rate: value of %f for ship class '%s' is < -1.0, setting to -1.0!\n", temp, sip->name));
+			temp = -1.0f;
+		}
+
+		sip->hull_repair_rate = temp;
+	}
+
+	// Maximum percent that hull can be self repaired
+	if (optional_string("$Hull Self Repair Maximum:")) 
+	{
+		float temp;
+		stuff_float(&temp);
+		temp *= 0.01f;
+
+		// Sanity checking
+		if (temp < 0.0f) {
+			mprintf(("$Hull Self Repair Maximum: value of %f for ship class '%s' is < 0.0, setting to 0.0!\n", temp, sip->name));
+			temp = 0.0f;
+		} else if (temp > 1.0f) {
+			mprintf(("$Hull Self Repair Maximum: value of %f for ship class '%s' is > 1.0, setting to 1.0!\n", temp, sip->name));
+			temp = 1.0f;
+		}
+
+		sip->hull_repair_max = temp;
 	}
 
 	// Support ship hull repair rate - if allowed
-	if(optional_string("$Support Hull Repair Rate:"))
+	if (optional_string("$Support Hull Repair Rate:"))
 	{
 		stuff_float(&sip->sup_hull_repair_rate);
 		sip->sup_hull_repair_rate *= 0.01f;
 		CLAMP(sip->sup_hull_repair_rate, 0.0f, 1.0f);
 	}
 
-	//Subsys rep rate
-	if(optional_string("$Subsystem Repair Rate:"))
+	// Subsys rep rate
+	if (optional_string("$Subsystem Repair Rate:"))
 	{
-		stuff_float(&sip->subsys_repair_rate);
-		sip->subsys_repair_rate *= 0.01f;
+		float temp;
+		stuff_float(&temp);
+		temp *= 0.01f;
 		
 		//Sanity checking
-		if(sip->subsys_repair_rate > 1.0f)
-			sip->subsys_repair_rate = 1.0f;
-		else if(sip->subsys_repair_rate < -1.0f)
-			sip->subsys_repair_rate = -1.0f;
+		if (temp > 1.0f) {
+			mprintf(("$Subsystem Repair Rate: value of %f for ship class '%s' is > 1.0, setting to 1.0!\n", temp, sip->name));
+			temp = 1.0f;
+		} else if (temp < -1.0f) {
+			mprintf(("$Subsystem Repair Rate: value of %f for ship class '%s' is < -1.0, setting to -1.0!\n", temp, sip->name));
+			temp = -1.0f;
+		}
+
+		sip->subsys_repair_rate = temp;
+	}
+
+	// Maximum percent that subsystems can be self repaired
+	if (optional_string("$Subsystem Self Repair Maximum:")) 
+	{
+		float temp;
+		stuff_float(&temp);
+		temp *= 0.01f;
+
+		// Sanity checking
+		if (temp < 0.0f) {
+			mprintf(("$Subsystem Self Repair Maximum: value of %f for ship class '%s' is < 0.0, setting to 0.0!\n", temp, sip->name));
+			temp = 0.0f;
+		} else if (temp > 1.0f) {
+			mprintf(("$Subsystem Self Repair Maximum: value of %f for ship class '%s' is > 1.0, setting to 1.0!\n", temp, sip->name));
+			temp = 1.0f;
+		}
+
+		sip->subsys_repair_max = temp;
 	}
 
 	// Support ship hull repair rate
-	if(optional_string("$Support Subsystem Repair Rate:"))
+	if (optional_string("$Support Subsystem Repair Rate:"))
 	{
 		stuff_float(&sip->sup_subsys_repair_rate);
 		sip->sup_subsys_repair_rate *= 0.01f;
@@ -4023,7 +4125,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	//Parse optional sound to be used for end of a glide
 	parse_game_sound("$GlideEndSnd:", &sip->glide_end_snd);
 
-	// Parse optional sound to be used for bfly-by sound
+	// Parse optional sound to be used for flyby sound
 	parse_game_sound("$Flyby Sound:", &sip->flyby_snd);
 
 	parse_ship_sounds(sip);
@@ -5820,8 +5922,6 @@ void ship_init()
 		// We shouldn't already have any subsystem pointers at this point.
 		Assertion(Ship_subsystems.empty(), "Some pre-allocated subsystems didn't get cleared out: " SIZE_T_ARG " batches present during ship_init(); get a coder!\n", Ship_subsystems.size());
 	}
-
-	ship_level_init();	// needed for FRED
 }
 
 static int Man_thruster_reset_timestamp = 0;
@@ -5902,14 +6002,7 @@ void ship_level_init()
 
 	Num_wings = 0;
 	for (i = 0; i < MAX_WINGS; i++ )
-	{
-		Wings[i].num_waves = -1;
-		Wings[i].wing_squad_filename[0] = '\0';
-		Wings[i].wing_insignia_texture = -1;	// Goober5000 - default to no wing insignia
-												// don't worry about releasing textures because
-												// they are released automatically when the model
-												// is unloaded (because they are part of the model)
-	}
+		Wings[i].clear();
 
 	for (i=0; i<MAX_STARTING_WINGS; i++)
 		Starting_wings[i] = -1;
@@ -6146,6 +6239,8 @@ void physics_ship_init(object *objp)
 	//SparK: setting the reverse burners
 	pi->afterburner_max_reverse_vel = sinfo->afterburner_max_reverse_vel;
 	pi->afterburner_reverse_accel = sinfo->afterburner_reverse_accel;
+
+	pi->gravity_const = sinfo->gravity_const;
 }
 
 /**
@@ -6175,6 +6270,22 @@ const std::set<size_t>& ship_get_default_orders_accepted( ship_info *sip )
 		static std::set<size_t> inv_class_set;
 		return inv_class_set;
 	}
+}
+
+/**
+ * Set the orders allowed against a ship -- all allowed by default
+ *
+ * This value might get overridden by a value in the mission file.
+ */
+const std::set<size_t> ship_set_default_orders_against()
+{
+	SCP_set<size_t> orders;
+	
+	for (int i = 0; i <= (int)Player_orders.size(); i++) {
+		orders.insert(i);
+	}
+
+	return orders;
 }
 
 vec3d get_submodel_offset(int model, int submodel){
@@ -6280,6 +6391,7 @@ void ship::clear()
 
 	wingnum = -1;
 	orders_accepted.clear();
+	orders_allowed_against.clear();
 
 	subsys_list_indexer.reset();
 	subsys_list.clear();
@@ -6357,7 +6469,7 @@ void ship::clear()
 
 	next_engine_stutter = timestamp(0);
 
-	base_texture_anim_frametime = 0;
+	base_texture_anim_timestamp = _timestamp();
 
 	total_damage_received = 0.0f;
 	memset(&damage_ship, 0, MAX_DAMAGE_SLOTS * sizeof(float));
@@ -6423,8 +6535,7 @@ void ship::clear()
 
 	shader_effect_num = 0;
 	shader_effect_duration = 0;
-	shader_effect_start_time = 0;
-	shader_effect_active = false;
+	shader_effect_timestamp = TIMESTAMP::invalid();
 
 	alpha_mult = 1.0f;
 
@@ -6599,6 +6710,69 @@ void ship_weapon::clear()
 
 ship_weapon::ship_weapon() {
 	clear();
+}
+
+// Reset all wing values to empty/unused.
+void wing::clear()
+{
+	name[0] = '\0';
+	wing_squad_filename[0] = '\0';
+	reinforcement_index = -1;
+	hotkey = -1;
+
+	num_waves = 1;
+	current_wave = 0;
+	threshold = 0;
+
+	time_gone = 0;
+
+	wave_count = 0;
+	total_arrived_count = 0;
+	red_alert_skipped_ships = 0;
+	current_count = 0;
+
+	for (int i = 0; i < MAX_SHIPS_PER_WING; i++)
+		ship_index[i] = -1;
+
+	total_destroyed = 0;
+	total_departed = 0;
+	total_vanished = 0;
+
+	special_ship = 0;
+	special_ship_ship_info_index = -1;
+
+	arrival_location = ARRIVE_AT_LOCATION;
+	arrival_distance = 0;
+	arrival_anchor = -1;
+	arrival_path_mask = 0;
+	arrival_cue = Locked_sexp_true;
+	arrival_delay = 0;
+
+	departure_location = DEPART_AT_LOCATION;
+	departure_anchor = -1;
+	departure_path_mask = 0;
+	departure_cue = Locked_sexp_false;
+	departure_delay = 0;
+
+	wave_delay_min = 0;
+	wave_delay_max = 0;
+
+	// be sure to set the wave arrival timestamp of this wing to pop right away so that the
+	// wing could be created if it needs to be
+	wave_delay_timestamp = TIMESTAMP::immediate();
+
+	flags.reset();
+
+	// initialize wing goals
+	for (int i = 0; i < MAX_AI_GOALS; i++)
+		ai_goal_reset(&ai_goals[i]);
+
+	net_signature = 0;
+
+	wing_insignia_texture = -1;
+
+	formation = -1;
+	formation_scale = 1.0f;
 }
 
 // NOTE: Now that the clear() member function exists, this function only sets the stuff associated with the object and ship class.
@@ -7001,6 +7175,8 @@ void ship_subsys::clear()
 
 	turret_max_bomb_ownage = -1; 
 	turret_max_target_ownage = -1;
+
+	info_from_server_stamp = TIMESTAMP::never();
 }
 
 /**
@@ -7194,6 +7370,8 @@ static int subsys_set(int objnum, int ignore_subsys_info)
 		ship_system->turret_max_bomb_ownage = model_system->turret_max_bomb_ownage;
 		ship_system->turret_max_target_ownage = model_system->turret_max_target_ownage;
 
+		ship_system->info_from_server_stamp = TIMESTAMP::never();
+
 		// Make turret flag checks and warnings
 		if ((ship_system->system_info->flags[Model::Subsystem_Flags::Turret_salvo]) && (ship_system->system_info->flags[Model::Subsystem_Flags::Turret_fixed_fp]))
 		{
@@ -7373,55 +7551,121 @@ static void ship_find_warping_ship_helper(object *objp, dock_function_info *info
 //WMC - used for FTL and maneuvering thrusters
 extern bool Rendering_to_shadow_map;
 
-void ship_render_cockpit(object *objp)
-{
-	if(objp->type != OBJ_SHIP || objp->instance < 0)
+void ship_render_player_ship(object* objp) {
+	ship* shipp = &Ships[objp->instance];
+	ship_info* sip = &Ship_info[shipp->ship_info_index];
+
+	const bool hasCockpitModel = sip->cockpit_model_num >= 0;
+
+	const bool renderCockpitModel = (Viewer_mode != VM_TOPDOWN) && hasCockpitModel && !disableCockpits;
+	const bool renderShipModel = (sip->flags[Ship::Info_Flags::Show_ship_model])
+		&& (!Viewer_mode || (Viewer_mode & VM_PADLOCK_ANY) || (Viewer_mode & VM_OTHER_SHIP) || (Viewer_mode & VM_TRACK)
+			|| !(Viewer_mode & VM_EXTERNAL));
+	cockpitActive = renderCockpitModel;
+
+	//Nothing to do
+	if (!(renderCockpitModel || renderShipModel)) {
 		return;
+	}
 
-	ship *shipp = &Ships[objp->instance];
-	ship_info *sip = &Ship_info[shipp->ship_info_index];
+	//If we aren't sure whether cockpits and external models can share the same worldspace,
+	//we need to pre-render the external ship hull without shadows / deferred and give the cockpit precedence,
+	//unless this ship has no cockpit at all
+	const bool prerenderShipModel = renderShipModel && hasCockpitModel && !Cockpit_shares_coordinate_space;
+	const bool deferredRenderShipModel = renderShipModel && !prerenderShipModel;
 
-	if(sip->cockpit_model_num < 0)
-		return;
-
-	polymodel *pm = model_get(sip->cockpit_model_num);
-	Assert(pm != NULL);
-
-	//Setup
 	gr_reset_clip();
-	hud_save_restore_camera_data(1);
 
-	matrix eye_ori = vmd_identity_matrix;
-	vec3d eye_pos = vmd_zero_vector;
-	ship_get_eye(&eye_pos, &eye_ori, objp, false, true);
-
-	vec3d pos = vmd_zero_vector;
-
-	vm_vec_unrotate(&pos, &sip->cockpit_offset, &eye_ori);
+	vec3d eye_pos, eye_offset;
+	matrix eye_orient;
+	ship_get_eye_local(&eye_pos, &eye_orient, objp);
+	vm_vec_copy_scale(&eye_offset, &eye_pos, -1.0f);
 
 	float fov_backup = Proj_fov;
-
 	g3_set_fov(Sexp_fov <= 0.0f ? COCKPIT_ZOOM_DEFAULT : Sexp_fov);
 
+	if (prerenderShipModel) {
+		gr_post_process_save_zbuffer();
+
+		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 0.05f, Max_draw_distance);
+		gr_set_view_matrix(&leaning_position, &eye_orient);
+
+		model_render_params render_info;
+		render_info.set_object_number(OBJ_INDEX(objp));
+
+		// update any replacement and/or team color textures (wookieejedi), then render
+		render_info.set_replacement_textures(shipp->ship_replacement_textures);
+
+		if (sip->uses_team_colors)
+			render_info.set_team_color(shipp->team_name, shipp->secondary_team_name, 0, 0);
+
+		render_info.set_detail_level_lock(0);
+		model_render_immediate(&render_info, sip->model_num, shipp->model_instance_num, &objp->orient, &eye_offset);
+
+		gr_end_view_matrix();
+		gr_end_proj_matrix();
+
+		gr_post_process_restore_zbuffer();
+	}
+
+	//We only needed to prerender the ship model. This can occur if the cockpit isn't
+	//rendered for some reason but a model exists. In this case, we still want to not
+	//render the ship model with deferred rendering to keep visuals constant for the ship
+	if (!renderCockpitModel && !deferredRenderShipModel) {
+		Proj_fov = fov_backup;
+		return;
+	}
+
+	Lighting_mode = lighting_mode::COCKPIT;
+
+	gr_reset_clip();
+
 	//Deal with the model
-	model_clear_instance(sip->cockpit_model_num);
+	if(renderCockpitModel)
+		model_clear_instance(sip->cockpit_model_num);
+
+	gr_post_process_save_zbuffer();
+
+	//Deal with shadow if we have to
 	if (shadow_maybe_start_frame(Shadow_disable_overrides.disable_cockpit)) {
 		gr_reset_clip();
 		Shadow_override = false;
 
-		shadows_start_render(&Eye_matrix, &leaning_position, Proj_fov, gr_screen.clip_aspect, std::get<0>(Shadow_distances_cockpit), std::get<1>(Shadow_distances_cockpit), std::get<2>(Shadow_distances_cockpit), std::get<3>(Shadow_distances_cockpit));
+		shadows_start_render(&eye_orient, &leaning_position, Proj_fov, gr_screen.clip_aspect,
+			std::get<0>(Shadow_distances_cockpit),
+			std::get<1>(Shadow_distances_cockpit),
+			std::get<2>(Shadow_distances_cockpit),
+			std::get<3>(Shadow_distances_cockpit));
 
-		model_render_params shadow_render_info;
-		shadow_render_info.set_detail_level_lock(0);
-		shadow_render_info.set_flags(MR_NO_TEXTURING | MR_NO_LIGHTING);
-		model_render_immediate(&shadow_render_info, sip->cockpit_model_num, &eye_ori, &pos);
+		if (deferredRenderShipModel) {
+			model_render_params shadow_render_info;
+			shadow_render_info.set_detail_level_lock(0);
+			//If we just want to recieve, we still have to write to the color buffer but not to the zbuffer, otherwise shadow recieving breaks
+			shadow_render_info.set_flags(MR_NO_TEXTURING | MR_NO_LIGHTING | (Show_ship_casts_shadow ? 0 : MR_NO_ZBUFFER));
+			shadow_render_info.set_object_number(OBJ_INDEX(objp));
+			model_render_immediate(&shadow_render_info, sip->model_num, shipp->model_instance_num, &objp->orient, &eye_offset);
+		}
+		if (renderCockpitModel) {
+			model_render_params shadow_render_info;
+			shadow_render_info.set_detail_level_lock(0);
+			shadow_render_info.set_flags(MR_NO_TEXTURING | MR_NO_LIGHTING);
+			shadow_render_info.set_object_number(OBJ_INDEX(objp));
+			vec3d offset = sip->cockpit_offset;
+			vm_vec_unrotate(&offset, &offset, &objp->orient);
+			model_render_immediate(&shadow_render_info, sip->cockpit_model_num, &objp->orient, &offset);
+		}
 
 		shadows_end_render();
 		gr_clear_states();
 	}
 
-	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 0.02f, 10.0f * pm->rad);
-	gr_set_view_matrix(&leaning_position, &Eye_matrix);
+	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 0.02f, Max_draw_distance);
+	gr_set_view_matrix(&leaning_position, &eye_orient);
+
+	Shadow_view_matrix_render = gr_view_matrix;
+
+	if (Cmdline_deferred_lighting_cockpit)
+		gr_deferred_lighting_begin(true);
 
 	uint render_flags = MR_NORMAL;
 	render_flags |= MR_NO_FOGGING;
@@ -7430,65 +7674,55 @@ void ship_render_cockpit(object *objp)
 		render_flags |= MR_NO_GLOWMAPS;
 	}
 
-	model_render_params render_info;
-	render_info.set_detail_level_lock(0);
-	render_info.set_flags(render_flags);
-	render_info.set_replacement_textures(Player_cockpit_textures);
+	//Properly render ship and cockpit model
+	if (deferredRenderShipModel) {
+		model_render_params render_info;
+		render_info.set_detail_level_lock(0);
+		render_info.set_flags(render_flags);
+		render_info.set_replacement_textures(shipp->ship_replacement_textures);
+		render_info.set_object_number(OBJ_INDEX(objp));
+		if (sip->uses_team_colors)
+			render_info.set_team_color(shipp->team_name, shipp->secondary_team_name, 0, 0);
 
-	model_render_immediate(&render_info, sip->cockpit_model_num, &eye_ori, &pos);
+		model_render_immediate(&render_info, sip->model_num, shipp->model_instance_num, &objp->orient, &eye_offset);
+		gr_zbuffer_clear(true);
+	}
+	if (renderCockpitModel) {
+		model_render_params render_info;
+		render_info.set_detail_level_lock(0);
+		render_info.set_flags(render_flags);
+		render_info.set_replacement_textures(Player_cockpit_textures);
+		vec3d offset = sip->cockpit_offset;
+		vm_vec_unrotate(&offset, &offset, &objp->orient);
+		model_render_immediate(&render_info, sip->cockpit_model_num, &objp->orient, &offset);
+	}
+
+
+	if (Cmdline_deferred_lighting_cockpit) {
+		gr_end_view_matrix();
+		gr_end_proj_matrix();
+
+		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+		gr_set_view_matrix(&Eye_position, &Eye_matrix);
+
+		gr_deferred_lighting_end();
+		gr_deferred_lighting_finish();
+
+		gr_reset_lighting();
+		gr_set_lighting();
+	}
+
+	Lighting_mode = lighting_mode::NORMAL;
+
+	gr_end_view_matrix();
+	gr_end_proj_matrix();
 
 	Proj_fov = fov_backup;
 
-	gr_end_view_matrix();
-	gr_end_proj_matrix();
-
-	hud_save_restore_camera_data(0);
-
 	//Restore the Shadow_override
 	shadow_end_frame();
-}
 
-void ship_render_show_ship_cockpit(object *objp)
-{
-	if (objp->type != OBJ_SHIP || objp->instance < 0)
-		return;
-
-	vec3d cockpit_eye_pos;
-	matrix dummy;
-	ship_get_eye(&cockpit_eye_pos, &dummy, objp, true, false); // Get cockpit eye position
-
-	gr_end_view_matrix();
-	gr_end_proj_matrix();
-	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 0.05f, Max_draw_distance);
-	gr_set_view_matrix(&cockpit_eye_pos, &Eye_matrix); // Set Camera to cockpit eye position
-	
-	Glowpoint_override = true; // Turn off glowpoints so they dont get rendered fixed at origin
-
-	model_render_params render_info;
-
-	render_info.set_object_number(OBJ_INDEX(objp));
-
-	// update any replacement and/or team color textures (wookieejedi), then render
-	ship* shipp = &Ships[objp->instance];
-	ship_info* sip = &Ship_info[Ships[objp->instance].ship_info_index];
-
-	render_info.set_replacement_textures(shipp->ship_replacement_textures);
-
-	if (sip->uses_team_colors) {
-		render_info.set_team_color(shipp->team_name, shipp->secondary_team_name, 0, 0);
-	}
-
-	render_info.set_detail_level_lock(0);
-
-	model_render_immediate(&render_info, sip->model_num, &objp->orient,
-	                       &objp->pos); // Render ship model with fixed detail level 0 so its not switching LOD when
-	                                    // moving away from origin
-	Glowpoint_override = false;
-
-	gr_end_view_matrix();
-	gr_end_proj_matrix();
-	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-	gr_set_view_matrix(&Eye_position, &Eye_matrix); // Reset Camera to normal
+	gr_post_process_restore_zbuffer();
 }
 
 void ship_init_cockpit_displays(ship *shipp)
@@ -7819,8 +8053,19 @@ void ship_wing_cleanup( int shipnum, wing *wingp )
 	wingp->ship_index[wingp->current_count] = -1;
 
 	// adjust the special ship if necessary
-	if (wingp->special_ship > 0 && wingp->special_ship >= index)
+	if (wingp->special_ship > 0 && wingp->special_ship >= index){
 		wingp->special_ship--;
+
+		// sorry to have make this a little convoluted, if I put this after this if statement, then I introduce edge case bugs.
+		// if there are ships in the wing, and the special ship changed, make sure the special_ship_ship_info_index is updated too
+		if (wingp->current_count > 0){
+			wingp->special_ship_ship_info_index = Ships[wingp->ship_index[wingp->special_ship]].ship_info_index;
+		}
+	
+	// if the special ship *variable* didn't change, but the wing leader did because index was 0, adjust special_ship_ship_info_index 
+	} else if (wingp->current_count > 0 && index == 0) {
+			wingp->special_ship_ship_info_index = Ships[wingp->ship_index[0]].ship_info_index;
+	}
 
 	// if the current count is 0, check to see if the wing departed or was destroyed.
 	if (wingp->current_count == 0)
@@ -8993,8 +9238,7 @@ void ship_do_weapon_thruster_frame( weapon *weaponp, object *objp, float frameti
 //
 // NOTE: need to update current_hits in the sp->subsys_list element, and the sp->subsys_info[]
 // element.
-#define SHIP_REPAIR_SUBSYSTEM_RATE	0.01f	// percent repair per second for a subsystem
-#define SUBSYS_REPAIR_THRESHOLD		0.1	// only repair subsystems that have > 10% strength
+#define SHIP_REPAIR_SUBSYSTEM_RATE 0.01f // percent repair per second for a subsystem
 static void ship_auto_repair_frame(int shipnum, float frametime)
 {
 	ship_subsys		*ssp;
@@ -9005,7 +9249,8 @@ static void ship_auto_repair_frame(int shipnum, float frametime)
 	float			real_repair_rate;
 
 	#ifndef NDEBUG
-	if ( !Ship_auto_repair )	// only repair subsystems if Ship_auto_repair flag is set
+	// only repair subsystems if Ship_auto_repair flag is set
+	if (!Ship_auto_repair)
 		return;
 	#endif
 	
@@ -9014,32 +9259,45 @@ static void ship_auto_repair_frame(int shipnum, float frametime)
 	sip = &Ship_info[sp->ship_info_index];
 	objp = &Objects[sp->objnum];
 
-	if (sp->flags[Ship::Ship_Flags::Dying]) // do not repair if already dead 
+	// do not repair if already dead 
+	if (sp->flags[Ship::Ship_Flags::Dying])
 		return;
 
-	//Repair the hull...or maybe unrepair?
-	if(sip->hull_repair_rate != 0.0f)
+	// Repair the hull...or maybe unrepair?
+	if (sip->hull_repair_rate != 0.0f)
 	{
-		objp->hull_strength += sp->ship_max_hull_strength * sip->hull_repair_rate * frametime;
+		float repaired_delta = sp->ship_max_hull_strength * sip->hull_repair_rate * frametime;
+		float repair_threshold_strength = sp->ship_max_hull_strength * sip->hull_repair_max;
 
-		if (objp->hull_strength > sp->ship_max_hull_strength)
-			objp->hull_strength = sp->ship_max_hull_strength;
-		else if (objp->hull_strength < 0)
+		if ((objp->hull_strength + repaired_delta) < repair_threshold_strength) {
+			objp->hull_strength += repaired_delta;
+		} else {
+			repaired_delta = repair_threshold_strength - objp->hull_strength;
+			CLAMP(repaired_delta, 0.0f, repair_threshold_strength); // this will be negative if it is already way above the threshold
+			if (repaired_delta != 0.0f)
+				objp->hull_strength += repaired_delta;
+		}
+
+		if (objp->hull_strength < 0)
 			ship_hit_kill(objp, nullptr, nullptr, 0, true);
 	}
 
-	// only allow for the auto-repair of subsystems on small ships
-	//...NOT. Check if var has been changed from def -C
-	if ( !(sip->is_small_ship()) && sip->subsys_repair_rate == -2.0f)
+	// do not repair if it is a large ship with a default repair rate
+	if (!(sip->is_small_ship()) && sip->subsys_repair_rate == -2.0f)
 		return;
 	
-	if(sip->subsys_repair_rate == -2.0f)
+	// determine if repair rate is default or specified
+	if (sip->subsys_repair_rate == -2.0f)
 		real_repair_rate = SHIP_REPAIR_SUBSYSTEM_RATE;
 	else
 		real_repair_rate = sip->subsys_repair_rate;
 
+	// do not bother repairing if rate equals 0 --wookieejedi
+	if (real_repair_rate == 0.0f)
+		return;
+
 	// AL 3-14-98: only allow auto-repair if power output not zero
-	if (sip->power_output <= 0)
+	if ( sip->power_output <= 0 )
 		return;
 	
 	// iterate through subsystems, repair as needed based on elapsed frametime
@@ -9047,13 +9305,13 @@ static void ship_auto_repair_frame(int shipnum, float frametime)
 		Assert(ssp->system_info->type >= 0 && ssp->system_info->type < SUBSYSTEM_MAX);
 		ssip = &sp->subsys_info[ssp->system_info->type];
 
-		if ( ssp->current_hits < ssp->max_hits ) {
+		if (ssp->current_hits < ssp->max_hits) {
 
-			// only repair those subsystems which are not destroyed
+			// only repair those subsystems which can be destroyed
 			if ( ssp->max_hits <= 0 )
 				continue;
 
-			if ( ssp->current_hits <= 0 ) {
+			if (ssp->current_hits <= 0) {
 				if (sip->flags[Ship::Info_Flags::Subsys_repair_when_disabled]) {
 					if (ssp->flags[Ship::Subsystem_Flags::No_autorepair_if_disabled]) {
 						continue;
@@ -9065,9 +9323,16 @@ static void ship_auto_repair_frame(int shipnum, float frametime)
 
 			// do incremental repair on the subsystem
 			// check for overflow of current_hits
-			ssp->current_hits += ssp->max_hits * real_repair_rate * frametime;
-			if ( ssp->current_hits > ssp->max_hits ) {
-				ssp->current_hits = ssp->max_hits;
+			float repaired_delta = ssp->max_hits * real_repair_rate * frametime;
+			float repair_threshold_hits = ssp->max_hits * sip->subsys_repair_max;
+
+			if ((ssp->current_hits + repaired_delta) < repair_threshold_hits) {
+				ssp->current_hits += repaired_delta;
+			} else {
+				repaired_delta = repair_threshold_hits - ssp->current_hits;
+				CLAMP(repaired_delta, 0.0f, repair_threshold_hits); // this will be negative if it is already way above the threshold
+				if (repaired_delta != 0.0f)
+					ssp->current_hits += repaired_delta;
 			}
 
 			// aggregate repair
@@ -9080,7 +9345,7 @@ static void ship_auto_repair_frame(int shipnum, float frametime)
 
 			// check to see if this subsystem was totally non functional before -- if so, then
 			// reset the flags
-			if ( (ssp->system_info->type == SUBSYSTEM_ENGINE) && (sp->flags[Ship_Flags::Disabled]) ) {
+			if ((ssp->system_info->type == SUBSYSTEM_ENGINE) && (sp->flags[Ship_Flags::Disabled])) {
 				sp->flags.remove(Ship_Flags::Disabled);
 				ship_reset_disabled_physics(objp, sp->ship_info_index);
 			}
@@ -9397,9 +9662,18 @@ void ship_evaluate_ai(object* obj, float frametime) {
 
 void ship_process_pre(object *obj, float frametime)
 {
+	// Cyborg, to enable turrets movement on clients, we need to process them here before  bailing
+	if (MULTIPLAYER_CLIENT)
+	{
+		// But only with Framerate_independent_turning
+		if (Framerate_independent_turning)
+			ai_process_subobjects(OBJ_INDEX(obj));
+
+		return;
+	}
+
 	// If Framerate_independent_turning is false everything following is evaluated in ship_process_post()
-	// Also only multi masters do ai
-	if ( (obj == nullptr) || !frametime || MULTIPLAYER_CLIENT || !Framerate_independent_turning)
+	if ( (obj == nullptr) || !frametime || !Framerate_independent_turning)
 		return;
 
 	if (obj->type != OBJ_SHIP) {
@@ -9608,8 +9882,14 @@ void ship_process_post(object * obj, float frametime)
 	{
 		//	Do AI.
 
-		// for multiplayer people.  return here if in multiplay and not the host
+		// Cyborg: Mutliplayer clients do not do AI locally.
 		if ( MULTIPLAYER_CLIENT ) {
+
+			// But to enable turrets movement on clients, we need to process them here before bailing
+			// And this section will do it if Framerate_independent_turning is off
+			if (!Framerate_independent_turning)
+				ai_process_subobjects(OBJ_INDEX(obj));
+			
 			return;
 		}
 
@@ -9985,6 +10265,7 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 	sip = &(Ship_info[ship_type]);
 	shipp = &Ships[n];
 	shipp->clear();
+	shipp->orders_allowed_against = ship_set_default_orders_against();
 
 	sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);		// use the highest detail level
 
@@ -10044,6 +10325,9 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 	objnum = obj_create(OBJ_SHIP, -1, n, orient, pos, model_get_radius(sip->model_num), default_ship_object_flags);
 	Assert( objnum >= 0 );
 
+	// Init multiplayer interpolation info
+	Objects[objnum].interp_info.reset(sip->n_subsystems); 
+
 	shipp->model_instance_num = model_create_instance(objnum, sip->model_num);
 
 	shipp->ai_index = ai_get_slot(n);
@@ -10067,9 +10351,9 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 		strcpy_s(shipp->ship_name, base_name);
 
 		// if generated name will be longer than allowable name, truncate the class section of the name by the overflow
-		int char_overflow = (strlen(base_name) + strlen(suffix)) - (NAME_LENGTH - 1);
+		int char_overflow = static_cast<int>(strlen(base_name) + strlen(suffix)) - (NAME_LENGTH - 1);
 		if (char_overflow > 0) {
-			shipp->ship_name[strlen(base_name) - char_overflow] = '\0';
+			shipp->ship_name[strlen(base_name) - static_cast<size_t>(char_overflow)] = '\0';
 		}
 
 		// complete building the name by adding suffix number
@@ -10302,7 +10586,7 @@ static void ship_model_change(int n, int ship_type)
 	objp->shield_quadrant.resize(objp->n_quadrants);
 
 	// reset texture animations
-	sp->base_texture_anim_frametime = game_get_overall_frametime();
+	sp->base_texture_anim_timestamp = _timestamp();
 }
 
 /**
@@ -10341,6 +10625,11 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	objp = &Objects[objnum];
 	p_objp = mission_parse_get_parse_object(sp->ship_name);
 	ph_inf = objp->phys_info;
+
+	// if this ship is the wing leader, update the ship info index that the wing keeps track of.
+	if (!Fred_running && p_objp->wingnum > -1 && p_objp->pos_in_wing == 0) {
+		Wings[p_objp->wingnum].special_ship_ship_info_index = ship_type;
+	}
 
 	// MageKing17 - See if any AIs are doing anything with subsystems of this ship (targeting, goal to destroy)
 	// keep track of those subsystems and transfer the target/goal if the subsystem still exists, delete otherwise
@@ -11336,7 +11625,10 @@ bool in_autoaim_fov(ship *shipp, int bank_to_fire, object *obj)
 
 	dist_to_target = vm_vec_dist_quick(&Objects[shipp->objnum].pos, &target_position);
 
-	hud_calculate_lead_pos(&plr_to_target_vec, &target_position, obj, winfo_p, dist_to_target);
+	if (!hud_calculate_lead_pos(&Objects[shipp->objnum].pos, &plr_to_target_vec, &target_position, obj, winfo_p, dist_to_target)) {
+		// no ballistic trajectory, also counts for no autoaim
+		return false;
+	}
 	vm_vec_sub2(&plr_to_target_vec, &Objects[shipp->objnum].pos);
 
 	float angle_to_target = vm_vec_delta_ang(&player_forward_vec, &plr_to_target_vec, nullptr);
@@ -11574,7 +11866,7 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 		//doing that time scale thing on enemy fighter is just ugly with beams, especaly ones that have careful timeing
 		if (!((obj->flags[Object::Object_Flags::Player_ship]) || fast_firing || winfo_p->wi_flags[Weapon::Info_Flags::Beam])) {
 			// When testing weapons fire in the lab, we do not have a player object available.
-			if ((Game_mode & GM_LAB) || shipp->team == Ships[Player_obj->instance].team){
+			if ((Game_mode & GM_LAB) || (Player_obj == nullptr) || (shipp->team == Ships[Player_obj->instance].team)){
 				next_fire_delay *= aip->ai_ship_fire_delay_scale_friendly;
 			} else {
 				next_fire_delay *= aip->ai_ship_fire_delay_scale_hostile;
@@ -12615,9 +12907,15 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 					shipp->missile_locks_firing.pop_back();
 				}
 
-				target_objnum = OBJ_INDEX(lock_data.obj);
-				target_subsys = lock_data.subsys;
-				locked = 1;
+				if (lock_data.obj != nullptr) {
+					target_objnum = OBJ_INDEX(lock_data.obj);
+					target_subsys = lock_data.subsys;
+					locked = 1;
+				} else {
+					target_objnum = -1;
+					target_subsys = nullptr;
+					locked = 0;
+				}
 			} else if (wip->wi_flags[Weapon::Info_Flags::Homing_heat]) {
 				target_objnum = aip->target_objnum;
 				target_subsys = aip->targeted_subsys;
@@ -13880,6 +14178,45 @@ void ship_get_eye( vec3d *eye_pos, matrix *eye_orient, object *obj, bool do_slew
 	}
 }
 
+// calculates the eye position for this ship in the ships reference frame, but rotated along.  Uses the
+// view_positions array in the model.  The 0th element is the normal viewing position.
+// the vector of the eye is returned in the parameter 'eye'.  The orientation of the
+// eye is returned in orient.
+void ship_get_eye_local(vec3d* eye_pos, matrix* eye_orient, object* obj, bool do_slew)
+{
+	Assertion(obj->type == OBJ_SHIP, "Only ships can have eye positions!");
+
+	ship* shipp = &Ships[obj->instance];
+	auto pmi = model_get_instance(shipp->model_instance_num);
+	auto pm = model_get(pmi->model_num);
+
+	// check to be sure that we have a view eye to look at.....spit out nasty debug message
+	if (shipp->current_viewpoint < 0 || pm->n_view_positions == 0 || shipp->current_viewpoint > pm->n_view_positions) {
+		*eye_pos = ZERO_VECTOR;
+		*eye_orient = IDENTITY_MATRIX;
+		return;
+	}
+
+	// eye points are stored in an array -- the normal viewing position for a ship is
+	// the current_eye_index element.
+	eye* ep = &(pm->view_positions[shipp->current_viewpoint]);
+
+	if (ep->parent >= 0 && pm->submodel[ep->parent].flags[Model::Submodel_flags::Can_move]) {
+		model_instance_local_to_global_point_orient(eye_pos, eye_orient, &ep->pnt, &vmd_identity_matrix, pm, pmi, ep->parent, &obj->orient, &vmd_zero_vector);
+	}
+	else {
+		model_local_to_global_point(eye_pos, &ep->pnt, Ship_info[shipp->ship_info_index].model_num, ep->parent, &obj->orient, &vmd_zero_vector);
+		*eye_orient = obj->orient;
+	}
+
+	// Modify the orientation based on head orientation.
+	if (Viewer_obj == obj && do_slew) {
+		// Add the cockpit leaning translation offset
+		vm_vec_add2(eye_pos, &leaning_position);
+		compute_slew_matrix(eye_orient, &Viewer_slew_angles);
+	}
+}
+
 // of attackers to make this decision.
 //
 // NOTE: This function takes into account how many ships are attacking a subsystem, and will 
@@ -14194,7 +14531,7 @@ float ship_calculate_rearm_duration( object *objp )
 		hull_rep_time = (max_hull_repair - objp->hull_strength) / (sp->ship_max_hull_strength * sip->sup_hull_repair_rate);
 	}
 
-	//caluclate subsystem repair time
+	//calculate subsystem repair time
 	ssp = GET_FIRST(&sp->subsys_list);
 	while (ssp != END_OF_LIST(&sp->subsys_list))
 	{
@@ -17688,6 +18025,10 @@ void object_jettison_cargo(object *objp, object *cargo_objp, float jettison_spee
 	// physics stuff
 	if (jettison_new)
 	{
+		// we might not need to do any calculations
+		if (whack_below_limit(jettison_speed * cargo_objp->phys_info.mass))
+			return;
+
 		// new method uses dockpoint normals and user-specified force
 		extern void find_adjusted_dockpoint_info(vec3d *global_dock_point, matrix *dock_orient, object *objp, polymodel *pm, int submodel, int dock_index);
 		extern int find_parent_moving_submodel(polymodel *pm, int dock_index);
@@ -18146,7 +18487,6 @@ void ship_set_new_ai_class(ship *shipp, int new_ai_class)
 
 	// we hafta change a bunch of stuff here...
 	aip->ai_class = new_ai_class;
-	aip->behavior = AIM_NONE;
 	init_aip_from_class_and_profile(aip, &Ai_classes[new_ai_class], The_mission.ai_profile);
 
 	shipp->weapons.ai_class = new_ai_class;
@@ -19848,31 +20188,30 @@ int ship_render_get_insignia(object* obj, ship* shipp)
 
 void ship_render_set_animated_effect(model_render_params *render_info, ship *shipp, uint * /*render_flags*/)
 {
-	if ( !shipp->shader_effect_active || Rendering_to_shadow_map ) {
+	if ( !shipp->shader_effect_timestamp.isValid() || Rendering_to_shadow_map ) {
 		return;
 	}
 
 	float timer;
 
 	ship_effect* sep = &Ship_effects[shipp->shader_effect_num];
+	int elapsed_time = shipp->shader_effect_duration - timestamp_until(shipp->shader_effect_timestamp);
 	
-	if ( sep->invert_timer ) {
-		timer = 1.0f - ((timer_get_milliseconds() - shipp->shader_effect_start_time) / (float)shipp->shader_effect_duration);
-		timer = MAX(timer,0.0f);
-	} else {
-		timer = ((timer_get_milliseconds() - shipp->shader_effect_start_time) / (float)shipp->shader_effect_duration);
+	if (shipp->shader_effect_duration > 0) {
+		if (sep->invert_timer) {
+			timer = 1.0f - (elapsed_time / (float)shipp->shader_effect_duration);
+			timer = MAX(timer, 0.0f);
+		}
+		else {
+			timer = (elapsed_time / (float)shipp->shader_effect_duration);
+		}
+
+		render_info->set_animated_effect(sep->shader_effect, timer);
 	}
 
-	render_info->set_animated_effect(sep->shader_effect, timer);
-
-	if ( sep->disables_rendering && (timer_get_milliseconds() > shipp->shader_effect_start_time + shipp->shader_effect_duration) ) {
-		shipp->flags.set(Ship_Flags::Cloaked);
-		shipp->shader_effect_active = false;
-	} else {
-		shipp->flags.remove(Ship_Flags::Cloaked);
-		if (timer_get_milliseconds() > shipp->shader_effect_start_time + shipp->shader_effect_duration) {
-			shipp->shader_effect_active = false;
-		}
+	if ( timestamp_elapsed(shipp->shader_effect_timestamp) ) {
+		shipp->flags.set(Ship_Flags::Cloaked, sep->disables_rendering);
+		shipp->shader_effect_timestamp = TIMESTAMP::invalid();
 	}
 }
 

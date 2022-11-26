@@ -85,7 +85,6 @@ typedef struct vci {
 } vci;
 
 extern fix Missiontime;
-extern fix Skybox_timestamp;
 extern fix Frametime;
 extern int Framecount;
 
@@ -138,31 +137,14 @@ extern float Noise[NOISE_NUM_FRAMES];
 
 
 // override states to skip rendering of certain elements, but without disabling them completely
-extern bool Basemap_override;
 extern bool Envmap_override;
-extern bool Specmap_override;
-extern bool Normalmap_override;
-extern bool Heightmap_override;
 extern bool Glowpoint_override;
 extern bool Glowpoint_use_depth_buffer;
-extern bool GLSL_override;
 extern bool PostProcessing_override;
 extern bool Shadow_override;
 extern bool Trail_render_override;
 
-extern bool Basemap_color_override_set;
-extern float Basemap_color_override[4];
-
-extern bool Glowmap_color_override_set;
-extern float Glowmap_color_override[3];
-
-extern bool Specmap_color_override_set;
-extern float Specmap_color_override[3];
-
-extern bool Gloss_override_set;
-extern float Gloss_override;
-
-// game skill levels 
+// game skill levels
 #define	NUM_SKILL_LEVELS	5
 
 //====================================================================================

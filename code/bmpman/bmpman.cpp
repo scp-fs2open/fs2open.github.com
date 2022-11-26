@@ -1531,7 +1531,7 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 				cfclose(img_cfp);
 			return -1;
 		} else {
-			mprintf(("BMPMAN: Found EFF (%s) with %d frames at %d fps.\n", filename, anim_frames, anim_fps));
+			nprintf(("BmpMan","BMPMAN: Found EFF (%s) with %d frames at %d fps.\n", filename, anim_frames, anim_fps));
 		}
 		if (anim_fps == 0) {
 			Error(LOCATION, "animation (%s) has invalid fps of 0, fix this!", filename);
@@ -1600,7 +1600,7 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 				throw e;
 			}
 			else {
-				mprintf(("Failed to load apng: %s\n", e.what()));
+				nprintf(("apng","Failed to load apng: %s\n", e.what()));
 				return -1;
 			}
 		}
@@ -1835,7 +1835,7 @@ int bm_load_sub_fast(const char *real_filename, int *handle, int dir_type, bool 
 }
 
 int bm_load_sub_slow(const char *real_filename, const int num_ext, const char **ext_list, CFILE **img_cfp, int dir_type) {
-	auto res = cf_find_file_location_ext(real_filename, num_ext, ext_list, dir_type, false);
+	auto res = cf_find_file_location_ext(real_filename, num_ext, ext_list, dir_type);
 
 	// could not be found, or is invalid for some reason
 	if (!res.found)
@@ -2623,7 +2623,7 @@ void bm_page_in_stop() {
 		}
 	}
 
-	mprintf(("Bmpman: %d/%d bitmap slots in use.\n", total_bitmaps, total_slots));
+	nprintf(("BmpMan","BMPMAN: %d/%d bitmap slots in use.\n", total_bitmaps, total_slots));
 #endif
 
 	Bm_paging = 0;

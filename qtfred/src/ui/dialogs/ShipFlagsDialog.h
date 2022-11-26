@@ -3,7 +3,6 @@
 
 #include <mission/dialogs/ShipFlagsDialogModel.h>
 #include <ui/FredView.h>
-
 #include <QtWidgets/QDialog>
 
 namespace fso {
@@ -13,7 +12,6 @@ namespace dialogs {
 namespace Ui {
 class ShipFlagsDialog;
 }
-
 class ShipFlagsDialog : public QDialog {
 	Q_OBJECT
 
@@ -23,12 +21,12 @@ class ShipFlagsDialog : public QDialog {
 
   protected:
 	void closeEvent(QCloseEvent*) override;
+	void showEvent(QShowEvent*) override;
 
   private:
 	std::unique_ptr<Ui::ShipFlagsDialog> ui;
 	std::unique_ptr<ShipFlagsDialogModel> _model;
 	EditorViewport* _viewport;
-
 	void updateUI();
 
 	void destroyBeforeMissionChanged(int);

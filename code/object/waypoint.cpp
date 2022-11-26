@@ -99,11 +99,6 @@ void waypoint_list::set_name(const char *name)
 }
 
 //********************FUNCTIONS********************
-void waypoint_parse_init()
-{
-	Waypoint_lists.clear();
-}
-
 void waypoint_level_close()
 {
 	Waypoint_lists.clear();

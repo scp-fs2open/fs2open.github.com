@@ -553,7 +553,7 @@ ADE_FUNC(addPostMoveHook, l_Object, "function(object object) => void callback",
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(assignSound, l_Object, "soundentry GameSnd, [vector Offset=nil, enumeration Flags=0, subsystem Subsys=nil]",
+ADE_FUNC(assignSound, l_Object, "soundentry GameSnd, [vector Offset=nil, enumeration Flags=OS_NONE, subsystem Subsys=nil]",
 	"Assigns a sound to this object, with optional offset, sound flags (OS_XXXX), and associated subsystem.",
 	"number",
 	"Returns the index of the sound on this object, or -1 if a sound could not be assigned.")
@@ -576,8 +576,8 @@ ADE_FUNC(assignSound, l_Object, "soundentry GameSnd, [vector Offset=nil, enumera
 	auto subsys = tgsh ? tgsh->ss : nullptr;
 	if (!offset)
 		offset = &vmd_zero_vector;
-	if (enum_flags.index >= 0)
-		flags = enum_flags.index;
+	if (enum_flags.value)
+		flags = *enum_flags.value;
 
 	int snd_idx = obj_snd_assign(OBJ_INDEX(objp), gs_id, offset, flags, subsys);
 
@@ -593,6 +593,7 @@ ADE_FUNC(removeSoundByIndex, l_Object, "number index", "Removes an assigned soun
 		return ADE_RETURN_NIL;
 
 	auto objp = objh->objp;
+	snd_idx--;	// Lua -> C++
 
 	if (snd_idx < 0 || snd_idx >= (int)objp->objsnd_num.size())
 	{

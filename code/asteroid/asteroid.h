@@ -21,7 +21,7 @@ class polymodel;
 struct collision_info_struct;
 class model_draw_list;
 
-#define	MAX_ASTEROIDS			512
+#define	MAX_ASTEROIDS			2000	//Increased from 512 to 2000 in 2022
 
 #define NUM_DEBRIS_SIZES		3
 #define	NUM_DEBRIS_POFS			3				// Number of POFs per debris size
@@ -35,12 +35,6 @@ class model_draw_list;
 
 // Goober5000 - currently same as MAX_SHIP_DETAIL_LEVELS (put here to avoid an #include)
 #define MAX_ASTEROID_DETAIL_LEVELS	5
-
-// whether to do retail behavior, just throw at the first big ship in the field
-// must be explicitly opted out of by the mission
-extern bool Default_asteroid_throwing_behavior;
-
-extern SCP_vector<SCP_string> Asteroid_target_ships;
 
 // Data structure to track the active asteroids
 typedef struct asteroid_obj {
@@ -80,12 +74,13 @@ public:
 	float		fireball_radius_multiplier;						// the model radius is multiplied by this to determine the fireball size
 	SCP_string	display_name;									// only used for hud targeting display and for 'ship' asteroids
 	float		spawn_weight;									// ship asteroids only, relative proportion to spawn compared to other types in its asteroid field
+	float		gravity_const;									// multiplier for mission gravity
 
 	asteroid_info( )
 		: num_detail_levels( 0 ), max_speed( 0 ), damage_type_idx( 0 ),
 		  damage_type_idx_sav( -1 ), inner_rad( 0 ), outer_rad( 0 ),
 		  damage( 0 ), blast( 0 ), initial_asteroid_strength( 0 ),
-		  fireball_radius_multiplier( -1 )
+		  fireball_radius_multiplier( -1 ), spawn_weight( 1 ), gravity_const( 0 )
 	{
 		name[ 0 ] = 0;
 		memset( detail_distance, 0, sizeof( detail_distance ) );
@@ -134,7 +129,7 @@ typedef	struct asteroid_field {
 	vec3d	min_bound;					// Minimum range of field.
 	vec3d	max_bound;					// Maximum range of field.
 	float	bound_rad;
-	int		has_inner_bound;
+	bool	has_inner_bound;
 	vec3d	inner_min_bound;
 	vec3d	inner_max_bound;
 	vec3d	vel;						// Average asteroid moves at this velocity.
@@ -144,6 +139,8 @@ typedef	struct asteroid_field {
 	debris_genre_t	debris_genre;		// type of debris (ship or asteroid)  [generic type]
 	int				field_debris_type[MAX_ACTIVE_DEBRIS_TYPES];	// one of the debris type defines above
 	int				num_used_field_debris_types;	// how many of the above are used
+
+	SCP_vector<SCP_string> target_names;	// default retail behavior is to just throw at the first big ship in the field
 } asteroid_field;
 
 extern SCP_vector< asteroid_info > Asteroid_info;

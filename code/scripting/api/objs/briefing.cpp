@@ -55,6 +55,52 @@ ADE_VIRTVAR(AudioFilename,
 	return ade_set_args(L, "s", stage.getStage()->voice);
 }
 
+ADE_VIRTVAR(hasForwardCut,
+	l_BriefStage,
+	nullptr,
+	"If the stage has a forward cut flag",
+	"boolean",
+	"true if the stage is set to cut to the next stage, false otherwise")
+{
+	brief_stage_h stage;
+	if (!ade_get_args(L, "o", l_BriefStage.Get(&stage))) {
+		return ADE_RETURN_NIL;
+	}
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	if (stage.getStage()->flags & BS_FORWARD_CUT) {
+		return ADE_RETURN_TRUE;
+	} else {
+		return ADE_RETURN_FALSE;
+	}
+}
+
+ADE_VIRTVAR(hasBackwardCut,
+	l_BriefStage,
+	nullptr,
+	"If the stage has a backward cut flag",
+	"boolean",
+	"true if the stage is set to cut to the previous stage, false otherwise")
+{
+	brief_stage_h stage;
+	if (!ade_get_args(L, "o", l_BriefStage.Get(&stage))) {
+		return ADE_RETURN_NIL;
+	}
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	if (stage.getStage()->flags & BS_BACKWARD_CUT) {
+		return ADE_RETURN_TRUE;
+	} else {
+		return ADE_RETURN_FALSE;
+	}
+}
+
 //**********HANDLE: briefing
 ADE_OBJ(l_Brief, int, "briefing", "Briefing handle");
 

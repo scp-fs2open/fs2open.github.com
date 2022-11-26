@@ -1257,11 +1257,6 @@ void sexp_add_to_map(int node)
 		return;
 	}
 
-	if (container.is_being_used_in_special_arg()) {
-		report_container_used_in_special_arg("Add-to-map", container_name);
-		return;
-	}
-
 	node = CDR(node);
 	Assertion(node != -1, "Add-to-map wasn't given values to add. Please report!");
 
@@ -1276,6 +1271,16 @@ void sexp_add_to_map(int node)
 		}
 
 		const SCP_string key = CTEXT(node);
+
+		if (container.is_being_used_in_special_arg()) {
+			// modifying existing keys' data is ok, but adding new keys is not
+			if (container.map_data.find(key) == container.map_data.end()) {
+				report_container_used_in_special_arg("Add-to-map", container_name);
+				node = CDDR(node); // skip to next key-data pair
+				continue;
+			}
+		}
+
 		const SCP_string data = CTEXT(CDR(node));
 		add_to_map_internal(container, key, data);
 

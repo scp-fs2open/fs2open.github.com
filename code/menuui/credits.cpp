@@ -56,13 +56,16 @@ const char *fs2_open_credit_text =
 	"Hassan \"Karajorma\" Kazmi\n"
 	"Derek \"Kazan\" Meek\n"
 	"Nick \"phreak\" Iannetta\n"
+	"David \"EatThePath\" Gibson\n"
 	"argv[-1], Backslash, Baezon\n"
 	"CommanderDJ, Cyborg, DTP\n"
 	"Echelon9, EdrickV, Eternal1\n"
 	"Flaming_Sword, Fry_Day, FUBAR\n"
 	"Hery, Iss Mneur, jg18\n"
-	"m!m, MageKing17, mrduckman\n"
-	"niffiwan, penguin, portej05\n"
+	"Kiloku, Lafiel, m!m\n"
+	"MageKing17, MjnMixael, mrduckman\n"
+	"naomimyselfandi, niffiwan, penguin\n"
+	"Phantom Hoover, portej05, qazwsxal\n"
 	"RandomTiger, Righteous1, Sesquipedalian\n"
 	"Shade, Sticks, Sushi\n"
 	"Swifty, UnknownPlayer, Valathil\n"
@@ -198,7 +201,7 @@ static credits_screen_buttons Buttons[NUM_BUTTONS][GR_NUM_RESOLUTIONS] = {
 //XSTR:ON
 };
 
-char Credits_music_name[NAME_LENGTH];
+char Credits_music_name[NAME_LENGTH] = "Cinema";
 static int	Credits_music_handle = -1;
 static UI_TIMESTAMP	Credits_music_begin_timestamp;
 
@@ -206,8 +209,8 @@ static int	Credits_frametime;		// frametime of credits_do_frame() loop in ms
 static int	Credits_last_time;		// timestamp used to calc frametime (in ms)
 static float Credits_counter;
 
-int Credits_num_images;
-int Credits_artwork_index;
+int Credits_num_images = DEFAULT_NUM_IMAGES;
+int Credits_artwork_index = -1;
 static SCP_vector<int> Credits_bmps;
 
 // Positions for credits...
@@ -240,7 +243,7 @@ void credits_stop_music(bool fade)
 	}
 }
 
-void credits_load_music(char* fname)
+void credits_load_music(const char* fname)
 {
 	if ( Credits_music_handle != -1 ){
 		return;
@@ -266,12 +269,7 @@ const char* credits_get_music_filename(const char* music)
 {
 	int credits_spooled_music_index = event_music_get_spooled_music_index(music);
 	if (credits_spooled_music_index != -1) {
-		char* credits_wavfile_name = Spooled_music[credits_spooled_music_index].filename;
-		if (credits_wavfile_name != NULL) {
-			credits_load_music(credits_wavfile_name);
-			return credits_wavfile_name;
-		}
-		return nullptr;
+		return Spooled_music[credits_spooled_music_index].filename;
 	}
 	return nullptr;
 }
@@ -467,13 +465,6 @@ void credits_init()
 	int i;
 	credits_screen_buttons *b;
 
-	// pre-initialize
-	Credits_num_images = DEFAULT_NUM_IMAGES;
-	Credits_artwork_index = -1;
-
-	// this is moved up here so we can override it if desired
-	strcpy_s(Credits_music_name, "Cinema");
-
 	// parse credits early so as to set up any overrides (for music and such)
 	Credits_parsed = false;
 	credits_parse();
@@ -484,7 +475,10 @@ void credits_init()
 		Credits_artwork_index = Random::next(Credits_num_images);
 	}
 
-	credits_get_music_filename(Credits_music_name);
+	auto credits_wavfile_name = credits_get_music_filename(Credits_music_name);
+	if (credits_wavfile_name != nullptr) {
+		credits_load_music(credits_wavfile_name);
+	}
 
 	// Use this id to trigger the start of music playing on the briefing screen
 	Credits_music_begin_timestamp = ui_timestamp(Credits_music_delay);

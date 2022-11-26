@@ -100,8 +100,11 @@ int Cargo_scan_coords[GR_NUM_RESOLUTIONS][4] = {
 // first element is time flashing expires
 int Targetbox_flash_timers[NUM_TBOX_FLASH_TIMERS];
 
+int CurrentWire = 0;
 int Targetbox_wire = 0;
 int Targetbox_shader_effect = -1;
+color Targetbox_color;
+bool Targetbox_color_override = false;
 bool Lock_targetbox_mode = false;
 
 // Different target states.  This drives the text display right below the hull integrity on the targetbox.
@@ -277,6 +280,11 @@ void HudGaugeTargetBox::initHullOffsets(int x, int y)
 	Hull_offsets[1] = y;
 }
 
+void HudGaugeTargetBox::initCargoScanType(CargoScanType scantype)
+{
+	Cargo_scan_type = scantype;
+}
+
 void HudGaugeTargetBox::initCargoScanStartOffsets(int x, int y)
 {
 	Cargo_scan_start_offsets[0] = x;
@@ -315,6 +323,21 @@ void HudGaugeTargetBox::initDesaturate(bool desaturate)
 	Desaturated = desaturate;
 }
 
+void HudGaugeTargetBox::initGaugeWireframe(int wireframe)
+{
+	GaugeWireframe = wireframe;
+}
+
+void HudGaugeTargetBox::initGaugeWirecolor(color wirecolor)
+{
+	GaugeWirecolor = wirecolor;
+}
+
+void HudGaugeTargetBox::initGaugeWirecolorOverride(bool wirecoloroverride)
+{
+	GaugeWirecolorOverride = wirecoloroverride;
+}
+
 void HudGaugeTargetBox::initBitmaps(char *fname_monitor, char *fname_monitor_mask, char *fname_integrity, char *fname_static)
 {
 	Monitor_frame.first_frame = bm_load_animation(fname_monitor, &Monitor_frame.num_frames);
@@ -345,6 +368,8 @@ void HudGaugeTargetBox::initialize()
 	for(int i = 0; i < NUM_TBOX_FLASH_TIMERS; i++) {
 		initFlashTimer(i);
 	}
+
+	CurrentWire = GaugeWireframe;
 
 	HudGauge::initialize();
 }
@@ -575,19 +600,27 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 		model_render_params render_info;
 		render_info.set_object_number(OBJ_INDEX(target_objp));
 
-		switch (Targetbox_wire) {
+		color thisColor = GaugeWirecolor;
+		bool thisOverride = GaugeWirecolorOverride;
+
+		if (target_sip->uses_team_colors) {
+			render_info.set_team_color(target_shipp->team_name, target_shipp->secondary_team_name, target_shipp->team_change_timestamp, target_shipp->team_change_time);
+		}
+
+		switch (CurrentWire) {
 			case 0:
 				flags |= MR_NO_LIGHTING;
 
 				break;
 			case 1:
-				if (ship_is_tagged(target_objp))
-					render_info.set_color(*iff_get_color(IFF_COLOR_TAGGED, 1));
-				else
-					render_info.set_color(*iff_get_color_by_team_and_object(target_shipp->team, Player_ship->team, 1, target_objp));
-
-				if (target_sip->uses_team_colors) {
-					render_info.set_team_color(target_shipp->team_name, target_shipp->secondary_team_name, target_shipp->team_change_timestamp, target_shipp->team_change_time);
+				if (thisOverride) {
+					render_info.set_color(thisColor);
+				} else {
+					if (ship_is_tagged(target_objp))
+						render_info.set_color(*iff_get_color(IFF_COLOR_TAGGED, 1));
+					else
+						render_info.set_color(
+							*iff_get_color_by_team_and_object(target_shipp->team, Player_ship->team, 1, target_objp));
 				}
 
 				flags = MR_SHOW_OUTLINE_HTL | MR_NO_POLYS | MR_NO_LIGHTING | MR_NO_TEXTURING;
@@ -596,10 +629,14 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 			case 2:
 				break;
 			case 3:
-				if (ship_is_tagged(target_objp))
-					render_info.set_color(*iff_get_color(IFF_COLOR_TAGGED, 1));
-				else
-					render_info.set_color(*iff_get_color_by_team_and_object(target_shipp->team, Player_ship->team, 1, target_objp));
+				if (thisOverride) {
+					render_info.set_color(thisColor);
+				} else {
+					if (ship_is_tagged(target_objp))
+						render_info.set_color(*iff_get_color(IFF_COLOR_TAGGED, 1));
+					else
+						render_info.set_color(*iff_get_color_by_team_and_object(target_shipp->team, Player_ship->team, 1, target_objp));
+					}
 
 				flags |= MR_NO_LIGHTING | MR_NO_TEXTURING;
 
@@ -738,13 +775,20 @@ void HudGaugeTargetBox::renderTargetDebris(object *target_objp)
 
 		model_render_params render_info;
 
-		switch (Targetbox_wire) {
+		color thisColor = GaugeWirecolor;
+		bool thisOverride = GaugeWirecolorOverride;
+
+		switch (CurrentWire) {
 			case 0:
 				flags |= MR_NO_LIGHTING;
 
 				break;
 			case 1:
-				render_info.set_color(255, 255, 255);
+				if (thisOverride) {
+					render_info.set_color(thisColor);
+				} else {
+					render_info.set_color(255, 255, 255);
+				}
 
 				flags = MR_SHOW_OUTLINE_HTL | MR_NO_POLYS | MR_NO_LIGHTING | MR_NO_TEXTURING;
 
@@ -752,7 +796,11 @@ void HudGaugeTargetBox::renderTargetDebris(object *target_objp)
 			case 2:
 				break;
 			case 3:
-				render_info.set_color(255, 255, 255);
+				if (thisOverride) {
+					render_info.set_color(thisColor);
+				} else {
+					render_info.set_color(255, 255, 255);
+				}
 
 				flags |= MR_NO_LIGHTING | MR_NO_TEXTURING;
 
@@ -774,8 +822,8 @@ void HudGaugeTargetBox::renderTargetDebris(object *target_objp)
 
 		render_info.set_flags(flags | MR_NO_FOGGING);
 
-		auto pmi = model_get_instance(debrisp->model_instance_num);
-		auto pm = model_get(pmi->model_num);
+		auto pm = model_get(debrisp->model_num);
+		auto pmi = debrisp->model_instance_num < 0 ? nullptr : model_get_instance(debrisp->model_instance_num);
 
 		// This calls the colour that doesn't get reset
 		submodel_render_immediate( &render_info, pm, pmi, debrisp->submodel_num, &target_objp->orient, &obj_pos);
@@ -898,45 +946,23 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 		
 		model_render_params render_info;
 
+		color thisColor = GaugeWirecolor;
+		bool thisOverride = GaugeWirecolorOverride;
+
 		// IMPORTANT NOTE! Code handling the rendering when 'missile_view == TRUE' is largely copied over from
 		//                 renderTargetShip(). To keep the codes similar please update both if and when needed
 		if (missile_view == FALSE) {
-			switch (Targetbox_wire) {
+			switch (CurrentWire) {
 				case 0:
 					flags |= MR_NO_LIGHTING;
 
 					break;
 				case 1:
-					render_info.set_color(*iff_get_color_by_team_and_object(target_team, Player_ship->team, 0, target_objp));
-
-					flags = MR_SHOW_OUTLINE_HTL | MR_NO_POLYS | MR_NO_LIGHTING | MR_NO_TEXTURING;
-
-					break;
-				case 2:
-					break;
-				case 3:
-					render_info.set_color(*iff_get_color_by_team_and_object(target_team, Player_ship->team, 0, target_objp));
-
-					flags |= MR_NO_LIGHTING | MR_NO_TEXTURING;
-
-					break;
-			}
-		} else {
-			render_info.set_object_number(OBJ_INDEX(viewed_obj));
-
-			switch (Targetbox_wire) {
-				case 0:
-					flags |= MR_NO_LIGHTING;
-
-					break;
-				case 1:
-					if (ship_is_tagged(viewed_obj))
-						render_info.set_color(*iff_get_color(IFF_COLOR_TAGGED, 1));
-					else
-						render_info.set_color(*iff_get_color_by_team_and_object(homing_shipp->team, Player_ship->team, 1, viewed_obj));
-
-					if (homing_sip->uses_team_colors) {
-						render_info.set_team_color(homing_shipp->team_name, homing_shipp->secondary_team_name, homing_shipp->team_change_timestamp, homing_shipp->team_change_time);
+					if (thisOverride) {
+						render_info.set_color(thisColor);
+					} else {
+						render_info.set_color(
+							*iff_get_color_by_team_and_object(target_team, Player_ship->team, 0, target_objp));
 					}
 
 					flags = MR_SHOW_OUTLINE_HTL | MR_NO_POLYS | MR_NO_LIGHTING | MR_NO_TEXTURING;
@@ -945,10 +971,52 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 				case 2:
 					break;
 				case 3:
-					if (ship_is_tagged(viewed_obj))
-						render_info.set_color(*iff_get_color(IFF_COLOR_TAGGED, 1));
-					else
-						render_info.set_color(*iff_get_color_by_team_and_object(homing_shipp->team, Player_ship->team, 1, viewed_obj));
+					if (thisOverride) {
+						render_info.set_color(thisColor);
+					} else {
+						render_info.set_color(*iff_get_color_by_team_and_object(target_team, Player_ship->team, 0, target_objp));
+					}
+
+					flags |= MR_NO_LIGHTING | MR_NO_TEXTURING;
+
+					break;
+			}
+		} else {
+			render_info.set_object_number(OBJ_INDEX(viewed_obj));
+
+			switch (CurrentWire) {
+				case 0:
+					flags |= MR_NO_LIGHTING;
+
+					break;
+				case 1:
+					if (thisOverride) {
+						render_info.set_color(thisColor);
+					} else {
+						if (ship_is_tagged(viewed_obj))
+							render_info.set_color(*iff_get_color(IFF_COLOR_TAGGED, 1));
+						else
+							render_info.set_color(*iff_get_color_by_team_and_object(homing_shipp->team, Player_ship->team, 1, viewed_obj));
+
+						if (homing_sip->uses_team_colors) {
+							render_info.set_team_color(homing_shipp->team_name, homing_shipp->secondary_team_name, homing_shipp->team_change_timestamp, homing_shipp->team_change_time);
+						}
+					}
+
+					flags = MR_SHOW_OUTLINE_HTL | MR_NO_POLYS | MR_NO_LIGHTING | MR_NO_TEXTURING;
+
+					break;
+				case 2:
+					break;
+				case 3:
+					if (thisOverride) {
+						render_info.set_color(thisColor);
+					} else {
+						if (ship_is_tagged(viewed_obj))
+							render_info.set_color(*iff_get_color(IFF_COLOR_TAGGED, 1));
+						else
+							render_info.set_color(*iff_get_color_by_team_and_object(homing_shipp->team, Player_ship->team, 1, viewed_obj));
+					}
 
 					flags |= MR_NO_LIGHTING | MR_NO_TEXTURING;
 
@@ -1100,16 +1168,23 @@ void HudGaugeTargetBox::renderTargetAsteroid(object *target_objp)
 		
 		model_render_params render_info;
 
-		switch (Targetbox_wire) {
+		color thisColor = GaugeWirecolor;
+		bool thisOverride = GaugeWirecolorOverride;
+
+		switch (CurrentWire) {
 			case 0:
 				flags |= MR_NO_LIGHTING;
 
 				break;
 			case 1:
-				if (time_to_impact>=0)
-					render_info.set_color(255,255,255);
-				else
-					render_info.set_color(64,64,0);
+				if (thisOverride) {
+					render_info.set_color(thisColor);
+				} else {
+					if (time_to_impact >= 0)
+						render_info.set_color(255, 255, 255);
+					else
+						render_info.set_color(64, 64, 0);
+				}
 
 				flags = MR_SHOW_OUTLINE_HTL | MR_NO_POLYS | MR_NO_LIGHTING | MR_NO_TEXTURING;
 
@@ -1117,10 +1192,14 @@ void HudGaugeTargetBox::renderTargetAsteroid(object *target_objp)
 			case 2:
 				break;
 			case 3:
-				if (time_to_impact>=0)
-					render_info.set_color(255,255,255);
-				else
-					render_info.set_color(64,64,0);
+				if (thisOverride) {
+					render_info.set_color(thisColor);
+				} else {
+					if (time_to_impact >= 0)
+						render_info.set_color(255, 255, 255);
+					else
+						render_info.set_color(64, 64, 0);
+				}
 
 				flags |= MR_NO_LIGHTING | MR_NO_TEXTURING;
 
@@ -1271,10 +1350,9 @@ void HudGaugeTargetBox::renderTargetJumpNode(object *target_objp)
  */
 void hud_targetbox_switch_wireframe_mode()
 {
-
-	Targetbox_wire++;
-		if (Targetbox_wire==3)
-			Targetbox_wire=0;
+	CurrentWire++;
+		if (CurrentWire==3)
+			CurrentWire=0;
 }
 
 /**
@@ -1901,32 +1979,84 @@ void HudGaugeTargetBox::maybeRenderCargoScan(ship_info *target_sip, ship_subsys 
 
 	setGaugeColor(HUD_C_BRIGHT);
 
-	// draw horizontal scan line
-	x1 = position[0] + Cargo_scan_start_offsets[0]; // Cargo_scan_coords[gr_screen.res][0];
-	y1 = fl2i(0.5f + position[1] + Cargo_scan_start_offsets[1] + ( (i2fl(Player->cargo_inspect_time) / scan_time) * Cargo_scan_h ));
-	x2 = x1 + Cargo_scan_w;
+	int left = position[0] + Cargo_scan_start_offsets[0];
+	int right = left + Cargo_scan_w;
+	int top = position[1] + Cargo_scan_start_offsets[1];
+	int bot = top + Cargo_scan_h;
 
-	renderLine(x1, y1, x2, y1);
+	float t = i2fl(Player->cargo_inspect_time) / scan_time;
 
-	// RT Changed this to be optional
-	if(Cmdline_dualscanlines) {
-		// added 2nd horizontal scan line - phreak
-		y1 = fl2i(position[1] + Cargo_scan_start_offsets[1] + Cargo_scan_h - ( (i2fl(Player->cargo_inspect_time) / scan_time) * Cargo_scan_h ));
+	if (Cargo_scan_type == CargoScanType::DEFAULT || Cargo_scan_type == CargoScanType::DUAL_SCAN_LINES) {
+		// draw horizontal scan line
+		x1 = left;
+		y1 = fl2i(0.5f + top + (t * Cargo_scan_h));
+		x2 = x1 + Cargo_scan_w;
+
 		renderLine(x1, y1, x2, y1);
-	}
 
-	// draw vertical scan line
-	x1 = fl2i(0.5f + position[0] + Cargo_scan_start_offsets[0] + ( (i2fl(Player->cargo_inspect_time) / scan_time) * Cargo_scan_w ));
-	y1 = position[1] + Cargo_scan_start_offsets[1];
-	y2 = y1 + Cargo_scan_h;
+		// RT Changed this to be optional
+		if (Cargo_scan_type == CargoScanType::DUAL_SCAN_LINES) {
+			// added 2nd horizontal scan line - phreak
+			y1 = fl2i(bot - (t * Cargo_scan_h));
+			renderLine(x1, y1, x2, y1);
+		}
 
-	renderLine(x1, y1-3, x1, y2-1);
+		// draw vertical scan line
+		x1 = fl2i(0.5f + left + (t * Cargo_scan_w));
+		y1 = top;
+		y2 = bot;
 
-	// RT Changed this to be optional
-	if(Cmdline_dualscanlines) {
-		// added 2nd vertical scan line - phreak
-		x1 = fl2i(0.5f + Cargo_scan_w + position[0] + Cargo_scan_start_offsets[0] - ( (i2fl(Player->cargo_inspect_time) / scan_time) * Cargo_scan_w ));
-		renderLine(x1, y1-3, x1, y2-1);
+		renderLine(x1, y1 - 3, x1, y2 - 1);
+
+		// RT Changed this to be optional
+		if (Cargo_scan_type == CargoScanType::DUAL_SCAN_LINES) {
+			// added 2nd vertical scan line - phreak
+			x1 = fl2i(0.5f + right - (t * Cargo_scan_w));
+			renderLine(x1, y1 - 3, x1, y2 - 1);
+		}
+	} else if (Cargo_scan_type == CargoScanType::DISCO_SCAN_LINES) {	
+		// by popular demand, this, which was made as a joke, was added - Asteroth
+		for (int i = 0; i < 4; i++) {
+			float arr[2] = { 1 / 0.75f, 1 / 0.4f };
+			float tmod;
+			if (i < 2) {
+				tmod = powf(t, arr[i]);
+			} else {
+				tmod = 1 - powf(1 - t, arr[i - 2]);
+			}
+
+			if (tmod < 0.5f) {
+				y2 = fl2i(0.5f + bot - 2.f * tmod * Cargo_scan_h);
+				renderLine(left, bot, right, y2);
+			} else {
+				x2 = fl2i(0.5f + right - (2.f * tmod - 1) * Cargo_scan_w);
+				renderLine(left, bot, x2, top);
+			}
+
+			if (tmod < 0.5f) {
+				x2 = fl2i(0.5f + right - 2.f * tmod * Cargo_scan_w);
+				renderLine(right, bot, x2, top);
+			} else {
+				y2 = fl2i(0.5f + top + (2.f * tmod - 1) * Cargo_scan_h);
+				renderLine(right, bot, left, y2);
+			}
+
+			if (tmod < 0.5f) {
+				y2 = fl2i(0.5f + top + 2.f * tmod * Cargo_scan_h);
+				renderLine(right, top, left, y2);
+			} else {
+				x2 = fl2i(0.5f + left + (2.f * tmod - 1) * Cargo_scan_w);
+				renderLine(right, top, x2, bot);
+			}
+
+			if (tmod < 0.5f) {
+				x2 = fl2i(0.5f + left + 2.f * tmod * Cargo_scan_w);
+				renderLine(left, top, x2, bot);
+			} else {
+				y2 = fl2i(0.5f + bot - (2.f * tmod - 1) * Cargo_scan_h);
+				renderLine(left, top, right, y2);
+			}
+		}
 	}
 }
 
@@ -2217,6 +2347,7 @@ void hud_init_target_static()
 {
 	Target_static_next = 0;
 	Target_static_playing = 0;
+	Sensor_static_forced = false;
 }
 
 /**
@@ -2227,7 +2358,7 @@ void hud_update_target_static()
 	float	sensors_str;
 
 	// on lowest skill level, don't show static on target monitor
-	if ( Game_skill_level == 0 ) 
+	if ( (Game_skill_level == 0) && !Sensor_static_forced ) 
 		return;
 
 	// if multiplayer observer, don't show static
@@ -2240,7 +2371,7 @@ void hud_update_target_static()
 		sensors_str = SENSOR_STR_TARGET_NO_EFFECTS-1;
 	}
 
-	if ( sensors_str > SENSOR_STR_TARGET_NO_EFFECTS ) {
+	if ( (sensors_str > SENSOR_STR_TARGET_NO_EFFECTS) && !Sensor_static_forced ) {
 		Target_static_playing = 0;
 		Target_static_next = 0;
 	} else {

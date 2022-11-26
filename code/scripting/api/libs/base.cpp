@@ -24,31 +24,69 @@
 #include "scripting/util/LuaValueDeserializer.h"
 #include "scripting/util/LuaValueSerializer.h"
 #include "utils/Random.h"
+#include "cmdline/cmdline.h"
+
 
 namespace scripting {
+extern SCP_string ade_tostring(lua_State* L, int argnum, bool add_typeinfo);
+	
 namespace api {
 using Random = ::util::Random;
 
 //**********LIBRARY: Base
 ADE_LIB(l_Base, "Base", "ba", "Base FreeSpace 2 functions");
 
-ADE_FUNC(print, l_Base, "string Message", "Prints a string", NULL, NULL)
+ADE_FUNC(print, l_Base, "string Message", "Prints a string", nullptr, nullptr)
 {
-	mprintf(("%s", lua_tostring(L, -1)));
+#ifndef NDEBUG
+	auto str = ade_tostring(L, -1, false);
+	nprintf(("scripting", "%s", str.c_str()));
+#else
+	SCP_UNUSED(L);
+#endif
 
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(warning, l_Base, "string Message", "Displays a FreeSpace warning (debug build-only) message with the string provided", NULL, NULL)
+ADE_FUNC(println, l_Base, "string Message", "Prints a string with a newline", nullptr, nullptr)
 {
-	Warning(LOCATION, "%s", lua_tostring(L, -1));
+#ifndef NDEBUG
+	auto str = ade_tostring(L, -1, false);
+	nprintf(("scripting", "%s\n", str.c_str()));
+#else
+	SCP_UNUSED(L);
+#endif
 
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(error, l_Base, "string Message", "Displays a FreeSpace error message with the string provided", NULL, NULL)
+ADE_FUNC(warning, l_Base, "string Message", "Displays a FreeSpace warning (debug build-only) message with the string provided", nullptr, nullptr)
 {
-	Error(LOCATION, "%s", lua_tostring(L, -1));
+#ifndef NDEBUG
+	auto str = ade_tostring(L, -1, false);
+
+	if (Cmdline_lua_devmode) {
+		nprintf(("scripting", "WARNING: %s\n", str.c_str()));
+	} else {
+		Warning(LOCATION, "%s", str.c_str());
+	}
+#else
+	SCP_UNUSED(L);
+	Global_warning_count++;
+#endif
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(error, l_Base, "string Message", "Displays a FreeSpace error message with the string provided", nullptr, nullptr)
+{
+	auto str = ade_tostring(L, -1, false);
+
+	if (Cmdline_lua_devmode) {
+		nprintf(("scripting", "ERROR: %s\n", str.c_str()));
+	} else {
+		Error(LOCATION, "%s", lua_tostring(L, -1));
+	}
 
 	return ADE_RETURN_NIL;
 }

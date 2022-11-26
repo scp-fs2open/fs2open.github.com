@@ -41,6 +41,8 @@ static float Reflective_light = REFLECTIVE_LIGHT_DEFAULT;
 int Lighting_flag = 1;
 int Num_lights = 0;
 
+lighting_mode Lighting_mode = lighting_mode::NORMAL;
+
 DCF(light,"Changes lighting parameters")
 {
 	SCP_string arg_str;

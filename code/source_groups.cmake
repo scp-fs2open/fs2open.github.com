@@ -946,6 +946,8 @@ add_file_folder("Network"
 	network/multi_sw.h
 	network/multi_team.cpp
 	network/multi_team.h
+	network/multi_turret_manager.cpp
+	network/multi_turret_manager.h
 	network/multi_time_manager.cpp
 	network/multi_time_manager.h
 	network/multi_update.cpp
@@ -1279,8 +1281,6 @@ add_file_folder("Scripting\\\\Api\\\\Libs"
 	scripting/api/libs/options.h
 	scripting/api/libs/parse.cpp
 	scripting/api/libs/parse.h
-	scripting/api/objs/redalert.cpp
-	scripting/api/objs/redalert.h
 	scripting/api/libs/tables.cpp
 	scripting/api/libs/tables.h
 	scripting/api/libs/testing.cpp
@@ -1320,6 +1320,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/color.h
 	scripting/api/objs/control_info.cpp
 	scripting/api/objs/control_info.h
+	scripting/api/objs/debriefing.cpp
+	scripting/api/objs/debriefing.h
 	scripting/api/objs/debris.cpp
 	scripting/api/objs/debris.h
 	scripting/api/objs/decaldefinition.cpp
@@ -1388,18 +1390,24 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/player.h
 	scripting/api/objs/promise.cpp
 	scripting/api/objs/promise.h
+	scripting/api/objs/redalert.cpp
+	scripting/api/objs/redalert.h
 	scripting/api/objs/sexpvar.cpp
 	scripting/api/objs/sexpvar.h
 	scripting/api/objs/shields.cpp
 	scripting/api/objs/shields.h
 	scripting/api/objs/ship_bank.cpp
 	scripting/api/objs/ship_bank.h
+	scripting/api/objs/ship_registry_entry.cpp
+	scripting/api/objs/ship_registry_entry.h
 	scripting/api/objs/shipclass.cpp
 	scripting/api/objs/shipclass.h
 	scripting/api/objs/ship.cpp
 	scripting/api/objs/ship.h
 	scripting/api/objs/shiptype.cpp
 	scripting/api/objs/shiptype.h
+	scripting/api/objs/shipwepselect.cpp
+	scripting/api/objs/shipwepselect.h
 	scripting/api/objs/sound.cpp
 	scripting/api/objs/sound.h
 	scripting/api/objs/species.cpp
@@ -1506,6 +1514,13 @@ add_file_folder("Sound"
 	sound/voicerec.h
 )
 
+if (APPLE)
+	add_file_folder("Sound"
+		${file_root_sound}
+		sound/speech.mm
+	)
+endif()
+
 if (FSO_BUILD_WITH_FFMPEG)
 	# Sound -> ffmpeg files
 	add_file_folder("Sound\\\\FFmpeg"
@@ -1589,6 +1604,8 @@ add_file_folder("Ui"
 )
 
 add_file_folder("Utils"
+	utils/base64.cpp
+	utils/base64.h
 	utils/encoding.cpp
 	utils/encoding.h
 	utils/event.h

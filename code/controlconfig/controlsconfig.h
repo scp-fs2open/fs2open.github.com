@@ -567,7 +567,9 @@ public:
 	CC_type type;           //!< manner control should be checked in
 
 // Items used during gameplay
-	int  used;                  //!< has control been used yet in mission?  If so, this is the timestamp. For axes, this denotes the last frame's value
+	TIMESTAMP digital_used;     //!< has control been used yet in mission?  If so, this is the timestamp.
+	                            // Note this is not a UI timestamp because this is purely for mission timing purposes.
+	int  analog_value;          // For axes, this denotes the last frame's value
 	bool disabled = true;       //!< whether this action should be available at all
 	bool locked = false;		//!< whether this action will be triggered by the respectively bound key
 	bool scriptEnabledByDefault = false; //!< whether this binding will execute it's registered hooks if triggered. Resets each mission

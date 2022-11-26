@@ -326,6 +326,28 @@ ADE_VIRTVAR(NumFirePoints, l_Subsystem, "number", "Number of firepoints", "numbe
 	return ade_set_args(L, "i", sso->ss->system_info->turret_num_firing_points);
 }
 
+ADE_VIRTVAR(FireRateMultiplier, l_Subsystem, "number", "Factor by which turret's rate of fire is multiplied.  This can also be set with the turret-set-rate-of-fire SEXP.  As with the SEXP, assigning a negative value will cause this to be reset to default.", "number", "Firing rate multiplier, or 0 if handle is invalid")
+{
+	ship_subsys_h* sso;
+	float multiplier;
+	if (!ade_get_args(L, "o|f", l_Subsystem.GetPtr(&sso), &multiplier))
+		return ade_set_error(L, "f", 0.0f);
+
+	if (!sso->isSubsystemValid())
+		return ade_set_error(L, "f", 0.0f);
+
+	if (ADE_SETTING_VAR)
+	{
+		// set the rate
+		if (multiplier < 0.0f)
+			sso->ss->rof_scaler = sso->ss->system_info->turret_rof_scaler;
+		else
+			sso->ss->rof_scaler = multiplier;
+	}
+
+	return ade_set_args(L, "f", sso->ss->rof_scaler);
+}
+
 ADE_FUNC(getModelName, l_Subsystem, NULL, "Returns the original name of the subsystem in the model file", "string", "name or empty string on error")
 {
 	ship_subsys_h *sso;
@@ -400,7 +422,7 @@ ADE_VIRTVAR(SecondaryBanks, l_Subsystem, "weaponbanktype", "Array of secondary w
 }
 
 
-ADE_VIRTVAR(Target, l_Subsystem, "object", "Object targeted by this subsystem. If used to set a new target, AI targeting will be switched off.", "object", "Targeted object, or invalid object handle if subsystem handle is invalid")
+ADE_VIRTVAR(Target, l_Subsystem, "object", "Object targeted by this subsystem. If used to set a new target or clear it, AI targeting will be switched off.", "object", "Targeted object, or invalid object handle if subsystem handle is invalid")
 {
 	ship_subsys_h *sso;
 	object_h *objh = nullptr;
@@ -412,12 +434,18 @@ ADE_VIRTVAR(Target, l_Subsystem, "object", "Object targeted by this subsystem. I
 
 	ship_subsys *ss = sso->ss;
 
-	if(ADE_SETTING_VAR && objh && objh->IsValid())
-	{
-		ss->turret_enemy_objnum = OBJ_INDEX(objh->objp);
-		ss->turret_enemy_sig = objh->sig;
-		ss->targeted_subsys = NULL;
-		ss->scripting_target_override = true;
+	if(ADE_SETTING_VAR)	{
+		if (objh && objh->IsValid()) {
+			ss->turret_enemy_objnum = OBJ_INDEX(objh->objp);
+			ss->turret_enemy_sig = objh->sig;
+			ss->targeted_subsys = nullptr;
+			ss->scripting_target_override = true;
+		} else if (lua_isnil(L, 2)) {
+			ss->turret_enemy_objnum = -1;
+			ss->turret_enemy_sig = -1;
+			ss->targeted_subsys = nullptr;
+			ss->scripting_target_override = true;
+		}
 	}
 
 	return ade_set_object_with_breed(L, ss->turret_enemy_objnum);
@@ -598,6 +626,49 @@ ADE_FUNC(targetingOverride, l_Subsystem, "boolean", "If set to true, AI targetin
 	return ADE_RETURN_TRUE;
 }
 
+ADE_FUNC(getModelFlag, 
+	l_Subsystem, 
+	"string flag_name", 
+	"Checks whether one or more <a href=\"https://wiki.hard-light.net/index.php/Subsystem#.24Flags:\">model subsystem flags</a> are set - this function can accept an arbitrary number of flag arguments.  The flag names can be any string that the alter-ship-flag SEXP operator supports.", 
+	"boolean", 
+	"Returns whether all flags are set, or nil if the subsystem is not valid")
+{
+	ship_subsys_h* sso;
+	const char* flag_name;
+
+	if (!ade_get_args(L, "os", l_Subsystem.GetPtr(&sso), &flag_name))
+		return ADE_RETURN_NIL;
+	int skip_args = 1;	// not 2 because there will be one more below
+
+	if (!sso->IsValid())
+		return ADE_RETURN_NIL;
+
+	do {
+		auto subsys_flag = Model::Subsystem_Flags::NUM_VALUES;
+
+		for (size_t i = 0; i < (size_t)Num_subsystem_flags; i++) {
+			if (!stricmp(Subsystem_flags[i].name, flag_name)) {
+				subsys_flag = Subsystem_flags[i].def;
+				break;
+			}
+		}
+
+		if (subsys_flag == Model::Subsystem_Flags::NUM_VALUES) {
+			Warning(LOCATION, "Subsystem flag '%s' not found!", flag_name);
+			return ADE_RETURN_FALSE;
+		} else {
+			if (!(sso->ss->system_info->flags[subsys_flag]))
+				return ADE_RETURN_FALSE;
+		}
+
+		// read the next flag
+		internal::Ade_get_args_skip = ++skip_args;
+	} while (ade_get_args(L, "|s", &flag_name) > 0);
+
+	// if we're still here, all the flags we were looking for were present
+	return ADE_RETURN_TRUE;
+}
+
 ADE_FUNC(hasFired, l_Subsystem, NULL, "Determine if a subsystem has fired", "boolean", "true if if fired, false if not fired, or nil if invalid. resets fired flag when called.")
 {
 	ship_subsys_h *sso;
@@ -625,6 +696,18 @@ ADE_FUNC(isTurret, l_Subsystem, NULL, "Determines if this subsystem is a turret"
 		return ADE_RETURN_NIL;
 
 	return ade_set_args(L, "b", sso->ss->system_info->type == SUBSYSTEM_TURRET);
+}
+
+ADE_FUNC(isMultipartTurret, l_Subsystem, NULL, "Determines if this subsystem is a multi-part turret", "boolean", "true if subsystem is multi-part turret, false otherwise or nil on error")
+{
+	ship_subsys_h* sso;
+	if (!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
+		return ADE_RETURN_NIL;
+
+	if (!sso->isSubsystemValid())
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "b", sso->ss->system_info->type == SUBSYSTEM_TURRET && sso->ss->system_info->turret_gun_sobj != sso->ss->system_info->subobj_num);
 }
 
 ADE_FUNC(isTargetInFOV, l_Subsystem, "object Target", "Determines if the object is in the turrets FOV", "boolean", "true if in FOV, false if not, nil on error or if subsystem is not a turret ")
@@ -671,12 +754,13 @@ ADE_FUNC(isPositionInFOV, l_Subsystem, "vector Target", "Determines if a positio
 		return ADE_RETURN_FALSE;
 }
 
-ADE_FUNC(fireWeapon, l_Subsystem, "[number TurretWeaponIndex = 1, number FlakRange = 100]", "Fires weapon on turret", nullptr, nullptr)
+ADE_FUNC(fireWeapon, l_Subsystem, "[number TurretWeaponIndex = 1, number FlakRange = 100, vector OverrideFiringVec]", "Fires weapon on turret", nullptr, nullptr)
 {
 	ship_subsys_h *sso;
 	int wnum = 1;
 	float flak_range = 100.0f;
-	if(!ade_get_args(L, "o|if", l_Subsystem.GetPtr(&sso), &wnum, &flak_range))
+	vec3d* override_gvec = nullptr;
+	if (!ade_get_args(L, "o|ifo", l_Subsystem.GetPtr(&sso), &wnum, &flak_range, l_Vector.GetPtr(&override_gvec)))
 		return ADE_RETURN_NIL;
 
 	if (!sso->isSubsystemValid())
@@ -705,6 +789,8 @@ ADE_FUNC(fireWeapon, l_Subsystem, "[number TurretWeaponIndex = 1, number FlakRan
 	vec3d gpos, gvec;
 
 	ship_get_global_turret_gun_info(sso->objp, sso->ss, &gpos, &gvec, 1, NULL);
+	if (override_gvec != nullptr)
+		gvec = *override_gvec;
 
 	bool rtn = turret_fire_weapon(wnum, sso->ss, OBJ_INDEX(sso->objp), &gpos, &gvec, NULL, flak_range);
 

@@ -35,6 +35,7 @@
 #include "object/objectshield.h"
 #include "object/objectsnd.h"
 #include "observer/observer.h"
+#include "scripting/api/libs/graphics.h"
 #include "scripting/scripting.h"
 #include "playerman/player.h"
 #include "radar/radar.h"
@@ -102,17 +103,17 @@ const char *Object_type_names[MAX_OBJECT_TYPES] = {
 };
 
 obj_flag_name Object_flag_names[] = {
-    { Object::Object_Flags::Invulnerable,			"invulnerable",				1,	},
-	{ Object::Object_Flags::Protected,				"protect-ship",				1,	},
-	{ Object::Object_Flags::Beam_protected,			"beam-protect-ship",		1,	},
-	{ Object::Object_Flags::No_shields,				"no-shields",				1,	},
-	{ Object::Object_Flags::Targetable_as_bomb,		"targetable-as-bomb",		1,	},
-	{ Object::Object_Flags::Flak_protected,			"flak-protect-ship",		1,	},
-	{ Object::Object_Flags::Laser_protected,		"laser-protect-ship",		1,	},
-	{ Object::Object_Flags::Missile_protected,		"missile-protect-ship",		1,	},
-	{ Object::Object_Flags::Immobile,				"immobile",					1,	},
-	{ Object::Object_Flags::Collides,				"collides",					1,  },
-	{ Object::Object_Flags::Attackable_if_no_collide, "ai-attackable-if-no-collide", 1,},
+    { Object::Object_Flags::Invulnerable,			"invulnerable",						},
+	{ Object::Object_Flags::Protected,				"protect-ship",						},
+	{ Object::Object_Flags::Beam_protected,			"beam-protect-ship",				},
+	{ Object::Object_Flags::No_shields,				"no-shields",						},
+	{ Object::Object_Flags::Targetable_as_bomb,		"targetable-as-bomb",				},
+	{ Object::Object_Flags::Flak_protected,			"flak-protect-ship",				},
+	{ Object::Object_Flags::Laser_protected,		"laser-protect-ship",				},
+	{ Object::Object_Flags::Missile_protected,		"missile-protect-ship",				},
+	{ Object::Object_Flags::Immobile,				"immobile",							},
+	{ Object::Object_Flags::Collides,				"collides",							},
+	{ Object::Object_Flags::Attackable_if_no_collide, "ai-attackable-if-no-collide",	},
 };
 
 extern const int Num_object_flag_names = sizeof(Object_flag_names) / sizeof(obj_flag_name);
@@ -533,11 +534,6 @@ int obj_create(ubyte type,int parent_obj,int instance, matrix * orient,
 	obj->n_quadrants = DEFAULT_SHIELD_SECTIONS; // Might be changed by the ship creation code
 	obj->shield_quadrant.resize(obj->n_quadrants);
 
-	// only ships are interpolated
-	if (obj->type == OBJ_SHIP){
-		obj->interp_info.reset(); // Multiplayer Interpolation info
-	}
-
 	return objnum;
 }
 
@@ -916,7 +912,7 @@ void obj_move_call_physics(object *objp, float frametime)
 
 		if (physics_paused)	{
 			if (objp==Player_obj){
-				physics_sim(&objp->pos, &objp->orient, &objp->phys_info, frametime );		// simulate the physics
+				physics_sim(&objp->pos, &objp->orient, &objp->phys_info, &The_mission.gravity, frametime );		// simulate the physics
 			}
 		} else {
 			//	Hack for dock mode.
@@ -945,7 +941,7 @@ void obj_move_call_physics(object *objp, float frametime)
 			}			
 
 			// simulate the physics
-			physics_sim(&objp->pos, &objp->orient, &objp->phys_info, frametime);		
+			physics_sim(&objp->pos, &objp->orient, &objp->phys_info, &The_mission.gravity,  frametime);
 
 			// if the object is the player object, do things that need to be done after the ship
 			// is moved (like firing weapons, etc).  This routine will get called either single
@@ -1524,11 +1520,17 @@ void obj_move_all(float frametime)
 		if (!(objp->flags[Object::Object_Flags::Immobile] && objp->hull_strength > 0.0f)) {
 			// if this is an object which should be interpolated in multiplayer, do so
 			if (interpolation_object) {
-				objp->interp_info.interpolate(&objp->pos, &objp->orient, &objp->phys_info, &objp->last_pos, &objp->last_orient, objp->flags[Object::Object_Flags::Player_ship]);
+				objp->interp_info.interpolate_main(&objp->pos, &objp->orient, &objp->phys_info, &objp->last_pos, &objp->last_orient, &The_mission.gravity, objp->flags[Object::Object_Flags::Player_ship]);
 			} else {
 				// physics
 				obj_move_call_physics(objp, frametime);
 			}
+		} else {
+			// make sure velocity is always 0 for immobile things!
+			vm_vec_zero(&objp->phys_info.vel);
+			vm_vec_zero(&objp->phys_info.desired_vel);
+			vm_vec_zero(&objp->phys_info.rotvel);
+			vm_vec_zero(&objp->phys_info.desired_rotvel);
 		}
 
 		// Submodel movement now happens here, right after physics movement.  It's not excluded by the "immobile" flag.
@@ -1679,11 +1681,18 @@ void obj_queue_render(object* obj, model_draw_list* scene)
 	if ( obj->flags[Object::Object_Flags::Should_be_dead] ) return;
 
 	if (Script_system.IsActiveAction(CHA_OBJECTRENDER)) {
+		// Set the render scene context
+		scripting::api::Current_scene = scene;
+
 		Script_system.SetHookObject("Self", obj);
 		bool skip_render = Script_system.IsConditionOverride(CHA_OBJECTRENDER, obj);
 		// Always execute the hook content
 		Script_system.RunCondition(CHA_OBJECTRENDER, obj);
 		Script_system.RemHookVar("Self");
+
+		// Clear the render scene context
+		scripting::api::Current_scene = nullptr;
+
 		if (skip_render) {
 			// Script said that it want's to skip rendering
 			return;

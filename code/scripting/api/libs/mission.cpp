@@ -12,6 +12,7 @@
 #include "executor/GameStateExecutionContext.h"
 #include "executor/global_executors.h"
 #include "gamesequence/gamesequence.h"
+#include "gamesnd/eventmusic.h"
 #include "hud/hudescort.h"
 #include "hud/hudmessage.h"
 #include "iff_defs/iff_defs.h"
@@ -45,10 +46,12 @@
 #include "scripting/api/objs/fireball.h"
 #include "scripting/api/objs/fireballclass.h"
 #include "scripting/api/objs/message.h"
+#include "scripting/api/objs/model.h"
 #include "scripting/api/objs/object.h"
 #include "scripting/api/objs/parse_object.h"
 #include "scripting/api/objs/promise.h"
 #include "scripting/api/objs/sexpvar.h"
+#include "scripting/api/objs/ship_registry_entry.h"
 #include "scripting/api/objs/ship.h"
 #include "scripting/api/objs/shipclass.h"
 #include "scripting/api/objs/sound.h"
@@ -58,6 +61,7 @@
 #include "scripting/api/objs/weapon.h"
 #include "scripting/api/objs/weaponclass.h"
 #include "scripting/api/objs/wing.h"
+#include "scripting/lua/LuaConvert.h"
 #include "scripting/lua/LuaFunction.h"
 #include "scripting/lua/LuaTable.h"
 #include "scripting/scripting.h"
@@ -336,6 +340,35 @@ ADE_FUNC(__len, l_Mission_SEXPVariables, NULL, "Current number of SEXP variables
 	return ade_set_args(L, "i", sexp_variable_count());
 }
 
+//****SUBLIBRARY: Mission/ShipRegistry
+ADE_LIB_DERIV(l_Mission_ShipRegistry, "ShipRegistry", nullptr, "The mission's ship registry: all ships parsed, created, or exited that the mission knows about", l_Mission);
+
+ADE_INDEXER(l_Mission_ShipRegistry, "number/string IndexOrName", "Gets ship registry entry", "ship_registry_entry", "Ship registry entry handle, or invalid handle if index was invalid")
+{
+	const char* name;
+	if(!ade_get_args(L, "*s", &name))
+		return ade_set_error(L, "o", l_ShipRegistryEntry.Set(-1));
+
+	int idx = ship_registry_get_index(name);
+	if (idx < 0)
+	{
+		idx = atoi(name);	// will return 0 if not parseable
+
+		//Lua-->FS2
+		idx--;
+	}
+
+	return ade_set_args(L, "o", l_ShipRegistryEntry.Set(idx));
+}
+
+ADE_FUNC(__len, l_Mission_ShipRegistry, nullptr,
+		 "Number of ship registry entries in the mission.  The value returned is generally stable but will change if a ship is created using ship-create or if additional wing waves arrive.",
+		 "number",
+		 "Number of ship registry entries in the mission")
+{
+	return ade_set_args(L, "i", (int)Ship_registry.size());
+}
+
 //****SUBLIBRARY: Mission/Ships
 ADE_LIB_DERIV(l_Mission_Ships, "Ships", NULL, "Ships in the mission", l_Mission);
 
@@ -386,6 +419,46 @@ ADE_FUNC(__len, l_Mission_Ships, NULL,
 		return ade_set_args(L, "i", ship_get_num_ships());
 	else
 		return ade_set_args(L, "i", 0);
+}
+
+//****SUBLIBRARY: Mission/ParsedShips
+ADE_LIB_DERIV(l_Mission_ParsedShips, "ParsedShips", nullptr, "Parsed ships (aka parse objects) in the mission", l_Mission);
+
+ADE_INDEXER(l_Mission_ParsedShips, "number/string IndexOrName", "Gets parsed ship", "parse_object", "Parsed ship handle, or invalid handle if index was invalid")
+{
+	const char *name;
+	if (!ade_get_args(L, "*s", &name))
+		return ade_set_error(L, "o", l_ParseObject.Set(parse_object_h(nullptr)));
+
+	auto pobjp = mission_parse_get_parse_object(name);
+
+	if (pobjp)
+	{
+		return ade_set_args(L, "o", l_ParseObject.Set(parse_object_h(pobjp)));
+	}
+	else
+	{
+		auto idx = atoi(name);
+		if (idx > 0)
+		{
+			idx--;	// Lua -> C++
+
+			if (idx < static_cast<int>(Parse_objects.size()))
+			{
+				return ade_set_args(L, "o", l_ParseObject.Set(parse_object_h(&Parse_objects[idx])));
+			}
+		}
+	}
+
+	return ade_set_error(L, "o", l_ParseObject.Set(parse_object_h(nullptr)));
+}
+
+ADE_FUNC(__len, l_Mission_ParsedShips, NULL,
+		 "Number of parsed ships in the mission. This function is quick and the value returned can be relied on to be stable for the entire mission.",
+		 "number",
+		 "Number of parsed ships in the most recently loaded mission, or 0 if no mission has been parsed yet")
+{
+	return ade_set_args(L, "i", static_cast<int>(Parse_objects.size()));
 }
 
 //****SUBLIBRARY: Mission/Waypoints
@@ -870,7 +943,7 @@ ADE_FUNC(sendTrainingMessage, l_Mission, "message message, number time, [number 
 		return ADE_RETURN_FALSE;
 	}
 
-	message_training_queue(Messages[messageIdx].name, timestamp(fl2i(delay * 1000.0f)), time);
+	message_training_queue(Messages[messageIdx].name, _timestamp(fl2i(delay * MILLISECONDS_PER_SECOND)), time);
 
 	return ADE_RETURN_TRUE;
 }
@@ -958,6 +1031,138 @@ ADE_FUNC(createShip,
 		return ade_set_args(L, "o", l_Ship.Set(object_h(&Objects[obj_idx])));
 	} else
 		return ade_set_error(L, "o", l_Ship.Set(object_h()));
+}
+
+ADE_FUNC(createDebris,
+	l_Mission,
+	"[ship | shipclass | model | submodel | nil source, string | nil submodel_index_or_name, vector position, orientation, enumeration create_flags, "
+	"number hitpoints, number spark_timeout_seconds, team, vector explosion_center, number explosion_force_multiplier]",
+	"Creates a chunk or shard of debris with the specified parameters.  Vectors are in world coordinates.  Any parameter can be nil or negative to specify defaults.  "
+	"A nil source will create generic or vaporized debris; submodel_index_or_name will be disregarded if source is submodel and can be nil to spawn random generic or "
+	"vaporized debris; position defaults to 0,0,0; orientation defaults to the source orientation or a random orientation for non-ship sources or for generic/vaporized "
+	"debris; create_flags can be any combination of DC_IS_HULL, DC_VAPORIZE, DC_SET_VELOCITY, or DC_FIRE_HOOK; hitpoints defaults to 1/8 source ship hitpoints or 10 "
+	"hitpoints if there is no source ship; explosion_center and explosion_force_multiplier are only applicable for DC_SET_VELOCITY",
+	"debris",
+	"Debris handle, or invalid handle if the debris couldn't be created")
+{
+	model_h *mh = nullptr;
+	submodel_h *smh = nullptr;
+	vec3d *pos = nullptr, *explosion_center = nullptr;
+	matrix_h *orient_h = nullptr;
+	enum_h *create_flags = nullptr;
+	float hitpoints = -1.0f, spark_timeout = -1.0f, explosion_force_multiplier = 1.0f;
+	int team = -1, source_class = -1;
+	object_h *source_ship = nullptr;
+	ship *source_shipp = nullptr;
+	bool is_hull = false;
+	bool vaporize = false;
+	bool set_velocity = false;
+	bool fire_hook = false;
+
+	int source_objnum = -1, model_num = -1, submodel_num = -1;
+
+	// get first variant parameter
+	if (luacpp::convert::ade_odata_is_userdata_type(L, 1, l_Ship))
+	{
+		ade_get_args(L, "|o", l_Ship.GetPtr(&source_ship));
+
+		if (source_ship == nullptr || !source_ship->IsValid())
+			return ade_set_args(L, "o", l_Debris.Set(object_h()));
+
+		source_shipp = &Ships[source_ship->objp->instance];
+		source_objnum = source_shipp->objnum;
+		source_class = source_shipp->ship_info_index;
+		model_num = Ship_info[source_class].model_num;
+	}
+	else if (luacpp::convert::ade_odata_is_userdata_type(L, 1, l_Shipclass))
+	{
+		ade_get_args(L, "|o", l_Shipclass.Get(&source_class));
+
+		if (source_class < 0 || source_class >= ship_info_size())
+			return ade_set_args(L, "o", l_Debris.Set(object_h()));
+
+		model_num = Ship_info[source_class].model_num;
+	}
+	else if (luacpp::convert::ade_odata_is_userdata_type(L, 1, l_Model))
+	{
+		ade_get_args(L, "|o", l_Model.GetPtr(&mh));
+
+		if (mh == nullptr || !mh->IsValid())
+			return ade_set_args(L, "o", l_Debris.Set(object_h()));
+
+		model_num = mh->GetID();
+	}
+	else if (luacpp::convert::ade_odata_is_userdata_type(L, 1, l_Submodel))
+	{
+		ade_get_args(L, "|o", l_Submodel.GetPtr(&smh));
+
+		if (smh == nullptr || !smh->IsValid())
+			return ade_set_args(L, "o", l_Debris.Set(object_h()));
+
+		model_num = smh->GetModelID();
+		submodel_num = smh->GetSubmodelIndex();
+	}
+
+	// get second variant parameter
+	if (submodel_num < 0 && model_num >= 0)
+	{
+		if (lua_isnumber(L, 2))
+		{
+			ade_get_args(L, "|*i", &submodel_num);
+			submodel_num--; // Lua --> C/C++
+		}
+		else if (lua_isstring(L, 2))
+		{
+			const char *name = nullptr;
+			ade_get_args(L, "|*s", &name);
+			submodel_num = model_find_submodel_index(model_num, name);
+		}
+	}
+
+	ade_get_args(L, "|**oooffoof",
+		l_Vector.GetPtr(&pos),
+		l_Matrix.GetPtr(&orient_h),
+		l_Enum.GetPtr(&create_flags),
+		&hitpoints,
+		&spark_timeout,
+		l_Team.Get(&team),
+		l_Vector.GetPtr(&explosion_center),
+		&explosion_force_multiplier);
+
+	// validate some arguments
+
+	matrix *orient = orient_h == nullptr ? nullptr : orient_h->GetMatrix();
+
+	if (create_flags != nullptr)
+	{
+		if (!create_flags->IsValid() || !create_flags->value)
+			return ade_set_args(L, "o", l_Debris.Set(object_h()));
+
+		is_hull = (*create_flags->value & LE_DC_IS_HULL);
+		vaporize = (*create_flags->value & LE_DC_VAPORIZE);
+		set_velocity = (*create_flags->value & LE_DC_SET_VELOCITY);
+		fire_hook = (*create_flags->value & LE_DC_FIRE_HOOK);
+	}
+
+	int spark_timeout_millis = spark_timeout < 0.0f ? -1 : fl2i(spark_timeout * MILLISECONDS_PER_SECOND);
+
+	// a submodel and a ship class imply hull debris
+	if (submodel_num >= 0 && source_class >= 0)
+		is_hull = true;
+
+	// now call the relevant functions
+
+	auto obj = debris_create_only(source_objnum, source_class, -1, team, hitpoints, spark_timeout_millis, model_num, submodel_num, pos, orient, is_hull, vaporize, -1);
+	if (obj == nullptr)
+		return ade_set_args(L, "o", l_Debris.Set(object_h()));
+
+	if (set_velocity)
+		debris_create_set_velocity(&Debris[obj->instance], source_shipp, explosion_center, explosion_force_multiplier);
+
+	if (fire_hook)
+		debris_create_fire_hook(obj, source_objnum < 0 ? nullptr : &Objects[source_objnum]);
+
+	return ade_set_args(L, "o", l_Debris.Set(object_h(obj)));
 }
 
 ADE_FUNC(createWaypoint, l_Mission, "[vector Position, waypointlist List]",
@@ -1203,11 +1408,8 @@ ADE_FUNC(startMission,
 	return ade_set_args(L, "b", false);
 }
 
-ADE_FUNC(getMissionTime, l_Mission, NULL, "Game time in seconds since the mission was started; is affected by time compression", "number", "Mission time (seconds), or 0 if game is not in a mission")
+ADE_FUNC(getMissionTime, l_Mission, nullptr, "Game time in seconds since the mission was started; is affected by time compression", "number", "Mission time (seconds) of the current or most recently played mission.")
 {
-	if(!(Game_mode & GM_IN_MISSION))
-		return ade_set_error(L, "f", 0.0f);
-
 	return ade_set_args(L, "x", Missiontime);
 }
 
@@ -1369,6 +1571,23 @@ ADE_VIRTVAR(ShudderIntensity, l_Mission, "number", "Gets or sets the shudder int
 	return ade_set_args(L, "f", intensity);
 }
 
+ADE_VIRTVAR(Gravity, l_Mission, "vector", "Gravity acceleration vector in meters / second^2", "vector", "gravity vector")
+{
+	vec3d* gravity_vec = &The_mission.gravity;
+
+	if (ADE_SETTING_VAR && ade_get_args(L, "*o", l_Vector.GetPtr(&gravity_vec)))
+	{
+		The_mission.gravity = *gravity_vec;
+	}
+
+	return ade_set_args(L, "o", l_Vector.Set(The_mission.gravity));
+}
+
+ADE_FUNC(isInMission, l_Mission, nullptr, "get whether or not a mission is currently being played", "boolean", "true if in mission, false otherwise")
+{
+	return ade_set_args(L, "b", (Game_mode & GM_IN_MISSION) != 0);
+}
+
 ADE_FUNC(isInCampaign, l_Mission, NULL, "Get whether or not the current mission being played in a campaign (as opposed to the tech room's simulator)", "boolean", "true if in campaign, false if not")
 {
 	bool b = false;
@@ -1390,9 +1609,9 @@ ADE_FUNC(isTraining, l_Mission, nullptr, "Get whether or not the current mission
 	return ade_set_args(L, "b", (The_mission.game_type & MISSION_TYPE_TRAINING) != 0);
 }
 
-ADE_FUNC(isScramble, l_Mission, nullptr, "Get whether or not the current mission being played is a scramble mission", "boolean", "true if in training, false if not")
+ADE_FUNC(isScramble, l_Mission, nullptr, "Get whether or not the current mission being played is a scramble mission", "boolean", "true if scramble, false if not")
 {
-	return ade_set_args(L, "b", (brief_only_allow_briefing()));
+	return ade_set_args(L, "b", (brief_only_allow_briefing() == 1));
 }
 
 ADE_FUNC(isMissionSkipAllowed, l_Mission, nullptr, "Get whether or not the player has reached the failure limit", "boolean", "true if limit reached, false if not")
@@ -1642,6 +1861,55 @@ ADE_FUNC(hasGoalsStage,
 	bool goals = The_mission.flags[Mission::Mission_Flags::Toggle_showing_goals] == !!(The_mission.game_type & MISSION_TYPE_TRAINING);
 	
 	return ade_set_args(L, "b", goals);
+}
+
+ADE_FUNC(hasDebriefing,
+	l_Mission,
+	nullptr,
+	"Determines if the current mission has a debriefing",
+	"boolean",
+	"true if debriefing, false otherwise.")
+{
+	return ade_set_args(L, "b", !(The_mission.flags[Mission::Mission_Flags::Toggle_debriefing]));
+}
+
+ADE_FUNC(getMusicScore, l_Mission, "enumeration score", "Returns the music.tbl entry name for the specified mission music score", "string", "The name, or nil if the score is invalid")
+{
+	enum_h score;
+	if (!ade_get_args(L, "o", l_Enum.Get(&score)))
+		return ADE_RETURN_NIL;
+
+	if (!score.IsValid() || score.index < LE_SCORE_BRIEFING || score.index > LE_SCORE_FICTION_VIEWER)
+	{
+		Warning(LOCATION, "Invalid music score index %d", score.index);
+		return ADE_RETURN_NIL;
+	}
+
+	int spooled_index = Mission_music[score.index - LE_SCORE_BRIEFING];
+
+	const char *name = nullptr;
+	if (spooled_index >= 0 && (size_t)spooled_index < Spooled_music.size())
+		name = Spooled_music[spooled_index].name;
+
+	return ade_set_args(L, "s", name);
+}
+
+ADE_FUNC(setMusicScore, l_Mission, "enumeration score, string name", "Sets the music.tbl entry for the specified mission music score", nullptr, nullptr)
+{
+	enum_h score;
+	const char *name;
+	if (!ade_get_args(L, "os", l_Enum.Get(&score), &name))
+		return ADE_RETURN_NIL;
+
+	if (!score.IsValid() || score.index < LE_SCORE_BRIEFING || score.index > LE_SCORE_FICTION_VIEWER)
+	{
+		Warning(LOCATION, "Invalid music score index %d", score.index);
+		return ADE_RETURN_NIL;
+	}
+
+	event_music_set_score(score.index - LE_SCORE_BRIEFING, name);
+
+	return ADE_RETURN_TRUE;
 }
 
 int testLineOfSight_internal(lua_State* L, bool returnDist_and_Obj) {

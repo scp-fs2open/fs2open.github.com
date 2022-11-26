@@ -14,7 +14,6 @@
 #include "anim/animplay.h"
 #include "anim/packunpack.h"
 #include "cfile/cfile.h"
-#include "cmdline/cmdline.h"
 #include "freespace.h"
 #include "gamehelp/contexthelp.h"
 #include "gamesequence/gamesequence.h"
@@ -36,6 +35,7 @@
 #include "missionui/missionscreencommon.h"
 #include "missionui/missionshipchoice.h"
 #include "missionui/missionweaponchoice.h"
+#include "mod_table/mod_table.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #include "network/multiteamselect.h"
@@ -88,21 +88,6 @@ typedef struct ss_icon_info
 	int				model_index;
 	generic_anim	ss_anim;
 } ss_icon_info;
-
-typedef struct ss_slot_info
-{
-	int status;			// slot status (WING_SLOT_DISABLED, etc)
-	int sa_index;		// index into ship arrival list, -1 if ship is created
-	int original_ship_class;
-} ss_slot_info;
-
-typedef struct ss_wing_info
-{
-	int num_slots;
-	int wingnum;
-	int is_late;
-	ss_slot_info ss_slots[MAX_WING_SLOTS];
-} ss_wing_info;
 
 //ss_icon_info	Ss_icons[MAX_SHIP_CLASSES];		// holds ui info on different ship icons
 //ss_wing_info	Ss_wings[MAX_WING_BLOCKS];		// holds ui info for wings and wing slots
@@ -326,14 +311,14 @@ void pick_from_wing(int wb_num, int ws_num);
 
 // ui related
 void ship_select_button_do(int i);
-void ship_select_common_init();
+void ship_select_common_init(bool API_Access);
 void ss_reset_selected_ship();
 void ss_restore_loadout();
 void maybe_change_selected_wing_ship(int wb_num, int ws_num);
 
 // init functions
 void ss_init_pool(team_data *pteam);
-int create_wings();
+commit_pressed_status create_wings(bool API_Access = false);
 
 // loading/unloading
 void ss_unload_all_icons();
@@ -1437,7 +1422,7 @@ void ship_select_do(float frametime)
 		ship_select_redraw_pressed_buttons();
 		common_render_selected_screen_button();
 	}
-	if(!Cmdline_ship_choice_3d && ((Selected_ss_class >= 0) && (Ss_icons[Selected_ss_class].ss_anim.num_frames > 0)))
+	if (!Use_3d_ship_select && ((Selected_ss_class >= 0) && (Ss_icons[Selected_ss_class].ss_anim.num_frames > 0)))
 	{
 		GR_DEBUG_SCOPE("Render ship animation");
 
@@ -1510,7 +1495,7 @@ void ship_select_do(float frametime)
 		{
 			ship_info *sip = &Ship_info[Carried_ss_icon.ship_class];
 			if(Ss_icons[Carried_ss_icon.ship_class].model_index == -1) {
-				Ss_icons[Carried_ss_icon.ship_class].model_index = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+				Ss_icons[Carried_ss_icon.ship_class].model_index = model_load(sip, true);
 				mprintf(("SL WARNING: Had to attempt to page in model for %s paged in manually! Result: %d\n", sip->name, Ss_icons[Carried_ss_icon.ship_class].model_index));
 			}
 			gr_set_color_fast(&Icon_colors[ICON_FRAME_SELECTED]);
@@ -1703,7 +1688,7 @@ void draw_ship_icon_with_number(int screen_offset, int ship_class)
 	{
 		ship_info *sip = &Ship_info[ship_class];
 		if(ss_icon->model_index == -1) {
-			ss_icon->model_index = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+			ss_icon->model_index = model_load(sip, true);
 			mprintf(("SL WARNING: Had to attempt to page in model for %s paged in manually! Result: %d\n", sip->name, ss_icon->model_index));
 		}
 		gr_set_color_fast(color_to_draw);
@@ -1750,7 +1735,7 @@ void start_ship_animation(int ship_class, int  /*play_sound*/)
     
 	anim_timer_start = timer_get_milliseconds();
 
-	if ( Cmdline_ship_choice_3d || !strlen(sip->anim_filename) ) {
+	if ( Use_3d_ship_select || !strlen(sip->anim_filename) ) {
 
 		//Unload Anim if one was playing
 		if(Ship_anim_class > 0 && Ss_icons[Ship_anim_class].ss_anim.num_frames > 0) {
@@ -1759,7 +1744,7 @@ void start_ship_animation(int ship_class, int  /*play_sound*/)
 		}
 
 		// Load the necessary model file
-		ShipSelectModelNum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+		ShipSelectModelNum = model_load(sip, true);
 		
 		// page in ship textures properly (takes care of nondimming pixels)
 		model_page_in_textures(ShipSelectModelNum, ship_class);
@@ -1902,17 +1887,19 @@ bool check_for_gaps_in_weapon_slots()
 // ------------------------------------------------------------------------
 // commit_pressed() is called when the commit button from any of the briefing/ship select/ weapon
 // select screens is pressed.  The ship selected is created, and the interface music is stopped.
-void commit_pressed()
+commit_pressed_status commit_pressed(bool API_Access)
 {
 	int j, player_ship_info_index;
 	
 	if ( Wss_num_wings > 0 ) {
 		if(!(Game_mode & GM_MULTIPLAYER)){
-			int rc;
-			rc = create_wings();
-			if (rc != 0) {
-				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
-				return;
+			commit_pressed_status rc;
+			rc = create_wings(API_Access);
+			if (rc != commit_pressed_status::SUCCESS) {
+				if (!API_Access) {
+					gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
+				}
+				return rc;
 			}
 		}
 	}
@@ -1928,8 +1915,10 @@ void commit_pressed()
 
 		update_player_ship( player_ship_info_index );
 		if ( wl_update_ship_weapons(Ships[Player_obj->instance].objnum, &Wss_slots[0]) == -1 ) {
-			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR( "Player ship has no weapons", 461));
-			return;
+			if (!API_Access) {
+				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Player ship has no weapons", 461));
+			}
+			return commit_pressed_status::PLAYER_NO_WEAPONS;
 		}
 	}
 
@@ -1956,13 +1945,27 @@ void commit_pressed()
 	{
 		if (num_required_weapons == 1)
 		{
-			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("The %s is required for this mission, but it has not been added to any ship loadout.", 1624), weapon_list.c_str());
-			return;
+			if (!API_Access) {
+				popup(PF_USE_AFFIRMATIVE_ICON,
+					1,
+					POPUP_OK,
+					XSTR("The %s is required for this mission, but it has not been added to any ship loadout.", 1624),
+					weapon_list.c_str());
+			} 
+			return commit_pressed_status::NO_REQUIRED_WEAPON;
 		}
 		else if (num_required_weapons > 1)
 		{
-			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("The following weapons are required for this mission, but at least one of them has not been added to any ship loadout:\n\n%s", 1625), weapon_list.c_str());
-			return;
+			if (!API_Access) {
+				popup(PF_USE_AFFIRMATIVE_ICON,
+					1,
+					POPUP_OK,
+					XSTR("The following weapons are required for this mission, but at least one of them has not been "
+						 "added to any ship loadout:\n\n%s",
+						1625),
+					weapon_list.c_str());
+			} 
+			return commit_pressed_status::NO_REQUIRED_WEAPON_MULTIPLE;
 		}
 	}
 
@@ -1972,8 +1975,16 @@ void commit_pressed()
 	// Note2: don't check missions without briefings either
 	if (check_for_gaps_in_weapon_slots() && !(The_mission.game_type & MISSION_TYPE_TRAINING) && !The_mission.flags[Mission::Mission_Flags::Scramble, Mission::Mission_Flags::Red_alert, Mission::Mission_Flags::No_briefing])
 	{
-		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("At least one ship has an empty weapon bank before a full weapon bank.\n\nAll weapon banks must have weapons assigned, or if there are any gaps, they must be at the bottom of the set of banks.", 1642), weapon_list.c_str());
-		return;
+		if (!API_Access) {
+			popup(PF_USE_AFFIRMATIVE_ICON,
+				1,
+				POPUP_OK,
+				XSTR("At least one ship has an empty weapon bank before a full weapon bank.\n\nAll weapon banks must "
+					 "have weapons assigned, or if there are any gaps, they must be at the bottom of the set of banks.",
+					1642),
+				weapon_list.c_str());
+		} 
+		return commit_pressed_status::BANK_GAP_ERROR;
 	}
 
 	// Check to ensure that the hotkeys are still pointing to valid objects.  It is possible
@@ -2023,6 +2034,8 @@ void commit_pressed()
 		Pilot.save_savefile();
 		gameseq_post_event(GS_EVENT_ENTER_GAME);
 	}
+
+	return commit_pressed_status::SUCCESS;
 }
 
 // ------------------------------------------------------------------------
@@ -2368,7 +2381,7 @@ void ss_blit_ship_icon(int x,int y,int ship_class,int bmap_num)
 		{
 			ship_info *sip = &Ship_info[ship_class];
 			if(icon->model_index == -1) {
-				icon->model_index = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+				icon->model_index = model_load(sip, true);
 				mprintf(("SL WARNING: Had to attempt to page in model for %s paged in manually! Result: %d\n", sip->name, icon->model_index));
 			}
 			if(icon->model_index != -1)
@@ -2412,7 +2425,7 @@ void unload_wing_icons()
 //
 // returns:   0 ==> success
 //           !0 ==> failure
-int create_wings()
+commit_pressed_status create_wings(bool API_Access)
 {
 	ss_wing_info		*wb;
 	ss_slot_info		*ws;
@@ -2445,8 +2458,10 @@ int create_wings()
 					update_player_ship(Wss_slots[slot_index].ship_class);
 
 					if ( wl_update_ship_weapons(Ships[Player_obj->instance].objnum, &Wss_slots[i*MAX_WING_SLOTS+j]) == -1 ) {
-						popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR( "Player ship has no weapons", 461));
-						return -1;
+						if (!API_Access) {
+							popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Player ship has no weapons", 461));
+						}
+						return commit_pressed_status::PLAYER_NO_WEAPONS;
 					}
 
 					objnum = OBJ_INDEX(Player_obj);
@@ -2481,8 +2496,14 @@ int create_wings()
 			}
 			else if (ws->status & WING_SLOT_EMPTY) {
 				if ( ws->status & WING_SLOT_IS_PLAYER ) {						
-					popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR( "Player %s must select a place in player wing", 462), Player->callsign);
-					return -1;
+					if (!API_Access) {
+						popup(PF_USE_AFFIRMATIVE_ICON,
+							1,
+							POPUP_OK,
+							XSTR("Player %s must select a place in player wing", 462),
+							Player->callsign);
+					}
+					return commit_pressed_status::PLAYER_NO_SLOT;
 				}
 			}
 		}	// end for (wing slot)	
@@ -2535,7 +2556,7 @@ int create_wings()
 
 	}	// end for (wing block)
 	
-	return 0;
+	return commit_pressed_status::SUCCESS;
 }
 
 // ----------------------------------------------------------------------------
@@ -2755,23 +2776,24 @@ void ss_reset_selected_ship()
 	for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
 		if ( Wss_slots[i].ship_class >= 0 ) {
 			Selected_ss_class = Wss_slots[i].ship_class;
-			break;
+			return;
 		}
 	}
 
-	if ( Selected_ss_class == -1 ) {
-		Int3();
-		for ( i = 0; i < ship_info_size(); i++ ) {
-			if ( Ss_pool[i] > 0 ) {
-				Selected_ss_class = i;
-			}
+	// get the first ship class found in the pool
+	for ( i = 0; i < ship_info_size(); i++ ) {
+		if ( Ss_pool[i] > 0 ) {
+			Selected_ss_class = i;
+			return;
 		}
 	}
 
-	if ( Selected_ss_class == -1 ) {
+	// If we still haven't found a ship to display, then leave it as -1. This results in no ship info
+	// being displayed in the UI, but is not a game breaking issue. -Mjn
+	/*if ( Selected_ss_class == -1 ) {
 		Int3();
 		return;
-	}
+	}*/
 }
 
 // There may be ships that are in wings but not in Team_data[0].  Since we still want to show those
@@ -2890,7 +2912,7 @@ void ss_load_icons(int ship_class)
 	icon = &Ss_icons[ship_class];
 	ship_info *sip = &Ship_info[ship_class];
 
-	if(!Cmdline_ship_choice_3d && strlen(sip->icon_filename))
+	if (!Use_3d_ship_icons && strlen(sip->icon_filename))
 	{
 		int				first_frame, num_frames, i;
 		first_frame = bm_load_animation(sip->icon_filename, &num_frames);
@@ -2908,7 +2930,7 @@ void ss_load_icons(int ship_class)
 	}
 	else
 	{
-		icon->model_index = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+		icon->model_index = model_load(sip, true);
 		model_page_in_textures(icon->model_index, ship_class);
 	}
 }
@@ -2997,6 +3019,7 @@ void ss_clear_slots()
 			slot->status = WING_SLOT_LOCKED;
 			slot->sa_index = -1;
 			slot->original_ship_class = -1;
+			slot->in_mission = false;
 		}
 	}
 }
@@ -3108,6 +3131,7 @@ void ss_init_units()
 		for ( j = 0; j < ss_wing->num_slots; j++ ) {
 				
 			ss_slot = &ss_wing->ss_slots[j];
+			ss_slot->in_mission = true;
 
 			if ( ss_slot->sa_index == -1 ) {
 				ss_slot->original_ship_class = Ships[wp->ship_index[j]].ship_info_index;
@@ -3245,7 +3269,7 @@ void ship_select_init_team_data(int team_num)
 }
 
 // called when the briefing is entered
-void ship_select_common_init()
+void ship_select_common_init(bool API_Access)
 {		
 	// initialize team critical data for all teams
 	int idx;
@@ -3262,13 +3286,15 @@ void ship_select_common_init()
 		ship_select_init_team_data(Common_team);
 	}
 	
-	init_active_list();
+	if (!API_Access) {
+		init_active_list();
 
-	// load the necessary icons/animations
-	ss_load_all_icons();
+		// load the necessary icons/animations
+		ss_load_all_icons();
 
-	ss_reset_selected_ship();
-	ss_reset_carried_icon();
+		ss_reset_selected_ship();
+		ss_reset_carried_icon();
+	}
 }
 
 void ship_select_common_close()

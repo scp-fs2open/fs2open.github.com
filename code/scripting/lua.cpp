@@ -73,6 +73,7 @@ extern "C" {
 #include "scripting/api/libs/hookvars.h"
 #include "scripting/api/libs/hud.h"
 #include "scripting/api/libs/mission.h"
+#include "scripting/api/libs/multi.h"
 #include "scripting/api/libs/options.h"
 #include "scripting/api/libs/parse.h"
 #include "scripting/api/libs/tables.h"
@@ -168,6 +169,7 @@ int script_state::CreateLuaState()
 	for(i = 0; i < Num_enumerations; i++)
 	{
 		eh.index = Enumerations[i].def;
+		eh.value = Enumerations[i].value;
 		eh.is_constant = true;
 
 		ade_set_args(L, "o", l_Enum.Set(eh));

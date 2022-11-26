@@ -1528,6 +1528,7 @@ int sexp_tree::query_default_argument_available(int op, int i) {
 	case OPF_SHIP_EFFECT:
 	case OPF_ANIMATION_TYPE:
 	case OPF_SHIP_FLAG:
+	case OPF_WING_FLAG:
 	case OPF_NEBULA_PATTERN:
 	case OPF_NAV_POINT:
 	case OPF_TEAM_COLOR:
@@ -3247,6 +3248,10 @@ sexp_list_item* sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 		list = get_listing_opf_ship_flags();
 		break;
 
+	case OPF_WING_FLAG:
+		list = get_listing_opf_wing_flags();
+		break;
+
 	case OPF_TEAM_COLOR:
 		list = get_listing_opf_team_colors();
 		break;
@@ -4517,7 +4522,7 @@ sexp_list_item* sexp_tree::get_listing_opf_medal_name() {
 	int i;
 	sexp_list_item head;
 
-	for (i = 0; i < Num_medals; i++) {
+	for (i = 0; i < (int)Medals.size(); i++) {
 		// don't add Rank or the Ace badges
 		if ((i == Rank_medal_index) || (Medals[i].kills_needed > 0)) {
 			continue;
@@ -4792,20 +4797,40 @@ sexp_list_item* sexp_tree::get_listing_opf_mission_moods() {
 	return head.next;
 }
 
-sexp_list_item* sexp_tree::get_listing_opf_ship_flags() {
-	int i;
+template <typename M, typename T, typename PTM>
+static void add_flag_name_helper(M& flag_name_map, sexp_list_item& head, T flag_name_array[], PTM T::* member, size_t flag_name_count)
+{
+	for (size_t i = 0; i < flag_name_count; i++)
+	{
+		auto name = flag_name_array[i].*member;
+		if (flag_name_map.count(name) == 0)
+		{
+			head.add_data(name);
+			flag_name_map.insert(name);
+		}
+	}
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_ship_flags()
+{
 	sexp_list_item head;
-	// object flags
-	for (i = 0; i < Num_object_flag_names; i++) {
-		head.add_data(Object_flag_names[i].flag_name);
-	}
-	// ship flags
-	for (i = 0; i < Num_ship_flag_names; i++) {
-		head.add_data(Ship_flag_names[i].flag_name);
-	}
-	// ai flags
-	for (i = 0; i < Num_ai_flag_names; i++) {
-		head.add_data(Ai_flag_names[i].flag_name);
+	// prevent duplicate names, comparing case-insensitively
+	SCP_unordered_set<SCP_string, SCP_string_lcase_hash, SCP_string_lcase_equal_to> all_flags;
+
+	add_flag_name_helper(all_flags, head, Object_flag_names, &obj_flag_name::flag_name, (size_t)Num_object_flag_names);
+	add_flag_name_helper(all_flags, head, Ship_flag_names, &ship_flag_name::flag_name, Num_ship_flag_names);
+	add_flag_name_helper(all_flags, head, Parse_object_flags, &flag_def_list_new<Mission::Parse_Object_Flags>::name, Num_parse_object_flags);
+	add_flag_name_helper(all_flags, head, Ai_flag_names, &ai_flag_name::flag_name, (size_t)Num_ai_flag_names);
+
+	return head.next;
+}
+
+sexp_list_item* sexp_tree::get_listing_opf_wing_flags() {
+	size_t i;
+	sexp_list_item head;
+	// wing flags
+	for (i = 0; i < Num_wing_flag_names; i++) {
+		head.add_data(Wing_flag_names[i].flag_name);
 	}
 
 	return head.next;

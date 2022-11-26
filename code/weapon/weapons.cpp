@@ -236,11 +236,13 @@ special_flag_def_list_new<Weapon::Info_Flags, weapon_info*, flagset<Weapon::Info
 	{ "require exact los",				Weapon::Info_Flags::Require_exact_los,					true },
 	{ "can damage shooter",				Weapon::Info_Flags::Can_damage_shooter,					true },
 	{ "heals",							Weapon::Info_Flags::Heals,						        true },
+	{"vampiric",						Weapon::Info_Flags::Vampiric,							true },
 	{ "secondary no ammo",				Weapon::Info_Flags::SecondaryNoAmmo,					true },
 	{ "no collide",						Weapon::Info_Flags::No_collide,						    true },
 	{ "multilock target dead subsys",   Weapon::Info_Flags::Multilock_target_dead_subsys,		true },
 	{ "no evasion",						Weapon::Info_Flags::No_evasion,						    true },
  	{ "don't merge lead indicators",	Weapon::Info_Flags::Dont_merge_indicators,			    true },
+	{ "no_fred",						Weapon::Info_Flags::No_fred,							true },
 };
 
 const size_t num_weapon_info_flags = sizeof(Weapon_Info_Flags) / sizeof(special_flag_def_list_new<Weapon::Info_Flags, weapon_info*, flagset<Weapon::Info_Flags>&>);
@@ -777,6 +779,9 @@ void parse_shockwave_info(shockwave_create_info *sci, const char *pre_char)
 	if(optional_string(buf)) {
 		stuff_string(sci->name, F_NAME, MAX_FILENAME_LEN);
 	}
+
+	sprintf(buf, "%sShockwave Sound:", pre_char);
+	parse_game_sound(buf, &sci->blast_sound_id);
 }
 
 static SCP_vector<SCP_string> Removed_weapons;
@@ -1695,6 +1700,11 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	else if (first_time && is_homing) {
 		wip->free_flight_speed_factor = HOMING_DEFAULT_FREE_FLIGHT_FACTOR;
 	}
+
+	if (optional_string("$Gravity Const:")) {
+		stuff_float(&(wip->gravity_const));
+	}
+
 	//Optional one-shot sound to play at the beginning of firing
 	parse_game_sound("$PreLaunchSnd:", &wip->pre_launch_snd);
 
@@ -1712,6 +1722,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 	//Disarmed impact sound
 	parse_game_sound("$Disarmed ImpactSnd:", &wip->disarmed_impact_snd);
+
+	//Shield Impact sound --wookieejedi
+	parse_game_sound("$Shield ImpactSnd:", &wip->shield_impact_snd);
 
 	parse_game_sound("$FlyBySnd:", &wip->flyby_snd);
 
@@ -2223,6 +2236,23 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		stuff_float(&wip->afterburner_reduce);
 	}
 
+	// Multiplier for the healing done to the shooter of the weapon.
+	if (optional_string("$Vampiric Healing Factor:")) {
+		stuff_float(&wip->vamp_regen);
+		if (!(wip->wi_flags[Weapon::Info_Flags::Vampiric])) {
+			Warning(LOCATION,
+				"$Vampiric Healing Factor specified for weapon %s but this weapon does not have the \"Vampiric\" "
+				"weapon flag set. Automatically setting the flag",
+				wip->name);
+			wip->wi_flags.set(Weapon::Info_Flags::Vampiric);
+		}
+		if (wip->vamp_regen <= 0) {
+			Warning(LOCATION,
+				"Vampiric Healing Factor \'%s\' must be greater than zero\nResetting value to default.",
+				wip->name);
+			wip->vamp_regen = 1.0f;
+		}
+	}
 	if (optional_string("$Corkscrew:"))
 	{
 		if(optional_string("+Num Fired:")) {
@@ -5295,9 +5325,9 @@ void weapon_home(object *obj, int num, float frame_time)
 
 
 // moved out of weapon_process_post() so it can be called from either -post() or -pre() depending on Framerate_independent_turning
-void weapon_update_missiles(object* obj, float  frame_time) {
+void weapon_do_homing_behavior(object* obj, float  frame_time) {
 
-	Assertion(obj->type == OBJ_WEAPON, "weapon_update_missiles called on a non-weapon object");
+	Assertion(obj->type == OBJ_WEAPON, "weapon_do_homing_behavior called on a non-weapon object");
 
 	weapon* wp = &Weapons[obj->instance];
 	weapon_info* wip = &Weapon_info[wp->weapon_info_index];
@@ -5327,19 +5357,33 @@ void weapon_update_missiles(object* obj, float  frame_time) {
 			swarm_update_direction(obj, wp->swarm_info_ptr.get());
 		}
 	}
-	else if (wip->acceleration_time > 0.0f) {
-		if (Missiontime - wp->creation_time < fl2f(wip->acceleration_time)) {
-			float t;
-
-			t = f2fl(Missiontime - wp->creation_time) / wip->acceleration_time;
-			obj->phys_info.speed = wp->launch_speed + MAX(0.0f, wp->weapon_max_vel - wp->launch_speed) * t;
-		}
-		else {
-			obj->phys_info.speed = wip->max_speed;
-			obj->phys_info.flags |= PF_CONST_VEL; // Max speed reached, can use simpler physics calculations now
+	else {
+		if (The_mission.gravity != vmd_zero_vector && obj->phys_info.gravity_const != 0.0f) {
+			// if a weapon isnt homing and is affected by gravity, make it 'drift' towards its speed vector as it travels
+			float factor = vm_vec_mag(&The_mission.gravity) * obj->phys_info.gravity_const;
+			float interp = exp(-factor * flFrametime / obj->radius);
+			vec3d speed_vec = obj->phys_info.vel;
+			vm_vec_normalize(&speed_vec);
+			vm_vec_interp_constant(&obj->orient.vec.fvec, &obj->orient.vec.fvec, &speed_vec, 1.0f - interp);
 		}
 
-		vm_vec_copy_scale(&obj->phys_info.desired_vel, &obj->orient.vec.fvec, obj->phys_info.speed);
+		if (wip->acceleration_time > 0.0f) {
+			if (Missiontime - wp->creation_time < fl2f(wip->acceleration_time)) {
+				float t;
+
+				t = f2fl(Missiontime - wp->creation_time) / wip->acceleration_time;
+				obj->phys_info.speed = wp->launch_speed + MAX(0.0f, wp->weapon_max_vel - wp->launch_speed) * t;
+			}
+			else {
+				obj->phys_info.speed = wip->max_speed;
+				if (The_mission.gravity == vmd_zero_vector || obj->phys_info.gravity_const == 0.0f)
+					obj->phys_info.flags |= PF_CONST_VEL; // Max speed reached, can use simpler physics calculations now
+				else
+					obj->phys_info.flags |= PF_BALLISTIC;
+			}
+
+			vm_vec_copy_scale(&obj->phys_info.desired_vel, &obj->orient.vec.fvec, obj->phys_info.speed);
+		}
 	}
 }
 
@@ -5389,7 +5433,7 @@ void weapon_process_pre( object *obj, float  frame_time)
 
 	// If this flag is false missile turning is evaluated in weapon_process_post()
 	if (Framerate_independent_turning) {
-		weapon_update_missiles(obj, frame_time);
+		weapon_do_homing_behavior(obj, frame_time);
 	}
 }
 
@@ -5659,7 +5703,7 @@ void weapon_process_post(object * obj, float frame_time)
 
 	// If this flag is true this is evaluated in weapon_process_pre()
 	if (!Framerate_independent_turning) {
-		weapon_update_missiles(obj, frame_time);
+		weapon_do_homing_behavior(obj, frame_time);
 	}
 
 	//handle corkscrew missiles
@@ -6151,8 +6195,13 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	// set physics flag to allow optimization
 	if (((wip->subtype == WP_LASER) || (wip->subtype == WP_MISSILE)) && !(wip->is_homing()) && wip->acceleration_time == 0.0f) {
 		// set physics flag
-		objp->phys_info.flags |= PF_CONST_VEL;
+		if (The_mission.gravity == vmd_zero_vector || wip->gravity_const == 0.0f)
+			objp->phys_info.flags |= PF_CONST_VEL;
+		else
+			objp->phys_info.flags |= PF_BALLISTIC;
 	}
+
+	objp->phys_info.gravity_const = wip->gravity_const;
 
 	wp->start_pos = *pos;
 	wp->objnum = objnum;
@@ -6750,28 +6799,32 @@ void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos, bool 
 		// play a shield hit if shields are above 10% max in this quadrant
 		if ( shield_str > 0.1f ) {
 			// Play a shield impact sound effect
-			if ( hit_obj == Player_obj ) {
+			if ( !(Use_weapon_class_sounds_for_hits_to_player) && (hit_obj == Player_obj)) {
 				snd_play_3d( gamesnd_get_game_sound(GameSounds::SHIELD_HIT_YOU), hitpos, &Eye_position );
 				// AL 12-15-97: Add missile impact sound even when shield is hit
 				if ( wip->subtype == WP_MISSILE ) {
-					snd_play_3d( gamesnd_get_game_sound(GameSounds::PLAYER_HIT_MISSILE), hitpos, &Eye_position);
+					snd_play_3d( gamesnd_get_game_sound(GameSounds::PLAYER_HIT_MISSILE), hitpos, &Eye_position );
 				}
 			} else {
-				snd_play_3d( gamesnd_get_game_sound(GameSounds::SHIELD_HIT), hitpos, &Eye_position );
+				if (wip->shield_impact_snd.isValid()) {
+					snd_play_3d( gamesnd_get_game_sound(wip->shield_impact_snd), hitpos, &Eye_position );
+				} else {
+					snd_play_3d( gamesnd_get_game_sound(GameSounds::SHIELD_HIT), hitpos, &Eye_position );
+				}
 			}
 		} else {
 			// Play a hull impact sound effect
 			switch ( wip->subtype ) {
 				case WP_LASER:
-					if ( hit_obj == Player_obj )
+					if ( !(Use_weapon_class_sounds_for_hits_to_player) && (hit_obj == Player_obj))
 						snd_play_3d( gamesnd_get_game_sound(GameSounds::PLAYER_HIT_LASER), hitpos, &Eye_position );
 					else {
 						weapon_play_impact_sound(wip, hitpos, is_armed);
 					}
 					break;
 				case WP_MISSILE:
-					if ( hit_obj == Player_obj ) 
-						snd_play_3d( gamesnd_get_game_sound(GameSounds::PLAYER_HIT_MISSILE), hitpos, &Eye_position);
+					if ( !(Use_weapon_class_sounds_for_hits_to_player) && (hit_obj == Player_obj)) 
+						snd_play_3d( gamesnd_get_game_sound(GameSounds::PLAYER_HIT_MISSILE), hitpos, &Eye_position );
 					else {
 						weapon_play_impact_sound(wip, hitpos, is_armed);
 					}
@@ -8798,6 +8851,7 @@ void weapon_info::reset()
 	this->vel_inherit_amount = 1.0f;
 	this->free_flight_time = 0.0f;
 	this->free_flight_speed_factor = 0.25f;
+	this->gravity_const = 0.0f;
 	this->mass = 1.0f;
 	this->fire_wait = 1.0f;
 	this->max_delay = 0.0f;
@@ -8893,6 +8947,7 @@ void weapon_info::reset()
 	this->launch_snd = gamesnd_id();
 	this->impact_snd = gamesnd_id();
 	this->disarmed_impact_snd = gamesnd_id();
+	this->shield_impact_snd = gamesnd_id();
 	this->flyby_snd = gamesnd_id();
 
 	this->hud_tracking_snd = gamesnd_id();
@@ -8936,6 +8991,8 @@ void weapon_info::reset()
 
 	this->weapon_reduce = ESUCK_DEFAULT_WEAPON_REDUCE;
 	this->afterburner_reduce = ESUCK_DEFAULT_AFTERBURNER_REDUCE;
+
+	this->vamp_regen = 1.0f;
 
 	this->tag_time = -1.0f;
 	this->tag_level = -1;
@@ -9577,8 +9634,8 @@ bool weapon_multilock_can_lock_on_target(object* shooter, object* target_objp, w
 			return false;
 	}
 
-	// if this is part of the same team and doesn't have any iff restrictions, reject lock
-	if (!weapon_has_iff_restrictions(wip) && Ships[shooter->instance].team == obj_team(target_objp))
+	// if there are no iff restrictions, reject lock if they are not supposed to attack each other
+	if (!weapon_has_iff_restrictions(wip) && !iff_x_attacks_y(Ships[shooter->instance].team, obj_team(target_objp)))
 		return false;
 
 	vec3d vec_to_target;

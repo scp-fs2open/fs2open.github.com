@@ -55,8 +55,8 @@ InetGetFile::InetGetFile(const char *URL, const char *filename, int cf_type)
 	cf_create_directory(cf_type);
 
 	// create full path for file
-	char localfile[MAX_PATH_LEN] = "";
-	cf_create_default_path_string(localfile, MAX_PATH_LEN, cf_type, filename);
+	SCP_string localfile;
+	cf_create_default_path_string(localfile, cf_type, filename);
 
 	if ( strstr(URL, "http:") ) {
 		m_bUseHTTP = true;
@@ -66,9 +66,9 @@ InetGetFile::InetGetFile(const char *URL, const char *filename, int cf_type)
 		extern ushort Multi_options_proxy_port;
 
 		if ( strlen(Multi_options_proxy) > 0 ) {
-			http = new ChttpGet(URL, localfile, Multi_options_proxy, Multi_options_proxy_port);
+			http = new ChttpGet(URL, localfile.c_str(), Multi_options_proxy, Multi_options_proxy_port);
 		} else {
-			http = new ChttpGet(URL, localfile);
+			http = new ChttpGet(URL, localfile.c_str());
 		}
 
 		if (http == NULL) {
@@ -77,7 +77,7 @@ InetGetFile::InetGetFile(const char *URL, const char *filename, int cf_type)
 	} else if ( strstr(URL, "ftp:") ) {
 		m_bUseHTTP = FALSE;
 
-		ftp = new CFtpGet(URL,localfile);
+		ftp = new CFtpGet(URL,localfile.c_str());
 
 		if (ftp == NULL) {
 			m_HardError = INET_ERROR_NO_MEMORY;

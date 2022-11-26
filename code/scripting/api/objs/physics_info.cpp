@@ -394,6 +394,23 @@ ADE_VIRTVAR(AfterburnerActive, l_Physics, "boolean", "Specifies if the afterburn
 		return ade_set_args(L, "b",  false);
 }
 
+ADE_VIRTVAR(GravityConst, l_Physics, "number", "Multiplier for the effect of gravity on this object", "number", "Multiplier, or 0 if handle is invalid")
+{
+	physics_info_h* pih;
+	float grav_const = 0.0f;
+	if (!ade_get_args(L, "o|f", l_Physics.GetPtr(&pih), &grav_const))
+		return ade_set_error(L, "f", 0.0f);
+
+	if (!pih->IsValid())
+		return ade_set_error(L, "f", 0.0f);
+
+	if (ADE_SETTING_VAR) {
+		pih->pi->gravity_const = grav_const;
+	}
+
+	return ade_set_args(L, "f", pih->pi->gravity_const);
+}
+
 ADE_FUNC(isValid, l_Physics, NULL, "True if valid, false or nil if not", "boolean", "Detects whether handle is valid")
 {
 	physics_info_h *pih;

@@ -62,7 +62,9 @@ static int Subspace_model_outer = -1;
 static int Rendering_to_env = 0;
 
 int Num_stars = 500;
-fix starfield_timestamp = 0;
+
+// A timestamp for animated skyboxes -MageKing17
+TIMESTAMP Skybox_timestamp;
 
 #define MAX_FLARE_COUNT 10
 #define MAX_FLARE_BMP 6
@@ -472,8 +474,20 @@ void parse_startbl(const char *filename)
 				stuff_float(&sbm.b);
 				stuff_float(&sbm.i);
 
-				if (optional_string("$SunSpecularRGB:"))
-					mprintf(("Sun %s tried to set SunSpecularRGB. This feature has been deprecated and will be ignored.\n", sbm.filename));
+				if (optional_string("$SunSpecularRGB:")) {
+					SCP_string warning;
+					sprintf(warning, "Sun %s tried to set SunSpecularRGB. This feature has been deprecated and will be ignored.", sbm.filename);
+
+					float spec_r, spec_g, spec_b;
+					stuff_float(&spec_r);
+					stuff_float(&spec_g);
+					stuff_float(&spec_b);
+
+					if (fl_equal(sbm.r, spec_r) && fl_equal(sbm.g, spec_g) && fl_equal(sbm.b, spec_b))
+						mprintf(("%s\n", warning.c_str()));				// default case is not significant
+					else
+						Warning(LOCATION, "%s", warning.c_str());		// customized case is significant
+				}
 
 				// lens flare stuff
 				if (optional_string("$Flare:")) {
@@ -725,6 +739,8 @@ void stars_pre_level_init(bool clear_backgrounds)
 	uint idx, i;
 	starfield_bitmap *sb = NULL;
 
+	Num_stars = 500;
+
 	// we used to clear all the array entries, but now we can just wipe the vector
 	if (clear_backgrounds)
 		Backgrounds.clear();
@@ -787,6 +803,9 @@ void stars_pre_level_init(bool clear_backgrounds)
 
 	Env_cubemap_drawn = false;
 	Irr_cubemap_drawn = false;
+
+	// reset the skybox timestamp, used for animated textures
+	Skybox_timestamp = _timestamp();
 }
 
 // setup the render target ready for this mission's environment map

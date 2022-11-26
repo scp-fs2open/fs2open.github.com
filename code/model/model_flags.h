@@ -70,6 +70,7 @@ namespace Model {
         No_sparks,          // Subsystem does not generate sparks if hit - m!m
 		No_impact_debris,    // Don't spawn the small debris on impact - m!m
 		Hide_turret_from_loadout_stats, // Turret is not accounted for in auto-generated "Turrets" line in the ship loadout window --wookieejedi
+		Turret_distant_firepoint,	//Turret barrel is very long and should be taken into account when aiming -- Kiloku
 
         NUM_VALUES
 	};

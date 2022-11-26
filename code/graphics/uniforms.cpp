@@ -93,12 +93,8 @@ void convert_model_material(model_uniform_data* data_out,
 			data_out->emissionFactor.xyz.z = gr_light_zero[2];
 		}
 
-		if (Gloss_override_set) {
-			data_out->defaultGloss = Gloss_override;
-		} else {
-			data_out->defaultGloss = 0.6f;
-		}
 	}
+	data_out->defaultGloss = 0.6f;
 
 	if (shader_flags & SDR_FLAG_MODEL_DIFFUSE_MAP) {
 		if (material.is_desaturated()) {
@@ -107,14 +103,6 @@ void convert_model_material(model_uniform_data* data_out,
 			data_out->desaturate = 0;
 		}
 
-		if (Basemap_color_override_set) {
-			data_out->overrideDiffuse = 1;
-			data_out->diffuseClr.xyz.x = Basemap_color_override[0];
-			data_out->diffuseClr.xyz.y = Basemap_color_override[1];
-			data_out->diffuseClr.xyz.z = Basemap_color_override[2];
-		} else {
-			data_out->overrideDiffuse = 0;
-		}
 
 		switch (material.get_blend_mode()) {
 		case ALPHA_BLEND_PREMULTIPLIED:
@@ -132,55 +120,35 @@ void convert_model_material(model_uniform_data* data_out,
 	}
 
 	if (shader_flags & SDR_FLAG_MODEL_GLOW_MAP) {
-		if (Glowmap_color_override_set) {
-			data_out->overrideGlow = 1;
-			data_out->glowClr.xyz.x = Glowmap_color_override[0];
-			data_out->glowClr.xyz.y = Glowmap_color_override[1];
-			data_out->glowClr.xyz.z = Glowmap_color_override[2];
-		} else {
-			data_out->overrideGlow = 0;
-		}
 		data_out->sGlowmapIndex = bm_get_array_index(material.get_texture_map(TM_GLOW_TYPE));
 	}
 
 	if (shader_flags & SDR_FLAG_MODEL_SPEC_MAP) {
-		if (Specmap_color_override_set) {
-			data_out->overrideSpec = 1;
-			data_out->specClr.xyz.x = Specmap_color_override[0];
-			data_out->specClr.xyz.y = Specmap_color_override[1];
-			data_out->specClr.xyz.z = Specmap_color_override[2];
-		} else {
-			data_out->overrideSpec = 0;
-		}
 
 		if (material.get_texture_map(TM_SPEC_GLOSS_TYPE) > 0) {
 			data_out->sSpecmapIndex = bm_get_array_index(material.get_texture_map(TM_SPEC_GLOSS_TYPE));
 
 			data_out->gammaSpec = 1;
+			data_out->alphaGloss = 1;
 
-			if (Gloss_override_set) {
-				data_out->alphaGloss = 0;
-			} else {
-				data_out->alphaGloss = 1;
-			}
 		} else {
 			data_out->sSpecmapIndex = bm_get_array_index(material.get_texture_map(TM_SPECULAR_TYPE));
 
 			data_out->gammaSpec = 0;
 			data_out->alphaGloss = 0;
 		}
-
-		if (shader_flags & SDR_FLAG_MODEL_ENV_MAP) {
-			if (material.get_texture_map(TM_SPEC_GLOSS_TYPE) > 0 || Gloss_override_set) {
-				data_out->envGloss = 1;
-			} else {
-				data_out->envGloss = 0;
-			}
-
-			data_out->envMatrix = gr_env_texture_matrix;
-		}
 	}
 
+	if (shader_flags & SDR_FLAG_MODEL_ENV_MAP) {
+		if (material.get_texture_map(TM_SPEC_GLOSS_TYPE) > 0) {
+			data_out->envGloss = 1;
+		} else {
+			data_out->envGloss = 0;
+		}
+
+		data_out->envMatrix = gr_env_texture_matrix;
+	}
+	
 	if ( shader_flags & SDR_FLAG_MODEL_NORMAL_MAP ) {
 		data_out->sNormalmapIndex = bm_get_array_index(material.get_texture_map(TM_NORMAL_TYPE));
 	}
@@ -194,7 +162,7 @@ void convert_model_material(model_uniform_data* data_out,
 	}
 
 	if (shader_flags & SDR_FLAG_MODEL_SHADOWS) {
-		data_out->shadow_mv_matrix = Shadow_view_matrix;
+		data_out->shadow_mv_matrix = Shadow_view_matrix_light;
 
 		for (size_t i = 0; i < MAX_SHADOW_CASCADES; ++i) {
 			data_out->shadow_proj_matrix[i] = Shadow_proj_matrix[i];
@@ -254,11 +222,6 @@ void convert_model_material(model_uniform_data* data_out,
 			data_out->fogColor.xyzw.z = i2fl(fog_params.b) / 255.0f;
 			data_out->fogColor.xyzw.w = 1.0f;
 		}
-	}
-
-	if (shader_flags & SDR_FLAG_MODEL_NORMAL_ALPHA) {
-		data_out->normalAlphaMinMax.x = material.get_normal_alpha_min();
-		data_out->normalAlphaMinMax.y = material.get_normal_alpha_max();
 	}
 
 	if ( shader_flags & SDR_FLAG_MODEL_THICK_OUTLINES ) {

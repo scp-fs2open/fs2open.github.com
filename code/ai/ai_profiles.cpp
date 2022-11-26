@@ -602,6 +602,14 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$fix good-rearm-time bug:", AI::Profile_Flags::Fix_good_rearm_time_bug);
 
+				set_flag(profile, "$no continuous turn on attack:", AI::Profile_Flags::No_continuous_turn_on_attack);
+
+				set_flag(profile, "$remove-goal properly removes play-dead order:", AI::Profile_Flags::Fixed_removing_play_dead_order);
+
+				set_flag(profile, "$bay arrivals not time limited:", AI::Profile_Flags::Disable_bay_emerge_timeout);
+
+				set_flag(profile, "$use adjusted AI class autoscale:", AI::Profile_Flags::Adjusted_AI_class_autoscale);
+
 
 				// if we've been through once already and are at the same place, force a move
 				if (saved_Mp && (saved_Mp == Mp))
@@ -772,5 +780,7 @@ void ai_profile_t::reset()
 	}
 	if (mod_supports_version(22, 4, 0)) {
 		flags.set(AI::Profile_Flags::Fix_good_rearm_time_bug);
+		flags.set(AI::Profile_Flags::No_continuous_turn_on_attack);
+		flags.set(AI::Profile_Flags::Fixed_removing_play_dead_order);
 	}
 }

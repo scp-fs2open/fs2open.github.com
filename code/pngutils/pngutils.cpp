@@ -6,6 +6,7 @@
 #include "globalincs/pstypes.h"
 #include "graphics/2d.h"
 #include "pngutils/pngutils.h"
+#include "utils/base64.h"
 
 struct png_status {
 	CFILE* cfp = nullptr;
@@ -85,6 +86,65 @@ static void png_warning_fn(png_structp png_ptr, png_const_charp message)
 	}
 }
 
+
+static int png_read_header_data(int* w, int* h, int* bpp, png_voidp status, png_error_ptr error, png_error_ptr warning, png_rw_ptr readFunc, std::function<void()> onClose)
+{
+	png_infop info_ptr;
+	png_structp png_ptr;
+
+	/* Create and initialize the png_struct with the desired error handler
+	* functions.  If you want to use the default stderr and longjump method,
+	* you can supply NULL for the last three parameters.  We also supply the
+	* the compiler header file version, so that we know if the application
+	* was compiled with a compatible version of the library.  REQUIRED
+	*/
+	png_ptr = png_create_read_struct_2(PNG_LIBPNG_VER_STRING, status, error, warning, status, png_malloc_fn, png_free_fn);
+
+	if (png_ptr == nullptr)
+	{
+		mprintf(("png_read_header: error creating read struct\n"));
+		onClose();
+		return PNG_ERROR_READING;
+	}
+
+	/* Allocate/initialize the memory for image information.  REQUIRED. */
+	info_ptr = png_create_info_struct(png_ptr);
+	if (info_ptr == NULL)
+	{
+		mprintf(("png_read_header: error creating info struct\n"));
+		onClose();
+		png_destroy_read_struct(&png_ptr, nullptr, nullptr);
+		return PNG_ERROR_READING;
+	}
+
+	if (setjmp(png_jmpbuf(png_ptr)))
+	{
+		mprintf(("png_read_header: something went wrong\n"));
+		/* Free all of the memory associated with the png_ptr and info_ptr */
+		png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
+		onClose();
+		/* If we get here, we had a problem reading the file */
+		return PNG_ERROR_READING;
+	}
+
+	png_set_read_fn(png_ptr, status, readFunc);
+
+	png_read_info(png_ptr, info_ptr);
+
+	if (w) *w = png_get_image_width(png_ptr, info_ptr);
+	if (h) *h = png_get_image_height(png_ptr, info_ptr);
+	// this turns out to be near useless, but meh
+	if (bpp) {
+		// bit depth can also be 16 bit we tell libpng to reduce that to 8 bits so we also need to tell our caller about that
+		auto bits = std::min(8, (int)png_get_bit_depth(png_ptr, info_ptr));
+		*bpp = (png_get_channels(png_ptr, info_ptr) * bits);
+	}
+
+	png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
+
+	return PNG_ERROR_NONE;
+}
+
 /*
  * @brief Reads header information from the PNG file into the bitmap pointer
  *
@@ -99,14 +159,12 @@ static void png_warning_fn(png_structp png_ptr, png_const_charp message)
 int png_read_header(const char *real_filename, CFILE *img_cfp, int *w, int *h, int *bpp, ubyte * /*palette*/)
 {
 	char filename[MAX_FILENAME_LEN];
-	png_infop info_ptr;
-	png_structp png_ptr;
 
 	png_status status;
 	status.reading_header = true;
 	status.filename = real_filename;
 
-	if (img_cfp == NULL) {
+	if (img_cfp == nullptr) {
 		strcpy_s( filename, real_filename );
 
 		char *p = strchr( filename, '.' );
@@ -124,101 +182,60 @@ int png_read_header(const char *real_filename, CFILE *img_cfp, int *w, int *h, i
 		status.cfp = img_cfp;
 	}
 
-	Assert( status.cfp != NULL );
+	Assert( status.cfp != nullptr);
 
-	if (status.cfp == NULL)
+	if (status.cfp == nullptr)
 		return PNG_ERROR_READING;
 
-	/* Create and initialize the png_struct with the desired error handler
-	* functions.  If you want to use the default stderr and longjump method,
-	* you can supply NULL for the last three parameters.  We also supply the
-	* the compiler header file version, so that we know if the application
-	* was compiled with a compatible version of the library.  REQUIRED
-	*/
-	png_ptr = png_create_read_struct_2(PNG_LIBPNG_VER_STRING, &status, png_error_fn, png_warning_fn, &status, png_malloc_fn, png_free_fn);
+	int result = png_read_header_data(w, h, bpp, &status, png_error_fn, png_warning_fn, png_scp_read_data, [&status]() {cfclose(status.cfp); });
 
-	if (png_ptr == NULL)
-	{
-		mprintf(("png_read_header: error creating read struct\n"));
+	if (img_cfp == nullptr) {
 		cfclose(status.cfp);
-		return PNG_ERROR_READING;
+		status.cfp = nullptr;
 	}
 
-	/* Allocate/initialize the memory for image information.  REQUIRED. */
-	info_ptr = png_create_info_struct(png_ptr);
-	if (info_ptr == NULL)
-	{
-		mprintf(("png_read_header: error creating info struct\n"));
-		cfclose(status.cfp);
-		png_destroy_read_struct(&png_ptr, NULL, NULL);
-		return PNG_ERROR_READING;
-	}
+	return result;
+}
 
-	if (setjmp(png_jmpbuf(png_ptr)))
-	{
-		mprintf(("png_read_header: something went wrong\n"));
-		/* Free all of the memory associated with the png_ptr and info_ptr */
-		png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
-		cfclose(status.cfp);
-		/* If we get here, we had a problem reading the file */
-		return PNG_ERROR_READING;
-	}
+int png_read_header(const SCP_string& b64, int* w, int* h, int* bpp, ubyte* /*palette*/)
+{
+	struct b64_dec_buffer {
+		SCP_string decoded;
+		size_t pos;
+	} buffer{ base64_decode(b64), 0 };
 
-	png_set_read_fn(png_ptr, &status, png_scp_read_data);
+	return png_read_header_data(w, h, bpp, &buffer,
+		[](png_structp png_ptr, png_const_charp msg) {
+			mprintf(("PNG error while parsing base64 PNG: %s\n", msg));
+			longjmp(png_jmpbuf(png_ptr), 1);
+		},
+		[](png_structp, png_const_charp msg) {
+			mprintf(("PNG warning while parsing base64 PNG: %s\n", msg));
+		},
+			[](png_structp png_ptr, png_bytep datap, png_size_t length) {
+			b64_dec_buffer& buf = *static_cast<b64_dec_buffer*>(png_get_io_ptr(png_ptr));
 
-	png_read_info(png_ptr, info_ptr);
-
-	if (w) *w = png_get_image_width(png_ptr, info_ptr);
-	if (h) *h = png_get_image_height(png_ptr, info_ptr);
-	// this turns out to be near useless, but meh
-	if (bpp) {
-		// bit depth can also be 16 bit we tell libpng to reduce that to 8 bits so we also need to tell our caller about that
-		auto bits = std::min(8, (int)png_get_bit_depth(png_ptr, info_ptr));
-		*bpp = (png_get_channels(png_ptr, info_ptr) * bits);
-	}
-
-	if (img_cfp == NULL) {
-		cfclose(status.cfp);
-		status.cfp = NULL;
-	}
-
-	png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
-
-	return PNG_ERROR_NONE;
+			for (size_t finalPos = buf.pos + length; buf.pos < finalPos; buf.pos++) {
+				*(datap++) = buf.decoded.at(buf.pos);
+			}
+		}, []() {});
 }
 
 /*
  * Loads a PNG image
  *
- * @param [in]  real_filename  name of the png file to load
  * @param [out] image_data     allocated storage for the bitmap
  * @param [in]  bpp
  * @param [in]  dest_size
- * @param [in]  cf_type
  *
  * @retval true if succesful, false otherwise
  */
-int png_read_bitmap(const char *real_filename, ubyte *image_data, int *bpp, int  /*dest_size*/, int cf_type)
+static int png_read_bitmap_data(ubyte *image_data, int *bpp, png_voidp status, png_error_ptr error, png_error_ptr warning, png_rw_ptr readFunc, std::function<void()> onClose)
 {
-	char filename[MAX_FILENAME_LEN];
 	png_infop info_ptr;
 	png_structp png_ptr;
 	png_bytepp row_pointers;
 	unsigned int i;
-
-	png_status status;
-	status.reading_header = false;
-	status.filename = real_filename;
-
-	strcpy_s( filename, real_filename );
-	char *p = strchr( filename, '.' );
-	if ( p ) *p = 0;
-	strcat_s( filename, ".png" );
-
-	status.cfp = cfopen(filename, "rb", CFILE_NORMAL, cf_type);
-
-	if (status.cfp == NULL)
-		return PNG_ERROR_READING;
 
 	/* Create and initialize the png_struct with the desired error handler
 	* functions.  If you want to use the default stderr and longjump method,
@@ -226,22 +243,22 @@ int png_read_bitmap(const char *real_filename, ubyte *image_data, int *bpp, int 
 	* the compiler header file version, so that we know if the application
 	* was compiled with a compatible version of the library.  REQUIRED
 	*/
-	png_ptr = png_create_read_struct_2(PNG_LIBPNG_VER_STRING, &status, png_error_fn, png_warning_fn, NULL, NULL, NULL);
+	png_ptr = png_create_read_struct_2(PNG_LIBPNG_VER_STRING, status, error, warning, nullptr, nullptr, nullptr);
 
-	if (png_ptr == NULL)
+	if (png_ptr == nullptr)
 	{
 		mprintf(("png_read_bitmap: png_ptr went wrong\n"));
-		cfclose(status.cfp);
+		onClose();
 		return PNG_ERROR_READING;
 	}
 
 	/* Allocate/initialize the memory for image information.  REQUIRED. */
 	info_ptr = png_create_info_struct(png_ptr);
-	if (info_ptr == NULL)
+	if (info_ptr == nullptr)
 	{
 		mprintf(("png_read_bitmap: info_ptr went wrong\n"));
-		cfclose(status.cfp);
-		png_destroy_read_struct(&png_ptr, NULL, NULL);
+		onClose();
+		png_destroy_read_struct(&png_ptr, nullptr, nullptr);
 		return PNG_ERROR_READING;
 	}
 
@@ -249,13 +266,13 @@ int png_read_bitmap(const char *real_filename, ubyte *image_data, int *bpp, int 
 	{
 		mprintf(("png_read_bitmap: something went wrong\n"));
 		/* Free all of the memory associated with the png_ptr and info_ptr */
-		png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
-		cfclose(status.cfp);
+		png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
+		onClose();
 		/* If we get here, we had a problem reading the file */
 		return PNG_ERROR_READING;
 	}
 
-	png_set_read_fn(png_ptr, &status, png_scp_read_data);
+	png_set_read_fn(png_ptr, status, readFunc);
 
 	png_read_png(png_ptr, info_ptr, PNG_TRANSFORM_BGR | PNG_TRANSFORM_EXPAND | PNG_TRANSFORM_STRIP_16, NULL);
 	auto len = png_get_rowbytes(png_ptr, info_ptr);
@@ -272,23 +289,69 @@ int png_read_bitmap(const char *real_filename, ubyte *image_data, int *bpp, int 
 	}
 
 	png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
-	cfclose(status.cfp);
+	onClose();
 
 	return PNG_ERROR_NONE;
 }
 
-bool png_write_bitmap(const char* filename, size_t width, size_t height, bool y_flip, const uint8_t* data) {
+/*
+ * Loads a PNG image
+ *
+ * @param [in]  real_filename  name of the png file to load
+ * @param [out] image_data     allocated storage for the bitmap
+ * @param [in]  bpp
+ * @param [in]  dest_size
+ * @param [in]  cf_type
+ *
+ * @retval true if succesful, false otherwise
+ */
+int png_read_bitmap(const char* real_filename, ubyte* image_data, int* bpp, int  /*dest_size*/, int cf_type)
+{
+	char filename[MAX_FILENAME_LEN];
+
 	png_status status;
+	status.reading_header = false;
+	status.filename = real_filename;
 
-	status.writing = true;
-	status.filename = filename;
-	status.cfp = cfopen(filename, "wb");
+	strcpy_s(filename, real_filename);
+	char* p = strchr(filename, '.');
+	if (p) *p = 0;
+	strcat_s(filename, ".png");
 
-	if (!status.cfp) {
-		return false;
-	}
+	status.cfp = cfopen(filename, "rb", CFILE_NORMAL, cf_type);
 
-	auto png_ptr = png_create_write_struct_2(PNG_LIBPNG_VER_STRING, &status, png_error_fn, png_warning_fn, &status, png_malloc_fn, png_free_fn);
+	if (status.cfp == NULL)
+		return PNG_ERROR_READING;
+
+	return png_read_bitmap_data(image_data, bpp, &status, png_error_fn, png_warning_fn, png_scp_read_data, [&status]() {cfclose(status.cfp); });
+}
+
+int png_read_bitmap(const SCP_string& b64, ubyte* image_data, int* bpp)
+{
+	struct b64_dec_buffer {
+		SCP_string decoded;
+		size_t pos;
+	} buffer{ base64_decode(b64), 0 };
+
+	return png_read_bitmap_data(image_data, bpp, &buffer,
+		[](png_structp png_ptr, png_const_charp msg) {
+			mprintf(("PNG error while parsing base64 PNG: %s\n", msg));
+			longjmp(png_jmpbuf(png_ptr), 1);
+		},
+		[](png_structp, png_const_charp msg) {
+			mprintf(("PNG warning while parsing base64 PNG: %s\n", msg));
+		}, 
+		[](png_structp png_ptr, png_bytep datap, png_size_t length) {
+			b64_dec_buffer& buf = *static_cast<b64_dec_buffer*>(png_get_io_ptr(png_ptr));
+
+			for (size_t finalPos = std::min(buf.pos + length, buf.decoded.size()); buf.pos < finalPos; buf.pos++) {
+				*(datap++) = buf.decoded.at(buf.pos);
+			}
+		}, []() {});
+}
+
+static bool png_write_bitmap_data(size_t width, size_t height, bool y_flip, const uint8_t* data, png_voidp status, png_error_ptr error, png_error_ptr warning, png_rw_ptr writeFunc, png_flush_ptr flushFnc) {
+	auto png_ptr = png_create_write_struct_2(PNG_LIBPNG_VER_STRING, status, error, warning, status, png_malloc_fn, png_free_fn);
 
 	auto info_ptr = png_create_info_struct(png_ptr);
 	png_set_IHDR(png_ptr, info_ptr, (png_uint_32)width, (png_uint_32)height, 8, PNG_COLOR_TYPE_RGBA,
@@ -306,13 +369,85 @@ bool png_write_bitmap(const char* filename, size_t width, size_t height, bool y_
 	// According to the documentation level 6 should perform reasonably well for us
 	png_set_compression_level(png_ptr, 6);
 #endif
-	png_set_write_fn(png_ptr, &status, png_scp_write_data, png_scp_flush);
+	png_set_write_fn(png_ptr, status, writeFunc, flushFnc);
 	png_write_png(png_ptr, info_ptr, PNG_TRANSFORM_IDENTITY, nullptr);
 
 	png_destroy_write_struct(&png_ptr, &info_ptr);
+
+	return true;
+}
+
+bool png_write_bitmap(const char* filename, size_t width, size_t height, bool y_flip, const uint8_t* data) {
+	png_status status;
+
+	status.writing = true;
+	status.filename = filename;
+	status.cfp = cfopen(filename, "wb");
+
+	if (!status.cfp) {
+		return false;
+	}
+
+	png_write_bitmap_data(width, height, y_flip, data, &status, png_error_fn, png_warning_fn, png_scp_write_data, png_scp_flush);
+
 	cfclose(status.cfp);
 
 	return true;
+}
+
+SCP_string png_b64_bitmap(size_t width, size_t height, bool y_flip, const uint8_t* data) {
+	struct b64_enc_buffer {
+		size_t i = 0;
+		std::array<png_byte, 3> buffer;
+		std::stringstream b64;
+
+	} buffer;
+
+	png_write_bitmap_data(width, height, y_flip, data, &buffer,
+		[](png_structp png_ptr, png_const_charp msg) {
+		mprintf(("PNG error while generating base64: %s\n", msg));
+		longjmp(png_jmpbuf(png_ptr), 1);
+		},
+		[](png_structp, png_const_charp msg) {
+			mprintf(("PNG warning while generating base64: %s\n", msg));
+		}, 
+		[](png_structp png_ptr, png_bytep datap, png_size_t length) {
+			auto& buf = *static_cast<b64_enc_buffer*>(png_get_io_ptr(png_ptr));
+
+			while (buf.i != 0 && length != 0) {
+				length--;
+				buf.buffer[buf.i] = *(datap++);
+
+				if (++buf.i >= 3) {
+					buf.i = 0;
+					base64_encode(buf.b64, buf.buffer.data(), 3);
+				}
+			}
+
+			if (length == 0)
+				return;
+
+			size_t rem = length % 3;
+
+			base64_encode(buf.b64, datap, (unsigned int) length - (unsigned int) rem);
+			datap = &datap[length - rem];
+
+			for (; buf.i < rem; buf.i++) {
+				buf.buffer[buf.i] = *(datap++);
+			}
+		},
+		[](png_structp png_ptr) {
+			auto& buf = *static_cast<b64_enc_buffer*>(png_get_io_ptr(png_ptr));
+
+			if (buf.i != 0) {
+				base64_encode(buf.b64, buf.buffer.data(), (unsigned int) buf.i);
+			}
+		});
+
+	if (buffer.i != 0)
+		base64_encode(buffer.b64, buffer.buffer.data(), (unsigned int)buffer.i);
+
+	return buffer.b64.str();
 }
 
 /*

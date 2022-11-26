@@ -62,6 +62,7 @@
 #include "ship/ship.h"
 #include "osapi/osregistry.h"
 #include "mission/missionbriefcommon.h"
+#include "missionui/missionscreencommon.h"
 #include "parse/parselo.h"
 #include "cfile/cfile.h"
 #include "network/multi_fstracker.h"
@@ -1912,10 +1913,10 @@ void multi_join_send_join_request(int as_observer)
 	}
 
 	// 5/26/98 -- for team v team games, don't allow ingame joining :-(
-	if ( (Multi_join_selected_item->flags & AG_FLAG_TEAMS) && (Multi_join_selected_item->flags & (AG_FLAG_PAUSE|AG_FLAG_IN_MISSION)) ) {
-		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Joining ingame is currently not allowed for team vs. team games",772));
-		return;
-	}
+//	if ( (Multi_join_selected_item->flags & AG_FLAG_TEAMS) && (Multi_join_selected_item->flags & (AG_FLAG_PAUSE|AG_FLAG_IN_MISSION)) ) {
+//		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Joining ingame is currently not allowed for team vs. team games",772));
+//		return;
+//	}
 
 	memset(&Multi_join_request,0,sizeof(join_request));
 
@@ -8241,7 +8242,7 @@ void multi_sync_post_init()
 
 #define MULTI_POST_TIMESTAMP			7000
 
-extern int create_wings();
+extern commit_pressed_status create_wings();
 
 void multi_sync_post_do()
 {	

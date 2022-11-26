@@ -1319,7 +1319,7 @@ int aifft_rotate_turret(object *objp, ship *shipp, ship_subsys *ss, object *lep,
 
 	if (ss->turret_enemy_objnum != -1) {
 		model_subsystem *tp = ss->system_info;
-		vec3d	gun_pos, gun_vec, target_moving_direction;
+		vec3d	gun_pos, gun_vec, target_vel;
 		//float		weapon_speed;
 		float		weapon_system_strength;
 		//HACK HACK HACK -WMC
@@ -1357,14 +1357,33 @@ int aifft_rotate_turret(object *objp, ship *shipp, ship_subsys *ss, object *lep,
 			}
 		}
 
-		target_moving_direction = ss->last_aim_enemy_vel;
+		target_vel = ss->last_aim_enemy_vel;
 
 		//Try to guess where the enemy will be, and store that spot in predicted_enemy_pos
 		if (The_mission.ai_profile->flags[AI::Profile_Flags::Use_additive_weapon_velocity]) {
-			vm_vec_scale_sub2(&target_moving_direction, &objp->phys_info.vel, wip->vel_inherit_amount);
+			vm_vec_scale_sub2(&target_vel, &objp->phys_info.vel, wip->vel_inherit_amount);
 		}
 
-		set_predicted_enemy_pos_turret(predicted_enemy_pos, &gun_pos, objp, &enemy_point, &target_moving_direction, wip->max_speed, ss->turret_time_enemy_in_range * (weapon_system_strength + 1.0f)/2.0f);
+		if (tp->flags[Model::Subsystem_Flags::Turret_distant_firepoint] || Always_use_distant_firepoints) {
+			//The firing point of this turret is so far away from the its center that we should consider this for firing calculations
+			//This will do the enemy position prediction based on their relative position and speed to the firing point, not the turret center.
+			vec3d temp;
+			ship_get_global_turret_gun_info(objp, ss, &gun_pos, &temp, 1, nullptr);
+		} 
+
+		if (IS_VEC_NULL(&The_mission.gravity) || wip->gravity_const == 0.0f)
+			set_predicted_enemy_pos_turret(predicted_enemy_pos, &gun_pos, objp, &enemy_point, &target_vel, wip->max_speed, ss->turret_time_enemy_in_range * (weapon_system_strength + 1.0f)/2.0f);
+		else {
+			vec3d shoot_vec;
+			if (physics_lead_ballistic_trajectory(&gun_pos, &enemy_point, &target_vel, wip->max_speed, &The_mission.gravity, &shoot_vec)) {
+				*predicted_enemy_pos = gun_pos + shoot_vec * 1000.0f;
+			} else {
+				if ((ss->system_info->flags[Model::Subsystem_Flags::Turret_reset_idle]) && (timestamp_elapsed(ss->rotation_timestamp))) {
+					ret_val = model_rotate_gun(objp, pm, pmi, ss, predicted_enemy_pos, true);
+				}
+				return ret_val;
+			}
+		}
 
 		//Mess with the turret's accuracy if the weapon system is damaged.
 		if (weapon_system_strength < Weapon_SS_Threshold_Turret_Inaccuracy) {
@@ -1643,11 +1662,21 @@ void turret_set_next_fire_timestamp(int weapon_num, weapon_info *wip, ship_subsy
 			if (wip->wi_flags[Weapon::Info_Flags::Flak]) {
 				wait *= aip->ai_ship_fire_delay_scale_friendly * 0.5f;
 				if (aip->ai_class_autoscale)
-					wait += (Num_ai_classes - aip->ai_class - 1) * 40.0f;
+				{
+					if (The_mission.ai_profile->flags[AI::Profile_Flags::Adjusted_AI_class_autoscale])
+						wait += (ai_get_autoscale_index(Num_ai_classes) - ai_get_autoscale_index(aip->ai_class) - 1) * 40.0f;
+					else
+						wait += (Num_ai_classes - aip->ai_class - 1) * 40.0f;
+				}
 			} else {
 				wait *= aip->ai_ship_fire_delay_scale_friendly;
 				if (aip->ai_class_autoscale)
-					wait += (Num_ai_classes - aip->ai_class - 1) * 100.0f;
+				{
+					if (The_mission.ai_profile->flags[AI::Profile_Flags::Adjusted_AI_class_autoscale])
+						wait += (ai_get_autoscale_index(Num_ai_classes) - ai_get_autoscale_index(aip->ai_class) - 1) * 100.0f;
+					else
+						wait += (Num_ai_classes - aip->ai_class - 1) * 100.0f;
+				}
 			}
 		} else {
 			// flak guns need to fire more rapidly
@@ -1658,13 +1687,23 @@ void turret_set_next_fire_timestamp(int weapon_num, weapon_info *wip, ship_subsy
 					wait *= aip->ai_ship_fire_delay_scale_hostile * 0.5f;
 				}	
 				if (aip->ai_class_autoscale)
-					wait += (Num_ai_classes - aip->ai_class - 1) * 40.0f;
+				{
+					if (The_mission.ai_profile->flags[AI::Profile_Flags::Adjusted_AI_class_autoscale])
+						wait += (ai_get_autoscale_index(Num_ai_classes) - ai_get_autoscale_index(aip->ai_class) - 1) * 40.0f;
+					else
+						wait += (Num_ai_classes - aip->ai_class - 1) * 40.0f;
+				}
 
 			} else if (wip->wi_flags[Weapon::Info_Flags::Huge]) {
 				// make huge weapons fire independently of team
 				wait *= aip->ai_ship_fire_delay_scale_friendly;
 				if (aip->ai_class_autoscale)
-					wait += (Num_ai_classes - aip->ai_class - 1) * 100.0f;
+				{
+					if (The_mission.ai_profile->flags[AI::Profile_Flags::Adjusted_AI_class_autoscale])
+						wait += (ai_get_autoscale_index(Num_ai_classes) - ai_get_autoscale_index(aip->ai_class) - 1) * 100.0f;
+					else
+						wait += (Num_ai_classes - aip->ai_class - 1) * 100.0f;
+				}
 			} else {
 				// give team friendly an advantage
 				if (Ships[aip->shipnum].team == Player_ship->team) {
@@ -1673,7 +1712,12 @@ void turret_set_next_fire_timestamp(int weapon_num, weapon_info *wip, ship_subsy
 					wait *= aip->ai_ship_fire_delay_scale_hostile;
 				}	
 				if (aip->ai_class_autoscale)
-					wait += (Num_ai_classes - aip->ai_class - 1) * 100.0f;
+				{
+					if (The_mission.ai_profile->flags[AI::Profile_Flags::Adjusted_AI_class_autoscale])
+						wait += (ai_get_autoscale_index(Num_ai_classes) - ai_get_autoscale_index(aip->ai_class) - 1) * 100.0f;
+					else
+						wait += (Num_ai_classes - aip->ai_class - 1) * 100.0f;
+				}
 			}
 		}
 		// vary wait time +/- 10%
@@ -2235,6 +2279,12 @@ void ai_turret_execute_behavior(ship *shipp, ship_subsys *ss)
 	// Rotate the turret even if time hasn't elapsed, since it needs to turn to face its target.
 	int use_angles = aifft_rotate_turret(objp, shipp, ss, lep, &predicted_enemy_pos, &gvec);
 
+	// Multiplayer clients are now able to try to track their targets and also reset to their idle positions.
+	// But everything after this point is turret firing, so we need to bail here.
+	if (MULTIPLAYER_CLIENT) {
+		return;
+	}
+
 	if ((tp->flags[Model::Subsystem_Flags::Fire_on_target]) && (ss->points_to_target >= 0.0f))
 	{
 		// value probably needs tweaking... could perhaps be made into table option?
@@ -2337,6 +2387,15 @@ void ai_turret_execute_behavior(ship *shipp, ship_subsys *ss)
 					weapon_firing_range *= BEAM_NEBULA_RANGE_REDUCE_FACTOR;
 				}
 			}
+		}
+
+		// If the barrel of this turret is long, we shouldn't try to fire if the enemy is under the gun.
+		// Note that this isn't the same thing as min_range, which is unrelated to barrel length.
+		if (tp->flags[Model::Subsystem_Flags::Turret_distant_firepoint] || Always_use_distant_firepoints) {
+			vec3d fpoint, fvec;
+			ship_get_global_turret_gun_info(objp, ss, &fpoint, &fvec, use_angles, &predicted_enemy_pos);
+			auto barrel_length = vm_vec_dist(&fpoint, &gpos);
+			if (dist_to_enemy < barrel_length) continue;
 		}
 
 		// Don't try to fire beyond weapon_limit_range (or within min range)
@@ -2527,7 +2586,9 @@ void ai_turret_execute_behavior(ship *shipp, ship_subsys *ss)
 	bool in_fov = turret_fov_test(ss, &gvec, &v2e);
 	bool something_was_ok_to_fire = false;
 
-	if (in_fov && num_valid) {
+	// the only reason predicted_enemy_pos might be zero, while everything else is valid is if
+	// its a ballistic trajectory with no valid path
+	if (in_fov && num_valid && predicted_enemy_pos != vmd_zero_vector) {
 
 		// Do salvo thing separately - to prevent messing up things
 		int number_of_firings;

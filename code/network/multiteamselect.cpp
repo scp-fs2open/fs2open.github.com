@@ -2642,7 +2642,6 @@ void multi_ts_commit_pressed()
 	switch(multi_ts_ok_to_commit()){
 	// yes, it _is_ ok to commit
 	case 0:
-		extern void commit_pressed();
 		commit_pressed();
 		break;
 

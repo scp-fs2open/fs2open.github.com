@@ -36,8 +36,8 @@
 #include "utils/Random.h"
 #include "weapon/weapon.h"
 
-#define MIN_RADIUS_FOR_PERSISTANT_DEBRIS	50		// ship radius at which debris from it becomes persistant
-#define DEBRIS_SOUND_DELAY						2000	// time to start debris sound after created
+constexpr int MIN_RADIUS_FOR_PERSISTENT_DEBRIS = 50;	// ship radius at which debris from it becomes persistant
+constexpr int DEBRIS_SOUND_DELAY = 2000;				// time to start debris sound after created
 
 int Num_hull_pieces;	// number of hull pieces in existence
 						// we now maintain a kind of "virtual" Hull_debris_list,
@@ -189,7 +189,9 @@ void debris_delete( object * obj )
 
 	db = &Debris[num];
 
-	model_delete_instance(db->model_instance_num);
+	if (db->model_instance_num >= 0) {
+		model_delete_instance(db->model_instance_num);
+	}
 
 	if ( db->is_hull ) {
 		debris_remove_from_hull_list(db);
@@ -372,29 +374,43 @@ MONITOR(NumHullDebris)
  * @param source_obj	Source object
  * @param model_num		Model number
  * @param submodel_num	Sub-model number
- * @param pos			Position in vector space
- * @param exp_center	Explosion center in vector space
- * @param hull_flag		Hull flag settings
+ * @param pos			Position in global coordinates
+ * @param exp_center	Explosion center in global coordinates
+ * @param hull_flag		Whether this debris is a chunk of a ship's hull (as opposed to shrapnel)
  * @param exp_force		Explosion force, used to assign velocity to pieces. 1.0f assigns velocity like before. 2.0f assigns twice as much to non-inherited part of velocity
  */
 object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d *pos, vec3d *exp_center, bool hull_flag, float exp_force)
 {
-	int		objnum, parent_objnum;
-	object	*obj;
-	ship		*shipp;
-	debris	*db;	
-	polymodel *pm;
-	int vaporize;
-	physics_info *pi = NULL;
-	ship_info *sip = NULL;
+	int             parent_objnum;
+	object  *obj;
+	ship            *shipp;
+	bool vaporize;
 
 	parent_objnum = OBJ_INDEX(source_obj);
 
 	Assert( (source_obj->type == OBJ_SHIP ) || (source_obj->type == OBJ_GHOST));
 	Assert( source_obj->instance >= 0 && source_obj->instance < MAX_SHIPS );	
 	shipp = &Ships[source_obj->instance];
-	sip = &Ship_info[shipp->ship_info_index];
+
 	vaporize = (shipp->flags[Ship::Ship_Flags::Vaporize]);
+
+	obj = debris_create_only(parent_objnum, shipp->ship_info_index, shipp->alt_type_index, shipp->team, -1.0f, -1, model_num, submodel_num, pos, nullptr, hull_flag, vaporize, shipp->debris_damage_type_idx);
+	if (obj != nullptr)
+	{
+		debris_create_set_velocity(&Debris[obj->instance], shipp, exp_center, exp_force);
+		debris_create_fire_hook(obj, source_obj);
+	}
+
+	return obj;
+}
+
+object *debris_create_only(int parent_objnum, int parent_ship_class, int alt_type_index, int team, float hull_strength, int spark_timeout, int model_num, int submodel_num, vec3d *pos, matrix *orient, bool hull_flag, bool vaporize, int damage_type_idx)
+{
+	int		objnum;
+	object	*obj;
+	debris	*db;
+	ship_info *sip;
+	matrix orient_buf;
 
 	// try to maintain our soft limit
 	if (hull_flag && (Num_hull_pieces >= SOFT_LIMIT_DEBRIS_PIECES)) {
@@ -418,10 +434,73 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 
 	db = &Debris[n];
 
+
+	// validate or deduce some parameters
+
+	if ( pos == nullptr ) {
+		if (parent_objnum >= 0) {
+			pos = &Objects[parent_objnum].pos;
+		} else {
+			pos = &vmd_zero_vector;
+		}
+	}
+
+	if ( orient == nullptr ) {
+		if (parent_objnum >= 0 && hull_flag) {
+			orient = &Objects[parent_objnum].orient;
+		} else {
+			// non-hull debris has no relation to its parent orientation
+			vec3d rand;
+			vm_vec_rand_vec(&rand);
+			vm_vector_2_matrix(&orient_buf, &rand);
+			orient = &orient_buf;
+		}
+	}
+
+	sip = (parent_ship_class < 0) ? nullptr : &Ship_info[parent_ship_class];
+	if (hull_flag && !sip)
+	{
+		Warning(LOCATION, "Cannot create hull debris without a ship class!");
+		return nullptr;
+	}
+
+	if (hull_strength < 0.0f)
+	{
+		if (parent_objnum >= 0 && Objects[parent_objnum].type == OBJ_SHIP)
+			hull_strength = Ships[Objects[parent_objnum].instance].ship_max_hull_strength / 8.0f;
+		else
+			hull_strength = 10.0f;
+	}
+
+	if (hull_flag && (model_num < 0 || submodel_num < 0))
+	{
+		Warning(LOCATION, "Model and submodel numbers must be specified for hull debris!");
+		return nullptr;
+	}
+
+	if (team < 0 && hull_flag)
+	{
+		if (parent_objnum >= 0 && Objects[parent_objnum].type == OBJ_SHIP)
+			team = Ships[Objects[parent_objnum].instance].team;
+		else if (Player_ship)
+			team = Player_ship->team;
+		else
+			team = 0;
+	}
+
+	if (damage_type_idx < 0)
+	{
+		if (parent_objnum >= 0 && Objects[parent_objnum].type == OBJ_SHIP)
+			damage_type_idx = Ships[Objects[parent_objnum].instance].debris_damage_type_idx;
+	}
+
+	// done validation
+
+
 	if (!hull_flag) {
 		if (model_num >= 0) {
 			db->model_num = model_num;
-			db->submodel_num = Random::next(sip->generic_debris_num_submodels);
+			db->submodel_num = (sip == nullptr || sip->generic_debris_num_submodels <= 0) ? 0 : Random::next(sip->generic_debris_num_submodels);
 		}
 		else if (vaporize) {
 			db->model_num = Debris_vaporize_model;
@@ -451,25 +530,18 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 		}
 	}
 
-	if(hull_flag && sip->debris_min_lifetime >= 0.0f && sip->debris_max_lifetime >= 0.0f)
-	{
-		db->lifeleft = (( sip->debris_max_lifetime - sip->debris_min_lifetime ) * frand()) + sip->debris_min_lifetime;
-	}
-	else
-	{
-		// Create Debris piece n!
-		if ( hull_flag ) {
-			if (Random::next() < (Random::MAX_VALUE/6))	// Make some pieces blow up shortly after explosion.
-				db->lifeleft = 2.0f * (frand()) + 0.5f;
-			else {
-				db->flags.set(Debris_Flags::DoNotExpire);
-				db->lifeleft = -1.0f;		// large hull pieces stay around forever
-			}
-		} else { 
-			// small non-hull pieces should stick around longer the larger they are
-			// sqrtf should make sure its never too crazy long
-			db->lifeleft = (frand() * 2.0f + 0.1f) * sqrtf(radius);
+	// Create Debris piece n!
+	if ( hull_flag ) {
+		if (Random::next() < (Random::MAX_VALUE/6))	// Make some pieces blow up shortly after explosion.
+			db->lifeleft = 2.0f * (frand()) + 0.5f;
+		else {
+			db->flags.set(Debris_Flags::DoNotExpire);
+			db->lifeleft = -1.0f;		// large hull pieces stay around forever
 		}
+	} else {
+		// small non-hull pieces should stick around longer the larger they are
+		// sqrtf should make sure its never too crazy long
+		db->lifeleft = (frand() * 2.0f + 0.1f) * sqrtf(radius);
 	}
 
 	//WMC - Oh noes, we may need to change lifeleft
@@ -498,14 +570,14 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 	db->flags.set(Debris_Flags::Used);
 	db->is_hull = hull_flag;
 	db->source_objnum = parent_objnum;
-	db->damage_type_idx = shipp->debris_damage_type_idx;
-	db->ship_info_index = shipp->ship_info_index;
-	db->team = shipp->team;
-	db->ambient_sound = sip->debris_ambient_sound;
+	db->damage_type_idx = damage_type_idx;
+	db->ship_info_index = parent_ship_class;
+	db->team = team;
+	db->ambient_sound = (sip == nullptr) ? gamesnd_id(-1) : sip->debris_ambient_sound;
 	db->fire_timeout = TIMESTAMP::never();	// if not changed, timestamp_elapsed() will return false
 	db->time_started = Missiontime;
-	db->species = Ship_info[shipp->ship_info_index].species;
-	db->parent_alt_name = shipp->alt_type_index;
+	db->species = (sip == nullptr) ? -1 : sip->species;
+	db->parent_alt_name = alt_type_index;
 	db->damage_mult = 1.0f;
 
 	for (int i=0; i<MAX_DEBRIS_ARCS; ++i)	{	// NOLINT
@@ -525,34 +597,21 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 
 	db->next_fireball = _timestamp_rand(500,2000);	//start one 1/2 - 2 secs later
 
-	if ( pos == nullptr )
-		pos = &source_obj->pos;
+	flagset<Object::Object_Flags> default_flags;
+	default_flags.set(Object::Object_Flags::Renders);
+	default_flags.set(Object::Object_Flags::Physics);
+	default_flags.set(Object::Object_Flags::Collides, hull_flag != 0);
 
-    flagset<Object::Object_Flags> default_flags;
-    default_flags.set(Object::Object_Flags::Renders);
-    default_flags.set(Object::Object_Flags::Physics);
-    default_flags.set(Object::Object_Flags::Collides, hull_flag != 0);
-
-	matrix orient = source_obj->orient;
-	if (!db->is_hull) {
-		// non-hull debris has no relation to its parent orientation
-		vec3d rand;
-		vm_vec_rand_vec(&rand);
-		vm_vector_2_matrix(&orient, &rand);
-	}
-
-	objnum = obj_create(OBJ_DEBRIS, parent_objnum, n, &orient, pos, radius, default_flags, false);
+	objnum = obj_create(OBJ_DEBRIS, parent_objnum, n, orient, pos, radius, default_flags, false);
 	if ( objnum == -1 ) {
 		mprintf(("Couldn't create debris object -- out of object slots\n"));
 		return nullptr;
 	}
 
 	db->objnum = objnum;
-	
 	obj = &Objects[objnum];
-	pi = &obj->phys_info;
 
-	db->model_instance_num = model_create_instance(objnum, db->model_num);
+	db->model_instance_num = hull_flag ? model_create_instance(objnum, db->model_num) : -1;
 
 	// assign the network signature.  The signature will be 0 for non-hull pieces, but since that
 	// is our invalid signature, it should be okay.
@@ -562,10 +621,7 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 		obj->net_signature = multi_get_next_network_signature( MULTI_SIG_DEBRIS );
 	}
 
-	if (source_obj->type == OBJ_SHIP) {
-		obj->hull_strength = Ships[source_obj->instance].ship_max_hull_strength/8.0f;
-	} else
-		obj->hull_strength = 10.0f;
+	obj->hull_strength = hull_strength;
 
 	if (hull_flag) {
 		if(sip->debris_min_hitpoints >= 0.0f && sip->debris_max_hitpoints >= 0.0f)
@@ -583,40 +639,58 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 				obj->hull_strength = sip->debris_max_hitpoints;
 		}
 		db->damage_mult = sip->debris_damage_mult;
+
+		db->sound_delay = _timestamp(DEBRIS_SOUND_DELAY);
+
+		// limit the amount of time that fireballs appear
+		// let fireball length be linked to radius of ship.  Range is .33 radius => 3.33 radius seconds.
+		if (spark_timeout >= 0) {
+			db->fire_timeout = _timestamp(spark_timeout);
+		} else if (parent_objnum >= 0) {
+			float t = 1000*Objects[parent_objnum].radius/3 + Random::next(fl2i(1000*3*Objects[parent_objnum].radius));
+			db->fire_timeout = _timestamp(fl2i(t));		// fireballs last from 5 - 30 seconds
+		} else {
+			db->fire_timeout = TIMESTAMP::immediate();
+		}
+
+		if (parent_objnum >= 0 && Objects[parent_objnum].radius >= MIN_RADIUS_FOR_PERSISTENT_DEBRIS) {
+			db->flags.set(Debris_Flags::DoNotExpire);
+		} else {
+			debris_add_to_hull_list(db);
+		}
 	}
 
+	if (hull_flag) {
+		MONITOR_INC(NumHullDebris,1);
+	} else {
+		MONITOR_INC(NumSmallDebris,1);
+	}
+
+	return obj;
+}
+
+void debris_create_set_velocity(debris *db, ship *source_shipp, vec3d *exp_center, float exp_force)
+{
+	auto obj = &Objects[db->objnum];
+	auto source_obj = (source_shipp == nullptr) ? nullptr : &Objects[source_shipp->objnum];
+	physics_info *pi = &obj->phys_info;
 	vec3d rotvel, radial_vel, to_center;
 
 	if ( exp_center )
-		vm_vec_sub( &to_center,pos, exp_center );
+		vm_vec_sub( &to_center, &obj->pos, exp_center );
 	else
 		vm_vec_zero(&to_center);
 
 	float scale;
-
-	if ( hull_flag )	{
-		float t;
+	if ( db->is_hull )	{
 		scale = exp_force * i2fl(Random::next(10, 29));	// for radial_vel away from location of blast center
-		db->sound_delay = _timestamp(DEBRIS_SOUND_DELAY);
 
 		// set up physics mass and I_inv for hull debris pieces
-		pm = model_get(model_num);
+		auto pm = model_get(db->model_num);
 		vec3d *min, *max;
-		min = &pm->submodel[submodel_num].min;
-		max = &pm->submodel[submodel_num].max;
+		min = &pm->submodel[db->submodel_num].min;
+		max = &pm->submodel[db->submodel_num].max;
 		calc_debris_physics_properties( &obj->phys_info, min, max );
-
-		// limit the amount of time that fireballs appear
-		// let fireball length be linked to radius of ship.  Range is .33 radius => 3.33 radius seconds.
-		t = 1000*Objects[db->source_objnum].radius/3 + Random::next(fl2i(1000*3*Objects[db->source_objnum].radius));
-		db->fire_timeout = _timestamp(fl2i(t));		// fireballs last from 5 - 30 seconds
-		
-		if ( Objects[db->source_objnum].radius < MIN_RADIUS_FOR_PERSISTANT_DEBRIS ) {
-			debris_add_to_hull_list(db);
-		} else {
-			db->flags.set(Debris_Flags::DoNotExpire);
-			nprintf(("Alan","A forever chunk of debris was created from ship with radius %f\n",Objects[db->source_objnum].radius));
-		}
 	}
 	else {
 		scale = exp_force * i2fl(Random::next(10, 29));	// for radial_vel away from blast center (non-hull)
@@ -631,15 +705,21 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 		vm_vec_copy_scale(&radial_vel, &to_center, scale );
 	}
 
-	// DA: here we need to vel_from_rot = w x to_center, where w is world is unrotated to world coords and offset is the 
-	// displacement fromt the center of the parent object to the center of the debris piece
-	vec3d world_rotvel, vel_from_rotvel;
-	vm_vec_unrotate ( &world_rotvel, &source_obj->phys_info.rotvel, &source_obj->orient );
-	vm_vec_cross ( &vel_from_rotvel, &world_rotvel, &to_center );
-	vm_vec_scale ( &vel_from_rotvel, DEBRIS_ROTVEL_SCALE);
+	if (source_obj)
+	{
+		// DA: here we need to vel_from_rot = w x to_center, where w is world is unrotated to world coords and offset is the 
+		// displacement fromt the center of the parent object to the center of the debris piece
+		vec3d world_rotvel, vel_from_rotvel;
+		vm_vec_unrotate ( &world_rotvel, &source_obj->phys_info.rotvel, &source_obj->orient );
+		vm_vec_cross ( &vel_from_rotvel, &world_rotvel, &to_center );
+		vm_vec_scale ( &vel_from_rotvel, DEBRIS_ROTVEL_SCALE);
 
-	vm_vec_add (&obj->phys_info.vel, &radial_vel, &source_obj->phys_info.vel);
-	vm_vec_add2(&obj->phys_info.vel, &vel_from_rotvel);
+		vm_vec_add (&obj->phys_info.vel, &radial_vel, &source_obj->phys_info.vel);
+		vm_vec_add2(&obj->phys_info.vel, &vel_from_rotvel);
+	}
+
+
+	float radius = submodel_get_radius(db->model_num, db->submodel_num);
 
 	// make sure rotational velocity does not get too high
 	if (radius < 1.0) {
@@ -651,40 +731,39 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 	vm_vec_rand_vec_quick(&rotvel);
 	vm_vec_scale(&rotvel, scale);
 
-	pi->flags |= PF_DEAD_DAMP;
 	pi->rotvel = rotvel;
+	pi->flags |= (PF_DEAD_DAMP | PF_BALLISTIC);
 	check_rotvel_limit( &obj->phys_info );
 
 	// check that debris is not created with too high a velocity
-	if (hull_flag)
+	if (db->is_hull)
 	{
-		shipfx_debris_limit_speed(db, shipp);
+		shipfx_debris_limit_speed(db, source_shipp);
 	}
 
 	// blow out his reverse thrusters. Or drag, same thing.
 	pi->rotdamp = 10000.0f;
-	pi->side_slip_time_const = 10000.0f;
-	pi->flags |= (PF_REDUCED_DAMP | PF_DEAD_DAMP);	// set damping equal for all axis and not changable
+	if (source_shipp != nullptr) {
+		pi->gravity_const = Ship_info[source_shipp->ship_info_index].debris_gravity_const;
+	} else {
+		pi->gravity_const = 1.0f;
+	}
+	
 
 	vm_vec_zero(&pi->max_vel);		// make so he can't turn on his own VOLITION anymore.
 	vm_vec_zero(&pi->max_rotvel);	// make so he can't change speed on his own VOLITION anymore.
 
 	// ensure vel is valid
 	Assert( !vm_is_vec_nan(&obj->phys_info.vel) );
+}
 
+void debris_create_fire_hook(object *obj, object *source_obj)
+{
 	if (scripting::hooks::OnDebrisCreated->isActive()) {
 		scripting::hooks::OnDebrisCreated->run(scripting::hook_param_list(
 			scripting::hook_param("Debris", 'o', obj),
 			scripting::hook_param("Source", 'o', source_obj)));
 	}
-
-	if (db->is_hull) {
-		MONITOR_INC(NumHullDebris,1);
-	} else {
-		MONITOR_INC(NumSmallDebris,1);
-	}
-
-	return obj;
 }
 
 /**
@@ -1075,11 +1154,8 @@ void debris_render(object * obj, model_draw_list *scene)
 
 	texture_info *tbase = nullptr;
 
-	auto pmi = model_get_instance(db->model_instance_num);
-	auto pm = model_get(pmi->model_num);
-
+	auto pm = model_get(db->model_num);
 	model_clear_instance( db->model_num );
-	model_instance_clear_arcs(pm, pmi);
 
 	// Swap in a different texture depending on the species
 	if (db->species >= 0)
@@ -1092,11 +1168,18 @@ void debris_render(object * obj, model_draw_list *scene)
 		}
 	}
 
-	// Only render electrical arcs if within 500m of the eye (for a 10m piece)
-	if ( vm_vec_dist_quick( &obj->pos, &Eye_position ) < obj->radius*50.0f )	{
-		for (i=0; i<MAX_DEBRIS_ARCS; i++ )	{
-			if ( db->arc_timestamp[i].isValid() )	{
-				model_instance_add_arc( pm, pmi, db->submodel_num, &db->arc_pts[i][0], &db->arc_pts[i][1], MARC_TYPE_DAMAGED );
+	polymodel_instance *pmi = nullptr;
+	if (db->model_instance_num >= 0)
+	{
+		pmi = model_get_instance(db->model_instance_num);
+		model_instance_clear_arcs(pm, pmi);
+
+		// Only render electrical arcs if within 500m of the eye (for a 10m piece)
+		if ( vm_vec_dist_quick( &obj->pos, &Eye_position ) < obj->radius*50.0f )	{
+			for (i=0; i<MAX_DEBRIS_ARCS; i++ )	{
+				if ( db->arc_timestamp[i].isValid() )	{
+					model_instance_add_arc( pm, pmi, db->submodel_num, &db->arc_pts[i][0], &db->arc_pts[i][1], MARC_TYPE_DAMAGED );
+				}
 			}
 		}
 	}

@@ -10,6 +10,9 @@ on:
       windows_result: # job.result
         required: true
         type: string
+      mac_result: # job.result
+        required: true
+        type: string
       releaseTag:
         required: true
         type: string
@@ -55,6 +58,7 @@ jobs:
         env:
           LINUX_RESULT: ${{ inputs.linux_result }}
           WINDOWS_RESULT: ${{ inputs.windows_result }}
+          MAC_RESULT: ${{ inputs.mac_result }}
         run: python ci/post/main.py release
 
       - name: Post Builds (Manual trigger)
@@ -63,6 +67,7 @@ jobs:
         env:
           LINUX_RESULT: success
           WINDOWS_RESULT: success
+          MAC_RESULT: success
         run: |
           echo "releaseTag= ${{ env.RELEASE_TAG }}"
           echo "repository= ${{ github.repository }}"

@@ -292,6 +292,7 @@ public:
 	sexp_list_item *get_listing_opf_animation_type();
 	sexp_list_item *get_listing_opf_mission_moods();
 	sexp_list_item *get_listing_opf_ship_flags();
+	sexp_list_item *get_listing_opf_wing_flags();
 	sexp_list_item *get_listing_opf_team_colors();
 	sexp_list_item *get_listing_opf_nebula_patterns();
 	sexp_list_item *get_listing_opf_game_snds();

@@ -18,6 +18,8 @@ private:
 	
 	int _proposed_skip_time; // until skip time is finalized, we need to 
 
+	bool _in_game_time_set;
+
 	std::array<int, 12> _most_recent_frame;
 
 	// for in-game joiners, adjust local timing and then reset proposed time.
@@ -28,6 +30,10 @@ public:
 
 	// aka reset the class. Needs to be called every time the mission starts.
 	void set_mission_start_time();
+
+	// this was not part of the original design, but is useful when matching up 
+	// timestamps to what is kept internally in this class.
+	int get_mission_start_time() { return _start_time.value(); }
 
 	void update_current_time();
 
@@ -40,6 +46,8 @@ public:
 	//void set_proposed_skip_time(int candidate) { _proposed_skip_time = candidate; }
 
 	bool is_most_recent_frame(int player_index, int frame);
+
+	void in_game_set_skip_time(float mission_time);
 };
 
 extern multiplayer_timing_info Multi_Timing_Info;

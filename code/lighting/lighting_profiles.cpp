@@ -96,6 +96,11 @@ bool lighting_profile_value::read_adjust(float *out) const
 	*out = adjust;
 	return has_adjust;
 }
+bool lighting_profile_value::read_multiplier(float *out) const
+{
+	*out = multipier;
+	return has_multiplier;
+}
 /**
  * @brief for use during the parsing of a light profile to attempt to read in an LPV
  *
@@ -221,6 +226,9 @@ void lighting_profile::reset()
 	ambient_light_brightness.set_multiplier(0.286f); 
 	ambient_light_brightness.stack_multiplier(Cmdline_ambient_power);
 	ambient_light_brightness.set_adjust(MAX(0.0f,Cmdline_emissive_power));
+
+	cockpit_light_radius_modifier.reset();
+	cockpit_light_radius_modifier.set_multiplier(1.0f);
 }
 
 TonemapperAlgorithm lighting_profile::name_to_tonemapper(SCP_string &name)
@@ -276,7 +284,7 @@ void lighting_profile::parse_all()
 {
 	default_profile.reset();
 	if (cf_exists_full("lighting_profiles.tbl", CF_TYPE_TABLES)){
-		mprintf(("TABLES:Starting parse of lighting profiles.tbl"));
+		mprintf(("TABLES: Starting parse of lighting profiles.tbl\n"));
 		lighting_profile::parse_file("lighting_profiles.tbl");
 	}
 
@@ -331,6 +339,10 @@ void lighting_profile::parse_default_section(const char *filename)
 										&default_profile.point_light_radius);
 		parsed |= lighting_profile_value::parse(filename,"$Directional light brightness:",profile_name,
 										&default_profile.directional_light_brightness);
+		parsed |= lighting_profile_value::parse(filename,"$Cone light radius:",profile_name,
+										&default_profile.cone_light_radius);
+		parsed |= lighting_profile_value::parse(filename,"$Cone light brightness:",profile_name,
+										&default_profile.cone_light_brightness);
 		if(lighting_profile_value::parse(filename,"$Ambient light brightness:",profile_name, &default_profile.ambient_light_brightness))
 		{
 			parsed = true;
@@ -346,6 +358,10 @@ void lighting_profile::parse_default_section(const char *filename)
 		}
 
 		parsed |= parse_optional_float_into("$Exposure:",&default_profile.exposure);
+
+		parsed |= lighting_profile_value::parse(filename, "$Cockpit light radius modifier:", profile_name,
+			&default_profile.cockpit_light_radius_modifier);
+
 		if(!parsed){
 			stuff_string(buffer,F_RAW);
 			Warning(LOCATION,"Unhandled line in lighting profile\n\t%s",buffer.c_str());
@@ -450,10 +466,16 @@ piecewise_power_curve_values lighting_profile::lab_get_ppc(){
 }
 
 float lighting_profile::lab_get_light(){
-	return default_profile.overall_brightness.handle(1.0f);
+	float r;
+	default_profile.overall_brightness.read_multiplier(&r);
+
+	return r;
 }
 float lighting_profile::lab_get_ambient(){
-	return default_profile.ambient_light_brightness.handle(1.0f);
+	float r;
+	default_profile.ambient_light_brightness.read_multiplier(&r);
+
+	return r;
 }
 float lighting_profile::lab_get_emissive(){
 	float r;

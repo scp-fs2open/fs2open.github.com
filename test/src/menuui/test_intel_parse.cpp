@@ -133,30 +133,6 @@ TEST_F(IntelParseTest, invalid_start) {
 	EXPECT_EQ(intel_info_size(), 0);
 }
 
-// A valid entry followed by rubbish on the same line, followed by
-// another valid entry. Parsing stops at the rubbish.
-TEST_F(IntelParseTest, invalid_end_same_line) {
-	SCOPED_TRACE("invalid_end_same_line");
-
-	techroom_intel_init();
-
-	ASSERT_EQ(intel_info_size(), 1);
-
-	test_intel_data_equal(expected_foo, Intel_info[0]);
-}
-
-// A valid entry followed by rubbish on a new line, followed by another
-// valid entry. Parsing stops at the rubbish.
-TEST_F(IntelParseTest, invalid_end_new_line) {
-	SCOPED_TRACE("invalid_end_new_line");
-
-	techroom_intel_init();
-
-	ASSERT_EQ(intel_info_size(), 1);
-
-	test_intel_data_equal(expected_foo, Intel_info[0]);
-}
-
 // Three valid entries.
 TEST_F(IntelParseTest, three) {
 	SCOPED_TRACE("three");
@@ -170,119 +146,10 @@ TEST_F(IntelParseTest, three) {
 	test_intel_data_equal(expected_baz, Intel_info[2]);
 }
 
-// A valid entry followed by one with a missing $:Entry line.
-// The second entry should be ignored. Parsing should stop there.
-TEST_F(IntelParseTest, missing_entry) {
-	SCOPED_TRACE("missing_entry");
-
-	techroom_intel_init();
-
-	ASSERT_EQ(intel_info_size(), 1);
-
-	test_intel_data_equal(expected_foo, Intel_info[0]);
-}
-
 // A valid entry followed by one with a missing $Name: line.
 // The second entry should be ignored. Parsing should stop there.
 TEST_F(IntelParseTest, missing_name) {
 	SCOPED_TRACE("missing_name");
-
-	EXPECT_ANY_THROW(techroom_intel_init());
-
-	ASSERT_EQ(intel_info_size(), 1);
-
-	test_intel_data_equal(expected_foo, Intel_info[0]);
-}
-
-// A valid entry followed by one with a missing $Anim: line.
-// The second entry should be ignored. Parsing should stop there.
-TEST_F(IntelParseTest, missing_anim) {
-	SCOPED_TRACE("missing_anim");
-
-	EXPECT_ANY_THROW(techroom_intel_init());
-
-	ASSERT_EQ(intel_info_size(), 1);
-
-	test_intel_data_equal(expected_foo, Intel_info[0]);
-}
-
-// A valid entry followed by one with a missing $AlwaysIntechRoom: line.
-// The second entry should be ignored. Parsing should stop there.
-TEST_F(IntelParseTest, missing_always_techroom) {
-	SCOPED_TRACE("missing_always_techroom");
-
-	EXPECT_ANY_THROW(techroom_intel_init());
-
-	ASSERT_EQ(intel_info_size(), 1);
-
-	test_intel_data_equal(expected_foo, Intel_info[0]);
-}
-
-// A valid entry followed by one with a missing description.
-// The second entry should be ignored. Parsing should stop there.
-TEST_F(IntelParseTest, missing_description) {
-	SCOPED_TRACE("missing_description");
-
-	EXPECT_ANY_THROW(techroom_intel_init());
-
-	ASSERT_EQ(intel_info_size(), 1);
-
-	test_intel_data_equal(expected_foo, Intel_info[0]);
-}
-
-// A valid entry followed by one with no description but with a
-// $end_multi_text. The second entry should be invalid. Parsing
-// should stop there.
-TEST_F(IntelParseTest, missing_description_2) {
-	SCOPED_TRACE("missing_description_2");
-
-	EXPECT_ANY_THROW(techroom_intel_init());
-
-	ASSERT_EQ(intel_info_size(), 1);
-
-	test_intel_data_equal(expected_foo, Intel_info[0]);
-}
-
-// A valid entry followed by one with a missing $end_multi_text.
-// The second should be invalid.
-TEST_F(IntelParseTest, missing_end_multi_text) {
-	SCOPED_TRACE("missing_end_multi_text");
-
-	techroom_intel_init();
-
-	ASSERT_EQ(intel_info_size(), 1);
-
-	test_intel_data_equal(expected_foo, Intel_info[0]);
-}
-
-// Test reaction to #End, should be treated as rubbish.
-TEST_F(IntelParseTest, stray_hash_end) {
-	SCOPED_TRACE("stray_hash_end");
-
-	techroom_intel_init();
-
-	ASSERT_EQ(intel_info_size(), 1);
-
-	test_intel_data_equal(expected_foo, Intel_info[0]);
-}
-
-// Non-zero values of AlwaysInTechRoom mean true, 0 means false.
-TEST_F(IntelParseTest, always_techroom_values) {
-	SCOPED_TRACE("always_techroom_values");
-
-	techroom_intel_init();
-
-	ASSERT_EQ(intel_info_size(), 4);
-
-	test_intel_data_equal(expected_foo, Intel_info[0]);
-	test_intel_data_equal(expected_bar, Intel_info[1]);
-	test_intel_data_equal(expected_baz, Intel_info[2]);
-	test_intel_data_equal(expected_qux, Intel_info[3]);
-}
-
-// Data must be in the correct order.
-TEST_F(IntelParseTest, wrong_order) {
-	SCOPED_TRACE("wrong_order");
 
 	EXPECT_ANY_THROW(techroom_intel_init());
 

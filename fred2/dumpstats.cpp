@@ -287,7 +287,7 @@ void DumpStats::get_background_stats(CString &buffer)
 		}
 	} else {
 		// FS! nebula pattern
-		if (Nebula_index > 0) {
+		if (Nebula_index >= 0) {
 			temp.Format("\tOld style FS1 nebula filename: %s\r\n", Nebula_filenames[Nebula_index]);
 			buffer += temp;
 		}

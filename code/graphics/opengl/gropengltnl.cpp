@@ -49,11 +49,7 @@ extern int G3_user_clip;
 extern vec3d G3_user_clip_normal;
 extern vec3d G3_user_clip_point;
 
-extern bool Basemap_override;
 extern bool Envmap_override;
-extern bool Specmap_override;
-extern bool Normalmap_override;
-extern bool Heightmap_override;
 extern bool Shadow_override;
 
 size_t GL_vertex_data_in = 0;
@@ -1015,6 +1011,18 @@ void opengl_tnl_set_material_movie(movie_material* material_info) {
 	opengl_tnl_set_material(material_info, false);
 
 	gr_matrix_set_uniforms();
+
+	auto uniform_buffer = gr_get_uniform_buffer(uniform_block_type::MovieData, 1);
+	auto& aligner = uniform_buffer.aligner();
+
+	auto movie_data = aligner.addTypedElement<graphics::movie_uniforms>();
+	movie_data->alpha = material_info->get_color().xyzw.w;
+
+	uniform_buffer.submitData();
+	gr_bind_uniform_buffer(uniform_block_type::MovieData,
+		uniform_buffer.getBufferOffset(0),
+		sizeof(graphics::movie_uniforms),
+		uniform_buffer.bufferHandle());
 
 	Current_shader->program->Uniforms.setTextureUniform("ytex", 0);
 	Current_shader->program->Uniforms.setTextureUniform("utex", 1);

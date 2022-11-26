@@ -969,14 +969,12 @@ void multi_ingame_handle_timeout()
 void process_ingame_ships_packet( ubyte *data, header *hinfo )
 {
 	int offset, team, j;
-    std::uint64_t oflags, sflags;
 	ubyte p_type;
 	ushort net_signature;	
 	short wing_data;	
 	int team_val, slot_index, idx;
 	char ship_name[255] = "";
 	object *objp;
-	int net_sig_modify;
 
 	// go through the ship obj list and delete everything. YEAH
 	if(!Ingame_ships_deleted){
@@ -1003,28 +1001,41 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 	while ( p_type == INGAME_SHIP_NEXT ) {
 		p_object *p_objp;
 		int ship_num, objnum;
+		ubyte flag_size;
 
 		GET_STRING( ship_name );
 		GET_USHORT( net_signature );
-		GET_ULONG( sflags );
-		GET_ULONG( oflags );
+		GET_DATA( flag_size );
+
+		ubyte temp;
+		SCP_vector<ubyte> ship_flags, object_flags;
+
+		for (ubyte i = 0; i < flag_size; i++) {
+			GET_DATA(temp);
+			ship_flags.push_back(temp);
+		}
+
+		GET_DATA( flag_size );
+
+		for (ubyte i = 0; i < flag_size; i++) {
+			GET_DATA(temp);
+			object_flags.push_back(temp);
+		}
+
 		GET_INT( team );		
 		GET_SHORT( wing_data );
-		net_sig_modify = 0;
 		if(wing_data >= 0){
 			GET_INT(Wings[wing_data].current_wave);			
-			net_sig_modify = Wings[wing_data].current_wave - 1;
 		}
 
 		// lookup ship in the original ships array
-		p_objp = mission_parse_get_parse_object(net_signature);
+		p_objp = mission_parse_get_parse_object(ship_name);
 		if(p_objp == NULL){
 			// if this ship is part of wing not on its current wave, look for its "original" by subtracting out wave #
-			p_objp = mission_parse_get_arrival_ship((ushort)(net_signature - (ushort)net_sig_modify));
+			p_objp = mission_parse_get_arrival_ship(ship_name);
 		}
 		if(p_objp == NULL){
-			Int3();
-			nprintf(("Network", "Couldn't find ship %s in either arrival list or in mission", ship_name));
+			mprintf(("ABORTING in-game join since FSO couldn't find ship %s in either arrival list or in mission!\n", ship_name));
 			multi_quit_game(PROMPT_NONE, MULTI_END_NOTIFY_NONE, MULTI_END_ERROR_INGAME_BOGUS);
 			return;
 		}
@@ -1036,7 +1047,8 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 		 multi_set_network_signature( net_signature, MULTI_SIG_SHIP );
 		objnum = parse_create_object( p_objp );
 		ship_num = Objects[objnum].instance;
-        Objects[objnum].flags.from_u64(oflags);
+		Objects[objnum].flags.reset();
+		Objects[objnum].flags.set_from_vector(object_flags);
 		Objects[objnum].net_signature = net_signature;
 
 		// Cyborg17 also add this ship to the multi ship tracking and interpolation struct
@@ -1044,7 +1056,8 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 
 		// assign any common data
 		strcpy_s(Ships[ship_num].ship_name, ship_name);
-		Ships[ship_num].flags.from_u64(sflags);
+		Ships[ship_num].flags.reset();
+		Ships[ship_num].flags.set_from_vector(ship_flags);
 		Ships[ship_num].team = team;
 		Ships[ship_num].wingnum = (int)wing_data;				
 
@@ -1064,13 +1077,12 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 				continue;
 			}
 
-			// get the team and slot.  Team will be -1 when it isn't a part of player wing.  So, if
-			// not -1, then be sure we have a valid slot, then change the ship type, etc.
+			// get the team and slot.  Team and slot will be -1 when it isn't a part of player wing.
+			// So, if not -1, then change the ship type, etc.
 			objp = &Objects[Ships[idx].objnum];		
 			multi_ts_get_team_and_slot(Ships[idx].ship_name, &team_val, &slot_index);
-			if ( team_val != -1 ) {
-				Assert( slot_index != -1 );
 
+			if ( (team_val != -1) && (slot_index != -1) ) {
 				// change the ship type and the weapons
 				change_ship_type(objp->instance, Wss_slots_teams[team_val][slot_index].ship_class);
 				wl_bash_ship_weapons(&Ships[idx].weapons, &Wss_slots_teams[team_val][slot_index]);
@@ -1127,13 +1139,35 @@ void send_ingame_ships_packet(net_player *player)
 			continue;
 		}
 
+		SCP_vector<ubyte> ship_flags_out, obj_flags_out;
+
 		//  add the ship name and other information such as net signature, ship and object(?) flags.
 		p_type = INGAME_SHIP_NEXT;
 		ADD_DATA( p_type );
 		ADD_STRING( shipp->ship_name );
 		ADD_USHORT( Objects[so->objnum].net_signature );
-		ADD_ULONG( shipp->flags.to_u64() );
-		ADD_ULONG( Objects[so->objnum].flags.to_u64() );
+		
+		auto check = shipp->flags.to_ubyte_vector(ship_flags_out);
+		Assertion(check <= 255, "Somehow FSO thinks there are too many ship flags, %d * 8 to be exact. Please report!", static_cast<int>(check));
+
+		auto temp_size = static_cast<ubyte>(check);
+		ADD_DATA(temp_size);
+
+		for (auto& item : ship_flags_out){
+			ADD_DATA(item);
+		} 
+
+		check = Objects[so->objnum].flags.to_ubyte_vector(obj_flags_out);
+
+		Assertion(check <= 255, "Somehow FSO thinks there are too many object flags, %d * 8 to be exact. Please report!", static_cast<int>(check));
+
+		temp_size = static_cast<ubyte>(check);
+
+		ADD_DATA(temp_size);
+		for (auto& item : obj_flags_out){
+			ADD_DATA(item);
+		} 
+
 		ADD_INT( shipp->team );
 		wing_data = (short)shipp->wingnum;
 		ADD_SHORT(wing_data);
@@ -1252,7 +1286,7 @@ void process_ingame_wings_packet( ubyte *data, header *hinfo )
 				// assign it here.
 
 				wingp->current_wave = 0;						// make it the first wave.  Ensures that ships don't get removed off the list
-				parse_wing_create_ships( wingp, 1, 1, specific_instance );
+				parse_wing_create_ships( wingp, 1, true, false, specific_instance );
 				shipnum = wingp->ship_index[wingp->current_count-1];
 				Ingame_ships_to_delete[shipnum] = 0;			// "unmark" this ship so it doesn't get deleted.
 
@@ -1401,6 +1435,7 @@ void send_ingame_ship_request_packet(int code,int rdata,net_player *pl)
 	int i, packet_size = 0;
 	ushort signature;
 	p_object *pobj;
+	short sval;
 
 	// add the data
 	BUILD_HEADER(INGAME_SHIP_REQUEST);
@@ -1427,7 +1462,7 @@ void send_ingame_ship_request_packet(int code,int rdata,net_player *pl)
 		// add the # of respawns this ship has left
 		pobj = mission_parse_get_arrival_ship( Objects[rdata].net_signature );
 		Assert(pobj != NULL);
-		ADD_DATA(pobj->respawn_count);
+		ADD_UINT(pobj->respawn_count);
 
 		// add the ships ets settings
 		val = (ubyte)shipp->weapon_recharge_index;
@@ -1437,33 +1472,26 @@ void send_ingame_ship_request_packet(int code,int rdata,net_player *pl)
 		val = (ubyte)shipp->engine_recharge_index;
 		ADD_DATA(val);
 
-		// dummy field to replace ballistic primary flag
-		val = 0;
-		ADD_DATA(val);
-
 		// add current primary and secondary banks, and add link status
 		val = (ubyte)shipp->weapons.current_primary_bank;
 		ADD_DATA(val);
 		val = (ubyte)shipp->weapons.current_secondary_bank;
 		ADD_DATA(val);		
 
+		// add the current ammo count for primary banks
+		val = (ubyte)shipp->weapons.num_primary_banks;		// for sanity checking
+		ADD_DATA(val);
+		for ( i = 0; i < shipp->weapons.num_primary_banks; i++ ) {
+			sval = static_cast<short>(shipp->weapons.primary_bank_ammo[i]);
+			ADD_SHORT(sval);
+		}
+
 		// add the current ammo count for secondary banks;
 		val = (ubyte)shipp->weapons.num_secondary_banks;		// for sanity checking
 		ADD_DATA(val);
 		for ( i = 0; i < shipp->weapons.num_secondary_banks; i++ ) {
-			Assert( shipp->weapons.secondary_bank_ammo[i] < UCHAR_MAX );
-			val = (ubyte)shipp->weapons.secondary_bank_ammo[i];
-			ADD_DATA(val);
-		}
-
-		// add the current ammo count for primary banks - copied from above - Goober5000
-		val = (ubyte)shipp->weapons.num_primary_banks;		// for sanity checking
-		ADD_DATA(val);
-		for ( i = 0; i < shipp->weapons.num_primary_banks; i++ )
-		{
-			Assert( shipp->weapons.primary_bank_ammo[i] < UCHAR_MAX );
-			val = (ubyte)shipp->weapons.primary_bank_ammo[i];
-			ADD_DATA(val);
+			sval = static_cast<short>(shipp->weapons.secondary_bank_ammo[i]);
+			ADD_SHORT(sval);
 		}
 
 		// add the link status of weapons
@@ -1475,7 +1503,12 @@ void send_ingame_ship_request_packet(int code,int rdata,net_player *pl)
 		if(shipp->flags[Ship::Ship_Flags::Secondary_dual_fire]){
 			val |= (1<<1);
 		}
-		ADD_DATA(val);		
+		ADD_DATA(val);
+
+		// now that we have multilock missiles tracked by the ship object, we need to clear this
+		// on the server to be safe.
+		shipp->missile_locks.clear();
+
 		break;
 	}
 
@@ -1555,6 +1588,8 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 	ubyte val, num_secondary_banks, num_primary_banks;
 	p_object *pobj;
 	int player_num;
+	short sval;
+	fix mission_time;
 
 	// get the code
 	GET_INT(code);
@@ -1601,6 +1636,9 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
         objp->flags.remove(Object::Object_Flags::Could_be_player);
 		objp->flags.set(Object::Object_Flags::Player_ship);
 
+		// remove any potentially problemantic AI only flags.
+		Ai_info[Ships[objp->instance].ai_index].ai_flags.remove(AI::AI_Flags::Formation_object);
+
 		// send a player settings packet to update all other players of this guy's final choices
 		send_player_settings_packet();
 
@@ -1621,7 +1659,7 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 	case INGAME_SR_DENY :
 		PACKET_SET_SIZE();
 
-		// set this to -1 so we can pick again
+		// set this to 0 so we can pick again
 		Multi_ingame_join_sig = 0;
 
 		// display a popup
@@ -1629,7 +1667,7 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 		break;
 
 	// a confirmation that we can use the selected ship
-	case INGAME_SR_CONFIRM:
+	case INGAME_SR_CONFIRM: {
 		// object *temp_objp;
 
 		// delete the ship this ingame joiner was using.  Unassign Player_obj so that this object
@@ -1645,9 +1683,9 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 		// get its most recent position and orientation
 		GET_VECTOR(objp->pos);
 		GET_ORIENT(objp->orient);
-		GET_INT( Missiontime ); // NOTE: this is a long so careful with swapping in 64-bit platforms - taylor
+		GET_INT(mission_time);
 		GET_UINT( respawn_count );
-				
+
 		// tell the server I'm in the mission
 		Net_player->state = NETPLAYER_STATE_IN_MISSION;
 		send_netplayer_update_packet();
@@ -1656,7 +1694,8 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 		Net_player->m_player->objnum = OBJ_INDEX(objp);			
 		Player_obj = objp;
 		Player_obj->flags.remove(Object::Object_Flags::Could_be_player);
-        Player_obj->flags.set(Object::Object_Flags::Player_ship);
+		Player_obj->flags.set(Object::Object_Flags::Player_ship);
+		Player_obj->flags.set(Object::Object_Flags::Physics);
 		multi_assign_player_ship( MY_NET_PLAYER_NUM, objp, Ships[objp->instance].ship_info_index );
 
 		// must change the ship type and weapons.  An ingame joiner know about the default class
@@ -1680,30 +1719,26 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 		GET_DATA(val);
 		Player_ship->engine_recharge_index = val;		
 
-		// handle the dummy value that used to be the ballistic primary flag
-		GET_DATA(val);
-
 		// get current primary and secondary banks, and add link status
 		GET_DATA(val);
 		Player_ship->weapons.current_primary_bank = val;
 		GET_DATA(val);
 		Player_ship->weapons.current_secondary_bank = val;				
 
-		// secondary bank ammo data
-		GET_DATA( num_secondary_banks );
-		Assert( num_secondary_banks == Player_ship->weapons.num_secondary_banks );
-		for ( i = 0; i < Player_ship->weapons.num_secondary_banks; i++ ) {
-			GET_DATA(val);
-			Player_ship->weapons.secondary_bank_ammo[i] = val;
+		// primary bank ammo data
+		GET_DATA( num_primary_banks );
+		Player_ship->weapons.num_primary_banks = num_primary_banks;
+		for ( i = 0; i < Player_ship->weapons.num_primary_banks; i++ ) {
+			GET_SHORT(sval);
+			Player_ship->weapons.primary_bank_ammo[i] = sval;
 		}
 
-		// primary bank ammo data - copied from above - Goober5000
-		GET_DATA( num_primary_banks );
-		Assert( num_primary_banks == Player_ship->weapons.num_primary_banks );
-		for ( i = 0; i < Player_ship->weapons.num_primary_banks; i++ )
-		{
-			GET_DATA(val);
-			Player_ship->weapons.primary_bank_ammo[i] = val;
+		// secondary bank ammo data
+		GET_DATA( num_secondary_banks );
+		Player_ship->weapons.num_secondary_banks = num_secondary_banks;
+		for ( i = 0; i < Player_ship->weapons.num_secondary_banks; i++ ) {
+			GET_SHORT(sval);
+			Player_ship->weapons.secondary_bank_ammo[i] = sval;
 		}
 
 		// get the link status of weapons
@@ -1733,6 +1768,15 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 		// obj_reset_pairs();
 		// obj_add_pairs( OBJ_INDEX(Player_obj) );
 
+		// use server time to sync up mission time and multi timer, taking average ping into account
+		float fl_mission_time = f2fl(mission_time);
+
+		auto ping_offset = static_cast<float>(Netgame.server->s_info.ping.ping_avg / 2000.0f);	// half avg ping in seconds
+		fl_mission_time += ping_offset;
+
+		timestamp_offset_mission_time(fl_mission_time);
+		Multi_Timing_Info.in_game_set_skip_time(fl_mission_time);
+
 		mission_hotkey_set_defaults();
 
 		//multi_ingame_validate_players();
@@ -1745,6 +1789,7 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 			gameseq_post_event(GS_EVENT_ENTER_GAME);								
 		} 
 		break;
+	}
 
 	case INGAME_PLAYER_CHOICE: {
 		ushort net_signature;
@@ -1806,10 +1851,25 @@ void send_ingame_ship_update_packet(net_player *p,ship *sp)
 
 	BUILD_HEADER(INGAME_SHIP_UPDATE);
 	
-	// just send net signature, shield and hull percentages
+	// just send net signature, flags and shield and hull percentages
 	objp = &Objects[sp->objnum];
+
 	ADD_USHORT(objp->net_signature);
-	ADD_ULONG(objp->flags.to_u64());
+
+	// flags
+	SCP_vector<ubyte> obj_flags_out;
+	objp->flags.to_ubyte_vector(obj_flags_out);
+
+	Assertion(obj_flags_out.size() <= 255, "FSO thinks there are too many object flags to send over multiplayer, specifically %d * 8. Please report!", static_cast<int>(obj_flags_out.size()));
+
+	auto temp_size = static_cast<ubyte>(obj_flags_out.size());
+
+	// Add flag entries
+	ADD_DATA(temp_size);
+	for (auto& entry : obj_flags_out){
+		ADD_DATA(entry);
+	}
+
 	ADD_INT(objp->n_quadrants);
 	ADD_FLOAT(objp->hull_strength);
 	
@@ -1826,7 +1886,6 @@ void process_ingame_ship_update_packet(ubyte *data, header *hinfo)
 {
 	int offset;
 	float garbage;
-	uint64_t flags;
 	int idx;
 	int n_quadrants;
 	ushort net_sig;
@@ -1836,7 +1895,17 @@ void process_ingame_ship_update_packet(ubyte *data, header *hinfo)
 	offset = HEADER_LENGTH;
 	// get the net sig for the ship and do a lookup
 	GET_USHORT(net_sig);
-	GET_ULONG(flags);
+
+	// retrieve object flags
+	ubyte temp_size, temp;
+	SCP_vector<ubyte> flags_final;
+	GET_DATA(temp_size);
+
+	for (size_t i = 0; i < temp_size; i++){
+		GET_DATA(temp);
+		flags_final.push_back(temp);
+	}
+
 	GET_INT(n_quadrants);
 
 	// get the object
@@ -1852,8 +1921,9 @@ void process_ingame_ship_update_packet(ubyte *data, header *hinfo)
 		PACKET_SET_SIZE();
 		return;
 	}
+
 	// otherwise read in the ship values
-	lookup->flags.from_u64(flags);
+	lookup->flags.set_from_vector(flags_final);
 	lookup->n_quadrants = n_quadrants;
  	GET_FLOAT(lookup->hull_strength);
 	for(idx=0;idx<n_quadrants;idx++){

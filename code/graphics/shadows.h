@@ -29,9 +29,12 @@ enum class ShadowQuality { Disabled = 0, Low = 1, Medium = 2, High = 3, Ultra = 
 
 extern ShadowQuality Shadow_quality;
 
+
+extern matrix4 Shadow_view_matrix_light;
+extern matrix4 Shadow_view_matrix_render;
+
 extern bool Shadow_quality_uses_mod_option; 
 
-extern matrix4 Shadow_view_matrix;
 extern matrix4 Shadow_proj_matrix[MAX_SHADOW_CASCADES];
 extern float Shadow_cascade_distances[MAX_SHADOW_CASCADES];
 

@@ -18,7 +18,6 @@
 class scoring_struct;
 class player;
 
-#define MAX_BADGES				3
 extern int Rank_medal_index;
 
 extern scoring_struct *Player_score;
@@ -36,6 +35,7 @@ public:
 	bool version_starts_at_1;
 	bool available_from_start;
 	int	kills_needed;
+	int mask_index;
 
 	//If this is a badge (kills_needed > 0)
 	char voice_base[MAX_FILENAME_LEN];
@@ -48,7 +48,7 @@ public:
 
 extern SCP_vector<medal_stuff> Medals;
 
-extern void parse_medal_tbl();
+extern void medals_init();
 
 // modes for this screen
 #define MM_NORMAL				0		// normal - run through the state code

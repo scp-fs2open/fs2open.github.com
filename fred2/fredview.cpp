@@ -1479,8 +1479,8 @@ void CFREDView::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
 			// create a popup menu based on the ship models read in ship.cpp.
 			shipPopup.CreatePopupMenu();
 			shipPopup.AppendMenu(MF_STRING | MF_ENABLED, SHIP_TYPES + Id_select_type_waypoint, "Waypoint");
-			shipPopup.AppendMenu(MF_STRING | MF_ENABLED, SHIP_TYPES + Id_select_type_start, "Player Start");
 			shipPopup.AppendMenu(MF_STRING | MF_ENABLED, SHIP_TYPES + Id_select_type_jump_node, "Jump Node");
+			shipPopup.AppendMenu(MF_STRING | MF_ENABLED, SHIP_TYPES + Id_select_type_start, "Player Start");
 			for (i=0; i<(int)Species_info.size(); i++) {
 				species_submenu[i].CreatePopupMenu();
 				shipPopup.AppendMenu(MF_STRING | MF_POPUP | MF_ENABLED,
@@ -1555,79 +1555,6 @@ CFREDView *CFREDView::GetView()
   return (CFREDView *) pView;
 }
 
-/*void CFREDView::OnShipType0() 
-{
-	cur_model_index = 1;
-}
-
-void CFREDView::OnShipType1() 
-{
-	cur_model_index = 2;
-}
-
-void CFREDView::OnShipType2() 
-{
-	cur_model_index = 3;
-}
-
-void CFREDView::OnShipType3() 
-{
-	cur_model_index = 4;
-}
-
-void CFREDView::OnShipType4() 
-{
-	cur_model_index = 5;
-}
-
-void CFREDView::OnShipType5() 
-{
-	cur_model_index = 6;
-}
-
-void CFREDView::OnUpdateShipType1(CCmdUI* pCmdUI) 
-{
-	pCmdUI->SetCheck(cur_model_index == 2);
-}
-
-void CFREDView::OnUpdateShipType2(CCmdUI* pCmdUI) 
-{
-	pCmdUI->SetCheck(cur_model_index == 3);
-}
-
-void CFREDView::OnUpdateShipType3(CCmdUI* pCmdUI) 
-{
-	pCmdUI->SetCheck(cur_model_index == 4);
-}
-
-void CFREDView::OnUpdateShipType4(CCmdUI* pCmdUI) 
-{
-	pCmdUI->SetCheck(cur_model_index == 5);
-}
-
-void CFREDView::OnUpdateShipType5(CCmdUI* pCmdUI) 
-{
-	pCmdUI->SetCheck(cur_model_index == 6);
-}
-
-
-void CFREDView::OnUpdateShipType0(CCmdUI* pCmdUI) 
-{
-	pCmdUI->SetCheck(cur_model_index == 1);
-	
-}
-
-void CFREDView::OnEditShipType6() 
-{
-	cur_model_index = 7;
-	
-}
-
-void CFREDView::OnUpdateEditShipType6(CCmdUI* pCmdUI) 
-{
-	pCmdUI->SetCheck(cur_model_index == 7);
-} */
-
 
 // following code added by MWA 09/04/96
 // Implements messages for popup menu built on the fly.
@@ -1639,14 +1566,14 @@ BOOL CFREDView::OnCmdMsg(UINT nID, int nCode, void* pExtra, AFX_CMDHANDLERINFO* 
 	int id = (int) nID;
 
 	if (!pHandlerInfo) {
-		if ((id >= SHIP_TYPES) && (id < SHIP_TYPES + ship_info_size() + 3)) {
+		if ((id >= SHIP_TYPES) && (id < SHIP_TYPES + (int)ship_type_combo_box_size + 3)) {
 			if (nCode == CN_COMMAND) {
-				cur_model_index = id - SHIP_TYPES;
-				m_new_ship_type_combo_box.SetCurSelNEW(cur_model_index);
+				cur_ship_type_combo_index = id - SHIP_TYPES;
+				m_new_ship_type_combo_box.SetCurSel(cur_ship_type_combo_index);
 
 			} else if (nCode == CN_UPDATE_COMMAND_UI)	{
 				// Update UI element state
-				((CCmdUI*) pExtra)->SetCheck(cur_model_index + SHIP_TYPES == id);
+				((CCmdUI*) pExtra)->SetCheck(cur_ship_type_combo_index + SHIP_TYPES == id);
 				((CCmdUI*) pExtra)->Enable(TRUE);
 			}
 
@@ -3078,9 +3005,9 @@ int CFREDView::global_error_check()
 	}*/
 
 	// do error checking for asteroid targets
-	for (const auto& target_ship : Asteroid_target_ships) {
-		if (ship_name_lookup(target_ship.c_str(), 1) < 0) {
-			if (error("Asteroid target '%s' is not a valid ship", target_ship.c_str())) {
+	for (const auto& name : Asteroid_field.target_names) {
+		if (ship_name_lookup(name.c_str(), 1) < 0) {
+			if (error("Asteroid target '%s' is not a valid ship", name.c_str())) {
 				return 1;
 			}
 		}
@@ -3821,11 +3748,11 @@ void CFREDView::OnUpdateNewShipType(CCmdUI* pCmdUI)
 	int z;
 	CWnd *bar;
 
-	z = m_new_ship_type_combo_box.GetCurSelNEW();
+	z = m_new_ship_type_combo_box.GetCurSel();
 	if (z == CB_ERR)
-		m_new_ship_type_combo_box.SetCurSelNEW(cur_model_index);
+		m_new_ship_type_combo_box.SetCurSel(cur_ship_type_combo_index);
 	else
-		cur_model_index = z;
+		cur_ship_type_combo_index = z;
 
 	bar = GetDlgItem(pCmdUI->m_nID);
 	if (!bar) {

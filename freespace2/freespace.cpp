@@ -133,6 +133,7 @@
 #include "network/multi_pxo.h"
 #include "network/multi_rate.h"
 #include "network/multi_respawn.h"
+#include "network/multi_turret_manager.h"
 #include "network/multi_voice.h"
 #include "network/multimsgs.h"
 #include "network/multiteamselect.h"
@@ -165,6 +166,7 @@
 #include "render/batching.h"
 #include "scpui/rocket_ui.h"
 #include "scripting/api/objs/gamestate.h"
+#include "scripting/api/objs/camera.h"
 #include "scripting/global_hooks.h"
 #include "scripting/hook_api.h"
 #include "scripting/scripting.h"
@@ -373,6 +375,12 @@ const auto OnStateEndHook = scripting::OverridableHook::Factory(
 	{
 		{"OldState", "gamestate", "The game state that has ended."},
 		{"NewState", "gamestate", "The game state that will begin next."},
+	});
+
+const auto OnCameraSetUpHook = scripting::Hook::Factory(
+	"On Camera Set Up", "Called every frame when the camera is positioned and oriented for rendering.",
+	{
+		{"Camera", "camera", "The camera about to be used for rendering."},
 	});
 
 
@@ -913,6 +921,7 @@ void game_level_close()
 		stars_level_close();
 
 		multi_close_oo_and_ship_tracker();
+		Multi_Turret_Manager.reset(); // Cyborg, this can safely be done after everything else.  At some point, I'll probably consolidate these.
 
 		Pilot.save_savefile();
 
@@ -1031,7 +1040,6 @@ void game_level_init()
 	control_config_clear_used_status();
 	collide_ship_ship_sounds_init();
 
-	Skybox_timestamp = game_get_overall_frametime();
 	Pre_player_entry = 1;			//	Means the player has not yet entered.
 	Entry_delay_time = 0;			//	Could get overwritten in mission read.
 
@@ -1902,7 +1910,7 @@ void game_init()
 
 	parse_rank_tbl();
 	parse_traitor_tbl();
-	parse_medal_tbl();
+	medals_init();
 
 	cutscene_init();
 	key_init();
@@ -2019,8 +2027,9 @@ void game_init()
 #ifdef WITH_FFMPEG
 		libs::ffmpeg::initialize();
 #endif
-
-		libs::discord::init();
+		if (Discord_presence) {
+			libs::discord::init();
+		}
 	}
 
 	mod_table_post_process();
@@ -3193,6 +3202,12 @@ camid game_render_frame_setup()
 
 			if(Viewer_mode & VM_FREECAMERA) {
 				Viewer_obj = nullptr;
+
+				if (OnCameraSetUpHook->isActive()) {
+					OnCameraSetUpHook->run(scripting::hook_param_list(
+						scripting::hook_param("Camera", 'o', scripting::api::l_Camera.Set(cam_get_current()))));
+				}
+
 				return cam_get_current();
 			} else if (Viewer_mode & VM_EXTERNAL) {
 				matrix	tm, tm2;
@@ -3323,6 +3338,11 @@ camid game_render_frame_setup()
 	main_cam->set_position(&eye_pos);
 	main_cam->set_rotation(&eye_orient);
 
+	if (OnCameraSetUpHook->isActive())	{
+		OnCameraSetUpHook->run(scripting::hook_param_list(
+			scripting::hook_param("Camera", 'o', scripting::api::l_Camera.Set(Main_camera))));
+	}
+
 	// setup neb2 rendering
 	neb2_render_setup(Main_camera);
 
@@ -3441,18 +3461,19 @@ void game_render_frame( camid cid )
 	batching_render_all(true);
 
 	Shadow_override = true;
-	//Draw the viewer 'cause we didn't before.
-	//This is so we can change the minimum clipping distance without messing everything up.
-	if (Viewer_obj && (Viewer_obj->type == OBJ_SHIP)
-		&& (Ship_info[Ships[Viewer_obj->instance].ship_info_index].flags[Ship::Info_Flags::Show_ship_model])
-		&& (!Viewer_mode || (Viewer_mode & VM_PADLOCK_ANY) || (Viewer_mode & VM_OTHER_SHIP) || (Viewer_mode & VM_TRACK)
-			|| !(Viewer_mode & VM_EXTERNAL)))
-	{
-		gr_post_process_save_zbuffer();
-		ship_render_show_ship_cockpit(Viewer_obj);
-		gr_post_process_restore_zbuffer();
-	}
 
+	//Draw the viewer 'cause we didn't before.
+	//This is currently seperate to facilitate deferred rendering on different view/proj matrices and with different settings
+	if (Viewer_obj && Viewer_obj->type == OBJ_SHIP && Viewer_obj->instance >= 0) {
+		gr_end_proj_matrix();
+		gr_end_view_matrix();
+
+		GR_DEBUG_SCOPE("Render Cockpit");
+		ship_render_player_ship(Viewer_obj);
+
+		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+		gr_set_view_matrix(&Eye_position, &Eye_matrix);
+	}
 
 #ifndef NDEBUG
 	debug_sphere::render();
@@ -3460,22 +3481,6 @@ void game_render_frame( camid cid )
 	extern void snd_spew_debug_info();
 	snd_spew_debug_info();
 #endif
-
-	gr_end_proj_matrix();
-	gr_end_view_matrix();
-
-	//Draw viewer cockpit
-	if(Viewer_obj != nullptr && Viewer_mode != VM_TOPDOWN && Ship_info[Ships[Viewer_obj->instance].ship_info_index].cockpit_model_num > 0)
-	{
-		GR_DEBUG_SCOPE("Render Cockpit");
-
-		gr_post_process_save_zbuffer();
-		ship_render_cockpit(Viewer_obj);
-		gr_post_process_restore_zbuffer();
-	}
-
-	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
 	// Do the sunspot
 	game_sunspot_process(flFrametime);
@@ -4182,7 +4187,8 @@ void game_frame(bool paused)
 
 fix Last_time = 0;						// The absolute time of game at end of last frame (beginning of this frame)
 fix Last_delta_time = 0;				// While game is paused, this keeps track of how much elapsed in the frame before paused.
-int Last_frame_timestamp = 0;
+TIMESTAMP Last_frame_timestamp = TIMESTAMP::invalid();
+UI_TIMESTAMP Last_frame_ui_timestamp = UI_TIMESTAMP::invalid();
 static bool Time_paused = false;
 
 void game_time_level_init()
@@ -4327,16 +4333,6 @@ void game_set_frametime(int state)
 	if (Frametime > MAX_FRAMETIME)	{
 #ifndef NDEBUG
 		mprintf(("Frame %2i too long!!: frametime = %.3f (%.3f)\n", Framecount, f2fl(Frametime), f2fl(debug_frametime)));
-
-		// If the frame took more than 5 seconds, assume we're tracing through a debugger.  If timestamps are running, correct the elapsed time.
-		if (!Cmdline_slow_frames_ok && !timestamp_is_paused() && (Last_frame_timestamp != 0) && (f2fl(Frametime) > 5.0f)) {
-			auto delta_timestamp = timestamp() - Last_frame_timestamp;
-			// could be 0 if we have time compression slowed to a crawl
-			if (delta_timestamp > 0) {
-				mprintf(("Adjusting timestamp by %2i milliseconds to compensate\n", delta_timestamp));
-				timestamp_adjust_pause_offset(delta_timestamp);
-			}
-		}
 #endif
 		Frametime = MAX_FRAMETIME;
 	}
@@ -4370,7 +4366,15 @@ void game_set_frametime(int state)
 	}
 
 	Last_time = thistime;
-	Last_frame_timestamp = timestamp();
+
+	// Unlike Last_frame_ui_timestamp, it's probably ok to leave this here for the following reasons:
+	// 1) Frametime-related values have always been updated in this specific function
+	// 2) The only time this function is not called during a frame is when the game is paused, which is a state
+	//    wherein timestamps don't need to be updated anyway (the internal Timestamp_paused_at_counter variable
+	//    only needs to be set when the pause starts)
+	// 3) The only place Last_frame_timestamp is used is for checking control key or button presses, and in that
+	//    situation there is no check for duration, only whether the timestamp has changed
+	Last_frame_timestamp = _timestamp();
 
 	flFrametime = f2fl(Frametime);
 
@@ -6108,6 +6112,20 @@ void mouse_force_pos(int x, int y);
 // do stuff that may need to be done regardless of state
 void game_do_state_common(int state,int no_networking)
 {
+#ifndef NDEBUG
+	// If the frame took more than 5 seconds, assume we're tracing through a debugger.  If timestamps are running, correct the elapsed time.
+	if (!Cmdline_slow_frames_ok && !timestamp_is_paused() && Last_frame_ui_timestamp.isValid()) {
+		auto delta_timestamp = ui_timestamp_since(Last_frame_ui_timestamp);
+		if (delta_timestamp > 5 * MILLISECONDS_PER_SECOND) {
+			delta_timestamp -= 20;	// suppose last frame was 50 FPS
+			mprintf(("Too much time passed between frames.  Adjusting timestamp by %i milliseconds to compensate\n", delta_timestamp));
+			timestamp_adjust_pause_offset(delta_timestamp);
+		}
+	}
+#endif
+	Last_frame_ui_timestamp = ui_timestamp();
+
+
 	io::mouse::CursorManager::doFrame();		// determine if to draw the mouse this frame
 	snd_do_frame();								// update sound system
 	event_music_do_frame();						// music needs to play across many states
@@ -6750,10 +6768,6 @@ void game_shutdown(void)
 	// the menu close functions will unload the bitmaps if they were displayed during the game
 	main_hall_close();
 	training_menu_close();
-
-	// free left over memory from table parsing
-	player_tips_close();
-
 
 	// more fundamental shutdowns begin here ----------
 

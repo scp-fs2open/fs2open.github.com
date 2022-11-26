@@ -97,6 +97,7 @@ const char *stars_get_name_from_instance(int index, bool is_a_sun);
 
 extern const int MAX_STARS;
 extern int Num_stars;
+extern TIMESTAMP Skybox_timestamp;
 
 // call on game startup
 void stars_init();

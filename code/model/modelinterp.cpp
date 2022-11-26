@@ -52,8 +52,6 @@ int modelstats_num_sortnorms = 0;
 int modelstats_num_boxes = 0;
 #endif
 
-extern fix game_get_overall_frametime();	// for texture animation
-
 typedef struct model_light {
 	ubyte r, g, b;
 } model_light;
@@ -207,7 +205,6 @@ int Interp_detail_level = 0;
 
 // forward references
 int model_should_render_engine_glow(int objnum, int bank_obj);
-int model_interp_get_texture(texture_info *tinfo, fix base_frametime);
 
 void model_deallocate_interp_data()
 {
@@ -2774,10 +2771,10 @@ int model_should_render_engine_glow(int objnum, int bank_obj)
 
 // Goober5000
 // uses same algorithms as in ship_do_thruster_frame
-int model_interp_get_texture(texture_info *tinfo, fix base_frametime)
+int model_interp_get_texture(texture_info *tinfo, int elapsed_time)
 {
-	int texture, frame, num_frames;
-	float cur_time, total_time;
+	int texture, frame, cur_time, num_frames;
+	float total_time;
 
 	// get texture
 	num_frames = tinfo->GetNumFrames();
@@ -2789,11 +2786,12 @@ int model_interp_get_texture(texture_info *tinfo, fix base_frametime)
 	{
 		// sanity check total_time first thing
 		Assert(total_time > 0.0f);
+		total_time *= MILLISECONDS_PER_SECOND;
 
-		cur_time = f2fl((game_get_overall_frametime() - base_frametime) % fl2f(total_time));
+		cur_time = elapsed_time % fl2i(total_time);
 
 		// get animation frame
-		frame = fl2i((cur_time * num_frames) / total_time);
+		frame = fl2i((cur_time * num_frames) / total_time + 0.5f);
 		CLAMP(frame, 0, num_frames - 1);
 
 		// advance to the correct frame
@@ -3426,6 +3424,6 @@ void bsp_polygon_data::replace_textures_used(const SCP_map<int, int>& replacemen
 	}
 }
 
-SCP_set<int> model_get_textures_used(polymodel* pm, int submodel) {
+SCP_set<int> model_get_textures_used(const polymodel* pm, int submodel) {
 	return bsp_polygon_data{ pm->submodel[submodel].bsp_data }.get_textures_used();
 }

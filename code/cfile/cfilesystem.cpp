@@ -21,6 +21,7 @@
 #include <direct.h>
 #include <windows.h>
 #include <winbase.h>		/* needed for memory mapping of file functions */
+#include <shlwapi.h>
 #endif
 
 #ifdef SCP_UNIX
@@ -37,7 +38,6 @@
 #include "cmdline/cmdline.h"
 #include "globalincs/pstypes.h"
 #include "def_files/def_files.h"
-#include "localization/localize.h"
 #include "osapi/osapi.h"
 #include "parse/parselo.h"
 
@@ -96,6 +96,7 @@ typedef struct cf_file {
 	int			size;								// How big it is in bytes
 	int			pack_offset;						// For pack files, where it is at.   0 if not in a pack file.  This can be used to tell if in a pack file.
 	SCP_string	real_name;							// For real files, the full path
+	SCP_string	sub_path;							// subfolder path off of pathtype root (should include trailing directory seperator)
 	const void*	data;								// For in-memory files, the data pointer
 
 	cf_file() : root_index(0), pathtype_index(0), write_time(0), size(0), pack_offset(0), data(nullptr) {}
@@ -188,47 +189,95 @@ cf_root *cf_create_root()
 
 struct _file_list_t {
 	SCP_string name;
+	SCP_string sub_path;
 	time_t m_time;
 	size_t size;
+	int pathtype;
+	int offset;
+
+	_file_list_t() : m_time(0), size(0), pathtype(CF_TYPE_INVALID), offset(0) {}
 };
 
 static bool sort_file_list(const _file_list_t &a, const _file_list_t &b)
 {
+	if ( a.sub_path.empty() && !b.sub_path.empty() ) {
+		return stricmp(a.name.c_str(), b.sub_path.c_str()) < 0;
+	}
+
+	if ( !a.sub_path.empty() && b.sub_path.empty() ) {
+		return stricmp(a.sub_path.c_str(), b.name.c_str()) < 0;
+	}
+
+	if ( !a.sub_path.empty() && !b.sub_path.empty() ) {
+		int rc = stricmp(a.sub_path.c_str(), b.sub_path.c_str());
+
+		if (rc) {
+			return rc < 0;
+		}
+	}
+
 	return stricmp(a.name.c_str(), b.name.c_str()) < 0;
 }
 
-static size_t cf_get_list_of_files(SCP_string &path, SCP_vector<_file_list_t> &files, const char *filter = nullptr)
+static size_t cf_get_list_of_files(const SCP_string &in_path, SCP_vector<_file_list_t> &files, const char *filter = nullptr, bool recursive = false, const char *subpath = nullptr)
 {
 	_file_list_t nfile;
+	SCP_string path = in_path;
+
+	if (path.back() != DIR_SEPARATOR_CHAR) {
+		path += DIR_SEPARATOR_CHAR;
+	}
+
+	if (subpath) {
+		path += subpath;
+		path += DIR_SEPARATOR_CHAR;
+	}
 
 #if defined _WIN32
 
-	SCP_string tmppath = path;
 	intptr_t find_handle;
 	_finddata_t find;
 
-	if (filter) {
-		if (tmppath.back() != DIR_SEPARATOR_CHAR) {
-			tmppath += DIR_SEPARATOR_CHAR;
-		}
+	// make sure we return all entries by default
+	path += "*";
 
-		tmppath += filter;
-	}
-
-	find_handle = _findfirst(tmppath.c_str(), &find);
+	find_handle = _findfirst(path.c_str(), &find);
 
 	if (find_handle == -1) {
 		return 0;
 	}
 
 	do {
+
 		if (find.attrib & _A_SUBDIR) {
+			if ( recursive && strcmp(find.name, ".") && strcmp(find.name, "..") ) {
+				SCP_string sub;
+
+				if (subpath) {
+					sub = subpath;
+					sub += DIR_SEPARATOR_CHAR;
+				}
+
+				sub += find.name;
+
+				cf_get_list_of_files(in_path, files, filter, recursive, sub.c_str());
+			}
+
+			continue;
+		}
+
+		if (filter && !PathMatchSpec(find.name, filter)) {
 			continue;
 		}
 
 		nfile.name = find.name;
 		nfile.m_time = find.time_write;
 		nfile.size = find.size;
+
+		if (subpath) {
+			nfile.sub_path = subpath;
+			nfile.sub_path += DIR_SEPARATOR_CHAR;
+		}
 
 		files.push_back(nfile);
 	} while ( !_findnext(find_handle, &find) );
@@ -248,16 +297,7 @@ static size_t cf_get_list_of_files(SCP_string &path, SCP_vector<_file_list_t> &f
 	}
 
 	while ((dir = readdir(dirp)) != nullptr) {
-		if (filter && fnmatch(filter, dir->d_name, 0)) {
-			continue;
-		}
-
 		filepath = path;
-
-		if (filepath.back() != DIR_SEPARATOR_CHAR) {
-			filepath += DIR_SEPARATOR_CHAR;
-		}
-
 		filepath += dir->d_name;
 
 		struct stat buf;
@@ -266,13 +306,42 @@ static size_t cf_get_list_of_files(SCP_string &path, SCP_vector<_file_list_t> &f
 			continue;
 		}
 
+		if ( recursive && S_ISDIR(buf.st_mode) && strcmp(dir->d_name, ".") && strcmp(dir->d_name, "..") ) {
+			SCP_string sub;
+
+			if (subpath) {
+				sub = subpath;
+				sub += DIR_SEPARATOR_CHAR;
+			}
+
+			sub += dir->d_name;
+
+			cf_get_list_of_files(in_path, files, filter, recursive, sub.c_str());
+
+			continue;
+		}
+
 		if ( !S_ISREG(buf.st_mode) ) {
+			continue;
+		}
+
+		// zero byte files shouldn't be indexed, but that breaks unit tests
+		// if ( !buf.st_size ) {
+		// 	continue;
+		// }
+
+		if (filter && fnmatch(filter, dir->d_name, 0)) {
 			continue;
 		}
 
 		nfile.name = dir->d_name;
 		nfile.m_time = buf.st_mtime;
 		nfile.size = buf.st_size;
+
+		if (subpath) {
+			nfile.sub_path = subpath;
+			nfile.sub_path += DIR_SEPARATOR_CHAR;
+		}
 
 		files.push_back(nfile);
 	}
@@ -281,16 +350,34 @@ static size_t cf_get_list_of_files(SCP_string &path, SCP_vector<_file_list_t> &f
 
 #endif
 
-	std::sort(files.begin(), files.end(), sort_file_list);
+	if ( !subpath ) {
+		std::sort(files.begin(), files.end(), sort_file_list);
+	}
 
 	return files.size();
 }
 
-static size_t cf_get_list_of_files(const char *path, SCP_vector<_file_list_t> &files, const char *filter = nullptr)
+static bool cf_should_scan_subdirs(int pathtype)
 {
-	SCP_string t_path = path;
+	if ((pathtype <= CF_TYPE_DATA) || (pathtype >= CF_MAX_PATH_TYPES)) {
+		return false;
+	}
 
-	return cf_get_list_of_files(t_path, files, filter);
+	switch (pathtype) {
+		// all pilot file related directories, except for images, should be ignored
+		case CF_TYPE_PLAYERS:
+		case CF_TYPE_SINGLE_PLAYERS:
+		case CF_TYPE_MULTI_PLAYERS:
+		case CF_TYPE_PLAYER_BINDS:
+		// voice, missing extensions, has no automatic subfolder support
+		case CF_TYPE_VOICE:
+			return false;
+
+		default:
+			break;
+	}
+
+	return true;
 }
 
 
@@ -367,7 +454,7 @@ static void cf_init_root_pathtypes(cf_root *root)
 #endif
 }
 
-static SCP_string cf_get_root_pathtype(const cf_root *root, const int type)
+static SCP_string cf_get_root_pathtype(__UNUSED const cf_root *root, const int type)
 {
 #ifdef SCP_UNIX
 	auto parentPathIter = root->pathTypeToRealPath.find(type);
@@ -466,14 +553,15 @@ void cf_build_pack_list( cf_root *root )
 	}
 }
 
-static char normalize_directory_separator(char in)
+void normalize_directory_separators(SCP_string &str)
 {
-	if (in == '/')
-	{
-		return DIR_SEPARATOR_CHAR;
+	char bad_sep = '/';
+
+	if (bad_sep == DIR_SEPARATOR_CHAR) {
+		bad_sep = '\\';
 	}
 
-	return in;
+	std::replace(str.begin(), str.end(), bad_sep, DIR_SEPARATOR_CHAR);
 }
 
 static void cf_add_mod_roots(const char* rootDirectory, uint32_t basic_location)
@@ -499,7 +587,7 @@ static void cf_add_mod_roots(const char* rootDirectory, uint32_t basic_location)
 			}
 
 			// normalize the path to the native path format
-			std::transform(rootPath.begin(), rootPath.end(), rootPath.begin(), normalize_directory_separator);
+			normalize_directory_separators(rootPath);
 
 			cf_root* root = cf_create_root();
 
@@ -593,8 +681,32 @@ void cf_build_root_list(const char *cdrom_dir)
 		Error(LOCATION, "Can't get current working directory -- %d", errno );
 	}
 
+	if (Cmdline_override_data) {
+
+		//To allow user-override of mod files, this new root takes presecdence over all mod roots.
+		cf_root	*last = nullptr;
+		last = cf_create_root();
+
+		last->location_flags |= CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT | CF_LOCATION_TYPE_SECONDARY_MODS;
+
+		last->path = working_directory;
+		if (last->path.back() != DIR_SEPARATOR_CHAR) {
+			last->path += DIR_SEPARATOR_CHAR;
+		}
+		last->path += "_override";
+		last->path += DIR_SEPARATOR_CHAR; 
+
+		last->roottype = CF_ROOTTYPE_PATH;
+
+		cf_init_root_pathtypes(last);
+
+		cf_build_pack_list(last);
+	}
+
+	//now that the _override root is finished(or not), handle all mods
 	cf_add_mod_roots(working_directory, CF_LOCATION_ROOT_GAME);
 
+	//finally, handle the default root.
 	root = cf_create_root();
 
 	root->location_flags |= CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT;
@@ -656,6 +768,63 @@ int is_ext_in_list( const char *ext_list, const char *ext )
 	return 0;
 }
 
+// Run a basic test for indexed files that may be shadowed
+#ifndef NDEBUG
+	#define ENABLE_SHADOW_CHECK		1
+#endif
+
+static void check_file_shadows(const int root_index __UNUSED, const int pathtype __UNUSED, const SCP_string &name __UNUSED, const SCP_string sub_path __UNUSED)
+{
+#if ENABLE_SHADOW_CHECK
+	if ( !cf_should_scan_subdirs(pathtype) ) {
+		return;
+	}
+
+	SCP_string curfile, newfile;
+
+	const auto root = cf_get_root(root_index);
+
+	newfile = root->path + ((root->roottype == CF_ROOTTYPE_PACK) ? "::" : "");
+	newfile += cf_get_root_pathtype(root, pathtype) + DIR_SEPARATOR_CHAR;
+	newfile += sub_path + name;
+
+	for (uint i = 0; i < Num_files; ++i) {
+		const auto f = cf_get_file(i);
+		const auto r = cf_get_root(f->root_index);
+
+		// skip memory roots, no subdirs there
+		if (r->roottype == CF_ROOTTYPE_MEMORY) {
+			continue;
+		}
+
+		// if basic path type doesn't match then skip
+		if (pathtype != f->pathtype_index) {
+			continue;
+		}
+
+		if (name != f->name_ext) {
+			continue;
+		}
+
+		// if the subpath matches then consider it an override rather than shadow
+		if (sub_path == f->sub_path) {
+			continue;
+		}
+
+		curfile = r->path + ((r->roottype == CF_ROOTTYPE_PACK) ? "::" : "");
+		curfile += cf_get_root_pathtype(r, pathtype) + DIR_SEPARATOR_CHAR;
+		curfile += f->sub_path + f->name_ext;
+
+		// this log message occurs in the middle of an existing line, hence the extra new lines
+		mprintf(("\nWARNING! A file being indexed may be shadowed by an existing file!\n New:\n  %s\n Existing:\n  %s\n",
+				newfile.c_str(), curfile.c_str()));
+
+		break;
+	}
+#endif
+}
+
+
 void cf_search_root_path(int root_index)
 {
 	int i;
@@ -709,7 +878,7 @@ void cf_search_root_path(int root_index)
 
 		SCP_vector<_file_list_t> files;
 
-		cf_get_list_of_files(search_path, files, "*.*");
+		cf_get_list_of_files(search_path, files, "*.*", cf_should_scan_subdirs(i));
 
 		for (auto &file : files) {
 			auto ext_idx = file.name.rfind('.');
@@ -717,6 +886,8 @@ void cf_search_root_path(int root_index)
 			if ( ext_idx == SCP_string::npos || !is_ext_in_list(Pathtypes[i].extensions, file.name.substr(ext_idx+1).c_str()) ) {
 				continue;
 			}
+
+			check_file_shadows(root_index, i, file.name, file.sub_path);
 
 			cf_file *cfile = cf_create_file();
 
@@ -726,7 +897,8 @@ void cf_search_root_path(int root_index)
 			cfile->write_time = file.m_time;
 			cfile->size = static_cast<int>(file.size);
 			cfile->pack_offset = 0;
-			cfile->real_name = search_path + DIR_SEPARATOR_STR + file.name;
+			cfile->real_name = search_path + DIR_SEPARATOR_STR + file.sub_path + file.name;
+			cfile->sub_path = file.sub_path;
 
 			++num_files;
 		}
@@ -749,6 +921,31 @@ typedef struct VP_FILE {
 	char	filename[32];
 	_fs_time_t write_time;
 } VP_FILE;
+
+static int cf_add_pack_files(const int root_index, SCP_vector<_file_list_t> &files)
+{
+	if (files.empty()) {
+		return 0;
+	}
+
+	std::sort(files.begin(), files.end(), sort_file_list);
+
+	for (auto &file : files) {
+		check_file_shadows(root_index, file.pathtype, file.name, file.sub_path);
+
+		cf_file *pf = cf_create_file();
+
+		pf->name_ext = file.name;
+		pf->root_index = root_index;
+		pf->pathtype_index = file.pathtype;
+		pf->write_time = file.m_time;
+		pf->size = static_cast<int>(file.size);
+		pf->pack_offset = file.offset;			// Mark as a packed file
+		pf->sub_path = file.sub_path;
+	}
+
+	return static_cast<int>(files.size());
+}
 
 void cf_search_root_pack(int root_index)
 {
@@ -788,17 +985,22 @@ void cf_search_root_pack(int root_index)
 	// Read index info
 	fseek(fp, VP_header.index_offset, SEEK_SET);
 
-	char search_path[CF_MAX_PATHNAME_LENGTH];
 
-	strcpy_s( search_path, "" );
-	
+	SCP_string search_path;
+	SCP_string sub_path;
+	int path_type = CF_TYPE_INVALID;
+
+	SCP_vector<_file_list_t> files;
+
+	files.reserve(256);		// should be set to a good baseline of files per path
+
 	// Go through all the files
 	int i;
 	for (i=0; i<VP_header.num_files; i++ )	{
 		VP_FILE find;
 
 		if (fread( &find, sizeof(VP_FILE), 1, fp ) != 1) {
-			mprintf(("Failed to read file entry (currently in directory %s)!\n", search_path));
+			mprintf(("Failed to read file entry (currently in directory %s)!\n", search_path.c_str()));
 			break;
 		}
 
@@ -808,49 +1010,68 @@ void cf_search_root_pack(int root_index)
 		find.filename[sizeof(find.filename)-1] = '\0';
 
 		if ( find.size == 0 )	{
-			size_t search_path_len = strlen(search_path);
-			if ( !stricmp( find.filename, ".." ))	{
-				char *p = &search_path[search_path_len-1];
-				while( (p > search_path) && (*p != DIR_SEPARATOR_CHAR) )	{
-					p--;
+			if ( !stricmp(find.filename, "..")) {
+				auto end = search_path.rfind(DIR_SEPARATOR_CHAR);
+
+				if (end != SCP_string::npos) {
+					search_path.erase(end);
+				} else {
+					search_path.clear();
 				}
-				*p = 0;
 			} else {
-				if ( search_path_len && (search_path[search_path_len-1] != DIR_SEPARATOR_CHAR) ) {
-					strcat_s( search_path, DIR_SEPARATOR_STR );
+				if ( !search_path.empty() && (search_path.back() != DIR_SEPARATOR_CHAR) ) {
+					search_path += DIR_SEPARATOR_CHAR;
 				}
-				strcat_s( search_path, find.filename );
+
+				search_path += find.filename;
 			}
 
-			//mprintf(( "Current dir = '%s'\n", search_path ));
+			auto rval = cfile_get_path_type(search_path);
+
+			// if the pathtype root changed then add all of the files
+			if (rval != path_type) {
+				num_files += cf_add_pack_files(root_index, files);
+				files.clear();
+			}
+
+			path_type = rval;
+
+			if ( (path_type > CF_TYPE_DATA) && Pathtypes[path_type].path &&
+				 (search_path.length() > strlen(Pathtypes[path_type].path)) )
+			{
+				sub_path = search_path.substr(strlen(Pathtypes[path_type].path)+1) + DIR_SEPARATOR_STR;
+			} else {
+				sub_path.clear();
+			}
+
+			//mprintf(( "Current dir = '%s'\n", search_path.c_str() ));
 		} else {
-	
-			int j;			
-							
-			for (j=CF_TYPE_ROOT; j<CF_MAX_PATH_TYPES; j++ )	{
-				
-				if ( !stricmp( search_path, Pathtypes[j].path ))	{
-					char *ext = strrchr( find.filename, '.' );
-					if ( ext )	{
-						if ( is_ext_in_list( Pathtypes[j].extensions, ext ) )	{
-							// Found a file!!!!
-							cf_file *file = cf_create_file();
+			if (path_type != CF_TYPE_INVALID) {
+				char *ext = strrchr( find.filename, '.' );
+				if ( ext )	{
+					if ( is_ext_in_list( Pathtypes[path_type].extensions, ext ) )	{
+						// Found a file!!!!
+						_file_list_t file;
 
-							file->name_ext = find.filename;
-							file->root_index = root_index;
-							file->pathtype_index = j;
-							file->write_time = (time_t)find.write_time;
-							file->size = find.size;
-							file->pack_offset = find.offset;			// Mark as a packed file
+						file.name = find.filename;
+						file.m_time = find.write_time;
+						file.size = find.size;
+						file.sub_path = sub_path;
+						file.pathtype = path_type;
+						file.offset = find.offset;
 
-							num_files++;
-							//mprintf(( "Found pack file '%s'\n", file->name_ext ));
-						}
+						files.push_back(file);
+
+						//mprintf(( "Found pack file '%s'\n", find.filename ));
 					}
 				}
 			}
 		}
 	}
+
+	// add final set of files
+	num_files += cf_add_pack_files(root_index, files);
+	files.clear();
 
 	fclose(fp);
 
@@ -948,6 +1169,34 @@ void cf_free_secondary_filelist()
 	Num_files = 0;
 }
 
+static bool is_absolute_path(const char *path)
+{
+	if ( !path || !strlen(path) ) {
+		return false;
+	}
+
+#ifdef WIN32
+	return (PathIsRelative(path) == FALSE);
+#else
+	return (*path == '/');
+#endif
+}
+
+static bool sub_path_match(const SCP_string &search, const SCP_string &index)
+{
+	// if search path is empty then we only care about the file name
+	if (search.empty()) {
+		return true;
+	}
+
+	// if we have search but no index then fail
+	if (index.empty()) {
+		return false;
+	}
+
+	return !stricmp(search.c_str(), index.c_str());
+}
+
 /**
  * Searches for a file.
  *
@@ -955,17 +1204,16 @@ void cf_free_secondary_filelist()
  *
  * @param filespec      Filename & extension
  * @param pathtype      See CF_TYPE_ defines in CFILE.H
- * @param localize      Undertake localization
  * @param location_flags Specifies where to search for the specified flag
  *
  * @return A structure which describes the found file
  */
-CFileLocation cf_find_file_location(const char* filespec, int pathtype, bool localize, uint32_t location_flags)
+CFileLocation cf_find_file_location(const char* filespec, int pathtype, uint32_t location_flags)
 {
 	int i;
     uint ui;
 	int cfs_slow_search = 0;
-	char longname[MAX_PATH_LEN];
+	SCP_string longname;
 
 	Assert( (filespec != NULL) && (strlen(filespec) > 0) ); //-V805
 
@@ -976,16 +1224,19 @@ CFileLocation cf_find_file_location(const char* filespec, int pathtype, bool loc
 	// of the file
 
 	// NOTE: full path should also include localization, if so desired
-	auto last_separator = strrchr(filespec, DIR_SEPARATOR_CHAR);
 
 	// do we have a full path already?
-	if ( last_separator ) {
+	if (is_absolute_path(filespec)) {
 		FILE *fp = fopen(filespec, "rb" );
 		if (fp)	{
 			CFileLocation res(true);
 			res.size = static_cast<size_t>(filelength(fileno(fp)));
 
 			fclose(fp);
+
+			auto last_separator = strrchr(filespec, DIR_SEPARATOR_CHAR);
+
+			Assertion(last_separator != nullptr, "We have full path, but no separator!?");
 
 			res.offset = 0;
 			res.full_name = filespec;
@@ -1010,9 +1261,6 @@ CFileLocation cf_find_file_location(const char* filespec, int pathtype, bool loc
 		}
 	}
 
-	memset( longname, 0, sizeof(longname) );
-
-
 	for (ui=0; ui<num_search_dirs; ui++ )	{
 		cfs_slow_search = 0;
 
@@ -1036,10 +1284,11 @@ CFileLocation cf_find_file_location(const char* filespec, int pathtype, bool loc
 		}
  
 		if (cfs_slow_search) {
-			cf_create_default_path_string(longname, sizeof(longname) - 1, search_order[ui], filespec, localize,
-			                              location_flags);
+			if ( !cf_create_default_path_string(longname, search_order[ui], filespec, location_flags) ) {
+				continue;
+			}
 
-			FILE *fp = fopen(longname, "rb" );
+			FILE *fp = fopen(longname.c_str(), "rb" );
 
 			if (fp) {
 				CFileLocation res(true);
@@ -1054,6 +1303,21 @@ CFileLocation cf_find_file_location(const char* filespec, int pathtype, bool loc
 				return res;
 			}
 		}
+	}
+
+	// fixup filename and sub directory path, if needed
+	SCP_string filename = filespec;
+	SCP_string sub_path;
+
+	normalize_directory_separators(filename);
+
+	auto seperator = filename.rfind(DIR_SEPARATOR_CHAR);
+
+	if (seperator != SCP_string::npos) {
+		sub_path = filename.substr(0, seperator);
+		sub_path += DIR_SEPARATOR_CHAR;
+
+		filename.erase(0, seperator+1);
 	}
 
 	// Search the pak files and CD-ROM.
@@ -1074,40 +1338,12 @@ CFileLocation cf_find_file_location(const char* filespec, int pathtype, bool loc
 			}
 		}
 
-		if (localize) {
-			// create localized filespec
-			strncpy(longname, filespec, MAX_PATH_LEN - 1);
-
-			if ( lcl_add_dir_to_path_with_filename(longname, MAX_PATH_LEN - 1) ) {
-				if ( !stricmp(longname, f->name_ext.c_str()) ) {
-					CFileLocation res(true);
-					res.size = static_cast<size_t>(f->size);
-					res.offset = (size_t)f->pack_offset;
-					res.data_ptr = f->data;
-					res.name_ext = f->name_ext;
-
-					if (f->data != nullptr) {
-						// This is an in-memory file so we just copy the pathtype name + file name
-						res.full_name = Pathtypes[f->pathtype_index].path;
-						res.full_name += DIR_SEPARATOR_STR;
-						res.full_name += f->name_ext;
-					} else if (f->pack_offset < 1) {
-						// This is a real file, return the actual file path
-						res.full_name = f->real_name;
-					} else {
-						// File is in a pack file
-						cf_root *r = cf_get_root(f->root_index);
-
-						res.full_name = r->path;
-					}
-
-					return res;
-				}
-			}
+		if ( !sub_path_match(sub_path, f->sub_path) ) {
+			continue;
 		}
 
 		// file either not localized or localized version not found
-		if ( !stricmp(filespec, f->name_ext.c_str()) ) {
+		if ( !stricmp(filename.c_str(), f->name_ext.c_str()) ) {
 			CFileLocation res(true);
 			res.size = static_cast<size_t>(f->size);
 			res.offset = (size_t)f->pack_offset;
@@ -1118,6 +1354,7 @@ CFileLocation cf_find_file_location(const char* filespec, int pathtype, bool loc
 				// This is an in-memory file so we just copy the pathtype name + file name
 				res.full_name = Pathtypes[f->pathtype_index].path;
 				res.full_name += DIR_SEPARATOR_STR;
+				res.full_name += f->sub_path;
 				res.full_name += f->name_ext;
 			} else if (f->pack_offset < 1) {
 				// This is a real file, return the actual file path
@@ -1150,25 +1387,22 @@ extern char *stristr(char *str, const char *substr);
  * @param ext_list      Extension filter list
  * @param pathtype      See CF_TYPE_ defines in CFILE.H
  * @param max_out       Maximum string length that should be stuffed into pack_filename
- * @param localize      Undertake localization
  *
  * @return A structure containing information about the found file
  */
-CFileLocationExt cf_find_file_location_ext( const char *filename, const int ext_num, const char **ext_list, int pathtype, bool localize)
+CFileLocationExt cf_find_file_location_ext(const char *filename, const int ext_num, const char **ext_list, int pathtype)
 {
 	int cur_ext, i;
     uint ui;
 	int cfs_slow_search = 0;
-	char longname[MAX_PATH_LEN];
-	char filespec[MAX_FILENAME_LEN];
-	char *p = NULL;
-	
+	SCP_string longname;
+
 	Assert( (filename != NULL) && (strlen(filename) < MAX_FILENAME_LEN) );
 	Assert( (ext_list != NULL) && (ext_num > 1) );	// if we are searching for just one ext
 													// then this is the wrong function to use
 
 	// if we have a full path already then fail.  this function if for searching via filter only!
-	if ( strchr(filename, DIR_SEPARATOR_CHAR) ) {		// do we have a full path already?
+	if (is_absolute_path(filename)) {		// do we have a full path already?
 		Int3();
 		return CFileLocationExt();
 	}
@@ -1184,11 +1418,31 @@ CFileLocationExt cf_find_file_location_ext( const char *filename, const int ext_
 			search_order[num_search_dirs++] = i;
 	}
 
-	memset( longname, 0, sizeof(longname) );
-	memset( filespec, 0, sizeof(filespec) );
+	// fixup filename and sub directory path, if needed
+	SCP_string filespec = filename;
+	SCP_string sub_path;
+
+	normalize_directory_separators(filespec);
+
+	auto seperator = filespec.rfind(DIR_SEPARATOR_CHAR);
+
+	if (seperator != SCP_string::npos) {
+		sub_path = filespec.substr(0, seperator);
+		sub_path += DIR_SEPARATOR_CHAR;
+
+		filespec.erase(0, seperator+1);
+	}
 
 	// strip any existing extension
-	strncpy(filespec, filename, MAX_FILENAME_LEN-1);
+	// (NOTE: to be fully retail compatible, we need to support multiple periods for something like *_1.5.wav,
+	//        which means that we need to strip a length of >2 only, assuming that all valid ext are at least 2 chars)
+	auto dot = filespec.rfind('.');
+
+	if ( (dot != SCP_string::npos) && ((filespec.length() - dot) > 2) ) {
+		filespec.erase(dot);
+	}
+
+	SCP_string filespec_ext;
 
 	for (ui = 0; ui < num_search_dirs; ui++) {
 		cfs_slow_search = 0;
@@ -1218,18 +1472,13 @@ CFileLocationExt cf_find_file_location_ext( const char *filename, const int ext_
 			continue;
 
 		for (cur_ext = 0; cur_ext < ext_num; cur_ext++) {
-			// strip any extension and add the one we want to check for
-			// (NOTE: to be fully retail compatible, we need to support multiple periods for something like *_1.5.wav,
-			//        which means that we need to strip a length of >2 only, assuming that all valid ext are at least 2 chars)
-			p = strrchr(filespec, '.');
-			if ( p && (strlen(p) > 2) )
-				(*p) = 0;
+			filespec_ext = filespec + ext_list[cur_ext];
 
-			strcat_s( filespec, ext_list[cur_ext] );
- 
-			cf_create_default_path_string( longname, sizeof(longname)-1, search_order[ui], filespec, localize );
+			if ( !cf_create_default_path_string(longname, search_order[ui], filespec_ext.c_str()) ) {
+				continue;
+			}
 
-			FILE *fp = fopen(longname, "rb" );
+			FILE *fp = fopen(longname.c_str(), "rb" );
 
 			if (fp) {
 				CFileLocationExt res(cur_ext);
@@ -1240,7 +1489,7 @@ CFileLocationExt cf_find_file_location_ext( const char *filename, const int ext_
 
 				res.offset = 0;
 				res.full_name = longname;
-				res.name_ext = filespec;
+				res.name_ext = filespec_ext;
 
 				return res;
 			}
@@ -1249,19 +1498,9 @@ CFileLocationExt cf_find_file_location_ext( const char *filename, const int ext_
 
 	// Search the pak files and CD-ROM.
 
-	// first off, make sure that we don't have an extension
-	// (NOTE: to be fully retail compatible, we need to support multiple periods for something like *_1.5.wav,
-	//        which means that we need to strip a length of >2 only, assuming that all valid ext are at least 2 chars)
-	p = strrchr(filespec, '.');
-	if ( p && (strlen(p) > 2) )
-		(*p) = 0;
-
-	// go ahead and get our length, which is used to test with later
-	size_t filespec_len = strlen(filespec);
-
-	// get total legnth, with extension, which is iused to test with later
+	// get total length, with extension, which is used to test with later
 	// (FIXME: this assumes that everything in ext_list[] is the same length!)
-	size_t filespec_len_big = filespec_len + strlen(ext_list[0]);
+	size_t filespec_len_big = filespec.length() + strlen(ext_list[0]);
 
 	SCP_vector< cf_file* > file_list_index;
 	int last_root_index = -1;
@@ -1277,12 +1516,17 @@ CFileLocationExt cf_find_file_location_ext( const char *filename, const int ext_
 		if ( (num_search_dirs == 1) && (pathtype != f->pathtype_index) )
 			continue;
 
+		// ... match subdirectories (if specified)
+		if ( !sub_path_match(sub_path, f->sub_path) ) {
+			continue;
+		}
+
 		// ... check that our names are the same length (accounting for the missing extension on our own name)
 		if (f->name_ext.length() != filespec_len_big )
 			continue;
 
 		// ... check that we match the base filename
-		if ( strnicmp(f->name_ext.c_str(), filespec, filespec_len) != 0 )
+		if ( strnicmp(f->name_ext.c_str(), filespec.c_str(), filespec.length()) != 0 )
 			continue;
 
 		// ... make sure that it's one of our supported types
@@ -1317,47 +1561,11 @@ CFileLocationExt cf_find_file_location_ext( const char *filename, const int ext_
 	for (cur_ext = 0; cur_ext < ext_num; cur_ext++) {
 		for (SCP_vector<cf_file*>::iterator fli = file_list_index.begin(); fli != file_list_index.end(); ++fli) {
 			cf_file *f = *fli;
-	
-			strcat_s( filespec, ext_list[cur_ext] );
 
-			if (localize) {
-				// create localized filespec
-				strncpy(longname, filespec, MAX_PATH_LEN - 1);
-
-				if ( lcl_add_dir_to_path_with_filename(longname, MAX_PATH_LEN - 1) ) {
-					if ( !stricmp(longname, f->name_ext.c_str()) ) {
-						CFileLocationExt res(cur_ext);
-						res.found = true;
-						res.size = static_cast<size_t>(f->size);
-						res.offset = (size_t)f->pack_offset;
-						res.data_ptr = f->data;
-						res.name_ext = f->name_ext;
-
-						if (f->data != nullptr) {
-							// This is an in-memory file so we just copy the pathtype name + file name
-							res.full_name = Pathtypes[f->pathtype_index].path;
-							res.full_name += DIR_SEPARATOR_STR;
-							res.full_name += f->name_ext;
-						} else if (f->pack_offset < 1) {
-							// This is a real file, return the actual file path
-							res.full_name = f->real_name;
-						} else {
-							// File is in a pack file
-							cf_root *r = cf_get_root(f->root_index);
-
-							res.full_name = r->path;
-						}
-
-						// found it, so cleanup and return
-						file_list_index.clear();
-
-						return res;
-					}
-				}
-			}
+			filespec_ext = filespec + ext_list[cur_ext];
 
 			// file either not localized or localized version not found
-			if ( !stricmp(filespec, f->name_ext.c_str()) ) {
+			if ( !stricmp(filespec_ext.c_str(), f->name_ext.c_str()) ) {
 				CFileLocationExt res(cur_ext);
 				res.found = true;
 				res.size = static_cast<size_t>(f->size);
@@ -1369,6 +1577,7 @@ CFileLocationExt cf_find_file_location_ext( const char *filename, const int ext_
 					// This is an in-memory file so we just copy the pathtype name + file name
 					res.full_name = Pathtypes[f->pathtype_index].path;
 					res.full_name += DIR_SEPARATOR_STR;
+					res.full_name += f->sub_path;
 					res.full_name += f->name_ext;
 				} else if (f->pack_offset < 1) {
 					// This is a real file, return the actual file path
@@ -1385,12 +1594,6 @@ CFileLocationExt cf_find_file_location_ext( const char *filename, const int ext_
 
 				return res;
 			}
-
-			// ok, we're still here, so strip off the extension again in order to
-			// prepare for the next run
-			p = strrchr(filespec, '.');
-			if ( p && (strlen(p) > 2) )
-				(*p) = 0;
 		}
 	}
 
@@ -1496,7 +1699,7 @@ static int cf_file_already_in_list( SCP_vector<SCP_string> &list, const char *fi
 // Note that filesystem listing is always sorted by name *before* sorting by the
 // provided sort order. This isn't strictly needed on NTFS, which always provides the list
 // sorted by name. But on mac/linux it's always needed.
-int cf_get_file_list(SCP_vector<SCP_string>& list, int pathtype, const char* filter, int sort,
+int cf_get_file_list(SCP_vector<SCP_string>& list, int pathtype, const char* _filter, int sort,
                      SCP_vector<file_list_info>* info, uint32_t location_flags)
 {
 	uint i;
@@ -1509,7 +1712,42 @@ int cf_get_file_list(SCP_vector<SCP_string>& list, int pathtype, const char* fil
 		own_flag = 1;
 	}
 
-	char filespec[MAX_PATH_LEN];
+	SCP_string filespec;
+	SCP_vector<_file_list_t> files;
+
+	// do we have a full path already?
+	if (is_absolute_path(_filter)) {
+		// check for full path and only grab matching files from it if specified
+		auto last_separator = strrchr(_filter, DIR_SEPARATOR_CHAR);
+
+		Assertion(Get_file_list_filter == nullptr, "File list filter not supported with absolute paths!");
+
+		const char *fltr = last_separator + 1;
+		filespec = SCP_string(_filter, strlen(_filter) - strlen(last_separator));
+
+		cf_get_list_of_files(filespec, files, fltr);
+
+		for (auto &file : files) {
+			SCP_string::size_type pos = file.name.find_last_of('.');
+
+			if (pos != SCP_string::npos) {
+				list.push_back(file.name.substr(0, pos));
+			} else {
+				list.push_back(file.name);
+			}
+
+			if (info) {
+				tinfo.write_time = file.m_time;
+				info->push_back(tinfo);
+			}
+		}
+
+		if (sort != CF_SORT_NONE)	{
+			cf_sort_filenames(list, sort, info);
+		}
+
+		return (int)list.size();
+	}
 
 	bool check_duplicates = !list.empty();
 
@@ -1522,26 +1760,54 @@ int cf_get_file_list(SCP_vector<SCP_string>& list, int pathtype, const char* fil
 		Get_file_list_child = nullptr;
 	}
 
-	cf_create_default_path_string(filespec, sizeof(filespec) - 1, pathtype, (char*)Get_file_list_child, false,
-	                              location_flags);
+	cf_create_default_path_string(filespec, pathtype, (char*)Get_file_list_child, location_flags);
 
-	SCP_vector<_file_list_t> files;
+	// fixup filter and sub directory path, if needed
+	SCP_string filter = _filter;
+	SCP_string sub_path;
+	bool glob = false;
 
-	cf_get_list_of_files(filespec, files, filter);
+	normalize_directory_separators(filter);
+
+	auto seperator = filter.rfind(DIR_SEPARATOR_CHAR);
+
+	if (seperator != SCP_string::npos) {
+		sub_path = filter.substr(0, seperator);
+
+		if (sub_path == "*") {
+			glob = true;
+		} else {
+			sub_path += DIR_SEPARATOR_CHAR;
+		}
+
+		filter.erase(0, seperator+1);
+	}
+
+	SCP_string fullname;
+
+	cf_get_list_of_files(filespec, files, filter.c_str());
 
 	for (auto &file : files) {
+		if ( !glob && !sub_path_match(sub_path, file.sub_path) ) {
+			continue;
+		}
+
+		auto pos = file.name.rfind('.');
+
+		if ( !sub_path.empty() ) {
+			// prepend file name with sub directory path
+			// allows us to open the specific file and allows duplicate filenames in different paths
+			fullname = file.sub_path + file.name.substr(0, pos);
+		} else {
+			fullname = file.name.substr(0, pos);
+		}
+
+		if (check_duplicates && cf_file_already_in_list(list, fullname.c_str())) {
+			continue;
+		}
+
 		if ( !Get_file_list_filter || (*Get_file_list_filter)(file.name.c_str()) ) {
-			if (check_duplicates && cf_file_already_in_list(list, file.name.c_str())) {
-				continue;
-			}
-
-			SCP_string::size_type pos = file.name.find_last_of('.');
-
-			if (pos != SCP_string::npos) {
-				list.push_back(file.name.substr(0, pos));
-			} else {
-				list.push_back(file.name);
-			}
+			list.push_back(fullname);
 
 			if (info) {
 				tinfo.write_time = file.m_time;
@@ -1562,6 +1828,16 @@ int cf_get_file_list(SCP_vector<SCP_string>& list, int pathtype, const char* fil
 		for (i=0; i<Num_files; i++ )	{
 			cf_file * f = cf_get_file(i);
 
+			if (Skip_packfile_search && f->pack_offset != 0) {
+				// If the packfile skip flag is set we skip files in VPs but still search in directories
+				continue;
+			}
+
+			if (Skip_memory_files && f->data != nullptr) {
+				// If we want to skip memory files and this is a memory file then ignore it
+				continue;
+			}
+
 			// only search paths we're supposed to...
 			if ( (pathtype != CF_TYPE_ANY) && (pathtype != f->pathtype_index)  )	{
 				continue;
@@ -1577,30 +1853,32 @@ int cf_get_file_list(SCP_vector<SCP_string>& list, int pathtype, const char* fil
 				}
 			}
 
-			if ( !cf_matches_spec(filter, f->name_ext.c_str()) ) {
+			if ( !glob && !sub_path_match(sub_path, f->sub_path) ) {
 				continue;
 			}
 
-			if ( cf_file_already_in_list(list, f->name_ext.c_str()) ) {
+			if ( !cf_matches_spec(filter.c_str(), f->name_ext.c_str()) ) {
 				continue;
 			}
 
-			if (Skip_packfile_search && f->pack_offset != 0) {
-				// If the packfile skip flag is set we skip files in VPs but still search in directories
-				continue;
+			auto pos = f->name_ext.rfind('.');
+
+			if ( !sub_path.empty() ) {
+				// prepend file name with sub directory path
+				// allows us to open the specific file and allows duplicate filenames in different paths
+				fullname = f->sub_path + f->name_ext.substr(0, pos);
+			} else {
+				fullname = f->name_ext.substr(0, pos);
 			}
 
-			if (Skip_memory_files && f->data != nullptr) {
-				// If we want to skip memory files and this is a memory file then ignore it
+			if ( cf_file_already_in_list(list, fullname.c_str()) ) {
 				continue;
 			}
 
 			if ( !Get_file_list_filter || (*Get_file_list_filter)(f->name_ext.c_str()) ) {
 				//mprintf(( "Found '%s' in root %d path %d\n", f->name_ext, f->root_index, f->pathtype_index ));
 
-				auto pos = f->name_ext.rfind('.');
-
-				list.push_back( f->name_ext.substr(0, pos) );
+				list.push_back(fullname);
 
 				if (info) {
 					tinfo.write_time = f->write_time;
@@ -1649,12 +1927,11 @@ int cf_file_already_in_list( int num_files, char **list, const char *filename )
 // This one has a 'type', which is a CF_TYPE_* value.  Because this specifies the directory
 // location, 'filter' only needs to be the filter itself, with no path information.
 // See above descriptions of cf_get_file_list() for more information about how it all works.
-int cf_get_file_list(int max, char** list, int pathtype, const char* filter, int sort, file_list_info* info,
+int cf_get_file_list(int max, char** list, int pathtype, const char* _filter, int sort, file_list_info* info,
                      uint32_t location_flags)
 {
 	uint i;
 	int num_files = 0, own_flag = 0;
-	size_t l;
 
 	if (max < 1) {
 		Get_file_list_filter = NULL;
@@ -1669,35 +1946,61 @@ int cf_get_file_list(int max, char** list, int pathtype, const char* filter, int
 		own_flag = 1;
 	}
 
-	char filespec[MAX_PATH_LEN];
+	SCP_string filespec;
 
 	if (Get_file_list_child && !verify_file_list_child() ) {
 		Get_file_list_child = nullptr;
 	}
 
-	cf_create_default_path_string(filespec, sizeof(filespec) - 1, pathtype, (char*)Get_file_list_child, false,
-	                              location_flags);
+	cf_create_default_path_string(filespec, pathtype, (char*)Get_file_list_child, location_flags);
 
+	// fixup filter and sub directory path, if needed
+	SCP_string filter = _filter;
+	SCP_string sub_path;
+	bool glob = false;
+
+	normalize_directory_separators(filter);
+
+	auto seperator = filter.rfind(DIR_SEPARATOR_CHAR);
+
+	if (seperator != SCP_string::npos) {
+		sub_path = filter.substr(0, seperator);
+
+		if (sub_path == "*") {
+			glob = true;
+		} else {
+			sub_path += DIR_SEPARATOR_CHAR;
+		}
+
+		filter.erase(0, seperator+1);
+	}
+
+	SCP_string fullname;
 	SCP_vector<_file_list_t> files;
 
-	cf_get_list_of_files(filespec, files, filter);
+	cf_get_list_of_files(filespec, files, filter.c_str());
 
 	for (auto &file : files) {
 		if (num_files >= max) {
 			break;
 		}
 
+		if ( !glob && !sub_path_match(sub_path, file.sub_path) ) {
+			continue;
+		}
+
+		auto pos = file.name.rfind('.');
+
+		if ( !sub_path.empty() ) {
+			// prepend file name with sub directory path
+			// allows us to open the specific file and allows duplicate filenames in different paths
+			fullname = file.sub_path + file.name.substr(0, pos);
+		} else {
+			fullname = file.name.substr(0, pos);
+		}
+
 		if ( !Get_file_list_filter || (*Get_file_list_filter)(file.name.c_str()) ) {
-			auto pos = file.name.rfind('.');
-
-			if (pos != SCP_string::npos) {
-				l = pos;
-			} else {
-				l = file.name.length();
-			}
-
-			list[num_files] = reinterpret_cast<char *>(vm_malloc(l + 1));
-			SDL_strlcpy(list[num_files], file.name.substr(0, l).c_str(), l+1);
+			list[num_files] = vm_strdup(fullname.c_str());
 
 			if (info) {
 				info[num_files].write_time = file.m_time;
@@ -1720,6 +2023,20 @@ int cf_get_file_list(int max, char** list, int pathtype, const char* filter, int
 		for (i=0; i<Num_files; i++ )	{
 			cf_file * f = cf_get_file(i);
 
+			if (num_files >= max) {
+				break;
+			}
+
+			if (Skip_packfile_search && f->pack_offset != 0) {
+				// If the packfile skip flag is set we skip files in VPs but still search in directories
+				continue;
+			}
+
+			if (Skip_memory_files && f->data != nullptr) {
+				// If we want to skip memory files and this is a memory file then ignore it
+				continue;
+			}
+
 			// only search paths we're supposed to...
 			if ( (pathtype != CF_TYPE_ANY) && (pathtype != f->pathtype_index)  )	{
 				continue;
@@ -1735,42 +2052,32 @@ int cf_get_file_list(int max, char** list, int pathtype, const char* filter, int
 				}
 			}
 
-			if (num_files >= max)
-				break;
-			
-			if ( !cf_matches_spec(filter, f->name_ext.c_str())) {
+			if ( !glob && !sub_path_match(sub_path, f->sub_path) ) {
 				continue;
 			}
 
-			if ( cf_file_already_in_list(num_files, list, f->name_ext.c_str()) ) {
+			if ( !cf_matches_spec(filter.c_str(), f->name_ext.c_str())) {
 				continue;
 			}
 
-			if (Skip_packfile_search && f->pack_offset != 0) {
-				// If the packfile skip flag is set we skip files in VPs but still search in directories
-				continue;
+			auto pos = f->name_ext.rfind('.');
+
+			if ( !sub_path.empty() ) {
+				// prepend file name with sub directory path
+				// allows us to open the specific file and allows duplicate filenames in different paths
+				fullname = f->sub_path + f->name_ext.substr(0, pos);
+			} else {
+				fullname = f->name_ext.substr(0, pos);
 			}
 
-			if (Skip_memory_files && f->data != nullptr) {
-				// If we want to skip memory files and this is a memory file then ignore it
+			if ( cf_file_already_in_list(num_files, list, fullname.c_str()) ) {
 				continue;
 			}
 
 			if ( !Get_file_list_filter || (*Get_file_list_filter)(f->name_ext.c_str()) ) {
-
 				//mprintf(( "Found '%s' in root %d path %d\n", f->name_ext, f->root_index, f->pathtype_index ));
 
-					auto pos = f->name_ext.rfind('.');
-
-					if (pos != SCP_string::npos) {
-						l = pos;
-					} else {
-						l = f->name_ext.length();
-					}
-
-					list[num_files] = (char *)vm_malloc(l + 1);
-					strncpy(list[num_files], f->name_ext.c_str(), l);
-					list[num_files][l] = 0;
+				list[num_files] = vm_strdup(fullname.c_str());
 
 				if (info)	{
 					info[num_files].write_time = f->write_time;
@@ -1820,7 +2127,7 @@ int cf_file_already_in_list_preallocated( int num_files, char arr[][MAX_FILENAME
 // This one has a 'type', which is a CF_TYPE_* value.  Because this specifies the directory
 // location, 'filter' only needs to be the filter itself, with no path information.
 // See above descriptions of cf_get_file_list() for more information about how it all works.
-int cf_get_file_list_preallocated(int max, char arr[][MAX_FILENAME_LEN], char** list, int pathtype, const char* filter,
+int cf_get_file_list_preallocated(int max, char arr[][MAX_FILENAME_LEN], char** list, int pathtype, const char* _filter,
                                   int sort, file_list_info* info, uint32_t location_flags)
 {
 	int num_files = 0, own_flag = 0;
@@ -1846,19 +2153,40 @@ int cf_get_file_list_preallocated(int max, char arr[][MAX_FILENAME_LEN], char** 
 			own_flag = 1;
 	}
 
-	char filespec[MAX_PATH_LEN];
+	SCP_string filespec;
 
 	if (Get_file_list_child && !verify_file_list_child() ) {
 		Get_file_list_child = nullptr;
 	}
 
 	// Search the default directories
-	cf_create_default_path_string(filespec, sizeof(filespec) - 1, pathtype, (char*)Get_file_list_child, false,
-	                              location_flags);
+	cf_create_default_path_string(filespec, pathtype, (char*)Get_file_list_child, location_flags);
+
+	// fixup filter and sub directory path, if needed
+	SCP_string filter = _filter;
+	SCP_string sub_path;
+
+	normalize_directory_separators(filter);
+
+	auto seperator = filter.rfind(DIR_SEPARATOR_CHAR);
+
+	if (seperator != SCP_string::npos) {
+		sub_path = filter.substr(0, seperator);
+
+		if (sub_path != "*") {
+			sub_path += DIR_SEPARATOR_CHAR;
+		}
+
+		filter.erase(0, seperator+1);
+
+		// due to the limited filename length we can't reliably add sub paths to it
+		// so we just strip off the sub path and do a regular search instead, after a warning
+		Warning(LOCATION, "Subdirectory searches aren't available for cf_get_file_list_preallocated()!");
+	}
 
 	SCP_vector<_file_list_t> files;
 
-	cf_get_list_of_files(filespec, files, filter);
+	cf_get_list_of_files(filespec, files, filter.c_str());
 
 	for (auto &file : files) {
 		if (num_files >= max) {
@@ -1918,7 +2246,7 @@ int cf_get_file_list_preallocated(int max, char arr[][MAX_FILENAME_LEN], char** 
 						
 				break;
 
-			if ( !cf_matches_spec(filter, f->name_ext.c_str()) ) {
+			if ( !cf_matches_spec(filter.c_str(), f->name_ext.c_str()) ) {
 				continue;
 			}
 
@@ -1980,86 +2308,22 @@ int cf_get_file_list_preallocated(int max, char arr[][MAX_FILENAME_LEN], char** 
 //          filename  - optional, if set, tacks the filename onto end of path.
 // Output:  path      - Fully qualified pathname.
 //Returns 0 if the result would be too long (invalid result)
-int cf_create_default_path_string(char* path, uint path_max, int pathtype, const char* filename, bool localize,
-                                  uint32_t _location_flags)
+int cf_create_default_path_string(char* path, uint path_max, int pathtype, const char* filename, uint32_t _location_flags)
 {
-	uint32_t location_flags = _location_flags;
+	SCP_string fullpath;
 
-	if ( filename && strchr(filename, DIR_SEPARATOR_CHAR) ) {
-		// Already has full path
-		strncpy( path, filename, path_max );
+	cf_create_default_path_string(fullpath, pathtype, filename, _location_flags);
 
-	} else {
-		cf_root* root = nullptr;
-
-		// override location flags for path types which should always come from the root (NOT mod directories)
-		// NOTE: cache directories should NOT be added here to avoid possible mod breakage
-		switch(pathtype) {
-			case CF_TYPE_PLAYERS:
-			case CF_TYPE_MULTI_PLAYERS:
-			case CF_TYPE_SINGLE_PLAYERS:
-				location_flags = CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT;
-				break;
+	// if truncation would occur, return error
+	if (fullpath.length() >= path_max) {
+		if (path_max > 0) {
+			*path = '\0';
 		}
 
-		for (auto i = 0; i < Num_roots; ++i) {
-			auto current_root = cf_get_root(i);
-
-			if (current_root->roottype != CF_ROOTTYPE_PATH) {
-				// We want a "real" path here so only path roots are valid
-				continue;
-			}
-
-			if (cf_check_location_flags(current_root->location_flags, location_flags)) {
-				// We found a valid root
-				root = current_root;
-				break;
-			}
-		}
-
-		if (!root) {
-			Assert( filename != NULL );
-			strncpy(path, filename, path_max);
-			return 1;
-		}
-
-		Assert(CF_TYPE_SPECIFIED(pathtype));
-
-		strncpy(path, root->path.c_str(), path_max);
-
-		SCP_string real_path = cf_get_root_pathtype(root, pathtype);
-
-		strcat_s(path, path_max, real_path.c_str());
-
-		// Don't add slash for root directory
-		if (Pathtypes[pathtype].path[0] != '\0') {
-			if ( path[strlen(path)-1] != DIR_SEPARATOR_CHAR ) {
-				strcat_s(path, path_max, DIR_SEPARATOR_STR);
-			}
-		}
-
-		// add filename
-		if (filename) {
-			strcat_s(path, path_max, filename);
-
-			// localize filename
-			if (localize) {
-				// create copy of path
-				char path_tmp[MAX_PATH_LEN] = { 0 };
-				strncpy( path_tmp, path, MAX_PATH_LEN - 1 );
-
-				// localize the path
-				if(lcl_add_dir_to_path_with_filename(path_tmp, MAX_PATH_LEN - 1)) {
-					// verify localized path
-					FILE *fp = fopen(path, "rb");
-					if (fp) {
-						fclose(fp);
-						return 1;
-					}
-				}
-			}
-		}
+		return 0;
 	}
+
+	strcpy_s(path, path_max, fullpath.c_str());
 
 	return 1;
 }
@@ -2073,15 +2337,27 @@ int cf_create_default_path_string(char* path, uint path_max, int pathtype, const
 //          filename  - optional, if set, tacks the filename onto end of path.
 // Output:  path      - Fully qualified pathname.
 //Returns 0 if the result would be too long (invalid result)
-int cf_create_default_path_string(SCP_string& path, int pathtype, const char* filename, bool /*localize*/,
-                                  uint32_t location_flags)
+int cf_create_default_path_string(SCP_string& path, int pathtype, const char* filename, uint32_t _location_flags)
 {
-	if ( filename && strchr(filename, DIR_SEPARATOR_CHAR) ) {
+	uint32_t location_flags = _location_flags;
+
+	if ( filename && is_absolute_path(filename)) {
 		// Already has full path
 		path.assign(filename);
 
 	} else {
 		cf_root* root = nullptr;
+
+		// override location flags for path types which should always come from the root (NOT mod directories)
+		// NOTE: cache directories should NOT be added here to avoid possible mod breakage
+		switch(pathtype) {
+			case CF_TYPE_PLAYERS:
+			case CF_TYPE_MULTI_PLAYERS:
+			case CF_TYPE_SINGLE_PLAYERS:
+			case CF_TYPE_PLAYER_BINDS:
+				location_flags = CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT;
+				break;
+		}
 
 		for (auto i = 0; i < Num_roots; ++i) {
 			auto current_root = cf_get_root(i);

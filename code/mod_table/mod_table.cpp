@@ -12,12 +12,14 @@
 #include "globalincs/version.h"
 #include "graphics/shadows.h"
 #include "localization/localize.h"
+#include "libs/discord/discord.h"
 #include "mission/missioncampaign.h"
 #include "mission/missionload.h"
 #include "mission/missionmessage.h"
 #include "missionui/fictionviewer.h"
 #include "nebula/neb.h"
 #include "mod_table/mod_table.h"
+#include "options/Option.h"
 #include "parse/parselo.h"
 #include "sound/sound.h"
 #include "starfield/supernova.h"
@@ -31,6 +33,12 @@ bool Damage_impacted_subsystem_first;
 bool Cutscene_camera_displays_hud;
 bool Alternate_chaining_behavior;
 bool Use_host_orientation_for_set_camera_facing;
+bool Use_3d_ship_select;
+bool Use_3d_ship_icons;
+bool Use_3d_weapon_select;
+bool Use_3d_weapon_icons;
+bool Use_3d_overhead_ship;
+overhead_style Default_overhead_ship_style;
 int Default_ship_select_effect;
 int Default_weapon_select_effect;
 int Default_fiction_viewer_ui;
@@ -44,7 +52,9 @@ bool Flight_controls_follow_eyepoint_orientation;
 int FS2NetD_port;
 int Default_multi_object_update_level;
 float Briefing_window_FOV;
+int Briefing_window_resolution[2];
 bool Disable_hc_message_ani;
+SCP_vector<SCP_string> Custom_head_anis;
 bool Red_alert_applies_to_delayed_ships;
 bool Beams_use_damage_factors;
 float Generic_pain_flash_factor;
@@ -92,6 +102,8 @@ bool Neb_affects_particles;
 bool Neb_affects_fireballs;
 std::tuple<float, float, float, float> Shadow_distances;
 std::tuple<float, float, float, float> Shadow_distances_cockpit;
+bool Show_ship_casts_shadow;
+bool Cockpit_shares_coordinate_space;
 bool Custom_briefing_icons_always_override_standard_icons;
 float Min_pixel_size_thruster;
 float Min_pixel_size_beam;
@@ -106,6 +118,33 @@ bool Always_warn_player_about_unbound_keys;
 leadIndicatorBehavior Lead_indicator_behavior;
 shadow_disable_overrides Shadow_disable_overrides {false, false, false, false};
 float Thruster_easing;
+bool Always_use_distant_firepoints;
+bool Discord_presence;
+bool Hotkey_always_hide_hidden_ships;
+bool Use_weapon_class_sounds_for_hits_to_player;
+
+static auto DiscordOption = options::OptionBuilder<bool>("Other.Discord", "Discord Presence", "Toggle Discord Rich Presence")
+							 .category("Other")
+							 .default_val(Discord_presence)
+							 .level(options::ExpertLevel::Advanced)
+							 .importance(55)
+		                     .change_listener([](bool val, bool) {
+									if(Discord_presence){
+										if (!val) {
+											Discord_presence = false;
+											libs::discord::shutdown();
+											return true;
+										}
+									} else {
+										if (val) {
+											Discord_presence = true;
+											libs::discord::init();
+											return true;
+										}
+									}
+									return false;
+								})
+							 .finish();
 
 void mod_table_set_version_flags();
 
@@ -645,6 +684,14 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Shadow_disable_overrides.disable_mission_select_ships);
 		}
 
+		if (optional_string("$Show Ship Casts Shadow:")) {
+			stuff_boolean(&Show_ship_casts_shadow);
+		}
+
+		if (optional_string("$Ship Model And Cockpit Share Coordinate Space:")) {
+			stuff_boolean(&Cockpit_shares_coordinate_space);
+		}
+
 		if (optional_string("$Minimum Pixel Size Thrusters:")) {
 			stuff_float(&Min_pixel_size_thruster);
 		}
@@ -719,6 +766,10 @@ void parse_mod_table(const char *filename)
 			}
 		}
 
+		if (optional_string("$Use weapon class impact sounds for hits to player:")) {
+			stuff_boolean(&Use_weapon_class_sounds_for_hits_to_player);
+		}
+
 		optional_string("#FRED SETTINGS");
 
 		if (optional_string("$Disable Hard Coded Message Head Ani Files:")) {
@@ -732,6 +783,20 @@ void parse_mod_table(const char *filename)
 			}
 		}
 
+		if (optional_string("$Add Message Head Ani Files:")) {
+			SCP_string head_name;
+			while (optional_string("+Head:")) {
+				stuff_string(head_name, F_NAME);
+
+				// remove extension?
+				if (drop_extension(head_name)) {
+					mprintf(("Game Settings Table: Removed extension on head ani file name %s\n", head_name.c_str()));
+				}
+
+				Custom_head_anis.push_back(head_name);
+			}
+		}
+
 		if (optional_string("$Enable scripting in FRED:")) {
 			stuff_boolean(&Enable_scripts_in_fred);
 			if (Enable_scripts_in_fred) {
@@ -739,6 +804,22 @@ void parse_mod_table(const char *filename)
 			}
 			else {
 				mprintf(("Game Settings Table: FRED - Scripts will not be executed when running FRED.\n"));
+			}
+		}
+
+		if (optional_string("$FRED Briefing window resolution:")) {
+			int res[2];
+			if (stuff_int_list(res, 2) == 2) {
+				mprintf(("Game Settings Table: Setting FRED briefing window resolution from (%ix%i) to (%ix%i)\n",
+					Briefing_window_resolution[0],
+					Briefing_window_resolution[1],
+					res[0],
+					res[1]));
+
+				Briefing_window_resolution[0] = res[0];
+				Briefing_window_resolution[1] = res[1];
+			} else {
+				Warning(LOCATION, "$FRED Briefing window resolution: must specify two arguments");
 			}
 		}
 
@@ -756,6 +837,10 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Damage_impacted_subsystem_first);
 		}
 
+		if (optional_string("$Use 3d ship select:")) {
+			stuff_boolean(&Use_3d_ship_select);
+		}
+
 		if (optional_string("$Default ship select effect:")) {
 			char effect[NAME_LENGTH];
 			stuff_string(effect, F_NAME, NAME_LENGTH);
@@ -767,6 +852,14 @@ void parse_mod_table(const char *filename)
 				Default_ship_select_effect = 0;
 		}
 
+		if (optional_string("$Use 3d ship icons:")) {
+			stuff_boolean(&Use_3d_ship_icons);
+		}
+
+		if (optional_string("$Use 3d weapon select:")) {
+			stuff_boolean(&Use_3d_weapon_select);
+		}
+
 		if (optional_string("$Default weapon select effect:")) {
 			char effect[NAME_LENGTH];
 			stuff_string(effect, F_NAME, NAME_LENGTH);
@@ -776,6 +869,26 @@ void parse_mod_table(const char *filename)
 				Default_weapon_select_effect = 1;
 			else if (!stricmp(effect, "off"))
 				Default_weapon_select_effect = 0;
+		}
+
+		if (optional_string("$Use 3d weapon icons:")) {
+			stuff_boolean(&Use_3d_weapon_icons);
+		}
+
+		if (optional_string("$Use 3d overhead ship:")) {
+			stuff_boolean(&Use_3d_overhead_ship);
+		}
+
+		if (optional_string("$Default overhead ship style:")) {
+			char effect[NAME_LENGTH];
+			stuff_string(effect, F_NAME, NAME_LENGTH);
+			if (!stricmp(effect, "ROTATE")) {
+				Default_overhead_ship_style = OH_ROTATING;
+			} else if (!stricmp(effect, "TOPVIEW")) {
+				Default_overhead_ship_style = OH_TOP_VIEW;
+			} else {
+				error_display(0, "Unknown Select Overhead Ship Style %s, using TOPVIEW instead.", effect);
+			}
 		}
 
 		if (optional_string("$Weapons inherit parent collision group:")) {
@@ -958,6 +1071,18 @@ void parse_mod_table(const char *filename)
 			}
 		}
 
+		if (optional_string("$Use distant firepoint for all turrets:")){
+			stuff_boolean(&Always_use_distant_firepoints);
+		}
+		if (optional_string("$Enable Discord rich presence:")) {
+			stuff_boolean(&Discord_presence);
+		}
+
+		if (optional_string("$Always hide hidden ships in hotkey list:")) {
+			stuff_boolean(&Hotkey_always_hide_hidden_ships);
+		}
+
+
 		required_string("#END");
 	}
 	catch (const parse::ParseException& e)
@@ -1017,6 +1142,7 @@ void mod_table_reset()
 	Use_host_orientation_for_set_camera_facing = false;
 	Default_ship_select_effect = 2;
 	Default_weapon_select_effect = 2;
+	Default_overhead_ship_style = OH_TOP_VIEW;
 	Default_fiction_viewer_ui = -1;
 	Enable_external_shaders = false;
 	Enable_external_default_scripts = false;
@@ -1028,6 +1154,8 @@ void mod_table_reset()
 	FS2NetD_port = 0;
 	Default_multi_object_update_level = OBJ_UPDATE_HIGH;
 	Briefing_window_FOV = 0.29375f;
+	Briefing_window_resolution[0] = 888;
+	Briefing_window_resolution[1] = 371;
 	Disable_hc_message_ani = false;
 	Red_alert_applies_to_delayed_ships = false;
 	Beams_use_damage_factors = false;
@@ -1076,6 +1204,8 @@ void mod_table_reset()
 	Neb_affects_fireballs = false;
 	Shadow_distances = std::make_tuple(200.0f, 600.0f, 2500.0f, 8000.0f); // Default values tuned by Swifty and added here by wookieejedi
 	Shadow_distances_cockpit = std::make_tuple(0.25f, 0.75f, 1.5f, 3.0f); // Default values tuned by wookieejedi and added here by Lafiel
+	Show_ship_casts_shadow = false;
+	Cockpit_shares_coordinate_space = false;
 	Custom_briefing_icons_always_override_standard_icons = false;
 	Min_pixel_size_thruster = 0.0f;
 	Min_pixel_size_beam = 0.0f;
@@ -1091,6 +1221,10 @@ void mod_table_reset()
 	Always_warn_player_about_unbound_keys = false;
 	Lead_indicator_behavior = leadIndicatorBehavior::DEFAULT;
 	Thruster_easing = 0;
+	Always_use_distant_firepoints = false;
+	Discord_presence = true;
+	Hotkey_always_hide_hidden_ships = false;
+	Use_weapon_class_sounds_for_hits_to_player = false;
 }
 
 void mod_table_set_version_flags()

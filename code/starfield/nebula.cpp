@@ -130,14 +130,15 @@ int load_nebula_sub(char *filename)
 	return 1;
 }
 
-void nebula_init( const char *filename, int pitch, int bank, int heading )
+void nebula_init( int index, int pitch, int bank, int heading )
 {
 	angles a;
 
 	a.p = fl_radians(pitch);
 	a.b = fl_radians(bank);
 	a.h = fl_radians(heading);
-	nebula_init(filename, &a);
+
+	nebula_init(index < 0 ? nullptr : Nebula_filenames[index], &a);
 }
 
 void nebula_init( const char *filename, angles * pbh )
@@ -146,7 +147,7 @@ void nebula_init( const char *filename, angles * pbh )
 		nebula_close();
 	}
 
-	if ( load_nebula_sub( cf_add_ext(filename, NOX(".neb")) ) ) {
+	if ( filename && load_nebula_sub( cf_add_ext(filename, NOX(".neb")) ) ) {
 		Nebula_loaded = 1;
 	}
 

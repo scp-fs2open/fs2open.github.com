@@ -95,6 +95,7 @@ namespace fso {
 					m_duration = Ships[m_ship].special_exp_deathroll_time;
 					m_special_exp = true;
 				}
+				modelChanged();
 			}
 
 			bool ShipSpecialStatsDialogModel::apply()

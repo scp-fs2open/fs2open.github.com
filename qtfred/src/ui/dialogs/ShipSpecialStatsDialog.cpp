@@ -65,6 +65,12 @@ namespace fso {
 				QDialog::closeEvent(event);
 			}
 
+			void ShipSpecialStatsDialog::showEvent(QShowEvent* event) {
+				_model->initializeData();
+
+				QDialog::showEvent(event);
+			}
+
 			void ShipSpecialStatsDialog::updateUI()
 			{
 				util::SignalBlockers blockers(this);

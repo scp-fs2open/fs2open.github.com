@@ -71,6 +71,8 @@ extern int model_render_flags_size;
 #define SUBSYSTEM_UNKNOWN			11
 #define SUBSYSTEM_MAX				12				//	maximum value for subsystem_xxx, for error checking
 
+enum class modelread_status { FAIL, SUCCESS_REAL, SUCCESS_VIRTUAL };
+
 // Goober5000
 extern const char *Subsystem_types[SUBSYSTEM_MAX];
 
@@ -877,7 +879,7 @@ struct model_read_deferred_tasks {
 	};
 
 	struct engine_subsystem_parse {
-		int thruster_nr;
+		SCP_string subsystem_name;
 	};
 
 	struct weapon_subsystem_parse {
@@ -894,12 +896,16 @@ struct model_read_deferred_tasks {
 
 	//Key: Subsystem Name
 	SCP_unordered_map<SCP_string, model_subsystem_parse, SCP_string_lcase_hash, SCP_string_lcase_equal_to> model_subsystems;
-	//Key: Subsystem Name
-	SCP_unordered_map<SCP_string, engine_subsystem_parse, SCP_string_lcase_hash, SCP_string_lcase_equal_to> engine_subsystems;
+	using model_subsystem_pair = decltype(model_subsystems)::value_type;
+	//Key: Engine Nr
+	SCP_unordered_map<int, engine_subsystem_parse> engine_subsystems;
+	using engine_subsystem_pair = decltype(engine_subsystems)::value_type;
 	//Key: Parent Subobject Nr
 	SCP_unordered_map<int, weapon_subsystem_parse> weapons_subsystems;
+	using weapon_subsystem_pair = decltype(weapons_subsystems)::value_type;
 	//Key: Subobject Nr
 	SCP_unordered_map<int, texture_idx_replace> texture_replacements;
+	using texture_replacement_pair = decltype(texture_replacements)::value_type;
 };
 
 using model_parse_depth = SCP_unordered_map<SCP_string, int, SCP_string_lcase_hash, SCP_string_lcase_equal_to>;
@@ -910,8 +916,8 @@ using model_parse_depth = SCP_unordered_map<SCP_string, int, SCP_string_lcase_ha
 //
 // The "level" parameter indicates how deep the nesting level is, and the "isLeaf" parameter indicates whether the submodel is a leaf node.
 // To find the model's detail0 root node, use pm->submodel[pm->detail[0]].
-template <typename Func, typename... AdditionalParams>
-void model_iterate_submodel_tree(polymodel* pm, int submodel, Func func, int level, AdditionalParams... params)
+template <typename pm_t, typename Func, typename... AdditionalParams>
+void model_iterate_submodel_tree(pm_t* pm, int submodel, Func func, int level, AdditionalParams... params)
 {
 	Assertion(pm != nullptr, "pm must not be null!");
 	Assertion(submodel >= 0 && submodel < pm->n_models, "submodel must be in range!");
@@ -928,8 +934,8 @@ void model_iterate_submodel_tree(polymodel* pm, int submodel, Func func, int lev
 }
 
 //This wrapper function is needed due to a bug in clang versions before 11 which breaks default parameters before parameter packs
-template <typename Func>
-inline void model_iterate_submodel_tree(polymodel* pm, int submodel, Func func)
+template <typename pm_t, typename Func>
+inline void model_iterate_submodel_tree(pm_t* pm, int submodel, Func func)
 {
 	model_iterate_submodel_tree(pm, submodel, func, 0);
 }
@@ -946,6 +952,9 @@ void model_free(polymodel* pm);
 void model_free_all();
 void model_instance_free_all();
 
+// Alias to model_load, checks if a pof tech model exists and loads it if specified, otherwise loads the default pof. --wookieejedi
+int model_load(ship_info* sip, bool prefer_tech_model);
+
 // Loads a model from disk and returns the model number it loaded into.
 int model_load(const char *filename, int n_subsystems, model_subsystem *subsystems, int ferror = 1, int duplicate = 0);
 
@@ -955,7 +964,7 @@ void model_delete_instance(int model_instance_num);
 // Goober5000
 void model_load_texture(polymodel *pm, int i, char *file);
 
-SCP_set<int> model_get_textures_used(polymodel* pm, int submodel);
+SCP_set<int> model_get_textures_used(const polymodel* pm, int submodel);
 
 // Returns a pointer to the polymodel structure for model 'n'
 polymodel *model_get(int model_num);
@@ -1215,7 +1224,7 @@ typedef struct mc_info {
 	vec3d	*p0;					// The starting point of the ray (sphere) to check
 	vec3d	*p1;					// The ending point of the ray (sphere) to check
 	int		flags;				// Flags that the model_collide code looks at.  See MC_??? defines
-	float		radius;				// If MC_CHECK_THICK is set, checks a sphere moving with the radius.
+	float	radius;				// If MC_CHECK_THICK is set, checks a sphere moving with the radius.
 	int		lod;				// Which detail level of the submodel to check instead
 	
 	// Return values

@@ -8,7 +8,7 @@ local function cfileLoader(name)
     local file = nil
 
     for i,v in ipairs(exts) do
-        local real_name = name .. v
+        local real_name = string.gsub(name, "%.", "/") .. v
         file = cf.openFile(real_name, "r", "data/scripts")
 
         if (file:isValid()) then

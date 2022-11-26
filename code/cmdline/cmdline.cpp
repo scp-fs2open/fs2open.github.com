@@ -171,6 +171,7 @@ Flag exe_params[] =
     { "-fb_thrusters",      "Enable Framebuffer Thrusters",             true,   EASY_ALL_ON,						EASY_DEFAULT,					"Graphics",     "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-fb_thrusters", },
 	{ "-no_deferred",		"Disable Deferred Lighting",				true,	EASY_DEFAULT | EASY_HI_MEM_OFF,		EASY_ALL_ON | EASY_HI_MEM_ON,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_deferred"},
 	{ "-enable_shadows",	"Enable Shadows",							true,	EASY_ALL_ON  | EASY_HI_MEM_ON,		EASY_DEFAULT | EASY_HI_MEM_OFF,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-enable_shadows"},
+	{ "-deferred_cockpit",	"Enable Deferred Lighting for Cockpits",	true,	EASY_ALL_ON	 | EASY_HI_MEM_ON,		EASY_DEFAULT | EASY_HI_MEM_OFF,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-deferred_cockpit"},
 
 	{ "-no_vsync",			"Disable vertical sync",					true,	0,									EASY_DEFAULT,					"Game Speed",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_vsync", },
 
@@ -186,8 +187,6 @@ Flag exe_params[] =
 	{ "-stretch_menu",		"Stretch interface to fill screen",			true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-stretch_menu", },
 	{ "-noscalevid",		"Disable scale-to-window for movies",		true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-noscalevid", },
 	{ "-nomotiondebris",	"Disable motion debris",					true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nomotiondebris",},
-	{ "-ship_choice_3d",	"Use 3D models for ship selection",			true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-ship_choice_3d", },
-	{ "-weapon_choice_3d",	"Use 3D models for weapon selection",		true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-weapon_choice_3d", },
 	{ "-3dwarp",			"Enable 3D warp",							true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-3dwarp", },
 	{ "-warp_flash",		"Enable flash upon warp",					true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-warp_flash", },
 	{ "-no_ap_interrupt",	"Disable interrupting autopilot",			true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_ap_interrupt", },
@@ -208,6 +207,7 @@ Flag exe_params[] =
 	{ "-clientdamage",		"",											false,	0,									EASY_DEFAULT,					"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-clientdamage", },
 	{ "-mpnoreturn",		"Disable flight deck option",				true,	0,									EASY_DEFAULT,					"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-mpnoreturn", },
 	{ "-gateway_ip",		"Set gateway IP address",					false,	0,									EASY_DEFAULT,					"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-gateway_ip", },
+	{ "-ingame_join",		"Disable in-game joining",					true,	0,									EASY_DEFAULT,					"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-ingame_join", },
 
 	{ "-no_set_gamma",		"Disable setting of gamma",					true,	0,									EASY_DEFAULT,					"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_set_gamma", },
 	{ "-nomovies",			"Disable video playback",					true,	0,									EASY_DEFAULT,					"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nomovies", },
@@ -231,7 +231,6 @@ Flag exe_params[] =
 	{ "-fix_registry",	"Use a different registry path",				true,	0,									EASY_DEFAULT,					"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-fix_registry", },
 #endif
 
-	{ "-ingame_join",		"Allow in-game joining",					true,	0,									EASY_DEFAULT,					"Experimental",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-ingame_join", },
 	{ "-voicer",			"Enable voice recognition",					true,	0,									EASY_DEFAULT,					"Experimental",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-voicer", },
 
 	{ "-bmpmanusage",		"Show how many BMPMAN slots are in use",	false,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-bmpmanusage", },
@@ -345,6 +344,7 @@ cmdline_parm flightshaftsoff_arg("-nolightshafts", NULL, AT_NONE);
 cmdline_parm shadow_quality_arg("-shadow_quality", NULL, AT_INT);
 cmdline_parm enable_shadows_arg("-enable_shadows", NULL, AT_NONE);
 cmdline_parm no_deferred_lighting_arg("-no_deferred", NULL, AT_NONE);	// Cmdline_no_deferred
+cmdline_parm deferred_lighting_cockpit_arg("-deferred_cockpit", nullptr, AT_NONE);
 cmdline_parm anisotropy_level_arg("-anisotropic_filter", NULL, AT_INT);
 
 float Cmdline_clip_dist = Default_min_draw_distance;
@@ -364,6 +364,7 @@ int Cmdline_softparticles = 0;
 int Cmdline_bloom_intensity = 25;
 bool Cmdline_force_lightshaft_off = false;
 int Cmdline_no_deferred_lighting = 0;
+bool Cmdline_deferred_lighting_cockpit = false;
 int Cmdline_aniso_level = 0;
 
 // Game Speed related
@@ -375,21 +376,18 @@ int Cmdline_no_vsync = 0;
 
 // HUD related
 cmdline_parm ballistic_gauge("-ballistic_gauge", NULL, AT_NONE);	// Cmdline_ballistic_gauge
-cmdline_parm dualscanlines_arg("-dualscanlines", NULL, AT_NONE); // Cmdline_dualscanlines  -- Change to phreaks options including new targeting code
+cmdline_parm dualscanlines_arg("-dualscanlines", NULL, AT_NONE); // Cmdline_dualscanlines  -- Change to phreaks options including new targeting code; semi-deprecated but still functional
 cmdline_parm orb_radar("-orbradar", NULL, AT_NONE);			// Cmdline_orb_radar
-cmdline_parm rearm_timer_arg("-rearm_timer", NULL, AT_NONE);	// Cmdline_rearm_timer
-cmdline_parm targetinfo_arg("-targetinfo", NULL, AT_NONE);	// Cmdline_targetinfo  -- Adds ship name/class to right of target box -C
+cmdline_parm rearm_timer_arg("-rearm_timer", NULL, AT_NONE);	// Cmdline_rearm_timer; semi-deprecated but still functional-Mjn
+cmdline_parm targetinfo_arg("-targetinfo", NULL, AT_NONE);	// Cmdline_targetinfo  -- Adds ship name/class to right of target box -C; semi-deprecated but still functional-Mjn
 
 int Cmdline_ballistic_gauge = 0;	// WMCoolmon's gauge thingy
 int Cmdline_dualscanlines = 0;
 int Cmdline_orb_radar = 0;
 int Cmdline_rearm_timer = 0;
-int Cmdline_targetinfo = 0;
 
 // Gameplay related
 cmdline_parm use_3dwarp("-3dwarp", nullptr, AT_NONE);			// Is now Fireball_use_3d_warp
-cmdline_parm ship_choice_3d_arg("-ship_choice_3d", nullptr, AT_NONE);	// Cmdline_ship_choice_3d
-cmdline_parm weapon_choice_3d_arg("-weapon_choice_3d", nullptr, AT_NONE);	// Cmdline_weapon_choice_3d
 cmdline_parm use_warp_flash("-warp_flash", nullptr, AT_NONE);	// Cmdline_warp_flash
 cmdline_parm allow_autpilot_interrupt("-no_ap_interrupt", nullptr, AT_NONE);
 cmdline_parm stretch_menu("-stretch_menu", nullptr, AT_NONE);	// Cmdline_stretch_menu
@@ -399,7 +397,6 @@ cmdline_parm deadzone("-deadzone",
 
 int Cmdline_ship_choice_3d = 0;
 int Cmdline_weapon_choice_3d = 0;
-int Cmdline_warp_flash = 0;
 int Cmdline_autopilot_interruptable = 1;
 int Cmdline_stretch_menu = 0;
 int Cmdline_no_screenshake = 0;
@@ -423,8 +420,8 @@ cmdline_parm mpnoreturn_arg("-mpnoreturn", NULL, AT_NONE);	// Cmdline_mpnoreturn
 cmdline_parm objupd_arg("-cap_object_update", "Multiplayer object update cap (0-3)", AT_INT);
 cmdline_parm gateway_ip_arg("-gateway_ip", "Set gateway IP address", AT_STRING);
 
-char *Cmdline_almission = NULL;	//DTP for autoload multi mission.
-int Cmdline_ingamejoin = 0;
+char *Cmdline_almission = nullptr;	//DTP for autoload multi mission.
+int Cmdline_ingamejoin = 1;
 int Cmdline_mpnoreturn = 0;
 int Cmdline_objupd = 3;		// client object updates on LAN by default
 char *Cmdline_gateway_ip = nullptr;
@@ -512,7 +509,8 @@ cmdline_parm graphics_debug_output_arg("-gr_debug", nullptr, AT_NONE); // Cmdlin
 cmdline_parm log_to_stdout_arg("-stdout_log", nullptr, AT_NONE); // Cmdline_log_to_stdout
 cmdline_parm slow_frames_ok_arg("-slow_frames_ok", nullptr, AT_NONE);	// Cmdline_slow_frames_ok
 cmdline_parm fixed_seed_rand("-seed", nullptr, AT_INT);	// Cmdline_rng_seed,Cmdline_reuse_rng_seed;
-
+cmdline_parm luadev_arg("-luadev", nullptr, AT_NONE);	// Cmdline_lua_devmode
+cmdline_parm override_arg("-override_data", nullptr, AT_NONE);	// Cmdline_override_data
 
 char *Cmdline_start_mission = NULL;
 int Cmdline_dis_collisions = 0;
@@ -545,6 +543,8 @@ bool Cmdline_debug_window = false;
 bool Cmdline_graphics_debug_output = false;
 bool Cmdline_log_to_stdout = false;
 bool Cmdline_slow_frames_ok = false;
+bool Cmdline_lua_devmode = false;
+bool Cmdline_override_data = false;
 
 // Other
 cmdline_parm get_flags_arg(GET_FLAGS_STRING, "Output the launcher flags file", AT_STRING);
@@ -571,6 +571,8 @@ cmdline_parm deprecated_spec_static_arg("-spec_static", "Deprecated", AT_NONE);
 cmdline_parm deprecated_spec_point_arg("-spec_point", "Deprecated", AT_NONE);
 cmdline_parm deprecated_spec_tube_arg("-spec_tube", "Deprecated", AT_NONE);
 cmdline_parm deprecated_ambient_factor_arg("-ambient_factor", "Deprecated", AT_NONE);	//
+cmdline_parm deprecated_ship_choice_3d_arg("-ship_choice_3d", "Deprecated", AT_NONE);
+cmdline_parm deprecated_weapon_choice_3d_arg("-weapon_choice_3d", "Deprecated", AT_NONE);
 
 #ifndef NDEBUG
 // NOTE: this assumes that os_init() has already been called but isn't a fatal error if it hasn't
@@ -1725,7 +1727,7 @@ bool SetCmdlineParams()
 
 	if(targetinfo_arg.found())
 	{
-		Cmdline_targetinfo = 1;
+		Extra_target_info = true;
 	}
 
 	if(nomovies_arg.found() ) {
@@ -1832,7 +1834,7 @@ bool SetCmdlineParams()
 	}
 
 	if ( use_warp_flash.found() ) {
-		Cmdline_warp_flash = 1;
+		Fireball_warp_flash = true;
 	}
 
 	if ( allow_autpilot_interrupt.found() )	{
@@ -1919,14 +1921,8 @@ bool SetCmdlineParams()
 	if ( glow_arg.found() )
 		Cmdline_glow = 0;
 
-	if ( ship_choice_3d_arg.found() )
-		Cmdline_ship_choice_3d = 1;
-
-	if ( weapon_choice_3d_arg.found() )
-		Cmdline_weapon_choice_3d = 1;
-
 	if (ingamejoin_arg.found() )
-		Cmdline_ingamejoin = 1;
+		Cmdline_ingamejoin = 0;
 
 	if ( start_mission_arg.found() ) {
 		Cmdline_start_mission = start_mission_arg.str();
@@ -2112,6 +2108,11 @@ bool SetCmdlineParams()
 		Cmdline_no_deferred_lighting = 1;
 	}
 
+	if( deferred_lighting_cockpit_arg.found() )
+	{
+		Cmdline_deferred_lighting_cockpit = true;
+	}
+
 	if (anisotropy_level_arg.found()) 
 	{
 		Cmdline_aniso_level = anisotropy_level_arg.get_int();
@@ -2166,6 +2167,13 @@ bool SetCmdlineParams()
 
 	if (slow_frames_ok_arg.found()) {
 		Cmdline_slow_frames_ok = true;
+	}
+	if ( luadev_arg.found()) {
+		Cmdline_lua_devmode = true;
+	}
+
+	if ( override_arg.found()) {
+		Cmdline_override_data = true;
 	}
 
 	if (show_video_info.found())

@@ -370,6 +370,7 @@ struct weapon_info
 	float	vel_inherit_amount;					// how much of the parent ship's velocity is inherited (0.0..1.0)
 	float	free_flight_time;
 	float	free_flight_speed_factor;
+	float gravity_const;						// multiplier applied to gravity, if any in the mission
 	float mass;									// mass of the weapon
 	float fire_wait;							// fire rate -- amount of time before you can refire the weapon
 	float max_delay;							// max time to delay a shot (DahBlount)
@@ -457,7 +458,8 @@ struct weapon_info
 	int	pre_launch_snd_min_interval;	//Minimum interval in ms between the last time the pre-launch sound was played and the next time it can play, as a limiter in case the player is pumping the trigger
 	gamesnd_id	launch_snd;
 	gamesnd_id	impact_snd;
-	gamesnd_id disarmed_impact_snd;
+	gamesnd_id  disarmed_impact_snd;
+	gamesnd_id  shield_impact_snd;
 	gamesnd_id	flyby_snd;							//	whizz-by sound, transmitted through weapon's portable atmosphere.
 	gamesnd_id	ambient_snd;
 	
@@ -495,6 +497,9 @@ struct weapon_info
 	// Energy suck effect
 	float weapon_reduce;					// how much energy removed from weapons systems
 	float afterburner_reduce;			// how much energy removed from weapons systems
+
+	// Vampirism Effect Multiplier
+	float vamp_regen;					// Factor by which a vampiric weapon will multiply the healing done to the shooter
 
 	// tag stuff
 	float	tag_time;						// how long the tag lasts		
