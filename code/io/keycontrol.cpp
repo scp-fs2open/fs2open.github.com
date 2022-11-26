@@ -1583,8 +1583,6 @@ void game_process_cheats(int k)
 	
 	cheatCode detectedCheatCode = CHEAT_CODE_NONE;
 
-	extern bool checkForCustomCheats(char converted_buffer[], int buffer_length);
-
 
 	for(i=0; i < CHEATS_TABLE_LEN; i++) {
 		Cheat cheat = cheatsTable[i];
@@ -1602,7 +1600,7 @@ void game_process_cheats(int k)
 	{
 		memset(CheatBuffer, 0, (CHEAT_BUFFER_LEN+1)*sizeof(char));
 		if (detectedCheatCode == CHEAT_CODE_NONE) return;
-		// If detectedCheatCode is anything else, thenk the modder overwrote an original cheat, and we still want that behavior, so continue.
+		// If detectedCheatCode is anything else, then the modder overwrote an original cheat, and we still want that behavior, so continue.
 	}
 
 	if(detectedCheatCode == CHEAT_CODE_FREESPACE){

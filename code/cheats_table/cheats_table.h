@@ -121,3 +121,4 @@ static SCP_map<SCP_string, std::unique_ptr<CustomCheat>> customCheats;
 
 void cheat_table_init();
 void parse_cheat_table(const char* filename);
+bool checkForCustomCheats(char converted_buffer[], int buffer_length);
