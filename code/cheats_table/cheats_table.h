@@ -28,7 +28,7 @@ class CustomCheat {
 			if (canUseCheat()) {
 				HUD_printf("%s", cheatMsg.c_str());
 				scripting::hooks::OnCheat->run(scripting::hook_param_list(scripting::hook_param("Cheat", 's', cheatCode)));
-				CheatUsed = SCP_string(cheatCode);
+				CheatUsed = cheatCode;
 			}
 		}
 
