@@ -17,11 +17,10 @@ class CustomCheat {
 		SCP_string cheatMsg;
 		bool requireCheatsEnabled;
 
-		CustomCheat(SCP_string cheat_code, SCP_string cheat_msg, bool require_cheats_enabled) {
-			cheatCode = cheat_code;
-			cheatMsg = cheat_msg;
-			requireCheatsEnabled = require_cheats_enabled;
-		}
+		CustomCheat(SCP_string cheat_code, SCP_string cheat_msg, bool require_cheats_enabled) : 
+			cheatCode(std::move(cheat_code)),
+			cheatMsg(std::move(cheat_msg)),
+			requireCheatsEnabled(require_cheats_enabled) { }
 
 		virtual ~CustomCheat() = default;
 
