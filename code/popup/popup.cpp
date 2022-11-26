@@ -956,7 +956,7 @@ int popup_do(popup_info *pi, int flags)
 					done = popup_resolve_scripting(L, choice, pi->input_text, resolveVals) ? 1 : 0;
 					return luacpp::LuaValueList{};
 					})),
-				scripting::hook_param("IsDeathPopup", 'b', true));
+				scripting::hook_param("IsDeathPopup", 'b', false));
 
 			scripting::hooks::OnDialogFrame->run(paramList);
 			isScriptingOverride = scripting::hooks::OnDialogFrame->isOverride(paramList);
