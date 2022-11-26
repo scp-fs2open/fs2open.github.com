@@ -4,12 +4,6 @@
 void cheat_table_init() {
 	customCheats.clear();
 
-	// Add default Spawn Ship Cheat (Volition Bravos).
-	// Won't interfere with Total Conversions, since if the ship doesn't exist, the game will just ignore the cheat.
-	// The other default cheats do not use the Custom Cheat Framework and are still handled in keycontrol.cpp
-	std::unique_ptr<CustomCheat> bravos(new SpawnShipCheat("arrrrwalktheplank", "Walk the plank", false, "Volition Bravos", "Volition Bravos"));
-	customCheats.emplace(SCP_string(bravos->cheatCode), std::move(bravos));
-
 	if (cf_exists_full("cheats.tbl", CF_TYPE_TABLES)) {
 		parse_cheat_table("cheats.tbl");
 	}
