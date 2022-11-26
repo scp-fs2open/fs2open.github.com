@@ -432,7 +432,7 @@ void popupdead_draw_button_text()
 	}
 }
 
-void popup_resolve_scripting(lua_State* L, int& choice, const luacpp::LuaValueList& arguments) {
+static void popupdead_resolve_scripting(lua_State* L, int& choice, const luacpp::LuaValueList& arguments) {
 	if (arguments.empty() || !arguments[0].isValid()) {
 		LuaError(L, "Invalid type supplied to dialog submit function!");
 		return;
@@ -487,7 +487,7 @@ int popupdead_do_frame(float  /*frametime*/)
 	if (scripting::hooks::OnDialogFrame->isActive()) {
 		auto paramList = scripting::hook_param_list(
 			scripting::hook_param("Submit", 'u', luacpp::LuaFunction::createFromStdFunction(Script_system.GetLuaSession(), [&choice](lua_State* L, const luacpp::LuaValueList& resolveVals) {
-				popup_resolve_scripting(L, choice, resolveVals);
+				popupdead_resolve_scripting(L, choice, resolveVals);
 				return luacpp::LuaValueList{};
 				})),
 			scripting::hook_param("IsDeathPopup", 'b', true),
