@@ -224,6 +224,7 @@ namespace animation {
 		//True if the animation can externally have its state changed. Needs special handling
 		bool m_canChangeState;
 
+		SCP_string request;
 	public:
 		flagset<animation::Animation_Flags>	m_flags;
 		struct {
@@ -312,7 +313,7 @@ namespace animation {
 		ModelAnimationSet& operator=(const ModelAnimationSet& other);
 
 		//Helper function to shorten animation emplaces
-		void emplace(const std::shared_ptr<ModelAnimation>& animation, const SCP_string& name, ModelAnimationTriggerType type, int subtype, unsigned int uniqueId);
+		void emplace(const std::shared_ptr<ModelAnimation>& animation, const SCP_string& request, const SCP_string& name, ModelAnimationTriggerType type, int subtype, unsigned int uniqueId);
 
 		void changeShipName(const SCP_string& name);
 
@@ -348,6 +349,7 @@ namespace animation {
 
 		struct RegisteredTrigger { ModelAnimationTriggerType type; int subtype; const SCP_string& name; };
 		std::vector<RegisteredTrigger> getRegisteredTriggers() const;
+		std::set<SCP_string> getRegisteredAnimNames() const;
 
 		bool updateMoveable(polymodel_instance* pmi, const SCP_string& name, const std::vector<linb::any>& args) const;
 		void initializeMoveables(polymodel_instance* pmi);

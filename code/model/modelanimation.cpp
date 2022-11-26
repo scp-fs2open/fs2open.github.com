@@ -629,12 +629,13 @@ namespace animation {
 		return *this;
 	}
 
-	void ModelAnimationSet::emplace(const std::shared_ptr<ModelAnimation>& animation, const SCP_string& name, ModelAnimationTriggerType type, int subtype, unsigned int uniqueId) {
+	void ModelAnimationSet::emplace(const std::shared_ptr<ModelAnimation>& animation, const SCP_string& request, const SCP_string& name, ModelAnimationTriggerType type, int subtype, unsigned int uniqueId) {
 		auto newAnim = std::shared_ptr<ModelAnimation>(new ModelAnimation(*animation));
 		newAnim->m_set = this;
 		newAnim->m_animation = std::shared_ptr<ModelAnimationSegment>(animation->m_animation->copy());
 		newAnim->m_animation->exchangeSubmodelPointers(*this);
 		newAnim->id = uniqueId;
+		newAnim->request = request;
 		ModelAnimationSet::s_animationById[uniqueId] = newAnim;
 		m_animationSet[{type, subtype}][name].push_back(newAnim);
 	}
@@ -837,6 +838,20 @@ namespace animation {
 
 		return ret;
 	};
+
+	std::set<SCP_string> ModelAnimationSet::getRegisteredAnimNames() const {
+		std::set<SCP_string> ret;
+
+		for (const auto& animList : m_animationSet) {
+			for (const auto& animationL : animList.second) {
+				for (const auto& animation : animationL.second) {
+					ret.emplace(animation->request);
+				}
+			}
+		}
+
+		return ret;
+	}
 
 	bool ModelAnimationSet::AnimationList::start(ModelAnimationDirection direction, bool forced, bool instant, bool pause) const {
 		polymodel_instance* pmi = model_get_instance(pmi_id);
@@ -1343,7 +1358,7 @@ namespace animation {
 			auto animIt = s_animationsById.find(request);
 			if (animIt != s_animationsById.end()) {
 				const ParsedModelAnimation& foundAnim = animIt->second;
-				set.emplace(foundAnim.anim, foundAnim.name, foundAnim.type, foundAnim.subtype, ModelAnimationParseHelper::getUniqueAnimationID(animIt->first, uniqueTypePrefix, uniqueParentName));
+				set.emplace(foundAnim.anim, request, foundAnim.name, foundAnim.type, foundAnim.subtype, ModelAnimationParseHelper::getUniqueAnimationID(animIt->first, uniqueTypePrefix, uniqueParentName));
 			}
 			else {
 				error_display(0, "Animation with name %s not found!", request.c_str());
@@ -1478,7 +1493,7 @@ namespace animation {
 
 			//Initial Animations in legacy style will continue to be fully supported and allowed, given the frequency of these (especially for turrets) and the fact that these are more intuitive to be directly in the subsystem section of the ship table, as these are closer to representing a property of the subsystem rather than an animation.
 			//Hence, there will not be any warning displayed if the legacy table is used for these. -Lafiel 
-			sip->animations.emplace(anim, name, ModelAnimationTriggerType::Initial, ModelAnimationSet::SUBTYPE_DEFAULT, ModelAnimationParseHelper::getUniqueAnimationID(name + Animation_types.at(ModelAnimationTriggerType::Initial).first + std::to_string(subtype), 'b', sip->name));
+			sip->animations.emplace(anim, name, name, ModelAnimationTriggerType::Initial, ModelAnimationSet::SUBTYPE_DEFAULT, ModelAnimationParseHelper::getUniqueAnimationID(name + Animation_types.at(ModelAnimationTriggerType::Initial).first + std::to_string(subtype), 'b', sip->name));
 		}
 		else {
 			auto anim = std::shared_ptr<ModelAnimation>(new ModelAnimation());
@@ -1573,7 +1588,7 @@ namespace animation {
 			anim->setAnimation(mainSegment);
 
 			//TODO maybe handle sub_name? Not documented in Wiki, maybe no one actually uses it...
-			sip->animations.emplace(anim, name, type, subtype, ModelAnimationParseHelper::getUniqueAnimationID(name + Animation_types.at(type).first + std::to_string(subtype), 'b', sip->name));
+			sip->animations.emplace(anim, name, name, type, subtype, ModelAnimationParseHelper::getUniqueAnimationID(name + Animation_types.at(type).first + std::to_string(subtype), 'b', sip->name));
 
 			mprintf(("Specified deprecated non-initial type animation on subsystem %s of ship class %s. Consider using *-anim.tbm's instead.\n", sp->subobj_name, sip->name));
 		}
