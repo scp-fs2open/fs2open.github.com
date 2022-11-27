@@ -1883,7 +1883,7 @@ int cfile_get_path_type(const SCP_string& dir)
 		}
 
 		// for everything else just find closest match, allowing for unknown subdirectories
-		if ( !buf.compare(0, strlen(Pathtype.path), Pathtype.path) ) {
+		if ( !strnicmp(buf.c_str(), Pathtype.path, strlen(Pathtype.path)) ) {
 			best_match = Pathtype.index;
 		}
 	}
