@@ -323,8 +323,11 @@ void ai_remove_ship_goal( ai_info *aip, int index )
 			// Goober5000 - any ship subsystems will start moving now, so their initial velocity should be 0 to match original behavior
 			for (auto pss = GET_FIRST(&shipp->subsys_list); pss != END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss))
 			{
-				pss->submodel_instance_1->current_turn_rate = 0.0f;
-				pss->submodel_instance_1->current_shift_rate = 0.0f;
+				if (pss->submodel_instance_1)
+				{
+					pss->submodel_instance_1->current_turn_rate = 0.0f;
+					pss->submodel_instance_1->current_shift_rate = 0.0f;
+				}
 			}
 		}
 
