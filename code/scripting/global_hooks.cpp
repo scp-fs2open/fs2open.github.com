@@ -85,23 +85,28 @@ const std::shared_ptr<OverridableHook> OnDialogInit = OverridableHook::Factory("
 			"A table containing the different choices for this dialog. Contains subtables, each consisting of "
 			"Positivity (an int, 0 if neutral, 1 if positive, and -1 if negative) and "
 			"Text (a string, the text of the button)."},
-		{"Title", "string", "The title of the popup window."},
-		{"Text", "string", "The text to be displayed in the popup window."},
+		{"Title", "string", "The title of the popup window. Nil for a death popup."},
+		{"Text", "string", "The text to be displayed in the popup window. Nil for a death popup."},
 		{"IsTimeStopped", "boolean", "True if mission time was interrupted for this popup."},
 		{"IsStateRunning", "boolean", "True if the underlying state is still being processed and rendered."},
 		{"IsInputPopup", "boolean", "True if this popup is for entering text."},
+		{"IsDeathPopup", "boolean", "True if this popup is an in-mission death popup and should be styled as such."},
 		{"AllowedInput", "string", "A string of characters allowed to be present in the input popup. Nil if not an input popup."}
 	 });
 
 const std::shared_ptr<OverridableHook> OnDialogFrame = OverridableHook::Factory("On Dialog Frame",
 	"Invoked each frame for a system dialog. Override to prevent the system dialog from rendering and evaluating.",
 	{
-		{"Submit", "function(number | string | nil result) -> nil", "A callback function that should be called if the popup resolves. Should be string only if it is an input popup. Pass nil to abort."}
+		{"Submit", "function(number | string | nil result) -> nil", "A callback function that should be called if the popup resolves. Should be string only if it is an input popup. Pass nil to abort."},
+		{"IsDeathPopup", "boolean", "True if this popup is an in-mission death popup and should be styled as such."},
+		{"Freeze", "boolean", "If not nil and true, the popup should not process any inputs but just render."}
 	});
 
 const std::shared_ptr<Hook> OnDialogClose = Hook::Factory("On Dialog Close",
 	"Invoked when a dialog closes.",
-	{});
+	{
+		{"IsDeathPopup", "boolean", "True if this popup is an in-mission death popup and should be styled as such."}
+	});
 
 // ========== DEPRECATED ==========
 
