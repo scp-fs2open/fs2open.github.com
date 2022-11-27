@@ -59,7 +59,7 @@ public:
 	int get_event_num(HTREEITEM handle);
 	void reset_event(int num, HTREEITEM after);
 	void save_event(int e);
-	void swap_handler(int node1, int node2);
+	void move_handler(int node1, int node2, bool insert_before);
 	void insert_handler(int old, int node);
 	int query_modified();
 	void OnOK();		// default MFC OK behavior

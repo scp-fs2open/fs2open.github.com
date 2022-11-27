@@ -137,7 +137,7 @@ public:
 	int get_default_value(sexp_list_item *item, char *text_buf, int op, int i);
 	int query_default_argument_available(int op);
 	int query_default_argument_available(int op, int i);
-	void swap_roots(HTREEITEM one, HTREEITEM two);
+	void move_root(HTREEITEM source, HTREEITEM dest, bool insert_before);
 	void move_branch(int source, int parent = -1);
 	HTREEITEM move_branch(HTREEITEM source, HTREEITEM parent = TVI_ROOT, HTREEITEM after = TVI_LAST);
 	void copy_branch(HTREEITEM source, HTREEITEM parent = TVI_ROOT, HTREEITEM after = TVI_LAST);

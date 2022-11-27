@@ -41,7 +41,7 @@ protected:
 public:
 	void mission_selected(int num);
 	void insert_handler(int old, int node);
-	void swap_handler(int node1, int node2);
+	void move_handler(int node1, int node2, bool insert_before);
 	void update();
 	void load_tree(int save = 1);
 	void save_tree(int clear = 1);

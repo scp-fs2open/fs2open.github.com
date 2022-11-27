@@ -1208,7 +1208,7 @@ void event_editor::OnUpdateTriggerCount()
 		GetDlgItem(IDC_INTERVAL_TIME)->EnableWindow(TRUE);
 	}
 }
-void event_editor::swap_handler(int node1, int node2)
+void event_editor::move_handler(int node1, int node2, bool insert_before)
 {
 	int index1, index2, s;
 	mission_event m;
@@ -1232,12 +1232,14 @@ void event_editor::swap_handler(int node1, int node2)
 	m = m_events[index1];
 	s = m_sig[index1];
 
-	while (index1 < index2) {
+	int offset = insert_before ? -1 : 0;
+
+	while (index1 < index2 + offset) {
 		m_events[index1] = m_events[index1 + 1];
 		m_sig[index1] = m_sig[index1 + 1];
 		index1++;
 	}
-	while (index1 > index2 + 1) {
+	while (index1 > index2 + offset + 1) {
 		m_events[index1] = m_events[index1 - 1];
 		m_sig[index1] = m_sig[index1 - 1];
 		index1--;
@@ -1246,7 +1248,7 @@ void event_editor::swap_handler(int node1, int node2)
 	m_events[index1] = m;
 	m_sig[index1] = s;
 
-	cur_event = index1;
+	cur_event = index2;
 	update_cur_event();
 }
 

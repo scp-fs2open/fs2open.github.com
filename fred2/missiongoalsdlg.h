@@ -27,7 +27,7 @@ class CMissionGoalsDlg : public CDialog
 {
 // Construction
 public:
-	void swap_handler(int node1, int node2);
+	void move_handler(int node1, int node2, bool insert_before);
 	int query_modified();
 	void OnCancel();
 	void OnOK();

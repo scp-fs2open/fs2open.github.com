@@ -516,7 +516,7 @@ void campaign_editor::OnMoveUp()
 		if ((last != -1) && (i < Total_links)) {
 			h1 = m_tree.GetParentItem(m_tree.handle(Links[i].node));
 			h2 = m_tree.GetParentItem(m_tree.handle(Links[last].node));
-			m_tree.swap_roots(h1, h2);
+			m_tree.move_root(h1, h2, true);
 			m_tree.SelectItem(m_tree.GetParentItem(m_tree.handle(Links[i].node)));
 
 			temp = Links[last];
@@ -549,7 +549,7 @@ void campaign_editor::OnMoveDown()
 		if (j < Total_links) {
 			h1 = m_tree.GetParentItem(m_tree.handle(Links[i].node));
 			h2 = m_tree.GetParentItem(m_tree.handle(Links[j].node));
-			m_tree.swap_roots(h1, h2);
+			m_tree.move_root(h1, h2, false);
 			m_tree.SelectItem(m_tree.GetParentItem(m_tree.handle(Links[i].node)));
 
 			temp = Links[j];
@@ -562,7 +562,7 @@ void campaign_editor::OnMoveDown()
 	GetDlgItem(IDC_SEXP_TREE)->SetFocus();
 }
 
-void campaign_editor::swap_handler(int node1, int node2)
+void campaign_editor::move_handler(int node1, int node2, bool insert_before)
 {
 	int index1, index2;
 	campaign_tree_link temp;
@@ -583,11 +583,13 @@ void campaign_editor::swap_handler(int node1, int node2)
 
 	temp = Links[index1];
 
-	while (index1 < index2) {
+	int offset = insert_before ? -1 : 0;
+
+	while (index1 < index2 + offset) {
 		Links[index1] = Links[index1 + 1];
 		index1++;
 	}
-	while (index1 > index2 + 1) {
+	while (index1 > index2 + offset + 1) {
 		Links[index1] = Links[index1 - 1];
 		index1--;
 	}
@@ -595,7 +597,7 @@ void campaign_editor::swap_handler(int node1, int node2)
 	Links[index1] = temp;
 
 	// update Cur_campaign_link
-	Cur_campaign_link = index1;
+	Cur_campaign_link = index2;
 }
 
 void campaign_editor::insert_handler(int old, int node)

@@ -2605,11 +2605,14 @@ void sexp_tree::copy_branch(QTreeWidgetItem* source, QTreeWidgetItem* parent, QT
 	}
 }
 
-void sexp_tree::swap_roots(QTreeWidgetItem* one, QTreeWidgetItem* two) {
-//	copy_branch(one, TVI_ROOT, two);
-//	move_branch(two, TVI_ROOT, one);
-//	DeleteItem(one);
-	auto h = move_branch(one, itemFromIndex(rootIndex()), two);
+void sexp_tree::move_root(QTreeWidgetItem* source, QTreeWidgetItem* dest, bool insert_before) {
+	auto after = dest;
+
+	if (insert_before) {
+		Warning(LOCATION, "Inserting before a tree item is not yet implemented in qtFRED");
+	}
+
+	auto h = move_branch(source, itemFromIndex(rootIndex()), after);
 	setCurrentItem(h);
 	modified();
 }
