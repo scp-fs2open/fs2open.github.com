@@ -1350,6 +1350,23 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		stuff_float(&wip->cargo_size);
 	}
 
+	if (optional_string("$Autoaim FOV:")) {
+		float fovt;
+		stuff_float(&fovt);
+
+		//Must be between 0 and 360 - Mjn
+		if (fovt < 0.0f) {
+			fovt = 0.0f;
+			error_display(0, "Weapon %s autoaim fov was less than 0, setting to %f\n", wip->name, fovt);
+		}
+		if (fovt >= 360.0f) {
+			fovt = 359.99f;
+			error_display(0, "Weapon %s autoaim fov was greater than 360, setting to %f\n", wip->name, fovt);
+		}
+
+		wip->autoaim_fov = fovt;
+	}
+
 	bool is_homing=false;
 	if(optional_string("$Homing:")) {
 		stuff_boolean(&is_homing);
@@ -8892,6 +8909,7 @@ void weapon_info::reset()
 	this->turn_time = 1.0f;
 	this->turn_accel_time = 0.f;
 	this->cargo_size = 1.0f;
+	this->autoaim_fov = 0.0f;
 	this->rearm_rate = 1.0f;
 	this->reloaded_per_batch = -1;
 	this->weapon_range = WEAPON_DEFAULT_TABLED_MAX_RANGE;
