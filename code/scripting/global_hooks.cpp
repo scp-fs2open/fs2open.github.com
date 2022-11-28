@@ -121,5 +121,11 @@ const std::shared_ptr<OverridableHook> OnDeath = OverridableHook::Factory("On De
 			"The position of the hit that caused the death (only set for ships and only if available)"},
 	});
 
+std::shared_ptr<scripting::Hook> OnCheat = scripting::Hook::Factory(
+	"On Cheat", "Called when a cheat is used", 
+	{
+		{ "Cheat", "string", "The cheat code the user typed" },
+	});
+
 } // namespace hooks
 } // namespace scripting

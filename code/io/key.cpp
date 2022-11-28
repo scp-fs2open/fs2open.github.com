@@ -81,6 +81,7 @@ int shifted_ascii_table[SIZE_OF_ASCII_TABLE] =
 static int Key_numlock_was_on = 0;	// Flag to indicate whether NumLock is on at start
 
 
+SCP_string CheatUsed = "";
 int Cheats_enabled = 0;
 int Key_normal_game = 0;
 

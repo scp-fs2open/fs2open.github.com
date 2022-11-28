@@ -42,6 +42,7 @@
 #include "autopilot/autopilot.h"
 #include "bmpman/bmpman.h"
 #include "cfile/cfile.h"
+#include "cheats_table/cheats_table.h"
 #include "cmdline/cmdline.h"
 #include "cmeasure/cmeasure.h"
 #include "cutscene/cutscenes.h"
@@ -986,6 +987,7 @@ void game_level_init()
 
 	Key_normal_game = (Game_mode & GM_NORMAL);
 	Cheats_enabled = 0;
+	CheatUsed = "";
 
 	Game_shudder_time = TIMESTAMP::invalid();
 
@@ -1395,6 +1397,7 @@ void game_post_level_init()
 	Game_mode |= GM_IN_MISSION;
 	Script_system.RunCondition(CHA_MISSIONSTART);
 	Game_mode &= ~GM_IN_MISSION;
+
 
 	if (Player_obj)
 		Script_system.RemHookVar("Player");
@@ -1976,6 +1979,8 @@ void game_init()
 	ssm_init();	
 	player_tips_init();				// helpful tips
 	beam_init();
+
+	cheat_table_init();
 
 	lighting_profile::load_profiles();
 

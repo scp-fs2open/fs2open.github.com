@@ -117,6 +117,11 @@ add_file_folder("Camera"
 	camera/camera.h
 )
 
+add_file_folder("Cheats Table"
+	cheats_table/cheats_table.cpp
+	cheats_table/cheats_table.h
+)
+
 # CFile files
 add_file_folder("CFile"
 	cfile/cfile.cpp
@@ -289,6 +294,7 @@ add_file_folder("Default files\\\\data\\\\tables"
 	def_files/data/tables/objecttypes.tbl
 	def_files/data/tables/post_processing.tbl
 	def_files/data/tables/species_defs.tbl
+	def_files/data/tables/cheats.tbl
 )
 
 # These files will be included in the executable but not in CFile

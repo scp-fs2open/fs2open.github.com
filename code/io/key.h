@@ -46,6 +46,7 @@ uint key_get_shift_status();
 int key_down_count(int scancode);
 int key_checkch();
 
+extern SCP_string CheatUsed;
 extern int Cheats_enabled;
 extern int Key_normal_game;
 
