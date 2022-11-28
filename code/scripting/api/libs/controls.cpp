@@ -100,12 +100,62 @@ ADE_FUNC(isMouseButtonDown,
 			check_flags |= MOUSE_MIDDLE_BUTTON;
 		if(e[i]->index == LE_MOUSE_RIGHT_BUTTON)
 			check_flags |= MOUSE_RIGHT_BUTTON;
+		if (e[i]->index == LE_MOUSE_X1_BUTTON)
+			check_flags |= MOUSE_X1_BUTTON;
+		if (e[i]->index == LE_MOUSE_X2_BUTTON)
+			check_flags |= MOUSE_X2_BUTTON;
 	}
 
 	if(mouse_down(check_flags))
 		rtn = true;
 
 	return ade_set_args(L, "b", rtn);
+}
+
+ADE_FUNC(mouseButtonDownCount,
+	l_Mouse,
+	"enumeration buttonCheck /* any one of MOUSE_LEFT_BUTTON, MOUSE_RIGHT_BUTTON, MOUSE_MIDDLE_BUTTON, MOUSE_X1_BUTTON, MOUSE_X2_BUTTON */, [ boolean reset_count ]",
+	"Returns the pressed count of the specified button.  The count is then reset, unless reset_count (which defaults to true) is false.",
+	"number",
+	"The number of frames this button has been pressed, or -1 if the mouse has not been initialized")
+{
+	if(!mouse_inited)
+		return ade_set_error(L, "i", -1);
+
+	enum_h buttonCheck;
+	int check_btn = 0;
+	bool reset_count = true;
+
+	if (!ade_get_args(L, "o|b", l_Enum.Get(&buttonCheck), &reset_count))
+		return ade_set_error(L, "i", -1);
+
+	if (!buttonCheck.IsValid())
+		return ade_set_error(L, "i", -1);
+
+	switch (buttonCheck.index)
+	{
+		case LE_MOUSE_LEFT_BUTTON:
+			check_btn = MOUSE_LEFT_BUTTON;
+			break;
+		case LE_MOUSE_RIGHT_BUTTON:
+			check_btn = MOUSE_RIGHT_BUTTON;
+			break;
+		case LE_MOUSE_MIDDLE_BUTTON:
+			check_btn = MOUSE_MIDDLE_BUTTON;
+			break;
+		case LE_MOUSE_X1_BUTTON:
+			check_btn = MOUSE_X1_BUTTON;
+			break;
+		case LE_MOUSE_X2_BUTTON:
+			check_btn = MOUSE_X2_BUTTON;
+			break;
+		default:
+			return ade_set_error(L, "i", -1);
+	}
+
+	int count = mouse_down_count(check_btn, reset_count ? 1 : 0);
+
+	return ade_set_args(L, "i", count);
 }
 
 static int AxisActionInverted_sub(int AxisAction, int ordinal, lua_State* L)
