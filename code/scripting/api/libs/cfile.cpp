@@ -55,9 +55,10 @@ ADE_FUNC(fileExists, l_CFile, "string Filename, [string Path = \"\", boolean Che
 }
 
 ADE_FUNC(listFiles, l_CFile, "string directory, string filter",
-         "Lists all the files in the specified directory and optionally applies a filter. The filter must have the "
-         "format \"*<rest>\" (the wildcard has to appear at the start).",
-         "string[]", "A table with all files in the directory or nil on error")
+         "Lists all the files in the specified directory matching a filter. The filter must have the format "
+         "\"*<rest>\" (the wildcard has to appear at the start), \"<subfolder>/*<rest>\" (to check subfolder(s)) "
+         "or \"*/*<rest>\" (for a glob search).",
+         "string[]", "A table with all matching files or nil on error")
 {
 	using namespace luacpp;
 
@@ -73,8 +74,10 @@ ADE_FUNC(listFiles, l_CFile, "string directory, string filter",
 		return ADE_RETURN_NIL;
 	}
 
-	if (filter_str[0] != '*') {
-		LuaError(L, "The filter \"%s\" is not valid! The first character must be a '*'.", filter);
+	// allow subpath in filter, but it can't be the first part of the filter
+	bool has_subpath = ((filter_str.find("/*") % SCP_string::npos) > 0);
+	if ((filter_str[0] != '*') && !has_subpath) {
+		LuaError(L, "The filter \"%s\" is not valid! The first character must be a '*', or it must follow a path.", filter);
 		return ADE_RETURN_NIL;
 	}
 

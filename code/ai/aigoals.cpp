@@ -304,16 +304,31 @@ void ai_remove_ship_goal( ai_info *aip, int index )
 
 	if (index == aip->active_goal)
 	{
+		auto shipp = &Ships[aip->shipnum];
+
 		// rearm/repair needs a bit of extra cleanup
 		if (aip->goals[index].ai_mode == AI_GOAL_REARM_REPAIR)
-			ai_abort_rearm_request(&Objects[Ships[aip->shipnum].objnum]);
+			ai_abort_rearm_request(&Objects[shipp->objnum]);
 
-		// wookieejedi - play dead needs some extra cleanup, too
-		// there is an early return for the mode AIM_PLAY_DEAD in AI frame, so it needs to be set back to AIM_NONE
-		if (aip->ai_profile_flags[AI::Profile_Flags::Fixed_removing_play_dead_order] && 
-			(aip->goals[index].ai_mode == AI_GOAL_PLAY_DEAD || aip->goals[index].ai_mode == AI_GOAL_PLAY_DEAD_PERSISTENT)) {
-			aip->mode = AIM_NONE;
-			aip->submode_start_time = Missiontime;
+		// play dead needs some extra cleanup, too
+		if (aip->goals[index].ai_mode == AI_GOAL_PLAY_DEAD || aip->goals[index].ai_mode == AI_GOAL_PLAY_DEAD_PERSISTENT)
+		{
+			// wookieejedi - there is an early return for the mode AIM_PLAY_DEAD in AI frame, so it needs to be set back to AIM_NONE
+			if (aip->ai_profile_flags[AI::Profile_Flags::Fixed_removing_play_dead_order])
+			{
+				aip->mode = AIM_NONE;
+				aip->submode_start_time = Missiontime;
+			}
+
+			// Goober5000 - any ship subsystems will start moving now, so their initial velocity should be 0 to match original behavior
+			for (auto pss = GET_FIRST(&shipp->subsys_list); pss != END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss))
+			{
+				if (pss->submodel_instance_1)
+				{
+					pss->submodel_instance_1->current_turn_rate = 0.0f;
+					pss->submodel_instance_1->current_shift_rate = 0.0f;
+				}
+			}
 		}
 
 		aip->active_goal = AI_GOAL_NONE;

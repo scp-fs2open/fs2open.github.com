@@ -233,6 +233,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "time-elapsed-last-order",		OP_LAST_ORDER_TIME,						2,	2,			SEXP_INTEGER_OPERATOR,	},
 	{ "player-is-cheating",				OP_PLAYER_IS_CHEATING_BASTARD,			0,  0,			SEXP_BOOLEAN_OPERATOR,  },
 	{ "is-language",					OP_IS_LANGUAGE,							1,	1,			SEXP_BOOLEAN_OPERATOR, }, // Goober5000
+	{ "used-cheat",						OP_USED_CHEAT,							1,	1,			SEXP_BOOLEAN_OPERATOR, }, // Kiloku
 
 	//Multiplayer Sub-Category
 	{ "num-players",					OP_NUM_PLAYERS,							0,	0,			SEXP_INTEGER_OPERATOR,	},
@@ -4614,11 +4615,20 @@ void stuff_sexp_text_string(SCP_string &dest, int node, int mode)
 			if (can_construe_as_integer(Sexp_nodes[node].text))
 				sexp_variables_index = atoi(Sexp_nodes[node].text);
 		}
-		Assertion(sexp_variables_index != -1, "Couldn't find variable: %s\n", Sexp_nodes[node].text);
-		Assert((Sexp_variables[sexp_variables_index].type & SEXP_VARIABLE_NUMBER) || (Sexp_variables[sexp_variables_index].type & SEXP_VARIABLE_STRING));
 
-		auto var_name = (Fred_running) ? Sexp_nodes[node].text : Sexp_variables[sexp_variables_index].variable_name;
-		auto var_contents = Sexp_variables[sexp_variables_index].text;
+		const char *var_name, *var_contents;
+		if (sexp_variables_index < 0)
+		{
+			Warning(LOCATION, "Couldn't find variable: %s\n", Sexp_nodes[node].text);
+			var_name = Sexp_nodes[node].text;
+			var_contents = "undefined";
+		}
+		else
+		{
+			var_name = (Fred_running) ? Sexp_nodes[node].text : Sexp_variables[sexp_variables_index].variable_name;
+			var_contents = Sexp_variables[sexp_variables_index].text;
+			Assertion((Sexp_variables[sexp_variables_index].type & SEXP_VARIABLE_NUMBER) || (Sexp_variables[sexp_variables_index].type & SEXP_VARIABLE_STRING), "Variable %s must be either a number or a string!", var_name);
+		}
 
 		// number
 		if (Sexp_nodes[node].subtype == SEXP_ATOM_NUMBER)
@@ -25263,6 +25273,18 @@ int sexp_is_language(int node)
 		return SEXP_KNOWN_FALSE;
 }
 
+extern SCP_string CheatUsed;
+int sexp_cheat_used(int node)
+{
+	auto len = CheatUsed.length();
+	if (len <= 0) 
+		return SEXP_KNOWN_FALSE;
+	auto text = CTEXT(node);
+	if (strcmp(text, CheatUsed.c_str()) == 0)
+		return SEXP_KNOWN_TRUE;
+	return SEXP_UNKNOWN;
+}
+
 void sexp_set_motion_debris(int node)
 {
 	Motion_debris_override = is_sexp_true(node);
@@ -27850,6 +27872,10 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_is_language(node);
 				break;
 
+			case OP_USED_CHEAT:
+				sexp_val = sexp_cheat_used(node);
+				break;
+
 			case OP_IS_IN_TURRET_FOV:
 				sexp_val = sexp_is_in_turret_fov(node);
 				break;
@@ -28559,6 +28585,7 @@ int query_operator_return_type(int op)
 		case OP_ARE_WING_FLAGS_SET:
 		case OP_IS_IN_TURRET_FOV:
 		case OP_IS_LANGUAGE:
+		case OP_USED_CHEAT:
 		case OP_FUNCTIONAL_WHEN:
 		case OP_SCRIPT_EVAL_BOOL:
 		case OP_IS_CONTAINER_EMPTY:
@@ -31645,6 +31672,9 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_IS_LANGUAGE:
 			return OPF_LANGUAGE;
 
+		case OP_USED_CHEAT:
+			return OPF_STRING;
+
 		case OP_TRIGGER_ANIMATION_NEW:
 		case OP_STOP_LOOPING_ANIMATION:
 			if (argnum == 0)
@@ -32392,7 +32422,6 @@ const char *CTEXT(int n)
 		if (Fred_running)
 		{
 			sexp_variable_index = get_index_sexp_variable_name(Sexp_nodes[n].text);
-			Assert(sexp_variable_index != -1);
 		}
 		else
 		{
@@ -32400,6 +32429,10 @@ const char *CTEXT(int n)
 		}
 		// Reference a Sexp_variable
 		// string format -- "Sexp_variables[xx]=number" or "Sexp_variables[xx]=string", where xx is the index
+
+		// if variable not found, just return the node text
+		if (sexp_variable_index < 0)
+			return Sexp_nodes[n].text;
 
 		Assert( !(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_NOT_USED) );
 		Assert(Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_SET);
@@ -33639,6 +33672,7 @@ int get_subcategory(int sexp_id)
 		case OP_LAST_ORDER_TIME:
 		case OP_PLAYER_IS_CHEATING_BASTARD:
 		case OP_IS_LANGUAGE:
+		case OP_USED_CHEAT:
 			return STATUS_SUBCATEGORY_PLAYER;
 
 		case OP_NUM_PLAYERS:
@@ -38112,6 +38146,12 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tReturns whether the game is running in the specified language.  Takes 1 argument...\r\n"
 		"\t1:\tA language.  This can be any string; the SEXP will return true if and only if the string matches the current language.  "
 		"Builtin languages are English, German, French, and Polish, and others can be defined in strings.tbl.\r\n"
+	},
+
+	{ OP_USED_CHEAT, "used-cheat\r\n"
+		"\tReturns true if the given cheat has been used during this mission and there has not been another cheat used since.  Takes 1 argument.\r\n"
+		"\t1:\tA cheat string. This can be any string; the SEXP will return true if and only if the string matches the last cheat used.  "
+		"All original FS2 cheats are supported, and more can be defined in the cheats.tbl file.\r\n"
 	},
 
 	{ OP_SET_MOTION_DEBRIS, "set-motion-debris-override\r\n"

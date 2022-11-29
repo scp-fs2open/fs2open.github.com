@@ -154,9 +154,11 @@ void sexp_tree::load_tree(int index, const char *deflt)
 void get_combined_variable_name(char *combined_name, const char *sexp_var_name)
 {
 	int sexp_var_index = get_index_sexp_variable_name(sexp_var_name);
-	Assert(sexp_var_index > -1);
 
-	sprintf(combined_name, "%s(%s)", Sexp_variables[sexp_var_index].variable_name, Sexp_variables[sexp_var_index].text);
+	if (sexp_var_index >= 0)
+		sprintf(combined_name, "%s(%s)", Sexp_variables[sexp_var_index].variable_name, Sexp_variables[sexp_var_index].text);
+	else
+		sprintf(combined_name, "%s(undefined)", sexp_var_name);
 }
 
 // creates a tree from a given Sexp_nodes[] point under a given parent.  Recursive.
@@ -3928,12 +3930,10 @@ int sexp_tree::get_modify_variable_type(int parent)
 
 	if ( op_const == OP_MODIFY_VARIABLE ) {
 		sexp_var_index = get_tree_name_to_sexp_variable_index(node_text);
-		Assert(sexp_var_index >= 0);
 	}
 	else if ( op_const == OP_SET_VARIABLE_BY_INDEX ) {
 		if (can_construe_as_integer(node_text)) {
 			sexp_var_index = atoi(node_text);
-			Assert(sexp_var_index >= 0);
 		}
 		else if (strchr(node_text, '(') && strchr(node_text, ')')) {
 			// the variable index is itself a variable!
@@ -3943,7 +3943,11 @@ int sexp_tree::get_modify_variable_type(int parent)
 		Int3();  // should not be called otherwise
 	}
 
-	if (sexp_var_index < 0 || Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_BLOCK || Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_NOT_USED) {
+	// if we don't have a valid variable, allow replacement with anything
+	if (sexp_var_index < 0)
+		return OPF_AMBIGUOUS;
+
+	if (Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_BLOCK || Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_NOT_USED) {
 		// assume number so that we can allow tree display of number operators
 		return OPF_NUMBER;
 	} else if (Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_NUMBER) {
@@ -4445,16 +4449,22 @@ void sexp_tree::copy_branch(HTREEITEM source, HTREEITEM parent, HTREEITEM after)
 	}
 }
 
-void sexp_tree::swap_roots(HTREEITEM one, HTREEITEM two)
+void sexp_tree::move_root(HTREEITEM source, HTREEITEM dest, bool insert_before)
 {
-	HTREEITEM h;
+	HTREEITEM h, after = dest;
 
-	Assert(!GetParentItem(one));
-	Assert(!GetParentItem(two));
-//	copy_branch(one, TVI_ROOT, two);
-//	move_branch(two, TVI_ROOT, one);
-//	DeleteItem(one);
-	h = move_branch(one, TVI_ROOT, two);
+	Assert(!GetParentItem(source));
+	Assert(!GetParentItem(dest));
+
+	if (insert_before)
+	{
+		// since we can only insert after something, find the item previous to the destination; or indicate the first item if there is no previous item
+		after = GetNextItem(dest, TVGN_PREVIOUS);
+		if (after == nullptr)
+			after = TVI_FIRST;
+	}
+
+	h = move_branch(source, TVI_ROOT, after);
 	SelectItem(h);
 	SelectItem(h);
 	*modified = 1;
@@ -4514,7 +4524,7 @@ void sexp_tree::OnMouseMove(UINT nFlags, CPoint point)
 
 void sexp_tree::OnLButtonUp(UINT nFlags, CPoint point) 
 {
-	int index1, index2;
+	int node1, node2;
 
 	if (m_dragging) {
 		ASSERT(m_p_image_list != NULL);
@@ -4525,22 +4535,37 @@ void sexp_tree::OnLButtonUp(UINT nFlags, CPoint point)
 
 		if (m_h_drop && m_h_drag != m_h_drop) {
 			Assert(m_h_drag);
-			index1 = (int)GetItemData(m_h_drag);
-			index2 = (int)GetItemData(m_h_drop);
-			swap_roots(m_h_drag, m_h_drop);
+			node1 = (int)GetItemData(m_h_drag);
+			node2 = (int)GetItemData(m_h_drop);
+
+			// If we're moving up, insert before the dropped item.  If we're moving down,
+			// insert after the dropped item.  The idea is to always end up where we dropped.
+			bool insert_before = false;
+			for (auto h = m_h_drag; h != nullptr; h = GetNextItem(h, TVGN_PREVIOUS))
+			{
+				if (h == m_h_drop)
+				{
+					insert_before = true;
+					break;
+				}
+			}
+
+			move_root(m_h_drag, m_h_drop, insert_before);
+
 			if (m_mode == MODE_GOALS) {
 				Assert(Goal_editor_dlg);
-				Goal_editor_dlg->swap_handler(index1, index2);
+				Goal_editor_dlg->move_handler(node1, node2, insert_before);
 
 			} else if (m_mode == MODE_EVENTS) {
 				Assert(Event_editor_dlg);
-				Event_editor_dlg->swap_handler(index1, index2);
+				Event_editor_dlg->move_handler(node1, node2, insert_before);
 
 			} else if (m_mode == MODE_CAMPAIGN) {
-				Campaign_tree_formp->swap_handler(index1, index2);
+				Assert(Campaign_tree_formp);
+				Campaign_tree_formp->move_handler(node1, node2, insert_before);
 
 			} else
-				Assert(0);
+				UNREACHABLE("Unhandled dialog mode!");
 
 		} else
 			MessageBeep(0);
