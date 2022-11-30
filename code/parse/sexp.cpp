@@ -16660,9 +16660,17 @@ int sexp_event_delay_status( int n, int want_true, bool use_msecs = false)
 	for (int i = 0; i < Num_mission_events; ++i) {
 		// look for the event name; check its status.  If formula is gone, we know the state won't ever change.
 		if ( !stricmp(Mission_events[i].name, name) ) {
-			// Previous implementations could skip this block if the timestamp wasn't valid yet.  This had no effect
-			// because result, checked below, was still 0; but let's be correct.
-			if ( !Mission_events[i].timestamp.isValid() || timestamp_since(Mission_events[i].timestamp) <= delay ) {
+			// deduct the interval using the same logic as in mission_process_event()
+			if (Mission_events[i].flags & MEF_TIMESTAMP_HAS_INTERVAL) {
+				if (Mission_events[i].flags & MEF_USE_MSECS) {
+					delay -= Mission_events[i].interval;
+				} else {
+					delay -= Mission_events[i].interval * MILLISECONDS_PER_SECOND;
+				}
+			}
+
+			// check that the event delay has elapsed, again using the same logic as in mission_process_event()
+			if (!timestamp_elapsed(timestamp_delta(Mission_events[i].timestamp, delay))) {
 				rval = SEXP_FALSE;
 				break;
 			}
