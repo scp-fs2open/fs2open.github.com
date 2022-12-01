@@ -312,7 +312,7 @@ bool AsteroidEditorDialogModel::validate_data()
 
 		// for a ship debris (i.e. passive) field, need at least one debris type is selected
 		if (_a_field.field_type == FT_PASSIVE) {
-			if (_a_field.debris_genre == DG_SHIP) {
+			if (_a_field.debris_genre == DG_DEBRIS) {
 				if ( (_a_field.field_debris_type[0] == -1) && \
 						(_a_field.field_debris_type[1] == -1) && \
 						(_a_field.field_debris_type[2] == -1) ) {
@@ -374,7 +374,7 @@ void AsteroidEditorDialogModel::update_init()
 		modify(_a_field.debris_genre, _debris_genre);
 
 		// ship debris
-		if ( (_field_type == FT_PASSIVE) && (_debris_genre == DG_SHIP) ) {
+		if ( (_field_type == FT_PASSIVE) && (_debris_genre == DG_DEBRIS) ) {
 			for (auto idx=0; idx<MAX_ACTIVE_DEBRIS_TYPES; ++idx) {
 				modify(_a_field.field_debris_type[idx], _field_debris_type[idx]);
 			}
