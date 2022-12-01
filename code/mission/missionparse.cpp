@@ -5567,6 +5567,8 @@ void parse_asteroid_fields(mission *pm)
 
 	Assert(pm != NULL);
 
+	Asteroid_field.num_initial_asteroids = 0;
+
 	i = 0;
 	count = 0;
 

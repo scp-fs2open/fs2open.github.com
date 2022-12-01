@@ -56,6 +56,7 @@ const float LARGE_DEBRIS_WEIGHT = 1.0f;
 int	Asteroids_enabled = 1;
 int	Num_asteroids = 0;
 
+// Contains information for asteroid and debris objects for use in asteroid fields
 SCP_vector< asteroid_info > Asteroid_info;
 asteroid			Asteroids[MAX_ASTEROIDS];
 asteroid_field	Asteroid_field;
@@ -507,11 +508,11 @@ static void asteroid_load(int asteroid_info_index, int asteroid_subtype)
 			if ( !Is_standalone )
 			{
 				// just log to file for standalone servers
-				Warning(LOCATION, "For asteroid '%s', detail level\nmismatch (POF needs %d)", asip->name, pm->n_detail_levels );
+				Warning(LOCATION, "For asteroid '%s', detail level mismatch (POF has %d, table has %d)", asip->name, pm->n_detail_levels, asip->num_detail_levels );
 			}
 			else
 			{
-				nprintf(("Warning",  "For asteroid '%s', detail level mismatch (POF needs %d)\n", asip->name, pm->n_detail_levels));
+				nprintf(("Warning",  "For asteroid '%s', detail level mismatch (POF has %d, table has %d)\n", asip->name, pm->n_detail_levels, asip->num_detail_levels ));
 			}
 		}	
 		// Stuff detail level distances.
@@ -2051,78 +2052,140 @@ static SCP_string setup_display_name(SCP_string name)
 
 }
 
+// Temporary list used to grab parsed data. After verification, the list is cleared -Mjn
+static SCP_vector<asteroid_info> asteroid_list;
+
+static asteroid_info* get_asteroid_pointer(const char* asteroid_name)
+{
+	for (int i = 0; i < (int)asteroid_list.size(); i++) {
+		if (!stricmp(asteroid_name, asteroid_list[i].name)) {
+			return &asteroid_list[i];
+		}
+	}
+
+	// Didn't find anything.
+	return nullptr;
+}
+
 /**
  * Read in a single asteroid section from asteroid.tbl
  */
-static void asteroid_parse_section(asteroid_info *asip, int counter)
+static void asteroid_parse_section()
 {
+	bool create_if_not_found = true;
+	asteroid_info asteroid_t;
+	asteroid_info* asteroid_p;
+	
 	required_string("$Name:");
-	stuff_string(asip->name, F_NAME, NAME_LENGTH);
+	stuff_string(asteroid_t.name, F_NAME, NAME_LENGTH);
+
+	if (optional_string("+nocreate")) {
+		if (!Parsing_modular_table) {
+			Warning(LOCATION, "+nocreate flag used for asteroid in non-modular table\n");
+		}
+		create_if_not_found = false;
+	}
+
+	// Does this asteroid exist already?
+	// If so, load this new info into it
+	asteroid_p = get_asteroid_pointer(asteroid_t.name);
+	if (asteroid_p != nullptr) {
+		if (!Parsing_modular_table) {
+			error_display(1,
+				"Error:  Asteroid %s already exists.  All asteroid names must be unique.",
+				asteroid_t.name);
+		}
+	} else {
+		// Don't create poof if it has +nocreate and is in a modular table.
+		if (!create_if_not_found && Parsing_modular_table) {
+			if (!skip_to_start_of_string_either("$Name:", "#end")) {
+				error_display(1, "Missing [#end] or [$Name] after asteroid %s", asteroid_t.name);
+			}
+			return;
+		}
+		asteroid_list.push_back(asteroid_t);
+		asteroid_p = &asteroid_list[asteroid_list.size() - 1];
+
+	}
 
 	if (optional_string("$Display Name:")) {
-		stuff_string(asip->display_name, F_NAME);
+		stuff_string(asteroid_p->display_name, F_NAME);
 	} else {
-		asip->display_name = setup_display_name(asip->name);
+		asteroid_p->display_name = setup_display_name(asteroid_p->name);
 	}
 
 	if (optional_string("$Type:")) {
-		stuff_int(&asip->type);
+		stuff_int(&asteroid_p->type);
 	}
 
-	required_string( "$POF file1:" );
-	stuff_string(asip->pof_files[0], F_NAME, MAX_FILENAME_LEN);
-
-	if ((stristr(asip->name, "Asteroid") != NULL) || (asip->type >= 0)) {
-		required_string("$POF file2:");
-		stuff_string(asip->pof_files[1], F_NAME, MAX_FILENAME_LEN);
-	} else if (optional_string("$POF file2:")) {
-		stuff_string(asip->pof_files[1], F_NAME, MAX_FILENAME_LEN);
+	switch (asteroid_p->type) {
+	case ASTEROID_TYPE_SMALL:
+	case ASTEROID_TYPE_MEDIUM:
+	case ASTEROID_TYPE_LARGE:
+	case ASTEROID_TYPE_DEBRIS:
+		break;
+	default:
+		error_display(0, "Unknown asteroid type [%i] found for asteroid %s. Assuming debris", asteroid_p->type, asteroid_p->name);
+		asteroid_p->type = -1;
 	}
 
-	if ( (stristr(asip->name, "Asteroid") != NULL) || (asip->type >= 0) ) {
-		required_string( "$POF file3:" );
-		stuff_string(asip->pof_files[2], F_NAME, MAX_FILENAME_LEN);
-	} else if (optional_string("$POF file3:")) {
-		stuff_string(asip->pof_files[2], F_NAME, MAX_FILENAME_LEN);
+	if (optional_string("$POF file1:")) {
+		stuff_string(asteroid_p->pof_files[0], F_NAME, MAX_FILENAME_LEN);
 	}
 
-	required_string("$Detail distance:");
-	asip->num_detail_levels = (int)stuff_int_list(asip->detail_distance, MAX_ASTEROID_DETAIL_LEVELS, RAW_INTEGER_TYPE);
+	if (optional_string("$POF file2:")) {
+		stuff_string(asteroid_p->pof_files[1], F_NAME, MAX_FILENAME_LEN);
+	}
 
-	required_string("$Max Speed:");
-	stuff_float(&asip->max_speed);
+	if (optional_string("$POF file3:")) {
+		stuff_string(asteroid_p->pof_files[2], F_NAME, MAX_FILENAME_LEN);
+	}
+
+	if (optional_string("$Detail distance:")) {
+		asteroid_p->num_detail_levels = (int)stuff_int_list(asteroid_p->detail_distance, MAX_ASTEROID_DETAIL_LEVELS, RAW_INTEGER_TYPE);
+	}
+
+	if (optional_string("$Max Speed:")) {
+		stuff_float(&asteroid_p->max_speed);
+	}
 
 	if(optional_string("$Damage Type:")) {
 		char buf[NAME_LENGTH];
 		stuff_string(buf, F_NAME, NAME_LENGTH);
-		asip->damage_type_idx_sav = damage_type_add(buf);
-		asip->damage_type_idx = asip->damage_type_idx_sav;
+		asteroid_p->damage_type_idx_sav = damage_type_add(buf);
+		asteroid_p->damage_type_idx = asteroid_p->damage_type_idx_sav;
 	}
 	
 	if(optional_string("$Explosion Animations:")){
 		int temp[MAX_FIREBALL_TYPES];
 		auto parsed_ints = stuff_int_list(temp, MAX_FIREBALL_TYPES, RAW_INTEGER_TYPE);
-		asip->explosion_bitmap_anims.clear();
-		asip->explosion_bitmap_anims.insert(asip->explosion_bitmap_anims.begin(), temp, temp+parsed_ints);
+		asteroid_p->explosion_bitmap_anims.clear();
+		asteroid_p->explosion_bitmap_anims.insert(asteroid_p->explosion_bitmap_anims.begin(), temp, temp + parsed_ints);
 	}
 
-	if(optional_string("$Explosion Radius Mult:"))
-		stuff_float(&asip->fireball_radius_multiplier);
+	if (optional_string("$Explosion Radius Mult:")) {
+		stuff_float(&asteroid_p->fireball_radius_multiplier);
+	}
 
-	required_string("$Expl inner rad:");
-	stuff_float(&asip->inner_rad);
+	if (optional_string("$Expl inner rad:")){
+		stuff_float(&asteroid_p->inner_rad);
+		}
 
-	required_string("$Expl outer rad:");
-	stuff_float(&asip->outer_rad);
+	if (optional_string("$Expl outer rad:")) {
+		stuff_float(&asteroid_p->outer_rad);
+		}
 
-	required_string("$Expl damage:");
-	stuff_float(&asip->damage);
+	if (optional_string("$Expl damage:")){
+		stuff_float(&asteroid_p->damage);
+		}
 
-	required_string("$Expl blast:");
-	stuff_float(&asip->blast);
+	if (optional_string("$Expl blast:")){
+		stuff_float(&asteroid_p->blast);
+		}
 
-	required_string("$Hitpoints:");
-	stuff_float(&asip->initial_asteroid_strength);
+	if (optional_string("$Hitpoints:")){
+		stuff_float(&asteroid_p->initial_asteroid_strength);
+		}
 
 	while(optional_string("$Split:")) {
 		int split_type;
@@ -2144,28 +2207,28 @@ static void asteroid_parse_section(asteroid_info *asip, int counter)
 			else
 				new_split.max = 0;
 
-			asip->split_info.push_back( new_split );
+			asteroid_p->split_info.push_back(new_split);
 		} else
 			Warning(LOCATION, "Invalid asteroid reference %i used for $Split in asteroids table, ignoring.", split_type);
 	}
 
 	if (optional_string("$Spawn Weight:")) {
-		stuff_float(&asip->spawn_weight);
-		if (asip->spawn_weight <= 0.0f) {
-			Warning(LOCATION, "Spawn weight for asteroid '%s' must be greater than 0", asip->name);
-			asip->spawn_weight = 1.0f;
+		stuff_float(&asteroid_p->spawn_weight);
+		if (asteroid_p->spawn_weight <= 0.0f) {
+			Warning(LOCATION, "Spawn weight for asteroid '%s' must be greater than 0", asteroid_p->name);
+			asteroid_p->spawn_weight = 1.0f;
 		}
 	} else {
 		switch (Asteroid_info.size() % NUM_ASTEROID_SIZES)
 		{
 			case ASTEROID_TYPE_SMALL:
-				asip->spawn_weight = SMALL_DEBRIS_WEIGHT;
+				asteroid_p->spawn_weight = SMALL_DEBRIS_WEIGHT;
 				break;
 			case ASTEROID_TYPE_MEDIUM:
-				asip->spawn_weight = MEDIUM_DEBRIS_WEIGHT;
+				asteroid_p->spawn_weight = MEDIUM_DEBRIS_WEIGHT;
 				break;
 			case ASTEROID_TYPE_LARGE:
-				asip->spawn_weight = LARGE_DEBRIS_WEIGHT;
+				asteroid_p->spawn_weight = LARGE_DEBRIS_WEIGHT;
 				break;
 			default:
 				UNREACHABLE("Here be dragons");
@@ -2192,110 +2255,144 @@ to do with the debris of ships that explode, however these
 are the same debris and asteroids that get flung at a ship
 that is being protected.
 */
-static void asteroid_parse_tbl()
+static void asteroid_parse_tbl(const char* filename)
 {
-	char impact_ani_file[MAX_FILENAME_LEN];
-
-	SCP_vector<asteroid_info> asteroid_list;
 	
 	try
 	{
-		read_file_text("asteroid.tbl", CF_TYPE_TABLES);
+		read_file_text(filename, CF_TYPE_TABLES);
 		reset_parse();
 
 		required_string("#Asteroid Types");
 
-		int counter = 0;
-
-		// parse and tally each asteroid
+		// parse each asteroid
 		while (required_string_either("#End", "$Name:"))
 		{
-			asteroid_info new_asteroid;
 
-			asteroid_parse_section(&new_asteroid, counter);
-			counter++;
-			asteroid_list.push_back(new_asteroid);
-		}
-		mprintf(("ASTEROID begining setting of types\n"));
-		
-		//Set the three asteroid sizes
-		for (int i = 0; i < NUM_ASTEROID_SIZES; i++) {
+			asteroid_parse_section();
 
-			bool found = false;
-
-			char* debris_size[NUM_ASTEROID_SIZES] = {"Small", "Medium", "Large"};
-
-			for (int j = 0; j < (int)asteroid_list.size(); j++) {
-				if (asteroid_list[j].type == i) {
-					mprintf(("%s asteroid parsed with name %s\n", debris_size[i], asteroid_list[j].name));
-					Asteroid_info.push_back(asteroid_list[j]);
-					asteroid_list.erase(asteroid_list.begin() + j);
-					found = true;
-					break;
-				}
-			}
-
-			if (found)
-				continue;
-
-			mprintf(("%s asteroid not found. Using asteroid %s\n", debris_size[i], asteroid_list[0].name));
-			Asteroid_info.push_back(asteroid_list[0]);
-			asteroid_list.erase(asteroid_list.begin());
-			continue;
-		}
-
-		for (int i = 0; i < (int)asteroid_list.size(); i++) {
-			if (asteroid_list[i].type < 0) {
-				Asteroid_info.push_back(asteroid_list[i]);
-			} else {
-				error_display(0,
-					"Additional asteroid type found with name %s. Setting as debris type instead!",
-					asteroid_list[i].name);
-				asteroid_list[i].type = -1;
-				Asteroid_info.push_back(asteroid_list[i]);
-			}
 		}
 
 		required_string("#End");
 
-		Asteroid_impact_explosion_ani = -1;
-		required_string("$Impact Explosion:");
-		stuff_string(impact_ani_file, F_NAME, MAX_FILENAME_LEN);
+		if (optional_string("$Impact Explosion:")) {
+			char impact_ani_file[MAX_FILENAME_LEN];
+			stuff_string(impact_ani_file, F_NAME, MAX_FILENAME_LEN);
 
-		if (VALID_FNAME(impact_ani_file)) {
-			int num_frames;
-			Asteroid_impact_explosion_ani = bm_load_animation(impact_ani_file, &num_frames, nullptr, nullptr, nullptr, true);
+			if (VALID_FNAME(impact_ani_file)) {
+				int num_frames;
+				Asteroid_impact_explosion_ani = bm_load_animation(impact_ani_file, &num_frames, nullptr, nullptr, nullptr, true);
+			}
 		}
 
-		required_string("$Impact Explosion Radius:");
-		stuff_float(&Asteroid_impact_explosion_radius);
+		if (optional_string("$Impact Explosion Radius:")) {
+			stuff_float(&Asteroid_impact_explosion_radius);
+		}
 
 		if (optional_string("$Briefing Icon Closeup Model:")) {
 			stuff_string(Asteroid_icon_closeup_model, F_NAME, NAME_LENGTH);
-		}
-		else {
-			strcpy_s(Asteroid_icon_closeup_model, Asteroid_info[ASTEROID_TYPE_LARGE].pof_files[0]);	// magic file from retail
 		}
 
 		if (optional_string("$Briefing Icon Closeup Position:")) {
 			stuff_vec3d(&Asteroid_icon_closeup_position);
 		}
-		else {
-			vm_vec_make(&Asteroid_icon_closeup_position, 0.0f, 0.0f, -334.0f);  // magic numbers from retail
-		}
 
 		if (optional_string("$Briefing Icon Closeup Zoom:")) {
 			stuff_float(&Asteroid_icon_closeup_zoom);
 		}
-		else {
-			Asteroid_icon_closeup_zoom = 0.5f;	// magic number from retail
-		}
+
 	}
 	catch (const parse::ParseException& e)
 	{
-		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "asteroid.tbl", e.what()));
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
 		return;
 	}
+}
+
+static void verify_asteroid_list()
+{
+	char* asteroid_size[NUM_ASTEROID_SIZES] = {"Small", "Medium", "Large"};
+	
+	// Set the three asteroid sizes
+	for (int i = 0; i < NUM_ASTEROID_SIZES; i++) {
+
+		bool found = false;
+
+		for (int j = 0; j < (int)asteroid_list.size(); j++) {
+			if (asteroid_list[j].type == i) {
+				mprintf(("%s asteroid parsed with name %s\n", asteroid_size[i], asteroid_list[j].name));
+				Asteroid_info.push_back(asteroid_list[j]);
+				asteroid_list.erase(asteroid_list.begin() + j);
+				found = true;
+				break;
+			}
+		}
+
+		if (found)
+			continue;
+
+		//Left this as a log print instead of a Warning because of retail-Mjn
+		mprintf(("%s asteroid not found. Using asteroid %s\n", asteroid_size[i], asteroid_list[0].name));
+		asteroid_list[0].type = i;
+		Asteroid_info.push_back(asteroid_list[0]);
+		asteroid_list.erase(asteroid_list.begin());
+		continue;
+
+	}
+
+	for (int i = 0; i < (int)asteroid_list.size(); i++) {
+		if (asteroid_list[i].type < 0) {
+			Asteroid_info.push_back(asteroid_list[i]);
+		} else {
+			Warning(LOCATION, "Additional %s asteroid type found with name %s. Setting as debris type instead!", asteroid_size[asteroid_list[i].type], asteroid_list[i].name);
+			asteroid_list[i].type = ASTEROID_TYPE_DEBRIS;
+			Asteroid_info.push_back(asteroid_list[i]);
+		}
+	}
+
+	asteroid_list.clear();
+
+	//Check that we have the appropriate POF files-Mjn
+	for (int i = 0; i < (int)Asteroid_info.size(); i++) {
+		if (Asteroid_info[i].pof_files[0][0] == '\0')
+			Error(LOCATION, "Missing [POF File 1] for %s", Asteroid_info[i].name);
+
+		if (Asteroid_info[i].type != ASTEROID_TYPE_DEBRIS) {
+			if (Asteroid_info[i].pof_files[1][0] == '\0')
+				Error(LOCATION, "Missing [POF File 2] for %s", Asteroid_info[i].name);
+			if (Asteroid_info[i].pof_files[2][0] == '\0')
+				Error(LOCATION, "Missing [POF File 3] for %s", Asteroid_info[i].name);
+		}
+	}
+}
+
+/**
+ * Called once, at game start.  Do any one-time initializations here
+ */
+void asteroid_init()
+{
+	Asteroid_impact_explosion_ani = -1;
+	Asteroid_impact_explosion_radius = 20.0;							// retail value
+	Asteroid_icon_closeup_model[0] = '\0';
+	vm_vec_make(&Asteroid_icon_closeup_position, 0.0f, 0.0f, -334.0f);	// magic numbers from retail
+	Asteroid_icon_closeup_zoom = 0.5f;									// magic number from retail
+
+	// first parse the default table
+	asteroid_parse_tbl("asteroid.tbl");
+
+	// parse any modular tables
+	parse_modular_table("*-ast.tbm", asteroid_parse_tbl);
+
+	// now verify the asteroids were found and put them in the correct order
+	verify_asteroid_list();
+
+	if (Asteroid_impact_explosion_ani == -1) {
+		Error(LOCATION, "Missing valid asteroid impact explosion definition in asteroid.tbl!");
+	}
+
+	if (Asteroid_icon_closeup_model[0] == '\0')
+		strcpy_s(Asteroid_icon_closeup_model, Asteroid_info[ASTEROID_TYPE_LARGE].pof_files[0]);	// magic file from retail
+	
 }
 
 /**
@@ -2345,14 +2442,6 @@ void asteroid_frame()
 	sanitize_asteroid_targets_list();
 
 	maybe_throw_asteroid();
-}
-
-/**
- * Called once, at game start.  Do any one-time initializations here
- */
-void asteroid_init()
-{
-	asteroid_parse_tbl();
 }
 
 extern bool Extra_target_info;
