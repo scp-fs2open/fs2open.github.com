@@ -30,6 +30,7 @@
 #include "network/multi_pmsg.h"
 #include "network/multiutil.h"
 #include "scripting/scripting.h"
+#include "scripting/global_hooks.h"
 #include "playerman/player.h"
 #include "pilotfile/pilotfile.h"
 #include "popup/popup.h"
@@ -2635,10 +2636,11 @@ int check_control(int id, int key)
 		// If we reach this point, then it means this is a continuous control
 		// which has just been released
 
-		if (Script_system.IsActiveAction(CHA_ONACTIONSTOPPED)) {
-			Script_system.SetHookVar("Action", 's', Control_config[id].text);
-			Script_system.RunCondition(CHA_ONACTIONSTOPPED, nullptr, nullptr, id);
-			Script_system.RemHookVar("Action");
+		if (scripting::hooks::OnActionStopped->isActive()) {
+			scripting::hooks::OnActionStopped->run(scripting::hooks::ControlActionConditions{ id },
+				scripting::hook_param_list(
+					scripting::hook_param("Action", 's', Control_config[id].text)
+				));
 		}
 
 		Control_config[id].continuous_ongoing = false;
@@ -2824,9 +2826,12 @@ void control_used(int id)
 	// and we don't want to run the hooks more than once per frame
 	if (!Control_config[id].digital_used.isValid() || timestamp_compare(Control_config[id].digital_used, Last_frame_timestamp) < 0) {
 		if (!Control_config[id].continuous_ongoing) {
-			Script_system.SetHookVar("Action", 's', Control_config[id].text);
-			Script_system.RunCondition(CHA_ONACTION, nullptr, nullptr, id);
-			Script_system.RemHookVar("Action");
+			if (scripting::hooks::OnAction->isActive()) {
+				scripting::hooks::OnAction->run(scripting::hooks::ControlActionConditions{ id },
+					scripting::hook_param_list(
+						scripting::hook_param("Action", 's', Control_config[id].text)
+					));
+			}
 
 			if (Control_config[id].type == CC_TYPE_CONTINUOUS)
 				Control_config[id].continuous_ongoing = true;

@@ -464,13 +464,14 @@ static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, f
 
 		bool ship_override = false, weapon_override = false;
 
-		if (Script_system.IsActiveAction(CHA_COLLIDEWEAPON)) {
-			Script_system.SetHookObjects(4, "Self", ship_objp, "Object", weapon_objp, "Ship", ship_objp, "Weapon", weapon_objp);
-			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(mc.hit_point_world));
-			ship_override = Script_system.IsConditionOverride(CHA_COLLIDEWEAPON, ship_objp, weapon_objp);
-			Script_system.RemHookVars({ "Self", "Object", "Ship", "Weapon", "Hitpos" });
+		if (scripting::hooks::OnWeaponCollision->isActive()) {
+			ship_override = scripting::hooks::OnWeaponCollision->isOverride(scripting::hooks::CollisionConditions{ {ship_objp, weapon_objp} },
+				scripting::hook_param_list(scripting::hook_param("Self", 'o', ship_objp),
+					scripting::hook_param("Object", 'o', weapon_objp),
+					scripting::hook_param("Ship", 'o', ship_objp),
+					scripting::hook_param("Weapon", 'o', weapon_objp),
+					scripting::hook_param("Hitpos", 'o', mc.hit_point_world)));
 		}
-
 		if (scripting::hooks::OnShipCollision->isActive()) {
 			weapon_override = scripting::hooks::OnShipCollision->isOverride(scripting::hooks::CollisionConditions{{ship_objp, weapon_objp}},
 				scripting::hook_param_list(scripting::hook_param("Self", 'o', weapon_objp),
@@ -489,16 +490,15 @@ static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, f
 			ship_weapon_do_hit_stuff(ship_objp, weapon_objp, &mc.hit_point_world, &mc.hit_point, quadrant_num, mc.hit_submodel, mc.hit_normal);
 		}
 
-		if (Script_system.IsActiveAction(CHA_COLLIDEWEAPON) && !(weapon_override && !ship_override))
-		{
-			Script_system.SetHookObjects(4, "Self", ship_objp, "Object", weapon_objp, "Ship", ship_objp, "Weapon", weapon_objp);
-			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(mc.hit_point_world));
-			Script_system.RunCondition(CHA_COLLIDEWEAPON, ship_objp, weapon_objp);
-			Script_system.RemHookVars({ "Self", "Object", "Ship", "Weapon", "Hitpos" });
+		if (scripting::hooks::OnWeaponCollision->isActive() && !(weapon_override && !ship_override)) {
+			scripting::hooks::OnWeaponCollision->run(scripting::hooks::CollisionConditions{ {ship_objp, weapon_objp} },
+				scripting::hook_param_list(scripting::hook_param("Self", 'o', ship_objp),
+					scripting::hook_param("Object", 'o', weapon_objp),
+					scripting::hook_param("Ship", 'o', ship_objp),
+					scripting::hook_param("Weapon", 'o', weapon_objp),
+					scripting::hook_param("Hitpos", 'o', mc.hit_point_world)));
 		}
-
-		if (scripting::hooks::OnShipCollision->isActive() && ((weapon_override && !ship_override) || (!weapon_override && !ship_override)))
-		{
+		if (scripting::hooks::OnShipCollision->isActive() && ((weapon_override && !ship_override) || (!weapon_override && !ship_override))) {
 			scripting::hooks::OnShipCollision->run(scripting::hooks::CollisionConditions{{ship_objp, weapon_objp}},
 				scripting::hook_param_list(scripting::hook_param("Self", 'o', weapon_objp),
 					scripting::hook_param("Object", 'o', ship_objp),

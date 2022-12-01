@@ -1389,18 +1389,14 @@ void game_post_level_init()
 
 	mission_process_alt_types();
 
-	// m!m Make hv.Player available in "On Mission Start" hook
-	if(Player_obj)
-		Script_system.SetHookObject("Player", Player_obj);
-
-	// HACK: That scripting hook should be in mission so GM_IN_MISSION has to be set
-	Game_mode |= GM_IN_MISSION;
-	Script_system.RunCondition(CHA_MISSIONSTART);
-	Game_mode &= ~GM_IN_MISSION;
-
-
-	if (Player_obj)
-		Script_system.RemHookVar("Player");
+	if (scripting::hooks::OnMissionStart->isActive()) {
+		// HACK: That scripting hook should be in mission so GM_IN_MISSION has to be sety
+		Game_mode |= GM_IN_MISSION;
+		scripting::hooks::OnMissionStart->run(scripting::hook_param_list(
+			scripting::hook_param("Player", 'o', Player_obj, Player_obj != nullptr)
+		));
+		Game_mode &= ~GM_IN_MISSION;
+	}
 }
 
 /**
@@ -4079,10 +4075,13 @@ void game_frame(bool paused)
 			}
 
 			Scripting_didnt_draw_hud = 1;
-			Script_system.SetHookObject("Self", Viewer_obj);
-			Script_system.SetHookObject("Player", Player_obj);
-			if(Script_system.IsConditionOverride(CHA_HUDDRAW, Viewer_obj)) {
-				Scripting_didnt_draw_hud = 0;
+			auto scripting_param_list = scripting::hook_param_list(
+				scripting::hook_param("Self", 'o', Viewer_obj),
+				scripting::hook_param("Player", 'o', Player_obj)
+			);
+
+			if (scripting::hooks::OnHudDraw->isActive()) {
+				Scripting_didnt_draw_hud = scripting::hooks::OnHudDraw->isOverride(scripting::hooks::ObjectDrawConditions{ Viewer_obj }, scripting_param_list) ? 0 : 1;
 			}
 
 			if(Scripting_didnt_draw_hud) {
@@ -4101,10 +4100,10 @@ void game_frame(bool paused)
 			{
 				TRACE_SCOPE(tracing::RenderHUDHook);
 
-				Script_system.RunCondition(CHA_HUDDRAW, Viewer_obj);
+				if (scripting::hooks::OnHudDraw->isActive()) {
+					scripting::hooks::OnHudDraw->run(scripting::hooks::ObjectDrawConditions{ Viewer_obj }, scripting_param_list);
+				}
 			}
-			Script_system.RemHookVar("Self");
-			Script_system.RemHookVar("Player");
 			
 			// check to see if we should display the death died popup
 			if(Game_mode & GM_DEAD_BLEW_UP){				
@@ -5573,13 +5572,13 @@ void game_enter_state( int old_state, int new_state )
 
 	using namespace scripting::api;
 
-	Script_system.SetHookVar("OldState", 'o', l_GameState.Set(gamestate_h(old_state)));
-	Script_system.SetHookVar("NewState", 'o', l_GameState.Set(gamestate_h(new_state)));
+	auto script_param_list = scripting::hook_param_list(
+		scripting::hook_param("OldState", 'o', l_GameState.Set(gamestate_h(old_state))),
+		scripting::hook_param("NewState", 'o', l_GameState.Set(gamestate_h(new_state))));
 
-	if(Script_system.IsConditionOverride(CHA_ONSTATESTART, nullptr, nullptr, old_state)) {
-		Script_system.RunCondition(CHA_ONSTATESTART, nullptr, nullptr, old_state);
-		Script_system.RemHookVars({"OldState", "NewState"});
-		return;
+	if(scripting::hooks::OnStateStart->isActive()) {
+		if(scripting::hooks::OnStateStart->isOverride(script_param_list))
+			return;
 	}
 
 	switch (new_state) {
@@ -6105,8 +6104,10 @@ void mouse_force_pos(int x, int y);
 	} // end switch
 
 	//WMC - now do user scripting stuff
-	Script_system.RunCondition(CHA_ONSTATESTART, nullptr, nullptr, old_state);
-	Script_system.RemHookVars({"OldState", "NewState"});
+	if (scripting::hooks::OnStateStart->isActive()) {
+		if (scripting::hooks::OnStateStart->run(script_param_list))
+			return;
+	}
 }
 
 // do stuff that may need to be done regardless of state
@@ -7483,7 +7484,11 @@ int game_hacked_data()
 
 void game_title_screen_display()
 {
-	bool condhook_override = Script_system.IsConditionOverride(CHA_SPLASHSCREEN);
+	bool condhook_override = false;
+	if (scripting::hooks::OnSplashScreen->isActive()) {
+		condhook_override = scripting::hooks::OnSplashScreen->isOverride();
+	}
+
 	mprintf(("SCRIPTING: Splash screen overrides checked\n"));
 	if(!condhook_override)
 	{
@@ -7517,7 +7522,9 @@ void game_title_screen_display()
 		}
 	}
 
-	Script_system.RunCondition(CHA_SPLASHSCREEN);
+	if (scripting::hooks::OnSplashScreen->isActive()) {
+		condhook_override = scripting::hooks::OnSplashScreen->run();
+	}
 
 	mprintf(("SCRIPTING: Splash screen conditional hook has been run\n"));
 

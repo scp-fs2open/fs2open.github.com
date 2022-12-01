@@ -208,7 +208,7 @@ int Head_coords[GR_NUM_RESOLUTIONS][2] = {
 	}
 };
 
-const auto OnMessageReceivedHook = scripting::Hook::Factory(
+const auto OnMessageReceivedHook = scripting::Hook<>::Factory(
 	"On Message Received",
 	"Invoked when a mission sends a message.",
 	{

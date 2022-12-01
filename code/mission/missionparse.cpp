@@ -63,6 +63,7 @@
 #include "parse/parselo.h"
 #include "parse/sexp_container.h"
 #include "scripting/hook_api.h"
+#include "scripting/hook_conditions.h"
 #include "scripting/scripting.h"
 #include "species_defs/species_defs.h"
 #include "playerman/player.h"
@@ -412,14 +413,14 @@ void convertFSMtoFS2();
 MONITOR(NumShipArrivals)
 MONITOR(NumShipDepartures)
 
-const std::shared_ptr<scripting::Hook> OnDepartureStartedHook = scripting::Hook::Factory(
+const std::shared_ptr<scripting::Hook<scripting::hooks::ShipDepartConditions>> OnDepartureStartedHook = scripting::Hook<scripting::hooks::ShipDepartConditions>::Factory(
 	"On Departure Started", "Called when a ship starts the departure process.",
 	{
 		{"Self", "ship", "An alias for Ship."},
 		{"Ship", "ship", "The ship that has begun the departure process."},
 	});
 
- const std::shared_ptr<scripting::Hook> OnLoadoutAboutToParseHook = scripting::Hook::Factory("On Loadout About To Parse",
+ const std::shared_ptr<scripting::Hook<>> OnLoadoutAboutToParseHook = scripting::Hook<>::Factory("On Loadout About To Parse",
 	"Called during mission load just before parsing the team loadout.",{});
 
 // Goober5000
@@ -7583,7 +7584,8 @@ int mission_do_departure(object *objp, bool goal_is_to_warp)
 		// add scripting hook for 'On Departure Started' --wookieejedi
 		// hook is placed at the beginning of this function to allow the scripter to
 		// actually have access to the ship's departure decisions before they are all executed
-		OnDepartureStartedHook->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp), scripting::hook_param("Ship", 'o', objp)));
+		OnDepartureStartedHook->run(scripting::hooks::ShipDepartConditions{ shipp },
+			scripting::hook_param_list(scripting::hook_param("Self", 'o', objp), scripting::hook_param("Ship", 'o', objp)));
 	}
 
 	// abort rearm, because if we entered this function we're either going to depart via hyperspace, depart via bay,
