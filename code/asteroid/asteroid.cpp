@@ -746,7 +746,7 @@ void asteroid_create_debris_field(int num_asteroids, int asteroid_speed, int deb
 	vm_vec_rand_vec_quick(&Asteroid_field.vel);
 	vm_vec_scale(&Asteroid_field.vel, (float)asteroid_speed);
 	Asteroid_field.speed = (float)asteroid_speed;
-	Asteroid_field.debris_genre = DG_SHIP;
+	Asteroid_field.debris_genre = DG_DEBRIS;
 
 	Asteroid_field.field_debris_type[0] = -1;
 	Asteroid_field.field_debris_type[1] = -1;
@@ -2236,7 +2236,7 @@ static void asteroid_parse_section()
 	}
 
 	if (optional_string("$Gravity Const:")) {
-		stuff_float(&asip->gravity_const);
+		stuff_float(&asteroid_p->gravity_const);
 	}
 }
 
