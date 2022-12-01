@@ -338,12 +338,7 @@ void parseDecalReference(creation_info& dest_info, bool is_new_entry) {
 	}
 
 	if (required_string_if_new("+Radius:", is_new_entry)) {
-		stuff_float(&dest_info.radius);
-
-		if (dest_info.radius <= 0.0f) {
-			error_display(0, "Invalid radius of %f! Must be a positive number.", dest_info.radius);
-			dest_info.radius = 1.0f;
-		}
+		dest_info.radius = util::parseUniformRange(0.0001f);
 	}
 
 	if (required_string_if_new("+Lifetime:", is_new_entry)) {
@@ -353,6 +348,10 @@ void parseDecalReference(creation_info& dest_info, bool is_new_entry) {
 			// Require at least a small lifetime so that the calculations don't have to deal with div-by-zero
 			dest_info.lifetime = util::parseUniformRange(0.0001f);
 		}
+	}
+
+	if (optional_string("+Use Random Rotation:")) {
+		stuff_boolean(&dest_info.random_rotation);
 	}
 }
 
@@ -530,9 +529,10 @@ void addDecal(creation_info& info, object* host, int submodel, const vec3d& loca
 	newDecal.position = local_pos;
 	newDecal.orientation = local_orient;
 	if (info.width < 0.0f || info.height < 0.0f) {
-		newDecal.scale.xyz.x = info.radius;
-		newDecal.scale.xyz.y = info.radius;
-		newDecal.scale.xyz.z = info.radius;
+		float radius = info.radius.next();
+		newDecal.scale.xyz.x = radius;
+		newDecal.scale.xyz.y = radius;
+		newDecal.scale.xyz.z = radius;
 	} else {
 		newDecal.scale.xyz.x = info.width;
 		newDecal.scale.xyz.y = info.height;
