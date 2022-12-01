@@ -186,7 +186,7 @@ void parse_decals_table(const char* filename) {
 	}
 
 	if (!gr_is_capable(CAPABILITY_DEFERRED_LIGHTING)) {
-		// we need deferred lighting
+		// We need deferred lighting
 		Decal_system_active = false;
 		mprintf(("Note: Decal system has been disabled due to lack of deferred lighting.\n"));
 	}
@@ -196,7 +196,7 @@ void parse_decals_table(const char* filename) {
 		mprintf(("Note: Decal system has been disabled due to lack of normal mapping.\n"));
 	}
 	if (!gr_is_capable(CAPABILITY_SEPARATE_BLEND_FUNCTIONS)) {
-		// WWe need separate blending functions for different color buffers
+		// We need separate blending functions for different color buffers
 		Decal_system_active = false;
 		mprintf(("Note: Decal system has been disabled due to lack of separate color buffer blend functions.\n"));
 	}
@@ -436,7 +436,7 @@ void renderAll() {
 	}
 
 	// Clear out any invalid decals
-	for (auto iter = active_decals.begin(); iter != active_decals.end(); ++iter) {
+	for (auto iter = active_decals.begin(); iter != active_decals.end();) {
 		if (!iter->isValid()) {
 			// if we're sitting on the very last element, popping-back will invalidate the iterator!
 			if (iter + 1 == active_decals.end()) {
@@ -448,6 +448,10 @@ void renderAll() {
 			active_decals.pop_back();
 			continue;
 		}
+
+		// next decal, only increment the iterator if we found a valid value so nothing gets skipped
+		// otherwise we may skip a decal which can then get through to the draw_list loop while being invalid
+		++iter;
 	}
 
 	if (active_decals.empty()) {
@@ -458,13 +462,14 @@ void renderAll() {
 
 	graphics::decal_draw_list draw_list(active_decals.size());
 	for (auto& decal : active_decals) {
+
+		Assertion(decal.definition_handle >= 0 && decal.definition_handle < (int)DecalDefinitions.size(),
+			"Invalid decal handle detected!");
+		auto& decalDef = DecalDefinitions[decal.definition_handle];
+
 		int diffuse_bm = -1;
 		int glow_bm = -1;
 		int normal_bm = -1;
-
-		Assertion(decal.definition_handle >= 0 && decal.definition_handle < (int) DecalDefinitions.size(),
-				  "Invalid decal handle detected!");
-		auto& decalDef = DecalDefinitions[decal.definition_handle];
 
 		auto decal_time = mission_time - decal.creation_time;
 		auto progress = decal_time / decal.lifetime;
