@@ -2026,6 +2026,52 @@ int get_asteroid_position(const char* name)
 	return -1;
 }
 
+// changes the name to "[species] Debris" if it had a name like "[species] debris #"
+void setup_display_name(asteroid_info* asip)
+{
+
+	SCP_string name = asip->name;
+	size_t split = std::string::npos;
+
+	for (species_info species : Species_info) {
+		if (name.compare(0, strlen(species.species_name), species.species_name) == 0) {
+			split = strlen(species.species_name);
+			break;
+		}
+	}
+
+	if (split == std::string::npos)
+		return;
+
+	SCP_string remaining_name = name.substr(split + 1, name.length());
+
+	split = remaining_name.find(' ');
+
+	if (split == std::string::npos)
+		return;
+
+	SCP_string debris = remaining_name.substr(0, split);
+	SCP_string num = remaining_name.substr(split + 1, remaining_name.length());
+
+	if (stricmp(debris.c_str(), "Debris") != 0)
+		return;
+
+	if (num.empty() ||
+		std::find_if(num.begin(), num.end(), [](char c) { return !std::isdigit(c, SCP_default_locale); }) != num.end())
+		return;
+
+	// make sure this asteroid would correspond the 'species section' of the old style retail asteroids
+	if (Asteroid_info.size() < NUM_DEBRIS_SIZES + Species_info.size() * NUM_DEBRIS_SIZES &&
+		Asteroid_info.size() >= NUM_DEBRIS_SIZES) {
+		int idx = (int)(Asteroid_info.size()) / NUM_DEBRIS_SIZES - 1;
+		char newName[NAME_LENGTH];
+		strcpy_s(newName, Species_info[idx].species_name);
+		strcat(newName, " ");
+		strcat(newName, XSTR("debris", 348));
+		asip->display_name = newName;
+	}
+}
+
 /**
  * Read in a single asteroid section from asteroid.tbl
  */
@@ -2034,14 +2080,30 @@ static void asteroid_parse_section(asteroid_info *asip)
 	required_string("$Name:");
 	stuff_string(asip->name, F_NAME, NAME_LENGTH);
 
+	setup_display_name(asip);
+
+	if (optional_string("$Display Name:")) {
+		stuff_string(asip->display_name, F_NAME);
+	}
+
+	if (optional_string("$Type:")) {
+		stuff_int(&asip->type);
+	}
+
 	required_string( "$POF file1:" );
 	stuff_string(asip->pof_files[0], F_NAME, MAX_FILENAME_LEN);
 
-	required_string( "$POF file2:" );
-	stuff_string(asip->pof_files[1], F_NAME, MAX_FILENAME_LEN);
+	if ((stristr(asip->name, "Asteroid") != NULL) || (asip->type >= 0)) {
+		required_string("$POF file2:");
+		stuff_string(asip->pof_files[1], F_NAME, MAX_FILENAME_LEN);
+	} else if (optional_string("$POF file2:")) {
+		stuff_string(asip->pof_files[1], F_NAME, MAX_FILENAME_LEN);
+	}
 
-	if ( (stristr(asip->name, "Asteroid") != NULL) ) {
+	if ( (stristr(asip->name, "Asteroid") != NULL) || (asip->type >= 0) ) {
 		required_string( "$POF file3:" );
+		stuff_string(asip->pof_files[2], F_NAME, MAX_FILENAME_LEN);
+	} else if (optional_string("$POF file3:")) {
 		stuff_string(asip->pof_files[2], F_NAME, MAX_FILENAME_LEN);
 	}
 
@@ -2136,50 +2198,6 @@ static void asteroid_parse_section(asteroid_info *asip)
 	}
 }
 
-// changes the name to "[species] Debris" if it had a name like "[species] debris #"
-/*void maybe_change_asteroid_name(asteroid_info* asip)
-{
-
-	SCP_string name = asip->name;
-	size_t split = std::string::npos;
-
-	for (species_info species : Species_info) {
-		if (name.compare(0, strlen(species.species_name), species.species_name) == 0) {
-			split = strlen(species.species_name);
-			break;
-		}
-	}
-
-	if (split == std::string::npos)
-		return;
-
-	SCP_string remaining_name = name.substr(split + 1, name.length());
-
-	split = remaining_name.find(' ');
-
-	if (split == std::string::npos)
-		return;
-
-	SCP_string debris = remaining_name.substr(0, split);
-	SCP_string num = remaining_name.substr(split + 1, remaining_name.length());
-
-	if (stricmp(debris.c_str(), "Debris") != 0)
-		return;
-
-	if (num.empty() || std::find_if(num.begin(), num.end(), [](char c) {
-	                       return !std::isdigit(c, SCP_default_locale);
-	                   }) != num.end())
-		return;
-
-	// make sure this asteroid would correspond the 'species section' of the old style retail asteroids
-	if (Asteroid_info.size() < NUM_DEBRIS_SIZES + Species_info.size() * NUM_DEBRIS_SIZES && Asteroid_info.size() >= NUM_DEBRIS_SIZES) {
-		int idx = (int)(Asteroid_info.size()) / NUM_DEBRIS_SIZES - 1;
-		strcpy_s(asip->name, Species_info[idx].species_name);
-		strcat(asip->name, " ");
-		strcat(asip->name, XSTR("debris", 348));
-	}
-}*/
-
 /**
 Read in data from asteroid.tbl into Asteroid_info[] array.
 
@@ -2198,6 +2216,8 @@ that is being protected.
 static void asteroid_parse_tbl()
 {
 	char impact_ani_file[MAX_FILENAME_LEN];
+
+	SCP_vector<asteroid_info> asteroid_list;
 	
 	try
 	{
@@ -2206,12 +2226,6 @@ static void asteroid_parse_tbl()
 
 		required_string("#Asteroid Types");
 
-		size_t tally = 0;
-
-#ifndef NDEBUG
-		SCP_vector<SCP_string> parsed_asteroids;
-#endif
-
 		// parse and tally each asteroid
 		while (required_string_either("#End", "$Name:"))
 		{
@@ -2219,41 +2233,48 @@ static void asteroid_parse_tbl()
 
 			asteroid_parse_section(&new_asteroid);
 
-			// I really don't think this is needed and actually causes a bug in FRED
-			// making it impossible to select some debris types-Mjn
-			//maybe_change_asteroid_name(&new_asteroid);
-
-#ifndef NDEBUG
-			SCP_string msg;
-			msg.append("Parsing asteroid: '");
-			msg.append(new_asteroid.name);
-			msg.append("' as a '");
-			msg.append((tally >= NUM_DEBRIS_SIZES) ? "generic" : "special");
-			msg.append("'");
-			switch (tally % NUM_DEBRIS_SIZES) {
-			case ASTEROID_TYPE_SMALL:
-				msg.append(" small\n");
-				break;
-			case ASTEROID_TYPE_MEDIUM:
-				msg.append(" medium\n");
-				break;
-			case ASTEROID_TYPE_LARGE:
-				msg.append(" large\n");
-				break;
-			default:
-				Error(LOCATION, "Get a coder! Math has broken!\n"
-					"Important numbers:\n"
-					"\ttally: " SIZE_T_ARG "\n"
-					"\tNUM_DEBRIS_SIZES: %d\n",
-					tally, NUM_DEBRIS_SIZES
-					);
-				msg.append(" unknown\n");
-			}
-			parsed_asteroids.push_back(msg);
-#endif
-			Asteroid_info.push_back(new_asteroid);
-			tally++;
+			asteroid_list.push_back(new_asteroid);
 		}
+		mprintf(("ASTEROID begining setting of types\n"));
+		
+		//Set the three asteroid sizes
+		for (int i = 0; i < NUM_DEBRIS_SIZES; i++) {
+
+			bool found = false;
+
+			char* debris_size[NUM_DEBRIS_SIZES] = {"Small", "Medium", "Large"};
+
+			for (int j = 0; j < (int)asteroid_list.size(); j++) {
+				if (asteroid_list[j].type == i) {
+					mprintf(("%s asteroid parsed with name %s\n", debris_size[i], asteroid_list[j].name));
+					Asteroid_info.push_back(asteroid_list[j]);
+					asteroid_list.erase(asteroid_list.begin() + j);
+					found = true;
+					break;
+				}
+			}
+
+			if (found)
+				continue;
+
+			mprintf(("%s asteroid not found. Using asteroid %s\n", debris_size[i], asteroid_list[0].name));
+			Asteroid_info.push_back(asteroid_list[0]);
+			asteroid_list.erase(asteroid_list.begin());
+			continue;
+		}
+
+		for (int i = 0; i < (int)asteroid_list.size(); i++) {
+			if (asteroid_list[i].type < 0) {
+				Asteroid_info.push_back(asteroid_list[i]);
+			} else {
+				error_display(0,
+					"Additional asteroid type found with name %s. Setting as debris type instead!",
+					asteroid_list[i].name);
+				asteroid_list[i].type = -1;
+				Asteroid_info.push_back(asteroid_list[i]);
+			}
+		}
+
 		required_string("#End");
 
 		Asteroid_impact_explosion_ani = -1;
