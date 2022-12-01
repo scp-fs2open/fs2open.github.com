@@ -1,6 +1,8 @@
 
 #include "global_hooks.h"
 
+#include "hook_conditions.h"
+
 namespace scripting {
 namespace hooks {
 
