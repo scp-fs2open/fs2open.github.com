@@ -760,9 +760,12 @@ void debris_create_set_velocity(debris *db, ship *source_shipp, vec3d *exp_cente
 void debris_create_fire_hook(object *obj, object *source_obj)
 {
 	if (scripting::hooks::OnDebrisCreated->isActive()) {
-		scripting::hooks::OnDebrisCreated->run(scripting::hook_param_list(
-			scripting::hook_param("Debris", 'o', obj),
-			scripting::hook_param("Source", 'o', source_obj)));
+		scripting::hooks::ShipSourceConditions conditions;
+		conditions.source_shipp = (source_obj != nullptr && source_obj->type == OBJ_SHIP) ? &Ships[source_obj->instance] : nullptr;
+		scripting::hooks::OnDebrisCreated->run(std::move(conditions),
+			scripting::hook_param_list(
+				scripting::hook_param("Debris", 'o', obj),
+				scripting::hook_param("Source", 'o', source_obj)));
 	}
 }
 

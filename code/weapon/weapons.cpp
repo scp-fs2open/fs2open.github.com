@@ -7197,10 +7197,10 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 
 	if (scripting::hooks::OnMissileDeathStarted->isActive() && wip->subtype == WP_MISSILE) {
 		// analagous to On Ship Death Started
-		scripting::hooks::OnMissileDeathStarted->run(scripting::hook_param_list(
+		scripting::hooks::OnMissileDeathStarted->run(scripting::hooks::WeaponDeathConditions{ wp },
+			scripting::hook_param_list(
 			scripting::hook_param("Weapon", 'o', weapon_obj),
-			scripting::hook_param("Object", 'o', other_obj)),
-			weapon_obj);
+			scripting::hook_param("Object", 'o', other_obj)));
 	}
 
 	// check if the weapon actually hit the intended target
@@ -7384,10 +7384,10 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 	}
 
 	if (scripting::hooks::OnMissileDeath->isActive() && wip->subtype == WP_MISSILE) {
-		scripting::hooks::OnMissileDeath->run(scripting::hook_param_list(
+		scripting::hooks::OnMissileDeath->run(scripting::hooks::WeaponDeathConditions{ wp },
+			scripting::hook_param_list(
 			scripting::hook_param("Weapon", 'o', weapon_obj),
-			scripting::hook_param("Object", 'o', other_obj)),
-			weapon_obj);
+			scripting::hook_param("Object", 'o', other_obj)));
 	}
 
     weapon_obj->flags.set(Object::Object_Flags::Should_be_dead);

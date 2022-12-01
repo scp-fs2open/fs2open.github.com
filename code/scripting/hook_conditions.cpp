@@ -54,19 +54,19 @@ namespace hooks {
 // ---- Hook Condition System Utility and Parsing methods ----
 
 static bool conditionCompareShip(const ship* shipp, const SCP_string& value) {
-	return stricmp(shipp->ship_name, value.c_str()) == 0;
+	return shipp != nullptr && stricmp(shipp->ship_name, value.c_str()) == 0;
 }
 
 static bool conditionCompareShipType(const ship* shipp, const int& value) {
-	return Ship_info[shipp->ship_info_index].class_type == value;
+	return shipp != nullptr && Ship_info[shipp->ship_info_index].class_type == value;
 }
 
 static bool conditionCompareShipClass(const ship* shipp, const int& value) {
-	return shipp->ship_info_index == value;
+	return shipp != nullptr && shipp->ship_info_index == value;
 }
 
 static bool conditionCompareWeaponClass(const weapon* wep, const int& value) {
-	return wep->weapon_info_index == value;
+	return wep != nullptr && wep->weapon_info_index == value;
 }
 
 static bool conditionIsObjecttype(const object* objp, const int& value) {

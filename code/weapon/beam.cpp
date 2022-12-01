@@ -3114,13 +3114,12 @@ int beam_collide_ship(obj_pair *pair)
 			}
 
 			if (scripting::hooks::OnShipCollision->isActive()) {
-				weapon_override = scripting::hooks::OnShipCollision->isOverride(
+				weapon_override = scripting::hooks::OnShipCollision->isOverride(scripting::hooks::CollisionConditions{{ship_objp, weapon_objp}},
 					scripting::hook_param_list(scripting::hook_param("Self", 'o', weapon_objp),
 						scripting::hook_param("Object", 'o', ship_objp),
 						scripting::hook_param("Ship", 'o', ship_objp),
 						scripting::hook_param("Beam", 'o', weapon_objp),
-						scripting::hook_param("Hitpos", 'o', mc_array[i]->hit_point_world)),
-					weapon_objp, ship_objp);
+						scripting::hook_param("Hitpos", 'o', mc_array[i]->hit_point_world)));
 			}
 
 			if (!ship_override && !weapon_override)
@@ -3140,13 +3139,12 @@ int beam_collide_ship(obj_pair *pair)
 
 			if (scripting::hooks::OnShipCollision->isActive() && ((weapon_override && !ship_override) || (!weapon_override && !ship_override)))
 			{
-				scripting::hooks::OnShipCollision->run(
+				scripting::hooks::OnShipCollision->run(scripting::hooks::CollisionConditions{{ship_objp, weapon_objp}},
 					scripting::hook_param_list(scripting::hook_param("Self", 'o', weapon_objp),
 						scripting::hook_param("Object", 'o', ship_objp),
 						scripting::hook_param("Ship", 'o', ship_objp),
 						scripting::hook_param("Beam", 'o', weapon_objp),
-						scripting::hook_param("Hitpos", 'o', mc_array[i]->hit_point_world)),
-					weapon_objp, ship_objp);
+						scripting::hook_param("Hitpos", 'o', mc_array[i]->hit_point_world)));
 			}
 		}
 	}

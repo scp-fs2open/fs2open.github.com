@@ -8167,11 +8167,15 @@ void ship_destroy_instantly(object *ship_objp, bool with_debris)
 	Assert(ship_objp->type == OBJ_SHIP);
 	Assert(!(ship_objp == Player_obj));
 
+	ship* shipp = &Ships[ship_objp->instance];
+
 	if (scripting::hooks::OnShipDeathStarted->isActive()) {
 		// add scripting hook for 'On Ship Death Started' -- Goober5000
 		// hook is placed at the beginning of this function to allow the scripter to
 		// actually have access to the ship before any death routines (such as mission logging) are executed
-		scripting::hooks::OnShipDeathStarted->run(scripting::hook_param_list(scripting::hook_param("Ship", 'o', ship_objp)));
+		;
+		scripting::hooks::OnShipDeathStarted->run(scripting::hooks::ShipDeathConditions{ shipp },
+			scripting::hook_param_list(scripting::hook_param("Ship", 'o', ship_objp)));
 	}
 
 	// undocking and death preparation
@@ -8181,18 +8185,18 @@ void ship_destroy_instantly(object *ship_objp, bool with_debris)
 	if (with_debris)
 		shipfx_blow_up_model(ship_objp, 0, 0, &ship_objp->pos);
 
-	mission_log_add_entry(LOG_SELF_DESTRUCTED, Ships[ship_objp->instance].ship_name, NULL );
+	mission_log_add_entry(LOG_SELF_DESTRUCTED, shipp->ship_name, NULL );
 	
 	// scripting stuff
 	if (scripting::hooks::OnDeath->isActive()) {
-		scripting::hooks::OnDeath->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', ship_objp),
-			scripting::hook_param("Ship", 'o', ship_objp)),
-			ship_objp);
+		scripting::hooks::OnDeath->run(scripting::hooks::ObjectDeathConditions{ ship_objp },
+			scripting::hook_param_list(scripting::hook_param("Self", 'o', ship_objp),
+			scripting::hook_param("Ship", 'o', ship_objp)));
 	}
 	if (scripting::hooks::OnShipDeath->isActive()) {
-		scripting::hooks::OnShipDeath->run(scripting::hook_param_list(
-			scripting::hook_param("Ship", 'o', ship_objp)),
-			ship_objp);
+		scripting::hooks::OnShipDeath->run(scripting::hooks::ShipDeathConditions{ shipp },
+			scripting::hook_param_list(
+			scripting::hook_param("Ship", 'o', ship_objp)));
 	}
 
 	ship_objp->flags.set(Object::Object_Flags::Should_be_dead);
