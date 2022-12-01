@@ -658,6 +658,136 @@ void asteroid_create_all()
 	}
 }
 
+// instantly deletes all asteroids in a mission before moving on.
+// Uses obj_delete_all_that_should_be_dead() so this method has a side effect
+// of also deleting non-asteroid objects marked as dead in the same frame. Usually this is
+// desired but it's worth knowing ahead of time. -Mjn
+void remove_all_asteroids()
+{
+	for (int i = 0; i < MAX_ASTEROIDS; i++) {
+		if (Asteroids[i].flags & AF_USED) {
+			Asteroids[i].flags &= ~AF_USED;
+			Assert(Asteroids[i].objnum >= 0 && Asteroids[i].objnum < MAX_OBJECTS);
+			Objects[Asteroids[i].objnum].flags.set(Object::Object_Flags::Should_be_dead);
+		}
+	}
+	// This feels hackish, but we need to make sure all the asteroids are actually gone before we continue-Mjn
+	obj_delete_all_that_should_be_dead();
+}
+
+// will replace any existing asteroid or debris field with an asteroid field
+void asteroid_create_asteroid_field(int num_asteroids, int field_type, int asteroid_speed, bool brown, bool blue, bool orange, vec3d o_min, vec3d o_max, bool inner_box, vec3d i_min, vec3d i_max, SCP_vector<SCP_string> targets)
+{
+	remove_all_asteroids();
+
+	Asteroid_field.num_initial_asteroids = num_asteroids;
+
+	if (field_type == 0) {
+		Asteroid_field.field_type = FT_PASSIVE;
+	} else {
+		Asteroid_field.field_type = FT_ACTIVE;
+	}
+	vm_vec_rand_vec_quick(&Asteroid_field.vel);
+	vm_vec_scale(&Asteroid_field.vel, (float)asteroid_speed);
+	Asteroid_field.speed = (float)asteroid_speed;
+	Asteroid_field.debris_genre = DG_ASTEROID;
+
+	Asteroid_field.field_debris_type[0] = -1;
+	Asteroid_field.field_debris_type[1] = -1;
+	Asteroid_field.field_debris_type[2] = -1;
+
+	int count = 0;
+	if (brown) {
+		Asteroid_field.field_debris_type[0] = 1;
+		count++;
+	}
+	if (blue) {
+		Asteroid_field.field_debris_type[1] = 1;
+		count++;
+	}
+	if (orange) {
+		Asteroid_field.field_debris_type[2] = 1;
+		count++;
+	}
+
+	Asteroid_field.num_used_field_debris_types = count;
+
+	Asteroid_field.min_bound = o_min;
+	Asteroid_field.max_bound = o_max;
+
+	vec3d a_rad;
+	vm_vec_sub(&a_rad, &Asteroid_field.max_bound, &Asteroid_field.min_bound);
+	vm_vec_scale(&a_rad, 0.5f);
+	float b_rad = vm_vec_mag(&a_rad);
+
+	Asteroid_field.bound_rad = MAX(3000.0f, b_rad);
+
+	if (inner_box) {
+		Asteroid_field.has_inner_bound = true;
+		Asteroid_field.inner_min_bound = i_min;
+		Asteroid_field.inner_max_bound = i_max;
+	}
+
+	Asteroid_field.target_names = targets;
+
+	asteroid_create_all();
+}
+
+// will replace any existing asteroid or debris field with a debris field
+void asteroid_create_debris_field(int num_asteroids, int asteroid_speed, int debris1, int debris2, int debris3, vec3d o_min, vec3d o_max)
+{
+	remove_all_asteroids();
+
+	Asteroid_field.num_initial_asteroids = num_asteroids;
+
+	Asteroid_field.field_type = FT_PASSIVE;
+
+	vm_vec_rand_vec_quick(&Asteroid_field.vel);
+	vm_vec_scale(&Asteroid_field.vel, (float)asteroid_speed);
+	Asteroid_field.speed = (float)asteroid_speed;
+	Asteroid_field.debris_genre = DG_SHIP;
+
+	Asteroid_field.field_debris_type[0] = -1;
+	Asteroid_field.field_debris_type[1] = -1;
+	Asteroid_field.field_debris_type[2] = -1;
+
+	int count = 0;
+	for (int i = 0; i < MAX_ACTIVE_DEBRIS_TYPES; i++) {
+		if (debris1 >= 0) {
+			Asteroid_field.field_debris_type[i] = debris1;
+			debris1 = -1;
+			count++;
+			continue;
+		}
+		if (debris2 >= 0) {
+			Asteroid_field.field_debris_type[i] = debris2;
+			debris2 = -1;
+			count++;
+			continue;
+		}
+		if (debris3 >= 0) {
+			Asteroid_field.field_debris_type[i] = debris3;
+			debris3 = -1;
+			count++;
+			continue;
+		}
+	}
+
+	Asteroid_field.num_used_field_debris_types = count;
+
+	Asteroid_field.min_bound = o_min;
+	Asteroid_field.max_bound = o_max;
+
+	vec3d a_rad;
+	vm_vec_sub(&a_rad, &Asteroid_field.max_bound, &Asteroid_field.min_bound);
+	vm_vec_scale(&a_rad, 0.5f);
+	float b_rad = vm_vec_mag(&a_rad);
+
+	Asteroid_field.bound_rad = MAX(3000.0f, b_rad);
+
+	asteroid_create_all();
+}
+
 /**
  * Init asteroid system for the level, called from ::game_level_init()
  */

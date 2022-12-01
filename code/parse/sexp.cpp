@@ -15079,16 +15079,6 @@ void sexp_set_asteroid_field(int n)
 {
 	bool is_nan, is_nan_forever;
 
-	for (int i = 0; i < MAX_ASTEROIDS; i++) {
-		if (Asteroids[i].flags & AF_USED) {
-			Asteroids[i].flags &= ~AF_USED;
-			Assert(Asteroids[i].objnum >= 0 && Asteroids[i].objnum < MAX_OBJECTS);
-			Objects[Asteroids[i].objnum].flags.set(Object::Object_Flags::Should_be_dead);
-		}
-	}
-	//This feels hackish, but we need to make sure all the asteroids are actually gone before we continue-Mjn
-	obj_delete_all_that_should_be_dead();
-
 	int field_type = 0, num_asteroids = 0, asteroid_speed = 0;
 	for (int i = 0; i < 3; i++) {
 
@@ -15200,73 +15190,32 @@ void sexp_set_asteroid_field(int n)
 	} else if (num_asteroids > MAX_ASTEROIDS) {
 		num_asteroids = MAX_ASTEROIDS;
 	}
-	Asteroid_field.num_initial_asteroids = num_asteroids;
 
-	if (field_type == 0) {
-		Asteroid_field.field_type = FT_PASSIVE;
-	} else {
-		Asteroid_field.field_type = FT_ACTIVE;
-	}
-	vm_vec_rand_vec_quick(&Asteroid_field.vel);
-	vm_vec_scale(&Asteroid_field.vel, (float)asteroid_speed);
-	Asteroid_field.speed = (float)asteroid_speed;
-	Asteroid_field.debris_genre = DG_ASTEROID;
+	vec3d o_min = vm_vec_new((float)o_minx, (float)o_miny, (float)o_minz);
+	vec3d o_max = vm_vec_new((float)o_maxx, (float)o_maxy, (float)o_maxz);
 
-	Asteroid_field.field_debris_type[0] = -1;
-	Asteroid_field.field_debris_type[1] = -1;
-	Asteroid_field.field_debris_type[2] = -1;
+	vec3d i_min = vm_vec_new((float)i_minx, (float)i_miny, (float)i_minz);
+	vec3d i_max = vm_vec_new((float)i_maxx, (float)i_maxy, (float)i_maxz);
 
-	int count = 0;
-	if (brown) {
-		Asteroid_field.field_debris_type[0] = 1;
-		count++;
-	}
-	if (blue) {
-		Asteroid_field.field_debris_type[1] = 1;
-		count++;
-	}
-	if (orange) {
-		Asteroid_field.field_debris_type[2] = 1;
-		count++;
-	}
-
-	Asteroid_field.num_used_field_debris_types = count;
-	
-	Asteroid_field.min_bound = vm_vec_new((float)o_minx, (float)o_miny, (float)o_minz);
-	Asteroid_field.max_bound = vm_vec_new((float)o_maxx, (float)o_maxy, (float)o_maxz);
-
-	vec3d a_rad;
-	vm_vec_sub(&a_rad, &Asteroid_field.max_bound, &Asteroid_field.min_bound);
-	vm_vec_scale(&a_rad, 0.5f);
-	float b_rad = vm_vec_mag(&a_rad);
-
-	Asteroid_field.bound_rad = MAX(3000.0f, b_rad);
-
-	if (inner_box) {
-		Asteroid_field.has_inner_bound = true;
-		Asteroid_field.inner_min_bound = vm_vec_new((float) i_minx, (float)i_miny, (float)i_minz);
-		Asteroid_field.inner_max_bound = vm_vec_new((float) i_maxx, (float)i_maxy, (float)i_maxz);
-	}
-
-	Asteroid_field.target_names = targets;
-
-	asteroid_create_all();
+	asteroid_create_asteroid_field(
+		num_asteroids,
+		field_type,
+		asteroid_speed,
+		brown,
+		blue,
+		orange,
+		o_min,
+		o_max,
+		inner_box,
+		i_min,
+		i_max,
+		targets);
 
 }
 
 void sexp_set_debris_field(int n)
 {
 	bool is_nan, is_nan_forever;
-
-	for (int i = 0; i < MAX_ASTEROIDS; i++) {
-		if (Asteroids[i].flags & AF_USED) {
-			Asteroids[i].flags &= ~AF_USED;
-			Assert(Asteroids[i].objnum >= 0 && Asteroids[i].objnum < MAX_OBJECTS);
-			Objects[Asteroids[i].objnum].flags.set(Object::Object_Flags::Should_be_dead);
-		}
-	}
-	// This feels hackish, but we need to make sure all the debris pieces are actually gone before we continue-Mjn
-	obj_delete_all_that_should_be_dead();
 
 	int num_asteroids = 0, asteroid_speed = 0;
 	for (int i = 0; i < 2; i++) {
@@ -15346,54 +15295,18 @@ void sexp_set_debris_field(int n)
 	} else if (num_asteroids > MAX_ASTEROIDS) {
 		num_asteroids = MAX_ASTEROIDS;
 	}
-	Asteroid_field.num_initial_asteroids = num_asteroids;
 
-	Asteroid_field.field_type = FT_PASSIVE;
+	vec3d o_min = vm_vec_new((float)o_minx, (float)o_miny, (float)o_minz);
+	vec3d o_max = vm_vec_new((float)o_maxx, (float)o_maxy, (float)o_maxz);
 
-	vm_vec_rand_vec_quick(&Asteroid_field.vel);
-	vm_vec_scale(&Asteroid_field.vel, (float)asteroid_speed);
-	Asteroid_field.speed = (float)asteroid_speed;
-	Asteroid_field.debris_genre = DG_SHIP;
-
-	Asteroid_field.field_debris_type[0] = -1;
-	Asteroid_field.field_debris_type[1] = -1;
-	Asteroid_field.field_debris_type[2] = -1;
-
-	int count = 0;
-	for (int i = 0; i < MAX_ACTIVE_DEBRIS_TYPES; i++) {
-		if (debris1 >= 0) {
-			Asteroid_field.field_debris_type[i] = debris1;
-			debris1 = -1;
-			count++;
-			continue;
-		}
-		if (debris2 >= 0) {
-			Asteroid_field.field_debris_type[i] = debris2;
-			debris2 = -1;
-			count++;
-			continue;
-		}
-		if (debris3 >= 0) {
-			Asteroid_field.field_debris_type[i] = debris3;
-			debris3 = -1;
-			count++;
-			continue;
-		}
-	}
-
-	Asteroid_field.num_used_field_debris_types = count;
-
-	Asteroid_field.min_bound = vm_vec_new((float)o_minx, (float)o_miny, (float)o_minz);
-	Asteroid_field.max_bound = vm_vec_new((float)o_maxx, (float)o_maxy, (float)o_maxz);
-
-	vec3d a_rad;
-	vm_vec_sub(&a_rad, &Asteroid_field.max_bound, &Asteroid_field.min_bound);
-	vm_vec_scale(&a_rad, 0.5f);
-	float b_rad = vm_vec_mag(&a_rad);
-
-	Asteroid_field.bound_rad = MAX(3000.0f, b_rad);
-
-	asteroid_create_all();
+	asteroid_create_debris_field(
+		num_asteroids,
+		asteroid_speed,
+		debris1,
+		debris2,
+		debris3,
+		o_min,
+		o_max);
 }
 
 /**
