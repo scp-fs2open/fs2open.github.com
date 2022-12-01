@@ -6,8 +6,8 @@
 
 // ---- Hook Condition System Macro and Class defines ----
 
-#define HOOK_CONDITIONS_START(name) const SCP_unordered_map<SCP_string, std::unique_ptr<ParseableCondition>> name::conditions = []() { \
-	SCP_unordered_map<SCP_string, std::unique_ptr<ParseableCondition>> build;
+#define HOOK_CONDITIONS_START(name) const SCP_unordered_map<SCP_string, const std::unique_ptr<const ParseableCondition>> name::conditions = []() { \
+	SCP_unordered_map<SCP_string, const std::unique_ptr<const ParseableCondition>> build;
 #define HOOK_CONDITIONS_END return build; \
 }();
 #define HOOK_CONDITION(conditionsClassName, conditionParseName, documentation, argument, argumentParse, argumentValid) \
@@ -39,8 +39,8 @@ class EvaluatableConditionImpl : public EvaluatableCondition {
 public:
 	EvaluatableConditionImpl(const ParseableConditionImpl<conditions_t, operating_t, cache_t>& _condition) : condition(_condition), cached(condition.cache()) { }
 
-	bool evaluate(linb::any conditionContext) const override {
-		const conditions_t conditions = linb::any_cast<conditions_t>(std::move(conditionContext));
+	bool evaluate(const linb::any& conditionContext) const override {
+		const conditions_t& conditions = linb::any_cast<conditions_t>(conditionContext);
 		return condition.evaluate(conditions.*(condition.object), cached);
 	}
 };
@@ -48,32 +48,32 @@ public:
 
 // ---- Hook Condition System Utility and Parsing methods ----
 
-bool conditionCompareShip(const ship* shipp, const SCP_string& value) {
+static bool conditionCompareShip(const ship* shipp, const SCP_string& value) {
 	return stricmp(shipp->ship_name, value.c_str()) == 0;
 }
 
-bool conditionCompareShipType(const ship* shipp, const int& value) {
+static bool conditionCompareShipType(const ship* shipp, const int& value) {
 	return Ship_info[shipp->ship_info_index].class_type == value;
 }
 
-bool conditionCompareShipClass(const ship* shipp, const int& value) {
+static bool conditionCompareShipClass(const ship* shipp, const int& value) {
 	return shipp->ship_info_index == value;
 }
 
 
-SCP_string conditionParseString() {
+static SCP_string conditionParseString() {
 	SCP_string name;
 	stuff_string(name, F_NAME);
 	return name;
 }
 
-int conditionParseShipType() {
+static int conditionParseShipType() {
 	SCP_string name;
 	stuff_string(name, F_NAME);
 	return ship_type_name_lookup(name.c_str());
 }
 
-int conditionParseShipClass() {
+static int conditionParseShipClass() {
 	SCP_string name;
 	stuff_string(name, F_NAME);
 	return ship_info_lookup(name.c_str());

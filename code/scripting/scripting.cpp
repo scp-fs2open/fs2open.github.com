@@ -257,7 +257,7 @@ DCF(script, "Evaluates a line of scripting")
 
 //*************************CLASS: ConditionedScript*************************
 extern char Game_current_mission_filename[];
-bool ConditionedHook::AddCondition(script_condition *sc)
+/*bool ConditionedHook::AddCondition(script_condition* sc)
 {
 	//Since string comparisons are expensive and these hooks have to be checked very frequently
 	//where possible whatever string comparison is done here and the outcome stored for later
@@ -734,7 +734,7 @@ bool ConditionedHook::Run(class script_state* sys, int action_type)
 	}
 
 	return true;
-}
+}*/
 
 //*************************CLASS: script_state*************************
 //Most of the icky stuff is here. Lots of #ifdefs
@@ -829,11 +829,17 @@ int script_state::RunCondition(int action_type, object *objp1, object *objp2, in
 		return num;
 	}
 
-	for(SCP_vector<ConditionedHook>::iterator chp = ConditionalHooks.begin(); chp != ConditionalHooks.end(); ++chp) 
+	auto action_it = ConditionalHooks.find(action_type);
+	if (action_it == ConditionalHooks.end())
+		return num;
+
+	linb::any local_condition_data; //TODO
+
+	for(const auto& action : action_it->second) 
 	{
-		if (chp->ConditionsValid(action_type, objp1, objp2, more_data))
+		if (action.ConditionsValid(local_condition_data))
 		{
-			chp->Run(this, action_type);
+			RunBytecode(action.hook.hook_function);
 			num++;
 		}
 	}
@@ -844,11 +850,17 @@ int script_state::RunCondition(int action_type, object *objp1, object *objp2, in
 
 bool script_state::IsConditionOverride(int action_type, object *objp1, object *objp2, int more_data)
 {
-	for(SCP_vector<ConditionedHook>::iterator chp = ConditionalHooks.begin(); chp != ConditionalHooks.end(); ++chp)
+	auto action_it = ConditionalHooks.find(action_type);
+	if (action_it == ConditionalHooks.end())
+		return false;
+
+	linb::any local_condition_data; //TODO
+
+	for (const auto& action : action_it->second)
 	{
-		if (chp->ConditionsValid(action_type, objp1, objp2, more_data))
+		if (action.ConditionsValid(local_condition_data))
 		{
-			if(chp->IsOverride(this, action_type))
+			if (IsOverride(action.hook))
 				return true;
 		}
 	}
@@ -1098,7 +1110,8 @@ bool script_state::EvalString(const char* string, const char* debug_str)
 
 	return true;
 }
-int script_state::RunBytecode(script_function& hd)
+
+int script_state::RunBytecode(const script_function& hd)
 {
 	using namespace luacpp;
 
@@ -1162,22 +1175,27 @@ ConditionalType scripting_string_to_condition(const char* condition)
 	return CHC_NONE;
 }
 
-void script_state::ParseGlobalChunk(ConditionalActions hookType, const char* debug_str) {
-	ConditionedHook hook;
+bool script_action::ConditionsValid(const linb::any& local_condition_data) const {
+	//TODO global conditions
 
+	for (const auto& local_condition : local_conditions) {
+		if (!local_condition->evaluate(local_condition_data))
+			return false;
+	}
+
+	return true;
+};
+
+void script_state::ParseGlobalChunk(ConditionalActions hookType, const char* debug_str) {
 	script_action sat;
-	sat.action_type = hookType;
 
 	ParseChunk(&sat.hook, debug_str);
 
-	//Add the action
-	hook.AddAction(&sat);
-
-	ConditionalHooks.push_back(hook);
+	ConditionalHooks[hookType].emplace_back(std::move(sat));
 }
 bool script_state::ParseCondition(const char *filename)
 {
-	ConditionedHook *chp = nullptr;
+	/*ConditionedHook* chp = nullptr;
 
 	for(auto condition = script_parse_condition(); condition != CHC_NONE; condition = script_parse_condition())
 	{
@@ -1241,17 +1259,18 @@ bool script_state::ParseCondition(const char *filename)
 		ConditionalHooks.pop_back();
 		return false;
 	}
-
+	*/
 	return true;
 }
 
-void script_state::AddConditionedHook(ConditionedHook hook) {
-	AddedHooks.push_back(std::move(hook));
+void script_state::AddConditionedHook(int action_id, script_action hook) {
+	AddedHooks[action_id].emplace_back(std::move(hook));
 }
 
 void script_state::ProcessAddedHooks() {
 	for (auto& hook : AddedHooks) {
-		ConditionalHooks.push_back(std::move(hook));
+		auto& conditionalHooks = ConditionalHooks[hook.first];
+		conditionalHooks.insert(conditionalHooks.end(), std::make_move_iterator(hook.second.begin()), std::make_move_iterator(hook.second.end()));
 	}
 	AddedHooks.clear();
 	AssayActions();
@@ -1266,9 +1285,7 @@ void script_state::AssayActions() {
 	ActiveActions.clear();
 
 	for (const auto &hook : ConditionalHooks) {
-		for (const auto &action : hook.Actions) {
-			ActiveActions[action.action_type] = true;
-		}
+		ActiveActions[hook.first] = !hook.second.empty();
 	}
 }
 
@@ -1280,8 +1297,7 @@ bool script_state::IsActiveAction(int action_id) {
 		return false;
 }
 
-//*************************CLASS: script_state*************************
-bool script_state::IsOverride(script_hook &hd)
+bool script_state::IsOverride(const script_hook &hd)
 {
 	if(!hd.hook_function.function.isValid())
 		return false;

@@ -38,12 +38,10 @@ ADE_FUNC(addHook,
 		return ADE_RETURN_FALSE;
 	}
 
-	ConditionedHook cond_hook;
-
 	script_action action;
-	action.action_type = scripting_string_to_action(hook_name);
+	int action_type = scripting_string_to_action(hook_name);
 
-	if (action.action_type == CHA_NONE) {
+	if (action_type == CHA_NONE) {
 		LuaError(L, "Invalid hook name '%s'!", hook_name);
 		return ADE_RETURN_FALSE;
 	}
@@ -55,8 +53,6 @@ ADE_FUNC(addHook,
 		action.hook.override_function.language = SC_LUA;
 		action.hook.override_function.function = override_func;
 	}
-
-	cond_hook.AddAction(&action);
 
 	if (conditionals.isValid()) {
 		for (const auto& tableEntry : conditionals) {
@@ -79,11 +75,11 @@ ADE_FUNC(addHook,
 			cond.condition_string = value.getValue<SCP_string>();
 			cond.condition_cached_value = -1;
 
-			cond_hook.AddCondition(&cond);
+			//TODO
 		}
 	}
 
-	Script_system.AddConditionedHook(std::move(cond_hook));
+	Script_system.AddConditionedHook(action_type, std::move(action));
 	return ADE_RETURN_TRUE;
 }
 

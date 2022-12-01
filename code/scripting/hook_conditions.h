@@ -2,11 +2,11 @@
 
 #include <linb/any.hpp>
 
-#include "ship/ship.h"
+class ship;
 
 class EvaluatableCondition {
 public:
-	virtual bool evaluate(linb::any conditionContext) const {
+	virtual bool evaluate(const linb::any& conditionContext) const {
 		return false;
 	};
 };
@@ -24,7 +24,7 @@ protected:
 	ParseableCondition(SCP_string documentation_) : documentation(std::move(documentation_)) { }
 };
 
-#define HOOK_DEFINE_CONDITIONS static const SCP_unordered_map<SCP_string, std::unique_ptr<ParseableCondition>> conditions
+#define HOOK_DEFINE_CONDITIONS static const SCP_unordered_map<SCP_string, const std::unique_ptr<const ParseableCondition>> conditions
 
 
 // ---- Hook Condition System Conditions ----

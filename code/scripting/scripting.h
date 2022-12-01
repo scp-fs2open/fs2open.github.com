@@ -7,6 +7,7 @@
 #include "graphics/2d.h"
 #include "scripting/ade.h"
 #include "scripting/ade_args.h"
+#include "scripting/hook_conditions.h"
 #include "scripting/lua/LuaFunction.h"
 #include "utils/event.h"
 
@@ -142,23 +143,14 @@ struct script_condition
 	int condition_cached_value = -1;
 };
 
-struct script_action
-{
-	int32_t action_type {CHA_NONE};
-	script_hook hook;
-};
-
-class ConditionedHook
-{
+class script_action {
 public:
-	SCP_vector<script_action> Actions;
-	SCP_vector<script_condition> Conditions;
-	bool AddCondition(script_condition *sc);
-	bool AddAction(script_action *sa);
+	SCP_vector<script_condition> global_conditions;
+	SCP_vector<std::unique_ptr<EvaluatableCondition>> local_conditions;
 
-	bool ConditionsValid(int action_type, class object *objp1 = nullptr, class object *objp2 = nullptr, int more_data = -1);
-	bool IsOverride(class script_state *sys, int action_type);
-	bool Run(class script_state* sys, int action_type);
+	script_hook hook;
+
+	bool ConditionsValid(const linb::any& local_condition_data) const;
 };
 
 //**********Main script_state function
@@ -173,10 +165,10 @@ class script_state
 
 	//Utility variables
 	SCP_vector<image_desc> ScriptImages;
-	SCP_vector<ConditionedHook> ConditionalHooks;
+	SCP_unordered_map<int, SCP_vector<script_action>> ConditionalHooks;
 	// Scripts can add new hooks at runtime; we collect all hooks to be added here and add them at the end of the current
 	// frame to avoid corrupting any iterators that the script system may be using.
-	SCP_vector<ConditionedHook> AddedHooks;
+	SCP_unordered_map<int, SCP_vector<script_action>> AddedHooks;
 
 	SCP_vector<script_function> GameInitFunctions;
 
@@ -243,7 +235,7 @@ public:
 	void ParseChunk(script_hook *dest, const char* debug_str=NULL);
 	void ParseGlobalChunk(ConditionalActions hookType, const char* debug_str=nullptr);
 	bool ParseCondition(const char *filename="<Unknown>");
-	void AddConditionedHook(ConditionedHook hook);
+	void AddConditionedHook(int action_id, script_action hook);
 	void AssayActions();
 	bool IsActiveAction(int hookId);
 
@@ -251,9 +243,9 @@ public:
 
 	//***Hook running functions
 	template <typename T>
-	int RunBytecode(script_function& hd, char format = '\0', T* data = nullptr);
-	int RunBytecode(script_function& hd);
-	bool IsOverride(script_hook &hd);
+	int RunBytecode(const script_function& hd, char format = '\0', T* data = nullptr);
+	int RunBytecode(const script_function& hd);
+	bool IsOverride(const script_hook &hd);
 	int RunCondition(int action_type, object *objp1 = nullptr, object *objp2 = nullptr, int more_data = -1);
 	bool IsConditionOverride(int action_type, object *objp1 = nullptr, object *objp2 = nullptr, int more_data = -1);
 
@@ -355,7 +347,7 @@ bool script_state::EvalStringWithReturn(const char* string, const char* format, 
 }
 
 template <typename T>
-int script_state::RunBytecode(script_function& hd, char format, T* data)
+int script_state::RunBytecode(const script_function& hd, char format, T* data)
 {
 	using namespace luacpp;
 
