@@ -1160,21 +1160,24 @@ typedef struct sexp_ai_goal_link {
 	int op_code;
 } sexp_ai_goal_link;
 
-#define SEXP_CONDITIONAL_OPERATOR			(1<<0)
-#define SEXP_ARGUMENT_OPERATOR				(1<<1)
-#define SEXP_ACTION_OPERATOR				(1<<2)
-#define SEXP_ARITHMETIC_OPERATOR			(1<<3)
-#define SEXP_BOOLEAN_OPERATOR				(1<<4)
-#define SEXP_INTEGER_OPERATOR				(1<<5)
-#define SEXP_GOAL_OPERATOR					(1<<6)
 
-#define SEXP_TRIGGER_OPERATOR		( SEXP_ARITHMETIC_OPERATOR | SEXP_BOOLEAN_OPERATOR | SEXP_INTEGER_OPERATOR ) 
+enum class sexp_oper_type
+{
+	NONE = 0,
+	CONDITIONAL,
+	ARGUMENT,
+	ACTION,
+	ARITHMETIC,
+	BOOLEAN,
+	INTEGER,
+	GOAL
+};
 
 typedef struct sexp_oper {
 	SCP_string text;
 	int	value;
 	int	min, max;
-	int type;
+	sexp_oper_type type;
 } sexp_oper;
 
 // Goober5000

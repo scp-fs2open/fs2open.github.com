@@ -117,6 +117,15 @@
 #undef MessageBox
 #endif
 
+// for ease of table reading
+#define SEXP_CONDITIONAL_OPERATOR sexp_oper_type::CONDITIONAL
+#define SEXP_ARGUMENT_OPERATOR    sexp_oper_type::ARGUMENT
+#define SEXP_ACTION_OPERATOR      sexp_oper_type::ACTION
+#define SEXP_ARITHMETIC_OPERATOR  sexp_oper_type::ARITHMETIC
+#define SEXP_BOOLEAN_OPERATOR     sexp_oper_type::BOOLEAN
+#define SEXP_INTEGER_OPERATOR     sexp_oper_type::INTEGER
+#define SEXP_GOAL_OPERATOR        sexp_oper_type::GOAL
+
 
 SCP_vector<sexp_oper> Operators = {
 //   Operator, Identity, Min / Max arguments
@@ -25500,7 +25509,7 @@ void add_to_event_log_buffer(int node, int op_num, int result)
 	tmp.append(Operators[op_num].text);
 	tmp.append(" returned ");
 
-	if ((Operators[op_num].type & (SEXP_INTEGER_OPERATOR|SEXP_ARITHMETIC_OPERATOR)) || (sexp_get_result_as_text(result) == nullptr)) {
+	if ((Operators[op_num].type == sexp_oper_type::INTEGER) || (Operators[op_num].type == sexp_oper_type::ARITHMETIC) || (sexp_get_result_as_text(result) == nullptr)) {
 		sprintf(buffer, "%d", result);
 		tmp.append(buffer);
 	}

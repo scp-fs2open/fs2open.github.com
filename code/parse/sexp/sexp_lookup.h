@@ -18,7 +18,7 @@ namespace sexp {
  * 
  * @return The operator id of the SEXP
  */
-int add_dynamic_sexp(std::unique_ptr<DynamicSEXP>&& sexp, int type = SEXP_ACTION_OPERATOR);
+int add_dynamic_sexp(std::unique_ptr<DynamicSEXP>&& sexp, sexp_oper_type type = sexp_oper_type::ACTION);
 
 /**
  * @brief Given an operator constant, return the associated dynamic SEXP

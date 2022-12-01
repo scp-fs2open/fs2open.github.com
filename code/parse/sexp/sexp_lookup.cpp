@@ -124,7 +124,7 @@ void parse_sexp_table(const char* filename) {
 				auto luaSexp = static_cast<LuaAISEXP*>(instance.get());
 				luaSexp->parseTable();
 
-				int op = add_dynamic_sexp(std::move(instance), SEXP_GOAL_OPERATOR);
+				int op = add_dynamic_sexp(std::move(instance), sexp_oper_type::GOAL);
 				if (op >= 0) {
 					luaSexp->registerAIMode(op);
 					luaSexp->maybeRegisterPlayerOrder(op);
@@ -159,7 +159,7 @@ void free_lua_sexps(lua_State* /*L*/)
 
 namespace sexp {
 
-int add_dynamic_sexp(std::unique_ptr<DynamicSEXP>&& sexp, int type)
+int add_dynamic_sexp(std::unique_ptr<DynamicSEXP>&& sexp, sexp_oper_type type)
 {
 	auto& global = globals();
 
