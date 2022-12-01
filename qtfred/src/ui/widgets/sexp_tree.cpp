@@ -5322,7 +5322,6 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 	sexp_list_item* list;
 
 	add_instance = replace_instance = -1;
-	Assert(Operators.size() <= MAX_OPERATORS);
 	Assert((int) op_menu.size() < MAX_OP_MENUS);
 	Assert((int) op_submenu.size() < MAX_SUBMENUS);
 

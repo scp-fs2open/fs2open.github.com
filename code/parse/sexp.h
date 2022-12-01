@@ -26,8 +26,6 @@ struct ship_obj;
 
 #define MAX_SEXP_VARIABLES 250
 
-#define	MAX_OPERATORS	1024  // Yes, this is used, but not by the Sexp code.
-
 // Operator argument formats (data types of an argument)
 #define	OPF_NONE				1		// argument cannot exist at this position if it's this
 #define	OPF_NULL				2		// no value.  Can still be used for type matching, however
