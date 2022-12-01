@@ -357,27 +357,27 @@ UI_TIMESTAMP Player_died_popup_wait;
 UI_TIMESTAMP Multi_ping_timestamp;
 
 
-const auto OnMissionAboutToEndHook = scripting::Hook::Factory(
+const auto OnMissionAboutToEndHook = scripting::Hook<>::Factory(
 	"On Mission About To End", "Called when a mission is about to end but has not run any mission-ending logic", {});
 
-const auto OnMissionEndHook = scripting::OverridableHook::Factory(
+const auto OnMissionEndHook = scripting::OverridableHook<>::Factory(
 	"On Mission End", "Called when a mission has ended", {});
 
-const auto OnStateAboutToEndHook = scripting::Hook::Factory(
+const auto OnStateAboutToEndHook = scripting::Hook<>::Factory(
 	"On State About To End", "Called when a game state is about to end but has not run any state-ending logic",
 	{
 		{"OldState", "gamestate", "The game state that has ended."},
 		{"NewState", "gamestate", "The game state that will begin next."},
 	});
 
-const auto OnStateEndHook = scripting::OverridableHook::Factory(
+const auto OnStateEndHook = scripting::OverridableHook<>::Factory(
 	"On State End", "Called when a game state has ended",
 	{
 		{"OldState", "gamestate", "The game state that has ended."},
 		{"NewState", "gamestate", "The game state that will begin next."},
 	});
 
-const auto OnCameraSetUpHook = scripting::Hook::Factory(
+const auto OnCameraSetUpHook = scripting::Hook<>::Factory(
 	"On Camera Set Up", "Called every frame when the camera is positioned and oriented for rendering.",
 	{
 		{"Camera", "camera", "The camera about to be used for rendering."},

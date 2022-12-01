@@ -78,7 +78,7 @@ static auto UseMouseOption = options::OptionBuilder<bool>("Input.UseMouse", "Mou
                                  .importance(1)
                                  .finish();
 
-const std::shared_ptr<scripting::Hook> OnMouseWheelHook = scripting::Hook::Factory(
+const std::shared_ptr<scripting::Hook<>> OnMouseWheelHook = scripting::Hook<>::Factory(
 	"On Mouse Wheel", "Called when the mouse wheel is moved in any direction.",
 	{
 		{"MouseWheelY", "number", "Positive if moved up, negative if moved down."},

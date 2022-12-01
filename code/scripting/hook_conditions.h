@@ -4,7 +4,7 @@
 
 class object;
 class ship;
-class weapon;
+struct weapon;
 
 #define HOOK_DEFINE_CONDITIONS static const SCP_unordered_map<SCP_string, const std::unique_ptr<const ParseableCondition>> conditions
 

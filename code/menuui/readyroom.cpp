@@ -269,7 +269,7 @@ void sim_room_load_mission_icons();
 void sim_room_unload_mission_icons();
 void sim_room_blit_icons(int line_index, int y_start, fs_builtin_mission *fb = NULL, int is_md = 0);
 
-const std::shared_ptr<scripting::Hook> OnCampaignBeginHook = scripting::Hook::Factory(
+const std::shared_ptr<scripting::Hook<>> OnCampaignBeginHook = scripting::Hook<>::Factory(
 	"On Campaign Begin", "Called when a campaign is started from the beginning or is reset",
 	{
 		{ "Campaign", "string", "The campaign filename (without the extension)" },

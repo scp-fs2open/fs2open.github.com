@@ -19,7 +19,6 @@
 
 namespace scripting {
 struct ScriptingDocumentation;
-class Hook;
 }
 
 struct image_desc
@@ -146,7 +145,7 @@ struct script_condition
 class script_action {
 public:
 	SCP_vector<script_condition> global_conditions;
-	SCP_vector<std::unique_ptr<EvaluatableCondition>> local_conditions;
+	SCP_vector<std::unique_ptr<scripting::EvaluatableCondition>> local_conditions;
 
 	script_hook hook;
 

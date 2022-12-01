@@ -29,6 +29,7 @@
 #include "species_defs/species_defs.h"
 #include "weapon/shockwave.h"
 #include "weapon/trails.h"
+#include "scripting/global_hooks.h"
 #include "ship/ship_flags.h"
 #include "weapon/weapon_flags.h"
 #include "ai/ai.h"
@@ -39,11 +40,6 @@
 
 class object;
 class WarpEffect;
-
-namespace scripting
-{
-	class Hook;
-}
 
 //	Part of the player died system.
 extern vec3d	Original_vec_to_deader;
