@@ -53,7 +53,7 @@ int Num_script_conditions = sizeof(Script_conditions) / sizeof(flag_def_list);
 class BuiltinHook : public scripting::HookBase {
   public:
 	BuiltinHook(SCP_string hookName, int32_t hookId)
-		: HookBase(std::move(hookName), SCP_string(), SCP_vector<HookVariableDocumentation>(), hookId)
+		: HookBase(std::move(hookName), SCP_string(), SCP_vector<HookVariableDocumentation>(), SCP_unordered_map<SCP_string, const std::unique_ptr<const ParseableCondition>>{}, hookId)
 	{
 	}
 	~BuiltinHook() override = default;
@@ -820,7 +820,7 @@ void script_state::UnloadImages()
 	ScriptImages.clear();
 }
 
-int script_state::RunCondition(int action_type, object *objp1, object *objp2, int more_data)
+int script_state::RunCondition(int action_type, linb::any local_condition_data)
 {
 	TRACE_SCOPE(tracing::LuaHooks);
 	int num = 0;
@@ -832,8 +832,6 @@ int script_state::RunCondition(int action_type, object *objp1, object *objp2, in
 	auto action_it = ConditionalHooks.find(action_type);
 	if (action_it == ConditionalHooks.end())
 		return num;
-
-	linb::any local_condition_data; //TODO
 
 	for(const auto& action : action_it->second) 
 	{
@@ -848,13 +846,11 @@ int script_state::RunCondition(int action_type, object *objp1, object *objp2, in
 	return num;
 }
 
-bool script_state::IsConditionOverride(int action_type, object *objp1, object *objp2, int more_data)
+bool script_state::IsConditionOverride(int action_type, linb::any local_condition_data)
 {
 	auto action_it = ConditionalHooks.find(action_type);
 	if (action_it == ConditionalHooks.end())
 		return false;
-
-	linb::any local_condition_data; //TODO
 
 	for (const auto& action : action_it->second)
 	{

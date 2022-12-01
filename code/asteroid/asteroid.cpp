@@ -1644,8 +1644,7 @@ static void asteroid_maybe_break_up(object *pasteroid_obj)
 			scripting::hooks::OnAsteroidDeath->run(
 				scripting::hook_param_list(
 					scripting::hook_param("Asteroid", 'o', pasteroid_obj),
-					scripting::hook_param("Hitpos", 'o', asp->death_hit_pos)),
-				pasteroid_obj);
+					scripting::hook_param("Hitpos", 'o', asp->death_hit_pos)));
 		}
 	}
 }

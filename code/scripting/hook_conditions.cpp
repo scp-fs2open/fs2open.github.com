@@ -3,6 +3,7 @@
 #include <utility>
 
 #include "ship/ship.h"
+#include "weapon/weapon.h"
 
 // ---- Hook Condition System Macro and Class defines ----
 
@@ -14,6 +15,8 @@
 	build.emplace(conditionParseName, ::make_unique<ParseableConditionImpl<conditionsClassName, \
 		decltype(std::declval<conditionsClassName>().argument), decltype(argumentParse())>> \
 		(documentation, &conditionsClassName::argument, argumentParse, argumentValid))
+
+namespace scripting {
 
 template<typename conditions_t, typename operating_t, typename cache_t>
 class ParseableConditionImpl : public ParseableCondition {
@@ -46,6 +49,8 @@ public:
 };
 
 
+namespace hooks {
+
 // ---- Hook Condition System Utility and Parsing methods ----
 
 static bool conditionCompareShip(const ship* shipp, const SCP_string& value) {
@@ -58,6 +63,30 @@ static bool conditionCompareShipType(const ship* shipp, const int& value) {
 
 static bool conditionCompareShipClass(const ship* shipp, const int& value) {
 	return shipp->ship_info_index == value;
+}
+
+static bool conditionCompareWeaponClass(const weapon* wep, const int& value) {
+	return wep->weapon_info_index == value;
+}
+
+static bool conditionIsObjecttype(const object* objp, const int& value) {
+	return objp != nullptr && objp->type == value;
+}
+
+template<typename fnc_t, typename value_t>
+static bool conditionObjectIsShipDo(fnc_t fnc, const object* objp, const value_t& value) {
+	if (objp != nullptr && objp->type == OBJ_SHIP) {
+		return fnc(&Ships[objp->instance], value);
+	}
+	return false;
+}
+
+template<typename fnc_t, typename value_t>
+static bool conditionObjectIsWeaponDo(fnc_t fnc, const object* objp, const value_t& value) {
+	if (objp != nullptr && objp->type == OBJ_WEAPON) {
+		return fnc(&Weapons[objp->instance], value);
+	}
+	return false;
 }
 
 
@@ -79,6 +108,21 @@ static int conditionParseShipClass() {
 	return ship_info_lookup(name.c_str());
 }
 
+static int conditionParseWeaponClass() {
+	SCP_string name;
+	stuff_string(name, F_NAME);
+	return weapon_info_lookup(name.c_str());
+}
+
+static int conditionParseObjectType() {
+	SCP_string name;
+	stuff_string(name, F_NAME);
+	for (int i = 0; i < MAX_OBJECT_TYPES; i++) {
+		if (stricmp(Object_type_names[i], name.c_str()) == 0)
+			return i;
+	}
+	return -1;
+}
 
 // ---- Hook Condition Helpers ----
 
@@ -91,5 +135,71 @@ static int conditionParseShipClass() {
 // ---- Hook Conditions ----
 
 HOOK_CONDITIONS_START(ShipDeathConditions)
-	HOOK_CONDITION_SHIPP(ShipDeathConditions, "that died", dying_shipp);
+	HOOK_CONDITION_SHIPP(ShipDeathConditions, "that died.", dying_shipp);
 HOOK_CONDITIONS_END
+
+HOOK_CONDITIONS_START(WeaponDeathConditions)
+	HOOK_CONDITION(WeaponDeathConditions, "Weapon class", "Specifies the class of the weapon that died.", dying_wep, conditionParseWeaponClass, conditionCompareWeaponClass);
+HOOK_CONDITIONS_END
+
+HOOK_CONDITIONS_START(ObjectDeathConditions)
+	HOOK_CONDITION(ObjectDeathConditions, "Ship", "Specifies the name of the ship that died.", dying_objp, conditionParseString, [](const object* objp, const SCP_string& shipname) -> bool {
+		return conditionObjectIsShipDo(&conditionCompareShip, objp, shipname);
+	});
+	HOOK_CONDITION(ObjectDeathConditions, "Ship class", "Specifies the class of the ship that died.", dying_objp, conditionParseShipClass, [](const object* objp, const int& shipclass) -> bool {
+		return conditionObjectIsShipDo(&conditionCompareShipClass, objp, shipclass);
+	});
+	HOOK_CONDITION(ObjectDeathConditions, "Ship type", "Specifies the type of the ship that died.", dying_objp, conditionParseShipType, [](const object* objp, const int& shiptype) -> bool {
+		return conditionObjectIsShipDo(&conditionCompareShipType, objp, shiptype);
+	});
+	HOOK_CONDITION(ObjectDeathConditions, "Weapon class", "Specifies the class of the weapon that died.", dying_objp, conditionParseWeaponClass, [](const object* objp, const int& weaponclass) -> bool {
+		return conditionObjectIsWeaponDo(&conditionCompareWeaponClass, objp, weaponclass);
+	});
+	HOOK_CONDITION(ObjectDeathConditions, "Object type", "Specifies the type of the object that died.", dying_objp, conditionParseObjectType, conditionIsObjecttype);
+HOOK_CONDITIONS_END
+
+HOOK_CONDITIONS_START(ShipSourceConditions)
+	HOOK_CONDITION_SHIPP(ShipSourceConditions, "that was the source of the event.", source_shipp);
+HOOK_CONDITIONS_END
+
+HOOK_CONDITIONS_START(CollisionConditions)
+	//These conditions with "must be one of the ships" instead of "must be both ships" is unlike the previous behaviour of PR #4231, but is closer to the original behaviour, where a specific ship of the two must match
+	HOOK_CONDITION(CollisionConditions, "Ship", "Specifies the name of the ship which was part of the collision. At least one ship must be part of the collision and match.", participating_objects, conditionParseString, [](CollisionConditions::ParticipatingObjects po, const SCP_string& shipname) -> bool {
+		if(conditionObjectIsShipDo(&conditionCompareShip, po.objp_a, shipname)) 
+			return true;
+		if (conditionObjectIsShipDo(&conditionCompareShip, po.objp_b, shipname))
+			return true;
+		return false;
+	});
+	HOOK_CONDITION(CollisionConditions, "Ship class", "Specifies the class of the ship which was part of the collision. At least one ship must be part of the collision and match.", participating_objects, conditionParseShipClass, [](CollisionConditions::ParticipatingObjects po, const int& shipclass) -> bool {
+		if (conditionObjectIsShipDo(&conditionCompareShipClass, po.objp_a, shipclass))
+			return true;
+		if (conditionObjectIsShipDo(&conditionCompareShipClass, po.objp_b, shipclass))
+			return true;
+		return false;
+	});
+	HOOK_CONDITION(CollisionConditions, "Ship type", "Specifies the type of the ship which was part of the collision. At least one ship must be part of the collision and match.", participating_objects, conditionParseShipType, [](CollisionConditions::ParticipatingObjects po, const int& shiptype) -> bool {
+		if (conditionObjectIsShipDo(&conditionCompareShipType, po.objp_a, shiptype))
+			return true;
+		if (conditionObjectIsShipDo(&conditionCompareShipType, po.objp_b, shiptype))
+			return true;
+		return false;
+	});
+	HOOK_CONDITION(CollisionConditions, "Weapon class", "Specifies the name of the weapon class which was part of the collision. At least one weapon must be part of the collision and match.", participating_objects, conditionParseWeaponClass, [](CollisionConditions::ParticipatingObjects po, const int& weaponclass) -> bool {
+		if (conditionObjectIsWeaponDo(&conditionCompareWeaponClass, po.objp_a, weaponclass))
+			return true;
+		if (conditionObjectIsWeaponDo(&conditionCompareWeaponClass, po.objp_b, weaponclass))
+			return true;
+		return false;
+	});
+	HOOK_CONDITION(CollisionConditions, "Object type", "Specifies the type of the object which was part of the collision. At least one object must match.", participating_objects, conditionParseObjectType, [](CollisionConditions::ParticipatingObjects po, const int& objecttype) -> bool {
+		if (conditionIsObjecttype(po.objp_a, objecttype))
+			return true;
+		if (conditionIsObjecttype(po.objp_b, objecttype))
+			return true;
+		return false;
+	});
+HOOK_CONDITIONS_END
+
+}
+}

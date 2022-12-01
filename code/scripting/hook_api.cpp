@@ -69,8 +69,9 @@ HookVariableDocumentation::HookVariableDocumentation(const char* name_, ade_type
 HookBase::HookBase(SCP_string hookName,
 				   SCP_string description,
 				   SCP_vector<HookVariableDocumentation> parameters,
+				   const SCP_unordered_map<SCP_string, const std::unique_ptr<const ParseableCondition>>& conditions,
 				   int32_t hookId)
-	: _hookName(std::move(hookName)), _description(std::move(description)), _parameters(std::move(parameters))
+	: _conditions(conditions), _hookName(std::move(hookName)), _description(std::move(description)), _parameters(std::move(parameters))
 {
 	// If we specify a forced id then use that. This is for special hooks that need a guaranteed id
 	if (hookId >= 0) {
@@ -86,54 +87,6 @@ const SCP_string& HookBase::getDescription() const { return _description; }
 const SCP_vector<HookVariableDocumentation>& HookBase::getParameters() const { return _parameters; }
 int32_t HookBase::getHookId() const { return _hookId; }
 HookBase::~HookBase() = default;
-
-std::shared_ptr<Hook> Hook::Factory(SCP_string hookName,
-									SCP_string description,
-									SCP_vector<HookVariableDocumentation> parameters,
-									int32_t hookId)
-{
-	return std::make_shared<Hook>(std::move(hookName), std::move(description), std::move(parameters), hookId);
-}
-std::shared_ptr<Hook> Hook::Factory(SCP_string hookName, int32_t hookId)
-{
-	return std::make_shared<Hook>(std::move(hookName), SCP_string(), SCP_vector<HookVariableDocumentation>(), hookId);
-}
-Hook::Hook(SCP_string hookName,
-		   SCP_string description,
-		   SCP_vector<HookVariableDocumentation> parameters,
-		   int32_t hookId)
-	: HookBase(std::move(hookName), std::move(description), std::move(parameters), hookId)
-{
-}
-Hook::~Hook() = default;
-
-bool Hook::isActive() const
-{
-	return Script_system.IsActiveAction(_hookId);
-}
-
-bool Hook::isOverridable() const { return false; }
-
-OverridableHook::OverridableHook(SCP_string hookName,
-								 SCP_string description,
-								 SCP_vector<HookVariableDocumentation> parameters,
-								 int32_t hookId)
-	: Hook(std::move(hookName), std::move(description), std::move(parameters), hookId)
-{
-}
-OverridableHook::~OverridableHook() = default;
-
-std::shared_ptr<OverridableHook> OverridableHook::Factory(SCP_string hookName,
-														  SCP_string description,
-														  SCP_vector<HookVariableDocumentation> parameters,
-														  int32_t hookId)
-{
-	return std::make_shared<OverridableHook>(std::move(hookName),
-											 std::move(description),
-											 std::move(parameters),
-											 hookId);
-}
-bool OverridableHook::isOverridable() const { return true; }
 
 const SCP_vector<HookBase*>& getHooks() { return getHookManager().getHooks(); }
 

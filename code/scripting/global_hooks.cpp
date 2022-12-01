@@ -6,12 +6,12 @@
 namespace scripting {
 namespace hooks {
 
-const std::shared_ptr<Hook> OnGameInit = Hook::Factory("On Game Init",
+const std::shared_ptr<Hook<>> OnGameInit = Hook<>::Factory("On Game Init",
 	"Executed at the start of the engine after all game data has been loaded.",
 	{},
 	CHA_GAMEINIT);
 
-const std::shared_ptr<Hook> OnDebrisCreated = Hook::Factory(
+const std::shared_ptr<Hook<ShipSourceConditions>> OnDebrisCreated = Hook<ShipSourceConditions>::Factory(
 	"On Debris Created",
 	"Invoked when a piece of debris is created.",
 	{
@@ -19,7 +19,7 @@ const std::shared_ptr<Hook> OnDebrisCreated = Hook::Factory(
 		{"Source", "object", "The object (probably a ship) from which this debris piece was spawned."},
 	});
 
-const std::shared_ptr<OverridableHook> OnShipCollision = OverridableHook::Factory("On Ship Collision",
+const std::shared_ptr<OverridableHook<CollisionConditions>> OnShipCollision = OverridableHook<CollisionConditions>::Factory("On Ship Collision",
 	"Invoked when a ship collides with another object. Note: When two ships collide this will be called twice, once "
 	"with each ship object as the \"Ship\" parameter.",
 	{{"Self", "object", "The \"other\" object that collided with the ship."},
@@ -35,7 +35,7 @@ const std::shared_ptr<OverridableHook> OnShipCollision = OverridableHook::Factor
 		{"Weapon", "weapon", "The weapon object with which the ship collided (only set for weapon collisions)"},
 		{"Beam", "weapon", "The beam object with which the ship collided (only set for beam collisions)"}});
 
-const std::shared_ptr<Hook> OnShipDeathStarted = Hook::Factory(
+const std::shared_ptr<Hook<ShipDeathConditions>> OnShipDeathStarted = Hook<ShipDeathConditions>::Factory(
 	"On Ship Death Started", "Called when a ship starts the death process.",
 	{
 		{"Ship", "ship", "The ship that has begun the death process."},
@@ -43,7 +43,7 @@ const std::shared_ptr<Hook> OnShipDeathStarted = Hook::Factory(
 		{"Hitpos", "vector", "The world coordinates of the killing blow.  Could be nil."},
 	});
 
-const std::shared_ptr<OverridableHook> OnShipDeath = OverridableHook::Factory(
+const std::shared_ptr<OverridableHook<ShipDeathConditions>> OnShipDeath = OverridableHook<ShipDeathConditions>::Factory(
 	"On Ship Death", "Called when a ship has been destroyed.  Supersedes On Death for ships.",
 	{
 		{"Ship", "ship", "The ship that was destroyed."},
@@ -51,35 +51,35 @@ const std::shared_ptr<OverridableHook> OnShipDeath = OverridableHook::Factory(
 		{"Hitpos", "vector", "The world coordinates of the killing blow.  Could be nil."},
 	});
 
-const std::shared_ptr<Hook> OnMissileDeathStarted = Hook::Factory(
+const std::shared_ptr<Hook<WeaponDeathConditions>> OnMissileDeathStarted = Hook<WeaponDeathConditions>::Factory(
 	"On Missile Death Started", "Called when a missile is about to be destroyed (whether by impact, interception, or expiration).",
 	{
 		{"Weapon", "weapon", "The weapon that was destroyed."},
 		{"Object", "object", "The object that the weapon hit - a ship, asteroid, or piece of debris.  Always set but could be invalid if there is no other object.  If this missile was destroyed by another weapon, the 'other object' will be invalid but the DestroyedByWeapon flag will be set."},
 	});
 
-const std::shared_ptr<Hook> OnMissileDeath = Hook::Factory(
+const std::shared_ptr<Hook<WeaponDeathConditions>> OnMissileDeath = Hook<WeaponDeathConditions>::Factory(
 	"On Missile Death", "Called when a missile has been destroyed (whether by impact, interception, or expiration).",
 	{
 		{"Weapon", "weapon", "The weapon that was destroyed."},
 		{"Object", "object", "The object that the weapon hit - a ship, asteroid, or piece of debris.  Always set but could be invalid if there is no other object.  If this missile was destroyed by another weapon, the 'other object' will be invalid but the DestroyedByWeapon flag will be set."},
 	});
 
-const std::shared_ptr<Hook> OnAsteroidDeath = Hook::Factory(
+const std::shared_ptr<Hook<>> OnAsteroidDeath = Hook<>::Factory(
 	"On Asteroid Death", "Called when an asteroid has been destroyed.  Supersedes On Death for asteroids.",
 	{
 		{"Asteroid", "asteroid", "The asteroid that was destroyed."},
 		{"Hitpos", "vector", "The world coordinates of the killing blow."},
 	});
 
-const std::shared_ptr<Hook> OnDebrisDeath = Hook::Factory(
+const std::shared_ptr<Hook<>> OnDebrisDeath = Hook<>::Factory(
 	"On Debris Death", "Called when a piece of debris has been destroyed.",
 	{
 		{"Debris", "debris", "The piece of debris that was destroyed."},
 		{"Hitpos", "vector", "The world coordinates of the killing blow.  Could be nil."},
 	});
 
-const std::shared_ptr<OverridableHook> OnDialogInit = OverridableHook::Factory("On Dialog Init",
+const std::shared_ptr<OverridableHook<>> OnDialogInit = OverridableHook<>::Factory("On Dialog Init",
 	"Invoked when a system dialog initalizes. Override to prevent the system dialog to load dialog-related resources (requires retail files)",
 	{   
 		{"Choices",
@@ -96,7 +96,7 @@ const std::shared_ptr<OverridableHook> OnDialogInit = OverridableHook::Factory("
 		{"AllowedInput", "string", "A string of characters allowed to be present in the input popup. Nil if not an input popup."}
 	 });
 
-const std::shared_ptr<OverridableHook> OnDialogFrame = OverridableHook::Factory("On Dialog Frame",
+const std::shared_ptr<OverridableHook<>> OnDialogFrame = OverridableHook<>::Factory("On Dialog Frame",
 	"Invoked each frame for a system dialog. Override to prevent the system dialog from rendering and evaluating.",
 	{
 		{"Submit", "function(number | string | nil result) -> nil", "A callback function that should be called if the popup resolves. Should be string only if it is an input popup. Pass nil to abort."},
@@ -104,15 +104,21 @@ const std::shared_ptr<OverridableHook> OnDialogFrame = OverridableHook::Factory(
 		{"Freeze", "boolean", "If not nil and true, the popup should not process any inputs but just render."}
 	});
 
-const std::shared_ptr<Hook> OnDialogClose = Hook::Factory("On Dialog Close",
+const std::shared_ptr<Hook<>> OnDialogClose = Hook<>::Factory("On Dialog Close",
 	"Invoked when a dialog closes.",
 	{
 		{"IsDeathPopup", "boolean", "True if this popup is an in-mission death popup and should be styled as such."}
 	});
 
+const std::shared_ptr<Hook<>> OnCheat = Hook<>::Factory("On Cheat",
+	"Called when a cheat is used",
+	{
+		{ "Cheat", "string", "The cheat code the user typed" },
+	});
+
 // ========== DEPRECATED ==========
 
-const std::shared_ptr<OverridableHook> OnDeath = OverridableHook::Factory("On Death",
+const std::shared_ptr<OverridableHook<ObjectDeathConditions>> OnDeath = OverridableHook<ObjectDeathConditions>::Factory("On Death",
 	"Invoked when an object (ship or asteroid) has been destroyed.  Deprecated in favor of On Ship Destroyed and On Asteroid Destroyed.",
 	{
 		{"Self", "object", "The object that was killed"},
@@ -121,12 +127,6 @@ const std::shared_ptr<OverridableHook> OnDeath = OverridableHook::Factory("On De
 		{"Hitpos",
 			"vector",
 			"The position of the hit that caused the death (only set for ships and only if available)"},
-	});
-
-std::shared_ptr<scripting::Hook> OnCheat = scripting::Hook::Factory(
-	"On Cheat", "Called when a cheat is used", 
-	{
-		{ "Cheat", "string", "The cheat code the user typed" },
 	});
 
 } // namespace hooks

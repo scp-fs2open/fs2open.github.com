@@ -100,6 +100,7 @@ class HookBase {
 	HookBase(SCP_string hookName,
 			 SCP_string description,
 			 SCP_vector<HookVariableDocumentation> parameters,
+			 const SCP_unordered_map<SCP_string, const std::unique_ptr<const ParseableCondition>>& conditions,
 			 int32_t hookId = -1);
 	virtual ~HookBase();
 
@@ -111,12 +112,14 @@ class HookBase {
 	virtual bool isActive() const = 0;
 	virtual bool isOverridable() const = 0;
 
+	const SCP_unordered_map<SCP_string, const std::unique_ptr<const ParseableCondition>>& _conditions;
+
   protected:
 	SCP_string _hookName;
 	SCP_string _description;
 	SCP_vector<HookVariableDocumentation> _parameters;
 	int32_t _hookId = 0;
-
+	
 	bool hasParameter(const SCP_string& param) const
 	{
 		return std::find_if(_parameters.begin(), _parameters.end(), [&param](const HookVariableDocumentation& test) {
@@ -125,25 +128,48 @@ class HookBase {
 	}
 };
 
+template<typename... condition_t>
 class Hook : public HookBase {
+  protected:
+	static_assert(sizeof...(condition_t) <= 1, "Hooks may only have one local conditions package");
+	inline static typename std::enable_if<sizeof...(condition_t) == 0, const SCP_unordered_map<SCP_string, const std::unique_ptr<const ParseableCondition>>>::type getConditions() {
+		return SCP_unordered_map<SCP_string, const std::unique_ptr<const ParseableCondition>>{};
+	}
+	inline static typename std::enable_if<sizeof...(condition_t) == 1, const SCP_unordered_map<SCP_string, const std::unique_ptr<const ParseableCondition>>>::type getConditions() {
+		return condition_t::conditions...;
+	}
+	inline static typename std::enable_if<sizeof...(condition_t) == 0, linb::any>::type getConditionData() {
+		return linb::any{};
+	}
+	inline static typename std::enable_if<sizeof...(condition_t) == 1, linb::any>::type getConditionData(condition_t condition...) {
+		return linb::any{ std::move(condition) }...;
+	}
+
   public:
-	Hook(SCP_string hookName, SCP_string description, SCP_vector<HookVariableDocumentation> parameters, int32_t hookId);
-	~Hook() override;
+	Hook(SCP_string hookName, SCP_string description, SCP_vector<HookVariableDocumentation> parameters, int32_t hookId)
+		  : HookBase(std::move(hookName), std::move(description), std::move(parameters), getConditions(), hookId) { };
+	~Hook() override = default;
 
-	static std::shared_ptr<Hook> Factory(SCP_string hookName,
-										 SCP_string description,
-										 SCP_vector<HookVariableDocumentation> parameters,
-										 int32_t hookId = -1);
-	static std::shared_ptr<Hook> Factory(SCP_string hookName, int32_t hookId);
+	static std::shared_ptr<Hook<condition_t...>> Factory(SCP_string hookName,
+		SCP_string description,
+		SCP_vector<HookVariableDocumentation> parameters,
+		int32_t hookId = -1) {
+		return std::make_shared<Hook<condition_t...>>(std::move(hookName), std::move(description), std::move(parameters), hookId);
+	}
+	static std::shared_ptr<Hook<condition_t...>> Factory(SCP_string hookName, int32_t hookId) {
+		return std::make_shared<Hook<condition_t...>>(std::move(hookName), SCP_string(), SCP_vector<HookVariableDocumentation>(), hookId);
+	}
 
-	bool isActive() const override;
-	bool isOverridable() const override;
+	bool isActive() const override {
+		return Script_system.IsActiveAction(_hookId);
+	}
+
+	bool isOverridable() const override {
+		return false;
+	};
 
 	template <typename... Args>
-	int run(detail::HookParameterInstanceList<Args...> argsList = hook_param_list<Args...>(),
-			object* objp1                                       = nullptr,
-			object* objp2                                       = nullptr,
-			int more_data                                       = -1) const
+	int run(condition_t condition..., detail::HookParameterInstanceList<Args...> argsList = hook_param_list<Args...>()) const
 	{
 		SCP_vector<SCP_string> paramNames;
 		argsList.setHookVars(paramNames);
@@ -157,7 +183,7 @@ class Hook : public HookBase {
 		});
 #endif
 
-		const auto num_run = Script_system.RunCondition(_hookId, objp1, objp2, more_data);
+		const auto num_run = Script_system.RunCondition(_hookId, getConditionData(std::move(condition)...));
 
 		for (const auto& param : paramNames) {
 			Script_system.RemHookVar(param.c_str());
@@ -167,24 +193,31 @@ class Hook : public HookBase {
 	}
 };
 
-class OverridableHook : public Hook {
+template<typename... condition_t>
+class OverridableHook : public Hook<condition_t...> {
   public:
 	OverridableHook(SCP_string hookName,
-					SCP_string description,
-					SCP_vector<HookVariableDocumentation> parameters,
-					int32_t hookId);
-	~OverridableHook() override;
+		SCP_string description,
+		SCP_vector<HookVariableDocumentation> parameters,
+		int32_t hookId) : Hook<condition_t...>(std::move(hookName), std::move(description), std::move(parameters), hookId) { }
+	~OverridableHook() override = default;
 
-	static std::shared_ptr<OverridableHook> Factory(SCP_string hookName,
-													SCP_string description,
-													SCP_vector<HookVariableDocumentation> parameters,
-													int32_t hookId = -1);
+	static std::shared_ptr<OverridableHook<condition_t...>> Factory(SCP_string hookName,
+		SCP_string description,
+		SCP_vector<HookVariableDocumentation> parameters,
+		int32_t hookId = -1) {
+		return std::make_shared<OverridableHook<condition_t...>>(std::move(hookName),
+			std::move(description),
+			std::move(parameters),
+			hookId);
+	}
 
-	bool isOverridable() const override;
+	bool isOverridable() const override {
+		return true;
+	}
 
 	template <typename... Args>
-	bool isOverride(detail::HookParameterInstanceList<Args...> argsList = hook_param_list<Args...>(),
-					object* objp1 = nullptr, object* objp2 = nullptr) const
+	bool isOverride(condition_t condition..., detail::HookParameterInstanceList<Args...> argsList = hook_param_list<Args...>()) const
 	{
 		SCP_vector<SCP_string> paramNames;
 		argsList.setHookVars(paramNames);
@@ -198,7 +231,7 @@ class OverridableHook : public Hook {
 		});
 #endif
 
-		const auto ret_val = Script_system.IsConditionOverride(_hookId, objp1, objp2);
+		const auto ret_val = Script_system.IsConditionOverride(_hookId, getConditionData(std::move(condition)...));
 
 		for (const auto& param : paramNames) {
 			Script_system.RemHookVar(param.c_str());
