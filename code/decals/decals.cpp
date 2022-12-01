@@ -161,6 +161,7 @@ SCP_vector<DecalDefinition> DecalDefinitions;
 
 // Variable to indicate if the system is able to work correctly on the current system
 bool Decal_system_active = true;
+bool Decal_option_active = true;
 
 void parse_decals_table(const char* filename) {
 	try {
@@ -356,7 +357,7 @@ void parseDecalReference(creation_info& dest_info, bool is_new_entry) {
 }
 
 void loadBitmaps(const creation_info& info) {
-	if (!Decal_system_active) {
+	if (!Decal_system_active || !Decal_option_active) {
 		return;
 	}
 	// Silently ignore invalid definition handle since weapons use the default values if the decal option is not present
@@ -373,7 +374,7 @@ void loadBitmaps(const creation_info& info) {
 }
 
 void pageInDecal(const creation_info& info) {
-	if (!Decal_system_active) {
+	if (!Decal_system_active || !Decal_option_active) {
 		return;
 	}
 	// Silently ignore invalid definition handle since weapons use the default values if the decal option is not present
@@ -430,7 +431,7 @@ matrix4 getDecalTransform(Decal& decal) {
 }
 
 void renderAll() {
-	if (!Decal_system_active) {
+	if (!Decal_system_active || !Decal_option_active) {
 		return;
 	}
 
@@ -501,7 +502,7 @@ void renderAll() {
 }
 
 void addDecal(creation_info& info, object* host, int submodel, const vec3d& local_pos, const matrix& local_orient) {
-	if (!Decal_system_active) {
+	if (!Decal_system_active || !Decal_option_active) {
 		return;
 	}
 	// Silently ignore invalid definition handle since weapons use the default values if the decal option is not present

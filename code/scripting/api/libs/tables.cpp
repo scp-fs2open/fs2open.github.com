@@ -283,5 +283,16 @@ ADE_FUNC(isDecalSystemActive, l_Tables, nullptr, "Returns whether the decal syst
 	return ade_set_args(L, "b", decals::Decal_system_active);
 }
 
+ADE_FUNC(DecalOptionActive, l_Tables, nullptr, "Gets or sets whether the decal option is active (note, decals will only work if the decal system is able to work on the current machine)", "boolean", "true if active, false if inactive")
+{
+	bool choice = decals::Decal_option_active;
+
+	if (ADE_SETTING_VAR && ade_get_args(L, "*b", &choice)) {
+		decals::Decal_option_active = choice;
+	}
+
+	return ade_set_args(L, "b", choice);
+}
+
 }
 }

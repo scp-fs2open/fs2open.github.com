@@ -52,6 +52,7 @@ class DecalDefinition {
 
 extern SCP_vector<DecalDefinition> DecalDefinitions;
 extern bool Decal_system_active;
+extern bool Decal_option_active;
 
 
 /**
