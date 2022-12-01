@@ -1851,10 +1851,10 @@ void model_render_glowpoint_add_light(int point_num, vec3d *pos, matrix *orient,
 			vm_vec_rotate(&cone_dir_screen, &cone_dir_world, &Eye_matrix);
 			cone_dir_screen.xyz.z = -cone_dir_screen.xyz.z;
 			light_add_cone(
-				&world_pnt, &cone_dir_screen, gpo->cone_angle, gpo->cone_inner_angle, gpo->dualcone, 1.0f, light_radius, 1,
+				&world_pnt, &cone_dir_screen, gpo->cone_angle, gpo->cone_inner_angle, gpo->dualcone, 1.0f, light_radius, gpo->intensity,
 				lightcolor.xyz.x, lightcolor.xyz.y, lightcolor.xyz.z, gpt->radius);
 		} else {
-			light_add_point(&world_pnt, 1.0f, light_radius, 1,	lightcolor.xyz.x, lightcolor.xyz.y, lightcolor.xyz.z, gpt->radius);
+			light_add_point(&world_pnt, 1.0f, light_radius, gpo->intensity,	lightcolor.xyz.x, lightcolor.xyz.y, lightcolor.xyz.z, gpt->radius);
 		}
 	}
 }
