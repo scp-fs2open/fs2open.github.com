@@ -6422,8 +6422,7 @@ void mission_init(mission *pm)
 	
 	Num_reinforcements = 0;
 
-	for (int i = 0; i < MAX_ASTEROID_FIELDS; i++)
-		Asteroid_field.num_initial_asteroids = 0;
+	Asteroid_field.num_initial_asteroids = 0;
 
 	// reset background bitmaps and suns
 	stars_pre_level_init();
