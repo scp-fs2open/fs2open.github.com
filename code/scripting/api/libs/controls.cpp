@@ -158,6 +158,20 @@ ADE_FUNC(mouseButtonDownCount,
 	return ade_set_args(L, "i", count);
 }
 
+ADE_FUNC(flushMouse,
+	l_Mouse,
+	nullptr,
+	"Clears mouse input data, including button press count, button flags, wheel scroll value, and position delta.",
+	nullptr,
+	"Returns nothing")
+{
+	SCP_UNUSED(L);
+
+	mouse_flush();
+
+	return ADE_RETURN_NIL;
+}
+
 static int AxisActionInverted_sub(int AxisAction, int ordinal, lua_State* L)
 {
 	bool b;
