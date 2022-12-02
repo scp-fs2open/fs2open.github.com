@@ -284,7 +284,7 @@ static bool global_condition_valid(const script_condition& condition)
 	return true;
 }
 
-static int cache_condition(ConditionalType type, const SCP_string& value){
+int cache_condition(ConditionalType type, const SCP_string& value){
 	//Since string comparisons are expensive and these hooks have to be checked very frequently
 	//where possible whatever string comparison is done here and the outcome stored for later
 	//nature of value stored depends on condition type.
@@ -753,14 +753,14 @@ const scripting::HookBase* script_parse_action()
 	return nullptr;
 }
 
-int32_t scripting_string_to_action(const char* action)
+const HookBase* scripting_string_to_action(const char* action)
 {
 	for (const auto& hook : scripting::getHooks()) {
 		if (hook->getHookName() == action)
-			return hook->getHookId();
+			return hook;
 	}
 
-	return CHA_NONE;
+	return nullptr;
 }
 
 ConditionalType scripting_string_to_condition(const char* condition)

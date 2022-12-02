@@ -19,6 +19,7 @@
 
 namespace scripting {
 struct ScriptingDocumentation;
+class HookBase;
 }
 
 struct image_desc
@@ -86,7 +87,7 @@ void scripting_state_init();
 void scripting_state_close();
 void scripting_state_do_frame(float frametime);
 
-int32_t scripting_string_to_action(const char* action);
+const scripting::HookBase* scripting_string_to_action(const char* action);
 ConditionalType scripting_string_to_condition(const char* condition);
 
 struct script_condition
