@@ -137,7 +137,7 @@ void main() {
 
 		// The main model shader applies ambient lighting by drawing the ambient part of the texture into the emissive
 		// texture. We do the same here to make sure the decal material is applied correctly
-		if (glow_blend_mode == 0) {
+		if (diffuse_blend_mode == 0) {
 			// Normal alpha blending
 			emissive_out = vec4(color.rgb * ambientLight, color.a * alpha);
 		} else {
@@ -147,7 +147,7 @@ void main() {
 	}
 
 	if (glow_index >= 0) {
-		// We have a valid diffuse map
+		// We have a valid glow map
 		vec4 color = texture(glowMap, vec3(tex_coord, float(glow_index)));
 
 		color.rgb = srgb_to_linear(color.rgb) * GLOW_MAP_SRGB_MULTIPLIER;
