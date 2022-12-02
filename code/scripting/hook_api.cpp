@@ -90,4 +90,6 @@ HookBase::~HookBase() = default;
 
 const SCP_vector<HookBase*>& getHooks() { return getHookManager().getHooks(); }
 
+const SCP_unordered_map<SCP_string, const std::unique_ptr<const ParseableCondition>> HookImpl<void>::emptyConditions{};
+
 } // namespace scripting

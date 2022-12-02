@@ -544,7 +544,7 @@ ScriptingDocumentation script_state::OutputDocumentation(const scripting::Docume
 			  });
 	for (const auto& hook : sortedHooks) {
 		doc.actions.push_back(
-			{hook->getHookName(), hook->getDescription(), hook->getParameters(), hook->isOverridable()});
+			{hook->getHookName(), hook->getDescription(), hook->getParameters(), hook->_conditions, hook->isOverridable()});
 	}
 
 	OutputLuaDocumentation(doc, errorReporter);
@@ -815,9 +815,10 @@ bool script_state::ParseCondition(const char *filename)
 			parsed_conditions.emplace_back(script_condition{ condition, std::move(condition_string), cache });
 		}
 		else {
-			if (optional_string("#End") || check_for_eof()) {
-				//There was no action here, but an unexpected EOF
-				error_display(1, "No actions specified for conditional hook / unexpected EOF in file '%s'", filename);
+			if (check_for_string("#End") || check_for_eof()) {
+				//There was no action here, but an EOF
+				if(!parsed_conditions.empty() || !conditions.empty())
+					error_display(1, "No actions specified for conditional hook in file '%s'", filename);
 				return false;
 			}
 
@@ -840,19 +841,34 @@ bool script_state::ParseCondition(const char *filename)
 
 		sat.global_conditions = parsed_conditions;
 		for (const SCP_string& local_condition : conditions) {
-			auto condition_it = currHook->_conditions.find(local_condition);
-			if (condition_it == currHook->_conditions.end()) {
+			bool found = false;
+			pause_parse();
+			char* parse = vm_strdup(local_condition.c_str());
+			reset_parse(parse);
+			for (const auto& potential_condition : currHook->_conditions) {
+				SCP_string bufCond;
+				sprintf(bufCond, "$%s:", potential_condition.first.c_str());
+				if (optional_string(bufCond.c_str())) {
+					SCP_string arg;
+					stuff_string(arg, F_NAME);
+					sat.local_conditions.emplace_back(potential_condition.second->parse(arg));
+					found = true;
+					break;
+				}
+			}
+			vm_free(parse);
+			unpause_parse();
+			
+			if (!found) {
 				error_display(0, "Condition '%s' is not valid for hook '%s'. The hook will not evaluate!", local_condition.c_str(), currHook->getHookName().c_str());
 				sat.local_conditions.emplace_back(ParseableCondition().parse(local_condition));
 				continue;
 			}
-
-			sat.local_conditions.emplace_back(condition_it->second->parse(local_condition));
 		}
 
 		AddConditionedHook(hookId, std::move(sat));
 
-	} while ((currHook = script_parse_action()) == nullptr);
+	} while ((currHook = script_parse_action()) != nullptr);
 
 	return true;
 }

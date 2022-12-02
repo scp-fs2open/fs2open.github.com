@@ -221,18 +221,29 @@ static json_t* json_doc_generate_param_element(const HookVariableDocumentation& 
 static json_t* json_doc_generate_action_element(const DocumentationAction& action)
 {
 	json_t* paramArray = json_array();
+	json_t* conditionArray = json_array();
 
 	for (const auto& param : action.parameters) {
 		json_array_append_new(paramArray, json_doc_generate_param_element(param));
 	}
 
-	return json_pack("{s:s,s:s,s:o,s:b}",
+	for (const auto& condition : action.conditions) {
+		json_array_append_new(conditionArray, json_pack("{s:s,s:s}",
+			"name",
+			condition.first.c_str(),
+			"description",
+			condition.second->documentation.c_str()));
+	}
+
+	return json_pack("{s:s,s:s,s:o,s:o,s:b}",
 		"name",
 		action.name.c_str(),
 		"description",
 		action.description.c_str(),
 		"hookVars",
 		paramArray,
+		"conditions",
+		conditionArray,
 		"overridable",
 		action.overridable);
 }

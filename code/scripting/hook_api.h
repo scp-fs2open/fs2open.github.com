@@ -160,9 +160,10 @@ class HookImpl : public HookBase {
 };
 template<>
 class HookImpl<void> : public HookBase {
+	static const SCP_unordered_map<SCP_string, const std::unique_ptr<const ParseableCondition>> emptyConditions;
   protected:
 	HookImpl(SCP_string hookName, SCP_string description, SCP_vector<HookVariableDocumentation> parameters, int32_t hookId)
-		: HookBase(std::move(hookName), std::move(description), std::move(parameters), SCP_unordered_map<SCP_string, const std::unique_ptr<const ParseableCondition>>{}, hookId) { };
+		: HookBase(std::move(hookName), std::move(description), std::move(parameters), emptyConditions, hookId) { };
 
 	template <typename... Args>
 	int run(detail::HookParameterInstanceList<Args...> argsList = hook_param_list<Args...>()) const
