@@ -189,7 +189,7 @@ int collide_weapon_weapon( obj_pair * pair )
 			}
 		}
 
-		if (!Script_system.IsActiveAction(CHA_COLLIDEWEAPON)) {
+		if (!scripting::hooks::OnWeaponCollision->isActive()) {
 			return 1;
 		}
 

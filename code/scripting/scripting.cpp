@@ -36,13 +36,7 @@ flag_def_list Script_conditions[] =
 	{"State",		CHC_STATE,			0},
 	{"Campaign", CHC_CAMPAIGN, 0},
 	{"Mission", CHC_MISSION, 0},
-	{"Object Type", CHC_OBJECTTYPE, 0},
-	{"Ship", CHC_SHIP, 0},
-	{"Ship class", CHC_SHIPCLASS, 0},
-	{"Ship type", CHC_SHIPTYPE, 0},
-	{"Weapon class", CHC_WEAPONCLASS, 0},
 	{"KeyPress", CHC_KEYPRESS, 0},
-	{"Action", CHC_ACTION, 0},
 	{"Version", CHC_VERSION, 0},
 	{"Application", CHC_APPLICATION, 0},
 	{"Multi type", CHC_MULTI_SERVER, 0},
@@ -67,11 +61,6 @@ class BuiltinHook : public scripting::HookBase {
 };
 
 // clang-format off
-static USED_VARIABLE SCP_vector<std::shared_ptr<BuiltinHook>> Script_actions
-{
-	// DO NOT ADD NEW HOOKS HERE, see scripting.h for a more in-depth explanation
-};
-
 static HookVariableDocumentation GlobalVariables[] =
 {
 	{

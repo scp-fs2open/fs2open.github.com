@@ -50,74 +50,35 @@ extern bool script_hook_valid(script_hook *hook);
 
 // Conditionals
 enum ConditionalType {
+	//These conditionals must ONLY contain global conditions.
+	//That is, conditions that do not depend on anything specific per-hook (such as a ship firing a weapon),
+	//but only conditions that can evaluate exclusively on a global state, identically for all actions. 
+	//Per-Hook specific conditionals are added through hook_conditions.h/.cpp and the respective template argument of the hook.
 	CHC_NONE        = -1,
-	CHC_MISSION     = 0,
-	CHC_SHIP        = 1,
-	CHC_SHIPCLASS   = 2,
-	CHC_SHIPTYPE    = 3,
-	CHC_STATE       = 4,
-	CHC_CAMPAIGN    = 5,
-	CHC_WEAPONCLASS = 6,
-	CHC_OBJECTTYPE  = 7,
-	CHC_KEYPRESS    = 8,
-	CHC_ACTION      = 9,
-	CHC_VERSION     = 10,
-	CHC_APPLICATION = 11,
-	CHC_MULTI_SERVER = 12,
+	CHC_MISSION,     
+	CHC_STATE,       
+	CHC_CAMPAIGN,    
+	CHC_KEYPRESS,    
+	CHC_VERSION,    
+	CHC_APPLICATION, 
+	CHC_MULTI_SERVER
 };
 
 //Actions
 enum ConditionalActions : int32_t {
 	CHA_NONE    = -1,
 	CHA_ONFRAME,
-	CHA_COLLIDEWEAPON,
-	CHA_COLLIDEDEBRIS,
-	CHA_COLLIDEASTEROID,
-	CHA_HUDDRAW,
-	CHA_OBJECTRENDER,
 	CHA_SPLASHSCREEN,
+	CHA_HUDDRAW,
 	CHA_GAMEINIT,
-	CHA_MISSIONSTART,
-	CHA_MOUSEMOVED,
-	CHA_MOUSEPRESSED,
-	CHA_MOUSERELEASED,
-	CHA_KEYPRESSED,
-	CHA_KEYRELEASED,
-	CHA_ONSTATESTART,
-	CHA_ONWEAPONDELETE,
-	CHA_ONWPEQUIPPED,
-	CHA_ONWPFIRED,
-	CHA_ONWPSELECTED,
-	CHA_ONWPDESELECTED,
-	CHA_GAMEPLAYSTART,
-	CHA_ONTURRETFIRED,
-	CHA_PRIMARYFIRE,
-	CHA_SECONDARYFIRE,
-	CHA_ONSHIPARRIVE,
-	CHA_COLLIDEBEAM,
-	CHA_ONACTION,
-	CHA_ONACTIONSTOPPED,
-	CHA_MSGRECEIVED,
-	CHA_HUDMSGRECEIVED,
-	CHA_AFTERBURNSTART,
-	CHA_AFTERBURNEND,
-	CHA_BEAMFIRE,
 	CHA_SIMULATION,
-	CHA_LOADSCREEN,
-	CHA_CMISSIONACCEPT,
-	CHA_ONSHIPDEPART,
-	CHA_ONWEAPONCREATED,
-	CHA_ONWAYPOINTSDONE,
-	CHA_ONSUBSYSDEATH,
-	CHA_ONGOALSCLEARED,
-	CHA_ONBRIEFSTAGE,
 
-	// DO NOT ADD NEW HOOKS HERE
+	// DO NOT ADD NEW HOOKS HERE. THESE HOOKS ARE EXCLUSIVELY FOR COMPATIBILITY WITH NON-CONDITIONAL GLOBAL HOOKS
 	// There is a new Lua Hook API, see hook_api.h
 	// There you use either scripting::Hook for non-overridable or scripting::OverridableHook for overridable hooks
 	// while also having the option to document when the hook is called and what hook variables are set for it.
 
-	CHA_LAST = CHA_ONBRIEFSTAGE,
+	CHA_LAST = CHA_SIMULATION
 };
 
 // management stuff
