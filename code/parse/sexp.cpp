@@ -17238,10 +17238,11 @@ void sexp_ship_create(int n)
 
 	mission_log_add_entry(LOG_SHIP_ARRIVED, shipp->ship_name, nullptr, -1, show_in_mission_log ? 0 : MLF_HIDDEN);
 
-	if (Script_system.IsActiveAction(CHA_ONSHIPARRIVE)) {
-		Script_system.SetHookObjects(2, "Ship", &Objects[objnum], "Parent", nullptr);
-		Script_system.RunCondition(CHA_ONSHIPARRIVE, &Objects[objnum]);
-		Script_system.RemHookVars({"Ship", "Parent"});
+	if (scripting::hooks::OnShipArrive->isActive()) {
+		scripting::hooks::OnShipArrive->run(scripting::hooks::ShipSpawnConditions{ shipp, ARRIVE_AT_LOCATION, nullptr },
+			scripting::hook_param_list(
+				scripting::hook_param("Ship", 'o', &Objects[objnum])
+			));
 	}
 }
 

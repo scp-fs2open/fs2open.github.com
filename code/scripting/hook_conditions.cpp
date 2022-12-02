@@ -257,7 +257,7 @@ HOOK_CONDITIONS_START(WeaponEquippedConditions)
 HOOK_CONDITIONS_END
 
 HOOK_CONDITIONS_START(WeaponUsedConditions)
-	HOOK_CONDITION_SHIP(WeaponUsedConditions, "that fired the weapon.", user_shipp);
+	HOOK_CONDITION_SHIPP(WeaponUsedConditions, "that fired the weapon.", user_shipp);
 	HOOK_CONDITION(WeaponUsedConditions, "Weapon class", "Specifies the class of the weapon that was fired.", weaponclass, conditionParseWeaponClass, &std::equal_to<int>());
 HOOK_CONDITIONS_END
 

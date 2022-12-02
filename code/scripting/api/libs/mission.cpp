@@ -1022,10 +1022,11 @@ ADE_FUNC(createShip,
 
 		mission_log_add_entry(LOG_SHIP_ARRIVED, shipp->ship_name, nullptr, -1, show_in_log ? 0 : MLF_HIDDEN);
 
-		if (Script_system.IsActiveAction(CHA_ONSHIPARRIVE)) {
-			Script_system.SetHookObjects(2, "Ship", &Objects[obj_idx], "Parent", NULL);
-			Script_system.RunCondition(CHA_ONSHIPARRIVE, &Objects[obj_idx]);
-			Script_system.RemHookVars({"Ship", "Parent"});
+		if (scripting::hooks::OnShipArrive->isActive()) {
+			scripting::hooks::OnShipArrive->run(scripting::hooks::ShipSpawnConditions{ shipp, ARRIVE_AT_LOCATION, nullptr },
+				scripting::hook_param_list(
+					scripting::hook_param("Ship", 'o', &Objects[obj_idx])
+				));
 		}
 
 		return ade_set_args(L, "o", l_Ship.Set(object_h(&Objects[obj_idx])));

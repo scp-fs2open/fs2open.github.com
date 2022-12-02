@@ -3106,11 +3106,13 @@ int beam_collide_ship(obj_pair *pair)
 		{
 			bool ship_override = false, weapon_override = false;
 
-			if (Script_system.IsActiveAction(CHA_COLLIDEBEAM)) {
-				Script_system.SetHookObjects(4, "Self", ship_objp, "Object", weapon_objp, "Ship", ship_objp, "Beam", weapon_objp);
-				Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(mc_array[i]->hit_point_world));
-				ship_override = Script_system.IsConditionOverride(CHA_COLLIDEBEAM, ship_objp, weapon_objp);
-				Script_system.RemHookVars({ "Self", "Object", "Ship", "Beam", "Hitpos" });
+			if (scripting::hooks::OnBeamCollision->isActive()) {
+				ship_override = scripting::hooks::OnBeamCollision->isOverride(scripting::hooks::CollisionConditions{ {ship_objp, weapon_objp} },
+					scripting::hook_param_list(scripting::hook_param("Self", 'o', ship_objp),
+						scripting::hook_param("Object", 'o', weapon_objp),
+						scripting::hook_param("Ship", 'o', ship_objp),
+						scripting::hook_param("Beam", 'o', weapon_objp),
+						scripting::hook_param("Hitpos", 'o', mc_array[i]->hit_point_world)));
 			}
 
 			if (scripting::hooks::OnShipCollision->isActive()) {
@@ -3129,14 +3131,14 @@ int beam_collide_ship(obj_pair *pair)
 				beam_add_collision(a_beam, ship_objp, mc_array[i], quadrant_num, i != 0);
 			}
 
-			if (Script_system.IsActiveAction(CHA_COLLIDEBEAM) && !(weapon_override && !ship_override))
-			{
-				Script_system.SetHookObjects(4, "Self", ship_objp, "Object", weapon_objp, "Ship", ship_objp, "Beam", weapon_objp);
-				Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(mc_array[i]->hit_point_world));
-				Script_system.RunCondition(CHA_COLLIDEBEAM, ship_objp, weapon_objp);
-				Script_system.RemHookVars({ "Self", "Object", "Ship", "Beam", "Hitpos" });
+			if (scripting::hooks::OnBeamCollision->isActive() && !(weapon_override && !ship_override)) {
+				scripting::hooks::OnBeamCollision->run(scripting::hooks::CollisionConditions{ {ship_objp, weapon_objp} },
+					scripting::hook_param_list(scripting::hook_param("Self", 'o', ship_objp),
+						scripting::hook_param("Object", 'o', weapon_objp),
+						scripting::hook_param("Ship", 'o', ship_objp),
+						scripting::hook_param("Beam", 'o', weapon_objp),
+						scripting::hook_param("Hitpos", 'o', mc_array[i]->hit_point_world)));
 			}
-
 			if (scripting::hooks::OnShipCollision->isActive() && ((weapon_override && !ship_override) || (!weapon_override && !ship_override)))
 			{
 				scripting::hooks::OnShipCollision->run(scripting::hooks::CollisionConditions{{ship_objp, weapon_objp}},
@@ -3219,18 +3221,21 @@ int beam_collide_asteroid(obj_pair *pair)
 		// add to the collision list
 		bool weapon_override = false, asteroid_override = false;
 
-		if (Script_system.IsActiveAction(CHA_COLLIDEASTEROID)) {
-			Script_system.SetHookObjects(4, "Self", pair->a, "Object", pair->b, "Beam", pair->a, "Asteroid", pair->b);
-			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(test_collide.hit_point_world));
-			weapon_override = Script_system.IsConditionOverride(CHA_COLLIDEASTEROID, pair->a, pair->b);
-			Script_system.RemHookVars({ "Self", "Object", "Beam", "Asteroid", "Hitpos" });
+		if (scripting::hooks::OnAsteroidCollision->isActive()) {
+			weapon_override = scripting::hooks::OnAsteroidCollision->isOverride(scripting::hooks::CollisionConditions{ {pair->a, pair->b} },
+				scripting::hook_param_list(scripting::hook_param("Self", 'o', pair->a),
+					scripting::hook_param("Object", 'o', pair->b),
+					scripting::hook_param("Asteroid", 'o', pair->b),
+					scripting::hook_param("Beam", 'o', pair->a),
+					scripting::hook_param("Hitpos", 'o', test_collide.hit_point_world)));
 		}
-
-		if (Script_system.IsActiveAction(CHA_COLLIDEBEAM)) {
-			Script_system.SetHookObjects(4, "Self", pair->b, "Object", pair->a, "Beam", pair->a, "Asteroid", pair->b);
-			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(test_collide.hit_point_world));
-			asteroid_override = Script_system.IsConditionOverride(CHA_COLLIDEBEAM, pair->b, pair->a);
-			Script_system.RemHookVars({ "Self", "Object", "Beam", "Asteroid", "Hitpos" });
+		if (scripting::hooks::OnBeamCollision->isActive()) {
+			asteroid_override = scripting::hooks::OnBeamCollision->isOverride(scripting::hooks::CollisionConditions{ {pair->a, pair->b} },
+				scripting::hook_param_list(scripting::hook_param("Self", 'o', pair->b),
+					scripting::hook_param("Object", 'o', pair->a),
+					scripting::hook_param("Asteroid", 'o', pair->b),
+					scripting::hook_param("Beam", 'o', pair->a),
+					scripting::hook_param("Hitpos", 'o', test_collide.hit_point_world)));
 		}
 
 		if (!weapon_override && !asteroid_override)
@@ -3238,20 +3243,21 @@ int beam_collide_asteroid(obj_pair *pair)
 			beam_add_collision(a_beam, pair->b, &test_collide);
 		}
 
-		if (Script_system.IsActiveAction(CHA_COLLIDEASTEROID) && !(asteroid_override && !weapon_override))
-		{
-			Script_system.SetHookObjects(4, "Self", pair->a, "Object", pair->b, "Beam", pair->a, "Asteroid", pair->b);
-			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(test_collide.hit_point_world));
-			Script_system.RunCondition(CHA_COLLIDEASTEROID, pair->a, pair->b);
-			Script_system.RemHookVars({ "Self", "Object", "Beam", "Asteroid", "Hitpos" });
+		if (scripting::hooks::OnAsteroidCollision->isActive() && !(asteroid_override && !weapon_override)) {
+			scripting::hooks::OnAsteroidCollision->run(scripting::hooks::CollisionConditions{ {pair->a, pair->b} },
+				scripting::hook_param_list(scripting::hook_param("Self", 'o', pair->a),
+					scripting::hook_param("Object", 'o', pair->b),
+					scripting::hook_param("Asteroid", 'o', pair->b),
+					scripting::hook_param("Beam", 'o', pair->a),
+					scripting::hook_param("Hitpos", 'o', test_collide.hit_point_world)));
 		}
-
-		if (Script_system.IsActiveAction(CHA_COLLIDEBEAM) && ((asteroid_override && !weapon_override) || (!asteroid_override && !weapon_override)))
-		{
-			Script_system.SetHookObjects(4, "Self", pair->b, "Object", pair->a, "Beam", pair->a, "Asteroid", pair->b);
-			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(test_collide.hit_point_world));
-			Script_system.RunCondition(CHA_COLLIDEBEAM, pair->b, pair->a);
-			Script_system.RemHookVars({ "Self", "Object", "Beam", "Asteroid", "Hitpos" });
+		if (scripting::hooks::OnBeamCollision->isActive() && ((asteroid_override && !weapon_override) || (!asteroid_override && !weapon_override))) {
+			scripting::hooks::OnBeamCollision->run(scripting::hooks::CollisionConditions{ {pair->a, pair->b} },
+				scripting::hook_param_list(scripting::hook_param("Self", 'o', pair->b),
+					scripting::hook_param("Object", 'o', pair->a),
+					scripting::hook_param("Asteroid", 'o', pair->b),
+					scripting::hook_param("Beam", 'o', pair->a),
+					scripting::hook_param("Hitpos", 'o', test_collide.hit_point_world)));
 		}
 
 		return 0;
@@ -3324,19 +3330,21 @@ int beam_collide_missile(obj_pair *pair)
 		// add to the collision list
 		bool a_override = false, b_override = false;
 
-		if (Script_system.IsActiveAction(CHA_COLLIDEWEAPON)) {
-			Script_system.SetHookObjects(4, "Self", pair->a, "Object", pair->b, "Beam", pair->a, "Weapon", pair->b);
-			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(test_collide.hit_point_world));
-			a_override = Script_system.IsConditionOverride(CHA_COLLIDEWEAPON, pair->a, pair->b);
-			Script_system.RemHookVars({ "Self", "Object", "Beam", "Weapon", "Hitpos" });
+		if (scripting::hooks::OnWeaponCollision->isActive()) {
+			a_override = scripting::hooks::OnWeaponCollision->isOverride(scripting::hooks::CollisionConditions{ {pair->a, pair->b} },
+				scripting::hook_param_list(scripting::hook_param("Self", 'o', pair->a),
+					scripting::hook_param("Object", 'o', pair->b),
+					scripting::hook_param("Weapon", 'o', pair->b),
+					scripting::hook_param("Beam", 'o', pair->a),
+					scripting::hook_param("Hitpos", 'o', test_collide.hit_point_world)));
 		}
-
-		//Should be reversed
-		if (Script_system.IsActiveAction(CHA_COLLIDEBEAM)) {
-			Script_system.SetHookObjects(4, "Self", pair->b, "Object", pair->a, "Beam", pair->a, "Weapon", pair->b);
-			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(test_collide.hit_point_world));
-			b_override = Script_system.IsConditionOverride(CHA_COLLIDEBEAM, pair->b, pair->a);
-			Script_system.RemHookVars({ "Self", "Object", "Beam", "Weapon", "Hitpos" });
+		if (scripting::hooks::OnBeamCollision->isActive()) {
+			b_override = scripting::hooks::OnBeamCollision->isOverride(scripting::hooks::CollisionConditions{ {pair->a, pair->b} },
+				scripting::hook_param_list(scripting::hook_param("Self", 'o', pair->b),
+					scripting::hook_param("Object", 'o', pair->a),
+					scripting::hook_param("Weapon", 'o', pair->b),
+					scripting::hook_param("Beam", 'o', pair->a),
+					scripting::hook_param("Hitpos", 'o', test_collide.hit_point_world)));
 		}
 
 		if(!a_override && !b_override)
@@ -3344,21 +3352,21 @@ int beam_collide_missile(obj_pair *pair)
 			beam_add_collision(a_beam, pair->b, &test_collide);
 		}
 
-		if(Script_system.IsActiveAction(CHA_COLLIDEWEAPON) && !(b_override && !a_override))
-		{
-			Script_system.SetHookObjects(4, "Self", pair->a, "Object", pair->b, "Beam", pair->a, "Weapon", pair->b);
-			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(test_collide.hit_point_world));
-			Script_system.RunCondition(CHA_COLLIDEWEAPON, pair->a, pair->b);
-			Script_system.RemHookVars({ "Self", "Object", "Beam", "Weapon", "Hitpos" });
+		if (scripting::hooks::OnWeaponCollision->isActive() && !(b_override && !a_override)) {
+			scripting::hooks::OnWeaponCollision->run(scripting::hooks::CollisionConditions{ {pair->a, pair->b} },
+				scripting::hook_param_list(scripting::hook_param("Self", 'o', pair->a),
+					scripting::hook_param("Object", 'o', pair->b),
+					scripting::hook_param("Weapon", 'o', pair->b),
+					scripting::hook_param("Beam", 'o', pair->a),
+					scripting::hook_param("Hitpos", 'o', test_collide.hit_point_world)));
 		}
-
-		if(Script_system.IsActiveAction(CHA_COLLIDEBEAM) && ((b_override && !a_override) || (!b_override && !a_override)))
-		{
-			//Should be reversed
-			Script_system.SetHookObjects(4, "Self", pair->b, "Object", pair->a, "Beam", pair->a, "Weapon", pair->b);
-			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(test_collide.hit_point_world));
-			Script_system.RunCondition(CHA_COLLIDEBEAM, pair->b, pair->a);
-			Script_system.RemHookVars({ "Self", "Object", "Beam", "Weapon", "Hitpos" });
+		if (scripting::hooks::OnBeamCollision->isActive() && ((b_override && !a_override) || (!b_override && !a_override))) {
+			scripting::hooks::OnBeamCollision->run(scripting::hooks::CollisionConditions{ {pair->a, pair->b} },
+				scripting::hook_param_list(scripting::hook_param("Self", 'o', pair->b),
+					scripting::hook_param("Object", 'o', pair->a),
+					scripting::hook_param("Weapon", 'o', pair->b),
+					scripting::hook_param("Beam", 'o', pair->a),
+					scripting::hook_param("Hitpos", 'o', test_collide.hit_point_world)));
 		}
 	}
 
@@ -3431,18 +3439,21 @@ int beam_collide_debris(obj_pair *pair)
 	{
 		bool weapon_override = false, debris_override = false;
 
-		if (Script_system.IsActiveAction(CHA_COLLIDEDEBRIS)) {
-			Script_system.SetHookObjects(4, "Self", pair->a, "Object", pair->b, "Beam", pair->a, "Debris", pair->b);
-			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(test_collide.hit_point_world));
-			weapon_override = Script_system.IsConditionOverride(CHA_COLLIDEDEBRIS, pair->a, pair->b);
-			Script_system.RemHookVars({ "Self", "Object", "Beam", "Debris", "Hitpos" });
+		if (scripting::hooks::OnDebrisCollision->isActive()) {
+			weapon_override = scripting::hooks::OnWeaponCollision->isOverride(scripting::hooks::CollisionConditions{ {pair->a, pair->b} },
+				scripting::hook_param_list(scripting::hook_param("Self", 'o', pair->a),
+					scripting::hook_param("Object", 'o', pair->b),
+					scripting::hook_param("Debris", 'o', pair->b),
+					scripting::hook_param("Beam", 'o', pair->a),
+					scripting::hook_param("Hitpos", 'o', test_collide.hit_point_world)));
 		}
-
-		if (Script_system.IsActiveAction(CHA_COLLIDEBEAM)) {
-			Script_system.SetHookObjects(4, "Self", pair->b, "Object",  pair->a, "Beam", pair->a, "Debris", pair->b);
-			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(test_collide.hit_point_world));
-			debris_override = Script_system.IsConditionOverride(CHA_COLLIDEBEAM, pair->b, pair->a);
-			Script_system.RemHookVars({ "Self", "Object", "Beam", "Debris", "Hitpos" });
+		if (scripting::hooks::OnBeamCollision->isActive()) {
+			debris_override = scripting::hooks::OnBeamCollision->isOverride(scripting::hooks::CollisionConditions{ {pair->a, pair->b} },
+				scripting::hook_param_list(scripting::hook_param("Self", 'o', pair->b),
+					scripting::hook_param("Object", 'o', pair->a),
+					scripting::hook_param("Debris", 'o', pair->b),
+					scripting::hook_param("Beam", 'o', pair->a),
+					scripting::hook_param("Hitpos", 'o', test_collide.hit_point_world)));
 		}
 
 		if(!weapon_override && !debris_override)
@@ -3451,20 +3462,21 @@ int beam_collide_debris(obj_pair *pair)
 			beam_add_collision(a_beam, pair->b, &test_collide);
 		}
 
-		if (Script_system.IsActiveAction(CHA_COLLIDEDEBRIS) && !(debris_override && !weapon_override))
-		{
-			Script_system.SetHookObjects(4, "Self", pair->a, "Object", pair->b, "Beam", pair->a, "Debris", pair->b);
-			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(test_collide.hit_point_world));
-			Script_system.RunCondition(CHA_COLLIDEDEBRIS, pair->a, pair->b);
-			Script_system.RemHookVars({ "Self", "Object", "Beam", "Debris", "Hitpos" });
+		if (scripting::hooks::OnDebrisCollision->isActive() && !(debris_override && !weapon_override)) {
+			scripting::hooks::OnWeaponCollision->run(scripting::hooks::CollisionConditions{ {pair->a, pair->b} },
+				scripting::hook_param_list(scripting::hook_param("Self", 'o', pair->a),
+					scripting::hook_param("Object", 'o', pair->b),
+					scripting::hook_param("Debris", 'o', pair->b),
+					scripting::hook_param("Beam", 'o', pair->a),
+					scripting::hook_param("Hitpos", 'o', test_collide.hit_point_world)));
 		}
-
-		if (Script_system.IsActiveAction(CHA_COLLIDEBEAM) && ((debris_override && !weapon_override) || (!debris_override && !weapon_override)))
-		{
-			Script_system.SetHookObjects(4, "Self", pair->b, "Object", pair->a, "Beam", pair->a, "Debris", pair->b);
-			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(test_collide.hit_point_world));
-			Script_system.RunCondition(CHA_COLLIDEBEAM, pair->b, pair->a);
-			Script_system.RemHookVars({ "Self", "Object", "Beam", "Debris", "Hitpos" });
+		if (scripting::hooks::OnBeamCollision->isActive() && ((debris_override && !weapon_override) || (!debris_override && !weapon_override))) {
+			scripting::hooks::OnBeamCollision->run(scripting::hooks::CollisionConditions{ {pair->a, pair->b} },
+				scripting::hook_param_list(scripting::hook_param("Self", 'o', pair->b),
+					scripting::hook_param("Object", 'o', pair->a),
+					scripting::hook_param("Debris", 'o', pair->b),
+					scripting::hook_param("Beam", 'o', pair->a),
+					scripting::hook_param("Hitpos", 'o', test_collide.hit_point_world)));
 		}
 	}
 

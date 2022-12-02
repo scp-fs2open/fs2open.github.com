@@ -4476,16 +4476,18 @@ void weapon_delete(object *obj)
 	weapon *wp;
 	int num;
 
-	if (Script_system.IsActiveAction(CHA_ONWEAPONDELETE)) {
-		Script_system.SetHookObjects(2, "Weapon", obj, "Self", obj);
-		Script_system.RunCondition(CHA_ONWEAPONDELETE, obj);
-		Script_system.RemHookVars({"Weapon", "Self"});
+	Assert( Weapons[num].objnum == OBJ_INDEX(obj));
+	wp = &Weapons[num];
+
+	if (scripting::hooks::OnWeaponDelete->isActive()) {
+		scripting::hooks::OnWeaponDelete->run(scripting::hooks::WeaponDeathConditions{ wp },
+			scripting::hook_param_list(
+				scripting::hook_param("Weapon", 'o', obj),
+				scripting::hook_param("Self", 'o', obj)
+			));
 	}
 
 	num = obj->instance;
-
-	Assert( Weapons[num].objnum == OBJ_INDEX(obj));
-	wp = &Weapons[num];
 
 	Assert(wp->weapon_info_index >= 0);
 	wp->weapon_info_index = -1;

@@ -27,6 +27,10 @@ const std::shared_ptr<Hook<>> OnMissionStart = Hook<>::Factory("On Mission Start
 	"Invoked when a mission starts.",
 	{ {"Player", "object", "The player object."} });
 
+const std::shared_ptr<Hook<>> OnGameplayStart = Hook<>::Factory("On Gameplay Start",
+	"Invoked when the gameplay portion of a mission starts.",
+	{ {"Player", "object", "The player object."} });
+
 const std::shared_ptr<Hook<ControlActionConditions>> OnAction = Hook<ControlActionConditions>::Factory("On Action",
 	"Invoked whenever a user action was invoked through control input.",
 	{ {"Action", "string", "The name of the action that was executed."} });
@@ -139,6 +143,13 @@ const std::shared_ptr<OverridableHook<CollisionConditions>> OnBeamCollision = Ov
 		{"Weapon", "weapon", "The weapon object with which the ship collided (only set for weapon collisions)"},
 		{"Beam", "weapon", "The beam object with which the ship collided (only set for beam collisions)"} });
 
+const std::shared_ptr<Hook<ShipSpawnConditions>> OnShipArrive = Hook<ShipSpawnConditions>::Factory("On Ship Arrive",
+	"Invoked when a ship arrives in mission.",
+	{
+		{"Ship", "ship", "The ship that has arrived."},
+		{"Parent", "object", "The object which serves as the arrival anchor of the ship. Could be nil."},
+	});
+
 const std::shared_ptr<Hook<ShipDeathConditions>> OnShipDeathStarted = Hook<ShipDeathConditions>::Factory(
 	"On Ship Death Started", "Called when a ship starts the death process.",
 	{
@@ -183,6 +194,64 @@ const std::shared_ptr<Hook<>> OnDebrisDeath = Hook<>::Factory(
 		{"Hitpos", "vector", "The world coordinates of the killing blow.  Could be nil."},
 	});
 
+const std::shared_ptr<Hook<WeaponDeathConditions>> OnWeaponDelete = Hook<WeaponDeathConditions>::Factory("On Weapon Delete",
+	"Invoked whenever a weapon is deleted from the scene.",
+	{
+		{"Weapon", "weapon", "The weapon that was deleted."},
+		{"Self", "weapon", "An alias for \"Weapon\"."},
+	});
+
+const std::shared_ptr<Hook<WeaponEquippedConditions>> OnWeaponEquipped = Hook<WeaponEquippedConditions>::Factory("On Weapon Equipped",
+	"Invoked for each ship for each frame, allowing to be filtered for whether a weapon is equipped by the ship using conditions.",
+	{
+		{"User", "ship", "The ship that has a weapon equipped."},
+		{"Target", "object", "The current AI target of this ship."},
+	});
+
+const std::shared_ptr<Hook<WeaponUsedConditions>> OnWeaponFired = Hook<WeaponUsedConditions>::Factory("On Weapon Fired",
+	"Invoked when a weapon is fired.",
+	{
+		{"User", "ship", "The ship that has fired the weapon."},
+		{"Target", "object", "The current target of this ship."},
+	});
+
+const std::shared_ptr<Hook<WeaponUsedConditions>> OnPrimaryFired = Hook<WeaponUsedConditions>::Factory("On Primary Fire",
+	"Invoked when a primary weapon is fired.",
+	{
+		{"User", "ship", "The ship that has fired the weapon."},
+		{"Target", "object", "The current target of this ship."},
+	});
+
+const std::shared_ptr<Hook<WeaponUsedConditions>> OnSecondaryFired = Hook<WeaponUsedConditions>::Factory("On Secondary Fire",
+	"Invoked when a secondary weapon is fired.",
+	{
+		{"User", "ship", "The ship that has fired the weapon."},
+		{"Target", "object", "The current target of this ship."},
+	});
+
+const std::shared_ptr<Hook<WeaponSelectedConditions>> OnWeaponSelected = Hook<WeaponSelectedConditions>::Factory("On Weapon Selected",
+	"Invoked when a new weapon is selected.",
+	{
+		{"User", "ship", "The ship that has selectd the weapon."},
+		{"Target", "object", "The current target of this ship."},
+	});
+
+const std::shared_ptr<Hook<WeaponDeselectedConditions>> OnWeaponDeselected = Hook<WeaponDeselectedConditions>::Factory("On Weapon Deselected",
+	"Invoked when a weapon is deselected.",
+	{
+		{"User", "ship", "The ship that has selectd the weapon."},
+		{"Target", "object", "The current target of this ship."},
+	});
+
+extern const std::shared_ptr<Hook<WeaponUsedConditions>> OnTurretFired = Hook<WeaponUsedConditions>::Factory("On Turret Fired",
+	"Invoked when a turret is fired.",
+	{
+		{"Ship", "ship", "The ship that has fired the turret."},
+		{"Weapon", "weapon", "The spawned weapon object (nil if the turret fired a beam)."},
+		{"Beam", "beam", "The spawned beam object (nil unless the turret fired a beam)."},
+		{"Target", "object", "The current target of the shot."},
+	});
+
 const std::shared_ptr<OverridableHook<ObjectDrawConditions>> OnHudDraw = OverridableHook<ObjectDrawConditions>::Factory("On HUD Draw",
 	"Invoked when the HUD is rendered.",
 	{ 
@@ -190,6 +259,12 @@ const std::shared_ptr<OverridableHook<ObjectDrawConditions>> OnHudDraw = Overrid
 		{"Player", "object", "The player object."} 
 	},
 	CHA_HUDDRAW);
+
+const std::shared_ptr<OverridableHook<ObjectDrawConditions>> OnObjectRender = OverridableHook<ObjectDrawConditions>::Factory("On Object Render",
+	"Invoked every time an object is rendered.",
+	{
+		{"Self", "object", "The object which is rendered."}
+	});
 
 const std::shared_ptr<OverridableHook<>> OnDialogInit = OverridableHook<>::Factory("On Dialog Init",
 	"Invoked when a system dialog initalizes. Override to prevent the system dialog to load dialog-related resources (requires retail files)",

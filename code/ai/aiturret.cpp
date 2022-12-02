@@ -1886,10 +1886,13 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 				parent_ship->last_fired_turret = turret;
 				turret->last_fired_weapon_info_index = turret_weapon_class;
 
-				if (Script_system.IsActiveAction(CHA_ONTURRETFIRED)) {
-					Script_system.SetHookObjects(4, "Ship", &Objects[parent_objnum], "Weapon", nullptr, "Beam", objp, "Target", turret_enemy_objp);
-					Script_system.RunCondition(CHA_ONTURRETFIRED, &Objects[parent_objnum], objp);
-					Script_system.RemHookVars({"Ship", "Weapon", "Beam", "Target"});
+				if (scripting::hooks::OnTurretFired->isActive()) {
+					scripting::hooks::OnTurretFired->run(scripting::hooks::WeaponUsedConditions{ parent_ship , turret_enemy_objp, turret_weapon_class, true },
+						scripting::hook_param_list(
+							scripting::hook_param("Ship", 'o', &Objects[parent_objnum]),
+							scripting::hook_param("Beam", 'o', objp),
+							scripting::hook_param("Target", 'o', turret_enemy_objp)
+						));
 				}
 			}
 
@@ -2029,10 +2032,13 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 					// AL 1-6-97: Store pointer to turret subsystem
 					wp->turret_subsys = turret;	
 
-					if (Script_system.IsActiveAction(CHA_ONTURRETFIRED)) {
-						Script_system.SetHookObjects(4, "Ship", &Objects[parent_objnum], "Weapon", objp, "Beam", nullptr, "Target", turret_enemy_objp);
-						Script_system.RunCondition(CHA_ONTURRETFIRED, &Objects[parent_objnum], objp);
-						Script_system.RemHookVars({"Ship", "Weapon", "Beam", "Target"});
+					if (scripting::hooks::OnTurretFired->isActive()) {
+						scripting::hooks::OnTurretFired->run(scripting::hooks::WeaponUsedConditions{ parent_ship , turret_enemy_objp, turret_weapon_class, wip->subtype == WP_LASER },
+							scripting::hook_param_list(
+								scripting::hook_param("Ship", 'o', &Objects[parent_objnum]),
+								scripting::hook_param("Weapon", 'o', objp),
+								scripting::hook_param("Target", 'o', turret_enemy_objp)
+							));
 					}
 
 					// if the gun is a flak gun
@@ -2148,10 +2154,17 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 		Ships[Objects[tsi->parent_objnum].instance].last_fired_turret = tsi->turret;
 		tsi->turret->last_fired_weapon_info_index = tsi->weapon_class;
 
-		if (Script_system.IsActiveAction(CHA_ONTURRETFIRED)) {
-			Script_system.SetHookObjects(4, "Ship", &Objects[tsi->parent_objnum], "Weapon", &Objects[weapon_objnum], "Beam", nullptr, "Target", &Objects[tsi->turret->turret_enemy_objnum]);
-			Script_system.RunCondition(CHA_ONTURRETFIRED, &Objects[tsi->parent_objnum], &Objects[weapon_objnum]);
-			Script_system.RemHookVars({"Ship", "Weapon", "Beam", "Target"});
+		if (scripting::hooks::OnTurretFired->isActive()) {
+			scripting::hooks::OnTurretFired->run(scripting::hooks::WeaponUsedConditions{
+				&Ships[Objects[tsi->parent_objnum].instance],
+				&Objects[tsi->turret->turret_enemy_objnum], 
+				tsi->weapon_class, Weapon_info[tsi->weapon_class].subtype == WP_LASER
+				},
+				scripting::hook_param_list(
+					scripting::hook_param("Ship", 'o', &Objects[tsi->parent_objnum]),
+					scripting::hook_param("Weapon", 'o', &Objects[weapon_objnum]),
+					scripting::hook_param("Target", 'o', &Objects[tsi->turret->turret_enemy_objnum])
+				));
 		}
 
 		// muzzle flash?

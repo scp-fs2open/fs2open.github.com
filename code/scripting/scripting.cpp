@@ -69,18 +69,6 @@ class BuiltinHook : public scripting::HookBase {
 // clang-format off
 static USED_VARIABLE SCP_vector<std::shared_ptr<BuiltinHook>> Script_actions
 {
-	std::make_shared<BuiltinHook>("On Object Render",		CHA_OBJECTRENDER ),
-	std::make_shared<BuiltinHook>("On Weapon Delete",		CHA_ONWEAPONDELETE ),
-	std::make_shared<BuiltinHook>("On Weapon Equipped",		CHA_ONWPEQUIPPED ), //Called every frame for every ship
-	std::make_shared<BuiltinHook>("On Weapon Fired",		CHA_ONWPFIRED ),
-	std::make_shared<BuiltinHook>("On Weapon Selected",		CHA_ONWPSELECTED ),
-	std::make_shared<BuiltinHook>("On Weapon Deselected",	CHA_ONWPDESELECTED ),
-	std::make_shared<BuiltinHook>("On Gameplay Start",		CHA_GAMEPLAYSTART ),
-	std::make_shared<BuiltinHook>("On Turret Fired",		CHA_ONTURRETFIRED ),
-	std::make_shared<BuiltinHook>("On Primary Fire",		CHA_PRIMARYFIRE ),
-	std::make_shared<BuiltinHook>("On Secondary Fire",		CHA_SECONDARYFIRE ),
-	std::make_shared<BuiltinHook>("On Ship Arrive",			CHA_ONSHIPARRIVE ),
-	std::make_shared<BuiltinHook>("On Beam Collision",		CHA_COLLIDEBEAM ),
 	std::make_shared<BuiltinHook>("On Afterburner Engage",	CHA_AFTERBURNSTART ),
 	std::make_shared<BuiltinHook>("On Afterburner Stop",	CHA_AFTERBURNEND ),
 	std::make_shared<BuiltinHook>("On Beam Fire",			CHA_BEAMFIRE ),

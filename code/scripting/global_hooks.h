@@ -53,10 +53,10 @@ extern const std::shared_ptr<Hook<WeaponDeathConditions>>				OnWeaponDelete;
 
 extern const std::shared_ptr<Hook<WeaponEquippedConditions>>			OnWeaponEquipped;
 extern const std::shared_ptr<Hook<WeaponUsedConditions>>				OnWeaponFired;
-extern const std::shared_ptr<Hook<WeaponSelectedConditions>>			OnWeaponSelected;
-extern const std::shared_ptr<Hook<WeaponDeselectedConditions>>			OnWeaponDeselected;
 extern const std::shared_ptr<Hook<WeaponUsedConditions>>				OnPrimaryFired;
 extern const std::shared_ptr<Hook<WeaponUsedConditions>>				OnSecondaryFired;
+extern const std::shared_ptr<Hook<WeaponSelectedConditions>>			OnWeaponSelected;
+extern const std::shared_ptr<Hook<WeaponDeselectedConditions>>			OnWeaponDeselected;
 extern const std::shared_ptr<Hook<WeaponUsedConditions>>				OnTurretFired;
 extern const std::shared_ptr<Hook<WeaponUsedConditions>>				OnBeamFired;
 

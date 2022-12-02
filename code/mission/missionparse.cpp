@@ -62,6 +62,7 @@
 #include "parse/generic_log.h"
 #include "parse/parselo.h"
 #include "parse/sexp_container.h"
+#include "scripting/global_hooks.h"
 #include "scripting/hook_api.h"
 #include "scripting/hook_conditions.h"
 #include "scripting/scripting.h"
@@ -2402,10 +2403,12 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 	if (Game_mode & GM_IN_MISSION && ((shipp->wingnum == -1) || (brought_in_docked_wing))) {
 		object *anchor_objp = (anchor_objnum >= 0) ? &Objects[anchor_objnum] : nullptr;
 
-		if (Script_system.IsActiveAction(CHA_ONSHIPARRIVE)) {
-			Script_system.SetHookObjects(2, "Ship", &Objects[objnum], "Parent", anchor_objp);
-			Script_system.RunCondition(CHA_ONSHIPARRIVE, &Objects[objnum]);
-			Script_system.RemHookVars({"Ship", "Parent"});
+		if (scripting::hooks::OnShipArrive->isActive()) {
+			scripting::hooks::OnShipArrive->run(scripting::hooks::ShipSpawnConditions{ shipp, p_objp->arrival_location, anchor_objp },
+				scripting::hook_param_list(
+					scripting::hook_param("Ship", 'o', &Objects[objnum]),
+					scripting::hook_param("Parent", 'o', anchor_objp, anchor_objp != nullptr)
+				));
 		}
 	}
 
@@ -6583,10 +6586,12 @@ void mission_set_wing_arrival_location( wing *wingp, int num_to_set )
 			object *objp = &Objects[Ships[wingp->ship_index[index]].objnum];
 			object *anchor_objp = (anchor_objnum >= 0) ? &Objects[anchor_objnum] : nullptr;
 
-			if (Script_system.IsActiveAction(CHA_ONSHIPARRIVE)) {
-				Script_system.SetHookObjects(2, "Ship", objp, "Parent", anchor_objp);
-				Script_system.RunCondition(CHA_ONSHIPARRIVE, objp);
-				Script_system.RemHookVars({"Ship", "Parent"});
+			if (scripting::hooks::OnShipArrive->isActive()) {
+				scripting::hooks::OnShipArrive->run(scripting::hooks::ShipSpawnConditions{ &Ships[wingp->ship_index[index]], wingp->arrival_location, anchor_objp },
+					scripting::hook_param_list(
+						scripting::hook_param("Ship", 'o', objp),
+						scripting::hook_param("Parent", 'o', anchor_objp, anchor_objp != nullptr)
+					));
 			}
 
 			if (wingp->arrival_location != ARRIVE_FROM_DOCK_BAY) {

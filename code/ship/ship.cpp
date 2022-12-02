@@ -12477,11 +12477,14 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 				sip->animations.getAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::PrimaryFired, bank).start(animation::ModelAnimationDirection::FWD, true);
 		}
 
-		if (Script_system.IsActiveAction(CHA_ONWPFIRED) || Script_system.IsActiveAction(CHA_PRIMARYFIRE)) {
-			Script_system.SetHookObjects(2, "User", objp, "Target", target);
-			Script_system.RunCondition(CHA_ONWPFIRED, objp, nullptr, 1);
-			Script_system.RunCondition(CHA_PRIMARYFIRE, objp, nullptr);
-			Script_system.RemHookVars({"User", "Target"});
+		if (scripting::hooks::OnWeaponFired->isActive() || scripting::hooks::OnPrimaryFired->isActive()) {
+			auto param_list = scripting::hook_param_list(
+				scripting::hook_param("User", 'o', objp),
+				scripting::hook_param("Target", 'o', target)
+			);
+			auto conditions = scripting::hooks::WeaponUsedConditions{ shipp, target, weapon_idx, true };
+			scripting::hooks::OnWeaponFired->run(conditions, param_list);
+			scripting::hooks::OnPrimaryFired->run(conditions, param_list);
 		}
 	}
 
@@ -13185,11 +13188,14 @@ done_secondary:
 		//Start Animation in Forced mode: Always restart it from its initial position rather than just flip it to FWD motion if it was still moving. This is to make it work best for uses like recoil.
 		sip->animations.getAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::SecondaryFired, bank).start(animation::ModelAnimationDirection::FWD, true);
 
-		if (Script_system.IsActiveAction(CHA_ONWPFIRED) || Script_system.IsActiveAction(CHA_SECONDARYFIRE)) {
-			Script_system.SetHookObjects(2, "User", objp, "Target", target);
-			Script_system.RunCondition(CHA_ONWPFIRED, objp, nullptr, 2);
-			Script_system.RunCondition(CHA_SECONDARYFIRE, objp, nullptr);
-			Script_system.RemHookVars({"User", "Target"});
+		if (scripting::hooks::OnWeaponFired->isActive() || scripting::hooks::OnSecondaryFired->isActive()) {
+			auto param_list = scripting::hook_param_list(
+				scripting::hook_param("User", 'o', objp),
+				scripting::hook_param("Target", 'o', target)
+			);
+			auto conditions = scripting::hooks::WeaponUsedConditions{ shipp, target, weapon_idx, false };
+			scripting::hooks::OnWeaponFired->run(conditions, param_list);
+			scripting::hooks::OnSecondaryFired->run(conditions, param_list);
 		}
 	}
 
@@ -13447,11 +13453,13 @@ int ship_select_next_primary(object *objp, int direction)
 		if (objp == Player_obj && Player_ai->target_objnum != -1)
 			target = &Objects[Player_ai->target_objnum];
 
-		if (Script_system.IsActiveAction(CHA_ONWPSELECTED) || Script_system.IsActiveAction(CHA_ONWPDESELECTED)) {
-			Script_system.SetHookObjects(2, "User", objp, "Target", target);
-			Script_system.RunCondition(CHA_ONWPSELECTED, objp, nullptr, 1);
-			Script_system.RunCondition(CHA_ONWPDESELECTED, objp, nullptr, 1);
-			Script_system.RemHookVars({"User", "Target"});
+		if (scripting::hooks::OnWeaponSelected->isActive() || scripting::hooks::OnWeaponDeselected->isActive()) {
+			auto param_list = scripting::hook_param_list(
+				scripting::hook_param("User", 'o', objp),
+				scripting::hook_param("Target", 'o', target)
+			);
+			scripting::hooks::OnWeaponSelected->run(scripting::hooks::WeaponSelectedConditions{ shipp, swp->current_primary_bank, original_bank, true }, param_list);
+			scripting::hooks::OnWeaponDeselected->run(scripting::hooks::WeaponDeselectedConditions{ shipp, swp->current_primary_bank, original_bank, true }, param_list);
 		}
 
 		return 1;
@@ -13551,11 +13559,13 @@ int ship_select_next_secondary(object *objp)
 			if (objp == Player_obj && Player_ai->target_objnum != -1)
 				target = &Objects[Player_ai->target_objnum];
 
-			if (Script_system.IsActiveAction(CHA_ONWPSELECTED) || Script_system.IsActiveAction(CHA_ONWPDESELECTED)) {
-				Script_system.SetHookObjects(2, "User", objp, "Target", target);
-				Script_system.RunCondition(CHA_ONWPSELECTED, objp, nullptr, 2);
-				Script_system.RunCondition(CHA_ONWPDESELECTED, objp, nullptr, 2);
-				Script_system.RemHookVars({"User", "Target"});
+			if (scripting::hooks::OnWeaponSelected->isActive() || scripting::hooks::OnWeaponDeselected->isActive()) {
+				auto param_list = scripting::hook_param_list(
+					scripting::hook_param("User", 'o', objp),
+					scripting::hook_param("Target", 'o', target)
+				);
+				scripting::hooks::OnWeaponSelected->run(scripting::hooks::WeaponSelectedConditions{ shipp, swp->current_secondary_bank, original_bank, false }, param_list);
+				scripting::hooks::OnWeaponDeselected->run(scripting::hooks::WeaponDeselectedConditions{ shipp, swp->current_secondary_bank, original_bank, false }, param_list);
 			}
 
 			return 1;

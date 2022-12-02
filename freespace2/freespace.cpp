@@ -4757,13 +4757,9 @@ void game_process_event( int current_state, int event )
 			memset(&Multi_ship_status_bi, 0, sizeof(button_info));
 
 			// Make hv.Player available in "On Gameplay Start" hook -zookeeper
-			if(Player_obj)
-				Script_system.SetHookObject("Player", Player_obj);
-
-			Script_system.RunCondition(CHA_GAMEPLAYSTART);
-
-			if (Player_obj)
-				Script_system.RemHookVar("Player");
+			scripting::hooks::OnGameplayStart->run(scripting::hook_param_list(
+				scripting::hook_param("Player", 'o', Player_obj, Player_obj != nullptr)
+			));
 
 			Start_time = f2fl(timer_get_approx_seconds());
 			mprintf(("Entering game at time = %7.3f\n", Start_time));

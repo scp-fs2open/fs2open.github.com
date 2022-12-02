@@ -82,7 +82,7 @@ struct ShipSpawnConditions {
 	HOOK_DEFINE_CONDITIONS;
 	const ship* spawned_shipp;
 	int arrival_location; // As of yet unused
-	const ship* spawn_source_shipp; // As of yet unused
+	const object* spawn_anchor_objp; // As of yet unused
 };
 
 struct WeaponCreatedConditions {
@@ -120,7 +120,7 @@ struct WeaponDeselectedConditions {
 };
 
 struct ObjectDrawConditions {
-	HOOK_DEFINE_CONDITIONS; //TODO
+	HOOK_DEFINE_CONDITIONS;
 	const object* drawn_from_objp;
 };
 

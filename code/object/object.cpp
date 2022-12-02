@@ -1570,10 +1570,12 @@ void obj_move_all(float frametime)
 			if (objp == Player_obj && Player_ai->target_objnum != -1)
 				target = &Objects[Player_ai->target_objnum];
 
-			if (Script_system.IsActiveAction(CHA_ONWPEQUIPPED)) {
-				Script_system.SetHookObjects(2, "User", objp, "Target", target);
-				Script_system.RunCondition(CHA_ONWPEQUIPPED, objp);
-				Script_system.RemHookVars({"User", "Target"});
+			if (scripting::hooks::OnWeaponEquipped->isActive()) {
+				scripting::hooks::OnWeaponEquipped->run(scripting::hooks::WeaponEquippedConditions{ shipp, target },
+					scripting::hook_param_list(
+						scripting::hook_param("User", 'o', objp),
+						scripting::hook_param("Target", 'o', target)
+					));
 			}
 		}
 	}
@@ -1680,15 +1682,14 @@ void obj_queue_render(object* obj, model_draw_list* scene)
 
 	if ( obj->flags[Object::Object_Flags::Should_be_dead] ) return;
 
-	if (Script_system.IsActiveAction(CHA_OBJECTRENDER)) {
-		// Set the render scene context
+	if (scripting::hooks::OnObjectRender->isActive()) {
 		scripting::api::Current_scene = scene;
 
-		Script_system.SetHookObject("Self", obj);
-		bool skip_render = Script_system.IsConditionOverride(CHA_OBJECTRENDER, obj);
+		auto param_list = scripting::hook_param_list(scripting::hook_param("Self", 'o', obj));
+
 		// Always execute the hook content
-		Script_system.RunCondition(CHA_OBJECTRENDER, obj);
-		Script_system.RemHookVar("Self");
+		bool skip_render = scripting::hooks::OnObjectRender->isOverride(scripting::hooks::ObjectDrawConditions{ obj }, param_list);
+		scripting::hooks::OnObjectRender->run(scripting::hooks::ObjectDrawConditions{ obj }, param_list);
 
 		// Clear the render scene context
 		scripting::api::Current_scene = nullptr;
@@ -1698,7 +1699,6 @@ void obj_queue_render(object* obj, model_draw_list* scene)
 			return;
 		}
 	}
-
 
 	switch ( obj->type ) {
 	case OBJ_NONE:
