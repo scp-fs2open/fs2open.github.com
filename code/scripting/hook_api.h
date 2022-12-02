@@ -157,7 +157,10 @@ class HookImpl : public HookBase {
 
 		return num_run;
 	}
+
 	using HookBase::_hookId;
+	using HookBase::_hookName;
+	using HookBase::hasParameter;
 };
 template<>
 class HookImpl<void> : public HookBase {
@@ -191,6 +194,8 @@ class HookImpl<void> : public HookBase {
 	}
 
 	using HookBase::_hookId;
+	using HookBase::_hookName;
+	using HookBase::hasParameter;
 };
 
 template<typename condition_t = void>
@@ -253,6 +258,8 @@ class OverridableHookImpl : public Hook<condition_t> {
 	}
 
 	using HookBase::_hookId;
+	using HookBase::_hookName;
+	using HookBase::hasParameter;
 };
 
 template<>
@@ -286,6 +293,8 @@ protected:
 	}
 
 	using HookBase::_hookId;
+	using HookBase::_hookName;
+	using HookBase::hasParameter;
 };
 
 

@@ -13,7 +13,7 @@ namespace scripting {
 
 class EvaluatableCondition {
 public:
-	virtual bool evaluate(const linb::any& conditionContext) const {
+	virtual bool evaluate(const linb::any& /*conditionContext*/) const {
 		return false;
 	};
 };
@@ -22,7 +22,7 @@ class ParseableCondition {
 public:
 	SCP_string documentation;
 
-	virtual std::unique_ptr<EvaluatableCondition> parse(const SCP_string& /*input*/ ) const {
+	virtual std::unique_ptr<EvaluatableCondition> parse(const SCP_string& /*input*/) const {
 		return make_unique<EvaluatableCondition>();
 	};
 
