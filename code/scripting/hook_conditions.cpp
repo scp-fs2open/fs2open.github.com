@@ -97,7 +97,7 @@ static SCP_string conditionParseString(const SCP_string& name) {
 }
 
 static int conditionParseActionId(const SCP_string& name) {
-	for (int i = 0; i < Control_config.size(); i++) {
+	for (int i = 0; i < (int)Control_config.size(); i++) {
 		if (stricmp(Control_config[i].text.c_str(), name.c_str()) == 0)
 			return i;
 	}
