@@ -10,6 +10,8 @@
 #include "scripting/scripting.h"
 #include "scripting/hook_api.h"
 
+extern int cache_condition(ConditionalType type, const SCP_string& value);
+
 namespace scripting {
 namespace api {
 
@@ -72,40 +74,24 @@ ADE_FUNC(addHook,
 				return ADE_RETURN_FALSE;
 			}
 
-			auto condition = scripting_string_to_condition(key.getValue<SCP_string>().c_str());
+			const SCP_string& condition_key = key.getValue<SCP_string>();
+			auto condition = scripting_string_to_condition(condition_key.c_str());
 			SCP_string condition_value = value.getValue<SCP_string>();
 
 			if (condition != CHC_NONE) {
-				extern int cache_condition(ConditionalType type, const SCP_string & value);
-
 				//It's a global condition
 				int cache = cache_condition(condition, condition_value);
 				action.global_conditions.emplace_back(script_condition{ condition, std::move(condition_value), cache });
 			}
 			else {
-				bool found = false;
-				pause_parse();
-				char* parse = vm_strdup(condition_value.c_str());
-				reset_parse(parse);
+				auto condition_it = action_hook->_conditions.find(condition_key);
 
-				for (const auto& potential_condition : action_hook->_conditions) {
-					SCP_string bufCond;
-					sprintf(bufCond, "$%s:", potential_condition.first.c_str());
-					if (optional_string(bufCond.c_str())) {
-						SCP_string arg;
-						stuff_string(arg, F_NAME);
-						action.local_conditions.emplace_back(potential_condition.second->parse(arg));
-						found = true;
-						break;
-					}
-				}
-				vm_free(parse);
-				unpause_parse();
-
-				if (!found) {
+				if (condition_it == action_hook->_conditions.end()) {
 					LuaError(L, "Condition '%s' is not valid for hook '%s'. The hook will not evaluate!", condition_value.c_str(), action_hook->getHookName().c_str());
 					return ADE_RETURN_FALSE;
 				}
+
+				action.local_conditions.emplace_back(condition_it->second->parse(condition_value));
 			}
 		}
 	}
