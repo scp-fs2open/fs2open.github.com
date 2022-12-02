@@ -1068,15 +1068,15 @@ int common_scroll_down_pressed(int *start, int size, int max_show)
 
 void common_fire_stage_script_hook(int old_stage, int new_stage)
 {
-	if (!Script_system.IsActiveAction(CHA_ONBRIEFSTAGE)) {
-		return;
+	if (scripting::hooks::OnBriefStage->isActive()) {
+		// call a scripting hook for switching stages
+		// note that we add 1 because Lua arrays are 1-based
+		scripting::hooks::OnBriefStage->run(
+			scripting::hook_param_list(
+				scripting::hook_param("OldStage", 'i', old_stage + 1),
+				scripting::hook_param("NewStage", 'i', new_stage + 1)
+			));
 	}
-	// call a scripting hook for switching stages
-	// note that we add 1 because Lua arrays are 1-based
-	Script_system.SetHookVar("OldStage", 'i', old_stage + 1);
-	Script_system.SetHookVar("NewStage", 'i', new_stage + 1);
-	Script_system.RunCondition(CHA_ONBRIEFSTAGE);
-	Script_system.RemHookVars({"OldStage", "NewStage"});
 }
 
 // NEWSTUFF BEGIN

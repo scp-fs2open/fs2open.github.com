@@ -23,6 +23,21 @@ const std::shared_ptr<OverridableHook<>> OnStateStart = OverridableHook<>::Facto
 		{"NewState", "object", "The gamestate object of the state that will be executing."}
 	});
 
+const std::shared_ptr<Hook<>> OnLoadScreen = Hook<>::Factory("On Load Screen",
+	"Executed regularly during loading of a mission.",
+	{ {"Progress", "number", "A number from 0 to 1 indicating how far along the loading process the game is."}});
+
+const std::shared_ptr<Hook<>> OnCampaignMissionAccept = Hook<>::Factory("On Campaign Mission Accept",
+	"Invoked after a campaign mission once the player accepts the result and moves on to the next mission instead of replaying it.",
+	{});
+
+const std::shared_ptr<Hook<>> OnBriefStage = Hook<>::Factory("On Briefing Stage",
+	"Invoked for each briefing stage what it is shown.",
+	{
+		{"OldStage", "number", "The index of the previous briefing stage."},
+		{"NewStage", "number", "The index of the new briefing stage."}
+	});
+
 const std::shared_ptr<Hook<>> OnMissionStart = Hook<>::Factory("On Mission Start",
 	"Invoked when a mission starts.",
 	{ {"Player", "object", "The player object."} });
@@ -58,6 +73,26 @@ const std::shared_ptr<Hook<>> OnMousePressed = Hook<>::Factory("On Mouse Pressed
 const std::shared_ptr<Hook<>> OnMouseReleased = Hook<>::Factory("On Mouse Released",
 	"Invoked whenever a mouse button is released.",
 	{});
+
+const std::shared_ptr<Hook<ShipSourceConditions>> OnAfterburnerStart = Hook<ShipSourceConditions>::Factory("On Afterburner Engage",
+	"Invoked whenever a ship engages its afterburners",
+	{ { "Ship", "ship", "The ship engaging its afterburners" } });
+
+const std::shared_ptr<Hook<ShipSourceConditions>> OnAfterburnerEnd = Hook<ShipSourceConditions>::Factory("On Afterburner Stop",
+	"Invoked whenever a ship stops using its afterburners",
+	{ { "Ship", "ship", "The ship which had been using its afterburners" } });
+
+const std::shared_ptr<Hook<ShipSourceConditions>> OnWaypointsDone = Hook<ShipSourceConditions>::Factory("On Waypoints Done",
+	"Invoked whenever a ship stops using its afterburners",
+	{
+		{ "Ship", "ship", "The ship which has completed the waypoints." },
+		{ "Wing", "wing", "The wing which the ship belongs to. Can be invalid." },
+		{ "Waypointlist", "waypointlist", "The set of waypoints which was completed." }
+	});
+
+const std::shared_ptr<Hook<ShipSourceConditions>> OnGoalsCleared = Hook<ShipSourceConditions>::Factory("On Goals Cleared",
+	"Invoked whenever a ship has its goals cleared.",
+	{ { "Ship", "ship", "The ship whose goals are cleared." } });
 
 const std::shared_ptr<Hook<ShipSourceConditions>> OnDebrisCreated = Hook<ShipSourceConditions>::Factory(
 	"On Debris Created",
@@ -150,6 +185,10 @@ const std::shared_ptr<Hook<ShipSpawnConditions>> OnShipArrive = Hook<ShipSpawnCo
 		{"Parent", "object", "The object which serves as the arrival anchor of the ship. Could be nil."},
 	});
 
+const std::shared_ptr<Hook<WeaponCreatedConditions>> OnWeaponCreated = Hook<WeaponCreatedConditions>::Factory("On Weapon Created",
+	"Invoked every time a weapon object is created.",
+	{ {"Weapon", "weapon", "The weapon object."} });
+
 const std::shared_ptr<Hook<ShipDeathConditions>> OnShipDeathStarted = Hook<ShipDeathConditions>::Factory(
 	"On Ship Death Started", "Called when a ship starts the death process.",
 	{
@@ -192,6 +231,21 @@ const std::shared_ptr<Hook<>> OnDebrisDeath = Hook<>::Factory(
 	{
 		{"Debris", "debris", "The piece of debris that was destroyed."},
 		{"Hitpos", "vector", "The world coordinates of the killing blow.  Could be nil."},
+	});
+
+const std::shared_ptr<Hook<SubsystemDeathConditions>> OnSubsystemDestroyed = Hook<SubsystemDeathConditions>::Factory("On Subsystem Destroyed",
+	"Called when a subsystem is destroyed.",
+	{
+		{"Ship", "ship", "The ship that held the subsystem."},
+		{"Subsystem", "subsystem", "The subsystem that has been destroyed."},
+	});
+
+const std::shared_ptr<Hook<ShipDepartConditions>> OnShipDepart = Hook<ShipDepartConditions>::Factory("On Ship Depart",
+	"Invoked when a ship departs the mission without being destroyed.",
+	{
+		{"Ship", "ship", "The ship departing the mission"},
+		{"JumpNode", "string", "The name of the jump node the ship jumped out of. Can be nil."},
+		{"Method", "ship", "The name of the method the ship used to depart. One of: 'SHIP_DEPARTED', 'SHIP_DEPARTED_WARP', 'SHIP_DEPARTED_BAY', 'SHIP_VANISHED', 'SHIP_DEPARTED_REDALERT'."},
 	});
 
 const std::shared_ptr<Hook<WeaponDeathConditions>> OnWeaponDelete = Hook<WeaponDeathConditions>::Factory("On Weapon Delete",
@@ -243,12 +297,20 @@ const std::shared_ptr<Hook<WeaponDeselectedConditions>> OnWeaponDeselected = Hoo
 		{"Target", "object", "The current target of this ship."},
 	});
 
-extern const std::shared_ptr<Hook<WeaponUsedConditions>> OnTurretFired = Hook<WeaponUsedConditions>::Factory("On Turret Fired",
+const std::shared_ptr<Hook<WeaponUsedConditions>> OnTurretFired = Hook<WeaponUsedConditions>::Factory("On Turret Fired",
 	"Invoked when a turret is fired.",
 	{
 		{"Ship", "ship", "The ship that has fired the turret."},
 		{"Weapon", "weapon", "The spawned weapon object (nil if the turret fired a beam)."},
 		{"Beam", "beam", "The spawned beam object (nil unless the turret fired a beam)."},
+		{"Target", "object", "The current target of the shot."},
+	});
+
+const std::shared_ptr<Hook<WeaponUsedConditions>> OnBeamFired = Hook<WeaponUsedConditions>::Factory("On Beam Fire",
+	"Invoked when a beam is fired.",
+	{
+		{"Ship", "ship", "The ship that has fired the turret."},
+		{"Beam", "beam", "The spawned beam object."},
 		{"Target", "object", "The current target of the shot."},
 	});
 
@@ -265,6 +327,11 @@ const std::shared_ptr<OverridableHook<ObjectDrawConditions>> OnObjectRender = Ov
 	{
 		{"Self", "object", "The object which is rendered."}
 	});
+
+const std::shared_ptr<Hook<>> OnSimulation = Hook<>::Factory("On Simulation",
+	"Invoked every time that FSO processes physics and AI.",
+	{},
+	CHA_SIMULATION);
 
 const std::shared_ptr<OverridableHook<>> OnDialogInit = OverridableHook<>::Factory("On Dialog Init",
 	"Invoked when a system dialog initalizes. Override to prevent the system dialog to load dialog-related resources (requires retail files)",

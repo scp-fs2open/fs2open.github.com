@@ -360,10 +360,9 @@ void ai_clear_ship_goals( ai_info *aip )
 	}
 
 	// add scripting hook for 'On Goals Cleared' --wookieejedi
-	if (Script_system.IsActiveAction(CHA_ONGOALSCLEARED)) {
-		Script_system.SetHookObject("Ship", &Objects[Ships[aip->shipnum].objnum]);
-		Script_system.RunCondition(CHA_ONGOALSCLEARED, &Objects[Ships[aip->shipnum].objnum]);
-		Script_system.RemHookVars({"Ship"});
+	if (scripting::hooks::OnGoalsCleared->isActive()) {
+		scripting::hooks::OnGoalsCleared->run(scripting::hooks::ShipSourceConditions{ &Ships[aip->shipnum] },
+			scripting::hook_param_list(scripting::hook_param("Ship", 'o', &Objects[Ships[aip->shipnum].objnum])));
 	}
 }
 

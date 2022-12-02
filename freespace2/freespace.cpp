@@ -1200,14 +1200,11 @@ void game_loading_callback(int count)
 
 	auto progress = static_cast<float>(count) / static_cast<float>(COUNT_ESTIMATE);
 	CLAMP(progress, 0.0f, 1.0f);
-	Script_system.SetHookVar("Progress", 'f', progress);
 
-	if (Script_system.RunCondition(CHA_LOADSCREEN)) {
+	if (scripting::hooks::OnLoadScreen->run(scripting::hook_param_list(scripting::hook_param("Progress", 'f', progress))) > 0) {
 		// At least one script exeuted so we probably need to do a flip now
 		do_flip = 1;
 	}
-
-	Script_system.RemHookVar("Progress");
 
 	os_defer_events_on_load_screen();
 
@@ -3708,7 +3705,7 @@ void game_simulation_frame()
 
 	// Kick off externally injected operations after the simulation step has finished
 	executor::OnSimulationExecutor->process();
-	Script_system.RunCondition(CHA_SIMULATION);
+	scripting::hooks::OnSimulation->run();
 }
 
 // Maybe render and process the dead-popup

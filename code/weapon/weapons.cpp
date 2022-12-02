@@ -4476,6 +4476,8 @@ void weapon_delete(object *obj)
 	weapon *wp;
 	int num;
 
+	num = obj->instance;
+
 	Assert( Weapons[num].objnum == OBJ_INDEX(obj));
 	wp = &Weapons[num];
 
@@ -4486,8 +4488,6 @@ void weapon_delete(object *obj)
 				scripting::hook_param("Self", 'o', obj)
 			));
 	}
-
-	num = obj->instance;
 
 	Assert(wp->weapon_info_index >= 0);
 	wp->weapon_info_index = -1;
@@ -6539,10 +6539,11 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		wip->animations.getAll(model_get_instance(wp->model_instance_num), animation::ModelAnimationTriggerType::OnSpawn).start(animation::ModelAnimationDirection::FWD);
 	}
 
-	if (Script_system.IsActiveAction(CHA_ONWEAPONCREATED)) {
-		Script_system.SetHookObject("Weapon", &Objects[objnum]);
-		Script_system.RunCondition(CHA_ONWEAPONCREATED, &Objects[objnum]);
-		Script_system.RemHookVar("Weapon");
+	if (scripting::hooks::OnWeaponCreated->isActive()) {
+		scripting::hooks::OnWeaponCreated->run(scripting::hooks::WeaponCreatedConditions{ wp, &Objects[parent_objnum] },
+			scripting::hook_param_list(
+				scripting::hook_param("Weapon", 'o', &Objects[objnum])
+			));
 	}
 
 	return objnum;

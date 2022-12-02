@@ -301,11 +301,12 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 	}
 
 	// call a scripting hook for the subsystem (regardless of whether it's added to the mission log)
-	if (Script_system.IsActiveAction(CHA_ONSUBSYSDEATH)) {
-		Script_system.SetHookObject("Ship", ship_objp);
-		Script_system.SetHookVar("Subsystem", 'o', scripting::api::l_Subsystem.Set(scripting::api::ship_subsys_h(ship_objp, subsys)));
-		Script_system.RunCondition(CHA_ONSUBSYSDEATH, ship_objp);
-		Script_system.RemHookVars({"Ship", "Subsystem"});
+	if (scripting::hooks::OnSubsystemDestroyed->isActive()) {
+		scripting::hooks::OnSubsystemDestroyed->run(scripting::hooks::SubsystemDeathConditions{ ship_p, subsys },
+			scripting::hook_param_list(
+				scripting::hook_param("Ship", 'o', ship_objp),
+				scripting::hook_param("Subsystem", 'o', scripting::api::l_Subsystem.Set(scripting::api::ship_subsys_h(ship_objp, subsys)))
+			));
 	}
 
 	if (!(subsys->flags[Ship::Subsystem_Flags::No_disappear])) {

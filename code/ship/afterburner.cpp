@@ -159,10 +159,11 @@ void afterburners_start(object *objp)
 		snd_play_3d( gamesnd_get_game_sound(ship_get_sound(objp, GameSounds::ABURN_ENGAGE)), &objp->pos, &View_position, objp->radius );
 	}
 
-	if (Script_system.IsActiveAction(CHA_AFTERBURNSTART)) {
-		Script_system.SetHookObjects(1, "Ship", objp);
-		Script_system.RunCondition(CHA_AFTERBURNSTART, objp);
-		Script_system.RemHookVars({"Ship"});
+	if (scripting::hooks::OnAfterburnerStart->isActive()) {
+		scripting::hooks::OnAfterburnerStart->run(scripting::hooks::ShipSourceConditions{ shipp },
+			scripting::hook_param_list(
+				scripting::hook_param("Ship", 'o', objp)
+			));
 	}
 	
 	objp->phys_info.flags |= PF_AFTERBURNER_WAIT;
@@ -330,10 +331,11 @@ void afterburners_stop(object *objp, int key_released)
 
 	shipp->afterburner_last_end_time = timer_get_milliseconds();
 
-	if (Script_system.IsActiveAction(CHA_AFTERBURNEND)) {
-		Script_system.SetHookObjects(1, "Ship", objp);
-		Script_system.RunCondition(CHA_AFTERBURNEND, objp);
-		Script_system.RemHookVars({"Ship"});
+	if (scripting::hooks::OnAfterburnerEnd->isActive()) {
+		scripting::hooks::OnAfterburnerEnd->run(scripting::hooks::ShipSourceConditions{ shipp },
+			scripting::hook_param_list(
+				scripting::hook_param("Ship", 'o', objp)
+			));
 	}
 
 	objp->phys_info.flags &= ~PF_AFTERBURNER_ON;

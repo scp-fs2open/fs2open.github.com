@@ -2184,10 +2184,13 @@ int beam_start_firing(beam *b)
 	if (b->flags & BF_IS_FIGHTER_BEAM && wip->wi_flags[Weapon::Info_Flags::Ballistic])
 		Ships[b->objp->instance].weapons.primary_bank_ammo[b->bank]--;
 
-	if (Script_system.IsActiveAction(CHA_BEAMFIRE)) {
-		Script_system.SetHookObjects(3, "Beam", &Objects[b->objnum], "User", b->objp, "Target", b->target);
-		Script_system.RunCondition(CHA_BEAMFIRE, b->objp, &Objects[b->objnum]);
-		Script_system.RemHookVars({"Beam", "User", "Target"});
+	if (scripting::hooks::OnBeamFired->isActive()) {
+		scripting::hooks::OnBeamFired->run(scripting::hooks::WeaponUsedConditions{ &Ships[b->objp->instance], b->target, b->weapon_info_index, true },
+			scripting::hook_param_list(
+				scripting::hook_param("Beam", 'o', &Objects[b->objnum]),
+				scripting::hook_param("User", 'o', b->objp),
+				scripting::hook_param("Target", 'o', b->target)
+			));
 	}
 
 	// success

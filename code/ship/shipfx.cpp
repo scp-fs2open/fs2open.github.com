@@ -58,11 +58,11 @@ sound_handle Player_engine_wash_loop = sound_handle::invalid();
 
 extern float splode_level;
 
-const auto OnWarpOutHook = scripting::OverridableHook::Factory(
-	"On Warp Out", "Called when a ship warps out", {{"Self", "ship", "The object that is warping out."}});
+const auto OnWarpOutHook = scripting::OverridableHook<scripting::hooks::ShipSourceConditions>::Factory(
+	"On Warp Out", "Called when a ship warps out.", {{"Self", "ship", "The object that is warping out."}});
 
-const auto OnWarpInHook = scripting::OverridableHook::Factory(
-	"On Warp In", "Called when a ship warps in", {{"Self", "ship", "The object that is warping in."}});
+const auto OnWarpInHook = scripting::OverridableHook<scripting::hooks::ShipSourceConditions>::Factory(
+	"On Warp In", "Called when a ship warps in.", {{"Self", "ship", "The object that is warping in."}});
 
 static void shipfx_remove_submodel_ship_sparks(ship* shipp, int submodel_num)
 {
@@ -538,9 +538,10 @@ void shipfx_warpin_start( object *objp )
 	//WMC - Check if scripting handles this.
 	if (OnWarpInHook->isActive())
 	{
-		if (OnWarpInHook->isOverride(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp)), objp))
-		{
-			OnWarpInHook->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp)), objp);
+		auto params = scripting::hook_param_list(scripting::hook_param("Self", 'o', objp));
+		auto conditions = scripting::hooks::ShipSourceConditions{ shipp };
+		if (OnWarpInHook->isOverride(conditions, params)) {
+			OnWarpInHook->run(conditions, params);
 			return;
 		}
 	}
@@ -558,7 +559,9 @@ void shipfx_warpin_start( object *objp )
 
 	if (OnWarpInHook->isActive())
 	{
-		OnWarpInHook->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp)), objp);
+		auto params = scripting::hook_param_list(scripting::hook_param("Self", 'o', objp));
+		auto conditions = scripting::hooks::ShipSourceConditions{ shipp };
+		OnWarpInHook->run(conditions, params);
 	}
 }
 
@@ -679,8 +682,10 @@ void shipfx_warpout_start( object *objp )
 	}
 
 	if (OnWarpOutHook->isActive()) {
-		if (OnWarpOutHook->isOverride(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp)), objp)) {
-			OnWarpOutHook->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp)), objp);
+		auto params = scripting::hook_param_list(scripting::hook_param("Self", 'o', objp));
+		auto conditions = scripting::hooks::ShipSourceConditions{ shipp };
+		if (OnWarpOutHook->isOverride(conditions, params)) {
+			OnWarpOutHook->run(conditions, params);
 			return;
 		}
 	}
@@ -720,7 +725,9 @@ void shipfx_warpout_start( object *objp )
 	shipp->warpout_effect->warpStart();
 
 	if (OnWarpOutHook->isActive()) {
-		OnWarpOutHook->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp)), objp);
+		auto params = scripting::hook_param_list(scripting::hook_param("Self", 'o', objp));
+		auto conditions = scripting::hooks::ShipSourceConditions{ shipp };
+		OnWarpOutHook->run(conditions, params);
 	}
 }
 

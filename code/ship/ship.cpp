@@ -568,7 +568,7 @@ SCP_vector<ship_counts>	Ship_type_counts;
 
 SCP_vector<wing_formation> Wing_formations;
 
-const std::shared_ptr<scripting::Hook> OnCountermeasureFireHook = scripting::Hook::Factory("On Countermeasure Fire",
+const std::shared_ptr<scripting::Hook<scripting::hooks::ShipSourceConditions>> OnCountermeasureFireHook = scripting::Hook<scripting::hooks::ShipSourceConditions>::Factory("On Countermeasure Fire",
 	"Called when a ship fires a countermeasure.",
 	{
 		{"Ship", "ship", "The ship that has fired the countermeasure."},
@@ -8312,12 +8312,13 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 	    (cleanup_mode == SHIP_VANISHED)) {
 		const char* departmethod = get_departure_name(cleanup_mode);
 
-		if (Script_system.IsActiveAction(CHA_ONSHIPDEPART)) {
-			Script_system.SetHookObject("Ship", objp);
-			Script_system.SetHookVar("Method", 's', departmethod);
-			Script_system.SetHookVar("JumpNode", 's', jumpnode_name);
-			Script_system.RunCondition(CHA_ONSHIPDEPART, objp);
-			Script_system.RemHookVars({"Ship", "Method", "JumpNode"});
+		if (scripting::hooks::OnShipDepart->isActive()) {
+			scripting::hooks::OnShipDepart->run(scripting::hooks::ShipDepartConditions{ shipp },
+				scripting::hook_param_list(
+					scripting::hook_param("Ship", 'o', objp),
+					scripting::hook_param("Method", 's', departmethod),
+					scripting::hook_param("JumpNode", 's', jumpnode_name, jumpnode_name != nullptr)
+				));
 		}
 	}
 
@@ -11358,9 +11359,11 @@ int ship_launch_countermeasure(object *objp, int rand_val)
 
 		if (OnCountermeasureFireHook->isActive()) {
 			// add scripting hook for 'On Countermeasure Fire' --wookieejedi
-			OnCountermeasureFireHook->run(scripting::hook_param_list(scripting::hook_param("Ship", 'o', objp),
-				scripting::hook_param("CountermeasuresLeft", 'i', shipp->cmeasure_count),
-				scripting::hook_param("Countermeasure", 'o', &Objects[cobjnum])));
+			OnCountermeasureFireHook->run(scripting::hooks::ShipSourceConditions{ shipp },
+				scripting::hook_param_list(scripting::hook_param("Ship", 'o', objp),
+					scripting::hook_param("CountermeasuresLeft", 'i', shipp->cmeasure_count),
+					scripting::hook_param("Countermeasure", 'o', &Objects[cobjnum])
+				));
 		}
 	}
 

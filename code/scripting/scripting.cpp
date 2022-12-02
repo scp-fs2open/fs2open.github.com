@@ -69,18 +69,6 @@ class BuiltinHook : public scripting::HookBase {
 // clang-format off
 static USED_VARIABLE SCP_vector<std::shared_ptr<BuiltinHook>> Script_actions
 {
-	std::make_shared<BuiltinHook>("On Afterburner Engage",	CHA_AFTERBURNSTART ),
-	std::make_shared<BuiltinHook>("On Afterburner Stop",	CHA_AFTERBURNEND ),
-	std::make_shared<BuiltinHook>("On Beam Fire",			CHA_BEAMFIRE ),
-	std::make_shared<BuiltinHook>("On Simulation",			CHA_SIMULATION ),
-	std::make_shared<BuiltinHook>("On Load Screen",			CHA_LOADSCREEN ),
-	std::make_shared<BuiltinHook>("On Campaign Mission Accept", CHA_CMISSIONACCEPT ),
-	std::make_shared<BuiltinHook>("On Ship Depart",			CHA_ONSHIPDEPART ),
-	std::make_shared<BuiltinHook>("On Weapon Created",		CHA_ONWEAPONCREATED ),
-	std::make_shared<BuiltinHook>("On Waypoints Done",		CHA_ONWAYPOINTSDONE ),
-	std::make_shared<BuiltinHook>("On Subsystem Destroyed",	CHA_ONSUBSYSDEATH ),
-	std::make_shared<BuiltinHook>("On Goals Cleared",		CHA_ONGOALSCLEARED ),
-	std::make_shared<BuiltinHook>("On Briefing Stage",		CHA_ONBRIEFSTAGE ),
 	// DO NOT ADD NEW HOOKS HERE, see scripting.h for a more in-depth explanation
 };
 

@@ -146,13 +146,13 @@ static int conditionParseObjectType() {
 #define HOOK_CONDITION_SHIP_OBJP(classname, documentationAddendum, objp) \
 	HOOK_CONDITION(classname, "Ship", "Specifies the name of the ship " documentationAddendum, objp, conditionParseString, [](const object* objp, const SCP_string& shipname) -> bool { \
 		return conditionObjectIsShipDo(&conditionCompareShip, objp, shipname); \
-		}); \
+	}); \
 	HOOK_CONDITION(classname, "Ship class", "Specifies the class of the ship " documentationAddendum, objp, conditionParseShipClass, [](const object* objp, const int& shipclass) -> bool { \
 		return conditionObjectIsShipDo(&conditionCompareShipClass, objp, shipclass); \
-		}); \
+	}); \
 	HOOK_CONDITION(classname, "Ship type", "Specifies the type of the ship " documentationAddendum, objp, conditionParseShipType, [](const object* objp, const int& shiptype) -> bool { \
 		return conditionObjectIsShipDo(&conditionCompareShipType, objp, shiptype); \
-		});
+	});
 
 // ---- Hook Conditions ----
 
@@ -258,24 +258,24 @@ HOOK_CONDITIONS_END
 
 HOOK_CONDITIONS_START(WeaponUsedConditions)
 	HOOK_CONDITION_SHIPP(WeaponUsedConditions, "that fired the weapon.", user_shipp);
-	HOOK_CONDITION(WeaponUsedConditions, "Weapon class", "Specifies the class of the weapon that was fired.", weaponclass, conditionParseWeaponClass, &std::equal_to<int>());
+	HOOK_CONDITION(WeaponUsedConditions, "Weapon class", "Specifies the class of the weapon that was fired.", weaponclass, conditionParseWeaponClass, std::equal_to<int>());
 HOOK_CONDITIONS_END
 
 HOOK_CONDITIONS_START(WeaponSelectedConditions)
 	HOOK_CONDITION_SHIPP(WeaponSelectedConditions, "that has selected the weapon.", user_shipp);
-	HOOK_CONDITION(WeaponSelectedConditions, "Weapon class", "Specifies the class of the weapon that was selected.", weaponclass, conditionParseWeaponClass, &std::equal_to<int>());
+	HOOK_CONDITION(WeaponSelectedConditions, "Weapon class", "Specifies the class of the weapon that was selected.", weaponclass, conditionParseWeaponClass, std::equal_to<int>());
 HOOK_CONDITIONS_END
 
 HOOK_CONDITIONS_START(WeaponDeselectedConditions)
 	HOOK_CONDITION_SHIPP(WeaponDeselectedConditions, "that has selected the weapon.", user_shipp);
-	HOOK_CONDITION(WeaponDeselectedConditions, "Weapon class", "Specifies the class of the weapon that was deselected.", weaponclass_prev, conditionParseWeaponClass, &std::equal_to<int>());
+	HOOK_CONDITION(WeaponDeselectedConditions, "Weapon class", "Specifies the class of the weapon that was deselected.", weaponclass_prev, conditionParseWeaponClass, std::equal_to<int>());
 HOOK_CONDITIONS_END
 
 HOOK_CONDITIONS_START(ObjectDrawConditions)
 	HOOK_CONDITION_SHIP_OBJP(ObjectDrawConditions, "that was drawn / drawn from.", drawn_from_objp);
 	HOOK_CONDITION(ObjectDrawConditions, "Weapon class", "Specifies the class of the weapon that was drawn / drawn from.", drawn_from_objp, conditionParseWeaponClass, [](const object* objp, const int& weaponclass) -> bool {
 		return conditionObjectIsWeaponDo(&conditionCompareWeaponClass, objp, weaponclass);
-		});
+	});
 	HOOK_CONDITION(ObjectDrawConditions, "Object type", "Specifies the type of the object that was drawn / drawn from.", drawn_from_objp, conditionParseObjectType, conditionIsObjecttype);
 HOOK_CONDITIONS_END
 

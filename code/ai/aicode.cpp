@@ -4759,12 +4759,13 @@ void ai_waypoints()
 					mission_log_add_entry( LOG_WAYPOINTS_DONE, Wings[Ships[Pl_objp->instance].wingnum].name, aip->wp_list->get_name(), -1 );
 				}
 				// adds scripting hook for 'On Waypoints Done' --wookieejedi
-				if (Script_system.IsActiveAction(CHA_ONWAYPOINTSDONE)) {
-					Script_system.SetHookObject("Ship", &Objects[Ships[Pl_objp->instance].objnum]);
-					Script_system.SetHookVar("Wing", 'o', scripting::api::l_Wing.Set(Ships[Pl_objp->instance].wingnum));
-					Script_system.SetHookVar("Waypointlist", 'o', scripting::api::l_WaypointList.Set(scripting::api::waypointlist_h(aip->wp_list)));
-					Script_system.RunCondition(CHA_ONWAYPOINTSDONE, Pl_objp);
-					Script_system.RemHookVars({"Ship", "Wing", "Waypointlist"});
+				if (scripting::hooks::OnWaypointsDone->isActive()) {
+					scripting::hooks::OnWaypointsDone->run(scripting::hooks::ShipSourceConditions{ &Ships[Pl_objp->instance] },
+						scripting::hook_param_list(
+							scripting::hook_param("Ship", 'o', Pl_objp),
+							scripting::hook_param("Wing", 'o', scripting::api::l_Wing.Set(Ships[Pl_objp->instance].wingnum)),
+							scripting::hook_param("Waypointlist", 'o', scripting::api::l_WaypointList.Set(scripting::api::waypointlist_h(aip->wp_list)))
+						));
 				}
 			}
 		}
