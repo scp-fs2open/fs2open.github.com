@@ -15,7 +15,7 @@
 }();
 #define HOOK_CONDITION(conditionsClassName, conditionParseName, documentation, argument, argumentParse, argumentValid) \
 	build.emplace(conditionParseName, ::make_unique<ParseableConditionImpl<conditionsClassName, \
-		decltype(std::declval<conditionsClassName>().argument), decltype(argumentParse())>> \
+		decltype(std::declval<conditionsClassName>().argument), decltype(argumentParse(std::declval<SCP_string>()))>> \
 		(documentation, &conditionsClassName::argument, argumentParse, argumentValid))
 
 namespace scripting {
@@ -23,16 +23,16 @@ namespace scripting {
 template<typename conditions_t, typename operating_t, typename cache_t>
 class ParseableConditionImpl : public ParseableCondition {
 	const operating_t conditions_t::* object;
-	std::function<cache_t(void)> cache;
+	std::function<cache_t(const SCP_string&)> cache;
 	std::function<bool(operating_t, const cache_t&)> evaluate;
 
 	template<typename conditions_t, typename operating_t, typename cache_t> friend class EvaluatableConditionImpl;
 public:
-	std::unique_ptr<EvaluatableCondition> parse() const override {
-		return ::make_unique<EvaluatableConditionImpl<conditions_t, operating_t, cache_t>>(*this);
+	std::unique_ptr<EvaluatableCondition> parse(const SCP_string& input) const override {
+		return ::make_unique<EvaluatableConditionImpl<conditions_t, operating_t, cache_t>>(*this, input);
 	}
 
-	ParseableConditionImpl(SCP_string documentation_, const operating_t conditions_t::* object_, std::function<cache_t(void)> cache_, std::function<bool(operating_t, const cache_t&)> evaluate_) :
+	ParseableConditionImpl(SCP_string documentation_, const operating_t conditions_t::* object_, std::function<cache_t(const SCP_string&)> cache_, std::function<bool(operating_t, const cache_t&)> evaluate_) :
 		ParseableCondition(std::move(documentation_)), object(object_), cache(std::move(cache_)), evaluate(std::move(evaluate_)) { }
 };
 
@@ -42,7 +42,7 @@ class EvaluatableConditionImpl : public EvaluatableCondition {
 	cache_t cached;
 
 public:
-	EvaluatableConditionImpl(const ParseableConditionImpl<conditions_t, operating_t, cache_t>& _condition) : condition(_condition), cached(condition.cache()) { }
+	EvaluatableConditionImpl(const ParseableConditionImpl<conditions_t, operating_t, cache_t>& _condition, const SCP_string& input) : condition(_condition), cached(condition.cache(input)) { }
 
 	bool evaluate(const linb::any& conditionContext) const override {
 		const conditions_t& conditions = linb::any_cast<conditions_t>(conditionContext);
@@ -92,15 +92,11 @@ static bool conditionObjectIsWeaponDo(fnc_t fnc, const object* objp, const value
 }
 
 
-static SCP_string conditionParseString() {
-	SCP_string name;
-	stuff_string(name, F_NAME);
+static SCP_string conditionParseString(const SCP_string& name) {
 	return name;
 }
 
-static int conditionParseActionId() {
-	SCP_string name;
-	stuff_string(name, F_NAME);
+static int conditionParseActionId(const SCP_string& name) {
 	for (int i = 0; i < Control_config.size(); i++) {
 		if (stricmp(Control_config[i].text.c_str(), name.c_str()) == 0)
 			return i;
@@ -108,27 +104,19 @@ static int conditionParseActionId() {
 	return -1;
 }
 
-static int conditionParseShipType() {
-	SCP_string name;
-	stuff_string(name, F_NAME);
+static int conditionParseShipType(const SCP_string& name) {
 	return ship_type_name_lookup(name.c_str());
 }
 
-static int conditionParseShipClass() {
-	SCP_string name;
-	stuff_string(name, F_NAME);
+static int conditionParseShipClass(const SCP_string& name) {
 	return ship_info_lookup(name.c_str());
 }
 
-static int conditionParseWeaponClass() {
-	SCP_string name;
-	stuff_string(name, F_NAME);
+static int conditionParseWeaponClass(const SCP_string& name) {
 	return weapon_info_lookup(name.c_str());
 }
 
-static int conditionParseObjectType() {
-	SCP_string name;
-	stuff_string(name, F_NAME);
+static int conditionParseObjectType(const SCP_string& name) {
 	for (int i = 0; i < MAX_OBJECT_TYPES; i++) {
 		if (stricmp(Object_type_names[i], name.c_str()) == 0)
 			return i;
