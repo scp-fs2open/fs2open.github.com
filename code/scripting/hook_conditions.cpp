@@ -134,14 +134,14 @@ static int conditionParseObjectType(const SCP_string& name) {
 	HOOK_CONDITION(classname, "Ship class", "Specifies the class of the ship " documentationAddendum, shipp, conditionParseShipClass, conditionCompareShipClass); \
 	HOOK_CONDITION(classname, "Ship type", "Specifies the type of the ship " documentationAddendum, shipp, conditionParseShipType, conditionCompareShipType); 
 
-#define HOOK_CONDITION_SHIP_OBJP(classname, documentationAddendum, objp) \
-	HOOK_CONDITION(classname, "Ship", "Specifies the name of the ship " documentationAddendum, objp, conditionParseString, [](const object* objp, const SCP_string& shipname) -> bool { \
+#define HOOK_CONDITION_SHIP_OBJP(classname, documentationAddendum, objp_) \
+	HOOK_CONDITION(classname, "Ship", "Specifies the name of the ship " documentationAddendum, objp_, conditionParseString, [](const object* objp, const SCP_string& shipname) -> bool { \
 		return conditionObjectIsShipDo(&conditionCompareShip, objp, shipname); \
 	}); \
-	HOOK_CONDITION(classname, "Ship class", "Specifies the class of the ship " documentationAddendum, objp, conditionParseShipClass, [](const object* objp, const int& shipclass) -> bool { \
+	HOOK_CONDITION(classname, "Ship class", "Specifies the class of the ship " documentationAddendum, objp_, conditionParseShipClass, [](const object* objp, const int& shipclass) -> bool { \
 		return conditionObjectIsShipDo(&conditionCompareShipClass, objp, shipclass); \
 	}); \
-	HOOK_CONDITION(classname, "Ship type", "Specifies the type of the ship " documentationAddendum, objp, conditionParseShipType, [](const object* objp, const int& shiptype) -> bool { \
+	HOOK_CONDITION(classname, "Ship type", "Specifies the type of the ship " documentationAddendum, objp_, conditionParseShipType, [](const object* objp, const int& shiptype) -> bool { \
 		return conditionObjectIsShipDo(&conditionCompareShipType, objp, shiptype); \
 	});
 
