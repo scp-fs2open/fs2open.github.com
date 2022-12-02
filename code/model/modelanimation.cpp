@@ -28,8 +28,8 @@ namespace animation {
 		}}
 	};
 
-	std::map<int, ModelAnimationSet::RunningAnimationList> ModelAnimationSet::s_runningAnimations;
-	std::map<unsigned int, std::shared_ptr<ModelAnimation>> ModelAnimationSet::s_animationById;
+	SCP_unordered_map<int, ModelAnimationSet::RunningAnimationList> ModelAnimationSet::s_runningAnimations;
+	SCP_unordered_map<unsigned int, std::shared_ptr<ModelAnimation>> ModelAnimationSet::s_animationById;
 
 	ModelAnimation::ModelAnimation(bool isInitialType, bool isMultiCompatible, bool canStateChange, const ModelAnimationSet* defaultSet)
 		: m_set(defaultSet), m_isInitialType(isInitialType), m_isMultiCompatible(isMultiCompatible), m_canChangeState(canStateChange)
@@ -827,8 +827,8 @@ namespace animation {
 		return list;
 	}
 
-	std::vector<ModelAnimationSet::RegisteredTrigger> ModelAnimationSet::getRegisteredTriggers() const {
-		std::vector<RegisteredTrigger> ret;
+	SCP_vector<ModelAnimationSet::RegisteredTrigger> ModelAnimationSet::getRegisteredTriggers() const {
+		SCP_vector<RegisteredTrigger> ret;
 
 		for (const auto& animList : m_animationSet) {
 			for (const auto& animation : animList.second) {
@@ -839,8 +839,8 @@ namespace animation {
 		return ret;
 	};
 
-	std::set<SCP_string> ModelAnimationSet::getRegisteredAnimNames() const {
-		std::set<SCP_string> ret;
+	SCP_set<SCP_string> ModelAnimationSet::getRegisteredAnimNames() const {
+		SCP_set<SCP_string> ret;
 
 		for (const auto& animList : m_animationSet) {
 			for (const auto& animationL : animList.second) {
@@ -939,7 +939,7 @@ namespace animation {
 		case ModelAnimationTriggerType::TurretFired:
 		case ModelAnimationTriggerType::TurretFiring: {
 			//Name of the turret subsys that needs to be firing
-			std::string name(triggeredBy);
+			SCP_string name(triggeredBy);
 			SCP_tolower(name);
 
 			return get(pmi, type, name);
@@ -958,7 +958,7 @@ namespace animation {
 		}
 	}
 
-	bool ModelAnimationSet::updateMoveable(polymodel_instance* pmi, const SCP_string& name, const std::vector<linb::any>& args) const {
+	bool ModelAnimationSet::updateMoveable(polymodel_instance* pmi, const SCP_string& name, const SCP_vector<linb::any>& args) const {
 		SCP_string lowername = name;
 		SCP_tolower(lowername);
 		auto moveable = m_moveableSet.find(lowername);
@@ -975,8 +975,8 @@ namespace animation {
 		}
 	}
 
-	std::vector<SCP_string> ModelAnimationSet::getRegisteredMoveables() const {
-		std::vector<SCP_string> ret;
+	SCP_vector<SCP_string> ModelAnimationSet::getRegisteredMoveables() const {
+		SCP_vector<SCP_string> ret;
 
 		for (const auto& moveable : m_moveableSet) {
 			ret.push_back(moveable.first);
@@ -1044,7 +1044,7 @@ namespace animation {
 		sip->animations.getAll(pmi, animation::ModelAnimationTriggerType::OnSpawn).start(ModelAnimationDirection::FWD);
 	}
 
-	const std::map<ModelAnimationTriggerType, std::pair<const char*, bool>> Animation_types = {
+	const SCP_unordered_map<ModelAnimationTriggerType, std::pair<const char*, bool>> Animation_types = {
 	{ModelAnimationTriggerType::Initial, {"initial", false}}, //Atypical case. Will only ever be run in fully triggered state and then applied as base transformation
 	{ModelAnimationTriggerType::OnSpawn, {"on-spawn", false}}, //Atypical case. While no reverse trigger occurs, it is also guaranteed to not trigger more than once per model, hence non-resetting animations are fine here.
 	{ModelAnimationTriggerType::Docking_Stage1, {"docking-stage-1", false}},
@@ -1127,8 +1127,8 @@ namespace animation {
 	}
 
 	//Parsing functions
-	std::map<SCP_string, ModelAnimationParseHelper::ParsedModelAnimation> ModelAnimationParseHelper::s_animationsById;
-	std::map<SCP_string, std::shared_ptr<ModelAnimationMoveable>> ModelAnimationParseHelper::s_moveablesById;
+	SCP_unordered_map<SCP_string, ModelAnimationParseHelper::ParsedModelAnimation> ModelAnimationParseHelper::s_animationsById;
+	SCP_unordered_map<SCP_string, std::shared_ptr<ModelAnimationMoveable>> ModelAnimationParseHelper::s_moveablesById;
 
 	std::shared_ptr<ModelAnimationSegment> ModelAnimationParseHelper::parseSegment() {
 		ignore_white_space();
@@ -1594,7 +1594,7 @@ namespace animation {
 		}
 	}
 
-	std::map<SCP_string, ModelAnimationParseHelper::ModelAnimationSegmentParser> ModelAnimationParseHelper::s_segmentParsers = {
+	SCP_unordered_map<SCP_string, ModelAnimationParseHelper::ModelAnimationSegmentParser> ModelAnimationParseHelper::s_segmentParsers = {
 		{"$Segment Sequential:", 	ModelAnimationSegmentSerial::parser},
 		{"$Segment Parallel:", 	ModelAnimationSegmentParallel::parser},
 		{"$Wait:", 				ModelAnimationSegmentWait::parser},
@@ -1607,7 +1607,7 @@ namespace animation {
 		{"$Inverse Kinematics:", 	ModelAnimationSegmentIK::parser}
 	};
 	
-	std::map<SCP_string, ModelAnimationParseHelper::ModelAnimationMoveableParser> ModelAnimationParseHelper::s_moveableParsers = {
+	SCP_unordered_map<SCP_string, ModelAnimationParseHelper::ModelAnimationMoveableParser> ModelAnimationParseHelper::s_moveableParsers = {
 		{"Orientation", 			ModelAnimationMoveableOrientation::parser},
 		{"Rotation", 				ModelAnimationMoveableRotation::parser},
 		{"Axis Rotation", 		ModelAnimationMoveableAxisRotation::parser},

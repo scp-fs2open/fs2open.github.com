@@ -132,7 +132,7 @@ namespace animation {
 
 	private:
 		//Polymodel Instance ID -> ModelAnimationData
-		std::map<int, ModelAnimationData<>> m_initialData;
+		SCP_unordered_map<int, ModelAnimationData<>> m_initialData;
 		static ModelAnimationData<> identity;
 
 	public:
@@ -180,12 +180,12 @@ namespace animation {
 
 	struct ModelAnimationSubmodelBufferData { ModelAnimationData<> data; bool modified; };
 	//Submodel -> data + was_set
-	using ModelAnimationSubmodelBuffer = std::map<std::shared_ptr<ModelAnimationSubmodel>, ModelAnimationSubmodelBufferData>;
+	using ModelAnimationSubmodelBuffer = SCP_unordered_map<std::shared_ptr<ModelAnimationSubmodel>, ModelAnimationSubmodelBufferData>;
 
 	class ModelAnimationSegment {
 	protected:
 
-		std::map<int, float> m_duration;
+		SCP_unordered_map<int, float> m_duration;
 
 	public:
 		virtual ~ModelAnimationSegment() = default;
@@ -213,7 +213,7 @@ namespace animation {
 			float speed = 1.0f;
 		};
 		//PMI ID -> Instance Data
-		std::map<int, instance_data> m_instances;
+		SCP_unordered_map<int, instance_data> m_instances;
 
 		const ModelAnimationSet* m_set;
 
@@ -264,12 +264,12 @@ namespace animation {
 			std::shared_ptr<ModelAnimation> animation = nullptr;
 		};
 		//PMI ID -> Instance Data
-		std::map<int, instance_data> m_instances;
+		SCP_unordered_map<int, instance_data> m_instances;
 
 	public:
 		virtual ~ModelAnimationMoveable() = default;
 
-		virtual void update(polymodel_instance* pmi, const std::vector<linb::any>& args) = 0;
+		virtual void update(polymodel_instance* pmi, const SCP_vector<linb::any>& args) = 0;
 		virtual void initialize(ModelAnimationSet* parentSet, polymodel_instance* pmi) = 0;
 	};
 
@@ -277,14 +277,14 @@ namespace animation {
 	class ModelAnimationSet {
 	public:
 		static int SUBTYPE_DEFAULT;
-		static std::map<unsigned int, std::shared_ptr<ModelAnimation>> s_animationById;
+		static SCP_unordered_map<unsigned int, std::shared_ptr<ModelAnimation>> s_animationById;
 
 	private:
-		struct RunningAnimationList { const ModelAnimationSet* parentSet; std::list<std::shared_ptr<ModelAnimation>> animationList; };
+		struct RunningAnimationList { const ModelAnimationSet* parentSet; SCP_list<std::shared_ptr<ModelAnimation>> animationList; };
 		//Polymodel Instance ID -> set + ModelAnimation* list (naturally ordered by beginning time))
-		static std::map<int, RunningAnimationList> s_runningAnimations;
+		static SCP_unordered_map<int, RunningAnimationList> s_runningAnimations;
 
-		std::vector< std::shared_ptr<ModelAnimationSubmodel>> m_submodels;
+		SCP_vector< std::shared_ptr<ModelAnimationSubmodel>> m_submodels;
 		SCP_string m_SIPname;
 
 		struct ModelAnimationSubtrigger { 
@@ -295,8 +295,8 @@ namespace animation {
 			}
 		};
 		// Trigger Type + Subtype -> (Trigger name -> list of Animation*)
-		std::map <ModelAnimationSubtrigger, std::map <SCP_string, std::vector<std::shared_ptr<ModelAnimation>>>> m_animationSet;
-		std::map <SCP_string, std::shared_ptr<ModelAnimationMoveable>> m_moveableSet;
+		SCP_map<ModelAnimationSubtrigger, SCP_unordered_map<SCP_string, std::vector<std::shared_ptr<ModelAnimation>>>> m_animationSet;
+		SCP_unordered_map<SCP_string, std::shared_ptr<ModelAnimationMoveable>> m_moveableSet;
 
 		static void apply(polymodel_instance* pmi, const ModelAnimationSubmodelBuffer& applyBuffer);
 		static void cleanRunning();
@@ -322,7 +322,7 @@ namespace animation {
 		void clearShipData(polymodel_instance* pmi);
 
 		class AnimationList {
-			std::vector<std::shared_ptr<ModelAnimation>> animations;
+			SCP_vector<std::shared_ptr<ModelAnimation>> animations;
 			int pmi_id;
 			AnimationList(polymodel_instance* pmi_) : pmi_id(pmi_ == nullptr ? -1 : pmi_->id) {}
 			AnimationList(int pmi_id_) : pmi_id(pmi_id_) {}
@@ -348,8 +348,8 @@ namespace animation {
 		AnimationList parseScripted(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& triggeredBy) const;
 
 		struct RegisteredTrigger { ModelAnimationTriggerType type; int subtype; const SCP_string& name; };
-		std::vector<RegisteredTrigger> getRegisteredTriggers() const;
-		std::set<SCP_string> getRegisteredAnimNames() const;
+		SCP_vector<RegisteredTrigger> getRegisteredTriggers() const;
+		SCP_set<SCP_string> getRegisteredAnimNames() const;
 
 		bool updateMoveable(polymodel_instance* pmi, const SCP_string& name, const std::vector<linb::any>& args) const;
 		void initializeMoveables(polymodel_instance* pmi);
@@ -367,10 +367,10 @@ namespace animation {
 
 		//Parsing Registrars
 		using ModelAnimationSegmentParser = std::function<std::shared_ptr<ModelAnimationSegment>(ModelAnimationParseHelper*)>;
-		static std::map<SCP_string, ModelAnimationSegmentParser> s_segmentParsers;
+		static SCP_unordered_map<SCP_string, ModelAnimationSegmentParser> s_segmentParsers;
 
 		using ModelAnimationMoveableParser = std::function<std::shared_ptr<ModelAnimationMoveable>()>;
-		static std::map<SCP_string, ModelAnimationMoveableParser> s_moveableParsers;
+		static SCP_unordered_map<SCP_string, ModelAnimationMoveableParser> s_moveableParsers;
 
 		//Parsed Animations
 		struct ParsedModelAnimation {
@@ -379,8 +379,8 @@ namespace animation {
 			SCP_string name;
 			int subtype;
 		};
-		static std::map<SCP_string, ParsedModelAnimation> s_animationsById;
-		static std::map<SCP_string, std::shared_ptr<ModelAnimationMoveable>> s_moveablesById;
+		static SCP_unordered_map<SCP_string, ParsedModelAnimation> s_animationsById;
+		static SCP_unordered_map<SCP_string, std::shared_ptr<ModelAnimationMoveable>> s_moveablesById;
 
 		static unsigned int getUniqueAnimationID(const SCP_string& animName, char uniquePrefix, const SCP_string& parentName);
 
@@ -409,7 +409,7 @@ namespace animation {
 	//Start of section of helper functions, mostly to complement the old modelanim functions as required
 
 	//Type -> Name + Requires reset flag (== will never be triggered in reverse)
-	extern const std::map<animation::ModelAnimationTriggerType, std::pair<const char*, bool>> Animation_types;
+	extern const SCP_unordered_map<animation::ModelAnimationTriggerType, std::pair<const char*, bool>> Animation_types;
 
 	void anim_set_initial_states(ship* shipp);
 	

@@ -2778,7 +2778,7 @@ int CFred_mission_save::save_mission_info()
 		const auto& moveable_triggers = The_mission.skybox_model_animations.getRegisteredMoveables();
 
 		if (!anim_triggers.empty() || !moveable_triggers.empty()) {
-			fso_comment_push(";;FSO 22.3.0;;");
+			fso_comment_push(";;FSO 22.4.0;;");
 			if (!anim_triggers.empty()) {
 				if (optional_string_fred("$Skybox Model Animations:")) {
 					parse_comments(1);
