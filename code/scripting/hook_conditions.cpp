@@ -21,12 +21,15 @@
 namespace scripting {
 
 template<typename conditions_t, typename operating_t, typename cache_t>
+class EvaluatableConditionImpl;
+
+template<typename conditions_t, typename operating_t, typename cache_t>
 class ParseableConditionImpl : public ParseableCondition {
 	const operating_t conditions_t::* object;
 	std::function<cache_t(const SCP_string&)> cache;
 	std::function<bool(operating_t, const cache_t&)> evaluate;
 
-	template<typename conditions_t, typename operating_t, typename cache_t> friend class EvaluatableConditionImpl;
+	template<typename _conditions_t, typename _operating_t, typename _cache_t> friend class EvaluatableConditionImpl;
 public:
 	std::unique_ptr<EvaluatableCondition> parse(const SCP_string& input) const override {
 		return ::make_unique<EvaluatableConditionImpl<conditions_t, operating_t, cache_t>>(*this, input);

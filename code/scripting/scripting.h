@@ -92,7 +92,7 @@ ConditionalType scripting_string_to_condition(const char* condition);
 
 struct script_condition
 {
-	ConditionalType condition_type = CHC_NONE;
+	ConditionalType condition_type;
 	SCP_string condition_string;
 	// stores values evaluated at hook load to optimize later condition checking.
 	// currently mostly olg done for the highest impact condition types, according to performance profiling
@@ -101,7 +101,7 @@ struct script_condition
 	// CHC_SHIPCLASS, CHC_WEAPONCLASS - stores the index of the info object requested by the condition
 	// CHC_VERSION, CHC_APPLICATION - stores validity of the check in 1 for true or 0 for false, as the condition will not change after load.
 	// see ConditionedHook::AddCondition for exact implimentation
-	int condition_cached_value = -1;
+	int condition_cached_value;
 };
 
 class script_action {
