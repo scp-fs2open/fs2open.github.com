@@ -16,6 +16,8 @@ public:
 	virtual bool evaluate(const linb::any& /*conditionContext*/) const {
 		return false;
 	};
+
+	virtual ~EvaluatableCondition() = default;
 };
 
 class ParseableCondition {
@@ -27,6 +29,8 @@ public:
 	};
 
 	ParseableCondition() : documentation("Invalid Condition. Will never evaluate.") { }
+
+	virtual ~ParseableCondition() = default;
 protected:
 	ParseableCondition(SCP_string documentation_) : documentation(std::move(documentation_)) { }
 };
