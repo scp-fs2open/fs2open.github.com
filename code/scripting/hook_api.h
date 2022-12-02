@@ -142,14 +142,14 @@ class HookImpl : public HookBase {
 
 #ifndef NDEBUG
 		std::for_each(paramNames.begin(), paramNames.end(), [this](const SCP_string& param) {
-			Assertion(hasParameter(param),
+			Assertion(this->hasParameter(param),
 				"Hook '%s' does not accept parameter '%s'.",
-				_hookName.c_str(),
+				this->_hookName.c_str(),
 				param.c_str());
 			});
 #endif
 
-		const auto num_run = Script_system.RunCondition(_hookId, linb::any(std::move(condition)));
+		const auto num_run = Script_system.RunCondition(this->_hookId, linb::any(std::move(condition)));
 
 		for (const auto& param : paramNames) {
 			Script_system.RemHookVar(param.c_str());
@@ -157,10 +157,6 @@ class HookImpl : public HookBase {
 
 		return num_run;
 	}
-
-	using HookBase::_hookId;
-	using HookBase::_hookName;
-	using HookBase::hasParameter;
 };
 template<>
 class HookImpl<void> : public HookBase {
@@ -177,14 +173,14 @@ class HookImpl<void> : public HookBase {
 
 #ifndef NDEBUG
 		std::for_each(paramNames.begin(), paramNames.end(), [this](const SCP_string& param) {
-			Assertion(hasParameter(param),
+			Assertion(this->hasParameter(param),
 				"Hook '%s' does not accept parameter '%s'.",
-				_hookName.c_str(),
+				this->_hookName.c_str(),
 				param.c_str());
 			});
 #endif
 
-		const auto num_run = Script_system.RunCondition(_hookId, linb::any{});
+		const auto num_run = Script_system.RunCondition(this->_hookId, linb::any{});
 
 		for (const auto& param : paramNames) {
 			Script_system.RemHookVar(param.c_str());
@@ -192,16 +188,10 @@ class HookImpl<void> : public HookBase {
 
 		return num_run;
 	}
-
-	using HookBase::_hookId;
-	using HookBase::_hookName;
-	using HookBase::hasParameter;
 };
 
 template<typename condition_t = void>
 class Hook : public HookImpl<condition_t> {
-  protected:
-	using HookBase::_hookId;
   public:
 	using HookImpl<condition_t>::HookImpl;
 	~Hook() override = default;
@@ -217,7 +207,7 @@ class Hook : public HookImpl<condition_t> {
 	}
 
 	bool isActive() const override {
-		return Script_system.IsActiveAction(_hookId);
+		return Script_system.IsActiveAction(this->_hookId);
 	}
 
 	bool isOverridable() const override {
@@ -241,14 +231,14 @@ class OverridableHookImpl : public Hook<condition_t> {
 
 #ifndef NDEBUG
 		std::for_each(paramNames.begin(), paramNames.end(), [this](const SCP_string& param) {
-			Assertion(hasParameter(param),
+			Assertion(this->hasParameter(param),
 				"Hook '%s' does not accept parameter '%s'.",
-				_hookName.c_str(),
+				this->_hookName.c_str(),
 				param.c_str());
 			});
 #endif
 
-		const auto ret_val = Script_system.IsConditionOverride(_hookId, linb::any(std::move(condition)));
+		const auto ret_val = Script_system.IsConditionOverride(this->_hookId, linb::any(std::move(condition)));
 
 		for (const auto& param : paramNames) {
 			Script_system.RemHookVar(param.c_str());
@@ -256,10 +246,6 @@ class OverridableHookImpl : public Hook<condition_t> {
 
 		return ret_val;
 	}
-
-	using HookBase::_hookId;
-	using HookBase::_hookName;
-	using HookBase::hasParameter;
 };
 
 template<>
@@ -276,14 +262,14 @@ protected:
 
 #ifndef NDEBUG
 		std::for_each(paramNames.begin(), paramNames.end(), [this](const SCP_string& param) {
-			Assertion(hasParameter(param),
+			Assertion(this->hasParameter(param),
 				"Hook '%s' does not accept parameter '%s'.",
-				_hookName.c_str(),
+				this->_hookName.c_str(),
 				param.c_str());
 			});
 #endif
 
-		const auto ret_val = Script_system.IsConditionOverride(_hookId, linb::any{});
+		const auto ret_val = Script_system.IsConditionOverride(this->_hookId, linb::any{});
 
 		for (const auto& param : paramNames) {
 			Script_system.RemHookVar(param.c_str());
@@ -291,10 +277,6 @@ protected:
 
 		return ret_val;
 	}
-
-	using HookBase::_hookId;
-	using HookBase::_hookName;
-	using HookBase::hasParameter;
 };
 
 
