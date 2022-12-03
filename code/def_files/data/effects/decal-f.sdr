@@ -118,7 +118,7 @@ void main() {
 	vec3 normal = getPixelNormal(frag_position, gl_FragCoord.xy, alpha, binormal, tangent);
 
 	vec4 diffuse_out = vec4(0.0);
-	vec4 emissive_out = vec4(0.0, 0.0, 0.0, 0.0);
+	vec4 emissive_out = vec4(0.0);
 	vec3 normal_out = vec3(0.0);
 
 	if (diffuse_index >= 0) {
@@ -137,7 +137,7 @@ void main() {
 
 		// The main model shader applies ambient lighting by drawing the ambient part of the texture into the emissive
 		// texture. We do the same here to make sure the decal material is applied correctly
-		if (diffuse_blend_mode == 0) {
+		if (diffuse_glow_mode == 0) {
 			// Normal alpha blending
 			emissive_out = vec4(color.rgb * ambientLight, color.a * alpha);
 		} else {
