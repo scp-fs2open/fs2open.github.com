@@ -117,7 +117,8 @@
 #undef MessageBox
 #endif
 
-// for ease of table reading
+// legacy references
+// --------------------------------------------------------------------------------
 #define SEXP_CONDITIONAL_OPERATOR sexp_oper_type::CONDITIONAL
 #define SEXP_ARGUMENT_OPERATOR    sexp_oper_type::ARGUMENT
 #define SEXP_ACTION_OPERATOR      sexp_oper_type::ACTION
@@ -125,6 +126,17 @@
 #define SEXP_BOOLEAN_OPERATOR     sexp_oper_type::BOOLEAN
 #define SEXP_INTEGER_OPERATOR     sexp_oper_type::INTEGER
 #define SEXP_GOAL_OPERATOR        sexp_oper_type::GOAL
+
+#define OSWPT_TYPE_NONE				oswpt_type::NONE
+#define OSWPT_TYPE_SHIP				oswpt_type::SHIP
+#define OSWPT_TYPE_WING				oswpt_type::WING
+#define OSWPT_TYPE_WAYPOINT			oswpt_type::WAYPOINT
+#define OSWPT_TYPE_SHIP_ON_TEAM		oswpt_type::SHIP_ON_TEAM
+#define OSWPT_TYPE_WHOLE_TEAM		oswpt_type::WHOLE_TEAM
+#define OSWPT_TYPE_PARSE_OBJECT		oswpt_type::PARSE_OBJECT
+#define OSWPT_TYPE_EXITED			oswpt_type::EXITED
+#define OSWPT_TYPE_WING_NOT_PRESENT	oswpt_type::WING_NOT_PRESENT
+// --------------------------------------------------------------------------------
 
 
 SCP_vector<sexp_oper> Operators = {
@@ -16208,7 +16220,7 @@ void sexp_alter_ship_flag(int node)
 
 			sexp_alter_ship_flag_helper(oswpt, future_ships, object_flag, ship_flag, parse_obj_flag, ai_flag, set_flag);
 
-			Current_sexp_network_packet.send_int(oswpt.type);
+			Current_sexp_network_packet.send_int((int)oswpt.type);
 
 			switch (oswpt.type) {
 				case OSWPT_TYPE_SHIP:
@@ -17873,7 +17885,7 @@ void sexp_ship_change_alt_name_or_callsign(int node, bool alt_name)
 		eval_object_ship_wing_point_team(&oswpt, n);
 
 		if (MULTIPLAYER_MASTER)
-			Current_sexp_network_packet.send_int(oswpt.type);
+			Current_sexp_network_packet.send_int((int)oswpt.type);
 
 		switch (oswpt.type)
 		{

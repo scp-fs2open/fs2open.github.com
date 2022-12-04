@@ -1446,21 +1446,24 @@ void maybe_write_to_event_log(int result);
 
 //OSWPT Stuff
 
-#define OSWPT_TYPE_NONE				0
-#define OSWPT_TYPE_SHIP				1
-#define OSWPT_TYPE_WING				2
-#define OSWPT_TYPE_WAYPOINT			3
-#define OSWPT_TYPE_SHIP_ON_TEAM		4	// e.g. <any friendly>
-#define OSWPT_TYPE_WHOLE_TEAM		5	// e.g. Friendly
-#define OSWPT_TYPE_PARSE_OBJECT		6	// a "ship" that hasn't arrived yet
-#define OSWPT_TYPE_EXITED			7
-#define OSWPT_TYPE_WING_NOT_PRESENT	8	// a wing that hasn't arrived yet or is between waves
+enum class oswpt_type
+{
+	NONE = 0,
+	SHIP,
+	WING,
+	WAYPOINT,
+	SHIP_ON_TEAM,		// e.g. <any friendly>
+	WHOLE_TEAM,			// e.g. Friendly
+	PARSE_OBJECT,		// a "ship" that hasn't arrived yet
+	EXITED,
+	WING_NOT_PRESENT	// a wing that hasn't arrived yet or is between waves
+};
 
 // Goober5000
 struct object_ship_wing_point_team
 {
 	const char* object_name = nullptr;
-	int type = OSWPT_TYPE_NONE;
+	oswpt_type type = oswpt_type::NONE;
 
 	const ship_registry_entry* ship_entry = nullptr;
 	object* objp = nullptr;
