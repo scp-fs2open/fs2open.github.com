@@ -328,8 +328,9 @@ luacpp::LuaValueList LuaSEXP::getSEXPArgumentList(int node) const {
 
 int LuaSEXP::execute(int node) {
 	if (!_action.isValid()) {
+		
 		Error(LOCATION,
-			  "Lua SEXP called without a valid action function! A script probably failed to set the action for some reason.");
+			  "Lua SEXP %s called without a valid action function! A script probably failed to set the action for some reason.", _name.c_str());
 		return SEXP_CANT_EVAL;
 	}
 
