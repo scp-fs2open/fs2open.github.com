@@ -2169,23 +2169,23 @@ static void asteroid_parse_section()
 
 	if (optional_string("$Expl inner rad:")){
 		stuff_float(&asteroid_p->inner_rad);
-		}
+	}
 
 	if (optional_string("$Expl outer rad:")) {
 		stuff_float(&asteroid_p->outer_rad);
-		}
+	}
 
 	if (optional_string("$Expl damage:")){
 		stuff_float(&asteroid_p->damage);
-		}
+	}
 
 	if (optional_string("$Expl blast:")){
 		stuff_float(&asteroid_p->blast);
-		}
+	}
 
 	if (optional_string("$Hitpoints:")){
 		stuff_float(&asteroid_p->initial_asteroid_strength);
-		}
+	}
 
 	while(optional_string("$Split:")) {
 		int split_type;
