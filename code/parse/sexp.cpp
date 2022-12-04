@@ -18974,10 +18974,32 @@ void sexp_set_weapon(int node, bool primary)
 		return;
 	node = CDR(node);
 
+	// Get the weapon to change to
 	windex = weapon_info_lookup(CTEXT(node));
 	if (windex < 0)
 		return;
 	node = CDR(node);
+
+	if (primary)
+	{
+		// Be sure it's a valid bank
+		if (requested_bank < 0 || requested_bank >= ship_entry->shipp->weapons.num_primary_banks)
+			return;
+
+		// Be sure it's a valid type
+		if (Weapon_info[windex].subtype != WP_LASER && Weapon_info[windex].subtype != WP_BEAM)
+			return;
+	}
+	else
+	{
+		// Be sure it's a valid bank
+		if (requested_bank < 0 || requested_bank >= ship_entry->shipp->weapons.num_secondary_banks)
+			return;
+
+		// Be sure it's a valid type
+		if (Weapon_info[windex].subtype != WP_MISSILE)
+			return;
+	}
 
 	// Change the weapon
 	if (primary)
