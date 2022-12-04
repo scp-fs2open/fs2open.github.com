@@ -46,3 +46,24 @@ inline void *vm_realloc(void *ptr, size_t size)
 
 	return ret_ptr;
 }
+
+
+// For use with unique_ptr
+template <typename T>
+struct FreeDeleter
+{
+	void operator()(T* const p) const
+	{
+		free(p);
+	}
+};
+
+// For use with unique_ptr
+template <typename T>
+struct VmFreeDeleter
+{
+	void operator()(T* const p) const
+	{
+		vm_free(p);
+	}
+};
