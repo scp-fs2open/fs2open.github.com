@@ -296,7 +296,7 @@ int Ai_last_arrive_path;	// index of ship_bay path used by last arrival from a f
 int	ai_return_path_num_from_dockbay(object *dockee_objp, int dockbay_index);
 void create_model_exit_path(object *pl_objp, object *mobjp, int path_num, int count=1);
 void copy_xlate_model_path_points(object *objp, model_path *mp, int dir, int count, int path_num, pnode *pnp, int randomize_pnt=-1);
-void ai_cleanup_rearm_mode(object *objp);
+void ai_cleanup_rearm_mode(object *objp, bool deathroll);
 void ai_cleanup_dock_mode_subjective(object *objp);
 void ai_cleanup_dock_mode_objective(object *objp);
 
@@ -11098,19 +11098,21 @@ void ai_cleanup_dock_mode_objective(object *objp)
 }
 
 // Goober5000
-// (This function should ONLY need to be called from a ship doing a deathroll.
+// (This function should ONLY need to be called from a ship doing a deathroll.  [Addendum - or ai_ship_destroy().]
 // It ensures that any support ship stuff will be wrapped up gracefully.)
-void ai_cleanup_rearm_mode(object *objp)
+void ai_cleanup_rearm_mode(object *objp, bool deathroll)
 {
 	ai_info *aip = &Ai_info[Ships[objp->instance].ai_index];
 
+	auto how = deathroll ? REPAIR_INFO_ABORT : REPAIR_INFO_END;
+
 	if (aip->ai_flags[AI::AI_Flags::Repairing]) {
 		Assert( aip->goal_objnum != -1 );
-		ai_do_objects_repairing_stuff( &Objects[aip->goal_objnum], objp, REPAIR_INFO_KILLED );
+		ai_do_objects_repairing_stuff( &Objects[aip->goal_objnum], objp, deathroll ? REPAIR_INFO_KILLED : REPAIR_INFO_END);
 	} else if ( aip->ai_flags[AI::AI_Flags::Being_repaired] ) {
 		// MWA/Goober5000 -- note that we have to use support object here instead of goal_objnum.
 		Assert( aip->support_ship_objnum != -1 );
-		ai_do_objects_repairing_stuff( objp, &Objects[aip->support_ship_objnum], REPAIR_INFO_ABORT );
+		ai_do_objects_repairing_stuff( objp, &Objects[aip->support_ship_objnum], how );
 	} else if ( aip->ai_flags[AI::AI_Flags::Awaiting_repair] ) {
 		// MWA/Goober5000 -- note that we have to use support object here instead of goal_objnum.
 		// MWA -- 3/38/98  Check to see if this guy is queued for a support ship, or there is already
@@ -11119,9 +11121,9 @@ void ai_cleanup_rearm_mode(object *objp)
 			mission_remove_scheduled_repair( objp );			// this function will notify multiplayer clients.
 		} else {
 			if ( aip->support_ship_objnum != -1 )
-				ai_do_objects_repairing_stuff( objp, &Objects[aip->support_ship_objnum], REPAIR_INFO_ABORT );
+				ai_do_objects_repairing_stuff( objp, &Objects[aip->support_ship_objnum], how );
 			else
-				ai_do_objects_repairing_stuff( objp, NULL, REPAIR_INFO_ABORT );
+				ai_do_objects_repairing_stuff( objp, NULL, how );
 		}
 	}
 }
@@ -15953,14 +15955,8 @@ void ai_ship_destroy(int shipnum)
 	Assert((dead_shipp->ai_index >= 0) && (dead_shipp->ai_index < MAX_AI_INFO));
 	auto dead_aip = &Ai_info[dead_shipp->ai_index];
 
-	// if I was getting repaired, or awaiting repair, then cleanup the repair mode.  When awaiting repair, the support objnum
-	// is -1.  When the support ship is on the way, the suppoort objnum >= 0 (points to support ship).
-	if ( dead_aip->ai_flags[AI::AI_Flags::Being_repaired, AI::AI_Flags::Awaiting_repair] ) {
-		if ( dead_aip->support_ship_objnum >= 0 )
-			ai_do_objects_repairing_stuff( dead_objp, &Objects[dead_aip->support_ship_objnum], REPAIR_INFO_END);
-		else
-			ai_do_objects_repairing_stuff( dead_objp, NULL, REPAIR_INFO_END );
-	}
+	// if I was getting repaired, or awaiting repair, or performing repair, then clean up the repair mode.
+	ai_cleanup_rearm_mode(dead_objp, false);
 
 	// clear bay door animations
 	ai_manage_bay_doors(dead_objp, dead_aip, true);
@@ -16022,7 +16018,7 @@ void ai_deathroll_start(object *dying_objp)
 	}
 
 	// clean up any rearm-related stuff
-	ai_cleanup_rearm_mode(dying_objp);
+	ai_cleanup_rearm_mode(dying_objp, true);
 
 	// clean up anybody docking or undocking to me
 	ai_cleanup_dock_mode_objective(dying_objp);
