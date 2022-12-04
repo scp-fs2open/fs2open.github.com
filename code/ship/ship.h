@@ -1961,7 +1961,7 @@ extern int ship_has_engine_power(ship *shipp);
 
 // Swifty - Cockpit displays
 void ship_init_cockpit_displays(ship *shipp);
-void ship_clear_cockpit_displays(ship* shipp);
+void ship_close_cockpit_displays(ship* shipp);
 int ship_start_render_cockpit_display(size_t cockpit_display_num);
 void ship_end_render_cockpit_display(size_t cockpit_display_num);
 

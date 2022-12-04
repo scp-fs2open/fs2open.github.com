@@ -7719,7 +7719,7 @@ void ship_init_cockpit_displays(ship *shipp)
 	ship_set_hud_cockpit_targets();
 }
 
-void ship_clear_cockpit_displays(ship* shipp)
+void ship_close_cockpit_displays(ship* shipp)
 {
 	if (shipp->cockpit_model_instance >= 0) {
 		model_delete_instance(shipp->cockpit_model_instance);

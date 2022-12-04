@@ -1980,7 +1980,7 @@ ADE_FUNC(getSpecialSubmodelAnimation, l_Mission, "string target, string type, st
 	animation::ModelAnimationSet* set;
 
 	if (stricmp(target, "cockpit") == 0) {
-		if (Player_ship->cockpit_model_instance < 0)
+		if (Player_ship != nullptr && Player_ship->cockpit_model_instance < 0)
 			return ade_set_args(L, "o", l_AnimationHandle.Set(animation::ModelAnimationSet::AnimationList{}));
 		pmi = model_get_instance(Player_ship->cockpit_model_instance);
 		set = &Ship_info[Player_ship_class].cockpit_animations;
@@ -2027,7 +2027,7 @@ ADE_FUNC(updateSpecialSubmodelMoveable, l_Mission, "string target, string name, 
 	animation::ModelAnimationSet* set;
 
 	if (stricmp(target, "cockpit") == 0) {
-		if (Player_ship->cockpit_model_instance < 0)
+		if (Player_ship != nullptr && Player_ship->cockpit_model_instance < 0)
 			return ADE_RETURN_NIL;
 		pmi = model_get_instance(Player_ship->cockpit_model_instance);
 		set = &Ship_info[Player_ship_class].cockpit_animations;
