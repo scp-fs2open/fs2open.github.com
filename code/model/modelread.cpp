@@ -5638,6 +5638,7 @@ void glowpoint_override_defaults(glow_point_bank_override *gpo)
 	gpo->rotating = false;
 	gpo->rotation_axis = vmd_zero_vector;
 	gpo->rotation_speed = 0.0f;
+	gpo->intensity = 1.0f;
 }
 
 SCP_vector<glow_point_bank_override>::iterator get_glowpoint_bank_override_by_name(const char* name)
@@ -5782,6 +5783,10 @@ void parse_glowpoint_table(const char *filename)
 
 			if (optional_string("+light")) {
 				gpo.is_lightsource = true;
+
+				if (optional_string("$Light intensity:")) {
+					stuff_float(&gpo.intensity);
+				}
 
 				if (optional_string("$Light radius multiplier:")) {
 					stuff_float(&gpo.radius_multi);
