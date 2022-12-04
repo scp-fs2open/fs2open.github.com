@@ -1573,11 +1573,7 @@ void sexp_tree::right_clicked(int mode)
 		for (j=0; j<(int)Operators.size(); j++) {
 			z = 0;
 			if (m_mode == MODE_CAMPAIGN) {
-				if (Operators[j].value & OP_NONCAMPAIGN_FLAG)
-					z = 1;
-
-			} else {
-				if (Operators[j].value & OP_CAMPAIGN_ONLY_FLAG)
+				if (!usable_in_campaign(Operators[j].value))
 					z = 1;
 			}
 

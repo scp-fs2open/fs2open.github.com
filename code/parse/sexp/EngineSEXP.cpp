@@ -15,7 +15,7 @@ int get_subcategory(const SCP_string& name)
 		}
 	}
 
-	return -1;
+	return OP_SUBCATEGORY_NONE;
 }
 
 } // namespace

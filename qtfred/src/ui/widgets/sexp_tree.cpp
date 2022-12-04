@@ -6284,14 +6284,8 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 	for (j = 0; j < (int) Operators.size(); j++) {
 		z = 0;
 		if (_interface->requireCampaignOperators()) {
-			if (Operators[j].value & OP_NONCAMPAIGN_FLAG) {
+			if (!usable_in_campaign(Operators[j].value))
 				z = 1;
-			}
-
-		} else {
-			if (Operators[j].value & OP_CAMPAIGN_ONLY_FLAG) {
-				z = 1;
-			}
 		}
 
 		if (z) {

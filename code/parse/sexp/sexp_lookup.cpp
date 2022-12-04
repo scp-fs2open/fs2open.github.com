@@ -22,9 +22,12 @@ struct global_state {
 	SCP_vector<std::unique_ptr<DynamicSEXP>> pending_sexps;
 
 	SCP_unordered_map<int, std::unique_ptr<sexp::DynamicSEXP>> operator_const_mapping;
+	SCP_unordered_map<int, int> subcategory_to_category;
 
-	// This contains which operator is the next free operator in a specific category
-	SCP_unordered_map<int, int> next_free_operator_mapping;
+	// These IDs are now just incremented
+	int next_free_operator_id = First_available_operator_id;
+	int next_free_category_id = First_available_category_id;
+	int next_free_subcategory_id = First_available_subcategory_id;
 };
 
 // Static initialization to avoid initialization order issues
@@ -32,35 +35,6 @@ global_state& globals()
 {
 	static global_state state;
 	return state;
-}
-
-int get_next_free_operator(int category)
-{
-	Assertion(category != OP_CATEGORY_CHANGE,
-		"The primary change category is full so it can't be used for new operators!");
-
-	auto& global = globals();
-
-	auto iter = global.next_free_operator_mapping.find(category);
-
-	if (iter == global.next_free_operator_mapping.end()) {
-		// The next operator number isn't initialized yet so we initialize that here
-		int max_op_value = 0;
-		for (auto& oper : Operators) {
-			// We need to do some ugly bit masking here since the SEXP system uses different bytes of the operator
-			// number for storing various things
-			if ((oper.value & OP_CATEGORY_MASK) == category) {
-				// This operator has the right category
-				// We only store the number part which is the lowest byte of the operator number
-				max_op_value = std::max(max_op_value, oper.value & 0xFF);
-			}
-		}
-		iter = global.next_free_operator_mapping.insert(std::make_pair(category, max_op_value + 1)).first;
-	}
-
-	auto value = iter->second;
-	iter->second = value + 1; // Update the value inside the iterator
-	return value;
 }
 
 void parse_sexp_table(const char* filename) {
@@ -179,11 +153,7 @@ int add_dynamic_sexp(std::unique_ptr<DynamicSEXP>&& sexp, sexp_oper_type type)
 	new_op.min = sexp->getMinimumArguments();
 	new_op.max = sexp->getMaximumArguments();
 
-	int free_op_index = get_next_free_operator(sexp->getCategory());
-	if (free_op_index >= 256) {
-		Warning(LOCATION, "There are too many SEXPs in the %s category.  The SEXP %s will not be added.", get_category_name(sexp->getCategory()), sexp->getName().c_str());
-		return -1;
-	}
+	int free_op_index = global.next_free_operator_id++;
 
 	if (Operators.size() >= FIRST_OP) {
 		Warning(LOCATION, "There are too many total SEXPs.  The SEXP %s will not be added.", sexp->getName().c_str());
@@ -191,7 +161,7 @@ int add_dynamic_sexp(std::unique_ptr<DynamicSEXP>&& sexp, sexp_oper_type type)
 	}
 
 	// For now, all dynamic SEXPS are only valid in missions
-	new_op.value = free_op_index | sexp->getCategory() | OP_NONCAMPAIGN_FLAG;
+	new_op.value = free_op_index;
 	new_op.type = type;
 
 	global.operator_const_mapping.insert(std::make_pair(new_op.value, std::move(sexp)));
@@ -217,6 +187,17 @@ DynamicSEXP* get_dynamic_sexp(int operator_const)
 
 	return iter->second.get();
 }
+int get_category_of_subcategory(int subcategory_id)
+{
+	auto& global = globals();
+
+	auto iter = global.subcategory_to_category.find(subcategory_id);
+	if (iter == global.subcategory_to_category.end()) {
+		return OP_CATEGORY_NONE;
+	}
+
+	return iter->second;
+}
 void dynamic_sexp_init()
 {
 	auto& global = globals();
@@ -237,31 +218,29 @@ void dynamic_sexp_shutdown()
 	auto& global = globals();
 
 	global.operator_const_mapping.clear();
-	global.next_free_operator_mapping.clear();
+	global.subcategory_to_category.clear();
+
+	global.next_free_operator_id = First_available_operator_id;
+	global.next_free_category_id = First_available_category_id;
+	global.next_free_subcategory_id = First_available_subcategory_id;
 
 	global.initialized = false;
 }
+int add_category(const SCP_string& name)
+{
+	auto& global = globals();
+
+	int category_id = global.next_free_category_id++;
+	op_menu.push_back({ name, category_id });
+	return category_id;
+}
 int add_subcategory(int parent_category, const SCP_string& name)
 {
-	// Another hack to make sure change2 is interpreted as the normal change category
-	if (parent_category == OP_CATEGORY_CHANGE2) {
-		parent_category = OP_CATEGORY_CHANGE;
-	}
+	auto& global = globals();
 
-	int max_subcategory_value = 0;
-	for (auto& subcat : op_submenu) {
-		if ((subcat.id & OP_CATEGORY_MASK) == parent_category) {
-			max_subcategory_value = std::max(max_subcategory_value, subcat.id & SUBCATEGORY_MASK);
-		}
-	}
-
-	if (max_subcategory_value >= SUBCATEGORY_MASK) {
-		// No more entries left in this subcategory!
-		return -1;
-	}
-
-	int subcategory_id = (max_subcategory_value + 1) | parent_category;
+	int subcategory_id = global.next_free_subcategory_id++;
 	op_submenu.push_back({ name, subcategory_id });
+	global.subcategory_to_category[subcategory_id] = parent_category;
 	return subcategory_id;
 }
 

@@ -28,13 +28,30 @@ int add_dynamic_sexp(std::unique_ptr<DynamicSEXP>&& sexp, sexp_oper_type type = 
 DynamicSEXP* get_dynamic_sexp(int operator_const);
 
 /**
+ * @brief Given a subcategory constant, return its parent category
+ * @param subcategory_id The subcategory constant to check
+ * @return The category or OP_CATEGORY_NONE if there isn't one
+ */
+int get_category_of_subcategory(int subcategory_id);
+
+/**
+ * @brief Dynamically add a new category to the SEXP system
+ *
+ * @warning Category names must be globally unique! This is not validated by this function.
+ *
+ * @param name The display name of the category
+ * @return The new category identifier
+ */
+int add_category(const SCP_string& name);
+
+/**
  * @brief Dynamically add a new subcategory to the SEXP system
  *
  * @warning Subcategory names must be globally unique! This is not validated by this function.
  *
  * @param parent_category The parent category of this category
- * @param name The display name of the category
- * @return The new category identifier or -1 on error
+ * @param name The display name of the subcategory
+ * @return The new subcategory identifier
  */
 int add_subcategory(int parent_category, const SCP_string& name);
 
