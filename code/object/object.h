@@ -248,6 +248,8 @@ void obj_delete(int objnum);
 
 void obj_delete_all();
 
+void obj_delete_all_that_should_be_dead();
+
 // should only be used by the editor!
 void obj_merge_created_list(void);
 

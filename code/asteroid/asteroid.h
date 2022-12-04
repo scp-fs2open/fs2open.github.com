@@ -157,7 +157,9 @@ void	asteroid_init();
 void	asteroid_level_init();
 void	asteroid_level_close();
 void	asteroid_create_all();
-void	asteroid_render(object * obj, model_draw_list *scene);
+void	asteroid_create_asteroid_field(int num_asteroids, int field_type, int asteroid_speed, bool brown, bool blue, bool orange, vec3d o_min, vec3d o_max, bool inner_box, vec3d i_min, vec3d i_max, SCP_vector<SCP_string> targets);
+void	asteroid_create_debris_field(int num_asteroids, int asteroid_speed, int debris1, int debris2, int debris3, vec3d o_min, vec3d o_max);
+void	asteroid_render(object* obj, model_draw_list* scene);
 void	asteroid_delete( object *asteroid_objp );
 void	asteroid_process_pre( object *asteroid_objp );
 void	asteroid_process_post( object *asteroid_objp);
@@ -169,6 +171,7 @@ float asteroid_time_to_impact(object *asteroid_objp);
 void	asteroid_show_brackets();
 void	asteroid_target_closest_danger();
 void asteroid_add_target(object* objp);
+int get_asteroid_position(const char* name);
 
 // need to extern for multiplayer
 void asteroid_sub_create(object *parent_objp, int asteroid_type, vec3d *relvec);
