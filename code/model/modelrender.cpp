@@ -847,25 +847,48 @@ void model_render_add_lightning( model_draw_list *scene, model_render_params* in
 		switch ( smi->arc_type[i] ) {
 			// "normal", FreeSpace 1 style arcs
 		case MARC_TYPE_DAMAGED:
-		case MARC_TYPE_SHIP:
 			if ( Random::flip_coin() )	{
-				gr_init_color(&primary, std::get<0>(Arc_color_damage_p1), std::get<1>(Arc_color_damage_p1), std::get<2>(Arc_color_damage_p1));
+				primary = Arc_color_damage_p1;
 			} else {
-				gr_init_color(&primary, std::get<0>(Arc_color_damage_p2), std::get<1>(Arc_color_damage_p2), std::get<2>(Arc_color_damage_p2));
+				primary = Arc_color_damage_p2;
 			}
 
-			gr_init_color(&primary, std::get<0>(Arc_color_damage_s1), std::get<1>(Arc_color_damage_s1), std::get<2>(Arc_color_damage_s1));
+			secondary = Arc_color_damage_s1;
+			break;
+		case MARC_TYPE_SHIP:
+			if ( Random::flip_coin() )	{
+				// It's possible for the color to be nullptr here, so in that case use the default -Mjn
+				if (smi->arc_primary_color_1 != nullptr) {
+					primary = smi->arc_primary_color_1[i];
+				} else {
+					primary = Arc_color_damage_p1;
+				}
+			} else {
+				// It's possible for the color to be nullptr here, so in that case use the default -Mjn
+				if (smi->arc_primary_color_2 != nullptr) {
+					primary = smi->arc_primary_color_2[i];
+				} else {
+					primary = Arc_color_damage_p2;
+				}
+			}
+
+			// It's possible for the color to be nullptr here, so in that case use the default -Mjn
+			if (smi->arc_secondary_color != nullptr) {
+				secondary = smi->arc_secondary_color[i];
+			} else {
+				secondary = Arc_color_damage_s1;
+			}
 			break;
 
 			// "EMP" style arcs
 		case MARC_TYPE_EMP:
 			if ( Random::flip_coin() )	{
-				gr_init_color(&primary, std::get<0>(Arc_color_emp_p1), std::get<1>(Arc_color_emp_p1), std::get<2>(Arc_color_emp_p1));
+				primary = Arc_color_emp_p1;
 			} else {
-				gr_init_color(&primary, std::get<0>(Arc_color_emp_p2), std::get<1>(Arc_color_emp_p2), std::get<2>(Arc_color_emp_p2));
+				primary = Arc_color_emp_p2;
 			}
 
-			gr_init_color(&primary, std::get<0>(Arc_color_emp_s1), std::get<1>(Arc_color_emp_s1), std::get<2>(Arc_color_emp_s1));
+			secondary = Arc_color_emp_s1;
 			break;
 
 		default:

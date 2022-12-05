@@ -5047,7 +5047,7 @@ void model_instance_clear_arcs(polymodel *pm, polymodel_instance *pmi)
 }
 
 // Adds an electrical arcing effect to a submodel
-void model_instance_add_arc(polymodel *pm, polymodel_instance *pmi, int sub_model_num, vec3d *v1, vec3d *v2, int arc_type )
+void model_instance_add_arc(polymodel *pm, polymodel_instance *pmi, int sub_model_num, vec3d *v1, vec3d *v2, int arc_type, color *primary_color_1, color *primary_color_2, color *secondary_color )
 {
 	Assert(pm->id == pmi->model_num);
 
@@ -5066,6 +5066,9 @@ void model_instance_add_arc(polymodel *pm, polymodel_instance *pmi, int sub_mode
 		smi->arc_type[smi->num_arcs] = (ubyte)arc_type;
 		smi->arc_pts[smi->num_arcs][0] = *v1;
 		smi->arc_pts[smi->num_arcs][1] = *v2;
+		smi->arc_primary_color_1[smi->num_arcs] = *primary_color_1;
+		smi->arc_primary_color_2[smi->num_arcs] = *primary_color_2;
+		smi->arc_secondary_color[smi->num_arcs] = *secondary_color;
 		smi->num_arcs++;
 	}
 }
