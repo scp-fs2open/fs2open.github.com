@@ -819,7 +819,7 @@ model_draw_list::~model_draw_list() {
 void model_render_add_lightning( model_draw_list *scene, model_render_params* interp, polymodel *pm, submodel_instance *smi )
 {
 	int i;
-	float width = 0.9f;
+	float width;
 	color primary, secondary;
 
 	Assert( smi->num_arcs > 0 );
@@ -832,15 +832,6 @@ void model_render_add_lightning( model_draw_list *scene, model_render_params* in
 	if ( !Interp_lightning ) {
  		return;
  	}
-
-	// try and scale the size a bit so that it looks equally well on smaller vessels
-	if ( pm->rad < 500.0f ) {
-		width *= (pm->rad * 0.01f);
-
-		if ( width < 0.2f ) {
-			width = 0.2f;
-		}
-	}
 
 	for ( i = 0; i < smi->num_arcs; i++ ) {
 		// pick a color based upon arc type
@@ -855,6 +846,16 @@ void model_render_add_lightning( model_draw_list *scene, model_render_params* in
 			}
 
 			gr_init_color(&primary, std::get<0>(Arc_color_damage_s1), std::get<1>(Arc_color_damage_s1), std::get<2>(Arc_color_damage_s1));
+
+			// try and scale the size a bit so that it looks equally well on smaller vessels
+			width = Arc_width_default_damage;
+			if (pm->rad < Arc_width_no_multiply_over_radius_damage) {
+				width *= (pm->rad * Arc_width_radius_multiplier_damage);
+
+				if (width < Arc_width_minimum_damage) {
+					width = Arc_width_minimum_damage;
+				}
+			}
 			break;
 
 			// "EMP" style arcs
@@ -866,6 +867,16 @@ void model_render_add_lightning( model_draw_list *scene, model_render_params* in
 			}
 
 			gr_init_color(&primary, std::get<0>(Arc_color_emp_s1), std::get<1>(Arc_color_emp_s1), std::get<2>(Arc_color_emp_s1));
+
+			// try and scale the size a bit so that it looks equally well on smaller vessels
+			width = Arc_width_default_emp;
+			if (pm->rad < Arc_width_no_multiply_over_radius_emp) {
+				width *= (pm->rad * Arc_width_radius_multiplier_emp);
+
+				if (width < Arc_width_minimum_emp) {
+					width = Arc_width_minimum_emp;
+				}
+			}
 			break;
 
 		default:
@@ -873,7 +884,8 @@ void model_render_add_lightning( model_draw_list *scene, model_render_params* in
 		}
 
 		// render the actual arc segment
-		scene->add_arc(&smi->arc_pts[i][0], &smi->arc_pts[i][1], &primary, &secondary, width);
+		if (width > 0.0f)
+			scene->add_arc(&smi->arc_pts[i][0], &smi->arc_pts[i][1], &primary, &secondary, width);
 	}
 }
 
