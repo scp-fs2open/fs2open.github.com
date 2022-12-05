@@ -553,6 +553,7 @@ typedef struct glow_point_bank_override {
 	bool		rotating;
 	vec3d		rotation_axis;
 	float		rotation_speed;
+	float		intensity;
 
 	bool		pulse_period_override;
 } glow_point_bank_override;

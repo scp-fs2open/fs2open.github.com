@@ -2253,7 +2253,7 @@ void stars_draw_background()
 	render_info.set_alpha(1.0f);
 	render_info.set_flags(Nmodel_flags | MR_SKYBOX);
 
-	model_render_immediate(&render_info, Nmodel_num, &Nmodel_orient, &Eye_position, MODEL_RENDER_ALL, false);
+	model_render_immediate(&render_info, Nmodel_num, Nmodel_instance_num, &Nmodel_orient, &Eye_position, MODEL_RENDER_ALL, false);
 }
 
 // call this to set a specific model as the background model
@@ -2301,9 +2301,7 @@ void stars_set_background_model(const char *model_name, const char *texture_name
 	if (Nmodel_num >= 0) {
 		model_page_in_textures(Nmodel_num);
 
-		if (model_get(Nmodel_num)->flags & PM_FLAG_HAS_INTRINSIC_MOTION) {
-			Nmodel_instance_num = model_create_instance(-1, Nmodel_num);
-		}
+		Nmodel_instance_num = model_create_instance(-1, Nmodel_num);
 	}
 
 	// Since we have a new skybox we need to rerender the environment map

@@ -2224,6 +2224,7 @@ static void parse_ship_template()
 				sip->clone(Ship_templates[template_id]);
 				strcpy_s(sip->name, buf);
 				sip->animations.changeShipName(sip->name);
+				sip->cockpit_animations.changeShipName(sip->name);
 			}
 			else {
 				Warning(LOCATION, "Unable to find ship template '%s' requested by ship template '%s', ignoring template request...", template_name, buf);
@@ -2805,6 +2806,13 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			strcpy_s(sip->cockpit_pof_file, temp);
 		else
 			WarningEx(LOCATION, "Ship %s\nCockpit POF file \"%s\" invalid!", sip->name, temp);
+
+		if (optional_string("$Cockpit Animations:")) {
+			animation::ModelAnimationParseHelper::parseAnimsetInfo(sip->cockpit_animations, 'c', sip->name);
+		}
+		if (optional_string("$Cockpit Moveables:")) {
+			animation::ModelAnimationParseHelper::parseMoveablesetInfo(sip->cockpit_animations);
+		}
 	}
 	if(optional_string( "+Cockpit offset:" ))
 	{
@@ -7652,7 +7660,7 @@ void ship_render_player_ship(object* objp) {
 			shadow_render_info.set_object_number(OBJ_INDEX(objp));
 			vec3d offset = sip->cockpit_offset;
 			vm_vec_unrotate(&offset, &offset, &objp->orient);
-			model_render_immediate(&shadow_render_info, sip->cockpit_model_num, &objp->orient, &offset);
+			model_render_immediate(&shadow_render_info, sip->cockpit_model_num, shipp->cockpit_model_instance, &objp->orient, &offset);
 		}
 
 		shadows_end_render();
@@ -7694,7 +7702,7 @@ void ship_render_player_ship(object* objp) {
 		render_info.set_replacement_textures(Player_cockpit_textures);
 		vec3d offset = sip->cockpit_offset;
 		vm_vec_unrotate(&offset, &offset, &objp->orient);
-		model_render_immediate(&render_info, sip->cockpit_model_num, &objp->orient, &offset);
+		model_render_immediate(&render_info, sip->cockpit_model_num, shipp->cockpit_model_instance, &objp->orient, &offset);
 	}
 
 
@@ -7736,6 +7744,8 @@ void ship_init_cockpit_displays(ship *shipp)
 		return;
 	}
 
+	shipp->cockpit_model_instance = model_create_instance(shipp->objnum, cockpit_model_num);
+
 	// check if we even have cockpit displays
 	if ( sip->displays.empty() ) {
 		return;
@@ -7761,8 +7771,12 @@ void ship_init_cockpit_displays(ship *shipp)
 	ship_set_hud_cockpit_targets();
 }
 
-void ship_clear_cockpit_displays()
+void ship_close_cockpit_displays(ship* shipp)
 {
+	if (shipp->cockpit_model_instance >= 0) {
+		model_delete_instance(shipp->cockpit_model_instance);
+	}
+
 	for ( int i = 0; i < (int)Player_displays.size(); i++ ) {
 		if ( Player_displays[i].background >= 0 ) {
 			bm_release(Player_displays[i].background);
@@ -18818,7 +18832,7 @@ int ship_squadron_wing_lookup(const char *wing_name)
 
 		for (int i = 0; i < MAX_SQUADRON_WINGS; i++)
 		{
-			if (!strnicmp(Squadron_wing_names[i], wing_name, len))
+			if (!strnicmp(Squadron_wing_names[i], wing_name, std::max(len, strlen(Squadron_wing_names[i]))))
 				return i;
 		}
 	}
