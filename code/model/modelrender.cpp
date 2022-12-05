@@ -845,7 +845,7 @@ void model_render_add_lightning( model_draw_list *scene, model_render_params* in
 				gr_init_color(&primary, std::get<0>(Arc_color_damage_p2), std::get<1>(Arc_color_damage_p2), std::get<2>(Arc_color_damage_p2));
 			}
 
-			gr_init_color(&primary, std::get<0>(Arc_color_damage_s1), std::get<1>(Arc_color_damage_s1), std::get<2>(Arc_color_damage_s1));
+			gr_init_color(&secondary, std::get<0>(Arc_color_damage_s1), std::get<1>(Arc_color_damage_s1), std::get<2>(Arc_color_damage_s1));
 
 			// try and scale the size a bit so that it looks equally well on smaller vessels
 			width = Arc_width_default_damage;
@@ -866,7 +866,7 @@ void model_render_add_lightning( model_draw_list *scene, model_render_params* in
 				gr_init_color(&primary, std::get<0>(Arc_color_emp_p2), std::get<1>(Arc_color_emp_p2), std::get<2>(Arc_color_emp_p2));
 			}
 
-			gr_init_color(&primary, std::get<0>(Arc_color_emp_s1), std::get<1>(Arc_color_emp_s1), std::get<2>(Arc_color_emp_s1));
+			gr_init_color(&secondary, std::get<0>(Arc_color_emp_s1), std::get<1>(Arc_color_emp_s1), std::get<2>(Arc_color_emp_s1));
 
 			// try and scale the size a bit so that it looks equally well on smaller vessels
 			width = Arc_width_default_emp;
