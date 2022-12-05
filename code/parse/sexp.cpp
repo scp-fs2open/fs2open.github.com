@@ -6358,11 +6358,11 @@ void eval_object_ship_wing_point_team(object_ship_wing_point_team *oswpt, int no
  */
 int sexp_num_ships_in_battle(int n)
 {
-	int count=0;
-	ship_obj	*so;
+	int count = 0;
+	ship_obj* so;
 
-	if ( n == -1) {
-		for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
+	if (n == -1) {
+		for (so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so)) {
 			count++;
 		}
 
@@ -6374,22 +6374,25 @@ int sexp_num_ships_in_battle(int n)
 		eval_object_ship_wing_point_team(&oswpt1, n);
 
 		switch (oswpt1.type) {
- 			case OSWPT_TYPE_WHOLE_TEAM:
-			  for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
-				  auto shipp=&Ships[Objects[so->objnum].instance];
-				  if (shipp->team == oswpt1.team) {
-						 count++;
-					  }
-			  }
-			  break;
+			case OSWPT_TYPE_WHOLE_TEAM:
+				for (so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so)) {
+					auto shipp = &Ships[Objects[so->objnum].instance];
+					if (shipp->team == oswpt1.team) {
+						count++;
+					}
+				}
+				break;
 
-  			case OSWPT_TYPE_SHIP:
-			  count++;
-			  break;
+			case OSWPT_TYPE_SHIP:
+				count++;
+				break;
 
 			case OSWPT_TYPE_WING:
-			  count += oswpt1.wingp->current_count;
-			  break;
+				count += oswpt1.wingp->current_count;
+				break;
+
+			default:
+				break;
 		}
 
 		n = CDR(n);
@@ -6453,6 +6456,9 @@ int sexp_current_speed(int n)
 		case OSWPT_TYPE_SHIP:
 		case OSWPT_TYPE_WING:
 			return sexp_get_real_speed(oswpt.objp);
+
+		default:
+			break;
 	}
 
 	return 0;
@@ -7834,6 +7840,9 @@ int sexp_distance2(object *objp1, object_ship_wing_point_team *oswpt2, int(*dist
 
 			return dist_min;
 		}
+
+		default:
+			break;
 	}
 
 	return SEXP_NAN;
@@ -7914,6 +7923,9 @@ int sexp_distance(int n, int(*distance_method)(object*, object*))
 
 			return dist_min;
 		}
+
+		default:
+			break;
 	}
 
 	return SEXP_NAN;
@@ -8056,6 +8068,9 @@ int sexp_distance_subsystem(int n, int(*distance_method)(object*, vec3d*))
 
 			return dist_min;
 		}
+
+		default:
+			break;
 	}
 
 	return SEXP_NAN;
@@ -8196,6 +8211,9 @@ void sexp_set_object_speed(int n, int axis)
 			}
 			break;
 		}
+
+		default:
+			break;
 	}
 
 	Current_sexp_network_packet.end_callback();
@@ -8581,6 +8599,9 @@ void sexp_set_object_position(int n)
 
 			break;
 		}
+
+		default:
+			break;
 	}
 
 	// retime all collision pairs (so they're checked again) if we moved something that collides
@@ -8672,6 +8693,9 @@ void sexp_set_object_orientation(int n)
 
 			break;
 		}
+
+		default:
+			break;
 	}
 
 	// retime all collision pairs (so they're checked again) if we rotated something that collides
@@ -8763,6 +8787,9 @@ void sexp_stuff_oswpt_location(vec3d **location, object_ship_wing_point_team *os
 			}
 			break;
 		}
+
+		default:
+			break;
 	}
 }
 
@@ -8801,6 +8828,9 @@ void sexp_set_oswpt_facing(object_ship_wing_point_team *oswpt, vec3d *location, 
 			}
 			break;
 		}
+
+		default:
+			break;
 	}
 }
 
@@ -8954,6 +8984,9 @@ void sexp_set_oswpt_maneuver(object_ship_wing_point_team *oswpt, int duration, i
 
 			break;
 		}
+
+		default:
+			break;
 	}
 }
 
@@ -11576,7 +11609,11 @@ void sexp_change_iff_helper(object_ship_wing_point_team oswpt, int new_team)
 					sexp_parse_ship_change_iff(p_objp, new_team);
 			}
 
+			break;
 		}
+
+		default:
+			break;
 	}
 }
 
@@ -11672,6 +11709,9 @@ void sexp_change_iff_color_helper(object_ship_wing_point_team oswpt, int observe
 
 			break;
 		}
+
+		default:
+			break;
 	}
 }
 
@@ -16011,6 +16051,9 @@ void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future
 				oswpt.ship_entry->p_objp->flags.set(parse_obj_flag, set_flag);
 			}
 			break;
+
+		default:
+			break;
 	}
 
 }
@@ -16239,6 +16282,9 @@ void sexp_alter_ship_flag(int node)
 				case OSWPT_TYPE_WHOLE_TEAM:
 					Current_sexp_network_packet.send_int(oswpt.team);
 					break;
+
+				default:
+					break;
 			}
 		}
 	}
@@ -16280,7 +16326,7 @@ void multi_sexp_alter_ship_flag()
 		{
 			std::unique_ptr<object_ship_wing_point_team> oswptp;
 
-			switch (type)
+			switch ((oswpt_type)type)
 			{
 				case OSWPT_TYPE_SHIP:
 				{
@@ -16326,6 +16372,9 @@ void multi_sexp_alter_ship_flag()
 						Warning(LOCATION, "OSWPT had an invalid team in multi_sexp_alter_ship_flag(), skipping");
 					break;
 				}
+
+				default:
+					break;
 			}
 
 			if (oswptp)
@@ -17766,6 +17815,9 @@ void sexp_kamikaze(int n, int kamikaze)
 				}
 				break;
 			}
+
+			default:
+				break;
 		}
 	}
 }
@@ -17926,6 +17978,9 @@ void sexp_ship_change_alt_name_or_callsign(int node, bool alt_name)
 					Current_sexp_network_packet.send_wing(oswpt.wingp);
 				break;
 			}
+
+			default:
+				break;
 		}
 	}
 
@@ -17975,7 +18030,7 @@ void multi_sexp_ship_change_alt_name_or_callsign(bool alt_name)
 
 	while (Current_sexp_network_packet.get_int(type)) 
 	{
-		switch (type)
+		switch ((oswpt_type)type)
 		{
 			case OSWPT_TYPE_SHIP:
 			{
@@ -18012,6 +18067,9 @@ void multi_sexp_ship_change_alt_name_or_callsign(bool alt_name)
 				}
 				break;
 			}
+
+			default:
+				break;
 		}
 	}
 }
@@ -21804,6 +21862,9 @@ void set_unset_nav_carry_status(int node, bool set_it)
 			case OSWPT_TYPE_WING:
 			case OSWPT_TYPE_WING_NOT_PRESENT:
 				oswpt.wingp->flags.set(Ship::Wing_Flags::Nav_carry, set_it);
+				break;
+
+			default:
 				break;
 		}
 	}
