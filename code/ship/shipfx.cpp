@@ -2325,7 +2325,8 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 
 	// maybe move arc points around
 	for (int i=0; i<MAX_SHIP_ARCS; i++ )	{
-		if ( shipp->arc_timestamp[i].isValid() )	{
+		//Only move arc points around for Damaged or EMP type arcs
+		if (((shipp->arc_type[i] == MARC_TYPE_DAMAGED) || (shipp->arc_type[i] == MARC_TYPE_EMP)) && shipp->arc_timestamp[i].isValid()) {
 			if ( !timestamp_elapsed( shipp->arc_timestamp[i] ) )	{							
 				// Maybe move a vertex....  20% of the time maybe?
 				int mr = Random::next();
