@@ -857,27 +857,12 @@ void model_render_add_lightning( model_draw_list *scene, model_render_params* in
 			break;
 		case MARC_TYPE_SHIP:
 			if ( Random::flip_coin() )	{
-				// It's possible for the color to be nullptr here, so in that case use the default -Mjn
-				if (smi->arc_primary_color_1 != nullptr) {
-					primary = smi->arc_primary_color_1[i];
-				} else {
-					primary = Arc_color_damage_p1;
-				}
+				primary = smi->arc_primary_color_1[i];
 			} else {
-				// It's possible for the color to be nullptr here, so in that case use the default -Mjn
-				if (smi->arc_primary_color_2 != nullptr) {
-					primary = smi->arc_primary_color_2[i];
-				} else {
-					primary = Arc_color_damage_p2;
-				}
+				primary = smi->arc_primary_color_2[i];
 			}
 
-			// It's possible for the color to be nullptr here, so in that case use the default -Mjn
-			if (smi->arc_secondary_color != nullptr) {
-				secondary = smi->arc_secondary_color[i];
-			} else {
-				secondary = Arc_color_damage_s1;
-			}
+			secondary = smi->arc_secondary_color[i];
 			break;
 
 			// "EMP" style arcs

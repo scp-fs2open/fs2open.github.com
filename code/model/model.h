@@ -129,6 +129,9 @@ struct submodel_instance
 	submodel_instance()
 	{
 		memset(&arc_pts, 0, MAX_ARC_EFFECTS * 2 * sizeof(vec3d));
+		memset(&arc_primary_color_1, 0, MAX_ARC_EFFECTS * sizeof(color));
+		memset(&arc_primary_color_2, 0, MAX_ARC_EFFECTS * sizeof(color));
+		memset(&arc_secondary_color, 0, MAX_ARC_EFFECTS * sizeof(color));
 		memset(&arc_type, 0, MAX_ARC_EFFECTS * sizeof(ubyte));
 	}
 };
