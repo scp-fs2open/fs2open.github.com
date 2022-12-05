@@ -6591,6 +6591,8 @@ void ship::clear()
 
 	autoaim_fov = 0.0f;
 
+	cockpit_model_instance = -1;
+
 	multi_client_collision_timestamp = TIMESTAMP::immediate();
 
 	passive_arc_next_times.clear();
