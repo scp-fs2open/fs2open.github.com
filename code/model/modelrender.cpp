@@ -819,7 +819,7 @@ model_draw_list::~model_draw_list() {
 void model_render_add_lightning( model_draw_list *scene, model_render_params* interp, polymodel *pm, submodel_instance *smi )
 {
 	int i;
-	float width;
+	float width = 0.9f;
 	color primary, secondary;
 
 	Assert( smi->num_arcs > 0 );
