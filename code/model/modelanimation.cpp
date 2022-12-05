@@ -28,8 +28,8 @@ namespace animation {
 		}}
 	};
 
-	std::map<int, ModelAnimationSet::RunningAnimationList> ModelAnimationSet::s_runningAnimations;
-	std::map<unsigned int, std::shared_ptr<ModelAnimation>> ModelAnimationSet::s_animationById;
+	SCP_unordered_map<int, ModelAnimationSet::RunningAnimationList> ModelAnimationSet::s_runningAnimations;
+	SCP_unordered_map<unsigned int, std::shared_ptr<ModelAnimation>> ModelAnimationSet::s_animationById;
 
 	ModelAnimation::ModelAnimation(bool isInitialType, bool isMultiCompatible, bool canStateChange, const ModelAnimationSet* defaultSet)
 		: m_set(defaultSet), m_isInitialType(isInitialType), m_isMultiCompatible(isMultiCompatible), m_canChangeState(canStateChange)
@@ -629,12 +629,13 @@ namespace animation {
 		return *this;
 	}
 
-	void ModelAnimationSet::emplace(const std::shared_ptr<ModelAnimation>& animation, const SCP_string& name, ModelAnimationTriggerType type, int subtype, unsigned int uniqueId) {
+	void ModelAnimationSet::emplace(const std::shared_ptr<ModelAnimation>& animation, const SCP_string& request, const SCP_string& name, ModelAnimationTriggerType type, int subtype, unsigned int uniqueId) {
 		auto newAnim = std::shared_ptr<ModelAnimation>(new ModelAnimation(*animation));
 		newAnim->m_set = this;
 		newAnim->m_animation = std::shared_ptr<ModelAnimationSegment>(animation->m_animation->copy());
 		newAnim->m_animation->exchangeSubmodelPointers(*this);
 		newAnim->id = uniqueId;
+		newAnim->request = request;
 		ModelAnimationSet::s_animationById[uniqueId] = newAnim;
 		m_animationSet[{type, subtype}][name].push_back(newAnim);
 	}
@@ -826,8 +827,8 @@ namespace animation {
 		return list;
 	}
 
-	std::vector<ModelAnimationSet::RegisteredTrigger> ModelAnimationSet::getRegisteredTriggers() const {
-		std::vector<RegisteredTrigger> ret;
+	SCP_vector<ModelAnimationSet::RegisteredTrigger> ModelAnimationSet::getRegisteredTriggers() const {
+		SCP_vector<RegisteredTrigger> ret;
 
 		for (const auto& animList : m_animationSet) {
 			for (const auto& animation : animList.second) {
@@ -838,7 +839,22 @@ namespace animation {
 		return ret;
 	};
 
+	SCP_set<SCP_string> ModelAnimationSet::getRegisteredAnimNames() const {
+		SCP_set<SCP_string> ret;
+
+		for (const auto& animList : m_animationSet) {
+			for (const auto& animationL : animList.second) {
+				for (const auto& animation : animationL.second) {
+					ret.emplace(animation->request);
+				}
+			}
+		}
+
+		return ret;
+	}
+
 	bool ModelAnimationSet::AnimationList::start(ModelAnimationDirection direction, bool forced, bool instant, bool pause) const {
+		polymodel_instance* pmi = model_get_instance(pmi_id);
 		for(auto anim : animations)
 			anim->start(pmi, direction, forced, instant, pause);
 
@@ -849,9 +865,9 @@ namespace animation {
 		float duration = 0.0f;
 
 		for (const auto& anim : animations) {
-			if (anim->m_instances[pmi->id].state == ModelAnimationState::UNTRIGGERED)
+			if (anim->m_instances[pmi_id].state == ModelAnimationState::UNTRIGGERED)
 				continue;
-			float localDur = anim->m_instances[pmi->id].duration;
+			float localDur = anim->m_instances[pmi_id].duration;
 			duration = duration < localDur ? localDur : duration;
 		}
 
@@ -860,22 +876,22 @@ namespace animation {
 
 	void ModelAnimationSet::AnimationList::setFlag(Animation_Instance_Flags flag, bool set) const {
 		for (const auto& anim : animations)
-			anim->m_instances[pmi->id].instance_flags.set(flag, set);
+			anim->m_instances[pmi_id].instance_flags.set(flag, set);
 	}
 
 	void ModelAnimationSet::AnimationList::setSpeed(float speed) const {
 		for (const auto& anim : animations)
-			anim->m_instances[pmi->id].speed = speed;
+			anim->m_instances[pmi_id].speed = speed;
 	};
 
 	ModelAnimationSet::AnimationList& ModelAnimationSet::AnimationList::operator+=(const AnimationList& rhs) {
-		Assertion(pmi == rhs.pmi, "Tried to concatenate two AnimationLists of different model instances!");
+		Assertion(pmi_id == rhs.pmi_id, "Tried to concatenate two AnimationLists of different model instances!");
 		animations.insert(animations.end(), rhs.animations.cbegin(), rhs.animations.cend());
 		return *this;
 	}
 
 	ModelAnimationSet::AnimationList ModelAnimationSet::AnimationList::operator+(const AnimationList& rhs) {
-		Assertion(pmi == rhs.pmi, "Tried to concatenate two AnimationLists of different model instances!");
+		Assertion(pmi_id == rhs.pmi_id, "Tried to concatenate two AnimationLists of different model instances!");
 		AnimationList result = *this;
 		result.animations.insert(result.animations.end(), rhs.animations.cbegin(), rhs.animations.cend());
 		return result;
@@ -923,7 +939,7 @@ namespace animation {
 		case ModelAnimationTriggerType::TurretFired:
 		case ModelAnimationTriggerType::TurretFiring: {
 			//Name of the turret subsys that needs to be firing
-			std::string name(triggeredBy);
+			SCP_string name(triggeredBy);
 			SCP_tolower(name);
 
 			return get(pmi, type, name);
@@ -942,7 +958,7 @@ namespace animation {
 		}
 	}
 
-	bool ModelAnimationSet::updateMoveable(polymodel_instance* pmi, const SCP_string& name, const std::vector<linb::any>& args) const {
+	bool ModelAnimationSet::updateMoveable(polymodel_instance* pmi, const SCP_string& name, const SCP_vector<linb::any>& args) const {
 		SCP_string lowername = name;
 		SCP_tolower(lowername);
 		auto moveable = m_moveableSet.find(lowername);
@@ -959,8 +975,8 @@ namespace animation {
 		}
 	}
 
-	std::vector<SCP_string> ModelAnimationSet::getRegisteredMoveables() const {
-		std::vector<SCP_string> ret;
+	SCP_vector<SCP_string> ModelAnimationSet::getRegisteredMoveables() const {
+		SCP_vector<SCP_string> ret;
 
 		for (const auto& moveable : m_moveableSet) {
 			ret.push_back(moveable.first);
@@ -1028,7 +1044,7 @@ namespace animation {
 		sip->animations.getAll(pmi, animation::ModelAnimationTriggerType::OnSpawn).start(ModelAnimationDirection::FWD);
 	}
 
-	const std::map<ModelAnimationTriggerType, std::pair<const char*, bool>> Animation_types = {
+	const SCP_unordered_map<ModelAnimationTriggerType, std::pair<const char*, bool>> Animation_types = {
 	{ModelAnimationTriggerType::Initial, {"initial", false}}, //Atypical case. Will only ever be run in fully triggered state and then applied as base transformation
 	{ModelAnimationTriggerType::OnSpawn, {"on-spawn", false}}, //Atypical case. While no reverse trigger occurs, it is also guaranteed to not trigger more than once per model, hence non-resetting animations are fine here.
 	{ModelAnimationTriggerType::Docking_Stage1, {"docking-stage-1", false}},
@@ -1111,8 +1127,8 @@ namespace animation {
 	}
 
 	//Parsing functions
-	std::map<SCP_string, ModelAnimationParseHelper::ParsedModelAnimation> ModelAnimationParseHelper::s_animationsById;
-	std::map<SCP_string, std::shared_ptr<ModelAnimationMoveable>> ModelAnimationParseHelper::s_moveablesById;
+	SCP_unordered_map<SCP_string, ModelAnimationParseHelper::ParsedModelAnimation> ModelAnimationParseHelper::s_animationsById;
+	SCP_unordered_map<SCP_string, std::shared_ptr<ModelAnimationMoveable>> ModelAnimationParseHelper::s_moveablesById;
 
 	std::shared_ptr<ModelAnimationSegment> ModelAnimationParseHelper::parseSegment() {
 		ignore_white_space();
@@ -1342,7 +1358,7 @@ namespace animation {
 			auto animIt = s_animationsById.find(request);
 			if (animIt != s_animationsById.end()) {
 				const ParsedModelAnimation& foundAnim = animIt->second;
-				set.emplace(foundAnim.anim, foundAnim.name, foundAnim.type, foundAnim.subtype, ModelAnimationParseHelper::getUniqueAnimationID(animIt->first, uniqueTypePrefix, uniqueParentName));
+				set.emplace(foundAnim.anim, request, foundAnim.name, foundAnim.type, foundAnim.subtype, ModelAnimationParseHelper::getUniqueAnimationID(animIt->first, uniqueTypePrefix, uniqueParentName));
 			}
 			else {
 				error_display(0, "Animation with name %s not found!", request.c_str());
@@ -1477,7 +1493,7 @@ namespace animation {
 
 			//Initial Animations in legacy style will continue to be fully supported and allowed, given the frequency of these (especially for turrets) and the fact that these are more intuitive to be directly in the subsystem section of the ship table, as these are closer to representing a property of the subsystem rather than an animation.
 			//Hence, there will not be any warning displayed if the legacy table is used for these. -Lafiel 
-			sip->animations.emplace(anim, name, ModelAnimationTriggerType::Initial, ModelAnimationSet::SUBTYPE_DEFAULT, ModelAnimationParseHelper::getUniqueAnimationID(name + Animation_types.at(ModelAnimationTriggerType::Initial).first + std::to_string(subtype), 'b', sip->name));
+			sip->animations.emplace(anim, name, name, ModelAnimationTriggerType::Initial, ModelAnimationSet::SUBTYPE_DEFAULT, ModelAnimationParseHelper::getUniqueAnimationID(name + Animation_types.at(ModelAnimationTriggerType::Initial).first + std::to_string(subtype), 'b', sip->name));
 		}
 		else {
 			auto anim = std::shared_ptr<ModelAnimation>(new ModelAnimation());
@@ -1572,13 +1588,13 @@ namespace animation {
 			anim->setAnimation(mainSegment);
 
 			//TODO maybe handle sub_name? Not documented in Wiki, maybe no one actually uses it...
-			sip->animations.emplace(anim, name, type, subtype, ModelAnimationParseHelper::getUniqueAnimationID(name + Animation_types.at(type).first + std::to_string(subtype), 'b', sip->name));
+			sip->animations.emplace(anim, name, name, type, subtype, ModelAnimationParseHelper::getUniqueAnimationID(name + Animation_types.at(type).first + std::to_string(subtype), 'b', sip->name));
 
 			mprintf(("Specified deprecated non-initial type animation on subsystem %s of ship class %s. Consider using *-anim.tbm's instead.\n", sp->subobj_name, sip->name));
 		}
 	}
 
-	std::map<SCP_string, ModelAnimationParseHelper::ModelAnimationSegmentParser> ModelAnimationParseHelper::s_segmentParsers = {
+	SCP_unordered_map<SCP_string, ModelAnimationParseHelper::ModelAnimationSegmentParser> ModelAnimationParseHelper::s_segmentParsers = {
 		{"$Segment Sequential:", 	ModelAnimationSegmentSerial::parser},
 		{"$Segment Parallel:", 	ModelAnimationSegmentParallel::parser},
 		{"$Wait:", 				ModelAnimationSegmentWait::parser},
@@ -1591,7 +1607,7 @@ namespace animation {
 		{"$Inverse Kinematics:", 	ModelAnimationSegmentIK::parser}
 	};
 	
-	std::map<SCP_string, ModelAnimationParseHelper::ModelAnimationMoveableParser> ModelAnimationParseHelper::s_moveableParsers = {
+	SCP_unordered_map<SCP_string, ModelAnimationParseHelper::ModelAnimationMoveableParser> ModelAnimationParseHelper::s_moveableParsers = {
 		{"Orientation", 			ModelAnimationMoveableOrientation::parser},
 		{"Rotation", 				ModelAnimationMoveableRotation::parser},
 		{"Axis Rotation", 		ModelAnimationMoveableAxisRotation::parser},

@@ -2487,6 +2487,50 @@ int CFred_mission_save::save_mission_info()
 			fout_version("\n\n$Skybox Model: %s.pof", out_str);
 		}
 		fso_comment_pop();
+
+		const auto& anim_triggers = The_mission.skybox_model_animations.getRegisteredAnimNames();
+		const auto& moveable_triggers = The_mission.skybox_model_animations.getRegisteredMoveables();
+
+		if (!anim_triggers.empty() || !moveable_triggers.empty()) {
+			fso_comment_push(";;FSO 22.4.0;;");
+			if (!anim_triggers.empty()) {
+				if (optional_string_fred("$Skybox Model Animations:")) {
+					parse_comments(1);
+					fout("( ");
+					for (const auto& animation : anim_triggers) {
+						fout("\"%s\" ", animation.c_str());
+					}
+					fout(")");
+				}
+				else {
+					fout_version("\n$Skybox Model Animations:");
+					fout("( ");
+					for (const auto& animation : anim_triggers) {
+						fout("\"%s\" ", animation.c_str());
+					}
+					fout(")");
+				}
+			}
+			if (!moveable_triggers.empty()) {
+				if (optional_string_fred("$Skybox Model Moveables:")) {
+					parse_comments(1);
+					fout("( ");
+					for (const auto& moveable : moveable_triggers) {
+						fout("\"%s\" ", moveable.c_str());
+					}
+					fout(")");
+				}
+				else {
+					fout_version("\n$Skybox Model Moveables:");
+					fout("( ");
+					for (const auto& moveable : moveable_triggers) {
+						fout("\"%s\" ", moveable.c_str());
+					}
+					fout(")");
+				}
+			}
+			fso_comment_pop();
+		}
 	} else {
 		bypass_comment(";;FSO 3.6.0;; $Skybox Model:");
 	}

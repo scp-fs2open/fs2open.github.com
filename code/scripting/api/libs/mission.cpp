@@ -38,6 +38,7 @@
 #include "scripting/api/objs/LuaSEXP.h"
 #include "scripting/api/objs/luaaisexp.h"
 #include "scripting/api/objs/asteroid.h"
+#include "scripting/api/objs/animation_handle.h"
 #include "scripting/api/objs/background_element.h"
 #include "scripting/api/objs/beam.h"
 #include "scripting/api/objs/debris.h"
@@ -1972,6 +1973,111 @@ ADE_FUNC(hasLineOfSight, l_Mission, "vector from, vector to, [table excludedObje
 ADE_FUNC(getLineOfSightFirstIntersect, l_Mission, "vector from, vector to, [table excludedObjects /* expects list of objects, empty by default */, boolean testForShields = false, boolean testForHull = true, number threshold = 10.0]", "Checks whether the to-position is in line of sight from the from-position and returns the distance and intersecting object to the first interruption of the line of sight, disregarding specific excluded objects and objects with a radius of less then threshold.", "boolean, number, object", "true and zero and nil if there is line of sight, false and the distance and intersecting object otherwise.")
 {
 	return testLineOfSight_internal(L, true);
+}
+
+ADE_FUNC(getSpecialSubmodelAnimation, l_Mission, "string target, string type, string triggeredBy",
+	"Gets an animation handle. Target is the object that should be animated (one of \"cockpit\", \"skybox\"), type is the string name of the animation type, "
+	"triggeredBy is a closer specification which animation should trigger. See *-anim.tbm specifications. ",
+	"animation_handle",
+	"The animation handle for the specified animation, nil if invalid arguments.")
+{
+	const char* target = nullptr;
+	const char* type = nullptr;
+	const char* trigger = nullptr;
+
+	if (!ade_get_args(L, "sss", &target, &type, &trigger))
+		return ADE_RETURN_NIL;
+
+	polymodel_instance* pmi;
+	animation::ModelAnimationSet* set;
+
+	if (stricmp(target, "cockpit") == 0) {
+		if (Player_ship == nullptr || Player_ship->cockpit_model_instance < 0)
+			return ade_set_args(L, "o", l_AnimationHandle.Set(animation::ModelAnimationSet::AnimationList{}));
+		pmi = model_get_instance(Player_ship->cockpit_model_instance);
+		set = &Ship_info[Player_ship_class].cockpit_animations;
+	}
+	else if (stricmp(target, "skybox") == 0) {
+		if(Nmodel_instance_num < 0)
+			return ade_set_args(L, "o", l_AnimationHandle.Set(animation::ModelAnimationSet::AnimationList{}));
+		pmi = model_get_instance(Nmodel_instance_num);
+		set = &The_mission.skybox_model_animations;
+	}
+	else {
+		return ADE_RETURN_NIL;
+	}
+
+	auto animtype = animation::anim_match_type(type);
+	if (animtype == animation::ModelAnimationTriggerType::None)
+		return ade_set_args(L, "o", l_AnimationHandle.Set(animation::ModelAnimationSet::AnimationList{}));
+
+	return ade_set_args(L, "o", l_AnimationHandle.Set(set->parseScripted(pmi, animtype, trigger)));
+}
+
+ADE_FUNC(updateSpecialSubmodelMoveable, l_Mission, "string target, string name, table values",
+	"Updates a moveable animation. Name is the name of the moveable. For what values needs to contain, please refer to the table below, depending on the type of the moveable:"
+	"Orientation:\r\n"
+	"\tThree numbers, x, y, z rotation respectively, in degrees\r\n"
+	"Rotation:\r\n"
+	"\tThree numbers, x, y, z rotation respectively, in degrees\r\n"
+	"Axis Rotation:\r\n"
+	"\tOne number, rotation angle in degrees\r\n"
+	"Inverse Kinematics:\r\n"
+	"\tThree required numbers: x, y, z position target relative to base, in 1/100th meters\r\n"
+	"\tThree optional numbers: x, y, z rotation target relative to base, in degrees\r\n",
+	"boolean",
+	"True if successful, false or nil otherwise")
+{
+	const char* target = nullptr;
+	const char* name = nullptr;
+	luacpp::LuaTable values;
+
+	if (!ade_get_args(L, "sst", &target, &name, &values))
+		return ADE_RETURN_NIL;
+
+	polymodel_instance* pmi;
+	animation::ModelAnimationSet* set;
+
+	if (stricmp(target, "cockpit") == 0) {
+		if (Player_ship == nullptr || Player_ship->cockpit_model_instance < 0)
+			return ADE_RETURN_NIL;
+		pmi = model_get_instance(Player_ship->cockpit_model_instance);
+		set = &Ship_info[Player_ship_class].cockpit_animations;
+	}
+	else if (stricmp(target, "skybox") == 0) {
+		if (Nmodel_instance_num < 0)
+			return ADE_RETURN_NIL;
+		pmi = model_get_instance(Nmodel_instance_num);
+		set = &The_mission.skybox_model_animations;
+	}
+	else {
+		return ADE_RETURN_NIL;
+	}
+
+	SCP_vector<linb::any> valuesMoveable;
+
+	if (values.isValid()) {
+		for (const auto& object : values) {
+			if (object.second.is(luacpp::ValueType::NUMBER)) {
+				// This'll lua-error internally if it's not fed only objects. Additionally, catch the lua exception and then carry on
+				try {
+					valuesMoveable.emplace_back(object.second.getValue<int>());
+				}
+				catch (const luacpp::LuaException& /*e*/) {
+					// We were likely fed a float. 
+					// Since we can't actually tell whether that's the case before we try to get the value, and the attempt to get the value is printing a LuaError itself, just eat the exception here and return
+					return ADE_RETURN_FALSE;
+				}
+			}
+			else {
+				//This happens on a non-userdata value, i.e. a number
+				LuaError(L, "Value table contained non-numbers! Aborting...");
+				return ADE_RETURN_FALSE;
+			}
+		}
+	}
+
+	return set->updateMoveable(pmi, name, valuesMoveable) ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
 }
 
 ADE_LIB_DERIV(l_Mission_LuaSEXPs, "LuaSEXPs", nullptr, "Lua SEXPs", l_Mission);
