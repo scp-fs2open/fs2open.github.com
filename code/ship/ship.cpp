@@ -11661,9 +11661,6 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 	int			banks_fired;				// used for multiplayer to help determine whether or not to send packet
 	banks_fired = 0;			// used in multiplayer -- bitfield of banks that were fired
 	bool has_fired = false;		// used to determine whether we should fire the scripting hook
-	bool has_autoaim, has_converging_autoaim, needs_target_pos;	// used to flag weapon/ship as having autoaim
-	float autoaim_fov = 0;			// autoaim limit
-	float dist_to_target = 0;		// distance to target, for autoaim & automatic convergence
 
 	gamesnd_id		sound_played;	// used to track what sound is played.  If the player is firing two banks
 										// of the same laser, we only want to play one sound
@@ -11738,6 +11735,10 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 	polymodel* pm = model_get(sip->model_num);
 
 	for ( i = 0; i < num_primary_banks; i++ ) {		
+		bool has_autoaim, has_converging_autoaim, needs_target_pos; // used to flag weapon/ship as having autoaim
+		float autoaim_fov = 0;                                      // autoaim limit
+		float dist_to_target = 0;									// distance to target, for autoaim & automatic convergence
+
 		// Goober5000 - allow more than two banks
 		bank_to_fire = (swp->current_primary_bank+i) % swp->num_primary_banks;
 
@@ -11781,9 +11782,7 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 			}
 
 			dist_to_target = vm_vec_dist_quick(&target_position, &obj->pos);
-		}
 
-		if (needs_target_pos) {
 			target_velocity_vec = Objects[aip->target_objnum].phys_info.vel;
 			if (The_mission.ai_profile->flags[AI::Profile_Flags::Use_additive_weapon_velocity])
 				vm_vec_scale_sub2(&target_velocity_vec, &obj->phys_info.vel, winfo_p->vel_inherit_amount);
