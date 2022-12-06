@@ -156,13 +156,15 @@ void LabUi::createUi()
 		with_Window("Select object and background")
 		{
 
-			if (ImGui::CollapsingHeader("Displayed Object")) {
+			with_CollapsingHeader("Displayed Object")
+			{
 				buildShipList();
 
 				buildWeaponList();
 			}
 
-			if (ImGui::CollapsingHeader("Mission Background")) {
+			with_CollapsingHeader("Mission Background")
+			{
 				buildBackgroundList();
 			}
 		}
@@ -265,7 +267,8 @@ void LabUi::showRenderOptions()
 	{
 		ImGui::Checkbox("Enable Model Rotation", &enable_model_rotation);
 
-		if (ImGui::CollapsingHeader("Model features")) {
+		with_CollapsingHeader("Model features")
+		{
 			ImGui::Checkbox("Rotate/Translate Subsystems", &animate_subsystems);
 			ImGui::Checkbox("Show full detail", &show_full_detail);
 			ImGui::Checkbox("Show thrusters", &show_thrusters);
@@ -276,7 +279,8 @@ void LabUi::showRenderOptions()
 			ImGui::Checkbox("No glowpoints", &no_glowpoints);
 		}
 
-		if (ImGui::CollapsingHeader("Texture options")) {
+		with_CollapsingHeader("Texture options")
+		{
 			ImGui::Checkbox("Diffuse map", &diffuse_map);
 			ImGui::Checkbox("Glow map", &glow_map);
 			ImGui::Checkbox("Specular map", &spec_map);
@@ -290,7 +294,8 @@ void LabUi::showRenderOptions()
 			buildTextureQualityCombobox();
 		}
 
-		if (ImGui::CollapsingHeader("Scene rendering options")) {
+		with_CollapsingHeader("Scene rendering options")
+		{
 			ImGui::Checkbox("Hide Post Processing", &hide_post_processing);
 			ImGui::Checkbox("Render as wireframe", &use_wireframe_rendering);
 			ImGui::Checkbox("Render without light", &no_lighting);
@@ -428,7 +433,8 @@ void LabUi::showObjectOptions() const
 			auto pm = model_get(sip->model_num);
 
 
-			if (ImGui::CollapsingHeader(sip->name)) {
+			with_CollapsingHeader(sip->name)
+			{
 				buildTableInfoTxtbox(sip);
 
 				with_TreeNode("Model information") {
@@ -478,7 +484,8 @@ void LabUi::showObjectOptions() const
 			}
 		}
 
-		if (ImGui::CollapsingHeader("Object actions")) {
+		with_CollapsingHeader("Object actions")
+		{
 			if (getLabManager()->CurrentMode == LabMode::Ship) {
 				if (getLabManager()->isSafeForShips()) {
 					if (ImGui::Button("Destroy ship")) {
@@ -488,6 +495,11 @@ void LabUi::showObjectOptions() const
 							obj->flags.remove(Object::Object_Flags::Player_ship);
 							ship_self_destruct(obj);
 						}
+					}
+
+					with_CollapsingHeader("Animations")
+					{
+						
 					}
 				}
 			}
