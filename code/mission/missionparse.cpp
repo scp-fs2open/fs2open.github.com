@@ -7579,23 +7579,34 @@ bool mission_maybe_make_wing_arrive(int wingnum, bool force_arrival)
 int mission_do_departure(object *objp, bool goal_is_to_warp)
 {
 	Assert(objp->type == OBJ_SHIP);
+	bool beginning_departure;
 	int location, anchor, path_mask;
 	ship *shipp = &Ships[objp->instance];
 	ai_info *aip = &Ai_info[shipp->ai_index];
 
-	mprintf(("Entered mission_do_departure() for %s\n", shipp->ship_name));
-
-	if (OnDepartureStartedHook->isActive())
+	// this function is often called many times in a row for ships that are in the first stage of departing,
+	// but some things should only be done when departure first starts
+	if (aip->mode == AIM_WARP_OUT || shipp->is_departing())
 	{
-		// add scripting hook for 'On Departure Started' --wookieejedi
-		// hook is placed at the beginning of this function to allow the scripter to
-		// actually have access to the ship's departure decisions before they are all executed
-		OnDepartureStartedHook->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp), scripting::hook_param("Ship", 'o', objp)));
+		beginning_departure = false;
 	}
+	else
+	{
+		beginning_departure = true;
+		mprintf(("Entered mission_do_departure() for %s\n", shipp->ship_name));
 
-	// abort rearm, because if we entered this function we're either going to depart via hyperspace, depart via bay,
-	// or revert to our default behavior
-	ai_abort_rearm_request(objp);
+		if (OnDepartureStartedHook->isActive())
+		{
+			// add scripting hook for 'On Departure Started' --wookieejedi
+			// hook is placed at the beginning of this function to allow the scripter to
+			// actually have access to the ship's departure decisions before they are all executed
+			OnDepartureStartedHook->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp), scripting::hook_param("Ship", 'o', objp)));
+		}
+
+		// abort rearm, because if we entered this function we're either going to depart via hyperspace, depart via bay,
+		// or revert to our default behavior
+		ai_abort_rearm_request(objp);
+	}
 
 	// if our current goal is to warp, then we won't consider departing to a bay, because the goal explicitly says to warp out
 	// (this sort of goal can be assigned in FRED, either in the ship's initial orders or as the ai-warp-out goal)
@@ -7616,7 +7627,7 @@ int mission_do_departure(object *objp, bool goal_is_to_warp)
 	}
 
 	// if this ship belongs to a wing, then use the wing departure information
-	if (shipp->wingnum >= 0)
+	if (beginning_departure && shipp->wingnum >= 0)
 	{
 		wing *wingp = &Wings[shipp->wingnum];
 
@@ -7679,10 +7690,13 @@ try_to_warp:
 	// make sure we can actually warp
 	if (ship_can_warp_full_check(shipp))
 	{
-		mprintf(("Setting mode to warpout\n"));
+		if (aip->mode != AIM_WARP_OUT)
+		{
+			mprintf(("Setting mode to warpout\n"));
 
-		ai_set_mode_warp_out(objp, aip);
-		MONITOR_INC(NumShipDepartures,1);
+			ai_set_mode_warp_out(objp, aip);
+			MONITOR_INC(NumShipDepartures, 1);
+		}
 
 		return 1;
 	}
