@@ -837,47 +837,9 @@ ADE_FUNC(addMessage, l_Mission, "string name, string text, [persona persona]", "
 	return ade_set_error(L, "o", l_Message.Set((int) Messages.size() - 1));
 }
 
-ADE_FUNC(sendMessage,
-	l_Mission,
-	"string sender, message message, [number delay=0.0, enumeration priority = MESSAGE_PRIORITY_NORMAL, boolean "
-	"fromCommand = false]",
-	"Sends a message from the given source (not from a ship!) with the given priority or optionally sends it from the "
-	"missions command source.<br>"
-	"If delay is specified the message will be delayed by the specified time in seconds<br>"
-	"If you pass <i>nil</i> as the sender then the message will not have a sender.",
-	"boolean",
-	"true if successfull, false otherwise")
+int sendMessage_sub(lua_State* L, const void* sender, int messageSource, int messageIdx, float delay, enum_h* ehp)
 {
-	const char* sender = nullptr;
-	int messageIdx = -1;
-	int priority = MESSAGE_PRIORITY_NORMAL;
-	bool fromCommand = false;
-	int messageSource = MESSAGE_SOURCE_SPECIAL;
-	float delay = 0.0f;
-
-	enum_h* ehp = NULL;
-
-	// if first is nil then use no source
-	if (lua_isnil(L, 1))
-	{
-		if (!ade_get_args(L, "*o|fob", l_Message.Get(&messageIdx), &delay, l_Enum.GetPtr(&ehp), &fromCommand))
-			return ADE_RETURN_FALSE;
-
-		messageSource = MESSAGE_SOURCE_NONE;
-	}
-	else
-	{
-		if (!ade_get_args(L, "so|fob", &sender, l_Message.Get(&messageIdx), &delay, l_Enum.GetPtr(&ehp), &fromCommand))
-			return ADE_RETURN_FALSE;
-
-		if (sender == NULL)
-			return ADE_RETURN_FALSE;
-	}
-
-	if (fromCommand)
-		messageSource = MESSAGE_SOURCE_COMMAND;
-
-	if (messageIdx < 0 || messageIdx >= (int) Messages.size())
+	if (messageIdx < 0 || messageIdx >= (int)Messages.size())
 		return ADE_RETURN_FALSE;
 
 	if (messageIdx < Num_builtin_messages)
@@ -892,9 +854,11 @@ ADE_FUNC(sendMessage,
 		return ADE_RETURN_FALSE;
 	}
 
-	if (ehp != NULL)
+	int priority = MESSAGE_PRIORITY_NORMAL;
+
+	if (ehp != nullptr)
 	{
-		switch(ehp->index)
+		switch (ehp->index)
 		{
 			case LE_MESSAGE_PRIORITY_HIGH:
 				priority = MESSAGE_PRIORITY_HIGH;
@@ -911,12 +875,71 @@ ADE_FUNC(sendMessage,
 		}
 	}
 
-	if (messageSource == MESSAGE_SOURCE_NONE)
-		message_send_unique_to_player(Messages[messageIdx].name, NULL, MESSAGE_SOURCE_NONE, priority, 0, fl2i(delay * 1000.0f));
-	else
-		message_send_unique_to_player(Messages[messageIdx].name, (void*) sender, messageSource, priority, 0, fl2i(delay * 1000.0f));
+	message_send_unique_to_player(Messages[messageIdx].name, sender, messageSource, priority, 0, fl2i(delay * MILLISECONDS_PER_SECOND));
 
 	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(sendMessage,
+	l_Mission,
+	"string|ship sender, message message, [number delay=0.0, enumeration priority = MESSAGE_PRIORITY_NORMAL, boolean "
+	"fromCommand = false]",
+	"Sends a message from the given source or ship with the given priority, or optionally sends it from the "
+	"mission's command source.<br>"
+	"If delay is specified, the message will be delayed by the specified time in seconds.<br>"
+	"If sender is <i>nil</i> the message will not have a sender.  If sender is a ship object the message will be sent from the ship; "
+	"if sender is a string the message will have a non-ship source even if the string is a ship name.",
+	"boolean",
+	"true if successful, false otherwise")
+{
+	const void* sender = nullptr;
+	int messageIdx = -1;
+	bool fromCommand = false;
+	int messageSource = MESSAGE_SOURCE_SPECIAL;
+	float delay = 0.0f;
+
+	enum_h* ehp = nullptr;
+
+	// if first is nil then use no source
+	if (lua_isnil(L, 1))
+	{
+		if (!ade_get_args(L, "*o|fob", l_Message.Get(&messageIdx), &delay, l_Enum.GetPtr(&ehp), &fromCommand))
+			return ADE_RETURN_FALSE;
+
+		messageSource = MESSAGE_SOURCE_NONE;
+	}
+	// if first is a string then treat it as such
+	else if (lua_isstring(L, 1))
+	{
+		const char* sender_string = nullptr;
+
+		if (!ade_get_args(L, "so|fob", &sender_string, l_Message.Get(&messageIdx), &delay, l_Enum.GetPtr(&ehp), &fromCommand))
+			return ADE_RETURN_FALSE;
+
+		if (sender_string == nullptr)
+			return ADE_RETURN_FALSE;
+
+		sender = sender_string;
+	}
+	// assume it's a ship
+	else
+	{
+		object_h* ship_h = nullptr;
+
+		if (!ade_get_args(L, "oo|fob", l_Ship.GetPtr(&ship_h), l_Message.Get(&messageIdx), &delay, l_Enum.GetPtr(&ehp), &fromCommand))
+			return ADE_RETURN_FALSE;
+
+		if (ship_h == nullptr || !ship_h->IsValid())
+			return ADE_RETURN_FALSE;
+
+		sender = &Ships[ship_h->objp->instance];
+		messageSource = MESSAGE_SOURCE_SHIP;
+	}
+
+	if (fromCommand)
+		messageSource = MESSAGE_SOURCE_COMMAND;
+
+	return sendMessage_sub(L, sender, messageSource, messageIdx, delay, ehp);
 }
 
 ADE_FUNC(sendTrainingMessage, l_Mission, "message message, number time, [number delay=0.0]",
