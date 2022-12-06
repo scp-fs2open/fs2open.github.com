@@ -89,7 +89,7 @@ extern matrix4 vmd_zero_matrix4;
 extern angles vmd_zero_angles;
 
 //Here's a handy constant
-
+#define ZERO_ANGLES { 0.0f, 0.0f, 0.0f }
 #define ZERO_VECTOR { { { 0.0f, 0.0f, 0.0f } } }
 #define SCALE_IDENTITY_VECTOR { { { 1.0f, 1.0f, 1.0f } } }
 //#define IDENTITY_MATRIX {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f}

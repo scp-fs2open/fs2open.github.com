@@ -18,26 +18,30 @@ namespace io
 		};
 
 		struct SpaceMouseDefinition {
-
+			unsigned int vendorID, productID;
+			size_t buttons;
+			size_t packetSize;
 		};
 
 		class SpaceMouse {
+			const SpaceMouseDefinition& m_definition;
+			const int m_pollingFrequency;
+
+			hid_device* m_deviceHandle;
 			SpaceMouseMovement m_current;
 			SCP_vector<bool> m_keypresses;
 			UI_TIMESTAMP m_lastPolled;
-			int m_pollingFrequency; // in ms, 0 is every frame
-			hid_device* m_deviceHandle;
 			
 			void poll();
 			void pollMaybe();
-			SpaceMouse(const SpaceMouseDefinition& definition, hid_device* deviceHandle, int pollingFrequency = 0);
+			SpaceMouse(const SpaceMouseDefinition& definition, hid_device* deviceHandle, int pollingFrequency = 10);
 		public:
 			~SpaceMouse();
 
 			const SpaceMouseMovement& getMovement();
 			bool isButtonPressed(size_t number);
 
-			static tl::optional<SpaceMouse> searchSpaceMouses();
+			static tl::optional<SpaceMouse> searchSpaceMouses(int pollingFrequency = 10);
 		};
 	}
 }
