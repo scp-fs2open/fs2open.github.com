@@ -656,6 +656,8 @@ add_file_folder("Io"
 	io/joy-sdl.cpp
 	io/joy_ff.h
 	io/joy_ff-sdl.cpp
+	io/spacemouse.cpp
+	io/spacemouse.h
 )
 
 # jpgutils files
