@@ -805,6 +805,14 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 	required_string("$Name:");
 	stuff_string(fname, F_NAME, NAME_LENGTH);
+
+	// Remove @ symbol
+	// these used to denote weapons that would
+	// only be parsed in demo builds
+	if (fname[0] == '@') {
+		backspace(fname);
+	}
+
 	diag_printf("Weapon name -- %s\n", fname);
 
 	if(optional_string("+nocreate")) {
@@ -829,13 +837,6 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			Removed_weapons.push_back(fname);
 			remove_weapon = true;
 		}
-	}
-
-	//Remove @ symbol
-	//these used to denote weapons that would
-	//only be parsed in demo builds
-	if ( fname[0] == '@' ) {
-		backspace(fname);
 	}
 
 	//Check if weapon exists already
