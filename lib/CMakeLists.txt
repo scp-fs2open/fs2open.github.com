@@ -57,4 +57,6 @@ add_subdirectory(optional)
 
 ADD_SUBDIRECTORY(lz4)
 
+add_subdirectory(hidapi)
+
 ADD_SUBDIRECTORY(imgui)
