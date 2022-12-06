@@ -1650,7 +1650,7 @@ void obj_move_all(float frametime)
 	}
 
 	if (Viewer_obj && Viewer_obj->type == OBJ_SHIP && Viewer_obj->instance >= 0) {
-		ship* shipp = &Ships[objp->instance];
+		ship* shipp = &Ships[Viewer_obj->instance];
 		if (shipp->cockpit_model_instance >= 0) {
 			animation::ModelAnimation::stepAnimations(frametime, model_get_instance(shipp->cockpit_model_instance));
 		}
