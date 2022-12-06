@@ -420,6 +420,8 @@ void LabUi::buildTableInfoTxtbox(ship_info* sip) const
 	}
 }
 
+
+
 void LabUi::showObjectOptions() const
 {
 	ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg;
@@ -432,13 +434,14 @@ void LabUi::showObjectOptions() const
 			auto sip = &Ship_info[shipp->ship_info_index];
 			auto pm = model_get(sip->model_num);
 
-
 			with_CollapsingHeader(sip->name)
 			{
 				buildTableInfoTxtbox(sip);
 
-				with_TreeNode("Model information") {
-					with_Table("model info", 2, flags) {
+				with_TreeNode("Model information")
+				{
+					with_Table("model info", 2, flags)
+					{
 						IMGUI_TABLE_ENTRY("Model File", sip->pof_file)
 						IMGUI_TABLE_ENTRY("Target model", sip->pof_file_hud)
 						IMGUI_TABLE_ENTRY("Techroom model", sip->pof_file_tech)
@@ -446,8 +449,9 @@ void LabUi::showObjectOptions() const
 						IMGUI_TABLE_ENTRY("POF version", std::to_string(pm->version).c_str())
 					}
 				}
-				
-				with_TreeNode("Subsystems") {
+
+				with_TreeNode("Subsystems")
+				{
 					static ship_subsys* selected_subsys = nullptr;
 					int subsys_index = 0;
 
@@ -470,11 +474,17 @@ void LabUi::showObjectOptions() const
 						SCP_string subsys_name;
 						sprintf(subsys_name, "%s (%i)", subsys_name_tmp, subsys_index);
 
-						with_TreeNode(subsys_name.c_str()) {
-
+						with_TreeNode(subsys_name.c_str())
+						{
 							ImGui::TreeNodeEx("Highlight system", leaf_flags);
 							if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
 								selected_subsys = cur_subsys;
+							}
+
+							ImGui::TreeNodeEx("Destroy subsystem", leaf_flags);
+							if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
+								cur_subsys->current_hits = 0;
+								do_subobj_destroyed_stuff(shipp, cur_subsys, nullptr);
 							}
 						}
 
@@ -482,24 +492,78 @@ void LabUi::showObjectOptions() const
 					}
 				}
 			}
-		}
 
-		with_CollapsingHeader("Object actions")
-		{
-			if (getLabManager()->CurrentMode == LabMode::Ship) {
-				if (getLabManager()->isSafeForShips()) {
-					if (ImGui::Button("Destroy ship")) {
-						if (Objects[getLabManager()->CurrentObject].type == OBJ_SHIP) {
-							auto obj = &Objects[getLabManager()->CurrentObject];
+			with_CollapsingHeader("Object actions")
+			{
+				if (getLabManager()->CurrentMode == LabMode::Ship) {
+					if (getLabManager()->isSafeForShips()) {
+						if (ImGui::Button("Destroy ship")) {
+							if (Objects[getLabManager()->CurrentObject].type == OBJ_SHIP) {
+								auto obj = &Objects[getLabManager()->CurrentObject];
 
-							obj->flags.remove(Object::Object_Flags::Player_ship);
-							ship_self_destruct(obj);
+								obj->flags.remove(Object::Object_Flags::Player_ship);
+								ship_self_destruct(obj);
+							}
+						}
+
+						
+
+						//with_CollapsingHeader("Animations") {}
+					}
+				}
+			}
+
+			with_CollapsingHeader("Weapons")
+			{
+				with_CollapsingHeader("Primaries")
+				{
+					auto bank = 0;
+					for (auto& primary_slot : shipp->weapons.primary_bank_weapons) {
+						if (primary_slot != -1) {
+							auto wip = &Weapon_info[primary_slot];
+
+							SCP_string text;
+							sprintf(text, "Primary bank %i", bank);
+							with_Combo(text.c_str(), wip->name)
+							{
+								for (auto i = 0; i < Weapon_info.size(); i++) {
+									if (Weapon_info[i].subtype == WP_MISSILE)
+										continue;
+									bool is_selected = i == primary_slot;
+									if (ImGui::Selectable(Weapon_info[i].name, is_selected))
+										primary_slot = i;
+									if (is_selected)
+										ImGui::SetItemDefaultFocus();
+								}
+							}
+							bank++;
 						}
 					}
+				}
 
-					with_CollapsingHeader("Animations")
-					{
-						
+				with_CollapsingHeader("Secondaries")
+				{
+					auto bank = 0;
+					for (auto& secondary_slot : shipp->weapons.secondary_bank_weapons) {
+						if (secondary_slot != -1) {
+							auto wip = &Weapon_info[secondary_slot];
+
+							SCP_string text;
+							sprintf(text, "Secondary bank %i", bank);
+							with_Combo(text.c_str(), wip->name)
+							{
+								for (auto i = 0; i < Weapon_info.size(); i++) {
+									if (Weapon_info[i].subtype != WP_MISSILE)
+										continue;
+									bool is_selected = i == secondary_slot;
+									if (ImGui::Selectable(Weapon_info[i].name, is_selected))
+										secondary_slot = i;
+									if (is_selected)
+										ImGui::SetItemDefaultFocus();
+								}
+							}
+							bank++;
+						}
 					}
 				}
 			}
