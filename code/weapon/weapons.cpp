@@ -806,9 +806,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	required_string("$Name:");
 	stuff_string(fname, F_NAME, NAME_LENGTH);
 
-	// Remove @ symbol
-	// these used to denote weapons that would
-	// only be parsed in demo builds
+	// Remove @ symbol -- these used to denote weapons that would only be parsed in demo builds
 	if (fname[0] == '@') {
 		backspace(fname);
 	}
