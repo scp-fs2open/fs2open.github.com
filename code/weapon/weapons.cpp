@@ -1358,12 +1358,12 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			fovt = 0.0f;
 			error_display(0, "Weapon %s autoaim fov was less than 0, setting to %f\n", wip->name, fovt);
 		}
-		if (fovt >= 360.0f) {
-			fovt = 359.99f;
-			error_display(0, "Weapon %s autoaim fov was greater than 360, setting to %f\n", wip->name, fovt);
+		if (fovt >= 180.0f) {
+			fovt = 180.0f;
+			error_display(0, "Weapon %s autoaim fov was greater than 180, setting to %f\n", wip->name, fovt);
 		}
 
-		wip->autoaim_fov = fovt;
+		wip->autoaim_fov = fovt * PI / 180.0f;
 	}
 
 	bool is_homing=false;
