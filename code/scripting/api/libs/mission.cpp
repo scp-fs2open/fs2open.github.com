@@ -1995,7 +1995,7 @@ ADE_FUNC(getSpecialSubmodelAnimation, l_Mission, "string target, string type, st
 		if (Player_ship == nullptr || Player_ship->cockpit_model_instance < 0)
 			return ade_set_args(L, "o", l_AnimationHandle.Set(animation::ModelAnimationSet::AnimationList{}));
 		pmi = model_get_instance(Player_ship->cockpit_model_instance);
-		set = &Ship_info[Player_ship_class].cockpit_animations;
+		set = &Ship_info[Player_ship->ship_info_index].cockpit_animations;
 	}
 	else if (stricmp(target, "skybox") == 0) {
 		if(Nmodel_instance_num < 0)
@@ -2042,7 +2042,7 @@ ADE_FUNC(updateSpecialSubmodelMoveable, l_Mission, "string target, string name, 
 		if (Player_ship == nullptr || Player_ship->cockpit_model_instance < 0)
 			return ADE_RETURN_NIL;
 		pmi = model_get_instance(Player_ship->cockpit_model_instance);
-		set = &Ship_info[Player_ship_class].cockpit_animations;
+		set = &Ship_info[Player_ship->ship_info_index].cockpit_animations;
 	}
 	else if (stricmp(target, "skybox") == 0) {
 		if (Nmodel_instance_num < 0)

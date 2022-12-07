@@ -2302,6 +2302,7 @@ void stars_set_background_model(const char *model_name, const char *texture_name
 		model_page_in_textures(Nmodel_num);
 
 		Nmodel_instance_num = model_create_instance(-1, Nmodel_num);
+		The_mission.skybox_model_animations.initializeMoveables(model_get_instance(Nmodel_instance_num));
 	}
 
 	// Since we have a new skybox we need to rerender the environment map
