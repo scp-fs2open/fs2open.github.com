@@ -137,7 +137,7 @@ void main() {
 
 		// The main model shader applies ambient lighting by drawing the ambient part of the texture into the emissive
 		// texture. We do the same here to make sure the decal material is applied correctly
-		if (diffuse_glow_mode == 0) {
+		if (glow_blend_mode == 0) {
 			// Normal alpha blending
 			emissive_out = vec4(color.rgb * ambientLight, color.a * alpha);
 		} else {

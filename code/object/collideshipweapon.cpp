@@ -142,8 +142,7 @@ static void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, vec3
 
 		// randomize angle of decal if specified --wookeejedi
 		if (wip->impact_decal.random_rotation) {
-			angles random_rotation_angs;
-			random_rotation_angs.b = frand() * PI;
+			angles random_rotation_angs = vm_angles_new(0.0f, frand() * PI2, 0.0f);
 			matrix random_rotation_ori;
 			vm_angles_2_matrix(&random_rotation_ori, &random_rotation_angs);
 			vm_matrix_x_matrix(&decal_orient, &decal_orient, &random_rotation_ori);
