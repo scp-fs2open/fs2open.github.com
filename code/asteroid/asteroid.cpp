@@ -2129,7 +2129,7 @@ static void asteroid_parse_section()
 		break;
 	default:
 		error_display(0, "Unknown asteroid type [%i] found for asteroid %s. Assuming debris", asteroid_p->type, asteroid_p->name);
-		asteroid_p->type = -1;
+		asteroid_p->type = ASTEROID_TYPE_DEBRIS;
 	}
 
 	if (optional_string("$POF file1:")) {
