@@ -131,6 +131,7 @@ struct ship_obj;
 #define OPF_ANY_HUD_GAUGE		100		// Goober5000 - both custom and builtin
 #define OPF_WING_FLAG			101		// Goober5000 - The name of a wing flag
 #define OPF_ASTEROID_DEBRIS		102		// MjnMixael - Debris types as defined in asteroids.tbl
+#define OPF_WING_FORMATION		103		// Goober5000 - as defined in ships.tbl
 
 // Operand return types
 #define	OPR_NUMBER				1	// returns number
@@ -770,7 +771,7 @@ struct ship_obj;
 #define OP_ALTER_SHIP_FLAG					(0x001b | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Karajorma
 #define OP_CHANGE_TEAM_COLOR				(0x001c | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// The E
 #define OP_NEBULA_CHANGE_PATTERN			(0x001d | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Axem
-// 0x001e is currently vacant
+#define OP_SET_WING_FORMATION				(0x001e | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_TECH_ADD_INTEL_XSTR				(0x001f | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Goober5000
 
 #define OP_COPY_VARIABLE_FROM_INDEX			(0x0020 | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG) // Goober5000
@@ -840,8 +841,6 @@ struct ship_obj;
 #define OP_USED_CHEAT						(0x005d | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// Kiloku
 #define OP_SET_ASTEROID_FIELD				(0x005e | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// MjnMixael
 #define OP_SET_DEBRIS_FIELD					(0x005f | OP_CATEGORY_CHANGE2 | OP_NONCAMPAIGN_FLAG)	// MjnMixael
-
-// before starting 0x0060, be aware of the gap at 0x001e
 
 // defined for AI goals
 #define OP_AI_CHASE							(0x0000 | OP_CATEGORY_AI | OP_NONCAMPAIGN_FLAG)
@@ -1149,6 +1148,7 @@ const char *CTEXT(int n);
 #define SEXP_CHECK_INVALID_TRANSLATING_SUBSYS	-176
 #define SEXP_CHECK_INVALID_ANY_HUD_GAUGE		-177
 #define SEXP_CHECK_INVALID_WING_FLAG			-178
+#define SEXP_CHECK_INVALID_WING_FORMATION		-179
 
 
 #define TRAINING_CONTEXT_SPEED		(1<<0)
