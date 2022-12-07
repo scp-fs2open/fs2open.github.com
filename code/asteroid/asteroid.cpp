@@ -2315,6 +2315,7 @@ static void asteroid_parse_tbl(const char* filename)
 static void verify_asteroid_list()
 {
 	SCP_string asteroid_size[NUM_ASTEROID_SIZES] = {"Small", "Medium", "Large"};
+	float asteroid_spawn_weight[NUM_ASTEROID_SIZES] = {SMALL_DEBRIS_WEIGHT, MEDIUM_DEBRIS_WEIGHT, LARGE_DEBRIS_WEIGHT};
 	
 	// Set the three asteroid sizes
 	for (int i = 0; i < NUM_ASTEROID_SIZES; i++) {
@@ -2324,6 +2325,7 @@ static void verify_asteroid_list()
 		for (int j = 0; j < (int)asteroid_list.size(); j++) {
 			if (asteroid_list[j].type == i) {
 				mprintf(("%s asteroid parsed with name %s\n", asteroid_size[i].c_str(), asteroid_list[j].name));
+				asteroid_list[j].spawn_weight = asteroid_spawn_weight[i]; //Be absolutely sure we're using the right spawn weight for asteroids
 				Asteroid_info.push_back(asteroid_list[j]);
 				asteroid_list.erase(asteroid_list.begin() + j);
 				found = true;
@@ -2337,6 +2339,7 @@ static void verify_asteroid_list()
 		//Left this as a log print instead of a Warning because of retail-Mjn
 		mprintf(("%s asteroid not found. Using asteroid %s\n", asteroid_size[i].c_str(), asteroid_list[0].name));
 		asteroid_list[0].type = i;
+		asteroid_list[0].spawn_weight = asteroid_spawn_weight[i]; //Be absolutely sure we're using the right spawn weight for asteroids
 		Asteroid_info.push_back(asteroid_list[0]);
 		asteroid_list.erase(asteroid_list.begin());
 		continue;
