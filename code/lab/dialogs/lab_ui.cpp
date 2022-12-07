@@ -365,8 +365,6 @@ void LabUi::showRenderOptions()
 		getLabManager()->Renderer->setBloomLevel(bloom_level);
 		getLabManager()->Renderer->setExposureLevel(exposure_level);
 		getLabManager()->Renderer->setPPCValues(ppcv);
-	} else {
-		skip_setting_light_options_this_frame = false;
 	}
 }
 
@@ -420,15 +418,148 @@ void LabUi::buildTableInfoTxtbox(ship_info* sip) const
 	}
 }
 
+void LabUi::buildModelInfoBox(ship_info* sip, polymodel* pm) const {
+	ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg;
+	with_TreeNode("Model information")
+	{
+		with_Table("model info", 2, flags)
+		{
+			IMGUI_TABLE_ENTRY("Model File", sip->pof_file)
+			IMGUI_TABLE_ENTRY("Target model", sip->pof_file_hud)
+			IMGUI_TABLE_ENTRY("Techroom model", sip->pof_file_tech)
+			IMGUI_TABLE_ENTRY("Cockpit model", sip->cockpit_pof_file)
+			IMGUI_TABLE_ENTRY("POF version", std::to_string(pm->version).c_str())
+		}
+	}
+}
 
+void LabUi::buildSubsystemList(object* objp, ship* shipp) const {
+	ImGuiTreeNodeFlags node_flags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
+
+	with_TreeNode("Subsystems")
+	{
+		static ship_subsys* selected_subsys = nullptr;
+		int subsys_index = 0;
+
+		for (auto cur_subsys = GET_FIRST(&shipp->subsys_list); cur_subsys != END_OF_LIST(&shipp->subsys_list);
+			 cur_subsys = GET_NEXT(cur_subsys)) {
+
+			auto leaf_flags = node_flags;
+			if (selected_subsys == cur_subsys) {
+				vec3d pos;
+				vm_vec_unrotate(&pos, &cur_subsys->system_info->pnt, &objp->orient);
+				debug_sphere::add(pos, cur_subsys->system_info->radius);
+				leaf_flags |= ImGuiTreeNodeFlags_Selected;
+			}
+
+			auto subsys_name_tmp = cur_subsys->sub_name;
+			if (strlen(subsys_name_tmp) == 0)
+				subsys_name_tmp = cur_subsys->system_info->name;
+
+			SCP_string subsys_name;
+			sprintf(subsys_name, "%s (%i)", subsys_name_tmp, subsys_index);
+
+			with_TreeNode(subsys_name.c_str())
+			{
+				ImGui::TreeNodeEx("Highlight system", leaf_flags);
+				if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
+					selected_subsys = cur_subsys;
+				}
+
+				ImGui::TreeNodeEx("Destroy subsystem", leaf_flags);
+				if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
+					cur_subsys->current_hits = 0;
+					do_subobj_destroyed_stuff(shipp, cur_subsys, nullptr);
+				}
+			}
+
+			subsys_index++;
+		}
+	}
+}
+
+void LabUi::buildWeaponOptions(ship* shipp) const {
+	with_TreeNode("Primaries")
+	{
+		auto bank = 0;
+		for (auto& primary_slot : shipp->weapons.primary_bank_weapons) {
+			if (primary_slot != -1) {
+				auto wip = &Weapon_info[primary_slot];
+
+				SCP_string text;
+				sprintf(text, "##Primary bank %i", bank);
+				with_Combo(text.c_str(), wip->name)
+				{
+					for (auto i = 0; i < Weapon_info.size(); i++) {
+						if (Weapon_info[i].subtype == WP_MISSILE)
+							continue;
+						bool is_selected = i == primary_slot;
+						if (ImGui::Selectable(Weapon_info[i].name, is_selected))
+							primary_slot = i;
+						if (is_selected)
+							ImGui::SetItemDefaultFocus();
+					}
+				}
+				ImGui::SameLine();
+				static bool should_fire[MAX_SHIP_PRIMARY_BANKS] = {false, false, false};
+				SCP_string cb_text;
+				sprintf(cb_text, "Fire bank %i", bank);
+				ImGui::Checkbox(cb_text.c_str(), &should_fire[bank]);
+				if (should_fire[bank]) {
+					getLabManager()->FirePrimaries |= 1 << bank;
+				} else {
+					getLabManager()->FirePrimaries &= ~(1 << bank);
+				}
+
+				bank++;
+			}
+		}
+	}
+
+	with_TreeNode("Secondaries")
+	{
+		auto bank = 0;
+		for (auto& secondary_slot : shipp->weapons.secondary_bank_weapons) {
+			if (secondary_slot != -1) {
+				auto wip = &Weapon_info[secondary_slot];
+
+				SCP_string text;
+				sprintf(text, "##Secondary bank %i", bank);
+				with_Combo(text.c_str(), wip->name)
+				{
+					for (auto i = 0; i < Weapon_info.size(); i++) {
+						if (Weapon_info[i].subtype != WP_MISSILE)
+							continue;
+						bool is_selected = i == secondary_slot;
+						if (ImGui::Selectable(Weapon_info[i].name, is_selected))
+							secondary_slot = i;
+						if (is_selected)
+							ImGui::SetItemDefaultFocus();
+					}
+				}
+				ImGui::SameLine();
+				static bool should_fire[MAX_SHIP_SECONDARY_BANKS] = {false, false, false, false};
+				SCP_string cb_text;
+				sprintf(cb_text, "Fire bank %i##secondary", bank);
+				ImGui::Checkbox(cb_text.c_str(), &should_fire[bank]);
+				if (should_fire[bank]) {
+					getLabManager()->FireSecondaries |= 1 << bank;
+				} else {
+					getLabManager()->FireSecondaries &= ~(1 << bank);
+				}
+
+				bank++;
+			}
+		}
+	}
+}
 
 void LabUi::showObjectOptions() const
 {
-	ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg;
-	ImGuiTreeNodeFlags node_flags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
+	
 	with_Window("Object Information")
 	{
-		if (getLabManager()->CurrentMode == LabMode::Ship) {
+		if (getLabManager()->CurrentMode == LabMode::Ship && getLabManager()->isSafeForShips()) {
 			auto objp = &Objects[getLabManager()->CurrentObject];
 			auto shipp = &Ships[objp->instance];
 			auto sip = &Ship_info[shipp->ship_info_index];
@@ -438,134 +569,32 @@ void LabUi::showObjectOptions() const
 			{
 				buildTableInfoTxtbox(sip);
 
-				with_TreeNode("Model information")
-				{
-					with_Table("model info", 2, flags)
-					{
-						IMGUI_TABLE_ENTRY("Model File", sip->pof_file)
-						IMGUI_TABLE_ENTRY("Target model", sip->pof_file_hud)
-						IMGUI_TABLE_ENTRY("Techroom model", sip->pof_file_tech)
-						IMGUI_TABLE_ENTRY("Cockpit model", sip->cockpit_pof_file)
-						IMGUI_TABLE_ENTRY("POF version", std::to_string(pm->version).c_str())
-					}
-				}
+				buildModelInfoBox(sip, pm);
 
-				with_TreeNode("Subsystems")
-				{
-					static ship_subsys* selected_subsys = nullptr;
-					int subsys_index = 0;
-
-					for (auto cur_subsys = GET_FIRST(&shipp->subsys_list);
-						 cur_subsys != END_OF_LIST(&shipp->subsys_list);
-						 cur_subsys = GET_NEXT(cur_subsys)) {
-
-						auto leaf_flags = node_flags;
-						if (selected_subsys == cur_subsys) {
-							vec3d pos;
-							vm_vec_unrotate(&pos, &cur_subsys->system_info->pnt, &objp->orient);
-							debug_sphere::add(pos, cur_subsys->system_info->radius);
-							leaf_flags |= ImGuiTreeNodeFlags_Selected;
-						}
-
-						auto subsys_name_tmp = cur_subsys->sub_name;
-						if (strlen(subsys_name_tmp) == 0)
-							subsys_name_tmp = cur_subsys->system_info->name;
-
-						SCP_string subsys_name;
-						sprintf(subsys_name, "%s (%i)", subsys_name_tmp, subsys_index);
-
-						with_TreeNode(subsys_name.c_str())
-						{
-							ImGui::TreeNodeEx("Highlight system", leaf_flags);
-							if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
-								selected_subsys = cur_subsys;
-							}
-
-							ImGui::TreeNodeEx("Destroy subsystem", leaf_flags);
-							if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
-								cur_subsys->current_hits = 0;
-								do_subobj_destroyed_stuff(shipp, cur_subsys, nullptr);
-							}
-						}
-
-						subsys_index++;
-					}
-				}
+				buildSubsystemList(objp, shipp);
 			}
 
 			with_CollapsingHeader("Object actions")
 			{
-				if (getLabManager()->CurrentMode == LabMode::Ship) {
-					if (getLabManager()->isSafeForShips()) {
-						if (ImGui::Button("Destroy ship")) {
-							if (Objects[getLabManager()->CurrentObject].type == OBJ_SHIP) {
-								auto obj = &Objects[getLabManager()->CurrentObject];
+				if (getLabManager()->isSafeForShips()) {
+					if (ImGui::Button("Destroy ship")) {
+						if (Objects[getLabManager()->CurrentObject].type == OBJ_SHIP) {
+							auto obj = &Objects[getLabManager()->CurrentObject];
 
-								obj->flags.remove(Object::Object_Flags::Player_ship);
-								ship_self_destruct(obj);
-							}
+							obj->flags.remove(Object::Object_Flags::Player_ship);
+							ship_self_destruct(obj);
 						}
+					}
 
 						
 
-						//with_CollapsingHeader("Animations") {}
-					}
+					//with_CollapsingHeader("Animations") {}
 				}
 			}
 
 			with_CollapsingHeader("Weapons")
 			{
-				with_CollapsingHeader("Primaries")
-				{
-					auto bank = 0;
-					for (auto& primary_slot : shipp->weapons.primary_bank_weapons) {
-						if (primary_slot != -1) {
-							auto wip = &Weapon_info[primary_slot];
-
-							SCP_string text;
-							sprintf(text, "Primary bank %i", bank);
-							with_Combo(text.c_str(), wip->name)
-							{
-								for (auto i = 0; i < Weapon_info.size(); i++) {
-									if (Weapon_info[i].subtype == WP_MISSILE)
-										continue;
-									bool is_selected = i == primary_slot;
-									if (ImGui::Selectable(Weapon_info[i].name, is_selected))
-										primary_slot = i;
-									if (is_selected)
-										ImGui::SetItemDefaultFocus();
-								}
-							}
-							bank++;
-						}
-					}
-				}
-
-				with_CollapsingHeader("Secondaries")
-				{
-					auto bank = 0;
-					for (auto& secondary_slot : shipp->weapons.secondary_bank_weapons) {
-						if (secondary_slot != -1) {
-							auto wip = &Weapon_info[secondary_slot];
-
-							SCP_string text;
-							sprintf(text, "Secondary bank %i", bank);
-							with_Combo(text.c_str(), wip->name)
-							{
-								for (auto i = 0; i < Weapon_info.size(); i++) {
-									if (Weapon_info[i].subtype != WP_MISSILE)
-										continue;
-									bool is_selected = i == secondary_slot;
-									if (ImGui::Selectable(Weapon_info[i].name, is_selected))
-										secondary_slot = i;
-									if (is_selected)
-										ImGui::SetItemDefaultFocus();
-								}
-							}
-							bank++;
-						}
-					}
-				}
+				buildWeaponOptions(shipp);
 			}
 		}
 	}

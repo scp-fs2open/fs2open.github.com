@@ -1,5 +1,6 @@
 #pragma once
 
+#include "model/model.h"
 #include "species_defs/species_defs.h"
 
 class LabUi {
@@ -21,6 +22,9 @@ class LabUi {
 	void buildAntialiasingCombobox();
 	void buildToneMapperCombobox();
 	void buildTableInfoTxtbox(ship_info* sip) const;
+	void buildModelInfoBox(ship_info* sip, polymodel* pm) const;
+	void buildSubsystemList(object* objp, ship* shipp) const;
+	void buildWeaponOptions(ship* shipp) const;
 
 	// if this is true, the displayed object has changed and so every piece of cached data related to
 	// the object must be invalidated
