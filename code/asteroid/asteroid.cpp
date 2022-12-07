@@ -2055,6 +2055,7 @@ static SCP_string setup_display_name(SCP_string name)
 // Temporary list used to grab parsed data. After verification, the list is cleared -Mjn
 static SCP_vector<asteroid_info> asteroid_list;
 
+// Gets the asteroid pointer for asteroid_list NOT Asteroid_info. Use only during parsing! - Mjn
 static asteroid_info* get_asteroid_pointer(const char* asteroid_name)
 {
 	for (int i = 0; i < (int)asteroid_list.size(); i++) {
@@ -2191,14 +2192,15 @@ static void asteroid_parse_section()
 	}
 
 	while(optional_string("$Split:")) {
-		int split_type;
+		int split_index;
 
-		stuff_int(&split_type);
+		stuff_int(&split_index);
 
-		if (split_type>=0 && split_type<NUM_ASTEROID_SIZES) {
+		if (split_index>=0 && split_index<asteroid_list.size()) {
 			asteroid_split_info new_split;
 
-			new_split.asteroid_type = split_type;
+			new_split.asteroid_type = split_index;
+			strcpy(new_split.name, asteroid_list[split_index].name);
 
 			if(optional_string("+Min:"))
 				stuff_int(&new_split.min);
@@ -2212,7 +2214,31 @@ static void asteroid_parse_section()
 
 			asteroid_p->split_info.push_back(new_split);
 		} else
-			Warning(LOCATION, "Invalid asteroid reference %i used for $Split in asteroids table, ignoring.", split_type);
+			Warning(LOCATION, "Invalid asteroid reference %i used for $Split in asteroids table, ignoring.", split_index);
+	}
+
+	// provide a way to define splits by name instead of index, verified after all parsing is done - Mjn
+	while (optional_string("$Split name:")) {
+		char split_name[NAME_LENGTH];
+
+		stuff_string(split_name, F_NAME, NAME_LENGTH);
+
+		asteroid_split_info new_split;
+
+		new_split.asteroid_type = -1;
+		strcpy(new_split.name, split_name);
+
+		if (optional_string("+Min:"))
+			stuff_int(&new_split.min);
+		else
+			new_split.min = 0;
+
+		if (optional_string("+Max:"))
+			stuff_int(&new_split.max);
+		else
+			new_split.max = 0;
+
+		asteroid_p->split_info.push_back(new_split);
 	}
 
 	if (optional_string("$Spawn Weight:")) {
@@ -2301,6 +2327,44 @@ static void asteroid_parse_tbl(const char* filename)
 	}
 }
 
+// Gets the index of an asteroid by name from Asteroid_info
+static int get_asteroid_index(const char* asteroid_name)
+{
+	for (int i = 0; i < (int)Asteroid_info.size(); i++) {
+		if (!stricmp(asteroid_name, Asteroid_info[i].name)) {
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+static void verify_asteroid_splits() 
+{
+	
+	for (int i = 0; i < (int)Asteroid_info.size(); i++) {
+		SCP_vector<int> splits_to_remove;
+
+		for (int j = 0; j < (int)Asteroid_info[i].split_info.size(); j++) {
+			int asteroid_index = get_asteroid_index(Asteroid_info[i].split_info[j].name);
+			if (asteroid_index >= 0) {
+				Asteroid_info[i].split_info[j].asteroid_type = asteroid_index;
+			} else {
+				Warning(LOCATION,
+					"Unknown asteroid %s defined as split type for asteroid %s, removing!",
+					Asteroid_info[i].split_info[j].name,
+					Asteroid_info[i].name);
+				splits_to_remove.push_back(j); // Remove them all after we're done so we don't mess with the loop
+			}
+		}
+
+		// Remove errored splits
+		for (int j = 0; j < (int)splits_to_remove.size(); j++) {
+			Asteroid_info[i].split_info.erase(Asteroid_info[i].split_info.begin() + splits_to_remove[j]);
+		}
+	}
+}
+
 static void verify_asteroid_list()
 {
 	SCP_string asteroid_size[NUM_ASTEROID_SIZES] = {"Small", "Medium", "Large"};
@@ -2380,6 +2444,9 @@ void asteroid_init()
 
 	// now verify the asteroids were found and put them in the correct order
 	verify_asteroid_list();
+
+	// now that Asteroid_info is filled in we can verify the asteroid splits and set their indecies
+	verify_asteroid_splits();
 
 	if (Asteroid_impact_explosion_ani == -1) {
 		Error(LOCATION, "Missing valid asteroid impact explosion definition in asteroid.tbl!");

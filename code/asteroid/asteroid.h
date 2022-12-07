@@ -48,9 +48,10 @@ extern asteroid_obj Asteroid_obj_list;
 // Data structure for determining a type and amount of other asteroids an
 // asteroid will split to when destroyed.
 typedef struct asteroid_split_info {
-	int		asteroid_type;
-	int		min;
-	int		max;
+	int		asteroid_type;		//index position
+	char	name[NAME_LENGTH];	//asteroid name
+	int		min;				//minimum asteroids to spawn
+	int		max;				//maximum asteroids to spawn
 } asteroid_split_info;
 
 class asteroid_info
