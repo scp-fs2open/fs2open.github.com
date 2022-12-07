@@ -1225,14 +1225,14 @@ void mod_table_reset()
 	gr_init_color(&Arc_color_damage_p1, 64, 64, 255);
 	gr_init_color(&Arc_color_damage_p2, 128, 128, 255);
 	gr_init_color(&Arc_color_damage_s1, 200, 200, 255);
-  Arc_width_default_damage = 0.9f;
+	Arc_width_default_damage = 0.9f;
 	Arc_width_radius_multiplier_damage = 0.01f;
 	Arc_width_no_multiply_over_radius_damage = 500.0f;
 	Arc_width_minimum_damage = 0.2f;
 	gr_init_color(&Arc_color_emp_p1, 64, 64, 5);
 	gr_init_color(&Arc_color_emp_p2, 128, 128, 10);
 	gr_init_color(&Arc_color_emp_s1, 255, 255, 10);
-  Arc_width_default_emp = 0.9f;
+	Arc_width_default_emp = 0.9f;
 	Arc_width_radius_multiplier_emp = 0.01f;
 	Arc_width_no_multiply_over_radius_emp = 500.0f;
 	Arc_width_minimum_emp = 0.2f;
