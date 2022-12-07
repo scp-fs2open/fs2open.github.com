@@ -1428,7 +1428,7 @@ void stars_draw_bitmaps(int show_bitmaps)
 		return;
 
 	// if we're in the nebula, don't render any backgrounds
-	if (The_mission.flags[Mission::Mission_Flags::Fullneb])
+	if (The_mission.flags[Mission::Mission_Flags::Fullneb] && !The_mission.flags[Mission::Mission_Flags::Fullneb_background_bitmaps])
 		return;
 
 	// detail settings

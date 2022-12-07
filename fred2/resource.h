@@ -960,6 +960,7 @@
 #define IDC_SBITMAP_SCALE_Y             1529
 #define IDC_LASER_PROTECT_SHIP          1529
 #define IDC_MISSILE_PROTECT_SHIP        1530
+#define IDC_NEB2_BACKGROUND_BITMAPS     1535
 #define IDC_SBITMAP_DIV_X               1536
 #define IDC_SBITMAP_DIV_Y               1537
 #define IDC_STATS_TEXT                  1537
