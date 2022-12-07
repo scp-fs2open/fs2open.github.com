@@ -13937,11 +13937,10 @@ int maybe_request_support(object *objp)
 void ai_set_mode_warp_out(object *objp, ai_info *aip)
 {
 	ai_abort_rearm_request(objp);
-	if (aip->mode != AIM_WARP_OUT) {
-		aip->mode = AIM_WARP_OUT;
-		aip->submode = AIS_WARP_1;
-		aip->submode_start_time = Missiontime;
-	}
+
+	aip->mode = AIM_WARP_OUT;
+	aip->submode = AIS_WARP_1;
+	aip->submode_start_time = Missiontime;
 }
 
 //	Maybe make ship depart (Goober5000 - changed from always warp ship out)

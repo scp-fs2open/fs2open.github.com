@@ -2053,6 +2053,12 @@ static void parse_ship(const char *filename, bool replace)
 
 	required_string("$Name:");
 	stuff_string(fname, F_NAME, NAME_LENGTH);
+
+	// Remove @ symbol -- these used to denote ships that would only be parsed in demo builds
+	if (fname[0] == '@') {
+		backspace(fname);
+	}
+
 	diag_printf("Ship name -- %s\n", fname);
 
 	if (optional_string("+nocreate")) {
@@ -2077,13 +2083,6 @@ static void parse_ship(const char *filename, bool replace)
 			Removed_ships.push_back(fname);
 			remove_ship = true;
 		}
-	}
-
-	//Remove @ symbol
-	//these used to denote weapons that would
-	//only be parsed in demo builds
-	if ( fname[0] == '@' ) {
-		backspace(fname);
 	}
 
 	//Check if ship exists already
@@ -4821,6 +4820,27 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		stuff_float(&new_info.duration);
 		required_string("+Frequency:");
 		stuff_float(&new_info.frequency);
+		if (optional_string("+Primary color 1:")) {
+			int rgb[3];
+			stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+			gr_init_color(&new_info.primary_color_1, rgb[0], rgb[1], rgb[2]);
+		} else {
+			new_info.primary_color_1 = Arc_color_damage_p1;
+		}
+		if (optional_string("+Primary color 2:")) {
+			int rgb[3];
+			stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+			gr_init_color(&new_info.primary_color_2, rgb[0], rgb[1], rgb[2]);
+		} else {
+			new_info.primary_color_2 = Arc_color_damage_p2;
+		}
+		if (optional_string("+Secondary color:")) {
+			int rgb[3];
+			stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+			gr_init_color(&new_info.secondary_color, rgb[0], rgb[1], rgb[2]);
+		} else {
+			new_info.secondary_color = Arc_color_damage_s1;
+		}
 
 		sip->ship_passive_arcs.push_back(new_info);
 	}
@@ -6590,6 +6610,8 @@ void ship::clear()
 	team_change_time = 0;
 
 	autoaim_fov = 0.0f;
+
+	cockpit_model_instance = -1;
 
 	multi_client_collision_timestamp = TIMESTAMP::immediate();
 
@@ -20298,7 +20320,15 @@ void ship_render(object* obj, model_draw_list* scene)
 	if ( vm_vec_dist_quick( &obj->pos, &Eye_position ) < obj->radius*50.0f && !Rendering_to_shadow_map ) {
 		for ( int i = 0; i < MAX_SHIP_ARCS; i++ )	{
 			if ( shipp->arc_timestamp[i].isValid() ) {
-				model_instance_add_arc(pm, pmi, -1, &shipp->arc_pts[i][0], &shipp->arc_pts[i][1], shipp->arc_type[i]);
+				model_instance_add_arc(pm,
+					pmi,
+					-1,
+					&shipp->arc_pts[i][0],
+					&shipp->arc_pts[i][1],
+					shipp->arc_type[i],
+					&shipp->arc_primary_color_1[i],
+					&shipp->arc_primary_color_2[i],
+					&shipp->arc_secondary_color[i]);
 			}
 		}
 	}

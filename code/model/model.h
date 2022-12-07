@@ -116,6 +116,9 @@ struct submodel_instance
 	// Electrical Arc Effect Info
 	// Sets a spark for this submodel between vertex v1 and v2	
 	int		num_arcs = 0;											// See model_add_arc for more info	
+	color   arc_primary_color_1[MAX_ARC_EFFECTS];
+	color   arc_primary_color_2[MAX_ARC_EFFECTS];
+	color	arc_secondary_color[MAX_ARC_EFFECTS];
 	vec3d	arc_pts[MAX_ARC_EFFECTS][2];
 	ubyte		arc_type[MAX_ARC_EFFECTS];							// see MARC_TYPE_* defines
 
@@ -126,6 +129,9 @@ struct submodel_instance
 	submodel_instance()
 	{
 		memset(&arc_pts, 0, MAX_ARC_EFFECTS * 2 * sizeof(vec3d));
+		memset(&arc_primary_color_1, 0, MAX_ARC_EFFECTS * sizeof(color));
+		memset(&arc_primary_color_2, 0, MAX_ARC_EFFECTS * sizeof(color));
+		memset(&arc_secondary_color, 0, MAX_ARC_EFFECTS * sizeof(color));
 		memset(&arc_type, 0, MAX_ARC_EFFECTS * sizeof(ubyte));
 	}
 };
@@ -1173,7 +1179,7 @@ void model_replicate_submodel_instance(polymodel *pm, polymodel_instance *pmi, i
 
 // Adds an electrical arcing effect to a submodel
 void model_instance_clear_arcs(polymodel *pm, polymodel_instance *pmi);
-void model_instance_add_arc(polymodel *pm, polymodel_instance *pmi, int sub_model_num, vec3d *v1, vec3d *v2, int arc_type);
+void model_instance_add_arc(polymodel *pm, polymodel_instance *pmi, int sub_model_num, vec3d *v1, vec3d *v2, int arc_type, color *primary_color_1 = nullptr, color *primary_color_2 = nullptr, color *secondary_color = nullptr);
 
 // Gets two random points on the surface of a submodel
 extern void submodel_get_two_random_points(int model_num, int submodel_num, vec3d *v1, vec3d *v2, vec3d *n1 = NULL, vec3d *n2 = NULL);
