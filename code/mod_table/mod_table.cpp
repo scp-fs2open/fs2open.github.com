@@ -82,12 +82,12 @@ SCP_string Inherited_shockwave_damage_type_suffix;
 SCP_string Inherited_dinky_shockwave_damage_type_suffix;
 SCP_string Default_shockwave_damage_type;
 SCP_string Default_dinky_shockwave_damage_type;
-std::tuple<ubyte, ubyte, ubyte> Arc_color_damage_p1;
-std::tuple<ubyte, ubyte, ubyte> Arc_color_damage_p2;
-std::tuple<ubyte, ubyte, ubyte> Arc_color_damage_s1;
-std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_p1;
-std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_p2;
-std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_s1;
+color Arc_color_damage_p1;
+color Arc_color_damage_p2;
+color Arc_color_damage_s1;
+color Arc_color_emp_p1;
+color Arc_color_emp_p2;
+color Arc_color_emp_s1;
 bool Use_engine_wash_intensity;
 bool Framerate_independent_turning; // an in-depth explanation how this flag is supposed to work can be found in #2740 PR description
 bool Ai_respect_tabled_turntime_rotdamp;
@@ -476,7 +476,7 @@ void parse_mod_table(const char *filename)
 				int rgb[3];
 				stuff_int_list(rgb, 3);
 				if ((rgb[0] >= 0 && rgb[0] <= 255) && (rgb[1] >= 0 && rgb[1] <= 255) && (rgb[2] >= 0 && rgb[2] <= 255)) {
-					Arc_color_emp_p1 = std::make_tuple(static_cast<ubyte>(rgb[0]), static_cast<ubyte>(rgb[1]), static_cast<ubyte>(rgb[2]));
+					gr_init_color(&Arc_color_emp_p1, rgb[0], rgb[1], rgb[2]);
 				} else {
 					error_display(0, "$EMP Arc Color: +Primary Color Option 1 is %i, %i, %i. "
 						"One or more of these values is not within the range of 0-255. Assuming default color.", rgb[0], rgb[1], rgb[2]);
@@ -486,7 +486,7 @@ void parse_mod_table(const char *filename)
 				int rgb[3];
 				stuff_int_list(rgb, 3);
 				if ((rgb[0] >= 0 && rgb[0] <= 255) && (rgb[1] >= 0 && rgb[1] <= 255) && (rgb[2] >= 0 && rgb[2] <= 255)) {
-					Arc_color_emp_p2 = std::make_tuple(static_cast<ubyte>(rgb[0]), static_cast<ubyte>(rgb[1]), static_cast<ubyte>(rgb[2]));
+					gr_init_color(&Arc_color_emp_p2, rgb[0], rgb[1], rgb[2]);
 				} else {
 					error_display(0, "$EMP Arc Color: +Primary Color Option 2 is %i, %i, %i. "
 					    "One or more of these values is not within the range of 0-255. Assuming default color.", rgb[0], rgb[1], rgb[2]);
@@ -496,7 +496,7 @@ void parse_mod_table(const char *filename)
 				int rgb[3];
 				stuff_int_list(rgb, 3);
 				if ((rgb[0] >= 0 && rgb[0] <= 255) && (rgb[1] >= 0 && rgb[1] <= 255) && (rgb[2] >= 0 && rgb[2] <= 255)) {
-					Arc_color_emp_s1 = std::make_tuple(static_cast<ubyte>(rgb[0]), static_cast<ubyte>(rgb[1]), static_cast<ubyte>(rgb[2]));
+					gr_init_color(&Arc_color_emp_s1, rgb[0], rgb[1], rgb[2]);
 			    } else {
 				    error_display(0,"$EMP Arc Color: +Secondary Color Option 1 is %i, %i, %i. "
 					    "One or more of these values is not within the range of 0-255. Assuming default color.", rgb[0], rgb[1], rgb[2]);
@@ -509,7 +509,7 @@ void parse_mod_table(const char *filename)
 				int rgb[3];
 				stuff_int_list(rgb, 3);
 				if ((rgb[0] >= 0 && rgb[0] <= 255) && (rgb[1] >= 0 && rgb[1] <= 255) && (rgb[2] >= 0 && rgb[2] <= 255)) {
-					Arc_color_damage_p1 = std::make_tuple(static_cast<ubyte>(rgb[0]), static_cast<ubyte>(rgb[1]), static_cast<ubyte>(rgb[2]));
+					gr_init_color(&Arc_color_damage_p1, rgb[0], rgb[1], rgb[2]);
 		        } else {
 			        error_display(0, "Damage Arc Color: +Primary Color Option 1 is %i, %i, %i. "
 					    "One or more of these values is not within the range of 0-255. Assuming default color.", rgb[0], rgb[1], rgb[2]);
@@ -519,7 +519,7 @@ void parse_mod_table(const char *filename)
 				int rgb[3];
 				stuff_int_list(rgb, 3);
 				if ((rgb[0] >= 0 && rgb[0] <= 255) && (rgb[1] >= 0 && rgb[1] <= 255) && (rgb[2] >= 0 && rgb[2] <= 255)) {
-					Arc_color_damage_p2 = std::make_tuple(static_cast<ubyte>(rgb[0]), static_cast<ubyte>(rgb[1]), static_cast<ubyte>(rgb[2]));
+					gr_init_color(&Arc_color_damage_p2, rgb[0], rgb[1], rgb[2]);
 	            } else {
 		            error_display(0, "$Damage Arc Color: +Primary Color Option 2 is %i, %i, %i. "
 					    "One or more of these values is not within the range of 0-255. Assuming default color.", rgb[0], rgb[1], rgb[2]);
@@ -529,7 +529,7 @@ void parse_mod_table(const char *filename)
 				int rgb[3];
 				stuff_int_list(rgb, 3);
 				if ((rgb[0] >= 0 && rgb[0] <= 255) && (rgb[1] >= 0 && rgb[1] <= 255) && (rgb[2] >= 0 && rgb[2] <= 255)) {
-					Arc_color_damage_s1 = std::make_tuple(static_cast<ubyte>(rgb[0]), static_cast<ubyte>(rgb[1]), static_cast<ubyte>(rgb[2]));
+					gr_init_color(&Arc_color_damage_s1, rgb[0], rgb[1], rgb[2]);
 	            } else {
 		            error_display(0, "$Damage Arc Color: +Secondary Color Option 1 is %i, %i, %i. "
 					    "One or more of these values is not within the range of 0-255. Assuming default color.", rgb[0], rgb[1], rgb[2]);
@@ -1184,12 +1184,12 @@ void mod_table_reset()
 	Inherited_dinky_shockwave_damage_type_suffix = "";
 	Default_shockwave_damage_type = "";
 	Default_dinky_shockwave_damage_type = "";
-	Arc_color_damage_p1 = std::make_tuple(static_cast<ubyte>(64), static_cast<ubyte>(64), static_cast<ubyte>(225));
-	Arc_color_damage_p2 = std::make_tuple(static_cast<ubyte>(128), static_cast<ubyte>(128), static_cast<ubyte>(255));
-	Arc_color_damage_s1 = std::make_tuple(static_cast<ubyte>(200), static_cast<ubyte>(200), static_cast<ubyte>(255));
-	Arc_color_emp_p1 = std::make_tuple(static_cast<ubyte>(64), static_cast<ubyte>(64), static_cast<ubyte>(5));
-	Arc_color_emp_p2 = std::make_tuple(static_cast<ubyte>(128), static_cast<ubyte>(128), static_cast<ubyte>(10));
-	Arc_color_emp_s1 = std::make_tuple(static_cast<ubyte>(255), static_cast<ubyte>(255), static_cast<ubyte>(10));
+	gr_init_color(&Arc_color_damage_p1, 64, 64, 255);
+	gr_init_color(&Arc_color_damage_p2, 128, 128, 255);
+	gr_init_color(&Arc_color_damage_s1, 200, 200, 255);
+	gr_init_color(&Arc_color_emp_p1, 64, 64, 5);
+	gr_init_color(&Arc_color_emp_p2, 128, 128, 10);
+	gr_init_color(&Arc_color_emp_s1, 255, 255, 10);
 	Use_engine_wash_intensity = false;
 	Framerate_independent_turning = true;
 	Ai_respect_tabled_turntime_rotdamp = false;
