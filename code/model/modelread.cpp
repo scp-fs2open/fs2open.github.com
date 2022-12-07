@@ -5066,9 +5066,13 @@ void model_instance_add_arc(polymodel *pm, polymodel_instance *pmi, int sub_mode
 		smi->arc_type[smi->num_arcs] = (ubyte)arc_type;
 		smi->arc_pts[smi->num_arcs][0] = *v1;
 		smi->arc_pts[smi->num_arcs][1] = *v2;
-		smi->arc_primary_color_1[smi->num_arcs] = *primary_color_1;
-		smi->arc_primary_color_2[smi->num_arcs] = *primary_color_2;
-		smi->arc_secondary_color[smi->num_arcs] = *secondary_color;
+
+		if (arc_type == MARC_TYPE_SHIP) {
+			smi->arc_primary_color_1[smi->num_arcs] = *primary_color_1;
+			smi->arc_primary_color_2[smi->num_arcs] = *primary_color_2;
+			smi->arc_secondary_color[smi->num_arcs] = *secondary_color;
+		}
+
 		smi->num_arcs++;
 	}
 }
