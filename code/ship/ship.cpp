@@ -1142,6 +1142,8 @@ void ship_info::clone(const ship_info& other)
 
 	ship_sounds = other.ship_sounds;
 
+	custom_data = other.custom_data;
+
 	num_maneuvering = other.num_maneuvering;
 
     for (int i = 0; i < MAX_MAN_THRUSTERS; ++i) 
@@ -1467,6 +1469,8 @@ void ship_info::move(ship_info&& other)
 	flyby_snd  = other.flyby_snd;
 
 	std::swap(ship_sounds, other.ship_sounds);
+
+	std::swap(custom_data, other.custom_data);
 
 	num_maneuvering = other.num_maneuvering;
 	std::swap(maneuvering, other.maneuvering);
@@ -1911,6 +1915,8 @@ ship_info::ship_info()
 	ship_sounds.clear();
 
 	num_maneuvering = 0;
+
+	custom_data.clear();
 
 	for (i = 0; i < MAX_MAN_THRUSTERS; i++)
 	{
