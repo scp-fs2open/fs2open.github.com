@@ -87,6 +87,10 @@ class NanoVGRenderer {
 
 	std::vector<NVGvertex> _vertices;
 	std::vector<DrawCall> _drawCalls;
+	std::vector<DrawCall> _drawFillCalls;
+	std::vector<DrawCall> _drawConvexFillCalls;
+	std::vector<DrawCall> _drawStrokeCalls;
+	std::vector<DrawCall> _drawTriangleCalls;
 	std::vector<graphics::nanovg_draw_data> _uniformData;
 	std::vector<Path> _paths;
 
@@ -96,6 +100,7 @@ class NanoVGRenderer {
 	ivec2 _viewport;
 
 	DrawCall* addDrawCall();
+	DrawCall* addDrawCall(CallType t);
 	size_t addUniformData(size_t num);
 	size_t addVertices(const NVGvertex* vert, size_t num);
 
@@ -110,7 +115,7 @@ class NanoVGRenderer {
 					  float strokeThr);
 
 	Image* getTexture(int id);
-
+	void sortCalls(std::vector<DrawCall> calls);
 	void drawTriangles(const DrawCall& call);
 	void drawFill(const DrawCall& call);
 	void drawConvexFill(const DrawCall& call);

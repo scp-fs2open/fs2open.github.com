@@ -96,6 +96,11 @@ Category MainFrame("Main Frame", true);
 Category PageFlip("Page flip", true);
 
 Category NanoVGFlushFrame("NanoVG flush frame", true);
+Category NanoVGFlushAll("NanoVG misc flush", true);
+Category NanoVGFlushFill("NanoVG fill flush", true);
+Category NanoVGFlushConvex("NanoVG convex flush", true);
+Category NanoVGFlushPath("NanoVG path flush", true);
+Category NanoVGFlushTriangle("NanoVG triangle flush", true);
 Category NanoVGDrawFill("NanoVG Draw fill", true);
 Category NanoVGDrawConvexFill("NanoVG Draw convex fill", true);
 Category NanoVGDrawStroke("NanoVG Draw stroke", true);
