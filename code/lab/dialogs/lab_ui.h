@@ -1,6 +1,7 @@
 #pragma once
 
 #include "model/model.h"
+#include "model/modelanimation.h"
 #include "species_defs/species_defs.h"
 
 class LabUi {
@@ -10,6 +11,7 @@ class LabUi {
 	void closeUi();
 
   private:
+	void buildOptionsMenu();
 	void buildShipList() const;
 	void buildSpeciesEntry(species_info species_def, int species_idx) const;
 	void buildWeaponList() const;

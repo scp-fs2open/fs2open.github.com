@@ -7,9 +7,22 @@
 #include "ship/shiphit.h"
 #include "weapon/weapon.h"
 
+std::map<animation::ModelAnimationTriggerType, std::map<SCP_string, bool>> manual_animation_triggers = {};
+std::map<animation::ModelAnimationTriggerType, bool> manual_animations = {};
+
+std::array<bool, MAX_SHIP_PRIMARY_BANKS> triggered_primary_banks = {false, false, false};
+std::array<bool, MAX_SHIP_SECONDARY_BANKS> triggered_secondary_banks = {false, false, false, false};
+
 void LabUi::objectChanged()
 {
 	rebuild_after_object_change = true;
+
+	manual_animation_triggers.clear();
+
+	for (auto& trigger : triggered_primary_banks)
+		trigger = false;
+	for (auto& trigger : triggered_secondary_banks)
+		trigger = false;
 }
 
 void LabUi::buildSpeciesEntry(species_info species_def, int species_idx) const
@@ -123,17 +136,22 @@ void LabUi::buildBackgroundList() const
 	}
 }
 
+void LabUi::buildOptionsMenu()
+{
+	with_Menu("Options")
+	{
+		ImGui::MenuItem("Render options", NULL, &show_render_options);
+		ImGui::MenuItem("Object selector", NULL, &show_object_selector);
+		ImGui::MenuItem("Object options", NULL, &show_object_options);
+		ImGui::MenuItem("Close lab", "ESC", &close_lab);
+	}
+}
+
 void LabUi::buildToolbarEntries()
 {
 	with_MainMenuBar
 	{
-		with_Menu("Options")
-		{
-			ImGui::MenuItem("Render options", NULL, &show_render_options);
-			ImGui::MenuItem("Object selector", NULL, &show_object_selector);
-			ImGui::MenuItem("Object options", NULL, &show_object_options);
-			ImGui::MenuItem("Close lab", "ESC", &close_lab);
-		}
+		buildOptionsMenu();
 	}
 
 	if (close_lab) {
@@ -368,12 +386,6 @@ void LabUi::showRenderOptions()
 	}
 }
 
-std::map<animation::ModelAnimationTriggerType, std::map<SCP_string, bool>> manual_animation_triggers = {};
-std::map<animation::ModelAnimationTriggerType, bool> manual_animations = {};
-
-std::array<bool, MAX_SHIP_PRIMARY_BANKS> triggered_primary_banks;
-std::array<bool, MAX_SHIP_SECONDARY_BANKS> triggered_secondary_banks;
-
 void do_triggered_anim(animation::ModelAnimationTriggerType type,
 	const SCP_string& name,
 	bool direction,
@@ -418,18 +430,26 @@ void LabUi::buildTableInfoTxtbox(ship_info* sip) const
 	}
 }
 
-void LabUi::buildModelInfoBox(ship_info* sip, polymodel* pm) const {
+void buildModelInfoBox_actual(ship_info* sip, polymodel* pm)
+{
 	ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg;
+
+	with_Table("model info", 2, flags)
+	{
+		IMGUI_TABLE_ENTRY("Model File", sip->pof_file)
+		IMGUI_TABLE_ENTRY("Target model", sip->pof_file_hud)
+		IMGUI_TABLE_ENTRY("Techroom model", sip->pof_file_tech)
+		IMGUI_TABLE_ENTRY("Cockpit model", sip->cockpit_pof_file)
+		IMGUI_TABLE_ENTRY("POF version", std::to_string(pm->version).c_str());
+		IMGUI_TABLE_ENTRY("Materials used", std::to_string(pm->n_textures).c_str());
+		IMGUI_TABLE_ENTRY("Radius", std::to_string(pm->core_radius).c_str());
+	}
+}
+
+void LabUi::buildModelInfoBox(ship_info* sip, polymodel* pm) const {
 	with_TreeNode("Model information")
 	{
-		with_Table("model info", 2, flags)
-		{
-			IMGUI_TABLE_ENTRY("Model File", sip->pof_file)
-			IMGUI_TABLE_ENTRY("Target model", sip->pof_file_hud)
-			IMGUI_TABLE_ENTRY("Techroom model", sip->pof_file_tech)
-			IMGUI_TABLE_ENTRY("Cockpit model", sip->cockpit_pof_file)
-			IMGUI_TABLE_ENTRY("POF version", std::to_string(pm->version).c_str())
-		}
+		buildModelInfoBox_actual(sip, pm);
 	}
 }
 
@@ -554,6 +574,161 @@ void LabUi::buildWeaponOptions(ship* shipp) const {
 	}
 }
 
+void reset_animations(ship* shipp, ship_info* sip)
+{
+	polymodel_instance* shipp_pmi = model_get_instance(shipp->model_instance_num);
+
+	for (auto i = 0; i < MAX_SHIP_PRIMARY_BANKS; ++i) {
+		if (triggered_primary_banks[i]) {
+			sip->animations.getAll(shipp_pmi, animation::ModelAnimationTriggerType::PrimaryBank, i)
+				.start(animation::ModelAnimationDirection::RWD);
+			triggered_primary_banks[i] = false;
+		}
+	}
+
+	for (auto i = 0; i < MAX_SHIP_SECONDARY_BANKS; ++i) {
+		if (triggered_secondary_banks[i]) {
+			sip->animations.getAll(shipp_pmi, animation::ModelAnimationTriggerType::SecondaryBank, i)
+				.start(animation::ModelAnimationDirection::RWD);
+			triggered_secondary_banks[i] = false;
+		}
+	}
+
+	for (auto entry : manual_animations) {
+		if (manual_animations[entry.first]) {
+			sip->animations.getAll(shipp_pmi, entry.first).start(animation::ModelAnimationDirection::RWD);
+			manual_animations[entry.first] = false;
+		}
+	}
+
+	for (const auto& entry : manual_animation_triggers) {
+		auto animation_type = entry.first;
+		sip->animations.getAll(shipp_pmi, animation_type).start(animation::ModelAnimationDirection::RWD);
+	}
+}
+
+void maybeShowAnimationCategory(const SCP_vector<animation::ModelAnimationSet::RegisteredTrigger>& anim_triggers,
+	animation::ModelAnimationTriggerType trigger_type, SCP_string label)
+{
+	if (std::any_of(anim_triggers.begin(), anim_triggers.end(), [trigger_type](animation::ModelAnimationSet::RegisteredTrigger t) {
+			return t.type == trigger_type;
+		})) {
+		with_TreeNode(label.c_str())
+		{
+			for (const auto& anim_trigger : anim_triggers) {
+				if (anim_trigger.type == trigger_type) {
+
+					if (ImGui::Button(anim_trigger.name.c_str())) {
+						auto& scripted_triggers = manual_animation_triggers[trigger_type];
+						auto direction = scripted_triggers[anim_trigger.name];
+						do_triggered_anim(trigger_type,
+							anim_trigger.name,
+							direction,
+							anim_trigger.subtype);
+						scripted_triggers[anim_trigger.name] = !scripted_triggers[anim_trigger.name];
+					}
+				}
+			}
+		}
+	}
+}
+
+void buildAnimationOptions(ship* shipp, ship_info* sip)
+{
+	with_TreeNode("Animations")
+	{
+		const auto& anim_triggers = sip->animations.getRegisteredTriggers();
+
+		if (ImGui::Button("Reset animations")) {
+			reset_animations(shipp, sip);
+		}
+
+		if (shipp->weapons.num_primary_banks > 0) {
+			with_TreeNode("Primary Weapons##Anims")
+			{
+				for (auto i = 0; i < shipp->weapons.num_primary_banks; ++i) {
+					SCP_string button_label;
+					sprintf(button_label, "Trigger animation for primary bank %i", i);
+					if (ImGui::Button(button_label.c_str())) {
+						sip->animations
+							.getAll(model_get_instance(shipp->model_instance_num),
+								animation::ModelAnimationTriggerType::PrimaryBank,
+								i)
+							.start(triggered_primary_banks[i] ? animation::ModelAnimationDirection::RWD
+															  : animation::ModelAnimationDirection::FWD);
+						triggered_primary_banks[i] = !triggered_primary_banks[i];
+					}
+				}
+			}
+		}
+
+		if (shipp->weapons.num_secondary_banks > 0) {
+			with_TreeNode("Secondary Weapons##Anims")
+			{
+				for (auto i = 0; i < shipp->weapons.num_secondary_banks; ++i) {
+					SCP_string button_label;
+					sprintf(button_label, "Trigger animation for secondary bank %i", i);
+					if (ImGui::Button(button_label.c_str())) {
+						sip->animations
+							.getAll(model_get_instance(shipp->model_instance_num),
+								animation::ModelAnimationTriggerType::SecondaryBank,
+								i)
+							.start(triggered_secondary_banks[i] ? animation::ModelAnimationDirection::RWD
+																: animation::ModelAnimationDirection::FWD);
+						triggered_secondary_banks[i] = !triggered_secondary_banks[i];
+					}
+				}
+			}
+		}
+
+		if (std::any_of(anim_triggers.begin(),
+				anim_triggers.end(),
+				[](animation::ModelAnimationSet::RegisteredTrigger t) {
+					return t.type == animation::ModelAnimationTriggerType::Afterburner;
+				})) {
+			with_TreeNode("Afterburner")
+			{
+				if (ImGui::Button("Trigger afterburner animations")) {
+					for (const auto& anim_trigger : anim_triggers) {
+						if (anim_trigger.type == animation::ModelAnimationTriggerType::Afterburner) {
+							auto& ab_triggers =
+								manual_animation_triggers[animation::ModelAnimationTriggerType::Afterburner];
+							auto direction = ab_triggers[anim_trigger.name];
+							do_triggered_anim(animation::ModelAnimationTriggerType::Afterburner,
+								anim_trigger.name,
+								direction,
+								anim_trigger.subtype);
+							ab_triggers[anim_trigger.name] = !ab_triggers[anim_trigger.name];
+						}
+					}
+				}
+			}
+		}
+
+		maybeShowAnimationCategory(anim_triggers,
+			animation::ModelAnimationTriggerType::TurretFiring,
+			"Turret firing##anims");
+		maybeShowAnimationCategory(anim_triggers,
+			animation::ModelAnimationTriggerType::TurretFired,
+			"Turret fired##anims");
+		maybeShowAnimationCategory(anim_triggers,
+			animation::ModelAnimationTriggerType::Scripted,
+			"Scripted animations##anims");
+		maybeShowAnimationCategory(anim_triggers,
+			animation::ModelAnimationTriggerType::DockBayDoor,
+			"Dock bay door##anims");
+		maybeShowAnimationCategory(anim_triggers,
+			animation::ModelAnimationTriggerType::Docking_Stage1,
+			"Docking stage 1##anims");
+		maybeShowAnimationCategory(anim_triggers,
+			animation::ModelAnimationTriggerType::Docking_Stage2,
+			"Docking stage 2##anims");
+		maybeShowAnimationCategory(anim_triggers,
+			animation::ModelAnimationTriggerType::Docking_Stage3,
+			"Docking stage 3##anims");
+	}
+}
+
 void LabUi::showObjectOptions() const
 {
 	
@@ -586,9 +761,7 @@ void LabUi::showObjectOptions() const
 						}
 					}
 
-						
-
-					//with_CollapsingHeader("Animations") {}
+					buildAnimationOptions(shipp, sip);
 				}
 			}
 
