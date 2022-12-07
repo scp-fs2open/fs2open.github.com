@@ -855,7 +855,7 @@ void model_render_add_lightning( model_draw_list *scene, model_render_params* in
 
 			secondary = smi->arc_secondary_color[i];
       
-      // try and scale the size a bit so that it looks equally well on smaller vessels
+      			// try and scale the size a bit so that it looks equally well on smaller vessels
 			width = Arc_width_default_damage;
 			if (pm->rad < Arc_width_no_multiply_over_radius_damage) {
 				width *= (pm->rad * Arc_width_radius_multiplier_damage);
@@ -864,6 +864,7 @@ void model_render_add_lightning( model_draw_list *scene, model_render_params* in
 					width = Arc_width_minimum_damage;
 				}
 			}
+
 			break;
 
 			// "EMP" style arcs
