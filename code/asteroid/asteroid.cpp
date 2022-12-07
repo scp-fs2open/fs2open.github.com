@@ -2110,7 +2110,10 @@ static void asteroid_parse_section()
 
 	if (optional_string("$Display Name:")) {
 		stuff_string(asteroid_p->display_name, F_NAME);
-	} else {
+	} 
+	
+	// setup display name only if the string is empty - Mjn
+	if (asteroid_p->display_name.empty()) {
 		asteroid_p->display_name = setup_display_name(asteroid_p->name);
 	}
 
