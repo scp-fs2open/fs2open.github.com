@@ -407,8 +407,9 @@ SCP_vector<sexp_oper> Operators = {
 	{ "player-use-ai",					OP_PLAYER_USE_AI,						0,	0,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "player-not-use-ai",				OP_PLAYER_NOT_USE_AI,					0,	0,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-player-orders",				OP_SET_PLAYER_ORDERS,					3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma
-	{ "cap-waypoint-speed",				OP_CAP_WAYPOINT_SPEED,					2,	2,			SEXP_ACTION_OPERATOR,	},
 	{ "set-order-allowed-for-target",	OP_SET_ORDER_ALLOWED_TARGET,			3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// MjnMixael
+	{ "cap-waypoint-speed",				OP_CAP_WAYPOINT_SPEED,					2,	2,			SEXP_ACTION_OPERATOR,	},
+	{ "set-wing-formation",				OP_SET_WING_FORMATION,					3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 
 	//Ship Status Sub-Category
 	{ "protect-ship",					OP_PROTECT_SHIP,						1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
@@ -3857,6 +3858,20 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				}
 				break;
 			}
+
+			case OPF_WING_FORMATION:
+				if (type2 != SEXP_ATOM_STRING) {
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+
+				if (!stricmp(CTEXT(node), "Default")) {
+					break;
+				}
+
+				if (wing_formation_lookup(CTEXT(node)) < 0) {
+					return SEXP_CHECK_INVALID_WING_FORMATION;
+				}
+				break;
 
 			default:
 				Error(LOCATION, "Unhandled argument format");
@@ -14659,6 +14674,37 @@ void sexp_cap_waypoint_speed(int n)
 	}
 
 	Ai_info[ship_entry->shipp->ai_index].waypoint_speed_cap = speed;
+}
+
+void sexp_set_wing_formation(int node)
+{
+	bool is_nan, is_nan_forever;
+
+	auto formation = wing_formation_lookup(CTEXT(node));
+	if (formation < 0)
+	{
+		if (stricmp(CTEXT(node), "Default") != 0)
+			return;
+	}
+
+	int multiplier = eval_num(CDR(node), is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
+
+	if (multiplier == 0)
+	{
+		Warning(LOCATION, "Formation percent cannot be 0!  Defaulting to 100.");
+		multiplier = 100;
+	}
+
+	float factor = i2fl(multiplier) / 100;
+
+	for (int n = CDDR(node); n >= 0; n = CDR(n))
+	{
+		auto wingp = eval_wing(n);
+		wingp->formation = formation;
+		wingp->formation_scale = factor;
+	}
 }
 
 /**
@@ -27233,6 +27279,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_cap_waypoint_speed(node);
 				break;
 
+			case OP_SET_WING_FORMATION:
+				sexp_set_wing_formation(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_TURRET_TAGGED_ONLY_ALL:
 			case OP_TURRET_TAGGED_CLEAR_ALL:
 				sexp_turret_tagged_only_or_clear_all(node, op_num == OP_TURRET_TAGGED_ONLY_ALL);
@@ -28782,6 +28833,7 @@ int query_operator_return_type(int op)
 		case OP_SEND_MESSAGE_LIST:
 		case OP_SEND_MESSAGE_CHAIN:
 		case OP_CAP_WAYPOINT_SPEED:
+		case OP_SET_WING_FORMATION:
 		case OP_TURRET_TAGGED_ONLY_ALL:
 		case OP_TURRET_TAGGED_CLEAR_ALL:
 		case OP_SUBSYS_SET_RANDOM:
@@ -30930,6 +30982,14 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_NUMBER;
 			}
 
+		case OP_SET_WING_FORMATION:
+			if (argnum == 0)
+				return OPF_WING_FORMATION;
+			else if (argnum == 1)
+				return OPF_NUMBER;
+			else
+				return OPF_WING;
+
 		case OP_SUBSYS_SET_RANDOM:
 			if (argnum == 0) {
 				return OPF_SHIP;
@@ -32255,6 +32315,9 @@ const char *sexp_error_message(int num)
 		case SEXP_CHECK_INVALID_SPECIAL_ARG_TYPE:
 			return "Invalid special argument type";
 
+		case SEXP_CHECK_INVALID_WING_FORMATION:
+			return "Invalid wing formation";
+
 		default:
 			Warning(LOCATION, "Unhandled sexp error code %d!", num);
 			return "Unhandled sexp error code!";
@@ -33230,6 +33293,7 @@ int get_subcategory(int sexp_id)
 		case OP_PLAYER_NOT_USE_AI:
 		case OP_SET_PLAYER_ORDERS:
 		case OP_CAP_WAYPOINT_SPEED:
+		case OP_SET_WING_FORMATION:
 		case OP_SET_ORDER_ALLOWED_TARGET:
 			return CHANGE_SUBCATEGORY_AI_CONTROL;
 
@@ -36771,6 +36835,13 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t2: Maximum speed while flying waypoints (must be greater than 0)\r\n"
 		"\tNOTE: This will only work if the ship is already in the game\r\n"
 		"\tNOTE: Set to -1 to reset\r\n"},
+
+	{ OP_SET_WING_FORMATION, "set-wing-formation\r\n"
+		"\tSets the formation used by one or more wings\r\n"
+		"\t1: Formation name\r\n"
+		"\t2: Formation multiplier, as a percentage (1x = 100)\r\n"
+		"\tRest: Wing that should fly this formation\r\n"
+	},
 
 	{ OP_TURRET_TAGGED_ONLY_ALL, "turret-tagged-only\r\n"
 		"\tMakes turrets target and hence fire strictly at tagged objects\r\n"
