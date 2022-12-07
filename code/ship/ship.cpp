@@ -11644,13 +11644,13 @@ bool in_autoaim_fov(ship *shipp, int bank_to_fire, object *obj)
 	weapon_info* winfo_p = &Weapon_info[weapon_idx];
 
 	has_converging_autoaim = ((sip->aiming_flags[Ship::Aiming_Flags::Autoaim_convergence] || (The_mission.ai_profile->player_autoaim_fov[Game_skill_level] > 0.0f && !( Game_mode & GM_MULTIPLAYER ))) && aip->target_objnum != -1);
-	has_autoaim = ((has_converging_autoaim || (sip->aiming_flags[Ship::Aiming_Flags::Autoaim])) && aip->target_objnum != -1);
+	has_autoaim = ((has_converging_autoaim || (sip->aiming_flags[Ship::Aiming_Flags::Autoaim]) || (winfo_p->autoaim_fov > 0.0f)) && aip->target_objnum != -1);
 
 	if (!has_autoaim) {
 		return false;
 	}
 
-	autoaim_fov = MAX(shipp->autoaim_fov, The_mission.ai_profile->player_autoaim_fov[Game_skill_level]);
+	autoaim_fov = std::max({shipp->autoaim_fov, The_mission.ai_profile->player_autoaim_fov[Game_skill_level], winfo_p->autoaim_fov});
 
 	if (aip->targeted_subsys != nullptr) {
 		get_subsystem_world_pos(&Objects[aip->target_objnum], aip->targeted_subsys, &target_position);
@@ -11697,9 +11697,6 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 	int			banks_fired;				// used for multiplayer to help determine whether or not to send packet
 	banks_fired = 0;			// used in multiplayer -- bitfield of banks that were fired
 	bool has_fired = false;		// used to determine whether we should fire the scripting hook
-	bool has_autoaim, has_converging_autoaim, needs_target_pos;	// used to flag weapon/ship as having autoaim
-	float autoaim_fov = 0;			// autoaim limit
-	float dist_to_target = 0;		// distance to target, for autoaim & automatic convergence
 
 	gamesnd_id		sound_played;	// used to track what sound is played.  If the player is firing two banks
 										// of the same laser, we only want to play one sound
@@ -11771,32 +11768,13 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 			if(i!=swp->current_primary_bank)ship_stop_fire_primary_bank(obj, i);
 		}
 
-	// lets start gun convergence / autoaim code from here - Wanderer
-	has_converging_autoaim = ((sip->aiming_flags[Ship::Aiming_Flags::Autoaim_convergence] || (The_mission.ai_profile->player_autoaim_fov[Game_skill_level] > 0.0f && !( Game_mode & GM_MULTIPLAYER ))) && aip->target_objnum != -1);
-	has_autoaim = ((has_converging_autoaim || (sip->aiming_flags[Ship::Aiming_Flags::Autoaim])) && aip->target_objnum != -1);
-	needs_target_pos = ((has_autoaim || (sip->aiming_flags[Ship::Aiming_Flags::Auto_convergence])) && aip->target_objnum != -1);
-	
-	if (needs_target_pos) {
-		if (has_autoaim) {
-			autoaim_fov = MAX(shipp->autoaim_fov, The_mission.ai_profile->player_autoaim_fov[Game_skill_level]);
-		}
-
-		// If a subsystem is targeted, fire in that direction instead
-		if (aip->targeted_subsys != NULL)
-		{
-			get_subsystem_world_pos(&Objects[aip->target_objnum], aip->targeted_subsys, &target_position);
-		}
-		else
-		{
-			target_position = Objects[aip->target_objnum].pos;
-		}
-
-		dist_to_target = vm_vec_dist_quick(&target_position, &obj->pos);
-	}
-
 	polymodel* pm = model_get(sip->model_num);
 
 	for ( i = 0; i < num_primary_banks; i++ ) {		
+		bool has_autoaim, has_converging_autoaim, needs_target_pos; // used to flag weapon/ship as having autoaim
+		float autoaim_fov = 0;                                      // autoaim limit
+		float dist_to_target = 0;									// distance to target, for autoaim & automatic convergence
+
 		// Goober5000 - allow more than two banks
 		bank_to_fire = (swp->current_primary_bank+i) % swp->num_primary_banks;
 
@@ -11818,7 +11796,29 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 
 		weapon_info* winfo_p = &Weapon_info[weapon_idx];
 
+		// lets start gun convergence / autoaim code from here - Wanderer
+		// in order to do this per weapon, this needs to be moved here from above -Mjn
+		has_converging_autoaim = ((sip->aiming_flags[Ship::Aiming_Flags::Autoaim_convergence] || (The_mission.ai_profile->player_autoaim_fov[Game_skill_level] > 0.0f && !( Game_mode & GM_MULTIPLAYER ))) && aip->target_objnum != -1);
+		has_autoaim = ((has_converging_autoaim || (sip->aiming_flags[Ship::Aiming_Flags::Autoaim]) || (winfo_p->autoaim_fov > 0.0f)) && aip->target_objnum != -1);
+		needs_target_pos = ((has_autoaim || (sip->aiming_flags[Ship::Aiming_Flags::Auto_convergence])) && aip->target_objnum != -1);
+
 		if (needs_target_pos) {
+			if (has_autoaim) {
+				autoaim_fov = std::max({shipp->autoaim_fov, The_mission.ai_profile->player_autoaim_fov[Game_skill_level], winfo_p->autoaim_fov});
+			}
+
+			// If a subsystem is targeted, fire in that direction instead
+			if (aip->targeted_subsys != NULL)
+			{
+				get_subsystem_world_pos(&Objects[aip->target_objnum], aip->targeted_subsys, &target_position);
+			}
+			else
+			{
+				target_position = Objects[aip->target_objnum].pos;
+			}
+
+			dist_to_target = vm_vec_dist_quick(&target_position, &obj->pos);
+
 			target_velocity_vec = Objects[aip->target_objnum].phys_info.vel;
 			if (The_mission.ai_profile->flags[AI::Profile_Flags::Use_additive_weapon_velocity])
 				vm_vec_scale_sub2(&target_velocity_vec, &obj->phys_info.vel, winfo_p->vel_inherit_amount);
