@@ -2196,7 +2196,7 @@ static void asteroid_parse_section()
 
 		stuff_int(&split_index);
 
-		if (split_index>=0 && split_index<asteroid_list.size()) {
+		if (split_index >=0 && split_index < (int)asteroid_list.size()) {
 			asteroid_split_info new_split;
 
 			new_split.asteroid_type = split_index;
