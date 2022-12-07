@@ -2216,7 +2216,7 @@ static void asteroid_parse_section()
 	}
 
 	if (optional_string("$Spawn Weight:")) {
-		if (asteroid_p->type = ASTEROID_TYPE_DEBRIS) {
+		if (asteroid_p->type == ASTEROID_TYPE_DEBRIS) {
 			stuff_float(&asteroid_p->spawn_weight);
 			if (asteroid_p->spawn_weight <= 0.0f) {
 				Warning(LOCATION, "Spawn weight for asteroid '%s' must be greater than 0", asteroid_p->name);
