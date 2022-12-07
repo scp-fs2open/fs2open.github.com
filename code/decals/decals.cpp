@@ -161,6 +161,7 @@ SCP_vector<DecalDefinition> DecalDefinitions;
 
 // Variable to indicate if the system is able to work correctly on the current system
 bool Decal_system_active = true;
+bool Decal_option_active = true;
 
 void parse_decals_table(const char* filename) {
 	try {
@@ -338,12 +339,7 @@ void parseDecalReference(creation_info& dest_info, bool is_new_entry) {
 	}
 
 	if (required_string_if_new("+Radius:", is_new_entry)) {
-		stuff_float(&dest_info.radius);
-
-		if (dest_info.radius <= 0.0f) {
-			error_display(0, "Invalid radius of %f! Must be a positive number.", dest_info.radius);
-			dest_info.radius = 1.0f;
-		}
+		dest_info.radius = util::parseUniformRange(0.0001f);
 	}
 
 	if (required_string_if_new("+Lifetime:", is_new_entry)) {
@@ -354,10 +350,14 @@ void parseDecalReference(creation_info& dest_info, bool is_new_entry) {
 			dest_info.lifetime = util::parseUniformRange(0.0001f);
 		}
 	}
+
+	if (optional_string("+Use Random Rotation:")) {
+		stuff_boolean(&dest_info.random_rotation);
+	}
 }
 
 void loadBitmaps(const creation_info& info) {
-	if (!Decal_system_active) {
+	if (!Decal_system_active || !Decal_option_active) {
 		return;
 	}
 	// Silently ignore invalid definition handle since weapons use the default values if the decal option is not present
@@ -374,7 +374,7 @@ void loadBitmaps(const creation_info& info) {
 }
 
 void pageInDecal(const creation_info& info) {
-	if (!Decal_system_active) {
+	if (!Decal_system_active || !Decal_option_active) {
 		return;
 	}
 	// Silently ignore invalid definition handle since weapons use the default values if the decal option is not present
@@ -431,7 +431,7 @@ matrix4 getDecalTransform(Decal& decal) {
 }
 
 void renderAll() {
-	if (!Decal_system_active) {
+	if (!Decal_system_active || !Decal_option_active) {
 		return;
 	}
 
@@ -502,7 +502,7 @@ void renderAll() {
 }
 
 void addDecal(creation_info& info, object* host, int submodel, const vec3d& local_pos, const matrix& local_orient) {
-	if (!Decal_system_active) {
+	if (!Decal_system_active || !Decal_option_active) {
 		return;
 	}
 	// Silently ignore invalid definition handle since weapons use the default values if the decal option is not present
@@ -530,9 +530,10 @@ void addDecal(creation_info& info, object* host, int submodel, const vec3d& loca
 	newDecal.position = local_pos;
 	newDecal.orientation = local_orient;
 	if (info.width < 0.0f || info.height < 0.0f) {
-		newDecal.scale.xyz.x = info.radius;
-		newDecal.scale.xyz.y = info.radius;
-		newDecal.scale.xyz.z = info.radius;
+		float radius = info.radius.next();
+		newDecal.scale.xyz.x = radius;
+		newDecal.scale.xyz.y = radius;
+		newDecal.scale.xyz.z = radius;
 	} else {
 		newDecal.scale.xyz.x = info.width;
 		newDecal.scale.xyz.y = info.height;
