@@ -973,6 +973,7 @@ void ship_info::clone(const ship_info& other)
 	n_subsystems = other.n_subsystems;
 
 	animations = other.animations;
+	cockpit_animations = other.cockpit_animations;
 
 	power_output = other.power_output;
 	max_overclocked_speed = other.max_overclocked_speed;
@@ -1507,6 +1508,7 @@ void ship_info::move(ship_info&& other)
 	std::swap(glowpoint_bank_override_map, other.glowpoint_bank_override_map);
 
 	animations = std::move(other.animations);
+	cockpit_animations = std::move(other.cockpit_animations);
 }
 
 #define CHECK_THEN_FREE(attribute) \
@@ -2178,6 +2180,7 @@ static void parse_ship(const char *filename, bool replace)
 		}
 
 		sip->animations.changeShipName(sip->name);
+		sip->cockpit_animations.changeShipName(sip->name);
 	}
 
 	parse_ship_values(sip, false, first_time, replace);
@@ -7773,6 +7776,7 @@ void ship_init_cockpit_displays(ship *shipp)
 	}
 
 	shipp->cockpit_model_instance = model_create_instance(shipp->objnum, cockpit_model_num);
+	sip->cockpit_animations.initializeMoveables(model_get_instance(shipp->cockpit_model_instance));
 
 	// check if we even have cockpit displays
 	if ( sip->displays.empty() ) {
