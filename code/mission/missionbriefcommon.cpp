@@ -345,7 +345,7 @@ void brief_icon_parse_cleanup() {
 	}
 }
 
-static int Num_icons_in_table = 0;
+static size_t Num_icons_in_table = 0;
 
 // This is explicitely used to count the number of icons listed in the tbl
 // so that we can correctly parse each icon into a species without any off-by-N errors.
@@ -447,8 +447,6 @@ void brief_parse_icon_tbl(const char* filename)
 			}
 		}
 		else { // old style
-
-			size_t Num_species_in_table = 0;
 			
 			//Calculate how many species we're going to try to parse icons for using the pre-parsed count
 			if (Num_icons_in_table % MIN_BRIEF_ICONS != 0)
@@ -456,16 +454,16 @@ void brief_parse_icon_tbl(const char* filename)
 					"An incorrect number of icons was found in icons.tbl. There should be %i icons per species listed!",
 					MIN_BRIEF_ICONS);
 
-			Num_species_in_table = Num_icons_in_table / MIN_BRIEF_ICONS;
+			size_t Num_icon_sets = Num_icons_in_table / MIN_BRIEF_ICONS;
 
-			if (Num_species_in_table % BRIEF_ICON_TYPES != 0)
+			if (Num_icon_sets % BRIEF_ICON_TYPES != 0)
 				Error(LOCATION,
 					"There was somehow a number of icons divisible by %i, but is now not divisible by %i. Get a "
 					"coder!",
 					MIN_BRIEF_ICONS,
 					BRIEF_ICON_TYPES);
 
-			Num_species_in_table = Num_species_in_table / BRIEF_ICON_TYPES;
+			size_t Num_species_in_table = Num_icon_sets / BRIEF_ICON_TYPES;
 
 			for (int icon_type = 0; icon_type < MIN_BRIEF_ICONS; icon_type++) { // NOLINT(modernize-loop-convert)
 				for (species = 0; species < Num_species_in_table; species++) {
