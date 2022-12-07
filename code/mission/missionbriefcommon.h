@@ -63,6 +63,9 @@
 #define ICON_JUMP_NODE						33
 #define ICON_TRANSPORT						34
 
+#define BRIEF_ICON_TYPES					3
+
+//If any types are added here then be sure to update BRIEF_ICON_TYPES
 typedef struct briefing_icon_info {
 	generic_anim	regular;
 	hud_anim		fade;
