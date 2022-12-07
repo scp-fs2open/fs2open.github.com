@@ -2216,25 +2216,14 @@ static void asteroid_parse_section()
 	}
 
 	if (optional_string("$Spawn Weight:")) {
-		stuff_float(&asteroid_p->spawn_weight);
-		if (asteroid_p->spawn_weight <= 0.0f) {
-			Warning(LOCATION, "Spawn weight for asteroid '%s' must be greater than 0", asteroid_p->name);
-			asteroid_p->spawn_weight = 1.0f;
-		}
-	} else {
-		switch (Asteroid_info.size() % NUM_ASTEROID_SIZES)
-		{
-			case ASTEROID_TYPE_SMALL:
-				asteroid_p->spawn_weight = SMALL_DEBRIS_WEIGHT;
-				break;
-			case ASTEROID_TYPE_MEDIUM:
-				asteroid_p->spawn_weight = MEDIUM_DEBRIS_WEIGHT;
-				break;
-			case ASTEROID_TYPE_LARGE:
-				asteroid_p->spawn_weight = LARGE_DEBRIS_WEIGHT;
-				break;
-			default:
-				UNREACHABLE("Here be dragons");
+		if (asteroid_p->type = ASTEROID_TYPE_DEBRIS) {
+			stuff_float(&asteroid_p->spawn_weight);
+			if (asteroid_p->spawn_weight <= 0.0f) {
+				Warning(LOCATION, "Spawn weight for asteroid '%s' must be greater than 0", asteroid_p->name);
+				asteroid_p->spawn_weight = 1.0f;
+			}
+		} else {
+			Warning(LOCATION, "Spawn weight defined for non-debris type asteroid '%s', but can only be defined for debris types.", asteroid_p->name);
 		}
 	}
 
