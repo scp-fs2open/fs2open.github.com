@@ -42,7 +42,7 @@ static size_t requiredPollCount(SpaceMouseDefinition::Protocol protocol) {
 	case SpaceMouseDefinition::Protocol::CONNEXION_3D_OLD:
 		return 4;
 	case SpaceMouseDefinition::Protocol::CONNEXION_3D_NEW:
-		return 2;
+		return 4;
 	default:
 		UNREACHABLE("Bad SpaceMouse protocol specified!");
 		return 0;
@@ -92,6 +92,8 @@ void SpaceMouse::poll() {
 				//Buttons are not yet handled
 				break;
 			default:
+				m_current.translation = ZERO_VECTOR;
+				m_current.rotation = ZERO_ANGLES;
 				break;
 			}
 			break;
