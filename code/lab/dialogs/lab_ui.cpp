@@ -240,6 +240,25 @@ void LabUi::buildTextureQualityCombobox()
 	}
 }
 
+void buildTeamColorCombobox()
+{
+	if (!Team_Colors.empty()) {
+		with_Combo("Team Color setting", getLabManager()->Renderer->getCurrentTeamColor().c_str())
+		{
+			for (auto team_color : Team_Colors) {
+				bool is_selected = team_color.first == getLabManager()->Renderer->getCurrentTeamColor();
+
+				if (ImGui::Selectable(team_color.first.c_str(), is_selected)) {
+					getLabManager()->Renderer->setTeamColor(team_color.first);
+				}
+
+				if (is_selected)
+					ImGui::SetItemDefaultFocus();
+			}
+		}
+	}
+}
+
 void LabUi::buildAntialiasingCombobox()
 {
 	with_Combo("Antialiasing method", antialiasing_settings[static_cast<int>(Gr_aa_mode)])
@@ -312,6 +331,8 @@ void LabUi::showRenderOptions()
 			ImGui::Checkbox("AO map", &ao_map);
 
 			buildTextureQualityCombobox();
+
+			buildTeamColorCombobox();
 		}
 
 		with_CollapsingHeader("Scene rendering options")

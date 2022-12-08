@@ -151,6 +151,11 @@ public:
 		currentTeamColor = std::move(teamColor);
 	}
 
+	SCP_string getCurrentTeamColor()
+	{
+		return currentTeamColor;
+	}
+
 	void resetView() {}
 
 	void setRenderFlag(LabRenderFlag flag, bool value) { renderFlags.set(flag, value); }
