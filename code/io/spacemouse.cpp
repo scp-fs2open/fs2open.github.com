@@ -73,7 +73,7 @@ void SpaceMouse::poll() {
 				//Buttons are not yet handled
 				break;
 			default:
-				UNREACHABLE("Bad data in old 3Dconnexion protocol!");
+				break;
 			}
 			break;
 		}
@@ -135,8 +135,11 @@ bool SpaceMouse::isButtonPressed(size_t number) {
 
 const static SCP_vector<SpaceMouseDefinition> knownSpaceMice {
 	SpaceMouseDefinition { 0x046D, 0xC626,  2, SpaceMouseDefinition::Protocol::CONNEXION_3D_OLD }, //SpaceNavigator
+	SpaceMouseDefinition { 0x046D, 0xC628,  2, SpaceMouseDefinition::Protocol::CONNEXION_3D_OLD }, //SpaceNavigator
 	SpaceMouseDefinition { 0x256F, 0xC635,  2, SpaceMouseDefinition::Protocol::CONNEXION_3D_OLD }, //SpaceMouse Compact
 	SpaceMouseDefinition { 0x256F, 0xC62E,  2, SpaceMouseDefinition::Protocol::CONNEXION_3D_NEW }, //SpaceMouse Wireless
+	SpaceMouseDefinition { 0x256F, 0xC62F,  2, SpaceMouseDefinition::Protocol::CONNEXION_3D_NEW }, //SpaceMouse Wireless
+	SpaceMouseDefinition { 0x256F, 0xC658,  2, SpaceMouseDefinition::Protocol::CONNEXION_3D_NEW }, //SpaceMouse Wireless
 	SpaceMouseDefinition { 0x046D, 0xC62B, 15, SpaceMouseDefinition::Protocol::CONNEXION_3D_OLD }, //SpaceMouse Pro
 	SpaceMouseDefinition { 0x256F, 0xC631, 15, SpaceMouseDefinition::Protocol::CONNEXION_3D_NEW }, //SpaceMouse Pro Wireless
 	SpaceMouseDefinition { 0x256F, 0xC632, 15, SpaceMouseDefinition::Protocol::CONNEXION_3D_NEW }, //SpaceMouse Pro Wireless
