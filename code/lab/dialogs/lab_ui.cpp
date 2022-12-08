@@ -440,9 +440,12 @@ void LabUi::buildTableInfoTxtbox(ship_info* sip) const
 {
 	with_TreeNode("Table information")
 	{
+		// since this dialog is closed when the displayed object changes, we need to track whether or not
+		// the text needs to be updated separately
 		static SCP_string table_text;
+		static int old_class = getLabManager()->CurrentClass;
 
-		if (table_text.length() == 0 || rebuild_after_object_change)
+		if (table_text.length() == 0 || old_class != getLabManager()->CurrentClass)
 			table_text = get_ship_table_text(sip);
 
 		ImGui::InputTextMultiline("##table_text",
