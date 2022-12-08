@@ -83,10 +83,12 @@ void LabUi::buildWeaponSubtypeList() const
 
 void LabUi::buildWeaponList() const
 {
-	with_TreeNode("Weapon Classes")
-	{
-		buildWeaponSubtypeList();
-	}
+	//weapon display needs to be rethought
+
+	//with_TreeNode("Weapon Classes")
+	//{
+	//	buildWeaponSubtypeList();
+	//}
 }
 
 void LabUi::buildBackgroundList() const

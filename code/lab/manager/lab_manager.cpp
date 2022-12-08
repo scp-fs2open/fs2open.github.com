@@ -96,7 +96,6 @@ void LabManager::onFrame(float frametime) {
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplSDL2_NewFrame();
 	ImGui::NewFrame();
-	ImGuizmo::BeginFrame();
 
 	Renderer->onFrame(frametime);
 
@@ -260,7 +259,7 @@ void LabManager::onFrame(float frametime) {
 		vm_rotate_matrix_by_angles(&CurrentOrientation, &rot_angles);
 	}
 	
-	ImGui::ShowDemoWindow();
+	//ImGui::ShowDemoWindow();
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
@@ -331,7 +330,8 @@ void LabManager::changeShipInternal() {
 	ship_objp->apply_replacement_textures(replacements);
 	ship_page_in_textures(ship_objp->ship_info_index);
 
-	Renderer->setTeamColor(ship_infop->default_team_name);
+	if (!ship_infop->default_team_name.empty())
+		Renderer->setTeamColor(ship_infop->default_team_name);
 
 	ModelFilename = model_get(ship_infop->model_num)->filename;
 }
