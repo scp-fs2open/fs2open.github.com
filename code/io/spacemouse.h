@@ -20,7 +20,7 @@ namespace io
 		struct SpaceMouseDefinition {
 			unsigned int vendorID, productID;
 			size_t buttons;
-			size_t packetSize;
+			enum class Protocol { CONNEXION_3D_OLD, CONNEXION_3D_NEW } protocol;
 		};
 
 		class SpaceMouse {
@@ -38,9 +38,24 @@ namespace io
 		public:
 			~SpaceMouse();
 
+			/*
+			@brief Get the current requested movement from the space mouse. Automatically polls for an HID update if required.
+			@returns The current movement of the space mouse
+			*/
 			const SpaceMouseMovement& getMovement();
+
+			/*
+			@brief Test if the requested button is currently held down. Automatically polls for an HID update if required.
+			@param number The number of the button to test.
+			@returns Whether or not the button is pressed. Always false for buttons not present on this space mouse.
+			*/
 			bool isButtonPressed(size_t number);
 
+			/*
+			@brief Polls connected HID devices and tests for known and supported space mice
+			@param pollingFrequency The frequency any found space mice should be polled for HID updates, in ms.
+			@returns An optional SpaceMouse object, if found
+			*/
 			static tl::optional<SpaceMouse> searchSpaceMouses(int pollingFrequency = 10);
 		};
 	}
