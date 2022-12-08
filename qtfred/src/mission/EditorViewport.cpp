@@ -6,6 +6,7 @@
 #include <render/3d.h>
 #include <ship/ship.h>
 #include <io/key.h>
+#include <io/spacemouse.h>
 
 #include "object.h"
 
@@ -318,8 +319,20 @@ void EditorViewport::process_system_keys(int key) {
 }
 
 void EditorViewport::process_controls(vec3d* pos, matrix* orient, float frametime, int key, int mode) {
+	static std::unique_ptr<io::spacemouse::SpaceMouse> spacemouse = io::spacemouse::SpaceMouse::searchSpaceMouses();
+
 	if (Flying_controls_mode) {
 		grid_read_camera_controls(&view_controls, frametime);
+
+		if (spacemouse != nullptr) {
+			const auto& spacemouse_movement = spacemouse->getMovement();
+			view_controls.pitch += spacemouse_movement.rotation.p;
+			view_controls.vertical += spacemouse_movement.translation.xyz.z;
+			view_controls.heading += spacemouse_movement.rotation.h;
+			view_controls.sideways += spacemouse_movement.translation.xyz.x;
+			view_controls.bank += spacemouse_movement.rotation.b;
+			view_controls.forward += spacemouse_movement.translation.xyz.y;
+		}
 
 		if (key_get_shift_status()) {
 			memset(&view_controls, 0, sizeof(control_info));
@@ -344,6 +357,12 @@ void EditorViewport::process_controls(vec3d* pos, matrix* orient, float frametim
 		matrix newmat, rotmat;
 
 		process_movement_keys(key, &movement_vec, &rotangs);
+		if (spacemouse != nullptr) {
+			const auto& spacemouse_movement = spacemouse->getMovement();
+			movement_vec += spacemouse_movement.translation;
+			rotangs += spacemouse_movement.rotation;
+		}
+
 		vm_vec_rotate(&rel_movement_vec, &movement_vec, &The_grid->gmatrix);
 		vm_vec_add2(pos, &rel_movement_vec);
 
