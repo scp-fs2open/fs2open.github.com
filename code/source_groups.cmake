@@ -1441,6 +1441,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/weapon.h
 	scripting/api/objs/wing.cpp
 	scripting/api/objs/wing.h
+	scripting/api/objs/wingformation.cpp
+	scripting/api/objs/wingformation.h
 )
 
 add_file_folder("Scripting\\\\Lua"
