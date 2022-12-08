@@ -13,6 +13,8 @@ namespace io
 		struct SpaceMouseMovement {
 			vec3d translation;
 			angles rotation;
+
+			void handleNonlinearities(std::array<std::tuple<float, float>, 6>& spacemouse_nonlinearity);
 		};
 
 		struct SpaceMouseDefinition {

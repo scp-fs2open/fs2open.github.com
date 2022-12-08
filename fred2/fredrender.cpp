@@ -1350,7 +1350,8 @@ void process_controls(vec3d *pos, matrix *orient, float frametime, int key, int 
 	if (Flying_controls_mode) {
 		grid_read_camera_controls(&view_controls, frametime);
 		if (spacemouse != nullptr) {
-			const auto& spacemouse_movement = spacemouse->getMovement();
+			auto spacemouse_movement = spacemouse->getMovement();
+			spacemouse_movement.handleNonlinearities(Fred_spacemouse_nonlinearity);
 			view_controls.pitch += spacemouse_movement.rotation.p;
 			view_controls.vertical += spacemouse_movement.translation.xyz.z;
 			view_controls.heading += spacemouse_movement.rotation.h;
@@ -1384,7 +1385,8 @@ void process_controls(vec3d *pos, matrix *orient, float frametime, int key, int 
 
 		process_movement_keys(key, &movement_vec, &rotangs);
 		if (spacemouse != nullptr) {
-			const auto& spacemouse_movement = spacemouse->getMovement();
+			auto spacemouse_movement = spacemouse->getMovement();
+			spacemouse_movement.handleNonlinearities(Fred_spacemouse_nonlinearity);
 			movement_vec += spacemouse_movement.translation;
 			rotangs += spacemouse_movement.rotation;
 		}
