@@ -400,6 +400,7 @@ void LabUi::showRenderOptions()
 		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowAfterburners, show_afterburners);
 		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowWeapons, show_weapons);
 		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowEmissiveLighting, show_emissive_lighting);
+		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::MoveSubsystems, animate_subsystems);
 		getLabManager()->Renderer->setEmissiveFactor(emissive_factor);
 		getLabManager()->Renderer->setAmbientFactor(ambient_factor);
 		getLabManager()->Renderer->setLightFactor(light_factor);
