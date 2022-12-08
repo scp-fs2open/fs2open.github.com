@@ -3,32 +3,34 @@
 
 
 #include "animation_handle.h"
-#include "ship.h"
-#include "texture.h"
-#include "object.h"
-#include "subsystem.h"
-#include "shipclass.h"
 #include "cockpit_display.h"
-#include "weaponclass.h"
-#include "ship_bank.h"
-#include "team.h"
-#include "order.h"
 #include "enums.h"
-#include "wing.h"
+#include "message.h"
+#include "object.h"
+#include "order.h"
+#include "ship.h"
+#include "ship_bank.h"
+#include "shipclass.h"
+#include "subsystem.h"
+#include "team.h"
+#include "texture.h"
 #include "vecmath.h"
+#include "weaponclass.h"
+#include "wing.h"
 
-#include "ship/shiphit.h"
-#include "hud/hudshield.h"
-#include "playerman/player.h"
-#include "mission/missionlog.h"
 #include "ai/aigoals.h"
-#include "ship/shipfx.h"
 #include "hud/hudets.h"
+#include "hud/hudshield.h"
+#include "mission/missionlog.h"
+#include "mission/missionmessage.h"
+#include "model/model.h"
 #include "object/object.h"
 #include "object/objectdock.h"
-#include "model/model.h"
-#include "ship/ship.h"
 #include "parse/parselo.h"
+#include "playerman/player.h"
+#include "ship/ship.h"
+#include "ship/shipfx.h"
+#include "ship/shiphit.h"
 
 extern void ship_reset_disabled_physics(object *objp, int ship_class);
 extern bool sexp_check_flag_arrays(const char *flag_name, Object::Object_Flags &object_flag, Ship::Ship_Flags &ship_flags, Mission::Parse_Object_Flags &parse_obj_flag, AI::AI_Flags &ai_flag);
@@ -1220,6 +1222,31 @@ ADE_VIRTVAR(DepartureDelay, l_Ship, "number", "The ship's departure delay", "num
 ADE_VIRTVAR(ArrivalDistance, l_Ship, "number", "The ship's arrival distance", "number", "Arrival distance, or nil if handle is invalid")
 {
 	return ship_getset_helper(L, &ship::arrival_distance, true);
+}
+
+extern int sendMessage_sub(lua_State* L, const void* sender, int messageSource, int messageIdx, float delay, enum_h* ehp);
+
+ADE_FUNC(sendMessage,
+	l_Ship,
+	"message message, [number delay=0.0, enumeration priority = MESSAGE_PRIORITY_NORMAL]",
+	"Sends a message from the given ship with the given priority.<br>"
+	"If delay is specified, the message will be delayed by the specified time in seconds.",
+	"boolean",
+	"true if successful, false otherwise")
+{
+	int messageIdx = -1;
+	float delay = 0.0f;
+
+	object_h* ship_h = nullptr;
+	enum_h* ehp = nullptr;
+
+	if (!ade_get_args(L, "oo|fob", l_Ship.GetPtr(&ship_h), l_Message.Get(&messageIdx), &delay, l_Enum.GetPtr(&ehp)))
+		return ADE_RETURN_FALSE;
+
+	if (ship_h == nullptr || !ship_h->IsValid())
+		return ADE_RETURN_FALSE;
+
+	return sendMessage_sub(L, &Ships[ship_h->objp->instance], MESSAGE_SOURCE_SHIP, messageIdx, delay, ehp);
 }
 
 ADE_FUNC(turnTowardsPoint,
