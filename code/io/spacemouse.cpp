@@ -92,7 +92,7 @@ void SpaceMouse::poll() {
 				//Buttons are not yet handled
 				break;
 			default:
-				UNREACHABLE("Bad data in new 3Dconnexion protocol!");
+				break;
 			}
 			break;
 		}
