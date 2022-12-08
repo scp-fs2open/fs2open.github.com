@@ -1345,7 +1345,7 @@ int object_check_collision(object *objp, vec3d *p0, vec3d *p1, vec3d *hitpos) {
 }
 
 void process_controls(vec3d *pos, matrix *orient, float frametime, int key, int mode) {
-	static std::unique_ptr<io::spacemouse::SpaceMouse> spacemouse = io::spacemouse::SpaceMouse::searchSpaceMouses();
+	static std::unique_ptr<io::spacemouse::SpaceMouse> spacemouse = io::spacemouse::SpaceMouse::searchSpaceMouses(0);
 
 	if (Flying_controls_mode) {
 		grid_read_camera_controls(&view_controls, frametime);
