@@ -12,10 +12,10 @@ struct connexion_3d_old_protocol {
 	uint8_t type;
 	union {
 		struct {
-			uint16_t trans_x, trans_y, trans_z;
+			int16_t trans_x, trans_y, trans_z;
 		} type1;
 		struct {
-			uint16_t rot_x, rot_y, rot_z;
+			int16_t rot_x, rot_y, rot_z;
 		} type2;
 		struct {
 			uint8_t buttons[4];
@@ -27,8 +27,8 @@ struct connexion_3d_new_protocol {
 	uint8_t type;
 	union {
 		struct {
-			uint16_t trans_x, trans_y, trans_z;
-			uint16_t rot_x, rot_y, rot_z;
+			int16_t trans_x, trans_y, trans_z;
+			int16_t rot_x, rot_y, rot_z;
 		} type1;
 		struct {
 			uint8_t buttons[4];
@@ -60,14 +60,14 @@ void SpaceMouse::poll() {
 			const connexion_3d_old_protocol& data = *reinterpret_cast<connexion_3d_old_protocol*>(spacemouse_hid_buffer);
 			switch (data.type) {
 			case 1:
-				m_current.translation.xyz.x = static_cast<float>(data.data.type1.trans_x) / 350.0f;
-				m_current.translation.xyz.y = static_cast<float>(data.data.type1.trans_y) / 350.0f;
-				m_current.translation.xyz.z = static_cast<float>(data.data.type1.trans_z) / 350.0f;
+				m_current.translation.xyz.x = static_cast<float>(data.data.type1.trans_x) / 150.0f;
+				m_current.translation.xyz.y = static_cast<float>(data.data.type1.trans_y) / -150.0f;
+				m_current.translation.xyz.z = static_cast<float>(data.data.type1.trans_z) / -150.0f;
 				break;
 			case 2:
-				m_current.rotation.p = static_cast<float>(data.data.type2.rot_x) / 350.0f;
-				m_current.rotation.h = static_cast<float>(data.data.type2.rot_y) / 350.0f;
-				m_current.rotation.b = static_cast<float>(data.data.type2.rot_z) / 350.0f;
+				m_current.rotation.p = static_cast<float>(data.data.type2.rot_x) / -350.0f;
+				m_current.rotation.b = static_cast<float>(data.data.type2.rot_y) / 350.0f;
+				m_current.rotation.h = static_cast<float>(data.data.type2.rot_z) / 350.0f;
 				break;
 			case 3:
 				//Buttons are not yet handled
@@ -81,12 +81,12 @@ void SpaceMouse::poll() {
 			const connexion_3d_new_protocol& data = *reinterpret_cast<connexion_3d_new_protocol*>(spacemouse_hid_buffer);
 			switch (data.type) {
 			case 1:
-				m_current.translation.xyz.x = static_cast<float>(data.data.type1.trans_x) / 350.0f;
-				m_current.translation.xyz.y = static_cast<float>(data.data.type1.trans_y) / 350.0f;
-				m_current.translation.xyz.z = static_cast<float>(data.data.type1.trans_z) / 350.0f;
-				m_current.rotation.p = static_cast<float>(data.data.type1.rot_x) / 350.0f;
-				m_current.rotation.h = static_cast<float>(data.data.type1.rot_y) / 350.0f;
-				m_current.rotation.b = static_cast<float>(data.data.type1.rot_z) / 350.0f;
+				m_current.translation.xyz.x = static_cast<float>(data.data.type1.trans_x) / 150.0f;
+				m_current.translation.xyz.y = static_cast<float>(data.data.type1.trans_y) / -150.0f;
+				m_current.translation.xyz.z = static_cast<float>(data.data.type1.trans_z) / -150.0f;
+				m_current.rotation.p = static_cast<float>(data.data.type1.rot_x) / -350.0f;
+				m_current.rotation.b = static_cast<float>(data.data.type1.rot_y) / 350.0f;
+				m_current.rotation.h = static_cast<float>(data.data.type1.rot_z) / 350.0f;
 				break;
 			case 3:
 				//Buttons are not yet handled
@@ -144,12 +144,12 @@ const static SCP_vector<SpaceMouseDefinition> knownSpaceMice {
 	SpaceMouseDefinition { 0x256F, 0xC652, 15, SpaceMouseDefinition::Protocol::CONNEXION_3D_NEW }, //3Dconnexion Universal Receiver
 };
 
-tl::optional<SpaceMouse> SpaceMouse::searchSpaceMouses(int pollingFrequency) {
-	tl::optional<SpaceMouse> mouse = tl::nullopt;
+std::unique_ptr<SpaceMouse> SpaceMouse::searchSpaceMouses(int pollingFrequency) {
+	std::unique_ptr<SpaceMouse> mouse = nullptr;
 	
 	hid_device_info* devices = hid_enumerate(0, 0);
 
-	for (const hid_device_info* head = devices; head != nullptr && !mouse.has_value(); head = head->next) {
+	for (const hid_device_info* head = devices; head != nullptr && mouse == nullptr; head = head->next) {
 		for (const SpaceMouseDefinition& mouseDef : knownSpaceMice) {
 			if (mouseDef.vendorID != head->vendor_id || mouseDef.productID != head->product_id)
 				continue;
@@ -157,7 +157,7 @@ tl::optional<SpaceMouse> SpaceMouse::searchSpaceMouses(int pollingFrequency) {
 			hid_device* device = hid_open_path(head->path);
 
 			if (device != nullptr) {
-				mouse.emplace(SpaceMouse(mouseDef, device, pollingFrequency));
+				mouse = std::unique_ptr<SpaceMouse>(new SpaceMouse(mouseDef, device, pollingFrequency));
 				break;
 			}
 		}

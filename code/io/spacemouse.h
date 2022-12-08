@@ -4,8 +4,6 @@
 #include "math/vecmat.h"
 #include "io/timer.h"
 
-#include <tl/optional.hpp>
-
 struct hid_device_;
 typedef hid_device_ hid_device;
 
@@ -56,7 +54,7 @@ namespace io
 			@param pollingFrequency The frequency any found space mice should be polled for HID updates, in ms.
 			@returns An optional SpaceMouse object, if found
 			*/
-			static tl::optional<SpaceMouse> searchSpaceMouses(int pollingFrequency = 10);
+			static std::unique_ptr<SpaceMouse> searchSpaceMouses(int pollingFrequency = 10);
 		};
 	}
 }
