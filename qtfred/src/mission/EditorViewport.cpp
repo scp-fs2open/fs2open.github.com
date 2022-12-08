@@ -319,7 +319,7 @@ void EditorViewport::process_system_keys(int key) {
 }
 
 void EditorViewport::process_controls(vec3d* pos, matrix* orient, float frametime, int key, int mode) {
-	static std::unique_ptr<io::spacemouse::SpaceMouse> spacemouse = io::spacemouse::SpaceMouse::searchSpaceMouses();
+	static std::unique_ptr<io::spacemouse::SpaceMouse> spacemouse = io::spacemouse::SpaceMouse::searchSpaceMouses(0);
 
 	if (Flying_controls_mode) {
 		grid_read_camera_controls(&view_controls, frametime);
