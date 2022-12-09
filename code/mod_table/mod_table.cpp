@@ -1299,7 +1299,14 @@ void mod_table_reset()
 	Discord_presence = true;
 	Hotkey_always_hide_hidden_ships = false;
 	Use_weapon_class_sounds_for_hits_to_player = false;
-	Fred_spacemouse_nonlinearity = {{ { 1.0f, 1.0f }, { 1.0f, 1.0f }, { 1.0f, 1.0f }, { 1.0f, 1.0f }, { 1.0f, 1.0f }, { 1.0f, 1.0f } }};
+	Fred_spacemouse_nonlinearity = std::array<std::tuple<float, float>, 6>{{
+			std::tuple<float, float>{ 1.0f, 1.0f },
+			std::tuple<float, float>{ 1.0f, 1.0f },
+			std::tuple<float, float>{ 1.0f, 1.0f },
+			std::tuple<float, float>{ 1.0f, 1.0f },
+			std::tuple<float, float>{ 1.0f, 1.0f },
+			std::tuple<float, float>{ 1.0f, 1.0f }
+		}};
 }
 
 void mod_table_set_version_flags()
