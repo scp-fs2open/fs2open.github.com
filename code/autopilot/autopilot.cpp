@@ -1222,6 +1222,7 @@ void NavSystem_Init()
 	for (int i = 0; i < MAX_NAVPOINTS; i++)
 		Navs[i].clear();
 
+	//Initialize all these as empty strings so we can detect and bail out later -Mjn
 	for (int i = 0; i < NP_NUM_MESSAGES; i++)
 		NavMsgs[i].message[0] = '\0';
 
