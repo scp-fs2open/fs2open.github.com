@@ -3,6 +3,7 @@
 #include "lab_ui_helpers.h"
 
 #include "graphics/debug_sphere.h"
+#include "graphics/matrix.h"
 #include "lab/labv2_internal.h"
 #include "ship/shiphit.h"
 #include "weapon/weapon.h"
@@ -480,24 +481,140 @@ void LabUi::buildModelInfoBox(ship_info* sip, polymodel* pm) const {
 	}
 }
 
+void render_subsystem(ship_subsys* ss, object* objp)
+{
+	vertex text_center;
+	SCP_string buf;
+
+	auto pmi = model_get_instance(Ships[objp->instance].model_instance_num);
+	auto pm = model_get(pmi->model_num);
+	int subobj_num = ss->system_info->subobj_num;
+
+	if (subobj_num != -1) {
+		auto bsp = &pm->submodel[subobj_num];
+
+		vec3d front_top_left = bsp->bounding_box[7];
+		vec3d front_top_right = bsp->bounding_box[6];
+		vec3d front_bot_left = bsp->bounding_box[4];
+		vec3d front_bot_right = bsp->bounding_box[5];
+		vec3d back_top_left = bsp->bounding_box[3];
+		vec3d back_top_right = bsp->bounding_box[2];
+		vec3d back_bot_left = bsp->bounding_box[0];
+		vec3d back_bot_right = bsp->bounding_box[1];
+
+		g3_start_frame(1);
+		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+		gr_set_view_matrix(&Eye_position, &Eye_matrix);
+
+		gr_set_color(255, 32, 32);
+
+		// get into the frame of reference of the submodel
+		int g3_count = 1;
+		g3_start_instance_matrix(&objp->pos, &objp->orient, true);
+		int mn = subobj_num;
+		while ((mn >= 0) && (pm->submodel[mn].parent >= 0)) {
+			g3_start_instance_matrix(&pm->submodel[mn].offset, &pmi->submodel[mn].canonical_orient, true);
+			g3_count++;
+			mn = pm->submodel[mn].parent;
+		}
+
+		// draw a cube around the subsystem
+		g3_draw_htl_line(&front_top_left, &front_top_right);
+		g3_draw_htl_line(&front_top_right, &front_bot_right);
+		g3_draw_htl_line(&front_bot_right, &front_bot_left);
+		g3_draw_htl_line(&front_bot_left, &front_top_left);
+
+		g3_draw_htl_line(&back_top_left, &back_top_right);
+		g3_draw_htl_line(&back_top_right, &back_bot_right);
+		g3_draw_htl_line(&back_bot_right, &back_bot_left);
+		g3_draw_htl_line(&back_bot_left, &back_top_left);
+
+		g3_draw_htl_line(&front_top_left, &back_top_left);
+		g3_draw_htl_line(&front_top_right, &back_top_right);
+		g3_draw_htl_line(&front_bot_left, &back_bot_left);
+		g3_draw_htl_line(&front_bot_right, &back_bot_right);
+
+		// draw another cube around a gun for a two-part turret
+		if ((ss->system_info->turret_gun_sobj >= 0) &&
+			(ss->system_info->turret_gun_sobj != ss->system_info->subobj_num)) {
+			bsp_info* bsp_turret = &pm->submodel[ss->system_info->turret_gun_sobj];
+
+			front_top_left = bsp_turret->bounding_box[7];
+			front_top_right = bsp_turret->bounding_box[6];
+			front_bot_left = bsp_turret->bounding_box[4];
+			front_bot_right = bsp_turret->bounding_box[5];
+			back_top_left = bsp_turret->bounding_box[3];
+			back_top_right = bsp_turret->bounding_box[2];
+			back_bot_left = bsp_turret->bounding_box[0];
+			back_bot_right = bsp_turret->bounding_box[1];
+
+			g3_start_instance_matrix(&bsp_turret->offset,
+				&pmi->submodel[ss->system_info->turret_gun_sobj].canonical_orient,
+				true);
+
+			g3_draw_htl_line(&front_top_left, &front_top_right);
+			g3_draw_htl_line(&front_top_right, &front_bot_right);
+			g3_draw_htl_line(&front_bot_right, &front_bot_left);
+			g3_draw_htl_line(&front_bot_left, &front_top_left);
+
+			g3_draw_htl_line(&back_top_left, &back_top_right);
+			g3_draw_htl_line(&back_top_right, &back_bot_right);
+			g3_draw_htl_line(&back_bot_right, &back_bot_left);
+			g3_draw_htl_line(&back_bot_left, &back_top_left);
+
+			g3_draw_htl_line(&front_top_left, &back_top_left);
+			g3_draw_htl_line(&front_top_right, &back_top_right);
+			g3_draw_htl_line(&front_bot_left, &back_bot_left);
+			g3_draw_htl_line(&front_bot_right, &back_bot_right);
+
+			g3_done_instance(true);
+		}
+
+		for (int i = 0; i < g3_count; i++)
+			g3_done_instance(true);
+
+		// get text
+		buf = ss->system_info->subobj_name;
+
+		// add weapons if present
+		for (int i = 0; i < ss->weapons.num_primary_banks; ++i) {
+			int wi = ss->weapons.primary_bank_weapons[i];
+			if (wi >= 0) {
+				buf += "\n";
+				buf += Weapon_info[wi].name;
+			}
+		}
+		for (int i = 0; i < ss->weapons.num_secondary_banks; ++i) {
+			int wi = ss->weapons.secondary_bank_weapons[i];
+			if (wi >= 0) {
+				buf += "\n";
+				buf += Weapon_info[wi].name;
+			}
+		}
+
+		gr_end_proj_matrix();
+		gr_end_view_matrix();
+		g3_end_frame();
+	}
+}
+
 void LabUi::buildSubsystemList(object* objp, ship* shipp) const {
 	ImGuiTreeNodeFlags node_flags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
 
 	with_TreeNode("Subsystems")
 	{
-		static ship_subsys* selected_subsys = nullptr;
 		int subsys_index = 0;
+		static SCP_vector<bool> show_subsys;
+		static int ship_class_idx = shipp->ship_info_index;
+		if (ship_class_idx != shipp->ship_info_index) {
+			ship_class_idx = shipp->ship_info_index;
+			show_subsys.clear();
+		}
 
 		for (auto cur_subsys = GET_FIRST(&shipp->subsys_list); cur_subsys != END_OF_LIST(&shipp->subsys_list);
 			 cur_subsys = GET_NEXT(cur_subsys)) {
-
-			auto leaf_flags = node_flags;
-			if (selected_subsys == cur_subsys) {
-				vec3d pos;
-				vm_vec_unrotate(&pos, &cur_subsys->system_info->pnt, &objp->orient);
-				debug_sphere::add(pos, cur_subsys->system_info->radius);
-				leaf_flags |= ImGuiTreeNodeFlags_Selected;
-			}
+			if (show_subsys.size() < subsys_index)
+				show_subsys.push_back(false);
 
 			auto subsys_name_tmp = cur_subsys->sub_name;
 			if (strlen(subsys_name_tmp) == 0)
@@ -508,13 +625,22 @@ void LabUi::buildSubsystemList(object* objp, ship* shipp) const {
 
 			with_TreeNode(subsys_name.c_str())
 			{
-				ImGui::TreeNodeEx("Highlight system", leaf_flags);
-				if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
-					selected_subsys = cur_subsys;
+				SCP_string node_name;
+				sprintf(node_name, "Highlight system##%s", subsys_name.c_str());
+
+				auto display_this = show_subsys[subsys_index] == true;
+
+				ImGui::Checkbox(node_name.c_str(), &display_this);
+
+				if (display_this) {
+					render_subsystem(cur_subsys, objp);
 				}
 
-				ImGui::TreeNodeEx("Destroy subsystem", leaf_flags);
-				if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
+				show_subsys[subsys_index] = display_this;
+
+				sprintf(node_name, "Destroy system##%s", subsys_name.c_str());
+
+				if (ImGui::Button(node_name.c_str())) {
 					cur_subsys->current_hits = 0;
 					do_subobj_destroyed_stuff(shipp, cur_subsys, nullptr);
 				}
