@@ -4,9 +4,6 @@
 
 using namespace io::spacemouse;
 
-constexpr static size_t SPACEMOUSE_HID_BUFFER_SIZE = 0xff;
-static unsigned char spacemouse_hid_buffer[SPACEMOUSE_HID_BUFFER_SIZE];
-
 #pragma pack(push,1)
 struct connexion_3d_old_protocol {
 	uint8_t type;
@@ -51,13 +48,14 @@ static size_t requiredPollCount(SpaceMouseDefinition::Protocol protocol) {
 
 void SpaceMouse::poll() {
 	for (size_t report = 0; report < requiredPollCount(m_definition.protocol); report++) {
-		int bytes_read = hid_read(m_deviceHandle, spacemouse_hid_buffer, SPACEMOUSE_HID_BUFFER_SIZE);
-		if (bytes_read <= 0)
-			continue;
-
 		switch (m_definition.protocol) {
 		case SpaceMouseDefinition::Protocol::CONNEXION_3D_OLD: {
-			const connexion_3d_old_protocol& data = *reinterpret_cast<connexion_3d_old_protocol*>(spacemouse_hid_buffer);
+			static connexion_3d_old_protocol data;
+
+			int bytes_read = hid_read(m_deviceHandle, reinterpret_cast<unsigned char*>(&data), sizeof(connexion_3d_old_protocol));
+			if (bytes_read <= 0)
+				continue;
+
 			switch (data.type) {
 			case 1:
 				m_current.translation.xyz.x = static_cast<float>(data.data.type1.trans_x) / 150.0f;
@@ -78,7 +76,12 @@ void SpaceMouse::poll() {
 			break;
 		}
 		case SpaceMouseDefinition::Protocol::CONNEXION_3D_NEW: {
-			const connexion_3d_new_protocol& data = *reinterpret_cast<connexion_3d_new_protocol*>(spacemouse_hid_buffer);
+			static connexion_3d_new_protocol data;
+
+			int bytes_read = hid_read(m_deviceHandle, reinterpret_cast<unsigned char*>(&data), sizeof(connexion_3d_new_protocol));
+			if (bytes_read <= 0)
+				continue;
+
 			switch (data.type) {
 			case 1:
 				m_current.translation.xyz.x = static_cast<float>(data.data.type1.trans_x) / 150.0f;
