@@ -20,8 +20,6 @@
 #include "globalincs/vmallocator.h"
 #include "utils/strings.h"
 
-#include "imgui.h"
-
 #include <cstdio>    // For NULL, etc
 #include <cstdlib>
 #include <memory.h>
@@ -484,31 +482,37 @@ SCP_string dump_stacktrace();
 	const auto ptr_memset = std::memset;
 	#define memset memset_if_trivial_else_error
 
+// Forward declarations from libraries
+struct ImDrawListSplitter;
+
 // Put into std to be compatible with code that uses std::mem*
 namespace std
 {
-	template<typename T>
-	using trivial_check = std::is_trivially_copyable<T>;
+template <typename T>
+using trivial_check = std::is_trivially_copyable<T>;
 
-	template<typename T>
-	void *memset_if_trivial_else_error(T *memset_data, int ch, size_t count)
-	{
-		static_assert(trivial_check<T>::value, "memset on non-trivial object");
-		return ptr_memset(memset_data, ch, count);
-	}
+template <typename T>
+void* memset_if_trivial_else_error(
+	typename std::enable_if<!std::is_same<T, ImDrawListSplitter>::value, T>::type* memset_data,
+	int ch,
+	size_t count)
+{
+	static_assert(trivial_check<T>::value, "memset on non-trivial object");
+	return ptr_memset(memset_data, ch, count);
+}
 
-	// assume memset on a void* is "safe"
-	// only used in cutscene/mveplayer.cpp:mve_video_createbuf()
-	inline void *memset_if_trivial_else_error(void *memset_data, int ch, size_t count)
-	{
-		return ptr_memset(memset_data, ch, count);
-	}
+// assume memset on a void* is "safe"
+// only used in cutscene/mveplayer.cpp:mve_video_createbuf()
+inline void* memset_if_trivial_else_error(void* memset_data, int ch, size_t count)
+{
+	return ptr_memset(memset_data, ch, count);
+}
 
-	// Dear ImGui triggers these as well, so we need to let them pass
-	inline void *memset_if_trivial_else_error(ImDrawListSplitter *memset_data, int ch, size_t count)
-	{
-		return ptr_memset(memset_data, ch, count);
-	}
+// Dear ImGui triggers these as well, so we need to let them pass
+inline void* memset_if_trivial_else_error(ImDrawListSplitter* memset_data, int ch, size_t count)
+{
+	return ptr_memset(memset_data, ch, count);
+}
 
 	// MEMCPY!
 	const auto ptr_memcpy = std::memcpy;
