@@ -8531,7 +8531,7 @@ void process_event_update_packet(ubyte *data, header *hinfo)
 
 	if (Mission_events[u_event].result && !Mission_events[u_event].satisfied_time.isValid()) {
 		Mission_events[u_event].satisfied_time = _timestamp();
-		if ( Mission_events[u_event].objective_text ) {
+		if ( !Mission_events[u_event].objective_text.empty() ) {
 			mission_event_set_completion_sound_timestamp();
 		}
 	}

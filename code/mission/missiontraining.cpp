@@ -250,11 +250,11 @@ void HudGaugeDirectives::render(float  /*frametime*/)
 
 		c = &Color_normal;
 		if (Training_obj_lines[i + offset] & TRAINING_OBJ_LINES_KEY) {
-			SCP_string temp_buf = message_translate_tokens(Mission_events[z].objective_key_text);  // remap keys
+			SCP_string temp_buf = message_translate_tokens(Mission_events[z].objective_key_text.c_str());  // remap keys
 			strcpy_s(buf, temp_buf.c_str());
 			c = &Color_bright_green;
 		} else {
-			strcpy_s(buf, Mission_events[z].objective_text);
+			strcpy_s(buf, Mission_events[z].objective_text.c_str());
 			if (Mission_events[z].count){
 				sprintf(buf + strlen(buf), NOX(" [%d]"), Mission_events[z].count);
 			}
@@ -277,7 +277,7 @@ void HudGaugeDirectives::render(float  /*frametime*/)
 
 			case EVENT_SATISFIED:
 				t = Mission_events[z].satisfied_time;
-				Assertion(t.isValid(), "Since event %s was satisfied, satisfied_time must be valid here", Mission_events[z].name);
+				Assertion(t.isValid(), "Since event %s was satisfied, satisfied_time must be valid here", Mission_events[z].name.c_str());
 				if (timestamp_since(t) < 2 * MILLISECONDS_PER_SECOND) {
 					if (Missiontime % fl2f(.4f) < fl2f(.2f)){
 						c = &Color_bright_blue;
@@ -406,7 +406,7 @@ void sort_training_objectives()
 			Training_obj_lines[i] |= TRAINING_OBJ_STATUS_UNKNOWN;
 			num_offset_events++;
 		} else if (event_status ==	EVENT_SATISFIED) {
-			Assertion(Mission_events[event_num].satisfied_time.isValid(), "Since event %s was satisfied, satisfied_time must be valid here", Mission_events[event_num].name);
+			Assertion(Mission_events[event_num].satisfied_time.isValid(), "Since event %s was satisfied, satisfied_time must be valid here", Mission_events[event_num].name.c_str());
 			if (timestamp_since(Mission_events[event_num].satisfied_time) < MIN_SATISFIED_TIME) {
 				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_UNKNOWN;
 				num_offset_events++;
@@ -414,7 +414,7 @@ void sort_training_objectives()
 				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_KNOWN;
 			}
 		} else if (event_status ==	EVENT_FAILED) {
-			Assertion(Mission_events[event_num].satisfied_time.isValid(), "Since event %s failed, satisfied_time must be valid here", Mission_events[event_num].name);
+			Assertion(Mission_events[event_num].satisfied_time.isValid(), "Since event %s failed, satisfied_time must be valid here", Mission_events[event_num].name.c_str());
 			if (timestamp_since(Mission_events[event_num].satisfied_time) < MIN_FAILED_TIME) {
 				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_UNKNOWN;
 				num_offset_events++;
@@ -445,14 +445,14 @@ void sort_training_objectives()
 		if (event_status == EVENT_CURRENT)  {
 			Training_obj_lines[i] |= TRAINING_OBJ_STATUS_UNKNOWN;
 		} else if (event_status ==	EVENT_SATISFIED) {
-			Assertion(Mission_events[event_num].satisfied_time.isValid(), "Since event %s was satisfied, satisfied_time must be valid here", Mission_events[event_num].name);
+			Assertion(Mission_events[event_num].satisfied_time.isValid(), "Since event %s was satisfied, satisfied_time must be valid here", Mission_events[event_num].name.c_str());
 			if (timestamp_since(Mission_events[event_num].satisfied_time) < MIN_SATISFIED_TIME) {
 				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_UNKNOWN;
 			} else {
 				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_KNOWN;
 			}
 		} else if (event_status ==	EVENT_FAILED) {
-			Assertion(Mission_events[event_num].satisfied_time.isValid(), "Since event %s failed, satisfied_time must be valid here", Mission_events[event_num].name);
+			Assertion(Mission_events[event_num].satisfied_time.isValid(), "Since event %s failed, satisfied_time must be valid here", Mission_events[event_num].name.c_str());
 			if (timestamp_since(Mission_events[event_num].satisfied_time) < MIN_FAILED_TIME) {
 				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_UNKNOWN;
 			} else {
@@ -510,10 +510,10 @@ void training_check_objectives()
 	int i, event_idx, event_status;
 
 	Training_obj_num_lines = 0;
-	for (event_idx=0; event_idx<Num_mission_events; event_idx++) {
+	for (event_idx=0; event_idx<(int)Mission_events.size(); event_idx++) {
 		event_status = mission_get_event_status(event_idx);
-		if ( (event_status != EVENT_UNBORN) && Mission_events[event_idx].objective_text && (timestamp_since(Mission_events[event_idx].born_on_date) > Directive_wait_time) ) {
-			if (!Training_failure || !strnicmp(Mission_events[event_idx].name, XSTR( "Training failed", 423), 15)) {
+		if ( (event_status != EVENT_UNBORN) && !Mission_events[event_idx].objective_text.empty() && (timestamp_since(Mission_events[event_idx].born_on_date) > Directive_wait_time) ) {
+			if (!Training_failure || !strnicmp(Mission_events[event_idx].name.c_str(), XSTR( "Training failed", 423), 15)) {
 
 				// check for the actual objective
 				for (i=0; i<Training_obj_num_lines; i++) {
@@ -544,7 +544,7 @@ void training_check_objectives()
 				}
 
 				// if there is a keypress message with directive, process that too.
-				if (Mission_events[event_idx].objective_key_text) {
+				if (!Mission_events[event_idx].objective_key_text.empty()) {
 					if (event_status == EVENT_CURRENT) {
 
 						// not in objective list, need to add it

@@ -51,7 +51,6 @@ CMissionGoalsDlg::CMissionGoalsDlg(CWnd* pParent /*=NULL*/)
 	m_team = -1;
 	//}}AFX_DATA_INIT
 	m_goals_tree.m_mode = MODE_GOALS;
-	m_num_goals = 0;
 	m_goals_tree.link_modified(&modified);
 	modified = 0;
 	select_sexp_node = -1;
@@ -74,8 +73,6 @@ BOOL CMissionGoalsDlg::OnInitDialog()
 	m_goals_tree.setup((CEdit *) GetDlgItem(IDC_HELP_BOX));
 	load_tree();
 	create_tree();
-	if (m_num_goals >= MAX_GOALS)
-		GetDlgItem(IDC_BUTTON_NEW_GOAL)->EnableWindow(FALSE);
 
 	Goal_editor_dlg = this;
 	i = m_goals_tree.select_sexp_node;
@@ -102,7 +99,6 @@ void CMissionGoalsDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_NO_MUSIC, m_no_music);
 	DDX_CBIndex(pDX, IDC_OBJ_TEAM, m_team);
 	//}}AFX_DATA_MAP
-	DDV_MaxChars(pDX, m_goal_desc, MAX_GOAL_TEXT - 1);
 	DDV_MaxChars(pDX, m_name, NAME_LENGTH - 1);
 }
 
@@ -139,12 +135,14 @@ void CMissionGoalsDlg::load_tree()
 	select_sexp_node = -1;
 
 	m_goals_tree.clear_tree();
-	m_num_goals = Num_goals;
-	for (i=0; i<Num_goals; i++) {
-		m_goals[i] = Mission_goals[i];
-		m_sig[i] = i;
-		if (!(*m_goals[i].name))
-			strcpy_s(m_goals[i].name, "<unnamed>");
+	m_goals.clear();
+	m_sig.clear();
+	for (i=0; i<(int)Mission_goals.size(); i++) {
+		m_goals.push_back(Mission_goals[i]);
+		m_sig.push_back(i);
+
+		if (m_goals[i].name.empty())
+			m_goals[i].name = "<Unnamed>";
 
 		m_goals[i].formula = m_goals_tree.load_sub_tree(Mission_goals[i].formula, true, "true");
 	}
@@ -162,11 +160,11 @@ void CMissionGoalsDlg::create_tree()
 
 	m_goals_tree.DeleteAllItems();
 	m_goals_tree.reset_handles();
-	for (i=0; i<m_num_goals; i++) {
+	for (i=0; i<(int)m_goals.size(); i++) {
 		if ( (m_goals[i].type & GOAL_TYPE_MASK) != m_display_goal_types)
 			continue;
 
-		h = m_goals_tree.insert(m_goals[i].name);
+		h = m_goals_tree.insert(m_goals[i].name.c_str());
 		m_goals_tree.SetItemData(h, m_goals[i].formula);
 		m_goals_tree.add_sub_tree(m_goals[i].formula, h);
 	}
@@ -199,11 +197,11 @@ void CMissionGoalsDlg::OnSelchangedGoalsTree(NMHDR* pNMHDR, LRESULT* pResult)
 		h = h2;
 
 	z = (int)m_goals_tree.GetItemData(h);
-	for (i=0; i<m_num_goals; i++)
+	for (i=0; i<(int)m_goals.size(); i++)
 		if (m_goals[i].formula == z)
 			break;
 
-	Assert(i < m_num_goals);
+	Assert(i < (int)m_goals.size());
 	cur_goal = i;
 	update_cur_goal();
 	*pResult = 0;
@@ -230,8 +228,8 @@ void CMissionGoalsDlg::update_cur_goal()
 		return;
 	}
 
-	m_name = _T(m_goals[cur_goal].name);
-	m_goal_desc = _T(m_goals[cur_goal].message);
+	m_name = _T(m_goals[cur_goal].name.c_str());
+	m_goal_desc = _T(m_goals[cur_goal].message.c_str());
 	m_goal_type = m_goals[cur_goal].type & GOAL_TYPE_MASK;
 	if ( m_goals[cur_goal].type & INVALID_GOAL ){
 		m_goal_invalid = 1;
@@ -313,13 +311,13 @@ int CMissionGoalsDlg::query_modified()
 	if (modified)
 		return 1;
 
-	if (Num_goals != m_num_goals)
+	if (Mission_goals.size() != m_goals.size())
 		return 1;
 
-	for (i=0; i<Num_goals; i++) {
-		if (stricmp(Mission_goals[i].name, m_goals[i].name))
+	for (i=0; i<(int)Mission_goals.size(); i++) {
+		if (!SCP_string_lcase_equal_to()(Mission_goals[i].name, m_goals[i].name))
 			return 1;
-		if (stricmp(Mission_goals[i].message, m_goals[i].message))
+		if (!SCP_string_lcase_equal_to()(Mission_goals[i].message, m_goals[i].message))
 			return 1;
 		if (Mission_goals[i].type != m_goals[i].type)
 			return 1;
@@ -334,51 +332,52 @@ int CMissionGoalsDlg::query_modified()
 
 void CMissionGoalsDlg::OnOk()
 {
-	char buf[256], names[2][MAX_GOALS][NAME_LENGTH];
-	int i, count;
-
-	for (i=0; i<Num_goals; i++)
-		free_sexp2(Mission_goals[i].formula);
+	SCP_vector<std::pair<SCP_string, SCP_string>> names;
+	int i;
 
 	UpdateData(TRUE);
 	if (query_modified())
 		set_modified();
 
-	count = 0;
-	for (i=0; i<Num_goals; i++)
-		Mission_goals[i].satisfied = 0;  // use this as a processed flag
+	for (auto &goal: Mission_goals) {
+		free_sexp2(goal.formula);
+		goal.satisfied = 0;  // use this as a processed flag
+	}
 	
-	// rename all sexp references to old events
-	for (i=0; i<m_num_goals; i++)
+	// rename all sexp references to old goals
+	for (i=0; i<(int)m_goals.size(); i++) {
 		if (m_sig[i] >= 0) {
-			strcpy_s(names[0][count], Mission_goals[m_sig[i]].name);
-			strcpy_s(names[1][count], m_goals[i].name);
-			count++;
+			names.emplace_back(Mission_goals[m_sig[i]].name, m_goals[i].name);
 			Mission_goals[m_sig[i]].satisfied = 1;
 		}
+	}
 
-	// invalidate all sexp references to deleted events.
-	for (i=0; i<Num_goals; i++)
-		if (!Mission_goals[i].satisfied) {
-			sprintf(buf, "<%s>", Mission_goals[i].name);
-			strcpy(buf + NAME_LENGTH - 2, ">");  // force it to be not too long
-			strcpy_s(names[0][count], Mission_goals[i].name);
-			strcpy_s(names[1][count], buf);
-			count++;
+	// invalidate all sexp references to deleted goals.
+	for (const auto &goal: Mission_goals) {
+		if (!goal.satisfied) {
+			SCP_string buf = "<" + goal.name + ">";
+
+			// force it to not be too long
+			if (SCP_truncate(buf, NAME_LENGTH))
+				buf.back() = '>';
+
+			names.emplace_back(goal.name, buf);
 		}
+	}
 
-	Num_goals = m_num_goals;
-	for (i=0; i<Num_goals; i++) {
-		Mission_goals[i] = m_goals[i];
-		Mission_goals[i].formula = m_goals_tree.save_tree(Mission_goals[i].formula);
+	// copy all dialog goals to the mission
+	Mission_goals.clear();
+	for (const auto &dialog_goal: m_goals) {
+		Mission_goals.push_back(dialog_goal);
+		Mission_goals.back().formula = m_goals_tree.save_tree(dialog_goal.formula);
 		if ( The_mission.game_type & MISSION_TYPE_MULTI_TEAMS ) {
-			Assert( Mission_goals[i].team != -1 );
+			Assert( dialog_goal.team != -1 );
 		}
 	}
 
 	// now update all sexp references
-	while (count--)
-		update_sexp_references(names[0][count], names[1][count], OPF_GOAL_NAME);
+	for (const auto &name_pair: names)
+		update_sexp_references(name_pair.first.c_str(), name_pair.second.c_str(), OPF_GOAL_NAME);
 
 	theApp.record_window_data(&Mission_goals_wnd_data, this);
 	CDialog::OnOK();
@@ -389,51 +388,36 @@ void CMissionGoalsDlg::OnButtonNewGoal()
 	int index;
 	HTREEITEM h;
 
-	Assert(m_num_goals < MAX_GOALS);
-	m_goals[m_num_goals].type = m_display_goal_types;			// this also marks the goal as valid since bit not set
-	m_sig[m_num_goals] = -1;
-	strcpy_s(m_goals[m_num_goals].name, "Goal name");
-	strcpy_s(m_goals[m_num_goals].message, "Mission goal text");
-	h = m_goals_tree.insert(m_goals[m_num_goals].name);
+	m_goals.emplace_back();
+	m_sig.push_back(-1);
+
+	m_goals.back().type = m_display_goal_types;			// this also marks the goal as valid since bit not set
+	m_goals.back().name = "Goal name";
+	m_goals.back().message = "Mission goal text";
+	h = m_goals_tree.insert(m_goals.back().name.c_str());
 
 	m_goals_tree.item_index = -1;
 	m_goals_tree.add_operator("true", h);
-	m_goals[m_num_goals].score = 0;
-	index = m_goals[m_num_goals].formula = m_goals_tree.item_index;
+	index = m_goals.back().formula = m_goals_tree.item_index;
 	m_goals_tree.SetItemData(h, index);
-
-	// team defaults to the first team.
-	m_goals[m_num_goals].team = 0;
-
-	m_num_goals++;
-
-	if (m_num_goals >= MAX_GOALS){
-		GetDlgItem(IDC_BUTTON_NEW_GOAL)->EnableWindow(FALSE);
-	}
 
 	m_goals_tree.SelectItem(h);
 }
 
 int CMissionGoalsDlg::handler(int code, int node)
 {
-	int goal;
+	int i;
 
 	switch (code) {
 	case ROOT_DELETED:
-		for (goal=0; goal<m_num_goals; goal++){
-			if (m_goals[goal].formula == node){
+		for (i=0; i<(int)m_goals.size(); i++)
+			if (m_goals[i].formula == node)
 				break;
-			}
-		}
 
-		Assert(goal < m_num_goals);
-		while (goal < m_num_goals - 1) {
-			m_goals[goal] = m_goals[goal + 1];
-			m_sig[goal] = m_sig[goal + 1];
-			goal++;
-		}
-		m_num_goals--;
-		GetDlgItem(IDC_BUTTON_NEW_GOAL)->EnableWindow(TRUE);
+		Assert(i < (int)m_goals.size());
+		m_goals.erase(m_goals.begin() + i);
+		m_sig.erase(m_sig.begin() + i);
+
 		return node;
 
 	default:
@@ -450,7 +434,7 @@ void CMissionGoalsDlg::OnChangeGoalDesc()
 	}
 
 	UpdateData(TRUE);
-	string_copy(m_goals[cur_goal].message, m_goal_desc, MAX_GOAL_TEXT - 1);
+	string_copy(m_goals[cur_goal].message, m_goal_desc);
 }
 
 void CMissionGoalsDlg::OnChangeGoalRating() 
@@ -511,7 +495,7 @@ void CMissionGoalsDlg::OnChangeGoalName()
 	}
 
 	m_goals_tree.SetItemText(h, m_name);
-	string_copy(m_goals[cur_goal].name, m_name, NAME_LENGTH - 1);
+	string_copy(m_goals[cur_goal].name, m_name);
 }
 
 void CMissionGoalsDlg::OnCancel()
@@ -542,13 +526,13 @@ void CMissionGoalsDlg::insert_handler(int old, int node)
 {
 	int i;
 
-	for (i=0; i<m_num_goals; i++){
+	for (i=0; i<(int)m_goals.size(); i++){
 		if (m_goals[i].formula == old){
 			break;
 		}
 	}
 
-	Assert(i < m_num_goals);
+	Assert(i < (int)m_goals.size());
 	m_goals[i].formula = node;
 	return;
 }
@@ -580,19 +564,19 @@ void CMissionGoalsDlg::move_handler(int node1, int node2, bool insert_before)
 	int index1, index2, s;
 	mission_goal g;
 
-	for (index1=0; index1<m_num_goals; index1++){
+	for (index1=0; index1<(int)m_goals.size(); index1++){
 		if (m_goals[index1].formula == node1){
 			break;
 		}
 	}
-	Assert(index1 < m_num_goals);
+	Assert(index1 < (int)m_goals.size());
 
-	for (index2=0; index2<m_num_goals; index2++){
+	for (index2=0; index2<(int)m_goals.size(); index2++){
 		if (m_goals[index2].formula == node2){
 			break;
 		}
 	}
-	Assert(index2 < m_num_goals);
+	Assert(index2 < (int)m_goals.size());
 
 	g = m_goals[index1];
 	s = m_sig[index1];

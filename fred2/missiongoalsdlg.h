@@ -15,7 +15,6 @@
 /////////////////////////////////////////////////////////////////////////////
 // CMissionGoalsDlg dialog
 
-#define MAX_GOAL_ELEMENTS 300
 #define OPERAND	0x01
 #define EDITABLE	0x02
 
@@ -87,9 +86,8 @@ protected:
 	DECLARE_MESSAGE_MAP()
 
 	int cur_goal;
-	int m_num_goals;
-	int m_sig[MAX_GOALS];
-	mission_goal m_goals[MAX_GOALS];
+	SCP_vector<int> m_sig;
+	SCP_vector<mission_goal> m_goals;
 	int modified;
 };
 

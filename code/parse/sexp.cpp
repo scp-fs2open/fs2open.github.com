@@ -880,7 +880,8 @@ const char *Skybox_flags[] = {
 
 int	Directive_count;
 int	Sexp_useful_number;  // a variable to pass useful info in from external modules
-int	Locked_sexp_true, Locked_sexp_false;
+int	Locked_sexp_true = -1;
+int	Locked_sexp_false = -1;
 int	Num_sexp_ai_goal_links = sizeof(Sexp_ai_goal_links) / sizeof(sexp_ai_goal_link);
 int	Sexp_clipboard = -1;  // used by Fred
 int	Training_context = 0;
@@ -1835,6 +1836,32 @@ int count_items_with_name(const char *name, const T* item_array, int num_items)
 	int count = 0;
 	for (int i = 0; i < num_items; ++i)
 		if (!stricmp(name, item_array[i].name))
+			++count;
+
+	return count;
+}
+
+template <typename T>
+int count_items_with_name(const char *name, const T& item_vector)
+{
+	Assert(name != nullptr);
+
+	int count = 0;
+	for (const auto &item: item_vector)
+		if (!stricmp(name, item.name))
+			++count;
+
+	return count;
+}
+
+template <typename T>
+int count_items_with_scp_string_name(const char *name, const T& item_vector)
+{
+	Assert(name != nullptr);
+
+	int count = 0;
+	for (const auto &item: item_vector)
+		if (!stricmp(name, item.name.c_str()))
 			++count;
 
 	return count;
@@ -3144,14 +3171,17 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 						return SEXP_CHECK_INVALID_MISSION_NAME;
 					}
 
-					// read the goal/event list from the mission file if both num_goals and num_events are <= 0
-					if ((Campaign.missions[i].num_goals <= 0) && (Campaign.missions[i].num_events <= 0))
+					// read the goal/event list from the mission file if we need to
+					if (Campaign.missions[i].flags & CMISSION_FLAG_FRED_LOAD_PENDING)
+					{
 						read_mission_goal_list(i);
+						Campaign.missions[i].flags &= ~CMISSION_FLAG_FRED_LOAD_PENDING;
+					}
 
 					if (type == OPF_GOAL_NAME) {
-						count = count_items_with_name(CTEXT(node), Campaign.missions[i].goals, Campaign.missions[i].num_goals);
+						count = count_items_with_name(CTEXT(node), Campaign.missions[i].goals);
 					} else if (type == OPF_EVENT_NAME) {
-						count = count_items_with_name(CTEXT(node), Campaign.missions[i].events, Campaign.missions[i].num_events);
+						count = count_items_with_name(CTEXT(node), Campaign.missions[i].events);
 					} else {
 						UNREACHABLE("type == %d; expected OPF_GOAL_NAME or OPF_EVENT_NAME", type);
 					}
@@ -3160,13 +3190,13 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					if ((Operators[op].value == OP_PREVIOUS_GOAL_TRUE) || (Operators[op].value == OP_PREVIOUS_GOAL_FALSE) || (Operators[op].value == OP_PREVIOUS_GOAL_INCOMPLETE))
 						break;
 
-					count = count_items_with_name(CTEXT(node), Mission_goals, Num_goals);
+					count = count_items_with_scp_string_name(CTEXT(node), Mission_goals);
 				} else if (type == OPF_EVENT_NAME) {
 					// neither the previous mission nor the previous event is guaranteed to exist (missions can be developed out of sequence), so we don't need to check them
 					if ((Operators[op].value == OP_PREVIOUS_EVENT_TRUE) || (Operators[op].value == OP_PREVIOUS_EVENT_FALSE) || (Operators[op].value == OP_PREVIOUS_EVENT_INCOMPLETE))
 						break;
 
-					count = count_items_with_name(CTEXT(node), Mission_events, Num_mission_events);
+					count = count_items_with_scp_string_name(CTEXT(node), Mission_events);
 				} else {
 					UNREACHABLE("type == %d; expected OPF_GOAL_NAME or OPF_EVENT_NAME", type);
 				}
@@ -13693,8 +13723,8 @@ void sexp_send_message_list(int n, bool send_message_chain)
 		auto name = CTEXT(n);
 		n = CDR(n);
 
-		for (int i = 0; i < Num_mission_events; ++i) {
-			if (!stricmp(Mission_events[i].name, name)) {
+		for (int i = 0; i < (int)Mission_events.size(); ++i) {
+			if (!stricmp(Mission_events[i].name.c_str(), name)) {
 				event_num = i;
 				break;
 			}
@@ -16761,12 +16791,12 @@ int sexp_previous_goal_status( int n, int status )
 		} else {
 			// now try and find the goal this mission
 			mission_num = i;
-			for (i = 0; i < Campaign.missions[mission_num].num_goals; i++) {
+			for (i = 0; i < (int)Campaign.missions[mission_num].goals.size(); i++) {
 				if ( !stricmp(Campaign.missions[mission_num].goals[i].name, goal_name) )
 					break;
 			}
 
-			if ( i == Campaign.missions[mission_num].num_goals ) {
+			if ( i == (int)Campaign.missions[mission_num].goals.size() ) {
 				Warning(LOCATION, "Couldn't find goal name \"%s\" in mission %s.\nReturning %s for goal-true function.", goal_name, mission_name, (status==GOAL_COMPLETE)?"false":"true");
 				if ( status == GOAL_COMPLETE )
 					rval = SEXP_KNOWN_FALSE;
@@ -16841,12 +16871,12 @@ int sexp_previous_event_status( int n, int status )
 		} else {
 			// now try and find the goal this mission
 			mission_num = i;
-			for (i = 0; i < Campaign.missions[mission_num].num_events; i++) {
+			for (i = 0; i < (int)Campaign.missions[mission_num].events.size(); i++) {
 				if ( !stricmp(Campaign.missions[mission_num].events[i].name, name) )
 					break;
 			}
 
-			if ( i == Campaign.missions[mission_num].num_events ) {
+			if ( i == (int)Campaign.missions[mission_num].events.size() ) {
 				Warning(LOCATION, "Couldn't find event name \"%s\" in mission %s.\nReturning %s for event_status function.", name, mission_name, (status==EVENT_SATISFIED)?"false":"true");
 				if ( status == EVENT_SATISFIED )
 					rval = SEXP_KNOWN_FALSE;
@@ -16892,9 +16922,9 @@ int sexp_event_status( int n, int want_true )
 {
 	auto name = CTEXT(n);
 
-	for (int i = 0; i < Num_mission_events; ++i) {
-		// look for the event name, check it's status.  If formula is gone, we know the state won't ever change.
-		if ( !stricmp(Mission_events[i].name, name) ) {
+	for (int i = 0; i < (int)Mission_events.size(); ++i) {
+		// look for the event name; check its status.  If formula is gone, we know the state won't ever change.
+		if ( !stricmp(Mission_events[i].name.c_str(), name) ) {
 			int result = Mission_events[i].result;
 			if (Mission_events[i].formula < 0) {
 				if ( (want_true && result) || (!want_true && !result) )
@@ -16939,9 +16969,9 @@ int sexp_event_delay_status( int n, int want_true, bool use_msecs = false)
 		delay *= MILLISECONDS_PER_SECOND;
 	}
 
-	for (int i = 0; i < Num_mission_events; ++i) {
+	for (int i = 0; i < (int)Mission_events.size(); ++i) {
 		// look for the event name; check its status.  If formula is gone, we know the state won't ever change.
-		if ( !stricmp(Mission_events[i].name, name) ) {
+		if ( !stricmp(Mission_events[i].name.c_str(), name) ) {
 			// deduct the interval using the same logic as in mission_process_event()
 			if (Mission_events[i].flags & MEF_TIMESTAMP_HAS_INTERVAL) {
 				if (Mission_events[i].flags & MEF_USE_MSECS) {
@@ -16997,8 +17027,8 @@ int sexp_event_incomplete(int n)
 {
 	auto name = CTEXT(n);
 	
-	for (int i = 0; i < Num_mission_events; ++i) {
-		if ( !stricmp(Mission_events[i].name, name ) ) {
+	for (int i = 0; i < (int)Mission_events.size(); ++i) {
+		if ( !stricmp(Mission_events[i].name.c_str(), name ) ) {
 			// if the formula is still >= 0 (meaning it is still getting eval'ed), then
 			// the event is incomplete
 			if ( Mission_events[i].formula != -1 )
@@ -25411,7 +25441,7 @@ void maybe_write_to_event_log(int result)
 	char buffer [256]; 
 
 	int mask = generate_event_log_flags_mask(result); 
-	sprintf(buffer, "Event: %s at mission time %d seconds (%d milliseconds)", Mission_events[Event_index].name, f2i(Missiontime), f2i((longlong)Missiontime * 1000));
+	sprintf(buffer, "Event: %s at mission time %d seconds (%d milliseconds)", Mission_events[Event_index].name.c_str(), f2i(Missiontime), f2i((longlong)Missiontime * MILLISECONDS_PER_SECOND));
 	Current_event_log_buffer->push_back(buffer);
 		
 	if (!Snapshot_all_events && (!(mask &=  Mission_events[Event_index].mission_log_flags))) {
@@ -31887,13 +31917,13 @@ int query_referenced_in_sexp(int  /*mode*/, const char *name, int *node)
 		}
 	}
 
-	for (i=0; i<Num_mission_events; i++){
+	for (i=0; i<(int)Mission_events.size(); i++){
 		if (query_node_in_sexp(n, Mission_events[i].formula)){
 			return i | SRC_EVENT;
 		}
 	}
 
-	for (i=0; i<Num_goals; i++){
+	for (i=0; i<(int)Mission_goals.size(); i++){
 		if (query_node_in_sexp(n, Mission_goals[i].formula)){
 			return i | SRC_MISSION_GOAL;
 		}

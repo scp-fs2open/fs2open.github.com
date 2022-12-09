@@ -70,11 +70,6 @@ int Local_modified = 0;
 int Undo_available = 0;
 int Undo_count = 0;
 
-// From Missionsave.cpp
-extern int Num_unknown_ship_classes;
-extern int Num_unknown_weapon_classes;
-extern int Num_unknown_loadout_classes;
-
 
 CFREDDoc::CFREDDoc() {
 	int i;
