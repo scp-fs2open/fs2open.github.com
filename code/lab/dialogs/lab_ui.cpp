@@ -240,7 +240,7 @@ void LabUi::buildTextureQualityCombobox()
 	}
 }
 
-void buildTeamColorCombobox()
+void LabUi::buildTeamColorCombobox() const
 {
 	if (!Team_Colors.empty()) {
 		with_Combo("Team Color setting", getLabManager()->Renderer->getCurrentTeamColor().c_str())
@@ -410,10 +410,10 @@ void LabUi::showRenderOptions()
 	}
 }
 
-void do_triggered_anim(animation::ModelAnimationTriggerType type,
+void LabUi::do_triggered_anim(animation::ModelAnimationTriggerType type,
 	const SCP_string& name,
 	bool direction,
-	int subtype = animation::ModelAnimationSet::SUBTYPE_DEFAULT)
+	int subtype) const
 {
 	if (getLabManager()->isSafeForShips()) {
 		auto shipp = &Ships[Objects[getLabManager()->CurrentObject].instance];
@@ -457,7 +457,7 @@ void LabUi::buildTableInfoTxtbox(ship_info* sip) const
 	}
 }
 
-void buildModelInfoBox_actual(ship_info* sip, polymodel* pm)
+void LabUi::buildModelInfoBox_actual(ship_info* sip, polymodel* pm) const
 {
 	ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg;
 
@@ -601,7 +601,7 @@ void LabUi::buildWeaponOptions(ship* shipp) const {
 	}
 }
 
-void reset_animations(ship* shipp, ship_info* sip)
+void LabUi::reset_animations(ship* shipp, ship_info* sip) const
 {
 	polymodel_instance* shipp_pmi = model_get_instance(shipp->model_instance_num);
 
@@ -634,8 +634,8 @@ void reset_animations(ship* shipp, ship_info* sip)
 	}
 }
 
-void maybeShowAnimationCategory(const SCP_vector<animation::ModelAnimationSet::RegisteredTrigger>& anim_triggers,
-	animation::ModelAnimationTriggerType trigger_type, SCP_string label)
+void LabUi::maybeShowAnimationCategory(const SCP_vector<animation::ModelAnimationSet::RegisteredTrigger>& anim_triggers,
+	animation::ModelAnimationTriggerType trigger_type, SCP_string label) const
 {
 	if (std::any_of(anim_triggers.begin(), anim_triggers.end(), [trigger_type](animation::ModelAnimationSet::RegisteredTrigger t) {
 			return t.type == trigger_type;
@@ -660,7 +660,7 @@ void maybeShowAnimationCategory(const SCP_vector<animation::ModelAnimationSet::R
 	}
 }
 
-void buildAnimationOptions(ship* shipp, ship_info* sip)
+void LabUi::buildAnimationOptions(ship* shipp, ship_info* sip) const
 {
 	with_TreeNode("Animations")
 	{

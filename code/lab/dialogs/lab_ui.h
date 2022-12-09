@@ -27,6 +27,17 @@ class LabUi {
 	void buildModelInfoBox(ship_info* sip, polymodel* pm) const;
 	void buildSubsystemList(object* objp, ship* shipp) const;
 	void buildWeaponOptions(ship* shipp) const;
+	void buildAnimationOptions(ship* shipp, ship_info* sip) const;
+	void buildModelInfoBox_actual(ship_info* sip, polymodel* pm) const;
+	void buildTeamColorCombobox() const;
+	void reset_animations(ship* shipp, ship_info* sip) const;
+	void do_triggered_anim(animation::ModelAnimationTriggerType type,
+		const SCP_string& name,
+		bool direction,
+		int subtype = animation::ModelAnimationSet::SUBTYPE_DEFAULT) const;
+	void maybeShowAnimationCategory(const SCP_vector<animation::ModelAnimationSet::RegisteredTrigger>& anim_triggers,
+		animation::ModelAnimationTriggerType trigger_type,
+		SCP_string label) const;
 
 	// if this is true, the displayed object has changed and so every piece of cached data related to
 	// the object must be invalidated
