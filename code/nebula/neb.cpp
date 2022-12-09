@@ -191,7 +191,7 @@ void parse_nebula_table(const char* filename)
 			optional_string("+Nebula:");
 			stuff_string(name, F_NAME, MAX_FILENAME_LEN);
 
-			if (!(generic_bitmap_exists(name))) {
+			if (!generic_bitmap_exists(name) && !generic_anim_exists(name)) {
 				error_display(0, "Nebula bitmap %s was not found!, skipping!", name);
 				continue;
 			}
@@ -217,7 +217,7 @@ void parse_nebula_table(const char* filename)
 
 				strcpy_s(pooft.name, name);
 
-				if (!(generic_bitmap_exists(pooft.bitmap_filename))) {
+				if (!generic_bitmap_exists(pooft.bitmap_filename) && !generic_anim_exists(pooft.bitmap_filename)) {
 					error_display(0, "Bitmap defined for nebula poof %s was not found. Skipping!", pooft.name);
 					continue;
 				}
@@ -284,7 +284,7 @@ void parse_nebula_table(const char* filename)
 				}
 
 				//We can't skip here because we'd have to back out the entire poof from the vector-Mjn
-				if (!(generic_bitmap_exists(poofp->bitmap_filename)))
+				if (!generic_bitmap_exists(poofp->bitmap_filename) && !generic_anim_exists(poofp->bitmap_filename))
 					error_display(0, "Bitmap defined for nebula poof %s was not found!", poofp->name);
 
 				if (optional_string("$Scale:"))
@@ -484,15 +484,16 @@ void neb2_post_level_init(bool fog_color_override)
 	// load in all nebula bitmaps
 	for (poof_info &pinfo : Poof_info) {
 		if (pinfo.bitmap.first_frame < 0) {
-			pinfo.bitmap.first_frame = bm_load(pinfo.bitmap_filename);
-
-			if (pinfo.bitmap.first_frame >= 0) {
-				pinfo.bitmap.num_frames = 1;
-				pinfo.bitmap.total_time = 1.0f;
-			}		// fall back to an animated type
-			else if (generic_anim_load(&pinfo.bitmap)) {
-				mprintf(("Could not find a usable bitmap for nebula poof '%s'!\n", pinfo.name));
-				Warning(LOCATION, "Could not find a usable bitmap (%s) for nebula poof '%s'!\n", pinfo.bitmap_filename, pinfo.name);
+			if (generic_anim_load(&pinfo.bitmap)) {
+				// fall back to non-animated type
+				pinfo.bitmap.first_frame = bm_load(pinfo.bitmap_filename);
+				if (pinfo.bitmap.first_frame >= 0) {
+					pinfo.bitmap.num_frames = 1;
+					pinfo.bitmap.total_time = 1.0f;
+				} else {
+					mprintf(("Could not find a usable bitmap for nebula poof '%s'!\n", pinfo.name));
+					Warning(LOCATION, "Could not find a usable bitmap (%s) for nebula poof '%s'!\n", pinfo.bitmap_filename, pinfo.name);
+				}
 			}
 		}
 	}
