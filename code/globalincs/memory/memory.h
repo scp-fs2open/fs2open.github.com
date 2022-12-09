@@ -47,17 +47,6 @@ inline void *vm_realloc(void *ptr, size_t size)
 	return ret_ptr;
 }
 
-
-// For use with unique_ptr
-template <typename T>
-struct FreeDeleter
-{
-	void operator()(T* const p) const
-	{
-		free(p);
-	}
-};
-
 // For use with unique_ptr
 template <typename T>
 struct VmFreeDeleter
@@ -67,3 +56,8 @@ struct VmFreeDeleter
 		vm_free(p);
 	}
 };
+
+// Managed unique pointer for data allocated using vm_malloc.  Never use with data allocated with new or malloc;
+// allocation and deallocation must always be performed using matching operations.
+template<typename T>
+using SCP_vm_unique_ptr = std::unique_ptr<T, VmFreeDeleter<T>>;

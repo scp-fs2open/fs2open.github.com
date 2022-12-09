@@ -141,7 +141,7 @@ typedef struct message_q {
 	TIMESTAMP window_timestamp;		// timestamp which will tell us how long we have to play the message
 	int	priority;					// priority of the message
 	int	message_num;				// index into the Messages[] array
-	std::unique_ptr<char, VmFreeDeleter<char>> special_message;	// Goober5000 - message to play if we've replaced stuff (like variables)
+	SCP_vm_unique_ptr<char> special_message;	// Goober5000 - message to play if we've replaced stuff (like variables)
 	char who_from[NAME_LENGTH];		// who this message is from
 	int	source;						// who the source of the message is (HUD_SOURCE_* type)
 	int	builtin_type;				// type of builtin message (-1 if mission message)
