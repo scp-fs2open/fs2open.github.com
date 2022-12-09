@@ -9,6 +9,7 @@
 #cmakedefine SCP_HAVE_STD_MAX_ALIGN_T
 
 #cmakedefine01 IS_64BIT
+#cmakedefine01 IS_ARM64
 
 #cmakedefine01 SCP_HAVE_STRCASECMP
 #cmakedefine01 SCP_HAVE_STRNCASECMP
