@@ -73,7 +73,7 @@ static void rank_stuff_init(rank_stuff* ranki)
 {
 	ranki->name[0] = '\0';
 	ranki->promotion_text = {};
-	ranki->points = 1;
+	ranki->points = -1;
 	ranki->bitmap[0] = '\0';
 	ranki->promotion_voice_base[0] = '\0';
 }
@@ -138,7 +138,10 @@ void parse_rank_table(const char* filename)
 
 			if (optional_string("$Points:")) {
 				stuff_int(&rank_p->points);
-			} else {
+			} 
+			
+			// If points are not set then set it to index position + 1
+			if (rank_p->points == -1) {
 				rank_p->points = ((int)Ranks.size() + 1);
 			}
 
@@ -153,7 +156,10 @@ void parse_rank_table(const char* filename)
 
 			if (optional_string("$Promotion Voice Base:")) {
 				stuff_string(rank_p->promotion_voice_base, F_NAME, MAX_FILENAME_LEN);
-			} else {
+			} 
+
+			// If voice base is not set then set it to the rank name
+			if (rank_p->promotion_voice_base[0] == '\0') {
 				strcpy(rank_p->promotion_voice_base, rank_p->name);
 			}
 
