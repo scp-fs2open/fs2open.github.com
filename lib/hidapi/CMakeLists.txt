@@ -40,11 +40,11 @@ if(APPLE)
 elseif(NOT WIN32)
     if(CMAKE_SYSTEM_NAME MATCHES "Linux")
         option(HIDAPI_WITH_HIDRAW "Build HIDRAW-based implementation of HIDAPI" ON)
-        option(HIDAPI_WITH_LIBUSB "Build LIBUSB-based implementation of HIDAPI" ON)
+        option(HIDAPI_WITH_LIBUSB "Build LIBUSB-based implementation of HIDAPI" OFF)
     endif()
 endif()
 
-option(BUILD_SHARED_LIBS "Build shared version of the libraries, otherwise build statically" ON)
+option(BUILD_SHARED_LIBS "Build shared version of the libraries, otherwise build statically" OFF)
 
 set(HIDAPI_INSTALL_TARGETS ON)
 set(HIDAPI_PRINT_VERSION ON)
