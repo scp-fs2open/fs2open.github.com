@@ -189,7 +189,7 @@ DynamicSEXP* get_dynamic_sexp(int operator_const)
 }
 int get_category_of_subcategory(int subcategory_id)
 {
-	auto& global = globals();
+	const auto& global = globals();
 
 	auto iter = global.subcategory_to_category.find(subcategory_id);
 	if (iter == global.subcategory_to_category.end()) {
@@ -202,6 +202,12 @@ void dynamic_sexp_init()
 {
 	auto& global = globals();
 	global.initialized = true;
+
+	// Add built-in subcategories
+	for (auto& item : op_submenu) {
+		int category = category_of_subcategory(item.id);
+		global.subcategory_to_category.emplace(item.id, category);
+	}
 
 	// Add pending sexps now when it is safe to do so
 	for (auto&& pending : global.pending_sexps) {
@@ -240,7 +246,7 @@ int add_subcategory(int parent_category, const SCP_string& name)
 
 	int subcategory_id = global.next_free_subcategory_id++;
 	op_submenu.push_back({ name, subcategory_id });
-	global.subcategory_to_category[subcategory_id] = parent_category;
+	global.subcategory_to_category.emplace(subcategory_id, parent_category);
 	return subcategory_id;
 }
 
