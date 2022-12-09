@@ -46,8 +46,12 @@ target_compile_options(compiler INTERFACE ${WARNING_FLAGS})
 set(CMAKE_C_FLAGS "/MP /GS- /analyze- /Zc:wchar_t /errorReport:prompt /Zc:forScope /Gd /EHsc /nologo /Zm200")
 set(CMAKE_CXX_FLAGS "/MP /GS- /analyze- /Zc:wchar_t /errorReport:prompt /Zc:forScope /Gd /EHsc /nologo /Zm200")
 
-set(CMAKE_EXE_LINKER_FLAGS "/MANIFEST /DYNAMICBASE:NO /SAFESEH:NO /ERRORREPORT:PROMPT /NOLOGO")
+set(CMAKE_EXE_LINKER_FLAGS "/MANIFEST /SAFESEH:NO /ERRORREPORT:PROMPT /NOLOGO")
 set(CMAKE_STATIC_LINKER_FLAGS "")
+
+if(NOT IS_ARM64)
+	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /DYNAMICBASE:NO")
+endif()
 
 # Release
 set(CMAKE_C_FLAGS_RELEASE "/GL /Gy- /Ox /Ot /Ob2 /fp:precise /GF /Oy /Oi /Zi /W3")
