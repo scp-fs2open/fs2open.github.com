@@ -653,7 +653,7 @@ static ai_class* get_ai_class_pointer(const char* class_name)
 	return nullptr;
 }
 
-static int num_classes_from_tbm = 0;
+static bool class_added_in_tbm = false;
 
 void parse_ai_class()
 {
@@ -695,7 +695,7 @@ void parse_ai_class()
 
 		if (Parsing_modular_table) {
 			mprintf(("New Ai Class '%s' found in modular table\n", aicp->name));
-			num_classes_from_tbm++;
+			class_added_in_tbm = true;
 		}
 
 	}
@@ -938,7 +938,7 @@ void ai_init()
 
 		parse_modular_table("*-aic.tbm", parse_aitbl);
 
-		if (num_classes_from_tbm > 0) {
+		if (class_added_in_tbm) {
 			mprintf(("One or more Ai Classes were added in a modular table. This may affect "
 					 "ai autoscaling. If that's not desired then use a tbl instead of a tbm!\n"));
 		}
