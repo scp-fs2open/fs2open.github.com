@@ -481,8 +481,8 @@ static void asteroid_load(int asteroid_info_index, int asteroid_subtype)
 	int i;
 	asteroid_info	*asip;
 
-	Assert( asteroid_info_index < (int)Asteroid_info.size() );
-	Assert( asteroid_subtype < NUM_ASTEROID_POFS );
+	Assertion(asteroid_info_index < (int)Asteroid_info.size(), "Command to load asteroid at index %i, but only %i asteroids exist", asteroid_info_index, (int)Asteroid_info.size());
+	Assertion(asteroid_subtype < NUM_ASTEROID_POFS, "Command to load asteroid pof %i, but only %i pofs are allowed", asteroid_subtype, NUM_ASTEROID_POFS);
 
 	if ( (asteroid_info_index >= (int)Asteroid_info.size()) || (asteroid_subtype >= NUM_ASTEROID_POFS) ) {
 		return;
@@ -2033,7 +2033,7 @@ static SCP_string setup_display_name(SCP_string name)
 	size_t split = std::string::npos;
 	char thisSpecies[NAME_LENGTH];
 
-	for (species_info species : Species_info) {
+	for (auto& species : Species_info) {
 		if (name.compare(0, strlen(species.species_name), species.species_name) == 0) {
 			split = strlen(species.species_name);
 			strcpy_s(thisSpecies, species.species_name);
@@ -2075,7 +2075,6 @@ static void asteroid_parse_section()
 {
 	bool create_if_not_found = true;
 	asteroid_info asteroid_t;
-	asteroid_info* asteroid_p;
 	
 	required_string("$Name:");
 	stuff_string(asteroid_t.name, F_NAME, NAME_LENGTH);
@@ -2089,7 +2088,8 @@ static void asteroid_parse_section()
 
 	// Does this asteroid exist already?
 	// If so, load this new info into it
-	asteroid_p = get_asteroid_pointer(asteroid_t.name);
+	asteroid_info* asteroid_p = get_asteroid_pointer(asteroid_t.name);
+
 	if (asteroid_p != nullptr) {
 		if (!Parsing_modular_table) {
 			error_display(1,
@@ -2343,25 +2343,23 @@ static void verify_asteroid_splits()
 {
 	
 	for (int i = 0; i < (int)Asteroid_info.size(); i++) {
-		SCP_vector<int> splits_to_remove;
+		SCP_vector<asteroid_split_info> splits_t;
 
 		for (int j = 0; j < (int)Asteroid_info[i].split_info.size(); j++) {
 			int asteroid_index = get_asteroid_index(Asteroid_info[i].split_info[j].name);
 			if (asteroid_index >= 0) {
 				Asteroid_info[i].split_info[j].asteroid_type = asteroid_index;
+				splits_t.push_back(Asteroid_info[i].split_info[j]);
 			} else {
 				Warning(LOCATION,
 					"Unknown asteroid %s defined as split type for asteroid %s, removing!",
 					Asteroid_info[i].split_info[j].name,
 					Asteroid_info[i].name);
-				splits_to_remove.push_back(j); // Remove them all after we're done so we don't mess with the loop
 			}
 		}
 
-		// Remove errored splits
-		for (int j = 0; j < (int)splits_to_remove.size(); j++) {
-			Asteroid_info[i].split_info.erase(Asteroid_info[i].split_info.begin() + splits_to_remove[j]);
-		}
+		// Replace splits with only valid splits
+		Asteroid_info[i].split_info = splits_t;
 	}
 }
 
@@ -2597,7 +2595,7 @@ void asteroid_page_in()
 
 			if (Asteroid_field.debris_genre == DG_ASTEROID) {
 				// asteroid
-				Assert(i < NUM_ASTEROID_SIZES);
+				Assertion(i < NUM_ASTEROID_SIZES, "Got invalid call to load a debris type instead of asteroid type!");
 				asip = &Asteroid_info[i];
 			} else {
 				// ship debris - always full until empty
