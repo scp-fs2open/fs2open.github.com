@@ -214,7 +214,12 @@ void g3_draw_htl_line(const vec3d *start, const vec3d *end);
 /**
  * Draw a sphere mode without having to go through the rotate/project stuff
  */
-void g3_draw_htl_sphere(color *clr, const vec3d *position, float radius);
+void g3_draw_htl_sphere(color* clr,
+	const vec3d* position,
+	float radius,
+	gr_alpha_blend alpha_blend_mode,
+	gr_zbuffer_type zbuffer_mode);
+void g3_draw_htl_sphere(color* clr, const vec3d* position, float radius);
 void g3_draw_htl_sphere(const vec3d* position, float radius);
 
 void g3_render_primitives(material* mat, vertex* verts, int n_verts, primitive_type prim_type, bool orthographic = false);

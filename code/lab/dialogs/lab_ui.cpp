@@ -483,12 +483,15 @@ void LabUi::buildModelInfoBox(ship_info* sip, polymodel* pm) const {
 
 void render_subsystem(ship_subsys* ss, object* objp)
 {
-	vertex text_center;
 	SCP_string buf;
 
 	auto pmi = model_get_instance(Ships[objp->instance].model_instance_num);
 	auto pm = model_get(pmi->model_num);
 	int subobj_num = ss->system_info->subobj_num;
+
+	g3_start_frame(1);
+	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
 	if (subobj_num != -1) {
 		auto bsp = &pm->submodel[subobj_num];
@@ -501,10 +504,6 @@ void render_subsystem(ship_subsys* ss, object* objp)
 		vec3d back_top_right = bsp->bounding_box[2];
 		vec3d back_bot_left = bsp->bounding_box[0];
 		vec3d back_bot_right = bsp->bounding_box[1];
-
-		g3_start_frame(1);
-		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-		gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
 		gr_set_color(255, 32, 32);
 
@@ -591,11 +590,24 @@ void render_subsystem(ship_subsys* ss, object* objp)
 				buf += Weapon_info[wi].name;
 			}
 		}
+	} else {
+		vec3d subsys_position;
+		vm_vec_add(&subsys_position, &objp->pos, &ss->system_info->pnt);
+		vm_vec_rotate(&subsys_position, &subsys_position, &objp->orient);
 
-		gr_end_proj_matrix();
-		gr_end_view_matrix();
-		g3_end_frame();
+		color c;
+		gr_init_alphacolor(&c, 255, 32, 32, 128);
+
+		g3_draw_htl_sphere(&c,
+			&subsys_position,
+			ss->system_info->radius,
+			ALPHA_BLEND_ALPHA_BLEND_ALPHA,
+			ZBUFFER_TYPE_FULL);
 	}
+
+	gr_end_proj_matrix();
+	gr_end_view_matrix();
+	g3_end_frame();
 }
 
 void LabUi::buildSubsystemList(object* objp, ship* shipp) const {
