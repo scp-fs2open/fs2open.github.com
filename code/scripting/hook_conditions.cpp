@@ -101,7 +101,7 @@ static SCP_string conditionParseString(const SCP_string& name) {
 
 static int conditionParseActionId(const SCP_string& name) {
 	for (int i = 0; i < (int)Control_config.size(); i++) {
-		if (stricmp(Control_config[i].text.c_str(), name.c_str()) == 0)
+		if (SCP_string_lcase_equal_to{}(Control_config[i].text, name))
 			return i;
 	}
 	return -1;
@@ -203,7 +203,7 @@ HOOK_CONDITIONS_START(ShipDeathConditions)
 HOOK_CONDITIONS_END
 
 HOOK_CONDITIONS_START(SubsystemDeathConditions)
-	HOOK_CONDITION_SHIPP(SubsystemDeathConditions, "of which the subsystem got destroyed.", affected_shipp);
+	HOOK_CONDITION_SHIPP(SubsystemDeathConditions, "whose subsystem got destroyed.", affected_shipp);
 HOOK_CONDITIONS_END
 
 HOOK_CONDITIONS_START(ShipDepartConditions)
@@ -222,8 +222,8 @@ HOOK_CONDITIONS_START(ObjectDeathConditions)
 	HOOK_CONDITION(ObjectDeathConditions, "Object type", "Specifies the type of the object that died.", dying_objp, conditionParseObjectType, conditionIsObjecttype);
 HOOK_CONDITIONS_END
 
-HOOK_CONDITIONS_START(ShipSpawnConditions)
-	HOOK_CONDITION_SHIPP(ShipSpawnConditions, "that arrived.", spawned_shipp);
+HOOK_CONDITIONS_START(ShipArriveConditions)
+	HOOK_CONDITION_SHIPP(ShipArriveConditions, "that arrived.", spawned_shipp);
 HOOK_CONDITIONS_END
 
 HOOK_CONDITIONS_START(WeaponCreatedConditions)
@@ -236,11 +236,11 @@ HOOK_CONDITIONS_START(WeaponEquippedConditions)
 	HOOK_CONDITION_SHIPP(WeaponEquippedConditions, "that has the weapon equipped.", user_shipp);
 	HOOK_CONDITION(WeaponEquippedConditions, "Weapon class", "Specifies the class of the weapon that the ship needs to have equipped in at least one bank.", user_shipp, conditionParseWeaponClass, [](const ship* wielder, const int& weaponclass) -> bool {
 		for (int i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++) {
-			if (wielder->weapons.primary_bank_weapons[i] > 0 && wielder->weapons.primary_bank_weapons[i] == weaponclass)
+			if (wielder->weapons.primary_bank_weapons[i] >= 0 && wielder->weapons.primary_bank_weapons[i] == weaponclass)
 				return true;
 		}
 		for (int i = 0; i < MAX_SHIP_SECONDARY_BANKS; i++) {
-			if (wielder->weapons.secondary_bank_weapons[i] > 0 && wielder->weapons.secondary_bank_weapons[i] == weaponclass)
+			if (wielder->weapons.secondary_bank_weapons[i] >= 0 && wielder->weapons.secondary_bank_weapons[i] == weaponclass)
 				return true;
 		}
 		return false;
@@ -258,7 +258,7 @@ HOOK_CONDITIONS_START(WeaponSelectedConditions)
 HOOK_CONDITIONS_END
 
 HOOK_CONDITIONS_START(WeaponDeselectedConditions)
-	HOOK_CONDITION_SHIPP(WeaponDeselectedConditions, "that has selected the weapon.", user_shipp);
+	HOOK_CONDITION_SHIPP(WeaponDeselectedConditions, "that has deselected the weapon.", user_shipp);
 	HOOK_CONDITION(WeaponDeselectedConditions, "Weapon class", "Specifies the class of the weapon that was deselected.", weaponclass_prev, conditionParseWeaponClass, std::equal_to<int>());
 HOOK_CONDITIONS_END
 

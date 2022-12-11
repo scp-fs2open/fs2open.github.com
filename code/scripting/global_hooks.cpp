@@ -111,7 +111,7 @@ const std::shared_ptr<OverridableHook<CollisionConditions>> OnShipCollision = Ov
 			"The ship object with which the \"other\" object collided with. Provided for consistency with other "
 			"collision hooks."},
 		{"Ship", "ship", "Same as \"Object\""},
-		{"Hitpos", "vector", "The world position where the colission was detected"},
+		{"Hitpos", "vector", "The world position where the collision was detected"},
 		{"Debris", "object", "The debris object with which the ship collided (only set for debris collisions)"},
 		{"Asteroid", "object", "The asteroid object with which the ship collided (only set for asteroid collisions)"},
 		{"ShipB", "ship", "For ship on ship collisions, the \"other\" ship."},
@@ -119,7 +119,7 @@ const std::shared_ptr<OverridableHook<CollisionConditions>> OnShipCollision = Ov
 		{"Beam", "weapon", "The beam object with which the ship collided (only set for beam collisions)"}});
 
 const std::shared_ptr<OverridableHook<CollisionConditions>> OnWeaponCollision = OverridableHook<CollisionConditions>::Factory("On Weapon Collision",
-	"Invoked when a ship collides with another object. Note: When two weapons collide this will be called twice, once "
+	"Invoked when a weapon collides with another object. Note: When two weapons collide this will be called twice, once "
 	"with each weapon object as the \"Weapon\" parameter.",
 	{ {"Self", "object", "The \"other\" object that collided with the weapon."},
 		{"Object",
@@ -127,58 +127,56 @@ const std::shared_ptr<OverridableHook<CollisionConditions>> OnWeaponCollision = 
 			"The weapon object with which the \"other\" object collided with. Provided for consistency with other "
 			"collision hooks."},
 		{"Weapon", "weapon", "Same as \"Object\""},
-		{"Hitpos", "vector", "The world position where the colission was detected"},
-		{"Debris", "object", "The debris object with which the ship collided (only set for debris collisions)"},
-		{"Asteroid", "object", "The asteroid object with which the ship collided (only set for asteroid collisions)"},
+		{"Hitpos", "vector", "The world position where the collision was detected"},
+		{"Debris", "object", "The debris object with which the weapon collided (only set for debris collisions)"},
+		{"Asteroid", "object", "The asteroid object with which the weapon collided (only set for asteroid collisions)"},
 		{"Ship", "ship", "The ship object with which the weapon collided (only set for ship collisions)."},
 		{"WeaponB", "weapon", "For weapon on weapon collisions, the \"other\" weapon."},
-		{"Beam", "weapon", "The beam object with which the ship collided (only set for beam collisions)"} });
+		{"Beam", "weapon", "The beam object with which the weapon collided (only set for beam collisions)"} });
 
 const std::shared_ptr<OverridableHook<CollisionConditions>> OnDebrisCollision = OverridableHook<CollisionConditions>::Factory("On Debris Collision",
-	"Invoked when a ship collides with another object.",
-	{ {"Self", "object", "The \"other\" object that collided with the ship."},
+	"Invoked when a debris piece collides with another object.",
+	{ {"Self", "object", "The \"other\" object that collided with the debris."},
 		{"Object",
 			"debris",
 			"The debris object with which the \"other\" object collided with. Provided for consistency with other "
 			"collision hooks."},
 		{"Debris", "debris", "Same as \"Object\""},
-		{"Hitpos", "vector", "The world position where the colission was detected"},
-		{"Asteroid", "object", "The asteroid object with which the ship collided (only set for asteroid collisions)"},
-		{"Ship", "ship", "The ship object with which the ship collided (only set for ship collisions)."},
-		{"Weapon", "weapon", "The weapon object with which the ship collided (only set for weapon collisions)"},
-		{"Beam", "weapon", "The beam object with which the ship collided (only set for beam collisions)"} });
+		{"Hitpos", "vector", "The world position where the collision was detected"},
+		{"Asteroid", "object", "The asteroid object with which the debris collided (only set for asteroid collisions)"},
+		{"Ship", "ship", "The ship object with which the debris collided (only set for ship collisions)."},
+		{"Weapon", "weapon", "The weapon object with which the debris collided (only set for weapon collisions)"},
+		{"Beam", "weapon", "The beam object with which the debris collided (only set for beam collisions)"} });
 
 const std::shared_ptr<OverridableHook<CollisionConditions>> OnAsteroidCollision = OverridableHook<CollisionConditions>::Factory("On Asteroid Collision",
-	"Invoked when a ship collides with another object.",
-	{ {"Self", "object", "The \"other\" object that collided with the ship."},
+	"Invoked when an asteroid collides with another object.",
+	{ {"Self", "object", "The \"other\" object that collided with the asteroid."},
 		{"Object",
 			"object",
 			"The asteroid object with which the \"other\" object collided with. Provided for consistency with other "
 			"collision hooks."},
 		{"Asteroid", "object", "Same as \"Object\""},
-		{"Hitpos", "vector", "The world position where the colission was detected"},
-		{"Debris", "object", "The debris object with which the ship collided (only set for debris collisions)"},
-		{"Ship", "ship", "The ship object with which the ship collided (only set for ship collisions)"},
-		{"Weapon", "weapon", "The weapon object with which the ship collided (only set for weapon collisions)"},
-		{"Beam", "weapon", "The beam object with which the ship collided (only set for beam collisions)"} });
+		{"Hitpos", "vector", "The world position where the collision was detected"},
+		{"Debris", "object", "The debris object with which the asteroid collided (only set for debris collisions)"},
+		{"Ship", "ship", "The ship object with which the asteroid collided (only set for ship collisions)"},
+		{"Weapon", "weapon", "The weapon object with which the asteroid collided (only set for weapon collisions)"},
+		{"Beam", "weapon", "The beam object with which the asteroid collided (only set for beam collisions)"} });
 
 const std::shared_ptr<OverridableHook<CollisionConditions>> OnBeamCollision = OverridableHook<CollisionConditions>::Factory("On Beam Collision",
-	"Invoked when a ship collides with another object. Note: When two ships collide this will be called twice, once "
+	"Invoked when a beam collides with another object. Note: When two ships collide this will be called twice, once "
 	"with each ship object as the \"Ship\" parameter.",
-	{ {"Self", "object", "The \"other\" object that collided with the ship."},
+	{ {"Self", "object", "The \"other\" object that collided with the beam."},
 		{"Object",
 			"ship",
 			"The ship object with which the \"other\" object collided with. Provided for consistency with other "
 			"collision hooks."},
 		{"Ship", "ship", "Same as \"Object\""},
-		{"Hitpos", "vector", "The world position where the colission was detected"},
-		{"Debris", "object", "The debris object with which the ship collided (only set for debris collisions)"},
-		{"Asteroid", "object", "The asteroid object with which the ship collided (only set for asteroid collisions)"},
-		{"ShipB", "ship", "For ship on ship collisions, the \"other\" ship."},
-		{"Weapon", "weapon", "The weapon object with which the ship collided (only set for weapon collisions)"},
-		{"Beam", "weapon", "The beam object with which the ship collided (only set for beam collisions)"} });
+		{"Hitpos", "vector", "The world position where the collision was detected"},
+		{"Debris", "object", "The debris object with which the beam collided (only set for debris collisions)"},
+		{"Asteroid", "object", "The asteroid object with which the beam collided (only set for asteroid collisions)"},
+		{"Weapon", "weapon", "The weapon object with which the beam collided (only set for weapon collisions)"}});
 
-const std::shared_ptr<Hook<ShipSpawnConditions>> OnShipArrive = Hook<ShipSpawnConditions>::Factory("On Ship Arrive",
+const std::shared_ptr<Hook<ShipArriveConditions>> OnShipArrive = Hook<ShipArriveConditions>::Factory("On Ship Arrive",
 	"Invoked when a ship arrives in mission.",
 	{
 		{"Ship", "ship", "The ship that has arrived."},
@@ -286,14 +284,14 @@ const std::shared_ptr<Hook<WeaponUsedConditions>> OnSecondaryFired = Hook<Weapon
 const std::shared_ptr<Hook<WeaponSelectedConditions>> OnWeaponSelected = Hook<WeaponSelectedConditions>::Factory("On Weapon Selected",
 	"Invoked when a new weapon is selected.",
 	{
-		{"User", "ship", "The ship that has selectd the weapon."},
+		{"User", "ship", "The ship that has selected the weapon."},
 		{"Target", "object", "The current target of this ship."},
 	});
 
 const std::shared_ptr<Hook<WeaponDeselectedConditions>> OnWeaponDeselected = Hook<WeaponDeselectedConditions>::Factory("On Weapon Deselected",
 	"Invoked when a weapon is deselected.",
 	{
-		{"User", "ship", "The ship that has selectd the weapon."},
+		{"User", "ship", "The ship that has deselected the weapon."},
 		{"Target", "object", "The current target of this ship."},
 	});
 
@@ -334,7 +332,7 @@ const std::shared_ptr<Hook<>> OnSimulation = Hook<>::Factory("On Simulation",
 	CHA_SIMULATION);
 
 const std::shared_ptr<OverridableHook<>> OnDialogInit = OverridableHook<>::Factory("On Dialog Init",
-	"Invoked when a system dialog initalizes. Override to prevent the system dialog to load dialog-related resources (requires retail files)",
+	"Invoked when a system dialog initalizes. Override to prevent the system dialog from loading dialog-related resources (requires retail files)",
 	{   
 		{"Choices",
 			"table",

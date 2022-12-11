@@ -1049,7 +1049,7 @@ ADE_FUNC(createShip,
 		mission_log_add_entry(LOG_SHIP_ARRIVED, shipp->ship_name, nullptr, -1, show_in_log ? 0 : MLF_HIDDEN);
 
 		if (scripting::hooks::OnShipArrive->isActive()) {
-			scripting::hooks::OnShipArrive->run(scripting::hooks::ShipSpawnConditions{ shipp, ARRIVE_AT_LOCATION, nullptr },
+			scripting::hooks::OnShipArrive->run(scripting::hooks::ShipArriveConditions{ shipp, ARRIVE_AT_LOCATION, nullptr },
 				scripting::hook_param_list(
 					scripting::hook_param("Ship", 'o', &Objects[obj_idx])
 				));

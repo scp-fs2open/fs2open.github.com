@@ -506,7 +506,7 @@ static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, f
 					scripting::hook_param("Weapon", 'o', weapon_objp),
 					scripting::hook_param("Hitpos", 'o', mc.hit_point_world)));
 		}
-		if (scripting::hooks::OnShipCollision->isActive() && ((weapon_override && !ship_override) || (!weapon_override && !ship_override))) {
+		if (scripting::hooks::OnShipCollision->isActive() && !ship_override) {
 			scripting::hooks::OnShipCollision->run(scripting::hooks::CollisionConditions{{ship_objp, weapon_objp}},
 				scripting::hook_param_list(scripting::hook_param("Self", 'o', weapon_objp),
 					scripting::hook_param("Object", 'o', ship_objp),

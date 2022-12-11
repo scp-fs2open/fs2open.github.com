@@ -8219,7 +8219,6 @@ void ship_destroy_instantly(object *ship_objp, bool with_debris)
 		// add scripting hook for 'On Ship Death Started' -- Goober5000
 		// hook is placed at the beginning of this function to allow the scripter to
 		// actually have access to the ship before any death routines (such as mission logging) are executed
-		;
 		scripting::hooks::OnShipDeathStarted->run(scripting::hooks::ShipDeathConditions{ shipp },
 			scripting::hook_param_list(scripting::hook_param("Ship", 'o', ship_objp)));
 	}

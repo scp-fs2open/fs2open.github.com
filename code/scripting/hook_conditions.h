@@ -82,7 +82,7 @@ struct ObjectDeathConditions {
 	const object* dying_objp;
 };
 
-struct ShipSpawnConditions {
+struct ShipArriveConditions {
 	HOOK_DEFINE_CONDITIONS;
 	const ship* spawned_shipp;
 	int arrival_location; // As of yet unused

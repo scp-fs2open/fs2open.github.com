@@ -2411,7 +2411,7 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 		object *anchor_objp = (anchor_objnum >= 0) ? &Objects[anchor_objnum] : nullptr;
 
 		if (scripting::hooks::OnShipArrive->isActive()) {
-			scripting::hooks::OnShipArrive->run(scripting::hooks::ShipSpawnConditions{ shipp, p_objp->arrival_location, anchor_objp },
+			scripting::hooks::OnShipArrive->run(scripting::hooks::ShipArriveConditions{ shipp, p_objp->arrival_location, anchor_objp },
 				scripting::hook_param_list(
 					scripting::hook_param("Ship", 'o', &Objects[objnum]),
 					scripting::hook_param("Parent", 'o', anchor_objp, anchor_objp != nullptr)
@@ -6579,7 +6579,7 @@ void mission_set_wing_arrival_location( wing *wingp, int num_to_set )
 			object *anchor_objp = (anchor_objnum >= 0) ? &Objects[anchor_objnum] : nullptr;
 
 			if (scripting::hooks::OnShipArrive->isActive()) {
-				scripting::hooks::OnShipArrive->run(scripting::hooks::ShipSpawnConditions{ &Ships[wingp->ship_index[index]], wingp->arrival_location, anchor_objp },
+				scripting::hooks::OnShipArrive->run(scripting::hooks::ShipArriveConditions{ &Ships[wingp->ship_index[index]], wingp->arrival_location, anchor_objp },
 					scripting::hook_param_list(
 						scripting::hook_param("Ship", 'o', objp),
 						scripting::hook_param("Parent", 'o', anchor_objp, anchor_objp != nullptr)

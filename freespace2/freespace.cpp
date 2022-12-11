@@ -1386,7 +1386,7 @@ void game_post_level_init()
 	mission_process_alt_types();
 
 	if (scripting::hooks::OnMissionStart->isActive()) {
-		// HACK: That scripting hook should be in mission so GM_IN_MISSION has to be sety
+		// HACK: That scripting hook should be in mission so GM_IN_MISSION has to be set
 		Game_mode |= GM_IN_MISSION;
 		scripting::hooks::OnMissionStart->run(scripting::hook_param_list(
 			scripting::hook_param("Player", 'o', Player_obj, Player_obj != nullptr)
@@ -7514,9 +7514,8 @@ void game_title_screen_display()
 		}
 	}
 
-	if (scripting::hooks::OnSplashScreen->isActive()) {
-		condhook_override = scripting::hooks::OnSplashScreen->run();
-	}
+	if (scripting::hooks::OnSplashScreen->isActive())
+		scripting::hooks::OnSplashScreen->run();
 
 	mprintf(("SCRIPTING: Splash screen conditional hook has been run\n"));
 

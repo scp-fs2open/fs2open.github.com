@@ -843,8 +843,8 @@ bool script_state::ParseCondition(const char *filename)
 		for (const SCP_string& local_condition : conditions) {
 			bool found = false;
 			pause_parse();
-			char* parse = vm_strdup(local_condition.c_str());
-			reset_parse(parse);
+			SCP_vm_unique_ptr<char> parse{ vm_strdup(local_condition.c_str()) };
+			reset_parse(parse.get());
 			for (const auto& potential_condition : currHook->_conditions) {
 				SCP_string bufCond;
 				sprintf(bufCond, "$%s:", potential_condition.first.c_str());
@@ -856,7 +856,6 @@ bool script_state::ParseCondition(const char *filename)
 					break;
 				}
 			}
-			vm_free(parse);
 			unpause_parse();
 			
 			if (!found) {
