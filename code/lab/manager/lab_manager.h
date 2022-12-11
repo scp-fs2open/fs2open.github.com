@@ -93,7 +93,4 @@ public:
 	LabUi labUi;
 
 	void changeShipInternal();
-
-	os::events::ListenerIdentifier keyboardEventListener;
-	os::events::ListenerIdentifier mouseEventListener;
 };

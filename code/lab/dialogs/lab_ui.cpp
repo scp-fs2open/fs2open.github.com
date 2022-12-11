@@ -36,7 +36,7 @@ void LabUi::buildSpeciesEntry(species_info species_def, int species_idx) const
 			if (class_def.species == species_idx) {
 				ImGui::TreeNodeEx((void*)(intptr_t)ship_info_idx,
 					ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen,
-					class_def.name);
+					"%s", class_def.name);
 				if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
 					getLabManager()->changeDisplayedObject(LabMode::Ship, ship_info_idx);
 				}
@@ -70,7 +70,7 @@ void LabUi::buildWeaponSubtypeList() const
 					(class_def.subtype == weapon_subtype_idx && !class_def.wi_flags[Weapon::Info_Flags::Beam])) {
 					ImGui::TreeNodeEx((void*)(intptr_t)weapon_idx,
 						ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen,
-						class_def.name);
+						"%s", class_def.name);
 
 					if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
 						getLabManager()->changeDisplayedObject(LabMode::Weapon, weapon_idx);
@@ -128,11 +128,11 @@ void LabUi::buildBackgroundList() const
 
 		with_TreeNode(directory_name)
 		{
-			for (const auto& mission : directory.second) {
-				ImGui::TreeNodeEx(mission.c_str(), node_flags, "%s", mission.c_str());
+			for (const auto& mission_name : directory.second) {
+				ImGui::TreeNodeEx(mission_name.c_str(), node_flags, "%s", mission_name.c_str());
 
 				if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
-					getLabManager()->Renderer->useBackground(mission);
+					getLabManager()->Renderer->useBackground(mission_name);
 				}
 			}
 		}
@@ -246,11 +246,11 @@ void LabUi::buildTeamColorCombobox() const
 	if (!Team_Colors.empty()) {
 		with_Combo("Team Color setting", getLabManager()->Renderer->getCurrentTeamColor().c_str())
 		{
-			for (auto team_color : Team_Colors) {
-				bool is_selected = team_color.first == getLabManager()->Renderer->getCurrentTeamColor();
+			for (const auto& team_color_name : Team_Colors) {
+				bool is_selected = team_color_name.first == getLabManager()->Renderer->getCurrentTeamColor();
 
-				if (ImGui::Selectable(team_color.first.c_str(), is_selected)) {
-					getLabManager()->Renderer->setTeamColor(team_color.first);
+				if (ImGui::Selectable(team_color_name.first.c_str(), is_selected)) {
+					getLabManager()->Renderer->setTeamColor(team_color_name.first);
 				}
 
 				if (is_selected)
@@ -611,11 +611,9 @@ void render_subsystem(ship_subsys* ss, object* objp)
 }
 
 void LabUi::buildSubsystemList(object* objp, ship* shipp) const {
-	ImGuiTreeNodeFlags node_flags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
-
 	with_TreeNode("Subsystems")
 	{
-		int subsys_index = 0;
+		size_t subsys_index = 0;
 		static SCP_vector<bool> show_subsys;
 		static int ship_class_idx = shipp->ship_info_index;
 		if (ship_class_idx != shipp->ship_info_index) {
@@ -633,32 +631,42 @@ void LabUi::buildSubsystemList(object* objp, ship* shipp) const {
 				subsys_name_tmp = cur_subsys->system_info->name;
 
 			SCP_string subsys_name;
-			sprintf(subsys_name, "%s (%i)", subsys_name_tmp, subsys_index);
+			sprintf(subsys_name, "%s (%i)", subsys_name_tmp, (int)subsys_index);
 
-			with_TreeNode(subsys_name.c_str())
-			{
-				SCP_string node_name;
-				sprintf(node_name, "Highlight system##%s", subsys_name.c_str());
-
-				auto display_this = show_subsys[subsys_index] == true;
-
-				ImGui::Checkbox(node_name.c_str(), &display_this);
-
-				if (display_this) {
-					render_subsystem(cur_subsys, objp);
-				}
-
-				show_subsys[subsys_index] = display_this;
-
-				sprintf(node_name, "Destroy system##%s", subsys_name.c_str());
-
-				if (ImGui::Button(node_name.c_str())) {
-					cur_subsys->current_hits = 0;
-					do_subobj_destroyed_stuff(shipp, cur_subsys, nullptr);
-				}
-			}
+			buildSubsystemListEntry(subsys_name, show_subsys, subsys_index, cur_subsys, objp, shipp);
 
 			subsys_index++;
+		}
+	}
+}
+
+void LabUi::buildSubsystemListEntry(SCP_string& subsys_name,
+	SCP_vector<bool>& show_subsys,
+	const size_t& subsys_index,
+	ship_subsys* cur_subsys,
+	object* objp,
+	ship* shipp) const
+{
+	with_TreeNode(subsys_name.c_str())
+	{
+		SCP_string node_name;
+		sprintf(node_name, "Highlight system##%s", subsys_name.c_str());
+
+		auto display_this = show_subsys[subsys_index] == true;
+
+		ImGui::Checkbox(node_name.c_str(), &display_this);
+
+		if (display_this) {
+			render_subsystem(cur_subsys, objp);
+		}
+
+		show_subsys[subsys_index] = display_this;
+
+		sprintf(node_name, "Destroy system##%s", subsys_name.c_str());
+
+		if (ImGui::Button(node_name.c_str())) {
+			cur_subsys->current_hits = 0;
+			do_subobj_destroyed_stuff(shipp, cur_subsys, nullptr);
 		}
 	}
 }
@@ -673,18 +681,8 @@ void LabUi::buildWeaponOptions(ship* shipp) const {
 
 				SCP_string text;
 				sprintf(text, "##Primary bank %i", bank);
-				with_Combo(text.c_str(), wip->name)
-				{
-					for (auto i = 0; i < Weapon_info.size(); i++) {
-						if (Weapon_info[i].subtype == WP_MISSILE)
-							continue;
-						bool is_selected = i == primary_slot;
-						if (ImGui::Selectable(Weapon_info[i].name, is_selected))
-							primary_slot = i;
-						if (is_selected)
-							ImGui::SetItemDefaultFocus();
-					}
-				}
+
+				buildPrimaryWeaponCombobox(text, wip, primary_slot);
 				ImGui::SameLine();
 				static bool should_fire[MAX_SHIP_PRIMARY_BANKS] = {false, false, false};
 				SCP_string cb_text;
@@ -710,18 +708,7 @@ void LabUi::buildWeaponOptions(ship* shipp) const {
 
 				SCP_string text;
 				sprintf(text, "##Secondary bank %i", bank);
-				with_Combo(text.c_str(), wip->name)
-				{
-					for (auto i = 0; i < Weapon_info.size(); i++) {
-						if (Weapon_info[i].subtype != WP_MISSILE)
-							continue;
-						bool is_selected = i == secondary_slot;
-						if (ImGui::Selectable(Weapon_info[i].name, is_selected))
-							secondary_slot = i;
-						if (is_selected)
-							ImGui::SetItemDefaultFocus();
-					}
-				}
+				buildSecondaryWeaponCombobox(text, wip, secondary_slot);
 				ImGui::SameLine();
 				static bool should_fire[MAX_SHIP_SECONDARY_BANKS] = {false, false, false, false};
 				SCP_string cb_text;
@@ -735,6 +722,40 @@ void LabUi::buildWeaponOptions(ship* shipp) const {
 
 				bank++;
 			}
+		}
+	}
+}
+
+void LabUi::buildPrimaryWeaponCombobox(SCP_string& text,
+	weapon_info* wip,
+	int& primary_slot) const
+{
+	with_Combo(text.c_str(), wip->name)
+	{
+		for (size_t i = 0; i < Weapon_info.size(); i++) {
+			if (Weapon_info[i].subtype == WP_MISSILE)
+				continue;
+			bool is_selected = i == (size_t)primary_slot;
+			if (ImGui::Selectable(Weapon_info[i].name, is_selected))
+				primary_slot = (int)i;
+			if (is_selected)
+				ImGui::SetItemDefaultFocus();
+		}
+	}
+}
+
+void LabUi::buildSecondaryWeaponCombobox(SCP_string& text, weapon_info* wip, int& secondary_slot) const
+{
+	with_Combo(text.c_str(), wip->name)
+	{
+		for (size_t i = 0; i < Weapon_info.size(); i++) {
+			if (Weapon_info[i].subtype != WP_MISSILE)
+				continue;
+			bool is_selected = i == (size_t)secondary_slot;
+			if (ImGui::Selectable(Weapon_info[i].name, is_selected))
+				secondary_slot = (int)i;
+			if (is_selected)
+				ImGui::SetItemDefaultFocus();
 		}
 	}
 }
@@ -809,41 +830,11 @@ void LabUi::buildAnimationOptions(ship* shipp, ship_info* sip) const
 		}
 
 		if (shipp->weapons.num_primary_banks > 0) {
-			with_TreeNode("Primary Weapons##Anims")
-			{
-				for (auto i = 0; i < shipp->weapons.num_primary_banks; ++i) {
-					SCP_string button_label;
-					sprintf(button_label, "Trigger animation for primary bank %i", i);
-					if (ImGui::Button(button_label.c_str())) {
-						sip->animations
-							.getAll(model_get_instance(shipp->model_instance_num),
-								animation::ModelAnimationTriggerType::PrimaryBank,
-								i)
-							.start(triggered_primary_banks[i] ? animation::ModelAnimationDirection::RWD
-															  : animation::ModelAnimationDirection::FWD);
-						triggered_primary_banks[i] = !triggered_primary_banks[i];
-					}
-				}
-			}
+			createPrimaryWeaponAnimNode(shipp, sip);
 		}
 
 		if (shipp->weapons.num_secondary_banks > 0) {
-			with_TreeNode("Secondary Weapons##Anims")
-			{
-				for (auto i = 0; i < shipp->weapons.num_secondary_banks; ++i) {
-					SCP_string button_label;
-					sprintf(button_label, "Trigger animation for secondary bank %i", i);
-					if (ImGui::Button(button_label.c_str())) {
-						sip->animations
-							.getAll(model_get_instance(shipp->model_instance_num),
-								animation::ModelAnimationTriggerType::SecondaryBank,
-								i)
-							.start(triggered_secondary_banks[i] ? animation::ModelAnimationDirection::RWD
-																: animation::ModelAnimationDirection::FWD);
-						triggered_secondary_banks[i] = !triggered_secondary_banks[i];
-					}
-				}
-			}
+			createSecondaryWeaponAnimNode(shipp, sip);
 		}
 
 		if (std::any_of(anim_triggers.begin(),
@@ -851,23 +842,7 @@ void LabUi::buildAnimationOptions(ship* shipp, ship_info* sip) const
 				[](animation::ModelAnimationSet::RegisteredTrigger t) {
 					return t.type == animation::ModelAnimationTriggerType::Afterburner;
 				})) {
-			with_TreeNode("Afterburner")
-			{
-				if (ImGui::Button("Trigger afterburner animations")) {
-					for (const auto& anim_trigger : anim_triggers) {
-						if (anim_trigger.type == animation::ModelAnimationTriggerType::Afterburner) {
-							auto& ab_triggers =
-								manual_animation_triggers[animation::ModelAnimationTriggerType::Afterburner];
-							auto direction = ab_triggers[anim_trigger.name];
-							do_triggered_anim(animation::ModelAnimationTriggerType::Afterburner,
-								anim_trigger.name,
-								direction,
-								anim_trigger.subtype);
-							ab_triggers[anim_trigger.name] = !ab_triggers[anim_trigger.name];
-						}
-					}
-				}
-			}
+			createAfterburnerAnimationNode(anim_triggers);
 		}
 
 		maybeShowAnimationCategory(anim_triggers,
@@ -891,6 +866,71 @@ void LabUi::buildAnimationOptions(ship* shipp, ship_info* sip) const
 		maybeShowAnimationCategory(anim_triggers,
 			animation::ModelAnimationTriggerType::Docking_Stage3,
 			"Docking stage 3##anims");
+	}
+}
+
+void LabUi::createAfterburnerAnimationNode(
+	const SCP_vector<animation::ModelAnimationSet::RegisteredTrigger>& anim_triggers) const
+{
+	with_TreeNode("Afterburner")
+	{
+		if (ImGui::Button("Trigger afterburner animations")) {
+			for (const auto& anim_trigger : anim_triggers) {
+				if (anim_trigger.type == animation::ModelAnimationTriggerType::Afterburner) {
+					auto& ab_triggers = manual_animation_triggers[animation::ModelAnimationTriggerType::Afterburner];
+					auto direction = ab_triggers[anim_trigger.name];
+					do_triggered_anim(animation::ModelAnimationTriggerType::Afterburner,
+						anim_trigger.name,
+						direction,
+						anim_trigger.subtype);
+					ab_triggers[anim_trigger.name] = !ab_triggers[anim_trigger.name];
+				}
+			}
+		}
+	}
+}
+
+void LabUi::createSecondaryWeaponAnimNode(
+	ship* shipp,
+	ship_info* sip) const
+{
+	with_TreeNode("Secondary Weapons##Anims")
+	{
+		for (auto i = 0; i < shipp->weapons.num_secondary_banks; ++i) {
+			SCP_string button_label;
+			sprintf(button_label, "Trigger animation for secondary bank %i", i);
+			if (ImGui::Button(button_label.c_str())) {
+				sip->animations
+					.getAll(model_get_instance(shipp->model_instance_num),
+						animation::ModelAnimationTriggerType::SecondaryBank,
+						i)
+					.start(triggered_secondary_banks[i] ? animation::ModelAnimationDirection::RWD
+														: animation::ModelAnimationDirection::FWD);
+				triggered_secondary_banks[i] = !triggered_secondary_banks[i];
+			}
+		}
+	}
+}
+
+void LabUi::createPrimaryWeaponAnimNode(
+	ship* shipp,
+	ship_info* sip) const
+{
+	with_TreeNode("Primary Weapons##Anims")
+	{
+		for (auto i = 0; i < shipp->weapons.num_primary_banks; ++i) {
+			SCP_string button_label;
+			sprintf(button_label, "Trigger animation for primary bank %i", i);
+			if (ImGui::Button(button_label.c_str())) {
+				sip->animations
+					.getAll(model_get_instance(shipp->model_instance_num),
+						animation::ModelAnimationTriggerType::PrimaryBank,
+						i)
+					.start(triggered_primary_banks[i] ? animation::ModelAnimationDirection::RWD
+													  : animation::ModelAnimationDirection::FWD);
+				triggered_primary_banks[i] = !triggered_primary_banks[i];
+			}
+		}
 	}
 }
 

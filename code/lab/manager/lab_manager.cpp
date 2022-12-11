@@ -190,6 +190,7 @@ void LabManager::onFrame(float frametime) {
 
 		case KEY_ESC:
 			notify_close();
+			break;
 
 		default:
 			// check for game-specific controls

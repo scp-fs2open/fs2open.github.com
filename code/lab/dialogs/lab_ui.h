@@ -26,8 +26,26 @@ class LabUi {
 	void buildTableInfoTxtbox(ship_info* sip) const;
 	void buildModelInfoBox(ship_info* sip, polymodel* pm) const;
 	void buildSubsystemList(object* objp, ship* shipp) const;
+	void buildSubsystemListEntry(SCP_string& subsys_name,
+		SCP_vector<bool>& show_subsys,
+		const size_t& subsys_index,
+		ship_subsys* cur_subsys,
+		object* objp,
+		ship* shipp) const;
 	void buildWeaponOptions(ship* shipp) const;
+	void buildPrimaryWeaponCombobox(SCP_string& text,
+		weapon_info* wip,
+		int& primary_slot) const;
+	void buildSecondaryWeaponCombobox(SCP_string& text, weapon_info* wip, int& secondary_slot) const;
 	void buildAnimationOptions(ship* shipp, ship_info* sip) const;
+	void createAfterburnerAnimationNode(
+		const SCP_vector<animation::ModelAnimationSet::RegisteredTrigger>& anim_triggers) const;
+	void createSecondaryWeaponAnimNode(
+		ship* shipp,
+		ship_info* sip) const;
+	void createPrimaryWeaponAnimNode(
+		ship* shipp,
+		ship_info* sip) const;
 	void buildModelInfoBox_actual(ship_info* sip, polymodel* pm) const;
 	void buildTeamColorCombobox() const;
 	void reset_animations(ship* shipp, ship_info* sip) const;

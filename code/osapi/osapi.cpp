@@ -16,6 +16,9 @@
 #include <fcntl.h>
 #include <utf8.h>
 
+#include "imgui.h"
+#include "backends/imgui_impl_sdl.h"
+
 #ifdef SCP_UNIX
 #include <sys/stat.h>
 #elif defined(WIN32)
