@@ -833,39 +833,72 @@ void model_render_add_lightning( model_draw_list *scene, model_render_params* in
  		return;
  	}
 
-	// try and scale the size a bit so that it looks equally well on smaller vessels
-	if ( pm->rad < 500.0f ) {
-		width *= (pm->rad * 0.01f);
-
-		if ( width < 0.2f ) {
-			width = 0.2f;
-		}
-	}
-
 	for ( i = 0; i < smi->num_arcs; i++ ) {
 		// pick a color based upon arc type
 		switch ( smi->arc_type[i] ) {
 			// "normal", FreeSpace 1 style arcs
 		case MARC_TYPE_DAMAGED:
-		case MARC_TYPE_SHIP:
 			if ( Random::flip_coin() )	{
-				gr_init_color(&primary, std::get<0>(Arc_color_damage_p1), std::get<1>(Arc_color_damage_p1), std::get<2>(Arc_color_damage_p1));
+				primary = Arc_color_damage_p1;
 			} else {
-				gr_init_color(&primary, std::get<0>(Arc_color_damage_p2), std::get<1>(Arc_color_damage_p2), std::get<2>(Arc_color_damage_p2));
+				primary = Arc_color_damage_p2;
 			}
 
-			gr_init_color(&primary, std::get<0>(Arc_color_damage_s1), std::get<1>(Arc_color_damage_s1), std::get<2>(Arc_color_damage_s1));
+			secondary = Arc_color_damage_s1;
+			
+			// try and scale the size a bit so that it looks equally well on smaller vessels
+			width = Arc_width_default_damage;
+			if (pm->rad < Arc_width_no_multiply_over_radius_damage) {
+				width *= (pm->rad * Arc_width_radius_multiplier_damage);
+
+				if (width < Arc_width_minimum_damage) {
+					width = Arc_width_minimum_damage;
+				}
+			}
+			
+			break;
+
+		case MARC_TYPE_SHIP:
+			if ( Random::flip_coin() )	{
+				primary = smi->arc_primary_color_1[i];
+			} else {
+				primary = smi->arc_primary_color_2[i];
+			}
+
+			secondary = smi->arc_secondary_color[i];
+      
+      			// try and scale the size a bit so that it looks equally well on smaller vessels
+			width = Arc_width_default_damage;
+			if (pm->rad < Arc_width_no_multiply_over_radius_damage) {
+				width *= (pm->rad * Arc_width_radius_multiplier_damage);
+
+				if (width < Arc_width_minimum_damage) {
+					width = Arc_width_minimum_damage;
+				}
+			}
+
 			break;
 
 			// "EMP" style arcs
 		case MARC_TYPE_EMP:
 			if ( Random::flip_coin() )	{
-				gr_init_color(&primary, std::get<0>(Arc_color_emp_p1), std::get<1>(Arc_color_emp_p1), std::get<2>(Arc_color_emp_p1));
+				primary = Arc_color_emp_p1;
 			} else {
-				gr_init_color(&primary, std::get<0>(Arc_color_emp_p2), std::get<1>(Arc_color_emp_p2), std::get<2>(Arc_color_emp_p2));
+				primary = Arc_color_emp_p2;
 			}
 
-			gr_init_color(&primary, std::get<0>(Arc_color_emp_s1), std::get<1>(Arc_color_emp_s1), std::get<2>(Arc_color_emp_s1));
+			secondary = Arc_color_emp_s1;
+      
+			// try and scale the size a bit so that it looks equally well on smaller vessels
+			width = Arc_width_default_emp;
+			if (pm->rad < Arc_width_no_multiply_over_radius_emp) {
+				width *= (pm->rad * Arc_width_radius_multiplier_emp);
+
+				if (width < Arc_width_minimum_emp) {
+					width = Arc_width_minimum_emp;
+				}
+			}      
+      
 			break;
 
 		default:
@@ -873,7 +906,8 @@ void model_render_add_lightning( model_draw_list *scene, model_render_params* in
 		}
 
 		// render the actual arc segment
-		scene->add_arc(&smi->arc_pts[i][0], &smi->arc_pts[i][1], &primary, &secondary, width);
+		if (width > 0.0f)
+			scene->add_arc(&smi->arc_pts[i][0], &smi->arc_pts[i][1], &primary, &secondary, width);
 	}
 }
 
@@ -1851,10 +1885,10 @@ void model_render_glowpoint_add_light(int point_num, vec3d *pos, matrix *orient,
 			vm_vec_rotate(&cone_dir_screen, &cone_dir_world, &Eye_matrix);
 			cone_dir_screen.xyz.z = -cone_dir_screen.xyz.z;
 			light_add_cone(
-				&world_pnt, &cone_dir_screen, gpo->cone_angle, gpo->cone_inner_angle, gpo->dualcone, 1.0f, light_radius, 1,
+				&world_pnt, &cone_dir_screen, gpo->cone_angle, gpo->cone_inner_angle, gpo->dualcone, 1.0f, light_radius, gpo->intensity,
 				lightcolor.xyz.x, lightcolor.xyz.y, lightcolor.xyz.z, gpt->radius);
 		} else {
-			light_add_point(&world_pnt, 1.0f, light_radius, 1,	lightcolor.xyz.x, lightcolor.xyz.y, lightcolor.xyz.z, gpt->radius);
+			light_add_point(&world_pnt, 1.0f, light_radius, gpo->intensity,	lightcolor.xyz.x, lightcolor.xyz.y, lightcolor.xyz.z, gpt->radius);
 		}
 	}
 }

@@ -367,8 +367,6 @@ void Editor::clearMission() {
         Briefing_dialog->reset_editor();
     }
 #endif
-	mission_event_shutdown();
-
 
 	allocate_parse_text(PARSE_TEXT_SIZE);
 
@@ -1048,8 +1046,8 @@ int Editor::reference_handler(const char* name, int type, int obj) {
 			break;
 
 		case SRC_EVENT:
-			if (*Mission_events[n].name) {
-				sprintf(text, "event \"%s\"", Mission_events[n].name);
+			if (!Mission_events[n].name.empty()) {
+				sprintf(text, "event \"%s\"", Mission_events[n].name.c_str());
 			} else {
 				sprintf(text, "event #%d", n);
 			}
@@ -1057,8 +1055,8 @@ int Editor::reference_handler(const char* name, int type, int obj) {
 			break;
 
 		case SRC_MISSION_GOAL:
-			if (*Mission_goals[n].name) {
-				sprintf(text, "mission goal \"%s\"", Mission_goals[n].name);
+			if (!Mission_goals[n].name.empty()) {
+				sprintf(text, "mission goal \"%s\"", Mission_goals[n].name.c_str());
 			} else {
 				sprintf(text, "mission goal #%d", n);
 			}
@@ -2319,14 +2317,14 @@ int Editor::global_error_check_impl() {
 		return i;
 	}
 
-	for (i = 0; i < Num_mission_events; i++) {
-		if (fred_check_sexp(Mission_events[i].formula, OPR_NULL, "mission event \"%s\"", Mission_events[i].name)) {
+	for (i = 0; i < (int)Mission_events.size(); i++) {
+		if (fred_check_sexp(Mission_events[i].formula, OPR_NULL, "mission event \"%s\"", Mission_events[i].name.c_str())) {
 			return -1;
 		}
 	}
 
-	for (i = 0; i < Num_goals; i++) {
-		if (fred_check_sexp(Mission_goals[i].formula, OPR_BOOL, "mission goal \"%s\"", Mission_goals[i].name)) {
+	for (i = 0; i < (int)Mission_goals.size(); i++) {
+		if (fred_check_sexp(Mission_goals[i].formula, OPR_BOOL, "mission goal \"%s\"", Mission_goals[i].name.c_str())) {
 			return -1;
 		}
 	}

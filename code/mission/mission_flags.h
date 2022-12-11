@@ -34,6 +34,7 @@ namespace Mission {
 		Override_hashcommand,		// Override #Command with the Command info in Mission Specs - Goober5000
 		Player_start_chase_view,	// Player starts mission in chase view - Goober5000
 		Neb2_fog_color_override,	// Whether to use explicit fog colors instead of checking the palette - Goober5000
+		Fullneb_background_bitmaps, // Show background bitmaps despite fullneb
 		
 		NUM_VALUES
 	};

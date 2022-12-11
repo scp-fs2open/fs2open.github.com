@@ -21,7 +21,6 @@ MissionGoalsDialog::MissionGoalsDialog(QWidget* parent, EditorViewport* viewport
     ui->goalEventTree->initializeEditor(viewport->editor, this);
     _model->setTreeControl(ui->goalEventTree);
 
-	ui->goalDescription->setMaxLength(MAX_GOAL_TEXT - 1);
 	ui->goalName->setMaxLength(NAME_LENGTH - 1);
 
 	ui->helpTextBox->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
@@ -37,9 +36,9 @@ MissionGoalsDialog::MissionGoalsDialog(QWidget* parent, EditorViewport* viewport
 	});
 
 	connect(ui->goalEventTree, &sexp_tree::selectedRootChanged, this, [this](int forumla) {
-		for (auto i = 0; i < _model->getNumGoals(); ++i) {
-			auto& goal = _model->getGoals()[i];
-			if (goal.formula == forumla) {
+		auto& goals = _model->getGoals();
+		for (auto i = 0; i < (int)goals.size(); ++i) {
+			if (goals[i].formula == forumla) {
 				_model->setCurrentGoal(i);
 				break;
 			}
@@ -47,7 +46,6 @@ MissionGoalsDialog::MissionGoalsDialog(QWidget* parent, EditorViewport* viewport
 	});
 	connect(ui->goalEventTree, &sexp_tree::rootNodeDeleted, this, [this](int node) {
 		_model->deleteGoal(node);
-		ui->newObjectiveBtn->setEnabled(true);
 	});
 	connect(ui->goalEventTree, &sexp_tree::rootNodeFormulaChanged, this, [this](int old, int node) {
 		_model->changeFormula(old, node);
@@ -143,8 +141,8 @@ void MissionGoalsDialog::updateUI() {
 
 	auto& goal = _model->getCurrentGoal();
 
-	ui->goalName->setText(QString::fromUtf8(goal.name));
-	ui->goalDescription->setText(QString::fromUtf8(goal.message));
+	ui->goalName->setText(QString::fromUtf8(goal.name.c_str()));
+	ui->goalDescription->setText(QString::fromUtf8(goal.message.c_str()));
 	ui->goalTypeCombo->setCurrentIndex(goal.type & GOAL_TYPE_MASK);
 	ui->objectiveInvalidCheck->setChecked((goal.type & INVALID_GOAL) != 0);
 	ui->noCompletionMusicCheck->setChecked((goal.type & MGF_NO_MUSIC) != 0);
@@ -161,21 +159,21 @@ void MissionGoalsDialog::updateUI() {
 }
 void MissionGoalsDialog::load_tree() {
 	ui->goalEventTree->clear_tree();
-	for (auto i = 0; i < _model->getNumGoals(); ++i) {
-		auto& goal = _model->getGoals()[i];
+	auto& goals = _model->getGoals();
+	for (auto &goal: goals) {
 		goal.formula = ui->goalEventTree->load_sub_tree(goal.formula, true, "true");
 	}
 	ui->goalEventTree->post_load();
 }
 void MissionGoalsDialog::recreate_tree() {
 	ui->goalEventTree->clear();
-	for (auto i = 0; i < _model->getNumGoals(); ++i) {
-		const auto& goal = _model->getGoals()[i];
+	const auto& goals = _model->getGoals();
+	for (const auto& goal: goals) {
 		if (!_model->isGoalVisible(goal)) {
 			continue;
 		}
 
-		auto h = ui->goalEventTree->insert(goal.name);
+		auto h = ui->goalEventTree->insert(goal.name.c_str());
 		h->setData(0, sexp_tree::FormulaDataRole, goal.formula);
 		ui->goalEventTree->add_sub_tree(goal.formula, h);
 	}
@@ -185,16 +183,12 @@ void MissionGoalsDialog::recreate_tree() {
 void MissionGoalsDialog::createNewObjective() {
 	auto& goal = _model->createNewGoal();
 
-	auto h = ui->goalEventTree->insert(goal.name);
+	auto h = ui->goalEventTree->insert(goal.name.c_str());
 
 	ui->goalEventTree->setCurrentItemIndex(-1);
 	ui->goalEventTree->add_operator("true", h);
 	auto index = goal.formula = ui->goalEventTree->getCurrentItemIndex();
 	h->setData(0, sexp_tree::FormulaDataRole, index);
-
-	if (_model->getNumGoals() >= MAX_GOALS) {
-		ui->newObjectiveBtn->setEnabled(false);
-	}
 
 	ui->goalEventTree->setCurrentItem(h);
 }

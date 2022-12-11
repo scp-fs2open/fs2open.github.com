@@ -45,36 +45,37 @@ class player;
 // Version #. Please put the date down when you up these values
 // NOTE: always keep SERVER_VERSION and SERVER_COMPATIBLE_VERSION the same
 //
-// version 32 - 1/29/99
-// version 33 - 2/22/99
-// version 34 - 4/8/99
-// version 35 - 4/21/99
-// version 36 - 4/28/99
-// version 37 - 4/29/99
-// version 38 - 5/17/77
-// version 39 - 7/3/99
-// version 40 - 7/7/99
-// version 41 - 7/22/99
-// version 42 - 7/26/99 (ingame join stuff)
-// version 43 - 7/30/99
-// version 44 - 8/24/99
-// version 46 - 8/30/99
-// version 47 - 11/11/2003 - (FS2OpenPXO, FS2 Open Changes - FS2Open 3.6)
+// Version 32 - 1/29/99
+// Version 33 - 2/22/99
+// Version 34 - 4/8/99
+// Version 35 - 4/21/99
+// Version 36 - 4/28/99
+// Version 37 - 4/29/99
+// Version 38 - 5/17/77
+// Version 39 - 7/3/99
+// Version 40 - 7/7/99
+// Version 41 - 7/22/99
+// Version 42 - 7/26/99 (ingame join stuff)
+// Version 43 - 7/30/99
+// Version 44 - 8/24/99
+// Version 46 - 8/30/99
+// Version 47 - 11/11/2003 - (FS2OpenPXO, FS2 Open Changes - FS2Open 3.6)
 // revert  46 - 9/7/2006 - (the 47 bump wasn't needed, reverting to retail version for compatibility reasons)
-// version 48 - 8/15/2016 - Multiple changes to the packet format for multi sexps
-// version 49 - 7/26/2020 - Addition of multilock
-// version 50 - 7/27/2020 - IPv6
-// version 51 - 9/20/2020 - Object Update Packet Upgrade: Waypoints, subsystem rotation, bandwidth improvements, bugfixes
-// version 52 - 10/9/2020 - Dumbfire Rollback, increases accuracy of high ping, or delayed packet primary fire for clients.
-// version 53 - 12/2/2020 - big set of packet fixes/upgrades
-// version 54 - 3/20/2021 - Fixes for FSO 21_2 especially better net_sig calc, better missile intercept
-// version 55 - 8/28/2021 - Adding multi-compatible animations
-// version 56 - 8/28/2021 - Fix animations for 22_0 release
-// version 57 - 6/5/2022 - Upgrade interpolation, fix multiplayer sexp handling, and enable player orders to exceed 16
+// Version 48 - 8/15/2016 - Multiple changes to the packet format for multi sexps
+// Version 49 - 7/26/2020 - Addition of multilock
+// Version 50 - 7/27/2020 - IPv6
+// Version 51 - 9/20/2020 - Object Update Packet Upgrade: Waypoints, subsystem rotation, bandwidth improvements, bugfixes
+// Version 52 - 10/9/2020 - Dumbfire Rollback, increases accuracy of high ping, or delayed packet primary fire for clients.
+// Version 53 - 12/2/2020 - big set of packet fixes/upgrades
+// Version 54 - 3/20/2021 - Fixes for FSO 21_2 especially better net_sig calc, better missile intercept
+// Version 55 - 8/28/2021 - Adding multi-compatible animations
+// Version 56 - 8/28/2021 - Fix animations for 22_0 release
+// Version 57 - 6/5/2022 - Upgrade interpolation, fix multiplayer sexp handling, and enable player orders to exceed 16
 // Version 58 - 11/14/2022 - Enable turret movement on clients, and fix in-game joining
+// Version 59 - 12/9/2022 - New IDs for SEXP operators
 // STANDALONE_ONLY
 
-#define MULTI_FS_SERVER_VERSION							58
+#define MULTI_FS_SERVER_VERSION							59
 
 #define MULTI_FS_SERVER_COMPATIBLE_VERSION			MULTI_FS_SERVER_VERSION
 

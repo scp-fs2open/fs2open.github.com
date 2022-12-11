@@ -153,10 +153,8 @@ protected:
 private:
 	int cur_event;
 	void update_cur_event();
-	int m_num_events;
-	int m_sig[MAX_MISSION_EVENTS];
-	mission_event m_events[MAX_MISSION_EVENTS];
-	int m_num_messages;
+	SCP_vector<int> m_sig;
+	SCP_vector<mission_event> m_events;
 	SCP_vector<MMessage> m_messages;
 	int m_wave_id;
 };

@@ -380,6 +380,7 @@ add_file_folder("Generated Files"
 add_file_folder("GlobalIncs"
 	globalincs/alphacolors.cpp
 	globalincs/alphacolors.h
+	globalincs/counter.hpp
 	globalincs/crashdump.cpp
 	globalincs/crashdump.h
 	globalincs/fsmemory.h
@@ -1299,6 +1300,8 @@ add_file_folder("Scripting\\\\Api\\\\Libs"
 add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/ai_helper.cpp
 	scripting/api/objs/ai_helper.h
+	scripting/api/objs/animation_handle.cpp
+	scripting/api/objs/animation_handle.h
 	scripting/api/objs/asteroid.cpp
 	scripting/api/objs/asteroid.h
 	scripting/api/objs/audio_stream.cpp
@@ -1441,6 +1444,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/weapon.h
 	scripting/api/objs/wing.cpp
 	scripting/api/objs/wing.h
+	scripting/api/objs/wingformation.cpp
+	scripting/api/objs/wingformation.h
 )
 
 add_file_folder("Scripting\\\\Lua"

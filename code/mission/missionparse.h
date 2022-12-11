@@ -18,6 +18,7 @@
 #include "graphics/2d.h"
 #include "io/keycontrol.h"
 #include "model/model.h"
+#include "model/modelanimation.h"
 #include "object/object.h"
 #include "parse/sexp.h"
 #include "sound/sound.h"
@@ -124,6 +125,7 @@ typedef struct mission {
 	char	squad_name[NAME_LENGTH];				// if the player has been reassigned to a squadron, this is the name of the squadron, otherwise empty string
 	char	loading_screen[GR_NUM_RESOLUTIONS][MAX_FILENAME_LEN];
 	char	skybox_model[MAX_FILENAME_LEN];
+	animation::ModelAnimationSet skybox_model_animations;
 	matrix	skybox_orientation;
 	char	envmap_name[MAX_FILENAME_LEN];
 	int		skybox_flags;
@@ -316,13 +318,13 @@ public:
 	int	arrival_distance = 0;					// used when arrival location is near or in front of some ship
 	int	arrival_anchor = -1;						// ship used for anchoring an arrival point
 	int arrival_path_mask = 0;					// Goober5000
-	int	arrival_cue = Locked_sexp_true;				//	Index in Sexp_nodes of this sexp.
+	int	arrival_cue = -1;				//	Index in Sexp_nodes of this sexp.
 	int	arrival_delay = 0;
 
 	int	departure_location = DEPART_AT_LOCATION;
 	int	departure_anchor = -1;
 	int departure_path_mask = 0;				// Goober5000
-	int	departure_cue = Locked_sexp_false;			//	Index in Sexp_nodes of this sexp.
+	int	departure_cue = -1;			//	Index in Sexp_nodes of this sexp.
 	int	departure_delay = 0;
 
 	int warpin_params_index = -1;

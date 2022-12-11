@@ -2143,6 +2143,11 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 						model_instance_local_to_global_point(&v2, &v2, shipp->model_instance_num, submodel_2, &vmd_identity_matrix, &vmd_zero_vector);
 						shipp->arc_pts[j][1] = v2;
 
+						//Set the arc colors
+						shipp->arc_primary_color_1[j] = arc_info->primary_color_1;
+						shipp->arc_primary_color_2[j] = arc_info->primary_color_2;
+						shipp->arc_secondary_color[j] = arc_info->secondary_color;
+
 						shipp->arc_type[j] = MARC_TYPE_SHIP;
 
 						shipp->passive_arc_next_times[passive_arc_info_idx] = timestamp((int)(arc_info->frequency * 1000));
@@ -2327,7 +2332,8 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 
 	// maybe move arc points around
 	for (int i=0; i<MAX_SHIP_ARCS; i++ )	{
-		if ( shipp->arc_timestamp[i].isValid() )	{
+		//Only move arc points around for Damaged or EMP type arcs
+		if (((shipp->arc_type[i] == MARC_TYPE_DAMAGED) || (shipp->arc_type[i] == MARC_TYPE_EMP)) && shipp->arc_timestamp[i].isValid()) {
 			if ( !timestamp_elapsed( shipp->arc_timestamp[i] ) )	{							
 				// Maybe move a vertex....  20% of the time maybe?
 				int mr = Random::next();

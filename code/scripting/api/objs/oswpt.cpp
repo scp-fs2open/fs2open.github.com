@@ -9,6 +9,18 @@
 #include "wing.h"
 #include "ship/ship.h"
 
+
+#define OSWPT_TYPE_NONE				oswpt_type::NONE
+#define OSWPT_TYPE_SHIP				oswpt_type::SHIP
+#define OSWPT_TYPE_WING				oswpt_type::WING
+#define OSWPT_TYPE_WAYPOINT			oswpt_type::WAYPOINT
+#define OSWPT_TYPE_SHIP_ON_TEAM		oswpt_type::SHIP_ON_TEAM
+#define OSWPT_TYPE_WHOLE_TEAM		oswpt_type::WHOLE_TEAM
+#define OSWPT_TYPE_PARSE_OBJECT		oswpt_type::PARSE_OBJECT
+#define OSWPT_TYPE_EXITED			oswpt_type::EXITED
+#define OSWPT_TYPE_WING_NOT_PRESENT	oswpt_type::WING_NOT_PRESENT
+
+
 namespace scripting {
 namespace api {
 

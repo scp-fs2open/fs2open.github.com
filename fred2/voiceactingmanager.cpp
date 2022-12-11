@@ -822,11 +822,8 @@ void VoiceActingManager::group_message_indexes(SCP_vector<int> &message_indexes)
 	message_indexes.clear();
 
 	// add all messages found in send-message-list or send-random-message node trees
-	for (int i = 0; i < Num_mission_events; i++)
-	{
-		mission_event *event = &Mission_events[i];
-		group_message_indexes_in_tree(event->formula, temp_message_indexes, message_indexes);
-	}
+	for (const auto &event: Mission_events)
+		group_message_indexes_in_tree(event.formula, temp_message_indexes, message_indexes);
 
 	// add remaining messages
 	for (size_t index = 0; index < temp_message_indexes.size(); index++)

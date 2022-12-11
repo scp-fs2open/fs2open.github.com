@@ -59,8 +59,8 @@ extern SCP_vector<bool> Show_iff;
 
 extern CCriticalSection CS_cur_object_index;
 
-void string_copy(char* dest, const CString& src, size_t max_len, int modify = 0);
-void string_copy(SCP_string& dest, const CString& src, int modify = 0);
+void string_copy(char* dest, const CString& src, size_t max_len, bool modify = false);
+void string_copy(SCP_string& dest, const CString& src, bool modify = false);
 void convert_multiline_string(CString& dest, const SCP_string& src);
 void convert_multiline_string(CString& dest, const char* src);
 void deconvert_multiline_string(char* dest, const CString& str, size_t max_len);

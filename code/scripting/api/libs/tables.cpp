@@ -3,19 +3,20 @@
 
 #include "tables.h"
 
+#include "scripting/api/objs/decaldefinition.h"
+#include "scripting/api/objs/fireballclass.h"
+#include "scripting/api/objs/intelentry.h"
 #include "scripting/api/objs/shipclass.h"
 #include "scripting/api/objs/shiptype.h"
 #include "scripting/api/objs/weaponclass.h"
-#include "scripting/api/objs/intelentry.h"
-#include "scripting/api/objs/fireballclass.h"
-#include "scripting/api/objs/decaldefinition.h"
+#include "scripting/api/objs/wingformation.h"
 
+#include "decals/decals.h"
+#include "fireball/fireballs.h"
+#include "menuui/techmenu.h"
+#include "mission/missionmessage.h"
 #include "ship/ship.h"
 #include "weapon/weapon.h"
-#include "menuui/techmenu.h"
-#include "fireball/fireballs.h"
-#include "mission/missionmessage.h"
-#include "decals/decals.h"
 
 
 extern bool Ships_inited;
@@ -281,6 +282,62 @@ ADE_FUNC(__len, l_Tables_DecalDefinitions, nullptr, "Number of decal definitions
 ADE_FUNC(isDecalSystemActive, l_Tables, nullptr, "Returns whether the decal system is able to work on the current machine", "boolean", "true if active, false if inactive")
 {
 	return ade_set_args(L, "b", decals::Decal_system_active);
+}
+
+ADE_VIRTVAR(DecalOptionActive, l_Tables, "boolean", "Gets or sets whether the decal option is active (note, decals will only work if the decal system is able to work on the current machine)", "boolean", "true if active, false if inactive")
+{
+	bool choice = decals::Decal_option_active;
+
+	if (ADE_SETTING_VAR && ade_get_args(L, "*b", &choice)) {
+		decals::Decal_option_active = choice;
+	}
+
+	return ade_set_args(L, "b", choice);
+}
+
+//*****SUBLIBRARY: Tables/WingFormations
+ADE_LIB_DERIV(l_Tables_WingFormations, "WingFormations", nullptr, nullptr, l_Tables);
+
+ADE_INDEXER(l_Tables_WingFormations, "number/string IndexOrName", "Array of wing formations", "wingformation", "Wing formation handle, or invalid handle if name is invalid")
+{
+	const char* name;
+	if (!ade_get_args(L, "*s", &name))
+		return 0;
+
+	// default is always the first formation
+	if (!stricmp(name, "Default"))
+		return ade_set_args(L, "o", l_WingFormation.Set(0));
+
+	// look up by name
+	int idx = wing_formation_lookup(name);
+
+	// if found, add 1 since "Default" is always first
+	if (idx >= 0)
+	{
+		idx++;
+	}
+	// look up by number
+	else
+	{
+		// atoi is good enough here, 0 is invalid anyway
+		idx = atoi(name);
+		if (idx > 0)
+		{
+			idx--; // Lua --> C/C++
+		}
+		else
+		{
+			return ade_set_args(L, "o", l_WingFormation.Set(-1));
+		}
+	}
+
+	return ade_set_args(L, "o", l_WingFormation.Set(idx));
+}
+
+ADE_FUNC(__len, l_Tables_WingFormations, nullptr, "Number of wing formations", "number", "Number of wing formations")
+{
+	// add 1 since "Default" is always first
+	return ade_set_args(L, "i", static_cast<int>(Wing_formations.size()) + 1);
 }
 
 }

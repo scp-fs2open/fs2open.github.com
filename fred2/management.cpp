@@ -151,7 +151,7 @@ int query_ship_name_duplicate(int ship);
 char *reg_read_string( char *section, char *name, char *default_value );
 
 // Note that the parameter here is max *length*, not max buffer size.  Leave room for the null-terminator!
-void string_copy(char *dest, const CString &src, size_t max_len, int modify)
+void string_copy(char *dest, const CString &src, size_t max_len, bool modify)
 {
 	if (modify)
 		if (strcmp(src, dest))
@@ -165,7 +165,7 @@ void string_copy(char *dest, const CString &src, size_t max_len, int modify)
 	dest[len] = 0;
 }
 
-void string_copy(SCP_string &dest, const CString &src, int modify)
+void string_copy(SCP_string &dest, const CString &src, bool modify)
 {
 	if (modify)
 		if (strcmp(src, dest.c_str()))
@@ -828,8 +828,6 @@ void clear_mission()
 	if (Briefing_dialog){
 		Briefing_dialog->reset_editor();
 	}
-	mission_event_shutdown();
-
 
 	allocate_parse_text( PARSE_TEXT_SIZE );
 
@@ -1769,10 +1767,10 @@ int internal_integrity_check()
 {
 	int i;
 
-	for (i=0; i<Num_mission_events; i++)
+	for (i=0; i<(int)Mission_events.size(); i++)
 		verify_sexp_tree(Mission_events[i].formula);
 
-	for (i=0; i<Num_goals; i++)
+	for (i=0; i<(int)Mission_goals.size(); i++)
 		verify_sexp_tree(Mission_goals[i].formula);
 
 	for (i=0; i<MAX_WINGS; i++)
@@ -1964,16 +1962,16 @@ int reference_handler(char *name, int type, int obj)
 				break;
 
 			case SRC_EVENT:
-				if (*Mission_events[n].name)
-					sprintf(text, "event \"%s\"", Mission_events[n].name);
+				if (!Mission_events[n].name.empty())
+					sprintf(text, "event \"%s\"", Mission_events[n].name.c_str());
 				else
 					sprintf(text, "event #%d", n);
 
 				break;
 
 			case SRC_MISSION_GOAL:
-				if (*Mission_goals[n].name)
-					sprintf(text, "mission goal \"%s\"", Mission_goals[n].name);
+				if (!Mission_goals[n].name.empty())
+					sprintf(text, "mission goal \"%s\"", Mission_goals[n].name.c_str());
 				else
 					sprintf(text, "mission goal #%d", n);
 

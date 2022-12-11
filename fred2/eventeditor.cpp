@@ -71,7 +71,6 @@ event_editor::event_editor(CWnd* pParent /*=NULL*/)
 	m_last_message_node = -1;
 	//}}AFX_DATA_INIT
 	m_event_tree.m_mode = MODE_EVENTS;
-	m_num_events = 0;
 	m_event_tree.link_modified(&modified);
 	modified = 0;
 	select_sexp_node = -1;
@@ -195,9 +194,6 @@ BOOL event_editor::OnInitDialog()
 	m_event_tree.setup((CEdit *) GetDlgItem(IDC_HELP_BOX));
 	load_tree();
 	create_tree();
-	if (m_num_events >= MAX_MISSION_EVENTS){
-		GetDlgItem(IDC_BUTTON_NEW_EVENT)->EnableWindow(FALSE);
-	}
 
 	update_cur_event();
 	i = m_event_tree.select_sexp_node;
@@ -226,8 +222,10 @@ BOOL event_editor::OnInitDialog()
 
 	// ---------- end of event initialization ----------
 
-	m_num_messages = Num_messages - Num_builtin_messages;
-	for (i=0; i<m_num_messages; i++) {
+	int num_messages = Num_messages - Num_builtin_messages;
+	m_messages.clear();
+	m_messages.reserve(num_messages);
+	for (i=0; i<num_messages; i++) {
 		msg = Messages[i + Num_builtin_messages];
 		m_messages.push_back(msg); 
 		if (m_messages[i].avi_info.name){
@@ -245,8 +243,8 @@ BOOL event_editor::OnInitDialog()
 
 	list = (CListBox *) GetDlgItem(IDC_MESSAGE_LIST);
 	list->ResetContent();
-	for (i=0; i<m_num_messages; i++) {
-		list->AddString(m_messages[i].name);
+	for (const auto &message: m_messages) {
+		list->AddString(message.name);
 	}
 
 	box = (CComboBox *) GetDlgItem(IDC_AVI_FILENAME);
@@ -337,25 +335,14 @@ void event_editor::load_tree()
 	select_sexp_node = -1;
 
 	m_event_tree.clear_tree();
-	m_num_events = Num_mission_events;
-	for (i=0; i<m_num_events; i++) {
-		m_events[i] = Mission_events[i];
-		if (Mission_events[i].objective_text){
-			m_events[i].objective_text = strdup(Mission_events[i].objective_text);
-		} else {
-			m_events[i].objective_text = NULL;
-		}
+	m_events.clear();
+	m_sig.clear();
+	for (i=0; i<(int)Mission_events.size(); i++) {
+		m_events.push_back(Mission_events[i]);
+		m_sig.push_back(i);
 
-		if (Mission_events[i].objective_key_text){
-			m_events[i].objective_key_text = strdup(Mission_events[i].objective_key_text);
-		} else {
-			m_events[i].objective_key_text = NULL;
-		}
-		
-		m_sig[i] = i;
-		if (!(*m_events[i].name)){
-			strcpy_s(m_events[i].name, "<Unnamed>");
-		}
+		if (m_events[i].name.empty())
+			m_events[i].name = "<Unnamed>";
 
 		m_events[i].formula = m_event_tree.load_sub_tree(Mission_events[i].formula, false, "do-nothing");
 
@@ -376,23 +363,23 @@ void event_editor::create_tree()
 	HTREEITEM h;
 
 	m_event_tree.DeleteAllItems();
-	for (i=0; i<m_num_events; i++) {
+	for (i=0; i<(int)m_events.size(); i++) {
 
 		// set the proper bitmap
 		int image;
 		if (m_events[i].chain_delay >= 0) {
 			image = BITMAP_CHAIN;
-			if (m_events[i].objective_text) {
+			if (!m_events[i].objective_text.empty()) {
 				image = BITMAP_CHAIN_DIRECTIVE;
 			}
 		} else {
 			image = BITMAP_ROOT;
-			if (m_events[i].objective_text) {
+			if (!m_events[i].objective_text.empty()) {
 				image = BITMAP_ROOT_DIRECTIVE;
 			}
 		}
 
-		h = m_event_tree.insert(m_events[i].name, image, image);
+		h = m_event_tree.insert(m_events[i].name.c_str(), image, image);
 
 		m_event_tree.SetItemData(h, m_events[i].formula);
 		m_event_tree.add_sub_tree(m_events[i].formula, h);
@@ -458,11 +445,11 @@ int event_editor::query_modified()
 	if (modified)
 		return 1;
 
-	if (Num_mission_events != m_num_events)
+	if (Mission_events.size() != m_events.size())
 		return 1;
 
-	for (i=0; i<m_num_events; i++) {
-		if (stricmp(m_events[i].name, Mission_events[i].name))
+	for (i=0; i<(int)m_events.size(); i++) {
+		if (!SCP_string_lcase_equal_to()(m_events[i].name, Mission_events[i].name))
 			return 1;
 		if (m_events[i].repeat_count != Mission_events[i].repeat_count)
 			return 1;
@@ -474,9 +461,9 @@ int event_editor::query_modified()
 			return 1;
 		if (m_events[i].chain_delay != Mission_events[i].chain_delay)
 			return 1;
-		if (advanced_stricmp(m_events[i].objective_text, Mission_events[i].objective_text))
+		if (!SCP_string_lcase_equal_to()(m_events[i].objective_text, Mission_events[i].objective_text))
 			return 1;
-		if (advanced_stricmp(m_events[i].objective_key_text, Mission_events[i].objective_key_text))
+		if (!SCP_string_lcase_equal_to()(m_events[i].objective_key_text, Mission_events[i].objective_key_text))
 			return 1;
 		if (m_events[i].flags != Mission_events[i].flags)
 			return 1;
@@ -487,7 +474,7 @@ int event_editor::query_modified()
 	if (m_cur_msg < 0)
 		return 0;
 
-	if (m_num_messages != Num_messages)
+	if ((int)m_messages.size() != Num_messages - Num_builtin_messages)
 		return 1;
 
 	ptr = (char *) (LPCTSTR) m_message_name;
@@ -495,7 +482,7 @@ int event_editor::query_modified()
 		if (!stricmp(ptr, Messages[i].name))
 			return 1;
 
-	for (i=0; i<m_num_messages; i++) {
+	for (i=0; i<(int)m_messages.size(); i++) {
 
 		if ((i != m_cur_msg) && (!stricmp(ptr, m_messages[m_cur_msg].name)))
 			return 1;
@@ -526,8 +513,8 @@ int event_editor::query_modified()
 
 void event_editor::OnButtonOk()
 {
-	char buf[256], names[2][MAX_MISSION_EVENTS][NAME_LENGTH];
-	int i, count;
+	SCP_vector<std::pair<SCP_string, SCP_string>> names;
+	int i;
 
 	audiostream_close_file(m_wave_id, 0);
 	m_wave_id = -1;
@@ -536,49 +523,42 @@ void event_editor::OnButtonOk()
 	if (query_modified())
 		set_modified();
 
-	for (i=0; i<Num_mission_events; i++) {
-		free_sexp2(Mission_events[i].formula);
-		if (Mission_events[i].objective_text)
-			free(Mission_events[i].objective_text);
-		if (Mission_events[i].objective_key_text)
-			free(Mission_events[i].objective_key_text);
+	for (auto &event: Mission_events) {
+		free_sexp2(event.formula);
+		event.result = 0;  // use this as a processed flag
 	}
-
-	count = 0;
-	for (i=0; i<Num_mission_events; i++)
-		Mission_events[i].result = 0;  // use this as a processed flag
 	
 	// rename all sexp references to old events
-	for (i=0; i<m_num_events; i++)
+	for (i=0; i<(int)m_events.size(); i++) {
 		if (m_sig[i] >= 0) {
-			strcpy_s(names[0][count], Mission_events[m_sig[i]].name);
-			strcpy_s(names[1][count], m_events[i].name);
-			count++;
+			names.emplace_back(Mission_events[m_sig[i]].name, m_events[i].name);
 			Mission_events[m_sig[i]].result = 1;
 		}
+	}
 
 	// invalidate all sexp references to deleted events.
-	for (i=0; i<Num_mission_events; i++)
-		if (!Mission_events[i].result) {
-			sprintf(buf, "<%s>", Mission_events[i].name);
-			strcpy(buf + NAME_LENGTH - 2, ">");  // force it to be not too long
-			strcpy_s(names[0][count], Mission_events[i].name);
-			strcpy_s(names[1][count], buf);
-			count++;
-		}
+	for (const auto &event: Mission_events) {
+		if (!event.result) {
+			SCP_string buf = "<" + event.name + ">";
 
-	Num_mission_events = m_num_events;
-	for (i=0; i<m_num_events; i++) {
-		Mission_events[i] = m_events[i];
-		Mission_events[i].formula = m_event_tree.save_tree(m_events[i].formula);
-		Mission_events[i].objective_text = m_events[i].objective_text;
-		Mission_events[i].objective_key_text = m_events[i].objective_key_text;
-		Mission_events[i].mission_log_flags = m_events[i].mission_log_flags;
+			// force it to not be too long
+			if (SCP_truncate(buf, NAME_LENGTH))
+				buf.back() = '>';
+
+			names.emplace_back(event.name, buf);
+		}
+	}
+
+	// copy all dialog events to the mission
+	Mission_events.clear();
+	for (const auto &dialog_event: m_events) {
+		Mission_events.push_back(dialog_event);
+		Mission_events.back().formula = m_event_tree.save_tree(dialog_event.formula);
 	}
 
 	// now update all sexp references
-	while (count--)
-		update_sexp_references(names[0][count], names[1][count], OPF_EVENT_NAME);
+	for (const auto &name_pair: names)
+		update_sexp_references(name_pair.first.c_str(), name_pair.second.c_str(), OPF_EVENT_NAME);
 
 	for (i=Num_builtin_messages; i<Num_messages; i++) {
 		if (Messages[i].avi_info.name)
@@ -588,9 +568,9 @@ void event_editor::OnButtonOk()
 			free(Messages[i].wave_info.name);
 	}
 
-	Num_messages = m_num_messages + Num_builtin_messages;
+	Num_messages = (int)m_messages.size() + Num_builtin_messages;
 	Messages.resize(Num_messages);
-	for (i=0; i<m_num_messages; i++)
+	for (i=0; i<(int)m_messages.size(); i++)
 		Messages[i + Num_builtin_messages] = m_messages[i];
 
 	event_annotation_prune();
@@ -677,38 +657,33 @@ void event_editor::update_cur_message()
 
 int event_editor::handler(int code, int node, const char *str)
 {
-	int i, index;
+	int i;
 
 	switch (code) {
 		case ROOT_DELETED:
-			for (i=0; i<m_num_events; i++)
+			for (i=0; i<(int)m_events.size(); i++)
 				if (m_events[i].formula == node)
 					break;
 
-			Assert(i < m_num_events);
-			index = i;
-			while (i < m_num_events - 1) {
-				m_events[i] = m_events[i + 1];
-				m_sig[i] = m_sig[i + 1];
-				i++;
-			}
+			Assert(i < (int)m_events.size());
+			m_events.erase(m_events.begin() + i);
+			m_sig.erase(m_sig.begin() + i);
 
-			m_num_events--;
-			GetDlgItem(IDC_BUTTON_NEW_EVENT)->EnableWindow(TRUE);
+			if (i >= (int)m_events.size())	// if we have deleted the last event,
+				i--;						// i will be set to -1 which is what we want
 
-			cur_event = index;
+			cur_event = i;
 			update_cur_event();
 
 			return node;
 
 		case ROOT_RENAMED:
-			for (i=0; i<m_num_events; i++)
+			for (i=0; i<(int)m_events.size(); i++)
 				if (m_events[i].formula == node)
 					break;
 
-			Assert(i < m_num_events);
-			Assert(strlen(str) < NAME_LENGTH);
-			strcpy_s(m_events[i].name, str);
+			Assert(i < (int)m_events.size());
+			m_events[i].name = str;
 			return node;
 
 		default:
@@ -720,53 +695,36 @@ int event_editor::handler(int code, int node, const char *str)
 
 void event_editor::OnButtonNewEvent() 
 {
-	if (m_num_events == MAX_MISSION_EVENTS) {
-		MessageBox("You have reached the limit on mission events.\n"
-			"Can't add any more.");
-		return;
-	}
-
 	// before we do anything, we must check and save off any data from the current event (e.g
 	// the repeat count and interval count)
 	save();
 
-	reset_event(m_num_events++, TVI_LAST);
+	m_events.emplace_back();
+	m_sig.push_back(-1);
+	reset_event((int)m_events.size() - 1, TVI_LAST);
 }
 
 void event_editor::OnInsert() 
 {
-	int i;
-
-	if (m_num_events == MAX_MISSION_EVENTS) {
-		MessageBox("You have reached the limit on mission events.\n"
-			"Can't add any more.");
-		return;
-	}
-
-	// before we do anything, we must check and save off any data from the current event (e.g
-	// the repeat count and interval count)
-	save();
-	
-
-	if(cur_event < 0 || m_num_events == 0)
+	if(cur_event < 0 || m_events.empty())
 	{
 		//There are no events yet, so just create one
-		reset_event(m_num_events++, TVI_LAST);
+		OnButtonNewEvent();
 	}
 	else
 	{
-		for (i=m_num_events; i>cur_event; i--) {
-			m_events[i] = m_events[i - 1];
-			m_sig[i] = m_sig[i - 1];
-		}
+		// before we do anything, we must check and save off any data from the current event (e.g
+		// the repeat count and interval count)
+		save();
+
+		m_events.insert(m_events.begin() + cur_event, mission_event());
+		m_sig.insert(m_sig.begin() + cur_event, -1);
 
 		if (cur_event){
 			reset_event(cur_event, get_event_handle(cur_event - 1));
 		} else {
 			reset_event(cur_event, TVI_FIRST);
 		}
-
-		m_num_events++;
 	}
 }
 
@@ -790,7 +748,7 @@ int event_editor::get_event_num(HTREEITEM handle)
 {
 	int formula = (int)m_event_tree.GetItemData(handle);
 
-	for (int i = 0; i < MAX_MISSION_EVENTS; ++i)
+	for (int i = 0; i < (int)m_events.size(); ++i)
 		if (formula == m_events[i].formula)
 			return i;
 
@@ -802,20 +760,9 @@ void event_editor::reset_event(int num, HTREEITEM after)
 	int index;
 	HTREEITEM h;
 
-	strcpy_s(m_events[num].name, "Event name");
-	h = m_event_tree.insert(m_events[num].name, BITMAP_ROOT, BITMAP_ROOT, TVI_ROOT, after);
-
-	m_events[num].repeat_count = 1;
-	m_events[num].trigger_count = 1;
-	m_events[num].interval = 1;
-	m_events[num].score = 0;
-	m_events[num].chain_delay = -1;
-	m_events[num].flags = 0;
-	m_events[num].objective_text = NULL;
-	m_events[num].objective_key_text = NULL;
-	m_events[num].team = -1;
-	m_events[num].mission_log_flags = 0;
-	m_sig[num] = -1;
+	// this is always called for a freshly constructed event, so all we have to do is set the name
+	m_events[num].name = "Event name";
+	h = m_event_tree.insert(m_events[num].name.c_str(), BITMAP_ROOT, BITMAP_ROOT, TVI_ROOT, after);
 
 	m_event_tree.item_index = -1;
 	m_event_tree.add_operator("when", h);
@@ -828,10 +775,6 @@ void event_editor::reset_event(int num, HTREEITEM after)
 	update_cur_event();
 
 	m_event_tree.SelectItem(h);
-//	GetDlgItem(IDC_CHAIN_DELAY) -> EnableWindow(FALSE);
-	if (num >= MAX_MISSION_EVENTS){
-		GetDlgItem(IDC_BUTTON_NEW_EVENT)->EnableWindow(FALSE);
-	}
 }
 
 void event_editor::OnDelete() 
@@ -895,13 +838,13 @@ void event_editor::insert_handler(int old, int node)
 {
 	int i;
 
-	for (i=0; i<m_num_events; i++){
+	for (i=0; i<(int)m_events.size(); i++){
 		if (m_events[i].formula == old){
 			break;
 		}
 	}
 
-	Assert(i < m_num_events);
+	Assert(i < (int)m_events.size());
 	m_events[i].formula = node;
 	return;
 }
@@ -916,7 +859,7 @@ void event_editor::save()
 		// the current message could be -1 because the message list
 		// lost focus, so remember the last focused message
 		// (but make sure it's valid)
-		if (m_cur_msg_old >= 0 && m_cur_msg_old < m_num_messages) {
+		if (m_cur_msg_old >= 0 && m_cur_msg_old < (int)m_messages.size()) {
 			m = m_cur_msg_old;
 		} else {
 			m = -1;
@@ -947,26 +890,8 @@ void event_editor::save_event(int e)
 	}
 
 	// handle objective text
-	if (m_events[e].objective_text) {
-		free(m_events[e].objective_text);
-	}
-
-	if (m_obj_text.IsEmpty()) {
-		m_events[e].objective_text = NULL;
-	} else {
-		m_events[e].objective_text = strdup(m_obj_text);
-	}
-
-	// handle objective key text
-	if (m_events[e].objective_key_text) {
-		free(m_events[e].objective_key_text);
-	}
-
-	if (m_obj_key_text.IsEmpty()) {
-		m_events[e].objective_key_text = NULL;
-	} else {
-		m_events[e].objective_key_text = strdup(m_obj_key_text);
-	}
+	m_events[e].objective_text = (LPCTSTR)m_obj_text;
+	m_events[e].objective_key_text = (LPCTSTR)m_obj_key_text;
 
 	// update bitmap
 	int bitmap;
@@ -1046,13 +971,13 @@ void event_editor::OnSelchangedEventTree(NMHDR* pNMHDR, LRESULT* pResult)
 	}
 
 	z = (int)m_event_tree.GetItemData(h);
-	for (i=0; i<m_num_events; i++){
+	for (i=0; i<(int)m_events.size(); i++){
 		if (m_events[i].formula == z){
 			break;
 		}
 	}
 
-	Assert(i < m_num_events);
+	Assert(i < (int)m_events.size());
 	cur_event = i;
 	update_cur_event();
 	
@@ -1123,17 +1048,8 @@ void event_editor::update_cur_event()
 		GetDlgItem(IDC_CHAIN_DELAY) -> EnableWindow(FALSE);
 	}
 
-	if (m_events[cur_event].objective_text){
-		m_obj_text = m_events[cur_event].objective_text;
-	} else {
-		m_obj_text.Empty();
-	}
-
-	if (m_events[cur_event].objective_key_text){
-		m_obj_key_text = m_events[cur_event].objective_key_text;
-	} else {
-		m_obj_key_text.Empty();
-	}
+	m_obj_text = m_events[cur_event].objective_text.c_str();
+	m_obj_key_text = m_events[cur_event].objective_key_text.c_str();
 
 	GetDlgItem(IDC_REPEAT_COUNT)->EnableWindow(TRUE);
 	GetDlgItem(IDC_TRIGGER_COUNT)->EnableWindow(TRUE);
@@ -1211,25 +1127,25 @@ void event_editor::OnUpdateTriggerCount()
 void event_editor::move_handler(int node1, int node2, bool insert_before)
 {
 	int index1, index2, s;
-	mission_event m;
+	mission_event e;
 
 	save();
 
-	for (index1=0; index1<m_num_events; index1++){
+	for (index1=0; index1<(int)m_events.size(); index1++){
 		if (m_events[index1].formula == node1){
 			break;
 		}
 	}
-	Assert(index1 < m_num_events);
+	Assert(index1 < (int)m_events.size());
 
-	for (index2=0; index2<m_num_events; index2++){
+	for (index2=0; index2<(int)m_events.size(); index2++){
 		if (m_events[index2].formula == node2){
 			break;
 		}
 	}
-	Assert(index2 < m_num_events);
+	Assert(index2 < (int)m_events.size());
 
-	m = m_events[index1];
+	e = m_events[index1];
 	s = m_sig[index1];
 
 	int offset = insert_before ? -1 : 0;
@@ -1245,7 +1161,7 @@ void event_editor::move_handler(int node1, int node2, bool insert_before)
 		index1--;
 	}
 
-	m_events[index1] = m;
+	m_events[index1] = e;
 	m_sig[index1] = s;
 
 	cur_event = index2;
@@ -1320,7 +1236,7 @@ int event_editor::save_message(int num)
 			}
 		}
 
-		for (i=0; i<m_num_messages; i++){
+		for (i=0; i<(int)m_messages.size(); i++){
 			if ((i != num) && (!stricmp(m_message_name, m_messages[i].name))) {
 				conflict = 1;
 				break;
@@ -1390,7 +1306,7 @@ void event_editor::OnNewMsg()
 	msg.persona_index = -1;
 	msg.multi_team = -1;
 	m_messages.push_back(msg);
-	m_cur_msg = m_num_messages++;
+	m_cur_msg = (int)m_messages.size() - 1;
 
 	modified = 1;
 	update_cur_message();
@@ -1401,8 +1317,8 @@ void event_editor::OnDeleteMsg()
 	char buf[256];
 
 	// handle this case somewhat gracefully
-	Assertion((m_cur_msg >= -1) && (m_cur_msg < m_num_messages), "Unexpected m_cur_msg value (%d); expected either -1, or between 0-%d. Get a coder!\n", m_cur_msg, m_num_messages - 1);
-	if((m_cur_msg < 0) || (m_cur_msg >= m_num_messages)){
+	Assertion((m_cur_msg >= -1) && (m_cur_msg < (int)m_messages.size()), "Unexpected m_cur_msg value (%d); expected either -1, or between 0-%d. Get a coder!\n", m_cur_msg, (int)m_messages.size() - 1);
+	if((m_cur_msg < 0) || (m_cur_msg >= (int)m_messages.size())){
 		return;
 	}
 
@@ -1420,9 +1336,8 @@ void event_editor::OnDeleteMsg()
 
 	m_messages.erase(m_messages.begin() + m_cur_msg); 
 
-	m_num_messages--;
-	if (m_cur_msg >= m_num_messages){
-		m_cur_msg = m_num_messages - 1;
+	if (m_cur_msg >= (int)m_messages.size()){
+		m_cur_msg = (int)m_messages.size() - 1;
 	}
 
 	GetDlgItem(IDC_NEW_MSG)->EnableWindow(TRUE);
@@ -1485,7 +1400,7 @@ void event_editor::OnBrowseWave()
 
 char *event_editor::current_message_name(int i)
 {
-	if ( (i < 0) || (i >= m_num_messages) ){
+	if ( (i < 0) || (i >= (int)m_messages.size()) ){
 		return NULL;
 	}
 

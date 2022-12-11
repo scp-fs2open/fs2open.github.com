@@ -13,42 +13,50 @@ MissionGoalsDialogModel::MissionGoalsDialogModel(QObject* parent, fso::fred::Edi
 }
 bool MissionGoalsDialogModel::apply()
 {
-	for (int i = 0; i < Num_goals; i++)
-		free_sexp2(Mission_goals[i].formula);
+	SCP_vector<std::pair<SCP_string, SCP_string>> names;
+	int i;
 
 	auto changes_detected = query_modified();
 
-	SCP_vector<std::pair<SCP_string, SCP_string>> names;
+	for (auto &goal: Mission_goals) {
+		free_sexp2(goal.formula);
+		goal.satisfied = 0;  // use this as a processed flag
+	}
 
-	for (int i = 0; i < Num_goals; i++)
-		Mission_goals[i].satisfied = 0; // use this as a processed flag
-
-	// rename all sexp references to old events
-	for (int i = 0; i < m_num_goals; i++)
+	// rename all sexp references to old goals
+	for (i=0; i<(int)m_goals.size(); i++) {
 		if (m_sig[i] >= 0) {
 			names.emplace_back(Mission_goals[m_sig[i]].name, m_goals[i].name);
 			Mission_goals[m_sig[i]].satisfied = 1;
 		}
+	}
 
-	// invalidate all sexp references to deleted events.
-	for (int i = 0; i < Num_goals; i++)
-		if (!Mission_goals[i].satisfied) {
-			names.emplace_back(Mission_goals[i].name, SCP_string("<") + Mission_goals[i].name + ">");
+	// invalidate all sexp references to deleted goals.
+	for (const auto &goal: Mission_goals) {
+		if (!goal.satisfied) {
+			SCP_string buf = "<" + goal.name + ">";
+
+			// force it to not be too long
+			if (SCP_truncate(buf, NAME_LENGTH))
+				buf.back() = '>';
+
+			names.emplace_back(goal.name, buf);
 		}
+	}
 
-	Num_goals = m_num_goals;
-	for (int i = 0; i < Num_goals; i++) {
-		Mission_goals[i]         = m_goals[i];
-		Mission_goals[i].formula = _sexp_tree->save_tree(Mission_goals[i].formula);
-		if (The_mission.game_type & MISSION_TYPE_MULTI_TEAMS) {
-			Assert(Mission_goals[i].team != -1);
+	// copy all dialog goals to the mission
+	Mission_goals.clear();
+	for (const auto &dialog_goal: m_goals) {
+		Mission_goals.push_back(dialog_goal);
+		Mission_goals.back().formula = _sexp_tree->save_tree(dialog_goal.formula);
+		if ( The_mission.game_type & MISSION_TYPE_MULTI_TEAMS ) {
+			Assert( dialog_goal.team != -1 );
 		}
 	}
 
 	// now update all sexp references
-	for (const auto& entry : names) {
-		update_sexp_references(entry.first.c_str(), entry.second.c_str(), OPF_GOAL_NAME);
-	}
+	for (const auto &name_pair: names)
+		update_sexp_references(name_pair.first.c_str(), name_pair.second.c_str(), OPF_GOAL_NAME);
 
 	// Only fire the signal after the changes have been applied to make sure the other parts of the code see the updated
 	// state
@@ -62,27 +70,28 @@ void MissionGoalsDialogModel::reject() {
 	// Nothing to do here
 }
 mission_goal& MissionGoalsDialogModel::getCurrentGoal() {
-	Assertion(cur_goal >= 0 && cur_goal < m_num_goals, "Current goal index is not valid!");
+	Assertion(cur_goal >= 0 && cur_goal < (int)m_goals.size(), "Current goal index is not valid!");
 
 	return m_goals[cur_goal];
 }
 bool MissionGoalsDialogModel::isCurrentGoalValid() const {
-	return cur_goal >= 0 && cur_goal < m_num_goals;
+	return cur_goal >= 0 && cur_goal < (int)m_goals.size();
 }
 void MissionGoalsDialogModel::initializeData() {
-	m_num_goals = Num_goals;
-	for (auto i = 0; i < Num_goals; i++) {
-		m_goals[i] = Mission_goals[i];
-		m_sig[i] = i;
-		if (strlen(m_goals[i].name) <= 0) {
-			strcpy_s(m_goals[i].name, "<unnamed>");
-		}
-	}
-	cur_goal = -1;
+	m_goals.clear();
+	m_sig.clear();
+	for (int i=0; i<(int)Mission_goals.size(); i++) {
+		m_goals.push_back(Mission_goals[i]);
+		m_sig.push_back(i);
 
+		if (m_goals[i].name.empty())
+			m_goals[i].name = "<Unnamed>";
+	}
+
+	cur_goal = -1;
 	modelChanged();
 }
-std::array<mission_goal, MAX_GOALS>& MissionGoalsDialogModel::getGoals() {
+SCP_vector<mission_goal>& MissionGoalsDialogModel::getGoals() {
 	return m_goals;
 }
 void MissionGoalsDialogModel::setCurrentGoal(int index) {
@@ -93,9 +102,6 @@ void MissionGoalsDialogModel::setCurrentGoal(int index) {
 bool MissionGoalsDialogModel::isGoalVisible(const mission_goal& goal) const {
 	return (goal.type & GOAL_TYPE_MASK) == m_display_goal_types;
 }
-int MissionGoalsDialogModel::getNumGoals() const {
-	return m_num_goals;
-}
 void MissionGoalsDialogModel::setGoalDisplayType(int type) {
 	m_display_goal_types = type;
 }
@@ -105,13 +111,13 @@ bool MissionGoalsDialogModel::query_modified() {
 	if (modified)
 		return true;
 
-	if (Num_goals != m_num_goals)
+	if (Mission_goals.size() != m_goals.size())
 		return true;
 
-	for (i=0; i<Num_goals; i++) {
-		if (stricmp(Mission_goals[i].name, m_goals[i].name))
+	for (i=0; i<(int)Mission_goals.size(); i++) {
+		if (!SCP_string_lcase_equal_to()(Mission_goals[i].name, m_goals[i].name))
 			return true;
-		if (stricmp(Mission_goals[i].message, m_goals[i].message))
+		if (!SCP_string_lcase_equal_to()(Mission_goals[i].message, m_goals[i].message))
 			return true;
 		if (Mission_goals[i].type != m_goals[i].type)
 			return true;
@@ -126,55 +132,45 @@ bool MissionGoalsDialogModel::query_modified() {
 void MissionGoalsDialogModel::setTreeControl(sexp_tree* tree) {
 	_sexp_tree = tree;
 }
-void MissionGoalsDialogModel::deleteGoal(int formula) {
-	int goal;
-	for (goal=0; goal<m_num_goals; goal++){
-		if (m_goals[goal].formula == formula){
-			break;
-		}
-	}
+void MissionGoalsDialogModel::deleteGoal(int node) {
+	int i;
+	for (i=0; i<(int)m_goals.size(); i++)
+	if (m_goals[i].formula == node)
+		break;
 
-	Assert(goal < m_num_goals);
-	while (goal < m_num_goals - 1) {
-		m_goals[goal] = m_goals[goal + 1];
-		m_sig[goal] = m_sig[goal + 1];
-		goal++;
-	}
-	m_num_goals--;
+	Assert(i < (int)m_goals.size());
+	m_goals.erase(m_goals.begin() + i);
+	m_sig.erase(m_sig.begin() + i);
 
 	modelChanged();
 }
 void MissionGoalsDialogModel::changeFormula(int old_form, int new_form) {
 	int i;
 
-	for (i=0; i<m_num_goals; i++){
+	for (i=0; i<(int)m_goals.size(); i++){
 		if (m_goals[i].formula == old_form){
 			break;
 		}
 	}
 
-	Assert(i < m_num_goals);
+	Assert(i < (int)m_goals.size());
 	m_goals[i].formula = new_form;
 
 	modelChanged();
 }
 mission_goal& MissionGoalsDialogModel::createNewGoal() {
-	Assert(m_num_goals < MAX_GOALS);
-	m_goals[m_num_goals].type = m_display_goal_types;			// this also marks the goal as valid since bit not set
-	m_sig[m_num_goals] = -1;
-	strcpy_s(m_goals[m_num_goals].name, "Goal name");
-	strcpy_s(m_goals[m_num_goals].message, "Mission goal text");
-	m_goals[m_num_goals].score = 0;
-		// team defaults to the first team.
-	m_goals[m_num_goals].team = 0;
+	m_goals.emplace_back();
+	m_sig.push_back(-1);
 
-	auto new_goal = m_num_goals++;
+	m_goals.back().type = m_display_goal_types;			// this also marks the goal as valid since bit not set
+	m_goals.back().name = "Goal name";
+	m_goals.back().message = "Mission goal text";
 
-	return m_goals[new_goal];
+	return m_goals.back();
 }
 void MissionGoalsDialogModel::setCurrentGoalMessage(const char* text) {
 	Assertion(isCurrentGoalValid(), "Current goal is not valid!");
-	strcpy_s(getCurrentGoal().message, text);
+	getCurrentGoal().message = text;
 
 	modelChanged();
 }
@@ -196,7 +192,7 @@ void MissionGoalsDialogModel::setCurrentGoalScore(int value) {
 }
 void MissionGoalsDialogModel::setCurrentGoalName(const char* name) {
 	Assertion(isCurrentGoalValid(), "Current goal is not valid!");
-	strcpy_s(getCurrentGoal().name, name);
+	getCurrentGoal().name = name;
 
 	modelChanged();
 }

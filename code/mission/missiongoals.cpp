@@ -170,15 +170,13 @@ struct goal_text {
 	void display(int n, int y);
 };
 
-int Num_mission_events;
-int Num_goals = 0;								// number of goals for this mission
 int Event_index = -1;  // used by sexp code to tell what event it came from
 bool Log_event = false;
 bool Snapshot_all_events = false;
 TIMESTAMP Mission_goal_timestamp;
 
-mission_event Mission_events[MAX_MISSION_EVENTS];
-mission_goal Mission_goals[MAX_GOALS];		// structure for the goals of this mission
+SCP_vector<mission_event> Mission_events;
+SCP_vector<mission_goal> Mission_goals;		// structure for the goals of this mission
 static goal_text Goal_text;
 
 SCP_vector<event_annotation> Event_annotations;
@@ -250,7 +248,7 @@ void goal_list::set()
 
 	for (i=0; i<count; i++) {
 		line_offsets[i] = Goal_text.m_num_lines;
-		line_spans[i] = Goal_text.add(list[i]->message);
+		line_spans[i] = Goal_text.add(list[i]->message.c_str());
 		
 		if (i < count - 1)
 			Goal_text.add();
@@ -363,57 +361,15 @@ void goal_text::display(int n, int y)
 	gr_printf_menu(Goal_screen_text_x, y, "%s", buf);
 }
 
-// mission_init_goals: initializes info for goals.  Called as part of mission initialization.
-void mission_init_goals()
+// Called as part of mission initialization.
+void mission_goals_and_events_init()
 {
-	int i;
-
-	Num_goals = 0;
-	for (i=0; i<MAX_GOALS; i++) {
-		Mission_goals[i].satisfied = GOAL_INCOMPLETE;
-		Mission_goals[i].flags = 0;
-		Mission_goals[i].team = 0;
-	}
-
-	Num_mission_events = 0;
-	for (i=0; i<MAX_MISSION_EVENTS; i++) {
-		Mission_events[i].result = 0;
-		Mission_events[i].timestamp = TIMESTAMP::invalid();
-		Mission_events[i].flags = 0;
-		Mission_events[i].count = 0;
-		Mission_events[i].satisfied_time = TIMESTAMP::invalid();
-		Mission_events[i].born_on_date = TIMESTAMP::invalid();
-		Mission_events[i].team = -1;
-
-		Mission_events[i].mission_log_flags = 0;
-		Mission_events[i].event_log_buffer.clear();
-		Mission_events[i].event_log_variable_buffer.clear();
-		Mission_events[i].event_log_container_buffer.clear();
-		Mission_events[i].event_log_argument_buffer.clear();
-		Mission_events[i].backup_log_buffer.clear();
-		Mission_events[i].previous_result = 0;
-	}
+	Mission_goals.clear();
+	Mission_events.clear();
 
 	Mission_goal_timestamp = _timestamp(GOAL_TIMESTAMP);
 	Mission_directive_sound_timestamp = TIMESTAMP::invalid();
 	Mission_directive_special_timestamp = TIMESTAMP::invalid();		// need to make invalid right away
-}
-
-// called at the end of a mission for cleanup
-void mission_event_shutdown()
-{
-	int i;
-
-	for (i=0; i<Num_mission_events; i++) {
-		if (Mission_events[i].objective_text) {
-			vm_free(Mission_events[i].objective_text);
-			Mission_events[i].objective_text = NULL;
-		}
-		if (Mission_events[i].objective_key_text) {
-			vm_free(Mission_events[i].objective_key_text);
-			Mission_events[i].objective_key_text = NULL;
-		}
-	}
 }
 
 // called once right before entering the show goals screen to do initializations.
@@ -434,7 +390,7 @@ void mission_show_goals_init()
 	Goal_screen_icon_x = Goal_screen_icon_xcoord[gr_screen.res];
 
 	// fill up the lists so we can display the goals appropriately
-	for (i=0; i<Num_goals; i++) {
+	for (i=0; i<(int)Mission_goals.size(); i++) {
 		if (Mission_goals[i].type & INVALID_GOAL){  // don't count invalid goals here
 			continue;
 		}
@@ -611,7 +567,7 @@ int ML_objectives_init(int x, int y, int w, int h)
 	}
 
 	// fill up the lists so we can display the goals appropriately
-	for (i=0; i<Num_goals; i++) {
+	for (i=0; i<(int)Mission_goals.size(); i++) {
 		if (Mission_goals[i].type & INVALID_GOAL){  // don't count invalid goals here
 			continue;
 		}
@@ -774,7 +730,7 @@ void mission_goal_status_change( int goal_num, int new_status)
 {
 	int type;
 
-	Assert(goal_num < Num_goals);
+	Assert(goal_num < (int)Mission_goals.size());
 	Assert((new_status == GOAL_FAILED) || (new_status == GOAL_COMPLETE));
 
 	// if in a multiplayer game, send a status change to clients
@@ -796,7 +752,7 @@ void mission_goal_status_change( int goal_num, int new_status)
 				}
 			}
 		}
-		mission_log_add_entry( LOG_GOAL_FAILED, Mission_goals[goal_num].name, NULL, goal_num );
+		mission_log_add_entry( LOG_GOAL_FAILED, Mission_goals[goal_num].name.c_str(), nullptr, goal_num );
 	} else if ( new_status == GOAL_COMPLETE ) {
 		if ( (Game_mode & GM_NORMAL) || ((Net_player != NULL) && (Net_player->p_info.team == Mission_goals[goal_num].team))) {
 			hud_add_objective_messsage(type, new_status);
@@ -804,7 +760,7 @@ void mission_goal_status_change( int goal_num, int new_status)
 			if ( !(Mission_goals[goal_num].flags & MGF_NO_MUSIC) ) {
 				event_music_primary_goals_met();
 			}			
-			mission_log_add_entry( LOG_GOAL_SATISFIED, Mission_goals[goal_num].name, NULL, goal_num );
+			mission_log_add_entry( LOG_GOAL_SATISFIED, Mission_goals[goal_num].name.c_str(), nullptr, goal_num );
 		}	
 		
 		if(Game_mode & GM_MULTIPLAYER){
@@ -861,7 +817,7 @@ int mission_get_event_status(int event)
 void mission_event_set_directive_special(int event)
 {
 	// bogus
-	if((event < 0) || (event >= Num_mission_events)){
+	if((event < 0) || (event >= (int)Mission_events.size())){
 		return;
 	}
 
@@ -875,7 +831,7 @@ void mission_event_set_directive_special(int event)
 void mission_event_unset_directive_special(int event)
 {
 	// bogus
-	if((event < 0) || (event >= Num_mission_events)){
+	if((event < 0) || (event >= (int)Mission_events.size())){
 		return;
 	}
 
@@ -962,7 +918,7 @@ void mission_process_event( int event )
 				}
 			}
 
-			if ((event < Num_mission_events - 1) && Mission_events[event + 1].result && (Mission_events[event + 1].chain_delay >= 0)){
+			if ((event < (int)Mission_events.size() - 1) && Mission_events[event + 1].result && (Mission_events[event + 1].chain_delay >= 0)){
 				sindex = -1;  // bypass evaluation
 			}
 		}
@@ -1028,7 +984,7 @@ void mission_process_event( int event )
 
 	if (result && !Mission_events[event].satisfied_time.isValid()) {
 		Mission_events[event].satisfied_time = _timestamp();
-		if ( Mission_events[event].objective_text ) {
+		if ( !Mission_events[event].objective_text.empty() ) {
 			mission_event_set_completion_sound_timestamp();
 		}
 	}
@@ -1100,7 +1056,7 @@ void mission_eval_goals()
 
 	// before checking whether or not we should evaluate goals, we should run through the events and
 	// process any whose timestamp is valid and has expired.  This would catch repeating events only
-	for (i=0; i<Num_mission_events; i++) {
+	for (i=0; i<(int)Mission_events.size(); i++) {
 		if (Mission_events[i].formula != -1) {
 			if ( !Mission_events[i].timestamp.isValid() || !timestamp_elapsed(Mission_events[i].timestamp) ){
 				continue;
@@ -1118,7 +1074,7 @@ void mission_eval_goals()
 	}
 
 	// first evaluate the players goals
-	for (i=0; i<Num_goals; i++) {
+	for (i=0; i<(int)Mission_goals.size(); i++) {
 		// don't evaluate invalid goals
 		if (Mission_goals[i].type & INVALID_GOAL){
 			continue;
@@ -1137,7 +1093,7 @@ void mission_eval_goals()
 	} // end for
 
 	// now evaluate any mission events
-	for (i=0; i<Num_mission_events; i++) {
+	for (i=0; i<(int)Mission_events.size(); i++) {
 		if ( Mission_events[i].formula != -1 ) {
 			// only evaluate this event if the timestamp is not valid.  We do this since
 			// we will evaluate repeatable events at the top of the file so we can get
@@ -1180,7 +1136,7 @@ int mission_evaluate_primary_goals()
 {
 	int i, primary_goals_complete = PRIMARY_GOALS_COMPLETE;
 
-	for (i=0; i<Num_goals; i++) {
+	for (i=0; i<(int)Mission_goals.size(); i++) {
 
 		if ( Mission_goals[i].type & INVALID_GOAL ) {
 			continue;
@@ -1203,7 +1159,7 @@ int mission_goals_met()
 {
 	int i, all_goals_met = 1;
 
-	for (i=0; i<Num_goals; i++) {
+	for (i=0; i<(int)Mission_goals.size(); i++) {
 
 		if ( Mission_goals[i].type & INVALID_GOAL ) {
 			continue;
@@ -1252,8 +1208,8 @@ void mission_goal_mark_valid( const char *name, bool valid )
 {
 	int i;
 
-	for (i=0; i<Num_goals; i++) {
-		if ( !stricmp(Mission_goals[i].name, name) ) {
+	for (i=0; i<(int)Mission_goals.size(); i++) {
+		if ( !stricmp(Mission_goals[i].name.c_str(), name) ) {
 			mission_goal_validation_change( i, valid );
 			return;
 		}
@@ -1267,9 +1223,9 @@ void mission_goal_fail_all()
 {
 	int i;
 
-	for (i=0; i<Num_goals; i++) {
+	for (i=0; i<(int)Mission_goals.size(); i++) {
 		Mission_goals[i].satisfied = GOAL_FAILED;
-		mission_log_add_entry( LOG_GOAL_FAILED, Mission_goals[i].name, NULL, i );
+		mission_log_add_entry( LOG_GOAL_FAILED, Mission_goals[i].name.c_str(), nullptr, i );
 	}
 }
 
@@ -1279,16 +1235,16 @@ void mission_goal_fail_incomplete()
 {
 	int i;
 
-	for (i = 0; i < Num_goals; i++ ) {
+	for (i = 0; i < (int)Mission_goals.size(); i++ ) {
 		if ( Mission_goals[i].satisfied == GOAL_INCOMPLETE ) {
 			Mission_goals[i].satisfied = GOAL_FAILED;
-			mission_log_add_entry( LOG_GOAL_FAILED, Mission_goals[i].name, NULL, i );
+			mission_log_add_entry( LOG_GOAL_FAILED, Mission_goals[i].name.c_str(), nullptr, i );
 		}
 	}
 
 	// now for the events.  Must set the formula to -1 and the result to 0 to be a failed
 	// event.
-	for ( i = 0; i < Num_mission_events; i++ ) {
+	for ( i = 0; i < (int)Mission_events.size(); i++ ) {
 		if ( Mission_events[i].formula != -1 ) {
 			Mission_events[i].formula = -1;
 			Mission_events[i].result = 0;
@@ -1302,7 +1258,7 @@ void mission_goal_mark_objectives_complete()
 {
 	int i;
 
-	for (i = 0; i < Num_goals; i++ ) {
+	for (i = 0; i < (int)Mission_goals.size(); i++ ) {
 		Mission_goals[i].satisfied = GOAL_COMPLETE;
 	}
 }
@@ -1312,7 +1268,7 @@ void mission_goal_mark_events_complete()
 {
 	int i;
 
-	for (i = 0; i < Num_mission_events; i++ ) {
+	for (i = 0; i < (int)Mission_events.size(); i++ ) {
 		Mission_events[i].result = 1;
 		Mission_events[i].formula = -1;
 	}
@@ -1332,9 +1288,9 @@ DCF(show_mission_goals,"Lists the status of mission goals")
 		// Don't do anything, but advance the parser past the flag
 	}
 
-	for (i=0; i<Num_goals; i++) {
+	for (i=0; i<(int)Mission_goals.size(); i++) {
 		type = Mission_goals[i].type & GOAL_TYPE_MASK;
-		dc_printf("%2d. %32s(%10s) -- ", i, Mission_goals[i].name, Goal_type_text(type));
+		dc_printf("%2d. %32s(%10s) -- ", i, Mission_goals[i].name.c_str(), Goal_type_text(type));
 		if ( Mission_goals[i].satisfied == GOAL_COMPLETE )
 			dc_printf("satisfied.\n");
 		else if ( Mission_goals[i].satisfied == GOAL_INCOMPLETE )
@@ -1374,8 +1330,8 @@ DCF(change_mission_goal, "Changes the mission goal status")
 	}
 
 	dc_stuff_int(&num);
-	if ( num >= Num_goals ) {
-		dc_printf (" Error: Invalid value for <goal_num>. Valid values: 0 - %i\n", Num_goals);
+	if ( num >= (int)Mission_goals.size() ) {
+		dc_printf (" Error: Invalid value for <goal_num>. Valid values: 0 - " SIZE_T_ARG "\n", Mission_goals.size());
 		return;
 	}
 
@@ -1422,7 +1378,7 @@ void mission_goal_mark_all_true(int type)
 {
 	int i;
 
-	for (i = 0; i < Num_goals; i++ ) {
+	for (i = 0; i < (int)Mission_goals.size(); i++ ) {
 		if ( (Mission_goals[i].type & GOAL_TYPE_MASK) == type )
 			Mission_goals[i].satisfied = GOAL_COMPLETE;
 	}
@@ -1479,7 +1435,7 @@ void mission_goal_fetch_num_resolved(int desired_type, int *num_resolved, int *t
 	*num_resolved=0;
 	*total=0;
 
-	for (i=0; i<Num_goals; i++) {
+	for (i=0; i<(int)Mission_goals.size(); i++) {
 		// if we're checking for team
 		if((team >= 0) && (Mission_goals[i].team != team)){
 			continue;
@@ -1507,7 +1463,7 @@ int mission_goals_incomplete(int desired_type, int team)
 {
 	int i, type;
 
-	for (i=0; i<Num_goals; i++) {		
+	for (i=0; i<(int)Mission_goals.size(); i++) {		
 		// if we're checking for team
 		if((team >= 0) && (Mission_goals[i].team != team)){
 			continue;
@@ -1538,7 +1494,7 @@ void mission_goal_exit()
 
 int mission_goal_find_sexp_tree(int root_node)
 {
-	for (int i = 0; i < Num_goals; ++i)
+	for (int i = 0; i < (int)Mission_goals.size(); ++i)
 		if (Mission_goals[i].formula == root_node)
 			return i;
 	return -1;
@@ -1546,7 +1502,7 @@ int mission_goal_find_sexp_tree(int root_node)
 
 int mission_event_find_sexp_tree(int root_node)
 {
-	for (int i = 0; i < Num_mission_events; ++i)
+	for (int i = 0; i < (int)Mission_events.size(); ++i)
 		if (Mission_events[i].formula == root_node)
 			return i;
 	return -1;
@@ -1556,8 +1512,8 @@ int mission_goal_lookup(const char *name)
 {
 	Assertion(name != nullptr, "Goal name cannot be null!");
 
-	for (int i = 0; i < Num_goals; ++i)
-		if (!stricmp(Mission_goals[i].name, name))
+	for (int i = 0; i < (int)Mission_goals.size(); ++i)
+		if (!stricmp(Mission_goals[i].name.c_str(), name))
 			return i;
 	return -1;
 }
@@ -1566,8 +1522,8 @@ int mission_event_lookup(const char *name)
 {
 	Assertion(name != nullptr, "Event name cannot be null!");
 
-	for (int i = 0; i < Num_mission_events; ++i)
-		if (!stricmp(Mission_events[i].name, name))
+	for (int i = 0; i < (int)Mission_events.size(); ++i)
+		if (!stricmp(Mission_events[i].name.c_str(), name))
 			return i;
 	return -1;
 }

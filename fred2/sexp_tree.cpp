@@ -46,6 +46,7 @@
 #include "globalincs/alphacolors.h"
 #include "localization/localize.h"
 #include "AddModifyContainerDlg.h"
+#include "asteroid/asteroid.h"
 
 #define TREE_NODE_INCREMENT	100
 
@@ -639,7 +640,6 @@ void sexp_tree::right_clicked(int mode)
 
 	m_mode = mode;
 	add_instance = replace_instance = -1;
-	Assert(Operators.size() <= MAX_OPERATORS);
 	Assert((int)op_menu.size() < MAX_OP_MENUS);
 	Assert((int)op_submenu.size() < MAX_SUBMENUS);
 
@@ -1573,11 +1573,7 @@ void sexp_tree::right_clicked(int mode)
 		for (j=0; j<(int)Operators.size(); j++) {
 			z = 0;
 			if (m_mode == MODE_CAMPAIGN) {
-				if (Operators[j].value & OP_NONCAMPAIGN_FLAG)
-					z = 1;
-
-			} else {
-				if (Operators[j].value & OP_CAMPAIGN_ONLY_FLAG)
+				if (!usable_in_campaign(Operators[j].value))
 					z = 1;
 			}
 
@@ -3374,6 +3370,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_FUNCTIONAL_WHEN_EVAL_TYPE:
 		case OPF_ANIMATION_NAME:
 		case OPF_CONTAINER_VALUE:
+		case OPF_WING_FORMATION:
 			return 1;
 
 		case OPF_SHIP:
@@ -3440,7 +3437,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 				return 1;
 
 			// need to be sure that previous-goal functions are available.  (i.e. we are providing a default argument for them)
-			else if ((value == OP_PREVIOUS_GOAL_TRUE) || (value == OP_PREVIOUS_GOAL_FALSE) || (value == OP_PREVIOUS_GOAL_INCOMPLETE) || Num_goals)
+			else if ((value == OP_PREVIOUS_GOAL_TRUE) || (value == OP_PREVIOUS_GOAL_FALSE) || (value == OP_PREVIOUS_GOAL_INCOMPLETE) || !Mission_goals.empty())
 				return 1;
 
 			return 0;
@@ -3454,7 +3451,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 				return 1;
 
 			// need to be sure that previous-event functions are available.  (i.e. we are providing a default argument for them)
-			else if ((value == OP_PREVIOUS_EVENT_TRUE) || (value == OP_PREVIOUS_EVENT_FALSE) || (value == OP_PREVIOUS_EVENT_INCOMPLETE) || Num_mission_events)
+			else if ((value == OP_PREVIOUS_EVENT_TRUE) || (value == OP_PREVIOUS_EVENT_FALSE) || (value == OP_PREVIOUS_EVENT_INCOMPLETE) || !Mission_events.empty())
 				return 1;
 
 			return 0;
@@ -5432,6 +5429,14 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = nullptr;
 			break;
 
+		case OPF_ASTEROID_DEBRIS:
+			list = get_listing_opf_asteroid_debris();
+			break;
+
+		case OPF_WING_FORMATION:
+			list = get_listing_opf_wing_formation();
+			break;
+
 		default:
 			Int3();  // unknown OPF code
 			list = NULL;
@@ -6582,7 +6587,7 @@ sexp_list_item *sexp_tree::get_listing_opf_mission_name()
 
 sexp_list_item *sexp_tree::get_listing_opf_goal_name(int parent_node)
 {
-	int i, m;
+	int m;
 	sexp_list_item head;
 
 	if (m_mode == MODE_CAMPAIGN) {
@@ -6597,16 +6602,21 @@ sexp_list_item *sexp_tree::get_listing_opf_goal_name(int parent_node)
 				break;
 
 		if (m < Campaign.num_missions) {
-			if (Campaign.missions[m].num_goals < 0)  // haven't loaded goal names yet.
+			if (Campaign.missions[m].flags & CMISSION_FLAG_FRED_LOAD_PENDING)  // haven't loaded goal names yet.
+			{
 				read_mission_goal_list(m);
+				Campaign.missions[m].flags &= ~CMISSION_FLAG_FRED_LOAD_PENDING;
+			}
 
-			for (i=0; i<Campaign.missions[m].num_goals; i++)
-				head.add_data(Campaign.missions[m].goals[i].name);
+			for (const auto &stored_goal: Campaign.missions[m].goals)
+				head.add_data(stored_goal.name);
 		}
-
 	} else {
-		for (i=0; i<Num_goals; i++)
-			head.add_data(Mission_goals[i].name);
+		for (const auto &goal: Mission_goals) {
+			auto temp_name = goal.name;
+			SCP_truncate(temp_name, NAME_LENGTH);
+			head.add_data(temp_name.c_str());
+		}
 	}
 
 	return head.next;
@@ -6663,7 +6673,7 @@ sexp_list_item *sexp_tree::get_listing_opf_keypress()
 
 sexp_list_item *sexp_tree::get_listing_opf_event_name(int parent_node)
 {
-	int i, m;
+	int m;
 	sexp_list_item head;
 
 
@@ -6679,16 +6689,21 @@ sexp_list_item *sexp_tree::get_listing_opf_event_name(int parent_node)
 				break;
 
 		if (m < Campaign.num_missions) {
-			if (Campaign.missions[m].num_events < 0)  // haven't loaded goal names yet.
+			if (Campaign.missions[m].flags & CMISSION_FLAG_FRED_LOAD_PENDING)  // haven't loaded goal names yet.
+			{
 				read_mission_goal_list(m);
+				Campaign.missions[m].flags &= ~CMISSION_FLAG_FRED_LOAD_PENDING;
+			}
 
-			for (i=0; i<Campaign.missions[m].num_events; i++)
-				head.add_data(Campaign.missions[m].events[i].name);
+			for (const auto &stored_event: Campaign.missions[m].events)
+				head.add_data(stored_event.name);
 		}
-
 	} else {
-		for (i=0; i<Num_mission_events; i++)
-			head.add_data(Mission_events[i].name);
+		for (const auto &event: Mission_events) {
+			auto temp_name = event.name;
+			SCP_truncate(temp_name, NAME_LENGTH);
+			head.add_data(temp_name.c_str());
+		}
 	}
 
 	return head.next;
@@ -7105,6 +7120,22 @@ sexp_list_item *sexp_tree::get_listing_opf_nebula_patterns()
 	return head.next;
 }
 
+sexp_list_item* sexp_tree::get_listing_opf_asteroid_debris()
+{
+	sexp_list_item head;
+
+	head.add_data(SEXP_NONE_STRING);
+
+	for (int i = 0; i < (int)Asteroid_info.size(); i++) {
+		//first three asteroids are not debris-Mjn
+		if (i > NUM_DEBRIS_SIZES) {
+			head.add_data(Asteroid_info[i].name);
+		}
+	}
+
+	return head.next;
+}
+
 extern SCP_vector<game_snd>	Snds;
 
 sexp_list_item *sexp_tree::get_listing_opf_game_snds()
@@ -7231,6 +7262,17 @@ sexp_list_item *sexp_tree::get_listing_opf_sexp_containers(ContainerType con_typ
 			head.add_data(container.container_name.c_str(), (SEXPT_CONTAINER_NAME | SEXPT_STRING | SEXPT_VALID));
 		}
 	}
+
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_wing_formation()	// NOLINT
+{
+	sexp_list_item head;
+
+	head.add_data("Default");
+	for (const auto &formation : Wing_formations)
+		head.add_data(formation.name);
 
 	return head.next;
 }

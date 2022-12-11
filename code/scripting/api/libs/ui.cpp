@@ -809,7 +809,7 @@ ADE_INDEXER(l_Briefing_Goals,
 
 ADE_FUNC(__len, l_Briefing_Goals, nullptr, "The number of goals in the mission", "number", "The number of goals.")
 {
-	return ade_set_args(L, "i", Num_goals);
+	return ade_set_args(L, "i", (int)Mission_goals.size());
 }
 
 //**********SUBLIBRARY: UserInterface/CommandBriefing

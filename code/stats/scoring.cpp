@@ -141,14 +141,15 @@ void parse_traitor_tbl()
 		auto debrief = &Traitor_debriefing;
 		required_string("#Debriefing_info");
 
-		required_string("$Num stages:");
-		stuff_int(&debrief->num_stages);
-		Assert(debrief->num_stages == 1);
+		//required_string("$Num stages:");			// would assert if non 1 value was parsed so let's just skip it -Mjn
+		//stuff_int(&debrief->num_stages);
+		//Assert(debrief->num_stages == 1);
+		debrief->num_stages = 1; // must always be 1
 
 		int stage_num = 0;
 		auto stagep = &debrief->stages[stage_num++];
 
-		required_string("$Formula:");
+		//required_string("$Formula:");				// the table value was just ignored so let's skip it -Mjn
 		stagep->formula = 1;						// sexp nodes aren't initialized yet, but node 1 will be Locked_sexp_true
 		skip_to_start_of_string("$multi text");		// just skip over the sexp, since it must always be locked-true anyway
 

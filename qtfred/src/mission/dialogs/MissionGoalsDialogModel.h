@@ -25,8 +25,7 @@ class MissionGoalsDialogModel: public AbstractDialogModel {
 
 	void initializeData();
 
-	int getNumGoals() const;
-	std::array<mission_goal, MAX_GOALS>& getGoals();
+	SCP_vector<mission_goal>& getGoals();
 
 	bool isGoalVisible(const mission_goal& goal) const;
 
@@ -53,9 +52,8 @@ class MissionGoalsDialogModel: public AbstractDialogModel {
 	void setTreeControl(sexp_tree* tree);
  public:
 	int cur_goal = -1;
-	int m_num_goals = 0;
-	int m_sig[MAX_GOALS];
-	std::array<mission_goal, MAX_GOALS> m_goals;
+	SCP_vector<int> m_sig;
+	SCP_vector<mission_goal> m_goals;
 	bool modified = false;
 
 	int m_display_goal_types;

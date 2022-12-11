@@ -492,6 +492,10 @@ static void asteroid_load(int asteroid_info_index, int asteroid_subtype)
 	if ( !VALID_FNAME(asip->pof_files[asteroid_subtype]) )
 		return;
 
+	//Check if the model is already loaded
+	if (asip->model_num[asteroid_subtype] >= 0)
+		return;
+
 	asip->model_num[asteroid_subtype] = model_load( asip->pof_files[asteroid_subtype], 0, NULL );
 
 	if (asip->model_num[asteroid_subtype] >= 0)
@@ -543,6 +547,32 @@ void asteroid_create_all()
 
 	if (Asteroid_field.num_used_field_debris_types <= 0) {
 		Warning(LOCATION, "An asteroid field is enabled, but no asteroid types were enabled.");
+		return;
+	}
+
+	//Check that the asteroid field bounds are valid - Mjn
+	if (Asteroid_field.min_bound.xyz.x >= Asteroid_field.max_bound.xyz.x) {
+		Warning(LOCATION, "Asteroid field Outer Bound Min X is greater than or equal to Max X. Aborting asteroid creation!");
+		return;
+	}
+	if (Asteroid_field.min_bound.xyz.y >= Asteroid_field.max_bound.xyz.y) {
+		Warning(LOCATION, "Asteroid field Outer Bound Min Y is greater than or equal to Max Y. Aborting asteroid creation!");
+		return;
+	}
+	if (Asteroid_field.min_bound.xyz.z >= Asteroid_field.max_bound.xyz.z) {
+		Warning(LOCATION, "Asteroid field Outer Bound Min Z is greater than or equal to Max Z. Aborting asteroid creation!");
+		return;
+	}
+	if (Asteroid_field.inner_min_bound.xyz.x >= Asteroid_field.inner_max_bound.xyz.x) {
+		Warning(LOCATION, "Asteroid field Inner Bound Min X is greater than or equal to Max X. Aborting asteroid creation!");
+		return;
+	}
+	if (Asteroid_field.inner_min_bound.xyz.y >= Asteroid_field.inner_max_bound.xyz.y) {
+		Warning(LOCATION, "Asteroid field Inner Bound Min Y is greater than or equal to Max Y. Aborting asteroid creation!");
+		return;
+	}
+	if (Asteroid_field.inner_min_bound.xyz.z >= Asteroid_field.inner_max_bound.xyz.z) {
+		Warning(LOCATION, "Asteroid field Inner Bound Min Z is greater than or equal to Max Z. Aborting asteroid creation!");
 		return;
 	}
 
@@ -626,6 +656,136 @@ void asteroid_create_all()
 			}
 		}
 	}
+}
+
+// instantly deletes all asteroids in a mission before moving on.
+// Uses obj_delete_all_that_should_be_dead() so this method has a side effect
+// of also deleting non-asteroid objects marked as dead in the same frame. Usually this is
+// desired but it's worth knowing ahead of time. -Mjn
+void remove_all_asteroids()
+{
+	for (int i = 0; i < MAX_ASTEROIDS; i++) {
+		if (Asteroids[i].flags & AF_USED) {
+			Asteroids[i].flags &= ~AF_USED;
+			Assert(Asteroids[i].objnum >= 0 && Asteroids[i].objnum < MAX_OBJECTS);
+			Objects[Asteroids[i].objnum].flags.set(Object::Object_Flags::Should_be_dead);
+		}
+	}
+	// This feels hackish, but we need to make sure all the asteroids are actually gone before we continue-Mjn
+	obj_delete_all_that_should_be_dead();
+}
+
+// will replace any existing asteroid or debris field with an asteroid field
+void asteroid_create_asteroid_field(int num_asteroids, int field_type, int asteroid_speed, bool brown, bool blue, bool orange, vec3d o_min, vec3d o_max, bool inner_box, vec3d i_min, vec3d i_max, SCP_vector<SCP_string> targets)
+{
+	remove_all_asteroids();
+
+	Asteroid_field.num_initial_asteroids = num_asteroids;
+
+	if (field_type == 0) {
+		Asteroid_field.field_type = FT_PASSIVE;
+	} else {
+		Asteroid_field.field_type = FT_ACTIVE;
+	}
+	vm_vec_rand_vec_quick(&Asteroid_field.vel);
+	vm_vec_scale(&Asteroid_field.vel, (float)asteroid_speed);
+	Asteroid_field.speed = (float)asteroid_speed;
+	Asteroid_field.debris_genre = DG_ASTEROID;
+
+	Asteroid_field.field_debris_type[0] = -1;
+	Asteroid_field.field_debris_type[1] = -1;
+	Asteroid_field.field_debris_type[2] = -1;
+
+	int count = 0;
+	if (brown) {
+		Asteroid_field.field_debris_type[0] = 1;
+		count++;
+	}
+	if (blue) {
+		Asteroid_field.field_debris_type[1] = 1;
+		count++;
+	}
+	if (orange) {
+		Asteroid_field.field_debris_type[2] = 1;
+		count++;
+	}
+
+	Asteroid_field.num_used_field_debris_types = count;
+
+	Asteroid_field.min_bound = o_min;
+	Asteroid_field.max_bound = o_max;
+
+	vec3d a_rad;
+	vm_vec_sub(&a_rad, &Asteroid_field.max_bound, &Asteroid_field.min_bound);
+	vm_vec_scale(&a_rad, 0.5f);
+	float b_rad = vm_vec_mag(&a_rad);
+
+	Asteroid_field.bound_rad = MAX(3000.0f, b_rad);
+
+	if (inner_box) {
+		Asteroid_field.has_inner_bound = true;
+		Asteroid_field.inner_min_bound = i_min;
+		Asteroid_field.inner_max_bound = i_max;
+	}
+
+	Asteroid_field.target_names = targets;
+
+	asteroid_create_all();
+}
+
+// will replace any existing asteroid or debris field with a debris field
+void asteroid_create_debris_field(int num_asteroids, int asteroid_speed, int debris1, int debris2, int debris3, vec3d o_min, vec3d o_max)
+{
+	remove_all_asteroids();
+
+	Asteroid_field.num_initial_asteroids = num_asteroids;
+
+	Asteroid_field.field_type = FT_PASSIVE;
+
+	vm_vec_rand_vec_quick(&Asteroid_field.vel);
+	vm_vec_scale(&Asteroid_field.vel, (float)asteroid_speed);
+	Asteroid_field.speed = (float)asteroid_speed;
+	Asteroid_field.debris_genre = DG_SHIP;
+
+	Asteroid_field.field_debris_type[0] = -1;
+	Asteroid_field.field_debris_type[1] = -1;
+	Asteroid_field.field_debris_type[2] = -1;
+
+	int count = 0;
+	for (int i = 0; i < MAX_ACTIVE_DEBRIS_TYPES; i++) {
+		if (debris1 >= 0) {
+			Asteroid_field.field_debris_type[i] = debris1;
+			debris1 = -1;
+			count++;
+			continue;
+		}
+		if (debris2 >= 0) {
+			Asteroid_field.field_debris_type[i] = debris2;
+			debris2 = -1;
+			count++;
+			continue;
+		}
+		if (debris3 >= 0) {
+			Asteroid_field.field_debris_type[i] = debris3;
+			debris3 = -1;
+			count++;
+			continue;
+		}
+	}
+
+	Asteroid_field.num_used_field_debris_types = count;
+
+	Asteroid_field.min_bound = o_min;
+	Asteroid_field.max_bound = o_max;
+
+	vec3d a_rad;
+	vm_vec_sub(&a_rad, &Asteroid_field.max_bound, &Asteroid_field.min_bound);
+	vm_vec_scale(&a_rad, 0.5f);
+	float b_rad = vm_vec_mag(&a_rad);
+
+	Asteroid_field.bound_rad = MAX(3000.0f, b_rad);
+
+	asteroid_create_all();
 }
 
 /**
@@ -1484,13 +1644,20 @@ void asteroid_hit( object * pasteroid_obj, object * other_obj, vec3d * hitpos, f
  */
 void asteroid_level_close()
 {
-	int	i;
 
-	for (i=0; i<MAX_ASTEROIDS; i++) {
+	for (int i=0; i<MAX_ASTEROIDS; i++) {
 		if (Asteroids[i].flags & AF_USED) {
 			Asteroids[i].flags &= ~AF_USED;
 			Assert(Asteroids[i].objnum >=0 && Asteroids[i].objnum < MAX_OBJECTS);
 			Objects[Asteroids[i].objnum].flags.set(Object::Object_Flags::Should_be_dead);
+		}
+	}
+
+	//when a level is closed, all models are cleared, so let's make sure that
+	//is tracked for asteroids as well -Mjn
+	for (int i = 0; i < (int)Asteroid_info.size(); i++) {
+		for (int j = 0; j < NUM_DEBRIS_POFS; j++) {
+			Asteroid_info[i].model_num[j] = -1;
 		}
 	}
 
@@ -1845,6 +2012,17 @@ float asteroid_time_to_impact(object *asteroid_objp)
 	return time;
 }
 
+int get_asteroid_position(const char* name)
+{
+	for (int i = 0; i < (int)Asteroid_info.size(); i++) {
+		if (!stricmp(name, Asteroid_info[i].name)) {
+			return i;
+		}
+	}
+
+	return -1;
+}
+
 /**
  * Read in a single asteroid section from asteroid.tbl
  */
@@ -1956,7 +2134,8 @@ static void asteroid_parse_section(asteroid_info *asip)
 }
 
 // changes the name to "[species] Debris" if it had a name like "[species] debris #"
-void maybe_change_asteroid_name(asteroid_info* asip) {
+/*void maybe_change_asteroid_name(asteroid_info* asip)
+{
 
 	SCP_string name = asip->name;
 	size_t split = std::string::npos;
@@ -1996,7 +2175,7 @@ void maybe_change_asteroid_name(asteroid_info* asip) {
 		strcat(asip->name, " ");
 		strcat(asip->name, XSTR("debris", 348));
 	}
-}
+}*/
 
 /**
 Read in data from asteroid.tbl into Asteroid_info[] array.
@@ -2037,7 +2216,9 @@ static void asteroid_parse_tbl()
 
 			asteroid_parse_section(&new_asteroid);
 
-			maybe_change_asteroid_name(&new_asteroid);
+			// I really don't think this is needed and actually causes a bug in FRED
+			// making it impossible to select some debris types-Mjn
+			//maybe_change_asteroid_name(&new_asteroid);
 
 #ifndef NDEBUG
 			SCP_string msg;

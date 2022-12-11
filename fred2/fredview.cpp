@@ -2903,14 +2903,14 @@ int CFREDView::global_error_check()
 		return i;
 	}
 
-	for (i=0; i<Num_mission_events; i++){
-		if (fred_check_sexp(Mission_events[i].formula, OPR_NULL, "mission event \"%s\"", Mission_events[i].name)){
+	for (i=0; i<(int)Mission_events.size(); i++){
+		if (fred_check_sexp(Mission_events[i].formula, OPR_NULL, "mission event \"%s\"", Mission_events[i].name.c_str())){
 			return -1;
 		}
 	}
 
-	for (i=0; i<Num_goals; i++){
-		if (fred_check_sexp(Mission_goals[i].formula, OPR_BOOL, "mission goal \"%s\"", Mission_goals[i].name)){
+	for (i=0; i<(int)Mission_goals.size(); i++){
+		if (fred_check_sexp(Mission_goals[i].formula, OPR_BOOL, "mission goal \"%s\"", Mission_goals[i].name.c_str())){
 			return -1;
 		}
 	}

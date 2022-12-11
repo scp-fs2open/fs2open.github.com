@@ -201,13 +201,13 @@ void mission_log_add_entry(LogType type, const char *pname, const char *sname, i
 	entry->type = type;
 	if ( pname ) {
 		Assert (strlen(pname) < NAME_LENGTH);
-		strcpy_s(entry->pname, pname);
+		strncpy_s(entry->pname, pname, NAME_LENGTH - 1);
 	} else
 		strcpy_s( entry->pname, EMPTY_LOG_NAME );
 
 	if ( sname ) {
 		Assert (strlen(sname) < NAME_LENGTH);
-		strcpy_s(entry->sname, sname);
+		strncpy_s(entry->sname, sname, NAME_LENGTH - 1);
 	} else
 		strcpy_s( entry->sname, EMPTY_LOG_NAME );
 

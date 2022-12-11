@@ -973,6 +973,7 @@ void ship_info::clone(const ship_info& other)
 	n_subsystems = other.n_subsystems;
 
 	animations = other.animations;
+	cockpit_animations = other.cockpit_animations;
 
 	power_output = other.power_output;
 	max_overclocked_speed = other.max_overclocked_speed;
@@ -1141,6 +1142,8 @@ void ship_info::clone(const ship_info& other)
 	flyby_snd = other.flyby_snd;
 
 	ship_sounds = other.ship_sounds;
+
+	custom_data = other.custom_data;
 
 	num_maneuvering = other.num_maneuvering;
 
@@ -1468,6 +1471,8 @@ void ship_info::move(ship_info&& other)
 
 	std::swap(ship_sounds, other.ship_sounds);
 
+	std::swap(custom_data, other.custom_data);
+
 	num_maneuvering = other.num_maneuvering;
 	std::swap(maneuvering, other.maneuvering);
 
@@ -1503,6 +1508,7 @@ void ship_info::move(ship_info&& other)
 	std::swap(glowpoint_bank_override_map, other.glowpoint_bank_override_map);
 
 	animations = std::move(other.animations);
+	cockpit_animations = std::move(other.cockpit_animations);
 }
 
 #define CHECK_THEN_FREE(attribute) \
@@ -1912,6 +1918,8 @@ ship_info::ship_info()
 
 	num_maneuvering = 0;
 
+	custom_data.clear();
+
 	for (i = 0; i < MAX_MAN_THRUSTERS; i++)
 	{
         maneuvering[i].reset();
@@ -2053,6 +2061,12 @@ static void parse_ship(const char *filename, bool replace)
 
 	required_string("$Name:");
 	stuff_string(fname, F_NAME, NAME_LENGTH);
+
+	// Remove @ symbol -- these used to denote ships that would only be parsed in demo builds
+	if (fname[0] == '@') {
+		backspace(fname);
+	}
+
 	diag_printf("Ship name -- %s\n", fname);
 
 	if (optional_string("+nocreate")) {
@@ -2077,13 +2091,6 @@ static void parse_ship(const char *filename, bool replace)
 			Removed_ships.push_back(fname);
 			remove_ship = true;
 		}
-	}
-
-	//Remove @ symbol
-	//these used to denote weapons that would
-	//only be parsed in demo builds
-	if ( fname[0] == '@' ) {
-		backspace(fname);
 	}
 
 	//Check if ship exists already
@@ -2173,6 +2180,7 @@ static void parse_ship(const char *filename, bool replace)
 		}
 
 		sip->animations.changeShipName(sip->name);
+		sip->cockpit_animations.changeShipName(sip->name);
 	}
 
 	parse_ship_values(sip, false, first_time, replace);
@@ -2224,6 +2232,7 @@ static void parse_ship_template()
 				sip->clone(Ship_templates[template_id]);
 				strcpy_s(sip->name, buf);
 				sip->animations.changeShipName(sip->name);
+				sip->cockpit_animations.changeShipName(sip->name);
 			}
 			else {
 				Warning(LOCATION, "Unable to find ship template '%s' requested by ship template '%s', ignoring template request...", template_name, buf);
@@ -2805,6 +2814,13 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			strcpy_s(sip->cockpit_pof_file, temp);
 		else
 			WarningEx(LOCATION, "Ship %s\nCockpit POF file \"%s\" invalid!", sip->name, temp);
+
+		if (optional_string("$Cockpit Animations:")) {
+			animation::ModelAnimationParseHelper::parseAnimsetInfo(sip->cockpit_animations, 'c', sip->name);
+		}
+		if (optional_string("$Cockpit Moveables:")) {
+			animation::ModelAnimationParseHelper::parseMoveablesetInfo(sip->cockpit_animations);
+		}
 	}
 	if(optional_string( "+Cockpit offset:" ))
 	{
@@ -4813,6 +4829,27 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		stuff_float(&new_info.duration);
 		required_string("+Frequency:");
 		stuff_float(&new_info.frequency);
+		if (optional_string("+Primary color 1:")) {
+			int rgb[3];
+			stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+			gr_init_color(&new_info.primary_color_1, rgb[0], rgb[1], rgb[2]);
+		} else {
+			new_info.primary_color_1 = Arc_color_damage_p1;
+		}
+		if (optional_string("+Primary color 2:")) {
+			int rgb[3];
+			stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+			gr_init_color(&new_info.primary_color_2, rgb[0], rgb[1], rgb[2]);
+		} else {
+			new_info.primary_color_2 = Arc_color_damage_p2;
+		}
+		if (optional_string("+Secondary color:")) {
+			int rgb[3];
+			stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+			gr_init_color(&new_info.secondary_color, rgb[0], rgb[1], rgb[2]);
+		} else {
+			new_info.secondary_color = Arc_color_damage_s1;
+		}
 
 		sip->ship_passive_arcs.push_back(new_info);
 	}
@@ -6583,6 +6620,8 @@ void ship::clear()
 
 	autoaim_fov = 0.0f;
 
+	cockpit_model_instance = -1;
+
 	multi_client_collision_timestamp = TIMESTAMP::immediate();
 
 	passive_arc_next_times.clear();
@@ -6745,13 +6784,13 @@ void wing::clear()
 	arrival_distance = 0;
 	arrival_anchor = -1;
 	arrival_path_mask = 0;
-	arrival_cue = Locked_sexp_true;
+	arrival_cue = -1;
 	arrival_delay = 0;
 
 	departure_location = DEPART_AT_LOCATION;
 	departure_anchor = -1;
 	departure_path_mask = 0;
-	departure_cue = Locked_sexp_false;
+	departure_cue = -1;
 	departure_delay = 0;
 
 	wave_delay_min = 0;
@@ -7652,7 +7691,7 @@ void ship_render_player_ship(object* objp) {
 			shadow_render_info.set_object_number(OBJ_INDEX(objp));
 			vec3d offset = sip->cockpit_offset;
 			vm_vec_unrotate(&offset, &offset, &objp->orient);
-			model_render_immediate(&shadow_render_info, sip->cockpit_model_num, &objp->orient, &offset);
+			model_render_immediate(&shadow_render_info, sip->cockpit_model_num, shipp->cockpit_model_instance, &objp->orient, &offset);
 		}
 
 		shadows_end_render();
@@ -7694,7 +7733,7 @@ void ship_render_player_ship(object* objp) {
 		render_info.set_replacement_textures(Player_cockpit_textures);
 		vec3d offset = sip->cockpit_offset;
 		vm_vec_unrotate(&offset, &offset, &objp->orient);
-		model_render_immediate(&render_info, sip->cockpit_model_num, &objp->orient, &offset);
+		model_render_immediate(&render_info, sip->cockpit_model_num, shipp->cockpit_model_instance, &objp->orient, &offset);
 	}
 
 
@@ -7736,6 +7775,9 @@ void ship_init_cockpit_displays(ship *shipp)
 		return;
 	}
 
+	shipp->cockpit_model_instance = model_create_instance(shipp->objnum, cockpit_model_num);
+	sip->cockpit_animations.initializeMoveables(model_get_instance(shipp->cockpit_model_instance));
+
 	// check if we even have cockpit displays
 	if ( sip->displays.empty() ) {
 		return;
@@ -7761,8 +7803,12 @@ void ship_init_cockpit_displays(ship *shipp)
 	ship_set_hud_cockpit_targets();
 }
 
-void ship_clear_cockpit_displays()
+void ship_close_cockpit_displays(ship* shipp)
 {
+	if (shipp && shipp->cockpit_model_instance >= 0) {
+		model_delete_instance(shipp->cockpit_model_instance);
+	}
+
 	for ( int i = 0; i < (int)Player_displays.size(); i++ ) {
 		if ( Player_displays[i].background >= 0 ) {
 			bm_release(Player_displays[i].background);
@@ -11615,13 +11661,13 @@ bool in_autoaim_fov(ship *shipp, int bank_to_fire, object *obj)
 	weapon_info* winfo_p = &Weapon_info[weapon_idx];
 
 	has_converging_autoaim = ((sip->aiming_flags[Ship::Aiming_Flags::Autoaim_convergence] || (The_mission.ai_profile->player_autoaim_fov[Game_skill_level] > 0.0f && !( Game_mode & GM_MULTIPLAYER ))) && aip->target_objnum != -1);
-	has_autoaim = ((has_converging_autoaim || (sip->aiming_flags[Ship::Aiming_Flags::Autoaim])) && aip->target_objnum != -1);
+	has_autoaim = ((has_converging_autoaim || (sip->aiming_flags[Ship::Aiming_Flags::Autoaim]) || (winfo_p->autoaim_fov > 0.0f)) && aip->target_objnum != -1);
 
 	if (!has_autoaim) {
 		return false;
 	}
 
-	autoaim_fov = MAX(shipp->autoaim_fov, The_mission.ai_profile->player_autoaim_fov[Game_skill_level]);
+	autoaim_fov = std::max({shipp->autoaim_fov, The_mission.ai_profile->player_autoaim_fov[Game_skill_level], winfo_p->autoaim_fov});
 
 	if (aip->targeted_subsys != nullptr) {
 		get_subsystem_world_pos(&Objects[aip->target_objnum], aip->targeted_subsys, &target_position);
@@ -11668,9 +11714,6 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 	int			banks_fired;				// used for multiplayer to help determine whether or not to send packet
 	banks_fired = 0;			// used in multiplayer -- bitfield of banks that were fired
 	bool has_fired = false;		// used to determine whether we should fire the scripting hook
-	bool has_autoaim, has_converging_autoaim, needs_target_pos;	// used to flag weapon/ship as having autoaim
-	float autoaim_fov = 0;			// autoaim limit
-	float dist_to_target = 0;		// distance to target, for autoaim & automatic convergence
 
 	gamesnd_id		sound_played;	// used to track what sound is played.  If the player is firing two banks
 										// of the same laser, we only want to play one sound
@@ -11742,32 +11785,13 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 			if(i!=swp->current_primary_bank)ship_stop_fire_primary_bank(obj, i);
 		}
 
-	// lets start gun convergence / autoaim code from here - Wanderer
-	has_converging_autoaim = ((sip->aiming_flags[Ship::Aiming_Flags::Autoaim_convergence] || (The_mission.ai_profile->player_autoaim_fov[Game_skill_level] > 0.0f && !( Game_mode & GM_MULTIPLAYER ))) && aip->target_objnum != -1);
-	has_autoaim = ((has_converging_autoaim || (sip->aiming_flags[Ship::Aiming_Flags::Autoaim])) && aip->target_objnum != -1);
-	needs_target_pos = ((has_autoaim || (sip->aiming_flags[Ship::Aiming_Flags::Auto_convergence])) && aip->target_objnum != -1);
-	
-	if (needs_target_pos) {
-		if (has_autoaim) {
-			autoaim_fov = MAX(shipp->autoaim_fov, The_mission.ai_profile->player_autoaim_fov[Game_skill_level]);
-		}
-
-		// If a subsystem is targeted, fire in that direction instead
-		if (aip->targeted_subsys != NULL)
-		{
-			get_subsystem_world_pos(&Objects[aip->target_objnum], aip->targeted_subsys, &target_position);
-		}
-		else
-		{
-			target_position = Objects[aip->target_objnum].pos;
-		}
-
-		dist_to_target = vm_vec_dist_quick(&target_position, &obj->pos);
-	}
-
 	polymodel* pm = model_get(sip->model_num);
 
 	for ( i = 0; i < num_primary_banks; i++ ) {		
+		bool has_autoaim, has_converging_autoaim, needs_target_pos; // used to flag weapon/ship as having autoaim
+		float autoaim_fov = 0;                                      // autoaim limit
+		float dist_to_target = 0;									// distance to target, for autoaim & automatic convergence
+
 		// Goober5000 - allow more than two banks
 		bank_to_fire = (swp->current_primary_bank+i) % swp->num_primary_banks;
 
@@ -11789,7 +11813,29 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 
 		weapon_info* winfo_p = &Weapon_info[weapon_idx];
 
+		// lets start gun convergence / autoaim code from here - Wanderer
+		// in order to do this per weapon, this needs to be moved here from above -Mjn
+		has_converging_autoaim = ((sip->aiming_flags[Ship::Aiming_Flags::Autoaim_convergence] || (The_mission.ai_profile->player_autoaim_fov[Game_skill_level] > 0.0f && !( Game_mode & GM_MULTIPLAYER ))) && aip->target_objnum != -1);
+		has_autoaim = ((has_converging_autoaim || (sip->aiming_flags[Ship::Aiming_Flags::Autoaim]) || (winfo_p->autoaim_fov > 0.0f)) && aip->target_objnum != -1);
+		needs_target_pos = ((has_autoaim || (sip->aiming_flags[Ship::Aiming_Flags::Auto_convergence])) && aip->target_objnum != -1);
+
 		if (needs_target_pos) {
+			if (has_autoaim) {
+				autoaim_fov = std::max({shipp->autoaim_fov, The_mission.ai_profile->player_autoaim_fov[Game_skill_level], winfo_p->autoaim_fov});
+			}
+
+			// If a subsystem is targeted, fire in that direction instead
+			if (aip->targeted_subsys != NULL)
+			{
+				get_subsystem_world_pos(&Objects[aip->target_objnum], aip->targeted_subsys, &target_position);
+			}
+			else
+			{
+				target_position = Objects[aip->target_objnum].pos;
+			}
+
+			dist_to_target = vm_vec_dist_quick(&target_position, &obj->pos);
+
 			target_velocity_vec = Objects[aip->target_objnum].phys_info.vel;
 			if (The_mission.ai_profile->flags[AI::Profile_Flags::Use_additive_weapon_velocity])
 				vm_vec_scale_sub2(&target_velocity_vec, &obj->phys_info.vel, winfo_p->vel_inherit_amount);
@@ -18835,7 +18881,7 @@ int ship_squadron_wing_lookup(const char *wing_name)
 
 		for (int i = 0; i < MAX_SQUADRON_WINGS; i++)
 		{
-			if (!strnicmp(Squadron_wing_names[i], wing_name, len))
+			if (!strnicmp(Squadron_wing_names[i], wing_name, std::max(len, strlen(Squadron_wing_names[i]))))
 				return i;
 		}
 	}
@@ -20301,7 +20347,15 @@ void ship_render(object* obj, model_draw_list* scene)
 	if ( vm_vec_dist_quick( &obj->pos, &Eye_position ) < obj->radius*50.0f && !Rendering_to_shadow_map ) {
 		for ( int i = 0; i < MAX_SHIP_ARCS; i++ )	{
 			if ( shipp->arc_timestamp[i].isValid() ) {
-				model_instance_add_arc(pm, pmi, -1, &shipp->arc_pts[i][0], &shipp->arc_pts[i][1], shipp->arc_type[i]);
+				model_instance_add_arc(pm,
+					pmi,
+					-1,
+					&shipp->arc_pts[i][0],
+					&shipp->arc_pts[i][1],
+					shipp->arc_type[i],
+					&shipp->arc_primary_color_1[i],
+					&shipp->arc_primary_color_2[i],
+					&shipp->arc_secondary_color[i]);
 			}
 		}
 	}

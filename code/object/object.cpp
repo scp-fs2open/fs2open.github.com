@@ -43,6 +43,7 @@
 #include "render/3d.h"
 #include "ship/afterburner.h"
 #include "ship/ship.h"
+#include "starfield/starfield.h"
 #include "tracing/tracing.h"
 #include "weapon/beam.h"
 #include "weapon/shockwave.h"
@@ -1645,6 +1646,17 @@ void obj_move_all(float frametime)
 
 	// update artillery locking info now
 	ship_update_artillery_lock();
+
+	if (Nmodel_instance_num >= 0) {
+		animation::ModelAnimation::stepAnimations(frametime, model_get_instance(Nmodel_instance_num));
+	}
+
+	if (Viewer_obj && Viewer_obj->type == OBJ_SHIP && Viewer_obj->instance >= 0) {
+		ship* shipp = &Ships[Viewer_obj->instance];
+		if (shipp->cockpit_model_instance >= 0) {
+			animation::ModelAnimation::stepAnimations(frametime, model_get_instance(shipp->cockpit_model_instance));
+		}
+	}
 
 //	mprintf(("moved all objects\n"));
 }

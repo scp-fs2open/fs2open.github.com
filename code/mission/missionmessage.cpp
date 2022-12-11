@@ -138,28 +138,25 @@ int Message_expire;							// timestamp to extend the duration of message bracket
 
 typedef struct message_q {
 	fix	time_added;					// time at which this entry was added
-	int	window_timestamp;			// timestamp which will tell us how long we have to play the message
+	TIMESTAMP window_timestamp;		// timestamp which will tell us how long we have to play the message
 	int	priority;					// priority of the message
 	int	message_num;				// index into the Messages[] array
-	char *special_message;			// Goober5000 - message to play if we've replaced stuff (like variables)
+	SCP_vm_unique_ptr<char> special_message;	// Goober5000 - message to play if we've replaced stuff (like variables)
 	char who_from[NAME_LENGTH];		// who this message is from
 	int	source;						// who the source of the message is (HUD_SOURCE_* type)
 	int	builtin_type;				// type of builtin message (-1 if mission message)
 	int	flags;						// should this message entry be converted to Terran Command head/wave file
-	int	min_delay_stamp;			// minimum delay before this message will start playing
+	TIMESTAMP min_delay_stamp;		// minimum delay before this message will start playing
 	int	group;						// message is part of a group, don't time it out
 	int event_num_to_cancel;		// Goober5000 - if this event is true, the message will not be played
 } message_q;
 
-#define MAX_MESSAGE_Q				30
-#define MAX_MESSAGE_LIFE			F1_0*30		// After being queued for 30 seconds, don't play it
 #define DEFAULT_MESSAGE_LENGTH	3000			// default number of milliseconds to display message indicator on hud
-message_q	MessageQ[MAX_MESSAGE_Q];
+SCP_vector<message_q>	MessageQ;
 int MessageQ_num;			// keeps track of number of entries on the queue.
 
 #define MESSAGE_IMMEDIATE_TIMESTAMP		1000		// immediate messages must play within 1 second
 #define MESSAGE_SOON_TIMESTAMP			5000		// "soon" messages must play within 5 seconds
-#define MESSAGE_ANYTIME_TIMESTAMP		-1			// anytime timestamps are invalid
 
 // Persona information
 int Num_personas;
@@ -695,18 +692,7 @@ void messages_init()
 
 	// initialize the stuff for the linked lists of messages
 	MessageQ_num = 0;
-	for (i = 0; i < MAX_MESSAGE_Q; i++) {
-		MessageQ[i].priority = -1;
-		MessageQ[i].time_added = -1;
-		MessageQ[i].message_num = -1;
-		MessageQ[i].builtin_type = -1;
-		MessageQ[i].min_delay_stamp = -1;
-		MessageQ[i].group = 0;
-
-		// Goober5000
-		MessageQ[i].special_message = nullptr;
-		MessageQ[i].event_num_to_cancel = -1;
-	}
+	MessageQ.clear();
 	
 	// this forces a reload of the AVI's and waves for builtin messages.  Needed because the flic and
 	// sound system also get reset between missions!
@@ -784,15 +770,8 @@ void message_mission_shutdown()
 		message_mission_free_avi(i);
 	}
 
-	// Goober5000 - free up special messages
-	for (i = 0; i < MAX_MESSAGE_Q; i++)
-	{
-		if (MessageQ[i].special_message != NULL)
-		{
-			vm_free(MessageQ[i].special_message);
-			MessageQ[i].special_message = NULL;
-		}
-	}
+	// Goober5000 - free up special messages (done automatically via unique_ptr)
+	MessageQ.clear();
 }
 
 // call from game_shutdown() ONLY!!!
@@ -967,25 +946,22 @@ void message_remove_from_queue(message_q *q)
 		return;
 	}	
 
-	MessageQ_num--;
 	q->priority = -1;
 	q->time_added = -1;
 	q->message_num = -1;
 	q->builtin_type = -1;
-	q->min_delay_stamp = -1;
+	q->min_delay_stamp = TIMESTAMP::invalid();
 	q->group = 0;
 
 	// Goober5000
-	if (q->special_message != NULL)
-	{
-		vm_free(q->special_message);
-		q->special_message = NULL;
-	}
+	q->special_message.reset();
 	q->event_num_to_cancel = -1;
 
-	if ( MessageQ_num > 0 ) {
-		insertion_sort(MessageQ, MAX_MESSAGE_Q, message_queue_priority_compare);
+	if ( MessageQ_num > 1 ) {
+		insertion_sort(MessageQ, MessageQ_num, message_queue_priority_compare);
 	}
+
+	MessageQ_num--;
 }
 
 // Load in the sound data for a message.
@@ -1394,7 +1370,7 @@ void message_queue_process()
 	while ( MessageQ_num > 0 ) {
 		q = &MessageQ[0];
 		// message is outside its time window
-		if ( timestamp_valid(q->window_timestamp) && timestamp_elapsed(q->window_timestamp) && !q->group) {
+		if ( q->window_timestamp.isValid() && timestamp_elapsed(q->window_timestamp) && !q->group) {
 			// remove message from queue and see if more to remove
 			nprintf(("messaging", "Message %s didn't play because it didn't fit into time window.\n", Messages[q->message_num].name));
 			if ( q->message_num < Num_builtin_messages ){			// we should only ever remove builtin messages this way
@@ -1423,7 +1399,7 @@ void message_queue_process()
 	int idx = 0;
 	while((found == -1) && (idx < MessageQ_num)){
 		// if this guy has no min delay timestamp, or it has expired, select him
-		if((MessageQ[idx].min_delay_stamp == -1) || timestamp_elapsed(MessageQ[idx].min_delay_stamp)){
+		if (!MessageQ[idx].min_delay_stamp.isValid() || timestamp_elapsed(MessageQ[idx].min_delay_stamp)) {
 			found = idx;
 			break;
 		}
@@ -1438,18 +1414,16 @@ void message_queue_process()
 	}
 	// if this is not the first item on the queue, make it the first item
 	if(found != 0){
-		message_q temp;
-
 		// store the entry
-		memcpy(&temp, &MessageQ[found], sizeof(message_q));
+		message_q temp = std::move(MessageQ[found]);
 
 		// move all other entries up
 		for(idx=found; idx>0; idx--){
-			memcpy(&MessageQ[idx], &MessageQ[idx-1], sizeof(message_q));
+			MessageQ[idx] = std::move(MessageQ[idx-1]);
 		}
 
 		// plop the entry down as being first
-		memcpy(&MessageQ[0], &temp, sizeof(message_q));
+		MessageQ[0] = std::move(temp);
 	}
 
 	q = &MessageQ[0];
@@ -1582,7 +1556,7 @@ void message_queue_process()
 	Message_wave_duration = 0;
 
 	// translate tokens in message to the real things
-	buf = message_translate_tokens(q->special_message ? q->special_message : m->message);
+	buf = message_translate_tokens(q->special_message ? q->special_message.get() : m->message);
 
 	Message_expire = timestamp(static_cast<int>(42 * buf.size()));
 
@@ -1672,10 +1646,9 @@ void message_queue_message( int message_num, int priority, int timing, const cha
 		}
 	}
 
-	// check to be sure that we haven't reached our max limit on these messages yet.
-	if ( MessageQ_num == MAX_MESSAGE_Q ) {
-		mprintf(("Message queue already full. Message will not be added!\n"));										
-		return;
+	// check to be sure that we have room to queue this message
+	if ( MessageQ_num == (int)MessageQ.size() ) {
+		MessageQ.emplace_back();
 	}
 
 	// if player is a traitor, no messages for him!!!
@@ -1690,24 +1663,17 @@ void message_queue_message( int message_num, int priority, int timing, const cha
 	m_persona = Messages[message_num].persona_index;
 
 	// put the message into a slot
-	i = MessageQ_num;
+	i = MessageQ_num++;
 	MessageQ[i].time_added = Missiontime;
 	MessageQ[i].priority = priority;
 	MessageQ[i].message_num = message_num;
 	MessageQ[i].source = source;
 	MessageQ[i].builtin_type = builtin_type;
-	MessageQ[i].min_delay_stamp = timestamp(delay);
+	MessageQ[i].min_delay_stamp = _timestamp(delay);
 	MessageQ[i].group = group;
 	strcpy_s(MessageQ[i].who_from, who_from);
+	MessageQ[i].special_message.reset();
 	MessageQ[i].event_num_to_cancel = event_num_to_cancel;
-
-	// Goober5000 - this shouldn't happen, but let's be safe
-	if (MessageQ[i].special_message != NULL)
-	{
-		Int3();
-		vm_free(MessageQ[i].special_message);
-		MessageQ[i].special_message = NULL;
-	}
 
 	// Goober5000 - replace variables if necessary
 	// karajorma/jg18 - replace container references if necessary
@@ -1715,7 +1681,7 @@ void message_queue_message( int message_num, int priority, int timing, const cha
 	const bool replace_var = sexp_replace_variable_names_with_values(temp_buf, MESSAGE_LENGTH - 1);
 	const bool replace_con = sexp_container_replace_refs_with_values(temp_buf, MESSAGE_LENGTH - 1);
 	if (replace_var || replace_con)
-		MessageQ[i].special_message = vm_strdup(temp_buf);
+		MessageQ[i].special_message.reset(vm_strdup(temp_buf));
 
 	MessageQ[i].flags = 0;
 
@@ -1753,18 +1719,13 @@ void message_queue_message( int message_num, int priority, int timing, const cha
 
 	// set the timestamp of when to play this message based on the 'timing' value
 	if ( timing == MESSAGE_TIME_IMMEDIATE )
-		MessageQ[i].window_timestamp = timestamp(MESSAGE_IMMEDIATE_TIMESTAMP);
+		MessageQ[i].window_timestamp = _timestamp(MESSAGE_IMMEDIATE_TIMESTAMP);
 	else if ( timing == MESSAGE_TIME_SOON )
-		MessageQ[i].window_timestamp = timestamp(MESSAGE_SOON_TIMESTAMP);
+		MessageQ[i].window_timestamp = _timestamp(MESSAGE_SOON_TIMESTAMP);
 	else
-		MessageQ[i].window_timestamp = timestamp(MESSAGE_ANYTIME_TIMESTAMP);		// make invalid
+		MessageQ[i].window_timestamp = TIMESTAMP::invalid();		// make invalid
 
-	MessageQ_num++;
-	insertion_sort(MessageQ, MAX_MESSAGE_Q, message_queue_priority_compare);
-
-	// Try to start it!
-	// MWA -- called every frame from game loop
-	//message_queue_process();
+	insertion_sort(MessageQ, MessageQ_num, message_queue_priority_compare);
 }
 
 // function to return the persona index of the given ship.  If it isn't assigned, it will be

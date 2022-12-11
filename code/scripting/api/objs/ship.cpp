@@ -2,32 +2,35 @@
 //
 
 
-#include "ship.h"
-#include "texture.h"
-#include "object.h"
-#include "subsystem.h"
-#include "shipclass.h"
+#include "animation_handle.h"
 #include "cockpit_display.h"
-#include "weaponclass.h"
-#include "ship_bank.h"
-#include "team.h"
-#include "order.h"
 #include "enums.h"
-#include "wing.h"
+#include "message.h"
+#include "object.h"
+#include "order.h"
+#include "ship.h"
+#include "ship_bank.h"
+#include "shipclass.h"
+#include "subsystem.h"
+#include "team.h"
+#include "texture.h"
 #include "vecmath.h"
+#include "weaponclass.h"
+#include "wing.h"
 
-#include "ship/shiphit.h"
-#include "hud/hudshield.h"
-#include "playerman/player.h"
-#include "mission/missionlog.h"
 #include "ai/aigoals.h"
-#include "ship/shipfx.h"
 #include "hud/hudets.h"
+#include "hud/hudshield.h"
+#include "mission/missionlog.h"
+#include "mission/missionmessage.h"
+#include "model/model.h"
 #include "object/object.h"
 #include "object/objectdock.h"
-#include "model/model.h"
-#include "ship/ship.h"
 #include "parse/parselo.h"
+#include "playerman/player.h"
+#include "ship/ship.h"
+#include "ship/shipfx.h"
+#include "ship/shiphit.h"
 
 extern void ship_reset_disabled_physics(object *objp, int ship_class);
 extern bool sexp_check_flag_arrays(const char *flag_name, Object::Object_Flags &object_flag, Ship::Ship_Flags &ship_flags, Mission::Parse_Object_Flags &parse_obj_flag, AI::AI_Flags &ai_flag);
@@ -461,7 +464,7 @@ ADE_VIRTVAR(Class, l_Ship, "shipclass", "Ship class", "shipclass", "Ship class, 
 		if (shipp == Player_ship) {
 			// update HUD and RTT cockpit gauges if applicable
 			set_current_hud();
-			ship_clear_cockpit_displays();
+			ship_close_cockpit_displays(Player_ship);
 			ship_init_cockpit_displays(Player_ship);
 		}
 	}
@@ -1221,6 +1224,31 @@ ADE_VIRTVAR(ArrivalDistance, l_Ship, "number", "The ship's arrival distance", "n
 	return ship_getset_helper(L, &ship::arrival_distance, true);
 }
 
+extern int sendMessage_sub(lua_State* L, const void* sender, int messageSource, int messageIdx, float delay, enum_h* ehp);
+
+ADE_FUNC(sendMessage,
+	l_Ship,
+	"message message, [number delay=0.0, enumeration priority = MESSAGE_PRIORITY_NORMAL]",
+	"Sends a message from the given ship with the given priority.<br>"
+	"If delay is specified, the message will be delayed by the specified time in seconds.",
+	"boolean",
+	"true if successful, false otherwise")
+{
+	int messageIdx = -1;
+	float delay = 0.0f;
+
+	object_h* ship_h = nullptr;
+	enum_h* ehp = nullptr;
+
+	if (!ade_get_args(L, "oo|fob", l_Ship.GetPtr(&ship_h), l_Message.Get(&messageIdx), &delay, l_Enum.GetPtr(&ehp)))
+		return ADE_RETURN_FALSE;
+
+	if (ship_h == nullptr || !ship_h->IsValid())
+		return ADE_RETURN_FALSE;
+
+	return sendMessage_sub(L, &Ships[ship_h->objp->instance], MESSAGE_SOURCE_SHIP, messageIdx, delay, ehp);
+}
+
 ADE_FUNC(turnTowardsPoint,
 	l_Ship,
 	"vector target, [boolean respectDifficulty = true, vector turnrateModifier /* 100% of tabled values in all rotation axes by default */, number bank /* native bank-on-heading by default */ ]",
@@ -1898,8 +1926,8 @@ ADE_FUNC_DEPRECATED(triggerAnimation, l_Ship, "string Type, [number Subtype, boo
 }
 
 ADE_FUNC(triggerSubmodelAnimation, l_Ship, "string type, string triggeredBy, [boolean forwards = true, boolean resetOnStart = false, boolean completeInstant = false, boolean pause = false]",
-	"Triggers an animation. Type is the string name of the animation type, "
-	"triggeredBy is a closer specification which animation should trigger. See *-anim.tbm specifications. "
+	"Triggers an animation. If used often with the same type / triggeredBy, consider using getSubmodelAnimation for performance reasons. "
+	"Type is the string name of the animation type, triggeredBy is a closer specification which animation should trigger. See *-anim.tbm specifications. "
 	"Forwards controls the direction of the animation. ResetOnStart will cause the animation to play from its initial state, as opposed to its current state. CompleteInstant will immediately complete the animation. Pause will instead stop the animation at the current state.",
 	"boolean",
 	"True if successful, false or nil otherwise")
@@ -1927,8 +1955,32 @@ ADE_FUNC(triggerSubmodelAnimation, l_Ship, "string type, string triggeredBy, [bo
 	return Ship_info[shipp->ship_info_index].animations.parseScripted(model_get_instance(shipp->model_instance_num), animtype, trigger).start(forwards ? animation::ModelAnimationDirection::FWD : animation::ModelAnimationDirection::RWD, forced || instant, instant, pause) ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
 }
 
+ADE_FUNC(getSubmodelAnimation, l_Ship, "string type, string triggeredBy",
+	"Gets an animation handle. Type is the string name of the animation type, triggeredBy is a closer specification which animation should trigger. See *-anim.tbm specifications. ",
+	"animation_handle",
+	"The animation handle for the specified animation, nil if invalid arguments.")
+{
+	object_h* objh;
+	const char* type = nullptr;
+	const char* trigger = nullptr;
+
+	if (!ade_get_args(L, "oss", l_Ship.GetPtr(&objh), &type, &trigger))
+		return ADE_RETURN_NIL;
+
+	if (!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	auto animtype = animation::anim_match_type(type);
+	if (animtype == animation::ModelAnimationTriggerType::None)
+		return ade_set_args(L, "o", l_AnimationHandle.Set(animation::ModelAnimationSet::AnimationList{}));
+
+	ship* shipp = &Ships[objh->objp->instance];
+
+	return ade_set_args(L, "o", l_AnimationHandle.Set(Ship_info[shipp->ship_info_index].animations.parseScripted(model_get_instance(shipp->model_instance_num), animtype, trigger)));
+}
+
 ADE_FUNC(stopLoopingSubmodelAnimation, l_Ship, "string type, string triggeredBy",
-	"Stops a currently looping animation after it has finished its current loop. Type is the string name of the animation type, "
+	"Stops a currently looping animation after it has finished its current loop. If used often with the same type / triggeredBy, consider using getSubmodelAnimation for performance reasons. Type is the string name of the animation type, "
 	"triggeredBy is a closer specification which animation was triggered. See *-anim.tbm specifications. ",
 	"boolean",
 	"True if successful, false or nil otherwise")
@@ -1954,7 +2006,7 @@ ADE_FUNC(stopLoopingSubmodelAnimation, l_Ship, "string type, string triggeredBy"
 }
 
 ADE_FUNC(setAnimationSpeed, l_Ship, "string type, string triggeredBy, [number speedMultiplier = 1.0]",
-	"Sets the speed multiplier at which an animation runs. Anything other than 1 will not work in multiplayer. Type is the string name of the animation type, "
+	"Sets the speed multiplier at which an animation runs. If used often with the same type / triggeredBy, consider using getSubmodelAnimation for performance reasons. Anything other than 1 will not work in multiplayer. Type is the string name of the animation type, "
 	"triggeredBy is a closer specification which animation should trigger. See *-anim.tbm specifications.",
 	nullptr,
 	nullptr)
@@ -1981,7 +2033,7 @@ ADE_FUNC(setAnimationSpeed, l_Ship, "string type, string triggeredBy, [number sp
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(getSubmodelAnimationTime, l_Ship, "string type, string triggeredBy", "Gets time that animation will be done", "number", "Time (seconds), or 0 if ship handle is invalid")
+ADE_FUNC(getSubmodelAnimationTime, l_Ship, "string type, string triggeredBy", "Gets time that animation will be done. If used often with the same type / triggeredBy, consider using getSubmodelAnimation for performance reasons.", "number", "Time (seconds), or 0 if ship handle is invalid")
 {
 	object_h* objh;
 	const char* type = nullptr;
@@ -2002,6 +2054,57 @@ ADE_FUNC(getSubmodelAnimationTime, l_Ship, "string type, string triggeredBy", "G
 	float time_s = (float)time_ms / 1000.0f;
 
 	return ade_set_args(L, "f", time_s);
+}
+
+ADE_FUNC(updateSubmodelMoveable, l_Ship, "string name, table values",
+	"Updates a moveable animation. Name is the name of the moveable. For what values needs to contain, please refer to the table below, depending on the type of the moveable:"
+	"Orientation:\r\n"
+	"\tThree numbers, x, y, z rotation respectively, in degrees\r\n"
+	"Rotation:\r\n"
+	"\tThree numbers, x, y, z rotation respectively, in degrees\r\n"
+	"Axis Rotation:\r\n"
+	"\tOne number, rotation angle in degrees\r\n"
+	"Inverse Kinematics:\r\n"
+	"\tThree required numbers: x, y, z position target relative to base, in 1/100th meters\r\n"
+	"\tThree optional numbers: x, y, z rotation target relative to base, in degrees\r\n",
+	"boolean",
+	"True if successful, false or nil otherwise")
+{
+	object_h* objh;
+	const char* name = nullptr;
+	luacpp::LuaTable values;
+
+	if (!ade_get_args(L, "ost", l_Ship.GetPtr(&objh), &name, &values))
+		return ADE_RETURN_NIL;
+
+	if (!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	SCP_vector<linb::any> valuesMoveable;
+
+	if (values.isValid()) {
+		for (const auto& object : values) {
+			if (object.second.is(luacpp::ValueType::NUMBER)) {
+				// This'll lua-error internally if it's not fed only objects. Additionally, catch the lua exception and then carry on
+				try {
+					valuesMoveable.emplace_back(object.second.getValue<int>());
+				}
+				catch (const luacpp::LuaException& /*e*/) {
+					// We were likely fed a float. 
+					// Since we can't actually tell whether that's the case before we try to get the value, and the attempt to get the value is printing a LuaError itself, just eat the exception here and return
+					return ADE_RETURN_FALSE;
+				}
+			}
+			else {
+				//This happens on a non-userdata value, i.e. a number
+				LuaError(L, "Value table contained non-numbers! Aborting...");
+				return ADE_RETURN_FALSE;
+			}
+		}
+	}
+
+	ship* shipp = &Ships[objh->objp->instance];
+	return Ship_info[shipp->ship_info_index].animations.updateMoveable(model_get_instance(shipp->model_instance_num), name, valuesMoveable) ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
 }
 
 ADE_FUNC(warpIn, l_Ship, NULL, "Warps ship in", "boolean", "True if successful, or nil if ship handle is invalid")

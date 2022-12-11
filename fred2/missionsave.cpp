@@ -2001,23 +2001,23 @@ int CFred_mission_save::save_events()
 	fred_parse_flag = 0;
 	required_string_fred("#Events");
 	parse_comments(2);
-	fout("\t\t;! %d total\n", Num_mission_events);
+	fout("\t\t;! " SIZE_T_ARG " total\n", Mission_events.size());
 
-	for (i = 0; i < Num_mission_events; i++) {
+	for (i = 0; i < (int)Mission_events.size(); i++) {
 		required_string_either_fred("$Formula:", "#Goals");
 		required_string_fred("$Formula:");
 		parse_comments(i ? 2 : 1);
 		convert_sexp_to_string(sexp_out, Mission_events[i].formula, SEXP_SAVE_MODE);
 		fout(" %s", sexp_out.c_str());
 
-		if (*Mission_events[i].name) {
+		if (!Mission_events[i].name.empty()) {
 			if (optional_string_fred("+Name:", "$Formula:")) {
 				parse_comments();
 			} else {
 				fout("\n+Name:");
 			}
 
-			fout(" %s", Mission_events[i].name);
+			fout(" %s", Mission_events[i].name.c_str());
 		}
 
 		if (optional_string_fred("+Repeat Count:", "$Formula:")) {
@@ -2073,25 +2073,25 @@ int CFred_mission_save::save_events()
 		}
 
 		//XSTR
-		if (Mission_events[i].objective_text) {
+		if (!Mission_events[i].objective_text.empty()) {
 			if (optional_string_fred("+Objective:", "$Formula:")) {
 				parse_comments();
 			} else {
 				fout("\n+Objective:");
 			}
 
-			fout_ext(" ", "%s", Mission_events[i].objective_text);
+			fout_ext(" ", "%s", Mission_events[i].objective_text.c_str());
 		}
 
 		//XSTR
-		if (Mission_events[i].objective_key_text) {
+		if (!Mission_events[i].objective_key_text.empty()) {
 			if (optional_string_fred("+Objective key:", "$Formula:")) {
 				parse_comments();
 			} else {
 				fout("\n+Objective key:");
 			}
 
-			fout_ext(" ", "%s", Mission_events[i].objective_key_text);
+			fout_ext(" ", "%s", Mission_events[i].objective_key_text.c_str());
 		}
 
 		// save team
@@ -2320,9 +2320,9 @@ int CFred_mission_save::save_goals()
 	fred_parse_flag = 0;
 	required_string_fred("#Goals");
 	parse_comments(2);
-	fout("\t\t;! %d total\n", Num_goals);
+	fout("\t\t;! " SIZE_T_ARG " total\n", Mission_goals.size());
 
-	for (i = 0; i < Num_goals; i++) {
+	for (i = 0; i < (int)Mission_goals.size(); i++) {
 		int type;
 
 		required_string_either_fred("$Type:", "#Waypoints");
@@ -2332,19 +2332,19 @@ int CFred_mission_save::save_goals()
 		type = Mission_goals[i].type & GOAL_TYPE_MASK;
 		fout(" %s", Goal_type_names[type]);
 
-		if (*Mission_goals[i].name) {
+		if (!Mission_goals[i].name.empty()) {
 			if (optional_string_fred("+Name:", "$Type:"))
 				parse_comments();
 			else
 				fout("\n+Name:");
 
-			fout(" %s", Mission_goals[i].name);
+			fout(" %s", Mission_goals[i].name.c_str());
 		}
 
 		// XSTR
 		required_string_fred("$MessageNew:");
 		parse_comments();
-		fout_ext(" ", "%s", Mission_goals[i].message);
+		fout_ext(" ", "%s", Mission_goals[i].message.c_str());
 		fout("\n");
 		required_string_fred("$end_multi_text");
 		parse_comments(0);
@@ -2773,6 +2773,50 @@ int CFred_mission_save::save_mission_info()
 			fout_version("\n\n$Skybox Model: %s.pof", out_str);
 		}
 		fso_comment_pop();
+
+		const auto& anim_triggers = The_mission.skybox_model_animations.getRegisteredAnimNames();
+		const auto& moveable_triggers = The_mission.skybox_model_animations.getRegisteredMoveables();
+
+		if (!anim_triggers.empty() || !moveable_triggers.empty()) {
+			fso_comment_push(";;FSO 22.4.0;;");
+			if (!anim_triggers.empty()) {
+				if (optional_string_fred("$Skybox Model Animations:")) {
+					parse_comments(1);
+					fout("( ");
+					for (const auto& animation : anim_triggers) {
+						fout("\"%s\" ", animation.c_str());
+					}
+					fout(")");
+				}
+				else {
+					fout_version("\n$Skybox Model Animations:");
+					fout("( ");
+					for (const auto& animation : anim_triggers) {
+						fout("\"%s\" ", animation.c_str());
+					}
+					fout(")");
+				}
+			}
+			if (!moveable_triggers.empty()) {
+				if (optional_string_fred("$Skybox Model Moveables:")) {
+					parse_comments(1);
+					fout("( ");
+					for (const auto& moveable : moveable_triggers) {
+						fout("\"%s\" ", moveable.c_str());
+					}
+					fout(")");
+				}
+				else {
+					fout_version("\n$Skybox Model Moveables:");
+					fout("( ");
+					for (const auto& moveable : moveable_triggers) {
+						fout("\"%s\" ", moveable.c_str());
+					}
+					fout(")");
+				}
+			}
+			fso_comment_pop();
+		}
 	} else {
 		bypass_comment(";;FSO 3.6.0;; $Skybox Model:");
 	}

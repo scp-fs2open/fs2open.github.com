@@ -705,6 +705,9 @@ public:
 	vec3d	arc_pts[MAX_SHIP_ARCS][2];			// The endpoints of each arc
 	TIMESTAMP	arc_timestamp[MAX_SHIP_ARCS];		// When this times out, the spark goes away.  Invalid is not used
 	ubyte		arc_type[MAX_SHIP_ARCS];			// see MARC_TYPE_* defines in model.h
+	color		arc_primary_color_1[MAX_SHIP_ARCS];
+	color		arc_primary_color_2[MAX_SHIP_ARCS];
+	color		arc_secondary_color[MAX_SHIP_ARCS];
 	int		arc_next_time;							// When the next damage/emp arc will be created.	
 	SCP_vector<int>		passive_arc_next_times;		// When the next passive ship arc will be created.	
 
@@ -808,6 +811,8 @@ public:
 	int team_change_time;
 
 	float autoaim_fov;
+
+	int cockpit_model_instance;
 
 	TIMESTAMP	multi_client_collision_timestamp;
 
@@ -924,6 +929,9 @@ typedef struct ship_passive_arc_info {
 	std::pair<vec3d, vec3d> pos;
 	float duration;
 	float frequency;
+	color primary_color_1;
+	color primary_color_2;
+	color secondary_color;
 } ship_lightning_data;
 
 typedef struct thruster_particles {
@@ -1428,6 +1436,7 @@ public:
 	SCP_unordered_map<int, void*> glowpoint_bank_override_map;
 
 	animation::ModelAnimationSet animations;
+	animation::ModelAnimationSet cockpit_animations;
 
 	SCP_vector<ship_passive_arc_info> ship_passive_arcs;
 
@@ -1963,7 +1972,7 @@ extern int ship_has_engine_power(ship *shipp);
 
 // Swifty - Cockpit displays
 void ship_init_cockpit_displays(ship *shipp);
-void ship_clear_cockpit_displays();
+void ship_close_cockpit_displays(ship* shipp);
 int ship_start_render_cockpit_display(size_t cockpit_display_num);
 void ship_end_render_cockpit_display(size_t cockpit_display_num);
 

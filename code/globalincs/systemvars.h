@@ -198,8 +198,8 @@ int current_detail_level();
 // A sort for use with small or almost-sorted lists.  Iteration time is O(n) for a fully-sorted list.
 // This uses a type-safe version of the function prototype for stdlib's qsort, although the size is an int rather than a size_t (for the reasons that j is an int).
 // The fncompare function should return <0, 0, or >0 as the left item is less than, equal to, or greater than the right item.
-template <typename T>
-void insertion_sort(T* array_base, int array_size, int (*fncompare)(const T*, const T*))
+template <typename array_t, typename T>
+void insertion_sort(array_t& array_base, int array_size, int (*fncompare)(const T*, const T*))
 {
 	// NOTE: j *must* be a signed type because j reaches -1 and j+1 must be 0.
 	int i, j;

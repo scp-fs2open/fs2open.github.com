@@ -887,7 +887,6 @@ void game_level_close()
 		shockwave_level_close();
 		fireball_close();	
 		shield_hit_close();
-		mission_event_shutdown();
 		asteroid_level_close();
 		jumpnode_level_close();
 		waypoint_level_close();
@@ -903,7 +902,7 @@ void game_level_close()
 		particle::ParticleManager::get()->clearSources();
 		particle::close();
 		trail_level_close();
-		ship_clear_cockpit_displays();
+		ship_close_cockpit_displays(Player_ship);
 		hud_level_close();
 		hud_escort_clear_all();
 		model_instance_free_all();
@@ -1027,7 +1026,7 @@ void game_level_init()
 	debris_init();
 	shield_hit_init();				//	Initialize system for showing shield hits
 
-	mission_init_goals();
+	mission_goals_and_events_init();
 	mission_log_init();
 	messages_init();
 	obj_snd_level_init();					// init object-linked persistant sounds
@@ -6933,7 +6932,7 @@ void game_event_debug_init()
 	int e;
 
 	ED_count = 0;
-	for (e=0; e<Num_mission_events; e++) {
+	for (e=0; e<(int)Mission_events.size(); e++) {
 		game_add_event_debug_index(e | EVENT_DEBUG_EVENT, 0);
 		game_add_event_debug_sexp(Mission_events[e].formula, 1);
 	}
@@ -7000,7 +6999,7 @@ void game_show_event_debug(float  /*frametime*/)
 		if (z & EVENT_DEBUG_EVENT) {
 			z &= 0x7fff;
 			sprintf(buf, NOX("%s%s (%s) %s%d %d"), (Mission_events[z].flags & MEF_CURRENT) ? NOX("* ") : "",
-				Mission_events[z].name, Mission_events[z].result ? NOX("True") : NOX("False"),
+				Mission_events[z].name.c_str(), Mission_events[z].result ? NOX("True") : NOX("False"),
 				(Mission_events[z].chain_delay < 0) ? "" : NOX("x "),
 				Mission_events[z].repeat_count, Mission_events[z].interval);
 

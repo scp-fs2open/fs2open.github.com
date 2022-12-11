@@ -38,6 +38,7 @@
 #include "scripting/api/objs/LuaSEXP.h"
 #include "scripting/api/objs/luaaisexp.h"
 #include "scripting/api/objs/asteroid.h"
+#include "scripting/api/objs/animation_handle.h"
 #include "scripting/api/objs/background_element.h"
 #include "scripting/api/objs/beam.h"
 #include "scripting/api/objs/debris.h"
@@ -270,26 +271,27 @@ ADE_INDEXER(l_Mission_Events, "number/string IndexOrName", "Indexes events list"
 		return ade_set_error(L, "o", l_Event.Set(-1));
 
 	int i;
-	for(i = 0; i < Num_mission_events; i++)
+	for(i = 0; i < (int)Mission_events.size(); i++)
 	{
-		if(!stricmp(Mission_events[i].name, s))
+		if(!stricmp(Mission_events[i].name.c_str(), s))
 			return ade_set_args(L, "o", l_Event.Set(i));
 	}
 
 	//Now try as a number
 	i = atoi(s);
-	if(i < 1 || i > Num_mission_events)
-		return ade_set_error(L, "o", l_Event.Set(-1));
-
 	//Lua-->FS2
 	i--;
+
+	if(i < 0 || i >= (int)Mission_events.size())
+		return ade_set_error(L, "o", l_Event.Set(-1));
+
 
 	return ade_set_args(L, "o", l_Event.Set(i));
 }
 
 ADE_FUNC(__len, l_Mission_Events, NULL, "Number of events in mission", "number", "Number of events in mission")
 {
-	return ade_set_args(L, "i", Num_mission_events);
+	return ade_set_args(L, "i", (int)Mission_events.size());
 }
 
 //****SUBLIBRARY: Mission/SEXPVariables
@@ -836,47 +838,9 @@ ADE_FUNC(addMessage, l_Mission, "string name, string text, [persona persona]", "
 	return ade_set_error(L, "o", l_Message.Set((int) Messages.size() - 1));
 }
 
-ADE_FUNC(sendMessage,
-	l_Mission,
-	"string sender, message message, [number delay=0.0, enumeration priority = MESSAGE_PRIORITY_NORMAL, boolean "
-	"fromCommand = false]",
-	"Sends a message from the given source (not from a ship!) with the given priority or optionally sends it from the "
-	"missions command source.<br>"
-	"If delay is specified the message will be delayed by the specified time in seconds<br>"
-	"If you pass <i>nil</i> as the sender then the message will not have a sender.",
-	"boolean",
-	"true if successfull, false otherwise")
+int sendMessage_sub(lua_State* L, const void* sender, int messageSource, int messageIdx, float delay, enum_h* ehp)
 {
-	const char* sender = nullptr;
-	int messageIdx = -1;
-	int priority = MESSAGE_PRIORITY_NORMAL;
-	bool fromCommand = false;
-	int messageSource = MESSAGE_SOURCE_SPECIAL;
-	float delay = 0.0f;
-
-	enum_h* ehp = NULL;
-
-	// if first is nil then use no source
-	if (lua_isnil(L, 1))
-	{
-		if (!ade_get_args(L, "*o|fob", l_Message.Get(&messageIdx), &delay, l_Enum.GetPtr(&ehp), &fromCommand))
-			return ADE_RETURN_FALSE;
-
-		messageSource = MESSAGE_SOURCE_NONE;
-	}
-	else
-	{
-		if (!ade_get_args(L, "so|fob", &sender, l_Message.Get(&messageIdx), &delay, l_Enum.GetPtr(&ehp), &fromCommand))
-			return ADE_RETURN_FALSE;
-
-		if (sender == NULL)
-			return ADE_RETURN_FALSE;
-	}
-
-	if (fromCommand)
-		messageSource = MESSAGE_SOURCE_COMMAND;
-
-	if (messageIdx < 0 || messageIdx >= (int) Messages.size())
+	if (messageIdx < 0 || messageIdx >= (int)Messages.size())
 		return ADE_RETURN_FALSE;
 
 	if (messageIdx < Num_builtin_messages)
@@ -891,9 +855,11 @@ ADE_FUNC(sendMessage,
 		return ADE_RETURN_FALSE;
 	}
 
-	if (ehp != NULL)
+	int priority = MESSAGE_PRIORITY_NORMAL;
+
+	if (ehp != nullptr)
 	{
-		switch(ehp->index)
+		switch (ehp->index)
 		{
 			case LE_MESSAGE_PRIORITY_HIGH:
 				priority = MESSAGE_PRIORITY_HIGH;
@@ -910,12 +876,71 @@ ADE_FUNC(sendMessage,
 		}
 	}
 
-	if (messageSource == MESSAGE_SOURCE_NONE)
-		message_send_unique_to_player(Messages[messageIdx].name, NULL, MESSAGE_SOURCE_NONE, priority, 0, fl2i(delay * 1000.0f));
-	else
-		message_send_unique_to_player(Messages[messageIdx].name, (void*) sender, messageSource, priority, 0, fl2i(delay * 1000.0f));
+	message_send_unique_to_player(Messages[messageIdx].name, sender, messageSource, priority, 0, fl2i(delay * MILLISECONDS_PER_SECOND));
 
 	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(sendMessage,
+	l_Mission,
+	"string|ship sender, message message, [number delay=0.0, enumeration priority = MESSAGE_PRIORITY_NORMAL, boolean "
+	"fromCommand = false]",
+	"Sends a message from the given source or ship with the given priority, or optionally sends it from the "
+	"mission's command source.<br>"
+	"If delay is specified, the message will be delayed by the specified time in seconds.<br>"
+	"If sender is <i>nil</i> the message will not have a sender.  If sender is a ship object the message will be sent from the ship; "
+	"if sender is a string the message will have a non-ship source even if the string is a ship name.",
+	"boolean",
+	"true if successful, false otherwise")
+{
+	const void* sender = nullptr;
+	int messageIdx = -1;
+	bool fromCommand = false;
+	int messageSource = MESSAGE_SOURCE_SPECIAL;
+	float delay = 0.0f;
+
+	enum_h* ehp = nullptr;
+
+	// if first is nil then use no source
+	if (lua_isnil(L, 1))
+	{
+		if (!ade_get_args(L, "*o|fob", l_Message.Get(&messageIdx), &delay, l_Enum.GetPtr(&ehp), &fromCommand))
+			return ADE_RETURN_FALSE;
+
+		messageSource = MESSAGE_SOURCE_NONE;
+	}
+	// if first is a string then treat it as such
+	else if (lua_isstring(L, 1))
+	{
+		const char* sender_string = nullptr;
+
+		if (!ade_get_args(L, "so|fob", &sender_string, l_Message.Get(&messageIdx), &delay, l_Enum.GetPtr(&ehp), &fromCommand))
+			return ADE_RETURN_FALSE;
+
+		if (sender_string == nullptr)
+			return ADE_RETURN_FALSE;
+
+		sender = sender_string;
+	}
+	// assume it's a ship
+	else
+	{
+		object_h* ship_h = nullptr;
+
+		if (!ade_get_args(L, "oo|fob", l_Ship.GetPtr(&ship_h), l_Message.Get(&messageIdx), &delay, l_Enum.GetPtr(&ehp), &fromCommand))
+			return ADE_RETURN_FALSE;
+
+		if (ship_h == nullptr || !ship_h->IsValid())
+			return ADE_RETURN_FALSE;
+
+		sender = &Ships[ship_h->objp->instance];
+		messageSource = MESSAGE_SOURCE_SHIP;
+	}
+
+	if (fromCommand)
+		messageSource = MESSAGE_SOURCE_COMMAND;
+
+	return sendMessage_sub(L, sender, messageSource, messageIdx, delay, ehp);
 }
 
 ADE_FUNC(sendTrainingMessage, l_Mission, "message message, number time, [number delay=0.0]",
@@ -1973,6 +1998,111 @@ ADE_FUNC(hasLineOfSight, l_Mission, "vector from, vector to, [table excludedObje
 ADE_FUNC(getLineOfSightFirstIntersect, l_Mission, "vector from, vector to, [table excludedObjects /* expects list of objects, empty by default */, boolean testForShields = false, boolean testForHull = true, number threshold = 10.0]", "Checks whether the to-position is in line of sight from the from-position and returns the distance and intersecting object to the first interruption of the line of sight, disregarding specific excluded objects and objects with a radius of less then threshold.", "boolean, number, object", "true and zero and nil if there is line of sight, false and the distance and intersecting object otherwise.")
 {
 	return testLineOfSight_internal(L, true);
+}
+
+ADE_FUNC(getSpecialSubmodelAnimation, l_Mission, "string target, string type, string triggeredBy",
+	"Gets an animation handle. Target is the object that should be animated (one of \"cockpit\", \"skybox\"), type is the string name of the animation type, "
+	"triggeredBy is a closer specification which animation should trigger. See *-anim.tbm specifications. ",
+	"animation_handle",
+	"The animation handle for the specified animation, nil if invalid arguments.")
+{
+	const char* target = nullptr;
+	const char* type = nullptr;
+	const char* trigger = nullptr;
+
+	if (!ade_get_args(L, "sss", &target, &type, &trigger))
+		return ADE_RETURN_NIL;
+
+	polymodel_instance* pmi;
+	animation::ModelAnimationSet* set;
+
+	if (stricmp(target, "cockpit") == 0) {
+		if (Player_ship == nullptr || Player_ship->cockpit_model_instance < 0)
+			return ade_set_args(L, "o", l_AnimationHandle.Set(animation::ModelAnimationSet::AnimationList{}));
+		pmi = model_get_instance(Player_ship->cockpit_model_instance);
+		set = &Ship_info[Player_ship->ship_info_index].cockpit_animations;
+	}
+	else if (stricmp(target, "skybox") == 0) {
+		if(Nmodel_instance_num < 0)
+			return ade_set_args(L, "o", l_AnimationHandle.Set(animation::ModelAnimationSet::AnimationList{}));
+		pmi = model_get_instance(Nmodel_instance_num);
+		set = &The_mission.skybox_model_animations;
+	}
+	else {
+		return ADE_RETURN_NIL;
+	}
+
+	auto animtype = animation::anim_match_type(type);
+	if (animtype == animation::ModelAnimationTriggerType::None)
+		return ade_set_args(L, "o", l_AnimationHandle.Set(animation::ModelAnimationSet::AnimationList{}));
+
+	return ade_set_args(L, "o", l_AnimationHandle.Set(set->parseScripted(pmi, animtype, trigger)));
+}
+
+ADE_FUNC(updateSpecialSubmodelMoveable, l_Mission, "string target, string name, table values",
+	"Updates a moveable animation. Name is the name of the moveable. For what values needs to contain, please refer to the table below, depending on the type of the moveable:"
+	"Orientation:\r\n"
+	"\tThree numbers, x, y, z rotation respectively, in degrees\r\n"
+	"Rotation:\r\n"
+	"\tThree numbers, x, y, z rotation respectively, in degrees\r\n"
+	"Axis Rotation:\r\n"
+	"\tOne number, rotation angle in degrees\r\n"
+	"Inverse Kinematics:\r\n"
+	"\tThree required numbers: x, y, z position target relative to base, in 1/100th meters\r\n"
+	"\tThree optional numbers: x, y, z rotation target relative to base, in degrees\r\n",
+	"boolean",
+	"True if successful, false or nil otherwise")
+{
+	const char* target = nullptr;
+	const char* name = nullptr;
+	luacpp::LuaTable values;
+
+	if (!ade_get_args(L, "sst", &target, &name, &values))
+		return ADE_RETURN_NIL;
+
+	polymodel_instance* pmi;
+	animation::ModelAnimationSet* set;
+
+	if (stricmp(target, "cockpit") == 0) {
+		if (Player_ship == nullptr || Player_ship->cockpit_model_instance < 0)
+			return ADE_RETURN_NIL;
+		pmi = model_get_instance(Player_ship->cockpit_model_instance);
+		set = &Ship_info[Player_ship->ship_info_index].cockpit_animations;
+	}
+	else if (stricmp(target, "skybox") == 0) {
+		if (Nmodel_instance_num < 0)
+			return ADE_RETURN_NIL;
+		pmi = model_get_instance(Nmodel_instance_num);
+		set = &The_mission.skybox_model_animations;
+	}
+	else {
+		return ADE_RETURN_NIL;
+	}
+
+	SCP_vector<linb::any> valuesMoveable;
+
+	if (values.isValid()) {
+		for (const auto& object : values) {
+			if (object.second.is(luacpp::ValueType::NUMBER)) {
+				// This'll lua-error internally if it's not fed only objects. Additionally, catch the lua exception and then carry on
+				try {
+					valuesMoveable.emplace_back(object.second.getValue<int>());
+				}
+				catch (const luacpp::LuaException& /*e*/) {
+					// We were likely fed a float. 
+					// Since we can't actually tell whether that's the case before we try to get the value, and the attempt to get the value is printing a LuaError itself, just eat the exception here and return
+					return ADE_RETURN_FALSE;
+				}
+			}
+			else {
+				//This happens on a non-userdata value, i.e. a number
+				LuaError(L, "Value table contained non-numbers! Aborting...");
+				return ADE_RETURN_FALSE;
+			}
+		}
+	}
+
+	return set->updateMoveable(pmi, name, valuesMoveable) ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
 }
 
 ADE_LIB_DERIV(l_Mission_LuaSEXPs, "LuaSEXPs", nullptr, "Lua SEXPs", l_Mission);
