@@ -259,7 +259,8 @@ void LabManager::onFrame(float frametime) {
 		vm_rotate_matrix_by_angles(&CurrentOrientation, &rot_angles);
 	}
 	
-	//ImGui::ShowDemoWindow();
+	if (Cmdline_show_imgui_debug)
+		ImGui::ShowDemoWindow();
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
