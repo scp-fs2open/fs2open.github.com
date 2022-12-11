@@ -7805,7 +7805,7 @@ void ship_init_cockpit_displays(ship *shipp)
 
 void ship_close_cockpit_displays(ship* shipp)
 {
-	if (shipp->cockpit_model_instance >= 0) {
+	if (shipp && shipp->cockpit_model_instance >= 0) {
 		model_delete_instance(shipp->cockpit_model_instance);
 	}
 
