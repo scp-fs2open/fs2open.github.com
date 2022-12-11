@@ -44,6 +44,7 @@
 #include "pilotfile/pilotfile.h"
 #include "playerman/player.h"
 #include "popup/popup.h"
+#include "scripting/global_hooks.h"
 #include "scripting/scripting.h"
 #include "ship/ship.h"
 #include "starfield/supernova.h"

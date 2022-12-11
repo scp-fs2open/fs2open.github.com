@@ -23,6 +23,7 @@
 #include "parse/sexp.h"
 #include "parse/sexp/LuaAISEXP.h"
 #include "playerman/player.h"
+#include "scripting/global_hooks.h"
 #include "scripting/scripting.h"
 #include "ship/ship.h"
 #include "ship/awacs.h"

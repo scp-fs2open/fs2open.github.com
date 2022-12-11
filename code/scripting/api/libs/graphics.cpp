@@ -14,6 +14,7 @@
 #include "scripting/api/objs/subsystem.h"
 #include "scripting/api/objs/texture.h"
 #include "scripting/api/objs/vecmath.h"
+#include "scripting/global_hooks.h"
 
 #include <asteroid/asteroid.h>
 #include <camera/camera.h>

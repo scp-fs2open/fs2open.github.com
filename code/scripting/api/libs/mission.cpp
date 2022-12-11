@@ -65,6 +65,7 @@
 #include "scripting/lua/LuaConvert.h"
 #include "scripting/lua/LuaFunction.h"
 #include "scripting/lua/LuaTable.h"
+#include "scripting/global_hooks.h"
 #include "scripting/scripting.h"
 #include "ship/ship.h"
 #include "ship/shipfx.h"

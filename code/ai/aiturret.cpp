@@ -14,6 +14,7 @@
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #include "object/objectdock.h"
+#include "scripting/global_hooks.h"
 #include "scripting/scripting.h"
 #include "render/3d.h"
 #include "ship/ship.h"

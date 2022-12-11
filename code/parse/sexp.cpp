@@ -86,6 +86,7 @@
 #include "parse/sexp_container.h"
 #include "playerman/player.h"
 #include "render/3d.h"
+#include "scripting/global_hooks.h"
 #include "ship/afterburner.h"
 #include "ship/awacs.h"
 #include "ship/ship.h"

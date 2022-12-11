@@ -29,7 +29,6 @@
 #include "species_defs/species_defs.h"
 #include "weapon/shockwave.h"
 #include "weapon/trails.h"
-#include "scripting/global_hooks.h"
 #include "ship/ship_flags.h"
 #include "weapon/weapon_flags.h"
 #include "ai/ai.h"

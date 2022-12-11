@@ -64,6 +64,7 @@
 #include "scripting/api/objs/waypoint.h"
 #include "scripting/api/objs/wing.h"
 #include "scripting/scripting.h"
+#include "scripting/global_hooks.h"
 #include "ship/afterburner.h"
 #include "ship/awacs.h"
 #include "ship/ship.h"

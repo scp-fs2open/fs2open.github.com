@@ -35,6 +35,7 @@
 #include "object/objectshield.h"
 #include "object/objectsnd.h"
 #include "observer/observer.h"
+#include "scripting/global_hooks.h"
 #include "scripting/api/libs/graphics.h"
 #include "scripting/scripting.h"
 #include "playerman/player.h"
