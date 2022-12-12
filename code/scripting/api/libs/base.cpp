@@ -654,7 +654,7 @@ ADE_FUNC(getModVersion, l_Base, nullptr,
 		size_t pos = str.find_first_of('.');
 		if (pos != SCP_string::npos) {
 			auto ver = str.substr(0, pos);
-			if(!ver.empty() && std::find_if(ver.begin(), ver.end(), [](char c) { return !std::isdigit(c); }) == ver.end()){
+			if(!ver.empty() && std::find_if(ver.begin(), ver.end(), [](char c) { return !std::isdigit(c, SCP_default_locale); }) == ver.end()){
 				if (major < 0) {
 					major = std::stoi(str.c_str());
 				} else if (minor < 0) {
@@ -665,7 +665,7 @@ ADE_FUNC(getModVersion, l_Base, nullptr,
 				break; //Break out of the loop if the first string is not a digit. In this case we only return the whole string.
 			}
 		} else if ((major > -1) && (minor > -1) && (!str.empty() && std::find_if(str.begin(), str.end(), [](char c) {
-					   return !std::isdigit(c);
+					   return !std::isdigit(c, SCP_default_locale);
 				   }) == str.end())) {
 			patch = std::stoi(str.c_str());
 		}
