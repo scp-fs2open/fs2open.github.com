@@ -75,6 +75,14 @@ version parse_version_inline() {
 
 	v.build = std::atoi(input.substr(start_pos, end_pos - start_pos).c_str());
 
+	if (end_pos == SCP_string::npos)
+		return v;
+
+	start_pos = end_pos + 1;
+	end_pos = input.find('.', start_pos);
+
+	v.revision = std::atoi(input.substr(start_pos, end_pos - start_pos).c_str());
+
 	return v;
 }
 version get_executable_version() {
