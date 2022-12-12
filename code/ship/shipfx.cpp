@@ -2116,7 +2116,7 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 					break;
 				}
 			}
-			if (skip) break;
+			if (skip) continue;
 
 			if (submodel_1 >= 0 && submodel_2 >= 0) {
 				// spawn the arc in the first unused slot
