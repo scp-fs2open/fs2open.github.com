@@ -32,7 +32,7 @@ private:
 	void setFieldActive();
 	void setFieldPassive();
 	void setGenreAsteroid();
-	void setGenreShip();
+	void setGenreDebris();
 
 	void changedBoxTextIMinX(const QString &text);
 	void changedBoxTextIMinY(const QString &text);

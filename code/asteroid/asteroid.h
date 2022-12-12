@@ -23,15 +23,16 @@ class model_draw_list;
 
 #define	MAX_ASTEROIDS			2000	//Increased from 512 to 2000 in 2022
 
-#define NUM_DEBRIS_SIZES		3
-#define	NUM_DEBRIS_POFS			3				// Number of POFs per debris size
+#define	NUM_ASTEROID_SIZES		3
+#define	NUM_ASTEROID_POFS		3				// Number of POFs per debris size
 
+#define	ASTEROID_TYPE_DEBRIS    -1
 #define	ASTEROID_TYPE_SMALL		0
 #define	ASTEROID_TYPE_MEDIUM	1
 #define	ASTEROID_TYPE_LARGE		2
 
 // these should always be equal for the benefit of generic asteroids (c.f. asteroid_page_in)
-#define	MAX_ACTIVE_DEBRIS_TYPES		NUM_DEBRIS_SIZES
+#define	MAX_ACTIVE_DEBRIS_TYPES		NUM_ASTEROID_SIZES
 
 // Goober5000 - currently same as MAX_SHIP_DETAIL_LEVELS (put here to avoid an #include)
 #define MAX_ASTEROID_DETAIL_LEVELS	5
@@ -47,16 +48,18 @@ extern asteroid_obj Asteroid_obj_list;
 // Data structure for determining a type and amount of other asteroids an
 // asteroid will split to when destroyed.
 typedef struct asteroid_split_info {
-	int		asteroid_type;
-	int		min;
-	int		max;
+	int		asteroid_type;		//index position
+	char	name[NAME_LENGTH];	//asteroid name
+	int		min;				//minimum asteroids to spawn
+	int		max;				//maximum asteroids to spawn
 } asteroid_split_info;
 
 class asteroid_info
 {
 public:
 	char		name[NAME_LENGTH];								// name for the asteroid
-	char		pof_files[NUM_DEBRIS_POFS][MAX_FILENAME_LEN];	// POF files to load/associate with ship
+	int			type;											// type of asteroid, 0 = small, 1 = medium, 2 = large, -1 = debris
+	char		pof_files[NUM_ASTEROID_POFS][MAX_FILENAME_LEN];	// POF files to load/associate with ship
 	int			num_detail_levels;								// number of detail levels for this ship
 	int			detail_distance[MAX_ASTEROID_DETAIL_LEVELS];	// distance to change detail levels at
 	float		max_speed;										// cap on speed for asteroid
@@ -68,8 +71,8 @@ public:
 	float		blast;											// maximum blast impulse from area effect explosion
 	float		initial_asteroid_strength;						// starting strength of asteroid
 	SCP_vector< asteroid_split_info > split_info;
-	polymodel	*modelp[NUM_DEBRIS_POFS];
-	int			model_num[NUM_DEBRIS_POFS];
+	polymodel	*modelp[NUM_ASTEROID_POFS];
+	int			model_num[NUM_ASTEROID_POFS];
 	SCP_vector<int> explosion_bitmap_anims;
 	float		fireball_radius_multiplier;						// the model radius is multiplied by this to determine the fireball size
 	SCP_string	display_name;									// only used for hud targeting display and for 'ship' asteroids
@@ -77,19 +80,20 @@ public:
 	float		gravity_const;									// multiplier for mission gravity
 
 	asteroid_info( )
-		: num_detail_levels( 0 ), max_speed( 0 ), damage_type_idx( 0 ),
+		: type(ASTEROID_TYPE_DEBRIS), num_detail_levels(0), max_speed(0), damage_type_idx(0),
 		  damage_type_idx_sav( -1 ), inner_rad( 0 ), outer_rad( 0 ),
 		  damage( 0 ), blast( 0 ), initial_asteroid_strength( 0 ),
 		  fireball_radius_multiplier( -1 ), spawn_weight( 1 ), gravity_const( 0 )
 	{
 		name[ 0 ] = 0;
+		display_name = "";
 		memset( detail_distance, 0, sizeof( detail_distance ) );
 
-		for (int i = 0; i < NUM_DEBRIS_POFS; i++)
+		for (int i = 0; i < NUM_ASTEROID_POFS; i++)
 		{
 			modelp[i] = NULL;
 			model_num[i] = -1;
-			pof_files[i][0] = 0;
+			pof_files[i][0] = '\0';
 		}
 	}
 };
@@ -116,7 +120,7 @@ typedef	struct asteroid {
 // TYPEDEF FOR DEBRIS TYPE
 typedef enum {
 	DG_ASTEROID,
-	DG_SHIP
+	DG_DEBRIS
 } debris_genre_t;
 
 // TYPEDEF FOR FIELD TYPE

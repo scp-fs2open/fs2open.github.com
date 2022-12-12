@@ -246,7 +246,7 @@ void DumpStats::get_background_stats(CString &buffer)
 				temp.Format("\t\tSpecies: ");
 				for (i=0; i<(int)Species_info.size(); i++) {
 					if (Asteroid_field.field_debris_type[i] >= 0) {
-						temp += CString(Species_info[(Asteroid_field.field_debris_type[i] / NUM_DEBRIS_SIZES) - 1].species_name) + " ";
+						temp += CString(Species_info[(Asteroid_field.field_debris_type[i] / NUM_ASTEROID_SIZES) - 1].species_name) + " ";
 					}
 				}
 

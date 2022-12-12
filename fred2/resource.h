@@ -203,8 +203,8 @@
 #define IDC_GALATEA                     1034
 #define IDC_TYPE_STRING                 1034
 #define IDC_DOGFIGHT                    1034
-#define IDC_PASSIVE_SHIP                1034
-#define IDC_FIELD_SHIP                  1034
+#define IDC_PASSIVE_DEBRIS              1034
+#define IDC_FIELD_DEBRIS                1034
 #define IDC_SEP_UNDERSCORES             1034
 #define IDC_EXPORT_EVERYTHING           1034
 #define IDC_CONTAINER_LIST              1034

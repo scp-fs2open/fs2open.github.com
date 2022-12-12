@@ -5551,6 +5551,8 @@ void parse_asteroid_fields(mission *pm)
 
 	Assert(pm != NULL);
 
+	Asteroid_field.num_initial_asteroids = 0;
+
 	i = 0;
 	count = 0;
 
@@ -5582,7 +5584,7 @@ void parse_asteroid_fields(mission *pm)
 		Asteroid_field.field_debris_type[0] = -1;
 		Asteroid_field.field_debris_type[1] = -1;
 		Asteroid_field.field_debris_type[2] = -1;
-		if (Asteroid_field.debris_genre == DG_SHIP) {
+		if (Asteroid_field.debris_genre == DG_DEBRIS) {
 			if (optional_string("+Field Debris Type:")) {
 				stuff_int(&Asteroid_field.field_debris_type[0]);
 				count++;
@@ -6419,8 +6421,7 @@ void mission_init(mission *pm)
 	
 	Num_reinforcements = 0;
 
-	for (int i = 0; i < MAX_ASTEROID_FIELDS; i++)
-		Asteroid_field.num_initial_asteroids = 0;
+	Asteroid_field.num_initial_asteroids = 0;
 
 	// reset background bitmaps and suns
 	stars_pre_level_init();
