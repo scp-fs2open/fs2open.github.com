@@ -294,17 +294,7 @@ int cache_condition(ConditionalType type, const SCP_string& value){
 		return gameseq_get_state_idx(value.c_str());
 	case CHC_VERSION:
 	{
-		char buf[32];
-		sprintf(buf, "%i.%i.%i", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD);
-		if (stricmp(buf, value.c_str()) == 0)
-		{
-			return 1;
-		}
-		else if (FS_VERSION_BUILD == 0) //In case some people are lazy and say "3.7" instead of "3.7.0" or something
-		{
-			sprintf(buf, "%i.%i", FS_VERSION_MAJOR, FS_VERSION_MINOR);
-			return (stricmp(buf, value.c_str()) == 0) ? 1 : 0;
-		}
+		return gameversion::parse_version_inline() == gameversion::get_executable_version() ? 1 : 0;
 	}
 	case CHC_APPLICATION:
 	{

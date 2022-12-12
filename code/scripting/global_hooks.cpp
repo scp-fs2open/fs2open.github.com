@@ -163,8 +163,7 @@ const std::shared_ptr<OverridableHook<CollisionConditions>> OnAsteroidCollision 
 		{"Beam", "weapon", "The beam object with which the asteroid collided (only set for beam collisions)"} });
 
 const std::shared_ptr<OverridableHook<CollisionConditions>> OnBeamCollision = OverridableHook<CollisionConditions>::Factory("On Beam Collision",
-	"Invoked when a beam collides with another object. Note: When two ships collide this will be called twice, once "
-	"with each ship object as the \"Ship\" parameter.",
+	"Invoked when a beam collides with another object.",
 	{ {"Self", "object", "The \"other\" object that collided with the beam."},
 		{"Object",
 			"ship",

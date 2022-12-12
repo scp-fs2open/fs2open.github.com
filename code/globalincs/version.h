@@ -68,6 +68,7 @@ struct version {
 };
 
 version parse_version();
+version parse_version_inline();
 
 version get_executable_version();
 

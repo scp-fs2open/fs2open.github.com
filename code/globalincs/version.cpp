@@ -48,6 +48,35 @@ version parse_version() {
 
 	return v;
 }
+version parse_version_inline() {
+	version v;
+
+	SCP_string input;
+	stuff_string(input, F_RAW);
+
+	size_t start_pos = 0;
+	size_t end_pos = input.find('.');
+
+	v.major = std::atoi(input.substr(start_pos, end_pos - start_pos).c_str());
+
+	if (end_pos == SCP_string::npos)
+		return v;
+
+	start_pos = end_pos + 1;
+	end_pos = input.find('.', start_pos);
+
+	v.minor = std::atoi(input.substr(start_pos, end_pos - start_pos).c_str());
+
+	if (end_pos == SCP_string::npos)
+		return v;
+
+	start_pos = end_pos + 1;
+	end_pos = input.find('.', start_pos);
+
+	v.build = std::atoi(input.substr(start_pos, end_pos - start_pos).c_str());
+
+	return v;
+}
 version get_executable_version() {
 	version v;
 	v.major = FS_VERSION_MAJOR;
