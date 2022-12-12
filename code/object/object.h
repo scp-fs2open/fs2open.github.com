@@ -328,8 +328,6 @@ void obj_move_all_post(object *objp, float frametime);
 
 void obj_move_call_physics(object *objp, float frametime);
 
-// multiplayer object update stuff begins -------------------------------------------
-
 // move an observer object in multiplayer
 void obj_observer_move(float frame_time);
 
