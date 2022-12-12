@@ -408,7 +408,7 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	gamesnd_parse_soundstbl();		// needs to be loaded after species stuff but before interface/weapon/ship stuff - taylor
 	mission_brief_common_init();	
 
-	sexp::dynamic_sexp_init(); // Must happen before ship init for LuaAI
+	sexp_startup(); // Must happen before ship init for LuaAI
 
 	animation::ModelAnimationParseHelper::parseTables();
 	obj_init();

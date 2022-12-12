@@ -168,9 +168,9 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 	listener(SubSystem::MissionBrief);
 	mission_brief_common_init();
 
-	// Initialize dynamic SEXPs. Must happen before ship init for LuaAI
-	listener(SubSystem::DynamicSEXPs);
-	sexp::dynamic_sexp_init();
+	// Initialize SEXPs. Must happen before ship init for LuaAI
+	listener(SubSystem::SEXPs);
+	sexp_startup();
 
 	listener(SubSystem::Objects);
 	obj_init();

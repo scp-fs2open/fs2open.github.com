@@ -290,6 +290,8 @@ SCP_vector<sexp_oper> Operators = {
 	{ "secondary-ammo-pct",				OP_SECONDARY_AMMO_PCT,					2,	2,			SEXP_INTEGER_OPERATOR,	},
 	{ "get-primary-ammo",				OP_GET_PRIMARY_AMMO,					2,	2,			SEXP_INTEGER_OPERATOR,	}, // Karajorma
 	{ "get-secondary-ammo",				OP_GET_SECONDARY_AMMO,					2,	2,			SEXP_INTEGER_OPERATOR,	}, // Karajorma
+	{ "turret-get-primary-ammo",		OP_TURRET_GET_PRIMARY_AMMO,				3,	3,			SEXP_INTEGER_OPERATOR,	},	// DahBlount
+	{ "turret-get-secondary-ammo",		OP_TURRET_GET_SECONDARY_AMMO,			3,	3,			SEXP_INTEGER_OPERATOR,	},	// DahBlount
 	{ "get-num-countermeasures",		OP_GET_NUM_COUNTERMEASURES,				1,	1,			SEXP_INTEGER_OPERATOR,	}, // Karajorma
 	{ "weapon-energy-pct",				OP_WEAPON_ENERGY_LEFT,					1,	1,			SEXP_INTEGER_OPERATOR,	},
 	{ "afterburner-energy-pct",			OP_AFTERBURNER_LEFT,					1,	1,			SEXP_INTEGER_OPERATOR,	},
@@ -351,7 +353,6 @@ SCP_vector<sexp_oper> Operators = {
 	//Other Sub-Category
 	{ "script-eval-bool",				OP_SCRIPT_EVAL_BOOL,					1,	1,			SEXP_BOOLEAN_OPERATOR, },
 	{ "script-eval-num",				OP_SCRIPT_EVAL_NUM,						1,	1,			SEXP_INTEGER_OPERATOR,	},
-	{ "script-eval-string",				OP_SCRIPT_EVAL_STRING,					2,	2,			SEXP_ACTION_OPERATOR,	},
 
 	//Time Category
 	{ "time-ship-destroyed",			OP_TIME_SHIP_DESTROYED,					1,	1,			SEXP_INTEGER_OPERATOR,	},
@@ -576,8 +577,6 @@ SCP_vector<sexp_oper> Operators = {
 	{ "turret-clear-forced-target",	    OP_TURRET_CLEAR_FORCED_TARGET,			2,	INT_MAX,	SEXP_ACTION_OPERATOR,   },  // Asteroth
 	{ "turret-set-primary-ammo",		OP_TURRET_SET_PRIMARY_AMMO,				4,	4,			SEXP_ACTION_OPERATOR,	},	// DahBlount
 	{ "turret-set-secondary-ammo",		OP_TURRET_SET_SECONDARY_AMMO,			4,	4,			SEXP_ACTION_OPERATOR,	},	// DahBlount
-	{ "turret-get-primary-ammo",		OP_TURRET_GET_PRIMARY_AMMO,				3,	3,			SEXP_INTEGER_OPERATOR,	},	// DahBlount
-	{ "turret-get-secondary-ammo",		OP_TURRET_GET_SECONDARY_AMMO,			3,	3,			SEXP_INTEGER_OPERATOR,	},	// DahBlount
 	{ "is-in-turret-fov",				OP_IS_IN_TURRET_FOV,					3,	4,			SEXP_BOOLEAN_OPERATOR,	},	// Goober5000
 	
 	//Models and Textures Sub-Category
@@ -800,6 +799,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "script-eval",					OP_SCRIPT_EVAL,							1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "script-eval-block",				OP_SCRIPT_EVAL_BLOCK,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "multi-eval",						OP_SCRIPT_EVAL_MULTI,					2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
+	{ "script-eval-string",				OP_SCRIPT_EVAL_STRING,					2,	2,			SEXP_ACTION_OPERATOR,	},
 	{ "debug",							OP_DEBUG,								2,	2,			SEXP_ACTION_OPERATOR,	},	// Karajorma
 	{ "do-nothing",						OP_NOP,									0,	0,			SEXP_ACTION_OPERATOR,	},
 	
@@ -1271,7 +1271,29 @@ void init_sexp()
 	Fade_out_b = 0;
 }
 
-void sexp_shutdown() {
+void sexp_startup()
+{
+#ifndef NDEBUG
+	// sanity check categories and subcategories for all operators
+	for (const auto& op : Operators)
+	{
+		int subcategory = get_subcategory(op.value);
+
+		if (subcategory != OP_SUBCATEGORY_NONE)
+		{
+			int category = get_category(op.value);
+			int implied_category = category_of_subcategory(subcategory);
+
+			Assertion(category == implied_category, "Operator %s has a category that is not a parent of its subcategory!", op.text.c_str());
+		}
+	}
+#endif
+
+	sexp::dynamic_sexp_init();
+}
+
+void sexp_shutdown()
+{
 	sexp_nodes_close();
 
 	sexp::dynamic_sexp_shutdown();
@@ -33526,7 +33548,6 @@ int get_category(int op_id)
 		case OP_IS_IFF:
 		case OP_NUM_WITHIN_BOX:
 		case OP_SCRIPT_EVAL_NUM:
-		case OP_SCRIPT_EVAL_STRING:
 		case OP_NUM_SHIPS_IN_WING:
 		case OP_GET_PRIMARY_AMMO:
 		case OP_GET_SECONDARY_AMMO:
@@ -33538,9 +33559,9 @@ int get_category(int op_id)
 		case OP_GET_DAMAGE_CAUSED:
 		case OP_AFTERBURNER_LEFT:
 		case OP_WEAPON_ENERGY_LEFT:
+		case OP_GET_ETS_VALUE:
 		case OP_PRIMARY_FIRED_SINCE:
 		case OP_SECONDARY_FIRED_SINCE:
-		case OP_CUTSCENES_GET_FOV:
 		case OP_GET_THROTTLE_SPEED:
 		case OP_HITS_LEFT_SUBSYSTEM_GENERIC:
 		case OP_HITS_LEFT_SUBSYSTEM_SPECIFIC:
@@ -33580,6 +33601,8 @@ int get_category(int op_id)
 		case OP_MAP_HAS_DATA_ITEM:
 		case OP_ANGLE_FVEC_TARGET:
 		case OP_ARE_WING_FLAGS_SET:
+		case OP_PLAYER_IS_CHEATING_BASTARD:
+		case OP_USED_CHEAT:
 			return OP_CATEGORY_STATUS;
 
 		case OP_WHEN:
@@ -33799,6 +33822,7 @@ int get_category(int op_id)
 		case OP_SET_PERSONA:
 		case OP_CHANGE_PLAYER_SCORE:
 		case OP_CHANGE_TEAM_SCORE:
+		case OP_CUTSCENES_GET_FOV:
 		case OP_CUTSCENES_SET_CAMERA_FOV:
 		case OP_CUTSCENES_SET_CAMERA:
 		case OP_CUTSCENES_SET_CAMERA_HOST:
@@ -33900,16 +33924,15 @@ int get_category(int op_id)
 		case OP_ALTER_SHIP_FLAG:
 		case OP_CHANGE_TEAM_COLOR:
 		case OP_NEBULA_CHANGE_PATTERN:
-		case OP_PLAYER_IS_CHEATING_BASTARD:
 		case OP_TECH_ADD_INTEL_XSTR:
 		case OP_COPY_VARIABLE_FROM_INDEX:
 		case OP_COPY_VARIABLE_BETWEEN_INDEXES:
-		case OP_GET_ETS_VALUE:
 		case OP_SET_ETS_VALUES:
 		case OP_CALL_SSM_STRIKE:
 		case OP_SET_MOTION_DEBRIS:
 		case OP_HUD_SET_CUSTOM_GAUGE_ACTIVE:
 		case OP_HUD_SET_BUILTIN_GAUGE_ACTIVE:
+		case OP_SCRIPT_EVAL_STRING:
 		case OP_SCRIPT_EVAL_MULTI:
 		case OP_PAUSE_SOUND_FROM_FILE:
 		case OP_SCRIPT_EVAL_BLOCK:
@@ -33963,9 +33986,9 @@ int get_category(int op_id)
 		case OP_HUD_FORCE_SENSOR_STATIC:
 		case OP_SET_GRAVITY_ACCEL:
 		case OP_SET_ORDER_ALLOWED_TARGET:
-		case OP_USED_CHEAT:
 		case OP_SET_ASTEROID_FIELD:
 		case OP_SET_DEBRIS_FIELD:
+		case OP_SET_WING_FORMATION:
 			return OP_CATEGORY_CHANGE;
 
 		case OP_AI_CHASE:
@@ -34231,8 +34254,6 @@ int get_subcategory(int op_id)
 		case OP_TURRET_SUBSYS_TARGET_ENABLE:
 		case OP_TURRET_SET_PRIMARY_AMMO:
 		case OP_TURRET_SET_SECONDARY_AMMO:
-		case OP_TURRET_GET_PRIMARY_AMMO:
-		case OP_TURRET_GET_SECONDARY_AMMO:
 			return CHANGE_SUBCATEGORY_BEAMS_AND_TURRETS;
 
 		case OP_CHANGE_SHIP_CLASS:
@@ -34510,6 +34531,8 @@ int get_subcategory(int op_id)
 		case OP_IS_SECONDARY_SELECTED:
 		case OP_GET_PRIMARY_AMMO:
 		case OP_GET_SECONDARY_AMMO:
+		case OP_TURRET_GET_PRIMARY_AMMO:
+		case OP_TURRET_GET_SECONDARY_AMMO:
 		case OP_GET_NUM_COUNTERMEASURES:
 		case OP_AFTERBURNER_LEFT:
 		case OP_WEAPON_ENERGY_LEFT:
