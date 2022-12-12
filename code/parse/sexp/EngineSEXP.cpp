@@ -83,11 +83,11 @@ EngineSEXPFactory::ArgumentListBuilder EngineSEXPFactory::beginArgList() { retur
 
 dummy_return EngineSEXPFactory::finish()
 {
-	Assertion(_category >= 0, "Engine SEXP %s: A category has to be specified!", m_sexp->getName().c_str());
+	Assertion(_category >= 0 && _category != OP_CATEGORY_NONE, "Engine SEXP %s: A category has to be specified!", m_sexp->getName().c_str());
 	Assertion(_returnType >= 0, "Engine SEXP %s: A return type has to be specified!", m_sexp->getName().c_str());
 
 	m_sexp->setCategory(_category);
-	if (_subcategory >= 0) {
+	if (_subcategory >= 0 && _subcategory != OP_SUBCATEGORY_NONE) {
 		m_sexp->setSubcategory(_subcategory);
 	} else {
 		Assertion(!_subcategoryName.empty(), "A subcategory has to be specified!");
@@ -183,10 +183,10 @@ EngineSEXPFactory EngineSEXP::create(const SCP_string& name)
 void EngineSEXP::initialize()
 {
 	// Initialize subcategory now that we know that it is safe to do so
-	if (_subcategory < 0) {
+	if (_subcategory == OP_SUBCATEGORY_NONE) {
 		_subcategory = get_subcategory(_subcategoryName);
 
-		if (_subcategory < 0) {
+		if (_subcategory == OP_SUBCATEGORY_NONE) {
 			_subcategory = add_subcategory(_category, _subcategoryName);
 		}
 	}

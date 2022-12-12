@@ -161,7 +161,7 @@ int main(int argc, char* argv[]) {
 								 { SubSystem::Campaign,          app.tr("Initializing campaign system") },
 								 { SubSystem::NebulaLightning,   app.tr("Initializing nebula lightning") },
 								 { SubSystem::FFmpeg,            app.tr("Initializing FFmpeg") },
-								 { SubSystem::DynamicSEXPs,      app.tr("Initializing dynamic SEXP system") },
+								 { SubSystem::SEXPs,             app.tr("Initializing SEXP system") },
 								 { SubSystem::ScriptingInitHook, app.tr("Running game init scripting hook") },
 	};
 

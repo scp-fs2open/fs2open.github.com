@@ -160,6 +160,17 @@ int add_dynamic_sexp(std::unique_ptr<DynamicSEXP>&& sexp, sexp_oper_type type)
 		return -1;
 	}
 
+	// sanity check
+	int subcategory = sexp->getSubcategory();
+	if (subcategory != OP_SUBCATEGORY_NONE)
+	{
+		int category = sexp->getCategory();
+		int implied_category = category_of_subcategory(subcategory);
+
+		if (category != implied_category)
+			Warning(LOCATION, "Operator %s has a category that is not a parent of its subcategory!", name.c_str());
+	}
+
 	// For now, all dynamic SEXPS are only valid in missions
 	new_op.value = free_op_index;
 	new_op.type = type;

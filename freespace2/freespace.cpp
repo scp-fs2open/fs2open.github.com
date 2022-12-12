@@ -1946,8 +1946,8 @@ void game_init()
 
 	animation::ModelAnimationParseHelper::parseTables();
 
-	// Initialize dynamic SEXPs. Must happen before ship init for LuaAI
-	sexp::dynamic_sexp_init();
+	// Initialize SEXPs. Must happen before ship init for LuaAI
+	sexp_startup();
 
 	obj_init();	
 	virtual_pof_init();
