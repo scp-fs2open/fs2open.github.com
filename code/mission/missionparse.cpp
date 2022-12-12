@@ -5015,7 +5015,7 @@ void parse_event(mission *pm)
 		if (Fred_running) {
 			while (check_for_string("+Comment:") || check_for_string("+Background Color:") || check_for_string("+Path:")) {
 				event_annotation ea;
-				ea.path.push_back(event - &Mission_events[0]);
+				ea.path.push_back((int)(event - &Mission_events[0]));
 
 				if (optional_string("+Comment:")) {
 					stuff_string(ea.comment, F_MULTITEXT);
