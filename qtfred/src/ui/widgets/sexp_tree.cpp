@@ -5642,7 +5642,7 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 	for (i = 0; i < (int) Operators.size(); i++) {
 		// add only if it is not in a subcategory
 		subcategory_id = get_subcategory(Operators[i].value);
-		if (subcategory_id == -1) {
+		if (subcategory_id == OP_SUBCATEGORY_NONE) {
 			// put it in the appropriate menu
 			for (j = 0; j < (int) op_menu.size(); j++) {
 				if (op_menu[j].id == get_category(Operators[i].value)) {
