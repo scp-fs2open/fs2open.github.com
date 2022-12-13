@@ -11756,8 +11756,8 @@ void ai_process_subobjects(int objnum)
 	ai_info	*aip = &Ai_info[shipp->ai_index];
 	ship_info	*sip = &Ship_info[shipp->ship_info_index];
 
-	// ships that are playing dead do not process subsystems or turrets
-	if (aip->mode == AIM_PLAY_DEAD)
+	// non-player ships that are playing dead do not process subsystems or turrets
+	if ((!(objp->flags[Object::Object_Flags::Player_ship]) || Player_use_ai) && aip->mode == AIM_PLAY_DEAD)
 		return;
 
 	polymodel_instance *pmi = model_get_instance(shipp->model_instance_num);
