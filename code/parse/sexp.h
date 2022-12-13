@@ -152,7 +152,7 @@ struct ship_obj;
 #define	FIRST_OP				0x0400
 
 // We'd use enums here, except that we can add categories and subcategories via dynamic SEXPs
-enum SEXP_CATEGORIES : int {
+enum : int {
 	OP_CATEGORY_NONE,
 	OP_CATEGORY_OBJECTIVE,
 	OP_CATEGORY_TIME,
@@ -173,7 +173,7 @@ enum SEXP_CATEGORIES : int {
 // Adding more subcategories is possible with the new code.  All that needs to be done is
 // to add a line here, some appropriate case statements in get_subcategory() and
 // category_from_subcategory(), and the submenu name in the op_submenu[] array in sexp.cpp.
-enum SEXP_SUBCATEGORIES : int {
+enum : int {
 	OP_SUBCATEGORY_NONE,
 	CHANGE_SUBCATEGORY_MESSAGING,
 	CHANGE_SUBCATEGORY_AI_CONTROL,
@@ -211,7 +211,7 @@ enum SEXP_SUBCATEGORIES : int {
 	First_available_subcategory_id
 };
 
-enum SEXP_OPERATORS : int {
+enum : int {
 	OP_NOT_AN_OP = 0, // zero represents a non-operator
 	// OP_CATEGORY_ARITHMETIC
 
