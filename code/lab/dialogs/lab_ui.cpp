@@ -34,7 +34,9 @@ void LabUi::build_species_entry(species_info species_def, int species_idx) const
 
 		for (auto const& class_def : Ship_info) {
 			if (class_def.species == species_idx) {
-				ImGui::TreeNodeEx((void*)(intptr_t)ship_info_idx,
+				SCP_string node_label;
+				sprintf(node_label, "##ShipClassIndex%i", ship_info_idx);
+				ImGui::TreeNodeEx(node_label.c_str(),
 					ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen,
 					"%s", class_def.name);
 				if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
@@ -68,7 +70,9 @@ void LabUi::build_weapon_subtype_list() const
 			for (auto const& class_def : Weapon_info) {
 				if ((weapon_subtype_idx == 2 && class_def.wi_flags[Weapon::Info_Flags::Beam]) ||
 					(class_def.subtype == weapon_subtype_idx && !class_def.wi_flags[Weapon::Info_Flags::Beam])) {
-					ImGui::TreeNodeEx((void*)(intptr_t)weapon_idx,
+					SCP_string node_label;
+					sprintf(node_label, "##WeaponClassIndex%i", weapon_idx);
+					ImGui::TreeNodeEx(node_label.c_str(),
 						ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen,
 						"%s", class_def.name);
 
