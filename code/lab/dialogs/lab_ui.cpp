@@ -623,7 +623,7 @@ void LabUi::buildSubsystemList(object* objp, ship* shipp) const {
 
 		for (auto cur_subsys = GET_FIRST(&shipp->subsys_list); cur_subsys != END_OF_LIST(&shipp->subsys_list);
 			 cur_subsys = GET_NEXT(cur_subsys)) {
-			if (show_subsys.size() < subsys_index)
+			if (show_subsys.size() <= subsys_index)
 				show_subsys.push_back(false);
 
 			auto subsys_name_tmp = cur_subsys->sub_name;
