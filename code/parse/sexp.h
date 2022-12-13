@@ -215,7 +215,7 @@ enum SEXP_OPERATORS : int {
 	OP_NOT_AN_OP = 0, // zero represents a non-operator
 	// OP_CATEGORY_ARITHMETIC
 
-	OP_PLUS,
+	OP_PLUS = FIRST_OP,
 	OP_MINUS,
 	OP_MOD,
 	OP_MUL,
