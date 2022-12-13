@@ -27220,7 +27220,7 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
-			case 0: // zero represents a non-operator
+			case OP_NOT_AN_OP: // zero represents a non-operator
 				return sexp_atoi(cur_node);
 
 			case OP_NOP:

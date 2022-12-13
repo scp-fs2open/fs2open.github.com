@@ -12,7 +12,6 @@
 
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"	// for NULL
-#include "globalincs/counter.hpp"
 
 class ship_subsys;
 class ship;
@@ -152,779 +151,775 @@ struct ship_obj;
 // and sexp array index
 #define	FIRST_OP				0x0400
 
-
 // We'd use enums here, except that we can add categories and subcategories via dynamic SEXPs
-constexpr fameta::counter<__COUNTER__> C1;
-constexpr int OP_CATEGORY_NONE              = C1.next<__COUNTER__>();
-constexpr int OP_CATEGORY_OBJECTIVE         = C1.next<__COUNTER__>();
-constexpr int OP_CATEGORY_TIME              = C1.next<__COUNTER__>();
-constexpr int OP_CATEGORY_LOGICAL           = C1.next<__COUNTER__>();
-constexpr int OP_CATEGORY_ARITHMETIC        = C1.next<__COUNTER__>();
-constexpr int OP_CATEGORY_STATUS            = C1.next<__COUNTER__>();
-constexpr int OP_CATEGORY_CHANGE            = C1.next<__COUNTER__>();
-constexpr int OP_CATEGORY_CONDITIONAL       = C1.next<__COUNTER__>();
-constexpr int OP_CATEGORY_AI                = C1.next<__COUNTER__>();
-constexpr int OP_CATEGORY_TRAINING          = C1.next<__COUNTER__>();
-constexpr int OP_CATEGORY_UNLISTED          = C1.next<__COUNTER__>();
-constexpr int OP_CATEGORY_GOAL_EVENT        = C1.next<__COUNTER__>();
-
-// this should come after every category
-constexpr int First_available_category_id   = C1.next<__COUNTER__>();
-
+enum SEXP_CATEGORIES : int {
+	OP_CATEGORY_NONE,
+	OP_CATEGORY_OBJECTIVE,
+	OP_CATEGORY_TIME,
+	OP_CATEGORY_LOGICAL,
+	OP_CATEGORY_ARITHMETIC,
+	OP_CATEGORY_STATUS,
+	OP_CATEGORY_CHANGE,
+	OP_CATEGORY_CONDITIONAL,
+	OP_CATEGORY_AI,
+	OP_CATEGORY_TRAINING,
+	OP_CATEGORY_UNLISTED,
+	OP_CATEGORY_GOAL_EVENT,
+	// this should come after every category
+	First_available_category_id
+};
 
 // New subcategories! :) -- Goober5000
 // Adding more subcategories is possible with the new code.  All that needs to be done is
 // to add a line here, some appropriate case statements in get_subcategory() and
 // category_from_subcategory(), and the submenu name in the op_submenu[] array in sexp.cpp.
-constexpr fameta::counter<__COUNTER__> C2;
-constexpr int OP_SUBCATEGORY_NONE                               = C2.next<__COUNTER__>();
-constexpr int CHANGE_SUBCATEGORY_MESSAGING                      = C2.next<__COUNTER__>();
-constexpr int CHANGE_SUBCATEGORY_AI_CONTROL                     = C2.next<__COUNTER__>();
-constexpr int CHANGE_SUBCATEGORY_SHIP_STATUS                    = C2.next<__COUNTER__>();
-constexpr int CHANGE_SUBCATEGORY_SHIELDS_ENGINES_AND_WEAPONS    = C2.next<__COUNTER__>();
-constexpr int CHANGE_SUBCATEGORY_SUBSYSTEMS                     = C2.next<__COUNTER__>();
-constexpr int CHANGE_SUBCATEGORY_CARGO                          = C2.next<__COUNTER__>();
-constexpr int CHANGE_SUBCATEGORY_ARMOR_AND_DAMAGE_TYPES         = C2.next<__COUNTER__>();
-constexpr int CHANGE_SUBCATEGORY_BEAMS_AND_TURRETS              = C2.next<__COUNTER__>();
-constexpr int CHANGE_SUBCATEGORY_MODELS_AND_TEXTURES            = C2.next<__COUNTER__>();
-constexpr int CHANGE_SUBCATEGORY_COORDINATE_MANIPULATION        = C2.next<__COUNTER__>();
-constexpr int CHANGE_SUBCATEGORY_MISSION_AND_CAMPAIGN           = C2.next<__COUNTER__>();
-constexpr int CHANGE_SUBCATEGORY_MUSIC_AND_SOUND                = C2.next<__COUNTER__>();
-constexpr int CHANGE_SUBCATEGORY_HUD                            = C2.next<__COUNTER__>();
-constexpr int CHANGE_SUBCATEGORY_NAV                            = C2.next<__COUNTER__>();
-constexpr int CHANGE_SUBCATEGORY_CUTSCENES                      = C2.next<__COUNTER__>();
-constexpr int CHANGE_SUBCATEGORY_BACKGROUND_AND_NEBULA          = C2.next<__COUNTER__>();
-constexpr int CHANGE_SUBCATEGORY_JUMP_NODES                     = C2.next<__COUNTER__>();
-constexpr int CHANGE_SUBCATEGORY_SPECIAL_EFFECTS                = C2.next<__COUNTER__>();
-constexpr int CHANGE_SUBCATEGORY_VARIABLES                      = C2.next<__COUNTER__>();
-constexpr int CHANGE_SUBCATEGORY_CONTAINERS                     = C2.next<__COUNTER__>();
-constexpr int CHANGE_SUBCATEGORY_OTHER                          = C2.next<__COUNTER__>();
-constexpr int STATUS_SUBCATEGORY_MISSION                        = C2.next<__COUNTER__>();
-constexpr int STATUS_SUBCATEGORY_PLAYER                         = C2.next<__COUNTER__>();
-constexpr int STATUS_SUBCATEGORY_MULTIPLAYER                    = C2.next<__COUNTER__>();
-constexpr int STATUS_SUBCATEGORY_SHIP_STATUS                    = C2.next<__COUNTER__>();
-constexpr int STATUS_SUBCATEGORY_SHIELDS_ENGINES_AND_WEAPONS    = C2.next<__COUNTER__>();
-constexpr int STATUS_SUBCATEGORY_CARGO                          = C2.next<__COUNTER__>();
-constexpr int STATUS_SUBCATEGORY_DAMAGE                         = C2.next<__COUNTER__>();
-constexpr int STATUS_SUBCATEGORY_DISTANCE_AND_COORDINATES       = C2.next<__COUNTER__>();
-constexpr int STATUS_SUBCATEGORY_VARIABLES                      = C2.next<__COUNTER__>();
-constexpr int STATUS_SUBCATEGORY_CONTAINERS                     = C2.next<__COUNTER__>();
-constexpr int STATUS_SUBCATEGORY_OTHER                          = C2.next<__COUNTER__>();
+enum SEXP_SUBCATEGORIES : int {
+	OP_SUBCATEGORY_NONE,
+	CHANGE_SUBCATEGORY_MESSAGING,
+	CHANGE_SUBCATEGORY_AI_CONTROL,
+	CHANGE_SUBCATEGORY_SHIP_STATUS,
+	CHANGE_SUBCATEGORY_SHIELDS_ENGINES_AND_WEAPONS,
+	CHANGE_SUBCATEGORY_SUBSYSTEMS,
+	CHANGE_SUBCATEGORY_CARGO,
+	CHANGE_SUBCATEGORY_ARMOR_AND_DAMAGE_TYPES,
+	CHANGE_SUBCATEGORY_BEAMS_AND_TURRETS,
+	CHANGE_SUBCATEGORY_MODELS_AND_TEXTURES,
+	CHANGE_SUBCATEGORY_COORDINATE_MANIPULATION,
+	CHANGE_SUBCATEGORY_MISSION_AND_CAMPAIGN,
+	CHANGE_SUBCATEGORY_MUSIC_AND_SOUND,
+	CHANGE_SUBCATEGORY_HUD,
+	CHANGE_SUBCATEGORY_NAV,
+	CHANGE_SUBCATEGORY_CUTSCENES,
+	CHANGE_SUBCATEGORY_BACKGROUND_AND_NEBULA,
+	CHANGE_SUBCATEGORY_JUMP_NODES,
+	CHANGE_SUBCATEGORY_SPECIAL_EFFECTS,
+	CHANGE_SUBCATEGORY_VARIABLES,
+	CHANGE_SUBCATEGORY_CONTAINERS,
+	CHANGE_SUBCATEGORY_OTHER,
+	STATUS_SUBCATEGORY_MISSION,
+	STATUS_SUBCATEGORY_PLAYER,
+	STATUS_SUBCATEGORY_MULTIPLAYER,
+	STATUS_SUBCATEGORY_SHIP_STATUS,
+	STATUS_SUBCATEGORY_SHIELDS_ENGINES_AND_WEAPONS,
+	STATUS_SUBCATEGORY_CARGO,
+	STATUS_SUBCATEGORY_DAMAGE,
+	STATUS_SUBCATEGORY_DISTANCE_AND_COORDINATES,
+	STATUS_SUBCATEGORY_VARIABLES,
+	STATUS_SUBCATEGORY_CONTAINERS,
+	STATUS_SUBCATEGORY_OTHER,
+	// this should come after every subcategory
+	First_available_subcategory_id
+};
 
-// this should come after every subcategory
-constexpr int First_available_subcategory_id                    = C2.next<__COUNTER__>();
+enum SEXP_OPERATORS : int {
+	OP_NOT_AN_OP = 0, // zero represents a non-operator
+	// OP_CATEGORY_ARITHMETIC
 
+	OP_PLUS,
+	OP_MINUS,
+	OP_MOD,
+	OP_MUL,
+	OP_DIV,
+	OP_RAND,
+	OP_ABS,	// Goober5000
+	OP_MIN,	// Goober5000
+	OP_MAX,	// Goober5000
+	OP_AVG,	// Goober5000
+	OP_RAND_MULTIPLE,	// Goober5000
+	OP_POW,	// Goober5000
+	OP_BITWISE_AND,	// Goober5000
+	OP_BITWISE_OR,	// Goober5000
+	OP_BITWISE_NOT,	// Goober5000
+	OP_BITWISE_XOR,	// Goober5000
 
-// start at FIRST_OP, not zero
-constexpr fameta::counter<__COUNTER__, FIRST_OP> C3;
+	OP_SET_BIT,	// Goober5000
+	OP_UNSET_BIT,	// Goober5000
+	OP_IS_BIT_SET,	// Goober5000
+	OP_SIGNUM,	// Goober5000
+	OP_IS_NAN,	// Goober5000
+	OP_NAN_TO_NUMBER,	// Goober5000
+	OP_ANGLE_VECTORS,	// Lafiel
 
-// OP_CATEGORY_ARITHMETIC
+	// OP_CATEGORY_LOGICAL
 
-constexpr int OP_PLUS                                   = C3.next<__COUNTER__>();
-constexpr int OP_MINUS                                  = C3.next<__COUNTER__>();
-constexpr int OP_MOD                                    = C3.next<__COUNTER__>();
-constexpr int OP_MUL                                    = C3.next<__COUNTER__>();
-constexpr int OP_DIV                                    = C3.next<__COUNTER__>();
-constexpr int OP_RAND                                   = C3.next<__COUNTER__>();
-constexpr int OP_ABS                                    = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_MIN                                    = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_MAX                                    = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_AVG                                    = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_RAND_MULTIPLE                          = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_POW                                    = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_BITWISE_AND                            = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_BITWISE_OR                             = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_BITWISE_NOT                            = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_BITWISE_XOR                            = C3.next<__COUNTER__>();	// Goober5000
+	OP_TRUE,
+	OP_FALSE,
+	OP_AND,
+	OP_AND_IN_SEQUENCE,
+	OP_OR,
+	OP_EQUALS,
+	OP_GREATER_THAN,
+	OP_LESS_THAN,
+	OP_HAS_TIME_ELAPSED,
+	OP_NOT,
+	OP_STRING_EQUALS,
+	OP_STRING_GREATER_THAN,
+	OP_STRING_LESS_THAN,
+	OP_NOT_EQUAL,	// Goober5000
+	OP_GREATER_OR_EQUAL,	// Goober5000
+	OP_LESS_OR_EQUAL,	// Goober5000
 
-constexpr int OP_SET_BIT                                = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_UNSET_BIT                              = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_IS_BIT_SET                             = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_SIGNUM                                 = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_IS_NAN                                 = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_NAN_TO_NUMBER                          = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_ANGLE_VECTORS                          = C3.next<__COUNTER__>();	// Lafiel
+	OP_XOR,	// Goober5000
+	OP_PERFORM_ACTIONS_BOOL_FIRST,	// Goober5000
+	OP_PERFORM_ACTIONS_BOOL_LAST,	// Goober5000
 
-// OP_CATEGORY_LOGICAL
+   // OP_CATEGORY_GOAL_EVENT
 
-constexpr int OP_TRUE                                   = C3.next<__COUNTER__>();
-constexpr int OP_FALSE                                  = C3.next<__COUNTER__>();
-constexpr int OP_AND                                    = C3.next<__COUNTER__>();
-constexpr int OP_AND_IN_SEQUENCE                        = C3.next<__COUNTER__>();
-constexpr int OP_OR                                     = C3.next<__COUNTER__>();
-constexpr int OP_EQUALS                                 = C3.next<__COUNTER__>();
-constexpr int OP_GREATER_THAN                           = C3.next<__COUNTER__>();
-constexpr int OP_LESS_THAN                              = C3.next<__COUNTER__>();
-constexpr int OP_HAS_TIME_ELAPSED                       = C3.next<__COUNTER__>();
-constexpr int OP_NOT                                    = C3.next<__COUNTER__>();
-constexpr int OP_STRING_EQUALS                          = C3.next<__COUNTER__>();
-constexpr int OP_STRING_GREATER_THAN                    = C3.next<__COUNTER__>();
-constexpr int OP_STRING_LESS_THAN                       = C3.next<__COUNTER__>();
-constexpr int OP_NOT_EQUAL                              = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_GREATER_OR_EQUAL                       = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_LESS_OR_EQUAL                          = C3.next<__COUNTER__>();	// Goober5000
+   OP_GOAL_INCOMPLETE,
+   OP_GOAL_TRUE_DELAY,
+   OP_GOAL_FALSE_DELAY,
+   OP_EVENT_INCOMPLETE,
+   OP_EVENT_TRUE_DELAY,
+   OP_EVENT_FALSE_DELAY,
+   OP_PREVIOUS_EVENT_TRUE,
+   OP_PREVIOUS_EVENT_FALSE,
+   OP_PREVIOUS_GOAL_TRUE,
+   OP_PREVIOUS_GOAL_FALSE,
+   OP_EVENT_TRUE_MSECS_DELAY,
+   OP_EVENT_FALSE_MSECS_DELAY,
 
-constexpr int OP_XOR                                    = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_PERFORM_ACTIONS_BOOL_FIRST             = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_PERFORM_ACTIONS_BOOL_LAST              = C3.next<__COUNTER__>();	// Goober5000
+   // OP_CATEGORY_OBJECTIVE
 
-// OP_CATEGORY_GOAL_EVENT
+   OP_IS_DESTROYED_DELAY,
+   OP_IS_SUBSYSTEM_DESTROYED_DELAY,
+   OP_IS_DISABLED_DELAY,
+   OP_IS_DISARMED_DELAY,
+   OP_HAS_DOCKED_DELAY,
+   OP_HAS_UNDOCKED_DELAY,
+   OP_HAS_ARRIVED_DELAY,
+   OP_HAS_DEPARTED_DELAY,
+   OP_WAYPOINTS_DONE_DELAY,
+   OP_SHIP_TYPE_DESTROYED,
+   OP_PERCENT_SHIPS_DEPARTED,
+   OP_PERCENT_SHIPS_DESTROYED,
+   OP_DEPART_NODE_DELAY,
+   OP_DESTROYED_DEPARTED_DELAY,
+   OP_PERCENT_SHIPS_DISARMED,	// Goober5000
+   OP_PERCENT_SHIPS_DISABLED,	// Goober5000
+   OP_PERCENT_SHIPS_ARRIVED,	// FUBAR-BDHR
+   OP_NAV_IS_VISITED,	// Kazan
+   OP_WAS_DESTROYED_BY_DELAY,	// WCS
 
-constexpr int OP_GOAL_INCOMPLETE                        = C3.next<__COUNTER__>();
-constexpr int OP_GOAL_TRUE_DELAY                        = C3.next<__COUNTER__>();
-constexpr int OP_GOAL_FALSE_DELAY                       = C3.next<__COUNTER__>();
-constexpr int OP_EVENT_INCOMPLETE                       = C3.next<__COUNTER__>();
-constexpr int OP_EVENT_TRUE_DELAY                       = C3.next<__COUNTER__>();
-constexpr int OP_EVENT_FALSE_DELAY                      = C3.next<__COUNTER__>();
-constexpr int OP_PREVIOUS_EVENT_TRUE                    = C3.next<__COUNTER__>();
-constexpr int OP_PREVIOUS_EVENT_FALSE                   = C3.next<__COUNTER__>();
-constexpr int OP_PREVIOUS_GOAL_TRUE                     = C3.next<__COUNTER__>();
-constexpr int OP_PREVIOUS_GOAL_FALSE                    = C3.next<__COUNTER__>();
-constexpr int OP_EVENT_TRUE_MSECS_DELAY                 = C3.next<__COUNTER__>();
-constexpr int OP_EVENT_FALSE_MSECS_DELAY                = C3.next<__COUNTER__>();
+   // OP_CATEGORY_TIME
 
-// OP_CATEGORY_OBJECTIVE
+   OP_TIME_SHIP_DESTROYED,
+   OP_TIME_SHIP_ARRIVED,
+   OP_TIME_SHIP_DEPARTED,
+   OP_TIME_WING_DESTROYED,
+   OP_TIME_WING_ARRIVED,
+   OP_TIME_WING_DEPARTED,
+   OP_MISSION_TIME,
+   OP_MISSION_TIME_MSECS,	// Goober5000
+   OP_TIME_DOCKED,
+   OP_TIME_UNDOCKED,
+   OP_TIME_TO_GOAL, // tcrayford
 
-constexpr int OP_IS_DESTROYED_DELAY                     = C3.next<__COUNTER__>();
-constexpr int OP_IS_SUBSYSTEM_DESTROYED_DELAY           = C3.next<__COUNTER__>();
-constexpr int OP_IS_DISABLED_DELAY                      = C3.next<__COUNTER__>();
-constexpr int OP_IS_DISARMED_DELAY                      = C3.next<__COUNTER__>();
-constexpr int OP_HAS_DOCKED_DELAY                       = C3.next<__COUNTER__>();
-constexpr int OP_HAS_UNDOCKED_DELAY                     = C3.next<__COUNTER__>();
-constexpr int OP_HAS_ARRIVED_DELAY                      = C3.next<__COUNTER__>();
-constexpr int OP_HAS_DEPARTED_DELAY                     = C3.next<__COUNTER__>();
-constexpr int OP_WAYPOINTS_DONE_DELAY                   = C3.next<__COUNTER__>();
-constexpr int OP_SHIP_TYPE_DESTROYED                    = C3.next<__COUNTER__>();
-constexpr int OP_PERCENT_SHIPS_DEPARTED                 = C3.next<__COUNTER__>();
-constexpr int OP_PERCENT_SHIPS_DESTROYED                = C3.next<__COUNTER__>();
-constexpr int OP_DEPART_NODE_DELAY                      = C3.next<__COUNTER__>();
-constexpr int OP_DESTROYED_DEPARTED_DELAY               = C3.next<__COUNTER__>();
-constexpr int OP_PERCENT_SHIPS_DISARMED                 = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_PERCENT_SHIPS_DISABLED                 = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_PERCENT_SHIPS_ARRIVED                  = C3.next<__COUNTER__>();	// FUBAR-BDHR
-constexpr int OP_NAV_IS_VISITED                         = C3.next<__COUNTER__>();	// Kazan
-constexpr int OP_WAS_DESTROYED_BY_DELAY                 = C3.next<__COUNTER__>();	// WCS
+   // OP_CATEGORY_STATUS
 
-// OP_CATEGORY_TIME
+   OP_SHIELDS_LEFT,
+   OP_HITS_LEFT,
+   OP_HITS_LEFT_SUBSYSTEM,	// deprecated
+   OP_SIM_HITS_LEFT,
+   OP_DISTANCE,
+   OP_DISTANCE_CENTER_SUBSYSTEM,	// Goober5000
+   OP_LAST_ORDER_TIME,
+   OP_NUM_PLAYERS,
+   OP_SKILL_LEVEL_AT_LEAST,
+   OP_WAS_PROMOTION_GRANTED,
+   OP_WAS_MEDAL_GRANTED,
+   OP_CARGO_KNOWN_DELAY,
+   OP_CAP_SUBSYS_CARGO_KNOWN_DELAY,
+   OP_HAS_BEEN_TAGGED_DELAY,
+   OP_IS_TAGGED,
+   OP_NUM_KILLS,
 
-constexpr int OP_TIME_SHIP_DESTROYED                    = C3.next<__COUNTER__>();
-constexpr int OP_TIME_SHIP_ARRIVED                      = C3.next<__COUNTER__>();
-constexpr int OP_TIME_SHIP_DEPARTED                     = C3.next<__COUNTER__>();
-constexpr int OP_TIME_WING_DESTROYED                    = C3.next<__COUNTER__>();
-constexpr int OP_TIME_WING_ARRIVED                      = C3.next<__COUNTER__>();
-constexpr int OP_TIME_WING_DEPARTED                     = C3.next<__COUNTER__>();
-constexpr int OP_MISSION_TIME                           = C3.next<__COUNTER__>();
-constexpr int OP_MISSION_TIME_MSECS                     = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_TIME_DOCKED                            = C3.next<__COUNTER__>();
-constexpr int OP_TIME_UNDOCKED                          = C3.next<__COUNTER__>();
-constexpr int OP_TIME_TO_GOAL                           = C3.next<__COUNTER__>(); // tcrayford
+   OP_NUM_TYPE_KILLS,
+   OP_NUM_CLASS_KILLS,
+   OP_SHIELD_RECHARGE_PCT,
+   OP_ENGINE_RECHARGE_PCT,
+   OP_WEAPON_RECHARGE_PCT,
+   OP_SHIELD_QUAD_LOW,
+   OP_SECONDARY_AMMO_PCT,
+   OP_IS_SECONDARY_SELECTED,
+   OP_IS_PRIMARY_SELECTED,
+   OP_SPECIAL_WARP_DISTANCE,
+   OP_IS_SHIP_VISIBLE,
+   OP_TEAM_SCORE,
+   OP_PRIMARY_AMMO_PCT,	// Goober5000
+   OP_IS_SHIP_STEALTHY,	// Goober5000
+   OP_IS_CARGO,	// Goober5000
+   OP_IS_FRIENDLY_STEALTH_VISIBLE,	// Goober5000
 
-// OP_CATEGORY_STATUS
+   OP_GET_OBJECT_X,	// Goober5000
+   OP_GET_OBJECT_Y,	// Goober5000
+   OP_GET_OBJECT_Z,	// Goober5000
+   OP_IS_AI_CLASS,	// Goober5000
+   OP_IS_SHIP_TYPE,	// Goober5000
+   OP_IS_SHIP_CLASS,	// Goober5000
+   OP_NUM_SHIPS_IN_BATTLE,	// phreak
+   OP_CURRENT_SPEED, // WMCoolmon
+   OP_IS_IFF,	// Goober5000
+   OP_NUM_WITHIN_BOX,	// WMCoolmon
+   OP_SCRIPT_EVAL_NUM, // WMCoolmon
+   OP_SCRIPT_EVAL_STRING, // WMCoolmon
+   OP_NUM_SHIPS_IN_WING,	// Karajorma
+   OP_GET_PRIMARY_AMMO, // Karajorma
+   OP_GET_SECONDARY_AMMO, // Karajorma
+   OP_NUM_ASSISTS, // Karajorma
 
-constexpr int OP_SHIELDS_LEFT                           = C3.next<__COUNTER__>();
-constexpr int OP_HITS_LEFT                              = C3.next<__COUNTER__>();
-constexpr int OP_HITS_LEFT_SUBSYSTEM                    = C3.next<__COUNTER__>();	// deprecated
-constexpr int OP_SIM_HITS_LEFT                          = C3.next<__COUNTER__>();
-constexpr int OP_DISTANCE                               = C3.next<__COUNTER__>();
-constexpr int OP_DISTANCE_CENTER_SUBSYSTEM              = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_LAST_ORDER_TIME                        = C3.next<__COUNTER__>();
-constexpr int OP_NUM_PLAYERS                            = C3.next<__COUNTER__>();
-constexpr int OP_SKILL_LEVEL_AT_LEAST                   = C3.next<__COUNTER__>();
-constexpr int OP_WAS_PROMOTION_GRANTED                  = C3.next<__COUNTER__>();
-constexpr int OP_WAS_MEDAL_GRANTED                      = C3.next<__COUNTER__>();
-constexpr int OP_CARGO_KNOWN_DELAY                      = C3.next<__COUNTER__>();
-constexpr int OP_CAP_SUBSYS_CARGO_KNOWN_DELAY           = C3.next<__COUNTER__>();
-constexpr int OP_HAS_BEEN_TAGGED_DELAY                  = C3.next<__COUNTER__>();
-constexpr int OP_IS_TAGGED                              = C3.next<__COUNTER__>();
-constexpr int OP_NUM_KILLS                              = C3.next<__COUNTER__>();
+   OP_SHIP_SCORE, // Karajorma
+   OP_SHIP_DEATHS, // Karajorma
+   OP_RESPAWNS_LEFT, // Karajorma
+   OP_IS_PLAYER, // Karajorma
+   OP_GET_DAMAGE_CAUSED, // Karajorma
+   OP_AFTERBURNER_LEFT, // Karajorma
+   OP_WEAPON_ENERGY_LEFT, // Karajorma
+   OP_PRIMARY_FIRED_SINCE, // Karajorma
+   OP_SECONDARY_FIRED_SINCE, // Karajorma
+   OP_CUTSCENES_GET_FOV, // Echelon9
+   OP_GET_THROTTLE_SPEED, // Karajorma
+   OP_HITS_LEFT_SUBSYSTEM_GENERIC, // Goober5000
+   OP_HITS_LEFT_SUBSYSTEM_SPECIFIC, // Goober5000
+   OP_GET_OBJECT_PITCH,	// Goober5000
+   OP_GET_OBJECT_BANK,	// Goober5000
+   OP_GET_OBJECT_HEADING,	// Goober5000
 
-constexpr int OP_NUM_TYPE_KILLS                         = C3.next<__COUNTER__>();
-constexpr int OP_NUM_CLASS_KILLS                        = C3.next<__COUNTER__>();
-constexpr int OP_SHIELD_RECHARGE_PCT                    = C3.next<__COUNTER__>();
-constexpr int OP_ENGINE_RECHARGE_PCT                    = C3.next<__COUNTER__>();
-constexpr int OP_WEAPON_RECHARGE_PCT                    = C3.next<__COUNTER__>();
-constexpr int OP_SHIELD_QUAD_LOW                        = C3.next<__COUNTER__>();
-constexpr int OP_SECONDARY_AMMO_PCT                     = C3.next<__COUNTER__>();
-constexpr int OP_IS_SECONDARY_SELECTED                  = C3.next<__COUNTER__>();
-constexpr int OP_IS_PRIMARY_SELECTED                    = C3.next<__COUNTER__>();
-constexpr int OP_SPECIAL_WARP_DISTANCE                  = C3.next<__COUNTER__>();
-constexpr int OP_IS_SHIP_VISIBLE                        = C3.next<__COUNTER__>();
-constexpr int OP_TEAM_SCORE                             = C3.next<__COUNTER__>();
-constexpr int OP_PRIMARY_AMMO_PCT                       = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_IS_SHIP_STEALTHY                       = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_IS_CARGO                               = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_IS_FRIENDLY_STEALTH_VISIBLE            = C3.next<__COUNTER__>();	// Goober5000
+   OP_HAS_PRIMARY_WEAPON, // Karajorma
+   OP_HAS_SECONDARY_WEAPON, // Karajorma
+   OP_STRING_TO_INT, // Karajorma
+   OP_STRING_GET_LENGTH, // Goober5000
+   OP_GET_OBJECT_SPEED_X,
+   OP_GET_OBJECT_SPEED_Y,
+   OP_GET_OBJECT_SPEED_Z,
+   OP_NAV_DISTANCE, // Kazan
+   OP_NAV_ISLINKED, // Kazan
+   OP_IS_FACING, // The E
+   OP_DIRECTIVE_VALUE, // Karajorma
+   OP_GET_NUM_COUNTERMEASURES, // Karajorma
+   OP_IS_IN_BOX, // Sushi
+   OP_IS_IN_MISSION, // Goober5000
+   OP_ARE_SHIP_FLAGS_SET, // Karajorma
+   OP_TURRET_GET_PRIMARY_AMMO, // DahBlount, part of the turret ammo code
 
-constexpr int OP_GET_OBJECT_X                           = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_GET_OBJECT_Y                           = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_GET_OBJECT_Z                           = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_IS_AI_CLASS                            = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_IS_SHIP_TYPE                           = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_IS_SHIP_CLASS                          = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_NUM_SHIPS_IN_BATTLE                    = C3.next<__COUNTER__>();	// phreak
-constexpr int OP_CURRENT_SPEED                          = C3.next<__COUNTER__>(); // WMCoolmon
-constexpr int OP_IS_IFF                                 = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_NUM_WITHIN_BOX                         = C3.next<__COUNTER__>();	// WMCoolmon
-constexpr int OP_SCRIPT_EVAL_NUM                        = C3.next<__COUNTER__>(); // WMCoolmon
-constexpr int OP_SCRIPT_EVAL_STRING                     = C3.next<__COUNTER__>(); // WMCoolmon
-constexpr int OP_NUM_SHIPS_IN_WING                      = C3.next<__COUNTER__>();	// Karajorma
-constexpr int OP_GET_PRIMARY_AMMO                       = C3.next<__COUNTER__>(); // Karajorma
-constexpr int OP_GET_SECONDARY_AMMO                     = C3.next<__COUNTER__>(); // Karajorma
-constexpr int OP_NUM_ASSISTS                            = C3.next<__COUNTER__>(); // Karajorma
+   OP_TURRET_GET_SECONDARY_AMMO,	// DahBlount, part of the turret ammo code
+   OP_IS_DOCKED,	// Goober5000
+   OP_IS_IN_TURRET_FOV,	// Goober5000
+   OP_GET_HOTKEY, // wookieejedi
+   OP_DISTANCE_CENTER, // Goober5000
+   OP_DISTANCE_BBOX, // Goober5000
+   OP_DISTANCE_BBOX_SUBSYSTEM, // Goober5000
+   OP_IS_LANGUAGE,						// Goober5000
+   OP_SCRIPT_EVAL_BOOL, // Goober5000
+   OP_IS_CONTAINER_EMPTY,	// Karajorma/jg18
+   OP_GET_CONTAINER_SIZE,	// Karajorma/jg18
+   OP_LIST_HAS_DATA,	// Karajorma/jg18
+   OP_LIST_DATA_INDEX,	// Karajorma/jg18
+   OP_MAP_HAS_KEY,	// Karajorma/jg18
+   OP_MAP_HAS_DATA_ITEM,	// Karajorma/jg18
+   OP_ANGLE_FVEC_TARGET, // Lafiel
 
-constexpr int OP_SHIP_SCORE                             = C3.next<__COUNTER__>(); // Karajorma
-constexpr int OP_SHIP_DEATHS                            = C3.next<__COUNTER__>(); // Karajorma
-constexpr int OP_RESPAWNS_LEFT                          = C3.next<__COUNTER__>(); // Karajorma
-constexpr int OP_IS_PLAYER                              = C3.next<__COUNTER__>(); // Karajorma
-constexpr int OP_GET_DAMAGE_CAUSED                      = C3.next<__COUNTER__>(); // Karajorma
-constexpr int OP_AFTERBURNER_LEFT                       = C3.next<__COUNTER__>(); // Karajorma
-constexpr int OP_WEAPON_ENERGY_LEFT                     = C3.next<__COUNTER__>(); // Karajorma
-constexpr int OP_PRIMARY_FIRED_SINCE                    = C3.next<__COUNTER__>(); // Karajorma
-constexpr int OP_SECONDARY_FIRED_SINCE                  = C3.next<__COUNTER__>(); // Karajorma
-constexpr int OP_CUTSCENES_GET_FOV                      = C3.next<__COUNTER__>(); // Echelon9
-constexpr int OP_GET_THROTTLE_SPEED                     = C3.next<__COUNTER__>(); // Karajorma
-constexpr int OP_HITS_LEFT_SUBSYSTEM_GENERIC            = C3.next<__COUNTER__>(); // Goober5000
-constexpr int OP_HITS_LEFT_SUBSYSTEM_SPECIFIC           = C3.next<__COUNTER__>(); // Goober5000
-constexpr int OP_GET_OBJECT_PITCH                       = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_GET_OBJECT_BANK                        = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_GET_OBJECT_HEADING                     = C3.next<__COUNTER__>();	// Goober5000
+   OP_ARE_WING_FLAGS_SET, // Goober5000
+   OP_PLAYER_IS_CHEATING_BASTARD,	// The E
 
-constexpr int OP_HAS_PRIMARY_WEAPON                     = C3.next<__COUNTER__>(); // Karajorma
-constexpr int OP_HAS_SECONDARY_WEAPON                   = C3.next<__COUNTER__>(); // Karajorma
-constexpr int OP_STRING_TO_INT                          = C3.next<__COUNTER__>(); // Karajorma
-constexpr int OP_STRING_GET_LENGTH                      = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_GET_OBJECT_SPEED_X                     = C3.next<__COUNTER__>();
-constexpr int OP_GET_OBJECT_SPEED_Y                     = C3.next<__COUNTER__>();
-constexpr int OP_GET_OBJECT_SPEED_Z                     = C3.next<__COUNTER__>();
-constexpr int OP_NAV_DISTANCE                           = C3.next<__COUNTER__>();	// Kazan
-constexpr int OP_NAV_ISLINKED                           = C3.next<__COUNTER__>();	// Kazan
-constexpr int OP_IS_FACING                              = C3.next<__COUNTER__>(); // The E
-constexpr int OP_DIRECTIVE_VALUE                        = C3.next<__COUNTER__>(); // Karajorma
-constexpr int OP_GET_NUM_COUNTERMEASURES                = C3.next<__COUNTER__>(); // Karajorma
-constexpr int OP_IS_IN_BOX                              = C3.next<__COUNTER__>();	// Sushi
-constexpr int OP_IS_IN_MISSION                          = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_ARE_SHIP_FLAGS_SET                     = C3.next<__COUNTER__>(); // Karajorma
-constexpr int OP_TURRET_GET_PRIMARY_AMMO                = C3.next<__COUNTER__>();	// DahBlount, part of the turret ammo code
+   // OP_CATEGORY_CONDITIONAL
+   // conditional sexpressions
 
-constexpr int OP_TURRET_GET_SECONDARY_AMMO              = C3.next<__COUNTER__>();	// DahBlount, part of the turret ammo code
-constexpr int OP_IS_DOCKED                              = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_IS_IN_TURRET_FOV                       = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_GET_HOTKEY                             = C3.next<__COUNTER__>(); // wookieejedi
-constexpr int OP_DISTANCE_CENTER                        = C3.next<__COUNTER__>(); // Goober5000
-constexpr int OP_DISTANCE_BBOX                          = C3.next<__COUNTER__>(); // Goober5000
-constexpr int OP_DISTANCE_BBOX_SUBSYSTEM                = C3.next<__COUNTER__>(); // Goober5000
-constexpr int OP_IS_LANGUAGE                            = C3.next<__COUNTER__>();						// Goober5000
-constexpr int OP_SCRIPT_EVAL_BOOL                       = C3.next<__COUNTER__>(); // Goober5000
-constexpr int OP_IS_CONTAINER_EMPTY                     = C3.next<__COUNTER__>();	// Karajorma/jg18
-constexpr int OP_GET_CONTAINER_SIZE                     = C3.next<__COUNTER__>();	// Karajorma/jg18
-constexpr int OP_LIST_HAS_DATA                          = C3.next<__COUNTER__>();	// Karajorma/jg18
-constexpr int OP_LIST_DATA_INDEX                        = C3.next<__COUNTER__>();	// Karajorma/jg18
-constexpr int OP_MAP_HAS_KEY                            = C3.next<__COUNTER__>();	// Karajorma/jg18
-constexpr int OP_MAP_HAS_DATA_ITEM                      = C3.next<__COUNTER__>();	// Karajorma/jg18
-constexpr int OP_ANGLE_FVEC_TARGET                      = C3.next<__COUNTER__>(); // Lafiel
+   OP_WHEN,
+   OP_WHEN_ARGUMENT,	// Goober5000
+   OP_EVERY_TIME,	// Goober5000
+   OP_EVERY_TIME_ARGUMENT,	// Goober5000
+   OP_ANY_OF,	// Goober5000
+   OP_EVERY_OF,	// Goober5000
+   OP_RANDOM_OF,	// Goober5000
+   OP_NUMBER_OF,	// Goober5000
+   OP_INVALIDATE_ARGUMENT,	// Goober5000
+   OP_RANDOM_MULTIPLE_OF,	// Karajorma
+   OP_IN_SEQUENCE,	// Karajorma
+   OP_VALIDATE_ARGUMENT,	// Karajorma
+   OP_DO_FOR_VALID_ARGUMENTS,	// Karajorma
+   OP_INVALIDATE_ALL_ARGUMENTS,	// Karajorma
+   OP_VALIDATE_ALL_ARGUMENTS,	// Karajorma
+   OP_FOR_COUNTER,	// Goober5000
 
-constexpr int OP_ARE_WING_FLAGS_SET                     = C3.next<__COUNTER__>(); // Goober5000
-constexpr int OP_PLAYER_IS_CHEATING_BASTARD             = C3.next<__COUNTER__>();	// The E
+   OP_IF_THEN_ELSE,	// Goober5000
+   OP_NUM_VALID_ARGUMENTS,	// Karajorma
+   OP_FUNCTIONAL_IF_THEN_ELSE,	// Goober5000
+   OP_FOR_SHIP_CLASS,	// Goober5000
+   OP_FOR_SHIP_TYPE,	// Goober5000
+   OP_FOR_SHIP_TEAM,	// Goober5000
+   OP_FOR_SHIP_SPECIES,	// Goober5000
+   OP_FOR_PLAYERS,	// Goober5000
+   OP_FIRST_OF,	// MageKing17
+   OP_SWITCH,	// Goober5000
+   OP_FUNCTIONAL_SWITCH,	// Goober5000
+   OP_FUNCTIONAL_WHEN,	// Goober5000
+   OP_FOR_CONTAINER_DATA,	// jg18
+   OP_FOR_MAP_CONTAINER_KEYS,	// jg18
 
-// OP_CATEGORY_CONDITIONAL
-// conditional sexpressions
+   // OP_CATEGORY_CHANGE
+   // sexpressions with side-effects
 
-constexpr int OP_WHEN                                   = C3.next<__COUNTER__>();
-constexpr int OP_WHEN_ARGUMENT                          = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_EVERY_TIME                             = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_EVERY_TIME_ARGUMENT                    = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_ANY_OF                                 = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_EVERY_OF                               = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_RANDOM_OF                              = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_NUMBER_OF                              = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_INVALIDATE_ARGUMENT                    = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_RANDOM_MULTIPLE_OF                     = C3.next<__COUNTER__>();	// Karajorma
-constexpr int OP_IN_SEQUENCE                            = C3.next<__COUNTER__>();	// Karajorma
-constexpr int OP_VALIDATE_ARGUMENT                      = C3.next<__COUNTER__>();	// Karajorma
-constexpr int OP_DO_FOR_VALID_ARGUMENTS                 = C3.next<__COUNTER__>();	// Karajorma
-constexpr int OP_INVALIDATE_ALL_ARGUMENTS               = C3.next<__COUNTER__>();	// Karajorma
-constexpr int OP_VALIDATE_ALL_ARGUMENTS                 = C3.next<__COUNTER__>();	// Karajorma
-constexpr int OP_FOR_COUNTER                            = C3.next<__COUNTER__>();	// Goober5000
+   OP_CHANGE_IFF,
+   OP_REPAIR_SUBSYSTEM,
+   OP_SABOTAGE_SUBSYSTEM,
+   OP_SET_SUBSYSTEM_STRNGTH,
+   OP_PROTECT_SHIP,
+   OP_SEND_MESSAGE,
+   OP_SELF_DESTRUCT,
+   OP_CLEAR_GOALS,
+   OP_ADD_GOAL,
+   OP_REMOVE_GOAL,	// Goober5000
+   OP_INVALIDATE_GOAL,
+   OP_VALIDATE_GOAL,
+   OP_SEND_RANDOM_MESSAGE,
+   OP_TRANSFER_CARGO,
+   OP_EXCHANGE_CARGO,
+   OP_UNPROTECT_SHIP,
 
-constexpr int OP_IF_THEN_ELSE                           = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_NUM_VALID_ARGUMENTS                    = C3.next<__COUNTER__>();	// Karajorma
-constexpr int OP_FUNCTIONAL_IF_THEN_ELSE                = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_FOR_SHIP_CLASS                         = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_FOR_SHIP_TYPE                          = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_FOR_SHIP_TEAM                          = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_FOR_SHIP_SPECIES                       = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_FOR_PLAYERS                            = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_FIRST_OF                               = C3.next<__COUNTER__>();	// MageKing17
-constexpr int OP_SWITCH                                 = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_FUNCTIONAL_SWITCH                      = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_FUNCTIONAL_WHEN                        = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_FOR_CONTAINER_DATA                     = C3.next<__COUNTER__>();	// jg18
-constexpr int OP_FOR_MAP_CONTAINER_KEYS                 = C3.next<__COUNTER__>();	// jg18
+   OP_GOOD_REARM_TIME,
+   OP_BAD_REARM_TIME,
+   OP_GRANT_PROMOTION,
+   OP_GRANT_MEDAL,
+   OP_ALLOW_SHIP,
+   OP_ALLOW_WEAPON,
+   OP_GOOD_SECONDARY_TIME,
+   OP_WARP_BROKEN,
+   OP_WARP_NOT_BROKEN,
+   OP_WARP_NEVER,
+   OP_WARP_ALLOWED,
+   OP_SHIP_INVISIBLE,
+   OP_SHIP_VISIBLE,
+   OP_SHIP_INVULNERABLE,
+   OP_SHIP_VULNERABLE,
+   OP_RED_ALERT,
 
-// OP_CATEGORY_CHANGE
-// sexpressions with side-effects
+   OP_TECH_ADD_SHIP,
+   OP_TECH_ADD_WEAPON,
+   OP_END_CAMPAIGN,
+   OP_JETTISON_CARGO_DELAY,
+   OP_MODIFY_VARIABLE,
+   OP_NOP,
+   OP_BEAM_FIRE,
+   OP_BEAM_FREE,
+   OP_BEAM_FREE_ALL,
+   OP_BEAM_LOCK,
+   OP_BEAM_LOCK_ALL,
+   OP_BEAM_PROTECT_SHIP,
+   OP_BEAM_UNPROTECT_SHIP,
+   OP_TURRET_FREE,
+   OP_TURRET_FREE_ALL,
+   OP_TURRET_LOCK,
 
-constexpr int OP_CHANGE_IFF                             = C3.next<__COUNTER__>();
-constexpr int OP_REPAIR_SUBSYSTEM                       = C3.next<__COUNTER__>();
-constexpr int OP_SABOTAGE_SUBSYSTEM                     = C3.next<__COUNTER__>();
-constexpr int OP_SET_SUBSYSTEM_STRNGTH                  = C3.next<__COUNTER__>();
-constexpr int OP_PROTECT_SHIP                           = C3.next<__COUNTER__>();
-constexpr int OP_SEND_MESSAGE                           = C3.next<__COUNTER__>();
-constexpr int OP_SELF_DESTRUCT                          = C3.next<__COUNTER__>();
-constexpr int OP_CLEAR_GOALS                            = C3.next<__COUNTER__>();
-constexpr int OP_ADD_GOAL                               = C3.next<__COUNTER__>();
-constexpr int OP_REMOVE_GOAL                            = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_INVALIDATE_GOAL                        = C3.next<__COUNTER__>();
-constexpr int OP_VALIDATE_GOAL                          = C3.next<__COUNTER__>();
-constexpr int OP_SEND_RANDOM_MESSAGE                    = C3.next<__COUNTER__>();
-constexpr int OP_TRANSFER_CARGO                         = C3.next<__COUNTER__>();
-constexpr int OP_EXCHANGE_CARGO                         = C3.next<__COUNTER__>();
-constexpr int OP_UNPROTECT_SHIP                         = C3.next<__COUNTER__>();
+   OP_TURRET_LOCK_ALL,
+   OP_ADD_REMOVE_ESCORT,
+   OP_AWACS_SET_RADIUS,
+   OP_SEND_MESSAGE_LIST,
+   OP_CAP_WAYPOINT_SPEED,
+   OP_SHIP_GUARDIAN,
+   OP_SHIP_NO_GUARDIAN,
+   OP_TURRET_TAGGED_ONLY_ALL,
+   OP_TURRET_TAGGED_CLEAR_ALL,
+   OP_SUBSYS_SET_RANDOM,
+   OP_SUPERNOVA_START,
+   OP_CARGO_NO_DEPLETE,
+   OP_SET_SPECIAL_WARPOUT_NAME,
+   OP_SHIP_VANISH,
+   OP_SHIELDS_ON,	//-Sesquipedalian
+   OP_SHIELDS_OFF,	//-Sesquipedalian
 
-constexpr int OP_GOOD_REARM_TIME                        = C3.next<__COUNTER__>();
-constexpr int OP_BAD_REARM_TIME                         = C3.next<__COUNTER__>();
-constexpr int OP_GRANT_PROMOTION                        = C3.next<__COUNTER__>();
-constexpr int OP_GRANT_MEDAL                            = C3.next<__COUNTER__>();
-constexpr int OP_ALLOW_SHIP                             = C3.next<__COUNTER__>();
-constexpr int OP_ALLOW_WEAPON                           = C3.next<__COUNTER__>();
-constexpr int OP_GOOD_SECONDARY_TIME                    = C3.next<__COUNTER__>();
-constexpr int OP_WARP_BROKEN                            = C3.next<__COUNTER__>();
-constexpr int OP_WARP_NOT_BROKEN                        = C3.next<__COUNTER__>();
-constexpr int OP_WARP_NEVER                             = C3.next<__COUNTER__>();
-constexpr int OP_WARP_ALLOWED                           = C3.next<__COUNTER__>();
-constexpr int OP_SHIP_INVISIBLE                         = C3.next<__COUNTER__>();
-constexpr int OP_SHIP_VISIBLE                           = C3.next<__COUNTER__>();
-constexpr int OP_SHIP_INVULNERABLE                      = C3.next<__COUNTER__>();
-constexpr int OP_SHIP_VULNERABLE                        = C3.next<__COUNTER__>();
-constexpr int OP_RED_ALERT                              = C3.next<__COUNTER__>();
+   OP_CHANGE_AI_LEVEL,	//-Sesquipedalian
+   OP_END_MISSION, //-Sesquipedalian. replaces end-mission-delay, which did nothing
+   OP_SET_SCANNED,	// Goober5000
+   OP_SET_UNSCANNED,	// Goober5000
+   OP_SHIP_STEALTHY,	// Goober5000
+   OP_SHIP_UNSTEALTHY,	// Goober5000
+   OP_SET_CARGO,	// Goober5000
+   OP_CHANGE_AI_CLASS,	// Goober5000
+   OP_FRIENDLY_STEALTH_INVISIBLE,	// Goober5000
+   OP_FRIENDLY_STEALTH_VISIBLE,	// Goober5000
+   OP_DAMAGED_ESCORT_LIST, //phreak
+   OP_DAMAGED_ESCORT_LIST_ALL,	// Goober5000
+   OP_SHIP_VAPORIZE,	// Goober5000
+   OP_SHIP_NO_VAPORIZE,	// Goober5000
+   OP_COLLIDE_INVISIBLE,	// Goober5000
+   OP_DONT_COLLIDE_INVISIBLE,	// Goober5000
 
-constexpr int OP_TECH_ADD_SHIP                          = C3.next<__COUNTER__>();
-constexpr int OP_TECH_ADD_WEAPON                        = C3.next<__COUNTER__>();
-constexpr int OP_END_CAMPAIGN                           = C3.next<__COUNTER__>();
-constexpr int OP_JETTISON_CARGO_DELAY                   = C3.next<__COUNTER__>();
-constexpr int OP_MODIFY_VARIABLE                        = C3.next<__COUNTER__>();
-constexpr int OP_NOP                                    = C3.next<__COUNTER__>();
-constexpr int OP_BEAM_FIRE                              = C3.next<__COUNTER__>();
-constexpr int OP_BEAM_FREE                              = C3.next<__COUNTER__>();
-constexpr int OP_BEAM_FREE_ALL                          = C3.next<__COUNTER__>();
-constexpr int OP_BEAM_LOCK                              = C3.next<__COUNTER__>();
-constexpr int OP_BEAM_LOCK_ALL                          = C3.next<__COUNTER__>();
-constexpr int OP_BEAM_PROTECT_SHIP                      = C3.next<__COUNTER__>();
-constexpr int OP_BEAM_UNPROTECT_SHIP                    = C3.next<__COUNTER__>();
-constexpr int OP_TURRET_FREE                            = C3.next<__COUNTER__>();
-constexpr int OP_TURRET_FREE_ALL                        = C3.next<__COUNTER__>();
-constexpr int OP_TURRET_LOCK                            = C3.next<__COUNTER__>();
+   OP_PRIMITIVE_SENSORS_SET_RANGE,	// Goober5000
+   OP_CHANGE_SHIP_CLASS,	// Goober5000
+   OP_SCRIPT_EVAL, //WMC
+   OP_SET_SUPPORT_SHIP,	// Goober5000
+   OP_DEACTIVATE_GLOW_POINTS,	//-Bobboau
+   OP_ACTIVATE_GLOW_POINTS,	//-Bobboau
+   OP_DEACTIVATE_GLOW_MAPS,	//-Bobboau
+   OP_ACTIVATE_GLOW_MAPS,	//-Bobboau
+   OP_DEACTIVATE_GLOW_POINT_BANK,	//-Bobboau
+   OP_ACTIVATE_GLOW_POINT_BANK,	//-Bobboau
+   OP_CHANGE_SOUNDTRACK,	// Goober5000
+   OP_TECH_ADD_INTEL,	// Goober5000
+   OP_TECH_RESET_TO_DEFAULT,	// Goober5000
+   OP_EXPLOSION_EFFECT,	// Goober5000
+   OP_WARP_EFFECT,	// Goober5000
+   OP_SET_OBJECT_FACING,	// Goober5000
 
-constexpr int OP_TURRET_LOCK_ALL                        = C3.next<__COUNTER__>();
-constexpr int OP_ADD_REMOVE_ESCORT                      = C3.next<__COUNTER__>();
-constexpr int OP_AWACS_SET_RADIUS                       = C3.next<__COUNTER__>();
-constexpr int OP_SEND_MESSAGE_LIST                      = C3.next<__COUNTER__>();
-constexpr int OP_CAP_WAYPOINT_SPEED                     = C3.next<__COUNTER__>();
-constexpr int OP_SHIP_GUARDIAN                          = C3.next<__COUNTER__>();
-constexpr int OP_SHIP_NO_GUARDIAN                       = C3.next<__COUNTER__>();
-constexpr int OP_TURRET_TAGGED_ONLY_ALL                 = C3.next<__COUNTER__>();
-constexpr int OP_TURRET_TAGGED_CLEAR_ALL                = C3.next<__COUNTER__>();
-constexpr int OP_SUBSYS_SET_RANDOM                      = C3.next<__COUNTER__>();
-constexpr int OP_SUPERNOVA_START                        = C3.next<__COUNTER__>();
-constexpr int OP_CARGO_NO_DEPLETE                       = C3.next<__COUNTER__>();
-constexpr int OP_SET_SPECIAL_WARPOUT_NAME               = C3.next<__COUNTER__>();
-constexpr int OP_SHIP_VANISH                            = C3.next<__COUNTER__>();
-constexpr int OP_SHIELDS_ON                             = C3.next<__COUNTER__>();	//-Sesquipedalian
-constexpr int OP_SHIELDS_OFF                            = C3.next<__COUNTER__>();	//-Sesquipedalian
+   OP_SET_OBJECT_FACING_OBJECT,	// Goober5000
+   OP_SET_OBJECT_POSITION,	// Goober5000
+   OP_PLAY_SOUND_FROM_TABLE,	// Goober5000
+   OP_PLAY_SOUND_FROM_FILE,	// Goober5000
+   OP_CLOSE_SOUND_FROM_FILE,	// Goober5000
+   OP_HUD_DISABLE,	// Goober5000
+   OP_KAMIKAZE,	//-Sesquipedalian
+   OP_MISSION_SET_SUBSPACE,
+   OP_TURRET_TAGGED_SPECIFIC, //phreak
+   OP_TURRET_TAGGED_CLEAR_SPECIFIC, //phreak
+   OP_LOCK_ROTATING_SUBSYSTEM,	// Goober5000
+   OP_FREE_ROTATING_SUBSYSTEM,	// Goober5000
+   OP_REVERSE_ROTATING_SUBSYSTEM,	// Goober5000
+   OP_ROTATING_SUBSYS_SET_TURN_TIME,	// Goober5000
+   OP_PLAYER_USE_AI,	// Goober5000
+   OP_PLAYER_NOT_USE_AI,	// Goober5000
 
-constexpr int OP_CHANGE_AI_LEVEL                        = C3.next<__COUNTER__>();	//-Sesquipedalian
-constexpr int OP_END_MISSION                            = C3.next<__COUNTER__>(); //-Sesquipedalian. replaces end-mission-delay, which did nothing
-constexpr int OP_SET_SCANNED                            = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_SET_UNSCANNED                          = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_SHIP_STEALTHY                          = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_SHIP_UNSTEALTHY                        = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_SET_CARGO                              = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_CHANGE_AI_CLASS                        = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_FRIENDLY_STEALTH_INVISIBLE             = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_FRIENDLY_STEALTH_VISIBLE               = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_DAMAGED_ESCORT_LIST                    = C3.next<__COUNTER__>(); //phreak
-constexpr int OP_DAMAGED_ESCORT_LIST_ALL                = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_SHIP_VAPORIZE                          = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_SHIP_NO_VAPORIZE                       = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_COLLIDE_INVISIBLE                      = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_DONT_COLLIDE_INVISIBLE                 = C3.next<__COUNTER__>();	// Goober5000
+   OP_HUD_DISABLE_EXCEPT_MESSAGES,	// Goober5000
+   OP_FORCE_JUMP,	// Goober5000
+   OP_HUD_SET_TEXT, //WMC
+   OP_HUD_SET_TEXT_NUM, //WMC
+   OP_HUD_SET_COORDS, //WMC
+   OP_HUD_SET_FRAME, //WMC
+   OP_HUD_SET_COLOR, //WMC
+   OP_HUD_SET_MAX_TARGETING_RANGE, // Goober5000
+   OP_SHIP_TAG, // Goober5000
+   OP_SHIP_UNTAG, // Goober5000
+   OP_SHIP_CHANGE_ALT_NAME,	// Goober5000
+   OP_SCRAMBLE_MESSAGES,	// phreak
+   OP_UNSCRAMBLE_MESSAGES,	// phreak
+   OP_CUTSCENES_SET_CUTSCENE_BARS,	// WMC
+   OP_CUTSCENES_UNSET_CUTSCENE_BARS,	// WMC
+   OP_CUTSCENES_FADE_IN,	// WMC
 
-constexpr int OP_PRIMITIVE_SENSORS_SET_RANGE            = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_CHANGE_SHIP_CLASS                      = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_SCRIPT_EVAL                            = C3.next<__COUNTER__>(); //WMC
-constexpr int OP_SET_SUPPORT_SHIP                       = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_DEACTIVATE_GLOW_POINTS                 = C3.next<__COUNTER__>();	//-Bobboau
-constexpr int OP_ACTIVATE_GLOW_POINTS                   = C3.next<__COUNTER__>();	//-Bobboau
-constexpr int OP_DEACTIVATE_GLOW_MAPS                   = C3.next<__COUNTER__>();	//-Bobboau
-constexpr int OP_ACTIVATE_GLOW_MAPS                     = C3.next<__COUNTER__>();	//-Bobboau
-constexpr int OP_DEACTIVATE_GLOW_POINT_BANK             = C3.next<__COUNTER__>();	//-Bobboau
-constexpr int OP_ACTIVATE_GLOW_POINT_BANK               = C3.next<__COUNTER__>();	//-Bobboau
-constexpr int OP_CHANGE_SOUNDTRACK                      = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_TECH_ADD_INTEL                         = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_TECH_RESET_TO_DEFAULT                  = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_EXPLOSION_EFFECT                       = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_WARP_EFFECT                            = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_SET_OBJECT_FACING                      = C3.next<__COUNTER__>();	// Goober5000
+   OP_CUTSCENES_FADE_OUT,	// WMC
+   OP_CUTSCENES_SET_CAMERA_POSITION,	// WMC
+   OP_CUTSCENES_SET_CAMERA_FACING,	// WMC
+   OP_CUTSCENES_SET_CAMERA_FACING_OBJECT,	// WMC
+   OP_CUTSCENES_SET_CAMERA_ROTATION,	// WMC
+   OP_CUTSCENES_SET_FOV,	// WMC
+   OP_CUTSCENES_RESET_FOV,	// WMC
+   OP_CUTSCENES_RESET_CAMERA,	// WMC
+   OP_CUTSCENES_SHOW_SUBTITLE,	// WMC / deprecated
+   OP_CUTSCENES_SET_TIME_COMPRESSION,	// WMC
+   OP_CUTSCENES_RESET_TIME_COMPRESSION,	// WMC
+   OP_CUTSCENES_FORCE_PERSPECTIVE,	// WMC
+   OP_JUMP_NODE_SET_JUMPNODE_NAME,	// CommanderDJ
+   OP_JUMP_NODE_SET_JUMPNODE_COLOR,	// WMC
+   OP_JUMP_NODE_SET_JUMPNODE_MODEL,	// WMC
+   OP_JUMP_NODE_SHOW_JUMPNODE,	// WMC
 
-constexpr int OP_SET_OBJECT_FACING_OBJECT               = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_SET_OBJECT_POSITION                    = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_PLAY_SOUND_FROM_TABLE                  = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_PLAY_SOUND_FROM_FILE                   = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_CLOSE_SOUND_FROM_FILE                  = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_HUD_DISABLE                            = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_KAMIKAZE                               = C3.next<__COUNTER__>();	//-Sesquipedalian
-constexpr int OP_MISSION_SET_SUBSPACE                   = C3.next<__COUNTER__>();
-constexpr int OP_TURRET_TAGGED_SPECIFIC                 = C3.next<__COUNTER__>(); //phreak
-constexpr int OP_TURRET_TAGGED_CLEAR_SPECIFIC           = C3.next<__COUNTER__>(); //phreak
-constexpr int OP_LOCK_ROTATING_SUBSYSTEM                = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_FREE_ROTATING_SUBSYSTEM                = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_REVERSE_ROTATING_SUBSYSTEM             = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_ROTATING_SUBSYS_SET_TURN_TIME          = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_PLAYER_USE_AI                          = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_PLAYER_NOT_USE_AI                      = C3.next<__COUNTER__>();	// Goober5000
+   OP_JUMP_NODE_HIDE_JUMPNODE,	// WMC
+   OP_SHIP_GUARDIAN_THRESHOLD,	// Goober5000
+   OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD,	// Goober5000
+   OP_SET_SKYBOX_MODEL, // taylor
+   OP_SHIP_CREATE,
+   OP_WEAPON_CREATE,	// Goober5000
+   OP_SET_OBJECT_SPEED_X, // Deprecated by wookieejedi
+   OP_SET_OBJECT_SPEED_Y, // Deprecated by wookieejedi
+   OP_SET_OBJECT_SPEED_Z, // Deprecated by wookieejedi
+   OP_MISSION_SET_NEBULA,
+   OP_ADD_BACKGROUND_BITMAP,
+   OP_REMOVE_BACKGROUND_BITMAP,
+   OP_ADD_SUN_BITMAP,
+   OP_REMOVE_SUN_BITMAP,
+   OP_NEBULA_CHANGE_STORM,
+   OP_NEBULA_TOGGLE_POOF,
 
-constexpr int OP_HUD_DISABLE_EXCEPT_MESSAGES            = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_FORCE_JUMP                             = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_HUD_SET_TEXT                           = C3.next<__COUNTER__>(); //WMC
-constexpr int OP_HUD_SET_TEXT_NUM                       = C3.next<__COUNTER__>(); //WMC
-constexpr int OP_HUD_SET_COORDS                         = C3.next<__COUNTER__>(); //WMC
-constexpr int OP_HUD_SET_FRAME                          = C3.next<__COUNTER__>(); //WMC
-constexpr int OP_HUD_SET_COLOR                          = C3.next<__COUNTER__>(); //WMC
-constexpr int OP_HUD_SET_MAX_TARGETING_RANGE            = C3.next<__COUNTER__>(); // Goober5000
-constexpr int OP_SHIP_TAG                               = C3.next<__COUNTER__>(); // Goober5000
-constexpr int OP_SHIP_UNTAG                             = C3.next<__COUNTER__>(); // Goober5000
-constexpr int OP_SHIP_CHANGE_ALT_NAME                   = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_SCRAMBLE_MESSAGES                      = C3.next<__COUNTER__>();	// phreak
-constexpr int OP_UNSCRAMBLE_MESSAGES                    = C3.next<__COUNTER__>();	// phreak
-constexpr int OP_CUTSCENES_SET_CUTSCENE_BARS            = C3.next<__COUNTER__>();	// WMC
-constexpr int OP_CUTSCENES_UNSET_CUTSCENE_BARS          = C3.next<__COUNTER__>();	// WMC
-constexpr int OP_CUTSCENES_FADE_IN                      = C3.next<__COUNTER__>();	// WMC
+   OP_TURRET_CHANGE_WEAPON,
+   OP_TURRET_SET_TARGET_ORDER,
+   OP_SHIP_TURRET_TARGET_ORDER,
+   OP_SET_PRIMARY_AMMO, // Karajorma
+   OP_SET_SECONDARY_AMMO, // Karajorma
+   OP_SHIP_BOMB_TARGETABLE,	//WMC
+   OP_SHIP_BOMB_UNTARGETABLE,	//WMC
+   OP_SHIP_SUBSYS_TARGETABLE,	// Goober5000
+   OP_SHIP_SUBSYS_UNTARGETABLE,	// Goober5000
+   OP_SET_DEATH_MESSAGE,	// Goober5000
+   OP_SET_PRIMARY_WEAPON, // Karajorma
+   OP_SET_SECONDARY_WEAPON, // Karajorma
+   OP_DISABLE_BUILTIN_MESSAGES, // Karajorma
+   OP_ENABLE_BUILTIN_MESSAGES, // Karajorma
+   OP_LOCK_PRIMARY_WEAPON, // Karajorma
+   OP_UNLOCK_PRIMARY_WEAPON, // Karajorma
 
-constexpr int OP_CUTSCENES_FADE_OUT                     = C3.next<__COUNTER__>();	// WMC
-constexpr int OP_CUTSCENES_SET_CAMERA_POSITION          = C3.next<__COUNTER__>();	// WMC
-constexpr int OP_CUTSCENES_SET_CAMERA_FACING            = C3.next<__COUNTER__>();	// WMC
-constexpr int OP_CUTSCENES_SET_CAMERA_FACING_OBJECT     = C3.next<__COUNTER__>();	// WMC
-constexpr int OP_CUTSCENES_SET_CAMERA_ROTATION          = C3.next<__COUNTER__>();	// WMC
-constexpr int OP_CUTSCENES_SET_FOV                      = C3.next<__COUNTER__>();	// WMC
-constexpr int OP_CUTSCENES_RESET_FOV                    = C3.next<__COUNTER__>();	// WMC
-constexpr int OP_CUTSCENES_RESET_CAMERA                 = C3.next<__COUNTER__>();	// WMC
-constexpr int OP_CUTSCENES_SHOW_SUBTITLE                = C3.next<__COUNTER__>();	// WMC / deprecated
-constexpr int OP_CUTSCENES_SET_TIME_COMPRESSION         = C3.next<__COUNTER__>();	// WMC
-constexpr int OP_CUTSCENES_RESET_TIME_COMPRESSION       = C3.next<__COUNTER__>();	// WMC
-constexpr int OP_CUTSCENES_FORCE_PERSPECTIVE            = C3.next<__COUNTER__>();	// WMC
-constexpr int OP_JUMP_NODE_SET_JUMPNODE_NAME            = C3.next<__COUNTER__>();	// CommanderDJ
-constexpr int OP_JUMP_NODE_SET_JUMPNODE_COLOR           = C3.next<__COUNTER__>();	// WMC
-constexpr int OP_JUMP_NODE_SET_JUMPNODE_MODEL           = C3.next<__COUNTER__>();	// WMC
-constexpr int OP_JUMP_NODE_SHOW_JUMPNODE                = C3.next<__COUNTER__>();	// WMC
+   OP_LOCK_SECONDARY_WEAPON, // Karajorma
+   OP_UNLOCK_SECONDARY_WEAPON, // Karajorma
+   OP_SET_CAMERA_SHUDDER,	// Goober5000
+   OP_ALLOW_TREASON, // Karajorma
+   OP_SHIP_COPY_DAMAGE,	// Goober5000
+   OP_CHANGE_SUBSYSTEM_NAME,	// Karajorma
+   OP_SET_PERSONA, // Karajorma
+   OP_CHANGE_PLAYER_SCORE, // Karajorma
+   OP_CHANGE_TEAM_SCORE, // Karajorma
+   OP_CUTSCENES_SET_CAMERA_FOV,	// WMC
+   OP_CUTSCENES_SET_CAMERA, // WMC
+   OP_CUTSCENES_SET_CAMERA_HOST, // WMC
+   OP_CUTSCENES_SET_CAMERA_TARGET, // WMC
+   OP_LOCK_AFTERBURNER, // KeldorKatarn
+   OP_UNLOCK_AFTERBURNER, // KeldorKatarn
+   OP_SHIP_CHANGE_CALLSIGN,	// FUBAR
 
-constexpr int OP_JUMP_NODE_HIDE_JUMPNODE                = C3.next<__COUNTER__>();	// WMC
-constexpr int OP_SHIP_GUARDIAN_THRESHOLD                = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD         = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_SET_SKYBOX_MODEL                       = C3.next<__COUNTER__>(); // taylor
-constexpr int OP_SHIP_CREATE                            = C3.next<__COUNTER__>();
-constexpr int OP_WEAPON_CREATE                          = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_SET_OBJECT_SPEED_X                     = C3.next<__COUNTER__>(); // Deprecated by wookieejedi
-constexpr int OP_SET_OBJECT_SPEED_Y                     = C3.next<__COUNTER__>(); // Deprecated by wookieejedi
-constexpr int OP_SET_OBJECT_SPEED_Z                     = C3.next<__COUNTER__>(); // Deprecated by wookieejedi
-constexpr int OP_MISSION_SET_NEBULA                     = C3.next<__COUNTER__>();
-constexpr int OP_ADD_BACKGROUND_BITMAP                  = C3.next<__COUNTER__>();
-constexpr int OP_REMOVE_BACKGROUND_BITMAP               = C3.next<__COUNTER__>();
-constexpr int OP_ADD_SUN_BITMAP                         = C3.next<__COUNTER__>();
-constexpr int OP_REMOVE_SUN_BITMAP                      = C3.next<__COUNTER__>();
-constexpr int OP_NEBULA_CHANGE_STORM                    = C3.next<__COUNTER__>();
-constexpr int OP_NEBULA_TOGGLE_POOF                     = C3.next<__COUNTER__>();
+   OP_SET_RESPAWNS, // Karajorma
+   OP_SET_AFTERBURNER_ENERGY, // Karajorma
+   OP_SET_WEAPON_ENERGY, // Karajorma
+   OP_SET_SHIELD_ENERGY, // Karajorma
+   OP_SET_AMBIENT_LIGHT, // Karajorma
+   OP_CHANGE_IFF_COLOR, // Wanderer
+   OP_TURRET_SUBSYS_TARGET_DISABLE, // Wanderer
+   OP_TURRET_SUBSYS_TARGET_ENABLE, // Wanderer
+   OP_CLEAR_WEAPONS, // Wanderer
+   OP_SHIP_MANEUVER, // Wanderer 
+   OP_SHIP_ROT_MANEUVER, // Wanderer
+   OP_SHIP_LAT_MANEUVER, // Wanderer
+   OP_GET_VARIABLE_BY_INDEX, // Goober5000
+   OP_SET_VARIABLE_BY_INDEX, // Goober5000
+   OP_SET_POST_EFFECT, // Hery
+   OP_TURRET_SET_OPTIMUM_RANGE, // FUBAR
 
-constexpr int OP_TURRET_CHANGE_WEAPON                   = C3.next<__COUNTER__>();
-constexpr int OP_TURRET_SET_TARGET_ORDER                = C3.next<__COUNTER__>();
-constexpr int OP_SHIP_TURRET_TARGET_ORDER               = C3.next<__COUNTER__>();
-constexpr int OP_SET_PRIMARY_AMMO                       = C3.next<__COUNTER__>(); // Karajorma
-constexpr int OP_SET_SECONDARY_AMMO                     = C3.next<__COUNTER__>(); // Karajorma
-constexpr int OP_SHIP_BOMB_TARGETABLE                   = C3.next<__COUNTER__>();	//WMC
-constexpr int OP_SHIP_BOMB_UNTARGETABLE                 = C3.next<__COUNTER__>();	//WMC
-constexpr int OP_SHIP_SUBSYS_TARGETABLE                 = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_SHIP_SUBSYS_UNTARGETABLE               = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_SET_DEATH_MESSAGE                      = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_SET_PRIMARY_WEAPON                     = C3.next<__COUNTER__>(); // Karajorma
-constexpr int OP_SET_SECONDARY_WEAPON                   = C3.next<__COUNTER__>(); // Karajorma
-constexpr int OP_DISABLE_BUILTIN_MESSAGES               = C3.next<__COUNTER__>(); // Karajorma
-constexpr int OP_ENABLE_BUILTIN_MESSAGES                = C3.next<__COUNTER__>(); // Karajorma
-constexpr int OP_LOCK_PRIMARY_WEAPON                    = C3.next<__COUNTER__>(); // Karajorma
-constexpr int OP_UNLOCK_PRIMARY_WEAPON                  = C3.next<__COUNTER__>(); // Karajorma
+   OP_TURRET_SET_DIRECTION_PREFERENCE, // FUBAR
+   OP_TURRET_SET_TARGET_PRIORITIES, // FUBAR
+   OP_SET_ARMOR_TYPE, // FUBAR
+   OP_CUTSCENES_SHOW_SUBTITLE_TEXT,	// Goober5000
+   OP_CUTSCENES_SHOW_SUBTITLE_IMAGE,	// Goober5000
+   OP_HUD_DISPLAY_GAUGE,
+   OP_SET_SOUND_ENVIRONMENT,	// Taylor
+   OP_UPDATE_SOUND_ENVIRONMENT,	// Taylor
+   OP_SET_EXPLOSION_OPTION,	// Goober5000
+   OP_ADJUST_AUDIO_VOLUME, // The E
+   OP_FORCE_GLIDE, // The E
+   OP_TURRET_SET_RATE_OF_FIRE, // FUBAR
+   OP_HUD_SET_MESSAGE, // The E
+   OP_SHIP_SUBSYS_NO_REPLACE, // FUBAR
+   OP_SET_IMMOBILE,	// Goober5000
+   OP_SET_MOBILE,	// Goober5000
 
-constexpr int OP_LOCK_SECONDARY_WEAPON                  = C3.next<__COUNTER__>(); // Karajorma
-constexpr int OP_UNLOCK_SECONDARY_WEAPON                = C3.next<__COUNTER__>(); // Karajorma
-constexpr int OP_SET_CAMERA_SHUDDER                     = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_ALLOW_TREASON                          = C3.next<__COUNTER__>(); // Karajorma
-constexpr int OP_SHIP_COPY_DAMAGE                       = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_CHANGE_SUBSYSTEM_NAME                  = C3.next<__COUNTER__>();	// Karajorma
-constexpr int OP_SET_PERSONA                            = C3.next<__COUNTER__>(); // Karajorma
-constexpr int OP_CHANGE_PLAYER_SCORE                    = C3.next<__COUNTER__>(); // Karajorma
-constexpr int OP_CHANGE_TEAM_SCORE                      = C3.next<__COUNTER__>(); // Karajorma
-constexpr int OP_CUTSCENES_SET_CAMERA_FOV               = C3.next<__COUNTER__>();	// WMC
-constexpr int OP_CUTSCENES_SET_CAMERA                   = C3.next<__COUNTER__>(); // WMC
-constexpr int OP_CUTSCENES_SET_CAMERA_HOST              = C3.next<__COUNTER__>(); // WMC
-constexpr int OP_CUTSCENES_SET_CAMERA_TARGET            = C3.next<__COUNTER__>(); // WMC
-constexpr int OP_LOCK_AFTERBURNER                       = C3.next<__COUNTER__>(); // KeldorKatarn
-constexpr int OP_UNLOCK_AFTERBURNER                     = C3.next<__COUNTER__>(); // KeldorKatarn
-constexpr int OP_SHIP_CHANGE_CALLSIGN                   = C3.next<__COUNTER__>();	// FUBAR
+   OP_SHIP_SUBSYS_NO_LIVE_DEBRIS, // FUBAR
+   OP_SHIP_SUBSYS_VANISHED, // FUBAR
+   OP_SHIP_SUBSYS_IGNORE_IF_DEAD, // FUBAR
+   OP_HUD_SET_DIRECTIVE, // The E
+   OP_HUD_GAUGE_SET_ACTIVE, // The E - slightly deprecated
+   OP_HUD_ACTIVATE_GAUGE_TYPE, // The E - slightly deprecated
+   OP_SET_OBJECT_ORIENTATION,	// Goober5000
+   OP_STRING_CONCATENATE,	// Goober5000
+   OP_INT_TO_STRING, // Goober5000
+   OP_WEAPON_SET_DAMAGE_TYPE, // FUBAR
+   OP_SHIP_SET_DAMAGE_TYPE, // FUBAR
+   OP_SHIP_SHOCKWAVE_SET_DAMAGE_TYPE, // FUBAR
+   OP_FIELD_SET_DAMAGE_TYPE, // FUBAR
+   OP_TURRET_PROTECT_SHIP,	// Goober5000
+   OP_TURRET_UNPROTECT_SHIP,	// Goober5000
+   OP_DISABLE_ETS, // The E
 
-constexpr int OP_SET_RESPAWNS                           = C3.next<__COUNTER__>(); // Karajorma
-constexpr int OP_SET_AFTERBURNER_ENERGY                 = C3.next<__COUNTER__>(); // Karajorma
-constexpr int OP_SET_WEAPON_ENERGY                      = C3.next<__COUNTER__>(); // Karajorma
-constexpr int OP_SET_SHIELD_ENERGY                      = C3.next<__COUNTER__>(); // Karajorma
-constexpr int OP_SET_AMBIENT_LIGHT                      = C3.next<__COUNTER__>(); // Karajorma
-constexpr int OP_CHANGE_IFF_COLOR                       = C3.next<__COUNTER__>(); // Wanderer
-constexpr int OP_TURRET_SUBSYS_TARGET_DISABLE           = C3.next<__COUNTER__>(); // Wanderer
-constexpr int OP_TURRET_SUBSYS_TARGET_ENABLE            = C3.next<__COUNTER__>(); // Wanderer
-constexpr int OP_CLEAR_WEAPONS                          = C3.next<__COUNTER__>(); // Wanderer
-constexpr int OP_SHIP_MANEUVER                          = C3.next<__COUNTER__>(); // Wanderer 
-constexpr int OP_SHIP_ROT_MANEUVER                      = C3.next<__COUNTER__>(); // Wanderer
-constexpr int OP_SHIP_LAT_MANEUVER                      = C3.next<__COUNTER__>(); // Wanderer
-constexpr int OP_GET_VARIABLE_BY_INDEX                  = C3.next<__COUNTER__>(); // Goober5000
-constexpr int OP_SET_VARIABLE_BY_INDEX                  = C3.next<__COUNTER__>(); // Goober5000
-constexpr int OP_SET_POST_EFFECT                        = C3.next<__COUNTER__>(); // Hery
-constexpr int OP_TURRET_SET_OPTIMUM_RANGE               = C3.next<__COUNTER__>(); // FUBAR
+   OP_ENABLE_ETS, // The E
+   OP_NAV_ADD_WAYPOINT,	// Kazan
+   OP_NAV_ADD_SHIP,	// Kazan
+   OP_NAV_DEL,	// Kazan
+   OP_NAV_HIDE,	// Kazan
+   OP_NAV_RESTRICT,	// Kazan
+   OP_NAV_UNHIDE,	// Kazan
+   OP_NAV_UNRESTRICT,	// Kazan
+   OP_NAV_SET_VISITED,	// Kazan
+   OP_NAV_SET_CARRY,	// Kazan
+   OP_NAV_UNSET_CARRY,	// Kazan
+   OP_NAV_UNSET_VISITED,	// Kazan
+   OP_NAV_SET_NEEDSLINK,	// Kazan
+   OP_NAV_UNSET_NEEDSLINK,	// Kazan
+   OP_NAV_USECINEMATICS,	// Kazan
+   OP_NAV_USEAP,	// Kazan
 
-constexpr int OP_TURRET_SET_DIRECTION_PREFERENCE        = C3.next<__COUNTER__>(); // FUBAR
-constexpr int OP_TURRET_SET_TARGET_PRIORITIES           = C3.next<__COUNTER__>(); // FUBAR
-constexpr int OP_SET_ARMOR_TYPE                         = C3.next<__COUNTER__>(); // FUBAR
-constexpr int OP_CUTSCENES_SHOW_SUBTITLE_TEXT           = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_CUTSCENES_SHOW_SUBTITLE_IMAGE          = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_HUD_DISPLAY_GAUGE                      = C3.next<__COUNTER__>();
-constexpr int OP_SET_SOUND_ENVIRONMENT                  = C3.next<__COUNTER__>();	// Taylor
-constexpr int OP_UPDATE_SOUND_ENVIRONMENT               = C3.next<__COUNTER__>();	// Taylor
-constexpr int OP_SET_EXPLOSION_OPTION                   = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_ADJUST_AUDIO_VOLUME                    = C3.next<__COUNTER__>(); // The E
-constexpr int OP_FORCE_GLIDE                            = C3.next<__COUNTER__>(); // The E
-constexpr int OP_TURRET_SET_RATE_OF_FIRE                = C3.next<__COUNTER__>(); // FUBAR
-constexpr int OP_HUD_SET_MESSAGE                        = C3.next<__COUNTER__>(); // The E
-constexpr int OP_SHIP_SUBSYS_NO_REPLACE                 = C3.next<__COUNTER__>(); // FUBAR
-constexpr int OP_SET_IMMOBILE                           = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_SET_MOBILE                             = C3.next<__COUNTER__>();	// Goober5000
+   // OP_CATEGORY_CHANGE2
 
-constexpr int OP_SHIP_SUBSYS_NO_LIVE_DEBRIS             = C3.next<__COUNTER__>(); // FUBAR
-constexpr int OP_SHIP_SUBSYS_VANISHED                   = C3.next<__COUNTER__>(); // FUBAR
-constexpr int OP_SHIP_SUBSYS_IGNORE_IF_DEAD             = C3.next<__COUNTER__>(); // FUBAR
-constexpr int OP_HUD_SET_DIRECTIVE                      = C3.next<__COUNTER__>(); // The E
-constexpr int OP_HUD_GAUGE_SET_ACTIVE                   = C3.next<__COUNTER__>(); // The E - slightly deprecated
-constexpr int OP_HUD_ACTIVATE_GAUGE_TYPE                = C3.next<__COUNTER__>(); // The E - slightly deprecated
-constexpr int OP_SET_OBJECT_ORIENTATION                 = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_STRING_CONCATENATE                     = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_INT_TO_STRING                          = C3.next<__COUNTER__>(); // Goober5000
-constexpr int OP_WEAPON_SET_DAMAGE_TYPE                 = C3.next<__COUNTER__>(); // FUBAR
-constexpr int OP_SHIP_SET_DAMAGE_TYPE                   = C3.next<__COUNTER__>(); // FUBAR
-constexpr int OP_SHIP_SHOCKWAVE_SET_DAMAGE_TYPE         = C3.next<__COUNTER__>(); // FUBAR
-constexpr int OP_FIELD_SET_DAMAGE_TYPE                  = C3.next<__COUNTER__>(); // FUBAR
-constexpr int OP_TURRET_PROTECT_SHIP                    = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_TURRET_UNPROTECT_SHIP                  = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_DISABLE_ETS                            = C3.next<__COUNTER__>(); // The E
+   OP_STRING_GET_SUBSTRING,	// Goober5000
+   OP_STRING_SET_SUBSTRING,	// Goober5000
+   OP_SET_NUM_COUNTERMEASURES, // Karajorma
+   OP_ADD_TO_COLGROUP, // The E
+   OP_REMOVE_FROM_COLGROUP, // The E
+   OP_GET_COLGROUP_ID, // The E
+   OP_SHIP_EFFECT, // Valathil
+   OP_CLEAR_SUBTITLES, // The E
+   OP_BEAM_FIRE_COORDS,	// Goober5000
+   OP_SET_DOCKED, // Sushi
+   OP_SET_THRUSTERS, // The E
+   OP_TRIGGER_SUBMODEL_ANIMATION,	// Goober5000
+   OP_HUD_CLEAR_MESSAGES, // Swifty
+   OP_SET_PLAYER_ORDERS,	// Karajorma
+   OP_SUPERNOVA_STOP, //CommanderDJ
+   OP_SET_PLAYER_THROTTLE_SPEED, //CommanderDJ
 
-constexpr int OP_ENABLE_ETS                             = C3.next<__COUNTER__>(); // The E
-constexpr int OP_NAV_ADD_WAYPOINT                       = C3.next<__COUNTER__>();	// Kazan
-constexpr int OP_NAV_ADD_SHIP                           = C3.next<__COUNTER__>();	// Kazan
-constexpr int OP_NAV_DEL                                = C3.next<__COUNTER__>();	// Kazan
-constexpr int OP_NAV_HIDE                               = C3.next<__COUNTER__>();	// Kazan
-constexpr int OP_NAV_RESTRICT                           = C3.next<__COUNTER__>();	// Kazan
-constexpr int OP_NAV_UNHIDE                             = C3.next<__COUNTER__>();	// Kazan
-constexpr int OP_NAV_UNRESTRICT                         = C3.next<__COUNTER__>();	// Kazan
-constexpr int OP_NAV_SET_VISITED                        = C3.next<__COUNTER__>();	// Kazan
-constexpr int OP_NAV_SET_CARRY                          = C3.next<__COUNTER__>();	// Kazan
-constexpr int OP_NAV_UNSET_CARRY                        = C3.next<__COUNTER__>();	// Kazan
-constexpr int OP_NAV_UNSET_VISITED                      = C3.next<__COUNTER__>();	// Kazan
-constexpr int OP_NAV_SET_NEEDSLINK                      = C3.next<__COUNTER__>();	// Kazan
-constexpr int OP_NAV_UNSET_NEEDSLINK                    = C3.next<__COUNTER__>();	// Kazan
-constexpr int OP_NAV_USECINEMATICS                      = C3.next<__COUNTER__>();	// Kazan
-constexpr int OP_NAV_USEAP                              = C3.next<__COUNTER__>();	// Kazan
+   OP_SET_DEBRIEFING_TOGGLED,	// Goober5000
+   OP_SET_SUBSPACE_DRIVE,	// Goober5000
+   OP_SET_ARRIVAL_INFO,	// Goober5000
+   OP_SET_DEPARTURE_INFO,	// Goober5000
+   OP_SET_SKYBOX_ORIENT,	// Goober5000
+   OP_DESTROY_INSTANTLY,	// Admiral MS
+   OP_DESTROY_SUBSYS_INSTANTLY,	// Admiral MS
+   OP_DEBUG,	// Karajorma
+   OP_SET_MISSION_MOOD,	// Karajorma
+   OP_NAV_SELECT, 	// Talon1024
+   OP_NAV_UNSELECT, 	// Talon1024
+   OP_ALTER_SHIP_FLAG,	// Karajorma
+   OP_CHANGE_TEAM_COLOR,	// The E
+   OP_NEBULA_CHANGE_PATTERN,	// Axem
+   OP_SET_WING_FORMATION,	// Goober5000
+   OP_TECH_ADD_INTEL_XSTR,	// Goober5000
 
-// OP_CATEGORY_CHANGE2
+   OP_COPY_VARIABLE_FROM_INDEX, // Goober5000
+   OP_COPY_VARIABLE_BETWEEN_INDEXES, // Goober5000
+   OP_GET_ETS_VALUE,	// niffiwan
+   OP_SET_ETS_VALUES,	// niffiwan
+   OP_CALL_SSM_STRIKE, // X3N0-Life-Form
+   OP_SET_MOTION_DEBRIS,    // The E
+   OP_HUD_SET_CUSTOM_GAUGE_ACTIVE, 	// The E, just revamped a bit by Axem
+   OP_HUD_SET_BUILTIN_GAUGE_ACTIVE, 	// The E, just revamped a bit by Axem
+   OP_SCRIPT_EVAL_MULTI,	// Karajorma
+   OP_PAUSE_SOUND_FROM_FILE,	// Goober5000
+   OP_SCRIPT_EVAL_BLOCK, // niffiwan
+   OP_BEAM_FLOATING_FIRE,	// MageKing17
+   OP_TURRET_SET_PRIMARY_AMMO,	// DahBlount, part of the turret ammo changes
+   OP_TURRET_SET_SECONDARY_AMMO,	// DahBlount, part of the turret ammo changes
+   OP_JETTISON_CARGO_NEW,	// Goober5000
+   OP_STRING_CONCATENATE_BLOCK,	// Goober5000
 
-constexpr int OP_STRING_GET_SUBSTRING                   = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_STRING_SET_SUBSTRING                   = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_SET_NUM_COUNTERMEASURES                = C3.next<__COUNTER__>(); // Karajorma
-constexpr int OP_ADD_TO_COLGROUP                        = C3.next<__COUNTER__>(); // The E
-constexpr int OP_REMOVE_FROM_COLGROUP                   = C3.next<__COUNTER__>(); // The E
-constexpr int OP_GET_COLGROUP_ID                        = C3.next<__COUNTER__>(); // The E
-constexpr int OP_SHIP_EFFECT                            = C3.next<__COUNTER__>(); // Valathil
-constexpr int OP_CLEAR_SUBTITLES                        = C3.next<__COUNTER__>(); // The E
-constexpr int OP_BEAM_FIRE_COORDS                       = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_SET_DOCKED                             = C3.next<__COUNTER__>(); // Sushi
-constexpr int OP_SET_THRUSTERS                          = C3.next<__COUNTER__>(); // The E
-constexpr int OP_TRIGGER_SUBMODEL_ANIMATION             = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_HUD_CLEAR_MESSAGES                     = C3.next<__COUNTER__>(); // Swifty
-constexpr int OP_SET_PLAYER_ORDERS                      = C3.next<__COUNTER__>();	// Karajorma
-constexpr int OP_SUPERNOVA_STOP                         = C3.next<__COUNTER__>(); //CommanderDJ
-constexpr int OP_SET_PLAYER_THROTTLE_SPEED              = C3.next<__COUNTER__>(); //CommanderDJ
+   OP_MODIFY_VARIABLE_XSTR,	// m!m
+   OP_RESET_POST_EFFECTS,	// Goober5000
+   OP_ADD_REMOVE_HOTKEY,    // wookieejedi
+   OP_TECH_REMOVE_INTEL_XSTR,    // wookieejedi
+   OP_TECH_REMOVE_INTEL,   // wookieejedi
+   OP_CHANGE_BACKGROUND,	// Goober5000
+   OP_CLEAR_DEBRIS,	// Goober5000
+   OP_SET_DEBRIEFING_PERSONA,	// Goober5000
+   OP_ADD_TO_COLGROUP_NEW,	// Goober5000
+   OP_REMOVE_FROM_COLGROUP_NEW,	// Goober5000
+   OP_GET_POWER_OUTPUT,	// The E
+   OP_TURRET_SET_FORCED_TARGET,	// Asteroth
+   OP_TURRET_SET_FORCED_SUBSYS_TARGET,	// Asteroth
+   OP_TURRET_CLEAR_FORCED_TARGET,	// Asteroth
+   OP_SEND_MESSAGE_CHAIN,	// Goober5000
+   OP_TURRET_SET_INACCURACY,	// Asteroth
 
-constexpr int OP_SET_DEBRIEFING_TOGGLED                 = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_SET_SUBSPACE_DRIVE                     = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_SET_ARRIVAL_INFO                       = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_SET_DEPARTURE_INFO                     = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_SET_SKYBOX_ORIENT                      = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_DESTROY_INSTANTLY                      = C3.next<__COUNTER__>();	// Admiral MS
-constexpr int OP_DESTROY_SUBSYS_INSTANTLY               = C3.next<__COUNTER__>();	// Admiral MS
-constexpr int OP_DEBUG                                  = C3.next<__COUNTER__>();	// Karajorma
-constexpr int OP_SET_MISSION_MOOD                       = C3.next<__COUNTER__>();	// Karajorma
-constexpr int OP_NAV_SELECT                             = C3.next<__COUNTER__>(); 	// Talon1024
-constexpr int OP_NAV_UNSELECT                           = C3.next<__COUNTER__>(); 	// Talon1024
-constexpr int OP_ALTER_SHIP_FLAG                        = C3.next<__COUNTER__>();	// Karajorma
-constexpr int OP_CHANGE_TEAM_COLOR                      = C3.next<__COUNTER__>();	// The E
-constexpr int OP_NEBULA_CHANGE_PATTERN                  = C3.next<__COUNTER__>();	// Axem
-constexpr int OP_SET_WING_FORMATION                     = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_TECH_ADD_INTEL_XSTR                    = C3.next<__COUNTER__>();	// Goober5000
+   OP_REPLACE_TEXTURE,	// Lafiel
+   OP_NEBULA_CHANGE_FOG_COLOR,	// Asteroth
+   OP_SET_ALPHA_MULT,	// Lafiel
+   OP_DESTROY_INSTANTLY_WITH_DEBRIS,	// Asteroth
+   OP_TRIGGER_ANIMATION_NEW,	// Lafiel
+   OP_UPDATE_MOVEABLE,	// Lafiel
+   OP_NAV_SET_COLOR, 	// Goober5000
+   OP_NAV_SET_VISITED_COLOR, 	// Goober5000
+   OP_CONTAINER_ADD_TO_LIST,	// Karajorma/jg18
+   OP_CONTAINER_REMOVE_FROM_LIST,	// Karajorma/jg18
+   OP_CONTAINER_ADD_TO_MAP,	// Karajorma/jg18
+   OP_CONTAINER_REMOVE_FROM_MAP,	// Karajorma/jg18
+   OP_CONTAINER_GET_MAP_KEYS,	// Karajorma/jg18
+   OP_CLEAR_CONTAINER,	// Karajorma/jg18
+   OP_ADD_BACKGROUND_BITMAP_NEW,	// Goober5000
+   OP_ADD_SUN_BITMAP_NEW,	// Goober5000
 
-constexpr int OP_COPY_VARIABLE_FROM_INDEX               = C3.next<__COUNTER__>(); // Goober5000
-constexpr int OP_COPY_VARIABLE_BETWEEN_INDEXES          = C3.next<__COUNTER__>(); // Goober5000
-constexpr int OP_GET_ETS_VALUE                          = C3.next<__COUNTER__>();	// niffiwan
-constexpr int OP_SET_ETS_VALUES                         = C3.next<__COUNTER__>();	// niffiwan
-constexpr int OP_CALL_SSM_STRIKE                        = C3.next<__COUNTER__>(); // X3N0-Life-Form
-constexpr int OP_SET_MOTION_DEBRIS                      = C3.next<__COUNTER__>();    // The E
-constexpr int OP_HUD_SET_CUSTOM_GAUGE_ACTIVE            = C3.next<__COUNTER__>(); 	// The E, just revamped a bit by Axem
-constexpr int OP_HUD_SET_BUILTIN_GAUGE_ACTIVE           = C3.next<__COUNTER__>(); 	// The E, just revamped a bit by Axem
-constexpr int OP_SCRIPT_EVAL_MULTI                      = C3.next<__COUNTER__>();	// Karajorma
-constexpr int OP_PAUSE_SOUND_FROM_FILE                  = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_SCRIPT_EVAL_BLOCK                      = C3.next<__COUNTER__>(); // niffiwan
-constexpr int OP_BEAM_FLOATING_FIRE                     = C3.next<__COUNTER__>();	// MageKing17
-constexpr int OP_TURRET_SET_PRIMARY_AMMO                = C3.next<__COUNTER__>();	// DahBlount, part of the turret ammo changes
-constexpr int OP_TURRET_SET_SECONDARY_AMMO              = C3.next<__COUNTER__>();	// DahBlount, part of the turret ammo changes
-constexpr int OP_JETTISON_CARGO_NEW                     = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_STRING_CONCATENATE_BLOCK               = C3.next<__COUNTER__>();	// Goober5000
+   OP_CANCEL_FUTURE_WAVES,	// naomimyselfandi
+   OP_COPY_CONTAINER,	// jg18
+   OP_APPLY_CONTAINER_FILTER,	// jg18
+   OP_STOP_LOOPING_ANIMATION,	// Lafiel
+   OP_LOCK_TRANSLATING_SUBSYSTEM,	// Goober5000
+   OP_FREE_TRANSLATING_SUBSYSTEM,	// Goober5000
+   OP_REVERSE_TRANSLATING_SUBSYSTEM,	// Goober5000
+   OP_TRANSLATING_SUBSYS_SET_SPEED,	// Goober5000
+   OP_ALTER_WING_FLAG,	// Goober5000
+   OP_TOGGLE_ASTEROID_FIELD,	// MjnMixael
+   OP_HUD_FORCE_SENSOR_STATIC,	// MjnMixael
+   OP_SET_GRAVITY_ACCEL,	// Asteroth
+   OP_SET_ORDER_ALLOWED_TARGET,	// MjnMixael
+   OP_USED_CHEAT,	// Kiloku
+   OP_SET_ASTEROID_FIELD,	// MjnMixael
+   OP_SET_DEBRIS_FIELD,	// MjnMixael
 
-constexpr int OP_MODIFY_VARIABLE_XSTR                   = C3.next<__COUNTER__>();	// m!m
-constexpr int OP_RESET_POST_EFFECTS                     = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_ADD_REMOVE_HOTKEY                      = C3.next<__COUNTER__>();    // wookieejedi
-constexpr int OP_TECH_REMOVE_INTEL_XSTR                 = C3.next<__COUNTER__>();    // wookieejedi
-constexpr int OP_TECH_REMOVE_INTEL                      = C3.next<__COUNTER__>();   // wookieejedi
-constexpr int OP_CHANGE_BACKGROUND                      = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_CLEAR_DEBRIS                           = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_SET_DEBRIEFING_PERSONA                 = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_ADD_TO_COLGROUP_NEW                    = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_REMOVE_FROM_COLGROUP_NEW               = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_GET_POWER_OUTPUT                       = C3.next<__COUNTER__>();	// The E
-constexpr int OP_TURRET_SET_FORCED_TARGET               = C3.next<__COUNTER__>();	// Asteroth
-constexpr int OP_TURRET_SET_FORCED_SUBSYS_TARGET        = C3.next<__COUNTER__>();	// Asteroth
-constexpr int OP_TURRET_CLEAR_FORCED_TARGET             = C3.next<__COUNTER__>();	// Asteroth
-constexpr int OP_SEND_MESSAGE_CHAIN                     = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_TURRET_SET_INACCURACY                  = C3.next<__COUNTER__>();	// Asteroth
+   // OP_CATEGORY_AI
+   // defined for AI goals
 
-constexpr int OP_REPLACE_TEXTURE                        = C3.next<__COUNTER__>();	// Lafiel
-constexpr int OP_NEBULA_CHANGE_FOG_COLOR                = C3.next<__COUNTER__>();	// Asteroth
-constexpr int OP_SET_ALPHA_MULT                         = C3.next<__COUNTER__>();	// Lafiel
-constexpr int OP_DESTROY_INSTANTLY_WITH_DEBRIS          = C3.next<__COUNTER__>();	// Asteroth
-constexpr int OP_TRIGGER_ANIMATION_NEW                  = C3.next<__COUNTER__>();	// Lafiel
-constexpr int OP_UPDATE_MOVEABLE                        = C3.next<__COUNTER__>();	// Lafiel
-constexpr int OP_NAV_SET_COLOR                          = C3.next<__COUNTER__>(); 	// Goober5000
-constexpr int OP_NAV_SET_VISITED_COLOR                  = C3.next<__COUNTER__>(); 	// Goober5000
-constexpr int OP_CONTAINER_ADD_TO_LIST                  = C3.next<__COUNTER__>();	// Karajorma/jg18
-constexpr int OP_CONTAINER_REMOVE_FROM_LIST             = C3.next<__COUNTER__>();	// Karajorma/jg18
-constexpr int OP_CONTAINER_ADD_TO_MAP                   = C3.next<__COUNTER__>();	// Karajorma/jg18
-constexpr int OP_CONTAINER_REMOVE_FROM_MAP              = C3.next<__COUNTER__>();	// Karajorma/jg18
-constexpr int OP_CONTAINER_GET_MAP_KEYS                 = C3.next<__COUNTER__>();	// Karajorma/jg18
-constexpr int OP_CLEAR_CONTAINER                        = C3.next<__COUNTER__>();	// Karajorma/jg18
-constexpr int OP_ADD_BACKGROUND_BITMAP_NEW              = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_ADD_SUN_BITMAP_NEW                     = C3.next<__COUNTER__>();	// Goober5000
+   OP_AI_CHASE,
+   OP_AI_DOCK,
+   OP_AI_UNDOCK,
+   OP_AI_WARP_OUT,
+   OP_AI_WAYPOINTS,
+   OP_AI_WAYPOINTS_ONCE,
+   OP_AI_DESTROY_SUBSYS,
+   OP_AI_DISABLE_SHIP,
+   OP_AI_DISARM_SHIP,
+   OP_AI_GUARD,
+   OP_AI_CHASE_ANY,
+   OP_AI_EVADE_SHIP,
+   OP_AI_STAY_NEAR_SHIP,
+   OP_AI_KEEP_SAFE_DISTANCE,
+   OP_AI_IGNORE,
+   OP_AI_STAY_STILL,
+   OP_AI_PLAY_DEAD,
+   OP_AI_IGNORE_NEW,	// Goober5000
+   OP_AI_FORM_ON_WING, // The E
+   OP_AI_CHASE_SHIP_CLASS,	// Goober5000
+   OP_AI_PLAY_DEAD_PERSISTENT,	// Goober5000
+   OP_AI_FLY_TO_SHIP,	// Goober5000
+   OP_AI_REARM_REPAIR,	// Goober5000
 
-constexpr int OP_CANCEL_FUTURE_WAVES                    = C3.next<__COUNTER__>();	// naomimyselfandi
-constexpr int OP_COPY_CONTAINER                         = C3.next<__COUNTER__>();	// jg18
-constexpr int OP_APPLY_CONTAINER_FILTER                 = C3.next<__COUNTER__>();	// jg18
-constexpr int OP_STOP_LOOPING_ANIMATION                 = C3.next<__COUNTER__>();	// Lafiel
-constexpr int OP_LOCK_TRANSLATING_SUBSYSTEM             = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_FREE_TRANSLATING_SUBSYSTEM             = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_REVERSE_TRANSLATING_SUBSYSTEM          = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_TRANSLATING_SUBSYS_SET_SPEED           = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_ALTER_WING_FLAG                        = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_TOGGLE_ASTEROID_FIELD                  = C3.next<__COUNTER__>();	// MjnMixael
-constexpr int OP_HUD_FORCE_SENSOR_STATIC                = C3.next<__COUNTER__>();	// MjnMixael
-constexpr int OP_SET_GRAVITY_ACCEL                      = C3.next<__COUNTER__>();	// Asteroth
-constexpr int OP_SET_ORDER_ALLOWED_TARGET               = C3.next<__COUNTER__>();	// MjnMixael
-constexpr int OP_USED_CHEAT                             = C3.next<__COUNTER__>();	// Kiloku
-constexpr int OP_SET_ASTEROID_FIELD                     = C3.next<__COUNTER__>();	// MjnMixael
-constexpr int OP_SET_DEBRIS_FIELD                       = C3.next<__COUNTER__>();	// MjnMixael
+   // OP_CATEGORY_UNLISTED
 
-// OP_CATEGORY_AI
-// defined for AI goals
+   OP_GOALS_ID,
+   OP_NEXT_MISSION,		// used in campaign files for branching
+   OP_IS_DESTROYED,
+   OP_IS_SUBSYSTEM_DESTROYED,
+   OP_IS_DISABLED,
+   OP_IS_DISARMED,
+   OP_HAS_DOCKED,
+   OP_HAS_UNDOCKED,
+   OP_HAS_ARRIVED,
+   OP_HAS_DEPARTED,
+   OP_WAYPOINTS_DONE,
+   OP_ADD_SHIP_GOAL,
+   OP_CLEAR_SHIP_GOALS,
+   OP_ADD_WING_GOAL,
+   OP_CLEAR_WING_GOALS,
+   OP_AI_CHASE_WING,
+   OP_AI_GUARD_WING,
+   OP_EVENT_TRUE,
+   OP_EVENT_FALSE,
+   OP_PREVIOUS_GOAL_INCOMPLETE,
+   OP_PREVIOUS_EVENT_INCOMPLETE,
+   OP_AI_WARP,
+   OP_IS_CARGO_KNOWN,
+   OP_COND,
+   OP_END_OF_CAMPAIGN,
 
-constexpr int OP_AI_CHASE                               = C3.next<__COUNTER__>();
-constexpr int OP_AI_DOCK                                = C3.next<__COUNTER__>();
-constexpr int OP_AI_UNDOCK                              = C3.next<__COUNTER__>();
-constexpr int OP_AI_WARP_OUT                            = C3.next<__COUNTER__>();
-constexpr int OP_AI_WAYPOINTS                           = C3.next<__COUNTER__>();
-constexpr int OP_AI_WAYPOINTS_ONCE                      = C3.next<__COUNTER__>();
-constexpr int OP_AI_DESTROY_SUBSYS                      = C3.next<__COUNTER__>();
-constexpr int OP_AI_DISABLE_SHIP                        = C3.next<__COUNTER__>();
-constexpr int OP_AI_DISARM_SHIP                         = C3.next<__COUNTER__>();
-constexpr int OP_AI_GUARD                               = C3.next<__COUNTER__>();
-constexpr int OP_AI_CHASE_ANY                           = C3.next<__COUNTER__>();
-constexpr int OP_AI_EVADE_SHIP                          = C3.next<__COUNTER__>();
-constexpr int OP_AI_STAY_NEAR_SHIP                      = C3.next<__COUNTER__>();
-constexpr int OP_AI_KEEP_SAFE_DISTANCE                  = C3.next<__COUNTER__>();
-constexpr int OP_AI_IGNORE                              = C3.next<__COUNTER__>();
-constexpr int OP_AI_STAY_STILL                          = C3.next<__COUNTER__>();
-constexpr int OP_AI_PLAY_DEAD                           = C3.next<__COUNTER__>();
-constexpr int OP_AI_IGNORE_NEW                          = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_AI_FORM_ON_WING                        = C3.next<__COUNTER__>(); // The E
-constexpr int OP_AI_CHASE_SHIP_CLASS                    = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_AI_PLAY_DEAD_PERSISTENT                = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_AI_FLY_TO_SHIP                         = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_AI_REARM_REPAIR                        = C3.next<__COUNTER__>();	// Goober5000
+   // OP_CATEGORY_TRAINING
+   // training sexps
 
-// OP_CATEGORY_UNLISTED
+   OP_KEY_PRESSED,
+   OP_KEY_RESET,
+   OP_TARGETED,
+   OP_SPEED,
+   OP_FACING,
+   OP_ORDER,
+   OP_WAYPOINT_MISSED,
+   OP_PATH_FLOWN,
+   OP_WAYPOINT_TWICE,
+   OP_TRAINING_MSG,
+   OP_FLASH_HUD_GAUGE,
+   OP_SPECIAL_CHECK,
+   OP_SECONDARIES_DEPLETED,
+   OP_FACING2,
+   OP_PRIMARIES_DEPLETED,	// Goober5000
+   OP_MISSILE_LOCKED,	// Sesquipedalian
+   OP_SET_TRAINING_CONTEXT_FLY_PATH,
+   OP_SET_TRAINING_CONTEXT_SPEED,
+   OP_KEY_RESET_MULTIPLE,	// Goober5000
+   OP_RESET_ORDERS, // Karajorma
+   OP_QUERY_ORDERS, // Karajorma
+   OP_NODE_TARGETED, // FUBAR
+   OP_IGNORE_KEY, // Karajorma
 
-constexpr int OP_GOALS_ID                               = C3.next<__COUNTER__>();
-constexpr int OP_NEXT_MISSION                           = C3.next<__COUNTER__>();		// used in campaign files for branching
-constexpr int OP_IS_DESTROYED                           = C3.next<__COUNTER__>();
-constexpr int OP_IS_SUBSYSTEM_DESTROYED                 = C3.next<__COUNTER__>();
-constexpr int OP_IS_DISABLED                            = C3.next<__COUNTER__>();
-constexpr int OP_IS_DISARMED                            = C3.next<__COUNTER__>();
-constexpr int OP_HAS_DOCKED                             = C3.next<__COUNTER__>();
-constexpr int OP_HAS_UNDOCKED                           = C3.next<__COUNTER__>();
-constexpr int OP_HAS_ARRIVED                            = C3.next<__COUNTER__>();
-constexpr int OP_HAS_DEPARTED                           = C3.next<__COUNTER__>();
-constexpr int OP_WAYPOINTS_DONE                         = C3.next<__COUNTER__>();
-constexpr int OP_ADD_SHIP_GOAL                          = C3.next<__COUNTER__>();
-constexpr int OP_CLEAR_SHIP_GOALS                       = C3.next<__COUNTER__>();
-constexpr int OP_ADD_WING_GOAL                          = C3.next<__COUNTER__>();
-constexpr int OP_CLEAR_WING_GOALS                       = C3.next<__COUNTER__>();
-constexpr int OP_AI_CHASE_WING                          = C3.next<__COUNTER__>();
-constexpr int OP_AI_GUARD_WING                          = C3.next<__COUNTER__>();
-constexpr int OP_EVENT_TRUE                             = C3.next<__COUNTER__>();
-constexpr int OP_EVENT_FALSE                            = C3.next<__COUNTER__>();
-constexpr int OP_PREVIOUS_GOAL_INCOMPLETE               = C3.next<__COUNTER__>();
-constexpr int OP_PREVIOUS_EVENT_INCOMPLETE              = C3.next<__COUNTER__>();
-constexpr int OP_AI_WARP                                = C3.next<__COUNTER__>();
-constexpr int OP_IS_CARGO_KNOWN                         = C3.next<__COUNTER__>();
-constexpr int OP_COND                                   = C3.next<__COUNTER__>();
-constexpr int OP_END_OF_CAMPAIGN                        = C3.next<__COUNTER__>();
-
-// OP_CATEGORY_TRAINING
-// training sexps
-
-constexpr int OP_KEY_PRESSED                            = C3.next<__COUNTER__>();
-constexpr int OP_KEY_RESET                              = C3.next<__COUNTER__>();
-constexpr int OP_TARGETED                               = C3.next<__COUNTER__>();
-constexpr int OP_SPEED                                  = C3.next<__COUNTER__>();
-constexpr int OP_FACING                                 = C3.next<__COUNTER__>();
-constexpr int OP_ORDER                                  = C3.next<__COUNTER__>();
-constexpr int OP_WAYPOINT_MISSED                        = C3.next<__COUNTER__>();
-constexpr int OP_PATH_FLOWN                             = C3.next<__COUNTER__>();
-constexpr int OP_WAYPOINT_TWICE                         = C3.next<__COUNTER__>();
-constexpr int OP_TRAINING_MSG                           = C3.next<__COUNTER__>();
-constexpr int OP_FLASH_HUD_GAUGE                        = C3.next<__COUNTER__>();
-constexpr int OP_SPECIAL_CHECK                          = C3.next<__COUNTER__>();
-constexpr int OP_SECONDARIES_DEPLETED                   = C3.next<__COUNTER__>();
-constexpr int OP_FACING2                                = C3.next<__COUNTER__>();
-constexpr int OP_PRIMARIES_DEPLETED                     = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_MISSILE_LOCKED                         = C3.next<__COUNTER__>();	// Sesquipedalian
-constexpr int OP_SET_TRAINING_CONTEXT_FLY_PATH          = C3.next<__COUNTER__>();
-constexpr int OP_SET_TRAINING_CONTEXT_SPEED             = C3.next<__COUNTER__>();
-constexpr int OP_KEY_RESET_MULTIPLE                     = C3.next<__COUNTER__>();	// Goober5000
-constexpr int OP_RESET_ORDERS                           = C3.next<__COUNTER__>(); // Karajorma
-constexpr int OP_QUERY_ORDERS                           = C3.next<__COUNTER__>(); // Karajorma
-constexpr int OP_NODE_TARGETED                          = C3.next<__COUNTER__>(); // FUBAR
-constexpr int OP_IGNORE_KEY                             = C3.next<__COUNTER__>(); // Karajorma
-
-// this should come after every operator
-constexpr int First_available_operator_id               = C3.next<__COUNTER__>();
-
+   // this should come after every operator
+   First_available_operator_id
+};
 
 // defines for string constants
 #define SEXP_HULL_STRING			"Hull"
