@@ -5569,8 +5569,10 @@ void game_enter_state( int old_state, int new_state )
 		scripting::hook_param("NewState", 'o', l_GameState.Set(gamestate_h(new_state))));
 
 	if(scripting::hooks::OnStateStart->isActive()) {
-		if(scripting::hooks::OnStateStart->isOverride(script_param_list))
+		if (scripting::hooks::OnStateStart->isOverride(script_param_list)) {
+			scripting::hooks::OnStateStart->run(script_param_list);
 			return;
+		}
 	}
 
 	switch (new_state) {
@@ -6097,8 +6099,7 @@ void mouse_force_pos(int x, int y);
 
 	//WMC - now do user scripting stuff
 	if (scripting::hooks::OnStateStart->isActive()) {
-		if (scripting::hooks::OnStateStart->run(script_param_list))
-			return;
+		scripting::hooks::OnStateStart->run(script_param_list);
 	}
 }
 
