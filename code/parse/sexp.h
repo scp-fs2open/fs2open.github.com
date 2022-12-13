@@ -151,7 +151,6 @@ struct ship_obj;
 // and sexp array index
 #define	FIRST_OP				0x0400
 
-// We'd use enums here, except that we can add categories and subcategories via dynamic SEXPs
 enum : int {
 	OP_CATEGORY_NONE,
 	OP_CATEGORY_OBJECTIVE,
