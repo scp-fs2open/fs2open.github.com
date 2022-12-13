@@ -14,7 +14,7 @@ std::map<animation::ModelAnimationTriggerType, bool> manual_animations = {};
 std::array<bool, MAX_SHIP_PRIMARY_BANKS> triggered_primary_banks = {false, false, false};
 std::array<bool, MAX_SHIP_SECONDARY_BANKS> triggered_secondary_banks = {false, false, false, false};
 
-void LabUi::objectChanged()
+void LabUi::object_changed()
 {
 	rebuild_after_object_change = true;
 
@@ -26,7 +26,7 @@ void LabUi::objectChanged()
 		trigger = false;
 }
 
-void LabUi::buildSpeciesEntry(species_info species_def, int species_idx) const
+void LabUi::build_species_entry(species_info species_def, int species_idx) const
 {
 	with_TreeNode(species_def.species_name)
 	{
@@ -46,19 +46,19 @@ void LabUi::buildSpeciesEntry(species_info species_def, int species_idx) const
 	}
 }
 
-void LabUi::buildShipList() const
+void LabUi::build_ship_list() const
 {
 	with_TreeNode("Ship Classes")
 	{
 		int species_idx = 0;
 		for (auto const& species_def : Species_info) {
-			buildSpeciesEntry(species_def, species_idx);
+			build_species_entry(species_def, species_idx);
 			species_idx++;
 		}
 	}
 }
 
-void LabUi::buildWeaponSubtypeList() const
+void LabUi::build_weapon_subtype_list() const
 {
 	for (auto weapon_subtype_idx = 0; weapon_subtype_idx < Num_weapon_subtypes; ++weapon_subtype_idx) {
 		with_TreeNode(Weapon_subtype_names[weapon_subtype_idx])
@@ -82,17 +82,17 @@ void LabUi::buildWeaponSubtypeList() const
 	}
 }
 
-void LabUi::buildWeaponList() const
+void LabUi::build_weapon_list() const
 {
 	//weapon display needs to be rethought
 
 	//with_TreeNode("Weapon Classes")
 	//{
-	//	buildWeaponSubtypeList();
+	//	build_weapon_subtype_list();
 	//}
 }
 
-void LabUi::buildBackgroundList() const
+void LabUi::build_background_list() const
 {
 	SCP_vector<SCP_string> missions;
 
@@ -139,22 +139,22 @@ void LabUi::buildBackgroundList() const
 	}
 }
 
-void LabUi::buildOptionsMenu()
+void LabUi::build_options_menu()
 {
 	with_Menu("Options")
 	{
-		ImGui::MenuItem("Render options", NULL, &show_render_options);
-		ImGui::MenuItem("Object selector", NULL, &show_object_selector);
-		ImGui::MenuItem("Object options", NULL, &show_object_options);
+		ImGui::MenuItem("Render options", nullptr, &show_render_options_dialog);
+		ImGui::MenuItem("Object selector", nullptr, &show_object_selector);
+		ImGui::MenuItem("Object options", nullptr, &show_object_options_dialog);
 		ImGui::MenuItem("Close lab", "ESC", &close_lab);
 	}
 }
 
-void LabUi::buildToolbarEntries()
+void LabUi::build_toolbar_entries()
 {
 	with_MainMenuBar
 	{
-		buildOptionsMenu();
+		build_options_menu();
 	}
 
 	if (close_lab) {
@@ -163,15 +163,15 @@ void LabUi::buildToolbarEntries()
 	}
 }
 
-void LabUi::createUi()
+void LabUi::create_ui()
 {
-	if (show_render_options)
-		showRenderOptions();
+	if (show_render_options_dialog)
+		show_render_options();
 
-	if (show_object_options)
-		showObjectOptions();
+	if (show_object_options_dialog)
+		show_object_options();
 
-	buildToolbarEntries();
+	build_toolbar_entries();
 
 	if (show_object_selector) {
 		with_Window("Select object and background")
@@ -179,14 +179,14 @@ void LabUi::createUi()
 
 			with_CollapsingHeader("Displayed Object")
 			{
-				buildShipList();
+				build_ship_list();
 
-				buildWeaponList();
+				build_weapon_list();
 			}
 
 			with_CollapsingHeader("Mission Background")
 			{
-				buildBackgroundList();
+				build_background_list();
 			}
 		}
 	}
@@ -225,7 +225,7 @@ const char* texture_quality_settings[] = {
 	"Maximum",
 };
 
-void LabUi::buildTextureQualityCombobox()
+void LabUi::build_texture_quality_combobox()
 {
 	with_Combo("Texture quality",
 		texture_quality_settings[static_cast<int>(getLabManager()->Renderer->getTextureQuality())])
@@ -241,7 +241,7 @@ void LabUi::buildTextureQualityCombobox()
 	}
 }
 
-void LabUi::buildTeamColorCombobox() const
+void LabUi::build_team_color_combobox() const
 {
 	if (!Team_Colors.empty()) {
 		with_Combo("Team Color setting", getLabManager()->Renderer->getCurrentTeamColor().c_str())
@@ -260,7 +260,7 @@ void LabUi::buildTeamColorCombobox() const
 	}
 }
 
-void LabUi::buildAntialiasingCombobox()
+void LabUi::build_antialiasing_combobox()
 {
 	with_Combo("Antialiasing method", antialiasing_settings[static_cast<int>(Gr_aa_mode)])
 	{
@@ -276,7 +276,7 @@ void LabUi::buildAntialiasingCombobox()
 	}
 }
 
-void LabUi::buildToneMapperCombobox()
+void LabUi::build_tone_mapper_combobox()
 {
 	with_Combo("Tonemapper", lighting_profile::tonemapper_to_name(lighting_profile::current_tonemapper()).c_str())
 	{
@@ -292,7 +292,7 @@ void LabUi::buildToneMapperCombobox()
 	}
 }
 
-void LabUi::showRenderOptions()
+void LabUi::show_render_options()
 {
 	int bloom_level = gr_bloom_intensity();
 	float ambient_factor = lighting_profile::lab_get_ambient();
@@ -331,9 +331,9 @@ void LabUi::showRenderOptions()
 			ImGui::Checkbox("Misc map", &misc_map);
 			ImGui::Checkbox("AO map", &ao_map);
 
-			buildTextureQualityCombobox();
+			build_texture_quality_combobox();
 
-			buildTeamColorCombobox();
+			build_team_color_combobox();
 		}
 
 		with_CollapsingHeader("Scene rendering options")
@@ -348,9 +348,9 @@ void LabUi::showRenderOptions()
 			ImGui::SliderFloat("Exposure", &exposure_level, 0.0f, 8.0f);
 			ImGui::SliderInt("Bloom level", &bloom_level, 0, 200);
 
-			buildAntialiasingCombobox();
+			build_antialiasing_combobox();
 
-			buildToneMapperCombobox();
+			build_tone_mapper_combobox();
 
 			if (lighting_profile::current_tonemapper() == tnm_PPC ||
 				lighting_profile::current_tonemapper() == tnm_PPC_RGB) {
@@ -438,7 +438,7 @@ void LabUi::do_triggered_anim(animation::ModelAnimationTriggerType type,
 	ImGui::TextUnformatted(colB);         \
 
 
-void LabUi::buildTableInfoTxtbox(ship_info* sip) const
+void LabUi::build_table_info_txtbox(ship_info* sip) const
 {
 	with_TreeNode("Table information")
 	{
@@ -458,7 +458,7 @@ void LabUi::buildTableInfoTxtbox(ship_info* sip) const
 	}
 }
 
-void LabUi::buildModelInfoBox_actual(ship_info* sip, polymodel* pm) const
+void LabUi::build_model_info_box_actual(ship_info* sip, polymodel* pm) const
 {
 	ImGuiTableFlags flags = ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg;
 
@@ -474,10 +474,10 @@ void LabUi::buildModelInfoBox_actual(ship_info* sip, polymodel* pm) const
 	}
 }
 
-void LabUi::buildModelInfoBox(ship_info* sip, polymodel* pm) const {
+void LabUi::build_model_info_box(ship_info* sip, polymodel* pm) const {
 	with_TreeNode("Model information")
 	{
-		buildModelInfoBox_actual(sip, pm);
+		build_model_info_box_actual(sip, pm);
 	}
 }
 
@@ -610,7 +610,7 @@ void render_subsystem(ship_subsys* ss, object* objp)
 	g3_end_frame();
 }
 
-void LabUi::buildSubsystemList(object* objp, ship* shipp) const {
+void LabUi::build_subsystem_list(object* objp, ship* shipp) const {
 	with_TreeNode("Subsystems")
 	{
 		size_t subsys_index = 0;
@@ -633,14 +633,14 @@ void LabUi::buildSubsystemList(object* objp, ship* shipp) const {
 			SCP_string subsys_name;
 			sprintf(subsys_name, "%s (%i)", subsys_name_tmp, (int)subsys_index);
 
-			buildSubsystemListEntry(subsys_name, show_subsys, subsys_index, cur_subsys, objp, shipp);
+			build_subsystem_list_entry(subsys_name, show_subsys, subsys_index, cur_subsys, objp, shipp);
 
 			subsys_index++;
 		}
 	}
 }
 
-void LabUi::buildSubsystemListEntry(SCP_string& subsys_name,
+void LabUi::build_subsystem_list_entry(SCP_string& subsys_name,
 	SCP_vector<bool>& show_subsys,
 	const size_t& subsys_index,
 	ship_subsys* cur_subsys,
@@ -671,7 +671,7 @@ void LabUi::buildSubsystemListEntry(SCP_string& subsys_name,
 	}
 }
 
-void LabUi::buildWeaponOptions(ship* shipp) const {
+void LabUi::build_weapon_options(ship* shipp) const {
 	with_TreeNode("Primaries")
 	{
 		auto bank = 0;
@@ -682,7 +682,7 @@ void LabUi::buildWeaponOptions(ship* shipp) const {
 				SCP_string text;
 				sprintf(text, "##Primary bank %i", bank);
 
-				buildPrimaryWeaponCombobox(text, wip, primary_slot);
+				build_primary_weapon_combobox(text, wip, primary_slot);
 				ImGui::SameLine();
 				static bool should_fire[MAX_SHIP_PRIMARY_BANKS] = {false, false, false};
 				SCP_string cb_text;
@@ -708,7 +708,7 @@ void LabUi::buildWeaponOptions(ship* shipp) const {
 
 				SCP_string text;
 				sprintf(text, "##Secondary bank %i", bank);
-				buildSecondaryWeaponCombobox(text, wip, secondary_slot);
+				build_secondary_weapon_combobox(text, wip, secondary_slot);
 				ImGui::SameLine();
 				static bool should_fire[MAX_SHIP_SECONDARY_BANKS] = {false, false, false, false};
 				SCP_string cb_text;
@@ -726,7 +726,7 @@ void LabUi::buildWeaponOptions(ship* shipp) const {
 	}
 }
 
-void LabUi::buildPrimaryWeaponCombobox(SCP_string& text,
+void LabUi::build_primary_weapon_combobox(SCP_string& text,
 	weapon_info* wip,
 	int& primary_slot) const
 {
@@ -744,7 +744,7 @@ void LabUi::buildPrimaryWeaponCombobox(SCP_string& text,
 	}
 }
 
-void LabUi::buildSecondaryWeaponCombobox(SCP_string& text, weapon_info* wip, int& secondary_slot) const
+void LabUi::build_secondary_weapon_combobox(SCP_string& text, weapon_info* wip, int& secondary_slot) const
 {
 	with_Combo(text.c_str(), wip->name)
 	{
@@ -793,7 +793,7 @@ void LabUi::reset_animations(ship* shipp, ship_info* sip) const
 	}
 }
 
-void LabUi::maybeShowAnimationCategory(const SCP_vector<animation::ModelAnimationSet::RegisteredTrigger>& anim_triggers,
+void LabUi::maybe_show_animation_category(const SCP_vector<animation::ModelAnimationSet::RegisteredTrigger>& anim_triggers,
 	animation::ModelAnimationTriggerType trigger_type, SCP_string label) const
 {
 	if (std::any_of(anim_triggers.begin(), anim_triggers.end(), [trigger_type](animation::ModelAnimationSet::RegisteredTrigger t) {
@@ -819,7 +819,7 @@ void LabUi::maybeShowAnimationCategory(const SCP_vector<animation::ModelAnimatio
 	}
 }
 
-void LabUi::buildAnimationOptions(ship* shipp, ship_info* sip) const
+void LabUi::build_animation_options(ship* shipp, ship_info* sip) const
 {
 	with_TreeNode("Animations")
 	{
@@ -830,11 +830,11 @@ void LabUi::buildAnimationOptions(ship* shipp, ship_info* sip) const
 		}
 
 		if (shipp->weapons.num_primary_banks > 0) {
-			createPrimaryWeaponAnimNode(shipp, sip);
+			create_primary_weapon_anim_node(shipp, sip);
 		}
 
 		if (shipp->weapons.num_secondary_banks > 0) {
-			createSecondaryWeaponAnimNode(shipp, sip);
+			create_secondary_weapon_anim_node(shipp, sip);
 		}
 
 		if (std::any_of(anim_triggers.begin(),
@@ -842,34 +842,34 @@ void LabUi::buildAnimationOptions(ship* shipp, ship_info* sip) const
 				[](animation::ModelAnimationSet::RegisteredTrigger t) {
 					return t.type == animation::ModelAnimationTriggerType::Afterburner;
 				})) {
-			createAfterburnerAnimationNode(anim_triggers);
+			create_afterburner_animation_node(anim_triggers);
 		}
 
-		maybeShowAnimationCategory(anim_triggers,
+		maybe_show_animation_category(anim_triggers,
 			animation::ModelAnimationTriggerType::TurretFiring,
 			"Turret firing##anims");
-		maybeShowAnimationCategory(anim_triggers,
+		maybe_show_animation_category(anim_triggers,
 			animation::ModelAnimationTriggerType::TurretFired,
 			"Turret fired##anims");
-		maybeShowAnimationCategory(anim_triggers,
+		maybe_show_animation_category(anim_triggers,
 			animation::ModelAnimationTriggerType::Scripted,
 			"Scripted animations##anims");
-		maybeShowAnimationCategory(anim_triggers,
+		maybe_show_animation_category(anim_triggers,
 			animation::ModelAnimationTriggerType::DockBayDoor,
 			"Dock bay door##anims");
-		maybeShowAnimationCategory(anim_triggers,
+		maybe_show_animation_category(anim_triggers,
 			animation::ModelAnimationTriggerType::Docking_Stage1,
 			"Docking stage 1##anims");
-		maybeShowAnimationCategory(anim_triggers,
+		maybe_show_animation_category(anim_triggers,
 			animation::ModelAnimationTriggerType::Docking_Stage2,
 			"Docking stage 2##anims");
-		maybeShowAnimationCategory(anim_triggers,
+		maybe_show_animation_category(anim_triggers,
 			animation::ModelAnimationTriggerType::Docking_Stage3,
 			"Docking stage 3##anims");
 	}
 }
 
-void LabUi::createAfterburnerAnimationNode(
+void LabUi::create_afterburner_animation_node(
 	const SCP_vector<animation::ModelAnimationSet::RegisteredTrigger>& anim_triggers) const
 {
 	with_TreeNode("Afterburner")
@@ -878,10 +878,9 @@ void LabUi::createAfterburnerAnimationNode(
 			for (const auto& anim_trigger : anim_triggers) {
 				if (anim_trigger.type == animation::ModelAnimationTriggerType::Afterburner) {
 					auto& ab_triggers = manual_animation_triggers[animation::ModelAnimationTriggerType::Afterburner];
-					auto direction = ab_triggers[anim_trigger.name];
 					do_triggered_anim(animation::ModelAnimationTriggerType::Afterburner,
 						anim_trigger.name,
-						direction,
+						ab_triggers[anim_trigger.name],
 						anim_trigger.subtype);
 					ab_triggers[anim_trigger.name] = !ab_triggers[anim_trigger.name];
 				}
@@ -890,7 +889,7 @@ void LabUi::createAfterburnerAnimationNode(
 	}
 }
 
-void LabUi::createSecondaryWeaponAnimNode(
+void LabUi::create_secondary_weapon_anim_node(
 	ship* shipp,
 	ship_info* sip) const
 {
@@ -912,7 +911,7 @@ void LabUi::createSecondaryWeaponAnimNode(
 	}
 }
 
-void LabUi::createPrimaryWeaponAnimNode(
+void LabUi::create_primary_weapon_anim_node(
 	ship* shipp,
 	ship_info* sip) const
 {
@@ -934,7 +933,7 @@ void LabUi::createPrimaryWeaponAnimNode(
 	}
 }
 
-void LabUi::showObjectOptions() const
+void LabUi::show_object_options() const
 {
 	
 	with_Window("Object Information")
@@ -947,11 +946,11 @@ void LabUi::showObjectOptions() const
 
 			with_CollapsingHeader(sip->name)
 			{
-				buildTableInfoTxtbox(sip);
+				build_table_info_txtbox(sip);
 
-				buildModelInfoBox(sip, pm);
+				build_model_info_box(sip, pm);
 
-				buildSubsystemList(objp, shipp);
+				build_subsystem_list(objp, shipp);
 			}
 
 			with_CollapsingHeader("Object actions")
@@ -966,13 +965,13 @@ void LabUi::showObjectOptions() const
 						}
 					}
 
-					buildAnimationOptions(shipp, sip);
+					build_animation_options(shipp, sip);
 				}
 			}
 
 			with_CollapsingHeader("Weapons")
 			{
-				buildWeaponOptions(shipp);
+				build_weapon_options(shipp);
 			}
 		}
 	}

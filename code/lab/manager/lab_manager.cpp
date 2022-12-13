@@ -99,7 +99,7 @@ void LabManager::onFrame(float frametime) {
 
 	Renderer->onFrame(frametime);
 
-	labUi.createUi();
+	labUi.create_ui();
 
 	int key = game_check_key();
 
