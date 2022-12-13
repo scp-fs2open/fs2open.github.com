@@ -74,7 +74,7 @@ vec3d	Original_vec_to_deader;
 
 static bool global_damage = false;
 
-const std::shared_ptr<scripting::Hook> OnPainFlashHook = scripting::Hook::Factory(
+const std::shared_ptr<scripting::Hook<>> OnPainFlashHook = scripting::Hook<>::Factory(
 	"On Pain Flash", "Called when a pain flash is displayed.",
 	{ 		
 		{"Pain_Type", "number", "The type of pain flash displayed: shield = 0 and hull = 1."},
@@ -301,11 +301,12 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 	}
 
 	// call a scripting hook for the subsystem (regardless of whether it's added to the mission log)
-	if (Script_system.IsActiveAction(CHA_ONSUBSYSDEATH)) {
-		Script_system.SetHookObject("Ship", ship_objp);
-		Script_system.SetHookVar("Subsystem", 'o', scripting::api::l_Subsystem.Set(scripting::api::ship_subsys_h(ship_objp, subsys)));
-		Script_system.RunCondition(CHA_ONSUBSYSDEATH, ship_objp);
-		Script_system.RemHookVars({"Ship", "Subsystem"});
+	if (scripting::hooks::OnSubsystemDestroyed->isActive()) {
+		scripting::hooks::OnSubsystemDestroyed->run(scripting::hooks::SubsystemDeathConditions{ ship_p, subsys },
+			scripting::hook_param_list(
+				scripting::hook_param("Ship", 'o', ship_objp),
+				scripting::hook_param("Subsystem", 'o', scripting::api::l_Subsystem.Set(scripting::api::ship_subsys_h(ship_objp, subsys)))
+			));
 	}
 
 	if (!(subsys->flags[Ship::Subsystem_Flags::No_disappear])) {
@@ -1786,13 +1787,15 @@ static void ship_vaporize(ship *shipp)
 void ship_hit_kill(object *ship_objp, object *other_obj, vec3d *hitpos, float percent_killed, bool self_destruct, bool always_log_other_obj)
 {
 	Assert(ship_objp);	// Goober5000 - but not other_obj, not only for sexp but also for self-destruct
+	ship *sp = &Ships[ship_objp->instance];
 
 	if (scripting::hooks::OnShipDeathStarted->isActive())
 	{
 		// add scripting hook for 'On Ship Death Started' -- Goober5000
 		// hook is placed at the beginning of this function to allow the scripter to
 		// actually have access to the ship before any death routines (such as mission logging) are executed
-		scripting::hooks::OnShipDeathStarted->run(scripting::hook_param_list(
+		scripting::hooks::OnShipDeathStarted->run(scripting::hooks::ShipDeathConditions{ sp },
+			scripting::hook_param_list(
 			scripting::hook_param("Ship", 'o', ship_objp),
 			scripting::hook_param("Killer", 'o', other_obj),
 			scripting::hook_param("Hitpos",
@@ -1812,8 +1815,8 @@ void ship_hit_kill(object *ship_objp, object *other_obj, vec3d *hitpos, float pe
 				scripting::api::l_Vector.Set(hitpos ? *hitpos : vmd_zero_vector),
 				hitpos != nullptr));
 
-		if (scripting::hooks::OnDeath->isOverride(onDeathParamList, ship_objp)) {
-			scripting::hooks::OnDeath->run(onDeathParamList, ship_objp);
+		if (scripting::hooks::OnDeath->isOverride(scripting::hooks::ObjectDeathConditions{ ship_objp }, onDeathParamList)) {
+			scripting::hooks::OnDeath->run(scripting::hooks::ObjectDeathConditions{ ship_objp }, onDeathParamList);
 			return;
 		}
 	}
@@ -1829,19 +1832,17 @@ void ship_hit_kill(object *ship_objp, object *other_obj, vec3d *hitpos, float pe
 				scripting::api::l_Vector.Set(hitpos ? *hitpos : vmd_zero_vector),
 				hitpos != nullptr));
 
-		if (scripting::hooks::OnShipDeath->isOverride(onDeathParamList, ship_objp)) {
-			scripting::hooks::OnShipDeath->run(onDeathParamList, ship_objp);
+		if (scripting::hooks::OnShipDeath->isOverride(scripting::hooks::ShipDeathConditions{ sp }, onDeathParamList)) {
+			scripting::hooks::OnShipDeath->run(scripting::hooks::ShipDeathConditions{ sp }, onDeathParamList);
 			return;
 		}
 	}
 
-	ship *sp;
 	char *killer_ship_name;
 	int killer_damage_percent = 0;
 	int killer_index = -1;
 	object *killer_objp = NULL;
 
-	sp = &Ships[ship_objp->instance];
 	show_dead_message(ship_objp, other_obj);
 
 	if (ship_objp == Player_obj) {
@@ -1993,7 +1994,7 @@ void ship_hit_kill(object *ship_objp, object *other_obj, vec3d *hitpos, float pe
 				scripting::api::l_Vector.Set(hitpos ? *hitpos : vmd_zero_vector),
 				hitpos != nullptr));
 
-		scripting::hooks::OnDeath->run(onDeathParamList, ship_objp);
+		scripting::hooks::OnDeath->run(scripting::hooks::ObjectDeathConditions{ ship_objp }, onDeathParamList);
 	}
 	if (scripting::hooks::OnShipDeath->isActive()) {
 		auto onDeathParamList = scripting::hook_param_list(
@@ -2004,7 +2005,7 @@ void ship_hit_kill(object *ship_objp, object *other_obj, vec3d *hitpos, float pe
 				scripting::api::l_Vector.Set(hitpos ? *hitpos : vmd_zero_vector),
 				hitpos != nullptr));
 
-		scripting::hooks::OnShipDeath->run(onDeathParamList, ship_objp);
+		scripting::hooks::OnShipDeath->run(scripting::hooks::ShipDeathConditions{ sp }, onDeathParamList);
 	}
 }
 

@@ -3,10 +3,14 @@
 
 #include "engine.h"
 
+#include "parse/parselo.h"
 #include "osapi/outwnd.h"
 #include "scripting/ade_api.h"
 #include "scripting/api/objs/tracing_category.h"
 #include "scripting/scripting.h"
+#include "scripting/hook_api.h"
+
+extern int cache_condition(ConditionalType type, const SCP_string& value);
 
 namespace scripting {
 namespace api {
@@ -38,12 +42,10 @@ ADE_FUNC(addHook,
 		return ADE_RETURN_FALSE;
 	}
 
-	ConditionedHook cond_hook;
-
 	script_action action;
-	action.action_type = scripting_string_to_action(hook_name);
+	auto action_hook = scripting_string_to_action(hook_name);
 
-	if (action.action_type == CHA_NONE) {
+	if (action_hook == nullptr) {
 		LuaError(L, "Invalid hook name '%s'!", hook_name);
 		return ADE_RETURN_FALSE;
 	}
@@ -55,8 +57,6 @@ ADE_FUNC(addHook,
 		action.hook.override_function.language = SC_LUA;
 		action.hook.override_function.function = override_func;
 	}
-
-	cond_hook.AddAction(&action);
 
 	if (conditionals.isValid()) {
 		for (const auto& tableEntry : conditionals) {
@@ -74,16 +74,29 @@ ADE_FUNC(addHook,
 				return ADE_RETURN_FALSE;
 			}
 
-			script_condition cond;
-			cond.condition_type   = scripting_string_to_condition(key.getValue<SCP_string>().c_str());
-			cond.condition_string = value.getValue<SCP_string>();
-			cond.condition_cached_value = -1;
+			const SCP_string& condition_key = key.getValue<SCP_string>();
+			auto condition = scripting_string_to_condition(condition_key.c_str());
+			SCP_string condition_value = value.getValue<SCP_string>();
 
-			cond_hook.AddCondition(&cond);
+			if (condition != CHC_NONE) {
+				//It's a global condition
+				int cache = cache_condition(condition, condition_value);
+				action.global_conditions.emplace_back(script_condition{ condition, std::move(condition_value), cache });
+			}
+			else {
+				auto condition_it = action_hook->_conditions.find(condition_key);
+
+				if (condition_it == action_hook->_conditions.end()) {
+					LuaError(L, "Condition '%s' is not valid for hook '%s'. The hook will not evaluate!", condition_value.c_str(), action_hook->getHookName().c_str());
+					return ADE_RETURN_FALSE;
+				}
+
+				action.local_conditions.emplace_back(condition_it->second->parse(condition_value));
+			}
 		}
 	}
 
-	Script_system.AddConditionedHook(std::move(cond_hook));
+	Script_system.AddConditionedHook(action_hook->getHookId(), std::move(action));
 	return ADE_RETURN_TRUE;
 }
 

@@ -62,7 +62,9 @@
 #include "parse/generic_log.h"
 #include "parse/parselo.h"
 #include "parse/sexp_container.h"
+#include "scripting/global_hooks.h"
 #include "scripting/hook_api.h"
+#include "scripting/hook_conditions.h"
 #include "scripting/scripting.h"
 #include "species_defs/species_defs.h"
 #include "playerman/player.h"
@@ -412,14 +414,14 @@ void convertFSMtoFS2();
 MONITOR(NumShipArrivals)
 MONITOR(NumShipDepartures)
 
-const std::shared_ptr<scripting::Hook> OnDepartureStartedHook = scripting::Hook::Factory(
+const std::shared_ptr<scripting::Hook<scripting::hooks::ShipDepartConditions>> OnDepartureStartedHook = scripting::Hook<scripting::hooks::ShipDepartConditions>::Factory(
 	"On Departure Started", "Called when a ship starts the departure process.",
 	{
 		{"Self", "ship", "An alias for Ship."},
 		{"Ship", "ship", "The ship that has begun the departure process."},
 	});
 
- const std::shared_ptr<scripting::Hook> OnLoadoutAboutToParseHook = scripting::Hook::Factory("On Loadout About To Parse",
+ const std::shared_ptr<scripting::Hook<>> OnLoadoutAboutToParseHook = scripting::Hook<>::Factory("On Loadout About To Parse",
 	"Called during mission load just before parsing the team loadout.",{});
 
 // Goober5000
@@ -2408,10 +2410,12 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 	if (Game_mode & GM_IN_MISSION && ((shipp->wingnum == -1) || (brought_in_docked_wing))) {
 		object *anchor_objp = (anchor_objnum >= 0) ? &Objects[anchor_objnum] : nullptr;
 
-		if (Script_system.IsActiveAction(CHA_ONSHIPARRIVE)) {
-			Script_system.SetHookObjects(2, "Ship", &Objects[objnum], "Parent", anchor_objp);
-			Script_system.RunCondition(CHA_ONSHIPARRIVE, &Objects[objnum]);
-			Script_system.RemHookVars({"Ship", "Parent"});
+		if (scripting::hooks::OnShipArrive->isActive()) {
+			scripting::hooks::OnShipArrive->run(scripting::hooks::ShipArriveConditions{ shipp, p_objp->arrival_location, anchor_objp },
+				scripting::hook_param_list(
+					scripting::hook_param("Ship", 'o', &Objects[objnum]),
+					scripting::hook_param("Parent", 'o', anchor_objp, anchor_objp != nullptr)
+				));
 		}
 	}
 
@@ -6575,10 +6579,12 @@ void mission_set_wing_arrival_location( wing *wingp, int num_to_set )
 			object *objp = &Objects[Ships[wingp->ship_index[index]].objnum];
 			object *anchor_objp = (anchor_objnum >= 0) ? &Objects[anchor_objnum] : nullptr;
 
-			if (Script_system.IsActiveAction(CHA_ONSHIPARRIVE)) {
-				Script_system.SetHookObjects(2, "Ship", objp, "Parent", anchor_objp);
-				Script_system.RunCondition(CHA_ONSHIPARRIVE, objp);
-				Script_system.RemHookVars({"Ship", "Parent"});
+			if (scripting::hooks::OnShipArrive->isActive()) {
+				scripting::hooks::OnShipArrive->run(scripting::hooks::ShipArriveConditions{ &Ships[wingp->ship_index[index]], wingp->arrival_location, anchor_objp },
+					scripting::hook_param_list(
+						scripting::hook_param("Ship", 'o', objp),
+						scripting::hook_param("Parent", 'o', anchor_objp, anchor_objp != nullptr)
+					));
 			}
 
 			if (wingp->arrival_location != ARRIVE_FROM_DOCK_BAY) {
@@ -7581,13 +7587,14 @@ int mission_do_departure(object *objp, bool goal_is_to_warp)
 		beginning_departure = true;
 		mprintf(("Entered mission_do_departure() for %s\n", shipp->ship_name));
 
-		if (OnDepartureStartedHook->isActive())
-		{
-			// add scripting hook for 'On Departure Started' --wookieejedi
-			// hook is placed at the beginning of this function to allow the scripter to
-			// actually have access to the ship's departure decisions before they are all executed
-			OnDepartureStartedHook->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', objp), scripting::hook_param("Ship", 'o', objp)));
-		}
+	if (OnDepartureStartedHook->isActive())
+	{
+		// add scripting hook for 'On Departure Started' --wookieejedi
+		// hook is placed at the beginning of this function to allow the scripter to
+		// actually have access to the ship's departure decisions before they are all executed
+		OnDepartureStartedHook->run(scripting::hooks::ShipDepartConditions{ shipp },
+			scripting::hook_param_list(scripting::hook_param("Self", 'o', objp), scripting::hook_param("Ship", 'o', objp)));
+	}
 
 		// abort rearm, because if we entered this function we're either going to depart via hyperspace, depart via bay,
 		// or revert to our default behavior

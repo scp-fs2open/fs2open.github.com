@@ -199,7 +199,7 @@ static scrollback_buttons Buttons[GR_NUM_RESOLUTIONS][NUM_BUTTONS] = {
 	}
 };
 
-const auto OnHudMessageReceivedHook = scripting::Hook::Factory(
+const auto OnHudMessageReceivedHook = scripting::Hook<>::Factory(
 	"On HUD Message Received",
 	"Called when a HUD message is received. For normal messages this will be called with the final text that appears "
 	"on the HUD (e.g. [ship]: [message]). Will also be called for engine generated messages.",

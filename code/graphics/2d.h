@@ -30,6 +30,7 @@ class GPUMemoryHeap;
 } // namespace util
 } // namespace graphics
 namespace scripting {
+template<typename condition_t>
 class OverridableHook;
 }
 
@@ -75,7 +76,7 @@ extern bool High_dynamic_range;
 
 extern os::ViewportState Gr_configured_window_state;
 
-extern const std::shared_ptr<scripting::OverridableHook> OnFrameHook;
+extern const std::shared_ptr<scripting::OverridableHook<void>> OnFrameHook;
 
 class material;
 class model_material;

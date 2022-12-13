@@ -1230,6 +1230,8 @@ add_file_folder("Scripting"
 	scripting/global_hooks.h
 	scripting/hook_api.cpp
 	scripting/hook_api.h
+	scripting/hook_conditions.cpp
+	scripting/hook_conditions.h
 	scripting/lua.cpp
 	scripting/scripting.cpp
 	scripting/scripting.h

@@ -1694,9 +1694,8 @@ static void asteroid_maybe_break_up(object *pasteroid_obj)
 		bool hooked = scripting::hooks::OnDeath->isActive();
 
 		if (hooked) {
-			skip = scripting::hooks::OnDeath->isOverride(
-				scripting::hook_param_list(scripting::hook_param("Self", 'o', pasteroid_obj)),
-				pasteroid_obj);
+			skip = scripting::hooks::OnDeath->isOverride(scripting::hooks::ObjectDeathConditions{ pasteroid_obj },
+				scripting::hook_param_list(scripting::hook_param("Self", 'o', pasteroid_obj)));
 		}
 		if (!skip)
 		{
@@ -1804,16 +1803,14 @@ static void asteroid_maybe_break_up(object *pasteroid_obj)
 			asp->final_death_time = TIMESTAMP::invalid();
 		}
 		if (hooked) {
-			scripting::hooks::OnDeath->run(
-				scripting::hook_param_list(scripting::hook_param("Self", 'o', pasteroid_obj)),
-				pasteroid_obj);
+			scripting::hooks::OnDeath->run(scripting::hooks::ObjectDeathConditions{ pasteroid_obj },
+				scripting::hook_param_list(scripting::hook_param("Self", 'o', pasteroid_obj)));
 		}
 		if (scripting::hooks::OnAsteroidDeath->isActive()) {
 			scripting::hooks::OnAsteroidDeath->run(
 				scripting::hook_param_list(
 					scripting::hook_param("Asteroid", 'o', pasteroid_obj),
-					scripting::hook_param("Hitpos", 'o', asp->death_hit_pos)),
-				pasteroid_obj);
+					scripting::hook_param("Hitpos", 'o', asp->death_hit_pos)));
 		}
 	}
 }

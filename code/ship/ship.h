@@ -40,11 +40,6 @@
 class object;
 class WarpEffect;
 
-namespace scripting
-{
-	class Hook;
-}
-
 //	Part of the player died system.
 extern vec3d	Original_vec_to_deader;
 

@@ -568,7 +568,7 @@ SCP_vector<ship_counts>	Ship_type_counts;
 
 SCP_vector<wing_formation> Wing_formations;
 
-const std::shared_ptr<scripting::Hook> OnCountermeasureFireHook = scripting::Hook::Factory("On Countermeasure Fire",
+const std::shared_ptr<scripting::Hook<scripting::hooks::ShipSourceConditions>> OnCountermeasureFireHook = scripting::Hook<scripting::hooks::ShipSourceConditions>::Factory("On Countermeasure Fire",
 	"Called when a ship fires a countermeasure.",
 	{
 		{"Ship", "ship", "The ship that has fired the countermeasure."},
@@ -8213,11 +8213,14 @@ void ship_destroy_instantly(object *ship_objp, bool with_debris)
 	Assert(ship_objp->type == OBJ_SHIP);
 	Assert(!(ship_objp == Player_obj));
 
+	ship* shipp = &Ships[ship_objp->instance];
+
 	if (scripting::hooks::OnShipDeathStarted->isActive()) {
 		// add scripting hook for 'On Ship Death Started' -- Goober5000
 		// hook is placed at the beginning of this function to allow the scripter to
 		// actually have access to the ship before any death routines (such as mission logging) are executed
-		scripting::hooks::OnShipDeathStarted->run(scripting::hook_param_list(scripting::hook_param("Ship", 'o', ship_objp)));
+		scripting::hooks::OnShipDeathStarted->run(scripting::hooks::ShipDeathConditions{ shipp },
+			scripting::hook_param_list(scripting::hook_param("Ship", 'o', ship_objp)));
 	}
 
 	// undocking and death preparation
@@ -8227,18 +8230,18 @@ void ship_destroy_instantly(object *ship_objp, bool with_debris)
 	if (with_debris)
 		shipfx_blow_up_model(ship_objp, 0, 0, &ship_objp->pos);
 
-	mission_log_add_entry(LOG_SELF_DESTRUCTED, Ships[ship_objp->instance].ship_name, NULL );
+	mission_log_add_entry(LOG_SELF_DESTRUCTED, shipp->ship_name, NULL );
 	
 	// scripting stuff
 	if (scripting::hooks::OnDeath->isActive()) {
-		scripting::hooks::OnDeath->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', ship_objp),
-			scripting::hook_param("Ship", 'o', ship_objp)),
-			ship_objp);
+		scripting::hooks::OnDeath->run(scripting::hooks::ObjectDeathConditions{ ship_objp },
+			scripting::hook_param_list(scripting::hook_param("Self", 'o', ship_objp),
+			scripting::hook_param("Ship", 'o', ship_objp)));
 	}
 	if (scripting::hooks::OnShipDeath->isActive()) {
-		scripting::hooks::OnShipDeath->run(scripting::hook_param_list(
-			scripting::hook_param("Ship", 'o', ship_objp)),
-			ship_objp);
+		scripting::hooks::OnShipDeath->run(scripting::hooks::ShipDeathConditions{ shipp },
+			scripting::hook_param_list(
+			scripting::hook_param("Ship", 'o', ship_objp)));
 	}
 
 	ship_objp->flags.set(Object::Object_Flags::Should_be_dead);
@@ -8354,12 +8357,13 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 	    (cleanup_mode == SHIP_VANISHED)) {
 		const char* departmethod = get_departure_name(cleanup_mode);
 
-		if (Script_system.IsActiveAction(CHA_ONSHIPDEPART)) {
-			Script_system.SetHookObject("Ship", objp);
-			Script_system.SetHookVar("Method", 's', departmethod);
-			Script_system.SetHookVar("JumpNode", 's', jumpnode_name);
-			Script_system.RunCondition(CHA_ONSHIPDEPART, objp);
-			Script_system.RemHookVars({"Ship", "Method", "JumpNode"});
+		if (scripting::hooks::OnShipDepart->isActive()) {
+			scripting::hooks::OnShipDepart->run(scripting::hooks::ShipDepartConditions{ shipp },
+				scripting::hook_param_list(
+					scripting::hook_param("Ship", 'o', objp),
+					scripting::hook_param("Method", 's', departmethod),
+					scripting::hook_param("JumpNode", 's', jumpnode_name, jumpnode_name != nullptr)
+				));
 		}
 	}
 
@@ -11400,9 +11404,11 @@ int ship_launch_countermeasure(object *objp, int rand_val)
 
 		if (OnCountermeasureFireHook->isActive()) {
 			// add scripting hook for 'On Countermeasure Fire' --wookieejedi
-			OnCountermeasureFireHook->run(scripting::hook_param_list(scripting::hook_param("Ship", 'o', objp),
-				scripting::hook_param("CountermeasuresLeft", 'i', shipp->cmeasure_count),
-				scripting::hook_param("Countermeasure", 'o', &Objects[cobjnum])));
+			OnCountermeasureFireHook->run(scripting::hooks::ShipSourceConditions{ shipp },
+				scripting::hook_param_list(scripting::hook_param("Ship", 'o', objp),
+					scripting::hook_param("CountermeasuresLeft", 'i', shipp->cmeasure_count),
+					scripting::hook_param("Countermeasure", 'o', &Objects[cobjnum])
+				));
 		}
 	}
 
@@ -11702,7 +11708,7 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 	ship_weapon	*swp;
 	ship_info	*sip;
 	ai_info		*aip;
-	int			weapon_idx, i, j, w, v, weapon_objnum;
+	int			weapon_idx = -1, i, j, w, v, weapon_objnum;
 	int			bank_to_fire, num_fired = 0;	
 	int			banks_fired;				// used for multiplayer to help determine whether or not to send packet
 	banks_fired = 0;			// used in multiplayer -- bitfield of banks that were fired
@@ -12519,11 +12525,14 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 				sip->animations.getAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::PrimaryFired, bank).start(animation::ModelAnimationDirection::FWD, true);
 		}
 
-		if (Script_system.IsActiveAction(CHA_ONWPFIRED) || Script_system.IsActiveAction(CHA_PRIMARYFIRE)) {
-			Script_system.SetHookObjects(2, "User", objp, "Target", target);
-			Script_system.RunCondition(CHA_ONWPFIRED, objp, nullptr, 1);
-			Script_system.RunCondition(CHA_PRIMARYFIRE, objp, nullptr);
-			Script_system.RemHookVars({"User", "Target"});
+		if (scripting::hooks::OnWeaponFired->isActive() || scripting::hooks::OnPrimaryFired->isActive()) {
+			auto param_list = scripting::hook_param_list(
+				scripting::hook_param("User", 'o', objp),
+				scripting::hook_param("Target", 'o', target)
+			);
+			auto conditions = scripting::hooks::WeaponUsedConditions{ shipp, target, weapon_idx, true };
+			scripting::hooks::OnWeaponFired->run(conditions, param_list);
+			scripting::hooks::OnPrimaryFired->run(conditions, param_list);
 		}
 	}
 
@@ -13227,11 +13236,14 @@ done_secondary:
 		//Start Animation in Forced mode: Always restart it from its initial position rather than just flip it to FWD motion if it was still moving. This is to make it work best for uses like recoil.
 		sip->animations.getAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::SecondaryFired, bank).start(animation::ModelAnimationDirection::FWD, true);
 
-		if (Script_system.IsActiveAction(CHA_ONWPFIRED) || Script_system.IsActiveAction(CHA_SECONDARYFIRE)) {
-			Script_system.SetHookObjects(2, "User", objp, "Target", target);
-			Script_system.RunCondition(CHA_ONWPFIRED, objp, nullptr, 2);
-			Script_system.RunCondition(CHA_SECONDARYFIRE, objp, nullptr);
-			Script_system.RemHookVars({"User", "Target"});
+		if (scripting::hooks::OnWeaponFired->isActive() || scripting::hooks::OnSecondaryFired->isActive()) {
+			auto param_list = scripting::hook_param_list(
+				scripting::hook_param("User", 'o', objp),
+				scripting::hook_param("Target", 'o', target)
+			);
+			auto conditions = scripting::hooks::WeaponUsedConditions{ shipp, target, weapon_idx, false };
+			scripting::hooks::OnWeaponFired->run(conditions, param_list);
+			scripting::hooks::OnSecondaryFired->run(conditions, param_list);
 		}
 	}
 
@@ -13489,11 +13501,13 @@ int ship_select_next_primary(object *objp, int direction)
 		if (objp == Player_obj && Player_ai->target_objnum != -1)
 			target = &Objects[Player_ai->target_objnum];
 
-		if (Script_system.IsActiveAction(CHA_ONWPSELECTED) || Script_system.IsActiveAction(CHA_ONWPDESELECTED)) {
-			Script_system.SetHookObjects(2, "User", objp, "Target", target);
-			Script_system.RunCondition(CHA_ONWPSELECTED, objp, nullptr, 1);
-			Script_system.RunCondition(CHA_ONWPDESELECTED, objp, nullptr, 1);
-			Script_system.RemHookVars({"User", "Target"});
+		if (scripting::hooks::OnWeaponSelected->isActive() || scripting::hooks::OnWeaponDeselected->isActive()) {
+			auto param_list = scripting::hook_param_list(
+				scripting::hook_param("User", 'o', objp),
+				scripting::hook_param("Target", 'o', target)
+			);
+			scripting::hooks::OnWeaponSelected->run(scripting::hooks::WeaponSelectedConditions{ shipp, swp->current_primary_bank, original_bank, true }, param_list);
+			scripting::hooks::OnWeaponDeselected->run(scripting::hooks::WeaponDeselectedConditions{ shipp, swp->current_primary_bank, original_bank, true }, param_list);
 		}
 
 		return 1;
@@ -13593,11 +13607,13 @@ int ship_select_next_secondary(object *objp)
 			if (objp == Player_obj && Player_ai->target_objnum != -1)
 				target = &Objects[Player_ai->target_objnum];
 
-			if (Script_system.IsActiveAction(CHA_ONWPSELECTED) || Script_system.IsActiveAction(CHA_ONWPDESELECTED)) {
-				Script_system.SetHookObjects(2, "User", objp, "Target", target);
-				Script_system.RunCondition(CHA_ONWPSELECTED, objp, nullptr, 2);
-				Script_system.RunCondition(CHA_ONWPDESELECTED, objp, nullptr, 2);
-				Script_system.RemHookVars({"User", "Target"});
+			if (scripting::hooks::OnWeaponSelected->isActive() || scripting::hooks::OnWeaponDeselected->isActive()) {
+				auto param_list = scripting::hook_param_list(
+					scripting::hook_param("User", 'o', objp),
+					scripting::hook_param("Target", 'o', target)
+				);
+				scripting::hooks::OnWeaponSelected->run(scripting::hooks::WeaponSelectedConditions{ shipp, swp->current_secondary_bank, original_bank, false }, param_list);
+				scripting::hooks::OnWeaponDeselected->run(scripting::hooks::WeaponDeselectedConditions{ shipp, swp->current_secondary_bank, original_bank, false }, param_list);
 			}
 
 			return 1;

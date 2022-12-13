@@ -14,6 +14,7 @@
 #include "scripting/api/objs/subsystem.h"
 #include "scripting/api/objs/texture.h"
 #include "scripting/api/objs/vecmath.h"
+#include "scripting/global_hooks.h"
 
 #include <asteroid/asteroid.h>
 #include <camera/camera.h>
@@ -875,7 +876,7 @@ ADE_FUNC(drawModel, l_Graphics, "model model, vector position, orientation orien
 
 	// Make sure we have a scene to use
 	// Note that this is only relevant, and thus only expected to be set, in OBJECTRENDER hooks
-	if (Script_system.IsActiveAction(CHA_OBJECTRENDER) && !Current_scene)
+	if (scripting::hooks::OnObjectRender->isActive() && !Current_scene)
 		return ade_set_args(L, "i", 4);
 
 	//Handle angles
@@ -919,7 +920,7 @@ ADE_FUNC(drawModel, l_Graphics, "model model, vector position, orientation orien
 	// of some optimizations by adding this model to the global render queue.
 	// In all other circumstances, we need to render the model in immediate mode, which may be slow but
 	// is guaranteed to work.
-	if (Script_system.IsActiveAction(CHA_OBJECTRENDER))
+	if (scripting::hooks::OnObjectRender->isActive())
 		model_render_queue(&render_info, Current_scene, model_num, orient, v);
 	else
 		model_render_immediate(&render_info, model_num, orient, v);
@@ -962,7 +963,7 @@ ADE_FUNC(drawModelOOR, l_Graphics, "model Model, vector Position, orientation Or
 
 	// Make sure we have a scene to use
 	// Note that this is only relevant, and thus only expected to be set, in OBJECTRENDER hooks
-	if (Script_system.IsActiveAction(CHA_OBJECTRENDER) && !Current_scene)
+	if (scripting::hooks::OnObjectRender->isActive() && !Current_scene)
 		return ade_set_args(L, "i", 4);
 
 	//Handle angles
@@ -978,7 +979,7 @@ ADE_FUNC(drawModelOOR, l_Graphics, "model Model, vector Position, orientation Or
 	// of some optimizations by adding this model to the global render queue.
 	// In all other circumstances, we need to render the model in immediate mode, which may be slow but
 	// is guaranteed to work.
-	if (Script_system.IsActiveAction(CHA_OBJECTRENDER))
+	if (scripting::hooks::OnObjectRender->isActive())
 		model_render_queue(&render_info, Current_scene, model_num, orient, v);
 	else
 		model_render_immediate(&render_info, model_num, orient, v);

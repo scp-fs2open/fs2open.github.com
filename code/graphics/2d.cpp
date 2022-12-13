@@ -175,7 +175,7 @@ static auto WindowModeOption = options::OptionBuilder<os::ViewportState>("Graphi
 								   .change_listener(mode_change_func)
 								   .finish();
 
-const std::shared_ptr<scripting::OverridableHook> OnFrameHook = scripting::OverridableHook::Factory(
+const std::shared_ptr<scripting::OverridableHook<>> OnFrameHook = scripting::OverridableHook<>::Factory(
 	"On Frame", "Called every frame as the last action before showing the frame result to the user.", {}, CHA_ONFRAME);
 
 // z-buffer stuff

@@ -44,6 +44,7 @@
 #include "pilotfile/pilotfile.h"
 #include "playerman/player.h"
 #include "popup/popup.h"
+#include "scripting/global_hooks.h"
 #include "scripting/scripting.h"
 #include "ship/ship.h"
 #include "starfield/supernova.h"
@@ -1163,9 +1164,7 @@ void mission_campaign_mission_over(bool do_next_mission)
 		}
 
 		// runs the new scripting conditional hook, "On Campaign Mission Accept" --wookieejedi
-		if (Script_system.IsActiveAction(CHA_CMISSIONACCEPT)) {
-			Script_system.RunCondition(CHA_CMISSIONACCEPT);
-		}
+		scripting::hooks::OnCampaignMissionAccept->run();
 		
 	} else {
 		// free up the goals and events which were just malloced.  It's kind of like erasing any fact

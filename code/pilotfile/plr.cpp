@@ -24,7 +24,7 @@
 #include "stats/medals.h"
 #include "weapon/weapon.h"
 
-const auto OnPlayerLoadedHook = scripting::Hook::Factory(
+const auto OnPlayerLoadedHook = scripting::Hook<>::Factory(
 	"On Player Loaded", "Called when a player has been successfully loaded",
 	{
 		{ "Player", "object", "The player object" },
