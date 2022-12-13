@@ -211,7 +211,10 @@ enum : int {
 };
 
 enum : int {
-	OP_NOT_AN_OP = 0, // zero represents a non-operator
+	//an operator value of 0 represents a non-operator.
+	//Because of this, OP_NOT_AN_OP must NEVER be changed to a different value and must always be assigned 0
+	OP_NOT_AN_OP = 0, 
+
 	// OP_CATEGORY_ARITHMETIC
 
 	OP_PLUS = FIRST_OP,
