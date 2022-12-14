@@ -891,6 +891,18 @@ sexp_ai_goal_link Sexp_ai_goal_links[] = {
 
 SCP_vector<dynamic_sexp_enum_list> Dynamic_enums;
 
+int get_dynamic_enum_position(SCP_string enum_name)
+{
+	for (int i = 0; i < (int)Dynamic_enums.size(); i++) {
+		if (!stricmp(enum_name.c_str(), Dynamic_enums[i].name.c_str())) {
+			return i;
+		}
+	}
+
+	// Didn't find anything.
+	return -1;
+}
+
 void sexp_set_skybox_model_preload(const char *name); // taylor
 int Num_skybox_flags = 6;
 const char *Skybox_flags[] = {

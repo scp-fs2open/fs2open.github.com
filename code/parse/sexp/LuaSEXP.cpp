@@ -526,29 +526,75 @@ void LuaSEXP::parseTable() {
 		}
 
 		if ((strcmp(type.first.c_str(), "enum")) == 0) {
-			type.second = increment_enum_list_id();
+			
 			required_string("+Enum Name:");
 
 			SCP_string enum_name;
 			stuff_string(enum_name, F_NAME);
 
 			dynamic_sexp_enum_list thisList;
-			thisList.name = enum_name;
+			int list_position = get_dynamic_enum_position(enum_name);
+			bool new_enum = false;
 
-			SCP_vector<SCP_string> list_items;
-			while (optional_string("+Enum:")) {
-				SCP_string item;
-				stuff_string(item, F_NAME);
-				list_items.push_back(item);
+			if (list_position >= 0) {
+				type.second = list_position + (int)First_available_opf_id;
+
+				//Do this just in case we're going to use this list as a template
+				thisList.name = Dynamic_enums[list_position].name; 
+				for (const SCP_string& enum_item : Dynamic_enums[list_position].list) {
+					thisList.list.push_back(enum_item);
+				}
+			} else {
+				new_enum = true;
+				thisList.name = enum_name;
 			}
 
-			if ((int)list_items.size() > 0) {
-				thisList.list = std::move(list_items);
-			} else {
+			while (optional_string("+Enum:")) {
+				new_enum = true;
+
+				//If we're making a new Enum based off another one, let's give it a unique name
+				if (list_position >= 0) {
+					char newName[NAME_LENGTH];
+					strcpy_s(newName, enum_name.c_str());
+					strcat(newName, std::to_string(list_position).c_str());
+					thisList.name = newName;
+				}
+
+				SCP_string item;
+				stuff_string(item, F_NAME);
+
+				// These characters may not appear in an Enum item
+				constexpr const char* ENUM_INVALID_CHARS = "()\"'\\/";
+				if (std::strpbrk(item.c_str(), ENUM_INVALID_CHARS) != nullptr) {
+					error_display(0, "ENUM item '%s' cannot include these characters [(,),\",',\\,/]. Skipping!\n", item.c_str());
+
+					// Skip the invalid entry
+					continue;
+
+				}
+
+				if (item.length() >= NAME_LENGTH) {
+					error_display(0, "Enum item '%s' is longer than %i characters. Truncating!\n", item.c_str(), NAME_LENGTH);
+					item.resize(NAME_LENGTH - 1);
+				}
+
+				thisList.list.push_back(item);
+			}
+
+			if (thisList.list.size() == 0) {
+				error_display(0, "Parsed empty enum list '%s'\n", thisList.name.c_str());
 				thisList.list.push_back("<none>");
 			}
 
-			Dynamic_enums.push_back(thisList);
+			if (new_enum) {
+				type.second = increment_enum_list_id();
+				Dynamic_enums.push_back(thisList);
+			} else {
+				// Not an error but large mods may lose track of their enum names and I thought this would be helpful -Mjn
+				mprintf(("Found previously existing Lua Enum '%s'. Using that for sexp '%s'!\n",
+					enum_name.c_str(),
+					_name.c_str()));
+			}
 
 		}
 
