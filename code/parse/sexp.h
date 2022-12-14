@@ -132,6 +132,7 @@ enum : int {
 	OPF_ASTEROID_DEBRIS,			// MjnMixael - Debris types as defined in asteroids.tbl
 	OPF_WING_FORMATION,				// Goober5000 - as defined in ships.tbl
 
+	//Must always be at the end of the list
 	First_available_list_id
 };
 
