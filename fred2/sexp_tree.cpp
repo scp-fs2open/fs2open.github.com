@@ -3499,7 +3499,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 			return 0;
 
 		default:
-			if (Dynamic_enums.size() > 0) {
+			if (!Dynamic_enums.empty()) {
 				if ((type - First_available_list_id) < (int)Dynamic_enums.size()) {
 					return 1;
 				} else {
@@ -7362,16 +7362,16 @@ sexp_list_item* sexp_tree::check_for_dynamic_sexp_enum(int opf)
 
 	int item = opf - First_available_list_id;
 
-	if (item <= (int)Dynamic_enums.size()) {
+	if (item < (int)Dynamic_enums.size()) {
 
-		for (int i = 0; i < (int)Dynamic_enums[item].list.size(); i++) {
-			head.add_data(Dynamic_enums[item].list[i].c_str());
+		for (const SCP_string& enum_item : Dynamic_enums[item].list) {
+			head.add_data(enum_item.c_str());
 		}
 		return head.next;
 	} else {
 		// else if opf is invalid do this
 		UNREACHABLE("Unhandled SEXP argument type!"); // unknown OPF code
-		return NULL;
+		return nullptr;
 	}
 }
 

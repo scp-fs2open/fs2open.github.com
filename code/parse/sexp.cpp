@@ -889,7 +889,7 @@ sexp_ai_goal_link Sexp_ai_goal_links[] = {
 	{ AI_GOAL_REARM_REPAIR, OP_AI_REARM_REPAIR },
 };
 
-SCP_vector<enum_list> Dynamic_enums;
+SCP_vector<dynamic_sexp_enum_list> Dynamic_enums;
 
 void sexp_set_skybox_model_preload(const char *name); // taylor
 int Num_skybox_flags = 6;

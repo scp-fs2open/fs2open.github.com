@@ -136,12 +136,12 @@ enum : int {
 	First_available_list_id
 };
 
-typedef struct enum_list {
+struct dynamic_sexp_enum_list {
 	SCP_string name;
 	SCP_vector<SCP_string> list;
-}enum_list;
+};
 
-extern SCP_vector<enum_list> Dynamic_enums;
+extern SCP_vector<dynamic_sexp_enum_list> Dynamic_enums;
 
 // Operand return types
 #define	OPR_NUMBER				1	// returns number

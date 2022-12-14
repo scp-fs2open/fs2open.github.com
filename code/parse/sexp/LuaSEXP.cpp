@@ -532,7 +532,7 @@ void LuaSEXP::parseTable() {
 			SCP_string enum_name;
 			stuff_string(enum_name, F_NAME);
 
-			enum_list thisList;
+			dynamic_sexp_enum_list thisList;
 			thisList.name = enum_name;
 
 			SCP_vector<SCP_string> list_items;
@@ -543,7 +543,7 @@ void LuaSEXP::parseTable() {
 			}
 
 			if ((int)list_items.size() > 0) {
-				thisList.list = list_items;
+				thisList.list = std::move(list_items);
 			} else {
 				thisList.list.push_back("<none>");
 			}
