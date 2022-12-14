@@ -304,6 +304,7 @@ public:
 	sexp_list_item *get_listing_opf_animation_name(int parent_node);
 	sexp_list_item *get_listing_opf_sexp_containers(ContainerType con_type);
 	sexp_list_item *get_listing_opf_wing_formation();
+	sexp_list_item* check_for_dynamic_sexp_enum(int opf);
 
 	// container modifier options for container data nodes
 	sexp_list_item *get_container_modifiers(int con_data_node) const;

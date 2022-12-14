@@ -199,8 +199,13 @@ DynamicSEXP* get_dynamic_sexp(int operator_const)
 
 	return iter->second.get();
 }
-int get_category_of_subcategory(int subcategory_id)
+int increment_list_id()
 {
+	auto& global = globals();
+	return global.next_free_list_id++;
+}
+int get_category_of_subcategory(int subcategory_id)
+	{
 	const auto& global = globals();
 
 	auto iter = global.subcategory_to_category.find(subcategory_id);

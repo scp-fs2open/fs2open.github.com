@@ -44,6 +44,8 @@ int get_category_of_subcategory(int subcategory_id);
  */
 int add_category(const SCP_string& name);
 
+int increment_list_id();
+
 /**
  * @brief Dynamically add a new subcategory to the SEXP system
  *

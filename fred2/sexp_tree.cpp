@@ -3499,7 +3499,15 @@ int sexp_tree::query_default_argument_available(int op, int i)
 			return 0;
 
 		default:
-			Int3();
+			if (Enums.size() > 0) {
+				if ((type - First_available_list_id) < (int)Enums.size()) {
+					return 1;
+				} else {
+					UNREACHABLE("Unhandled SEXP argument type!");
+				}
+			} else {
+				UNREACHABLE("Unhandled SEXP argument type!");
+			}
 
 	}
 
@@ -5438,8 +5446,8 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			break;
 
 		default:
-			Int3();  // unknown OPF code
-			list = NULL;
+			//We're at the end of the list so check for any dynamic enums
+			list = check_for_dynamic_sexp_enum(opf);
 			break;
 	}
 
@@ -7346,6 +7354,26 @@ sexp_list_item *sexp_tree::get_container_multidim_modifiers(int con_data_node) c
 	head.add_list(list);
 
 	return head.next;
+}
+
+sexp_list_item* sexp_tree::check_for_dynamic_sexp_enum(int opf)
+{
+	sexp_list_item head;
+
+	int item = opf - First_available_list_id;
+
+	if (item <= (int)Enums.size()) {
+
+		for (int i = 0; i < (int)Enums[item].list.size(); i++) {
+			mprintf(("ENUMS adding item %s\n", Enums[item].list[i].c_str()));
+			head.add_data(Enums[item].list[i].c_str());
+		}
+		return head.next;
+	} else {
+		// else if opf is invalid do this
+		UNREACHABLE("Unhandled SEXP argument type!"); // unknown OPF code
+		return NULL;
+	}
 }
 
 // given a node's parent, check if node is eligible for being used with the special argument

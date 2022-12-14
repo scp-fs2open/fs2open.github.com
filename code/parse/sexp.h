@@ -135,110 +135,12 @@ enum : int {
 	First_available_list_id
 };
 
-// Operator argument formats (data types of an argument)
-/*#define OPF_NONE 1 // argument cannot exist at this position if it's this
-#define	OPF_NULL				2		// no value.  Can still be used for type matching, however
-#define	OPF_BOOL				3
-#define	OPF_NUMBER				4
-#define	OPF_SHIP				5
-#define	OPF_WING				6
-#define	OPF_SUBSYSTEM			7
-#define	OPF_POINT				8		// either a 3d point in space, or a waypoint name
-#define	OPF_IFF					9
-#define	OPF_AI_GOAL				10		// special to match ai goals
-#define	OPF_DOCKER_POINT		11		// docking point on docker ship
-#define	OPF_DOCKEE_POINT		12		// docking point on dockee ship
-#define	OPF_MESSAGE				13		// the name (id) of a message in Messages[] array
-#define	OPF_WHO_FROM			14		// who sent the message -- doesn't necessarily have to be a ship!!!
-#define	OPF_PRIORITY			15		// priority for messages
-#define	OPF_WAYPOINT_PATH		16		// name of a waypoint
-#define	OPF_POSITIVE			17		// positive number or zero
-#define	OPF_MISSION_NAME		18		// name of a mission for various mission related things
-#define	OPF_SHIP_POINT			19		// a waypoint or a ship
-#define	OPF_GOAL_NAME			20		// name of goal (or maybe event?) from a mission
-#define	OPF_SHIP_WING			21		// either a ship or wing name (they don't conflict)
-#define OPF_SHIP_WING_WHOLETEAM			22	// Karajorma - Ship, wing or an entire team's worth of ships
-#define	OPF_SHIP_WING_SHIPONTEAM_POINT	23	// name of a ship, wing, any ship on a team, or a point
-#define OPF_SHIP_WING_POINT		24
-#define OPF_SHIP_WING_POINT_OR_NONE	25	// WMC - Ship, wing, point or none
-#define	OPF_SHIP_TYPE			26		// type of ship (fighter/bomber/etc)
-#define	OPF_KEYPRESS			27		// a default key
-#define	OPF_EVENT_NAME			28		// name of an event
-#define	OPF_AI_ORDER			29		// a squadmsg order player can give to a ship
-#define	OPF_SKILL_LEVEL			30		// current skill level of the game
-#define	OPF_MEDAL_NAME			31		// name of medals
-#define	OPF_WEAPON_NAME			32		// name of a weapon
-#define	OPF_SHIP_CLASS_NAME		33		// name of a ship class
-#define	OPF_CUSTOM_HUD_GAUGE	34		// name of custom HUD gauge
-#define	OPF_HUGE_WEAPON			35		// name of a secondary bomb type weapon
-#define	OPF_SHIP_NOT_PLAYER		36		// a ship, but not a player ship
-#define	OPF_JUMP_NODE_NAME		37		// name of a jump node
-#define	OPF_VARIABLE_NAME		38		// variable name
-#define	OPF_AMBIGUOUS			39		// type used with variable
-#define	OPF_AWACS_SUBSYSTEM		40		// an awacs subsystem
-#define OPF_CARGO				41		// Goober5000 - a cargo string (currently used for set-cargo and is-cargo)
-#define OPF_AI_CLASS			42		// Goober5000 - an AI class
-#define OPF_SUPPORT_SHIP_CLASS	43		// Goober5000 - a support ship class
-#define OPF_ARRIVAL_LOCATION	44		// Goober5000 - a ship arrival location
-#define OPF_ARRIVAL_ANCHOR_ALL	45		// Goober5000 - all of a ship's possible arrival anchors
-#define OPF_DEPARTURE_LOCATION	46		// Goober5000 - a ship departure location
-#define OPF_SHIP_WITH_BAY		47		// Goober5000 - a ship with a fighter bay
-#define OPF_SOUNDTRACK_NAME		48		// Goober5000 - the name of a music soundtrack
-#define OPF_INTEL_NAME			49		// Goober5000 - the name of an intel entry in species.tbl
-#define OPF_STRING				50		// Goober5000 - any old string
-#define OPF_ROTATING_SUBSYSTEM	51		// Goober5000 - a rotating subsystem
-#define OPF_NAV_POINT			52		// Kazan	  - a Nav Point name
-#define OPF_SSM_CLASS			53		// Goober5000 - an SSM class
-#define OPF_FLEXIBLE_ARGUMENT	54		// Goober5000 - special to match for when-argument
-#define OPF_ANYTHING			55		// Goober5000 - anything goes, except containers
-#define OPF_SKYBOX_MODEL_NAME	56		// taylor - changing skybox model
-#define OPF_SHIP_OR_NONE		57		// Goober5000 - an "optional" ship argument
-#define OPF_BACKGROUND_BITMAP	58		// phreak - name of a background bitmap
-#define OPF_SUN_BITMAP			59		// phreak - name of a background bitmap
-#define OPF_NEBULA_STORM_TYPE	60		// phreak - name a nebula storm
-#define OPF_NEBULA_POOF			61		// phreak - name of a nebula poof
-#define OPF_TURRET_TARGET_ORDER	62		// WMC - name of a turret target type (see aiturret.cpp)
-#define OPF_SUBSYSTEM_OR_NONE	63		// Goober5000 - an "optional" subsystem argument
-#define OPF_PERSONA				64		// Karajorma - name of a persona
-#define OPF_SUBSYS_OR_GENERIC	65		// Karajorma - a subsystem or a generic name (like engine) which covers all subsystems of that type
-#define OPF_ORDER_RECIPIENT		66		// Karajorma - since orders can go to All Fighters as well as a ship or wing
-#define OPF_SUBSYSTEM_TYPE		67		// Goober5000 - a generic subsystem type (navigation, engines, etc.) rather than a specific subsystem
-#define OPF_POST_EFFECT			68		// Hery - type of post-processing effect
-#define OPF_TARGET_PRIORITIES	69		// FUBAR - Target priority groups
-#define OPF_ARMOR_TYPE			70		// FUBAR - Armor type or <none>
-#define OPF_FONT				71		// Goober5000 - a FreeSpace font
-#define OPF_HUD_ELEMENT			72		// A magic name of a specific HUD element
-#define OPF_SOUND_ENVIRONMENT	73		// Goober5000 - one of EFX_presets, per Taylor
-#define OPF_SOUND_ENVIRONMENT_OPTION 74	// Goober5000 - one of Taylor's options
-#define OPF_EXPLOSION_OPTION	75		// Goober5000
-#define OPF_AUDIO_VOLUME_OPTION 76		// The E
-#define OPF_WEAPON_BANK_NUMBER	77		// Karajorma - The number of a primary/secondary/tertiary weapon bank or all of them
-#define OPF_MESSAGE_OR_STRING	78		// Goober5000 - provides a list of messages like OPF_MESSAGE, but also allows entering arbitrary strings
-#define OPF_BUILTIN_HUD_GAUGE	79		// The E
-#define OPF_DAMAGE_TYPE			80		// FUBAR - Damage type or <none>
-#define OPF_SHIP_EFFECT			81		// The E - per-ship effects, as defined in post-processing.tbl
-#define OPF_ANIMATION_TYPE		82		// Goober5000 - as defined in modelanim.h
-#define OPF_MISSION_MOOD		83		// Karajorma - Moods determine which builtin messages will be sent
-#define OPF_SHIP_FLAG			84		// Karajorma - The name of a ship flag
-#define OPF_TEAM_COLOR			85		// The E - Color settings as defined in Colors.tbl
-#define OPF_NEBULA_PATTERN		86		// Axem - Full Nebula Background Patterns, as defined in nebula.tbl
-#define OPF_SKYBOX_FLAGS		87		// niffiwan - valid skybox flags
-#define OPF_GAME_SND			88		// m!m - A game sound
-#define OPF_FIREBALL			89		// Goober5000 - an entry in fireball.tbl
-#define OPF_SPECIES				90		// Goober5000
-#define OPF_LANGUAGE			91		// Goober5000
-#define OPF_FUNCTIONAL_WHEN_EVAL_TYPE	92	// Goober5000
-#define OPF_CONTAINER_NAME		93		// Karajorma/jg18 - The name of a SEXP container
-#define OPF_LIST_CONTAINER_NAME	94		// Karajorma/jg18 - The name of a SEXP list container
-#define OPF_MAP_CONTAINER_NAME	95		// Karajorma/jg18 - The name of a SEXP map container
-#define OPF_ANIMATION_NAME 		96		// Lafiel
-#define OPF_CONTAINER_VALUE		97		// jg18 - Container data and map container keys
-#define OPF_DATA_OR_STR_CONTAINER	98	// jg18 - any data, or a container that is accessed via strings
-#define OPF_TRANSLATING_SUBSYSTEM	99	// Goober5000 - a translating subsystem
-#define OPF_ANY_HUD_GAUGE		100		// Goober5000 - both custom and builtin
-#define OPF_WING_FLAG			101		// Goober5000 - The name of a wing flag
-#define OPF_ASTEROID_DEBRIS		102		// MjnMixael - Debris types as defined in asteroids.tbl
-#define OPF_WING_FORMATION		103		// Goober5000 - as defined in ships.tbl*/
+typedef struct enum_list {
+	SCP_string name;
+	SCP_vector<SCP_string> list;
+}enum_list;
+
+extern SCP_vector<enum_list> Enums;
 
 // Operand return types
 #define	OPR_NUMBER				1	// returns number
