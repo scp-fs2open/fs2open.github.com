@@ -3499,8 +3499,8 @@ int sexp_tree::query_default_argument_available(int op, int i)
 			return 0;
 
 		default:
-			if (Enums.size() > 0) {
-				if ((type - First_available_list_id) < (int)Enums.size()) {
+			if (Dynamic_enums.size() > 0) {
+				if ((type - First_available_list_id) < (int)Dynamic_enums.size()) {
 					return 1;
 				} else {
 					UNREACHABLE("Unhandled SEXP argument type!");
@@ -7362,11 +7362,10 @@ sexp_list_item* sexp_tree::check_for_dynamic_sexp_enum(int opf)
 
 	int item = opf - First_available_list_id;
 
-	if (item <= (int)Enums.size()) {
+	if (item <= (int)Dynamic_enums.size()) {
 
-		for (int i = 0; i < (int)Enums[item].list.size(); i++) {
-			mprintf(("ENUMS adding item %s\n", Enums[item].list[i].c_str()));
-			head.add_data(Enums[item].list[i].c_str());
+		for (int i = 0; i < (int)Dynamic_enums[item].list.size(); i++) {
+			head.add_data(Dynamic_enums[item].list[i].c_str());
 		}
 		return head.next;
 	} else {

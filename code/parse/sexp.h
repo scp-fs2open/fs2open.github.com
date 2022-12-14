@@ -140,7 +140,7 @@ typedef struct enum_list {
 	SCP_vector<SCP_string> list;
 }enum_list;
 
-extern SCP_vector<enum_list> Enums;
+extern SCP_vector<enum_list> Dynamic_enums;
 
 // Operand return types
 #define	OPR_NUMBER				1	// returns number

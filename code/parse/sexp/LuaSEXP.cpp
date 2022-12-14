@@ -548,7 +548,7 @@ void LuaSEXP::parseTable() {
 				thisList.list.push_back("<none>");
 			}
 
-			Enums.push_back(thisList);
+			Dynamic_enums.push_back(thisList);
 
 		}
 
