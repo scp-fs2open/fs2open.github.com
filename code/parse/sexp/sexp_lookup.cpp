@@ -198,6 +198,26 @@ DynamicSEXP* get_dynamic_sexp(int operator_const)
 
 	return iter->second.get();
 }
+int get_category(const SCP_string& name)
+{
+	for (auto& cat : op_menu) {
+		if (SCP_string_lcase_equal_to()(cat.name, name)) {
+			return cat.id;
+		}
+	}
+
+	return OP_CATEGORY_NONE;
+}
+int get_subcategory(const SCP_string& name, int category)
+{
+	for (auto& subcat : op_submenu) {
+		if (SCP_string_lcase_equal_to()(subcat.name, name) && get_category_of_subcategory(subcat.id) == category) {
+			return subcat.id;
+		}
+	}
+
+	return OP_SUBCATEGORY_NONE;
+}
 int get_category_of_subcategory(int subcategory_id)
 {
 	const auto& global = globals();

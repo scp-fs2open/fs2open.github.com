@@ -76,26 +76,6 @@ int LuaSEXP::get_return_type(const SCP_string& name)
 	}
 }
 
-int LuaSEXP::get_category(const SCP_string& name) {
-	for (auto& subcat : op_menu) {
-		if (subcat.name == name) {
-			return subcat.id;
-		}
-	}
-
-	return OP_CATEGORY_NONE;
-}
-
-int LuaSEXP::get_subcategory(const SCP_string& name, int category) {
-	for (auto& subcat : op_submenu) {
-		if (subcat.name == name && category_of_subcategory(subcat.id) == category) {
-			return subcat.id;
-		}
-	}
-
-	return OP_SUBCATEGORY_NONE;
-}
-
 LuaSEXP::LuaSEXP(const SCP_string& name) : DynamicSEXP(name) {
 }
 void LuaSEXP::initialize() {
