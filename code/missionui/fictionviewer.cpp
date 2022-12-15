@@ -12,6 +12,7 @@
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
 #include "io/key.h"
+#include "localization/localize.h"
 #include "mission/missionbriefcommon.h"
 #include "missionui/fictionviewer.h"
 #include "missionui/missioncmdbrief.h"
@@ -575,15 +576,30 @@ void fiction_viewer_load(int stage)
 	Fiction_viewer_voice = audiostream_open(stagep->voice_filename, ASF_VOICE);
 
 	// load up the text
-	CFILE *fp = cfopen(stagep->story_filename, "rb", CFILE_NORMAL, CF_TYPE_FICTION);
+	SCP_string localized_filename;
+	localized_filename = stagep->story_filename;
+
+	// check if a localized version of the file exists
+	int lang = lcl_get_current_lang_index();
+	if (lang > 0) {
+		size_t lastindex = localized_filename.find_last_of(".");
+		localized_filename = localized_filename.substr(0, lastindex);
+		localized_filename = localized_filename + "-" + Lcl_languages[lang].lang_ext + ".txt";
+	}
+
+	// if it localized doesn't exist then revert to the base filename
+	if (!cf_exists_full(localized_filename.c_str(), CF_TYPE_FICTION))
+		localized_filename = stagep->story_filename;
+
+	CFILE *fp = cfopen(localized_filename.c_str(), "rb", CFILE_NORMAL, CF_TYPE_FICTION);
 	if (fp == NULL)
 	{
-		Warning(LOCATION, "Unable to load story file '%s'.", stagep->story_filename);
+		Warning(LOCATION, "Unable to load story file '%s'.", localized_filename.c_str());
 	}
 	else
 	{
 		// allocate space for raw text
-		int file_length = util::check_encoding_and_skip_bom(fp, stagep->story_filename);
+		int file_length = util::check_encoding_and_skip_bom(fp, localized_filename.c_str());
 
 		char *Fiction_viewer_text_raw = (char *) vm_malloc(file_length + 1);
 		Fiction_viewer_text_raw[file_length] = '\0';

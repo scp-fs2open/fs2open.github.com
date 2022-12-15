@@ -1,4 +1,5 @@
 #include "fictionviewer.h"
+#include "localization/localize.h"
 
 namespace scripting {
 namespace api {
@@ -30,8 +31,22 @@ ADE_VIRTVAR(TextFile, l_FictionViewerStage, nullptr, "The text file of the stage
 	if (ADE_SETTING_VAR) {
 		LuaError(L, "This property is read only.");
 	}
+	SCP_string localized_filename;
+	localized_filename = stage.getStage()->story_filename;
 
-	return ade_set_args(L, "s", stage.getStage()->story_filename);
+	// check if a localized version of the file exists
+	int lang = lcl_get_current_lang_index();
+	if (lang > 0) {
+		size_t lastindex = localized_filename.find_last_of(".");
+		localized_filename = localized_filename.substr(0, lastindex);
+		localized_filename = localized_filename + "-" + Lcl_languages[lang].lang_ext + ".txt";
+	}
+
+	// if it localized doesn't exist then revert to the base filename
+	if (!cf_exists_full(localized_filename.c_str(), CF_TYPE_FICTION))
+		localized_filename = stage.getStage()->story_filename;
+
+	return ade_set_args(L, "s", localized_filename);
 }
 
 ADE_VIRTVAR(FontFile, l_FictionViewerStage, nullptr, "The font file of the stage", "string", "The font filename")
