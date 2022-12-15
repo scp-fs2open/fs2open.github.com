@@ -28,7 +28,7 @@ struct ship_obj;
 
 // Operator argument formats (data types of an argument)
 enum : int {
-	UNUSED,							// argument types need to start at 1 instead of 0
+	OPF_UNUSED,						// argument types need to start at 1 instead of 0
 	OPF_NONE,						// argument cannot exist at this position if it's this
 	OPF_NULL,						// no value.  Can still be used for type matching, however
 	OPF_BOOL,
