@@ -429,8 +429,10 @@ char *Cmdline_gateway_ip = nullptr;
 // Launcher related options
 cmdline_parm portable_mode("-portable_mode", NULL, AT_NONE);
 cmdline_parm joy_info("-joy_info", "Outputs SDL joystick info", AT_NONE);
+cmdline_parm lang_arg("-language", "Language name as defined in strings.tbl", AT_STRING);
 
 bool Cmdline_portable_mode = false;
+SCP_string Cmdline_lang;
 
 // Troubleshooting
 cmdline_parm loadallweapons_arg("-loadallweps", NULL, AT_NONE);	// Cmdline_load_all_weapons
@@ -1984,6 +1986,11 @@ bool SetCmdlineParams()
 	if (portable_mode.found())
 	{
 		Cmdline_portable_mode = true;
+	}
+
+	if (lang_arg.found()) 
+	{
+		Cmdline_lang = lang_arg.str();
 	}
 	
 #ifdef WIN32
