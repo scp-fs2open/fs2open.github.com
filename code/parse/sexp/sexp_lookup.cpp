@@ -48,6 +48,12 @@ void parse_sexp_table(const char* filename) {
 				SCP_string name;
 				stuff_string(name, F_NAME);
 
+				if (get_dynamic_enum_position(name) >= 0) {
+					error_display(0, "Lua Sexp Enum %s already exists! Skipping!\n", name.c_str());
+					continue;
+				}
+
+
 				dynamic_sexp_enum_list thisList;
 				thisList.name = name;
 
