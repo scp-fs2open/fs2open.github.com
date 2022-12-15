@@ -1,13 +1,16 @@
 //
 //
 
-#include <weapon/beam.h>
+#include "iff_defs/iff_defs.h"
+#include "weapon/beam.h"
+
 #include "beam.h"
-#include "object.h"
-#include "weaponclass.h"
-#include "vecmath.h"
-#include "subsystem.h"
 #include "mc_info.h"
+#include "object.h"
+#include "subsystem.h"
+#include "team.h"
+#include "vecmath.h"
+#include "weaponclass.h"
 
 namespace scripting {
 namespace api {
@@ -216,6 +219,24 @@ ADE_VIRTVAR(ParentSubsystem, l_Beam, "subsystem", "Subsystem that beam is fired 
 	}
 
 	return ade_set_args(L, "o", l_Subsystem.Set(ship_subsys_h(bp->objp, bp->subsys)));
+}
+
+ADE_VIRTVAR(Team, l_Beam, "team", "Beam's team", "team", "Beam team, or invalid team handle if beam handle is invalid")
+{
+	object_h* oh = nullptr;
+	int nt = -1;
+	if (!ade_get_args(L, "o|o", l_Beam.GetPtr(&oh), l_Team.Get(&nt)))
+		return ade_set_error(L, "o", l_Team.Set(-1));
+
+	if (!oh->IsValid())
+		return ade_set_error(L, "o", l_Team.Set(-1));
+
+	beam* b = &Beams[oh->objp->instance];
+
+	if (ADE_SETTING_VAR && nt >= 0 && nt < (int)Iff_info.size())
+		b->team = (char)nt;
+
+	return ade_set_args(L, "o", l_Team.Set(b->team));
 }
 
 ADE_FUNC(getCollisionCount, l_Beam, NULL, "Get the number of collisions in frame.", "number", "Number of beam collisions")
