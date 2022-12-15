@@ -3500,7 +3500,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 
 		default:
 			if (!Dynamic_enums.empty()) {
-				if ((type - First_available_list_id) < (int)Dynamic_enums.size()) {
+				if ((type - First_available_opf_id) < (int)Dynamic_enums.size()) {
 					return 1;
 				} else {
 					UNREACHABLE("Unhandled SEXP argument type!");
@@ -7360,7 +7360,7 @@ sexp_list_item* sexp_tree::check_for_dynamic_sexp_enum(int opf)
 {
 	sexp_list_item head;
 
-	int item = opf - First_available_list_id;
+	int item = opf - First_available_opf_id;
 
 	if (item < (int)Dynamic_enums.size()) {
 

@@ -3951,7 +3951,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 			default:
 				if (Dynamic_enums.size() > 0) {
-					if ((type - First_available_list_id) < (int)Dynamic_enums.size()) {
+					if ((type - First_available_opf_id) < (int)Dynamic_enums.size()) {
 						if (type2 != SEXP_ATOM_STRING)
 							return SEXP_CHECK_TYPE_MISMATCH;
 					} else {

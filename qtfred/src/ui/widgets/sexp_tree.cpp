@@ -3321,8 +3321,8 @@ sexp_list_item* sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 		break;
 
 	default:
-		Int3();  // unknown OPF code
-		list = NULL;
+		// We're at the end of the list so check for any dynamic enums
+		list = check_for_dynamic_sexp_enum(opf);
 		break;
 	}
 
@@ -5126,6 +5126,25 @@ sexp_list_item *sexp_tree::get_container_multidim_modifiers(int con_data_node) c
 	head.add_list(list);
 
 	return head.next;
+}
+
+sexp_list_item* sexp_tree::check_for_dynamic_sexp_enum(int opf)
+{
+	sexp_list_item head;
+
+	int item = opf - First_available_list_id;
+
+	if (item < (int)Dynamic_enums.size()) {
+
+		for (const SCP_string& enum_item : Dynamic_enums[item].list) {
+			head.add_data(enum_item.c_str());
+		}
+		return head.next;
+	} else {
+		// else if opf is invalid do this
+		UNREACHABLE("Unhandled SEXP argument type!"); // unknown OPF code
+		return nullptr;
+	}
 }
 
 // given a node's parent, check if node is eligible for being used with the special argument

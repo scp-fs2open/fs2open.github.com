@@ -46,7 +46,7 @@ static SCP_unordered_map<SCP_string, int> parameter_type_mapping{{ "boolean",   
 														  { "ship+wing+ship_on_team+waypoint",   OPF_SHIP_WING_SHIPONTEAM_POINT },
 														  { "ship+wing+waypoint",   OPF_SHIP_WING_POINT },
 														  { "ship+wing+waypoint+none",   OPF_SHIP_WING_POINT_OR_NONE },
-														  { "enum",   First_available_list_id } };
+														  { "enum",   First_available_opf_id } };
 
 std::pair<SCP_string, int> LuaSEXP::get_parameter_type(const SCP_string& name)
 {
@@ -526,7 +526,7 @@ void LuaSEXP::parseTable() {
 		}
 
 		if ((strcmp(type.first.c_str(), "enum")) == 0) {
-			type.second = increment_list_id();
+			type.second = increment_enum_list_id();
 			required_string("+Enum Name:");
 
 			SCP_string enum_name;

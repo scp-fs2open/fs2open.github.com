@@ -28,6 +28,7 @@ struct ship_obj;
 
 // Operator argument formats (data types of an argument)
 enum : int {
+	UNUSED,							// argument types need to start at 1 instead of 0
 	OPF_NONE,						// argument cannot exist at this position if it's this
 	OPF_NULL,						// no value.  Can still be used for type matching, however
 	OPF_BOOL,
@@ -133,7 +134,7 @@ enum : int {
 	OPF_WING_FORMATION,				// Goober5000 - as defined in ships.tbl
 
 	//Must always be at the end of the list
-	First_available_list_id
+	First_available_opf_id
 };
 
 struct dynamic_sexp_enum_list {
