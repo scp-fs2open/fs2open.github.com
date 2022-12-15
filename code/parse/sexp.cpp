@@ -889,6 +889,8 @@ sexp_ai_goal_link Sexp_ai_goal_links[] = {
 	{ AI_GOAL_REARM_REPAIR, OP_AI_REARM_REPAIR },
 };
 
+SCP_vector<dynamic_sexp_enum_list> Dynamic_enums;
+
 void sexp_set_skybox_model_preload(const char *name); // taylor
 int Num_skybox_flags = 6;
 const char *Skybox_flags[] = {
@@ -3948,7 +3950,17 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				break;
 
 			default:
-				Error(LOCATION, "Unhandled argument format");
+				if (Dynamic_enums.size() > 0) {
+					if ((type - First_available_opf_id) < (int)Dynamic_enums.size()) {
+						if (type2 != SEXP_ATOM_STRING)
+							return SEXP_CHECK_TYPE_MISMATCH;
+					} else {
+						Error(LOCATION, "Unhandled argument format");
+					}
+				} else {
+					Error(LOCATION, "Unhandled argument format");
+				}
+				
 		}
 
 		node = Sexp_nodes[node].rest;

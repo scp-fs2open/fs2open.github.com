@@ -28,6 +28,7 @@ struct global_state {
 	int next_free_operator_id = First_available_operator_id;
 	int next_free_category_id = First_available_category_id;
 	int next_free_subcategory_id = First_available_subcategory_id;
+	int next_free_enum_list_id = First_available_opf_id;
 };
 
 // Static initialization to avoid initialization order issues
@@ -198,8 +199,13 @@ DynamicSEXP* get_dynamic_sexp(int operator_const)
 
 	return iter->second.get();
 }
-int get_category_of_subcategory(int subcategory_id)
+int increment_enum_list_id()
 {
+	auto& global = globals();
+	return global.next_free_enum_list_id++;
+}
+int get_category_of_subcategory(int subcategory_id)
+	{
 	const auto& global = globals();
 
 	auto iter = global.subcategory_to_category.find(subcategory_id);
