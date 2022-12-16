@@ -545,6 +545,26 @@ void fiction_viewer_reset()
 	}
 }
 
+SCP_string get_localized_fiction_filename(const char* filename)
+{
+	SCP_string this_filename = filename;
+	
+	// setup the localized filename string
+	int lang = lcl_get_current_lang_index();
+	if (lang > 0) {
+		size_t lastindex = this_filename.find_last_of(".");
+		this_filename = this_filename.substr(0, lastindex);
+		this_filename = this_filename + "-" + Lcl_languages[lang].lang_ext + ".txt";
+	}
+
+	// return the localized version only if it exists
+	if (cf_exists_full(this_filename.c_str(), CF_TYPE_FICTION))
+		return this_filename;
+
+	// if localized doesn't exist then return the base filename
+	return filename;
+}
+
 void fiction_viewer_load(int stage)
 {
 	Assertion(stage >= 0 && static_cast<size_t>(stage) < Fiction_viewer_stages.size(), "stage parameter must be in range of Fiction_viewer_stages!");
@@ -576,20 +596,7 @@ void fiction_viewer_load(int stage)
 	Fiction_viewer_voice = audiostream_open(stagep->voice_filename, ASF_VOICE);
 
 	// load up the text
-	SCP_string localized_filename;
-	localized_filename = stagep->story_filename;
-
-	// check if a localized version of the file exists
-	int lang = lcl_get_current_lang_index();
-	if (lang > 0) {
-		size_t lastindex = localized_filename.find_last_of(".");
-		localized_filename = localized_filename.substr(0, lastindex);
-		localized_filename = localized_filename + "-" + Lcl_languages[lang].lang_ext + ".txt";
-	}
-
-	// if it localized doesn't exist then revert to the base filename
-	if (!cf_exists_full(localized_filename.c_str(), CF_TYPE_FICTION))
-		localized_filename = stagep->story_filename;
+	SCP_string localized_filename = get_localized_fiction_filename(stagep->story_filename);
 
 	CFILE *fp = cfopen(localized_filename.c_str(), "rb", CFILE_NORMAL, CF_TYPE_FICTION);
 	if (fp == NULL)
