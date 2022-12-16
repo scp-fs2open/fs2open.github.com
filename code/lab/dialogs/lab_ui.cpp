@@ -575,25 +575,6 @@ void render_subsystem(ship_subsys* ss, object* objp)
 
 		for (int i = 0; i < g3_count; i++)
 			g3_done_instance(true);
-
-		// get text
-		buf = ss->system_info->subobj_name;
-
-		// add weapons if present
-		for (int i = 0; i < ss->weapons.num_primary_banks; ++i) {
-			int wi = ss->weapons.primary_bank_weapons[i];
-			if (wi >= 0) {
-				buf += "\n";
-				buf += Weapon_info[wi].name;
-			}
-		}
-		for (int i = 0; i < ss->weapons.num_secondary_banks; ++i) {
-			int wi = ss->weapons.secondary_bank_weapons[i];
-			if (wi >= 0) {
-				buf += "\n";
-				buf += Weapon_info[wi].name;
-			}
-		}
 	} else {
 		vec3d subsys_position;
 		vm_vec_add(&subsys_position, &objp->pos, &ss->system_info->pnt);
