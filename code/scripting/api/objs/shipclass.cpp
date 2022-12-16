@@ -1251,6 +1251,9 @@ ADE_FUNC(renderTechModel,
 	g3_end_frame();
 	gr_reset_clip();
 
+	//Now that we've rendered the frame we can remove the instance
+	model_delete_instance(model_instance);
+
 	return ade_set_args(L, "b", true);
 }
 
@@ -1324,6 +1327,9 @@ ADE_FUNC(renderTechModel2, l_Shipclass, "number X1, number Y1, number X2, number
 	//Bye!!
 	g3_end_frame();
 	gr_reset_clip();
+
+	// Now that we've rendered the frame we can remove the instance
+	model_delete_instance(model_instance);
 
 	return ade_set_args(L, "b", true);
 }
