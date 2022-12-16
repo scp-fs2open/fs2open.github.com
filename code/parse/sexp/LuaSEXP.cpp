@@ -4,12 +4,15 @@
 
 #include "iff_defs/iff_defs.h"
 #include "localization/localize.h"
+#include "mission/missiongoals.h"
 #include "mission/missionmessage.h"
 #include "object/waypoint.h"
 #include "parse/parselo.h"
 #include "parse/sexp.h"
 #include "parse/sexp/sexp_lookup.h"
+#include "scripting/api/objs/hudgauge.h"
 #include "scripting/api/objs/message.h"
+#include "scripting/api/objs/event.h"
 #include "scripting/api/objs/oswpt.h"
 #include "scripting/api/objs/sexpvar.h"
 #include "scripting/api/objs/ship.h"
@@ -46,6 +49,8 @@ static SCP_unordered_map<SCP_string, int> parameter_type_mapping{{ "boolean",   
 														  { "ship+wing+ship_on_team+waypoint",   OPF_SHIP_WING_SHIPONTEAM_POINT },
 														  { "ship+wing+waypoint",   OPF_SHIP_WING_POINT },
 														  { "ship+wing+waypoint+none",   OPF_SHIP_WING_POINT_OR_NONE },
+														  { "hudgauge",   OPF_ANY_HUD_GAUGE },
+														  { "event",   OPF_EVENT_NAME },
 														  { "enum",   First_available_opf_id } };
 
 std::pair<SCP_string, int> LuaSEXP::get_parameter_type(const SCP_string& name)
@@ -244,6 +249,20 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum) const {
 		object_ship_wing_point_team oswpt;
 		eval_object_ship_wing_point_team(&oswpt, node);
 		return LuaValue::createValue(_action.getLuaState(), l_OSWPT.Set(oswpt));
+	}
+	case OPF_ANY_HUD_GAUGE: {
+		auto name = CTEXT(node);
+		return LuaValue::createValue(_action.getLuaState(), l_HudGauge.Set(hud_get_gauge(name)));
+	}
+	case OPF_EVENT_NAME: {
+		auto name = CTEXT(node);
+
+		int i;
+		for (i = 0; i < (int)Mission_events.size(); i++) {
+			if (!stricmp(Mission_events[i].name.c_str(), name))
+				break;
+			}
+		return LuaValue::createValue(_action.getLuaState(), l_Event.Set(i));
 	}
 	default:
 		if ((strcmp(argtype.first.c_str(), "enum")) == 0) {
