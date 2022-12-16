@@ -5785,7 +5785,7 @@ void set_primary_weapon_linkage(object *objp)
 	if (!sip->flags[Ship::Info_Flags::No_primary_linking]) {
 		if (energy > aip->ai_link_energy_levels_always) {
 			shipp->flags.set(Ship::Ship_Flags::Primary_linked);
-		} else if (energy > aip->ai_link_ammo_levels_maybe) {
+		} else if (energy > aip->ai_link_energy_levels_maybe) {
 			if (objp->hull_strength < shipp->ship_max_hull_strength / 3.0f) {
 				shipp->flags.set(Ship::Ship_Flags::Primary_linked);
 			}
