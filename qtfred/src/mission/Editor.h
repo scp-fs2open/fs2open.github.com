@@ -214,8 +214,8 @@ class Editor : public QObject {
 
 	int reference_handler(const char* name, SEXP_REF_TYPE type, int obj);
 
-	int sexp_reference_handler(int node, int code, const char* msg);
-	int orders_reference_handler(int code, char* msg);
+	int sexp_reference_handler(int node, SEXP_SRC source, int source_index, const char* msg);
+	int orders_reference_handler(SEXP_SRC source, int source_index, char* msg);
 
 	int delete_ship_from_wing(int ship);
 

@@ -31980,7 +31980,7 @@ void update_sexp_references(const char *old_name, const char *new_name, int form
 	}
 }
 
-int query_referenced_in_sexp(SEXP_REF_TYPE  /*type*/, const char *name, int *node)
+std::pair<int, SEXP_SRC> query_referenced_in_sexp(SEXP_REF_TYPE  /*type*/, const char *name, int &node)
 {
 	int i, n, j;
 
@@ -31993,51 +31993,49 @@ int query_referenced_in_sexp(SEXP_REF_TYPE  /*type*/, const char *name, int *nod
 	}
 
 	if (n == Num_sexp_nodes){
-		return 0;
+		return std::make_pair(-1, SEXP_SRC::NONE);
 	}
 
-	if (node){
-		*node = n;
-	}
+	node = n;
 
 	// so we know it's being used somewhere..  Time to find out where..
 	for (i=0; i<MAX_SHIPS; i++)
 		if (Ships[i].objnum >= 0) {
 			if (query_node_in_sexp(n, Ships[i].arrival_cue)){
-				return i | SRC_SHIP_ARRIVAL;
+				return std::make_pair(i, SEXP_SRC::SHIP_ARRIVAL);
 			}
 			if (query_node_in_sexp(n, Ships[i].departure_cue)){
-				return i | SRC_SHIP_DEPARTURE;
+				return std::make_pair(i, SEXP_SRC::SHIP_DEPARTURE);
 			}
 		}
 
 	for (i=0; i<MAX_WINGS; i++){
 		if (Wings[i].wave_count) {
 			if (query_node_in_sexp(n, Wings[i].arrival_cue)){
-				return i | SRC_WING_ARRIVAL;
+				return std::make_pair(i, SEXP_SRC::WING_ARRIVAL);
 			}
 			if (query_node_in_sexp(n, Wings[i].departure_cue)){
-				return i | SRC_WING_DEPARTURE;
+				return std::make_pair(i, SEXP_SRC::WING_DEPARTURE);
 			}
 		}
 	}
 
 	for (i=0; i<(int)Mission_events.size(); i++){
 		if (query_node_in_sexp(n, Mission_events[i].formula)){
-			return i | SRC_EVENT;
+			return std::make_pair(i, SEXP_SRC::EVENT);
 		}
 	}
 
 	for (i=0; i<(int)Mission_goals.size(); i++){
 		if (query_node_in_sexp(n, Mission_goals[i].formula)){
-			return i | SRC_MISSION_GOAL;
+			return std::make_pair(i, SEXP_SRC::MISSION_GOAL);
 		}
 	}
 
 	for (j=0; j<Num_teams; j++) {
 		for (i=0; i<Debriefings[j].num_stages; i++) {
 			if (query_node_in_sexp(n, Debriefings[j].stages[i].formula)){
-				return i | SRC_DEBRIEFING;
+				return std::make_pair(i, SEXP_SRC::DEBRIEFING);
 			}
 		}
 	}
@@ -32045,12 +32043,12 @@ int query_referenced_in_sexp(SEXP_REF_TYPE  /*type*/, const char *name, int *nod
 	for (j=0; j<Num_teams; j++) {
 		for (i=0; i<Briefings[j].num_stages; i++) {
 			if (query_node_in_sexp(n, Briefings[j].stages[i].formula)){
-				return i | SRC_BRIEFING;
+				return std::make_pair(i, SEXP_SRC::BRIEFING);
 			}
 		}
 	}
 
-	return SRC_UNKNOWN;
+	return std::make_pair(-1, SEXP_SRC::UNKNOWN);
 }
 
 void skip_white(const char **str)

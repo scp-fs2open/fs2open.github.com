@@ -2564,7 +2564,7 @@ void ai_update_goal_references(ai_goal *goals, SEXP_REF_TYPE type, const char *o
 	}
 }
 
-int query_referenced_in_ai_goals(ai_goal *goals, SEXP_REF_TYPE type, const char *name)
+bool query_referenced_in_ai_goals(ai_goal *goals, SEXP_REF_TYPE type, const char *name)
 {
 	int i, mode, flag;
 
@@ -2622,11 +2622,11 @@ int query_referenced_in_ai_goals(ai_goal *goals, SEXP_REF_TYPE type, const char 
 		if (flag)  // is this a valid goal to parse for this conversion?
 		{
 			if (!stricmp(goals[i].target_name, name))
-				return 1;
+				return true;
 		}
 	}
 
-	return 0;
+	return false;
 }
 
 char *ai_add_dock_name(const char *str)

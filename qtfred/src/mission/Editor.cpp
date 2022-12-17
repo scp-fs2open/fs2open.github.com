@@ -36,13 +36,13 @@
 
 namespace {
 
-int query_referenced_in_ai_goals(SEXP_REF_TYPE type, const char* name) {
+std::pair<int, SEXP_SRC> query_referenced_in_ai_goals(SEXP_REF_TYPE type, const char* name) {
 	int i;
 
 	for (i = 0; i < MAX_AI_INFO; i++) {  // loop through all Ai_info entries
 		if (Ai_info[i].shipnum >= 0) {  // skip if unused
 			if (query_referenced_in_ai_goals(Ai_info[i].goals, type, name)) {
-				return Ai_info[i].shipnum | SRC_SHIP_ORDER;
+				return std::make_pair(Ai_info[i].shipnum, SEXP_SRC::SHIP_ORDER);
 			}
 		}
 	}
@@ -50,12 +50,12 @@ int query_referenced_in_ai_goals(SEXP_REF_TYPE type, const char* name) {
 	for (i = 0; i < MAX_WINGS; i++) {
 		if (Wings[i].wave_count) {
 			if (query_referenced_in_ai_goals(Wings[i].ai_goals, type, name)) {
-				return i | SRC_WING_ORDER;
+				return std::make_pair(i, SEXP_SRC::WING_ORDER);
 			}
 		}
 	}
 
-	return 0;
+	return std::make_pair(-1, SEXP_SRC::NONE);
 }
 
 // Used in the FRED drop-down menu and in error_check_initial_orders
@@ -999,6 +999,7 @@ int Editor::reference_handler(const char* name, SEXP_REF_TYPE type, int obj) {
 
 	char msg[2048], text[128], type_name[128];
 	int r, n, node;
+	SEXP_SRC source;
 
 	switch (type) {
 	case SEXP_REF_TYPE::SHIP:
@@ -1025,27 +1026,29 @@ int Editor::reference_handler(const char* name, SEXP_REF_TYPE type, int obj) {
 		Error(LOCATION, "Type unknown for object \"%s\".  Let Hoffos know now!", name);
 	}
 
-	r = query_referenced_in_sexp(type, name, &node);
-	if (r) {
-		n = r & SRC_DATA_MASK;
-		switch (r & SRC_MASK) {
-		case SRC_SHIP_ARRIVAL:
+	auto pair = query_referenced_in_sexp(type, name, node);
+	n = pair.first;
+	source = pair.second;
+
+	if (source != SEXP_SRC::NONE) {
+		switch (source) {
+		case SEXP_SRC::SHIP_ARRIVAL:
 			sprintf(text, "the arrival cue of ship \"%s\"", Ships[n].ship_name);
 			break;
 
-		case SRC_SHIP_DEPARTURE:
+		case SEXP_SRC::SHIP_DEPARTURE:
 			sprintf(text, "the departure cue of ship \"%s\"", Ships[n].ship_name);
 			break;
 
-		case SRC_WING_ARRIVAL:
+		case SEXP_SRC::WING_ARRIVAL:
 			sprintf(text, "the arrival cue of wing \"%s\"", Wings[n].name);
 			break;
 
-		case SRC_WING_DEPARTURE:
+		case SEXP_SRC::WING_DEPARTURE:
 			sprintf(text, "the departure cue of wing \"%s\"", Wings[n].name);
 			break;
 
-		case SRC_EVENT:
+		case SEXP_SRC::EVENT:
 			if (!Mission_events[n].name.empty()) {
 				sprintf(text, "event \"%s\"", Mission_events[n].name.c_str());
 			} else {
@@ -1054,7 +1057,7 @@ int Editor::reference_handler(const char* name, SEXP_REF_TYPE type, int obj) {
 
 			break;
 
-		case SRC_MISSION_GOAL:
+		case SEXP_SRC::MISSION_GOAL:
 			if (!Mission_goals[n].name.empty()) {
 				sprintf(text, "mission goal \"%s\"", Mission_goals[n].name.c_str());
 			} else {
@@ -1063,11 +1066,11 @@ int Editor::reference_handler(const char* name, SEXP_REF_TYPE type, int obj) {
 
 			break;
 
-		case SRC_DEBRIEFING:
+		case SEXP_SRC::DEBRIEFING:
 			sprintf(text, "debriefing #%d", n);
 			break;
 
-		case SRC_BRIEFING:
+		case SEXP_SRC::BRIEFING:
 			sprintf(text, "briefing #%d", n);
 			break;
 
@@ -1083,7 +1086,7 @@ int Editor::reference_handler(const char* name, SEXP_REF_TYPE type, int obj) {
 			"Do you want to delete it anyway?\n\n"
 			"(click Cancel to go to the reference)", type_name, text);
 
-		r = sexp_reference_handler(node, r, msg);
+		r = sexp_reference_handler(node, source, n, msg);
 		if (r == 1) {
 			if (obj >= 0) {
 				unmarkObject(obj);
@@ -1098,15 +1101,17 @@ int Editor::reference_handler(const char* name, SEXP_REF_TYPE type, int obj) {
 		}
 	}
 
-	r = query_referenced_in_ai_goals(type, name);
-	if (r) {
-		n = r & SRC_DATA_MASK;
-		switch (r & SRC_MASK) {
-		case SRC_SHIP_ORDER:
+	pair = query_referenced_in_ai_goals(type, name);
+	n = pair.first;
+	source = pair.second;
+
+	if (source != SEXP_SRC::NONE) {
+		switch (source) {
+		case SEXP_SRC::SHIP_ORDER:
 			sprintf(text, "ship \"%s\"", Ships[n].ship_name);
 			break;
 
-		case SRC_WING_ORDER:
+		case SEXP_SRC::WING_ORDER:
 			sprintf(text, "wing \"%s\"", Wings[n].name);
 			break;
 
@@ -1119,7 +1124,7 @@ int Editor::reference_handler(const char* name, SEXP_REF_TYPE type, int obj) {
 			"more initial orders).  Do you want to delete it anyway?\n\n"
 			"(click Cancel to go to the reference)", type_name, text);
 
-		r = orders_reference_handler(r, msg);
+		r = orders_reference_handler(source, n, msg);
 		if (r == 1) {
 			if (obj >= 0) {
 				unmarkObject(obj);
@@ -1162,7 +1167,7 @@ int Editor::reference_handler(const char* name, SEXP_REF_TYPE type, int obj) {
 	return 0;
 }
 
-int Editor::orders_reference_handler(int  /*code*/, char* msg) {
+int Editor::orders_reference_handler(SEXP_SRC /*source*/, int /*source_index*/, char* msg) {
 	auto r = _lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Warning,
 																   "Warning",
 																   msg,
@@ -1181,9 +1186,9 @@ int Editor::orders_reference_handler(int  /*code*/, char* msg) {
 	/*
 	ShipGoalsDlg dlg_goals;
 
-	auto n = code & SRC_DATA_MASK;
-	switch (code & SRC_MASK) {
-	case SRC_SHIP_ORDER:
+	auto n = source_index;
+	switch (source) {
+	case SEXP_SRC::SHIP_ORDER:
 		unmark_all();
 		mark_object(Ships[n].objnum);
 
@@ -1195,7 +1200,7 @@ int Editor::orders_reference_handler(int  /*code*/, char* msg) {
 
 		break;
 
-	case SRC_WING_ORDER:
+	case SEXP_SRC::WING_ORDER:
 		unmark_all();
 		mark_wing(n);
 
@@ -1214,7 +1219,7 @@ int Editor::orders_reference_handler(int  /*code*/, char* msg) {
 	delete_flag = 1;
 	return 2;
 }
-int Editor::sexp_reference_handler(int  /*node*/, int  /*code*/, const char* msg) {
+int Editor::sexp_reference_handler(int  /*node*/, SEXP_SRC /*source*/, int /*source_index*/, const char* msg) {
 	auto r = _lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Warning,
 																   "Warning",
 																   msg,
@@ -1231,9 +1236,10 @@ int Editor::sexp_reference_handler(int  /*node*/, int  /*code*/, const char* msg
 
 	// TODO: add a generic dialog system for showing these dialogs
 	/*
-	switch (code & SRC_MASK) {
-	case SRC_SHIP_ARRIVAL:
-	case SRC_SHIP_DEPARTURE:
+	int n = source_index;
+	switch (source) {
+	case SEXP_SRC::SHIP_ARRIVAL:
+	case SEXP_SRC::SHIP_DEPARTURE:
 		if (!Ship_editor_dialog.GetSafeHwnd())
 			Ship_editor_dialog.Create();
 
@@ -1243,11 +1249,11 @@ int Editor::sexp_reference_handler(int  /*node*/, int  /*code*/, const char* msg
 
 		Ship_editor_dialog.select_sexp_node = node;
 		unmark_all();
-		mark_object(Ships[code & SRC_DATA_MASK].objnum);
+		mark_object(Ships[n].objnum);
 		break;
 
-	case SRC_WING_ARRIVAL:
-	case SRC_WING_DEPARTURE:
+	case SEXP_SRC::WING_ARRIVAL:
+	case SEXP_SRC::WING_DEPARTURE:
 		if (!Wing_editor_dialog.GetSafeHwnd())
 			Wing_editor_dialog.Create();
 
@@ -1257,10 +1263,10 @@ int Editor::sexp_reference_handler(int  /*node*/, int  /*code*/, const char* msg
 
 		Wing_editor_dialog.select_sexp_node = node;
 		unmark_all();
-		mark_wing(code & SRC_DATA_MASK);
+		mark_wing(n);
 		break;
 
-	case SRC_EVENT:
+	case SEXP_SRC::EVENT:
 		if (Message_editor_dlg) {
 			Fred_main_wnd->MessageBox("You must close the message editor before the event editor can be opened");
 			break;
@@ -1276,7 +1282,7 @@ int Editor::sexp_reference_handler(int  /*node*/, int  /*code*/, const char* msg
 		Event_editor_dlg->ShowWindow(SW_RESTORE);
 		break;
 
-	case SRC_MISSION_GOAL: {
+	case SEXP_SRC::MISSION_GOAL: {
 		CMissionGoalsDlg dlg;
 
 		dlg.select_sexp_node = node;
@@ -1284,7 +1290,7 @@ int Editor::sexp_reference_handler(int  /*node*/, int  /*code*/, const char* msg
 		break;
 	}
 
-	case SRC_DEBRIEFING: {
+	case SEXP_SRC::DEBRIEFING: {
 		debriefing_editor_dlg dlg;
 
 		dlg.select_sexp_node = node;
@@ -1292,7 +1298,7 @@ int Editor::sexp_reference_handler(int  /*node*/, int  /*code*/, const char* msg
 		break;
 	}
 
-	case SRC_BRIEFING: {
+	case SEXP_SRC::BRIEFING: {
 		if (!Briefing_dialog) {
 			Briefing_dialog = new briefing_editor_dlg;
 			Briefing_dialog->create();

@@ -988,23 +988,25 @@ enum class SEXP_REF_TYPE
 	WAYPOINT_PATH
 };
 
-#define SRC_SHIP_ARRIVAL	0x10000
-#define SRC_SHIP_DEPARTURE	0x20000
-#define SRC_WING_ARRIVAL	0x30000
-#define SRC_WING_DEPARTURE	0x40000
-#define SRC_EVENT				0x50000
-#define SRC_MISSION_GOAL	0x60000
-#define SRC_SHIP_ORDER		0x70000
-#define SRC_WING_ORDER		0x80000
-#define SRC_DEBRIEFING		0x90000
-#define SRC_BRIEFING			0xa0000
-#define SRC_UNKNOWN			0xffff0000
-#define SRC_MASK				0xffff0000
-#define SRC_DATA_MASK		0xffff
+enum class SEXP_SRC
+{
+	NONE = 0,
+	SHIP_ARRIVAL,
+	SHIP_DEPARTURE,
+	WING_ARRIVAL,
+	WING_DEPARTURE,
+	EVENT,
+	MISSION_GOAL,
+	SHIP_ORDER,
+	WING_ORDER,
+	DEBRIEFING,
+	BRIEFING,
+	UNKNOWN
+};
 
 enum class SEXP_MODE
 {
-	GENERAL,
+	GENERAL = 0,
 	CAMPAIGN
 };
 
@@ -1360,7 +1362,7 @@ extern int query_operator_return_type(int op);
 extern int query_operator_argument_type(int op, int argnum);
 extern void update_sexp_references(const char *old_name, const char *new_name);
 extern void update_sexp_references(const char *old_name, const char *new_name, int format);
-extern int query_referenced_in_sexp(SEXP_REF_TYPE type, const char *name, int *node);
+extern std::pair<int, SEXP_SRC> query_referenced_in_sexp(SEXP_REF_TYPE type, const char *name, int &node);
 extern void stuff_sexp_text_string(SCP_string &dest, int node, int mode);
 extern int build_sexp_string(SCP_string &accumulator, int cur_node, int level, int mode);
 extern int sexp_query_type_match(int opf, int opr);
