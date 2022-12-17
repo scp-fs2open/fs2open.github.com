@@ -434,7 +434,7 @@ int campaign_tree_wnd::fred_check_sexp(int sexp, int type, char *msg, ...)
 	if (sexp == -1)
 		return 0;
 
-	z = check_sexp_syntax(sexp, type, 1, &faulty_node, SEXP_MODE_CAMPAIGN);
+	z = check_sexp_syntax(sexp, type, 1, &faulty_node, SEXP_MODE::CAMPAIGN);
 	if (!z)
 		return 0;
 

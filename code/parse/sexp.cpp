@@ -2044,7 +2044,7 @@ bool check_variable_data_type(int type, int var_type, int op, int argnum, const 
  * @return 0 if ok, negative if there's an error in expression..
  * See the returns types in sexp.h
  */
-int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, int mode)
+int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, SEXP_MODE mode)
 {
 	int i = 0, z, t, type, argnum = 0, count, op, type2 = 0, op2;
 	int op_node;
@@ -3153,7 +3153,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					return SEXP_CHECK_TYPE_MISMATCH;
 
 				if (Fred_running) {
-					if (mode == SEXP_MODE_CAMPAIGN) {
+					if (mode == SEXP_MODE::CAMPAIGN) {
 						for (i=0; i<Campaign.num_missions; i++)
 							if (!stricmp(CTEXT(node), Campaign.missions[i].name)) {
 								if ((i != Sexp_useful_number) && (Campaign.missions[i].level >= Campaign.missions[Sexp_useful_number].level))
@@ -3189,7 +3189,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 				// we only need to check the campaign list if running in Fred and are in campaign mode.
 				// otherwise, check the set of current goals/events
-				if (Fred_running && (mode == SEXP_MODE_CAMPAIGN)) {
+				if (Fred_running && (mode == SEXP_MODE::CAMPAIGN)) {
 					z = find_parent_operator(node);
 					Assert(z >= 0);
 					z = Sexp_nodes[z].rest;  // first argument of operator should be mission name
