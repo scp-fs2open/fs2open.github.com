@@ -2547,7 +2547,7 @@ void ai_update_goal_references(ai_goal *goals, SEXP_REF_TYPE type, const char *o
 				break;
 
 			default:
-				Warning(LOCATION, "unhandled FRED reference type %d in ai_update_goal_references", type);
+				Warning(LOCATION, "unhandled FRED reference type %d in ai_update_goal_references", (int)type);
 				break;
 		}
 
@@ -2575,6 +2575,7 @@ bool query_referenced_in_ai_goals(ai_goal *goals, SEXP_REF_TYPE type, const char
 		switch (type)
 		{
 			case SEXP_REF_TYPE::SHIP:
+			case SEXP_REF_TYPE::PLAYER:
 				switch (mode)
 				{
 					case AI_GOAL_CHASE:
