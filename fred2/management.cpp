@@ -1175,7 +1175,7 @@ int common_object_delete(int obj)
 		Assert((i >= 0) && (i < MAX_SHIPS));
 		sprintf(msg, "Player %d", i + 1);
 		name = msg;
-		r = reference_handler(name, REF_TYPE_PLAYER, obj);
+		r = reference_handler(name, SEXP_REF_TYPE::PLAYER, obj);
 		if (r)
 			return r;
 
@@ -1186,7 +1186,7 @@ int common_object_delete(int obj)
 		}
 
 		Objects[obj].type = OBJ_SHIP;  // was allocated as a ship originally, so remove as such.
-		invalidate_references(name, REF_TYPE_PLAYER);
+		invalidate_references(name, SEXP_REF_TYPE::PLAYER);
 
 		// check if any ship is docked with this ship and break dock if so
 		while (object_is_docked(&Objects[obj]))
@@ -1218,7 +1218,7 @@ int common_object_delete(int obj)
 		// we'll end up deleting the path, so check for path references
 		if (count == 1) {
 			name = wp_list->get_name();
-			r = reference_handler(name, REF_TYPE_PATH, obj);
+			r = reference_handler(name, SEXP_REF_TYPE::WAYPOINT_PATH, obj);
 			if (r)
 				return r;
 		}
@@ -1226,15 +1226,15 @@ int common_object_delete(int obj)
 		// check for waypoint references
 		sprintf(msg, "%s:%d", wp_list->get_name(), index + 1);
 		name = msg;
-		r = reference_handler(name, REF_TYPE_WAYPOINT, obj);
+		r = reference_handler(name, SEXP_REF_TYPE::WAYPOINT, obj);
 		if (r)
 			return r;
 
 		// at this point we've confirmed we want to delete it
 
-		invalidate_references(name, REF_TYPE_WAYPOINT);
+		invalidate_references(name, SEXP_REF_TYPE::WAYPOINT);
 		if (count == 1) {
-			invalidate_references(wp_list->get_name(), REF_TYPE_PATH);
+			invalidate_references(wp_list->get_name(), SEXP_REF_TYPE::WAYPOINT_PATH);
 		}
 
 		// the actual removal code has been moved to this function in waypoints.cpp
@@ -1242,13 +1242,13 @@ int common_object_delete(int obj)
 
 	} else if (type == OBJ_SHIP) {
 		name = Ships[Objects[obj].instance].ship_name;
-		r = reference_handler(name, REF_TYPE_SHIP, obj);
+		r = reference_handler(name, SEXP_REF_TYPE::SHIP, obj);
 		if (r)
 			return r;
 
 		z = Objects[obj].instance;
 		if (Ships[z].wingnum >= 1) {
-			invalidate_references(name, REF_TYPE_SHIP);
+			invalidate_references(name, SEXP_REF_TYPE::SHIP);
 			r = delete_ship_from_wing(z);
 			if (r)
 				return r;
@@ -1258,7 +1258,7 @@ int common_object_delete(int obj)
 			if (r)
 				return r;
 
-			invalidate_references(name, REF_TYPE_SHIP);
+			invalidate_references(name, SEXP_REF_TYPE::SHIP);
 		}
 
 		for (i=0; i<Num_reinforcements; i++)
@@ -1732,7 +1732,7 @@ int rename_ship(int ship, char *name)
 	Assert(strlen(name) < NAME_LENGTH);
 
 	update_sexp_references(Ships[ship].ship_name, name);
-	ai_update_goal_references(REF_TYPE_SHIP, Ships[ship].ship_name, name);
+	ai_update_goal_references(SEXP_REF_TYPE::SHIP, Ships[ship].ship_name, name);
 	update_texture_replacements(Ships[ship].ship_name, name);
 	for (i=0; i<Num_reinforcements; i++)
 		if (!stricmp(Ships[ship].ship_name, Reinforcements[i].name)) {
@@ -1746,7 +1746,7 @@ int rename_ship(int ship, char *name)
 	return 0;
 }
 
-int invalidate_references(char *name, int type)
+int invalidate_references(char *name, SEXP_REF_TYPE type)
 {
 	char new_name[512];
 	int i;
@@ -1864,7 +1864,7 @@ int get_ship_from_obj(object *objp)
 	return 0;
 }
 
-void ai_update_goal_references(int type, const char *old_name, const char *new_name)
+void ai_update_goal_references(SEXP_REF_TYPE type, const char *old_name, const char *new_name)
 {
 	int i;
 
@@ -1877,7 +1877,7 @@ void ai_update_goal_references(int type, const char *old_name, const char *new_n
 			ai_update_goal_references(Wings[i].ai_goals, type, old_name, new_name);
 }
 
-int query_referenced_in_ai_goals(int type, const char *name)
+int query_referenced_in_ai_goals(SEXP_REF_TYPE type, const char *name)
 {
 	int i;
 
@@ -1911,29 +1911,29 @@ int advanced_stricmp(char *one, char *two)
 // returns 0: go ahead change object
 //			  1: don't change it
 //			  2: abort (they used cancel to go to reference)
-int reference_handler(char *name, int type, int obj)
+int reference_handler(char *name, SEXP_REF_TYPE type, int obj)
 {
 	char msg[2048], text[128], type_name[128];
 	int r, n, node;
 
 	switch (type) {
-		case REF_TYPE_SHIP:
+		case SEXP_REF_TYPE::SHIP:
 			sprintf(type_name, "Ship \"%s\"", name);
 			break;
 
-		case REF_TYPE_WING:
+		case SEXP_REF_TYPE::WING:
 			sprintf(type_name, "Wing \"%s\"", name);
 			break;
 
-		case REF_TYPE_PLAYER:
+		case SEXP_REF_TYPE::PLAYER:
 			strcpy_s(type_name, name);
 			break;
 
-		case REF_TYPE_WAYPOINT:
+		case SEXP_REF_TYPE::WAYPOINT:
 			sprintf(type_name, "Waypoint \"%s\"", name);
 			break;
 
-		case REF_TYPE_PATH:
+		case SEXP_REF_TYPE::WAYPOINT_PATH:
 			sprintf(type_name, "Waypoint path \"%s\"", name);
 			break;
 
@@ -2046,7 +2046,7 @@ int reference_handler(char *name, int type, int obj)
 		}
 	}
 
-	if ((type != REF_TYPE_SHIP) && (type != REF_TYPE_WING))
+	if ((type != SEXP_REF_TYPE::SHIP) && (type != SEXP_REF_TYPE::WING))
 		return 0;
 
 	for (n=0; n<Num_reinforcements; n++)

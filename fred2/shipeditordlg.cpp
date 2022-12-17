@@ -1209,7 +1209,7 @@ int CShipEditorDlg::update_data(int redraw)
 		str = Ships[single_ship].ship_name;
 		if (strcmp(old_name, str)) {
 			update_sexp_references(old_name, str);
-			ai_update_goal_references(REF_TYPE_SHIP, old_name, str);
+			ai_update_goal_references(SEXP_REF_TYPE::SHIP, old_name, str);
 			update_texture_replacements(old_name, str);
 			for (i=0; i<Num_reinforcements; i++)
 				if (!strcmp(old_name, Reinforcements[i].name)) {

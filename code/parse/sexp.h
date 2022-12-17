@@ -979,11 +979,14 @@ const char *CTEXT(int n);
 #define CADDDDR(n)	CAR(CDDDDR(n))
 #define CADDDDDR(n)	CAR(CDDDDDR(n))
 
-#define REF_TYPE_SHIP		1
-#define REF_TYPE_WING		2
-#define REF_TYPE_PLAYER		3
-#define REF_TYPE_WAYPOINT	4
-#define REF_TYPE_PATH		5	// waypoint path
+enum class SEXP_REF_TYPE
+{
+	SHIP = 1,
+	WING,
+	PLAYER,
+	WAYPOINT,
+	WAYPOINT_PATH
+};
 
 #define SRC_SHIP_ARRIVAL	0x10000
 #define SRC_SHIP_DEPARTURE	0x20000
@@ -1354,7 +1357,7 @@ extern int query_operator_return_type(int op);
 extern int query_operator_argument_type(int op, int argnum);
 extern void update_sexp_references(const char *old_name, const char *new_name);
 extern void update_sexp_references(const char *old_name, const char *new_name, int format);
-extern int query_referenced_in_sexp(int mode, const char *name, int *node);
+extern int query_referenced_in_sexp(SEXP_REF_TYPE type, const char *name, int *node);
 extern void stuff_sexp_text_string(SCP_string &dest, int node, int mode);
 extern int build_sexp_string(SCP_string &accumulator, int cur_node, int level, int mode);
 extern int sexp_query_type_match(int opf, int opr);

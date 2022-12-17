@@ -31980,7 +31980,7 @@ void update_sexp_references(const char *old_name, const char *new_name, int form
 	}
 }
 
-int query_referenced_in_sexp(int  /*mode*/, const char *name, int *node)
+int query_referenced_in_sexp(SEXP_REF_TYPE  /*type*/, const char *name, int *node)
 {
 	int i, n, j;
 

@@ -136,7 +136,7 @@ bool WaypointEditorDialogModel::apply() {
 		str = _currentName.c_str();
 		if (strcmp(old_name, str) != 0) {
 			update_sexp_references(old_name, str);
-			_editor->ai_update_goal_references(REF_TYPE_WAYPOINT, old_name, str);
+			_editor->ai_update_goal_references(SEXP_REF_TYPE::WAYPOINT, old_name, str);
 			_editor->update_texture_replacements(old_name, str);
 		}
 

@@ -36,7 +36,7 @@
 
 namespace {
 
-int query_referenced_in_ai_goals(int type, const char* name) {
+int query_referenced_in_ai_goals(SEXP_REF_TYPE type, const char* name) {
 	int i;
 
 	for (i = 0; i < MAX_AI_INFO; i++) {  // loop through all Ai_info entries
@@ -220,7 +220,7 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 				old_name = Ships[Wings[i].ship_index[j]].ship_name;
 				if (stricmp(name, old_name) != 0) {  // need to fix name
 					update_sexp_references(old_name, name);
-					ai_update_goal_references(REF_TYPE_SHIP, old_name, name);
+					ai_update_goal_references(SEXP_REF_TYPE::SHIP, old_name, name);
 					update_texture_replacements(old_name, name);
 					for (k = 0; k < Num_reinforcements; k++) {
 						if (!strcmp(old_name, Reinforcements[k].name)) {
@@ -839,7 +839,7 @@ int Editor::common_object_delete(int obj) {
 		Assert((i >= 0) && (i < MAX_SHIPS));
 		sprintf(msg, "Player %d", i + 1);
 		name = msg;
-		r = reference_handler(name, REF_TYPE_PLAYER, obj);
+		r = reference_handler(name, SEXP_REF_TYPE::PLAYER, obj);
 		if (r) {
 			return r;
 		}
@@ -852,7 +852,7 @@ int Editor::common_object_delete(int obj) {
 		}
 
 		Objects[obj].type = OBJ_SHIP;  // was allocated as a ship originally, so remove as such.
-		invalidate_references(name, REF_TYPE_PLAYER);
+		invalidate_references(name, SEXP_REF_TYPE::PLAYER);
 
 		// check if any ship is docked with this ship and break dock if so
 		while (object_is_docked(&Objects[obj])) {
@@ -883,7 +883,7 @@ int Editor::common_object_delete(int obj) {
 		// we'll end up deleting the path, so check for path references
 		if (count == 1) {
 			name = wp_list->get_name();
-			r = reference_handler(name, REF_TYPE_PATH, obj);
+			r = reference_handler(name, SEXP_REF_TYPE::WAYPOINT_PATH, obj);
 			if (r) {
 				return r;
 			}
@@ -892,16 +892,16 @@ int Editor::common_object_delete(int obj) {
 		// check for waypoint references
 		sprintf(msg, "%s:%d", wp_list->get_name(), index + 1);
 		name = msg;
-		r = reference_handler(name, REF_TYPE_WAYPOINT, obj);
+		r = reference_handler(name, SEXP_REF_TYPE::WAYPOINT, obj);
 		if (r) {
 			return r;
 		}
 
 		// at this point we've confirmed we want to delete it
 
-		invalidate_references(name, REF_TYPE_WAYPOINT);
+		invalidate_references(name, SEXP_REF_TYPE::WAYPOINT);
 		if (count == 1) {
-			invalidate_references(wp_list->get_name(), REF_TYPE_PATH);
+			invalidate_references(wp_list->get_name(), SEXP_REF_TYPE::WAYPOINT_PATH);
 		}
 
 		// the actual removal code has been moved to this function in waypoints.cpp
@@ -909,14 +909,14 @@ int Editor::common_object_delete(int obj) {
 
 	} else if (type == OBJ_SHIP) {
 		name = Ships[Objects[obj].instance].ship_name;
-		r = reference_handler(name, REF_TYPE_SHIP, obj);
+		r = reference_handler(name, SEXP_REF_TYPE::SHIP, obj);
 		if (r) {
 			return r;
 		}
 
 		z = Objects[obj].instance;
 		if (Ships[z].wingnum >= 1) {
-			invalidate_references(name, REF_TYPE_SHIP);
+			invalidate_references(name, SEXP_REF_TYPE::SHIP);
 			r = delete_ship_from_wing(z);
 			if (r) {
 				return r;
@@ -928,7 +928,7 @@ int Editor::common_object_delete(int obj) {
 				return r;
 			}
 
-			invalidate_references(name, REF_TYPE_SHIP);
+			invalidate_references(name, SEXP_REF_TYPE::SHIP);
 		}
 
 		for (i = 0; i < Num_reinforcements; i++) {
@@ -995,29 +995,29 @@ void Editor::setActiveViewport(EditorViewport* viewport) {
 	_lastActiveViewport = viewport;
 }
 
-int Editor::reference_handler(const char* name, int type, int obj) {
+int Editor::reference_handler(const char* name, SEXP_REF_TYPE type, int obj) {
 
 	char msg[2048], text[128], type_name[128];
 	int r, n, node;
 
 	switch (type) {
-	case REF_TYPE_SHIP:
+	case SEXP_REF_TYPE::SHIP:
 		sprintf(type_name, "Ship \"%s\"", name);
 		break;
 
-	case REF_TYPE_WING:
+	case SEXP_REF_TYPE::WING:
 		sprintf(type_name, "Wing \"%s\"", name);
 		break;
 
-	case REF_TYPE_PLAYER:
+	case SEXP_REF_TYPE::PLAYER:
 		strcpy_s(type_name, name);
 		break;
 
-	case REF_TYPE_WAYPOINT:
+	case SEXP_REF_TYPE::WAYPOINT:
 		sprintf(type_name, "Waypoint \"%s\"", name);
 		break;
 
-	case REF_TYPE_PATH:
+	case SEXP_REF_TYPE::WAYPOINT_PATH:
 		sprintf(type_name, "Waypoint path \"%s\"", name);
 		break;
 
@@ -1134,7 +1134,7 @@ int Editor::reference_handler(const char* name, int type, int obj) {
 		}
 	}
 
-	if ((type != REF_TYPE_SHIP) && (type != REF_TYPE_WING)) {
+	if ((type != SEXP_REF_TYPE::SHIP) && (type != SEXP_REF_TYPE::WING)) {
 		return 0;
 	}
 
@@ -1369,7 +1369,7 @@ int Editor::delete_ship_from_wing(int ship) {
 	missionChanged();
 	return 0;
 }
-int Editor::invalidate_references(const char* name, int type) {
+int Editor::invalidate_references(const char* name, SEXP_REF_TYPE type) {
 	char new_name[512];
 	int i;
 
@@ -1385,7 +1385,7 @@ int Editor::invalidate_references(const char* name, int type) {
 
 	return 0;
 }
-void Editor::ai_update_goal_references(int type, const char* old_name, const char* new_name) {
+void Editor::ai_update_goal_references(SEXP_REF_TYPE type, const char* old_name, const char* new_name) {
 	int i;
 
 	for (i = 0; i < MAX_AI_INFO; i++) {  // loop through all Ai_info entries
@@ -1414,7 +1414,7 @@ int Editor::rename_ship(int ship, char* name) {
 	Assert(strlen(name) < NAME_LENGTH);
 
 	update_sexp_references(Ships[ship].ship_name, name);
-	ai_update_goal_references(REF_TYPE_SHIP, Ships[ship].ship_name, name);
+	ai_update_goal_references(SEXP_REF_TYPE::SHIP, Ships[ship].ship_name, name);
 	update_texture_replacements(Ships[ship].ship_name, name);
 	for (i = 0; i < Num_reinforcements; i++) {
 		if (!stricmp(Ships[ship].ship_name, Reinforcements[i].name)) {
@@ -1440,7 +1440,7 @@ void Editor::delete_reinforcement(int num) {
 }
 int Editor::check_wing_dependencies(int wing_num) {
 	const char* name = Wings[wing_num].name;
-	return reference_handler(name, REF_TYPE_WING, -1);
+	return reference_handler(name, SEXP_REF_TYPE::WING, -1);
 }
 int Editor::set_reinforcement(const char* name, int state) {
 	int i, index, cur = -1;

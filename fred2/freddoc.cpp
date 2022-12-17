@@ -277,7 +277,7 @@ bool CFREDDoc::load_mission(char *pathname, int flags) {
 				old_name = Ships[Wings[i].ship_index[j]].ship_name;
 				if (stricmp(name, old_name)) {  // need to fix name
 					update_sexp_references(old_name, name);
-					ai_update_goal_references(REF_TYPE_SHIP, old_name, name);
+					ai_update_goal_references(SEXP_REF_TYPE::SHIP, old_name, name);
 					update_texture_replacements(old_name, name);
 					for (k = 0; k < Num_reinforcements; k++)
 						if (!strcmp(old_name, Reinforcements[k].name)) {

@@ -36,7 +36,7 @@ int Editor::delete_wing(int wing_num, int bypass)
 		}
 	}
 
-	invalidate_references(Wings[wing_num].name, REF_TYPE_WING);
+	invalidate_references(Wings[wing_num].name, SEXP_REF_TYPE::WING);
 	if (!bypass) {
 		total = Wings[wing_num].wave_count;
 		for (i = 0; i < total; i++) {

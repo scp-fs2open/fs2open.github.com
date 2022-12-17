@@ -698,7 +698,7 @@ int wing_editor::update_data(int redraw)
 		str = Wings[cur_wing].name;
 		if (strcmp(old_name, str)) {
 			update_sexp_references(old_name, str);
-			ai_update_goal_references(REF_TYPE_WING, old_name, str);
+			ai_update_goal_references(SEXP_REF_TYPE::WING, old_name, str);
 			update_texture_replacements(old_name, str);
 			for (i=0; i<Num_reinforcements; i++)
 				if (!strcmp(old_name, Reinforcements[i].name)) {
