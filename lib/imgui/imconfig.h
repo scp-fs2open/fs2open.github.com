@@ -27,7 +27,7 @@
 //#define IMGUI_API __declspec( dllimport )
 
 //---- Don't define obsolete functions/enums/behaviors. Consider enabling from time to time after updating to avoid using soon-to-be obsolete function/names.
-#define IMGUI_DISABLE_OBSOLETE_FUNCTIONS
+//#define IMGUI_DISABLE_OBSOLETE_FUNCTIONS
 //#define IMGUI_DISABLE_OBSOLETE_KEYIO                      // 1.87: disable legacy io.KeyMap[]+io.KeysDown[] in favor io.AddKeyEvent(). This will be folded into IMGUI_DISABLE_OBSOLETE_FUNCTIONS in a few versions.
 
 //---- Disable all of Dear ImGui or don't implement standard windows/tools.
@@ -108,11 +108,6 @@
 //#define IM_DEBUG_BREAK  IM_ASSERT(0)
 //#define IM_DEBUG_BREAK  __debugbreak()
 
-//---- Debug Tools: Have the Item Picker break in the ItemAdd() function instead of ItemHoverable(),
-// (which comes earlier in the code, will catch a few extra items, allow picking items other than Hovered one.)
-// This adds a small runtime cost which is why it is not enabled by default.
-//#define IMGUI_DEBUG_TOOL_ITEM_PICKER_EX
-
 //---- Debug Tools: Enable slower asserts
 //#define IMGUI_DEBUG_PARANOID
 
@@ -123,8 +118,3 @@ namespace ImGui
     void MyFunction(const char* name, const MyMatrix44& v);
 }
 */
-
-// FSO-specific overrides
-
-// required for ImGuizmo
-#define USE_IMGUI_API
