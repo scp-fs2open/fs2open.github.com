@@ -3935,6 +3935,16 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				break;
 			}
 
+			case OPF_ASTEROID_DEBRIS:
+				if (type2 != SEXP_ATOM_STRING) {
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+
+				if (get_asteroid_position(CTEXT(node)) < 0) {
+					return SEXP_CHECK_INVALID_ASTEROID;
+				}
+				break;
+
 			case OPF_WING_FORMATION:
 				if (type2 != SEXP_ATOM_STRING) {
 					return SEXP_CHECK_TYPE_MISMATCH;
@@ -32449,6 +32459,9 @@ const char *sexp_error_message(int num)
 
 		case SEXP_CHECK_INVALID_SPECIAL_ARG_TYPE:
 			return "Invalid special argument type";
+
+		case SEXP_CHECK_INVALID_ASTEROID:
+			return "Invalid asteroid debris type";
 
 		case SEXP_CHECK_INVALID_WING_FORMATION:
 			return "Invalid wing formation";

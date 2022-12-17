@@ -3498,6 +3498,12 @@ int sexp_tree::query_default_argument_available(int op, int i)
 			}
 			return 0;
 
+		case OPF_ASTEROID_DEBRIS:
+			if ((Asteroid_info.size() - NUM_ASTEROID_POFS) > 0) {
+				return 1;
+			}
+			return 0;
+
 		default:
 			if (!Dynamic_enums.empty()) {
 				if ((type - First_available_opf_id) < (int)Dynamic_enums.size()) {
