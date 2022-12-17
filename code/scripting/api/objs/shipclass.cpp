@@ -1227,6 +1227,11 @@ ADE_FUNC(renderTechModel,
 
 	//Draw the ship!!
 	model_clear_instance(sip->model_num);
+
+	//Create an instance that can be used to clear out destroyed subobjects from rendering
+	int model_instance = model_create_instance(-1, sip->model_num);
+	model_set_up_techroom_instance(sip, model_instance);
+
 	render_info.set_detail_level_lock(0);
 
 	uint render_flags = MR_AUTOCENTER | MR_NO_FOGGING;
@@ -1236,7 +1241,7 @@ ADE_FUNC(renderTechModel,
 
 	render_info.set_flags(render_flags);
 
-	model_render_immediate(&render_info, sip->model_num, &orient, &vmd_zero_vector);
+	model_render_immediate(&render_info, sip->model_num, model_instance, &orient, &vmd_zero_vector);
 
 	//OK we're done
 	gr_end_view_matrix();
@@ -1245,6 +1250,9 @@ ADE_FUNC(renderTechModel,
 	//Bye!!
 	g3_end_frame();
 	gr_reset_clip();
+
+	//Now that we've rendered the frame we can remove the instance
+	model_delete_instance(model_instance);
 
 	return ade_set_args(L, "b", true);
 }
@@ -1296,6 +1304,11 @@ ADE_FUNC(renderTechModel2, l_Shipclass, "number X1, number Y1, number X2, number
 
 	//Draw the ship!!
 	model_clear_instance(sip->model_num);
+
+	// Create an instance that can be used to clear out destroyed subobjects from rendering
+	int model_instance = model_create_instance(-1, sip->model_num);
+	model_set_up_techroom_instance(sip, model_instance);
+
 	render_info.set_detail_level_lock(0);
 
 	uint render_flags = MR_AUTOCENTER | MR_NO_FOGGING;
@@ -1305,7 +1318,7 @@ ADE_FUNC(renderTechModel2, l_Shipclass, "number X1, number Y1, number X2, number
 
 	render_info.set_flags(render_flags);
 
-	model_render_immediate(&render_info, sip->model_num, orient, &vmd_zero_vector);
+	model_render_immediate(&render_info, sip->model_num, model_instance, orient, &vmd_zero_vector);
 
 	//OK we're done
 	gr_end_view_matrix();
@@ -1314,6 +1327,9 @@ ADE_FUNC(renderTechModel2, l_Shipclass, "number X1, number Y1, number X2, number
 	//Bye!!
 	g3_end_frame();
 	gr_reset_clip();
+
+	// Now that we've rendered the frame we can remove the instance
+	model_delete_instance(model_instance);
 
 	return ade_set_args(L, "b", true);
 }
