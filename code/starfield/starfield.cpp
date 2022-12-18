@@ -633,7 +633,7 @@ void parse_startbl(const char *filename)
 
 			// custom debris pieces
 			while (optional_string("$Motion Debris Name:")) {
-				bool in_check = false;
+				in_check = true;
 
 				stuff_string(name, F_NAME, MAX_NAME_LEN);
 
