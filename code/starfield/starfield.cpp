@@ -661,15 +661,13 @@ void parse_startbl(const char *filename)
 
 				int count = 0;
 
-				while (optional_string("+Bitmap:")) {
-
+				while (count < MAX_MOTION_DEBRIS_BITMAPS){
+					
+					required_string("+Bitmap:");
 					stuff_string(name, F_NAME, MAX_FILENAME_LEN);
 
-					if (count < MAX_MOTION_DEBRIS_BITMAPS) {
-						strcpy_s(debris_ptr->bitmaps[count++].name, name);
-					} else {
-						Warning(LOCATION, "Could not load motion debris '%s'; maximum of %d exceeded.", name, MAX_MOTION_DEBRIS_BITMAPS);
-					}
+					strcpy_s(debris_ptr->bitmaps[count++].name, name);
+
 				}
 
 				for (int i = 0; i < MAX_MOTION_DEBRIS_BITMAPS; i++) {
