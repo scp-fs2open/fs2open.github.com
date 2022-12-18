@@ -42,14 +42,14 @@
 #define DEBRIS_ROT_RANGE_SCALER		10000
 #define RND_MAX_MASK				0x3fff
 #define HALF_RND_MAX				0x2000
+#define MAX_MOTION_DEBRIS			300
 
 typedef struct {
 	vec3d pos;
 	int vclip;
 	float size;
-} motion_debris_vclips;
+} motion_debris_instance;
 
-const int MAX_DEBRIS = 300;
 const int MAX_STARS = 2000;
 const float MAX_DIST_RANGE = 80.0f;
 const float MIN_DIST_RANGE = 14.0f;
@@ -150,9 +150,9 @@ typedef struct vDist {
 
 star Stars[MAX_STARS];
 
-motion_debris_vclips Motion_debris_clips[MAX_DEBRIS];
+motion_debris_instance Motion_debris[MAX_MOTION_DEBRIS];
 
-SCP_vector<motion_debris> Motion_debris;
+SCP_vector<motion_debris_types> Motion_debris_info;
 motion_debris_bitmaps* Motion_debris_ptr;
 
 // background data
@@ -185,8 +185,8 @@ static bool Env_cubemap_drawn = false;
 static bool Irr_cubemap_drawn = false;
 
 int get_motion_debris_by_name(SCP_string name) {
-	for (int i = 0; i < (int)Motion_debris.size(); i++) {
-		if (!stricmp(Motion_debris[i].name.c_str(), name.c_str())) {
+	for (int i = 0; i < (int)Motion_debris_info.size(); i++) {
+		if (!stricmp(Motion_debris_info[i].name.c_str(), name.c_str())) {
 			return i;
 		}
 	}
@@ -230,7 +230,7 @@ void stars_load_motion_debris(motion_debris_bitmaps* vclips)
 
 void stars_load_debris(int fullneb, SCP_string custom_name)
 {
-	if (!Motion_debris_enabled || ((int)Motion_debris.size() == 0)) {
+	if (!Motion_debris_enabled || ((int)Motion_debris_info.size() == 0)) {
 		return;
 	}
 
@@ -247,11 +247,11 @@ void stars_load_debris(int fullneb, SCP_string custom_name)
 		debris_name = "default";
 	}
 
-	int debris_position = get_motion_debris_by_name(debris_name);
+	int debris_index = get_motion_debris_by_name(debris_name);
 
 	//If we can't find the motion debris that's been called for then warn and
 	//set debris override to prevent downstream errors. Then abort.
-	if (debris_position < 0) {
+	if (debris_index < 0) {
 		Warning(LOCATION, "Motion debris '%s' not found in stars.tbl!\n", debris_name.c_str());
 		Motion_debris_override = true;
 		Motion_debris_ptr = nullptr;
@@ -259,8 +259,8 @@ void stars_load_debris(int fullneb, SCP_string custom_name)
 	}
 
 	stars_release_motion_debris(Motion_debris_ptr);
-	stars_load_motion_debris(Motion_debris[debris_position].bitmaps);
-	Motion_debris_ptr = Motion_debris[debris_position].bitmaps;
+	stars_load_motion_debris(Motion_debris_info[debris_index].bitmaps);
+	Motion_debris_ptr = Motion_debris_info[debris_index].bitmaps;
 }
 
 const int MAX_PERSPECTIVE_DIVISIONS = 5;
@@ -576,7 +576,7 @@ void parse_startbl(const char *filename)
 			if (check_for_string("$Debris:")) {
 
 				mprintf(("Using deprecated motion debris parsing for Default motion debris!\n"));
-				motion_debris this_debris;
+				motion_debris_types this_debris;
 				this_debris.name = "Default";
 
 				int count = 0;
@@ -593,7 +593,7 @@ void parse_startbl(const char *filename)
 					}
 				}
 				if (count == MAX_MOTION_DEBRIS_BITMAPS) {
-					Motion_debris.push_back(this_debris);
+					Motion_debris_info.push_back(this_debris);
 				} else {
 					error_display(0, "Not enough bitmaps defined for motion debris '%s'. Skipping!\n", this_debris.name.c_str());
 				}
@@ -606,7 +606,7 @@ void parse_startbl(const char *filename)
 			if (check_for_string("$DebrisNeb:")) {
 
 				mprintf(("Using deprecated motion debris parsing for Nebula motion debris!\n"));
-				motion_debris this_debris;
+				motion_debris_types this_debris;
 				this_debris.name = "Nebula";
 
 				int count = 0;
@@ -623,7 +623,7 @@ void parse_startbl(const char *filename)
 					}
 				}
 				if (count == MAX_MOTION_DEBRIS_BITMAPS) {
-					Motion_debris.push_back(this_debris);
+					Motion_debris_info.push_back(this_debris);
 				} else {
 					error_display(0, "Not enough bitmaps defined for motion debris '%s'. Skipping!\n", this_debris.name.c_str());
 				}
@@ -637,17 +637,27 @@ void parse_startbl(const char *filename)
 
 				stuff_string(name, F_NAME, MAX_NAME_LEN);
 
-				// check that the name is unique
+				motion_debris_types this_debris;
+				this_debris.name = name;
+
+				// check if we will replace an existing entry
 				int check = get_motion_debris_by_name(name);
 
-				if (check >= 0) {
-					error_display(0, "Motion debris name %s is already used; All names must be unique. Skipping!\n", name);
-					skip_to_start_of_string_either("$Motion Debris Name:", "#end");
-					continue;
+				motion_debris_types* debris_ptr;
+
+				//If we're going to create a new motion debris then set it up
+				if (check == -1) {
+
+					// initialize all the names as empty strings for later checking
+					for (int i = 0; i < MAX_MOTION_DEBRIS_BITMAPS; i++) {
+						this_debris.bitmaps[i].name[0] = '\0';
+					}
+
+					Motion_debris_info.push_back(this_debris);
+					check = (int)Motion_debris_info.size() - 1;
 				}
 
-				motion_debris this_debris;
-				this_debris.name = name;
+				debris_ptr = &Motion_debris_info[check];
 
 				int count = 0;
 
@@ -656,15 +666,18 @@ void parse_startbl(const char *filename)
 					stuff_string(name, F_NAME, MAX_FILENAME_LEN);
 
 					if (count < MAX_MOTION_DEBRIS_BITMAPS) {
-						strcpy_s(this_debris.bitmaps[count++].name, name);
+						strcpy_s(debris_ptr->bitmaps[count++].name, name);
 					} else {
 						Warning(LOCATION, "Could not load motion debris '%s'; maximum of %d exceeded.", name, MAX_MOTION_DEBRIS_BITMAPS);
 					}
 				}
-				if (count == MAX_MOTION_DEBRIS_BITMAPS) {
-					Motion_debris.push_back(this_debris);
-				} else {
-					error_display(0, "Not enough bitmaps defined for motion debris '%s'. Skipping!\n", this_debris.name.c_str());
+
+				for (int i = 0; i < MAX_MOTION_DEBRIS_BITMAPS; i++) {
+					if(debris_ptr->bitmaps[i].name[0] == '\0'){
+						error_display(0, "Not enough bitmaps defined for motion debris '%s'. Removing!\n", this_debris.name.c_str());
+						Motion_debris_info.erase(Motion_debris_info.begin() + check);
+						break;
+					}
 				}
 
 			}
@@ -1007,7 +1020,7 @@ void stars_post_level_init()
 
 	}
 
-	memset( &Motion_debris_clips, 0, sizeof(motion_debris_vclips) * MAX_DEBRIS );
+	memset( &Motion_debris, 0, sizeof(motion_debris_instance) * MAX_MOTION_DEBRIS );
 
 	
 	for (i=0; i<8; i++ ) {
@@ -1881,11 +1894,11 @@ void stars_draw_motion_debris()
 	if (Motion_debris_override)
 		return;
 
-	if (!Motion_debris_enabled || ((int)Motion_debris.size() == 0)) {
+	if (!Motion_debris_enabled || ((int)Motion_debris_info.size() == 0)) {
 		return;
 	}
 
-	for (motion_debris_vclips &mdebris : Motion_debris_clips) {
+	for (motion_debris_instance &mdebris : Motion_debris) {
 		float vdist = vm_vec_dist(&mdebris.pos, &Eye_position);
 
 		if ((vdist < MIN_DIST_RANGE) || (vdist > MAX_DIST_RANGE)) {

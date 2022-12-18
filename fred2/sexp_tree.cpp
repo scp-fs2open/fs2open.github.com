@@ -3505,7 +3505,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 			return 0;
 
 		case OPF_MOTION_DEBRIS:
-			if (Motion_debris.size() > 0) {
+			if (Motion_debris_info.size() > 0) {
 				return 1;
 			}
 			return 0;
@@ -7166,8 +7166,8 @@ sexp_list_item* sexp_tree::get_listing_opf_motion_debris()
 
 	head.add_data(SEXP_NONE_STRING);
 
-	for (int i = 0; i < (int)Motion_debris.size(); i++) {
-		head.add_data(Motion_debris[i].name.c_str());
+	for (int i = 0; i < (int)Motion_debris_info.size(); i++) {
+		head.add_data(Motion_debris_info[i].name.c_str());
 	}
 
 	return head.next;

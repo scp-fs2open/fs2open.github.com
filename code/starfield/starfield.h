@@ -64,12 +64,12 @@ struct motion_debris_bitmaps {
 	char name[MAX_FILENAME_LEN];
 };
 
-struct motion_debris {
+struct motion_debris_types {
 	motion_debris_bitmaps bitmaps[MAX_MOTION_DEBRIS_BITMAPS];
 	SCP_string name;
 };
 
-extern SCP_vector<motion_debris> Motion_debris;
+extern SCP_vector<motion_debris_types> Motion_debris_info;
 extern motion_debris_bitmaps* Motion_debris_ptr;
 
 void stars_swap_backgrounds(int idx1, int idx2);
