@@ -399,13 +399,22 @@ void event_editor::OnBeginlabeleditEventTree(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	TV_DISPINFO* pTVDispInfo = (TV_DISPINFO*)pNMHDR;
 	CEdit *edit;
+	bool is_operator;
 
-	if (m_event_tree.edit_label(pTVDispInfo->item.hItem) == 1)	{
-		*pResult = 0;
-		modified = 1;
-		edit = m_event_tree.GetEditControl();
-		Assert(edit);
-		edit->SetLimitText(NAME_LENGTH - 1);
+	if (m_event_tree.edit_label(pTVDispInfo->item.hItem, &is_operator) == 1)	{
+		// when editing operators, do not use the built-in CEdit control, but overlay the special CComboBox
+		if (is_operator) {
+			*pResult = 1;
+			modified = 1;
+			m_event_tree.start_operator_edit(pTVDispInfo->item.hItem);
+		}
+		else {
+			*pResult = 0;
+			modified = 1;
+			edit = m_event_tree.GetEditControl();
+			Assert(edit);
+			edit->SetLimitText(NAME_LENGTH - 1);
+		}
 
 	} else
 		*pResult = 1;

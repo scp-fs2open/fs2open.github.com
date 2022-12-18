@@ -161,7 +161,7 @@ public:
 	void expand_operator(int node);
 	void merge_operator(int node);
 	int end_label_edit(TVITEMA &item);
-	int edit_label(HTREEITEM h);
+	int edit_label(HTREEITEM h, bool *is_operator = nullptr);
 	virtual void edit_comment(HTREEITEM h);
 	virtual void edit_bg_color(HTREEITEM h);
 	int identify_arg_type(int node);
@@ -328,6 +328,10 @@ public:
 	CEdit *help_box;
 	CEdit *mini_help_box;
 	CPoint m_pt;
+	CComboBox m_operator_box;
+
+	void start_operator_edit(HTREEITEM h);
+	void end_operator_edit(bool confirm);
 
 	// ClassWizard generated virtual function overrides
 	//{{AFX_VIRTUAL(sexp_tree)
@@ -361,6 +365,10 @@ protected:
 
 	int flag;
 	int *modified;
+	bool m_operator_popup_active;
+	bool m_operator_popup_created;
+	int m_font_height;
+	int m_font_max_width;
 
 	SCP_vector<sexp_tree_item> tree_nodes;
 	int total_nodes;
