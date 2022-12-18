@@ -593,13 +593,14 @@ void render_subsystem(ship_subsys* ss, object* objp)
 	} else {
 		vec3d subsys_position;
 		vm_vec_add(&subsys_position, &objp->pos, &ss->system_info->pnt);
-		vm_vec_rotate(&subsys_position, &subsys_position, &objp->orient);
+		vec3d rotated_position;
+		vm_vec_unrotate(&rotated_position, &subsys_position, &objp->orient);
 
 		color c;
 		gr_init_alphacolor(&c, 255, 32, 32, 128);
 
 		g3_draw_htl_sphere(&c,
-			&subsys_position,
+			&rotated_position,
 			ss->system_info->radius,
 			ALPHA_BLEND_ALPHA_BLEND_ALPHA,
 			ZBUFFER_TYPE_FULL);
