@@ -59,6 +59,14 @@ jobs:
           LINUX_RESULT: ${{ inputs.linux_result }}
           WINDOWS_RESULT: ${{ inputs.windows_result }}
           MAC_RESULT: ${{ inputs.mac_result }}
+          GITHUB_REPO: ${{ github.repository }} # repo this workflow was called from
+          INDIEGAMES_USER: ${{ secrets.INDIEGAMES_USER }}
+          INDIEGAMES_SSHPASS: ${{ secrets.INDIEGAMES_PASSWORD }}
+          NEBULA_USER: ${{ secrets.NEBULA_USER }}
+          NEBULA_PASSWORD: ${{ secrets.NEBULA_PASSWORD }}
+          HLP_API: ${{ secrets.HLP_API }}
+          HLP_KEY: ${{ secrets.HLP_KEY }}
+          RELEASE_TAG: ${{ inputs.releaseTag }}
         run: python ci/post/main.py release
 
       - name: Post Builds (Manual trigger)
