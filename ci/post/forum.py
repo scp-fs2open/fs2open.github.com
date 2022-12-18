@@ -40,7 +40,7 @@ class ForumAPI:
             "body": content
         })
 
-        if resp.text != "OK":
+        if resp.status_code != 200:
             print("Post failed! Response: %s" %resp.text)
         
         return resp.json()
