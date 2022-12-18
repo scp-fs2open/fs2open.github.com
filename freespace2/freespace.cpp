@@ -84,7 +84,6 @@
 #include "io/timer.h"
 #include "jumpnode/jumpnode.h"
 #include "lab/labv2.h"
-#include "lab/wmcgui.h" //So that GUI_System can be initialized
 #include "libs/discord/discord.h"
 #include "libs/ffmpeg/FFmpeg.h"
 #include "lighting/lighting.h"
@@ -201,6 +200,8 @@
 
 #include <cinttypes>
 #include <stdexcept>
+
+#include "imgui.h"
 
 #ifdef WIN32
 // According to AMD and NV, these _should_ force their drivers into high-performance mode
@@ -1673,6 +1674,8 @@ void game_init()
 	// seed the random number generator
 	Random::seed(static_cast<unsigned int>(time(nullptr)));
 
+	ImGui::CreateContext();
+
 	Framerate_delay = 0;
 
 #ifndef NDEBUG
@@ -1882,12 +1885,6 @@ void game_init()
 		mprintf(( "Using high memory settings...\n" ));
 		bm_set_low_mem(0);		// Use all frames of bitmaps
 	}
-
-	//WMC - Initialize my new GUI system
-	//This may seem scary, but it should take up 0 processing time and very little memory
-	//as long as it's not being used.
-	//Otherwise, it just keeps the parsed interface.tbl in memory.
-	GUI_system.ParseClassInfo("interface.tbl");
 	
 	particle::ParticleManager::init();
 
@@ -6774,7 +6771,6 @@ void game_shutdown(void)
 
 	scpui::shutdown();				// Deinitialize the new UI system, needs to be done after scripting shutdown to make sure the resources were released properly
 
-
 	control_config_common_close();
 	io::joystick::shutdown();
 
@@ -6800,6 +6796,8 @@ void game_shutdown(void)
 	if (Is_standalone) {
 		std_deinit_standalone();
 	}
+
+	ImGui::DestroyContext();
 
 	os_cleanup();
 
