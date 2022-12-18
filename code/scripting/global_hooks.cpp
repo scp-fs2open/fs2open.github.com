@@ -172,7 +172,7 @@ const std::shared_ptr<OverridableHook<CollisionConditions>> OnBeamCollision = Ov
 		{"Beam", "weapon", "Same as \"Object\""},
 		{"Hitpos", "vector", "The world position where the collision was detected"},
 		{"Debris", "object", "The debris object with which the beam collided (only set for debris collisions)"},
-		{"Ship", "ship", "The ship object with which the asteroid collided (only set for ship collisions)"},
+		{"Ship", "ship", "The ship object with which the beam collided (only set for ship collisions)"},
 		{"Asteroid", "object", "The asteroid object with which the beam collided (only set for asteroid collisions)"},
 		{"Weapon", "weapon", "The weapon object with which the beam collided (only set for weapon collisions)"}});
 
