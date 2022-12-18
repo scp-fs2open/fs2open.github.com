@@ -8,6 +8,8 @@
 #include "ship/shiphit.h"
 #include "weapon/weapon.h"
 
+using namespace ImGui;
+
 std::map<animation::ModelAnimationTriggerType, std::map<SCP_string, bool>> manual_animation_triggers = {};
 std::map<animation::ModelAnimationTriggerType, bool> manual_animations = {};
 
@@ -36,10 +38,10 @@ void LabUi::build_species_entry(species_info species_def, int species_idx) const
 			if (class_def.species == species_idx) {
 				SCP_string node_label;
 				sprintf(node_label, "##ShipClassIndex%i", ship_info_idx);
-				ImGui::TreeNodeEx(node_label.c_str(),
+				TreeNodeEx(node_label.c_str(),
 					ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen,
 					"%s", class_def.name);
-				if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
+				if (IsItemClicked() && !IsItemToggledOpen()) {
 					getLabManager()->changeDisplayedObject(LabMode::Ship, ship_info_idx);
 				}
 			}
@@ -72,11 +74,11 @@ void LabUi::build_weapon_subtype_list() const
 					(class_def.subtype == weapon_subtype_idx && !class_def.wi_flags[Weapon::Info_Flags::Beam])) {
 					SCP_string node_label;
 					sprintf(node_label, "##WeaponClassIndex%i", weapon_idx);
-					ImGui::TreeNodeEx(node_label.c_str(),
+					TreeNodeEx(node_label.c_str(),
 						ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen,
 						"%s", class_def.name);
 
-					if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
+					if (IsItemClicked() && !IsItemToggledOpen()) {
 						getLabManager()->changeDisplayedObject(LabMode::Weapon, weapon_idx);
 					}
 				}
@@ -118,8 +120,8 @@ void LabUi::build_background_list() const
 
 	ImGuiTreeNodeFlags node_flags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
 
-	ImGui::TreeNodeEx(LAB_MISSION_NONE_STRING, node_flags, LAB_MISSION_NONE_STRING);
-	if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
+	TreeNodeEx(LAB_MISSION_NONE_STRING, node_flags, LAB_MISSION_NONE_STRING);
+	if (IsItemClicked() && !IsItemToggledOpen()) {
 		getLabManager()->Renderer->useBackground(LAB_MISSION_NONE_STRING);
 	}
 
@@ -133,9 +135,9 @@ void LabUi::build_background_list() const
 		with_TreeNode(directory_name)
 		{
 			for (const auto& mission_name : directory.second) {
-				ImGui::TreeNodeEx(mission_name.c_str(), node_flags, "%s", mission_name.c_str());
+				TreeNodeEx(mission_name.c_str(), node_flags, "%s", mission_name.c_str());
 
-				if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
+				if (IsItemClicked() && !IsItemToggledOpen()) {
 					getLabManager()->Renderer->useBackground(mission_name);
 				}
 			}
@@ -147,10 +149,10 @@ void LabUi::build_options_menu()
 {
 	with_Menu("Options")
 	{
-		ImGui::MenuItem("Render options", nullptr, &show_render_options_dialog);
-		ImGui::MenuItem("Object selector", nullptr, &show_object_selector);
-		ImGui::MenuItem("Object options", nullptr, &show_object_options_dialog);
-		ImGui::MenuItem("Close lab", "ESC", &close_lab);
+		MenuItem("Render options", nullptr, &show_render_options_dialog);
+		MenuItem("Object selector", nullptr, &show_object_selector);
+		MenuItem("Object options", nullptr, &show_object_options_dialog);
+		MenuItem("Close lab", "ESC", &close_lab);
 	}
 }
 
@@ -236,11 +238,11 @@ void LabUi::build_texture_quality_combobox()
 	{
 		for (int n = 0; n < IM_ARRAYSIZE(texture_quality_settings); n++) {
 			bool is_selected = n == static_cast<int>(getLabManager()->Renderer->getTextureQuality());
-			if (ImGui::Selectable(texture_quality_settings[n], is_selected))
+			if (Selectable(texture_quality_settings[n], is_selected))
 				getLabManager()->Renderer->setTextureQuality(static_cast<TextureQuality>(n));
 
 			if (is_selected)
-				ImGui::SetItemDefaultFocus();
+				SetItemDefaultFocus();
 		}
 	}
 }
@@ -253,12 +255,12 @@ void LabUi::build_team_color_combobox() const
 			for (const auto& team_color_name : Team_Colors) {
 				bool is_selected = team_color_name.first == getLabManager()->Renderer->getCurrentTeamColor();
 
-				if (ImGui::Selectable(team_color_name.first.c_str(), is_selected)) {
+				if (Selectable(team_color_name.first.c_str(), is_selected)) {
 					getLabManager()->Renderer->setTeamColor(team_color_name.first);
 				}
 
 				if (is_selected)
-					ImGui::SetItemDefaultFocus();
+					SetItemDefaultFocus();
 			}
 		}
 	}
@@ -271,11 +273,11 @@ void LabUi::build_antialiasing_combobox()
 		for (int n = 0; n < IM_ARRAYSIZE(antialiasing_settings); n++) {
 			bool is_selected = static_cast<int>(Gr_aa_mode) == n;
 
-			if (ImGui::Selectable(antialiasing_settings[n], is_selected))
+			if (Selectable(antialiasing_settings[n], is_selected))
 				getLabManager()->Renderer->setAAMode(static_cast<AntiAliasMode>(n));
 
 			if (is_selected)
-				ImGui::SetItemDefaultFocus();
+				SetItemDefaultFocus();
 		}
 	}
 }
@@ -287,11 +289,11 @@ void LabUi::build_tone_mapper_combobox()
 		for (int n = 0; n < IM_ARRAYSIZE(tonemappers); n++) {
 			const bool is_selected =
 				lighting_profile::tonemapper_to_name(lighting_profile::current_tonemapper()) == tonemappers[n];
-			if (ImGui::Selectable(tonemappers[n].c_str(), is_selected))
+			if (Selectable(tonemappers[n].c_str(), is_selected))
 				lighting_profile::lab_set_tonemapper(lighting_profile::name_to_tonemapper(tonemappers[n]));
 
 			if (is_selected)
-				ImGui::SetItemDefaultFocus();
+				SetItemDefaultFocus();
 		}
 	}
 }
@@ -309,31 +311,31 @@ void LabUi::show_render_options()
 
 	with_Window("Render options")
 	{
-		ImGui::Checkbox("Enable Model Rotation", &enable_model_rotation);
+		Checkbox("Enable Model Rotation", &enable_model_rotation);
 
 		with_CollapsingHeader("Model features")
 		{
-			ImGui::Checkbox("Rotate/Translate Subsystems", &animate_subsystems);
-			ImGui::Checkbox("Show full detail", &show_full_detail);
-			ImGui::Checkbox("Show thrusters", &show_thrusters);
-			ImGui::Checkbox("Show afterburners", &show_afterburners);
-			ImGui::Checkbox("Show weapons", &show_weapons);
-			ImGui::Checkbox("Show Insignia", &show_insignia);
-			ImGui::Checkbox("Show damage lightning", &show_damage_lightning);
-			ImGui::Checkbox("No glowpoints", &no_glowpoints);
+			Checkbox("Rotate/Translate Subsystems", &animate_subsystems);
+			Checkbox("Show full detail", &show_full_detail);
+			Checkbox("Show thrusters", &show_thrusters);
+			Checkbox("Show afterburners", &show_afterburners);
+			Checkbox("Show weapons", &show_weapons);
+			Checkbox("Show Insignia", &show_insignia);
+			Checkbox("Show damage lightning", &show_damage_lightning);
+			Checkbox("No glowpoints", &no_glowpoints);
 		}
 
 		with_CollapsingHeader("Texture options")
 		{
-			ImGui::Checkbox("Diffuse map", &diffuse_map);
-			ImGui::Checkbox("Glow map", &glow_map);
-			ImGui::Checkbox("Specular map", &spec_map);
-			ImGui::Checkbox("Reflection map", &reflect_map);
-			ImGui::Checkbox("Environment map", &env_map);
-			ImGui::Checkbox("Normal map", &normal_map);
-			ImGui::Checkbox("Height map", &height_map);
-			ImGui::Checkbox("Misc map", &misc_map);
-			ImGui::Checkbox("AO map", &ao_map);
+			Checkbox("Diffuse map", &diffuse_map);
+			Checkbox("Glow map", &glow_map);
+			Checkbox("Specular map", &spec_map);
+			Checkbox("Reflection map", &reflect_map);
+			Checkbox("Environment map", &env_map);
+			Checkbox("Normal map", &normal_map);
+			Checkbox("Height map", &height_map);
+			Checkbox("Misc map", &misc_map);
+			Checkbox("AO map", &ao_map);
 
 			build_texture_quality_combobox();
 
@@ -342,15 +344,15 @@ void LabUi::show_render_options()
 
 		with_CollapsingHeader("Scene rendering options")
 		{
-			ImGui::Checkbox("Hide Post Processing", &hide_post_processing);
-			ImGui::Checkbox("Render as wireframe", &use_wireframe_rendering);
-			ImGui::Checkbox("Render without light", &no_lighting);
-			ImGui::Checkbox("Render with emissive lighting", &show_emissive_lighting);
-			ImGui::SliderFloat("Light brightness", &light_factor, 0.0f, 10.0f);
-			ImGui::SliderFloat("Ambient factor", &ambient_factor, 0.0f, 10.0f);
-			ImGui::SliderFloat("Emissive amount", &emissive_factor, 0.0f, 10.0f);
-			ImGui::SliderFloat("Exposure", &exposure_level, 0.0f, 8.0f);
-			ImGui::SliderInt("Bloom level", &bloom_level, 0, 200);
+			Checkbox("Hide Post Processing", &hide_post_processing);
+			Checkbox("Render as wireframe", &use_wireframe_rendering);
+			Checkbox("Render without light", &no_lighting);
+			Checkbox("Render with emissive lighting", &show_emissive_lighting);
+			SliderFloat("Light brightness", &light_factor, 0.0f, 10.0f);
+			SliderFloat("Ambient factor", &ambient_factor, 0.0f, 10.0f);
+			SliderFloat("Emissive amount", &emissive_factor, 0.0f, 10.0f);
+			SliderFloat("Exposure", &exposure_level, 0.0f, 8.0f);
+			SliderInt("Bloom level", &bloom_level, 0, 200);
 
 			build_antialiasing_combobox();
 
@@ -358,22 +360,22 @@ void LabUi::show_render_options()
 
 			if (lighting_profile::current_tonemapper() == tnm_PPC ||
 				lighting_profile::current_tonemapper() == tnm_PPC_RGB) {
-				ImGui::SliderFloat("PPC Toe Strength", &ppcv.toe_strength, 0.0f, 1.0f);
-				ImGui::SliderFloat("PPC Toe Length", &ppcv.toe_length, 0.0f, 1.0f);
-				ImGui::SliderFloat("PPC Shoulder Angle", &ppcv.shoulder_angle, 0.0f, 1.0f);
-				ImGui::SliderFloat("PPC Shoulder Length", &ppcv.shoulder_length, 0.0f, 10.0f);
-				ImGui::SliderFloat("PPC Shoulder Strength", &ppcv.shoulder_strength, 0.0f, 1.0f);
+				SliderFloat("PPC Toe Strength", &ppcv.toe_strength, 0.0f, 1.0f);
+				SliderFloat("PPC Toe Length", &ppcv.toe_length, 0.0f, 1.0f);
+				SliderFloat("PPC Shoulder Angle", &ppcv.shoulder_angle, 0.0f, 1.0f);
+				SliderFloat("PPC Shoulder Length", &ppcv.shoulder_length, 0.0f, 10.0f);
+				SliderFloat("PPC Shoulder Strength", &ppcv.shoulder_strength, 0.0f, 1.0f);
 			}
 		}
 
 		if (getLabManager()->Renderer->currentMissionBackground != LAB_MISSION_NONE_STRING) {
-			if (ImGui::Button("Export environment cubemap", ImVec2(-FLT_MIN, ImGui::GetTextLineHeight()*2))) {
+			if (Button("Export environment cubemap", ImVec2(-FLT_MIN, GetTextLineHeight()*2))) {
 				gr_dump_envmap(getLabManager()->Renderer->currentMissionBackground.c_str());
 			}
 		}
 
 		if (graphics_options_changed()) {
-			if (ImGui::Button("Reset graphics settings", ImVec2(-FLT_MIN, ImGui::GetTextLineHeight() * 2))) {
+			if (Button("Reset graphics settings", ImVec2(-FLT_MIN, GetTextLineHeight() * 2))) {
 				getLabManager()->resetGraphicsSettings();
 
 				// In order to make the reset button work, we can't set anything here this frame; we'll wait until
@@ -435,11 +437,11 @@ void LabUi::do_triggered_anim(animation::ModelAnimationTriggerType type,
 }
 
 #define IMGUI_TABLE_ENTRY(colA, colB)     \
-	ImGui::TableNextRow();                \
-	ImGui::TableSetColumnIndex(0);        \
-	ImGui::TextUnformatted(colA);		  \
-	ImGui::TableSetColumnIndex(1);		  \
-	ImGui::TextUnformatted(colB);         \
+	TableNextRow();                \
+	TableSetColumnIndex(0);        \
+	TextUnformatted(colA);		  \
+	TableSetColumnIndex(1);		  \
+	TextUnformatted(colB);         \
 
 
 void LabUi::build_table_info_txtbox(ship_info* sip) const
@@ -454,10 +456,10 @@ void LabUi::build_table_info_txtbox(ship_info* sip) const
 		if (table_text.length() == 0 || old_class != getLabManager()->CurrentClass)
 			table_text = get_ship_table_text(sip);
 
-		ImGui::InputTextMultiline("##table_text",
+		InputTextMultiline("##table_text",
 			const_cast<char*>(table_text.c_str()),
 			table_text.length(),
-			ImVec2(-FLT_MIN, ImGui::GetTextLineHeight() * 16),
+			ImVec2(-FLT_MIN, GetTextLineHeight() * 16),
 			ImGuiInputTextFlags_ReadOnly);
 	}
 }
@@ -639,7 +641,7 @@ void LabUi::build_subsystem_list_entry(SCP_string& subsys_name,
 
 		auto display_this = show_subsys[subsys_index] == true;
 
-		ImGui::Checkbox(node_name.c_str(), &display_this);
+		Checkbox(node_name.c_str(), &display_this);
 
 		if (display_this) {
 			render_subsystem(cur_subsys, objp);
@@ -649,7 +651,7 @@ void LabUi::build_subsystem_list_entry(SCP_string& subsys_name,
 
 		sprintf(node_name, "Destroy system##%s", subsys_name.c_str());
 
-		if (ImGui::Button(node_name.c_str())) {
+		if (Button(node_name.c_str())) {
 			cur_subsys->current_hits = 0;
 			do_subobj_destroyed_stuff(shipp, cur_subsys, nullptr);
 		}
@@ -668,11 +670,11 @@ void LabUi::build_weapon_options(ship* shipp) const {
 				sprintf(text, "##Primary bank %i", bank);
 
 				build_primary_weapon_combobox(text, wip, primary_slot);
-				ImGui::SameLine();
+				SameLine();
 				static bool should_fire[MAX_SHIP_PRIMARY_BANKS] = {false, false, false};
 				SCP_string cb_text;
 				sprintf(cb_text, "Fire bank %i", bank);
-				ImGui::Checkbox(cb_text.c_str(), &should_fire[bank]);
+				Checkbox(cb_text.c_str(), &should_fire[bank]);
 				if (should_fire[bank]) {
 					getLabManager()->FirePrimaries |= 1 << bank;
 				} else {
@@ -694,11 +696,11 @@ void LabUi::build_weapon_options(ship* shipp) const {
 				SCP_string text;
 				sprintf(text, "##Secondary bank %i", bank);
 				build_secondary_weapon_combobox(text, wip, secondary_slot);
-				ImGui::SameLine();
+				SameLine();
 				static bool should_fire[MAX_SHIP_SECONDARY_BANKS] = {false, false, false, false};
 				SCP_string cb_text;
 				sprintf(cb_text, "Fire bank %i##secondary", bank);
-				ImGui::Checkbox(cb_text.c_str(), &should_fire[bank]);
+				Checkbox(cb_text.c_str(), &should_fire[bank]);
 				if (should_fire[bank]) {
 					getLabManager()->FireSecondaries |= 1 << bank;
 				} else {
@@ -721,10 +723,10 @@ void LabUi::build_primary_weapon_combobox(SCP_string& text,
 			if (Weapon_info[i].subtype == WP_MISSILE)
 				continue;
 			bool is_selected = i == (size_t)primary_slot;
-			if (ImGui::Selectable(Weapon_info[i].name, is_selected))
+			if (Selectable(Weapon_info[i].name, is_selected))
 				primary_slot = (int)i;
 			if (is_selected)
-				ImGui::SetItemDefaultFocus();
+				SetItemDefaultFocus();
 		}
 	}
 }
@@ -737,10 +739,10 @@ void LabUi::build_secondary_weapon_combobox(SCP_string& text, weapon_info* wip, 
 			if (Weapon_info[i].subtype != WP_MISSILE)
 				continue;
 			bool is_selected = i == (size_t)secondary_slot;
-			if (ImGui::Selectable(Weapon_info[i].name, is_selected))
+			if (Selectable(Weapon_info[i].name, is_selected))
 				secondary_slot = (int)i;
 			if (is_selected)
-				ImGui::SetItemDefaultFocus();
+				SetItemDefaultFocus();
 		}
 	}
 }
@@ -789,7 +791,7 @@ void LabUi::maybe_show_animation_category(const SCP_vector<animation::ModelAnima
 			for (const auto& anim_trigger : anim_triggers) {
 				if (anim_trigger.type == trigger_type) {
 
-					if (ImGui::Button(anim_trigger.name.c_str())) {
+					if (Button(anim_trigger.name.c_str())) {
 						auto& scripted_triggers = manual_animation_triggers[trigger_type];
 						auto direction = scripted_triggers[anim_trigger.name];
 						do_triggered_anim(trigger_type,
@@ -810,7 +812,7 @@ void LabUi::build_animation_options(ship* shipp, ship_info* sip) const
 	{
 		const auto& anim_triggers = sip->animations.getRegisteredTriggers();
 
-		if (ImGui::Button("Reset animations")) {
+		if (Button("Reset animations")) {
 			reset_animations(shipp, sip);
 		}
 
@@ -859,7 +861,7 @@ void LabUi::create_afterburner_animation_node(
 {
 	with_TreeNode("Afterburner")
 	{
-		if (ImGui::Button("Trigger afterburner animations")) {
+		if (Button("Trigger afterburner animations")) {
 			for (const auto& anim_trigger : anim_triggers) {
 				if (anim_trigger.type == animation::ModelAnimationTriggerType::Afterburner) {
 					auto& ab_triggers = manual_animation_triggers[animation::ModelAnimationTriggerType::Afterburner];
@@ -883,7 +885,7 @@ void LabUi::create_secondary_weapon_anim_node(
 		for (auto i = 0; i < shipp->weapons.num_secondary_banks; ++i) {
 			SCP_string button_label;
 			sprintf(button_label, "Trigger animation for secondary bank %i", i);
-			if (ImGui::Button(button_label.c_str())) {
+			if (Button(button_label.c_str())) {
 				sip->animations
 					.getAll(model_get_instance(shipp->model_instance_num),
 						animation::ModelAnimationTriggerType::SecondaryBank,
@@ -905,7 +907,7 @@ void LabUi::create_primary_weapon_anim_node(
 		for (auto i = 0; i < shipp->weapons.num_primary_banks; ++i) {
 			SCP_string button_label;
 			sprintf(button_label, "Trigger animation for primary bank %i", i);
-			if (ImGui::Button(button_label.c_str())) {
+			if (Button(button_label.c_str())) {
 				sip->animations
 					.getAll(model_get_instance(shipp->model_instance_num),
 						animation::ModelAnimationTriggerType::PrimaryBank,
@@ -941,7 +943,7 @@ void LabUi::show_object_options() const
 			with_CollapsingHeader("Object actions")
 			{
 				if (getLabManager()->isSafeForShips()) {
-					if (ImGui::Button("Destroy ship")) {
+					if (Button("Destroy ship")) {
 						if (Objects[getLabManager()->CurrentObject].type == OBJ_SHIP) {
 							auto obj = &Objects[getLabManager()->CurrentObject];
 
