@@ -166,12 +166,13 @@ const std::shared_ptr<OverridableHook<CollisionConditions>> OnBeamCollision = Ov
 	"Invoked when a beam collides with another object.",
 	{ {"Self", "object", "The \"other\" object that collided with the beam."},
 		{"Object",
-			"ship",
-			"The ship object with which the \"other\" object collided with. Provided for consistency with other "
+			"weapon",
+			"The beam object with which the \"other\" object collided with. Provided for consistency with other "
 			"collision hooks."},
-		{"Ship", "ship", "Same as \"Object\""},
+		{"Beam", "weapon", "Same as \"Object\""},
 		{"Hitpos", "vector", "The world position where the collision was detected"},
 		{"Debris", "object", "The debris object with which the beam collided (only set for debris collisions)"},
+		{"Ship", "ship", "The ship object with which the asteroid collided (only set for ship collisions)"},
 		{"Asteroid", "object", "The asteroid object with which the beam collided (only set for asteroid collisions)"},
 		{"Weapon", "weapon", "The weapon object with which the beam collided (only set for weapon collisions)"}});
 
