@@ -150,7 +150,8 @@ void LabUi::build_options_menu()
 	with_Menu("Options")
 	{
 		MenuItem("Render options", nullptr, &show_render_options_dialog);
-		MenuItem("Object selector", nullptr, &show_object_selector);
+		MenuItem("Object selector", nullptr, &show_object_selection_dialog);
+		MenuItem("Background selector", nullptr, &show_background_selection_dialog);
 		MenuItem("Object options", nullptr, &show_object_options_dialog);
 		MenuItem("Close lab", "ESC", &close_lab);
 	}
@@ -169,33 +170,45 @@ void LabUi::build_toolbar_entries()
 	}
 }
 
+void LabUi::show_background_selector() const
+{
+	with_Window("Select background")
+	{
+		with_CollapsingHeader("Mission Background")
+		{
+			build_background_list();
+		}
+	}
+}
+
+void LabUi::show_object_selector() const
+{
+	with_Window("Select object")
+	{
+		with_CollapsingHeader("Displayed Object")
+		{
+			build_ship_list();
+
+			build_weapon_list();
+		}
+	}
+}
+
 void LabUi::create_ui()
 {
+	build_toolbar_entries();
+
 	if (show_render_options_dialog)
 		show_render_options();
 
 	if (show_object_options_dialog)
 		show_object_options();
 
-	build_toolbar_entries();
+	if (show_background_selection_dialog)
+		show_background_selector();
 
-	if (show_object_selector) {
-		with_Window("Select object and background")
-		{
-
-			with_CollapsingHeader("Displayed Object")
-			{
-				build_ship_list();
-
-				build_weapon_list();
-			}
-
-			with_CollapsingHeader("Mission Background")
-			{
-				build_background_list();
-			}
-		}
-	}
+	if (show_object_selection_dialog)
+		show_object_selector();
 
 	rebuild_after_object_change = false;
 }

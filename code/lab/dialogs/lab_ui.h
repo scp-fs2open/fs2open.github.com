@@ -19,6 +19,8 @@ class LabUi {
 	void build_background_list() const;
 	void show_render_options();
 	void show_object_options() const;
+	void show_object_selector() const;
+	void show_background_selector() const;
 	void build_toolbar_entries();
 	void build_texture_quality_combobox();
 	void build_antialiasing_combobox();
@@ -64,8 +66,9 @@ class LabUi {
 	// these flags track the state of open windows. We start with the object selector open and all other
 	// subdialogs closed
 	bool show_render_options_dialog = false;
-	bool show_object_selector = true;
+	bool show_object_selection_dialog = true;
 	bool show_object_options_dialog = false;
+	bool show_background_selection_dialog = true;
 
 	// used to track the "Close Lab" function
 	bool close_lab = false;
