@@ -5785,7 +5785,7 @@ void set_primary_weapon_linkage(object *objp)
 	if (!sip->flags[Ship::Info_Flags::No_primary_linking]) {
 		if (energy > aip->ai_link_energy_levels_always) {
 			shipp->flags.set(Ship::Ship_Flags::Primary_linked);
-		} else if (energy > aip->ai_link_ammo_levels_maybe) {
+		} else if (energy > aip->ai_link_energy_levels_maybe) {
 			if (objp->hull_strength < shipp->ship_max_hull_strength / 3.0f) {
 				shipp->flags.set(Ship::Ship_Flags::Primary_linked);
 			}
@@ -11756,8 +11756,8 @@ void ai_process_subobjects(int objnum)
 	ai_info	*aip = &Ai_info[shipp->ai_index];
 	ship_info	*sip = &Ship_info[shipp->ship_info_index];
 
-	// ships that are playing dead do not process subsystems or turrets
-	if (aip->mode == AIM_PLAY_DEAD)
+	// non-player ships that are playing dead do not process subsystems or turrets
+	if ((!(objp->flags[Object::Object_Flags::Player_ship]) || Player_use_ai) && aip->mode == AIM_PLAY_DEAD)
 		return;
 
 	polymodel_instance *pmi = model_get_instance(shipp->model_instance_num);
