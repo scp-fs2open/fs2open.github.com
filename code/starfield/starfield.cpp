@@ -37,7 +37,6 @@
 #include "tracing/tracing.h"
 #include "utils/Random.h"
 
-#define MAX_DEBRIS_VCLIPS			4
 #define DEBRIS_ROT_MIN				10000
 #define DEBRIS_ROT_RANGE			8
 #define DEBRIS_ROT_RANGE_SCALER		10000
@@ -48,7 +47,7 @@ typedef struct {
 	vec3d pos;
 	int vclip;
 	float size;
-} motion_debris;
+} motion_debris_vclips;
 
 const int MAX_DEBRIS = 300;
 const int MAX_STARS = 2000;
@@ -151,25 +150,10 @@ typedef struct vDist {
 
 star Stars[MAX_STARS];
 
-motion_debris Motion_debris[MAX_DEBRIS];
+motion_debris_vclips Motion_debris_clips[MAX_DEBRIS];
 
-
-typedef struct debris_vclip {
-	int	bm;
-	int	nframes;
-	char  name[MAX_FILENAME_LEN];
-} debris_vclip;
-extern debris_vclip Debris_vclips_normal[];
-extern debris_vclip Debris_vclips_nebula[];
-extern debris_vclip *Debris_vclips;
-
-//XSTR:OFF
-debris_vclip Debris_vclips_normal[MAX_DEBRIS_VCLIPS] = { { -1, -1, "debris01" }, { -1, -1, "debris02" }, { -1, -1, "debris03" }, { -1, -1, "debris04" } };
-debris_vclip Debris_vclips_nebula[MAX_DEBRIS_VCLIPS] = { { -1, -1, "nebdeb01" }, { -1, -1, "nebdeb02" }, { -1, -1, "nebdeb03" }, { -1, -1, "nebdeb04" } };
-debris_vclip *Debris_vclips = Debris_vclips_normal;
-//XSTR:ON
-
-int stars_debris_loaded = 0;	// 0 = not loaded, 1 = normal vclips, 2 = nebula vclips
+SCP_vector<motion_debris> Motion_debris;
+motion_debris_bitmaps* Motion_debris_ptr;
 
 // background data
 int Stars_background_inited = 0;			// if we're inited
@@ -178,9 +162,6 @@ int Nmodel_instance_num = -1;					// model instance num
 matrix Nmodel_orient = IDENTITY_MATRIX;			// model orientation
 int Nmodel_flags = DEFAULT_NMODEL_FLAGS;		// model flags
 int Nmodel_bitmap = -1;						// model texture
-
-int Num_debris_normal = 0;
-int Num_debris_nebula = 0;
 
 bool Dynamic_environment = false;
 
@@ -203,14 +184,23 @@ static int Mission_env_map = -1;
 static bool Env_cubemap_drawn = false;
 static bool Irr_cubemap_drawn = false;
 
-void stars_release_debris_vclips(debris_vclip *vclips)
-{
-	int i;
+int get_motion_debris_by_name(SCP_string name) {
+	for (int i = 0; i < (int)Motion_debris.size(); i++) {
+		if (!stricmp(Motion_debris[i].name.c_str(), name.c_str())) {
+			return i;
+		}
+	}
 
-	if (vclips == NULL)
+	return -1;
+}
+
+void stars_release_motion_debris(motion_debris_bitmaps* vclips)
+{
+
+	if (vclips == nullptr)
 		return;
 
-	for (i = 0; i < MAX_DEBRIS_VCLIPS; i++) {
+	for (int i = 0; i < MAX_MOTION_DEBRIS_BITMAPS; i++) {
 		if ( (vclips[i].bm >= 0) && bm_release(vclips[i].bm) ) {
 			vclips[i].bm = -1;
 			vclips[i].nframes = -1;
@@ -218,21 +208,17 @@ void stars_release_debris_vclips(debris_vclip *vclips)
 	}
 }
 
-void stars_load_debris_vclips(debris_vclip *vclips)
+void stars_load_motion_debris(motion_debris_bitmaps* vclips)
 {
-	int i;
 
-	if (vclips == NULL) {
-		Int3();
-		return;
-	}
+	Assertion(vclips != nullptr, "Motion debris not loaded!");
 
-	for (i = 0; i < MAX_DEBRIS_VCLIPS; i++) {
+	for (int i = 0; i < MAX_MOTION_DEBRIS_BITMAPS; i++) {
 		vclips[i].bm = bm_load_animation( vclips[i].name, &vclips[i].nframes, nullptr, nullptr, nullptr, true );
 
 		if ( vclips[i].bm < 0 ) {
 			// try loading it as a single bitmap
-			vclips[i].bm = bm_load(Debris_vclips[i].name);
+			vclips[i].bm = bm_load(Motion_debris_ptr[i].name);
 			vclips[i].nframes = 1;
 
 			if (vclips[i].bm <= 0) {
@@ -242,24 +228,39 @@ void stars_load_debris_vclips(debris_vclip *vclips)
 	}
 }
 
-void stars_load_debris(int fullneb)
+void stars_load_debris(int fullneb, SCP_string custom_name)
 {
-	if (!Motion_debris_enabled) {
+	if (!Motion_debris_enabled || ((int)Motion_debris.size() == 0)) {
 		return;
 	}
 
-	// if we're in nebula mode
-	if ( fullneb && (stars_debris_loaded != 2) ) {
-		stars_release_debris_vclips(Debris_vclips);
-		stars_load_debris_vclips(Debris_vclips_nebula);
-		Debris_vclips = Debris_vclips_nebula;
-		stars_debris_loaded = 2;
-	} else if (stars_debris_loaded != 1) {
-		stars_release_debris_vclips(Debris_vclips);
-		stars_load_debris_vclips(Debris_vclips_normal);
-		Debris_vclips = Debris_vclips_normal;
-		stars_debris_loaded = 1;
+	SCP_string debris_name = "";
+	
+	if (!custom_name.empty()) {
+		debris_name = custom_name;
 	}
+
+	// if not using custom the load the default type for the mission
+	if (fullneb && debris_name.empty()) { // if we're in nebula mode
+		debris_name = "nebula";
+	} else if (debris_name.empty()) {
+		debris_name = "default";
+	}
+
+	int debris_position = get_motion_debris_by_name(debris_name);
+
+	//If we can't find the motion debris that's been called for then warn and
+	//set debris override to prevent downstream errors. Then abort.
+	if (debris_position < 0) {
+		Warning(LOCATION, "Motion debris '%s' not found in stars.tbl!\n", debris_name.c_str());
+		Motion_debris_override = true;
+		Motion_debris_ptr = nullptr;
+		return;
+	}
+
+	stars_release_motion_debris(Motion_debris_ptr);
+	stars_load_motion_debris(Motion_debris[debris_position].bitmaps);
+	Motion_debris_ptr = Motion_debris[debris_position].bitmaps;
 }
 
 const int MAX_PERSPECTIVE_DIVISIONS = 5;
@@ -431,6 +432,9 @@ void parse_startbl(const char *filename)
 
 		// freaky! ;)
 		while (!check_for_eof()) {
+			
+			optional_string("#Background Bitmaps");
+
 			while ((rc = optional_string_either("$Bitmap:", "$BitmapX:")) != -1) {
 				in_check = true;
 
@@ -455,6 +459,8 @@ void parse_startbl(const char *filename)
 			}
 
 			CHECK_END();
+
+			optional_string("#Stars");
 
 			while (optional_string("$Sun:")) {
 				in_check = true;
@@ -563,34 +569,104 @@ void parse_startbl(const char *filename)
 
 			CHECK_END();
 
+			optional_string("#Motion Debris");
+
 			// normal debris pieces
-			while (optional_string("$Debris:")) {
+			// leaving this for retail - Mjn
+			if (check_for_string("$Debris:")) {
+
+				mprintf(("Using deprecated motion debris parsing for Default motion debris!\n"));
+				motion_debris this_debris;
+				this_debris.name = "Default";
+
+				int count = 0;
+
+				while (optional_string("$Debris:")) {
 				in_check = true;
 
-				stuff_string(name, F_NAME, MAX_FILENAME_LEN);
+					stuff_string(name, F_NAME, MAX_FILENAME_LEN);
 
-				if (Num_debris_normal < MAX_DEBRIS_VCLIPS) {
-					strcpy_s(Debris_vclips_normal[Num_debris_normal++].name, name);
+					if (count < MAX_MOTION_DEBRIS_BITMAPS) {
+						strcpy_s(this_debris.bitmaps[count++].name, name);
+					} else {
+						Warning(LOCATION, "Could not load normal motion debris '%s'; maximum of %d exceeded.", name, MAX_MOTION_DEBRIS_BITMAPS);
+					}
 				}
-				else {
-					Warning(LOCATION, "Could not load normal motion debris '%s'; maximum of %d exceeded.", name, MAX_DEBRIS_VCLIPS);
+				if (count == MAX_MOTION_DEBRIS_BITMAPS) {
+					Motion_debris.push_back(this_debris);
+				} else {
+					error_display(0, "Not enough bitmaps defined for motion debris '%s'. Skipping!\n", this_debris.name.c_str());
 				}
 			}
 
 			CHECK_END();
 
 			// nebula debris pieces
-			while (optional_string("$DebrisNeb:")) {
+			// leaving this for retail - Mjn
+			if (check_for_string("$DebrisNeb:")) {
+
+				mprintf(("Using deprecated motion debris parsing for Nebula motion debris!\n"));
+				motion_debris this_debris;
+				this_debris.name = "Nebula";
+
+				int count = 0;
+
+				while (optional_string("$DebrisNeb:")) {
 				in_check = true;
 
-				stuff_string(name, F_NAME, MAX_FILENAME_LEN);
+					stuff_string(name, F_NAME, MAX_FILENAME_LEN);
 
-				if (Num_debris_nebula < MAX_DEBRIS_VCLIPS) {
-					strcpy_s(Debris_vclips_nebula[Num_debris_nebula++].name, name);
+					if (count < MAX_MOTION_DEBRIS_BITMAPS) {
+						strcpy_s(this_debris.bitmaps[count++].name, name);
+					} else {
+						Warning(LOCATION, "Could not load nebula motion debris '%s'; maximum of %d exceeded.", name, MAX_MOTION_DEBRIS_BITMAPS);
+					}
 				}
-				else {
-					Warning(LOCATION, "Could not load nebula motion debris '%s'; maximum of %d exceeded.", name, MAX_DEBRIS_VCLIPS);
+				if (count == MAX_MOTION_DEBRIS_BITMAPS) {
+					Motion_debris.push_back(this_debris);
+				} else {
+					error_display(0, "Not enough bitmaps defined for motion debris '%s'. Skipping!\n", this_debris.name.c_str());
 				}
+			}
+
+			CHECK_END();
+
+			// custom debris pieces
+			while (optional_string("$Motion Debris Name:")) {
+				bool in_check = false;
+
+				stuff_string(name, F_NAME, MAX_NAME_LEN);
+
+				// check that the name is unique
+				int check = get_motion_debris_by_name(name);
+
+				if (check >= 0) {
+					error_display(0, "Motion debris name %s is already used; All names must be unique. Skipping!\n", name);
+					skip_to_start_of_string_either("$Motion Debris Name:", "#end");
+					continue;
+				}
+
+				motion_debris this_debris;
+				this_debris.name = name;
+
+				int count = 0;
+
+				while (optional_string("+Bitmap:")) {
+
+					stuff_string(name, F_NAME, MAX_FILENAME_LEN);
+
+					if (count < MAX_MOTION_DEBRIS_BITMAPS) {
+						strcpy_s(this_debris.bitmaps[count++].name, name);
+					} else {
+						Warning(LOCATION, "Could not load motion debris '%s'; maximum of %d exceeded.", name, MAX_MOTION_DEBRIS_BITMAPS);
+					}
+				}
+				if (count == MAX_MOTION_DEBRIS_BITMAPS) {
+					Motion_debris.push_back(this_debris);
+				} else {
+					error_display(0, "Not enough bitmaps defined for motion debris '%s'. Skipping!\n", this_debris.name.c_str());
+				}
+
 			}
 
 			CHECK_END();
@@ -711,14 +787,18 @@ void stars_clear_instances()
 // call on game startup
 void stars_init()
 {
-	// starfield bitmaps
-	Num_debris_normal = 0;
-	Num_debris_nebula = 0;
 
 	// parse stars.tbl
 	parse_startbl("stars.tbl");
 
 	parse_modular_table("*-str.tbm", parse_startbl);
+
+	// Warn if we can't find the two retail motion debris types.
+	if (get_motion_debris_by_name("Default") < 0)
+		Warning(LOCATION, "Motion debris 'Default' not found in stars.tbl. Motion debris will be disabled!\n");
+
+	if (get_motion_debris_by_name("Nebula") < 0)
+		Warning(LOCATION, "Motion debris 'Nebula' not found in stars.tbl. Motion debris will be disabled!\n");
 
 	if (Cmdline_env) {
 		ENVMAP = Default_env_map = bm_load("cubemap");
@@ -927,7 +1007,7 @@ void stars_post_level_init()
 
 	}
 
-	memset( &Motion_debris, 0, sizeof(motion_debris) * MAX_DEBRIS );
+	memset( &Motion_debris_clips, 0, sizeof(motion_debris_vclips) * MAX_DEBRIS );
 
 	
 	for (i=0; i<8; i++ ) {
@@ -1801,11 +1881,11 @@ void stars_draw_motion_debris()
 	if (Motion_debris_override)
 		return;
 
-	if (!Motion_debris_enabled) {
+	if (!Motion_debris_enabled || ((int)Motion_debris.size() == 0)) {
 		return;
 	}
 
-	for (motion_debris &mdebris : Motion_debris) {
+	for (motion_debris_vclips &mdebris : Motion_debris_clips) {
 		float vdist = vm_vec_dist(&mdebris.pos, &Eye_position);
 
 		if ((vdist < MIN_DIST_RANGE) || (vdist > MAX_DIST_RANGE)) {
@@ -1813,7 +1893,7 @@ void stars_draw_motion_debris()
 			vm_vec_random_in_sphere(&mdebris.pos, &Eye_position, MAX_DIST_RANGE, !refresh_motion_debris);
 			vdist = vm_vec_dist(&mdebris.pos, &Eye_position);
 
-			mdebris.vclip = Random::next(MAX_DEBRIS_VCLIPS);	//rand()
+			mdebris.vclip = Random::next(MAX_MOTION_DEBRIS_BITMAPS); // rand()
 
 			// if we're in full neb mode
 			const float size_multiplier = i2fl(Random::next(4));
@@ -1829,7 +1909,7 @@ void stars_draw_motion_debris()
 
 		if (pnt.codes == 0) {
 			int frame = Missiontime / (DEBRIS_ROT_MIN + (1 % DEBRIS_ROT_RANGE) * DEBRIS_ROT_RANGE_SCALER);
-			frame %= Debris_vclips[mdebris.vclip].nframes;
+			frame %= Motion_debris_ptr[mdebris.vclip].nframes;
 
 			float alpha;
 
@@ -1844,7 +1924,7 @@ void stars_draw_motion_debris()
 
 			g3_transfer_vertex(&pnt, &mdebris.pos);
 
-			batching_add_bitmap(Debris_vclips[mdebris.vclip].bm + frame, &pnt, 0, mdebris.size, alpha);
+			batching_add_bitmap(Motion_debris_ptr[mdebris.vclip].bm + frame, &pnt, 0, mdebris.size, alpha);
 		}
 	}
 
@@ -2222,11 +2302,11 @@ void stars_page_in()
 	}
 
 
-	if (!Motion_debris_enabled)
+	if (!Motion_debris_enabled || Motion_debris_override)
 		return;
 
-	for (idx = 0; idx < MAX_DEBRIS_VCLIPS; idx++) {
-		bm_page_in_xparent_texture(Debris_vclips[idx].bm, Debris_vclips[idx].nframes);
+	for (idx = 0; idx < MAX_MOTION_DEBRIS_BITMAPS; idx++) {
+		bm_page_in_xparent_texture(Motion_debris_ptr[idx].bm, Motion_debris_ptr[idx].nframes);
 	}	
 }
 

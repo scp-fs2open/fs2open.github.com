@@ -721,7 +721,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "set-camera-shudder",				OP_SET_CAMERA_SHUDDER,					2,	4,			SEXP_ACTION_OPERATOR,	},
 	{ "supernova-start",				OP_SUPERNOVA_START,						1,	1,			SEXP_ACTION_OPERATOR,	},
 	{ "supernova-stop",					OP_SUPERNOVA_STOP,						0,	0,			SEXP_ACTION_OPERATOR,	},	//CommanderDJ
-	{ "set-motion-debris-override",		OP_SET_MOTION_DEBRIS,					1,  1,			SEXP_ACTION_OPERATOR,	},	// The E
+	{ "set-motion-debris-override",		OP_OVERRIDE_MOTION_DEBRIS,				1,  1,			SEXP_ACTION_OPERATOR,	},	// The E
 
 	//Background and Nebula Sub-Category
 	{ "mission-set-nebula",				OP_MISSION_SET_NEBULA,					1,	2,			SEXP_ACTION_OPERATOR,	},	// Sesquipedalian
@@ -743,6 +743,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "toggle-asteroid-field",			OP_TOGGLE_ASTEROID_FIELD,				1,	1,			SEXP_ACTION_OPERATOR,	},	// MjnMixael
 	{ "set-asteroid-field",				OP_SET_ASTEROID_FIELD,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// MjnMixael
 	{ "set-debris-field",				OP_SET_DEBRIS_FIELD,					1,	11,			SEXP_ACTION_OPERATOR,	},	// MjnMixael
+	{ "set-motion-debris",			    OP_SET_MOTION_DEBRIS,					1,	1,			SEXP_ACTION_OPERATOR,	},	// MjnMixael
 
 	//Jump Node Sub-Category
 	{ "set-jumpnode-name",				OP_JUMP_NODE_SET_JUMPNODE_NAME,			2,	2,			SEXP_ACTION_OPERATOR,	},	//CommanderDJ
@@ -3940,7 +3941,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
-				if (get_asteroid_position(CTEXT(node)) < 0) {
+				if (stricmp(CTEXT(node), SEXP_NONE_STRING) && (get_asteroid_position(CTEXT(node)) < 0)) {
 					return SEXP_CHECK_INVALID_ASTEROID;
 				}
 				break;
@@ -3956,6 +3957,16 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 				if (wing_formation_lookup(CTEXT(node)) < 0) {
 					return SEXP_CHECK_INVALID_WING_FORMATION;
+				}
+				break;
+
+			case OPF_MOTION_DEBRIS:
+				if (type2 != SEXP_ATOM_STRING) {
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+
+				if (stricmp(CTEXT(node), SEXP_NONE_STRING) && (get_motion_debris_by_name(CTEXT(node)) < 0)) {
+					return SEXP_CHECK_INVALID_MOTION_DEBRIS;
 				}
 				break;
 
@@ -15478,6 +15489,18 @@ void sexp_set_debris_field(int n)
 		o_max);
 }
 
+void sexp_set_motion_debris_type(int n)
+{
+	SCP_string name = CTEXT(n);
+
+	if (!stricmp(name.c_str(), SEXP_NONE_STRING)) {
+		Motion_debris_override = true;
+	} else {
+		Motion_debris_override = false;
+		stars_load_debris(false, name);
+	}
+}
+
 /**
  * End the mission.
  *
@@ -25421,7 +25444,8 @@ int sexp_cheat_used(int node)
 
 void sexp_set_motion_debris(int node)
 {
-	Motion_debris_override = is_sexp_true(node);
+	if (Motion_debris_ptr != nullptr)
+		Motion_debris_override = is_sexp_true(node);
 }
 
 /**
@@ -26887,6 +26911,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_SET_MOTION_DEBRIS:
+				sexp_set_motion_debris_type(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_END_MISSION:
 				sexp_end_mission(node);
 				sexp_val = SEXP_TRUE;
@@ -27450,7 +27479,7 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_supernova_stop(node);
 				break;
 
-			case OP_SET_MOTION_DEBRIS:
+			case OP_OVERRIDE_MOTION_DEBRIS:
 				sexp_val = SEXP_TRUE;
 				sexp_set_motion_debris(node);
 				break;
@@ -29120,6 +29149,7 @@ int query_operator_return_type(int op)
 		case OP_TOGGLE_ASTEROID_FIELD:
 		case OP_SET_ASTEROID_FIELD:
 		case OP_SET_DEBRIS_FIELD:
+		case OP_SET_MOTION_DEBRIS:
 		case OP_SET_PRIMARY_AMMO:
 		case OP_SET_SECONDARY_AMMO:
 		case OP_SET_PRIMARY_WEAPON:
@@ -29185,7 +29215,7 @@ int query_operator_return_type(int op)
 		case OP_COPY_VARIABLE_BETWEEN_INDEXES:
 		case OP_SET_ETS_VALUES:
 		case OP_CALL_SSM_STRIKE:
-		case OP_SET_MOTION_DEBRIS:
+		case OP_OVERRIDE_MOTION_DEBRIS:
 		case OP_TURRET_SET_PRIMARY_AMMO:
 		case OP_TURRET_SET_SECONDARY_AMMO:
 		case OP_TURRET_SET_FORCED_TARGET:
@@ -31686,6 +31716,9 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_NUMBER;
 
+		case OP_SET_MOTION_DEBRIS:
+			return OPF_MOTION_DEBRIS;
+
 		case OP_SCRIPT_EVAL_BOOL:
 		case OP_SCRIPT_EVAL_NUM:
 		case OP_SCRIPT_EVAL_BLOCK:
@@ -31802,7 +31835,7 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_SHIP;
 
-		case OP_SET_MOTION_DEBRIS:
+		case OP_OVERRIDE_MOTION_DEBRIS:
 			return OPF_BOOL;
 
 		case OP_REPLACE_TEXTURE:
@@ -32465,6 +32498,9 @@ const char *sexp_error_message(int num)
 
 		case SEXP_CHECK_INVALID_WING_FORMATION:
 			return "Invalid wing formation";
+
+		case SEXP_CHECK_INVALID_MOTION_DEBRIS:
+			return "Invalid motion debris type";
 
 		default:
 			Warning(LOCATION, "Unhandled sexp error code %d!", num);
@@ -33956,7 +33992,7 @@ int get_category(int op_id)
 		case OP_COPY_VARIABLE_BETWEEN_INDEXES:
 		case OP_SET_ETS_VALUES:
 		case OP_CALL_SSM_STRIKE:
-		case OP_SET_MOTION_DEBRIS:
+		case OP_OVERRIDE_MOTION_DEBRIS:
 		case OP_HUD_SET_CUSTOM_GAUGE_ACTIVE:
 		case OP_HUD_SET_BUILTIN_GAUGE_ACTIVE:
 		case OP_SCRIPT_EVAL_STRING:
@@ -34016,6 +34052,7 @@ int get_category(int op_id)
 		case OP_SET_ASTEROID_FIELD:
 		case OP_SET_DEBRIS_FIELD:
 		case OP_SET_WING_FORMATION:
+		case OP_SET_MOTION_DEBRIS:
 			return OP_CATEGORY_CHANGE;
 
 		case OP_AI_CHASE:
@@ -34420,7 +34457,7 @@ int get_subcategory(int op_id)
 		case OP_SET_CAMERA_SHUDDER:
 		case OP_SUPERNOVA_START:
 		case OP_SUPERNOVA_STOP:
-		case OP_SET_MOTION_DEBRIS:
+		case OP_OVERRIDE_MOTION_DEBRIS:
 			return CHANGE_SUBCATEGORY_CUTSCENES;
 
 		case OP_SET_SKYBOX_MODEL:
@@ -34442,6 +34479,7 @@ int get_subcategory(int op_id)
 		case OP_TOGGLE_ASTEROID_FIELD:
 		case OP_SET_ASTEROID_FIELD:
 		case OP_SET_DEBRIS_FIELD:
+		case OP_SET_MOTION_DEBRIS:
 			return CHANGE_SUBCATEGORY_BACKGROUND_AND_NEBULA;
 
 		case OP_JUMP_NODE_SET_JUMPNODE_NAME: //CommanderDJ
@@ -39051,7 +39089,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"All original FS2 cheats are supported, and more can be defined in the cheats.tbl file.\r\n"
 	},
 
-	{ OP_SET_MOTION_DEBRIS, "set-motion-debris-override\r\n"
+	{ OP_OVERRIDE_MOTION_DEBRIS, "set-motion-debris-override\r\n"
 		"\tControls whether or not motion debris should be active.\r\n"
 		"\tThis overrides any choice made by the user through the -nomotiondebris commandline flag."
 		"Takes 1 argument...\r\n"
@@ -39166,6 +39204,12 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t9:\tOuterbox Max Y, defaults to 1000\r\n"
 		"\t10:\tOuterbox Min Z, defaults to -1000\r\n"
 		"\t11:\tOuterbox Max Z, defaults to 1000\r\n"
+	},
+
+	{ OP_SET_MOTION_DEBRIS, "set-motion-debris\r\n" 
+		"\tSets the bitmap used for motion debris. If set-motion-debris-override is set then this will unset it.\r\n"
+		"\tTakes 1 argument...\r\n"
+		"\t1:\tthe name of the motion debris\r\n" 
 	}
 };
 // clang-format on

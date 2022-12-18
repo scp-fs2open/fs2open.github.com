@@ -132,6 +132,7 @@ enum : int {
 	OPF_WING_FLAG,					// Goober5000 - The name of a wing flag
 	OPF_ASTEROID_DEBRIS,			// MjnMixael - Debris types as defined in asteroids.tbl
 	OPF_WING_FORMATION,				// Goober5000 - as defined in ships.tbl
+	OPF_MOTION_DEBRIS,				// MjnMixael - Motion debris types as defined in stars.tbl
 
 	//Must always be at the end of the list
 	First_available_opf_id
@@ -787,7 +788,7 @@ enum : int {
 	OP_GET_ETS_VALUE,	// niffiwan
 	OP_SET_ETS_VALUES,	// niffiwan
 	OP_CALL_SSM_STRIKE, // X3N0-Life-Form
-	OP_SET_MOTION_DEBRIS,    // The E
+	OP_OVERRIDE_MOTION_DEBRIS,    // The E
 	OP_HUD_SET_CUSTOM_GAUGE_ACTIVE, 	// The E, just revamped a bit by Axem
 	OP_HUD_SET_BUILTIN_GAUGE_ACTIVE, 	// The E, just revamped a bit by Axem
 	OP_SCRIPT_EVAL_MULTI,	// Karajorma
@@ -849,6 +850,7 @@ enum : int {
 	OP_USED_CHEAT,	// Kiloku
 	OP_SET_ASTEROID_FIELD,	// MjnMixael
 	OP_SET_DEBRIS_FIELD,	// MjnMixael
+	OP_SET_MOTION_DEBRIS,   // MjnMixael
 	
 	// OP_CATEGORY_AI
 	// defined for AI goals
@@ -1172,6 +1174,7 @@ enum sexp_error_check
 	SEXP_CHECK_INVALID_WING_FLAG,
 	SEXP_CHECK_INVALID_WING_FORMATION,
 	SEXP_CHECK_INVALID_ASTEROID,
+	SEXP_CHECK_INVALID_MOTION_DEBRIS,
 };
 
 

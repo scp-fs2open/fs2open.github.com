@@ -3504,6 +3504,12 @@ int sexp_tree::query_default_argument_available(int op, int i)
 			}
 			return 0;
 
+		case OPF_MOTION_DEBRIS:
+			if (Motion_debris.size() > 0) {
+				return 1;
+			}
+			return 0;
+
 		default:
 			if (!Dynamic_enums.empty()) {
 				if ((type - First_available_opf_id) < (int)Dynamic_enums.size()) {
@@ -5451,6 +5457,10 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = get_listing_opf_wing_formation();
 			break;
 
+		case OPF_MOTION_DEBRIS:
+			list = get_listing_opf_motion_debris();
+			break;
+
 		default:
 			//We're at the end of the list so check for any dynamic enums
 			list = check_for_dynamic_sexp_enum(opf);
@@ -7145,6 +7155,19 @@ sexp_list_item* sexp_tree::get_listing_opf_asteroid_debris()
 		if (i > NUM_ASTEROID_SIZES) {
 			head.add_data(Asteroid_info[i].name);
 		}
+	}
+
+	return head.next;
+}
+
+sexp_list_item* sexp_tree::get_listing_opf_motion_debris()
+{
+	sexp_list_item head;
+
+	head.add_data(SEXP_NONE_STRING);
+
+	for (int i = 0; i < (int)Motion_debris.size(); i++) {
+		head.add_data(Motion_debris[i].name.c_str());
 	}
 
 	return head.next;

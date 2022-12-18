@@ -6427,6 +6427,9 @@ void mission_init(mission *pm)
 
 	Asteroid_field.num_initial_asteroids = 0;
 
+	// This could be set with a sexp, so we should reset it here
+	Motion_debris_override = false;
+
 	// reset background bitmaps and suns
 	stars_pre_level_init();
 	neb2_pre_level_init();
