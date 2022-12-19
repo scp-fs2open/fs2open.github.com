@@ -368,6 +368,33 @@ const std::shared_ptr<Hook<>> OnCheat = Hook<>::Factory("On Cheat",
 		{ "Cheat", "string", "The cheat code the user typed" },
 	});
 
+const std::shared_ptr<Hook<>> OnMissionAboutToEndHook = Hook<>::Factory("On Mission About To End",
+	"Called when a mission is about to end but has not run any mission-ending logic",
+	{});
+
+const std::shared_ptr<OverridableHook<>> OnMissionEndHook =
+	scripting::OverridableHook<>::Factory("On Mission End", "Called when a mission has ended", {});
+
+const std::shared_ptr<Hook<>> OnStateAboutToEndHook = Hook<>::Factory("On State About To End",
+	"Called when a game state is about to end but has not run any state-ending logic",
+	{
+		{"OldState", "gamestate", "The game state that has ended."},
+		{"NewState", "gamestate", "The game state that will begin next."},
+	});
+
+const std::shared_ptr<OverridableHook<>> OnStateEndHook = OverridableHook<>::Factory("On State End",
+	"Called when a game state has ended",
+	{
+		{"OldState", "gamestate", "The game state that has ended."},
+		{"NewState", "gamestate", "The game state that will begin next."},
+	});
+
+const std::shared_ptr<Hook<>> OnCameraSetUpHook = Hook<>::Factory("On Camera Set Up",
+	"Called every frame when the camera is positioned and oriented for rendering.",
+	{
+		{"Camera", "camera", "The camera about to be used for rendering."},
+	});
+
 // ========== DEPRECATED ==========
 
 const std::shared_ptr<OverridableHook<ObjectDeathConditions>> OnDeath = OverridableHook<ObjectDeathConditions>::Factory("On Death",

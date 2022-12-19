@@ -357,34 +357,6 @@ UI_TIMESTAMP Player_died_popup_wait;
 
 UI_TIMESTAMP Multi_ping_timestamp;
 
-
-const auto OnMissionAboutToEndHook = scripting::Hook<>::Factory(
-	"On Mission About To End", "Called when a mission is about to end but has not run any mission-ending logic", {});
-
-const auto OnMissionEndHook = scripting::OverridableHook<>::Factory(
-	"On Mission End", "Called when a mission has ended", {});
-
-const auto OnStateAboutToEndHook = scripting::Hook<>::Factory(
-	"On State About To End", "Called when a game state is about to end but has not run any state-ending logic",
-	{
-		{"OldState", "gamestate", "The game state that has ended."},
-		{"NewState", "gamestate", "The game state that will begin next."},
-	});
-
-const auto OnStateEndHook = scripting::OverridableHook<>::Factory(
-	"On State End", "Called when a game state has ended",
-	{
-		{"OldState", "gamestate", "The game state that has ended."},
-		{"NewState", "gamestate", "The game state that will begin next."},
-	});
-
-const auto OnCameraSetUpHook = scripting::Hook<>::Factory(
-	"On Camera Set Up", "Called every frame when the camera is positioned and oriented for rendering.",
-	{
-		{"Camera", "camera", "The camera about to be used for rendering."},
-	});
-
-
 // builtin mission list stuff
 int Game_builtin_mission_count = 92;
 fs_builtin_mission Game_builtin_mission_list[MAX_BUILTIN_MISSIONS] = {
@@ -861,14 +833,14 @@ static void game_flash_diminish(float frametime)
 
 void game_level_close()
 {
-	if (OnMissionAboutToEndHook->isActive())
+	if (scripting::hooks::OnMissionAboutToEndHook->isActive())
 	{
-		OnMissionAboutToEndHook->run();
+		scripting::hooks::OnMissionAboutToEndHook->run();
 	}
 
 	//WMC - this is actually pretty damn dangerous, but I don't want a modder
 	//to accidentally use an override here without realizing it.
-	if (!OnMissionEndHook->isActive() || !OnMissionEndHook->isOverride())
+	if (!scripting::hooks::OnMissionEndHook->isActive() || !scripting::hooks::OnMissionEndHook->isOverride())
 	{
 		// save player-persistent variables and containers
 		mission_campaign_save_on_close_variables();	// Goober5000
@@ -948,9 +920,9 @@ void game_level_close()
 		Error(LOCATION, "Scripting Mission End override is not fully supported yet.");
 	}
 
-	if (OnMissionEndHook->isActive())
+	if (scripting::hooks::OnMissionEndHook->isActive())
 	{
-		OnMissionEndHook->run();
+		scripting::hooks::OnMissionEndHook->run();
 	}
 }
 
@@ -3192,8 +3164,8 @@ camid game_render_frame_setup()
 			if(Viewer_mode & VM_FREECAMERA) {
 				Viewer_obj = nullptr;
 
-				if (OnCameraSetUpHook->isActive()) {
-					OnCameraSetUpHook->run(scripting::hook_param_list(
+				if (scripting::hooks::OnCameraSetUpHook->isActive()) {
+					scripting::hooks::OnCameraSetUpHook->run(scripting::hook_param_list(
 						scripting::hook_param("Camera", 'o', scripting::api::l_Camera.Set(cam_get_current()))));
 				}
 
@@ -3327,8 +3299,8 @@ camid game_render_frame_setup()
 	main_cam->set_position(&eye_pos);
 	main_cam->set_rotation(&eye_orient);
 
-	if (OnCameraSetUpHook->isActive())	{
-		OnCameraSetUpHook->run(scripting::hook_param_list(
+	if (scripting::hooks::OnCameraSetUpHook->isActive())	{
+		scripting::hooks::OnCameraSetUpHook->run(scripting::hook_param_list(
 			scripting::hook_param("Camera", 'o', scripting::api::l_Camera.Set(Main_camera))));
 	}
 
@@ -5100,18 +5072,18 @@ void game_leave_state( int old_state, int new_state )
 			break;
 	}
 
-	if (OnStateAboutToEndHook->isActive() || OnStateEndHook->isActive())
+	if (scripting::hooks::OnStateAboutToEndHook->isActive() || scripting::hooks::OnStateEndHook->isActive())
 	{
 		auto script_param_list = scripting::hook_param_list(
 			scripting::hook_param("OldState", 'o', scripting::api::l_GameState.Set(scripting::api::gamestate_h(old_state))),
 			scripting::hook_param("NewState", 'o', scripting::api::l_GameState.Set(scripting::api::gamestate_h(new_state))));
 
-		if (OnStateAboutToEndHook->isActive())
-			OnStateAboutToEndHook->run(script_param_list);
+		if (scripting::hooks::OnStateAboutToEndHook->isActive())
+			scripting::hooks::OnStateAboutToEndHook->run(script_param_list);
 
-		if (OnStateEndHook->isActive() && OnStateEndHook->isOverride(script_param_list))
+		if (scripting::hooks::OnStateEndHook->isActive() && scripting::hooks::OnStateEndHook->isOverride(script_param_list))
 		{
-			OnStateEndHook->run(script_param_list);
+			scripting::hooks::OnStateEndHook->run(script_param_list);
 			return;
 		}
 	}
@@ -5535,13 +5507,13 @@ void game_leave_state( int old_state, int new_state )
 	}
 
 	//WMC - Now run scripting stuff
-	if (OnStateEndHook->isActive())
+	if (scripting::hooks::OnStateEndHook->isActive())
 	{
 		auto script_param_list = scripting::hook_param_list(
 			scripting::hook_param("OldState", 'o', scripting::api::l_GameState.Set(scripting::api::gamestate_h(old_state))),
 			scripting::hook_param("NewState", 'o', scripting::api::l_GameState.Set(scripting::api::gamestate_h(new_state))));
 
-		OnStateEndHook->run(script_param_list);
+		scripting::hooks::OnStateEndHook->run(script_param_list);
 	}
 }
 
