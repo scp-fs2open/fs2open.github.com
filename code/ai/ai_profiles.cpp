@@ -778,7 +778,7 @@ void ai_profile_t::reset()
 		flags.set(AI::Profile_Flags::Prevent_negative_turret_ammo);
 		flags.set(AI::Profile_Flags::Fix_keep_safe_distance);
 	}
-	if (mod_supports_version(22, 4, 0)) {
+	if (mod_supports_version(23, 0, 0)) {
 		flags.set(AI::Profile_Flags::Fix_good_rearm_time_bug);
 		flags.set(AI::Profile_Flags::No_continuous_turn_on_attack);
 		flags.set(AI::Profile_Flags::Fixed_removing_play_dead_order);
