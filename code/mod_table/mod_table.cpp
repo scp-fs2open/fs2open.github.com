@@ -1282,7 +1282,7 @@ void mod_table_set_version_flags()
 		Framerate_independent_turning = true;					// this is already true, but let's re-emphasize it
 		Use_host_orientation_for_set_camera_facing = true;		// this is essentially a bugfix
 	}
-	if (mod_supports_version(22, 4, 0)) {
+	if (mod_supports_version(23, 0, 0)) {
 		Shockwaves_inherit_parent_damage_type = true;	// people intuitively expect shockwaves to default to the damage type of the weapon that spawned them
 	}
 }
