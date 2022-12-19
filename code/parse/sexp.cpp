@@ -891,6 +891,45 @@ sexp_ai_goal_link Sexp_ai_goal_links[] = {
 
 SCP_vector<dynamic_sexp_enum_list> Dynamic_enums;
 
+SCP_vector<dynamic_sexp_parameter_list> Dynamic_parameters;
+
+int get_dynamic_parameter_index(SCP_string op_name, int param)
+{
+	for (int i = 0; i < (int)Dynamic_parameters.size(); i++) {
+		if (!stricmp(Dynamic_parameters[i].operator_name.c_str(), op_name.c_str())) {
+
+			// Make sure there are actually parameters for this operator
+			if ((int)Dynamic_parameters[i].parameter_map.size() > 0) {
+
+				// Now we know what sexp we're working with, let's find the parameter
+				for (int j = 0; j < (int)Dynamic_parameters[i].parameter_map.size(); j++) {
+
+					// If we have an exact parameter match
+					if (param == Dynamic_parameters[i].parameter_map[j].first) {
+
+						// If it's a pos number return it, else return the previous param index
+						if (Dynamic_parameters[i].parameter_map[j].second >= 0) {
+							return Dynamic_parameters[i].parameter_map[j].second;
+						} else {
+							return param - 1;
+						}
+					}
+				}
+
+				// If we don't have an exact match then we're probably in $Repeat territory so let's return
+				// the last parent parameter in the list.
+				// This does prevent complex repeat patterns that might use multiple parent objects but
+				// I can't think of a better way to do this right now. -Mjn
+				int last_param = (int)Dynamic_parameters[i].parameter_map.size() - 1;
+				return Dynamic_parameters[i].parameter_map[last_param].second;
+			}
+		}
+	}
+
+	// Didn't find anything.
+	return -1;
+}
+
 void sexp_set_skybox_model_preload(const char *name); // taylor
 int Num_skybox_flags = 6;
 const char *Skybox_flags[] = {
@@ -2566,7 +2605,17 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 						break;
 
 					default:
-						ship_node = CDR(op_node);
+						if (op_node < First_available_operator_id) {
+							ship_node = CDR(op_node);
+						} else {
+							ship_node = get_dynamic_parameter_index(Sexp_nodes[op_node].text, argnum);
+
+							if (ship_node < 0)
+								error_display(1, "Expected to find a dynamic lua parent parameter for node %i in operator %s but found nothing!",
+									argnum,
+									Sexp_nodes[op_node].text);
+
+						}
 						break;
 				}
 				Assert(ship_node >= 0);
@@ -28053,7 +28102,7 @@ int eval_sexp(int cur_node, int referenced_node)
 				// Check if we have a dynamic SEXP with this operator and if there is, execute that
 				auto dynamicSEXP = sexp::get_dynamic_sexp(op_num);
 				if (dynamicSEXP != nullptr) {
-					sexp_val = dynamicSEXP->execute(node);
+					sexp_val = dynamicSEXP->execute(node, cur_node);
 				} else {
 					Error(LOCATION, "Looking for SEXP operator, found '%s'.\n", CTEXT(cur_node));
 				}

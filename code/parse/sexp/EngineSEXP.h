@@ -154,7 +154,7 @@ class EngineSEXP : public DynamicSEXP {
 	int getMinimumArguments() const override;
 	int getMaximumArguments() const override;
 	int getArgumentType(int argnum) const override;
-	int execute(int node) override;
+	int execute(int node, int parent_node = -1) override;
 	int getReturnType() override;
 	int getSubcategory() override;
 	int getCategory() override;

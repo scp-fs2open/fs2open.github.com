@@ -144,6 +144,15 @@ struct dynamic_sexp_enum_list {
 
 extern SCP_vector<dynamic_sexp_enum_list> Dynamic_enums;
 
+struct dynamic_sexp_parameter_list {
+	SCP_string operator_name;
+	SCP_vector<std::pair<int, int>> parameter_map;
+};
+
+extern SCP_vector<dynamic_sexp_parameter_list> Dynamic_parameters;
+
+int get_dynamic_parameter_index(SCP_string op_name, int param);
+
 // Operand return types
 #define	OPR_NUMBER				1	// returns number
 #define	OPR_BOOL				2	// returns true/false value

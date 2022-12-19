@@ -15,6 +15,7 @@
 #include "scripting/api/objs/ship.h"
 #include "scripting/api/objs/shipclass.h"
 #include "scripting/api/objs/sound.h"
+#include "scripting/api/objs/subsystem.h"
 #include "scripting/api/objs/team.h"
 #include "scripting/api/objs/waypoint.h"
 #include "scripting/api/objs/weaponclass.h"
@@ -46,7 +47,11 @@ static SCP_unordered_map<SCP_string, int> parameter_type_mapping{{ "boolean",   
 														  { "ship+wing+ship_on_team+waypoint",   OPF_SHIP_WING_SHIPONTEAM_POINT },
 														  { "ship+wing+waypoint",   OPF_SHIP_WING_POINT },
 														  { "ship+wing+waypoint+none",   OPF_SHIP_WING_POINT_OR_NONE },
+														  { "subsystem",   OPF_SUBSYSTEM },
 														  { "enum",   First_available_opf_id } };
+
+// If a parameter requires a parent parameter then it must be listed here!
+static SCP_vector<SCP_string> parent_parameter_required{"subsystem"};
 
 std::pair<SCP_string, int> LuaSEXP::get_parameter_type(const SCP_string& name)
 {
@@ -137,7 +142,7 @@ std::pair<SCP_string, int> LuaSEXP::getArgumentInternalType(int argnum) const {
 int LuaSEXP::getArgumentType(int argnum) const {
 	return getArgumentInternalType(argnum).second;
 }
-luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum) const {
+luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum, int parent_node) const {
 	using namespace scripting::api;
 	auto argtype = getArgumentInternalType(argnum);
 
@@ -245,6 +250,34 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum) const {
 		eval_object_ship_wing_point_team(&oswpt, node);
 		return LuaValue::createValue(_action.getLuaState(), l_OSWPT.Set(oswpt));
 	}
+	case OPF_SUBSYSTEM: {
+		auto name = CTEXT(node);
+
+		//Use the parent node to get the index of the parameter we should
+		//look at to find the parent object
+		int index = get_dynamic_parameter_index(_name, argnum);
+
+		if (index < 0)
+			error_display(1, "Expected to find a dynamic lua parent parameter for node %i in operator %s but found nothing!",
+				argnum,
+				_name.c_str());
+
+		int this_node = parent_node;
+		for (int i = 0; i <= index; i++) {
+			this_node = CDR(this_node);
+		}
+
+		auto ship_entry = eval_ship(this_node);
+
+		if (!ship_entry || ship_entry->status != ShipStatus::PRESENT) {
+			// Name is invalid
+			return LuaValue::createValue(_action.getLuaState(), l_Ship.Set(object_h()));
+		}
+
+		ship_subsys* ss = ship_get_subsys(ship_entry->shipp, name);
+		
+		return LuaValue::createValue(_action.getLuaState(), l_Subsystem.Set(ship_subsys_h(ship_entry->objp, ss)));
+	}
 	default:
 		if ((strcmp(argtype.first.c_str(), "enum")) == 0) {
 			auto text = CTEXT(node);
@@ -297,7 +330,7 @@ int LuaSEXP::getSexpReturnValue(const LuaValueList& retVals) const {
 	}
 }
 
-luacpp::LuaValueList LuaSEXP::getSEXPArgumentList(int node) const {
+luacpp::LuaValueList LuaSEXP::getSEXPArgumentList(int node, int parent_node) const {
 	LuaValueList luaParameters;
 
 	// We need to adapt how we handle parameters based on their type. We use this variable to keep track of which parameter
@@ -306,7 +339,7 @@ luacpp::LuaValueList LuaSEXP::getSEXPArgumentList(int node) const {
 	while (node != -1) {
 		if (argnum < (int)_argument_types.size()) {
 			// This is a parameter in the normal list so we add it to the normal parameter list
-			luaParameters.push_back(sexpToLua(node, argnum));
+			luaParameters.push_back(sexpToLua(node, argnum, parent_node));
 
 			node = CDR(node);
 			++argnum;
@@ -320,7 +353,7 @@ luacpp::LuaValueList LuaSEXP::getSEXPArgumentList(int node) const {
 			// If we reach the end of the parameter list inside this for loop we just exit since all parameters are optional
 			for (auto i = 0; i < (int)_varargs_type_pattern.size() && node != -1; ++i) {
 				// i + 1 since lua arrays are 1-indexed
-				varargs_part.addValue(i + 1, sexpToLua(node, argnum));
+				varargs_part.addValue(i + 1, sexpToLua(node, argnum, parent_node));
 
 				node = CDR(node);
 				++argnum;
@@ -333,7 +366,7 @@ luacpp::LuaValueList LuaSEXP::getSEXPArgumentList(int node) const {
 	return luaParameters;
 }
 
-int LuaSEXP::execute(int node) {
+int LuaSEXP::execute(int node, int parent_node) {
 	if (!_action.isValid()) {
 		
 		Error(LOCATION,
@@ -341,7 +374,7 @@ int LuaSEXP::execute(int node) {
 		return SEXP_CANT_EVAL;
 	}
 
-	LuaValueList luaParameters = getSEXPArgumentList(node);
+	LuaValueList luaParameters = getSEXPArgumentList(node, parent_node);
 
 	// All parameters are now in LuaValues, time to call our function
 	try {
@@ -501,8 +534,9 @@ void LuaSEXP::parseTable() {
 		help_text << "Rest: (The following pattern repeats)\r\n";
 		variable_arg_part = true;
 	}
-
+	int param_index = 0;
 	while (optional_string("$Parameter:")) {
+
 		required_string("+Description:");
 
 		SCP_string param_desc;
@@ -551,6 +585,51 @@ void LuaSEXP::parseTable() {
 			Dynamic_enums.push_back(thisList);
 
 		}
+		bool parent_required = false;
+		for (int i = 0; i < (int)parent_parameter_required.size(); i++) {
+			if (strcmp(type.first.c_str(), parent_parameter_required[i].c_str()) == 0) {
+				parent_required = true;
+				break;
+			}
+
+		}
+		if (parent_required)
+		{
+			int this_index = -1;
+			
+			if (optional_string("+Parent Parameter Index:")) {
+				stuff_int(&this_index);
+				this_index--;
+			}
+
+			if (this_index >= (param_index + 1)) {
+				error_display(1,
+					"Ship Paramater Index '%i' cannot be greater or equal to %i (the current parameter index)!\n",
+					this_index,
+					param_index + 1);
+			}
+			
+			std::pair<int, int> param_map(param_index, this_index);
+
+			// check if this operator already has an entry for dynamic parameters
+			int dyn_index = -1;
+			for (int i = 0; i < (int)Dynamic_parameters.size(); i++) {
+				if (!stricmp(Dynamic_parameters[i].operator_name.c_str(), _name.c_str())) {
+					dyn_index = i;
+				}
+			}
+
+			if (dyn_index >= 0) {
+				Dynamic_parameters[dyn_index].parameter_map.push_back(param_map);
+			} else {
+				dynamic_sexp_parameter_list this_subsystem;
+				this_subsystem.operator_name = _name;
+				this_subsystem.parameter_map.push_back(param_map);
+
+				Dynamic_parameters.push_back(this_subsystem);
+			}
+
+		}
 
 		if (variable_arg_part) {
 			_varargs_type_pattern.push_back(type);
@@ -566,6 +645,7 @@ void LuaSEXP::parseTable() {
 				error_display(0, "A second $Repeat has been encountered! Only one may appear in the parameter list.");
 			}
 		}
+		param_index++;
 	}
 
 	_help_text = help_text.str();

@@ -212,7 +212,7 @@ int EngineSEXP::getArgumentType(int argnum) const
 		return _argumentTypes[argnum];
 	}
 }
-int EngineSEXP::execute(int node)
+int EngineSEXP::execute(int node, int /*parent_node*/)
 {
 	SEXPParameterExtractor extractor(node);
 	return _action(&extractor);

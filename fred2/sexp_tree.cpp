@@ -5946,6 +5946,22 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 			}
 			break;
 
+		default:
+			if (op < First_available_operator_id) {
+				break;
+			} else {
+				int this_index = get_dynamic_parameter_index(tree_nodes[parent_node].text, arg_index);
+
+				if (this_index >= 0) {
+					for (int count = 0; count < this_index; count++) {
+						child = tree_nodes[child].next;
+					}
+				} else {
+					error_display(1, "Expected to find a dynamic lua parent parameter for node %i in operator %s but found nothing!",
+						arg_index,
+						tree_nodes[parent_node].text);
+				}
+			}
 	}
 
 	// now find the ship and add all relevant subsystems
