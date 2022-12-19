@@ -10955,6 +10955,12 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	Assert(sp->ship_max_hull_strength > 0.0f);
 	Assert(objp->hull_strength > 0.0f);
 
+	// set regen rates
+	sp->max_weapon_regen_per_second = sip->max_weapon_regen_per_second;
+	sp->max_shield_regen_per_second = sip->max_shield_regen_per_second;
+
+	sp->autoaim_fov = sip->autoaim_fov;
+
 	// Mantis 2763: moved down to have access to the right ship_max_shield_strength value
 	// make sure that shields are disabled/enabled if they need to be - Chief1983
 	if (!Fred_running) {
