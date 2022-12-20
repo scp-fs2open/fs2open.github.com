@@ -30,6 +30,7 @@
 #include "graphics/matrix.h"
 #include "graphics/shadows.h"
 #include "def_files/def_files.h"
+#include "globalincs/pool.h"
 #include "globalincs/linklist.h"
 #include "hud/hud.h"
 #include "hud/hudartillery.h"
@@ -6543,7 +6544,7 @@ void ship::clear()
 	emp_intensity = -1.0f;
 	emp_decr = 0.0f;
 
-	memset(trail_ptr, 0, MAX_SHIP_CONTRAILS * sizeof(trail *));
+	memset(trail_idx, 0, MAX_SHIP_CONTRAILS * sizeof(pool_index));
 
 	tag_total = 0.0f;
 	tag_left = -1.0f;
@@ -6572,7 +6573,7 @@ void ship::clear()
 	current_viewpoint = -1;
 
 	for (i = 0; i < MAX_SHIP_CONTRAILS; i++)
-		ABtrail_ptr[i] = NULL;
+		ABtrail_ptr[i].nullify();
 	memset(&ab_info, 0, MAX_SHIP_CONTRAILS * sizeof(trail_info));
 	ab_count = 0;
 

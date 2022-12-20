@@ -16,6 +16,7 @@
 
 #include "ai/ai.h"
 #include "fireball/fireballs.h"
+#include "globalincs/pool.h"
 #include "globalincs/globals.h"		// for defintions of token lengths -- maybe move this elsewhere later (Goober5000 - moved to globals.h)
 #include "globalincs/pstypes.h"
 #include "graphics/2d.h"			// for color def
@@ -715,7 +716,7 @@ public:
 	float emp_decr;									// how much to decrement EMP effect per second for this ship
 
 	// contrail stuff
-	trail *trail_ptr[MAX_SHIP_CONTRAILS];	
+	pool_index trail_idx[MAX_SHIP_CONTRAILS];	
 
 	// tag stuff
 	float tag_total;									// total tag time
@@ -749,7 +750,7 @@ public:
 	// that had this same functionality
 	int current_viewpoint;
 
-	trail *ABtrail_ptr[MAX_SHIP_CONTRAILS];		//after burner trails -Bobboau
+	pool_index ABtrail_ptr[MAX_SHIP_CONTRAILS];		//after burner trails -Bobboau
 	trail_info ab_info[MAX_SHIP_CONTRAILS];
 	int ab_count;
 
