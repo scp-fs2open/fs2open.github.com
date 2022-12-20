@@ -31,15 +31,15 @@ ADE_VIRTVAR(Name, l_LuaEnum, "string", "The enum name", "string", "The enum name
 	return ade_set_args(L, "s", lua_enum.getEnum()->name.c_str());
 }
 
-ADE_INDEXER(l_LuaEnum, "number Index", "Array of enum items", "enumItem", "enum item handle, or invalid handle if index or enum handle is invalid")
+ADE_INDEXER(l_LuaEnum, "number Index", "Array of enum items", "string", "enum item string, or nil if index or enum handle is invalid")
 {
 	lua_enum_h lua_enum;
 	int idx = -1;
 	if (!ade_get_args(L, "o|i", l_LuaEnum.Get(&lua_enum), &idx))
-		return ade_set_error(L, "o", l_LuaEnum.Set(lua_enum_h()));
+		return ADE_RETURN_NIL;
 
 	if ((idx < 0) || (idx >= (int)lua_enum.getEnum()->list.size()))
-		return ade_set_error(L, "o", l_LuaEnum.Set(lua_enum_h()));
+		return ADE_RETURN_NIL;
 
 	return ade_set_args(L, "s", lua_enum.getEnum()->list[idx].c_str());
 }
