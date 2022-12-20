@@ -35,6 +35,7 @@
 #include "parse/sexp/sexp_lookup.h"
 #include "playerman/player.h"
 #include "scripting/api/LuaPromise.h"
+#include "scripting/api/objs/LuaEnum.h"
 #include "scripting/api/objs/LuaSEXP.h"
 #include "scripting/api/objs/luaaisexp.h"
 #include "scripting/api/objs/asteroid.h"
@@ -2104,6 +2105,70 @@ ADE_FUNC(updateSpecialSubmodelMoveable, l_Mission, "string target, string name, 
 	}
 
 	return set->updateMoveable(pmi, name, valuesMoveable) ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
+}
+
+ADE_LIB_DERIV(l_Mission_LuaEnums, "LuaEnums", nullptr, "Lua Enums", l_Mission);
+
+ADE_INDEXER(l_Mission_LuaEnums,
+	"string/number NameOrIndex",
+	"Gets a handle of a Lua Enum",
+	"LuaEnum",
+	"Lua Enum handle or invalid handle on error")
+{
+	const char* name = nullptr;
+	if (!ade_get_args(L, "*s", &name)) {
+		return ade_set_error(L, "o", l_LuaEnum.Set(lua_enum_h()));
+	}
+
+	if (name == nullptr) {
+		return ade_set_error(L, "o", l_LuaEnum.Set(lua_enum_h()));
+	}
+
+	int idx = get_dynamic_enum_position(name);
+
+	if (idx > -1) {
+		return ade_set_args(L, "o", l_LuaEnum.Set(lua_enum_h(idx)));
+	} else {
+		idx = atoi(name);
+
+		if ((idx > 0) && (idx < (int)Dynamic_enums.size())) {
+			return ade_set_args(L, "o", l_LuaEnum.Set(lua_enum_h(idx)));
+		}
+	}
+
+	return ade_set_args(L, "o", l_LuaEnum.Set(lua_enum_h()));
+}
+
+ADE_FUNC(__len, l_Mission_LuaEnums, nullptr, "The number of Lua enums", "number", "The number of Lua enums.")
+{
+	return ade_set_args(L, "i", (int)Dynamic_enums.size());
+}
+
+ADE_FUNC(addLuaEnum,
+	l_Mission,
+	"string name",
+	"Adds an enum with the given name if it's unique.",
+	"LuaEnum",
+	"Returns the enum handle or an invalid handle if the name was not unique.")
+{
+	const char* enum_name;
+	if (!ade_get_args(L, "s", &enum_name))
+		return ade_set_error(L, "o", l_LuaEnum.Set(lua_enum_h()));
+
+	int idx = get_dynamic_enum_position(enum_name);
+
+	if (idx > -1) {
+		return ade_set_error(L, "o", l_LuaEnum.Set(lua_enum_h()));
+	} else {
+		dynamic_sexp_enum_list this_list;
+		this_list.name = enum_name;
+
+		Dynamic_enums.push_back(this_list);
+
+		idx = get_dynamic_enum_position(enum_name);
+
+		return ade_set_args(L, "o", l_LuaEnum.Set(lua_enum_h(idx)));
+	}
 }
 
 ADE_LIB_DERIV(l_Mission_LuaSEXPs, "LuaSEXPs", nullptr, "Lua SEXPs", l_Mission);
