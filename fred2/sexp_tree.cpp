@@ -6302,9 +6302,9 @@ sexp_list_item *sexp_tree::get_listing_opf_docker_point(int parent_node, int arg
 		int this_index = get_dynamic_parameter_index(tree_nodes[parent_node].text, arg_num);
 
 		if (this_index >= 0) {
-			int z = tree_nodes[parent_node].child;
+			z = tree_nodes[parent_node].child;
 
-			for (int i = 0; i < this_index; i++) {
+			for (int j = 0; j < this_index; j++) {
 				z = tree_nodes[z].next;
 			}
 
