@@ -10,6 +10,7 @@
 #include "parse/sexp.h"
 #include "parse/sexp/sexp_lookup.h"
 #include "scripting/api/objs/message.h"
+#include "scripting/api/objs/model.h"
 #include "scripting/api/objs/oswpt.h"
 #include "scripting/api/objs/sexpvar.h"
 #include "scripting/api/objs/ship.h"
@@ -48,10 +49,11 @@ static SCP_unordered_map<SCP_string, int> parameter_type_mapping{{ "boolean",   
 														  { "ship+wing+waypoint",   OPF_SHIP_WING_POINT },
 														  { "ship+wing+waypoint+none",   OPF_SHIP_WING_POINT_OR_NONE },
 														  { "subsystem",   OPF_SUBSYSTEM },
+														  { "dockpoint",   OPF_DOCKER_POINT },
 														  { "enum",   First_available_opf_id } };
 
 // If a parameter requires a parent parameter then it must be listed here!
-static SCP_vector<SCP_string> parent_parameter_required{"subsystem"};
+static SCP_vector<SCP_string> parent_parameter_required{"subsystem", "dockpoint"};
 
 std::pair<SCP_string, int> LuaSEXP::get_parameter_type(const SCP_string& name)
 {
@@ -277,6 +279,35 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum, int parent_node) const
 		ship_subsys* ss = ship_get_subsys(ship_entry->shipp, name);
 		
 		return LuaValue::createValue(_action.getLuaState(), l_Subsystem.Set(ship_subsys_h(ship_entry->objp, ss)));
+	}
+	case OPF_DOCKER_POINT: {
+		auto name = CTEXT(node);
+
+		// Use the parent node to get the index of the parameter we should
+		// look at to find the parent object
+		int index = get_dynamic_parameter_index(_name, argnum);
+
+		if (index < 0)
+			error_display(1,
+				"Expected to find a dynamic lua parent parameter for node %i in operator %s but found nothing!",
+				argnum,
+				_name.c_str());
+
+		int this_node = parent_node;
+		for (int i = 0; i <= index; i++) {
+			this_node = CDR(this_node);
+		}
+
+		auto ship_entry = eval_ship(this_node);
+		if (!ship_entry || ship_entry->status != ShipStatus::PRESENT) {
+			// Name is invalid
+			return LuaValue::createValue(_action.getLuaState(), l_Ship.Set(object_h()));
+		}
+
+		auto docker_pm = model_get(Ship_info[ship_entry->shipp->ship_info_index].model_num);
+		auto dockindex = model_find_dock_name_index(Ship_info[ship_entry->shipp->ship_info_index].model_num, name);
+
+		return LuaValue::createValue(_action.getLuaState(), l_Dockingbay.Set(dockingbay_h(docker_pm, dockindex)));
 	}
 	default:
 		if ((strcmp(argtype.first.c_str(), "enum")) == 0) {
