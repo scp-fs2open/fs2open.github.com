@@ -20,66 +20,53 @@
 #include "tracing/tracing.h"
 #include "weapon/trails.h"
 #include "render/batching.h"
+#include "tl/optional.hpp"
+#include "globalincs/pool.h"
 
-static int Num_trails = 0;
-static trail Trails;
+SCP_Pool<trail> Trails;
 
 // Reset everything between levels
 void trail_level_init()
 {
-	Num_trails = 0;
-	Trails.next = &Trails;
+	Trails.reset();
 }
 
 void trail_level_close()
 {
-	if ( !Num_trails ) {
-		return;
-	}
-
-	trail *nextp;
-	for(trail *trailp = Trails.next; trailp != &Trails; trailp = nextp)
-	{
-		nextp = trailp->next;
-
-		//Now we can delete it
-		delete trailp;
-	}
-
-	Num_trails=0;
-	Trails.next = &Trails;
+	Trails.reset();
 }
 
-//returns the number of a free trail
-//returns -1 if no free trails
-trail *trail_create(trail_info *info)
+//returns the index of a free trail
+//returns null index if no free trails
+pool_index trail_create(trail_info *info)
 {
 	// standalone server should never create trails
 	// No trails at slot 0
 	if((Game_mode & GM_STANDALONE_SERVER) || !Detail.weapon_extras)
-		return NULL;
+		return pool_index();
 
 	// Make a new trail
-	trail *trailp = new trail;
-
-	// increment counter
-	Num_trails++;
-
+	auto trail_index = Trails.get_new();
+	if(trail_index == tl::nullopt){
+		return pool_index();
+	}
+	pool_index i = trail_index.value();
+	trail *trailp = &Trails[i];
 	// Init the trail data
 	trailp->info = *info;
 	trailp->tail = 0;
-	trailp->head = 0;	
-	trailp->object_died = false;		
+	trailp->head = 0;
+	trailp->object_died = false;
 	trailp->trail_stamp = timestamp(trailp->info.stamp);
 
-	//Add it to the front of the list
-	//This is quickest since there are no prev vars
-	trailp->next = Trails.next;
-	Trails.next = trailp;
-
-	return trailp;
+	return i;
 }
 
+trail *trail_find(pool_index const &traili){
+	if(Trails.check(traili))
+		return &Trails[traili];
+	return nullptr;
+}
 // output top and bottom vectors
 // fvec == forward vector (eye viewpoint basically. in world coords)
 // pos == world coordinate of the point we're calculating "around"
@@ -104,13 +91,13 @@ void trail_calc_facing_pts( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, flo
 }
 
 // trail is on ship
-int trail_is_on_ship(trail *trailp, ship *shipp)
+int trail_is_on_ship(pool_index trail_i, ship *shipp)
 {
-	if(trailp == NULL)
+	if(trail_i.null())
 		return 0;
 
 	for(int idx=0; idx<MAX_SHIP_CONTRAILS; idx++){
-		if(shipp->trail_ptr[idx] == trailp){
+		if(shipp->trail_idx[idx] == trail_i){
 			return 1;
 		}
 	}
@@ -119,7 +106,7 @@ int trail_is_on_ship(trail *trailp, ship *shipp)
 	return 0;
 }
 
-void trail_render( trail * trailp )
+void trail_render(trail * trailp, pool_index const & trail_i)
 {
 	int sections[NUM_TRAIL_SECTIONS];
 	int num_sections = 0;
@@ -128,7 +115,7 @@ void trail_render( trail * trailp )
 		return;
 
 	// if this trail is on the player ship, and he's in any padlock view except rear view, don't draw	
-	if ( (Player_ship != NULL) && trail_is_on_ship(trailp, Player_ship) &&
+	if ( (Player_ship != nullptr) && trail_is_on_ship(trail_i, Player_ship) &&
 		(Viewer_mode & (VM_PADLOCK_UP | VM_PADLOCK_LEFT | VM_PADLOCK_RIGHT)) )
 	{
 		return;
@@ -273,8 +260,9 @@ void trail_render( trail * trailp )
 // In order for trailp's 'spread' field to have any effect, it must be nonzero and the orient must be non-null
 // If so, the orient's fvec is the treated as the direction of the trail, and the 
 // new trail point is given a random velocity orthogonal to the fvec (scaled by spread speed)
-void trail_add_segment( trail *trailp, vec3d *pos , const matrix* orient)
+void trail_add_segment( pool_index const &traili, vec3d *pos , const matrix* orient)
 {
+	trail* trailp = trail_find(traili);
 	int next = trailp->tail;
 	trailp->tail++;
 	if ( trailp->tail >= NUM_TRAIL_SECTIONS )
@@ -286,7 +274,7 @@ void trail_add_segment( trail *trailp, vec3d *pos , const matrix* orient)
 		if ( trailp->head >= NUM_TRAIL_SECTIONS )
 			trailp->head = 0;
 	}
-	
+
 	trailp->pos[next] = *pos;
 	trailp->val[next] = 0.0f;
 
@@ -296,8 +284,9 @@ void trail_add_segment( trail *trailp, vec3d *pos , const matrix* orient)
 		vm_vec_zero(&trailp->vel[next]);
 }		
 
-void trail_set_segment( trail *trailp, vec3d *pos )
+void trail_set_segment(pool_index const &traili, vec3d *pos )
 {
+	trail *trailp = trail_find(traili);
 	int next = trailp->tail-1;
 	if ( next < 0 )	{
 		next = NUM_TRAIL_SECTIONS-1;
@@ -312,12 +301,9 @@ void trail_move_all(float frametime)
 
 	int num_alive_segments,n;
 	float time_delta;
-	trail *next_trail;
-	trail *prev_trail = &Trails;
-
-	for (trail *trailp = Trails.next; trailp != &Trails; trailp = next_trail) {
-		next_trail = trailp->next;
-
+	trail *trailp = nullptr;
+	for (auto iter = Trails.begin(); iter<Trails.end();++iter){
+		trailp = *iter;
 		num_alive_segments = 0;
 
 		if ( trailp->tail != trailp->head )	{
@@ -340,23 +326,21 @@ void trail_move_all(float frametime)
 	
 		if ( (num_alive_segments < 1) && trailp->object_died)
 		{
-			prev_trail->next = trailp->next;
-			delete trailp;
-
-			// decrement counter
-			Num_trails--;
-		}
-		else
-		{
-			prev_trail = trailp;
+			Trails.remove(iter.position());
 		}
 	}
 }
 
-void trail_object_died( trail *trailp )
+void trail_object_died(trail *trailp)
 {
 	trailp->object_died = true;
 }
+void trail_object_died(pool_index const &traili)
+{
+	trail* trailp = trail_find(traili);
+	trailp->object_died = true;
+}
+
 
 void trail_render_all()
 {
@@ -367,17 +351,21 @@ void trail_render_all()
 	if ( !Detail.weapon_extras )
 		return;
 
-	for(trail *trailp = Trails.next; trailp!=&Trails; trailp = trailp->next )
-	{
-		trail_render(trailp);
+	trail *trailp = nullptr;
+	for (auto iter = Trails.begin(); iter<Trails.end();++iter){
+	
+		trailp = *iter;
+		trail_render(trailp,iter.position());
 	}
 }
-int trail_stamp_elapsed(trail *trailp)
+int trail_stamp_elapsed(pool_index const &traili)
 {
-	return timestamp_elapsed(trailp->trail_stamp);
+	trail *trailp = trail_find(traili);
+ 	return timestamp_elapsed(trailp->trail_stamp);
 }
 
-void trail_set_stamp(trail *trailp)
+void trail_set_stamp(pool_index const &traili)
 {
+	trail *trailp = trail_find(traili);
 	trailp->trail_stamp = timestamp(trailp->info.stamp);
 }

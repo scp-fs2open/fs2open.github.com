@@ -72,11 +72,11 @@ void ct_ship_create(ship *shipp)
 
 	// null out the ct indices for this guy
 	for(idx=0; idx<MAX_SHIP_CONTRAILS; idx++){
-		shipp->trail_ptr[idx] = NULL;
+		shipp->trail_idx[idx].nullify();
 	}
 
 	for(idx=0; idx<MAX_SHIP_CONTRAILS; idx++){
-		shipp->ABtrail_ptr[idx] = NULL;
+		shipp->ABtrail_ptr[idx].nullify();
 	}
 
 
@@ -87,16 +87,16 @@ void ct_ship_delete(ship *shipp)
 {
 	int idx;		
 
-	Assert(shipp != NULL);
+	Assert(shipp != nullptr);
 	// free up any contrails this guy may have had
 	for(idx=0; idx<MAX_SHIP_CONTRAILS; idx++){
-		if(shipp->trail_ptr[idx] != NULL){
-			trail_object_died(shipp->trail_ptr[idx]);
-			shipp->trail_ptr[idx] = NULL;
+		if(!shipp->trail_idx[idx].null()){
+			trail_object_died(shipp->trail_idx[idx]);
+			shipp->trail_idx[idx].nullify();
 		}
-		if(shipp->ABtrail_ptr[idx] != NULL){
+		if(!shipp->ABtrail_ptr[idx].null()){
 			trail_object_died(shipp->ABtrail_ptr[idx]);
-			shipp->ABtrail_ptr[idx] = NULL;
+			shipp->ABtrail_ptr[idx].nullify();
 		}
 	}
 }
@@ -132,9 +132,9 @@ void ct_ship_process(ship *shipp)
 	if(ct_below_limit(objp)){
 		// kill any active trails he has
 		for(idx=0; idx<MAX_SHIP_CONTRAILS; idx++){
-			if(shipp->trail_ptr[idx] != NULL){
-				trail_object_died(shipp->trail_ptr[idx]);
-				shipp->trail_ptr[idx] = NULL;
+			if(!shipp->trail_idx[idx].null()){
+				trail_object_died(shipp->trail_idx[idx]);
+				shipp->trail_idx[idx].nullify();
 			}
 		}
 
@@ -169,7 +169,7 @@ int ct_has_contrails(ship *shipp)
 	int idx;
 
 	for(idx=0; idx<MAX_SHIP_CONTRAILS; idx++){
-		if(shipp->trail_ptr[idx] != NULL){
+		if(!shipp->trail_idx[idx].null()){
 			return 1;
 		}
 	}
@@ -201,18 +201,18 @@ void ct_update_contrails(ship *shipp)
 	// process each contrail	
 	for(idx=0; idx<MAX_SHIP_CONTRAILS; idx++){
 		// if this is a valid contrail
-			if(shipp->trail_ptr[idx] != NULL){	
+			if(!shipp->trail_idx[idx].null()){	
 				// get the point for the contrail
 				vm_vec_unrotate(&v1, &sip->ct_info[idx].pt, &objp->orient);
 				vm_vec_add2(&v1, &objp->pos);
 
 				// if the spew stamp has elapsed
-				if(trail_stamp_elapsed(shipp->trail_ptr[idx])){	
-					trail_add_segment(shipp->trail_ptr[idx], &v1, &objp->orient);
-					trail_set_stamp(shipp->trail_ptr[idx]);
+				if(trail_stamp_elapsed(shipp->trail_idx[idx])){	
+					trail_add_segment(shipp->trail_idx[idx], &v1, &objp->orient);
+					trail_set_stamp(shipp->trail_idx[idx]);
 				} else {
-					trail_set_segment(shipp->trail_ptr[idx], &v1);
-				}			
+					trail_set_segment(shipp->trail_idx[idx], &v1);
+				}
 			}
 	}
 }
@@ -245,15 +245,15 @@ void ct_create_contrails(ship *shipp)
 	for(idx=0; idx<sip->ct_count; idx++)
 	{
 		//if (this is a neb mision and this is a neb trail) or an ABtrail -Bobboau
-		shipp->trail_ptr[idx] = trail_create(&sip->ct_info[idx]);	
+		shipp->trail_idx[idx] = trail_create(&sip->ct_info[idx]);	
 	
-		if(shipp->trail_ptr[idx] != NULL)
+		if(!shipp->trail_idx[idx].null())
 		{
 			// add the point		
 			vm_vec_unrotate(&v1, &sip->ct_info[idx].pt, &objp->orient);
 			vm_vec_add2(&v1, &objp->pos);
-			trail_add_segment(shipp->trail_ptr[idx], &v1, &objp->orient);
-			trail_add_segment(shipp->trail_ptr[idx], &v1, &objp->orient);
+			trail_add_segment(shipp->trail_idx[idx], &v1, &objp->orient);
+			trail_add_segment(shipp->trail_idx[idx], &v1, &objp->orient);
 		}
 	}
 
@@ -289,10 +289,10 @@ void ct_ship_process_ABtrails(ship *shipp)
 
 	if(!(objp->phys_info.flags & PF_AFTERBURNER_ON)){ //if the after burners aren't on -Bobboau
 		for(idx=0; idx<MAX_SHIP_CONTRAILS; idx++){
-			if(shipp->ABtrail_ptr[idx] != NULL)
+			if(!shipp->ABtrail_ptr[idx].null())
 			{
 				trail_object_died(shipp->ABtrail_ptr[idx]);
-				shipp->ABtrail_ptr[idx] = NULL;
+				shipp->ABtrail_ptr[idx].nullify();
 			}
 		}
 
@@ -347,7 +347,7 @@ void ct_create_ABtrails(ship *shipp)
 		{
 		
 			shipp->ABtrail_ptr[idx] = trail_create(&shipp->ab_info[idx]);	
-			if(shipp->ABtrail_ptr[idx] != NULL)
+			if(!shipp->ABtrail_ptr[idx].null())
 			{
 				// get the point for the contrail
 				vm_vec_unrotate(&v1, &shipp->ab_info[idx].pt, &objp->orient);
@@ -390,7 +390,7 @@ void ct_update_ABtrails(ship *shipp)
 
 	for(idx=0; idx<MAX_SHIP_CONTRAILS; idx++){
 		if(objp->phys_info.flags & PF_AFTERBURNER_ON){//ABtrails
-			if(shipp->ABtrail_ptr[idx] != NULL){	
+			if(!shipp->ABtrail_ptr[idx].null()){	
 				// get the point for the contrail
 				vm_vec_unrotate(&v1, &shipp->ab_info[idx].pt, &objp->orient);
 				vm_vec_add2(&v1, &objp->pos);
@@ -420,7 +420,7 @@ int ct_has_ABtrails(ship *shipp)
 		return 0;
 
 	for(idx=0; idx<MAX_SHIP_CONTRAILS; idx++){
-		if(shipp->ABtrail_ptr[idx] != NULL){
+		if(!shipp->ABtrail_ptr[idx].null()){
 			return 1;
 		}
 	}
