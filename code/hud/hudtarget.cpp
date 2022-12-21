@@ -1751,14 +1751,18 @@ void hud_target_live_turret(int next_flag, int auto_advance, int only_player_tar
 	int num_live_turrets = 0;
 
 	// make sure we're targeting a ship
-	if (Player_ai->target_objnum == -1 && !auto_advance) {
-		snd_play(gamesnd_get_game_sound(GameSounds::TARGET_FAIL));
+	if (Player_ai->target_objnum == -1) {
+		if (!auto_advance) {
+			snd_play(gamesnd_get_game_sound(GameSounds::TARGET_FAIL));
+		}
 		return;
 	}
 
 	// only targeting subsystems on ship
-	if ((Objects[Player_ai->target_objnum].type != OBJ_SHIP) && (!auto_advance)) {
-		snd_play( gamesnd_get_game_sound(GameSounds::TARGET_FAIL));
+	if (Objects[Player_ai->target_objnum].type != OBJ_SHIP) {
+		if (!auto_advance) {
+			snd_play( gamesnd_get_game_sound(GameSounds::TARGET_FAIL));
+		}
 		return;
 	}
 
