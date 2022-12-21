@@ -1330,7 +1330,10 @@ static object* select_next_target_by_distance(const bool targeting_from_closest_
     object   *prospective_victim_ptr;
     ship     *prospective_victim_ship_ptr;
     for (ship_object_ptr = GET_FIRST(&Ship_obj_list); ship_object_ptr != END_OF_LIST(&Ship_obj_list); ship_object_ptr = GET_NEXT(ship_object_ptr)) {
-        prospective_victim_ptr = &Objects[ship_object_ptr->objnum];
+		if (Objects[ship_object_ptr->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
+	
+		prospective_victim_ptr = &Objects[ship_object_ptr->objnum];
         // get a pointer to the ship information
         prospective_victim_ship_ptr = &Ships[prospective_victim_ptr->instance];
 
@@ -1523,14 +1526,17 @@ void hud_target_missile(object *source_obj, int next_flag)
 		}
 
 		for (so=advance_ship(startShip, next_flag); so!=startShip; so=advance_ship(so, next_flag)) {
-			A = &Objects[so->objnum];
 
 			// don't look at header
 			if (so == &Ship_obj_list) {
 				continue;
 			}
 
-			Assertion(Objects[so->objnum].type == OBJ_SHIP, "hud_target_missile was about to call obj_team with a non-ship obejct with type %d. Please report!", Objects[so->objnum].type); 
+			A = &Objects[so->objnum];
+			if (A->flags[Object::Object_Flags::Should_be_dead])
+				continue;
+
+			Assertion(A->type == OBJ_SHIP, "hud_target_missile was about to call obj_team with a non-ship obejct with type %d. Please report!", A->type);
 
 			// only allow targeting of hostile bombs
 			if (!iff_x_attacks_y(Player_ship->team, obj_team(A))) {
@@ -1665,6 +1671,8 @@ void hud_target_newest_ship()
 
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		A = &Objects[so->objnum];
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 		shipp = &Ships[A->instance];	// get a pointer to the ship information
 
 		if ( (A == Player_obj) || (should_be_ignored(shipp)) )
@@ -2216,8 +2224,9 @@ int hud_target_closest(int team_mask, int attacked_objnum, int play_fail_snd, in
 	eval_ship_as_closest_target_args.turret_attacking_target = get_closest_turret_attacking_player;
 
 	for ( so=GET_FIRST(&Ship_obj_list); so!=END_OF_LIST(&Ship_obj_list); so=GET_NEXT(so) ) {
-
 		A = &Objects[so->objnum];
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 		shipp = &Ships[A->instance];	// get a pointer to the ship information
 
 		// fill in rest of eval_ship_as_closest_target_args
@@ -3531,8 +3540,9 @@ void hud_show_hostile_triangle()
 	hostile_obj = NULL;
 
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list);  so = GET_NEXT(so) ) {
-
 		A = &Objects[so->objnum];
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 		sp = &Ships[A->instance];
 
 		// only look at ships who attack us
@@ -4919,6 +4929,8 @@ int hud_target_closest_repair_ship(int goal_objnum)
 
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		A = &Objects[so->objnum];
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 		shipp = &Ships[A->instance];	// get a pointer to the ship information
 
 		// ignore all ships that aren't repair ships
@@ -4990,8 +5002,9 @@ void hud_target_closest_uninspected_object()
 	float		new_distance = 0.0f;
 
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
-
 		A = &Objects[so->objnum];
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 		shipp = &Ships[A->instance];	// get a pointer to the ship information
 
 		if ( (A == Player_obj) || (should_be_ignored(shipp)) ){
@@ -5055,6 +5068,8 @@ void hud_target_uninspected_object(int next_flag)
 
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		A = &Objects[so->objnum];
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 		shipp = &Ships[A->instance];	// get a pointer to the ship information
 
 		if ( (A == Player_obj) || (should_be_ignored(shipp)) )

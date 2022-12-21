@@ -602,6 +602,9 @@ int hotkey_build_team_listing(int enemy_team_mask, int y, bool list_enemies)
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		bool add_it;
 
+		if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		// don't process non-ships, or the player ship
 		if ( (Game_mode & GM_NORMAL) && (so->objnum == OBJ_INDEX(Player_obj)) )
 			continue;
@@ -867,6 +870,8 @@ void save_hotkeys()
 	for (i=0; i<MAX_KEYED_TARGETS; i++) {
 		hud_target_hotkey_clear(i);
 		for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
+			if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+				continue;
 			if ( Hotkey_bits[Objects[so->objnum].instance] & (1 << i) ) {
 				hud_target_hotkey_add_remove(i, &Objects[so->objnum], HOTKEY_USER_ADDED );
 			}

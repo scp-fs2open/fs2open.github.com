@@ -151,6 +151,9 @@ void emp_apply(vec3d *pos, float inner_radius, float outer_radius, float emp_int
 
 	// See if there are any friendly ships present, if so return without preventing msg
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {		
+		if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		target = &Objects[so->objnum];
 		if(target->type != OBJ_SHIP){
 			continue;

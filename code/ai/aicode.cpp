@@ -435,6 +435,9 @@ void garbage_collect_path_points()
 	//	in pp_xlate, mark all used Path_point records
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		A = &Objects[so->objnum];
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		ship	*shipp = &Ships[A->instance];
 		if (shipp->ai_index != -1) {
 			ai_info	*aip = &Ai_info[shipp->ai_index];
@@ -466,6 +469,9 @@ void garbage_collect_path_points()
 	//	Now, using pp_xlate, fixup all aip->path_cur and aip->path_start indices
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		A = &Objects[so->objnum];
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		ship	*shipp = &Ships[A->instance];
 		if (shipp->ai_index != -1) {
 			ai_info	*aip = &Ai_info[shipp->ai_index];
@@ -1849,6 +1855,9 @@ int num_enemies_attacking(int objnum)
 
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		objp = &Objects[so->objnum];
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		Assert(objp->instance != -1);
 		sp = &Ships[objp->instance];
 
@@ -1902,6 +1911,9 @@ float get_wing_lowest_max_speed(object *objp)
 
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		o = &Objects[so->objnum];
+		if (o->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		ship	*oshipp = &Ships[o->instance];
 		ai_info	*oaip = &Ai_info[oshipp->ai_index];
 
@@ -1964,6 +1976,9 @@ float get_wing_lowest_av_ab_speed(object *objp)
 
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		o = &Objects[so->objnum];
+		if (o->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		ship	*oshipp = &Ships[o->instance];
 		ai_info	*oaip = &Ai_info[oshipp->ai_index];
 		ship_info *osip = &Ship_info[oshipp->ship_info_index];
@@ -2207,6 +2222,9 @@ int get_nearest_objnum(int objnum, int enemy_team_mask, int enemy_wing, float ra
 
 	// go through the list of all ships and evaluate as potential targets
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
+		if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		eno.trial_objp = &Objects[so->objnum];
 		evaluate_object_as_nearest_objnum(&eno);
 	}
@@ -2265,6 +2283,8 @@ int find_nearby_threat(int objnum, int enemy_team_mask, float range, int *count)
 
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		objp = &Objects[so->objnum];
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 
 		if ( OBJ_INDEX(objp) != objnum ) {
 			if (Ships[objp->instance].flags[Ship::Ship_Flags::Dying])
@@ -3011,6 +3031,8 @@ int pp_collide_any(vec3d *curpos, vec3d *goalpos, float radius, object *ignore_o
 
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		object *objp = &Objects[so->objnum];
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 
 		if (big_only_flag) {
 			if (!Ship_info[Ships[objp->instance].ship_info_index].is_big_or_huge())
@@ -3510,6 +3532,9 @@ void ai_formation_object_recalculate_slotnums(int form_objnum, int exiting_objnu
 	int	slotnum = 1;			//	Note: Slot #0 means leader, which isn't someone who was told to form-on-wing.
 
 	for (ship_obj* ship = GET_FIRST(&Ship_obj_list); ship != END_OF_LIST(&Ship_obj_list); ship = GET_NEXT(ship) ) {
+		if (Objects[ship->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		ai_info* aip = &Ai_info[Ships[Objects[ship->objnum].instance].ai_index];
 
 		if (ship->objnum == exiting_objnum)
@@ -4265,6 +4290,9 @@ int get_enemy_team_range(object *my_objp, float range, int enemy_team_mask, vec3
 
     for (so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so)) {
         objp = &Objects[so->objnum];
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
         if (iff_matches_mask(Ships[objp->instance].team, enemy_team_mask)) {
             ship_info* sip = &Ship_info[Ships[objp->instance].ship_info_index];
             if (sip->is_fighter_bomber() || sip->flags[Ship::Info_Flags::Cruiser] || sip->flags[Ship::Info_Flags::Capital] || sip->flags[Ship::Info_Flags::Supercap] || sip->flags[Ship::Info_Flags::Drydock] || sip->flags[Ship::Info_Flags::Corvette] || sip->flags[Ship::Info_Flags::Awacs] || sip->flags[Ship::Info_Flags::Gas_miner])
@@ -5885,6 +5913,9 @@ bool ai_do_multilock(ai_info* aip, weapon_info* wip) {
 	} else { // any target
 		for (ship_obj* so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so)) {
 			object* target_objp = &Objects[so->objnum];
+			if (target_objp->flags[Object::Object_Flags::Should_be_dead])
+				continue;
+
 			ship* target_ship = &Ships[target_objp->instance];
 			float dot;
 
@@ -6136,6 +6167,8 @@ int num_nearby_fighters(int enemy_team_mask, vec3d *pos, float threshold)
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 
 		ship_objp = &Objects[so->objnum];
+		if (ship_objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 
 		if (iff_matches_mask(Ships[ship_objp->instance].team, enemy_team_mask)) {
 			if (Ship_info[Ships[ship_objp->instance].ship_info_index].is_fighter_bomber()) {
@@ -6308,6 +6341,9 @@ void ai_maybe_announce_shockwave_weapon(object *firing_objp, int weapon_index)
 
 		for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 			object	*A = &Objects[so->objnum];
+			if (A->flags[Object::Object_Flags::Should_be_dead])
+				continue;
+
 			Assert(A->type == OBJ_SHIP);
 
 			if (Ships[A->instance].team == firing_ship_team) {
@@ -6557,6 +6593,9 @@ int might_hit_teammate(object *firing_objp)
 
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		objp = &Objects[so->objnum];
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		if (Ships[objp->instance].team == team) {
 			float		dist, dot;
 			vec3d	vec_to_objp;
@@ -7300,6 +7339,8 @@ int will_collide_with_big_ship_all(object *objp, object *ignore_objp, vec3d *goa
 
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		big_objp = &Objects[so->objnum];
+		if (big_objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 
 		if (big_objp == ignore_objp)
 			continue;
@@ -9877,6 +9918,8 @@ int num_ships_attacking(int target_objnum)
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) )
 	{
 		attacking_objp = &Objects[so->objnum];
+		if (attacking_objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 		if (attacking_objp->instance < 0)
 			continue;
 
@@ -9917,6 +9960,9 @@ void remove_farthest_attacker(int objnum)
 
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		objp = &Objects[so->objnum];
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		if ( !(objp->flags[Object::Object_Flags::Player_ship])) {
 			if (objp->instance != -1) {
 				ai_info	*aip2;
@@ -10131,6 +10177,9 @@ void maybe_update_guard_object(object *hit_objp, object *hitter_objp)
 
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		objp = &Objects[so->objnum];
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		if (objp->instance != -1) {
 			ai_info	*aip;
 			aip = &Ai_info[Ships[objp->instance].ai_index];
@@ -10212,11 +10261,10 @@ void ai_guard_find_nearby_ship(object *guarding_objp, object *guarded_objp)
 	for (so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
 	{
 		enemy_objp = &Objects[so->objnum];
-
-		if (enemy_objp->instance < 0)
-		{
+		if (enemy_objp->flags[Object::Object_Flags::Should_be_dead])
 			continue;
-		}
+		if (enemy_objp->instance < 0)
+			continue;
 
 		ship *eshipp = &Ships[enemy_objp->instance];
 
@@ -12016,6 +12064,9 @@ float gwlr_1(object *objp, int wingnum)
 
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		o = &Objects[so->objnum];
+		if (o->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		if (Ships[o->instance].wingnum == wingnum)
 			if (o->radius > max_radius)
 				max_radius = o->radius;
@@ -12037,6 +12088,9 @@ static float gwlr_object_1(object *objp)
 
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		o = &Objects[so->objnum];
+		if (o->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		if (Ai_info[Ships[o->instance].ai_index].goal_objnum == OBJ_INDEX(objp))
 			if (o->radius > max_radius)
 				max_radius = o->radius;
@@ -12161,7 +12215,9 @@ void render_wing_phantoms_all()
 		int		wing_index;		//	Index in wing struct, defines 3-space location in wing.
 
 		objp = &Objects[so->objnum];
-		
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		Assert((objp->instance >= 0) && (objp->instance < MAX_SHIPS));
 		shipp = &Ships[objp->instance];
 		wingnum = shipp->wingnum;
@@ -13806,6 +13862,8 @@ int num_allies_rearming(object *objp)
 		
 		Assert (so->objnum != -1);
 		A = &Objects[so->objnum];
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 
 		if (Ships[A->instance].team == team) {
 			if (Ai_info[Ships[A->instance].ai_index].ai_flags[AI::AI_Flags::Repairing, AI::AI_Flags::Awaiting_repair]) {
@@ -14150,6 +14208,8 @@ void ai_announce_ship_dying(object *dying_objp)
 
 		for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 			object	*A = &Objects[so->objnum];
+			if (A->flags[Object::Object_Flags::Should_be_dead])
+				continue;
 			Assert(A->type == OBJ_SHIP);
 
 			// Goober5000 - the disallow is now handled uniformly in the ai_avoid_shockwave function
@@ -14180,6 +14240,8 @@ static int ai_find_shockwave_ship(object *objp)
 	
 		Assert(so->objnum >= 0 && so->objnum < MAX_OBJECTS);
 		A = &Objects[so->objnum];
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 
 		Assert(A->type == OBJ_SHIP);
 		Assert((A->instance >= 0) && (A->instance < MAX_SHIPS));
@@ -15964,6 +16026,9 @@ void ai_ship_destroy(int shipnum)
 
 	//	For all objects that had this ship as a target, wipe it out, forcing find of a new enemy.
 	for ( auto so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
+		if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		auto other_objp = &Objects[so->objnum];
 		Assert((other_objp->instance >= 0) && (other_objp->instance < MAX_SHIPS));
 		auto other_shipp = &Ships[other_objp->instance];

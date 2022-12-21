@@ -291,6 +291,9 @@ bool hud_squadmsg_exist_fighters( )
 	for (so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
 	{	
 		objp = &Objects[so->objnum];
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		shipp = &Ships[objp->instance];
 		Assertion(shipp->objnum != -1, "hud_squadmsg_exist_fighters() discovered that ship #%d ('%s') has an objnum of -1. Since the ship was retrieved from its object number (%d), this should be impossible; get a coder!\n", objp->instance, shipp->ship_name, so->objnum);
 
@@ -374,6 +377,9 @@ int hud_squadmsg_count_ships(int add_to_menu)
 	for (so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
 	{	
 		objp = &Objects[so->objnum];
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		shipp = &Ships[objp->instance];
 		Assertion(shipp->objnum != -1, "hud_squadmsg_count_ships() discovered that ship #%d ('%s') has an objnum of -1. Since the ship was retrieved from its object number (%d), this should be impossible; get a coder!\n", objp->instance, shipp->ship_name, so->objnum);
 
@@ -990,6 +996,9 @@ int hud_squadmsg_enemies_present()
 	ship_obj *so;
 
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
+		if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		shipp = &Ships[Objects[so->objnum].instance];
 		if ( shipp->team != Player_ship->team )
 			return 1;
@@ -1992,6 +2001,8 @@ void hud_squadmsg_ship_command()
 			all_accept = true;
 			partial_accept = false;
 			for (so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so)) {
+				if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+					continue;
 
 				// don't send messge to ships not on player's team, or that are in a wing.
 				shipp = &Ships[Objects[so->objnum].instance];

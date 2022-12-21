@@ -150,6 +150,9 @@ bool CanAutopilot(const vec3d *targetPos, bool send_msg)
 		for (ship_obj *so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
 		{
 			object *other_objp = &Objects[so->objnum];
+			if (other_objp->flags[Object::Object_Flags::Should_be_dead])
+				continue;
+
 			// attacks player?
 			if (iff_x_attacks_y(obj_team(other_objp), obj_team(Player_obj)) 
 				&& !(Ship_info[Ships[other_objp->instance].ship_info_index].flags[Ship::Info_Flags::Cargo])) // ignore cargo

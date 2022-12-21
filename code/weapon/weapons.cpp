@@ -4844,7 +4844,6 @@ void find_homing_object_cmeasures(const SCP_vector<object*> &cmeasure_list)
  */
 void find_homing_object_by_sig(object *weapon_objp, int sig)
 {
-	ship_obj		*sop;
 	weapon		*wp;
 	object		*old_homing_objp;
 
@@ -4853,18 +4852,16 @@ void find_homing_object_by_sig(object *weapon_objp, int sig)
 	// save the old object so that multiplayer masters know whether to send a homing update packet
 	old_homing_objp = wp->homing_object;
 
-	sop = GET_FIRST(&Ship_obj_list);
-	while(sop != END_OF_LIST(&Ship_obj_list)) {
-		object	*objp;
+	for (auto sop: list_range(&Ship_obj_list)) {
+		auto objp = &Objects[sop->objnum];
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 
-		objp = &Objects[sop->objnum];
 		if (objp->signature == sig) {
 			wp->homing_object = objp;
 			wp->target_sig = objp->signature;
 			break;
 		}
-
-		sop = sop->next;
 	}
 
 	// if the old homing object is different that the new one, send a packet to clients
@@ -7371,8 +7368,10 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 	// For all objects that had this weapon as a target, wipe it out, forcing find of a new enemy
 	for ( auto so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		auto ship_objp = &Objects[so->objnum];
-		Assert(ship_objp->instance != -1);
-        
+		if (ship_objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
+		Assert(ship_objp->instance != -1);        
 		shipp = &Ships[ship_objp->instance];
 		Assert(shipp->ai_index != -1);
         
