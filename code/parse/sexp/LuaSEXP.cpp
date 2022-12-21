@@ -653,11 +653,11 @@ void LuaSEXP::parseTable() {
 			if (dyn_index >= 0) {
 				Dynamic_parameters[dyn_index].parameter_map.push_back(param_map);
 			} else {
-				dynamic_sexp_parameter_list this_subsystem;
-				this_subsystem.operator_name = _name;
-				this_subsystem.parameter_map.push_back(param_map);
+				dynamic_sexp_parameter_list dyn_param;
+				dyn_param.operator_name = _name;
+				dyn_param.parameter_map.push_back(param_map);
 
-				Dynamic_parameters.push_back(this_subsystem);
+				Dynamic_parameters.push_back(dyn_param);
 			}
 
 		}
