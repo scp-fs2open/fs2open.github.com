@@ -21,6 +21,7 @@
 #include "jumpnode/jumpnode.h"
 #include "lighting/lighting.h"
 #include "math/staticrand.h"
+#include "missionui/missionscreencommon.h"
 #include "mod_table/mod_table.h"
 #include "nebula/neb.h"
 #include "particle/particle.h"
@@ -3079,4 +3080,109 @@ void model_render_only_glowpoint_lights(model_render_params* interp, int model_n
 void model_render_set_wireframe_color(color* clr)
 {
 	Wireframe_color = *clr;
+}
+
+bool render_tech_model(bool is_ship, int x1, int y1, int x2, int y2, float zoom, bool lighting, int class_idx, matrix* orient)
+{
+
+	model_render_params render_info;
+	vec3d closeup_pos;
+	float closeup_zoom;
+	int model_num;
+	bool model_lighting = true;
+
+	if (is_ship) {
+		ship_info* sip;
+		sip = &Ship_info[class_idx];
+
+		closeup_pos = sip->closeup_pos;
+		closeup_zoom = sip->closeup_zoom;
+
+		if (sip->uses_team_colors) {
+			render_info.set_team_color(sip->default_team_name, "none", 0, 0);
+		}
+
+		if (sip->flags[Ship::Info_Flags::No_lighting]) {
+			model_lighting = false;
+		}
+
+		// Make sure model is loaded
+		model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0], 0);
+
+	} else {
+		weapon_info* wip;
+		wip = &Weapon_info[class_idx];
+
+		closeup_pos = wip->closeup_pos;
+		closeup_zoom = wip->closeup_zoom;
+
+		if (wip->wi_flags[Weapon::Info_Flags::Mr_no_lighting]) {
+			model_lighting = false;
+		}
+
+		// Make sure model is loaded
+		if (VALID_FNAME(wip->tech_model)) {
+			model_num = model_load(wip->tech_model, 0, nullptr, 0);
+		} else {
+			// no tech model!!
+			return false;
+		}
+	}
+
+	//check if the model was loaded
+	if (model_num < 0)
+		return false;
+
+	// Clip
+	gr_set_clip(x1, y1, x2 - x1, y2 - y1, GR_RESIZE_NONE);
+
+	// Handle 3D init stuff
+	g3_start_frame(1);
+	g3_set_view_matrix(&closeup_pos, &vmd_identity_matrix, closeup_zoom * zoom);
+
+	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+	gr_set_view_matrix(&Eye_position, &Eye_matrix);
+
+	// setup lights
+	common_setup_room_lights();
+
+	// Draw the model!!
+	model_clear_instance(model_num);
+
+	int model_instance = -1;
+
+	// Create an instance for ships that can be used to clear out destroyed subobjects from rendering
+	if (is_ship) {
+		model_instance = model_create_instance(-1, model_num);
+		model_set_up_techroom_instance(&Ship_info[class_idx], model_instance);
+	}
+
+	render_info.set_detail_level_lock(0);
+
+	uint render_flags = MR_AUTOCENTER | MR_NO_FOGGING;
+
+	if (!lighting || !model_lighting)
+		render_flags |= MR_NO_LIGHTING;
+
+	render_info.set_flags(render_flags);
+
+	if (is_ship) {
+		model_render_immediate(&render_info, model_num, model_instance, orient, &vmd_zero_vector);
+	} else {
+		model_render_immediate(&render_info, model_num, orient, &vmd_zero_vector);
+	}
+
+	// OK we're done
+	gr_end_view_matrix();
+	gr_end_proj_matrix();
+
+	// Bye!!
+	g3_end_frame();
+	gr_reset_clip();
+
+	// Now that we've rendered the frame we can remove the instance if one was created for ships
+	if (is_ship)
+		model_delete_instance(model_instance);
+
+	return true;
 }
