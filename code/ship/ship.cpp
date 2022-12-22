@@ -10677,7 +10677,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	ph_inf = objp->phys_info;
 
 	// if this ship is the wing leader, update the ship info index that the wing keeps track of.
-	if (!Fred_running && p_objp->wingnum > -1 && p_objp->pos_in_wing == 0) {
+	if (!Fred_running && p_objp != nullptr && p_objp->wingnum > -1 && p_objp->pos_in_wing == 0) {
 		Wings[p_objp->wingnum].special_ship_ship_info_index = ship_type;
 	}
 
