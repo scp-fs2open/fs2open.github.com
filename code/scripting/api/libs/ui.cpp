@@ -798,11 +798,17 @@ ADE_INDEXER(l_Briefing_Goals,
 	"number Index",
 	"Array of goals",
 	"mission_goal",
-	"goal handle, or invalid handle if index is invalid")
+	"goal handle, or nil if index is invalid")
 {
 	int idx;
 	if (!ade_get_args(L, "*i", &idx))
 		return ade_set_error(L, "s", "");
+
+	// convert from lua index
+	idx--;
+
+	if ((idx < 0) || idx >= (int)Mission_goals.size())
+		return ADE_RETURN_NIL;
 
 	return ade_set_args(L, "o", l_Goals.Set(idx));
 }
