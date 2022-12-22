@@ -3941,7 +3941,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
-				if (stricmp(CTEXT(node), SEXP_NONE_STRING) && (get_asteroid_position(CTEXT(node)) < 0)) {
+				if (get_asteroid_position(CTEXT(node)) < 0) {
 					return SEXP_CHECK_INVALID_ASTEROID;
 				}
 				break;

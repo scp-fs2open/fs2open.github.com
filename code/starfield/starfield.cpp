@@ -153,7 +153,7 @@ star Stars[MAX_STARS];
 motion_debris_instance Motion_debris[MAX_MOTION_DEBRIS];
 
 SCP_vector<motion_debris_types> Motion_debris_info;
-motion_debris_bitmaps* Motion_debris_ptr;
+motion_debris_bitmaps* Motion_debris_ptr = nullptr;
 
 // background data
 int Stars_background_inited = 0;			// if we're inited
@@ -184,9 +184,9 @@ static int Mission_env_map = -1;
 static bool Env_cubemap_drawn = false;
 static bool Irr_cubemap_drawn = false;
 
-int get_motion_debris_by_name(SCP_string name) {
+int get_motion_debris_by_name(const SCP_string &name) {
 	for (int i = 0; i < (int)Motion_debris_info.size(); i++) {
-		if (!stricmp(Motion_debris_info[i].name.c_str(), name.c_str())) {
+		if (SCP_string_lcase_equal_to()(Motion_debris_info[i].name, name)) {
 			return i;
 		}
 	}
@@ -228,7 +228,7 @@ void stars_load_motion_debris(motion_debris_bitmaps* vclips)
 	}
 }
 
-void stars_load_debris(int fullneb, SCP_string custom_name)
+void stars_load_debris(int fullneb, const SCP_string &custom_name)
 {
 	if (!Motion_debris_enabled || ((int)Motion_debris_info.size() == 0)) {
 		return;

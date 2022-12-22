@@ -164,9 +164,9 @@ void stars_preload_background_bitmap(const char *fname);
 
 void stars_set_nebula(bool activate, float range);
 
-int get_motion_debris_by_name(SCP_string name);
+int get_motion_debris_by_name(const SCP_string &name);
 
-void stars_load_debris(int fullneb = 0, SCP_string = "");
+void stars_load_debris(int fullneb = 0, const SCP_string &custom_name = "");
 
 // Starfield functions that should be used only by FRED ...
 
