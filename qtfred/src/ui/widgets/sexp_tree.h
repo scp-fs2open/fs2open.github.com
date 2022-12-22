@@ -271,7 +271,7 @@ class sexp_tree: public QTreeWidget {
 	sexp_list_item* get_listing_opf_point();
 	sexp_list_item* get_listing_opf_iff();
 	sexp_list_item* get_listing_opf_ai_goal(int parent_node);
-	sexp_list_item* get_listing_opf_docker_point(int parent_node);
+	sexp_list_item* get_listing_opf_docker_point(int parent_node, int arg_index);
 	sexp_list_item* get_listing_opf_dockee_point(int parent_node);
 	sexp_list_item* get_listing_opf_message();
 	sexp_list_item* get_listing_opf_who_from();
