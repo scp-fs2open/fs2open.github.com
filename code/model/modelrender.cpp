@@ -3166,11 +3166,16 @@ bool render_tech_model(bool is_ship, int x1, int y1, int x2, int y2, float zoom,
 
 	render_info.set_flags(render_flags);
 
+	bool s_save = Shadow_override;
+	Shadow_override = true;
+
 	if (is_ship) {
 		model_render_immediate(&render_info, model_num, model_instance, orient, &vmd_zero_vector);
 	} else {
 		model_render_immediate(&render_info, model_num, orient, &vmd_zero_vector);
 	}
+
+	Shadow_override = s_save;
 
 	// OK we're done
 	gr_end_view_matrix();
