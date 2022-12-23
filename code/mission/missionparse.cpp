@@ -6154,8 +6154,9 @@ bool post_process_mission(mission *pm)
 	// their SF_IGNORE_COUNT flag set.  We don't count ships in wings when the equivalent wing flag is set.
 	// in counting ships in wings, we increment the count by the wing's wave count to account for everyone.
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
-		if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
-			continue;
+		// do not skip over should-be-dead ships (probably destroy-before-mission ships)
+		// a) because previous versions didn't, and changing this would change percentages,
+		// b) because it does no harm to access should-be-dead ships here
 
 		int shipnum = Objects[so->objnum].instance;
 		// pass over non-ship objects and player ship objects
