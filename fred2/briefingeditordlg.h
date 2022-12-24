@@ -54,6 +54,7 @@ public:
 	int		m_icon_image;
 	CString	m_icon_label;
 	CString	m_icon_closeup_label;
+	int		m_icon_scale;
 	CString	m_stage_title;
 	CString	m_text;
 	CString	m_time;

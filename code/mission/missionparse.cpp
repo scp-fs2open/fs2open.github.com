@@ -1494,6 +1494,10 @@ void parse_briefing(mission * /*pm*/, int flags)
 				if (optional_string("$closeup label:")) {
 					stuff_string(bi->closeup_label, F_MESSAGE, MAX_LABEL_LEN);
 				}
+				bi->scale = 100;
+				if (optional_string("$icon scale:")) {
+					stuff_int(&bi->scale);
+				}
 
 				if (optional_string("+id:")) {
 					stuff_int(&bi->id);

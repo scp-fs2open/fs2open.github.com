@@ -787,6 +787,7 @@
 #define IDC_INSERT_STAGE                1384
 #define IDC_ICON_CLOSEUP_LABEL          1385
 #define IDC_INSERT                      1385
+#define IDC_ICON_SCALE					1386
 #define IDC_GOTO_VIEW                   1388
 #define IDC_SAVE_VIEW                   1389
 #define IDC_BROWSE_AVI                  1390
