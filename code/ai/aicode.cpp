@@ -6317,6 +6317,9 @@ int compute_num_homing_objects(object *target_objp)
 	int		count = 0;
 
 	for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		if (objp->type == OBJ_WEAPON) {
 			if (Weapon_info[Weapons[objp->instance].weapon_info_index].is_homing()) {
 				if (Weapons[objp->instance].homing_object == target_objp) {
@@ -9887,23 +9890,6 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 	return fdist;
 }
 
-void debug_find_guard_object()
-{
-	ship			*shipp = &Ships[Pl_objp->instance];	
-	object		*objp;
-
-	for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
-		if ((Pl_objp != objp) && (objp->type == OBJ_SHIP)) {
-			if (objp->instance != -1) {
-				if (Ships[objp->instance].team == shipp->team)	{
-					ai_set_guard_object(Pl_objp, objp);
-				}
-			}
-		}
-	}
-
-}
-
 /**
  * Given an object number, return the number of ships attacking it.
  */
@@ -10298,6 +10284,9 @@ void ai_guard_find_nearby_asteroid(object *guarding_objp, object *guarded_objp)
 	float		dist_to_self, closest_danger_asteroid_dist=999999.0f, closest_asteroid_dist=999999.0f;
 
 	for ( asteroid_objp = GET_FIRST(&obj_used_list); asteroid_objp != END_OF_LIST(&obj_used_list); asteroid_objp = GET_NEXT(asteroid_objp) ) {
+		if (asteroid_objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		if ( asteroid_objp->type == OBJ_ASTEROID ) {
 			// Attack asteroid if near guarded ship
 			dist = vm_vec_dist_quick(&asteroid_objp->pos, &guarded_objp->pos);
@@ -16395,6 +16384,9 @@ bool test_line_of_sight(vec3d* from, vec3d* to, std::unordered_set<const object*
 	bool collides = false;
 
 	for (object* objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		//Don't collision check against excluded objects
 		if (excluded_objects.count(objp) > 0)
 			continue;

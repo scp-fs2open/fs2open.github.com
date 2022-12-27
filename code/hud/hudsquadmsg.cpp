@@ -946,7 +946,10 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num )
 	}
 
 	// now find any friendly fighter/bomber ships not in wings
-	for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
+	for (auto so: list_range(&Ship_obj_list)) {
+		auto objp = &Objects[so->objnum];
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 		if ( objp->type != OBJ_SHIP )
 			continue;
 

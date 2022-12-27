@@ -956,13 +956,13 @@ void process_debug_keys(int k)
 				debug_max_secondary_weapons(Player_obj);
 				debug_max_primary_weapons(Player_obj);
 				if (k & KEY_SHIFTED) {
-					object	*objp;
-
-					for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) )
-						if (objp->type == OBJ_SHIP) {
-							debug_max_secondary_weapons(objp);
-							debug_max_primary_weapons(objp);
-						}
+					for (auto so: list_range(&Ship_obj_list)) {
+						auto objp = &Objects[so->objnum];
+						if (objp->flags[Object::Object_Flags::Should_be_dead])
+							continue;
+						debug_max_secondary_weapons(objp);
+						debug_max_primary_weapons(objp);
+					}
 				}
 
 			} else

@@ -8557,6 +8557,9 @@ static void ship_blow_up_area_apply_blast( object *exp_objp)
 		float blast = 0.0f;
 		float damage = 0.0f;
 		for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
+			if (objp->flags[Object::Object_Flags::Should_be_dead])
+				continue;
+
 			if ( (objp->type != OBJ_SHIP) && (objp->type != OBJ_ASTEROID) ) {
 				continue;
 			}
@@ -10204,15 +10207,15 @@ int	Ship_subsys_hwm = 0;
 
 static void show_ship_subsys_count()
 {
-	object	*objp;
 	int		count = 0;	
 	int		o_type = 0;
 
-	for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
-		o_type = (int)objp->type;
-		if (o_type == OBJ_SHIP) {
-			count += Ship_info[Ships[objp->instance].ship_info_index].n_subsystems;
-		}
+	for (auto so: list_range(&Ship_obj_list)) {
+		auto objp = &Objects[so->objnum];
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
+		count += Ship_info[Ships[objp->instance].ship_info_index].n_subsystems;
 	}
 
 	if (count > Ship_subsys_hwm) {
@@ -15038,7 +15041,6 @@ int ship_do_rearm_frame( object *objp, float frametime )
 // if no ships can satisfy a request, we've reached the limits, and we can't queue anything, we're out of luck -- return 4
 int ship_find_repair_ship( object *requester_obj, object **ship_we_found )
 {
-	object *objp;
 	int num_support_ships = 0;
 	float min_dist = -1.0f;
 	object *nearest_support_ship = NULL;
@@ -15051,9 +15053,10 @@ int ship_find_repair_ship( object *requester_obj, object **ship_we_found )
 		requester_obj->instance, MAX_SHIPS);
 
 	ship *requester_ship = &Ships[requester_obj->instance];
-	for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) )
+	for (auto so: list_range(&Ship_obj_list))
 	{
-		if ((objp->type == OBJ_SHIP) && !(objp->flags[Object::Object_Flags::Should_be_dead]))
+		auto objp = &Objects[so->objnum];
+		if (!(objp->flags[Object::Object_Flags::Should_be_dead]))
 		{
 			ship *shipp;
 			ship_info *sip;
@@ -15303,6 +15306,9 @@ void ship_assign_sound_all()
 		return;
 
 	for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {		
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		if ( objp->type == OBJ_SHIP && Player_obj != objp) {
 			has_sounds = 0;
 
@@ -15718,12 +15724,13 @@ int ship_get_random_ship_in_wing(int wingnum, int flags, float max_dist, int get
 int ship_get_random_team_ship(int team_mask, int flags, float max_dist )
 {
 	int num, which_one;
-	object *objp, *obj_list[MAX_SHIPS];
+	object *obj_list[MAX_SHIPS];
 
 	// for any allied, go through the ships list and find all of the ships on that team
 	num = 0;
-	for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
-		if ( objp->type != OBJ_SHIP )
+	for (auto so: list_range(&Ship_obj_list)) {
+		auto objp = &Objects[so->objnum];
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
 			continue;
 
 		// series of conditionals one per line for easy reading
@@ -15760,11 +15767,7 @@ int ship_get_random_team_ship(int team_mask, int flags, float max_dist )
 		return -1;
 
 	which_one = Random::next(num);
-	objp = obj_list[which_one];
-
-	Assert ( objp->instance != -1 );
-
-	return objp->instance;
+	return obj_list[which_one]->instance;
 }
 
 // -----------------------------------------------------------------------

@@ -6608,19 +6608,17 @@ void mission_set_wing_arrival_location( wing *wingp, int num_to_set )
 void mission_parse_set_arrival_locations()
 {
 	int i;
-	object *objp;
 
 	if ( Fred_running )
 		return;
 
 	obj_merge_created_list();
-	for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
-		ship *shipp;
+	for (auto so: list_range(&Ship_obj_list)) {
+		// do not skip over should-be-dead ships (probably destroy-before-mission ships)
+		// a) because previous versions didn't, and changing this could affect the location of should-be-dead ships
+		// b) because it does no harm to access should-be-dead ships here
 
-		if ( objp->type != OBJ_SHIP ) 
-			continue;
-
-		shipp = &Ships[objp->instance];
+		auto shipp = &Ships[Objects[so->objnum].instance];
 		// if the ship is in a wing -- ignore the info and let the wing info handle it
 		if ( shipp->wingnum != -1 )
 			continue;
@@ -7732,7 +7730,10 @@ void mission_eval_departures()
 	// scan through the active ships an evaluate their departure cues.  For those
 	// ships whose time has come, set their departing flag.
 
-	for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
+	for (auto so: list_range(&Ship_obj_list)) {
+		objp = &Objects[so->objnum];
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 		if (objp->type == OBJ_SHIP) {
 			ship	*shipp;
 
@@ -8038,9 +8039,11 @@ int get_anchor(const char *name)
  */
 void mission_parse_fixup_players()
 {
-	object *objp;
+	for (auto so: list_range(&Ship_obj_list)) {
+		auto objp = &Objects[so->objnum];
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 
-	for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
 		if ( (objp->type == OBJ_SHIP) && (objp->flags[Object::Object_Flags::Player_ship]) ) {
 			game_busy( NOX("** fixing up player/ai stuff **") );	// animate the loading screen, doesn't nothing if the screen is not active
 			ai_clear_ship_goals( &Ai_info[Ships[objp->instance].ai_index] );

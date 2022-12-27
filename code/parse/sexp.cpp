@@ -9220,8 +9220,13 @@ int sexp_num_players()
 	object *objp;
 
 	count = 0;
-	for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
-		if ( (objp->type == OBJ_SHIP) && (objp->flags[Object::Object_Flags::Player_ship]) )
+	for (auto so: list_range(&Ship_obj_list))
+	{
+		auto objp = &Objects[so->objnum];
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
+		if (objp->flags[Object::Object_Flags::Player_ship])
 			count++;
 	}
 
@@ -11037,36 +11042,37 @@ int eval_for_ship_collection(int arg_handler_node, int condition_node, int op_co
 			continue;
 
 		// add all ships of this constraint which are present in the mission
-		for (auto objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp))
+		for (auto so: list_range(&Ship_obj_list))
 		{
-			if (objp->type == OBJ_SHIP)
+			auto objp = &Objects[so->objnum];
+			if (objp->flags[Object::Object_Flags::Should_be_dead])
+				continue;
+
+			auto shipp = &Ships[objp->instance];
+			int ship_index = -1;
+
+			switch (op_const)
 			{
-				auto shipp = &Ships[objp->instance];
-				int ship_index = -1;
+				case OP_FOR_SHIP_CLASS:
+					ship_index = shipp->ship_info_index;
+					break;
+				case OP_FOR_SHIP_TYPE:
+					ship_index = ship_class_query_general_type(shipp->ship_info_index);
+					break;
+				case OP_FOR_SHIP_TEAM:
+					ship_index = shipp->team;
+					break;
+				case OP_FOR_SHIP_SPECIES:
+					ship_index = Ship_info[shipp->ship_info_index].species;
+					break;
+			}
 
-				switch (op_const)
-				{
-					case OP_FOR_SHIP_CLASS:
-						ship_index = shipp->ship_info_index;
-						break;
-					case OP_FOR_SHIP_TYPE:
-						ship_index = ship_class_query_general_type(shipp->ship_info_index);
-						break;
-					case OP_FOR_SHIP_TEAM:
-						ship_index = shipp->team;
-						break;
-					case OP_FOR_SHIP_SPECIES:
-						ship_index = Ship_info[shipp->ship_info_index].species;
-						break;
-				}
-
-				if (constraint_index == ship_index)
-				{
-					if (just_count)
-						num_valid_arguments++;
-					else
-						argument_vector.emplace_back(shipp->ship_name, -1);
-				}
+			if (constraint_index == ship_index)
+			{
+				if (just_count)
+					num_valid_arguments++;
+				else
+					argument_vector.emplace_back(shipp->ship_name, -1);
 			}
 		}
 	}
@@ -13500,6 +13506,9 @@ void sexp_explosion_effect(int n)
 			float t_damage = 0.0f;
 			for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) )
 			{
+				if (objp->flags[Object::Object_Flags::Should_be_dead])
+					continue;
+
 				if ( (objp->type != OBJ_SHIP) && (objp->type != OBJ_ASTEROID) )
 				{
 					continue;
@@ -22451,6 +22460,9 @@ void actually_clear_weapons_or_debris(int op_num, int class_index)
 {
 	for (auto objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp))
 	{
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		if (op_num == OP_CLEAR_WEAPONS && objp->type != OBJ_WEAPON)
 			continue;
 		if (op_num == OP_CLEAR_DEBRIS && objp->type != OBJ_DEBRIS)
@@ -22771,6 +22783,9 @@ int process_special_sexps(int index)
 	case 1:	//	Fired Interceptors
 		object	*objp;
 		for (objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
+			if (objp->flags[Object::Object_Flags::Should_be_dead])
+				continue;
+
 			if (objp->type == OBJ_WEAPON) {
 				if (!stricmp(Weapon_info[Weapons[objp->instance].weapon_info_index].name, "Interceptor#weak")) {
 					int target = Weapons[objp->instance].target_num;

@@ -309,6 +309,7 @@ void obj_snd_stop_all()
 	object* A;
 
 	for ( A = GET_FIRST(&obj_used_list); A !=END_OF_LIST(&obj_used_list); A = GET_NEXT(A) ) {
+		// we probably don't want to skip should-be-dead objects here
 		obj_snd_stop(A, -1);
 	}
 }
