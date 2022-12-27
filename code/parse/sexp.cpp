@@ -9216,10 +9216,8 @@ int sexp_last_order_time(int n)
  */
 int sexp_num_players()
 {
-	int count;
-	object *objp;
+	int count = 0;
 
-	count = 0;
 	for (auto so: list_range(&Ship_obj_list))
 	{
 		auto objp = &Objects[so->objnum];

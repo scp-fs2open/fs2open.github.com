@@ -6624,7 +6624,7 @@ void mission_parse_set_arrival_locations()
 			continue;
 
 		// call function to set arrival location for this ship.
-		mission_set_arrival_location( shipp->arrival_anchor, shipp->arrival_location, shipp->arrival_distance, OBJ_INDEX(objp), shipp->arrival_path_mask, NULL, NULL);
+		mission_set_arrival_location( shipp->arrival_anchor, shipp->arrival_location, shipp->arrival_distance, so->objnum, shipp->arrival_path_mask, NULL, NULL);
 	}
 
 	// do the wings

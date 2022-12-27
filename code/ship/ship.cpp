@@ -10207,8 +10207,7 @@ int	Ship_subsys_hwm = 0;
 
 static void show_ship_subsys_count()
 {
-	int		count = 0;	
-	int		o_type = 0;
+	int count = 0;
 
 	for (auto so: list_range(&Ship_obj_list)) {
 		auto objp = &Objects[so->objnum];

@@ -864,7 +864,6 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num )
 	ai_info *aip;
 	ship *shipp, *ordering_shipp;
 	int i, send_message;
-	object *objp;
 
 	// quick short circuit here because of actually showing comm menu even though you cannot message.
 	// just a safety net.
