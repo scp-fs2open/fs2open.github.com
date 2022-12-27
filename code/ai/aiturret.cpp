@@ -1017,6 +1017,8 @@ int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subs
 					// Ship_used_list
 					for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 						objp = &Objects[so->objnum];
+						if (objp->flags[Object::Object_Flags::Should_be_dead])
+							continue;
 						evaluate_obj_as_target(objp, &eeo);
 					}
 

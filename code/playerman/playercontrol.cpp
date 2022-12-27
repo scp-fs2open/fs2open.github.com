@@ -1205,6 +1205,9 @@ void player_init_all_alone_msg()
 	// See if there are any friendly ships present, if so return without preventing msg
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		objp = &Objects[so->objnum];
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		if ( objp == Player_obj ) {
 			continue;
 		}
@@ -1962,6 +1965,8 @@ void player_maybe_play_all_alone_msg()
 
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		objp = &Objects[so->objnum];
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 
 		if ( objp == Player_obj ) {
 			continue;

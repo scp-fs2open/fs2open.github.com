@@ -5963,6 +5963,8 @@ void send_post_sync_data_packet(net_player *p, int std_request)
 	// ship count	
 	ship_count = 0;
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {		
+		if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
 		shipp = &Ships[Objects[so->objnum].instance];
 
 		// don't process non player wing ships
@@ -5978,6 +5980,8 @@ void send_post_sync_data_packet(net_player *p, int std_request)
 
 	// add ship class information (85 bytes max)	
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {		
+		if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
 		shipp = &Ships[Objects[so->objnum].instance];
 
 		// don't process non player wing ships
@@ -5997,6 +6001,8 @@ void send_post_sync_data_packet(net_player *p, int std_request)
 
 	// add weapon state information for all starting ships (277 bytes max)
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
+		if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
 		shipp = &Ships[Objects[so->objnum].instance];
 
 		// don't process non player wing ships

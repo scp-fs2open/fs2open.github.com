@@ -788,6 +788,8 @@ bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int sun_n )
 	// Find rp1
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) )	{
 		objp = &Objects[so->objnum];
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 
 		if ( src_obj != objp )	{
 			vm_vec_scale_add( &rp1, &rp0, &light_dir, objp->radius*10.0f );
@@ -2652,6 +2654,8 @@ void engine_wash_ship_process(ship *shipp)
 		}
 
 		object *wash_objp = &Objects[so->objnum];
+		if (wash_objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 
 		if (!wash_objp || (wash_objp->instance < 0) || (wash_objp->type != OBJ_SHIP)) {
 			continue;

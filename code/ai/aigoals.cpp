@@ -573,6 +573,8 @@ void ai_goal_purge_all_invalid_goals(ai_goal *aigp)
 	
 	for (sop = GET_FIRST(&Ship_obj_list); sop != END_OF_LIST(&Ship_obj_list); sop = GET_NEXT(sop))
 	{
+		if (Objects[sop->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
 		ship *shipp = &Ships[Objects[sop->objnum].instance];
 		ai_goal_purge_invalid_goals(aigp, Ai_info[shipp->ai_index].goals, &Ai_info[shipp->ai_index], -1);
 	}

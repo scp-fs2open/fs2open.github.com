@@ -1633,6 +1633,8 @@ void position_ship_for_knossos_warpin(object *objp)
 	for (ship_obj *so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
 	{
 		object *ship_objp = &Objects[so->objnum];
+		if (ship_objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 
 		if (Ship_info[Ships[ship_objp->instance].ship_info_index].flags[Ship::Info_Flags::Knossos_device])
 		{
@@ -6152,9 +6154,11 @@ bool post_process_mission(mission *pm)
 	// their SF_IGNORE_COUNT flag set.  We don't count ships in wings when the equivalent wing flag is set.
 	// in counting ships in wings, we increment the count by the wing's wave count to account for everyone.
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
-		int num, shipnum;
+		// do not skip over should-be-dead ships (probably destroy-before-mission ships)
+		// a) because previous versions didn't, and changing this would change percentages,
+		// b) because it does no harm to access should-be-dead ships here
 
-		shipnum = Objects[so->objnum].instance;
+		int shipnum = Objects[so->objnum].instance;
 		// pass over non-ship objects and player ship objects
 		if ( Ships[shipnum].objnum == -1 || (Objects[Ships[shipnum].objnum].flags[Object::Object_Flags::Player_ship]) )
 			continue;
@@ -6163,7 +6167,7 @@ bool post_process_mission(mission *pm)
 		if ( (Ships[shipnum].wingnum != -1) && (Wings[Ships[shipnum].wingnum].flags[Ship::Wing_Flags::Ignore_count]) )
 			continue;
 
-		num = 1;
+		int num = 1;
 
 		ship_add_ship_type_count( Ships[shipnum].ship_info_index, num );
 	}
@@ -6195,6 +6199,8 @@ bool post_process_mission(mission *pm)
 	//     had their current_primary_bank and current_secondary_bank set to -1 (from ship_set()) and left there since
 	//     Player_ship is not the only one we need to need about.
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {		
+		if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
 		ship *shipp = &Ships[Objects[so->objnum].instance];
 
 		// don't process non player wing ships

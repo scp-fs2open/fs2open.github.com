@@ -4656,6 +4656,9 @@ bool generate_special_explosion_block_variables()
 	num_sexp_variables = sexp_variable_count();
 
 	for ( auto sop = GET_FIRST(&Ship_obj_list); sop != END_OF_LIST(&Ship_obj_list); sop = GET_NEXT(sop) ) {
+		if (Objects[sop->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		shipp=&Ships[Objects[sop->objnum].instance];
 
 		if (!(shipp->use_special_explosion)) {
@@ -6438,6 +6441,9 @@ int sexp_num_ships_in_battle(int n)
 
 	if (n == -1) {
 		for (so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so)) {
+			if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+				continue;
+
 			count++;
 		}
 
@@ -6451,6 +6457,9 @@ int sexp_num_ships_in_battle(int n)
 		switch (oswpt1.type) {
 			case OSWPT_TYPE_WHOLE_TEAM:
 				for (so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so)) {
+					if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+						continue;
+
 					auto shipp = &Ships[Objects[so->objnum].instance];
 					if (shipp->team == oswpt1.team) {
 						count++;
@@ -7865,6 +7874,9 @@ int sexp_distance2(object *objp1, object_ship_wing_point_team *oswpt2, int(*dist
 		{
 			for (auto so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
 			{
+				if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+					continue;
+
 				if (Ships[Objects[so->objnum].instance].team == oswpt2->team)
 				{
 					dist = distance_method(objp1, &Objects[so->objnum]);
@@ -7948,6 +7960,9 @@ int sexp_distance(int n, int(*distance_method)(object*, object*))
 		{
 			for (auto so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
 			{
+				if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+					continue;
+
 				if (Ships[Objects[so->objnum].instance].team == oswpt1.team)
 				{
 					dist = sexp_distance2(&Objects[so->objnum], &oswpt2, distance_method);
@@ -8097,6 +8112,9 @@ int sexp_distance_subsystem(int n, int(*distance_method)(object*, vec3d*))
 		{
 			for (auto so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
 			{
+				if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+					continue;
+
 				if (Ships[Objects[so->objnum].instance].team == oswpt.team)
 				{
 					dist = distance_method(&Objects[so->objnum], &subsys_pos);
@@ -11673,6 +11691,9 @@ void sexp_change_iff_helper(object_ship_wing_point_team oswpt, int new_team)
 		case OSWPT_TYPE_WHOLE_TEAM:
 		{
 			for (ship_obj* so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so)) {
+				if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+					continue;
+
 				ship* shipp = &Ships[Objects[so->objnum].instance];
 				if (shipp->team == oswpt.team)
 					sexp_ingame_ship_change_iff(shipp, new_team);
@@ -16010,6 +16031,9 @@ void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future
 		case OSWPT_TYPE_WHOLE_TEAM:
 			Assert (oswpt.team >= 0);
 			for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ){
+				if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+					continue;
+
 				if (Ships[Objects[so->objnum].instance].team == oswpt.team) {
 					// recurse
 					object_ship_wing_point_team oswpt2(so);
@@ -16127,6 +16151,9 @@ void alter_flag_for_all_ships(bool future_ships, Object::Object_Flags object_fla
 
 	// set all the ships present in the mission
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
+		if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		object_ship_wing_point_team oswpt(so);
 		sexp_alter_ship_flag_helper(oswpt, future_ships, object_flag, ship_flag, parse_obj_flag, ai_flag, set_flag);
 	}
@@ -21816,6 +21843,8 @@ void sexp_damage_escort_list_all(int n)
 	for (auto so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
 	{
 		auto objp = &Objects[so->objnum];
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 		Assertion(objp->type == OBJ_SHIP, "All objects on Ship_obj_list must be ships!");
 
 		// make sure it's on the escort list

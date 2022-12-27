@@ -3509,25 +3509,23 @@ void game_simulation_frame()
 	// blow ships up in multiplayer dogfight
 	if( MULTIPLAYER_MASTER && (Net_player != nullptr) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && (f2fl(Missiontime) >= 2.0f) && !dogfight_blown){
 		// blow up all non-player ships
-		ship_obj *moveup = GET_FIRST(&Ship_obj_list);
-		ship *shipp;
-		ship_info *sip;
-		while((moveup != END_OF_LIST(&Ship_obj_list)) && (moveup != nullptr)){
+		for (auto moveup: list_range(&Ship_obj_list)){
+			if (Objects[moveup->objnum].flags[Object::Object_Flags::Should_be_dead])
+				continue;
+
 			// bogus
 			if((moveup->objnum < 0) || (moveup->objnum >= MAX_OBJECTS) || (Objects[moveup->objnum].type != OBJ_SHIP) || (Objects[moveup->objnum].instance < 0) || (Objects[moveup->objnum].instance >= MAX_SHIPS) || (Ships[Objects[moveup->objnum].instance].ship_info_index < 0) || (Ships[Objects[moveup->objnum].instance].ship_info_index >= ship_info_size())){
-				moveup = GET_NEXT(moveup);
 				continue;
 			}
-			shipp = &Ships[Objects[moveup->objnum].instance];
-			sip = &Ship_info[shipp->ship_info_index];
+
+			auto shipp = &Ships[Objects[moveup->objnum].instance];
+			auto sip = &Ship_info[shipp->ship_info_index];
 
 			// only blow up small ships			
 			if((sip->is_small_ship()) && (multi_find_player_by_object(&Objects[moveup->objnum]) < 0) && (shipp->team == Iff_traitor) && (Objects[moveup->objnum].net_signature != STANDALONE_SHIP_SIG) ){							
 				// function to simply explode a ship where it is currently at
 				ship_self_destruct( &Objects[moveup->objnum] );					
 			}
-
-			moveup = GET_NEXT(moveup);
 		}
 
 		dogfight_blown = 1;
