@@ -184,6 +184,8 @@ int Editor::create_wing()
 		}
 
 		Wings[wing].clear();
+		Wings[wing].arrival_cue = Locked_sexp_true;
+		Wings[wing].departure_cue = Locked_sexp_false;
 
 		auto dlg = _lastActiveViewport->dialogProvider->createFormWingDialog();
 
