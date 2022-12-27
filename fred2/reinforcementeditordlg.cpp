@@ -180,6 +180,8 @@ int reinforcement_editor_dlg::query_modified()
 
 void reinforcement_editor_dlg::OnOK()
 {
+	Assertion(Locked_sexp_true >= 0 && Locked_sexp_false >= 0, "SEXPs are not yet initialized!");
+
 	int i, j;
 
 	save_data();

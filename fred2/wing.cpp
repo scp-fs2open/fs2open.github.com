@@ -83,6 +83,8 @@ int check_wing_dependencies(int wing_num) {
 }
 
 int create_wing() {
+	Assertion(Locked_sexp_true >= 0 && Locked_sexp_false >= 0, "SEXPs are not yet initialized!");
+
 	char msg[1024];
 	int i, ship, wing = -1, waypoints = 0, count = 0, illegal_ships = 0;
 	int leader, leader_team;

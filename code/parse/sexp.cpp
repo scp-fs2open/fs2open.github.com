@@ -1424,10 +1424,15 @@ int alloc_sexp(const char *text, int type, int subtype, int first, int rest)
 	int sexp_const = get_operator_const(text);
 
 	if ((sexp_const == OP_TRUE) && (type == SEXP_ATOM) && (subtype == SEXP_ATOM_OPERATOR))
+	{
+		Assertion(Locked_sexp_true >= 0 && Locked_sexp_false >= 0, "SEXPs are not yet initialized!");
 		return Locked_sexp_true;
-
+	}
 	else if ((sexp_const == OP_FALSE) && (type == SEXP_ATOM) && (subtype == SEXP_ATOM_OPERATOR))
+	{
+		Assertion(Locked_sexp_true >= 0 && Locked_sexp_false >= 0, "SEXPs are not yet initialized!");
 		return Locked_sexp_false;
+	}
 
 	node = find_free_sexp();
 
@@ -1526,6 +1531,8 @@ void sexp_mark_persistent(int n)
 		return;
 	}
 
+	Assertion(Locked_sexp_true >= 0 && Locked_sexp_false >= 0, "SEXPs are not yet initialized!");
+
 	// total hack because of the true/false locked sexps -- we should make those persistent as well
 	if ( (n == Locked_sexp_true) || (n == Locked_sexp_false) ){
 		return;
@@ -1548,6 +1555,8 @@ void sexp_unmark_persistent(int n)
 		return;
 	}
 
+	Assertion(Locked_sexp_true >= 0 && Locked_sexp_false >= 0, "SEXPs are not yet initialized!");
+
 	// see sexp_mark_persistent
 	if ( (n == Locked_sexp_true) || (n == Locked_sexp_false) ){
 		return;
@@ -1569,6 +1578,8 @@ int free_one_sexp(int num)
 	Assert((num >= 0) && (num < Num_sexp_nodes));
 	Assert(Sexp_nodes[num].type != SEXP_NOT_USED);  // make sure it is actually used
 	Assert(!(Sexp_nodes[num].type & SEXP_FLAG_PERSISTENT));
+
+	Assertion(Locked_sexp_true >= 0 && Locked_sexp_false >= 0, "SEXPs are not yet initialized!");
 
 	// never free these nodes
 	if ((num == Locked_sexp_true) || (num == Locked_sexp_false))
@@ -1593,6 +1604,8 @@ int free_sexp(int num, int calling_node)
 	Assert((num >= 0) && (num < Num_sexp_nodes));
 	Assert(Sexp_nodes[num].type != SEXP_NOT_USED);  // make sure it is actually used
 	Assert(!(Sexp_nodes[num].type & SEXP_FLAG_PERSISTENT));
+
+	Assertion(Locked_sexp_true >= 0 && Locked_sexp_false >= 0, "SEXPs are not yet initialized!");
 
 	// never free these nodes
 	if ((num == -1) || (num == Locked_sexp_true) || (num == Locked_sexp_false))
@@ -4725,6 +4738,7 @@ int get_sexp()
 		} else {
 			const char *message = nullptr;
 			Assert(last != -1);
+			Assertion(Locked_sexp_true >= 0 && Locked_sexp_false >= 0, "SEXPs are not yet initialized!");
 
 			// Locked_sexp_true and Locked_sexp_false are only meant to represent operator
 			// nodes with no arguments, i.e. (true) and (false). If they appear as "bare"
@@ -10953,6 +10967,8 @@ int eval_perform_actions(int n, int op_num)
 	bool retval_first;
 	Assert( n >= 0 );
 
+	Assertion(Locked_sexp_true >= 0 && Locked_sexp_false >= 0, "SEXPs are not yet initialized!");
+
 	if (op_num == OP_PERFORM_ACTIONS_BOOL_FIRST)
 	{
 		return_cond = CAR(n);
@@ -12197,6 +12213,8 @@ int sexp_num_valid_arguments( int n )
 	// prevent a crash if the SEXP is used somewhere it's not supposed to be
 	if (arg_handler < 0)
 		return 0;
+
+	Assertion(Locked_sexp_true >= 0 && Locked_sexp_false >= 0, "SEXPs are not yet initialized!");
 
 	// the for-* sexps require special handling: they don't list their arguments explicitly but rather generate them on-the-fly
 	auto op_const = get_operator_const(arg_handler);

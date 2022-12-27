@@ -1065,6 +1065,8 @@ void parse_player_info2(mission *pm)
 
 void parse_cutscenes(mission *pm) 
 {
+	Assertion(Locked_sexp_true >= 0 && Locked_sexp_false >= 0, "SEXPs are not yet initialized!");
+
 	if (optional_string("#Cutscenes"))
 	{
 		mission_cutscene scene;
@@ -1367,6 +1369,8 @@ done_briefing_music:
  */
 void parse_fiction(mission * /*pm*/)
 {
+	Assertion(Locked_sexp_true >= 0 && Locked_sexp_false >= 0, "SEXPs are not yet initialized!");
+
 	if (optional_string("#Fiction Viewer"))
 	{
 		bool fiction_viewer_loaded = false;
@@ -1468,6 +1472,8 @@ void parse_cmd_briefs(mission *pm)
  */
 void parse_briefing(mission * /*pm*/, int flags)
 {
+	Assertion(Locked_sexp_true >= 0 && Locked_sexp_false >= 0, "SEXPs are not yet initialized!");
+
 	int nt, i, j, stage_num = 0, icon_num = 0;
 	brief_stage *bs;
 	brief_icon *bi;
@@ -3012,6 +3018,8 @@ extern int parse_warp_params(const WarpParams *inherit_from, WarpDirection direc
  */
 int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 {
+	Assertion(Locked_sexp_true >= 0 && Locked_sexp_false >= 0, "SEXPs are not yet initialized!");
+
 	int	i;
     char name[NAME_LENGTH];
 	ship_info *sip;
@@ -7075,13 +7083,18 @@ bool sexp_is_locked_false(int node)
 {
 	// dunno why these are different, but they are
 	if (Fred_running)
+	{
+		Assertion(Locked_sexp_true >= 0 && Locked_sexp_false >= 0, "SEXPs are not yet initialized!");
 		return (node == Locked_sexp_false);
+	}
 	else
 		return (Sexp_nodes[node].value == SEXP_KNOWN_FALSE);
 }
 
 void set_cue_to_false(int *cue)
 {
+	Assertion(Locked_sexp_true >= 0 && Locked_sexp_false >= 0, "SEXPs are not yet initialized!");
+
 	free_sexp2(*cue);
 	*cue = Locked_sexp_false;
 }
@@ -8563,6 +8576,8 @@ int get_warp_in_pos(vec3d *pos, object *objp, float x, float y, float z)
  */
 void mission_bring_in_support_ship( object *requester_objp )
 {
+	Assertion(Locked_sexp_true >= 0 && Locked_sexp_false >= 0, "SEXPs are not yet initialized!");
+
 	vec3d center, warp_in_pos;
 	p_object *pobj;
 	ship *requester_shipp;

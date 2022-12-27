@@ -2357,6 +2357,8 @@ int CFred_mission_save::save_events()
 
 int CFred_mission_save::save_fiction()
 {
+	Assertion(Locked_sexp_true >= 0 && Locked_sexp_false >= 0, "SEXPs are not yet initialized!");
+
 	if (mission_has_fiction()) {
 		if (Mission_save_format != FSO_FORMAT_RETAIL) {
 			if (optional_string_fred("#Fiction Viewer"))
