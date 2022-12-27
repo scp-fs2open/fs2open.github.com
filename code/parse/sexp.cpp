@@ -1434,6 +1434,7 @@ void sexp_unmark_persistent(int n)
 		return;
 	}
 
+	// see sexp_mark_persistent
 	if ( (n == Locked_sexp_true) || (n == Locked_sexp_false) ){
 		return;
 	}
@@ -1455,6 +1456,7 @@ int free_one_sexp(int num)
 	Assert(Sexp_nodes[num].type != SEXP_NOT_USED);  // make sure it is actually used
 	Assert(!(Sexp_nodes[num].type & SEXP_FLAG_PERSISTENT));
 
+	// never free these nodes
 	if ((num == Locked_sexp_true) || (num == Locked_sexp_false))
 		return 0;
 
@@ -1797,6 +1799,8 @@ int get_operator_index(const char *token)
 int get_operator_index(int node)
 {
 	Assertion(node >= 0 && node < Num_sexp_nodes, "Passed an out-of-range node index (%d) to get_operator_index(int)!", node);
+	if (node < 0 || node >= Num_sexp_nodes)
+		return NOT_A_SEXP_OPERATOR;
 
 	if (!Fred_running && (Sexp_nodes[node].op_index != NO_OPERATOR_INDEX_DEFINED) ) {
 		return Sexp_nodes[node].op_index;
@@ -1816,13 +1820,17 @@ int get_operator_const(const char *token)
 	int	idx = get_operator_index(token);
 
 	if (idx == NOT_A_SEXP_OPERATOR)
-		return 0;
+		return OP_NOT_AN_OP;
 
 	return Operators[idx].value;
 }
 
 int get_operator_const(int node)
 {
+	Assertion(node >= 0 && node < Num_sexp_nodes, "Passed an out-of-range node index (%d) to get_operator_const(int)!", node);
+	if (node < 0 || node >= Num_sexp_nodes)
+		return OP_NOT_AN_OP;
+
 	if (!Fred_running && Sexp_nodes[node].op_index >= 0) {
 		return Operators[Sexp_nodes[node].op_index].value;
 	}
@@ -1830,7 +1838,7 @@ int get_operator_const(int node)
 	int	idx = get_operator_index(node);
 
 	if (idx == NOT_A_SEXP_OPERATOR)
-		return 0;
+		return OP_NOT_AN_OP;
 
 	return Operators[idx].value;
 }
