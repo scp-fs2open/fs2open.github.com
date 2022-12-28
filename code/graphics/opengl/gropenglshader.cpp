@@ -185,8 +185,6 @@ static opengl_shader_variant_t GL_shader_variants[] = {
 
 	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_ENV_MAP, "FLAG_ENV_MAP", {}, "Environment Mapping"},
 
-	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_ANIMATED, "FLAG_ANIMATED", {}, "Animated Effects"},
-
 	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_MISC_MAP, "FLAG_MISC_MAP", {}, "Utility mapping"},
 
 	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_TEAMCOLOR, "FLAG_TEAMCOLOR", {}, "Team Colors"},
@@ -200,8 +198,6 @@ static opengl_shader_variant_t GL_shader_variants[] = {
 	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_TRANSFORM, "FLAG_TRANSFORM", {}, "Submodel Transforms"},
 
 	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_CLIP, "FLAG_CLIP", {}, "Clip Plane"},
-
-	//{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_HDR, "FLAG_HDR", {}, "High Dynamic Range"},
 
 	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_AMBIENT_MAP, "FLAG_AMBIENT_MAP",
 		{  }, "Ambient Occlusion Map"},

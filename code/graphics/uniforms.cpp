@@ -53,6 +53,7 @@ void convert_model_material(model_uniform_data* data_out,
 	data_out->flag_light = shader_flags & SDR_FLAG_MODEL_LIGHT;
 	data_out->flag_deferred = shader_flags & SDR_FLAG_MODEL_DEFERRED;
 	data_out->flag_hdr = shader_flags & SDR_FLAG_MODEL_HDR;
+	data_out->flag_animated = shader_flags & SDR_FLAG_MODEL_ANIMATED;
 
 	if (shader_flags & SDR_FLAG_MODEL_ANIMATED) {
 		data_out->anim_timer = material.get_animated_effect_time();

@@ -102,6 +102,7 @@ layout (std140) uniform modelData {
 	bool flag_light;
 	bool flag_deferred;
 	bool flag_hdr;
+	bool flag_animated;
 };
 
 in VertexOutput {
@@ -142,9 +143,9 @@ uniform sampler2DArray sNormalmap;
 #ifdef FLAG_AMBIENT_MAP
 uniform sampler2DArray sAmbientmap;
 #endif
-#ifdef FLAG_ANIMATED
+
 uniform sampler2D sFramebuffer;
-#endif
+
 #ifdef FLAG_TEAMCOLOR
 vec4 teamMask;
 #endif
@@ -256,17 +257,18 @@ void main()
 		  normal = unitNormal;
 	#endif
 
-	#ifdef FLAG_ANIMATED
-		vec2 distort = vec2(cos(vertIn.position.x*vertIn.position.w*0.005+anim_timer*20.0)*sin(vertIn.position.y*vertIn.position.w*0.005),sin(vertIn.position.x*vertIn.position.w*0.005+anim_timer*20.0)*cos(vertIn.position.y*vertIn.position.w*0.005))*0.03;
-	#endif
+	vec2 distort = vec2(0.0, 0.0);
+	if (flag_animated) {
+		distort = vec2(cos(vertIn.position.x*vertIn.position.w*0.005+anim_timer*20.0)*sin(vertIn.position.y*vertIn.position.w*0.005),sin(vertIn.position.x*vertIn.position.w*0.005+anim_timer*20.0)*cos(vertIn.position.y*vertIn.position.w*0.005))*0.03;
+	}
 
 	#ifdef FLAG_DIFFUSE_MAP
 		vec2 diffuseTexCoord = texCoord;
-		#ifdef FLAG_ANIMATED
+		if (flag_animated) {
 			if (effect_num == 2) {
 				diffuseTexCoord = texCoord + distort*(1.0-anim_timer);
 			}
-		#endif
+		}
 		baseColor = texture(sBasemap, vec3(diffuseTexCoord, float(sBasemapIndex)));
 
 		#ifdef FLAG_ALPHA_MULT
@@ -442,7 +444,8 @@ void main()
 			baseColor.rgb = color.rgb * dot(vec3(1.0), baseColor.rgb) * 0.3333333;
 		}
 	#endif
-	#ifdef FLAG_ANIMATED
+	
+	if (flag_animated) {
 		if (effect_num == 0) {
 			float shinefactor = 1.0/(1.0 + pow(abs((fract(abs(texCoord.x))-anim_timer) * 1000.0), 2.0)) * 1000.0;
 			emissiveColor.rgb += vec3(shinefactor);
@@ -466,7 +469,8 @@ void main()
 				baseColor.rgb = mix(texture(sFramebuffer, screenPos + distort*anim_timer + anim_timer*0.1*vertIn.normal.xy).rgb,baseColor.rgb,clamp(cloak_interp+anim_timer*2.0,0.0,1.0));
 			}
 		}
-	#endif
+	}
+
 	if (!flag_deferred) {
 		// emissive colors won't be added later when we are using forward rendering so we need to do that here
 		baseColor.rgb += emissiveColor.rgb;
