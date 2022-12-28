@@ -101,6 +101,7 @@ layout (std140) uniform modelData {
 
 	bool flag_light;
 	bool flag_deferred;
+	bool flag_hdr;
 };
 
 in VertexOutput {
@@ -279,9 +280,9 @@ void main()
 	#endif
 
 	specColor = vec4(baseColor.rgb * SPEC_FACTOR_NO_SPEC_MAP, glossData);
-	#ifdef FLAG_HDR
+	if (flag_hdr) {
 		baseColor.rgb = srgb_to_linear(baseColor.rgb);
-	#endif
+	}
 	#ifdef FLAG_SPEC_MAP
 		specColor = texture(sSpecmap, vec3(texCoord, float(sSpecmapIndex)));
 		if(alphaGloss) glossData = specColor.a;
@@ -289,9 +290,9 @@ void main()
 			specColor.rgb = max(specColor.rgb, vec3(0.03f)); // hardcoded minimum specular value. read John Hable's blog post titled 'Everything Is Shiny'. 
 			fresnelFactor = 1.0;
 		}
-		#ifdef FLAG_HDR
+		if (flag_hdr) {
 			specColor.rgb = srgb_to_linear(specColor.rgb);
-		#endif
+		}
 	#endif
 	baseColor.rgb *= aoFactors.y;
 	specColor.rgb *= aoFactors.y;
@@ -315,20 +316,20 @@ void main()
 			vec3 team_color = base_color * teamMask.x + stripe_color * teamMask.y + color_offset;
 			vec3 team_color_glow = (base_color * teamMask.b) + (stripe_color * teamMask.a);
 
-			#ifdef FLAG_HDR
+			if (flag_hdr) {
 				baseColor.rgb = linear_to_srgb(baseColor.rgb);
 				specColor.rgb = linear_to_srgb(specColor.rgb);
-			#endif
+			}
 
 			baseColor.rgb += team_color;					
 			baseColor.rgb = max(baseColor.rgb, vec3(0.0));	// We need to make sure that nothing here ever goes negative
 			specColor.rgb += team_color;
 			specColor.rgb = max(specColor.rgb, vec3(0.03));
 
-			#ifdef FLAG_HDR
+			if (flag_hdr) {
 				baseColor.rgb = srgb_to_linear(baseColor.rgb);
 				specColor.rgb = srgb_to_linear(specColor.rgb);
-			#endif
+			}
 		#endif
 	#endif
 
@@ -415,17 +416,17 @@ void main()
 				glowColor = team_glow_enabled ? mix(max(team_color_glow, vec3(0.0)), glowColor, clamp(glowColorLuminance - teamMask.b - teamMask.a, 0.0, 1.0)) : glowColor;
 			#endif
 		#endif
-		#ifdef FLAG_HDR
+		if (flag_hdr) {
 			glowColor = srgb_to_linear(glowColor) * GLOW_MAP_SRGB_MULTIPLIER;
-		#endif
+		}
 		emissiveColor.rgb += glowColor * GLOW_MAP_INTENSITY;
 	#endif
 
 	#ifdef FLAG_FOG
 		vec3 finalFogColor = fogColor.rgb;
-		#ifdef FLAG_HDR
+		if (flag_hdr) {
 			finalFogColor = srgb_to_linear(finalFogColor);
-		#endif
+		}
 		#ifdef FLAG_DIFFUSE_MAP
 			if(blend_alpha == 1) finalFogColor *= baseColor.a;
 		#endif

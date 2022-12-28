@@ -151,6 +151,7 @@ struct model_uniform_data {
 
 	int flag_light;
 	int flag_deferred;
+	int flag_hdr;
 };
 
 enum class NanoVGShaderType: int32_t {
