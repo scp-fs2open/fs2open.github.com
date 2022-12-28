@@ -75,6 +75,7 @@ briefing_editor_dlg::briefing_editor_dlg(CWnd* pParent /*=NULL*/)
 	m_substitute_briefing_music = _T("");
 	m_cut_next = FALSE;
 	m_cut_prev = FALSE;
+	m_no_grid = FALSE;
 	m_current_briefing = -1;
 	m_flipicon = FALSE;
 	m_use_wing = FALSE;
@@ -111,6 +112,7 @@ void briefing_editor_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_SUBSTITUTE_BRIEFING_MUSIC, m_substitute_briefing_music);
 	DDX_Check(pDX, IDC_CUT_NEXT, m_cut_next);
 	DDX_Check(pDX, IDC_CUT_PREV, m_cut_prev);
+	DDX_Check(pDX, IDC_NO_GRID, m_no_grid);
 	DDX_Check(pDX, IDC_FLIP_ICON, m_flipicon);
 	DDX_Check(pDX, IDC_USE_WING_ICON, m_use_wing);
 	DDX_Check(pDX, IDC_USE_CARGO_ICON, m_use_cargo);
@@ -367,6 +369,9 @@ void briefing_editor_dlg::update_data(int update)
 		else
 			i &= ~BS_FORWARD_CUT;
 
+		if (m_no_grid)
+			ptr->draw_grid = false;
+
 		MODIFY(ptr->flags, i);
 		ptr->formula = m_tree.save_tree();
 		switch (m_lines.GetCheck()) {
@@ -533,6 +538,7 @@ void briefing_editor_dlg::update_data(int update)
 		m_voice = ptr->voice;
 		m_cut_prev = (ptr->flags & BS_BACKWARD_CUT) ? 1 : 0;
 		m_cut_next = (ptr->flags & BS_FORWARD_CUT) ? 1 : 0;
+		m_no_grid = (ptr->draw_grid) ? 0 : 1;
 		m_tree.load_tree(ptr->formula);
 
 	} else {
@@ -541,6 +547,7 @@ void briefing_editor_dlg::update_data(int update)
 		m_time = _T("");
 		m_voice = _T("");
 		m_cut_prev = m_cut_next = 0;
+		m_no_grid = 0;
 		m_tree.clear_tree();
 		enable = FALSE;
 		m_cur_stage = -1;
@@ -577,6 +584,7 @@ void briefing_editor_dlg::update_data(int update)
 	GetDlgItem(IDC_GOTO_VIEW) -> EnableWindow(enable);
 	GetDlgItem(IDC_CUT_PREV) -> EnableWindow(enable);
 	GetDlgItem(IDC_CUT_NEXT) -> EnableWindow(enable);
+	GetDlgItem(IDC_NO_GRID)->EnableWindow(enable);
 	GetDlgItem(IDC_TREE) -> EnableWindow(enable);
 	GetDlgItem(IDC_PLAY) -> EnableWindow(enable);
 

@@ -66,6 +66,7 @@ public:
 	CString	m_substitute_briefing_music;
 	BOOL	m_cut_next;
 	BOOL	m_cut_prev;
+	BOOL	m_no_grid;
 	int		m_current_briefing;
 	BOOL	m_flipicon;
 	BOOL	m_use_wing;

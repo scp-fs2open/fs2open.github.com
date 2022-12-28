@@ -1376,6 +1376,9 @@ void parse_briefing(mission * /*pm*/, int flags)
 			required_string("$camera_time:");
 			stuff_int(&bs->camera_time);
 
+			if (optional_string("$no_grid"))
+				bs->draw_grid = false;
+
 			if ( optional_string("$num_lines:") ) {
 				stuff_int(&bs->num_lines);
 

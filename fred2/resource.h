@@ -853,6 +853,7 @@
 #define IDC_EXACT_PLAYERS               1455
 #define IDC_HEADING                     1456
 #define IDC_NO_ARRIVAL_MESSAGE          1457
+#define IDC_NO_GRID						1458
 #define IDC_NO_MUSIC                    1459
 #define ID_UPDATE                       1460
 #define IDC_SHIP_LOCKED                 1461
