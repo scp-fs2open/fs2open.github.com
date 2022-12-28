@@ -148,6 +148,8 @@ struct model_uniform_data {
 	int sMiscmapIndex;
 
 	float alphaMult;
+
+	int flag_light;
 };
 
 enum class NanoVGShaderType: int32_t {

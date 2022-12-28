@@ -100,6 +100,8 @@ layout (std140) uniform modelData {
 	int sMiscmapIndex;
 
 	float alphaMult;
+
+	bool flag_light;
 };
 
 #ifdef FLAG_TRANSFORM
@@ -153,76 +155,76 @@ void main()
 	vec4 texCoord;
 	mat4 orient = mat4(1.0);
 	mat4 scale = mat4(1.0);
-#ifdef FLAG_TRANSFORM
-	bool clipModel;
-	getModelTransform(orient, clipModel, int(vertModelID), buffer_matrix_offset);
-#endif
+	#ifdef FLAG_TRANSFORM
+		bool clipModel;
+		getModelTransform(orient, clipModel, int(vertModelID), buffer_matrix_offset);
+	#endif
 	texCoord = textureMatrix * vertTexCoord;
 	vec4 vertex = vertPosition;
- #ifdef FLAG_THRUSTER
-	if(vertex.z < -1.5) {
-		vertex.z *= thruster_scale;
-	}
- #endif
- // Transform the normal into eye space and normalize the result.
+	#ifdef FLAG_THRUSTER
+		if(vertex.z < -1.5) {
+			vertex.z *= thruster_scale;
+		}
+	#endif
+	// Transform the normal into eye space and normalize the result.
 	normal = normalize(mat3(modelViewMatrix) * mat3(orient) * vertNormal);
 	position = modelViewMatrix * orient * vertex;
- #ifdef FLAG_SHADOW_MAP
-	gl_Position = position;
-  #if !defined(GL_ARB_gpu_shader5)
-   #ifdef APPLE
-	vertOut.instance = float(gl_InstanceIDARB);
-   #else
-	vertOut.instance = float(gl_InstanceID);
-   #endif
-  #endif
- #else
-	gl_Position = projMatrix * position;
- #endif
- #ifdef FLAG_SHADOWS
-	vec4 shadowPos = shadow_mv_matrix * modelMatrix * orient * vertPosition;
-	vertOut.shadowPos = shadow_mv_matrix * modelMatrix * orient * vertPosition;
-	vertOut.shadowUV[0] = transformToShadowMap(shadow_proj_matrix[0], 0, shadowPos);
-	vertOut.shadowUV[1] = transformToShadowMap(shadow_proj_matrix[1], 1, shadowPos);
-	vertOut.shadowUV[2] = transformToShadowMap(shadow_proj_matrix[2], 2, shadowPos);
-	vertOut.shadowUV[3] = transformToShadowMap(shadow_proj_matrix[3], 3, shadowPos);
- #endif
+	#ifdef FLAG_SHADOW_MAP
+		gl_Position = position;
+		#if !defined(GL_ARB_gpu_shader5)
+			#ifdef APPLE
+				vertOut.instance = float(gl_InstanceIDARB);
+			#else
+				vertOut.instance = float(gl_InstanceID);
+			#endif
+		#endif
+	#else
+		gl_Position = projMatrix * position;
+	#endif
+	#ifdef FLAG_SHADOWS
+		vec4 shadowPos = shadow_mv_matrix * modelMatrix * orient * vertPosition;
+		vertOut.shadowPos = shadow_mv_matrix * modelMatrix * orient * vertPosition;
+		vertOut.shadowUV[0] = transformToShadowMap(shadow_proj_matrix[0], 0, shadowPos);
+		vertOut.shadowUV[1] = transformToShadowMap(shadow_proj_matrix[1], 1, shadowPos);
+		vertOut.shadowUV[2] = transformToShadowMap(shadow_proj_matrix[2], 2, shadowPos);
+		vertOut.shadowUV[3] = transformToShadowMap(shadow_proj_matrix[3], 3, shadowPos);
+	#endif
 
- // Setup stuff for normal maps and envmaps
-vec3 t = normalize(mat3(modelViewMatrix) * mat3(orient) * vertTangent.xyz);
-vec3 b = cross(normal, t) * vertTangent.w;
-vertOut.tangentMatrix = mat3(t, b, normal);
+	// Setup stuff for normal maps and envmaps
+	vec3 t = normalize(mat3(modelViewMatrix) * mat3(orient) * vertTangent.xyz);
+	vec3 b = cross(normal, t) * vertTangent.w;
+	vertOut.tangentMatrix = mat3(t, b, normal);
 
- #ifdef FLAG_ENV_MAP
- // Environment mapping reflection vector.
-	vec3 envReflect = reflect(normalize(position.xyz), normal);
-	vertOut.envReflect = vec3(envMatrix * vec4(envReflect, 0.0));
- #endif
- #ifdef FLAG_FOG
-	vertOut.fogDist = clamp((gl_Position.z - fogStart) * 0.75 * fogScale, 0.0, 1.0);
- #endif
-#ifdef FLAG_TRANSFORM
-	if (clipModel) {
-		// Clip this model by moving all vertices outside the clip volume
-		gl_Position = vec4(vec3(-2.0), 1.0);
-	}
- #ifdef FLAG_SHADOW_MAP
-	vertOut.clipModel = clipModel ? 1.0 : 0.0;
- #endif
-#endif
-#ifdef FLAG_CLIP
-	if(use_clip_plane) {
-		gl_ClipDistance[0] = dot(clip_equation, modelMatrix * orient * vertex);
-	} else {
-		gl_ClipDistance[0] = 1.0;
-	}
-#endif
-#ifndef FLAG_SHADOW_MAP
-	vertOut.position = position;
-	vertOut.normal = normal;
-	vertOut.texCoord = texCoord;
-#else
-	vertOut.normal = normal;
-	vertOut.texCoord = texCoord;
-#endif
+	#ifdef FLAG_ENV_MAP
+		// Environment mapping reflection vector.
+		vec3 envReflect = reflect(normalize(position.xyz), normal);
+		vertOut.envReflect = vec3(envMatrix * vec4(envReflect, 0.0));
+	#endif
+	#ifdef FLAG_FOG
+		vertOut.fogDist = clamp((gl_Position.z - fogStart) * 0.75 * fogScale, 0.0, 1.0);
+	#endif
+	#ifdef FLAG_TRANSFORM
+		if (clipModel) {
+			// Clip this model by moving all vertices outside the clip volume
+			gl_Position = vec4(vec3(-2.0), 1.0);
+		}
+		#ifdef FLAG_SHADOW_MAP
+			vertOut.clipModel = clipModel ? 1.0 : 0.0;
+		#endif
+	#endif
+	#ifdef FLAG_CLIP
+		if(use_clip_plane) {
+			gl_ClipDistance[0] = dot(clip_equation, modelMatrix * orient * vertex);
+		} else {
+			gl_ClipDistance[0] = 1.0;
+		}
+	#endif
+	#ifndef FLAG_SHADOW_MAP
+		vertOut.position = position;
+		vertOut.normal = normal;
+		vertOut.texCoord = texCoord;
+	#else
+		vertOut.normal = normal;
+		vertOut.texCoord = texCoord;
+	#endif
 }

@@ -49,6 +49,10 @@ void convert_model_material(model_uniform_data* data_out,
 
 	data_out->vpwidth = 1.0f / i2fl(gr_screen.max_w);
 	data_out->vpheight = 1.0f / i2fl(gr_screen.max_h);
+
+	data_out->flag_light = shader_flags & SDR_FLAG_MODEL_LIGHT;
+
+
 	if (shader_flags & SDR_FLAG_MODEL_ANIMATED) {
 		data_out->anim_timer = material.get_animated_effect_time();
 		data_out->effect_num = material.get_animated_effect();
