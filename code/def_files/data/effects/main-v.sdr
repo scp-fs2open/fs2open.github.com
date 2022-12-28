@@ -102,6 +102,7 @@ layout (std140) uniform modelData {
 	float alphaMult;
 
 	bool flag_light;
+	bool flag_deferred;
 };
 
 #ifdef FLAG_TRANSFORM

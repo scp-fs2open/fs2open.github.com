@@ -100,6 +100,7 @@ layout (std140) uniform modelData {
 	float alphaMult;
 
 	bool flag_light;
+	bool flag_deferred;
 };
 
 in VertexOutput {
@@ -332,7 +333,7 @@ void main()
 	#endif
 
 	// Lights aren't applied when we are rendering to the G-buffers since that gets handled later
-	#ifdef FLAG_DEFERRED
+	if (flag_deferred) {
 		if (flag_light) {
 			// Ambient lighting still needs to be done since that counts as an "emissive" color
 			vec3 lightAmbient = (emissionFactor + ambientFactor * ambientFactor) * aoFactors.x; // ambientFactor^2 due to legacy OpenGL compatibility behavior
@@ -344,7 +345,7 @@ void main()
 			// If there is no lighting then we copy the color data so far into the
 			emissiveColor.rgb += baseColor.rgb;
 		}
-	#else
+	} else {
 		if (flag_light) {
 			float shadow = 1.0;
 			#ifdef FLAG_SHADOWS
@@ -356,7 +357,7 @@ void main()
 				baseColor.rgb += pow(1.0 - clamp(dot(eyeDir, normal), 0.0, 1.0), 5.0 * clamp(glossData, 0.01, 1.0)) * specColor.rgb;
 			#endif
 		}
-	#endif
+	}
 
 	#ifdef FLAG_ENV_MAP
 		if (flag_light) {
@@ -465,17 +466,17 @@ void main()
 			}
 		}
 	#endif
-	#ifndef FLAG_DEFERRED
+	if (!flag_deferred) {
 		// emissive colors won't be added later when we are using forward rendering so we need to do that here
 		baseColor.rgb += emissiveColor.rgb;
-	#endif
+	}
 
 	fragOut0 = baseColor;
 
-	#ifdef FLAG_DEFERRED
+	if (flag_deferred) {
 		fragOut1 = vec4(vertIn.position.xyz, 1.0);
 		fragOut2 = vec4(normal, glossData);
 		fragOut3 = vec4(specColor.rgb, fresnelFactor);
 		fragOut4 = emissiveColor;
-	#endif
+	}
 }
