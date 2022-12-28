@@ -60,6 +60,7 @@ extern SCP_string Window_title;
 extern SCP_string Mod_title;
 extern SCP_string Mod_version;
 extern bool Unicode_text_mode;
+extern SCP_vector<SCP_string> Splash_screens;
 extern bool Use_tabled_strings_for_default_language;
 extern bool Dont_preempt_training_voice;
 extern SCP_string Movie_subtitle_font;

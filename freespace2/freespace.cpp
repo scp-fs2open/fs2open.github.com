@@ -7454,7 +7454,12 @@ void game_title_screen_display()
 	if(!condhook_override)
 	{
 		Game_title_logo = bm_load(Game_logo_screen_fname[gr_screen.res]);
-		Game_title_bitmap = bm_load(Game_title_screen_fname[gr_screen.res]);
+
+		if (!Splash_screens.empty()) {
+			Game_title_bitmap = bm_load(Splash_screens[Random::next(0, (int)Splash_screens.size() - 1)].c_str());
+		} else {
+			Game_title_bitmap = bm_load(Game_title_screen_fname[gr_screen.res]);
+		}
 
 		if (Game_title_bitmap != -1)
 		{

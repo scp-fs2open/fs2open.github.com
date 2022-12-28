@@ -66,6 +66,7 @@ SCP_string Window_title;
 SCP_string Mod_title;
 SCP_string Mod_version;
 bool Unicode_text_mode;
+SCP_vector<SCP_string> Splash_screens;
 bool Use_tabled_strings_for_default_language;
 bool Dont_preempt_training_voice;
 SCP_string Movie_subtitle_font;
@@ -211,6 +212,20 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Unicode_text_mode);
 
 			mprintf(("Game Settings Table: Unicode mode: %s\n", Unicode_text_mode ? "yes" : "no"));
+		}
+
+		if (optional_string("$Splash screens:")) {
+			SCP_string splash_bitmap;
+			while (optional_string("+Bitmap:")) {
+				stuff_string(splash_bitmap, F_NAME);
+
+				// remove extension?
+				if (drop_extension(splash_bitmap)) {
+					mprintf(("Game Settings Table: Removed extension on splash screen file name %s\n", splash_bitmap.c_str()));
+				}
+
+				Splash_screens.push_back(splash_bitmap);
+			}
 		}
 
 		optional_string("#LOCALIZATION SETTINGS");
