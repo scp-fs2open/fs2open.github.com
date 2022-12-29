@@ -905,6 +905,10 @@ void mission_process_event( int event )
 				// precisely at the right time, and then became consistent units when the repeat interval no longer mattered.  In order to restore the expected
 				// behavior while keeping all units consistent, it is necessary to set a flag when a timestamp includes an interval so that the interval can be
 				// deducted from the period of time that evaluation is bypassed.
+				//
+				// To say this another way, the timestamp field represents the time at which the event will be evaluated again, not the time at which the event
+				// was last evaluated.  Subtracting the interval accounts for this difference.
+				//
 				if (Mission_events[event - 1].flags & MEF_TIMESTAMP_HAS_INTERVAL) {
 					if (Mission_events[event - 1].flags & MEF_USE_MSECS) {
 						offset -= Mission_events[event - 1].interval;
