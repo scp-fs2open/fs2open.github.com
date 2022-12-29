@@ -6313,10 +6313,10 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, flagset<Weapon::
  */
 int compute_num_homing_objects(object *target_objp)
 {
-	object	*objp;
 	int		count = 0;
 
-	for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
+	for (auto mop: list_range(&Missile_obj_list)) {
+		auto objp = &Objects[mop->objnum];
 		if (objp->flags[Object::Object_Flags::Should_be_dead])
 			continue;
 
@@ -10286,7 +10286,8 @@ void ai_guard_find_nearby_asteroid(object *guarding_objp, object *guarded_objp)
 	object	*closest_asteroid_objp=NULL, *danger_asteroid_objp=NULL, *asteroid_objp;
 	float		dist_to_self, closest_danger_asteroid_dist=999999.0f, closest_asteroid_dist=999999.0f;
 
-	for ( asteroid_objp = GET_FIRST(&obj_used_list); asteroid_objp != END_OF_LIST(&obj_used_list); asteroid_objp = GET_NEXT(asteroid_objp) ) {
+	for (auto aop: list_range(&Asteroid_obj_list)) {
+		asteroid_objp = &Objects[aop->objnum];
 		if (asteroid_objp->flags[Object::Object_Flags::Should_be_dead])
 			continue;
 

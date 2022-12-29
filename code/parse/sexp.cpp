@@ -22787,8 +22787,8 @@ int process_special_sexps(int index)
 		return SEXP_FALSE;
 
 	case 1:	//	Fired Interceptors
-		object	*objp;
-		for (objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
+		for (auto mop: list_range(&Missile_obj_list)) {
+			auto objp = &Objects[mop->objnum];
 			if (objp->flags[Object::Object_Flags::Should_be_dead])
 				continue;
 
