@@ -4452,7 +4452,7 @@ sexp_list_item* sexp_tree::get_listing_opf_keypress() {
 		auto btn = Default_config[i].get_btn(CID_KEYBOARD);
 
 		if ((btn >= -1) && !Control_config[i].disabled) {
-			head.add_data(textify_scancode(btn));
+			head.add_data(textify_scancode_universal(btn));
 		}
 	}
 
