@@ -1481,6 +1481,8 @@ void hud_target_missile(object *source_obj, int next_flag)
 
 		Assert(mo->objnum >= 0 && mo->objnum < MAX_OBJECTS);
 		A = &Objects[mo->objnum];
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 
 		Assert(A->type == OBJ_WEAPON);
 		Assert((A->instance >= 0) && (A->instance < MAX_WEAPONS));
@@ -3089,8 +3091,10 @@ void hud_process_homing_missiles()
 
 	for ( mo = GET_NEXT(&Missile_obj_list); mo != END_OF_LIST(&Missile_obj_list); mo = GET_NEXT(mo) ) {
 		A = &Objects[mo->objnum];
-		Assert((A->instance >= 0) && (A->instance < MAX_WEAPONS));
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 
+		Assert((A->instance >= 0) && (A->instance < MAX_WEAPONS));
 		wp = &Weapons[A->instance];
 
 		if (wp->homing_object == Player_obj) {
@@ -3153,8 +3157,10 @@ void HudGaugeMissileTriangles::render(float  /*frametime*/)
 
 	for ( mo = GET_NEXT(&Missile_obj_list); mo != END_OF_LIST(&Missile_obj_list); mo = GET_NEXT(mo) ) {
 		A = &Objects[mo->objnum];
-		Assert((A->instance >= 0) && (A->instance < MAX_WEAPONS));
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 
+		Assert((A->instance >= 0) && (A->instance < MAX_WEAPONS));
 		wp = &Weapons[A->instance];
 
 		if (wp->homing_object == Player_obj) {
@@ -3215,6 +3221,8 @@ void hud_process_remote_detonate_missile()
 	for ( mo = GET_FIRST(&Missile_obj_list); mo != END_OF_LIST(&Missile_obj_list); mo = GET_NEXT(mo) ) {
 		Assert(mo->objnum >= 0 && mo->objnum < MAX_OBJECTS);
 		mobjp = &Objects[mo->objnum];
+		if (mobjp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 
 		if ((Player_obj != NULL) && (mobjp->parent_sig == Player_obj->parent_sig)) {
 			if (Weapon_info[Weapons[mobjp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Remote]) {

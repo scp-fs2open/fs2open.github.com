@@ -6370,9 +6370,10 @@ float compute_incoming_payload(object *target_objp)
 	float			payload = 0.0f;
 
 	for ( mo = GET_NEXT(&Missile_obj_list); mo != END_OF_LIST(&Missile_obj_list); mo = GET_NEXT(mo) ) {
-		object	*objp;
+		auto objp = &Objects[mo->objnum];
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 
-		objp = &Objects[mo->objnum];
 		Assert(objp->type == OBJ_WEAPON);
 		if (Weapons[objp->instance].homing_object == target_objp) {
 			payload += Weapon_info[Weapons[objp->instance].weapon_info_index].damage;
@@ -10198,6 +10199,8 @@ int ai_guard_find_nearby_bomb(object *guarding_objp, object *guarded_objp)
 	for ( mo = GET_NEXT(&Missile_obj_list); mo != END_OF_LIST(&Missile_obj_list); mo = GET_NEXT(mo) ) {
 		Assert(mo->objnum >= 0 && mo->objnum < MAX_OBJECTS);
 		bomb_objp = &Objects[mo->objnum];
+		if (bomb_objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 
 		wp = &Weapons[bomb_objp->instance];
 		wip = &Weapon_info[wp->weapon_info_index];
@@ -14162,6 +14165,8 @@ static int ai_find_shockwave_weapon(const object *objp)
 	
 		Assert(mo->objnum >= 0 && mo->objnum < MAX_OBJECTS);
 		A = &Objects[mo->objnum];
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 
 		Assert(A->type == OBJ_WEAPON);
 		Assert((A->instance >= 0) && (A->instance < MAX_WEAPONS));
@@ -14181,7 +14186,6 @@ static int ai_find_shockwave_weapon(const object *objp)
 	}
 
 	return nearest_index;
-
 }
 
 #define	EVADE_SHOCKWAVE_DAMAGE_THRESHOLD		100.0f
