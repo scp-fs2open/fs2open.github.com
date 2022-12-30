@@ -16782,12 +16782,12 @@ int sexp_turret_fired_delay(int node)
 		return SEXP_FALSE;
 	}
 
-	if (turret->turret_last_fired < 0) {
+	if (turret->turret_last_fired.isNever()) {
 		// weapon was never fired
 		return SEXP_FALSE;
 	}
-
-	if (timestamp() - delay < turret->turret_last_fired) {
+		
+	if (timestamp_since(turret->turret_last_fired) < delay) {
 		return SEXP_TRUE;
 	}
 

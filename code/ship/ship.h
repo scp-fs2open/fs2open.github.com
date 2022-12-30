@@ -356,7 +356,7 @@ public:
 	vec3d	turret_last_fire_direction;		//	direction pointing last time this turret fired
 	int		turret_next_enemy_check_stamp;	//	time at which to next look for a new enemy.
 	int		turret_next_fire_stamp;				// next time this turret can fire
-	int		turret_last_fired;				// time when the turret last fired any weapon
+	TIMESTAMP		turret_last_fired;				// time when the turret last fired any weapon
 	int		turret_enemy_objnum;					//	object index of ship this turret is firing upon
 	int		turret_enemy_sig;						//	signature of object ship this turret is firing upon
 	int		turret_next_fire_pos;				// counter which tells us which gun position to fire from next
