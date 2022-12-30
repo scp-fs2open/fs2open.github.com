@@ -104,6 +104,7 @@ layout (std140) uniform modelData {
 	bool flag_hdr;
 	bool flag_animated;
 	bool flag_diffuse;
+	bool flag_glow;
 };
 
 in VertexOutput {
@@ -126,10 +127,8 @@ mat3 tangentMatrix;
 } vertIn;
 
 uniform sampler2DArray sBasemap;
-
-#ifdef FLAG_GLOW_MAP
 uniform sampler2DArray sGlowmap;
-#endif
+
 #ifdef FLAG_SPEC_MAP
 uniform sampler2DArray sSpecmap;
 #endif
@@ -410,7 +409,7 @@ void main()
 		}
 	#endif
 
-	#ifdef FLAG_GLOW_MAP
+	if (flag_glow) {
 		vec3 glowColor = texture(sGlowmap, vec3(texCoord, float(sGlowmapIndex))).rgb;
 		#ifdef FLAG_MISC_MAP
 			#ifdef FLAG_TEAMCOLOR
@@ -422,7 +421,7 @@ void main()
 			glowColor = srgb_to_linear(glowColor) * GLOW_MAP_SRGB_MULTIPLIER;
 		}
 		emissiveColor.rgb += glowColor * GLOW_MAP_INTENSITY;
-	#endif
+	}
 
 	#ifdef FLAG_FOG
 		vec3 finalFogColor = fogColor.rgb;

@@ -751,10 +751,6 @@ uint model_material::get_shader_flags() const
 		Shader_flags |= SDR_FLAG_MODEL_FOG;
 	}
 
-	if (get_texture_map(TM_GLOW_TYPE) > 0) {
-		Shader_flags |= SDR_FLAG_MODEL_GLOW_MAP;
-	}
-
 	if (get_texture_map(TM_SPECULAR_TYPE) > 0 || get_texture_map(TM_SPEC_GLOSS_TYPE) > 0) {
 		Shader_flags |= SDR_FLAG_MODEL_SPEC_MAP;
 	}
