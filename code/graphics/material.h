@@ -228,7 +228,9 @@ public:
 	bool is_lit() const;
 
 	void set_deferred_lighting(bool enabled);
+	bool is_deferred() const;
 	void set_high_dynamic_range(bool enabled);
+	bool is_hdr() const;
 	
 	void set_center_alpha(int center_alpha);
 	int get_center_alpha() const;

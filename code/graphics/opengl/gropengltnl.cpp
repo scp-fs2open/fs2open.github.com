@@ -897,7 +897,7 @@ void opengl_tnl_set_model_material(model_material *material_info)
 		GL_state.Texture.Enable(8, GL_TEXTURE_2D_ARRAY, Shadow_map_texture);
 	}
 
-	if ( Current_shader->flags & SDR_FLAG_MODEL_ANIMATED ) {
+	if ( material_info->get_animated_effect() > 0) {
 		Current_shader->program->Uniforms.setTextureUniform("sFramebuffer", 9);
 
 		if ( Scene_framebuffer_in_frame ) {

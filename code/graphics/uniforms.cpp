@@ -50,12 +50,12 @@ void convert_model_material(model_uniform_data* data_out,
 	data_out->vpwidth = 1.0f / i2fl(gr_screen.max_w);
 	data_out->vpheight = 1.0f / i2fl(gr_screen.max_h);
 
-	data_out->flag_light = shader_flags & SDR_FLAG_MODEL_LIGHT;
-	data_out->flag_deferred = shader_flags & SDR_FLAG_MODEL_DEFERRED;
-	data_out->flag_hdr = shader_flags & SDR_FLAG_MODEL_HDR;
-	data_out->flag_animated = shader_flags & SDR_FLAG_MODEL_ANIMATED;
+	data_out->flag_light = material.is_lit();
+	data_out->flag_deferred = material.is_deferred();
+	data_out->flag_hdr = material.is_hdr();
+	data_out->flag_animated = material.get_animated_effect() > 0;
 
-	if (shader_flags & SDR_FLAG_MODEL_ANIMATED) {
+	if (material.get_animated_effect() > 0) {
 		data_out->anim_timer = material.get_animated_effect_time();
 		data_out->effect_num = material.get_animated_effect();
 	}
@@ -77,7 +77,7 @@ void convert_model_material(model_uniform_data* data_out,
 		}
 	}
 
-	if (shader_flags & SDR_FLAG_MODEL_LIGHT) {
+	if (material.is_lit()) {
 		int num_lights = MIN(Num_active_gr_lights, (int)graphics::MAX_UNIFORM_LIGHTS);
 		data_out->n_lights = num_lights;
 
