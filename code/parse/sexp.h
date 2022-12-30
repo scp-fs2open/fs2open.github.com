@@ -435,6 +435,7 @@ enum : int {
 	
 	OP_ARE_WING_FLAGS_SET, // Goober5000
 	OP_PLAYER_IS_CHEATING_BASTARD,	// The E
+	OP_TURRET_FIRED_SINCE,	// Asteroth
 	
 	// OP_CATEGORY_CONDITIONAL
 	// conditional sexpressions

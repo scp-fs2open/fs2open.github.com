@@ -286,6 +286,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "is-primary-selected",			OP_IS_PRIMARY_SELECTED,					2,	2,			SEXP_BOOLEAN_OPERATOR,	},
 	{ "is-secondary-selected",			OP_IS_SECONDARY_SELECTED,				2,	2,			SEXP_BOOLEAN_OPERATOR,	},
 	{ "primary-fired-since",			OP_PRIMARY_FIRED_SINCE,					3,	3,			SEXP_INTEGER_OPERATOR,	},	// Karajorma
+	{ "turret-fired-since",				OP_TURRET_FIRED_SINCE,					3,	3,			SEXP_INTEGER_OPERATOR, },	// Asteroth
 	{ "secondary-fired-since",			OP_SECONDARY_FIRED_SINCE,				3,	3,			SEXP_INTEGER_OPERATOR,	},	// Karajorma
 	{ "primary-ammo-pct",				OP_PRIMARY_AMMO_PCT,					2,	2,			SEXP_INTEGER_OPERATOR,	},
 	{ "secondary-ammo-pct",				OP_SECONDARY_AMMO_PCT,					2,	2,			SEXP_INTEGER_OPERATOR,	},
@@ -16747,6 +16748,52 @@ void sexp_set_mission_mood (int node)
 	Warning(LOCATION, "Sexp-mission-mood attempted to set mood %s which does not exist in messages.tbl", mood);
 }
 
+int sexp_turret_fired_delay(int node)
+{
+	ship* shipp;
+	int requested_bank, delay, last_fired = -1;
+	bool is_nan, is_nan_forever;
+
+	auto ship_entry = eval_ship(node);
+	if (!ship_entry) {
+		return SEXP_FALSE;
+	}
+	if (ship_entry->status == ShipStatus::EXITED) {
+		return SEXP_KNOWN_FALSE;
+	}
+	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT) {
+		return SEXP_CANT_EVAL;
+	}
+	shipp = ship_entry->shipp;
+
+	// get the subsystem
+	node = CDR(node);
+	auto turret = ship_get_subsys(shipp, CTEXT(node));
+	if (!turret || turret->system_info->type != SUBSYSTEM_TURRET)
+		return SEXP_KNOWN_FALSE;
+
+	// get the delay
+	node = CDR(node);
+	delay = eval_num(node, is_nan, is_nan_forever);
+	if (is_nan_forever) {
+		return SEXP_KNOWN_FALSE;
+	}
+	else if (is_nan || delay <= 0) {
+		return SEXP_FALSE;
+	}
+
+	if (turret->turret_last_fired < 0) {
+		// weapon was never fired
+		return SEXP_FALSE;
+	}
+
+	if (timestamp() - delay < turret->turret_last_fired) {
+		return SEXP_TRUE;
+	}
+
+	return SEXP_FALSE;
+}
+
 int sexp_weapon_fired_delay(int node, int op_num)
 {
 	ship *shipp;
@@ -27698,6 +27745,10 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_TURRET_FIRED_SINCE:
+				sexp_val = sexp_turret_fired_delay(node);
+				break;
+
 			case OP_PRIMARY_FIRED_SINCE:
 			case OP_SECONDARY_FIRED_SINCE:
 				sexp_val = sexp_weapon_fired_delay(node, op_num); 
@@ -28746,6 +28797,7 @@ int query_operator_return_type(int op)
 		case OP_NAV_ISLINKED:
 		case OP_IS_PLAYER:
 		case OP_PRIMARY_FIRED_SINCE:
+		case OP_TURRET_FIRED_SINCE:
 		case OP_SECONDARY_FIRED_SINCE:
 		case OP_IS_FACING:
 		case OP_HAS_PRIMARY_WEAPON:
@@ -31434,6 +31486,14 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_CURRENT_SPEED:
 			return OPF_SHIP_WING;
+
+		case OP_TURRET_FIRED_SINCE:
+			if (argnum == 0)
+				return OPF_SHIP;
+			else if (argnum == 1)
+				return OPF_SUBSYSTEM;
+			else
+				return OPF_POSITIVE;
 			
 		case OP_PRIMARY_FIRED_SINCE:
 		case OP_SECONDARY_FIRED_SINCE:
@@ -33624,6 +33684,7 @@ int get_category(int op_id)
 		case OP_AFTERBURNER_LEFT:
 		case OP_WEAPON_ENERGY_LEFT:
 		case OP_GET_ETS_VALUE:
+		case OP_TURRET_FIRED_SINCE:
 		case OP_PRIMARY_FIRED_SINCE:
 		case OP_SECONDARY_FIRED_SINCE:
 		case OP_GET_THROTTLE_SPEED:
@@ -34606,6 +34667,7 @@ int get_subcategory(int op_id)
 		case OP_HAS_SECONDARY_WEAPON:
 		case OP_GET_ETS_VALUE:
 		case OP_IS_IN_TURRET_FOV:
+		case OP_TURRET_FIRED_SINCE:
 			return STATUS_SUBCATEGORY_SHIELDS_ENGINES_AND_WEAPONS;
 			
 		case OP_CARGO_KNOWN_DELAY:
@@ -38440,6 +38502,14 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_CURRENT_SPEED, "current-speed\r\n"
 		"\tReturns the speed of the given object. Takes 1 argument...\r\n"
 		"\t1:\tName of the object"
+	},
+
+	// Asteroth
+	{ OP_TURRET_FIRED_SINCE, "turret-fired-since\r\n"
+		"\tReturns true if the turret has been fired within the supplied window of time. Takes 3 arguments...\r\n\r\n"
+		"\t1:\tShip name\r\n"
+		"\t2:\tTurret name\r\n"
+		"\t3:\tTime period to check if the turret was fired (in milliseconds)\r\n"
 	},
 
 	// Karajora
