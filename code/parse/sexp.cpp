@@ -16751,7 +16751,6 @@ void sexp_set_mission_mood (int node)
 int sexp_turret_fired_delay(int node)
 {
 	ship* shipp;
-	int requested_bank, delay, last_fired = -1;
 	bool is_nan, is_nan_forever;
 
 	auto ship_entry = eval_ship(node);
@@ -16774,7 +16773,7 @@ int sexp_turret_fired_delay(int node)
 
 	// get the delay
 	node = CDR(node);
-	delay = eval_num(node, is_nan, is_nan_forever);
+	int delay = eval_num(node, is_nan, is_nan_forever);
 	if (is_nan_forever) {
 		return SEXP_KNOWN_FALSE;
 	}
