@@ -173,8 +173,6 @@ static opengl_shader_type_t GL_shader_types[] = {
 static opengl_shader_variant_t GL_shader_variants[] = {
 	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_FOG, "FLAG_FOG", {}, "Fog Effect"},
 
-	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_DIFFUSE_MAP, "FLAG_DIFFUSE_MAP", {}, "Diffuse Mapping"},
-
 	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_GLOW_MAP, "FLAG_GLOW_MAP", {}, "Glow Mapping"},
 
 	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_SPEC_MAP, "FLAG_SPEC_MAP", {}, "Specular Mapping"},

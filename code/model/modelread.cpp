@@ -3159,8 +3159,6 @@ void model_load_texture(polymodel *pm, int i, char *file)
 	// See if we need to compile a new shader for this material
 	int shader_flags = 0;
 
-	if (tbase->GetTexture() > 0)
-		shader_flags |= SDR_FLAG_MODEL_DIFFUSE_MAP;
 	if (tglow->GetTexture() > 0 && Cmdline_glow)
 		shader_flags |= SDR_FLAG_MODEL_GLOW_MAP;
 	if ((tspec->GetTexture() > 0 || tspecgloss->GetTexture() > 0) && Cmdline_spec)

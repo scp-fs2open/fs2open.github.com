@@ -834,7 +834,7 @@ void opengl_tnl_set_model_material(model_material *material_info)
 	}
 
 	uint32_t array_index;
-	if ( Current_shader->flags & SDR_FLAG_MODEL_DIFFUSE_MAP ) {
+	if ( material_info->get_texture_map(TM_BASE_TYPE) > 0 ) {
 		Current_shader->program->Uniforms.setTextureUniform("sBasemap", 0);
 
 		gr_opengl_tcache_set(material_info->get_texture_map(TM_BASE_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, 0);

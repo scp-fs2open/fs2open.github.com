@@ -103,6 +103,7 @@ layout (std140) uniform modelData {
 	bool flag_deferred;
 	bool flag_hdr;
 	bool flag_animated;
+	bool flag_diffuse;
 };
 
 in VertexOutput {
@@ -124,9 +125,8 @@ mat3 tangentMatrix;
 #endif
 } vertIn;
 
-#ifdef FLAG_DIFFUSE_MAP
 uniform sampler2DArray sBasemap;
-#endif
+
 #ifdef FLAG_GLOW_MAP
 uniform sampler2DArray sGlowmap;
 #endif
@@ -262,7 +262,7 @@ void main()
 		distort = vec2(cos(vertIn.position.x*vertIn.position.w*0.005+anim_timer*20.0)*sin(vertIn.position.y*vertIn.position.w*0.005),sin(vertIn.position.x*vertIn.position.w*0.005+anim_timer*20.0)*cos(vertIn.position.y*vertIn.position.w*0.005))*0.03;
 	}
 
-	#ifdef FLAG_DIFFUSE_MAP
+	if (flag_diffuse) {
 		vec2 diffuseTexCoord = texCoord;
 		if (flag_animated) {
 			if (effect_num == 2) {
@@ -279,7 +279,7 @@ void main()
 		// premultiply alpha if blend_alpha is 1. assume that our blend function is srcColor + (1-Alpha)*destColor.
 		// if blend_alpha is 2, assume blend func is additive and don't modify color
 		if(blend_alpha == 1) baseColor.rgb = baseColor.rgb * baseColor.a;
-	#endif
+	}
 
 	specColor = vec4(baseColor.rgb * SPEC_FACTOR_NO_SPEC_MAP, glossData);
 	if (flag_hdr) {
@@ -429,9 +429,9 @@ void main()
 		if (flag_hdr) {
 			finalFogColor = srgb_to_linear(finalFogColor);
 		}
-		#ifdef FLAG_DIFFUSE_MAP
+		if (flag_diffuse) {
 			if(blend_alpha == 1) finalFogColor *= baseColor.a;
-		#endif
+		}
 		// This code will only be used by the forward renderer so we apply the fog effect to both the emissive and the base
 		// color.
 		baseColor.rgb = mix(emissiveColor.rgb + baseColor.rgb, finalFogColor, vertIn.fogDist);
@@ -439,11 +439,11 @@ void main()
 		specColor.rgb *= vertIn.fogDist;
 	#endif
 
-	#ifdef FLAG_DIFFUSE_MAP
+	if (flag_diffuse) {
 		if(desaturate == 1) {
 			baseColor.rgb = color.rgb * dot(vec3(1.0), baseColor.rgb) * 0.3333333;
 		}
-	#endif
+	}
 	
 	if (flag_animated) {
 		if (effect_num == 0) {

@@ -54,6 +54,7 @@ void convert_model_material(model_uniform_data* data_out,
 	data_out->flag_deferred = material.is_deferred();
 	data_out->flag_hdr = material.is_hdr();
 	data_out->flag_animated = material.get_animated_effect() > 0;
+	data_out->flag_diffuse = material.get_texture_map(TM_BASE_TYPE) > 0;
 
 	if (material.get_animated_effect() > 0) {
 		data_out->anim_timer = material.get_animated_effect_time();
@@ -102,7 +103,7 @@ void convert_model_material(model_uniform_data* data_out,
 	}
 	data_out->defaultGloss = 0.6f;
 
-	if (shader_flags & SDR_FLAG_MODEL_DIFFUSE_MAP) {
+	if (material.get_texture_map(TM_BASE_TYPE) > 0) {
 		if (material.is_desaturated()) {
 			data_out->desaturate = 1;
 		} else {
