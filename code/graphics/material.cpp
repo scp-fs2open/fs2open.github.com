@@ -755,10 +755,6 @@ uint model_material::get_shader_flags() const
 		Shader_flags |= SDR_FLAG_MODEL_HEIGHT_MAP;
 	}
 
-	if (get_texture_map(TM_AMBIENT_TYPE) > 0) {
-		Shader_flags |= SDR_FLAG_MODEL_AMBIENT_MAP;
-	}
-
 	if (lighting) {
 		if (Shadow_receiving && !Shadow_override) {
 			Shader_flags |= SDR_FLAG_MODEL_SHADOWS;

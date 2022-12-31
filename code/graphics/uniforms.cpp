@@ -60,6 +60,7 @@ void convert_model_material(model_uniform_data* data_out,
 		material.get_texture_map(TM_SPECULAR_TYPE) > 0 || material.get_texture_map(TM_SPEC_GLOSS_TYPE) > 0;
 	data_out->flag_env = ENVMAP > 0;
 	data_out->flag_normal = material.get_texture_map(TM_NORMAL_TYPE) > 0;
+	data_out->flag_ambient = material.get_texture_map(TM_AMBIENT_TYPE) > 0;
 
 	if (material.get_animated_effect() > 0) {
 		data_out->anim_timer = material.get_animated_effect_time();
@@ -165,7 +166,7 @@ void convert_model_material(model_uniform_data* data_out,
 		data_out->sNormalmapIndex = bm_get_array_index(material.get_texture_map(TM_NORMAL_TYPE));
 	}
 
-	if ( shader_flags & SDR_FLAG_MODEL_AMBIENT_MAP ) {
+	if (material.get_texture_map(TM_AMBIENT_TYPE) > 0) {
 		data_out->sAmbientmapIndex = bm_get_array_index(material.get_texture_map(TM_AMBIENT_TYPE));
 	}
 

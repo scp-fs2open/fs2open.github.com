@@ -108,6 +108,7 @@ layout (std140) uniform modelData {
 	bool flag_spec;
 	bool flag_env;
 	bool flag_normal;
+	bool flag_ambient;
 };
 
 in VertexOutput {
@@ -133,10 +134,7 @@ uniform sampler2DArray sSpecmap;
 uniform samplerCube sEnvmap;
 uniform samplerCube sIrrmap;
 uniform sampler2DArray sNormalmap;
-
-#ifdef FLAG_AMBIENT_MAP
 uniform sampler2DArray sAmbientmap;
-#endif
 
 uniform sampler2D sFramebuffer;
 
@@ -230,11 +228,11 @@ void main()
 	float fresnelFactor = 0.0;
 	float glossData = defaultGloss;
 	vec2 aoFactors = vec2(1.0, 1.0);
-	#ifdef	FLAG_AMBIENT_MAP
+	if (flag_ambient) {
 		// red channel is ambient occlusion factor which only affects ambient lighting.
 		// green is cavity occlusion factor which only affects diffuse and specular lighting.
 		aoFactors = texture(sAmbientmap, vec3(texCoord, float(sAmbientmapIndex))).xy;
-	#endif
+	}
 	vec3 unitNormal = normalize(vertIn.normal);
 	vec3 normal = unitNormal;
 	if (flag_normal) {

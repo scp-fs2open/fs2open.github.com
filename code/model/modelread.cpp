@@ -3163,8 +3163,6 @@ void model_load_texture(polymodel *pm, int i, char *file)
 		shader_flags |= SDR_FLAG_MODEL_HEIGHT_MAP;
 	if (tmisc->GetTexture() > 0)
 		shader_flags |= SDR_FLAG_MODEL_MISC_MAP;
-	if (tambient->GetTexture() >0)
-		shader_flags |= SDR_FLAG_MODEL_AMBIENT_MAP;
 	
 	gr_maybe_create_shader(SDR_TYPE_MODEL, SDR_FLAG_MODEL_SHADOW_MAP);
 
