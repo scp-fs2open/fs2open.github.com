@@ -3159,8 +3159,6 @@ void model_load_texture(polymodel *pm, int i, char *file)
 	// See if we need to compile a new shader for this material
 	int shader_flags = 0;
 
-	if (tnorm->GetTexture() > 0 && Cmdline_normal)
-		shader_flags |= SDR_FLAG_MODEL_NORMAL_MAP;
 	if (theight->GetTexture() > 0 && Cmdline_height)
 		shader_flags |= SDR_FLAG_MODEL_HEIGHT_MAP;
 	if (tmisc->GetTexture() > 0)

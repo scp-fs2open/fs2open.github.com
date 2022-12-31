@@ -751,10 +751,6 @@ uint model_material::get_shader_flags() const
 		Shader_flags |= SDR_FLAG_MODEL_FOG;
 	}
 
-	if (get_texture_map(TM_NORMAL_TYPE) > 0) {
-		Shader_flags |= SDR_FLAG_MODEL_NORMAL_MAP;
-	}
-
 	if (get_texture_map(TM_HEIGHT_TYPE) > 0) {
 		Shader_flags |= SDR_FLAG_MODEL_HEIGHT_MAP;
 	}

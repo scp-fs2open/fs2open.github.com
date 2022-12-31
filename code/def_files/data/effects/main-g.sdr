@@ -114,6 +114,7 @@ layout (std140) uniform modelData {
 	bool flag_glow;
 	bool flag_spec;
 	bool flag_env;
+	bool flag_normal;
 };
 
 in VertexOutput {
@@ -191,9 +192,9 @@ mat3 tangentMatrix;
 			if (flag_env) {
 				vertOut.envReflect = vertIn[vert].envReflect;
 			}
-			#ifdef FLAG_NORMAL_MAP
+			if (flag_normal) {
 				vertOut.tangentMatrix = vertIn[vert].tangentMatrix;
-			#endif
+			}
 			#ifdef FLAG_FOG
 				vertOut.fogDist = vertIn[vert].fogDist;
 			#endif
@@ -245,9 +246,9 @@ mat3 tangentMatrix;
 				if (flag_env) {
 					vertOut.envReflect = vertIn[vert].envReflect;
 				}
-				#ifdef FLAG_NORMAL_MAP
+				if (flag_normal) {
 					vertOut.tangentMatrix = vertIn[vert].tangentMatrix;
-				#endif
+				}
 				#ifdef FLAG_FOG
 					vertOut.fogDist = vertIn[vert].fogDist;
 				#endif

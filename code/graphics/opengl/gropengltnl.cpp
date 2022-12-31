@@ -867,7 +867,7 @@ void opengl_tnl_set_model_material(model_material *material_info)
 		Assertion(array_index == 0, "Cube map arrays are not supported yet!");
 	}
 
-	if ( Current_shader->flags & SDR_FLAG_MODEL_NORMAL_MAP ) {
+	if (material_info->get_texture_map(TM_NORMAL_TYPE) > 0) {
 		Current_shader->program->Uniforms.setTextureUniform("sNormalmap", 4);
 
 		gr_opengl_tcache_set(material_info->get_texture_map(TM_NORMAL_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, 4);
