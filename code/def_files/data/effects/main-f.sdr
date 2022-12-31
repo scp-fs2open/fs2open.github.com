@@ -109,6 +109,7 @@ layout (std140) uniform modelData {
 	bool flag_env;
 	bool flag_normal;
 	bool flag_ambient;
+	bool flag_misc;
 };
 
 in VertexOutput {
@@ -141,9 +142,9 @@ uniform sampler2D sFramebuffer;
 #ifdef FLAG_TEAMCOLOR
 vec4 teamMask;
 #endif
-#ifdef FLAG_MISC_MAP
+
 uniform sampler2DArray sMiscmap;
-#endif
+
 #ifdef FLAG_SHADOWS
 uniform sampler2DArray shadow_map;
 #endif
@@ -299,8 +300,9 @@ void main()
 	vec2 normDy = dFdy(unitNormal.xy);
 	float glossGeo = 1.0f - pow(clamp(max(dot(normDx,normDx), dot(normDy,normDy)),0.0,1.0),0.33);
 	glossData = min(glossData, glossGeo);
+	vec3 team_color_glow = vec3(0.0);
 
-	#ifdef FLAG_MISC_MAP
+	if (flag_misc) {
 		#ifdef FLAG_TEAMCOLOR
 			teamMask = texture(sMiscmap, vec3(texCoord, float(sMiscmapIndex)));
 
@@ -309,7 +311,7 @@ void main()
 			vec3 color_offset = vec3(-0.5) * (teamMask.x + teamMask.y);
 
 			vec3 team_color = base_color * teamMask.x + stripe_color * teamMask.y + color_offset;
-			vec3 team_color_glow = (base_color * teamMask.b) + (stripe_color * teamMask.a);
+			team_color_glow = (base_color * teamMask.b) + (stripe_color * teamMask.a);
 
 			if (flag_hdr) {
 				baseColor.rgb = linear_to_srgb(baseColor.rgb);
@@ -326,7 +328,7 @@ void main()
 				specColor.rgb = srgb_to_linear(specColor.rgb);
 			}
 		#endif
-	#endif
+	}
 
 	// Lights aren't applied when we are rendering to the G-buffers since that gets handled later
 	if (flag_deferred) {
@@ -405,12 +407,12 @@ void main()
 
 	if (flag_glow) {
 		vec3 glowColor = texture(sGlowmap, vec3(texCoord, float(sGlowmapIndex))).rgb;
-		#ifdef FLAG_MISC_MAP
+		if (flag_misc) {
 			#ifdef FLAG_TEAMCOLOR
 				float glowColorLuminance = dot(glowColor, vec3(0.299, 0.587, 0.114));
 				glowColor = team_glow_enabled ? mix(max(team_color_glow, vec3(0.0)), glowColor, clamp(glowColorLuminance - teamMask.b - teamMask.a, 0.0, 1.0)) : glowColor;
 			#endif
-		#endif
+		}
 		if (flag_hdr) {
 			glowColor = srgb_to_linear(glowColor) * GLOW_MAP_SRGB_MULTIPLIER;
 		}

@@ -111,6 +111,7 @@ layout (std140) uniform modelData {
 	bool flag_env;
 	bool flag_normal;
 	bool flag_ambient;
+	bool flag_misc;
 };
 
 #ifdef FLAG_TRANSFORM

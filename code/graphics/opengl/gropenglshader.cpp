@@ -173,8 +173,6 @@ static opengl_shader_type_t GL_shader_types[] = {
 static opengl_shader_variant_t GL_shader_variants[] = {
 	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_FOG, "FLAG_FOG", {}, "Fog Effect"},
 
-	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_MISC_MAP, "FLAG_MISC_MAP", {}, "Utility mapping"},
-
 	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_TEAMCOLOR, "FLAG_TEAMCOLOR", {}, "Team Colors"},
 
 	{SDR_TYPE_MODEL, true, SDR_FLAG_MODEL_SHADOW_MAP, "FLAG_SHADOW_MAP", {}, "Shadow Mapping"},

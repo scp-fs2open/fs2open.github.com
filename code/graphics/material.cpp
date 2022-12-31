@@ -758,8 +758,6 @@ uint model_material::get_shader_flags() const
 	}
 
 	if (get_texture_map(TM_MISC_TYPE) > 0) {
-		Shader_flags |= SDR_FLAG_MODEL_MISC_MAP;
-
 		if (Team_color_set) {
 			Shader_flags |= SDR_FLAG_MODEL_TEAMCOLOR;
 		}
