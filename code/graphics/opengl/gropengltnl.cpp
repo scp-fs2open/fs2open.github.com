@@ -846,7 +846,7 @@ void opengl_tnl_set_model_material(model_material *material_info)
 		gr_opengl_tcache_set(material_info->get_texture_map(TM_GLOW_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, 1);
 	}
 
-	if ( Current_shader->flags & SDR_FLAG_MODEL_SPEC_MAP ) {
+	if ( material_info->get_texture_map(TM_SPECULAR_TYPE) > 0 || material_info->get_texture_map(TM_SPEC_GLOSS_TYPE) > 0 ) {
 		Current_shader->program->Uniforms.setTextureUniform("sSpecmap", 2);
 
 		if ( material_info->get_texture_map(TM_SPEC_GLOSS_TYPE) > 0 ) {

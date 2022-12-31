@@ -105,6 +105,7 @@ layout (std140) uniform modelData {
 	bool flag_animated;
 	bool flag_diffuse;
 	bool flag_glow;
+	bool flag_spec;
 };
 
 in VertexOutput {
@@ -128,10 +129,8 @@ mat3 tangentMatrix;
 
 uniform sampler2DArray sBasemap;
 uniform sampler2DArray sGlowmap;
-
-#ifdef FLAG_SPEC_MAP
 uniform sampler2DArray sSpecmap;
-#endif
+
 #ifdef FLAG_ENV_MAP
 uniform samplerCube sEnvmap;
 uniform samplerCube sIrrmap;
@@ -284,7 +283,8 @@ void main()
 	if (flag_hdr) {
 		baseColor.rgb = srgb_to_linear(baseColor.rgb);
 	}
-	#ifdef FLAG_SPEC_MAP
+	
+	if (flag_spec) {
 		specColor = texture(sSpecmap, vec3(texCoord, float(sSpecmapIndex)));
 		if(alphaGloss) glossData = specColor.a;
 		if(gammaSpec) {
@@ -294,7 +294,7 @@ void main()
 		if (flag_hdr) {
 			specColor.rgb = srgb_to_linear(specColor.rgb);
 		}
-	#endif
+	}
 	baseColor.rgb *= aoFactors.y;
 	specColor.rgb *= aoFactors.y;
 
@@ -341,9 +341,9 @@ void main()
 			vec3 lightAmbient = (emissionFactor + ambientFactor * ambientFactor) * aoFactors.x; // ambientFactor^2 due to legacy OpenGL compatibility behavior
 			emissiveColor.rgb += baseColor.rgb * lightAmbient;
 		} else {
-			#ifdef FLAG_SPEC_MAP
+			if (flag_spec) {
 				baseColor.rgb += pow(1.0 - clamp(dot(eyeDir, normal), 0.0, 1.0), 5.0 * clamp(glossData, 0.01, 1.0)) * specColor.rgb;
-			#endif
+			}
 			// If there is no lighting then we copy the color data so far into the
 			emissiveColor.rgb += baseColor.rgb;
 		}
@@ -355,9 +355,9 @@ void main()
 			#endif
 			baseColor.rgb = CalculateLighting(normal, baseColor.rgb, specColor.rgb, glossData, fresnelFactor, shadow, aoFactors.x);
 		} else {
-			#ifdef FLAG_SPEC_MAP
+			if (flag_spec) {
 				baseColor.rgb += pow(1.0 - clamp(dot(eyeDir, normal), 0.0, 1.0), 5.0 * clamp(glossData, 0.01, 1.0)) * specColor.rgb;
-			#endif
+			}
 		}
 	}
 

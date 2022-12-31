@@ -56,6 +56,8 @@ void convert_model_material(model_uniform_data* data_out,
 	data_out->flag_animated = material.get_animated_effect() > 0;
 	data_out->flag_diffuse = material.get_texture_map(TM_BASE_TYPE) > 0;
 	data_out->flag_glow = material.get_texture_map(TM_GLOW_TYPE) > 0;
+	data_out->flag_spec =
+		material.get_texture_map(TM_SPECULAR_TYPE) > 0 || material.get_texture_map(TM_SPEC_GLOSS_TYPE) > 0;
 
 	if (material.get_animated_effect() > 0) {
 		data_out->anim_timer = material.get_animated_effect_time();
@@ -131,20 +133,20 @@ void convert_model_material(model_uniform_data* data_out,
 		data_out->sGlowmapIndex = bm_get_array_index(material.get_texture_map(TM_GLOW_TYPE));
 	}
 
-	if (shader_flags & SDR_FLAG_MODEL_SPEC_MAP) {
 
-		if (material.get_texture_map(TM_SPEC_GLOSS_TYPE) > 0) {
-			data_out->sSpecmapIndex = bm_get_array_index(material.get_texture_map(TM_SPEC_GLOSS_TYPE));
+	if (material.get_texture_map(TM_SPEC_GLOSS_TYPE) > 0) {
+		data_out->sSpecmapIndex = bm_get_array_index(material.get_texture_map(TM_SPEC_GLOSS_TYPE));
 
-			data_out->gammaSpec = 1;
-			data_out->alphaGloss = 1;
+		data_out->gammaSpec = 1;
+		data_out->alphaGloss = 1;
 
-		} else {
-			data_out->sSpecmapIndex = bm_get_array_index(material.get_texture_map(TM_SPECULAR_TYPE));
+	} 
 
-			data_out->gammaSpec = 0;
-			data_out->alphaGloss = 0;
-		}
+	if (material.get_texture_map(TM_SPECULAR_TYPE) > 0) {
+		data_out->sSpecmapIndex = bm_get_array_index(material.get_texture_map(TM_SPECULAR_TYPE));
+
+		data_out->gammaSpec = 0;
+		data_out->alphaGloss = 0;
 	}
 
 	if (shader_flags & SDR_FLAG_MODEL_ENV_MAP) {
