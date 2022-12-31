@@ -110,6 +110,7 @@ layout (std140) uniform modelData {
 	bool flag_normal;
 	bool flag_ambient;
 	bool flag_misc;
+	bool flag_teamcolor;
 };
 
 in VertexOutput {
@@ -138,10 +139,6 @@ uniform sampler2DArray sNormalmap;
 uniform sampler2DArray sAmbientmap;
 
 uniform sampler2D sFramebuffer;
-
-#ifdef FLAG_TEAMCOLOR
-vec4 teamMask;
-#endif
 
 uniform sampler2DArray sMiscmap;
 
@@ -300,10 +297,11 @@ void main()
 	vec2 normDy = dFdy(unitNormal.xy);
 	float glossGeo = 1.0f - pow(clamp(max(dot(normDx,normDx), dot(normDy,normDy)),0.0,1.0),0.33);
 	glossData = min(glossData, glossGeo);
+	vec4 teamMask = vec4(0.0);
 	vec3 team_color_glow = vec3(0.0);
 
 	if (flag_misc) {
-		#ifdef FLAG_TEAMCOLOR
+		if (flag_teamcolor) {
 			teamMask = texture(sMiscmap, vec3(texCoord, float(sMiscmapIndex)));
 
 			//For team colors applied to a diffuse or spec map, we assume that the base color of the diffuse 
@@ -327,7 +325,7 @@ void main()
 				baseColor.rgb = srgb_to_linear(baseColor.rgb);
 				specColor.rgb = srgb_to_linear(specColor.rgb);
 			}
-		#endif
+		}
 	}
 
 	// Lights aren't applied when we are rendering to the G-buffers since that gets handled later
@@ -408,10 +406,10 @@ void main()
 	if (flag_glow) {
 		vec3 glowColor = texture(sGlowmap, vec3(texCoord, float(sGlowmapIndex))).rgb;
 		if (flag_misc) {
-			#ifdef FLAG_TEAMCOLOR
+			if (flag_teamcolor) {
 				float glowColorLuminance = dot(glowColor, vec3(0.299, 0.587, 0.114));
 				glowColor = team_glow_enabled ? mix(max(team_color_glow, vec3(0.0)), glowColor, clamp(glowColorLuminance - teamMask.b - teamMask.a, 0.0, 1.0)) : glowColor;
-			#endif
+			}
 		}
 		if (flag_hdr) {
 			glowColor = srgb_to_linear(glowColor) * GLOW_MAP_SRGB_MULTIPLIER;

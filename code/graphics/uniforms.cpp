@@ -201,7 +201,7 @@ void convert_model_material(model_uniform_data* data_out,
 	// Team colors are passed to the shader here, but the shader needs to handle their application.
 	// By default, this is handled through the r and g channels of the misc map, but this can be changed
 	// in the shader; test versions of this used the normal map r and b channels
-	if (shader_flags & SDR_FLAG_MODEL_TEAMCOLOR) {
+	if (material.get_texture_map(TM_MISC_TYPE) > 0 && material.is_team_color_set()) {
 		auto& tm_clr = material.get_team_color();
 		vec3d stripe_color;
 		vec3d base_color;

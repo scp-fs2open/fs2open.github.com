@@ -241,6 +241,7 @@ public:
 	void set_team_color(const team_color &Team_clr);
 	void set_team_color();
 	const team_color& get_team_color() const;
+	bool is_team_color_set() const;
 
 	void set_animated_effect(int effect, float time);
 	void set_animated_effect();

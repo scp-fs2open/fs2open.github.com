@@ -117,6 +117,7 @@ layout (std140) uniform modelData {
 	bool flag_normal;
 	bool flag_ambient;
 	bool flag_misc;
+	bool flag_teamcolor;
 };
 
 in VertexOutput {

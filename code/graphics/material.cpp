@@ -633,6 +633,11 @@ void model_material::set_team_color()
 	Team_color_set = false;
 }
 
+bool model_material::is_team_color_set() const
+{
+	return Team_color_set;
+}
+
 const team_color& model_material::get_team_color() const
 {
 	return Tm_color;
@@ -749,12 +754,6 @@ uint model_material::get_shader_flags() const
 	if (lighting) {
 		if (Shadow_receiving && !Shadow_override) {
 			Shader_flags |= SDR_FLAG_MODEL_SHADOWS;
-		}
-	}
-
-	if (get_texture_map(TM_MISC_TYPE) > 0) {
-		if (Team_color_set) {
-			Shader_flags |= SDR_FLAG_MODEL_TEAMCOLOR;
 		}
 	}
 
