@@ -62,6 +62,7 @@ void convert_model_material(model_uniform_data* data_out,
 	data_out->flag_normal = material.get_texture_map(TM_NORMAL_TYPE) > 0;
 	data_out->flag_ambient = material.get_texture_map(TM_AMBIENT_TYPE) > 0;
 	data_out->flag_misc = material.get_texture_map(TM_MISC_TYPE) > 0;
+	data_out->flag_teamcolor = material.get_texture_map(TM_MISC_TYPE) > 0 && material.is_team_color_set();
 
 	if (material.get_animated_effect() > 0) {
 		data_out->anim_timer = material.get_animated_effect_time();
