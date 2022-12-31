@@ -106,14 +106,13 @@ layout (std140) uniform modelData {
 	bool flag_diffuse;
 	bool flag_glow;
 	bool flag_spec;
+	bool flag_env;
 };
 
 in VertexOutput {
-#ifdef FLAG_ENV_MAP
 	vec3 envReflect;
-#endif
 
-mat3 tangentMatrix;
+	mat3 tangentMatrix;
 
 #ifdef FLAG_FOG
 	float fogDist;
@@ -130,11 +129,9 @@ mat3 tangentMatrix;
 uniform sampler2DArray sBasemap;
 uniform sampler2DArray sGlowmap;
 uniform sampler2DArray sSpecmap;
-
-#ifdef FLAG_ENV_MAP
 uniform samplerCube sEnvmap;
 uniform samplerCube sIrrmap;
-#endif
+
 #ifdef FLAG_NORMAL_MAP
 uniform sampler2DArray sNormalmap;
 #endif
@@ -361,7 +358,7 @@ void main()
 		}
 	}
 
-	#ifdef FLAG_ENV_MAP
+	if (flag_env) {
 		if (flag_light) {
 			// Bit of a hack here, pretend we're doing blinn-phong shading and use a (modified version of) the derivation from
 			// Plausible Blinn-Phong Reflection of Standard Cube MIP-Maps - McGuire et al.
@@ -407,7 +404,7 @@ void main()
 			vec3 diffEnvLighting = kD * baseColor.rgb * diffEnvColor * aoFactors.x;
 			emissiveColor.rgb += (specEnvLighting + diffEnvLighting) * baseColor.a;
 		}
-	#endif
+	}
 
 	if (flag_glow) {
 		vec3 glowColor = texture(sGlowmap, vec3(texCoord, float(sGlowmapIndex))).rgb;

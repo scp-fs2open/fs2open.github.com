@@ -108,6 +108,7 @@ layout (std140) uniform modelData {
 	bool flag_diffuse;
 	bool flag_glow;
 	bool flag_spec;
+	bool flag_env;
 };
 
 #ifdef FLAG_TRANSFORM
@@ -115,10 +116,9 @@ uniform samplerBuffer transform_tex;
 #endif
 
 out VertexOutput {
-#ifdef FLAG_ENV_MAP
 	vec3 envReflect;
-#endif
-mat3 tangentMatrix;
+
+	mat3 tangentMatrix;
 #ifdef FLAG_FOG
 	float fogDist;
 #endif
@@ -201,11 +201,11 @@ void main()
 	vec3 b = cross(normal, t) * vertTangent.w;
 	vertOut.tangentMatrix = mat3(t, b, normal);
 
-	#ifdef FLAG_ENV_MAP
+	if (flag_env) {
 		// Environment mapping reflection vector.
 		vec3 envReflect = reflect(normalize(position.xyz), normal);
 		vertOut.envReflect = vec3(envMatrix * vec4(envReflect, 0.0));
-	#endif
+	}
 	#ifdef FLAG_FOG
 		vertOut.fogDist = clamp((gl_Position.z - fogStart) * 0.75 * fogScale, 0.0, 1.0);
 	#endif

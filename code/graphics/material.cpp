@@ -751,10 +751,6 @@ uint model_material::get_shader_flags() const
 		Shader_flags |= SDR_FLAG_MODEL_FOG;
 	}
 
-	if ((ENVMAP > 0) && !Envmap_override) {
-		Shader_flags |= SDR_FLAG_MODEL_ENV_MAP;
-	}
-
 	if (get_texture_map(TM_NORMAL_TYPE) > 0) {
 		Shader_flags |= SDR_FLAG_MODEL_NORMAL_MAP;
 	}

@@ -177,8 +177,6 @@ static opengl_shader_variant_t GL_shader_variants[] = {
 
 	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_HEIGHT_MAP, "FLAG_HEIGHT_MAP", {}, "Parallax Mapping"},
 
-	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_ENV_MAP, "FLAG_ENV_MAP", {}, "Environment Mapping"},
-
 	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_MISC_MAP, "FLAG_MISC_MAP", {}, "Utility mapping"},
 
 	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_TEAMCOLOR, "FLAG_TEAMCOLOR", {}, "Team Colors"},

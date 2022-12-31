@@ -856,7 +856,7 @@ void opengl_tnl_set_model_material(model_material *material_info)
 		}
 	}
 
-	if ( Current_shader->flags & SDR_FLAG_MODEL_ENV_MAP ) {
+	if ( ENVMAP > 0 ) {
 		Current_shader->program->Uniforms.setTextureUniform("sEnvmap", 3);
 
 		gr_opengl_tcache_set(ENVMAP, TCACHE_TYPE_CUBEMAP, &u_scale, &v_scale, &array_index, 3);
