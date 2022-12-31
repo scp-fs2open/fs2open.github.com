@@ -517,7 +517,7 @@ void model_draw_list::add_buffer_draw(model_material *render_material, indexed_v
 		draw_data.render_material.set_batching(false);
 	}
 
-	draw_data.sdr_flags = draw_data.render_material.get_effective_shader_flags();
+	draw_data.sdr_flags = draw_data.render_material.get_shader_flags();
 
 	draw_data.vert_src = vert_src;
 	draw_data.buffer = buffer;

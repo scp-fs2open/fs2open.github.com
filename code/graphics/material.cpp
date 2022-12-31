@@ -723,11 +723,6 @@ void model_material::reset_alpha_mult() {
 	Alpha_mult = 1.0f;
 }
 
-uint model_material::get_effective_shader_flags() const
-{
-	return get_shader_flags() & ~SDR_FLAG_MODEL_HANDLED_BY_UNIFORM;
-}
-
 uint model_material::get_shader_flags() const
 {
 	uint Shader_flags = 0;
