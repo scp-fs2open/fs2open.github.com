@@ -298,12 +298,6 @@ void obj_move_call_physics(object *objp, float frametime);
 
 // multiplayer object update stuff begins -------------------------------------------
 
-// do client-side pre-interpolation object movement
-void obj_client_pre_interpolate();
-
-// do client-side post-interpolation object movement
-void obj_client_post_interpolate();
-
 // move an observer object in multiplayer
 void obj_observer_move(float frame_time);
 

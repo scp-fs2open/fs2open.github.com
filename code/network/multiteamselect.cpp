@@ -816,8 +816,9 @@ void multi_ts_sync_interface()
 
 void multi_ts_assign_players_all()
 {
-	int idx,team_index,slot_index,found,player_count,original_player_count,shipnum;	
+	int idx,team_index,slot_index,found,player_count,shipnum;	
 	char name_lookup[100];
+	object *objp;	
 	
 	// set all player ship indices to -1
 	for(idx=0;idx<MAX_PLAYERS;idx++){
@@ -830,7 +831,7 @@ void multi_ts_assign_players_all()
 	obj_merge_created_list();		
 
 	// get the # of players currently in the game
-	player_count = original_player_count = multi_num_players();
+	player_count = multi_num_players();
 
 	// always assign the host to the wing leader of one of the TVT wings
 	// this is valid for coop games as well because the first starting wing
@@ -866,11 +867,8 @@ void multi_ts_assign_players_all()
 	Netgame.host->m_player->objnum = Ships[shipnum].objnum;						
 
 	// for each netplayer, try and find a ship
-	for (auto so: list_range(&Ship_obj_list)) {
-		auto objp = &Objects[so->objnum];
-		if (objp->flags[Object::Object_Flags::Should_be_dead])
-			continue;
-
+	objp = GET_FIRST(&obj_used_list);
+	while(objp != END_OF_LIST(&obj_used_list)){
 		// find a valid player ship - ignoring the ship which was assigned to the host
 		if((objp->flags[Object::Object_Flags::Player_ship]) && stricmp(Ships[objp->instance].ship_name,name_lookup) != 0){
 			// determine what team and slot this ship is				
@@ -919,24 +917,18 @@ void multi_ts_assign_players_all()
 			if(player_count <= 0){
 				break;
 			}
-		}
+		}		
+		
+		// move to the next item
+		objp = GET_NEXT(objp);		
 	}	
 	
-	// go through and change any surplus ships marked as player ships to be COULD_BE_PLAYER
-	if (player_count <= 0) {
-		player_count = original_player_count;
-		for (auto so: list_range(&Ship_obj_list)) {
-			auto objp = &Objects[so->objnum];
-			if (objp->flags[Object::Object_Flags::Should_be_dead])
-				continue;
-
+	// go through and change any ships marked as player ships to be COULD_BE_PLAYER
+	if ( objp != END_OF_LIST(&obj_used_list) ) {
+		for ( objp = GET_NEXT(objp); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
 			if ( objp->flags[Object::Object_Flags::Player_ship] ){
-				if (player_count > 0) {
-					player_count--;
-				} else {
-	                objp->flags.remove(Object::Object_Flags::Player_ship);
-					obj_set_flags( objp, objp->flags + Object::Object_Flags::Could_be_player);
-				}
+                objp->flags.remove(Object::Object_Flags::Player_ship);
+				obj_set_flags( objp, objp->flags + Object::Object_Flags::Could_be_player);
 			}
 		}
 	}	
