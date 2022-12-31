@@ -490,9 +490,9 @@ void cf_build_pack_list( cf_root *root )
 	int i;
 
 #ifdef _WIN32
-	const char *filter = "*.vp";
+	const SCP_vector<SCP_string> filters = { "*.vpc", "*.vp" };
 #else
-	const char *filter = "*.[vV][pP]";
+	const SCP_vector<SCP_string> filters = { "*.[vV][pP][cC]", "*.[vV][pP]" };
 #endif
 
 	// now just setup all the root info
@@ -513,7 +513,11 @@ void cf_build_pack_list( cf_root *root )
 
 		SCP_vector<_file_list_t> files;
 
-		if ( !cf_get_list_of_files(filespec, files, filter) ) {
+		for (auto &filter : filters) {
+			cf_get_list_of_files(filespec, files, filter.c_str());
+		}
+
+		if (files.empty()) {
 			continue;
 		}
 
