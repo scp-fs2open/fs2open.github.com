@@ -214,29 +214,8 @@ enum shader_type {
 
 
 // Shader flags
-#define SDR_FLAG_MODEL_UNUSED0		(1<<0)
-#define SDR_FLAG_MODEL_UNUSED1		(1<<1)
-#define SDR_FLAG_MODEL_UNUSED2		(1<<2)
-#define SDR_FLAG_MODEL_UNUSED3		(1<<3)
-#define SDR_FLAG_MODEL_UNUSED4		(1<<4)
-#define SDR_FLAG_MODEL_UNUSED5		(1<<5)
-#define SDR_FLAG_MODEL_UNUSED6		(1<<6)
-#define SDR_FLAG_MODEL_UNUSED7		(1<<7)
-#define SDR_FLAG_MODEL_UNUSED8		(1<<8)
-#define SDR_FLAG_MODEL_UNUSED9		(1<<9)
-#define SDR_FLAG_MODEL_UNUSED10		(1<<10)
-#define SDR_FLAG_MODEL_UNUSED11		(1<<11)
-#define SDR_FLAG_MODEL_UNUSED12		(1<<12)
 #define SDR_FLAG_MODEL_SHADOW_MAP	(1<<13)
-#define SDR_FLAG_MODEL_UNUSED14		(1<<14)
-#define SDR_FLAG_MODEL_UNUSED15		(1<<15)
-#define SDR_FLAG_MODEL_THRUSTER		(1<<16)
-#define SDR_FLAG_MODEL_UNUSED17		(1<<17)
-#define SDR_FLAG_MODEL_UNUSED18		(1<<18)
-#define SDR_FLAG_MODEL_UNUSED19		(1<<19)
-#define SDR_FLAG_MODEL_UNUSED20		(1<<20)
 #define SDR_FLAG_MODEL_THICK_OUTLINES (1<<21) // Renders the model geometry as an outline with configurable line width
-#define SDR_FLAG_MODEL_ALPHA_MULT (1<<22) 
 
 #define SDR_FLAG_PARTICLE_POINT_GEN			(1<<0)
 
