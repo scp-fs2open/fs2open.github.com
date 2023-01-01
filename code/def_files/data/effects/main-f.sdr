@@ -111,16 +111,13 @@ layout (std140) uniform modelData {
 	bool flag_ambient;
 	bool flag_misc;
 	bool flag_teamcolor;
+	bool flag_fog;
 };
 
 in VertexOutput {
 	vec3 envReflect;
-
 	mat3 tangentMatrix;
-
-#ifdef FLAG_FOG
 	float fogDist;
-#endif
 	vec4 position;
 	vec3 normal;
 	vec4 texCoord;
@@ -417,7 +414,7 @@ void main()
 		emissiveColor.rgb += glowColor * GLOW_MAP_INTENSITY;
 	}
 
-	#ifdef FLAG_FOG
+	if (flag_fog) {
 		vec3 finalFogColor = fogColor.rgb;
 		if (flag_hdr) {
 			finalFogColor = srgb_to_linear(finalFogColor);
@@ -430,7 +427,7 @@ void main()
 		baseColor.rgb = mix(emissiveColor.rgb + baseColor.rgb, finalFogColor, vertIn.fogDist);
 		emissiveColor.rgb = vec3(0.0); // Zero the emissive color since it has already been added by the previous line
 		specColor.rgb *= vertIn.fogDist;
-	#endif
+	}
 
 	if (flag_diffuse) {
 		if(desaturate == 1) {

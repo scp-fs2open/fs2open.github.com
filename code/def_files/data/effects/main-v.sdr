@@ -113,6 +113,7 @@ layout (std140) uniform modelData {
 	bool flag_ambient;
 	bool flag_misc;
 	bool flag_teamcolor;
+	bool flag_fog;
 };
 
 #ifdef FLAG_TRANSFORM
@@ -121,11 +122,8 @@ uniform samplerBuffer transform_tex;
 
 out VertexOutput {
 	vec3 envReflect;
-
 	mat3 tangentMatrix;
-#ifdef FLAG_FOG
 	float fogDist;
-#endif
 #ifdef FLAG_SHADOW_MAP
  #if !defined(GL_ARB_gpu_shader5)
 	float instance;
@@ -210,9 +208,9 @@ void main()
 		vec3 envReflect = reflect(normalize(position.xyz), normal);
 		vertOut.envReflect = vec3(envMatrix * vec4(envReflect, 0.0));
 	}
-	#ifdef FLAG_FOG
+	if (flag_fog) {
 		vertOut.fogDist = clamp((gl_Position.z - fogStart) * 0.75 * fogScale, 0.0, 1.0);
-	#endif
+	}
 	#ifdef FLAG_TRANSFORM
 		if (clipModel) {
 			// Clip this model by moving all vertices outside the clip volume

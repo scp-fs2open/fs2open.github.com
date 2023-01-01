@@ -747,10 +747,6 @@ uint model_material::get_shader_flags() const
 		return Shader_flags;
 	}
 
-	if (is_fogged()) {
-		Shader_flags |= SDR_FLAG_MODEL_FOG;
-	}
-
 	if (lighting) {
 		if (Shadow_receiving && !Shadow_override) {
 			Shader_flags |= SDR_FLAG_MODEL_SHADOWS;

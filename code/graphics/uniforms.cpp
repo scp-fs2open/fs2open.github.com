@@ -63,6 +63,7 @@ void convert_model_material(model_uniform_data* data_out,
 	data_out->flag_ambient = material.get_texture_map(TM_AMBIENT_TYPE) > 0;
 	data_out->flag_misc = material.get_texture_map(TM_MISC_TYPE) > 0;
 	data_out->flag_teamcolor = material.get_texture_map(TM_MISC_TYPE) > 0 && material.is_team_color_set();
+	data_out->flag_fog = material.is_fogged();
 
 	if (material.get_animated_effect() > 0) {
 		data_out->anim_timer = material.get_animated_effect_time();
@@ -226,7 +227,7 @@ void convert_model_material(model_uniform_data* data_out,
 	}
 
 
-	if (shader_flags & SDR_FLAG_MODEL_FOG) {
+	if (material.is_fogged()) {
 		auto& fog_params = material.get_fog();
 
 		if (fog_params.enabled) {

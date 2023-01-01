@@ -161,6 +161,7 @@ struct model_uniform_data {
 	int flag_ambient;
 	int flag_misc;
 	int flag_teamcolor;
+	int flag_fog;
 };
 
 enum class NanoVGShaderType: int32_t {

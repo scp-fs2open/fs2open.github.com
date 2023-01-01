@@ -214,7 +214,7 @@ enum shader_type {
 
 // Shader flags
 #define SDR_FLAG_MODEL_UNUSED0		(1<<0)
-#define SDR_FLAG_MODEL_FOG			(1<<1)
+#define SDR_FLAG_MODEL_UNUSED1		(1<<1)
 #define SDR_FLAG_MODEL_UNUSED2		(1<<2)
 #define SDR_FLAG_MODEL_UNUSED3		(1<<3)
 #define SDR_FLAG_MODEL_UNUSED4		(1<<4)

@@ -118,16 +118,14 @@ layout (std140) uniform modelData {
 	bool flag_ambient;
 	bool flag_misc;
 	bool flag_teamcolor;
+	bool flag_fog;
 };
 
 in VertexOutput {
 	vec3 envReflect;
-
 	mat3 tangentMatrix;
-
-#ifdef FLAG_FOG
 	float fogDist;
-#endif
+
 #ifdef FLAG_SHADOW_MAP
  #if !defined(GL_ARB_gpu_shader5)
 	float instance;
@@ -148,12 +146,8 @@ in VertexOutput {
 
 out VertexOutput {
 	vec3 envReflect;
-
-mat3 tangentMatrix;
-
-#ifdef FLAG_FOG
+	mat3 tangentMatrix;
 	float fogDist;
-#endif
 	vec4 position;
 	vec3 normal;
 	vec4 texCoord;
@@ -198,9 +192,9 @@ mat3 tangentMatrix;
 			if (flag_normal) {
 				vertOut.tangentMatrix = vertIn[vert].tangentMatrix;
 			}
-			#ifdef FLAG_FOG
+			if (flag_fog) {
 				vertOut.fogDist = vertIn[vert].fogDist;
-			#endif
+			}
 			#ifdef FLAG_SHADOWS
 				vertOut.shadowUV[0] = vertIn[vert].shadowUV[0];
 				vertOut.shadowUV[1] = vertIn[vert].shadowUV[1];
@@ -252,9 +246,9 @@ mat3 tangentMatrix;
 				if (flag_normal) {
 					vertOut.tangentMatrix = vertIn[vert].tangentMatrix;
 				}
-				#ifdef FLAG_FOG
+				if (flag_fog) {
 					vertOut.fogDist = vertIn[vert].fogDist;
-				#endif
+				}
 				#ifdef FLAG_SHADOWS
 					vertOut.shadowUV[0] = vertIn[vert].shadowUV[0];
 					vertOut.shadowUV[1] = vertIn[vert].shadowUV[1];
