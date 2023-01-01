@@ -525,6 +525,9 @@ int popup_init(popup_info *pi, int flags)
 			}
 			button.addValue("Positivity", luacpp::LuaValue::createValue(Script_system.GetLuaSession(), positivity));
 			button.addValue("Text", luacpp::LuaValue::createValue(Script_system.GetLuaSession(), pi->button_text[cnt]));
+			//FSO currently uses the ASCII keycode for these shortcuts, so just convert that back to the key, package it, and send it to Lua
+			SCP_string thisKey(1, (char)pi->keypress[cnt]);
+			button.addValue("Shortcut", luacpp::LuaValue::createValue(Script_system.GetLuaSession(), thisKey.c_str()));
 			buttons.addValue(cnt + 1, button);
 		}
 
