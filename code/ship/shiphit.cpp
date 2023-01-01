@@ -1873,6 +1873,7 @@ void ship_hit_kill(object *ship_objp, object *other_obj, vec3d *hitpos, float pe
 
 			sig = sp->damage_ship_id[killer_index];
 			for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
+				// don't skip should-be-dead objects here
 				if ( objp->signature == sig ){
 					break;
 				}

@@ -328,7 +328,6 @@ void mission_hotkey_set_defaults()
 	int		i,j;
 	wing		*wp;
 	ship		*sp;
-	object	*A;
 
 	for ( i = 0; i < MAX_KEYED_TARGETS; i++ ) {
 		hud_target_hotkey_clear(i);
@@ -348,9 +347,11 @@ void mission_hotkey_set_defaults()
 
 	// Check for ships with a hotkey assigned
 	obj_merge_created_list();
-	for ( A = GET_FIRST(&obj_used_list); A !=END_OF_LIST(&obj_used_list); A = GET_NEXT(A) ) {
-
-		if ( (A == &obj_used_list) || (A->type != OBJ_SHIP) || ((Game_mode & GM_NORMAL) && (A == Player_obj)) ) {
+	for (auto so: list_range(&Ship_obj_list)) {
+		auto A = &Objects[so->objnum];
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+		if ( (A->type != OBJ_SHIP) || ((Game_mode & GM_NORMAL) && (A == Player_obj)) ) {
 			continue;
 		}
 
@@ -478,6 +479,8 @@ void mission_hotkey_validate()
 			// ensure this object is still valid and in the obj_used_list
 			obj_valid = FALSE;
 			for ( A = GET_FIRST(&obj_used_list); A !=END_OF_LIST(&obj_used_list); A = GET_NEXT(A) ) {
+				if (A->flags[Object::Object_Flags::Should_be_dead])
+					continue;
 				if ( A->signature == hitem->objp->signature ) {
 					obj_valid = TRUE;
 					break;

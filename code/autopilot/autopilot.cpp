@@ -208,8 +208,9 @@ bool StartAutopilot()
 {
 	// Check for support ship and dismiss it if it is not doing anything.
 	// If the support ship is doing something then tell the user such.
-	for ( object *objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) )
+	for (auto so: list_range(&Ship_obj_list))
 	{
+		auto objp = &Objects[so->objnum];
 		if ((objp->type == OBJ_SHIP) && !(objp->flags[Object::Object_Flags::Should_be_dead]))
 		{
 			Assertion((objp->instance >= 0) && (objp->instance < MAX_SHIPS),

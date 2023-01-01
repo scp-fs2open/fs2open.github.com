@@ -1177,6 +1177,9 @@ void hud_target_common(int team_mask, int next_flag)
 	start2 = advance_fb(start, next_flag);
 
 	for ( A = start2; A != start; A = advance_fb(A, next_flag) ) {
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		is_ship = 0;
 
 		if (A == &obj_used_list)
@@ -1608,6 +1611,9 @@ void hud_target_uninspected_cargo(int next_flag)
 	start2 = advance_fb(start, next_flag);
 
 	for ( A = start2; A != start; A = advance_fb(A, next_flag) ) {
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		if ( A == &obj_used_list ) {
 			continue;
 		}
@@ -2466,6 +2472,9 @@ void hud_target_in_reticle_new()
 	mc.model_instance_num = -1;
 	mc.model_num = 0;
 	for ( A = GET_FIRST(&obj_used_list); A !=END_OF_LIST(&obj_used_list); A = GET_NEXT(A) ) {
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		if ( !object_targetable_in_reticle(A) ) {
 			continue;
 		}
@@ -2572,6 +2581,9 @@ void hud_target_in_reticle_old()
 	vec3d	vec_to_target;
 
 	for ( A = GET_FIRST(&obj_used_list); A !=END_OF_LIST(&obj_used_list); A = GET_NEXT(A) ) {
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		if ( !object_targetable_in_reticle(A) ) {
 			continue;
 		}

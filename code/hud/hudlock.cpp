@@ -918,6 +918,9 @@ void hud_lock_acquire_uncaged_target_weapon(lock_info* current_lock, weapon_info
 	bool actively_locking = false;
 
 	for (A = GET_FIRST(&obj_used_list); A != END_OF_LIST(&obj_used_list); A = GET_NEXT(A)) {
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		if (!weapon_multilock_can_lock_on_target(Player_obj, A, wip, &dot, true))
 			continue;
 

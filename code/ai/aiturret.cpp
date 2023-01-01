@@ -863,9 +863,10 @@ int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subs
 			int n_w_classes = (int)tt->weapon_class.size();
 			
 			bool found_something;
-			object *ptr = GET_FIRST(&obj_used_list);
-			
-			while (ptr != END_OF_LIST(&obj_used_list)) {
+			for (auto ptr: list_range(&obj_used_list)) {
+				if (ptr->flags[Object::Object_Flags::Should_be_dead])
+					continue;
+
 				found_something = false;
 
 				if(tt->obj_type > -1 && (ptr->type == tt->obj_type)) {
@@ -916,15 +917,10 @@ int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subs
 				if(!(found_something)) {
 					//we didnt find this object within this priority group
 					//skip to next without evaluating the object as target
-					ptr = GET_NEXT(ptr);
-
 					continue;
 				}
 
-
 				evaluate_obj_as_target(ptr, &eeo);
-
-				ptr = GET_NEXT(ptr);
 			}
 
 			//homing weapon entry...
