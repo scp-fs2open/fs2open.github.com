@@ -739,10 +739,6 @@ uint model_material::get_shader_flags() const
 		return Shader_flags;
 	}
 
-	if (Thrust_scale > 0.0f) {
-		Shader_flags |= SDR_FLAG_MODEL_THRUSTER;
-	}
-
 	if (uses_thick_outlines()) {
 		Shader_flags |= SDR_FLAG_MODEL_THICK_OUTLINES;
 	}

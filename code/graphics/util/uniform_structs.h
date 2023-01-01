@@ -165,6 +165,7 @@ struct model_uniform_data {
 	int flag_transform;
 	int flag_clip;
 	int flag_shadows;
+	int flag_thruster;
 };
 
 enum class NanoVGShaderType: int32_t {

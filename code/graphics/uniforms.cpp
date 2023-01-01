@@ -67,6 +67,7 @@ void convert_model_material(model_uniform_data* data_out,
 	data_out->flag_transform = material.is_batched();
 	data_out->flag_clip = material.is_clipped();
 	data_out->flag_shadows = material.is_shadow_receiving();
+	data_out->flag_thruster = material.get_thrust_scale() > 0.0f;
 
 	if (material.get_animated_effect() > 0) {
 		data_out->anim_timer = material.get_animated_effect_time();
@@ -223,7 +224,7 @@ void convert_model_material(model_uniform_data* data_out,
 		data_out->team_glow_enabled = bm_has_alpha_channel(material.get_texture_map(TM_MISC_TYPE)) ? 1 : 0;
 	}
 
-	if (shader_flags & SDR_FLAG_MODEL_THRUSTER) {
+	if (material.get_thrust_scale() > 0.0f) {
 		data_out->thruster_scale = material.get_thrust_scale();
 	}
 

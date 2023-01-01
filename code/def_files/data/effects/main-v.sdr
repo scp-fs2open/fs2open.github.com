@@ -117,6 +117,7 @@ layout (std140) uniform modelData {
 	bool flag_transform;
 	bool flag_clip;
 	bool flag_shadows;
+	bool flag_thruster;
 };
 
 uniform samplerBuffer transform_tex;
@@ -166,11 +167,11 @@ void main()
 	}
 	texCoord = textureMatrix * vertTexCoord;
 	vec4 vertex = vertPosition;
-	#ifdef FLAG_THRUSTER
+	if (flag_thruster) {
 		if(vertex.z < -1.5) {
 			vertex.z *= thruster_scale;
 		}
-	#endif
+	}
 	// Transform the normal into eye space and normalize the result.
 	normal = normalize(mat3(modelViewMatrix) * mat3(orient) * vertNormal);
 	position = modelViewMatrix * orient * vertex;
