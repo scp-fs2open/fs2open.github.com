@@ -1002,9 +1002,9 @@ namespace joystick
 		else
 		{
 			// Fall back to the legacy config values
-			for (short i = CID_JOY0; i < CID_JOY_MAX; ++i)
+			for (auto& stick : joysticks)
 			{
-				for (auto& stick : joysticks)
+				for (short i = CID_JOY0; i < CID_JOY_MAX; ++i)
 				{
 					if (isPlayerJoystick(stick.get(), i))
 					{
