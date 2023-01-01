@@ -743,10 +743,6 @@ uint model_material::get_shader_flags() const
 		Shader_flags |= SDR_FLAG_MODEL_THICK_OUTLINES;
 	}
 
-	if (is_alpha_mult_active()) {
-		Shader_flags |= SDR_FLAG_MODEL_ALPHA_MULT;
-	}
-
 	return Shader_flags;
 }
 

@@ -68,6 +68,7 @@ void convert_model_material(model_uniform_data* data_out,
 	data_out->flag_clip = material.is_clipped();
 	data_out->flag_shadows = material.is_shadow_receiving();
 	data_out->flag_thruster = material.get_thrust_scale() > 0.0f;
+	data_out->flag_alpha_mult = material.is_alpha_mult_active();
 
 	if (material.get_animated_effect() > 0) {
 		data_out->anim_timer = material.get_animated_effect_time();
@@ -246,7 +247,7 @@ void convert_model_material(model_uniform_data* data_out,
 		data_out->outlineWidth = material.get_outline_thickness();
 	}
 
-	if (shader_flags & SDR_FLAG_MODEL_ALPHA_MULT) {
+	if (material.is_alpha_mult_active()) {
 		data_out->alphaMult = material.get_alpha_mult();
 	}
 }
