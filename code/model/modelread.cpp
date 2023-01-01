@@ -3157,17 +3157,9 @@ void model_load_texture(polymodel *pm, int i, char *file)
 	// -------------------------------------------------------------------------
 
 	// See if we need to compile a new shader for this material
-	int shader_flags = 0;
-
 	gr_maybe_create_shader(SDR_TYPE_MODEL, SDR_FLAG_MODEL_SHADOW_MAP);
+	gr_maybe_create_shader(SDR_TYPE_MODEL, 0);
 
-	shader_flags |= SDR_FLAG_MODEL_CLIP;
-
-	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags);
-
-	shader_flags |= SDR_FLAG_MODEL_TRANSFORM;
-
-	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags);
 }
 
 //returns the number of the pof tech model if specified, otherwise number of pof model

@@ -64,27 +64,27 @@ void convert_model_material(model_uniform_data* data_out,
 	data_out->flag_misc = material.get_texture_map(TM_MISC_TYPE) > 0;
 	data_out->flag_teamcolor = material.get_texture_map(TM_MISC_TYPE) > 0 && material.is_team_color_set();
 	data_out->flag_fog = material.is_fogged();
+	data_out->flag_transform = material.is_batched();
+	data_out->flag_clip = material.is_clipped();
 
 	if (material.get_animated_effect() > 0) {
 		data_out->anim_timer = material.get_animated_effect_time();
 		data_out->effect_num = material.get_animated_effect();
 	}
 
-	if (shader_flags & SDR_FLAG_MODEL_CLIP) {
-		if (material.is_clipped()) {
-			auto& clip_info = material.get_clip_plane();
+	if (material.is_clipped()) {
+		auto& clip_info = material.get_clip_plane();
 
-			data_out->use_clip_plane = true;
+		data_out->use_clip_plane = true;
 
-			vec4 clip_equation;
-			clip_equation.xyzw.x = clip_info.normal.xyz.x;
-			clip_equation.xyzw.y = clip_info.normal.xyz.y;
-			clip_equation.xyzw.z = clip_info.normal.xyz.z;
-			clip_equation.xyzw.w = -vm_vec_dot(&clip_info.normal, &clip_info.position);
-			data_out->clip_equation = clip_equation;
-		} else {
-			data_out->use_clip_plane = false;
-		}
+		vec4 clip_equation;
+		clip_equation.xyzw.x = clip_info.normal.xyz.x;
+		clip_equation.xyzw.y = clip_info.normal.xyz.y;
+		clip_equation.xyzw.z = clip_info.normal.xyz.z;
+		clip_equation.xyzw.w = -vm_vec_dot(&clip_info.normal, &clip_info.position);
+		data_out->clip_equation = clip_equation;
+	} else {
+		data_out->use_clip_plane = false;
 	}
 
 	if (material.is_lit()) {
@@ -196,7 +196,7 @@ void convert_model_material(model_uniform_data* data_out,
 		}
 	}
 
-	if (shader_flags & SDR_FLAG_MODEL_TRANSFORM) {
+	if (material.is_batched()) {
 		data_out->buffer_matrix_offset = (int) transform_buffer_offset;
 	}
 

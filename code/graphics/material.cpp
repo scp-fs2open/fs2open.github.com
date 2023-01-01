@@ -732,14 +732,6 @@ uint model_material::get_shader_flags() const
 {
 	uint Shader_flags = 0;
 
-	if (is_clipped()) {
-		Shader_flags |= SDR_FLAG_MODEL_CLIP;
-	}
-
-	if (is_batched()) {
-		Shader_flags |= SDR_FLAG_MODEL_TRANSFORM;
-	}
-
 	if (Shadow_casting) {
 		// if we're building the shadow map, we likely only need the flags here and above so bail
 		Shader_flags |= SDR_FLAG_MODEL_SHADOW_MAP;

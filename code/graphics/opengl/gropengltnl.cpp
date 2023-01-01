@@ -827,7 +827,7 @@ void opengl_tnl_set_model_material(model_material *material_info)
 
 	GL_state.Texture.SetShaderMode(GL_TRUE);
 
-	if (Current_shader->flags & SDR_FLAG_MODEL_CLIP) {
+	if (material_info->is_clipped()) {
 		GL_state.ClipDistance(0, true);
 	} else {
 		GL_state.ClipDistance(0, false);
@@ -908,7 +908,7 @@ void opengl_tnl_set_model_material(model_material *material_info)
 		}
 	}
 
-	if ( Current_shader->flags & SDR_FLAG_MODEL_TRANSFORM ) {
+	if ( material_info->is_batched() ) {
 		Current_shader->program->Uniforms.setTextureUniform("transform_tex", 10);
 		GL_state.Texture.Enable(10, GL_TEXTURE_BUFFER, opengl_get_transform_buffer_texture());
 	}

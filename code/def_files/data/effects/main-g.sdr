@@ -119,6 +119,8 @@ layout (std140) uniform modelData {
 	bool flag_misc;
 	bool flag_teamcolor;
 	bool flag_fog;
+	bool flag_transform;
+	bool flag_clip;
 };
 
 in VertexOutput {
@@ -130,9 +132,7 @@ in VertexOutput {
  #if !defined(GL_ARB_gpu_shader5)
 	float instance;
  #endif
- #ifdef FLAG_TRANSFORM
 	float clipModel;
- #endif
 #else
 	vec4 position;
 #endif
@@ -167,16 +167,16 @@ out VertexOutput {
 		#endif
 		for(int vert = 0; vert < gl_in.length(); vert++)
 		{
-			#ifdef FLAG_TRANSFORM
+			if (flag_transform) {
 				if (vertIn[vert].clipModel > 0.9) {
 					// If the model was clipped in the vertex shader then we do not apply the shadow projection matrix here
 					gl_Position = gl_in[vert].gl_Position;
 				} else {
 					gl_Position = shadow_proj_matrix[instanceID] * gl_in[vert].gl_Position;
 				}
-			#else
+			} else {
 				gl_Position = shadow_proj_matrix[instanceID] * gl_in[vert].gl_Position;
-			#endif
+			}
 			if(gl_Position.z < -1.0)
 			gl_Position.z = -1.0;
 
@@ -202,9 +202,9 @@ out VertexOutput {
 				vertOut.shadowUV[3] = vertIn[vert].shadowUV[3];
 				vertOut.shadowPos = vertIn[vert].shadowPos;
 			#endif
-			#if defined(FLAG_CLIP)
+			if (flag_clip) {
 				gl_ClipDistance[0] = gl_in[vert].gl_ClipDistance[0];
-			#endif
+			}
 			EmitVertex();
 		}
 		EndPrimitive();
@@ -256,9 +256,9 @@ out VertexOutput {
 					vertOut.shadowUV[3] = vertIn[vert].shadowUV[3];
 					vertOut.shadowPos = vertIn[vert].shadowPos;
 				#endif
-				#if defined(FLAG_CLIP)
+				if (flag_clip) {
 					gl_ClipDistance[0] = gl_in[vert].gl_ClipDistance[0];
-				#endif
+				}
 				EmitVertex();
 			}
 

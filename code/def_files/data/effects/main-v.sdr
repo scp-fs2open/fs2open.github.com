@@ -114,11 +114,11 @@ layout (std140) uniform modelData {
 	bool flag_misc;
 	bool flag_teamcolor;
 	bool flag_fog;
+	bool flag_transform;
+	bool flag_clip;
 };
 
-#ifdef FLAG_TRANSFORM
 uniform samplerBuffer transform_tex;
-#endif
 
 out VertexOutput {
 	vec3 envReflect;
@@ -128,11 +128,9 @@ out VertexOutput {
  #if !defined(GL_ARB_gpu_shader5)
 	float instance;
  #endif
- #ifdef FLAG_TRANSFORM
 	// This flag is needed to let the geometry shader know that it doesn't need to apply the
 	// shadow projection to gl_Position
 	float clipModel;
- #endif
 #else
 	vec4 position;
 #endif
@@ -144,7 +142,6 @@ out VertexOutput {
 #endif
 } vertOut;
 
-#ifdef FLAG_TRANSFORM
 #define TEXELS_PER_MATRIX 4
 void getModelTransform(inout mat4 transform, out bool invisible, int id, int matrix_offset)
 {
@@ -155,7 +152,7 @@ void getModelTransform(inout mat4 transform, out bool invisible, int id, int mat
 	invisible = transform[3].w >= 0.9;
 	transform[3].w = 1.0;
 }
-#endif
+
 void main()
 {
 	vec4 position;
@@ -163,10 +160,11 @@ void main()
 	vec4 texCoord;
 	mat4 orient = mat4(1.0);
 	mat4 scale = mat4(1.0);
-	#ifdef FLAG_TRANSFORM
-		bool clipModel;
+	bool clipModel = false;
+	
+	if (flag_transform) {
 		getModelTransform(orient, clipModel, int(vertModelID), buffer_matrix_offset);
-	#endif
+	}
 	texCoord = textureMatrix * vertTexCoord;
 	vec4 vertex = vertPosition;
 	#ifdef FLAG_THRUSTER
@@ -211,7 +209,7 @@ void main()
 	if (flag_fog) {
 		vertOut.fogDist = clamp((gl_Position.z - fogStart) * 0.75 * fogScale, 0.0, 1.0);
 	}
-	#ifdef FLAG_TRANSFORM
+	if (flag_transform) {
 		if (clipModel) {
 			// Clip this model by moving all vertices outside the clip volume
 			gl_Position = vec4(vec3(-2.0), 1.0);
@@ -219,14 +217,14 @@ void main()
 		#ifdef FLAG_SHADOW_MAP
 			vertOut.clipModel = clipModel ? 1.0 : 0.0;
 		#endif
-	#endif
-	#ifdef FLAG_CLIP
+	}
+	if (flag_clip) {
 		if(use_clip_plane) {
 			gl_ClipDistance[0] = dot(clip_equation, modelMatrix * orient * vertex);
 		} else {
 			gl_ClipDistance[0] = 1.0;
 		}
-	#endif
+	}
 	#ifndef FLAG_SHADOW_MAP
 		vertOut.position = position;
 		vertOut.normal = normal;
