@@ -66,6 +66,7 @@ void convert_model_material(model_uniform_data* data_out,
 	data_out->flag_fog = material.is_fogged();
 	data_out->flag_transform = material.is_batched();
 	data_out->flag_clip = material.is_clipped();
+	data_out->flag_shadows = material.is_shadow_receiving();
 
 	if (material.get_animated_effect() > 0) {
 		data_out->anim_timer = material.get_animated_effect_time();
@@ -177,7 +178,7 @@ void convert_model_material(model_uniform_data* data_out,
 		data_out->sMiscmapIndex = bm_get_array_index(material.get_texture_map(TM_MISC_TYPE));
 	}
 
-	if (shader_flags & SDR_FLAG_MODEL_SHADOWS) {
+	if (material.is_shadow_receiving()) {
 		data_out->shadow_mv_matrix = Shadow_view_matrix_light;
 
 		for (size_t i = 0; i < MAX_SHADOW_CASCADES; ++i) {

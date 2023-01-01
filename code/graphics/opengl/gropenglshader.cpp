@@ -173,8 +173,6 @@ static opengl_shader_type_t GL_shader_types[] = {
 static opengl_shader_variant_t GL_shader_variants[] = {
 	{SDR_TYPE_MODEL, true, SDR_FLAG_MODEL_SHADOW_MAP, "FLAG_SHADOW_MAP", {}, "Shadow Mapping"},
 
-	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_SHADOWS, "FLAG_SHADOWS", {}, "Shadows"},
-
 	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_THRUSTER, "FLAG_THRUSTER", {}, "Thruster scaling"},
 
 	{SDR_TYPE_MODEL, true, SDR_FLAG_MODEL_THICK_OUTLINES, "FLAG_THICK_OUTLINE", {}, "Thick outlines"},

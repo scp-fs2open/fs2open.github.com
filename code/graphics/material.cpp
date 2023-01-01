@@ -558,7 +558,7 @@ void model_material::set_shadow_receiving(bool enabled) {
 }
 
 bool model_material::is_shadow_receiving() const {
-	return Shadow_receiving;
+	return Shadow_receiving && !Shadow_override;
 }
 
 void model_material::set_light_factor(float factor)
@@ -737,12 +737,6 @@ uint model_material::get_shader_flags() const
 		Shader_flags |= SDR_FLAG_MODEL_SHADOW_MAP;
 
 		return Shader_flags;
-	}
-
-	if (lighting) {
-		if (Shadow_receiving && !Shadow_override) {
-			Shader_flags |= SDR_FLAG_MODEL_SHADOWS;
-		}
 	}
 
 	if (Thrust_scale > 0.0f) {

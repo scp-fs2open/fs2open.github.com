@@ -114,6 +114,7 @@ layout (std140) uniform modelData {
 	bool flag_fog;
 	bool flag_transform;
 	bool flag_clip;
+	bool flag_shadows;
 };
 
 in VertexOutput {
@@ -123,10 +124,8 @@ in VertexOutput {
 	vec4 position;
 	vec3 normal;
 	vec4 texCoord;
-#ifdef FLAG_SHADOWS
 	vec4 shadowUV[4];
 	vec4 shadowPos;
-#endif
 } vertIn;
 
 uniform sampler2DArray sBasemap;
@@ -136,14 +135,9 @@ uniform samplerCube sEnvmap;
 uniform samplerCube sIrrmap;
 uniform sampler2DArray sNormalmap;
 uniform sampler2DArray sAmbientmap;
-
 uniform sampler2D sFramebuffer;
-
 uniform sampler2DArray sMiscmap;
-
-#ifdef FLAG_SHADOWS
 uniform sampler2DArray shadow_map;
-#endif
 
 out vec4 fragOut0;
 out vec4 fragOut1;
@@ -343,9 +337,9 @@ void main()
 	} else {
 		if (flag_light) {
 			float shadow = 1.0;
-			#ifdef FLAG_SHADOWS
+			if (flag_shadows) {
 				shadow = getShadowValue(shadow_map, -vertIn.position.z, vertIn.shadowPos.z, vertIn.shadowUV, fardist, middist, neardist, veryneardist);
-			#endif
+			}
 			baseColor.rgb = CalculateLighting(normal, baseColor.rgb, specColor.rgb, glossData, fresnelFactor, shadow, aoFactors.x);
 		} else {
 			if (flag_spec) {

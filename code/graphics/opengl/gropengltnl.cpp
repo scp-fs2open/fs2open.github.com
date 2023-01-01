@@ -891,7 +891,7 @@ void opengl_tnl_set_model_material(model_material *material_info)
 		gr_opengl_tcache_set(material_info->get_texture_map(TM_MISC_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, 7);
 	}
 
-	if ( Current_shader->flags & SDR_FLAG_MODEL_SHADOWS ) {
+	if ( material_info->is_shadow_receiving() ) {
 		Current_shader->program->Uniforms.setTextureUniform("shadow_map", 8);
 
 		GL_state.Texture.Enable(8, GL_TEXTURE_2D_ARRAY, Shadow_map_texture);

@@ -212,6 +212,7 @@ enum shader_type {
 	NUM_SHADER_TYPES
 };
 
+
 // Shader flags
 #define SDR_FLAG_MODEL_UNUSED0		(1<<0)
 #define SDR_FLAG_MODEL_UNUSED1		(1<<1)
@@ -227,8 +228,8 @@ enum shader_type {
 #define SDR_FLAG_MODEL_UNUSED11		(1<<11)
 #define SDR_FLAG_MODEL_UNUSED12		(1<<12)
 #define SDR_FLAG_MODEL_SHADOW_MAP	(1<<13)
-#define SDR_FLAG_MODEL_GEOMETRY		(1<<14)
-#define SDR_FLAG_MODEL_SHADOWS		(1<<15)
+#define SDR_FLAG_MODEL_UNUSED14		(1<<14)
+#define SDR_FLAG_MODEL_UNUSED15		(1<<15)
 #define SDR_FLAG_MODEL_THRUSTER		(1<<16)
 #define SDR_FLAG_MODEL_UNUSED17		(1<<17)
 #define SDR_FLAG_MODEL_UNUSED18		(1<<18)

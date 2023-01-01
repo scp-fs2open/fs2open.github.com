@@ -116,6 +116,7 @@ layout (std140) uniform modelData {
 	bool flag_fog;
 	bool flag_transform;
 	bool flag_clip;
+	bool flag_shadows;
 };
 
 uniform samplerBuffer transform_tex;
@@ -136,10 +137,8 @@ out VertexOutput {
 #endif
 	vec3 normal;
 	vec4 texCoord;
-#ifdef FLAG_SHADOWS
 	vec4 shadowUV[4];
 	vec4 shadowPos;
-#endif
 } vertOut;
 
 #define TEXELS_PER_MATRIX 4
@@ -187,14 +186,14 @@ void main()
 	#else
 		gl_Position = projMatrix * position;
 	#endif
-	#ifdef FLAG_SHADOWS
+	if (flag_shadows) {
 		vec4 shadowPos = shadow_mv_matrix * modelMatrix * orient * vertPosition;
 		vertOut.shadowPos = shadow_mv_matrix * modelMatrix * orient * vertPosition;
 		vertOut.shadowUV[0] = transformToShadowMap(shadow_proj_matrix[0], 0, shadowPos);
 		vertOut.shadowUV[1] = transformToShadowMap(shadow_proj_matrix[1], 1, shadowPos);
 		vertOut.shadowUV[2] = transformToShadowMap(shadow_proj_matrix[2], 2, shadowPos);
 		vertOut.shadowUV[3] = transformToShadowMap(shadow_proj_matrix[3], 3, shadowPos);
-	#endif
+	}
 
 	// Setup stuff for normal maps and envmaps
 	vec3 t = normalize(mat3(modelViewMatrix) * mat3(orient) * vertTangent.xyz);
