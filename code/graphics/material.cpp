@@ -266,11 +266,6 @@ uint material::get_shader_flags() const
 	return 0;
 }
 
-uint material::get_effective_shader_flags() const
-{
-	return 0;
-}
-
 
 int material::get_shader_handle() const
 {
@@ -773,11 +768,6 @@ uint particle_material::get_shader_flags() const
 	return flags;
 }
 
-uint particle_material::get_effective_shader_flags() const
-{
-	return get_shader_flags();
-}
-
 distortion_material::distortion_material(): 
 material()
 {
@@ -876,11 +866,6 @@ uint decal_material::get_shader_flags() const {
 	}
 
 	return flags;
-}
-
-uint decal_material::get_effective_shader_flags() const
-{
-	return get_shader_flags();
 }
 
 interface_material::interface_material()

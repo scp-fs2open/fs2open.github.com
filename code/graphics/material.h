@@ -94,11 +94,7 @@ public:
 	int get_shader_handle() const;
 
 	// get_shader_flags should return a full set of all flags set for this shader
-	// get_effective_flags should return a subset of the above, including only those flags that
-	// are governed by compile-time flags; this is used to cut down on the number of actual
-	// shaders being generated.
 	virtual uint get_shader_flags() const;
-	virtual uint get_effective_shader_flags() const;
 
 	void set_texture_map(int tex_type, int texture_num);
 	int get_texture_map(int tex_type) const;
@@ -279,7 +275,6 @@ public:
 	bool get_point_sprite_mode();
 
 	uint get_shader_flags() const override;
-	uint get_effective_shader_flags() const override;
 };
 
 class distortion_material: public material
@@ -339,7 +334,6 @@ class decal_material : public material {
 	decal_material();
 
 	uint get_shader_flags() const override;
-	uint get_effective_shader_flags() const override;
 };
 
 class interface_material : public material {
