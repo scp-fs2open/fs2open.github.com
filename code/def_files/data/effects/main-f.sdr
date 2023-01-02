@@ -204,19 +204,24 @@ void main()
 	#endif
 	vec3 eyeDir = vec3(normalize(-vertIn.position).xyz);
 	vec2 texCoord = vertIn.texCoord.xy;
+
+	// setup our baseline values for base, emissive, fresnel, gloss, AO and normal
+	// default specular value is set below, as it depends on the diffuse color
+
 	vec4 baseColor = color;
-	vec4 specColor = vec4(0.0, 0.0, 0.0, 1.0);
 	vec4 emissiveColor = vec4(0.0, 0.0, 0.0, 1.0);
 	float fresnelFactor = 0.0;
 	float glossData = defaultGloss;
 	vec2 aoFactors = vec2(1.0, 1.0);
+	vec3 unitNormal = normalize(vertIn.normal);
+	vec3 normal = unitNormal;
+
 	if (flag_ambient) {
 		// red channel is ambient occlusion factor which only affects ambient lighting.
 		// green is cavity occlusion factor which only affects diffuse and specular lighting.
 		aoFactors = texture(sAmbientmap, vec3(texCoord, float(sAmbientmapIndex))).xy;
 	}
-	vec3 unitNormal = normalize(vertIn.normal);
-	vec3 normal = unitNormal;
+
 	if (flag_normal) {
 	   // Normal map - convert from DXT5nm
 	   vec2 normalSample;
@@ -254,7 +259,16 @@ void main()
 		if(blend_alpha == 1) baseColor.rgb = baseColor.rgb * baseColor.a;
 	}
 
-	specColor = vec4(baseColor.rgb * SPEC_FACTOR_NO_SPEC_MAP, glossData);
+	// Anti-glint "trick" based on Valve's "Advanced VR Rendering" talk at GDC2015:
+	// http://media.steampowered.com/apps/valve/2015/Alex_Vlachos_Advanced_VR_Rendering_GDC2015.pdf Page 43
+	// basically make surfaces rougher if local normals change too fast in screenspace 
+	vec2 normDx = dFdx(unitNormal.xy);
+	vec2 normDy = dFdy(unitNormal.xy);
+	float glossGeo = 1.0f - pow(clamp(max(dot(normDx,normDx), dot(normDy,normDy)),0.0,1.0),0.33);
+	glossData = min(glossData, glossGeo);
+
+	// Now that we have a base color and min gloss value, compute the spec color
+	vec4 specColor = vec4(baseColor.rgb * SPEC_FACTOR_NO_SPEC_MAP, glossData);
 	
 	if (flag_spec) {
 		specColor = texture(sSpecmap, vec3(texCoord, float(sSpecmapIndex)));
@@ -264,16 +278,10 @@ void main()
 			fresnelFactor = 1.0;
 		}
 	}
+
 	baseColor.rgb *= aoFactors.y;
 	specColor.rgb *= aoFactors.y;
 
-	// Anti-glint "trick" based on Valve's "Advanced VR Rendering" talk at GDC2015:
-	// http://media.steampowered.com/apps/valve/2015/Alex_Vlachos_Advanced_VR_Rendering_GDC2015.pdf Page 43
-	// basically make surfaces rougher if local normals change too fast in screenspace 
-	vec2 normDx = dFdx(unitNormal.xy);
-	vec2 normDy = dFdy(unitNormal.xy);
-	float glossGeo = 1.0f - pow(clamp(max(dot(normDx,normDx), dot(normDy,normDy)),0.0,1.0),0.33);
-	glossData = min(glossData, glossGeo);
 	vec4 teamMask = vec4(0.0);
 	vec3 team_color_glow = vec3(0.0);
 
