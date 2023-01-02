@@ -153,12 +153,11 @@ struct model_uniform_data {
 	int flag_teamcolor;
 	int flag_fog;
 	int flag_transform;
-	int flag_clip;
-
 	int flag_shadows;
+
 	int flag_thruster;
 	int flag_alpha_mult;
-	int pad;
+	int pad[2];
 };
 
 const size_t model_uniform_data_size = sizeof(model_uniform_data);

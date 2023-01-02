@@ -104,7 +104,6 @@ layout (std140) uniform modelData {
 	bool flag_teamcolor;
 	bool flag_fog;
 	bool flag_transform;
-	bool flag_clip;
 	bool flag_shadows;
 	bool flag_thruster;
 	bool flag_alpha_mult;
@@ -208,13 +207,13 @@ void main()
 			vertOut.clipModel = clipModel ? 1.0 : 0.0;
 		#endif
 	}
-	if (flag_clip) {
-		if(use_clip_plane) {
-			gl_ClipDistance[0] = dot(clip_equation, modelMatrix * orient * vertex);
-		} else {
-			gl_ClipDistance[0] = 1.0;
-		}
+
+	if(use_clip_plane) {
+		gl_ClipDistance[0] = dot(clip_equation, modelMatrix * orient * vertex);
+	} else {
+		gl_ClipDistance[0] = 1.0;
 	}
+
 	#ifndef FLAG_SHADOW_MAP
 		vertOut.position = position;
 		vertOut.normal = normal;
