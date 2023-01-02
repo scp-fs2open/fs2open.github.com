@@ -293,6 +293,8 @@ SCP_vector<sexp_oper> Operators = {
 	{ "get-secondary-ammo",				OP_GET_SECONDARY_AMMO,					2,	2,			SEXP_INTEGER_OPERATOR,	}, // Karajorma
 	{ "turret-get-primary-ammo",		OP_TURRET_GET_PRIMARY_AMMO,				3,	3,			SEXP_INTEGER_OPERATOR,	},	// DahBlount
 	{ "turret-get-secondary-ammo",		OP_TURRET_GET_SECONDARY_AMMO,			3,	3,			SEXP_INTEGER_OPERATOR,	},	// DahBlount
+	{ "turret-has-primary-weapon",		OP_TURRET_HAS_PRIMARY_WEAPON,			4,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},	// MjnMixael
+	{ "turret-has-secondary-weapon",	OP_TURRET_HAS_SECONDARY_WEAPON,			4,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},	// MjnMixael
 	{ "get-num-countermeasures",		OP_GET_NUM_COUNTERMEASURES,				1,	1,			SEXP_INTEGER_OPERATOR,	}, // Karajorma
 	{ "weapon-energy-pct",				OP_WEAPON_ENERGY_LEFT,					1,	1,			SEXP_INTEGER_OPERATOR,	},
 	{ "afterburner-energy-pct",			OP_AFTERBURNER_LEFT,					1,	1,			SEXP_INTEGER_OPERATOR,	},
@@ -16820,14 +16822,9 @@ int sexp_weapon_fired_delay(int node, int op_num)
 
 int sexp_has_weapon(int node, int op_num)
 {
+	// Get the ship to check
 	ship *shipp;
-	bool is_nan, is_nan_forever;
-	int i;
-	int requested_bank;
-	int weapon_index;
-	int num_weapon_banks = 0;
-	int *weapon_banks = nullptr;
-
+	
 	auto ship_entry = eval_ship(node);
 	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
@@ -16836,8 +16833,28 @@ int sexp_has_weapon(int node, int op_num)
 	node = CDR(node);
 
 	shipp = ship_entry->shipp;
+	ship_subsys *turret = nullptr;
+
+	switch (op_num){
+		case OP_TURRET_HAS_PRIMARY_WEAPON:
+		case OP_TURRET_HAS_SECONDARY_WEAPON:
+			// get the subsystem
+			turret = ship_get_subsys(shipp, CTEXT(node));
+			if (!turret || turret->system_info->type != SUBSYSTEM_TURRET)
+				return SEXP_NAN_FOREVER;
+
+			node = CDR(node);
+			break;
+
+		default:
+			break;
+	}
+
 
 	// Get the bank to check
+	int requested_bank;
+	bool is_nan, is_nan_forever;
+
 	if (!strcmp(CTEXT(node), SEXP_ALL_BANKS_STRING)) {
 		requested_bank = -1;
 	}
@@ -16852,6 +16869,10 @@ int sexp_has_weapon(int node, int op_num)
 	}
 	node = CDR(node);
  
+	// Get the banks of the ship or turret
+	int num_weapon_banks = 0;
+	int* weapon_banks = nullptr;
+
 	switch (op_num) {
 		case OP_HAS_PRIMARY_WEAPON:
 			weapon_banks = shipp->weapons.primary_bank_weapons;
@@ -16863,6 +16884,16 @@ int sexp_has_weapon(int node, int op_num)
 			num_weapon_banks = shipp->weapons.num_secondary_banks;
 			break;
 
+		case OP_TURRET_HAS_PRIMARY_WEAPON:
+			weapon_banks = turret->weapons.primary_bank_weapons;
+			num_weapon_banks = turret->weapons.num_primary_banks;
+			break;
+
+		case OP_TURRET_HAS_SECONDARY_WEAPON:
+			weapon_banks = turret->weapons.secondary_bank_weapons;
+			num_weapon_banks = turret->weapons.num_secondary_banks;
+			break;
+
 		default:
 			Warning(LOCATION, "Unrecognised bank type used in has-x-weapon. Returning false");
 			return SEXP_FALSE;
@@ -16870,13 +16901,15 @@ int sexp_has_weapon(int node, int op_num)
 	
 
 	//loop through the weapons and test them
+	int weapon_index;
+
 	while (node > -1) {
 		weapon_index = weapon_info_lookup(CTEXT(node));
 		Assertion (weapon_index >= 0, "Weapon name %s is unknown.", CTEXT(node));
 
 		// if we're checking every bank
 		if (requested_bank == -1) {
-			for (i = 0; i < num_weapon_banks; i++) {
+			for (int i = 0; i < num_weapon_banks; i++) {
 				if (weapon_index == weapon_banks[i]) {
 					return SEXP_TRUE;
 				}
@@ -27718,6 +27751,8 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			case OP_HAS_PRIMARY_WEAPON:
 			case OP_HAS_SECONDARY_WEAPON:
+			case OP_TURRET_HAS_PRIMARY_WEAPON:
+			case OP_TURRET_HAS_SECONDARY_WEAPON:
 				sexp_val = sexp_has_weapon(node, op_num);
 				break;
 
@@ -28763,6 +28798,8 @@ int query_operator_return_type(int op)
 		case OP_IS_FACING:
 		case OP_HAS_PRIMARY_WEAPON:
 		case OP_HAS_SECONDARY_WEAPON:
+		case OP_TURRET_HAS_PRIMARY_WEAPON:
+		case OP_TURRET_HAS_SECONDARY_WEAPON:
 		case OP_IS_BIT_SET:
 		case OP_IS_NAN:
 		case OP_DIRECTIVE_VALUE:
@@ -31463,6 +31500,17 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_WEAPON_BANK_NUMBER;
 			else 
 				return OPF_WEAPON_NAME;
+
+		case OP_TURRET_HAS_PRIMARY_WEAPON:
+		case OP_TURRET_HAS_SECONDARY_WEAPON:
+			if (argnum == 0)
+				return OPF_SHIP;
+			else if (argnum == 1)
+				return OPF_SUBSYSTEM;
+			else if (argnum == 2)
+				return OPF_WEAPON_BANK_NUMBER;
+			else
+				return OPF_WEAPON_NAME;
 			
 		case OP_DIRECTIVE_VALUE:
 			if (argnum == 0)
@@ -33662,6 +33710,8 @@ int get_category(int op_id)
 		case OP_ARE_SHIP_FLAGS_SET:
 		case OP_TURRET_GET_PRIMARY_AMMO:
 		case OP_TURRET_GET_SECONDARY_AMMO:
+		case OP_TURRET_HAS_PRIMARY_WEAPON:
+		case OP_TURRET_HAS_SECONDARY_WEAPON:
 		case OP_IS_DOCKED:
 		case OP_IS_IN_TURRET_FOV:
 		case OP_GET_HOTKEY:
@@ -34610,6 +34660,8 @@ int get_subcategory(int op_id)
 		case OP_GET_SECONDARY_AMMO:
 		case OP_TURRET_GET_PRIMARY_AMMO:
 		case OP_TURRET_GET_SECONDARY_AMMO:
+		case OP_TURRET_HAS_PRIMARY_WEAPON:
+		case OP_TURRET_HAS_SECONDARY_WEAPON:
 		case OP_GET_NUM_COUNTERMEASURES:
 		case OP_AFTERBURNER_LEFT:
 		case OP_WEAPON_ENERGY_LEFT:
@@ -38484,6 +38536,24 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tReturns true if the secondary weapon bank specified has any of the weapons listed. Takes 3 or more arguments...\r\n\r\n"
 		"\t1:\tShip name\r\n"
 		"\t2:\tWeapon bank number (This is a zero-based index. The first bank is numbered 0.)\r\n"
+		"\tRest:\tWeapon name\r\n"
+	},
+
+	// MjnMixael
+	{ OP_TURRET_HAS_PRIMARY_WEAPON, "turret-has-primary-weapon\r\n"
+		"\tReturns true if the turret specified has any of the weapons listed. Takes 3 or more arguments...\r\n\r\n"
+		"\t1:\tShip name\r\n"
+		"\t2:\tTurret to check\r\n"
+		"\t3:\tTurret bank number (This is a zero-based index. The first bank is numbered 0.)\r\n"
+		"\tRest:\tWeapon name\r\n"
+	},
+
+	// MjnMixael
+	{ OP_TURRET_HAS_SECONDARY_WEAPON, "turret-has-secondary-weapon\r\n"
+		"\tReturns true if the turret specified has any of the weapons listed. Takes 3 or more arguments...\r\n\r\n"
+		"\t1:\tShip name\r\n"
+		"\t2:\tTurret to check\r\n"
+		"\t3:\tTurret bank number (This is a zero-based index. The first bank is numbered 0.)\r\n"
 		"\tRest:\tWeapon name\r\n"
 	},
 
