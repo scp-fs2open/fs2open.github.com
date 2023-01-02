@@ -278,7 +278,8 @@ SCP_vector<sexp_oper> Operators = {
 	{ "is_tagged",						OP_IS_TAGGED,							1,	1,			SEXP_BOOLEAN_OPERATOR,	},
 	{ "has-been-tagged-delay",			OP_HAS_BEEN_TAGGED_DELAY,				2,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},
 	{ "are-ship-flags-set",				OP_ARE_SHIP_FLAGS_SET,					2,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},	// Karajorma
-	{ "are-wing-flags-set",				OP_ARE_WING_FLAGS_SET,					2,	INT_MAX,	SEXP_BOOLEAN_OPERATOR, },	// Goober5000
+	{ "are-wing-flags-set",				OP_ARE_WING_FLAGS_SET,					2,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},	// Goober5000
+	{ "is-ship-emp-active",				OP_IS_SHIP_EMP_ACTIVE,					1,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},	// MjnMixael
 
 	//Shields, Engines and Weapons Sub-Category
 	{ "has-primary-weapon",				OP_HAS_PRIMARY_WEAPON,					3,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},	// Karajorma
@@ -526,8 +527,8 @@ SCP_vector<sexp_oper> Operators = {
 	{ "ship-subsys-ignore_if_dead",		OP_SHIP_SUBSYS_IGNORE_IF_DEAD,			3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// FUBAR
 	{ "awacs-set-radius",				OP_AWACS_SET_RADIUS,					3,	3,			SEXP_ACTION_OPERATOR,	},
 	{ "alter-ship-flag",				OP_ALTER_SHIP_FLAG,						3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma 
-	{ "alter-wing-flag",				OP_ALTER_WING_FLAG,						2,	INT_MAX,	SEXP_ACTION_OPERATOR, },	// Goober5000
-	{ "cancel-future-waves",			OP_CANCEL_FUTURE_WAVES,						1,	INT_MAX,	SEXP_ACTION_OPERATOR,	}, // naomimyselfandi
+	{ "alter-wing-flag",				OP_ALTER_WING_FLAG,						2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "cancel-future-waves",			OP_CANCEL_FUTURE_WAVES,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	}, // naomimyselfandi
 
 	//Cargo Sub-Category
 	{ "transfer-cargo",					OP_TRANSFER_CARGO,						2,	2,			SEXP_ACTION_OPERATOR,	},
@@ -16311,6 +16312,49 @@ int sexp_are_wing_flags_set(int node)
 	return SEXP_TRUE; 
 }
 
+int sexp_is_ship_emp_active(int n)
+{
+	bool is_nan, is_nan_forever;
+	int count, num_known;
+
+	Assert(n >= 0);
+
+	count = 0;
+	num_known = 0;
+
+	while (n != -1) {
+		count++;
+
+		auto ship_entry = eval_ship(n);
+		if (!ship_entry)
+			return SEXP_FALSE;
+		if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+			return SEXP_CANT_EVAL;
+
+		// see if the ship has already exited the mission (either through departure or destruction)
+		if (ship_entry->exited_index >= 0) {
+			return SEXP_KNOWN_FALSE;
+
+		}
+		// ship is in mission
+		else if (ship_entry->shipp) {
+			if (ship_entry->shipp->emp_intensity > 0.0f) {
+				num_known++;
+			}
+		}
+		// ship probably vanished
+		else
+			return SEXP_NAN_FOREVER;
+
+		n = CDR(n);
+	}
+
+	if (count == num_known)
+		return SEXP_TRUE;
+	else
+		return SEXP_FALSE;
+}
+
 void sexp_alter_ship_flag(int node)
 {
 	Object::Object_Flags object_flag = Object::Object_Flags::NUM_VALUES;
@@ -26249,6 +26293,10 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_are_wing_flags_set(node);
 				break;
 
+			case OP_IS_SHIP_EMP_ACTIVE:
+				sexp_val = sexp_is_ship_emp_active(node);
+				break;
+
 			case OP_CAP_SUBSYS_CARGO_KNOWN_DELAY:
 				sexp_val = sexp_cap_subsys_cargo_known_delay(node);
 				break;
@@ -28772,6 +28820,7 @@ int query_operator_return_type(int op)
 		case OP_PLAYER_IS_CHEATING_BASTARD:
 		case OP_ARE_SHIP_FLAGS_SET:
 		case OP_ARE_WING_FLAGS_SET:
+		case OP_IS_SHIP_EMP_ACTIVE:
 		case OP_IS_IN_TURRET_FOV:
 		case OP_IS_LANGUAGE:
 		case OP_USED_CHEAT:
@@ -30676,6 +30725,9 @@ int query_operator_argument_type(int op, int argnum)
 			} else {
 				return OPF_WING_FLAG;
 			}
+
+		case OP_IS_SHIP_EMP_ACTIVE:
+			return OPF_SHIP;
 
 		case OP_CAP_SUBSYS_CARGO_KNOWN_DELAY:
 			if ( argnum == 0 ) {
@@ -33678,6 +33730,7 @@ int get_category(int op_id)
 		case OP_MAP_HAS_DATA_ITEM:
 		case OP_ANGLE_FVEC_TARGET:
 		case OP_ARE_WING_FLAGS_SET:
+		case OP_IS_SHIP_EMP_ACTIVE:
 		case OP_PLAYER_IS_CHEATING_BASTARD:
 		case OP_USED_CHEAT:
 			return OP_CATEGORY_STATUS;
@@ -34596,6 +34649,7 @@ int get_subcategory(int op_id)
 		case OP_NAV_ISLINKED:
 		case OP_ARE_SHIP_FLAGS_SET:
 		case OP_ARE_WING_FLAGS_SET:
+		case OP_IS_SHIP_EMP_ACTIVE:
 			return STATUS_SUBCATEGORY_SHIP_STATUS;
 
 		case OP_SHIELD_RECHARGE_PCT:
@@ -36837,6 +36891,11 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"Takes 2 or more arguments...\r\n"
 		"\t1:\tName of the wing."
 		"\tRest:\tWing flags which might be set for this wing." },
+
+	{ OP_IS_SHIP_EMP_ACTIVE, "Is ship emp active (Boolean operator)\r\n"
+		"\tReturns true if all of the specified ships are currently experiencing EMP effects.\r\n\r\n"
+		"Returns a boolean value if all ships are currently EMP'd.  Takes 1 or more arguments...\r\n"
+		"\tAll:\tName of the ships to check." },
 
 	{ OP_CAP_SUBSYS_CARGO_KNOWN_DELAY, "Is capital ship subsystem cargo known (delay) (Boolean operator)\r\n"
 		"\tReturns true if all of the specified subsystem cargo is known by the player.\r\n"
