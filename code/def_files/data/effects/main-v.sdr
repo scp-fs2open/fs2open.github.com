@@ -94,7 +94,6 @@ layout (std140) uniform modelData {
 	bool flag_light;
 	bool flag_deferred;
 	bool flag_hdr;
-	bool flag_animated;
 	bool flag_diffuse;
 	bool flag_glow;
 	bool flag_spec;

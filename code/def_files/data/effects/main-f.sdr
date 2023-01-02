@@ -93,7 +93,6 @@ layout (std140) uniform modelData {
 	bool flag_light;
 	bool flag_deferred;
 	bool flag_hdr;
-	bool flag_animated;
 	bool flag_diffuse;
 	bool flag_glow;
 	bool flag_spec;
@@ -234,16 +233,15 @@ void main()
 	}
 
 	vec2 distort = vec2(0.0, 0.0);
-	if (flag_animated) {
+
+	if (effect_num >= 0) {
 		distort = vec2(cos(vertIn.position.x*vertIn.position.w*0.005+anim_timer*20.0)*sin(vertIn.position.y*vertIn.position.w*0.005),sin(vertIn.position.x*vertIn.position.w*0.005+anim_timer*20.0)*cos(vertIn.position.y*vertIn.position.w*0.005))*0.03;
 	}
 
 	if (flag_diffuse) {
 		vec2 diffuseTexCoord = texCoord;
-		if (flag_animated) {
-			if (effect_num == 2) {
-				diffuseTexCoord = texCoord + distort*(1.0-anim_timer);
-			}
+		if (effect_num == 2) {
+			diffuseTexCoord = texCoord + distort*(1.0-anim_timer);
 		}
 		baseColor = texture(sBasemap, vec3(diffuseTexCoord, float(sBasemapIndex)));
 
@@ -424,29 +422,27 @@ void main()
 		}
 	}
 	
-	if (flag_animated) {
-		if (effect_num == 0) {
-			float shinefactor = 1.0/(1.0 + pow(abs((fract(abs(texCoord.x))-anim_timer) * 1000.0), 2.0)) * 1000.0;
-			emissiveColor.rgb += vec3(shinefactor);
-			baseColor.a = baseColor.a * clamp(shinefactor * (fract(abs(texCoord.x))-anim_timer) * -10000.0,0.0,1.0);
+	if (effect_num == 0) {
+		float shinefactor = 1.0/(1.0 + pow(abs((fract(abs(texCoord.x))-anim_timer) * 1000.0), 2.0)) * 1000.0;
+		emissiveColor.rgb += vec3(shinefactor);
+		baseColor.a = baseColor.a * clamp(shinefactor * (fract(abs(texCoord.x))-anim_timer) * -10000.0,0.0,1.0);
+	}
+	if (effect_num == 1) {
+		float shinefactor = 1.0/(1.0 + pow(abs(vertIn.position.y-anim_timer), 2.0));
+		emissiveColor.rgb += vec3(shinefactor);
+		if (!flag_light) {
+			// ATI Wireframe fix *grumble*
+			baseColor.a = clamp((vertIn.position.y-anim_timer) * 10000.0,0.0,1.0);
 		}
-		if (effect_num == 1) {
-			float shinefactor = 1.0/(1.0 + pow(abs(vertIn.position.y-anim_timer), 2.0));
-			emissiveColor.rgb += vec3(shinefactor);
-			if (!flag_light) {
-				// ATI Wireframe fix *grumble*
-				baseColor.a = clamp((vertIn.position.y-anim_timer) * 10000.0,0.0,1.0);
-			}
-		}
-		if (effect_num == 2) {
-			vec2 screenPos = gl_FragCoord.xy * vec2(vpwidth,vpheight);
-			baseColor.a = baseColor.a;
-			float cloak_interp = (sin(vertIn.position.x*vertIn.position.w*0.005+anim_timer*20.0)*sin(vertIn.position.y*vertIn.position.w*0.005)*0.5)-0.5;
-			if (flag_light) {
-				baseColor.rgb = mix(texture(sFramebuffer, screenPos + distort*anim_timer + anim_timer*0.1*normal.xy).rgb,baseColor.rgb,clamp(cloak_interp+anim_timer*2.0,0.0,1.0));
-			} else {
-				baseColor.rgb = mix(texture(sFramebuffer, screenPos + distort*anim_timer + anim_timer*0.1*vertIn.normal.xy).rgb,baseColor.rgb,clamp(cloak_interp+anim_timer*2.0,0.0,1.0));
-			}
+	}
+	if (effect_num == 2) {
+		vec2 screenPos = gl_FragCoord.xy * vec2(vpwidth,vpheight);
+		baseColor.a = baseColor.a;
+		float cloak_interp = (sin(vertIn.position.x*vertIn.position.w*0.005+anim_timer*20.0)*sin(vertIn.position.y*vertIn.position.w*0.005)*0.5)-0.5;
+		if (flag_light) {
+			baseColor.rgb = mix(texture(sFramebuffer, screenPos + distort*anim_timer + anim_timer*0.1*normal.xy).rgb,baseColor.rgb,clamp(cloak_interp+anim_timer*2.0,0.0,1.0));
+		} else {
+			baseColor.rgb = mix(texture(sFramebuffer, screenPos + distort*anim_timer + anim_timer*0.1*vertIn.normal.xy).rgb,baseColor.rgb,clamp(cloak_interp+anim_timer*2.0,0.0,1.0));
 		}
 	}
 

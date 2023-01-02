@@ -50,10 +50,12 @@ void convert_model_material(model_uniform_data* data_out,
 	data_out->vpwidth = 1.0f / i2fl(gr_screen.max_w);
 	data_out->vpheight = 1.0f / i2fl(gr_screen.max_h);
 
+	data_out->effect_num = -1;
+	data_out->anim_timer = 0;
+
 	data_out->flag_light = material.is_lit();
 	data_out->flag_deferred = material.is_deferred();
 	data_out->flag_hdr = material.is_hdr();
-	data_out->flag_animated = material.get_animated_effect() > 0;
 	data_out->flag_diffuse = material.get_texture_map(TM_BASE_TYPE) > 0;
 	data_out->flag_glow = material.get_texture_map(TM_GLOW_TYPE) > 0;
 	data_out->flag_spec =
