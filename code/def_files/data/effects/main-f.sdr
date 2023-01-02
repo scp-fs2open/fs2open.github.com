@@ -244,9 +244,9 @@ void main()
 		}
 		baseColor = texture(sBasemap, vec3(diffuseTexCoord, float(sBasemapIndex)));
 
-		#ifdef FLAG_ALPHA_MULT
+		if (flag_alpha_mult) {
 			baseColor.a *= alphaMult;
-		#endif
+		}
 
 		if ( blend_alpha == 0 && baseColor.a < 0.95 ) discard; // if alpha blending is not on, discard transparent pixels
 		// premultiply alpha if blend_alpha is 1. assume that our blend function is srcColor + (1-Alpha)*destColor.
