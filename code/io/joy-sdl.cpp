@@ -998,6 +998,9 @@ namespace joystick
 		{
 			// The new options system is in use
 			setPlayerJoystick(JoystickOption->getValue(), 0);
+			setPlayerJoystick(JoystickOption1->getValue(), 1);
+			setPlayerJoystick(JoystickOption2->getValue(), 2);
+			setPlayerJoystick(JoystickOption3->getValue(), 3);
 		}
 		else
 		{
