@@ -66,8 +66,8 @@ layout (std140) uniform modelData {
 
 	bool gammaSpec;
 	bool envGloss;
-	bool alpha_spec_;
 	int effect_num;
+	int sBasemapIndex;
 
 	vec4 fogColor;
 
@@ -87,8 +87,6 @@ layout (std140) uniform modelData {
 	float middist;
 	float fardist;
 
-	vec2 normalAlphaMinMax_;
-	int sBasemapIndex;
 	int sGlowmapIndex;
 
 	int sSpecmapIndex;

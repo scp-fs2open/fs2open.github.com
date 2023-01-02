@@ -104,13 +104,12 @@ struct model_uniform_data {
 	int blend_alpha;
 
 	vec3d emissionFactor;
-
 	int alphaGloss;
 
 	int gammaSpec;
 	int envGloss;
-	int alpha_spec_; //Unused, to be removed.
 	int effect_num;
+	int sBasemapIndex;  // moved up here to track alignment
 
 	vec4 fogColor;
 
@@ -130,31 +129,31 @@ struct model_uniform_data {
 	float middist;
 	float fardist;
 
-	vec2d normalAlphaMinMax_;
-	int sBasemapIndex;
 	int sGlowmapIndex;
-
 	int sSpecmapIndex;
 	int sNormalmapIndex;
 	int sAmbientmapIndex;
+
 	int sMiscmapIndex;
-
 	float alphaMult;
-
 	int flag_light;
 	int flag_deferred;
+
 	int flag_hdr;
 	int flag_animated;
 	int flag_diffuse;
 	int flag_glow;
+
 	int flag_spec;
 	int flag_env;
 	int flag_normal;
 	int flag_ambient;
+
 	int flag_misc;
 	int flag_teamcolor;
 	int flag_fog;
 	int flag_transform;
+
 	int flag_clip;
 	int flag_shadows;
 	int flag_thruster;
@@ -162,6 +161,7 @@ struct model_uniform_data {
 };
 
 const size_t model_uniform_data_size = sizeof(model_uniform_data);
+const float mud_align = model_uniform_data_size / 16.0f;
 
 enum class NanoVGShaderType: int32_t {
 	FillGradient = 0, FillImage = 1, Simple = 2, Image = 3
