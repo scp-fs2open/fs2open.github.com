@@ -6313,10 +6313,10 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, flagset<Weapon::
  */
 int compute_num_homing_objects(object *target_objp)
 {
-	object	*objp;
 	int		count = 0;
 
-	for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
+	for (auto mop: list_range(&Missile_obj_list)) {
+		auto objp = &Objects[mop->objnum];
 		if (objp->flags[Object::Object_Flags::Should_be_dead])
 			continue;
 
@@ -6370,9 +6370,10 @@ float compute_incoming_payload(object *target_objp)
 	float			payload = 0.0f;
 
 	for ( mo = GET_NEXT(&Missile_obj_list); mo != END_OF_LIST(&Missile_obj_list); mo = GET_NEXT(mo) ) {
-		object	*objp;
+		auto objp = &Objects[mo->objnum];
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 
-		objp = &Objects[mo->objnum];
 		Assert(objp->type == OBJ_WEAPON);
 		if (Weapons[objp->instance].homing_object == target_objp) {
 			payload += Weapon_info[Weapons[objp->instance].weapon_info_index].damage;
@@ -10198,6 +10199,8 @@ int ai_guard_find_nearby_bomb(object *guarding_objp, object *guarded_objp)
 	for ( mo = GET_NEXT(&Missile_obj_list); mo != END_OF_LIST(&Missile_obj_list); mo = GET_NEXT(mo) ) {
 		Assert(mo->objnum >= 0 && mo->objnum < MAX_OBJECTS);
 		bomb_objp = &Objects[mo->objnum];
+		if (bomb_objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 
 		wp = &Weapons[bomb_objp->instance];
 		wip = &Weapon_info[wp->weapon_info_index];
@@ -10283,7 +10286,8 @@ void ai_guard_find_nearby_asteroid(object *guarding_objp, object *guarded_objp)
 	object	*closest_asteroid_objp=NULL, *danger_asteroid_objp=NULL, *asteroid_objp;
 	float		dist_to_self, closest_danger_asteroid_dist=999999.0f, closest_asteroid_dist=999999.0f;
 
-	for ( asteroid_objp = GET_FIRST(&obj_used_list); asteroid_objp != END_OF_LIST(&obj_used_list); asteroid_objp = GET_NEXT(asteroid_objp) ) {
+	for (auto aop: list_range(&Asteroid_obj_list)) {
+		asteroid_objp = &Objects[aop->objnum];
 		if (asteroid_objp->flags[Object::Object_Flags::Should_be_dead])
 			continue;
 
@@ -14162,6 +14166,8 @@ static int ai_find_shockwave_weapon(const object *objp)
 	
 		Assert(mo->objnum >= 0 && mo->objnum < MAX_OBJECTS);
 		A = &Objects[mo->objnum];
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 
 		Assert(A->type == OBJ_WEAPON);
 		Assert((A->instance >= 0) && (A->instance < MAX_WEAPONS));
@@ -14181,7 +14187,6 @@ static int ai_find_shockwave_weapon(const object *objp)
 	}
 
 	return nearest_index;
-
 }
 
 #define	EVADE_SHOCKWAVE_DAMAGE_THRESHOLD		100.0f

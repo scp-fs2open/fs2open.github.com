@@ -12675,6 +12675,9 @@ static bool ship_fire_secondary_detonate(object *obj, ship_weapon *swp)
 				object	*mobjp;
 				Assert(mo->objnum >= 0 && mo->objnum < MAX_OBJECTS);
 				mobjp = &Objects[mo->objnum];
+				if (mobjp->flags[Object::Object_Flags::Should_be_dead])
+					continue;
+
 				if (mobjp->parent_sig == obj->parent_sig && Weapon_info[Weapons[mobjp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Remote]) {
 					// dont detonate if this guy just spawned i.e. we just spawned him in a previous iteration of this loop
 					if (Missiontime - Weapons[mobjp->instance].creation_time > fl2f(0.01)) {
@@ -16159,6 +16162,8 @@ static int ship_has_homing_missile_locked(ship *shipp)
 	for ( mo = GET_NEXT(&Missile_obj_list); mo != END_OF_LIST(&Missile_obj_list); mo = GET_NEXT(mo) ) {
 		Assert(mo->objnum >= 0 && mo->objnum < MAX_OBJECTS);
 		A = &Objects[mo->objnum];
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 
 		if (A->type != OBJ_WEAPON)
 			continue;

@@ -94,9 +94,11 @@ static int count_incident_asteroids(int target_objnum)
 
 	count = 0;
 
-	for (asteroid_objp = GET_FIRST(&obj_used_list); asteroid_objp != END_OF_LIST(&obj_used_list); asteroid_objp = GET_NEXT(asteroid_objp)) {
+	for (auto aop: list_range(&Asteroid_obj_list)) {
+		asteroid_objp = &Objects[aop->objnum];
 		if (asteroid_objp->flags[Object::Object_Flags::Should_be_dead])
 			continue;
+
 		if (asteroid_objp->type == OBJ_ASTEROID) {
 			asteroid* asp = &Asteroids[asteroid_objp->instance];
 
@@ -2527,7 +2529,8 @@ void asteroid_show_brackets()
 		player_target = NULL;
 	}
 
-	for ( asteroid_objp = GET_FIRST(&obj_used_list); asteroid_objp !=END_OF_LIST(&obj_used_list); asteroid_objp = GET_NEXT(asteroid_objp) ) {
+	for (auto aop: list_range(&Asteroid_obj_list)) {
+		asteroid_objp = &Objects[aop->objnum];
 		if (asteroid_objp->flags[Object::Object_Flags::Should_be_dead])
 			continue;
 		if (asteroid_objp->type != OBJ_ASTEROID ) {
@@ -2564,7 +2567,8 @@ void asteroid_target_closest_danger()
 	asteroid	*asp;
 	float		dist, closest_dist = 999999.0f;
 
-	for ( asteroid_objp = GET_FIRST(&obj_used_list); asteroid_objp !=END_OF_LIST(&obj_used_list); asteroid_objp = GET_NEXT(asteroid_objp) ) {
+	for (auto aop: list_range(&Asteroid_obj_list)) {
+		asteroid_objp = &Objects[aop->objnum];
 		if (asteroid_objp->flags[Object::Object_Flags::Should_be_dead])
 			continue;
 		if (asteroid_objp->type != OBJ_ASTEROID ) {

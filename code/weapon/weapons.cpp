@@ -4590,10 +4590,11 @@ void detonate_nearby_missiles(object* killer_objp, object* missile_objp)
 		return;
 	}
 
-	missile_obj* mop = GET_FIRST(&Missile_obj_list);
-
-	while(mop != END_OF_LIST(&Missile_obj_list)) {
+	for (auto mop: list_range(&Missile_obj_list)) {
 		object* objp = &Objects[mop->objnum];
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		weapon* wp = &Weapons[objp->instance];
 
 		if (iff_x_attacks_y(Weapons[killer_objp->instance].team, wp->team)) {
@@ -4609,8 +4610,6 @@ void detonate_nearby_missiles(object* killer_objp, object* missile_objp)
 				}
 			}
 		}
-
-		mop = mop->next;
 	}
 }
 
