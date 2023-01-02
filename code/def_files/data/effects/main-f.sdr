@@ -255,9 +255,6 @@ void main()
 	}
 
 	specColor = vec4(baseColor.rgb * SPEC_FACTOR_NO_SPEC_MAP, glossData);
-	if (flag_hdr) {
-		baseColor.rgb = srgb_to_linear(baseColor.rgb);
-	}
 	
 	if (flag_spec) {
 		specColor = texture(sSpecmap, vec3(texCoord, float(sSpecmapIndex)));
@@ -265,9 +262,6 @@ void main()
 		if(gammaSpec) {
 			specColor.rgb = max(specColor.rgb, vec3(0.03f)); // hardcoded minimum specular value. read John Hable's blog post titled 'Everything Is Shiny'. 
 			fresnelFactor = 1.0;
-		}
-		if (flag_hdr) {
-			specColor.rgb = srgb_to_linear(specColor.rgb);
 		}
 	}
 	baseColor.rgb *= aoFactors.y;
@@ -294,20 +288,10 @@ void main()
 			vec3 team_color = base_color * teamMask.x + stripe_color * teamMask.y + color_offset;
 			team_color_glow = (base_color * teamMask.b) + (stripe_color * teamMask.a);
 
-			if (flag_hdr) {
-				baseColor.rgb = linear_to_srgb(baseColor.rgb);
-				specColor.rgb = linear_to_srgb(specColor.rgb);
-			}
-
 			baseColor.rgb += team_color;					
 			baseColor.rgb = max(baseColor.rgb, vec3(0.0));	// We need to make sure that nothing here ever goes negative
 			specColor.rgb += team_color;
 			specColor.rgb = max(specColor.rgb, vec3(0.03));
-
-			if (flag_hdr) {
-				baseColor.rgb = srgb_to_linear(baseColor.rgb);
-				specColor.rgb = srgb_to_linear(specColor.rgb);
-			}
 		}
 	}
 
@@ -394,17 +378,11 @@ void main()
 				glowColor = team_glow_enabled ? mix(max(team_color_glow, vec3(0.0)), glowColor, clamp(glowColorLuminance - teamMask.b - teamMask.a, 0.0, 1.0)) : glowColor;
 			}
 		}
-		if (flag_hdr) {
-			glowColor = srgb_to_linear(glowColor) * GLOW_MAP_SRGB_MULTIPLIER;
-		}
 		emissiveColor.rgb += glowColor * GLOW_MAP_INTENSITY;
 	}
 
 	if (flag_fog) {
 		vec3 finalFogColor = fogColor.rgb;
-		if (flag_hdr) {
-			finalFogColor = srgb_to_linear(finalFogColor);
-		}
 		if (flag_diffuse) {
 			if(blend_alpha == 1) finalFogColor *= baseColor.a;
 		}
@@ -448,6 +426,12 @@ void main()
 	if (!flag_deferred) {
 		// emissive colors won't be added later when we are using forward rendering so we need to do that here
 		baseColor.rgb += emissiveColor.rgb;
+	}
+
+	if (flag_hdr) {
+		baseColor.rgb = srgb_to_linear(baseColor.rgb);
+		specColor.rgb = srgb_to_linear(specColor.rgb);
+		emissiveColor.rgb = srgb_to_linear(emissiveColor.rgb);
 	}
 
 	fragOut0 = baseColor;
