@@ -104,15 +104,7 @@ struct model_uniform_data {
 	int blend_alpha;
 
 	vec3d emissionFactor;
-	int overrideDiffuse_; //Unused, to be removed.
 
-	vec3d diffuseClr_; //Unused, to be removed.
-	int overrideGlow_; //Unused, to be removed.
-
-	vec3d glowClr_; //Unused, to be removed.
-	int overrideSpec_; //Unused, to be removed.
-
-	vec3d specClr_; //Unused, to be removed.
 	int alphaGloss;
 
 	int gammaSpec;
@@ -168,6 +160,8 @@ struct model_uniform_data {
 	int flag_thruster;
 	int flag_alpha_mult;
 };
+
+const size_t model_uniform_data_size = sizeof(model_uniform_data);
 
 enum class NanoVGShaderType: int32_t {
 	FillGradient = 0, FillImage = 1, Simple = 2, Image = 3

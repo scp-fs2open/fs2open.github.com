@@ -54,15 +54,7 @@ layout (std140) uniform modelData {
 	int blend_alpha;
 
 	vec3 emissionFactor;
-	bool overrideDiffuse_;
 
-	vec3 diffuseClr_;
-	bool overrideGlow_;
-
-	vec3 glowClr_;
-	bool overrideSpec_;
-
-	vec3 specClr_;
 	bool alphaGloss;
 
 	bool gammaSpec;
