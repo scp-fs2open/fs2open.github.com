@@ -16314,7 +16314,6 @@ int sexp_are_wing_flags_set(int node)
 
 int sexp_is_ship_emp_active(int n)
 {
-	bool is_nan, is_nan_forever;
 	int count, num_known;
 
 	Assert(n >= 0);
