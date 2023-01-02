@@ -13,8 +13,11 @@ namespace graphics {
  * @file
  *
  * This file contains definitions for GPU uniform buffer structs. These structs must respect the std140 layout rules.
- * Read the OpenGL specification for the exact layout and padding rules.
+ * The complete rules for this can be found here: https://www.khronos.org/opengl/wiki/Interface_Block_(GLSL)#Explicit_variable_layout,
+ * but the TL;DR here is that everything in here must be 16-byte aligned.
  */
+
+const auto rt = sizeof(GLfloat);
 
 struct deferred_global_data {
 	matrix4 shadow_mv_matrix;
