@@ -1134,6 +1134,9 @@ void ship_info::clone(const ship_info& other)
 	newtonian_damp_override = other.newtonian_damp_override;
 
 	autoaim_fov = other.autoaim_fov;
+	for (int i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++) {
+		bank_autoaim_fov[i] = other.bank_autoaim_fov[i];
+	}
 	autoaim_lock_snd = other.autoaim_lock_snd;
 	autoaim_lost_snd = other.autoaim_lost_snd;
 
@@ -1462,6 +1465,9 @@ void ship_info::move(ship_info&& other)
 	newtonian_damp_override = other.newtonian_damp_override;
 
 	autoaim_fov = other.autoaim_fov;
+	for (int i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++) {
+		bank_autoaim_fov[i] = other.bank_autoaim_fov[i];
+	}
 	autoaim_lock_snd = other.autoaim_lock_snd;
 	autoaim_lost_snd = other.autoaim_lost_snd;
 
@@ -1907,6 +1913,9 @@ ship_info::ship_info()
 	newtonian_damp_override = false;
 
 	autoaim_fov = 0.0f;
+	for (int i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++) {
+		bank_autoaim_fov[i] = 0.0f;
+	}
 	autoaim_lock_snd = gamesnd_id();
 	autoaim_lost_snd = gamesnd_id();
 
@@ -3383,6 +3392,13 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 
 		parse_game_sound("+Autoaim Lock Snd:", &sip->autoaim_lock_snd);
 		parse_game_sound("+Autoaim Lost Snd:", &sip->autoaim_lost_snd);
+	}
+	int bank_fov_count = 0;
+	while (optional_string("+Bank Autoaim FOV:")) {
+		if (bank_fov_count < sip->num_primary_banks) {
+			stuff_float(&sip->bank_autoaim_fov[bank_fov_count]);
+		}else{
+			error_display(1, "Too many bank autoaims defined. Ship only has %i banks!", sip->num_primary_banks);
 	}
 
 	if(optional_string("$Convergence:"))
@@ -6627,6 +6643,9 @@ void ship::clear()
 	team_change_time = 0;
 
 	autoaim_fov = 0.0f;
+	for (int i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++) {
+		bank_autoaim_fov[i] = 0.0f;
+	}
 
 	cockpit_model_instance = -1;
 
@@ -6982,6 +7001,10 @@ static void ship_set(int ship_index, int objnum, int ship_type)
 	shipp->secondary_team_name = "none";
 
 	shipp->autoaim_fov = sip->autoaim_fov;
+
+	for (int i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++) {
+		shipp->bank_autoaim_fov[i] = sip->bank_autoaim_fov[i];
+	}
 
 	shipp->multi_client_collision_timestamp = TIMESTAMP::immediate();
 
@@ -11680,13 +11703,13 @@ bool in_autoaim_fov(ship *shipp, int bank_to_fire, object *obj)
 	weapon_info* winfo_p = &Weapon_info[weapon_idx];
 
 	has_converging_autoaim = ((sip->aiming_flags[Ship::Aiming_Flags::Autoaim_convergence] || (The_mission.ai_profile->player_autoaim_fov[Game_skill_level] > 0.0f && !( Game_mode & GM_MULTIPLAYER ))) && aip->target_objnum != -1);
-	has_autoaim = ((has_converging_autoaim || (sip->aiming_flags[Ship::Aiming_Flags::Autoaim]) || (winfo_p->autoaim_fov > 0.0f)) && aip->target_objnum != -1);
+	has_autoaim = ((has_converging_autoaim || (sip->aiming_flags[Ship::Aiming_Flags::Autoaim]) || (winfo_p->autoaim_fov > 0.0f) || (sip->bank_autoaim_fov[bank_to_fire] > 0.0f)) && aip->target_objnum != -1);
 
 	if (!has_autoaim) {
 		return false;
 	}
 
-	autoaim_fov = std::max({shipp->autoaim_fov, The_mission.ai_profile->player_autoaim_fov[Game_skill_level], winfo_p->autoaim_fov});
+	autoaim_fov = std::max({shipp->autoaim_fov, The_mission.ai_profile->player_autoaim_fov[Game_skill_level], winfo_p->autoaim_fov, sip->bank_autoaim_fov[bank_to_fire]});
 
 	if (aip->targeted_subsys != nullptr) {
 		get_subsystem_world_pos(&Objects[aip->target_objnum], aip->targeted_subsys, &target_position);
@@ -11835,12 +11858,12 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 		// lets start gun convergence / autoaim code from here - Wanderer
 		// in order to do this per weapon, this needs to be moved here from above -Mjn
 		has_converging_autoaim = ((sip->aiming_flags[Ship::Aiming_Flags::Autoaim_convergence] || (The_mission.ai_profile->player_autoaim_fov[Game_skill_level] > 0.0f && !( Game_mode & GM_MULTIPLAYER ))) && aip->target_objnum != -1);
-		has_autoaim = ((has_converging_autoaim || (sip->aiming_flags[Ship::Aiming_Flags::Autoaim]) || (winfo_p->autoaim_fov > 0.0f)) && aip->target_objnum != -1);
+		has_autoaim = ((has_converging_autoaim || (sip->aiming_flags[Ship::Aiming_Flags::Autoaim]) || (winfo_p->autoaim_fov > 0.0f) || (sip->bank_autoaim_fov[bank_to_fire] > 0.0f)) && aip->target_objnum != -1);
 		needs_target_pos = ((has_autoaim || (sip->aiming_flags[Ship::Aiming_Flags::Auto_convergence])) && aip->target_objnum != -1);
 
 		if (needs_target_pos) {
 			if (has_autoaim) {
-				autoaim_fov = std::max({shipp->autoaim_fov, The_mission.ai_profile->player_autoaim_fov[Game_skill_level], winfo_p->autoaim_fov});
+				autoaim_fov = std::max({shipp->autoaim_fov, The_mission.ai_profile->player_autoaim_fov[Game_skill_level], winfo_p->autoaim_fov, sip->bank_autoaim_fov[bank_to_fire]});
 			}
 
 			// If a subsystem is targeted, fire in that direction instead
