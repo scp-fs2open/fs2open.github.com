@@ -3395,10 +3395,12 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	}
 	int bank_fov_count = 0;
 	while (optional_string("+Bank Autoaim FOV:")) {
+
 		if (bank_fov_count < sip->num_primary_banks) {
 			stuff_float(&sip->bank_autoaim_fov[bank_fov_count]);
-		}else{
+		} else {
 			error_display(1, "Too many bank autoaims defined. Ship only has %i banks!", sip->num_primary_banks);
+		}
 	}
 
 	if(optional_string("$Convergence:"))
