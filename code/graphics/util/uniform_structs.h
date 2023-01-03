@@ -137,27 +137,8 @@ struct model_uniform_data {
 
 	int sMiscmapIndex;
 	float alphaMult;
-	int flag_light;
-	int flag_deferred;
-
-	int flag_hdr;
-	int flag_diffuse;
-	int flag_glow;
-	int flag_spec;
-
-	int flag_env;
-	int flag_normal;
-	int flag_ambient;
-	int flag_misc;
-
-	int flag_teamcolor;
-	int flag_fog;
-	int flag_transform;
-	int flag_shadows;
-
-	int flag_thruster;
-	int flag_alpha_mult;
-	int pad[2];
+	int flags;
+	int pad[1];
 };
 
 const size_t model_uniform_data_size = sizeof(model_uniform_data);

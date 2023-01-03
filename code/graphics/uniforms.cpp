@@ -6,6 +6,7 @@
 #include "light.h"
 #include "globalincs/systemvars.h"
 #include "shadows.h"
+#include "def_files/data/effects/model_shader_flags.h"
 
 namespace {
 void scale_matrix(matrix4& mat, const vec3d& scale) {
@@ -54,23 +55,39 @@ void convert_model_material(model_uniform_data* data_out,
 	data_out->anim_timer = 0;
 	data_out->use_clip_plane = 0;
 
-	data_out->flag_light = material.is_lit();
-	data_out->flag_deferred = material.is_deferred();
-	data_out->flag_hdr = material.is_hdr();
-	data_out->flag_diffuse = material.get_texture_map(TM_BASE_TYPE) > 0;
-	data_out->flag_glow = material.get_texture_map(TM_GLOW_TYPE) > 0;
-	data_out->flag_spec =
-		material.get_texture_map(TM_SPECULAR_TYPE) > 0 || material.get_texture_map(TM_SPEC_GLOSS_TYPE) > 0;
-	data_out->flag_env = ENVMAP > 0;
-	data_out->flag_normal = material.get_texture_map(TM_NORMAL_TYPE) > 0;
-	data_out->flag_ambient = material.get_texture_map(TM_AMBIENT_TYPE) > 0;
-	data_out->flag_misc = material.get_texture_map(TM_MISC_TYPE) > 0;
-	data_out->flag_teamcolor = material.get_texture_map(TM_MISC_TYPE) > 0 && material.is_team_color_set();
-	data_out->flag_fog = material.is_fogged();
-	data_out->flag_transform = material.is_batched();
-	data_out->flag_shadows = material.is_shadow_receiving();
-	data_out->flag_thruster = material.get_thrust_scale() > 0.0f;
-	data_out->flag_alpha_mult = material.is_alpha_mult_active();
+	data_out->flags = 0;
+	if (material.is_lit())
+		data_out->flags |= MODEL_SDR_FLAG_LIGHT;
+	if (material.is_deferred())
+		data_out->flags |= MODEL_SDR_FLAG_DEFERRED;
+	if (material.is_hdr())
+		data_out->flags |= MODEL_SDR_FLAG_HDR;
+	if (material.get_texture_map(TM_BASE_TYPE) > 0)
+		data_out->flags |= MODEL_SDR_FLAG_DIFFUSE;
+	if (material.get_texture_map(TM_GLOW_TYPE) > 0)
+		data_out->flags |= MODEL_SDR_FLAG_GLOW;
+	if (material.get_texture_map(TM_SPECULAR_TYPE) > 0 || material.get_texture_map(TM_SPEC_GLOSS_TYPE) > 0)
+		data_out->flags |= MODEL_SDR_FLAG_SPEC;
+	if (ENVMAP > 0)
+		data_out->flags |= MODEL_SDR_FLAG_ENV;
+	if (material.get_texture_map(TM_NORMAL_TYPE) > 0)
+		data_out->flags |= MODEL_SDR_FLAG_NORMAL;
+	if (material.get_texture_map(TM_AMBIENT_TYPE) > 0)
+		data_out->flags |= MODEL_SDR_FLAG_AMBIENT;
+	if (material.get_texture_map(TM_MISC_TYPE) > 0)
+		data_out->flags |= MODEL_SDR_FLAG_MISC;
+	if (material.get_texture_map(TM_MISC_TYPE) > 0 && material.is_team_color_set())
+		data_out->flags |= MODEL_SDR_FLAG_TEAMCOLOR;
+	if (material.is_fogged())
+		data_out->flags |= MODEL_SDR_FLAG_FOG;
+	if (material.is_batched())
+		data_out->flags |= MODEL_SDR_FLAG_TRANSFORM;
+	if (material.is_shadow_receiving())
+		data_out->flags |= MODEL_SDR_FLAG_SHADOWS;
+	if (material.get_thrust_scale() > 0.0f)
+		data_out->flags |= MODEL_SDR_FLAG_THRUSTER;
+	if (material.is_alpha_mult_active())
+		data_out->flags |= MODEL_SDR_FLAG_ALPHA_MULT; 
 
 	if (material.get_animated_effect() > 0) {
 		data_out->anim_timer = material.get_animated_effect_time();

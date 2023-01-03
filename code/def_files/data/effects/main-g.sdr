@@ -1,5 +1,7 @@
 #extension GL_ARB_gpu_shader5: enable
 
+#include "model_shader_flags.h"
+
 #ifdef FLAG_THICK_OUTLINE
 layout (triangles) in;
 // For every triangle line we generate 2 triangles which can be done with 4 vertices so in total we will need 12 vertices
@@ -96,22 +98,7 @@ layout (std140) uniform modelData {
 
 	float alphaMult;
 
-	bool flag_light;
-	bool flag_deferred;
-	bool flag_hdr;
-	bool flag_diffuse;
-	bool flag_glow;
-	bool flag_spec;
-	bool flag_env;
-	bool flag_normal;
-	bool flag_ambient;
-	bool flag_misc;
-	bool flag_teamcolor;
-	bool flag_fog;
-	bool flag_transform;
-	bool flag_shadows;
-	bool flag_thruster;
-	bool flag_alpha_mult;
+	int flags;
 };
 
 in VertexOutput {
@@ -154,7 +141,7 @@ out VertexOutput {
 		#endif
 		for(int vert = 0; vert < gl_in.length(); vert++)
 		{
-			if (flag_transform) {
+			if (FLAG_ACTIVE(MODEL_SDR_FLAG_TRANSFORM)) {
 				if (vertIn[vert].clipModel > 0.9) {
 					// If the model was clipped in the vertex shader then we do not apply the shadow projection matrix here
 					gl_Position = gl_in[vert].gl_Position;
@@ -173,16 +160,16 @@ out VertexOutput {
 
 			gl_Layer = instanceID;
 
-			if (flag_env) {
+			if (FLAG_ACTIVE(MODEL_SDR_FLAG_ENV)) {
 				vertOut.envReflect = vertIn[vert].envReflect;
 			}
-			if (flag_normal) {
+			if (FLAG_ACTIVE(MODEL_SDR_FLAG_NORMAL)) {
 				vertOut.tangentMatrix = vertIn[vert].tangentMatrix;
 			}
-			if (flag_fog) {
+			if (FLAG_ACTIVE(MODEL_SDR_FLAG_FOG)) {
 				vertOut.fogDist = vertIn[vert].fogDist;
 			}
-			if (flag_shadows) {
+			if (FLAG_ACTIVE(MODEL_SDR_FLAG_SHADOWS)) {
 				vertOut.shadowUV[0] = vertIn[vert].shadowUV[0];
 				vertOut.shadowUV[1] = vertIn[vert].shadowUV[1];
 				vertOut.shadowUV[2] = vertIn[vert].shadowUV[2];
@@ -227,16 +214,16 @@ out VertexOutput {
 				vertOut.normal = vertIn[vert].normal;
 				vertOut.texCoord = vertIn[vert].texCoord;
 
-				if (flag_env) {
+				if (FLAG_ACTIVE(MODEL_SDR_FLAG_ENV)) {
 					vertOut.envReflect = vertIn[vert].envReflect;
 				}
-				if (flag_normal) {
+				if (FLAG_ACTIVE(MODEL_SDR_FLAG_NORMAL)) {
 					vertOut.tangentMatrix = vertIn[vert].tangentMatrix;
 				}
-				if (flag_fog) {
+				if (FLAG_ACTIVE(MODEL_SDR_FLAG_FOG)) {
 					vertOut.fogDist = vertIn[vert].fogDist;
 				}
-				if (flag_shadows) {
+				if (FLAG_ACTIVE(MODEL_SDR_FLAG_SHADOWS)) {
 					vertOut.shadowUV[0] = vertIn[vert].shadowUV[0];
 					vertOut.shadowUV[1] = vertIn[vert].shadowUV[1];
 					vertOut.shadowUV[2] = vertIn[vert].shadowUV[2];
