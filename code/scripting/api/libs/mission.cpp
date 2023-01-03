@@ -1464,11 +1464,13 @@ ADE_FUNC(loadMission, l_Mission, "string missionName", "Loads a mission", "boole
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(unloadMission, l_Mission, NULL, "Stops the current mission and unloads it", NULL, NULL)
+ADE_FUNC(unloadMission, l_Mission, "boolean forceUnload", "Stops the current mission and unloads it. If forceUnload is true "
+	"then the mission unload logic will run regardless of if a mission is loaded or not. Use with caution.", nullptr, nullptr)
 {
-	SCP_UNUSED(L); // unused parameter
+	bool forceUnload = false;
+	ade_get_args(L, "|b", &forceUnload);
 
-	if(Game_mode & GM_IN_MISSION)
+	if(forceUnload || Game_mode & GM_IN_MISSION)
 	{
 		game_level_close();
 		Game_mode &= ~GM_IN_MISSION;
