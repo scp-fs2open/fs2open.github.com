@@ -363,7 +363,56 @@ void techroom_select_new_entry()
 		} else {
 			// we've failed to load any animation
 			// load an image and treat it like a 1 frame animation
-			Current_list->at(Cur_entry).bitmap = bm_load(Current_list->at(Cur_entry).tech_anim_filename);
+			bool weaponLoaded = false;
+			if (Tab == WEAPONS_DATA_TAB) {
+				weapon_info* wip = &Weapon_info[Cur_entry_index];
+
+				int i = 0;
+				// little memory management, kinda hacky but it should keep the techroom at around
+				// 100meg rather than the 700+ it can get to with all ships loaded - taylor
+				for (auto& list_entry : *Current_list) {
+					if ((list_entry.model_num > -1) && (list_entry.textures_loaded)) {
+						// don't unload any spot within 5 of current
+						if ((i < Cur_entry + 5) && (i > Cur_entry - 5))
+							continue;
+
+						mprintf(("TECH ROOM: Dumping excess ship textures...\n"));
+
+						model_page_out_textures(list_entry.model_num);
+
+						list_entry.textures_loaded = 0;
+					}
+					i++;
+				}
+
+				// Make sure model is loaded
+				if (VALID_FNAME(wip->tech_model)) {
+					Techroom_ship_modelnum = model_load(wip->tech_model, 0, nullptr, 0);
+				}
+
+				if (Techroom_ship_modelnum > 0) {
+					weaponLoaded = true;
+
+					if (Techroom_ship_model_instance >= 0) {
+						model_delete_instance(Techroom_ship_model_instance);
+					}
+					Techroom_ship_model_instance = model_create_instance(-1, Techroom_ship_modelnum);
+
+					//Might need a weapons version of this method
+					//model_set_up_techroom_instance(wip, Techroom_ship_model_instance);
+
+					Current_list->at(Cur_entry).model_num = Techroom_ship_modelnum;
+
+					// page in ship textures properly (takes care of nondimming pixels)
+					model_page_in_textures(Techroom_ship_modelnum, Cur_entry_index);
+
+					Current_list->at(Cur_entry).textures_loaded = 1;
+				}
+
+			}
+
+			if (!weaponLoaded)
+				Current_list->at(Cur_entry).bitmap = bm_load(Current_list->at(Cur_entry).tech_anim_filename);
 		}
 	}
 
@@ -476,19 +525,43 @@ void techroom_ships_render(float frametime)
 	// now render the trackball ship, which is unique to the ships tab
 	float rev_rate = REVOLUTION_RATE;
 	angles rot_angles, view_angles;
-	ship_info *sip = &Ship_info[Cur_entry_index];
 	model_render_params render_info;
 
-	if (sip->uses_team_colors) {
-		render_info.set_team_color(sip->default_team_name, "none", 0, 0);
-	}
+	vec3d closeup_pos;
+	float closeup_zoom = 0.0f;
+	bool noLighting = false;
 
-	// get correct revolution rate
-	if (sip->is_big_ship()) {
-		rev_rate *= 1.7f;
-	}
-	if (sip->is_huge_ship()) {
+	if (Tab == SHIPS_DATA_TAB) {
+		ship_info* sip = &Ship_info[Cur_entry_index];
+
+		if (sip->uses_team_colors) {
+			render_info.set_team_color(sip->default_team_name, "none", 0, 0);
+		}
+
+		// get correct revolution rate
+		if (sip->is_big_ship()) {
+			rev_rate *= 1.7f;
+		}
+		if (sip->is_huge_ship()) {
+			rev_rate *= 3.0f;
+		}
+
+		closeup_pos = sip->closeup_pos;
+		closeup_zoom = sip->closeup_zoom;
+
+		if (sip->replacement_textures.size() > 0) {
+			render_info.set_replacement_textures(Techroom_ship_modelnum, sip->replacement_textures);
+		}
+
+		if (sip->flags[Ship::Info_Flags::No_lighting])
+			noLighting = true;
+
+	} else {
+		weapon_info* wip = &Weapon_info[Cur_entry_index];
+
 		rev_rate *= 3.0f;
+		closeup_pos = wip->closeup_pos;
+		closeup_zoom = wip->closeup_zoom;
 	}
 
 	// rotate the ship as much as required for this frame
@@ -528,7 +601,7 @@ void techroom_ships_render(float frametime)
 
 	// render the ship
 	g3_start_frame(1);
-	g3_set_view_matrix(&sip->closeup_pos, &vmd_identity_matrix, sip->closeup_zoom * 1.3f);
+	g3_set_view_matrix(&closeup_pos, &vmd_identity_matrix, closeup_zoom * 1.3f);
 
 	//setup lights
 	common_setup_room_lights();
@@ -538,18 +611,13 @@ void techroom_ships_render(float frametime)
 	model_clear_instance(Techroom_ship_modelnum);
 	render_info.set_detail_level_lock(0);
 
-	if (sip->replacement_textures.size() > 0)
-	{
-		render_info.set_replacement_textures(Techroom_ship_modelnum, sip->replacement_textures);
-	}
-
     if(shadow_maybe_start_frame(Shadow_disable_overrides.disable_techroom))
     {
         gr_reset_clip();
 
 		auto pm = model_get(Techroom_ship_modelnum);
 
-		shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, gr_screen.clip_aspect, -sip->closeup_pos.xyz.z + pm->rad, -sip->closeup_pos.xyz.z + pm->rad + 200.0f, -sip->closeup_pos.xyz.z + pm->rad + 2000.0f, -sip->closeup_pos.xyz.z + pm->rad + 10000.0f);
+		shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, gr_screen.clip_aspect, -closeup_pos.xyz.z + pm->rad, -closeup_pos.xyz.z + pm->rad + 200.0f, -closeup_pos.xyz.z + pm->rad + 2000.0f, -closeup_pos.xyz.z + pm->rad + 10000.0f);
         render_info.set_flags(MR_NO_TEXTURING | MR_NO_LIGHTING | MR_AUTOCENTER);
 		
 		model_render_immediate(&render_info, Techroom_ship_modelnum, Techroom_ship_model_instance, &Techroom_ship_orient, &vmd_zero_vector);
@@ -563,7 +631,7 @@ void techroom_ships_render(float frametime)
 
 	uint render_flags = MR_AUTOCENTER;
 
-	if(sip->flags[Ship::Info_Flags::No_lighting])
+	if(noLighting)
 		render_flags |= MR_NO_LIGHTING;
 
 	render_info.set_flags(render_flags);
@@ -1404,6 +1472,13 @@ void techroom_do_frame(float frametime)
 			break;
 
 		case WEAPONS_DATA_TAB:
+			if (Techroom_ship_modelnum > 0) {
+				techroom_ships_render(frametime);
+			} else {
+				techroom_anim_render(frametime);
+			}
+			break;
+
 		case INTEL_DATA_TAB:
 			techroom_anim_render(frametime);
 			break;
