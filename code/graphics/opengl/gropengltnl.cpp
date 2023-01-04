@@ -835,9 +835,20 @@ void opengl_tnl_set_model_material(model_material *material_info)
 
 	uint32_t array_index;
 	if (!material_info->is_shadow_casting()) {
-		if (material_info->get_texture_map(TM_BASE_TYPE) > 0) {
-			Current_shader->program->Uniforms.setTextureUniform("sBasemap", 0);
+		Current_shader->program->Uniforms.setTextureUniform("sBasemap", 0);
+		Current_shader->program->Uniforms.setTextureUniform("sGlowmap", 1);
+		Current_shader->program->Uniforms.setTextureUniform("sSpecmap", 2);
+		Current_shader->program->Uniforms.setTextureUniform("sEnvmap", 3);
+		Current_shader->program->Uniforms.setTextureUniform("sIrrmap", 11);
+		Current_shader->program->Uniforms.setTextureUniform("sNormalmap", 4);
+		Current_shader->program->Uniforms.setTextureUniform("sHeightmap", 5);
+		Current_shader->program->Uniforms.setTextureUniform("sAmbientmap", 6);
+		Current_shader->program->Uniforms.setTextureUniform("sMiscmap", 7);
+		Current_shader->program->Uniforms.setTextureUniform("shadow_map", 8);
+		Current_shader->program->Uniforms.setTextureUniform("sFramebuffer", 9);
+		Current_shader->program->Uniforms.setTextureUniform("transform_tex", 10);
 
+		if (material_info->get_texture_map(TM_BASE_TYPE) > 0) {
 			gr_opengl_tcache_set(material_info->get_texture_map(TM_BASE_TYPE),
 				TCACHE_TYPE_NORMAL,
 				&u_scale,
@@ -847,8 +858,6 @@ void opengl_tnl_set_model_material(model_material *material_info)
 		}
 
 		if (material_info->get_texture_map(TM_GLOW_TYPE) > 0) {
-			Current_shader->program->Uniforms.setTextureUniform("sGlowmap", 1);
-
 			gr_opengl_tcache_set(material_info->get_texture_map(TM_GLOW_TYPE),
 				TCACHE_TYPE_NORMAL,
 				&u_scale,
@@ -859,8 +868,6 @@ void opengl_tnl_set_model_material(model_material *material_info)
 
 		if (material_info->get_texture_map(TM_SPECULAR_TYPE) > 0 ||
 			material_info->get_texture_map(TM_SPEC_GLOSS_TYPE) > 0) {
-			Current_shader->program->Uniforms.setTextureUniform("sSpecmap", 2);
-
 			if (material_info->get_texture_map(TM_SPEC_GLOSS_TYPE) > 0) {
 				gr_opengl_tcache_set(material_info->get_texture_map(TM_SPEC_GLOSS_TYPE),
 					TCACHE_TYPE_NORMAL,
@@ -879,19 +886,12 @@ void opengl_tnl_set_model_material(model_material *material_info)
 		}
 
 		if (ENVMAP > 0) {
-			Current_shader->program->Uniforms.setTextureUniform("sEnvmap", 3);
-
 			gr_opengl_tcache_set(ENVMAP, TCACHE_TYPE_CUBEMAP, &u_scale, &v_scale, &array_index, 3);
-
-			Current_shader->program->Uniforms.setTextureUniform("sIrrmap", 11);
-
 			gr_opengl_tcache_set(IRRMAP, TCACHE_TYPE_CUBEMAP, &u_scale, &v_scale, &array_index, 11);
 			Assertion(array_index == 0, "Cube map arrays are not supported yet!");
 		}
 
 		if (material_info->get_texture_map(TM_NORMAL_TYPE) > 0) {
-			Current_shader->program->Uniforms.setTextureUniform("sNormalmap", 4);
-
 			gr_opengl_tcache_set(material_info->get_texture_map(TM_NORMAL_TYPE),
 				TCACHE_TYPE_NORMAL,
 				&u_scale,
@@ -901,8 +901,6 @@ void opengl_tnl_set_model_material(model_material *material_info)
 		}
 
 		if (material_info->get_texture_map(TM_HEIGHT_TYPE) > 0) {
-			Current_shader->program->Uniforms.setTextureUniform("sHeightmap", 5);
-
 			gr_opengl_tcache_set(material_info->get_texture_map(TM_HEIGHT_TYPE),
 				TCACHE_TYPE_NORMAL,
 				&u_scale,
@@ -912,8 +910,6 @@ void opengl_tnl_set_model_material(model_material *material_info)
 		}
 
 		if (material_info->get_texture_map(TM_AMBIENT_TYPE) > 0) {
-			Current_shader->program->Uniforms.setTextureUniform("sAmbientmap", 6);
-
 			gr_opengl_tcache_set(material_info->get_texture_map(TM_AMBIENT_TYPE),
 				TCACHE_TYPE_NORMAL,
 				&u_scale,
@@ -923,8 +919,6 @@ void opengl_tnl_set_model_material(model_material *material_info)
 		}
 
 		if (material_info->get_texture_map(TM_MISC_TYPE) > 0) {
-			Current_shader->program->Uniforms.setTextureUniform("sMiscmap", 7);
-
 			gr_opengl_tcache_set(material_info->get_texture_map(TM_MISC_TYPE),
 				TCACHE_TYPE_NORMAL,
 				&u_scale,
@@ -934,14 +928,10 @@ void opengl_tnl_set_model_material(model_material *material_info)
 		}
 
 		if (material_info->is_shadow_receiving()) {
-			Current_shader->program->Uniforms.setTextureUniform("shadow_map", 8);
-
 			GL_state.Texture.Enable(8, GL_TEXTURE_2D_ARRAY, Shadow_map_texture);
 		}
 
 		if (material_info->get_animated_effect() > 0) {
-			Current_shader->program->Uniforms.setTextureUniform("sFramebuffer", 9);
-
 			if (Scene_framebuffer_in_frame) {
 				GL_state.Texture.Enable(9, GL_TEXTURE_2D, Scene_effect_texture);
 				glDrawBuffer(GL_COLOR_ATTACHMENT0);
@@ -952,7 +942,6 @@ void opengl_tnl_set_model_material(model_material *material_info)
 	}
 
 	if ( material_info->is_batched() ) {
-		Current_shader->program->Uniforms.setTextureUniform("transform_tex", 10);
 		GL_state.Texture.Enable(10, GL_TEXTURE_BUFFER, opengl_get_transform_buffer_texture());
 	}
 

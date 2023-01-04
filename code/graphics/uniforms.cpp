@@ -94,6 +94,13 @@ void convert_model_material(model_uniform_data* data_out,
 		data_out->effect_num = material.get_animated_effect();
 	}
 
+	data_out->sBasemapIndex = 0;
+	data_out->sAmbientmapIndex = 0;
+	data_out->sGlowmapIndex = 0;
+	data_out->sMiscmapIndex = 0;
+	data_out->sNormalmapIndex = 0;
+	data_out->sSpecmapIndex = 0;
+
 	if (material.is_clipped()) {
 		auto& clip_info = material.get_clip_plane();
 

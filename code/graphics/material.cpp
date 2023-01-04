@@ -294,6 +294,7 @@ bool material::is_textured() const
 	Texture_maps[TM_SPECULAR_TYPE]	> -1 ||
 	Texture_maps[TM_NORMAL_TYPE]	> -1 ||
 	Texture_maps[TM_HEIGHT_TYPE]	> -1 ||
+	Texture_maps[TM_AMBIENT_TYPE]	> -1 ||
 	Texture_maps[TM_MISC_TYPE]		> -1;
 }
 
