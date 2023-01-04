@@ -403,7 +403,15 @@ float orient_editor::convert(const CString &str) const
 			buf[j++] = buf[i];
 
 	buf[j] = 0;
-	return (float) atof(buf);
+
+	float val = (float)atof(buf);
+
+	// disallow input larger than INT_MAX
+	if (val > (float)INT_MAX) {
+		val = (float)INT_MAX;
+	}
+
+	return val;
 }
 
 /**
