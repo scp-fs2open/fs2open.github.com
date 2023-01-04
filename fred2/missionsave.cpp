@@ -3955,13 +3955,16 @@ int CFred_mission_save::save_players()
 				fout("\t@%s\t", Sexp_variables[var_idx].variable_name);
 			} else {
 				fout("\t\"%s\"\t", Ship_info[Team_data[i].ship_list[j]].name);
-				// Check the weapons pool for at least one dogfight weapon for this ship type
-				for (int wepCount = 0; wepCount <= Team_data[i].num_weapon_choices; wepCount++) {
-					if (Ship_info[Team_data[i].ship_list[j]].allowed_weapons[Team_data[i].weaponry_pool[wepCount]] & DOGFIGHT_WEAPON) {
-						num_dogfight_weapons++;
-						break;
-					}
 
+				// Check the weapons pool for at least one dogfight weapon for this ship type
+				if (IS_MISSION_MULTI_DOGFIGHT) {
+					for (int wepCount = 0; wepCount <= Team_data[i].num_weapon_choices; wepCount++) {
+						if (Ship_info[Team_data[i].ship_list[j]].allowed_weapons[Team_data[i].weaponry_pool[wepCount]] &
+							DOGFIGHT_WEAPON) {
+							num_dogfight_weapons++;
+							break;
+						}
+					}
 				}
 			}
 
