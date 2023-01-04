@@ -212,8 +212,8 @@ static const char *Text_lines[MAX_TEXT_LINES];
 
 static int Cur_entry = -1;				// this is the current entry selected, using entry indexing
 static int Cur_entry_index = -1;		// this is the current entry selected, using master list indexing
-static int Techroom_ship_modelnum = -1;
-static int Techroom_ship_model_instance = -1;
+static int Techroom_modelnum = -1;
+static int Techroom_model_instance = -1;
 static float Techroom_ship_rot;
 static UI_BUTTON List_buttons[LIST_BUTTONS_MAX];  // buttons for each line of text in list
 
@@ -330,27 +330,27 @@ void techroom_select_new_entry()
 			i++;
 		}
 
-		Techroom_ship_modelnum = model_load(sip, true);
+		Techroom_modelnum = model_load(sip, true);
 
-		if (Techroom_ship_model_instance >= 0) {
-			model_delete_instance(Techroom_ship_model_instance);
+		if (Techroom_model_instance >= 0) {
+			model_delete_instance(Techroom_model_instance);
 		}
-		Techroom_ship_model_instance = model_create_instance(-1, Techroom_ship_modelnum);
+		Techroom_model_instance = model_create_instance(-1, Techroom_modelnum);
 
-		model_set_up_techroom_instance(sip, Techroom_ship_model_instance);
+		model_set_up_techroom_instance(sip, Techroom_model_instance);
 
-		Current_list->at(Cur_entry).model_num = Techroom_ship_modelnum;
+		Current_list->at(Cur_entry).model_num = Techroom_modelnum;
 
 		// page in ship textures properly (takes care of nondimming pixels)
-		model_page_in_textures(Techroom_ship_modelnum, Cur_entry_index);
+		model_page_in_textures(Techroom_modelnum, Cur_entry_index);
 
 		Current_list->at(Cur_entry).textures_loaded = 1;
 	} else {
-		Techroom_ship_modelnum = -1;
+		Techroom_modelnum = -1;
 
-		if (Techroom_ship_model_instance >= 0) {
-			model_delete_instance(Techroom_ship_model_instance);
-			Techroom_ship_model_instance = -1;
+		if (Techroom_model_instance >= 0) {
+			model_delete_instance(Techroom_model_instance);
+			Techroom_model_instance = -1;
 		}
 
 		Trackball_mode = 0;
@@ -387,24 +387,27 @@ void techroom_select_new_entry()
 
 				// Make sure model is loaded
 				if (VALID_FNAME(wip->tech_model)) {
-					Techroom_ship_modelnum = model_load(wip->tech_model, 0, nullptr, 0);
+					Techroom_modelnum = model_load(wip->tech_model, 0, nullptr, 0);
 				}
 
-				if (Techroom_ship_modelnum > 0) {
+				if (Techroom_modelnum > 0) {
 					weaponLoaded = true;
 
-					if (Techroom_ship_model_instance >= 0) {
-						model_delete_instance(Techroom_ship_model_instance);
+					if (Techroom_model_instance >= 0) {
+						model_delete_instance(Techroom_model_instance);
 					}
-					Techroom_ship_model_instance = model_create_instance(-1, Techroom_ship_modelnum);
+					Techroom_model_instance = model_create_instance(-1, Techroom_modelnum);
 
-					//Might need a weapons version of this method
+					// If this ends up being needed for weapon models, a weapon version
+					// of this method will need to be created. Should only be necessary
+					// if weapon models start having animations or other advanced model
+					// features. - Mjn
 					//model_set_up_techroom_instance(wip, Techroom_ship_model_instance);
 
-					Current_list->at(Cur_entry).model_num = Techroom_ship_modelnum;
+					Current_list->at(Cur_entry).model_num = Techroom_modelnum;
 
 					// page in ship textures properly (takes care of nondimming pixels)
-					model_page_in_textures(Techroom_ship_modelnum, Cur_entry_index);
+					model_page_in_textures(Techroom_modelnum, Cur_entry_index);
 
 					Current_list->at(Cur_entry).textures_loaded = 1;
 				}
@@ -550,7 +553,7 @@ void techroom_ships_render(float frametime)
 		closeup_zoom = sip->closeup_zoom;
 
 		if (sip->replacement_textures.size() > 0) {
-			render_info.set_replacement_textures(Techroom_ship_modelnum, sip->replacement_textures);
+			render_info.set_replacement_textures(Techroom_modelnum, sip->replacement_textures);
 		}
 
 		if (sip->flags[Ship::Info_Flags::No_lighting])
@@ -608,19 +611,19 @@ void techroom_ships_render(float frametime)
 
 	Glowpoint_use_depth_buffer = false;
 
-	model_clear_instance(Techroom_ship_modelnum);
+	model_clear_instance(Techroom_modelnum);
 	render_info.set_detail_level_lock(0);
 
     if(shadow_maybe_start_frame(Shadow_disable_overrides.disable_techroom))
     {
         gr_reset_clip();
 
-		auto pm = model_get(Techroom_ship_modelnum);
+		auto pm = model_get(Techroom_modelnum);
 
 		shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, gr_screen.clip_aspect, -closeup_pos.xyz.z + pm->rad, -closeup_pos.xyz.z + pm->rad + 200.0f, -closeup_pos.xyz.z + pm->rad + 2000.0f, -closeup_pos.xyz.z + pm->rad + 10000.0f);
         render_info.set_flags(MR_NO_TEXTURING | MR_NO_LIGHTING | MR_AUTOCENTER);
 		
-		model_render_immediate(&render_info, Techroom_ship_modelnum, Techroom_ship_model_instance, &Techroom_ship_orient, &vmd_zero_vector);
+		model_render_immediate(&render_info, Techroom_modelnum, Techroom_model_instance, &Techroom_ship_orient, &vmd_zero_vector);
         shadows_end_render();
 
 		gr_set_clip(Tech_ship_display_coords[gr_screen.res][SHIP_X_COORD], Tech_ship_display_coords[gr_screen.res][SHIP_Y_COORD], Tech_ship_display_coords[gr_screen.res][SHIP_W_COORD], Tech_ship_display_coords[gr_screen.res][SHIP_H_COORD], GR_RESIZE_MENU);
@@ -636,7 +639,7 @@ void techroom_ships_render(float frametime)
 
 	render_info.set_flags(render_flags);
 
-	model_render_immediate(&render_info, Techroom_ship_modelnum, Techroom_ship_model_instance, &Techroom_ship_orient, &vmd_zero_vector);
+	model_render_immediate(&render_info, Techroom_modelnum, Techroom_model_instance, &Techroom_ship_orient, &vmd_zero_vector);
 
 	Glowpoint_use_depth_buffer = true;
 
@@ -1308,8 +1311,8 @@ void techroom_lists_reset()
 		techroom_unload_animation();
 
 	model_free_all();
-	Techroom_ship_modelnum = -1;
-	Techroom_ship_model_instance = -1;
+	Techroom_modelnum = -1;
+	Techroom_model_instance = -1;
 
 	// This can be cleared immediately because there are no anims or bitmaps associated.
 	Ship_list.clear();
@@ -1472,7 +1475,7 @@ void techroom_do_frame(float frametime)
 			break;
 
 		case WEAPONS_DATA_TAB:
-			if (Techroom_ship_modelnum > 0) {
+			if (Techroom_modelnum > 0) {
 				techroom_ships_render(frametime);
 			} else {
 				techroom_anim_render(frametime);
