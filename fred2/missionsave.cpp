@@ -3985,7 +3985,7 @@ int CFred_mission_save::save_players()
 		// make sure we have at least one dogfight weapon for each ship type in a dogfight mission
 		if (IS_MISSION_MULTI_DOGFIGHT && (num_dogfight_weapons != Team_data[i].num_ship_choices)) {
 			MessageBox(nullptr,
-				"Warning: This mission is a dogfight mission but no dogfight weapons are available in the loadout!", "No dogfight weapons",
+				"Warning: This mission is a dogfight mission but no dogfight weapons are available for at least one ship in the loadout!", "No dogfight weapons",
 				MB_OK);
 		}
 
