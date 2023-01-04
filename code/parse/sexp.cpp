@@ -17126,7 +17126,10 @@ int sexp_event_delay_status( int n, int want_true, bool use_msecs = false)
 			}
 
 			// check that the event delay has elapsed, again using the same logic as in mission_process_event()
-			if (!timestamp_elapsed(timestamp_delta(Mission_events[i].timestamp, delay))) {
+			if (!Fixed_chaining_to_repeat && Mission_events[i].flags & MEF_TIMESTAMP_HAS_INTERVAL) {
+				/* do not set rval */;
+			}
+			else if (!timestamp_elapsed(timestamp_delta(Mission_events[i].timestamp, delay))) {
 				rval = SEXP_FALSE;
 				break;
 			}
