@@ -1464,7 +1464,7 @@ ADE_FUNC(loadMission, l_Mission, "string missionName", "Loads a mission", "boole
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(unloadMission, l_Mission, "boolean forceUnload", "Stops the current mission and unloads it. If forceUnload is true "
+ADE_FUNC(unloadMission, l_Mission, "[boolean forceUnload]", "Stops the current mission and unloads it. If forceUnload is true "
 	"then the mission unload logic will run regardless of if a mission is loaded or not. Use with caution.", nullptr, nullptr)
 {
 	bool forceUnload = false;
