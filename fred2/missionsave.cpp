@@ -3945,6 +3945,8 @@ int CFred_mission_save::save_players()
 		fout(" (\n");
 
 		int num_dogfight_weapons = 0;
+		SCP_vector<SCP_string> dogfight_ships;
+
 		for (j = 0; j < Team_data[i].num_ship_choices; j++) {
 			// Check to see if a variable name should be written for the class rather than a number
 			if (strlen(Team_data[i].ship_list_variables[j])) {
@@ -3971,10 +3973,11 @@ int CFred_mission_save::save_players()
 			// Check the weapons pool for at least one dogfight weapon for this ship type
 			if (IS_MISSION_MULTI_DOGFIGHT) {
 				for (int wepCount = 0; wepCount <= Team_data[i].num_weapon_choices; wepCount++) {
-					if (Ship_info[Team_data[i].ship_list[j]].allowed_weapons[Team_data[i].weaponry_pool[wepCount]] &
-						DOGFIGHT_WEAPON) {
+					if (Ship_info[Team_data[i].ship_list[j]].allowed_weapons[Team_data[i].weaponry_pool[wepCount]] & DOGFIGHT_WEAPON) {
 						num_dogfight_weapons++;
 						break;
+					} else {
+						dogfight_ships.push_back(Ship_info[Team_data[i].ship_list[j]].name);
 					}
 				}
 			}
@@ -3984,8 +3987,13 @@ int CFred_mission_save::save_players()
 
 		// make sure we have at least one dogfight weapon for each ship type in a dogfight mission
 		if (IS_MISSION_MULTI_DOGFIGHT && (num_dogfight_weapons != Team_data[i].num_ship_choices)) {
+			for (int numErrors = 0; numErrors < (int)dogfight_ships.size(); numErrors++) {
+				mprintf(("Warning: Ship %s has no dogfight weapons allowed\n", dogfight_ships[numErrors].c_str()));
+			}
 			MessageBox(nullptr,
-				"Warning: This mission is a dogfight mission but no dogfight weapons are available for at least one ship in the loadout!", "No dogfight weapons",
+				"Warning: This mission is a dogfight mission but no dogfight weapons are available for at least one "
+				"ship in the loadout! In Debug mode a list of ships will be printed to the log.",
+				"No dogfight weapons",
 				MB_OK);
 		}
 
