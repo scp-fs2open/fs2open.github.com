@@ -652,12 +652,12 @@ void ai_profiles_init()
 	// init retail entry first
 	parse_ai_profiles_tbl(NULL);
 
-	// Allow gameplay_profiles.tbl to be a alias of ai_profiles.tbl, but only load one or the other.
-	// gameplay_profiles.tbl would be newer so assume intended, but print to the log to be sure - Mjn
+	// Allow mission_profiles.tbl to be a alias of ai_profiles.tbl, but only load one or the other.
+	// mission_profiles.tbl would be newer so assume intended, but print to the log to be sure - Mjn
 	char filename[MAX_FILENAME_LEN] = "ai_profiles.tbl";
-	if (cf_exists_full("gameplay_profiles.tbl", CF_TYPE_TABLES)) {
-		mprintf(("gameplay_profiles.tbl was found! Using that instead of ai_profiles.tbl...\n"));
-		strcpy_s(filename, "gameplay_profiles.tbl");
+	if (cf_exists_full("mission_profiles.tbl", CF_TYPE_TABLES)) {
+		mprintf(("mission_profiles.tbl was found! Using that instead of ai_profiles.tbl...\n"));
+		strcpy_s(filename, "mission_profiles.tbl");
 	}
 
 	// now parse the supplied table (if any)
@@ -666,7 +666,7 @@ void ai_profiles_init()
 
 	// parse any modular tables
 	parse_modular_table("*-aip.tbm", parse_ai_profiles_tbl);
-	parse_modular_table("*-gmp.tbm", parse_ai_profiles_tbl);
+	parse_modular_table("*-msp.tbm", parse_ai_profiles_tbl);
 
 	// set default if specified
 	temp = ai_profile_lookup(Default_profile_name);
