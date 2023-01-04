@@ -411,6 +411,11 @@ float orient_editor::convert(const CString &str) const
 		val = (float)INT_MAX;
 	}
 
+	// disallow input smaller than INT_MIN
+	if (val < (float)INT_MIN) {
+		val = (float)INT_MIN;
+	}
+
 	return val;
 }
 
