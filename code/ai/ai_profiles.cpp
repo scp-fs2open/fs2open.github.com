@@ -666,6 +666,7 @@ void ai_profiles_init()
 
 	// parse any modular tables
 	parse_modular_table("*-aip.tbm", parse_ai_profiles_tbl);
+	parse_modular_table("*-gmp.tbm", parse_ai_profiles_tbl);
 
 	// set default if specified
 	temp = ai_profile_lookup(Default_profile_name);
