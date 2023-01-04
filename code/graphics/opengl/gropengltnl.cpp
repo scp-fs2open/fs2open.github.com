@@ -835,6 +835,14 @@ void opengl_tnl_set_model_material(model_material *material_info)
 
 	uint32_t array_index;
 	if (!material_info->is_shadow_casting()) {
+		// An observant reader might, upon seeing this, ask themselves "Hang on, why are we setting these uniforms
+		// without putting anything in them". This is an entirely fair question.
+		// The answer, dear reader, is divergent behaviour in GL implementations. Nvidia, at time of writing (04.01.2023)
+		// doesn't care; AMD will report conflicting bindings and basically give up.
+		// While this technically invites undefined behaviour (texture reads from unbound texture units can do anything),
+		// it is uncritical at this time as texture reads are gated behind feature flags in the shader.
+		// This will be fixed in future cleanups, where we plan to introduce engine-generated default textures to substitute
+		// if the material doesn't provide anything.
 		Current_shader->program->Uniforms.setTextureUniform("sBasemap", 0);
 		Current_shader->program->Uniforms.setTextureUniform("sGlowmap", 1);
 		Current_shader->program->Uniforms.setTextureUniform("sSpecmap", 2);
