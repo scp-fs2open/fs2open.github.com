@@ -3775,7 +3775,7 @@ int CFred_mission_save::save_players()
 
 			// Check the weapons pool for at least one dogfight weapon for this ship type
 			if (IS_MISSION_MULTI_DOGFIGHT) {
-				for (int wepCount = 0; wepCount <= Team_data[i].num_weapon_choices; wepCount++) {
+				for (int wepCount = 0; wepCount < Team_data[i].num_weapon_choices; wepCount++) {
 					if (Ship_info[Team_data[i].ship_list[j]].allowed_weapons[Team_data[i].weaponry_pool[wepCount]] & DOGFIGHT_WEAPON) {
 						num_dogfight_weapons++;
 						break;
