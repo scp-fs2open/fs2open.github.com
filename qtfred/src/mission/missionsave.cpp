@@ -3747,6 +3747,7 @@ int CFred_mission_save::save_players()
 		parse_comments();
 		fout(" (\n");
 
+		int num_dogfight_weapons = 0;
 		for (j = 0; j < Team_data[i].num_ship_choices; j++) {
 			// Check to see if a variable name should be written for the class rather than a number
 			if (strlen(Team_data[i].ship_list_variables[j])) {
@@ -3757,6 +3758,14 @@ int CFred_mission_save::save_players()
 				fout("\t@%s\t", Sexp_variables[var_idx].variable_name);
 			} else {
 				fout("\t\"%s\"\t", Ship_info[Team_data[i].ship_list[j]].name);
+				// Check the weapons pool for at least one dogfight weapon for this ship type
+				for (int wepCount = 0; wepCount <= Team_data[i].num_weapon_choices; wepCount++) {
+					if (Ship_info[Team_data[i].ship_list[j]].allowed_weapons[Team_data[i].weaponry_pool[wepCount]] & DOGFIGHT_WEAPON) {
+						num_dogfight_weapons++;
+						break;
+					}
+
+				}
 			}
 
 			// Now check if we should write a variable or a number for the amount of ships available
@@ -3772,6 +3781,13 @@ int CFred_mission_save::save_players()
 		}
 
 		fout(")");
+
+		// make sure we have at least one dogfight weapon for each ship type in a dogfight mission
+		if (IS_MISSION_MULTI_DOGFIGHT && (num_dogfight_weapons != Team_data[i].num_ship_choices)) {
+			MessageBox(nullptr,
+				"Warning: This mission is a dogfight mission but no dogfight weapons are available in the loadout!", "No dogfight weapons",
+				MB_OK);
+		}
 
 		if (optional_string_fred("+Weaponry Pool:", "$Starting Shipname:")) {
 			parse_comments(2);
