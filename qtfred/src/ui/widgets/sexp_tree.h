@@ -342,6 +342,7 @@ class sexp_tree: public QTreeWidget {
 	sexp_list_item* get_listing_opf_wing_flags();
 	sexp_list_item* get_listing_opf_team_colors();
 	sexp_list_item* get_listing_opf_nebula_patterns();
+	sexp_list_item* get_listing_opf_asteroid_debris();
 	sexp_list_item* get_listing_opf_game_snds();
 	sexp_list_item* get_listing_opf_fireball();
 	sexp_list_item *get_listing_opf_species();
@@ -349,7 +350,6 @@ class sexp_tree: public QTreeWidget {
 	sexp_list_item *get_listing_opf_functional_when_eval_type();
 	sexp_list_item *get_listing_opf_animation_name(int parent_node);
 	static sexp_list_item *get_listing_opf_sexp_containers(ContainerType con_type);
-	sexp_list_item* get_listing_opf_asteroid_debris();
 	sexp_list_item *get_listing_opf_wing_formation();
 	sexp_list_item* check_for_dynamic_sexp_enum(int opf);
 

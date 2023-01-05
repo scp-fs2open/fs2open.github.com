@@ -4900,6 +4900,22 @@ sexp_list_item* sexp_tree::get_listing_opf_nebula_patterns() {
 	return head.next;
 }
 
+sexp_list_item* sexp_tree::get_listing_opf_asteroid_debris()
+{
+	sexp_list_item head;
+
+	head.add_data(SEXP_NONE_STRING);
+
+	for (int i = 0; i < (int)Asteroid_info.size(); i++) {
+		// first three asteroids are not debris-Mjn
+		if (i > NUM_ASTEROID_SIZES) {
+			head.add_data(Asteroid_info[i].name);
+		}
+	}
+
+	return head.next;
+}
+
 sexp_list_item* sexp_tree::get_listing_opf_game_snds() {
 	sexp_list_item head;
 
@@ -5021,22 +5037,6 @@ sexp_list_item *sexp_tree::get_listing_opf_sexp_containers(ContainerType con_typ
 	for (const auto &container : get_all_sexp_containers()) {
 		if (any(container.type & con_type)) {
 			head.add_data(container.container_name.c_str(), (SEXPT_CONTAINER_NAME | SEXPT_STRING | SEXPT_VALID));
-		}
-	}
-
-	return head.next;
-}
-
-sexp_list_item* sexp_tree::get_listing_opf_asteroid_debris()
-{
-	sexp_list_item head;
-
-	head.add_data(SEXP_NONE_STRING);
-
-	for (int i = 0; i < (int)Asteroid_info.size(); i++) {
-		// first three asteroids are not debris-Mjn
-		if (i > NUM_ASTEROID_SIZES) {
-			head.add_data(Asteroid_info[i].name);
 		}
 	}
 
