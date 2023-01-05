@@ -1346,7 +1346,7 @@ int sexp_tree::get_default_value(sexp_list_item* item, char* text_buf, int op, i
 	case OPF_SUBSYSTEM:
 	case OPF_AWACS_SUBSYSTEM:
 	case OPF_ROTATING_SUBSYSTEM:
-	case OPF_TRANSLATING_SUBSYTEM:
+	case OPF_TRANSLATING_SUBSYSTEM:
 	case OPF_SUBSYS_OR_GENERIC:
 		str = "<name of subsystem>";
 		break;
@@ -1481,7 +1481,7 @@ int sexp_tree::query_default_argument_available(int op, int i) {
 	case OPF_SUBSYSTEM:
 	case OPF_AWACS_SUBSYSTEM:
 	case OPF_ROTATING_SUBSYSTEM:
-	case OPF_TRANSLATING_SUBSYTEM:
+	case OPF_TRANSLATING_SUBSYSTEM:
 	case OPF_SUBSYSTEM_TYPE:
 	case OPF_DOCKER_POINT:
 	case OPF_DOCKEE_POINT:
@@ -1976,7 +1976,7 @@ int sexp_tree::verify_tree(int node, int *bypass)
 			case OPF_SUBSYSTEM:
 			case OPF_AWACS_SUBSYSTEM:
 			case OPF_ROTATING_SUBSYSTEM:
-			case OPF_TRANSLATING_SUBSYTEM:
+			case OPF_TRANSLATING_SUBSYSTEM:
 				if (type2 == SEXP_ATOM_STRING)
 					if (ai_get_subsystem_type(tree_nodes[node].text) == SUBSYSTEM_UNKNOWN)
 						type2 = 0;
@@ -2963,7 +2963,7 @@ sexp_list_item* sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 
 	case OPF_AWACS_SUBSYSTEM:
 	case OPF_ROTATING_SUBSYSTEM:
-	case OPF_TRANSLATING_SUBSYTEM:
+	case OPF_TRANSLATING_SUBSYSTEM:
 	case OPF_SUBSYSTEM:
 		list = get_listing_opf_subsystem(parent_node, arg_index);
 		break;
