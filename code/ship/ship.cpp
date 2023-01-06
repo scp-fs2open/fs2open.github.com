@@ -12540,19 +12540,19 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 			target = &Objects[Player_ai->target_objnum]; 
 
 		for (int bank = 0; bank < MAX_SHIP_PRIMARY_BANKS; bank++) {
-			if(banks_fired & (1 << bank))
+			if(banks_fired & (1 << bank)){
 				//Start Animation in Forced mode: Always restart it from its initial position rather than just flip it to FWD motion if it was still moving. This is to make it work best for uses like recoil.
 				sip->animations.getAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::PrimaryFired, bank).start(animation::ModelAnimationDirection::FWD, true);
-		}
 
-		if (scripting::hooks::OnWeaponFired->isActive() || scripting::hooks::OnPrimaryFired->isActive()) {
-			auto param_list = scripting::hook_param_list(
-				scripting::hook_param("User", 'o', objp),
-				scripting::hook_param("Target", 'o', target)
-			);
-			auto conditions = scripting::hooks::WeaponUsedConditions{ shipp, target, weapon_idx, true };
-			scripting::hooks::OnWeaponFired->run(conditions, param_list);
-			scripting::hooks::OnPrimaryFired->run(conditions, param_list);
+				//Run scripting hooks only if the actual bank has fired
+				if (scripting::hooks::OnWeaponFired->isActive() || scripting::hooks::OnPrimaryFired->isActive()) {
+					auto param_list = scripting::hook_param_list(scripting::hook_param("User", 'o', objp),
+						scripting::hook_param("Target", 'o', target));
+					auto conditions = scripting::hooks::WeaponUsedConditions{shipp, target, shipp->weapons.primary_bank_weapons[bank], true};
+					scripting::hooks::OnWeaponFired->run(conditions, param_list);
+					scripting::hooks::OnPrimaryFired->run(conditions, param_list);
+				}
+			}
 		}
 	}
 
