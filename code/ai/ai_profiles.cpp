@@ -610,6 +610,8 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$use adjusted AI class autoscale:", AI::Profile_Flags::Adjusted_AI_class_autoscale);
 
+				set_flag(profile, "$carry shield difficulty scaling bug:", AI::Profile_Flags::Carry_shield_difficulty_scaling_bug);
+
 
 				// if we've been through once already and are at the same place, force a move
 				if (saved_Mp && (saved_Mp == Mp))
@@ -769,6 +771,9 @@ void ai_profile_t::reset()
 	// and this flag has been enabled ever since 3.6.10
 	if (mod_supports_version(3, 6, 10)) {
 		flags.set(AI::Profile_Flags::Reset_last_hit_target_time_for_player_hits);
+	}
+	if (mod_supports_version(3, 6, 14)) {
+		flags.set(AI::Profile_Flags::Carry_shield_difficulty_scaling_bug);
 	}
 	if (mod_supports_version(21, 4, 0)) {
 		flags.set(AI::Profile_Flags::Fixed_ship_weapon_collision);

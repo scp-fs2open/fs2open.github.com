@@ -150,6 +150,7 @@ namespace AI {
 		Fixed_removing_play_dead_order,
 		Disable_bay_emerge_timeout,
 		Adjusted_AI_class_autoscale,
+		Carry_shield_difficulty_scaling_bug,
 
 		NUM_VALUES
 	};
