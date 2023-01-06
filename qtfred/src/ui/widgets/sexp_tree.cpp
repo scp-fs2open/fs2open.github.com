@@ -3676,6 +3676,14 @@ sexp_list_item* sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 		special_subsys = OPS_ROTATE;
 		break;
 
+	// translating
+	case OP_LOCK_TRANSLATING_SUBSYSTEM:
+	case OP_FREE_TRANSLATING_SUBSYSTEM:
+	case OP_REVERSE_TRANSLATING_SUBSYSTEM:
+	case OP_TRANSLATING_SUBSYS_SET_SPEED:
+		special_subsys = OPS_TRANSLATE;
+		break;
+
 		// where we care about capital ship subsystem cargo
 	case OP_CAP_SUBSYS_CARGO_KNOWN_DELAY:
 		special_subsys = OPS_CAP_CARGO;
@@ -3715,6 +3723,7 @@ sexp_list_item* sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 	case OP_MISSILE_LOCKED:
 	case OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD:
 	case OP_IS_IN_TURRET_FOV:
+	case OP_TURRET_SET_FORCED_TARGET:
 		// iterate to the next field
 		child = tree_nodes[child].next;
 		break;
@@ -3764,6 +3773,16 @@ sexp_list_item* sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 		Assert(child >= 0);
 		child = tree_nodes[child].next;
 		break;
+
+	// this sexp checks the third entry, but only for the 4th argument
+	case OP_TURRET_SET_FORCED_SUBSYS_TARGET:
+		if (arg_index >= 3) {
+			child = tree_nodes[child].next;
+			Assert(child >= 0);
+			child = tree_nodes[child].next;
+		}
+		break;
+
 	}
 
 	// now find the ship and add all relevant subsystems
@@ -3794,6 +3813,13 @@ sexp_list_item* sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 				// rotating
 			case OPS_ROTATE:
 				if (subsys->system_info->flags[Model::Subsystem_Flags::Rotates]) {
+					head.add_data(subsys->system_info->subobj_name);
+				}
+				break;
+
+				// translating
+			case OPS_TRANSLATE:
+				if (subsys->system_info->flags[Model::Subsystem_Flags::Translates]) {
 					head.add_data(subsys->system_info->subobj_name);
 				}
 				break;
