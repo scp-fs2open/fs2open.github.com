@@ -546,16 +546,18 @@ void parse_ai_profiles_tbl(const char *filename)
 					mprintf(("Warning: \"$ships with no shields can manage ETS\" flag is deprecated in favor of \"$any ship with no shields can manage ETS\"\n"));
 					bool temp;
 					stuff_boolean(&temp);
-                    profile->flags.set(AI::Profile_Flags::all_nonshielded_ships_can_manage_ets, temp);
+                    profile->flags.set(AI::Profile_Flags::All_nonshielded_ships_can_manage_ets, temp);
 				}
 
                 set_flag(profile, "$no directional bias for missile and ship turning:", AI::Profile_Flags::No_turning_directional_bias);
 
 				set_flag(profile, "$respect ship axial turnrate differences:", AI::Profile_Flags::Use_axial_turnrate_differences);
 
-				set_flag(profile, "$any ship with no shields can manage ETS:", AI::Profile_Flags::all_nonshielded_ships_can_manage_ets);
+				set_flag(profile, "$any ship with no shields can manage ETS:", AI::Profile_Flags::All_nonshielded_ships_can_manage_ets);
 
-				set_flag(profile, "$fighters/bombers with no shields can manage ETS:", AI::Profile_Flags::fightercraft_nonshielded_ships_can_manage_ets);
+				set_flag(profile, "$fighters/bombers with no shields can manage ETS:", AI::Profile_Flags::Fightercraft_nonshielded_ships_can_manage_ets);
+
+				set_flag(profile, "$ships playing dead don't manage ETS:", AI::Profile_Flags::Ships_playing_dead_dont_manage_ets);
 
 				set_flag(profile, "$better combat collision avoidance for fightercraft:", AI::Profile_Flags::Better_collision_avoidance);
 
@@ -760,7 +762,7 @@ void ai_profile_t::reset()
 		flags.set(AI::Profile_Flags::Fix_ai_path_order_bug);
 		flags.set(AI::Profile_Flags::Aspect_invulnerability_fix);
 		flags.set(AI::Profile_Flags::Use_actual_primary_range);
-		flags.set(AI::Profile_Flags::fightercraft_nonshielded_ships_can_manage_ets);
+		flags.set(AI::Profile_Flags::Fightercraft_nonshielded_ships_can_manage_ets);
 	}
 	// this flag has been enabled ever since 3.7.2
 	if (mod_supports_version(3, 7, 2)) {
@@ -782,5 +784,8 @@ void ai_profile_t::reset()
 		flags.set(AI::Profile_Flags::Fix_good_rearm_time_bug);
 		flags.set(AI::Profile_Flags::No_continuous_turn_on_attack);
 		flags.set(AI::Profile_Flags::Fixed_removing_play_dead_order);
+	}
+	if (mod_supports_version(23, 2, 0)) {
+		flags.set(AI::Profile_Flags::Ships_playing_dead_dont_manage_ets);
 	}
 }

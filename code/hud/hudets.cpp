@@ -221,10 +221,14 @@ void ai_manage_ets(object* obj)
 	}
 
 	// also check if the ship has no shields and if the AI is allowed to manage weapons and engines --wookieejedi
-	if ( !(ship_p->ship_max_shield_strength) && !( (aip->ai_profile_flags[AI::Profile_Flags::all_nonshielded_ships_can_manage_ets]) || 
-		( (ship_info_p->is_fighter_bomber()) && (aip->ai_profile_flags[AI::Profile_Flags::fightercraft_nonshielded_ships_can_manage_ets])) ) ) {
+	if ( !(ship_p->ship_max_shield_strength) && !( (aip->ai_profile_flags[AI::Profile_Flags::All_nonshielded_ships_can_manage_ets]) || 
+		( (ship_info_p->is_fighter_bomber()) && (aip->ai_profile_flags[AI::Profile_Flags::Fightercraft_nonshielded_ships_can_manage_ets])) ) ) {
 		return;
 	}
+
+	// also check if the ship is playing dead --Goober5000
+	if (aip->mode == AIM_PLAY_DEAD && aip->ai_profile_flags[AI::Profile_Flags::Ships_playing_dead_dont_manage_ets])
+		return;
 
 	float weapon_left_percent = ship_p->weapon_energy/ship_info_p->max_weapon_reserve;
 
