@@ -307,7 +307,7 @@ int Brief_max_line_width[GR_NUM_RESOLUTIONS] = {
 // --------------------------------------------------------------------------------------
 // Forward declarations
 // --------------------------------------------------------------------------------------
-int brief_setup_closeup(brief_icon *bi);
+int brief_setup_closeup(brief_icon *bi, bool api_access = false);
 void brief_maybe_blit_scene_cut(float frametime);
 void brief_transition_reset();
 
@@ -1305,7 +1305,7 @@ void brief_set_closeup_pos(brief_icon * /*bi*/)
 //
 // exit: 0	=>		set-up icon sucessfully
 //			-1	=>		could not setup closeup icon
-int brief_setup_closeup(brief_icon *bi)
+int brief_setup_closeup(brief_icon *bi, bool api_access)
 {
 	char				pof_filename[NAME_LENGTH];
 	ship_info		*sip=NULL;
@@ -1378,27 +1378,29 @@ int brief_setup_closeup(brief_icon *bi)
 		break;
 	}
 	
-	if ( Closeup_icon->modelnum < 0 ) {
-		if ( sip == nullptr ) {
-			Closeup_icon->modelnum = model_load(pof_filename, 0, nullptr);
-		} else {
-			Closeup_icon->modelnum = model_load(sip, true);
-			Closeup_icon->model_instance_num = model_create_instance(-1, Closeup_icon->modelnum);
-			model_set_up_techroom_instance(sip, Closeup_icon->model_instance_num);
+	if (!api_access) {
+		if (Closeup_icon->modelnum < 0) {
+			if (sip == nullptr) {
+				Closeup_icon->modelnum = model_load(pof_filename, 0, nullptr);
+			} else {
+				Closeup_icon->modelnum = model_load(sip, true);
+				Closeup_icon->model_instance_num = model_create_instance(-1, Closeup_icon->modelnum);
+				model_set_up_techroom_instance(sip, Closeup_icon->model_instance_num);
+			}
 		}
-	}
 
-	if ( Closeup_icon->modelnum >= 0 ) {
-		Closeup_icon->radius = model_get_radius(Closeup_icon->modelnum);
-	}
+		if (Closeup_icon->modelnum >= 0) {
+			Closeup_icon->radius = model_get_radius(Closeup_icon->modelnum);
+		}
 
-	vm_set_identity(&Closeup_orient);
-	vm_vec_make(&tvec, 0.0f, 0.0f, -1.0f);
-	Closeup_orient.vec.fvec = tvec;
-	vm_vec_zero(&Closeup_pos);
-	Closeup_angles.p  = 0.0f;
-	Closeup_angles.b  = 0.0f;
-	Closeup_angles.h  = PI;
+		vm_set_identity(&Closeup_orient);
+		vm_vec_make(&tvec, 0.0f, 0.0f, -1.0f);
+		Closeup_orient.vec.fvec = tvec;
+		vm_vec_zero(&Closeup_pos);
+		Closeup_angles.p = 0.0f;
+		Closeup_angles.b = 0.0f;
+		Closeup_angles.h = PI;
+	}
 
 	brief_set_closeup_pos(bi);
 
@@ -1513,7 +1515,7 @@ void brief_check_for_anim(bool api_access, int api_x, int api_y)
 		return;
 	}
 
-	if (brief_setup_closeup(bi) == 0) {
+	if (brief_setup_closeup(bi, api_access) == 0) {
 		if (!api_access) {
 			gamesnd_play_iface(InterfaceSounds::BRIEF_ICON_SELECT);
 		}
