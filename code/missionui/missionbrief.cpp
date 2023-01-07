@@ -1900,12 +1900,6 @@ void brief_do_frame(float frametime)
 void brief_api_do_frame(float frametime)
 {
 
-	// This may be needed by a future PR to get map icon clicking working through the API - Mjn
-	// if (Closeup_icon) {
-	//	Brief_mouse_up_flag = 0;
-	//}
-	//gr_reset_clip();
-
 	if (!Background_playing) {
 		int time = -1;
 		int check_jump_flag = 1;
@@ -1965,11 +1959,9 @@ void brief_api_do_frame(float frametime)
 				time,
 				Current_brief_stage);
 
-			//A few items commented out, but keeping a record for closeup icon fixing in a later PR - Mjn
-			// Brief_playing_fade_sound = 0;
 			Last_brief_stage = Current_brief_stage;
 			brief_reset_icons(Current_brief_stage);
-			// brief_update_closeup_icon(0);
+			brief_update_closeup_icon(0);
 		}
 
 	Transition_done:
@@ -1981,17 +1973,6 @@ void brief_api_do_frame(float frametime)
 		brief_api_render(frametime);
 		brief_camera_move(frametime, Current_brief_stage);
 
-		// More methods for dealing with clicking on ship icons to be solved in a future PR - Mjn
-		//if (Closeup_icon) {
-		//	gr_bitmap(Closeup_coords[gr_screen.res][BRIEF_X_COORD],
-		//		Closeup_coords[gr_screen.res][BRIEF_Y_COORD],
-		//		GR_RESIZE_MENU);
-		//}
-
-		// This may be needed in by a future PR to get map icon clicking working through the API - Mjn
-		// if (Closeup_icon) {
-		//	brief_render_closeup(Closeup_icon->ship_class, frametime);
-		//}
 	}
 }
 
