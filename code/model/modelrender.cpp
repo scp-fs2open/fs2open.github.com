@@ -3112,6 +3112,8 @@ bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int 
 			// Make sure model is loaded
 			model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0], 0);
 
+			break;
+
 		case TECH_WEAPON:
 			weapon_info* wip;
 			wip = &Weapon_info[class_idx];
@@ -3131,10 +3133,14 @@ bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int 
 				return false;
 			}
 
+			break;
+
 		case TECH_POF:
 			closeup_pos = close_pos;
 			closeup_zoom = close_zoom;
 			model_num = model_load(pof_filename.c_str(), 0, nullptr);
+
+			break;
 
 		default:
 			return false;
