@@ -194,6 +194,7 @@ matrix Closeup_orient;
 vec3d Closeup_pos;
 int Closeup_font_height;
 int Closeup_x1, Closeup_y1;
+char Closeup_type_name[NAME_LENGTH];
 
 // used for the 3d view of a closeup ship
 float Closeup_zoom;
@@ -701,7 +702,7 @@ brief_icon *brief_get_closeup_icon()
 }
 
 // stop showing the closeup view of an icon
-void brief_turn_off_closeup_icon()
+void brief_turn_off_closeup_icon(bool api_access)
 {
 	// turn off closeup
 	if ( Closeup_icon != NULL ) {
@@ -710,8 +711,11 @@ void brief_turn_off_closeup_icon()
 			Closeup_icon->model_instance_num = -1;
 		}
 
-		gamesnd_play_iface(InterfaceSounds::BRIEF_ICON_SELECT);
-		Closeup_icon = NULL;
+		if (!api_access) {
+			gamesnd_play_iface(InterfaceSounds::BRIEF_ICON_SELECT);
+		}
+		Closeup_icon = nullptr;
+		Closeup_type_name[0] = '\0';
 		Closeup_close_button.disable();
 		Closeup_close_button.hide();
 	}
@@ -1333,6 +1337,7 @@ int brief_setup_closeup(brief_icon *bi)
 		}
 		Closeup_cam_pos = Asteroid_icon_closeup_position;
 		Closeup_zoom = Asteroid_icon_closeup_zoom;
+		strcpy_s(Closeup_type_name, pof_filename);
 		break;
 
 	case ICON_JUMP_NODE:
@@ -1343,6 +1348,7 @@ int brief_setup_closeup(brief_icon *bi)
 		vm_vec_make(&Closeup_cam_pos, 0.0f, 0.0f, -2700.0f);
 		Closeup_zoom = 0.5f;
 		Closeup_one_revolution_time = ONE_REV_TIME * 3;
+		strcpy_s(Closeup_type_name, pof_filename);
 		break;
 
 	case ICON_UNKNOWN:
@@ -1353,11 +1359,13 @@ int brief_setup_closeup(brief_icon *bi)
 		}
 		vm_vec_make(&Closeup_cam_pos, 0.0f, 0.0f, -22.0f);
 		Closeup_zoom = 0.5f;
+		strcpy_s(Closeup_type_name, pof_filename);
 		break;
 
 	default:
 		Assert( Closeup_icon->ship_class != -1 );
 		sip = &Ship_info[Closeup_icon->ship_class];
+		strcpy_s(Closeup_type_name, sip->name);
 
 		if (Closeup_icon->closeup_label[0] == '\0') {
 			strcpy_s(Closeup_icon->closeup_label, sip->get_display_name());
@@ -1452,14 +1460,20 @@ void brief_update_closeup_icon(int mode)
 // brief_check_for_anim()
 //
 //
-void brief_check_for_anim()
+void brief_check_for_anim(bool api_access, int api_x, int api_y)
 {
 	int				mx, my, i, iw, ih, x, y;
 	brief_stage		*bs;
 	brief_icon		*bi = NULL;
 
 	bs = &Briefing->stages[Current_brief_stage];
-	mouse_get_pos_unscaled( &mx, &my );
+
+	if (!api_access) {
+		mouse_get_pos_unscaled(&mx, &my);
+	} else {
+		mx = api_x;
+		my = api_y;
+	}
 
 	// if mouse click is over the VCR controls, don't launch an icon
 	// FIXME - should prolly push these into defines instead of hardcoding this
@@ -1495,14 +1509,18 @@ void brief_check_for_anim()
 	}
 
 	if ( i == bs->num_icons ) {
-		brief_turn_off_closeup_icon();
+		brief_turn_off_closeup_icon(api_access);
 		return;
 	}
 
-	if ( brief_setup_closeup(bi) == 0 ) {
-		gamesnd_play_iface(InterfaceSounds::BRIEF_ICON_SELECT);
+	if (brief_setup_closeup(bi) == 0) {
+		if (!api_access) {
+			gamesnd_play_iface(InterfaceSounds::BRIEF_ICON_SELECT);
+		}
 	} else {
-		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
+		if (!api_access) {
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
+		}
 	}
 }
 

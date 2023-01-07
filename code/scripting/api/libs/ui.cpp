@@ -49,6 +49,7 @@
 #include "scripting/api/objs/enums.h"
 #include "scripting/api/objs/player.h"
 #include "scripting/api/objs/texture.h"
+#include "scripting/api/objs/vecmath.h"
 #include "scripting/lua/LuaTable.h"
 #include "stats/medals.h"
 #include "stats/stats.h"
@@ -710,6 +711,58 @@ ADE_FUNC(commitToMission,
 	return ade_set_args(L, "i", static_cast<int>(commit_pressed(true)));
 }
 
+ADE_FUNC(renderBriefingModel,
+	l_UserInterface_Brief,
+	"string PofName, number CloseupZoom, vector CloseupPos, number X1, number Y1, number X2, number Y2, [number RotationPercent =0, number PitchPercent =0, "
+	"number "
+	"BankPercent=40, number Zoom=1.3, boolean Lighting=true]",
+	"Draws a pof. True for regular lighting, false for flat lighting.",
+	"boolean",
+	"Whether pof was rendered")
+{
+	int x1, y1, x2, y2;
+	angles rot_angles = {0.0f, 0.0f, 40.0f};
+	const char* pof;
+	float closeup_zoom;
+	vec3d closeup_pos;
+	float zoom = 1.3f;
+	bool lighting = true;
+	if (!ade_get_args(L,
+			"sfoiiii|ffffb",
+			&pof,
+			&closeup_zoom,
+			l_Vector.Get(&closeup_pos),
+			&x1,
+			&y1,
+			&x2,
+			&y2,
+			&rot_angles.h,
+			&rot_angles.p,
+			&rot_angles.b,
+			&zoom,
+			&lighting))
+		return ade_set_error(L, "b", false);
+
+	if (x2 < x1 || y2 < y1)
+		return ade_set_args(L, "b", false);
+
+	CLAMP(rot_angles.p, 0.0f, 100.0f);
+	CLAMP(rot_angles.b, 0.0f, 100.0f);
+	CLAMP(rot_angles.h, 0.0f, 100.0f);
+
+	// Handle angles
+	matrix orient = vmd_identity_matrix;
+	angles view_angles = {-0.6f, 0.0f, 0.0f};
+	vm_angles_2_matrix(&orient, &view_angles);
+
+	rot_angles.p = (rot_angles.p * 0.01f) * PI2;
+	rot_angles.b = (rot_angles.b * 0.01f) * PI2;
+	rot_angles.h = (rot_angles.h * 0.01f) * PI2;
+	vm_rotate_matrix_by_angles(&orient, &rot_angles);
+
+	return ade_set_args(L, "b", render_tech_model(TECH_POF, x1, y1, x2, y2, zoom, lighting, -1, &orient, pof, closeup_zoom, closeup_pos));
+}
+
 ADE_FUNC(drawBriefingMap,
 	l_UserInterface_Brief,
 	"number x, number y, [number width = 888, number height = 371]",
@@ -743,6 +796,31 @@ ADE_FUNC(drawBriefingMap,
 	brief_api_do_frame(flRealframetime);
 
 	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(checkStageIcons,
+	l_UserInterface_Brief,
+	"number xPos, number yPos",
+	"Sends the mouse position to the brief map rendering functions to properly highlight icons.",
+	"string, number, vector, string",
+	"If an icon is highlighted then this will return the ship name for ships or the pof to render for asteroid, jumpnode, or unknown icons. "
+	"also returns the closeup zoom, the closeup position, and the closeup label. Otherwise it returns nil")
+{
+	int x;
+	int y;
+
+	if (!ade_get_args(L, "ii", &x, &y)) {
+		LuaError(L, "X and Y coordinates not provided!");
+		return ADE_RETURN_NIL;
+	}
+
+	brief_check_for_anim(true, x, y);
+
+	if (Closeup_icon == nullptr) {
+		return ADE_RETURN_NIL;
+	} else {
+		return ade_set_args(L, "sfos", Closeup_type_name, Closeup_zoom, l_Vector.Set(Closeup_cam_pos), Closeup_icon->closeup_label);
+	}
 }
 
 ADE_FUNC(callNextMapStage,
