@@ -17,6 +17,7 @@
 #include "parse/sexp.h"
 #include "globalincs/linklist.h"
 #include "ai/aigoals.h"
+#include "asteroid/asteroid.h"
 #include "mission/missionmessage.h"
 #include "mission/missioncampaign.h"
 #include "hud/hudsquadmsg.h"
@@ -3627,12 +3628,13 @@ sexp_list_item* sexp_tree::get_listing_opf_wing() {
 }
 
 // specific types of subsystems we're looking for
-#define OPS_CAP_CARGO        1
-#define OPS_STRENGTH            2
-#define OPS_BEAM_TURRET        3
-#define OPS_AWACS                4
-#define OPS_ROTATE            5
-#define OPS_ARMOR            6
+#define OPS_CAP_CARGO		1	
+#define OPS_STRENGTH		2
+#define OPS_BEAM_TURRET		3
+#define OPS_AWACS			4
+#define OPS_ROTATE			5
+#define OPS_TRANSLATE		6
+#define OPS_ARMOR			7
 sexp_list_item* sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_index) {
 	int op, child, sh;
 	int special_subsys = 0;
