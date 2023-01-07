@@ -30,7 +30,8 @@ extern color Wireframe_color;
 typedef enum {
 	TECH_SHIP,
 	TECH_WEAPON,
-	TECH_POF
+	TECH_POF,
+	TECH_JUMP_NODE
 } tech_render_type;
 
 inline int in_box(vec3d *min, vec3d *max, vec3d *pos, vec3d *view_position)

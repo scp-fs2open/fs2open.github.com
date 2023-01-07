@@ -3092,6 +3092,7 @@ bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int 
 	float closeup_zoom;
 	int model_num;
 	bool model_lighting = true;
+	uint render_flags = MR_AUTOCENTER | MR_NO_FOGGING;
 
 	switch (model_type) {
 		case TECH_SHIP:
@@ -3142,6 +3143,16 @@ bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int 
 
 			break;
 
+		case TECH_JUMP_NODE:
+			closeup_pos = close_pos;
+			closeup_zoom = close_zoom;
+			model_num = model_load(pof_filename.c_str(), 0, nullptr);
+			render_info.set_color(HUD_color_red, HUD_color_green, HUD_color_blue);
+			render_flags |= MR_NO_POLYS | MR_SHOW_OUTLINE_HTL | MR_NO_TEXTURING;
+			model_lighting = false;
+
+			break;
+
 		default:
 			return false;
 	}
@@ -3175,8 +3186,6 @@ bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int 
 	}
 
 	render_info.set_detail_level_lock(0);
-
-	uint render_flags = MR_AUTOCENTER | MR_NO_FOGGING;
 
 	if (!lighting || !model_lighting)
 		render_flags |= MR_NO_LIGHTING;

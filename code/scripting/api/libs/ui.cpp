@@ -715,7 +715,7 @@ ADE_FUNC(renderBriefingModel,
 	l_UserInterface_Brief,
 	"string PofName, number CloseupZoom, vector CloseupPos, number X1, number Y1, number X2, number Y2, [number RotationPercent =0, number PitchPercent =0, "
 	"number "
-	"BankPercent=40, number Zoom=1.3, boolean Lighting=true]",
+	"BankPercent=40, number Zoom=1.3, boolean Lighting=true, boolean Jumpnode=false]",
 	"Draws a pof. True for regular lighting, false for flat lighting.",
 	"boolean",
 	"Whether pof was rendered")
@@ -727,8 +727,9 @@ ADE_FUNC(renderBriefingModel,
 	vec3d closeup_pos;
 	float zoom = 1.3f;
 	bool lighting = true;
+	bool jumpNode = false;
 	if (!ade_get_args(L,
-			"sfoiiii|ffffb",
+			"sfoiiii|ffffbb",
 			&pof,
 			&closeup_zoom,
 			l_Vector.Get(&closeup_pos),
@@ -740,7 +741,8 @@ ADE_FUNC(renderBriefingModel,
 			&rot_angles.p,
 			&rot_angles.b,
 			&zoom,
-			&lighting))
+			&lighting,
+			&jumpNode))
 		return ade_set_error(L, "b", false);
 
 	if (x2 < x1 || y2 < y1)
@@ -760,7 +762,13 @@ ADE_FUNC(renderBriefingModel,
 	rot_angles.h = (rot_angles.h * 0.01f) * PI2;
 	vm_rotate_matrix_by_angles(&orient, &rot_angles);
 
-	return ade_set_args(L, "b", render_tech_model(TECH_POF, x1, y1, x2, y2, zoom, lighting, -1, &orient, pof, closeup_zoom, closeup_pos));
+	tech_render_type thisType = TECH_POF;
+
+	if (jumpNode) {
+		thisType = TECH_JUMP_NODE;
+	}
+
+	return ade_set_args(L, "b", render_tech_model(thisType, x1, y1, x2, y2, zoom, lighting, -1, &orient, pof, closeup_zoom, closeup_pos));
 }
 
 ADE_FUNC(drawBriefingMap,
@@ -802,9 +810,9 @@ ADE_FUNC(checkStageIcons,
 	l_UserInterface_Brief,
 	"number xPos, number yPos",
 	"Sends the mouse position to the brief map rendering functions to properly highlight icons.",
-	"string, number, vector, string",
+	"string, number, vector, string, number",
 	"If an icon is highlighted then this will return the ship name for ships or the pof to render for asteroid, jumpnode, or unknown icons. "
-	"also returns the closeup zoom, the closeup position, and the closeup label. Otherwise it returns nil")
+	"also returns the closeup zoom, the closeup position, the closeup label, and the icon id. Otherwise it returns nil")
 {
 	int x;
 	int y;
@@ -819,7 +827,7 @@ ADE_FUNC(checkStageIcons,
 	if (Closeup_icon == nullptr) {
 		return ADE_RETURN_NIL;
 	} else {
-		return ade_set_args(L, "sfos", Closeup_type_name, Closeup_zoom, l_Vector.Set(Closeup_cam_pos), Closeup_icon->closeup_label);
+		return ade_set_args(L, "sfosi", Closeup_type_name, Closeup_zoom, l_Vector.Set(Closeup_cam_pos), Closeup_icon->closeup_label, Closeup_icon->id);
 	}
 }
 
