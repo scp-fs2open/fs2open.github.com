@@ -535,6 +535,7 @@ typedef struct glow_point_bank_override {
 	int			glow_bitmap; 
 	int			glow_neb_bitmap;
 	bool		is_on;
+	bool		default_off;
 
 	bool		type_override;
 	bool		on_time_override; 

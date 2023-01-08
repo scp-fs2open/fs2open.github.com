@@ -5623,6 +5623,7 @@ void glowpoint_override_defaults(glow_point_bank_override *gpo)
 	gpo->glow_bitmap = -1;
 	gpo->glow_neb_bitmap = -1;
 	gpo->is_on = true;
+	gpo->default_off = false;
 	gpo->type_override = false;
 	gpo->on_time_override = false;
 	gpo->off_time_override = false;
@@ -5694,6 +5695,10 @@ void parse_glowpoint_table(const char *filename)
 
 			if (optional_string("$On:")) {
 				stuff_boolean(&gpo.is_on);
+			}
+
+			if (optional_string("$Default Off:")) {
+				stuff_boolean(&gpo.default_off);
 			}
 
 			if (optional_string("$Displacement time:")) {

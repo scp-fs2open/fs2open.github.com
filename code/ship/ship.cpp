@@ -10448,6 +10448,24 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 
 		if (pm->n_glow_point_banks)
 			shipp->glow_point_bank_active.resize( pm->n_glow_point_banks, val );
+
+		// set any default off banks to off
+		for (int bank = 0; bank < pm->n_glow_point_banks; bank++) {
+			glow_point_bank_override* gpo = nullptr;
+
+			if (sip) {
+				SCP_unordered_map<int, void*>::iterator gpoi = sip->glowpoint_bank_override_map.find(bank);
+				if (gpoi != sip->glowpoint_bank_override_map.end()) {
+					gpo = (glow_point_bank_override*)sip->glowpoint_bank_override_map[bank];
+				}
+			}
+
+			if (gpo) {
+				if (gpo->default_off) {
+					shipp->glow_point_bank_active[bank] = false;
+				}
+			}
+		}
 	}
 
 	// fix up references into paths for this ship's model to point to a ship_subsys entry instead
@@ -10622,6 +10640,24 @@ static void ship_model_change(int n, int ship_type)
 
 		if (pm->n_glow_point_banks)
 			sp->glow_point_bank_active.resize( pm->n_glow_point_banks, val );
+		
+		// set any default off banks to off
+		for (int bank = 0; bank < pm->n_glow_point_banks; bank++) {
+			glow_point_bank_override* gpo = nullptr;
+
+			if (sip) {
+				SCP_unordered_map<int, void*>::iterator gpoi = sip->glowpoint_bank_override_map.find(bank);
+				if (gpoi != sip->glowpoint_bank_override_map.end()) {
+					gpo = (glow_point_bank_override*)sip->glowpoint_bank_override_map[bank];
+				}
+			}
+
+			if (gpo) {
+				if (gpo->default_off) {
+					sp->glow_point_bank_active[bank] = false;
+				}
+			}
+		}
 	}
 
 	ship_copy_subsystem_fixup(sip);
