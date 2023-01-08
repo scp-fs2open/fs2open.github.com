@@ -4080,22 +4080,18 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 	}
 	else return;
 
-	//do dumbfire lead indicator - color is orange (255,128,0) - bright, (192,96,0) - dim
+	//do dumbfire or non-merged secondary lead indicator - color is orange (255,128,0) - bright, (192,96,0) - dim
 	//phreak changed 9/01/02
 	if((swp->current_secondary_bank>=0) && (swp->secondary_bank_weapons[swp->current_secondary_bank] >= 0)) {
 		int bank=swp->current_secondary_bank;
-		wip=&Weapon_info[swp->secondary_bank_weapons[bank]];
+		weapon_info* swip = &Weapon_info[swp->secondary_bank_weapons[bank]];
 
-		//get out of here if the secondary weapon is a homer or if its out of range
-		if ( wip->is_homing() && !wip->wi_flags[Weapon::Info_Flags::Dont_merge_indicators] )
-			return;
-
-		double max_dist = MIN((wip->lifetime * wip->max_speed), wip->weapon_range);
+		double max_dist = MIN((swip->lifetime * swip->max_speed), swip->weapon_range);
 
 		if (dist_to_target > max_dist)
 			return;
 
-		if (hud_calculate_lead_pos(&Player_obj->pos, &lead_target_pos, &target_pos, targetp, wip, dist_to_target))
+		if (hud_calculate_lead_pos(&Player_obj->pos, &lead_target_pos, &target_pos, targetp, (swip->is_homing() && !swip->wi_flags[Weapon::Info_Flags::Dont_merge_indicators]) ? wip : swip , dist_to_target))
 			renderIndicator(0, targetp, &lead_target_pos);
 	}
 }
