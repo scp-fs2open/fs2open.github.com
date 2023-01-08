@@ -398,16 +398,14 @@ void main()
 		float shinefactor = 1.0/(1.0 + pow(abs((fract(abs(texCoord.x))-anim_timer) * 1000.0), 2.0)) * 1000.0;
 		emissiveColor.rgb += vec3(shinefactor);
 		baseColor.a = baseColor.a * clamp(shinefactor * (fract(abs(texCoord.x))-anim_timer) * -10000.0,0.0,1.0);
-	}
-	if (effect_num == 1) {
+	} else if (effect_num == 1) {
 		float shinefactor = 1.0/(1.0 + pow(abs(vertIn.position.y-anim_timer), 2.0));
 		emissiveColor.rgb += vec3(shinefactor);
 		if (!(FLAG_ACTIVE(MODEL_SDR_FLAG_LIGHT))) {
 			// ATI Wireframe fix *grumble*
 			baseColor.a = clamp((vertIn.position.y-anim_timer) * 10000.0,0.0,1.0);
 		}
-	}
-	if (effect_num == 2) {
+	} else if (effect_num == 2) {
 		vec2 screenPos = gl_FragCoord.xy * vec2(vpwidth,vpheight);
 		baseColor.a = baseColor.a;
 		float cloak_interp = (sin(vertIn.position.x*vertIn.position.w*0.005+anim_timer*20.0)*sin(vertIn.position.y*vertIn.position.w*0.005)*0.5)-0.5;
