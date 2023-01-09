@@ -3635,6 +3635,20 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				
 				break;
 
+			case OPF_TURRET_TYPE:
+				if (type2 != SEXP_ATOM_STRING)
+					return SEXP_CHECK_TYPE_MISMATCH;
+
+				for (i = 0; i < NUM_TURRET_TYPES; i++) {
+					if (!stricmp(CTEXT(node), Turret_valid_types[i]))
+						break;
+				}
+
+				if (i == NUM_TURRET_TYPES)
+					return SEXP_CHECK_INVALID_TURRET_TYPE;
+
+				break;
+
 			case OPF_ARMOR_TYPE:
 				if ( type2 != SEXP_ATOM_STRING )
 					return SEXP_CHECK_TYPE_MISMATCH;
@@ -29510,7 +29524,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_TURRET_PROTECT_SHIP:
 		case OP_TURRET_UNPROTECT_SHIP:
 			if (argnum == 0)
-				return OPF_STRING;
+				return OPF_TURRET_TYPE;
 			else
 				return OPF_SHIP;
 
@@ -32434,6 +32448,9 @@ const char *sexp_error_message(int num)
 
 		case SEXP_CHECK_INVALID_TURRET_TARGET_ORDER:
 			return "Invalid turret target order";
+
+		case SEXP_CHECK_INVALID_TURRET_TYPE:
+			return "Invalid turret type";
 
 		case SEXP_CHECK_INVALID_ARMOR_TYPE:
 			return "Invalid armor type";

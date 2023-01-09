@@ -58,10 +58,18 @@ const char *Turret_target_order_names[NUM_TURRET_ORDER_TYPES] = {
 #define EEOF_BIG_ONLY		(1<<0)	// turret fires only at big and huge ships
 #define EEOF_SMALL_ONLY		(1<<1)	// turret fires only at small ships
 #define EEOF_TAGGED_ONLY	(1<<2)	// turret fires only at tagged ships
+
 #define EEOF_BEAM			(1<<3)	// turret is a beam
 #define EEOF_FLAK			(1<<4)	// turret is flak
 #define EEOF_LASER			(1<<5)	// turret is a laser
 #define EEOF_MISSILE		(1<<6)	// turret is a missile
+
+const char* Turret_valid_types[NUM_TURRET_TYPES] = {
+	"Beam",
+	"Flak",
+	"Laser",
+	"Missile",
+};
 
 typedef struct eval_enemy_obj_struct {
 	int			turret_parent_objnum;			// parent of turret

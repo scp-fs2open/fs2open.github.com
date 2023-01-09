@@ -1519,6 +1519,7 @@ int sexp_tree::query_default_argument_available(int op, int i) {
 	case OPF_NEBULA_STORM_TYPE:
 	case OPF_NEBULA_POOF:
 	case OPF_TURRET_TARGET_ORDER:
+	case OPF_TURRET_TYPE:
 	case OPF_POST_EFFECT:
 	case OPF_TARGET_PRIORITIES:
 	case OPF_ARMOR_TYPE:
@@ -3199,6 +3200,10 @@ sexp_list_item* sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 		list = get_listing_opf_turret_target_order();
 		break;
 
+	case OPF_TURRET_TYPE:
+		list = get_listing_opf_turret_types();
+		break;
+
 	case OPF_TARGET_PRIORITIES:
 		list = get_listing_opf_turret_target_priorities();
 		break;
@@ -4784,6 +4789,16 @@ sexp_list_item* sexp_tree::get_listing_opf_turret_target_order() {
 	for (i = 0; i < NUM_TURRET_ORDER_TYPES; i++) {
 		head.add_data(Turret_target_order_names[i]);
 	}
+
+	return head.next;
+}
+
+sexp_list_item* sexp_tree::get_listing_opf_turret_types()
+{
+	sexp_list_item head;
+
+	for (int i = 0; i < NUM_TURRET_TYPES; i++)
+		head.add_data(Turret_valid_types[i]);
 
 	return head.next;
 }
