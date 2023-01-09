@@ -36379,6 +36379,10 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t7: The Z origin of the SSM missile (optional - used only for TAG-C).\r\n" 
 		"\t8: The team the SSM missile belongs to (optional - used only for TAG-C).\r\n" },
 
+	{ OP_SHIP_UNTAG, "ship-untag\r\n"
+		"\tUntags a ship.  Takes 1 argument...\r\n"
+		"\t1: The name of a ship.\r\n" },
+
 /*	made obsolete by Goober5000 - it only works in debug builds anyway
 	{ OP_INT3, "Error (Debug directive)\r\n"
 		"Causes the game to halt with an error." },
