@@ -2421,11 +2421,13 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 		}
 	}
 
-	// if this is an asteroid target, add it to the list
-	for (SCP_string& name : Asteroid_field.target_names) {
-		if (stricmp(name.c_str(), shipp->ship_name) == 0) {
-			asteroid_add_target(&Objects[objnum]);
-			break;
+	if (!Fred_running) {
+		// if this is an asteroid target, add it to the list
+		for (SCP_string& name : Asteroid_field.target_names) {
+			if (stricmp(name.c_str(), shipp->ship_name) == 0) {
+				asteroid_add_target(&Objects[objnum]);
+				break;
+			}
 		}
 	}
 
