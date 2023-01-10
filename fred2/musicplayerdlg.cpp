@@ -5,6 +5,7 @@
 #include "FRED.h"
 #include "musicplayerdlg.h"
 #include "sound/audiostr.h"
+#include "TextViewDlg.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -37,6 +38,9 @@ BEGIN_MESSAGE_MAP(music_player_dlg, CDialog)
 //{{AFX_MSG_MAP(music_player_dlg)
 ON_LBN_SELCHANGE(IDC_MUSIC_LIST, OnSelchangeOriginList)
 ON_BN_CLICKED(IDC_BUTTON_PLAY_MUSIC, OnPlay)
+ON_BN_CLICKED(IDC_BUTTON_STOP_MUSIC, OnStop)
+ON_BN_CLICKED(IDC_BUTTON_MUSIC_TBL, OnMusicTbl)
+ON_WM_CLOSE()
 //}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -72,17 +76,54 @@ void music_player_dlg::OnPlay()
 	if (m_music_id >= 0) {
 		audiostream_close_file(m_music_id, 0);
 		m_music_id = -1;
-		return;
 	}
-	mprintf(("Trying to play music %s\n", m_music_item.c_str()));
 
+	//cfile strips the extension so first let's try .wav
 	SCP_string thisMusic = m_music_item + ".wav";
-
-	// we use ASF_EVENTMUSIC here so that it will keep the extension in place
 	m_music_id = audiostream_open(thisMusic.c_str(), ASF_EVENTMUSIC);
+
+	//if no file was loaded then it must be .ogg
+	if (m_music_id < 0) {
+		thisMusic = m_music_item + ".ogg";
+		m_music_id = audiostream_open(thisMusic.c_str(), ASF_EVENTMUSIC);
+	}
+
+	//if we still can't find it then abort
+	if (m_music_id < 0)
+		return;
 
 	if (m_music_id >= 0) {
 		audiostream_play(m_music_id, 1.0f, 0);
 	}
 
+}
+
+void music_player_dlg::OnStop()
+{
+
+	if (m_music_id >= 0) {
+		audiostream_close_file(m_music_id, 0);
+		m_music_id = -1;
+	}
+}
+
+void music_player_dlg::OnMusicTbl()
+{
+	TextViewDlg dlg;
+
+	//auto ship_class = combo_index_to_ship_class(m_ship_class_combo_index);
+
+	//if (ship_class < 0)
+		//return;
+	//auto sip = &Ship_info[ship_class];
+
+	dlg.LoadMusicTblText();
+	dlg.DoModal();
+}
+
+void music_player_dlg::OnClose()
+{
+	OnStop();
+
+	CDialog::OnClose();
 }

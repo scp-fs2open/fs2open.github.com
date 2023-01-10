@@ -29,10 +29,12 @@ class music_player_dlg : public CDialog {
 	virtual BOOL OnInitDialog();
 	afx_msg void OnSelchangeOriginList();
 	afx_msg void OnPlay();
+	afx_msg void OnStop();
+	afx_msg void OnMusicTbl();
+	afx_msg void OnClose();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 
-	void update_item();
 }
 ;
 #endif // _MUSICPLAYERDLG_H

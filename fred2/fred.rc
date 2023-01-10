@@ -1821,14 +1821,16 @@ BEGIN
     LTEXT           "X Level",IDC_STATIC,69,50,25,8
 END
 
-IDD_MUSIC_PLAYER DIALOGEX 0, 0, 311, 155
+IDD_MUSIC_PLAYER DIALOGEX 0, 0, 214, 156
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Music Player"
 FONT 8, "MS Sans Serif", 0, 0, 0x0
 BEGIN
     LTEXT           "Music Files",IDC_STATIC,8,8,42,10
-    LISTBOX         IDC_MUSIC_LIST,7,17,237,131,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
-    PUSHBUTTON      "Play",IDC_BUTTON_PLAY_MUSIC,249,68,50,14
+    LISTBOX         IDC_MUSIC_LIST,7,18,133,131,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "Play",IDC_BUTTON_PLAY_MUSIC,148,17,50,14
+    PUSHBUTTON      "Stop",IDC_BUTTON_STOP_MUSIC,148,38,50,14
+    PUSHBUTTON      "Music.tbl",IDC_BUTTON_MUSIC_TBL,148,59,50,14
 END
 
 IDD_CALC_RELATIVE_COORDS DIALOG 0, 0, 311, 155
@@ -2572,9 +2574,9 @@ BEGIN
     IDD_MUSIC_PLAYER, DIALOG
     BEGIN
         LEFTMARGIN, 7
-        RIGHTMARGIN, 304
+        RIGHTMARGIN, 207
         TOPMARGIN, 7
-        BOTTOMMARGIN, 148
+        BOTTOMMARGIN, 149
     END
 
     IDD_CALC_RELATIVE_COORDS, DIALOG
@@ -3157,6 +3159,7 @@ BEGIN
     ID_EDIT_CLONEMARKEDOBJECTS 
                             "Clone every marked object in-place, like Ctrl-drag without the dragging"
     ID_MISC_POINTUSINGUVEC  "When using the Object Editor to point ships, take the ship's current up-vector into account"
+    ID_MUSIC_PLAYER         "Preview music files"
 END
 
 STRINGTABLE
@@ -3343,11 +3346,6 @@ BEGIN
     ID_ALIGN_OBJ            "Align object (or camera if no objects are marked) X/Y/Z axes with the global axes that are closest"
     ID_LEVEL_OBJ            "Rotate object (or camera if no objects are marked) so that its Y-axis matches the grid's normal vector"
     ID_MARK_WING            "Mark the entire wing that contains the currently marked object"
-END
-
-STRINGTABLE
-BEGIN
-    ID_MUSIC_PLAYER         "Preview music files"
 END
 
 STRINGTABLE

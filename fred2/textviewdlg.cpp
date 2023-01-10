@@ -201,6 +201,56 @@ void TextViewDlg::LoadShipsTblText(const ship_info *sip)
 	}
 }
 
+void TextViewDlg::LoadMusicTblText()
+{
+	char line[256];
+	CFILE* fp;
+
+	SetCaption("Music Table Data");
+
+	fp = cfopen("music.tbl", "r");
+	Assert(fp);
+
+	// print the header
+	m_edit += "-- music.tbl  -------------------------------\r\n";
+
+	// now get the file content
+	while (cfgets(line, 255, fp)) {
+		m_edit += line;
+		m_edit += "\r\n";
+	}
+
+	cfclose(fp);
+
+	SCP_vector<SCP_string> tbl_file_names;
+
+	// done with ships.tbl, so now check all modular ship tables...
+	int num_files = cf_get_file_list(tbl_file_names, CF_TYPE_TABLES, NOX("*-mus.tbm"), CF_SORT_REVERSE);
+
+	for (int n = 0; n < num_files; n++) {
+		tbl_file_names[n] += ".tbm";
+
+		fp = cfopen(tbl_file_names[n].c_str(), "r");
+		Assert(fp);
+
+		memset(line, 0, sizeof(line));
+
+		// get the name of the current file and print it
+		char file_text[82];
+		memset(file_text, 0, sizeof(file_text));
+		snprintf(file_text, sizeof(file_text) - 1, "--  %s  -------------------------------\r\n", tbl_file_names[n].c_str());
+		m_edit += file_text;
+
+		// now get the file content
+		while (cfgets(line, 255, fp)) {
+			m_edit += line;
+			m_edit += "\r\n";
+		}
+
+		cfclose(fp);
+	}
+}
+
 void TextViewDlg::OnSetfocusEdit1()
 {
 	// when the dialog is first displayed, prevent it from selecting all the text

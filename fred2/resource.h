@@ -439,6 +439,8 @@
 #define IDC_GOALS_TREE                  1169
 #define IDC_DISPLAY_GOAL_TYPES_DROP     1173
 #define IDC_GOAL_DESC                   1176
+#define IDC_BUTTON_STOP_MUSIC			1177
+#define IDC_BUTTON_MUSIC_TBL			1178
 #define IDC_GOAL_RATING                 1180
 #define IDC_GOAL_TYPE_DROP              1181
 #define IDC_BUTTON_PLAY_MUSIC           1182
