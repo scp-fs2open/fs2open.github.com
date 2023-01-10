@@ -13,8 +13,6 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
-//music_player_dlg* Music_player = NULL;
-
 SCP_vector<SCP_string> Music_player_list;
 
 music_player_dlg::music_player_dlg(CWnd* pParent /*=nullptr*/)
@@ -37,7 +35,7 @@ void music_player_dlg::DoDataExchange(CDataExchange* pDX)
 
 BEGIN_MESSAGE_MAP(music_player_dlg, CDialog)
 //{{AFX_MSG_MAP(music_player_dlg)
-ON_LBN_SELCHANGE(IDC_MUSIC_LIST, OnSelchangeOriginList)
+ON_LBN_SELCHANGE(IDC_MUSIC_LIST, OnSelMusicList)
 ON_BN_CLICKED(IDC_BUTTON_PLAY_MUSIC, OnPlay)
 ON_BN_CLICKED(IDC_BUTTON_STOP_MUSIC, OnStop)
 ON_BN_CLICKED(IDC_BUTTON_MUSIC_TBL, OnMusicTbl)
@@ -72,11 +70,9 @@ BOOL music_player_dlg::OnInitDialog()
 	return TRUE;
 }
 
-void music_player_dlg::OnSelchangeOriginList()
+void music_player_dlg::OnSelMusicList()
 {
 	m_music_item = Music_player_list[m_music_list.GetCurSel()];
-	//m_music_item.SetString(this_item.c_str());
-	//m_music_item.Format("%s", this_item.c_str());
 }
 
 void music_player_dlg::OnPlay()
@@ -119,12 +115,6 @@ void music_player_dlg::OnStop()
 void music_player_dlg::OnMusicTbl()
 {
 	TextViewDlg dlg;
-
-	//auto ship_class = combo_index_to_ship_class(m_ship_class_combo_index);
-
-	//if (ship_class < 0)
-		//return;
-	//auto sip = &Ship_info[ship_class];
 
 	dlg.LoadMusicTblText();
 	dlg.DoModal();

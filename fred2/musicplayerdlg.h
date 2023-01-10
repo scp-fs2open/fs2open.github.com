@@ -20,15 +20,12 @@ class music_player_dlg : public CDialog {
 
 	SCP_vector<int> m_object_indexes;
 
-	//public:
-	//virtual BOOL DestroyWindow();
-
 	protected:
 	virtual void DoDataExchange(CDataExchange* pDX); // DDX/DDV support
 
 	//{{AFX_MSG(calc_relative_coords_dlg)
 	virtual BOOL OnInitDialog();
-	afx_msg void OnSelchangeOriginList();
+	afx_msg void OnSelMusicList();
 	afx_msg void OnPlay();
 	afx_msg void OnStop();
 	afx_msg void OnMusicTbl();
