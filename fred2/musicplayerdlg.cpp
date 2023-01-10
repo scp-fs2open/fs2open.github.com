@@ -3,6 +3,7 @@
 
 #include "stdafx.h"
 #include "FRED.h"
+#include "MainFrm.h"
 #include "musicplayerdlg.h"
 #include "sound/audiostr.h"
 #include "TextViewDlg.h"
@@ -43,6 +44,14 @@ ON_BN_CLICKED(IDC_BUTTON_MUSIC_TBL, OnMusicTbl)
 ON_WM_CLOSE()
 //}}AFX_MSG_MAP
 END_MESSAGE_MAP()
+
+BOOL music_player_dlg::Create()
+{
+	BOOL r;
+	r = CDialog::Create(IDD, Fred_main_wnd);
+	//initialize_data(1);
+	return r;
+}
 
 BOOL music_player_dlg::OnInitDialog()
 {

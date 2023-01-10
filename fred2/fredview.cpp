@@ -4129,9 +4129,13 @@ void CFREDView::OnCalcRelativeCoords()
 
 void CFREDView::OnMusicPlayer()
 {
-	music_player_dlg dlg;
+	Assert(Music_player_dialog.GetSafeHwnd());
 
-	dlg.DoModal();
+	if (!theApp.init_window(&MusPlayer_wnd_data, &Music_player_dialog))
+		return;
+
+	Music_player_dialog.SetWindowPos(&wndTop, 0, 0, 0, 0, SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
+	Music_player_dialog.ShowWindow(SW_RESTORE);
 }
 
 void CFREDView::OnEditorsShieldSys() 

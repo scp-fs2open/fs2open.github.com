@@ -6,6 +6,7 @@
 class music_player_dlg : public CDialog {
   public:
 	music_player_dlg(CWnd* pParent = nullptr);
+	BOOL Create();
 
 	// Dialog Data
 	//{{AFX_DATA(calc_relative_coords_dlg)
