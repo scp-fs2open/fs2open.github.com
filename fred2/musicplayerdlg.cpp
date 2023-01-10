@@ -5,8 +5,9 @@
 #include "FRED.h"
 #include "MainFrm.h"
 #include "musicplayerdlg.h"
-#include "sound/audiostr.h"
 #include "TextViewDlg.h"
+#include "mod_table/mod_table.h"
+#include "sound/audiostr.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -78,9 +79,22 @@ BOOL music_player_dlg::OnInitDialog()
 	cf_get_file_list(files, CF_TYPE_MUSIC, "*", CF_SORT_NAME);
 
 	for (auto& file : files) {
-		m_music_list.AddString(file.c_str());
-		m_player_list.push_back(file);
-		m_num_music_files++;
+		bool addItem = true;
+
+		// check if the file was asked to be ignored in game_settings
+		for (auto& thisFile : Ignored_music_player_files) {
+			if (!stricmp(thisFile.c_str(), file.c_str())) {
+				addItem = false;
+				break;
+			}
+		}
+
+		//add item if not ignored
+		if (addItem) {
+			m_music_list.AddString(file.c_str());
+			m_player_list.push_back(file);
+			m_num_music_files++;
+		}
 	}
 
 	return TRUE;
