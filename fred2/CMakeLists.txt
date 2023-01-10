@@ -85,6 +85,8 @@ set(FRED2_SOURCES
 	missionsave.h
 	modifyvariabledlg.cpp
 	modifyvariabledlg.h
+	musicplayerdlg.cpp
+	musicplayerdlg.h
 	operatorargtypeselect.cpp
 	operatorargtypeselect.h
 	orienteditor.cpp

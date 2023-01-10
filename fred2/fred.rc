@@ -374,6 +374,7 @@ BEGIN
         MENUITEM "Point Ships Using UVec",      33101
         MENUITEM "Move Ships When Undocking",   33098, CHECKED
         MENUITEM "Mission Statistics\tCtrl+Shift+D", 33067
+        MENUITEM "Music Player",                33102
         MENUITEM SEPARATOR
         MENUITEM "Error checker\tShift+H",      32978
     END
@@ -1820,6 +1821,16 @@ BEGIN
     LTEXT           "X Level",IDC_STATIC,69,50,25,8
 END
 
+IDD_MUSIC_PLAYER DIALOGEX 0, 0, 311, 155
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Music Player"
+FONT 8, "MS Sans Serif", 0, 0, 0x0
+BEGIN
+    LTEXT           "Music Files",IDC_STATIC,8,8,42,10
+    LISTBOX         IDC_MUSIC_LIST,7,17,237,131,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "Play",IDC_BUTTON_PLAY_MUSIC,249,68,50,14
+END
+
 IDD_CALC_RELATIVE_COORDS DIALOG 0, 0, 311, 155
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Calculate Relative Coordinates"
@@ -2558,6 +2569,14 @@ BEGIN
         BOTTOMMARGIN, 87
     END
 
+    IDD_MUSIC_PLAYER, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 304
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 148
+    END
+
     IDD_CALC_RELATIVE_COORDS, DIALOG
     BEGIN
         LEFTMARGIN, 7
@@ -3038,6 +3057,11 @@ BEGIN
     0
 END
 
+IDD_MUSIC_PLAYER AFX_DIALOG_LAYOUT
+BEGIN
+    0
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -3319,6 +3343,11 @@ BEGIN
     ID_ALIGN_OBJ            "Align object (or camera if no objects are marked) X/Y/Z axes with the global axes that are closest"
     ID_LEVEL_OBJ            "Rotate object (or camera if no objects are marked) so that its Y-axis matches the grid's normal vector"
     ID_MARK_WING            "Mark the entire wing that contains the currently marked object"
+END
+
+STRINGTABLE
+BEGIN
+    ID_MUSIC_PLAYER         "Preview music files"
 END
 
 STRINGTABLE

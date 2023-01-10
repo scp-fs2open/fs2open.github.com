@@ -128,6 +128,7 @@
 #define IDB_COMMENT                     322
 #define IDD_EDIT_CONTAINER              323
 #define IDD_EDIT_CONTAINER_NAME         324
+#define IDD_MUSIC_PLAYER                330
 #define IDC_SHIP_CLASS                  1003
 #define IDC_SHIP_WING                   1004
 #define IDC_SOUND_CLIP_NAME             1007
@@ -440,6 +441,7 @@
 #define IDC_GOAL_DESC                   1176
 #define IDC_GOAL_RATING                 1180
 #define IDC_GOAL_TYPE_DROP              1181
+#define IDC_BUTTON_PLAY_MUSIC           1182
 #define IDC_BUTTON_NEW_GOAL             1183
 #define IDC_BUTTON_VERIFY               1184
 #define IDC_SHIP_TEAM                   1185
@@ -1160,6 +1162,7 @@
 #define IDC_SATELLITE_LIST              1672
 #define IDC_DISTANCE                    1673
 #define IDC_IGNORE_ORDERS_LIST          1674
+#define IDC_MUSIC_LIST					1671
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774
 #define ID_VIEW_ROTATE                  32775
@@ -1445,6 +1448,7 @@
 #define ID_EDIT_CLONEMARKEDOBJECTS      33099
 #define ID_EDIT_SEXP_TREE_EDIT_CONTAINERS 33100
 #define ID_MISC_POINTUSINGUVEC          33101
+#define ID_MUSIC_PLAYER					33102
 #define ID_INDICATOR_MODE               59142
 #define ID_INDICATOR_LEFT               59143
 #define ID_INDICATOR_RIGHT              59144
@@ -1455,7 +1459,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        330
+#define _APS_NEXT_RESOURCE_VALUE        331
 #define _APS_NEXT_COMMAND_VALUE         33102
 #define _APS_NEXT_CONTROL_VALUE         1665
 #define _APS_NEXT_SYMED_VALUE           105
