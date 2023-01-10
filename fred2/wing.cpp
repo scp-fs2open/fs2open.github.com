@@ -168,6 +168,8 @@ int create_wing() {
 		}
 
 		Wings[wing].clear();
+		Wings[wing].arrival_cue = Locked_sexp_true;
+		Wings[wing].departure_cue = Locked_sexp_false;
 
 		if (dlg.DoModal() == IDCANCEL)
 			return -1;

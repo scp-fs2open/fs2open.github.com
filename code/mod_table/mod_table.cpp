@@ -32,6 +32,7 @@ bool Fixed_missile_detonation;
 bool Damage_impacted_subsystem_first;
 bool Cutscene_camera_displays_hud;
 bool Alternate_chaining_behavior;
+bool Fixed_chaining_to_repeat;
 bool Use_host_orientation_for_set_camera_facing;
 bool Use_3d_ship_select;
 bool Use_3d_ship_icons;
@@ -361,6 +362,16 @@ void parse_mod_table(const char *filename)
 			}
 			else {
 				mprintf(("Game Settings Table: Using standard event chaining behavior\n"));
+			}
+		}
+
+		if (optional_string("$Fixed Chaining To Repeating Events:")) {
+			stuff_boolean(&Fixed_chaining_to_repeat);
+			if (Fixed_chaining_to_repeat) {
+				mprintf(("Game Settings Table: Using fixed chaining to repeating events\n"));
+			}
+			else {
+				mprintf(("Game Settings Table: Using retail chaining to repeating events\n"));
 			}
 		}
 
@@ -1177,6 +1188,7 @@ void mod_table_reset()
 	Damage_impacted_subsystem_first = false;
 	Cutscene_camera_displays_hud = false;
 	Alternate_chaining_behavior = false;
+	Fixed_chaining_to_repeat = false;
 	Use_host_orientation_for_set_camera_facing = false;
 	Default_ship_select_effect = 2;
 	Default_weapon_select_effect = 2;
@@ -1282,7 +1294,8 @@ void mod_table_set_version_flags()
 		Framerate_independent_turning = true;					// this is already true, but let's re-emphasize it
 		Use_host_orientation_for_set_camera_facing = true;		// this is essentially a bugfix
 	}
-	if (mod_supports_version(22, 4, 0)) {
+	if (mod_supports_version(23, 0, 0)) {
 		Shockwaves_inherit_parent_damage_type = true;	// people intuitively expect shockwaves to default to the damage type of the weapon that spawned them
+		Fixed_chaining_to_repeat = true;
 	}
 }

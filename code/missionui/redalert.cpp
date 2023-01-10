@@ -734,6 +734,8 @@ void red_alert_store_wingman_status()
 	// store status for all existing ships
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		ship_objp = &Objects[so->objnum];
+		if (ship_objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 		Assert(ship_objp->type == OBJ_SHIP);
 		shipp = &Ships[ship_objp->instance];
 
@@ -855,6 +857,11 @@ void red_alert_bash_wingman_status()
 	for ( ; so != END_OF_LIST(&Ship_obj_list); )
 	{
 		object *ship_objp = &Objects[so->objnum];
+		if (ship_objp->flags[Object::Object_Flags::Should_be_dead]) {
+			so = GET_NEXT(so);
+			continue;
+		}
+
 		Assert(ship_objp->type == OBJ_SHIP);
 		ship *shipp = &Ships[ship_objp->instance];
 

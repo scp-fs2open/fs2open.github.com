@@ -1269,6 +1269,9 @@ void brief_api_render(float frametime)
 
 	brief_render_map(Current_brief_stage, frametime);
 
+	//Used to set the time when highlight animations should start
+	Brief_text_wipe_time_elapsed += frametime;
+
 	//We don't play the static anim from the API, but we still need to quick transition between stages -Mjn
 	if (Start_fade_up_anim) {
 		Current_brief_stage = Quick_transition_stage;
@@ -1947,7 +1950,7 @@ void brief_api_do_frame(float frametime)
 			//A few items commented out, but keeping a record for closeup icon fixing in a later PR - Mjn
 			// Brief_playing_fade_sound = 0;
 			Last_brief_stage = Current_brief_stage;
-			// brief_reset_icons(Current_brief_stage);
+			brief_reset_icons(Current_brief_stage);
 			// brief_update_closeup_icon(0);
 		}
 

@@ -106,8 +106,9 @@ ADE_FUNC(listFiles, l_CFile, "string directory, string filter",
 }
 
 ADE_FUNC(openFile, l_CFile, "string Filename, [string Mode=\"r\", string Path = \"\"]",
-		 "Opens a file. 'Mode' uses standard C fopen arguments. Use a blank string for path for any directory, or a slash for the root directory."
-			 "Be EXTREMELY CAREFUL when using this function, as you may PERMANENTLY delete any file by accident",
+		 "Opens a file. 'Mode' uses standard C fopen arguments. In read mode use a blank string for path for any directory, "
+			"or a slash for the root directory. When using write mode a valid path must be specified. "
+			"Be EXTREMELY CAREFUL when using this function, as you may PERMANENTLY delete any file by accident",
 		 "file",
 		 "File handle, or invalid file handle if the specified file couldn't be opened")
 {
@@ -124,6 +125,9 @@ ADE_FUNC(openFile, l_CFile, "string Filename, [string Mode=\"r\", string Path = 
 		path = cfile_get_path_type(n_path);
 
 	if(path == CF_TYPE_INVALID)
+		return ade_set_error(L, "o", l_File.Set(cfile_h()));
+
+	if((path == CF_TYPE_ANY) && (strchr(n_mode,'w') || strchr(n_mode,'+') || strchr(n_mode,'a')))
 		return ade_set_error(L, "o", l_File.Set(cfile_h()));
 
 	CFILE *cfp = cfopen(n_filename, n_mode, type, path);

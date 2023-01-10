@@ -804,6 +804,12 @@ ADE_INDEXER(l_Briefing_Goals,
 	if (!ade_get_args(L, "*i", &idx))
 		return ade_set_error(L, "s", "");
 
+	// convert from lua index
+	idx--;
+
+	if ((idx < 0) || idx >= (int)Mission_goals.size())
+		return ade_set_args(L, "o", l_Goals.Set(-1));
+
 	return ade_set_args(L, "o", l_Goals.Set(idx));
 }
 

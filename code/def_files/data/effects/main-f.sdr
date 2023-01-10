@@ -403,14 +403,14 @@ void main()
 #endif
 #ifdef FLAG_GLOW_MAP
 	vec3 glowColor = texture(sGlowmap, vec3(texCoord, float(sGlowmapIndex))).rgb;
- #ifdef FLAG_HDR
-	glowColor = srgb_to_linear(glowColor) * GLOW_MAP_SRGB_MULTIPLIER;
- #endif
  #ifdef FLAG_MISC_MAP
   #ifdef FLAG_TEAMCOLOR
 	float glowColorLuminance = dot(glowColor, vec3(0.299, 0.587, 0.114));
 	glowColor = team_glow_enabled ? mix(max(team_color_glow, vec3(0.0)), glowColor, clamp(glowColorLuminance - teamMask.b - teamMask.a, 0.0, 1.0)) : glowColor;
   #endif
+ #endif
+ #ifdef FLAG_HDR
+   glowColor = srgb_to_linear(glowColor) * GLOW_MAP_SRGB_MULTIPLIER;
  #endif
    emissiveColor.rgb += glowColor * GLOW_MAP_INTENSITY;
 #endif

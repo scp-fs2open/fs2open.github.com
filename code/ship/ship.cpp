@@ -687,7 +687,12 @@ int ship_get_num_ships()
 
 	count = 0;
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) )
+	{
+		if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		count++;
+	}
 
 	return count;
 }
@@ -6015,7 +6020,10 @@ static int ship_allocate_subsystems(int num_so, bool page_in = false)
 
 	// because the Ship_subsystems vector changed, it might have moved in memory, so invalidate all the subsystem caches
 	for (auto so : list_range(&Ship_obj_list))
+	{
+		// don't skip should-be-dead ships for this flag removal
 		Ships[Objects[so->objnum].instance].flags.remove(Ship::Ship_Flags::Subsystem_cache_valid);
+	}
 
 	mprintf(("a total of %i is now available (%i in-use).\n", Num_ship_subsystems_allocated, Num_ship_subsystems));
 	return 1;
@@ -8153,9 +8161,12 @@ void ship_wing_cleanup( int shipnum, wing *wingp )
 			if ((wingp->total_destroyed + wingp->total_departed + wingp->total_vanished) != wingp->total_arrived_count)
 			{
 				// apparently, there have been reports of ships still present in the mission when this log
-				// entry if written.  Do a sanity check here to find out for sure.
+				// entry is written.  Do a sanity check here to find out for sure.
 				for (ship_obj *so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
 				{
+					if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+						continue;
+
 					// skip the player -- stupid special case.
 					if (&Objects[so->objnum] == Player_obj)
 						continue;
@@ -8546,6 +8557,9 @@ static void ship_blow_up_area_apply_blast( object *exp_objp)
 		float blast = 0.0f;
 		float damage = 0.0f;
 		for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
+			if (objp->flags[Object::Object_Flags::Should_be_dead])
+				continue;
+
 			if ( (objp->type != OBJ_SHIP) && (objp->type != OBJ_ASTEROID) ) {
 				continue;
 			}
@@ -10150,6 +10164,7 @@ static void ship_make_create_time_unique(ship *shipp)
 		collision = 0;
 
 		for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
+			// we probably don't need to skip should-be-dead ships
 			compare_shipp = &Ships[Objects[so->objnum].instance];
 
 			if ( compare_shipp == shipp ) {
@@ -10192,15 +10207,14 @@ int	Ship_subsys_hwm = 0;
 
 static void show_ship_subsys_count()
 {
-	object	*objp;
-	int		count = 0;	
-	int		o_type = 0;
+	int count = 0;
 
-	for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
-		o_type = (int)objp->type;
-		if (o_type == OBJ_SHIP) {
-			count += Ship_info[Ships[objp->instance].ship_info_index].n_subsystems;
-		}
+	for (auto so: list_range(&Ship_obj_list)) {
+		auto objp = &Objects[so->objnum];
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
+		count += Ship_info[Ships[objp->instance].ship_info_index].n_subsystems;
 	}
 
 	if (count > Ship_subsys_hwm) {
@@ -10677,7 +10691,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	ph_inf = objp->phys_info;
 
 	// if this ship is the wing leader, update the ship info index that the wing keeps track of.
-	if (!Fred_running && p_objp->wingnum > -1 && p_objp->pos_in_wing == 0) {
+	if (!Fred_running && p_objp != nullptr && p_objp->wingnum > -1 && p_objp->pos_in_wing == 0) {
 		Wings[p_objp->wingnum].special_ship_ship_info_index = ship_type;
 	}
 
@@ -10954,6 +10968,12 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	// Goober5000: div-0 checks
 	Assert(sp->ship_max_hull_strength > 0.0f);
 	Assert(objp->hull_strength > 0.0f);
+
+	// set regen rates
+	sp->max_weapon_regen_per_second = sip->max_weapon_regen_per_second;
+	sp->max_shield_regen_per_second = sip->max_shield_regen_per_second;
+
+	sp->autoaim_fov = sip->autoaim_fov;
 
 	// Mantis 2763: moved down to have access to the right ship_max_shield_strength value
 	// make sure that shields are disabled/enabled if they need to be - Chief1983
@@ -11292,7 +11312,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	if (sip->uses_team_colors)
 	{
 		// wookieejedi - maintain team color setting if possible
-		if (!Fred_running && !p_objp->team_color_setting.empty()) {
+		if (!Fred_running && p_objp != nullptr && !p_objp->team_color_setting.empty()) {
 			sp->team_name = p_objp->team_color_setting;
 		} else {
 			sp->team_name = sip->default_team_name;
@@ -12591,10 +12611,10 @@ void ship_process_targeting_lasers()
 
 	// interate over all ships
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
-		// sanity checks
-		if(so->objnum < 0){
+		if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
 			continue;
-		}
+
+		// sanity checks
 		if(Objects[so->objnum].type != OBJ_SHIP){
 			continue;
 		}
@@ -12655,6 +12675,9 @@ static bool ship_fire_secondary_detonate(object *obj, ship_weapon *swp)
 				object	*mobjp;
 				Assert(mo->objnum >= 0 && mo->objnum < MAX_OBJECTS);
 				mobjp = &Objects[mo->objnum];
+				if (mobjp->flags[Object::Object_Flags::Should_be_dead])
+					continue;
+
 				if (mobjp->parent_sig == obj->parent_sig && Weapon_info[Weapons[mobjp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Remote]) {
 					// dont detonate if this guy just spawned i.e. we just spawned him in a previous iteration of this loop
 					if (Missiontime - Weapons[mobjp->instance].creation_time > fl2f(0.01)) {
@@ -14297,7 +14320,6 @@ ship_subsys *ship_get_best_subsys_to_attack(ship *sp, int subsys_type, vec3d *at
 	ship_subsys *best_in_sight_subsys, *lowest_attacker_subsys, *ss_return;
 	int			lowest_num_attackers, lowest_in_sight_attackers, num_attackers;
 	vec3d		gsubpos;
-	ship_obj		*sop;
 
 	lowest_in_sight_attackers = lowest_num_attackers = 1000;
 	ss_return = best_in_sight_subsys = lowest_attacker_subsys = NULL;
@@ -14312,12 +14334,12 @@ ship_subsys *ship_get_best_subsys_to_attack(ship *sp, int subsys_type, vec3d *at
 			// now find the number of ships attacking this subsystem by iterating through the ships list,
 			// and checking if aip->targeted_subsys matches the subsystem we're checking
 			num_attackers = 0;
-			sop = GET_FIRST(&Ship_obj_list);
-			while(sop != END_OF_LIST(&Ship_obj_list)){
+			for (auto sop: list_range(&Ship_obj_list)){
+				if (Objects[sop->objnum].flags[Object::Object_Flags::Should_be_dead])
+					continue;
 				if ( Ai_info[Ships[Objects[sop->objnum].instance].ai_index].targeted_subsys == ss ) {
 					num_attackers++;
 				}
-				sop = GET_NEXT(sop);
 			}
 
 			if ( num_attackers < lowest_num_attackers ) {
@@ -15021,7 +15043,6 @@ int ship_do_rearm_frame( object *objp, float frametime )
 // if no ships can satisfy a request, we've reached the limits, and we can't queue anything, we're out of luck -- return 4
 int ship_find_repair_ship( object *requester_obj, object **ship_we_found )
 {
-	object *objp;
 	int num_support_ships = 0;
 	float min_dist = -1.0f;
 	object *nearest_support_ship = NULL;
@@ -15034,9 +15055,10 @@ int ship_find_repair_ship( object *requester_obj, object **ship_we_found )
 		requester_obj->instance, MAX_SHIPS);
 
 	ship *requester_ship = &Ships[requester_obj->instance];
-	for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) )
+	for (auto so: list_range(&Ship_obj_list))
 	{
-		if ((objp->type == OBJ_SHIP) && !(objp->flags[Object::Object_Flags::Should_be_dead]))
+		auto objp = &Objects[so->objnum];
+		if (!(objp->flags[Object::Object_Flags::Should_be_dead]))
 		{
 			ship *shipp;
 			ship_info *sip;
@@ -15286,6 +15308,9 @@ void ship_assign_sound_all()
 		return;
 
 	for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {		
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		if ( objp->type == OBJ_SHIP && Player_obj != objp) {
 			has_sounds = 0;
 
@@ -15701,12 +15726,13 @@ int ship_get_random_ship_in_wing(int wingnum, int flags, float max_dist, int get
 int ship_get_random_team_ship(int team_mask, int flags, float max_dist )
 {
 	int num, which_one;
-	object *objp, *obj_list[MAX_SHIPS];
+	object *obj_list[MAX_SHIPS];
 
 	// for any allied, go through the ships list and find all of the ships on that team
 	num = 0;
-	for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
-		if ( objp->type != OBJ_SHIP )
+	for (auto so: list_range(&Ship_obj_list)) {
+		auto objp = &Objects[so->objnum];
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
 			continue;
 
 		// series of conditionals one per line for easy reading
@@ -15743,11 +15769,7 @@ int ship_get_random_team_ship(int team_mask, int flags, float max_dist )
 		return -1;
 
 	which_one = Random::next(num);
-	objp = obj_list[which_one];
-
-	Assert ( objp->instance != -1 );
-
-	return objp->instance;
+	return obj_list[which_one]->instance;
 }
 
 // -----------------------------------------------------------------------
@@ -16140,6 +16162,8 @@ static int ship_has_homing_missile_locked(ship *shipp)
 	for ( mo = GET_NEXT(&Missile_obj_list); mo != END_OF_LIST(&Missile_obj_list); mo = GET_NEXT(mo) ) {
 		Assert(mo->objnum >= 0 && mo->objnum < MAX_OBJECTS);
 		A = &Objects[mo->objnum];
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 
 		if (A->type != OBJ_WEAPON)
 			continue;
@@ -16171,6 +16195,8 @@ static int ship_is_getting_locked(ship *shipp)
 
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		objp = &Objects[so->objnum];
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 		aip = &Ai_info[Ships[objp->instance].ai_index];
 
 		if ( aip->target_objnum == shipp->objnum ) {
@@ -16484,7 +16510,6 @@ int ship_return_seconds_to_goal(ship *sp)
 void ship_check_cargo_all()
 {
 	object	*cargo_objp;
-	ship_obj	*cargo_so, *ship_so;
 	ship		*cargo_sp, *ship_sp;
 	float		dist_squared, limit_squared;
 
@@ -16500,20 +16525,25 @@ void ship_check_cargo_all()
 	// cargo revealed
 
 	// for now just locate a capital ship on the same team:
-	cargo_so = GET_FIRST(&Ship_obj_list);
-	while(cargo_so != END_OF_LIST(&Ship_obj_list)){
+	for (auto cargo_so: list_range(&Ship_obj_list)){
+		if (Objects[cargo_so->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		cargo_sp = &Ships[Objects[cargo_so->objnum].instance];
 		if ( (Ship_info[cargo_sp->ship_info_index].flags[Ship::Info_Flags::Cargo]) && (cargo_sp->team != Player_ship->team) ) {
 			
 			// If the cargo is revealed, continue on to next hostile cargo
 			if ( cargo_sp->flags[Ship::Ship_Flags::Cargo_revealed] ) {
-				goto next_cargo;
+				continue;
 			}
 
 			// check against friendly fighter/bombers + cruiser/freighter/transport
 			// IDEA: could cull down to fighter/bomber if we want this to run a bit quicker
-			for ( ship_so=GET_FIRST(&Ship_obj_list); ship_so != END_OF_LIST(&Ship_obj_list); ship_so=GET_NEXT(ship_so) )
+			for (auto ship_so: list_range(&Ship_obj_list))
 			{
+				if (Objects[ship_so->objnum].flags[Object::Object_Flags::Should_be_dead])
+					continue;
+
 				ship_sp = &Ships[Objects[ship_so->objnum].instance];
 				// only consider friendly ships
 				if (ship_sp->team != Player_ship->team) {
@@ -16538,9 +16568,7 @@ void ship_check_cargo_all()
 				}
 			} // end for
 		}
-next_cargo:
-		cargo_so = GET_NEXT(cargo_so);
-	} // end while
+	} // end for
 }
 */
 
@@ -17215,6 +17243,9 @@ int ship_get_by_signature(int signature)
 	ship_obj *so;
 		
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {		
+		if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		// if we found a matching ship object signature
 		if((Objects[so->objnum].signature == signature) && (Objects[so->objnum].type == OBJ_SHIP)){
 			return Objects[so->objnum].instance;
@@ -18022,6 +18053,9 @@ int ship_get_random_targetable_ship()
 	ship_obj *so;
 
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
+		if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		// make sure the instance is valid
 		if ( (Objects[so->objnum].instance < 0) || (Objects[so->objnum].instance >= MAX_SHIPS) )
 			continue;
@@ -18292,6 +18326,9 @@ void ship_update_artillery_lock()
 
 	// update all ships
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ){
+		if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		// get the ship
 		if((so->objnum >= 0) && (Objects[so->objnum].type == OBJ_SHIP) && (Objects[so->objnum].instance >= 0)){
 			shipp = &Ships[Objects[so->objnum].instance];
@@ -18659,6 +18696,9 @@ int ship_get_ship_for_departure(int team)
 	for (ship_obj *so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
 	{
 		Assert(so->objnum >= 0);
+		if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		int shipnum = Objects[so->objnum].instance;
 		Assert(shipnum >= 0);
 

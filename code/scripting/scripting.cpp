@@ -251,7 +251,7 @@ static bool global_condition_valid(const script_condition& condition)
 		if (Current_key_down == 0)
 			return false;
 		// WMC - could be more efficient, but whatever.
-		if (stricmp(textify_scancode(Current_key_down), condition.condition_string.c_str()) != 0)
+		if (stricmp(textify_scancode_universal(Current_key_down), condition.condition_string.c_str()) != 0)
 			return false;
 		break;
 	}

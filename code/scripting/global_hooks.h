@@ -71,6 +71,12 @@ extern const std::shared_ptr<Hook<>>									OnDialogClose;
 
 extern const std::shared_ptr<Hook<>>									OnCheat;
 
+extern const std::shared_ptr<Hook<>>									OnMissionAboutToEndHook;
+extern const std::shared_ptr<OverridableHook<>>							OnMissionEndHook;
+extern const std::shared_ptr<Hook<>>									OnStateAboutToEndHook;
+extern const std::shared_ptr<OverridableHook<>>							OnStateEndHook;
+extern const std::shared_ptr<Hook<>>									OnCameraSetUpHook;
+
 // deprecated
 extern const std::shared_ptr<OverridableHook<ObjectDeathConditions>>	OnDeath;
 
