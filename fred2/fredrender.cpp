@@ -47,6 +47,7 @@
 #include "render/3d.h"
 #include "render/3dinternal.h"
 #include "ship/ship.h"
+#include "sound/audiostr.h"
 #include "starfield/starfield.h"
 #include "weapon/weapon.h"
 
@@ -952,6 +953,28 @@ void game_do_frame() {
 
 	if ((viewpoint == 1) && !query_valid_object(view_obj))
 		viewpoint = 0;
+
+	if (Music_player_dialog.m_music_id >= 0){
+		if (!audiostream_is_playing(Music_player_dialog.m_music_id)) {
+			audiostream_close_file(Music_player_dialog.m_music_id, 0);
+
+			//Check that we're not at the end of the list
+			bool canAdvance = false;
+			if ((Music_player_dialog.m_cursor_pos >= 0) && (Music_player_dialog.m_cursor_pos < (Music_player_dialog.m_num_music_files - 1))) {
+				bool canAdvance = true;
+			}
+
+			//if autoplay is on and we just finished a track then select the next music track and play it
+			if (Music_player_dialog.m_autoplay && canAdvance && (Music_player_dialog.m_music_id >= 0)) {
+				Music_player_dialog.m_cursor_pos++;
+				Music_player_dialog.m_music_list.SetCurSel(Music_player_dialog.m_cursor_pos);
+				Music_player_dialog.UpdateSelection();
+				Music_player_dialog.PlayMusic();
+			} else {
+				Music_player_dialog.m_music_id = -1;
+			}
+		}
+	}
 
 	key = key_inkey();
 	process_system_keys(key);

@@ -438,9 +438,12 @@
 #define IDC_PREF_STARFIELD              1167
 #define IDC_GOALS_TREE                  1169
 #define IDC_DISPLAY_GOAL_TYPES_DROP     1173
+#define IDC_BUTTON_NEXT_MUSIC			1174
+#define IDC_BUTTON_PREV_MUSIC			1175
 #define IDC_GOAL_DESC                   1176
-#define IDC_BUTTON_STOP_MUSIC			1177
-#define IDC_BUTTON_MUSIC_TBL			1178
+#define IDC_BUTTON_STOP_MUSIC           1177
+#define IDC_BUTTON_MUSIC_TBL            1178
+#define IDC_MUSIC_AUTOPLAY              1179
 #define IDC_GOAL_RATING                 1180
 #define IDC_GOAL_TYPE_DROP              1181
 #define IDC_BUTTON_PLAY_MUSIC           1182
@@ -1161,10 +1164,10 @@
 #define IDC_CONTAINER_ETERNAL_PERSIST   1669
 #define IDC_RENAME_CONTAINER            1670
 #define IDC_ORIGIN_LIST                 1671
+#define IDC_MUSIC_LIST                  1671
 #define IDC_SATELLITE_LIST              1672
 #define IDC_DISTANCE                    1673
 #define IDC_IGNORE_ORDERS_LIST          1674
-#define IDC_MUSIC_LIST					1671
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774
 #define ID_VIEW_ROTATE                  32775
@@ -1450,7 +1453,7 @@
 #define ID_EDIT_CLONEMARKEDOBJECTS      33099
 #define ID_EDIT_SEXP_TREE_EDIT_CONTAINERS 33100
 #define ID_MISC_POINTUSINGUVEC          33101
-#define ID_MUSIC_PLAYER					33102
+#define ID_MUSIC_PLAYER                 33102
 #define ID_INDICATOR_MODE               59142
 #define ID_INDICATOR_LEFT               59143
 #define ID_INDICATOR_RIGHT              59144
