@@ -9,6 +9,9 @@ class music_player_dlg : public CDialog {
 	BOOL Create();
 	afx_msg void UpdateSelection();
 	afx_msg void PlayMusic();
+	afx_msg void StopMusic();
+	afx_msg bool SelectNextTrack();
+	afx_msg bool SelectPrevTrack();
 
 
 	enum {
@@ -33,7 +36,6 @@ class music_player_dlg : public CDialog {
 
 
 	virtual BOOL OnInitDialog();
-	afx_msg void StopMusic();
 	afx_msg void OnSelMusicList();
 	afx_msg void OnPlay();
 	afx_msg void OnStop();

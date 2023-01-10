@@ -20,7 +20,7 @@ music_player_dlg::music_player_dlg(CWnd* pParent /*=nullptr*/)
 	//{{AFX_DATA_INIT(calc_relative_coords_dlg)
 	m_music_item = "";
 	m_music_id = -1;
-	m_cursor_pos = 0;
+	m_cursor_pos = -1;
 	m_player_list = {};
 	m_autoplay = FALSE;
 	m_num_music_files = 0;
@@ -102,6 +102,8 @@ BOOL music_player_dlg::OnInitDialog()
 
 void music_player_dlg::PlayMusic()
 {
+	StopMusic();
+	
 	// cfile strips the extension so first let's try .wav
 	SCP_string thisMusic = m_music_item + ".wav";
 	m_music_id = audiostream_open(thisMusic.c_str(), ASF_EVENTMUSIC);
@@ -127,6 +129,30 @@ void music_player_dlg::StopMusic()
 	}
 }
 
+bool music_player_dlg::SelectNextTrack()
+{
+	if ((m_cursor_pos >= 0) && (m_cursor_pos < (m_num_music_files - 1))) {
+		m_cursor_pos++;
+		m_music_list.SetCurSel(m_cursor_pos);
+		UpdateSelection();
+		return true;
+	}
+	
+	return false;
+}
+
+bool music_player_dlg::SelectPrevTrack()
+{
+	if ((m_cursor_pos > 0) && (m_cursor_pos <= (m_num_music_files - 1))) {
+		m_cursor_pos--;
+		m_music_list.SetCurSel(m_cursor_pos);
+		UpdateSelection();
+		return true;
+	}
+
+	return false;
+}
+
 void music_player_dlg::UpdateSelection()
 {
 	m_cursor_pos = m_music_list.GetCurSel();
@@ -140,7 +166,6 @@ void music_player_dlg::OnSelMusicList()
 
 void music_player_dlg::OnPlay()
 {
-	StopMusic();
 	PlayMusic();
 }
 
@@ -151,29 +176,15 @@ void music_player_dlg::OnStop()
 
 void music_player_dlg::OnNextTrack()
 {
-	if ((m_cursor_pos >= 0) && (m_cursor_pos < (m_num_music_files - 1))) {
-		m_cursor_pos++;
-		m_music_list.SetCurSel(m_cursor_pos);
-		UpdateSelection();
-
-		if (audiostream_is_playing(m_music_id)) {
-			StopMusic();
-			PlayMusic();
-		}
+	if (SelectNextTrack() && audiostream_is_playing(m_music_id)) {
+		PlayMusic();
 	}
 }
 
 void music_player_dlg::OnPreviousTrack()
 {
-	if ((m_cursor_pos > 0) && (m_cursor_pos <= (m_num_music_files - 1))) {
-		m_cursor_pos--;
-		m_music_list.SetCurSel(m_cursor_pos);
-		UpdateSelection();
-
-		if (audiostream_is_playing(m_music_id)) {
-			StopMusic();
-			PlayMusic();
-		}
+	if (SelectPrevTrack() && audiostream_is_playing(m_music_id)) {
+		PlayMusic();
 	}
 }
 
@@ -187,7 +198,7 @@ void music_player_dlg::OnMusicTbl()
 
 void music_player_dlg::OnClose()
 {
-	OnStop();
+	StopMusic();
 
 	CDialog::OnClose();
 }

@@ -954,24 +954,17 @@ void game_do_frame() {
 	if ((viewpoint == 1) && !query_valid_object(view_obj))
 		viewpoint = 0;
 
+	//If the music player dialog is open and music is selected
 	if (Music_player_dialog.m_music_id >= 0){
-		if (!audiostream_is_playing(Music_player_dialog.m_music_id)) {
-			audiostream_close_file(Music_player_dialog.m_music_id, 0);
 
-			//Check that we're not at the end of the list
-			bool canAdvance = false;
-			if ((Music_player_dialog.m_cursor_pos >= 0) && (Music_player_dialog.m_cursor_pos < (Music_player_dialog.m_num_music_files - 1))) {
-				canAdvance = true;
-			}
+		//If the music has finished playing
+		if (!audiostream_is_playing(Music_player_dialog.m_music_id)) {
 
 			//if autoplay is on and we just finished a track then select the next music track and play it
-			if (Music_player_dialog.m_autoplay && canAdvance && (Music_player_dialog.m_music_id >= 0)) {
-				Music_player_dialog.m_cursor_pos++;
-				Music_player_dialog.m_music_list.SetCurSel(Music_player_dialog.m_cursor_pos);
-				Music_player_dialog.UpdateSelection();
+			if (Music_player_dialog.m_autoplay && Music_player_dialog.SelectNextTrack()) {
 				Music_player_dialog.PlayMusic();
 			} else {
-				Music_player_dialog.m_music_id = -1;
+				Music_player_dialog.StopMusic();
 			}
 		}
 	}
