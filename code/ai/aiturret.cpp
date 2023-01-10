@@ -766,7 +766,6 @@ int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subs
 {
 	//float					weapon_travel_dist;
 	int					weapon_system_ok;
-	object				*objp;
 	eval_enemy_obj_struct eeo;
 	ship_weapon *swp = &turret_subsys->weapons;
 
@@ -863,9 +862,10 @@ int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subs
 			int n_w_classes = (int)tt->weapon_class.size();
 			
 			bool found_something;
-			object *ptr = GET_FIRST(&obj_used_list);
-			
-			while (ptr != END_OF_LIST(&obj_used_list)) {
+			for (auto ptr: list_range(&obj_used_list)) {
+				if (ptr->flags[Object::Object_Flags::Should_be_dead])
+					continue;
+
 				found_something = false;
 
 				if(tt->obj_type > -1 && (ptr->type == tt->obj_type)) {
@@ -916,15 +916,10 @@ int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subs
 				if(!(found_something)) {
 					//we didnt find this object within this priority group
 					//skip to next without evaluating the object as target
-					ptr = GET_NEXT(ptr);
-
 					continue;
 				}
 
-
 				evaluate_obj_as_target(ptr, &eeo);
-
-				ptr = GET_NEXT(ptr);
 			}
 
 			//homing weapon entry...
@@ -995,8 +990,10 @@ int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subs
 					{
 						// Missile_obj_list
 						for( mo = GET_FIRST(&Missile_obj_list); mo != END_OF_LIST(&Missile_obj_list); mo = GET_NEXT(mo) ) {
-							objp = &Objects[mo->objnum];
-							
+							auto objp = &Objects[mo->objnum];
+							if (objp->flags[Object::Object_Flags::Should_be_dead])
+								continue;
+
 							Assert(objp->type == OBJ_WEAPON);
 							if ((Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Bomb]) || (Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Turret_Interceptable]))
 							{
@@ -1016,7 +1013,9 @@ int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subs
 					//Return if a ship is found
 					// Ship_used_list
 					for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
-						objp = &Objects[so->objnum];
+						auto objp = &Objects[so->objnum];
+						if (objp->flags[Object::Object_Flags::Should_be_dead])
+							continue;
 						evaluate_obj_as_target(objp, &eeo);
 					}
 
@@ -1044,7 +1043,9 @@ int get_nearest_turret_objnum(int turret_parent_objnum, ship_subsys *turret_subs
 					if ( !all_turret_weapons_have_flags(swp, tmp_flagset) ) {
 						// Asteroid_obj_list
 						for ( ao = GET_FIRST(&Asteroid_obj_list); ao != END_OF_LIST(&Asteroid_obj_list); ao = GET_NEXT(ao) ) {
-							objp = &Objects[ao->objnum];
+							auto objp = &Objects[ao->objnum];
+							if (objp->flags[Object::Object_Flags::Should_be_dead])
+								continue;
 							evaluate_obj_as_target(objp, &eeo);
 						}
 

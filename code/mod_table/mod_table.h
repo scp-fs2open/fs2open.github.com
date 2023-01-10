@@ -27,6 +27,7 @@ extern bool Fixed_missile_detonation;
 extern bool Damage_impacted_subsystem_first;
 extern bool Cutscene_camera_displays_hud;
 extern bool Alternate_chaining_behavior;
+extern bool Fixed_chaining_to_repeat;
 extern bool Use_host_orientation_for_set_camera_facing;
 extern bool Use_3d_ship_select;
 extern int Default_ship_select_effect;

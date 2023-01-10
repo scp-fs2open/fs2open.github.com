@@ -119,6 +119,9 @@ void awacs_update_all_levels()
 	// we need to traverse all subsystems on all ships	
 	for (moveup = GET_FIRST(&Ship_obj_list); moveup != END_OF_LIST(&Ship_obj_list); moveup = GET_NEXT(moveup))
 	{
+		if (Objects[moveup->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		// make sure its a valid ship
 		if ((Objects[moveup->objnum].type != OBJ_SHIP) || (Objects[moveup->objnum].instance < 0))
 			continue;
@@ -194,10 +197,10 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 	int distance = (int) vm_vec_mag_quick(&dist_vec);
 
 // redone by Goober5000
-#define ALWAYS_TARGETABLE		1.5f
-#define MARGINALLY_TARGETABLE	0.5f
-#define UNTARGETABLE			-1.0f
-#define FULLY_TARGETABLE		(viewer_has_primitive_sensors ? ((distance < viewer->primitive_sensor_range) ? MARGINALLY_TARGETABLE : UNTARGETABLE) : ALWAYS_TARGETABLE)
+constexpr float ALWAYS_TARGETABLE       = 1.5f;
+constexpr float MARGINALLY_TARGETABLE   = 0.5f;
+constexpr float UNTARGETABLE            = -1.0f;
+const     float FULLY_TARGETABLE        = (viewer_has_primitive_sensors ? ((distance < viewer->primitive_sensor_range) ? MARGINALLY_TARGETABLE : UNTARGETABLE) : ALWAYS_TARGETABLE);
 
 	// if the viewer is me, and I'm a multiplayer observer, its always viewable
 	if ((viewer == Player_ship) && (Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && MULTI_OBSERVER(Net_players[MY_NET_PLAYER_NUM]))
@@ -316,14 +319,14 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 			return UNTARGETABLE;
 		}
 	}
-	// all other ships
+	// all other objects
 	else
 	{
-		// if this is not a nebula mission, its always targetable
+		// if this is not a nebula mission, it's always targetable
 		if (!nebula_enabled)
 			return FULLY_TARGETABLE;
 
-		// if the ship is within range of an awacs, its fully targetable
+		// if the object is within range of an awacs, it's fully targetable
 		if (closest_index >= 0)
 			return FULLY_TARGETABLE;
 
@@ -377,6 +380,9 @@ void team_visibility_update()
 	// Go through list of ships and mark those visible for their own team
 	for (moveup = GET_FIRST(&Ship_obj_list); moveup != END_OF_LIST(&Ship_obj_list); moveup = GET_NEXT(moveup))
 	{
+		if (Objects[moveup->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		// make sure its a valid ship
 		if ((Objects[moveup->objnum].type != OBJ_SHIP) || (Objects[moveup->objnum].instance < 0))
 			continue;

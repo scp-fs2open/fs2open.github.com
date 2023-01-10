@@ -207,7 +207,7 @@ json_t* joystick_serializer(Joystick* joystick)
 		return json_null();
 	}
 
-	return json_pack("{sssi}", "guid", joystick->getGUID().c_str(), "id", joystick->getID());
+	return json_pack("{sssi}", "guid", joystick->getGUID().c_str(), "id", joystick->getDeviceId());
 }
 
 /**
@@ -998,13 +998,16 @@ namespace joystick
 		{
 			// The new options system is in use
 			setPlayerJoystick(JoystickOption->getValue(), 0);
+			setPlayerJoystick(JoystickOption1->getValue(), 1);
+			setPlayerJoystick(JoystickOption2->getValue(), 2);
+			setPlayerJoystick(JoystickOption3->getValue(), 3);
 		}
 		else
 		{
 			// Fall back to the legacy config values
-			for (short i = CID_JOY0; i < CID_JOY_MAX; ++i)
+			for (auto& stick : joysticks)
 			{
-				for (auto& stick : joysticks)
+				for (short i = CID_JOY0; i < CID_JOY_MAX; ++i)
 				{
 					if (isPlayerJoystick(stick.get(), i))
 					{

@@ -661,16 +661,17 @@ int ai_big_maybe_start_strafe(ai_info *aip, ship_info *sip)
 	// are near
 	if ( sip->is_small_ship() ) {
 		if ( timestamp_elapsed(aip->scan_for_enemy_timestamp) ) {
-			ship_obj	*so;
 			object	*test_objp;
 			ship		*test_sp;
 			float		dist_squared;
 			
 			aip->scan_for_enemy_timestamp = timestamp(SCAN_FIGHTERS_INTERVAL);
 			// iterate through ships, and see if any fighter/bomber from opposite team are near
-			so = GET_FIRST(&Ship_obj_list);
-			while( so != END_OF_LIST(&Ship_obj_list) ) {
+			for (auto so: list_range(&Ship_obj_list)) {
 				test_objp = &Objects[so->objnum];
+				if (test_objp->flags[Object::Object_Flags::Should_be_dead])
+					continue;
+
 				test_sp = &Ships[test_objp->instance];
 
 				if ( iff_x_attacks_y(Ships[Pl_objp->instance].team, test_sp->team) ) {
@@ -681,7 +682,6 @@ int ai_big_maybe_start_strafe(ai_info *aip, ship_info *sip)
 						}
 					}
 				}
-				so = GET_NEXT(so);
 			}
 		}
 	}
@@ -706,6 +706,9 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 		if (Pl_objp->phys_info.speed < 3.0f) {
 			object *objp;
 			for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
+				if (objp->flags[Object::Object_Flags::Should_be_dead])
+					continue;
+
 				if ((objp->type == OBJ_WEAPON) && (iff_x_attacks_y(Ships[Pl_objp->instance].team, Weapons[objp->instance].team)))
 					if (Weapon_info[Weapons[objp->instance].weapon_info_index].subtype == WP_LASER) {
 						vec3d	in_vec;

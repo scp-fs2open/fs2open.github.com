@@ -254,6 +254,8 @@ void ai_post_process_mission()
 	// mission following the orders in the mission file right away instead of waiting N seconds
 	// before following them.  Do both the created list and the object list for safety
 	for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 		if ( objp->type != OBJ_SHIP )
 			continue;
 		ai_process_mission_orders( OBJ_INDEX(objp), &Ai_info[Ships[objp->instance].ai_index] );
@@ -573,6 +575,8 @@ void ai_goal_purge_all_invalid_goals(ai_goal *aigp)
 	
 	for (sop = GET_FIRST(&Ship_obj_list); sop != END_OF_LIST(&Ship_obj_list); sop = GET_NEXT(sop))
 	{
+		if (Objects[sop->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
 		ship *shipp = &Ships[Objects[sop->objnum].instance];
 		ai_goal_purge_invalid_goals(aigp, Ai_info[shipp->ai_index].goals, &Ai_info[shipp->ai_index], -1);
 	}
@@ -1494,12 +1498,11 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 {
 	int status;
 	ai_achievability return_val;
-	object *objp;
 	ai_info *aip;
 	int index = -1, sindex = -1;
 	int modelnum = -1;
 
-	objp = &Objects[objnum];
+	auto objp = &Objects[objnum];
 	Assert( objp->instance != -1 );
 	aip = &Ai_info[Ships[objp->instance].ai_index];
 
@@ -1562,8 +1565,11 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 	// if not, the status is not known because more ships of that class could arrive in the future
 	// (c.f. AI_GOAL_CHASE_WING subsequent to the next switch statement)
 	if ( aigp->ai_mode == AI_GOAL_CHASE_SHIP_CLASS ) {
-		for (objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
-			if ((objp->type == OBJ_SHIP) && !strcmp(aigp->target_name, Ship_info[Ships[objp->instance].ship_info_index].name)) {
+		for (auto so: list_range(&Ship_obj_list)) {
+			auto class_objp = &Objects[so->objnum];
+			if (class_objp->flags[Object::Object_Flags::Should_be_dead])
+				continue;
+			if ((class_objp->type == OBJ_SHIP) && !strcmp(aigp->target_name, Ship_info[Ships[class_objp->instance].ship_info_index].name)) {
 				return ai_achievability::ACHIEVABLE;
 			}
 		}

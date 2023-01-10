@@ -5,6 +5,8 @@
 
 #if SDL_VERSION_ATLEAST(2, 0, 6)
 #include <SDL_vulkan.h>
+#include "backends/imgui_impl_sdl.h"
+#include "backends/imgui_impl_opengl3.h"
 #endif
 
 namespace {
@@ -151,6 +153,8 @@ SDLGraphicsOperations::SDLGraphicsOperations() {
 }
 SDLGraphicsOperations::~SDLGraphicsOperations() {
 	SDL_QuitSubSystem(SDL_INIT_VIDEO);
+	ImGui_ImplSDL2_Shutdown();
+	ImGui_ImplOpenGL3_Shutdown();
 }
 std::unique_ptr<os::Viewport> SDLGraphicsOperations::createViewport(const os::ViewPortProperties& props)
 {
@@ -245,6 +249,9 @@ std::unique_ptr<os::OpenGLContext> SDLGraphicsOperations::createOpenGLContext(os
 	mprintf(("  Actual SDL Video values    = R: %d, G: %d, B: %d, depth: %d, stencil: %d, double-buffer: %d, FSAA: %d\n",
 		r, g, b, depth, stencil, db, fsaa_samples));
 
+
+	ImGui_ImplSDL2_InitForOpenGL(viewport->toSDLWindow(), ctx);
+	ImGui_ImplOpenGL3_Init();
 
 	return std::unique_ptr<os::OpenGLContext>(new SDLOpenGLContext(ctx));
 }

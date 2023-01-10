@@ -1435,6 +1435,7 @@ void sexp_unmark_persistent(int n)
 		return;
 	}
 
+	// see sexp_mark_persistent
 	if ( (n == Locked_sexp_true) || (n == Locked_sexp_false) ){
 		return;
 	}
@@ -1456,6 +1457,7 @@ int free_one_sexp(int num)
 	Assert(Sexp_nodes[num].type != SEXP_NOT_USED);  // make sure it is actually used
 	Assert(!(Sexp_nodes[num].type & SEXP_FLAG_PERSISTENT));
 
+	// never free these nodes
 	if ((num == Locked_sexp_true) || (num == Locked_sexp_false))
 		return 0;
 
@@ -1798,6 +1800,8 @@ int get_operator_index(const char *token)
 int get_operator_index(int node)
 {
 	Assertion(node >= 0 && node < Num_sexp_nodes, "Passed an out-of-range node index (%d) to get_operator_index(int)!", node);
+	if (node < 0 || node >= Num_sexp_nodes)
+		return NOT_A_SEXP_OPERATOR;
 
 	if (!Fred_running && (Sexp_nodes[node].op_index != NO_OPERATOR_INDEX_DEFINED) ) {
 		return Sexp_nodes[node].op_index;
@@ -1817,13 +1821,17 @@ int get_operator_const(const char *token)
 	int	idx = get_operator_index(token);
 
 	if (idx == NOT_A_SEXP_OPERATOR)
-		return 0;
+		return OP_NOT_AN_OP;
 
 	return Operators[idx].value;
 }
 
 int get_operator_const(int node)
 {
+	Assertion(node >= 0 && node < Num_sexp_nodes, "Passed an out-of-range node index (%d) to get_operator_const(int)!", node);
+	if (node < 0 || node >= Num_sexp_nodes)
+		return OP_NOT_AN_OP;
+
 	if (!Fred_running && Sexp_nodes[node].op_index >= 0) {
 		return Operators[Sexp_nodes[node].op_index].value;
 	}
@@ -1831,7 +1839,7 @@ int get_operator_const(int node)
 	int	idx = get_operator_index(node);
 
 	if (idx == NOT_A_SEXP_OPERATOR)
-		return 0;
+		return OP_NOT_AN_OP;
 
 	return Operators[idx].value;
 }
@@ -3941,7 +3949,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
-				if (get_asteroid_position(CTEXT(node)) < 0) {
+				if (stricmp(CTEXT(node), SEXP_NONE_STRING) && (get_asteroid_position(CTEXT(node))) < 0) {
 					return SEXP_CHECK_INVALID_ASTEROID;
 				}
 				break;
@@ -4667,6 +4675,9 @@ bool generate_special_explosion_block_variables()
 	num_sexp_variables = sexp_variable_count();
 
 	for ( auto sop = GET_FIRST(&Ship_obj_list); sop != END_OF_LIST(&Ship_obj_list); sop = GET_NEXT(sop) ) {
+		if (Objects[sop->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		shipp=&Ships[Objects[sop->objnum].instance];
 
 		if (!(shipp->use_special_explosion)) {
@@ -4783,7 +4794,9 @@ void stuff_sexp_text_string(SCP_string &dest, int node, int mode)
 			{
 				// if (for whatever reason) we have an empty string or an invalid number, print 0
 				// do not do this trick in error mode, because we want to know what the text actually is
-				if ((mode != SEXP_ERROR_CHECK_MODE) &&
+				// note that we let <argument> strings pass here
+				if ((mode != SEXP_ERROR_CHECK_MODE) && 
+					(!(Sexp_nodes[node].flags & SNF_SPECIAL_ARG_IN_NODE)) &&
 					(*ctext_string == '\0' || !can_construe_as_integer(ctext_string)))
 				{
 					mprintf(("SEXP: '%s' is not a number; using '0' instead\n", ctext_string));
@@ -6449,6 +6462,9 @@ int sexp_num_ships_in_battle(int n)
 
 	if (n == -1) {
 		for (so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so)) {
+			if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+				continue;
+
 			count++;
 		}
 
@@ -6462,6 +6478,9 @@ int sexp_num_ships_in_battle(int n)
 		switch (oswpt1.type) {
 			case OSWPT_TYPE_WHOLE_TEAM:
 				for (so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so)) {
+					if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+						continue;
+
 					auto shipp = &Ships[Objects[so->objnum].instance];
 					if (shipp->team == oswpt1.team) {
 						count++;
@@ -7876,6 +7895,9 @@ int sexp_distance2(object *objp1, object_ship_wing_point_team *oswpt2, int(*dist
 		{
 			for (auto so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
 			{
+				if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+					continue;
+
 				if (Ships[Objects[so->objnum].instance].team == oswpt2->team)
 				{
 					dist = distance_method(objp1, &Objects[so->objnum]);
@@ -7959,6 +7981,9 @@ int sexp_distance(int n, int(*distance_method)(object*, object*))
 		{
 			for (auto so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
 			{
+				if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+					continue;
+
 				if (Ships[Objects[so->objnum].instance].team == oswpt1.team)
 				{
 					dist = sexp_distance2(&Objects[so->objnum], &oswpt2, distance_method);
@@ -8108,6 +8133,9 @@ int sexp_distance_subsystem(int n, int(*distance_method)(object*, vec3d*))
 		{
 			for (auto so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
 			{
+				if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+					continue;
+
 				if (Ships[Objects[so->objnum].instance].team == oswpt.team)
 				{
 					dist = distance_method(&Objects[so->objnum], &subsys_pos);
@@ -9209,12 +9237,15 @@ int sexp_last_order_time(int n)
  */
 int sexp_num_players()
 {
-	int count;
-	object *objp;
+	int count = 0;
 
-	count = 0;
-	for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
-		if ( (objp->type == OBJ_SHIP) && (objp->flags[Object::Object_Flags::Player_ship]) )
+	for (auto so: list_range(&Ship_obj_list))
+	{
+		auto objp = &Objects[so->objnum];
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
+		if (objp->flags[Object::Object_Flags::Player_ship])
 			count++;
 	}
 
@@ -11030,36 +11061,37 @@ int eval_for_ship_collection(int arg_handler_node, int condition_node, int op_co
 			continue;
 
 		// add all ships of this constraint which are present in the mission
-		for (auto objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp))
+		for (auto so: list_range(&Ship_obj_list))
 		{
-			if (objp->type == OBJ_SHIP)
+			auto objp = &Objects[so->objnum];
+			if (objp->flags[Object::Object_Flags::Should_be_dead])
+				continue;
+
+			auto shipp = &Ships[objp->instance];
+			int ship_index = -1;
+
+			switch (op_const)
 			{
-				auto shipp = &Ships[objp->instance];
-				int ship_index = -1;
+				case OP_FOR_SHIP_CLASS:
+					ship_index = shipp->ship_info_index;
+					break;
+				case OP_FOR_SHIP_TYPE:
+					ship_index = ship_class_query_general_type(shipp->ship_info_index);
+					break;
+				case OP_FOR_SHIP_TEAM:
+					ship_index = shipp->team;
+					break;
+				case OP_FOR_SHIP_SPECIES:
+					ship_index = Ship_info[shipp->ship_info_index].species;
+					break;
+			}
 
-				switch (op_const)
-				{
-					case OP_FOR_SHIP_CLASS:
-						ship_index = shipp->ship_info_index;
-						break;
-					case OP_FOR_SHIP_TYPE:
-						ship_index = ship_class_query_general_type(shipp->ship_info_index);
-						break;
-					case OP_FOR_SHIP_TEAM:
-						ship_index = shipp->team;
-						break;
-					case OP_FOR_SHIP_SPECIES:
-						ship_index = Ship_info[shipp->ship_info_index].species;
-						break;
-				}
-
-				if (constraint_index == ship_index)
-				{
-					if (just_count)
-						num_valid_arguments++;
-					else
-						argument_vector.emplace_back(shipp->ship_name, -1);
-				}
+			if (constraint_index == ship_index)
+			{
+				if (just_count)
+					num_valid_arguments++;
+				else
+					argument_vector.emplace_back(shipp->ship_name, -1);
 			}
 		}
 	}
@@ -11684,6 +11716,9 @@ void sexp_change_iff_helper(object_ship_wing_point_team oswpt, int new_team)
 		case OSWPT_TYPE_WHOLE_TEAM:
 		{
 			for (ship_obj* so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so)) {
+				if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+					continue;
+
 				ship* shipp = &Ships[Objects[so->objnum].instance];
 				if (shipp->team == oswpt.team)
 					sexp_ingame_ship_change_iff(shipp, new_team);
@@ -13490,6 +13525,9 @@ void sexp_explosion_effect(int n)
 			float t_damage = 0.0f;
 			for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) )
 			{
+				if (objp->flags[Object::Object_Flags::Should_be_dead])
+					continue;
+
 				if ( (objp->type != OBJ_SHIP) && (objp->type != OBJ_ASTEROID) )
 				{
 					continue;
@@ -16033,6 +16071,9 @@ void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future
 		case OSWPT_TYPE_WHOLE_TEAM:
 			Assert (oswpt.team >= 0);
 			for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ){
+				if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+					continue;
+
 				if (Ships[Objects[so->objnum].instance].team == oswpt.team) {
 					// recurse
 					object_ship_wing_point_team oswpt2(so);
@@ -16150,6 +16191,9 @@ void alter_flag_for_all_ships(bool future_ships, Object::Object_Flags object_fla
 
 	// set all the ships present in the mission
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
+		if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		object_ship_wing_point_team oswpt(so);
 		sexp_alter_ship_flag_helper(oswpt, future_ships, object_flag, ship_flag, parse_obj_flag, ai_flag, set_flag);
 	}
@@ -17107,7 +17151,10 @@ int sexp_event_delay_status( int n, int want_true, bool use_msecs = false)
 			}
 
 			// check that the event delay has elapsed, again using the same logic as in mission_process_event()
-			if (!timestamp_elapsed(timestamp_delta(Mission_events[i].timestamp, delay))) {
+			if (!Fixed_chaining_to_repeat && Mission_events[i].flags & MEF_TIMESTAMP_HAS_INTERVAL) {
+				/* do not set rval */;
+			}
+			else if (!timestamp_elapsed(timestamp_delta(Mission_events[i].timestamp, delay))) {
 				rval = SEXP_FALSE;
 				break;
 			}
@@ -21839,6 +21886,8 @@ void sexp_damage_escort_list_all(int n)
 	for (auto so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
 	{
 		auto objp = &Objects[so->objnum];
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 		Assertion(objp->type == OBJ_SHIP, "All objects on Ship_obj_list must be ships!");
 
 		// make sure it's on the escort list
@@ -22445,6 +22494,9 @@ void actually_clear_weapons_or_debris(int op_num, int class_index)
 {
 	for (auto objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp))
 	{
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		if (op_num == OP_CLEAR_WEAPONS && objp->type != OBJ_WEAPON)
 			continue;
 		if (op_num == OP_CLEAR_DEBRIS && objp->type != OBJ_DEBRIS)
@@ -22763,8 +22815,11 @@ int process_special_sexps(int index)
 		return SEXP_FALSE;
 
 	case 1:	//	Fired Interceptors
-		object	*objp;
-		for (objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
+		for (auto mop: list_range(&Missile_obj_list)) {
+			auto objp = &Objects[mop->objnum];
+			if (objp->flags[Object::Object_Flags::Should_be_dead])
+				continue;
+
 			if (objp->type == OBJ_WEAPON) {
 				if (!stricmp(Weapon_info[Weapons[objp->instance].weapon_info_index].name, "Interceptor#weak")) {
 					int target = Weapons[objp->instance].target_num;
@@ -36363,6 +36418,10 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t6: The Y origin of the SSM missile (optional - used only for TAG-C).\r\n"
 		"\t7: The Z origin of the SSM missile (optional - used only for TAG-C).\r\n" 
 		"\t8: The team the SSM missile belongs to (optional - used only for TAG-C).\r\n" },
+
+	{ OP_SHIP_UNTAG, "ship-untag\r\n"
+		"\tUntags a ship.  Takes 1 argument...\r\n"
+		"\t1: The name of a ship.\r\n" },
 
 /*	made obsolete by Goober5000 - it only works in debug builds anyway
 	{ OP_INT3, "Error (Debug directive)\r\n"

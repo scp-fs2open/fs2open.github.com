@@ -332,19 +332,28 @@ void g3_draw_htl_line(const vec3d *start, const vec3d *end)
 	g3_render_line_3d(true, start, end);
 }
 
-void g3_draw_htl_sphere(color *clr, const vec3d* position, float radius)
+void g3_draw_htl_sphere(color* clr,
+	const vec3d* position,
+	float radius,
+	gr_alpha_blend alpha_blend_mode,
+	gr_zbuffer_type zbuffer_mode)
 {
 	g3_start_instance_matrix(position, &vmd_identity_matrix, true);
 
 	material material_def;
 
-	material_def.set_blend_mode(ALPHA_BLEND_NONE);
-	material_def.set_depth_mode(ZBUFFER_TYPE_FULL);
+	material_def.set_blend_mode(alpha_blend_mode);
+	material_def.set_depth_mode(zbuffer_mode);
 	material_def.set_color(*clr);
 
 	gr_sphere(&material_def, radius);
 
 	g3_done_instance(true);
+}
+
+void g3_draw_htl_sphere(color *clr, const vec3d* position, float radius)
+{
+	g3_draw_htl_sphere(clr, position, radius, ALPHA_BLEND_NONE, ZBUFFER_TYPE_FULL);
 }
 
 void g3_draw_htl_sphere(const vec3d* position, float radius)

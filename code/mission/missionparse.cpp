@@ -1633,6 +1633,8 @@ void position_ship_for_knossos_warpin(object *objp)
 	for (ship_obj *so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
 	{
 		object *ship_objp = &Objects[so->objnum];
+		if (ship_objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 
 		if (Ship_info[Ships[ship_objp->instance].ship_info_index].flags[Ship::Info_Flags::Knossos_device])
 		{
@@ -2419,11 +2421,13 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 		}
 	}
 
-	// if this is an asteroid target, add it to the list
-	for (SCP_string& name : Asteroid_field.target_names) {
-		if (stricmp(name.c_str(), shipp->ship_name) == 0) {
-			asteroid_add_target(&Objects[objnum]);
-			break;
+	if (!Fred_running) {
+		// if this is an asteroid target, add it to the list
+		for (SCP_string& name : Asteroid_field.target_names) {
+			if (stricmp(name.c_str(), shipp->ship_name) == 0) {
+				asteroid_add_target(&Objects[objnum]);
+				break;
+			}
 		}
 	}
 
@@ -6152,9 +6156,11 @@ bool post_process_mission(mission *pm)
 	// their SF_IGNORE_COUNT flag set.  We don't count ships in wings when the equivalent wing flag is set.
 	// in counting ships in wings, we increment the count by the wing's wave count to account for everyone.
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
-		int num, shipnum;
+		// do not skip over should-be-dead ships (probably destroy-before-mission ships)
+		// a) because previous versions didn't, and changing this would change percentages,
+		// b) because it does no harm to access should-be-dead ships here
 
-		shipnum = Objects[so->objnum].instance;
+		int shipnum = Objects[so->objnum].instance;
 		// pass over non-ship objects and player ship objects
 		if ( Ships[shipnum].objnum == -1 || (Objects[Ships[shipnum].objnum].flags[Object::Object_Flags::Player_ship]) )
 			continue;
@@ -6163,7 +6169,7 @@ bool post_process_mission(mission *pm)
 		if ( (Ships[shipnum].wingnum != -1) && (Wings[Ships[shipnum].wingnum].flags[Ship::Wing_Flags::Ignore_count]) )
 			continue;
 
-		num = 1;
+		int num = 1;
 
 		ship_add_ship_type_count( Ships[shipnum].ship_info_index, num );
 	}
@@ -6195,6 +6201,8 @@ bool post_process_mission(mission *pm)
 	//     had their current_primary_bank and current_secondary_bank set to -1 (from ship_set()) and left there since
 	//     Player_ship is not the only one we need to need about.
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {		
+		if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
 		ship *shipp = &Ships[Objects[so->objnum].instance];
 
 		// don't process non player wing ships
@@ -6605,25 +6613,23 @@ void mission_set_wing_arrival_location( wing *wingp, int num_to_set )
 void mission_parse_set_arrival_locations()
 {
 	int i;
-	object *objp;
 
 	if ( Fred_running )
 		return;
 
 	obj_merge_created_list();
-	for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
-		ship *shipp;
+	for (auto so: list_range(&Ship_obj_list)) {
+		// do not skip over should-be-dead ships (probably destroy-before-mission ships)
+		// a) because previous versions didn't, and changing this could affect the location of should-be-dead ships
+		// b) because it does no harm to access should-be-dead ships here
 
-		if ( objp->type != OBJ_SHIP ) 
-			continue;
-
-		shipp = &Ships[objp->instance];
+		auto shipp = &Ships[Objects[so->objnum].instance];
 		// if the ship is in a wing -- ignore the info and let the wing info handle it
 		if ( shipp->wingnum != -1 )
 			continue;
 
 		// call function to set arrival location for this ship.
-		mission_set_arrival_location( shipp->arrival_anchor, shipp->arrival_location, shipp->arrival_distance, OBJ_INDEX(objp), shipp->arrival_path_mask, NULL, NULL);
+		mission_set_arrival_location( shipp->arrival_anchor, shipp->arrival_location, shipp->arrival_distance, so->objnum, shipp->arrival_path_mask, NULL, NULL);
 	}
 
 	// do the wings
@@ -7729,7 +7735,10 @@ void mission_eval_departures()
 	// scan through the active ships an evaluate their departure cues.  For those
 	// ships whose time has come, set their departing flag.
 
-	for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
+	for (auto so: list_range(&Ship_obj_list)) {
+		objp = &Objects[so->objnum];
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 		if (objp->type == OBJ_SHIP) {
 			ship	*shipp;
 
@@ -8035,9 +8044,11 @@ int get_anchor(const char *name)
  */
 void mission_parse_fixup_players()
 {
-	object *objp;
+	for (auto so: list_range(&Ship_obj_list)) {
+		auto objp = &Objects[so->objnum];
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 
-	for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
 		if ( (objp->type == OBJ_SHIP) && (objp->flags[Object::Object_Flags::Player_ship]) ) {
 			game_busy( NOX("** fixing up player/ai stuff **") );	// animate the loading screen, doesn't nothing if the screen is not active
 			ai_clear_ship_goals( &Ai_info[Ships[objp->instance].ai_index] );
