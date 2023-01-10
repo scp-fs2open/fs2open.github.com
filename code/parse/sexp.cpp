@@ -4783,7 +4783,9 @@ void stuff_sexp_text_string(SCP_string &dest, int node, int mode)
 			{
 				// if (for whatever reason) we have an empty string or an invalid number, print 0
 				// do not do this trick in error mode, because we want to know what the text actually is
-				if ((mode != SEXP_ERROR_CHECK_MODE) &&
+				// note that we let <argument> strings pass here
+				if ((mode != SEXP_ERROR_CHECK_MODE) && 
+					(!(Sexp_nodes[node].flags & SNF_SPECIAL_ARG_IN_NODE)) &&
 					(*ctext_string == '\0' || !can_construe_as_integer(ctext_string)))
 				{
 					mprintf(("SEXP: '%s' is not a number; using '0' instead\n", ctext_string));
