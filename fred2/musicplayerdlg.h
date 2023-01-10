@@ -18,10 +18,9 @@ class music_player_dlg : public CDialog {
 		IDD = IDD_MUSIC_PLAYER
 	};
 	CListBox m_music_list;
-	SCP_string m_music_item;
+	CString m_music_item;
 	int m_music_id;
 	int m_cursor_pos;
-	SCP_vector<SCP_string> m_player_list;
 	int m_autoplay;
 	int m_num_music_files;
 

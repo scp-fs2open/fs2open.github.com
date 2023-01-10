@@ -17,27 +17,26 @@ static char THIS_FILE[] = __FILE__;
 music_player_dlg::music_player_dlg(CWnd* pParent /*=nullptr*/)
 	: CDialog(music_player_dlg::IDD, pParent)
 {
-	//{{AFX_DATA_INIT(calc_relative_coords_dlg)
+
 	m_music_item = "";
 	m_music_id = -1;
 	m_cursor_pos = -1;
-	m_player_list = {};
 	m_autoplay = FALSE;
 	m_num_music_files = 0;
-	//}}AFX_DATA_INIT
+
 }
 
 void music_player_dlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange(pDX);
-	//{{AFX_DATA_MAP(calc_relative_coords_dlg)
+
 	DDX_Control(pDX, IDC_MUSIC_LIST, m_music_list);
 	DDX_Check(pDX, IDC_MUSIC_AUTOPLAY, m_autoplay);
-	//}}AFX_DATA_MAP
+
 }
 
 BEGIN_MESSAGE_MAP(music_player_dlg, CDialog)
-//{{AFX_MSG_MAP(music_player_dlg)
+
 ON_LBN_SELCHANGE(IDC_MUSIC_LIST, OnSelMusicList)
 ON_BN_CLICKED(IDC_BUTTON_PLAY_MUSIC, OnPlay)
 ON_BN_CLICKED(IDC_BUTTON_STOP_MUSIC, OnStop)
@@ -46,7 +45,7 @@ ON_BN_CLICKED(IDC_BUTTON_PREV_MUSIC, OnPreviousTrack)
 ON_BN_CLICKED(IDC_BUTTON_MUSIC_TBL, OnMusicTbl)
 ON_BN_CLICKED(IDC_MUSIC_AUTOPLAY, OnAutoplay)
 ON_WM_CLOSE()
-//}}AFX_MSG_MAP
+
 END_MESSAGE_MAP()
 
 BOOL music_player_dlg::Create()
@@ -92,7 +91,6 @@ BOOL music_player_dlg::OnInitDialog()
 		//add item if not ignored
 		if (addItem) {
 			m_music_list.AddString(file.c_str());
-			m_player_list.push_back(file);
 			m_num_music_files++;
 		}
 	}
@@ -117,6 +115,8 @@ void music_player_dlg::PlayMusic()
 	if (m_music_id >= 0) {
 		audiostream_play(m_music_id, 1.0f, 0);
 	} else {
+		thisMusic = m_music_item;
+		mprintf(("FRED failed to open music file %s in the music player\n", thisMusic.c_str()));
 		return;
 	}
 }
@@ -156,7 +156,7 @@ bool music_player_dlg::SelectPrevTrack()
 void music_player_dlg::UpdateSelection()
 {
 	m_cursor_pos = m_music_list.GetCurSel();
-	m_music_item = m_player_list[m_cursor_pos];
+	m_music_list.GetText(m_cursor_pos, m_music_item);
 }
 
 void music_player_dlg::OnSelMusicList()
