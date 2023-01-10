@@ -10,8 +10,7 @@ class music_player_dlg : public CDialog {
 	afx_msg void UpdateSelection();
 	afx_msg void PlayMusic();
 
-	// Dialog Data
-	//{{AFX_DATA(calc_relative_coords_dlg)
+
 	enum {
 		IDD = IDD_MUSIC_PLAYER
 	};
@@ -22,12 +21,17 @@ class music_player_dlg : public CDialog {
 	SCP_vector<SCP_string> m_player_list;
 	int m_autoplay;
 	int m_num_music_files;
-	//}}AFX_DATA
+
+
+	CBitmap m_play_bm;
+	CBitmap m_stop_bm;
+	CBitmap m_next_bm;
+	CBitmap m_prev_bm;
 
 	protected:
 	virtual void DoDataExchange(CDataExchange* pDX); // DDX/DDV support
 
-	//{{AFX_MSG(calc_relative_coords_dlg)
+
 	virtual BOOL OnInitDialog();
 	afx_msg void StopMusic();
 	afx_msg void OnSelMusicList();
@@ -38,7 +42,7 @@ class music_player_dlg : public CDialog {
 	afx_msg void OnMusicTbl();
 	afx_msg void OnClose();
 	afx_msg void OnAutoplay();
-	//}}AFX_MSG
+
 	DECLARE_MESSAGE_MAP()
 
 }

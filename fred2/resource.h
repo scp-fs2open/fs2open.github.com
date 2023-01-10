@@ -80,10 +80,13 @@
 #define IDD_CALC_RELATIVE_COORDS        235
 #define IDD_INITIAL_SHIPS               238
 #define IDB_CHAINED                     239
+#define IDB_STOP                        240
+#define IDB_NEXT                        241
 #define IDD_CMD_BRIEF                   242
 #define IDD_SHIP_FLAGS                  243
 #define IDB_PLAY                        244
 #define IDI_PLAY                        245
+#define IDB_PREV                        246
 #define IDB_ROOT_DIRECTIVE              247
 #define IDB_CHAINED_DIRECTIVE           248
 #define IDB_GREEN_DOT                   249

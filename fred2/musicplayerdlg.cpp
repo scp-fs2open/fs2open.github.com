@@ -52,7 +52,19 @@ BOOL music_player_dlg::Create()
 {
 	BOOL r;
 	r = CDialog::Create(IDD, Fred_main_wnd);
-	//initialize_data(1);
+
+	m_play_bm.LoadBitmap(IDB_PLAY);
+	((CButton*)GetDlgItem(IDC_BUTTON_PLAY_MUSIC))->SetBitmap(m_play_bm);
+
+	m_stop_bm.LoadBitmap(IDB_STOP);
+	((CButton*)GetDlgItem(IDC_BUTTON_STOP_MUSIC))->SetBitmap(m_stop_bm);
+
+	m_next_bm.LoadBitmap(IDB_NEXT);
+	((CButton*)GetDlgItem(IDC_BUTTON_NEXT_MUSIC))->SetBitmap(m_next_bm);
+
+	m_prev_bm.LoadBitmap(IDB_PREV);
+	((CButton*)GetDlgItem(IDC_BUTTON_PREV_MUSIC))->SetBitmap(m_prev_bm);
+
 	return r;
 }
 

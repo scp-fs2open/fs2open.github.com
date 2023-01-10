@@ -94,7 +94,13 @@ IDB_ROOT                BITMAP                  "res\\root.bmp"
 
 IDB_CHAINED             BITMAP                  "res\\chained.bmp"
 
-IDB_PLAY                BITMAP                  "res\\bmp00001.bmp"
+IDB_PLAY                BITMAP                  "res\\play.bmp"
+
+IDB_STOP                BITMAP                  "res\\stop.bmp"
+
+IDB_NEXT                BITMAP                  "res\\next.bmp"
+
+IDB_PREV                BITMAP                  "res\\prev.bmp"
 
 IDB_ROOT_DIRECTIVE      BITMAP                  "res\\root_directive.bmp"
 
@@ -1828,10 +1834,10 @@ FONT 8, "MS Sans Serif", 0, 0, 0x0
 BEGIN
     LTEXT           "Music Files",IDC_STATIC,8,8,42,10
     LISTBOX         IDC_MUSIC_LIST,11,18,133,131,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
-    PUSHBUTTON      "Play",IDC_BUTTON_PLAY_MUSIC,150,17,50,14
-    PUSHBUTTON      "Stop",IDC_BUTTON_STOP_MUSIC,150,38,50,14
-    PUSHBUTTON      "Next",IDC_BUTTON_NEXT_MUSIC,150,59,50,14
-    PUSHBUTTON      "Prev",IDC_BUTTON_PREV_MUSIC,150,80,50,14
+    PUSHBUTTON      "IDB_PLAY",IDC_BUTTON_PLAY_MUSIC,150,17,50,14,BS_BITMAP,WS_EX_TRANSPARENT | WS_EX_STATICEDGE
+    PUSHBUTTON      "IDB_STOP",IDC_BUTTON_STOP_MUSIC,150,38,50,14,BS_BITMAP,WS_EX_TRANSPARENT | WS_EX_STATICEDGE
+    PUSHBUTTON      "IDB_NEXT",IDC_BUTTON_NEXT_MUSIC,150,59,50,14,BS_BITMAP,WS_EX_TRANSPARENT | WS_EX_STATICEDGE
+    PUSHBUTTON      "IDB_PREV",IDC_BUTTON_PREV_MUSIC,150,80,50,14,BS_BITMAP,WS_EX_TRANSPARENT | WS_EX_STATICEDGE
     CONTROL         "Autoplay",IDC_MUSIC_AUTOPLAY,"Button",BS_3STATE | WS_TABSTOP,156,118,40,10
     PUSHBUTTON      "Music.tbl",IDC_BUTTON_MUSIC_TBL,150,131,50,14
 END

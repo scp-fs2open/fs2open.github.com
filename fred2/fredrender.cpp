@@ -961,7 +961,7 @@ void game_do_frame() {
 			//Check that we're not at the end of the list
 			bool canAdvance = false;
 			if ((Music_player_dialog.m_cursor_pos >= 0) && (Music_player_dialog.m_cursor_pos < (Music_player_dialog.m_num_music_files - 1))) {
-				bool canAdvance = true;
+				canAdvance = true;
 			}
 
 			//if autoplay is on and we just finished a track then select the next music track and play it
