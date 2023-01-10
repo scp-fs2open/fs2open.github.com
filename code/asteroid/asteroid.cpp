@@ -90,9 +90,9 @@ SCP_vector<asteroid_target> Asteroid_targets;
 static int count_incident_asteroids(int target_objnum)
 {
 	object* asteroid_objp;
-	int		count;
+	int		count = 0;
 
-	count = 0;
+	Assertion(GET_FIRST(&Asteroid_obj_list) != nullptr, "count_incident_asteroids() called before Asteroid_obj_list was initialized; this shouldn't happen. Get a coder!");
 
 	for (auto aop: list_range(&Asteroid_obj_list)) {
 		asteroid_objp = &Objects[aop->objnum];
@@ -154,6 +154,8 @@ static int asteroid_obj_list_add(int objnum)
 {
 	int index;
 
+	Assertion(GET_FIRST(&Asteroid_obj_list) != nullptr, "asteroid_obj_list_add() called before Asteroid_obj_list was initialized; this shouldn't happen. Get a coder!");
+
 	asteroid *cur_asteroid = &Asteroids[Objects[objnum].instance];
 	index = (int)(cur_asteroid - Asteroids);
 
@@ -175,6 +177,8 @@ static int asteroid_obj_list_add(int objnum)
 static void asteroid_obj_list_remove(object * obj)
 {
 	int index = obj->instance;
+
+	Assertion(GET_FIRST(&Asteroid_obj_list) != nullptr, "asteroid_obj_list_remove() called before Asteroid_obj_list was initialized; this shouldn't happen. Get a coder!");
 
 	Assert(index >= 0 && index < MAX_ASTEROID_OBJS);
 	Assert(Asteroid_objs[index].flags & ASTEROID_OBJ_USED);
@@ -2522,6 +2526,8 @@ void asteroid_show_brackets()
 	object	*asteroid_objp, *player_target;
 	asteroid	*asp;
 
+	Assertion(GET_FIRST(&Asteroid_obj_list) != nullptr, "asteroid_show_brackets() called before Asteroid_obj_list was initialized; this shouldn't happen. Get a coder!");
+
 	// get pointer to player target, so we don't need to take OBJ_INDEX() of asteroid_objp to compare to target_objnum
 	if ( Player_ai->target_objnum >= 0 ) {
 		player_target = &Objects[Player_ai->target_objnum];
@@ -2566,6 +2572,8 @@ void asteroid_target_closest_danger()
 	object	*asteroid_objp, *closest_asteroid_objp = NULL;
 	asteroid	*asp;
 	float		dist, closest_dist = 999999.0f;
+
+	Assertion(GET_FIRST(&Asteroid_obj_list) != nullptr, "asteroid_target_closest_danger() called before Asteroid_obj_list was initialized; this shouldn't happen. Get a coder!");
 
 	for (auto aop: list_range(&Asteroid_obj_list)) {
 		asteroid_objp = &Objects[aop->objnum];
