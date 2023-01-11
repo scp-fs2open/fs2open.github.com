@@ -2382,7 +2382,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 			}
 
 			float shield_factor = 1.0f;
-			if (weapon_info_index > 0 )
+			if (weapon_info_index >= 0 )
 				shield_factor = Weapon_info[weapon_info_index].shield_factor;
 
 			// apply shield damage
