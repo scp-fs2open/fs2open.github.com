@@ -2756,7 +2756,9 @@ void sexp_tree::update_help(QTreeWidgetItem* h) {
 	SCP_string nodeComment;
 
 	//if (thisIndex >= 0) {
-		//nodeComment = "Node Comments:\r\n   " + Event_annotations[thisIndex].comment;
+		//if (!Event_annotations[thisIndex].comment.empty()) {
+			//nodeComment = "Node Comments:\r\n   " + Event_annotations[thisIndex].comment;
+		//}
 	//} else {
 		nodeComment = "";
 	//}
@@ -2766,6 +2768,11 @@ void sexp_tree::update_help(QTreeWidgetItem* h) {
 		miniHelpChanged("");
 		return;
 	}
+
+	// Now that we're done with top level nodes we can add the empty lines because
+	// everything else below is supposed to have help text
+	if (!nodeComment.empty())
+		nodeComment.insert(0, "\r\n\r\n");
 
 	if (SEXPT_TYPE(tree_nodes[i].type) == SEXPT_OPERATOR) {
 		miniHelpChanged("");
@@ -2860,7 +2867,7 @@ void sexp_tree::update_help(QTreeWidgetItem* h) {
 			if (query_operator_argument_type(index, c) == OPF_MESSAGE) {
 				for (j = 0; j < Num_messages; j++) {
 					if (!stricmp(Messages[j].name, tree_nodes[i].text)) {
-						auto text = QString("Message Text:\n%1\r\n\r\n%2").arg(Messages[j].message, nodeComment.c_str());
+						auto text = QString("Message Text:\n%1%2").arg(Messages[j].message, nodeComment.c_str());
 						helpChanged(text);
 						return;
 					}
@@ -2875,9 +2882,9 @@ void sexp_tree::update_help(QTreeWidgetItem* h) {
 	auto str = help(code);
 	QString text;
 	if (!str) {
-		text = QString("No help available\r\n\r\n%1").arg(nodeComment.c_str());
+		text = QString("No help available%1").arg(nodeComment.c_str());
 	} else {
-		text = QString("%1\r\n\r\n%2").arg(str, nodeComment.c_str());
+		text = QString("%1%2").arg(str, nodeComment.c_str());
 	}
 
 	helpChanged(text);
