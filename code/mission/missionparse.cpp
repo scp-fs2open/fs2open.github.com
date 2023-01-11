@@ -2936,9 +2936,12 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 		stuff_string(temp, F_NAME, NAME_LENGTH);
 		p_objp->team_color_setting = temp;
 
-		if (Team_Colors.find(p_objp->team_color_setting) == Team_Colors.end()) {
-			mprintf(("Invalid team color specified in mission file for ship %s, resetting to default\n", p_objp->name));
-			p_objp->team_color_setting = sip->default_team_name;
+		//If team color is not default then verify
+		if (stricmp(p_objp->team_color_setting.c_str(), sip->default_team_name.c_str()) != 0) {
+			if (Team_Colors.find(p_objp->team_color_setting) == Team_Colors.end()) {
+				mprintf(("Invalid team color specified in mission file for ship %s, resetting to default\n", p_objp->name));
+				p_objp->team_color_setting = sip->default_team_name;
+			}
 		}
 	}
 
