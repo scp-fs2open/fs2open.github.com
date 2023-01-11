@@ -772,7 +772,8 @@ void ai_profile_t::reset()
 	if (mod_supports_version(3, 6, 10)) {
 		flags.set(AI::Profile_Flags::Reset_last_hit_target_time_for_player_hits);
 	}
-	if (mod_supports_version(3, 6, 14)) {
+	// backwards compatible flag for a bug accidentally introduced during this time
+	if (mod_supports_version(3, 6, 14) && !mod_supports_version(23, 0, 0)) {
 		flags.set(AI::Profile_Flags::Carry_shield_difficulty_scaling_bug);
 	}
 	if (mod_supports_version(21, 4, 0)) {
