@@ -294,12 +294,24 @@ void persona_parse()
 			WarningEx(LOCATION, "Unknown species in messages.tbl -- %s\n", cstrtemp );
 	}
 
-	if (optional_string("$Allow substitution of missing messages:")) {
-		stuff_boolean(&Personas[Num_personas].substitute_missing_messages);
+	if (optional_string("$Allow substitution of missing messages:"))
+	{
+		bool temp;
+		stuff_boolean(&temp);
+		if (temp)
+			Personas[Num_personas].flags |= PERSONA_FLAG_SUBSTITUTE_MISSING_MESSAGES;
 	}
 	else 
 	{
-		Personas[Num_personas].substitute_missing_messages = true;
+		Personas[Num_personas].flags |= PERSONA_FLAG_SUBSTITUTE_MISSING_MESSAGES;
+	}
+
+	if (optional_string("$No automatic assignment:"))
+	{
+		bool temp;
+		stuff_boolean(&temp);
+		if (temp)
+			Personas[Num_personas].flags |= PERSONA_FLAG_NO_AUTOMATIC_ASSIGNMENT;
 	}
 
 	Num_personas++;
@@ -1755,7 +1767,8 @@ int message_get_persona( ship *shipp )
 		if ( sip->is_fighter_bomber() )
 		{
 			persona_needed = PERSONA_FLAG_WINGMAN;
-		} else if ( sip->flags[Ship::Info_Flags::Support] ) 
+		}
+		else if ( sip->flags[Ship::Info_Flags::Support] )
 		{
 			persona_needed = PERSONA_FLAG_SUPPORT;
 		}
@@ -1769,6 +1782,10 @@ int message_get_persona( ship *shipp )
 		{
 			// this Persona is not our species - skip it
 			if (Personas[i].species != Ship_info[shipp->ship_info_index].species)
+				continue;
+
+			// this Persona should not be automatically selected - skip it
+			if (Personas[i].flags & PERSONA_FLAG_NO_AUTOMATIC_ASSIGNMENT)
 				continue;
 
 			// check the ship types, and don't try to assign those which don't type match
@@ -2021,9 +2038,18 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 
 			// check the exact persona (if required)
 			// NOTE: doesn't need to be nested under the species condition above
-			if ( (persona_index >= 0) && (Messages[i].persona_index == persona_index) ) {
-				// condition 3: type + species + persona index match	
-				current_builtin.type_of_match =  BUILTIN_MATCHES_PERSONA_CHECK_MOOD; 
+			if ( persona_index >= 0 ) {
+				if ( Messages[i].persona_index == persona_index ) {
+					// condition 3: type + species + persona index match
+					current_builtin.type_of_match =  BUILTIN_MATCHES_PERSONA_CHECK_MOOD;
+				}
+			}
+			// if we don't require a specific persona, make sure we don't pick an excluded one
+			else {
+				if ( Personas[Messages[i].persona_index].flags & PERSONA_FLAG_NO_AUTOMATIC_ASSIGNMENT ) {
+					// this is not a valid match after all
+					continue;
+				}
 			}
 
 			// check if the personas mood suits this particular message, first check if it is excluded
@@ -2062,7 +2088,7 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 	switch (best_match) {
 		case BUILTIN_MATCHES_PERSONA_EXCLUDED:
 			nprintf(("MESSAGING", "Couldn't find builtin message %s for persona %d with a none excluded mood\n", Builtin_messages[type].name, persona_index));
-			if (!Personas[persona_index].substitute_missing_messages) {
+			if (!(Personas[persona_index].flags & PERSONA_FLAG_SUBSTITUTE_MISSING_MESSAGES)) {
 				nprintf(("MESSAGING", "Persona does not allow substitution, skipping message.\n"));
 				return;
 			}
@@ -2071,7 +2097,7 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 			break;
 		case BUILTIN_MATCHES_SPECIES:
 			nprintf(("MESSAGING", "Couldn't find builtin message %s for persona %d\n", Builtin_messages[type].name, persona_index));
-			if (!Personas[persona_index].substitute_missing_messages) {
+			if (!(Personas[persona_index].flags & PERSONA_FLAG_SUBSTITUTE_MISSING_MESSAGES)) {
 				nprintf(("MESSAGING", "Persona does not allow substitution, skipping message.\n"));
 				return;
 			}
@@ -2080,7 +2106,7 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 			break;
 		case BUILTIN_MATCHES_TYPE:
 			nprintf(("MESSAGING", "Couldn't find builtin message %s for persona %d\n", Builtin_messages[type].name, persona_index));
-			if (!Personas[persona_index].substitute_missing_messages) {
+			if (!(Personas[persona_index].flags & PERSONA_FLAG_SUBSTITUTE_MISSING_MESSAGES)) {
 				nprintf(("MESSAGING", "Persona does not allow substitution, skipping message.\n"));
 				return;
 			}
