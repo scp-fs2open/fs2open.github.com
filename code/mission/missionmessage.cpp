@@ -283,16 +283,26 @@ void persona_parse()
 		WarningEx(LOCATION, "Unknown persona type in messages.tbl -- %s\n", type );
 
 	char cstrtemp[NAME_LENGTH];
-	if ( optional_string("+") )
+	while ( optional_string("+") )
 	{
 		stuff_string(cstrtemp, F_NAME, NAME_LENGTH);
 		int j = species_info_lookup(cstrtemp);
 
 		if (j >= 0)
-			Personas[Num_personas].species = j;
+		{
+			if (j < 32)
+				Personas[Num_personas].species_bitfield |= (1 << j);
+			else
+				Warning(LOCATION, "Species %s is index 32 or higher and therefore cannot be assigned to the persona species bitfield of %s",
+					Species_info[j].species_name, Personas[Num_personas].name);
+		}
 		else
 			WarningEx(LOCATION, "Unknown species in messages.tbl -- %s\n", cstrtemp );
 	}
+
+	// if no species were assigned, the persona should default to the first species, since that's how retail did it
+	if (Personas[Num_personas].species_bitfield == 0)
+		Personas[Num_personas].species_bitfield = (1 << 0);
 
 	if (optional_string("$Allow substitution of missing messages:"))
 	{
@@ -1780,8 +1790,9 @@ int message_get_persona( ship *shipp )
 		// first try to go for an unused persona
 		for (i = 0; i < Num_personas; i++)
 		{
-			// this Persona is not our species - skip it
-			if (Personas[i].species != Ship_info[shipp->ship_info_index].species)
+			// this Persona is not compatible with our species - skip it
+			int species = Ship_info[shipp->ship_info_index].species;
+			if (species >= 32 || (Personas[i].species_bitfield & (1 << species)) == 0)
 				continue;
 
 			// this Persona should not be automatically selected - skip it
@@ -1959,7 +1970,7 @@ typedef	struct matching_builtin {
 // and use a timing to tell how long we should wait before playing this message
 void message_send_builtin_to_player( int type, ship *shipp, int priority, int timing, int group, int delay, int multi_target, int multi_team_filter )
 {
-	int i, persona_index = -1, persona_species = -1, message_index = -1, random_selection = -1;
+	int i, persona_index = -1, persona_species_bitfield = -1, message_index = -1, random_selection = -1;
 	int source;
 	int num_matching_builtins = 0;
 	const char *who_from;
@@ -2018,7 +2029,7 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 	const char *name = Builtin_messages[type].name;
 
 	if (persona_index >= 0) {
-		persona_species = Personas[persona_index].species;
+		persona_species_bitfield = Personas[persona_index].species_bitfield;
 	}
 
 	// try to find a builtin message with the given type for the given persona
@@ -2031,7 +2042,7 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 			current_builtin.type_of_match =  BUILTIN_MATCHES_TYPE; 
 
 			// check the species of this persona (if required)
-			if ( (persona_species >= 0) && (Personas[Messages[i].persona_index].species == persona_species) ) {
+			if ( (persona_species_bitfield >= 0) && ((Personas[Messages[i].persona_index].species_bitfield & persona_species_bitfield) != 0) ) {
 				// condition 2: we have a type + species match
 				current_builtin.type_of_match =  BUILTIN_MATCHES_SPECIES; 
 			}

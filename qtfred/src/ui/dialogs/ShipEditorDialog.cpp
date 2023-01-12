@@ -324,10 +324,21 @@ void ShipEditorDialog::updateColumnTwo()
 	for (i = 0; i < Num_personas; i++) {
 		if (Personas[i].flags & PERSONA_FLAG_WINGMAN) {
 			SCP_string persona_name = Personas[i].name;
-			if (Personas[i].species > 0) {
+
+			// see if the bitfield matches one and only one species
+			int species = -1;
+			for (size_t j = 0; j < 32 && j < Species_info.size(); j++) {
+				if (Personas[i].species_bitfield == (1 << j)) {
+					species = (int)j;
+					break;
+				}
+			}
+
+			// if it is an exact species that isn't the first
+			if (species > 0) {
 				persona_name += "-";
 
-				auto species_name = Species_info[Personas[i].species].species_name;
+				auto species_name = Species_info[species].species_name;
 				size_t len = strlen(species_name);
 				for (size_t j = 0; j < 3 && j < len; j++)
 					persona_name += species_name[j];

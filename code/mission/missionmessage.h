@@ -185,7 +185,7 @@ extern SCP_vector<SCP_string> Generic_message_filenames;
 typedef struct persona_s {
 	char	name[NAME_LENGTH];
 	int	flags;
-	int species;
+	int species_bitfield;
 } Persona;
 
 extern Persona *Personas;
