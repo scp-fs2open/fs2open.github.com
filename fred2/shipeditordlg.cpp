@@ -300,14 +300,14 @@ BOOL CShipEditorDlg::Create()
 
 	for ( i = 0; i < Num_personas; i++ ) {
 		if ( Personas[i].flags & PERSONA_FLAG_WINGMAN ) {
-			// don't bother putting any vasudan personas on the list -- done automatically by code
-//			if ( Personas[i].flags & PERSONA_FLAG_VASUDAN ){
-//				continue;
-//			}
-
 			CString persona_name = Personas[i].name;
-			if ( Personas[i].flags & PERSONA_FLAG_VASUDAN ){
-				persona_name += " -Vas";
+			if (Personas[i].species > 0) {
+				persona_name += "-";
+
+				auto species_name = Species_info[Personas[i].species].species_name;
+				size_t len = strlen(species_name);
+				for (size_t j = 0; j < 3 && j < len; j++)
+					persona_name += species_name[j];
 			}
 
 			index = ptr->AddString(persona_name);

@@ -323,10 +323,14 @@ void ShipEditorDialog::updateColumnTwo()
 	ui->personaCombo->addItem("<none>", QVariant(-1));
 	for (i = 0; i < Num_personas; i++) {
 		if (Personas[i].flags & PERSONA_FLAG_WINGMAN) {
-
 			SCP_string persona_name = Personas[i].name;
-			if (Personas[i].flags & PERSONA_FLAG_VASUDAN) {
-				persona_name += " -Vas";
+			if (Personas[i].species > 0) {
+				persona_name += "-";
+
+				auto species_name = Species_info[Personas[i].species].species_name;
+				size_t len = strlen(species_name);
+				for (size_t j = 0; j < 3 && j < len; j++)
+					persona_name += species_name[j];
 			}
 
 			ui->personaCombo->addItem(persona_name.c_str(), QVariant(i));

@@ -177,7 +177,6 @@ extern SCP_vector<SCP_string> Generic_message_filenames;
 #define PERSONA_FLAG_COMMAND	(1<<3)		// for terran command
 // be sure that MAX_PERSONA_TYPES is always 1 greater than the last type bitfield above!!!
 
-#define PERSONA_FLAG_VASUDAN	(1<<30)
 #define PERSONA_FLAG_USED		(1<<31)
 
 typedef struct persona_s {
