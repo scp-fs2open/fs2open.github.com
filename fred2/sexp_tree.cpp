@@ -7142,7 +7142,7 @@ sexp_list_item* sexp_tree::get_listing_opf_asteroid_debris()
 
 	for (int i = 0; i < (int)Asteroid_info.size(); i++) {
 		//first three asteroids are not debris-Mjn
-		if (i > NUM_ASTEROID_SIZES) {
+		if (i > (NUM_ASTEROID_SIZES - 1)) {
 			head.add_data(Asteroid_info[i].name);
 		}
 	}
