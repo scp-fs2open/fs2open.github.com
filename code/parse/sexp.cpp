@@ -15409,9 +15409,7 @@ void sexp_set_asteroid_field(int n)
 		}
 	}
 
-	if (num_asteroids == 0) {
-		return;
-	} else if (num_asteroids > MAX_ASTEROIDS) {
+	if (num_asteroids > MAX_ASTEROIDS) {
 		num_asteroids = MAX_ASTEROIDS;
 	}
 
@@ -15503,9 +15501,7 @@ void sexp_set_debris_field(int n)
 		}
 	}
 
-	if (num_asteroids == 0) {
-		return;
-	} else if (num_asteroids > MAX_ASTEROIDS) {
+	if (num_asteroids > MAX_ASTEROIDS) {
 		num_asteroids = MAX_ASTEROIDS;
 	}
 
