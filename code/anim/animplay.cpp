@@ -397,8 +397,6 @@ int anim_show_next_frame(anim_instance *instance, float frametime)
 
 		t1 = timer_get_fixed_seconds();
 		for ( i = 0; i < frame_diff; i++ ) {
-			anim_check_for_palette_change(instance);			
-
 			// if we're playing backwards, every frame must be a keyframe and we set the data ptr here
 			if(instance->direction == ANIM_DIRECT_REVERSE){
 				if ( anim_instance_is_streamed(instance) ) {
@@ -789,9 +787,6 @@ anim *anim_load(const char *real_filename, int cf_dir_type, int file_mapped)
 		}
 
 		cfclose(fp);
-
-		// store screen signature, so we can tell if palette changes
-		ptr->screen_sig = gr_screen.signature;
 
 		anim_set_palette(ptr);
 	}

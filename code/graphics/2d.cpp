@@ -78,8 +78,6 @@ io::mouse::Cursor* Web_cursor = NULL;
 
 int Gr_inited = 0;
 
-uint Gr_signature = 0;
-
 float Gr_gamma = 1.0f;
 
 static SCP_vector<float> gamma_value_enumerator()
@@ -1299,8 +1297,6 @@ static bool gr_init_sub(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, i
 	Gr_save_menu_zoomed_offset_X = Gr_menu_zoomed_offset_X = Gr_menu_offset_X;
 	Gr_save_menu_zoomed_offset_Y = Gr_menu_zoomed_offset_Y = Gr_menu_offset_Y;
 	
-
-	gr_screen.signature = Gr_signature++;
 	gr_screen.bits_per_pixel = depth;
 	gr_screen.bytes_per_pixel= depth / 8;
 	gr_screen.rendering_to_texture = -1;
@@ -1738,7 +1734,6 @@ void gr_init_color(color *c, int r, int g, int b)
 	CAP(g, 0, 255);
 	CAP(b, 0, 255);
 
-	c->screen_sig = gr_screen.signature;
 	c->red = (ubyte)r;
 	c->green = (ubyte)g;
 	c->blue = (ubyte)b;
@@ -1776,21 +1771,12 @@ void gr_set_color( int r, int g, int b )
 
 void gr_set_color_fast(color *dst)
 {
-	if ( dst->screen_sig != gr_screen.signature ) {
-		if (dst->is_alphacolor) {
-			gr_init_alphacolor( dst, dst->red, dst->green, dst->blue, dst->alpha, dst->ac_type );
-		} else {
-			gr_init_color( dst, dst->red, dst->green, dst->blue );
-		}
-	}
-
 	gr_screen.current_color = *dst;
 }
 
 // shader functions
 void gr_create_shader(shader *shade, ubyte r, ubyte g, ubyte b, ubyte c )
 {
-	shade->screen_sig = gr_screen.signature;
 	shade->r = r;
 	shade->g = g;
 	shade->b = b;
@@ -1800,9 +1786,6 @@ void gr_create_shader(shader *shade, ubyte r, ubyte g, ubyte b, ubyte c )
 void gr_set_shader(shader *shade)
 {
 	if (shade) {
-		if (shade->screen_sig != gr_screen.signature) {
-			gr_create_shader( shade, shade->r, shade->g, shade->b, shade->c );
-		}
 		gr_screen.current_shader = *shade;
 	} else {
 		gr_create_shader( &gr_screen.current_shader, 0, 0, 0, 0 );

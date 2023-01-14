@@ -413,7 +413,6 @@ void generic_render_ani_stream(generic_anim *ga)
 		mprintf(("frame: %d\n", ga->current_frame));
 	#endif
 
-	anim_check_for_palette_change(ga->ani.instance);
 	// if we're using bitmap polys
 	BM_SELECT_TEX_FORMAT();
 	if(ga->direction & GENERIC_ANIM_DIRECTION_BACKWARDS) {
