@@ -23,6 +23,7 @@
 #define CCF_HAT         0x04    //!< btn is a hat
 #define CCF_BALL        0x02    //!< btn is a ball
 #define CCF_BUTTON      0x01    //!< btn is actually a button
+#define CCF_NONE        0x00    //!< No flags.  Alias is "NONE"
 
 /*!
  * These are used to index a corresponding axis value from an array.
