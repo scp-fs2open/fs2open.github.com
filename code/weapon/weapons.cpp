@@ -7522,7 +7522,7 @@ void weapons_page_in()
 		// if it's got a spawn type then grab it
         for (j = 0; j < Weapon_info[i].num_spawn_weapons_defined; j++)
         {
-			int idx = (int)Weapon_info[i].spawn_info[j].spawn_wep_index;
+			idx = (int)Weapon_info[i].spawn_info[j].spawn_wep_index;
 			if (idx >= 0)
 				used_weapons[idx]++;
         }
