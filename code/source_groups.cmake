@@ -398,8 +398,7 @@ add_file_folder("GlobalIncs"
 	globalincs/vmallocator.h
 	globalincs/scp_defines.h
 	globalincs/flagset.h
-	globalincs/generational.h
-	globalincs/generational.cpp
+	globalincs/pool.h
 )
 
 IF (WIN32)
