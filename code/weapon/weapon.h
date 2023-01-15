@@ -279,7 +279,7 @@ typedef struct particle_spew_info {	//this will be used for multi spews
 
 typedef struct spawn_weapon_info 
 {
-	short	spawn_type;							//	Type of weapon to spawn when detonated.
+	short	spawn_wep_index;							//	Type of weapon to spawn when detonated.
 	short	spawn_count;						//	Number of weapons of spawn_type to spawn.
 	float	spawn_angle;						//  Angle to spawn the child weapons in.  default is 180
 	float	spawn_min_angle;					//  Angle of spawning 'deadzone' inside spawn angle. Default 0.
