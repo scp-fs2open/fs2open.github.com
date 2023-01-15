@@ -76,26 +76,27 @@ class SCP_Pool {
 		gEntry<T> n;
 		n.generation = 0;
 		//Assuming trivial constructor behavior here...
+		n.stored = optional<T>(T());
 		storage.push_back(n);
-		pool_index i(storage.size()-1,0);
+		pool_index i((int) storage.size()-1,0);
 		return i;
 	};
 
 	//Internal function to use an existing free slot for a new object
 	pool_index use_free(){
 		auto i = known_empty.back();
-		Assertion(storage[i].value == tl::nullopt ,"Attempted to use_free on a slot that was not free");
+		Assertion(storage[i].stored == tl::nullopt ,"Attempted to use_free on a slot that was not free");
 		//values are created as nullopt when expanding a list
 		//and resest to nullopt here so we need to construct a new object to go in there.
-		storage[i].value = T();
+		storage[i].stored = T();
 		storage[i].generation++;
-		pool_index r(i,storage[i].generation);
+		pool_index r((int) i,(int) storage[i].generation);
 		known_empty.pop_back();
 		return r;
 	}
 	//internal function to find or create a new slot
 	//if size is capped and there's no slot, return nullopt.
-	optional<pool_index> get_new(){
+	optional<pool_index> internal_get_new(){
 		if (known_empty.empty()) {
 			if (capped && storage.size()>=cap) {
 				return tl::nullopt;
@@ -104,7 +105,7 @@ class SCP_Pool {
 		}
 		return use_free();
 	};
-	//Internal function to 
+	//Internal function to fill out the empty list when the storage is known to be clear.
 	void fill_empty_list(){
 		known_empty.clear();
 		if((int) storage.size()>0){
@@ -178,9 +179,7 @@ class SCP_Pool {
 
 
 	optional<pool_index> getNew(){
-		T n = T();
-		auto i = add(n);
-		return i;
+		return internal_get_new();
 	};
 
 	//Store a value in the vector
