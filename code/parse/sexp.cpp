@@ -15302,17 +15302,19 @@ void sexp_set_asteroid_field(int n)
 	int field_type = 0, num_asteroids = 0, asteroid_speed = 0;
 	for (int i = 0; i < 3; i++) {
 
-		int temp = eval_num(n, is_nan, is_nan_forever);
-		if (is_nan || is_nan_forever)
-			return;
+		if (n >= 0) {
+			int temp = eval_num(n, is_nan, is_nan_forever);
+			if (is_nan || is_nan_forever)
+				return;
 
-		if (i == 0)
-			num_asteroids = temp;
-		else if (i == 1)
-			field_type = temp;
-		else
-			asteroid_speed = temp;
-		n = CDR(n);
+			if (i == 0)
+				num_asteroids = temp;
+			else if (i == 1)
+				field_type = temp;
+			else
+				asteroid_speed = temp;
+			n = CDR(n);
+		}
 	}
 
 	bool brown = true;
@@ -15338,9 +15340,10 @@ void sexp_set_asteroid_field(int n)
 
 	int o_minx = -1000, o_miny = -1000, o_minz = -1000;
 	int o_maxx = 1000, o_maxy = 1000, o_maxz = 1000;
-	if (n >= 0) {
-		for (int i = 0; i < 6; i++) {
 
+	for (int i = 0; i < 6; i++) {
+
+		if (n >= 0) {
 			int temp = eval_num(n, is_nan, is_nan_forever);
 			if (is_nan || is_nan_forever)
 				return;
@@ -15369,9 +15372,10 @@ void sexp_set_asteroid_field(int n)
 
 	int i_minx = -500, i_miny = -500, i_minz = -500;
 	int i_maxx = 500, i_maxy = 500, i_maxz = 500;
-	if (n >= 0) {
-		for (int i = 0; i < 6; i++) {
+	
+	for (int i = 0; i < 6; i++) {
 
+		if (n >= 0) {
 			int temp = eval_num(n, is_nan, is_nan_forever);
 			if (is_nan || is_nan_forever)
 				return;
@@ -15405,9 +15409,7 @@ void sexp_set_asteroid_field(int n)
 		}
 	}
 
-	if (num_asteroids == 0) {
-		return;
-	} else if (num_asteroids > MAX_ASTEROIDS) {
+	if (num_asteroids > MAX_ASTEROIDS) {
 		num_asteroids = MAX_ASTEROIDS;
 	}
 
@@ -15439,16 +15441,18 @@ void sexp_set_debris_field(int n)
 
 	int num_asteroids = 0, asteroid_speed = 0;
 	for (int i = 0; i < 2; i++) {
+		
+		if (n >= 0) {
+			int temp = eval_num(n, is_nan, is_nan_forever);
+			if (is_nan || is_nan_forever)
+				return;
 
-		int temp = eval_num(n, is_nan, is_nan_forever);
-		if (is_nan || is_nan_forever)
-			return;
-
-		if (i == 0)
-			num_asteroids = temp;
-		else
-			asteroid_speed = temp;
-		n = CDR(n);
+			if (i == 0)
+				num_asteroids = temp;
+			else
+				asteroid_speed = temp;
+			n = CDR(n);
+		}
 	}
 
 	int debris1 = -1;
@@ -15474,9 +15478,9 @@ void sexp_set_debris_field(int n)
 
 	int o_minx = -1000, o_miny = -1000, o_minz = -1000;
 	int o_maxx = 1000, o_maxy = 1000, o_maxz = 1000;
-	if (n >= 0) {
-		for (int i = 0; i < 6; i++) {
+	for (int i = 0; i < 6; i++) {
 
+		if (n >= 0) {
 			int temp = eval_num(n, is_nan, is_nan_forever);
 			if (is_nan || is_nan_forever)
 				return;
@@ -15497,9 +15501,7 @@ void sexp_set_debris_field(int n)
 		}
 	}
 
-	if (num_asteroids == 0) {
-		return;
-	} else if (num_asteroids > MAX_ASTEROIDS) {
+	if (num_asteroids > MAX_ASTEROIDS) {
 		num_asteroids = MAX_ASTEROIDS;
 	}
 
