@@ -1604,6 +1604,7 @@ ADE_VIRTVAR(isPaused, l_UserInterface_PauseScreen, nullptr, "Returns true if the
 
 ADE_FUNC(initPause, l_UserInterface_PauseScreen, nullptr, "Makes sure everything is done correctly to pause the game.", nullptr, nullptr)
 {
+	SCP_UNUSED(L);
 
 	weapon_pause_sounds();
 	audiostream_pause_all();
@@ -1615,6 +1616,8 @@ ADE_FUNC(initPause, l_UserInterface_PauseScreen, nullptr, "Makes sure everything
 
 ADE_FUNC(closePause, l_UserInterface_PauseScreen, nullptr, "Makes sure everything is done correctly to unpause the game.", nullptr, nullptr)
 {
+	SCP_UNUSED(L);
+
 	weapon_unpause_sounds();
 	audiostream_unpause_all();
 
