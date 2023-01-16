@@ -1,6 +1,8 @@
 #pragma once
 
+#include "globalincs/pstypes.h"
 #include <tl/optional.hpp>
+#include <csignal>
 //#include <vector>
 
 using  tl::optional;
@@ -56,6 +58,39 @@ struct gEntry {
 	optional<T> stored;
 
 };
+class PoolExceptionStaleIndex : public std::runtime_error
+{
+public:
+	explicit PoolExceptionStaleIndex(const std::string& msg) : std::runtime_error(msg) {}
+	~PoolExceptionStaleIndex() noexcept override = default;
+};
+class PoolExceptionNullValue : public std::runtime_error
+{
+public:
+	explicit PoolExceptionNullValue(const std::string& msg) : std::runtime_error(msg) {}
+	~PoolExceptionNullValue() noexcept override = default;
+};
+class PoolExceptionNullIndex : public std::runtime_error
+{
+public:
+	explicit PoolExceptionNullIndex(const std::string& msg) : std::runtime_error(msg) {}
+	~PoolExceptionNullIndex() noexcept override = default;
+};
+class PoolExceptionOutOfRange : public std::runtime_error
+{
+public:
+	explicit PoolExceptionOutOfRange(const std::string& msg) : std::runtime_error(msg) {}
+	~PoolExceptionOutOfRange() noexcept override = default;
+};
+class PoolExceptionFull : public std::runtime_error
+{
+public:
+	explicit PoolExceptionFull(const std::string& msg) : std::runtime_error(msg) {}
+	~PoolExceptionFull() noexcept override = default;
+};
+
+
+
 
 using std::vector;
 template  <typename T>
@@ -63,48 +98,51 @@ template  <typename T>
 //Caps can only ever be set at the current size or smaller
 //shrinking the vector would lead to forgetting the generation counts and then potential slot reuse if allowed to expand later.
 class SCP_Pool {
+	/**************************************************************************
+	 * Private data members
+	 *
+	 *************************************************************************/
 	vector<gEntry<T>> storage;
 	vector<size_t> known_empty;
+
 	bool capped = false;
 	size_t cap = 0;
 
-	/*!
-	//Internal function to expand the storage list with a new object
-	//for use when there are no empty slots and the storage is not capped
-	!*/
-	pool_index add_new(){
+	/**************************************************************************
+	 * Private member functions
+	 *
+	 *************************************************************************/
+
+	/**
+	 * @brief
+	 * Internal function to expand the storage list with a new object
+	 * for use when there are no empty slots and the storage is not capped
+	 */
+	pool_index add_new(T &in){
 		gEntry<T> n;
 		n.generation = 0;
 		//Assuming trivial constructor behavior here...
-		n.stored = optional<T>(T());
+		n.stored = optional<T>(in);
 		storage.push_back(n);
 		pool_index i((int) storage.size()-1,0);
 		return i;
 	};
-
-	//Internal function to use an existing free slot for a new object
-	pool_index use_free(){
+	/**
+	 * @brief
+	 * 	//Internal function to use an existing free slot for a new object
+	 * @return pool_index
+	 */
+	pool_index use_free(T &in){
 		auto i = known_empty.back();
 		Assertion(storage[i].stored == tl::nullopt ,"Attempted to use_free on a slot that was not free");
 		//values are created as nullopt when expanding a list
 		//and resest to nullopt here so we need to construct a new object to go in there.
-		storage[i].stored = T();
-		storage[i].generation++;
+		storage[i].stored = optional<T>(in);
 		pool_index r((int) i,(int) storage[i].generation);
 		known_empty.pop_back();
 		return r;
 	}
-	//internal function to find or create a new slot
-	//if size is capped and there's no slot, return nullopt.
-	optional<pool_index> internal_get_new(){
-		if (known_empty.empty()) {
-			if (capped && storage.size()>=cap) {
-				return tl::nullopt;
-			}
-			return add_new();
-		}
-		return use_free();
-	};
+
 	//Internal function to fill out the empty list when the storage is known to be clear.
 	void fill_empty_list(){
 		known_empty.clear();
@@ -114,7 +152,22 @@ class SCP_Pool {
 			}
 		}
 	}
-
+	//Internal to reset a slot, assumes generation checking done by interface;
+	
+	void reset_entry(gEntry<T> &e)
+	{
+		 
+		if(e.stored == tl::nullopt)
+			return;
+		e.stored.reset();
+		e.generation++;
+	}
+	void reset_slot(int i)
+	{
+		gEntry<T> &e = storage[i];
+		reset_entry(e);
+		known_empty.push_back(i);
+	}
 	public:
 	SCP_Pool<T>() = default;
 	SCP_Pool<T>(size_t cap){
@@ -124,9 +177,9 @@ class SCP_Pool {
 	void reset(){
 		capped = false;
 		cap = 0;
-		for(gEntry<T> entry: storage){
-			if (entry.stored != tl::nullopt)
-				entry.stored.reset();
+		for(gEntry<T> &entry: storage)
+		{
+			reset_entry(entry);
 		}
 		fill_empty_list();
 	}
@@ -150,20 +203,37 @@ class SCP_Pool {
 
 	//Index into the storage... bare reference
 	T& operator[](pool_index i) {
-		T* v = nullptr;
-		if (i.i() >= storage.size()) {
-			return *v;
-		}
-		if (storage[i.i()].generation!= i.g()){
-			return *v;
-		}
-		if(storage[i.i()].stored==tl::nullopt) 
-			return *v;
+		if (i.null())
+			throw PoolExceptionNullIndex("null index SCP_Pool access attempted");
+		if (i.i() >= storage.size())
+			throw PoolExceptionOutOfRange("out of range SCP_Pool access attempted");
+		if (storage[i.i()].generation!= i.g())
+			throw PoolExceptionStaleIndex("Stale SCP_Pool access attempted");
+		if(storage[i.i()].stored==tl::nullopt)
+			throw PoolExceptionNullValue("Empty SCP_Pool access attempted");
 //		v = (storage[i.i()].stored).operator->();
 		return storage[i.i()].stored.operator*();
 	};
 
-
+	optional<T&> get(pool_index i){
+		SCP_Pool<T> &self = this;
+		try{
+			T& r = self[i];
+			return optional<T&>(r);
+		}
+		catch(const PoolExceptionNullIndex& e) {
+			return tl::nullopt;
+		}
+		catch(const PoolExceptionOutOfRange& e) {
+			return tl::nullopt;
+		}
+		catch(const PoolExceptionStaleIndex& e) {
+			return tl::nullopt;
+		}
+		catch(const PoolExceptionNullValue& e) {
+			return tl::nullopt;
+		}
+	};
 	optional<T*> get_pointer(pool_index i){
 		if (i.i() >= storage.size()) {
 			return tl::nullopt;
@@ -176,48 +246,38 @@ class SCP_Pool {
 		return p;
 	};
 
-
-
-	optional<pool_index> getNew(){
-		return internal_get_new();
+	optional<pool_index> get_new(){
+		T* n = new T();
+		return store(*n);
 	};
 
 	//Store a value in the vector
 	//TODO: Handle capped stuff
 	//This is kind of in appropriate for the actual usage this is primarily intended to replace
 	//to the point where if we want this functionality it might need to be a seperate data structure for sake of strictness
-	pool_index add(T input){
-	if (known_empty.empty()) {
-		gEntry<T> n;
-		n.generation = 0;
-		n.stored = optional<T>(input);
-		storage.push_back(n);
-		pool_index i(((int) storage.size())-1,(int) 0);;
-		return i;
+	optional<pool_index> store(T &n){
+		if (known_empty.empty()) {
+			if (capped && storage.size()>=cap) {
+				return tl::nullopt;
+			}
+			return add_new(n);
 		}
-	else {
-		auto i = known_empty.back();
-		storage[i].stored = optional<T>(input);
-		storage[i].generation++;
-		pool_index r((int) i,storage[i].generation);
-		known_empty.pop_back();
-		return r;
-		}
+		return use_free(n);
 	};
 
 	void remove(optional<pool_index> i){
-		if (i.has_value())
-			remove(i.value());
+		if (!i.has_value())
+			return;
+		remove(i.value());
 	};
 	void remove(pool_index i){
-		if (i.i() >= storage.size()) {
-			return;
-		}
-		if (storage[i.i()].generation != i.g() ) {
-			return;
-		}
-		storage[i.i()].stored.reset();
-		known_empty.push_back(i.i());
+		if (i.null())
+			throw PoolExceptionNullIndex("Attempted to remove from SCP_Pool with a null index");
+		if (i.i() >= storage.size())
+			throw PoolExceptionOutOfRange("Attempted to remove from SCP_Pool with out-of-range index");
+		if (storage[i.i()].generation != i.g() ) 
+			throw PoolExceptionStaleIndex("Attempted to remove from SCP_Pool with stale index");
+		reset_slot(i.i());
 	};
 	bool check(pool_index i){
 		if(i.null())
