@@ -21,6 +21,12 @@
 // pause bitmap display stuff
 extern int Please_wait_coords[GR_NUM_RESOLUTIONS][4];
 
+// saved background screen
+extern int Pause_saved_screen;
+extern int Pause_type;
+
+extern bool Paused;
+
 
 // ----------------------------------------------------------------------------------------------------------------
 // PAUSE FUNCTIONS

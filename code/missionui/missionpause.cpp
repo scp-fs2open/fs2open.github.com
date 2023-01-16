@@ -61,7 +61,7 @@ UI_BUTTON Pause_continue;
 int Pause_type = PAUSE_TYPE_NORMAL;
 
 // if we're already paused
-int Paused = 0;
+bool Paused = false;
 
 // background screen (for the chatbox)
 int Pause_background_bitmap = -1;
@@ -121,7 +121,7 @@ void pause_init()
 	io::mouse::CursorManager::get()->pushStatus();
 	io::mouse::CursorManager::get()->showCursor(true);
 
-	Paused = 1;
+	Paused = true;
 }
 
 extern int button_function_demo_valid(int n);
@@ -269,7 +269,7 @@ void pause_close()
 	// unpause all the music
 	audiostream_unpause_all();		
 
-	Paused = 0;
+	Paused = false;
 }
 
 // debug pause init

@@ -28,6 +28,7 @@
 #include "mission/missiongoals.h"
 #include "mission/missioncampaign.h"
 #include "missionui/redalert.h"
+#include "missionui/missionpause.h"
 #include "mod_table/mod_table.h"
 #include "network/multi.h"
 #include "network/multiteamselect.h"
@@ -50,6 +51,7 @@
 #include "scripting/api/objs/player.h"
 #include "scripting/api/objs/texture.h"
 #include "scripting/lua/LuaTable.h"
+#include "sound/audiostr.h"
 #include "stats/medals.h"
 #include "stats/stats.h"
 
@@ -1582,6 +1584,49 @@ ADE_VIRTVAR(Complete, l_UserInterface_Credits, nullptr, "The complete credits st
 	}
 
 	return ade_set_args(L, "s", credits_complete);
+}
+//**********SUBLIBRARY: UserInterface/PauseScreen
+ADE_LIB_DERIV(l_UserInterface_PauseScreen,
+	"PauseScreen",
+	nullptr,
+	"API for accessing data related to the pause screen UI.<br><b>Warning:</b> This is an internal "
+	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	l_UserInterface);
+
+ADE_VIRTVAR(isPaused, l_UserInterface_PauseScreen, nullptr, "Returns true if the game is paused, false otherwise", "boolean", "true if paused, false if unpaused")
+{
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "b", Paused);
+}
+
+ADE_FUNC(initPause, l_UserInterface_PauseScreen, nullptr, "Makes sure everything is done correctly to pause the game.", nullptr, nullptr)
+{
+
+	weapon_pause_sounds();
+	audiostream_pause_all();
+
+	Paused = true;
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(closePause, l_UserInterface_PauseScreen, nullptr, "Makes sure everything is done correctly to unpause the game.", nullptr, nullptr)
+{
+	weapon_unpause_sounds();
+	audiostream_unpause_all();
+
+	// FSO can run pause_init() before the actual games state change when the game loses focus
+	// so this is required to make sure that the saved screen is cleared if SCPUI takes over
+	// after the game state change
+	gr_free_screen(Pause_saved_screen);
+	Pause_saved_screen = -1;
+
+	Paused = false;
+
+	return ADE_RETURN_NIL;
 }
 
 } // namespace api
