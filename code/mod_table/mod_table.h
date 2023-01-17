@@ -127,6 +127,7 @@ extern bool Always_use_distant_firepoints;
 extern bool Discord_presence;
 extern bool Hotkey_always_hide_hidden_ships;
 extern bool Use_weapon_class_sounds_for_hits_to_player;
+extern bool Auto_assign_personas;
 
 void mod_table_init();
 void mod_table_post_process();

@@ -131,6 +131,7 @@ bool Always_use_distant_firepoints;
 bool Discord_presence;
 bool Hotkey_always_hide_hidden_ships;
 bool Use_weapon_class_sounds_for_hits_to_player;
+bool Auto_assign_personas;
 
 static auto DiscordOption = options::OptionBuilder<bool>("Other.Discord", "Discord Presence", "Toggle Discord Rich Presence")
 							 .category("Other")
@@ -1131,6 +1132,10 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Hotkey_always_hide_hidden_ships);
 		}
 
+		if (optional_string("$Allow automatically assigning personas:")) {
+			stuff_boolean(&Auto_assign_personas);
+		}
+
 
 		required_string("#END");
 	}
@@ -1283,6 +1288,7 @@ void mod_table_reset()
 	Discord_presence = true;
 	Hotkey_always_hide_hidden_ships = false;
 	Use_weapon_class_sounds_for_hits_to_player = false;
+	Auto_assign_personas = true;
 }
 
 void mod_table_set_version_flags()

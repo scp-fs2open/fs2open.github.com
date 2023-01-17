@@ -1984,8 +1984,14 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 		// Karajorma - the game should assert if a silenced ship gets this far
 		Assert( !(shipp->flags[Ship::Ship_Flags::No_builtin_messages]) );
 
-		if ( shipp->persona_index == -1 )
-			shipp->persona_index = message_get_persona( shipp );
+		if (shipp->persona_index == -1) {
+			if (!Auto_assign_personas) {
+				// if the game does not allow auto assignment then bail
+				return;
+			} else {
+				shipp->persona_index = message_get_persona(shipp);
+			}
+		}
 
 		persona_index = shipp->persona_index;
 
