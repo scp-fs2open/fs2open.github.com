@@ -34,25 +34,16 @@ struct connexion_3d_new_protocol {
 };
 #pragma pack(pop)
 
-static size_t requiredPollCount(SpaceMouseDefinition::Protocol protocol) {
-	switch (protocol) {
-	case SpaceMouseDefinition::Protocol::CONNEXION_3D_OLD:
-		return 4;
-	case SpaceMouseDefinition::Protocol::CONNEXION_3D_NEW:
-		return 4;
-	default:
-		UNREACHABLE("Bad SpaceMouse protocol specified!");
-		return 0;
-	}
-}
-
 void SpaceMouse::poll() {
-	for (size_t report = 0; report < requiredPollCount(m_definition.protocol); report++) {
+	int bytes_read = 0;
+	do {
+		//Read until we have all reports, since we need the last one in the buffer for each type as the most up to date one.
+
 		switch (m_definition.protocol) {
 		case SpaceMouseDefinition::Protocol::CONNEXION_3D_OLD: {
 			static connexion_3d_old_protocol data;
 
-			int bytes_read = hid_read(m_deviceHandle, reinterpret_cast<unsigned char*>(&data), sizeof(connexion_3d_old_protocol));
+			bytes_read = hid_read(m_deviceHandle, reinterpret_cast<unsigned char*>(&data), sizeof(connexion_3d_old_protocol));
 			if (bytes_read <= 0)
 				continue;
 
@@ -78,7 +69,7 @@ void SpaceMouse::poll() {
 		case SpaceMouseDefinition::Protocol::CONNEXION_3D_NEW: {
 			static connexion_3d_new_protocol data;
 
-			int bytes_read = hid_read(m_deviceHandle, reinterpret_cast<unsigned char*>(&data), sizeof(connexion_3d_new_protocol));
+			bytes_read = hid_read(m_deviceHandle, reinterpret_cast<unsigned char*>(&data), sizeof(connexion_3d_new_protocol));
 			if (bytes_read <= 0)
 				continue;
 
@@ -104,7 +95,7 @@ void SpaceMouse::poll() {
 		default:
 			UNREACHABLE("Bad SpaceMouse protocol specified!");
 		}
-	}
+	} while (bytes_read > 0);
 }
 
 void SpaceMouse::pollMaybe() {
