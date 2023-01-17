@@ -1864,6 +1864,9 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 	// Goober5000 - make the parse object aware of what it was created as
 	p_objp->created_object = &Objects[objnum];
 
+	// Goober5000 - set the collision group if one was provided
+	Objects[objnum].collision_group_id = p_objp->collision_group_id;
+
 	// Goober5000 - if this object is being created because he's docked to something,
 	// and he's in a wing, then mark the wing as having arrived
 	if (object_is_docked(p_objp) && !(p_objp->flags[Mission::Parse_Object_Flags::SF_Dock_leader]) && (p_objp->wingnum >= 0))

@@ -342,6 +342,7 @@ public:
 	SCP_set<size_t> orders_accepted;		// which orders this ship will accept from the player
 	p_dock_instance	*dock_list = nullptr;				// Goober5000 - parse objects this parse object is docked to
 	object *created_object = nullptr;					// Goober5000
+	int collision_group_id = 0;							// Goober5000
 	int	group = -1;								// group object is within or -1 if none.
 	int	persona_index = -1;
 	int	kamikaze_damage = 0;					// base damage for a kamikaze attack
