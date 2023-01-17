@@ -46,6 +46,7 @@ struct pool_index{
 	inline int i() const { return index;};
 	inline int g() const { return generation;};
 	inline bool null() const { return is_null;};
+	inline bool has_value() const { return !is_null;};
 };
 
 class PoolExceptionStaleIndex : public std::runtime_error
