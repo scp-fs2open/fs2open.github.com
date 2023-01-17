@@ -18,34 +18,34 @@ struct pool_index{
 			set(i,g);
 		}
 	};
-	void set(int i,int g){
+	inline void set(int i,int g){
 		is_null = false;
 		index = i;
 		generation = g;
 	}
-	void nullify()
+	inline void nullify()
 	{
 		index = -1;
 		generation = -1;
 		is_null=true;
 	};
-	bool operator==(pool_index &rhs) const {
+	inline bool operator==(pool_index &rhs) const {
 		if(is_null && rhs.is_null)
 			return true;
 		if(is_null || rhs.is_null)
 			return false;
 		return (index == rhs.index && generation == rhs.generation);
 	};
-	pool_index& operator=(pool_index const&rhs) {
+	inline pool_index& operator=(pool_index const&rhs) {
 		if(rhs.is_null)
 			nullify();
 		else
 			set(rhs.index, rhs.generation);
 		return *this;
 	};
-	int i() const { return index;};
-	int g() const { return generation;};
-	bool null() const { return is_null;};
+	inline int i() const { return index;};
+	inline int g() const { return generation;};
+	inline bool null() const { return is_null;};
 };
 
 class PoolExceptionStaleIndex : public std::runtime_error
@@ -232,8 +232,8 @@ class SCP_Pool {
 	};
 
 	tl::optional<pool_index> get_new(){
-		T* n = new T();
-		return store(*n);
+		//T* n = new T();
+		return store(T());
 	};
 
 	//Store a value in the vector
