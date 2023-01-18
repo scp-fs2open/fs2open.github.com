@@ -278,9 +278,9 @@ void bg_bitmap_dlg::create()
 		m_skybox_heading = m_skybox_heading + 360;
 
 
-	for(i=0; i<MAX_NEB2_BITMAPS; i++){
-		if(strlen(Neb2_bitmap_filenames[i]) > 0){ //-V805
-			((CComboBox*)GetDlgItem(IDC_NEB2_TEXTURE))->AddString(Neb2_bitmap_filenames[i]);
+	for (i = 0; i < (int)Neb2_bitmap_filenames.size(); i++) {
+		if (Neb2_bitmap_filenames[i].length() > 0) {
+			((CComboBox*)GetDlgItem(IDC_NEB2_TEXTURE))->AddString(Neb2_bitmap_filenames[i].c_str());
 		}
 	}
 	// if we have a texture selected already
@@ -429,7 +429,7 @@ void bg_bitmap_dlg::OnClose()
 		}
 		
 		// get the bitmap name
-		strcpy_s(Neb2_texture_name, Neb2_bitmap_filenames[m_neb2_texture]);
+		strcpy_s(Neb2_texture_name, Neb2_bitmap_filenames[m_neb2_texture].c_str());
 
 		// init the nebula
 		neb2_level_init();
@@ -659,7 +659,7 @@ void bg_bitmap_dlg::OnSelchangeNeb2Texture()
 	if (m_fog_color_override)
 	{
 		ubyte rgb[3];
-		neb2_generate_fog_color(m_neb2_texture >= 0 ? Neb2_bitmap_filenames[m_neb2_texture] : "", rgb);
+		neb2_generate_fog_color(m_neb2_texture >= 0 ? Neb2_bitmap_filenames[m_neb2_texture].c_str() : "", rgb);
 		m_fog_r = rgb[0];
 		m_fog_g = rgb[1];
 		m_fog_b = rgb[2];
