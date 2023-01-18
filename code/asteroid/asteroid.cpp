@@ -1579,8 +1579,8 @@ static void asteroid_do_area_effect(object *asteroid_objp)
 		if (ship_objp->flags[Object::Object_Flags::Should_be_dead])
 			continue;
 
-		// don't blast navbuoys
-		if ( ship_get_SIF(ship_objp->instance)[Ship::Info_Flags::Navbuoy] ) {
+		// don't blast no-collide or navbuoys
+		if ( !ship_objp->flags[Object::Object_Flags::Collides] || ship_get_SIF(ship_objp->instance)[Ship::Info_Flags::Navbuoy] ) {
 			continue;
 		}
 
