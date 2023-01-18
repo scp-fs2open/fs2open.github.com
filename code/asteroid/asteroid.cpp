@@ -739,7 +739,10 @@ void asteroid_create_asteroid_field(int num_asteroids, int field_type, int aster
 
 	Asteroid_field.target_names = targets;
 
-	asteroid_create_all();
+	// Only create asteroids if we have some to create
+	if ((count > 0) && (num_asteroids > 0)) {
+		asteroid_create_all();
+	}
 }
 
 // will replace any existing asteroid or debris field with a debris field
@@ -794,7 +797,10 @@ void asteroid_create_debris_field(int num_asteroids, int asteroid_speed, int deb
 
 	Asteroid_field.bound_rad = MAX(3000.0f, b_rad);
 
-	asteroid_create_all();
+	// Only create debris if we have some to create
+	if ((count > 0) && (num_asteroids > 0)) {
+		asteroid_create_all();
+	}
 }
 
 /**
