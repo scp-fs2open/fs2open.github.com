@@ -4924,9 +4924,7 @@ sexp_list_item* sexp_tree::get_listing_opf_nebula_patterns() {
 	head.add_data(SEXP_NONE_STRING);
 
 	for (int i = 0; i < (int)Neb2_bitmap_filenames.size(); i++) {
-		if (Neb2_bitmap_filenames[i].length() > 0) {
-			head.add_data(Neb2_bitmap_filenames[i].c_str());
-		}
+		head.add_data(Neb2_bitmap_filenames[i].c_str());
 	}
 
 	return head.next;

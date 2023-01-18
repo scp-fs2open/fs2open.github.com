@@ -279,9 +279,7 @@ void bg_bitmap_dlg::create()
 
 
 	for (i = 0; i < (int)Neb2_bitmap_filenames.size(); i++) {
-		if (Neb2_bitmap_filenames[i].length() > 0) {
-			((CComboBox*)GetDlgItem(IDC_NEB2_TEXTURE))->AddString(Neb2_bitmap_filenames[i].c_str());
-		}
+		((CComboBox*)GetDlgItem(IDC_NEB2_TEXTURE))->AddString(Neb2_bitmap_filenames[i].c_str());
 	}
 	// if we have a texture selected already
 	if(strlen(Neb2_texture_name) > 0){ //-V805
