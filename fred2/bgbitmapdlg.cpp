@@ -429,7 +429,9 @@ void bg_bitmap_dlg::OnClose()
 		}
 		
 		// get the bitmap name
-		strcpy_s(Neb2_texture_name, Neb2_bitmap_filenames[m_neb2_texture].c_str());
+		if ((m_neb2_texture >= 0) && (m_neb2_texture < (int)Neb2_bitmap_filenames.size())){
+			strcpy_s(Neb2_texture_name, Neb2_bitmap_filenames[m_neb2_texture].c_str());
+		}
 
 		// init the nebula
 		neb2_level_init();
