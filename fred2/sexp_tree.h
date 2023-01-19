@@ -13,6 +13,7 @@
 // 4786 is identifier truncated to 255 characters (happens all the time in Microsoft #includes) -- Goober5000
 #pragma warning(disable: 4786)
 
+#include "OperatorComboBox.h"
 #include "parse/sexp.h"
 #include "parse/sexp_container.h"
 #include "parse/parselo.h"
@@ -127,7 +128,7 @@ public:
 	void verify_and_fix_arguments(int node);
 	void post_load();
 	void update_help(HTREEITEM h);
-	const char *help(int code);
+	static const char *help(int code);
 	HTREEITEM insert(LPCTSTR lpszItem, int image = BITMAP_ROOT, int sel_image = BITMAP_ROOT, HTREEITEM hParent = TVI_ROOT, HTREEITEM hInsertAfter = TVI_LAST);
 	HTREEITEM handle(int node);
 	int get_type(HTREEITEM h);
@@ -328,7 +329,7 @@ public:
 	CEdit *help_box;
 	CEdit *mini_help_box;
 	CPoint m_pt;
-	CComboBox m_operator_box;
+	OperatorComboBox m_operator_box;
 
 	void start_operator_edit(HTREEITEM h);
 	void end_operator_edit(bool confirm);

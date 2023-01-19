@@ -86,6 +86,7 @@ static int Modify_variable;
 
 // constructor
 sexp_tree::sexp_tree()
+	: m_operator_box(help)
 {
 	select_sexp_node = -1;
 	root_item = -1;
@@ -2013,7 +2014,7 @@ void sexp_tree::start_operator_edit(HTREEITEM h)
 	// create or just position it
 	if (!m_operator_popup_created)
 	{
-		m_operator_box.Create(WS_CHILD | WS_VISIBLE | WS_VSCROLL | CBS_HASSTRINGS | CBS_SIMPLE | CBS_SORT, dropdown_rect, this, IDC_SEXP_POPUP_LIST);
+		m_operator_box.Create(WS_CHILD | WS_VISIBLE | WS_VSCROLL | CBS_SIMPLE | CBS_HASSTRINGS, dropdown_rect, this, IDC_SEXP_POPUP_LIST);
 		m_operator_box.SetFont(GetFont());
 		m_operator_popup_created = true;
 	}
@@ -2022,9 +2023,7 @@ void sexp_tree::start_operator_edit(HTREEITEM h)
 		m_operator_box.MoveWindow(&dropdown_rect);
 	}
 
-	m_operator_box.ResetContent();
-	for (auto& op : Operators)
-		m_operator_box.AddString(_T(op.text.c_str()));
+	m_operator_box.refresh_popup_operators();
 
 	m_operator_box.ShowWindow(SW_SHOWNORMAL);
 	m_operator_box.SetFocus();

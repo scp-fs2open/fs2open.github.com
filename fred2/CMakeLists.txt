@@ -87,6 +87,8 @@ set(FRED2_SOURCES
 	musicplayerdlg.h
 	operatorargtypeselect.cpp
 	operatorargtypeselect.h
+	OperatorComboBox.cpp
+	OperatorComboBox.h
 	orienteditor.cpp
 	orienteditor.h
 	playerstarteditor.cpp
