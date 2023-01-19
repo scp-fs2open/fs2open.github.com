@@ -13727,7 +13727,14 @@ void sexp_set_gravity_accel(int node)
 		return;
 
 	float fl_accel = (float)(-accel) / 100.0f;
+	vec3d old_gravity = The_mission.gravity;
 	The_mission.gravity = vm_vec_new(0.0f, fl_accel, 0.0f);
+
+	if ((IS_VEC_NULL(&old_gravity) && !IS_VEC_NULL(&The_mission.gravity)) ||
+		(!IS_VEC_NULL(&old_gravity) && IS_VEC_NULL(&The_mission.gravity))) {
+		// gravity was turned on or turned off
+		collide_apply_gravity_flags_weapons();
+	}
 
 	// do the multiplayer callback
 	if (MULTIPLAYER_MASTER) {
@@ -13743,7 +13750,13 @@ void multi_sexp_set_gravity_accel()
 
 	Current_sexp_network_packet.get_float(accel);
 
+	vec3d old_gravity = The_mission.gravity;
 	The_mission.gravity = vm_vec_new(0.0f, accel, 0.0f);
+	if ((IS_VEC_NULL(&old_gravity) && !IS_VEC_NULL(&The_mission.gravity)) ||
+		(!IS_VEC_NULL(&old_gravity) && IS_VEC_NULL(&The_mission.gravity))) {
+		// gravity was turned on or turned off
+		collide_apply_gravity_flags_weapons();
+	}
 }
 
 // this function get called by send-message or send-message random with the name of the message, sender,

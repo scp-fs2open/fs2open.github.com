@@ -1042,3 +1042,29 @@ void obj_sort_and_collide(SCP_vector<int>* Collision_list)
 	}
 	obj_find_overlap_colliders(sort_list_y, sort_list_z, 2, true);
 }
+
+void collide_apply_gravity_flags_weapons() {
+	for (int i = 0; i < MAX_OBJECTS; i++) {
+		object* obj = &Objects[i];
+		if (Objects[i].type != OBJ_WEAPON)
+			continue;
+
+		weapon* wp = &Weapons[Objects[i].instance];
+		weapon_info* wip = &Weapon_info[wp->weapon_info_index];
+
+		if (!wip->is_homing() || (wp->weapon_flags[Weapon::Weapon_Flags::No_homing])) {
+			// homing weapons dont get any gravity stuff
+			if (wip->acceleration_time <= 0.0f || Missiontime - wp->creation_time >= fl2f(wip->acceleration_time)) {
+				// if the weapon doesn't accelerate, or has finished accelerating...
+				if (The_mission.gravity == vmd_zero_vector || obj->phys_info.gravity_const == 0.0f) {
+					obj->phys_info.flags |= PF_CONST_VEL;
+					obj->phys_info.flags &= ~PF_BALLISTIC;
+				}
+				else {
+					obj->phys_info.flags |= PF_BALLISTIC;
+					obj->phys_info.flags &= ~PF_CONST_VEL;
+				}
+			}
+		}
+	}
+}
