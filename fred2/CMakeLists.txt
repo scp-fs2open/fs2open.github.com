@@ -41,8 +41,6 @@ set(FRED2_SOURCES
 	customwingnames.h
 	debriefingeditordlg.cpp
 	debriefingeditordlg.h
-	dialog1.cpp
-	dialog1.h
 	dumpstats.cpp
 	dumpstats.h
 	editcontainernamedlg.cpp
@@ -50,8 +48,6 @@ set(FRED2_SOURCES
 	editor.h
 	eventeditor.cpp
 	eventeditor.h
-	folderdlg.cpp
-	folderdlg.h
 	fred.cpp
 	fred.h
 	freddoc.cpp

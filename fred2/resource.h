@@ -31,11 +31,7 @@
 #define IDD_SHIP_EDITOR                 176
 #define IDD_WEAPON_EDITOR               177
 #define IDD_SHIP_MARKINGS               178
-#define IDD_DIALOG1                     179
 #define IDD_MISSION_GOALS               179
-#define IDD_DIALOG2                     180
-#define IDD_HELP_INPUT_INTERFACE        180
-#define IDD_DIALOG3                     181
 #define IDD_SHIP_SELECT                 181
 #define IDD_GRID                        182
 #define IDR_MENU_SHIP_POPUP             183
@@ -1302,7 +1298,6 @@
 #define ID_EDIT_TEXT                    32857
 #define ID_ADD_TRUE                     32858
 #define ID_ADD_FALSE                    32859
-#define ID_HELP_INPUT_INTERFACE         32860
 #define ID_ADD_LESS_THAN                32861
 #define ID_ADD_ELAPSED_TIME             32862
 #define ID_ADD_TIME_SHIP_DESTROYED      32863

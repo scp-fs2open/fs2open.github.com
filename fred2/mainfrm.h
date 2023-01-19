@@ -169,14 +169,6 @@ protected:
 	afx_msg void OnRButtonDown(UINT nFlags, CPoint point);
 
 	/**
-	 * @brief Calls dialog1
-	 *
-	 * @note Not sure if this is actually useful
-	 * @TODO Verify and remove
-	 */
-	afx_msg void OnHelpInputInterface();
-
-	/**
 	 * @brief Handler for OnClose() events. called by ON_WM_CLOSE()
 	 */
 	afx_msg void OnClose();
