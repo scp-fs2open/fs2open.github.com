@@ -1044,12 +1044,11 @@ void obj_sort_and_collide(SCP_vector<int>* Collision_list)
 }
 
 void collide_apply_gravity_flags_weapons() {
-	for (int i = 0; i < MAX_OBJECTS; i++) {
-		object* obj = &Objects[i];
-		if (Objects[i].type != OBJ_WEAPON)
+	for (object* obj = GET_FIRST(&obj_used_list); obj != END_OF_LIST(&obj_used_list); obj = GET_NEXT(obj)) {
+		if (obj->type != OBJ_WEAPON)
 			continue;
 
-		weapon* wp = &Weapons[Objects[i].instance];
+		weapon* wp = &Weapons[obj->instance];
 		weapon_info* wip = &Weapon_info[wp->weapon_info_index];
 
 		if (!wip->is_homing() || (wp->weapon_flags[Weapon::Weapon_Flags::No_homing])) {
