@@ -198,6 +198,19 @@ ADE_FUNC(createOrientationFromVectors, l_Base, "[vector fvec, vector uvec, vecto
 	}
 }
 
+ADE_FUNC(multiplyOrientations, l_Base, "orientation Orientation1, orientation Orientation2", "Multiplies two orientations and returns the result", "orientation", "Orientation object")
+{
+	matrix_h* mh1 = nullptr;
+	matrix_h* mh2 = nullptr;
+	if (!ade_get_args(L, "oo", l_Matrix.GetPtr(&mh1), l_Matrix.GetPtr(&mh2)))
+		return ade_set_error(L, "s", "");
+
+	matrix orient;
+	vm_matrix_x_matrix(&orient, mh1->GetMatrix(), mh2->GetMatrix());
+
+	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&orient)));
+}
+
 ADE_FUNC(createVector, l_Base, "[number x, number y, number z]", "Creates a vector object", "vector", "Vector object")
 {
 	vec3d v3 = vmd_zero_vector;
