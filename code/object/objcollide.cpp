@@ -1045,7 +1045,7 @@ void obj_sort_and_collide(SCP_vector<int>* Collision_list)
 
 void collide_apply_gravity_flags_weapons() {
 	for (object* obj = GET_FIRST(&obj_used_list); obj != END_OF_LIST(&obj_used_list); obj = GET_NEXT(obj)) {
-		if (obj->type != OBJ_WEAPON)
+		if (obj->type != OBJ_WEAPON || obj->flags[Object::Object_Flags::Should_be_dead])
 			continue;
 
 		weapon* wp = &Weapons[obj->instance];
