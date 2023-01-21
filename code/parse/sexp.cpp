@@ -25219,11 +25219,13 @@ int sexp_is_docked(int node)
 void sexp_manipulate_colgroup(int node, bool add_to_group)
 {
 	auto ship_entry = eval_ship(node);
-	if (!ship_entry || !ship_entry->shipp)
+	if (!ship_entry || ship_entry->status == ShipStatus::EXITED)
 		return;
 	node = CDR(node);
 
-	int colgroup_id = ship_entry->objp->collision_group_id;
+	int colgroup_id = (ship_entry->status == ShipStatus::PRESENT)
+		? ship_entry->objp->collision_group_id
+		: ship_entry->p_objp->collision_group_id;
 
 	for (; node != -1; node = CDR(node)) {
 		bool is_nan, is_nan_forever;
@@ -25243,7 +25245,10 @@ void sexp_manipulate_colgroup(int node, bool add_to_group)
 		}
 	}
 
-	ship_entry->objp->collision_group_id = colgroup_id;
+	if (ship_entry->status == ShipStatus::PRESENT)
+		ship_entry->objp->collision_group_id = colgroup_id;
+	else
+		ship_entry->p_objp->collision_group_id = colgroup_id;
 }
 
 void sexp_manipulate_colgroup_new(int node, bool add_to_group)
@@ -25263,24 +25268,38 @@ void sexp_manipulate_colgroup_new(int node, bool add_to_group)
 	for (; node != -1; node = CDR(node))
 	{
 		auto ship_entry = eval_ship(node);
-		if (!ship_entry || !ship_entry->shipp)
+		if (!ship_entry || ship_entry->status == ShipStatus::EXITED)
 			continue;
 
-		if (add_to_group)
-			ship_entry->objp->collision_group_id |= (1 << group);
+		if (ship_entry->status == ShipStatus::PRESENT)
+		{
+			if (add_to_group)
+				ship_entry->objp->collision_group_id |= (1 << group);
+			else
+				ship_entry->objp->collision_group_id &= ~(1 << group);
+		}
 		else
-			ship_entry->objp->collision_group_id &= ~(1 << group);
+		{
+			if (add_to_group)
+				ship_entry->p_objp->collision_group_id |= (1 << group);
+			else
+				ship_entry->p_objp->collision_group_id &= ~(1 << group);
+		}
 	}
 }
 
 int sexp_get_colgroup(int node)
 {
 	auto ship_entry = eval_ship(node);
-	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+	if (!ship_entry)
 		return SEXP_NAN;
 	if (ship_entry->status == ShipStatus::EXITED)
 		return SEXP_NAN_FOREVER;
-	return ship_entry->objp->collision_group_id;
+
+	if (ship_entry->status == ShipStatus::PRESENT)
+		return ship_entry->objp->collision_group_id;
+	else
+		return ship_entry->p_objp->collision_group_id;
 }
 
 int get_effect_from_name(const char* name)
