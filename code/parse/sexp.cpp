@@ -3948,7 +3948,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
-				if (stricmp(CTEXT(node), SEXP_NONE_STRING) && (get_asteroid_position(CTEXT(node))) < 0) {
+				if (stricmp(CTEXT(node), SEXP_NONE_STRING) && (get_asteroid_index(CTEXT(node))) < 0) {
 					return SEXP_CHECK_INVALID_ASTEROID;
 				}
 				break;
@@ -15451,19 +15451,19 @@ void sexp_set_debris_field(int n)
 
 	int debris1 = -1;
 	if (n >= 0) {
-		debris1 = get_asteroid_position(CTEXT(n));
+		debris1 = get_asteroid_index(CTEXT(n));
 		n = CDR(n);
 	}
 
 	int debris2 = -1;
 	if (n >= 0) {
-		debris2 = get_asteroid_position(CTEXT(n));
+		debris2 = get_asteroid_index(CTEXT(n));
 		n = CDR(n);
 	}
 
 	int debris3 = -1;
 	if (n >= 0) {
-		debris3 = get_asteroid_position(CTEXT(n));
+		debris3 = get_asteroid_index(CTEXT(n));
 		n = CDR(n);
 	}
 

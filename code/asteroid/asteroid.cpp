@@ -2031,17 +2031,6 @@ float asteroid_time_to_impact(object *asteroid_objp)
 	return time;
 }
 
-int get_asteroid_position(const char* name)
-{
-	for (int i = 0; i < (int)Asteroid_info.size(); i++) {
-		if (!stricmp(name, Asteroid_info[i].name)) {
-			return i;
-		}
-	}
-
-	return -1;
-}
-
 static SCP_string setup_display_name(SCP_string name)
 {
 
@@ -2112,7 +2101,7 @@ static void asteroid_parse_section()
 				asteroid_t.name);
 		}
 	} else {
-		// Don't create poof if it has +nocreate and is in a modular table.
+		// Don't create asteroid if it has +nocreate and is in a modular table.
 		if (!create_if_not_found && Parsing_modular_table) {
 			if (!skip_to_start_of_string_either("$Name:", "#end")) {
 				error_display(1, "Missing [#end] or [$Name] after asteroid %s", asteroid_t.name);
@@ -2343,7 +2332,7 @@ static void asteroid_parse_tbl(const char* filename)
 }
 
 // Gets the index of an asteroid by name from Asteroid_info
-static int get_asteroid_index(const char* asteroid_name)
+int get_asteroid_index(const char* asteroid_name)
 {
 	for (int i = 0; i < (int)Asteroid_info.size(); i++) {
 		if (!stricmp(asteroid_name, Asteroid_info[i].name)) {
