@@ -15332,9 +15332,6 @@ void sexp_set_asteroid_field(int n)
 		n = CDR(n);
 	}
 
-	if (!brown && !blue && !orange)
-		return;
-
 	int o_minx = -1000, o_miny = -1000, o_minz = -1000;
 	int o_maxx = 1000, o_maxy = 1000, o_maxz = 1000;
 
@@ -15469,9 +15466,6 @@ void sexp_set_debris_field(int n)
 		debris3 = get_asteroid_position(CTEXT(n));
 		n = CDR(n);
 	}
-
-	if ((debris1 == -1) && (debris2 == -1) && (debris3 == -1))
-		return;
 
 	int o_minx = -1000, o_miny = -1000, o_minz = -1000;
 	int o_maxx = 1000, o_maxy = 1000, o_maxz = 1000;
