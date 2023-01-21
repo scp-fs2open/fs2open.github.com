@@ -137,7 +137,7 @@ special_flag_def_list_new<Weapon::Info_Flags, weapon_info*, flagset<Weapon::Info
 			}
 
 			flags.set(Weapon::Info_Flags::Spawn);
-			weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_type = (short)Num_spawn_types;
+			weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_wep_index = (short)Num_spawn_types;
 			size_t start_num = spawn.find_first_of(',');
 			if (start_num == SCP_string::npos) {
 				weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_count = DEFAULT_WEAPON_SPAWN_COUNT;
@@ -3550,24 +3550,31 @@ void translate_spawn_types()
     {
         for (j = 0; j < Weapon_info[i].num_spawn_weapons_defined; j++)
         {
-            if ( (Weapon_info[i].spawn_info[j].spawn_type > -1) && (Weapon_info[i].spawn_info[j].spawn_type < Num_spawn_types) )
+            if ( (Weapon_info[i].spawn_info[j].spawn_wep_index > -1) && (Weapon_info[i].spawn_info[j].spawn_wep_index < Num_spawn_types) )
             {
-                int	spawn_type = Weapon_info[i].spawn_info[j].spawn_type;
+                int	spawn_type = Weapon_info[i].spawn_info[j].spawn_wep_index;
 
                 Assert( spawn_type < Num_spawn_types );
 
+				bool found_a_match = false;
                 for (k = 0; k < weapon_info_size(); k++)
                 {
                     if ( !stricmp(Spawn_names[spawn_type], Weapon_info[k].name) ) 
                     {
-                        Weapon_info[i].spawn_info[j].spawn_type = (short)k;
+                        Weapon_info[i].spawn_info[j].spawn_wep_index = (short)k;
 
                         if (i == k)
                             Warning(LOCATION, "Weapon %s spawns itself.  Infinite recursion?\n", Weapon_info[i].name);
 
+						found_a_match = true;
                         break;
                     }
                 }
+
+				if (!found_a_match) {
+					Warning(LOCATION, "Couldn't find spawn weapon %s for Weapon %s.\n", Spawn_names[spawn_type], Weapon_info[i].name);
+					Weapon_info[i].spawn_info[j].spawn_wep_index = -1;
+				}
             }
         }
     }
@@ -6645,14 +6652,18 @@ void spawn_child_weapons(object *objp, int spawn_index_override)
 			spawn_count = wip->spawn_info[i].spawn_count;
 		}
 
+		child_id = wip->spawn_info[i].spawn_wep_index;
+		if (child_id < 0)
+			continue;
+
+		child_wip = &Weapon_info[child_id];
+
 		for (int j = 0; j < spawn_count; j++)
 		{
 			int		weapon_objnum;
 			vec3d	tvec, pos;
 			matrix	orient;
 
-			child_id = wip->spawn_info[i].spawn_type;
-			child_wip = &Weapon_info[child_id];
 
 			// for multiplayer, use the static randvec functions based on the network signatures to provide
 			// the randomness so that it is the same on all machines.
@@ -7509,7 +7520,9 @@ void weapons_page_in()
 		// if it's got a spawn type then grab it
         for (j = 0; j < Weapon_info[i].num_spawn_weapons_defined; j++)
         {
-            used_weapons[(int)Weapon_info[i].spawn_info[j].spawn_type]++;
+			idx = (int)Weapon_info[i].spawn_info[j].spawn_wep_index;
+			if (idx >= 0)
+				used_weapons[idx]++;
         }
 	}
 
@@ -7704,7 +7717,9 @@ bool weapon_page_in(int weapon_type)
 	for (size_t x = 0; x < size; x++) {
 		if (Weapon_info[page_in_weapons.at(x)].num_spawn_weapons_defined > 0) {
 			for (int j = 0; j < Weapon_info[page_in_weapons.at(x)].num_spawn_weapons_defined; j++) {
-				page_in_weapons.push_back((int)Weapon_info[page_in_weapons.at(x)].spawn_info[j].spawn_type);
+				int idx = (int)Weapon_info[page_in_weapons.at(x)].spawn_info[j].spawn_wep_index;
+				if (idx >= 0)
+					page_in_weapons.push_back(idx);
 			}
 		}
 	}
@@ -8926,7 +8941,7 @@ void weapon_info::reset()
 	this->maximum_children_spawned = 0;
 	for (i = 0; i < MAX_SPAWN_TYPES_PER_WEAPON; i++)
 	{
-		this->spawn_info[i].spawn_type = -1;
+		this->spawn_info[i].spawn_wep_index = -1;
 		this->spawn_info[i].spawn_angle = 180;
 		this->spawn_info[i].spawn_min_angle = 0;
 		this->spawn_info[i].spawn_count = DEFAULT_WEAPON_SPAWN_COUNT;
