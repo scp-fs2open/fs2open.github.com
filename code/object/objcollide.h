@@ -134,4 +134,8 @@ int get_ship_quadrant_from_global(vec3d *global_pos, object *objp);
 int reject_due_collision_groups(object *A, object *B);
 
 void init_collision_info_struct(collision_info_struct *cis);
+
+// goes over weapons applying gravity-relevant flags
+// VERY IMPORTANT if gravity was just turned on or off
+void collide_apply_gravity_flags_weapons();
 #endif
