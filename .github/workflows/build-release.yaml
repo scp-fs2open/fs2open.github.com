@@ -411,3 +411,4 @@ jobs:
       windows_result: ${{ needs.windows_zip.result }}
       mac_result: ${{ needs.mac_zip.result }}
       releaseTag: ${{ github.ref_name }}
+    secrets: inherit
