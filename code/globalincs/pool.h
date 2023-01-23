@@ -167,8 +167,8 @@ class SCP_Pool {
 	}
 	public:
 	SCP_Pool<T>() = default;
-	SCP_Pool<T>(size_t cap){
-		reset(cap);
+	SCP_Pool<T>(size_t cap_in){
+		reset(cap_in);
 	};
 
 	void reset(){
