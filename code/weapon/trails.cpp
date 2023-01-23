@@ -302,12 +302,14 @@ void trail_move_all(float frametime)
 	int num_alive_segments,n;
 	float time_delta;
 	trail *trailp = nullptr;
+	//for (auto &item : Trails){
 	for (auto iter = Trails.begin(); iter<Trails.end();++iter){
-		trailp = *iter;
+		//trailp = &iter;//;;iter.operator->();
+		trailp = &*iter;
 		num_alive_segments = 0;
 
 		if ( trailp->tail != trailp->head )	{
-			n = trailp->tail;			
+			n = trailp->tail;
 			time_delta = frametime / trailp->info.max_life;
 			do	{
 				n--;
@@ -354,7 +356,7 @@ void trail_render_all()
 	trail *trailp = nullptr;
 	for (auto iter = Trails.begin(); iter<Trails.end();++iter){
 	
-		trailp = *iter;
+		trailp = &*iter;
 		trail_render(trailp,iter.position());
 	}
 }
