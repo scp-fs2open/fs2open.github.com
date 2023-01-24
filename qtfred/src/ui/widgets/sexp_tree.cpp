@@ -3672,6 +3672,7 @@ sexp_list_item* sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 
 		// Armor types need Hull and Shields but not Simulated Hull
 	case OP_SET_ARMOR_TYPE:
+	case OP_HAS_ARMOR_TYPE:
 		special_subsys = OPS_ARMOR;
 		break;
 

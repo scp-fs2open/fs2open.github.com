@@ -279,6 +279,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "has-been-tagged-delay",			OP_HAS_BEEN_TAGGED_DELAY,				2,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},
 	{ "are-ship-flags-set",				OP_ARE_SHIP_FLAGS_SET,					2,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},	// Karajorma
 	{ "are-wing-flags-set",				OP_ARE_WING_FLAGS_SET,					2,	INT_MAX,	SEXP_BOOLEAN_OPERATOR, },	// Goober5000
+	{ "has-armor-type",					OP_HAS_ARMOR_TYPE,						3,	3,			SEXP_BOOLEAN_OPERATOR, },	// MjnMixael
 
 	//Shields, Engines and Weapons Sub-Category
 	{ "has-primary-weapon",				OP_HAS_PRIMARY_WEAPON,					3,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},	// Karajorma
@@ -25197,6 +25198,52 @@ int sexp_is_in_mission(int node)
 	return SEXP_TRUE;
 }
 
+int sexp_has_armor_type(int node)
+{
+
+	// get ship from sexp
+	auto ship_entry = eval_ship(node);
+	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+		return SEXP_NAN;
+	if (ship_entry->status == ShipStatus::EXITED)
+		return SEXP_NAN_FOREVER;
+
+	ship* shipp = ship_entry->shipp;
+	node = CDR(node);
+
+	// get armor from sexp
+	int armor;
+	if (!stricmp(SEXP_NONE_STRING, CTEXT(node))) {
+		armor = -1;
+	} else {
+		armor = armor_type_get_idx(CTEXT(node));
+	}
+	node = CDR(node);
+
+	// get the armor to check against
+	int currentArmor = -1;
+	for (; node != -1; node = CDR(node)) {
+		if (!stricmp(SEXP_HULL_STRING, CTEXT(node))) {
+			currentArmor = shipp->armor_type_idx;
+		} else if (!stricmp(SEXP_SHIELD_STRING, CTEXT(node))) {
+			currentArmor = shipp->shield_armor_type_idx;
+		} else {
+			// get the subsystem
+			ship_subsys* ss = ship_get_subsys(shipp, CTEXT(node));
+			if (ss == nullptr) {
+				continue;
+			}
+
+			currentArmor = ss->armor_type_idx;
+		}
+	}
+
+	if (currentArmor == armor)
+		return SEXP_TRUE;
+
+	return SEXP_FALSE;
+}
+
 int sexp_is_docked(int node)
 {
 	object *host_objp = nullptr;
@@ -26209,6 +26256,10 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			case OP_IS_IN_MISSION:
 				sexp_val = sexp_is_in_mission(node);
+				break;
+
+			case OP_HAS_ARMOR_TYPE:
+				sexp_val = sexp_has_armor_type(node);
 				break;
 
 			case OP_IS_DOCKED:
@@ -28779,6 +28830,7 @@ int query_operator_return_type(int op)
 		case OP_DIRECTIVE_VALUE:
 		case OP_IS_IN_BOX:
 		case OP_IS_IN_MISSION:
+		case OP_HAS_ARMOR_TYPE:
 		case OP_IS_DOCKED:
 		case OP_PLAYER_IS_CHEATING_BASTARD:
 		case OP_ARE_SHIP_FLAGS_SET:
@@ -30020,6 +30072,14 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_IS_IN_MISSION:
 			return OPF_STRING;
+
+		case OP_HAS_ARMOR_TYPE:
+			if (argnum == 0)
+				return OPF_SHIP;
+			else if (argnum == 1)
+				return OPF_ARMOR_TYPE;
+			else
+				return OPF_SUBSYSTEM;
 
 		case OP_IS_DOCKED:
 			return OPF_SHIP;
@@ -33670,6 +33730,7 @@ int get_category(int op_id)
 		case OP_GET_NUM_COUNTERMEASURES:
 		case OP_IS_IN_BOX:
 		case OP_IS_IN_MISSION:
+		case OP_HAS_ARMOR_TYPE:
 		case OP_ARE_SHIP_FLAGS_SET:
 		case OP_TURRET_GET_PRIMARY_AMMO:
 		case OP_TURRET_GET_SECONDARY_AMMO:
@@ -34603,6 +34664,7 @@ int get_subcategory(int op_id)
 		case OP_GET_THROTTLE_SPEED:
 		case OP_IS_FACING:
 		case OP_IS_IN_MISSION:
+		case OP_HAS_ARMOR_TYPE:
 		case OP_IS_DOCKED:
 		case OP_NAV_ISLINKED:
 		case OP_ARE_SHIP_FLAGS_SET:
@@ -35582,6 +35644,13 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"for ships created with ship-create, as those ships will not have used the conventional ship arrival list.\r\n\r\n"
 		"Takes 1 or more string arguments, which are checked against the ship list.  (If more than 1 argument is specified, the sexp will only evaluate to true if all ships "
 		"are in the mission simultaneously.)" },
+
+	{ OP_HAS_ARMOR_TYPE, "has-armor-type (Status operator)\r\n"
+		"\tChecks if a given ship has a specific armor type.\r\n\r\n"
+		"Takes 3 arguments...\r\n"
+		"\t1:\tThe ship to check\r\n"
+		"\t2:\tThe armor type to check\r\n"
+		"\t3:\tThe subsystem armor to check" },
 
 	{ OP_IS_DOCKED, "Is-Docked (Status operator)\r\n"
 		"\tChecks whether the specified ships are currently docked.  This sexp is different from has-docked-delay, which will return true if the ships have docked at "
