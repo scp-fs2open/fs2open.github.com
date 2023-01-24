@@ -673,6 +673,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "hud-clear-messages",				OP_HUD_CLEAR_MESSAGES,					0,	0,			SEXP_ACTION_OPERATOR,	},	// swifty
 	{ "hud-set-max-targeting-range",	OP_HUD_SET_MAX_TARGETING_RANGE,			1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "hud-force-sensor-static",		OP_HUD_FORCE_SENSOR_STATIC,				1,	1,			SEXP_ACTION_OPERATOR,	},	// MjnMixael
+	{ "hud-force-emp-effect",			OP_HUD_FORCE_EMP_EFFECT,				2,	3,			SEXP_ACTION_OPERATOR,	},	// MjnMixael
 
 	//Nav Sub-Category
 	{ "add-nav-waypoint",				OP_NAV_ADD_WAYPOINT,					3,	4,			SEXP_ACTION_OPERATOR,	},	//kazan
@@ -12297,6 +12298,43 @@ void sexp_hud_set_message(int n)
 void sexp_hud_force_static(int n)
 {
 	Sensor_static_forced = is_sexp_true(n);
+}
+
+void sexp_hud_force_emp(int n)
+{
+	bool is_nan, is_nan_forever;
+
+	int intensity = eval_num(n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
+
+	n = CDR(n);
+
+	int duration = eval_num(n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
+
+	n = CDR(n);
+
+	SCP_string text = "";
+
+	if (n >= 0) {
+
+		// assume just text
+		text = CTEXT(n);
+
+		// but use an actual message if one exists
+		for (int i = 0; i < Num_messages; i++) {
+			if (!stricmp(Messages[i].name, text.c_str())) {
+				text = Messages[i].message;
+				break;
+			}
+		}
+
+		text = message_translate_tokens(text.c_str());
+	}
+
+	emp_start_local(i2fl(intensity), i2fl(duration), text);
 }
 
 void sexp_hud_set_directive(int n)
@@ -26729,6 +26767,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_HUD_FORCE_EMP_EFFECT:
+				sexp_hud_force_emp(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			// Goober5000
 			case OP_PLAYER_USE_AI:
 			case OP_PLAYER_NOT_USE_AI:
@@ -29131,6 +29174,7 @@ int query_operator_return_type(int op)
 		case OP_HUD_SET_MAX_TARGETING_RANGE:
 		case OP_HUD_CLEAR_MESSAGES:
 		case OP_HUD_FORCE_SENSOR_STATIC:
+		case OP_HUD_FORCE_EMP_EFFECT:
 		case OP_SHIP_CHANGE_ALT_NAME:
 		case OP_SHIP_CHANGE_CALLSIGN:
 		case OP_SET_DEATH_MESSAGE:
@@ -30411,6 +30455,12 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_HUD_FORCE_SENSOR_STATIC:
 			return OPF_BOOL;
+
+		case OP_HUD_FORCE_EMP_EFFECT:
+			if (argnum < 2)
+				return OPF_NUMBER;
+			else
+				return OPF_MESSAGE_OR_STRING;
 
 		case OP_PLAYER_USE_AI:
 		case OP_PLAYER_NOT_USE_AI:
@@ -34072,6 +34122,7 @@ int get_category(int op_id)
 		case OP_ALTER_WING_FLAG:
 		case OP_TOGGLE_ASTEROID_FIELD:
 		case OP_HUD_FORCE_SENSOR_STATIC:
+		case OP_HUD_FORCE_EMP_EFFECT:
 		case OP_SET_GRAVITY_ACCEL:
 		case OP_SET_ORDER_ALLOWED_TARGET:
 		case OP_SET_ASTEROID_FIELD:
@@ -34434,6 +34485,7 @@ int get_subcategory(int op_id)
 		case OP_HUD_CLEAR_MESSAGES:
 		case OP_HUD_SET_MAX_TARGETING_RANGE:
 		case OP_HUD_FORCE_SENSOR_STATIC:
+		case OP_HUD_FORCE_EMP_EFFECT:
 			return CHANGE_SUBCATEGORY_HUD;
 
 		case OP_NAV_ADD_WAYPOINT:
@@ -39011,6 +39063,14 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tActivates or deactivates hud static as if sensors are damaged."
 		"Takes 1 Argument...\r\n"
 		"\t1:\tBoolean, whether or not to enable sensor static\r\n"
+	},
+
+	{OP_HUD_FORCE_EMP_EFFECT, "hud-force-emp-effect\r\n"
+		"\tActivates or deactivates emp effect for the player."
+		"Takes 2 or more Arguments...\r\n"
+		"\t1:\tNumber, emp intensity (0 to 500)\r\n"
+		"\t2:\tNumber, emp duration in seconds\r\n"
+		"\t3:\tString or message to display. \"none\" to display nothing. Defaults to \"Emp\"\r\n"
 	},
 
 	{OP_ADD_TO_COLGROUP, "add-to-collision-group\r\n"
