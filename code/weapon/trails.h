@@ -43,6 +43,7 @@ typedef struct trail {
 	float	val[NUM_TRAIL_SECTIONS];	// for each point, a value that tells how much to fade out	
 	bool	object_died;					// set to zero as long as object	
 	int		trail_stamp;					// trail timestamp	
+	pool_index self_index;
 
 	// trail info
 	trail_info info;							// this is passed when creating a trail
