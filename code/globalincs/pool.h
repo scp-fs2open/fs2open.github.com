@@ -289,13 +289,15 @@ class SCP_Pool {
 		using reference = T&;
 		using index = int;
 		using storage_t = SCP_vector<gEntry>;
+		using t = SCP_Pool<T>;
 
-		iterator(SCP_Pool<T> *vec_ptr){
-			vec = vec_ptr;
-		};
-		iterator(SCP_Pool<T> *vec_ptr, int start_pos){
-			vec = vec_ptr;
-			inner_position = start_pos;
+		//iterator():vec() vec;
+		//iterator(t);
+		//iterator(t, index);
+		//iterator(t *vec_ptr) : vec{vec_ptr}{};
+		//iterator(t*,index);
+		iterator( t* parent,index i) : vec(parent), inner_position(i)
+		{
 			storage_t &st = vec->storage;
 			if(inner_position < st.size())
 			{
@@ -318,6 +320,7 @@ class SCP_Pool {
 		};
 		iterator& operator++(){
 			inner_position++;
+			MAX(inner_position,0);
 			storage_t &st = vec->storage;
 			//we want to skip empty slots
 			while(inner_position < st.size()
@@ -343,12 +346,12 @@ class SCP_Pool {
 			operator++();
 			return copy;
 		}
-		reference operator*(){
+		reference operator*() {
 			Assertion(vec->check(full_position), "scp_pool iterator attempted to get a pointer to an empty slot somehow");
 			return vec->operator[](full_position);
 		};
 
-		reference operator->(){
+		reference operator->() {
 			Assertion(vec->check(full_position), "scp_pool iterator attempted to get a pointer to an empty slot somehow");
 			return vec->operator[](full_position);
 		};
@@ -360,8 +363,23 @@ class SCP_Pool {
 	private:
 		index inner_position;
 		pool_index full_position;
-		SCP_Pool<T> *vec;
+		t *vec;
 	};
+	iterator cbegin() const{
+		return iterator(this,0);
+	};
+	iterator cend() const
+	{
+		return iterator(this,(int) storage.size());
+	};
+	SCP_Pool<T>::iterator begin() {
+		return SCP_Pool<T>::iterator(this,0);
+	};
+	SCP_Pool<T>::iterator end()
+	{
+		return SCP_Pool<T>::iterator(this,(int) storage.size());
+	};
+	/*
 	SCP_Pool<T>::iterator begin(){
 		return iterator(this,0);
 		//if (known_empty_) {
@@ -370,5 +388,5 @@ class SCP_Pool {
 	};
 	SCP_Pool<T>::iterator end(){
 		return iterator(this,(int) storage.size());
-	}
+	}*/
 };
