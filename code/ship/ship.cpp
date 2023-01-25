@@ -12253,7 +12253,7 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 
 				for ( w = 0; w < numtimes; w++ ) {
 					polymodel *weapon_model = NULL;
-					if(winfo_p->external_model_num >= 0) 
+					if (sip->draw_primary_models[bank_to_fire] && (winfo_p->external_model_num >= 0)) 
 						weapon_model = model_get(winfo_p->external_model_num);
 
 					if (weapon_model)
