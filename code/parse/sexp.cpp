@@ -12334,7 +12334,7 @@ void sexp_hud_force_emp(int n)
 		text = message_translate_tokens(text.c_str());
 	}
 
-	emp_start_local(i2fl(intensity), i2fl(duration), text);
+	emp_start_local(i2fl(intensity), i2fl(duration/1000), text);
 }
 
 void sexp_hud_set_directive(int n)
@@ -39069,7 +39069,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tActivates or deactivates emp effect for the player."
 		"Takes 2 or more Arguments...\r\n"
 		"\t1:\tNumber, emp intensity (0 to 500)\r\n"
-		"\t2:\tNumber, emp duration in seconds\r\n"
+		"\t2:\tNumber, emp duration in milliseconds\r\n"
 		"\t3:\tString or message to display. \"none\" to display nothing. Defaults to \"Emp\"\r\n"
 	},
 

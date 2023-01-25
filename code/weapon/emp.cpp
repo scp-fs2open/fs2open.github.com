@@ -378,7 +378,7 @@ void emp_process_ship(ship *shipp)
 
 // start the emp effect for MYSELF (intensity == arbitrary intensity variable, time == time the effect will last)
 // NOTE : time should be in seconds
-void emp_start_local(float intensity, float time, SCP_string text)
+void emp_start_local(float intensity, float time, const SCP_string &text)
 {
 	int idx;
 	float start_intensity;
@@ -412,13 +412,15 @@ void emp_start_local(float intensity, float time, SCP_string text)
 		Emp_wacky_text[idx].stamp = -1;
 	}
 
-	// if text is not set then use the default "Emp" string
-	if (text.length() == 0)
-		text = XSTR("Emp", 1670);
+	SCP_string display = XSTR("Emp", 1670);
 
-	// start the emp icon flashing if text is not "none"
-	if (text != "none")
-		hud_start_text_flash(text.c_str(), 5000);
+	// if text is set then use that instead
+	if (text.length() > 0)
+		display = text;
+
+	// start the emp icon flashing if display text is not "none"
+	if (stricmp(display.c_str(), "none") != 0)
+		hud_start_text_flash(display.c_str(), 5000);
 
 	// determine how much we have to decrement the effect per second
 	Emp_decr = Emp_intensity / time;
