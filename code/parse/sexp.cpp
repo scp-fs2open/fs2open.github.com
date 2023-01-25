@@ -25217,25 +25217,32 @@ int sexp_has_armor_type(int node)
 		armor = -1;
 	} else {
 		armor = armor_type_get_idx(CTEXT(node));
+
+		//warn and return if the armor is not found
+		if (armor < 0) {
+			Warning(LOCATION, "Armor %s not found on ship %s", CTEXT(node), shipp->ship_name);
+			return SEXP_NAN;
+		}
 	}
 	node = CDR(node);
 
 	// get the armor to check against
 	int currentArmor = -1;
-	for (; node != -1; node = CDR(node)) {
-		if (!stricmp(SEXP_HULL_STRING, CTEXT(node))) {
-			currentArmor = shipp->armor_type_idx;
-		} else if (!stricmp(SEXP_SHIELD_STRING, CTEXT(node))) {
-			currentArmor = shipp->shield_armor_type_idx;
-		} else {
-			// get the subsystem
-			ship_subsys* ss = ship_get_subsys(shipp, CTEXT(node));
-			if (ss == nullptr) {
-				continue;
-			}
 
-			currentArmor = ss->armor_type_idx;
+	if (!stricmp(SEXP_HULL_STRING, CTEXT(node))) {
+		currentArmor = shipp->armor_type_idx;
+	} else if (!stricmp(SEXP_SHIELD_STRING, CTEXT(node))) {
+		currentArmor = shipp->shield_armor_type_idx;
+	} else {
+		// get the subsystem
+		ship_subsys* ss = ship_get_subsys(shipp, CTEXT(node));
+
+		if (ss == nullptr) {
+			Warning(LOCATION, "Subsystem %s not found on ship %s", CTEXT(node), shipp->ship_name);
+			return SEXP_NAN;
 		}
+
+		currentArmor = ss->armor_type_idx;
 	}
 
 	if (currentArmor == armor)
