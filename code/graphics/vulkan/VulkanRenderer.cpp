@@ -3,6 +3,8 @@
 
 #include "globalincs/version.h"
 
+#include "backends/imgui_impl_sdl.h"
+#include "backends/imgui_impl_vulkan.h"
 #include "def_files/def_files.h"
 #include "graphics/2d.h"
 #include "libs/renderdoc/renderdoc.h"
@@ -278,6 +280,18 @@ bool VulkanRenderer::initialize()
 
 	// Prepare the rendering state by acquiring our first swap chain image
 	acquireNextSwapChainImage();
+
+	
+	auto imgui_vulkan_info = ImGui_ImplVulkan_InitInfo();
+	imgui_vulkan_info.Instance = m_vkInstance.get();
+	imgui_vulkan_info.Allocator = nullptr;
+	imgui_vulkan_info.CheckVkResultFn = nullptr;
+	imgui_vulkan_info.Device = m_device.get();
+	imgui_vulkan_info.ImageCount = 2;
+	
+
+	ImGui_ImplSDL2_InitForVulkan(os::getSDLMainWindow());
+	ImGui_ImplVulkan_Init(&imgui_vulkan_info, m_renderPass.get());
 
 	return true;
 }
@@ -791,7 +805,7 @@ void VulkanRenderer::createGraphicsPipeline()
 	pipelineInfo.basePipelineHandle = nullptr;
 	pipelineInfo.basePipelineIndex = -1;
 
-	m_graphicsPipeline = m_device->createGraphicsPipelineUnique(nullptr, pipelineInfo);
+	m_graphicsPipeline = m_device->createGraphicsPipelineUnique(nullptr, pipelineInfo).value;
 }
 void VulkanRenderer::createCommandPool(const PhysicalDeviceValues& values)
 {

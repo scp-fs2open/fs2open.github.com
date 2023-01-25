@@ -13,6 +13,8 @@ SET(IMGUI_SOURCES
 	imstb_truetype.h
     backends/imgui_impl_opengl3.h
     backends/imgui_impl_opengl3.cpp
+    backends/imgui_impl_vulkan.h
+    backends/imgui_impl_vulkan.cpp
     backends/imgui_impl_sdl.h
     backends/imgui_impl_sdl.cpp
     extensions/imgui_sugar.hpp
@@ -31,4 +33,8 @@ set_target_properties(imgui PROPERTIES FOLDER "3rdparty")
 TARGET_LINK_LIBRARIES(imgui PUBLIC sdl2)
 target_link_libraries(imgui PUBLIC compiler)
 
-
+if (FSO_BUILD_WITH_VULKAN)
+	find_package(Vulkan REQUIRED)
+    target_compile_definitions(imgui INTERFACE VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1 VK_NO_PROTOTYPES)
+	target_link_libraries(imgui PRIVATE Vulkan::Vulkan)
+endif()

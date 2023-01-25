@@ -249,7 +249,7 @@ std::unique_ptr<os::OpenGLContext> SDLGraphicsOperations::createOpenGLContext(os
 	mprintf(("  Actual SDL Video values    = R: %d, G: %d, B: %d, depth: %d, stencil: %d, double-buffer: %d, FSAA: %d\n",
 		r, g, b, depth, stencil, db, fsaa_samples));
 
-
+	
 	ImGui_ImplSDL2_InitForOpenGL(viewport->toSDLWindow(), ctx);
 	ImGui_ImplOpenGL3_Init();
 
