@@ -437,6 +437,12 @@ object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int asteroi
 	// ensure vel is valid
 	Assert( !vm_is_vec_nan(&objp->phys_info.vel) );	
 
+	if (scripting::hooks::OnAsteroidCreated->isActive()) {
+		scripting::hooks::OnAsteroidCreated->run(
+			scripting::hook_param_list(
+				scripting::hook_param("Asteroid", 'o', objp)));
+	}
+
 	return objp;
 }
 

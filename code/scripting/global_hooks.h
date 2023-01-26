@@ -30,6 +30,7 @@ extern const std::shared_ptr<Hook<ShipSourceConditions>>				OnWaypointsDone;
 extern const std::shared_ptr<Hook<ShipSourceConditions>>				OnGoalsCleared;
 
 extern const std::shared_ptr<Hook<ShipSourceConditions>>				OnDebrisCreated;
+extern const std::shared_ptr<Hook<>>									OnAsteroidCreated;
 
 extern const std::shared_ptr<OverridableHook<CollisionConditions>>		OnShipCollision;
 extern const std::shared_ptr<OverridableHook<CollisionConditions>>		OnWeaponCollision;
