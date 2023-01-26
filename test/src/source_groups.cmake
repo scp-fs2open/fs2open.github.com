@@ -21,6 +21,7 @@ add_file_folder("Globalincs"
     globalincs/test_flagset.cpp
     globalincs/test_safe_strings.cpp
     globalincs/test_version.cpp
+    globalincs/test_pool.cpp
 )
 
 add_file_folder("Graphics"

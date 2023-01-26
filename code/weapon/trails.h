@@ -12,6 +12,7 @@
 #ifndef _TRAILS_H
 #define _TRAILS_H
 
+#include "globalincs/pool.h"
 #include "globalincs/pstypes.h"
 #include "graphics/generic.h"
 
@@ -46,8 +47,6 @@ typedef struct trail {
 	// trail info
 	trail_info info;							// this is passed when creating a trail
 
-	struct	trail * next;
-
 } trail;
 
 // Call at the start of freespace to init trails
@@ -67,11 +66,12 @@ void trail_render_all();
 // to deal with trails:
 
 // Returns -1 if failed
-trail *trail_create(trail_info *info);
-void trail_add_segment( trail *trailp, vec3d *pos , const matrix* orient );
-void trail_set_segment( trail *trailp, vec3d *pos );
-void trail_object_died( trail *trailp );
-int trail_stamp_elapsed( trail *trailp );
-void trail_set_stamp( trail *trailp );
+pool_index trail_create(trail_info *info);
+void trail_add_segment( pool_index const &traili, vec3d *pos , const matrix* orient );
+void trail_set_segment( pool_index const &traili, vec3d *pos );
+void trail_object_died( pool_index const &traili );
+void trail_object_died( trail* trailp);
+int trail_stamp_elapsed( pool_index const &traili );
+void trail_set_stamp( pool_index const &traili );
 
 #endif //_TRAILS_H

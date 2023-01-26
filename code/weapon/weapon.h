@@ -12,6 +12,7 @@
 #ifndef _WEAPON_H
 #define _WEAPON_H
 
+#include "globalincs/pool.h"
 #include "globalincs/globals.h"
 #include "globalincs/systemvars.h"
 #include "globalincs/pstypes.h"
@@ -117,7 +118,7 @@ typedef struct weapon {
 	vec3d	homing_pos;						// world position missile is homing on
 	std::unique_ptr<swarm_info>		swarm_info_ptr;	// index into swarm missile info, -1 if not WIF_SWARM
 	int		missile_list_index;			// index for missiles into Missile_obj_list, -1 weapon not missile
-	trail		*trail_ptr;						// NULL if no trail, otherwise a pointer to its trail
+	pool_index		trail_idx;						// NULL if no trail, otherwise a pointer to its trail
 	ship_subsys *turret_subsys;			// points to turret that fired weapon, otherwise NULL
 	int		group_id;						// Which group this is in.
 	float	det_range;					//How far from start_pos it blows up

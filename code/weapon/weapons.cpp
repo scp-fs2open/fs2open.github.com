@@ -4547,9 +4547,9 @@ void weapon_delete(object *obj)
 		wp->missile_list_index = -1;
 	}
 
-	if (wp->trail_ptr != NULL) {
-		trail_object_died(wp->trail_ptr);
-		wp->trail_ptr = NULL;
+	if (wp->trail_idx.has_value()) {
+		trail_object_died(wp->trail_idx);
+		wp->trail_idx.nullify();
 	}
 
 	if (wp->hud_in_flight_snd_sig.isValid() && snd_is_playing(wp->hud_in_flight_snd_sig))
@@ -5709,7 +5709,7 @@ void weapon_process_post(object * obj, float frame_time)
 
 	// trail missiles
 	if ((wip->wi_flags[Weapon::Info_Flags::Trail]) && !(wip->wi_flags[Weapon::Info_Flags::Corkscrew])) {
-		if ( (wp->trail_ptr != NULL ) && (wp->lssm_stage!=3))	{
+		if ( wp->trail_idx.has_value() && (wp->lssm_stage!=3))	{
 			vec3d pos;
 			
 			if (wip->render_type == WRT_LASER) {
@@ -5719,13 +5719,13 @@ void weapon_process_post(object * obj, float frame_time)
 				pos = obj->pos;
 			}
 
-			if (trail_stamp_elapsed(wp->trail_ptr)) {
+			if (trail_stamp_elapsed(wp->trail_idx)) {
 
-				trail_add_segment( wp->trail_ptr, &pos, &obj->orient);
+				trail_add_segment( wp->trail_idx, &pos, &obj->orient);
 				
-				trail_set_stamp(wp->trail_ptr);
+				trail_set_stamp(wp->trail_idx);
 			} else {
-				trail_set_segment( wp->trail_ptr, &pos );
+				trail_set_segment( wp->trail_idx, &pos );
 			}
 
 		}
@@ -5812,9 +5812,9 @@ void weapon_process_post(object * obj, float frame_time)
 			obj_set_flags(obj, flags);
 		
 			// stop its trail here
-			if (wp->trail_ptr != nullptr) {
-				trail_object_died(wp->trail_ptr);
-				wp->trail_ptr = nullptr;
+			if (wp->trail_idx.has_value()) {
+				trail_object_died(wp->trail_idx);
+				wp->trail_idx.nullify();
 			}
 
 			//get the position of the target, and estimate its position when it warps out
@@ -5893,12 +5893,12 @@ void weapon_process_post(object * obj, float frame_time)
 
 			// start the trail back up if applicable
 			if (wip->wi_flags[Weapon::Info_Flags::Trail]) {
-				wp->trail_ptr = trail_create(&wip->tr_info);
+				wp->trail_idx = trail_create(&wip->tr_info);
 
-				if (wp->trail_ptr != nullptr) {
+				if (wp->trail_idx.has_value()) {
 					// Add two segments.  One to stay at launch pos, one to move.
-					trail_add_segment(wp->trail_ptr, &obj->pos, &obj->orient);
-					trail_add_segment(wp->trail_ptr, &obj->pos, &obj->orient);
+					trail_add_segment(wp->trail_idx, &obj->pos, &obj->orient);
+					trail_add_segment(wp->trail_idx, &obj->pos, &obj->orient);
 				}
 			}
 		}
@@ -6477,22 +6477,22 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	}
 
 	if (wip->wi_flags[Weapon::Info_Flags::Trail] /*&& !(wip->wi_flags[Weapon::Info_Flags::Corkscrew]) */) {
-		wp->trail_ptr = trail_create(&wip->tr_info);		
+		wp->trail_idx = trail_create(&wip->tr_info);		
 
-		if ( wp->trail_ptr != NULL )	{
+		if ( wp->trail_idx.has_value() )	{
 			// Add two segments.  One to stay at launch pos, one to move.
-			trail_add_segment( wp->trail_ptr, &objp->pos, &objp->orient );
-			trail_add_segment( wp->trail_ptr, &objp->pos, &objp->orient );
+			trail_add_segment( wp->trail_idx, &objp->pos, &objp->orient );
+			trail_add_segment( wp->trail_idx, &objp->pos, &objp->orient );
 		}
 	}
 	else
 	{
 		//If a weapon has no trails, make sure we don't try to do anything with them.
-		wp->trail_ptr = NULL;
+		wp->trail_idx.nullify();
 	}
 
 	// Ensure weapon flyby sound doesn't get played for player lasers
-	if ( parent_objp != NULL && parent_objp == Player_obj ) {
+	if ( parent_objp != nullptr && parent_objp == Player_obj ) {
         wp->weapon_flags.set(Weapon::Weapon_Flags::Played_flyby_sound);
 	}
 
