@@ -13362,6 +13362,14 @@ int ship_select_next_primary(object *objp, int direction)
 	original_bank = swp->current_primary_bank;
 	auto original_link_flag = shipp->flags[Ship_Flags::Primary_linked];
 
+	// check if at least two weapons can be linked
+	int num_linkable_weapons = 0;
+	for (int j = 0; j < swp->num_primary_banks; j++) {
+		if (!Weapon_info[swp->primary_bank_weapons[j]].wi_flags[Weapon::Info_Flags::Nolink]) {
+			num_linkable_weapons++;
+		}
+	}
+
 	// redid case structure to possibly add more primaries in the future - Goober5000
 	if ( swp->num_primary_banks == 0 )
 	{
@@ -13417,7 +13425,7 @@ int ship_select_next_primary(object *objp, int direction)
 				{
 					swp->current_primary_bank++;
 				}
-				else if( sip->flags[Ship::Info_Flags::No_primary_linking] )
+				else if( sip->flags[Ship::Info_Flags::No_primary_linking] || (num_linkable_weapons <= 1))
 				{
 					swp->current_primary_bank = 0;
 				}
@@ -13432,7 +13440,7 @@ int ship_select_next_primary(object *objp, int direction)
 				{
 					swp->current_primary_bank--;
 				}
-				else if( sip->flags[Ship::Info_Flags::No_primary_linking] )
+				else if( sip->flags[Ship::Info_Flags::No_primary_linking] || (num_linkable_weapons <= 1))
 				{
 					swp->current_primary_bank = swp->num_primary_banks - 1;
 				}
