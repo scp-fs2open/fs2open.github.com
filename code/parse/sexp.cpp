@@ -25220,7 +25220,7 @@ int sexp_has_armor_type(int node)
 
 		//warn and return if the armor is not found
 		if (armor < 0) {
-			Warning(LOCATION, "Armor %s not found on ship %s", CTEXT(node), shipp->ship_name);
+			Warning(LOCATION, "Armor %s is not a valid entry in armor.tbl!", CTEXT(node));
 			return SEXP_NAN;
 		}
 	}
