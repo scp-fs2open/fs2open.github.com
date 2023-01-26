@@ -1411,10 +1411,16 @@ void player_tips_popup()
 {
 	int tip, ret;
 
-	// player has disabled tips
-	if ( (Player != NULL) && !Player->tips ) {
+	// no player, or player has disabled tips
+	if ( (Player == nullptr) || !Player->tips ) {
 		return;
 	}
+
+	// no tips to show
+	if (Player_tips.empty()) {
+		return;
+	}
+
 	// only show tips once per instance of FreeSpace
 	if(Player_tips_shown == 1) {
 		return;
@@ -1422,13 +1428,13 @@ void player_tips_popup()
 	Player_tips_shown = 1;
 
 	// randomly pick one
-	tip = (int)frand_range(0.0f, (float)Player_tips.size() - 1.0f);
+	tip = Random::next((int)Player_tips.size());
 
-	char all_txt[2048];
+	SCP_string all_txt;
 
 	do {
 		sprintf(all_txt, XSTR("NEW USER TIP\n\n%s", 1565), Player_tips[tip].c_str());
-		ret = popup(PF_NO_SPECIAL_BUTTONS | PF_TITLE | PF_TITLE_WHITE, 3, XSTR("&Ok", 669), XSTR("&Next", 1444), XSTR("Don't show me this again", 1443), all_txt);
+		ret = popup(PF_NO_SPECIAL_BUTTONS | PF_TITLE | PF_TITLE_WHITE, 3, XSTR("&Ok", 669), XSTR("&Next", 1444), XSTR("Don't show me this again", 1443), all_txt.c_str());
 	
 		// now what?
 		switch(ret){
