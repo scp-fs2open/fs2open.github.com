@@ -12334,7 +12334,7 @@ void sexp_hud_force_emp(int n)
 		text = message_translate_tokens(text.c_str());
 	}
 
-	emp_start_local(i2fl(intensity), i2fl(duration/1000), text);
+	emp_start_local(i2fl(intensity), i2fl(duration) / 1000, text);
 }
 
 void sexp_hud_set_directive(int n)
