@@ -672,6 +672,28 @@ void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> preset_wi_
         }
     }
 
+	if (weaponp->wi_flags[Weapon::Info_Flags::Beam]) {
+		//If we're not doing damage anyway, then we don't care.. but also this prevents a retail
+		//warning for the targeting laser
+		if (weaponp->damage != 0.0f) {
+			if ((weaponp->armor_factor != 1.0f) && !Beams_use_damage_factors) {
+				Warning(LOCATION,
+					"Armor factor defined as %f for beam type weapon %s while damage factors are disabled for beams!",
+					weaponp->armor_factor, weaponp->name);
+			}
+			if ((weaponp->shield_factor != 1.0f) && !Beams_use_damage_factors) {
+				Warning(LOCATION,
+					"Shield factor defined as %f for beam type weapon %s while damage factors are disabled for beams!",
+					weaponp->shield_factor, weaponp->name);
+			}
+			if ((weaponp->subsystem_factor != 1.0f) && !Beams_use_damage_factors) {
+				Warning(LOCATION,
+					"Subsystem factor defined as %f for beam type weapon %s while damage factors are disabled for beams!",
+					weaponp->subsystem_factor, weaponp->name);
+			}
+		}
+	}
+
     if (weaponp->wi_flags[Weapon::Info_Flags::Swarm] && weaponp->wi_flags[Weapon::Info_Flags::Corkscrew]) {
         weaponp->wi_flags.remove(Weapon::Info_Flags::Corkscrew);
         Warning(LOCATION, "Swarm and Corkscrew are mutually exclusive!  Defaulting to Swarm on weapon %s.\n", weaponp->name);
