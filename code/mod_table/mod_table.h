@@ -92,6 +92,7 @@ extern float Arc_width_radius_multiplier_emp;
 extern float Arc_width_no_multiply_over_radius_emp;
 extern float Arc_width_minimum_emp;
 extern bool Use_engine_wash_intensity;
+extern bool Apply_shudder_to_chase_view;
 extern bool Swarmers_lead_targets;
 extern SCP_vector<gr_capability> Required_render_ext;
 extern float Weapon_SS_Threshold_Turret_Inaccuracy;
