@@ -52,3 +52,14 @@ TEST(Pool, minimal){
 	bptr->id=3;
 	ASSERT_EQ(store[b].id, 3);
 }
+
+
+TEST(Pool, uid){
+	SCP_Pool<testobj> store1;
+	SCP_Pool<testobj> store2;
+	auto a = store1.get_new().value();
+	auto b = store2.get_new().value();
+	store1[a].id;
+	store2[b].id;
+	ASSERT_THROW(store1[b], PoolExceptionWrongPool);
+}

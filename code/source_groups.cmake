@@ -399,6 +399,7 @@ add_file_folder("GlobalIncs"
 	globalincs/scp_defines.h
 	globalincs/flagset.h
 	globalincs/pool.h
+	globalincs/pool.cpp
 )
 
 IF (WIN32)

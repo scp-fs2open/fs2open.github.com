@@ -1,7 +1,9 @@
 #pragma once
 
 #include "globalincs/pstypes.h"
+#include "globalincs/vmallocator.h"
 #include <tl/optional.hpp>
+#include <vcruntime.h>
 #include <iterator>
 
 struct pool_index{
@@ -9,20 +11,22 @@ struct pool_index{
 	private:
 	int index;
 	int generation;
+	int vector_uid;
 	bool is_null = true;
 	public:
 	pool_index(){ nullify();};
-	pool_index(int i,int g,bool b = false){
+	pool_index(int i,int g,int id, bool b = false){
 		if(b){ nullify();
 		}
 		else{
-			set(i,g);
+			set(i,g,id);
 		}
 	};
-	inline void set(int i,int g){
+	inline void set(int i,int g, int id){
 		is_null = false;
 		index = i;
 		generation = g;
+		vector_uid = id;
 	}
 	inline void nullify()
 	{
@@ -35,17 +39,20 @@ struct pool_index{
 			return true;
 		if(is_null || rhs.is_null)
 			return false;
-		return (index == rhs.index && generation == rhs.generation);
+		return (index == rhs.index 
+				&& generation == rhs.generation
+				&& vector_uid == rhs.vector_uid);
 	};
 	inline pool_index& operator=(pool_index const&rhs) {
 		if(rhs.is_null)
 			nullify();
 		else
-			set(rhs.index, rhs.generation);
+			set(rhs.index, rhs.generation, rhs.vector_uid);
 		return *this;
 	};
 	inline int i() const { return index;};
 	inline int g() const { return generation;};
+	inline int u() const { return vector_uid;};
 	inline bool null() const { return is_null;};
 	inline bool has_value() const { return !is_null;};
 };
@@ -80,8 +87,17 @@ public:
 	explicit PoolExceptionFull(const std::string& msg) : std::runtime_error(msg) {}
 	~PoolExceptionFull() noexcept override = default;
 };
+class PoolExceptionWrongPool : public std::runtime_error
+{
+public:
+	explicit PoolExceptionWrongPool(const std::string& msg) : std::runtime_error(msg) {}
+	~PoolExceptionWrongPool() noexcept override = default;
+};
 
 
+namespace scp_pool{
+	int new_uid(); 
+}
 
 
 template  <typename T>
@@ -100,10 +116,11 @@ class SCP_Pool {
 	 *************************************************************************/
 	SCP_vector<gEntry> storage;
 	SCP_vector<size_t> known_empty;
-	static_assert(!std::is_reference<T>(), "SCP_Pool<T> can not be used to store a reference type.");
+	static_assert(!std::is_reference<T>::value, "SCP_Pool<T> can not be used to store a reference type.");
 
 	bool capped = false;
-	size_t cap = 0;
+	int cap = -1;
+	int uid = -1;
 
 	/**************************************************************************
 	 * Private member functions
@@ -121,7 +138,7 @@ class SCP_Pool {
 		//Assuming trivial constructor behavior here...
 		n.stored = tl::optional<T>(in);
 		storage.push_back(n);
-		pool_index i((int) storage.size()-1,0);
+		pool_index i((int) storage.size()-1,0,uid);
 		return i;
 	};
 	/**
@@ -135,7 +152,7 @@ class SCP_Pool {
 		//values are created as nullopt when expanding a list
 		//and resest to nullopt here so we need to construct a new object to go in there.
 		storage[i].stored = tl::optional<T>(in);
-		pool_index r((int) i,(int) storage[i].generation);
+		pool_index r((int) i,(int) storage[i].generation,uid);
 		known_empty.pop_back();
 		return r;
 	}
@@ -165,10 +182,29 @@ class SCP_Pool {
 		reset_entry(e);
 		known_empty.push_back(i);
 	}
+
+
+	//Store a value in the vector
+	//TODO: Handle capped stuff
+	//As public this kind of inappropriate for the actual usage this is primarily intended to replace
+	//to the point where if we want this functionality it might need to be a seperate data structure for sake of strictness.
+	//Moved it to private unless and until a good reason for external access comes up.
+	tl::optional<pool_index> store(T &n){
+		if (known_empty.empty()) {
+			if (capped && storage.size()>=cap) {
+				return tl::nullopt;
+			}
+			return add_new(n);
+		}
+		return use_free(n);
+	};
+	SCP_string debug_name;
 	public:
-	SCP_Pool<T>() = default;
-	SCP_Pool<T>(size_t cap_in){
-		reset(cap_in);
+	SCP_Pool<T>(int cap = -1, SCP_string name = "") : cap(cap), debug_name(name){
+		uid = scp_pool::new_uid(); 
+		if(cap>0)
+			reset(cap);
+		else reset();
 	};
 
 	void reset(){
@@ -181,9 +217,11 @@ class SCP_Pool {
 		fill_empty_list();
 	}
 
-	void reset(size_t cap_in){
+	void reset(int cap_in){
+		if( cap_in<0) return reset();
 		capped = true;
-		cap=MAX(cap_in,storage.size());//shrinking a container is illegal.
+		cap= cap_in;
+		MAX(cap,(int) storage.size());//shrinking a container is illegal.
 
 		for(gEntry entry: storage){
 			if (entry.stored != tl::nullopt)
@@ -199,20 +237,21 @@ class SCP_Pool {
 	}
 
 	//Index into the storage... bare reference
-	T& operator[](pool_index i) {
+	T& operator[](pool_index const& i) {
 		if (i.null())
 			throw PoolExceptionNullIndex("null index SCP_Pool access attempted");
+		if (i.u() != uid)
+			throw PoolExceptionWrongPool("SCP_Pool access attempted on wrong pool");
 		if (i.i() >= storage.size())
 			throw PoolExceptionOutOfRange("out of range SCP_Pool access attempted");
 		if (storage[i.i()].generation!= i.g())
 			throw PoolExceptionStaleIndex("Stale SCP_Pool access attempted");
-		if(storage[i.i()].stored==tl::nullopt)
-			throw PoolExceptionNullValue("Empty SCP_Pool access attempted");
-//		v = (storage[i.i()].stored).operator->();
-		return storage[i.i()].stored.operator*();
+		Assertion(storage[i.i()].stored!=tl::nullopt, "Empty SCP Pool access");
+		return *(storage[i.i()].stored);
 	};
 	bool value_at(pool_index i){
 		return !(i.null()
+			|| i.u()!=uid
 			|| i.i() >= storage.size()
 			|| storage[i.i()].generation!= i.g()
 			|| storage[i.i()].stored==tl::nullopt);
@@ -239,24 +278,12 @@ class SCP_Pool {
 		return store(n);
 	};
 
-	tl::optional<pool_index> get_new(T&& args){
-		T n = T(std::forward<T>(args));
+	template<typename... args_t>
+	tl::optional<pool_index> get_new(args_t&&... args){
+		T n = T(std::forward<args_t>(args)...);
 		return store(n);
 	};
 
-	//Store a value in the vector
-	//TODO: Handle capped stuff
-	//This is kind of in appropriate for the actual usage this is primarily intended to replace
-	//to the point where if we want this functionality it might need to be a seperate data structure for sake of strictness
-	tl::optional<pool_index> store(T &n){
-		if (known_empty.empty()) {
-			if (capped && storage.size()>=cap) {
-				return tl::nullopt;
-			}
-			return add_new(n);
-		}
-		return use_free(n);
-	};
 
 	void remove(tl::optional<pool_index> i){
 		if (!i.has_value())
@@ -291,11 +318,7 @@ class SCP_Pool {
 		using storage_t = SCP_vector<gEntry>;
 		using t = SCP_Pool<T>;
 
-		//iterator():vec() vec;
-		//iterator(t);
-		//iterator(t, index);
-		//iterator(t *vec_ptr) : vec{vec_ptr}{};
-		//iterator(t*,index);
+
 		iterator( t* parent,index i) : vec(parent), inner_position(i)
 		{
 			storage_t &st = vec->storage;
@@ -305,7 +328,9 @@ class SCP_Pool {
 					(*this)++;
 				}
 				else {
-					full_position =pool_index(inner_position,st.at(inner_position).generation);
+					full_position =pool_index(inner_position,
+						st.at(inner_position).generation,
+						vec->uid);
 				}
 			}
 		};
@@ -332,7 +357,7 @@ class SCP_Pool {
 			} 
 			if(inner_position < st.size()){
 			   if(st.at(inner_position).stored != tl::nullopt){
-				full_position.set(inner_position,st.at(inner_position).generation);
+				full_position.set(inner_position,st.at(inner_position).generation, vec->uid);
 			   }
 			   else{
 				 full_position.nullify();
