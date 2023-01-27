@@ -2979,11 +2979,14 @@ int CFred_mission_save::save_objects()
 			required_string_fred("$IFF:");
 			parse_comments();
 			fout(" %s", "IFF 1");
-
-			required_string_fred("$AI Behavior:");
-			parse_comments();
-			fout(" %s", Ai_behavior_names[AIM_NONE]);
 		}
+
+		// This is required pre-23.0, and optional after,
+		// keep it in to prevent accidental saves from breaking old missions.
+		required_string_fred("$AI Behavior:");
+		parse_comments();
+		fout(" %s", Ai_behavior_names[AIM_NONE]);
+		
 
 		if (shipp->weapons.ai_class != Ship_info[shipp->ship_info_index].ai_class) {
 			if (optional_string_fred("+AI Class:", "$Name:")) {
