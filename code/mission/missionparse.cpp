@@ -5642,7 +5642,7 @@ void parse_asteroid_fields(mission *pm)
 					SCP_string ast_name;
 					stuff_string(ast_name, F_NAME);
 					int subtype = get_asteroid_index(ast_name.c_str());
-					// If the returned index is valid but not one of the firs three then it's a debris type instead of asteroid
+					// If the returned index is valid but not one of the first three then it's a debris type instead of asteroid
 					if ((subtype >= 0) && (subtype < NUM_ASTEROID_SIZES)) {
 						Asteroid_field.field_debris_type[subtype] = 1;
 						count++;
