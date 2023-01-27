@@ -841,27 +841,37 @@ int CFred_mission_save::save_bitmaps()
 			fout(" )");
 		}
 
-		if (Mission_save_format == FSO_FORMAT_RETAIL) {
-			if (optional_string_fred("+Neb2Flags:")) {
-				parse_comments();
-			} else {
-				fout("\n+Neb2Flags:");
-			}
-			fout(" %d", Neb2_poof_flags);
+		// We push a block-comment start token so that the +Neb2Flags: section is ignored by FSO >= 23.0.0
+		fso_comment_push(";;23.0.0;;");
+		required_string_fred("!*");
+		fso_comment_pop();
+
+		if (optional_string_fred("+Neb2Flags:")) {
+			parse_comments();
 		} else {
-			if (optional_string_fred("+Neb2 Poofs List:")) {
-				parse_comments();
-			} else {
-				fout("\n+Neb2 Poofs List:");
-			}
-			fout(" (");
-			for (i = 0; i < (int)Poof_info.size(); ++i) {
-				if (Neb2_poof_flags & (1 << i)) {
-					fout(" \"%s\" ", Poof_info[i].name);
-				}
-			}
-			fout(") ");
+			fout("\n+Neb2Flags:");
 		}
+		fout(" %d", Neb2_poof_flags);
+
+		// Block-comment end token
+		fso_comment_push(";;23.0.0;;");
+		required_string_fred("!*");
+		fso_comment_pop();
+
+		fso_comment_push(";;FSO 23.0.0;;");
+		if (optional_string_fred("+Neb2 Poofs List:")) {
+			parse_comments();
+		} else {
+			fout("\n+Neb2 Poofs List:");
+		}
+		fout(" (");
+		for (i = 0; i < (int)Poof_info.size(); ++i) {
+			if (Neb2_poof_flags & (1 << i)) {
+				fout(" \"%s\" ", Poof_info[i].name);
+			}
+		}
+		fout(") ");
+		fso_comment_pop();
 	}
 	// neb 1 stuff
 	else {
@@ -3258,11 +3268,22 @@ int CFred_mission_save::save_objects()
 			fout(" %s", "IFF 1");
 		}
 
-		// This is required pre-23.0, and optional after, 
+		// This is required pre-23.0, and optional after,
 		// keep it in to prevent accidental saves from breaking old missions.
+		// We push a block-comment start token so that the section is ignored by FSO >= 23.0.0
+		fso_comment_push(";;23.0.0;;");
+		required_string_fred("!*");
+		fso_comment_pop();
+
 		required_string_fred("$AI Behavior:");
 		parse_comments();
 		fout(" %s", Ai_behavior_names[AIM_NONE]);
+
+		// We push a block-comment start token so that the +Neb2Flags: section is ignored by FSO >= 23.0.0
+		fso_comment_push(";;23.0.0;;");
+		required_string_fred("*!");
+		fso_comment_pop();
+		
 		
 
 		if (shipp->weapons.ai_class != Ship_info[shipp->ship_info_index].ai_class) {
