@@ -12549,7 +12549,7 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 					auto param_list = scripting::hook_param_list(
 						scripting::hook_param("User", 'o', objp),
 						scripting::hook_param("Target", 'o', target),
-						scripting::hook_param("BankIndex", 'i', bank));
+						scripting::hook_param("BankIndex", 'i', bank + 1));
 					auto conditions = scripting::hooks::WeaponUsedConditions{shipp, target, shipp->weapons.primary_bank_weapons[bank], true};
 					scripting::hooks::OnWeaponFired->run(conditions, param_list);
 					scripting::hooks::OnPrimaryFired->run(conditions, param_list);

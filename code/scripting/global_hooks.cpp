@@ -273,6 +273,7 @@ const std::shared_ptr<Hook<WeaponUsedConditions>> OnPrimaryFired = Hook<WeaponUs
 	{
 		{"User", "ship", "The ship that has fired the weapon."},
 		{"Target", "object", "The current target of this ship."},
+		{"BankIndex", "number", "The index of the bank that has fired."},
 	});
 
 const std::shared_ptr<Hook<WeaponUsedConditions>> OnSecondaryFired = Hook<WeaponUsedConditions>::Factory("On Secondary Fire",
