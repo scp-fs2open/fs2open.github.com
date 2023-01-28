@@ -2215,7 +2215,7 @@ int CFred_mission_save::save_mission_info()
 
 	required_string_fred("$Version:");
 	parse_comments(2);
-	fout(" %.2f", FRED_MISSION_VERSION);
+	fout(" %d.%d.%d", The_mission.required_fso_version.major, The_mission.required_fso_version.minor, The_mission.required_fso_version.build);
 
 	// XSTR
 	required_string_fred("$Name:");
@@ -2612,8 +2612,10 @@ void CFred_mission_save::save_mission_internal(const char* pathname)
 
 	time(&rawtime);
 	auto timeinfo = localtime(&rawtime);
-
 	strftime(The_mission.modified, sizeof(The_mission.modified), "%x at %X", timeinfo);
+
+	// Migrate the version!
+	The_mission.required_fso_version = MISSION_VERSION;
 
 	reset_parse();
 	fred_parse_flag = 0;

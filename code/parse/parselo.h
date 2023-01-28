@@ -14,6 +14,7 @@
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
 #include "globalincs/flagset.h"
+#include "globalincs/version.h"
 #include "def_files/def_files.h"
 #include "utils/unicode.h"
 
@@ -397,6 +398,17 @@ namespace parse
 	public:
 		explicit ParseException(const std::string& msg) : std::runtime_error(msg) {}
 		~ParseException() noexcept override = default;
+	};
+
+	class VersionException : public std::runtime_error
+	{
+	private:
+		gameversion::version _required_version;
+
+	public:
+		explicit VersionException(const std::string& msg, const gameversion::version& required_version) : std::runtime_error(msg), _required_version(required_version) {}
+		~VersionException() noexcept override = default;
+		const gameversion::version& required_version() { return _required_version; }
 	};
 
 	/**
