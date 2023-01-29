@@ -872,6 +872,15 @@ void batching_add_quad(int texture, vertex *verts)
 	batching_add_quad_internal(batch, texture, verts);
 }
 
+void batching_add_quad(int texture, vertex *verts, primitive_batch *batch)
+{
+	if ( texture < 0 ) {
+		Int3();
+		return;
+	}
+
+	batching_add_quad_internal(batch, texture, verts);
+}
 void batching_add_tri(int texture, vertex *verts)
 {
 	if ( texture < 0 ) {
@@ -880,6 +889,16 @@ void batching_add_tri(int texture, vertex *verts)
 	}
 
 	primitive_batch *batch = batching_find_batch(texture, batch_info::FLAT_EMISSIVE);
+
+	batching_add_tri_internal(batch, texture, verts);
+}
+
+void batching_add_tri(int texture, vertex *verts, primitive_batch *batch)
+{
+	if ( texture < 0 ) {
+		Int3();
+		return;
+	}
 
 	batching_add_tri_internal(batch, texture, verts);
 }

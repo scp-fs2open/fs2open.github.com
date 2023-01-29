@@ -155,6 +155,7 @@ void trail_render( trail * trailp )
 	vec3d prev_top, prev_bot; vm_vec_zero(&prev_top); vm_vec_zero(&prev_bot);
 	float prev_U = 0;
 	ubyte prev_alpha = 0;
+	auto batchp = batching_find_batch(ti->texture.bitmap_id, batch_info::FLAT_EMISSIVE);
 	for (int i = 0; i < num_sections; i++) {
 		n = sections[i];
 
@@ -209,6 +210,7 @@ void trail_render( trail * trailp )
 		float current_U = i2fl(n) / trailp->info.texture_stretch;
 		vec3d current_top, current_bot;
 		trail_calc_facing_pts(&current_top, &current_bot, &trail_direction, &trailp->pos[n], w);
+		
 
 		if (i > 0) {
 			if (i == num_sections-1) {
@@ -233,7 +235,7 @@ void trail_render( trail * trailp )
 				verts[1].texture_position.v = 1.0f;
 				verts[2].texture_position.v = 0.5f;
 
-				batching_add_tri(ti->texture.bitmap_id, verts);
+				batching_add_tri(ti->texture.bitmap_id, verts, batchp);
 			} else {
 				vertex verts[4];
 				verts[0].r = verts[0].g = verts[0].b = verts[0].a = prev_alpha;
@@ -254,7 +256,7 @@ void trail_render( trail * trailp )
 				verts[0].texture_position.v = verts[3].texture_position.v = 0.0f;
 				verts[1].texture_position.v = verts[2].texture_position.v = 1.0f;
 
-				batching_add_quad(ti->texture.bitmap_id, verts);
+				batching_add_quad(ti->texture.bitmap_id, verts, batchp);
 			}
 		}
 
