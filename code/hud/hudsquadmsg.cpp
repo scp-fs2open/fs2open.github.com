@@ -231,7 +231,6 @@ void hud_add_issued_order(const char *name, int order);
 void hud_update_last_order(const char *target, int order_source, int special_index);
 bool hud_squadmsg_is_target_order_valid(size_t order, ai_info *aip = nullptr);
 bool hud_squadmsg_ship_valid(ship *shipp, object *objp = nullptr);
-bool hud_squadmsg_ship_order_valid( int shipnum, int order );
 
 // function to set up variables needed when messaging mode is started
 void hud_squadmsg_start()
@@ -1529,11 +1528,11 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 		int ship_num;
 
 		// get a random ship in the wing to send the message to the player		
-		ship_num = ship_get_random_ship_in_wing( wingnum, SHIP_GET_UNSILENCED );
+		ship_num = ship_get_random_ship_in_wing( wingnum, SHIP_GET_UNSILENCED, 0.0, 0, command );
 		
 		// in multiplayer, its possible that all ships in a wing are players. so we'll just send from a random ship		
 		if(ship_num == -1 && (Game_mode & GM_MULTIPLAYER)){
-			ship_num = ship_get_random_ship_in_wing(wingnum);
+			ship_num = ship_get_random_ship_in_wing(wingnum, SHIP_GET_ANY_SHIP, 0.0, 0, command);
 		}
 		
 		// only send message if ship is found.  There appear to be cases where all ships
@@ -2097,6 +2096,18 @@ void hud_squadmsg_wing_command()
 		// if no target, remove any items which are associated with the players target
 		if ( !hud_squadmsg_is_target_order_valid((int)order_id, 0) )
 			MsgItems[Num_menu_items].active = 0;
+
+		// if no ship in the wing can depart then gray out the departure order
+		if (order_id == DEPART_ITEM) {
+			int active = 0;
+			for (int i = 0; i < wingp->current_count; i++) {
+				if (hud_squadmsg_ship_order_valid(wingp->ship_index[i], (int)order_id)) {
+					active = 1;
+					break;
+				}
+			}
+			MsgItems[Num_menu_items].active = active;
+		}
 
 		Num_menu_items++;
 	

@@ -15670,7 +15670,7 @@ int ship_get_random_player_wing_ship( int flags, float max_dist, int persona_ind
 
 // like above function, but returns a random ship in the given wing -- no restrictions
 // input:	max_dist	=>	OPTIONAL PARAMETER (default value 0.0f) max range ship can be from player
-int ship_get_random_ship_in_wing(int wingnum, int flags, float max_dist, int get_first)
+int ship_get_random_ship_in_wing(int wingnum, int flags, float max_dist, int get_first, int order_id)
 {
 	int i, ship_index, slist[MAX_SHIPS_PER_WING], count, which_one;
 
@@ -15681,6 +15681,13 @@ int ship_get_random_ship_in_wing(int wingnum, int flags, float max_dist, int get
 
 		if ( Ships[ship_index].flags[Ship_Flags::Dying] ) {
 			continue;
+		}
+
+		// specific to sending messages, make sure the ship selected can actually do the order
+		if (order_id >= 0) {
+			if (!hud_squadmsg_ship_order_valid(ship_index, order_id)) {
+				continue;
+			}
 		}
 
 		// see if ship meets our criterea
