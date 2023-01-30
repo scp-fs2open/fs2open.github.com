@@ -6287,6 +6287,12 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, flagset<Weapon::
 		}
 	}
 
+	Assertion(swp->current_secondary_bank >= 0, "ai_select_secondary_weapon assigned a -1 secondary bank to %s", Ships[objp->instance].ship_name);
+	// if we got an invalid bank somehow, just put it back and bail
+	if (swp->current_secondary_bank < 0) {
+		swp->current_secondary_bank = initial_bank;
+		return;
+	}
 
 	//	If switched banks, force reacquisition of aspect lock.
 	if (swp->current_secondary_bank != initial_bank) {
