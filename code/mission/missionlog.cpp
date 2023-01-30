@@ -961,7 +961,7 @@ void mission_log_scrollback(int line_offset, int list_x, int list_y, int list_w,
 			}
 
 			strcpy_s(buf, thisSeg.text);
-			font::force_fit_string(buf, 256, ACTION_X - OBJECT_X - 8);
+			font::force_fit_string(buf, 256, list_w - thisSeg.x);
 			gr_string(list_x + thisSeg.x, list_y + y, buf, GR_RESIZE_MENU);
 
 			if ((thisSeg.flags & LOG_FLAG_GOAL_TRUE) || (thisSeg.flags & LOG_FLAG_GOAL_FAILED)) {
