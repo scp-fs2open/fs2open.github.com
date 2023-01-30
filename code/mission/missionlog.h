@@ -87,6 +87,6 @@ extern int mission_log_get_count(LogType type, const char *pname, const char *sn
 
 void message_log_init_scrollback(int pw);
 void message_log_shutdown_scrollback();
-void mission_log_scrollback(int scroll_offset, int list_x, int list_y, int list_w, int list_h);
+void mission_log_scrollback(int line_offset, int list_x, int list_y, int list_w, int list_h);
 
 #endif
