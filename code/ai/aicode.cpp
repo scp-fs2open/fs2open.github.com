@@ -6241,6 +6241,10 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, flagset<Weapon::
 	//	Stuff weapon_bank_list with bank index of available weapons.
 	num_weapon_types = get_available_secondary_weapons(objp, weapon_id_list, weapon_bank_list);
 
+	//  If there are no valid choices, bail
+	if (num_weapon_types == 0)
+		return;
+
 	// Ignore homing weapons if we didn't specify a flag - for priority 1
 	if ((aip->ai_profile_flags[AI::Profile_Flags::Smart_secondary_weapon_selection]) && (prio1.none_set())) {
 		ignore_mask.set(Weapon::Info_Flags::Homing_aspect).set(Weapon::Info_Flags::Homing_heat).set(Weapon::Info_Flags::Homing_javelin);
