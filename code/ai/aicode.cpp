@@ -6271,7 +6271,6 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, flagset<Weapon::
 
 	//	If didn't find anything above, then pick any secondary weapon.
 	if (i == num_weapon_types) {
-		swp->current_secondary_bank = priority2_index;	//	Assume we won't find anything.
 		if (priority2_index == -1) {
 			for (i=0; i<num_weapon_types; i++) {
 				auto wi_flags = Weapon_info[swp->secondary_bank_weapons[weapon_bank_list[i]]].wi_flags;
@@ -6284,6 +6283,11 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, flagset<Weapon::
 					}
 				}
 			}
+		}
+
+		// if we have a valid priority2, use that
+		if (priority2_index >= 0) {
+			swp->current_secondary_bank = priority2_index;
 		}
 	}
 
