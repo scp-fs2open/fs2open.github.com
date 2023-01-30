@@ -6278,7 +6278,7 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, flagset<Weapon::
 
 				if (!(wi_flags & ignore_mask_to_use).any_set()) {					//	Maybe bombs are illegal.
 					if (ship_secondary_has_ammo(swp, weapon_bank_list[i])) {
-						swp->current_secondary_bank = weapon_bank_list[i];
+						priority2_index = weapon_bank_list[i];
 						break;
 					}
 				}
