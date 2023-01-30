@@ -224,6 +224,34 @@ ADE_VIRTVAR(Team, l_Goals, nullptr, "The goal team", "team", "The goal team")
 	return ade_set_args(L, "o", l_Team.Set(Mission_goals[current].team));
 }
 
+ADE_VIRTVAR(isGoalSatisfied, l_Goals, nullptr, "The status of the goal", "number", "0 if failed, 1 if complete, 2 if incomplete")
+{
+	int current;
+	if (!ade_get_args(L, "o", l_Goals.Get(&current))) {
+		return ADE_RETURN_NIL;
+	}
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "i", l_Team.Set(Mission_goals[current].satisfied));
+}
+
+ADE_VIRTVAR(Score, l_Goals, nullptr, "The score of the goal", "number", "the score")
+{
+	int current;
+	if (!ade_get_args(L, "o", l_Goals.Get(&current))) {
+		return ADE_RETURN_NIL;
+	}
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "i", l_Team.Set(Mission_goals[current].score));
+}
+
 ADE_VIRTVAR(isGoalValid, l_Goals, nullptr, "The goal validity", "boolean", "true if valid, false otherwise")
 {
 	int current;
