@@ -716,25 +716,25 @@ void message_log_init_scrollback(int pw)
 		thisEntry.timestamp = entry->timestamp;
 
 		// keep track of base color for the entry
-		int color;
+		int thisColor;
 
 		// Goober5000
 		if ((entry->type == LOG_GOAL_SATISFIED) || (entry->type == LOG_GOAL_FAILED))
-			color = LOG_COLOR_BRIGHT;
+			thisColor = LOG_COLOR_BRIGHT;
 		else if (entry->primary_team >= 0)
-			color = message_log_team_get_color(entry->primary_team);
+			thisColor = message_log_team_get_color(entry->primary_team);
 		else
-			color = LOG_COLOR_OTHER;
+			thisColor = LOG_COLOR_OTHER;
 
 		if ( (Lcl_gr) && ((entry->type == LOG_GOAL_FAILED) || (entry->type == LOG_GOAL_SATISFIED)) ) {
 			// in german goal events, just say "objective" instead of objective name
 			// this is cuz we can't translate objective names
-			message_log_add_seg(&thisEntry.objective, OBJECT_X, color, "Einsatzziel");
+			message_log_add_seg(&thisEntry.objective, OBJECT_X, thisColor, "Einsatzziel");
 		} else if ( (Lcl_pl) && ((entry->type == LOG_GOAL_FAILED) || (entry->type == LOG_GOAL_SATISFIED)) ) {
 			// same thing for polish
-			message_log_add_seg(&thisEntry.objective, OBJECT_X, color, "Cel misji");
+			message_log_add_seg(&thisEntry.objective, OBJECT_X, thisColor, "Cel misji");
 		} else {
-			message_log_add_seg(&thisEntry.objective, OBJECT_X, color, entry->pname_display.c_str());
+			message_log_add_seg(&thisEntry.objective, OBJECT_X, thisColor, entry->pname_display.c_str());
 		}
 
 		// now on to the actual message itself
@@ -742,9 +742,9 @@ void message_log_init_scrollback(int pw)
 
 		// Goober5000
 		if (entry->secondary_team >= 0)
-			color = message_log_team_get_color(entry->secondary_team);
+			thisColor = message_log_team_get_color(entry->secondary_team);
 		else
-			color = LOG_COLOR_NORMAL;
+			thisColor = LOG_COLOR_NORMAL;
 
 		char text[256];
 
@@ -753,7 +753,7 @@ void message_log_init_scrollback(int pw)
 				message_log_add_segs(XSTR( "Destroyed", 404), LOG_COLOR_NORMAL, 0, &thisEntry.actions);
 				if (!entry->sname_display.empty()) {
 					message_log_add_segs(XSTR("  Kill: ", 405), LOG_COLOR_NORMAL, 0, &thisEntry.actions);
-					message_log_add_segs(entry->sname_display.c_str(), color, 0, &thisEntry.actions);
+					message_log_add_segs(entry->sname_display.c_str(), thisColor, 0, &thisEntry.actions);
 					if (entry->index >= 0) {
 						sprintf(text, NOX(" (%d%%)"), entry->index);
 						message_log_add_segs(text, LOG_COLOR_BRIGHT, 0, &thisEntry.actions);
@@ -792,7 +792,7 @@ void message_log_init_scrollback(int pw)
 
 			case LOG_SHIP_DOCKED:
 				message_log_add_segs(XSTR("Docked with ", 409), LOG_COLOR_NORMAL, 0, &thisEntry.actions);
-				message_log_add_segs(entry->sname_display.c_str(), color, 0, &thisEntry.actions);
+				message_log_add_segs(entry->sname_display.c_str(), thisColor, 0, &thisEntry.actions);
 				break;
 
 			case LOG_SHIP_SUBSYS_DESTROYED: {
@@ -814,7 +814,7 @@ void message_log_init_scrollback(int pw)
 
 			case LOG_SHIP_UNDOCKED:
 				message_log_add_segs(XSTR("Undocked with ", 412), LOG_COLOR_NORMAL, 0, &thisEntry.actions);
-				message_log_add_segs(entry->sname_display.c_str(), color, 0, &thisEntry.actions);
+				message_log_add_segs(entry->sname_display.c_str(), thisColor, 0, &thisEntry.actions);
 				break;
 
 			case LOG_SHIP_DISABLED:
