@@ -1449,7 +1449,7 @@ ADE_FUNC(buildCredits,
 	"number",
 	"Returns 1 when completed")
 {
-	credits_parse();
+	credits_parse(false);
 	credits_scp_position();
 
 	size_t count = Credit_text_parts.size();

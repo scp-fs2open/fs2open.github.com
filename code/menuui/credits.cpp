@@ -228,6 +228,8 @@ SCP_vector<SCP_string> Credit_text_parts;
 
 static bool Credits_parsed;
 
+static bool Split_credits_lines = true;
+
 enum CreditsPosition
 {
 	START,
@@ -401,18 +403,31 @@ void credits_parse_table(const char* filename)
 			}
 			else
 			{
-				// split_str doesn't take care of this.
-				charNum.clear();
+				// optionally split lines. This is default behavior but SCPUI doesn't use it
+				if (Split_credits_lines) {
 
-				// Split the string into multiple lines if it's too long
-				numLines = split_str(line.c_str(), Credits_text_coords[gr_screen.res][2], charNum, lines);
+					// split_str doesn't take care of this.
+					charNum.clear();
 
-				// Make sure that we have valid data
-				Assertion(lines.size() == (size_t)numLines, "split_str reported %d lines but vector contains " SIZE_T_ARG " entries!", numLines, lines.size());
+					// Split the string into multiple lines if it's too long
+					numLines = split_str(line.c_str(), Credits_text_coords[gr_screen.res][2], charNum, lines);
 
-				Assertion(lines.size() <= charNum.size(),
-					"Something has gone wrong while splitting strings. Got " SIZE_T_ARG " lines but only " SIZE_T_ARG " chacter lengths.",
-					lines.size(), charNum.size());
+					// Make sure that we have valid data
+					Assertion(lines.size() == (size_t)numLines,
+						"split_str reported %d lines but vector contains " SIZE_T_ARG " entries!",
+						numLines,
+						lines.size());
+
+					Assertion(lines.size() <= charNum.size(),
+						"Something has gone wrong while splitting strings. Got " SIZE_T_ARG
+						" lines but only " SIZE_T_ARG " chacter lengths.",
+						lines.size(),
+						charNum.size());
+				} else {
+					lines.push_back(line.c_str());
+					charNum.push_back((int)line.length());
+					numLines = 1;
+				}
 
 				// Now add all splitted lines to the credit text and append a newline to the end
 				for (int i = 0; i < numLines; i++)
@@ -420,6 +435,10 @@ void credits_parse_table(const char* filename)
 					credits_text.append(SCP_string(lines[i], charNum[i]));
 					credits_text.append("\n");
 				}
+
+				// clear vectors for the next round
+				lines.clear();
+				charNum.clear();
 			}
 		}
 
@@ -451,8 +470,10 @@ void credits_scp_position()
 	}
 }
 
-void credits_parse()
+void credits_parse(bool split_lines)
 {
+
+	Split_credits_lines = split_lines;
 
 	// Parse main table
 	credits_parse_table("credits.tbl");
