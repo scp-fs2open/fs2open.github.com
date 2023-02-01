@@ -109,7 +109,7 @@ typedef struct mission_cutscene {
 
 typedef struct mission {
 	char	name[NAME_LENGTH];
-	char	author[NAME_LENGTH];
+	SCP_string	author;
 	float	version;
 	char	created[DATE_TIME_LENGTH];
 	char	modified[DATE_TIME_LENGTH];

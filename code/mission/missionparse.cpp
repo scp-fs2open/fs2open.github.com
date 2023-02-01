@@ -470,7 +470,7 @@ void parse_mission_info(mission *pm, bool basic = false)
 	stuff_string(pm->name, F_NAME, NAME_LENGTH);
 
 	required_string("$Author:");
-	stuff_string(pm->author, F_NAME, NAME_LENGTH);
+	stuff_string(pm->author, F_NAME);
 
 	required_string("$Created:");
 	stuff_string(pm->created, F_DATE, DATE_TIME_LENGTH);
@@ -6308,7 +6308,7 @@ int get_mission_info(const char *filename, mission *mission_p, bool basic, bool 
 void mission::Reset()
 {
 	name[ 0 ] = '\0';
-	author[ 0 ] = '\0';
+	author = "";
 	version = 0.;
 	created[ 0 ] = '\0';
 	modified[ 0 ] = '\0';

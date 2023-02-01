@@ -2523,7 +2523,7 @@ int CFred_mission_save::save_mission_info()
 
 	required_string_fred("$Author:");
 	parse_comments();
-	fout(" %s", The_mission.author);
+	fout(" %s", The_mission.author.c_str());
 
 	required_string_fred("$Created:");
 	parse_comments();
