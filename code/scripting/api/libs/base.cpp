@@ -761,7 +761,7 @@ ADE_FUNC(setDiscordPresence,
 	nullptr,
 	"nothing")
 {
-	SCP_string text = "";
+	const char* text;
 	bool gp = false;
 	if (!ade_get_args(L, "s|b", &text, &gp)) {
 		return ADE_RETURN_NIL;
@@ -772,9 +772,7 @@ ADE_FUNC(setDiscordPresence,
 			libs::discord::set_presence_gameplay();
 		}
 	} else {
-		if (text != "") {
-			libs::discord::set_presence_string(text);
-		}
+		libs::discord::set_presence_string(text);
 	}
 
 	return ADE_RETURN_NIL;
