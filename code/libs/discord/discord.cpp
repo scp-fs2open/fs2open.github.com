@@ -272,5 +272,15 @@ void shutdown()
 	shutdown_discord();
 }
 
+void set_presence_string(SCP_string text)
+{
+	set_presence(text);
+}
+
+void set_presence_gameplay()
+{
+	set_game_play_presence();
+}
+
 } // namespace discord
 } // namespace libs
