@@ -755,7 +755,7 @@ ADE_FUNC(deserializeValue,
 
 ADE_FUNC(setDiscordPresence,
 	l_Base,
-	"string DisplayText [boolean Gameplay]",
+	"string DisplayText, [boolean Gameplay]",
 	"Sets the Discord presence to a specific string. If Gameplay is true then the string is ignored and presence will "
 	"be set as if the player is in-mission. The latter will fail if the player is not in a mission.",
 	nullptr,
