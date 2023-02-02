@@ -6191,12 +6191,12 @@ int num_nearby_fighters(int enemy_team_mask, vec3d *pos, float threshold)
 //	set, that weapon will be selected.  If not, apply to priority2.  If neither, return -1, meaning no weapon selected.
 //	Note, priorityX have default values of -1, meaning if not set, they will match any weapon.
 //	Return value:
-//		bank index
+//		true if an appropriate weapon was found and switched to, false if no valid weapons, and should not fire
 //	Should do this:
 //		Favor aspect seekers when attacking small ships faraway.
 //		Favor rapid fire dumbfire when attacking a large ship.
 //		Ignore heat seekers because we're not sure how they'll work.
-void ai_select_secondary_weapon(object *objp, ship_weapon *swp, flagset<Weapon::Info_Flags>* priority1 = NULL, flagset<Weapon::Info_Flags>* priority2 = NULL)
+bool ai_select_secondary_weapon(object *objp, ship_weapon *swp, flagset<Weapon::Info_Flags>* priority1 = NULL, flagset<Weapon::Info_Flags>* priority2 = NULL)
 {
 	int	num_weapon_types;
 	int	weapon_id_list[MAX_WEAPON_TYPES], weapon_bank_list[MAX_WEAPON_TYPES];
@@ -6204,6 +6204,7 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, flagset<Weapon::
 	flagset<Weapon::Info_Flags>	ignore_mask, ignore_mask_without_huge, prio1, prio2;
 	int	initial_bank;
 	ai_info	*aip = &Ai_info[Ships[objp->instance].ai_index];
+	bool rval = false;
 
 	initial_bank = swp->current_secondary_bank;
 
@@ -6243,7 +6244,7 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, flagset<Weapon::
 
 	//  If there are no valid choices, bail
 	if (num_weapon_types == 0)
-		return;
+		return false;
 
 	// Ignore homing weapons if we didn't specify a flag - for priority 1
 	if ((aip->ai_profile_flags[AI::Profile_Flags::Smart_secondary_weapon_selection]) && (prio1.none_set())) {
@@ -6262,6 +6263,7 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, flagset<Weapon::
 		if (!(wi_flags & ignore_mask_to_use).any_set()) {					//	Maybe bombs are illegal.
 			if ((wi_flags & prio1).any_set()) {
 				swp->current_secondary_bank = weapon_bank_list[i];				//	Found first priority, return it.
+				rval = true;
 				break;
 			} else if ((wi_flags & prio2).any_set())
 				priority2_index = weapon_bank_list[i];	//	Found second priority, but might still find first priority.
@@ -6292,6 +6294,7 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, flagset<Weapon::
 		// if we have a valid priority2, use that
 		if (priority2_index >= 0) {
 			swp->current_secondary_bank = priority2_index;
+			rval = true;
 		}
 	}
 
@@ -6299,7 +6302,7 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, flagset<Weapon::
 	// if we got an invalid bank somehow, just put it back and bail
 	if (swp->current_secondary_bank < 0) {
 		swp->current_secondary_bank = initial_bank;
-		return;
+		return false;
 	}
 
 	//	If switched banks, force reacquisition of aspect lock.
@@ -6320,6 +6323,7 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, flagset<Weapon::
 	}
 
 	ship_secondary_changed(&Ships[objp->instance]);	// AL: let multiplayer know if secondary bank has changed
+	return rval;
 }
 
 /**
@@ -8178,7 +8182,8 @@ int has_preferred_secondary(object *objp, object *en_objp, ship_weapon *swp)
 //	Note, this is not like ai_select_secondary_weapon().  "choose" means make a choice.
 //	"select" means execute an order.  Get it?
 //	This function calls ai_select_secondary_weapon() with the characteristics it should search for.
-void ai_choose_secondary_weapon(object *objp, ai_info *aip, object *en_objp)
+//		return true if an appropriate weapon was found and switched to, false if no valid weapons, and should not fire
+bool ai_choose_secondary_weapon(object *objp, ai_info *aip, object *en_objp)
 {
 	float			subsystem_strength = 0.0f;
 	bool			is_big_ship;
@@ -8197,7 +8202,7 @@ void ai_choose_secondary_weapon(object *objp, ai_info *aip, object *en_objp)
 	// AL 3-5-98: do a quick out if the ship has no secondaries
 	if ( swp->num_secondary_banks <= 0 ) {
 		swp->current_secondary_bank = -1;
-		return;
+		return false;
 	}
 
 	int preferred_secondary = has_preferred_secondary(objp, en_objp, swp);
@@ -8209,6 +8214,7 @@ void ai_choose_secondary_weapon(object *objp, ai_info *aip, object *en_objp)
 			swp->current_secondary_bank = preferred_secondary;
 		}
 		aip->ai_flags.set(AI::AI_Flags::Unload_secondaries);
+		return true;
 	} else {
 		aip->ai_flags.remove(AI::AI_Flags::Unload_secondaries);
 		if (aip->targeted_subsys) {
@@ -8252,7 +8258,7 @@ void ai_choose_secondary_weapon(object *objp, ai_info *aip, object *en_objp)
 			wif_priority2.reset();
 		}
 		
-		ai_select_secondary_weapon(objp, swp, &wif_priority1, &wif_priority2);
+		return ai_select_secondary_weapon(objp, swp, &wif_priority1, &wif_priority2);
 	}
 }
 
@@ -9328,10 +9334,10 @@ void ai_chase()
 
 					//	Don't fire secondaries at a protected ship.
 					if (!(En_objp->flags[Object::Object_Flags::Protected])) {
-						ai_choose_secondary_weapon(Pl_objp, aip, En_objp);
+						bool valid_secondary = ai_choose_secondary_weapon(Pl_objp, aip, En_objp);
 						int current_bank = tswp->current_secondary_bank;
 
-						if (current_bank > -1) {
+						if (current_bank > -1 && valid_secondary) {
 							weapon_info	*swip = &Weapon_info[tswp->secondary_bank_weapons[current_bank]];
 							if (aip->ai_flags[AI::AI_Flags::Unload_secondaries]) {
 								if (timestamp_until(swp->next_secondary_fire_stamp[current_bank]) > swip->fire_wait*1000.0f) {
