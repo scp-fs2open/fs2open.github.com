@@ -314,7 +314,7 @@ void CMissionNotesDlg::OnOK()
 	pad_with_newline(m_mission_notes, NOTES_LENGTH - 1);
 
 	string_copy(The_mission.name, m_mission_title, NAME_LENGTH - 1, 1);
-	The_mission.author = m_designer_name;
+	string_copy(The_mission.author, m_designer_name, true);
 	string_copy(The_mission.loading_screen[GR_640], m_loading_640, NAME_LENGTH - 1, 1);
 	string_copy(The_mission.loading_screen[GR_1024], m_loading_1024, NAME_LENGTH - 1, 1);
 	deconvert_multiline_string(The_mission.notes, m_mission_notes, NOTES_LENGTH - 1);
