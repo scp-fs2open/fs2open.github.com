@@ -19338,15 +19338,18 @@ void sexp_set_countermeasures(int node)
 	shipp = ship_entry->shipp;
 	node = CDR(node);
 
+	float cm_cargo_size = 1.0f;
+	if (Countermeasures_use_capacity)
+		cm_cargo_size = Weapon_info[shipp->current_cmeasure].cargo_size;
+
 	num_cmeasures = eval_num(node, is_nan, is_nan_forever);
 	if (is_nan || is_nan_forever) {
 		return;
 	}
 	if (num_cmeasures < 0) {
 		num_cmeasures = 0;
-	}
-	else if (num_cmeasures > Ship_info[shipp->ship_info_index].cmeasure_max) {
-		num_cmeasures = Ship_info[shipp->ship_info_index].cmeasure_max;
+	} else if (num_cmeasures > fl2i(Ship_info[shipp->ship_info_index].cmeasure_max / cm_cargo_size)) {
+		num_cmeasures = fl2i(Ship_info[shipp->ship_info_index].cmeasure_max / cm_cargo_size);
 	}
 
 	shipp->cmeasure_count = num_cmeasures;

@@ -128,6 +128,7 @@ extern bool Discord_presence;
 extern bool Hotkey_always_hide_hidden_ships;
 extern bool Use_weapon_class_sounds_for_hits_to_player;
 extern bool SCPUI_loads_hi_res_animations;
+extern bool Countermeasures_use_capacity;
 
 void mod_table_init();
 void mod_table_post_process();
