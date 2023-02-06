@@ -64,6 +64,8 @@ void EventEditorDialog::initEventWidgets() {
 
 	ui->miniHelpBox->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
 	ui->helpBox->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
+	ui->triggerCountBox->setMinimum(-1);
+	ui->repeatCountBox->setMinimum(-1);
 
 	connect(ui->eventTree, &sexp_tree::modified, this, [this]() { modified = true; });
 	connect(ui->eventTree, &sexp_tree::rootNodeDeleted, this, &EventEditorDialog::rootNodeDeleted);
@@ -446,11 +448,12 @@ void EventEditorDialog::set_current_event(int evt) {
 	ui->repeatCountBox->setEnabled(true);
 	ui->triggerCountBox->setEnabled(true);
 
-	if (( m_events[cur_event].repeat_count <= 1) && (m_events[cur_event].trigger_count <= 1)) {
+	if ((m_events[cur_event].repeat_count > 1) || (m_events[cur_event].repeat_count < 0) ||
+		(m_events[cur_event].trigger_count > 1) || (m_events[cur_event].trigger_count < 0)) {
+		ui->intervalTimeBox->setEnabled(true);
+	} else {
 		ui->intervalTimeBox->setValue(1);
 		ui->intervalTimeBox->setEnabled(false);
-	} else {
-		ui->intervalTimeBox->setEnabled(true);
 	}
 
 	ui->scoreBox->setEnabled(true);

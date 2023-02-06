@@ -8568,11 +8568,9 @@ static void ship_blow_up_area_apply_blast( object *exp_objp)
 				continue;
 			}
 
-			// don't blast navbuoys
-			if ( objp->type == OBJ_SHIP ) {
-				if ( ship_get_SIF(objp->instance)[Ship::Info_Flags::Navbuoy] ) {
-					continue;
-				}
+			// don't blast no-collide or navbuoys
+			if ( !objp->flags[Object::Object_Flags::Collides] || (objp->type == OBJ_SHIP && ship_get_SIF(objp->instance)[Ship::Info_Flags::Navbuoy]) ) {
+				continue;
 			}
 
 			if ( ship_explode_area_calc_damage( &exp_objp->pos, &objp->pos, inner_rad, outer_rad, max_damage, max_blast, &damage, &blast ) == -1 ){
@@ -12255,7 +12253,7 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 
 				for ( w = 0; w < numtimes; w++ ) {
 					polymodel *weapon_model = NULL;
-					if(winfo_p->external_model_num >= 0) 
+					if (sip->draw_primary_models[bank_to_fire] && (winfo_p->external_model_num >= 0)) 
 						weapon_model = model_get(winfo_p->external_model_num);
 
 					if (weapon_model)
@@ -12539,10 +12537,14 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 		if (objp == Player_obj && Player_ai->target_objnum != -1)
 			target = &Objects[Player_ai->target_objnum]; 
 
+		SCP_vector<int> firedWeapons;
+
 		for (int bank = 0; bank < MAX_SHIP_PRIMARY_BANKS; bank++) {
-			if(banks_fired & (1 << bank))
+			if (banks_fired & (1 << bank)) {
 				//Start Animation in Forced mode: Always restart it from its initial position rather than just flip it to FWD motion if it was still moving. This is to make it work best for uses like recoil.
 				sip->animations.getAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::PrimaryFired, bank).start(animation::ModelAnimationDirection::FWD, true);
+				firedWeapons.emplace_back(shipp->weapons.primary_bank_weapons[bank]);
+			}
 		}
 
 		if (scripting::hooks::OnWeaponFired->isActive() || scripting::hooks::OnPrimaryFired->isActive()) {
@@ -12550,7 +12552,7 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 				scripting::hook_param("User", 'o', objp),
 				scripting::hook_param("Target", 'o', target)
 			);
-			auto conditions = scripting::hooks::WeaponUsedConditions{ shipp, target, weapon_idx, true };
+			auto conditions = scripting::hooks::WeaponUsedConditions{ shipp, target, firedWeapons, true };
 			scripting::hooks::OnWeaponFired->run(conditions, param_list);
 			scripting::hooks::OnPrimaryFired->run(conditions, param_list);
 		}
@@ -13264,7 +13266,7 @@ done_secondary:
 				scripting::hook_param("User", 'o', objp),
 				scripting::hook_param("Target", 'o', target)
 			);
-			auto conditions = scripting::hooks::WeaponUsedConditions{ shipp, target, weapon_idx, false };
+			auto conditions = scripting::hooks::WeaponUsedConditions{ shipp, target, SCP_vector<int>{ weapon_idx }, false };
 			scripting::hooks::OnWeaponFired->run(conditions, param_list);
 			scripting::hooks::OnSecondaryFired->run(conditions, param_list);
 		}
@@ -13364,6 +13366,14 @@ int ship_select_next_primary(object *objp, int direction)
 	original_bank = swp->current_primary_bank;
 	auto original_link_flag = shipp->flags[Ship_Flags::Primary_linked];
 
+	// check if at least two weapons can be linked
+	int num_linkable_weapons = 0;
+	for (int j = 0; j < swp->num_primary_banks; j++) {
+		if (!Weapon_info[swp->primary_bank_weapons[j]].wi_flags[Weapon::Info_Flags::Nolink]) {
+			num_linkable_weapons++;
+		}
+	}
+
 	// redid case structure to possibly add more primaries in the future - Goober5000
 	if ( swp->num_primary_banks == 0 )
 	{
@@ -13419,7 +13429,7 @@ int ship_select_next_primary(object *objp, int direction)
 				{
 					swp->current_primary_bank++;
 				}
-				else if( sip->flags[Ship::Info_Flags::No_primary_linking] )
+				else if( sip->flags[Ship::Info_Flags::No_primary_linking] || (num_linkable_weapons <= 1))
 				{
 					swp->current_primary_bank = 0;
 				}
@@ -13434,7 +13444,7 @@ int ship_select_next_primary(object *objp, int direction)
 				{
 					swp->current_primary_bank--;
 				}
-				else if( sip->flags[Ship::Info_Flags::No_primary_linking] )
+				else if( sip->flags[Ship::Info_Flags::No_primary_linking] || (num_linkable_weapons <= 1))
 				{
 					swp->current_primary_bank = swp->num_primary_banks - 1;
 				}
@@ -15664,7 +15674,7 @@ int ship_get_random_player_wing_ship( int flags, float max_dist, int persona_ind
 
 // like above function, but returns a random ship in the given wing -- no restrictions
 // input:	max_dist	=>	OPTIONAL PARAMETER (default value 0.0f) max range ship can be from player
-int ship_get_random_ship_in_wing(int wingnum, int flags, float max_dist, int get_first)
+int ship_get_random_ship_in_wing(int wingnum, int flags, float max_dist, int get_first, int order_id)
 {
 	int i, ship_index, slist[MAX_SHIPS_PER_WING], count, which_one;
 
@@ -15675,6 +15685,13 @@ int ship_get_random_ship_in_wing(int wingnum, int flags, float max_dist, int get
 
 		if ( Ships[ship_index].flags[Ship_Flags::Dying] ) {
 			continue;
+		}
+
+		// specific to sending messages, make sure the ship selected can actually do the order
+		if (order_id >= 0) {
+			if (!hud_squadmsg_ship_order_valid(ship_index, order_id)) {
+				continue;
+			}
 		}
 
 		// see if ship meets our criterea
