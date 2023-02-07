@@ -112,6 +112,7 @@ public:
 	void Fade_and_Stop();
 	void	Set_Volume(float vol);
 	float	Get_Volume();
+	int     Get_Duration();
 	void	Init_Data();
 	void	Set_Sample_Cutoff(uint sample_cutoff);
 	void	Set_Default_Volume(float vol) { m_lDefaultVolume = vol; }
@@ -819,6 +820,11 @@ float AudioStream::Get_Volume()
 	return m_lVolume;
 }
 
+int AudioStream::Get_Duration()
+{
+	return fl2i(1000.0f * m_fileProps.duration);
+}
+
 bool AudioStream::PlaybackDone()
 {
 	ALint state = 0;
@@ -1167,6 +1173,19 @@ int audiostream_is_paused(int i)
 		return -1;
 
 	return (int) Audio_streams[i].Is_Paused();
+}
+
+int audiostream_get_duration(int i)
+{
+	if (i == -1)
+		return 0;
+
+	Assert(i >= 0 && i < MAX_AUDIO_STREAMS);
+
+	if (Audio_streams[i].status == ASF_FREE)
+		return -1;
+
+	return (int)Audio_streams[i].Get_Duration();
 }
 
 void audiostream_set_sample_cutoff(int i, uint cutoff)

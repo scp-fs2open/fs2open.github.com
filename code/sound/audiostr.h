@@ -66,6 +66,9 @@ void audiostream_set_volume(int i, float volume);
 // see if a particular stream is paused
 int audiostream_is_paused(int i);
 
+// get duration of a stream
+int audiostream_get_duration(int i);
+
 // set the number of samples that the sound should cutoff after
 void audiostream_set_sample_cutoff(int i, unsigned int cutoff);
 
