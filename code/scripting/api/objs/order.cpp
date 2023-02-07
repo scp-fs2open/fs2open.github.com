@@ -291,7 +291,7 @@ ADE_VIRTVAR(Target, l_Order, "object", "Target of the order. Value may also be a
 		case AI_GOAL_WAYPOINTS_ONCE:
 			wpl = find_matching_waypoint_list(ohp->aigp->target_name);
 			if (wpl != nullptr) {
-				if ((ohp->odx == 0) && (aip->wp_index != -1)) {
+				if ( (ohp->odx == 0) && (aip->wp_index != static_cast<size_t>(-1)) ) {
 					objnum = aip->wp_list->get_waypoints()[aip->wp_index].get_objnum();
 				} else {
 					objnum = wpl->get_waypoints().front().get_objnum();
