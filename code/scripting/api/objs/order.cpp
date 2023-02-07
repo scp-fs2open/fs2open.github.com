@@ -289,11 +289,13 @@ ADE_VIRTVAR(Target, l_Order, "object", "Target of the order. Value may also be a
 			break;
 		case AI_GOAL_WAYPOINTS:
 		case AI_GOAL_WAYPOINTS_ONCE:
-			wpl = find_matching_waypoint_list(ohp->aigp->target_name);
-			if (wpl != nullptr) {
-				if ( (ohp->odx == 0) && (aip->wp_index != static_cast<size_t>(-1)) ) {
-					objnum = aip->wp_list->get_waypoints()[aip->wp_index].get_objnum();
-				} else {
+			// check if waypoint order is the current goal (ohp->odx == 0) and if it is valid
+			if ( (ohp->odx == 0) && (aip->wp_index != INVALID_WAYPOINT_POSITION) && (aip->wp_index >= 0) &&
+				(aip->wp_index < aip->wp_list->get_waypoints().size()) ) {
+				objnum = aip->wp_list->get_waypoints()[aip->wp_index].get_objnum();
+			} else {
+				wpl = find_matching_waypoint_list(ohp->aigp->target_name);
+				if (wpl >= 0) {
 					objnum = wpl->get_waypoints().front().get_objnum();
 				}
 			}
