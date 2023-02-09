@@ -16,7 +16,11 @@ bool CustomCheat::canUseCheat() {
 
 void CustomCheat::runCheat() {
 	if (!canUseCheat()) return;
-	HUD_printf("%s", cheatMsg.c_str());
+
+	//Only try to send the message if we actually have one to send and are in a mission
+	if (!cheatMsg.empty() && (Game_mode & GM_IN_MISSION))
+		HUD_printf("%s", cheatMsg.c_str());
+
 	scripting::hooks::OnCheat->run(scripting::hook_param_list(scripting::hook_param("Cheat", 's', cheatCode)));
 	CheatUsed = cheatCode;
 }
@@ -108,8 +112,9 @@ void parse_cheat_table(const char* filename) {
 				code = code.substr(0, CHEAT_BUFFER_LEN);
 			}
 
-			required_string("+Message:");
-			stuff_string(msg, F_MESSAGE);
+			if (optional_string("+Message:")) {
+				stuff_string(msg, F_MESSAGE);
+			}
 
 			if (optional_string("+RequireCheats:")) {
 				stuff_boolean(&requireCheats);
