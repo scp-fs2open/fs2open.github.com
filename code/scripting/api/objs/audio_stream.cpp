@@ -147,7 +147,7 @@ ADE_FUNC(setVolume,	l_AudioStream, "number volume", "Sets the volume of the audi
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(getDuration, l_AudioStream, nullptr, "Gets the duration of the stream", "number", "the duration in milliseconds or nil if invalid")
+ADE_FUNC(getDuration, l_AudioStream, nullptr, "Gets the duration of the stream", "number", "the duration in float seconds or nil if invalid")
 {
 	int streamHandle = -1;
 	if (!ade_get_args(L, "o", l_AudioStream.Get(&streamHandle))) {
@@ -158,7 +158,7 @@ ADE_FUNC(getDuration, l_AudioStream, nullptr, "Gets the duration of the stream",
 		return ADE_RETURN_NIL;
 	}
 
-	return ade_set_args(L, "i", audiostream_get_duration(streamHandle));
+	return ade_set_args(L, "f", (float)audiostream_get_duration(streamHandle));
 }
 
 ADE_FUNC(isValid,

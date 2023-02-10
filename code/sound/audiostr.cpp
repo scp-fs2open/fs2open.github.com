@@ -1175,7 +1175,7 @@ int audiostream_is_paused(int i)
 	return (int) Audio_streams[i].Is_Paused();
 }
 
-int audiostream_get_duration(int i)
+double audiostream_get_duration(int i)
 {
 	if (i == -1)
 		return 0;
@@ -1185,7 +1185,7 @@ int audiostream_get_duration(int i)
 	if (Audio_streams[i].status == ASF_FREE)
 		return -1;
 	
-	return fl2i(1000.0f * Audio_streams[i].Get_Duration());
+	return Audio_streams[i].Get_Duration();
 }
 
 void audiostream_set_sample_cutoff(int i, uint cutoff)
