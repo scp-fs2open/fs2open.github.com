@@ -120,28 +120,46 @@ OptionBase::OptionBase(SCP_string config_key, SCP_string title, SCP_string descr
 {
 	_parent = OptionsManager::instance();
 }
+
+//Return the option value from the config
 std::unique_ptr<json_t> OptionBase::getConfigValue() const { return _parent->getValueFromConfig(_config_key); }
 
+//Return the option expert_level value
 ExpertLevel OptionBase::getExpertLevel() const { return _expert_level; }
+
+//Set the option expert_level value
 void OptionBase::setExpertLevel(ExpertLevel expert_level) { _expert_level = expert_level; }
 
+//Set option preset value
 void OptionBase::setPreset(PresetKind preset, const SCP_string& value) { _preset_values.emplace(preset, value); }
 
+//Return the option category
 const SCP_string& OptionBase::getCategory() const { return _category; }
+
+//Set the option category
 void OptionBase::setCategory(const SCP_string& category) { _category = category; }
 
+//Return unique built-in key for the option
 const SCP_string& OptionBase::getConfigKey() const {
 	return _config_key;
 }
+
+//Return option title
 const SCP_string& OptionBase::getTitle() const {
 	return _title;
 }
+
+//Return option description
 const SCP_string& OptionBase::getDescription() const {
 	return _description;
 }
+
+//Return option importance, used for sorting
 int OptionBase::getImportance() const {
 	return _importance;
 }
+
+//Set option importance, used for sorting
 void OptionBase::setImportance(int importance) {
 	_importance = importance;
 }
@@ -161,12 +179,18 @@ bool operator<=(const OptionBase& lhs, const OptionBase& rhs) {
 bool operator>=(const OptionBase& lhs, const OptionBase& rhs) {
 	return !(lhs < rhs);
 }
+
+//Return current flags for this option
 const flagset<OptionFlags>& OptionBase::getFlags() const {
 	return _flags;
 }
+
+//Set flags for this option
 void OptionBase::setFlags(const flagset<OptionFlags>& flags) {
 	_flags = flags;
 }
+
+//persists any changes made to this specific option and returns whether or not it was successful
 bool OptionBase::persistChanges() const { return _parent->persistOptionChanges(this); }
 
 } // namespace options

@@ -7,6 +7,8 @@
 #include "osapi/osregistry.h"
 
 namespace {
+
+//Parses a full option key, separating it into section and key
 std::pair<SCP_string, SCP_string> parse_key(const SCP_string& key)
 {
 	auto point_pos = key.find('.');
@@ -32,6 +34,8 @@ OptionsManager* options::OptionsManager::instance()
 	static OptionsManager instance;
 	return &instance;
 }
+
+//Gets the value of an option from the Config using the option key
 std::unique_ptr<json_t> OptionsManager::getValueFromConfig(const SCP_string& key) const
 {
 	auto override_iter = _config_overrides.find(key);
@@ -68,10 +72,15 @@ std::unique_ptr<json_t> OptionsManager::getValueFromConfig(const SCP_string& key
 
 	return std::unique_ptr<json_t>(el);
 }
+
+//Sets the value for the option
 void OptionsManager::setConfigValue(const SCP_string& key,std::unique_ptr<json_t>&& value)
 {
 	_changed_values[key] = std::move(value);
 }
+
+//Provides a method for overriding a built-in option setting
+//Generally used for commandline settings
 void OptionsManager::setOverride(const SCP_string& key, const SCP_string& json)
 {
 	json_error_t err;
@@ -81,6 +90,8 @@ void OptionsManager::setOverride(const SCP_string& key, const SCP_string& json)
 	}
 	_config_overrides.emplace(key, std::unique_ptr<json_t>(el));
 }
+
+//Adds an option to the options vector
 const OptionBase* OptionsManager::addOption(std::unique_ptr<const OptionBase>&& option)
 {
 	_options.emplace_back(std::move(option));
@@ -90,6 +101,8 @@ const OptionBase* OptionsManager::addOption(std::unique_ptr<const OptionBase>&& 
 	_optionsMapping.emplace(ptr->getConfigKey(), ptr);
 	return ptr;
 }
+
+//Removes an option from the options vector
 void OptionsManager::removeOption(const OptionBase* option)
 {
 	_optionsMapping.erase(option->getConfigKey());
@@ -97,6 +110,8 @@ void OptionsManager::removeOption(const OptionBase* option)
 	    std::remove_if(_options.begin(), _options.end(),
 	                   [option](const std::unique_ptr<const OptionBase>& ptr) { return ptr.get() == option; }));
 }
+
+//Returns a table of all built-in options available
 const SCP_vector<std::unique_ptr<const options::OptionBase>>& OptionsManager::getOptions()
 {
 	if (!_optionsSorted) {
@@ -111,6 +126,8 @@ const SCP_vector<std::unique_ptr<const options::OptionBase>>& OptionsManager::ge
 	}
 	return _options;
 }
+
+//Write the option to the registry and return if it was changed or not
 bool OptionsManager::persistOptionChanges(const options::OptionBase* option)
 {
 	auto iter = _changed_values.find(option->getConfigKey());
@@ -137,6 +154,8 @@ bool OptionsManager::persistOptionChanges(const options::OptionBase* option)
 
 	return changed;
 }
+
+//Write value changes to disk and return vector of options that do not support changine the value
 SCP_vector<const options::OptionBase*> OptionsManager::persistChanges()
 {
 	for (auto& entry : _changed_values) {
@@ -165,7 +184,11 @@ SCP_vector<const options::OptionBase*> OptionsManager::persistChanges()
 
 	return unchanged;
 }
+
+//Discard changes and restore the option to initial value
 void OptionsManager::discardChanges() { _changed_values.clear(); }
+
+//Get the initial values of the option as stored on disk
 void OptionsManager::loadInitialValues()
 {
 	for (auto& opt : _options) {

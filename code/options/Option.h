@@ -403,49 +403,49 @@ class OptionBuilder {
 
 	OptionBuilder(OptionBuilder&&) noexcept = delete;
 	OptionBuilder& operator=(OptionBuilder&&) noexcept = delete;
-
+	//Set the category of the option
 	OptionBuilder& category(const SCP_string& category)
 	{
 		_instance.setCategory(category);
 		return *this;
 	}
-
+	//Set the level value of the option. Can be "Beginniner", "Advanced", or "Expert"
 	OptionBuilder& level(ExpertLevel level)
 	{
 		_instance.setExpertLevel(level);
 		return *this;
 	}
-
+	//Directly set the default value of an option
 	OptionBuilder& default_val(const T& val)
 	{
 		_instance.setDefaultValueFunc(ValueFunctor<T>(val));
 		return *this;
 	}
-
+	//Function to find the default value of the option
 	OptionBuilder& default_func(const DefaultValueFunctor<T>& func)
 	{
 		_instance.setDefaultValueFunc(func);
 		return *this;
 	}
-
+	//Deserialize an option for persisting changes
 	OptionBuilder& deserializer(const ValueDeserializer<T>& converter)
 	{
 		_instance.setDeserializer(converter);
 		return *this;
 	}
-
+	//Serialize an option value for display
 	OptionBuilder& serializer(const ValueSerializer<T>& serializer)
 	{
 		_instance.setSerializer(serializer);
 		return *this;
 	}
-
+	//Builds an enum list of values for the optoin
 	OptionBuilder& enumerator(const ValueEnumerator<T>& enumerator)
 	{
 		_instance.setValueEnumerator(enumerator);
 		return *this;
 	}
-
+	//The valid values for the option
 	OptionBuilder& values(const SCP_vector<std::pair<T, SCP_string>>& value_display_pairs)
 	{
 		SCP_vector<T> values;
@@ -460,19 +460,19 @@ class OptionBuilder {
 		_instance.setDisplayFunc(MapValueDisplay<T>(display_mapping));
 		return *this;
 	}
-
+	//The string to display for the option values, usually a function that returns a string
 	OptionBuilder& display(const ValueDisplay<T>& display)
 	{
 		_instance.setDisplayFunc(display);
 		return *this;
 	}
-
+	//The code to run if the option value is changed
 	OptionBuilder& change_listener(const ValueChangeListener<T>& listener)
 	{
 		_instance.setChangeListener(listener);
 		return *this;
 	}
-
+	//The global variable to bind the option to immediately.
 	OptionBuilder& bind_to(T* dest)
 	{
 		return change_listener([dest](const T& val, bool) {
@@ -480,7 +480,7 @@ class OptionBuilder {
 			return true;
 		});
 	}
-
+	//The global variable to bind the option to once. Will require game restart to persist changes.
 	OptionBuilder& bind_to_once(T* dest)
 	{
 		return change_listener([dest](const T& val, bool initial) {
@@ -490,7 +490,7 @@ class OptionBuilder {
 			return initial;
 		});
 	}
-
+	//Set the minimum and maximum range for a "slider" type option
 	OptionBuilder& range(T min, T max)
 	{
 		Assertion(min <= max, "Invalid number range!");
@@ -499,25 +499,25 @@ class OptionBuilder {
 		    [min, max](T f) { return static_cast<float>(f - min) / static_cast<float>(max - min); });
 		return *this;
 	}
-
+	//Set the preset value for the option
 	OptionBuilder& preset(PresetKind kind, const T& value)
 	{
 		_preset_values.emplace(kind, value);
 		return *this;
 	}
-
+	//Set the option importance, used for sorting
 	OptionBuilder& importance(int value)
 	{
 		_instance.setImportance(value);
 		return *this;
 	}
-
+	//Set the option flags
 	OptionBuilder& flags(const flagset<OptionFlags>& flags)
 	{
 		_instance.setFlags(flags);
 		return *this;
 	}
-
+	//Finishes building the option and returns a pointer to it
 	const Option<T>* finish()
 	{
 		for (auto& val : _preset_values) {
