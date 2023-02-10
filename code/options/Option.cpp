@@ -1,5 +1,6 @@
-//
-//
+//Provides an API to create and interface with built-in game options
+//through scripting. Includes methods for instantly persisting value changes
+//or saving changes to persist upon restart of the game.
 
 #include "Option.h"
 #include "OptionsManager.h"

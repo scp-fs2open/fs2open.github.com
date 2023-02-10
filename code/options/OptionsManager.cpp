@@ -1,5 +1,5 @@
-//
-//
+//Internal use manager to handle seting option data and
+//correctly find options from config or save them back to config
 
 #include "OptionsManager.h"
 #include "Option.h"
