@@ -71,7 +71,7 @@ bool isDeviceUnsuitable(PhysicalDeviceValues& values, const vk::UniqueSurfaceKHR
 		values.properties.deviceType != vk::PhysicalDeviceType::eIntegratedGpu &&
 		values.properties.deviceType != vk::PhysicalDeviceType::eVirtualGpu) {
 		mprintf(("Rejecting %s (%d) because the device type is unsuitable.\n",
-			values.properties.deviceName,
+			values.properties.deviceName.data(),
 			values.properties.deviceID));
 		return true;
 	}
@@ -101,33 +101,33 @@ bool isDeviceUnsuitable(PhysicalDeviceValues& values, const vk::UniqueSurfaceKHR
 
 	if (!values.graphicsQueueIndex.initialized) {
 		mprintf(("Rejecting %s (%d) because the device does not have a graphics queue.\n",
-			values.properties.deviceName,
+			values.properties.deviceName.data(),
 			values.properties.deviceID));
 		return true;
 	}
 	if (!values.transferQueueIndex.initialized) {
 		mprintf(("Rejecting %s (%d) because the device does not have a transfer queue.\n",
-			values.properties.deviceName,
+			values.properties.deviceName.data(),
 			values.properties.deviceID));
 		return true;
 	}
 	if (!values.presentQueueIndex.initialized) {
 		mprintf(("Rejecting %s (%d) because the device does not have a presentation queue.\n",
-			values.properties.deviceName,
+			values.properties.deviceName.data(),
 			values.properties.deviceID));
 		return true;
 	}
 
 	if (!checkDeviceExtensionSupport(values)) {
 		mprintf(("Rejecting %s (%d) because the device does not support our required extensions.\n",
-			values.properties.deviceName,
+			values.properties.deviceName.data(),
 			values.properties.deviceID));
 		return true;
 	}
 
 	if (!checkSwapChainSupport(values, surface)) {
 		mprintf(("Rejecting %s (%d) because the device swap chain was not compatible.\n",
-			values.properties.deviceName,
+			values.properties.deviceName.data(),
 			values.properties.deviceID));
 		return true;
 	}
@@ -135,7 +135,7 @@ bool isDeviceUnsuitable(PhysicalDeviceValues& values, const vk::UniqueSurfaceKHR
 	return false;
 }
 
-int32_t deviceTypeScore(vk::PhysicalDeviceType type)
+uint32_t deviceTypeScore(vk::PhysicalDeviceType type)
 {
 	switch (type) {
 	case vk::PhysicalDeviceType::eIntegratedGpu:
@@ -149,11 +149,12 @@ int32_t deviceTypeScore(vk::PhysicalDeviceType type)
 	}
 }
 
-int32_t scoreDevice(const PhysicalDeviceValues& device)
+uint32_t scoreDevice(const PhysicalDeviceValues& device)
 {
-	int32_t score = 0;
+	uint32_t score = 0;
 
 	score += deviceTypeScore(device.properties.deviceType) * 1000;
+	score += device.properties.apiVersion * 100;
 
 	return score;
 }
@@ -166,7 +167,7 @@ bool compareDevices(const PhysicalDeviceValues& left, const PhysicalDeviceValues
 void printPhysicalDevice(const PhysicalDeviceValues& values)
 {
 	mprintf(("  Found %s (%d) of type %s. API version %d.%d.%d, Driver version %d.%d.%d. Scored as %d\n",
-		values.properties.deviceName,
+		values.properties.deviceName.data(),
 		values.properties.deviceID,
 		to_string(values.properties.deviceType).c_str(),
 		VK_VERSION_MAJOR(values.properties.apiVersion),
@@ -381,7 +382,7 @@ bool VulkanRenderer::initializeInstance()
 	const auto supportedExtensions = vk::enumerateInstanceExtensionProperties();
 	mprintf(("Instance extensions:\n"));
 	for (const auto& ext : supportedExtensions) {
-		mprintf(("  Found support for %s version %" PRIu32 "\n", ext.extensionName, ext.specVersion));
+		mprintf(("  Found support for %s version %" PRIu32 "\n", ext.extensionName.data(), ext.specVersion));
 		if (FSO_DEBUG || Cmdline_graphics_debug_output) {
 			if (!stricmp(ext.extensionName, VK_EXT_DEBUG_REPORT_EXTENSION_NAME)) {
 				extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
@@ -395,8 +396,8 @@ bool VulkanRenderer::initializeInstance()
 	mprintf(("Instance layers:\n"));
 	for (const auto& layer : supportedLayers) {
 		mprintf(("  Found layer %s(%s). Spec version %d.%d.%d and implementation %" PRIu32 "\n",
-			layer.layerName,
-			layer.description,
+			layer.layerName.data(),
+			layer.description.data(),
 			VK_VERSION_MAJOR(layer.specVersion),
 			VK_VERSION_MINOR(layer.specVersion),
 			VK_VERSION_PATCH(layer.specVersion),
@@ -508,11 +509,11 @@ bool VulkanRenderer::pickPhysicalDevice(PhysicalDeviceValues& deviceValues)
 
 	deviceValues = values.back();
 	mprintf(("Selected device %s (%d) as the primary Vulkan device.\n",
-		deviceValues.properties.deviceName,
+		deviceValues.properties.deviceName.data(),
 		deviceValues.properties.deviceID));
 	mprintf(("Device extensions:\n"));
 	for (const auto& extProp : deviceValues.extensions) {
-		mprintf(("  Found support for %s version %" PRIu32 "\n", extProp.extensionName, extProp.specVersion));
+		mprintf(("  Found support for %s version %" PRIu32 "\n", extProp.extensionName.data(), extProp.specVersion));
 	}
 
 	return true;
