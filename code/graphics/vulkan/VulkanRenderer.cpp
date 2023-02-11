@@ -144,7 +144,8 @@ uint32_t deviceTypeScore(vk::PhysicalDeviceType type)
 		return 2;
 	case vk::PhysicalDeviceType::eVirtualGpu:
 		return 0;
-	default:
+	case vk::PhysicalDeviceType::eCpu:
+	case vk::PhysicalDeviceType::eOther:
 		return -1;
 	}
 }
@@ -289,23 +290,19 @@ bool VulkanRenderer::initialize()
 	imgui_vulkan_info.CheckVkResultFn = nullptr;
 	imgui_vulkan_info.Device = m_device.get();
 	imgui_vulkan_info.ImageCount = 2;
-	
-
-	ImGui_ImplSDL2_InitForVulkan(os::getSDLMainWindow());
-	ImGui_ImplVulkan_Init(&imgui_vulkan_info, m_renderPass.get());
 
 	return true;
 }
 
-bool VulkanRenderer::initDisplayDevice()
+bool VulkanRenderer::initDisplayDevice() const
 {
 	os::ViewPortProperties attrs;
 	attrs.enable_opengl = false;
 	attrs.enable_vulkan = true;
 
 	attrs.display = os_config_read_uint("Video", "Display", 0);
-	attrs.width = (uint32_t)gr_screen.max_w;
-	attrs.height = (uint32_t)gr_screen.max_h;
+	attrs.width = static_cast<uint32_t>(gr_screen.max_w);
+	attrs.height = static_cast<uint32_t>(gr_screen.max_h);
 
 	attrs.title = Osreg_title;
 	if (!Window_title.empty()) {
@@ -337,7 +334,7 @@ bool VulkanRenderer::initDisplayDevice()
 		return false;
 	}
 
-	auto port = os::addViewport(std::move(viewPort));
+	const auto port = os::addViewport(std::move(viewPort));
 	os::setMainViewPort(port);
 
 	return true;
@@ -465,7 +462,7 @@ bool VulkanRenderer::initializeSurface()
 		return false;
 	}
 
-	vk::ObjectDestroy<vk::Instance, VULKAN_HPP_DEFAULT_DISPATCHER_TYPE> deleter(*m_vkInstance,
+	const vk::ObjectDestroy<vk::Instance, VULKAN_HPP_DEFAULT_DISPATCHER_TYPE> deleter(*m_vkInstance,
 		nullptr,
 		VULKAN_HPP_DEFAULT_DISPATCHER);
 	m_vkSurface = vk::UniqueSurfaceKHR(vk::SurfaceKHR(surface), deleter);
@@ -519,14 +516,14 @@ bool VulkanRenderer::pickPhysicalDevice(PhysicalDeviceValues& deviceValues)
 	return true;
 }
 
-bool VulkanRenderer::createLogicalDevice(PhysicalDeviceValues& deviceValues)
+bool VulkanRenderer::createLogicalDevice(const PhysicalDeviceValues& deviceValues)
 {
 	float queuePriority = 1.0f;
 
 	std::vector<vk::DeviceQueueCreateInfo> queueInfos;
-	std::set<uint32_t> familyIndices{deviceValues.graphicsQueueIndex.index,
-		deviceValues.transferQueueIndex.index,
-		deviceValues.presentQueueIndex.index};
+	const std::set<uint32_t> familyIndices{deviceValues.graphicsQueueIndex.index,
+	                                       deviceValues.transferQueueIndex.index,
+	                                       deviceValues.presentQueueIndex.index};
 
 	queueInfos.reserve(familyIndices.size());
 	for (auto index : familyIndices) {
@@ -550,7 +547,7 @@ bool VulkanRenderer::createLogicalDevice(PhysicalDeviceValues& deviceValues)
 
 	return true;
 }
-bool VulkanRenderer::createSwapChain(PhysicalDeviceValues& deviceValues)
+bool VulkanRenderer::createSwapChain(const PhysicalDeviceValues& deviceValues)
 {
 	// Choose one more than the minimum to avoid driver synchronization if it is not done with a thread yet
 	uint32_t imageCount = deviceValues.surfaceCapabilities.minImageCount + 1;
@@ -570,7 +567,7 @@ bool VulkanRenderer::createSwapChain(PhysicalDeviceValues& deviceValues)
 	createInfo.imageArrayLayers = 1;
 	createInfo.imageUsage = vk::ImageUsageFlagBits::eColorAttachment;
 
-	uint32_t queueFamilyIndices[] = {deviceValues.graphicsQueueIndex.index, deviceValues.presentQueueIndex.index};
+	const uint32_t queueFamilyIndices[] = {deviceValues.graphicsQueueIndex.index, deviceValues.presentQueueIndex.index};
 	if (deviceValues.graphicsQueueIndex.index != deviceValues.presentQueueIndex.index) {
 		createInfo.imageSharingMode = vk::SharingMode::eConcurrent;
 		createInfo.queueFamilyIndexCount = 2;
@@ -618,11 +615,11 @@ bool VulkanRenderer::createSwapChain(PhysicalDeviceValues& deviceValues)
 }
 vk::UniqueShaderModule VulkanRenderer::loadShader(const SCP_string& name)
 {
-	auto def_file = defaults_get_file(name.c_str());
+	const auto def_file = defaults_get_file(name.c_str());
 
 	vk::ShaderModuleCreateInfo createInfo;
 	createInfo.codeSize = def_file.size;
-	createInfo.pCode = reinterpret_cast<const uint32_t*>(def_file.data);
+	createInfo.pCode = static_cast<const uint32_t*>(def_file.data);
 
 	return m_device->createShaderModuleUnique(createInfo);
 }
@@ -630,7 +627,7 @@ void VulkanRenderer::createFrameBuffers()
 {
 	m_swapChainFramebuffers.reserve(m_swapChainImageViews.size());
 	for (const auto& imageView : m_swapChainImageViews) {
-		vk::ImageView attachments[] = {
+		const vk::ImageView attachments[] = {
 			imageView.get(),
 		};
 

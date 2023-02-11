@@ -3,6 +3,8 @@
 
 #include "SDLGraphicsOperations.h"
 
+#include "cmdline/cmdline.h"
+
 #if SDL_VERSION_ATLEAST(2, 0, 6)
 #include <SDL_vulkan.h>
 #include "backends/imgui_impl_sdl.h"
@@ -153,8 +155,10 @@ SDLGraphicsOperations::SDLGraphicsOperations() {
 }
 SDLGraphicsOperations::~SDLGraphicsOperations() {
 	SDL_QuitSubSystem(SDL_INIT_VIDEO);
-	ImGui_ImplSDL2_Shutdown();
-	ImGui_ImplOpenGL3_Shutdown();
+	if (!Cmdline_vulkan) {
+		ImGui_ImplSDL2_Shutdown();
+		ImGui_ImplOpenGL3_Shutdown();
+	}
 }
 std::unique_ptr<os::Viewport> SDLGraphicsOperations::createViewport(const os::ViewPortProperties& props)
 {
