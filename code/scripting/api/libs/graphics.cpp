@@ -2170,7 +2170,7 @@ ADE_FUNC(screenToBlob, l_Graphics, nullptr, "Captures the current render target 
 }
 
 ADE_FUNC(freeAllModels, l_Graphics, nullptr, "Releases all loaded models and frees the memory. Intended for use in UI situations "
-	"and not within missions. Use at your own risk!", nullptr, nullptr)
+	"and not within missions. Do not use after mission parse. Use at your own risk!", nullptr, nullptr)
 {
 	SCP_UNUSED(L);
 	
