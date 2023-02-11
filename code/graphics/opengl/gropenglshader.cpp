@@ -210,8 +210,6 @@ static opengl_shader_variant_t GL_shader_variants[] = {
 	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_AMBIENT_MAP, "FLAG_AMBIENT_MAP",
 		{  }, "Ambient Occlusion Map"},
 
-	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_NORMAL_ALPHA, "FLAG_NORMAL_ALPHA", {}, "Normal Alpha"},
-
 	{SDR_TYPE_MODEL, true, SDR_FLAG_MODEL_THICK_OUTLINES, "FLAG_THICK_OUTLINE", {}, "Thick outlines"},
 
 	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_ALPHA_MULT, "FLAG_ALPHA_MULT", {}, "Alpha multiplier"},

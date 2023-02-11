@@ -12,7 +12,6 @@
 #include "anim/animplay.h"
 #include "anim/packunpack.h"
 #include "cfile/cfile.h"
-#include "cmdline/cmdline.h"
 #include "gamehelp/contexthelp.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
@@ -30,6 +29,7 @@
 #include "missionui/missionshipchoice.h"
 #include "missionui/missionweaponchoice.h"
 #include "model/model.h"
+#include "mod_table/mod_table.h"
 #include "network/multi.h"
 #include "network/multi_pmsg.h"
 #include "network/multimsgs.h"
@@ -737,7 +737,8 @@ void draw_3d_overhead_view(int model_num,
 	int bank7_y,
 	int bank_prim_offset,
 	int bank_sec_offset,
-	int bank_y_offset)
+	int bank_y_offset,
+	overhead_style style)
 {
 	ship_info* sip = &Ship_info[ship_class];
 
@@ -749,12 +750,12 @@ void draw_3d_overhead_view(int model_num,
 		float zoom;
 		zoom = sip->closeup_zoom * 1.3f;
 
-		if (!Cmdline_ship_choice_3d) {
+		if (style == OH_TOP_VIEW) {
 			rot_angles.p = -(PI_2);
 			rot_angles.b = 0.0f;
 			rot_angles.h = 0.0f;
 			vm_angles_2_matrix(&object_orient, &rot_angles);
-		} else {
+		} else if (style == OH_ROTATING) {
 			float rev_rate;
 			rev_rate = REVOLUTION_RATE;
 			if (sip->is_big_ship()) {
@@ -778,6 +779,8 @@ void draw_3d_overhead_view(int model_num,
 			rot_angles.b = 0.0f;
 			rot_angles.h = *rotation_buffer;
 			vm_rotate_matrix_by_angles(&object_orient, &rot_angles);
+		} else {
+			Error(LOCATION, "Got call to draw overhead ship with invalid style!");
 		}
 		model_render_params render_info;
 
@@ -1041,7 +1044,7 @@ void wl_render_overhead_view(float frametime)
 	{
 		display_type = -1;
 
-		if(Cmdline_ship_choice_3d || !strlen(sip->overhead_filename))
+		if (Use_3d_overhead_ship || !strlen(sip->overhead_filename))
 		{
 			if (wl_ship->model_num < 0)
 			{
@@ -1051,7 +1054,7 @@ void wl_render_overhead_view(float frametime)
 
 			if(wl_ship->model_num > -1)
 			{
-				if(Cmdline_ship_choice_3d)
+				if (Use_3d_overhead_ship)
 				{
 					display_type = 2;
 				}
@@ -1329,7 +1332,7 @@ void wl_load_icons(int weapon_class)
 
 	icon = &Wl_icons[weapon_class];
 
-	if(!Cmdline_weapon_choice_3d || (wip->render_type == WRT_LASER && !strlen(wip->tech_model)))
+	if (!Use_3d_weapon_icons || (wip->render_type == WRT_LASER && !strlen(wip->tech_model)))
 	{
 		first_frame = bm_load_animation(Weapon_info[weapon_class].icon_filename, &num_frames, nullptr, nullptr, nullptr, false, CF_TYPE_INTERFACE);
 
@@ -1988,7 +1991,7 @@ void weapon_select_close_team()
  * This init is called even before the weapons loadout screen is entered.  It is called when the
  * briefing state is entered.
  */
-void weapon_select_common_init()
+void weapon_select_common_init(bool API_Access)
 {
 	int idx;
 
@@ -2005,9 +2008,11 @@ void weapon_select_common_init()
 		weapon_select_init_team(Common_team);
 	}
 
-	wl_reset_selected_slot();
-	wl_reset_carried_icon();
-	wl_maybe_reset_selected_weapon_class();
+	if (!API_Access) {
+		wl_reset_selected_slot();
+		wl_reset_carried_icon();
+		wl_maybe_reset_selected_weapon_class();
+	}
 }
 
 /**
@@ -2731,13 +2736,22 @@ void weapon_select_do(float frametime)
 		weapon_ani_coords = Wl_weapon_ani_coords[gr_screen.res];
 	}
 
-	if(Selected_wl_class != -1 && Wl_icons[Selected_wl_class].model_index != -1) {
+	if (Selected_wl_class != -1 && Use_3d_weapon_select) {
 		static float WeapSelectScreenWeapRot = 0.0f;
-		wl_icon_info *sel_icon	= &Wl_icons[Selected_wl_class];
+		int modelIdx = -1;
 		weapon_info *wip = &Weapon_info[Selected_wl_class];
+
+		//Get the model
+		if (strlen(wip->tech_model)) {
+			modelIdx = model_load(wip->tech_model, 0, NULL, 0);
+		}
+		if (wip->render_type != WRT_LASER && modelIdx == -1) {
+			modelIdx = model_load(wip->pofbitmap_name, 0, NULL);
+		}
+
 		model_render_params render_info;
 		draw_model_rotating(&render_info, 
-			sel_icon->model_index,
+			modelIdx,
 			weapon_ani_coords[0],
 			weapon_ani_coords[1],
 			gr_screen.res == 0 ? 202 : 332,

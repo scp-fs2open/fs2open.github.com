@@ -1032,7 +1032,7 @@ int event_music_primary_goals_met()
 
 		// If the mission goals aren't met (or there are no goals), or if victory 2 music has already played, then go
 		// to the next default track
-		if ( !mission_goals_met() || Victory2_music_played || (Num_goals == 0)) {
+		if ( !mission_goals_met() || Victory2_music_played || Mission_goals.empty()) {
 			Patterns[next_pattern].next_pattern = Patterns[next_pattern].default_next_pattern;
 		} else {
 			Victory2_music_played = true;
@@ -1540,6 +1540,8 @@ int hostile_ships_present()
 
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) )
 	{
+		if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
 		shipp = &Ships[Objects[so->objnum].instance];
 
 		// skip ourselves

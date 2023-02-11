@@ -14,7 +14,6 @@
 #include <type_traits>
 
 #include "anim/animplay.h"
-#include "cmdline/cmdline.h"
 #include "cutscene/cutscenes.h"
 #include "cutscene/movie.h"
 #include "gamehelp/contexthelp.h"
@@ -47,6 +46,7 @@
 #include "popup/popup.h"
 #include "render/3d.h"
 #include "render/batching.h"
+#include "scripting/global_hooks.h"
 #include "scripting/scripting.h"
 #include "ship/ship.h"
 #include "ui/uidefs.h"
@@ -522,7 +522,7 @@ void common_reset_team_pointers()
 // is called.  This prevents multiple loadings of animations/bitmaps.
 //
 // This function also sets the palette based on the file palette01.pcx
-void common_select_init()
+void common_select_init(bool API_Access)
 {
 	if ( Common_select_inited ) {
 		nprintf(("Alan","common_select_init() returning without doing anything\n"));
@@ -560,9 +560,11 @@ void common_select_init()
 
 	common_set_team_pointers(Common_team);
 
-	ship_select_common_init();	
-	weapon_select_common_init();
-	common_flash_button_init();
+	ship_select_common_init(API_Access);	
+	weapon_select_common_init(API_Access);
+	if (!API_Access) {
+		common_flash_button_init();
+	}
 
 	if ( Game_mode & GM_MULTIPLAYER ) {
 		multi_ts_common_init();
@@ -577,19 +579,21 @@ void common_select_init()
 		}
 	}
 	
-	ss_reset_selected_ship();
+	if (!API_Access) {
+		ss_reset_selected_ship();
 
-	Drop_icon_mflag = 0;
-	Drop_on_wing_mflag = 0;
+		Drop_icon_mflag = 0;
+		Drop_on_wing_mflag = 0;
+	}
 
-	//init colors
+	// init colors
 	gr_init_alphacolor(&Icon_colors[ICON_FRAME_NORMAL], 32, 128, 128, 255);
 	gr_init_alphacolor(&Icon_colors[ICON_FRAME_HOT], 48, 160, 160, 255);
 	gr_init_alphacolor(&Icon_colors[ICON_FRAME_SELECTED], 64, 192, 192, 255);
 	gr_init_alphacolor(&Icon_colors[ICON_FRAME_PLAYER], 192, 128, 64, 255);
 	gr_init_alphacolor(&Icon_colors[ICON_FRAME_DISABLED], 175, 175, 175, 255);
 	gr_init_alphacolor(&Icon_colors[ICON_FRAME_DISABLED_HIGH], 100, 100, 100, 255);
-	//init shaders
+	// init shaders
 	gr_create_shader(&Icon_shaders[ICON_FRAME_NORMAL], 32, 128, 128, 255);
 	gr_create_shader(&Icon_shaders[ICON_FRAME_HOT], 48, 160, 160, 255);
 	gr_create_shader(&Icon_shaders[ICON_FRAME_SELECTED], 64, 192, 192, 255);
@@ -1065,15 +1069,15 @@ int common_scroll_down_pressed(int *start, int size, int max_show)
 
 void common_fire_stage_script_hook(int old_stage, int new_stage)
 {
-	if (!Script_system.IsActiveAction(CHA_ONBRIEFSTAGE)) {
-		return;
+	if (scripting::hooks::OnBriefStage->isActive()) {
+		// call a scripting hook for switching stages
+		// note that we add 1 because Lua arrays are 1-based
+		scripting::hooks::OnBriefStage->run(
+			scripting::hook_param_list(
+				scripting::hook_param("OldStage", 'i', old_stage + 1),
+				scripting::hook_param("NewStage", 'i', new_stage + 1)
+			));
 	}
-	// call a scripting hook for switching stages
-	// note that we add 1 because Lua arrays are 1-based
-	Script_system.SetHookVar("OldStage", 'i', old_stage + 1);
-	Script_system.SetHookVar("NewStage", 'i', new_stage + 1);
-	Script_system.RunCondition(CHA_ONBRIEFSTAGE);
-	Script_system.RemHookVars({"OldStage", "NewStage"});
 }
 
 // NEWSTUFF BEGIN

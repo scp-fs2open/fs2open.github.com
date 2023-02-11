@@ -269,7 +269,7 @@ void sim_room_load_mission_icons();
 void sim_room_unload_mission_icons();
 void sim_room_blit_icons(int line_index, int y_start, fs_builtin_mission *fb = NULL, int is_md = 0);
 
-const std::shared_ptr<scripting::Hook> OnCampaignBeginHook = scripting::Hook::Factory(
+const std::shared_ptr<scripting::Hook<>> OnCampaignBeginHook = scripting::Hook<>::Factory(
 	"On Campaign Begin", "Called when a campaign is started from the beginning or is reset",
 	{
 		{ "Campaign", "string", "The campaign filename (without the extension)" },
@@ -1660,7 +1660,7 @@ void campaign_reset(const SCP_string& campaign_file)
 
 	mission_campaign_savefile_delete(filename.c_str());
 
-	const int load_status = mission_campaign_load(filename.c_str(), nullptr, 1 , false);	// retail doesn't reset stats when resetting the campaign
+	const int load_status = mission_campaign_load(filename.c_str(), nullptr, nullptr, 1 , false);	// retail doesn't reset stats when resetting the campaign
 
 	// see if we successfully loaded this campaign
 	if (load_status == 0) {

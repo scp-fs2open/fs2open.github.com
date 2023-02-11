@@ -194,7 +194,7 @@ class sexp_tree: public QTreeWidget {
 	int get_default_value(sexp_list_item* item, char* text_buf, int op, int i);
 	int query_default_argument_available(int op);
 	int query_default_argument_available(int op, int i);
-	void swap_roots(QTreeWidgetItem* one, QTreeWidgetItem* two);
+	void move_root(QTreeWidgetItem* source, QTreeWidgetItem* dest, bool insert_before);
 	void move_branch(int source, int parent = -1);
 	QTreeWidgetItem*
 	move_branch(QTreeWidgetItem* source, QTreeWidgetItem* parent = nullptr, QTreeWidgetItem* after = nullptr);
@@ -342,6 +342,7 @@ class sexp_tree: public QTreeWidget {
 	sexp_list_item* get_listing_opf_wing_flags();
 	sexp_list_item* get_listing_opf_team_colors();
 	sexp_list_item* get_listing_opf_nebula_patterns();
+	sexp_list_item* get_listing_opf_asteroid_debris();
 	sexp_list_item* get_listing_opf_game_snds();
 	sexp_list_item* get_listing_opf_fireball();
 	sexp_list_item *get_listing_opf_species();
@@ -349,6 +350,8 @@ class sexp_tree: public QTreeWidget {
 	sexp_list_item *get_listing_opf_functional_when_eval_type();
 	sexp_list_item *get_listing_opf_animation_name(int parent_node);
 	static sexp_list_item *get_listing_opf_sexp_containers(ContainerType con_type);
+	sexp_list_item *get_listing_opf_wing_formation();
+	sexp_list_item* check_for_dynamic_sexp_enum(int opf);
 
 	// container modifier options for container data nodes
 	sexp_list_item *get_container_modifiers(int con_data_node) const;

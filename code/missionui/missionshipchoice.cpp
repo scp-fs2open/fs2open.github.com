@@ -14,7 +14,6 @@
 #include "anim/animplay.h"
 #include "anim/packunpack.h"
 #include "cfile/cfile.h"
-#include "cmdline/cmdline.h"
 #include "freespace.h"
 #include "gamehelp/contexthelp.h"
 #include "gamesequence/gamesequence.h"
@@ -36,6 +35,7 @@
 #include "missionui/missionscreencommon.h"
 #include "missionui/missionshipchoice.h"
 #include "missionui/missionweaponchoice.h"
+#include "mod_table/mod_table.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
 #include "network/multiteamselect.h"
@@ -311,7 +311,7 @@ void pick_from_wing(int wb_num, int ws_num);
 
 // ui related
 void ship_select_button_do(int i);
-void ship_select_common_init();
+void ship_select_common_init(bool API_Access);
 void ss_reset_selected_ship();
 void ss_restore_loadout();
 void maybe_change_selected_wing_ship(int wb_num, int ws_num);
@@ -1422,7 +1422,7 @@ void ship_select_do(float frametime)
 		ship_select_redraw_pressed_buttons();
 		common_render_selected_screen_button();
 	}
-	if(!Cmdline_ship_choice_3d && ((Selected_ss_class >= 0) && (Ss_icons[Selected_ss_class].ss_anim.num_frames > 0)))
+	if (!Use_3d_ship_select && ((Selected_ss_class >= 0) && (Ss_icons[Selected_ss_class].ss_anim.num_frames > 0)))
 	{
 		GR_DEBUG_SCOPE("Render ship animation");
 
@@ -1735,7 +1735,7 @@ void start_ship_animation(int ship_class, int  /*play_sound*/)
     
 	anim_timer_start = timer_get_milliseconds();
 
-	if ( Cmdline_ship_choice_3d || !strlen(sip->anim_filename) ) {
+	if ( Use_3d_ship_select || !strlen(sip->anim_filename) ) {
 
 		//Unload Anim if one was playing
 		if(Ship_anim_class > 0 && Ss_icons[Ship_anim_class].ss_anim.num_frames > 0) {
@@ -2776,23 +2776,24 @@ void ss_reset_selected_ship()
 	for ( i = 0; i < MAX_WSS_SLOTS; i++ ) {
 		if ( Wss_slots[i].ship_class >= 0 ) {
 			Selected_ss_class = Wss_slots[i].ship_class;
-			break;
+			return;
 		}
 	}
 
-	if ( Selected_ss_class == -1 ) {
-		Int3();
-		for ( i = 0; i < ship_info_size(); i++ ) {
-			if ( Ss_pool[i] > 0 ) {
-				Selected_ss_class = i;
-			}
+	// get the first ship class found in the pool
+	for ( i = 0; i < ship_info_size(); i++ ) {
+		if ( Ss_pool[i] > 0 ) {
+			Selected_ss_class = i;
+			return;
 		}
 	}
 
-	if ( Selected_ss_class == -1 ) {
+	// If we still haven't found a ship to display, then leave it as -1. This results in no ship info
+	// being displayed in the UI, but is not a game breaking issue. -Mjn
+	/*if ( Selected_ss_class == -1 ) {
 		Int3();
 		return;
-	}
+	}*/
 }
 
 // There may be ships that are in wings but not in Team_data[0].  Since we still want to show those
@@ -2911,7 +2912,7 @@ void ss_load_icons(int ship_class)
 	icon = &Ss_icons[ship_class];
 	ship_info *sip = &Ship_info[ship_class];
 
-	if(!Cmdline_ship_choice_3d && strlen(sip->icon_filename))
+	if (!Use_3d_ship_icons && strlen(sip->icon_filename))
 	{
 		int				first_frame, num_frames, i;
 		first_frame = bm_load_animation(sip->icon_filename, &num_frames);
@@ -3268,7 +3269,7 @@ void ship_select_init_team_data(int team_num)
 }
 
 // called when the briefing is entered
-void ship_select_common_init()
+void ship_select_common_init(bool API_Access)
 {		
 	// initialize team critical data for all teams
 	int idx;
@@ -3285,13 +3286,15 @@ void ship_select_common_init()
 		ship_select_init_team_data(Common_team);
 	}
 	
-	init_active_list();
+	if (!API_Access) {
+		init_active_list();
 
-	// load the necessary icons/animations
-	ss_load_all_icons();
+		// load the necessary icons/animations
+		ss_load_all_icons();
 
-	ss_reset_selected_ship();
-	ss_reset_carried_icon();
+		ss_reset_selected_ship();
+		ss_reset_carried_icon();
+	}
 }
 
 void ship_select_common_close()

@@ -18,6 +18,8 @@ private:
 	
 	int _proposed_skip_time; // until skip time is finalized, we need to 
 
+	bool _in_game_time_set;
+
 	std::array<int, 12> _most_recent_frame;
 
 	// for in-game joiners, adjust local timing and then reset proposed time.
@@ -44,6 +46,8 @@ public:
 	//void set_proposed_skip_time(int candidate) { _proposed_skip_time = candidate; }
 
 	bool is_most_recent_frame(int player_index, int frame);
+
+	void in_game_set_skip_time(float mission_time);
 };
 
 extern multiplayer_timing_info Multi_Timing_Info;

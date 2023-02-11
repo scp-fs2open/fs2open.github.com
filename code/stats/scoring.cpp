@@ -141,14 +141,15 @@ void parse_traitor_tbl()
 		auto debrief = &Traitor_debriefing;
 		required_string("#Debriefing_info");
 
-		required_string("$Num stages:");
-		stuff_int(&debrief->num_stages);
-		Assert(debrief->num_stages == 1);
+		//required_string("$Num stages:");			// would assert if non 1 value was parsed so let's just skip it -Mjn
+		//stuff_int(&debrief->num_stages);
+		//Assert(debrief->num_stages == 1);
+		debrief->num_stages = 1; // must always be 1
 
 		int stage_num = 0;
 		auto stagep = &debrief->stages[stage_num++];
 
-		required_string("$Formula:");
+		//required_string("$Formula:");				// the table value was just ignored so let's skip it -Mjn
 		stagep->formula = 1;						// sexp nodes aren't initialized yet, but node 1 will be Locked_sexp_true
 		skip_to_start_of_string("$multi text");		// just skip over the sexp, since it must always be locked-true anyway
 
@@ -198,7 +199,7 @@ void scoring_struct::init()
 	score = 0;
 	rank = RANK_ENSIGN;
 
-	medal_counts.assign(Num_medals, 0);
+	medal_counts.assign((int)Medals.size(), 0);
 
 	memset(kills, 0, sizeof(kills));
 	assists = 0;
@@ -419,16 +420,19 @@ void scoring_eval_badges(scoring_struct *sc)
 
 	// total_kills should now reflect the number of kills on hostile fighters/bombers.  Check this number
 	// against badge kill numbers, and award the appropriate badges as neccessary.
+	// Now properly awards all appropriate badges regardless of their position in the medals vector,
+	// but keeps the highest award to show to the player - Mjn
 	int last_badge_kills = 0;
-	for (auto i = 0; i < Num_medals; i++ ) {
+	for (auto i = 0; i < (int)Medals.size(); i++) {
 		if ( total_kills >= Medals[i].kills_needed
-			&& Medals[i].kills_needed > last_badge_kills
 			&& Medals[i].kills_needed > 0 )
 		{
-			last_badge_kills = Medals[i].kills_needed;
 			if (sc->medal_counts[i] < 1) {
 				sc->medal_counts[i] = 1;
-				sc->m_badge_earned.push_back(i);
+				if (Medals[i].kills_needed > last_badge_kills) {
+					last_badge_kills = Medals[i].kills_needed;
+					sc->m_badge_earned.push_back(i);
+				}
 			}
 		}
 	}

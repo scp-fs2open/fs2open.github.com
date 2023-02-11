@@ -19,9 +19,9 @@ class EngineSEXPFactory {
 
 	SCP_string _helpText;
 
-	int _category = -1;
+	int _category = OP_CATEGORY_NONE;
 
-	int _subcategory = -1;
+	int _subcategory = OP_SUBCATEGORY_NONE;
 	SCP_string _subcategoryName;
 
 	int _returnType = -1;
@@ -178,9 +178,9 @@ class EngineSEXP : public DynamicSEXP {
 	void initArguments(int minArgs, int maxArgs, SCP_vector<int> argTypes, SCP_vector<int> varargsTypes);
 	void setAction(EngineSexpAction action);
 
-	int _category = -1;
+	int _category = OP_CATEGORY_NONE;
 
-	int _subcategory = -1;
+	int _subcategory = OP_SUBCATEGORY_NONE;
 	SCP_string _subcategoryName;
 
 	int _returnType = -1;

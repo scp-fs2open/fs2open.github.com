@@ -151,6 +151,10 @@ int hud_shield_maybe_flash(int gauge, int target_index, int shield_offset)
 
 	shi = &Shield_hit_data[target_index];
 
+	if ( shi->shield_hit_timers.empty() ) {
+		return 0;
+	}
+
 	if ( !timestamp_elapsed(shi->shield_hit_timers[shield_offset]) ) {
 		if ( timestamp_elapsed(shi->shield_hit_next_flash[shield_offset]) ) {
 			shi->shield_hit_next_flash[shield_offset] = timestamp(SHIELD_FLASH_INTERVAL_FAST);

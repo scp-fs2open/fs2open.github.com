@@ -1,6 +1,5 @@
 #include "lab/renderer/lab_renderer.h"
 #include "lab/labv2_internal.h"
-#include "lab/wmcgui.h"
 #include "graphics/2d.h"
 #include "graphics/light.h"
 #include "lighting/lighting_profiles.h"
@@ -8,6 +7,8 @@
 #include "starfield/nebula.h"
 #include "nebula/neb.h"
 #include "freespace.h"
+
+#include "missionui/missionscreencommon.h"
 #include "tracing/tracing.h"
 
 void LabRenderer::onFrame(float frametime) {
@@ -39,6 +40,17 @@ void LabRenderer::onFrame(float frametime) {
 	// the LabManager::onFrame method
 }
 
+void LabRenderer::resetGraphicsSettings(gfx_options settings) {
+	lighting_profile::lab_set_ambient(settings.ambient_factor);
+	lighting_profile::lab_set_emissive(settings.emissive_factor);
+	lighting_profile::lab_set_exposure(settings.exposure_level);
+	lighting_profile::lab_set_light(settings.light_factor);
+	lighting_profile::lab_set_ppc(settings.ppcv);
+	lighting_profile::lab_set_tonemapper(settings.tonemapper);
+	gr_set_bloom_intensity(settings.bloom_level);
+	Gr_aa_mode = settings.aa_mode;
+}
+
 void LabRenderer::renderModel(float frametime) {
 	GR_DEBUG_SCOPE("Lab Render Model");
 
@@ -47,6 +59,10 @@ void LabRenderer::renderModel(float frametime) {
 	auto lab_emissive_light_save = Cmdline_emissive;
 
 	light_reset();
+
+	if (currentMissionBackground == LAB_MISSION_NONE_STRING) {
+		common_setup_room_lights();
+	}
 
 	Cmdline_emissive = renderFlags[LabRenderFlag::ShowEmissiveLighting];
 
@@ -310,7 +326,7 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 				(ambient_light_level >> 16) & 0xff);
 
 			strcpy_s(Neb2_texture_name, "");
-			Neb2_poof_flags = ((1 << 0) | (1 << 1) | (1 << 2) | (1 << 3) | (1 << 4) | (1 << 5));
+			Neb2_poof_flags = 0;
 			bool nebula = false;
 			if (optional_string("+Neb2:")) {
 				nebula = true;
@@ -327,8 +343,15 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 			}
 
 			if (nebula){
-				required_string("+Neb2Flags:");
-				stuff_int(&Neb2_poof_flags);
+				if (optional_string("+Neb2Flags:")) {
+					stuff_int(&Neb2_poof_flags);
+				}
+				// Get poofs by name
+				if (optional_string("+Neb2 Poofs List:")) {
+					SCP_vector<SCP_string> poofs_list;
+					stuff_string_list(poofs_list);
+					neb2_set_poof_bits(poofs_list);
+				}
 
 				if (flags[Mission::Mission_Flags::Fullneb]) {
 					neb2_post_level_init(flags[Mission::Mission_Flags::Neb2_fog_color_override]);
@@ -400,12 +423,7 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 					}
 				}
 
-				if (Nebula_index >= 0) {
-					nebula_init(Nebula_filenames[Nebula_index], Nebula_pitch, Nebula_bank, Nebula_heading);
-				}
-				else {
-					nebula_close();
-				}
+				nebula_init(Nebula_index, Nebula_pitch, Nebula_bank, Nebula_heading);
 			}
 
 			stars_load_debris(flags[Mission::Mission_Flags::Fullneb]);

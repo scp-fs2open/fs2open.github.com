@@ -45,7 +45,8 @@ static SCP_unordered_map<SCP_string, int> parameter_type_mapping{{ "boolean",   
 														  { "ship+wing+team",   OPF_SHIP_WING_WHOLETEAM },
 														  { "ship+wing+ship_on_team+waypoint",   OPF_SHIP_WING_SHIPONTEAM_POINT },
 														  { "ship+wing+waypoint",   OPF_SHIP_WING_POINT },
-														  { "ship+wing+waypoint+none",   OPF_SHIP_WING_POINT_OR_NONE }, };
+														  { "ship+wing+waypoint+none",   OPF_SHIP_WING_POINT_OR_NONE },
+														  { "enum",   First_available_opf_id } };
 
 std::pair<SCP_string, int> LuaSEXP::get_parameter_type(const SCP_string& name)
 {
@@ -83,17 +84,17 @@ int LuaSEXP::get_category(const SCP_string& name) {
 		}
 	}
 
-	return -1;
+	return OP_CATEGORY_NONE;
 }
 
 int LuaSEXP::get_subcategory(const SCP_string& name, int category) {
 	for (auto& subcat : op_submenu) {
-		if (subcat.name == name && (subcat.id & OP_CATEGORY_MASK) == category) {
+		if (subcat.name == name && category_of_subcategory(subcat.id) == category) {
 			return subcat.id;
 		}
 	}
 
-	return -1;
+	return OP_SUBCATEGORY_NONE;
 }
 
 LuaSEXP::LuaSEXP(const SCP_string& name) : DynamicSEXP(name) {
@@ -245,8 +246,14 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum) const {
 		return LuaValue::createValue(_action.getLuaState(), l_OSWPT.Set(oswpt));
 	}
 	default:
-		UNREACHABLE("Unhandled argument type! Someone added an argument type but didn't add handling code to execute().");
-		return LuaValue::createNil(_action.getLuaState());
+		if ((strcmp(argtype.first.c_str(), "enum")) == 0) {
+			auto text = CTEXT(node);
+			return LuaValue::createValue(_action.getLuaState(), text);
+		} else {
+			UNREACHABLE(
+				"Unhandled argument type! Someone added an argument type but didn't add handling code to execute().");
+			return LuaValue::createNil(_action.getLuaState());
+		}
 	}
 }
 int LuaSEXP::getSexpReturnValue(const LuaValueList& retVals) const {
@@ -328,8 +335,9 @@ luacpp::LuaValueList LuaSEXP::getSEXPArgumentList(int node) const {
 
 int LuaSEXP::execute(int node) {
 	if (!_action.isValid()) {
+		
 		Error(LOCATION,
-			  "Lua SEXP called without a valid action function! A script probably failed to set the action for some reason.");
+			  "Lua SEXP %s called without a valid action function! A script probably failed to set the action for some reason.", _name.c_str());
 		return SEXP_CANT_EVAL;
 	}
 
@@ -362,10 +370,6 @@ int LuaSEXP::getSubcategory() {
 	return _subcategory;
 }
 int LuaSEXP::getCategory() {
-	if (_category == OP_CATEGORY_CHANGE) {
-		// "Change" is a special case since we can't add new SEXPs to the primary category
-		return OP_CATEGORY_CHANGE2;
-	}
 	return _category;
 }
 bool LuaSEXP::parseCheckEndOfDescription() {
@@ -402,9 +406,9 @@ void LuaSEXP::parseTable() {
 	stuff_string(category, F_NAME);
 
 	_category = get_category(category);
-	if (_category < 0) {
-		error_display(0, "Invalid category '%s' found. New main categories can't be added!", category.c_str());
-		_category = OP_CATEGORY_CHANGE2; // Default to change2 so we have a valid value later on
+	if (_category == OP_CATEGORY_NONE) {
+		// Unknown category so we need to add this one
+		_category = sexp::add_category(category);
 	}
 
 	required_string("$Subcategory:");
@@ -412,19 +416,9 @@ void LuaSEXP::parseTable() {
 	stuff_string(subcategory, F_NAME);
 
 	_subcategory = get_subcategory(subcategory, _category);
-	if (_subcategory < 0) {
+	if (_subcategory == OP_SUBCATEGORY_NONE) {
 		// Unknown subcategory so we need to add this one
 		_subcategory = sexp::add_subcategory(_category, subcategory);
-		if (_subcategory < 0) {
-			// Couldn't add subcategory!
-			error_display(0,
-						  "No more space for subcategory '%s' free in category '%s'!",
-						  subcategory.c_str(),
-						  category.c_str());
-
-			// Default to the first subcategory in our category, hopefully it will exist...
-			_subcategory = 0x0000 | _category;
-		}
 	} 
 
 	required_string("$Minimum Arguments:");
@@ -529,6 +523,33 @@ void LuaSEXP::parseTable() {
 		if (type.second < 0) {
 			error_display(0, "Unknown parameter type '%s'!", type_str.c_str());
 			type = get_parameter_type("string");
+		}
+
+		if ((strcmp(type.first.c_str(), "enum")) == 0) {
+			type.second = increment_enum_list_id();
+			required_string("+Enum Name:");
+
+			SCP_string enum_name;
+			stuff_string(enum_name, F_NAME);
+
+			dynamic_sexp_enum_list thisList;
+			thisList.name = enum_name;
+
+			SCP_vector<SCP_string> list_items;
+			while (optional_string("+Enum:")) {
+				SCP_string item;
+				stuff_string(item, F_NAME);
+				list_items.push_back(item);
+			}
+
+			if ((int)list_items.size() > 0) {
+				thisList.list = std::move(list_items);
+			} else {
+				thisList.list.push_back("<none>");
+			}
+
+			Dynamic_enums.push_back(thisList);
+
 		}
 
 		if (variable_arg_part) {

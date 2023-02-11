@@ -11,6 +11,7 @@
 #include "hud/hudconfig.h"
 #include "hud/hudtargetbox.h"
 #include "hud/hudtarget.h"
+#include "playerman/player.h"
 #include "ship/ship.h"
 
 extern int Training_obj_num_display_lines;
@@ -265,6 +266,11 @@ ADE_FUNC(getTargetDistance, l_HUD, "object targetee, [vector targeter_position]"
 ADE_FUNC(getDirectiveLines, l_HUD, nullptr, "Returns the number of lines displayed by the currently active directives", "number", "The number of lines")
 {
 	return ade_set_args(L, "i", Training_obj_num_display_lines);
+}
+
+ADE_FUNC(isCommMenuOpen, l_HUD, nullptr, "Returns whether the HUD comm menu is currently being displayed", "boolean", "Whether the comm menu is open")
+{
+	return ade_set_args(L, "b", (Player->flags & PLAYER_FLAGS_MSG_MODE) != 0);
 }
 
 ADE_VIRTVAR(toggleCockpits, l_HUD, "boolean", "Gets or sets whether the the cockpit model will be rendered.", "boolean", "true if being rendered, false otherwise")

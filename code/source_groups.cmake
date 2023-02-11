@@ -117,6 +117,11 @@ add_file_folder("Camera"
 	camera/camera.h
 )
 
+add_file_folder("Cheats Table"
+	cheats_table/cheats_table.cpp
+	cheats_table/cheats_table.h
+)
+
 # CFile files
 add_file_folder("CFile"
 	cfile/cfile.cpp
@@ -289,6 +294,7 @@ add_file_folder("Default files\\\\data\\\\tables"
 	def_files/data/tables/objecttypes.tbl
 	def_files/data/tables/post_processing.tbl
 	def_files/data/tables/species_defs.tbl
+	def_files/data/tables/cheats.tbl
 )
 
 # These files will be included in the executable but not in CFile
@@ -666,31 +672,16 @@ add_file_folder("JumpNode"
 
 # Lab files
 add_file_folder("Lab"
-	lab/wmcgui.cpp
-	lab/wmcgui.h
 	lab/labv2.h
 	lab/labv2_internal.h
 	lab/labv2.cpp
 )
 
 add_file_folder("Lab\\\\Dialogs"
-	lab/dialogs/lab_dialog.h
-	lab/dialogs/ship_classes.h
-	lab/dialogs/ship_classes.cpp
-	lab/dialogs/weapon_classes.h
-	lab/dialogs/weapon_classes.cpp
-	lab/dialogs/class_descriptions.h
-	lab/dialogs/class_descriptions.cpp
-	lab/dialogs/class_options.h
-	lab/dialogs/class_options.cpp
-	lab/dialogs/class_variables.h
-	lab/dialogs/class_variables.cpp
-	lab/dialogs/render_options.h
-	lab/dialogs/render_options.cpp
-	lab/dialogs/backgrounds.h
-	lab/dialogs/backgrounds.cpp
-	lab/dialogs/actions.h
-	lab/dialogs/actions.cpp
+	lab/dialogs/lab_ui.h
+	lab/dialogs/lab_ui.cpp
+	lab/dialogs/lab_ui_helpers.h
+	lab/dialogs/lab_ui_helpers.cpp
 )
 
 add_file_folder("Lab\\\\Manager"
@@ -943,6 +934,8 @@ add_file_folder("Network"
 	network/multi_sw.h
 	network/multi_team.cpp
 	network/multi_team.h
+	network/multi_turret_manager.cpp
+	network/multi_turret_manager.h
 	network/multi_time_manager.cpp
 	network/multi_time_manager.h
 	network/multi_update.cpp
@@ -1223,6 +1216,8 @@ add_file_folder("Scripting"
 	scripting/global_hooks.h
 	scripting/hook_api.cpp
 	scripting/hook_api.h
+	scripting/hook_conditions.cpp
+	scripting/hook_conditions.h
 	scripting/lua.cpp
 	scripting/scripting.cpp
 	scripting/scripting.h
@@ -1291,6 +1286,8 @@ add_file_folder("Scripting\\\\Api\\\\Libs"
 add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/ai_helper.cpp
 	scripting/api/objs/ai_helper.h
+	scripting/api/objs/animation_handle.cpp
+	scripting/api/objs/animation_handle.h
 	scripting/api/objs/asteroid.cpp
 	scripting/api/objs/asteroid.h
 	scripting/api/objs/audio_stream.cpp
@@ -1395,14 +1392,14 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/shields.h
 	scripting/api/objs/ship_bank.cpp
 	scripting/api/objs/ship_bank.h
-	scripting/api/objs/ship_registry_entry.cpp
-	scripting/api/objs/ship_registry_entry.h
 	scripting/api/objs/shipclass.cpp
 	scripting/api/objs/shipclass.h
 	scripting/api/objs/ship.cpp
 	scripting/api/objs/ship.h
 	scripting/api/objs/shiptype.cpp
 	scripting/api/objs/shiptype.h
+	scripting/api/objs/ship_registry_entry.cpp
+	scripting/api/objs/ship_registry_entry.h
 	scripting/api/objs/shipwepselect.cpp
 	scripting/api/objs/shipwepselect.h
 	scripting/api/objs/sound.cpp
@@ -1435,6 +1432,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/weapon.h
 	scripting/api/objs/wing.cpp
 	scripting/api/objs/wing.h
+	scripting/api/objs/wingformation.cpp
+	scripting/api/objs/wingformation.h
 )
 
 add_file_folder("Scripting\\\\Lua"
@@ -1510,6 +1509,13 @@ add_file_folder("Sound"
 	sound/voicerec.cpp
 	sound/voicerec.h
 )
+
+if (APPLE)
+	add_file_folder("Sound"
+		${file_root_sound}
+		sound/speech.mm
+	)
+endif()
 
 if (FSO_BUILD_WITH_FFMPEG)
 	# Sound -> ffmpeg files

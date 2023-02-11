@@ -29,16 +29,17 @@
 class NavPoint 
 {
 public:
-	char m_NavName[32];
-	int flags;
-	ubyte normal_color[3];
-	ubyte visited_color[3];
+	char m_NavName[32] = { 0 };
+	int flags = 0;
+	ubyte normal_color[3] = { 0x80, 0x80, 0xFF };
+	ubyte visited_color[3] = { 0xFF, 0xFF, 0x00 };
 
-	const void *target_obj;
-	int waypoint_num; //only used when flags & NP_WAYPOINT
+	const void *target_obj = nullptr;
+	int waypoint_num = -1; //only used when flags & NP_WAYPOINT
 
 	const vec3d *GetPosition();
 
+	// these assignments should match the initialization
 	void clear()
 	{
 		m_NavName[0] = 0;

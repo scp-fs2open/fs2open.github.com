@@ -200,6 +200,8 @@ void parse_ssm(const char *filename)
 			if (optional_string("+Custom Message:")) {
 				stuff_string(s.message, F_NAME, NAME_LENGTH);
 				s.use_custom_message = true;
+			} else {
+				s.use_custom_message = false;
 			}
 
 			s.sound_index = gamesnd_id();

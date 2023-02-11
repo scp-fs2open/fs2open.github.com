@@ -56,7 +56,6 @@ extern SCP_list<waypoint_list> Waypoint_lists;
 extern const size_t INVALID_WAYPOINT_POSITION;
 
 //********************FUNCTIONS********************
-void waypoint_parse_init();
 void waypoint_level_close();
 
 // Translate between object instance and list information

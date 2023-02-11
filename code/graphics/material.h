@@ -196,10 +196,6 @@ class model_material : public material
 	bool Team_color_set = false;
 	team_color Tm_color;
 
-	bool Normal_alpha = false;
-	float Normal_alpha_min = 0.0f;
-	float Normal_alpha_max = 1.0f;
-
 	fog Fog_params;
 
 	float Outline_thickness = -1.0f;
@@ -242,12 +238,6 @@ public:
 	void set_animated_effect();
 	int get_animated_effect() const;
 	float get_animated_effect_time() const;
-
-	void set_normal_alpha(float min, float max);
-	void set_normal_alpha();
-	bool is_normal_alpha_active() const;
-	float get_normal_alpha_min() const;
-	float get_normal_alpha_max() const;
 
 	void set_outline_thickness(float thickness = -1.0f);
 	float get_outline_thickness() const;

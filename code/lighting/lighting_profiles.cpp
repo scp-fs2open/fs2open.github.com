@@ -256,14 +256,43 @@ TonemapperAlgorithm lighting_profile::name_to_tonemapper(SCP_string &name)
 	if(name == "reinhard extended"){
 		r = tnm_Reinhard_Extended;
 	}
-	if(name == "ppc"){
+	if (name == "ppc" || name == "piecewise power curve") {
 		r = tnm_PPC;
 	}
-	if(name == "ppc rgb"){
+	if (name == "ppc rgb" || name == "piecewise power curve (rgb)") {
 		r = tnm_PPC_RGB;
 	}
 	return r;
 }
+
+SCP_string lighting_profile::tonemapper_to_name(TonemapperAlgorithm tnm)
+{
+	switch (tnm) {
+	case TonemapperAlgorithm::tnm_Aces:
+		return "ACES";
+	case TonemapperAlgorithm::tnm_Aces_Approx:
+		return "ACES Approximate";
+	case TonemapperAlgorithm::tnm_Cineon:
+		return "Cineon";
+	case TonemapperAlgorithm::tnm_Invalid:
+		return "invalid";
+	case TonemapperAlgorithm::tnm_Linear:
+		return "Linear";
+	case TonemapperAlgorithm::tnm_PPC:
+		return "Piecewise Power Curve";
+	case TonemapperAlgorithm::tnm_PPC_RGB:
+		return "Piecewise Power Curve (RGB)";
+	case TonemapperAlgorithm::tnm_Reinhard_Extended:
+		return "Reinhard Extended";
+	case TonemapperAlgorithm::tnm_Reinhard_Jodie:
+		return "Reinhard Jodie";
+	case TonemapperAlgorithm::tnm_Uncharted:
+		return "Uncharted 2";
+	default:
+		return "wtf";
+	}
+}
+
 
 lighting_profile lighting_profile::default_profile;
 
@@ -339,6 +368,10 @@ void lighting_profile::parse_default_section(const char *filename)
 										&default_profile.point_light_radius);
 		parsed |= lighting_profile_value::parse(filename,"$Directional light brightness:",profile_name,
 										&default_profile.directional_light_brightness);
+		parsed |= lighting_profile_value::parse(filename,"$Cone light radius:",profile_name,
+										&default_profile.cone_light_radius);
+		parsed |= lighting_profile_value::parse(filename,"$Cone light brightness:",profile_name,
+										&default_profile.cone_light_brightness);
 		if(lighting_profile_value::parse(filename,"$Ambient light brightness:",profile_name, &default_profile.ambient_light_brightness))
 		{
 			parsed = true;

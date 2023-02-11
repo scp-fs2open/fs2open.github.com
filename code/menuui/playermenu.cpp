@@ -1370,33 +1370,24 @@ DCF(bastion, "Temporarily sets the player to be on the Bastion (or any other mai
 	}
 }
 
-#define MAX_PLAYER_TIPS			40
-
-SCP_string Player_tips[MAX_PLAYER_TIPS];
-int Num_player_tips;
+SCP_vector<SCP_string> Player_tips;
 int Player_tips_shown = 0;
 
 // tooltips
-void player_tips_init()
+void parse_tips_table(const char* filename)
 {
-	Num_player_tips = 0;
-	
 	try
 	{
-		read_file_text("tips.tbl", CF_TYPE_TABLES);
+		read_file_text(filename, CF_TYPE_TABLES);
 		reset_parse();
 
 		while (!optional_string("#end")) {
 			required_string("+Tip:");
 
-			if (Num_player_tips >= MAX_PLAYER_TIPS) {
-				break;
-			}
-
 			SCP_string buf;
 			stuff_string(buf, F_MESSAGE);
-
-			Player_tips[Num_player_tips++] = message_translate_tokens(buf.c_str());
+			
+			Player_tips.push_back(message_translate_tokens(buf.c_str()));
 
 		}
 	}
@@ -1407,14 +1398,29 @@ void player_tips_init()
 	}
 }
 
+void player_tips_init()
+{
+	// first parse the default table
+	parse_tips_table("tips.tbl");
+
+	// parse any modular tables
+	parse_modular_table("*-tip.tbm", parse_tips_table);
+}
+
 void player_tips_popup()
 {
 	int tip, ret;
 
-	// player has disabled tips
-	if ( (Player != NULL) && !Player->tips ) {
+	// no player, or player has disabled tips
+	if ( (Player == nullptr) || !Player->tips ) {
 		return;
 	}
+
+	// no tips to show
+	if (Player_tips.empty()) {
+		return;
+	}
+
 	// only show tips once per instance of FreeSpace
 	if(Player_tips_shown == 1) {
 		return;
@@ -1422,19 +1428,19 @@ void player_tips_popup()
 	Player_tips_shown = 1;
 
 	// randomly pick one
-	tip = (int)frand_range(0.0f, (float)Num_player_tips - 1.0f);
+	tip = Random::next((int)Player_tips.size());
 
-	char all_txt[2048];
+	SCP_string all_txt;
 
 	do {
 		sprintf(all_txt, XSTR("NEW USER TIP\n\n%s", 1565), Player_tips[tip].c_str());
-		ret = popup(PF_NO_SPECIAL_BUTTONS | PF_TITLE | PF_TITLE_WHITE, 3, XSTR("&Ok", 669), XSTR("&Next", 1444), XSTR("Don't show me this again", 1443), all_txt);
+		ret = popup(PF_NO_SPECIAL_BUTTONS | PF_TITLE | PF_TITLE_WHITE, 3, XSTR("&Ok", 669), XSTR("&Next", 1444), XSTR("Don't show me this again", 1443), all_txt.c_str());
 	
 		// now what?
 		switch(ret){
 		// next
 		case 1:
-			if(tip >= Num_player_tips - 1) {
+			if (tip >= (int)Player_tips.size() - 1) {
 				tip = 0;
 			} else {
 				tip++;

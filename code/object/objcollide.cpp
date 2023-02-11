@@ -199,7 +199,8 @@ int weapon_will_never_hit( object *obj_weapon, object *other, obj_pair * current
 	weapon_info *wip = &Weapon_info[wp->weapon_info_index];
 
 	// Do some checks for weapons that don't turn
-	if ( !(wip->wi_flags[Weapon::Info_Flags::Turns]) )	{
+	// gotta treat anything being affected by gravity as turning too
+	if ( !(wip->wi_flags[Weapon::Info_Flags::Turns] && (IS_VEC_NULL(&The_mission.gravity) || obj_weapon->phys_info.gravity_const == 0.0))) {
 
 		// This first check is to see if a weapon is behind an object, and they
 		// are heading in opposite directions.   If so, we don't need to ever check	
@@ -251,10 +252,12 @@ int weapon_will_never_hit( object *obj_weapon, object *other, obj_pair * current
 		//If the PF_CONST_VEL flag is set, we can safely assume it doesn't change speed.
 		if (obj_weapon->phys_info.flags & PF_CONST_VEL)
 			max_vel_weapon = obj_weapon->phys_info.speed;
-		else if (wp->lssm_stage==5)
+		else if (wp->lssm_stage == 5)
 			max_vel_weapon = wip->lssm_stage5_vel;
-		else
+		else if (IS_VEC_NULL(&The_mission.gravity) || obj_weapon->phys_info.gravity_const == 0.0f)
 			max_vel_weapon = wp->weapon_max_vel;
+		else
+			max_vel_weapon = obj_weapon->phys_info.speed + wp->lifeleft * vm_vec_mag(&The_mission.gravity);
 
 		float max_vel_other = other->phys_info.max_vel.xyz.z;
 		if (max_vel_other < 10.0f) {
@@ -271,15 +274,13 @@ int weapon_will_never_hit( object *obj_weapon, object *other, obj_pair * current
 		// look for two time solutions to Xw = Xs, where Xw = Xw0 + Vwt*t  Xs = Xs + Vs*(t+dt), where Vs*dt = radius of ship 
 		// Since direction of Vs is unknown, solve for (Vs*t) and find norm of both sides
 		if ( !(wip->wi_flags[Weapon::Info_Flags::Turns]) && (obj_weapon->phys_info.flags & PF_CONST_VEL) ) {
-			vec3d delta_x, weapon_vel;
+			vec3d delta_x;
 			float a,b,c, delta_x_dot_vl, delta_t;
 			float root1, root2, root, earliest_time;
 
 			vm_vec_sub( &delta_x, &obj_weapon->pos, &other->pos );
-			weapon_vel = obj_weapon->phys_info.vel;
-			float weapon_speed = vm_vec_mag(&weapon_vel);
 
-			if (weapon_speed == max_vel_other) {
+			if (max_vel_weapon == max_vel_other) {
 				// this will give us NAN using the below formula, so check every frame
 				current_pair->next_check_time = timestamp(0);
 				return 0;
@@ -287,9 +288,9 @@ int weapon_will_never_hit( object *obj_weapon, object *other, obj_pair * current
 
 			// vm_vec_copy_scale( &laser_vel, &weapon->orient.vec.fvec, max_vel_weapon );
 			delta_t = (other->radius + 10.0f) / max_vel_other;		// time to get from center to radius of other obj
-			delta_x_dot_vl = vm_vec_dot( &delta_x, &weapon_vel);
+			delta_x_dot_vl = vm_vec_dot( &delta_x, &obj_weapon->phys_info.vel);
 
-			a = weapon_speed * weapon_speed - max_vel_other*max_vel_other;
+			a = max_vel_weapon * max_vel_weapon - max_vel_other*max_vel_other;
 			b = 2.0f * (delta_x_dot_vl - max_vel_other*max_vel_other*delta_t);
 			c = vm_vec_mag_squared( &delta_x ) - max_vel_other*max_vel_other*delta_t*delta_t;
 
@@ -311,7 +312,7 @@ int weapon_will_never_hit( object *obj_weapon, object *other, obj_pair * current
 			}
 
 			// standard algorithm
-			if (weapon_speed > max_vel_other) {
+			if (max_vel_weapon > max_vel_other) {
 				// find earliest positive time
 				if ( root1 > root2 ) {
 					float temp = root1;
@@ -437,6 +438,9 @@ int collide_predict_large_ship(object *objp, float distance)
 	vm_vec_scale_add(&goal_pos, &cur_pos, &objp->orient.vec.fvec, distance);
 
 	for ( objp2 = GET_FIRST(&obj_used_list); objp2 != END_OF_LIST(&obj_used_list); objp2 = GET_NEXT(objp2) ) {
+		if (objp2->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		if ((objp != objp2) && (objp2->type == OBJ_SHIP)) {
 			if (Ship_info[Ships[objp2->instance].ship_info_index].is_big_or_huge()) {
 				if (dock_check_find_docked_object(objp, objp2))
@@ -1037,4 +1041,29 @@ void obj_sort_and_collide(SCP_vector<int>* Collision_list)
 		obj_quicksort_colliders(&sort_list_z, 0, (int)(sort_list_z.size() - 1), 2);
 	}
 	obj_find_overlap_colliders(sort_list_y, sort_list_z, 2, true);
+}
+
+void collide_apply_gravity_flags_weapons() {
+	for (object* obj = GET_FIRST(&obj_used_list); obj != END_OF_LIST(&obj_used_list); obj = GET_NEXT(obj)) {
+		if (obj->type != OBJ_WEAPON || obj->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
+		weapon* wp = &Weapons[obj->instance];
+		weapon_info* wip = &Weapon_info[wp->weapon_info_index];
+
+		if (!wip->is_homing() || (wp->weapon_flags[Weapon::Weapon_Flags::No_homing])) {
+			// homing weapons dont get any gravity stuff
+			if (wip->acceleration_time <= 0.0f || Missiontime - wp->creation_time >= fl2f(wip->acceleration_time)) {
+				// if the weapon doesn't accelerate, or has finished accelerating...
+				if (The_mission.gravity == vmd_zero_vector || obj->phys_info.gravity_const == 0.0f) {
+					obj->phys_info.flags |= PF_CONST_VEL;
+					obj->phys_info.flags &= ~PF_BALLISTIC;
+				}
+				else {
+					obj->phys_info.flags |= PF_BALLISTIC;
+					obj->phys_info.flags &= ~PF_CONST_VEL;
+				}
+			}
+		}
+	}
 }

@@ -27,13 +27,11 @@ class EventEditorDialog: public QDialog, public SexpTreeEditorInterface {
 
 	Editor* _editor = nullptr;
 
-	int m_num_events = 0;
-	int m_sig[MAX_MISSION_EVENTS];
-	mission_event m_events[MAX_MISSION_EVENTS];
+	SCP_vector<int> m_sig;
+	SCP_vector<mission_event> m_events;
 	int cur_event = -1;
 	void set_current_event(int evt);
 
-	int m_num_messages = 0;
 	SCP_vector<MMessage> m_messages;
 	int m_cur_msg = -1;
 	void set_current_message(int msg);

@@ -39,7 +39,7 @@ void interpolation_manager::reassess_packet_index(vec3d* pos, matrix* ori, physi
 }
 
 // the meat and potatoes.  Basically, this figures out if we should interpolate, and then interpolates or sims
-void interpolation_manager::interpolate_main(vec3d* pos, matrix* ori, physics_info* pip, vec3d* last_pos, matrix* last_orient, bool player_ship)
+void interpolation_manager::interpolate_main(vec3d* pos, matrix* ori, physics_info* pip, vec3d* last_pos, matrix* last_orient, vec3d * gravity, bool player_ship)
 {
 	// make sure its a valid ship and valid mode
 	Assert(Game_mode & GM_MULTIPLAYER);
@@ -51,7 +51,7 @@ void interpolation_manager::interpolate_main(vec3d* pos, matrix* ori, physics_in
 		*last_pos = *pos;
 		*last_orient = *ori;
 
-		physics_sim(pos, ori, pip, flFrametime);
+		physics_sim(pos, ori, pip, gravity, flFrametime);
 
 		// duplicate the rest of the physics engine's calls here to make the simulation more exact.
 		pip->speed = vm_vec_mag(&pip->vel);
@@ -83,7 +83,7 @@ void interpolation_manager::interpolate_main(vec3d* pos, matrix* ori, physics_in
 
 		sim_time = (sim_time > 0.25f) ? 0.25f : sim_time;
 
-		physics_sim(pos, ori, pip, sim_time);
+		physics_sim(pos, ori, pip, gravity, sim_time);
 
 		// we can't trust what the last position was on the local instance, so figure out what it should have been
 		// use flFrametime here because we need to know what the last position would have been if it was accurate in the last frame.
@@ -179,9 +179,9 @@ void interpolation_manager::interpolate_main(vec3d* pos, matrix* ori, physics_in
 // correct the ship record for player ships when an up to date packet comes in.
 void interpolation_manager::reinterpolate_previous(TIMESTAMP stamp, int prev_packet_index, int next_packet_index,  vec3d* position, matrix* orientation, vec3d* velocity, vec3d* rotational_velocity)
 {
-	// calc what the current timing should be.
-	float numerator = static_cast<float>(_packets[_upcoming_packet_index].remote_missiontime) - static_cast<float>(stamp.value());
-	float denominator = static_cast<float>(_packets[_upcoming_packet_index].remote_missiontime) - static_cast<float>(_packets[_prev_packet_index].remote_missiontime);
+	// calc what the timing was previously.
+	float numerator = static_cast<float>(_packets[next_packet_index].remote_missiontime) - static_cast<float>(stamp.value());
+	float denominator = static_cast<float>(_packets[next_packet_index].remote_missiontime) - static_cast<float>(_packets[prev_packet_index].remote_missiontime);
 
 	denominator = (denominator > 0.05f) ? denominator : 0.05f;
 	

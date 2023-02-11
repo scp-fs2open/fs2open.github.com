@@ -316,6 +316,18 @@ ADE_FUNC(isValid, l_Object, NULL, "Detects whether handle is valid", "boolean", 
 	return ade_set_args(L, "b", oh->IsValid());
 }
 
+ADE_FUNC(isExpiring, l_Object, nullptr, "Checks whether the object has the should-be-dead flag set, which will cause it to be deleted within one frame", "boolean", "true or false according to the flag, or nil if a syntax/type error occurs")
+{
+	object_h* oh;
+	if (!ade_get_args(L, "o", l_Object.GetPtr(&oh)))
+		return ADE_RETURN_NIL;
+
+	if (!oh->IsValid())
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "b", oh->objp->flags[Object::Object_Flags::Should_be_dead]);
+}
+
 ADE_FUNC(getBreedName, l_Object, NULL, "Gets object type", "string", "Object type name, or empty string if handle is invalid")
 {
 	object_h *objh;
@@ -569,7 +581,7 @@ ADE_FUNC(addPostMoveHook, l_Object, "function(object object) => void callback",
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(assignSound, l_Object, "soundentry GameSnd, [vector Offset=nil, enumeration Flags=0, subsystem Subsys=nil]",
+ADE_FUNC(assignSound, l_Object, "soundentry GameSnd, [vector Offset=nil, enumeration Flags=OS_NONE, subsystem Subsys=nil]",
 	"Assigns a sound to this object, with optional offset, sound flags (OS_XXXX), and associated subsystem.",
 	"number",
 	"Returns the index of the sound on this object, or -1 if a sound could not be assigned.")
@@ -592,8 +604,8 @@ ADE_FUNC(assignSound, l_Object, "soundentry GameSnd, [vector Offset=nil, enumera
 	auto subsys = tgsh ? tgsh->ss : nullptr;
 	if (!offset)
 		offset = &vmd_zero_vector;
-	if (enum_flags.index >= 0)
-		flags = enum_flags.index;
+	if (enum_flags.value)
+		flags = *enum_flags.value;
 
 	int snd_idx = obj_snd_assign(OBJ_INDEX(objp), gs_id, offset, flags, subsys);
 

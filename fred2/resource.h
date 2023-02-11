@@ -203,8 +203,8 @@
 #define IDC_GALATEA                     1034
 #define IDC_TYPE_STRING                 1034
 #define IDC_DOGFIGHT                    1034
-#define IDC_PASSIVE_SHIP                1034
-#define IDC_FIELD_SHIP                  1034
+#define IDC_PASSIVE_DEBRIS              1034
+#define IDC_FIELD_DEBRIS                1034
 #define IDC_SEP_UNDERSCORES             1034
 #define IDC_EXPORT_EVERYTHING           1034
 #define IDC_CONTAINER_LIST              1034
@@ -533,6 +533,7 @@
 #define IDC_FILTER_STARTS               1212
 #define IDC_FILTER_SHIPS                1213
 #define IDC_IFF_LIST                    1214
+#define IDC_WING_FORMATION_SCALE        1215
 #define IDC_ALL                         1218
 #define IDC_CLEAR                       1219
 #define IDC_INVERT                      1220
@@ -548,6 +549,7 @@
 #define ID_NUMBERS                      1229
 #define ID_SHIPS                        1230
 #define ID_WINGS                        1231
+#define IDC_WING_FORMATION_ALIGN        1232
 #define IDC_TRANSFORM_INDEPENDENT       1233
 #define IDC_TRANSFORM_RELATIVE          1234
 #define IDC_POSITION_X                  1235
@@ -958,6 +960,7 @@
 #define IDC_SBITMAP_SCALE_Y             1529
 #define IDC_LASER_PROTECT_SHIP          1529
 #define IDC_MISSILE_PROTECT_SHIP        1530
+#define IDC_NEB2_BACKGROUND_BITMAPS     1535
 #define IDC_SBITMAP_DIV_X               1536
 #define IDC_SBITMAP_DIV_Y               1537
 #define IDC_STATS_TEXT                  1537

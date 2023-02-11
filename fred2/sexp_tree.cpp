@@ -46,6 +46,7 @@
 #include "globalincs/alphacolors.h"
 #include "localization/localize.h"
 #include "AddModifyContainerDlg.h"
+#include "asteroid/asteroid.h"
 
 #define TREE_NODE_INCREMENT	100
 
@@ -153,9 +154,11 @@ void sexp_tree::load_tree(int index, const char *deflt)
 void get_combined_variable_name(char *combined_name, const char *sexp_var_name)
 {
 	int sexp_var_index = get_index_sexp_variable_name(sexp_var_name);
-	Assert(sexp_var_index > -1);
 
-	sprintf(combined_name, "%s(%s)", Sexp_variables[sexp_var_index].variable_name, Sexp_variables[sexp_var_index].text);
+	if (sexp_var_index >= 0)
+		sprintf(combined_name, "%s(%s)", Sexp_variables[sexp_var_index].variable_name, Sexp_variables[sexp_var_index].text);
+	else
+		sprintf(combined_name, "%s(undefined)", sexp_var_name);
 }
 
 // creates a tree from a given Sexp_nodes[] point under a given parent.  Recursive.
@@ -637,7 +640,6 @@ void sexp_tree::right_clicked(int mode)
 
 	m_mode = mode;
 	add_instance = replace_instance = -1;
-	Assert(Operators.size() <= MAX_OPERATORS);
 	Assert((int)op_menu.size() < MAX_OP_MENUS);
 	Assert((int)op_submenu.size() < MAX_SUBMENUS);
 
@@ -961,7 +963,7 @@ void sexp_tree::right_clicked(int mode)
 		{
 			// add only if it is not in a subcategory
 			subcategory_id = get_subcategory(Operators[i].value);
-			if (subcategory_id == -1)
+			if (subcategory_id == OP_SUBCATEGORY_NONE)
 			{
 				// put it in the appropriate menu
 				for (j=0; j<(int)op_menu.size(); j++)
@@ -1571,11 +1573,7 @@ void sexp_tree::right_clicked(int mode)
 		for (j=0; j<(int)Operators.size(); j++) {
 			z = 0;
 			if (m_mode == MODE_CAMPAIGN) {
-				if (Operators[j].value & OP_NONCAMPAIGN_FLAG)
-					z = 1;
-
-			} else {
-				if (Operators[j].value & OP_CAMPAIGN_ONLY_FLAG)
+				if (!usable_in_campaign(Operators[j].value))
 					z = 1;
 			}
 
@@ -3372,6 +3370,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_FUNCTIONAL_WHEN_EVAL_TYPE:
 		case OPF_ANIMATION_NAME:
 		case OPF_CONTAINER_VALUE:
+		case OPF_WING_FORMATION:
 			return 1;
 
 		case OPF_SHIP:
@@ -3438,7 +3437,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 				return 1;
 
 			// need to be sure that previous-goal functions are available.  (i.e. we are providing a default argument for them)
-			else if ((value == OP_PREVIOUS_GOAL_TRUE) || (value == OP_PREVIOUS_GOAL_FALSE) || (value == OP_PREVIOUS_GOAL_INCOMPLETE) || Num_goals)
+			else if ((value == OP_PREVIOUS_GOAL_TRUE) || (value == OP_PREVIOUS_GOAL_FALSE) || (value == OP_PREVIOUS_GOAL_INCOMPLETE) || !Mission_goals.empty())
 				return 1;
 
 			return 0;
@@ -3452,7 +3451,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 				return 1;
 
 			// need to be sure that previous-event functions are available.  (i.e. we are providing a default argument for them)
-			else if ((value == OP_PREVIOUS_EVENT_TRUE) || (value == OP_PREVIOUS_EVENT_FALSE) || (value == OP_PREVIOUS_EVENT_INCOMPLETE) || Num_mission_events)
+			else if ((value == OP_PREVIOUS_EVENT_TRUE) || (value == OP_PREVIOUS_EVENT_FALSE) || (value == OP_PREVIOUS_EVENT_INCOMPLETE) || !Mission_events.empty())
 				return 1;
 
 			return 0;
@@ -3499,8 +3498,22 @@ int sexp_tree::query_default_argument_available(int op, int i)
 			}
 			return 0;
 
+		case OPF_ASTEROID_DEBRIS:
+			if ((Asteroid_info.size() - NUM_ASTEROID_POFS) > 0) {
+				return 1;
+			}
+			return 0;
+
 		default:
-			Int3();
+			if (!Dynamic_enums.empty()) {
+				if ((type - First_available_opf_id) < (int)Dynamic_enums.size()) {
+					return 1;
+				} else {
+					UNREACHABLE("Unhandled SEXP argument type!");
+				}
+			} else {
+				UNREACHABLE("Unhandled SEXP argument type!");
+			}
 
 	}
 
@@ -3927,12 +3940,10 @@ int sexp_tree::get_modify_variable_type(int parent)
 
 	if ( op_const == OP_MODIFY_VARIABLE ) {
 		sexp_var_index = get_tree_name_to_sexp_variable_index(node_text);
-		Assert(sexp_var_index >= 0);
 	}
 	else if ( op_const == OP_SET_VARIABLE_BY_INDEX ) {
 		if (can_construe_as_integer(node_text)) {
 			sexp_var_index = atoi(node_text);
-			Assert(sexp_var_index >= 0);
 		}
 		else if (strchr(node_text, '(') && strchr(node_text, ')')) {
 			// the variable index is itself a variable!
@@ -3942,7 +3953,11 @@ int sexp_tree::get_modify_variable_type(int parent)
 		Int3();  // should not be called otherwise
 	}
 
-	if (sexp_var_index < 0 || Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_BLOCK || Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_NOT_USED) {
+	// if we don't have a valid variable, allow replacement with anything
+	if (sexp_var_index < 0)
+		return OPF_AMBIGUOUS;
+
+	if (Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_BLOCK || Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_NOT_USED) {
 		// assume number so that we can allow tree display of number operators
 		return OPF_NUMBER;
 	} else if (Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_NUMBER) {
@@ -4444,16 +4459,22 @@ void sexp_tree::copy_branch(HTREEITEM source, HTREEITEM parent, HTREEITEM after)
 	}
 }
 
-void sexp_tree::swap_roots(HTREEITEM one, HTREEITEM two)
+void sexp_tree::move_root(HTREEITEM source, HTREEITEM dest, bool insert_before)
 {
-	HTREEITEM h;
+	HTREEITEM h, after = dest;
 
-	Assert(!GetParentItem(one));
-	Assert(!GetParentItem(two));
-//	copy_branch(one, TVI_ROOT, two);
-//	move_branch(two, TVI_ROOT, one);
-//	DeleteItem(one);
-	h = move_branch(one, TVI_ROOT, two);
+	Assert(!GetParentItem(source));
+	Assert(!GetParentItem(dest));
+
+	if (insert_before)
+	{
+		// since we can only insert after something, find the item previous to the destination; or indicate the first item if there is no previous item
+		after = GetNextItem(dest, TVGN_PREVIOUS);
+		if (after == nullptr)
+			after = TVI_FIRST;
+	}
+
+	h = move_branch(source, TVI_ROOT, after);
 	SelectItem(h);
 	SelectItem(h);
 	*modified = 1;
@@ -4513,7 +4534,7 @@ void sexp_tree::OnMouseMove(UINT nFlags, CPoint point)
 
 void sexp_tree::OnLButtonUp(UINT nFlags, CPoint point) 
 {
-	int index1, index2;
+	int node1, node2;
 
 	if (m_dragging) {
 		ASSERT(m_p_image_list != NULL);
@@ -4524,22 +4545,37 @@ void sexp_tree::OnLButtonUp(UINT nFlags, CPoint point)
 
 		if (m_h_drop && m_h_drag != m_h_drop) {
 			Assert(m_h_drag);
-			index1 = (int)GetItemData(m_h_drag);
-			index2 = (int)GetItemData(m_h_drop);
-			swap_roots(m_h_drag, m_h_drop);
+			node1 = (int)GetItemData(m_h_drag);
+			node2 = (int)GetItemData(m_h_drop);
+
+			// If we're moving up, insert before the dropped item.  If we're moving down,
+			// insert after the dropped item.  The idea is to always end up where we dropped.
+			bool insert_before = false;
+			for (auto h = m_h_drag; h != nullptr; h = GetNextItem(h, TVGN_PREVIOUS))
+			{
+				if (h == m_h_drop)
+				{
+					insert_before = true;
+					break;
+				}
+			}
+
+			move_root(m_h_drag, m_h_drop, insert_before);
+
 			if (m_mode == MODE_GOALS) {
 				Assert(Goal_editor_dlg);
-				Goal_editor_dlg->swap_handler(index1, index2);
+				Goal_editor_dlg->move_handler(node1, node2, insert_before);
 
 			} else if (m_mode == MODE_EVENTS) {
 				Assert(Event_editor_dlg);
-				Event_editor_dlg->swap_handler(index1, index2);
+				Event_editor_dlg->move_handler(node1, node2, insert_before);
 
 			} else if (m_mode == MODE_CAMPAIGN) {
-				Campaign_tree_formp->swap_handler(index1, index2);
+				Assert(Campaign_tree_formp);
+				Campaign_tree_formp->move_handler(node1, node2, insert_before);
 
 			} else
-				Assert(0);
+				UNREACHABLE("Unhandled dialog mode!");
 
 		} else
 			MessageBeep(0);
@@ -4734,7 +4770,7 @@ void sexp_tree::update_help(HTREEITEM h)
 		for (j=0; j<(int)op_menu.size(); j++) {
 			if (get_category(Operators[i].value) == op_menu[j].id) {
 				if (!help(Operators[i].value)) {
-					mprintf(("Allender!  If you add new sexp operators, add help for them too! :)\n"));
+					mprintf(("Allender!  If you add new sexp operators, add help for them too! :) Sexp %s has no help.\n", Operators[i].text.c_str()));
 				}
 			}
 		}
@@ -5407,9 +5443,17 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = nullptr;
 			break;
 
+		case OPF_ASTEROID_DEBRIS:
+			list = get_listing_opf_asteroid_debris();
+			break;
+
+		case OPF_WING_FORMATION:
+			list = get_listing_opf_wing_formation();
+			break;
+
 		default:
-			Int3();  // unknown OPF code
-			list = NULL;
+			//We're at the end of the list so check for any dynamic enums
+			list = check_for_dynamic_sexp_enum(opf);
 			break;
 	}
 
@@ -6557,7 +6601,7 @@ sexp_list_item *sexp_tree::get_listing_opf_mission_name()
 
 sexp_list_item *sexp_tree::get_listing_opf_goal_name(int parent_node)
 {
-	int i, m;
+	int m;
 	sexp_list_item head;
 
 	if (m_mode == MODE_CAMPAIGN) {
@@ -6572,16 +6616,21 @@ sexp_list_item *sexp_tree::get_listing_opf_goal_name(int parent_node)
 				break;
 
 		if (m < Campaign.num_missions) {
-			if (Campaign.missions[m].num_goals < 0)  // haven't loaded goal names yet.
+			if (Campaign.missions[m].flags & CMISSION_FLAG_FRED_LOAD_PENDING)  // haven't loaded goal names yet.
+			{
 				read_mission_goal_list(m);
+				Campaign.missions[m].flags &= ~CMISSION_FLAG_FRED_LOAD_PENDING;
+			}
 
-			for (i=0; i<Campaign.missions[m].num_goals; i++)
-				head.add_data(Campaign.missions[m].goals[i].name);
+			for (const auto &stored_goal: Campaign.missions[m].goals)
+				head.add_data(stored_goal.name);
 		}
-
 	} else {
-		for (i=0; i<Num_goals; i++)
-			head.add_data(Mission_goals[i].name);
+		for (const auto &goal: Mission_goals) {
+			auto temp_name = goal.name;
+			SCP_truncate(temp_name, NAME_LENGTH);
+			head.add_data(temp_name.c_str());
+		}
 	}
 
 	return head.next;
@@ -6629,7 +6678,7 @@ sexp_list_item *sexp_tree::get_listing_opf_keypress()
 		auto btn = Default_config[i].get_btn(CID_KEYBOARD);
 
 		if ((btn >= 0) && !Control_config[i].disabled) {
-			head.add_data(textify_scancode(btn));
+			head.add_data(textify_scancode_universal(btn));
 		}
 	}
 
@@ -6638,7 +6687,7 @@ sexp_list_item *sexp_tree::get_listing_opf_keypress()
 
 sexp_list_item *sexp_tree::get_listing_opf_event_name(int parent_node)
 {
-	int i, m;
+	int m;
 	sexp_list_item head;
 
 
@@ -6654,16 +6703,21 @@ sexp_list_item *sexp_tree::get_listing_opf_event_name(int parent_node)
 				break;
 
 		if (m < Campaign.num_missions) {
-			if (Campaign.missions[m].num_events < 0)  // haven't loaded goal names yet.
+			if (Campaign.missions[m].flags & CMISSION_FLAG_FRED_LOAD_PENDING)  // haven't loaded goal names yet.
+			{
 				read_mission_goal_list(m);
+				Campaign.missions[m].flags &= ~CMISSION_FLAG_FRED_LOAD_PENDING;
+			}
 
-			for (i=0; i<Campaign.missions[m].num_events; i++)
-				head.add_data(Campaign.missions[m].events[i].name);
+			for (const auto &stored_event: Campaign.missions[m].events)
+				head.add_data(stored_event.name);
 		}
-
 	} else {
-		for (i=0; i<Num_mission_events; i++)
-			head.add_data(Mission_events[i].name);
+		for (const auto &event: Mission_events) {
+			auto temp_name = event.name;
+			SCP_truncate(temp_name, NAME_LENGTH);
+			head.add_data(temp_name.c_str());
+		}
 	}
 
 	return head.next;
@@ -6718,7 +6772,7 @@ sexp_list_item *sexp_tree::get_listing_opf_medal_name()
 	int i;
 	sexp_list_item head;
 
-	for (i=0; i<Num_medals; i++)
+	for (i = 0; i < (int)Medals.size(); i++)
 	{
 		// don't add Rank or the Ace badges
 		if ((i == Rank_medal_index) || (Medals[i].kills_needed > 0))
@@ -7080,6 +7134,22 @@ sexp_list_item *sexp_tree::get_listing_opf_nebula_patterns()
 	return head.next;
 }
 
+sexp_list_item* sexp_tree::get_listing_opf_asteroid_debris()
+{
+	sexp_list_item head;
+
+	head.add_data(SEXP_NONE_STRING);
+
+	for (int i = 0; i < (int)Asteroid_info.size(); i++) {
+		//first three asteroids are not debris-Mjn
+		if (i > (NUM_ASTEROID_SIZES - 1)) {
+			head.add_data(Asteroid_info[i].name);
+		}
+	}
+
+	return head.next;
+}
+
 extern SCP_vector<game_snd>	Snds;
 
 sexp_list_item *sexp_tree::get_listing_opf_game_snds()
@@ -7210,6 +7280,17 @@ sexp_list_item *sexp_tree::get_listing_opf_sexp_containers(ContainerType con_typ
 	return head.next;
 }
 
+sexp_list_item *sexp_tree::get_listing_opf_wing_formation()	// NOLINT
+{
+	sexp_list_item head;
+
+	head.add_data("Default");
+	for (const auto &formation : Wing_formations)
+		head.add_data(formation.name);
+
+	return head.next;
+}
+
 sexp_list_item *sexp_tree::get_list_container_modifiers() const
 {
 	sexp_list_item head;
@@ -7279,6 +7360,25 @@ sexp_list_item *sexp_tree::get_container_multidim_modifiers(int con_data_node) c
 	head.add_list(list);
 
 	return head.next;
+}
+
+sexp_list_item* sexp_tree::check_for_dynamic_sexp_enum(int opf)
+{
+	sexp_list_item head;
+
+	int item = opf - First_available_opf_id;
+
+	if (item < (int)Dynamic_enums.size()) {
+
+		for (const SCP_string& enum_item : Dynamic_enums[item].list) {
+			head.add_data(enum_item.c_str());
+		}
+		return head.next;
+	} else {
+		// else if opf is invalid do this
+		UNREACHABLE("Unhandled SEXP argument type!"); // unknown OPF code
+		return nullptr;
+	}
 }
 
 // given a node's parent, check if node is eligible for being used with the special argument

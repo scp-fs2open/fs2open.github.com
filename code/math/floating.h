@@ -107,6 +107,12 @@ inline bool fl_equal(float a, float b)
 	return fl_abs(a - b) <= FLT_EPSILON * std::max({ 1.0f, fl_abs(a), fl_abs(b) });
 }
 
+// sees if two floating point numbers are approximately equal, with a user-specifiable epsilon
+inline bool fl_equal(float a, float b, float epsilon)
+{
+	return fl_abs(a - b) <= epsilon;
+}
+
 // rounds off a floating point number to a multiple of some number
 extern float fl_roundoff(float x, int multiple);
 

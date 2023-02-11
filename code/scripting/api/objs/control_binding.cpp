@@ -6,11 +6,11 @@
 namespace scripting {
 namespace api {
 
-cci_h::cci_h() { idx = CCFG_MAX; }
+cci_h::cci_h() { idx = IoActionId::CCFG_MAX; }
 
-cci_h::cci_h(int n_id) { idx = static_cast<IoActionId>(n_id); }
+cci_h::cci_h(int n_id) { if (n_id < 0 || n_id > static_cast<int>(IoActionId::CCFG_MAX)) idx = IoActionId::CCFG_MAX; else idx = static_cast<IoActionId>(n_id); }
 
-bool cci_h::IsValid() { return (idx > -1 && idx < IoActionId::CCFG_MAX); }
+bool cci_h::IsValid() { return idx != IoActionId::CCFG_MAX; }
 
 IoActionId cci_h::Get() { return idx; }
 

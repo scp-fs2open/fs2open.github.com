@@ -49,6 +49,15 @@ inline void SCP_toupper(SCP_string &str) {
 	std::transform(str.begin(), str.end(), str.begin(), [](char c) { return SCP_toupper(c); });
 }
 
+inline bool SCP_truncate(SCP_string &str, size_t c_str_size) {
+	if (str.length() >= c_str_size) {
+		str.resize(c_str_size - 1);
+		return true;
+	} else {
+		return false;
+	}
+}
+
 extern void SCP_tolower(char *str);
 extern void SCP_toupper(char *str);
 

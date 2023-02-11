@@ -4415,9 +4415,22 @@ int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, ship_
 	if (turret->flags[Model::Subsystem_Flags::Turret_base_restricted_fov])
 		limited_base_rotation = true;
 
+	// figure out how much time we need to account for.  This only varies in mulitplayer
+	// in singleplayer or multiplayer servers info_from_server_stamp will always be Timestamp::never()
+	float calc_time;
+
+	if ((Game_mode & GM_MULTIPLAYER) && !ss->info_from_server_stamp.isNever()){
+		calc_time = static_cast<float>(ss->info_from_server_stamp.value()) / MILLISECONDS_PER_SECOND;
+
+		// this timestamp will only be used once, so discard it.
+		ss->info_from_server_stamp = TIMESTAMP::never();
+	} else {
+		calc_time = flFrametime;
+	}
+
 	//------------
 	// Gradually turn the turret towards the desired angles
-	float step_size = turret->turret_turning_rate * flFrametime;
+	float step_size = turret->turret_turning_rate * calc_time;
 	float base_delta, gun_delta;
 
 	if (reset)
@@ -5034,7 +5047,7 @@ void model_instance_clear_arcs(polymodel *pm, polymodel_instance *pmi)
 }
 
 // Adds an electrical arcing effect to a submodel
-void model_instance_add_arc(polymodel *pm, polymodel_instance *pmi, int sub_model_num, vec3d *v1, vec3d *v2, int arc_type )
+void model_instance_add_arc(polymodel *pm, polymodel_instance *pmi, int sub_model_num, vec3d *v1, vec3d *v2, int arc_type, color *primary_color_1, color *primary_color_2, color *secondary_color )
 {
 	Assert(pm->id == pmi->model_num);
 
@@ -5053,6 +5066,13 @@ void model_instance_add_arc(polymodel *pm, polymodel_instance *pmi, int sub_mode
 		smi->arc_type[smi->num_arcs] = (ubyte)arc_type;
 		smi->arc_pts[smi->num_arcs][0] = *v1;
 		smi->arc_pts[smi->num_arcs][1] = *v2;
+
+		if (arc_type == MARC_TYPE_SHIP) {
+			smi->arc_primary_color_1[smi->num_arcs] = *primary_color_1;
+			smi->arc_primary_color_2[smi->num_arcs] = *primary_color_2;
+			smi->arc_secondary_color[smi->num_arcs] = *secondary_color;
+		}
+
 		smi->num_arcs++;
 	}
 }
@@ -5625,6 +5645,7 @@ void glowpoint_override_defaults(glow_point_bank_override *gpo)
 	gpo->rotating = false;
 	gpo->rotation_axis = vmd_zero_vector;
 	gpo->rotation_speed = 0.0f;
+	gpo->intensity = 1.0f;
 }
 
 SCP_vector<glow_point_bank_override>::iterator get_glowpoint_bank_override_by_name(const char* name)
@@ -5769,6 +5790,10 @@ void parse_glowpoint_table(const char *filename)
 
 			if (optional_string("+light")) {
 				gpo.is_lightsource = true;
+
+				if (optional_string("$Light intensity:")) {
+					stuff_float(&gpo.intensity);
+				}
 
 				if (optional_string("$Light radius multiplier:")) {
 					stuff_float(&gpo.radius_multi);

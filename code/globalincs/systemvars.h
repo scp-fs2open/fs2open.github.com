@@ -144,19 +144,7 @@ extern bool PostProcessing_override;
 extern bool Shadow_override;
 extern bool Trail_render_override;
 
-extern bool Basemap_color_override_set;
-extern float Basemap_color_override[4];
-
-extern bool Glowmap_color_override_set;
-extern float Glowmap_color_override[3];
-
-extern bool Specmap_color_override_set;
-extern float Specmap_color_override[3];
-
-extern bool Gloss_override_set;
-extern float Gloss_override;
-
-// game skill levels 
+// game skill levels
 #define	NUM_SKILL_LEVELS	5
 
 //====================================================================================
@@ -210,8 +198,8 @@ int current_detail_level();
 // A sort for use with small or almost-sorted lists.  Iteration time is O(n) for a fully-sorted list.
 // This uses a type-safe version of the function prototype for stdlib's qsort, although the size is an int rather than a size_t (for the reasons that j is an int).
 // The fncompare function should return <0, 0, or >0 as the left item is less than, equal to, or greater than the right item.
-template <typename T>
-void insertion_sort(T* array_base, int array_size, int (*fncompare)(const T*, const T*))
+template <typename array_t, typename T>
+void insertion_sort(array_t& array_base, int array_size, int (*fncompare)(const T*, const T*))
 {
 	// NOTE: j *must* be a signed type because j reaches -1 and j+1 must be 0.
 	int i, j;

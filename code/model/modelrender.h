@@ -93,10 +93,6 @@ class model_render_params
 
 	mst_info Thruster_info;
 
-	bool Normal_alpha;
-	float Normal_alpha_min;
-	float Normal_alpha_max;
-
 	float Outline_thickness = -1.0f;
 
 	bool Use_alpha_mult;
@@ -126,13 +122,11 @@ public:
 	void set_clip_plane(vec3d &pos, vec3d &normal);
 	void set_animated_effect(int effect_num, float timer);
 	void set_thruster_info(mst_info &info);
-	void set_normal_alpha(float min, float max);
 	void set_outline_thickness(float thick);
 	void set_alpha_mult(float alpha);
 
 	bool is_clip_plane_set();
 	bool is_team_color_set();
-	bool is_normal_alpha_set();
 	bool is_alpha_mult_set();
 	bool uses_thick_outlines();
 
@@ -155,8 +149,6 @@ public:
 	int get_animated_effect_num();
 	float get_animated_effect_timer();
 	const mst_info& get_thruster_info();
-	float get_normal_alpha_min();
-	float get_normal_alpha_max();
 	float get_outline_thickness();
 	float get_alpha_mult();
 };
@@ -315,6 +307,7 @@ bool model_render_check_detail_box(vec3d *view_pos, polymodel *pm, int submodel_
 void model_render_arc(vec3d *v1, vec3d *v2, color *primary, color *secondary, float arc_width);
 void model_render_insignias(insignia_draw_data *insignia);
 void model_render_set_wireframe_color(color* clr);
+bool render_tech_model(bool is_ship, int x1, int y1, int x2, int y2, float zoom, bool lighting, int class_idx, matrix* orient);
 
 float model_render_get_diameter_clamped_to_min_pixel_size(const vec3d* pos, float diameter, float min_pixel_size);
 

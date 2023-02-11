@@ -35,6 +35,7 @@
 #include "object/objectshield.h"
 #include "object/objectsnd.h"
 #include "observer/observer.h"
+#include "scripting/global_hooks.h"
 #include "scripting/api/libs/graphics.h"
 #include "scripting/scripting.h"
 #include "playerman/player.h"
@@ -43,6 +44,7 @@
 #include "render/3d.h"
 #include "ship/afterburner.h"
 #include "ship/ship.h"
+#include "starfield/starfield.h"
 #include "tracing/tracing.h"
 #include "weapon/beam.h"
 #include "weapon/shockwave.h"
@@ -912,7 +914,7 @@ void obj_move_call_physics(object *objp, float frametime)
 
 		if (physics_paused)	{
 			if (objp==Player_obj){
-				physics_sim(&objp->pos, &objp->orient, &objp->phys_info, frametime );		// simulate the physics
+				physics_sim(&objp->pos, &objp->orient, &objp->phys_info, &The_mission.gravity, frametime );		// simulate the physics
 			}
 		} else {
 			//	Hack for dock mode.
@@ -941,7 +943,7 @@ void obj_move_call_physics(object *objp, float frametime)
 			}			
 
 			// simulate the physics
-			physics_sim(&objp->pos, &objp->orient, &objp->phys_info, frametime);		
+			physics_sim(&objp->pos, &objp->orient, &objp->phys_info, &The_mission.gravity,  frametime);
 
 			// if the object is the player object, do things that need to be done after the ship
 			// is moved (like firing weapons, etc).  This routine will get called either single
@@ -1520,7 +1522,7 @@ void obj_move_all(float frametime)
 		if (!(objp->flags[Object::Object_Flags::Immobile] && objp->hull_strength > 0.0f)) {
 			// if this is an object which should be interpolated in multiplayer, do so
 			if (interpolation_object) {
-				objp->interp_info.interpolate_main(&objp->pos, &objp->orient, &objp->phys_info, &objp->last_pos, &objp->last_orient, objp->flags[Object::Object_Flags::Player_ship]);
+				objp->interp_info.interpolate_main(&objp->pos, &objp->orient, &objp->phys_info, &objp->last_pos, &objp->last_orient, &The_mission.gravity, objp->flags[Object::Object_Flags::Player_ship]);
 			} else {
 				// physics
 				obj_move_call_physics(objp, frametime);
@@ -1570,10 +1572,12 @@ void obj_move_all(float frametime)
 			if (objp == Player_obj && Player_ai->target_objnum != -1)
 				target = &Objects[Player_ai->target_objnum];
 
-			if (Script_system.IsActiveAction(CHA_ONWPEQUIPPED)) {
-				Script_system.SetHookObjects(2, "User", objp, "Target", target);
-				Script_system.RunCondition(CHA_ONWPEQUIPPED, objp);
-				Script_system.RemHookVars({"User", "Target"});
+			if (scripting::hooks::OnWeaponEquipped->isActive()) {
+				scripting::hooks::OnWeaponEquipped->run(scripting::hooks::WeaponEquippedConditions{ shipp, target },
+					scripting::hook_param_list(
+						scripting::hook_param("User", 'o', objp),
+						scripting::hook_param("Target", 'o', target)
+					));
 			}
 		}
 	}
@@ -1583,8 +1587,12 @@ void obj_move_all(float frametime)
 	model_do_intrinsic_motions(nullptr);
 
 	//	After all objects have been moved, move all docked objects.
-	objp = GET_FIRST(&obj_used_list);
-	while( objp !=END_OF_LIST(&obj_used_list) )	{
+	for (objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
+		// skip objects which should be dead
+		if (objp->flags[Object::Object_Flags::Should_be_dead]) {
+			continue;
+		}
+
 		dock_move_docked_objects(objp);
 
 		//Valathil - Move the screen rotation calculation for billboards here to get the updated orientation matrices caused by docking interpolation
@@ -1617,7 +1625,6 @@ void obj_move_all(float frametime)
 				Physics_viewer_bank -= 2.0f * PI; 	 
 			}
 		}
-		objp = GET_NEXT(objp);
 	}
 
 	if (!cmeasure_list.empty())
@@ -1643,6 +1650,17 @@ void obj_move_all(float frametime)
 
 	// update artillery locking info now
 	ship_update_artillery_lock();
+
+	if (Nmodel_instance_num >= 0) {
+		animation::ModelAnimation::stepAnimations(frametime, model_get_instance(Nmodel_instance_num));
+	}
+
+	if (Viewer_obj && Viewer_obj->type == OBJ_SHIP && Viewer_obj->instance >= 0) {
+		ship* shipp = &Ships[Viewer_obj->instance];
+		if (shipp->cockpit_model_instance >= 0) {
+			animation::ModelAnimation::stepAnimations(frametime, model_get_instance(shipp->cockpit_model_instance));
+		}
+	}
 
 //	mprintf(("moved all objects\n"));
 }
@@ -1680,15 +1698,14 @@ void obj_queue_render(object* obj, model_draw_list* scene)
 
 	if ( obj->flags[Object::Object_Flags::Should_be_dead] ) return;
 
-	if (Script_system.IsActiveAction(CHA_OBJECTRENDER)) {
-		// Set the render scene context
+	if (scripting::hooks::OnObjectRender->isActive()) {
 		scripting::api::Current_scene = scene;
 
-		Script_system.SetHookObject("Self", obj);
-		bool skip_render = Script_system.IsConditionOverride(CHA_OBJECTRENDER, obj);
+		auto param_list = scripting::hook_param_list(scripting::hook_param("Self", 'o', obj));
+
 		// Always execute the hook content
-		Script_system.RunCondition(CHA_OBJECTRENDER, obj);
-		Script_system.RemHookVar("Self");
+		bool skip_render = scripting::hooks::OnObjectRender->isOverride(scripting::hooks::ObjectDrawConditions{ obj }, param_list);
+		scripting::hooks::OnObjectRender->run(scripting::hooks::ObjectDrawConditions{ obj }, param_list);
 
 		// Clear the render scene context
 		scripting::api::Current_scene = nullptr;
@@ -1698,7 +1715,6 @@ void obj_queue_render(object* obj, model_draw_list* scene)
 			return;
 		}
 	}
-
 
 	switch ( obj->type ) {
 	case OBJ_NONE:
@@ -1761,74 +1777,6 @@ void obj_init_all_ships_physics()
 
 }
 
-/**
- * Do client-side pre-interpolation object movement
- */
-void obj_client_pre_interpolate()
-{
-	object *objp;
-	
-	// duh
-	obj_delete_all_that_should_be_dead();
-
-	// client side processing of warping in effect stages
-	multi_do_client_warp(flFrametime);     
-
-	// client side movement of an observer
-	if((Net_player->flags & NETINFO_FLAG_OBSERVER) || (Player_obj->type == OBJ_OBSERVER)){
-		obj_observer_move(flFrametime);   
-	}
-	
-	// run everything except ships through physics (and ourselves of course)	
-	obj_merge_created_list();						// must merge any objects created by the host!
-
-	objp = GET_FIRST(&obj_used_list);
-	for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) )	{
-		if((objp != Player_obj) && (objp->type == OBJ_SHIP)){
-			continue;
-		}
-
-		// for all non-dead object which are _not_ ships
-		if ( !(objp->flags[Object::Object_Flags::Should_be_dead]) )	{				
-			// pre-move step
-			obj_move_all_pre(objp, flFrametime);
-
-			// store position and orientation
-			objp->last_pos = objp->pos;
-			objp->last_orient = objp->orient;
-
-			// call physics
-			obj_move_call_physics(objp, flFrametime);
-
-			// post-move step
-			obj_move_all_post(objp, flFrametime);
-		}
-	}
-}
-
-/**
- * Do client-side post-interpolation object movement
- */
-void obj_client_post_interpolate()
-{
-	object *objp;
-
-	//	After all objects have been moved, move all docked objects.
-	objp = GET_FIRST(&obj_used_list);
-	while( objp !=END_OF_LIST(&obj_used_list) )	{
-		if ( objp != Player_obj ) {
-			dock_move_docked_objects(objp);
-		}
-		objp = GET_NEXT(objp);
-	}	
-
-	// check collisions
-	obj_sort_and_collide();
-
-	// do post-collision stuff for beam weapons
-	beam_move_all_post();
-}
-
 void obj_observer_move(float frame_time)
 {
 	object *objp;
@@ -1855,15 +1803,16 @@ void obj_observer_move(float frame_time)
 void obj_get_average_ship_pos( vec3d *pos )
 {
 	int count;
-	object *objp;
 
 	vm_vec_zero( pos );
 
    // average up all ship positions
 	count = 0;
-	for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
-		if ( objp->type != OBJ_SHIP )
+	for (auto so: list_range(&Ship_obj_list)) {
+		auto objp = &Objects[so->objnum];
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
 			continue;
+
 		vm_vec_add2( pos, &objp->pos );
 		count++;
 	}
@@ -1955,17 +1904,15 @@ void obj_reset_all_collisions()
 	obj_reset_colliders();
 
 	// now add every object back into the object collision pairs
-	object *moveup;
-	moveup = GET_FIRST(&obj_used_list);
-	while(moveup != END_OF_LIST(&obj_used_list)){
+	for (auto moveup: list_range(&obj_used_list)) {
+		if (moveup->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		// he's not in the collision list
 		moveup->flags.set(Object::Object_Flags::Not_in_coll);
 
 		// recalc pairs for this guy
 		obj_add_collider(OBJ_INDEX(moveup));
-
-		// next
-		moveup = GET_NEXT(moveup);
 	}
 }
 
@@ -2029,14 +1976,13 @@ int obj_get_by_signature(int sig)
 {
 	Assert(sig > 0);
 
-	object *objp = GET_FIRST(&obj_used_list);
-	while( objp !=END_OF_LIST(&obj_used_list) )
+	for (auto objp: list_range(&obj_used_list))
 	{
-		if(objp->signature == sig)
+		// don't skip over should-be-dead objects, since we assume we know what we're doing
+		if (objp->signature == sig)
 			return OBJ_INDEX(objp);
-
-		objp = GET_NEXT(objp);
 	}
+
 	return -1;
 }
 

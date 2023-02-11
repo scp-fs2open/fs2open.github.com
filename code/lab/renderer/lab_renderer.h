@@ -67,6 +67,18 @@ enum class TextureOverride {
 	Specular
 };
 
+
+struct gfx_options {
+	int bloom_level;
+	float ambient_factor;
+	float light_factor;
+	float emissive_factor;
+	float exposure_level;
+	piecewise_power_curve_values ppcv;
+	AntiAliasMode aa_mode;
+	TonemapperAlgorithm tonemapper;
+};
+
 constexpr auto LAB_MISSION_NONE_STRING = "None";
 constexpr auto LAB_TEAM_COLOR_NONE = "<none>";
 
@@ -139,6 +151,11 @@ public:
 		currentTeamColor = std::move(teamColor);
 	}
 
+	SCP_string getCurrentTeamColor()
+	{
+		return currentTeamColor;
+	}
+
 	void resetView() {}
 
 	void setRenderFlag(LabRenderFlag flag, bool value) { renderFlags.set(flag, value); }
@@ -175,10 +192,16 @@ public:
 	}
 
 	void setTextureQuality(TextureQuality quality) { textureQuality = quality; }
+	TextureQuality getTextureQuality()
+	{
+		return textureQuality;
+	}
 
 	void setTextureOverride(TextureOverride, bool) {};
 
 	void resetTextureOverride() {};
+
+	void resetGraphicsSettings(gfx_options settings);
 
 	std::unique_ptr<LabCamera> &getCurrentCamera();
 	void setCurrentCamera(std::unique_ptr<LabCamera> &newcam);

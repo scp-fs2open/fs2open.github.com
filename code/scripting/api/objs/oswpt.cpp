@@ -17,78 +17,91 @@
 void object_ship_wing_point_team::serialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, const luacpp::LuaValue& value, ubyte* data, int& packet_size) {
 	object_ship_wing_point_team oswpt;
 	value.getValue(scripting::api::l_OSWPT.Get(&oswpt));
-	ADD_INT(oswpt.type);
+	uint8_t type = static_cast<uint8_t>(oswpt.type);
+	ADD_DATA(type);
 	switch (oswpt.type) {
-	case OSWPT_TYPE_SHIP:
-	case OSWPT_TYPE_WAYPOINT:
+	case oswpt_type::SHIP:
+	case oswpt_type::WAYPOINT:
 		ADD_USHORT(oswpt.objp->net_signature);
 		break;
-	case OSWPT_TYPE_PARSE_OBJECT:
+	case oswpt_type::PARSE_OBJECT:
 		ADD_USHORT(oswpt.ship_entry->p_objp->net_signature);
 		break;
-	case OSWPT_TYPE_WING:
-	case OSWPT_TYPE_WING_NOT_PRESENT: {
+	case oswpt_type::WING:
+	case oswpt_type::WING_NOT_PRESENT: {
 		int wingidx = WING_INDEX(oswpt.wingp);
 		ADD_INT(wingidx);
 		break;
 	}
-	case OSWPT_TYPE_SHIP_ON_TEAM:
-	case OSWPT_TYPE_WHOLE_TEAM:
+	case oswpt_type::SHIP_ON_TEAM:
+	case oswpt_type::WHOLE_TEAM:
 		ADD_INT(oswpt.team);
 		break;
-	case OSWPT_TYPE_NONE:
-	case OSWPT_TYPE_EXITED:
+	case oswpt_type::NONE:
+	case oswpt_type::EXITED:
 	default:
 		break;
 	}
 }
 
 void object_ship_wing_point_team::deserialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, char* data_ptr, ubyte* data, int& offset) {
-	int oswpt_type;
-	GET_INT(oswpt_type);
-	switch (oswpt_type) {
-	case OSWPT_TYPE_SHIP:
-	case OSWPT_TYPE_WAYPOINT: {
+	uint8_t type;
+	GET_DATA(type);
+	switch (static_cast<oswpt_type>(type)) {
+	case oswpt_type::SHIP:
+	case oswpt_type::WAYPOINT: {
 		ushort net_signature;
 		GET_USHORT(net_signature);
 		object_ship_wing_point_team oswpt;
-		oswpt.type = oswpt_type;
+		oswpt.type = static_cast<oswpt_type>(type);
 		//This doesn't constitute a valid waypoint oswpt, but it will work for everything that lua has access to, so it's fine
 		oswpt.objp = multi_get_network_object(net_signature);
 		new(data_ptr) object_ship_wing_point_team(std::move(oswpt));
 		break;
 	}
-	case OSWPT_TYPE_PARSE_OBJECT: {
+	case oswpt_type::PARSE_OBJECT: {
 		ushort net_signature;
 		GET_USHORT(net_signature);
 		GET_USHORT(net_signature);
 		new(data_ptr) object_ship_wing_point_team(mission_parse_get_arrival_ship(net_signature));
 		break;
 	}
-	case OSWPT_TYPE_WING:
-	case OSWPT_TYPE_WING_NOT_PRESENT: {
+	case oswpt_type::WING:
+	case oswpt_type::WING_NOT_PRESENT: {
 		int wingidx;
 		GET_INT(wingidx);
 		new(data_ptr) object_ship_wing_point_team(&Wings[wingidx]);
 		break;
 	}
-	case OSWPT_TYPE_SHIP_ON_TEAM:
-	case OSWPT_TYPE_WHOLE_TEAM: {
+	case oswpt_type::SHIP_ON_TEAM:
+	case oswpt_type::WHOLE_TEAM: {
 		int oswpt_team;
 		GET_INT(oswpt_team);
 		object_ship_wing_point_team oswpt;
 		oswpt.team = oswpt_team;
-		oswpt.type = oswpt_type;
+		oswpt.type = static_cast<oswpt_type>(type);
 		new(data_ptr) object_ship_wing_point_team(std::move(oswpt));
 		break;
 	}
-	case OSWPT_TYPE_NONE:
-	case OSWPT_TYPE_EXITED:
+	case oswpt_type::NONE:
+	case oswpt_type::EXITED:
 	default:
 		new(data_ptr) object_ship_wing_point_team;
 		break;
 	}
 }
+
+
+
+#define OSWPT_TYPE_NONE				oswpt_type::NONE
+#define OSWPT_TYPE_SHIP				oswpt_type::SHIP
+#define OSWPT_TYPE_WING				oswpt_type::WING
+#define OSWPT_TYPE_WAYPOINT			oswpt_type::WAYPOINT
+#define OSWPT_TYPE_SHIP_ON_TEAM		oswpt_type::SHIP_ON_TEAM
+#define OSWPT_TYPE_WHOLE_TEAM		oswpt_type::WHOLE_TEAM
+#define OSWPT_TYPE_PARSE_OBJECT		oswpt_type::PARSE_OBJECT
+#define OSWPT_TYPE_EXITED			oswpt_type::EXITED
+#define OSWPT_TYPE_WING_NOT_PRESENT	oswpt_type::WING_NOT_PRESENT
 
 
 namespace scripting {
@@ -181,6 +194,9 @@ ADE_FUNC(forAllShips, l_OSWPT, "function(ship ship) => void body", "Applies this
 	case OSWPT_TYPE_WHOLE_TEAM:
 		for (auto so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
 		{
+			if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+				continue;
+
 			if (Ships[Objects[so->objnum].instance].team == oswpt.team)
 			{
 				luacpp::LuaValueList args;

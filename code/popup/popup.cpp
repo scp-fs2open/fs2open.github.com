@@ -533,6 +533,7 @@ int popup_init(popup_info *pi, int flags)
 			scripting::hook_param("IsTimeStopped", 'b', Popup_time_was_stopped_in_init),
 			scripting::hook_param("IsStateRunning", 'b', static_cast<bool>(Popup_running_state)),
 			scripting::hook_param("IsInputPopup", 'b', static_cast<bool>(flags & PF_INPUT)),
+			scripting::hook_param("IsDeathPopup", 'b', false),
 			scripting::hook_param("Title", 's', pi->title),
 			scripting::hook_param("Text", 's', pi->raw_text),
 			scripting::hook_param("AllowedInput", 's', pi->valid_chars, flags & PF_INPUT));
@@ -636,7 +637,9 @@ void popup_close(popup_info *pi, int screen_id)
 
 
 	if (scripting::hooks::OnDialogClose->isActive())
-		scripting::hooks::OnDialogClose->run();
+		scripting::hooks::OnDialogClose->run(scripting::hook_param_list(
+			scripting::hook_param("IsDeathPopup", 'b', false))
+		);
 }
 
 // set the popup text color
@@ -952,7 +955,8 @@ int popup_do(popup_info *pi, int flags)
 				scripting::hook_param("Submit", 'u', luacpp::LuaFunction::createFromStdFunction(Script_system.GetLuaSession(), [&done, &choice, pi](lua_State* L, const luacpp::LuaValueList& resolveVals) {
 					done = popup_resolve_scripting(L, choice, pi->input_text, resolveVals) ? 1 : 0;
 					return luacpp::LuaValueList{};
-					})));
+					})),
+				scripting::hook_param("IsDeathPopup", 'b', false));
 
 			scripting::hooks::OnDialogFrame->run(paramList);
 			isScriptingOverride = scripting::hooks::OnDialogFrame->isOverride(paramList);

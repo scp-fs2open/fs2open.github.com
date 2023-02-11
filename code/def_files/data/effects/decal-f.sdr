@@ -118,7 +118,7 @@ void main() {
 	vec3 normal = getPixelNormal(frag_position, gl_FragCoord.xy, alpha, binormal, tangent);
 
 	vec4 diffuse_out = vec4(0.0);
-	vec4 emissive_out = vec4(0.0, 0.0, 0.0, 0.0);
+	vec4 emissive_out = vec4(0.0);
 	vec3 normal_out = vec3(0.0);
 
 	if (diffuse_index >= 0) {
@@ -147,7 +147,7 @@ void main() {
 	}
 
 	if (glow_index >= 0) {
-		// We have a valid diffuse map
+		// We have a valid glow map
 		vec4 color = texture(glowMap, vec3(tex_coord, float(glow_index)));
 
 		color.rgb = srgb_to_linear(color.rgb) * GLOW_MAP_SRGB_MULTIPLIER;

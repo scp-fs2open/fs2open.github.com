@@ -14,7 +14,7 @@ static const SCP_unordered_set<int> allowed_oswpt_parameters{ OPF_SHIP, OPF_WING
 LuaAISEXP::LuaAISEXP(const SCP_string& name) : LuaSEXP(name) {
 	_return_type = OPR_AI_GOAL;
 	_category = OP_CATEGORY_AI;
-	_subcategory = -1;
+	_subcategory = OP_SUBCATEGORY_NONE;
 }
 
 void LuaAISEXP::initialize() {

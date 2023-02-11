@@ -133,6 +133,8 @@ int shockwave_create(int parent_objnum, vec3d* pos, shockwave_create_info* sci, 
 	sw->shockwave_info_index = info_index;		// only one type for now... type could be passed is as a parameter
 	sw->current_bitmap = -1;
 
+	sw->blast_sound_id = sci->blast_sound_id;
+
 	sw->time_elapsed=0.0f;
 	sw->delay_stamp = delay;
 
@@ -281,6 +283,8 @@ void shockwave_move(object *shockwave_objp, float frametime)
 	// blast ships and asteroids
 	// And (some) weapons
 	for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 		if ( (objp->type != OBJ_SHIP) && (objp->type != OBJ_ASTEROID) && (objp->type != OBJ_WEAPON)) {
 			continue;
 		}
@@ -296,11 +300,9 @@ void shockwave_move(object *shockwave_objp, float frametime)
 		}
 
 	
-		if ( objp->type == OBJ_SHIP ) {
-			// don't blast navbuoys
-			if ( ship_get_SIF(objp->instance)[Ship::Info_Flags::Navbuoy] ) {
-				continue;
-			}
+		// don't blast no-collide or navbuoys
+		if ( !objp->flags[Object::Object_Flags::Collides] || (objp->type == OBJ_SHIP && ship_get_SIF(objp->instance)[Ship::Info_Flags::Navbuoy]) ) {
+			continue;
 		}
 
 		bool found_in_list = false;
@@ -371,7 +373,9 @@ void shockwave_move(object *shockwave_objp, float frametime)
 			} else {
 				vol_scale = 1.0f;
 			}
-			snd_play( gamesnd_get_game_sound(GameSounds::SHOCKWAVE_IMPACT), 0.0f, vol_scale );
+			if (sw->blast_sound_id.isValid()) {
+				snd_play(gamesnd_get_game_sound(sw->blast_sound_id), 0.0f, vol_scale);
+			}
 		}
 
 	}	// end for
@@ -723,6 +727,8 @@ void shockwave_create_info_init(shockwave_create_info *sci)
 	sci->rot_defined = false;
 	sci->damage_type_idx = sci->damage_type_idx_sav = -1;
 	sci->damage_overidden = false;
+
+	sci->blast_sound_id = GameSounds::SHOCKWAVE_IMPACT;
 }
 
 /**

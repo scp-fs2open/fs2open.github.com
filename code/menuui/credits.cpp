@@ -113,6 +113,7 @@ const char *fs2_open_credit_text =
 	"FXAA - Copyright (c) 2010 NVIDIA Corporation. All rights reserved.\n"
 	"libpcp - Copyright (c) 2013 by Cisco Systems, Inc.\n"
 	"This software uses libraries from the FFmpeg project under the LGPLv2.1\n"
+	"Dear ImGui by Omar Cornut and contributors\n"
 	"\n"
 	"\n"
 	"\n";

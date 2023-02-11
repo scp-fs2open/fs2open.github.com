@@ -462,10 +462,6 @@ void multi_team_handle_join(net_player *pl)
 			else if(Net_players[idx].p_info.team == 1){
 				team1_count++;
 			} 
-			// some other case - should never happen
-			else {
-				Int3();
-			}
 		}
 	}
 
@@ -482,22 +478,17 @@ void multi_team_handle_join(net_player *pl)
 
 	// send a team update
 	multi_team_send_update();
-
-	// verify that we have valid team stuff
-	multi_team_verify();
 }
 
 // set all ships in the mission to be marked as the proper team (TEAM_HOSTILE, TEAM_FRIENLY)
 void multi_team_mark_all_ships()
 {
-	ship_obj *moveup;	
-	
    // look through all ships in the mission
-	moveup = GET_FIRST(&Ship_obj_list);
-	while(moveup!=END_OF_LIST(&Ship_obj_list)){
-		multi_team_mark_ship(&Ships[Objects[moveup->objnum].instance]);		
+	for (auto moveup: list_range(&Ship_obj_list)){
+		if (Objects[moveup->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
 
-		moveup = GET_NEXT(moveup);
+		multi_team_mark_ship(&Ships[Objects[moveup->objnum].instance]);		
 	}	
 
 	// verify that we have valid team stuff

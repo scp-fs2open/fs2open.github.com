@@ -41,7 +41,7 @@ class ship_weapon;
 extern int Weapon_select_overlay_id;
 
 void weapon_select_init();
-void weapon_select_common_init();
+void weapon_select_common_init(bool API_Access = false);
 void weapon_select_do(float frametime);
 void weapon_select_close();
 void weapon_select_close_team();
@@ -74,7 +74,8 @@ void draw_3d_overhead_view(int model_num,
 	int bank7_y,
 	int bank_prim_offset = 106,
 	int bank_sec_offset = -50,
-	int bank_y_offset = 12);
+	int bank_y_offset = 12,
+	overhead_style style = Default_overhead_ship_style);
 
 void	wl_update_parse_object_weapons(p_object *pobjp, wss_unit *slot);
 int	wl_update_ship_weapons(int objnum, wss_unit *slot);

@@ -16,6 +16,7 @@
 #include "graphics/matrix.h"
 #include "missionui/missionscreencommon.h"
 #include "scripting/api/objs/weaponclass.h"
+#include "model/modelrender.h"
 
 namespace scripting {
 namespace api {
@@ -1189,19 +1190,6 @@ ADE_FUNC(renderTechModel,
 	CLAMP(rot_angles.b, 0.0f, 100.0f);
 	CLAMP(rot_angles.h, 0.0f, 100.0f);
 
-	ship_info *sip = &Ship_info[idx];
-	model_render_params render_info;
-
-	if (sip->uses_team_colors) {
-		render_info.set_team_color(sip->default_team_name, "none", 0, 0);
-	}
-
-	//Make sure model is loaded
-	sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0], 0);
-
-	if(sip->model_num < 0)
-		return ade_set_args(L, "b", false);
-
 	//Handle angles
 	matrix orient = vmd_identity_matrix;
 	angles view_angles = {-0.6f, 0.0f, 0.0f};
@@ -1212,41 +1200,7 @@ ADE_FUNC(renderTechModel,
 	rot_angles.h = (rot_angles.h*0.01f) * PI2;
 	vm_rotate_matrix_by_angles(&orient, &rot_angles);
 
-	//Clip
-	gr_set_clip(x1,y1,x2-x1,y2-y1,GR_RESIZE_NONE);
-
-	//Handle 3D init stuff
-	g3_start_frame(1);
-	g3_set_view_matrix(&sip->closeup_pos, &vmd_identity_matrix, sip->closeup_zoom * zoom);
-
-	gr_set_proj_matrix( Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-	gr_set_view_matrix(&Eye_position, &Eye_matrix);
-
-	//setup lights
-	common_setup_room_lights();
-
-	//Draw the ship!!
-	model_clear_instance(sip->model_num);
-	render_info.set_detail_level_lock(0);
-
-	uint render_flags = MR_AUTOCENTER | MR_NO_FOGGING;
-
-	if(!lighting || (sip->flags[Ship::Info_Flags::No_lighting]))
-		render_flags |= MR_NO_LIGHTING;
-
-	render_info.set_flags(render_flags);
-
-	model_render_immediate(&render_info, sip->model_num, &orient, &vmd_zero_vector);
-
-	//OK we're done
-	gr_end_view_matrix();
-	gr_end_proj_matrix();
-
-	//Bye!!
-	g3_end_frame();
-	gr_reset_clip();
-
-	return ade_set_args(L, "b", true);
+	return ade_set_args(L, "b", render_tech_model(true, x1, y1, x2, y2, zoom, lighting, idx, &orient));
 }
 
 // Nuke's alternate tech model rendering function
@@ -1265,57 +1219,10 @@ ADE_FUNC(renderTechModel2, l_Shipclass, "number X1, number Y1, number X2, number
 	if(x2 < x1 || y2 < y1)
 		return ade_set_args(L, "b", false);
 
-	ship_info *sip = &Ship_info[idx];
-	model_render_params render_info;
-
-	if (sip->uses_team_colors) {
-		render_info.set_team_color(sip->default_team_name, "none", 0, 0);
-	}
-
-	//Make sure model is loaded
-	sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0], 0);
-
-	if(sip->model_num < 0)
-		return ade_set_args(L, "b", false);
-
 	//Handle angles
 	matrix *orient = mh->GetMatrix();
 
-	//Clip
-	gr_set_clip(x1,y1,x2-x1,y2-y1,GR_RESIZE_NONE);
-
-	//Handle 3D init stuff
-	g3_start_frame(1);
-	g3_set_view_matrix(&sip->closeup_pos, &vmd_identity_matrix, sip->closeup_zoom * zoom);
-
-	gr_set_proj_matrix( Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-	gr_set_view_matrix(&Eye_position, &Eye_matrix);
-
-	//setup lights
-	common_setup_room_lights();
-
-	//Draw the ship!!
-	model_clear_instance(sip->model_num);
-	render_info.set_detail_level_lock(0);
-
-	uint render_flags = MR_AUTOCENTER | MR_NO_FOGGING;
-
-	if(sip->flags[Ship::Info_Flags::No_lighting])
-		render_flags |= MR_NO_LIGHTING;
-
-	render_info.set_flags(render_flags);
-
-	model_render_immediate(&render_info, sip->model_num, orient, &vmd_zero_vector);
-
-	//OK we're done
-	gr_end_view_matrix();
-	gr_end_proj_matrix();
-
-	//Bye!!
-	g3_end_frame();
-	gr_reset_clip();
-
-	return ade_set_args(L, "b", true);
+	return ade_set_args(L, "b", render_tech_model(true, x1, y1, x2, y2, zoom, true, idx, orient));
 }
 
 ADE_FUNC(renderSelectModel,
@@ -1398,14 +1305,15 @@ ADE_FUNC(renderOverheadModel,
 	"number x, number y, [number width = 467, number height = 362, number selectedSlot = -1, number selectedWeapon = -1, number hoverSlot = -1, "
 	"number bank1_x = 170, number bank1_y = 203, number bank2_x = 170, number bank2_y = 246, number bank3_x = 170, number bank3_y = 290, "
 	"number bank4_x = 552, number bank4_y = 203, number bank5_x = 552, number bank5_y = 246, number bank6_x = 552, number bank6_y = 290, "
-	"number bank7_x = 552, number bank7_y = 333]",
+	"number bank7_x = 552, number bank7_y = 333, number style = 0]",
 	"Draws the 3D overhead ship model with the lines pointing from bank weapon selections to bank firepoints. SelectedSlot refers to loadout "
 	"ship slots 1-12 where wing 1 is 1-4, wing 2 is 5-8, and wing 3 is 9-12. SelectedWeapon is the index into weapon classes. HoverSlot refers "
 	"to the bank slots 1-7 where 1-3 are primaries and 4-6 are secondaries. Lines will be drawn from any bank containing the SelectedWeapon to "
 	"the firepoints on the model of that bank. Similarly, lines will be drawn from the bank defined by HoverSlot to the firepoints on the model "
 	"of that slot. Line drawing for HoverSlot takes precedence over line drawing for SelectedWeapon. Set either or both to -1 to stop line drawing. "
 	"The bank coordinates are the coordinates from which the lines for that bank will be drawn. It is expected that primary slots will be on the "
-	"left of the ship model and secondaries will be on the right. The lines have a hard-coded curve expecing to be drawn from those directions.",
+	"left of the ship model and secondaries will be on the right. The lines have a hard-coded curve expecing to be drawn from those directions. "
+	"Style can be 0 or 1. 0 for the ship to be drawn stationary from top down, 1 for the ship to be rotating.",
 	"boolean",
 	"true if rendered, false if error")
 {
@@ -1433,9 +1341,10 @@ ADE_FUNC(renderOverheadModel,
 	int bank6_y = 290;
 	int bank7_x = 552;
 	int bank7_y = 333;
+	int style = 0;
 
 	if (!ade_get_args(L,
-			"oii|iiiiiiiiiiiiiiiiiii",
+			"oii|iiiiiiiiiiiiiiiiiiii",
 			l_Shipclass.Get(&idx),
 			&x1,
 			&y1,
@@ -1457,7 +1366,8 @@ ADE_FUNC(renderOverheadModel,
 			&bank6_x,
 			&bank6_y,
 			&bank7_x,
-			&bank7_y))
+			&bank7_y,
+			&style))
 		return ADE_RETURN_NIL;
 
 	if (idx < 0 || idx >= ship_info_size())
@@ -1470,6 +1380,9 @@ ADE_FUNC(renderOverheadModel,
 
 	if (selectedSlot < 0)
 		return ade_set_args(L, "b", false);
+
+	if ((style < 0) || (style > 1))
+		LuaError(L, "Overhead style can only be 0 or 1!");
 
 	if (selectedWeapon < 0 || selectedWeapon >= weapon_info_size())
 		selectedWeapon = -1;
@@ -1511,7 +1424,8 @@ ADE_FUNC(renderOverheadModel,
 		bank7_y,
 		0,
 		0,
-		0);
+		0,
+		(overhead_style)style);
 
 	return ade_set_args(L, "b", true);
 }

@@ -437,7 +437,7 @@ bool timestamp_in_between(TIMESTAMP stamp, TIMESTAMP before, TIMESTAMP after)
 	if (!stamp.isValid() || !before.isValid() || !after.isValid())
 		return false;
 
-	return timestamp_compare(before, stamp) >= 0 && timestamp_compare(stamp, after) >= 0;
+	return timestamp_compare(before, stamp) <= 0 && timestamp_compare(stamp, after) <= 0;
 }
 
 bool ui_timestamp_in_between(UI_TIMESTAMP stamp, UI_TIMESTAMP before, UI_TIMESTAMP after)
@@ -449,7 +449,7 @@ bool ui_timestamp_in_between(UI_TIMESTAMP stamp, UI_TIMESTAMP before, UI_TIMESTA
 	if (!stamp.isValid() || !before.isValid() || !after.isValid())
 		return false;
 
-	return ui_timestamp_compare(before, stamp) >= 0 && ui_timestamp_compare(stamp, after) >= 0;
+	return ui_timestamp_compare(before, stamp) <= 0 && ui_timestamp_compare(stamp, after) <= 0;
 }
 
 bool timestamp_elapsed(int stamp) {
@@ -633,4 +633,16 @@ fix timestamp_get_mission_time()
 uint64_t timestamp_get_mission_time_in_microseconds()
 {
 	return timestamp_get_microseconds() - Timestamp_microseconds_at_mission_start;
+}
+
+int timestamp_get_mission_time_in_milliseconds()
+{
+	return static_cast<int>(timestamp_get_mission_time_in_microseconds() / MICROSECONDS_PER_MILLISECOND);
+}
+
+void timestamp_offset_mission_time(float offset)
+{
+	auto time = static_cast<uint64_t>(static_cast<long double>(offset) * MICROSECONDS_PER_SECOND);
+
+	Timestamp_microseconds_at_mission_start -= time;
 }

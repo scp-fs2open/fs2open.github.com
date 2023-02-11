@@ -653,33 +653,6 @@ bool model_material::is_batched() const
 	return Batched;
 }
 
-void model_material::set_normal_alpha(float min, float max)
-{
-	Normal_alpha = true;
-	Normal_alpha_min = min;
-	Normal_alpha_max = max;
-}
-
-void model_material::set_normal_alpha()
-{
-	Normal_alpha = false;
-}
-
-bool model_material::is_normal_alpha_active() const
-{
-	return Normal_alpha;
-}
-
-float model_material::get_normal_alpha_min() const
-{
-	return Normal_alpha_min;
-}
-
-float model_material::get_normal_alpha_max() const
-{
-	return Normal_alpha_max;
-}
-
 void model_material::set_fog(int r, int g, int b, float _near, float _far)
 {
 	Fog_params.enabled = true;
@@ -813,10 +786,6 @@ uint model_material::get_shader_flags() const
 
 	if ( Thrust_scale > 0.0f ) {
 		Shader_flags |= SDR_FLAG_MODEL_THRUSTER;
-	}
-
-	if ( Normal_alpha ) {
-		Shader_flags |= SDR_FLAG_MODEL_NORMAL_ALPHA;
 	}
 
 	if ( uses_thick_outlines() ) {

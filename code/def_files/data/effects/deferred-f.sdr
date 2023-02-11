@@ -138,6 +138,8 @@ void GetLightInfo(vec3 position, in float alpha, in vec3 reflectDir, out vec3 li
 			float coneDot = dot(normalize(-lightDir), coneDir);
 			float dist = length(lightDir);
 			attenuation = 1.0 - clamp(sqrt(dist / lightRadius), 0.0, 1.0);
+			area_normalisation = 1.0;
+
 			if(dualCone) {
 				if(abs(coneDot) < coneAngle) {
 					discard;
@@ -197,6 +199,6 @@ void main()
 	vec3 halfVec = normalize(lightDir + eyeDir);
 	float NdotL = clamp(dot(normal, lightDir), 0.0, 1.0);
 	vec4 fragmentColor = vec4(1.0);
-	fragmentColor.rgb = computeLighting(specColor.rgb, diffColor, lightDir, normal.xyz, halfVec, eyeDir, alpha, area_normalisation, fresnel, NdotL).rgb * diffuseLightColor * attenuation;
+	fragmentColor.rgb = computeLighting(specColor.rgb, diffColor, lightDir, normal.xyz, halfVec, eyeDir, roughness, fresnel, NdotL).rgb * diffuseLightColor * attenuation * area_normalisation;
 	fragOut0 = max(fragmentColor, vec4(0.0));
 }

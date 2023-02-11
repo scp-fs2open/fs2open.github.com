@@ -7,6 +7,7 @@
 #include "graphics/2d.h"
 #include "scripting/ade.h"
 #include "scripting/ade_args.h"
+#include "scripting/hook_conditions.h"
 #include "scripting/lua/LuaFunction.h"
 #include "utils/event.h"
 
@@ -18,7 +19,7 @@
 
 namespace scripting {
 struct ScriptingDocumentation;
-class Hook;
+class HookBase;
 }
 
 struct image_desc
@@ -50,74 +51,35 @@ extern bool script_hook_valid(script_hook *hook);
 
 // Conditionals
 enum ConditionalType {
+	//These conditionals must ONLY contain global conditions.
+	//That is, conditions that do not depend on anything specific per-hook (such as a ship firing a weapon),
+	//but only conditions that can evaluate exclusively on a global state, identically for all actions. 
+	//Per-Hook specific conditionals are added through hook_conditions.h/.cpp and the respective template argument of the hook.
 	CHC_NONE        = -1,
-	CHC_MISSION     = 0,
-	CHC_SHIP        = 1,
-	CHC_SHIPCLASS   = 2,
-	CHC_SHIPTYPE    = 3,
-	CHC_STATE       = 4,
-	CHC_CAMPAIGN    = 5,
-	CHC_WEAPONCLASS = 6,
-	CHC_OBJECTTYPE  = 7,
-	CHC_KEYPRESS    = 8,
-	CHC_ACTION      = 9,
-	CHC_VERSION     = 10,
-	CHC_APPLICATION = 11,
-	CHC_MULTI_SERVER = 12,
+	CHC_MISSION,     
+	CHC_STATE,       
+	CHC_CAMPAIGN,    
+	CHC_KEYPRESS,    
+	CHC_VERSION,    
+	CHC_APPLICATION, 
+	CHC_MULTI_SERVER
 };
 
 //Actions
 enum ConditionalActions : int32_t {
 	CHA_NONE    = -1,
 	CHA_ONFRAME,
-	CHA_COLLIDEWEAPON,
-	CHA_COLLIDEDEBRIS,
-	CHA_COLLIDEASTEROID,
-	CHA_HUDDRAW,
-	CHA_OBJECTRENDER,
 	CHA_SPLASHSCREEN,
+	CHA_HUDDRAW,
 	CHA_GAMEINIT,
-	CHA_MISSIONSTART,
-	CHA_MOUSEMOVED,
-	CHA_MOUSEPRESSED,
-	CHA_MOUSERELEASED,
-	CHA_KEYPRESSED,
-	CHA_KEYRELEASED,
-	CHA_ONSTATESTART,
-	CHA_ONWEAPONDELETE,
-	CHA_ONWPEQUIPPED,
-	CHA_ONWPFIRED,
-	CHA_ONWPSELECTED,
-	CHA_ONWPDESELECTED,
-	CHA_GAMEPLAYSTART,
-	CHA_ONTURRETFIRED,
-	CHA_PRIMARYFIRE,
-	CHA_SECONDARYFIRE,
-	CHA_ONSHIPARRIVE,
-	CHA_COLLIDEBEAM,
-	CHA_ONACTION,
-	CHA_ONACTIONSTOPPED,
-	CHA_MSGRECEIVED,
-	CHA_HUDMSGRECEIVED,
-	CHA_AFTERBURNSTART,
-	CHA_AFTERBURNEND,
-	CHA_BEAMFIRE,
 	CHA_SIMULATION,
-	CHA_LOADSCREEN,
-	CHA_CMISSIONACCEPT,
-	CHA_ONSHIPDEPART,
-	CHA_ONWEAPONCREATED,
-	CHA_ONWAYPOINTSDONE,
-	CHA_ONSUBSYSDEATH,
-	CHA_ONGOALSCLEARED,
-	CHA_ONBRIEFSTAGE,
 
-	// DO NOT ADD NEW HOOKS HERE
+	// DO NOT ADD NEW HOOKS HERE. THESE HOOKS ARE EXCLUSIVELY FOR COMPATIBILITY WITH NON-CONDITIONAL GLOBAL HOOKS
 	// There is a new Lua Hook API, see hook_api.h
 	// There you use either scripting::Hook for non-overridable or scripting::OverridableHook for overridable hooks
 	// while also having the option to document when the hook is called and what hook variables are set for it.
 
-	CHA_LAST = CHA_ONBRIEFSTAGE,
+	CHA_LAST = CHA_SIMULATION
 };
 
 // management stuff
@@ -125,12 +87,12 @@ void scripting_state_init();
 void scripting_state_close();
 void scripting_state_do_frame(float frametime);
 
-int32_t scripting_string_to_action(const char* action);
+const scripting::HookBase* scripting_string_to_action(const char* action);
 ConditionalType scripting_string_to_condition(const char* condition);
 
 struct script_condition
 {
-	ConditionalType condition_type = CHC_NONE;
+	ConditionalType condition_type;
 	SCP_string condition_string;
 	// stores values evaluated at hook load to optimize later condition checking.
 	// currently mostly olg done for the highest impact condition types, according to performance profiling
@@ -139,26 +101,17 @@ struct script_condition
 	// CHC_SHIPCLASS, CHC_WEAPONCLASS - stores the index of the info object requested by the condition
 	// CHC_VERSION, CHC_APPLICATION - stores validity of the check in 1 for true or 0 for false, as the condition will not change after load.
 	// see ConditionedHook::AddCondition for exact implimentation
-	int condition_cached_value = -1;
+	int condition_cached_value;
 };
 
-struct script_action
-{
-	int32_t action_type {CHA_NONE};
-	script_hook hook;
-};
-
-class ConditionedHook
-{
+class script_action {
 public:
-	SCP_vector<script_action> Actions;
-	SCP_vector<script_condition> Conditions;
-	bool AddCondition(script_condition *sc);
-	bool AddAction(script_action *sa);
+	SCP_vector<script_condition> global_conditions;
+	SCP_vector<std::unique_ptr<scripting::EvaluatableCondition>> local_conditions;
 
-	bool ConditionsValid(int action_type, class object *objp1 = nullptr, class object *objp2 = nullptr, int more_data = -1);
-	bool IsOverride(class script_state *sys, int action_type);
-	bool Run(class script_state* sys, int action_type);
+	script_hook hook;
+
+	bool ConditionsValid(const linb::any& local_condition_data) const;
 };
 
 //**********Main script_state function
@@ -173,10 +126,10 @@ class script_state
 
 	//Utility variables
 	SCP_vector<image_desc> ScriptImages;
-	SCP_vector<ConditionedHook> ConditionalHooks;
+	SCP_unordered_map<int, SCP_vector<script_action>> ConditionalHooks;
 	// Scripts can add new hooks at runtime; we collect all hooks to be added here and add them at the end of the current
 	// frame to avoid corrupting any iterators that the script system may be using.
-	SCP_vector<ConditionedHook> AddedHooks;
+	SCP_unordered_map<int, SCP_vector<script_action>> AddedHooks;
 
 	SCP_vector<script_function> GameInitFunctions;
 
@@ -243,7 +196,7 @@ public:
 	void ParseChunk(script_hook *dest, const char* debug_str=NULL);
 	void ParseGlobalChunk(ConditionalActions hookType, const char* debug_str=nullptr);
 	bool ParseCondition(const char *filename="<Unknown>");
-	void AddConditionedHook(ConditionedHook hook);
+	void AddConditionedHook(int action_id, script_action hook);
 	void AssayActions();
 	bool IsActiveAction(int hookId);
 
@@ -251,11 +204,11 @@ public:
 
 	//***Hook running functions
 	template <typename T>
-	int RunBytecode(script_function& hd, char format = '\0', T* data = nullptr);
-	int RunBytecode(script_function& hd);
-	bool IsOverride(script_hook &hd);
-	int RunCondition(int action_type, object *objp1 = nullptr, object *objp2 = nullptr, int more_data = -1);
-	bool IsConditionOverride(int action_type, object *objp1 = nullptr, object *objp2 = nullptr, int more_data = -1);
+	int RunBytecode(const script_function& hd, char format = '\0', T* data = nullptr);
+	int RunBytecode(const script_function& hd);
+	bool IsOverride(const script_hook &hd);
+	int RunCondition(int action_type, linb::any local_condition_data);
+	bool IsConditionOverride(int action_type, linb::any local_condition_data);
 
 	void RunInitFunctions();
 
@@ -355,7 +308,7 @@ bool script_state::EvalStringWithReturn(const char* string, const char* format, 
 }
 
 template <typename T>
-int script_state::RunBytecode(script_function& hd, char format, T* data)
+int script_state::RunBytecode(const script_function& hd, char format, T* data)
 {
 	using namespace luacpp;
 

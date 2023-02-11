@@ -75,6 +75,7 @@ struct DocumentationAction {
 	SCP_string name;
 	SCP_string description;
 	SCP_vector<HookVariableDocumentation> parameters;
+	const SCP_unordered_map<SCP_string, const std::unique_ptr<const ParseableCondition>>& conditions;
 	bool overridable;
 };
 

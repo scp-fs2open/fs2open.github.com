@@ -53,7 +53,7 @@ ADE_VIRTVAR(Status, l_ShipRegistryEntry, nullptr, "Status of ship", "enumeration
 	if (ADE_SETTING_VAR)
 		LuaError(L, "This property is read only.");
 
-	return ade_set_args(L, "o", l_Enum.Set(enum_h(LE_NOT_YET_PRESENT + (int)Ship_registry[idx].status)));
+	return ade_set_args(L, "o", l_Enum.Set(enum_h(static_cast<lua_enum>(LE_NOT_YET_PRESENT + (int)Ship_registry[idx].status))));
 }
 
 ADE_FUNC(getParsedShip, l_ShipRegistryEntry, nullptr, "Return the parsed ship associated with this ship registry entry", "parse_object", "The parsed ship, or nil if handle is invalid.  If this ship entry is for a ship-create'd ship, the returned handle may be invalid.")

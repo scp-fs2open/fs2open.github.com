@@ -59,7 +59,7 @@ public:
 
 	// adds a new packet, whilst also manually sorting the relevant entries
 	void add_packet(int objnum, int frame, int time_delta, vec3d* position, vec3d* velocity, vec3d* rotational_velocity, vec3d* desired_velocity, vec3d* desired_rotational_velocity, angles* angles, int player_index);
-	void interpolate_main(vec3d* pos, matrix* ori, physics_info* pip, vec3d* last_pos, matrix* last_orient, bool player_ship);
+	void interpolate_main(vec3d* pos, matrix* ori, physics_info* pip, vec3d* last_pos, matrix* last_orient, vec3d* gravity, bool player_ship);
 	void reinterpolate_previous(TIMESTAMP stamp, int prev_packet_index, int next_packet_index,  vec3d* position, matrix* orientation, vec3d* velocity, vec3d* rotational_velocity);
 
 	int get_hull_comparison_frame() { return _hull_comparison_frame; }

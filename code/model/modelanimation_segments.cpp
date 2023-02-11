@@ -1166,8 +1166,8 @@ namespace animation {
 	}
 
 
-	ModelAnimationSegmentSoundDuring::ModelAnimationSegmentSoundDuring(std::shared_ptr<ModelAnimationSegment> segment, gamesnd_id start, gamesnd_id end, gamesnd_id during, bool flipIfReversed, float radius, std::shared_ptr<ModelAnimationSubmodel> submodel, tl::optional<vec3d> position) :
-		m_segment(std::move(segment)), m_submodel(submodel), m_position(std::move(position)), m_radius(radius), m_start(start), m_end(end), m_during(during), m_flipIfReversed(flipIfReversed) { }
+	ModelAnimationSegmentSoundDuring::ModelAnimationSegmentSoundDuring(std::shared_ptr<ModelAnimationSegment> segment, gamesnd_id start, gamesnd_id end, gamesnd_id during, bool flipIfReversed, bool abortPlayingSounds, float radius, std::shared_ptr<ModelAnimationSubmodel> submodel, tl::optional<vec3d> position) :
+		m_segment(std::move(segment)), m_submodel(submodel), m_position(std::move(position)), m_radius(radius), m_start(start), m_end(end), m_during(during), m_flipIfReversed(flipIfReversed), m_abortSoundIfRunning(abortPlayingSounds) { }
 
 	ModelAnimationSegment* ModelAnimationSegmentSoundDuring::copy() const {
 		auto newCopy = new ModelAnimationSegmentSoundDuring(*this);
@@ -1213,14 +1213,14 @@ namespace animation {
 	}
 
 	void ModelAnimationSegmentSoundDuring::playStartSnd(polymodel_instance* pmi) {
-		if (snd_is_playing(m_instances[pmi->id].currentlyPlaying))
+		if (m_abortSoundIfRunning && snd_is_playing(m_instances[pmi->id].currentlyPlaying))
 			snd_stop(m_instances[pmi->id].currentlyPlaying);
 		
 		if(m_start.isValid())
 			m_instances[pmi->id].currentlyPlaying = playSnd(pmi, m_start, false);
 	}
 	void ModelAnimationSegmentSoundDuring::playEndSnd(polymodel_instance* pmi) {
-		if (snd_is_playing(m_instances[pmi->id].currentlyPlaying))
+		if (m_abortSoundIfRunning && snd_is_playing(m_instances[pmi->id].currentlyPlaying))
 			snd_stop(m_instances[pmi->id].currentlyPlaying);
 
 		if (m_end.isValid()) 
@@ -1277,8 +1277,9 @@ namespace animation {
 		}
 
 		bool flipIfReversed = optional_string("+Flip When Reversed");
+		bool abortSoundIfRunning = !optional_string("+Don't Interrupt Playing Sounds");
 
-		auto segment = std::shared_ptr<ModelAnimationSegmentSoundDuring>(new ModelAnimationSegmentSoundDuring(data->parseSegment(), start_sound, end_sound, loop_sound, flipIfReversed, snd_rad, submodel, position));
+		auto segment = std::shared_ptr<ModelAnimationSegmentSoundDuring>(new ModelAnimationSegmentSoundDuring(data->parseSegment(), start_sound, end_sound, loop_sound, flipIfReversed, abortSoundIfRunning, snd_rad, submodel, position));
 
 		return segment;
 	}

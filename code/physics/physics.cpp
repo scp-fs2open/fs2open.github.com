@@ -82,6 +82,8 @@ void physics_init( physics_info * pi )
 	pi->ai_desired_orient = vmd_zero_matrix; // Asteroth - initialize to the "invalid" orientation, which will be ignored by physics unless set otherwise
 
 	vm_vec_zero(&pi->acceleration);
+
+	pi->gravity_const = 0.0f;
 }
 
 
@@ -268,7 +270,7 @@ void physics_sim_rot_editor(matrix * orient, physics_info * pi, float sim_time)
 
 // Adds velocity to position
 // finds velocity and displacement in local coords
-void physics_sim_vel(vec3d * position, physics_info * pi, float sim_time, matrix *orient)
+void physics_sim_vel(vec3d * position, physics_info * pi, matrix *orient, vec3d* gravity, float sim_time)
 {
 	vec3d local_disp;		// displacement in this frame
 	vec3d local_v_in;		// velocity in local coords at the start of this frame
@@ -339,6 +341,8 @@ void physics_sim_vel(vec3d * position, physics_info * pi, float sim_time, matrix
 	// warp in test - make excessive speed drop exponentially from max allowed
 	// become (0.01x in 3 sec)
 
+	vec3d grav_disp = vmd_zero_vector;
+	vec3d grav_vel = vmd_zero_vector;
 	int special_warp_in = FALSE;
 	float excess = local_v_in.xyz.z - pi->max_vel.xyz.z;
 	if (excess > 5 && (pi->flags & PF_SPECIAL_WARP_IN)) {
@@ -355,6 +359,10 @@ void physics_sim_vel(vec3d * position, physics_info * pi, float sim_time, matrix
 		local_disp.xyz.z = (local_v_in.xyz.z * sim_time) + deficeit * (sim_time - (float(SPECIAL_WARP_T_CONST) * (1.0f - exp_factor)));
 	} else {
 		apply_physics (damp.xyz.z, local_desired_vel.xyz.z, local_v_in.xyz.z, sim_time, &local_v_out.xyz.z, &local_disp.xyz.z);
+		if (pi->gravity_const != 0.0f) {
+			grav_vel = *gravity * sim_time * pi->gravity_const;
+			grav_disp = (grav_vel * sim_time) * 0.5; // 1/2 * at^2
+		}
 	}
 
 	// maybe turn off special warp in flag
@@ -365,14 +373,16 @@ void physics_sim_vel(vec3d * position, physics_info * pi, float sim_time, matrix
 	// update world position from local to world coords using orient
 	vec3d world_disp;
 	vm_vec_unrotate (&world_disp, &local_disp, orient);
-	vm_vec_add2 (position, &world_disp);
+	*position += world_disp;
+	*position += grav_disp;
 
 	// update world velocity
 	vm_vec_unrotate(&pi->vel, &local_v_out, orient);
+	pi->vel += grav_vel;
 
 	// update acceleration
-	vm_vec_sub(&pi->acceleration, &pi->vel, &old_vel);
-	vm_vec_scale(&pi->acceleration, 1 / sim_time);
+	pi->acceleration = pi->vel - old_vel;
+	pi->acceleration *= 1 / sim_time;
 
 	if (special_warp_in) {
 		vm_vec_rotate(&pi->prev_ramp_vel, &pi->vel, orient);
@@ -381,15 +391,21 @@ void physics_sim_vel(vec3d * position, physics_info * pi, float sim_time, matrix
 
 //	-----------------------------------------------------------------------------------------------------------
 // Simulate a physics object for this frame
-void physics_sim(vec3d* position, matrix* orient, physics_info* pi, float sim_time)
+void physics_sim(vec3d* position, matrix* orient, physics_info* pi, vec3d* gravity, float sim_time)
 {
 	// check flag which tells us whether or not to do velocity translation
 	if (pi->flags & PF_CONST_VEL) {
-		vm_vec_scale_add2(position, &pi->vel, sim_time);
+		*position += pi->vel * sim_time;
 	}
 	else
 	{
-		physics_sim_vel(position, pi, sim_time, orient);
+		if (pi->flags & PF_BALLISTIC) {
+			*position += pi->vel * sim_time + *gravity * sim_time * sim_time * pi->gravity_const * 0.5f; // vt + 1/2 * at^2
+			pi->vel += *gravity * sim_time * pi->gravity_const;
+		} else {
+			physics_sim_vel(position, pi, orient, gravity, sim_time);
+		}
+
 		physics_sim_rot(orient, pi, sim_time);
 
 		pi->speed = vm_vec_mag(&pi->vel);							//	Note, cannot use quick version, causes cumulative error, increasing speed.
@@ -404,7 +420,7 @@ void physics_sim(vec3d* position, matrix* orient, physics_info* pi, float sim_ti
 // the universal Y axis, rather than the local orientation's Y axis.  Banking is also ignored.
 void physics_sim_editor(vec3d *position, matrix * orient, physics_info * pi, float sim_time )
 {
-	physics_sim_vel(position, pi, sim_time, orient);
+	physics_sim_vel(position, pi,orient, &vmd_zero_vector, sim_time);
 	physics_sim_rot_editor(orient, pi, sim_time);
 	pi->speed = vm_vec_mag_quick(&pi->vel);
 	pi->fspeed = vm_vec_dot(&orient->vec.fvec, &pi->vel);		// instead of vector magnitude -- use only forward vector since we are only interested in forward velocity
@@ -765,6 +781,11 @@ bool whack_below_limit(const vec3d* impulse)
 {
 	return (fl_abs(impulse->xyz.x) < WHACK_LIMIT) && (fl_abs(impulse->xyz.y) < WHACK_LIMIT) &&
 		   (fl_abs(impulse->xyz.z) < WHACK_LIMIT);
+}
+
+bool whack_below_limit(float impulse)
+{
+	return fl_abs(impulse) < WHACK_LIMIT;
 }
 
 // ----------------------------------------------------------------------------
@@ -1169,6 +1190,44 @@ void physics_add_point_mass_moi(matrix *moi, float mass, vec3d *pos)
 	moi->a2d[2][0] -= mass * pos->xyz.x * pos->xyz.z;
 	moi->a2d[2][1] -= mass * pos->xyz.y * pos->xyz.z;
 	moi->a2d[2][2] += mass * (pos->xyz.x * pos->xyz.x + pos->xyz.y * pos->xyz.y);
+}
+
+// equation from https://en.wikipedia.org/wiki/Projectile_motion#Angle_%CE%B8_required_to_hit_coordinate_(x,_y)
+bool physics_lead_ballistic_trajectory(const vec3d* start, const vec3d* end_pos, const vec3d* target_vel, float weapon_speed, const vec3d* gravity, vec3d* out_direction) {
+	float best_guess_time = 0.0f;
+	*out_direction = vmd_zero_vector;
+	float time = 0.0f;
+	for (int i = 0; i < 6; i++) {
+		vec3d target = *end_pos - *start;
+		target += *target_vel * time;
+
+		vec3d gravity_dir = *gravity;
+		float gravity_accel = vm_vec_normalize(&gravity_dir);
+
+		float height = -vm_vec_dot(&target, &gravity_dir);
+		vec3d plane_pos = target + gravity_dir * height;
+		float range = vm_vec_normalize(&plane_pos);
+
+		float vel_2 = weapon_speed * weapon_speed;
+		float gx = gravity_accel * range;
+		float gy = gravity_accel * height;
+		float discriminant = vel_2 * vel_2 - (gx * gx + 2 * gy * vel_2);
+
+		if (discriminant < 0)
+			return false;
+
+		float angle = atanf((vel_2 - sqrtf(discriminant)) / gx);
+
+		*out_direction = plane_pos * cosf(angle) - (gravity_dir)*sinf(angle);
+
+		time = range / (weapon_speed * cosf(angle));
+
+		if (abs(time - best_guess_time) < 0.01f)
+			break;
+		else
+			best_guess_time = time;
+	}
+	return true;
 }
 
 //*************************CLASS: avd_movement*************************

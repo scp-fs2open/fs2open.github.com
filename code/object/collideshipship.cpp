@@ -1197,22 +1197,20 @@ int collide_ship_ship( obj_pair * pair )
 			bool a_override = false, b_override = false;
 
 			if (scripting::hooks::OnShipCollision->isActive()) {
-				a_override = scripting::hooks::OnShipCollision->isOverride(
+				a_override = scripting::hooks::OnShipCollision->isOverride(scripting::hooks::CollisionConditions{{A, B}},
 					scripting::hook_param_list(scripting::hook_param("Self", 'o', A),
 						scripting::hook_param("Object", 'o', B),
 						scripting::hook_param("Ship", 'o', A),
 						scripting::hook_param("ShipB", 'o', B),
-						scripting::hook_param("Hitpos", 'o', world_hit_pos)),
-					A, B);
+						scripting::hook_param("Hitpos", 'o', world_hit_pos)));
 
 				// Yes, this should be reversed.
-				b_override = scripting::hooks::OnShipCollision->isOverride(
+				b_override = scripting::hooks::OnShipCollision->isOverride(scripting::hooks::CollisionConditions{{A, B}},
 					scripting::hook_param_list(scripting::hook_param("Self", 'o', B),
 						scripting::hook_param("Object", 'o', A),
 						scripting::hook_param("Ship", 'o', B),
 						scripting::hook_param("ShipB", 'o', A),
-						scripting::hook_param("Hitpos", 'o', world_hit_pos)),
-					B, A);
+						scripting::hook_param("Hitpos", 'o', world_hit_pos)));
 			}
 
 			if(!a_override && !b_override)
@@ -1460,22 +1458,22 @@ int collide_ship_ship( obj_pair * pair )
 
 			if(!(b_override && !a_override))
 			{
-				scripting::hooks::OnShipCollision->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', A),
+				scripting::hooks::OnShipCollision->run(scripting::hooks::CollisionConditions{{A, B}}, 
+					scripting::hook_param_list(scripting::hook_param("Self", 'o', A),
 														   scripting::hook_param("Object", 'o', B),
 														   scripting::hook_param("Ship", 'o', A),
 														   scripting::hook_param("ShipB", 'o', B),
-														   scripting::hook_param("Hitpos", 'o', world_hit_pos)),
-					A, B);
+														   scripting::hook_param("Hitpos", 'o', world_hit_pos)));
 			}
 			if((b_override && !a_override) || (!b_override && !a_override))
 			{
 				// Yes, this should be reversed.
-				scripting::hooks::OnShipCollision->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', B),
+				scripting::hooks::OnShipCollision->run(scripting::hooks::CollisionConditions{{A, B}}, 
+					scripting::hook_param_list(scripting::hook_param("Self", 'o', B),
 														   scripting::hook_param("Object", 'o', A),
 														   scripting::hook_param("Ship", 'o', B),
 														   scripting::hook_param("ShipB", 'o', A),
-														   scripting::hook_param("Hitpos", 'o', world_hit_pos)),
-					B, A);
+														   scripting::hook_param("Hitpos", 'o', world_hit_pos)));
 			}
 
 			return 0;

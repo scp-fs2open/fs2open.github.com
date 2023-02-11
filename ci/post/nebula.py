@@ -7,6 +7,13 @@ import requests
 from file_list import ReleaseFile
 from util import retry_multi, GLOBAL_TIMEOUT
 
+LINUX_KEY = "Linux"
+MACOSX_KEY = "Mac"
+WIN32_SSE2_KEY = "Win32-SSE2"
+WIN64_SSE2_KEY = "Win64-SSE2"
+WIN32_AVX_KEY = "Win32-AVX"
+WIN64_AVX_KEY = "Win64-AVX"
+
 metadata = {
     'type': 'engine',
     'title': 'FSO',
@@ -26,28 +33,28 @@ metadata = {
 }
 
 platforms = {
-    'Linux': 'linux',
-    'MacOSX': 'macosx',
-    'Win32-SSE2': 'windows',
-    'Win64-SSE2': 'windows',
-    'Win32-AVX': 'windows',
-    'Win64-AVX': 'windows'
+    LINUX_KEY: 'linux',
+    MACOSX_KEY: 'macosx',
+    WIN32_SSE2_KEY: 'windows',
+    WIN64_SSE2_KEY: 'windows',
+    WIN32_AVX_KEY: 'windows',
+    WIN64_AVX_KEY: 'windows'
 }
 
 envs = {
-    'Linux': 'linux && x86_64',  # Linux only has 64bit builds
-    'MacOSX': 'macosx',
-    'Win32-SSE2': 'windows',
-    'Win64-SSE2': 'windows && x86_64',
-    'Win32-AVX': 'windows && avx',
-    'Win64-AVX': 'windows && avx && x86_64'
+    LINUX_KEY: 'linux && x86_64',  # Linux only has 64bit builds
+    MACOSX_KEY: 'macosx',
+    WIN32_SSE2_KEY: 'windows',
+    WIN64_SSE2_KEY: 'windows && x86_64',
+    WIN32_AVX_KEY: 'windows && avx',
+    WIN64_AVX_KEY: 'windows && avx && x86_64'
 }
 
 subdirs = {
-    'Win32-SSE2': 'x86',
-    'Win64-SSE2': 'x64',
-    'Win32-AVX': 'x86_avx',
-    'Win64-AVX': 'x64_avx'
+    WIN32_SSE2_KEY: 'x86',
+    WIN64_SSE2_KEY: 'x64',
+    WIN32_AVX_KEY: 'x86_avx',
+    WIN64_AVX_KEY: 'x64_avx'
 }
 
 
@@ -103,7 +110,7 @@ def render_nebula_release(version, stability, files, config):
                 'filename': dest_fn
             })
 
-            if group == 'Linux' and fn.endswith('.AppImage'):
+            if group == LINUX_KEY and fn.endswith('.AppImage'):
                 if 'qtfred' in fn:
                     if '-FASTDBG' in fn:
                         label = 'QtFRED Debug'
@@ -128,7 +135,7 @@ def render_nebula_release(version, stability, files, config):
                     'label': label,
                     'properties': props,
                 })
-            elif group == 'MacOSX' and fn.startswith(os.path.basename(fn) + '.app/'):
+            elif group == MACOSX_KEY and fn.startswith(os.path.basename(fn) + '.app/'):
                 if 'qtfred' in fn:
                     if '-FASTDBG' in fn:
                         label = 'QtFRED Debug'

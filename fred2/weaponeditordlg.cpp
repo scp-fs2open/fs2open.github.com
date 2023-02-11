@@ -32,21 +32,42 @@ WeaponEditorDlg::WeaponEditorDlg(CWnd* pParent /*=NULL*/)
 {
 	//{{AFX_DATA_INIT(WeaponEditorDlg)
 	m_ai_class = -1;
-	m_ammo1 = 0;
-	m_ammo2 = 0;
-	m_ammo3 = 0;
-	m_ammo4 = 0;
-	m_gun1 = -1;
-	m_gun2 = -1;
-	m_gun3 = -1;
-	m_missile1 = -1;
-	m_missile2 = -1;
-	m_missile3 = -1;
-	m_missile4 = -1;
+
+	for (int bank = 0; bank < MAX_SHIP_PRIMARY_BANKS; bank++)
+	{
+		m_gun[bank] = -1;
+	}
+	for (int bank = 0; bank < MAX_SHIP_SECONDARY_BANKS; bank++)
+	{
+		m_missile[bank] = -1;
+		m_ammo[bank] = BLANK_FIELD;
+		m_ammo_max[bank] = 0;
+	}
+
+	m_IDC_GUN[0] = IDC_GUN1;
+	m_IDC_GUN[1] = IDC_GUN2;
+	m_IDC_GUN[2] = IDC_GUN3;
+	m_IDC_MISSILE[0] = IDC_MISSILE1;
+	m_IDC_MISSILE[1] = IDC_MISSILE2;
+	m_IDC_MISSILE[2] = IDC_MISSILE3;
+	m_IDC_MISSILE[3] = IDC_MISSILE4;
+	m_IDC_AMMO[0] = IDC_AMMO1;
+	m_IDC_AMMO[1] = IDC_AMMO2;
+	m_IDC_AMMO[2] = IDC_AMMO3;
+	m_IDC_AMMO[3] = IDC_AMMO4;
+	m_IDC_SPIN[0] = IDC_SPIN1;
+	m_IDC_SPIN[1] = IDC_SPIN2;
+	m_IDC_SPIN[2] = IDC_SPIN3;
+	m_IDC_SPIN[3] = IDC_SPIN4;
+
 	m_cur_item = -1;
 	//}}AFX_DATA_INIT
 	m_last_item = -1;
 	m_multi_edit = 0;
+
+	cur_weapon = nullptr;
+	m_ship = -1;
+	m_ship_class = -1;
 }
 
 int save_number(char *str, int *val)
@@ -69,99 +90,47 @@ void WeaponEditorDlg::DoDataExchange(CDataExchange* pDX)
 
 	CDialog::DoDataExchange(pDX);
 	//{{AFX_DATA_MAP(WeaponEditorDlg)
-	DDX_Control(pDX, IDC_SPIN4, m_spin4);
-	DDX_Control(pDX, IDC_SPIN3, m_spin3);
-	DDX_Control(pDX, IDC_SPIN2, m_spin2);
-	DDX_Control(pDX, IDC_SPIN1, m_spin1);
+
+	for (int bank = 0; bank < MAX_SHIP_PRIMARY_BANKS; bank++)
+	{
+		DDX_CBIndex(pDX, m_IDC_GUN[bank], m_gun[bank]);
+	}
+	for (int bank = 0; bank < MAX_SHIP_SECONDARY_BANKS; bank++)
+	{
+		DDX_CBIndex(pDX, m_IDC_MISSILE[bank], m_missile[bank]);
+		DDX_Control(pDX, m_IDC_SPIN[bank], m_spin[bank]);
+	}
+
 	DDX_CBIndex(pDX, IDC_AI_CLASS, m_ai_class);
-	DDX_CBIndex(pDX, IDC_GUN1, m_gun1);
-	DDX_CBIndex(pDX, IDC_GUN2, m_gun2);
-	DDX_CBIndex(pDX, IDC_GUN3, m_gun3);
-	DDX_CBIndex(pDX, IDC_MISSILE1, m_missile1);
-	DDX_CBIndex(pDX, IDC_MISSILE2, m_missile2);
-	DDX_CBIndex(pDX, IDC_MISSILE3, m_missile3);
-	DDX_CBIndex(pDX, IDC_MISSILE4, m_missile4);
 	DDX_LBIndex(pDX, IDC_LIST, m_cur_item);
 	//}}AFX_DATA_MAP
 
 	if (pDX->m_bSaveAndValidate) {
-		GetDlgItem(IDC_AMMO1)->GetWindowText(str);
-		if (save_number((char *) (LPCSTR) str, &m_ammo1)) {
-			if (m_missile1 <= 0) {
-				m_ammo_max1 = 0;
-			} else {
-				m_ammo_max1 = (m_cur_item == 0) ? get_max_ammo_count_for_bank(m_ship_class, 0, m_missile1 + First_secondary_index - 1) : get_max_ammo_count_for_turret_bank(cur_weapon, 0, m_missile1 + First_secondary_index - 1);
+		for (int bank = 0; bank < MAX_SHIP_SECONDARY_BANKS; bank++)
+		{
+			GetDlgItem(m_IDC_AMMO[bank])->GetWindowText(str);
+			if (save_number((char *) (LPCSTR) str, &m_ammo[bank])) {
+				if (m_missile[bank] <= 0) {
+					m_ammo_max[bank] = 0;
+				} else {
+					int weapon_class = combo_index_to_weapon_class(m_IDC_MISSILE[bank], m_missile[bank]);
+					m_ammo_max[bank] = (m_cur_item == 0) 
+						? get_max_ammo_count_for_bank(m_ship_class, bank, weapon_class)
+						: get_max_ammo_count_for_turret_bank(cur_weapon, bank, weapon_class);
+				}
+				CLAMP(m_ammo[bank], 0, m_ammo_max[bank]);
 			}
-			if (m_ammo1 < 0)
-				m_ammo1 = 0;
-			if (m_ammo1 > m_ammo_max1)
-				m_ammo1 = m_ammo_max1;
+
+			m_spin[bank].SetRange(0, (short)m_ammo_max[bank]);
 		}
-
-		GetDlgItem(IDC_AMMO2)->GetWindowText(str);
-		if (save_number((char *) (LPCSTR) str, &m_ammo2)) {
-			if (m_missile2 <= 0) {
-				m_ammo_max2 = 0;
-			} else {
-				m_ammo_max2 = (m_cur_item == 0) ? get_max_ammo_count_for_bank(m_ship_class, 1, m_missile2 + First_secondary_index - 1) : get_max_ammo_count_for_turret_bank(cur_weapon, 1, m_missile2 + First_secondary_index - 1);
-			}
-			if (m_ammo2 < 0)
-				m_ammo2 = 0;
-			if (m_ammo2 > m_ammo_max2)
-				m_ammo2 = m_ammo_max2;
-		}
-
-		GetDlgItem(IDC_AMMO3)->GetWindowText(str);
-		if (save_number((char *) (LPCSTR) str, &m_ammo3)) {
-			if (m_missile3 <= 0) {
-				m_ammo_max3 = 0;
-			} else {
-				m_ammo_max3 = (m_cur_item == 0) ? get_max_ammo_count_for_bank(m_ship_class, 2, m_missile3 + First_secondary_index - 1) : get_max_ammo_count_for_turret_bank(cur_weapon, 2, m_missile3 + First_secondary_index - 1);
-			}
-			if (m_ammo3 < 0)
-				m_ammo3 = 0;
-			if (m_ammo3 > m_ammo_max3)
-				m_ammo3 = m_ammo_max3;
-		}
-
-		GetDlgItem(IDC_AMMO4)->GetWindowText(str);
-		if (save_number((char *) (LPCSTR) str, &m_ammo4)) {
-			if (m_missile4 <= 0) {
-				m_ammo_max4 = 0;
-			} else {
-				m_ammo_max4 = (m_cur_item == 0) ? get_max_ammo_count_for_bank(m_ship_class, 3, m_missile4 + First_secondary_index - 1) : get_max_ammo_count_for_turret_bank(cur_weapon, 3, m_missile4 + First_secondary_index - 1);
-			}
-			if (m_ammo4 < 0)
-				m_ammo4 = 0;
-			if (m_ammo4 > m_ammo_max4)
-				m_ammo4 = m_ammo_max4;
-		}
-
-		m_spin1.SetRange(0, (short) m_ammo_max1);
-		m_spin2.SetRange(0, (short) m_ammo_max2);
-		m_spin3.SetRange(0, (short) m_ammo_max3);
-		m_spin4.SetRange(0, (short) m_ammo_max4);
-
 	} else {
-		if (m_ammo1 != BLANK_FIELD)
-			DDX_Text(pDX, IDC_AMMO1, m_ammo1);
-		else
-			GetDlgItem(IDC_AMMO1)->SetWindowText("");
-
-		if (m_ammo2 != BLANK_FIELD)
-			DDX_Text(pDX, IDC_AMMO2, m_ammo2);
-		else
-			GetDlgItem(IDC_AMMO2)->SetWindowText("");
-
-		if (m_ammo3 != BLANK_FIELD)
-			DDX_Text(pDX, IDC_AMMO3, m_ammo3);
-		else
-			GetDlgItem(IDC_AMMO3)->SetWindowText("");
-
-		if (m_ammo4 != BLANK_FIELD)
-			DDX_Text(pDX, IDC_AMMO4, m_ammo4);
-		else
-			GetDlgItem(IDC_AMMO4)->SetWindowText("");
+		for (int bank = 0; bank < MAX_SHIP_SECONDARY_BANKS; bank++)
+		{
+			if (m_ammo[bank] != BLANK_FIELD)
+				DDX_Text(pDX, m_IDC_AMMO[bank], m_ammo[bank]);
+			else
+				GetDlgItem(m_IDC_AMMO[bank])->SetWindowText("");
+		}
 	}
 }
 
@@ -181,7 +150,7 @@ END_MESSAGE_MAP()
 
 BOOL WeaponEditorDlg::OnInitDialog() 
 {
-	int i, z, big = 1, end1, end2, inst, flag = 0;
+	int i, z, big = 1, inst, flag = 0;
 	object *ptr;
 	model_subsystem *psub;
 	ship_subsys *ssl, *pss;
@@ -192,9 +161,6 @@ BOOL WeaponEditorDlg::OnInitDialog()
 	m_ship = cur_ship;
 	if (m_ship == -1)
 		m_ship = Objects[cur_object_index].instance;
-
-	end1 = First_secondary_index;
-	end2 = weapon_info_size();
 
 	list = (CListBox *) GetDlgItem(IDC_LIST);
 
@@ -255,58 +221,57 @@ BOOL WeaponEditorDlg::OnInitDialog()
 		box->AddString(Ai_class_names[i]);
 	}
 
-	for (i=0; i<end1; i++){
-		if ((Weapon_info[i].wi_flags[Weapon::Info_Flags::Child]) || (!big && (Weapon_info[i].wi_flags[Weapon::Info_Flags::Big_only]))){
-			end1 = i;
+	// all weapon boxes have None at the top
+	for (int bank = 0; bank < MAX_SHIP_PRIMARY_BANKS; bank++)
+	{
+		box = (CComboBox*)GetDlgItem(m_IDC_GUN[bank]);
+		box->ResetContent();
+		box->AddString("None");
+		box->SetItemData(0, (DWORD_PTR)-1);
+	}
+	for (int bank = 0; bank < MAX_SHIP_SECONDARY_BANKS; bank++)
+	{
+		box = (CComboBox*)GetDlgItem(m_IDC_MISSILE[bank]);
+		box->ResetContent();
+		box->AddString("None");
+		box->SetItemData(0, (DWORD_PTR)-1);
+	}
+
+	// populate all weapon boxes with items mapped to weapon classes
+	for (int weapon_class = 0; weapon_class < weapon_info_size(); weapon_class++)
+	{
+		auto wip = &Weapon_info[weapon_class];
+
+		// can't select child weapons or no_fred weapons
+		if (wip->wi_flags[Weapon::Info_Flags::Child] || wip->wi_flags[Weapon::Info_Flags::No_fred])
+			continue;
+
+		// can only select big weapons if the ship is big
+		if (!big && wip->wi_flags[Weapon::Info_Flags::Big_only])
+			continue;
+
+		// primary weapon
+		if (weapon_class < First_secondary_index)
+		{
+			for (int bank = 0; bank < MAX_SHIP_PRIMARY_BANKS; bank++)
+			{
+				box = (CComboBox*)GetDlgItem(m_IDC_GUN[bank]);
+				i = box->GetCount();
+				box->AddString(wip->name);
+				box->SetItemData(i, weapon_class);
+			}
 		}
-	}
-
-	box = (CComboBox *) GetDlgItem(IDC_GUN1);
-	box->AddString("None");
-	for (i=0; i<end1; i++){
-		box->AddString(Weapon_info[i].name);
-	}
-
-	box = (CComboBox *) GetDlgItem(IDC_GUN2);
-	box->AddString("None");
-	for (i=0; i<end1; i++){
-		box->AddString(Weapon_info[i].name);
-	}
-
-	box = (CComboBox *) GetDlgItem(IDC_GUN3);
-	box->AddString("None");
-	for (i=0; i<end1; i++){
-		box->AddString(Weapon_info[i].name);
-	}
-
-	for (i=First_secondary_index; i<end2; i++){
-		if ((Weapon_info[i].wi_flags[Weapon::Info_Flags::Child]) || (!big && (Weapon_info[i].wi_flags[Weapon::Info_Flags::Big_only]))){
-			end2 = i;
+		// secondary weapon
+		else
+		{
+			for (int bank = 0; bank < MAX_SHIP_SECONDARY_BANKS; bank++)
+			{
+				box = (CComboBox*)GetDlgItem(m_IDC_MISSILE[bank]);
+				i = box->GetCount();
+				box->AddString(wip->name);
+				box->SetItemData(i, weapon_class);
+			}
 		}
-	}
-
-	box = (CComboBox *) GetDlgItem(IDC_MISSILE1);
-	box->AddString("None");
-	for (i=First_secondary_index; i<end2; i++){
-		box->AddString(Weapon_info[i].name);
-	}
-
-	box = (CComboBox *) GetDlgItem(IDC_MISSILE2);
-	box->AddString("None");
-	for (i=First_secondary_index; i<end2; i++){
-		box->AddString(Weapon_info[i].name);
-	}
-
-	box = (CComboBox *) GetDlgItem(IDC_MISSILE3);
-	box->AddString("None");
-	for (i=First_secondary_index; i<end2; i++){
-		box->AddString(Weapon_info[i].name);
-	}
-
-	box = (CComboBox *) GetDlgItem(IDC_MISSILE4);
-	box->AddString("None");
-	for (i=First_secondary_index; i<end2; i++){
-		box->AddString(Weapon_info[i].name);
 	}
 
 	m_cur_item = 0;
@@ -325,70 +290,55 @@ void WeaponEditorDlg::OnSelchangeList()
 
 void WeaponEditorDlg::change_selection()
 {
-	CString a1, a2, a3, a4;
+	std::array<CString, MAX_SHIP_SECONDARY_BANKS> ammo_str;
 
-	GetDlgItem(IDC_AMMO1)->GetWindowText(a1);
-	GetDlgItem(IDC_AMMO2)->GetWindowText(a2);
-	GetDlgItem(IDC_AMMO3)->GetWindowText(a3);
-	GetDlgItem(IDC_AMMO4)->GetWindowText(a4);
+	for (int bank = 0; bank < MAX_SHIP_SECONDARY_BANKS; bank++)
+		GetDlgItem(m_IDC_AMMO[bank])->GetWindowText(ammo_str[bank]);
 
 	if (m_last_item >= 0) {
 		cur_weapon->ai_class = m_ai_class;
-		cur_weapon->primary_bank_weapons[0] = m_gun1 - 1;
-		cur_weapon->primary_bank_weapons[1] = m_gun2 - 1;
-		cur_weapon->primary_bank_weapons[2] = m_gun3 - 1;
-		if (m_missile1 > 0)
-			m_missile1 += First_secondary_index;
 
-		cur_weapon->secondary_bank_weapons[0] = m_missile1 - 1;
-		if (m_missile2 > 0)
-			m_missile2 += First_secondary_index;
+		for (int bank = 0; bank < MAX_SHIP_PRIMARY_BANKS; bank++)
+			cur_weapon->primary_bank_weapons[bank] = combo_index_to_weapon_class(m_IDC_GUN[bank], m_gun[bank]);
 
-		cur_weapon->secondary_bank_weapons[1] = m_missile2 - 1;
-		if (m_missile3 > 0)
-			m_missile3 += First_secondary_index;
+		for (int bank = 0; bank < MAX_SHIP_SECONDARY_BANKS; bank++)
+		{
+			cur_weapon->secondary_bank_weapons[bank] = combo_index_to_weapon_class(m_IDC_MISSILE[bank], m_missile[bank]);
+			cur_weapon->secondary_bank_ammo[bank] = m_ammo_max[bank] ? fl2ir(m_ammo[bank] * 100.0f / m_ammo_max[bank]) : 0;
+		}
 
-		cur_weapon->secondary_bank_weapons[2] = m_missile3 - 1;
-		if (m_missile4 > 0)
-			m_missile4 += First_secondary_index;
-
-		cur_weapon->secondary_bank_weapons[3] = m_missile4 - 1;
-		cur_weapon->secondary_bank_ammo[0] = m_ammo_max1 ? fl2ir(m_ammo1 * 100.0f / m_ammo_max1) : 0;
-		cur_weapon->secondary_bank_ammo[1] = m_ammo_max2 ? fl2ir(m_ammo2 * 100.0f / m_ammo_max2) : 0;
-		cur_weapon->secondary_bank_ammo[2] = m_ammo_max3 ? fl2ir(m_ammo3 * 100.0f / m_ammo_max3) : 0;
-		cur_weapon->secondary_bank_ammo[3] = m_ammo_max4 ? fl2ir(m_ammo4 * 100.0f / m_ammo_max4) : 0;
 		if (m_multi_edit) {
-			if (!strlen(a1))
-				cur_weapon->secondary_bank_ammo[0] = BLANK_FIELD;
-			if (!strlen(a2))
-				cur_weapon->secondary_bank_ammo[1] = BLANK_FIELD;
-			if (!strlen(a3))
-				cur_weapon->secondary_bank_ammo[2] = BLANK_FIELD;
-			if (!strlen(a4))
-				cur_weapon->secondary_bank_ammo[3] = BLANK_FIELD;
+			for (int bank = 0; bank < MAX_SHIP_SECONDARY_BANKS; bank++)
+				if (ammo_str[bank].IsEmpty())
+					cur_weapon->secondary_bank_ammo[bank] = BLANK_FIELD;
 		}
 	}
 
-	m_gun1 = m_gun2 = m_gun3 = m_missile1 = m_missile2 = m_missile3 = m_missile4 = -1;
-	m_ammo1 = m_ammo2 = m_ammo3 = m_ammo4 = BLANK_FIELD;
-	m_ammo_max1 = m_ammo_max2 = m_ammo_max3 = m_ammo_max4 = 0;
+	for (int bank = 0; bank < MAX_SHIP_PRIMARY_BANKS; bank++)
+	{
+		m_gun[bank] = -1;
+	}
+	for (int bank = 0; bank < MAX_SHIP_SECONDARY_BANKS; bank++)
+	{
+		m_missile[bank] = -1;
+		m_ammo[bank] = BLANK_FIELD;
+		m_ammo_max[bank] = 0;
+	}
+
 	if (m_cur_item < 0) {
 		m_last_item = m_cur_item;
-		GetDlgItem(IDC_GUN1)->EnableWindow(FALSE);
-		GetDlgItem(IDC_GUN2)->EnableWindow(FALSE);
-		GetDlgItem(IDC_GUN3)->EnableWindow(FALSE);
-		GetDlgItem(IDC_MISSILE1)->EnableWindow(FALSE);
-		GetDlgItem(IDC_MISSILE2)->EnableWindow(FALSE);
-		GetDlgItem(IDC_MISSILE3)->EnableWindow(FALSE);
-		GetDlgItem(IDC_MISSILE4)->EnableWindow(FALSE);
-		GetDlgItem(IDC_AMMO1)->EnableWindow(FALSE);
-		GetDlgItem(IDC_AMMO2)->EnableWindow(FALSE);
-		GetDlgItem(IDC_AMMO3)->EnableWindow(FALSE);
-		GetDlgItem(IDC_AMMO4)->EnableWindow(FALSE);
-		GetDlgItem(IDC_SPIN1)->EnableWindow(FALSE);
-		GetDlgItem(IDC_SPIN2)->EnableWindow(FALSE);
-		GetDlgItem(IDC_SPIN3)->EnableWindow(FALSE);
-		GetDlgItem(IDC_SPIN4)->EnableWindow(FALSE);
+
+		for (int bank = 0; bank < MAX_SHIP_PRIMARY_BANKS; bank++)
+		{
+			GetDlgItem(m_IDC_GUN[bank])->EnableWindow(FALSE);
+		}
+		for (int bank = 0; bank < MAX_SHIP_SECONDARY_BANKS; bank++)
+		{
+			GetDlgItem(m_IDC_MISSILE[bank])->EnableWindow(FALSE);
+			GetDlgItem(m_IDC_AMMO[bank])->EnableWindow(FALSE);
+			GetDlgItem(m_IDC_SPIN[bank])->EnableWindow(FALSE);
+		}
+
 		GetDlgItem(IDC_AI_CLASS)->EnableWindow(FALSE);
 		UpdateData(FALSE);
 		return;
@@ -398,127 +348,46 @@ void WeaponEditorDlg::change_selection()
 	GetDlgItem(IDC_AI_CLASS)->EnableWindow(TRUE);
 	m_ai_class = cur_weapon->ai_class;
 
-	if (cur_weapon->num_primary_banks > 0) {
-		m_gun1 = cur_weapon->primary_bank_weapons[0] + 1;
-		GetDlgItem(IDC_GUN1)->EnableWindow(TRUE);
-	} else
-		GetDlgItem(IDC_GUN1)->EnableWindow(FALSE);
-
-	if (cur_weapon->num_primary_banks > 1) {
-		m_gun2 = cur_weapon->primary_bank_weapons[1] + 1;
-		GetDlgItem(IDC_GUN2)->EnableWindow(TRUE);
-	} else
-		GetDlgItem(IDC_GUN2)->EnableWindow(FALSE);
-
-	if (cur_weapon->num_primary_banks > 2) {
-		m_gun3 = cur_weapon->primary_bank_weapons[2] + 1;
-		GetDlgItem(IDC_GUN3)->EnableWindow(TRUE);
-	} else
-		GetDlgItem(IDC_GUN3)->EnableWindow(FALSE);
-
-	if (cur_weapon->num_secondary_banks > 0) {
-		m_missile1 = cur_weapon->secondary_bank_weapons[0] + 1;
-		if (m_missile1 > 0) {
-			if (m_cur_item == 0) {
-				m_ammo_max1 = get_max_ammo_count_for_bank(m_ship_class, 0, m_missile1 - 1);
-			} else {
-				m_ammo_max1 = get_max_ammo_count_for_turret_bank(cur_weapon, 0, m_missile1 - 1);
-			}
-			if (cur_weapon->secondary_bank_ammo[0] != BLANK_FIELD)
-				m_ammo1 = fl2ir(cur_weapon->secondary_bank_ammo[0] * m_ammo_max1 / 100.0f);
-			m_missile1 -= First_secondary_index;
-		}
-
-		GetDlgItem(IDC_MISSILE1)->EnableWindow(TRUE);
-		GetDlgItem(IDC_AMMO1)->EnableWindow(TRUE);
-		GetDlgItem(IDC_SPIN1)->EnableWindow(TRUE);
-
-	} else {
-		GetDlgItem(IDC_MISSILE1)->EnableWindow(FALSE);
-		GetDlgItem(IDC_AMMO1)->EnableWindow(FALSE);
-		GetDlgItem(IDC_SPIN1)->EnableWindow(FALSE);
+	for (int bank = 0; bank < MAX_SHIP_PRIMARY_BANKS; bank++)
+	{
+		if (cur_weapon->num_primary_banks > bank) {
+			m_gun[bank] = weapon_class_to_combo_index(m_IDC_GUN[bank], cur_weapon->primary_bank_weapons[bank]);
+			GetDlgItem(m_IDC_GUN[bank])->EnableWindow(TRUE);
+		} else
+			GetDlgItem(m_IDC_GUN[bank])->EnableWindow(FALSE);
 	}
 
-	if (cur_weapon->num_secondary_banks > 1) {
-		m_missile2 = cur_weapon->secondary_bank_weapons[1] + 1;
-		if (m_missile2 > 0) {
-			if (m_cur_item == 0) {
-				m_ammo_max2 = get_max_ammo_count_for_bank(m_ship_class, 1, m_missile2 - 1);
-			} else {
-				m_ammo_max2 = get_max_ammo_count_for_turret_bank(cur_weapon, 1, m_missile2 - 1);
+	for (int bank = 0; bank < MAX_SHIP_SECONDARY_BANKS; bank++)
+	{
+		if (cur_weapon->num_secondary_banks > bank) {
+			m_missile[bank] = weapon_class_to_combo_index(m_IDC_MISSILE[bank], cur_weapon->secondary_bank_weapons[bank]);
+			if (m_missile[bank] > 0) {
+				if (m_cur_item == 0) {
+					m_ammo_max[bank] = get_max_ammo_count_for_bank(m_ship_class, bank, cur_weapon->secondary_bank_weapons[bank]);
+				} else {
+					m_ammo_max[bank] = get_max_ammo_count_for_turret_bank(cur_weapon, bank, cur_weapon->secondary_bank_weapons[bank]);
+				}
+				if (cur_weapon->secondary_bank_ammo[bank] != BLANK_FIELD)
+					m_ammo[bank] = fl2ir(cur_weapon->secondary_bank_ammo[bank] * m_ammo_max[bank] / 100.0f);
 			}
-			if (cur_weapon->secondary_bank_ammo[1] != BLANK_FIELD)
-				m_ammo2 = fl2ir(cur_weapon->secondary_bank_ammo[1] * m_ammo_max2 / 100.0f);
-			m_missile2 -= First_secondary_index;
+
+			GetDlgItem(m_IDC_MISSILE[bank])->EnableWindow(TRUE);
+			GetDlgItem(m_IDC_AMMO[bank])->EnableWindow(TRUE);
+			GetDlgItem(m_IDC_SPIN[bank])->EnableWindow(TRUE);
+
+		} else {
+			GetDlgItem(m_IDC_MISSILE[bank])->EnableWindow(FALSE);
+			GetDlgItem(m_IDC_AMMO[bank])->EnableWindow(FALSE);
+			GetDlgItem(m_IDC_SPIN[bank])->EnableWindow(FALSE);
 		}
-
-		GetDlgItem(IDC_MISSILE2)->EnableWindow(TRUE);
-		GetDlgItem(IDC_AMMO2)->EnableWindow(TRUE);
-		GetDlgItem(IDC_SPIN2)->EnableWindow(TRUE);
-
-	} else {
-		GetDlgItem(IDC_MISSILE2)->EnableWindow(FALSE);
-		GetDlgItem(IDC_AMMO2)->EnableWindow(FALSE);
-		GetDlgItem(IDC_SPIN2)->EnableWindow(FALSE);
-	}
-
-	if (cur_weapon->num_secondary_banks > 2) {
-		m_missile3 = cur_weapon->secondary_bank_weapons[2] + 1;
-		if (m_missile3 > 0) {
-			if (m_cur_item == 0) {
-				m_ammo_max3 = get_max_ammo_count_for_bank(m_ship_class, 2, m_missile3 - 1);
-			} else {
-				m_ammo_max3 = get_max_ammo_count_for_turret_bank(cur_weapon, 2, m_missile3 - 1);
-			}
-			if (cur_weapon->secondary_bank_ammo[2] != BLANK_FIELD)
-				m_ammo3 = fl2ir(cur_weapon->secondary_bank_ammo[2] * m_ammo_max3 / 100.0f);
-			m_missile3 -= First_secondary_index;
-		}
-
-		GetDlgItem(IDC_MISSILE3)->EnableWindow(TRUE);
-		GetDlgItem(IDC_AMMO3)->EnableWindow(TRUE);
-		GetDlgItem(IDC_SPIN3)->EnableWindow(TRUE);
-
-	} else {
-		GetDlgItem(IDC_MISSILE3)->EnableWindow(FALSE);
-		GetDlgItem(IDC_AMMO3)->EnableWindow(FALSE);
-		GetDlgItem(IDC_SPIN3)->EnableWindow(FALSE);
-	}
-
-	if (cur_weapon->num_secondary_banks > 3) {
-		m_missile4 = cur_weapon->secondary_bank_weapons[3] + 1;
-		if (m_missile4 > 0) {
-			if (m_cur_item == 0) {
-				m_ammo_max4 = get_max_ammo_count_for_bank(m_ship_class, 3, m_missile4 - 1);
-			} else {
-				m_ammo_max4 = get_max_ammo_count_for_turret_bank(cur_weapon, 3, m_missile4 - 1);
-			}
-			if (cur_weapon->secondary_bank_ammo[3] != BLANK_FIELD)
-				m_ammo4 = fl2ir(cur_weapon->secondary_bank_ammo[3] * m_ammo_max4 / 100.0f);
-			m_missile4 -= First_secondary_index;
-		}
-
-		GetDlgItem(IDC_MISSILE4)->EnableWindow(TRUE);
-		GetDlgItem(IDC_AMMO4)->EnableWindow(TRUE);
-		GetDlgItem(IDC_SPIN4)->EnableWindow(TRUE);
-
-	} else {
-		GetDlgItem(IDC_MISSILE4)->EnableWindow(FALSE);
-		GetDlgItem(IDC_AMMO4)->EnableWindow(FALSE);
-		GetDlgItem(IDC_SPIN4)->EnableWindow(FALSE);
 	}
 
 	m_last_item = m_cur_item;
 	UpdateData(FALSE);
 	if (m_multi_edit) {
-		if (m_ammo1 == BLANK_FIELD)
-			GetDlgItem(IDC_AMMO1)->SetWindowText("");
-		if (m_ammo2 == BLANK_FIELD)
-			GetDlgItem(IDC_AMMO2)->SetWindowText("");
-		if (m_ammo3 == BLANK_FIELD)
-			GetDlgItem(IDC_AMMO3)->SetWindowText("");
-		if (m_ammo4 == BLANK_FIELD)
-			GetDlgItem(IDC_AMMO4)->SetWindowText("");
+		for (int bank = 0; bank < MAX_SHIP_SECONDARY_BANKS; bank++)
+			if (m_ammo[bank] == BLANK_FIELD)
+				GetDlgItem(m_IDC_AMMO[bank])->SetWindowText("");
 	}
 }
 
@@ -581,70 +450,66 @@ void WeaponEditorDlg::update_pilot()
 	}
 }
 
-void WeaponEditorDlg::OnSelchangeMissile1() 
+void WeaponEditorDlg::OnSelchangeMissile1()
+{
+	OnSelchangeMissile(0);
+}
+
+void WeaponEditorDlg::OnSelchangeMissile2()
+{
+	OnSelchangeMissile(1);
+}
+
+void WeaponEditorDlg::OnSelchangeMissile3()
+{
+	OnSelchangeMissile(2);
+}
+
+void WeaponEditorDlg::OnSelchangeMissile4()
+{
+	OnSelchangeMissile(3);
+}
+
+void WeaponEditorDlg::OnSelchangeMissile(int secondary_index)
 {
 	UpdateData(TRUE);
 	UpdateData(TRUE);
-	if (m_missile1 == 0) {
-		m_ammo_max1 = 0;
+
+	if (m_missile[secondary_index] == 0) {
+		m_ammo_max[secondary_index] = 0;
 	} else {
+		int weapon_class = combo_index_to_weapon_class(m_IDC_MISSILE[secondary_index], m_missile[secondary_index]);
+
 		if (m_cur_item == 0) {
-			m_ammo_max1 = get_max_ammo_count_for_bank(m_ship_class, 0, m_missile1 + First_secondary_index - 1);
+			m_ammo_max[secondary_index] = get_max_ammo_count_for_bank(m_ship_class, secondary_index, weapon_class);
 		} else {
-			m_ammo_max1 = get_max_ammo_count_for_turret_bank(cur_weapon, 0, m_missile1 + First_secondary_index - 1);
+			m_ammo_max[secondary_index] = get_max_ammo_count_for_turret_bank(cur_weapon, secondary_index, weapon_class);
 		}
 	}
-	m_ammo1 = m_ammo_max1 ? (m_ammo_max1) : 0;
+	m_ammo[secondary_index] = m_ammo_max[secondary_index] ? m_ammo_max[secondary_index] : 0;
 	change_selection();
 }
 
-void WeaponEditorDlg::OnSelchangeMissile2() 
+int WeaponEditorDlg::combo_index_to_weapon_class(int dialog_id, int combo_index)
 {
-	UpdateData(TRUE);
-	UpdateData(TRUE);
-	if (m_missile2 == 0) {
-		m_ammo_max2 = 0;
-	} else {
-		if (m_cur_item == 0) {
-			m_ammo_max2 = get_max_ammo_count_for_bank(m_ship_class, 1, m_missile2 + First_secondary_index - 1);
-		} else {
-			m_ammo_max2 = get_max_ammo_count_for_turret_bank(cur_weapon, 1, m_missile2 + First_secondary_index - 1);
-		}
-	}
-	m_ammo2 = m_ammo_max2 ? (m_ammo_max2) : 0;
-	change_selection();
+	auto ptr = (CComboBox*)GetDlgItem(dialog_id);
+
+	if (combo_index < 0 || combo_index >= ptr->GetCount())
+		return -1;
+
+	return (int)ptr->GetItemData(combo_index);
 }
 
-void WeaponEditorDlg::OnSelchangeMissile3() 
+int WeaponEditorDlg::weapon_class_to_combo_index(int dialog_id, int weapon_class)
 {
-	UpdateData(TRUE);
-	UpdateData(TRUE);
-	if (m_missile3 == 0) {
-		m_ammo_max3 = 0;
-	} else {
-		if (m_cur_item == 0) {
-			m_ammo_max3 = get_max_ammo_count_for_bank(m_ship_class, 2, m_missile3 + First_secondary_index - 1);
-		} else {
-			m_ammo_max3 = get_max_ammo_count_for_turret_bank(cur_weapon, 2, m_missile3 + First_secondary_index - 1);
-		}
-	}
-	m_ammo3 = m_ammo_max3 ? (m_ammo_max3) : 0;
-	change_selection();
-}
+	if (weapon_class < 0 || weapon_class >= weapon_info_size())
+		return 0;	// "None"
 
-void WeaponEditorDlg::OnSelchangeMissile4() 
-{
-	UpdateData(TRUE);
-	UpdateData(TRUE);
-	if (m_missile4 == 0) {
-		m_ammo_max4 = 0;
-	} else {
-		if (m_cur_item == 0) {
-			m_ammo_max4 = get_max_ammo_count_for_bank(m_ship_class, 3, m_missile4 + First_secondary_index - 1);
-		} else {
-			m_ammo_max4 = get_max_ammo_count_for_turret_bank(cur_weapon, 3, m_missile4 + First_secondary_index - 1);
-		}
-	}
-	m_ammo4 = m_ammo_max4 ? (m_ammo_max4) : 0;
-	change_selection();
+	auto ptr = (CComboBox*)GetDlgItem(dialog_id);
+
+	for (int i = 0; i < ptr->GetCount(); i++)
+		if ((int)ptr->GetItemData(i) == weapon_class)
+			return i;
+
+	return -1;	// will not display anything
 }

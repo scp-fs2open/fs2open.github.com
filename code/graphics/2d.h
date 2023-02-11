@@ -30,6 +30,7 @@ class GPUMemoryHeap;
 } // namespace util
 } // namespace graphics
 namespace scripting {
+template<typename condition_t>
 class OverridableHook;
 }
 
@@ -75,7 +76,7 @@ extern bool High_dynamic_range;
 
 extern os::ViewportState Gr_configured_window_state;
 
-extern const std::shared_ptr<scripting::OverridableHook> OnFrameHook;
+extern const std::shared_ptr<scripting::OverridableHook<void>> OnFrameHook;
 
 class material;
 class model_material;
@@ -232,7 +233,7 @@ enum shader_type {
 #define SDR_FLAG_MODEL_CLIP			(1<<17)
 #define SDR_FLAG_MODEL_HDR			(1<<18)
 #define SDR_FLAG_MODEL_AMBIENT_MAP	(1<<19)
-#define SDR_FLAG_MODEL_NORMAL_ALPHA	(1<<20)
+#define SDR_FLAG_MODEL_UNUSED20		(1<<20)
 #define SDR_FLAG_MODEL_THICK_OUTLINES (1<<21) // Renders the model geometry as an outline with configurable line width
 #define SDR_FLAG_MODEL_ALPHA_MULT (1<<22) 
 
@@ -359,7 +360,6 @@ extern int gr_stencil_mode;
  * of the values you want to use in the shade primitive.
  */
 typedef struct shader {
-	uint screen_sig;  // current mode this is in
 	ubyte r, g, b, c; // factors and constant
 	ubyte lookup[256];
 } shader;
@@ -372,7 +372,6 @@ typedef struct shader {
 // If you need to get the rgb values of a "color" struct call
 // gr_get_colors after calling gr_set_colors_fast.
 typedef struct color {
-	uint		screen_sig;
 	int		is_alphacolor;
 	int		alphacolor;
 	int		magic;
@@ -653,7 +652,6 @@ enum class BufferUsageHint { Static, Dynamic, Streaming, PersistentMapping };
 typedef void* gr_sync;
 
 typedef struct screen {
-	uint signature = 0;       // changes when mode or palette or width or height changes
 	int max_w = 0, max_h = 0; // Width and height
 	int max_w_unscaled = 0, max_h_unscaled = 0;
 	int max_w_unscaled_zoomed = 0, max_h_unscaled_zoomed = 0;

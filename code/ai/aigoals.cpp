@@ -23,6 +23,7 @@
 #include "parse/sexp.h"
 #include "parse/sexp/LuaAISEXP.h"
 #include "playerman/player.h"
+#include "scripting/global_hooks.h"
 #include "scripting/scripting.h"
 #include "ship/ship.h"
 #include "ship/awacs.h"
@@ -253,6 +254,8 @@ void ai_post_process_mission()
 	// mission following the orders in the mission file right away instead of waiting N seconds
 	// before following them.  Do both the created list and the object list for safety
 	for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 		if ( objp->type != OBJ_SHIP )
 			continue;
 		ai_process_mission_orders( OBJ_INDEX(objp), &Ai_info[Ships[objp->instance].ai_index] );
@@ -304,16 +307,31 @@ void ai_remove_ship_goal( ai_info *aip, int index )
 
 	if (index == aip->active_goal)
 	{
+		auto shipp = &Ships[aip->shipnum];
+
 		// rearm/repair needs a bit of extra cleanup
 		if (aip->goals[index].ai_mode == AI_GOAL_REARM_REPAIR)
-			ai_abort_rearm_request(&Objects[Ships[aip->shipnum].objnum]);
+			ai_abort_rearm_request(&Objects[shipp->objnum]);
 
-		// wookieejedi - play dead needs some extra cleanup, too
-		// there is an early return for the mode AIM_PLAY_DEAD in AI frame, so it needs to be set back to AIM_NONE
-		if (aip->ai_profile_flags[AI::Profile_Flags::Fixed_removing_play_dead_order] && 
-			(aip->goals[index].ai_mode == AI_GOAL_PLAY_DEAD || aip->goals[index].ai_mode == AI_GOAL_PLAY_DEAD_PERSISTENT)) {
-			aip->mode = AIM_NONE;
-			aip->submode_start_time = Missiontime;
+		// play dead needs some extra cleanup, too
+		if (aip->goals[index].ai_mode == AI_GOAL_PLAY_DEAD || aip->goals[index].ai_mode == AI_GOAL_PLAY_DEAD_PERSISTENT)
+		{
+			// wookieejedi - there is an early return for the mode AIM_PLAY_DEAD in AI frame, so it needs to be set back to AIM_NONE
+			if (aip->ai_profile_flags[AI::Profile_Flags::Fixed_removing_play_dead_order])
+			{
+				aip->mode = AIM_NONE;
+				aip->submode_start_time = Missiontime;
+			}
+
+			// Goober5000 - any ship subsystems will start moving now, so their initial velocity should be 0 to match original behavior
+			for (auto pss = GET_FIRST(&shipp->subsys_list); pss != END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss))
+			{
+				if (pss->submodel_instance_1)
+				{
+					pss->submodel_instance_1->current_turn_rate = 0.0f;
+					pss->submodel_instance_1->current_shift_rate = 0.0f;
+				}
+			}
 		}
 
 		aip->active_goal = AI_GOAL_NONE;
@@ -345,10 +363,9 @@ void ai_clear_ship_goals( ai_info *aip )
 	}
 
 	// add scripting hook for 'On Goals Cleared' --wookieejedi
-	if (Script_system.IsActiveAction(CHA_ONGOALSCLEARED)) {
-		Script_system.SetHookObject("Ship", &Objects[Ships[aip->shipnum].objnum]);
-		Script_system.RunCondition(CHA_ONGOALSCLEARED, &Objects[Ships[aip->shipnum].objnum]);
-		Script_system.RemHookVars({"Ship"});
+	if (scripting::hooks::OnGoalsCleared->isActive()) {
+		scripting::hooks::OnGoalsCleared->run(scripting::hooks::ShipSourceConditions{ &Ships[aip->shipnum] },
+			scripting::hook_param_list(scripting::hook_param("Ship", 'o', &Objects[Ships[aip->shipnum].objnum])));
 	}
 }
 
@@ -522,7 +539,7 @@ void ai_goal_purge_invalid_goals( ai_goal *aigp, ai_goal *goal_list, ai_info *ai
 
 					// for wings we grab the ship type of the wing leader
 					if (ai_wingnum >= 0) {
-						ai_ship_type = Ship_info[Ships[Wings[ai_wingnum].special_ship].ship_info_index].class_type;
+						ai_ship_type = Ship_info[Wings[ai_wingnum].special_ship_ship_info_index].class_type;
 					}
 					// otherwise we simply grab it from the ship itself
 					else {
@@ -558,6 +575,8 @@ void ai_goal_purge_all_invalid_goals(ai_goal *aigp)
 	
 	for (sop = GET_FIRST(&Ship_obj_list); sop != END_OF_LIST(&Ship_obj_list); sop = GET_NEXT(sop))
 	{
+		if (Objects[sop->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
 		ship *shipp = &Ships[Objects[sop->objnum].instance];
 		ai_goal_purge_invalid_goals(aigp, Ai_info[shipp->ai_index].goals, &Ai_info[shipp->ai_index], -1);
 	}
@@ -1479,12 +1498,11 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 {
 	int status;
 	ai_achievability return_val;
-	object *objp;
 	ai_info *aip;
 	int index = -1, sindex = -1;
 	int modelnum = -1;
 
-	objp = &Objects[objnum];
+	auto objp = &Objects[objnum];
 	Assert( objp->instance != -1 );
 	aip = &Ai_info[Ships[objp->instance].ai_index];
 
@@ -1547,8 +1565,11 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 	// if not, the status is not known because more ships of that class could arrive in the future
 	// (c.f. AI_GOAL_CHASE_WING subsequent to the next switch statement)
 	if ( aigp->ai_mode == AI_GOAL_CHASE_SHIP_CLASS ) {
-		for (objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
-			if ((objp->type == OBJ_SHIP) && !strcmp(aigp->target_name, Ship_info[Ships[objp->instance].ship_info_index].name)) {
+		for (auto so: list_range(&Ship_obj_list)) {
+			auto class_objp = &Objects[so->objnum];
+			if (class_objp->flags[Object::Object_Flags::Should_be_dead])
+				continue;
+			if ((class_objp->type == OBJ_SHIP) && !strcmp(aigp->target_name, Ship_info[Ships[class_objp->instance].ship_info_index].name)) {
 				return ai_achievability::ACHIEVABLE;
 			}
 		}

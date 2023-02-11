@@ -24,6 +24,7 @@
 #include "restrictpaths.h"
 #include "iff_defs/iff_defs.h"
 #include "warpparamsdlg.h"
+#include "ship/ship.h"
 
 #define ID_WING_MENU 9000
 
@@ -31,6 +32,9 @@
 #undef THIS_FILE
 static char THIS_FILE[] = __FILE__;
 #endif
+
+constexpr auto INPUT_THRESHOLD = 0.001f;		// smallest increment of input box
+constexpr auto INPUT_FORMAT = "%#.3f";
 
 /////////////////////////////////////////////////////////////////////////////
 // wing_editor dialog
@@ -45,6 +49,7 @@ wing_editor::wing_editor(CWnd* pParent /*=NULL*/)
 	m_waves = 0;
 	m_threshold = 0;
 	m_formation = 0;	// retail formation (no formation) is -1, but it's the 0-offset in the combo box
+	m_formation_scale = _T("1.0");
 	m_arrival_location = -1;
 	m_departure_location = -1;
 	m_arrival_delay = 0;
@@ -86,6 +91,7 @@ void wing_editor::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_WING_SQUAD_LOGO, m_wing_squad_filename);
 	DDX_CBIndex(pDX, IDC_WING_SPECIAL_SHIP, m_special_ship);
 	DDX_CBIndex(pDX, IDC_WING_FORMATION, m_formation);
+	DDX_Text(pDX, IDC_WING_FORMATION_SCALE, m_formation_scale);
 	DDX_CBIndex(pDX, IDC_ARRIVAL_LOCATION, m_arrival_location);
 	DDX_CBIndex(pDX, IDC_DEPARTURE_LOCATION, m_departure_location);
 	DDX_Check(pDX, IDC_REINFORCEMENT, m_reinforcement);
@@ -172,6 +178,7 @@ BEGIN_MESSAGE_MAP(wing_editor, CDialog)
 	ON_BN_CLICKED(IDC_RESTRICT_DEPARTURE, OnRestrictDeparture)
 	ON_BN_CLICKED(IDC_CUSTOM_WARPIN_PARAMS, OnBnClickedCustomWarpinParams)
 	ON_BN_CLICKED(IDC_CUSTOM_WARPOUT_PARAMS, OnBnClickedCustomWarpoutParams)
+	ON_BN_CLICKED(IDC_WING_FORMATION_ALIGN, OnWingFormationAlign)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -277,6 +284,7 @@ void wing_editor::initialize_data_safe(int full_update)
 		m_wing_squad_filename = _T("");
 		m_special_ship = -1;
 		m_formation = 0;
+		m_formation_scale = _T("1.0");
 		m_arrival_location = -1;
 		m_departure_location = -1;
 		m_arrival_delay = 0;
@@ -339,6 +347,13 @@ void wing_editor::initialize_data_safe(int full_update)
 		m_waves = Wings[cur_wing].num_waves;
 		m_threshold = Wings[cur_wing].threshold;
 		m_formation = Wings[cur_wing].formation + 1;
+
+		// there doesn't seem to be an easier way to do this
+		m_formation_scale.Format(INPUT_FORMAT, Wings[cur_wing].formation_scale);
+		m_formation_scale.TrimRight('0');
+		if (m_formation_scale.Right(1) == CString("."))
+			m_formation_scale.Append("0");
+
 		m_arrival_location = Wings[cur_wing].arrival_location;
 		m_departure_location = Wings[cur_wing].departure_location;
 		m_arrival_delay = Wings[cur_wing].arrival_delay;
@@ -438,6 +453,8 @@ void wing_editor::initialize_data_safe(int full_update)
 	GetDlgItem(IDC_SPIN_WAVE_THRESHOLD)->EnableWindow(player_enabled);
 
 	GetDlgItem(IDC_WING_FORMATION)->EnableWindow(enable);
+	GetDlgItem(IDC_WING_FORMATION_ALIGN)->EnableWindow(enable);
+	GetDlgItem(IDC_WING_FORMATION_SCALE)->EnableWindow(enable);
 
 	GetDlgItem(IDC_ARRIVAL_LOCATION)->EnableWindow(enable);
 	GetDlgItem(IDC_ARRIVAL_DELAY)->EnableWindow(player_enabled);
@@ -774,6 +791,8 @@ void wing_editor::update_data_safe()
 	MODIFY(Wings[cur_wing].num_waves, m_waves);
 	MODIFY(Wings[cur_wing].threshold, m_threshold);
 	MODIFY(Wings[cur_wing].formation, m_formation - 1);
+	MODIFY(Wings[cur_wing].formation_scale, (float)atof(m_formation_scale));
+
 	MODIFY(Wings[cur_wing].arrival_location, m_arrival_location);
 	MODIFY(Wings[cur_wing].departure_location, m_departure_location);
 	MODIFY(Wings[cur_wing].arrival_delay, m_arrival_delay);
@@ -1416,4 +1435,29 @@ void wing_editor::OnBnClickedCustomWarpoutParams()
 	warp_params_dlg dlg;
 	dlg.m_warp_in = false;
 	dlg.DoModal();
+}
+
+void wing_editor::OnWingFormationAlign()
+{
+	auto wingp = &Wings[cur_wing];
+	auto leader_objp = &Objects[Ships[wingp->ship_index[0]].objnum];
+
+	// temporarily set formation in case it isn't set yet (since changes don't take effect until dialog is closed)
+	auto old_formation = wingp->formation;
+	auto old_formation_scale = wingp->formation_scale;
+	UpdateData(TRUE);	// read controls
+	wingp->formation = m_formation - 1;
+	wingp->formation_scale = (float)atof(m_formation_scale);
+
+	for (int i = 1; i < wingp->wave_count; i++)
+	{
+		auto objp = &Objects[Ships[wingp->ship_index[i]].objnum];
+
+		get_absolute_wing_pos(&objp->pos, leader_objp, cur_wing, i, false);
+		objp->orient = leader_objp->orient;
+	}
+
+	// roll back temporary formation
+	wingp->formation = old_formation;
+	wingp->formation_scale = old_formation_scale;
 }

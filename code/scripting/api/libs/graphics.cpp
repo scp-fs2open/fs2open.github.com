@@ -14,6 +14,7 @@
 #include "scripting/api/objs/subsystem.h"
 #include "scripting/api/objs/texture.h"
 #include "scripting/api/objs/vecmath.h"
+#include "scripting/global_hooks.h"
 
 #include <asteroid/asteroid.h>
 #include <camera/camera.h>
@@ -214,7 +215,7 @@ ADE_VIRTVAR(CurrentOpacityType, l_Graphics, "enumeration", "Current alpha blendi
 			lua_Opacity_type = GR_ALPHABLEND_NONE;
 	}
 
-	int rtn;
+	lua_enum rtn;
 	switch(lua_Opacity_type)
 	{
 		case GR_ALPHABLEND_FILTER:
@@ -270,7 +271,7 @@ ADE_VIRTVAR(CurrentResizeMode, l_Graphics, "enumeration ResizeMode", "Current re
 		lua_ResizeMode = resize_arg.index - LE_GR_RESIZE_NONE;
 	}
 
-	return ade_set_args(L, "o", l_Enum.Set(enum_h(LE_GR_RESIZE_NONE + lua_ResizeMode)));
+	return ade_set_args(L, "o", l_Enum.Set(enum_h(static_cast<lua_enum>(LE_GR_RESIZE_NONE + lua_ResizeMode))));
 }
 
 ADE_FUNC(clear, l_Graphics, nullptr, "Calls gr_clear(), which fills the entire screen with the currently active color.  Useful if you want to have a fresh start for drawing things.  (Call this between setClip and resetClip if you only want to clear part of the screen.)", nullptr, nullptr)
@@ -875,7 +876,7 @@ ADE_FUNC(drawModel, l_Graphics, "model model, vector position, orientation orien
 
 	// Make sure we have a scene to use
 	// Note that this is only relevant, and thus only expected to be set, in OBJECTRENDER hooks
-	if (Script_system.IsActiveAction(CHA_OBJECTRENDER) && !Current_scene)
+	if (scripting::hooks::OnObjectRender->isActive() && !Current_scene)
 		return ade_set_args(L, "i", 4);
 
 	//Handle angles
@@ -919,7 +920,7 @@ ADE_FUNC(drawModel, l_Graphics, "model model, vector position, orientation orien
 	// of some optimizations by adding this model to the global render queue.
 	// In all other circumstances, we need to render the model in immediate mode, which may be slow but
 	// is guaranteed to work.
-	if (Script_system.IsActiveAction(CHA_OBJECTRENDER))
+	if (scripting::hooks::OnObjectRender->isActive())
 		model_render_queue(&render_info, Current_scene, model_num, orient, v);
 	else
 		model_render_immediate(&render_info, model_num, orient, v);
@@ -962,7 +963,7 @@ ADE_FUNC(drawModelOOR, l_Graphics, "model Model, vector Position, orientation Or
 
 	// Make sure we have a scene to use
 	// Note that this is only relevant, and thus only expected to be set, in OBJECTRENDER hooks
-	if (Script_system.IsActiveAction(CHA_OBJECTRENDER) && !Current_scene)
+	if (scripting::hooks::OnObjectRender->isActive() && !Current_scene)
 		return ade_set_args(L, "i", 4);
 
 	//Handle angles
@@ -978,7 +979,7 @@ ADE_FUNC(drawModelOOR, l_Graphics, "model Model, vector Position, orientation Or
 	// of some optimizations by adding this model to the global render queue.
 	// In all other circumstances, we need to render the model in immediate mode, which may be slow but
 	// is guaranteed to work.
-	if (Script_system.IsActiveAction(CHA_OBJECTRENDER))
+	if (scripting::hooks::OnObjectRender->isActive())
 		model_render_queue(&render_info, Current_scene, model_num, orient, v);
 	else
 		model_render_immediate(&render_info, model_num, orient, v);
@@ -1519,7 +1520,8 @@ ADE_FUNC(createTexture, l_Graphics, "[number Width=512, number Height=512, enume
 	if(idx < 0)
 		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
 
-	return ade_set_args(L, "o", l_Texture.Set(texture_h(idx)));
+	//Since creating a render target does not increase load count, when creating the scripting texture object we need to pass true to the constructor so that the constructor will increase the load count for us.
+	return ade_set_args(L, "o", l_Texture.Set(texture_h(idx, true)));
 }
 
 ADE_FUNC(loadTexture, l_Graphics, "string Filename, [boolean LoadIfAnimation, boolean NoDropFrames]",
@@ -1547,8 +1549,9 @@ ADE_FUNC(loadTexture, l_Graphics, "string Filename, [boolean LoadIfAnimation, bo
 
 	if(idx < 0)
 		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
-
-	return ade_set_args(L, "o", l_Texture.Set(texture_h(idx)));
+	
+	//Loading increases load count, so we must pass false to the texture scripting object, so that the constructor doesn't increase the load count by itself again.
+	return ade_set_args(L, "o", l_Texture.Set(texture_h(idx, false)));
 }
 
 ADE_FUNC(drawImage,
@@ -1688,8 +1691,8 @@ ADE_FUNC(drawImageCentered,
 				l_Texture.GetPtr(&th),
 				&x,
 				&y,
-				&h,
 				&w,
+				&h,
 				&uv_x1,
 				&uv_y1,
 				&uv_x2,
@@ -2066,6 +2069,9 @@ ADE_FUNC(createPersistentParticle,
 				pi.type          = particle::PARTICLE_BITMAP;
 			}
 			break;
+		default:
+			LuaError(L, "Invalid particle enum for createParticle(). Can only support PARTICLE_* enums!");
+			return ADE_RETURN_NIL;
 		}
 	}
 
@@ -2136,6 +2142,9 @@ ADE_FUNC(createParticle,
 				pi.type          = particle::PARTICLE_BITMAP;
 			}
 			break;
+		default:
+			LuaError(L, "Invalid particle enum for createParticle(). Can only support PARTICLE_* enums!");
+			return ADE_RETURN_NIL;
 		}
 	}
 

@@ -231,7 +231,6 @@ void hud_add_issued_order(const char *name, int order);
 void hud_update_last_order(const char *target, int order_source, int special_index);
 bool hud_squadmsg_is_target_order_valid(size_t order, ai_info *aip = nullptr);
 bool hud_squadmsg_ship_valid(ship *shipp, object *objp = nullptr);
-bool hud_squadmsg_ship_order_valid( int shipnum, int order );
 
 // function to set up variables needed when messaging mode is started
 void hud_squadmsg_start()
@@ -291,6 +290,9 @@ bool hud_squadmsg_exist_fighters( )
 	for (so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
 	{	
 		objp = &Objects[so->objnum];
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		shipp = &Ships[objp->instance];
 		Assertion(shipp->objnum != -1, "hud_squadmsg_exist_fighters() discovered that ship #%d ('%s') has an objnum of -1. Since the ship was retrieved from its object number (%d), this should be impossible; get a coder!\n", objp->instance, shipp->ship_name, so->objnum);
 
@@ -374,6 +376,9 @@ int hud_squadmsg_count_ships(int add_to_menu)
 	for (so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
 	{	
 		objp = &Objects[so->objnum];
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		shipp = &Ships[objp->instance];
 		Assertion(shipp->objnum != -1, "hud_squadmsg_count_ships() discovered that ship #%d ('%s') has an objnum of -1. Since the ship was retrieved from its object number (%d), this should be impossible; get a coder!\n", objp->instance, shipp->ship_name, so->objnum);
 
@@ -770,7 +775,7 @@ bool hud_squadmsg_is_target_order_valid(size_t order, ai_info *aip )
 
 	//If it's a lua order, defer to luaai
 	if (Player_orders[order].lua_id != -1) {
-		return ai_lua_is_valid_target(Player_orders[order].lua_id, target_objnum, ordering_shipp);
+		return ai_lua_is_valid_target(Player_orders[order].lua_id, target_objnum, ordering_shipp, order);
 	}
 
 	// orders which don't operate on targets are always valid
@@ -822,6 +827,11 @@ bool hud_squadmsg_is_target_order_valid(size_t order, ai_info *aip )
 		return false;
 	}
 
+	// check if this order can be issued against the target
+	if (shipp->orders_allowed_against.find(order) == shipp->orders_allowed_against.end()) {
+		return false;
+	}
+
 	// if the order is a disable order or depart, and the ship is disabled, order isn't active
 	if ( (order == DISABLE_TARGET_ITEM) && (shipp->flags[Ship::Ship_Flags::Disabled]) ){
 		return false;
@@ -853,7 +863,6 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num )
 	ai_info *aip;
 	ship *shipp, *ordering_shipp;
 	int i, send_message;
-	object *objp;
 
 	// quick short circuit here because of actually showing comm menu even though you cannot message.
 	// just a safety net.
@@ -912,7 +921,7 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num )
 			continue;
 
 		// can't message if ship not fighter/bomber if the command isn't to everyone.
-		if ( !(Ship_info[shipp->ship_info_index].is_fighter_bomber()) )
+		if ( !(Ship_info[Wings[i].special_ship_ship_info_index].is_fighter_bomber()) )
 			continue;
 
 		// don't send the command if the "wing" won't accept the command.  We do this by looking at
@@ -935,7 +944,10 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num )
 	}
 
 	// now find any friendly fighter/bomber ships not in wings
-	for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
+	for (auto so: list_range(&Ship_obj_list)) {
+		auto objp = &Objects[so->objnum];
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 		if ( objp->type != OBJ_SHIP )
 			continue;
 
@@ -985,6 +997,9 @@ int hud_squadmsg_enemies_present()
 	ship_obj *so;
 
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
+		if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		shipp = &Ships[Objects[so->objnum].instance];
 		if ( shipp->team != Player_ship->team )
 			return 1;
@@ -1513,11 +1528,11 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 		int ship_num;
 
 		// get a random ship in the wing to send the message to the player		
-		ship_num = ship_get_random_ship_in_wing( wingnum, SHIP_GET_UNSILENCED );
+		ship_num = ship_get_random_ship_in_wing( wingnum, SHIP_GET_UNSILENCED, 0.0, 0, command );
 		
 		// in multiplayer, its possible that all ships in a wing are players. so we'll just send from a random ship		
 		if(ship_num == -1 && (Game_mode & GM_MULTIPLAYER)){
-			ship_num = ship_get_random_ship_in_wing(wingnum);
+			ship_num = ship_get_random_ship_in_wing(wingnum, SHIP_GET_ANY_SHIP, 0.0, 0, command);
 		}
 		
 		// only send message if ship is found.  There appear to be cases where all ships
@@ -1987,6 +2002,8 @@ void hud_squadmsg_ship_command()
 			all_accept = true;
 			partial_accept = false;
 			for (so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so)) {
+				if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+					continue;
 
 				// don't send messge to ships not on player's team, or that are in a wing.
 				shipp = &Ships[Objects[so->objnum].instance];
@@ -2079,6 +2096,18 @@ void hud_squadmsg_wing_command()
 		// if no target, remove any items which are associated with the players target
 		if ( !hud_squadmsg_is_target_order_valid((int)order_id, 0) )
 			MsgItems[Num_menu_items].active = 0;
+
+		// if no ship in the wing can depart then gray out the departure order
+		if (order_id == DEPART_ITEM) {
+			int active = 0;
+			for (int i = 0; i < wingp->current_count; i++) {
+				if (hud_squadmsg_ship_order_valid(wingp->ship_index[i], (int)order_id)) {
+					active = 1;
+					break;
+				}
+			}
+			MsgItems[Num_menu_items].active = active;
+		}
 
 		Num_menu_items++;
 	

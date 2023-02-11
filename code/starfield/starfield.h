@@ -21,7 +21,6 @@
 #define DEFAULT_NMODEL_FLAGS  (MR_NO_ZBUFFER | MR_NO_CULL | MR_ALL_XPARENT | MR_NO_LIGHTING)
 
 #define MAX_STARFIELD_BITMAP_LISTS	1
-#define MAX_ASTEROID_FIELDS			4
 
 // nice low polygon background
 #define BACKGROUND_MODEL_FILENAME			"spherec.pof"

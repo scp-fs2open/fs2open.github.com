@@ -1189,8 +1189,6 @@ void parse_sound_environments()
 	required_string("#Sound Environments End");
 }
 
-static SCP_vector<species_info> missingFlybySounds;
-
 void parse_sound_table(const char* filename)
 {
 	try
@@ -1291,20 +1289,14 @@ void gamesnd_parse_soundstbl()
 
 	parse_modular_table("*-snd.tbm", parse_sound_table);
 
-	// if we are missing any species then report
-	if (!missingFlybySounds.empty())
-	{
-		SCP_string errorString;
-		for (size_t i = 0; i < missingFlybySounds.size(); i++)
-		{
-			errorString.append(missingFlybySounds[i].species_name);
-			errorString.append("\n");
+	//Set any flyby sounds for species that use the borrowed feature
+	for (size_t i = 0; i < Species_info.size(); i++) {
+		if (Species_info[i].borrows_flyby_sounds_species >= 0) {
+			int idx = Species_info[i].borrows_flyby_sounds_species;
+			Species_info[i].snd_flyby_fighter = Species_info[idx].snd_flyby_fighter;
+			Species_info[i].snd_flyby_bomber = Species_info[idx].snd_flyby_bomber;
 		}
-
-		Error(LOCATION, "The following species are missing flyby sounds in sounds.tbl:\n%s", errorString.c_str());
 	}
-
-	missingFlybySounds.clear();
 }
 
 /**

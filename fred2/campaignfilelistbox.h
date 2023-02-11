@@ -17,7 +17,7 @@ class campaign_filelist_box : public CListBox
 {
 // Construction
 public:
-	void initialize();
+	void initialize(const CString &path);
 	campaign_filelist_box();
 
 // Attributes

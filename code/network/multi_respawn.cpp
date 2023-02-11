@@ -270,14 +270,16 @@ void multi_respawn_handle_invul_players()
 // build a list of respawn points for the mission
 void multi_respawn_build_points()
 {
-	ship_obj *moveup;
 	respawn_point *r;
 
 	// respawn points
 	Multi_respawn_point_count = 0;
 	Multi_next_respawn_point = 0;
-	moveup = GET_FIRST(&Ship_obj_list);
-	while(moveup != END_OF_LIST(&Ship_obj_list)){
+
+	for (auto moveup: list_range(&Ship_obj_list)){
+		if (Objects[moveup->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		// player ships
 		if(Objects[moveup->objnum].flags[Object::Object_Flags::Player_ship] || Objects[moveup->objnum].flags[Object::Object_Flags::Could_be_player]){
 			r = &Multi_respawn_points[Multi_respawn_point_count++];
@@ -285,13 +287,15 @@ void multi_respawn_build_points()
 			r->pos = Objects[moveup->objnum].pos;
 			r->team = Ships[Objects[moveup->objnum].instance].team;			
 		}
-		moveup = GET_NEXT(moveup);
 	}	
 
 	// priority respawn points
 	Multi_respawn_priority_count = 0;
-	moveup = GET_FIRST(&Ship_obj_list);
-	while(moveup != END_OF_LIST(&Ship_obj_list)){
+
+	for (auto moveup: list_range(&Ship_obj_list)){
+		if (Objects[moveup->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		// stuff info
 		if((Ships[Objects[moveup->objnum].instance].respawn_priority > 0) && (Multi_respawn_priority_count < MAX_PRIORITY_POINTS)){
 			r = &Multi_respawn_priority_ships[Multi_respawn_priority_count++];
@@ -299,7 +303,6 @@ void multi_respawn_build_points()
 			strcpy_s(r->ship_name, Ships[Objects[moveup->objnum].instance].ship_name);
 			r->team = Ships[Objects[moveup->objnum].instance].team;
 		}
-		moveup = GET_NEXT(moveup);
 	}	
 }
 
@@ -933,6 +936,9 @@ void prevent_spawning_collision(object *new_obj)
 
 		for (moveup = GET_FIRST(&Ship_obj_list); moveup != END_OF_LIST(&Ship_obj_list); moveup = GET_NEXT(moveup))
 		{
+			if (Objects[moveup->objnum].flags[Object::Object_Flags::Should_be_dead])
+				continue;
+
 			// don't check the new object itself!!
 			if (moveup->objnum == OBJ_INDEX(new_obj))
 				continue;

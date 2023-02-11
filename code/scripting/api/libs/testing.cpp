@@ -168,6 +168,9 @@ ADE_FUNC_DEPRECATED(createParticle,
 				    pi.type          = particle::PARTICLE_BITMAP;
 			    }
 			    break;
+			default:
+				LuaError(L, "Invalid particle enum for createParticle(). Can only support PARTICLE_* enums!");
+				return ADE_RETURN_NIL;
 		}
 	}
 

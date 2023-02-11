@@ -77,6 +77,7 @@ class lighting_profile{
 public:
 	static lighting_profile * current();
 	static enum TonemapperAlgorithm name_to_tonemapper(SCP_string &name);
+	static SCP_string tonemapper_to_name(TonemapperAlgorithm tnm);
 	static void load_profiles();
 	static TonemapperAlgorithm current_tonemapper();
 	static const piecewise_power_curve_values & current_piecewise_values();

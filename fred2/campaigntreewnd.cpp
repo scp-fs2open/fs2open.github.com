@@ -103,7 +103,6 @@ BOOL campaign_tree_wnd::OnCreateClient(LPCREATESTRUCT, CCreateContext* pContext)
 	// activate the input view
 	SetActiveView(Campaign_tree_formp);
 	OnCpgnFileNew();
-//	Campaign_tree_formp->load_campaign();
 	Fred_main_wnd->EnableWindow(FALSE);
 	return TRUE;
 }
@@ -115,7 +114,7 @@ void campaign_tree_wnd::OnUpdateCpgnFileOpen(CCmdUI* pCmdUI)
 
 void campaign_tree_wnd::OnCpgnFileOpen() 
 {
-	CString name;
+	CString name, full_path;
 
 	if (Campaign_modified)
 		if (save_modified())
@@ -133,8 +132,9 @@ void campaign_tree_wnd::OnCpgnFileOpen()
 		if (!strlen(name))
 			return;
 
-		string_copy(Campaign.filename, name, MAX_FILENAME_LEN - 1);
-		Campaign_tree_formp->load_campaign();
+		full_path = dlg.GetPathName();
+
+		Campaign_tree_formp->load_campaign((LPCTSTR)name, (LPCTSTR)full_path);
 	}
 }
 
@@ -219,7 +219,7 @@ void campaign_tree_wnd::OnCpgnFileSaveAs()
 		}
 
 		if (!strlen(name)){
-			return;		
+			return;
 		}
 
 		string_copy(Campaign.filename, name, MAX_FILENAME_LEN - 1);
@@ -246,7 +246,7 @@ void campaign_tree_wnd::OnCpgnFileNew()
 	strcpy_s(Campaign.name, "Unnamed");
 	Campaign.desc = NULL;
 	Campaign_tree_viewp->free_links();
-	Campaign_tree_formp->initialize();
+	Campaign_tree_formp->initialize(true, true);
 	Campaign_modified = 0;
 	Campaign.flags = CF_DEFAULT_VALUE;
 	((CButton *) (Campaign_tree_formp->GetDlgItem(IDC_CUSTOM_TECH_DB)))->SetCheck(0);

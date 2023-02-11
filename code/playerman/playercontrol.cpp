@@ -1205,6 +1205,9 @@ void player_init_all_alone_msg()
 	// See if there are any friendly ships present, if so return without preventing msg
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		objp = &Objects[so->objnum];
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		if ( objp == Player_obj ) {
 			continue;
 		}
@@ -1525,7 +1528,7 @@ int player_inspect_cargo(float frametime, char *outstr)
 
 	outstr[0] = 0;
 
-	if ( Player_ai->target_objnum < 0 ) {
+	if ( Player_ai->target_objnum < 0 || Player_ship->flags[Ship::Ship_Flags::Cannot_perform_scan] ) {
 		return 0;
 	}
 
@@ -1640,7 +1643,7 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 	outstr[0] = 0;
 	subsys = Player_ai->targeted_subsys;
 
-	if ( subsys == NULL ) {
+	if ( subsys == NULL || Player_ship->flags[Ship::Ship_Flags::Cannot_perform_scan] ) {
 		return 0;
 	} 
 
@@ -1962,6 +1965,8 @@ void player_maybe_play_all_alone_msg()
 
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		objp = &Objects[so->objnum];
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 
 		if ( objp == Player_obj ) {
 			continue;

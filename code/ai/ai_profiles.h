@@ -21,7 +21,7 @@
 #define	AI_RANGE_AWARE_SEC_SEL_MODE_RETAIL 0
 #define	AI_RANGE_AWARE_SEC_SEL_MODE_AWARE 1
 	
-#define MAX_AI_PROFILES	5
+#define MAX_AI_PROFILES	8
 
 class ai_profile_t {
 public:

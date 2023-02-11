@@ -2786,11 +2786,12 @@ int model_interp_get_texture(texture_info *tinfo, int elapsed_time)
 	{
 		// sanity check total_time first thing
 		Assert(total_time > 0.0f);
+		total_time *= MILLISECONDS_PER_SECOND;
 
-		cur_time = elapsed_time % fl2i(total_time * MILLISECONDS_PER_SECOND);
+		cur_time = elapsed_time % fl2i(total_time);
 
 		// get animation frame
-		frame = fl2i((cur_time * num_frames) / total_time);
+		frame = fl2i((cur_time * num_frames) / total_time + 0.5f);
 		CLAMP(frame, 0, num_frames - 1);
 
 		// advance to the correct frame

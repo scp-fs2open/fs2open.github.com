@@ -21,6 +21,7 @@
 #include "jumpnode/jumpnode.h"
 #include "lighting/lighting.h"
 #include "math/staticrand.h"
+#include "missionui/missionscreencommon.h"
 #include "mod_table/mod_table.h"
 #include "nebula/neb.h"
 #include "particle/particle.h"
@@ -70,7 +71,6 @@ model_render_params::model_render_params() :
 	Animated_effect(-1),
 	Animated_timer(0.0f),
 	Thruster_info(),
-	Normal_alpha(false),
 	Use_alpha_mult(false),
 	Alpha_mult(1.0f)
 {
@@ -318,28 +318,6 @@ void model_render_params::set_thruster_info(mst_info &info)
 const mst_info& model_render_params::get_thruster_info()
 {
 	return Thruster_info;
-}
-
-void model_render_params::set_normal_alpha(float min, float max)
-{
-	Normal_alpha = true;
-	Normal_alpha_min = min;
-	Normal_alpha_max = max;
-}
-
-bool model_render_params::is_normal_alpha_set()
-{
-	return Normal_alpha;
-}
-
-float model_render_params::get_normal_alpha_min()
-{
-	return Normal_alpha_min;
-}
-
-float model_render_params::get_normal_alpha_max()
-{
-	return Normal_alpha_max;
 }
 
 void model_render_params::set_outline_thickness(float thickness) {
@@ -856,39 +834,72 @@ void model_render_add_lightning( model_draw_list *scene, model_render_params* in
  		return;
  	}
 
-	// try and scale the size a bit so that it looks equally well on smaller vessels
-	if ( pm->rad < 500.0f ) {
-		width *= (pm->rad * 0.01f);
-
-		if ( width < 0.2f ) {
-			width = 0.2f;
-		}
-	}
-
 	for ( i = 0; i < smi->num_arcs; i++ ) {
 		// pick a color based upon arc type
 		switch ( smi->arc_type[i] ) {
 			// "normal", FreeSpace 1 style arcs
 		case MARC_TYPE_DAMAGED:
-		case MARC_TYPE_SHIP:
 			if ( Random::flip_coin() )	{
-				gr_init_color(&primary, std::get<0>(Arc_color_damage_p1), std::get<1>(Arc_color_damage_p1), std::get<2>(Arc_color_damage_p1));
+				primary = Arc_color_damage_p1;
 			} else {
-				gr_init_color(&primary, std::get<0>(Arc_color_damage_p2), std::get<1>(Arc_color_damage_p2), std::get<2>(Arc_color_damage_p2));
+				primary = Arc_color_damage_p2;
 			}
 
-			gr_init_color(&primary, std::get<0>(Arc_color_damage_s1), std::get<1>(Arc_color_damage_s1), std::get<2>(Arc_color_damage_s1));
+			secondary = Arc_color_damage_s1;
+			
+			// try and scale the size a bit so that it looks equally well on smaller vessels
+			width = Arc_width_default_damage;
+			if (pm->rad < Arc_width_no_multiply_over_radius_damage) {
+				width *= (pm->rad * Arc_width_radius_multiplier_damage);
+
+				if (width < Arc_width_minimum_damage) {
+					width = Arc_width_minimum_damage;
+				}
+			}
+			
+			break;
+
+		case MARC_TYPE_SHIP:
+			if ( Random::flip_coin() )	{
+				primary = smi->arc_primary_color_1[i];
+			} else {
+				primary = smi->arc_primary_color_2[i];
+			}
+
+			secondary = smi->arc_secondary_color[i];
+      
+      			// try and scale the size a bit so that it looks equally well on smaller vessels
+			width = Arc_width_default_damage;
+			if (pm->rad < Arc_width_no_multiply_over_radius_damage) {
+				width *= (pm->rad * Arc_width_radius_multiplier_damage);
+
+				if (width < Arc_width_minimum_damage) {
+					width = Arc_width_minimum_damage;
+				}
+			}
+
 			break;
 
 			// "EMP" style arcs
 		case MARC_TYPE_EMP:
 			if ( Random::flip_coin() )	{
-				gr_init_color(&primary, std::get<0>(Arc_color_emp_p1), std::get<1>(Arc_color_emp_p1), std::get<2>(Arc_color_emp_p1));
+				primary = Arc_color_emp_p1;
 			} else {
-				gr_init_color(&primary, std::get<0>(Arc_color_emp_p2), std::get<1>(Arc_color_emp_p2), std::get<2>(Arc_color_emp_p2));
+				primary = Arc_color_emp_p2;
 			}
 
-			gr_init_color(&primary, std::get<0>(Arc_color_emp_s1), std::get<1>(Arc_color_emp_s1), std::get<2>(Arc_color_emp_s1));
+			secondary = Arc_color_emp_s1;
+      
+			// try and scale the size a bit so that it looks equally well on smaller vessels
+			width = Arc_width_default_emp;
+			if (pm->rad < Arc_width_no_multiply_over_radius_emp) {
+				width *= (pm->rad * Arc_width_radius_multiplier_emp);
+
+				if (width < Arc_width_minimum_emp) {
+					width = Arc_width_minimum_emp;
+				}
+			}      
+      
 			break;
 
 		default:
@@ -896,7 +907,8 @@ void model_render_add_lightning( model_draw_list *scene, model_render_params* in
 		}
 
 		// render the actual arc segment
-		scene->add_arc(&smi->arc_pts[i][0], &smi->arc_pts[i][1], &primary, &secondary, width);
+		if (width > 0.0f)
+			scene->add_arc(&smi->arc_pts[i][0], &smi->arc_pts[i][1], &primary, &secondary, width);
 	}
 }
 
@@ -1388,7 +1400,8 @@ int model_render_determine_elapsed_time(int objnum, uint flags)
 		return timestamp_since(Skybox_timestamp);
 	}
 
-	return 0;
+	// by default, assume texture animation started at the beginning of the mission
+	return timestamp_get_mission_time_in_milliseconds();
 }
 
 bool model_render_determine_autocenter(vec3d *auto_back, polymodel *pm, int detail_level, uint flags)
@@ -1873,10 +1886,10 @@ void model_render_glowpoint_add_light(int point_num, vec3d *pos, matrix *orient,
 			vm_vec_rotate(&cone_dir_screen, &cone_dir_world, &Eye_matrix);
 			cone_dir_screen.xyz.z = -cone_dir_screen.xyz.z;
 			light_add_cone(
-				&world_pnt, &cone_dir_screen, gpo->cone_angle, gpo->cone_inner_angle, gpo->dualcone, 1.0f, light_radius, 1,
+				&world_pnt, &cone_dir_screen, gpo->cone_angle, gpo->cone_inner_angle, gpo->dualcone, 1.0f, light_radius, gpo->intensity,
 				lightcolor.xyz.x, lightcolor.xyz.y, lightcolor.xyz.z, gpt->radius);
 		} else {
-			light_add_point(&world_pnt, 1.0f, light_radius, 1,	lightcolor.xyz.x, lightcolor.xyz.y, lightcolor.xyz.z, gpt->radius);
+			light_add_point(&world_pnt, 1.0f, light_radius, gpo->intensity,	lightcolor.xyz.x, lightcolor.xyz.y, lightcolor.xyz.z, gpt->radius);
 		}
 	}
 }
@@ -2850,10 +2863,6 @@ void model_render_queue(model_render_params* interp, model_draw_list* scene, int
 		rendering_material.set_center_alpha(0);
 	}
 
-	if ( interp->is_normal_alpha_set() ) {
-		rendering_material.set_normal_alpha(interp->get_normal_alpha_min(), interp->get_normal_alpha_max());
-	}
-
 	if ( interp->uses_thick_outlines() ) {
 		rendering_material.set_outline_thickness(interp->get_outline_thickness());
 	}
@@ -3071,4 +3080,114 @@ void model_render_only_glowpoint_lights(model_render_params* interp, int model_n
 void model_render_set_wireframe_color(color* clr)
 {
 	Wireframe_color = *clr;
+}
+
+bool render_tech_model(bool is_ship, int x1, int y1, int x2, int y2, float zoom, bool lighting, int class_idx, matrix* orient)
+{
+
+	model_render_params render_info;
+	vec3d closeup_pos;
+	float closeup_zoom;
+	int model_num;
+	bool model_lighting = true;
+
+	if (is_ship) {
+		ship_info* sip;
+		sip = &Ship_info[class_idx];
+
+		closeup_pos = sip->closeup_pos;
+		closeup_zoom = sip->closeup_zoom;
+
+		if (sip->uses_team_colors) {
+			render_info.set_team_color(sip->default_team_name, "none", 0, 0);
+		}
+
+		if (sip->flags[Ship::Info_Flags::No_lighting]) {
+			model_lighting = false;
+		}
+
+		// Make sure model is loaded
+		model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0], 0);
+
+	} else {
+		weapon_info* wip;
+		wip = &Weapon_info[class_idx];
+
+		closeup_pos = wip->closeup_pos;
+		closeup_zoom = wip->closeup_zoom;
+
+		if (wip->wi_flags[Weapon::Info_Flags::Mr_no_lighting]) {
+			model_lighting = false;
+		}
+
+		// Make sure model is loaded
+		if (VALID_FNAME(wip->tech_model)) {
+			model_num = model_load(wip->tech_model, 0, nullptr, 0);
+		} else {
+			// no tech model!!
+			return false;
+		}
+	}
+
+	//check if the model was loaded
+	if (model_num < 0)
+		return false;
+
+	// Clip
+	gr_set_clip(x1, y1, x2 - x1, y2 - y1, GR_RESIZE_NONE);
+
+	// Handle 3D init stuff
+	g3_start_frame(1);
+	g3_set_view_matrix(&closeup_pos, &vmd_identity_matrix, closeup_zoom * zoom);
+
+	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+	gr_set_view_matrix(&Eye_position, &Eye_matrix);
+
+	// setup lights
+	common_setup_room_lights();
+
+	// Draw the model!!
+	model_clear_instance(model_num);
+
+	int model_instance = -1;
+
+	// Create an instance for ships that can be used to clear out destroyed subobjects from rendering
+	if (is_ship) {
+		model_instance = model_create_instance(-1, model_num);
+		model_set_up_techroom_instance(&Ship_info[class_idx], model_instance);
+	}
+
+	render_info.set_detail_level_lock(0);
+
+	uint render_flags = MR_AUTOCENTER | MR_NO_FOGGING;
+
+	if (!lighting || !model_lighting)
+		render_flags |= MR_NO_LIGHTING;
+
+	render_info.set_flags(render_flags);
+
+	bool s_save = Shadow_override;
+	Shadow_override = true;
+
+	if (is_ship) {
+		model_render_immediate(&render_info, model_num, model_instance, orient, &vmd_zero_vector);
+	} else {
+		model_render_immediate(&render_info, model_num, orient, &vmd_zero_vector);
+	}
+
+	Shadow_override = s_save;
+
+	// OK we're done
+	gr_end_view_matrix();
+	gr_end_proj_matrix();
+
+	// Bye!!
+	g3_end_frame();
+	gr_reset_clip();
+
+	// Now that we've rendered the frame we can remove the instance if one was created for ships
+	if (is_ship)
+		model_delete_instance(model_instance);
+
+	return true;
 }

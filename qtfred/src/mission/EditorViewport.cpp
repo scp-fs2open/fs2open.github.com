@@ -336,7 +336,7 @@ void EditorViewport::process_controls(vec3d* pos, matrix* orient, float frametim
 		if (mode) {
 			physics_sim_editor(pos, orient, &view_physics, frametime);
 		} else {
-			physics_sim(pos, orient, &view_physics, frametime);
+			physics_sim(pos, orient, &view_physics, &vmd_zero_vector, frametime);
 		}
 	} else {
 		vec3d movement_vec, rel_movement_vec;

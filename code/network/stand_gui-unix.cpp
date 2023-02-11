@@ -397,8 +397,8 @@ json_t* missionGoalsGet(ResourceContext * /*context*/) {
 
         json_t *goalEntity = json_object();
 
-        json_object_set_new(goalEntity, "name", json_string(goal.name));
-        json_object_set_new(goalEntity, "message", json_string(goal.message));
+        json_object_set_new(goalEntity, "name", json_string(goal.name.c_str()));
+        json_object_set_new(goalEntity, "message", json_string(goal.message.c_str()));
         json_object_set_new(goalEntity, "score", json_integer(goal.score));
         json_object_set_new(goalEntity, "team", json_integer(goal.team));
 
@@ -790,7 +790,7 @@ void std_do_gui_frame() {
     webui_missiontime = f2fl(Missiontime);
 
     webuiMissionGoals.clear();
-    for (int idx = 0; idx < Num_goals; idx++) {
+    for (int idx = 0; idx < (int)Mission_goals.size(); idx++) {
         webuiMissionGoals.push_back(Mission_goals[idx]);
     }
 

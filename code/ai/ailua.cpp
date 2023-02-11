@@ -158,7 +158,7 @@ bool ai_lua_is_valid_target_lua(const ai_mode_lua& mode, int target_objnum, ship
 	return true;
 }
 
-bool ai_lua_is_valid_target(int sexp_op, int target_objnum, ship* self) {
+bool ai_lua_is_valid_target(int sexp_op, int target_objnum, ship* self, size_t order) {
 	const ai_mode_lua& mode = *ai_lua_find_mode(sexp_op);
 
 	//All targetless AI modes are fine
@@ -174,6 +174,12 @@ bool ai_lua_is_valid_target(int sexp_op, int target_objnum, ship* self) {
 
 		if (!ai_lua_is_valid_target_intrinsic(sexp_op, target_objnum, self))
 			return false;
+
+		// check if this order can be issued against the target
+		ship *shipp = &Ships[Objects[target_objnum].instance];
+		if (shipp->orders_allowed_against.find(order) == shipp->orders_allowed_against.end()) {
+			return false;
+		}
 	}
 
 	//If we haven't bailed yet, query the custom callback

@@ -336,7 +336,7 @@ ADE_FUNC(loadCampaign, l_Player, "string campaign", "Loads the specified campaig
 	strcpy_s(pl->current_campaign, filename); // track new campaign for player
 
 	// attempt to load the campaign
-	const int load_status = mission_campaign_load(filename, pl);
+	const int load_status = mission_campaign_load(filename, nullptr, pl);
 
 	// see if we successfully loaded this campaign and it's at the beginning
 	if (load_status == 0 && Campaign.prev_mission < 0) {

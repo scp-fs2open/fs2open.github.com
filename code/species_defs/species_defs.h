@@ -68,6 +68,7 @@ public:
 
 	game_snd snd_flyby_fighter;
 	game_snd snd_flyby_bomber;
+	int borrows_flyby_sounds_species;
 
 	int bii_indices[MIN_BRIEF_ICONS];
 	int borrows_bii_index_species;   // species that this species borrows all of its briefing icons from, -1 if none
@@ -90,6 +91,7 @@ public:
 		support_ship_name[0] = '\0';
 		support_ship_index = -1;
 		borrows_bii_index_species = -1;
+		borrows_flyby_sounds_species = -1;
 	}
 };
 

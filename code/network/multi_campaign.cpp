@@ -57,10 +57,6 @@
 // flags indicating the "accept" status of all players involved in a campaign
 int Multi_campaign_accept_flags[MAX_PLAYERS];
 
-// safety checks
-static_assert(MAX_CAMPAIGN_MISSIONS <= UINT8_MAX, "MAX_CAMPAIGN_MISSIONS is set too high and breaks multi!");
-static_assert(MAX_GOALS <= UINT8_MAX, "MAX_GOALS is set too high and breaks multi!");
-
 // ------------------------------------------------------------------------------------
 // MULTIPLAYER CAMPAIGN FUNCTIONS
 //
@@ -239,22 +235,6 @@ void multi_campaign_eval_debrief()
 	multi_campaign_send_debrief_info();
 }
 
-// clients should store mission goal/event names in the campaign now
-void multi_campaign_client_store_goals(int mission_num)
-{
-	int idx;
-	
-	// copy mission goals into the campaign goals
-	for(idx=0;idx<Num_goals;idx++){
-		strcpy_s(Campaign.missions[mission_num].goals[idx].name,Mission_goals[idx].name);
-	}
-
-	// copy mission events into the campaign events
-	for(idx=0;idx<Num_mission_events;idx++){
-		strcpy_s(Campaign.missions[mission_num].events[idx].name,Mission_events[idx].name);
-	}
-}
-
 
 // ------------------------------------------------------------------------------------
 // MULTIPLAYER CAMPAIGN PACKET HANDLERS
@@ -269,6 +249,8 @@ void multi_campaign_process_update(ubyte *data, header *hinfo)
 	ubyte code;
 	ubyte cur_mission,next_mission;
 	ubyte item_count, starting_num;
+	ubyte num_goals;
+	ushort num_events;
 	int idx;
 
 	// get the packet code
@@ -336,31 +318,37 @@ void multi_campaign_process_update(ubyte *data, header *hinfo)
 	
 		// add the # of goals and events
 		GET_DATA(val);
-		Campaign.missions[cur_mission].num_goals = val;
-		Campaign.missions[cur_mission].goals = reinterpret_cast<mgoal *>(vm_malloc(sizeof(mgoal) * val));
-
+		num_goals = val;
 		GET_USHORT(s_val);
-		Campaign.missions[cur_mission].num_events = s_val;
-		Campaign.missions[cur_mission].events = reinterpret_cast<mevent *>(vm_malloc(sizeof(mevent) * s_val));
+		num_events = s_val;
 
 		// add the goals
-		for(idx=0;idx<Campaign.missions[cur_mission].num_goals;idx++){
+		Campaign.missions[cur_mission].goals.clear();
+		for (idx = 0; idx < num_goals; idx++) {
 			GET_DATA(val);
-			Campaign.missions[cur_mission].goals[idx].status = static_cast<char>(val);
-		}	
+
+			Campaign.missions[cur_mission].goals.emplace_back();
+			auto& stored_goal = Campaign.missions[cur_mission].goals.back();
+
+			strncpy_s(stored_goal.name, Mission_goals[idx].name.c_str(), NAME_LENGTH - 1);
+			stored_goal.status = static_cast<char>(val);
+		}
 
 		// add the events
-		for(idx=0;idx<Campaign.missions[cur_mission].num_events;idx++){
+		Campaign.missions[cur_mission].events.clear();
+		for (idx = 0; idx < num_events; idx++) {
 			GET_DATA(val);
-			Campaign.missions[cur_mission].events[idx].status = static_cast<char>(val);
-		}	
+
+			Campaign.missions[cur_mission].events.emplace_back();
+			auto& stored_event = Campaign.missions[cur_mission].events.back();
+
+			strncpy_s(stored_event.name, Mission_events[idx].name.c_str(), NAME_LENGTH - 1);
+			stored_event.status = static_cast<char>(val);
+		}
 
 		// now set the "next mission to be the "current mission"
 		Campaign.prev_mission = cur_mission;
 		Campaign.current_mission = next_mission;
-
-		// clients should store mission goal/event names in the campaign now
-		multi_campaign_client_store_goals(cur_mission);
 		break;
 
 	case MC_CODE_START:
@@ -430,25 +418,25 @@ void multi_campaign_send_debrief_info()
 	ADD_STRING(Campaign.missions[Campaign.current_mission].name);
 
 	// add the # of goals and events
-	val = static_cast<ubyte>(Campaign.missions[Campaign.current_mission].num_goals);
+	val = static_cast<ubyte>(Campaign.missions[Campaign.current_mission].goals.size());
 	ADD_DATA(val);
-	ADD_USHORT(static_cast<ushort>(Campaign.missions[Campaign.current_mission].num_events));
+	ADD_USHORT(static_cast<ushort>(Campaign.missions[Campaign.current_mission].events.size()));
 
 #ifndef NDEBUG
-	const int goal_size = Campaign.missions[Campaign.current_mission].num_goals * static_cast<int>(sizeof(ubyte));
-	const int event_size = Campaign.missions[Campaign.current_mission].num_events * static_cast<int>(sizeof(ubyte));
+	const size_t goal_size = Campaign.missions[Campaign.current_mission].goals.size() * sizeof(ubyte);
+	const size_t event_size = Campaign.missions[Campaign.current_mission].events.size() * sizeof(ubyte);
 
 	Assertion(packet_size + goal_size + event_size < MAX_PACKET_SIZE, "Campaign debrief info packet is too large!");
 #endif
 
 	// add the goals
-	for(idx=0;idx<Campaign.missions[Campaign.current_mission].num_goals;idx++){
+	for(idx=0;idx<(int)Campaign.missions[Campaign.current_mission].goals.size();idx++){
 		val = static_cast<ubyte>(Campaign.missions[Campaign.current_mission].goals[idx].status);
 		ADD_DATA(val);
 	}	
 
 	// add the events
-	for(idx=0;idx<Campaign.missions[Campaign.current_mission].num_events;idx++){
+	for(idx=0;idx<(int)Campaign.missions[Campaign.current_mission].events.size();idx++){
 		val = static_cast<ubyte>(Campaign.missions[Campaign.current_mission].events[idx].status);
 		ADD_DATA(val);
 	}	
@@ -682,8 +670,8 @@ void multi_campaign_send_ingame_start( net_player *pl )
 				continue;
 
 			// don't send data for the current mission being played, or if both goals and events are 0
-			num_goals = static_cast<ubyte>(Campaign.missions[i].num_goals);
-			num_events = static_cast<ushort>(Campaign.missions[i].num_events);
+			num_goals = static_cast<ubyte>(Campaign.missions[i].goals.size());
+			num_events = static_cast<ushort>(Campaign.missions[i].events.size());
 
 			// add the mission number and the goal/event status
 			BUILD_HEADER( CAMPAIGN_UPDATE_INGAME );
@@ -714,7 +702,7 @@ void multi_campaign_send_ingame_start( net_player *pl )
 			ubyte goal_count, starting_goal_num;
 
 			// first the goal names
-			num_goals = static_cast<ubyte>(Campaign.missions[i].num_goals);
+			num_goals = static_cast<ubyte>(Campaign.missions[i].goals.size());
 
 			// don't do anything if mission hasn't been completed
 			if ( !Campaign.missions[i].completed ){
@@ -766,8 +754,8 @@ void multi_campaign_send_ingame_start( net_player *pl )
 			ushort event_count, starting_event_num;
 
 			// first the goal names
-			Assert( Campaign.missions[i].num_events < UCHAR_MAX );
-			num_events = static_cast<ushort>(Campaign.missions[i].num_events);
+			Assert( Campaign.missions[i].events.size() < UCHAR_MAX );
+			num_events = static_cast<ushort>(Campaign.missions[i].events.size());
 
 			// don't do anything if mission hasn't been completed
 			if ( !Campaign.missions[i].completed )
@@ -846,33 +834,26 @@ void multi_campaign_process_ingame_start( ubyte *data, header *hinfo )
 		
 		GET_DATA( mission_num );
 		GET_DATA( num_goals );
-		// need to malloc out the data
-		Assert( Campaign.missions[mission_num].num_goals == 0 );
-		Campaign.missions[mission_num].num_goals = num_goals;
-		if ( num_goals > 0 ){
-			Campaign.missions[mission_num].goals = reinterpret_cast<mgoal *>(vm_malloc(sizeof(mgoal) * num_goals));
-		}
-		for ( i = 0; i < num_goals; i++ ) {
+		// need to fill out the data
+		Assert( Campaign.missions[mission_num].goals.empty() );
+		Campaign.missions[mission_num].goals.clear();
+		for (i = 0; i < num_goals; i++) {
+			Campaign.missions[mission_num].goals.emplace_back();
+			auto& stored_goal = Campaign.missions[mission_num].goals.back();
 			GET_DATA(status);
-			// AL: .goals was a NULL pointer here!  I have no idea why.  Putting
-			// in a check to avoid the unhandled exception
-			if ( Campaign.missions[mission_num].goals ) {
-				Campaign.missions[mission_num].goals[i].status = static_cast<char>(status);
-			}
+			stored_goal.status = static_cast<char>(status);
 		}
 
 		// now the events
 		GET_USHORT( num_events );
-		// need to malloc out the data
-		Assert( Campaign.missions[mission_num].num_events == 0 );
-		Campaign.missions[mission_num].num_events = num_events;
-		if ( num_events > 0 ){
-			Campaign.missions[mission_num].events = reinterpret_cast<mevent *>(vm_malloc(sizeof(mevent) * num_events));
-		}
-
-		for ( i = 0; i < num_events; i++ ) {
+		// need to fill out the data
+		Assert( Campaign.missions[mission_num].events.empty() );
+		Campaign.missions[mission_num].events.clear();
+		for (i = 0; i < num_events; i++) {
+			Campaign.missions[mission_num].events.emplace_back();
+			auto& stored_event = Campaign.missions[mission_num].events.back();
 			GET_DATA(status);
-			Campaign.missions[mission_num].events[i].status = static_cast<char>(status);
+			stored_event.status = static_cast<char>(status);
 		}
 		break;
 

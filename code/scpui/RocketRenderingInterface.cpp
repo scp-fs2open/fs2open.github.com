@@ -22,8 +22,11 @@
 #include "graphics/2d.h"
 #include "graphics/generic.h"
 #include "graphics/material.h"
+#include "mod_table/mod_table.h"
 #include "tracing/categories.h"
 #include "tracing/tracing.h"
+#define BMPMAN_INTERNAL
+#include "bmpman/bm_internal.h"
 
 using namespace Rocket::Core;
 
@@ -162,6 +165,22 @@ bool RocketRenderingInterface::LoadTexture(TextureHandle& texture_handle, Vector
 
 			return success;
 		}
+		else if (submode.Find("bmpman,") == 0) {
+			int handle = std::atoi(submode.Substring(7).CString());
+
+			auto* entry = bm_get_entry(handle);
+			if (entry->handle != handle)
+				return false;
+
+			entry->load_count++;
+
+			bm_get_info(handle, &texture_dimensions.x, &texture_dimensions.y);
+
+			std::unique_ptr<Texture> tex(new Texture());
+			tex->bm_handle = handle;
+			texture_handle = get_texture_handle(tex.release());
+			return true;
+		}
 		else {
 			return false;
 		}
@@ -180,7 +199,8 @@ bool RocketRenderingInterface::LoadTexture(TextureHandle& texture_handle, Vector
 
 	std::unique_ptr<Texture> tex(new Texture());
 	// If there is a file that ends with an animation extension, try to load that
-	if (generic_anim_init_and_stream(&tex->animation, filename.c_str(), BM_TYPE_NONE, true) == 0) {
+	if (generic_anim_init_and_stream(&tex->animation, filename.c_str(), BM_TYPE_NONE, SCPUI_loads_hi_res_animations) ==
+		0) {
 		tex->is_animation = true;
 
 		texture_dimensions.x = tex->animation.width;

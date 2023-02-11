@@ -295,7 +295,7 @@ int CMessageEditorDlg::find_event()
 	int i, formula, node;
 	CComboBox *box;
 
-	for (i=0; i<Num_mission_events; i++) {
+	for (i=0; i<(int)Mission_events.size(); i++) {
 		node = Mission_events[i].formula;
 		Assertion(node >= 0, "Can't have a formula point to sexp node -1!");
 
@@ -411,13 +411,8 @@ int CMessageEditorDlg::update(int num)
 			if (m_event_num >= 0) {  // need to delete event
 				i = m_event_num;
 				free_sexp2(Mission_events[i].formula);
-				Assert(i < Num_mission_events);
-				while (i < Num_mission_events - 1) {
-					Mission_events[i] = Mission_events[i + 1];
-					i++;
-				}
-
-				Num_mission_events--;
+				Assert(i < (int)Mission_events.size());
+				Mission_events.erase(Mission_events.begin() + i);
 				m_event_num = -1;
 			}
 
@@ -426,24 +421,9 @@ int CMessageEditorDlg::update(int num)
 				free_sexp2(Mission_events[m_event_num].formula);
 			
 			else {
-				if (Num_mission_events == MAX_MISSION_EVENTS) {
-					MessageBox("You have reached the limit on mission events.\n"
-						"Can't add an event to send this message.");
-
-					goto exit;
-				}
-
-				Assert(Num_mission_events < MAX_MISSION_EVENTS);
-				m_event_num = Num_mission_events++;
-				string_copy(Mission_events[m_event_num].name, m_message_name, NAME_LENGTH - 1);
-				Mission_events[m_event_num].repeat_count = 1;
-				Mission_events[m_event_num].interval = 1;
-				Mission_events[m_event_num].score = 0;
-				Mission_events[m_event_num].chain_delay = -1;
-				Mission_events[m_event_num].flags = 0;
-				Mission_events[m_event_num].objective_text = NULL;
-				Mission_events[m_event_num].objective_key_text = NULL;
-				Mission_events[m_event_num].mission_log_flags = 0;
+				Mission_events.emplace_back();
+				m_event_num = (int)Mission_events.size() - 1;
+				Mission_events[m_event_num].name = m_message_name;
 			}
 
 			fnode = m_tree.save_tree();
@@ -461,7 +441,6 @@ int CMessageEditorDlg::update(int num)
 		}
 	}
 
-exit:
 	if (query_modified())
 		set_modified();
 

@@ -27,6 +27,7 @@ class ship;
 struct server_item;
 class ship_info;
 class p_object;
+class ship_subsys;
 
 // two types of signatures that we can request,  permanent signatures are all below 5000.  non-permanent are above 5000
 #define MULTI_SIG_SHIP					1
@@ -202,6 +203,12 @@ int multi_pack_unpack_rotvel(int write, ubyte *data, physics_info *pi);
 
 // Cyborg17 - Packs/unpacks desired velocity and rotational velocity.
 int multi_pack_unpack_desired_vel_and_desired_rotvel(int write, bool full_physics, ubyte* data, physics_info* pi, vec3d* local_desired_vel);
+
+// pack cur_angle data from turrets
+int multi_pack_turret_angles(ubyte* data, ship_subsys* ssp);
+
+// unpack cur_angle data from turrets
+int multi_unpack_turret_angles(ubyte* data, std::pair<bool, float>& angle1, std::pair<bool, float>& angle2);
 
 // Cyborg17 - Compresses the list of subsystems, so that we don't have to mark each one with a ubyte
 int multi_pack_unpack_subsystem_list(bool write, ubyte* data, SCP_vector<ubyte>* flags, SCP_vector<float>* subsys_data);

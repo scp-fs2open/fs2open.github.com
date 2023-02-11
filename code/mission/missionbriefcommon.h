@@ -63,6 +63,9 @@
 #define ICON_JUMP_NODE						33
 #define ICON_TRANSPORT						34
 
+#define BRIEF_ICON_TYPES					3
+
+//If any types are added here then be sure to update BRIEF_ICON_TYPES
 typedef struct briefing_icon_info {
 	generic_anim	regular;
 	hud_anim		fade;
@@ -235,14 +238,14 @@ extern int Brief_text_max_lines[GR_NUM_RESOLUTIONS];
 extern const char *Brief_static_name[GR_NUM_RESOLUTIONS];
 extern int Brief_static_coords[GR_NUM_RESOLUTIONS][2];
 
-// Needed for Fred
+/* Needed for Fred
 #define BRIEF_GRID3_X1						42
 #define BRIEF_GRID3_Y1						122
 #define BRIEF_GRID0_X2						585
 #define BRIEF_GRID0_Y2						371
 #define BRIEF_GRID_W							(BRIEF_GRID0_X2-BRIEF_GRID3_X1+1)
 #define BRIEF_GRID_H							(BRIEF_GRID0_Y2-BRIEF_GRID3_Y1+1)
-/*
+
 #define BRIEF_GRID0_X1						63
 #define BRIEF_GRID0_Y1						122
 #define BRIEF_GRID1_X1						575

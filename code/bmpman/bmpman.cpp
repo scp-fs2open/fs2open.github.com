@@ -1835,7 +1835,7 @@ int bm_load_sub_fast(const char *real_filename, int *handle, int dir_type, bool 
 }
 
 int bm_load_sub_slow(const char *real_filename, const int num_ext, const char **ext_list, CFILE **img_cfp, int dir_type) {
-	auto res = cf_find_file_location_ext(real_filename, num_ext, ext_list, dir_type, false);
+	auto res = cf_find_file_location_ext(real_filename, num_ext, ext_list, dir_type);
 
 	// could not be found, or is invalid for some reason
 	if (!res.found)

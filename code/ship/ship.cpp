@@ -151,7 +151,6 @@ int TVT_wings[MAX_TVT_WINGS];
 // Goober5000
 char Starting_wing_names[MAX_STARTING_WINGS][NAME_LENGTH];
 char Squadron_wing_names[MAX_SQUADRON_WINGS][NAME_LENGTH];
-bool Squadron_wing_names_found[MAX_SQUADRON_WINGS];
 char TVT_wing_names[MAX_TVT_WINGS][NAME_LENGTH];
 
 SCP_vector<engine_wash_info> Engine_wash_info;
@@ -203,6 +202,8 @@ int	Num_engine_wash_types;
 int	Num_ship_subobj_types;
 int	Num_ship_subobjects;
 int	Player_ship_class;	// needs to be player specific, move to player structure	
+
+bool Sensor_static_forced = false; //forced static effect sexp initialization
 
 #define		SHIP_OBJ_USED	(1<<0)				// flag used in ship_obj struct
 #define		MAX_SHIP_OBJS	MAX_SHIPS			// max number of ships tracked in ship list
@@ -541,7 +542,9 @@ ship_flag_name Ship_flag_names[] = {
 	{ Ship_Flags::No_thrusters,					"no-thrusters" },
 	{ Ship_Flags::Fail_sound_locked_primary, 	"fail-sound-locked-primary"},
 	{ Ship_Flags::Fail_sound_locked_secondary, 	"fail-sound-locked-secondary"},
-	{ Ship_Flags::Aspect_immune, 				"aspect-immune"}
+	{ Ship_Flags::Aspect_immune, 				"aspect-immune"},
+	{ Ship_Flags::Cannot_perform_scan,			"cannot-perform-scan"},
+	{ Ship_Flags::No_targeting_limits,			"no-targeting-limits"}
 };
 
 extern const size_t Num_ship_flag_names = sizeof(Ship_flag_names) / sizeof(ship_flag_name);
@@ -565,7 +568,7 @@ SCP_vector<ship_counts>	Ship_type_counts;
 
 SCP_vector<wing_formation> Wing_formations;
 
-const std::shared_ptr<scripting::Hook> OnCountermeasureFireHook = scripting::Hook::Factory("On Countermeasure Fire",
+const std::shared_ptr<scripting::Hook<scripting::hooks::ShipSourceConditions>> OnCountermeasureFireHook = scripting::Hook<scripting::hooks::ShipSourceConditions>::Factory("On Countermeasure Fire",
 	"Called when a ship fires a countermeasure.",
 	{
 		{"Ship", "ship", "The ship that has fired the countermeasure."},
@@ -684,7 +687,12 @@ int ship_get_num_ships()
 
 	count = 0;
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) )
+	{
+		if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		count++;
+	}
 
 	return count;
 }
@@ -891,6 +899,8 @@ void ship_info::clone(const ship_info& other)
 	forward_decel = other.forward_decel;
 	slide_accel = other.slide_accel;
 	slide_decel = other.slide_decel;
+	gravity_const = other.gravity_const;
+	dying_gravity_const = other.dying_gravity_const;
 
 	warpin_params_index = other.warpin_params_index;
 	warpout_params_index = other.warpout_params_index;
@@ -941,6 +951,7 @@ void ship_info::clone(const ship_info& other)
 	debris_max_hitpoints = other.debris_max_hitpoints;
 	debris_damage_mult = other.debris_damage_mult;
 	debris_arc_percent = other.debris_arc_percent;
+	debris_gravity_const = other.debris_gravity_const;
 	debris_ambient_sound = other.debris_ambient_sound;
 	debris_collision_sound_light = other.debris_collision_sound_light;
 	debris_collision_sound_heavy = other.debris_collision_sound_heavy;
@@ -967,6 +978,7 @@ void ship_info::clone(const ship_info& other)
 	n_subsystems = other.n_subsystems;
 
 	animations = other.animations;
+	cockpit_animations = other.cockpit_animations;
 
 	power_output = other.power_output;
 	max_overclocked_speed = other.max_overclocked_speed;
@@ -1136,6 +1148,8 @@ void ship_info::clone(const ship_info& other)
 
 	ship_sounds = other.ship_sounds;
 
+	custom_data = other.custom_data;
+
 	num_maneuvering = other.num_maneuvering;
 
     for (int i = 0; i < MAX_MAN_THRUSTERS; ++i) 
@@ -1230,6 +1244,8 @@ void ship_info::move(ship_info&& other)
 	forward_decel = other.forward_decel;
 	slide_accel = other.slide_accel;
 	slide_decel = other.slide_decel;
+	gravity_const = other.gravity_const;
+	dying_gravity_const = other.dying_gravity_const;
 
 	warpin_params_index = other.warpin_params_index;
 	warpout_params_index = other.warpout_params_index;
@@ -1280,6 +1296,7 @@ void ship_info::move(ship_info&& other)
 	debris_max_hitpoints = other.debris_max_hitpoints;
 	debris_damage_mult = other.debris_damage_mult;
 	debris_arc_percent = other.debris_arc_percent;
+	debris_gravity_const = other.debris_gravity_const;
 	debris_ambient_sound = other.debris_ambient_sound;
 	debris_collision_sound_light = other.debris_collision_sound_light;
 	debris_collision_sound_heavy = other.debris_collision_sound_heavy;
@@ -1459,6 +1476,8 @@ void ship_info::move(ship_info&& other)
 
 	std::swap(ship_sounds, other.ship_sounds);
 
+	std::swap(custom_data, other.custom_data);
+
 	num_maneuvering = other.num_maneuvering;
 	std::swap(maneuvering, other.maneuvering);
 
@@ -1494,6 +1513,7 @@ void ship_info::move(ship_info&& other)
 	std::swap(glowpoint_bank_override_map, other.glowpoint_bank_override_map);
 
 	animations = std::move(other.animations);
+	cockpit_animations = std::move(other.cockpit_animations);
 }
 
 #define CHECK_THEN_FREE(attribute) \
@@ -1589,6 +1609,8 @@ ship_info::ship_info()
 	forward_decel = 0.0f;
 	slide_accel = 0.0f;
 	slide_decel = 0.0f;
+	gravity_const = 0.0f;
+	dying_gravity_const = 0.0f;
 
 	warpin_params_index = -1;
 	warpout_params_index = -1;
@@ -1695,6 +1717,7 @@ ship_info::ship_info()
 	debris_max_hitpoints = -1.0f;
 	debris_damage_mult = 1.0f;
 	debris_arc_percent = 0.5f;
+	debris_gravity_const = 1.0f;
 	debris_ambient_sound = GameSounds::DEBRIS;
 	debris_collision_sound_light = gamesnd_id();
 	debris_collision_sound_heavy = gamesnd_id();
@@ -1900,6 +1923,8 @@ ship_info::ship_info()
 
 	num_maneuvering = 0;
 
+	custom_data.clear();
+
 	for (i = 0; i < MAX_MAN_THRUSTERS; i++)
 	{
         maneuvering[i].reset();
@@ -2041,6 +2066,12 @@ static void parse_ship(const char *filename, bool replace)
 
 	required_string("$Name:");
 	stuff_string(fname, F_NAME, NAME_LENGTH);
+
+	// Remove @ symbol -- these used to denote ships that would only be parsed in demo builds
+	if (fname[0] == '@') {
+		backspace(fname);
+	}
+
 	diag_printf("Ship name -- %s\n", fname);
 
 	if (optional_string("+nocreate")) {
@@ -2065,13 +2096,6 @@ static void parse_ship(const char *filename, bool replace)
 			Removed_ships.push_back(fname);
 			remove_ship = true;
 		}
-	}
-
-	//Remove @ symbol
-	//these used to denote weapons that would
-	//only be parsed in demo builds
-	if ( fname[0] == '@' ) {
-		backspace(fname);
 	}
 
 	//Check if ship exists already
@@ -2161,6 +2185,7 @@ static void parse_ship(const char *filename, bool replace)
 		}
 
 		sip->animations.changeShipName(sip->name);
+		sip->cockpit_animations.changeShipName(sip->name);
 	}
 
 	parse_ship_values(sip, false, first_time, replace);
@@ -2212,6 +2237,7 @@ static void parse_ship_template()
 				sip->clone(Ship_templates[template_id]);
 				strcpy_s(sip->name, buf);
 				sip->animations.changeShipName(sip->name);
+				sip->cockpit_animations.changeShipName(sip->name);
 			}
 			else {
 				Warning(LOCATION, "Unable to find ship template '%s' requested by ship template '%s', ignoring template request...", template_name, buf);
@@ -2793,6 +2819,13 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			strcpy_s(sip->cockpit_pof_file, temp);
 		else
 			WarningEx(LOCATION, "Ship %s\nCockpit POF file \"%s\" invalid!", sip->name, temp);
+
+		if (optional_string("$Cockpit Animations:")) {
+			animation::ModelAnimationParseHelper::parseAnimsetInfo(sip->cockpit_animations, 'c', sip->name);
+		}
+		if (optional_string("$Cockpit Moveables:")) {
+			animation::ModelAnimationParseHelper::parseMoveablesetInfo(sip->cockpit_animations);
+		}
 	}
 	if(optional_string( "+Cockpit offset:" ))
 	{
@@ -3114,6 +3147,15 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		parse_game_sound("+Collision Sound Shielded:", &sip->collision_physics.collision_sound_shielded_idx);
 	}
 
+	if (optional_string("$Gravity Const:")) {
+		stuff_float(&sip->gravity_const);
+	}
+
+	if (optional_string("$Dying Gravity Const:")) {
+		stuff_float(&sip->dying_gravity_const);
+	} else if (first_time) {
+		sip->dying_gravity_const = sip->gravity_const;
+	}
 
 	if(optional_string("$Debris:"))
 	{
@@ -3174,6 +3216,11 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			}
 			//Percent is nice for modders, but here in the code we want it betwwen 0 and 1.0
 			sip->debris_arc_percent /= 100.0;
+		}
+		if (optional_string("+Debris Gravity Const:")) {
+			stuff_float(&sip->debris_gravity_const);
+		} else if (first_time) {
+			sip->debris_gravity_const = sip->dying_gravity_const;
 		}
 		gamesnd_id ambient_snd, collision_snd_light, collision_snd_heavy, explosion_snd;
 		if (parse_game_sound("+Ambient Sound:", &ambient_snd))
@@ -3509,6 +3556,8 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	if(optional_string("$Shockwave name:")) {
 		stuff_string( sci->name, F_NAME, NAME_LENGTH);
 	}
+
+	parse_game_sound("$Shockwave Sound:", &sci->blast_sound_id);
 
 	if(optional_string("$Explosion Animations:")){
 		int temp[MAX_FIREBALL_TYPES];
@@ -4097,7 +4146,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	//Parse optional sound to be used for end of a glide
 	parse_game_sound("$GlideEndSnd:", &sip->glide_end_snd);
 
-	// Parse optional sound to be used for bfly-by sound
+	// Parse optional sound to be used for flyby sound
 	parse_game_sound("$Flyby Sound:", &sip->flyby_snd);
 
 	parse_ship_sounds(sip);
@@ -4785,6 +4834,27 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		stuff_float(&new_info.duration);
 		required_string("+Frequency:");
 		stuff_float(&new_info.frequency);
+		if (optional_string("+Primary color 1:")) {
+			int rgb[3];
+			stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+			gr_init_color(&new_info.primary_color_1, rgb[0], rgb[1], rgb[2]);
+		} else {
+			new_info.primary_color_1 = Arc_color_damage_p1;
+		}
+		if (optional_string("+Primary color 2:")) {
+			int rgb[3];
+			stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+			gr_init_color(&new_info.primary_color_2, rgb[0], rgb[1], rgb[2]);
+		} else {
+			new_info.primary_color_2 = Arc_color_damage_p2;
+		}
+		if (optional_string("+Secondary color:")) {
+			int rgb[3];
+			stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+			gr_init_color(&new_info.secondary_color, rgb[0], rgb[1], rgb[2]);
+		} else {
+			new_info.secondary_color = Arc_color_damage_s1;
+		}
 
 		sip->ship_passive_arcs.push_back(new_info);
 	}
@@ -5894,8 +5964,6 @@ void ship_init()
 		// We shouldn't already have any subsystem pointers at this point.
 		Assertion(Ship_subsystems.empty(), "Some pre-allocated subsystems didn't get cleared out: " SIZE_T_ARG " batches present during ship_init(); get a coder!\n", Ship_subsystems.size());
 	}
-
-	ship_level_init();	// needed for FRED
 }
 
 static int Man_thruster_reset_timestamp = 0;
@@ -5952,7 +6020,10 @@ static int ship_allocate_subsystems(int num_so, bool page_in = false)
 
 	// because the Ship_subsystems vector changed, it might have moved in memory, so invalidate all the subsystem caches
 	for (auto so : list_range(&Ship_obj_list))
+	{
+		// don't skip should-be-dead ships for this flag removal
 		Ships[Objects[so->objnum].instance].flags.remove(Ship::Ship_Flags::Subsystem_cache_valid);
+	}
 
 	mprintf(("a total of %i is now available (%i in-use).\n", Num_ship_subsystems_allocated, Num_ship_subsystems));
 	return 1;
@@ -5976,14 +6047,7 @@ void ship_level_init()
 
 	Num_wings = 0;
 	for (i = 0; i < MAX_WINGS; i++ )
-	{
-		Wings[i].num_waves = -1;
-		Wings[i].wing_squad_filename[0] = '\0';
-		Wings[i].wing_insignia_texture = -1;	// Goober5000 - default to no wing insignia
-												// don't worry about releasing textures because
-												// they are released automatically when the model
-												// is unloaded (because they are part of the model)
-	}
+		Wings[i].clear();
 
 	for (i=0; i<MAX_STARTING_WINGS; i++)
 		Starting_wings[i] = -1;
@@ -6220,6 +6284,8 @@ void physics_ship_init(object *objp)
 	//SparK: setting the reverse burners
 	pi->afterburner_max_reverse_vel = sinfo->afterburner_max_reverse_vel;
 	pi->afterburner_reverse_accel = sinfo->afterburner_reverse_accel;
+
+	pi->gravity_const = sinfo->gravity_const;
 }
 
 /**
@@ -6249,6 +6315,22 @@ const std::set<size_t>& ship_get_default_orders_accepted( ship_info *sip )
 		static std::set<size_t> inv_class_set;
 		return inv_class_set;
 	}
+}
+
+/**
+ * Set the orders allowed against a ship -- all allowed by default
+ *
+ * This value might get overridden by a value in the mission file.
+ */
+const std::set<size_t> ship_set_default_orders_against()
+{
+	SCP_set<size_t> orders;
+	
+	for (int i = 0; i <= (int)Player_orders.size(); i++) {
+		orders.insert(i);
+	}
+
+	return orders;
 }
 
 vec3d get_submodel_offset(int model, int submodel){
@@ -6354,6 +6436,7 @@ void ship::clear()
 
 	wingnum = -1;
 	orders_accepted.clear();
+	orders_allowed_against.clear();
 
 	subsys_list_indexer.reset();
 	subsys_list.clear();
@@ -6545,6 +6628,8 @@ void ship::clear()
 
 	autoaim_fov = 0.0f;
 
+	cockpit_model_instance = -1;
+
 	multi_client_collision_timestamp = TIMESTAMP::immediate();
 
 	passive_arc_next_times.clear();
@@ -6672,6 +6757,69 @@ void ship_weapon::clear()
 
 ship_weapon::ship_weapon() {
 	clear();
+}
+
+// Reset all wing values to empty/unused.
+void wing::clear()
+{
+	name[0] = '\0';
+	wing_squad_filename[0] = '\0';
+	reinforcement_index = -1;
+	hotkey = -1;
+
+	num_waves = 1;
+	current_wave = 0;
+	threshold = 0;
+
+	time_gone = 0;
+
+	wave_count = 0;
+	total_arrived_count = 0;
+	red_alert_skipped_ships = 0;
+	current_count = 0;
+
+	for (int i = 0; i < MAX_SHIPS_PER_WING; i++)
+		ship_index[i] = -1;
+
+	total_destroyed = 0;
+	total_departed = 0;
+	total_vanished = 0;
+
+	special_ship = 0;
+	special_ship_ship_info_index = -1;
+
+	arrival_location = ARRIVE_AT_LOCATION;
+	arrival_distance = 0;
+	arrival_anchor = -1;
+	arrival_path_mask = 0;
+	arrival_cue = -1;
+	arrival_delay = 0;
+
+	departure_location = DEPART_AT_LOCATION;
+	departure_anchor = -1;
+	departure_path_mask = 0;
+	departure_cue = -1;
+	departure_delay = 0;
+
+	wave_delay_min = 0;
+	wave_delay_max = 0;
+
+	// be sure to set the wave arrival timestamp of this wing to pop right away so that the
+	// wing could be created if it needs to be
+	wave_delay_timestamp = TIMESTAMP::immediate();
+
+	flags.reset();
+
+	// initialize wing goals
+	for (int i = 0; i < MAX_AI_GOALS; i++)
+		ai_goal_reset(&ai_goals[i]);
+
+	net_signature = 0;
+
+	wing_insignia_texture = -1;
+
+	formation = -1;
+	formation_scale = 1.0f;
 }
 
 // NOTE: Now that the clear() member function exists, this function only sets the stuff associated with the object and ship class.
@@ -7074,6 +7222,8 @@ void ship_subsys::clear()
 
 	turret_max_bomb_ownage = -1; 
 	turret_max_target_ownage = -1;
+
+	info_from_server_stamp = TIMESTAMP::never();
 }
 
 /**
@@ -7266,6 +7416,8 @@ static int subsys_set(int objnum, int ignore_subsys_info)
 
 		ship_system->turret_max_bomb_ownage = model_system->turret_max_bomb_ownage;
 		ship_system->turret_max_target_ownage = model_system->turret_max_target_ownage;
+
+		ship_system->info_from_server_stamp = TIMESTAMP::never();
 
 		// Make turret flag checks and warnings
 		if ((ship_system->system_info->flags[Model::Subsystem_Flags::Turret_salvo]) && (ship_system->system_info->flags[Model::Subsystem_Flags::Turret_fixed_fp]))
@@ -7547,7 +7699,7 @@ void ship_render_player_ship(object* objp) {
 			shadow_render_info.set_object_number(OBJ_INDEX(objp));
 			vec3d offset = sip->cockpit_offset;
 			vm_vec_unrotate(&offset, &offset, &objp->orient);
-			model_render_immediate(&shadow_render_info, sip->cockpit_model_num, &objp->orient, &offset);
+			model_render_immediate(&shadow_render_info, sip->cockpit_model_num, shipp->cockpit_model_instance, &objp->orient, &offset);
 		}
 
 		shadows_end_render();
@@ -7589,7 +7741,7 @@ void ship_render_player_ship(object* objp) {
 		render_info.set_replacement_textures(Player_cockpit_textures);
 		vec3d offset = sip->cockpit_offset;
 		vm_vec_unrotate(&offset, &offset, &objp->orient);
-		model_render_immediate(&render_info, sip->cockpit_model_num, &objp->orient, &offset);
+		model_render_immediate(&render_info, sip->cockpit_model_num, shipp->cockpit_model_instance, &objp->orient, &offset);
 	}
 
 
@@ -7631,6 +7783,9 @@ void ship_init_cockpit_displays(ship *shipp)
 		return;
 	}
 
+	shipp->cockpit_model_instance = model_create_instance(shipp->objnum, cockpit_model_num);
+	sip->cockpit_animations.initializeMoveables(model_get_instance(shipp->cockpit_model_instance));
+
 	// check if we even have cockpit displays
 	if ( sip->displays.empty() ) {
 		return;
@@ -7656,8 +7811,12 @@ void ship_init_cockpit_displays(ship *shipp)
 	ship_set_hud_cockpit_targets();
 }
 
-void ship_clear_cockpit_displays()
+void ship_close_cockpit_displays(ship* shipp)
 {
+	if (shipp && shipp->cockpit_model_instance >= 0) {
+		model_delete_instance(shipp->cockpit_model_instance);
+	}
+
 	for ( int i = 0; i < (int)Player_displays.size(); i++ ) {
 		if ( Player_displays[i].background >= 0 ) {
 			bm_release(Player_displays[i].background);
@@ -7948,8 +8107,19 @@ void ship_wing_cleanup( int shipnum, wing *wingp )
 	wingp->ship_index[wingp->current_count] = -1;
 
 	// adjust the special ship if necessary
-	if (wingp->special_ship > 0 && wingp->special_ship >= index)
+	if (wingp->special_ship > 0 && wingp->special_ship >= index){
 		wingp->special_ship--;
+
+		// sorry to have make this a little convoluted, if I put this after this if statement, then I introduce edge case bugs.
+		// if there are ships in the wing, and the special ship changed, make sure the special_ship_ship_info_index is updated too
+		if (wingp->current_count > 0){
+			wingp->special_ship_ship_info_index = Ships[wingp->ship_index[wingp->special_ship]].ship_info_index;
+		}
+	
+	// if the special ship *variable* didn't change, but the wing leader did because index was 0, adjust special_ship_ship_info_index 
+	} else if (wingp->current_count > 0 && index == 0) {
+			wingp->special_ship_ship_info_index = Ships[wingp->ship_index[0]].ship_info_index;
+	}
 
 	// if the current count is 0, check to see if the wing departed or was destroyed.
 	if (wingp->current_count == 0)
@@ -7991,9 +8161,12 @@ void ship_wing_cleanup( int shipnum, wing *wingp )
 			if ((wingp->total_destroyed + wingp->total_departed + wingp->total_vanished) != wingp->total_arrived_count)
 			{
 				// apparently, there have been reports of ships still present in the mission when this log
-				// entry if written.  Do a sanity check here to find out for sure.
+				// entry is written.  Do a sanity check here to find out for sure.
 				for (ship_obj *so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
 				{
+					if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+						continue;
+
 					// skip the player -- stupid special case.
 					if (&Objects[so->objnum] == Player_obj)
 						continue;
@@ -8051,11 +8224,14 @@ void ship_destroy_instantly(object *ship_objp, bool with_debris)
 	Assert(ship_objp->type == OBJ_SHIP);
 	Assert(!(ship_objp == Player_obj));
 
+	ship* shipp = &Ships[ship_objp->instance];
+
 	if (scripting::hooks::OnShipDeathStarted->isActive()) {
 		// add scripting hook for 'On Ship Death Started' -- Goober5000
 		// hook is placed at the beginning of this function to allow the scripter to
 		// actually have access to the ship before any death routines (such as mission logging) are executed
-		scripting::hooks::OnShipDeathStarted->run(scripting::hook_param_list(scripting::hook_param("Ship", 'o', ship_objp)));
+		scripting::hooks::OnShipDeathStarted->run(scripting::hooks::ShipDeathConditions{ shipp },
+			scripting::hook_param_list(scripting::hook_param("Ship", 'o', ship_objp)));
 	}
 
 	// undocking and death preparation
@@ -8065,18 +8241,18 @@ void ship_destroy_instantly(object *ship_objp, bool with_debris)
 	if (with_debris)
 		shipfx_blow_up_model(ship_objp, 0, 0, &ship_objp->pos);
 
-	mission_log_add_entry(LOG_SELF_DESTRUCTED, Ships[ship_objp->instance].ship_name, NULL );
+	mission_log_add_entry(LOG_SELF_DESTRUCTED, shipp->ship_name, NULL );
 	
 	// scripting stuff
 	if (scripting::hooks::OnDeath->isActive()) {
-		scripting::hooks::OnDeath->run(scripting::hook_param_list(scripting::hook_param("Self", 'o', ship_objp),
-			scripting::hook_param("Ship", 'o', ship_objp)),
-			ship_objp);
+		scripting::hooks::OnDeath->run(scripting::hooks::ObjectDeathConditions{ ship_objp },
+			scripting::hook_param_list(scripting::hook_param("Self", 'o', ship_objp),
+			scripting::hook_param("Ship", 'o', ship_objp)));
 	}
 	if (scripting::hooks::OnShipDeath->isActive()) {
-		scripting::hooks::OnShipDeath->run(scripting::hook_param_list(
-			scripting::hook_param("Ship", 'o', ship_objp)),
-			ship_objp);
+		scripting::hooks::OnShipDeath->run(scripting::hooks::ShipDeathConditions{ shipp },
+			scripting::hook_param_list(
+			scripting::hook_param("Ship", 'o', ship_objp)));
 	}
 
 	ship_objp->flags.set(Object::Object_Flags::Should_be_dead);
@@ -8192,12 +8368,13 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 	    (cleanup_mode == SHIP_VANISHED)) {
 		const char* departmethod = get_departure_name(cleanup_mode);
 
-		if (Script_system.IsActiveAction(CHA_ONSHIPDEPART)) {
-			Script_system.SetHookObject("Ship", objp);
-			Script_system.SetHookVar("Method", 's', departmethod);
-			Script_system.SetHookVar("JumpNode", 's', jumpnode_name);
-			Script_system.RunCondition(CHA_ONSHIPDEPART, objp);
-			Script_system.RemHookVars({"Ship", "Method", "JumpNode"});
+		if (scripting::hooks::OnShipDepart->isActive()) {
+			scripting::hooks::OnShipDepart->run(scripting::hooks::ShipDepartConditions{ shipp },
+				scripting::hook_param_list(
+					scripting::hook_param("Ship", 'o', objp),
+					scripting::hook_param("Method", 's', departmethod),
+					scripting::hook_param("JumpNode", 's', jumpnode_name, jumpnode_name != nullptr)
+				));
 		}
 	}
 
@@ -8380,6 +8557,9 @@ static void ship_blow_up_area_apply_blast( object *exp_objp)
 		float blast = 0.0f;
 		float damage = 0.0f;
 		for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
+			if (objp->flags[Object::Object_Flags::Should_be_dead])
+				continue;
+
 			if ( (objp->type != OBJ_SHIP) && (objp->type != OBJ_ASTEROID) ) {
 				continue;
 			}
@@ -8388,11 +8568,9 @@ static void ship_blow_up_area_apply_blast( object *exp_objp)
 				continue;
 			}
 
-			// don't blast navbuoys
-			if ( objp->type == OBJ_SHIP ) {
-				if ( ship_get_SIF(objp->instance)[Ship::Info_Flags::Navbuoy] ) {
-					continue;
-				}
+			// don't blast no-collide or navbuoys
+			if ( !objp->flags[Object::Object_Flags::Collides] || (objp->type == OBJ_SHIP && ship_get_SIF(objp->instance)[Ship::Info_Flags::Navbuoy]) ) {
+				continue;
 			}
 
 			if ( ship_explode_area_calc_damage( &exp_objp->pos, &objp->pos, inner_rad, outer_rad, max_damage, max_blast, &damage, &blast ) == -1 ){
@@ -9546,9 +9724,18 @@ void ship_evaluate_ai(object* obj, float frametime) {
 
 void ship_process_pre(object *obj, float frametime)
 {
+	// Cyborg, to enable turrets movement on clients, we need to process them here before  bailing
+	if (MULTIPLAYER_CLIENT)
+	{
+		// But only with Framerate_independent_turning
+		if (Framerate_independent_turning)
+			ai_process_subobjects(OBJ_INDEX(obj));
+
+		return;
+	}
+
 	// If Framerate_independent_turning is false everything following is evaluated in ship_process_post()
-	// Also only multi masters do ai
-	if ( (obj == nullptr) || !frametime || MULTIPLAYER_CLIENT || !Framerate_independent_turning)
+	if ( (obj == nullptr) || !frametime || !Framerate_independent_turning)
 		return;
 
 	if (obj->type != OBJ_SHIP) {
@@ -9757,8 +9944,14 @@ void ship_process_post(object * obj, float frametime)
 	{
 		//	Do AI.
 
-		// for multiplayer people.  return here if in multiplay and not the host
+		// Cyborg: Mutliplayer clients do not do AI locally.
 		if ( MULTIPLAYER_CLIENT ) {
+
+			// But to enable turrets movement on clients, we need to process them here before bailing
+			// And this section will do it if Framerate_independent_turning is off
+			if (!Framerate_independent_turning)
+				ai_process_subobjects(OBJ_INDEX(obj));
+			
 			return;
 		}
 
@@ -9969,6 +10162,7 @@ static void ship_make_create_time_unique(ship *shipp)
 		collision = 0;
 
 		for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
+			// we probably don't need to skip should-be-dead ships
 			compare_shipp = &Ships[Objects[so->objnum].instance];
 
 			if ( compare_shipp == shipp ) {
@@ -10011,15 +10205,14 @@ int	Ship_subsys_hwm = 0;
 
 static void show_ship_subsys_count()
 {
-	object	*objp;
-	int		count = 0;	
-	int		o_type = 0;
+	int count = 0;
 
-	for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
-		o_type = (int)objp->type;
-		if (o_type == OBJ_SHIP) {
-			count += Ship_info[Ships[objp->instance].ship_info_index].n_subsystems;
-		}
+	for (auto so: list_range(&Ship_obj_list)) {
+		auto objp = &Objects[so->objnum];
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
+		count += Ship_info[Ships[objp->instance].ship_info_index].n_subsystems;
 	}
 
 	if (count > Ship_subsys_hwm) {
@@ -10134,6 +10327,7 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 	sip = &(Ship_info[ship_type]);
 	shipp = &Ships[n];
 	shipp->clear();
+	shipp->orders_allowed_against = ship_set_default_orders_against();
 
 	sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);		// use the highest detail level
 
@@ -10494,6 +10688,11 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	p_objp = mission_parse_get_parse_object(sp->ship_name);
 	ph_inf = objp->phys_info;
 
+	// if this ship is the wing leader, update the ship info index that the wing keeps track of.
+	if (!Fred_running && p_objp != nullptr && p_objp->wingnum > -1 && p_objp->pos_in_wing == 0) {
+		Wings[p_objp->wingnum].special_ship_ship_info_index = ship_type;
+	}
+
 	// MageKing17 - See if any AIs are doing anything with subsystems of this ship (targeting, goal to destroy)
 	// keep track of those subsystems and transfer the target/goal if the subsystem still exists, delete otherwise
 
@@ -10767,6 +10966,12 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	// Goober5000: div-0 checks
 	Assert(sp->ship_max_hull_strength > 0.0f);
 	Assert(objp->hull_strength > 0.0f);
+
+	// set regen rates
+	sp->max_weapon_regen_per_second = sip->max_weapon_regen_per_second;
+	sp->max_shield_regen_per_second = sip->max_shield_regen_per_second;
+
+	sp->autoaim_fov = sip->autoaim_fov;
 
 	// Mantis 2763: moved down to have access to the right ship_max_shield_strength value
 	// make sure that shields are disabled/enabled if they need to be - Chief1983
@@ -11105,7 +11310,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	if (sip->uses_team_colors)
 	{
 		// wookieejedi - maintain team color setting if possible
-		if (!Fred_running && !p_objp->team_color_setting.empty()) {
+		if (!Fred_running && p_objp != nullptr && !p_objp->team_color_setting.empty()) {
 			sp->team_name = p_objp->team_color_setting;
 		} else {
 			sp->team_name = sip->default_team_name;
@@ -11217,9 +11422,11 @@ int ship_launch_countermeasure(object *objp, int rand_val)
 
 		if (OnCountermeasureFireHook->isActive()) {
 			// add scripting hook for 'On Countermeasure Fire' --wookieejedi
-			OnCountermeasureFireHook->run(scripting::hook_param_list(scripting::hook_param("Ship", 'o', objp),
-				scripting::hook_param("CountermeasuresLeft", 'i', shipp->cmeasure_count),
-				scripting::hook_param("Countermeasure", 'o', &Objects[cobjnum])));
+			OnCountermeasureFireHook->run(scripting::hooks::ShipSourceConditions{ shipp },
+				scripting::hook_param_list(scripting::hook_param("Ship", 'o', objp),
+					scripting::hook_param("CountermeasuresLeft", 'i', shipp->cmeasure_count),
+					scripting::hook_param("Countermeasure", 'o', &Objects[cobjnum])
+				));
 		}
 	}
 
@@ -11471,13 +11678,13 @@ bool in_autoaim_fov(ship *shipp, int bank_to_fire, object *obj)
 	weapon_info* winfo_p = &Weapon_info[weapon_idx];
 
 	has_converging_autoaim = ((sip->aiming_flags[Ship::Aiming_Flags::Autoaim_convergence] || (The_mission.ai_profile->player_autoaim_fov[Game_skill_level] > 0.0f && !( Game_mode & GM_MULTIPLAYER ))) && aip->target_objnum != -1);
-	has_autoaim = ((has_converging_autoaim || (sip->aiming_flags[Ship::Aiming_Flags::Autoaim])) && aip->target_objnum != -1);
+	has_autoaim = ((has_converging_autoaim || (sip->aiming_flags[Ship::Aiming_Flags::Autoaim]) || (winfo_p->autoaim_fov > 0.0f)) && aip->target_objnum != -1);
 
 	if (!has_autoaim) {
 		return false;
 	}
 
-	autoaim_fov = MAX(shipp->autoaim_fov, The_mission.ai_profile->player_autoaim_fov[Game_skill_level]);
+	autoaim_fov = std::max({shipp->autoaim_fov, The_mission.ai_profile->player_autoaim_fov[Game_skill_level], winfo_p->autoaim_fov});
 
 	if (aip->targeted_subsys != nullptr) {
 		get_subsystem_world_pos(&Objects[aip->target_objnum], aip->targeted_subsys, &target_position);
@@ -11488,7 +11695,10 @@ bool in_autoaim_fov(ship *shipp, int bank_to_fire, object *obj)
 
 	dist_to_target = vm_vec_dist_quick(&Objects[shipp->objnum].pos, &target_position);
 
-	hud_calculate_lead_pos(&plr_to_target_vec, &target_position, obj, winfo_p, dist_to_target);
+	if (!hud_calculate_lead_pos(&Objects[shipp->objnum].pos, &plr_to_target_vec, &target_position, obj, winfo_p, dist_to_target)) {
+		// no ballistic trajectory, also counts for no autoaim
+		return false;
+	}
 	vm_vec_sub2(&plr_to_target_vec, &Objects[shipp->objnum].pos);
 
 	float angle_to_target = vm_vec_delta_ang(&player_forward_vec, &plr_to_target_vec, nullptr);
@@ -11516,14 +11726,11 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 	ship_weapon	*swp;
 	ship_info	*sip;
 	ai_info		*aip;
-	int			weapon_idx, i, j, w, v, weapon_objnum;
+	int			weapon_idx = -1, i, j, w, v, weapon_objnum;
 	int			bank_to_fire, num_fired = 0;	
 	int			banks_fired;				// used for multiplayer to help determine whether or not to send packet
 	banks_fired = 0;			// used in multiplayer -- bitfield of banks that were fired
 	bool has_fired = false;		// used to determine whether we should fire the scripting hook
-	bool has_autoaim, has_converging_autoaim, needs_target_pos;	// used to flag weapon/ship as having autoaim
-	float autoaim_fov = 0;			// autoaim limit
-	float dist_to_target = 0;		// distance to target, for autoaim & automatic convergence
 
 	gamesnd_id		sound_played;	// used to track what sound is played.  If the player is firing two banks
 										// of the same laser, we only want to play one sound
@@ -11595,32 +11802,13 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 			if(i!=swp->current_primary_bank)ship_stop_fire_primary_bank(obj, i);
 		}
 
-	// lets start gun convergence / autoaim code from here - Wanderer
-	has_converging_autoaim = ((sip->aiming_flags[Ship::Aiming_Flags::Autoaim_convergence] || (The_mission.ai_profile->player_autoaim_fov[Game_skill_level] > 0.0f && !( Game_mode & GM_MULTIPLAYER ))) && aip->target_objnum != -1);
-	has_autoaim = ((has_converging_autoaim || (sip->aiming_flags[Ship::Aiming_Flags::Autoaim])) && aip->target_objnum != -1);
-	needs_target_pos = ((has_autoaim || (sip->aiming_flags[Ship::Aiming_Flags::Auto_convergence])) && aip->target_objnum != -1);
-	
-	if (needs_target_pos) {
-		if (has_autoaim) {
-			autoaim_fov = MAX(shipp->autoaim_fov, The_mission.ai_profile->player_autoaim_fov[Game_skill_level]);
-		}
-
-		// If a subsystem is targeted, fire in that direction instead
-		if (aip->targeted_subsys != NULL)
-		{
-			get_subsystem_world_pos(&Objects[aip->target_objnum], aip->targeted_subsys, &target_position);
-		}
-		else
-		{
-			target_position = Objects[aip->target_objnum].pos;
-		}
-
-		dist_to_target = vm_vec_dist_quick(&target_position, &obj->pos);
-	}
-
 	polymodel* pm = model_get(sip->model_num);
 
 	for ( i = 0; i < num_primary_banks; i++ ) {		
+		bool has_autoaim, has_converging_autoaim, needs_target_pos; // used to flag weapon/ship as having autoaim
+		float autoaim_fov = 0;                                      // autoaim limit
+		float dist_to_target = 0;									// distance to target, for autoaim & automatic convergence
+
 		// Goober5000 - allow more than two banks
 		bank_to_fire = (swp->current_primary_bank+i) % swp->num_primary_banks;
 
@@ -11642,7 +11830,29 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 
 		weapon_info* winfo_p = &Weapon_info[weapon_idx];
 
+		// lets start gun convergence / autoaim code from here - Wanderer
+		// in order to do this per weapon, this needs to be moved here from above -Mjn
+		has_converging_autoaim = ((sip->aiming_flags[Ship::Aiming_Flags::Autoaim_convergence] || (The_mission.ai_profile->player_autoaim_fov[Game_skill_level] > 0.0f && !( Game_mode & GM_MULTIPLAYER ))) && aip->target_objnum != -1);
+		has_autoaim = ((has_converging_autoaim || (sip->aiming_flags[Ship::Aiming_Flags::Autoaim]) || (winfo_p->autoaim_fov > 0.0f)) && aip->target_objnum != -1);
+		needs_target_pos = ((has_autoaim || (sip->aiming_flags[Ship::Aiming_Flags::Auto_convergence])) && aip->target_objnum != -1);
+
 		if (needs_target_pos) {
+			if (has_autoaim) {
+				autoaim_fov = std::max({shipp->autoaim_fov, The_mission.ai_profile->player_autoaim_fov[Game_skill_level], winfo_p->autoaim_fov});
+			}
+
+			// If a subsystem is targeted, fire in that direction instead
+			if (aip->targeted_subsys != NULL)
+			{
+				get_subsystem_world_pos(&Objects[aip->target_objnum], aip->targeted_subsys, &target_position);
+			}
+			else
+			{
+				target_position = Objects[aip->target_objnum].pos;
+			}
+
+			dist_to_target = vm_vec_dist_quick(&target_position, &obj->pos);
+
 			target_velocity_vec = Objects[aip->target_objnum].phys_info.vel;
 			if (The_mission.ai_profile->flags[AI::Profile_Flags::Use_additive_weapon_velocity])
 				vm_vec_scale_sub2(&target_velocity_vec, &obj->phys_info.vel, winfo_p->vel_inherit_amount);
@@ -11726,7 +11936,7 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 		//doing that time scale thing on enemy fighter is just ugly with beams, especaly ones that have careful timeing
 		if (!((obj->flags[Object::Object_Flags::Player_ship]) || fast_firing || winfo_p->wi_flags[Weapon::Info_Flags::Beam])) {
 			// When testing weapons fire in the lab, we do not have a player object available.
-			if ((Game_mode & GM_LAB) || shipp->team == Ships[Player_obj->instance].team){
+			if ((Game_mode & GM_LAB) || (Player_obj == nullptr) || (shipp->team == Ships[Player_obj->instance].team)){
 				next_fire_delay *= aip->ai_ship_fire_delay_scale_friendly;
 			} else {
 				next_fire_delay *= aip->ai_ship_fire_delay_scale_hostile;
@@ -12043,7 +12253,7 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 
 				for ( w = 0; w < numtimes; w++ ) {
 					polymodel *weapon_model = NULL;
-					if(winfo_p->external_model_num >= 0) 
+					if (sip->draw_primary_models[bank_to_fire] && (winfo_p->external_model_num >= 0)) 
 						weapon_model = model_get(winfo_p->external_model_num);
 
 					if (weapon_model)
@@ -12327,17 +12537,24 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 		if (objp == Player_obj && Player_ai->target_objnum != -1)
 			target = &Objects[Player_ai->target_objnum]; 
 
+		SCP_vector<int> firedWeapons;
+
 		for (int bank = 0; bank < MAX_SHIP_PRIMARY_BANKS; bank++) {
-			if(banks_fired & (1 << bank))
+			if (banks_fired & (1 << bank)) {
 				//Start Animation in Forced mode: Always restart it from its initial position rather than just flip it to FWD motion if it was still moving. This is to make it work best for uses like recoil.
 				sip->animations.getAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::PrimaryFired, bank).start(animation::ModelAnimationDirection::FWD, true);
+				firedWeapons.emplace_back(shipp->weapons.primary_bank_weapons[bank]);
+			}
 		}
 
-		if (Script_system.IsActiveAction(CHA_ONWPFIRED) || Script_system.IsActiveAction(CHA_PRIMARYFIRE)) {
-			Script_system.SetHookObjects(2, "User", objp, "Target", target);
-			Script_system.RunCondition(CHA_ONWPFIRED, objp, nullptr, 1);
-			Script_system.RunCondition(CHA_PRIMARYFIRE, objp, nullptr);
-			Script_system.RemHookVars({"User", "Target"});
+		if (scripting::hooks::OnWeaponFired->isActive() || scripting::hooks::OnPrimaryFired->isActive()) {
+			auto param_list = scripting::hook_param_list(
+				scripting::hook_param("User", 'o', objp),
+				scripting::hook_param("Target", 'o', target)
+			);
+			auto conditions = scripting::hooks::WeaponUsedConditions{ shipp, target, firedWeapons, true };
+			scripting::hooks::OnWeaponFired->run(conditions, param_list);
+			scripting::hooks::OnPrimaryFired->run(conditions, param_list);
 		}
 	}
 
@@ -12396,10 +12613,10 @@ void ship_process_targeting_lasers()
 
 	// interate over all ships
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
-		// sanity checks
-		if(so->objnum < 0){
+		if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
 			continue;
-		}
+
+		// sanity checks
 		if(Objects[so->objnum].type != OBJ_SHIP){
 			continue;
 		}
@@ -12460,6 +12677,9 @@ static bool ship_fire_secondary_detonate(object *obj, ship_weapon *swp)
 				object	*mobjp;
 				Assert(mo->objnum >= 0 && mo->objnum < MAX_OBJECTS);
 				mobjp = &Objects[mo->objnum];
+				if (mobjp->flags[Object::Object_Flags::Should_be_dead])
+					continue;
+
 				if (mobjp->parent_sig == obj->parent_sig && Weapon_info[Weapons[mobjp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Remote]) {
 					// dont detonate if this guy just spawned i.e. we just spawned him in a previous iteration of this loop
 					if (Missiontime - Weapons[mobjp->instance].creation_time > fl2f(0.01)) {
@@ -12767,9 +12987,15 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 					shipp->missile_locks_firing.pop_back();
 				}
 
-				target_objnum = OBJ_INDEX(lock_data.obj);
-				target_subsys = lock_data.subsys;
-				locked = 1;
+				if (lock_data.obj != nullptr) {
+					target_objnum = OBJ_INDEX(lock_data.obj);
+					target_subsys = lock_data.subsys;
+					locked = 1;
+				} else {
+					target_objnum = -1;
+					target_subsys = nullptr;
+					locked = 0;
+				}
 			} else if (wip->wi_flags[Weapon::Info_Flags::Homing_heat]) {
 				target_objnum = aip->target_objnum;
 				target_subsys = aip->targeted_subsys;
@@ -13035,11 +13261,14 @@ done_secondary:
 		//Start Animation in Forced mode: Always restart it from its initial position rather than just flip it to FWD motion if it was still moving. This is to make it work best for uses like recoil.
 		sip->animations.getAll(model_get_instance(shipp->model_instance_num), animation::ModelAnimationTriggerType::SecondaryFired, bank).start(animation::ModelAnimationDirection::FWD, true);
 
-		if (Script_system.IsActiveAction(CHA_ONWPFIRED) || Script_system.IsActiveAction(CHA_SECONDARYFIRE)) {
-			Script_system.SetHookObjects(2, "User", objp, "Target", target);
-			Script_system.RunCondition(CHA_ONWPFIRED, objp, nullptr, 2);
-			Script_system.RunCondition(CHA_SECONDARYFIRE, objp, nullptr);
-			Script_system.RemHookVars({"User", "Target"});
+		if (scripting::hooks::OnWeaponFired->isActive() || scripting::hooks::OnSecondaryFired->isActive()) {
+			auto param_list = scripting::hook_param_list(
+				scripting::hook_param("User", 'o', objp),
+				scripting::hook_param("Target", 'o', target)
+			);
+			auto conditions = scripting::hooks::WeaponUsedConditions{ shipp, target, SCP_vector<int>{ weapon_idx }, false };
+			scripting::hooks::OnWeaponFired->run(conditions, param_list);
+			scripting::hooks::OnSecondaryFired->run(conditions, param_list);
 		}
 	}
 
@@ -13137,6 +13366,14 @@ int ship_select_next_primary(object *objp, int direction)
 	original_bank = swp->current_primary_bank;
 	auto original_link_flag = shipp->flags[Ship_Flags::Primary_linked];
 
+	// check if at least two weapons can be linked
+	int num_linkable_weapons = 0;
+	for (int j = 0; j < swp->num_primary_banks; j++) {
+		if (!Weapon_info[swp->primary_bank_weapons[j]].wi_flags[Weapon::Info_Flags::Nolink]) {
+			num_linkable_weapons++;
+		}
+	}
+
 	// redid case structure to possibly add more primaries in the future - Goober5000
 	if ( swp->num_primary_banks == 0 )
 	{
@@ -13192,7 +13429,7 @@ int ship_select_next_primary(object *objp, int direction)
 				{
 					swp->current_primary_bank++;
 				}
-				else if( sip->flags[Ship::Info_Flags::No_primary_linking] )
+				else if( sip->flags[Ship::Info_Flags::No_primary_linking] || (num_linkable_weapons <= 1))
 				{
 					swp->current_primary_bank = 0;
 				}
@@ -13207,7 +13444,7 @@ int ship_select_next_primary(object *objp, int direction)
 				{
 					swp->current_primary_bank--;
 				}
-				else if( sip->flags[Ship::Info_Flags::No_primary_linking] )
+				else if( sip->flags[Ship::Info_Flags::No_primary_linking] || (num_linkable_weapons <= 1))
 				{
 					swp->current_primary_bank = swp->num_primary_banks - 1;
 				}
@@ -13297,11 +13534,13 @@ int ship_select_next_primary(object *objp, int direction)
 		if (objp == Player_obj && Player_ai->target_objnum != -1)
 			target = &Objects[Player_ai->target_objnum];
 
-		if (Script_system.IsActiveAction(CHA_ONWPSELECTED) || Script_system.IsActiveAction(CHA_ONWPDESELECTED)) {
-			Script_system.SetHookObjects(2, "User", objp, "Target", target);
-			Script_system.RunCondition(CHA_ONWPSELECTED, objp, nullptr, 1);
-			Script_system.RunCondition(CHA_ONWPDESELECTED, objp, nullptr, 1);
-			Script_system.RemHookVars({"User", "Target"});
+		if (scripting::hooks::OnWeaponSelected->isActive() || scripting::hooks::OnWeaponDeselected->isActive()) {
+			auto param_list = scripting::hook_param_list(
+				scripting::hook_param("User", 'o', objp),
+				scripting::hook_param("Target", 'o', target)
+			);
+			scripting::hooks::OnWeaponSelected->run(scripting::hooks::WeaponSelectedConditions{ shipp, swp->current_primary_bank, original_bank, true }, param_list);
+			scripting::hooks::OnWeaponDeselected->run(scripting::hooks::WeaponDeselectedConditions{ shipp, swp->current_primary_bank, original_bank, true }, param_list);
 		}
 
 		return 1;
@@ -13401,11 +13640,13 @@ int ship_select_next_secondary(object *objp)
 			if (objp == Player_obj && Player_ai->target_objnum != -1)
 				target = &Objects[Player_ai->target_objnum];
 
-			if (Script_system.IsActiveAction(CHA_ONWPSELECTED) || Script_system.IsActiveAction(CHA_ONWPDESELECTED)) {
-				Script_system.SetHookObjects(2, "User", objp, "Target", target);
-				Script_system.RunCondition(CHA_ONWPSELECTED, objp, nullptr, 2);
-				Script_system.RunCondition(CHA_ONWPDESELECTED, objp, nullptr, 2);
-				Script_system.RemHookVars({"User", "Target"});
+			if (scripting::hooks::OnWeaponSelected->isActive() || scripting::hooks::OnWeaponDeselected->isActive()) {
+				auto param_list = scripting::hook_param_list(
+					scripting::hook_param("User", 'o', objp),
+					scripting::hook_param("Target", 'o', target)
+				);
+				scripting::hooks::OnWeaponSelected->run(scripting::hooks::WeaponSelectedConditions{ shipp, swp->current_secondary_bank, original_bank, false }, param_list);
+				scripting::hooks::OnWeaponDeselected->run(scripting::hooks::WeaponDeselectedConditions{ shipp, swp->current_secondary_bank, original_bank, false }, param_list);
 			}
 
 			return 1;
@@ -14089,7 +14330,6 @@ ship_subsys *ship_get_best_subsys_to_attack(ship *sp, int subsys_type, vec3d *at
 	ship_subsys *best_in_sight_subsys, *lowest_attacker_subsys, *ss_return;
 	int			lowest_num_attackers, lowest_in_sight_attackers, num_attackers;
 	vec3d		gsubpos;
-	ship_obj		*sop;
 
 	lowest_in_sight_attackers = lowest_num_attackers = 1000;
 	ss_return = best_in_sight_subsys = lowest_attacker_subsys = NULL;
@@ -14104,12 +14344,12 @@ ship_subsys *ship_get_best_subsys_to_attack(ship *sp, int subsys_type, vec3d *at
 			// now find the number of ships attacking this subsystem by iterating through the ships list,
 			// and checking if aip->targeted_subsys matches the subsystem we're checking
 			num_attackers = 0;
-			sop = GET_FIRST(&Ship_obj_list);
-			while(sop != END_OF_LIST(&Ship_obj_list)){
+			for (auto sop: list_range(&Ship_obj_list)){
+				if (Objects[sop->objnum].flags[Object::Object_Flags::Should_be_dead])
+					continue;
 				if ( Ai_info[Ships[Objects[sop->objnum].instance].ai_index].targeted_subsys == ss ) {
 					num_attackers++;
 				}
-				sop = GET_NEXT(sop);
 			}
 
 			if ( num_attackers < lowest_num_attackers ) {
@@ -14813,7 +15053,6 @@ int ship_do_rearm_frame( object *objp, float frametime )
 // if no ships can satisfy a request, we've reached the limits, and we can't queue anything, we're out of luck -- return 4
 int ship_find_repair_ship( object *requester_obj, object **ship_we_found )
 {
-	object *objp;
 	int num_support_ships = 0;
 	float min_dist = -1.0f;
 	object *nearest_support_ship = NULL;
@@ -14826,9 +15065,10 @@ int ship_find_repair_ship( object *requester_obj, object **ship_we_found )
 		requester_obj->instance, MAX_SHIPS);
 
 	ship *requester_ship = &Ships[requester_obj->instance];
-	for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) )
+	for (auto so: list_range(&Ship_obj_list))
 	{
-		if ((objp->type == OBJ_SHIP) && !(objp->flags[Object::Object_Flags::Should_be_dead]))
+		auto objp = &Objects[so->objnum];
+		if (!(objp->flags[Object::Object_Flags::Should_be_dead]))
 		{
 			ship *shipp;
 			ship_info *sip;
@@ -15078,6 +15318,9 @@ void ship_assign_sound_all()
 		return;
 
 	for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {		
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		if ( objp->type == OBJ_SHIP && Player_obj != objp) {
 			has_sounds = 0;
 
@@ -15431,7 +15674,7 @@ int ship_get_random_player_wing_ship( int flags, float max_dist, int persona_ind
 
 // like above function, but returns a random ship in the given wing -- no restrictions
 // input:	max_dist	=>	OPTIONAL PARAMETER (default value 0.0f) max range ship can be from player
-int ship_get_random_ship_in_wing(int wingnum, int flags, float max_dist, int get_first)
+int ship_get_random_ship_in_wing(int wingnum, int flags, float max_dist, int get_first, int order_id)
 {
 	int i, ship_index, slist[MAX_SHIPS_PER_WING], count, which_one;
 
@@ -15442,6 +15685,13 @@ int ship_get_random_ship_in_wing(int wingnum, int flags, float max_dist, int get
 
 		if ( Ships[ship_index].flags[Ship_Flags::Dying] ) {
 			continue;
+		}
+
+		// specific to sending messages, make sure the ship selected can actually do the order
+		if (order_id >= 0) {
+			if (!hud_squadmsg_ship_order_valid(ship_index, order_id)) {
+				continue;
+			}
 		}
 
 		// see if ship meets our criterea
@@ -15493,12 +15743,13 @@ int ship_get_random_ship_in_wing(int wingnum, int flags, float max_dist, int get
 int ship_get_random_team_ship(int team_mask, int flags, float max_dist )
 {
 	int num, which_one;
-	object *objp, *obj_list[MAX_SHIPS];
+	object *obj_list[MAX_SHIPS];
 
 	// for any allied, go through the ships list and find all of the ships on that team
 	num = 0;
-	for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
-		if ( objp->type != OBJ_SHIP )
+	for (auto so: list_range(&Ship_obj_list)) {
+		auto objp = &Objects[so->objnum];
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
 			continue;
 
 		// series of conditionals one per line for easy reading
@@ -15535,11 +15786,7 @@ int ship_get_random_team_ship(int team_mask, int flags, float max_dist )
 		return -1;
 
 	which_one = Random::next(num);
-	objp = obj_list[which_one];
-
-	Assert ( objp->instance != -1 );
-
-	return objp->instance;
+	return obj_list[which_one]->instance;
 }
 
 // -----------------------------------------------------------------------
@@ -15932,6 +16179,8 @@ static int ship_has_homing_missile_locked(ship *shipp)
 	for ( mo = GET_NEXT(&Missile_obj_list); mo != END_OF_LIST(&Missile_obj_list); mo = GET_NEXT(mo) ) {
 		Assert(mo->objnum >= 0 && mo->objnum < MAX_OBJECTS);
 		A = &Objects[mo->objnum];
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 
 		if (A->type != OBJ_WEAPON)
 			continue;
@@ -15963,6 +16212,8 @@ static int ship_is_getting_locked(ship *shipp)
 
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		objp = &Objects[so->objnum];
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 		aip = &Ai_info[Ships[objp->instance].ai_index];
 
 		if ( aip->target_objnum == shipp->objnum ) {
@@ -16276,7 +16527,6 @@ int ship_return_seconds_to_goal(ship *sp)
 void ship_check_cargo_all()
 {
 	object	*cargo_objp;
-	ship_obj	*cargo_so, *ship_so;
 	ship		*cargo_sp, *ship_sp;
 	float		dist_squared, limit_squared;
 
@@ -16292,20 +16542,25 @@ void ship_check_cargo_all()
 	// cargo revealed
 
 	// for now just locate a capital ship on the same team:
-	cargo_so = GET_FIRST(&Ship_obj_list);
-	while(cargo_so != END_OF_LIST(&Ship_obj_list)){
+	for (auto cargo_so: list_range(&Ship_obj_list)){
+		if (Objects[cargo_so->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		cargo_sp = &Ships[Objects[cargo_so->objnum].instance];
 		if ( (Ship_info[cargo_sp->ship_info_index].flags[Ship::Info_Flags::Cargo]) && (cargo_sp->team != Player_ship->team) ) {
 			
 			// If the cargo is revealed, continue on to next hostile cargo
 			if ( cargo_sp->flags[Ship::Ship_Flags::Cargo_revealed] ) {
-				goto next_cargo;
+				continue;
 			}
 
 			// check against friendly fighter/bombers + cruiser/freighter/transport
 			// IDEA: could cull down to fighter/bomber if we want this to run a bit quicker
-			for ( ship_so=GET_FIRST(&Ship_obj_list); ship_so != END_OF_LIST(&Ship_obj_list); ship_so=GET_NEXT(ship_so) )
+			for (auto ship_so: list_range(&Ship_obj_list))
 			{
+				if (Objects[ship_so->objnum].flags[Object::Object_Flags::Should_be_dead])
+					continue;
+
 				ship_sp = &Ships[Objects[ship_so->objnum].instance];
 				// only consider friendly ships
 				if (ship_sp->team != Player_ship->team) {
@@ -16330,9 +16585,7 @@ void ship_check_cargo_all()
 				}
 			} // end for
 		}
-next_cargo:
-		cargo_so = GET_NEXT(cargo_so);
-	} // end while
+	} // end for
 }
 */
 
@@ -17007,6 +17260,9 @@ int ship_get_by_signature(int signature)
 	ship_obj *so;
 		
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {		
+		if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		// if we found a matching ship object signature
 		if((Objects[so->objnum].signature == signature) && (Objects[so->objnum].type == OBJ_SHIP)){
 			return Objects[so->objnum].instance;
@@ -17814,6 +18070,9 @@ int ship_get_random_targetable_ship()
 	ship_obj *so;
 
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
+		if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		// make sure the instance is valid
 		if ( (Objects[so->objnum].instance < 0) || (Objects[so->objnum].instance >= MAX_SHIPS) )
 			continue;
@@ -17879,6 +18138,10 @@ void object_jettison_cargo(object *objp, object *cargo_objp, float jettison_spee
 	// physics stuff
 	if (jettison_new)
 	{
+		// we might not need to do any calculations
+		if (whack_below_limit(jettison_speed * cargo_objp->phys_info.mass))
+			return;
+
 		// new method uses dockpoint normals and user-specified force
 		extern void find_adjusted_dockpoint_info(vec3d *global_dock_point, matrix *dock_orient, object *objp, polymodel *pm, int submodel, int dock_index);
 		extern int find_parent_moving_submodel(polymodel *pm, int dock_index);
@@ -18080,6 +18343,9 @@ void ship_update_artillery_lock()
 
 	// update all ships
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ){
+		if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		// get the ship
 		if((so->objnum >= 0) && (Objects[so->objnum].type == OBJ_SHIP) && (Objects[so->objnum].instance >= 0)){
 			shipp = &Ships[Objects[so->objnum].instance];
@@ -18337,7 +18603,6 @@ void ship_set_new_ai_class(ship *shipp, int new_ai_class)
 
 	// we hafta change a bunch of stuff here...
 	aip->ai_class = new_ai_class;
-	aip->behavior = AIM_NONE;
 	init_aip_from_class_and_profile(aip, &Ai_classes[new_ai_class], The_mission.ai_profile);
 
 	shipp->weapons.ai_class = new_ai_class;
@@ -18448,6 +18713,9 @@ int ship_get_ship_for_departure(int team)
 	for (ship_obj *so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
 	{
 		Assert(so->objnum >= 0);
+		if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		int shipnum = Objects[so->objnum].instance;
 		Assert(shipnum >= 0);
 
@@ -18601,6 +18869,10 @@ void ship_move_subsystems(object *objp)
 {
 	Assertion(objp->type == OBJ_SHIP, "ship_move_subsystems should only be called for ships!  objp type = %d", objp->type);
 	auto shipp = &Ships[objp->instance];
+	
+	// non-player ships that are playing dead do not process subsystems or turrets
+	if ((!(objp->flags[Object::Object_Flags::Player_ship]) || Player_use_ai) && Ai_info[shipp->ai_index].mode == AIM_PLAY_DEAD)
+		return;
 
 	for (auto pss = GET_FIRST(&shipp->subsys_list); pss != END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss))
 	{
@@ -18665,7 +18937,7 @@ int ship_squadron_wing_lookup(const char *wing_name)
 
 		for (int i = 0; i < MAX_SQUADRON_WINGS; i++)
 		{
-			if (!strnicmp(Squadron_wing_names[i], wing_name, len))
+			if (!strnicmp(Squadron_wing_names[i], wing_name, std::max(len, strlen(Squadron_wing_names[i]))))
 				return i;
 		}
 	}
@@ -20131,7 +20403,15 @@ void ship_render(object* obj, model_draw_list* scene)
 	if ( vm_vec_dist_quick( &obj->pos, &Eye_position ) < obj->radius*50.0f && !Rendering_to_shadow_map ) {
 		for ( int i = 0; i < MAX_SHIP_ARCS; i++ )	{
 			if ( shipp->arc_timestamp[i].isValid() ) {
-				model_instance_add_arc(pm, pmi, -1, &shipp->arc_pts[i][0], &shipp->arc_pts[i][1], shipp->arc_type[i]);
+				model_instance_add_arc(pm,
+					pmi,
+					-1,
+					&shipp->arc_pts[i][0],
+					&shipp->arc_pts[i][1],
+					shipp->arc_type[i],
+					&shipp->arc_primary_color_1[i],
+					&shipp->arc_primary_color_2[i],
+					&shipp->arc_secondary_color[i]);
 			}
 		}
 	}
