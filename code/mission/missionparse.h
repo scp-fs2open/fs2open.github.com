@@ -15,6 +15,7 @@
 
 #include "ai/ai.h"
 #include "ai/ai_profiles.h"
+#include "globalincs/version.h"
 #include "graphics/2d.h"
 #include "io/keycontrol.h"
 #include "model/model.h"
@@ -42,12 +43,11 @@ struct p_dock_instance;
 
 int get_special_anchor(const char *name);
 
-// update version when mission file format changes, and add approprate code
-// to check loaded mission version numbers in the parse code.  Also, be sure
-// to update both MissionParse and MissionSave (FRED) when changing the
-// mission file format!
-#define	MISSION_VERSION 0.10f
-#define	FRED_MISSION_VERSION 0.10f
+// MISSION_VERSION should be the earliest version of FSO that can load the current mission format without
+// requiring version-specific comments.  It should be updated whenever the format changes, but it should
+// not be updated simply because the engine's version changed.
+extern const gameversion::version MISSION_VERSION;
+extern const gameversion::version LEGACY_MISSION_VERSION;
 
 #define WING_PLAYER_BASE	0x80000  // used by Fred to tell ship_index in a wing points to a player
 
@@ -110,7 +110,7 @@ typedef struct mission_cutscene {
 typedef struct mission {
 	char	name[NAME_LENGTH];
 	char	author[NAME_LENGTH];
-	float	version;
+	gameversion::version	required_fso_version;
 	char	created[DATE_TIME_LENGTH];
 	char	modified[DATE_TIME_LENGTH];
 	char	notes[NOTES_LENGTH];
