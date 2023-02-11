@@ -199,13 +199,28 @@ DynamicSEXP* get_dynamic_sexp(int operator_const)
 
 	return iter->second.get();
 }
-int increment_enum_list_id()
+int get_category(const SCP_string& name)
 {
-	auto& global = globals();
-	return global.next_free_enum_list_id++;
+	for (auto& cat : op_menu) {
+		if (SCP_string_lcase_equal_to()(cat.name, name)) {
+			return cat.id;
+		}
+	}
+
+	return OP_CATEGORY_NONE;
+}
+int get_subcategory(const SCP_string& name, int category)
+{
+	for (auto& subcat : op_submenu) {
+		if (SCP_string_lcase_equal_to()(subcat.name, name) && get_category_of_subcategory(subcat.id) == category) {
+			return subcat.id;
+		}
+	}
+
+	return OP_SUBCATEGORY_NONE;
 }
 int get_category_of_subcategory(int subcategory_id)
-	{
+{
 	const auto& global = globals();
 
 	auto iter = global.subcategory_to_category.find(subcategory_id);
@@ -214,6 +229,11 @@ int get_category_of_subcategory(int subcategory_id)
 	}
 
 	return iter->second;
+}
+int increment_enum_list_id()
+{
+	auto& global = globals();
+	return global.next_free_enum_list_id++;
 }
 void dynamic_sexp_init()
 {
