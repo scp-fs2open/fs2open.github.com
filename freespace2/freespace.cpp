@@ -2937,7 +2937,7 @@ void apply_view_shake(matrix *eye_orient)
 
 	bool do_hud_shudder = (Viewer_obj == Player_obj);
 
-	if ((Viewer_mode & VM_CHASE) && !Apply_shudder_to_chase_view)
+	if ((Viewer_mode & VM_CHASE) && Apply_shudder_to_chase_view)
 		do_hud_shudder = true;
 
 	// do shakes that only affect the HUD (unless disabled by cmdline in singleplayer or enabled by mod flag)
