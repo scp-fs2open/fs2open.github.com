@@ -2305,7 +2305,7 @@ void multi_sg_select_rank_default();
 int multi_start_game_rank_from_name( char *rank ) {
 	int i;
 
-	for ( i = 0; i <= ((int)Ranks.size() - 1); i++ ) {
+	for ( i = 0; i < ((int)Ranks.size()); i++ ) {
 		if ( !stricmp(Ranks[i].name, rank) ) {
 			return i;
 		}

@@ -57,7 +57,7 @@ float Scoring_scale_factors[NUM_SKILL_LEVELS] = {
 	1.25f					// insane
 };
 
-static rank_stuff* get_rank_pointer(char* rank_name)
+static rank_stuff* get_rank_pointer(const char* rank_name)
 {
 	for (int i = 0; i < (int)Ranks.size(); i++) {
 		if (!stricmp(rank_name, Ranks[i].name)) {
@@ -133,7 +133,7 @@ void parse_rank_table(const char* filename)
 					continue;
 				}
 				Ranks.push_back(rank_t);
-				rank_p = &Ranks[Ranks.size() - 1];
+				rank_p = &Ranks.back();
 			}
 
 			if (optional_string("$Points:")) {
@@ -215,13 +215,10 @@ void sort_ranks()
 	for (int i = 0; i < (int)Ranks.size(); i++) {
 		for (int j = (i + 1); j < (int)Ranks.size(); j++) {
 			if (Ranks[i].points == Ranks[j].points) {
-				Ranks[j].points++;
-				shouldSort = true;
-				mprintf(("Rank %s and %s are equal! Increasing %s to %i\n",
+				Error(LOCATION,
+					"Rank %s and %s have equal point values! This is not allowed.",
 					Ranks[i].name,
-					Ranks[j].name,
-					Ranks[j].name,
-					Ranks[j].points));
+					Ranks[j].name);
 			}
 		}
 	}
