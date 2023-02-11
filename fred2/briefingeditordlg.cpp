@@ -475,7 +475,7 @@ void briefing_editor_dlg::update_data(int update)
 			}
 			strcpy_s(ptr->icons[m_last_icon].closeup_label, buf);
 
-			if (m_icon_scale)
+			if (m_icon_scale > 0)
 				ptr->icons[m_last_icon].scale = m_icon_scale;
 
 			if ( m_hilight )
