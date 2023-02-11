@@ -132,6 +132,7 @@ enum : int {
 	OPF_WING_FLAG,					// Goober5000 - The name of a wing flag
 	OPF_ASTEROID_DEBRIS,			// MjnMixael - Debris types as defined in asteroids.tbl
 	OPF_WING_FORMATION,				// Goober5000 - as defined in ships.tbl
+	OPF_TURRET_TYPE,
 
 	//Must always be at the end of the list
 	First_available_opf_id
@@ -1140,6 +1141,7 @@ enum sexp_error_check
 	SEXP_CHECK_INVALID_EXPLOSION_OPTION,
 	SEXP_CHECK_INVALID_SHIP_EFFECT,
 	SEXP_CHECK_INVALID_TURRET_TARGET_ORDER,
+	SEXP_CHECK_INVALID_TURRET_TYPE,
 	SEXP_CHECK_INVALID_ARMOR_TYPE,
 	SEXP_CHECK_INVALID_DAMAGE_TYPE,
 	SEXP_CHECK_INVALID_TARGET_PRIORITIES,
