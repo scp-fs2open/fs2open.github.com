@@ -137,8 +137,11 @@ static luacpp::LuaValue process_lua_data(ubyte* data, int& offset, lua_State* L)
 		luacpp::LuaTable table = luacpp::LuaTable::create(L);
 		uint8_t entries = 0;
 		GET_DATA(entries);
-		for(uint8_t i = 0; i < entries; i++)
-			table.addValue(process_lua_data(data, offset, L), process_lua_data(data, offset, L));
+		for (uint8_t i = 0; i < entries; i++) {
+			luacpp::LuaValue index = process_lua_data(data, offset, L);
+			luacpp::LuaValue value = process_lua_data(data, offset, L);
+			table.addValue(std::move(index), std::move(value));
+		}
 		return std::move(table);
 	}
 	default:
