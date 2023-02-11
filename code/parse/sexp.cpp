@@ -19348,8 +19348,16 @@ void sexp_set_countermeasures(int node)
 	}
 	if (num_cmeasures < 0) {
 		num_cmeasures = 0;
-	} else if (num_cmeasures > fl2i(Ship_info[shipp->ship_info_index].cmeasure_max / cm_cargo_size)) {
-		num_cmeasures = fl2i(Ship_info[shipp->ship_info_index].cmeasure_max / cm_cargo_size);
+	} else {
+		if (Countermeasures_use_capacity) {
+			if (num_cmeasures > fl2i(Ship_info[shipp->ship_info_index].cmeasure_max / cm_cargo_size)) {
+				num_cmeasures = fl2i(Ship_info[shipp->ship_info_index].cmeasure_max / cm_cargo_size);
+			}
+		} else {
+			if (num_cmeasures > Ship_info[shipp->ship_info_index].cmeasure_max) {
+				num_cmeasures = Ship_info[shipp->ship_info_index].cmeasure_max;
+			}
+		}
 	}
 
 	shipp->cmeasure_count = num_cmeasures;
