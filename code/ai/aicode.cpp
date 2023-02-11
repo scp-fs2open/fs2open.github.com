@@ -574,14 +574,6 @@ void init_ai_class(ai_class *aicp)
 {
 
 	// AI Class main attributes
-	// Set the lowest values here so the table can be modular
-	for (int i = 0; i < NUM_SKILL_LEVELS; i++) {
-		aicp->ai_accuracy[i] = FLT_MIN;
-		aicp->ai_evasion[i] = FLT_MIN;
-		aicp->ai_courage[i] = FLT_MIN;
-		aicp->ai_patience[i] = FLT_MIN;
-	}
-
 	for (int i = 0; i < NUM_SKILL_LEVELS; i++)
 	{
 		aicp->ai_cmeasure_fire_chance[i] = FLT_MIN;
@@ -607,6 +599,11 @@ void init_ai_class(ai_class *aicp)
 		aicp->ai_chance_to_use_missiles_on_plr[i] = INT_MIN;
 		aicp->ai_max_aim_update_delay[i] = FLT_MIN;
 		aicp->ai_turret_max_aim_update_delay[i] = FLT_MIN;
+		// Set the lowest values here so the table can be modular
+		aicp->ai_accuracy[i] = FLT_MIN;
+		aicp->ai_evasion[i] = FLT_MIN;
+		aicp->ai_courage[i] = FLT_MIN;
+		aicp->ai_patience[i] = FLT_MIN;
 	}
     aicp->ai_profile_flags.reset();
     aicp->ai_profile_flags_set.reset();
