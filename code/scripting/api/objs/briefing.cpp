@@ -235,7 +235,7 @@ ADE_VIRTVAR(isGoalSatisfied, l_Goals, nullptr, "The status of the goal", "number
 		LuaError(L, "This property is read only.");
 	}
 
-	return ade_set_args(L, "i", l_Team.Set(Mission_goals[current].satisfied));
+	return ade_set_args(L, "i", Mission_goals[current].satisfied);
 }
 
 ADE_VIRTVAR(Score, l_Goals, nullptr, "The score of the goal", "number", "the score")
@@ -249,7 +249,7 @@ ADE_VIRTVAR(Score, l_Goals, nullptr, "The score of the goal", "number", "the sco
 		LuaError(L, "This property is read only.");
 	}
 
-	return ade_set_args(L, "i", l_Team.Set(Mission_goals[current].score));
+	return ade_set_args(L, "i", Mission_goals[current].score);
 }
 
 ADE_VIRTVAR(isGoalValid, l_Goals, nullptr, "The goal validity", "boolean", "true if valid, false otherwise")
