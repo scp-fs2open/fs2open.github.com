@@ -3341,6 +3341,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_NEBULA_STORM_TYPE:
 		case OPF_NEBULA_POOF:
 		case OPF_TURRET_TARGET_ORDER:
+		case OPF_TURRET_TYPE:
 		case OPF_POST_EFFECT:
 		case OPF_TARGET_PRIORITIES:
 		case OPF_ARMOR_TYPE:
@@ -4762,7 +4763,6 @@ int sexp_tree::get_type(HTREEITEM h)
 
 void sexp_tree::update_help(HTREEITEM h)
 {
-	const char *str;
 	int i, j, z, c, code, index, sibling_place;
 	CString text;
 
@@ -4788,12 +4788,28 @@ void sexp_tree::update_help(HTREEITEM h)
 		if (tree_nodes[i].handle == h)
 			break;
 
+	int thisIndex = event_annotation_lookup(h);
+	SCP_string nodeComment;
+
+	if (thisIndex >= 0) {
+		if (!Event_annotations[thisIndex].comment.empty()) {
+			nodeComment = "Node Comments:\r\n   " + Event_annotations[thisIndex].comment;
+		}
+	} else {
+		nodeComment = "";
+	}
+
 	if ((i >= (int)tree_nodes.size()) || !tree_nodes[i].type) {
-		help_box->SetWindowText("");
+		help_box->SetWindowText(nodeComment.c_str());
 		if (mini_help_box)
 			mini_help_box->SetWindowText("");
 		return;
 	}
+
+	// Now that we're done with top level nodes we can add the empty lines because
+	// everything else below is supposed to have help text
+	if (!nodeComment.empty())
+		nodeComment.insert(0, "\r\n\r\n");
 
 	if (SEXPT_TYPE(tree_nodes[i].type) == SEXPT_OPERATOR)
 	{
@@ -4904,8 +4920,8 @@ void sexp_tree::update_help(HTREEITEM h)
 			if (query_operator_argument_type(index, c) == OPF_MESSAGE) {
 				for (j=0; j<Num_messages; j++)
 					if (!stricmp(Messages[j].name, tree_nodes[i].text)) {
-						text.Format("Message Text:\r\n%s", Messages[j].message);
-						help_box->SetWindowText(text);
+						text.Format("Message Text:\r\n%s%s", Messages[j].message, nodeComment.c_str());
+						help_box->SetWindowText((LPCSTR)text);
 						return;
 					}
 			}
@@ -4915,11 +4931,14 @@ void sexp_tree::update_help(HTREEITEM h)
 	}
 
 	code = get_operator_const(tree_nodes[i].text);
-	str = help(code);
-	if (!str)
-		str = "No help available";
+	auto str = help(code);
+	if (!str) {
+		text.Format("No help available%s", nodeComment.c_str());
+	} else {
+		text.Format("%s%s", str, nodeComment.c_str());
+	}
 
-	help_box->SetWindowText(str);
+	help_box->SetWindowText((LPCSTR)text);
 }
 
 // find list of sexp_tree nodes with text
@@ -5305,6 +5324,10 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 
 		case OPF_TURRET_TARGET_ORDER:
 			list = get_listing_opf_turret_target_order();
+			break;
+
+		case OPF_TURRET_TYPE:
+			list = get_listing_opf_turret_types();
 			break;
 
 		case OPF_TARGET_PRIORITIES:
@@ -6971,13 +6994,23 @@ sexp_list_item *sexp_tree::get_listing_opf_nebula_poof()
 	return head.next;
 }
 
-sexp_list_item *sexp_tree::get_listing_opf_turret_target_order()
+sexp_list_item* sexp_tree::get_listing_opf_turret_target_order()
 {
 	int i;
 	sexp_list_item head;
 
 	for (i=0; i<NUM_TURRET_ORDER_TYPES; i++)
 		head.add_data(Turret_target_order_names[i]);
+
+	return head.next;
+}
+
+sexp_list_item* sexp_tree::get_listing_opf_turret_types()
+{
+	sexp_list_item head;
+
+	for (int i = 0; i < NUM_TURRET_TYPES; i++)
+		head.add_data(Turret_valid_types[i]);
 
 	return head.next;
 }
