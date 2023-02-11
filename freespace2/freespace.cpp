@@ -710,7 +710,7 @@ void game_sunspot_process(float frametime)
 			for(idx=0; idx<n_lights; idx++)	{
 				bool in_shadow = shipfx_eye_in_shadow(&Eye_position, Viewer_obj, idx);
 
-				if (gr_lightshafts_enabled() && !in_shadow) {
+				if (!in_shadow) {
 					vec3d light_dir;				
 					light_get_global_dir(&light_dir, idx);
 
@@ -719,8 +719,7 @@ void game_sunspot_process(float frametime)
 						float dot = vm_vec_dot( &light_dir, &Eye_matrix.vec.fvec )*0.5f+0.5f;
 						Sun_spot_goal += (float)pow(dot,85.0f);
 					}
-				}
-				if ( !in_shadow )	{
+
 					// draw the glow for this sun
 					stars_draw_sun_glow(idx);				
 				}

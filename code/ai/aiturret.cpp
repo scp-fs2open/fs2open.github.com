@@ -1889,7 +1889,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 				turret->last_fired_weapon_info_index = turret_weapon_class;
 
 				if (scripting::hooks::OnTurretFired->isActive()) {
-					scripting::hooks::OnTurretFired->run(scripting::hooks::WeaponUsedConditions{ parent_ship , turret_enemy_objp, turret_weapon_class, true },
+					scripting::hooks::OnTurretFired->run(scripting::hooks::WeaponUsedConditions{ parent_ship , turret_enemy_objp, SCP_vector<int>{ turret_weapon_class }, true },
 						scripting::hook_param_list(
 							scripting::hook_param("Ship", 'o', &Objects[parent_objnum]),
 							scripting::hook_param("Beam", 'o', objp),
@@ -2035,7 +2035,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 					wp->turret_subsys = turret;	
 
 					if (scripting::hooks::OnTurretFired->isActive()) {
-						scripting::hooks::OnTurretFired->run(scripting::hooks::WeaponUsedConditions{ parent_ship , turret_enemy_objp, turret_weapon_class, wip->subtype == WP_LASER },
+						scripting::hooks::OnTurretFired->run(scripting::hooks::WeaponUsedConditions{ parent_ship , turret_enemy_objp, SCP_vector<int>{ turret_weapon_class }, wip->subtype == WP_LASER },
 							scripting::hook_param_list(
 								scripting::hook_param("Ship", 'o', &Objects[parent_objnum]),
 								scripting::hook_param("Weapon", 'o', objp),
@@ -2160,7 +2160,7 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 			scripting::hooks::OnTurretFired->run(scripting::hooks::WeaponUsedConditions{
 				&Ships[Objects[tsi->parent_objnum].instance],
 				&Objects[tsi->turret->turret_enemy_objnum], 
-				tsi->weapon_class, Weapon_info[tsi->weapon_class].subtype == WP_LASER
+				SCP_vector<int>{ tsi->weapon_class }, Weapon_info[tsi->weapon_class].subtype == WP_LASER
 				},
 				scripting::hook_param_list(
 					scripting::hook_param("Ship", 'o', &Objects[tsi->parent_objnum]),

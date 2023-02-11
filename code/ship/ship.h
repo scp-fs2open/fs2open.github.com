@@ -1801,7 +1801,7 @@ ship_subsys *ship_return_next_subsys(ship *shipp, int type, vec3d *attacker_pos)
 
 extern int ship_get_random_team_ship(int team_mask, int flags = SHIP_GET_ANY_SHIP, float max_dist = 0.0f);
 extern int ship_get_random_player_wing_ship(int flags = SHIP_GET_ANY_SHIP, float max_dist = 0.0f, int persona_index = -1, int get_first = 0, int multi_team = -1);
-extern int ship_get_random_ship_in_wing(int wingnum, int flags = SHIP_GET_ANY_SHIP, float max_dist = 0.0f, int get_first = 0);
+extern int ship_get_random_ship_in_wing(int wingnum, int flags = SHIP_GET_ANY_SHIP, float max_dist = 0.0f, int get_first = 0, int order_id = -1);
 
 // return ship index
 int ship_get_random_targetable_ship();

@@ -739,7 +739,10 @@ void asteroid_create_asteroid_field(int num_asteroids, int field_type, int aster
 
 	Asteroid_field.target_names = targets;
 
-	asteroid_create_all();
+	// Only create asteroids if we have some to create
+	if ((count > 0) && (num_asteroids > 0)) {
+		asteroid_create_all();
+	}
 }
 
 // will replace any existing asteroid or debris field with a debris field
@@ -794,7 +797,10 @@ void asteroid_create_debris_field(int num_asteroids, int asteroid_speed, int deb
 
 	Asteroid_field.bound_rad = MAX(3000.0f, b_rad);
 
-	asteroid_create_all();
+	// Only create debris if we have some to create
+	if ((count > 0) && (num_asteroids > 0)) {
+		asteroid_create_all();
+	}
 }
 
 /**
@@ -1073,8 +1079,8 @@ void asteroid_delete( object * obj )
  */
 static void asteroid_maybe_reposition(object *objp, asteroid_field *asfieldp)
 {
-	// passive field does not wrap
-	if (asfieldp->field_type == FT_PASSIVE) {
+	// passive field does not wrap if there is no gravity
+	if (IS_VEC_NULL(&The_mission.gravity) && (asfieldp->field_type == FT_PASSIVE)) {
 		return;
 	}
 
@@ -1100,22 +1106,27 @@ static void asteroid_maybe_reposition(object *objp, asteroid_field *asfieldp)
 					asteroid_wrap_pos(objp, asfieldp);
 					asteroid* astp = &Asteroids[objp->instance];
 
-					// this doesnt count as a thrown asteroid anymore
-					for (asteroid_target& target : Asteroid_targets)
-						if (target.objnum == astp->target_objnum)
-							target.incoming_asteroids--;
+					if (asfieldp->field_type == FT_ACTIVE) {
+						// this doesnt count as a thrown asteroid anymore
+						for (asteroid_target& target : Asteroid_targets)
+							if (target.objnum == astp->target_objnum)
+								target.incoming_asteroids--;
 
-					astp->target_objnum = -1;
+						astp->target_objnum = -1;
+					}
 
 					dist = vm_vec_normalized_dir(&vec_to_asteroid, &objp->pos, &Eye_position);
 					dot = vm_vec_dot(&Eye_matrix.vec.fvec, &vec_to_asteroid);
 					
-					if ( (dot > 0.7f) && (dist < (asfieldp->bound_rad * 1.3f)) ) {
-						// player would see asteroid pop out other side, so reverse velocity instead of wrapping						
-						objp->pos = old_asteroid_pos;		
-						vm_vec_copy_scale(&objp->phys_info.vel, &old_vel, -1.0f);
-						objp->phys_info.desired_vel = objp->phys_info.vel;
-						Asteroids[objp->instance].target_objnum = -1;
+					//probably don't reverse direction if there's gravity involved
+					if (IS_VEC_NULL(&The_mission.gravity)) {
+						if ((dot > 0.7f) && (dist < (asfieldp->bound_rad * 1.3f))) {
+							// player would see asteroid pop out other side, so reverse velocity instead of wrapping
+							objp->pos = old_asteroid_pos;
+							vm_vec_copy_scale(&objp->phys_info.vel, &old_vel, -1.0f);
+							objp->phys_info.desired_vel = objp->phys_info.vel;
+							Asteroids[objp->instance].target_objnum = -1;
+						}
 					}
 
 					// update last pos (after vel is known)
@@ -1123,8 +1134,10 @@ static void asteroid_maybe_reposition(object *objp, asteroid_field *asfieldp)
 
 					asteroid_update_collide(objp);
 
-					if ( MULTIPLAYER_MASTER )
-						send_asteroid_throw( objp );
+					if (asfieldp->field_type == FT_ACTIVE) {
+						if (MULTIPLAYER_MASTER)
+							send_asteroid_throw(objp);
+					}
 				}
 			}
 		}
@@ -1579,8 +1592,8 @@ static void asteroid_do_area_effect(object *asteroid_objp)
 		if (ship_objp->flags[Object::Object_Flags::Should_be_dead])
 			continue;
 
-		// don't blast navbuoys
-		if ( ship_get_SIF(ship_objp->instance)[Ship::Info_Flags::Navbuoy] ) {
+		// don't blast no-collide or navbuoys
+		if ( !ship_objp->flags[Object::Object_Flags::Collides] || ship_get_SIF(ship_objp->instance)[Ship::Info_Flags::Navbuoy] ) {
 			continue;
 		}
 
@@ -1966,12 +1979,11 @@ void asteroid_process_post(object * obj)
 		
 		asteroid	*asp = &Asteroids[num];
 
-		// Only wrap if active field
-		if (Asteroid_field.field_type == FT_ACTIVE) {
-			if ( timestamp_elapsed(asp->check_for_wrap) ) {
-				asteroid_maybe_reposition(obj, &Asteroid_field);
-				asp->check_for_wrap = _timestamp(ASTEROID_CHECK_WRAP_TIMESTAMP);
-			}
+		//Passive fields might wrap if there's gravity so do
+		//this for all fields now-Mjn
+		if ( timestamp_elapsed(asp->check_for_wrap) ) {
+			asteroid_maybe_reposition(obj, &Asteroid_field);
+			asp->check_for_wrap = _timestamp(ASTEROID_CHECK_WRAP_TIMESTAMP);
 		}
 
 		asteroid_verify_collide_objnum(asp);

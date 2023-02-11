@@ -13522,13 +13522,10 @@ void sexp_explosion_effect(int n)
 					continue;
 				}
 		
-				// don't blast navbuoys
-				if ( objp->type == OBJ_SHIP )
+				// don't blast no-collide or navbuoys
+				if ( !objp->flags[Object::Object_Flags::Collides] || (objp->type == OBJ_SHIP && ship_get_SIF(objp->instance)[Ship::Info_Flags::Navbuoy]) )
 				{
-					if ( ship_get_SIF(objp->instance)[Ship::Info_Flags::Navbuoy] )
-					{
-						continue;
-					}
+					continue;
 				}
 
 				if ( ship_explode_area_calc_damage( &origin, &objp->pos, (float)inner_radius, (float)outer_radius, (float)max_damage, (float)max_blast, &t_damage, &t_blast ) == -1 )
@@ -13727,7 +13724,14 @@ void sexp_set_gravity_accel(int node)
 		return;
 
 	float fl_accel = (float)(-accel) / 100.0f;
+	vec3d old_gravity = The_mission.gravity;
 	The_mission.gravity = vm_vec_new(0.0f, fl_accel, 0.0f);
+
+	if ((IS_VEC_NULL(&old_gravity) && !IS_VEC_NULL(&The_mission.gravity)) ||
+		(!IS_VEC_NULL(&old_gravity) && IS_VEC_NULL(&The_mission.gravity))) {
+		// gravity was turned on or turned off
+		collide_apply_gravity_flags_weapons();
+	}
 
 	// do the multiplayer callback
 	if (MULTIPLAYER_MASTER) {
@@ -13743,7 +13747,13 @@ void multi_sexp_set_gravity_accel()
 
 	Current_sexp_network_packet.get_float(accel);
 
+	vec3d old_gravity = The_mission.gravity;
 	The_mission.gravity = vm_vec_new(0.0f, accel, 0.0f);
+	if ((IS_VEC_NULL(&old_gravity) && !IS_VEC_NULL(&The_mission.gravity)) ||
+		(!IS_VEC_NULL(&old_gravity) && IS_VEC_NULL(&The_mission.gravity))) {
+		// gravity was turned on or turned off
+		collide_apply_gravity_flags_weapons();
+	}
 }
 
 // this function get called by send-message or send-message random with the name of the message, sender,
@@ -15335,9 +15345,6 @@ void sexp_set_asteroid_field(int n)
 		n = CDR(n);
 	}
 
-	if (!brown && !blue && !orange)
-		return;
-
 	int o_minx = -1000, o_miny = -1000, o_minz = -1000;
 	int o_maxx = 1000, o_maxy = 1000, o_maxz = 1000;
 
@@ -15472,9 +15479,6 @@ void sexp_set_debris_field(int n)
 		debris3 = get_asteroid_position(CTEXT(n));
 		n = CDR(n);
 	}
-
-	if ((debris1 == -1) && (debris2 == -1) && (debris3 == -1))
-		return;
 
 	int o_minx = -1000, o_miny = -1000, o_minz = -1000;
 	int o_maxx = 1000, o_maxy = 1000, o_maxz = 1000;
