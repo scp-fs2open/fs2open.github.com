@@ -2760,11 +2760,30 @@ void sexp_tree::update_help(QTreeWidgetItem* h) {
 		}
 	}
 
+	// Node comments are not yet implemented in qtFRED, so just adding some base code here
+	// that can be used when the feature is completed - Mjn
+
+	//int thisIndex = event_annotation_lookup(h);
+	SCP_string nodeComment;
+
+	//if (thisIndex >= 0) {
+		//if (!Event_annotations[thisIndex].comment.empty()) {
+			//nodeComment = "Node Comments:\r\n   " + Event_annotations[thisIndex].comment;
+		//}
+	//} else {
+		nodeComment = "";
+	//}
+
 	if ((i >= (int) tree_nodes.size()) || !tree_nodes[i].type) {
-		helpChanged("");
+		helpChanged(nodeComment.c_str());
 		miniHelpChanged("");
 		return;
 	}
+
+	// Now that we're done with top level nodes we can add the empty lines because
+	// everything else below is supposed to have help text
+	if (!nodeComment.empty())
+		nodeComment.insert(0, "\r\n\r\n");
 
 	if (SEXPT_TYPE(tree_nodes[i].type) == SEXPT_OPERATOR) {
 		miniHelpChanged("");
@@ -2859,7 +2878,7 @@ void sexp_tree::update_help(QTreeWidgetItem* h) {
 			if (query_operator_argument_type(index, c) == OPF_MESSAGE) {
 				for (j = 0; j < Num_messages; j++) {
 					if (!stricmp(Messages[j].name, tree_nodes[i].text)) {
-						auto text = QString("Message Text:\n%1").arg(Messages[j].message);
+						auto text = QString("Message Text:\n%1%2").arg(Messages[j].message, nodeComment.c_str());
 						helpChanged(text);
 						return;
 					}
@@ -2872,11 +2891,14 @@ void sexp_tree::update_help(QTreeWidgetItem* h) {
 
 	code = get_operator_const(tree_nodes[i].text);
 	auto str = help(code);
+	QString text;
 	if (!str) {
-		str = "No help available";
+		text = QString("No help available%1").arg(nodeComment.c_str());
+	} else {
+		text = QString("%1%2").arg(str, nodeComment.c_str());
 	}
 
-	helpChanged(QString::fromUtf8(str));
+	helpChanged(text);
 }
 
 // find list of sexp_tree nodes with text
