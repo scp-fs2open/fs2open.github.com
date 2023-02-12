@@ -87,7 +87,8 @@ void emp_process_ship(ship *shipp);
 
 // start the emp effect for MYSELF (intensity == arbitrary intensity variable, time == time the effect will last)
 // NOTE : time should be in seconds
-void emp_start_local(float intensity, float time, const SCP_string &text = "");
+void emp_start_local(float intensity, float time, const SCP_string &text);
+void emp_start_local(float intensity, float time);
 
 // stop the emp effect cold
 void emp_stop_local();
