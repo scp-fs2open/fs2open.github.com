@@ -1505,7 +1505,7 @@ float scoring_get_scale_factor()
 void scoring_bash_rank(player *pl,int rank)
 {	
 	// if this is an invalid rank, do nothing
-	if((rank < 0) || (rank > (int)Ranks.size())){
+	if((rank < 0) || (rank >= (int)Ranks.size())){
 		nprintf(("General","Could not bash player rank - invalid value!!!\n"));
 		return;
 	}
