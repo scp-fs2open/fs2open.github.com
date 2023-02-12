@@ -20164,13 +20164,10 @@ void ship_render_batch_thrusters(object *obj)
 
 	if ( Rendering_to_shadow_map ) return;
 
-	physics_info *pi = &Objects[shipp->objnum].phys_info;
-	float render_amount;
-
 	for ( int i = 0; i < sip->num_maneuvering; i++ ) {
 		man_thruster *mtp = &sip->maneuvering[i];
 
-		render_amount = ship_get_thruster_status(obj, mtp);
+		float render_amount = ship_get_thruster_status(obj, mtp);
 
 		//Don't render small faraway thrusters (more than 1k * radius * length away)
 		if ( vm_vec_dist(&Eye_position, &obj->pos) > (1000.0f * mtp->radius * mtp->length) ) {
