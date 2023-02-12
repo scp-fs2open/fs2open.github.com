@@ -34,7 +34,7 @@ ADE_VIRTVAR(TextFile, l_FictionViewerStage, nullptr, "The text file of the stage
 
 	SCP_string localized_filename = get_localized_fiction_filename(stage.getStage()->story_filename);
 
-	return ade_set_args(L, "s", localized_filename);
+	return ade_set_args(L, "s", localized_filename.c_str());
 }
 
 ADE_VIRTVAR(FontFile, l_FictionViewerStage, nullptr, "The font file of the stage", "string", "The font filename")
