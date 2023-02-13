@@ -9722,6 +9722,133 @@ void ship_evaluate_ai(object* obj, float frametime) {
 	}
 }
 
+// given a particular maneuvering thruster, returns 0-1 how strongly the thruster is activated based on the ship's current phyiscal situation
+float ship_get_thruster_status(object* obj, man_thruster* mtp) {
+	float val = 0.0f;
+	physics_info* pi = &obj->phys_info;
+
+	if (mtp->use_flags.any_set()) {
+		if (pi->rotational_thrust.xyz.x < 0 && (mtp->use_flags[Ship::Thruster_Flags::Pitch_up])) {
+			val = -pi->rotational_thrust.xyz.x;
+		} else if (pi->rotational_thrust.xyz.x > 0 && (mtp->use_flags[Ship::Thruster_Flags::Pitch_down])) {
+			val = pi->rotational_thrust.xyz.x;
+		} else if (pi->rotational_thrust.xyz.y < 0 && (mtp->use_flags[Ship::Thruster_Flags::Roll_right])) {
+			val = -pi->rotational_thrust.xyz.y;
+		} else if (pi->rotational_thrust.xyz.y > 0 && (mtp->use_flags[Ship::Thruster_Flags::Roll_left])) {
+			val = pi->rotational_thrust.xyz.y;
+		} else if (pi->rotational_thrust.xyz.z < 0 && (mtp->use_flags[Ship::Thruster_Flags::Bank_right])) {
+			val = -pi->rotational_thrust.xyz.z;
+		} else if (pi->rotational_thrust.xyz.z > 0 && (mtp->use_flags[Ship::Thruster_Flags::Bank_left])) {
+			val = pi->rotational_thrust.xyz.z;
+		}
+
+		//Backslash - show thrusters according to thrust amount, not speed
+		if (pi->linear_thrust.xyz.x > 0 && (mtp->use_flags[Ship::Thruster_Flags::Slide_right])) {
+			val = pi->linear_thrust.xyz.x;
+		} else if (pi->linear_thrust.xyz.x < 0 && (mtp->use_flags[Ship::Thruster_Flags::Slide_left])) {
+			val = -pi->linear_thrust.xyz.x;
+		} else if (pi->linear_thrust.xyz.y > 0 && (mtp->use_flags[Ship::Thruster_Flags::Slide_up])) {
+			val = pi->linear_thrust.xyz.y;
+		} else if (pi->linear_thrust.xyz.y < 0 && (mtp->use_flags[Ship::Thruster_Flags::Slide_down])) {
+			val = -pi->linear_thrust.xyz.y;
+		} else if (pi->linear_thrust.xyz.z > 0 && (mtp->use_flags[Ship::Thruster_Flags::Forward])) {
+			val = pi->linear_thrust.xyz.z;
+		} else if (pi->linear_thrust.xyz.z < 0 && (mtp->use_flags[Ship::Thruster_Flags::Reverse])) {
+			val = -pi->linear_thrust.xyz.z;
+		}
+	} else {
+		// calculate it automatically
+		vec3d cross;
+		vec3d pos = mtp->pos / (obj->radius * 0.5f); // for full activation at half radius, further out will get capped to 1
+		vm_vec_cross(&cross, &pos, &pi->rotational_thrust);
+		val = vm_vec_dot(&mtp->norm, &cross);
+		CLAMP(val, 0.0f, 1.0f);
+
+		val += -vm_vec_dot(&mtp->norm, &vmd_x_vector) * pi->linear_thrust.xyz.x;
+		val += -vm_vec_dot(&mtp->norm, &vmd_y_vector) * pi->linear_thrust.xyz.y;
+		val += -vm_vec_dot(&mtp->norm, &vmd_z_vector) * pi->linear_thrust.xyz.z;
+
+	}
+
+	CLAMP(val, 0.0f, 1.0f);
+
+	if (pi->flags & PF_GLIDING) {
+		//WMC - get us a steady value
+		vec3d des_vel;
+		vm_vec_rotate(&des_vel, &pi->desired_vel, &obj->orient);
+
+		vec3d glide_dir;
+		vm_vec_copy_normalize(&glide_dir, &des_vel);
+		val += -vm_vec_dot(&mtp->norm, &glide_dir);
+		CLAMP(val, 0.0f, 1.0f);
+	}
+
+	return val;
+}
+
+
+void ship_do_thruster_sounds(object* obj) {
+	if (Cmdline_freespace_no_sound)
+		return;
+
+	int num = obj->instance;
+	ship* shipp = &Ships[num];
+	ship_info* sip = &Ship_info[Ships[num].ship_info_index];
+
+	for (int i = 0; i < sip->num_maneuvering; i++) {
+		man_thruster* mtp = &sip->maneuvering[i];
+
+		float activated = ship_get_thruster_status(obj, mtp);
+
+		vec3d thruster_pos;
+		vm_vec_unrotate(&thruster_pos, &mtp->pos, &obj->orient);
+		vm_vec_add2(&thruster_pos, &obj->pos);
+
+		if (activated > 0.0f) {
+
+			if (obj != Player_obj || Play_thruster_sounds_for_player) {
+				//Handle sounds and stuff
+				if (shipp->thrusters_start[i] <= 0) {
+					shipp->thrusters_start[i] = timestamp();
+					if (mtp->start_snd.isValid())
+						snd_play_3d(gamesnd_get_game_sound(mtp->start_snd), &thruster_pos, &Eye_position, 0.0f, &obj->phys_info.vel);
+				}
+
+				//Only assign looping sound if
+				//it is specified
+				//it isn't assigned already
+				//start sound doesn't exist or has finished
+				if (mtp->loop_snd.isValid()
+					&& shipp->thrusters_sounds[i] < 0
+					&& (!mtp->start_snd.isValid() || (gamesnd_get_max_duration(gamesnd_get_game_sound(mtp->start_snd)) < timestamp() - shipp->thrusters_start[i]))
+					)
+				{
+					shipp->thrusters_sounds[i] = obj_snd_assign(OBJ_INDEX(obj), mtp->loop_snd, &mtp->pos, OS_MAIN | OS_PLAY_ON_PLAYER);
+				}
+			}
+
+		} else if (shipp->thrusters_start[i] > 0 && (obj != Player_obj || Play_thruster_sounds_for_player)) {
+			// We've stopped firing a thruster
+
+			shipp->thrusters_start[i] = 0;
+			if (shipp->thrusters_sounds[i] >= 0)
+			{
+				obj_snd_delete(obj, shipp->thrusters_sounds[i]);
+				shipp->thrusters_sounds[i] = -1;
+			}
+
+			if (mtp->stop_snd.isValid()) {
+				//Get world pos
+				vec3d start;
+				vm_vec_unrotate(&start, &mtp->pos, &obj->orient);
+				vm_vec_add2(&start, &obj->pos);
+
+				snd_play_3d(gamesnd_get_game_sound(mtp->stop_snd), &thruster_pos, &Eye_position, 0.0f, &obj->phys_info.vel);
+			}
+		}
+	}
+}
+
 void ship_process_pre(object *obj, float frametime)
 {
 	// Cyborg, to enable turrets movement on clients, we need to process them here before  bailing
@@ -9835,6 +9962,8 @@ void ship_process_post(object * obj, float frametime)
 	ship_dying_frame(obj, num);
 
 	ship_move_ets_transfer_buffers(shipp, obj, frametime);
+
+	ship_do_thruster_sounds(obj);
 
 	// AL 1-6-98: record the initial ammo counts for ships, which is used as the max limit for rearming
 	// Goober5000 - added ballistics support
@@ -20035,68 +20164,10 @@ void ship_render_batch_thrusters(object *obj)
 
 	if ( Rendering_to_shadow_map ) return;
 
-	physics_info *pi = &Objects[shipp->objnum].phys_info;
-	float render_amount;
-
 	for ( int i = 0; i < sip->num_maneuvering; i++ ) {
 		man_thruster *mtp = &sip->maneuvering[i];
 
-		render_amount = 0.0f;
-
-		if (mtp->use_flags.any_set()) {
-			if(pi->rotational_thrust.xyz.x < 0 && (mtp->use_flags[Ship::Thruster_Flags::Pitch_up])) {
-				render_amount = -pi->rotational_thrust.xyz.x;
-			} else if(pi->rotational_thrust.xyz.x > 0 && (mtp->use_flags[Ship::Thruster_Flags::Pitch_down])) {
-				render_amount = pi->rotational_thrust.xyz.x;
-			} else if(pi->rotational_thrust.xyz.y < 0 && (mtp->use_flags[Ship::Thruster_Flags::Roll_right])) {
-				render_amount = -pi->rotational_thrust.xyz.y;
-			} else if(pi->rotational_thrust.xyz.y > 0 && (mtp->use_flags[Ship::Thruster_Flags::Roll_left])) {
-				render_amount = pi->rotational_thrust.xyz.y;
-			} else if(pi->rotational_thrust.xyz.z < 0 && (mtp->use_flags[Ship::Thruster_Flags::Bank_right])) {
-				render_amount = -pi->rotational_thrust.xyz.z;
-			} else if(pi->rotational_thrust.xyz.z > 0 && (mtp->use_flags[Ship::Thruster_Flags::Bank_left])) {
-				render_amount = pi->rotational_thrust.xyz.z;
-			}
-
-			//Backslash - show thrusters according to thrust amount, not speed
-			if(pi->linear_thrust.xyz.x > 0 && (mtp->use_flags[Ship::Thruster_Flags::Slide_right])) {
-				render_amount = pi->linear_thrust.xyz.x;
-			} else if(pi->linear_thrust.xyz.x < 0 && (mtp->use_flags[Ship::Thruster_Flags::Slide_left])) {
-				render_amount = -pi->linear_thrust.xyz.x;
-			} else if(pi->linear_thrust.xyz.y > 0 && (mtp->use_flags[Ship::Thruster_Flags::Slide_up])) {
-				render_amount = pi->linear_thrust.xyz.y;
-			} else if(pi->linear_thrust.xyz.y < 0 && (mtp->use_flags[Ship::Thruster_Flags::Slide_down])) {
-				render_amount = -pi->linear_thrust.xyz.y;
-			} else if(pi->linear_thrust.xyz.z > 0 && (mtp->use_flags[Ship::Thruster_Flags::Forward])) {
-				render_amount = pi->linear_thrust.xyz.z;
-			} else if(pi->linear_thrust.xyz.z < 0 && (mtp->use_flags[Ship::Thruster_Flags::Reverse])) {
-				render_amount = -pi->linear_thrust.xyz.z;
-			}
-		} else {
-			// calculate it automatically
-			vec3d cross;
-			vec3d pos = mtp->pos / (obj->radius * 0.5f); // for full activation at half radius, further out will get capped to 1
-			vm_vec_cross(&cross, &pos, &pi->rotational_thrust);
-			render_amount = vm_vec_dot(&mtp->norm, &cross);
-			CLAMP(render_amount, 0.0f, 1.0f);
-
-			render_amount += -vm_vec_dot(&mtp->norm, &vmd_x_vector) * pi->linear_thrust.xyz.x;
-			render_amount += -vm_vec_dot(&mtp->norm, &vmd_y_vector) * pi->linear_thrust.xyz.y;
-			render_amount += -vm_vec_dot(&mtp->norm, &vmd_z_vector) * pi->linear_thrust.xyz.z;
-
-		}
-		CLAMP(render_amount, 0.0f, 1.0f);
-
-		if (pi->flags & PF_GLIDING) {
-			//WMC - get us a steady value
-			vec3d des_vel;
-			vm_vec_rotate(&des_vel, &pi->desired_vel, &obj->orient);
-
-			vec3d glide_dir;
-			vm_vec_copy_normalize(&glide_dir, &des_vel);
-			render_amount += -vm_vec_dot(&mtp->norm, &glide_dir);
-			CLAMP(render_amount, 0.0f, 1.0f);
-		}
+		float render_amount = ship_get_thruster_status(obj, mtp);
 
 		//Don't render small faraway thrusters (more than 1k * radius * length away)
 		if ( vm_vec_dist(&Eye_position, &obj->pos) > (1000.0f * mtp->radius * mtp->length) ) {
@@ -20104,26 +20175,6 @@ void ship_render_batch_thrusters(object *obj)
 		}
 
 		if ( render_amount > 0.0f ) {
-			//Handle sounds and stuff
-			if ( shipp->thrusters_start[i] <= 0 ) {
-				shipp->thrusters_start[i] = timestamp();
-				if(mtp->start_snd.isValid())
-					snd_play_3d( gamesnd_get_game_sound(mtp->start_snd), &mtp->pos, &Eye_position, 0.0f, &obj->phys_info.vel );
-			}
-
-			//Only assign looping sound if
-			//it is specified
-			//it isn't assigned already
-			//start sound doesn't exist or has finished
-			if (!Cmdline_freespace_no_sound) {
-				if(mtp->loop_snd.isValid()
-					&& shipp->thrusters_sounds[i] < 0
-					&& (!mtp->start_snd.isValid() || (gamesnd_get_max_duration(gamesnd_get_game_sound(mtp->start_snd)) < timestamp() - shipp->thrusters_start[i]))
-					)
-				{
-					shipp->thrusters_sounds[i] = obj_snd_assign(OBJ_INDEX(obj), mtp->loop_snd, &mtp->pos, OS_MAIN);
-				}
-			}
 
 			//Draw graphics
 			//Skip invalid ones
@@ -20154,24 +20205,6 @@ void ship_render_batch_thrusters(object *obj)
 				//mtr->man_batcher.add_allocate(1);
 				//mtr->man_batcher.draw_beam(&start, &end, rad, 1.0f);
 				batching_add_beam(bmap_frame, &start, &end, rad, 1.0f);
-			}
-		} else if ( shipp->thrusters_start[i] > 0 ) { 
-			// We've stopped firing a thruster
-			
-			shipp->thrusters_start[i] = 0;
-			if(shipp->thrusters_sounds[i] >= 0)
-			{
-				obj_snd_delete(obj, shipp->thrusters_sounds[i]);
-				shipp->thrusters_sounds[i] = -1;
-			}
-
-			if ( mtp->stop_snd.isValid() ) {
-				//Get world pos
-				vec3d start;
-				vm_vec_unrotate(&start, &mtp->pos, &obj->orient);
-				vm_vec_add2(&start, &obj->pos);
-
-				snd_play_3d( gamesnd_get_game_sound(mtp->stop_snd), &mtp->pos, &Eye_position, 0.0f, &obj->phys_info.vel );
 			}
 		}
 	}

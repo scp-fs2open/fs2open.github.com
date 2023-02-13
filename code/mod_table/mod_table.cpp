@@ -133,6 +133,7 @@ bool Discord_presence;
 bool Hotkey_always_hide_hidden_ships;
 bool Use_weapon_class_sounds_for_hits_to_player;
 bool SCPUI_loads_hi_res_animations;
+bool Play_thruster_sounds_for_player;
 
 static auto DiscordOption = options::OptionBuilder<bool>("Other.Discord", "Discord Presence", "Toggle Discord Rich Presence")
 							 .category("Other")
@@ -839,6 +840,10 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Use_weapon_class_sounds_for_hits_to_player);
 		}
 
+		if (optional_string("$Play thruster sounds for the player:")) {
+			stuff_boolean(&Play_thruster_sounds_for_player);
+		}
+
 		optional_string("#FRED SETTINGS");
 
 		if (optional_string("$Disable Hard Coded Message Head Ani Files:")) {
@@ -1304,6 +1309,7 @@ void mod_table_reset()
 	Hotkey_always_hide_hidden_ships = false;
 	Use_weapon_class_sounds_for_hits_to_player = false;
 	SCPUI_loads_hi_res_animations = true;
+	Play_thruster_sounds_for_player = false;
 }
 
 void mod_table_set_version_flags()
