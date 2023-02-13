@@ -520,7 +520,7 @@ ScriptingDocumentation script_state::OutputDocumentation(const scripting::Docume
 			  });
 	for (const auto& hook : sortedHooks) {
 		doc.actions.push_back(
-			{hook->getHookName(), hook->getDescription(), hook->getParameters(), hook->_conditions, hook->isOverridable()});
+			{hook->getHookName(), hook->getDescription(), hook->getParameters(), hook->_conditions, hook->getDeprecation(), hook->isOverridable()});
 	}
 
 	OutputLuaDocumentation(doc, errorReporter);
