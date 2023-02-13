@@ -18,6 +18,7 @@
 #include "parse/parselo.h"
 #include "scripting/doc_html.h"
 #include "scripting/doc_json.h"
+#include "scripting/global_hooks.h"
 #include "scripting/scripting_doc.h"
 #include "ship/ship.h"
 #include "tracing/tracing.h"
@@ -73,28 +74,24 @@ void script_parse_table(const char* filename)
 
 		if (optional_string("#Global Hooks")) {
 			if (optional_string("$Global:")) {
-				extern const std::shared_ptr<OverridableHook<>> OnFrame;
-				st->ParseGlobalChunk(CHA_ONFRAME, "Global", OnFrame);
+				extern const std::shared_ptr<OverridableHook<>> OnFrameHook;
+				st->ParseGlobalChunk(CHA_ONFRAME, "Global", OnFrameHook);
 			}
 
 			if (optional_string("$Splash:")) {
-				extern const std::shared_ptr<OverridableHook<>> OnSplashScreen;
-				st->ParseGlobalChunk(CHA_SPLASHSCREEN, "Splash", OnSplashScreen);
+				st->ParseGlobalChunk(CHA_SPLASHSCREEN, "Splash", hooks::OnSplashScreen);
 			}
 
 			if (optional_string("$GameInit:")) {
-				extern const std::shared_ptr<Hook<>> OnGameInit;
-				st->ParseGlobalChunk(CHA_GAMEINIT, "GameInit", OnGameInit);
+				st->ParseGlobalChunk(CHA_GAMEINIT, "GameInit", hooks::OnGameInit);
 			}
 
 			if (optional_string("$Simulation:")) {
-				extern const std::shared_ptr<Hook<>> OnSimulation;
-				st->ParseGlobalChunk(CHA_SIMULATION, "Simulation", OnSimulation);
+				st->ParseGlobalChunk(CHA_SIMULATION, "Simulation", hooks::OnSimulation);
 			}
 
 			if (optional_string("$HUD:")) {
-				extern const std::shared_ptr<OverridableHook<>> OnHudDraw;
-				st->ParseGlobalChunk(CHA_HUDDRAW, "HUD", OnHudDraw);
+				st->ParseGlobalChunk(CHA_HUDDRAW, "HUD", hooks::OnHudDraw);
 			}
 
 			required_string("#End");
