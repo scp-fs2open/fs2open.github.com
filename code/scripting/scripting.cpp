@@ -44,22 +44,6 @@ flag_def_list Script_conditions[] =
 
 int Num_script_conditions = sizeof(Script_conditions) / sizeof(flag_def_list);
 
-class BuiltinHook : public scripting::HookBase {
-  public:
-	BuiltinHook(SCP_string hookName, int32_t hookId)
-		: HookBase(std::move(hookName), SCP_string(), SCP_vector<HookVariableDocumentation>(), SCP_unordered_map<SCP_string, const std::unique_ptr<const ParseableCondition>>{}, hookId)
-	{
-	}
-	~BuiltinHook() override = default;
-
-	bool isActive() const override
-	{
-		return Script_system.IsActiveAction(_hookId);
-	}
-
-	bool isOverridable() const override { return true; }
-};
-
 // clang-format off
 static HookVariableDocumentation GlobalVariables[] =
 {
@@ -89,23 +73,28 @@ void script_parse_table(const char* filename)
 
 		if (optional_string("#Global Hooks")) {
 			if (optional_string("$Global:")) {
-				st->ParseGlobalChunk(CHA_ONFRAME, "Global");
+				extern const std::shared_ptr<OverridableHook<>> OnFrame;
+				st->ParseGlobalChunk(CHA_ONFRAME, "Global", OnFrame);
 			}
 
 			if (optional_string("$Splash:")) {
-				st->ParseGlobalChunk(CHA_SPLASHSCREEN, "Splash");
+				extern const std::shared_ptr<OverridableHook<>> OnSplashScreen;
+				st->ParseGlobalChunk(CHA_SPLASHSCREEN, "Splash", OnSplashScreen);
 			}
 
 			if (optional_string("$GameInit:")) {
-				st->ParseGlobalChunk(CHA_GAMEINIT, "GameInit");
+				extern const std::shared_ptr<Hook<>> OnGameInit;
+				st->ParseGlobalChunk(CHA_GAMEINIT, "GameInit", OnGameInit);
 			}
 
 			if (optional_string("$Simulation:")) {
-				st->ParseGlobalChunk(CHA_SIMULATION, "Simulation");
+				extern const std::shared_ptr<Hook<>> OnSimulation;
+				st->ParseGlobalChunk(CHA_SIMULATION, "Simulation", OnSimulation);
 			}
 
 			if (optional_string("$HUD:")) {
-				st->ParseGlobalChunk(CHA_HUDDRAW, "HUD");
+				extern const std::shared_ptr<OverridableHook<>> OnHudDraw;
+				st->ParseGlobalChunk(CHA_HUDDRAW, "HUD", OnHudDraw);
 			}
 
 			required_string("#End");
@@ -778,10 +767,38 @@ bool script_action::ConditionsValid(const linb::any& local_condition_data) const
 	return true;
 };
 
-void script_state::ParseGlobalChunk(ConditionalActions hookType, const char* debug_str) {
+void script_state::ParseGlobalChunk(ConditionalActions hookType, const char* debug_str, const std::shared_ptr<HookBase> parentHook) {
 	script_action sat;
 
 	ParseChunk(&sat.hook, debug_str);
+
+	if (parentHook && parentHook->getDeprecation()) {
+		const auto& deprecation = *parentHook->getDeprecation();
+		bool shownWarn = false;
+		if (sat.hook.hook_function.function.isValid()) {
+			if (deprecation.level_hook == HookDeprecationOptions::DeprecationLevel::LEVEL_ERROR) {
+				error_display(1, "Hook '%s' is removed since version %s and cannot be used!", parentHook->getHookName().c_str(), gameversion::format_version(deprecation.deprecatedSince).c_str());
+			}
+			else if (deprecation.deprecatedSince <= Targeted_version) {
+				error_display(1, "Hook '%s' is deprecated since version %s and cannot be used if the mod targets that version or higher!", parentHook->getHookName().c_str(), gameversion::format_version(deprecation.deprecatedSince).c_str());
+			}
+			else {
+				error_display(0, "Hook '%s' is deprecated from version %s should be replaced!", parentHook->getHookName().c_str(), gameversion::format_version(deprecation.deprecatedSince).c_str());
+				shownWarn = true;
+			}
+		}
+		if (sat.hook.override_function.function.isValid()) {
+			if (deprecation.level_override == HookDeprecationOptions::DeprecationLevel::LEVEL_ERROR) {
+				error_display(1, "Overriding Hook '%s' is removed since version %s and cannot be used!", parentHook->getHookName().c_str(), gameversion::format_version(deprecation.deprecatedSince).c_str());
+			}
+			else if (deprecation.deprecatedSince <= Targeted_version) {
+				error_display(1, "Overriding Hook '%s' is deprecated since version %s and cannot be used if the mod targets that version or higher!", parentHook->getHookName().c_str(), gameversion::format_version(deprecation.deprecatedSince).c_str());
+			}
+			else if (!shownWarn) {
+				error_display(0, "Overriding Hook '%s' is deprecated from version %s should be replaced!", parentHook->getHookName().c_str(), gameversion::format_version(deprecation.deprecatedSince).c_str());
+			}
+		}
+	}
 
 	ConditionalHooks[hookType].emplace_back(std::move(sat));
 }
@@ -852,6 +869,34 @@ bool script_state::ParseCondition(const char *filename)
 				error_display(0, "Condition '%s' is not valid for hook '%s'. The hook will not evaluate!", local_condition.c_str(), currHook->getHookName().c_str());
 				sat.local_conditions.emplace_back(ParseableCondition().parse(local_condition));
 				continue;
+			}
+		}
+
+		if (currHook->getDeprecation()) {
+			const auto& deprecation = *currHook->getDeprecation();
+			bool shownWarn = false;
+			if (sat.hook.hook_function.function.isValid()) {
+				if (deprecation.level_hook == HookDeprecationOptions::DeprecationLevel::LEVEL_ERROR) {
+					error_display(1, "Hook '%s' is removed since version %s and cannot be used!", currHook->getHookName().c_str(), gameversion::format_version(deprecation.deprecatedSince).c_str());
+				}
+				else if (deprecation.deprecatedSince <= Targeted_version) {
+					error_display(1, "Hook '%s' is deprecated since version %s and cannot be used if the mod targets that version or higher!", currHook->getHookName().c_str(), gameversion::format_version(deprecation.deprecatedSince).c_str());
+				}
+				else {
+					error_display(0, "Hook '%s' is deprecated from version %s should be replaced!", currHook->getHookName().c_str(), gameversion::format_version(deprecation.deprecatedSince).c_str());
+					shownWarn = true;
+				}
+			}
+			if (sat.hook.override_function.function.isValid()) {
+				if (deprecation.level_override == HookDeprecationOptions::DeprecationLevel::LEVEL_ERROR) {
+					error_display(1, "Overriding Hook '%s' is removed since version %s and cannot be used!", currHook->getHookName().c_str(), gameversion::format_version(deprecation.deprecatedSince).c_str());
+				}
+				else if (deprecation.deprecatedSince <= Targeted_version) {
+					error_display(1, "Overriding Hook '%s' is deprecated since version %s and cannot be used if the mod targets that version or higher!", currHook->getHookName().c_str(), gameversion::format_version(deprecation.deprecatedSince).c_str());
+				}
+				else if(!shownWarn) {
+					error_display(0, "Overriding Hook '%s' is deprecated from version %s should be replaced!", currHook->getHookName().c_str(), gameversion::format_version(deprecation.deprecatedSince).c_str());
+				}
 			}
 		}
 
