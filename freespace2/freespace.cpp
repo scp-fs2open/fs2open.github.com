@@ -1403,7 +1403,14 @@ bool game_start_mission()
 
 	if ( !load_success ) {
 		if ( !(Game_mode & GM_MULTIPLAYER) ) {
-			popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR( "Attempt to load the mission failed", 169));
+			// the version will have been assigned before loading was aborted
+			if (!gameversion::check_at_least(The_mission.required_fso_version)) {
+				popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("This mission requires FSO version %s", 1671), format_version(The_mission.required_fso_version).c_str());
+			}
+			// standard load failure
+			else {
+				popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Attempt to load the mission failed", 169));
+			}
 			gameseq_post_event(GS_EVENT_MAIN_MENU);
 		} else {
 			multi_quit_game(PROMPT_NONE, MULTI_END_NOTIFY_NONE, MULTI_END_ERROR_LOAD_FAIL);
@@ -7453,7 +7460,12 @@ void game_title_screen_display()
 	if(!condhook_override)
 	{
 		Game_title_logo = bm_load(Game_logo_screen_fname[gr_screen.res]);
-		Game_title_bitmap = bm_load(Game_title_screen_fname[gr_screen.res]);
+
+		if (!Splash_screens.empty()) {
+			Game_title_bitmap = bm_load(Splash_screens[Random::next(0, (int)Splash_screens.size())].c_str());
+		} else {
+			Game_title_bitmap = bm_load(Game_title_screen_fname[gr_screen.res]);
+		}
 
 		if (Game_title_bitmap != -1)
 		{
