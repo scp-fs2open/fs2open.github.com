@@ -1,6 +1,7 @@
 #pragma once
 
 #include "globalincs/pstypes.h"
+#include "globalincs/version.h"
 
 #include "ade_api.h"
 #include "scripting.h"
@@ -8,6 +9,7 @@
 #include "utils/tuples.h"
 
 #include <utility>
+#include <tl/optional.hpp>
 
 namespace scripting {
 
@@ -94,6 +96,16 @@ struct HookVariableDocumentation {
 	HookVariableDocumentation(const char* name_, scripting::ade_type_info type_, const char* description_);
 };
 
+struct HookDeprecationOptions {
+	gameversion::version deprecatedSince;
+	enum class DeprecationLevel { 
+		LEVEL_WARN, //Will warn a user if an engine version before deprecatedSince is targeted and error if a later version is targeted.
+		LEVEL_ERROR //Will always error if used.
+	} level_hook, level_override;
+
+	HookDeprecationOptions(gameversion::version version, DeprecationLevel _level_hook, DeprecationLevel _level_override) : deprecatedSince(std::move(version)), level_hook(_level_hook), level_override(_level_override) { }
+	HookDeprecationOptions(gameversion::version version, DeprecationLevel _level_hook = DeprecationLevel::LEVEL_WARN) : HookDeprecationOptions(std::move(version), _level_hook, _level_hook) { }
+};
 
 class HookBase {
   public:
@@ -199,11 +211,9 @@ class Hook : public HookImpl<condition_t> {
 	static std::shared_ptr<Hook<condition_t>> Factory(SCP_string hookName,
 		SCP_string description,
 		SCP_vector<HookVariableDocumentation> parameters,
+		tl::optional<HookDeprecationOptions> deprecation = tl::nullopt,
 		int32_t hookId = -1) {
 		return std::shared_ptr<Hook<condition_t>>(new Hook<condition_t>(std::move(hookName), std::move(description), std::move(parameters), hookId));
-	}
-	static std::shared_ptr<Hook<condition_t>> Factory(SCP_string hookName, int32_t hookId) {
-		return std::shared_ptr<Hook<condition_t>>(new Hook<condition_t>(std::move(hookName), SCP_string(), SCP_vector<HookVariableDocumentation>(), hookId));
 	}
 
 	bool isActive() const override {
@@ -289,6 +299,7 @@ class OverridableHook : public OverridableHookImpl<condition_t> {
 	static std::shared_ptr<OverridableHook<condition_t>> Factory(SCP_string hookName,
 		SCP_string description,
 		SCP_vector<HookVariableDocumentation> parameters,
+		tl::optional<HookDeprecationOptions> deprecation = tl::nullopt,
 		int32_t hookId = -1) {
 		return std::shared_ptr<OverridableHook<condition_t>>(new OverridableHook<condition_t>(std::move(hookName),
 			std::move(description),

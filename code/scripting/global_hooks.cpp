@@ -9,11 +9,13 @@ namespace hooks {
 const std::shared_ptr<Hook<>> OnGameInit = Hook<>::Factory("On Game Init",
 	"Executed at the start of the engine after all game data has been loaded.",
 	{},
+	tl::nullopt,
 	CHA_GAMEINIT);
 
 const std::shared_ptr<OverridableHook<>> OnSplashScreen = OverridableHook<>::Factory("On Splash Screen",
 	"Will be called once when the splash screen shows for the first time.",
 	{},
+	tl::nullopt,
 	CHA_SPLASHSCREEN);
 
 const std::shared_ptr<OverridableHook<>> OnStateStart = OverridableHook<>::Factory("On State Start",
@@ -324,6 +326,7 @@ const std::shared_ptr<OverridableHook<ObjectDrawConditions>> OnHudDraw = Overrid
 		{"Self", "object", "The object from which the scene is viewed."},
 		{"Player", "object", "The player object."} 
 	},
+	tl::nullopt,
 	CHA_HUDDRAW);
 
 const std::shared_ptr<OverridableHook<ObjectDrawConditions>> OnObjectRender = OverridableHook<ObjectDrawConditions>::Factory("On Object Render",
@@ -335,6 +338,7 @@ const std::shared_ptr<OverridableHook<ObjectDrawConditions>> OnObjectRender = Ov
 const std::shared_ptr<Hook<>> OnSimulation = Hook<>::Factory("On Simulation",
 	"Invoked every time that FSO processes physics and AI.",
 	{},
+	tl::nullopt,
 	CHA_SIMULATION);
 
 const std::shared_ptr<OverridableHook<>> OnDialogInit = OverridableHook<>::Factory("On Dialog Init",
