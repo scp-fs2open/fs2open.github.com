@@ -862,8 +862,7 @@ void clear_mission()
 	t = CTime::GetCurrentTime();
 
 	strcpy_s(The_mission.name, "Untitled");
-	strncpy(The_mission.author, str, NAME_LENGTH - 1);
-	The_mission.author[NAME_LENGTH - 1] = 0;
+	The_mission.author = str;
 	strcpy_s(The_mission.created, t.Format("%x at %X"));
 	strcpy_s(The_mission.modified, The_mission.created);
 	strcpy_s(The_mission.notes, "This is a FRED2_OPEN created mission.\n");
