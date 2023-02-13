@@ -78,8 +78,8 @@ public:
 	//{{AFX_DATA(event_editor)
 	enum { IDD = IDD_EVENT_EDITOR };
 	event_sexp_tree	m_event_tree;
-	UINT	m_repeat_count;
-	UINT	m_trigger_count;
+	int		m_repeat_count;
+	int		m_trigger_count;
 	UINT	m_interval;
 	int		m_event_score;
 	int		m_chain_delay;

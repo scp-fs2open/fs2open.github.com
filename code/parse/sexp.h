@@ -132,6 +132,7 @@ enum : int {
 	OPF_WING_FLAG,					// Goober5000 - The name of a wing flag
 	OPF_ASTEROID_DEBRIS,			// MjnMixael - Debris types as defined in asteroids.tbl
 	OPF_WING_FORMATION,				// Goober5000 - as defined in ships.tbl
+	OPF_TURRET_TYPE,
 
 	//Must always be at the end of the list
 	First_available_opf_id
@@ -415,6 +416,7 @@ enum : int {
 	OP_IS_IN_MISSION, // Goober5000
 	OP_ARE_SHIP_FLAGS_SET, // Karajorma
 	OP_TURRET_GET_PRIMARY_AMMO, // DahBlount, part of the turret ammo code
+	OP_HAS_ARMOR_TYPE, // MjnMixael
 	
 	OP_TURRET_GET_SECONDARY_AMMO,	// DahBlount, part of the turret ammo code
 	OP_IS_DOCKED,	// Goober5000
@@ -845,6 +847,7 @@ enum : int {
 	OP_ALTER_WING_FLAG,	// Goober5000
 	OP_TOGGLE_ASTEROID_FIELD,	// MjnMixael
 	OP_HUD_FORCE_SENSOR_STATIC,	// MjnMixael
+	OP_HUD_FORCE_EMP_EFFECT, // MjnMixael
 	OP_SET_GRAVITY_ACCEL,	// Asteroth
 	OP_SET_ORDER_ALLOWED_TARGET,	// MjnMixael
 	OP_USED_CHEAT,	// Kiloku
@@ -1141,6 +1144,7 @@ enum sexp_error_check
 	SEXP_CHECK_INVALID_EXPLOSION_OPTION,
 	SEXP_CHECK_INVALID_SHIP_EFFECT,
 	SEXP_CHECK_INVALID_TURRET_TARGET_ORDER,
+	SEXP_CHECK_INVALID_TURRET_TYPE,
 	SEXP_CHECK_INVALID_ARMOR_TYPE,
 	SEXP_CHECK_INVALID_DAMAGE_TYPE,
 	SEXP_CHECK_INVALID_TARGET_PRIORITIES,

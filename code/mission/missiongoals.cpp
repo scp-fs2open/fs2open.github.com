@@ -917,7 +917,15 @@ void mission_process_event( int event )
 					}
 				}
 
-				if (!Mission_events[event - 1].result || !timestamp_elapsed(timestamp_delta(Mission_events[event - 1].timestamp, offset))) {
+				if (!Mission_events[event - 1].result) {
+					sindex = -1;  // bypass evaluation
+				}
+				// For compatibility reasons, simulate the old buggy behavior if we don't explicitly activate the bugfix.
+				// That is, if the timestamp has been set with an interval, always evaluate the event.
+				else if (!Fixed_chaining_to_repeat && Mission_events[event - 1].flags & MEF_TIMESTAMP_HAS_INTERVAL) {
+					/* do not bypass */;
+				}
+				else if (!timestamp_elapsed(timestamp_delta(Mission_events[event - 1].timestamp, offset))) {
 					sindex = -1;  // bypass evaluation
 				}
 			}

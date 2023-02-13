@@ -150,28 +150,39 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 		}
 	}
 
+	// message 1: required version
 	if (!parse_main(filepath.c_str(), flags)) {
-		if (flags & MPF_IMPORT_FSM) {
-			SCP_string msg;
-			sprintf(msg, "Unable to import the file \"%s\".", filepath.c_str());
+		auto term = (flags & MPF_IMPORT_FSM) ? "import" : "load";
+		SCP_string msg;
 
-			_lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Error,
-																  "Load Error",
-																  msg,
-																  { DialogButton::Ok });
-		} else {
-			SCP_string msg;
-			sprintf(msg, "Unable to load the file \"%s\".", filepath.c_str());
-			_lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Error,
-																  "Load Error",
-																  msg,
-																  { DialogButton::Ok });
+		// the version will have been assigned before loading was aborted
+		if (!gameversion::check_at_least(The_mission.required_fso_version)) {
+			msg += "The file \"";
+			msg += filepath;
+			msg += "\" cannot be ";
+			msg += term;
+			msg += "ed because it requires FSO version ";
+			msg += format_version(The_mission.required_fso_version);
+			msg += ".";
 		}
+		else {
+			msg += "Unable to ";
+			msg += term;
+			msg += " the file \"";
+			msg += filepath;
+			msg += "\".";
+		}
+
+		_lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Error,
+																"Load Error",
+																msg,
+																{ DialogButton::Ok });
 		createNewMission();
 
 		return false;
 	}
 
+	// message 2: unknown classes
 	if ((Num_unknown_ship_classes > 0) || (Num_unknown_weapon_classes > 0) || (Num_unknown_loadout_classes > 0)) {
 		if (flags & MPF_IMPORT_FSM) {
 			SCP_string msg;
@@ -190,6 +201,20 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 																  "Fred encountered unknown ship/weapon classes when parsing the mission file. This may be due to mission disk data you do not have.",
 																  { DialogButton::Ok });
 		}
+	}
+
+	// message 3: warning about saving under a new version
+	if (!(flags & MPF_IMPORT_FSM) && (The_mission.required_fso_version != LEGACY_MISSION_VERSION) && (MISSION_VERSION > The_mission.required_fso_version)) {
+		SCP_string msg = "This mission's file format is ";
+		msg += format_version(The_mission.required_fso_version);
+		msg += ".  When you save this mission, the file format will be migrated to ";
+		msg += format_version(MISSION_VERSION);
+		msg += ".  FSO versions earlier than this will not be able to load the mission.";
+
+		_lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Information,
+															  "Mission File Format",
+															  msg,
+															  { DialogButton::Ok });
 	}
 
 	obj_merge_created_list();

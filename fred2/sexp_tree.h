@@ -273,6 +273,7 @@ public:
 	sexp_list_item *get_listing_opf_subsystem_or_none(int parent_node, int arg_index);
 	sexp_list_item *get_listing_opf_subsys_or_generic(int parent_node, int arg_index);
 	sexp_list_item *get_listing_opf_turret_target_order();
+	sexp_list_item* get_listing_opf_turret_types();
 	sexp_list_item *get_listing_opf_armor_type();
 	sexp_list_item *get_listing_opf_damage_type();
 	sexp_list_item *get_listing_opf_turret_target_priorities();

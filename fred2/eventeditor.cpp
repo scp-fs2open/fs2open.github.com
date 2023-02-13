@@ -348,7 +348,7 @@ void event_editor::load_tree()
 
 		// we must check for the case of the repeat count being 0.  This would happen if the repeat
 		// count is not specified in a mission
-		if ( m_events[i].repeat_count <= 0 ){
+		if ( m_events[i].repeat_count == 0 ){
 			m_events[i].repeat_count = 1;
 		}
 	}
@@ -877,6 +877,13 @@ void event_editor::save_event(int e)
 	}
 
 	UpdateData(TRUE);
+
+	// there is currently no usage of a number < -1, so cap it at that
+	if (m_repeat_count < -1)
+		m_repeat_count = -1;
+	if (m_trigger_count < -1)
+		m_trigger_count = -1;
+
 	m_events[e].repeat_count = m_repeat_count;
 	m_events[e].trigger_count = m_trigger_count;
 	m_events[e].interval = m_interval;
@@ -1064,11 +1071,11 @@ void event_editor::update_cur_event()
 	GetDlgItem(IDC_MISSION_LOG_LAST_TRIGGER)->EnableWindow(TRUE);
 	GetDlgItem(IDC_MISSION_LOG_STATE_CHANGE)->EnableWindow(TRUE);
 
-	if (( m_repeat_count <= 1) && (m_trigger_count <= 1)) {
+	if ((m_repeat_count < 0) || (m_repeat_count > 1) || (m_trigger_count < 0) || (m_trigger_count > 1)) {
+		GetDlgItem(IDC_INTERVAL_TIME) -> EnableWindow(TRUE);
+	} else {
 		m_interval = 1;
 		GetDlgItem(IDC_INTERVAL_TIME) -> EnableWindow(FALSE);
-	} else {
-		GetDlgItem(IDC_INTERVAL_TIME) -> EnableWindow(TRUE);
 	}
 
 	GetDlgItem(IDC_EVENT_SCORE) -> EnableWindow(TRUE);
@@ -1103,10 +1110,10 @@ void event_editor::OnUpdateRepeatCount()
 	GetDlgItem(IDC_REPEAT_COUNT)->GetWindowText(buf, count);
 	m_repeat_count = atoi(buf);
 
-	if ( ( m_repeat_count <= 1) && (m_trigger_count <= 1) ){
-		GetDlgItem(IDC_INTERVAL_TIME)->EnableWindow(FALSE);
-	} else {
+	if ((m_repeat_count < 0) || (m_repeat_count > 1) || (m_trigger_count < 0) || (m_trigger_count > 1)) {
 		GetDlgItem(IDC_INTERVAL_TIME)->EnableWindow(TRUE);
+	} else {
+		GetDlgItem(IDC_INTERVAL_TIME)->EnableWindow(FALSE);
 	}
 }
 
@@ -1118,10 +1125,10 @@ void event_editor::OnUpdateTriggerCount()
 	GetDlgItem(IDC_TRIGGER_COUNT)->GetWindowText(buf, count);
 	m_trigger_count = atoi(buf);
 
-	if ( ( m_repeat_count <= 1) && (m_trigger_count <= 1) ){
-		GetDlgItem(IDC_INTERVAL_TIME)->EnableWindow(FALSE);
-	} else {
+	if ((m_repeat_count < 0) || (m_repeat_count > 1) || (m_trigger_count < 0) || (m_trigger_count > 1)) {
 		GetDlgItem(IDC_INTERVAL_TIME)->EnableWindow(TRUE);
+	} else {
+		GetDlgItem(IDC_INTERVAL_TIME)->EnableWindow(FALSE);
 	}
 }
 void event_editor::move_handler(int node1, int node2, bool insert_before)

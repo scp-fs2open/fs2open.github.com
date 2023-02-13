@@ -17,6 +17,7 @@
 #include "parse/sexp.h"
 #include "globalincs/linklist.h"
 #include "ai/aigoals.h"
+#include "asteroid/asteroid.h"
 #include "mission/missionmessage.h"
 #include "mission/missioncampaign.h"
 #include "hud/hudsquadmsg.h"
@@ -1346,6 +1347,7 @@ int sexp_tree::get_default_value(sexp_list_item* item, char* text_buf, int op, i
 	case OPF_SUBSYSTEM:
 	case OPF_AWACS_SUBSYSTEM:
 	case OPF_ROTATING_SUBSYSTEM:
+	case OPF_TRANSLATING_SUBSYSTEM:
 	case OPF_SUBSYS_OR_GENERIC:
 		str = "<name of subsystem>";
 		break;
@@ -1480,6 +1482,7 @@ int sexp_tree::query_default_argument_available(int op, int i) {
 	case OPF_SUBSYSTEM:
 	case OPF_AWACS_SUBSYSTEM:
 	case OPF_ROTATING_SUBSYSTEM:
+	case OPF_TRANSLATING_SUBSYSTEM:
 	case OPF_SUBSYSTEM_TYPE:
 	case OPF_DOCKER_POINT:
 	case OPF_DOCKEE_POINT:
@@ -1516,6 +1519,7 @@ int sexp_tree::query_default_argument_available(int op, int i) {
 	case OPF_NEBULA_STORM_TYPE:
 	case OPF_NEBULA_POOF:
 	case OPF_TURRET_TARGET_ORDER:
+	case OPF_TURRET_TYPE:
 	case OPF_POST_EFFECT:
 	case OPF_TARGET_PRIORITIES:
 	case OPF_ARMOR_TYPE:
@@ -1683,6 +1687,12 @@ int sexp_tree::query_default_argument_available(int op, int i) {
 			if (container.is_map()) {
 				return 1;
 			}
+		}
+		return 0;
+
+	case OPF_ASTEROID_DEBRIS:
+		if ((Asteroid_info.size() - NUM_ASTEROID_POFS) > 0) {
+			return 1;
 		}
 		return 0;
 
@@ -1974,6 +1984,7 @@ int sexp_tree::verify_tree(int node, int *bypass)
 			case OPF_SUBSYSTEM:
 			case OPF_AWACS_SUBSYSTEM:
 			case OPF_ROTATING_SUBSYSTEM:
+			case OPF_TRANSLATING_SUBSYSTEM:
 				if (type2 == SEXP_ATOM_STRING)
 					if (ai_get_subsystem_type(tree_nodes[node].text) == SUBSYSTEM_UNKNOWN)
 						type2 = 0;
@@ -2737,7 +2748,7 @@ void sexp_tree::update_help(QTreeWidgetItem* h) {
 		for (j = 0; j < (int) op_menu.size(); j++) {
 			if (get_category(Operators[i].value) == op_menu[j].id) {
 				if (!help(Operators[i].value)) {
-					mprintf(("Allender!  If you add new sexp operators, add help for them too! :)\n"));
+					mprintf(("Allender!  If you add new sexp operators, add help for them too! :) Sexp %s has no help.\n", Operators[i].text.c_str()));
 				}
 			}
 		}
@@ -2749,11 +2760,30 @@ void sexp_tree::update_help(QTreeWidgetItem* h) {
 		}
 	}
 
+	// Node comments are not yet implemented in qtFRED, so just adding some base code here
+	// that can be used when the feature is completed - Mjn
+
+	//int thisIndex = event_annotation_lookup(h);
+	SCP_string nodeComment;
+
+	//if (thisIndex >= 0) {
+		//if (!Event_annotations[thisIndex].comment.empty()) {
+			//nodeComment = "Node Comments:\r\n   " + Event_annotations[thisIndex].comment;
+		//}
+	//} else {
+		nodeComment = "";
+	//}
+
 	if ((i >= (int) tree_nodes.size()) || !tree_nodes[i].type) {
-		helpChanged("");
+		helpChanged(nodeComment.c_str());
 		miniHelpChanged("");
 		return;
 	}
+
+	// Now that we're done with top level nodes we can add the empty lines because
+	// everything else below is supposed to have help text
+	if (!nodeComment.empty())
+		nodeComment.insert(0, "\r\n\r\n");
 
 	if (SEXPT_TYPE(tree_nodes[i].type) == SEXPT_OPERATOR) {
 		miniHelpChanged("");
@@ -2848,7 +2878,7 @@ void sexp_tree::update_help(QTreeWidgetItem* h) {
 			if (query_operator_argument_type(index, c) == OPF_MESSAGE) {
 				for (j = 0; j < Num_messages; j++) {
 					if (!stricmp(Messages[j].name, tree_nodes[i].text)) {
-						auto text = QString("Message Text:\n%1").arg(Messages[j].message);
+						auto text = QString("Message Text:\n%1%2").arg(Messages[j].message, nodeComment.c_str());
 						helpChanged(text);
 						return;
 					}
@@ -2861,11 +2891,14 @@ void sexp_tree::update_help(QTreeWidgetItem* h) {
 
 	code = get_operator_const(tree_nodes[i].text);
 	auto str = help(code);
+	QString text;
 	if (!str) {
-		str = "No help available";
+		text = QString("No help available%1").arg(nodeComment.c_str());
+	} else {
+		text = QString("%1%2").arg(str, nodeComment.c_str());
 	}
 
-	helpChanged(QString::fromUtf8(str));
+	helpChanged(text);
 }
 
 // find list of sexp_tree nodes with text
@@ -2960,6 +2993,7 @@ sexp_list_item* sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 
 	case OPF_AWACS_SUBSYSTEM:
 	case OPF_ROTATING_SUBSYSTEM:
+	case OPF_TRANSLATING_SUBSYSTEM:
 	case OPF_SUBSYSTEM:
 		list = get_listing_opf_subsystem(parent_node, arg_index);
 		break;
@@ -3188,6 +3222,10 @@ sexp_list_item* sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 		list = get_listing_opf_turret_target_order();
 		break;
 
+	case OPF_TURRET_TYPE:
+		list = get_listing_opf_turret_types();
+		break;
+
 	case OPF_TARGET_PRIORITIES:
 		list = get_listing_opf_turret_target_priorities();
 		break;
@@ -3322,6 +3360,10 @@ sexp_list_item* sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 
 	case OPF_DATA_OR_STR_CONTAINER:
 		list = nullptr;
+		break;
+
+	case OPF_ASTEROID_DEBRIS:
+		list = get_listing_opf_asteroid_debris();
 		break;
 
 	case OPF_WING_FORMATION:
@@ -3623,12 +3665,13 @@ sexp_list_item* sexp_tree::get_listing_opf_wing() {
 }
 
 // specific types of subsystems we're looking for
-#define OPS_CAP_CARGO        1
-#define OPS_STRENGTH            2
-#define OPS_BEAM_TURRET        3
-#define OPS_AWACS                4
-#define OPS_ROTATE            5
-#define OPS_ARMOR            6
+#define OPS_CAP_CARGO		1	
+#define OPS_STRENGTH		2
+#define OPS_BEAM_TURRET		3
+#define OPS_AWACS			4
+#define OPS_ROTATE			5
+#define OPS_TRANSLATE		6
+#define OPS_ARMOR			7
 sexp_list_item* sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_index) {
 	int op, child, sh;
 	int special_subsys = 0;
@@ -3656,6 +3699,7 @@ sexp_list_item* sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 
 		// Armor types need Hull and Shields but not Simulated Hull
 	case OP_SET_ARMOR_TYPE:
+	case OP_HAS_ARMOR_TYPE:
 		special_subsys = OPS_ARMOR;
 		break;
 
@@ -3670,6 +3714,14 @@ sexp_list_item* sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 	case OP_REVERSE_ROTATING_SUBSYSTEM:
 	case OP_ROTATING_SUBSYS_SET_TURN_TIME:
 		special_subsys = OPS_ROTATE;
+		break;
+
+	// translating
+	case OP_LOCK_TRANSLATING_SUBSYSTEM:
+	case OP_FREE_TRANSLATING_SUBSYSTEM:
+	case OP_REVERSE_TRANSLATING_SUBSYSTEM:
+	case OP_TRANSLATING_SUBSYS_SET_SPEED:
+		special_subsys = OPS_TRANSLATE;
 		break;
 
 		// where we care about capital ship subsystem cargo
@@ -3711,6 +3763,7 @@ sexp_list_item* sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 	case OP_MISSILE_LOCKED:
 	case OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD:
 	case OP_IS_IN_TURRET_FOV:
+	case OP_TURRET_SET_FORCED_TARGET:
 		// iterate to the next field
 		child = tree_nodes[child].next;
 		break;
@@ -3760,6 +3813,16 @@ sexp_list_item* sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 		Assert(child >= 0);
 		child = tree_nodes[child].next;
 		break;
+
+	// this sexp checks the third entry, but only for the 4th argument
+	case OP_TURRET_SET_FORCED_SUBSYS_TARGET:
+		if (arg_index >= 3) {
+			child = tree_nodes[child].next;
+			Assert(child >= 0);
+			child = tree_nodes[child].next;
+		}
+		break;
+
 	}
 
 	// now find the ship and add all relevant subsystems
@@ -3790,6 +3853,13 @@ sexp_list_item* sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 				// rotating
 			case OPS_ROTATE:
 				if (subsys->system_info->flags[Model::Subsystem_Flags::Rotates]) {
+					head.add_data(subsys->system_info->subobj_name);
+				}
+				break;
+
+				// translating
+			case OPS_TRANSLATE:
+				if (subsys->system_info->flags[Model::Subsystem_Flags::Translates]) {
 					head.add_data(subsys->system_info->subobj_name);
 				}
 				break;
@@ -4746,6 +4816,16 @@ sexp_list_item* sexp_tree::get_listing_opf_turret_target_order() {
 	return head.next;
 }
 
+sexp_list_item* sexp_tree::get_listing_opf_turret_types()
+{
+	sexp_list_item head;
+
+	for (int i = 0; i < NUM_TURRET_TYPES; i++)
+		head.add_data(Turret_valid_types[i]);
+
+	return head.next;
+}
+
 sexp_list_item* sexp_tree::get_listing_opf_post_effect() {
 	unsigned int i;
 	sexp_list_item head;
@@ -4884,6 +4964,22 @@ sexp_list_item* sexp_tree::get_listing_opf_nebula_patterns() {
 	for (int i = 0; i < MAX_NEB2_BITMAPS; i++) {
 		if (strlen(Neb2_bitmap_filenames[i]) > 0) {
 			head.add_data(Neb2_bitmap_filenames[i]);
+		}
+	}
+
+	return head.next;
+}
+
+sexp_list_item* sexp_tree::get_listing_opf_asteroid_debris()
+{
+	sexp_list_item head;
+
+	head.add_data(SEXP_NONE_STRING);
+
+	for (int i = 0; i < (int)Asteroid_info.size(); i++) {
+		// first three asteroids are not debris-Mjn
+		if (i > (NUM_ASTEROID_SIZES - 1)) {
+			head.add_data(Asteroid_info[i].name);
 		}
 	}
 
