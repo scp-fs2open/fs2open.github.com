@@ -231,8 +231,8 @@ flag_def_list_new<Thruster_Flags> Man_types[] = {
     { "Bank left",	Thruster_Flags::Bank_left,	true, false },
     { "Pitch up",	Thruster_Flags::Pitch_up,	true, false },
     { "Pitch down", Thruster_Flags::Pitch_down, true, false },
-    { "Roll right", Thruster_Flags::Roll_right, true, false },
-    { "Roll left",	Thruster_Flags::Roll_left,	true, false },
+    { "Yaw right", Thruster_Flags::Yaw_right, true, false },
+    { "Yaw left",	Thruster_Flags::Yaw_left,	true, false },
     { "Slide right",Thruster_Flags::Slide_right,true, false },
     { "Slide left", Thruster_Flags::Slide_left, true, false },
     { "Slide up",	Thruster_Flags::Slide_up,	true, false },
@@ -4579,7 +4579,18 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		}
 
 		if(optional_string("+Used for:")) {
-			parse_string_flag_list(mtp->use_flags, Man_types, Num_man_types, NULL);
+			SCP_vector<SCP_string> unparsed;
+			parse_string_flag_list(mtp->use_flags, Man_types, Num_man_types, &unparsed);
+
+			// backwards compatibility
+			for (const auto& str : unparsed) {
+				if (!stricmp(str.c_str(), "Roll right"))
+					mtp->use_flags.set(Ship::Thruster_Flags::Yaw_right);
+				else if (!stricmp(str.c_str(), "Roll left"))
+					mtp->use_flags.set(Ship::Thruster_Flags::Yaw_left);
+				else
+					Warning(LOCATION, "Unrecognized string in %s $Thruster +Used for: %s", sip->name, str.c_str());
+			}
 		}
 
 		if(optional_string("+Position:")) {
@@ -9732,9 +9743,9 @@ float ship_get_thruster_status(object* obj, man_thruster* mtp) {
 			val = -pi->rotational_thrust.xyz.x;
 		} else if (pi->rotational_thrust.xyz.x > 0 && (mtp->use_flags[Ship::Thruster_Flags::Pitch_down])) {
 			val = pi->rotational_thrust.xyz.x;
-		} else if (pi->rotational_thrust.xyz.y < 0 && (mtp->use_flags[Ship::Thruster_Flags::Roll_right])) {
+		} else if (pi->rotational_thrust.xyz.y < 0 && (mtp->use_flags[Ship::Thruster_Flags::Yaw_right])) {
 			val = -pi->rotational_thrust.xyz.y;
-		} else if (pi->rotational_thrust.xyz.y > 0 && (mtp->use_flags[Ship::Thruster_Flags::Roll_left])) {
+		} else if (pi->rotational_thrust.xyz.y > 0 && (mtp->use_flags[Ship::Thruster_Flags::Yaw_left])) {
 			val = pi->rotational_thrust.xyz.y;
 		} else if (pi->rotational_thrust.xyz.z < 0 && (mtp->use_flags[Ship::Thruster_Flags::Bank_right])) {
 			val = -pi->rotational_thrust.xyz.z;
