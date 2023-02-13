@@ -12,12 +12,6 @@ const std::shared_ptr<Hook<>> OnGameInit = Hook<>::Factory("On Game Init",
 	tl::nullopt,
 	CHA_GAMEINIT);
 
-const std::shared_ptr<OverridableHook<>> OnSplashScreen = OverridableHook<>::Factory("On Splash Screen",
-	"Will be called once when the splash screen shows for the first time.",
-	{},
-	tl::nullopt,
-	CHA_SPLASHSCREEN);
-
 const std::shared_ptr<OverridableHook<>> OnStateStart = OverridableHook<>::Factory("On State Start",
 	"Executed whenever a new state is entered.",
 	{ 
@@ -407,6 +401,12 @@ const std::shared_ptr<Hook<>> OnCameraSetUpHook = Hook<>::Factory("On Camera Set
 
 // ========== DEPRECATED ==========
 
+const std::shared_ptr<OverridableHook<>> OnSplashScreen = OverridableHook<>::Factory("On Splash Screen",
+	"Will be called once when the splash screen shows for the first time.",
+	{},
+	HookDeprecationOptions(gameversion::version(23, 0), HookDeprecationOptions::DeprecationLevel::LEVEL_WARN, HookDeprecationOptions::DeprecationLevel::LEVEL_ERROR),
+	CHA_SPLASHSCREEN);
+
 const std::shared_ptr<OverridableHook<ObjectDeathConditions>> OnDeath = OverridableHook<ObjectDeathConditions>::Factory("On Death",
 	"Invoked when an object (ship or asteroid) has been destroyed.  Deprecated in favor of On Ship Destroyed and On Asteroid Destroyed.",
 	{
@@ -416,7 +416,8 @@ const std::shared_ptr<OverridableHook<ObjectDeathConditions>> OnDeath = Overrida
 		{"Hitpos",
 			"vector",
 			"The position of the hit that caused the death (only set for ships and only if available)"},
-	});
+	},
+	HookDeprecationOptions(gameversion::version(23, 0)));
 
 } // namespace hooks
 } // namespace scripting
