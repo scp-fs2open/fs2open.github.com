@@ -1984,6 +1984,10 @@ void game_init()
 	if (scripting::hooks::OnGameInit->isActive()) {
 		scripting::hooks::OnGameInit->run();
 	}
+	//Technically after the splash screen, but the best we can do these days. Since the override is hard-deprecated, we don't need to check it.
+	if (scripting::hooks::OnSplashScreen->isActive()) {
+		scripting::hooks::OnSplashScreen->run();
+	}
 
 	game_title_screen_close();
 
@@ -7451,53 +7455,42 @@ int game_hacked_data()
 
 void game_title_screen_display()
 {
-	bool condhook_override = false;
-	if (scripting::hooks::OnSplashScreen->isActive()) {
-		condhook_override = scripting::hooks::OnSplashScreen->isOverride();
+	//As the script system isn't available here (it needs tables loaded and stuff), the on Splash Screen hook is removed from here.
+	//It is deprecated as of 23.0 (where it was nonfunctional anyways), and will only be called for compatibility once the init has occurred after the splash screen -Lafiel
+
+	Game_title_logo = bm_load(Game_logo_screen_fname[gr_screen.res]);
+
+	if (!Splash_screens.empty()) {
+		Game_title_bitmap = bm_load(Splash_screens[Random::next(0, (int)Splash_screens.size())].c_str());
+	} else {
+		Game_title_bitmap = bm_load(Game_title_screen_fname[gr_screen.res]);
 	}
 
-	mprintf(("SCRIPTING: Splash screen overrides checked\n"));
-	if(!condhook_override)
+	if (Game_title_bitmap != -1)
 	{
-		Game_title_logo = bm_load(Game_logo_screen_fname[gr_screen.res]);
+		// set
+		gr_set_bitmap(Game_title_bitmap);
 
-		if (!Splash_screens.empty()) {
-			Game_title_bitmap = bm_load(Splash_screens[Random::next(0, (int)Splash_screens.size())].c_str());
-		} else {
-			Game_title_bitmap = bm_load(Game_title_screen_fname[gr_screen.res]);
-		}
+		// get bitmap's width and height
+		int width, height;
+		bm_get_info(Game_title_bitmap, &width, &height);
 
-		if (Game_title_bitmap != -1)
+		// set the screen scale to the bitmap's dimensions
+		gr_set_screen_scale(width, height);
+
+		// draw it in the center of the screen
+		gr_bitmap((gr_screen.max_w_unscaled - width)/2, (gr_screen.max_h_unscaled - height)/2, GR_RESIZE_MENU);
+
+		if (Game_title_logo != -1)
 		{
-			// set
-			gr_set_bitmap(Game_title_bitmap);
+			gr_set_bitmap(Game_title_logo);
 
-			// get bitmap's width and height
-			int width, height;
-			bm_get_info(Game_title_bitmap, &width, &height);
+			gr_bitmap(0, 0, GR_RESIZE_MENU);
 
-			// set the screen scale to the bitmap's dimensions
-			gr_set_screen_scale(width, height);
-
-			// draw it in the center of the screen
-			gr_bitmap((gr_screen.max_w_unscaled - width)/2, (gr_screen.max_h_unscaled - height)/2, GR_RESIZE_MENU);
-
-			if (Game_title_logo != -1)
-			{
-				gr_set_bitmap(Game_title_logo);
-
-				gr_bitmap(0, 0, GR_RESIZE_MENU);
-
-			}
-
-			gr_reset_screen_scale();
 		}
+
+		gr_reset_screen_scale();
 	}
-
-	if (scripting::hooks::OnSplashScreen->isActive())
-		scripting::hooks::OnSplashScreen->run();
-
-	mprintf(("SCRIPTING: Splash screen conditional hook has been run\n"));
 
 	// flip
 	gr_flip();
