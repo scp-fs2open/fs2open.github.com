@@ -7,6 +7,7 @@
 #include "lab/labv2_internal.h"
 #include "ship/shiphit.h"
 #include "weapon/weapon.h"
+#include "mission/missionload.h"
 
 using namespace ImGui;
 
@@ -100,9 +101,17 @@ void LabUi::build_weapon_list() const
 
 void LabUi::build_background_list() const
 {
-	SCP_vector<SCP_string> missions;
+	SCP_vector<SCP_string> t_missions;
 
-	cf_get_file_list(missions, CF_TYPE_MISSIONS, NOX("*.fs2"));
+	cf_get_file_list(t_missions, CF_TYPE_MISSIONS, NOX("*.fs2"));
+
+	// Remove any ignored missions from the list
+	SCP_vector<SCP_string> missions;
+	for (int i = 0; i < (int)t_missions.size(); i++) {
+		if (!mission_is_ignored(t_missions[i].c_str())) {
+			missions.push_back(t_missions[i]);
+		}
+	}
 
 	static SCP_map<SCP_string, SCP_vector<SCP_string>> directories;
 

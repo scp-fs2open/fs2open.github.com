@@ -2185,7 +2185,7 @@ int beam_start_firing(beam *b)
 		Ships[b->objp->instance].weapons.primary_bank_ammo[b->bank]--;
 
 	if (scripting::hooks::OnBeamFired->isActive()) {
-		scripting::hooks::OnBeamFired->run(scripting::hooks::WeaponUsedConditions{ &Ships[b->objp->instance], b->target, b->weapon_info_index, true },
+		scripting::hooks::OnBeamFired->run(scripting::hooks::WeaponUsedConditions{ &Ships[b->objp->instance], b->target, SCP_vector<int>{ b->weapon_info_index }, true },
 			scripting::hook_param_list(
 				scripting::hook_param("Beam", 'o', &Objects[b->objnum]),
 				scripting::hook_param("User", 'o', b->objp),

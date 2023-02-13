@@ -32,6 +32,7 @@ bool Fixed_missile_detonation;
 bool Damage_impacted_subsystem_first;
 bool Cutscene_camera_displays_hud;
 bool Alternate_chaining_behavior;
+bool Fixed_chaining_to_repeat;
 bool Use_host_orientation_for_set_camera_facing;
 bool Use_3d_ship_select;
 bool Use_3d_ship_icons;
@@ -66,6 +67,7 @@ SCP_string Window_title;
 SCP_string Mod_title;
 SCP_string Mod_version;
 bool Unicode_text_mode;
+SCP_vector<SCP_string> Splash_screens;
 bool Use_tabled_strings_for_default_language;
 bool Dont_preempt_training_voice;
 SCP_string Movie_subtitle_font;
@@ -130,6 +132,8 @@ bool Always_use_distant_firepoints;
 bool Discord_presence;
 bool Hotkey_always_hide_hidden_ships;
 bool Use_weapon_class_sounds_for_hits_to_player;
+bool SCPUI_loads_hi_res_animations;
+bool Play_thruster_sounds_for_player;
 
 static auto DiscordOption = options::OptionBuilder<bool>("Other.Discord", "Discord Presence", "Toggle Discord Rich Presence")
 							 .category("Other")
@@ -211,6 +215,20 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Unicode_text_mode);
 
 			mprintf(("Game Settings Table: Unicode mode: %s\n", Unicode_text_mode ? "yes" : "no"));
+		}
+
+		if (optional_string("$Splash screens:")) {
+			SCP_string splash_bitmap;
+			while (optional_string("+Bitmap:")) {
+				stuff_string(splash_bitmap, F_NAME);
+
+				// remove extension?
+				if (drop_extension(splash_bitmap)) {
+					mprintf(("Game Settings Table: Removed extension on splash screen file name %s\n", splash_bitmap.c_str()));
+				}
+
+				Splash_screens.push_back(splash_bitmap);
+			}
 		}
 
 		optional_string("#LOCALIZATION SETTINGS");
@@ -361,6 +379,16 @@ void parse_mod_table(const char *filename)
 			}
 			else {
 				mprintf(("Game Settings Table: Using standard event chaining behavior\n"));
+			}
+		}
+
+		if (optional_string("$Fixed Chaining To Repeating Events:")) {
+			stuff_boolean(&Fixed_chaining_to_repeat);
+			if (Fixed_chaining_to_repeat) {
+				mprintf(("Game Settings Table: Using fixed chaining to repeating events\n"));
+			}
+			else {
+				mprintf(("Game Settings Table: Using retail chaining to repeating events\n"));
 			}
 		}
 
@@ -754,6 +782,10 @@ void parse_mod_table(const char *filename)
 
 		}
 
+		if (optional_string("$SCPUI attempts to load hires animations:")) {
+			stuff_boolean(&SCPUI_loads_hi_res_animations);
+		}
+
 		optional_string("#NETWORK SETTINGS");
 
 		if (optional_string("$FS2NetD port:")) {
@@ -806,6 +838,10 @@ void parse_mod_table(const char *filename)
 
 		if (optional_string("$Use weapon class impact sounds for hits to player:")) {
 			stuff_boolean(&Use_weapon_class_sounds_for_hits_to_player);
+		}
+
+		if (optional_string("$Play thruster sounds for the player:")) {
+			stuff_boolean(&Play_thruster_sounds_for_player);
 		}
 
 		optional_string("#FRED SETTINGS");
@@ -1177,6 +1213,7 @@ void mod_table_reset()
 	Damage_impacted_subsystem_first = false;
 	Cutscene_camera_displays_hud = false;
 	Alternate_chaining_behavior = false;
+	Fixed_chaining_to_repeat = false;
 	Use_host_orientation_for_set_camera_facing = false;
 	Default_ship_select_effect = 2;
 	Default_weapon_select_effect = 2;
@@ -1271,6 +1308,8 @@ void mod_table_reset()
 	Discord_presence = true;
 	Hotkey_always_hide_hidden_ships = false;
 	Use_weapon_class_sounds_for_hits_to_player = false;
+	SCPUI_loads_hi_res_animations = true;
+	Play_thruster_sounds_for_player = false;
 }
 
 void mod_table_set_version_flags()
@@ -1284,5 +1323,6 @@ void mod_table_set_version_flags()
 	}
 	if (mod_supports_version(23, 0, 0)) {
 		Shockwaves_inherit_parent_damage_type = true;	// people intuitively expect shockwaves to default to the damage type of the weapon that spawned them
+		Fixed_chaining_to_repeat = true;
 	}
 }

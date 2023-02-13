@@ -943,7 +943,8 @@ void batching_allocate_and_load_buffer(primitive_batch_buffer *draw_queue)
 		offset += item->n_verts;
 	}
 
-	if (draw_queue->buffer_num.isValid()) {
+	// if there are no items in this batch, we will never render it and thus there is no need to update it in vmem
+	if (num_items && draw_queue->buffer_num.isValid()) {
 		gr_update_buffer_data(draw_queue->buffer_num, draw_queue->buffer_size, draw_queue->buffer_ptr);
 	}
 }

@@ -2840,6 +2840,26 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 
 	// Now that we've processed all the chunks, resolve the submodel indexes if we have any...
 
+	// first do some sanity checking to detect model errors
+	for (i = 0; i < pm->n_detail_levels; i++) {
+		if (pm->detail[i] < 0 || pm->detail[i] >= pm->n_models) {
+			Warning(LOCATION, "Model %s detail %d is %d which is not a valid submodel!", pm->filename, i, pm->detail[i]);
+			return modelread_status::FAIL;
+		}
+	}
+	for (i = 0; i < pm->num_debris_objects; i++) {
+		if (pm->debris_objects[i] < 0 || pm->debris_objects[i] >= pm->n_models) {
+			Warning(LOCATION, "Model %s debris object %d is %d which is not a valid submodel!", pm->filename, i, pm->debris_objects[i]);
+			return modelread_status::FAIL;
+		}
+	}
+	for (i = 0; i < pm->n_models; i++) {
+		if (pm->submodel[i].parent < -1 || pm->submodel[i].parent >= pm->n_models) {
+			Warning(LOCATION, "Model %s submodel %d parent is %d which is not a valid submodel!", pm->filename, i, pm->submodel[i].parent);
+			return modelread_status::FAIL;
+		}
+	}
+
 	// handle look_at
 	for (i = 0; i < pm->n_models; i++) {
 		auto sm = &pm->submodel[i];
@@ -5623,6 +5643,7 @@ void glowpoint_override_defaults(glow_point_bank_override *gpo)
 	gpo->glow_bitmap = -1;
 	gpo->glow_neb_bitmap = -1;
 	gpo->is_on = true;
+	gpo->default_off = false;
 	gpo->type_override = false;
 	gpo->on_time_override = false;
 	gpo->off_time_override = false;
@@ -5694,6 +5715,10 @@ void parse_glowpoint_table(const char *filename)
 
 			if (optional_string("$On:")) {
 				stuff_boolean(&gpo.is_on);
+			}
+
+			if (optional_string("$Default Off:")) {
+				stuff_boolean(&gpo.default_off);
 			}
 
 			if (optional_string("$Displacement time:")) {

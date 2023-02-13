@@ -1453,6 +1453,7 @@ ADE_FUNC(buildCredits,
 	credits_scp_position();
 
 	size_t count = Credit_text_parts.size();
+	credits_complete.clear();
 
 	for (size_t i = 0; i < count; i++) {
 		credits_complete.append(Credit_text_parts[i]);
