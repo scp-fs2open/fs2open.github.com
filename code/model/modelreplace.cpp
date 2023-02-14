@@ -16,6 +16,7 @@ static SCP_unordered_map<SCP_string, std::function<std::unique_ptr<VirtualPOFOpe
 	{"$Add Turret:", &make_unique<VirtualPOFOperationAddTurret> },
 	{"$Add Engine:", &make_unique<VirtualPOFOperationAddEngine> },
 	{"$Add Glowpoint:", &make_unique<VirtualPOFOperationAddGlowpoint> },
+	{"$Copy Weapon Bank:", &make_unique<VirtualPOFOperationAddWeapons> },
 	{"$Rename Subobjects:", &make_unique<VirtualPOFOperationRenameSubobjects> },
 	{"$Set Subobject Data:", &make_unique<VirtualPOFOperationChangeData> },
 	{"$Set Header Data:", &make_unique<VirtualPOFOperationHeaderData> }
@@ -196,12 +197,27 @@ void virtual_pof_init() {
 
 // Internal helper functions
 
-template<typename T, typename member_t>
-T object_copy_including_array_member(const T& item, member_t T::* ptm, int T::* size) {
-	T result{ item };
-	result.*ptm = (member_t) vm_malloc(sizeof(typename std::remove_pointer<member_t>::type) * (result.*size));
-	for (int i = 0; i < result.*size; i++)
+template<typename T, bool vmalloc, typename member_t>
+inline void object_copy_including_array_member_inner(const T& item, T& result, int size, member_t T::* ptm) {
+	if (vmalloc)
+		result.*ptm = (member_t)vm_malloc(sizeof(typename std::remove_pointer<member_t>::type) * (size));
+	else
+		result.*ptm = new typename std::remove_pointer<member_t>::type[size];
+
+	for (int i = 0; i < size; i++)
 		(result.*ptm)[i] = (item.*ptm)[i];
+}
+
+template<typename T, bool vmalloc, typename member_t_0, typename member_t_1, typename... member_t>
+inline void object_copy_including_array_member_inner(const T& item, T& result, int size, member_t_0 T::* ptm, member_t_1 T::* ptm1, member_t T::*... ptms) {
+	object_copy_including_array_member_inner<T, vmalloc>(item, result, size, ptm);
+	object_copy_including_array_member_inner<T, vmalloc>(item, result, size, ptm1, ptms...);
+}
+
+template<typename T, bool vmalloc = true, typename... member_t>
+T object_copy_including_array_member(const T& item, int T::* size, member_t T::*... ptm) {
+	T result{ item };
+	object_copy_including_array_member_inner<T, vmalloc>(item, result, result.*size, ptm...);
 	return result;
 }
 
@@ -218,7 +234,7 @@ int reallocate_and_copy_array(T*& array, int& size, size_t to_add) {
 
 	//Copy over old data. Pointers in the struct can still point to old members, we will just delete the outer bsp_info array
 	for (int i = 0; i < size_before; i++)
-		array[i] = oldArray[i];
+		array[i] = std::move(oldArray[i]);
 	delete[] oldArray;
 
 	return size_before;
@@ -469,7 +485,7 @@ void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_
 				}
 				int insertFrom = reallocate_and_copy_array(pm->glow_point_banks, pm->n_glow_point_banks, glowpointbanks.size());
 				for (const glow_point_bank* gpb : glowpointbanks) {
-					pm->glow_point_banks[insertFrom] = object_copy_including_array_member(*gpb, &glow_point_bank::points, &glow_point_bank::num_points);
+					pm->glow_point_banks[insertFrom] = object_copy_including_array_member(*gpb, &glow_point_bank::num_points, &glow_point_bank::points);
 					change_submodel_numbers(pm->glow_point_banks[insertFrom], replaceSubobjNo);
 				}
 			}
@@ -602,7 +618,7 @@ void VirtualPOFOperationAddEngine::process(polymodel* pm, model_read_deferred_ta
 	int newEngineNumber = reallocate_and_copy_array(pm->thrusters, pm->n_thrusters, 1);
 	const SCP_unordered_map<int, int> thrusterReplacementMap{ {engineNumber, newEngineNumber} };
 
-	pm->thrusters[newEngineNumber] = object_copy_including_array_member(appendingPM->pm()->thrusters[engineNumber], &thruster_bank::points, &thruster_bank::num_points);
+	pm->thrusters[newEngineNumber] = object_copy_including_array_member(appendingPM->pm()->thrusters[engineNumber], &thruster_bank::num_points, &thruster_bank::points);
 	
 	if (moveEngine) {
 		const vec3d& offset = *moveEngine;
@@ -652,7 +668,7 @@ void VirtualPOFOperationAddGlowpoint::process(polymodel* pm, model_read_deferred
 	}
 
 	int newGPNumber = reallocate_and_copy_array(pm->glow_point_banks, pm->n_glow_point_banks, 1);
-	pm->glow_point_banks[newGPNumber] = object_copy_including_array_member(appendingPM->pm()->glow_point_banks[sourceId], &glow_point_bank::points, &glow_point_bank::num_points);
+	pm->glow_point_banks[newGPNumber] = object_copy_including_array_member(appendingPM->pm()->glow_point_banks[sourceId], &glow_point_bank::num_points, &glow_point_bank::points);
 	pm->glow_point_banks[newGPNumber].submodel_parent = dest_subobj_no;
 
 	appendingPM->keepGlowbank(sourceId);
@@ -705,6 +721,59 @@ void VirtualPOFOperationAddSpecialSubsystem::process(polymodel* /*pm*/, model_re
 	else
 		deferredTasks.model_subsystems.emplace(*it);
 }
+
+VirtualPOFOperationAddWeapons::VirtualPOFOperationAddWeapons() {
+	required_string("+POF to Add:");
+	stuff_string(appendingPOF, F_FILESPEC);
+
+	required_string("+Type:");
+	primary = required_string_either("Primary", "Secondary") == 0;
+
+	required_string("+Source Weapon Bank:");
+	stuff_int(&sourcebank);
+
+	if (optional_string("+Destination Weapon Bank:"))
+		stuff_int(&destbank);	
+}
+
+void VirtualPOFOperationAddWeapons::process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const {
+	auto appendingPM = virtual_pof_build_cache(appendingPOF, depth);
+
+	w_bank*& banks = primary ? pm->gun_banks : pm->missile_banks;
+	int& n_banks = primary ? pm->n_guns : pm->n_missiles;
+
+	const w_bank* const& banks_src = primary ? appendingPM->pm()->gun_banks : appendingPM->pm()->missile_banks;
+	const int& n_banks_src = primary ? appendingPM->pm()->n_guns : appendingPM->pm()->n_missiles;
+
+	const int& n_banks_max = primary ? MAX_SHIP_PRIMARY_BANKS : MAX_SHIP_SECONDARY_BANKS;
+	
+	if (sourcebank < 0 || sourcebank >= n_banks_src) {
+		Warning(LOCATION, "Source bank %d on POF %s for virtual POF %s does not exist. Returning original POF", sourcebank, appendingPOF.c_str(), virtualPof.name.c_str());
+		return;
+	}
+
+	int actual_destbank = destbank;
+
+	if (destbank < 0) {
+		//Add
+		if (n_banks >= n_banks_max) {
+			Warning(LOCATION, "No space for additional destination bank on POF %s for virtual POF %s. Returning original POF", pm->filename, virtualPof.name.c_str());
+			return;
+		}
+
+		actual_destbank = reallocate_and_copy_array(banks, n_banks, 1);
+	}
+	else {
+		//Replace
+		if (destbank >= n_banks) {
+			Warning(LOCATION, "Destination bank %d on POF %s for virtual POF %s does not exist. Returning original POF", destbank, pm->filename, virtualPof.name.c_str());
+			return;
+		}
+	}
+
+	banks[destbank] = object_copy_including_array_member<w_bank, false>(banks_src[sourcebank], &w_bank::num_slots, &w_bank::pnt, &w_bank::norm, &w_bank::external_model_angle_offset);
+}
+
 
 VirtualPOFOperationRenameSubobjects::VirtualPOFOperationRenameSubobjects() {
 	while (optional_string("+Replace:")) {

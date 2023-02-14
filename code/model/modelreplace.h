@@ -90,6 +90,15 @@ public:
 	void process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const override;
 };
 
+class VirtualPOFOperationAddWeapons : public VirtualPOFOperation {
+	int sourcebank, destbank = -1;
+	bool primary;
+	SCP_string appendingPOF;
+public:
+	VirtualPOFOperationAddWeapons();
+	void process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const override;
+};
+
 class VirtualPOFOperationChangeData : public VirtualPOFOperation {
 	SCP_string submodel;
 	tl::optional<vec3d> setOffset = tl::nullopt;
