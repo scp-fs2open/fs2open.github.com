@@ -237,7 +237,7 @@ void opengl_setup_scene_textures()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, Scene_texture_width, Scene_texture_height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
-	opengl_set_object_label(GL_TEXTURE, Scene_composite_texture, "Scene Emissive texture");
+	opengl_set_object_label(GL_TEXTURE, Scene_composite_texture, "Scene Composite texture");
 
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT6, GL_TEXTURE_2D, Scene_composite_texture, 0);
 

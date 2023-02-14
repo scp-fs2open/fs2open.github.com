@@ -322,7 +322,20 @@ void gr_opengl_deferred_lighting_finish()
 		});
 
 		opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
-	} else {
+	}
+	else if (false) {
+		//If halfneb
+		float u_scale, v_scale;
+		uint32_t array_index;
+		int bitmap_handle = 0;//TODO
+
+		gr_opengl_tcache_set(bitmap_handle, TCACHE_TYPE_3DTEX, &u_scale, &v_scale, &array_index, 0);
+
+		GL_state.Texture.Enable(1, GL_TEXTURE_2D, Scene_composite_texture);
+		GL_state.Texture.Enable(2, GL_TEXTURE_2D, Scene_emissive_texture);
+		GL_state.Texture.Enable(3, GL_TEXTURE_2D, Scene_depth_texture);
+	}
+	else {
 		// Transfer the resolved lighting back to the color texture
 		// TODO: Maybe this could be improved so that it doesn't require the copy back operation?
 		glReadBuffer(GL_COLOR_ATTACHMENT6);
