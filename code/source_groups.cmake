@@ -874,6 +874,8 @@ add_file_folder("Nebula"
 	nebula/neb.h
 	nebula/neblightning.cpp
 	nebula/neblightning.h
+	nebula/volumetrics.cpp
+	nebula/volumetrics.h
 )
 
 # Network files
