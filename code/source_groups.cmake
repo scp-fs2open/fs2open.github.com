@@ -272,6 +272,7 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/tonemapping-f.sdr
 	def_files/data/effects/video-f.sdr
 	def_files/data/effects/video-v.sdr
+	def_files/data/effects/volumetric-f.sdr
 )
 
 add_file_folder("Default files\\\\data\\\\maps"

@@ -310,6 +310,12 @@ struct fog_data {
 	float pad[1];
 };
 
+struct volumetric_fog_data {
+	matrix4 p_inv, v_inv;
+	vec3d camera_pos;
+	float pad;
+};
+
 struct blur_data {
 	float texSize;
 	int level;

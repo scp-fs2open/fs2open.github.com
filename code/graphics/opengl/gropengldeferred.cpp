@@ -17,6 +17,7 @@
 #include "mission/mission_flags.h"
 #include "mission/missionparse.h"
 #include "nebula/neb.h"
+#include "nebula/volumetrics.h"
 #include "render/3d.h"
 #include "tracing/tracing.h"
 
@@ -124,10 +125,21 @@ void gr_opengl_deferred_lighting_finish()
 	GL_state.Texture.Enable(1, GL_TEXTURE_2D, Scene_normal_texture);
 	GL_state.Texture.Enable(2, GL_TEXTURE_2D, Scene_position_texture);
 	GL_state.Texture.Enable(3, GL_TEXTURE_2D, Scene_specular_texture);
-	GL_state.Texture.Enable(4, GL_TEXTURE_2D, Scene_emissive_texture);
 	if (Shadow_quality != ShadowQuality::Disabled) {
-		GL_state.Texture.Enable(5, GL_TEXTURE_2D_ARRAY, Shadow_map_texture);
+		GL_state.Texture.Enable(4, GL_TEXTURE_2D_ARRAY, Shadow_map_texture);
 	}
+
+	glReadBuffer(GL_COLOR_ATTACHMENT4);
+	glBlitFramebuffer(0,
+		0,
+		gr_screen.max_w,
+		gr_screen.max_h,
+		0,
+		0,
+		gr_screen.max_w,
+		gr_screen.max_h,
+		GL_COLOR_BUFFER_BIT,
+		GL_NEAREST);
 	
 	// We need to use stable sorting here to make sure that the relative ordering of the same light types is the same as
 	// the rest of the code. Otherwise the shadow mapping would be applied while rendering the wrong light which would
@@ -324,17 +336,37 @@ void gr_opengl_deferred_lighting_finish()
 
 		opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
 	}
-	else if (false) {
+	else if (true) {
+		static auto volumeTex = fromSphere(255, 0, 0);
+
+		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+		gr_set_view_matrix(&Eye_position, &Eye_matrix);
+
 		//If halfneb
 		float u_scale, v_scale;
 		uint32_t array_index;
-		int bitmap_handle = 0;//TODO
+		int bitmap_handle = volumeTex.getBitmapHandle();
 
-		gr_opengl_tcache_set(bitmap_handle, TCACHE_TYPE_3DTEX, &u_scale, &v_scale, &array_index, 0);
+		GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
+		gr_zbuffer_set(GR_ZBUFF_NONE);
+		opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_VOLUMETRIC_FOG, 0));
 
-		GL_state.Texture.Enable(1, GL_TEXTURE_2D, Scene_composite_texture);
-		GL_state.Texture.Enable(2, GL_TEXTURE_2D, Scene_emissive_texture);
-		GL_state.Texture.Enable(3, GL_TEXTURE_2D, Scene_depth_texture);
+		GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_composite_texture);
+		GL_state.Texture.Enable(1, GL_TEXTURE_2D, Scene_emissive_texture);
+		GL_state.Texture.Enable(2, GL_TEXTURE_2D, Scene_depth_texture);
+		
+		gr_opengl_tcache_set(bitmap_handle, TCACHE_TYPE_3DTEX, &u_scale, &v_scale, &array_index, 3);
+
+		opengl_set_generic_uniform_data<graphics::generic_data::volumetric_fog_data>([&](graphics::generic_data::volumetric_fog_data* data) {
+			vm_inverse_matrix4(&data->p_inv, &gr_projection_matrix);
+			vm_inverse_matrix4(&data->v_inv, &gr_view_matrix);
+			data->camera_pos = Eye_position;
+			});
+
+		opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
+
+		gr_end_view_matrix();
+		gr_end_proj_matrix();
 	}
 	else {
 		// Transfer the resolved lighting back to the color texture
