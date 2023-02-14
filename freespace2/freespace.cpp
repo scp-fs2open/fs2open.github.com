@@ -1876,7 +1876,7 @@ void game_init()
 	control_config_common_init();				// sets up localization stuff in the control config
 
 	rank_init();
-	parse_traitor_tbl();
+	traitor_init();
 	medals_init();
 
 	cutscene_init();
