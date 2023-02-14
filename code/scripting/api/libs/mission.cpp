@@ -1598,7 +1598,14 @@ ADE_VIRTVAR(Gravity, l_Mission, "vector", "Gravity acceleration vector in meters
 
 	if (ADE_SETTING_VAR && ade_get_args(L, "*o", l_Vector.GetPtr(&gravity_vec)))
 	{
+		vec3d old_gravity = The_mission.gravity;
 		The_mission.gravity = *gravity_vec;
+
+		if ((IS_VEC_NULL(&old_gravity) && !IS_VEC_NULL(&The_mission.gravity)) || 
+			(!IS_VEC_NULL(&old_gravity) && IS_VEC_NULL(&The_mission.gravity))) {
+			// gravity was turned on or turned off
+			collide_apply_gravity_flags_weapons();
+		}
 	}
 
 	return ade_set_args(L, "o", l_Vector.Set(The_mission.gravity));

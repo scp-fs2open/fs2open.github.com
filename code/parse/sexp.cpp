@@ -279,6 +279,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "has-been-tagged-delay",			OP_HAS_BEEN_TAGGED_DELAY,				2,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},
 	{ "are-ship-flags-set",				OP_ARE_SHIP_FLAGS_SET,					2,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},	// Karajorma
 	{ "are-wing-flags-set",				OP_ARE_WING_FLAGS_SET,					2,	INT_MAX,	SEXP_BOOLEAN_OPERATOR, },	// Goober5000
+	{ "has-armor-type",					OP_HAS_ARMOR_TYPE,						3,	3,			SEXP_BOOLEAN_OPERATOR, },	// MjnMixael
 
 	//Shields, Engines and Weapons Sub-Category
 	{ "has-primary-weapon",				OP_HAS_PRIMARY_WEAPON,					3,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},	// Karajorma
@@ -673,6 +674,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "hud-clear-messages",				OP_HUD_CLEAR_MESSAGES,					0,	0,			SEXP_ACTION_OPERATOR,	},	// swifty
 	{ "hud-set-max-targeting-range",	OP_HUD_SET_MAX_TARGETING_RANGE,			1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "hud-force-sensor-static",		OP_HUD_FORCE_SENSOR_STATIC,				1,	1,			SEXP_ACTION_OPERATOR,	},	// MjnMixael
+	{ "hud-force-emp-effect",			OP_HUD_FORCE_EMP_EFFECT,				2,	3,			SEXP_ACTION_OPERATOR,	},	// MjnMixael
 
 	//Nav Sub-Category
 	{ "add-nav-waypoint",				OP_NAV_ADD_WAYPOINT,					3,	4,			SEXP_ACTION_OPERATOR,	},	//kazan
@@ -3634,6 +3636,20 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				if ( i == NUM_TURRET_ORDER_TYPES )
 					return SEXP_CHECK_INVALID_TURRET_TARGET_ORDER;
 				
+				break;
+
+			case OPF_TURRET_TYPE:
+				if (type2 != SEXP_ATOM_STRING)
+					return SEXP_CHECK_TYPE_MISMATCH;
+
+				for (i = 0; i < NUM_TURRET_TYPES; i++) {
+					if (!stricmp(CTEXT(node), Turret_valid_types[i]))
+						break;
+				}
+
+				if (i == NUM_TURRET_TYPES)
+					return SEXP_CHECK_INVALID_TURRET_TYPE;
+
 				break;
 
 			case OPF_ARMOR_TYPE:
@@ -12310,6 +12326,43 @@ void sexp_hud_force_static(int n)
 	Sensor_static_forced = is_sexp_true(n);
 }
 
+void sexp_hud_force_emp(int n)
+{
+	bool is_nan, is_nan_forever;
+
+	int intensity = eval_num(n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
+
+	n = CDR(n);
+
+	int duration = eval_num(n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
+
+	n = CDR(n);
+
+	SCP_string text = "";
+
+	if (n >= 0) {
+
+		// assume just text
+		text = CTEXT(n);
+
+		// but use an actual message if one exists
+		for (int i = 0; i < Num_messages; i++) {
+			if (!stricmp(Messages[i].name, text.c_str())) {
+				text = Messages[i].message;
+				break;
+			}
+		}
+
+		text = message_translate_tokens(text.c_str());
+	}
+
+	emp_start_local(i2fl(intensity), i2fl(duration) / 1000, text);
+}
+
 void sexp_hud_set_directive(int n)
 {
 	auto gaugename = CTEXT(n);
@@ -13533,13 +13586,10 @@ void sexp_explosion_effect(int n)
 					continue;
 				}
 		
-				// don't blast navbuoys
-				if ( objp->type == OBJ_SHIP )
+				// don't blast no-collide or navbuoys
+				if ( !objp->flags[Object::Object_Flags::Collides] || (objp->type == OBJ_SHIP && ship_get_SIF(objp->instance)[Ship::Info_Flags::Navbuoy]) )
 				{
-					if ( ship_get_SIF(objp->instance)[Ship::Info_Flags::Navbuoy] )
-					{
-						continue;
-					}
+					continue;
 				}
 
 				if ( ship_explode_area_calc_damage( &origin, &objp->pos, (float)inner_radius, (float)outer_radius, (float)max_damage, (float)max_blast, &t_damage, &t_blast ) == -1 )
@@ -13738,7 +13788,14 @@ void sexp_set_gravity_accel(int node)
 		return;
 
 	float fl_accel = (float)(-accel) / 100.0f;
+	vec3d old_gravity = The_mission.gravity;
 	The_mission.gravity = vm_vec_new(0.0f, fl_accel, 0.0f);
+
+	if ((IS_VEC_NULL(&old_gravity) && !IS_VEC_NULL(&The_mission.gravity)) ||
+		(!IS_VEC_NULL(&old_gravity) && IS_VEC_NULL(&The_mission.gravity))) {
+		// gravity was turned on or turned off
+		collide_apply_gravity_flags_weapons();
+	}
 
 	// do the multiplayer callback
 	if (MULTIPLAYER_MASTER) {
@@ -13754,7 +13811,13 @@ void multi_sexp_set_gravity_accel()
 
 	Current_sexp_network_packet.get_float(accel);
 
+	vec3d old_gravity = The_mission.gravity;
 	The_mission.gravity = vm_vec_new(0.0f, accel, 0.0f);
+	if ((IS_VEC_NULL(&old_gravity) && !IS_VEC_NULL(&The_mission.gravity)) ||
+		(!IS_VEC_NULL(&old_gravity) && IS_VEC_NULL(&The_mission.gravity))) {
+		// gravity was turned on or turned off
+		collide_apply_gravity_flags_weapons();
+	}
 }
 
 // this function get called by send-message or send-message random with the name of the message, sender,
@@ -15313,17 +15376,19 @@ void sexp_set_asteroid_field(int n)
 	int field_type = 0, num_asteroids = 0, asteroid_speed = 0;
 	for (int i = 0; i < 3; i++) {
 
-		int temp = eval_num(n, is_nan, is_nan_forever);
-		if (is_nan || is_nan_forever)
-			return;
+		if (n >= 0) {
+			int temp = eval_num(n, is_nan, is_nan_forever);
+			if (is_nan || is_nan_forever)
+				return;
 
-		if (i == 0)
-			num_asteroids = temp;
-		else if (i == 1)
-			field_type = temp;
-		else
-			asteroid_speed = temp;
-		n = CDR(n);
+			if (i == 0)
+				num_asteroids = temp;
+			else if (i == 1)
+				field_type = temp;
+			else
+				asteroid_speed = temp;
+			n = CDR(n);
+		}
 	}
 
 	bool brown = true;
@@ -15344,14 +15409,12 @@ void sexp_set_asteroid_field(int n)
 		n = CDR(n);
 	}
 
-	if (!brown && !blue && !orange)
-		return;
-
 	int o_minx = -1000, o_miny = -1000, o_minz = -1000;
 	int o_maxx = 1000, o_maxy = 1000, o_maxz = 1000;
-	if (n >= 0) {
-		for (int i = 0; i < 6; i++) {
 
+	for (int i = 0; i < 6; i++) {
+
+		if (n >= 0) {
 			int temp = eval_num(n, is_nan, is_nan_forever);
 			if (is_nan || is_nan_forever)
 				return;
@@ -15380,9 +15443,10 @@ void sexp_set_asteroid_field(int n)
 
 	int i_minx = -500, i_miny = -500, i_minz = -500;
 	int i_maxx = 500, i_maxy = 500, i_maxz = 500;
-	if (n >= 0) {
-		for (int i = 0; i < 6; i++) {
+	
+	for (int i = 0; i < 6; i++) {
 
+		if (n >= 0) {
 			int temp = eval_num(n, is_nan, is_nan_forever);
 			if (is_nan || is_nan_forever)
 				return;
@@ -15416,9 +15480,7 @@ void sexp_set_asteroid_field(int n)
 		}
 	}
 
-	if (num_asteroids == 0) {
-		return;
-	} else if (num_asteroids > MAX_ASTEROIDS) {
+	if (num_asteroids > MAX_ASTEROIDS) {
 		num_asteroids = MAX_ASTEROIDS;
 	}
 
@@ -15450,16 +15512,18 @@ void sexp_set_debris_field(int n)
 
 	int num_asteroids = 0, asteroid_speed = 0;
 	for (int i = 0; i < 2; i++) {
+		
+		if (n >= 0) {
+			int temp = eval_num(n, is_nan, is_nan_forever);
+			if (is_nan || is_nan_forever)
+				return;
 
-		int temp = eval_num(n, is_nan, is_nan_forever);
-		if (is_nan || is_nan_forever)
-			return;
-
-		if (i == 0)
-			num_asteroids = temp;
-		else
-			asteroid_speed = temp;
-		n = CDR(n);
+			if (i == 0)
+				num_asteroids = temp;
+			else
+				asteroid_speed = temp;
+			n = CDR(n);
+		}
 	}
 
 	int debris1 = -1;
@@ -15480,14 +15544,11 @@ void sexp_set_debris_field(int n)
 		n = CDR(n);
 	}
 
-	if ((debris1 == -1) && (debris2 == -1) && (debris3 == -1))
-		return;
-
 	int o_minx = -1000, o_miny = -1000, o_minz = -1000;
 	int o_maxx = 1000, o_maxy = 1000, o_maxz = 1000;
-	if (n >= 0) {
-		for (int i = 0; i < 6; i++) {
+	for (int i = 0; i < 6; i++) {
 
+		if (n >= 0) {
 			int temp = eval_num(n, is_nan, is_nan_forever);
 			if (is_nan || is_nan_forever)
 				return;
@@ -15508,9 +15569,7 @@ void sexp_set_debris_field(int n)
 		}
 	}
 
-	if (num_asteroids == 0) {
-		return;
-	} else if (num_asteroids > MAX_ASTEROIDS) {
+	if (num_asteroids > MAX_ASTEROIDS) {
 		num_asteroids = MAX_ASTEROIDS;
 	}
 
@@ -25214,6 +25273,59 @@ int sexp_is_in_mission(int node)
 	return SEXP_TRUE;
 }
 
+int sexp_has_armor_type(int node)
+{
+
+	// get ship from sexp
+	auto ship_entry = eval_ship(node);
+	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+		return SEXP_NAN;
+	if (ship_entry->status == ShipStatus::EXITED)
+		return SEXP_NAN_FOREVER;
+
+	ship* shipp = ship_entry->shipp;
+	node = CDR(node);
+
+	// get armor from sexp
+	int armor;
+	if (!stricmp(SEXP_NONE_STRING, CTEXT(node))) {
+		armor = -1;
+	} else {
+		armor = armor_type_get_idx(CTEXT(node));
+
+		//warn and return if the armor is not found
+		if (armor < 0) {
+			Warning(LOCATION, "Armor %s is not a valid entry in armor.tbl!", CTEXT(node));
+			return SEXP_NAN;
+		}
+	}
+	node = CDR(node);
+
+	// get the armor to check against
+	int currentArmor = -1;
+
+	if (!stricmp(SEXP_HULL_STRING, CTEXT(node))) {
+		currentArmor = shipp->armor_type_idx;
+	} else if (!stricmp(SEXP_SHIELD_STRING, CTEXT(node))) {
+		currentArmor = shipp->shield_armor_type_idx;
+	} else {
+		// get the subsystem
+		ship_subsys* ss = ship_get_subsys(shipp, CTEXT(node));
+
+		if (ss == nullptr) {
+			Warning(LOCATION, "Subsystem %s not found on ship %s", CTEXT(node), shipp->ship_name);
+			return SEXP_NAN;
+		}
+
+		currentArmor = ss->armor_type_idx;
+	}
+
+	if (currentArmor == armor)
+		return SEXP_TRUE;
+
+	return SEXP_FALSE;
+}
+
 int sexp_is_docked(int node)
 {
 	object *host_objp = nullptr;
@@ -26229,6 +26341,10 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_is_in_mission(node);
 				break;
 
+			case OP_HAS_ARMOR_TYPE:
+				sexp_val = sexp_has_armor_type(node);
+				break;
+
 			case OP_IS_DOCKED:
 				sexp_val = sexp_is_docked(node);
 				break;
@@ -26744,6 +26860,11 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			case OP_HUD_FORCE_SENSOR_STATIC:
 				sexp_hud_force_static(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			case OP_HUD_FORCE_EMP_EFFECT:
+				sexp_hud_force_emp(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -28802,6 +28923,7 @@ int query_operator_return_type(int op)
 		case OP_DIRECTIVE_VALUE:
 		case OP_IS_IN_BOX:
 		case OP_IS_IN_MISSION:
+		case OP_HAS_ARMOR_TYPE:
 		case OP_IS_DOCKED:
 		case OP_PLAYER_IS_CHEATING_BASTARD:
 		case OP_ARE_SHIP_FLAGS_SET:
@@ -29154,6 +29276,7 @@ int query_operator_return_type(int op)
 		case OP_HUD_SET_MAX_TARGETING_RANGE:
 		case OP_HUD_CLEAR_MESSAGES:
 		case OP_HUD_FORCE_SENSOR_STATIC:
+		case OP_HUD_FORCE_EMP_EFFECT:
 		case OP_SHIP_CHANGE_ALT_NAME:
 		case OP_SHIP_CHANGE_CALLSIGN:
 		case OP_SET_DEATH_MESSAGE:
@@ -29542,7 +29665,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_TURRET_PROTECT_SHIP:
 		case OP_TURRET_UNPROTECT_SHIP:
 			if (argnum == 0)
-				return OPF_STRING;
+				return OPF_TURRET_TYPE;
 			else
 				return OPF_SHIP;
 
@@ -30045,6 +30168,14 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_IS_IN_MISSION:
 			return OPF_STRING;
 
+		case OP_HAS_ARMOR_TYPE:
+			if (argnum == 0)
+				return OPF_SHIP;
+			else if (argnum == 1)
+				return OPF_ARMOR_TYPE;
+			else
+				return OPF_SUBSYSTEM;
+
 		case OP_IS_DOCKED:
 			return OPF_SHIP;
 
@@ -30435,6 +30566,12 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_HUD_FORCE_SENSOR_STATIC:
 			return OPF_BOOL;
+
+		case OP_HUD_FORCE_EMP_EFFECT:
+			if (argnum < 2)
+				return OPF_NUMBER;
+			else
+				return OPF_MESSAGE_OR_STRING;
 
 		case OP_PLAYER_USE_AI:
 		case OP_PLAYER_NOT_USE_AI:
@@ -32470,6 +32607,9 @@ const char *sexp_error_message(int num)
 		case SEXP_CHECK_INVALID_TURRET_TARGET_ORDER:
 			return "Invalid turret target order";
 
+		case SEXP_CHECK_INVALID_TURRET_TYPE:
+			return "Invalid turret type";
+
 		case SEXP_CHECK_INVALID_ARMOR_TYPE:
 			return "Invalid armor type";
 
@@ -33700,6 +33840,7 @@ int get_category(int op_id)
 		case OP_GET_NUM_COUNTERMEASURES:
 		case OP_IS_IN_BOX:
 		case OP_IS_IN_MISSION:
+		case OP_HAS_ARMOR_TYPE:
 		case OP_ARE_SHIP_FLAGS_SET:
 		case OP_TURRET_GET_PRIMARY_AMMO:
 		case OP_TURRET_GET_SECONDARY_AMMO:
@@ -34102,6 +34243,7 @@ int get_category(int op_id)
 		case OP_ALTER_WING_FLAG:
 		case OP_TOGGLE_ASTEROID_FIELD:
 		case OP_HUD_FORCE_SENSOR_STATIC:
+		case OP_HUD_FORCE_EMP_EFFECT:
 		case OP_SET_GRAVITY_ACCEL:
 		case OP_SET_ORDER_ALLOWED_TARGET:
 		case OP_SET_ASTEROID_FIELD:
@@ -34465,6 +34607,7 @@ int get_subcategory(int op_id)
 		case OP_HUD_CLEAR_MESSAGES:
 		case OP_HUD_SET_MAX_TARGETING_RANGE:
 		case OP_HUD_FORCE_SENSOR_STATIC:
+		case OP_HUD_FORCE_EMP_EFFECT:
 			return CHANGE_SUBCATEGORY_HUD;
 
 		case OP_NAV_ADD_WAYPOINT:
@@ -34635,6 +34778,7 @@ int get_subcategory(int op_id)
 		case OP_GET_THROTTLE_SPEED:
 		case OP_IS_FACING:
 		case OP_IS_IN_MISSION:
+		case OP_HAS_ARMOR_TYPE:
 		case OP_IS_DOCKED:
 		case OP_NAV_ISLINKED:
 		case OP_ARE_SHIP_FLAGS_SET:
@@ -35614,6 +35758,13 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"for ships created with ship-create, as those ships will not have used the conventional ship arrival list.\r\n\r\n"
 		"Takes 1 or more string arguments, which are checked against the ship list.  (If more than 1 argument is specified, the sexp will only evaluate to true if all ships "
 		"are in the mission simultaneously.)" },
+
+	{ OP_HAS_ARMOR_TYPE, "has-armor-type (Status operator)\r\n"
+		"\tChecks if a given ship has a specific armor type.\r\n\r\n"
+		"Takes 3 arguments...\r\n"
+		"\t1:\tThe ship to check\r\n"
+		"\t2:\tThe armor type to check\r\n"
+		"\t3:\tThe subsystem armor to check" },
 
 	{ OP_IS_DOCKED, "Is-Docked (Status operator)\r\n"
 		"\tChecks whether the specified ships are currently docked.  This sexp is different from has-docked-delay, which will return true if the ships have docked at "
@@ -39043,6 +39194,14 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tActivates or deactivates hud static as if sensors are damaged."
 		"Takes 1 Argument...\r\n"
 		"\t1:\tBoolean, whether or not to enable sensor static\r\n"
+	},
+
+	{OP_HUD_FORCE_EMP_EFFECT, "hud-force-emp-effect\r\n"
+		"\tActivates or deactivates emp effect for the player."
+		"Takes 2 or more Arguments...\r\n"
+		"\t1:\tNumber, emp intensity (0 to 500)\r\n"
+		"\t2:\tNumber, emp duration in milliseconds\r\n"
+		"\t3:\tString or message to display. \"none\" to display nothing. Defaults to \"Emp\"\r\n"
 	},
 
 	{OP_ADD_TO_COLGROUP, "add-to-collision-group\r\n"

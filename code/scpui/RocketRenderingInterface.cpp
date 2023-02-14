@@ -22,6 +22,7 @@
 #include "graphics/2d.h"
 #include "graphics/generic.h"
 #include "graphics/material.h"
+#include "mod_table/mod_table.h"
 #include "tracing/categories.h"
 #include "tracing/tracing.h"
 #define BMPMAN_INTERNAL
@@ -198,7 +199,8 @@ bool RocketRenderingInterface::LoadTexture(TextureHandle& texture_handle, Vector
 
 	std::unique_ptr<Texture> tex(new Texture());
 	// If there is a file that ends with an animation extension, try to load that
-	if (generic_anim_init_and_stream(&tex->animation, filename.c_str(), BM_TYPE_NONE, true) == 0) {
+	if (generic_anim_init_and_stream(&tex->animation, filename.c_str(), BM_TYPE_NONE, SCPUI_loads_hi_res_animations) ==
+		0) {
 		tex->is_animation = true;
 
 		texture_dimensions.x = tex->animation.width;
