@@ -35,6 +35,7 @@ GLuint Scene_position_texture;
 GLuint Scene_normal_texture;
 GLuint Scene_specular_texture;
 GLuint Scene_emissive_texture;
+GLuint Scene_composite_texture;
 GLuint Scene_luminance_texture;
 GLuint Scene_effect_texture;
 GLuint Scene_depth_texture;
@@ -221,6 +222,24 @@ void opengl_setup_scene_textures()
 	opengl_set_object_label(GL_TEXTURE, Scene_emissive_texture, "Scene Emissive texture");
 
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT4, GL_TEXTURE_2D, Scene_emissive_texture, 0);
+
+	// setup compositing render texture
+	glGenTextures(1, &Scene_composite_texture);
+
+	GL_state.Texture.SetActiveUnit(0);
+	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+	GL_state.Texture.Enable(Scene_composite_texture);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, Scene_texture_width, Scene_texture_height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+	opengl_set_object_label(GL_TEXTURE, Scene_composite_texture, "Scene Emissive texture");
+
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT6, GL_TEXTURE_2D, Scene_composite_texture, 0);
 
 	//Set up luminance texture (used as input for FXAA)
 	// also used as a light accumulation buffer during the deferred pass

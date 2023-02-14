@@ -1481,6 +1481,10 @@ static int bm_load_image_data(int handle, int bpp, ushort flags, bool nodebug)
 			bm_lock_user(handle, bs, bmp, true_bpp, flags);
 			break;
 
+		case BM_TYPE_3D:
+			bm_lock_user(handle, bs, bmp, true_bpp, flags, false);
+			break;
+
 		default:
 			Warning(LOCATION, "Unsupported type in bm_lock -- %d\n", c_type);
 			return -1;
@@ -2462,7 +2466,7 @@ void bm_lock_tga(int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ushort flags
 	bm_convert_format(bmp, flags);
 }
 
-void bm_lock_user(int /*handle*/, bitmap_slot *bs, bitmap *bmp, int bpp, ushort flags) {
+void bm_lock_user(int /*handle*/, bitmap_slot *bs, bitmap *bmp, int bpp, ushort flags, bool convert) {
 	auto be = &bs->entry;
 
 	// Unload any existing data
@@ -2502,7 +2506,8 @@ void bm_lock_user(int /*handle*/, bitmap_slot *bs, bitmap *bmp, int bpp, ushort 
 		break;
 	}
 
-	bm_convert_format(bmp, flags);
+	if (convert)
+		bm_convert_format(bmp, flags);
 }
 
 int bm_make_render_target(int width, int height, int flags) {
