@@ -217,6 +217,12 @@ const std::shared_ptr<Hook<WeaponDeathConditions>> OnMissileDeath = Hook<WeaponD
 		{"Object", "object", "The object that the weapon hit - a ship, asteroid, or piece of debris.  Always set but could be invalid if there is no other object.  If this missile was destroyed by another weapon, the 'other object' will be invalid but the DestroyedByWeapon flag will be set."},
 	});
 
+const std::shared_ptr<Hook<>> OnAsteroidCreated = Hook<>::Factory("On Asteroid Created",
+	"Called when an asteroid has been created.",
+	{
+		{"Asteroid", "asteroid", "The asteroid that was created."},
+	});
+
 const std::shared_ptr<Hook<>> OnAsteroidDeath = Hook<>::Factory(
 	"On Asteroid Death", "Called when an asteroid has been destroyed.  Supersedes On Death for asteroids.",
 	{
