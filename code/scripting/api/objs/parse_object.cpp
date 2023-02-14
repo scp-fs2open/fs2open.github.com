@@ -471,6 +471,61 @@ ADE_FUNC(makeShipArrive, l_ParseObject, nullptr, "Causes this parsed ship to arr
 	return mission_maybe_make_ship_arrive(poh->getObject(), true) ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
 }
 
+ADE_VIRTVAR(CollisionGroups, l_ParseObject, "number", "Collision group data", "number", "Current set of collision groups. NOTE: This is a bitfield, NOT a normal number.")
+{
+	parse_object_h* poh = nullptr;
+	int id = 0;
+	if (!ade_get_args(L, "o|i", l_ParseObject.GetPtr(&poh), &id))
+		return ade_set_error(L, "i", 0);
+
+	if (!poh->isValid())
+		return ade_set_error(L, "i", 0);
+
+	//Set collision group data
+	if (ADE_SETTING_VAR)
+		poh->getObject()->collision_group_id = id;
+
+	return ade_set_args(L, "i", poh->getObject()->collision_group_id);
+}
+
+ADE_FUNC(addToCollisionGroup, l_ParseObject, "number group", "Adds this parsed ship to the specified collision group.  The group must be between 0 and 31, inclusive.", nullptr, "Returns nothing")
+{
+	parse_object_h* poh = nullptr;
+	int group;
+
+	if (!ade_get_args(L, "oi", l_ParseObject.GetPtr(&poh), &group))
+		return ADE_RETURN_NIL;
+
+	if (!poh->isValid())
+		return ADE_RETURN_NIL;
+
+	if (group >= 0 && group <= 31)
+		poh->getObject()->collision_group_id |= (1 << group);
+	else
+		Warning(LOCATION, "In addToCollisionGroup, group %d must be between 0 and 31, inclusive", group);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(removeFromCollisionGroup, l_ParseObject, "number group", "Removes this parsed ship from the specified collision group.  The group must be between 0 and 31, inclusive.", nullptr, "Returns nothing")
+{
+	parse_object_h* poh = nullptr;
+	int group;
+
+	if (!ade_get_args(L, "oi", l_ParseObject.GetPtr(&poh), &group))
+		return ADE_RETURN_NIL;
+
+	if (!poh->isValid())
+		return ADE_RETURN_NIL;
+
+	if (group >= 0 && group <= 31)
+		poh->getObject()->collision_group_id &= ~(1 << group);
+	else
+		Warning(LOCATION, "In removeFromCollisionGroup, group %d must be between 0 and 31, inclusive", group);
+
+	return ADE_RETURN_NIL;
+}
+
 parse_subsys_h::parse_subsys_h() = default;
 parse_subsys_h::parse_subsys_h(p_object* obj, int subsys_offset) : _obj(obj), _subsys_offset(subsys_offset) {}
 subsys_status* parse_subsys_h::getSubsys() const { return &Subsys_status[_obj->subsys_index + _subsys_offset]; }

@@ -324,7 +324,7 @@ ADE_FUNC(getBreedName, l_Object, NULL, "Gets object type", "string", "Object typ
 	return ade_set_args(L, "s", Object_type_names[objh->objp->type]);
 }
 
-ADE_VIRTVAR(CollisionGroups, l_Object, "number", "Collision group data", "number", "Current collision group signature. NOTE: This is a bitfield, NOT a normal number.")
+ADE_VIRTVAR(CollisionGroups, l_Object, "number", "Collision group data", "number", "Current set of collision groups. NOTE: This is a bitfield, NOT a normal number.")
 {
 	object_h *objh = NULL;
 	int id = 0;
@@ -355,6 +355,8 @@ ADE_FUNC(addToCollisionGroup, l_Object, "number group", "Adds this object to the
 
 	if (group >= 0 && group <= 31)
 		objh->objp->collision_group_id |= (1 << group);
+	else
+		Warning(LOCATION, "In addToCollisionGroup, group %d must be between 0 and 31, inclusive", group);
 
 	return ADE_RETURN_NIL;
 }
@@ -372,6 +374,8 @@ ADE_FUNC(removeFromCollisionGroup, l_Object, "number group", "Removes this objec
 
 	if (group >= 0 && group <= 31)
 		objh->objp->collision_group_id &= ~(1 << group);
+	else
+		Warning(LOCATION, "In removeFromCollisionGroup, group %d must be between 0 and 31, inclusive", group);
 
 	return ADE_RETURN_NIL;
 }
