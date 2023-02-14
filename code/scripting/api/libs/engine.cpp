@@ -68,7 +68,7 @@ ADE_FUNC(addHook,
 			LuaError(L, "Hook '%s' is deprecated since version %s and cannot be used if the mod targets that version or higher!", action_hook->getHookName().c_str(), gameversion::format_version(deprecation.deprecatedSince).c_str());
 		}
 		else {
-			Warning(LOCATION, "Hook '%s' is deprecated from version %s should be replaced!", action_hook->getHookName().c_str(), gameversion::format_version(deprecation.deprecatedSince).c_str());
+			Warning(LOCATION, "Hook '%s' is deprecated from version %s and should be replaced!", action_hook->getHookName().c_str(), gameversion::format_version(deprecation.deprecatedSince).c_str());
 			shownWarn = true;
 		}
 		if (override_func.isValid()) {
@@ -79,7 +79,7 @@ ADE_FUNC(addHook,
 				LuaError(L, "Overriding Hook '%s' is deprecated since version %s and cannot be used if the mod targets that version or higher!", action_hook->getHookName().c_str(), gameversion::format_version(deprecation.deprecatedSince).c_str());
 			}
 			else if (!shownWarn) {
-				Warning(LOCATION, "Overriding Hook '%s' is deprecated from version %s should be replaced!", action_hook->getHookName().c_str(), gameversion::format_version(deprecation.deprecatedSince).c_str());
+				Warning(LOCATION, "Overriding Hook '%s' is deprecated from version %s and should be replaced!", action_hook->getHookName().c_str(), gameversion::format_version(deprecation.deprecatedSince).c_str());
 			}
 		}
 	}

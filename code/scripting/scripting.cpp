@@ -780,7 +780,7 @@ void script_state::ParseGlobalChunk(ConditionalActions hookType, const char* deb
 				error_display(1, "Hook '%s' is deprecated since version %s and cannot be used if the mod targets that version or higher!", parentHook->getHookName().c_str(), gameversion::format_version(deprecation.deprecatedSince).c_str());
 			}
 			else {
-				error_display(0, "Hook '%s' is deprecated from version %s should be replaced!", parentHook->getHookName().c_str(), gameversion::format_version(deprecation.deprecatedSince).c_str());
+				error_display(0, "Hook '%s' is deprecated from version %s and should be replaced!", parentHook->getHookName().c_str(), gameversion::format_version(deprecation.deprecatedSince).c_str());
 				shownWarn = true;
 			}
 		}
@@ -792,7 +792,7 @@ void script_state::ParseGlobalChunk(ConditionalActions hookType, const char* deb
 				error_display(1, "Overriding Hook '%s' is deprecated since version %s and cannot be used if the mod targets that version or higher!", parentHook->getHookName().c_str(), gameversion::format_version(deprecation.deprecatedSince).c_str());
 			}
 			else if (!shownWarn) {
-				error_display(0, "Overriding Hook '%s' is deprecated from version %s should be replaced!", parentHook->getHookName().c_str(), gameversion::format_version(deprecation.deprecatedSince).c_str());
+				error_display(0, "Overriding Hook '%s' is deprecated from version %s and should be replaced!", parentHook->getHookName().c_str(), gameversion::format_version(deprecation.deprecatedSince).c_str());
 			}
 		}
 	}
@@ -880,7 +880,7 @@ bool script_state::ParseCondition(const char *filename)
 					error_display(1, "Hook '%s' is deprecated since version %s and cannot be used if the mod targets that version or higher!", currHook->getHookName().c_str(), gameversion::format_version(deprecation.deprecatedSince).c_str());
 				}
 				else {
-					error_display(0, "Hook '%s' is deprecated from version %s should be replaced!", currHook->getHookName().c_str(), gameversion::format_version(deprecation.deprecatedSince).c_str());
+					error_display(0, "Hook '%s' is deprecated from version %s and should be replaced!", currHook->getHookName().c_str(), gameversion::format_version(deprecation.deprecatedSince).c_str());
 					shownWarn = true;
 				}
 			}
@@ -892,7 +892,7 @@ bool script_state::ParseCondition(const char *filename)
 					error_display(1, "Overriding Hook '%s' is deprecated since version %s and cannot be used if the mod targets that version or higher!", currHook->getHookName().c_str(), gameversion::format_version(deprecation.deprecatedSince).c_str());
 				}
 				else if(!shownWarn) {
-					error_display(0, "Overriding Hook '%s' is deprecated from version %s should be replaced!", currHook->getHookName().c_str(), gameversion::format_version(deprecation.deprecatedSince).c_str());
+					error_display(0, "Overriding Hook '%s' is deprecated from version %s and should be replaced!", currHook->getHookName().c_str(), gameversion::format_version(deprecation.deprecatedSince).c_str());
 				}
 			}
 		}
