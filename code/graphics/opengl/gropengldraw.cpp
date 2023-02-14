@@ -514,8 +514,8 @@ void gr_opengl_scene_texture_begin()
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	} else {
-		GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4 };
-		glDrawBuffers(5, buffers);
+		GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4, GL_COLOR_ATTACHMENT6 };
+		glDrawBuffers(6, buffers);
 
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -972,8 +972,9 @@ void gr_opengl_stop_decal_pass() {
 		GL_COLOR_ATTACHMENT2,
 		GL_COLOR_ATTACHMENT3,
 		GL_COLOR_ATTACHMENT4,
+		GL_COLOR_ATTACHMENT6,
 	};
-	glDrawBuffers(5, buffers2);
+	glDrawBuffers(6, buffers2);
 }
 
 void gr_opengl_calculate_irrmap()

@@ -80,6 +80,7 @@ void gr_opengl_deferred_lighting_begin(bool clearNonColorBufs)
 		glClearBufferfv(GL_COLOR, 1, black);
 		glClearBufferfv(GL_COLOR, 2, black);
 		glClearBufferfv(GL_COLOR, 3, black);
+		glClearBufferfv(GL_COLOR, 5, black);
 	}
 }
 
