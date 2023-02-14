@@ -24,21 +24,20 @@ class object;
 #define NUM_MEDALS_FS2		18
 #define NUM_MEDALS_FS1		16
 
-#define NUM_RANKS				10
+//Ranks are no longer limited to the retail 10 and checks are against index position rather than arbitrary title - Mjn
+//#define RANK_ENSIGN				0
+//#define RANK_LT_JUNIOR			1
+//#define RANK_LT					2
+//#define RANK_LT_CMDR				3
+//#define RANK_CMDR					4
+//#define RANK_CAPTAIN				5
+//#define RANK_COMMODORE			6
+//#define RANK_REAR_ADMIRAL			7
+//#define RANK_VICE_ADMIRAL			8
+//#define RANK_ADMIRAL  			9
 
-#define RANK_ENSIGN				0
-#define RANK_LT_JUNIOR			1
-#define RANK_LT					2
-#define RANK_LT_CMDR				3
-#define RANK_CMDR					4
-#define RANK_CAPTAIN				5
-#define RANK_COMMODORE			6
-#define RANK_REAR_ADMIRAL		7
-#define RANK_VICE_ADMIRAL		8
-#define RANK_ADMIRAL  			9
-
-#define MAX_FREESPACE1_RANK	RANK_COMMODORE
-#define MAX_FREESPACE2_RANK	RANK_ADMIRAL
+//#define MAX_FREESPACE1_RANK	RANK_COMMODORE
+//#define MAX_FREESPACE2_RANK	RANK_ADMIRAL
 
 
 /*
@@ -141,10 +140,12 @@ public:
 	bool operator!=(const scoring_struct& rhs) const;
 };
 
-extern rank_stuff Ranks[NUM_RANKS];
+extern SCP_vector<rank_stuff> Ranks;
 extern traitor_stuff Traitor;
 
-void parse_rank_tbl();
+int verify_rank(int rank);
+
+void rank_init();
 void parse_traitor_tbl();
 void scoring_close();
 
