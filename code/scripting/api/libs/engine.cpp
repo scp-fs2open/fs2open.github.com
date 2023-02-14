@@ -64,7 +64,7 @@ ADE_FUNC(addHook,
 		if (deprecation.level_hook == HookDeprecationOptions::DeprecationLevel::LEVEL_ERROR) {
 			LuaError(L, "Hook '%s' is removed since version %s and cannot be used!", action_hook->getHookName().c_str(), gameversion::format_version(deprecation.deprecatedSince).c_str());
 		}
-		else if (deprecation.deprecatedSince <= Targeted_version) {
+		else if (mod_supports_version(deprecation.deprecatedSince)) {
 			LuaError(L, "Hook '%s' is deprecated since version %s and cannot be used if the mod targets that version or higher!", action_hook->getHookName().c_str(), gameversion::format_version(deprecation.deprecatedSince).c_str());
 		}
 		else {
@@ -75,7 +75,7 @@ ADE_FUNC(addHook,
 			if (deprecation.level_override == HookDeprecationOptions::DeprecationLevel::LEVEL_ERROR) {
 				LuaError(L, "Overriding Hook '%s' is removed since version %s and cannot be used!", action_hook->getHookName().c_str(), gameversion::format_version(deprecation.deprecatedSince).c_str());
 			}
-			else if (deprecation.deprecatedSince <= Targeted_version) {
+			else if (mod_supports_version(deprecation.deprecatedSince)) {
 				LuaError(L, "Overriding Hook '%s' is deprecated since version %s and cannot be used if the mod targets that version or higher!", action_hook->getHookName().c_str(), gameversion::format_version(deprecation.deprecatedSince).c_str());
 			}
 			else if (!shownWarn) {

@@ -776,7 +776,7 @@ void script_state::ParseGlobalChunk(ConditionalActions hookType, const char* deb
 			if (deprecation.level_hook == HookDeprecationOptions::DeprecationLevel::LEVEL_ERROR) {
 				error_display(1, "Hook '%s' is removed since version %s and cannot be used!", parentHook->getHookName().c_str(), gameversion::format_version(deprecation.deprecatedSince).c_str());
 			}
-			else if (deprecation.deprecatedSince <= Targeted_version) {
+			else if (mod_supports_version(deprecation.deprecatedSince)) {
 				error_display(1, "Hook '%s' is deprecated since version %s and cannot be used if the mod targets that version or higher!", parentHook->getHookName().c_str(), gameversion::format_version(deprecation.deprecatedSince).c_str());
 			}
 			else {
@@ -788,7 +788,7 @@ void script_state::ParseGlobalChunk(ConditionalActions hookType, const char* deb
 			if (deprecation.level_override == HookDeprecationOptions::DeprecationLevel::LEVEL_ERROR) {
 				error_display(1, "Overriding Hook '%s' is removed since version %s and cannot be used!", parentHook->getHookName().c_str(), gameversion::format_version(deprecation.deprecatedSince).c_str());
 			}
-			else if (deprecation.deprecatedSince <= Targeted_version) {
+			else if (mod_supports_version(deprecation.deprecatedSince)) {
 				error_display(1, "Overriding Hook '%s' is deprecated since version %s and cannot be used if the mod targets that version or higher!", parentHook->getHookName().c_str(), gameversion::format_version(deprecation.deprecatedSince).c_str());
 			}
 			else if (!shownWarn) {
@@ -876,7 +876,7 @@ bool script_state::ParseCondition(const char *filename)
 				if (deprecation.level_hook == HookDeprecationOptions::DeprecationLevel::LEVEL_ERROR) {
 					error_display(1, "Hook '%s' is removed since version %s and cannot be used!", currHook->getHookName().c_str(), gameversion::format_version(deprecation.deprecatedSince).c_str());
 				}
-				else if (deprecation.deprecatedSince <= Targeted_version) {
+				else if (mod_supports_version(deprecation.deprecatedSince)) {
 					error_display(1, "Hook '%s' is deprecated since version %s and cannot be used if the mod targets that version or higher!", currHook->getHookName().c_str(), gameversion::format_version(deprecation.deprecatedSince).c_str());
 				}
 				else {
@@ -888,7 +888,7 @@ bool script_state::ParseCondition(const char *filename)
 				if (deprecation.level_override == HookDeprecationOptions::DeprecationLevel::LEVEL_ERROR) {
 					error_display(1, "Overriding Hook '%s' is removed since version %s and cannot be used!", currHook->getHookName().c_str(), gameversion::format_version(deprecation.deprecatedSince).c_str());
 				}
-				else if (deprecation.deprecatedSince <= Targeted_version) {
+				else if (mod_supports_version(deprecation.deprecatedSince)) {
 					error_display(1, "Overriding Hook '%s' is deprecated since version %s and cannot be used if the mod targets that version or higher!", currHook->getHookName().c_str(), gameversion::format_version(deprecation.deprecatedSince).c_str());
 				}
 				else if(!shownWarn) {

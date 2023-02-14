@@ -57,7 +57,6 @@ extern float Generic_pain_flash_factor;
 extern float Shield_pain_flash_factor;
 extern float Emp_pain_flash_factor;
 extern std::tuple<float, float, float> Emp_pain_flash_color;
-extern gameversion::version Targeted_version;
 extern SCP_string Window_title;
 extern SCP_string Mod_title;
 extern SCP_string Mod_version;
@@ -155,3 +154,5 @@ void mod_table_reset();
  * @return @c true if the mod specified support for this or a later version, @c false otherwise
  */
 bool mod_supports_version(int major, int minor, int build);
+
+bool mod_supports_version(const gameversion::version& version);
