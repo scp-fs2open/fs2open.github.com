@@ -143,24 +143,39 @@ void lcl_init(int lang_init)
 		}
 	}
 
-	// read the language from the registry
+	// read the language from the commandline and then registry
 	if (lang_init < 0) {
-		memset(lang_string, 0, 128);
-		// default to DEFAULT_LANGUAGE (which should be English so we don't have to put German text
-		// in tstrings in the #default section)
-		ret = os_config_read_string(nullptr, "Language", Lcl_languages[LCL_DEFAULT].lang_name);
-		strcpy_s(lang_string, ret);		
 
-		// look it up
 		lang = -1;
-		for(idx = 0; idx < (int)Lcl_languages.size(); idx++){
-			if(!stricmp(Lcl_languages[idx].lang_name, lang_string)){
-				lang = idx;
-				break;
+
+		// first try the commandline
+		if (!Cmdline_lang.empty()) {
+			for (idx = 0; idx < (int)Lcl_languages.size(); idx++) {
+				if (!stricmp(Lcl_languages[idx].lang_name, Cmdline_lang.c_str())) {
+					lang = idx;
+					break;
+				}
 			}
 		}
-		if(lang < 0){
-			lang = LCL_DEFAULT;
+
+		if (lang < 0) {
+			// now go the the registry if it's not found
+			memset(lang_string, 0, 128);
+			// default to DEFAULT_LANGUAGE (which should be English so we don't have to put German text
+			// in tstrings in the #default section)
+			ret = os_config_read_string(nullptr, "Language", Lcl_languages[LCL_DEFAULT].lang_name);
+			strcpy_s(lang_string, ret);
+
+			// look it up
+			for (idx = 0; idx < (int)Lcl_languages.size(); idx++) {
+				if (!stricmp(Lcl_languages[idx].lang_name, lang_string)) {
+					lang = idx;
+					break;
+				}
+			}
+			if (lang < 0) {
+				lang = LCL_DEFAULT;
+			}
 		}
 	} else {
 		Assert(lang_init == LCL_UNTRANSLATED || lang_init == LCL_RETAIL_HYBRID || (lang_init >= 0 && lang_init < (int)Lcl_languages.size()));
