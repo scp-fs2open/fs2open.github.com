@@ -320,7 +320,7 @@ int opengl_free_texture(tcache_slot_opengl *t)
 // bmap_h == height of source bitmap
 // tex_w == width of final texture
 // tex_h == height of final texture
-static int opengl_texture_set_level(int bitmap_handle, int bitmap_type, int bmap_w, int bmap_h, int tex_w, int tex_h,
+static int opengl_texture_set_level(int bitmap_handle, int bitmap_type, int bmap_w, int bmap_h, int tex_w, int tex_h, int tex_d,
                                     ubyte* data, tcache_slot_opengl* tSlot, int base_level, int mipmap_levels,
                                     bool resize, GLenum intFormat) {
 	GR_DEBUG_SCOPE("Upload single frame");
@@ -599,6 +599,12 @@ static int opengl_texture_set_level(int bitmap_handle, int bitmap_type, int bmap
 
 		break;
 	}
+	case TCACHE_TYPE_3DTEX:
+		//Just upload as-is.
+		glTexSubImage3D(tSlot->texture_target, 0, 0, 0, 0, tex_w, tex_h, tex_d,
+			glFormat, texFormat, bmp_data + doffset);
+		break;
+	
 
 	default: {
 		// if we aren't resizing then we can just use bmp_data directly
@@ -866,7 +872,7 @@ int opengl_create_texture(int bitmap_handle, int bitmap_type, tcache_slot_opengl
 		return 0;
 	}
 
-	int width, height;
+	int width, height, depth = 1;
 	bm_get_info(animation_begin, &width, &height, nullptr, nullptr);
 
 	auto start_slot = bm_get_gr_info<tcache_slot_opengl>(animation_begin, true);
@@ -887,7 +893,7 @@ int opengl_create_texture(int bitmap_handle, int bitmap_type, tcache_slot_opengl
 	auto base_level = 0;
 	auto resize = false;
 	if ( (Detail.hardware_textures < 4) && (bitmap_type != TCACHE_TYPE_AABITMAP) && (bitmap_type != TCACHE_TYPE_INTERFACE)
-		&& (bitmap_type != TCACHE_TYPE_CUBEMAP)
+		&& (bitmap_type != TCACHE_TYPE_CUBEMAP) && (bitmap_type != TCACHE_TYPE_3DTEX)
 		&& ((bitmap_type != TCACHE_TYPE_COMPRESSED) || ((bitmap_type == TCACHE_TYPE_COMPRESSED) && (max_levels > 1))) )
 	{
 		if (max_levels == 1) {
@@ -928,7 +934,7 @@ int opengl_create_texture(int bitmap_handle, int bitmap_type, tcache_slot_opengl
 	}
 
 	// if we ended up locking a texture that wasn't originally compressed then this should catch it
-	if ( bitmap_type != TCACHE_TYPE_CUBEMAP && bm_is_compressed(bitmap_handle) ) {
+	if ( bitmap_type != TCACHE_TYPE_CUBEMAP && bitmap_type != TCACHE_TYPE_3DTEX && bm_is_compressed(bitmap_handle) ) {
 		bitmap_type = TCACHE_TYPE_COMPRESSED;
 	}
 
@@ -937,6 +943,9 @@ int opengl_create_texture(int bitmap_handle, int bitmap_type, tcache_slot_opengl
 	tslot->texture_target = GL_TEXTURE_2D_ARRAY;
 	if ( bitmap_type == TCACHE_TYPE_CUBEMAP ) {
 		tslot->texture_target = GL_TEXTURE_CUBE_MAP;
+	}
+	else if ( bitmap_type == TCACHE_TYPE_3DTEX ) {
+		tslot->texture_target = GL_TEXTURE_3D;
 	}
 
 	if (tslot->texture_id == 0) {
@@ -971,6 +980,11 @@ int opengl_create_texture(int bitmap_handle, int bitmap_type, tcache_slot_opengl
 		allocated_mipmap_levels = get_num_mipmap_levels(width, height);
 
 		min_filter = GL_LINEAR_MIPMAP_LINEAR;
+	}
+	else if (mipmap_levels == 1 && bitmap_type == TCACHE_TYPE_3DTEX) {
+		//3D-Tex just filters linearly always
+		min_filter = GL_LINEAR;
+		bm_get_depth(bitmap_handle, &depth);
 	}
 
 	glTexParameteri(tslot->texture_target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -1024,7 +1038,7 @@ int opengl_create_texture(int bitmap_handle, int bitmap_type, tcache_slot_opengl
 		frame_slot->array_index = (uint32_t) (frame - animation_begin);
 
 		// call the helper
-		int ret_val   = opengl_texture_set_level(frame, bitmap_type, bmp->w, bmp->h, width, height, (ubyte*)bmp->data,
+		int ret_val   = opengl_texture_set_level(frame, bitmap_type, bmp->w, bmp->h, width, height, depth, (ubyte*)bmp->data,
                                                frame_slot, base_level, mipmap_levels, resize, intFormat);
 		frames_loaded = frames_loaded && ret_val;
 
@@ -1082,7 +1096,7 @@ int gr_opengl_tcache_set_internal(int bitmap_handle, int bitmap_type, float *u_s
 		GL_state.Texture.Enable(tex_unit, t->texture_target, t->texture_id);
 
 		if ( (t->wrap_mode != GL_texture_addressing) && (bitmap_type != TCACHE_TYPE_AABITMAP)
-			&& (bitmap_type != TCACHE_TYPE_INTERFACE) && (bitmap_type != TCACHE_TYPE_CUBEMAP) )
+			&& (bitmap_type != TCACHE_TYPE_INTERFACE) && (bitmap_type != TCACHE_TYPE_CUBEMAP))
 		{
 			// In this case we need to make sure that the texture unit is actually active
 			GL_state.Texture.SetActiveUnit(tex_unit);
@@ -1119,7 +1133,7 @@ int gr_opengl_tcache_set(int bitmap_handle, int bitmap_type, float *u_scale, flo
 	GL_CHECK_FOR_ERRORS("start of tcache_set()");
 
 	// set special type if it's so, needed to be right later, but cubemaps are special
-	if ( !(bitmap_type == TCACHE_TYPE_CUBEMAP) ) {
+	if ( !(bitmap_type == TCACHE_TYPE_CUBEMAP) && !(bitmap_type == TCACHE_TYPE_3DTEX) ) {
 		int type = bm_get_tcache_type(bitmap_handle);
 
 		if (type != TCACHE_TYPE_NORMAL) {
