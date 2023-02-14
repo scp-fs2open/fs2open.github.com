@@ -134,6 +134,7 @@ bool Hotkey_always_hide_hidden_ships;
 bool Use_weapon_class_sounds_for_hits_to_player;
 bool SCPUI_loads_hi_res_animations;
 bool Play_thruster_sounds_for_player;
+std::array<std::tuple<float, float>, 6> Fred_spacemouse_nonlinearity;
 
 static auto DiscordOption = options::OptionBuilder<bool>("Other.Discord", "Discord Presence", "Toggle Discord Rich Presence")
 							 .category("Other")
@@ -897,6 +898,21 @@ void parse_mod_table(const char *filename)
 			}
 		}
 
+		if (optional_string("$FRED spacemouse nonlinearities:")) {
+#define SPACEMOUSE_NONLINEARITY(name, id) \
+			if (optional_string("+" name " exponent:")) \
+				stuff_float(&std::get<0>(Fred_spacemouse_nonlinearity[id])); \
+			if (optional_string("+" name " scale:")) \
+				stuff_float(&std::get<1>(Fred_spacemouse_nonlinearity[id]));
+			SPACEMOUSE_NONLINEARITY("Sideways", 0);
+			SPACEMOUSE_NONLINEARITY("Forwards", 1);
+			SPACEMOUSE_NONLINEARITY("Upwards", 2);
+			SPACEMOUSE_NONLINEARITY("Pitch", 3);
+			SPACEMOUSE_NONLINEARITY("Bank", 4);
+			SPACEMOUSE_NONLINEARITY("Heading", 5);
+#undef SPACEMOUSE_NONLINEARITY
+		}
+
 		optional_string("#OTHER SETTINGS");
 
 		if (optional_string("$Fixed Turret Collisions:")) {
@@ -1310,6 +1326,14 @@ void mod_table_reset()
 	Use_weapon_class_sounds_for_hits_to_player = false;
 	SCPUI_loads_hi_res_animations = true;
 	Play_thruster_sounds_for_player = false;
+	Fred_spacemouse_nonlinearity = std::array<std::tuple<float, float>, 6>{{
+			std::tuple<float, float>{ 1.0f, 1.0f },
+			std::tuple<float, float>{ 1.0f, 1.0f },
+			std::tuple<float, float>{ 1.0f, 1.0f },
+			std::tuple<float, float>{ 1.0f, 1.0f },
+			std::tuple<float, float>{ 1.0f, 1.0f },
+			std::tuple<float, float>{ 1.0f, 1.0f }
+		}};
 }
 
 void mod_table_set_version_flags()
