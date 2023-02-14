@@ -143,7 +143,7 @@ const static SCP_vector<SpaceMouseDefinition> knownSpaceMice {
 	SpaceMouseDefinition { 0x256F, 0xC652, 15, SpaceMouseDefinition::Protocol::CONNEXION_3D_NEW }, //3Dconnexion Universal Receiver
 };
 
-std::unique_ptr<SpaceMouse> SpaceMouse::searchSpaceMouses(int pollingFrequency) {
+std::unique_ptr<SpaceMouse> SpaceMouse::searchSpaceMice(int pollingFrequency) {
 	std::unique_ptr<SpaceMouse> mouse = nullptr;
 	
 	hid_device_info* devices = hid_enumerate(0, 0);

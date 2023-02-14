@@ -56,7 +56,7 @@ namespace io
 			@param pollingFrequency The frequency any found space mice should be polled for HID updates, in ms.
 			@returns An optional SpaceMouse object, if found
 			*/
-			static std::unique_ptr<SpaceMouse> searchSpaceMouses(int pollingFrequency = 10);
+			static std::unique_ptr<SpaceMouse> searchSpaceMice(int pollingFrequency = 10);
 		};
 	}
 }
