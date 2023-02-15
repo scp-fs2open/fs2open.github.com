@@ -12,6 +12,10 @@ layout (std140) uniform genericData {
 	mat4 p_inv;
 	mat4 v_inv;
 	vec3 camera;
+	float zNear;
+	float zFar;
+	float steps;
+	float visibility;
 };
 
 void main()
@@ -31,22 +35,30 @@ void main()
 	vec3 tMin = min(t1, t2);
 	vec3 tMax = max(t1, t2);
 
+	float depth = 2.0 * zNear * zFar / (zFar + zNear - (2 * texture(depth, fragTexCoord.xy).x - 1) * (zFar - zNear));
+
 	float maxtMin = max(0,max(tMin.x, max(tMin.y, tMin.z)));
-	float mintMax = min(tMax.x, min(tMax.y, tMax.z));
+	float mintMax = min(depth, min(tMax.x, min(tMax.y, tMax.z)));
 
-	float steps = 10.0;
+	float cumOMAlpha = 1;
+	vec3 cumcolor = vec3(0, 0, 0);
+	float stepsize = visibility / steps;
+	float globalstepalpha = 1.0 / steps;
+	float stepalpha;
+	vec4 stepcolor;
 
-	float stepsize = max((mintMax - maxtMin) / steps, 0.5);
+	for(float step = maxtMin; step < mintMax; step += stepsize) {
+		stepcolor = texture(volume_tex, (camera + rayDirection * step) / 60.0 + 0.5);
+		stepalpha = globalstepalpha * stepcolor.a;
 
-	vec4 sum = vec4(0.0, 0.0, 0.0, 0.0);
+		cumcolor += stepalpha * cumOMAlpha * stepcolor.rgb;
+		cumOMAlpha *= 1.0 - stepalpha;
 
-	for(float step = maxtMin; step < mintMax; step += stepsize)
-	{
-		vec3 pos = (camera + rayDirection * step) / 60.0 + 0.5;
-		sum += texture(volume_tex, pos) / steps;
+		if(cumOMAlpha < 0.05)
+			break;
 	}
 
-	//color_in.r = max(1.0 - length(-camera - rayDirection * dot(-camera, rayDirection)) / 30.0, 0.0);
-	//fragOut0 = vec4(color_in.rgb * (1.0 - max(sum.r, max(sum.g, max(sum.b, sum.a)))), 1);
-	fragOut0 = vec4(color_in.rgb * (1.0 - sum.a) + sum.rgb * sum.a, 1);
+	cumcolor += cumOMAlpha * color_in.rgb;
+
+	fragOut0 = vec4(cumcolor, 1);
 }

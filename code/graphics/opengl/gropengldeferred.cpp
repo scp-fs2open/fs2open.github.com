@@ -360,7 +360,11 @@ void gr_opengl_deferred_lighting_finish()
 		opengl_set_generic_uniform_data<graphics::generic_data::volumetric_fog_data>([&](graphics::generic_data::volumetric_fog_data* data) {
 			vm_inverse_matrix4(&data->p_inv, &gr_projection_matrix);
 			vm_inverse_matrix4(&data->v_inv, &gr_view_matrix);
+			data->zNear = Min_draw_distance;
+			data->zFar = Max_draw_distance;
 			data->camera_pos = Eye_position;
+			data->steps = 10;
+			data->visibility = 15;
 			});
 
 		opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
