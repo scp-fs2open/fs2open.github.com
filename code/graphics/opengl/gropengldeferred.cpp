@@ -357,14 +357,19 @@ void gr_opengl_deferred_lighting_finish()
 		
 		gr_opengl_tcache_set(bitmap_handle, TCACHE_TYPE_3DTEX, &u_scale, &v_scale, &array_index, 3);
 
+		float steps = 15.0f;
+		float visibility = 7.0f;
+		float alphaLim = 0.01f;
+
 		opengl_set_generic_uniform_data<graphics::generic_data::volumetric_fog_data>([&](graphics::generic_data::volumetric_fog_data* data) {
 			vm_inverse_matrix4(&data->p_inv, &gr_projection_matrix);
 			vm_inverse_matrix4(&data->v_inv, &gr_view_matrix);
 			data->zNear = Min_draw_distance;
 			data->zFar = Max_draw_distance;
 			data->camera_pos = Eye_position;
-			data->steps = 10;
-			data->visibility = 15;
+			data->stepsize = visibility / steps;
+			data->globalstepalpha = -(powf(alphaLim, 1.0f / steps) - 1.0f);
+			data->alphalimit = alphaLim;
 			});
 
 		opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);

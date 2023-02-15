@@ -14,8 +14,9 @@ layout (std140) uniform genericData {
 	vec3 camera;
 	float zNear;
 	float zFar;
-	float steps;
-	float visibility;
+	float stepsize;
+	float globalstepalpha;
+	float alphalim;
 };
 
 void main()
@@ -42,8 +43,6 @@ void main()
 
 	float cumOMAlpha = 1;
 	vec3 cumcolor = vec3(0, 0, 0);
-	float stepsize = visibility / steps;
-	float globalstepalpha = 1.0 / steps;
 	float stepalpha;
 	vec4 stepcolor;
 
@@ -54,7 +53,7 @@ void main()
 		cumcolor += stepalpha * cumOMAlpha * stepcolor.rgb;
 		cumOMAlpha *= 1.0 - stepalpha;
 
-		if(cumOMAlpha < 0.05)
+		if(cumOMAlpha < alphalim)
 			break;
 	}
 

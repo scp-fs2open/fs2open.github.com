@@ -314,8 +314,7 @@ struct volumetric_fog_data {
 	matrix4 p_inv, v_inv;
 	vec3d camera_pos;
 	float zNear, zFar;
-	float steps, visibility;
-	float pad;
+	float stepsize, globalstepalpha, alphalimit;
 };
 
 struct blur_data {
