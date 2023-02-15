@@ -421,7 +421,7 @@ void os_cleanup()
 // window management -----------------------------------------------------------------
 
 // Returns 1 if app is not the foreground app.
-int os_foreground()
+bool os_foreground()
 {
 	return fAppActive;
 }
