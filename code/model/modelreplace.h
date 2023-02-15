@@ -99,6 +99,26 @@ public:
 	void process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const override;
 };
 
+class VirtualPOFOperationAddDockPoint : public VirtualPOFOperation {
+	SCP_string sourcedock;
+	tl::optional<SCP_string> renameDock;
+	tl::optional<SCP_string> targetParentSubsystem;
+	SCP_string appendingPOF;
+public:
+	VirtualPOFOperationAddDockPoint();
+	void process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const override;
+};
+
+class VirtualPOFOperationAddPath : public VirtualPOFOperation {
+	SCP_string sourcepath;
+	tl::optional<SCP_string> renamePath;
+	tl::optional<SCP_string> targetParentSubsystem;
+	SCP_string appendingPOF;
+public:
+	VirtualPOFOperationAddPath();
+	void process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const override;
+};
+
 class VirtualPOFOperationChangeData : public VirtualPOFOperation {
 	SCP_string submodel;
 	tl::optional<vec3d> setOffset = tl::nullopt;

@@ -16,7 +16,9 @@ static SCP_unordered_map<SCP_string, std::function<std::unique_ptr<VirtualPOFOpe
 	{"$Add Turret:", &make_unique<VirtualPOFOperationAddTurret> },
 	{"$Add Engine:", &make_unique<VirtualPOFOperationAddEngine> },
 	{"$Add Glowpoint:", &make_unique<VirtualPOFOperationAddGlowpoint> },
-	{"$Copy Weapon Bank:", &make_unique<VirtualPOFOperationAddWeapons> },
+	{"$Add Weapon Bank:", &make_unique<VirtualPOFOperationAddWeapons> },
+	{"$Add Dock Point:", &make_unique<VirtualPOFOperationAddDockPoint> },
+	{"$Add Path:", &make_unique<VirtualPOFOperationAddPath> },
 	{"$Rename Subobjects:", &make_unique<VirtualPOFOperationRenameSubobjects> },
 	{"$Set Subobject Data:", &make_unique<VirtualPOFOperationChangeData> },
 	{"$Set Header Data:", &make_unique<VirtualPOFOperationHeaderData> }
@@ -236,6 +238,25 @@ int reallocate_and_copy_array(T*& array, int& size, size_t to_add) {
 	for (int i = 0; i < size_before; i++)
 		array[i] = std::move(oldArray[i]);
 	delete[] oldArray;
+
+	return size_before;
+}
+
+template<typename T>
+int reallocate_and_copy_array_vmalloc(T*& array, int& size, size_t to_add) {
+	//Make sure to keep old data
+	T* oldArray = array;
+
+	int size_before = size;
+
+	//Realloc new submodel array of proper size
+	size += static_cast<int>(to_add);
+	array = (T*)vm_malloc(sizeof(T) * size);
+
+	//Copy over old data. Pointers in the struct can still point to old members, we will just delete the outer bsp_info array
+	for (int i = 0; i < size_before; i++)
+		array[i] = std::move(oldArray[i]);
+	vm_free(oldArray);
 
 	return size_before;
 }
@@ -772,6 +793,154 @@ void VirtualPOFOperationAddWeapons::process(polymodel* pm, model_read_deferred_t
 	}
 
 	banks[destbank] = object_copy_including_array_member<w_bank, false>(banks_src[sourcebank], &w_bank::num_slots, &w_bank::pnt, &w_bank::norm, &w_bank::external_model_angle_offset);
+}
+
+
+VirtualPOFOperationAddDockPoint::VirtualPOFOperationAddDockPoint() {
+	required_string("+POF to Add:");
+	stuff_string(appendingPOF, F_FILESPEC);
+
+	required_string("+Source Dock Point:");
+	stuff_string(sourcedock, F_NAME);
+
+	if (required_string("+Parent Submodel:")) {
+		SCP_string name;
+		stuff_string(name, F_NAME);
+		targetParentSubsystem = std::move(name);
+	}
+}
+	
+void VirtualPOFOperationAddDockPoint::process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const {
+	const polymodel* appendingPM = virtual_pof_build_cache(appendingPOF, depth)->pm();
+
+	int dockpoint = model_find_dock_name_index(appendingPM->id, sourcedock.c_str());
+	if (dockpoint < 0) {
+		Warning(LOCATION, "Could not find dockpoint %s on POF %s for virtual POF %s. Returning original POF", sourcedock.c_str(), appendingPOF.c_str(), virtualPof.name.c_str());
+		return;
+	}
+
+	const SCP_string& targetName = renameDock ? *renameDock : sourcedock;
+	if (model_find_dock_name_index(pm->id, targetName.c_str()) >= 0) {
+		Warning(LOCATION, "Dockpoint %s already exists on POF %s for virtual POF %s. Returning original POF", targetName.c_str(), pm->filename, virtualPof.name.c_str());
+		return;
+	}
+
+	if (appendingPM->docking_bays[dockpoint].parent_submodel >= 0 && !targetParentSubsystem) {
+		Warning(LOCATION, "Dockpoint %s must have a parent submodel specified for virtual POF %s. Returning original POF", sourcedock.c_str(), virtualPof.name.c_str());
+		return;
+	}
+
+	int submodel_index = -1;
+	if (targetParentSubsystem) {
+		submodel_index = model_find_submodel_index(pm, targetParentSubsystem->c_str());
+		if (submodel_index < 0) {
+			Warning(LOCATION, "Submodel %s does not exist on POF %s for virtual POF %s. Returning original POF", targetParentSubsystem->c_str(), pm->filename, virtualPof.name.c_str());
+			return;
+		}
+	}
+
+	for (int i = 0; i < appendingPM->docking_bays[dockpoint].num_spline_paths; i++) {
+		const auto& targetSplineName = appendingPM->paths[appendingPM->docking_bays[dockpoint].splines[i]].name;
+		for (int j = 0; j < pm->n_paths; j++) {
+			if (stricmp(targetSplineName, pm->paths[j].name) == 0) {
+				Warning(LOCATION, "Path %s already exists on POF %s for virtual POF %s. Returning original POF", targetSplineName, pm->filename, virtualPof.name.c_str());
+				return;
+			}
+		}
+	}
+
+	int destdock = reallocate_and_copy_array_vmalloc(pm->docking_bays, pm->n_docks, 1);
+	pm->docking_bays[destdock] = object_copy_including_array_member(appendingPM->docking_bays[dockpoint], &dock_bay::num_spline_paths, &dock_bay::splines);
+	int splinefrom = reallocate_and_copy_array_vmalloc(pm->paths, pm->n_paths, pm->docking_bays[destdock].num_spline_paths);
+	
+	for (int i = 0; i < pm->docking_bays[destdock].num_spline_paths; i++) {
+		pm->paths[i + splinefrom] = object_copy_including_array_member(appendingPM->paths[appendingPM->docking_bays[dockpoint].splines[i]], &model_path::nverts, &model_path::verts);
+		if (targetParentSubsystem) {
+			strcpy_s(pm->paths[i + splinefrom].parent_name, targetParentSubsystem->c_str());
+			pm->paths[i + splinefrom].parent_submodel = submodel_index;
+		}
+		pm->docking_bays[destdock].splines[i] = i + splinefrom;
+	}
+
+	if (targetParentSubsystem) {
+		pm->docking_bays[destdock].parent_submodel = submodel_index;
+	}
+
+	if (renameDock) {
+		strcpy_s(pm->docking_bays[destdock].name, renameDock->c_str());
+	}
+}
+
+
+VirtualPOFOperationAddPath::VirtualPOFOperationAddPath() {
+	required_string("+POF to Add:");
+	stuff_string(appendingPOF, F_FILESPEC);
+
+	required_string("+Source Path:");
+	stuff_string(sourcepath, F_NAME);
+
+	if (required_string("+Rename Path:")) {
+		SCP_string name;
+		stuff_string(name, F_NAME);
+		renamePath = std::move(name);
+	}
+
+	if (required_string("+Parent Submodel:")) {
+		SCP_string name;
+		stuff_string(name, F_NAME);
+		targetParentSubsystem = std::move(name);
+	}
+}
+
+void VirtualPOFOperationAddPath::process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const {
+	const polymodel* appendingPM = virtual_pof_build_cache(appendingPOF, depth)->pm();
+
+	int sourcePathNr = -1;
+	for (int i = 0; i < appendingPM->n_paths; i++) {
+		if (SCP_string_lcase_equal_to()(sourcepath, appendingPM->paths[i].name)) {
+			sourcePathNr = i;
+			break;
+		}
+	}
+
+	const SCP_string& targetName = renamePath ? *renamePath : sourcepath;
+	for (int i = 0; i < pm->n_paths; i++) {
+		if (SCP_string_lcase_equal_to()(targetName, pm->paths[i].name)) {
+			Warning(LOCATION, "Path %s already exists on POF %s for virtual POF %s. Returning original POF", targetName.c_str(), pm->filename, virtualPof.name.c_str());
+			return;
+		}
+	}
+
+	if (sourcePathNr < 0) {
+		Warning(LOCATION, "Could not find path %s on POF %s for virtual POF %s. Returning original POF", sourcepath.c_str(), appendingPOF.c_str(), virtualPof.name.c_str());
+		return;
+	}
+
+	if (appendingPM->paths[sourcePathNr].parent_submodel >= 0 && !targetParentSubsystem) {
+		Warning(LOCATION, "Path %s must have a parent submodel specified for virtual POF %s. Returning original POF", sourcepath.c_str(), virtualPof.name.c_str());
+		return;
+	}
+
+	int submodel_index = -1;
+	if (targetParentSubsystem) {
+		submodel_index = model_find_submodel_index(pm, targetParentSubsystem->c_str());
+		if (submodel_index < 0) {
+			Warning(LOCATION, "Submodel %s does not exist on POF %s for virtual POF %s. Returning original POF", targetParentSubsystem->c_str(), pm->filename, virtualPof.name.c_str());
+			return;
+		}
+	}
+
+	int destpath = reallocate_and_copy_array_vmalloc(pm->paths, pm->n_paths, 1);
+	pm->paths[destpath] = object_copy_including_array_member(appendingPM->paths[sourcePathNr], &model_path::nverts, &model_path::verts);
+
+	if (targetParentSubsystem) {
+		strcpy_s(pm->paths[destpath].parent_name, targetParentSubsystem->c_str());
+		pm->paths[destpath].parent_submodel = submodel_index;
+	}
+
+	if (renamePath) {
+		strcpy_s(pm->paths[destpath].name, renamePath->c_str());
+	}
 }
 
 
