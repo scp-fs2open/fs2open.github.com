@@ -909,6 +909,7 @@ void parse_mod_table(const char *filename)
 
 				Ignored_music_player_files.push_back(music_name);
 			}
+		}
 
 		if (optional_string("$FRED spacemouse nonlinearities:")) {
 #define SPACEMOUSE_NONLINEARITY(name, id) \
