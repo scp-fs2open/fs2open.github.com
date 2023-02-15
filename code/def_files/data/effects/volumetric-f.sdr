@@ -47,7 +47,9 @@ void main()
 	vec4 stepcolor;
 
 	for(float step = maxtMin; step < mintMax; step += stepsize) {
-		stepcolor = texture(volume_tex, (camera + rayDirection * step) / 60.0 + 0.5);
+		vec3 stepcolor_diffuse = texture(volume_tex, (camera + rayDirection * step) / 60.0 + 0.5);
+		vec3 stepcolor_emissive = vec3(0,0,0);
+		stepcolor = clamp(stepcolor_diffuse + stepcolor_emissive, 0, 1);
 		stepalpha = globalstepalpha * stepcolor.a;
 
 		cumcolor += stepalpha * cumOMAlpha * stepcolor.rgb;
