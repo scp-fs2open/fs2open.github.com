@@ -3157,53 +3157,9 @@ void model_load_texture(polymodel *pm, int i, char *file)
 	// -------------------------------------------------------------------------
 
 	// See if we need to compile a new shader for this material
-	int shader_flags = 0;
-
-	if (tbase->GetTexture() > 0)
-		shader_flags |= SDR_FLAG_MODEL_DIFFUSE_MAP;
-	if (tglow->GetTexture() > 0 && Cmdline_glow)
-		shader_flags |= SDR_FLAG_MODEL_GLOW_MAP;
-	if ((tspec->GetTexture() > 0 || tspecgloss->GetTexture() > 0) && Cmdline_spec)
-		shader_flags |= SDR_FLAG_MODEL_SPEC_MAP;
-	if (tnorm->GetTexture() > 0 && Cmdline_normal)
-		shader_flags |= SDR_FLAG_MODEL_NORMAL_MAP;
-	if (theight->GetTexture() > 0 && Cmdline_height)
-		shader_flags |= SDR_FLAG_MODEL_HEIGHT_MAP;
-	if (Cmdline_env) // always render envmaps, they contribue lightning no matter what textures are avaliable.
-		shader_flags |= SDR_FLAG_MODEL_ENV_MAP;
-	if (tmisc->GetTexture() > 0)
-		shader_flags |= SDR_FLAG_MODEL_MISC_MAP;
-	if (tambient->GetTexture() >0)
-		shader_flags |= SDR_FLAG_MODEL_AMBIENT_MAP;
-	
 	gr_maybe_create_shader(SDR_TYPE_MODEL, SDR_FLAG_MODEL_SHADOW_MAP);
+	gr_maybe_create_shader(SDR_TYPE_MODEL, 0);
 
-	shader_flags |= SDR_FLAG_MODEL_CLIP;
-
-	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_ANIMATED);
-	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_ANIMATED | SDR_FLAG_MODEL_FOG);
-
-	shader_flags |= SDR_FLAG_MODEL_DEFERRED;
-
-	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT);
-	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_FOG);
-
-	shader_flags &= ~SDR_FLAG_MODEL_DEFERRED;
-	shader_flags |= SDR_FLAG_MODEL_TRANSFORM;
-
-	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_ANIMATED);
-	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_ANIMATED | SDR_FLAG_MODEL_FOG);
-
-	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT);
-	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_FOG);
-
-	shader_flags |= SDR_FLAG_MODEL_DEFERRED;
-
-	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_ANIMATED);
-	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_ANIMATED | SDR_FLAG_MODEL_FOG);
-
-	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT);
-	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_FOG);
 }
 
 //returns the number of the pof tech model if specified, otherwise number of pof model
