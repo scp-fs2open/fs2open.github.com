@@ -1183,6 +1183,10 @@ void send_autopilot_msgID(int msgid)
 	if (msgid < 0 || msgid >= NP_NUM_MESSAGES)
 		return;
 
+	// bail out if message is not set
+	if (NavMsgs[msgid].message[0] == '\0')
+		return;
+
 	send_autopilot_msg(NavMsgs[msgid].message, NavMsgs[msgid].filename);
 }
 // ********************************************************************************************
@@ -1222,6 +1226,15 @@ void NavSystem_Init()
 	for (int i = 0; i < MAX_NAVPOINTS; i++)
 		Navs[i].clear();
 
+	//Initialize all these as empty strings so we can detect and bail out later -Mjn
+	for (int i = 0; i < NP_NUM_MESSAGES; i++)
+		NavMsgs[i].message[0] = '\0';
+
+	//Set defaults here before parsing
+	NavLinkDistance = 1000;
+	AutopilotMinEnemyDistance = 5000;
+	AutopilotMinAsteroidDistance = 1000;
+	LockWeaponsDuringAutopilot = false;
 	AutoPilotEngaged = false;
 	CurrentNav = -1;
 	audio_handle = -1;
@@ -1229,10 +1242,9 @@ void NavSystem_Init()
 	UseCutsceneBars = true;
 
 	// defaults... can be tabled or bound to mission later
-	if (cf_exists_full("autopilot.tbl", CF_TYPE_TABLES))
-		parse_autopilot_table("autopilot.tbl");
-	else
-		parse_autopilot_table(NULL);
+	parse_autopilot_table("autopilot.tbl");
+	
+	parse_modular_table("*-aplt.tbm", parse_autopilot_table);
 }
 
 // ********************************************************************************************
@@ -1243,10 +1255,16 @@ void parse_autopilot_table(const char *filename)
 
 	try
 	{
-		if (filename == NULL)
-			read_file_text_from_default(defaults_get_file("autopilot.tbl"));
-		else
+
+		if (!Parsing_modular_table) {
+			// if table doesn't exist, use the default table
+			if (cf_exists_full(filename, CF_TYPE_TABLES))
+				read_file_text(filename, CF_TYPE_TABLES);
+			else
+				read_file_text_from_default(defaults_get_file("autopilot.tbl"));
+		} else {
 			read_file_text(filename, CF_TYPE_TABLES);
+		}
 
 		reset_parse();
 
@@ -1254,23 +1272,17 @@ void parse_autopilot_table(const char *filename)
 		required_string("#Autopilot");
 
 		// autopilot link distance
-		required_string("$Link Distance:");
-		stuff_int(&NavLinkDistance);
+		if (optional_string("$Link Distance:"))
+			stuff_int(&NavLinkDistance);
 
 		if (optional_string("$Interrupt autopilot if enemy within distance:"))
 			stuff_int(&AutopilotMinEnemyDistance);
-		else
-			AutopilotMinEnemyDistance = 5000;
 
 		if (optional_string("$Interrupt autopilot if asteroid within distance:"))
 			stuff_int(&AutopilotMinAsteroidDistance);
-		else
-			AutopilotMinAsteroidDistance = 1000;
 
 		if (optional_string("$Lock Weapons During Autopilot:"))
 			stuff_boolean(&LockWeaponsDuringAutopilot);
-		else
-			LockWeaponsDuringAutopilot = false;
 
 		// optional no cutscene bars
 		if (optional_string("+No_Cutscene_Bars"))
@@ -1285,13 +1297,14 @@ void parse_autopilot_table(const char *filename)
 			"$Support Present:", "$Support Working:" };
 		for (int i = 0; i < NP_NUM_MESSAGES; i++)
 		{
-			required_string(msg_tags[i]);
+			if (optional_string(msg_tags[i])) {
 
-			required_string("+Msg:");
-			stuff_string(NavMsgs[i].message, F_MESSAGE, 256);
+				required_string("+Msg:");
+				stuff_string(NavMsgs[i].message, F_MESSAGE, 256);
 
-			required_string("+Snd File:");
-			stuff_string(NavMsgs[i].filename, F_NAME, 256);
+				required_string("+Snd File:");
+				stuff_string(NavMsgs[i].filename, F_NAME, 256);
+			}
 		}
 
 
