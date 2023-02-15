@@ -757,7 +757,7 @@ VirtualPOFOperationAddWeapons::VirtualPOFOperationAddWeapons() {
 		stuff_int(&destbank);	
 }
 
-void VirtualPOFOperationAddWeapons::process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const {
+void VirtualPOFOperationAddWeapons::process(polymodel* pm, model_read_deferred_tasks& /*deferredTasks*/, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const {
 	auto appendingPM = virtual_pof_build_cache(appendingPOF, depth);
 
 	w_bank*& banks = primary ? pm->gun_banks : pm->missile_banks;
@@ -810,7 +810,7 @@ VirtualPOFOperationAddDockPoint::VirtualPOFOperationAddDockPoint() {
 	}
 }
 	
-void VirtualPOFOperationAddDockPoint::process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const {
+void VirtualPOFOperationAddDockPoint::process(polymodel* pm, model_read_deferred_tasks& /*deferredTasks*/, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const {
 	const polymodel* appendingPM = virtual_pof_build_cache(appendingPOF, depth)->pm();
 
 	int dockpoint = model_find_dock_name_index(appendingPM->id, sourcedock.c_str());
@@ -892,7 +892,7 @@ VirtualPOFOperationAddPath::VirtualPOFOperationAddPath() {
 	}
 }
 
-void VirtualPOFOperationAddPath::process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const {
+void VirtualPOFOperationAddPath::process(polymodel* pm, model_read_deferred_tasks& /*deferredTasks*/, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const {
 	const polymodel* appendingPM = virtual_pof_build_cache(appendingPOF, depth)->pm();
 
 	int sourcePathNr = -1;
