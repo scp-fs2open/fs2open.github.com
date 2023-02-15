@@ -11,13 +11,19 @@ layout (binding = 3) uniform sampler3D volume_tex;
 layout (std140) uniform genericData {
 	mat4 p_inv;
 	mat4 v_inv;
+	mat4 p;
+	mat4 v;
 	vec3 camera;
 	float zNear;
+	vec3 cameraUp;
 	float zFar;
 	float stepsize;
 	float globalstepalpha;
 	float alphalim;
+	float emissiveSpreadFactor;
 };
+
+const float sqrt2_inv = inversesqrt(2);
 
 void main()
 {
@@ -25,6 +31,8 @@ void main()
     eyeDirection.w = 0;
     vec3 rayDirection = normalize((v_inv * eyeDirection).xyz);
 	
+	vec3 cameraRight = cross(rayDirection, cameraUp);
+
 	vec4 color_in = texture(composite, fragTexCoord.xy);
 
 	vec3 lCorner = vec3(-30, -30, -30);
@@ -42,17 +50,26 @@ void main()
 	float mintMax = min(depth, min(tMax.x, min(tMax.y, tMax.z)));
 
 	float cumOMAlpha = 1;
+	float cumnebdist = 0;
 	vec3 cumcolor = vec3(0, 0, 0);
 	float stepalpha;
-	vec4 stepcolor;
+	vec3 stepcolor;
 
 	for(float step = maxtMin; step < mintMax; step += stepsize) {
-		vec3 stepcolor_diffuse = texture(volume_tex, (camera + rayDirection * step) / 60.0 + 0.5);
+		vec4 stepcolor_diffuse = texture(volume_tex, (camera + rayDirection * step) / 60.0 + 0.5);
 		vec3 stepcolor_emissive = vec3(0,0,0);
-		stepcolor = clamp(stepcolor_diffuse + stepcolor_emissive, 0, 1);
-		stepalpha = globalstepalpha * stepcolor.a;
+		float stepcolor_alpha = stepcolor_diffuse.a;
 
-		cumcolor += stepalpha * cumOMAlpha * stepcolor.rgb;
+		//This is supposed to overlay lower mipmaps of the emissive texture depending on depth, making further away light sources bloom more in the nebula, but it doesn't seem to fetch lower LODs...
+		//Alternative ideas were to sample the emissive texture itself in a ring around the ray, but I didn't manage to properly calculate the sampler coordinates for that from the world pos of the ray
+		
+		//cumnebdist += stepcolor_alpha * stepsize;
+		//stepcolor_emissive += textureLod(emissive, fragTexCoord.xy, clamp(cumnebdist * emissiveSpreadFactor, 0, float(textureQueryLevels(emissive) - 1))).rgb * pow(1 - globalstepalpha, depth - step);
+
+		stepcolor = clamp(stepcolor_diffuse.rgb + stepcolor_emissive, 0, 1);
+		stepalpha = globalstepalpha * stepcolor_alpha;
+
+		cumcolor += stepalpha * cumOMAlpha * stepcolor;
 		cumOMAlpha *= 1.0 - stepalpha;
 
 		if(cumOMAlpha < alphalim)

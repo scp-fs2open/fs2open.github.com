@@ -310,12 +310,17 @@ struct fog_data {
 	float pad[1];
 };
 
+#pragma pack(push, 1)
 struct volumetric_fog_data {
-	matrix4 p_inv, v_inv;
+	matrix4 p_inv, v_inv, p, v;
 	vec3d camera_pos;
-	float zNear, zFar;
+	float zNear;
+	vec3d camera_up;
+	float zFar;
 	float stepsize, globalstepalpha, alphalimit;
+	float emissiveSpreadFactor;
 };
+#pragma pack(pop)
 
 struct blur_data {
 	float texSize;

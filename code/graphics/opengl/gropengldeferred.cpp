@@ -120,15 +120,6 @@ void gr_opengl_deferred_lighting_finish()
 
 	// Render on top of the composite buffer texture
 	glDrawBuffer(GL_COLOR_ATTACHMENT6);
-
-	GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_color_texture);
-	GL_state.Texture.Enable(1, GL_TEXTURE_2D, Scene_normal_texture);
-	GL_state.Texture.Enable(2, GL_TEXTURE_2D, Scene_position_texture);
-	GL_state.Texture.Enable(3, GL_TEXTURE_2D, Scene_specular_texture);
-	if (Shadow_quality != ShadowQuality::Disabled) {
-		GL_state.Texture.Enable(4, GL_TEXTURE_2D_ARRAY, Shadow_map_texture);
-	}
-
 	glReadBuffer(GL_COLOR_ATTACHMENT4);
 	glBlitFramebuffer(0,
 		0,
@@ -140,6 +131,17 @@ void gr_opengl_deferred_lighting_finish()
 		gr_screen.max_h,
 		GL_COLOR_BUFFER_BIT,
 		GL_NEAREST);
+
+	GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_emissive_texture);
+	glGenerateMipmap(GL_TEXTURE_2D);
+
+	GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_color_texture);
+	GL_state.Texture.Enable(1, GL_TEXTURE_2D, Scene_normal_texture);
+	GL_state.Texture.Enable(2, GL_TEXTURE_2D, Scene_position_texture);
+	GL_state.Texture.Enable(3, GL_TEXTURE_2D, Scene_specular_texture);
+	if (Shadow_quality != ShadowQuality::Disabled) {
+		GL_state.Texture.Enable(4, GL_TEXTURE_2D_ARRAY, Shadow_map_texture);
+	}
 	
 	// We need to use stable sorting here to make sure that the relative ordering of the same light types is the same as
 	// the rest of the code. Otherwise the shadow mapping would be applied while rendering the wrong light which would
@@ -358,18 +360,23 @@ void gr_opengl_deferred_lighting_finish()
 		gr_opengl_tcache_set(bitmap_handle, TCACHE_TYPE_3DTEX, &u_scale, &v_scale, &array_index, 3);
 
 		float steps = 15.0f;
-		float visibility = 7.0f;
-		float alphaLim = 0.01f;
+		float visibility = 7.5f;
+		float alphaLim = 0.001f;
+		float emissiveSpread = 4.0f;
 
 		opengl_set_generic_uniform_data<graphics::generic_data::volumetric_fog_data>([&](graphics::generic_data::volumetric_fog_data* data) {
 			vm_inverse_matrix4(&data->p_inv, &gr_projection_matrix);
 			vm_inverse_matrix4(&data->v_inv, &gr_view_matrix);
+			data->p = gr_projection_matrix;
+			data->v = gr_view_matrix;
 			data->zNear = Min_draw_distance;
 			data->zFar = Max_draw_distance;
 			data->camera_pos = Eye_position;
+			data->camera_up = Eye_matrix.vec.uvec;
 			data->stepsize = visibility / steps;
 			data->globalstepalpha = -(powf(alphaLim, 1.0f / steps) - 1.0f);
 			data->alphalimit = alphaLim;
+			data->emissiveSpreadFactor = emissiveSpread;
 			});
 
 		opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
