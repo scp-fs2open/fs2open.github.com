@@ -354,6 +354,7 @@ class sexp_tree: public QTreeWidget {
 	static sexp_list_item *get_listing_opf_sexp_containers(ContainerType con_type);
 	sexp_list_item *get_listing_opf_wing_formation();
 	sexp_list_item* check_for_dynamic_sexp_enum(int opf);
+	sexp_list_item* get_listing_opf_bolt_types();
 
 	// container modifier options for container data nodes
 	sexp_list_item *get_container_modifiers(int con_data_node) const;

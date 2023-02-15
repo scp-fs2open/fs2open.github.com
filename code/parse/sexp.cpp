@@ -764,6 +764,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "ship-vaporize",					OP_SHIP_VAPORIZE,						1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "ship-no-vaporize",				OP_SHIP_NO_VAPORIZE,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-explosion-option",			OP_SET_EXPLOSION_OPTION,				3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "create-bolt",					OP_CREATE_BOLT,							7,	8,			SEXP_ACTION_OPERATOR,	},	// MjnMixael
 	{ "explosion-effect",				OP_EXPLOSION_EFFECT,					11,	14,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "warp-effect",					OP_WARP_EFFECT,							12, 14,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "clear-weapons",					OP_CLEAR_WEAPONS,						0,	1,			SEXP_ACTION_OPERATOR,	},	// Karajorma
@@ -13436,6 +13437,37 @@ void sexp_set_explosion_option(int node)
 		shipp->special_exp_shockwave_speed = -1;
 		shipp->special_exp_deathroll_time = 0;
 	}
+}
+
+void sexp_create_bolt(int n)
+{
+	int bolt = get_bolt_type_by_name(CTEXT(n));
+
+	if (bolt < 0)
+		return;
+
+	float coords[6];
+	bool is_nan, is_nan_forever;
+	for (int i = 0; i <= 5; i++) {
+		n = CDR(n);
+		int buf = eval_num(n, is_nan, is_nan_forever);
+
+		if (is_nan || is_nan_forever)
+			return;
+
+		coords[i] = i2fl(buf);
+	}
+	n = CDR(n);
+
+	bool playSound = true;
+	
+	if (n >= 0)
+		playSound = eval_sexp(CDR(n));
+
+	vec3d origin = vm_vec_new(coords[0], coords[1], coords[2]);
+	vec3d dest = vm_vec_new(coords[3], coords[4], coords[5]);
+	
+	nebl_bolt(bolt, &origin, &dest, playSound);
 }
 
 // Goober5000
@@ -26910,7 +26942,13 @@ int eval_sexp(int cur_node, int referenced_node)
 			case OP_SET_ORDER_ALLOWED_TARGET:
 				sexp_set_order_allowed_for_target(node);
 				sexp_val = SEXP_TRUE;
-				break; 
+				break;
+
+			// MjnMixael
+			case OP_CREATE_BOLT:
+				sexp_create_bolt(node);
+				sexp_val = SEXP_TRUE;
+				break;
 
 			// Goober5000
 			case OP_EXPLOSION_EFFECT:
@@ -29239,6 +29277,7 @@ int query_operator_return_type(int op)
 		case OP_SET_SOUND_ENVIRONMENT:
 		case OP_UPDATE_SOUND_ENVIRONMENT:
 		case OP_ADJUST_AUDIO_VOLUME:
+		case OP_CREATE_BOLT:
 		case OP_EXPLOSION_EFFECT:
 		case OP_WARP_EFFECT:
 		case OP_SET_OBJECT_POSITION:
@@ -30595,6 +30634,14 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_PLAYER_USE_AI:
 		case OP_PLAYER_NOT_USE_AI:
 			return OPF_NONE;
+
+		case OP_CREATE_BOLT:
+			if (argnum == 0)
+				return OPF_BOLT_TYPE;
+			else if (argnum == 7)
+				return OPF_BOOL;
+			else
+				return OPF_NUMBER;
 
 		case OP_EXPLOSION_EFFECT:
 			if (argnum <= 2)
@@ -34008,6 +34055,7 @@ int get_category(int op_id)
 		case OP_CHANGE_SOUNDTRACK:
 		case OP_TECH_ADD_INTEL:
 		case OP_TECH_RESET_TO_DEFAULT:
+		case OP_CREATE_BOLT:
 		case OP_EXPLOSION_EFFECT:
 		case OP_WARP_EFFECT:
 		case OP_SET_OBJECT_FACING:
@@ -34715,6 +34763,7 @@ int get_subcategory(int op_id)
 		case OP_SHIP_VAPORIZE:
 		case OP_SHIP_NO_VAPORIZE:
 		case OP_SET_EXPLOSION_OPTION:
+		case OP_CREATE_BOLT:
 		case OP_EXPLOSION_EFFECT:
 		case OP_WARP_EFFECT:
 		case OP_CLEAR_WEAPONS:
@@ -36459,6 +36508,19 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"Use Add-Data to specify additional explosion options in repeating option-value pairs, just like Send-Message-List can have additional messages in source-priority-message-delay groups.\r\n\r\n"
 		"IMPORTANT: Each additional option in the list MUST HAVE two entries; any option without the two proper fields will be ignored, as will any successive options." },
 
+	// MjnMixael
+	{ OP_CREATE_BOLT, "create-bolt\r\n"
+		"\tCreates a lightning bolt at the specified location  "
+		"Takes 8 arguments...\r\n"
+		"\t1:  The bolt type to create\r\n"
+		"\t2:  Origin X\r\n"
+		"\t3:  Origin Y\r\n"
+		"\t4:  Origin Z\r\n"
+		"\t5:  Strike X\r\n"
+		"\t6:  Strike Y\r\n"
+		"\t7:  Strike Z\r\n"
+		"\t8:  (Optional) Whether or not to play the default lightning sounds. Defaults to true\r\n" },
+			
 	// Goober5000
 	{ OP_EXPLOSION_EFFECT, "explosion-effect\r\n"
 		"\tCauses an explosion at a given origin, with the given parameters.  "

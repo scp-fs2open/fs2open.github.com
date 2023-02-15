@@ -133,7 +133,8 @@ enum : int {
 	OPF_ASTEROID_DEBRIS,			// MjnMixael - Debris types as defined in asteroids.tbl
 	OPF_WING_FORMATION,				// Goober5000 - as defined in ships.tbl
 	OPF_MOTION_DEBRIS,				// MjnMixael - Motion debris types as defined in stars.tbl
-	OPF_TURRET_TYPE,
+	OPF_TURRET_TYPE,				// MjnMixael - Turret types as defined in aiturret.cpp
+	OPF_BOLT_TYPE,					// MjnMixael - Lightning bolt types as defined in lightning.tbl
 
 	//Must always be at the end of the list
 	First_available_opf_id
@@ -575,6 +576,7 @@ enum : int {
 	OP_CHANGE_SOUNDTRACK,	// Goober5000
 	OP_TECH_ADD_INTEL,	// Goober5000
 	OP_TECH_RESET_TO_DEFAULT,	// Goober5000
+	OP_CREATE_BOLT,		//MjnMixael
 	OP_EXPLOSION_EFFECT,	// Goober5000
 	OP_WARP_EFFECT,	// Goober5000
 	OP_SET_OBJECT_FACING,	// Goober5000
