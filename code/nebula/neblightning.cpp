@@ -599,7 +599,7 @@ void nebl_render_all()
 					// do some special stuff on the very first strike of the bolt
 					if (b->strikes_left == bi->num_strikes) {					
 						// play a sound
-						if (b->playSound) {
+						if (b->play_sound) {
 							float bang;
 							if (Nebl_bang < 40.0f) {
 								bang = 1.0f;
@@ -721,7 +721,7 @@ void nebl_process()
 }
 
 // create a lightning bolt
-bool nebl_bolt(int type, vec3d *start, vec3d *strike, bool playSound)
+bool nebl_bolt(int type, vec3d *start, vec3d *strike, bool play_sound)
 {
 	vec3d dir;
 	l_bolt *bolt;
@@ -759,7 +759,7 @@ bool nebl_bolt(int type, vec3d *start, vec3d *strike, bool playSound)
 	bolt->type = (char)type;
 	bolt->first_frame = 1;
 	bolt->bolt_life = timestamp(bi->lifetime / bi->num_strikes);	
-	bolt->playSound = playSound;
+	bolt->play_sound = play_sound;
 
 	Nebl_bolt_start = *start;
 	Nebl_bolt_strike = *strike;

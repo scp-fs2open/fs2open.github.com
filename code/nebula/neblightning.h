@@ -45,7 +45,7 @@ typedef struct l_bolt {
 	int		delay;				// delay stamp
 	int		strikes_left;		// #of strikes left
 	float	width;
-	bool	playSound;
+	bool	play_sound;
 } l_bolt;
 
 // one cross-section of a lightning bolt
@@ -139,7 +139,7 @@ void nebl_process();
 int get_bolt_type_by_name(const char* bolt);
 
 // create a lightning bolt
-bool nebl_bolt(int type, vec3d *start, vec3d *strike, bool playSound = true);
+bool nebl_bolt(int type, vec3d* start, vec3d* strike, bool play_sound = true);
 
 // "new" a lightning node
 l_node *nebl_new();
