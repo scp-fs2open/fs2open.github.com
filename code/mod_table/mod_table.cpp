@@ -1220,6 +1220,10 @@ bool mod_supports_version(int major, int minor, int build)
 	return Targeted_version >= gameversion::version(major, minor, build, 0);
 }
 
+bool mod_supports_version(const gameversion::version& version) {
+	return Targeted_version >= version;
+}
+
 void mod_table_reset()
 {
 	Directive_wait_time = 3000;

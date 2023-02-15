@@ -155,3 +155,5 @@ void mod_table_reset();
  * @return @c true if the mod specified support for this or a later version, @c false otherwise
  */
 bool mod_supports_version(int major, int minor, int build);
+
+bool mod_supports_version(const gameversion::version& version);
