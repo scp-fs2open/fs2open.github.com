@@ -3,10 +3,10 @@ in vec4 fragTexCoord;
 
 out vec4 fragOut0;
 
-uniform sampler2D composite;
-uniform sampler2D emissive;
-uniform sampler2D depth;
-uniform sampler3D volume_tex;
+layout (binding = 0) uniform sampler2D composite;
+layout (binding = 1) uniform sampler2D emissive;
+layout (binding = 2) uniform sampler2D depth;
+layout (binding = 3) uniform sampler3D volume_tex;
 
 layout (std140) uniform genericData {
 	mat4 p_inv;
@@ -19,8 +19,34 @@ void main()
 	vec4 eyeDirection = p_inv * vec4(fragTexCoord.xy * 2.0 - 1.0, -1, 1);
     eyeDirection.w = 0;
     vec3 rayDirection = normalize((v_inv * eyeDirection).xyz);
+	
 	vec4 color_in = texture(composite, fragTexCoord.xy);
-	color_in.r = max(1.0 - length(-camera - rayDirection * dot(-camera, rayDirection)) / 30.0, 0.0);
 
-	fragOut0 = color_in;
+	vec3 lCorner = vec3(-30, -30, -30);
+	vec3 rCorner = vec3(30, 30, 30);
+	
+	vec3 t1 = (lCorner - camera) / rayDirection;
+	vec3 t2 = (rCorner - camera) / rayDirection;
+
+	vec3 tMin = min(t1, t2);
+	vec3 tMax = max(t1, t2);
+
+	float maxtMin = max(0,max(tMin.x, max(tMin.y, tMin.z)));
+	float mintMax = min(tMax.x, min(tMax.y, tMax.z));
+
+	float steps = 10.0;
+
+	float stepsize = max((mintMax - maxtMin) / steps, 0.5);
+
+	vec4 sum = vec4(0.0, 0.0, 0.0, 0.0);
+
+	for(float step = maxtMin; step < mintMax; step += stepsize)
+	{
+		vec3 pos = (camera + rayDirection * step) / 60.0 + 0.5;
+		sum += texture(volume_tex, pos) / steps;
+	}
+
+	//color_in.r = max(1.0 - length(-camera - rayDirection * dot(-camera, rayDirection)) / 30.0, 0.0);
+	//fragOut0 = vec4(color_in.rgb * (1.0 - max(sum.r, max(sum.g, max(sum.b, sum.a)))), 1);
+	fragOut0 = vec4(color_in.rgb * (1.0 - sum.a) + sum.rgb * sum.a, 1);
 }

@@ -808,6 +808,9 @@ void opengl_determine_bpp_and_flags(int bitmap_handle, int bitmap_type, ushort& 
 			}
 
 			break;
+		case TCACHE_TYPE_3DTEX:
+			bpp = 32;
+			break;
 	}
 }
 
@@ -1000,7 +1003,7 @@ int opengl_create_texture(int bitmap_handle, int bitmap_type, tcache_slot_opengl
 	opengl_determine_bpp_and_flags(animation_begin, bitmap_type, bitmap_flags, bits_per_pixel);
 
 	auto intFormat = opengl_get_internal_format(bitmap_handle, bitmap_type, bits_per_pixel);
-	opengl_tex_array_storage(tslot->texture_target, allocated_mipmap_levels, intFormat, width, height, num_frames);
+	opengl_tex_array_storage(tslot->texture_target, allocated_mipmap_levels, intFormat, width, height, bitmap_type == TCACHE_TYPE_3DTEX ? depth : num_frames);
 
 	bool frames_loaded = true;
 	for (int frame = animation_begin; frame < animation_begin + num_frames; ++frame) {
