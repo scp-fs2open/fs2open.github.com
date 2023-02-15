@@ -579,8 +579,9 @@ int ai_maybe_autoscale(int absolute_index)
  */
 void init_ai_class(ai_class *aicp)
 {
-	int i;
-	for (i = 0; i < NUM_SKILL_LEVELS; i++)
+
+	// AI Class main attributes
+	for (int i = 0; i < NUM_SKILL_LEVELS; i++)
 	{
 		aicp->ai_cmeasure_fire_chance[i] = FLT_MIN;
 		aicp->ai_in_range_time[i] = FLT_MIN;
@@ -605,13 +606,18 @@ void init_ai_class(ai_class *aicp)
 		aicp->ai_chance_to_use_missiles_on_plr[i] = INT_MIN;
 		aicp->ai_max_aim_update_delay[i] = FLT_MIN;
 		aicp->ai_turret_max_aim_update_delay[i] = FLT_MIN;
+		// Set the lowest values here so the table can be modular
+		aicp->ai_accuracy[i] = FLT_MIN;
+		aicp->ai_evasion[i] = FLT_MIN;
+		aicp->ai_courage[i] = FLT_MIN;
+		aicp->ai_patience[i] = FLT_MIN;
 	}
     aicp->ai_profile_flags.reset();
     aicp->ai_profile_flags_set.reset();
 
 	//AI Class autoscale overrides
 	//INT_MIN and FLT_MIN represent the "not set" state
-	for (i = 0; i < NUM_SKILL_LEVELS; i++)
+	for (int i = 0; i < NUM_SKILL_LEVELS; i++)
 	{
 		aicp->ai_aburn_use_factor[i] = INT_MIN;
 		aicp->ai_shockwave_evade_chance[i] = FLT_MIN;
@@ -639,28 +645,76 @@ void set_aic_flag(ai_class *aicp, const char *name, AI::Profile_Flags flag)
 		set->remove(flag);
 }
 
+static ai_class* get_ai_class_pointer(const char* class_name)
+{
+	for (int i = 0; i < Num_ai_classes; i++) {
+		if (!stricmp(class_name, Ai_classes[i].name)) {
+			return &Ai_classes[i];
+		}
+	}
+
+	// Didn't find anything.
+	return nullptr;
+}
+
+static bool class_added_in_tbm = false;
+
 void parse_ai_class()
 {
-	ai_class	*aicp = &Ai_classes[Num_ai_classes];
-
-	init_ai_class(aicp);
+	ai_class	*aicp;
+	bool create_if_not_found = true;
+	char thisName[NAME_LENGTH];
 
 	required_string("$Name:");
-	stuff_string(aicp->name, F_NAME, NAME_LENGTH);
+	stuff_string(thisName, F_NAME, NAME_LENGTH);
 
-	Ai_class_names[Num_ai_classes] = aicp->name;
+	if (optional_string("+nocreate")) {
+		if (!Parsing_modular_table) {
+			Warning(LOCATION, "+nocreate flag used for ai class in non-modular table\n");
+		}
+		create_if_not_found = false;
+	}
 
-	required_string("$accuracy:");
-	parse_float_list(aicp->ai_accuracy, NUM_SKILL_LEVELS);
+	// Does this class exist already?
+	// If so, load this new info into it
+	aicp = get_ai_class_pointer(thisName);
+	if (aicp != nullptr) {
+		if (!Parsing_modular_table) {
+			error_display(1, "Error:  AI Class %s already exists.  All class names must be unique.", thisName);
+		}
+	} else {
+		// Don't create class if it has +nocreate and is in a modular table.
+		if (!create_if_not_found && Parsing_modular_table) {
+			return;
+		}
 
-	required_string("$evasion:");
-	parse_float_list(aicp->ai_evasion, NUM_SKILL_LEVELS);
+		// Setup a new ai class
+		aicp = &Ai_classes[Num_ai_classes];
+		strcpy(aicp->name, thisName);
 
-	required_string("$courage:");
-	parse_float_list(aicp->ai_courage, NUM_SKILL_LEVELS);
+		init_ai_class(aicp);
+		Ai_class_names[Num_ai_classes] = aicp->name;
 
-	required_string("$patience:");
-	parse_float_list(aicp->ai_patience, NUM_SKILL_LEVELS);
+		Num_ai_classes++;
+
+		if (Parsing_modular_table) {
+			mprintf(("New Ai Class '%s' found in modular table\n", aicp->name));
+			class_added_in_tbm = true;
+		}
+
+	}
+
+	if (optional_string("$accuracy:"))
+		parse_float_list(aicp->ai_accuracy, NUM_SKILL_LEVELS);
+
+	if (optional_string("$evasion:"))
+		parse_float_list(aicp->ai_evasion, NUM_SKILL_LEVELS);
+
+	if (optional_string("$courage:"))
+		parse_float_list(aicp->ai_courage, NUM_SKILL_LEVELS);
+
+	if (optional_string("$patience:"))
+		parse_float_list(aicp->ai_patience, NUM_SKILL_LEVELS);
 
 	if (optional_string("$Afterburner Use Factor:"))
 		parse_int_list(aicp->ai_aburn_use_factor, NUM_SKILL_LEVELS);
@@ -833,27 +887,17 @@ void reset_ai_class_names()
 }
 
 #define AI_CLASS_INCREMENT		10
-void parse_aitbl()
+void parse_aitbl(const char* filename)
 {
 	try {
-		read_file_text("ai.tbl", CF_TYPE_TABLES);
+		read_file_text(filename, CF_TYPE_TABLES);
 		reset_parse();
-
-		//Just in case parse_aitbl is called twice
-		free_ai_stuff();
-
-		Num_ai_classes = 0;
-		Num_alloced_ai_classes = AI_CLASS_INCREMENT;
-		Ai_classes = (ai_class*) vm_malloc(Num_alloced_ai_classes * sizeof(ai_class));
-		Ai_class_names = (char**) vm_malloc(Num_alloced_ai_classes * sizeof(char*));
 
 		required_string("#AI Classes");
 
 		while (required_string_either("#End", "$Name:")) {
 
 			parse_ai_class();
-
-			Num_ai_classes++;
 
 			if(Num_ai_classes >= Num_alloced_ai_classes)
 			{
@@ -868,11 +912,10 @@ void parse_aitbl()
 			}
 		}
 
-		atexit(free_ai_stuff);
 	}
 	catch (const parse::ParseException& e)
 	{
-		mprintf(("TABLES: Unable to parse 'ai.tbl'!  Error message = %s.\n", e.what()));
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
 		return;
 	}
 }
@@ -888,14 +931,23 @@ void ai_init()
 {
 	if ( !ai_inited )	{
 		// Do the first time initialization stuff here		
-		try
-		{
-			parse_aitbl();
+		free_ai_stuff();
+
+		Num_ai_classes = 0;
+		Num_alloced_ai_classes = AI_CLASS_INCREMENT;
+		Ai_classes = (ai_class*)vm_malloc(Num_alloced_ai_classes * sizeof(ai_class));
+		Ai_class_names = (char**)vm_malloc(Num_alloced_ai_classes * sizeof(char*));
+
+		parse_aitbl("ai.tbl");
+
+		parse_modular_table("*-aic.tbm", parse_aitbl);
+
+		if (class_added_in_tbm) {
+			mprintf(("One or more Ai Classes were added in a modular table. This may affect "
+					 "ai autoscaling. If that's not desired then use a tbl instead of a tbm!\n"));
 		}
-		catch (const parse::ParseException& e)
-		{
-			mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "ai.tbl", e.what()));
-		}
+
+		atexit(free_ai_stuff);
 
 		ai_inited = 1;
 	}
@@ -6191,12 +6243,12 @@ int num_nearby_fighters(int enemy_team_mask, vec3d *pos, float threshold)
 //	set, that weapon will be selected.  If not, apply to priority2.  If neither, return -1, meaning no weapon selected.
 //	Note, priorityX have default values of -1, meaning if not set, they will match any weapon.
 //	Return value:
-//		bank index
+//		true if an appropriate weapon was found and switched to, false if no valid weapons, and should not fire
 //	Should do this:
 //		Favor aspect seekers when attacking small ships faraway.
 //		Favor rapid fire dumbfire when attacking a large ship.
 //		Ignore heat seekers because we're not sure how they'll work.
-void ai_select_secondary_weapon(object *objp, ship_weapon *swp, flagset<Weapon::Info_Flags>* priority1 = NULL, flagset<Weapon::Info_Flags>* priority2 = NULL)
+bool ai_select_secondary_weapon(object *objp, ship_weapon *swp, flagset<Weapon::Info_Flags>* priority1 = NULL, flagset<Weapon::Info_Flags>* priority2 = NULL)
 {
 	int	num_weapon_types;
 	int	weapon_id_list[MAX_WEAPON_TYPES], weapon_bank_list[MAX_WEAPON_TYPES];
@@ -6204,6 +6256,7 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, flagset<Weapon::
 	flagset<Weapon::Info_Flags>	ignore_mask, ignore_mask_without_huge, prio1, prio2;
 	int	initial_bank;
 	ai_info	*aip = &Ai_info[Ships[objp->instance].ai_index];
+	bool rval = false;
 
 	initial_bank = swp->current_secondary_bank;
 
@@ -6241,6 +6294,10 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, flagset<Weapon::
 	//	Stuff weapon_bank_list with bank index of available weapons.
 	num_weapon_types = get_available_secondary_weapons(objp, weapon_id_list, weapon_bank_list);
 
+	//  If there are no valid choices, bail
+	if (num_weapon_types == 0)
+		return false;
+
 	// Ignore homing weapons if we didn't specify a flag - for priority 1
 	if ((aip->ai_profile_flags[AI::Profile_Flags::Smart_secondary_weapon_selection]) && (prio1.none_set())) {
 		ignore_mask.set(Weapon::Info_Flags::Homing_aspect).set(Weapon::Info_Flags::Homing_heat).set(Weapon::Info_Flags::Homing_javelin);
@@ -6258,6 +6315,7 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, flagset<Weapon::
 		if (!(wi_flags & ignore_mask_to_use).any_set()) {					//	Maybe bombs are illegal.
 			if ((wi_flags & prio1).any_set()) {
 				swp->current_secondary_bank = weapon_bank_list[i];				//	Found first priority, return it.
+				rval = true;
 				break;
 			} else if ((wi_flags & prio2).any_set())
 				priority2_index = weapon_bank_list[i];	//	Found second priority, but might still find first priority.
@@ -6271,7 +6329,6 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, flagset<Weapon::
 
 	//	If didn't find anything above, then pick any secondary weapon.
 	if (i == num_weapon_types) {
-		swp->current_secondary_bank = priority2_index;	//	Assume we won't find anything.
 		if (priority2_index == -1) {
 			for (i=0; i<num_weapon_types; i++) {
 				auto wi_flags = Weapon_info[swp->secondary_bank_weapons[weapon_bank_list[i]]].wi_flags;
@@ -6279,14 +6336,26 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, flagset<Weapon::
 
 				if (!(wi_flags & ignore_mask_to_use).any_set()) {					//	Maybe bombs are illegal.
 					if (ship_secondary_has_ammo(swp, weapon_bank_list[i])) {
-						swp->current_secondary_bank = weapon_bank_list[i];
+						priority2_index = weapon_bank_list[i];
 						break;
 					}
 				}
 			}
 		}
+
+		// if we have a valid priority2, use that
+		if (priority2_index >= 0) {
+			swp->current_secondary_bank = priority2_index;
+			rval = true;
+		}
 	}
 
+	Assertion(swp->current_secondary_bank >= 0, "ai_select_secondary_weapon assigned a -1 secondary bank to %s", Ships[objp->instance].ship_name);
+	// if we got an invalid bank somehow, just put it back and bail
+	if (swp->current_secondary_bank < 0) {
+		swp->current_secondary_bank = initial_bank;
+		return false;
+	}
 
 	//	If switched banks, force reacquisition of aspect lock.
 	if (swp->current_secondary_bank != initial_bank) {
@@ -6306,6 +6375,7 @@ void ai_select_secondary_weapon(object *objp, ship_weapon *swp, flagset<Weapon::
 	}
 
 	ship_secondary_changed(&Ships[objp->instance]);	// AL: let multiplayer know if secondary bank has changed
+	return rval;
 }
 
 /**
@@ -8164,7 +8234,8 @@ int has_preferred_secondary(object *objp, object *en_objp, ship_weapon *swp)
 //	Note, this is not like ai_select_secondary_weapon().  "choose" means make a choice.
 //	"select" means execute an order.  Get it?
 //	This function calls ai_select_secondary_weapon() with the characteristics it should search for.
-void ai_choose_secondary_weapon(object *objp, ai_info *aip, object *en_objp)
+//		return true if an appropriate weapon was found and switched to, false if no valid weapons, and should not fire
+bool ai_choose_secondary_weapon(object *objp, ai_info *aip, object *en_objp)
 {
 	float			subsystem_strength = 0.0f;
 	bool			is_big_ship;
@@ -8183,7 +8254,7 @@ void ai_choose_secondary_weapon(object *objp, ai_info *aip, object *en_objp)
 	// AL 3-5-98: do a quick out if the ship has no secondaries
 	if ( swp->num_secondary_banks <= 0 ) {
 		swp->current_secondary_bank = -1;
-		return;
+		return false;
 	}
 
 	int preferred_secondary = has_preferred_secondary(objp, en_objp, swp);
@@ -8195,6 +8266,7 @@ void ai_choose_secondary_weapon(object *objp, ai_info *aip, object *en_objp)
 			swp->current_secondary_bank = preferred_secondary;
 		}
 		aip->ai_flags.set(AI::AI_Flags::Unload_secondaries);
+		return true;
 	} else {
 		aip->ai_flags.remove(AI::AI_Flags::Unload_secondaries);
 		if (aip->targeted_subsys) {
@@ -8238,7 +8310,7 @@ void ai_choose_secondary_weapon(object *objp, ai_info *aip, object *en_objp)
 			wif_priority2.reset();
 		}
 		
-		ai_select_secondary_weapon(objp, swp, &wif_priority1, &wif_priority2);
+		return ai_select_secondary_weapon(objp, swp, &wif_priority1, &wif_priority2);
 	}
 }
 
@@ -9314,10 +9386,10 @@ void ai_chase()
 
 					//	Don't fire secondaries at a protected ship.
 					if (!(En_objp->flags[Object::Object_Flags::Protected])) {
-						ai_choose_secondary_weapon(Pl_objp, aip, En_objp);
+						bool valid_secondary = ai_choose_secondary_weapon(Pl_objp, aip, En_objp);
 						int current_bank = tswp->current_secondary_bank;
 
-						if (current_bank > -1) {
+						if (current_bank > -1 && valid_secondary) {
 							weapon_info	*swip = &Weapon_info[tswp->secondary_bank_weapons[current_bank]];
 							if (aip->ai_flags[AI::AI_Flags::Unload_secondaries]) {
 								if (timestamp_until(swp->next_secondary_fire_stamp[current_bank]) > swip->fire_wait*1000.0f) {

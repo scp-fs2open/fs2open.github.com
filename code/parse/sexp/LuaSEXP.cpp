@@ -4,13 +4,16 @@
 
 #include "iff_defs/iff_defs.h"
 #include "localization/localize.h"
+#include "mission/missiongoals.h"
 #include "mission/missionmessage.h"
 #include "object/waypoint.h"
 #include "parse/parselo.h"
 #include "parse/sexp.h"
 #include "parse/sexp/sexp_lookup.h"
+#include "scripting/api/objs/hudgauge.h"
 #include "scripting/api/objs/message.h"
 #include "scripting/api/objs/model.h"
+#include "scripting/api/objs/event.h"
 #include "scripting/api/objs/oswpt.h"
 #include "scripting/api/objs/sexpvar.h"
 #include "scripting/api/objs/ship.h"
@@ -50,6 +53,8 @@ static SCP_unordered_map<SCP_string, int> parameter_type_mapping{{ "boolean",   
 														  { "ship+wing+waypoint+none",   OPF_SHIP_WING_POINT_OR_NONE },
 														  { "subsystem",   OPF_SUBSYSTEM },
 														  { "dockpoint",   OPF_DOCKER_POINT },
+														  { "hudgauge",   OPF_ANY_HUD_GAUGE },
+														  { "event",   OPF_EVENT_NAME },
 														  { "enum",   First_available_opf_id } };
 
 // If a parameter requires a parent parameter then it must be listed here!
@@ -82,26 +87,6 @@ int LuaSEXP::get_return_type(const SCP_string& name)
 	} else {
 		return iter->second;
 	}
-}
-
-int LuaSEXP::get_category(const SCP_string& name) {
-	for (auto& subcat : op_menu) {
-		if (subcat.name == name) {
-			return subcat.id;
-		}
-	}
-
-	return OP_CATEGORY_NONE;
-}
-
-int LuaSEXP::get_subcategory(const SCP_string& name, int category) {
-	for (auto& subcat : op_submenu) {
-		if (subcat.name == name && category_of_subcategory(subcat.id) == category) {
-			return subcat.id;
-		}
-	}
-
-	return OP_SUBCATEGORY_NONE;
 }
 
 LuaSEXP::LuaSEXP(const SCP_string& name) : DynamicSEXP(name) {
@@ -308,6 +293,20 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum, int parent_node) const
 		auto dockindex = model_find_dock_name_index(Ship_info[ship_entry->shipp->ship_info_index].model_num, name);
 
 		return LuaValue::createValue(_action.getLuaState(), l_Dockingbay.Set(dockingbay_h(docker_pm, dockindex)));
+  }
+	case OPF_ANY_HUD_GAUGE: {
+		auto name = CTEXT(node);
+		return LuaValue::createValue(_action.getLuaState(), l_HudGauge.Set(hud_get_gauge(name)));
+	}
+	case OPF_EVENT_NAME: {
+		auto name = CTEXT(node);
+
+		int i;
+		for (i = 0; i < (int)Mission_events.size(); i++) {
+			if (!stricmp(Mission_events[i].name.c_str(), name))
+				break;
+			}
+		return LuaValue::createValue(_action.getLuaState(), l_Event.Set(i));
 	}
 	default:
 		if ((strcmp(argtype.first.c_str(), "enum")) == 0) {

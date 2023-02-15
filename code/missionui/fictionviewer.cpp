@@ -12,6 +12,7 @@
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
 #include "io/key.h"
+#include "localization/localize.h"
 #include "mission/missionbriefcommon.h"
 #include "missionui/fictionviewer.h"
 #include "missionui/missioncmdbrief.h"
@@ -544,6 +545,26 @@ void fiction_viewer_reset()
 	}
 }
 
+SCP_string get_localized_fiction_filename(const char* filename)
+{
+	SCP_string this_filename = filename;
+	
+	// setup the localized filename string
+	int lang = lcl_get_current_lang_index();
+	if (lang > 0) {
+		size_t lastindex = this_filename.find_last_of(".");
+		this_filename = this_filename.substr(0, lastindex);
+		this_filename = this_filename + "-" + Lcl_languages[lang].lang_ext + ".txt";
+	}
+
+	// return the localized version only if it exists
+	if (cf_exists_full(this_filename.c_str(), CF_TYPE_FICTION))
+		return this_filename;
+
+	// if localized doesn't exist then return the base filename
+	return filename;
+}
+
 void fiction_viewer_load(int stage)
 {
 	Assertion(stage >= 0 && static_cast<size_t>(stage) < Fiction_viewer_stages.size(), "stage parameter must be in range of Fiction_viewer_stages!");
@@ -575,15 +596,17 @@ void fiction_viewer_load(int stage)
 	Fiction_viewer_voice = audiostream_open(stagep->voice_filename, ASF_VOICE);
 
 	// load up the text
-	CFILE *fp = cfopen(stagep->story_filename, "rb", CFILE_NORMAL, CF_TYPE_FICTION);
+	SCP_string localized_filename = get_localized_fiction_filename(stagep->story_filename);
+
+	CFILE *fp = cfopen(localized_filename.c_str(), "rb", CFILE_NORMAL, CF_TYPE_FICTION);
 	if (fp == NULL)
 	{
-		Warning(LOCATION, "Unable to load story file '%s'.", stagep->story_filename);
+		Warning(LOCATION, "Unable to load story file '%s'.", localized_filename.c_str());
 	}
 	else
 	{
 		// allocate space for raw text
-		int file_length = util::check_encoding_and_skip_bom(fp, stagep->story_filename);
+		int file_length = util::check_encoding_and_skip_bom(fp, localized_filename.c_str());
 
 		char *Fiction_viewer_text_raw = (char *) vm_malloc(file_length + 1);
 		Fiction_viewer_text_raw[file_length] = '\0';

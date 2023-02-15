@@ -104,6 +104,7 @@ extern char *Cmdline_gateway_ip;
 
 // Launcher related options
 extern bool Cmdline_portable_mode;
+extern SCP_string Cmdline_lang;
 
 // Troubleshooting
 extern int Cmdline_load_all_weapons;

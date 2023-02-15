@@ -81,6 +81,12 @@
 #include "missionparse.h"
 
 
+// MISSION_VERSION should be the earliest version of FSO that can load the current mission format without
+// requiring version-specific comments.  It should be updated whenever the format changes, but it should
+// not be updated simply because the engine's version changed.
+const gameversion::version MISSION_VERSION = gameversion::version(22, 3, 0);
+const gameversion::version LEGACY_MISSION_VERSION = gameversion::version(0, 10);
+
 LOCAL struct {
 	char docker[NAME_LENGTH];
 	char dockee[NAME_LENGTH];
@@ -462,15 +468,16 @@ void parse_mission_info(mission *pm, bool basic = false)
 	required_string("#Mission Info");
 	
 	required_string("$Version:");
-	stuff_float(&pm->version);
-	if (pm->version != MISSION_VERSION)
-		mprintf(("Older mission, should update it (%.2f<-->%.2f)\n", pm->version, MISSION_VERSION));
+	pm->required_fso_version = gameversion::parse_version_inline();
+
+	if (!gameversion::check_at_least(pm->required_fso_version))
+		throw parse::VersionException("Mission requires version " + gameversion::format_version(pm->required_fso_version), pm->required_fso_version);
 
 	required_string("$Name:");
 	stuff_string(pm->name, F_NAME, NAME_LENGTH);
 
 	required_string("$Author:");
-	stuff_string(pm->author, F_NAME, NAME_LENGTH);
+	stuff_string(pm->author, F_NAME);
 
 	required_string("$Created:");
 	stuff_string(pm->created, F_DATE, DATE_TIME_LENGTH);
@@ -1864,6 +1871,9 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 	// Goober5000 - make the parse object aware of what it was created as
 	p_objp->created_object = &Objects[objnum];
 
+	// Goober5000 - set the collision group if one was provided
+	Objects[objnum].collision_group_id = p_objp->collision_group_id;
+
 	// Goober5000 - if this object is being created because he's docked to something,
 	// and he's in a wing, then mark the wing as having arrived
 	if (object_is_docked(p_objp) && !(p_objp->flags[Mission::Parse_Object_Flags::SF_Dock_leader]) && (p_objp->wingnum >= 0))
@@ -2936,9 +2946,12 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 		stuff_string(temp, F_NAME, NAME_LENGTH);
 		p_objp->team_color_setting = temp;
 
-		if (Team_Colors.find(p_objp->team_color_setting) == Team_Colors.end()) {
-			mprintf(("Invalid team color specified in mission file for ship %s, resetting to default\n", p_objp->name));
-			p_objp->team_color_setting = sip->default_team_name;
+		//If team color is not default then verify
+		if (stricmp(p_objp->team_color_setting.c_str(), sip->default_team_name.c_str()) != 0) {
+			if (Team_Colors.find(p_objp->team_color_setting) == Team_Colors.end()) {
+				mprintf(("Invalid team color specified in mission file for ship %s, resetting to default\n", p_objp->name));
+				p_objp->team_color_setting = sip->default_team_name;
+			}
 		}
 	}
 
@@ -6298,6 +6311,11 @@ int get_mission_info(const char *filename, mission *mission_p, bool basic, bool 
 		mprintf(("MISSIONS: Unable to parse '%s'!  Error message = %s.\n", real_fname, e.what()));
 		return -1;
 	}
+	catch (const parse::VersionException& e)
+	{
+		mprintf(("MISSIONS: Unable to parse '%s'!  %s", real_fname, e.what()));
+		return -1;
+	}
 
 	return 0;
 }
@@ -6305,8 +6323,8 @@ int get_mission_info(const char *filename, mission *mission_p, bool basic, bool 
 void mission::Reset()
 {
 	name[ 0 ] = '\0';
-	author[ 0 ] = '\0';
-	version = 0.;
+	author = "";
+	required_fso_version = LEGACY_MISSION_VERSION;
 	created[ 0 ] = '\0';
 	modified[ 0 ] = '\0';
 	notes[ 0 ] = '\0';
@@ -6435,6 +6453,9 @@ void mission_init(mission *pm)
 
 	Asteroid_field.num_initial_asteroids = 0;
 
+	// This could be set with a sexp, so we should reset it here
+	Motion_debris_override = false;
+
 	// reset background bitmaps and suns
 	stars_pre_level_init();
 	neb2_pre_level_init();
@@ -6504,6 +6525,12 @@ bool parse_main(const char *mission_name, int flags)
 		catch (const parse::ParseException& e)
 		{
 			mprintf(("MISSIONS: Unable to parse '%s'!  Error message = %s.\n", mission_name, e.what()));
+			rval = false;
+			break;
+		}
+		catch (const parse::VersionException& e)
+		{
+			mprintf(("MISSIONS: Unable to parse '%s'!  %s", mission_name, e.what()));
 			rval = false;
 			break;
 		}
@@ -6916,6 +6943,11 @@ int mission_parse_is_multi(const char *filename, char *mission_name)
 		catch (const parse::ParseException& e)
 		{
 			mprintf(("MISSIONS: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
+			break;
+		}
+		catch (const parse::VersionException& e)
+		{
+			mprintf(("MISSIONS: Unable to parse '%s'!  %s", filename, e.what()));
 			break;
 		}
 	} while (0);

@@ -2169,5 +2169,15 @@ ADE_FUNC(screenToBlob, l_Graphics, nullptr, "Captures the current render target 
 	return ade_set_args(L, "s", gr_blob_screen().c_str());
 }
 
+ADE_FUNC(freeAllModels, l_Graphics, nullptr, "Releases all loaded models and frees the memory. Intended for use in UI situations "
+	"and not within missions. Do not use after mission parse. Use at your own risk!", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+	
+	model_free_all();
+
+	return ADE_RETURN_NIL;
+}
+
 } // namespace api
 } // namespace scripting

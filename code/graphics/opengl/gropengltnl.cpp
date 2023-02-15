@@ -827,89 +827,129 @@ void opengl_tnl_set_model_material(model_material *material_info)
 
 	GL_state.Texture.SetShaderMode(GL_TRUE);
 
-	if (Current_shader->flags & SDR_FLAG_MODEL_CLIP) {
+	if (material_info->is_clipped()) {
 		GL_state.ClipDistance(0, true);
 	} else {
 		GL_state.ClipDistance(0, false);
 	}
 
 	uint32_t array_index;
-	if ( Current_shader->flags & SDR_FLAG_MODEL_DIFFUSE_MAP ) {
+	if (!material_info->is_shadow_casting()) {
+		// An observant reader might, upon seeing this, ask themselves "Hang on, why are we setting these uniforms
+		// without putting anything in them". This is an entirely fair question.
+		// The answer, dear reader, is divergent behaviour in GL implementations. Nvidia, at time of writing (04.01.2023)
+		// doesn't care; AMD will report conflicting bindings and basically give up.
+		// While this technically invites undefined behaviour (texture reads from unbound texture units can do anything),
+		// it is uncritical at this time as texture reads are gated behind feature flags in the shader.
+		// This will be fixed in future cleanups, where we plan to introduce engine-generated default textures to substitute
+		// if the material doesn't provide anything.
 		Current_shader->program->Uniforms.setTextureUniform("sBasemap", 0);
-
-		gr_opengl_tcache_set(material_info->get_texture_map(TM_BASE_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, 0);
-	}
-
-	if ( Current_shader->flags & SDR_FLAG_MODEL_GLOW_MAP ) {
 		Current_shader->program->Uniforms.setTextureUniform("sGlowmap", 1);
-
-		gr_opengl_tcache_set(material_info->get_texture_map(TM_GLOW_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, 1);
-	}
-
-	if ( Current_shader->flags & SDR_FLAG_MODEL_SPEC_MAP ) {
 		Current_shader->program->Uniforms.setTextureUniform("sSpecmap", 2);
-
-		if ( material_info->get_texture_map(TM_SPEC_GLOSS_TYPE) > 0 ) {
-			gr_opengl_tcache_set(material_info->get_texture_map(TM_SPEC_GLOSS_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, 2);
-		} else {
-			gr_opengl_tcache_set(material_info->get_texture_map(TM_SPECULAR_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, 2);
-		}
-	}
-
-	if ( Current_shader->flags & SDR_FLAG_MODEL_ENV_MAP ) {
 		Current_shader->program->Uniforms.setTextureUniform("sEnvmap", 3);
-
-		gr_opengl_tcache_set(ENVMAP, TCACHE_TYPE_CUBEMAP, &u_scale, &v_scale, &array_index, 3);
-
 		Current_shader->program->Uniforms.setTextureUniform("sIrrmap", 11);
-
-		gr_opengl_tcache_set(IRRMAP, TCACHE_TYPE_CUBEMAP, &u_scale, &v_scale, &array_index, 11);
-		Assertion(array_index == 0, "Cube map arrays are not supported yet!");
-	}
-
-	if ( Current_shader->flags & SDR_FLAG_MODEL_NORMAL_MAP ) {
 		Current_shader->program->Uniforms.setTextureUniform("sNormalmap", 4);
-
-		gr_opengl_tcache_set(material_info->get_texture_map(TM_NORMAL_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, 4);
-	}
-
-	if ( Current_shader->flags & SDR_FLAG_MODEL_HEIGHT_MAP ) {
 		Current_shader->program->Uniforms.setTextureUniform("sHeightmap", 5);
-
-		gr_opengl_tcache_set(material_info->get_texture_map(TM_HEIGHT_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, 5);
-	}
-
-	if ( Current_shader->flags & SDR_FLAG_MODEL_AMBIENT_MAP ) {
 		Current_shader->program->Uniforms.setTextureUniform("sAmbientmap", 6);
-
-		gr_opengl_tcache_set(material_info->get_texture_map(TM_AMBIENT_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, 6);
-	}
-
-	if ( Current_shader->flags & SDR_FLAG_MODEL_MISC_MAP ) {
 		Current_shader->program->Uniforms.setTextureUniform("sMiscmap", 7);
-
-		gr_opengl_tcache_set(material_info->get_texture_map(TM_MISC_TYPE), TCACHE_TYPE_NORMAL, &u_scale, &v_scale, &array_index, 7);
-	}
-
-	if ( Current_shader->flags & SDR_FLAG_MODEL_SHADOWS ) {
 		Current_shader->program->Uniforms.setTextureUniform("shadow_map", 8);
-
-		GL_state.Texture.Enable(8, GL_TEXTURE_2D_ARRAY, Shadow_map_texture);
-	}
-
-	if ( Current_shader->flags & SDR_FLAG_MODEL_ANIMATED ) {
 		Current_shader->program->Uniforms.setTextureUniform("sFramebuffer", 9);
+		Current_shader->program->Uniforms.setTextureUniform("transform_tex", 10);
 
-		if ( Scene_framebuffer_in_frame ) {
-			GL_state.Texture.Enable(9, GL_TEXTURE_2D, Scene_effect_texture);
-			glDrawBuffer(GL_COLOR_ATTACHMENT0);
-		} else {
-			GL_state.Texture.Enable(9, GL_TEXTURE_2D, Framebuffer_fallback_texture_id);
+		if (material_info->get_texture_map(TM_BASE_TYPE) > 0) {
+			gr_opengl_tcache_set(material_info->get_texture_map(TM_BASE_TYPE),
+				TCACHE_TYPE_NORMAL,
+				&u_scale,
+				&v_scale,
+				&array_index,
+				0);
+		}
+
+		if (material_info->get_texture_map(TM_GLOW_TYPE) > 0) {
+			gr_opengl_tcache_set(material_info->get_texture_map(TM_GLOW_TYPE),
+				TCACHE_TYPE_NORMAL,
+				&u_scale,
+				&v_scale,
+				&array_index,
+				1);
+		}
+
+		if (material_info->get_texture_map(TM_SPECULAR_TYPE) > 0 ||
+			material_info->get_texture_map(TM_SPEC_GLOSS_TYPE) > 0) {
+			if (material_info->get_texture_map(TM_SPEC_GLOSS_TYPE) > 0) {
+				gr_opengl_tcache_set(material_info->get_texture_map(TM_SPEC_GLOSS_TYPE),
+					TCACHE_TYPE_NORMAL,
+					&u_scale,
+					&v_scale,
+					&array_index,
+					2);
+			} else {
+				gr_opengl_tcache_set(material_info->get_texture_map(TM_SPECULAR_TYPE),
+					TCACHE_TYPE_NORMAL,
+					&u_scale,
+					&v_scale,
+					&array_index,
+					2);
+			}
+		}
+
+		if (ENVMAP > 0) {
+			gr_opengl_tcache_set(ENVMAP, TCACHE_TYPE_CUBEMAP, &u_scale, &v_scale, &array_index, 3);
+			gr_opengl_tcache_set(IRRMAP, TCACHE_TYPE_CUBEMAP, &u_scale, &v_scale, &array_index, 11);
+			Assertion(array_index == 0, "Cube map arrays are not supported yet!");
+		}
+
+		if (material_info->get_texture_map(TM_NORMAL_TYPE) > 0) {
+			gr_opengl_tcache_set(material_info->get_texture_map(TM_NORMAL_TYPE),
+				TCACHE_TYPE_NORMAL,
+				&u_scale,
+				&v_scale,
+				&array_index,
+				4);
+		}
+
+		if (material_info->get_texture_map(TM_HEIGHT_TYPE) > 0) {
+			gr_opengl_tcache_set(material_info->get_texture_map(TM_HEIGHT_TYPE),
+				TCACHE_TYPE_NORMAL,
+				&u_scale,
+				&v_scale,
+				&array_index,
+				5);
+		}
+
+		if (material_info->get_texture_map(TM_AMBIENT_TYPE) > 0) {
+			gr_opengl_tcache_set(material_info->get_texture_map(TM_AMBIENT_TYPE),
+				TCACHE_TYPE_NORMAL,
+				&u_scale,
+				&v_scale,
+				&array_index,
+				6);
+		}
+
+		if (material_info->get_texture_map(TM_MISC_TYPE) > 0) {
+			gr_opengl_tcache_set(material_info->get_texture_map(TM_MISC_TYPE),
+				TCACHE_TYPE_NORMAL,
+				&u_scale,
+				&v_scale,
+				&array_index,
+				7);
+		}
+
+		if (material_info->is_shadow_receiving()) {
+			GL_state.Texture.Enable(8, GL_TEXTURE_2D_ARRAY, Shadow_map_texture);
+		}
+
+		if (material_info->get_animated_effect() > 0) {
+			if (Scene_framebuffer_in_frame) {
+				GL_state.Texture.Enable(9, GL_TEXTURE_2D, Scene_effect_texture);
+				glDrawBuffer(GL_COLOR_ATTACHMENT0);
+			} else {
+				GL_state.Texture.Enable(9, GL_TEXTURE_2D, Framebuffer_fallback_texture_id);
+			}
 		}
 	}
 
-	if ( Current_shader->flags & SDR_FLAG_MODEL_TRANSFORM ) {
-		Current_shader->program->Uniforms.setTextureUniform("transform_tex", 10);
+	if ( material_info->is_batched() ) {
 		GL_state.Texture.Enable(10, GL_TEXTURE_BUFFER, opengl_get_transform_buffer_texture());
 	}
 
