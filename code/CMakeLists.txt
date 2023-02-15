@@ -70,6 +70,8 @@ target_link_libraries(code PUBLIC any)
 
 target_link_libraries(code PUBLIC optional)
 
+target_link_libraries(code PUBLIC hidapi::hidapi)
+
 target_link_libraries(code PUBLIC imgui)
 
 # Headers for standalone "gui" on UNIX

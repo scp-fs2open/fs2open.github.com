@@ -68,6 +68,7 @@ SCP_string Window_title;
 SCP_string Mod_title;
 SCP_string Mod_version;
 bool Unicode_text_mode;
+SCP_vector<SCP_string> Splash_screens;
 bool Use_tabled_strings_for_default_language;
 bool Dont_preempt_training_voice;
 SCP_string Movie_subtitle_font;
@@ -132,6 +133,9 @@ bool Always_use_distant_firepoints;
 bool Discord_presence;
 bool Hotkey_always_hide_hidden_ships;
 bool Use_weapon_class_sounds_for_hits_to_player;
+bool SCPUI_loads_hi_res_animations;
+bool Play_thruster_sounds_for_player;
+std::array<std::tuple<float, float>, 6> Fred_spacemouse_nonlinearity;
 
 static auto DiscordOption = options::OptionBuilder<bool>("Other.Discord", "Discord Presence", "Toggle Discord Rich Presence")
 							 .category("Other")
@@ -213,6 +217,20 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Unicode_text_mode);
 
 			mprintf(("Game Settings Table: Unicode mode: %s\n", Unicode_text_mode ? "yes" : "no"));
+		}
+
+		if (optional_string("$Splash screens:")) {
+			SCP_string splash_bitmap;
+			while (optional_string("+Bitmap:")) {
+				stuff_string(splash_bitmap, F_NAME);
+
+				// remove extension?
+				if (drop_extension(splash_bitmap)) {
+					mprintf(("Game Settings Table: Removed extension on splash screen file name %s\n", splash_bitmap.c_str()));
+				}
+
+				Splash_screens.push_back(splash_bitmap);
+			}
 		}
 
 		optional_string("#LOCALIZATION SETTINGS");
@@ -766,6 +784,10 @@ void parse_mod_table(const char *filename)
 
 		}
 
+		if (optional_string("$SCPUI attempts to load hires animations:")) {
+			stuff_boolean(&SCPUI_loads_hi_res_animations);
+		}
+
 		optional_string("#NETWORK SETTINGS");
 
 		if (optional_string("$FS2NetD port:")) {
@@ -818,6 +840,10 @@ void parse_mod_table(const char *filename)
 
 		if (optional_string("$Use weapon class impact sounds for hits to player:")) {
 			stuff_boolean(&Use_weapon_class_sounds_for_hits_to_player);
+		}
+
+		if (optional_string("$Play thruster sounds for the player:")) {
+			stuff_boolean(&Play_thruster_sounds_for_player);
 		}
 
 		optional_string("#FRED SETTINGS");
@@ -873,6 +899,7 @@ void parse_mod_table(const char *filename)
 			}
 		}
 
+
 		if (optional_string("$Ignore Music Files In Music Player:")) {
 			SCP_string music_name;
 			while (optional_string("+File:")) {
@@ -882,6 +909,21 @@ void parse_mod_table(const char *filename)
 
 				Ignored_music_player_files.push_back(music_name);
 			}
+
+		if (optional_string("$FRED spacemouse nonlinearities:")) {
+#define SPACEMOUSE_NONLINEARITY(name, id) \
+			if (optional_string("+" name " exponent:")) \
+				stuff_float(&std::get<0>(Fred_spacemouse_nonlinearity[id])); \
+			if (optional_string("+" name " scale:")) \
+				stuff_float(&std::get<1>(Fred_spacemouse_nonlinearity[id]));
+			SPACEMOUSE_NONLINEARITY("Sideways", 0);
+			SPACEMOUSE_NONLINEARITY("Forwards", 1);
+			SPACEMOUSE_NONLINEARITY("Upwards", 2);
+			SPACEMOUSE_NONLINEARITY("Pitch", 3);
+			SPACEMOUSE_NONLINEARITY("Bank", 4);
+			SPACEMOUSE_NONLINEARITY("Heading", 5);
+#undef SPACEMOUSE_NONLINEARITY
+
 		}
 
 		optional_string("#OTHER SETTINGS");
@@ -1191,6 +1233,10 @@ bool mod_supports_version(int major, int minor, int build)
 	return Targeted_version >= gameversion::version(major, minor, build, 0);
 }
 
+bool mod_supports_version(const gameversion::version& version) {
+	return Targeted_version >= version;
+}
+
 void mod_table_reset()
 {
 	Directive_wait_time = 3000;
@@ -1295,6 +1341,16 @@ void mod_table_reset()
 	Discord_presence = true;
 	Hotkey_always_hide_hidden_ships = false;
 	Use_weapon_class_sounds_for_hits_to_player = false;
+	SCPUI_loads_hi_res_animations = true;
+	Play_thruster_sounds_for_player = false;
+	Fred_spacemouse_nonlinearity = std::array<std::tuple<float, float>, 6>{{
+			std::tuple<float, float>{ 1.0f, 1.0f },
+			std::tuple<float, float>{ 1.0f, 1.0f },
+			std::tuple<float, float>{ 1.0f, 1.0f },
+			std::tuple<float, float>{ 1.0f, 1.0f },
+			std::tuple<float, float>{ 1.0f, 1.0f },
+			std::tuple<float, float>{ 1.0f, 1.0f }
+		}};
 }
 
 void mod_table_set_version_flags()

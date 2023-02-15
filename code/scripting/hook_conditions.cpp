@@ -249,7 +249,9 @@ HOOK_CONDITIONS_END
 
 HOOK_CONDITIONS_START(WeaponUsedConditions)
 	HOOK_CONDITION_SHIPP(WeaponUsedConditions, "that fired the weapon.", user_shipp);
-	HOOK_CONDITION(WeaponUsedConditions, "Weapon class", "Specifies the class of the weapon that was fired.", weaponclass, conditionParseWeaponClass, std::equal_to<int>());
+	HOOK_CONDITION(WeaponUsedConditions, "Weapon class", "Specifies the class of the weapon that was fired.", weaponclasses, conditionParseWeaponClass, [](const SCP_vector<int>& weaponclass_list, const int& weaponclass) -> bool {
+		return std::count(weaponclass_list.cbegin(), weaponclass_list.cend(), weaponclass) > 0;
+	});
 HOOK_CONDITIONS_END
 
 HOOK_CONDITIONS_START(WeaponSelectedConditions)

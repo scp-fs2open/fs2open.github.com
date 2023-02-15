@@ -2840,6 +2840,26 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 
 	// Now that we've processed all the chunks, resolve the submodel indexes if we have any...
 
+	// first do some sanity checking to detect model errors
+	for (i = 0; i < pm->n_detail_levels; i++) {
+		if (pm->detail[i] < 0 || pm->detail[i] >= pm->n_models) {
+			Warning(LOCATION, "Model %s detail %d is %d which is not a valid submodel!", pm->filename, i, pm->detail[i]);
+			return modelread_status::FAIL;
+		}
+	}
+	for (i = 0; i < pm->num_debris_objects; i++) {
+		if (pm->debris_objects[i] < 0 || pm->debris_objects[i] >= pm->n_models) {
+			Warning(LOCATION, "Model %s debris object %d is %d which is not a valid submodel!", pm->filename, i, pm->debris_objects[i]);
+			return modelread_status::FAIL;
+		}
+	}
+	for (i = 0; i < pm->n_models; i++) {
+		if (pm->submodel[i].parent < -1 || pm->submodel[i].parent >= pm->n_models) {
+			Warning(LOCATION, "Model %s submodel %d parent is %d which is not a valid submodel!", pm->filename, i, pm->submodel[i].parent);
+			return modelread_status::FAIL;
+		}
+	}
+
 	// handle look_at
 	for (i = 0; i < pm->n_models; i++) {
 		auto sm = &pm->submodel[i];
@@ -3137,53 +3157,9 @@ void model_load_texture(polymodel *pm, int i, char *file)
 	// -------------------------------------------------------------------------
 
 	// See if we need to compile a new shader for this material
-	int shader_flags = 0;
-
-	if (tbase->GetTexture() > 0)
-		shader_flags |= SDR_FLAG_MODEL_DIFFUSE_MAP;
-	if (tglow->GetTexture() > 0 && Cmdline_glow)
-		shader_flags |= SDR_FLAG_MODEL_GLOW_MAP;
-	if ((tspec->GetTexture() > 0 || tspecgloss->GetTexture() > 0) && Cmdline_spec)
-		shader_flags |= SDR_FLAG_MODEL_SPEC_MAP;
-	if (tnorm->GetTexture() > 0 && Cmdline_normal)
-		shader_flags |= SDR_FLAG_MODEL_NORMAL_MAP;
-	if (theight->GetTexture() > 0 && Cmdline_height)
-		shader_flags |= SDR_FLAG_MODEL_HEIGHT_MAP;
-	if (Cmdline_env) // always render envmaps, they contribue lightning no matter what textures are avaliable.
-		shader_flags |= SDR_FLAG_MODEL_ENV_MAP;
-	if (tmisc->GetTexture() > 0)
-		shader_flags |= SDR_FLAG_MODEL_MISC_MAP;
-	if (tambient->GetTexture() >0)
-		shader_flags |= SDR_FLAG_MODEL_AMBIENT_MAP;
-	
 	gr_maybe_create_shader(SDR_TYPE_MODEL, SDR_FLAG_MODEL_SHADOW_MAP);
+	gr_maybe_create_shader(SDR_TYPE_MODEL, 0);
 
-	shader_flags |= SDR_FLAG_MODEL_CLIP;
-
-	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_ANIMATED);
-	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_ANIMATED | SDR_FLAG_MODEL_FOG);
-
-	shader_flags |= SDR_FLAG_MODEL_DEFERRED;
-
-	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT);
-	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_FOG);
-
-	shader_flags &= ~SDR_FLAG_MODEL_DEFERRED;
-	shader_flags |= SDR_FLAG_MODEL_TRANSFORM;
-
-	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_ANIMATED);
-	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_ANIMATED | SDR_FLAG_MODEL_FOG);
-
-	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT);
-	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_FOG);
-
-	shader_flags |= SDR_FLAG_MODEL_DEFERRED;
-
-	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_ANIMATED);
-	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_ANIMATED | SDR_FLAG_MODEL_FOG);
-
-	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT);
-	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_FOG);
 }
 
 //returns the number of the pof tech model if specified, otherwise number of pof model
@@ -5623,6 +5599,7 @@ void glowpoint_override_defaults(glow_point_bank_override *gpo)
 	gpo->glow_bitmap = -1;
 	gpo->glow_neb_bitmap = -1;
 	gpo->is_on = true;
+	gpo->default_off = false;
 	gpo->type_override = false;
 	gpo->on_time_override = false;
 	gpo->off_time_override = false;
@@ -5694,6 +5671,10 @@ void parse_glowpoint_table(const char *filename)
 
 			if (optional_string("$On:")) {
 				stuff_boolean(&gpo.is_on);
+			}
+
+			if (optional_string("$Default Off:")) {
+				stuff_boolean(&gpo.default_off);
 			}
 
 			if (optional_string("$Displacement time:")) {
