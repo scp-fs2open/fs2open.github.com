@@ -1344,7 +1344,7 @@ ADE_FUNC(createExplosion,
 
 ADE_FUNC(createBolt,
 	l_Mission,
-	"string BoltName, vector Origin, vector Target, [bool PlaySound]",
+	"string BoltName, vector Origin, vector Target, [boolean PlaySound = true]",
 	"Creates a lightning bolt between the origin and target vectors. BoltName is name of a bolt from lightning.tbl",
 	"boolean",
 	"True if successful, false if the bolt could't be created.")
