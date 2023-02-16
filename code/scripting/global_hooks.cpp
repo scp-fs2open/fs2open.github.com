@@ -408,7 +408,7 @@ const std::shared_ptr<OverridableHook<>> OnSplashScreen = OverridableHook<>::Fac
 	CHA_SPLASHSCREEN);
 
 const std::shared_ptr<OverridableHook<ObjectDeathConditions>> OnDeath = OverridableHook<ObjectDeathConditions>::Factory("On Death",
-	"Invoked when an object (ship or asteroid) has been destroyed.  Deprecated in favor of On Ship Destroyed and On Asteroid Destroyed.",
+	"Invoked when an object (ship or asteroid) has been destroyed.  Deprecated in favor of On Ship Death and On Asteroid Death.",
 	{
 		{"Self", "object", "The object that was killed"},
 		{"Ship", "ship", "The ship that was destroyed (only set for ships)"},
