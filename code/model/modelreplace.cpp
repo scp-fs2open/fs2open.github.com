@@ -803,7 +803,7 @@ VirtualPOFOperationAddDockPoint::VirtualPOFOperationAddDockPoint() {
 	required_string("+Source Dock Point:");
 	stuff_string(sourcedock, F_NAME);
 
-	if (required_string("+Parent Submodel:")) {
+	if (optional_string("+Parent Submodel:")) {
 		SCP_string name;
 		stuff_string(name, F_NAME);
 		targetParentSubsystem = std::move(name);
@@ -813,14 +813,14 @@ VirtualPOFOperationAddDockPoint::VirtualPOFOperationAddDockPoint() {
 void VirtualPOFOperationAddDockPoint::process(polymodel* pm, model_read_deferred_tasks& /*deferredTasks*/, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const {
 	const polymodel* appendingPM = virtual_pof_build_cache(appendingPOF, depth)->pm();
 
-	int dockpoint = model_find_dock_name_index(appendingPM->id, sourcedock.c_str());
+	int dockpoint = model_find_dock_name_index(appendingPM, sourcedock.c_str());
 	if (dockpoint < 0) {
 		Warning(LOCATION, "Could not find dockpoint %s on POF %s for virtual POF %s. Returning original POF", sourcedock.c_str(), appendingPOF.c_str(), virtualPof.name.c_str());
 		return;
 	}
 
 	const SCP_string& targetName = renameDock ? *renameDock : sourcedock;
-	if (model_find_dock_name_index(pm->id, targetName.c_str()) >= 0) {
+	if (model_find_dock_name_index(pm, targetName.c_str()) >= 0) {
 		Warning(LOCATION, "Dockpoint %s already exists on POF %s for virtual POF %s. Returning original POF", targetName.c_str(), pm->filename, virtualPof.name.c_str());
 		return;
 	}
@@ -879,13 +879,13 @@ VirtualPOFOperationAddPath::VirtualPOFOperationAddPath() {
 	required_string("+Source Path:");
 	stuff_string(sourcepath, F_NAME);
 
-	if (required_string("+Rename Path:")) {
+	if (optional_string("+Rename Path:")) {
 		SCP_string name;
 		stuff_string(name, F_NAME);
 		renamePath = std::move(name);
 	}
 
-	if (required_string("+Parent Submodel:")) {
+	if (optional_string("+Parent Submodel:")) {
 		SCP_string name;
 		stuff_string(name, F_NAME);
 		targetParentSubsystem = std::move(name);

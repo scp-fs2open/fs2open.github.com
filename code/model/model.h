@@ -1215,7 +1215,9 @@ extern int model_find_submodel_index(const polymodel* pm, const char* name);
 // Returns the index.  second functions returns the index of the docking bay with
 // the specified name
 extern int model_find_dock_index(int modelnum, int dock_type, int index_to_start_at = 0);
+extern int model_find_dock_index(const polymodel* pm, int dock_type, int index_to_start_at = 0);
 extern int model_find_dock_name_index(int modelnum, const char* name);
+extern int model_find_dock_name_index(const polymodel* pm, const char* name);
 
 // returns the actual name of a docking point on a model, needed by Fred.
 char *model_get_dock_name(int modelnum, int index);
