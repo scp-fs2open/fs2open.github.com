@@ -336,6 +336,7 @@ flag_def_list_new<Mission::Parse_Object_Flags> Parse_object_flags[] = {
     { "aspect-immune",						Mission::Parse_Object_Flags::SF_Aspect_immune, true, false },
 	{ "cannot-perform-scan",			Mission::Parse_Object_Flags::SF_Cannot_perform_scan,	true, false },
 	{ "no-targeting-limits",				Mission::Parse_Object_Flags::SF_No_targeting_limits, true, false},
+	{ "radar-stealth-visible",              Mission::Parse_Object_Flags::SF_Radar_stealth_visible, true, false},
 };
 
 const size_t Num_parse_object_flags = sizeof(Parse_object_flags) / sizeof(flag_def_list_new<Mission::Parse_Object_Flags>);
@@ -2724,6 +2725,9 @@ void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> &par
 
 	if (parse_flags[Mission::Parse_Object_Flags::SF_No_targeting_limits])
 		shipp->flags.set(Ship::Ship_Flags::No_targeting_limits);
+
+	if (parse_flags[Mission::Parse_Object_Flags::SF_Radar_stealth_visible])
+		shipp->flags.set(Ship::Ship_Flags::Radar_stealth_visible);
 }
 
 void fix_old_special_explosions(p_object *p_objp, int variable_index) 

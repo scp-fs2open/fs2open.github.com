@@ -109,6 +109,7 @@ namespace Mission {
 		SF_Aspect_immune,				// Kiloku - Ship cannot be locked onto by aspect seeking weapons
 		SF_Cannot_perform_scan,			// Goober5000 - ship cannot scan other ships
 		SF_No_targeting_limits,			// MjnMixael - Ship is always targetable regardless of AWACS or targeting range limits
+		SF_Radar_stealth_visible,		// MjnMixael - Ship is visible on radar even if stealthed.
 
 		NUM_VALUES
 	};

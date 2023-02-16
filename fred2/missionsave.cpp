@@ -3554,6 +3554,8 @@ int CFred_mission_save::save_objects()
 				fout(" \"cannot-perform-scan\"");
 			if (shipp->flags[Ship::Ship_Flags::No_targeting_limits])
 				fout(" \"no-targeting-limits\"");
+			if (shipp->flags[Ship::Ship_Flags::Radar_stealth_visible])
+				fout(" \"radar-stealth-visible\"");
 			fout(" )");
 		}
 		// -----------------------------------------------------------

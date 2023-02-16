@@ -173,6 +173,11 @@ void radar_plot_object( object *objp )
 		if (Player_ship != NULL) {
 			if (ship_is_visible_by_team(objp, Player_ship)) {
 				ship_is_visible = 1;
+			} else {
+				//Ship returned not visible, so now check that it should be on radar regardless of stealth
+				ship* shipp = &Ships[objp->instance];
+				if ((shipp->flags[Ship::Ship_Flags::Stealth] && shipp->flags[Ship::Ship_Flags::Radar_stealth_visible]))
+					ship_is_visible = 1;
 			}
 		}
 	}
@@ -529,8 +534,12 @@ RadarVisibility radar_is_visible( object *objp )
 	switch (objp->type)
 	{
 		case OBJ_SHIP:
-			if (Ships[objp->instance].flags[Ship::Ship_Flags::Stealth])
+		if (Ships[objp->instance].flags[Ship::Ship_Flags::Stealth])
+			if (Ships[objp->instance].flags[Ship::Ship_Flags::Radar_stealth_visible]) {
+				return VISIBLE;
+			} else {
 				return NOT_VISIBLE;
+			}
 
 			// Ships that are warp in in are not visible on the radar
 			if (Ships[objp->instance].is_arriving(ship::warpstage::STAGE1, false))
