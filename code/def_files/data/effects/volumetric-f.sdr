@@ -37,6 +37,11 @@ float henyey_greenstein(float cosTheta) {
 	return sqrt4pi_inv * (1.0 - heyneyGreensteinCoeff * heyneyGreensteinCoeff) / pow(radicant, 3.0 / 2.0);
 }
 
+/*
+Base idea of sampling volumetrics from multiple LOD 3D-Textures with cloud models / noise as well as the shading for the diffuse
+part of the volumetrics is adapted from Andrew Schneider's 2015 SIGGRAPH talk "The real-time volumetric cloudscapes of Horizon: Zero Dawn".
+*/
+
 void main()
 {
 	vec4 eyeDirection = p_inv * vec4(fragTexCoord.xy * 2.0 - 1.0, -1, 1);
