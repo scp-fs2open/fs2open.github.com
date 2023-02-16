@@ -3995,6 +3995,16 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				}
 				break;
 
+			case OPF_BOLT_TYPE:
+				if (type2 != SEXP_ATOM_STRING) {
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+
+				if (get_bolt_type_by_name(CTEXT(node)) < 0) {
+					return SEXP_CHECK_INVALID_BOLT_TYPE;
+				}
+				break;
+
 			default:
 				if (Dynamic_enums.size() > 0) {
 					if ((type - First_available_opf_id) < (int)Dynamic_enums.size()) {
@@ -32762,6 +32772,9 @@ const char *sexp_error_message(int num)
 
 		case SEXP_CHECK_INVALID_MOTION_DEBRIS:
 			return "Invalid motion debris type";
+
+		case SEXP_CHECK_INVALID_BOLT_TYPE:
+			return "Invalid lightning bolt type";
 
 		default:
 			Warning(LOCATION, "Unhandled sexp error code %d!", num);
