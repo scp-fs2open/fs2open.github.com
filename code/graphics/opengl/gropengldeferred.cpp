@@ -370,7 +370,7 @@ void gr_opengl_deferred_lighting_finish()
 		gr_opengl_tcache_set(bitmap_handle, TCACHE_TYPE_3DTEX, &u_scale, &v_scale, &array_index, 3);
 
 		//How many steps are used to nebulify the volume until the visibility is reached. In theory purely quality and can be changed without changing the aesthetics.
-		float steps = 15.0f;
+		int steps = 15;
 		//The distance in meters until the target translucity is reached
 		float visibility = 7.5f;
 		//The target translucity. The nebula won't get more opaque than what is specified here. 0 is not possible.
@@ -378,11 +378,15 @@ void gr_opengl_deferred_lighting_finish()
 		//How quickly the emissive will widen in the nebula. The larger the value, the wider will emissives be drawn even with only little nebula to obscure it.
 		float emissiveSpread = 1.0f;
 		//How intense emissives will be added. The higher, the brighter the emissives.
-		float emissiveIntensity = 1.0f;
+		float emissiveIntensity = 0.0f;
 		//Correcting factor for emissive alpha. Values > 1 will darken the added emissive closer to the actual source, values < 1 will lighten the added emissive closer to the actual source.
 		float emissiveFalloff = 1.33f;
 		//HG coefficient for backlit nebulae. (-1, 1), but should probably be in the range of (0.2, 0.9)
-		float heyneyGreensteinCoeff = 0.7;
+		float heyneyGreensteinCoeff = 0.2f;
+		//Number of steps per nebula slice to test towards the sun
+		int globalLightSteps = 6;
+		//Distance factor for global light vs nebula translucity. Values > 1 means the nebula is brighter than it ought to be, values < 0 means it's darker
+		float globalLightDistanceFactor = 1.0f;
 
 		opengl_set_generic_uniform_data<graphics::generic_data::volumetric_fog_data>([&](graphics::generic_data::volumetric_fog_data* data) {
 			vm_inverse_matrix4(&data->p_inv, &gr_projection_matrix);
@@ -392,13 +396,15 @@ void gr_opengl_deferred_lighting_finish()
 			data->camera_pos = Eye_position;
 			data->globalLightDirection = global_light ? global_light->vec : vec3d(ZERO_VECTOR);
 			data->globalLightDiffuse = global_light_diffuse;
-			data->stepsize = visibility / steps;
-			data->globalstepalpha = -(powf(alphaLim, 1.0f / steps) - 1.0f);
+			data->stepsize = visibility / static_cast<float>(steps);
+			data->globalstepalpha = -(powf(alphaLim, 1.0f / static_cast<float>(steps)) - 1.0f);
 			data->alphalimit = alphaLim;
 			data->emissiveSpreadFactor = emissiveSpread;
 			data->emissiveIntensity = emissiveIntensity;
 			data->emissiveFalloff = emissiveFalloff;
 			data->heyneyGreensteinCoeff = heyneyGreensteinCoeff;
+			data->directionalLightSampleSteps = globalLightSteps;
+			data->directionalLightStepSize = visibility / static_cast<float>(globalLightSteps) * globalLightDistanceFactor;
 			});
 
 		opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);

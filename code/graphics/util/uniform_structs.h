@@ -320,7 +320,8 @@ struct volumetric_fog_data {
 	float stepsize, globalstepalpha, alphalimit;
 	float emissiveSpreadFactor, emissiveIntensity, emissiveFalloff;
 	float heyneyGreensteinCoeff;
-	float pad[2];
+	int directionalLightSampleSteps;
+	float directionalLightStepSize;
 };
 
 struct blur_data {

@@ -23,10 +23,13 @@ layout (std140) uniform genericData {
 	float emissiveIntensity;
 	float emissiveFalloff;
 	float heyneyGreensteinCoeff;
+	int directionalLightSampleSteps;
+	float directionalLightStepSize;
 };
 
 const float sqrt2_inv = inversesqrt(2);
 const float sqrt4pi_inv = inversesqrt(4.0 * 3.14159);
+const float beer_powder_norm = 3.0/2.0 * sqrt(3.0);
 
 //HG assumes that the scatter vectors between which is theta both point away from the point of scatter
 float henyey_greenstein(float cosTheta) {
@@ -62,12 +65,20 @@ void main()
 
 	for(float step = maxtMin; step < mintMax; step += stepsize) {
 		//Step setup
-		vec4 volume_sample = texture(volume_tex, (camera + rayDirection * step) / 60.0 + 0.5);
+		vec3 position = camera + rayDirection * step;
+		vec4 volume_sample = texture(volume_tex, position / 60.0 + 0.5);
 		float stepcolor_alpha = volume_sample.a;
 		cumnebdist += stepcolor_alpha * stepsize;
 
 		//Diffuse
-		vec3 stepcolor_diffuse = volume_sample.rgb * henyey_greenstein(dot(rayDirection, normalize(globalLightDirection)));
+		vec3 stepcolor_diffuse = volume_sample.rgb * henyey_greenstein(dot(rayDirection, globalLightDirection));
+		float directionalLightStep = 4.0 / float(directionalLightSampleSteps);
+		float directionalLightDepth = 0.1;
+		for(int dlstep = 1; dlstep <= directionalLightSampleSteps; dlstep++){
+			float dlstepalpha = texture(volume_tex, (position - globalLightDirection * (dlstep * directionalLightStepSize)) / 60.0 + 0.5).a;
+			directionalLightDepth += dlstepalpha * directionalLightStep;
+		}
+		stepcolor_diffuse *= beer_powder_norm * (1 - exp(-directionalLightDepth * 2.0)) * exp(-directionalLightDepth);
 
 		//Emissive
 		vec3 emissive_lod = textureLod(emissive, fragTexCoord.xy, clamp(cumnebdist * emissiveSpreadFactor, 0, float(textureQueryLevels(emissive) - 1))).rgb;
