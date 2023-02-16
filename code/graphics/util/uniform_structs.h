@@ -319,7 +319,8 @@ struct volumetric_fog_data {
 	vec3d globalLightDiffuse;
 	float stepsize, globalstepalpha, alphalimit;
 	float emissiveSpreadFactor, emissiveIntensity, emissiveFalloff;
-	float pad[3];
+	float heyneyGreensteinCoeff;
+	float pad[2];
 };
 
 struct blur_data {

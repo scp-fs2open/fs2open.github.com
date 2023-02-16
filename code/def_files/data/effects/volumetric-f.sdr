@@ -22,9 +22,17 @@ layout (std140) uniform genericData {
 	float emissiveSpreadFactor;
 	float emissiveIntensity;
 	float emissiveFalloff;
+	float heyneyGreensteinCoeff;
 };
 
 const float sqrt2_inv = inversesqrt(2);
+const float sqrt4pi_inv = inversesqrt(4.0 * 3.14159);
+
+//HG assumes that the scatter vectors between which is theta both point away from the point of scatter
+float henyey_greenstein(float cosTheta) {
+	float radicant = 1.0 + heyneyGreensteinCoeff * heyneyGreensteinCoeff + 2.0 * heyneyGreensteinCoeff * cosTheta;
+	return sqrt4pi_inv * (1.0 - heyneyGreensteinCoeff * heyneyGreensteinCoeff) / pow(radicant, 3.0 / 2.0);
+}
 
 void main()
 {
@@ -59,7 +67,7 @@ void main()
 		cumnebdist += stepcolor_alpha * stepsize;
 
 		//Diffuse
-		vec3 stepcolor_diffuse = volume_sample.rgb;
+		vec3 stepcolor_diffuse = volume_sample.rgb * henyey_greenstein(dot(rayDirection, normalize(globalLightDirection)));
 
 		//Emissive
 		vec3 emissive_lod = textureLod(emissive, fragTexCoord.xy, clamp(cumnebdist * emissiveSpreadFactor, 0, float(textureQueryLevels(emissive) - 1))).rgb;

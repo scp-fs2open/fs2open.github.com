@@ -381,6 +381,8 @@ void gr_opengl_deferred_lighting_finish()
 		float emissiveIntensity = 1.0f;
 		//Correcting factor for emissive alpha. Values > 1 will darken the added emissive closer to the actual source, values < 1 will lighten the added emissive closer to the actual source.
 		float emissiveFalloff = 1.33f;
+		//HG coefficient for backlit nebulae. (-1, 1), but should probably be in the range of (0.2, 0.9)
+		float heyneyGreensteinCoeff = 0.7;
 
 		opengl_set_generic_uniform_data<graphics::generic_data::volumetric_fog_data>([&](graphics::generic_data::volumetric_fog_data* data) {
 			vm_inverse_matrix4(&data->p_inv, &gr_projection_matrix);
@@ -396,6 +398,7 @@ void gr_opengl_deferred_lighting_finish()
 			data->emissiveSpreadFactor = emissiveSpread;
 			data->emissiveIntensity = emissiveIntensity;
 			data->emissiveFalloff = emissiveFalloff;
+			data->heyneyGreensteinCoeff = heyneyGreensteinCoeff;
 			});
 
 		opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
