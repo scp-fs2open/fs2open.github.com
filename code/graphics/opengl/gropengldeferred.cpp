@@ -153,6 +153,10 @@ void gr_opengl_deferred_lighting_finish()
 	auto buffer          = gr_get_uniform_buffer(uniform_block_type::Lights, num_data_elements);
 	auto& uniformAligner = buffer.aligner();
 
+	// This is the light which is responsible for shadows and volumetric nebula lighting
+	const light* global_light = nullptr;
+	vec3d global_light_diffuse;
+
 	{
 		GR_DEBUG_SCOPE("Build buffer data");
 
@@ -199,6 +203,13 @@ void gr_opengl_deferred_lighting_finish()
 				if (Shadow_quality != ShadowQuality::Disabled) {
 					light_data->enable_shadows = first_directional ? 1 : 0;
 				}
+
+				// Global light direction should match shadow light direction
+				if (first_directional) {
+					global_light = &l;
+					global_light_diffuse = diffuse;
+				}
+				
 				vec4 light_dir;
 				light_dir.xyzw.x = -l.vec.xyz.x;
 				light_dir.xyzw.y = -l.vec.xyz.y;
@@ -367,9 +378,9 @@ void gr_opengl_deferred_lighting_finish()
 		//How quickly the emissive will widen in the nebula. The larger the value, the wider will emissives be drawn even with only little nebula to obscure it.
 		float emissiveSpread = 1.0f;
 		//How intense emissives will be added. The higher, the brighter the emissives.
-		float emissiveIntensity = 2.0f;
+		float emissiveIntensity = 1.0f;
 		//Correcting factor for emissive alpha. Values > 1 will darken the added emissive closer to the actual source, values < 1 will lighten the added emissive closer to the actual source.
-		float emissiveFalloff = 0.33f;
+		float emissiveFalloff = 1.33f;
 
 		opengl_set_generic_uniform_data<graphics::generic_data::volumetric_fog_data>([&](graphics::generic_data::volumetric_fog_data* data) {
 			vm_inverse_matrix4(&data->p_inv, &gr_projection_matrix);
@@ -377,6 +388,8 @@ void gr_opengl_deferred_lighting_finish()
 			data->zNear = Min_draw_distance;
 			data->zFar = Max_draw_distance;
 			data->camera_pos = Eye_position;
+			data->globalLightDirection = global_light ? global_light->vec : vec3d(ZERO_VECTOR);
+			data->globalLightDiffuse = global_light_diffuse;
 			data->stepsize = visibility / steps;
 			data->globalstepalpha = -(powf(alphaLim, 1.0f / steps) - 1.0f);
 			data->alphalimit = alphaLim;

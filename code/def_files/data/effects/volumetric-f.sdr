@@ -13,7 +13,9 @@ layout (std140) uniform genericData {
 	mat4 v_inv;
 	vec3 camera;
 	float zNear;
+	vec3 globalLightDirection;
 	float zFar;
+	vec3 globalLightDiffuse;
 	float stepsize;
 	float globalstepalpha;
 	float alphalim;
@@ -49,24 +51,23 @@ void main()
 	float cumOMAlpha = 1;
 	float cumnebdist = 0;
 	vec3 cumcolor = vec3(0, 0, 0);
-	float stepalpha;
-	vec3 stepcolor;
 
 	for(float step = maxtMin; step < mintMax; step += stepsize) {
-		vec4 stepcolor_diffuse = texture(volume_tex, (camera + rayDirection * step) / 60.0 + 0.5);
-		vec3 stepcolor_emissive = vec3(0,0,0);
-		float stepcolor_alpha = stepcolor_diffuse.a;
-
-		//This is supposed to overlay lower mipmaps of the emissive texture depending on depth, making further away light sources bloom more in the nebula, but it doesn't seem to fetch lower LODs...
-		//Alternative ideas were to sample the emissive texture itself in a ring around the ray, but I didn't manage to properly calculate the sampler coordinates for that from the world pos of the ray
-		
+		//Step setup
+		vec4 volume_sample = texture(volume_tex, (camera + rayDirection * step) / 60.0 + 0.5);
+		float stepcolor_alpha = volume_sample.a;
 		cumnebdist += stepcolor_alpha * stepsize;
+
+		//Diffuse
+		vec3 stepcolor_diffuse = volume_sample.rgb;
+
+		//Emissive
 		vec3 emissive_lod = textureLod(emissive, fragTexCoord.xy, clamp(cumnebdist * emissiveSpreadFactor, 0, float(textureQueryLevels(emissive) - 1))).rgb;
-		stepcolor_emissive += emissive_lod.rgb * pow(1 - globalstepalpha, (depth - step) * emissiveFalloff) * emissiveIntensity;
+		vec3 stepcolor_emissive = emissive_lod.rgb * pow(1 - globalstepalpha, (depth - step) * emissiveFalloff) * emissiveIntensity;
 
-		stepcolor = clamp(stepcolor_diffuse.rgb + stepcolor_emissive, 0, 1);
-		stepalpha = globalstepalpha * stepcolor_alpha;
-
+		//Step finish
+		vec3 stepcolor = clamp(stepcolor_diffuse + stepcolor_emissive, 0, 1);
+		float stepalpha = globalstepalpha * stepcolor_alpha;
 		cumcolor += stepalpha * cumOMAlpha * stepcolor;
 		cumOMAlpha *= 1.0 - stepalpha;
 

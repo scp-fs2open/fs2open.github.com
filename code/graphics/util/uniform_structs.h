@@ -314,10 +314,12 @@ struct volumetric_fog_data {
 	matrix4 p_inv, v_inv;
 	vec3d camera_pos;
 	float zNear;
+	vec3d globalLightDirection;
 	float zFar;
+	vec3d globalLightDiffuse;
 	float stepsize, globalstepalpha, alphalimit;
 	float emissiveSpreadFactor, emissiveIntensity, emissiveFalloff;
-	float pad;
+	float pad[3];
 };
 
 struct blur_data {
