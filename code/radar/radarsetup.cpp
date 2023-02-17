@@ -534,7 +534,7 @@ RadarVisibility radar_is_visible( object *objp )
 	switch (objp->type)
 	{
 		case OBJ_SHIP:
-		if (Ships[objp->instance].flags[Ship::Ship_Flags::Stealth])
+		if (Ships[objp->instance].flags[Ship::Ship_Flags::Stealth]) {
 			if (Ships[objp->instance].flags[Ship::Ship_Flags::Radar_stealth_visible]) {
 				return VISIBLE;
 			} else {
@@ -546,6 +546,7 @@ RadarVisibility radar_is_visible( object *objp )
 				return NOT_VISIBLE;
 
 			break;
+		}
 		
 		case OBJ_JUMP_NODE:
 		{
