@@ -1288,7 +1288,9 @@ void brief_render_map(int stage_num, float frametime)
 	g3_set_view_matrix(&Current_cam_pos, &Current_cam_orient, Briefing_window_FOV);
 
 	brief_maybe_create_new_grid(The_grid, &Current_cam_pos, &Current_cam_orient);
-	brief_render_grid(The_grid);
+
+	if (Briefing->stages[stage_num].draw_grid)
+		brief_render_grid(The_grid);
 
 	brief_render_fade_outs(frametime);
 

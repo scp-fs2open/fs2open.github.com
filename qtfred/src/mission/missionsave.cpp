@@ -1090,6 +1090,12 @@ int CFred_mission_save::save_briefing()
 			parse_comments();
 			fout(" %d", bs->camera_time);
 
+			if (!bs->draw_grid) {
+				if (save_format != MissionFormat::RETAIL) {
+					fout("\n$no_grid");
+				}
+			}
+
 			required_string_fred("$num_lines:");
 			parse_comments();
 			fout(" %d", bs->num_lines);
