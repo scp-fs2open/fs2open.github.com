@@ -80,6 +80,7 @@ void main()
 		float directionalLightStep = 4.0 / float(directionalLightSampleSteps);
 		float directionalLightDepth = 0.1;
 		for(int dlstep = 1; dlstep <= directionalLightSampleSteps; dlstep++){
+			//TODO Sample these in a cone towards the sun, not just a line. Also add the high-distance sample for concave nebulae
 			float dlstepalpha = texture(volume_tex, (position - globalLightDirection * (dlstep * directionalLightStepSize)) / 60.0 + 0.5).a;
 			directionalLightDepth += dlstepalpha * directionalLightStep;
 		}

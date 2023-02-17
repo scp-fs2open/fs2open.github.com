@@ -4,6 +4,42 @@
 
 #include <memory>
 
+int volumetric_nebula::getSteps() const {
+	return steps; //potentially adjust for graphics settings in F2 menu
+}
+
+int volumetric_nebula::getGlobalLightSteps() const {
+	return globalLightSteps; //potentially adjust for graphics settings in F2 menu
+}
+
+float volumetric_nebula::getVisibility() const {
+	return visibility;
+}
+
+float volumetric_nebula::getAlphaLim() const {
+	return alphaLim;
+}
+
+float volumetric_nebula::getEmissiveSpread() const {
+	return emissiveSpread;
+}
+
+float volumetric_nebula::getEmissiveIntensity() const {
+	return emissiveIntensity;
+}
+
+float volumetric_nebula::getEmissiveFalloff() const {
+	return emissiveFalloff;
+}
+
+float volumetric_nebula::getHeyneyGreensteinCoeff() const {
+	return heyneyGreensteinCoeff;
+}
+
+float volumetric_nebula::getGlobalLightDistanceFactor() const {
+	return globalLightDistanceFactor;
+}
+
 using volume_grid_base_coarse = volume_grid_base<33>;
 
 static volume_grid_base_coarse volume_grid_base_sphere() {
