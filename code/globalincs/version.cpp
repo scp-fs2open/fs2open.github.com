@@ -19,13 +19,17 @@ bool check_at_least(const version& v) {
 	return get_executable_version() >= v;
 }
 
-SCP_string format_version(const version& v) {
+SCP_string format_version(const version& v, bool exclude_build) {
 	SCP_stringstream ss;
 
-	ss << v.major << "." << v.minor << "." << v.build;
+	ss << v.major << "." << v.minor;
 
-	if (v.revision != 0) {
-		ss << "." << v.revision;
+	if (!exclude_build) {
+		ss << "." << v.build;
+
+		if (v.revision != 0) {
+			ss << "." << v.revision;
+		}
 	}
 
 	return ss.str();
