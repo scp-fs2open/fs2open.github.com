@@ -1140,6 +1140,15 @@ int CFred_mission_save::save_briefing()
 					}
 				}
 
+				if (Mission_save_format != FSO_FORMAT_RETAIL) {
+					if (optional_string_fred("$icon scale:"))
+						parse_comments();
+					else
+						fout("\n$icon scale:");
+
+					fout(" %d", bi->scale);
+				}
+
 				if (optional_string_fred("+id:"))
 					parse_comments();
 				else
