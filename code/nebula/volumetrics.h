@@ -7,8 +7,8 @@
 class volumetric_nebula {
 	//Instance Settings
 	//Type
-	SCP_string hullPof;
-	vec3d pos, size;
+	SCP_string hullPof = "neb.pof";
+	vec3d pos = {{0, 0, 0}}, size = {{60, 60, 60}};
 
 	//Quality
 	//How many steps are used to nebulify the volume until the visibility is reached. In theory purely quality and can be changed without changing the aesthetics. Mostly FPS Cost

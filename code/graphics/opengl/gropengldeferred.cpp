@@ -349,7 +349,7 @@ void gr_opengl_deferred_lighting_finish()
 	else if (true) {
 		static volumetric_nebula neb;
 		if (!neb.isVolumeBitmapValid())
-			neb.renderVolumeBitmap(0.7, 0, 0.3);
+			neb.renderVolumeBitmap(1, 0, 0);
 
 		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
 		gr_set_view_matrix(&Eye_position, &Eye_matrix);

@@ -59,16 +59,18 @@ void volumetric_nebula::renderVolumeBitmap(float r, float g, float b) {
 	int modelnum = model_load(hullPof.c_str(), 0, nullptr);
 
 	mc_info mc;
+	mc_info_init(&mc);
 
 	mc.model_num = modelnum;
 	mc.orient = &vmd_identity_matrix;
 	mc.pos = &vmd_zero_vector;
-	mc.p0 = &vmd_zero_vector;
+	mc.p1 = &vmd_zero_vector;
+	mc.radius = 0.1f;
 
-	mc.flags = MC_CHECK_MODEL | MC_CHECK_INVISIBLE_FACES;
+	mc.flags = MC_CHECK_MODEL | MC_CHECK_SPHERELINE;
 
 	vec3d bl;
-	vm_vec_copy_scale(&bl, &size, 0.5f);
+	vm_vec_copy_scale(&bl, &size, -0.5f);
 
 	for (size_t x = 0; x < nSample; x++) {
 		for (size_t y = 0; y < nSample; y++) {
@@ -77,11 +79,12 @@ void volumetric_nebula::renderVolumeBitmap(float r, float g, float b) {
 				targetPos += vec3d{ {static_cast<float>(x) * size.xyz.x / static_cast<float>(n << (oversampling - 1)),
 									 static_cast<float>(y) * size.xyz.y / static_cast<float>(n << (oversampling - 1)),
 									 static_cast<float>(z) * size.xyz.z / static_cast<float>(n << (oversampling - 1))} };
-				mc.p1 = &targetPos;
+				mc.p0 = &targetPos;
 
 				//currently, model_collide will not return the exact number of collisions a ray has with a model, hence we're limited to convex hulls for now.
+				//Also, backface collision seems to not yet be working.
 				model_collide(&mc);
-				volumeSampleCache[x * nSample * nSample + y * nSample + z] = mc.num_hits != 0;
+				volumeSampleCache[x * nSample * nSample + y * nSample + z] = mc.num_hits == 0;
 			}
 		}
 	}
