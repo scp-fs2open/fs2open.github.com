@@ -6,7 +6,10 @@
 
 class volumetric_nebula {
 	//Instance Settings
-	
+	//Type
+	SCP_string hullPof;
+	vec3d pos, size;
+
 	//Quality
 	//How many steps are used to nebulify the volume until the visibility is reached. In theory purely quality and can be changed without changing the aesthetics. Mostly FPS Cost
 	int steps = 15;
@@ -38,6 +41,7 @@ class volumetric_nebula {
 	float globalLightDistanceFactor = 1.0f;
 
 	//Instance Data
+
 	int volumeBitmapHandle = -1;
 	std::unique_ptr<ubyte[]> volumeBitmapData = nullptr;
 
