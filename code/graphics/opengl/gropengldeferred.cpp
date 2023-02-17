@@ -385,7 +385,7 @@ void gr_opengl_deferred_lighting_finish()
 			data->emissiveSpreadFactor = neb.getEmissiveSpread();
 			data->emissiveIntensity = neb.getEmissiveIntensity();
 			data->emissiveFalloff = neb.getEmissiveFalloff();
-			data->heyneyGreensteinCoeff = neb.getHeyneyGreensteinCoeff();
+			data->henyeyGreensteinCoeff = neb.getHenyeyGreensteinCoeff();
 			data->directionalLightSampleSteps = neb.getGlobalLightSteps();
 			data->directionalLightStepSize = neb.getVisibility() / static_cast<float>(neb.getGlobalLightSteps()) * neb.getGlobalLightDistanceFactor();
 			});

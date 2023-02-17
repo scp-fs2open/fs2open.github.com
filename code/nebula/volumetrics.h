@@ -15,7 +15,7 @@ class volumetric_nebula {
 	//Resolution of 3D texture as 2^n. 5 - 8 recommended. Mostly VRAM cost
 	int resolution = 6;
 	//Oversampling of 3D-Texture. Will octuple loading computation time for each value, but improves banding especially at lower resolutions. 1 - 3. Mostly Loading time cost.
-	int oversampling = 1;
+	int oversampling = 2;
 
 	//General Visibility
 	//The distance in meters until the target translucity is reached
@@ -33,7 +33,7 @@ class volumetric_nebula {
 
 	//Sun-based illumination
 	//HG coefficient for backlit nebulae. (-1, 1), but should probably be in the range of (0.05, 0.75)
-	float heyneyGreensteinCoeff = 0.2f;
+	float henyeyGreensteinCoeff = 0.2f;
 	//Distance factor for global light vs nebula translucity. Values > 1 means the nebula is brighter than it ought to be when it's deeper, values < 0 means it's darker when its shallower
 	float globalLightDistanceFactor = 1.0f;
 
@@ -55,7 +55,7 @@ public:
 	float getEmissiveIntensity() const;
 	float getEmissiveFalloff() const;
 
-	float getHeyneyGreensteinCoeff() const;
+	float getHenyeyGreensteinCoeff() const;
 	float getGlobalLightDistanceFactor() const;
 
 	bool isVolumeBitmapValid() const;

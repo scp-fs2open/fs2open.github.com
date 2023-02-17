@@ -22,7 +22,7 @@ layout (std140) uniform genericData {
 	float emissiveSpreadFactor;
 	float emissiveIntensity;
 	float emissiveFalloff;
-	float heyneyGreensteinCoeff;
+	float henyeyGreensteinCoeff;
 	int directionalLightSampleSteps;
 	float directionalLightStepSize;
 };
@@ -33,8 +33,8 @@ const float beer_powder_norm = 3.0/2.0 * sqrt(3.0);
 
 //HG assumes that the scatter vectors between which is theta both point away from the point of scatter
 float henyey_greenstein(float cosTheta) {
-	float radicant = 1.0 + heyneyGreensteinCoeff * heyneyGreensteinCoeff + 2.0 * heyneyGreensteinCoeff * cosTheta;
-	return sqrt4pi_inv * (1.0 - heyneyGreensteinCoeff * heyneyGreensteinCoeff) / pow(radicant, 3.0 / 2.0);
+	float radicant = 1.0 + henyeyGreensteinCoeff * henyeyGreensteinCoeff + 2.0 * henyeyGreensteinCoeff * cosTheta;
+	return sqrt4pi_inv * (1.0 - henyeyGreensteinCoeff * henyeyGreensteinCoeff) / pow(radicant, 3.0 / 2.0);
 }
 
 /*

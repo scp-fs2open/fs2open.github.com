@@ -36,8 +36,8 @@ float volumetric_nebula::getEmissiveFalloff() const {
 	return emissiveFalloff;
 }
 
-float volumetric_nebula::getHeyneyGreensteinCoeff() const {
-	return heyneyGreensteinCoeff;
+float volumetric_nebula::getHenyeyGreensteinCoeff() const {
+	return henyeyGreensteinCoeff;
 }
 
 float volumetric_nebula::getGlobalLightDistanceFactor() const {
