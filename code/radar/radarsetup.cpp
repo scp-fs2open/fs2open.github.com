@@ -540,13 +540,13 @@ RadarVisibility radar_is_visible( object *objp )
 			} else {
 				return NOT_VISIBLE;
 			}
-
-			// Ships that are warp in in are not visible on the radar
-			if (Ships[objp->instance].is_arriving(ship::warpstage::STAGE1, false))
-				return NOT_VISIBLE;
-
-			break;
 		}
+
+		// Ships that are warp in in are not visible on the radar
+		if (Ships[objp->instance].is_arriving(ship::warpstage::STAGE1, false))
+			return NOT_VISIBLE;
+
+		break;
 		
 		case OBJ_JUMP_NODE:
 		{
