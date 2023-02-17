@@ -2904,7 +2904,7 @@ void sexp_tree::update_help(QTreeWidgetItem* h) {
 
 				// Ship flags are pulled from multiple categories, so we have to search them all. Ew.
 				if (object_flag != Object::Object_Flags::NUM_VALUES) {
-					for (size_t n = 0; n < Num_object_flag_names; n++) {
+					for (size_t n = 0; n < (size_t)Num_object_flag_names; n++) {
 						if (object_flag == Object_flag_descriptions[n].flag) {
 							desc = Object_flag_descriptions[n].flag_desc;
 							break;
@@ -2913,7 +2913,7 @@ void sexp_tree::update_help(QTreeWidgetItem* h) {
 				}
 
 				if (ship_flag != Ship::Ship_Flags::NUM_VALUES) {
-					for (size_t n = 0; n < Num_ship_flag_names; n++) {
+					for (size_t n = 0; n < (size_t)Num_ship_flag_names; n++) {
 						if (ship_flag == Ship_flag_descriptions[n].flag) {
 							desc = Ship_flag_descriptions[n].flag_desc;
 							break;
@@ -2922,7 +2922,7 @@ void sexp_tree::update_help(QTreeWidgetItem* h) {
 				}
 
 				if (ai_flag != AI::AI_Flags::NUM_VALUES) {
-					for (size_t n = 0; n < Num_ai_flag_names; n++) {
+					for (size_t n = 0; n < (size_t)Num_ai_flag_names; n++) {
 						if (ai_flag == Ai_flag_descriptions[n].flag) {
 							desc = Ai_flag_descriptions[n].flag_desc;
 							break;
@@ -2933,7 +2933,7 @@ void sexp_tree::update_help(QTreeWidgetItem* h) {
 				// Only check through parse object flags if we haven't found anything yet
 				if (desc.empty()) {
 					if (parse_obj_flag != Mission::Parse_Object_Flags::NUM_VALUES) {
-						for (size_t n = 0; n < Num_parse_object_flags; n++) {
+						for (size_t n = 0; n < (size_t)Num_parse_object_flags; n++) {
 							if (parse_obj_flag == Parse_object_flag_descriptions[n].def) {
 								desc = Parse_object_flag_descriptions[n].flag_desc;
 								break;
@@ -2959,7 +2959,7 @@ void sexp_tree::update_help(QTreeWidgetItem* h) {
 				sexp_check_flag_array(tree_nodes[i].text, wing_flag);
 
 				if (wing_flag != Ship::Wing_Flags::NUM_VALUES) {
-					for (size_t n = 0; n < Num_wing_flag_names; n++) {
+					for (size_t n = 0; n < (size_t)Num_wing_flag_names; n++) {
 						if (wing_flag == Wing_flag_descriptions[n].flag) {
 							desc = Wing_flag_descriptions[n].flag_desc;
 							break;
