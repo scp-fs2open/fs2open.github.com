@@ -347,7 +347,9 @@ void gr_opengl_deferred_lighting_finish()
 		opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
 	}
 	else if (true) {
-		static auto volumeTex = fromSphere(255, 0, 0);
+		static volumetric_nebula neb;
+		if (!neb.isVolumeBitmapValid())
+			neb.renderVolumeBitmap(0.7, 0, 0.3);
 
 		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
 		gr_set_view_matrix(&Eye_position, &Eye_matrix);
@@ -355,7 +357,7 @@ void gr_opengl_deferred_lighting_finish()
 		//If halfneb
 		float u_scale, v_scale;
 		uint32_t array_index;
-		int bitmap_handle = volumeTex.getBitmapHandle();
+		int bitmap_handle = neb.getVolumeBitmapHandle();
 
 		GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
 		gr_zbuffer_set(GR_ZBUFF_NONE);
@@ -368,8 +370,6 @@ void gr_opengl_deferred_lighting_finish()
 		GL_state.Texture.Enable(2, GL_TEXTURE_2D, Scene_depth_texture);
 		
 		gr_opengl_tcache_set(bitmap_handle, TCACHE_TYPE_3DTEX, &u_scale, &v_scale, &array_index, 3);
-
-		volumetric_nebula neb;
 
 		opengl_set_generic_uniform_data<graphics::generic_data::volumetric_fog_data>([&](graphics::generic_data::volumetric_fog_data* data) {
 			vm_inverse_matrix4(&data->p_inv, &gr_projection_matrix);
