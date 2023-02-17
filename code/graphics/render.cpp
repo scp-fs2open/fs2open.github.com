@@ -95,8 +95,7 @@ static void bitmap_ex_internal(int x,
 							   int resize_mode,
 							   bool aabitmap,
 							   bool mirror,
-							   color* clr,
-							   int scale = 100) {
+							   color* clr) {
 	if ((w < 1) || (h < 1)) {
 		return;
 	}
@@ -117,9 +116,6 @@ static void bitmap_ex_internal(int x,
 	}
 
 	bm_get_info(gr_screen.current_bitmap, &bw, &bh);
-
-	bw = (bw * scale) / 100;
-	bh = (bh * scale) / 100;
 
 	u0 = (i2fl(sx) / i2fl(bw));
 	v0 = (i2fl(sy) / i2fl(bh));
@@ -163,7 +159,7 @@ static void bitmap_ex_internal(int x,
 	draw_textured_quad(&render_mat, x1, y1, u0, v0, x2, y2, u1, v1);
 }
 
-void gr_aabitmap(int x, int y, int resize_mode, bool mirror, int scale) {
+void gr_aabitmap(int x, int y, int resize_mode, bool mirror) {
 	if (gr_screen.mode == GR_STUB) {
 		return;
 	}
@@ -173,9 +169,6 @@ void gr_aabitmap(int x, int y, int resize_mode, bool mirror, int scale) {
 	int w, h, do_resize;
 
 	bm_get_info(gr_screen.current_bitmap, &w, &h);
-
-	w = (w * scale) / 100;
-	h = (h * scale) / 100;
 
 	if (resize_mode != GR_RESIZE_NONE && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1))) {
 		do_resize = 1;
@@ -238,8 +231,7 @@ void gr_aabitmap(int x, int y, int resize_mode, bool mirror, int scale) {
 					   resize_mode,
 					   true,
 					   mirror,
-					   &gr_screen.current_color,
-					   scale);
+					   &gr_screen.current_color);
 }
 void gr_aabitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode, bool mirror) {
 	if (gr_screen.mode == GR_STUB) {
