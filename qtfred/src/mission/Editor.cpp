@@ -6,6 +6,7 @@
 #include <clocale>
 
 #include <SDL.h>
+#include <ai/ai.h>
 #include <sound/audiostr.h>
 #include <parse/parselo.h>
 #include <missionui/fictionviewer.h>
@@ -422,7 +423,7 @@ void Editor::clearMission() {
 	strftime(time_buffer, 26, "%Y-%m-%d %H:%M:%S", tm_info);
 
 	strcpy_s(The_mission.name, "Untitled");
-	strncpy(The_mission.author, userName.c_str(), NAME_LENGTH - 1);
+	The_mission.author = userName;
 	The_mission.author[NAME_LENGTH - 1] = 0;
 	strcpy_s(The_mission.created, time_buffer);
 	strcpy_s(The_mission.modified, The_mission.created);
