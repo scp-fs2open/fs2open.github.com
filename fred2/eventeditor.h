@@ -33,6 +33,9 @@ protected:
 	virtual void PreSubclassWindow();
 	virtual void OnCustomDraw(NMHDR* pNMHDR, LRESULT* pResult);
 
+	CStringA m_tooltiptextA;
+	CStringW m_tooltiptextW;
+
 	DECLARE_MESSAGE_MAP()
 };
 
