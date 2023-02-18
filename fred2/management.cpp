@@ -1175,7 +1175,7 @@ int common_object_delete(int obj)
 		Assert((i >= 0) && (i < MAX_SHIPS));
 		sprintf(msg, "Player %d", i + 1);
 		name = msg;
-		r = reference_handler(name, SEXP_REF_TYPE::PLAYER, obj);
+		r = reference_handler(name, sexp_ref_type::PLAYER, obj);
 		if (r)
 			return r;
 
@@ -1186,7 +1186,7 @@ int common_object_delete(int obj)
 		}
 
 		Objects[obj].type = OBJ_SHIP;  // was allocated as a ship originally, so remove as such.
-		invalidate_references(name, SEXP_REF_TYPE::PLAYER);
+		invalidate_references(name, sexp_ref_type::PLAYER);
 
 		// check if any ship is docked with this ship and break dock if so
 		while (object_is_docked(&Objects[obj]))
@@ -1218,7 +1218,7 @@ int common_object_delete(int obj)
 		// we'll end up deleting the path, so check for path references
 		if (count == 1) {
 			name = wp_list->get_name();
-			r = reference_handler(name, SEXP_REF_TYPE::WAYPOINT_PATH, obj);
+			r = reference_handler(name, sexp_ref_type::WAYPOINT_PATH, obj);
 			if (r)
 				return r;
 		}
@@ -1226,15 +1226,15 @@ int common_object_delete(int obj)
 		// check for waypoint references
 		sprintf(msg, "%s:%d", wp_list->get_name(), index + 1);
 		name = msg;
-		r = reference_handler(name, SEXP_REF_TYPE::WAYPOINT, obj);
+		r = reference_handler(name, sexp_ref_type::WAYPOINT, obj);
 		if (r)
 			return r;
 
 		// at this point we've confirmed we want to delete it
 
-		invalidate_references(name, SEXP_REF_TYPE::WAYPOINT);
+		invalidate_references(name, sexp_ref_type::WAYPOINT);
 		if (count == 1) {
-			invalidate_references(wp_list->get_name(), SEXP_REF_TYPE::WAYPOINT_PATH);
+			invalidate_references(wp_list->get_name(), sexp_ref_type::WAYPOINT_PATH);
 		}
 
 		// the actual removal code has been moved to this function in waypoints.cpp
@@ -1242,13 +1242,13 @@ int common_object_delete(int obj)
 
 	} else if (type == OBJ_SHIP) {
 		name = Ships[Objects[obj].instance].ship_name;
-		r = reference_handler(name, SEXP_REF_TYPE::SHIP, obj);
+		r = reference_handler(name, sexp_ref_type::SHIP, obj);
 		if (r)
 			return r;
 
 		z = Objects[obj].instance;
 		if (Ships[z].wingnum >= 1) {
-			invalidate_references(name, SEXP_REF_TYPE::SHIP);
+			invalidate_references(name, sexp_ref_type::SHIP);
 			r = delete_ship_from_wing(z);
 			if (r)
 				return r;
@@ -1258,7 +1258,7 @@ int common_object_delete(int obj)
 			if (r)
 				return r;
 
-			invalidate_references(name, SEXP_REF_TYPE::SHIP);
+			invalidate_references(name, sexp_ref_type::SHIP);
 		}
 
 		for (i=0; i<Num_reinforcements; i++)
@@ -1732,7 +1732,7 @@ int rename_ship(int ship, char *name)
 	Assert(strlen(name) < NAME_LENGTH);
 
 	update_sexp_references(Ships[ship].ship_name, name);
-	ai_update_goal_references(SEXP_REF_TYPE::SHIP, Ships[ship].ship_name, name);
+	ai_update_goal_references(sexp_ref_type::SHIP, Ships[ship].ship_name, name);
 	update_texture_replacements(Ships[ship].ship_name, name);
 	for (i=0; i<Num_reinforcements; i++)
 		if (!stricmp(Ships[ship].ship_name, Reinforcements[i].name)) {
@@ -1746,7 +1746,7 @@ int rename_ship(int ship, char *name)
 	return 0;
 }
 
-int invalidate_references(char *name, SEXP_REF_TYPE type)
+int invalidate_references(char *name, sexp_ref_type type)
 {
 	char new_name[512];
 	int i;
@@ -1864,7 +1864,7 @@ int get_ship_from_obj(object *objp)
 	return 0;
 }
 
-void ai_update_goal_references(SEXP_REF_TYPE type, const char *old_name, const char *new_name)
+void ai_update_goal_references(sexp_ref_type type, const char *old_name, const char *new_name)
 {
 	int i;
 
@@ -1877,21 +1877,21 @@ void ai_update_goal_references(SEXP_REF_TYPE type, const char *old_name, const c
 			ai_update_goal_references(Wings[i].ai_goals, type, old_name, new_name);
 }
 
-std::pair<int, SEXP_SRC> query_referenced_in_ai_goals(SEXP_REF_TYPE type, const char *name)
+std::pair<int, sexp_src> query_referenced_in_ai_goals(sexp_ref_type type, const char *name)
 {
 	int i;
 
 	for (i=0; i<MAX_AI_INFO; i++)  // loop through all Ai_info entries
 		if (Ai_info[i].shipnum >= 0)  // skip if unused
 			if (query_referenced_in_ai_goals(Ai_info[i].goals, type, name))
-				return std::make_pair(Ai_info[i].shipnum, SEXP_SRC::SHIP_ORDER);
+				return std::make_pair(Ai_info[i].shipnum, sexp_src::SHIP_ORDER);
 
 	for (i=0; i<MAX_WINGS; i++)
 		if (Wings[i].wave_count)
 			if (query_referenced_in_ai_goals(Wings[i].ai_goals, type, name))
-				return std::make_pair(i, SEXP_SRC::WING_ORDER);
+				return std::make_pair(i, sexp_src::WING_ORDER);
 
-	return std::make_pair(-1, SEXP_SRC::NONE);
+	return std::make_pair(-1, sexp_src::NONE);
 }
 
 int advanced_stricmp(char *one, char *two)
@@ -1911,30 +1911,30 @@ int advanced_stricmp(char *one, char *two)
 // returns 0: go ahead change object
 //			  1: don't change it
 //			  2: abort (they used cancel to go to reference)
-int reference_handler(char *name, SEXP_REF_TYPE type, int obj)
+int reference_handler(char *name, sexp_ref_type type, int obj)
 {
 	char msg[2048], text[128], type_name[128];
 	int r, n, node;
-	SEXP_SRC source;
+	sexp_src source;
 
 	switch (type) {
-		case SEXP_REF_TYPE::SHIP:
+		case sexp_ref_type::SHIP:
 			sprintf(type_name, "Ship \"%s\"", name);
 			break;
 
-		case SEXP_REF_TYPE::WING:
+		case sexp_ref_type::WING:
 			sprintf(type_name, "Wing \"%s\"", name);
 			break;
 
-		case SEXP_REF_TYPE::PLAYER:
+		case sexp_ref_type::PLAYER:
 			strcpy_s(type_name, name);
 			break;
 
-		case SEXP_REF_TYPE::WAYPOINT:
+		case sexp_ref_type::WAYPOINT:
 			sprintf(type_name, "Waypoint \"%s\"", name);
 			break;
 
-		case SEXP_REF_TYPE::WAYPOINT_PATH:
+		case sexp_ref_type::WAYPOINT_PATH:
 			sprintf(type_name, "Waypoint path \"%s\"", name);
 			break;
 
@@ -1946,25 +1946,25 @@ int reference_handler(char *name, SEXP_REF_TYPE type, int obj)
 	n = pair.first;
 	source = pair.second;
 
-	if (source != SEXP_SRC::NONE) {
+	if (source != sexp_src::NONE) {
 		switch (source) {
-			case SEXP_SRC::SHIP_ARRIVAL:
+			case sexp_src::SHIP_ARRIVAL:
 				sprintf(text, "the arrival cue of ship \"%s\"", Ships[n].ship_name);
 				break;
 
-			case SEXP_SRC::SHIP_DEPARTURE:
+			case sexp_src::SHIP_DEPARTURE:
 				sprintf(text, "the departure cue of ship \"%s\"", Ships[n].ship_name);
 				break;
 
-			case SEXP_SRC::WING_ARRIVAL:
+			case sexp_src::WING_ARRIVAL:
 				sprintf(text, "the arrival cue of wing \"%s\"", Wings[n].name);
 				break;
 
-			case SEXP_SRC::WING_DEPARTURE:
+			case sexp_src::WING_DEPARTURE:
 				sprintf(text, "the departure cue of wing \"%s\"", Wings[n].name);
 				break;
 
-			case SEXP_SRC::EVENT:
+			case sexp_src::EVENT:
 				if (!Mission_events[n].name.empty())
 					sprintf(text, "event \"%s\"", Mission_events[n].name.c_str());
 				else
@@ -1972,7 +1972,7 @@ int reference_handler(char *name, SEXP_REF_TYPE type, int obj)
 
 				break;
 
-			case SEXP_SRC::MISSION_GOAL:
+			case sexp_src::MISSION_GOAL:
 				if (!Mission_goals[n].name.empty())
 					sprintf(text, "mission goal \"%s\"", Mission_goals[n].name.c_str());
 				else
@@ -1980,11 +1980,11 @@ int reference_handler(char *name, SEXP_REF_TYPE type, int obj)
 
 				break;
 
-			case SEXP_SRC::DEBRIEFING:
+			case sexp_src::DEBRIEFING:
 				sprintf(text, "debriefing #%d", n);
 				break;
 
-			case SEXP_SRC::BRIEFING:
+			case sexp_src::BRIEFING:
 				sprintf(text, "briefing #%d", n);
 				break;
 
@@ -2018,13 +2018,13 @@ int reference_handler(char *name, SEXP_REF_TYPE type, int obj)
 	n = pair.first;
 	source = pair.second;
 
-	if (source != SEXP_SRC::NONE) {
+	if (source != sexp_src::NONE) {
 		switch (source) {
-			case SEXP_SRC::SHIP_ORDER:
+			case sexp_src::SHIP_ORDER:
 				sprintf(text, "ship \"%s\"", Ships[n].ship_name);
 				break;
 
-			case SEXP_SRC::WING_ORDER:
+			case sexp_src::WING_ORDER:
 				sprintf(text, "wing \"%s\"", Wings[n].name);
 				break;
 
@@ -2051,7 +2051,7 @@ int reference_handler(char *name, SEXP_REF_TYPE type, int obj)
 		}
 	}
 
-	if ((type != SEXP_REF_TYPE::SHIP) && (type != SEXP_REF_TYPE::WING))
+	if ((type != sexp_ref_type::SHIP) && (type != sexp_ref_type::WING))
 		return 0;
 
 	for (n=0; n<Num_reinforcements; n++)
@@ -2074,7 +2074,7 @@ int reference_handler(char *name, SEXP_REF_TYPE type, int obj)
 	return 0;
 }
 
-int orders_reference_handler(SEXP_SRC source, int source_index, char *msg)
+int orders_reference_handler(sexp_src source, int source_index, char *msg)
 {
 	int r, n;
 
@@ -2089,7 +2089,7 @@ int orders_reference_handler(SEXP_SRC source, int source_index, char *msg)
 
 	n = source_index;
 	switch (source) {
-		case SEXP_SRC::SHIP_ORDER:
+		case sexp_src::SHIP_ORDER:
 			unmark_all();
 			mark_object(Ships[n].objnum);
 
@@ -2101,7 +2101,7 @@ int orders_reference_handler(SEXP_SRC source, int source_index, char *msg)
 
 			break;
 
-		case SEXP_SRC::WING_ORDER:
+		case sexp_src::WING_ORDER:
 			unmark_all();
 			mark_wing(n);
 
@@ -2120,7 +2120,7 @@ int orders_reference_handler(SEXP_SRC source, int source_index, char *msg)
 	return 2;
 }
 
-int sexp_reference_handler(int node, SEXP_SRC source, int source_index, char *msg)
+int sexp_reference_handler(int node, sexp_src source, int source_index, char *msg)
 {
 	int r, n;
 
@@ -2133,8 +2133,8 @@ int sexp_reference_handler(int node, SEXP_SRC source, int source_index, char *ms
 
 	n = source_index;
 	switch (source) {
-		case SEXP_SRC::SHIP_ARRIVAL:
-		case SEXP_SRC::SHIP_DEPARTURE:
+		case sexp_src::SHIP_ARRIVAL:
+		case sexp_src::SHIP_DEPARTURE:
 			if (!Ship_editor_dialog.GetSafeHwnd())
 				Ship_editor_dialog.Create();
 
@@ -2147,8 +2147,8 @@ int sexp_reference_handler(int node, SEXP_SRC source, int source_index, char *ms
 			mark_object(Ships[n].objnum);
 			break;
 
-		case SEXP_SRC::WING_ARRIVAL:
-		case SEXP_SRC::WING_DEPARTURE:
+		case sexp_src::WING_ARRIVAL:
+		case sexp_src::WING_DEPARTURE:
 			if (!Wing_editor_dialog.GetSafeHwnd())
 				Wing_editor_dialog.Create();
 
@@ -2161,7 +2161,7 @@ int sexp_reference_handler(int node, SEXP_SRC source, int source_index, char *ms
 			mark_wing(n);
 			break;
 
-		case SEXP_SRC::EVENT:
+		case sexp_src::EVENT:
 			if (Message_editor_dlg) {
 				Fred_main_wnd->MessageBox("You must close the message editor before the event editor can be opened");
 				break;
@@ -2177,7 +2177,7 @@ int sexp_reference_handler(int node, SEXP_SRC source, int source_index, char *ms
 			Event_editor_dlg->ShowWindow(SW_RESTORE);
 			break;
 
-		case SEXP_SRC::MISSION_GOAL: {
+		case sexp_src::MISSION_GOAL: {
 			CMissionGoalsDlg dlg;
 
 			dlg.select_sexp_node = node;
@@ -2185,7 +2185,7 @@ int sexp_reference_handler(int node, SEXP_SRC source, int source_index, char *ms
 			break;
 		}
 
-		case SEXP_SRC::DEBRIEFING: {
+		case sexp_src::DEBRIEFING: {
 			debriefing_editor_dlg dlg;
 
 			dlg.select_sexp_node = node;
@@ -2193,7 +2193,7 @@ int sexp_reference_handler(int node, SEXP_SRC source, int source_index, char *ms
 			break;
 		}
 
-		case SEXP_SRC::BRIEFING: {
+		case sexp_src::BRIEFING: {
 			if (!Briefing_dialog) {
 				Briefing_dialog = new briefing_editor_dlg;
 				Briefing_dialog->create();

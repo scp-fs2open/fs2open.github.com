@@ -979,7 +979,7 @@ const char *CTEXT(int n);
 #define CADDDDR(n)	CAR(CDDDDR(n))
 #define CADDDDDR(n)	CAR(CDDDDDR(n))
 
-enum class SEXP_REF_TYPE
+enum class sexp_ref_type
 {
 	SHIP = 1,
 	WING,
@@ -988,7 +988,7 @@ enum class SEXP_REF_TYPE
 	WAYPOINT_PATH
 };
 
-enum class SEXP_SRC
+enum class sexp_src
 {
 	NONE = 0,
 	SHIP_ARRIVAL,
@@ -1004,7 +1004,7 @@ enum class SEXP_SRC
 	UNKNOWN
 };
 
-enum class SEXP_MODE
+enum class sexp_mode
 {
 	GENERAL = 0,
 	CAMPAIGN
@@ -1351,7 +1351,7 @@ extern int get_operator_index(int node);
 extern int get_operator_const(const char *token);
 extern int get_operator_const(int node);
 
-extern int check_sexp_syntax(int node, int return_type = OPR_BOOL, int recursive = 0, int *bad_node = 0 /*NULL*/, SEXP_MODE mode = SEXP_MODE::GENERAL);
+extern int check_sexp_syntax(int node, int return_type = OPR_BOOL, int recursive = 0, int *bad_node = 0 /*NULL*/, sexp_mode mode = sexp_mode::GENERAL);
 extern int get_sexp_main(void);	//	Returns start node
 extern int run_sexp(const char* sexpression, bool run_eval_num = false, bool *is_nan_or_nan_forever = nullptr); // debug and lua sexps
 extern int stuff_sexp_variable_list();
@@ -1362,7 +1362,7 @@ extern int query_operator_return_type(int op);
 extern int query_operator_argument_type(int op, int argnum);
 extern void update_sexp_references(const char *old_name, const char *new_name);
 extern void update_sexp_references(const char *old_name, const char *new_name, int format);
-extern std::pair<int, SEXP_SRC> query_referenced_in_sexp(SEXP_REF_TYPE type, const char *name, int &node);
+extern std::pair<int, sexp_src> query_referenced_in_sexp(sexp_ref_type type, const char *name, int &node);
 extern void stuff_sexp_text_string(SCP_string &dest, int node, int mode);
 extern int build_sexp_string(SCP_string &accumulator, int cur_node, int level, int mode);
 extern int sexp_query_type_match(int opf, int opr);
