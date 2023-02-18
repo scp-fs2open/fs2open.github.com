@@ -4980,6 +4980,13 @@ int sexp_tree::find_text(const char *text, int *find)
 	return find_count;
 }
 
+// This solution was found at https://community.notepad-plus-plus.org/topic/21158/way-to-disallow-copying-text/7
+//   Another interesting thing with the script's execution is that if you don't allow Notepad++ to process the Ctrl+c
+//   keycombo as a WM_KEYDOWN event, you'll get an "ETX" (hex code = 0x03) character in your document at the caret
+//   position. This occurs because, with Notepad++ ignoring the Ctrl+c as a command, it thinks that you want to embed
+//   a control character with value "3" into the doc (it gets a WM_CHAR message to that effect, which it would normally
+//   filter out on its own). So... in the case of preventing copying data, we have to remove any Ctrl+c or Ctrl+x
+//   characters that might get inserted; we do this by processing the WM_CHAR message and filtering those as well.
 void sexp_tree::OnChar(UINT nChar, UINT nRepCnt, UINT nFlags)
 {
 }
