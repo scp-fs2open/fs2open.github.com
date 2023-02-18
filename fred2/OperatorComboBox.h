@@ -3,9 +3,25 @@
 
 #include "stdafx.h"
 #include "globalincs/vmallocator.h"
+#include "globalincs/pstypes.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // OperatorComboBox control
+
+class OperatorComboBoxList : public CListBox
+{
+public:
+	OperatorComboBoxList(const char* (*help_callback)(int));
+
+	BOOL OnToolTipText(UINT id, NMHDR* pNMHDR, LRESULT* pResult);
+
+protected:
+	const char* (*m_help_callback)(int);
+	CStringA m_tooltiptextA;
+	CStringW m_tooltiptextW;
+
+	DECLARE_MESSAGE_MAP()
+};
 
 class OperatorComboBox : public CComboBox
 {
@@ -14,12 +30,11 @@ public:
 	virtual ~OperatorComboBox();
 
 	// we need to reference the components of the combo box
-	CEdit      m_edit;
-	CListBox   m_listbox;
+	CEdit                  m_edit;
+	OperatorComboBoxList   m_listbox;
 
 	// for tooltips
 	INT_PTR OnToolHitTest(CPoint point, TOOLINFO* pTI) const;
-	BOOL OnToolTipText(UINT id, NMHDR* pNMHDR, LRESULT* pResult);
 
 	void refresh_popup_operators();
 

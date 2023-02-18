@@ -2,18 +2,25 @@
 //
 
 #include "OperatorComboBox.h"
+#include "parse/parselo.h"
 #include "parse/sexp.h"
 
 BEGIN_MESSAGE_MAP(OperatorComboBox, CComboBox)
 	//{{AFX_MSG_MAP(OperatorComboBox)
-	ON_NOTIFY_EX_RANGE(TTN_NEEDTEXTW, 0, 0xFFFF, OnToolTipText)
-	ON_NOTIFY_EX_RANGE(TTN_NEEDTEXTA, 0, 0xFFFF, OnToolTipText)
 	ON_WM_CTLCOLOR()
 	ON_WM_DESTROY()
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
+BEGIN_MESSAGE_MAP(OperatorComboBoxList, CListBox)
+	//{{AFX_MSG_MAP(OperatorComboBoxList)
+	ON_NOTIFY_EX_RANGE(TTN_NEEDTEXTW, 0, 0xFFFF, OnToolTipText)
+	ON_NOTIFY_EX_RANGE(TTN_NEEDTEXTA, 0, 0xFFFF, OnToolTipText)
+	//}}AFX_MSG_MAP
+END_MESSAGE_MAP()
+
 OperatorComboBox::OperatorComboBox(const char* (*help_callback)(int))
+	: m_listbox(help_callback)
 {
 	m_help_callback = help_callback;
 
@@ -96,8 +103,12 @@ INT_PTR OperatorComboBox::OnToolHitTest(CPoint point, TOOLINFO *pTI) const
 	{
 		CRect rect;
 		m_listbox.GetItemRect(item, &rect);
+		int op_const = (int)GetItemData(item);
+		auto helptext = m_help_callback(op_const);
+		if (helptext == nullptr)
+			return -1;
 
-		pTI->hwnd = m_hWnd;
+		pTI->hwnd = m_listbox.GetSafeHwnd();
 		pTI->uId = item;
 		pTI->lpszText = LPSTR_TEXTCALLBACK;
 		pTI->rect = rect;
@@ -107,8 +118,13 @@ INT_PTR OperatorComboBox::OnToolHitTest(CPoint point, TOOLINFO *pTI) const
 	return -1;
 }
 
+OperatorComboBoxList::OperatorComboBoxList(const char* (*help_callback)(int))
+{
+	m_help_callback = help_callback;
+}
+
 //here we supply the text for the item
-BOOL OperatorComboBox::OnToolTipText(UINT id, NMHDR *pNMHDR, LRESULT *pResult)
+BOOL OperatorComboBoxList::OnToolTipText(UINT id, NMHDR* pNMHDR, LRESULT* pResult)
 {
 	// need to handle both ANSI and UNICODE versions of the message
 	TOOLTIPTEXTA* pTTTA = (TOOLTIPTEXTA*)pNMHDR;
@@ -128,23 +144,39 @@ BOOL OperatorComboBox::OnToolTipText(UINT id, NMHDR *pNMHDR, LRESULT *pResult)
 	ASSERT(pMessage);
 	auto pt = pMessage->pt;
 
-	int item = LBItemFromPt(m_listbox.GetSafeHwnd(), pt, FALSE);
+	int item = LBItemFromPt(GetSafeHwnd(), pt, FALSE);
 
 	if (item >= 0 && item < GetCount())
 	{
 		int op_const = (int)GetItemData(item);
-		strTipText = m_help_callback(op_const);
+
+		SCP_string helptext = m_help_callback(op_const);
+		replace_all(helptext, "\t", "    ");
+		m_tooltiptextA = helptext.c_str();
+		m_tooltiptextW = helptext.c_str();
 
 #ifndef _UNICODE
 		if (pNMHDR->code == TTN_NEEDTEXTA)
-			lstrcpyn(pTTTA->szText, strTipText, 80);
+		{
+			pTTTA->lpszText = (LPSTR)(LPCSTR)m_tooltiptextA;
+			::SendMessage(pTTTA->hdr.hwndFrom, TTM_SETMAXTIPWIDTH, 0, 400);
+		}
 		else
-			_mbstowcsz(pTTTW->szText, strTipText, 80);
+		{
+			pTTTW->lpszText = (LPWSTR)(LPCWSTR)m_tooltiptextW;
+			::SendMessage(pTTTW->hdr.hwndFrom, TTM_SETMAXTIPWIDTH, 0, 400);
+		}
 #else
 		if (pNMHDR->code == TTN_NEEDTEXTA)
-			_wcstombsz(pTTTA->szText, strTipText, 80);
+		{
+			pTTTA->lpszText = (LPSTR)(LPCSTR)m_tooltiptextA;
+			::SendMessage(pTTTA->hdr.hwndFrom, TTM_SETMAXTIPWIDTH, 0, 400);
+		}
 		else
-			lstrcpyn(pTTTW->szText, strTipText, 80);
+		{
+			pTTTW->lpszText = (LPWSTR)(LPCWSTR)m_tooltiptextW;
+			::SendMessage(pTTTW->hdr.hwndFrom, TTM_SETMAXTIPWIDTH, 0, 400);
+		}
 #endif
 	}
 
