@@ -38,15 +38,6 @@ jobs:
           # cached: ${{ steps.cache-qt-lin.outputs.cache-hit }}
           # setup-python: 'false'
           # aqtversion: ==1.1.3
-      - if: ${{ env.ACT }}
-        name: Hack container for local development
-        run: |
-            apt update && apt -y upgrade && apt -y install curl jq
-      - if: ${{ env.ACT }}
-        name: Hack container for local development
-        run: |
-            curl -fsSL https://deb.nodesource.com/setup_12.x | sudo -E bash -
-            apt -y install nodejs
       - name: Add curl to the container
         run: |    
           apt-get update -y
