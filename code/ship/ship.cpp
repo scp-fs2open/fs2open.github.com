@@ -8740,9 +8740,8 @@ static void ship_dying_frame(object *objp, int ship_num)
 				vec3d outpnt;
 				polymodel *pm = model_get(sip->model_num);
 
-				// Gets two random points on the surface of a submodel
+				// Get a random point on the surface of a submodel
 				vec3d pnt1 = submodel_get_random_point(pm->id, pm->detail[0]);
-				vec3d pnt2 = submodel_get_random_point(pm->id, pm->detail[0]);
 
 				model_instance_local_to_global_point(&outpnt, &pnt1, shipp->model_instance_num, pm->detail[0], &objp->orient, &objp->pos );
 
