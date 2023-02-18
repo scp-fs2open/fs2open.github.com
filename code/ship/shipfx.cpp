@@ -362,10 +362,9 @@ void shipfx_blow_up_model(object *obj, int submodel, int ndebris, vec3d *exp_cen
 	}
 
 	for (i=0; i<ndebris; i++ )	{
-		vec3d pnt1, pnt2;
-
 		// Gets two random points on the surface of a submodel
-		submodel_get_two_random_points_better(pm->id, submodel, &pnt1, &pnt2);
+		vec3d pnt1 = submodel_get_random_point(pm->id, submodel);
+		vec3d pnt2 = submodel_get_random_point(pm->id, submodel);
 
 		vec3d tmp, outpnt;
 
@@ -2238,9 +2237,10 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 
 		int n, n_arcs = Random::next(1, 3);
 
-		vec3d v1, v2, v3, v4;
-		submodel_get_two_random_points_better(model_num, -1, &v1, &v2);
-		submodel_get_two_random_points_better(model_num, -1, &v3, &v4);
+		vec3d v1 = submodel_get_random_point(model_num, -1);
+		vec3d v2 = submodel_get_random_point(model_num, -1);
+		vec3d v3 = submodel_get_random_point(model_num, -1);
+		vec3d v4 = submodel_get_random_point(model_num, -1);
 
 		// For large ships, cap the length to be 25% of max radius
 		if ( obj->radius > 200.0f )	{
@@ -2350,8 +2350,7 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 				// Maybe move a vertex....  20% of the time maybe?
 				int mr = Random::next();
 				if ( mr < Random::MAX_VALUE/5 )	{
-					vec3d v1, v2;
-					submodel_get_two_random_points_better(model_num, -1, &v1, &v2);
+					vec3d v1 = submodel_get_random_point(model_num, -1);
 
 					vec3d static_one;
 
