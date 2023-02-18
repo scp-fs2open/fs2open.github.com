@@ -1256,8 +1256,9 @@ vec3d submodel_get_random_point(int model_num, int submodel_num, int seed)
 			submodel_num = pm->detail[0];
 		}
 
+		// the Shivan Comm Node does not have a collision tree, for one
 		if (pm->submodel[submodel_num].collision_tree_index < 0) {
-			nprintf(("Model", "In submodel_get_two_random_points_better(), model %s does not have a collision tree!  Falling back to submodel_get_two_random_points().\n", pm->filename));
+			nprintf(("Model", "In submodel_get_random_point(), model %s does not have a collision tree!  Falling back to submodel_get_random_point_fallback().\n", pm->filename));
 
 			return submodel_get_random_point_fallback(model_num, submodel_num);
 		}
