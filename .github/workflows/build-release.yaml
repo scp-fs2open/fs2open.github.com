@@ -348,17 +348,17 @@ jobs:
           # cached: ${{ steps.cache-qt-mac.outputs.cache-hit }}
           # setup-python: 'false'
           # aqtversion: ==1.1.3
+      - uses: actions/checkout@v1
+        name: Checkout
+        with:
+          submodules: true
+          fetch-depth: 0
       - name: Prepare Vulkan SDK
         uses: humbletim/setup-vulkan-sdk@v1.2.0
         with:
           vulkan-query-version: latest
           vulkan-components: Vulkan-Headers, Vulkan-Loader
           vulkan-use-cache: true
-      - uses: actions/checkout@v1
-        name: Checkout
-        with:
-          submodules: true
-          fetch-depth: 0
       - name: Configure CMake
         env:
           CONFIGURATION: ${{ matrix.configuration }}
