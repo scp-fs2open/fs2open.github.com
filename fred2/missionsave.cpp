@@ -2529,7 +2529,8 @@ int CFred_mission_save::save_mission_info()
 
 	required_string_fred("$Version:");
 	parse_comments(2);
-	fout(" %d.%d.%d", The_mission.required_fso_version.major, The_mission.required_fso_version.minor, The_mission.required_fso_version.build);
+	// Since previous versions of FreeSpace interpret this as a float, this can only have one decimal point
+	fout(" %d.%d", The_mission.required_fso_version.major, The_mission.required_fso_version.minor);
 
 	// XSTR
 	required_string_fred("$Name:");

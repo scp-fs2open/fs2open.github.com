@@ -1405,7 +1405,7 @@ bool game_start_mission()
 		if ( !(Game_mode & GM_MULTIPLAYER) ) {
 			// the version will have been assigned before loading was aborted
 			if (!gameversion::check_at_least(The_mission.required_fso_version)) {
-				popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("This mission requires FSO version %s", 1671), format_version(The_mission.required_fso_version).c_str());
+				popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("This mission requires FSO version %s", 1671), format_version(The_mission.required_fso_version, true).c_str());
 			}
 			// standard load failure
 			else {

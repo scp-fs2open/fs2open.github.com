@@ -84,7 +84,8 @@
 // MISSION_VERSION should be the earliest version of FSO that can load the current mission format without
 // requiring version-specific comments.  It should be updated whenever the format changes, but it should
 // not be updated simply because the engine's version changed.
-const gameversion::version MISSION_VERSION = gameversion::version(22, 3, 0);
+// NOTE: The version can only have two numbers because old FRED builds expect the version to be a float.
+const gameversion::version MISSION_VERSION = gameversion::version(22, 3);
 const gameversion::version LEGACY_MISSION_VERSION = gameversion::version(0, 10);
 
 LOCAL struct {

@@ -163,7 +163,7 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 			msg += "\" cannot be ";
 			msg += term;
 			msg += "ed because it requires FSO version ";
-			msg += format_version(The_mission.required_fso_version);
+			msg += format_version(The_mission.required_fso_version, true);
 			msg += ".";
 		}
 		else {
@@ -207,9 +207,9 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 	// message 3: warning about saving under a new version
 	if (!(flags & MPF_IMPORT_FSM) && (The_mission.required_fso_version != LEGACY_MISSION_VERSION) && (MISSION_VERSION > The_mission.required_fso_version)) {
 		SCP_string msg = "This mission's file format is ";
-		msg += format_version(The_mission.required_fso_version);
+		msg += format_version(The_mission.required_fso_version, true);
 		msg += ".  When you save this mission, the file format will be migrated to ";
-		msg += format_version(MISSION_VERSION);
+		msg += format_version(MISSION_VERSION, true);
 		msg += ".  FSO versions earlier than this will not be able to load the mission.";
 
 		_lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Information,
