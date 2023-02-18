@@ -204,12 +204,6 @@ jobs:
           # setup-python: 'false'
           # aqtversion: ==1.1.3
           # py7zrversion: '==0.19.*'
-      - name: Prepare Vulkan SDK
-        uses: humbletim/setup-vulkan-sdk@v1.2.0
-        with:
-          vulkan-query-version: latest
-          vulkan-components: Vulkan-Headers, Vulkan-Loader
-          vulkan-use-cache: true
       - uses: actions/checkout@v1
         name: Checkout
         with:
@@ -219,7 +213,12 @@ jobs:
         uses: hendrikmuhs/ccache-action@v1
         with:
           key: ${{ runner.os }}-${{ matrix.configuration }}-${{ matrix.compiler }}
-
+      - name: Prepare Vulkan SDK
+        uses: humbletim/setup-vulkan-sdk@v1.2.0
+        with:
+          vulkan-query-version: latest
+          vulkan-components: Vulkan-Headers, Vulkan-Loader
+          vulkan-use-cache: true
       - name: Configure CMake
         env:
           CONFIGURATION: ${{ matrix.configuration }}
