@@ -31,16 +31,21 @@ jobs:
           # cached: ${{ steps.cache-qt-lin.outputs.cache-hit }}
           # setup-python: 'false'
           # aqtversion: ==1.1.3
+      # seriously, what the fuck why do i have to do this
+      - name: Add curl to the container
+        run: |    
+          apt-get update -y 
+          apt -y install curl jq
+      - uses: actions/checkout@v1
+        name: Checkout
+        with:
+          submodules: true
       - name: Prepare Vulkan SDK
         uses: humbletim/setup-vulkan-sdk@v1.2.0
         with:
           vulkan-query-version: latest
           vulkan-components: Vulkan-Headers, Vulkan-Loader
           vulkan-use-cache: true
-      - uses: actions/checkout@v1
-        name: Checkout
-        with:
-          submodules: true
       - name: Configure CMake
         env:
           CONFIGURATION: ${{ matrix.configuration }}
