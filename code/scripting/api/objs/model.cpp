@@ -338,7 +338,7 @@ ADE_VIRTVAR(Offset, l_Submodel, nullptr, "Gets the submodel's offset from its pa
 
 ADE_VIRTVAR(Radius, l_Submodel, nullptr, "Gets the submodel's radius", "number", "The radius of the submodel or -1 if invalid")
 {
-	submodel_h *smh = nullptr;
+	submodel_h* smh = nullptr;
 
 	if (!ade_get_args(L, "o", l_Submodel.GetPtr(&smh)))
 		return ade_set_error(L, "f", -1.0f);
@@ -350,6 +350,23 @@ ADE_VIRTVAR(Radius, l_Submodel, nullptr, "Gets the submodel's radius", "number",
 		LuaError(L, "Setting the submodel radius is not implemented");
 
 	return ade_set_args(L, "f", smh->GetSubmodel()->rad);
+}
+
+
+ADE_FUNC(NumVertices, l_Submodel, nullptr, "Returns the number of vertices in the submodel's mesh", "submodel", "The number of vertices, or 0 if the submodel was invalid")
+{
+	submodel_h* smh = nullptr;
+
+	if (!ade_get_args(L, "o", l_Submodel.GetPtr(&smh)))
+		return ade_set_error(L, "i", 0);
+
+	if (!smh->IsValid())
+		return ade_set_error(L, "i", 0);
+
+	auto sm = smh->GetSubmodel();
+	bsp_collision_tree* tree = model_get_bsp_collision_tree(sm->collision_tree_index);
+
+	return ade_set_args(L, "i", tree->n_verts);
 }
 
 ADE_FUNC(GetVertex, l_Submodel, nullptr, "Gets the specified vertex, or a random one if no index specified", "submodel", "A vertex position, or nil if the submodel was invalid")
