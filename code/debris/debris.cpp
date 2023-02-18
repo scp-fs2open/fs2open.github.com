@@ -253,8 +253,8 @@ void debris_process_post(object * obj, float frame_time)
 
 			vec3d v1, v2, v3, v4;
 
-			submodel_get_two_random_points_better(db->model_num, db->submodel_num, &v1, &v2);
-			submodel_get_two_random_points_better(db->model_num, db->submodel_num, &v3, &v4);
+			submodel_get_two_random_points(db->model_num, db->submodel_num, &v1, &v2);
+			submodel_get_two_random_points(db->model_num, db->submodel_num, &v3, &v4);
 
 			n = 0;
 
@@ -329,7 +329,7 @@ void debris_process_post(object * obj, float frame_time)
 				if ( mr < Random::MAX_VALUE/5 )	{
 					vec3d v1, v2;
 
-					submodel_get_two_random_points_better(db->model_num, db->submodel_num, &v1, &v2);
+					submodel_get_two_random_points(db->model_num, db->submodel_num, &v1, &v2);
 
 					db->arc_pts[i][mr % 2] = v1;
 				}

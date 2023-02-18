@@ -365,7 +365,7 @@ void shipfx_blow_up_model(object *obj, int submodel, int ndebris, vec3d *exp_cen
 		vec3d pnt1, pnt2;
 
 		// Gets two random points on the surface of a submodel
-		submodel_get_two_random_points_better(pm->id, submodel, &pnt1, &pnt2);
+		submodel_get_two_random_points(pm->id, submodel, &pnt1, &pnt2);
 
 		vec3d tmp, outpnt;
 
@@ -2239,8 +2239,8 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 		int n, n_arcs = Random::next(1, 3);
 
 		vec3d v1, v2, v3, v4;
-		submodel_get_two_random_points_better(model_num, -1, &v1, &v2);
-		submodel_get_two_random_points_better(model_num, -1, &v3, &v4);
+		submodel_get_two_random_points(model_num, -1, &v1, &v2);
+		submodel_get_two_random_points(model_num, -1, &v3, &v4);
 
 		// For large ships, cap the length to be 25% of max radius
 		if ( obj->radius > 200.0f )	{
@@ -2351,7 +2351,7 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 				int mr = Random::next();
 				if ( mr < Random::MAX_VALUE/5 )	{
 					vec3d v1, v2;
-					submodel_get_two_random_points_better(model_num, -1, &v1, &v2);
+					submodel_get_two_random_points(model_num, -1, &v1, &v2);
 
 					vec3d static_one;
 

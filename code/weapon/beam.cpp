@@ -2337,7 +2337,7 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 			vm_vec_zero(&b->binfo.dir_b);
 		} else {
 			// get random model points, this is useful for big ships, because we never miss when shooting at them
-			submodel_get_two_random_points_better(model_num, 0, &b->binfo.dir_a, &b->binfo.dir_b, seed);
+			submodel_get_two_random_points(model_num, 0, &b->binfo.dir_a, &b->binfo.dir_b, seed);
 		}
 		break;
 
@@ -2429,7 +2429,7 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 			// set up our two kinds of random points if needed
 			if (bwi->t5info.start_pos == Type5BeamPos::RANDOM_INSIDE || bwi->t5info.end_pos == Type5BeamPos::RANDOM_INSIDE) {
 				vec3d temp1, temp2;
-				submodel_get_two_random_points_better(model_num, 0, &temp1, &temp2, seed);
+				submodel_get_two_random_points(model_num, 0, &temp1, &temp2, seed);
 				vm_vec_rotate(&rand1_on, &temp1, &b->target->orient);
 				vm_vec_rotate(&rand2_on, &temp2, &b->target->orient);
 				rand1_on += b->target->pos;

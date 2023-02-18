@@ -8763,7 +8763,7 @@ static void ship_dying_frame(object *objp, int ship_num)
 				polymodel *pm = model_get(sip->model_num);
 
 				// Gets two random points on the surface of a submodel
-				submodel_get_two_random_points_better(pm->id, pm->detail[0], &pnt1, &pnt2);
+				submodel_get_two_random_points(pm->id, pm->detail[0], &pnt1, &pnt2);
 
 				model_instance_local_to_global_point(&outpnt, &pnt1, shipp->model_instance_num, pm->detail[0], &objp->orient, &objp->pos );
 
@@ -8877,7 +8877,7 @@ static void ship_dying_frame(object *objp, int ship_num)
 				vec3d tmp, outpnt, pnt1, pnt2;
 
 				// Gets two random points on the surface of a submodel [KNOSSOS]
-				submodel_get_two_random_points_better(pm->id, pm->detail[0], &pnt1, &pnt2);
+				submodel_get_two_random_points(pm->id, pm->detail[0], &pnt1, &pnt2);
 
 				vm_vec_avg( &tmp, &pnt1, &pnt2 );
 				model_instance_local_to_global_point(&outpnt, &tmp, pm, pmi, pm->detail[0], &objp->orient, &objp->pos );
