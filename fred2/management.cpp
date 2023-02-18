@@ -1914,8 +1914,7 @@ int advanced_stricmp(char *one, char *two)
 int reference_handler(char *name, sexp_ref_type type, int obj)
 {
 	char msg[2048], text[128], type_name[128];
-	int r, n, node;
-	sexp_src source;
+	int r, node;
 
 	switch (type) {
 		case sexp_ref_type::SHIP:
@@ -1943,8 +1942,8 @@ int reference_handler(char *name, sexp_ref_type type, int obj)
 	}
 
 	auto pair = query_referenced_in_sexp(type, name, node);
-	n = pair.first;
-	source = pair.second;
+	int n = pair.first;
+	sexp_src source = pair.second;
 
 	if (source != sexp_src::NONE) {
 		switch (source) {
@@ -2076,9 +2075,7 @@ int reference_handler(char *name, sexp_ref_type type, int obj)
 
 int orders_reference_handler(sexp_src source, int source_index, char *msg)
 {
-	int r, n;
-
-	r = Fred_main_wnd->MessageBox(msg, "Warning", MB_YESNOCANCEL | MB_ICONEXCLAMATION);
+	int r = Fred_main_wnd->MessageBox(msg, "Warning", MB_YESNOCANCEL | MB_ICONEXCLAMATION);
 	if (r == IDNO)
 		return 1;
 
@@ -2087,27 +2084,26 @@ int orders_reference_handler(sexp_src source, int source_index, char *msg)
 
 	ShipGoalsDlg dlg_goals;
 
-	n = source_index;
 	switch (source) {
 		case sexp_src::SHIP_ORDER:
 			unmark_all();
-			mark_object(Ships[n].objnum);
+			mark_object(Ships[source_index].objnum);
 
-			dlg_goals.self_ship = n;
+			dlg_goals.self_ship = source_index;
 			dlg_goals.DoModal();
-			if (!query_initial_orders_empty(Ai_info[Ships[n].ai_index].goals))
-				if ((Ships[n].wingnum >= 0) && (query_initial_orders_conflict(Ships[n].wingnum)))
+			if (!query_initial_orders_empty(Ai_info[Ships[source_index].ai_index].goals))
+				if ((Ships[source_index].wingnum >= 0) && (query_initial_orders_conflict(Ships[source_index].wingnum)))
 					Fred_main_wnd->MessageBox("This ship's wing also has initial orders", "Possible conflict");
 
 			break;
 
 		case sexp_src::WING_ORDER:
 			unmark_all();
-			mark_wing(n);
+			mark_wing(source_index);
 
-			dlg_goals.self_wing = n;
+			dlg_goals.self_wing = source_index;
 			dlg_goals.DoModal();
-			if (query_initial_orders_conflict(n))
+			if (query_initial_orders_conflict(source_index))
 				Fred_main_wnd->MessageBox("One or more ships of this wing also has initial orders", "Possible conflict");
 
 			break;

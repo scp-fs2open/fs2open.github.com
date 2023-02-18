@@ -2547,7 +2547,7 @@ void ai_update_goal_references(ai_goal *goals, sexp_ref_type type, const char *o
 				break;
 
 			default:
-				Warning(LOCATION, "unhandled FRED reference type %d in ai_update_goal_references", (int)type);
+				Warning(LOCATION, "unhandled FRED reference type %d in ai_update_goal_references", static_cast<int>(type));
 				break;
 		}
 
