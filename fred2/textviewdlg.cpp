@@ -210,6 +210,11 @@ void TextViewDlg::OnSetfocusEdit1()
 void TextViewDlg::SetText(const CString &text)
 {
 	m_edit = text;
+
+	// accommodate MFC newlines
+	m_edit.Replace("\n", "\r\n");
+	m_edit.Replace("\r\r", "\r");
+
 	if (IsWindow(m_hWnd))
 		UpdateData(FALSE);
 }
@@ -218,7 +223,11 @@ void TextViewDlg::GetText(CString &text)
 {
 	if (IsWindow(m_hWnd))
 		UpdateData(TRUE);
+
 	text = m_edit;
+
+	// accommodate MFC newlines
+	text.Replace("\r\n", "\n");
 }
 
 void TextViewDlg::SetCaption(const CString &caption)
