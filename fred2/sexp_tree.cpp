@@ -74,6 +74,7 @@ BEGIN_MESSAGE_MAP(sexp_tree, CTreeCtrl)
 	ON_WM_LBUTTONUP()
 	ON_WM_DESTROY()
 	ON_WM_LBUTTONDOWN()
+	ON_WM_CHAR()
 	ON_NOTIFY_REFLECT(TVN_KEYDOWN, OnKeyDown)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
@@ -4978,7 +4979,11 @@ int sexp_tree::find_text(const char *text, int *find)
 
 	return find_count;
 }
-			
+
+void sexp_tree::OnChar(UINT nChar, UINT nRepCnt, UINT nFlags)
+{
+}
+
 void sexp_tree::OnKeyDown(NMHDR *pNMHDR, LRESULT *pResult) 
 {
 	int key;
@@ -4989,8 +4994,8 @@ void sexp_tree::OnKeyDown(NMHDR *pNMHDR, LRESULT *pResult)
 	// Handle clipboard operations for the sexp_tree and its subclasses.  The *proper* way to do this
 	// would be to catch the WM_CUT, WM_COPY, and WM_PASTE messages, but I wasn't able to get it to work
 	// despite considerable research and effort.  So this achieves the same result by just catching
-	// the shortcut keys instead of the messages they produce.  Unfortunately one still hears an error
-	// beep caused by the fumbled WM_CUT, WM_COPY, or WM_PASTE message landing somewhere unknown.
+	// the shortcut keys instead of the messages they produce.  The shortcut keys are still sent to
+	// the window, so the OnChar handler is necessary to catch them and prevent an error beep.
 	// 
 	// Only capture keys on the nodes when we're not currently editing their text
 	//
