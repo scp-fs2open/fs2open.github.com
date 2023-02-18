@@ -146,6 +146,7 @@ uint32_t deviceTypeScore(vk::PhysicalDeviceType type)
 		return 0;
 	case vk::PhysicalDeviceType::eCpu:
 	case vk::PhysicalDeviceType::eOther:
+	default:
 		return -1;
 	}
 }
