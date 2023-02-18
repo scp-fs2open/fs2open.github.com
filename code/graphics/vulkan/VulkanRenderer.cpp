@@ -284,14 +284,6 @@ bool VulkanRenderer::initialize()
 	// Prepare the rendering state by acquiring our first swap chain image
 	acquireNextSwapChainImage();
 
-	
-	auto imgui_vulkan_info = ImGui_ImplVulkan_InitInfo();
-	imgui_vulkan_info.Instance = m_vkInstance.get();
-	imgui_vulkan_info.Allocator = nullptr;
-	imgui_vulkan_info.CheckVkResultFn = nullptr;
-	imgui_vulkan_info.Device = m_device.get();
-	imgui_vulkan_info.ImageCount = 2;
-
 	return true;
 }
 
