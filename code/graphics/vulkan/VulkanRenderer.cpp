@@ -143,11 +143,10 @@ uint32_t deviceTypeScore(vk::PhysicalDeviceType type)
 	case vk::PhysicalDeviceType::eDiscreteGpu:
 		return 2;
 	case vk::PhysicalDeviceType::eVirtualGpu:
-		return 0;
 	case vk::PhysicalDeviceType::eCpu:
 	case vk::PhysicalDeviceType::eOther:
 	default:
-		return -1;
+		return 0;
 	}
 }
 

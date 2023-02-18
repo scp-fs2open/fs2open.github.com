@@ -13,14 +13,19 @@ SET(IMGUI_SOURCES
 	imstb_truetype.h
     backends/imgui_impl_opengl3.h
     backends/imgui_impl_opengl3.cpp
-    backends/imgui_impl_vulkan.h
-    backends/imgui_impl_vulkan.cpp
     backends/imgui_impl_sdl.h
     backends/imgui_impl_sdl.cpp
     extensions/imgui_sugar.hpp
     extensions/ImGuizmo.cpp
     extensions/ImGuizmo.h
 )
+
+if (FSO_BUILD_WITH_VULKAN)
+    list(APPEND IMGUI_SOURCES
+        backends/imgui_impl_vulkan.h
+        backends/imgui_impl_vulkan.cpp
+    )
+endif()
 
 ADD_LIBRARY(imgui STATIC ${IMGUI_SOURCES})
 
