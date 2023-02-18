@@ -171,11 +171,19 @@ jobs:
           mkdir build
           cd build
 
-          cmake -DCMAKE_INSTALL_PREFIX="$(pwd)/install" -DFSO_USE_SPEECH="ON" \
-            -DFSO_USE_VOICEREC="ON" -DMSVC_SIMD_INSTRUCTIONS="$SIMD" \
-            -DFSO_BUILD_QTFRED=OFF -DFSO_BUILD_TESTS=ON \
-            -DFSO_INSTALL_DEBUG_FILES="ON" -A "$ARCHITECTURE" \
-            -G "Visual Studio 16 2019" -T "v142" ..
+          if [ "$ARCHITECTURE" = "Win32" ]; then
+              cmake -DCMAKE_INSTALL_PREFIX="$(pwd)/install" -DFSO_USE_SPEECH="ON" \
+                -DFSO_USE_VOICEREC="ON" -DMSVC_SIMD_INSTRUCTIONS="$SIMD" \
+                -DFSO_BUILD_QTFRED=OFF -DFSO_BUILD_TESTS=ON \
+                -DFSO_INSTALL_DEBUG_FILES="ON" -DFSO_BUILD_WITH_VULKAN="OFF" -A "$ARCHITECTURE" \
+                -G "Visual Studio 16 2019" -T "v142" ..
+          else
+              cmake -DCMAKE_INSTALL_PREFIX="$(pwd)/install" -DFSO_USE_SPEECH="ON" \
+                -DFSO_USE_VOICEREC="ON" -DMSVC_SIMD_INSTRUCTIONS="$SIMD" \
+                -DFSO_BUILD_QTFRED=OFF -DFSO_BUILD_TESTS=ON \
+                -DFSO_INSTALL_DEBUG_FILES="ON" -A "$ARCHITECTURE" \
+                -G "Visual Studio 16 2019" -T "v142" ..
+          fi
       - name: Compile
         working-directory: ./build
         env:
