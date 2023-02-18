@@ -2055,7 +2055,7 @@ bool check_variable_data_type(int type, int var_type, int op, int argnum, const 
  * @return 0 if ok, negative if there's an error in expression..
  * See the returns types in sexp.h
  */
-int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, int mode)
+int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, sexp_mode mode)
 {
 	int i = 0, z, t, type, argnum = 0, count, op, type2 = 0, op2;
 	int op_node;
@@ -3164,7 +3164,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					return SEXP_CHECK_TYPE_MISMATCH;
 
 				if (Fred_running) {
-					if (mode == SEXP_MODE_CAMPAIGN) {
+					if (mode == sexp_mode::CAMPAIGN) {
 						for (i=0; i<Campaign.num_missions; i++)
 							if (!stricmp(CTEXT(node), Campaign.missions[i].name)) {
 								if ((i != Sexp_useful_number) && (Campaign.missions[i].level >= Campaign.missions[Sexp_useful_number].level))
@@ -3200,7 +3200,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 				// we only need to check the campaign list if running in Fred and are in campaign mode.
 				// otherwise, check the set of current goals/events
-				if (Fred_running && (mode == SEXP_MODE_CAMPAIGN)) {
+				if (Fred_running && (mode == sexp_mode::CAMPAIGN)) {
 					z = find_parent_operator(node);
 					Assert(z >= 0);
 					z = Sexp_nodes[z].rest;  // first argument of operator should be mission name
@@ -32234,7 +32234,7 @@ void update_sexp_references(const char *old_name, const char *new_name, int form
 	}
 }
 
-int query_referenced_in_sexp(int  /*mode*/, const char *name, int *node)
+std::pair<int, sexp_src> query_referenced_in_sexp(sexp_ref_type  /*type*/, const char *name, int &node)
 {
 	int i, n, j;
 
@@ -32247,51 +32247,49 @@ int query_referenced_in_sexp(int  /*mode*/, const char *name, int *node)
 	}
 
 	if (n == Num_sexp_nodes){
-		return 0;
+		return std::make_pair(-1, sexp_src::NONE);
 	}
 
-	if (node){
-		*node = n;
-	}
+	node = n;
 
 	// so we know it's being used somewhere..  Time to find out where..
 	for (i=0; i<MAX_SHIPS; i++)
 		if (Ships[i].objnum >= 0) {
 			if (query_node_in_sexp(n, Ships[i].arrival_cue)){
-				return i | SRC_SHIP_ARRIVAL;
+				return std::make_pair(i, sexp_src::SHIP_ARRIVAL);
 			}
 			if (query_node_in_sexp(n, Ships[i].departure_cue)){
-				return i | SRC_SHIP_DEPARTURE;
+				return std::make_pair(i, sexp_src::SHIP_DEPARTURE);
 			}
 		}
 
 	for (i=0; i<MAX_WINGS; i++){
 		if (Wings[i].wave_count) {
 			if (query_node_in_sexp(n, Wings[i].arrival_cue)){
-				return i | SRC_WING_ARRIVAL;
+				return std::make_pair(i, sexp_src::WING_ARRIVAL);
 			}
 			if (query_node_in_sexp(n, Wings[i].departure_cue)){
-				return i | SRC_WING_DEPARTURE;
+				return std::make_pair(i, sexp_src::WING_DEPARTURE);
 			}
 		}
 	}
 
 	for (i=0; i<(int)Mission_events.size(); i++){
 		if (query_node_in_sexp(n, Mission_events[i].formula)){
-			return i | SRC_EVENT;
+			return std::make_pair(i, sexp_src::EVENT);
 		}
 	}
 
 	for (i=0; i<(int)Mission_goals.size(); i++){
 		if (query_node_in_sexp(n, Mission_goals[i].formula)){
-			return i | SRC_MISSION_GOAL;
+			return std::make_pair(i, sexp_src::MISSION_GOAL);
 		}
 	}
 
 	for (j=0; j<Num_teams; j++) {
 		for (i=0; i<Debriefings[j].num_stages; i++) {
 			if (query_node_in_sexp(n, Debriefings[j].stages[i].formula)){
-				return i | SRC_DEBRIEFING;
+				return std::make_pair(i, sexp_src::DEBRIEFING);
 			}
 		}
 	}
@@ -32299,12 +32297,12 @@ int query_referenced_in_sexp(int  /*mode*/, const char *name, int *node)
 	for (j=0; j<Num_teams; j++) {
 		for (i=0; i<Briefings[j].num_stages; i++) {
 			if (query_node_in_sexp(n, Briefings[j].stages[i].formula)){
-				return i | SRC_BRIEFING;
+				return std::make_pair(i, sexp_src::BRIEFING);
 			}
 		}
 	}
 
-	return SRC_UNKNOWN;
+	return std::make_pair(-1, sexp_src::UNKNOWN);
 }
 
 void skip_white(const char **str)
