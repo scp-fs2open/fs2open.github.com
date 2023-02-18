@@ -5845,7 +5845,8 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 
 	// first child node
 	child = tree_nodes[parent_node].child;
-	Assert(child >= 0);
+	if (child >= 0)
+		return nullptr;
 
 	switch(op)
 	{
@@ -5902,7 +5903,7 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 
 				// iterate to the next field two times
 				child = tree_nodes[child].next;
-				Assert(child >= 0);			
+				if (child < 0) return nullptr;
 				child = tree_nodes[child].next;			
 			}
 			else
@@ -5934,9 +5935,9 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 		case OP_QUERY_ORDERS:
 			// iterate to the next field three times
 			child = tree_nodes[child].next;
-			Assert(child >= 0);
+			if (child < 0) return nullptr;
 			child = tree_nodes[child].next;
-			Assert(child >= 0);
+			if (child < 0) return nullptr;
 			child = tree_nodes[child].next;
 			break;
 
@@ -5944,15 +5945,15 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 		case OP_BEAM_FLOATING_FIRE:
 			// iterate to the next field six times
 			child = tree_nodes[child].next;
-			Assert(child >= 0);
+			if (child < 0) return nullptr;
 			child = tree_nodes[child].next;
-			Assert(child >= 0);
+			if (child < 0) return nullptr;
 			child = tree_nodes[child].next;
-			Assert(child >= 0);
+			if (child < 0) return nullptr;
 			child = tree_nodes[child].next;
-			Assert(child >= 0);
+			if (child < 0) return nullptr;
 			child = tree_nodes[child].next;
-			Assert(child >= 0);
+			if (child < 0) return nullptr;
 			child = tree_nodes[child].next;
 			break;
 
@@ -5960,19 +5961,19 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 		case OP_WEAPON_CREATE:
 			// iterate to the next field eight times
 			child = tree_nodes[child].next;
-			Assert(child >= 0);
+			if (child < 0) return nullptr;
 			child = tree_nodes[child].next;
-			Assert(child >= 0);
+			if (child < 0) return nullptr;
 			child = tree_nodes[child].next;
-			Assert(child >= 0);
+			if (child < 0) return nullptr;
 			child = tree_nodes[child].next;
-			Assert(child >= 0);
+			if (child < 0) return nullptr;
 			child = tree_nodes[child].next;
-			Assert(child >= 0);
+			if (child < 0) return nullptr;
 			child = tree_nodes[child].next;
-			Assert(child >= 0);
+			if (child < 0) return nullptr;
 			child = tree_nodes[child].next;
-			Assert(child >= 0);
+			if (child < 0) return nullptr;
 			child = tree_nodes[child].next;
 			break;
 
@@ -5980,15 +5981,17 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 		case OP_TURRET_SET_FORCED_SUBSYS_TARGET:
 			if (arg_index >= 3) {
 				child = tree_nodes[child].next;
-				Assert(child >= 0);
+				if (child < 0) return nullptr;
 				child = tree_nodes[child].next;
 			}
 			break;
 
 	}
 
+	if (child < 0)
+		return nullptr;
+
 	// now find the ship and add all relevant subsystems
-	Assert(child >= 0);
 	sh = ship_name_lookup(tree_nodes[child].text, 1);
 	if (sh >= 0) {
 		subsys = GET_FIRST(&Ships[sh].subsys_list);
@@ -6059,7 +6062,8 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem_type(int parent_node)
 
 	// first child node
 	child = tree_nodes[parent_node].child;
-	Assert(child >= 0);
+	if (child < 0)
+		return nullptr;
 
 	// now find the ship
 	shipnum = ship_name_lookup(tree_nodes[child].text, 1);
@@ -6258,7 +6262,9 @@ sexp_list_item *sexp_tree::get_listing_opf_ai_goal(int parent_node)
 
 	Assert(parent_node >= 0);
 	child = tree_nodes[parent_node].child;
-	Assert(child >= 0);
+	if (child < 0)
+		return nullptr;
+
 	n = ship_name_lookup(tree_nodes[child].text, 1);
 	if (n >= 0) {
 		// add operators if it's an ai-goal and ai-goal is allowed for that ship
@@ -6304,18 +6310,21 @@ sexp_list_item *sexp_tree::get_listing_opf_docker_point(int parent_node)
 	if (!stricmp(tree_nodes[parent_node].text, "ai-dock"))
 	{
 		z = tree_nodes[parent_node].parent;
-		Assert(z >= 0);
+		if (z < 0)
+			return nullptr;
 		Assert(!stricmp(tree_nodes[z].text, "add-ship-goal") || !stricmp(tree_nodes[z].text, "add-wing-goal") || !stricmp(tree_nodes[z].text, "add-goal"));
 
 		z = tree_nodes[z].child;
-		Assert(z >= 0);
-
+		if (z < 0)
+			return nullptr;
 		sh = ship_name_lookup(tree_nodes[z].text, 1);
 	}
 	else if (!stricmp(tree_nodes[parent_node].text, "set-docked"))
 	{
 		//Docker ship should be the first child node
 		z = tree_nodes[parent_node].child;
+		if (z < 0)
+			return nullptr;
 		sh = ship_name_lookup(tree_nodes[z].text, 1);
 	}
 
@@ -6341,7 +6350,8 @@ sexp_list_item *sexp_tree::get_listing_opf_dockee_point(int parent_node)
 	if (!stricmp(tree_nodes[parent_node].text, "ai-dock"))
 	{
 		z = tree_nodes[parent_node].child;
-		Assert(z >= 0);
+		if (z < 0)
+			return nullptr;
 
 		sh = ship_name_lookup(tree_nodes[z].text, 1);
 	}
@@ -6349,8 +6359,11 @@ sexp_list_item *sexp_tree::get_listing_opf_dockee_point(int parent_node)
 	{
 		//Dockee ship should be the third child node
 		z = tree_nodes[parent_node].child;	// 1
+		if (z < 0) return nullptr;
 		z = tree_nodes[z].next;				// 2
+		if (z < 0) return nullptr;
 		z = tree_nodes[z].next;				// 3
+		if (z < 0) return nullptr;
 
 		sh = ship_name_lookup(tree_nodes[z].text, 1);
 	}
@@ -6648,7 +6661,8 @@ sexp_list_item *sexp_tree::get_listing_opf_goal_name(int parent_node)
 
 		Assert(parent_node >= 0);
 		child = tree_nodes[parent_node].child;
-		Assert(child >= 0);
+		if (child < 0)
+			return nullptr;
 
 		for (m=0; m<Campaign.num_missions; m++)
 			if (!stricmp(Campaign.missions[m].name, tree_nodes[child].text))
@@ -6735,7 +6749,8 @@ sexp_list_item *sexp_tree::get_listing_opf_event_name(int parent_node)
 
 		Assert(parent_node >= 0);
 		child = tree_nodes[parent_node].child;
-		Assert(child >= 0);
+		if (child < 0)
+			return nullptr;
 
 		for (m=0; m<Campaign.num_missions; m++)
 			if (!stricmp(Campaign.missions[m].name, tree_nodes[child].text))
@@ -7084,7 +7099,7 @@ sexp_list_item *sexp_tree::get_listing_opf_animation_type()
 {
 	sexp_list_item head;
 
-	for (auto animation_type : animation::Animation_types) {
+	for (const auto &animation_type : animation::Animation_types) {
 		head.add_data(animation_type.second.first);
 	}
 
@@ -7286,7 +7301,8 @@ sexp_list_item *sexp_tree::get_listing_opf_animation_name(int parent_node)
 
 	// first child node
 	child = tree_nodes[parent_node].child;
-	Assert(child >= 0);
+	if (child < 0)
+		return nullptr;
 	sh = ship_name_lookup(tree_nodes[child].text, 1);
 
 	switch(op) {
