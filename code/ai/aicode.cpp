@@ -219,7 +219,7 @@ ai_flag_name Ai_flag_names[] = {
 };
 
 ai_flag_description Ai_flag_descriptions[] = {
-	{AI::AI_Flags::No_dynamic,				"Will stop allowing the AI to persue dynamic goals (eg: chasing ships it was not ordered to)."},
+	{AI::AI_Flags::No_dynamic,				"Will stop allowing the AI to pursue dynamic goals (eg: chasing ships it was not ordered to)."},
 	{AI::AI_Flags::Free_afterburner_use,	"Will allow AI to use afterburners when attacking a big ship, flying to a target position, guarding a ship, and flying in formation."},
 };
 

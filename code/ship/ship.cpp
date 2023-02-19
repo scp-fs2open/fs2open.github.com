@@ -552,7 +552,7 @@ ship_flag_description Ship_flag_descriptions[] = {
 	{ Ship_Flags::Warp_broken,					"Causes a ship's subspace drive to break. Can be repaired by a support ship."},
 	{ Ship_Flags::Warp_never,					"Causes a ship's subspace drive to never work. Cannot be repaired by a support ship."},
 	{ Ship_Flags::Scannable,					"Whether or not the ship can be scanned."},
-	{ Ship_Flags::Cargo_revealed,				"If set, the ships cargo can be seen without scanning the ship."},
+	{ Ship_Flags::Cargo_revealed,				"If set, the ship's cargo can be seen without scanning the ship."},
 	{ Ship_Flags::Hidden_from_sensors,			"If set, the ship can't be targeted and appears on radar as a blinking dot."},
 	{ Ship_Flags::Stealth,						"If set, the ship can't be targeted, is invisible on radar, and is ignored by AI unless firing."},
 	{ Ship_Flags::Friendly_stealth_invis,		"If set, the ship can't be targeted even by ships on the same team."},
@@ -595,8 +595,8 @@ wing_flag_description Wing_flag_descriptions[] = {
 	{ Wing_Flags::No_arrival_message,				"Arrival messages will not be sent when this wing arrives."},
 	{ Wing_Flags::No_arrival_warp,					"No ship in the wing will use a warp effect upon arrival."},
 	{ Wing_Flags::No_departure_warp,				"No ship in the wing will use a warp effect upon departure."},
-	{ Wing_Flags::Same_arrival_warp_when_docked,	"All ships in the wing will use a single warp effect on arrival if docked."},
-	{ Wing_Flags::Same_departure_warp_when_docked,	"All ships in the wing will use a single warp effect on departure if docked."}
+	{ Wing_Flags::Same_arrival_warp_when_docked,	"All ships in the wing will use the same warp effect size upon arrival as if they were not docked instead of the enlarged arggregate size."},
+	{ Wing_Flags::Same_departure_warp_when_docked,	"All ships in the wing will use the same warp effect size upon departure as if they were not docked instead of the enlarged arggregate size."}
 };
 
 extern const size_t Num_wing_flag_names = sizeof(Wing_flag_names) / sizeof(wing_flag_name);
