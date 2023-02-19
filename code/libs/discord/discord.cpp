@@ -272,7 +272,7 @@ void shutdown()
 	shutdown_discord();
 }
 
-void set_presence_string(SCP_string text)
+void set_presence_string(const SCP_string &text)
 {
 	set_presence(text);
 }
