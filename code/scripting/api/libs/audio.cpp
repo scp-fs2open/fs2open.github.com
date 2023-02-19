@@ -8,6 +8,7 @@
 #include "menuui/mainhallmenu.h"
 #include "missionui/missionbrief.h"
 #include "render/3d.h"
+#include "weapon/weapon.h"
 #include "scripting/api/objs/audio_stream.h"
 #include "scripting/api/objs/enums.h"
 #include "scripting/api/objs/sound.h"
@@ -359,6 +360,27 @@ ADE_FUNC(openAudioStream,
 		return ade_set_args(L, "o", l_AudioStream.Set(-1));
 
 	return ade_set_args(L, "o", l_AudioStream.Set(ah));
+}
+
+ADE_FUNC(pauseWeaponSounds,
+	l_Audio,
+	"boolean pause",
+	"Pauses or unpauses all weapon sounds. The boolean argument should be true to pause and false to unpause.",
+	nullptr,
+	nullptr)
+{
+	bool pause;
+
+	if (!ade_get_args(L, "b", &pause))
+		return ADE_RETURN_NIL;
+
+	if (pause) {
+		weapon_pause_sounds();
+	} else {
+		weapon_unpause_sounds();
+	}
+
+	return ADE_RETURN_NIL;
 }
 
 } // namespace api

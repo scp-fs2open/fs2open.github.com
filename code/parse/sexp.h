@@ -132,6 +132,9 @@ enum : int {
 	OPF_WING_FLAG,					// Goober5000 - The name of a wing flag
 	OPF_ASTEROID_DEBRIS,			// MjnMixael - Debris types as defined in asteroids.tbl
 	OPF_WING_FORMATION,				// Goober5000 - as defined in ships.tbl
+	OPF_MOTION_DEBRIS,				// MjnMixael - Motion debris types as defined in stars.tbl
+	OPF_TURRET_TYPE,				// MjnMixael - Turret types as defined in aiturret.cpp
+	OPF_BOLT_TYPE,					// MjnMixael - Lightning bolt types as defined in lightning.tbl
 
 	//Must always be at the end of the list
 	First_available_opf_id
@@ -415,6 +418,7 @@ enum : int {
 	OP_IS_IN_MISSION, // Goober5000
 	OP_ARE_SHIP_FLAGS_SET, // Karajorma
 	OP_TURRET_GET_PRIMARY_AMMO, // DahBlount, part of the turret ammo code
+	OP_HAS_ARMOR_TYPE, // MjnMixael
 	
 	OP_TURRET_GET_SECONDARY_AMMO,	// DahBlount, part of the turret ammo code
 	OP_IS_DOCKED,	// Goober5000
@@ -572,6 +576,7 @@ enum : int {
 	OP_CHANGE_SOUNDTRACK,	// Goober5000
 	OP_TECH_ADD_INTEL,	// Goober5000
 	OP_TECH_RESET_TO_DEFAULT,	// Goober5000
+	OP_CREATE_BOLT,		//MjnMixael
 	OP_EXPLOSION_EFFECT,	// Goober5000
 	OP_WARP_EFFECT,	// Goober5000
 	OP_SET_OBJECT_FACING,	// Goober5000
@@ -787,7 +792,7 @@ enum : int {
 	OP_GET_ETS_VALUE,	// niffiwan
 	OP_SET_ETS_VALUES,	// niffiwan
 	OP_CALL_SSM_STRIKE, // X3N0-Life-Form
-	OP_SET_MOTION_DEBRIS,    // The E
+	OP_OVERRIDE_MOTION_DEBRIS,    // The E
 	OP_HUD_SET_CUSTOM_GAUGE_ACTIVE, 	// The E, just revamped a bit by Axem
 	OP_HUD_SET_BUILTIN_GAUGE_ACTIVE, 	// The E, just revamped a bit by Axem
 	OP_SCRIPT_EVAL_MULTI,	// Karajorma
@@ -844,11 +849,13 @@ enum : int {
 	OP_ALTER_WING_FLAG,	// Goober5000
 	OP_TOGGLE_ASTEROID_FIELD,	// MjnMixael
 	OP_HUD_FORCE_SENSOR_STATIC,	// MjnMixael
+	OP_HUD_FORCE_EMP_EFFECT, // MjnMixael
 	OP_SET_GRAVITY_ACCEL,	// Asteroth
 	OP_SET_ORDER_ALLOWED_TARGET,	// MjnMixael
 	OP_USED_CHEAT,	// Kiloku
 	OP_SET_ASTEROID_FIELD,	// MjnMixael
 	OP_SET_DEBRIS_FIELD,	// MjnMixael
+	OP_SET_MOTION_DEBRIS,   // MjnMixael
 	
 	// OP_CATEGORY_AI
 	// defined for AI goals
@@ -979,28 +986,36 @@ const char *CTEXT(int n);
 #define CADDDDR(n)	CAR(CDDDDR(n))
 #define CADDDDDR(n)	CAR(CDDDDDR(n))
 
-#define REF_TYPE_SHIP		1
-#define REF_TYPE_WING		2
-#define REF_TYPE_PLAYER		3
-#define REF_TYPE_WAYPOINT	4
-#define REF_TYPE_PATH		5	// waypoint path
+enum class sexp_ref_type
+{
+	SHIP = 1,
+	WING,
+	PLAYER,
+	WAYPOINT,
+	WAYPOINT_PATH
+};
 
-#define SRC_SHIP_ARRIVAL	0x10000
-#define SRC_SHIP_DEPARTURE	0x20000
-#define SRC_WING_ARRIVAL	0x30000
-#define SRC_WING_DEPARTURE	0x40000
-#define SRC_EVENT				0x50000
-#define SRC_MISSION_GOAL	0x60000
-#define SRC_SHIP_ORDER		0x70000
-#define SRC_WING_ORDER		0x80000
-#define SRC_DEBRIEFING		0x90000
-#define SRC_BRIEFING			0xa0000
-#define SRC_UNKNOWN			0xffff0000
-#define SRC_MASK				0xffff0000
-#define SRC_DATA_MASK		0xffff
+enum class sexp_src
+{
+	NONE = 0,
+	SHIP_ARRIVAL,
+	SHIP_DEPARTURE,
+	WING_ARRIVAL,
+	WING_DEPARTURE,
+	EVENT,
+	MISSION_GOAL,
+	SHIP_ORDER,
+	WING_ORDER,
+	DEBRIEFING,
+	BRIEFING,
+	UNKNOWN
+};
 
-#define SEXP_MODE_GENERAL	0
-#define SEXP_MODE_CAMPAIGN	1
+enum class sexp_mode
+{
+	GENERAL = 0,
+	CAMPAIGN
+};
 
 // defines for type field of sexp nodes.  The actual type of the node will be stored in the lower
 // two bytes of the field.  The upper two bytes will be used for flags (bleah...)
@@ -1140,6 +1155,7 @@ enum sexp_error_check
 	SEXP_CHECK_INVALID_EXPLOSION_OPTION,
 	SEXP_CHECK_INVALID_SHIP_EFFECT,
 	SEXP_CHECK_INVALID_TURRET_TARGET_ORDER,
+	SEXP_CHECK_INVALID_TURRET_TYPE,
 	SEXP_CHECK_INVALID_ARMOR_TYPE,
 	SEXP_CHECK_INVALID_DAMAGE_TYPE,
 	SEXP_CHECK_INVALID_TARGET_PRIORITIES,
@@ -1172,6 +1188,8 @@ enum sexp_error_check
 	SEXP_CHECK_INVALID_WING_FLAG,
 	SEXP_CHECK_INVALID_WING_FORMATION,
 	SEXP_CHECK_INVALID_ASTEROID,
+	SEXP_CHECK_INVALID_MOTION_DEBRIS,
+	SEXP_CHECK_INVALID_BOLT_TYPE,
 };
 
 
@@ -1344,7 +1362,7 @@ extern int get_operator_index(int node);
 extern int get_operator_const(const char *token);
 extern int get_operator_const(int node);
 
-extern int check_sexp_syntax(int node, int return_type = OPR_BOOL, int recursive = 0, int *bad_node = 0 /*NULL*/, int mode = 0);
+extern int check_sexp_syntax(int node, int return_type = OPR_BOOL, int recursive = 0, int *bad_node = 0 /*NULL*/, sexp_mode mode = sexp_mode::GENERAL);
 extern int get_sexp_main(void);	//	Returns start node
 extern int run_sexp(const char* sexpression, bool run_eval_num = false, bool *is_nan_or_nan_forever = nullptr); // debug and lua sexps
 extern int stuff_sexp_variable_list();
@@ -1355,7 +1373,7 @@ extern int query_operator_return_type(int op);
 extern int query_operator_argument_type(int op, int argnum);
 extern void update_sexp_references(const char *old_name, const char *new_name);
 extern void update_sexp_references(const char *old_name, const char *new_name, int format);
-extern int query_referenced_in_sexp(int mode, const char *name, int *node);
+extern std::pair<int, sexp_src> query_referenced_in_sexp(sexp_ref_type type, const char *name, int &node);
 extern void stuff_sexp_text_string(SCP_string &dest, int node, int mode);
 extern int build_sexp_string(SCP_string &accumulator, int cur_node, int level, int mode);
 extern int sexp_query_type_match(int opf, int opr);

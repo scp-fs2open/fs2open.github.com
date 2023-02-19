@@ -270,6 +270,9 @@ extern SCP_vector<DamageTypeStruct>	Damage_types;
 #define NUM_TURRET_ORDER_TYPES		3
 extern const char *Turret_target_order_names[NUM_TURRET_ORDER_TYPES];	//aiturret.cpp
 
+#define NUM_TURRET_TYPES 4
+extern const char* Turret_valid_types[NUM_TURRET_TYPES];
+
 // Swifty: Cockpit displays
 typedef struct cockpit_display {
 	int target;
@@ -810,6 +813,7 @@ public:
 	int team_change_time;
 
 	float autoaim_fov;
+	float bank_autoaim_fov[MAX_SHIP_PRIMARY_BANKS];
 
 	int cockpit_model_instance;
 
@@ -1386,6 +1390,7 @@ public:
 	bool newtonian_damp_override; 
 
 	float autoaim_fov;
+	float bank_autoaim_fov[MAX_SHIP_PRIMARY_BANKS];
 
 	bool topdown_offset_def;
 	vec3d topdown_offset;

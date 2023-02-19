@@ -81,6 +81,13 @@
 #include "missionparse.h"
 
 
+// MISSION_VERSION should be the earliest version of FSO that can load the current mission format without
+// requiring version-specific comments.  It should be updated whenever the format changes, but it should
+// not be updated simply because the engine's version changed.
+// NOTE: The version can only have two numbers because old FRED builds expect the version to be a float.
+const gameversion::version MISSION_VERSION = gameversion::version(22, 3);
+const gameversion::version LEGACY_MISSION_VERSION = gameversion::version(0, 10);
+
 LOCAL struct {
 	char docker[NAME_LENGTH];
 	char dockee[NAME_LENGTH];
@@ -462,15 +469,16 @@ void parse_mission_info(mission *pm, bool basic = false)
 	required_string("#Mission Info");
 	
 	required_string("$Version:");
-	stuff_float(&pm->version);
-	if (pm->version != MISSION_VERSION)
-		mprintf(("Older mission, should update it (%.2f<-->%.2f)\n", pm->version, MISSION_VERSION));
+	pm->required_fso_version = gameversion::parse_version_inline();
+
+	if (!gameversion::check_at_least(pm->required_fso_version))
+		throw parse::VersionException("Mission requires version " + gameversion::format_version(pm->required_fso_version), pm->required_fso_version);
 
 	required_string("$Name:");
 	stuff_string(pm->name, F_NAME, NAME_LENGTH);
 
 	required_string("$Author:");
-	stuff_string(pm->author, F_NAME, NAME_LENGTH);
+	stuff_string(pm->author, F_NAME);
 
 	required_string("$Created:");
 	stuff_string(pm->created, F_DATE, DATE_TIME_LENGTH);
@@ -1376,6 +1384,9 @@ void parse_briefing(mission * /*pm*/, int flags)
 			required_string("$camera_time:");
 			stuff_int(&bs->camera_time);
 
+			if (optional_string("$no_grid"))
+				bs->draw_grid = false;
+
 			if ( optional_string("$num_lines:") ) {
 				stuff_int(&bs->num_lines);
 
@@ -1493,6 +1504,10 @@ void parse_briefing(mission * /*pm*/, int flags)
 				bi->closeup_label[0] = 0;
 				if (optional_string("$closeup label:")) {
 					stuff_string(bi->closeup_label, F_MESSAGE, MAX_LABEL_LEN);
+				}
+				bi->scale = 100;
+				if (optional_string("$icon scale:")) {
+					stuff_int(&bi->scale);
 				}
 
 				if (optional_string("+id:")) {
@@ -1863,6 +1878,9 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 
 	// Goober5000 - make the parse object aware of what it was created as
 	p_objp->created_object = &Objects[objnum];
+
+	// Goober5000 - set the collision group if one was provided
+	Objects[objnum].collision_group_id = p_objp->collision_group_id;
 
 	// Goober5000 - if this object is being created because he's docked to something,
 	// and he's in a wing, then mark the wing as having arrived
@@ -2341,10 +2359,8 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 
 		for (iLoop = 0; iLoop < num_sparks; iLoop++)
 		{
-			vec3d v1, v2;
-
 			// DA 10/20/98 - sparks must be chosen on the hull and not any submodel
-			submodel_get_two_random_points_better(sip->model_num, pm->detail[0], &v1, &v2);
+			vec3d v1 = submodel_get_random_point(sip->model_num, pm->detail[0]);
 			ship_hit_sparks_no_rotate(&Objects[objnum], &v1);
 		}
 	}
@@ -6301,6 +6317,11 @@ int get_mission_info(const char *filename, mission *mission_p, bool basic, bool 
 		mprintf(("MISSIONS: Unable to parse '%s'!  Error message = %s.\n", real_fname, e.what()));
 		return -1;
 	}
+	catch (const parse::VersionException& e)
+	{
+		mprintf(("MISSIONS: Unable to parse '%s'!  %s", real_fname, e.what()));
+		return -1;
+	}
 
 	return 0;
 }
@@ -6308,8 +6329,8 @@ int get_mission_info(const char *filename, mission *mission_p, bool basic, bool 
 void mission::Reset()
 {
 	name[ 0 ] = '\0';
-	author[ 0 ] = '\0';
-	version = 0.;
+	author = "";
+	required_fso_version = LEGACY_MISSION_VERSION;
 	created[ 0 ] = '\0';
 	modified[ 0 ] = '\0';
 	notes[ 0 ] = '\0';
@@ -6438,6 +6459,9 @@ void mission_init(mission *pm)
 
 	Asteroid_field.num_initial_asteroids = 0;
 
+	// This could be set with a sexp, so we should reset it here
+	Motion_debris_override = false;
+
 	// reset background bitmaps and suns
 	stars_pre_level_init();
 	neb2_pre_level_init();
@@ -6507,6 +6531,12 @@ bool parse_main(const char *mission_name, int flags)
 		catch (const parse::ParseException& e)
 		{
 			mprintf(("MISSIONS: Unable to parse '%s'!  Error message = %s.\n", mission_name, e.what()));
+			rval = false;
+			break;
+		}
+		catch (const parse::VersionException& e)
+		{
+			mprintf(("MISSIONS: Unable to parse '%s'!  %s", mission_name, e.what()));
 			rval = false;
 			break;
 		}
@@ -6919,6 +6949,11 @@ int mission_parse_is_multi(const char *filename, char *mission_name)
 		catch (const parse::ParseException& e)
 		{
 			mprintf(("MISSIONS: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
+			break;
+		}
+		catch (const parse::VersionException& e)
+		{
+			mprintf(("MISSIONS: Unable to parse '%s'!  %s", filename, e.what()));
 			break;
 		}
 	} while (0);

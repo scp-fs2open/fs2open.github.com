@@ -171,48 +171,9 @@ static opengl_shader_type_t GL_shader_types[] = {
  * When adding a new shader variant for a shader, list all associated uniforms and attributes here
  */
 static opengl_shader_variant_t GL_shader_variants[] = {
-	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_LIGHT, "FLAG_LIGHT", {}, "Lighting"},
-
-	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_FOG, "FLAG_FOG", {}, "Fog Effect"},
-
-	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_DIFFUSE_MAP, "FLAG_DIFFUSE_MAP", {}, "Diffuse Mapping"},
-
-	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_GLOW_MAP, "FLAG_GLOW_MAP", {}, "Glow Mapping"},
-
-	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_SPEC_MAP, "FLAG_SPEC_MAP", {}, "Specular Mapping"},
-
-	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_NORMAL_MAP, "FLAG_NORMAL_MAP", {}, "Normal Mapping"},
-
-	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_HEIGHT_MAP, "FLAG_HEIGHT_MAP", {}, "Parallax Mapping"},
-
-	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_ENV_MAP, "FLAG_ENV_MAP", {}, "Environment Mapping"},
-
-	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_ANIMATED, "FLAG_ANIMATED", {}, "Animated Effects"},
-
-	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_MISC_MAP, "FLAG_MISC_MAP", {}, "Utility mapping"},
-
-	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_TEAMCOLOR, "FLAG_TEAMCOLOR", {}, "Team Colors"},
-
-	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_DEFERRED, "FLAG_DEFERRED", {}, "Deferred lighting"},
-
 	{SDR_TYPE_MODEL, true, SDR_FLAG_MODEL_SHADOW_MAP, "FLAG_SHADOW_MAP", {}, "Shadow Mapping"},
 
-	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_SHADOWS, "FLAG_SHADOWS", {}, "Shadows"},
-
-	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_THRUSTER, "FLAG_THRUSTER", {}, "Thruster scaling"},
-
-	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_TRANSFORM, "FLAG_TRANSFORM", {}, "Submodel Transforms"},
-
-	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_CLIP, "FLAG_CLIP", {}, "Clip Plane"},
-
-	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_HDR, "FLAG_HDR", {}, "High Dynamic Range"},
-
-	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_AMBIENT_MAP, "FLAG_AMBIENT_MAP",
-		{  }, "Ambient Occlusion Map"},
-
 	{SDR_TYPE_MODEL, true, SDR_FLAG_MODEL_THICK_OUTLINES, "FLAG_THICK_OUTLINE", {}, "Thick outlines"},
-
-	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_ALPHA_MULT, "FLAG_ALPHA_MULT", {}, "Alpha multiplier"},
 
 	{SDR_TYPE_EFFECT_PARTICLE,
 	 true,

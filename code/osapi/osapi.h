@@ -58,8 +58,8 @@ void os_cleanup();
 
 // window management ---------------------------------------------------------------
 
-// Returns 1 if app is not the foreground app.
-int os_foreground();
+// Returns false if app is not the foreground app.
+bool os_foreground();
 
 // process management --------------------------------------------------------------
 

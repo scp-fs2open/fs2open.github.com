@@ -74,6 +74,7 @@ BEGIN_MESSAGE_MAP(sexp_tree, CTreeCtrl)
 	ON_WM_LBUTTONUP()
 	ON_WM_DESTROY()
 	ON_WM_LBUTTONDOWN()
+	ON_WM_CHAR()
 	ON_NOTIFY_REFLECT(TVN_KEYDOWN, OnKeyDown)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
@@ -3341,6 +3342,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_NEBULA_STORM_TYPE:
 		case OPF_NEBULA_POOF:
 		case OPF_TURRET_TARGET_ORDER:
+		case OPF_TURRET_TYPE:
 		case OPF_POST_EFFECT:
 		case OPF_TARGET_PRIORITIES:
 		case OPF_ARMOR_TYPE:
@@ -3500,6 +3502,18 @@ int sexp_tree::query_default_argument_available(int op, int i)
 
 		case OPF_ASTEROID_DEBRIS:
 			if ((Asteroid_info.size() - NUM_ASTEROID_POFS) > 0) {
+				return 1;
+			}
+			return 0;
+
+		case OPF_MOTION_DEBRIS:
+			if (Motion_debris_info.size() > 0) {
+				return 1;
+			}
+			return 0;
+
+		case OPF_BOLT_TYPE:
+			if (Bolt_types.size() > 0) {
 				return 1;
 			}
 			return 0;
@@ -4762,7 +4776,6 @@ int sexp_tree::get_type(HTREEITEM h)
 
 void sexp_tree::update_help(HTREEITEM h)
 {
-	const char *str;
 	int i, j, z, c, code, index, sibling_place;
 	CString text;
 
@@ -4788,12 +4801,28 @@ void sexp_tree::update_help(HTREEITEM h)
 		if (tree_nodes[i].handle == h)
 			break;
 
+	int thisIndex = event_annotation_lookup(h);
+	SCP_string nodeComment;
+
+	if (thisIndex >= 0) {
+		if (!Event_annotations[thisIndex].comment.empty()) {
+			nodeComment = "Node Comments:\r\n   " + Event_annotations[thisIndex].comment;
+		}
+	} else {
+		nodeComment = "";
+	}
+
 	if ((i >= (int)tree_nodes.size()) || !tree_nodes[i].type) {
-		help_box->SetWindowText("");
+		help_box->SetWindowText(nodeComment.c_str());
 		if (mini_help_box)
 			mini_help_box->SetWindowText("");
 		return;
 	}
+
+	// Now that we're done with top level nodes we can add the empty lines because
+	// everything else below is supposed to have help text
+	if (!nodeComment.empty())
+		nodeComment.insert(0, "\r\n\r\n");
 
 	if (SEXPT_TYPE(tree_nodes[i].type) == SEXPT_OPERATOR)
 	{
@@ -4904,8 +4933,8 @@ void sexp_tree::update_help(HTREEITEM h)
 			if (query_operator_argument_type(index, c) == OPF_MESSAGE) {
 				for (j=0; j<Num_messages; j++)
 					if (!stricmp(Messages[j].name, tree_nodes[i].text)) {
-						text.Format("Message Text:\r\n%s", Messages[j].message);
-						help_box->SetWindowText(text);
+						text.Format("Message Text:\r\n%s%s", Messages[j].message, nodeComment.c_str());
+						help_box->SetWindowText((LPCSTR)text);
 						return;
 					}
 			}
@@ -4915,11 +4944,14 @@ void sexp_tree::update_help(HTREEITEM h)
 	}
 
 	code = get_operator_const(tree_nodes[i].text);
-	str = help(code);
-	if (!str)
-		str = "No help available";
+	auto str = help(code);
+	if (!str) {
+		text.Format("No help available%s", nodeComment.c_str());
+	} else {
+		text.Format("%s%s", str, nodeComment.c_str());
+	}
 
-	help_box->SetWindowText(str);
+	help_box->SetWindowText((LPCSTR)text);
 }
 
 // find list of sexp_tree nodes with text
@@ -4953,7 +4985,18 @@ int sexp_tree::find_text(const char *text, int *find)
 
 	return find_count;
 }
-			
+
+// This solution was found at https://community.notepad-plus-plus.org/topic/21158/way-to-disallow-copying-text/7
+//   Another interesting thing with the script's execution is that if you don't allow Notepad++ to process the Ctrl+c
+//   keycombo as a WM_KEYDOWN event, you'll get an "ETX" (hex code = 0x03) character in your document at the caret
+//   position. This occurs because, with Notepad++ ignoring the Ctrl+c as a command, it thinks that you want to embed
+//   a control character with value "3" into the doc (it gets a WM_CHAR message to that effect, which it would normally
+//   filter out on its own). So... in the case of preventing copying data, we have to remove any Ctrl+c or Ctrl+x
+//   characters that might get inserted; we do this by processing the WM_CHAR message and filtering those as well.
+void sexp_tree::OnChar(UINT nChar, UINT nRepCnt, UINT nFlags)
+{
+}
+
 void sexp_tree::OnKeyDown(NMHDR *pNMHDR, LRESULT *pResult) 
 {
 	int key;
@@ -4964,8 +5007,8 @@ void sexp_tree::OnKeyDown(NMHDR *pNMHDR, LRESULT *pResult)
 	// Handle clipboard operations for the sexp_tree and its subclasses.  The *proper* way to do this
 	// would be to catch the WM_CUT, WM_COPY, and WM_PASTE messages, but I wasn't able to get it to work
 	// despite considerable research and effort.  So this achieves the same result by just catching
-	// the shortcut keys instead of the messages they produce.  Unfortunately one still hears an error
-	// beep caused by the fumbled WM_CUT, WM_COPY, or WM_PASTE message landing somewhere unknown.
+	// the shortcut keys instead of the messages they produce.  The shortcut keys are still sent to
+	// the window, so the OnChar handler is necessary to catch them and prevent an error beep.
 	// 
 	// Only capture keys on the nodes when we're not currently editing their text
 	//
@@ -5307,6 +5350,10 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = get_listing_opf_turret_target_order();
 			break;
 
+		case OPF_TURRET_TYPE:
+			list = get_listing_opf_turret_types();
+			break;
+
 		case OPF_TARGET_PRIORITIES:
 			list = get_listing_opf_turret_target_priorities();
 			break;
@@ -5449,6 +5496,14 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 
 		case OPF_WING_FORMATION:
 			list = get_listing_opf_wing_formation();
+			break;
+
+		case OPF_MOTION_DEBRIS:
+			list = get_listing_opf_motion_debris();
+			break;
+
+		case OPF_BOLT_TYPE:
+			list = get_listing_opf_bolt_types();
 			break;
 
 		default:
@@ -5807,7 +5862,8 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 
 	// first child node
 	child = tree_nodes[parent_node].child;
-	Assert(child >= 0);
+	if (child >= 0)
+		return nullptr;
 
 	switch(op)
 	{
@@ -5820,6 +5876,7 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 
 		// Armor types need Hull and Shields but not Simulated Hull
 		case OP_SET_ARMOR_TYPE:
+		case OP_HAS_ARMOR_TYPE:
 			special_subsys = OPS_ARMOR;
 			break;
 
@@ -5863,7 +5920,7 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 
 				// iterate to the next field two times
 				child = tree_nodes[child].next;
-				Assert(child >= 0);			
+				if (child < 0) return nullptr;
 				child = tree_nodes[child].next;			
 			}
 			else
@@ -5895,9 +5952,9 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 		case OP_QUERY_ORDERS:
 			// iterate to the next field three times
 			child = tree_nodes[child].next;
-			Assert(child >= 0);
+			if (child < 0) return nullptr;
 			child = tree_nodes[child].next;
-			Assert(child >= 0);
+			if (child < 0) return nullptr;
 			child = tree_nodes[child].next;
 			break;
 
@@ -5905,15 +5962,15 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 		case OP_BEAM_FLOATING_FIRE:
 			// iterate to the next field six times
 			child = tree_nodes[child].next;
-			Assert(child >= 0);
+			if (child < 0) return nullptr;
 			child = tree_nodes[child].next;
-			Assert(child >= 0);
+			if (child < 0) return nullptr;
 			child = tree_nodes[child].next;
-			Assert(child >= 0);
+			if (child < 0) return nullptr;
 			child = tree_nodes[child].next;
-			Assert(child >= 0);
+			if (child < 0) return nullptr;
 			child = tree_nodes[child].next;
-			Assert(child >= 0);
+			if (child < 0) return nullptr;
 			child = tree_nodes[child].next;
 			break;
 
@@ -5921,19 +5978,19 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 		case OP_WEAPON_CREATE:
 			// iterate to the next field eight times
 			child = tree_nodes[child].next;
-			Assert(child >= 0);
+			if (child < 0) return nullptr;
 			child = tree_nodes[child].next;
-			Assert(child >= 0);
+			if (child < 0) return nullptr;
 			child = tree_nodes[child].next;
-			Assert(child >= 0);
+			if (child < 0) return nullptr;
 			child = tree_nodes[child].next;
-			Assert(child >= 0);
+			if (child < 0) return nullptr;
 			child = tree_nodes[child].next;
-			Assert(child >= 0);
+			if (child < 0) return nullptr;
 			child = tree_nodes[child].next;
-			Assert(child >= 0);
+			if (child < 0) return nullptr;
 			child = tree_nodes[child].next;
-			Assert(child >= 0);
+			if (child < 0) return nullptr;
 			child = tree_nodes[child].next;
 			break;
 
@@ -5941,15 +5998,17 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 		case OP_TURRET_SET_FORCED_SUBSYS_TARGET:
 			if (arg_index >= 3) {
 				child = tree_nodes[child].next;
-				Assert(child >= 0);
+				if (child < 0) return nullptr;
 				child = tree_nodes[child].next;
 			}
 			break;
 
 	}
 
+	if (child < 0)
+		return nullptr;
+
 	// now find the ship and add all relevant subsystems
-	Assert(child >= 0);
 	sh = ship_name_lookup(tree_nodes[child].text, 1);
 	if (sh >= 0) {
 		subsys = GET_FIRST(&Ships[sh].subsys_list);
@@ -6020,7 +6079,8 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem_type(int parent_node)
 
 	// first child node
 	child = tree_nodes[parent_node].child;
-	Assert(child >= 0);
+	if (child < 0)
+		return nullptr;
 
 	// now find the ship
 	shipnum = ship_name_lookup(tree_nodes[child].text, 1);
@@ -6219,7 +6279,9 @@ sexp_list_item *sexp_tree::get_listing_opf_ai_goal(int parent_node)
 
 	Assert(parent_node >= 0);
 	child = tree_nodes[parent_node].child;
-	Assert(child >= 0);
+	if (child < 0)
+		return nullptr;
+
 	n = ship_name_lookup(tree_nodes[child].text, 1);
 	if (n >= 0) {
 		// add operators if it's an ai-goal and ai-goal is allowed for that ship
@@ -6265,18 +6327,21 @@ sexp_list_item *sexp_tree::get_listing_opf_docker_point(int parent_node)
 	if (!stricmp(tree_nodes[parent_node].text, "ai-dock"))
 	{
 		z = tree_nodes[parent_node].parent;
-		Assert(z >= 0);
+		if (z < 0)
+			return nullptr;
 		Assert(!stricmp(tree_nodes[z].text, "add-ship-goal") || !stricmp(tree_nodes[z].text, "add-wing-goal") || !stricmp(tree_nodes[z].text, "add-goal"));
 
 		z = tree_nodes[z].child;
-		Assert(z >= 0);
-
+		if (z < 0)
+			return nullptr;
 		sh = ship_name_lookup(tree_nodes[z].text, 1);
 	}
 	else if (!stricmp(tree_nodes[parent_node].text, "set-docked"))
 	{
 		//Docker ship should be the first child node
 		z = tree_nodes[parent_node].child;
+		if (z < 0)
+			return nullptr;
 		sh = ship_name_lookup(tree_nodes[z].text, 1);
 	}
 
@@ -6302,7 +6367,8 @@ sexp_list_item *sexp_tree::get_listing_opf_dockee_point(int parent_node)
 	if (!stricmp(tree_nodes[parent_node].text, "ai-dock"))
 	{
 		z = tree_nodes[parent_node].child;
-		Assert(z >= 0);
+		if (z < 0)
+			return nullptr;
 
 		sh = ship_name_lookup(tree_nodes[z].text, 1);
 	}
@@ -6310,8 +6376,11 @@ sexp_list_item *sexp_tree::get_listing_opf_dockee_point(int parent_node)
 	{
 		//Dockee ship should be the third child node
 		z = tree_nodes[parent_node].child;	// 1
+		if (z < 0) return nullptr;
 		z = tree_nodes[z].next;				// 2
+		if (z < 0) return nullptr;
 		z = tree_nodes[z].next;				// 3
+		if (z < 0) return nullptr;
 
 		sh = ship_name_lookup(tree_nodes[z].text, 1);
 	}
@@ -6609,7 +6678,8 @@ sexp_list_item *sexp_tree::get_listing_opf_goal_name(int parent_node)
 
 		Assert(parent_node >= 0);
 		child = tree_nodes[parent_node].child;
-		Assert(child >= 0);
+		if (child < 0)
+			return nullptr;
 
 		for (m=0; m<Campaign.num_missions; m++)
 			if (!stricmp(Campaign.missions[m].name, tree_nodes[child].text))
@@ -6696,7 +6766,8 @@ sexp_list_item *sexp_tree::get_listing_opf_event_name(int parent_node)
 
 		Assert(parent_node >= 0);
 		child = tree_nodes[parent_node].child;
-		Assert(child >= 0);
+		if (child < 0)
+			return nullptr;
 
 		for (m=0; m<Campaign.num_missions; m++)
 			if (!stricmp(Campaign.missions[m].name, tree_nodes[child].text))
@@ -6971,13 +7042,23 @@ sexp_list_item *sexp_tree::get_listing_opf_nebula_poof()
 	return head.next;
 }
 
-sexp_list_item *sexp_tree::get_listing_opf_turret_target_order()
+sexp_list_item* sexp_tree::get_listing_opf_turret_target_order()
 {
 	int i;
 	sexp_list_item head;
 
 	for (i=0; i<NUM_TURRET_ORDER_TYPES; i++)
 		head.add_data(Turret_target_order_names[i]);
+
+	return head.next;
+}
+
+sexp_list_item* sexp_tree::get_listing_opf_turret_types()
+{
+	sexp_list_item head;
+
+	for (int i = 0; i < NUM_TURRET_TYPES; i++)
+		head.add_data(Turret_valid_types[i]);
 
 	return head.next;
 }
@@ -7035,7 +7116,7 @@ sexp_list_item *sexp_tree::get_listing_opf_animation_type()
 {
 	sexp_list_item head;
 
-	for (auto animation_type : animation::Animation_types) {
+	for (const auto &animation_type : animation::Animation_types) {
 		head.add_data(animation_type.second.first);
 	}
 
@@ -7150,6 +7231,32 @@ sexp_list_item* sexp_tree::get_listing_opf_asteroid_debris()
 	return head.next;
 }
 
+sexp_list_item* sexp_tree::get_listing_opf_motion_debris()
+{
+	sexp_list_item head;
+
+	head.add_data(SEXP_NONE_STRING);
+
+	for (int i = 0; i < (int)Motion_debris_info.size(); i++) {
+		head.add_data(Motion_debris_info[i].name.c_str());
+	}
+
+	return head.next;
+}
+
+sexp_list_item* sexp_tree::get_listing_opf_bolt_types()
+{
+	sexp_list_item head;
+
+	head.add_data(SEXP_NONE_STRING);
+
+	for (int i = 0; i < (int)Bolt_types.size(); i++) {
+		head.add_data(Bolt_types[i].name);
+	}
+
+	return head.next;
+}
+
 extern SCP_vector<game_snd>	Snds;
 
 sexp_list_item *sexp_tree::get_listing_opf_game_snds()
@@ -7224,7 +7331,8 @@ sexp_list_item *sexp_tree::get_listing_opf_animation_name(int parent_node)
 
 	// first child node
 	child = tree_nodes[parent_node].child;
-	Assert(child >= 0);
+	if (child < 0)
+		return nullptr;
 	sh = ship_name_lookup(tree_nodes[child].text, 1);
 
 	switch(op) {

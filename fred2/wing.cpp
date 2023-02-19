@@ -79,7 +79,7 @@ int check_wing_dependencies(int wing_num) {
 	char *name;
 
 	name = Wings[wing_num].name;
-	return reference_handler(name, REF_TYPE_WING, -1);
+	return reference_handler(name, sexp_ref_type::WING, -1);
 }
 
 int create_wing() {
@@ -309,7 +309,7 @@ int delete_wing(int wing_num, int bypass) {
 			break;
 		}
 
-	invalidate_references(Wings[wing_num].name, REF_TYPE_WING);
+	invalidate_references(Wings[wing_num].name, sexp_ref_type::WING);
 	if (!bypass) {
 		total = Wings[wing_num].wave_count;
 		for (i = 0; i<total; i++)

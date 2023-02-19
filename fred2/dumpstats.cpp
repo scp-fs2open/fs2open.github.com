@@ -137,7 +137,7 @@ void DumpStats::get_mission_stats(CString &buffer)
 	temp.Format("Filename: %s\r\n", Mission_filename);
 	buffer += temp;
 
-	temp.Format("Author: %s\r\n", The_mission.author);
+	temp.Format("Author: %s\r\n", The_mission.author.c_str());
 	buffer += temp;
 
 	temp.Format("Description: %s\r\n", The_mission.mission_desc);

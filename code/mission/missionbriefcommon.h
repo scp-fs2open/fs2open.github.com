@@ -115,6 +115,7 @@ extern const float		BRIEF_TEXT_WIPE_TIME;		// time in seconds for wipe to occur
 
 typedef struct brief_icon {
 	int		x,y,w,h;
+	int		scale;
 	int		hold_x, hold_y;	// 2D screen position of icon, used to place animations
 	int		ship_class;
 	int		modelnum;
@@ -157,10 +158,11 @@ public:
 	brief_icon	*icons;
 	int			num_lines;
 	brief_line	*lines;
+	bool		draw_grid;
 
 	brief_stage( ) 
-		: text( ), camera_time( 0 ), flags( 0 ), formula( -1 ),
-		  num_icons( 0 ), icons( NULL ), num_lines( 0 ), lines( NULL )
+		: text( ), camera_time( 0 ), flags( 0 ), formula( -1 ), num_icons(0), icons(NULL), num_lines(0), lines(NULL),
+		  draw_grid( true )
 	{ 
 		voice[ 0 ] = 0;
 		camera_pos = vmd_zero_vector;

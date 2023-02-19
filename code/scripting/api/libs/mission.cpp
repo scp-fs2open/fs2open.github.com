@@ -26,6 +26,7 @@
 #include "missionui/missioncmdbrief.h"
 #include "missionui/redalert.h"
 #include "nebula/neb.h"
+#include "nebula/neblightning.h"
 #include "object/objcollide.h"
 #include "parse/parselo.h"
 #include "parse/sexp.h"
@@ -1339,6 +1340,31 @@ ADE_FUNC(createExplosion,
 		return ade_set_args(L, "o", l_Fireball.Set(object_h(&Objects[obj_idx])));
 	else
 		return ade_set_error(L, "o", l_Fireball.Set(object_h()));
+}
+
+ADE_FUNC(createBolt,
+	l_Mission,
+	"string BoltName, vector Origin, vector Target, [boolean PlaySound = true]",
+	"Creates a lightning bolt between the origin and target vectors. BoltName is name of a bolt from lightning.tbl",
+	"boolean",
+	"True if successful, false if the bolt could't be created.")
+{
+	const char* boltname;
+	vec3d origin = vmd_zero_vector;
+	vec3d dest = vmd_zero_vector;
+	bool playSound = true;
+
+	if (!ade_get_args(L, "soo|b", &boltname, l_Vector.Get(&origin), l_Vector.Get(&dest), &playSound)) {
+		return ADE_RETURN_FALSE;
+	}
+	
+	int boltclass = get_bolt_type_by_name(boltname);
+
+	if (boltclass < 0) {
+		return ADE_RETURN_FALSE;
+	}
+
+	return ade_set_args(L, "b", nebl_bolt(boltclass, &origin, &dest, playSound));
 }
 
 ADE_FUNC(getMissionFilename, l_Mission, NULL, "Gets mission filename", "string", "Mission filename, or empty string if game is not in a mission")

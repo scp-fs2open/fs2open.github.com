@@ -1403,7 +1403,14 @@ bool game_start_mission()
 
 	if ( !load_success ) {
 		if ( !(Game_mode & GM_MULTIPLAYER) ) {
-			popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR( "Attempt to load the mission failed", 169));
+			// the version will have been assigned before loading was aborted
+			if (!gameversion::check_at_least(The_mission.required_fso_version)) {
+				popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("This mission requires FSO version %s", 1671), format_version(The_mission.required_fso_version, true).c_str());
+			}
+			// standard load failure
+			else {
+				popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Attempt to load the mission failed", 169));
+			}
 			gameseq_post_event(GS_EVENT_MAIN_MENU);
 		} else {
 			multi_quit_game(PROMPT_NONE, MULTI_END_NOTIFY_NONE, MULTI_END_ERROR_LOAD_FAIL);
@@ -1868,7 +1875,7 @@ void game_init()
 
 	control_config_common_init();				// sets up localization stuff in the control config
 
-	parse_rank_tbl();
+	rank_init();
 	parse_traitor_tbl();
 	medals_init();
 
@@ -1976,6 +1983,10 @@ void game_init()
 	Script_system.RunInitFunctions();
 	if (scripting::hooks::OnGameInit->isActive()) {
 		scripting::hooks::OnGameInit->run();
+	}
+	//Technically after the splash screen, but the best we can do these days. Since the override is hard-deprecated, we don't need to check it.
+	if (scripting::hooks::OnSplashScreen->isActive()) {
+		scripting::hooks::OnSplashScreen->run();
 	}
 
 	game_title_screen_close();
@@ -7444,48 +7455,42 @@ int game_hacked_data()
 
 void game_title_screen_display()
 {
-	bool condhook_override = false;
-	if (scripting::hooks::OnSplashScreen->isActive()) {
-		condhook_override = scripting::hooks::OnSplashScreen->isOverride();
-	}
+	//As the script system isn't available here (it needs tables loaded and stuff), the on Splash Screen hook is removed from here.
+	//It is deprecated as of 23.0 (where it was nonfunctional anyways), and will only be called for compatibility once the init has occurred after the splash screen -Lafiel
 
-	mprintf(("SCRIPTING: Splash screen overrides checked\n"));
-	if(!condhook_override)
-	{
-		Game_title_logo = bm_load(Game_logo_screen_fname[gr_screen.res]);
+	Game_title_logo = bm_load(Game_logo_screen_fname[gr_screen.res]);
+
+	if (!Splash_screens.empty()) {
+		Game_title_bitmap = bm_load(Splash_screens[Random::next(0, (int)Splash_screens.size() - 1)].c_str());
+	} else {
 		Game_title_bitmap = bm_load(Game_title_screen_fname[gr_screen.res]);
-
-		if (Game_title_bitmap != -1)
-		{
-			// set
-			gr_set_bitmap(Game_title_bitmap);
-
-			// get bitmap's width and height
-			int width, height;
-			bm_get_info(Game_title_bitmap, &width, &height);
-
-			// set the screen scale to the bitmap's dimensions
-			gr_set_screen_scale(width, height);
-
-			// draw it in the center of the screen
-			gr_bitmap((gr_screen.max_w_unscaled - width)/2, (gr_screen.max_h_unscaled - height)/2, GR_RESIZE_MENU);
-
-			if (Game_title_logo != -1)
-			{
-				gr_set_bitmap(Game_title_logo);
-
-				gr_bitmap(0, 0, GR_RESIZE_MENU);
-
-			}
-
-			gr_reset_screen_scale();
-		}
 	}
 
-	if (scripting::hooks::OnSplashScreen->isActive())
-		scripting::hooks::OnSplashScreen->run();
+	if (Game_title_bitmap != -1)
+	{
+		// set
+		gr_set_bitmap(Game_title_bitmap);
 
-	mprintf(("SCRIPTING: Splash screen conditional hook has been run\n"));
+		// get bitmap's width and height
+		int width, height;
+		bm_get_info(Game_title_bitmap, &width, &height);
+
+		// set the screen scale to the bitmap's dimensions
+		gr_set_screen_scale(width, height);
+
+		// draw it in the center of the screen
+		gr_bitmap((gr_screen.max_w_unscaled - width)/2, (gr_screen.max_h_unscaled - height)/2, GR_RESIZE_MENU);
+
+		if (Game_title_logo != -1)
+		{
+			gr_set_bitmap(Game_title_logo);
+
+			gr_bitmap(0, 0, GR_RESIZE_MENU);
+
+		}
+
+		gr_reset_screen_scale();
+	}
 
 	// flip
 	gr_flip();

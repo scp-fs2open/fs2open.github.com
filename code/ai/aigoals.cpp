@@ -2496,7 +2496,7 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 		ai_formation_object_recalculate_slotnums(old_form_objnum);
 }
 
-void ai_update_goal_references(ai_goal *goals, int type, const char *old_name, const char *new_name)
+void ai_update_goal_references(ai_goal *goals, sexp_ref_type type, const char *old_name, const char *new_name)
 {
 	int i, mode, flag, dummy;
 
@@ -2506,8 +2506,8 @@ void ai_update_goal_references(ai_goal *goals, int type, const char *old_name, c
 		flag = 0;
 		switch (type)
 		{
-			case REF_TYPE_SHIP:
-			case REF_TYPE_PLAYER:
+			case sexp_ref_type::SHIP:
+			case sexp_ref_type::PLAYER:
 				switch (mode)
 				{
 					case AI_GOAL_CHASE:
@@ -2524,7 +2524,7 @@ void ai_update_goal_references(ai_goal *goals, int type, const char *old_name, c
 				}
 				break;
 
-			case REF_TYPE_WING:
+			case sexp_ref_type::WING:
 				switch (mode)
 				{
 					case AI_GOAL_CHASE_WING:
@@ -2533,7 +2533,7 @@ void ai_update_goal_references(ai_goal *goals, int type, const char *old_name, c
 				}
 				break;
 
-			case REF_TYPE_WAYPOINT:
+			case sexp_ref_type::WAYPOINT:
 				switch (mode)
 				{
 					case AI_GOAL_WAYPOINTS:
@@ -2542,7 +2542,7 @@ void ai_update_goal_references(ai_goal *goals, int type, const char *old_name, c
 				}
 				break;
 
-			case REF_TYPE_PATH:
+			case sexp_ref_type::WAYPOINT_PATH:
 				switch (mode)
 				{
 					case AI_GOAL_WAYPOINTS:
@@ -2553,7 +2553,7 @@ void ai_update_goal_references(ai_goal *goals, int type, const char *old_name, c
 				break;
 
 			default:
-				Warning(LOCATION, "unhandled FRED reference type %d in ai_update_goal_references", type);
+				Warning(LOCATION, "unhandled FRED reference type %d in ai_update_goal_references", static_cast<int>(type));
 				break;
 		}
 
@@ -2570,7 +2570,7 @@ void ai_update_goal_references(ai_goal *goals, int type, const char *old_name, c
 	}
 }
 
-int query_referenced_in_ai_goals(ai_goal *goals, int type, const char *name)
+bool query_referenced_in_ai_goals(ai_goal *goals, sexp_ref_type type, const char *name)
 {
 	int i, mode, flag;
 
@@ -2580,7 +2580,8 @@ int query_referenced_in_ai_goals(ai_goal *goals, int type, const char *name)
 		flag = 0;
 		switch (type)
 		{
-			case REF_TYPE_SHIP:
+			case sexp_ref_type::SHIP:
+			case sexp_ref_type::PLAYER:
 				switch (mode)
 				{
 					case AI_GOAL_CHASE:
@@ -2597,7 +2598,7 @@ int query_referenced_in_ai_goals(ai_goal *goals, int type, const char *name)
 				}
 				break;
 
-			case REF_TYPE_WING:
+			case sexp_ref_type::WING:
 				switch (mode)
 				{
 					case AI_GOAL_CHASE_WING:
@@ -2606,7 +2607,7 @@ int query_referenced_in_ai_goals(ai_goal *goals, int type, const char *name)
 				}
 				break;
 
-			case REF_TYPE_WAYPOINT:
+			case sexp_ref_type::WAYPOINT:
 				switch (mode)
 				{
 					case AI_GOAL_WAYPOINTS:
@@ -2615,7 +2616,7 @@ int query_referenced_in_ai_goals(ai_goal *goals, int type, const char *name)
 				}
 				break;
 
-			case REF_TYPE_PATH:
+			case sexp_ref_type::WAYPOINT_PATH:
 				switch (mode)
 				{
 					case AI_GOAL_WAYPOINTS:
@@ -2628,11 +2629,11 @@ int query_referenced_in_ai_goals(ai_goal *goals, int type, const char *name)
 		if (flag)  // is this a valid goal to parse for this conversion?
 		{
 			if (!stricmp(goals[i].target_name, name))
-				return 1;
+				return true;
 		}
 	}
 
-	return 0;
+	return false;
 }
 
 char *ai_add_dock_name(const char *str)

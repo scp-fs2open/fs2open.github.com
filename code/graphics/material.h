@@ -92,6 +92,8 @@ public:
 	material();
 
 	int get_shader_handle() const;
+
+	// get_shader_flags should return a full set of all flags set for this shader
 	virtual uint get_shader_flags() const;
 
 	void set_texture_map(int tex_type, int texture_num);
@@ -222,7 +224,9 @@ public:
 	bool is_lit() const;
 
 	void set_deferred_lighting(bool enabled);
+	bool is_deferred() const;
 	void set_high_dynamic_range(bool enabled);
+	bool is_hdr() const;
 	
 	void set_center_alpha(int center_alpha);
 	int get_center_alpha() const;
@@ -233,6 +237,7 @@ public:
 	void set_team_color(const team_color &Team_clr);
 	void set_team_color();
 	const team_color& get_team_color() const;
+	bool is_team_color_set() const;
 
 	void set_animated_effect(int effect, float time);
 	void set_animated_effect();

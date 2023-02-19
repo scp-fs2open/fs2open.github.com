@@ -753,6 +753,7 @@ ADE_FUNC(deserializeValue,
 	}
 }
 
+
 ADE_FUNC(setDiscordPresence,
 	l_Base,
 	"string DisplayText, [boolean Gameplay]",
@@ -776,6 +777,12 @@ ADE_FUNC(setDiscordPresence,
 	}
 
 	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(hasFocus, l_Base, nullptr, "Returns if the game engine has focus or not", "boolean", "True if the game has focus, false if it has been lost")
+{
+	return ade_set_args(L, "b", os_foreground());
+
 }
 
 //**********SUBLIBRARY: Base/Events

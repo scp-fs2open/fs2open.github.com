@@ -2185,7 +2185,7 @@ int beam_start_firing(beam *b)
 		Ships[b->objp->instance].weapons.primary_bank_ammo[b->bank]--;
 
 	if (scripting::hooks::OnBeamFired->isActive()) {
-		scripting::hooks::OnBeamFired->run(scripting::hooks::WeaponUsedConditions{ &Ships[b->objp->instance], b->target, b->weapon_info_index, true },
+		scripting::hooks::OnBeamFired->run(scripting::hooks::WeaponUsedConditions{ &Ships[b->objp->instance], b->target, SCP_vector<int>{ b->weapon_info_index }, true },
 			scripting::hook_param_list(
 				scripting::hook_param("Beam", 'o', &Objects[b->objnum]),
 				scripting::hook_param("User", 'o', b->objp),
@@ -2337,7 +2337,8 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 			vm_vec_zero(&b->binfo.dir_b);
 		} else {
 			// get random model points, this is useful for big ships, because we never miss when shooting at them
-			submodel_get_two_random_points_better(model_num, 0, &b->binfo.dir_a, &b->binfo.dir_b, seed);
+			b->binfo.dir_a = submodel_get_random_point(model_num, 0, seed);
+			b->binfo.dir_b = submodel_get_random_point(model_num, 0, seed);
 		}
 		break;
 
@@ -2428,8 +2429,8 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 		if (usable_target) {
 			// set up our two kinds of random points if needed
 			if (bwi->t5info.start_pos == Type5BeamPos::RANDOM_INSIDE || bwi->t5info.end_pos == Type5BeamPos::RANDOM_INSIDE) {
-				vec3d temp1, temp2;
-				submodel_get_two_random_points_better(model_num, 0, &temp1, &temp2, seed);
+				vec3d temp1 = submodel_get_random_point(model_num, 0, seed);
+				vec3d temp2 = submodel_get_random_point(model_num, 0, seed);
 				vm_vec_rotate(&rand1_on, &temp1, &b->target->orient);
 				vm_vec_rotate(&rand2_on, &temp2, &b->target->orient);
 				rand1_on += b->target->pos;

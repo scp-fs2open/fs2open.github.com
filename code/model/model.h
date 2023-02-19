@@ -535,6 +535,7 @@ typedef struct glow_point_bank_override {
 	int			glow_bitmap; 
 	int			glow_neb_bitmap;
 	bool		is_on;
+	bool		default_off;
 
 	bool		type_override;
 	bool		on_time_override; 
@@ -1182,9 +1183,7 @@ void model_instance_clear_arcs(polymodel *pm, polymodel_instance *pmi);
 void model_instance_add_arc(polymodel *pm, polymodel_instance *pmi, int sub_model_num, vec3d *v1, vec3d *v2, int arc_type, color *primary_color_1 = nullptr, color *primary_color_2 = nullptr, color *secondary_color = nullptr);
 
 // Gets two random points on the surface of a submodel
-extern void submodel_get_two_random_points(int model_num, int submodel_num, vec3d *v1, vec3d *v2, vec3d *n1 = NULL, vec3d *n2 = NULL);
-
-extern void submodel_get_two_random_points_better(int model_num, int submodel_num, vec3d * v1, vec3d * v2, int seed = -1);
+extern vec3d submodel_get_random_point(int model_num, int submodel_num, int seed = -1);
 
 // gets the average position of the mesh at a particular z slice, approximately
 void submodel_get_cross_sectional_avg_pos(int model_num, int submodel_num, float z_slice_pos, vec3d* pos);

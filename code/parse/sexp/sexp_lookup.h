@@ -28,6 +28,21 @@ int add_dynamic_sexp(std::unique_ptr<DynamicSEXP>&& sexp, sexp_oper_type type = 
 DynamicSEXP* get_dynamic_sexp(int operator_const);
 
 /**
+ * @brief Given a category name, return the category index
+ * @param name The category name
+ * @return The category index or OP_CATEGORY_NONE if not found
+ */
+int get_category(const SCP_string& name);
+
+/**
+ * @brief Given a category and a subcategory name, return the subcategory index
+ * @param name The subcategory name
+ * @param category The parent category
+ * @return The subcategory index or OP_SUBCATEGORY_NONE if not found
+ */
+int get_subcategory(const SCP_string& name, int category);
+
+/**
  * @brief Given a subcategory constant, return its parent category
  * @param subcategory_id The subcategory constant to check
  * @return The category or OP_CATEGORY_NONE if there isn't one

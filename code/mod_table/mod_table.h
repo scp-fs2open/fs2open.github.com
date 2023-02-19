@@ -61,6 +61,7 @@ extern SCP_string Window_title;
 extern SCP_string Mod_title;
 extern SCP_string Mod_version;
 extern bool Unicode_text_mode;
+extern SCP_vector<SCP_string> Splash_screens;
 extern bool Use_tabled_strings_for_default_language;
 extern bool Dont_preempt_training_voice;
 extern SCP_string Movie_subtitle_font;
@@ -128,6 +129,8 @@ extern bool Discord_presence;
 extern bool Hotkey_always_hide_hidden_ships;
 extern bool Use_weapon_class_sounds_for_hits_to_player;
 extern bool SCPUI_loads_hi_res_animations;
+extern bool Play_thruster_sounds_for_player;
+extern std::array<std::tuple<float, float>, 6> Fred_spacemouse_nonlinearity;
 
 void mod_table_init();
 void mod_table_post_process();
@@ -152,3 +155,5 @@ void mod_table_reset();
  * @return @c true if the mod specified support for this or a later version, @c false otherwise
  */
 bool mod_supports_version(int major, int minor, int build);
+
+bool mod_supports_version(const gameversion::version& version);

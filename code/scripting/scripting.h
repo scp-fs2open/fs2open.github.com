@@ -194,7 +194,7 @@ public:
 	                          const char* debug_str = nullptr);
 	bool EvalString(const char* string, const char* debug_str = nullptr);
 	void ParseChunk(script_hook *dest, const char* debug_str=NULL);
-	void ParseGlobalChunk(ConditionalActions hookType, const char* debug_str=nullptr);
+	void ParseGlobalChunk(ConditionalActions hookType, const char* debug_str=nullptr, const std::shared_ptr<scripting::HookBase> parentHook=nullptr);
 	bool ParseCondition(const char *filename="<Unknown>");
 	void AddConditionedHook(int action_id, script_action hook);
 	void AssayActions();
