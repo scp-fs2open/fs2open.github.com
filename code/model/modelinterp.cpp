@@ -1229,42 +1229,25 @@ static int submodel_get_points_internal(int model_num, int submodel_num)
 /**
  * Gets two random points on a model
  */
-void submodel_get_two_random_points(int model_num, int submodel_num, vec3d *v1, vec3d *v2, vec3d *n1, vec3d *n2 )
+vec3d submodel_get_random_point_fallback(int model_num, int submodel_num)
 {
 	int nv = submodel_get_points_internal(model_num, submodel_num);
 
-	// this is not only because of the immediate div-0 error but also because of the less immediate expectation for at least one point (preferably two) to be found
+	// this is not only because of the immediate div-0 error but also because of the less immediate expectation for at least one point to be found
 	if (nv <= 0) {
 		polymodel *pm = model_get(model_num);
 		Error(LOCATION, "Model %d ('%s') must have at least one point from submodel_get_points_internal!", model_num, (pm == NULL) ? "<null model?!?>" : pm->filename);
 
 		// in case people ignore the error...
-		vm_vec_zero(v1);
-		vm_vec_zero(v2);
-		if (n1 != NULL) {
-			vm_vec_zero(n1);
-		}
-		if (n2 != NULL) {
-			vm_vec_zero(n2);
-		}
-		return;
+		return vmd_zero_vector;
 	}
 
 	int vn1 = Random::next(nv);
-	int vn2 = Random::next(nv);
 
-	*v1 = *Interp_verts[vn1];
-	*v2 = *Interp_verts[vn2];
-
-	if(n1 != NULL){
-		*n1 = *Interp_norms[vn1];
-	}
-	if(n2 != NULL){
-		*n2 = *Interp_norms[vn2];
-	}
+	return *Interp_verts[vn1];
 }
 
-void submodel_get_two_random_points_better(int model_num, int submodel_num, vec3d *v1, vec3d *v2, int seed)
+vec3d submodel_get_random_point(int model_num, int submodel_num, int seed)
 {
 	polymodel *pm = model_get(model_num);
 
@@ -1275,10 +1258,9 @@ void submodel_get_two_random_points_better(int model_num, int submodel_num, vec3
 
 		// the Shivan Comm Node does not have a collision tree, for one
 		if (pm->submodel[submodel_num].collision_tree_index < 0) {
-			nprintf(("Model", "In submodel_get_two_random_points_better(), model %s does not have a collision tree!  Falling back to submodel_get_two_random_points().\n", pm->filename));
+			nprintf(("Model", "In submodel_get_random_point(), model %s does not have a collision tree!  Falling back to submodel_get_random_point_fallback().\n", pm->filename));
 
-			submodel_get_two_random_points(model_num, submodel_num, v1, v2);
-			return;
+			return submodel_get_random_point_fallback(model_num, submodel_num);
 		}
 
 		bsp_collision_tree *tree = model_get_bsp_collision_tree(pm->submodel[submodel_num].collision_tree_index);
@@ -1287,21 +1269,19 @@ void submodel_get_two_random_points_better(int model_num, int submodel_num, vec3
 
 		// this is not only because of the immediate div-0 error but also because of the less immediate expectation for at least one point (preferably two) to be found
 		if (nv <= 0) {
-			Error(LOCATION, "Model %d ('%s') must have at least one point from submodel_get_points_internal!", model_num, (pm == NULL) ? "<null model?!?>" : pm->filename);
+			Error(LOCATION, "Model %d ('%s') must have at least one point in its collision tree!", model_num, (pm == NULL) ? "<null model?!?>" : pm->filename);
 
 			// in case people ignore the error...
-			vm_vec_zero(v1);
-			vm_vec_zero(v2);
-
-			return;
+			return vmd_zero_vector;
 		}
 
 		int seed_num = seed == -1 ? Random::next() : seed;
 		int vn1 = static_rand(seed_num) % nv;
-		int vn2 = static_rand(seed_num) % nv;
 
-		*v1 = tree->point_list[vn1];
-		*v2 = tree->point_list[vn2];
+		return tree->point_list[vn1];
+	} else {
+		Assertion(false, "submodel_get_random_point called on an invalid model!");
+		return vmd_zero_vector;
 	}
 }
 

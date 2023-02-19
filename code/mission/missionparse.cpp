@@ -2359,10 +2359,8 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 
 		for (iLoop = 0; iLoop < num_sparks; iLoop++)
 		{
-			vec3d v1, v2;
-
 			// DA 10/20/98 - sparks must be chosen on the hull and not any submodel
-			submodel_get_two_random_points_better(sip->model_num, pm->detail[0], &v1, &v2);
+			vec3d v1 = submodel_get_random_point(sip->model_num, pm->detail[0]);
 			ship_hit_sparks_no_rotate(&Objects[objnum], &v1);
 		}
 	}
