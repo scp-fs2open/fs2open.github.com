@@ -8,6 +8,7 @@
 #include "freespace.h"
 
 #include "gamesequence/gamesequence.h"
+#include "libs/discord/discord.h"
 #include "mission/missiontraining.h"
 #include "network/multi.h"
 #include "parse/parselo.h"
@@ -752,9 +753,36 @@ ADE_FUNC(deserializeValue,
 	}
 }
 
+
+ADE_FUNC(setDiscordPresence,
+	l_Base,
+	"string DisplayText, [boolean Gameplay]",
+	"Sets the Discord presence to a specific string. If Gameplay is true then the string is ignored and presence will "
+	"be set as if the player is in-mission. The latter will fail if the player is not in a mission.",
+	nullptr,
+	"nothing")
+{
+	const char* text;
+	bool gp = false;
+	if (!ade_get_args(L, "s|b", &text, &gp)) {
+		return ADE_RETURN_NIL;
+	}
+
+	if (gp) {
+		if ((Game_mode & GM_IN_MISSION) != 0){
+			libs::discord::set_presence_gameplay();
+		}
+	} else {
+		libs::discord::set_presence_string(text);
+	}
+
+	return ADE_RETURN_NIL;
+}
+
 ADE_FUNC(hasFocus, l_Base, nullptr, "Returns if the game engine has focus or not", "boolean", "True if the game has focus, false if it has been lost")
 {
 	return ade_set_args(L, "b", os_foreground());
+
 }
 
 //**********SUBLIBRARY: Base/Events
