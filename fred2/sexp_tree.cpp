@@ -5862,7 +5862,7 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 
 	// first child node
 	child = tree_nodes[parent_node].child;
-	if (child >= 0)
+	if (child < 0)
 		return nullptr;
 
 	switch(op)
