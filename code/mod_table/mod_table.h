@@ -129,6 +129,7 @@ extern bool Discord_presence;
 extern bool Hotkey_always_hide_hidden_ships;
 extern bool Use_weapon_class_sounds_for_hits_to_player;
 extern bool SCPUI_loads_hi_res_animations;
+extern bool Countermeasures_use_capacity;
 extern bool Play_thruster_sounds_for_player;
 extern std::array<std::tuple<float, float>, 6> Fred_spacemouse_nonlinearity;
 

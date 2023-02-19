@@ -6930,7 +6930,12 @@ static void ship_set(int ship_index, int objnum, int ship_type)
 
 	shipp->afterburner_fuel = sip->afterburner_fuel_capacity;
 
-	shipp->cmeasure_count = sip->cmeasure_max;
+	if (Countermeasures_use_capacity) {
+		float cm_cargo_size = Weapon_info[sip->cmeasure_type].cargo_size;
+		shipp->cmeasure_count = fl2i(sip->cmeasure_max / cm_cargo_size);
+	} else {
+		shipp->cmeasure_count = sip->cmeasure_max;
+	}
 	shipp->current_cmeasure = sip->cmeasure_type;
 
 	if (sip->num_primary_banks == 0 || swp->primary_bank_weapons[0] < 0) {
@@ -11331,7 +11336,15 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	delete [] subsys_pcts;
 
 	sp->afterburner_fuel = MAX(0, sip->afterburner_fuel_capacity - (sip_orig->afterburner_fuel_capacity - sp->afterburner_fuel));
-	sp->cmeasure_count = MAX(0, sip->cmeasure_max - (sip_orig->cmeasure_max - sp->cmeasure_count));
+
+	// handle countermeasure counts
+	if (Countermeasures_use_capacity) {
+		float cm_cargo_size = Weapon_info[sp->current_cmeasure].cargo_size;
+		int cm_used = fl2i(sip_orig->cmeasure_max / cm_cargo_size) - sp->cmeasure_count;
+		sp->cmeasure_count = MAX(0, fl2i(sip->cmeasure_max / cm_cargo_size) - cm_used);
+	} else {
+		sp->cmeasure_count = MAX(0, sip->cmeasure_max - (sip_orig->cmeasure_max - sp->cmeasure_count));
+	}
 
 	// avoid cases where either of these are 0
 	if (sp->current_max_speed != 0 && sip_orig->max_speed != 0) {
@@ -14948,7 +14961,12 @@ int ship_do_rearm_frame( object *objp, float frametime )
 	}
 
 	// AL 1-16-98: Replenish countermeasures
-	shipp->cmeasure_count = sip->cmeasure_max;
+	if (Countermeasures_use_capacity) {
+		float cm_cargo_size = Weapon_info[sip->cmeasure_type].cargo_size;
+		shipp->cmeasure_count = fl2i(sip->cmeasure_max / cm_cargo_size);
+	} else {
+		shipp->cmeasure_count = sip->cmeasure_max;
+	}
 
 	// Do shield repair here
 	if ( !(objp->flags[Object::Object_Flags::No_shields]) )
