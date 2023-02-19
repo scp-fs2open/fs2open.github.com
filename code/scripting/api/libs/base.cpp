@@ -752,6 +752,11 @@ ADE_FUNC(deserializeValue,
 	}
 }
 
+ADE_FUNC(hasFocus, l_Base, nullptr, "Returns if the game engine has focus or not", "boolean", "True if the game has focus, false if it has been lost")
+{
+	return ade_set_args(L, "b", os_foreground());
+}
+
 //**********SUBLIBRARY: Base/Events
 ADE_LIB_DERIV(l_Base_Events, "GameEvents", NULL, "Freespace 2 game events", l_Base);
 
