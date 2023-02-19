@@ -189,5 +189,37 @@ ADE_VIRTVAR(isVisible,
 
 }
 
+ADE_VIRTVAR(CustomData, l_TechRoomCutscene, nullptr, "Gets the custom data table for this cutscene", "table", "The cutscene's custom data table") 
+{
+	cutscene_info_h current;
+	if (!ade_get_args(L, "o", l_TechRoomCutscene.Get(&current))) {
+		return ADE_RETURN_NIL;
+	}
+	
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	auto table = luacpp::LuaTable::create(L);
+
+	for (const auto& pair : current.getStage()->custom_data)
+	{
+		table.addValue(pair.first, pair.second);
+	}
+
+	return ade_set_args(L, "t", &table);	
+}
+
+ADE_FUNC(hasCustomData, l_TechRoomCutscene, nullptr, "Detects whether the cutscene has any custom data", "boolean", "true if the cutscene's custom_data is not empty, false otherwise") 
+{
+	cutscene_info_h current;
+	if (!ade_get_args(L, "o", l_TechRoomCutscene.Get(&current))) {
+		return ADE_RETURN_NIL;
+	}
+
+	bool result = !current.getStage()->custom_data.empty();
+	return ade_set_args(L, "b", result);
+}
+
 } // namespace api
 } // namespace scripting
