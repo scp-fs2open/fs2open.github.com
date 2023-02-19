@@ -3439,8 +3439,10 @@ void game_render_frame( camid cid )
 		gr_end_proj_matrix();
 		gr_end_view_matrix();
 
+		gr_override_fog(true);
 		GR_DEBUG_SCOPE("Render Cockpit");
 		ship_render_player_ship(Viewer_obj);
+		gr_override_fog(false);
 
 		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
 		gr_set_view_matrix(&Eye_position, &Eye_matrix);

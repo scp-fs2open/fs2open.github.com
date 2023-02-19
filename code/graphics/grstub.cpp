@@ -565,5 +565,7 @@ bool gr_stub_init()
 
 	gr_screen.gf_set_viewport = [](int /*x*/, int /*y*/, int /*width*/, int /*height*/) {};
 
+	gr_screen.gf_override_fog = [](bool /*b*/) {};
+
 	return true;
 }
