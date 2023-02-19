@@ -8759,11 +8759,11 @@ static void ship_dying_frame(object *objp, int ship_num)
 		// Do fireballs for Big ship with propagating explostion, but not Kamikaze
 		if (!(Ai_info[shipp->ai_index].ai_flags[AI::AI_Flags::Kamikaze]) && ship_get_exp_propagates(shipp) && (sip->death_roll_r_mult > 0.0f)) {
 			if ( timestamp_elapsed(shipp->next_fireball))	{
-				vec3d outpnt, pnt1, pnt2;
+				vec3d outpnt;
 				polymodel *pm = model_get(sip->model_num);
 
-				// Gets two random points on the surface of a submodel
-				submodel_get_two_random_points(pm->id, pm->detail[0], &pnt1, &pnt2);
+				// Get a random point on the surface of a submodel
+				vec3d pnt1 = submodel_get_random_point(pm->id, pm->detail[0]);
 
 				model_instance_local_to_global_point(&outpnt, &pnt1, shipp->model_instance_num, pm->detail[0], &objp->orient, &objp->pos );
 
@@ -8874,10 +8874,11 @@ static void ship_dying_frame(object *objp, int ship_num)
 				}
 				// Find two random vertices on the model, then average them
 				// and make the piece start there.
-				vec3d tmp, outpnt, pnt1, pnt2;
+				vec3d tmp, outpnt;
 
 				// Gets two random points on the surface of a submodel [KNOSSOS]
-				submodel_get_two_random_points(pm->id, pm->detail[0], &pnt1, &pnt2);
+				vec3d pnt1 = submodel_get_random_point(pm->id, pm->detail[0]);
+				vec3d pnt2 = submodel_get_random_point(pm->id, pm->detail[0]);
 
 				vm_vec_avg( &tmp, &pnt1, &pnt2 );
 				model_instance_local_to_global_point(&outpnt, &tmp, pm, pmi, pm->detail[0], &objp->orient, &objp->pos );

@@ -1159,7 +1159,7 @@ void moldel_calc_facing_pts( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, fl
 	vm_vec_scale_add( bot, &temp, &uvec, -w/2.0f );	
 }
 
-void submodel_get_two_random_points(int model_num, int submodel_num, vec3d *v1, vec3d *v2, int seed)
+vec3d submodel_get_random_point(int model_num, int submodel_num, int seed)
 {
 	polymodel *pm = model_get(model_num);
 
@@ -1174,21 +1174,19 @@ void submodel_get_two_random_points(int model_num, int submodel_num, vec3d *v1, 
 
 		// this is not only because of the immediate div-0 error but also because of the less immediate expectation for at least one point (preferably two) to be found
 		if (nv <= 0) {
-			Error(LOCATION, "Model %d ('%s') must have at least one point from submodel_get_points_internal!", model_num, (pm == NULL) ? "<null model?!?>" : pm->filename);
+			Error(LOCATION, "Model %d ('%s') must have at least one point in its collision tree!", model_num, (pm == NULL) ? "<null model?!?>" : pm->filename);
 
 			// in case people ignore the error...
-			vm_vec_zero(v1);
-			vm_vec_zero(v2);
-
-			return;
+			return vmd_zero_vector;
 		}
 
 		int seed_num = seed == -1 ? Random::next() : seed;
 		int vn1 = static_rand(seed_num) % nv;
-		int vn2 = static_rand(seed_num) % nv;
 
-		*v1 = tree->point_list[vn1];
-		*v2 = tree->point_list[vn2];
+		return tree->point_list[vn1];
+	} else {
+		Assertion(false, "submodel_get_random_point called on an invalid model!");
+		return vmd_zero_vector;
 	}
 }
 
