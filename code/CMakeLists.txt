@@ -92,6 +92,7 @@ if (FSO_BUILD_WITH_OPENGL)
 	target_compile_definitions(code PUBLIC WITH_OPENGL)
 endif()
 if (FSO_BUILD_WITH_VULKAN)
+	target_compile_definitions(code PUBLIC WITH_VULKAN)
 	find_package(Vulkan REQUIRED)
 	target_link_libraries(code PRIVATE Vulkan::Vulkan)
 
