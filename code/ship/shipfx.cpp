@@ -58,6 +58,10 @@ sound_handle Player_engine_wash_loop = sound_handle::invalid();
 
 extern float splode_level;
 
+const auto OnWarpOutCompleteHook = scripting::OverridableHook<scripting::hooks::ShipSourceConditions>::Factory(
+	"On Warp Out Complete", "Called when a ship has completed the warp out animation",
+	{{"Self", "ship", "The object that is warping out."}});
+
 const auto OnWarpOutHook = scripting::OverridableHook<scripting::hooks::ShipSourceConditions>::Factory(
 	"On Warp Out", "Called when a ship warps out.", {{"Self", "ship", "The object that is warping out."}});
 
@@ -589,8 +593,23 @@ static void shipfx_actually_warpout(ship *shipp, object *objp)
 	// let physics in on it too.
 	objp->phys_info.flags &= (~PF_WARP_OUT);
 
+	if (OnWarpOutCompleteHook->isActive()) {
+		auto params = scripting::hook_param_list(scripting::hook_param("Self", 'o', objp));
+		auto conditions = scripting::hooks::ShipSourceConditions{ shipp };
+		if (OnWarpOutCompleteHook->isOverride(conditions, params)) {
+			OnWarpOutCompleteHook->run(conditions, params);
+			return;
+		}
+	}
+	
 	// Once we get through effect, make the ship go away
 	ship_actually_depart(objp->instance);
+
+	if (OnWarpOutCompleteHook->isActive()) {
+		auto params = scripting::hook_param_list(scripting::hook_param("Self", 'o', objp));
+		auto conditions = scripting::hooks::ShipSourceConditions{shipp};
+		OnWarpOutCompleteHook->run(conditions, params);
+	}
 }
 
 void WE_Default::compute_warpout_stuff(float *warp_time, vec3d *warp_pos)
