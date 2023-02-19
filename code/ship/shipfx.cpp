@@ -2459,7 +2459,8 @@ void shipfx_do_lightning_frame( ship * /*shipp*/ )
 	count = (int)frand_range(0.0f, (float)count);
 	while(count > 0){
 		// get 2 points on the hull of the ship
-		submodel_get_two_random_points(shipp->modelnum, 0, &v1, &v2, &n1, &n2);
+		v1 = submodel_get_random_point(shipp->modelnum, 0);
+		v2 = submodel_get_random_point(shipp->modelnum, 0);
 
 		// make up to 2 bolts
 		if(objp->radius > l_max_radius){
