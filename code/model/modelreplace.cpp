@@ -792,7 +792,7 @@ void VirtualPOFOperationAddWeapons::process(polymodel* pm, model_read_deferred_t
 		}
 	}
 
-	banks[destbank] = object_copy_including_array_member<w_bank, false>(banks_src[sourcebank], &w_bank::num_slots, &w_bank::pnt, &w_bank::norm, &w_bank::external_model_angle_offset);
+	banks[actual_destbank] = object_copy_including_array_member<w_bank, false>(banks_src[sourcebank], &w_bank::num_slots, &w_bank::pnt, &w_bank::norm, &w_bank::external_model_angle_offset);
 }
 
 
