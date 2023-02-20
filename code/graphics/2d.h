@@ -898,6 +898,8 @@ typedef struct screen {
 	std::function<void(gr_sync sync)> gf_sync_delete;
 
 	std::function<void(int x, int y, int width, int height)> gf_set_viewport;
+
+	std::function<void(bool set_override)> gf_override_fog;
 } screen;
 
 // handy macro
@@ -1101,6 +1103,8 @@ inline void gr_post_process_restore_zbuffer()
 #define gr_shadow_map_start				GR_CALL(gr_screen.gf_shadow_map_start)
 #define gr_shadow_map_end				GR_CALL(gr_screen.gf_shadow_map_end)
 #define gr_render_shield_impact			GR_CALL(gr_screen.gf_render_shield_impact)
+
+#define gr_override_fog					GR_CALL(gr_screen.gf_override_fog)
 
 inline void gr_render_primitives(material* material_info,
 	primitive_type prim_type,

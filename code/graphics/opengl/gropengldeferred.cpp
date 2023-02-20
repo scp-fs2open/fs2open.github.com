@@ -98,6 +98,7 @@ void gr_opengl_deferred_lighting_end()
 
 extern SCP_vector<light> Lights;
 extern int Num_lights;
+static bool override_fog = false;
 
 void gr_opengl_deferred_lighting_finish()
 {
@@ -294,7 +295,7 @@ void gr_opengl_deferred_lighting_finish()
 	// Now reset back to drawing into the color buffer
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
-	if (The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb2_render_mode != NEB2_RENDER_NONE) {
+	if (The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb2_render_mode != NEB2_RENDER_NONE && !override_fog) {
 		GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
 		gr_zbuffer_set(GR_ZBUFF_NONE);
 		opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_SCENE_FOG, 0));
@@ -345,6 +346,10 @@ void gr_opengl_deferred_lighting_finish()
 	gr_clear_states();
 }
 
+void gr_opengl_override_fog(bool set_override)
+{
+	override_fog = set_override;
+}
 
 void gr_opengl_draw_deferred_light_sphere(const vec3d *position)
 {

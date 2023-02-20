@@ -17,4 +17,6 @@ void gr_opengl_draw_deferred_light_cylinder(const vec3d *position, const matrix 
 
 void gr_opengl_deferred_shutdown();
 
+void gr_opengl_override_fog(bool set_override);
+
 void opengl_draw_sphere();
