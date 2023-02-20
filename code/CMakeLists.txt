@@ -47,10 +47,6 @@ target_link_libraries(code PUBLIC libRocket)
 
 target_link_libraries(code PUBLIC pcp)
 
-if (FSO_BUILD_WITH_VULKAN)
-	target_link_libraries(code PUBLIC vulkan-hpp)
-endif()
-
 target_link_libraries(code PUBLIC parsers)
 
 target_link_libraries(code PUBLIC mdns)
@@ -67,6 +63,12 @@ TARGET_LINK_LIBRARIES(code PUBLIC jansson)
 target_link_libraries(code PUBLIC variant)
 
 target_link_libraries(code PUBLIC any)
+
+target_link_libraries(code PUBLIC optional)
+
+target_link_libraries(code PUBLIC hidapi::hidapi)
+
+target_link_libraries(code PUBLIC imgui)
 
 # Headers for standalone "gui" on UNIX
 IF(UNIX)
@@ -91,6 +93,10 @@ if (FSO_BUILD_WITH_OPENGL)
 endif()
 if (FSO_BUILD_WITH_VULKAN)
 	target_compile_definitions(code PUBLIC WITH_VULKAN)
+	find_package(Vulkan REQUIRED)
+	target_link_libraries(code PRIVATE Vulkan::Vulkan)
+
+	target_compile_definitions(code PUBLIC WITH_VULKAN VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1 VK_NO_PROTOTYPES)
 endif()
 
 include(shaders.cmake)
@@ -106,3 +112,6 @@ set_target_properties(code PROPERTIES XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYM
 set_target_properties(code PROPERTIES XCODE_ATTRIBUTE_COPY_PHASE_STRIP[variant=Debug] "NO")
 set_target_properties(code PROPERTIES XCODE_ATTRIBUTE_STRIP_INSTALLED_PRODUCT[variant=Debug] "NO")
 set_target_properties(code PROPERTIES XCODE_ATTRIBUTE_GCC_SYMBOLS_PRIVATE_EXTERN[variant=Debug] "NO")
+
+# Prevent GCC warnings in third-party BitOp... see GitHub #4366
+suppress_file_warnings(scripting/lua/bitop/bit.c)

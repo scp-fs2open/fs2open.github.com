@@ -1,6 +1,7 @@
 #include "globalincs/pstypes.h"
 #include "globalincs/safe_strings.h"
 #include "globalincs/vmallocator.h"
+#include "cmdline/cmdline.h"
 #include "def_files/def_files.h"
 #include "lighting/lighting.h"
 #include "lighting/lighting_profiles.h"
@@ -53,6 +54,19 @@ void lighting_profile_value::set_multiplier(float in)
 	multipier = in;
 }
 
+void lighting_profile_value::stack_multiplier(float in)
+{
+	if(has_multiplier)
+	{
+		multipier*= in;
+	}
+	else 
+	{
+		multipier = in;
+		has_multiplier = true;
+	}
+}
+
 void lighting_profile_value::set_maximum(float in)
 {
 	has_maximum = true;
@@ -63,6 +77,29 @@ void lighting_profile_value::set_minimum(float in)
 {
 	has_minimum = true;
 	minimum = in;
+}
+
+void lighting_profile_value::stack_minimum(float in)
+{
+	if(has_minimum)
+	{
+		minimum = MAX(minimum,in);
+	}
+	else
+	{
+		minimum = in;
+		has_minimum = true;
+	}
+}
+bool lighting_profile_value::read_adjust(float *out) const
+{
+	*out = adjust;
+	return has_adjust;
+}
+bool lighting_profile_value::read_multiplier(float *out) const
+{
+	*out = multipier;
+	return has_multiplier;
 }
 /**
  * @brief for use during the parsing of a light profile to attempt to read in an LPV
@@ -176,7 +213,22 @@ void lighting_profile::reset()
 	cone_light_radius.set_multiplier(1.25f);
 
 	directional_light_brightness.reset();
+
+
+	overall_brightness.reset();
+	//Default Multiplier to maintain legacy visual compatibility
+	overall_brightness.set_multiplier(3.5f); 
+	overall_brightness.set_minimum(0.0f);
+	overall_brightness.stack_multiplier(Cmdline_light_power);
+
 	ambient_light_brightness.reset();
+	//Inverse of the overall brightness boost
+	ambient_light_brightness.set_multiplier(0.286f); 
+	ambient_light_brightness.stack_multiplier(Cmdline_ambient_power);
+	ambient_light_brightness.set_adjust(MAX(0.0f,Cmdline_emissive_power));
+
+	cockpit_light_radius_modifier.reset();
+	cockpit_light_radius_modifier.set_multiplier(1.0f);
 }
 
 TonemapperAlgorithm lighting_profile::name_to_tonemapper(SCP_string &name)
@@ -204,14 +256,43 @@ TonemapperAlgorithm lighting_profile::name_to_tonemapper(SCP_string &name)
 	if(name == "reinhard extended"){
 		r = tnm_Reinhard_Extended;
 	}
-	if(name == "ppc"){
+	if (name == "ppc" || name == "piecewise power curve") {
 		r = tnm_PPC;
 	}
-	if(name == "ppc rgb"){
+	if (name == "ppc rgb" || name == "piecewise power curve (rgb)") {
 		r = tnm_PPC_RGB;
 	}
 	return r;
 }
+
+SCP_string lighting_profile::tonemapper_to_name(TonemapperAlgorithm tnm)
+{
+	switch (tnm) {
+	case TonemapperAlgorithm::tnm_Aces:
+		return "ACES";
+	case TonemapperAlgorithm::tnm_Aces_Approx:
+		return "ACES Approximate";
+	case TonemapperAlgorithm::tnm_Cineon:
+		return "Cineon";
+	case TonemapperAlgorithm::tnm_Invalid:
+		return "invalid";
+	case TonemapperAlgorithm::tnm_Linear:
+		return "Linear";
+	case TonemapperAlgorithm::tnm_PPC:
+		return "Piecewise Power Curve";
+	case TonemapperAlgorithm::tnm_PPC_RGB:
+		return "Piecewise Power Curve (RGB)";
+	case TonemapperAlgorithm::tnm_Reinhard_Extended:
+		return "Reinhard Extended";
+	case TonemapperAlgorithm::tnm_Reinhard_Jodie:
+		return "Reinhard Jodie";
+	case TonemapperAlgorithm::tnm_Uncharted:
+		return "Uncharted 2";
+	default:
+		return "wtf";
+	}
+}
+
 
 lighting_profile lighting_profile::default_profile;
 
@@ -232,7 +313,7 @@ void lighting_profile::parse_all()
 {
 	default_profile.reset();
 	if (cf_exists_full("lighting_profiles.tbl", CF_TYPE_TABLES)){
-		mprintf(("TABLES:Starting parse of lighting profiles.tbl"));
+		mprintf(("TABLES: Starting parse of lighting profiles.tbl\n"));
 		lighting_profile::parse_file("lighting_profiles.tbl");
 	}
 
@@ -287,11 +368,29 @@ void lighting_profile::parse_default_section(const char *filename)
 										&default_profile.point_light_radius);
 		parsed |= lighting_profile_value::parse(filename,"$Directional light brightness:",profile_name,
 										&default_profile.directional_light_brightness);
-		parsed |= lighting_profile_value::parse(filename,"$Ambient light brightness:",profile_name,
-										&default_profile.ambient_light_brightness);
+		parsed |= lighting_profile_value::parse(filename,"$Cone light radius:",profile_name,
+										&default_profile.cone_light_radius);
+		parsed |= lighting_profile_value::parse(filename,"$Cone light brightness:",profile_name,
+										&default_profile.cone_light_brightness);
+		if(lighting_profile_value::parse(filename,"$Ambient light brightness:",profile_name, &default_profile.ambient_light_brightness))
+		{
+			parsed = true;
+			default_profile.ambient_light_brightness.stack_multiplier(Cmdline_ambient_power);
+			default_profile.ambient_light_brightness.stack_multiplier(Cmdline_light_power);
+			default_profile.ambient_light_brightness.stack_minimum(Cmdline_emissive_power);
+		}
 
+		if(lighting_profile_value::parse(filename,"$Overall brightness:",profile_name, &default_profile.overall_brightness))
+		{
+			parsed = true;
+			default_profile.overall_brightness.stack_multiplier(Cmdline_light_power);
+		}
 
 		parsed |= parse_optional_float_into("$Exposure:",&default_profile.exposure);
+
+		parsed |= lighting_profile_value::parse(filename, "$Cockpit light radius modifier:", profile_name,
+			&default_profile.cockpit_light_radius_modifier);
+
 		if(!parsed){
 			stuff_string(buffer,F_RAW);
 			Warning(LOCATION,"Unhandled line in lighting profile\n\t%s",buffer.c_str());
@@ -393,4 +492,32 @@ void lighting_profile::lab_set_ppc(piecewise_power_curve_values ppcin ){
 
 piecewise_power_curve_values lighting_profile::lab_get_ppc(){
 	return default_profile.ppc_values;
+}
+
+float lighting_profile::lab_get_light(){
+	float r;
+	default_profile.overall_brightness.read_multiplier(&r);
+
+	return r;
+}
+float lighting_profile::lab_get_ambient(){
+	float r;
+	default_profile.ambient_light_brightness.read_multiplier(&r);
+
+	return r;
+}
+float lighting_profile::lab_get_emissive(){
+	float r;
+	default_profile.ambient_light_brightness.read_adjust(&r);
+
+	return r;
+}
+void lighting_profile::lab_set_light(float in){
+	default_profile.overall_brightness.set_multiplier(in);
+}
+void lighting_profile::lab_set_ambient(float in){
+	default_profile.ambient_light_brightness.set_multiplier(in);
+}
+void lighting_profile::lab_set_emissive(float in){
+	default_profile.ambient_light_brightness.set_adjust(MAX(0.0f,in));
 }

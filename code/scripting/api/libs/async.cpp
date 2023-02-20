@@ -111,7 +111,7 @@ ADE_FUNC(promise,
 	"function(function(any resolveVal) => void resolve, function(any errorVal) => void reject) => void body",
 	"Creates a promise that resolves when the resolve function of the callback is called or errors if the reject "
 	"function is called. The function will be called "
-	"on it's own.",
+	"on its own.",
 	"promise",
 	"The promise or nil on error")
 {

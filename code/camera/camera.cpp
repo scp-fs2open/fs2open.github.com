@@ -831,7 +831,10 @@ void subtitle::do_frame(float frametime)
 
 	auto sizing_mode = do_screen_scaling ? GR_RESIZE_FULL : GR_RESIZE_NONE;
 	if (do_screen_scaling)
+	{
 		gr_set_screen_scale(Show_subtitle_screen_adjusted_res[0], Show_subtitle_screen_adjusted_res[1]);
+		gr_set_clip(0, 0, Show_subtitle_screen_adjusted_res[0], Show_subtitle_screen_adjusted_res[1]);
+	}
 
 	// do the actual drawing ---------------------
 
@@ -879,7 +882,10 @@ void subtitle::do_frame(float frametime)
 	// finished the actual drawing ---------------
 
 	if (do_screen_scaling)
+	{
 		gr_reset_screen_scale();
+		gr_reset_clip();
+	}
 
 	// restore old font
 	if (old_fontnum >= 0)

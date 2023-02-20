@@ -10,13 +10,16 @@
 #include "gamesnd/eventmusic.h"
 #include "def_files/def_files.h"
 #include "globalincs/version.h"
+#include "graphics/shadows.h"
 #include "localization/localize.h"
+#include "libs/discord/discord.h"
 #include "mission/missioncampaign.h"
 #include "mission/missionload.h"
 #include "mission/missionmessage.h"
 #include "missionui/fictionviewer.h"
 #include "nebula/neb.h"
 #include "mod_table/mod_table.h"
+#include "options/Option.h"
 #include "parse/parselo.h"
 #include "sound/sound.h"
 #include "starfield/supernova.h"
@@ -29,7 +32,14 @@ bool Fixed_missile_detonation;
 bool Damage_impacted_subsystem_first;
 bool Cutscene_camera_displays_hud;
 bool Alternate_chaining_behavior;
+bool Fixed_chaining_to_repeat;
 bool Use_host_orientation_for_set_camera_facing;
+bool Use_3d_ship_select;
+bool Use_3d_ship_icons;
+bool Use_3d_weapon_select;
+bool Use_3d_weapon_icons;
+bool Use_3d_overhead_ship;
+overhead_style Default_overhead_ship_style;
 int Default_ship_select_effect;
 int Default_weapon_select_effect;
 int Default_fiction_viewer_ui;
@@ -41,15 +51,23 @@ bool Dont_automatically_select_turret_when_targeting_ship;
 bool Weapons_inherit_parent_collision_group;
 bool Flight_controls_follow_eyepoint_orientation;
 int FS2NetD_port;
+int Default_multi_object_update_level;
 float Briefing_window_FOV;
+int Briefing_window_resolution[2];
 bool Disable_hc_message_ani;
+SCP_vector<SCP_string> Custom_head_anis;
 bool Red_alert_applies_to_delayed_ships;
 bool Beams_use_damage_factors;
 float Generic_pain_flash_factor;
 float Shield_pain_flash_factor;
+float Emp_pain_flash_factor;
+std::tuple<float, float, float> Emp_pain_flash_color;
 gameversion::version Targeted_version; // Defaults to retail
 SCP_string Window_title;
+SCP_string Mod_title;
+SCP_string Mod_version;
 bool Unicode_text_mode;
+SCP_vector<SCP_string> Splash_screens;
 bool Use_tabled_strings_for_default_language;
 bool Dont_preempt_training_voice;
 SCP_string Movie_subtitle_font;
@@ -61,13 +79,27 @@ bool Using_in_game_options;
 float Dinky_shockwave_default_multiplier;
 bool Shockwaves_always_damage_bombs;
 bool Shockwaves_damage_all_obj_types_once;
-std::tuple<ubyte, ubyte, ubyte> Arc_color_damage_p1;
-std::tuple<ubyte, ubyte, ubyte> Arc_color_damage_p2;
-std::tuple<ubyte, ubyte, ubyte> Arc_color_damage_s1;
-std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_p1;
-std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_p2;
-std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_s1;
+bool Shockwaves_inherit_parent_damage_type;
+SCP_string Inherited_shockwave_damage_type_suffix;
+SCP_string Inherited_dinky_shockwave_damage_type_suffix;
+SCP_string Default_shockwave_damage_type;
+SCP_string Default_dinky_shockwave_damage_type;
+color Arc_color_damage_p1;
+color Arc_color_damage_p2;
+color Arc_color_damage_s1;
+float Arc_width_default_damage;
+float Arc_width_radius_multiplier_damage;
+float Arc_width_no_multiply_over_radius_damage;
+float Arc_width_minimum_damage;
+color Arc_color_emp_p1;
+color Arc_color_emp_p2;
+color Arc_color_emp_s1;
+float Arc_width_default_emp;
+float Arc_width_radius_multiplier_emp;
+float Arc_width_no_multiply_over_radius_emp;
+float Arc_width_minimum_emp;
 bool Use_engine_wash_intensity;
+bool Apply_shudder_to_chase_view;
 bool Framerate_independent_turning; // an in-depth explanation how this flag is supposed to work can be found in #2740 PR description
 bool Ai_respect_tabled_turntime_rotdamp;
 bool Swarmers_lead_targets;
@@ -81,6 +113,8 @@ bool Neb_affects_particles;
 bool Neb_affects_fireballs;
 std::tuple<float, float, float, float> Shadow_distances;
 std::tuple<float, float, float, float> Shadow_distances_cockpit;
+bool Show_ship_casts_shadow;
+bool Cockpit_shares_coordinate_space;
 bool Custom_briefing_icons_always_override_standard_icons;
 float Min_pixel_size_thruster;
 float Min_pixel_size_beam;
@@ -92,6 +126,40 @@ bool Show_subtitle_uses_pixels;
 int Show_subtitle_screen_base_res[2];
 int Show_subtitle_screen_adjusted_res[2];
 bool Always_warn_player_about_unbound_keys;
+leadIndicatorBehavior Lead_indicator_behavior;
+shadow_disable_overrides Shadow_disable_overrides {false, false, false, false};
+float Thruster_easing;
+bool Always_use_distant_firepoints;
+bool Discord_presence;
+bool Hotkey_always_hide_hidden_ships;
+bool Use_weapon_class_sounds_for_hits_to_player;
+bool SCPUI_loads_hi_res_animations;
+bool Countermeasures_use_capacity;
+bool Play_thruster_sounds_for_player;
+std::array<std::tuple<float, float>, 6> Fred_spacemouse_nonlinearity;
+
+static auto DiscordOption = options::OptionBuilder<bool>("Other.Discord", "Discord Presence", "Toggle Discord Rich Presence")
+							 .category("Other")
+							 .default_val(Discord_presence)
+							 .level(options::ExpertLevel::Advanced)
+							 .importance(55)
+		                     .change_listener([](bool val, bool) {
+									if(Discord_presence){
+										if (!val) {
+											Discord_presence = false;
+											libs::discord::shutdown();
+											return true;
+										}
+									} else {
+										if (val) {
+											Discord_presence = true;
+											libs::discord::init();
+											return true;
+										}
+									}
+									return false;
+								})
+							 .finish();
 
 void mod_table_set_version_flags();
 
@@ -137,11 +205,33 @@ void parse_mod_table(const char *filename)
 		if (optional_string("$Window icon:")) {
 			stuff_string(Window_icon_path, F_NAME);
 		}
+
+		if (optional_string("$Mod title:")) {
+			stuff_string(Mod_title, F_NAME);
+		}
+
+		if (optional_string("$Mod version:")) {
+			stuff_string(Mod_version, F_NAME);
+		}
 		
 		if (optional_string("$Unicode mode:")) {
 			stuff_boolean(&Unicode_text_mode);
 
 			mprintf(("Game Settings Table: Unicode mode: %s\n", Unicode_text_mode ? "yes" : "no"));
+		}
+
+		if (optional_string("$Splash screens:")) {
+			SCP_string splash_bitmap;
+			while (optional_string("+Bitmap:")) {
+				stuff_string(splash_bitmap, F_NAME);
+
+				// remove extension?
+				if (drop_extension(splash_bitmap)) {
+					mprintf(("Game Settings Table: Removed extension on splash screen file name %s\n", splash_bitmap.c_str()));
+				}
+
+				Splash_screens.push_back(splash_bitmap);
+			}
 		}
 
 		optional_string("#LOCALIZATION SETTINGS");
@@ -295,6 +385,16 @@ void parse_mod_table(const char *filename)
 			}
 		}
 
+		if (optional_string("$Fixed Chaining To Repeating Events:")) {
+			stuff_boolean(&Fixed_chaining_to_repeat);
+			if (Fixed_chaining_to_repeat) {
+				mprintf(("Game Settings Table: Using fixed chaining to repeating events\n"));
+			}
+			else {
+				mprintf(("Game Settings Table: Using retail chaining to repeating events\n"));
+			}
+		}
+
 		if (optional_string("$Use host orientation for set-camera-facing:")) {
 			stuff_boolean(&Use_host_orientation_for_set_camera_facing);
 			if (Use_host_orientation_for_set_camera_facing) {
@@ -366,15 +466,41 @@ void parse_mod_table(const char *filename)
 		}
 
 		if (optional_string("$Generic Pain Flash Factor:")) {
-			stuff_float(&Generic_pain_flash_factor);
-			if (Generic_pain_flash_factor != 1.0f)
-				mprintf(("Game Settings Table: Setting generic pain flash factor to %.2f\n", Generic_pain_flash_factor));
+			float temp;
+			stuff_float(&temp);
+			if (temp >= 0.0f) {
+				mprintf(("Game Settings Table: Setting generic pain flash factor to %.2f\n", temp));
+				Generic_pain_flash_factor = temp;
+			}
 		}
 
 		if (optional_string("$Shield Pain Flash Factor:")) {
-			stuff_float(&Shield_pain_flash_factor);
-			if (Shield_pain_flash_factor != 0.0f)
-				 mprintf(("Game Settings Table: Setting shield pain flash factor to %.2f\n", Shield_pain_flash_factor));
+			float temp;
+			stuff_float(&temp);
+			if (temp >= 0.0f) {
+				mprintf(("Game Settings Table: Setting shield pain flash factor to %.2f\n", temp));
+				Shield_pain_flash_factor = temp;
+			}
+		}
+
+		if (optional_string("$EMP Pain Flash Factor:")) {
+			float temp;
+			stuff_float(&temp);
+			if (temp >= 0.0f) {
+				mprintf(("Game Settings Table: Setting EMP pain flash factor to %.2f\n", temp));
+				Emp_pain_flash_factor = temp;
+			}
+		}
+
+		if (optional_string("$EMP Pain Flash Color:")) {
+			int rgb[3];
+			stuff_int_list(rgb, 3);
+			if ((rgb[0] >= 0 && rgb[0] <= 255) && (rgb[1] >= 0 && rgb[1] <= 255) && (rgb[2] >= 0 && rgb[2] <= 255)) {
+				Emp_pain_flash_color = std::make_tuple(static_cast<float>(rgb[0])/255, static_cast<float>(rgb[1])/255, static_cast<float>(rgb[2])/255);
+			} else {
+				error_display(0, "$EMP Pain Flash Color is %i, %i, %i. "
+					"One or more of these values is not within the range of 0-255. Assuming default color.", rgb[0], rgb[1], rgb[2]);
+			}
 		}
 
 		if (optional_string("$BMPMAN Slot Limit:")) {
@@ -389,7 +515,7 @@ void parse_mod_table(const char *filename)
 				int rgb[3];
 				stuff_int_list(rgb, 3);
 				if ((rgb[0] >= 0 && rgb[0] <= 255) && (rgb[1] >= 0 && rgb[1] <= 255) && (rgb[2] >= 0 && rgb[2] <= 255)) {
-					Arc_color_emp_p1 = std::make_tuple(static_cast<ubyte>(rgb[0]), static_cast<ubyte>(rgb[1]), static_cast<ubyte>(rgb[2]));
+					gr_init_color(&Arc_color_emp_p1, rgb[0], rgb[1], rgb[2]);
 				} else {
 					error_display(0, "$EMP Arc Color: +Primary Color Option 1 is %i, %i, %i. "
 						"One or more of these values is not within the range of 0-255. Assuming default color.", rgb[0], rgb[1], rgb[2]);
@@ -399,7 +525,7 @@ void parse_mod_table(const char *filename)
 				int rgb[3];
 				stuff_int_list(rgb, 3);
 				if ((rgb[0] >= 0 && rgb[0] <= 255) && (rgb[1] >= 0 && rgb[1] <= 255) && (rgb[2] >= 0 && rgb[2] <= 255)) {
-					Arc_color_emp_p2 = std::make_tuple(static_cast<ubyte>(rgb[0]), static_cast<ubyte>(rgb[1]), static_cast<ubyte>(rgb[2]));
+					gr_init_color(&Arc_color_emp_p2, rgb[0], rgb[1], rgb[2]);
 				} else {
 					error_display(0, "$EMP Arc Color: +Primary Color Option 2 is %i, %i, %i. "
 					    "One or more of these values is not within the range of 0-255. Assuming default color.", rgb[0], rgb[1], rgb[2]);
@@ -409,7 +535,7 @@ void parse_mod_table(const char *filename)
 				int rgb[3];
 				stuff_int_list(rgb, 3);
 				if ((rgb[0] >= 0 && rgb[0] <= 255) && (rgb[1] >= 0 && rgb[1] <= 255) && (rgb[2] >= 0 && rgb[2] <= 255)) {
-					Arc_color_emp_s1 = std::make_tuple(static_cast<ubyte>(rgb[0]), static_cast<ubyte>(rgb[1]), static_cast<ubyte>(rgb[2]));
+					gr_init_color(&Arc_color_emp_s1, rgb[0], rgb[1], rgb[2]);
 			    } else {
 				    error_display(0,"$EMP Arc Color: +Secondary Color Option 1 is %i, %i, %i. "
 					    "One or more of these values is not within the range of 0-255. Assuming default color.", rgb[0], rgb[1], rgb[2]);
@@ -417,12 +543,27 @@ void parse_mod_table(const char *filename)
 		    }
 		}
 
+		if (optional_string("$EMP Arc Width:")) {
+			if (optional_string("+Width Default:")) {
+				stuff_float(&Arc_width_default_emp);
+			}
+			if (optional_string("+Width Radius Multiplier:")) {
+				stuff_float(&Arc_width_radius_multiplier_emp);
+			}
+			if (optional_string("+Do Not Use Width Multiplier Over Radius:")) {
+				stuff_float(&Arc_width_no_multiply_over_radius_emp);
+			}
+			if (optional_string("+Width Radius Minimum:")) {
+				stuff_float(&Arc_width_minimum_emp);
+			}
+		}
+
 		if (optional_string("$Damage Arc Color:")) {
 			if (optional_string("+Primary Color Option 1:")) {
 				int rgb[3];
 				stuff_int_list(rgb, 3);
 				if ((rgb[0] >= 0 && rgb[0] <= 255) && (rgb[1] >= 0 && rgb[1] <= 255) && (rgb[2] >= 0 && rgb[2] <= 255)) {
-					Arc_color_damage_p1 = std::make_tuple(static_cast<ubyte>(rgb[0]), static_cast<ubyte>(rgb[1]), static_cast<ubyte>(rgb[2]));
+					gr_init_color(&Arc_color_damage_p1, rgb[0], rgb[1], rgb[2]);
 		        } else {
 			        error_display(0, "Damage Arc Color: +Primary Color Option 1 is %i, %i, %i. "
 					    "One or more of these values is not within the range of 0-255. Assuming default color.", rgb[0], rgb[1], rgb[2]);
@@ -432,7 +573,7 @@ void parse_mod_table(const char *filename)
 				int rgb[3];
 				stuff_int_list(rgb, 3);
 				if ((rgb[0] >= 0 && rgb[0] <= 255) && (rgb[1] >= 0 && rgb[1] <= 255) && (rgb[2] >= 0 && rgb[2] <= 255)) {
-					Arc_color_damage_p2 = std::make_tuple(static_cast<ubyte>(rgb[0]), static_cast<ubyte>(rgb[1]), static_cast<ubyte>(rgb[2]));
+					gr_init_color(&Arc_color_damage_p2, rgb[0], rgb[1], rgb[2]);
 	            } else {
 		            error_display(0, "$Damage Arc Color: +Primary Color Option 2 is %i, %i, %i. "
 					    "One or more of these values is not within the range of 0-255. Assuming default color.", rgb[0], rgb[1], rgb[2]);
@@ -442,11 +583,26 @@ void parse_mod_table(const char *filename)
 				int rgb[3];
 				stuff_int_list(rgb, 3);
 				if ((rgb[0] >= 0 && rgb[0] <= 255) && (rgb[1] >= 0 && rgb[1] <= 255) && (rgb[2] >= 0 && rgb[2] <= 255)) {
-					Arc_color_damage_s1 = std::make_tuple(static_cast<ubyte>(rgb[0]), static_cast<ubyte>(rgb[1]), static_cast<ubyte>(rgb[2]));
+					gr_init_color(&Arc_color_damage_s1, rgb[0], rgb[1], rgb[2]);
 	            } else {
 		            error_display(0, "$Damage Arc Color: +Secondary Color Option 1 is %i, %i, %i. "
 					    "One or more of these values is not within the range of 0-255. Assuming default color.", rgb[0], rgb[1], rgb[2]);
 	            }
+			}
+		}
+
+		if (optional_string("$Damage Arc Width:")) {
+			if (optional_string("+Width Default:")) {
+				stuff_float(&Arc_width_default_damage);
+			}
+			if (optional_string("+Width Radius Multiplier:")) {
+				stuff_float(&Arc_width_radius_multiplier_damage);
+			}
+			if (optional_string("+Do Not Use Width Multiplier Over Radius:")) {
+				stuff_float(&Arc_width_no_multiply_over_radius_damage);
+			}
+			if (optional_string("+Width Radius Minimum:")) {
+				stuff_float(&Arc_width_minimum_damage);
 			}
 		}
 
@@ -531,6 +687,35 @@ void parse_mod_table(const char *filename)
 			}
 		}
 
+		if (optional_string("$Shadow Quality Default:")) {
+			int quality;
+			stuff_int(&quality);
+			// only set values if shadows are enabled and using default quality --wookieejedi
+			if (Shadow_quality_uses_mod_option) {
+				switch (quality) {
+				case 0:
+					Shadow_quality = ShadowQuality::Disabled;
+					break;
+				case 1:
+					Shadow_quality = ShadowQuality::Low;
+					break;
+				case 2:
+					Shadow_quality = ShadowQuality::Medium;
+					break;
+				case 3:
+					Shadow_quality = ShadowQuality::High;
+					break;
+				case 4:
+					Shadow_quality = ShadowQuality::Ultra;
+					break;
+				default:
+					// Shadow_quality was already set in cmdline.cpp, so just keep that default --wookieejedi
+					mprintf(("Game Settings Table: '$Shadow Quality Default:' value for default shadow quality %d is invalid. Using default quality of %d...\n", quality, static_cast<int>(Shadow_quality)));
+					break;
+				}
+			}
+		}
+
 		if (optional_string("$Shadow Cascade Distances:")) {
 			float dis[4];
 			stuff_float_list(dis, 4);
@@ -552,6 +737,30 @@ void parse_mod_table(const char *filename)
 			}
 		}
 
+		if (optional_string("$Shadow Disable Techroom:")) {
+			stuff_boolean(&Shadow_disable_overrides.disable_techroom);
+		}
+
+		if (optional_string("$Shadow Disable Cockpit:")) {
+			stuff_boolean(&Shadow_disable_overrides.disable_cockpit);
+		}
+
+		if (optional_string("$Shadow Disable Mission Brief Weapons:")) {
+			stuff_boolean(&Shadow_disable_overrides.disable_mission_select_weapons);
+		}
+
+		if (optional_string("$Shadow Disable Mission Brief Ships:")) {
+			stuff_boolean(&Shadow_disable_overrides.disable_mission_select_ships);
+		}
+
+		if (optional_string("$Show Ship Casts Shadow:")) {
+			stuff_boolean(&Show_ship_casts_shadow);
+		}
+
+		if (optional_string("$Ship Model And Cockpit Share Coordinate Space:")) {
+			stuff_boolean(&Cockpit_shares_coordinate_space);
+		}
+
 		if (optional_string("$Minimum Pixel Size Thrusters:")) {
 			stuff_float(&Min_pixel_size_thruster);
 		}
@@ -568,12 +777,34 @@ void parse_mod_table(const char *filename)
 			stuff_float(&Min_pixel_size_laser);
 		}
 
+		if (optional_string("$Thruster easing value:")) {
+			stuff_float(&Thruster_easing);
+			if (Thruster_easing <= 0.0f) {
+				Warning(LOCATION, "A \'Thruster easing value\' less than or equal to 0 will not be used.\n");
+			}
+
+		}
+
+		if (optional_string("$SCPUI attempts to load hires animations:")) {
+			stuff_boolean(&SCPUI_loads_hi_res_animations);
+		}
+
 		optional_string("#NETWORK SETTINGS");
 
 		if (optional_string("$FS2NetD port:")) {
 			stuff_int(&FS2NetD_port);
 			if (FS2NetD_port)
 				mprintf(("Game Settings Table: FS2NetD connecting to port %i\n", FS2NetD_port));
+		}
+
+		if (optional_string("$Default object update level for multiplayer:")) {
+			int object_update;
+			stuff_int(&object_update);
+			if ((object_update >= OBJ_UPDATE_LOW) && (object_update <= OBJ_UPDATE_LAN)) {
+				Default_multi_object_update_level = object_update;
+			} else {
+				mprintf(("Game Settings Table: '$Default object update level for multiplayer:' value of %d is not between %d and %d. Using default value of %d.\n", object_update, OBJ_UPDATE_LOW, OBJ_UPDATE_LAN, OBJ_UPDATE_HIGH));
+			}
 		}
 
 		optional_string("#SOUND SETTINGS");
@@ -608,6 +839,14 @@ void parse_mod_table(const char *filename)
 			}
 		}
 
+		if (optional_string("$Use weapon class impact sounds for hits to player:")) {
+			stuff_boolean(&Use_weapon_class_sounds_for_hits_to_player);
+		}
+
+		if (optional_string("$Play thruster sounds for the player:")) {
+			stuff_boolean(&Play_thruster_sounds_for_player);
+		}
+
 		optional_string("#FRED SETTINGS");
 
 		if (optional_string("$Disable Hard Coded Message Head Ani Files:")) {
@@ -621,6 +860,20 @@ void parse_mod_table(const char *filename)
 			}
 		}
 
+		if (optional_string("$Add Message Head Ani Files:")) {
+			SCP_string head_name;
+			while (optional_string("+Head:")) {
+				stuff_string(head_name, F_NAME);
+
+				// remove extension?
+				if (drop_extension(head_name)) {
+					mprintf(("Game Settings Table: Removed extension on head ani file name %s\n", head_name.c_str()));
+				}
+
+				Custom_head_anis.push_back(head_name);
+			}
+		}
+
 		if (optional_string("$Enable scripting in FRED:")) {
 			stuff_boolean(&Enable_scripts_in_fred);
 			if (Enable_scripts_in_fred) {
@@ -629,6 +882,37 @@ void parse_mod_table(const char *filename)
 			else {
 				mprintf(("Game Settings Table: FRED - Scripts will not be executed when running FRED.\n"));
 			}
+		}
+
+		if (optional_string("$FRED Briefing window resolution:")) {
+			int res[2];
+			if (stuff_int_list(res, 2) == 2) {
+				mprintf(("Game Settings Table: Setting FRED briefing window resolution from (%ix%i) to (%ix%i)\n",
+					Briefing_window_resolution[0],
+					Briefing_window_resolution[1],
+					res[0],
+					res[1]));
+
+				Briefing_window_resolution[0] = res[0];
+				Briefing_window_resolution[1] = res[1];
+			} else {
+				Warning(LOCATION, "$FRED Briefing window resolution: must specify two arguments");
+			}
+		}
+
+		if (optional_string("$FRED spacemouse nonlinearities:")) {
+#define SPACEMOUSE_NONLINEARITY(name, id) \
+			if (optional_string("+" name " exponent:")) \
+				stuff_float(&std::get<0>(Fred_spacemouse_nonlinearity[id])); \
+			if (optional_string("+" name " scale:")) \
+				stuff_float(&std::get<1>(Fred_spacemouse_nonlinearity[id]));
+			SPACEMOUSE_NONLINEARITY("Sideways", 0);
+			SPACEMOUSE_NONLINEARITY("Forwards", 1);
+			SPACEMOUSE_NONLINEARITY("Upwards", 2);
+			SPACEMOUSE_NONLINEARITY("Pitch", 3);
+			SPACEMOUSE_NONLINEARITY("Bank", 4);
+			SPACEMOUSE_NONLINEARITY("Heading", 5);
+#undef SPACEMOUSE_NONLINEARITY
 		}
 
 		optional_string("#OTHER SETTINGS");
@@ -645,6 +929,10 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Damage_impacted_subsystem_first);
 		}
 
+		if (optional_string("$Use 3d ship select:")) {
+			stuff_boolean(&Use_3d_ship_select);
+		}
+
 		if (optional_string("$Default ship select effect:")) {
 			char effect[NAME_LENGTH];
 			stuff_string(effect, F_NAME, NAME_LENGTH);
@@ -656,6 +944,14 @@ void parse_mod_table(const char *filename)
 				Default_ship_select_effect = 0;
 		}
 
+		if (optional_string("$Use 3d ship icons:")) {
+			stuff_boolean(&Use_3d_ship_icons);
+		}
+
+		if (optional_string("$Use 3d weapon select:")) {
+			stuff_boolean(&Use_3d_weapon_select);
+		}
+
 		if (optional_string("$Default weapon select effect:")) {
 			char effect[NAME_LENGTH];
 			stuff_string(effect, F_NAME, NAME_LENGTH);
@@ -665,6 +961,26 @@ void parse_mod_table(const char *filename)
 				Default_weapon_select_effect = 1;
 			else if (!stricmp(effect, "off"))
 				Default_weapon_select_effect = 0;
+		}
+
+		if (optional_string("$Use 3d weapon icons:")) {
+			stuff_boolean(&Use_3d_weapon_icons);
+		}
+
+		if (optional_string("$Use 3d overhead ship:")) {
+			stuff_boolean(&Use_3d_overhead_ship);
+		}
+
+		if (optional_string("$Default overhead ship style:")) {
+			char effect[NAME_LENGTH];
+			stuff_string(effect, F_NAME, NAME_LENGTH);
+			if (!stricmp(effect, "ROTATE")) {
+				Default_overhead_ship_style = OH_ROTATING;
+			} else if (!stricmp(effect, "TOPVIEW")) {
+				Default_overhead_ship_style = OH_TOP_VIEW;
+			} else {
+				error_display(0, "Unknown Select Overhead Ship Style %s, using TOPVIEW instead.", effect);
+			}
 		}
 
 		if (optional_string("$Weapons inherit parent collision group:")) {
@@ -763,8 +1079,35 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Shockwaves_damage_all_obj_types_once);
 		}
 
+		if (optional_string("$Shockwaves Inherit Parent Weapon Damage Type:")) {
+			stuff_boolean(&Shockwaves_inherit_parent_damage_type);
+		}
+
+		if (optional_string("$Inherited Shockwave Damage Type Added Suffix:")) {
+			stuff_string(Inherited_shockwave_damage_type_suffix, F_NAME);
+			Inherited_dinky_shockwave_damage_type_suffix = Inherited_shockwave_damage_type_suffix;
+		}
+
+		if (optional_string("$Inherited Dinky Shockwave Damage Type Added Suffix:")) {
+			stuff_string(Inherited_dinky_shockwave_damage_type_suffix, F_NAME);
+		}
+
+		if (optional_string("$Default Shockwave Damage Type:")) {
+			stuff_string(Default_shockwave_damage_type, F_NAME);
+			// Should this automatically be copied to dinky shockwaves?
+			Default_dinky_shockwave_damage_type = Default_shockwave_damage_type;
+		}
+
+		if (optional_string("$Default Dinky Shockwave Damage Type:")) {
+			stuff_string(Default_dinky_shockwave_damage_type, F_NAME);
+		}
+
 		if (optional_string("$Use Engine Wash Intensity:")) {
 			stuff_boolean(&Use_engine_wash_intensity);
+		}
+
+		if (optional_string("$Apply HUD shudder to chase view:")) {
+			stuff_boolean(&Apply_shudder_to_chase_view);
 		}
 
 		if (optional_string("$Swarmers Lead Targets:")) {
@@ -798,6 +1141,45 @@ void parse_mod_table(const char *filename)
 		
 		if (optional_string("$Custom briefing icons always override standard icons:")) {
 			stuff_boolean(&Custom_briefing_icons_always_override_standard_icons);
+		}
+
+		if (optional_string("$Lead indicator behavior:")){
+			SCP_string temp;
+			stuff_string(temp, F_RAW);
+			SCP_tolower(temp);
+
+			if (temp == "default")
+			{
+				Lead_indicator_behavior = leadIndicatorBehavior::DEFAULT;
+			}
+			else if (temp == "multiple")
+			{
+				Lead_indicator_behavior = leadIndicatorBehavior::MULTIPLE;
+			}
+			else if (temp == "average")
+			{
+				Lead_indicator_behavior = leadIndicatorBehavior::AVERAGE;
+			}
+			else
+			{
+				Warning(LOCATION, "$Lead indicator behavior: Invalid selection. Must be default, multiple or average. Reverting to default.");
+				Lead_indicator_behavior = leadIndicatorBehavior::DEFAULT;
+			}
+		}
+
+		if (optional_string("$Use distant firepoint for all turrets:")){
+			stuff_boolean(&Always_use_distant_firepoints);
+		}
+		if (optional_string("$Enable Discord rich presence:")) {
+			stuff_boolean(&Discord_presence);
+		}
+
+		if (optional_string("$Always hide hidden ships in hotkey list:")) {
+			stuff_boolean(&Hotkey_always_hide_hidden_ships);
+		}
+
+		if (optional_string("$Countermeasures use capacity:")) {
+			stuff_boolean(&Countermeasures_use_capacity);
 		}
 
 		required_string("#END");
@@ -847,6 +1229,10 @@ bool mod_supports_version(int major, int minor, int build)
 	return Targeted_version >= gameversion::version(major, minor, build, 0);
 }
 
+bool mod_supports_version(const gameversion::version& version) {
+	return Targeted_version >= version;
+}
+
 void mod_table_reset()
 {
 	Directive_wait_time = 3000;
@@ -856,9 +1242,11 @@ void mod_table_reset()
 	Damage_impacted_subsystem_first = false;
 	Cutscene_camera_displays_hud = false;
 	Alternate_chaining_behavior = false;
+	Fixed_chaining_to_repeat = false;
 	Use_host_orientation_for_set_camera_facing = false;
 	Default_ship_select_effect = 2;
 	Default_weapon_select_effect = 2;
+	Default_overhead_ship_style = OH_TOP_VIEW;
 	Default_fiction_viewer_ui = -1;
 	Enable_external_shaders = false;
 	Enable_external_default_scripts = false;
@@ -868,14 +1256,21 @@ void mod_table_reset()
 	Weapons_inherit_parent_collision_group = false;
 	Flight_controls_follow_eyepoint_orientation = false;
 	FS2NetD_port = 0;
+	Default_multi_object_update_level = OBJ_UPDATE_HIGH;
 	Briefing_window_FOV = 0.29375f;
+	Briefing_window_resolution[0] = 888;
+	Briefing_window_resolution[1] = 371;
 	Disable_hc_message_ani = false;
 	Red_alert_applies_to_delayed_ships = false;
 	Beams_use_damage_factors = false;
 	Generic_pain_flash_factor = 1.0f;
 	Shield_pain_flash_factor = 0.0f;
+	Emp_pain_flash_factor = 1.0f;
+	Emp_pain_flash_color = std::make_tuple(1.0f, 1.0f, 0.5f);
 	Targeted_version = gameversion::version(2, 0, 0, 0); // Defaults to retail
 	Window_title = "";
+	Mod_title = "";
+	Mod_version = "";
 	Unicode_text_mode = false;
 	Use_tabled_strings_for_default_language = false;
 	Dont_preempt_training_voice = false;
@@ -888,13 +1283,27 @@ void mod_table_reset()
 	Dinky_shockwave_default_multiplier = 1.0f;
 	Shockwaves_always_damage_bombs = false;
 	Shockwaves_damage_all_obj_types_once = false;
-	Arc_color_damage_p1 = std::make_tuple(static_cast<ubyte>(64), static_cast<ubyte>(64), static_cast<ubyte>(225));
-	Arc_color_damage_p2 = std::make_tuple(static_cast<ubyte>(128), static_cast<ubyte>(128), static_cast<ubyte>(255));
-	Arc_color_damage_s1 = std::make_tuple(static_cast<ubyte>(200), static_cast<ubyte>(200), static_cast<ubyte>(255));
-	Arc_color_emp_p1 = std::make_tuple(static_cast<ubyte>(64), static_cast<ubyte>(64), static_cast<ubyte>(5));
-	Arc_color_emp_p2 = std::make_tuple(static_cast<ubyte>(128), static_cast<ubyte>(128), static_cast<ubyte>(10));
-	Arc_color_emp_s1 = std::make_tuple(static_cast<ubyte>(255), static_cast<ubyte>(255), static_cast<ubyte>(10));
+	Shockwaves_inherit_parent_damage_type = false;
+	Inherited_shockwave_damage_type_suffix = "";
+	Inherited_dinky_shockwave_damage_type_suffix = "";
+	Default_shockwave_damage_type = "";
+	Default_dinky_shockwave_damage_type = "";
+	gr_init_color(&Arc_color_damage_p1, 64, 64, 255);
+	gr_init_color(&Arc_color_damage_p2, 128, 128, 255);
+	gr_init_color(&Arc_color_damage_s1, 200, 200, 255);
+	Arc_width_default_damage = 0.9f;
+	Arc_width_radius_multiplier_damage = 0.01f;
+	Arc_width_no_multiply_over_radius_damage = 500.0f;
+	Arc_width_minimum_damage = 0.2f;
+	gr_init_color(&Arc_color_emp_p1, 64, 64, 5);
+	gr_init_color(&Arc_color_emp_p2, 128, 128, 10);
+	gr_init_color(&Arc_color_emp_s1, 255, 255, 10);
+	Arc_width_default_emp = 0.9f;
+	Arc_width_radius_multiplier_emp = 0.01f;
+	Arc_width_no_multiply_over_radius_emp = 500.0f;
+	Arc_width_minimum_emp = 0.2f;
 	Use_engine_wash_intensity = false;
+	Apply_shudder_to_chase_view = false;
 	Framerate_independent_turning = true;
 	Ai_respect_tabled_turntime_rotdamp = false;
 	Chase_view_default = false;
@@ -908,6 +1317,8 @@ void mod_table_reset()
 	Neb_affects_fireballs = false;
 	Shadow_distances = std::make_tuple(200.0f, 600.0f, 2500.0f, 8000.0f); // Default values tuned by Swifty and added here by wookieejedi
 	Shadow_distances_cockpit = std::make_tuple(0.25f, 0.75f, 1.5f, 3.0f); // Default values tuned by wookieejedi and added here by Lafiel
+	Show_ship_casts_shadow = false;
+	Cockpit_shares_coordinate_space = false;
 	Custom_briefing_icons_always_override_standard_icons = false;
 	Min_pixel_size_thruster = 0.0f;
 	Min_pixel_size_beam = 0.0f;
@@ -921,6 +1332,23 @@ void mod_table_reset()
 	Show_subtitle_screen_adjusted_res[0] = -1;
 	Show_subtitle_screen_adjusted_res[1] = -1;
 	Always_warn_player_about_unbound_keys = false;
+	Lead_indicator_behavior = leadIndicatorBehavior::DEFAULT;
+	Thruster_easing = 0;
+	Always_use_distant_firepoints = false;
+	Discord_presence = true;
+	Hotkey_always_hide_hidden_ships = false;
+	Use_weapon_class_sounds_for_hits_to_player = false;
+	SCPUI_loads_hi_res_animations = true;
+	Countermeasures_use_capacity = false;
+	Play_thruster_sounds_for_player = false;
+	Fred_spacemouse_nonlinearity = std::array<std::tuple<float, float>, 6>{{
+			std::tuple<float, float>{ 1.0f, 1.0f },
+			std::tuple<float, float>{ 1.0f, 1.0f },
+			std::tuple<float, float>{ 1.0f, 1.0f },
+			std::tuple<float, float>{ 1.0f, 1.0f },
+			std::tuple<float, float>{ 1.0f, 1.0f },
+			std::tuple<float, float>{ 1.0f, 1.0f }
+		}};
 }
 
 void mod_table_set_version_flags()
@@ -931,5 +1359,9 @@ void mod_table_set_version_flags()
 		Shockwaves_damage_all_obj_types_once = true;
 		Framerate_independent_turning = true;					// this is already true, but let's re-emphasize it
 		Use_host_orientation_for_set_camera_facing = true;		// this is essentially a bugfix
+	}
+	if (mod_supports_version(23, 0, 0)) {
+		Shockwaves_inherit_parent_damage_type = true;	// people intuitively expect shockwaves to default to the damage type of the weapon that spawned them
+		Fixed_chaining_to_repeat = true;
 	}
 }

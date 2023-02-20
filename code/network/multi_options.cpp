@@ -349,7 +349,7 @@ void multi_options_set_local_defaults(multi_local_options *options)
 	if ( Psnet_connection == NETWORK_CONNECTION_DIALUP ) {
 		options->obj_update_level = OBJ_UPDATE_LOW;
 	} else {
-		options->obj_update_level = OBJ_UPDATE_HIGH;
+		options->obj_update_level = Default_multi_object_update_level;
 	}
 }
 

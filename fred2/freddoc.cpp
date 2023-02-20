@@ -70,11 +70,6 @@ int Local_modified = 0;
 int Undo_available = 0;
 int Undo_count = 0;
 
-// From Missionsave.cpp
-extern int Num_unknown_ship_classes;
-extern int Num_unknown_weapon_classes;
-extern int Num_unknown_loadout_classes;
-
 
 CFREDDoc::CFREDDoc() {
 	int i;
@@ -99,7 +94,10 @@ bool CFREDDoc::autoload() {
 	bool r;
 	FILE *fp;
 
-	cf_create_default_path_string(name, sizeof(name) - 1, CF_TYPE_MISSIONS);
+	if ( !cf_create_default_path_string(name, sizeof(name) - 1, CF_TYPE_MISSIONS) ) {
+		return 0;
+	}
+
 	strcat_s(name, MISSION_BACKUP_NAME);
 	strcpy_s(backup_name, name);
 	strcat_s(name, ".002");
@@ -116,7 +114,6 @@ bool CFREDDoc::autoload() {
 	}
 
 	// Load Backup.002
-	//	editor_init_mission();  
 	r = load_mission(name);
 	Update_window = 1;
 
@@ -181,7 +178,10 @@ int CFREDDoc::check_undo() {
 		return 0;
 	}
 
-	cf_create_default_path_string(name, sizeof(name) - 1, CF_TYPE_MISSIONS);
+	if ( !cf_create_default_path_string(name, sizeof(name) - 1, CF_TYPE_MISSIONS) ) {
+		return 0;
+	}
+
 	strcat_s(name, MISSION_BACKUP_NAME);
 	strcat_s(name, ".002");
 
@@ -228,18 +228,23 @@ bool CFREDDoc::load_mission(char *pathname, int flags) {
 
 	clear_mission();
 
+	// message 1: required version
 	if (!parse_main(pathname, flags)) {
-		if (flags & MPF_IMPORT_FSM) {
-			sprintf(name, "Unable to import the file \"%s\".", pathname);
-			Fred_view_wnd->MessageBox(name);
+		auto term = (flags & MPF_IMPORT_FSM) ? "import" : "load";
+
+		// the version will have been assigned before loading was aborted
+		if (!gameversion::check_at_least(The_mission.required_fso_version)) {
+			sprintf(name, "The file \"%s\" cannot be %sed because it requires FSO version %s", pathname, term, format_version(The_mission.required_fso_version, true).c_str());
 		} else {
-			sprintf(name, "Unable to load the file \"%s\".", pathname);
-			Fred_view_wnd->MessageBox(name);
+			sprintf(name, "Unable to %s the file \"%s\".", term, pathname);
 		}
+
+		Fred_view_wnd->MessageBox(name);
 		create_new_mission();
 		return false;
 	}
 
+	// message 2: unknown classes
 	if ((Num_unknown_ship_classes > 0) || (Num_unknown_weapon_classes > 0) || (Num_unknown_loadout_classes > 0)) {
 		if (flags & MPF_IMPORT_FSM) {
 			char msg[256];
@@ -248,6 +253,16 @@ bool CFREDDoc::load_mission(char *pathname, int flags) {
 		} else {
 			Fred_view_wnd->MessageBox("Fred encountered unknown ship/weapon classes when parsing the mission file. This may be due to mission disk data you do not have.");
 		}
+	}
+
+	// message 3: warning about saving under a new version
+	if (!(flags & MPF_IMPORT_FSM) && (The_mission.required_fso_version != LEGACY_MISSION_VERSION) && (MISSION_VERSION > The_mission.required_fso_version)) {
+		SCP_string msg = "This mission's file format is ";
+		msg += format_version(The_mission.required_fso_version, true);
+		msg += ".  When you save this mission, the file format will be migrated to ";
+		msg += format_version(MISSION_VERSION, true);
+		msg += ".  FSO versions earlier than this will not be able to load the mission.";
+		Fred_view_wnd->MessageBox(msg.c_str());
 	}
 
 	obj_merge_created_list();
@@ -277,7 +292,7 @@ bool CFREDDoc::load_mission(char *pathname, int flags) {
 				old_name = Ships[Wings[i].ship_index[j]].ship_name;
 				if (stricmp(name, old_name)) {  // need to fix name
 					update_sexp_references(old_name, name);
-					ai_update_goal_references(REF_TYPE_SHIP, old_name, name);
+					ai_update_goal_references(sexp_ref_type::SHIP, old_name, name);
 					update_texture_replacements(old_name, name);
 					for (k = 0; k < Num_reinforcements; k++)
 						if (!strcmp(old_name, Reinforcements[k].name)) {

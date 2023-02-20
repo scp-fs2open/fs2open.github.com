@@ -345,6 +345,36 @@ void brief_icon_parse_cleanup() {
 	}
 }
 
+static size_t Num_icons_in_table = 0;
+
+// This is explicitely used to count the number of icons listed in the tbl
+// so that we can correctly parse each icon into a species without any off-by-N errors.
+// This allows modular icons.tbls to build upon the retail icons.tbl.
+void brief_pre_parse_icons()
+{
+	try {
+		read_file_text("icons.tbl", CF_TYPE_TABLES);
+		reset_parse();
+
+		required_string("#Start");
+
+		//If we're in the new format, then nothing to do!
+		if (check_for_string("$Species:"))
+			return;
+
+		char junk[MAX_FILENAME_LEN];
+		while (optional_string("$Name:")) {
+			stuff_string(junk, F_NAME, MAX_FILENAME_LEN);
+			Num_icons_in_table++;
+		}
+
+		required_string("#End");
+	} 
+	catch (const parse::ParseException& e) {
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "icons.tbl", e.what()));
+	}
+}
+
 // --------------------------------------------------------------------------------------
 //	brief_parse_icon_tbl()
 //
@@ -371,7 +401,7 @@ void brief_parse_icon_tbl(const char* filename)
 		}
 
 		bool new_style_parsing = false;
-		if (check_for_string("$Species:"))
+		if (Parsing_modular_table || check_for_string("$Species:")) //Do not allow modular tables to use the old format! -Mjn
 			new_style_parsing = true;
 
 		if (new_style_parsing) {
@@ -417,14 +447,34 @@ void brief_parse_icon_tbl(const char* filename)
 			}
 		}
 		else { // old style
+			
+			//Calculate how many species we're going to try to parse icons for using the pre-parsed count
+			if (Num_icons_in_table % MIN_BRIEF_ICONS != 0)
+				Warning(LOCATION,
+					"An incorrect number of icons was found in icons.tbl. There should be %i icons per species listed!",
+					MIN_BRIEF_ICONS);
+
+			size_t Num_icon_sets = Num_icons_in_table / MIN_BRIEF_ICONS;
+
+			if (Num_icon_sets % BRIEF_ICON_TYPES != 0)
+				Error(LOCATION,
+					"There was somehow a number of icons divisible by %i, but is now not divisible by %i. Get a "
+					"coder!",
+					MIN_BRIEF_ICONS,
+					BRIEF_ICON_TYPES);
+
+			size_t Num_species_in_table = Num_icon_sets / BRIEF_ICON_TYPES;
+
 			for (int icon_type = 0; icon_type < MIN_BRIEF_ICONS; icon_type++) { // NOLINT(modernize-loop-convert)
-				for (species = 0; species < unique_icons_species.size(); species++) {
+				for (species = 0; species < Num_species_in_table; species++) {
 					// if this check isn't true we're missing entries and will complain about it later in brief_icon_parse_cleanup()
-					if (check_for_string("$Name:"))
+					if (check_for_string("$Name:")) {
 						Species_info[unique_icons_species[species]].bii_indices[icon_type] = add_briefing_icons();
+					}
 				}
 			}
 
+			//This can still be reached if the above Warning is ignored-Mjn
 			const size_t max_icons = unique_icons_species.size() * MIN_BRIEF_ICONS;
 			if (!check_for_string("#End"))
 				Warning(LOCATION, "Too many icons in icons.tbl; only the first " SIZE_T_ARG " will be used", max_icons);
@@ -438,6 +488,9 @@ void brief_parse_icon_tbl(const char* filename)
 
 void brief_icons_init() {
 	Briefing_icon_info.clear();
+
+	//This is super dumb, but retail format is bad and should feel bad for making me do this-Mjn
+	brief_pre_parse_icons();
 
 	brief_parse_icon_tbl("icons.tbl");
 
@@ -633,6 +686,7 @@ void brief_init_screen(int  /*multiplayer_flag*/)
 	bscreen.map_x2			= Brief_grid_coords[gr_screen.res][0] + Brief_grid_coords[gr_screen.res][2];
 	bscreen.map_y1			= Brief_grid_coords[gr_screen.res][1];
 	bscreen.map_y2			= Brief_grid_coords[gr_screen.res][1] + Brief_grid_coords[gr_screen.res][3];
+	bscreen.resize          = GR_RESIZE_MENU;
 }
 
 // --------------------------------------------------------------------------------------
@@ -1051,10 +1105,14 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 
 		float sx = tv.screen.xyw.x;
 		float sy = tv.screen.xyw.y;
-		gr_unsize_screen_posf( &sx, &sy, NULL, NULL, GR_RESIZE_MENU_NO_OFFSET );
+		int this_resize = bscreen.resize;
+		if (bscreen.resize == GR_RESIZE_MENU) {
+			this_resize = GR_RESIZE_MENU_NO_OFFSET;
+		}
+		gr_unsize_screen_posf(&sx, &sy, NULL, NULL, this_resize);
 	
-		scaled_w = icon_w * w_scale_factor;
-		scaled_h = icon_h * h_scale_factor;
+		scaled_w = i2fl(((icon_w * bi->scale) / 100) * w_scale_factor);
+		scaled_h = i2fl(((icon_h * bi->scale) / 100) * h_scale_factor);
 		bxf = sx - scaled_w / 2.0f + 0.5f;
 		byf = sy - scaled_h / 2.0f + 0.5f;
 		bx = fl2i(bxf);
@@ -1081,7 +1139,7 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 				//hud_set_iff_color(bi->team);
 				brief_set_icon_color(bi->team);
 
-				hud_anim_render(ha, frametime, 1, 0, 1, 0, GR_RESIZE_MENU, mirror_icon);
+				hud_anim_render(ha, frametime, 1, 0, 1, 0, bscreen.resize, mirror_icon);
 
 				if (!Brief_stage_highlight_sound_handle.isValid()) {
 					if ( !Fred_running) {
@@ -1099,7 +1157,7 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 				ha->sy = by;
 				brief_set_icon_color(bi->team);
 
-				if ( hud_anim_render(ha, frametime, 1, 0, 0, 1, GR_RESIZE_MENU, mirror_icon) == 0 ) {
+				if (hud_anim_render(ha, frametime, 1, 0, 0, 1, bscreen.resize, mirror_icon) == 0) {
 					bi->flags &= ~BI_FADEIN;
 				}
 			} else {
@@ -1109,12 +1167,12 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 
 		if ( !(bi->flags & BI_FADEIN) ) {
 			gr_set_bitmap(icon_bitmap);
-			gr_aabitmap(bx, by, GR_RESIZE_MENU,mirror_icon);
+			gr_aabitmap(bx, by, bscreen.resize, mirror_icon, bi->scale);
 
 			// draw text centered over the icon (make text darker)
 			if ( bi->type == ICON_FIGHTER_PLAYER || bi->type == ICON_BOMBER_PLAYER ) {
 				gr_get_string_size(&w,&h,Players[Player_num].callsign);
-				gr_string(bc - fl2i(w/2.0f), by - h, Players[Player_num].callsign, GR_RESIZE_MENU);
+				gr_string(bc - fl2i(w / 2.0f), by - h, Players[Player_num].callsign, bscreen.resize);
 			}
 			else {
 				if (Lcl_gr && !Disable_built_in_translations) {
@@ -1122,16 +1180,16 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 					strcpy_s(buf, bi->label);
 					lcl_translate_brief_icon_name_gr(buf);
 					gr_get_string_size(&w, &h, buf);
-					gr_string(bc - fl2i(w/2.0f), by - h, buf, GR_RESIZE_MENU);
+					gr_string(bc - fl2i(w / 2.0f), by - h, buf, bscreen.resize);
 				} else if (Lcl_pl && !Disable_built_in_translations) {
 					char buf[128];
 					strcpy_s(buf, bi->label);
 					lcl_translate_brief_icon_name_pl(buf);
 					gr_get_string_size(&w, &h, buf);
-					gr_string(bc - fl2i(w/2.0f), by - h, buf, GR_RESIZE_MENU);
+					gr_string(bc - fl2i(w / 2.0f), by - h, buf, bscreen.resize);
 				} else {
 					gr_get_string_size(&w,&h,bi->label);
-					gr_string(bc - fl2i(w/2.0f), by - h, bi->label, GR_RESIZE_MENU);
+					gr_string(bc - fl2i(w / 2.0f), by - h, bi->label, bscreen.resize);
 				}
 			}
 
@@ -1217,7 +1275,7 @@ void brief_start_highlight_anims(int stage_num)
 //
 void brief_render_map(int stage_num, float frametime)
 {
-	gr_set_clip(bscreen.map_x1 + 1, bscreen.map_y1 + 1, bscreen.map_x2 - bscreen.map_x1 - 1, bscreen.map_y2 - bscreen.map_y1 - 2, GR_RESIZE_MENU);
+	gr_set_clip(bscreen.map_x1 + 1, bscreen.map_y1 + 1, bscreen.map_x2 - bscreen.map_x1 - 1, bscreen.map_y2 - bscreen.map_y1 - 2, bscreen.resize);
 
     if (stage_num >= Briefing->num_stages) {
 		gr_reset_clip();
@@ -1230,7 +1288,9 @@ void brief_render_map(int stage_num, float frametime)
 	g3_set_view_matrix(&Current_cam_pos, &Current_cam_orient, Briefing_window_FOV);
 
 	brief_maybe_create_new_grid(The_grid, &Current_cam_pos, &Current_cam_orient);
-	brief_render_grid(The_grid);
+
+	if (Briefing->stages[stage_num].draw_grid)
+		brief_render_grid(The_grid);
 
 	brief_render_fade_outs(frametime);
 

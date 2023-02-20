@@ -147,6 +147,8 @@ extern bool Knossos_warp_ani_used;
 
 extern bool Fireball_use_3d_warp;
 
+extern bool Fireball_warp_flash;
+
 // Cyborg - get a count of how many valid fireballs are in the mission.
 int fireball_get_count();
 

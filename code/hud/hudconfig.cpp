@@ -1613,6 +1613,7 @@ void hud_config_color_load(const char *name)
 	int idx;
 	char str[1024];
 	char *fname;
+	ubyte r, g, b, a;
 
 	fname = cf_add_ext(name, ".hcf");
 
@@ -1630,13 +1631,18 @@ void hud_config_color_load(const char *name)
 		while (optional_string("+Gauge:")) {
 			stuff_string(str, F_NAME, sizeof(str));
 
+			required_string("+RGBA:");
+			stuff_ubyte(&r);
+			stuff_ubyte(&g);
+			stuff_ubyte(&b);
+			stuff_ubyte(&a);
+
 			for (idx = 0; idx < NUM_HUD_GAUGES; idx++) {
-				if (!stricmp(str, Hud_Gauge_Names[idx])) {
-					required_string("+RGBA:");
-					stuff_ubyte(&HUD_config.clr[idx].red);
-					stuff_ubyte(&HUD_config.clr[idx].green);
-					stuff_ubyte(&HUD_config.clr[idx].blue);
-					stuff_ubyte(&HUD_config.clr[idx].alpha);
+				if (!stricmp(str, HC_gauge_descriptions(idx))) {
+					HUD_config.clr[idx].red = r;
+					HUD_config.clr[idx].green = g;
+					HUD_config.clr[idx].blue = b;
+					HUD_config.clr[idx].alpha = a;
 					break;
 				}
 			}
@@ -1652,7 +1658,7 @@ void hud_config_color_load(const char *name)
 void hud_config_alpha_slider_up()
 {	
 	int pos = HCS_CONV(HC_color_sliders[HCS_ALPHA].get_currentItem());
-	int max = MAX(MAX( HCS_CONV(HC_color_sliders[HCS_RED].get_currentItem()), HCS_CONV(HC_color_sliders[HCS_GREEN].get_currentItem()) ), HCS_CONV(HC_color_sliders[HCS_BLUE].get_currentItem()) );
+	int max = std::max({ HCS_CONV(HC_color_sliders[HCS_RED].get_currentItem()), HCS_CONV(HC_color_sliders[HCS_GREEN].get_currentItem()), HCS_CONV(HC_color_sliders[HCS_BLUE].get_currentItem()) });
 
 	// if this would put the brightest element past its limit, skip
 	if(max >= 255){

@@ -13,7 +13,8 @@ namespace graphics {
  * @file
  *
  * This file contains definitions for GPU uniform buffer structs. These structs must respect the std140 layout rules.
- * Read the OpenGL specification for the exact layout and padding rules.
+ * The complete rules for this can be found here: https://www.khronos.org/opengl/wiki/Interface_Block_(GLSL)#Explicit_variable_layout,
+ * but the TL;DR here is that everything in here must be 16-byte aligned.
  */
 
 struct deferred_global_data {
@@ -40,7 +41,7 @@ struct deferred_light_data {
 	vec3d diffuseLightColor;
 	float coneAngle;
 
-	vec3d specLightColor;
+	vec3d lightDir;
 	float coneInnerAngle;
 
 	vec3d coneDir;
@@ -49,23 +50,24 @@ struct deferred_light_data {
 	vec3d scale;
 	float lightRadius;
 
-	vec3d lightDir;
 	int lightType;
-
 	int enable_shadows;
+	float sourceRadius;
 
-	float pad0[3]; // Struct size must be 16-bytes aligned because we use vec3s
+	float pad0[1]; // Struct size must be 16-bytes aligned because we use vec3s
 };
 
 struct model_light {
 	vec4 position;
+
 	vec3d diffuse_color;
 	int light_type;
-	vec3d spec_color;
-	float attenuation;
-	vec3d direction;
 
-	float pad;
+	vec3d direction;
+	float attenuation;
+
+	float ml_sourceRadius;
+	float pad0[3]; 
 };
 
 const size_t MAX_UNIFORM_LIGHTS = 8;
@@ -103,21 +105,12 @@ struct model_uniform_data {
 	int blend_alpha;
 
 	vec3d emissionFactor;
-	int overrideDiffuse;
-
-	vec3d diffuseClr;
-	int overrideGlow;
-
-	vec3d glowClr;
-	int overrideSpec;
-
-	vec3d specClr;
 	int alphaGloss;
 
 	int gammaSpec;
 	int envGloss;
-	int alpha_spec;
 	int effect_num;
+	int sBasemapIndex;  // moved up here to track alignment
 
 	vec4 fogColor;
 
@@ -137,17 +130,19 @@ struct model_uniform_data {
 	float middist;
 	float fardist;
 
-	vec2d normalAlphaMinMax;
-	int sBasemapIndex;
 	int sGlowmapIndex;
-
 	int sSpecmapIndex;
 	int sNormalmapIndex;
 	int sAmbientmapIndex;
-	int sMiscmapIndex;
 
+	int sMiscmapIndex;
 	float alphaMult;
+	int flags;
+	int pad[1];
 };
+
+const size_t model_uniform_data_size = sizeof(model_uniform_data);
+const float mud_align = model_uniform_data_size / 16.0f;
 
 enum class NanoVGShaderType: int32_t {
 	FillGradient = 0, FillImage = 1, Simple = 2, Image = 3
@@ -214,6 +209,11 @@ struct decal_info {
 struct matrix_uniforms {
 	matrix4 modelViewMatrix;
 	matrix4 projMatrix;
+};
+
+struct movie_uniforms {
+	float alpha;
+	float pad[3];
 };
 
 namespace generic_data {
@@ -360,6 +360,10 @@ struct post_data {
 
 	vec3d tint;
 	float dither;
+};
+
+struct irrmap_data {
+	int face;
 };
 
 } // namespace generic_data

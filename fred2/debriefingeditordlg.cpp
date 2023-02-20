@@ -147,9 +147,9 @@ BOOL debriefing_editor_dlg::OnInitDialog()
 	for (auto &sm: Spooled_music)
 		box->AddString(sm.name);
 
-	m_debriefPass_music = Mission_music[SCORE_DEBRIEF_SUCCESS] + 1;
-	m_debriefAvg_music = Mission_music[SCORE_DEBRIEF_AVERAGE] + 1;
-	m_debriefFail_music = Mission_music[SCORE_DEBRIEF_FAIL] + 1;
+	m_debriefPass_music = Mission_music[SCORE_DEBRIEFING_SUCCESS] + 1;
+	m_debriefAvg_music = Mission_music[SCORE_DEBRIEFING_AVERAGE] + 1;
+	m_debriefFail_music = Mission_music[SCORE_DEBRIEFING_FAILURE] + 1;
 
 	m_tree.link_modified(&modified);  // provide way to indicate trees are modified in dialog
 	n = m_tree.select_sexp_node = select_sexp_node;
@@ -433,9 +433,9 @@ void debriefing_editor_dlg::OnClose()
 	m_cur_stage = -1;
 	update_data(1);
 
-	Mission_music[SCORE_DEBRIEF_SUCCESS] = m_debriefPass_music - 1;
-	Mission_music[SCORE_DEBRIEF_AVERAGE] = m_debriefAvg_music - 1;
-	Mission_music[SCORE_DEBRIEF_FAIL] = m_debriefFail_music - 1;
+	Mission_music[SCORE_DEBRIEFING_SUCCESS] = m_debriefPass_music - 1;
+	Mission_music[SCORE_DEBRIEFING_AVERAGE] = m_debriefAvg_music - 1;
+	Mission_music[SCORE_DEBRIEFING_FAILURE] = m_debriefFail_music - 1;
 
 	CDialog::OnClose();
 }

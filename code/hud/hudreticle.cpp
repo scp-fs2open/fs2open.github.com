@@ -279,6 +279,24 @@ ship_info *sip = &Ship_info[Player_ship->ship_info_index];
 
 	setGaugeColor(HUD_C_BRIGHT);
 
+	if (HUD_shadows){
+		gr_set_color_fast(&Color_black);
+
+		if (has_autoaim_lock)
+		{
+			// Render the shadow twice to increase visibility
+			renderBitmap(crosshair.first_frame + autoaim_frame_offset, position[0] + 1, position[1] + 1);
+			renderBitmap(crosshair.first_frame + autoaim_frame_offset, position[0] + 1, position[1] + 1);
+		}
+		else
+		{
+			// Render the shadow twice to increase visibility
+			renderBitmap(crosshair.first_frame, position[0] + 1, position[1] + 1);
+			renderBitmap(crosshair.first_frame, position[0] + 1, position[1] + 1);
+		}
+		gr_set_color_fast(&gauge_color);
+	}
+
 	if (has_autoaim_lock)
 		renderBitmap(crosshair.first_frame + autoaim_frame_offset, position[0], position[1]);
 	else
@@ -309,12 +327,21 @@ ship_info *sip = &Ship_info[Player_ship->ship_info_index];
 }
 
 void HudGaugeReticle::getFirepointStatus() {
+
+	// allow the firepoint status to be empty when a multiplayer observer
+	// this is not a bug, the observer will simply *not* have any firepoints.
+	if (Objects[Player->objnum].type == OBJ_OBSERVER) {
+		// only multiplayer instances should be getting here!
+		Assertion((Game_mode & GM_MULTIPLAYER), "Somehow FSO thinks its player object is an observer even though it's not in Multiplayer. Please report!");
+		return; 
+	}
+
 	//First, get the player ship
 	ship_info* sip;
 	ship* shipp;
 	polymodel* pm;
 
-	Assert(Objects[Player->objnum].type == OBJ_SHIP);
+	Assertion(Objects[Player->objnum].type == OBJ_SHIP, "HudGaugeReticle::getFirepointStatus was passed an invalid object type of %d. Please report!", Objects[Player->objnum].type);
 
 	if (Objects[Player->objnum].type == OBJ_SHIP) {
 		shipp = &Ships[Objects[Player->objnum].instance];
@@ -459,8 +486,9 @@ void HudGaugeThrottle::initMatchSpeedOffsets(int x, int y, bool custom)
 	Match_speed_offsets[1] = y;
 	Use_custom_match_speed = custom;
 
-	font::FSFont* fsFont = font::get_font(font_num);
+	auto match_speed_str = XSTR("m", 1667);
 
+	font::FSFont* fsFont = font::get_font(font_num);
 	if (fsFont->getType() == font::VFNT_FONT)
 	{
 		ubyte sc = lcl_get_font_index(font_num);
@@ -468,7 +496,7 @@ void HudGaugeThrottle::initMatchSpeedOffsets(int x, int y, bool custom)
 		// a) the german font has no special m (its an a)
 		// b) the font has no special characters
 		if (sc == 0 || Lcl_gr) {
-			Match_speed_icon = 'm';
+			Match_speed_icon = match_speed_str[0];
 		}
 		else {
 			Match_speed_icon = sc + 3;
@@ -478,13 +506,12 @@ void HudGaugeThrottle::initMatchSpeedOffsets(int x, int y, bool custom)
 	else
 	{
 		// Default version for other fonts, draw a black character on a rectangle
-		Match_speed_icon = 'm';
+		Match_speed_icon = match_speed_str[0];
 		Match_speed_draw_background = true;
 	}
-	SCP_stringstream stream;
 
+	SCP_stringstream stream;
 	stream << static_cast<char>(Match_speed_icon);
-	
 	const SCP_string& iconStr = stream.str();
 
 	gr_get_string_size(&Match_speed_icon_width, nullptr, iconStr.c_str());
@@ -584,7 +611,7 @@ void HudGaugeThrottle::render(float  /*frametime*/)
 
 		if ( Show_percent ) {
 			if ( Player_obj->phys_info.flags & PF_AFTERBURNER_ON ) {
-				strcpy_s(buf, "A/B");
+				strcpy_s(buf, XSTR( "A/B", 1669 ));
 			} else {
 				sprintf(buf, XSTR( "%d%%", 326), (int)std::lround( (desired_speed/max_speed)*100 ));
 			}
@@ -641,8 +668,10 @@ void HudGaugeThrottle::renderThrottleSpeed(float current_speed, int y_end)
 	renderPrintf(sx, sy, "%s", buf);
 
 	if ( object_get_gliding(Player_obj) ) { 
+		auto glide_str = XSTR("GLIDE", 1668);
+
 		if ( Use_custom_glide ) {
-			renderString(position[0] + Glide_offsets[0], position[1] + Glide_offsets[1], "GLIDE");
+			renderString(position[0] + Glide_offsets[0], position[1] + Glide_offsets[1], glide_str);
 		} else {
 			int offset;
 			if ( current_speed <= 9.5 ) {
@@ -653,7 +682,7 @@ void HudGaugeThrottle::renderThrottleSpeed(float current_speed, int y_end)
 				offset = -13;
 			}
 
-			renderString(sx+offset, sy + h, "GLIDE");
+			renderString(sx+offset, sy + h, glide_str);
 		}
 	} else if ( Players[Player_num].flags & PLAYER_FLAGS_MATCH_TARGET ) {
 		if ( Use_custom_match_speed ) {

@@ -143,7 +143,7 @@ void init_new_pilot(player *p, int reset)
 	Pilot.reset_stats();
 	
 	p->stats.score = 0;
-	p->stats.rank = RANK_ENSIGN;	
+	p->stats.rank = 0;	
 
 	p->tips = 1;
 
@@ -165,7 +165,9 @@ void init_new_pilot(player *p, int reset)
 
 	pilot_set_start_campaign(p);
 
-	OnCampaignBeginHook->run(scripting::hook_param_list(scripting::hook_param("Campaign", 's', p->current_campaign)));
+	if (OnCampaignBeginHook->isActive()) {
+		OnCampaignBeginHook->run(scripting::hook_param_list(scripting::hook_param("Campaign", 's', p->current_campaign)));
+	}
 }
 
 int local_num_campaigns = 0;

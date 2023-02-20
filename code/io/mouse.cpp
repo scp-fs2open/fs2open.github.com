@@ -19,6 +19,8 @@
 #include "io/mouse.h"
 #include "options/Option.h"
 #include "scripting/scripting.h"
+#include "scripting/global_hooks.h"
+#include "scripting/hook_api.h"
 
 #define THREADED	// to use the proper set of macros
 #include "osapi/osapi.h"
@@ -66,13 +68,23 @@ static auto MouseSensitivityOption =
 
 bool Use_mouse_to_fly = false;
 
+static SCP_string mouse_mode_display(bool mode) { return mode ? "Joy-0" : "Mouse"; }
+
 static auto UseMouseOption = options::OptionBuilder<bool>("Input.UseMouse", "Mouse", "Use the mouse for flying")
                                  .category("Input")
+				 .display(mouse_mode_display) 
                                  .level(options::ExpertLevel::Beginner)
                                  .default_val(false)
                                  .bind_to(&Use_mouse_to_fly)
                                  .importance(1)
                                  .finish();
+
+const std::shared_ptr<scripting::Hook<>> OnMouseWheelHook = scripting::Hook<>::Factory(
+	"On Mouse Wheel", "Called when the mouse wheel is moved in any direction.",
+	{
+		{"MouseWheelY", "number", "Positive if moved up, negative if moved down."},
+		{"MouseWheelX", "number", "Positive if moved right, negative if moved left."},
+	});
 
 namespace
 {
@@ -271,12 +283,12 @@ void mouse_mark_button( uint flags, int set)
 
 	Script_system.SetHookVar("MouseButton", 'i', flags);
 
-	if (Script_system.IsActiveAction(CHA_MOUSEPRESSED) || Script_system.IsActiveAction(CHA_MOUSERELEASED)) {
+	if (scripting::hooks::OnMousePressed->isActive() || scripting::hooks::OnMouseReleased->isActive()) {
 		//WMC - On Mouse Pressed and On Mouse Released hooks
 		if (set == 1) {
-			Script_system.RunCondition(CHA_MOUSEPRESSED);
+			scripting::hooks::OnMousePressed->run();
 		} else if (set == 0) {
-			Script_system.RunCondition(CHA_MOUSERELEASED);
+			scripting::hooks::OnMouseReleased->run();
 		}
 	}
 
@@ -524,9 +536,9 @@ void mouse_event(int x, int y, int dx, int dy)
 	Mouse_dx += dx;
 	Mouse_dy += dy;
 
-	if (Script_system.IsActiveAction(CHA_MOUSEMOVED) && (Mouse_dx != 0 || Mouse_dy != 0))
+	if ((Mouse_dx != 0 || Mouse_dy != 0) && scripting::hooks::OnMouseMoved->isActive())
 	{
-		Script_system.RunCondition(CHA_MOUSEMOVED);
+		scripting::hooks::OnMouseMoved->run();
 	}
 }
 
@@ -632,6 +644,8 @@ void mousewheel_motion(int x, int y, bool reversed) {
 	} else {
 		mouse_flags &= ~(MOUSE_WHEEL_RIGHT | MOUSE_WHEEL_LEFT);
 	}
+
+	OnMouseWheelHook->run(scripting::hook_param_list(scripting::hook_param("MouseWheelY", 'i', y), scripting::hook_param("MouseWheelX", 'i', x)));
 }
 
 void mousewheel_decay(int btn) {

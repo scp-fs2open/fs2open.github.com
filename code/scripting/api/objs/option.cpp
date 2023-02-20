@@ -122,7 +122,7 @@ ADE_VIRTVAR(Type, l_Option, nullptr, "The type of this option. One of the OPTION
 		return ADE_RETURN_NIL;
 	}
 
-	int32_t enum_val = -1;
+	lua_enum enum_val = ENUM_INVALID;
 	switch (opt->get()->getType()) {
 	case options::OptionType::Selection:
 		enum_val = LE_OPTION_TYPE_SELECTION;

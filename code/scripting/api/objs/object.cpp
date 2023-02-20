@@ -98,6 +98,23 @@ ADE_VIRTVAR(Parent, l_Object, "object", "Parent of the object. Value may also be
 		return ade_set_args(L, "o", l_Object.Set(object_h()));
 }
 
+ADE_VIRTVAR(Radius, l_Object, "number", "Radius of an object", "number", "Radius, or 0 if handle is invalid")
+{
+	object_h* objh = nullptr;
+	float f = -1.0f;
+	if (!ade_get_args(L, "o|f", l_Object.GetPtr(&objh), &f))
+		return ade_set_error(L, "f", 0.0f);
+
+	if (!objh->IsValid())
+		return ade_set_error(L, "f", 0.0f);
+
+	if (ADE_SETTING_VAR) {
+		objh->objp->radius = f;
+	}
+
+	return ade_set_args(L, "f", objh->objp->radius);
+}
+
 ADE_VIRTVAR(Position, l_Object, "vector", "Object world position (World vector)", "vector", "World position, or null vector if handle is invalid")
 {
 	object_h *objh;
@@ -283,6 +300,18 @@ ADE_FUNC(isValid, l_Object, NULL, "Detects whether handle is valid", "boolean", 
 	return ade_set_args(L, "b", oh->IsValid());
 }
 
+ADE_FUNC(isExpiring, l_Object, nullptr, "Checks whether the object has the should-be-dead flag set, which will cause it to be deleted within one frame", "boolean", "true or false according to the flag, or nil if a syntax/type error occurs")
+{
+	object_h* oh;
+	if (!ade_get_args(L, "o", l_Object.GetPtr(&oh)))
+		return ADE_RETURN_NIL;
+
+	if (!oh->IsValid())
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "b", oh->objp->flags[Object::Object_Flags::Should_be_dead]);
+}
+
 ADE_FUNC(getBreedName, l_Object, NULL, "Gets object type", "string", "Object type name, or empty string if handle is invalid")
 {
 	object_h *objh;
@@ -295,7 +324,7 @@ ADE_FUNC(getBreedName, l_Object, NULL, "Gets object type", "string", "Object typ
 	return ade_set_args(L, "s", Object_type_names[objh->objp->type]);
 }
 
-ADE_VIRTVAR(CollisionGroups, l_Object, "number", "Collision group data", "number", "Current collision group signature. NOTE: This is a bitfield, NOT a normal number.")
+ADE_VIRTVAR(CollisionGroups, l_Object, "number", "Collision group data", "number", "Current set of collision groups. NOTE: This is a bitfield, NOT a normal number.")
 {
 	object_h *objh = NULL;
 	int id = 0;
@@ -326,6 +355,8 @@ ADE_FUNC(addToCollisionGroup, l_Object, "number group", "Adds this object to the
 
 	if (group >= 0 && group <= 31)
 		objh->objp->collision_group_id |= (1 << group);
+	else
+		Warning(LOCATION, "In addToCollisionGroup, group %d must be between 0 and 31, inclusive", group);
 
 	return ADE_RETURN_NIL;
 }
@@ -343,6 +374,8 @@ ADE_FUNC(removeFromCollisionGroup, l_Object, "number group", "Removes this objec
 
 	if (group >= 0 && group <= 31)
 		objh->objp->collision_group_id &= ~(1 << group);
+	else
+		Warning(LOCATION, "In removeFromCollisionGroup, group %d must be between 0 and 31, inclusive", group);
 
 	return ADE_RETURN_NIL;
 }
@@ -536,7 +569,7 @@ ADE_FUNC(addPostMoveHook, l_Object, "function(object object) => void callback",
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(assignSound, l_Object, "soundentry GameSnd, [vector Offset=nil, enumeration Flags=0, subsystem Subsys=nil]",
+ADE_FUNC(assignSound, l_Object, "soundentry GameSnd, [vector Offset=nil, enumeration Flags=OS_NONE, subsystem Subsys=nil]",
 	"Assigns a sound to this object, with optional offset, sound flags (OS_XXXX), and associated subsystem.",
 	"number",
 	"Returns the index of the sound on this object, or -1 if a sound could not be assigned.")
@@ -559,8 +592,8 @@ ADE_FUNC(assignSound, l_Object, "soundentry GameSnd, [vector Offset=nil, enumera
 	auto subsys = tgsh ? tgsh->ss : nullptr;
 	if (!offset)
 		offset = &vmd_zero_vector;
-	if (enum_flags.index >= 0)
-		flags = enum_flags.index;
+	if (enum_flags.value)
+		flags = *enum_flags.value;
 
 	int snd_idx = obj_snd_assign(OBJ_INDEX(objp), gs_id, offset, flags, subsys);
 
@@ -576,6 +609,7 @@ ADE_FUNC(removeSoundByIndex, l_Object, "number index", "Removes an assigned soun
 		return ADE_RETURN_NIL;
 
 	auto objp = objh->objp;
+	snd_idx--;	// Lua -> C++
 
 	if (snd_idx < 0 || snd_idx >= (int)objp->objsnd_num.size())
 	{

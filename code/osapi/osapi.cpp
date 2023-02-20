@@ -16,6 +16,9 @@
 #include <fcntl.h>
 #include <utf8.h>
 
+#include "imgui.h"
+#include "backends/imgui_impl_sdl.h"
+
 #ifdef SCP_UNIX
 #include <sys/stat.h>
 #elif defined(WIN32)
@@ -215,6 +218,7 @@ namespace
 // Windows specific includes
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <backends/imgui_impl_sdl.h>
 
 // go through all windows and try and find the one that matches the search string
 BOOL __stdcall os_enum_windows( HWND hwnd, LPARAM param )
@@ -300,7 +304,7 @@ static char			szWinTitle[128];
 static char			szWinClass[128];
 static int			Os_inited = 0;
 
-static SCP_vector<SDL_Event> buffered_events;
+static SCP_vector<SDL_Event> deferred_events;
 
 int Os_debugger_running = 0;
 
@@ -417,7 +421,7 @@ void os_cleanup()
 // window management -----------------------------------------------------------------
 
 // Returns 1 if app is not the foreground app.
-int os_foreground()
+bool os_foreground()
 {
 	return fAppActive;
 }
@@ -713,46 +717,64 @@ namespace os
 	}
 }
 	
-void os_ignore_events() {
+void os_defer_events_on_load_screen() {
 	SDL_Event event;
 	while (SDL_PollEvent(&event)) {
-		// Add event to buffer
-		buffered_events.push_back(event);
+		// Add event to be handled later
+		deferred_events.push_back(event);
 	}
 }
 
 static void handle_sdl_event(const SDL_Event& event) {
 	using namespace os::events;
-	
-	EventListenerData data;
-	data.type = event.type;
-		
-	auto iter = std::lower_bound(eventListeners.begin(), eventListeners.end(), data, compare_type);
 
-	if (iter != eventListeners.end())
-	{
-		// The vector contains all event listeners, the listeners are sorted for type and weight
-		// -> iterating through all listeners will yield them in increasing weight order
-		// but we can only do this until we have reached the end of the vector or the type has changed
-		for(; iter != eventListeners.end() && iter->type == event.type; ++iter)
-		{
-			if (iter->listener(event))
-			{
-				// Listener has handled the event
-				break;
+	bool imgui_processed_this = false;
+	if (gameseq_get_state() == GS_STATE_LAB && (ImGui::GetIO().WantCaptureKeyboard || ImGui::GetIO().WantCaptureMouse)) {
+		imgui_processed_this = ImGui_ImplSDL2_ProcessEvent(&event);
+	}
+
+	if (!imgui_processed_this) {
+		EventListenerData data;
+		data.type = event.type;
+
+		auto iter = std::lower_bound(eventListeners.begin(), eventListeners.end(), data, compare_type);
+
+		if (iter != eventListeners.end()) {
+			// The vector contains all event listeners, the listeners are sorted for type and weight
+			// -> iterating through all listeners will yield them in increasing weight order
+			// but we can only do this until we have reached the end of the vector or the type has changed
+			for (; iter != eventListeners.end() && iter->type == event.type; ++iter) {
+				if (iter->listener(event)) {
+					// Listener has handled the event
+					break;
+				}
 			}
 		}
 	}
 }
 
+void os_remove_deferred_cutscene_key_events() {
+	deferred_events.erase(
+		std::remove_if(deferred_events.begin(), deferred_events.end(), [](const SDL_Event &event)
+		{
+			return (event.type == SDL_KEYUP) && (
+				event.key.keysym.sym == SDLK_KP_ENTER ||
+				event.key.keysym.sym == SDLK_RETURN ||
+				event.key.keysym.sym == SDLK_SPACE
+			);
+		}),
+		deferred_events.end()
+	);
+}
+
 void os_poll()
 {
-	// Replay the buffered events
-	auto end = buffered_events.end();
-	for (auto it = buffered_events.begin(); it != end; ++it) {
+	// Replay the deferred events
+	auto end = deferred_events.end();
+	for (auto it = deferred_events.begin(); it != end; ++it) {
 		handle_sdl_event(*it);
 	}
-	buffered_events.clear();
+	deferred_events.clear();
 
 	SDL_Event event;
 

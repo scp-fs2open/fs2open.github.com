@@ -11,12 +11,12 @@
 
 
 #ifndef FS2_SPEECH
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__APPLE__)
 #if NDEBUG
 	#pragma message( "WARNING: You have not compiled speech into this build (use FS2_SPEECH)" )
 #endif // NDEBUG
-#endif // _WIN32
-#else // to end-of-file ...
+#endif // _WIN32 or __APPLE__
+#elif !defined(__APPLE__) // to end-of-file ...
 
 
 #ifdef LAUNCHER
@@ -27,10 +27,12 @@
 
 // Since we define these ourself we need to undefine them for the sapi header
 #pragma push_macro("strcpy_s")
+#pragma push_macro("strncpy_s")
 #pragma push_macro("strcat_s")
 #pragma push_macro("memset")
 #pragma push_macro("memcpy")
 #undef strcpy_s
+#undef strncpy_s
 #undef strcat_s
 #undef memset
 #undef memcpy
@@ -41,6 +43,7 @@
 	#include <sphelper.h>
 
 #pragma pushpop_macro("strcpy_s")
+#pragma pushpop_macro("strncpy_s")
 #pragma pushpop_macro("strcat_s")
 #pragma pushpop_macro("memset")
 #pragma pushpop_macro("memcpy")

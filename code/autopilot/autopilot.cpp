@@ -47,10 +47,9 @@ NavMessage NavMsgs[NP_NUM_MESSAGES];
 int audio_handle;
 int NavLinkDistance;
 // time offsets for autonav events
-int LockAPConv;
-int EndAPCinematic;
-int MoveCamera;
-int camMovingTime;
+TIMESTAMP LockAPConv;
+TIMESTAMP EndAPCinematic;
+TIMESTAMP MoveCamera;
 //float CameraSpeed;
 bool CinematicStarted, CameraMoving;
 vec3d cameraPos, cameraTarget;
@@ -151,6 +150,9 @@ bool CanAutopilot(const vec3d *targetPos, bool send_msg)
 		for (ship_obj *so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
 		{
 			object *other_objp = &Objects[so->objnum];
+			if (other_objp->flags[Object::Object_Flags::Should_be_dead])
+				continue;
+
 			// attacks player?
 			if (iff_x_attacks_y(obj_team(other_objp), obj_team(Player_obj)) 
 				&& !(Ship_info[Ships[other_objp->instance].ship_info_index].flags[Ship::Info_Flags::Cargo])) // ignore cargo
@@ -206,8 +208,9 @@ bool StartAutopilot()
 {
 	// Check for support ship and dismiss it if it is not doing anything.
 	// If the support ship is doing something then tell the user such.
-	for ( object *objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) )
+	for (auto so: list_range(&Ship_obj_list))
 	{
+		auto objp = &Objects[so->objnum];
 		if ((objp->type == OBJ_SHIP) && !(objp->flags[Object::Object_Flags::Should_be_dead]))
 		{
 			Assertion((objp->instance >= 0) && (objp->instance < MAX_SHIPS),
@@ -262,9 +265,9 @@ bool StartAutopilot()
 	}
 
 	if (The_mission.flags[Mission::Mission_Flags::Use_ap_cinematics])
-		LockAPConv = timestamp(); // lock convergence instantly
+		LockAPConv = _timestamp(); // lock convergence instantly
 	else
-		LockAPConv = timestamp(3000); // 3 seconds before we lock convergence
+		LockAPConv = _timestamp(3 * MILLISECONDS_PER_SECOND); // 3 seconds before we lock convergence
 	Player_use_ai = 1;
 	set_time_compression(1);
 	lock_time_compression(true);
@@ -402,7 +405,7 @@ bool StartAutopilot()
 				&& Autopilot_flight_leader != &Objects[Ships[i].objnum]) //only if not flight leader's object
 			{	
 				ai_info	*aip = &Ai_info[Ships[i].ai_index];
-				int wingnum = aip->wing, wing_index = get_wing_index(&Objects[Ships[i].objnum], wingnum);
+				int wingnum = Ships[i].wingnum, wing_index = get_wing_index(&Objects[Ships[i].objnum], wingnum);
 				vec3d goal_point;
 				object *leader_objp = get_wing_leader(wingnum);
 				
@@ -828,9 +831,8 @@ bool StartAutopilot()
 		//CameraMoving = false;
 
 
-		EndAPCinematic = timestamp((10000*tc_factor)+NPS_TICKRATE); // 10 objective seconds before end of cinematic 
-		MoveCamera = timestamp((5500*tc_factor)+NPS_TICKRATE);
-		camMovingTime = int(4.5*float(tc_factor));
+		EndAPCinematic = _timestamp((10 * MILLISECONDS_PER_SECOND * tc_factor) + NPS_TICKRATE); // 10 objective seconds before end of cinematic 
+		MoveCamera = _timestamp(fl2i(5.5 * MILLISECONDS_PER_SECOND * tc_factor) + NPS_TICKRATE);
 		set_time_compression((float)tc_factor);
 	}
 
@@ -923,10 +925,7 @@ void EndAutoPilot()
 					if ( ((aigp->target_name != NULL) && !stricmp(aigp->target_name, goal_name))
 							&& (aigp->ai_mode == goal) )
 					{
-						aigp->ai_mode = AI_GOAL_NONE;
-						aigp->signature = -1;
-						aigp->priority = -1;
-						aigp->flags.reset();
+						ai_goal_reset(aigp);
 					}
 				}
 			}
@@ -947,10 +946,7 @@ void EndAutoPilot()
 					if ( ((aigp->target_name != NULL) && !stricmp(aigp->target_name, goal_name))
 							&& (aigp->ai_mode == goal) )
 					{
-						aigp->ai_mode = AI_GOAL_NONE;
-						aigp->signature = -1;
-						aigp->priority = -1;
-						aigp->flags.reset();
+						ai_goal_reset(aigp);
 					}
 				}
 			}
@@ -1053,15 +1049,13 @@ void NavSystem_Do()
 					if(cam != NULL)
 						cam->set_rotation_facing(&Player_obj->pos);
 
-					if (timestamp() >= MoveCamera && !CameraMoving && vm_vec_mag(&cameraTarget) > 0.0f)
+					if (timestamp_elapsed(MoveCamera) && !CameraMoving && vm_vec_mag(&cameraTarget) > 0.0f)
 					{
-						//Free_camera->set_position(&cameraTarget, float(camMovingTime), float(camMovingTime)/2.0f);
-						//Free_camera->set_translation_velocity(&cameraTarget);
 						CameraMoving = true;
 					}
 
 
-					if (timestamp() >= EndAPCinematic || !CanAutopilot())
+					if (timestamp_elapsed(EndAPCinematic) || !CanAutopilot())
 					{
 						nav_warp();
 						EndAutoPilot();
@@ -1189,6 +1183,10 @@ void send_autopilot_msgID(int msgid)
 	if (msgid < 0 || msgid >= NP_NUM_MESSAGES)
 		return;
 
+	// bail out if message is not set
+	if (NavMsgs[msgid].message[0] == '\0')
+		return;
+
 	send_autopilot_msg(NavMsgs[msgid].message, NavMsgs[msgid].filename);
 }
 // ********************************************************************************************
@@ -1218,7 +1216,7 @@ void send_autopilot_msg(const char *msg, const char *snd)
 	}
 
 	if (msg[0] != '\0' && strcmp(msg, "none") != 0)
-		message_training_queue("autopilot builtin message", timestamp(0), 5); // display message for five seconds
+		message_training_queue("autopilot builtin message", TIMESTAMP::immediate(), 5); // display message for five seconds
 }
 
 // ********************************************************************************************
@@ -1228,6 +1226,15 @@ void NavSystem_Init()
 	for (int i = 0; i < MAX_NAVPOINTS; i++)
 		Navs[i].clear();
 
+	//Initialize all these as empty strings so we can detect and bail out later -Mjn
+	for (int i = 0; i < NP_NUM_MESSAGES; i++)
+		NavMsgs[i].message[0] = '\0';
+
+	//Set defaults here before parsing
+	NavLinkDistance = 1000;
+	AutopilotMinEnemyDistance = 5000;
+	AutopilotMinAsteroidDistance = 1000;
+	LockWeaponsDuringAutopilot = false;
 	AutoPilotEngaged = false;
 	CurrentNav = -1;
 	audio_handle = -1;
@@ -1235,10 +1242,9 @@ void NavSystem_Init()
 	UseCutsceneBars = true;
 
 	// defaults... can be tabled or bound to mission later
-	if (cf_exists_full("autopilot.tbl", CF_TYPE_TABLES))
-		parse_autopilot_table("autopilot.tbl");
-	else
-		parse_autopilot_table(NULL);
+	parse_autopilot_table("autopilot.tbl");
+	
+	parse_modular_table("*-aplt.tbm", parse_autopilot_table);
 }
 
 // ********************************************************************************************
@@ -1249,10 +1255,16 @@ void parse_autopilot_table(const char *filename)
 
 	try
 	{
-		if (filename == NULL)
-			read_file_text_from_default(defaults_get_file("autopilot.tbl"));
-		else
+
+		if (!Parsing_modular_table) {
+			// if table doesn't exist, use the default table
+			if (cf_exists_full(filename, CF_TYPE_TABLES))
+				read_file_text(filename, CF_TYPE_TABLES);
+			else
+				read_file_text_from_default(defaults_get_file("autopilot.tbl"));
+		} else {
 			read_file_text(filename, CF_TYPE_TABLES);
+		}
 
 		reset_parse();
 
@@ -1260,23 +1272,17 @@ void parse_autopilot_table(const char *filename)
 		required_string("#Autopilot");
 
 		// autopilot link distance
-		required_string("$Link Distance:");
-		stuff_int(&NavLinkDistance);
+		if (optional_string("$Link Distance:"))
+			stuff_int(&NavLinkDistance);
 
 		if (optional_string("$Interrupt autopilot if enemy within distance:"))
 			stuff_int(&AutopilotMinEnemyDistance);
-		else
-			AutopilotMinEnemyDistance = 5000;
 
 		if (optional_string("$Interrupt autopilot if asteroid within distance:"))
 			stuff_int(&AutopilotMinAsteroidDistance);
-		else
-			AutopilotMinAsteroidDistance = 1000;
 
 		if (optional_string("$Lock Weapons During Autopilot:"))
 			stuff_boolean(&LockWeaponsDuringAutopilot);
-		else
-			LockWeaponsDuringAutopilot = false;
 
 		// optional no cutscene bars
 		if (optional_string("+No_Cutscene_Bars"))
@@ -1291,13 +1297,14 @@ void parse_autopilot_table(const char *filename)
 			"$Support Present:", "$Support Working:" };
 		for (int i = 0; i < NP_NUM_MESSAGES; i++)
 		{
-			required_string(msg_tags[i]);
+			if (optional_string(msg_tags[i])) {
 
-			required_string("+Msg:");
-			stuff_string(NavMsgs[i].message, F_MESSAGE, 256);
+				required_string("+Msg:");
+				stuff_string(NavMsgs[i].message, F_MESSAGE, 256);
 
-			required_string("+Snd File:");
-			stuff_string(NavMsgs[i].filename, F_NAME, 256);
+				required_string("+Snd File:");
+				stuff_string(NavMsgs[i].filename, F_NAME, 256);
+			}
 		}
 
 

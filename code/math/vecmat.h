@@ -20,16 +20,34 @@
 #define vm_is_vec_nan(v) (fl_is_nan((v)->xyz.x) || fl_is_nan((v)->xyz.y) || fl_is_nan((v)->xyz.z))
 
 //Macros/functions to fill in fields of structures
+//VEC_NULL macros split into two functions in 2009 with commit 75a514b
 
-//macro to check if vector is zero
-#define IS_VEC_NULL_SQ_SAFE(v) (IS_NEAR_ZERO((v)->xyz.x, 1e-16) && \
-								IS_NEAR_ZERO((v)->xyz.y, 1e-16) && \
-								IS_NEAR_ZERO((v)->xyz.z, 1e-16))
+// Null vector checks are performed on the following types of vectors:
+// * orientation component vectors
+// * positions
+// * velocities
+// * normals
+// In each of these cases, FLT_EPSILON or 1.192092896e-07F is a reasonable threshold.
 
-#define IS_VEC_NULL(v) (IS_NEAR_ZERO((v)->xyz.x, 1e-36) && \
-						IS_NEAR_ZERO((v)->xyz.y, 1e-36) && \
-						IS_NEAR_ZERO((v)->xyz.z, 1e-36))
+// macro to check if vector is close to zero or would be close to zero after squaring
+// (uses FLT_EPSILON; original threshold was 1e-16 which can be tightened up a bit)
+#define IS_VEC_NULL_SQ_SAFE(v) \
+		(fl_near_zero((v)->xyz.x) && \
+		fl_near_zero((v)->xyz.y) && \
+		fl_near_zero((v)->xyz.z))
 
+// macro to check if vector is close to zero
+// (original threshold was 1e-36 which was too small)
+#define IS_VEC_NULL(v) IS_VEC_NULL_SQ_SAFE(v)
+
+// macro to check if moment-of-inertia vector is close to zero
+// (uses the previous 1e-36 threshold since MOI values are really small)
+#define IS_MOI_VEC_NULL(v) \
+		(fl_near_zero((v)->xyz.x, (float) 1e-36) && \
+		fl_near_zero((v)->xyz.y, (float) 1e-36) && \
+		fl_near_zero((v)->xyz.z, (float) 1e-36))
+
+// currently only used to check orientations
 #define IS_MAT_NULL(v) (IS_VEC_NULL(&(v)->vec.fvec) && IS_VEC_NULL(&(v)->vec.uvec) && IS_VEC_NULL(&(v)->vec.rvec))
 
 //macro to set a vector to zero.  we could do this with an in-line assembly
@@ -71,7 +89,7 @@ extern matrix4 vmd_zero_matrix4;
 extern angles vmd_zero_angles;
 
 //Here's a handy constant
-
+#define ZERO_ANGLES { 0.0f, 0.0f, 0.0f }
 #define ZERO_VECTOR { { { 0.0f, 0.0f, 0.0f } } }
 #define SCALE_IDENTITY_VECTOR { { { 1.0f, 1.0f, 1.0f } } }
 //#define IDENTITY_MATRIX {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f}
@@ -481,7 +499,8 @@ void vm_matrix_to_rot_axis_and_angle(const matrix *m, float *theta, vec3d *rot_a
 // If the axis is equal or very close to the orientation of the matrix, returns a distance of Pi/2 and an angle of 0
 float vm_closest_angle_to_matrix(const matrix* mat, const vec3d* rot_axis, float* angle);
 
-// interpolate between 2 vectors. t goes from 0.0 to 1.0. at
+// interpolate between 2 vectors. t goes from 0.0 to 1.0
+// out, v1 and v2 may all safely alias
 void vm_vec_interp_constant(vec3d *out, const vec3d *v1, const vec3d *v2, float t);
 
 // randomly perturb a vector around a given (normalized vector) or optional orientation matrix
@@ -570,6 +589,13 @@ void vm_match_bank(vec3d* out_rvec, const vec3d* goal_fvec, const matrix* match_
 // You will get strange results otherwise.
 void vm_interpolate_angles_quick(angles* dest0, angles* src0, angles* src1, float interp_perc);
 
+// Interpolate between two matrices, using t as a percentage progress between them.
+// Intended values for t are [0.0f, 1.0f], but values outside this range are allowed,
+// as you could conceivably use these calculations to find a rotation that is outside 
+// the usual 0-100%.
+// derived by Asteroth from our AI code
+void vm_interpolate_matrices(matrix* out_orient, const matrix* curr_orient, const matrix* goal_orient, float t);
+
 // generates a well distributed quasi-random position in a -1 to 1 cube
 // the caller must provide and increment the seed for each call for proper results
 // if being used to fill a space, offset may be needed to properly 'glue together' generated
@@ -651,6 +677,14 @@ inline matrix operator-(const matrix& left, const matrix& right)
 inline matrix& operator-=(matrix& left, const matrix& right)
 {
 	vm_matrix_sub2(&left, &right);
+	return left;
+}
+
+inline angles& operator+=(angles& left, const angles& right)
+{
+	left.p += right.p;
+	left.b += right.b;
+	left.h += right.h;
 	return left;
 }
 

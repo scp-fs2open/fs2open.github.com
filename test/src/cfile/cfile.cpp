@@ -141,14 +141,74 @@ TEST_F(CFileTest, test_get_path_type)
 	ASSERT_EQ(CF_TYPE_DATA, cfile_get_path_type("////data\\\\\\"));
 
 	// Test single subdirectory case
-	ASSERT_EQ(CF_TYPE_INTERFACE, cfile_get_path_type("data/interface"));
-	ASSERT_EQ(CF_TYPE_INTERFACE, cfile_get_path_type("///data/interface"));
-	ASSERT_EQ(CF_TYPE_INTERFACE, cfile_get_path_type("data/interface\\\\\\"));
-	ASSERT_EQ(CF_TYPE_INTERFACE, cfile_get_path_type("////data/interface\\\\\\"));
+	ASSERT_EQ(CF_TYPE_VOICE, cfile_get_path_type("data/voice"));
+	ASSERT_EQ(CF_TYPE_VOICE, cfile_get_path_type("///data/voice"));
+	ASSERT_EQ(CF_TYPE_VOICE, cfile_get_path_type("data/voice\\\\\\"));
+	ASSERT_EQ(CF_TYPE_VOICE, cfile_get_path_type("////data/voice\\\\\\"));
 
 	// Test nested subdirectory case
-	ASSERT_EQ(CF_TYPE_INTERFACE_MARKUP, cfile_get_path_type("data/interface/markup"));
-	ASSERT_EQ(CF_TYPE_INTERFACE_MARKUP, cfile_get_path_type("///data/interface/markup"));
-	ASSERT_EQ(CF_TYPE_INTERFACE_MARKUP, cfile_get_path_type("data/interface/markup\\\\\\"));
-	ASSERT_EQ(CF_TYPE_INTERFACE_MARKUP, cfile_get_path_type("////data/interface/markup\\\\\\"));
+	ASSERT_EQ(CF_TYPE_VOICE_SPECIAL, cfile_get_path_type("data/voice/special"));
+	ASSERT_EQ(CF_TYPE_VOICE_SPECIAL, cfile_get_path_type("///data/voice/special"));
+	ASSERT_EQ(CF_TYPE_VOICE_SPECIAL, cfile_get_path_type("data/voice/special\\\\\\"));
+	ASSERT_EQ(CF_TYPE_VOICE_SPECIAL, cfile_get_path_type("////data/voice/special\\\\\\"));
+}
+
+TEST_F(CFileTest, subfolders)
+{
+	// base check for all files
+	ASSERT_TRUE(cf_exists("file.tbl", CF_TYPE_TABLES));
+	ASSERT_TRUE(cf_exists("file2.tbl", CF_TYPE_TABLES));
+	ASSERT_TRUE(cf_exists("file3.tbl", CF_TYPE_TABLES));
+
+	// good direct subfolder check
+	ASSERT_TRUE(cf_exists("sub/file2.tbl", CF_TYPE_TABLES));
+
+	// bad direct subfolder check
+	ASSERT_FALSE(cf_exists("sub/file3.tbl", CF_TYPE_TABLES));
+
+	// sub-subfolder check
+	ASSERT_TRUE(cf_exists("sub/folder/file3.tbl", CF_TYPE_TABLES));
+
+	// check cf_find_file_location() with and without subfolders
+	auto loc = cf_find_file_location("file2.tbl", CF_TYPE_TABLES);
+	ASSERT_TRUE(loc.found);
+
+	loc = cf_find_file_location("sub/file2.tbl", CF_TYPE_ANY);
+	ASSERT_TRUE(loc.found);
+
+	// check that cf_find_file_location_ext() works with subfolders
+	const char *exts[] = { ".tbl", ".cfg" };
+	loc = cf_find_file_location_ext("sub/folder/file3.tbl", 2, exts, CF_TYPE_TABLES);
+	ASSERT_TRUE(loc.found);
+}
+
+TEST_F(CFileTest, subfolder_list)
+{
+	SCP_vector<SCP_string> table_files;
+	extern bool Skip_memory_files;
+
+	// For this test we need to skip the memory files to keep the results consistent
+	Skip_memory_files = true;
+
+	// look for all tables (one result, shadowing second file)
+	ASSERT_EQ(1, cf_get_file_list(table_files, CF_TYPE_TABLES, "*.tbl", CF_SORT_NAME));
+
+	// look for file in subfolder only, with unix and windows directory separators
+	table_files.clear();
+	ASSERT_EQ(1, cf_get_file_list(table_files, CF_TYPE_TABLES, "folder/*.tbl", CF_SORT_NAME));
+	ASSERT_TRUE(table_files.front().substr(0, 6) == "folder");
+
+	table_files.clear();
+	ASSERT_EQ(1, cf_get_file_list(table_files, CF_TYPE_TABLES, "folder\\*.tbl", CF_SORT_NAME));
+	ASSERT_TRUE(table_files.front().substr(0, 6) == "folder");
+
+	// subfolder glob, with unix and windows directory separators
+	// should return two files, one with a sub path
+	table_files.clear();
+	ASSERT_EQ(2, cf_get_file_list(table_files, CF_TYPE_TABLES, "*/*.tbl", CF_SORT_NAME));
+	ASSERT_TRUE(table_files.back().substr(0, 6) == "folder");
+
+	table_files.clear();
+	ASSERT_EQ(2, cf_get_file_list(table_files, CF_TYPE_TABLES, "*\\*.tbl", CF_SORT_NAME));
+	ASSERT_TRUE(table_files.back().substr(0, 6) == "folder");
 }

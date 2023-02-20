@@ -5,7 +5,7 @@
 void gr_opengl_deferred_init();
 
 void opengl_clear_deferred_buffers();
-void gr_opengl_deferred_lighting_begin();
+void gr_opengl_deferred_lighting_begin(bool clearNonColorBufs = false);
 void gr_opengl_deferred_lighting_end();
 void gr_opengl_deferred_lighting_finish();
 
@@ -16,5 +16,7 @@ void gr_opengl_draw_deferred_light_sphere(const vec3d *position);
 void gr_opengl_draw_deferred_light_cylinder(const vec3d *position, const matrix *orient);
 
 void gr_opengl_deferred_shutdown();
+
+void gr_opengl_override_fog(bool set_override);
 
 void opengl_draw_sphere();

@@ -13,6 +13,7 @@ namespace Model {
 		Do_not_scale_detail_distances,	// if set should not scale boxes or spheres based on 'model detail' settings
 		Gun_rotation,					// for animated weapon models
 		Instant_rotate_accel,			// rotating submodels instantly reach their desired velocity
+		Instant_translate_accel,		// ditto for translating submodels
 		No_collisions,					// for $no_collisions property - kazan
 		Nocollide_this_only,			//SUSHI: Like no_collisions, but not recursive. For the "replacement" collision model scheme.
 		Collide_invisible,				//SUSHI: If set, this submodel should allow collisions for invisible textures. For the "replacement" collision model scheme.
@@ -25,7 +26,9 @@ namespace Model {
 
 	FLAG_LIST(Subsystem_Flags) {
 		Rotates,			// This means the object rotates automatically
+		Translates,			// This means the object translates automatically
 		Stepped_rotate,		// This means that the rotation occurs in steps
+		Stepped_translate,	// Ditto for translation
 		Ai_rotate,			// This means that the rotation is controlled by ai
 		Crewpoint,			// If set, this is a crew point.
 		Awacs,				// If set, this subsystem has AWACS capability
@@ -41,7 +44,8 @@ namespace Model {
 		Fire_on_target,		// prevents turret from firing unless it is pointing at the firingpoints are pointing at the target
 		No_ss_targeting,	// toggles the subsystem targeting for the turret
 		Turret_reset_idle,	// makes turret reset to their initial position if the target is out of field of view
-		Turret_restricted_fov,	// tells the game to use additional calculations should turret have a limited base fov or elevation
+		Turret_base_restricted_fov,	// tells the game to use additional calculations should turret have a limited base fov or elevation
+		Turret_barrel_override_fov,	// indicates the ships.tbl FOV should override the POF FOV
 		Carry_shockwave,	// subsystem - even with 'carry no damage' flag - will carry shockwave damage to the hull
 		Allow_landing,		// This subsystem can be landed on
 		Fov_edge_check,		// Tells the game to use better FOV edge checking with this turret
@@ -66,6 +70,7 @@ namespace Model {
         No_sparks,          // Subsystem does not generate sparks if hit - m!m
 		No_impact_debris,    // Don't spawn the small debris on impact - m!m
 		Hide_turret_from_loadout_stats, // Turret is not accounted for in auto-generated "Turrets" line in the ship loadout window --wookieejedi
+		Turret_distant_firepoint,	//Turret barrel is very long and should be taken into account when aiming -- Kiloku
 
         NUM_VALUES
 	};

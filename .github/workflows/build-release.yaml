@@ -46,9 +46,9 @@ jobs:
     runs-on: ubuntu-latest
     container: ghcr.io/scp-fs2open/linux_build:sha-8a6bbbe
     steps:
-      - name: Cache Qt
-        id: cache-qt-lin
-        uses: actions/cache@v1
+      # - name: Cache Qt
+        # id: cache-qt-lin
+        # uses: actions/cache@v1
         # cache the Qt directory so we don't have to reinstall it every time
         # cache.inputs:
         #   path - A list of files, directories, and wildcard patterns to cache and restore. See @actions/glob for supported patterns.
@@ -56,11 +56,11 @@ jobs:
         #   restore-keys - An ordered list of keys to use for restoring the cache if no cache hit occurred for key
         # cache.outputs:
         #   cache-hit   true when an exact match was found for the key, false otherwise.
-        with:
-          path: ${{ github.workspace }}/../Qt
-          key: ${{ runner.os }}-QtCache-${{ env.QT_VERSION }}
-      - name: Install Qt
-        uses: jurplel/install-qt-action@v2
+        # with:
+          # path: ${{ github.workspace }}/../Qt
+          # key: ${{ runner.os }}-QtCache-${{ env.QT_VERSION }}
+      # - name: Install Qt
+        # uses: jurplel/install-qt-action@v2
         # installs Qt in the action workflow
         # install-qt-action.inputs:
         #   version     desired qt version to install
@@ -81,18 +81,27 @@ jobs:
         #   Qt5_DIR / Qt6_DIR
         #   Qt bin dir appended to PATH
         #   QT_PLUGIN_PATH, QML2_IMPORT_PATH, PKG_CONFIG_PATH, LD_LIBRARY_PATH
-        with:
-          version: ${{ env.QT_VERSION }}
-          dir: ${{ github.workspace }}/..
-          cached: ${{ steps.cache-qt-lin.outputs.cache-hit }}
-          setup-python: 'false'
-          aqtversion: ==1.1.3
-
+        # with:
+          # version: ${{ env.QT_VERSION }}
+          # dir: ${{ github.workspace }}/..
+          # cached: ${{ steps.cache-qt-lin.outputs.cache-hit }}
+          # setup-python: 'false'
+          # aqtversion: ==1.1.3
+      - name: Add curl to the container
+        run: |    
+          apt-get update -y 
+          apt -y install curl jq
       - uses: actions/checkout@v1
         # checks-out your repository under $GITHUB_WORKSPACE, so your workflow can access it.
         name: Checkout
         with:
           submodules: true  # `true` to checkout submodules, `recursive` to recursively checkout submodules
+      - name: Prepare Vulkan SDK
+        uses: humbletim/setup-vulkan-sdk@v1.2.0
+        with:
+          vulkan-query-version: 1.3.204.0
+          vulkan-components: Vulkan-Headers, Vulkan-Loader
+          vulkan-use-cache: true
       - name: Configure CMake
         env:
           CONFIGURATION: ${{ matrix.configuration }}
@@ -186,34 +195,39 @@ jobs:
         name: Checkout
         with:
           submodules: true
-      - name: Cache Qt
-        # Cache Qt
-        id: cache-qt-win
-        uses: actions/cache@v1
+      # - name: Cache Qt
+        # # Cache Qt
+        # id: cache-qt-win
+        # uses: actions/cache@v1
+        # with:
+          # path: ${{ github.workspace }}/../Qt
+          # key: ${{ runner.os }}-${{ matrix.arch }}-QtCache-${{ env.QT_VERSION }}
+      # - name: Install Qt (32 bit)
+        # # Install Qt 32bit if matrix.arch == Win32
+        # uses: jurplel/install-qt-action@v2
+        # if: ${{ matrix.arch == 'Win32' }}
+        # with:
+          # version: ${{ env.QT_VERSION }}
+          # dir: ${{ github.workspace }}/..
+          # arch: win32_msvc2017
+          # cached: ${{ steps.cache-qt-win.outputs.cache-hit }}
+          # aqtversion: ==0.8
+      # - name: Install Qt (64 bit)
+        # # Install Qt 64bit if matrix.arch == x64
+        # uses: jurplel/install-qt-action@v2
+        # if: ${{ matrix.arch == 'x64' }}
+        # with:
+          # version: ${{ env.QT_VERSION }}
+          # dir: ${{ github.workspace }}/..
+          # arch: win64_msvc2017_64
+          # cached: ${{ steps.cache-qt-win.outputs.cache-hit }}
+          # aqtversion: ==0.8
+      - name: Prepare Vulkan SDK
+        uses: humbletim/setup-vulkan-sdk@v1.2.0
         with:
-          path: ${{ github.workspace }}/../Qt
-          key: ${{ runner.os }}-${{ matrix.arch }}-QtCache-${{ env.QT_VERSION }}
-      - name: Install Qt (32 bit)
-        # Install Qt 32bit if matrix.arch == Win32
-        uses: jurplel/install-qt-action@v2
-        if: ${{ matrix.arch == 'Win32' }}
-        with:
-          version: ${{ env.QT_VERSION }}
-          dir: ${{ github.workspace }}/..
-          arch: win32_msvc2017
-          cached: ${{ steps.cache-qt-win.outputs.cache-hit }}
-          aqtversion: ==0.8
-      - name: Install Qt (64 bit)
-        # Install Qt 64bit if matrix.arch == x64
-        uses: jurplel/install-qt-action@v2
-        if: ${{ matrix.arch == 'x64' }}
-        with:
-          version: ${{ env.QT_VERSION }}
-          dir: ${{ github.workspace }}/..
-          arch: win64_msvc2017_64
-          cached: ${{ steps.cache-qt-win.outputs.cache-hit }}
-          aqtversion: ==0.8
-
+          vulkan-query-version: 1.3.204.0
+          vulkan-components: Vulkan-Headers, Vulkan-Loader
+          vulkan-use-cache: true
       - name: Configure CMake
         env:
           CONFIGURATION: ${{ matrix.configuration }}
@@ -224,11 +238,19 @@ jobs:
           mkdir build
           cd build
 
-          cmake -DCMAKE_INSTALL_PREFIX="$(pwd)/install" -DFSO_USE_SPEECH="ON" \
-            -DFSO_USE_VOICEREC="ON" -DMSVC_SIMD_INSTRUCTIONS="$SIMD" \
-            -DFSO_BUILD_QTFRED=ON -DFSO_BUILD_TESTS=ON \
-            -DFSO_INSTALL_DEBUG_FILES="ON" -A "$ARCHITECTURE" \
-            -G "Visual Studio 16 2019" -T "v142" ..
+          if [ "$ARCHITECTURE" = "Win32" ]; then
+              cmake -DCMAKE_INSTALL_PREFIX="$(pwd)/install" -DFSO_USE_SPEECH="ON" \
+                  -DFSO_USE_VOICEREC="ON" -DMSVC_SIMD_INSTRUCTIONS="$SIMD" \
+                  -DFSO_BUILD_QTFRED=OFF -DFSO_BUILD_TESTS=ON \
+                  -DFSO_INSTALL_DEBUG_FILES="ON" -DFSO_BUILD_WITH_VULKAN="OFF" -A "$ARCHITECTURE" \
+                  -G "Visual Studio 16 2019" -T "v142" ..
+          else
+              cmake -DCMAKE_INSTALL_PREFIX="$(pwd)/install" -DFSO_USE_SPEECH="ON" \
+                  -DFSO_USE_VOICEREC="ON" -DMSVC_SIMD_INSTRUCTIONS="$SIMD" \
+                  -DFSO_BUILD_QTFRED=OFF -DFSO_BUILD_TESTS=ON \
+                  -DFSO_INSTALL_DEBUG_FILES="ON" -A "$ARCHITECTURE" \
+                  -G "Visual Studio 16 2019" -T "v142" ..
+          fi
       - name: Compile
         working-directory: ./build
         env:
@@ -310,11 +332,110 @@ jobs:
             ${{ steps.generate_package.outputs.package_path }}
             ${{ steps.generate_package.outputs.debug_path }}
 
+  build_mac:
+    strategy:
+      matrix:
+        configuration: [FastDebug, Release]
+        compiler: [clang]
+        arch: [x86_64]
+    name: Mac
+    needs: create_release
+    runs-on: macos-latest
+    steps:
+      # - name: Cache Qt
+        # id: cache-qt-mac
+        # uses: actions/cache@v1
+        # with:
+          # path: ${{ github.workspace }}/../Qt
+          # key: ${{ runner.os }}-QtCache-${{ env.QT_VERSION }}
+      # - name: Install Qt
+        # uses: jurplel/install-qt-action@v2
+        # with:
+          # version: ${{ env.QT_VERSION }}
+          # dir: ${{ github.workspace }}/..
+          # cached: ${{ steps.cache-qt-mac.outputs.cache-hit }}
+          # setup-python: 'false'
+          # aqtversion: ==1.1.3
+      - uses: actions/checkout@v1
+        name: Checkout
+        with:
+          submodules: true
+          fetch-depth: 0
+      - name: Prepare Vulkan SDK
+        uses: humbletim/setup-vulkan-sdk@v1.2.0
+        with:
+          vulkan-query-version: 1.3.204.0
+          vulkan-components: Vulkan-Headers, Vulkan-Loader
+          vulkan-use-cache: true
+      - name: Configure CMake
+        env:
+          CONFIGURATION: ${{ matrix.configuration }}
+          COMPILER: ${{ matrix.compiler }}
+          ARCHITECTURE: ${{ matrix.arch }}
+          JOB_CMAKE_OPTIONS: ${{ matrix.cmake_options }}
+        run: $GITHUB_WORKSPACE/ci/linux/configure_cmake.sh
+      - name: Compile
+        working-directory: ./build
+        run: LD_LIBRARY_PATH=$Qt5_DIR/lib:$LD_LIBRARY_PATH ninja all
+      - name: Run Tests
+        working-directory: ./build
+        env:
+          CONFIGURATION: ${{ matrix.configuration }}
+          XDG_RUNTIME_DIR: /root
+        run: $GITHUB_WORKSPACE/ci/linux/run_tests.sh
+      - name: Package build result
+        working-directory: ./build
+        run: cd bin && tar -cvzf macos-build.tar *.app
+      - name: Upload build result
+        uses: actions/upload-artifact@v2
+        with:
+          name: mac-${{ matrix.configuration }}
+          path: ${{ github.workspace }}/build/bin/macos-build.tar
+  mac_zip:
+    name: Build Mac distribution zip
+    needs: build_mac
+    runs-on: ubuntu-latest
+    container: ghcr.io/scp-fs2open/sftp_upload:sha-748b19d
+    steps:
+      - uses: actions/checkout@v2
+        name: Checkout
+        with:
+          submodules: true
+          fetch-depth: '0'
+          ref: '${{ github.ref }}'
+      - name: Download Release builds
+        uses: actions/download-artifact@v2
+        with:
+          name: mac-Release
+          path: builds
+      - name: Download FastDebug builds
+        uses: actions/download-artifact@v2
+        with:
+          name: mac-FastDebug
+          path: builds
+      - name: Create Distribution package
+        id: generate_package
+        working-directory: ./builds
+        run: $GITHUB_WORKSPACE/ci/linux/create_dist_pack.sh Mac
+      - name: Upload result package
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ steps.generate_package.outputs.package_name }}
+          path: ${{ steps.generate_package.outputs.package_path }}
+      - name: Publish result package
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          files: ${{ steps.generate_package.outputs.package_path }}
+
   post_build:
     name: Post builds to Nebula and Forum
-    needs: [linux_zip, windows_zip]
+    needs: [linux_zip, windows_zip, mac_zip]
     uses: ./.github/workflows/post-build-release.yaml
     with:
-      linux_result: ${{ needs.build_linux.result }}
-      windows_result: ${{ needs.build_windows.result }}
+      linux_result: ${{ needs.linux_zip.result }}
+      windows_result: ${{ needs.windows_zip.result }}
+      mac_result: ${{ needs.mac_zip.result }}
       releaseTag: ${{ github.ref_name }}
+    secrets: inherit

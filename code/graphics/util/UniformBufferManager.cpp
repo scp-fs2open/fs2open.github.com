@@ -20,6 +20,8 @@ size_t getElementSize(uniform_block_type type)
 		return sizeof(graphics::decal_info);
 	case uniform_block_type::Matrices:
 		return sizeof(graphics::matrix_uniforms);
+	case uniform_block_type::MovieData:
+		return sizeof(graphics::movie_uniforms);
 	case uniform_block_type::NUM_BLOCK_TYPES:
 	default:
 		UNREACHABLE("Invalid block type encountered!");
@@ -37,6 +39,7 @@ size_t getHeaderSize(uniform_block_type type)
 	case uniform_block_type::ModelData:
 	case uniform_block_type::NanoVGData:
 	case uniform_block_type::Matrices:
+	case uniform_block_type::MovieData:
 	case uniform_block_type::GenericData:
 		return 0;
 	case uniform_block_type::NUM_BLOCK_TYPES:

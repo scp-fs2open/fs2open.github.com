@@ -14,6 +14,7 @@
 #include "math/fix.h"
 #include "io/timer.h"
 #include "localization/localize.h"
+#include "scripting/global_hooks.h"
 #include "scripting/scripting.h"
 #include "cmdline/cmdline.h"
 
@@ -54,7 +55,7 @@ SDL_mutex* key_lock;
 								// when typing in your pilots callsign.  This global flag is checked before execution
 								// is stopped.
 
-SCP_map<int, int> SDLtoFS2;
+SCP_map<SDL_Scancode, int> SDLtoFS2;
 
 int ascii_table[SIZE_OF_ASCII_TABLE] =
 { 255, 255, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=',255,255,
@@ -81,6 +82,7 @@ int shifted_ascii_table[SIZE_OF_ASCII_TABLE] =
 static int Key_numlock_was_on = 0;	// Flag to indicate whether NumLock is on at start
 
 
+SCP_string CheatUsed = "";
 int Cheats_enabled = 0;
 int Key_normal_game = 0;
 
@@ -237,6 +239,15 @@ void FillSDLArray ()
 	SDLtoFS2[SDL_SCANCODE_PRINTSCREEN] = KEY_PRINT_SCRN;
 	SDLtoFS2[SDL_SCANCODE_PAUSE] = KEY_PAUSE;
 	//	SDLtoFS2[SDL_SCANCODE_BREAK] = KEY_BREAK;
+}
+
+SDL_Scancode fs2_to_sdl(int scancode) {
+	for (auto code : SDLtoFS2) {
+		if (code.second == scancode)
+			return code.first;
+	}
+
+	return SDL_SCANCODE_UNKNOWN;
 }
 
 int key_numlock_is_on()
@@ -542,10 +553,9 @@ void key_mark( uint code, int state, uint latency )
 			Current_key_down |= KEY_CTRLED;
 		}
 
-		if (Script_system.IsActiveAction(CHA_KEYRELEASED)) {
-			Script_system.SetHookVar("Key", 's', textify_scancode(Current_key_down, true));
-			Script_system.RunCondition(CHA_KEYRELEASED);
-			Script_system.RemHookVar("Key");
+		if (scripting::hooks::OnKeyReleased->isActive()) {
+			scripting::hooks::OnKeyReleased->run(scripting::hook_param_list(
+				scripting::hook_param("Key", 's', textify_scancode_universal(Current_key_down))));
 		}
 	} else {
 		// Key going down
@@ -572,11 +582,9 @@ void key_mark( uint code, int state, uint latency )
 				Current_key_down |= KEY_CTRLED;
 			}
 
-			if (Script_system.IsActiveAction(CHA_KEYPRESSED)) {
-				// We use the universal value here to keep the scripting interface consistent regardless of the current language
-				Script_system.SetHookVar("Key", 's', textify_scancode(Current_key_down, true));
-				Script_system.RunCondition(CHA_KEYPRESSED);
-				Script_system.RemHookVar("Key");
+			if (scripting::hooks::OnKeyPressed->isActive()) {
+				scripting::hooks::OnKeyPressed->run(scripting::hook_param_list(
+					scripting::hook_param("Key", 's', textify_scancode_universal(Current_key_down))));
 			}
 		} else if (!keyd_repeat) {
 			// Don't buffer repeating key if repeat mode is off

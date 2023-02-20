@@ -172,12 +172,15 @@ LuaValueList LuaFunction::call(lua_State* L, const LuaValueList& args) const {
 		stackTop = lua_gettop(L);
 	}
 
+	if(!lua_checkstack(L, (int)args.size() + 1))
+		throw LuaException("Lua Stack Overflow!");
+
 	// Push the function onto the stack
-	this->pushValue(L);
+	this->pushValue(L, true);
 
 	// Push the arguments onto the stack
 	for (const auto& arg : args) {
-		arg.pushValue(L);
+		arg.pushValue(L, true);
 	}
 
 	// actually call the function now!

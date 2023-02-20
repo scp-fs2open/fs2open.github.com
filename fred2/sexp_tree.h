@@ -137,7 +137,7 @@ public:
 	int get_default_value(sexp_list_item *item, char *text_buf, int op, int i);
 	int query_default_argument_available(int op);
 	int query_default_argument_available(int op, int i);
-	void swap_roots(HTREEITEM one, HTREEITEM two);
+	void move_root(HTREEITEM source, HTREEITEM dest, bool insert_before);
 	void move_branch(int source, int parent = -1);
 	HTREEITEM move_branch(HTREEITEM source, HTREEITEM parent = TVI_ROOT, HTREEITEM after = TVI_LAST);
 	void copy_branch(HTREEITEM source, HTREEITEM parent = TVI_ROOT, HTREEITEM after = TVI_LAST);
@@ -273,6 +273,7 @@ public:
 	sexp_list_item *get_listing_opf_subsystem_or_none(int parent_node, int arg_index);
 	sexp_list_item *get_listing_opf_subsys_or_generic(int parent_node, int arg_index);
 	sexp_list_item *get_listing_opf_turret_target_order();
+	sexp_list_item* get_listing_opf_turret_types();
 	sexp_list_item *get_listing_opf_armor_type();
 	sexp_list_item *get_listing_opf_damage_type();
 	sexp_list_item *get_listing_opf_turret_target_priorities();
@@ -287,12 +288,16 @@ public:
 	sexp_list_item *get_listing_opf_weapon_banks();
 	sexp_list_item *get_listing_opf_builtin_hud_gauge();
 	sexp_list_item *get_listing_opf_custom_hud_gauge();
+	sexp_list_item *get_listing_opf_any_hud_gauge();
 	sexp_list_item *get_listing_opf_ship_effect();
 	sexp_list_item *get_listing_opf_animation_type();
 	sexp_list_item *get_listing_opf_mission_moods();
 	sexp_list_item *get_listing_opf_ship_flags();
+	sexp_list_item *get_listing_opf_wing_flags();
 	sexp_list_item *get_listing_opf_team_colors();
 	sexp_list_item *get_listing_opf_nebula_patterns();
+	sexp_list_item *get_listing_opf_asteroid_debris();
+	sexp_list_item *get_listing_opf_motion_debris();
 	sexp_list_item *get_listing_opf_game_snds();
 	sexp_list_item *get_listing_opf_fireball();
 	sexp_list_item *get_listing_opf_species();
@@ -300,6 +305,9 @@ public:
 	sexp_list_item *get_listing_opf_functional_when_eval_type();
 	sexp_list_item *get_listing_opf_animation_name(int parent_node);
 	sexp_list_item *get_listing_opf_sexp_containers(ContainerType con_type);
+	sexp_list_item *get_listing_opf_wing_formation();
+	sexp_list_item *check_for_dynamic_sexp_enum(int opf);
+	sexp_list_item* get_listing_opf_bolt_types();
 
 	// container modifier options for container data nodes
 	sexp_list_item *get_container_modifiers(int con_data_node) const;
@@ -334,6 +342,7 @@ protected:
 	afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
 	afx_msg void OnDestroy();
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
+	afx_msg void OnChar(UINT nChar, UINT nRepCnt, UINT nFlags);
 	afx_msg void OnKeyDown(NMHDR* pNMHDR, LRESULT* pResult);
 	//}}AFX_MSG
 

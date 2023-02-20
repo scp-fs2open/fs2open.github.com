@@ -15,9 +15,11 @@
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
 #include "math/vecmat.h"
+#include "object/object.h"
 #include "object/object_flags.h"
 #include "physics/physics.h"
 #include "utils/event.h"
+#include "network/multi_interpolate.h"
 
 #include <functional>
 
@@ -106,11 +108,10 @@ extern const char	*Object_type_names[MAX_OBJECT_TYPES];
 typedef struct obj_flag_name {
 	Object::Object_Flags flag;
 	char flag_name[TOKEN_LENGTH];
-	int flag_list;
 } obj_flag_name;
 
-#define MAX_OBJECT_FLAG_NAMES			11
 extern obj_flag_name Object_flag_names[];
+extern const int Num_object_flag_names;
 
 struct dock_instance;
 class model_draw_list;
@@ -147,6 +148,8 @@ public:
 	util::event<void, object*> pre_move_event;
 	util::event<void, object*> post_move_event;
 
+	interpolation_manager interp_info;
+
 	object();
 	~object();
 	void clear();
@@ -157,13 +160,30 @@ private:
 	object& operator= (const object & other); // no implementation
 };
 
+extern int Num_objects;
+extern object Objects[];
+
 struct object_h {
 	object *objp;
 	int sig;
 
 	bool IsValid() const {return (objp != NULL && objp->signature == sig && sig > 0);}
-	object_h(object *in){objp=in; if(objp!=NULL){sig=in->signature;}}
+	object_h(object *in){objp=in; sig = (in == nullptr) ? -1 : in->signature;}
 	object_h(){objp=NULL;sig=-1;}
+
+	object_h(int objnum)
+	{
+		if (objnum >= 0 && objnum < MAX_OBJECTS)
+		{
+			objp = &Objects[objnum];
+			sig = objp->signature;
+		}
+		else
+		{
+			objp = nullptr;
+			sig = -1;
+		}
+	}
 };
 
 // object backup struct used by Fred.
@@ -192,13 +212,10 @@ public:
 extern int Object_inited;
 extern int Show_waypoints;
 
-// The next signature for the next newly created object. Zero is bogus
-extern int Object_next_signature;		
-extern int Num_objects;
-
-extern object Objects[];
+extern int Object_next_signature;		// The next signature for the next newly created object. Zero is bogus
 extern int Highest_object_index;		//highest objnum
 extern int Highest_ever_object_index;
+
 extern object obj_free_list;
 extern object obj_used_list;
 extern object obj_create_list;
@@ -245,6 +262,8 @@ void obj_move_all(float frametime);		// moves all objects
 void obj_delete(int objnum);
 
 void obj_delete_all();
+
+void obj_delete_all_that_should_be_dead();
 
 // should only be used by the editor!
 void obj_merge_created_list(void);
@@ -293,12 +312,6 @@ void obj_move_all_post(object *objp, float frametime);
 void obj_move_call_physics(object *objp, float frametime);
 
 // multiplayer object update stuff begins -------------------------------------------
-
-// do client-side pre-interpolation object movement
-void obj_client_pre_interpolate();
-
-// do client-side post-interpolation object movement
-void obj_client_post_interpolate();
 
 // move an observer object in multiplayer
 void obj_observer_move(float frame_time);

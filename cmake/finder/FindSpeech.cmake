@@ -9,6 +9,8 @@ if (WIN32)
 	if (NOT HAVE_SAPI_H)
 		message(SEND_ERROR "sapi.h could not be found on your platform. Please disable speech support.")
 	endif()
+elseif(APPLE)
+	# it should just work
 else()
 	message(SEND_ERROR "Text to Speech is not supported on this platform!")
 endif()

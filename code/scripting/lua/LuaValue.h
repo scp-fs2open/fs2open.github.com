@@ -185,8 +185,9 @@ class LuaValue {
 	 * @brief Pushes this lua value onto the stack.
 	 * @param thread The thread stack onto which this value should be pushed. May be nullptr for the default state of
 	 * this value
+	 * @param manualStackAllocation Set to true if you manually allocate sufficient stack size before calling this function. Keep false unless you know what you are doing.
 	 */
-	bool pushValue(lua_State* thread) const;
+	bool pushValue(lua_State* thread, bool manualStackAllocation = false) const;
 
 	lua_State* getLuaState() const;
 

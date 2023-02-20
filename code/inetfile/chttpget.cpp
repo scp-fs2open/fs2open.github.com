@@ -331,7 +331,7 @@ int ChttpGet::ConnectSocket()
 	timeout.tv_sec = 0;
 	timeout.tv_usec = 0;
 
-	int serr = connect(m_DataSock, reinterpret_cast<LPSOCKADDR>(&hostaddr), sizeof(hostaddr));
+	int serr = connect(m_DataSock, reinterpret_cast<LPSOCKADDR>(&hostaddr), psnet_get_sockaddr_len(&hostaddr));
 	int cerr = WSAGetLastError();
 	if (serr) {
 		// fail after 20 seconds
@@ -360,7 +360,7 @@ int ChttpGet::ConnectSocket()
 			if (m_Aborting)
 				return 0;
 
-			serr = connect(m_DataSock, reinterpret_cast<LPSOCKADDR>(&hostaddr), sizeof(hostaddr));
+			serr = connect(m_DataSock, reinterpret_cast<LPSOCKADDR>(&hostaddr), psnet_get_sockaddr_len(&hostaddr));
 
 			if (serr == 0)
 				break;

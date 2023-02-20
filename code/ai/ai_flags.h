@@ -130,8 +130,9 @@ namespace AI {
         Use_only_single_fov_for_turrets,
         No_turning_directional_bias,
 		Use_axial_turnrate_differences,
-		all_nonshielded_ships_can_manage_ets,
-		fightercraft_nonshielded_ships_can_manage_ets,
+		All_nonshielded_ships_can_manage_ets,
+		Fightercraft_nonshielded_ships_can_manage_ets,
+		Ships_playing_dead_dont_manage_ets,
 		Better_collision_avoidance,
 		Require_exact_los,
 		Improved_missile_avoidance,
@@ -145,6 +146,11 @@ namespace AI {
 		Prevent_negative_turret_ammo,
 		Fix_keep_safe_distance,
 		Ignore_aspect_when_leading,
+		Fix_good_rearm_time_bug,
+		No_continuous_turn_on_attack,
+		Fixed_removing_play_dead_order,
+		Disable_bay_emerge_timeout,
+		Adjusted_AI_class_autoscale,
 
 		NUM_VALUES
 	};

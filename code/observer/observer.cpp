@@ -69,9 +69,9 @@ int observer_create(matrix *orient, vec3d *pos)
 	vm_vec_zero(&pi->desired_rotvel);
 	vm_vec_zero(&pi->vel);
 	vm_vec_zero(&pi->rotvel);
-	vm_vec_zero(&pi->prev_fvec);
 	vm_set_identity(&pi->last_rotmat);
-	pi->forward_thrust = 0.0f;
+	vm_vec_zero(&pi->linear_thrust);
+	vm_vec_zero(&pi->rotational_thrust);
 	pi->speed = 0.0f;
 	pi->fspeed = 0.0f;
 	pi->heading = 0.0f;

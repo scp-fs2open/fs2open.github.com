@@ -9,7 +9,9 @@
 
 
 
+#include "globalincs/pstypes.h"
 #include <climits>
+#include <string>
 
 #include "freespace.h"
 #include "cmdline/cmdline.h"
@@ -25,6 +27,7 @@
 #include "model/modelrender.h"
 #include "nebula/neb.h"
 #include "options/Option.h"
+#include "osapi/dialogs.h"
 #include "parse/parselo.h"
 #include "render/3d.h"
 #include "render/batching.h"
@@ -34,20 +37,19 @@
 #include "tracing/tracing.h"
 #include "utils/Random.h"
 
-#define MAX_DEBRIS_VCLIPS			4
 #define DEBRIS_ROT_MIN				10000
 #define DEBRIS_ROT_RANGE			8
 #define DEBRIS_ROT_RANGE_SCALER		10000
 #define RND_MAX_MASK				0x3fff
 #define HALF_RND_MAX				0x2000
+#define MAX_MOTION_DEBRIS			300
 
 typedef struct {
 	vec3d pos;
 	int vclip;
 	float size;
-} motion_debris;
+} motion_debris_instance;
 
-const int MAX_DEBRIS = 300;
 const int MAX_STARS = 2000;
 const float MAX_DIST_RANGE = 80.0f;
 const float MIN_DIST_RANGE = 14.0f;
@@ -59,7 +61,9 @@ static int Subspace_model_outer = -1;
 static int Rendering_to_env = 0;
 
 int Num_stars = 500;
-fix starfield_timestamp = 0;
+
+// A timestamp for animated skyboxes -MageKing17
+TIMESTAMP Skybox_timestamp;
 
 #define MAX_FLARE_COUNT 10
 #define MAX_FLARE_BMP 6
@@ -87,7 +91,7 @@ typedef struct starfield_bitmap {
 	int glow_n_frames;
 	int glow_fps;
 	int xparent;
-	float r, g, b, i, spec_r, spec_g, spec_b;		// only for suns
+	float r, g, b, i;		// only for suns
 	int glare;										// only for suns
 	int flare;										// Is there a lens-flare for this sun?
 	flare_info flare_infos[MAX_FLARE_COUNT];		// each flare can use a texture in flare_bmp, with different scale
@@ -146,25 +150,10 @@ typedef struct vDist {
 
 star Stars[MAX_STARS];
 
-motion_debris Motion_debris[MAX_DEBRIS];
+motion_debris_instance Motion_debris[MAX_MOTION_DEBRIS];
 
-
-typedef struct debris_vclip {
-	int	bm;
-	int	nframes;
-	char  name[MAX_FILENAME_LEN];
-} debris_vclip;
-extern debris_vclip Debris_vclips_normal[];
-extern debris_vclip Debris_vclips_nebula[];
-extern debris_vclip *Debris_vclips;
-
-//XSTR:OFF
-debris_vclip Debris_vclips_normal[MAX_DEBRIS_VCLIPS] = { { -1, -1, "debris01" }, { -1, -1, "debris02" }, { -1, -1, "debris03" }, { -1, -1, "debris04" } };
-debris_vclip Debris_vclips_nebula[MAX_DEBRIS_VCLIPS] = { { -1, -1, "nebdeb01" }, { -1, -1, "nebdeb02" }, { -1, -1, "nebdeb03" }, { -1, -1, "nebdeb04" } };
-debris_vclip *Debris_vclips = Debris_vclips_normal;
-//XSTR:ON
-
-int stars_debris_loaded = 0;	// 0 = not loaded, 1 = normal vclips, 2 = nebula vclips
+SCP_vector<motion_debris_types> Motion_debris_info;
+motion_debris_bitmaps* Motion_debris_ptr = nullptr;
 
 // background data
 int Stars_background_inited = 0;			// if we're inited
@@ -173,9 +162,6 @@ int Nmodel_instance_num = -1;					// model instance num
 matrix Nmodel_orient = IDENTITY_MATRIX;			// model orientation
 int Nmodel_flags = DEFAULT_NMODEL_FLAGS;		// model flags
 int Nmodel_bitmap = -1;						// model texture
-
-int Num_debris_normal = 0;
-int Num_debris_nebula = 0;
 
 bool Dynamic_environment = false;
 
@@ -196,15 +182,25 @@ auto MotionDebrisOption = options::OptionBuilder<bool>("Graphics.MotionDebris", 
 static int Default_env_map = -1;
 static int Mission_env_map = -1;
 static bool Env_cubemap_drawn = false;
+static bool Irr_cubemap_drawn = false;
 
-void stars_release_debris_vclips(debris_vclip *vclips)
+int get_motion_debris_by_name(const SCP_string &name) {
+	for (int i = 0; i < (int)Motion_debris_info.size(); i++) {
+		if (SCP_string_lcase_equal_to()(Motion_debris_info[i].name, name)) {
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+void stars_release_motion_debris(motion_debris_bitmaps* vclips)
 {
-	int i;
 
-	if (vclips == NULL)
+	if (vclips == nullptr)
 		return;
 
-	for (i = 0; i < MAX_DEBRIS_VCLIPS; i++) {
+	for (int i = 0; i < MAX_MOTION_DEBRIS_BITMAPS; i++) {
 		if ( (vclips[i].bm >= 0) && bm_release(vclips[i].bm) ) {
 			vclips[i].bm = -1;
 			vclips[i].nframes = -1;
@@ -212,21 +208,17 @@ void stars_release_debris_vclips(debris_vclip *vclips)
 	}
 }
 
-void stars_load_debris_vclips(debris_vclip *vclips)
+void stars_load_motion_debris(motion_debris_bitmaps* vclips)
 {
-	int i;
 
-	if (vclips == NULL) {
-		Int3();
-		return;
-	}
+	Assertion(vclips != nullptr, "Motion debris not loaded!");
 
-	for (i = 0; i < MAX_DEBRIS_VCLIPS; i++) {
+	for (int i = 0; i < MAX_MOTION_DEBRIS_BITMAPS; i++) {
 		vclips[i].bm = bm_load_animation( vclips[i].name, &vclips[i].nframes, nullptr, nullptr, nullptr, true );
 
 		if ( vclips[i].bm < 0 ) {
 			// try loading it as a single bitmap
-			vclips[i].bm = bm_load(Debris_vclips[i].name);
+			vclips[i].bm = bm_load(Motion_debris_ptr[i].name);
 			vclips[i].nframes = 1;
 
 			if (vclips[i].bm <= 0) {
@@ -236,24 +228,39 @@ void stars_load_debris_vclips(debris_vclip *vclips)
 	}
 }
 
-void stars_load_debris(int fullneb)
+void stars_load_debris(int fullneb, const SCP_string &custom_name)
 {
-	if (!Motion_debris_enabled) {
+	if (!Motion_debris_enabled || ((int)Motion_debris_info.size() == 0)) {
 		return;
 	}
 
-	// if we're in nebula mode
-	if ( fullneb && (stars_debris_loaded != 2) ) {
-		stars_release_debris_vclips(Debris_vclips);
-		stars_load_debris_vclips(Debris_vclips_nebula);
-		Debris_vclips = Debris_vclips_nebula;
-		stars_debris_loaded = 2;
-	} else if (stars_debris_loaded != 1) {
-		stars_release_debris_vclips(Debris_vclips);
-		stars_load_debris_vclips(Debris_vclips_normal);
-		Debris_vclips = Debris_vclips_normal;
-		stars_debris_loaded = 1;
+	SCP_string debris_name = "";
+	
+	if (!custom_name.empty()) {
+		debris_name = custom_name;
 	}
+
+	// if not using custom the load the default type for the mission
+	if (fullneb && debris_name.empty()) { // if we're in nebula mode
+		debris_name = "nebula";
+	} else if (debris_name.empty()) {
+		debris_name = "default";
+	}
+
+	int debris_index = get_motion_debris_by_name(debris_name);
+
+	//If we can't find the motion debris that's been called for then warn and
+	//set debris override to prevent downstream errors. Then abort.
+	if (debris_index < 0) {
+		Warning(LOCATION, "Motion debris '%s' not found in stars.tbl!\n", debris_name.c_str());
+		Motion_debris_override = true;
+		Motion_debris_ptr = nullptr;
+		return;
+	}
+
+	stars_release_motion_debris(Motion_debris_ptr);
+	stars_load_motion_debris(Motion_debris_info[debris_index].bitmaps);
+	Motion_debris_ptr = Motion_debris_info[debris_index].bitmaps;
 }
 
 const int MAX_PERSPECTIVE_DIVISIONS = 5;
@@ -425,6 +432,9 @@ void parse_startbl(const char *filename)
 
 		// freaky! ;)
 		while (!check_for_eof()) {
+			
+			optional_string("#Background Bitmaps");
+
 			while ((rc = optional_string_either("$Bitmap:", "$BitmapX:")) != -1) {
 				in_check = true;
 
@@ -450,6 +460,8 @@ void parse_startbl(const char *filename)
 
 			CHECK_END();
 
+			optional_string("#Stars");
+
 			while (optional_string("$Sun:")) {
 				in_check = true;
 
@@ -469,14 +481,18 @@ void parse_startbl(const char *filename)
 				stuff_float(&sbm.i);
 
 				if (optional_string("$SunSpecularRGB:")) {
-					stuff_float(&sbm.spec_r);
-					stuff_float(&sbm.spec_g);
-					stuff_float(&sbm.spec_b);
-				}
-				else {
-					sbm.spec_r = sbm.r;
-					sbm.spec_g = sbm.g;
-					sbm.spec_b = sbm.b;
+					SCP_string warning;
+					sprintf(warning, "Sun %s tried to set SunSpecularRGB. This feature has been deprecated and will be ignored.", sbm.filename);
+
+					float spec_r, spec_g, spec_b;
+					stuff_float(&spec_r);
+					stuff_float(&spec_g);
+					stuff_float(&spec_b);
+
+					if (fl_equal(sbm.r, spec_r) && fl_equal(sbm.g, spec_g) && fl_equal(sbm.b, spec_b))
+						mprintf(("%s\n", warning.c_str()));				// default case is not significant
+					else
+						Warning(LOCATION, "%s", warning.c_str());		// customized case is significant
 				}
 
 				// lens flare stuff
@@ -553,34 +569,115 @@ void parse_startbl(const char *filename)
 
 			CHECK_END();
 
+			optional_string("#Motion Debris");
+
 			// normal debris pieces
-			while (optional_string("$Debris:")) {
+			// leaving this for retail - Mjn
+			if (check_for_string("$Debris:")) {
+
+				mprintf(("Using deprecated motion debris parsing for Default motion debris!\n"));
+				motion_debris_types this_debris;
+				this_debris.name = "Default";
+
+				int count = 0;
+
+				while (optional_string("$Debris:")) {
 				in_check = true;
 
-				stuff_string(name, F_NAME, MAX_FILENAME_LEN);
+					stuff_string(name, F_NAME, MAX_FILENAME_LEN);
 
-				if (Num_debris_normal < MAX_DEBRIS_VCLIPS) {
-					strcpy_s(Debris_vclips_normal[Num_debris_normal++].name, name);
+					if (count < MAX_MOTION_DEBRIS_BITMAPS) {
+						strcpy_s(this_debris.bitmaps[count++].name, name);
+					} else {
+						Warning(LOCATION, "Could not load normal motion debris '%s'; maximum of %d exceeded.", name, MAX_MOTION_DEBRIS_BITMAPS);
+					}
 				}
-				else {
-					Warning(LOCATION, "Could not load normal motion debris '%s'; maximum of %d exceeded.", name, MAX_DEBRIS_VCLIPS);
+				if (count == MAX_MOTION_DEBRIS_BITMAPS) {
+					Motion_debris_info.push_back(this_debris);
+				} else {
+					error_display(0, "Not enough bitmaps defined for motion debris '%s'. Skipping!\n", this_debris.name.c_str());
 				}
 			}
 
 			CHECK_END();
 
 			// nebula debris pieces
-			while (optional_string("$DebrisNeb:")) {
+			// leaving this for retail - Mjn
+			if (check_for_string("$DebrisNeb:")) {
+
+				mprintf(("Using deprecated motion debris parsing for Nebula motion debris!\n"));
+				motion_debris_types this_debris;
+				this_debris.name = "Nebula";
+
+				int count = 0;
+
+				while (optional_string("$DebrisNeb:")) {
 				in_check = true;
 
-				stuff_string(name, F_NAME, MAX_FILENAME_LEN);
+					stuff_string(name, F_NAME, MAX_FILENAME_LEN);
 
-				if (Num_debris_nebula < MAX_DEBRIS_VCLIPS) {
-					strcpy_s(Debris_vclips_nebula[Num_debris_nebula++].name, name);
+					if (count < MAX_MOTION_DEBRIS_BITMAPS) {
+						strcpy_s(this_debris.bitmaps[count++].name, name);
+					} else {
+						Warning(LOCATION, "Could not load nebula motion debris '%s'; maximum of %d exceeded.", name, MAX_MOTION_DEBRIS_BITMAPS);
+					}
 				}
-				else {
-					Warning(LOCATION, "Could not load nebula motion debris '%s'; maximum of %d exceeded.", name, MAX_DEBRIS_VCLIPS);
+				if (count == MAX_MOTION_DEBRIS_BITMAPS) {
+					Motion_debris_info.push_back(this_debris);
+				} else {
+					error_display(0, "Not enough bitmaps defined for motion debris '%s'. Skipping!\n", this_debris.name.c_str());
 				}
+			}
+
+			CHECK_END();
+
+			// custom debris pieces
+			while (optional_string("$Motion Debris Name:")) {
+				in_check = true;
+
+				stuff_string(name, F_NAME, MAX_NAME_LEN);
+
+				motion_debris_types this_debris;
+				this_debris.name = name;
+
+				// check if we will replace an existing entry
+				int check = get_motion_debris_by_name(name);
+
+				motion_debris_types* debris_ptr;
+
+				//If we're going to create a new motion debris then set it up
+				if (check == -1) {
+
+					// initialize all the names as empty strings for later checking
+					for (int i = 0; i < MAX_MOTION_DEBRIS_BITMAPS; i++) {
+						this_debris.bitmaps[i].name[0] = '\0';
+					}
+
+					Motion_debris_info.push_back(this_debris);
+					check = (int)Motion_debris_info.size() - 1;
+				}
+
+				debris_ptr = &Motion_debris_info[check];
+
+				int count = 0;
+
+				while (count < MAX_MOTION_DEBRIS_BITMAPS){
+					
+					required_string("+Bitmap:");
+					stuff_string(name, F_NAME, MAX_FILENAME_LEN);
+
+					strcpy_s(debris_ptr->bitmaps[count++].name, name);
+
+				}
+
+				for (int i = 0; i < MAX_MOTION_DEBRIS_BITMAPS; i++) {
+					if(debris_ptr->bitmaps[i].name[0] == '\0'){
+						error_display(0, "Not enough bitmaps defined for motion debris '%s'. Removing!\n", this_debris.name.c_str());
+						Motion_debris_info.erase(Motion_debris_info.begin() + check);
+						break;
+					}
+				}
+
 			}
 
 			CHECK_END();
@@ -701,14 +798,18 @@ void stars_clear_instances()
 // call on game startup
 void stars_init()
 {
-	// starfield bitmaps
-	Num_debris_normal = 0;
-	Num_debris_nebula = 0;
 
 	// parse stars.tbl
 	parse_startbl("stars.tbl");
 
 	parse_modular_table("*-str.tbm", parse_startbl);
+
+	// Warn if we can't find the two retail motion debris types.
+	if (get_motion_debris_by_name("Default") < 0)
+		Warning(LOCATION, "Motion debris 'Default' not found in stars.tbl. Motion debris will be disabled!\n");
+
+	if (get_motion_debris_by_name("Nebula") < 0)
+		Warning(LOCATION, "Motion debris 'Nebula' not found in stars.tbl. Motion debris will be disabled!\n");
 
 	if (Cmdline_env) {
 		ENVMAP = Default_env_map = bm_load("cubemap");
@@ -728,6 +829,8 @@ void stars_pre_level_init(bool clear_backgrounds)
 {
 	uint idx, i;
 	starfield_bitmap *sb = NULL;
+
+	Num_stars = 500;
 
 	// we used to clear all the array entries, but now we can just wipe the vector
 	if (clear_backgrounds)
@@ -790,6 +893,10 @@ void stars_pre_level_init(bool clear_backgrounds)
 	Motion_debris_override = false;
 
 	Env_cubemap_drawn = false;
+	Irr_cubemap_drawn = false;
+
+	// reset the skybox timestamp, used for animated textures
+	Skybox_timestamp = _timestamp();
 }
 
 // setup the render target ready for this mission's environment map
@@ -823,6 +930,35 @@ static void environment_map_gen()
 	}
 
 	gr_screen.envmap_render_target = bm_make_render_target(size, size, gen_flags);
+}
+
+// setup the render target ready for this mission's environment map
+static void irradiance_map_gen()
+{
+	const int irr_size = 16;
+	int gen_flags = (BMP_FLAG_RENDER_TARGET_STATIC | BMP_FLAG_CUBEMAP | BMP_FLAG_RENDER_TARGET_MIPMAP);
+
+	if (!Cmdline_env) {
+		return;
+	}
+
+	if (gr_screen.irrmap_render_target >= 0) {
+		if (!bm_release(gr_screen.irrmap_render_target, 1)) {
+			Warning(LOCATION, "Unable to release environment map render target.");
+		}
+
+		gr_screen.irrmap_render_target = -1;
+		IRRMAP = -1;
+	}
+
+	if (Dynamic_environment || (The_mission.flags[Mission::Mission_Flags::Subspace])) {
+		Dynamic_environment = true;
+		gen_flags &= ~BMP_FLAG_RENDER_TARGET_STATIC;
+		gen_flags |= BMP_FLAG_RENDER_TARGET_DYNAMIC;
+	}
+
+	gr_screen.irrmap_render_target = bm_make_render_target(irr_size, irr_size, gen_flags);
+	IRRMAP = gr_screen.irrmap_render_target;
 }
 
 // call this in game_post_level_init() so we know whether we're running in full nebula mode or not
@@ -882,7 +1018,7 @@ void stars_post_level_init()
 
 	}
 
-	memset( &Motion_debris, 0, sizeof(motion_debris) * MAX_DEBRIS );
+	memset( &Motion_debris, 0, sizeof(motion_debris_instance) * MAX_MOTION_DEBRIS );
 
 	
 	for (i=0; i<8; i++ ) {
@@ -1191,7 +1327,7 @@ void stars_draw_sun(int show_sun)
 
 		// add the light source corresponding to the sun, except when rendering to an envmap
 		if ( !Rendering_to_env )
-			light_add_directional(&sun_dir, bm->i, bm->r, bm->g, bm->b, bm->spec_r, bm->spec_g, bm->spec_b, true);
+			light_add_directional(&sun_dir, bm->i, bm->r, bm->g, bm->b);
 
 		// if supernova
 		if ( supernova_active() && (idx == 0) )
@@ -1383,7 +1519,7 @@ void stars_draw_bitmaps(int show_bitmaps)
 		return;
 
 	// if we're in the nebula, don't render any backgrounds
-	if (The_mission.flags[Mission::Mission_Flags::Fullneb])
+	if (The_mission.flags[Mission::Mission_Flags::Fullneb] && !The_mission.flags[Mission::Mission_Flags::Fullneb_background_bitmaps])
 		return;
 
 	// detail settings
@@ -1756,11 +1892,11 @@ void stars_draw_motion_debris()
 	if (Motion_debris_override)
 		return;
 
-	if (!Motion_debris_enabled) {
+	if (!Motion_debris_enabled || ((int)Motion_debris_info.size() == 0)) {
 		return;
 	}
 
-	for (motion_debris &mdebris : Motion_debris) {
+	for (motion_debris_instance &mdebris : Motion_debris) {
 		float vdist = vm_vec_dist(&mdebris.pos, &Eye_position);
 
 		if ((vdist < MIN_DIST_RANGE) || (vdist > MAX_DIST_RANGE)) {
@@ -1768,7 +1904,7 @@ void stars_draw_motion_debris()
 			vm_vec_random_in_sphere(&mdebris.pos, &Eye_position, MAX_DIST_RANGE, !refresh_motion_debris);
 			vdist = vm_vec_dist(&mdebris.pos, &Eye_position);
 
-			mdebris.vclip = Random::next(MAX_DEBRIS_VCLIPS);	//rand()
+			mdebris.vclip = Random::next(MAX_MOTION_DEBRIS_BITMAPS); // rand()
 
 			// if we're in full neb mode
 			const float size_multiplier = i2fl(Random::next(4));
@@ -1784,7 +1920,7 @@ void stars_draw_motion_debris()
 
 		if (pnt.codes == 0) {
 			int frame = Missiontime / (DEBRIS_ROT_MIN + (1 % DEBRIS_ROT_RANGE) * DEBRIS_ROT_RANGE_SCALER);
-			frame %= Debris_vclips[mdebris.vclip].nframes;
+			frame %= Motion_debris_ptr[mdebris.vclip].nframes;
 
 			float alpha;
 
@@ -1799,7 +1935,7 @@ void stars_draw_motion_debris()
 
 			g3_transfer_vertex(&pnt, &mdebris.pos);
 
-			batching_add_bitmap(Debris_vclips[mdebris.vclip].bm + frame, &pnt, 0, mdebris.size, alpha);
+			batching_add_bitmap(Motion_debris_ptr[mdebris.vclip].bm + frame, &pnt, 0, mdebris.size, alpha);
 		}
 	}
 
@@ -2177,11 +2313,11 @@ void stars_page_in()
 	}
 
 
-	if (!Motion_debris_enabled)
+	if (!Motion_debris_enabled || Motion_debris_override)
 		return;
 
-	for (idx = 0; idx < MAX_DEBRIS_VCLIPS; idx++) {
-		bm_page_in_xparent_texture(Debris_vclips[idx].bm, Debris_vclips[idx].nframes);
+	for (idx = 0; idx < MAX_MOTION_DEBRIS_BITMAPS; idx++) {
+		bm_page_in_xparent_texture(Motion_debris_ptr[idx].bm, Motion_debris_ptr[idx].nframes);
 	}	
 }
 
@@ -2208,7 +2344,7 @@ void stars_draw_background()
 	render_info.set_alpha(1.0f);
 	render_info.set_flags(Nmodel_flags | MR_SKYBOX);
 
-	model_render_immediate(&render_info, Nmodel_num, &Nmodel_orient, &Eye_position, MODEL_RENDER_ALL, false);
+	model_render_immediate(&render_info, Nmodel_num, Nmodel_instance_num, &Nmodel_orient, &Eye_position, MODEL_RENDER_ALL, false);
 }
 
 // call this to set a specific model as the background model
@@ -2221,7 +2357,7 @@ void stars_set_background_model(const char *model_name, const char *texture_name
 		return;
 	}
 
-	if (model_name != nullptr && *model_name != '\0') {
+	if (model_name != nullptr && *model_name != '\0' && stricmp(model_name, "none") != 0) {
 		new_model = model_load(model_name, 0, nullptr, -1);
 
 		if (texture_name != nullptr && *texture_name != '\0') {
@@ -2256,9 +2392,8 @@ void stars_set_background_model(const char *model_name, const char *texture_name
 	if (Nmodel_num >= 0) {
 		model_page_in_textures(Nmodel_num);
 
-		if (model_get(Nmodel_num)->flags & PM_FLAG_HAS_INTRINSIC_MOTION) {
-			Nmodel_instance_num = model_create_instance(-1, Nmodel_num);
-		}
+		Nmodel_instance_num = model_create_instance(-1, Nmodel_num);
+		The_mission.skybox_model_animations.initializeMoveables(model_get_instance(Nmodel_instance_num));
 	}
 
 	// Since we have a new skybox we need to rerender the environment map
@@ -2917,7 +3052,6 @@ void stars_setup_environment_mapping(camid cid) {
 
 	extern float View_zoom;
 	float old_zoom = View_zoom, new_zoom = 1.0f;//0.925f;
-	int i = 0;
 
 	if (gr_screen.mode == GR_STUB) {
 		return;
@@ -2930,37 +3064,28 @@ void stars_setup_environment_mapping(camid cid) {
 	matrix cam_orient;
 	cid.getCamera()->get_info(&cam_pos, &cam_orient);
 
+	bool renderEnv = true;
+
 	// prefer the mission specified envmap over the static-generated envmap, but
 	// the dynamic envmap should always get preference if in a subspace mission
-	if ( !Dynamic_environment && Mission_env_map >= 0 ) {
+	if (!Dynamic_environment && Mission_env_map >= 0) {
 		ENVMAP = Mission_env_map;
-		return;
-	}
-
-	if (gr_screen.envmap_render_target < 0) {
-		if (ENVMAP >= 0)
-			return;
-
-		if (Mission_env_map >= 0) {
+		renderEnv = false;
+	} else if (gr_screen.envmap_render_target < 0) {
+		if (ENVMAP >= 0) {
+			renderEnv = false;
+		} else if (Mission_env_map >= 0) {
 			ENVMAP = Mission_env_map;
 		} else {
 			ENVMAP = Default_env_map;
 		}
-
-		return;
-	}
-
-	if (Env_cubemap_drawn) {
+		renderEnv = false;
+	} else if (Env_cubemap_drawn) {
 		// Nothing to do here anymore
-		return;
+		renderEnv = false;
 	}
 
-	GR_DEBUG_SCOPE("Environment Mapping");
-	TRACE_SCOPE(tracing::EnvironmentMapping);
-
-	ENVMAP = gr_screen.envmap_render_target;
-
-	/*
+			/*
 	 * Envmap matrix setup -- left-handed
 	 * -------------------------------------------------
 	 * Face --	Forward		Up		Right
@@ -2970,66 +3095,53 @@ void stars_setup_environment_mapping(camid cid) {
 	 * ny		-Y			+Z		+X
 	 * pz		+Z 			+Y		+X
 	 * nz		-Z			+Y		-X
-	*/
+	 */
 	// NOTE: OpenGL needs up/down reversed
 
 	// Save the previous render target so we can reset it once we are done here
 	auto previous_target = gr_screen.rendering_to_texture;
+	// Encode above table into directions and values.
+	// 0 = X, 1 = Y, 2 = Z
+	int f_dir[6] = {0, 0, 1, 1, 2, 2};
+	int u_dir[6] = {1, 1, 2, 2, 1, 1};
+	int r_dir[6] = {2, 2, 0, 0, 0, 0};
+	float f_val[6] = {1.0f, -1.0f, 1.0f, -1.0f, 1.0f, -1.0f};
+	float u_val[6] = {1.0f, 1.0f, -1.0f, 1.0f, 1.0f, 1.0f};
+	float r_val[6] = {-1.0f, 1.0f, 1.0f, 1.0f, 1.0f, -1.0f};
 
-	// face 1 (px / right)
-	memset( &new_orient, 0, sizeof(matrix) );
-	new_orient.vec.fvec.xyz.x =  1.0f;
-	new_orient.vec.uvec.xyz.y =  1.0f;
-	new_orient.vec.rvec.xyz.z = -1.0f;
-	render_environment(i, &cam_pos, &new_orient, new_zoom);
-	i++; // bump!
+	if (renderEnv) {
 
-	// face 2 (nx / left)
-	memset( &new_orient, 0, sizeof(matrix) );
-	new_orient.vec.fvec.xyz.x = -1.0f;
-	new_orient.vec.uvec.xyz.y =  1.0f;
-	new_orient.vec.rvec.xyz.z =  1.0f;
-	render_environment(i, &cam_pos, &new_orient, new_zoom);
-	i++; // bump!
+		GR_DEBUG_SCOPE("Environment Mapping");
+		TRACE_SCOPE(tracing::EnvironmentMapping);
 
-	// face 3 (py / up)
-	memset( &new_orient, 0, sizeof(matrix) );
-	new_orient.vec.fvec.xyz.y =  1.0f;
-	new_orient.vec.uvec.xyz.z =  -1.0f;
-	new_orient.vec.rvec.xyz.x =  1.0f;
-	render_environment(i, &cam_pos, &new_orient, new_zoom);
-	i++; // bump!
+		ENVMAP = gr_screen.envmap_render_target;
 
-	// face 4 (ny / down)
-	memset( &new_orient, 0, sizeof(matrix) );
-	new_orient.vec.fvec.xyz.y =  -1.0f;
-	new_orient.vec.uvec.xyz.z =  1.0f ;
-	new_orient.vec.rvec.xyz.x =  1.0f;
-	render_environment(i, &cam_pos, &new_orient, new_zoom);
-	i++; // bump!
+		for (int i = 0; i < 6; i++) {
+			memset(&new_orient, 0, sizeof(matrix));
+			new_orient.vec.fvec.a1d[f_dir[i]] = f_val[i];
+			new_orient.vec.uvec.a1d[u_dir[i]] = u_val[i];
+			new_orient.vec.rvec.a1d[r_dir[i]] = r_val[i];
+			render_environment(i, &cam_pos, &new_orient, new_zoom);
+		}
 
-	// face 5 (pz / forward)
-	memset( &new_orient, 0, sizeof(matrix) );
-	new_orient.vec.fvec.xyz.z =  1.0f;
-	new_orient.vec.uvec.xyz.y =  1.0f;
-	new_orient.vec.rvec.xyz.x =  1.0f;
-	render_environment(i, &cam_pos, &new_orient, new_zoom);
-	i++; // bump!
-
-	// face 6 (nz / back)
-	memset( &new_orient, 0, sizeof(matrix) );
-	new_orient.vec.fvec.xyz.z = -1.0f;
-	new_orient.vec.uvec.xyz.y =  1.0f;
-	new_orient.vec.rvec.xyz.x = -1.0f;
-	render_environment(i, &cam_pos, &new_orient, new_zoom);
-
-
-	// we're done, so now reset
-	bm_set_render_target(previous_target);
-	g3_set_view_matrix( &cam_pos, &cam_orient, old_zoom );
+		// we're done, so now reset
+		bm_set_render_target(previous_target);
+		g3_set_view_matrix(&cam_pos, &cam_orient, old_zoom);
+	}
+	// Draw irr map if we've just updated the envmap 
+	// or otherwise invalidated the irradiance map (i.e. custom/default envmap)
+	if ((!Irr_cubemap_drawn || renderEnv) && (ENVMAP >= 0)) {
+		// Generate irradiance map.
+		if (gr_screen.irrmap_render_target < 0) {
+			irradiance_map_gen();
+			IRRMAP = gr_screen.irrmap_render_target;
+		}
+		gr_screen.gf_calculate_irrmap();
+	}
 
 	if ( !Dynamic_environment ) {
 		Env_cubemap_drawn = true;
+		Irr_cubemap_drawn = true;
 	}
 }
 void stars_set_dynamic_environment(bool dynamic) {
@@ -3039,4 +3151,5 @@ void stars_set_dynamic_environment(bool dynamic) {
 void stars_invalidate_environment_map() {
 	// This will cause a redraw in the next frame
 	Env_cubemap_drawn = false;
+	Irr_cubemap_drawn = false;
 }

@@ -39,9 +39,10 @@ inline int sexp_function_getset_helper(lua_State* L, void (sexp::LuaAISEXP::*set
 
 ADE_VIRTVAR(ActionEnter,
 	l_LuaAISEXP,
-	"function(ai_helper helper, oswpt | nil arg) => boolean action",
+	"function(ai_helper helper, any... args) => boolean action"
+	"/* If a target parameter is specified, it will be the first object of args in form of an OSWPT type. The following arguments are the additional parameters. The additional parameters are nil if the order is given as a player order. */",
 	"The action of this AI SEXP to be executed once when the AI receives this order. Return true if the AI goal is complete.",
-	"function(ai_helper helper, oswpt | nil arg) => boolean action",
+	"function(ai_helper helper, any... args) => boolean action",
 	"The action function or nil on error")
 {
 	return sexp_function_getset_helper(L, &sexp::LuaAISEXP::setActionEnter, &sexp::LuaAISEXP::getActionEnter);
@@ -49,19 +50,21 @@ ADE_VIRTVAR(ActionEnter,
 
 ADE_VIRTVAR(ActionFrame,
 	l_LuaAISEXP,
-	"function(ai_helper helper, oswpt | nil arg) => boolean action",
+	"function(ai_helper helper, any... args) => boolean action"
+	"/* If a target parameter is specified, it will be the first object of args in form of an OSWPT type. The following arguments are the additional parameters. The additional parameters are nil if the order is given as a player order. */",
 	"The action of this AI SEXP to be executed each frame while active. Return true if the AI goal is complete.",
-	"function(ai_helper helper, oswpt | nil arg) => boolean action",
+	"function(ai_helper helper, any... args) => boolean action",
 	"The action function or nil on error")
 {
-	return sexp_function_getset_helper(L, &sexp::LuaAISEXP::setActionFrame, &sexp::LuaAISEXP::getActionFrame);
+	return sexp_function_getset_helper(L, &sexp::LuaAISEXP::setAction, &sexp::LuaAISEXP::getAction);
 }
 
 ADE_VIRTVAR(Achievability,
 	l_LuaAISEXP,
-	"function(ship ship, oswpt | nil arg) => enumeration achievable",
+	"function(ship ship, any... args) => enumeration achievable"
+	"/* If a target parameter is specified, it will be the first object of args in form of an OSWPT type. The following arguments are the additional parameters. The additional parameters are nil if the order is given as a player order. */",
 	"An optional function that specifies whether the AI mode is achieveable. Return LUAAI_ACHIEVABLE if it can be achieved, LUAAI_NOT_YET_ACHIEVABLE if it can be achieved later and execution should be delayed, and LUAAI_UNACHIEVABLE if the AI mode will never be achievable and should be cancelled. Assumes LUAAI_ACHIEVABLE if not specified.",
-	"function(ship ship, oswpt | nil arg) => enumeration achievable",
+	"function(ship ship, any... args) => enumeration achievable",
 	"The achievability function or nil on error")
 {
 	return sexp_function_getset_helper(L, &sexp::LuaAISEXP::setAchievable, &sexp::LuaAISEXP::getAchievable);

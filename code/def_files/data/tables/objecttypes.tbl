@@ -79,7 +79,7 @@ $Fog:
 	+Start dist:			10.0										
 	+Compl dist:			500.0										
 $AI:																	
-	+Valid goals:			( "fly to ship" "dock" "undock" "waypoints" "waypoints once" "stay near ship" "keep safe dist" "stay still" "play dead" "play dead (persistent)" )							
+	+Valid goals:			( "fly to ship" "dock" "undock" "waypoints" "waypoints once" "stay near ship" "keep safe dist" "stay still" "play dead" "play dead (persistent)" "rearm ship" )							
 	+Accept Player Orders:	YES											
 	+Player orders:			( "rearm me" "abort rearm" "depart" )																	
 	+Auto attacks:			YES											

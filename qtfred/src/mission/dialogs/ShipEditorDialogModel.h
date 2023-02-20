@@ -2,22 +2,22 @@
 
 #include "AbstractDialogModel.h"
 
+#include "mission/util.h"
 #include "ship/ship.h"
 #include "ui/widgets/sexp_tree.h"
-#include "mission/util.h"
 
 namespace fso {
 namespace fred {
 namespace dialogs {
-
+/**
+ * @brief QTFred's Ship Editor's Model
+ */
 class ShipEditorDialogModel : public AbstractDialogModel {
   private:
-	void initializeData();
 
 	template <typename T>
 	void modify(T& a, const T& b);
 
-	bool _modified = false;
 	int _m_no_departure_warp;
 	int _m_no_arrival_warp;
 	bool _m_player_ship;
@@ -58,118 +58,175 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 
 	static int make_ship_list(int* arr);
 
-
-  public:
-	ShipEditorDialogModel(QObject* parent, EditorViewport* viewport);
-
-	bool apply() override;
-	void reject() override;
-
-	void setShipName(const SCP_string& m_ship_name);
-	SCP_string getShipName();
-
-	void setShipClass(int);
-	int getShipClass();
-
-	void setAIClass(int);
-	int getAIClass();
-
-	void setTeam(int);
-	int getTeam();
-
-	void setCargo(const SCP_string&);
-	SCP_string getCargo();
-
-	void setAltName(const SCP_string&);
-	SCP_string getAltName();
-
-	void setCallsign(const SCP_string&);
-	SCP_string getCallsign();
-
-	SCP_string getWing();
-
-	void setHotkey(int);
-	int getHotkey();
-
-	void setPersona(int);
-	int getPersona();
-
-	void setScore(int);
-	int getScore();
-
-	void setAssist(int);
-	int getAssist();
-
-	void setPlayer(bool);
-	bool getPlayer();
-
-	void setArrivalLocation(int);
-	int getArrivalLocation();
-
-	void setArrivalTarget(int);
-	int getArrivalTarget();
-
-	void setArrivalDistance(int);
-	int getArrivalDistance();
-
-	void setArrivalDelay(int);
-	int getArrivalDelay();
-
-	void setArrivalCue(bool);
-	bool getArrivalCue();
-
-	void setArrivalFormula(int, int);
-	int getArrivalFormula();
-
-	void setNoArrivalWarp(int);
-	int getNoArrivalWarp();
-
-	void setDepartureLocation(int);
-	int getDepartureLocation();
-
-	void setDepartureTarget(int);
-	int getDepartureTarget();
-
-	void setDepartureDelay(int);
-	int getDepartureDelay();
-
-	void setDepartureCue(bool);
-	bool getDepartureCue();
-
-	void setDepartureFormula(int, int);
-	int getDepartureFormula();
-	void setNoDepartureWarp(int);
-	int getNoDepartureWarp();
-
-	void OnPrevious();
-	void OnNext();
-	void OnDeleteShip();
-	void OnShipReset();
-
-	static bool wing_is_player_wing(int);
-
 	bool enable = true;
-	//bool p_enable;
-	//int type;
-	//int base_player;
-	//int select_sexp_node;
 	int player_count;
 	int ship_count;
-	//int escort_count;
 	bool multi_edit;
-	//int base_ship;
 	int cue_init;
 	int total_count;
 	int pvalid_count;
 	int pship_count; // a total count of the player ships not marked
 	int single_ship;
 	int player_ship;
+
 	std::set<size_t> ship_orders;
-	static int tristate_set(int val, int cur_state);
 
-	bool texenable = true;
+		bool texenable = true;
 
-	//int pship, current_orders;
+  public:
+	ShipEditorDialogModel(QObject* parent, EditorViewport* viewport);
+	void initializeData();
+	bool _modified = false;
+	bool apply() override;
+	void reject() override;
+
+	void setShipName(const SCP_string m_ship_name);
+	SCP_string getShipName() const;
+
+	void setShipClass(const int);
+	int getShipClass() const;
+
+	void setAIClass(const int);
+	int getAIClass() const;
+
+	void setTeam(const int);
+	int getTeam() const;
+
+	void setCargo(const SCP_string);
+	SCP_string getCargo() const;
+
+	void setAltName(const SCP_string);
+	SCP_string getAltName() const;
+
+	void setCallsign(const SCP_string);
+	SCP_string getCallsign() const;
+
+	/**
+	 * @brief Gets the ships wing
+	 * @return Name of the ships wing
+	 */
+	SCP_string getWing() const;
+
+	void setHotkey(const int);
+	int getHotkey() const;
+
+	void setPersona(const int);
+	int getPersona() const;
+
+	void setScore(const int);
+	int getScore() const;
+
+	void setAssist(const int);
+	int getAssist() const;
+
+	void setPlayer(const bool);
+	bool getPlayer() const;
+
+	void setArrivalLocation(const int);
+	int getArrivalLocation() const;
+
+	void setArrivalTarget(const int);
+	int getArrivalTarget() const;
+
+	void setArrivalDistance(const int);
+	int getArrivalDistance() const;
+
+	void setArrivalDelay(const int);
+	int getArrivalDelay() const;
+
+	void setArrivalCue(const bool);
+	bool getArrivalCue() const;
+
+	void setArrivalFormula(const int, const int);
+	int getArrivalFormula() const;
+
+	void setNoArrivalWarp(const int);
+	int getNoArrivalWarp() const;
+
+	void setDepartureLocation(const int);
+	int getDepartureLocation() const;
+
+	void setDepartureTarget(const int);
+	int getDepartureTarget() const;
+
+	void setDepartureDelay(const int);
+	int getDepartureDelay() const;
+
+	void setDepartureCue(const bool);
+	bool getDepartureCue() const;
+
+	void setDepartureFormula(const int, const int);
+	int getDepartureFormula() const;
+	void setNoDepartureWarp(const int);
+	int getNoDepartureWarp() const;
+	/**
+	 * @brief Selects previous ship on the list
+	 */
+	void OnPrevious();
+	/**
+	 * @brief Selects next ship on the list
+	 */
+	void OnNext();
+	void OnDeleteShip();
+	/**
+	 * @brief Resets Ship/s to class default
+	 * @note Does not cover data from all subdialogs could use expanding
+	 */
+	void OnShipReset();
+	/**
+	 * @brief Returns true if the wing is a player wing
+	 * @param wing Takes an integer id of the wing
+	 */
+	static bool wing_is_player_wing(const int);
+	std::set<size_t> getShipOrders() const;
+
+	bool getTexEditEnable() const;
+	/**
+	 * @brief Used for handling conflicts between ships having differing states of the same flag
+	 * @param val Takes the new value
+	 * @param cur_state Takes the current state of the flag
+	 * @return integer state the flag should be set to
+	 * @warning Contains QT code. Will need refactoring if migrated to non QT environment.
+	 */
+	static int tristate_set(const int val, const int cur_state);
+
+	/**
+	 * @brief Returns the ID of the primary marked ship
+	 */
+	int getSingleShip() const;
+	/**
+	 * @brief Returns true if multiple ships/players selected
+	 */
+	bool getIfMultipleShips() const;
+	/**
+	 * @brief Returns number of selected players
+	 */
+	int getNumSelectedPlayers() const;
+	/**
+	 * @brief Get number of player ships not selected
+	 */
+	int getNumUnmarkedPlayers() const;
+	/**
+	 * @brief Whether or not to enable the UI
+	 */
+	bool getUIEnable() const;
+	/**
+	 * @brief Get number of non player ships
+	 */
+	int getNumSelectedShips() const;
+	int getUseCue() const;
+	/**
+	 * @brief Get number of Ships selected
+	 */
+	int getNumSelectedObjects() const;
+	/**
+	 * @brief Get number of player ships in mission
+	 */
+	int getNumValidPlayers() const;
+	/**
+	 * @brief Returns true if only a single ship is selected and it is a player ship
+	 */
+	int getIfPlayerShip() const;
 };
 
 template <typename T>

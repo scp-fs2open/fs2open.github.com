@@ -391,9 +391,7 @@ ADE_FUNC(triggerSubmodelAnimation, l_Weapon, "string type, string triggeredBy, [
 	if (animtype == animation::ModelAnimationTriggerType::None)
 		return ADE_RETURN_FALSE;
 
-	auto animationStartFunc = animation::anim_parse_scripted_start(wip->animations, model_get_instance(wp->model_instance_num), animtype, trigger).first;
-
-	return animationStartFunc(forwards ? animation::ModelAnimationDirection::FWD : animation::ModelAnimationDirection::RWD, forced || instant, instant, pause) ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
+	return wip->animations.parseScripted(model_get_instance(wp->model_instance_num), animtype, trigger).start(forwards ? animation::ModelAnimationDirection::FWD : animation::ModelAnimationDirection::RWD, forced || instant, instant, pause) ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
 }
 
 ADE_FUNC(getSubmodelAnimationTime, l_Weapon, "string type, string triggeredBy", "Gets time that animation will be done", "number", "Time (seconds), or 0 if weapon handle is invalid")
@@ -416,9 +414,7 @@ ADE_FUNC(getSubmodelAnimationTime, l_Weapon, "string type, string triggeredBy", 
 	if (wip->render_type != WRT_POF || wp->model_instance_num < 0)
 		return ade_set_error(L, "f", 0.0f);
 
-	auto animationTimeFunc = animation::anim_parse_scripted_start(wip->animations, model_get_instance(wp->model_instance_num), animtype, trigger).second;
-
-	int time_ms = animationTimeFunc();
+	int time_ms = wip->animations.parseScripted(model_get_instance(wp->model_instance_num), animtype, trigger).getTime();
 	float time_s = (float)time_ms / 1000.0f;
 
 	return ade_set_args(L, "f", time_s);

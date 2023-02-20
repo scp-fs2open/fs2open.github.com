@@ -21,6 +21,9 @@
     <layout class="QVBoxLayout" name="ColumnOneLayout">
      <item>
       <widget class="fso::fred::ShipFlagCheckbox" name="destroyBeforeMissionCheckbox">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Destroys the ship before the mission starts&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="text">
         <string>Destroy Before Mission</string>
        </property>
@@ -32,7 +35,11 @@
      <item>
       <layout class="QHBoxLayout" name="destroySecondsLayout">
        <item>
-        <widget class="QSpinBox" name="destroySecondsSpinBox"/>
+        <widget class="QSpinBox" name="destroySecondsSpinBox">
+         <property name="toolTip">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;How many seconds before the mission to destroy ship&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+        </widget>
        </item>
        <item>
         <widget class="QLabel" name="destroySecondsLabel">
@@ -45,6 +52,9 @@
      </item>
      <item>
       <widget class="fso::fred::ShipFlagCheckbox" name="scannableCheckbox">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Whether the ship is scannable or not&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="text">
         <string>Scannable</string>
        </property>
@@ -55,6 +65,9 @@
      </item>
      <item>
       <widget class="fso::fred::ShipFlagCheckbox" name="cargoKnownCheckbox">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Whether the player alredy knows the cargo or needs to scan for it&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="text">
         <string>Cargo Known</string>
        </property>
@@ -65,6 +78,9 @@
      </item>
      <item>
       <widget class="fso::fred::ShipFlagCheckbox" name="toggleSubsytemScanningCheckbox">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Switches between scanning the whole ship or individual subsystems&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="text">
         <string>Toggle Subsystem Scanning</string>
        </property>
@@ -75,6 +91,9 @@
      </item>
      <item>
       <widget class="fso::fred::ShipFlagCheckbox" name="reinforcementUnitCheckbox">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Makes the ship available in the reinforcements editor&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="text">
         <string>Reinforcement Unit</string>
        </property>
@@ -85,6 +104,9 @@
      </item>
      <item>
       <widget class="fso::fred::ShipFlagCheckbox" name="protectShipCheckbox">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Stops AI from attacking ship&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="text">
         <string>Protect Ship</string>
        </property>
@@ -101,6 +123,9 @@
        <layout class="QVBoxLayout" name="verticalLayout_2">
         <item>
          <widget class="QCheckBox" name="beamProtectCheckbox">
+          <property name="toolTip">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Stops Beams from targeting this ship&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
           <property name="text">
            <string>Beam Protect Ship</string>
           </property>
@@ -108,6 +133,9 @@
         </item>
         <item>
          <widget class="QCheckBox" name="flakProtectCheckbox">
+          <property name="toolTip">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Stops flack weapons from targeting this ship&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
           <property name="text">
            <string>Flak Protect Ship</string>
           </property>
@@ -115,6 +143,9 @@
         </item>
         <item>
          <widget class="QCheckBox" name="laserProtectCheckbox">
+          <property name="toolTip">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Stops blob turrets from targeting this ship&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
           <property name="text">
            <string>Laser Protect Ship</string>
           </property>
@@ -122,6 +153,9 @@
         </item>
         <item>
          <widget class="QCheckBox" name="missileProtectCheckbox">
+          <property name="toolTip">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Stops missile turrets from targeting this ship&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
           <property name="text">
            <string>Missile Protect Ship</string>
           </property>
@@ -132,6 +166,9 @@
      </item>
      <item>
       <widget class="fso::fred::ShipFlagCheckbox" name="ignoreForGoalsCheckbox">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;takes this ship out of consideration in SEXP operators like &lt;span style=&quot; font-style:italic;&quot;&gt;percent-ships-destroyed&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="text">
         <string>Ignore for Counting Goals</string>
        </property>
@@ -142,6 +179,9 @@
      </item>
      <item>
       <widget class="fso::fred::ShipFlagCheckbox" name="escortShipCheckbox">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Adds ship to escort list (Also makes active asteroid fields target ship)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="text">
         <string>Escort Ship</string>
        </property>
@@ -177,6 +217,9 @@
        </item>
        <item>
         <widget class="QSpinBox" name="escortPrioritySpinBox">
+         <property name="toolTip">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;How high up the escort list the ship is (Lower number = Higher up list)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
          <property name="buttonSymbols">
           <enum>QAbstractSpinBox::NoButtons</enum>
          </property>
@@ -186,6 +229,9 @@
      </item>
      <item>
       <widget class="fso::fred::ShipFlagCheckbox" name="noArrivalMusicCheckBox">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Don't change the music when the ship arrives&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="text">
         <string>No Arrival Music</string>
        </property>
@@ -196,6 +242,9 @@
      </item>
      <item>
       <widget class="fso::fred::ShipFlagCheckbox" name="invulnerableCheckbox">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Makes ship take no damage&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="text">
         <string>Invulnerable</string>
        </property>
@@ -206,6 +255,9 @@
      </item>
      <item>
       <widget class="fso::fred::ShipFlagCheckbox" name="guardianedCheckbox">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Ship becomes invulnerable at 1% health. Threshold can be changed with SEXP &lt;span style=&quot; font-style:italic;&quot;&gt;set-guardian-threshold&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="text">
         <string>Guardianed</string>
        </property>
@@ -226,6 +278,9 @@
      </item>
      <item>
       <widget class="fso::fred::ShipFlagCheckbox" name="noSubspaceDriveCheckbox">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Makes Jump out command fail silently, Useful for In-mission jumps&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="text">
         <string>No Subspace Drive</string>
        </property>
@@ -236,6 +291,9 @@
      </item>
      <item>
       <widget class="fso::fred::ShipFlagCheckbox" name="hiddenFromSensorsCheckbox">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Ship becomes untargetable and appears on rader as wobbly dot&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="text">
         <string>Hidden from Sensors</string>
        </property>
@@ -246,6 +304,9 @@
      </item>
      <item>
       <widget class="fso::fred::ShipFlagCheckbox" name="stealthCheckbox">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Ship becomes untargetable and does not apper on hostile radar&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="text">
         <string>Stealth</string>
        </property>
@@ -256,6 +317,9 @@
      </item>
      <item>
       <widget class="fso::fred::ShipFlagCheckbox" name="friendlyStealthCheckbox">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Makes stealth apply to teammates&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="text">
         <string>Invisible to Friendlies When Stealthed</string>
        </property>
@@ -266,6 +330,9 @@
      </item>
      <item>
       <widget class="fso::fred::ShipFlagCheckbox" name="kamikazeCheckbox">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Ram the ships target doing the specified amount of damage&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="text">
         <string>Kamikaze</string>
        </property>
@@ -310,6 +377,9 @@
      </item>
      <item>
       <widget class="fso::fred::ShipFlagCheckbox" name="noMoveCheckbox">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Ship should not move under any circumstances&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="text">
         <string>Does Not Move</string>
        </property>
@@ -324,6 +394,9 @@
     <layout class="QVBoxLayout" name="columnTwo" stretch="0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1">
      <item>
       <widget class="fso::fred::ShipFlagCheckbox" name="noDynamicGoalsCheckbox">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Ship goes for its objectives without self-preservation&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="text">
         <string>No Dynamic Goals</string>
        </property>
@@ -334,6 +407,9 @@
      </item>
      <item>
       <widget class="fso::fred::ShipFlagCheckbox" name="redAlertCheckbox">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;If the next mission is marked red alert this ships damage and loadaout wil be copied onto a ship woth the same name (Buggy, Recommend using Save-load script)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="text">
         <string>Red Alert Carry Status</string>
        </property>
@@ -344,6 +420,9 @@
      </item>
      <item>
       <widget class="fso::fred::ShipFlagCheckbox" name="gravityCheckbox">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;DEPRECATED: Does Nothing&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="text">
         <string>Affected By Gravity</string>
        </property>
@@ -354,6 +433,9 @@
      </item>
      <item>
       <widget class="fso::fred::ShipFlagCheckbox" name="specialWarpinCheckbox">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;DEPRECATED: Use Custom warp-in menu&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="text">
         <string>Special Warpin</string>
        </property>
@@ -364,6 +446,9 @@
      </item>
      <item>
       <widget class="fso::fred::ShipFlagCheckbox" name="targetableAsBombCheckbox">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Ship is targetable using the target bomb command&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="text">
         <string>Targetable as Bomb</string>
        </property>
@@ -374,6 +459,9 @@
      </item>
      <item>
       <widget class="fso::fred::ShipFlagCheckbox" name="disableBuiltInMessagesCheckbox">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Disables all automated messages from the ship&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="text">
         <string>Disable Built-in Messages</string>
        </property>
@@ -404,6 +492,9 @@
      </item>
      <item>
       <widget class="fso::fred::ShipFlagCheckbox" name="vaporizeCheckbox">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Ship disintegrates on death leaving no debris&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="text">
         <string>Vaporize on Death</string>
        </property>
@@ -431,12 +522,19 @@
         </widget>
        </item>
        <item>
-        <widget class="QSpinBox" name="respawnPrioritySpinBox"/>
+        <widget class="QSpinBox" name="respawnPrioritySpinBox">
+         <property name="toolTip">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;In multi a player will respawn nect to the ship with the highest priority (low number = high priority)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+         </property>
+        </widget>
        </item>
       </layout>
      </item>
      <item>
       <widget class="fso::fred::ShipFlagCheckbox" name="autoCarryCheckbox">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Brings ship along when the player autopilots&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="text">
         <string>AutoNav Carry Status</string>
        </property>
@@ -447,6 +545,9 @@
      </item>
      <item>
       <widget class="fso::fred::ShipFlagCheckbox" name="autoLinkCheckbox">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Player can only autopilot when in range of this ship (??? meters)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="text">
         <string>AutoNav Needs Link</string>
        </property>
@@ -457,6 +558,9 @@
      </item>
      <item>
       <widget class="fso::fred::ShipFlagCheckbox" name="hideShipNameCheckbox">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Don't show the ships name in the targeting box&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="text">
         <string>Hide Ship Name</string>
        </property>
@@ -467,6 +571,9 @@
      </item>
      <item>
       <widget class="fso::fred::ShipFlagCheckbox" name="classDynamicCheckbox">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Set the ships class based on the alt ship class menu&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="text">
         <string>Set Class Dynamically</string>
        </property>
@@ -477,6 +584,9 @@
      </item>
      <item>
       <widget class="fso::fred::ShipFlagCheckbox" name="disableETSCheckbox">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Disables the Energy Transfer System for this ship&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="text">
         <string>Disable ETS</string>
        </property>
@@ -487,6 +597,9 @@
      </item>
      <item>
       <widget class="fso::fred::ShipFlagCheckbox" name="cloakCheckbox">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Ship starts invisible&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="text">
         <string>Cloaked</string>
        </property>
@@ -497,6 +610,9 @@
      </item>
      <item>
       <widget class="fso::fred::ShipFlagCheckbox" name="scrambleMessagesCheckbox">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Messages from the ship will be garbeled with bits missing&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="text">
         <string>Scramble Messages</string>
        </property>
@@ -507,6 +623,9 @@
      </item>
      <item>
       <widget class="fso::fred::ShipFlagCheckbox" name="noCollideCheckbox">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Ship does not interact with any other object/weapon&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="text">
         <string>No Collisions</string>
        </property>
@@ -517,6 +636,9 @@
      </item>
      <item>
       <widget class="fso::fred::ShipFlagCheckbox" name="noSelfDestructCheckbox">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Prevents fighters in wong from self-destructing when there engines are destroyed&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="text">
         <string>No Disabled Self-Destruct</string>
        </property>

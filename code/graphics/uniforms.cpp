@@ -6,6 +6,7 @@
 #include "light.h"
 #include "globalincs/systemvars.h"
 #include "shadows.h"
+#include "def_files/data/effects/model_shader_flags.h"
 
 namespace {
 void scale_matrix(matrix4& mat, const vec3d& scale) {
@@ -49,29 +50,71 @@ void convert_model_material(model_uniform_data* data_out,
 
 	data_out->vpwidth = 1.0f / i2fl(gr_screen.max_w);
 	data_out->vpheight = 1.0f / i2fl(gr_screen.max_h);
-	if (shader_flags & SDR_FLAG_MODEL_ANIMATED) {
+
+	data_out->effect_num = -1;
+	data_out->anim_timer = 0;
+	data_out->use_clip_plane = 0;
+
+	data_out->flags = 0;
+	if (material.is_lit())
+		data_out->flags |= MODEL_SDR_FLAG_LIGHT;
+	if (material.is_deferred())
+		data_out->flags |= MODEL_SDR_FLAG_DEFERRED;
+	if (material.is_hdr())
+		data_out->flags |= MODEL_SDR_FLAG_HDR;
+	if (material.get_texture_map(TM_BASE_TYPE) > 0)
+		data_out->flags |= MODEL_SDR_FLAG_DIFFUSE;
+	if (material.get_texture_map(TM_GLOW_TYPE) > 0)
+		data_out->flags |= MODEL_SDR_FLAG_GLOW;
+	if (material.get_texture_map(TM_SPECULAR_TYPE) > 0 || material.get_texture_map(TM_SPEC_GLOSS_TYPE) > 0)
+		data_out->flags |= MODEL_SDR_FLAG_SPEC;
+	if (ENVMAP > 0)
+		data_out->flags |= MODEL_SDR_FLAG_ENV;
+	if (material.get_texture_map(TM_NORMAL_TYPE) > 0)
+		data_out->flags |= MODEL_SDR_FLAG_NORMAL;
+	if (material.get_texture_map(TM_AMBIENT_TYPE) > 0)
+		data_out->flags |= MODEL_SDR_FLAG_AMBIENT;
+	if (material.get_texture_map(TM_MISC_TYPE) > 0)
+		data_out->flags |= MODEL_SDR_FLAG_MISC;
+	if (material.get_texture_map(TM_MISC_TYPE) > 0 && material.is_team_color_set())
+		data_out->flags |= MODEL_SDR_FLAG_TEAMCOLOR;
+	if (material.is_fogged())
+		data_out->flags |= MODEL_SDR_FLAG_FOG;
+	if (material.is_batched())
+		data_out->flags |= MODEL_SDR_FLAG_TRANSFORM;
+	if (material.is_shadow_receiving())
+		data_out->flags |= MODEL_SDR_FLAG_SHADOWS;
+	if (material.get_thrust_scale() > 0.0f)
+		data_out->flags |= MODEL_SDR_FLAG_THRUSTER;
+	if (material.is_alpha_mult_active())
+		data_out->flags |= MODEL_SDR_FLAG_ALPHA_MULT; 
+
+	if (material.get_animated_effect() > 0) {
 		data_out->anim_timer = material.get_animated_effect_time();
 		data_out->effect_num = material.get_animated_effect();
 	}
 
-	if (shader_flags & SDR_FLAG_MODEL_CLIP) {
-		if (material.is_clipped()) {
-			auto& clip_info = material.get_clip_plane();
+	data_out->sBasemapIndex = 0;
+	data_out->sAmbientmapIndex = 0;
+	data_out->sGlowmapIndex = 0;
+	data_out->sMiscmapIndex = 0;
+	data_out->sNormalmapIndex = 0;
+	data_out->sSpecmapIndex = 0;
 
-			data_out->use_clip_plane = true;
+	if (material.is_clipped()) {
+		auto& clip_info = material.get_clip_plane();
 
-			vec4 clip_equation;
-			clip_equation.xyzw.x = clip_info.normal.xyz.x;
-			clip_equation.xyzw.y = clip_info.normal.xyz.y;
-			clip_equation.xyzw.z = clip_info.normal.xyz.z;
-			clip_equation.xyzw.w = -vm_vec_dot(&clip_info.normal, &clip_info.position);
-			data_out->clip_equation = clip_equation;
-		} else {
-			data_out->use_clip_plane = false;
-		}
+		data_out->use_clip_plane = true;
+
+		vec4 clip_equation;
+		clip_equation.xyzw.x = clip_info.normal.xyz.x;
+		clip_equation.xyzw.y = clip_info.normal.xyz.y;
+		clip_equation.xyzw.z = clip_info.normal.xyz.z;
+		clip_equation.xyzw.w = -vm_vec_dot(&clip_info.normal, &clip_info.position);
+		data_out->clip_equation = clip_equation;
 	}
 
-	if (shader_flags & SDR_FLAG_MODEL_LIGHT) {
+	if (material.is_lit()) {
 		int num_lights = MIN(Num_active_gr_lights, (int)graphics::MAX_UNIFORM_LIGHTS);
 		data_out->n_lights = num_lights;
 
@@ -81,13 +124,7 @@ void convert_model_material(model_uniform_data* data_out,
 		data_out->diffuseFactor.xyz.x = gr_light_color[0] * light_factor;
 		data_out->diffuseFactor.xyz.y = gr_light_color[1] * light_factor;
 		data_out->diffuseFactor.xyz.z = gr_light_color[2] * light_factor;
-		data_out->ambientFactor.xyz.x = gr_light_ambient[0] + gr_user_ambient;
-		data_out->ambientFactor.xyz.y = gr_light_ambient[1] + gr_user_ambient;
-		data_out->ambientFactor.xyz.z = gr_light_ambient[2] + gr_user_ambient;
-
-		CLAMP(data_out->ambientFactor.xyz.x, 0.02f, 1.0f);
-		CLAMP(data_out->ambientFactor.xyz.y, 0.02f, 1.0f);
-		CLAMP(data_out->ambientFactor.xyz.z, 0.02f, 1.0f);
+		gr_get_ambient_light(&data_out->ambientFactor);
 
 		if (material.get_light_factor() > 0.25f && Cmdline_emissive) {
 			data_out->emissionFactor.xyz.x = gr_light_emission[0];
@@ -99,28 +136,16 @@ void convert_model_material(model_uniform_data* data_out,
 			data_out->emissionFactor.xyz.z = gr_light_zero[2];
 		}
 
-		if (Gloss_override_set) {
-			data_out->defaultGloss = Gloss_override;
-		} else {
-			data_out->defaultGloss = 0.6f;
-		}
 	}
+	data_out->defaultGloss = 0.6f;
 
-	if (shader_flags & SDR_FLAG_MODEL_DIFFUSE_MAP) {
+	if (material.get_texture_map(TM_BASE_TYPE) > 0) {
 		if (material.is_desaturated()) {
 			data_out->desaturate = 1;
 		} else {
 			data_out->desaturate = 0;
 		}
 
-		if (Basemap_color_override_set) {
-			data_out->overrideDiffuse = 1;
-			data_out->diffuseClr.xyz.x = Basemap_color_override[0];
-			data_out->diffuseClr.xyz.y = Basemap_color_override[1];
-			data_out->diffuseClr.xyz.z = Basemap_color_override[2];
-		} else {
-			data_out->overrideDiffuse = 0;
-		}
 
 		switch (material.get_blend_mode()) {
 		case ALPHA_BLEND_PREMULTIPLIED:
@@ -137,70 +162,50 @@ void convert_model_material(model_uniform_data* data_out,
 		data_out->sBasemapIndex = bm_get_array_index(material.get_texture_map(TM_BASE_TYPE));
 	}
 
-	if (shader_flags & SDR_FLAG_MODEL_GLOW_MAP) {
-		if (Glowmap_color_override_set) {
-			data_out->overrideGlow = 1;
-			data_out->glowClr.xyz.x = Glowmap_color_override[0];
-			data_out->glowClr.xyz.y = Glowmap_color_override[1];
-			data_out->glowClr.xyz.z = Glowmap_color_override[2];
-		} else {
-			data_out->overrideGlow = 0;
-		}
+	if (material.get_texture_map(TM_GLOW_TYPE) > 0) {
 		data_out->sGlowmapIndex = bm_get_array_index(material.get_texture_map(TM_GLOW_TYPE));
 	}
 
-	if (shader_flags & SDR_FLAG_MODEL_SPEC_MAP) {
-		if (Specmap_color_override_set) {
-			data_out->overrideSpec = 1;
-			data_out->specClr.xyz.x = Specmap_color_override[0];
-			data_out->specClr.xyz.y = Specmap_color_override[1];
-			data_out->specClr.xyz.z = Specmap_color_override[2];
-		} else {
-			data_out->overrideSpec = 0;
-		}
 
-		if (material.get_texture_map(TM_SPEC_GLOSS_TYPE) > 0) {
-			data_out->sSpecmapIndex = bm_get_array_index(material.get_texture_map(TM_SPEC_GLOSS_TYPE));
+	if (material.get_texture_map(TM_SPEC_GLOSS_TYPE) > 0) {
+		data_out->sSpecmapIndex = bm_get_array_index(material.get_texture_map(TM_SPEC_GLOSS_TYPE));
 
-			data_out->gammaSpec = 1;
+		data_out->gammaSpec = 1;
+		data_out->alphaGloss = 1;
 
-			if (Gloss_override_set) {
-				data_out->alphaGloss = 0;
-			} else {
-				data_out->alphaGloss = 1;
-			}
-		} else {
-			data_out->sSpecmapIndex = bm_get_array_index(material.get_texture_map(TM_SPECULAR_TYPE));
+	} 
 
-			data_out->gammaSpec = 0;
-			data_out->alphaGloss = 0;
-		}
+	if (material.get_texture_map(TM_SPECULAR_TYPE) > 0) {
+		data_out->sSpecmapIndex = bm_get_array_index(material.get_texture_map(TM_SPECULAR_TYPE));
 
-		if (shader_flags & SDR_FLAG_MODEL_ENV_MAP) {
-			if (material.get_texture_map(TM_SPEC_GLOSS_TYPE) > 0 || Gloss_override_set) {
-				data_out->envGloss = 1;
-			} else {
-				data_out->envGloss = 0;
-			}
-
-			data_out->envMatrix = gr_env_texture_matrix;
-		}
+		data_out->gammaSpec = 0;
+		data_out->alphaGloss = 0;
 	}
 
-	if ( shader_flags & SDR_FLAG_MODEL_NORMAL_MAP ) {
+	if (ENVMAP > 0) {
+		if (material.get_texture_map(TM_SPEC_GLOSS_TYPE) > 0) {
+			data_out->envGloss = 1;
+		} else {
+			data_out->envGloss = 0;
+		}
+
+		data_out->envMatrix = gr_env_texture_matrix;
+	}
+	
+	if (material.get_texture_map(TM_NORMAL_TYPE) > 0) {
 		data_out->sNormalmapIndex = bm_get_array_index(material.get_texture_map(TM_NORMAL_TYPE));
 	}
 
-	if ( shader_flags & SDR_FLAG_MODEL_AMBIENT_MAP ) {
+	if (material.get_texture_map(TM_AMBIENT_TYPE) > 0) {
 		data_out->sAmbientmapIndex = bm_get_array_index(material.get_texture_map(TM_AMBIENT_TYPE));
 	}
 
-	if ( shader_flags & SDR_FLAG_MODEL_MISC_MAP ) {
+	if (material.get_texture_map(TM_MISC_TYPE) > 0) {
 		data_out->sMiscmapIndex = bm_get_array_index(material.get_texture_map(TM_MISC_TYPE));
 	}
 
-	if (shader_flags & SDR_FLAG_MODEL_SHADOWS) {
-		data_out->shadow_mv_matrix = Shadow_view_matrix;
+	if (material.is_shadow_receiving()) {
+		data_out->shadow_mv_matrix = Shadow_view_matrix_light;
 
 		for (size_t i = 0; i < MAX_SHADOW_CASCADES; ++i) {
 			data_out->shadow_proj_matrix[i] = Shadow_proj_matrix[i];
@@ -218,14 +223,14 @@ void convert_model_material(model_uniform_data* data_out,
 		}
 	}
 
-	if (shader_flags & SDR_FLAG_MODEL_TRANSFORM) {
+	if (material.is_batched()) {
 		data_out->buffer_matrix_offset = (int) transform_buffer_offset;
 	}
 
 	// Team colors are passed to the shader here, but the shader needs to handle their application.
 	// By default, this is handled through the r and g channels of the misc map, but this can be changed
 	// in the shader; test versions of this used the normal map r and b channels
-	if (shader_flags & SDR_FLAG_MODEL_TEAMCOLOR) {
+	if (material.get_texture_map(TM_MISC_TYPE) > 0 && material.is_team_color_set()) {
 		auto& tm_clr = material.get_team_color();
 		vec3d stripe_color;
 		vec3d base_color;
@@ -244,12 +249,12 @@ void convert_model_material(model_uniform_data* data_out,
 		data_out->team_glow_enabled = bm_has_alpha_channel(material.get_texture_map(TM_MISC_TYPE)) ? 1 : 0;
 	}
 
-	if (shader_flags & SDR_FLAG_MODEL_THRUSTER) {
+	if (material.get_thrust_scale() > 0.0f) {
 		data_out->thruster_scale = material.get_thrust_scale();
 	}
 
 
-	if (shader_flags & SDR_FLAG_MODEL_FOG) {
+	if (material.is_fogged()) {
 		auto& fog_params = material.get_fog();
 
 		if (fog_params.enabled) {
@@ -262,16 +267,11 @@ void convert_model_material(model_uniform_data* data_out,
 		}
 	}
 
-	if (shader_flags & SDR_FLAG_MODEL_NORMAL_ALPHA) {
-		data_out->normalAlphaMinMax.x = material.get_normal_alpha_min();
-		data_out->normalAlphaMinMax.y = material.get_normal_alpha_max();
-	}
-
 	if ( shader_flags & SDR_FLAG_MODEL_THICK_OUTLINES ) {
 		data_out->outlineWidth = material.get_outline_thickness();
 	}
 
-	if (shader_flags & SDR_FLAG_MODEL_ALPHA_MULT) {
+	if (material.is_alpha_mult_active()) {
 		data_out->alphaMult = material.get_alpha_mult();
 	}
 }

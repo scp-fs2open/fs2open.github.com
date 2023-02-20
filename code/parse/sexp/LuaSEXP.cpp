@@ -4,12 +4,15 @@
 
 #include "iff_defs/iff_defs.h"
 #include "localization/localize.h"
+#include "mission/missiongoals.h"
 #include "mission/missionmessage.h"
 #include "object/waypoint.h"
 #include "parse/parselo.h"
 #include "parse/sexp.h"
 #include "parse/sexp/sexp_lookup.h"
+#include "scripting/api/objs/hudgauge.h"
 #include "scripting/api/objs/message.h"
+#include "scripting/api/objs/event.h"
 #include "scripting/api/objs/oswpt.h"
 #include "scripting/api/objs/sexpvar.h"
 #include "scripting/api/objs/ship.h"
@@ -45,7 +48,10 @@ static SCP_unordered_map<SCP_string, int> parameter_type_mapping{{ "boolean",   
 														  { "ship+wing+team",   OPF_SHIP_WING_WHOLETEAM },
 														  { "ship+wing+ship_on_team+waypoint",   OPF_SHIP_WING_SHIPONTEAM_POINT },
 														  { "ship+wing+waypoint",   OPF_SHIP_WING_POINT },
-														  { "ship+wing+waypoint+none",   OPF_SHIP_WING_POINT_OR_NONE }, };
+														  { "ship+wing+waypoint+none",   OPF_SHIP_WING_POINT_OR_NONE },
+														  { "hudgauge",   OPF_ANY_HUD_GAUGE },
+														  { "event",   OPF_EVENT_NAME },
+														  { "enum",   First_available_opf_id } };
 
 std::pair<SCP_string, int> LuaSEXP::get_parameter_type(const SCP_string& name)
 {
@@ -76,35 +82,15 @@ int LuaSEXP::get_return_type(const SCP_string& name)
 	}
 }
 
-int LuaSEXP::get_category(const SCP_string& name) {
-	for (auto& subcat : op_menu) {
-		if (subcat.name == name) {
-			return subcat.id;
-		}
-	}
-
-	return -1;
-}
-
-int LuaSEXP::get_subcategory(const SCP_string& name, int category) {
-	for (auto& subcat : op_submenu) {
-		if (subcat.name == name && (subcat.id & OP_CATEGORY_MASK) == category) {
-			return subcat.id;
-		}
-	}
-
-	return -1;
-}
-
 LuaSEXP::LuaSEXP(const SCP_string& name) : DynamicSEXP(name) {
 }
 void LuaSEXP::initialize() {
 	// Nothing to do for this type
 }
-int LuaSEXP::getMinimumArguments() {
+int LuaSEXP::getMinimumArguments() const {
 	return _min_args;
 }
-int LuaSEXP::getMaximumArguments() {
+int LuaSEXP::getMaximumArguments() const {
 	return _max_args;
 }
 std::pair<SCP_string, int> LuaSEXP::getArgumentInternalType(int argnum) const {
@@ -244,9 +230,29 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum) const {
 		eval_object_ship_wing_point_team(&oswpt, node);
 		return LuaValue::createValue(_action.getLuaState(), l_OSWPT.Set(oswpt));
 	}
+	case OPF_ANY_HUD_GAUGE: {
+		auto name = CTEXT(node);
+		return LuaValue::createValue(_action.getLuaState(), l_HudGauge.Set(hud_get_gauge(name)));
+	}
+	case OPF_EVENT_NAME: {
+		auto name = CTEXT(node);
+
+		int i;
+		for (i = 0; i < (int)Mission_events.size(); i++) {
+			if (!stricmp(Mission_events[i].name.c_str(), name))
+				break;
+			}
+		return LuaValue::createValue(_action.getLuaState(), l_Event.Set(i));
+	}
 	default:
-		UNREACHABLE("Unhandled argument type! Someone added an argument type but didn't add handling code to execute().");
-		return LuaValue::createNil(_action.getLuaState());
+		if ((strcmp(argtype.first.c_str(), "enum")) == 0) {
+			auto text = CTEXT(node);
+			return LuaValue::createValue(_action.getLuaState(), text);
+		} else {
+			UNREACHABLE(
+				"Unhandled argument type! Someone added an argument type but didn't add handling code to execute().");
+			return LuaValue::createNil(_action.getLuaState());
+		}
 	}
 }
 int LuaSEXP::getSexpReturnValue(const LuaValueList& retVals) const {
@@ -289,26 +295,22 @@ int LuaSEXP::getSexpReturnValue(const LuaValueList& retVals) const {
 		return SEXP_TRUE;
 	}
 }
-int LuaSEXP::execute(int node) {
-	if (!_action.isValid()) {
-		Error(LOCATION,
-			  "Lua SEXP called without a valid action function! A script probably failed to set the action for some reason.");
-		return SEXP_CANT_EVAL;
-	}
 
+luacpp::LuaValueList LuaSEXP::getSEXPArgumentList(int node) const {
 	LuaValueList luaParameters;
 
 	// We need to adapt how we handle parameters based on their type. We use this variable to keep track of which parameter
 	// we are currently looking at
 	int argnum = 0;
 	while (node != -1) {
-		if (argnum < (int) _argument_types.size()) {
+		if (argnum < (int)_argument_types.size()) {
 			// This is a parameter in the normal list so we add it to the normal parameter list
 			luaParameters.push_back(sexpToLua(node, argnum));
 
 			node = CDR(node);
 			++argnum;
-		} else {
+		}
+		else {
 			// The varargs part is handled in chunks so that scripts can use the data more easily
 			// Every repeat pattern instance is put into its own table
 			LuaTable varargs_part = LuaTable::create(_action.getLuaState());
@@ -326,6 +328,19 @@ int LuaSEXP::execute(int node) {
 			luaParameters.push_back(varargs_part);
 		}
 	}
+
+	return luaParameters;
+}
+
+int LuaSEXP::execute(int node) {
+	if (!_action.isValid()) {
+		
+		Error(LOCATION,
+			  "Lua SEXP %s called without a valid action function! A script probably failed to set the action for some reason.", _name.c_str());
+		return SEXP_CANT_EVAL;
+	}
+
+	LuaValueList luaParameters = getSEXPArgumentList(node);
 
 	// All parameters are now in LuaValues, time to call our function
 	try {
@@ -354,10 +369,6 @@ int LuaSEXP::getSubcategory() {
 	return _subcategory;
 }
 int LuaSEXP::getCategory() {
-	if (_category == OP_CATEGORY_CHANGE) {
-		// "Change" is a special case since we can't add new SEXPs to the primary category
-		return OP_CATEGORY_CHANGE2;
-	}
 	return _category;
 }
 bool LuaSEXP::parseCheckEndOfDescription() {
@@ -394,9 +405,9 @@ void LuaSEXP::parseTable() {
 	stuff_string(category, F_NAME);
 
 	_category = get_category(category);
-	if (_category < 0) {
-		error_display(0, "Invalid category '%s' found. New main categories can't be added!", category.c_str());
-		_category = OP_CATEGORY_CHANGE2; // Default to change2 so we have a valid value later on
+	if (_category == OP_CATEGORY_NONE) {
+		// Unknown category so we need to add this one
+		_category = sexp::add_category(category);
 	}
 
 	required_string("$Subcategory:");
@@ -404,19 +415,9 @@ void LuaSEXP::parseTable() {
 	stuff_string(subcategory, F_NAME);
 
 	_subcategory = get_subcategory(subcategory, _category);
-	if (_subcategory < 0) {
+	if (_subcategory == OP_SUBCATEGORY_NONE) {
 		// Unknown subcategory so we need to add this one
 		_subcategory = sexp::add_subcategory(_category, subcategory);
-		if (_subcategory < 0) {
-			// Couldn't add subcategory!
-			error_display(0,
-						  "No more space for subcategory '%s' free in category '%s'!",
-						  subcategory.c_str(),
-						  category.c_str());
-
-			// Default to the first subcategory in our category, hopefully it will exist...
-			_subcategory = 0x0000 | _category;
-		}
 	} 
 
 	required_string("$Minimum Arguments:");
@@ -521,6 +522,33 @@ void LuaSEXP::parseTable() {
 		if (type.second < 0) {
 			error_display(0, "Unknown parameter type '%s'!", type_str.c_str());
 			type = get_parameter_type("string");
+		}
+
+		if ((strcmp(type.first.c_str(), "enum")) == 0) {
+			type.second = increment_enum_list_id();
+			required_string("+Enum Name:");
+
+			SCP_string enum_name;
+			stuff_string(enum_name, F_NAME);
+
+			dynamic_sexp_enum_list thisList;
+			thisList.name = enum_name;
+
+			SCP_vector<SCP_string> list_items;
+			while (optional_string("+Enum:")) {
+				SCP_string item;
+				stuff_string(item, F_NAME);
+				list_items.push_back(item);
+			}
+
+			if ((int)list_items.size() > 0) {
+				thisList.list = std::move(list_items);
+			} else {
+				thisList.list.push_back("<none>");
+			}
+
+			Dynamic_enums.push_back(thisList);
+
 		}
 
 		if (variable_arg_part) {

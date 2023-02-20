@@ -253,7 +253,7 @@ void obj_render_all(const std::function<void(object*)>& render_function, bool *d
 		}
 
 		if ( obj_render_is_model(obj) ) {
-			if( ((obj->type == OBJ_SHIP) && Ships[obj->instance].shader_effect_active) || (obj->type == OBJ_FIREBALL) )
+			if( ((obj->type == OBJ_SHIP) && Ships[obj->instance].shader_effect_timestamp.isValid()) || (obj->type == OBJ_FIREBALL) )
 				effect_ships.push_back(obj);
 			else 
 				render_function(obj);
@@ -303,7 +303,7 @@ void obj_render_queue_all()
 
 	objp = Objects;
 
-	gr_deferred_lighting_begin();
+	gr_deferred_lighting_begin(false);
 
 	scene.init();
 
@@ -328,7 +328,7 @@ void obj_render_queue_all()
 			}
 
 
-			if ( (objp->type == OBJ_SHIP) && Ships[objp->instance].shader_effect_active ) {
+			if ( (objp->type == OBJ_SHIP) && Ships[objp->instance].shader_effect_timestamp.isValid() ) {
 				effect_ships.push_back(objp);
 				continue;
 			}

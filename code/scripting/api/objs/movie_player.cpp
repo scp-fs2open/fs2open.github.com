@@ -63,7 +63,7 @@ ADE_VIRTVAR(FPS, l_MoviePlayer, "number", "Determines the frames per second of t
 		LuaError(L, "Tried to modify read-only member!");
 	}
 
-	return ade_set_args(L, "f", (int)ph->player()->getMovieProperties().fps);
+	return ade_set_args(L, "f", ph->player()->getMovieProperties().fps);
 }
 
 ADE_FUNC(update, l_MoviePlayer, "timespan step_time",
@@ -111,8 +111,9 @@ ADE_FUNC(drawMovie, l_MoviePlayer, "number x1, number y1, [number x2, number y2]
 	float y1;
 	float x2 = -1.f;
 	float y2 = -1.f;
+	float alpha = 1.f;
 
-	if (!ade_get_args(L, "off|ff", l_MoviePlayer.GetPtr(&ph), &x1, &y1, &x2, &y2))
+	if (!ade_get_args(L, "off|fff", l_MoviePlayer.GetPtr(&ph), &x1, &y1, &x2, &y2, &alpha))
 		return ADE_RETURN_NIL;
 
 	if (ph == nullptr || !ph->isValid()) {
@@ -129,7 +130,7 @@ ADE_FUNC(drawMovie, l_MoviePlayer, "number x1, number y1, [number x2, number y2]
 		y2 = y1 + props.size.height;
 	}
 
-	ph->player()->draw(x1, y1, x2, y2);
+	ph->player()->draw(x1, y1, x2, y2, alpha);
 
 	return ADE_RETURN_NIL;
 }

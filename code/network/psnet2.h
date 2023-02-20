@@ -178,6 +178,9 @@ bool psnet_get_addr(const char *host, uint16_t port, SOCKADDR_STORAGE *addr, int
 #define ADDR_FLAG_NUMERIC_SERVICE	(1<<0)
 #define ADDR_FLAG_PREFER_IPV4		(1<<1)
 
+// get protocol struct length from generic storage struct
+SOCKLEN_T psnet_get_sockaddr_len(const SOCKADDR_STORAGE *addr);
+
 // map an IPv4 address to IPv6
 void psnet_map4to6(const in_addr *in4, in6_addr *in6);
 

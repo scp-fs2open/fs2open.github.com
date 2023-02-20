@@ -25,20 +25,50 @@ class ShipEditorDialog;
 }
 
 class ShipTBLViewer;
+class ShipGoalsDialog;
+class ShipInitialStatusDialog;
+class ShipFlagsDialog;
+class ShipTextureReplacementDialog;
+class PlayerOrdersDialog;
 
+/**
+* @brief QTFred's Ship Editor
+*/
 class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 
 	Q_OBJECT
 
   public:
+	/**
+	 * @brief Constructor
+	 * @param parent The main fred window. Needed for triggering window updates.
+	 * @param viewport The viewport this dialog is attacted to.
+	 */
 	explicit ShipEditorDialog(FredView* parent, EditorViewport* viewport);
 	~ShipEditorDialog() override;
 
-	int getShipClass();
-	bool getIfMultipleShips();
+	/**
+	 * @brief Allows subdialogs to get the ships class
+	 * @return Returns the ship_info_index of the current ship or -1 if multiple ships selected.
+	 */
+	int getShipClass() const;
+
+	/**
+	 * @brief Allows subdialogs to get the ship the editor is currently working on.
+	 * @return Returns the index in Ships if working on one or -1 if working on multiple.
+	 */
+	int getSingleShip() const;
+
+	/**
+	 * @brief Allows subdialogs to know if we are working on multiple ships.
+	 * @return true if multiple ships are selected.
+	 */
+	bool getIfMultipleShips() const;
 
   protected:
 	void closeEvent(QCloseEvent*) override;
+	void hideEvent(QHideEvent*) override;
+	void showEvent(QShowEvent*) override;
   private slots:
 
 	void on_textureReplacementButton_clicked();
@@ -66,6 +96,8 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	std::unique_ptr<ShipEditorDialogModel> _model;
 	EditorViewport* _viewport;
 
+	void update();
+
 	void updateUI();
 	void updateColumnOne();
 	void updateColumnTwo();
@@ -75,38 +107,42 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 
 	//column one
 	void shipNameChanged();
-	void shipClassChanged(int);
-	void aiClassChanged(int);
-	void teamChanged(int);
+	void shipClassChanged(const int);
+	void aiClassChanged(const int);
+	void teamChanged(const int);
 	void cargoChanged();
 	void altNameChanged();
-	void altNameChanged(const QString&);
 	void callsignChanged();
-	void callsignChanged(const QString&);
 
 	//column two
-	void hotkeyChanged(int);
-	void personaChanged(int);
-	void scoreChanged(int);
-	void assistChanged(int);
-	void playerChanged(bool);
+	void hotkeyChanged(const int);
+	void personaChanged(const int);
+	void scoreChanged(const int);
+	void assistChanged(const int);
+	void playerChanged(const bool);
 
 	//arrival
-	void arrivalLocationChanged(int);
-	void arrivalTargetChanged(int);
-	void arrivalDistanceChanged(int);
-	void arrivalDelayChanged(int);
-	void arrivalWarpChanged(bool);
-	void ArrivalCueChanged(bool);
+	void arrivalLocationChanged(const int);
+	void arrivalTargetChanged(const int);
+	void arrivalDistanceChanged(const int);
+	void arrivalDelayChanged(const int);
+	void arrivalWarpChanged(const bool);
+	void ArrivalCueChanged(const bool);
 
 	//departure
-	void departureLocationChanged(int);
-	void departureTargetChanged(int);
-	void departureDelayChanged(int);
-	void departureWarpChanged(bool);
-	void DepartureCueChanged(bool);
+	void departureLocationChanged(const int);
+	void departureTargetChanged(const int);
+	void departureDelayChanged(const int);
+	void departureWarpChanged(const bool);
+	void DepartureCueChanged(const bool);
 
-	ShipTBLViewer* TBLViewer = nullptr;
+	std::unique_ptr<ShipGoalsDialog> GoalsDialog = nullptr;
+	std::unique_ptr<ShipInitialStatusDialog> initialStatusDialog = nullptr;
+	std::unique_ptr<ShipFlagsDialog> flagsDialog = nullptr;
+	std::unique_ptr<ShipTextureReplacementDialog> TextureReplacementDialog = nullptr;
+	std::unique_ptr<PlayerOrdersDialog> playerOrdersDialog = nullptr;
+	std::unique_ptr<ShipSpecialStatsDialog> specialStatsDialog = nullptr;
+	std::unique_ptr<ShipTBLViewer> TBLViewer = nullptr;
 };
 } // namespace dialogs
 } // namespace fred

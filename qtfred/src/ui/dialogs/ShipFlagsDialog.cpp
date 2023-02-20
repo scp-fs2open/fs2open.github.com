@@ -19,6 +19,7 @@ ShipFlagsDialog::ShipFlagsDialog(QWidget* parent, EditorViewport* viewport)
 	connect(this, &QDialog::accepted, _model.get(), &ShipFlagsDialogModel::apply);
 	connect(this, &QDialog::rejected, _model.get(), &ShipFlagsDialogModel::reject);
 
+
 	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &ShipFlagsDialog::updateUI);
 
 	// Column One
@@ -118,6 +119,13 @@ void ShipFlagsDialog::closeEvent(QCloseEvent* event)
 	}
 
 	QDialog::closeEvent(event);
+}
+
+void ShipFlagsDialog::showEvent(QShowEvent* event)
+{
+		_model->initializeData();
+
+	QDialog::showEvent(event);
 }
 
 void ShipFlagsDialog::updateUI()

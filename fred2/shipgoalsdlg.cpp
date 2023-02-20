@@ -476,7 +476,7 @@ void ShipGoalsDlg::initialize(ai_goal *goals, int ship)
 			case AI_GOAL_DESTROY_SUBSYSTEM:
 				num = ship_name_lookup(goalp[item].target_name, 1);
 				if (num != -1)
-					m_subsys[item] = ship_get_subsys_index(&Ships[num], goalp[item].docker.name);
+					m_subsys[item] = ship_find_subsys(&Ships[num], goalp[item].docker.name);
 
 				break;
 

@@ -55,9 +55,10 @@ ADE_FUNC(fileExists, l_CFile, "string Filename, [string Path = \"\", boolean Che
 }
 
 ADE_FUNC(listFiles, l_CFile, "string directory, string filter",
-         "Lists all the files in the specified directory and optionally applies a filter. The filter must have the "
-         "format \"*<rest>\" (the wildcard has to appear at the start).",
-         "string[]", "A table with all files in the directory or nil on error")
+         "Lists all the files in the specified directory matching a filter. The filter must have the format "
+         "\"*<rest>\" (the wildcard has to appear at the start), \"<subfolder>/*<rest>\" (to check subfolder(s)) "
+         "or \"*/*<rest>\" (for a glob search).",
+         "string[]", "A table with all matching files or nil on error")
 {
 	using namespace luacpp;
 
@@ -73,8 +74,10 @@ ADE_FUNC(listFiles, l_CFile, "string directory, string filter",
 		return ADE_RETURN_NIL;
 	}
 
-	if (filter_str[0] != '*') {
-		LuaError(L, "The filter \"%s\" is not valid! The first character must be a '*'.", filter);
+	// allow subpath in filter, but it can't be the first part of the filter
+	bool has_subpath = ((filter_str.find("/*") % SCP_string::npos) > 0);
+	if ((filter_str[0] != '*') && !has_subpath) {
+		LuaError(L, "The filter \"%s\" is not valid! The first character must be a '*', or it must follow a path.", filter);
 		return ADE_RETURN_NIL;
 	}
 
@@ -103,8 +106,9 @@ ADE_FUNC(listFiles, l_CFile, "string directory, string filter",
 }
 
 ADE_FUNC(openFile, l_CFile, "string Filename, [string Mode=\"r\", string Path = \"\"]",
-		 "Opens a file. 'Mode' uses standard C fopen arguments. Use a blank string for path for any directory, or a slash for the root directory."
-			 "Be EXTREMELY CAREFUL when using this function, as you may PERMANENTLY delete any file by accident",
+		 "Opens a file. 'Mode' uses standard C fopen arguments. In read mode use a blank string for path for any directory, "
+			"or a slash for the root directory. When using write mode a valid path must be specified. "
+			"Be EXTREMELY CAREFUL when using this function, as you may PERMANENTLY delete any file by accident",
 		 "file",
 		 "File handle, or invalid file handle if the specified file couldn't be opened")
 {
@@ -121,6 +125,9 @@ ADE_FUNC(openFile, l_CFile, "string Filename, [string Mode=\"r\", string Path = 
 		path = cfile_get_path_type(n_path);
 
 	if(path == CF_TYPE_INVALID)
+		return ade_set_error(L, "o", l_File.Set(cfile_h()));
+
+	if((path == CF_TYPE_ANY) && (strchr(n_mode,'w') || strchr(n_mode,'+') || strchr(n_mode,'a')))
 		return ade_set_error(L, "o", l_File.Set(cfile_h()));
 
 	CFILE *cfp = cfopen(n_filename, n_mode, type, path);

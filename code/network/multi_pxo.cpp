@@ -1453,6 +1453,9 @@ void multi_pxo_do_normal()
 
 	// if we need to connect, do so now
 	if (Multi_pxo_must_connect) {		
+		SCP_string pxo_ident = "PXO: Game identified as " + Multi_fs_tracker_game_name;
+		multi_pxo_chat_process_incoming(pxo_ident.c_str(), CHAT_MODE_CARRY);
+
 		// for now, just try once
 		Multi_pxo_connected = multi_pxo_connect();
 
@@ -4581,7 +4584,7 @@ void multi_pxo_pinfo_build_vals()
 
 	// rank
 	memset(Multi_pxo_pinfo_vals[1], 0, 50);	
-	multi_sg_rank_build_name(Ranks[fs->stats.rank].name, Multi_pxo_pinfo_vals[1]);	
+	multi_sg_rank_build_name(Ranks[verify_rank(fs->stats.rank)].name, Multi_pxo_pinfo_vals[1]);	
 	font::force_fit_string(Multi_pxo_pinfo_vals[1], 49, Multi_pxo_pinfo_coords[gr_screen.res][2] - (Multi_pxo_pinfo_val_x[gr_screen.res] - Multi_pxo_pinfo_coords[gr_screen.res][0]));
 
 	// kills

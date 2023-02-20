@@ -14,6 +14,7 @@
 
 #include "globalincs/globals.h"
 #include "globalincs/systemvars.h"
+#include "globalincs/pstypes.h"
 
 #include "actions/Program.h"
 #include "decals/decals.h"
@@ -29,6 +30,8 @@
 #include "weapon/swarm.h"
 #include "weapon/trails.h"
 #include "weapon/weapon_flags.h"
+#include "model/modelrender.h"
+#include "render/3d.h"
 
 class object;
 class ship_subsys;
@@ -276,7 +279,8 @@ typedef struct particle_spew_info {	//this will be used for multi spews
 
 typedef struct spawn_weapon_info 
 {
-	short	spawn_type;							//	Type of weapon to spawn when detonated.
+	short	spawn_wep_index;					//	weapon info index of the child weapon, during parsing instead an index into Spawn_names
+												//  MAY BE -1, if parsed weapon could not be found
 	short	spawn_count;						//	Number of weapons of spawn_type to spawn.
 	float	spawn_angle;						//  Angle to spawn the child weapons in.  default is 180
 	float	spawn_min_angle;					//  Angle of spawning 'deadzone' inside spawn angle. Default 0.
@@ -367,6 +371,7 @@ struct weapon_info
 	float	vel_inherit_amount;					// how much of the parent ship's velocity is inherited (0.0..1.0)
 	float	free_flight_time;
 	float	free_flight_speed_factor;
+	float gravity_const;						// multiplier applied to gravity, if any in the mission
 	float mass;									// mass of the weapon
 	float fire_wait;							// fire rate -- amount of time before you can refire the weapon
 	float max_delay;							// max time to delay a shot (DahBlount)
@@ -404,6 +409,7 @@ struct weapon_info
 	float turn_time;
 	float turn_accel_time;
 	float	cargo_size;							// cargo space taken up by individual weapon (missiles only)
+	float autoaim_fov;							// the weapon specific auto-aim field of view
 	float rearm_rate;							// rate per second at which secondary weapons are loaded during rearming
 	int		reloaded_per_batch;				    // number of munitions rearmed per batch
 	float	weapon_range;						// max range weapon can be effectively fired.  (May be less than life * speed)
@@ -454,7 +460,8 @@ struct weapon_info
 	int	pre_launch_snd_min_interval;	//Minimum interval in ms between the last time the pre-launch sound was played and the next time it can play, as a limiter in case the player is pumping the trigger
 	gamesnd_id	launch_snd;
 	gamesnd_id	impact_snd;
-	gamesnd_id disarmed_impact_snd;
+	gamesnd_id  disarmed_impact_snd;
+	gamesnd_id  shield_impact_snd;
 	gamesnd_id	flyby_snd;							//	whizz-by sound, transmitted through weapon's portable atmosphere.
 	gamesnd_id	ambient_snd;
 	
@@ -492,6 +499,9 @@ struct weapon_info
 	// Energy suck effect
 	float weapon_reduce;					// how much energy removed from weapons systems
 	float afterburner_reduce;			// how much energy removed from weapons systems
+
+	// Vampirism Effect Multiplier
+	float vamp_regen;					// Factor by which a vampiric weapon will multiply the healing done to the shooter
 
 	// tag stuff
 	float	tag_time;						// how long the tag lasts		
@@ -617,7 +627,8 @@ public:
 	void reset();
 };
 
-extern flag_def_list_new<Weapon::Info_Flags> Weapon_Info_Flags[];
+extern special_flag_def_list_new<Weapon::Info_Flags, weapon_info*, flagset<Weapon::Info_Flags>&> Weapon_Info_Flags[];
+
 extern const size_t num_weapon_info_flags;
 
 // Data structure to track the active missiles

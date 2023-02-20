@@ -138,6 +138,8 @@ inline GLenum opengl_primitive_type(primitive_type prim_type);
 void gr_opengl_start_decal_pass();
 void gr_opengl_stop_decal_pass();
 
+void gr_opengl_calculate_irrmap();
+
 extern int Scene_texture_initialized;
 
 extern GLuint Scene_color_texture;

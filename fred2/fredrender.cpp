@@ -31,6 +31,7 @@
 #include "graphics/tmapper.h"
 #include "iff_defs/iff_defs.h"
 #include "io/key.h"
+#include "io/spacemouse.h"
 #include "io/timer.h"
 #include "jumpnode/jumpnode.h"
 #include "lighting/lighting.h"
@@ -89,7 +90,6 @@ int Last_cursor_over = -1;
 int last_x = 0;
 int last_y = 0;
 int Lookat_mode = 0;
-int player_start1;
 int rendering_order[MAX_SHIPS];
 int render_count = 0;
 int Show_asteroid_field = 1;
@@ -751,7 +751,10 @@ void fredhtl_render_subsystem_bounding_box(subsys_to_render *s2r)
 	int mn = subobj_num;
 	while ((mn >= 0) && (pm->submodel[mn].parent >= 0))
 	{
-		g3_start_instance_matrix(&pm->submodel[mn].offset, &pmi->submodel[mn].canonical_orient, true);
+		vec3d offset = pm->submodel[mn].offset;
+		vm_vec_add2(&offset, &pmi->submodel[mn].canonical_offset);
+
+		g3_start_instance_matrix(&offset, &pmi->submodel[mn].canonical_orient, true);
 		g3_count++;
 		mn = pm->submodel[mn].parent;
 	}
@@ -1342,8 +1345,20 @@ int object_check_collision(object *objp, vec3d *p0, vec3d *p1, vec3d *hitpos) {
 }
 
 void process_controls(vec3d *pos, matrix *orient, float frametime, int key, int mode) {
+	static std::unique_ptr<io::spacemouse::SpaceMouse> spacemouse = io::spacemouse::SpaceMouse::searchSpaceMice(0);
+
 	if (Flying_controls_mode) {
 		grid_read_camera_controls(&view_controls, frametime);
+		if (spacemouse != nullptr) {
+			auto spacemouse_movement = spacemouse->getMovement();
+			spacemouse_movement.handleNonlinearities(Fred_spacemouse_nonlinearity);
+			view_controls.pitch += spacemouse_movement.rotation.p;
+			view_controls.vertical += spacemouse_movement.translation.xyz.z;
+			view_controls.heading += spacemouse_movement.rotation.h;
+			view_controls.sideways += spacemouse_movement.translation.xyz.x;
+			view_controls.bank += spacemouse_movement.rotation.b;
+			view_controls.forward += spacemouse_movement.translation.xyz.y;
+		}
 
 		if (key_get_shift_status())
 			memset(&view_controls, 0, sizeof(control_info));
@@ -1361,7 +1376,7 @@ void process_controls(vec3d *pos, matrix *orient, float frametime, int key, int 
 		if (mode)
 			physics_sim_editor(pos, orient, &view_physics, frametime);
 		else
-			physics_sim(pos, orient, &view_physics, frametime);
+			physics_sim(pos, orient, &view_physics, &vmd_zero_vector, frametime);
 
 	} else {
 		vec3d		movement_vec, rel_movement_vec;
@@ -1369,6 +1384,13 @@ void process_controls(vec3d *pos, matrix *orient, float frametime, int key, int 
 		matrix		newmat, rotmat;
 
 		process_movement_keys(key, &movement_vec, &rotangs);
+		if (spacemouse != nullptr) {
+			auto spacemouse_movement = spacemouse->getMovement();
+			spacemouse_movement.handleNonlinearities(Fred_spacemouse_nonlinearity);
+			movement_vec += spacemouse_movement.translation;
+			rotangs += spacemouse_movement.rotation;
+		}
+
 		vm_vec_rotate(&rel_movement_vec, &movement_vec, &The_grid->gmatrix);
 		vm_vec_add2(pos, &rel_movement_vec);
 
@@ -1513,15 +1535,15 @@ void render_frame() {
 		True_rw = rect.Width();
 		True_rh = rect.Height();
 		if (Fixed_briefing_size) {
-			True_rw = BRIEF_GRID_W;
-			True_rh = BRIEF_GRID_H;
+			True_rw = Briefing_window_resolution[0];
+			True_rh = Briefing_window_resolution[1];
 
 		} else {
-			if ((float) True_rh / (float) True_rw > (float) BRIEF_GRID_H / (float) BRIEF_GRID_W) {
-				True_rh = (int) ((float) BRIEF_GRID_H * (float) True_rw / (float) BRIEF_GRID_W);
+			if ((float) True_rh / (float) True_rw > (float) Briefing_window_resolution[1] / (float) Briefing_window_resolution[0]) {
+				True_rh = (int) ((float) Briefing_window_resolution[1] * (float) True_rw / (float) Briefing_window_resolution[0]);
 
 			} else {  // Fred is wider than briefing window
-				True_rw = (int) ((float) BRIEF_GRID_W * (float) True_rh / (float) BRIEF_GRID_H);
+				True_rw = (int) ((float) Briefing_window_resolution[0] * (float) True_rh / (float) Briefing_window_resolution[1]);
 			}
 		}
 

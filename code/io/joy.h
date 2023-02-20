@@ -266,8 +266,8 @@ namespace io
 
 			struct button_info
 			{
-				int DownTimestamp;  //!< The timestamp since when the button is pressed, -1 if not pressed
-				int DownCount;      //!< The number of times the button was pressed
+				UI_TIMESTAMP DownTimestamp;	//!< The timestamp since when the button is pressed, invalid if not pressed
+				int DownCount;				//!< The number of times the button was pressed
 			};
 
 			SCP_vector<button_info> _button;
@@ -276,8 +276,8 @@ namespace io
 			{
 				HatPosition Value;      //!< The current hat position
 
-				int DownTimestamp4[4];  //!< The timestamp when each 4-hat position was last hit, -1 if inactive.
-				int DownTimestamp8[8];  //!< The timestamp when each 8-hat posision was last hit, -1 if inactive.
+				UI_TIMESTAMP DownTimestamp4[4];  //!< The timestamp when each 4-hat position was last hit, invalid if inactive.
+				UI_TIMESTAMP DownTimestamp8[8];  //!< The timestamp when each 8-hat posision was last hit, invalid if inactive.
 
 				int DownCount4[4];      //!< The number of times each 4-hat position has been hit since we last checked.
 				int DownCount8[8];      //!< The number of times each 8-hat position has been hit since we last checked.
@@ -335,6 +335,12 @@ namespace io
 		 * @brief Called from cmdline -get_info, gets Joy info JSON and shuts down SDL_JOYSTICK subsystem.
 		 */
 		json_t* getJsonArray();
+		
+		/**
+		 * @brief Called from cmdline -joy_info, uses Prints Joy info JSON to STDOUT
+		 * @note Uses ::getJsonArray(); SDL_JOYSTICK subsystem is init and shutdown is handled by ::getJsonArray()
+		 */
+		void printJoyJSON();
 	}
 }
 

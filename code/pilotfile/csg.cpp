@@ -215,9 +215,9 @@ void pilotfile::csg_write_info()
 	}
 
 	// medals list
-	cfwrite_int(Num_medals, cfp);
+	cfwrite_int((int)Medals.size(), cfp);
 
-	for (idx = 0; idx < Num_medals; idx++) {
+	for (idx = 0; idx < (int)Medals.size(); idx++) {
 		cfwrite_string_len(Medals[idx].name, cfp);
 	}
 
@@ -271,49 +271,40 @@ void pilotfile::csg_read_missions()
 		missionp->flags = cfread_int(cfp);
 
 		// goals
-		missionp->num_goals = cfread_int(cfp);
+		missionp->goals.clear();
+		int num_goals = cfread_int(cfp);
 
-		if (missionp->num_goals > 0) {
-			missionp->goals = (mgoal *) vm_malloc( missionp->num_goals * sizeof(mgoal) );
-			Verify( missionp->goals != NULL );
+		for (j = 0; j < num_goals; j++) {
+			missionp->goals.emplace_back();
+			auto& stored_goal = missionp->goals.back();
 
-			memset( missionp->goals, 0, missionp->num_goals * sizeof(mgoal) );
-
-			for (j = 0; j < missionp->num_goals; j++) {
-				cfread_string_len(missionp->goals[j].name, NAME_LENGTH, cfp);
-				missionp->goals[j].status = cfread_char(cfp);
-			}
+			cfread_string_len(stored_goal.name, NAME_LENGTH, cfp);
+			stored_goal.status = cfread_char(cfp);
 		}
 
 		// events
-		missionp->num_events = cfread_int(cfp);
+		missionp->events.clear();
+		int num_events = cfread_int(cfp);
 
-		if (missionp->num_events > 0) {
-			missionp->events = (mevent *) vm_malloc( missionp->num_events * sizeof(mevent) );
-			Verify( missionp->events != NULL );
+		for (j = 0; j < num_events; j++) {
+			missionp->events.emplace_back();
+			auto& stored_event = missionp->events.back();
 
-			memset( missionp->events, 0, missionp->num_events * sizeof(mevent) );
-
-			for (j = 0; j < missionp->num_events; j++) {
-				cfread_string_len(missionp->events[j].name, NAME_LENGTH, cfp);
-				missionp->events[j].status = cfread_char(cfp);
-			}
+			cfread_string_len(stored_event.name, NAME_LENGTH, cfp);
+			stored_event.status = cfread_char(cfp);
 		}
 
 		// variables
-		missionp->num_variables = cfread_int(cfp);
+		missionp->variables.clear();
+		int num_variables = cfread_int(cfp);
 
-		if (missionp->num_variables > 0) {
-			missionp->variables = (sexp_variable *) vm_malloc( missionp->num_variables * sizeof(sexp_variable) );
-			Verify( missionp->variables != NULL );
+		for (j = 0; j < num_variables; j++) {
+			missionp->variables.emplace_back();
+			auto& stored_variable = missionp->variables.back();
 
-			memset( missionp->variables, 0, missionp->num_variables * sizeof(sexp_variable) );
-
-			for (j = 0; j < missionp->num_variables; j++) {
-				missionp->variables[j].type = cfread_int(cfp);
-				cfread_string_len(missionp->variables[j].text, TOKEN_LENGTH, cfp);
-				cfread_string_len(missionp->variables[j].variable_name, TOKEN_LENGTH, cfp);
-			}
+			stored_variable.type = cfread_int(cfp);
+			cfread_string_len(missionp->variables[j].text, TOKEN_LENGTH, cfp);
+			cfread_string_len(missionp->variables[j].variable_name, TOKEN_LENGTH, cfp);
 		}
 
 		// scoring stats
@@ -371,25 +362,25 @@ void pilotfile::csg_write_missions()
 			cfwrite_int(missionp->flags, cfp);
 
 			// goals
-			cfwrite_int(missionp->num_goals, cfp);
+			cfwrite_int((int)missionp->goals.size(), cfp);
 
-			for (j = 0; j < missionp->num_goals; j++) {
+			for (j = 0; j < (int)missionp->goals.size(); j++) {
 				cfwrite_string_len(missionp->goals[j].name, cfp);
 				cfwrite_char(missionp->goals[j].status, cfp);
 			}
 
 			// events
-			cfwrite_int(missionp->num_events, cfp);
+			cfwrite_int((int)missionp->events.size(), cfp);
 
-			for (j = 0; j < missionp->num_events; j++) {
+			for (j = 0; j < (int)missionp->events.size(); j++) {
 				cfwrite_string_len(missionp->events[j].name, cfp);
 				cfwrite_char(missionp->events[j].status, cfp);
 			}
 
 			// variables
-			cfwrite_int(missionp->num_variables, cfp);
+			cfwrite_int((int)missionp->variables.size(), cfp);
 
-			for (j = 0; j < missionp->num_variables; j++) {
+			for (j = 0; j < (int)missionp->variables.size(); j++) {
 				cfwrite_int(missionp->variables[j].type, cfp);
 				cfwrite_string_len(missionp->variables[j].text, cfp);
 				cfwrite_string_len(missionp->variables[j].variable_name, cfp);
@@ -417,7 +408,7 @@ void pilotfile::csg_write_missions()
 			}
 
 			// medals earned (scoring)
-			for (j = 0; j < Num_medals; j++) {
+			for (j = 0; j < (int)Medals.size(); j++) {
 				cfwrite_int(missionp->stats.medal_counts[j], cfp);
 			}
 		}
@@ -799,7 +790,7 @@ void pilotfile::csg_write_stats()
 	}
 
 	// medals earned (scoring)
-	for (idx = 0; idx < Num_medals; idx++) {
+	for (idx = 0; idx < (int)Medals.size(); idx++) {
 		cfwrite_int(p->stats.medal_counts[idx], cfp);
 	}
 
@@ -1134,11 +1125,20 @@ void pilotfile::csg_write_variables()
 
 void pilotfile::csg_read_settings()
 {
+	clamped_range_warnings.clear();
 	// sound/voice/music
 	if (!Using_in_game_options) {
-		snd_set_effects_volume(cfread_float(cfp));
-		event_music_set_volume(cfread_float(cfp));
-		snd_set_voice_volume(cfread_float(cfp));
+		float temp_volume = cfread_float(cfp);
+		clamp_value_with_warn(&temp_volume, 0.f, 1.f, "Effects Volume");
+		snd_set_effects_volume(temp_volume);
+
+		temp_volume = cfread_float(cfp);
+		clamp_value_with_warn(&temp_volume, 0.f, 1.f, "Music Volume");
+		event_music_set_volume(temp_volume);
+
+		temp_volume = cfread_float(cfp);
+		clamp_value_with_warn(&temp_volume, 0.f, 1.f, "Voice Volume");
+		snd_set_voice_volume(temp_volume);
 
 		Briefing_voice_enabled = cfread_int(cfp) != 0;
 	} else {
@@ -1154,13 +1154,20 @@ void pilotfile::csg_read_settings()
 
 	// skill level
 	Game_skill_level = cfread_int(cfp);
+	clamp_value_with_warn(&Game_skill_level, 0, 4, "Game Skill Level");
 
 	// input options
 	if (!Using_in_game_options) {
 		Use_mouse_to_fly   = cfread_int(cfp) != 0;
 		Mouse_sensitivity  = cfread_int(cfp);
+		clamp_value_with_warn(&Mouse_sensitivity, 0, 9, "Mouse Sensitivity");
+
 		Joy_sensitivity    = cfread_int(cfp);
+		clamp_value_with_warn(&Joy_sensitivity, 0, 9, "Joystick Sensitivity");
+
 		Joy_dead_zone_size = cfread_int(cfp);
+		clamp_value_with_warn(&Joy_dead_zone_size, 0, 45, "Joystick Deadzone");
+
 	} else {
 		// The values are set by the in-game menu but we still need to read the int from the file to maintain the correct offset
 		cfread_int(cfp);
@@ -1184,28 +1191,44 @@ void pilotfile::csg_read_settings()
 		dummy = cfread_int(cfp);
 		dummy = cfread_int(cfp);
 	}
+	if (!clamped_range_warnings.empty()) {
+		ReleaseWarning(LOCATION, "The following values in the campaign save file were out of bounds and were automatically reset:\n%s\nPlease check your settings!\n", clamped_range_warnings.c_str());
+		clamped_range_warnings.clear();
+	}
 }
 
 void pilotfile::csg_write_settings()
 {
 	startSection(Section::Settings);
+	clamped_range_warnings.clear();
 
 	// sound/voice/music
+	clamp_value_with_warn(&Master_sound_volume, 0.f, 1.f, "Effects Volume");
 	cfwrite_float(Master_sound_volume, cfp);
+	clamp_value_with_warn(&Master_event_music_volume, 0.f, 1.f, "Music Volume");
 	cfwrite_float(Master_event_music_volume, cfp);
+	clamp_value_with_warn(&Master_voice_volume, 0.f, 1.f, "Voice Volume");
 	cfwrite_float(Master_voice_volume, cfp);
 
 	cfwrite_int(Briefing_voice_enabled ? 1 : 0, cfp);
 
 	// skill level
+	clamp_value_with_warn(&Game_skill_level, 0, 4, "Game Skill Level");
 	cfwrite_int(Game_skill_level, cfp);
 
 	// input options
 	cfwrite_int(Use_mouse_to_fly, cfp);
+	clamp_value_with_warn(&Mouse_sensitivity, 0, 9, "Mouse Sensitivity");
 	cfwrite_int(Mouse_sensitivity, cfp);
+	clamp_value_with_warn(&Joy_sensitivity, 0, 9, "Joystick Sensitivity");
 	cfwrite_int(Joy_sensitivity, cfp);
+	clamp_value_with_warn(&Joy_dead_zone_size, 0, 45, "Joystick Deadzone");
 	cfwrite_int(Joy_dead_zone_size, cfp);
 
+	if (!clamped_range_warnings.empty()) {
+		ReleaseWarning(LOCATION, "The following values were out of bounds when saving the campaign file and were automatically reset.\n%s\nThis shouldn't be possible, please contact the FreeSpace 2 Open Source Code Project!\n", clamped_range_warnings.c_str());
+		clamped_range_warnings.clear();
+	}
 	endSection();
 }
 
@@ -1478,7 +1501,7 @@ void pilotfile::csg_reset_data()
 
 	// reset campaign status
 	Campaign.prev_mission = -1;
-	Campaign.next_mission = -1;
+	Campaign.next_mission = 0;
 	Campaign.num_missions_completed = 0;
 
 	// techroom reset
@@ -1495,23 +1518,9 @@ void pilotfile::csg_reset_data()
 	for (idx = 0; idx < MAX_CAMPAIGN_MISSIONS; idx++) {
 		missionp = &Campaign.missions[idx];
 
-		if (missionp->goals) {
-			missionp->num_goals = 0;
-			vm_free(missionp->goals);
-			missionp->goals = NULL;
-		}
-
-		if (missionp->events) {
-			missionp->num_events = 0;
-			vm_free(missionp->events);
-			missionp->events = NULL;
-		}
-
-		if (missionp->variables) {
-			missionp->num_variables = 0;
-			vm_free(missionp->variables);
-			missionp->variables = NULL;
-		}
+		missionp->goals.clear();
+		missionp->events.clear();
+		missionp->variables.clear();
 
 		missionp->stats.init();
 	}

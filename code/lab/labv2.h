@@ -1,8 +1,5 @@
 #pragma once
 
-#include "lab/wmcgui.h"
-
-
 enum class LabMode {
 	Ship,
 	Weapon,

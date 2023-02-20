@@ -51,7 +51,7 @@ enum class SubSystem {
 	Campaign,
 	NebulaLightning,
 	FFmpeg,
-	DynamicSEXPs,
+	SEXPs,
 	ScriptingInitHook,
 };
 

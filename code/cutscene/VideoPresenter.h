@@ -30,7 +30,7 @@ class VideoPresenter {
 
 	void uploadVideoFrame(const VideoFramePtr& frame);
 
-	void displayFrame(float x1, float y1, float x2, float y2);
+	void displayFrame(float x1, float y1, float x2, float y2, float alpha = 1.0f);
 };
 }
 }

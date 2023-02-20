@@ -402,6 +402,7 @@ BOOL initial_status::OnInitDialog()
 			if (Ship_info[shipp->ship_info_index].uses_team_colors) {
 				//Add a "None" entry at the beginning to allow simple deselection of colours
 				int t = m_team_color_setting.AddString("None");
+				m_team_color_setting.SetCurSel(i);
 				m_team_color_setting.SetItemData(t, i);
 				++i;
 

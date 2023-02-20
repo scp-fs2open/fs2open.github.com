@@ -44,7 +44,7 @@ vec3d Object_position;
 matrix	Object_matrix;			// Where the opject is pointing in World coordinates
 
 
-#define MAX_INSTANCE_DEPTH	10
+#define MAX_INSTANCE_DEPTH	32
 
 struct instance_context {
 	matrix m;

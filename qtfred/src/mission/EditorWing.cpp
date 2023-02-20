@@ -36,7 +36,7 @@ int Editor::delete_wing(int wing_num, int bypass)
 		}
 	}
 
-	invalidate_references(Wings[wing_num].name, REF_TYPE_WING);
+	invalidate_references(Wings[wing_num].name, sexp_ref_type::WING);
 	if (!bypass) {
 		total = Wings[wing_num].wave_count;
 		for (i = 0; i < total; i++) {
@@ -183,24 +183,9 @@ int Editor::create_wing()
 			return -1;
 		}
 
-		Wings[wing].num_waves = 1;
-		Wings[wing].threshold = 0;
-		Wings[wing].arrival_location = Wings[wing].departure_location = 0;
-		Wings[wing].arrival_distance = 0;
-		Wings[wing].arrival_anchor = -1;
-		Wings[wing].arrival_delay = 0;
+		Wings[wing].clear();
 		Wings[wing].arrival_cue = Locked_sexp_true;
-		Wings[wing].departure_delay = 0;
 		Wings[wing].departure_cue = Locked_sexp_false;
-		Wings[wing].hotkey = -1;
-		Wings[wing].flags.reset();
-		Wings[wing].wave_delay_min = 0;
-		Wings[wing].wave_delay_max = 0;
-
-		for (i = 0; i < MAX_AI_GOALS; i++) {
-			Wings[wing].ai_goals[i].ai_mode = AI_GOAL_NONE;
-			Wings[wing].ai_goals[i].priority = -1; // this sets up the priority field to be like ships
-		}
 
 		auto dlg = _lastActiveViewport->dialogProvider->createFormWingDialog();
 

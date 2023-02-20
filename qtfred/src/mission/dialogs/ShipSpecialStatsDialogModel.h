@@ -7,7 +7,6 @@ namespace fso {
 		namespace dialogs {
 			class ShipSpecialStatsDialogModel : public AbstractDialogModel {
 			private:
-				void initializeData();
 				template <typename T>
 				void modify(T& a, const T& b);
 				bool _modified = false;
@@ -36,6 +35,7 @@ namespace fso {
 
 			public:
 				ShipSpecialStatsDialogModel(QObject* parent, EditorViewport* viewport);
+			  void initializeData();
 				bool apply() override;
 				void reject() override;
 				bool query_modified();

@@ -25,6 +25,7 @@
 #include "mission/missionmessage.h"
 #include "mission/missiongoals.h"
 #include "mission/missionbriefcommon.h"
+#include "model/modelreplace.h"
 #include "Management.h"
 #include "cfile/cfile.h"
 #include "graphics/2d.h"
@@ -67,6 +68,7 @@
 #include "mod_table/mod_table.h"
 #include "libs/ffmpeg/FFmpeg.h"
 #include "scripting/scripting.h"
+#include "scripting/global_hooks.h"
 #include "utils/Random.h"
 
 #include <direct.h>
@@ -85,7 +87,7 @@ int cur_wing = -1;
 int cur_wing_index;
 int cur_object_index = -1;
 int cur_ship = -1;
-int cur_model_index = 0;
+int cur_ship_type_combo_index = 0;
 waypoint *cur_waypoint = NULL;
 waypoint_list *cur_waypoint_list = NULL;
 int delete_flag;
@@ -99,6 +101,8 @@ char Fred_base_dir[512] = "";
 
 char Fred_alt_names[MAX_SHIPS][NAME_LENGTH+1];
 char Fred_callsigns[MAX_SHIPS][NAME_LENGTH+1];
+
+extern void allocate_parse_text(size_t size);
 
 // object numbers for ships in a wing.
 int wing_objects[MAX_WINGS][MAX_SHIPS_PER_WING];
@@ -147,7 +151,7 @@ int query_ship_name_duplicate(int ship);
 char *reg_read_string( char *section, char *name, char *default_value );
 
 // Note that the parameter here is max *length*, not max buffer size.  Leave room for the null-terminator!
-void string_copy(char *dest, const CString &src, size_t max_len, int modify)
+void string_copy(char *dest, const CString &src, size_t max_len, bool modify)
 {
 	if (modify)
 		if (strcmp(src, dest))
@@ -161,7 +165,7 @@ void string_copy(char *dest, const CString &src, size_t max_len, int modify)
 	dest[len] = 0;
 }
 
-void string_copy(SCP_string &dest, const CString &src, int modify)
+void string_copy(SCP_string &dest, const CString &src, bool modify)
 {
 	if (modify)
 		if (strcmp(src, dest.c_str()))
@@ -274,7 +278,6 @@ void parse_medal_tbl()
 }
 */
 
-void parse_init(bool basic = false);
 void brief_init_colors();
 
 void fred_preload_all_briefing_icons()
@@ -405,19 +408,19 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	gamesnd_parse_soundstbl();		// needs to be loaded after species stuff but before interface/weapon/ship stuff - taylor
 	mission_brief_common_init();	
 
-	sexp::dynamic_sexp_init(); // Must happen before ship init for LuaAI
+	sexp_startup(); // Must happen before ship init for LuaAI
 
 	animation::ModelAnimationParseHelper::parseTables();
 	obj_init();
 	model_free_all();				// Free all existing models
+	virtual_pof_init();
 	ai_init();
 	ai_profiles_init();
 	armor_init();
 	weapon_init();
-	parse_medal_tbl();			// get medal names for sexpression usage
+	medals_init();			// get medal names for sexpression usage
 	glowpoint_init();
 	ship_init();
-	parse_init();
 	techroom_intel_init();
 	hud_positions_init();
 	asteroid_init();
@@ -461,15 +464,18 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	g3_set_view_matrix(&eye_pos, &eye_orient, 0.5f);
 	
 	// Get the default player ship
-	Default_player_model = cur_model_index = get_default_player_ship_index();
+	Default_player_model = get_default_player_ship_index();
 
-	Id_select_type_start = (int)(Ship_info.size() + 2);
-	Id_select_type_jump_node = (int)(Ship_info.size() + 1);
-	Id_select_type_waypoint = (int)(Ship_info.size());
 	Fred_main_wnd -> init_tools();
 
 	Script_system.RunInitFunctions();
-	Script_system.RunCondition(CHA_GAMEINIT);
+	if (scripting::hooks::OnGameInit->isActive()) {
+		scripting::hooks::OnGameInit->run();
+	}
+	//Technically after the splash screen, but the best we can do these days. Since the override is hard-deprecated, we don't need to check it.
+	if (scripting::hooks::OnSplashScreen->isActive()) {
+		scripting::hooks::OnSplashScreen->run();
+	}
 
 	return true;
 }
@@ -584,11 +590,7 @@ int create_ship(matrix *orient, vec3d *pos, int ship_type)
 			if (!(sip->is_small_ship()))
 			{
 				shipp->orders_accepted = ship_get_default_orders_accepted( sip );
-
-				for(size_t i = 0; i < Player_orders.size(); i++) {
-					if (Player_orders[i].id & DEPART_ITEM)
-						shipp->orders_accepted.erase(i);
-				}
+				shipp->orders_accepted.erase(DEPART_ITEM);
 			}
 		}
 		else
@@ -663,7 +665,6 @@ int dup_object(object *objp)
 
 		aip1 = &Ai_info[Ships[n].ai_index];
 		aip2 = &Ai_info[Ships[inst].ai_index];
-		aip1->behavior = aip2->behavior;
 		aip1->ai_class = aip2->ai_class;
 		for (i=0; i<MAX_AI_GOALS; i++)
 			aip1->goals[i] = aip2->goals[i];
@@ -721,10 +722,10 @@ int create_object(vec3d *pos, int waypoint_instance)
 {
 	int obj, n;
 
-	if (cur_model_index == Id_select_type_waypoint)
+	if (cur_ship_type_combo_index == Id_select_type_waypoint)
 		obj = create_waypoint(pos, waypoint_instance);
 
-	else if (cur_model_index == Id_select_type_start) {
+	else if (cur_ship_type_combo_index == Id_select_type_start) {
 		if (Player_starts >= MAX_PLAYERS) {
 			Fred_main_wnd->MessageBox("Unable to create new player start point.\n"
 				"You have reached the maximum limit.", NULL, MB_OK | MB_ICONEXCLAMATION);
@@ -743,14 +744,16 @@ int create_object(vec3d *pos, int waypoint_instance)
 		} else
 			obj = create_player(Player_starts, pos, NULL, Default_player_model);
 
-	} else if (cur_model_index == Id_select_type_jump_node) {
+	} else if (cur_ship_type_combo_index == Id_select_type_jump_node) {
 		CJumpNode jnp(pos);
 		obj = jnp.GetSCPObjectNumber();
 		Jump_nodes.push_back(std::move(jnp));
-	} else if(Ship_info[cur_model_index].flags[Ship::Info_Flags::No_fred]){		
-		obj = -1;
 	} else {  // creating a ship
-		obj = create_ship(NULL, pos, cur_model_index);
+		int ship_class = m_new_ship_type_combo_box.GetShipClass(cur_ship_type_combo_index);
+		if (ship_class < 0 || ship_class >= ship_info_size())
+			return -1;
+
+		obj = create_ship(nullptr, pos, ship_class);
 		if (obj == -1)
 			return -1;
 
@@ -776,12 +779,16 @@ int create_player(int num, vec3d *pos, matrix *orient, int type, int init)
 	if (type == -1){
 		type = Default_player_model;
 	}
-
 	Assert(type >= 0);
-	Assert(Player_starts < MAX_PLAYERS);
-	Player_starts++;
+
 	obj = create_ship(orient, pos, type);
 	Objects[obj].type = OBJ_START;
+
+	Assert(Player_starts < MAX_PLAYERS);
+	Player_starts++;
+	if (Player_start_shipnum < 0) {
+		Player_start_shipnum = Objects[obj].instance;
+	}
 
 	// be sure arrival/departure cues are set
 	Ships[Objects[obj].instance].arrival_cue = Locked_sexp_true;
@@ -810,7 +817,8 @@ void reset_mission()
 {
 	clear_mission();
 
-	player_start1 = create_player(0, &vmd_zero_vector, &vmd_identity_matrix);
+	create_player(0, &vmd_zero_vector, &vmd_identity_matrix);
+
 	stars_post_level_init();
 }
 
@@ -825,55 +833,24 @@ void clear_mission()
 		Briefing_dialog->reset_editor();
 	}
 
-	extern void allocate_parse_text(size_t size);
 	allocate_parse_text( PARSE_TEXT_SIZE );
 
-	The_mission.cutscenes.clear(); 
-	fiction_viewer_reset();
-	cmd_brief_reset();
-	mission_event_shutdown();
+	mission_init(&The_mission);
 
-	Asteroid_field.num_initial_asteroids = 0;  // disable asteroid field by default.
-	Asteroid_field.speed = 0.0f;
-	vm_vec_make(&Asteroid_field.min_bound, -1000.0f, -1000.0f, -1000.0f);
-	vm_vec_make(&Asteroid_field.max_bound,  1000.0f,  1000.0f,  1000.0f);
-	vm_vec_make(&Asteroid_field.inner_min_bound, -500.0f, -500.0f, -500.0f);
-	vm_vec_make(&Asteroid_field.inner_max_bound,  500.0f,  500.0f,  500.0f);
-	Asteroid_field.has_inner_bound = 0;
-	Asteroid_field.field_type = FT_ACTIVE;
-	Asteroid_field.debris_genre = DG_ASTEROID;
-	Asteroid_field.field_debris_type[0] = -1;
-	Asteroid_field.field_debris_type[1] = -1;
-	Asteroid_field.field_debris_type[2] = -1;
-
-	strcpy_s(Mission_parse_storm_name, "none");
-
-	animation::ModelAnimationParseHelper::parseTables();
 	obj_init();
 	model_free_all();				// Free all existing models
 	ai_init();
-	ship_init();
-	jumpnode_level_close();
-	waypoint_level_close();
-
-	Num_wings = 0;
-	for (i=0; i<MAX_WINGS; i++){
-		Wings[i].wave_count = 0;
-		Wings[i].wing_squad_filename[0] = '\0';
-		Wings[i].wing_insignia_texture = -1;
-	}
+	asteroid_level_init();
+	ship_level_init();
+	nebula_init(Nebula_index, Nebula_pitch, Nebula_bank, Nebula_heading);
 
 	Shield_sys_teams.clear();
-	for (i=0; i< (int)Iff_info.size(); i++){
-		Shield_sys_teams.push_back(0);
-	}
+	Shield_sys_teams.resize(Iff_info.size(), 0);
 
 	for (i=0; i<MAX_SHIP_CLASSES; i++){
 		Shield_sys_types[i] = 0;
 	}
 
-	Num_ai_dock_names = 0;
-	Num_reinforcements = 0;
 	set_cur_indices(-1);
 
 	str = reg_read_string("SOFTWARE\\Microsoft\\Windows\\CurrentVersion", "RegisteredOwner", NULL);
@@ -886,23 +863,14 @@ void clear_mission()
 			}
 		}
 	}
-
 	t = CTime::GetCurrentTime();
+
 	strcpy_s(The_mission.name, "Untitled");
-	strncpy(The_mission.author, str, NAME_LENGTH - 1);
-	The_mission.author[NAME_LENGTH - 1] = 0;
+	The_mission.author = str;
 	strcpy_s(The_mission.created, t.Format("%x at %X"));
 	strcpy_s(The_mission.modified, The_mission.created);
 	strcpy_s(The_mission.notes, "This is a FRED2_OPEN created mission.\n");
 	strcpy_s(The_mission.mission_desc, "Put mission description here\n");
-	The_mission.game_type = MISSION_TYPE_SINGLE;
-	strcpy_s(The_mission.squad_name, "");
-	strcpy_s(The_mission.squad_filename, "");
-	The_mission.num_respawns = 3;
-	The_mission.max_respawn_delay = -1;
-
-	Player_starts = 0;
-	Num_teams = 1;
 
 	// reset alternate name & callsign stuff
 	for(i=0; i<MAX_SHIPS; i++){
@@ -943,75 +911,11 @@ void clear_mission()
 		Team_data[i].num_weapon_choices = count; 
 	}
 
-	waypoint_parse_init();
-	Num_mission_events = 0;
-	Num_goals = 0;
 	unmark_all();
-	obj_init();
-	model_free_all();				// Free all existing models
 	fred_render_init();
-	init_sexp();
-	messages_init();
-	brief_reset();
-	debrief_reset();
-	event_music_reset_choices();
-	clear_texture_replacements();
-
-	Event_annotations.clear();
-
-	mission_parse_reset_alt();		// alternate ship type names
-	mission_parse_reset_callsign();
-
-	strcpy(Cargo_names[0], "Nothing");
-	Num_cargo = 1;
 	set_physics_controls();
 
-	// reset background bitmaps and suns
-	stars_pre_level_init();
-	Nebula_index = 0;
-	Mission_palette = 1;
-	Nebula_pitch = (int) ((float) (Random::next() & 0x0fff) * 360.0f / 4096.0f);
-	Nebula_bank = (int) ((float) (Random::next() & 0x0fff) * 360.0f / 4096.0f);
-	Nebula_heading = (int) ((float) (Random::next() & 0x0fff) * 360.0f / 4096.0f);
-	Neb2_awacs = -1.0f;
-	Neb2_poof_flags = 0;
-	strcpy_s(Neb2_texture_name, "");
-	for(i=0; i<(int)MAX_NEB2_POOFS; i++){
-		Neb2_poof_flags |= (1<<i);
-	}
-
-	Nmodel_flags = DEFAULT_NMODEL_FLAGS;
-	Nmodel_num = -1;
-	Nmodel_instance_num = -1;
-	vm_set_identity(&Nmodel_orient);
-	Nmodel_bitmap = -1;
-
-	The_mission.contrail_threshold = CONTRAIL_THRESHOLD_DEFAULT;
-
-	// Goober5000
-	The_mission.command_persona = Default_command_persona;
-	strcpy_s(The_mission.command_sender, DEFAULT_COMMAND); 
-
-	// Goober5000: reset ALL mission flags, not just nebula!
-	The_mission.flags.reset();
-	The_mission.support_ships.max_support_ships = -1;	// negative means infinite
-	The_mission.support_ships.max_hull_repair_val = 0.0f;
-	The_mission.support_ships.max_subsys_repair_val = 100.0f;
-	The_mission.ai_profile = &Ai_profiles[Default_ai_profile];
-	
-	nebula_init(Nebula_filenames[Nebula_index], Nebula_pitch, Nebula_bank, Nebula_heading);
-
-	strcpy_s(The_mission.loading_screen[GR_640],"");
-	strcpy_s(The_mission.loading_screen[GR_1024],"");
-	strcpy_s(The_mission.skybox_model, "");
-	vm_set_identity(&The_mission.skybox_orientation);
-	strcpy_s(The_mission.envmap_name, "");
-	The_mission.skybox_flags = DEFAULT_NMODEL_FLAGS;
-
-	// no sound environment
-	The_mission.sound_environment.id = -1;
-
-	ENVMAP = -1;
+	Event_annotations.clear();
 
 	// free memory from all parsing so far -- see also the stop_parse() in player_select_close() which frees all tbls found during game_init()
 	stop_parse();
@@ -1274,7 +1178,7 @@ int common_object_delete(int obj)
 		Assert((i >= 0) && (i < MAX_SHIPS));
 		sprintf(msg, "Player %d", i + 1);
 		name = msg;
-		r = reference_handler(name, REF_TYPE_PLAYER, obj);
+		r = reference_handler(name, sexp_ref_type::PLAYER, obj);
 		if (r)
 			return r;
 
@@ -1285,7 +1189,7 @@ int common_object_delete(int obj)
 		}
 
 		Objects[obj].type = OBJ_SHIP;  // was allocated as a ship originally, so remove as such.
-		invalidate_references(name, REF_TYPE_PLAYER);
+		invalidate_references(name, sexp_ref_type::PLAYER);
 
 		// check if any ship is docked with this ship and break dock if so
 		while (object_is_docked(&Objects[obj]))
@@ -1317,7 +1221,7 @@ int common_object_delete(int obj)
 		// we'll end up deleting the path, so check for path references
 		if (count == 1) {
 			name = wp_list->get_name();
-			r = reference_handler(name, REF_TYPE_PATH, obj);
+			r = reference_handler(name, sexp_ref_type::WAYPOINT_PATH, obj);
 			if (r)
 				return r;
 		}
@@ -1325,15 +1229,15 @@ int common_object_delete(int obj)
 		// check for waypoint references
 		sprintf(msg, "%s:%d", wp_list->get_name(), index + 1);
 		name = msg;
-		r = reference_handler(name, REF_TYPE_WAYPOINT, obj);
+		r = reference_handler(name, sexp_ref_type::WAYPOINT, obj);
 		if (r)
 			return r;
 
 		// at this point we've confirmed we want to delete it
 
-		invalidate_references(name, REF_TYPE_WAYPOINT);
+		invalidate_references(name, sexp_ref_type::WAYPOINT);
 		if (count == 1) {
-			invalidate_references(wp_list->get_name(), REF_TYPE_PATH);
+			invalidate_references(wp_list->get_name(), sexp_ref_type::WAYPOINT_PATH);
 		}
 
 		// the actual removal code has been moved to this function in waypoints.cpp
@@ -1341,13 +1245,13 @@ int common_object_delete(int obj)
 
 	} else if (type == OBJ_SHIP) {
 		name = Ships[Objects[obj].instance].ship_name;
-		r = reference_handler(name, REF_TYPE_SHIP, obj);
+		r = reference_handler(name, sexp_ref_type::SHIP, obj);
 		if (r)
 			return r;
 
 		z = Objects[obj].instance;
 		if (Ships[z].wingnum >= 1) {
-			invalidate_references(name, REF_TYPE_SHIP);
+			invalidate_references(name, sexp_ref_type::SHIP);
 			r = delete_ship_from_wing(z);
 			if (r)
 				return r;
@@ -1357,7 +1261,7 @@ int common_object_delete(int obj)
 			if (r)
 				return r;
 
-			invalidate_references(name, REF_TYPE_SHIP);
+			invalidate_references(name, sexp_ref_type::SHIP);
 		}
 
 		for (i=0; i<Num_reinforcements; i++)
@@ -1831,7 +1735,7 @@ int rename_ship(int ship, char *name)
 	Assert(strlen(name) < NAME_LENGTH);
 
 	update_sexp_references(Ships[ship].ship_name, name);
-	ai_update_goal_references(REF_TYPE_SHIP, Ships[ship].ship_name, name);
+	ai_update_goal_references(sexp_ref_type::SHIP, Ships[ship].ship_name, name);
 	update_texture_replacements(Ships[ship].ship_name, name);
 	for (i=0; i<Num_reinforcements; i++)
 		if (!stricmp(Ships[ship].ship_name, Reinforcements[i].name)) {
@@ -1845,7 +1749,7 @@ int rename_ship(int ship, char *name)
 	return 0;
 }
 
-int invalidate_references(char *name, int type)
+int invalidate_references(char *name, sexp_ref_type type)
 {
 	char new_name[512];
 	int i;
@@ -1866,10 +1770,10 @@ int internal_integrity_check()
 {
 	int i;
 
-	for (i=0; i<Num_mission_events; i++)
+	for (i=0; i<(int)Mission_events.size(); i++)
 		verify_sexp_tree(Mission_events[i].formula);
 
-	for (i=0; i<Num_goals; i++)
+	for (i=0; i<(int)Mission_goals.size(); i++)
 		verify_sexp_tree(Mission_goals[i].formula);
 
 	for (i=0; i<MAX_WINGS; i++)
@@ -1963,7 +1867,7 @@ int get_ship_from_obj(object *objp)
 	return 0;
 }
 
-void ai_update_goal_references(int type, const char *old_name, const char *new_name)
+void ai_update_goal_references(sexp_ref_type type, const char *old_name, const char *new_name)
 {
 	int i;
 
@@ -1976,21 +1880,21 @@ void ai_update_goal_references(int type, const char *old_name, const char *new_n
 			ai_update_goal_references(Wings[i].ai_goals, type, old_name, new_name);
 }
 
-int query_referenced_in_ai_goals(int type, const char *name)
+std::pair<int, sexp_src> query_referenced_in_ai_goals(sexp_ref_type type, const char *name)
 {
 	int i;
 
 	for (i=0; i<MAX_AI_INFO; i++)  // loop through all Ai_info entries
 		if (Ai_info[i].shipnum >= 0)  // skip if unused
 			if (query_referenced_in_ai_goals(Ai_info[i].goals, type, name))
-				return Ai_info[i].shipnum | SRC_SHIP_ORDER;
+				return std::make_pair(Ai_info[i].shipnum, sexp_src::SHIP_ORDER);
 
 	for (i=0; i<MAX_WINGS; i++)
 		if (Wings[i].wave_count)
 			if (query_referenced_in_ai_goals(Wings[i].ai_goals, type, name))
-				return i | SRC_WING_ORDER;
+				return std::make_pair(i, sexp_src::WING_ORDER);
 
-	return 0;
+	return std::make_pair(-1, sexp_src::NONE);
 }
 
 int advanced_stricmp(char *one, char *two)
@@ -2010,29 +1914,29 @@ int advanced_stricmp(char *one, char *two)
 // returns 0: go ahead change object
 //			  1: don't change it
 //			  2: abort (they used cancel to go to reference)
-int reference_handler(char *name, int type, int obj)
+int reference_handler(char *name, sexp_ref_type type, int obj)
 {
 	char msg[2048], text[128], type_name[128];
-	int r, n, node;
+	int r, node;
 
 	switch (type) {
-		case REF_TYPE_SHIP:
+		case sexp_ref_type::SHIP:
 			sprintf(type_name, "Ship \"%s\"", name);
 			break;
 
-		case REF_TYPE_WING:
+		case sexp_ref_type::WING:
 			sprintf(type_name, "Wing \"%s\"", name);
 			break;
 
-		case REF_TYPE_PLAYER:
+		case sexp_ref_type::PLAYER:
 			strcpy_s(type_name, name);
 			break;
 
-		case REF_TYPE_WAYPOINT:
+		case sexp_ref_type::WAYPOINT:
 			sprintf(type_name, "Waypoint \"%s\"", name);
 			break;
 
-		case REF_TYPE_PATH:
+		case sexp_ref_type::WAYPOINT_PATH:
 			sprintf(type_name, "Waypoint path \"%s\"", name);
 			break;
 
@@ -2040,47 +1944,49 @@ int reference_handler(char *name, int type, int obj)
 			Error(LOCATION, "Type unknown for object \"%s\".  Let Hoffos know now!", name);
 	}
 
-	r = query_referenced_in_sexp(type, name, &node);
-	if (r) {
-		n = r & SRC_DATA_MASK;
-		switch (r & SRC_MASK) {
-			case SRC_SHIP_ARRIVAL:
+	auto pair = query_referenced_in_sexp(type, name, node);
+	int n = pair.first;
+	sexp_src source = pair.second;
+
+	if (source != sexp_src::NONE) {
+		switch (source) {
+			case sexp_src::SHIP_ARRIVAL:
 				sprintf(text, "the arrival cue of ship \"%s\"", Ships[n].ship_name);
 				break;
 
-			case SRC_SHIP_DEPARTURE:
+			case sexp_src::SHIP_DEPARTURE:
 				sprintf(text, "the departure cue of ship \"%s\"", Ships[n].ship_name);
 				break;
 
-			case SRC_WING_ARRIVAL:
+			case sexp_src::WING_ARRIVAL:
 				sprintf(text, "the arrival cue of wing \"%s\"", Wings[n].name);
 				break;
 
-			case SRC_WING_DEPARTURE:
+			case sexp_src::WING_DEPARTURE:
 				sprintf(text, "the departure cue of wing \"%s\"", Wings[n].name);
 				break;
 
-			case SRC_EVENT:
-				if (*Mission_events[n].name)
-					sprintf(text, "event \"%s\"", Mission_events[n].name);
+			case sexp_src::EVENT:
+				if (!Mission_events[n].name.empty())
+					sprintf(text, "event \"%s\"", Mission_events[n].name.c_str());
 				else
 					sprintf(text, "event #%d", n);
 
 				break;
 
-			case SRC_MISSION_GOAL:
-				if (*Mission_goals[n].name)
-					sprintf(text, "mission goal \"%s\"", Mission_goals[n].name);
+			case sexp_src::MISSION_GOAL:
+				if (!Mission_goals[n].name.empty())
+					sprintf(text, "mission goal \"%s\"", Mission_goals[n].name.c_str());
 				else
 					sprintf(text, "mission goal #%d", n);
 
 				break;
 
-			case SRC_DEBRIEFING:
+			case sexp_src::DEBRIEFING:
 				sprintf(text, "debriefing #%d", n);
 				break;
 
-			case SRC_BRIEFING:
+			case sexp_src::BRIEFING:
 				sprintf(text, "briefing #%d", n);
 				break;
 
@@ -2096,7 +2002,7 @@ int reference_handler(char *name, int type, int obj)
 			"Do you want to delete it anyway?\n\n"
 			"(click Cancel to go to the reference)", type_name, text);
 
-		r = sexp_reference_handler(node, r, msg);
+		r = sexp_reference_handler(node, source, n, msg);
 		if (r == 1) {
 			if (obj >= 0)
 				unmark_object(obj);
@@ -2110,15 +2016,17 @@ int reference_handler(char *name, int type, int obj)
 		}
 	}
 
-	r = query_referenced_in_ai_goals(type, name);
-	if (r) {
-		n = r & SRC_DATA_MASK;
-		switch (r & SRC_MASK) {
-			case SRC_SHIP_ORDER:
+	pair = query_referenced_in_ai_goals(type, name);
+	n = pair.first;
+	source = pair.second;
+
+	if (source != sexp_src::NONE) {
+		switch (source) {
+			case sexp_src::SHIP_ORDER:
 				sprintf(text, "ship \"%s\"", Ships[n].ship_name);
 				break;
 
-			case SRC_WING_ORDER:
+			case sexp_src::WING_ORDER:
 				sprintf(text, "wing \"%s\"", Wings[n].name);
 				break;
 
@@ -2131,7 +2039,7 @@ int reference_handler(char *name, int type, int obj)
 			"more initial orders).  Do you want to delete it anyway?\n\n"
 			"(click Cancel to go to the reference)", type_name, text);
 
-		r = orders_reference_handler(r, msg);
+		r = orders_reference_handler(source, n, msg);
 		if (r == 1) {
 			if (obj >= 0)
 				unmark_object(obj);
@@ -2145,7 +2053,7 @@ int reference_handler(char *name, int type, int obj)
 		}
 	}
 
-	if ((type != REF_TYPE_SHIP) && (type != REF_TYPE_WING))
+	if ((type != sexp_ref_type::SHIP) && (type != sexp_ref_type::WING))
 		return 0;
 
 	for (n=0; n<Num_reinforcements; n++)
@@ -2168,11 +2076,9 @@ int reference_handler(char *name, int type, int obj)
 	return 0;
 }
 
-int orders_reference_handler(int code, char *msg)
+int orders_reference_handler(sexp_src source, int source_index, char *msg)
 {
-	int r, n;
-
-	r = Fred_main_wnd->MessageBox(msg, "Warning", MB_YESNOCANCEL | MB_ICONEXCLAMATION);
+	int r = Fred_main_wnd->MessageBox(msg, "Warning", MB_YESNOCANCEL | MB_ICONEXCLAMATION);
 	if (r == IDNO)
 		return 1;
 
@@ -2181,27 +2087,26 @@ int orders_reference_handler(int code, char *msg)
 
 	ShipGoalsDlg dlg_goals;
 
-	n = code & SRC_DATA_MASK;
-	switch (code & SRC_MASK) {
-		case SRC_SHIP_ORDER:
+	switch (source) {
+		case sexp_src::SHIP_ORDER:
 			unmark_all();
-			mark_object(Ships[n].objnum);
+			mark_object(Ships[source_index].objnum);
 
-			dlg_goals.self_ship = n;
+			dlg_goals.self_ship = source_index;
 			dlg_goals.DoModal();
-			if (!query_initial_orders_empty(Ai_info[Ships[n].ai_index].goals))
-				if ((Ships[n].wingnum >= 0) && (query_initial_orders_conflict(Ships[n].wingnum)))
+			if (!query_initial_orders_empty(Ai_info[Ships[source_index].ai_index].goals))
+				if ((Ships[source_index].wingnum >= 0) && (query_initial_orders_conflict(Ships[source_index].wingnum)))
 					Fred_main_wnd->MessageBox("This ship's wing also has initial orders", "Possible conflict");
 
 			break;
 
-		case SRC_WING_ORDER:
+		case sexp_src::WING_ORDER:
 			unmark_all();
-			mark_wing(n);
+			mark_wing(source_index);
 
-			dlg_goals.self_wing = n;
+			dlg_goals.self_wing = source_index;
 			dlg_goals.DoModal();
-			if (query_initial_orders_conflict(n))
+			if (query_initial_orders_conflict(source_index))
 				Fred_main_wnd->MessageBox("One or more ships of this wing also has initial orders", "Possible conflict");
 
 			break;
@@ -2214,9 +2119,9 @@ int orders_reference_handler(int code, char *msg)
 	return 2;
 }
 
-int sexp_reference_handler(int node, int code, char *msg)
+int sexp_reference_handler(int node, sexp_src source, int source_index, char *msg)
 {
-	int r;
+	int r, n;
 
 	r = Fred_main_wnd->MessageBox(msg, "Warning", MB_YESNOCANCEL | MB_ICONEXCLAMATION);
 	if (r == IDNO)
@@ -2225,9 +2130,10 @@ int sexp_reference_handler(int node, int code, char *msg)
 	if (r == IDYES)
 		return 0;
 
-	switch (code & SRC_MASK) {
-		case SRC_SHIP_ARRIVAL:
-		case SRC_SHIP_DEPARTURE:
+	n = source_index;
+	switch (source) {
+		case sexp_src::SHIP_ARRIVAL:
+		case sexp_src::SHIP_DEPARTURE:
 			if (!Ship_editor_dialog.GetSafeHwnd())
 				Ship_editor_dialog.Create();
 
@@ -2237,11 +2143,11 @@ int sexp_reference_handler(int node, int code, char *msg)
 
 			Ship_editor_dialog.select_sexp_node = node;
 			unmark_all();
-			mark_object(Ships[code & SRC_DATA_MASK].objnum);
+			mark_object(Ships[n].objnum);
 			break;
 
-		case SRC_WING_ARRIVAL:
-		case SRC_WING_DEPARTURE:
+		case sexp_src::WING_ARRIVAL:
+		case sexp_src::WING_DEPARTURE:
 			if (!Wing_editor_dialog.GetSafeHwnd())
 				Wing_editor_dialog.Create();
 
@@ -2251,10 +2157,10 @@ int sexp_reference_handler(int node, int code, char *msg)
 
 			Wing_editor_dialog.select_sexp_node = node;
 			unmark_all();
-			mark_wing(code & SRC_DATA_MASK);
+			mark_wing(n);
 			break;
 
-		case SRC_EVENT:
+		case sexp_src::EVENT:
 			if (Message_editor_dlg) {
 				Fred_main_wnd->MessageBox("You must close the message editor before the event editor can be opened");
 				break;
@@ -2270,7 +2176,7 @@ int sexp_reference_handler(int node, int code, char *msg)
 			Event_editor_dlg->ShowWindow(SW_RESTORE);
 			break;
 
-		case SRC_MISSION_GOAL: {
+		case sexp_src::MISSION_GOAL: {
 			CMissionGoalsDlg dlg;
 
 			dlg.select_sexp_node = node;
@@ -2278,7 +2184,7 @@ int sexp_reference_handler(int node, int code, char *msg)
 			break;
 		}
 
-		case SRC_DEBRIEFING: {
+		case sexp_src::DEBRIEFING: {
 			debriefing_editor_dlg dlg;
 
 			dlg.select_sexp_node = node;
@@ -2286,7 +2192,7 @@ int sexp_reference_handler(int node, int code, char *msg)
 			break;
 		}
 
-		case SRC_BRIEFING: {
+		case sexp_src::BRIEFING: {
 			if (!Briefing_dialog) {
 				Briefing_dialog = new briefing_editor_dlg;
 				Briefing_dialog->create();

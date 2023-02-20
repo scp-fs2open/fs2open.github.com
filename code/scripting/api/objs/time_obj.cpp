@@ -31,7 +31,7 @@ ADE_FUNC(getSeconds, l_TimeSpan, nullptr, "Gets the value of this timestamp in s
 	}
 
 	// Timestamps and spans are stored in nanoseconds
-	return ade_set_args(L, "f", (float)value / 1000000000.f);
+	return ade_set_args(L, "f", (float)((long double)value / (long double)NANOSECONDS_PER_SECOND));
 }
 
 } // namespace api

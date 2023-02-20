@@ -137,7 +137,7 @@ void DumpStats::get_mission_stats(CString &buffer)
 	temp.Format("Filename: %s\r\n", Mission_filename);
 	buffer += temp;
 
-	temp.Format("Author: %s\r\n", The_mission.author);
+	temp.Format("Author: %s\r\n", The_mission.author.c_str());
 	buffer += temp;
 
 	temp.Format("Description: %s\r\n", The_mission.mission_desc);
@@ -246,7 +246,7 @@ void DumpStats::get_background_stats(CString &buffer)
 				temp.Format("\t\tSpecies: ");
 				for (i=0; i<(int)Species_info.size(); i++) {
 					if (Asteroid_field.field_debris_type[i] >= 0) {
-						temp += CString(Species_info[(Asteroid_field.field_debris_type[i] / NUM_DEBRIS_SIZES) - 1].species_name) + " ";
+						temp += CString(Species_info[(Asteroid_field.field_debris_type[i] / NUM_ASTEROID_SIZES) - 1].species_name) + " ";
 					}
 				}
 
@@ -287,7 +287,7 @@ void DumpStats::get_background_stats(CString &buffer)
 		}
 	} else {
 		// FS! nebula pattern
-		if (Nebula_index > 0) {
+		if (Nebula_index >= 0) {
 			temp.Format("\tOld style FS1 nebula filename: %s\r\n", Nebula_filenames[Nebula_index]);
 			buffer += temp;
 		}
@@ -470,20 +470,20 @@ void DumpStats::get_objectives_and_goals(CString &buffer)
 	buffer += "\r\nOBJECTIVES AND GOALS\r\n";
 
 	// objectives
-	for (i=0; i<Num_mission_events; i++) {
+	for (i=0; i<(int)Mission_events.size(); i++) {
 		// name, objective_text, objective_key_text
-		if ( Mission_events[i].objective_text == NULL ) {
+		if ( Mission_events[i].objective_text.empty() ) {
 			continue;
 		}
-		temp.Format("\tObjective: %s,  text: %s,  key_text: %s\r\n", Mission_events[i].name, Mission_events[i].objective_text, Mission_events[i].objective_key_text);
+		temp.Format("\tObjective: %s,  text: %s,  key_text: %s\r\n", Mission_events[i].name.c_str(), Mission_events[i].objective_text.c_str(), Mission_events[i].objective_key_text.c_str());
 		buffer += temp;
 	}
 
 	buffer += "\r\n";
 
 	// goals
-	for (i=0; i<Num_goals; i++) {
-		temp.Format("\tGoal: %s, text: %s", Mission_goals[i].name, Mission_goals[i].message);
+	for (i=0; i<(int)Mission_goals.size(); i++) {
+		temp.Format("\tGoal: %s, text: %s", Mission_goals[i].name.c_str(), Mission_goals[i].message.c_str());
 		buffer += temp;
 
 		switch(Mission_goals[i].type & GOAL_TYPE_MASK) {

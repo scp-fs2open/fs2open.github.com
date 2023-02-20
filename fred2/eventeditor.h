@@ -59,7 +59,7 @@ public:
 	int get_event_num(HTREEITEM handle);
 	void reset_event(int num, HTREEITEM after);
 	void save_event(int e);
-	void swap_handler(int node1, int node2);
+	void move_handler(int node1, int node2, bool insert_before);
 	void insert_handler(int old, int node);
 	int query_modified();
 	void OnOK();		// default MFC OK behavior
@@ -78,8 +78,8 @@ public:
 	//{{AFX_DATA(event_editor)
 	enum { IDD = IDD_EVENT_EDITOR };
 	event_sexp_tree	m_event_tree;
-	UINT	m_repeat_count;
-	UINT	m_trigger_count;
+	int		m_repeat_count;
+	int		m_trigger_count;
 	UINT	m_interval;
 	int		m_event_score;
 	int		m_chain_delay;
@@ -143,7 +143,7 @@ protected:
 	afx_msg void OnBrowseWave();
 	afx_msg void OnSelchangeWaveFilename();
 	afx_msg void OnPlay();
-	afx_msg void OnUpdate();
+	afx_msg void OnUpdateStuff();
 	afx_msg void OnSelchangeTeam();
 	afx_msg void OnSelchangeMessageTeam();
 	afx_msg void OnDblclkMessageList();
@@ -153,10 +153,8 @@ protected:
 private:
 	int cur_event;
 	void update_cur_event();
-	int m_num_events;
-	int m_sig[MAX_MISSION_EVENTS];
-	mission_event m_events[MAX_MISSION_EVENTS];
-	int m_num_messages;
+	SCP_vector<int> m_sig;
+	SCP_vector<mission_event> m_events;
 	SCP_vector<MMessage> m_messages;
 	int m_wave_id;
 };

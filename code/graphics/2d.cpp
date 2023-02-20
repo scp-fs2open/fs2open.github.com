@@ -78,8 +78,6 @@ io::mouse::Cursor* Web_cursor = NULL;
 
 int Gr_inited = 0;
 
-uint Gr_signature = 0;
-
 float Gr_gamma = 1.0f;
 
 static SCP_vector<float> gamma_value_enumerator()
@@ -175,8 +173,8 @@ static auto WindowModeOption = options::OptionBuilder<os::ViewportState>("Graphi
 								   .change_listener(mode_change_func)
 								   .finish();
 
-const std::shared_ptr<scripting::OverridableHook> OnFrameHook = scripting::OverridableHook::Factory(
-	"On Frame", "Called every frame as the last action before showing the frame result to the user.", {}, CHA_ONFRAME);
+const std::shared_ptr<scripting::OverridableHook<>> OnFrameHook = scripting::OverridableHook<>::Factory(
+	"On Frame", "Called every frame as the last action before showing the frame result to the user.", {}, tl::nullopt, CHA_ONFRAME);
 
 // z-buffer stuff
 int gr_zbuffering        = 0;
@@ -432,7 +430,7 @@ bool gr_is_smaa_mode(AntiAliasMode mode) {
 bool Gr_post_processing_enabled = true;
 
 static auto PostProcessOption =
-    options::OptionBuilder<bool>("Graphis.PostProcessing", "Post processing",
+    options::OptionBuilder<bool>("Graphics.PostProcessing", "Post processing",
                                  "Controls whether post processing is enabled in the engine")
         .category("Graphics")
         .level(options::ExpertLevel::Advanced)
@@ -443,7 +441,7 @@ static auto PostProcessOption =
 
 bool Gr_enable_vsync = true;
 
-static auto VSyncOption = options::OptionBuilder<bool>("Graphis.VSync", "Vertical Sync",
+static auto VSyncOption = options::OptionBuilder<bool>("Graphics.VSync", "Vertical Sync",
                                                        "Controls how the engine does vertical synchronization")
                               .category("Graphics")
                               .level(options::ExpertLevel::Advanced)
@@ -1299,12 +1297,11 @@ static bool gr_init_sub(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, i
 	Gr_save_menu_zoomed_offset_X = Gr_menu_zoomed_offset_X = Gr_menu_offset_X;
 	Gr_save_menu_zoomed_offset_Y = Gr_menu_zoomed_offset_Y = Gr_menu_offset_Y;
 	
-
-	gr_screen.signature = Gr_signature++;
 	gr_screen.bits_per_pixel = depth;
 	gr_screen.bytes_per_pixel= depth / 8;
 	gr_screen.rendering_to_texture = -1;
 	gr_screen.envmap_render_target = -1;
+	gr_screen.irrmap_render_target = -1;
 	gr_screen.line_width = 1.0f;
 	gr_screen.mode = mode;
 	gr_screen.res = res;
@@ -1540,6 +1537,9 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 		depth = d_depth;
 	}
 
+	if (Cmdline_vulkan)
+		mode = GR_VULKAN;
+
 	// if we are in standalone mode then just use special defaults
 	if (Is_standalone) {
 		mode = GR_STUB;
@@ -1552,7 +1552,8 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 	if (gr_get_resolution_class(width, height) != GR_640) {
 		// check for hi-res interface files so that we can verify our width/height is correct
 		// if we don't have it then fall back to 640x480 mode instead
-		if ( !cf_exists_full("2_ChoosePilot-m.pcx", CF_TYPE_ANY)) {
+		// Lafiel: BUT! Only do this if the "low res graphic" ACTUALLY exists. Using SCPUI, not having this file is not a sufficient indicator for being on forced low-res.
+		if ( !cf_exists_full("2_ChoosePilot-m.pcx", CF_TYPE_ANY) && cf_exists_full("ChoosePilot-m.pcx", CF_TYPE_ANY)) {
 			if ( (width == 1024) && (height == 768) ) {
 				width = 640;
 				height = 480;
@@ -1736,7 +1737,6 @@ void gr_init_color(color *c, int r, int g, int b)
 	CAP(g, 0, 255);
 	CAP(b, 0, 255);
 
-	c->screen_sig = gr_screen.signature;
 	c->red = (ubyte)r;
 	c->green = (ubyte)g;
 	c->blue = (ubyte)b;
@@ -1774,21 +1774,12 @@ void gr_set_color( int r, int g, int b )
 
 void gr_set_color_fast(color *dst)
 {
-	if ( dst->screen_sig != gr_screen.signature ) {
-		if (dst->is_alphacolor) {
-			gr_init_alphacolor( dst, dst->red, dst->green, dst->blue, dst->alpha, dst->ac_type );
-		} else {
-			gr_init_color( dst, dst->red, dst->green, dst->blue );
-		}
-	}
-
 	gr_screen.current_color = *dst;
 }
 
 // shader functions
 void gr_create_shader(shader *shade, ubyte r, ubyte g, ubyte b, ubyte c )
 {
-	shade->screen_sig = gr_screen.signature;
 	shade->r = r;
 	shade->g = g;
 	shade->b = b;
@@ -1798,9 +1789,6 @@ void gr_create_shader(shader *shade, ubyte r, ubyte g, ubyte b, ubyte c )
 void gr_set_shader(shader *shade)
 {
 	if (shade) {
-		if (shade->screen_sig != gr_screen.signature) {
-			gr_create_shader( shade, shade->r, shade->g, shade->b, shade->c );
-		}
 		gr_screen.current_shader = *shade;
 	} else {
 		gr_create_shader( &gr_screen.current_shader, 0, 0, 0, 0 );
@@ -2557,9 +2545,9 @@ void gr_flip(bool execute_scripting)
 		TRACE_SCOPE(tracing::LuaOnFrame);
 
 		// WMC - Do conditional hooks. Yippee!
-		OnFrameHook->run();
-		// WMC - Do scripting reset stuff
-		Script_system.EndFrame();
+		if (OnFrameHook->isActive()) {
+			OnFrameHook->run();
+		}
 	}
 
 	gr_reset_immediate_buffer();

@@ -51,12 +51,16 @@ struct lighting_profile_value{
 
 	float handle(float input);
 	void reset();
-	void set_adjust(float in);
-	void set_multiplier(float in);
-	void set_maximum(float in);
-	void set_minimum(float in);
+	void set_adjust(const float in);
+	void set_multiplier(const float in);
+	void stack_multiplier(const float in);
+	void set_maximum(const float in);
+	void set_minimum(const float in);
+	void stack_minimum(const float in);
 
 	static bool parse(const char *filename, const char * valuename, const SCP_string &profile_name, lighting_profile_value* value_target, bool required=false);
+	bool read_multiplier(float *out) const;
+	bool read_adjust(float *out) const;
 
 private:
 	bool has_adjust = false;
@@ -73,6 +77,7 @@ class lighting_profile{
 public:
 	static lighting_profile * current();
 	static enum TonemapperAlgorithm name_to_tonemapper(SCP_string &name);
+	static SCP_string tonemapper_to_name(TonemapperAlgorithm tnm);
 	static void load_profiles();
 	static TonemapperAlgorithm current_tonemapper();
 	static const piecewise_power_curve_values & current_piecewise_values();
@@ -83,7 +88,12 @@ public:
 	static void lab_set_tonemapper(TonemapperAlgorithm tnin);
 	static void lab_set_ppc(piecewise_power_curve_values ppcin );
 	static piecewise_power_curve_values lab_get_ppc();
-
+	static float lab_get_light();
+	static void lab_set_light(float in);
+	static float lab_get_ambient();
+	static void lab_set_ambient(float in);
+	static float lab_get_emissive();
+	static void lab_set_emissive(float in);
 
 	SCP_string name;
     TonemapperAlgorithm tonemapper;
@@ -104,7 +114,9 @@ public:
 	lighting_profile_value cone_light_radius;
 	lighting_profile_value directional_light_brightness;
 	lighting_profile_value ambient_light_brightness;
-
+	//Strictly speaking this should be handled by postproc but we need something for the non-postproc people.
+	lighting_profile_value overall_brightness;
+	lighting_profile_value cockpit_light_radius_modifier;
 
     void reset();
 

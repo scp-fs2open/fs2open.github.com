@@ -48,7 +48,7 @@ namespace particle
 	 */
 	enum ParticleType
 	{
-		PARTICLE_DEBUG, //!< A red sphere, no optional data required
+		PARTICLE_DEBUG, //!< A simple sphere; optional data provides the color which defaults to red
 		PARTICLE_BITMAP, //!< A bitmap, optional data is the bitmap number.  If bitmap is an animation, lifetime is calculated by the number of frames and fps.
 		PARTICLE_FIRE, //!< The vclip used for explosions, optional means nothing
 		PARTICLE_SMOKE, //!< The vclip used for smoke, optional means nothing

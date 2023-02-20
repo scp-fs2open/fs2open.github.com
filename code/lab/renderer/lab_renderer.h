@@ -16,7 +16,7 @@ FLAG_LIST(LabRenderFlag) {
 	ModelRotationEnabled,
 	ShowInsignia,
 	ShowDamageLightning,
-	RotateSubsystems,
+	MoveSubsystems,
 	HidePostProcessing,
 	NoDiffuseMap,
 	NoGlowMap,
@@ -67,16 +67,29 @@ enum class TextureOverride {
 	Specular
 };
 
+
+struct gfx_options {
+	int bloom_level;
+	float ambient_factor;
+	float light_factor;
+	float emissive_factor;
+	float exposure_level;
+	piecewise_power_curve_values ppcv;
+	AntiAliasMode aa_mode;
+	TonemapperAlgorithm tonemapper;
+};
+
+constexpr auto LAB_MISSION_NONE_STRING = "None";
+constexpr auto LAB_TEAM_COLOR_NONE = "<none>";
+
 class LabRenderer {
 public:
 	LabRenderer() {
 		bloomLevel = gr_bloom_intensity();
-		ambientFactor = Cmdline_ambient_factor;
-		directionalFactor = static_light_factor;
 		textureQuality = TextureQuality::Maximum;
 		cameraDistance = 100.0f;
-		currentTeamColor = "<none>";
-		useBackground("None");
+		currentTeamColor = LAB_TEAM_COLOR_NONE;
+		useBackground(LAB_MISSION_NONE_STRING);
 
 		labCamera.reset(new OrbitCamera());
 
@@ -110,46 +123,55 @@ public:
 	}
 
 	void useNextTeamColorPreset() {
-		auto color_itr = Team_Colors.find(currentTeamColor);
+		if (!Team_Colors.empty()) {
+			auto color_itr = Team_Colors.find(currentTeamColor);
 
-		if (color_itr == Team_Colors.begin()) {
-			color_itr = --Team_Colors.end();
-			currentTeamColor = color_itr->first;
-		}
-		else {
-			--color_itr;
-			currentTeamColor = color_itr->first;
+			if (color_itr == Team_Colors.begin()) {
+				color_itr = --Team_Colors.end();
+				currentTeamColor = color_itr->first;
+			} else {
+				--color_itr;
+				currentTeamColor = color_itr->first;
+			}
 		}
 	}
 
 	void usePreviousTeamColorPreset() {
-		auto color_itr = Team_Colors.find(currentTeamColor);
+		if (!Team_Colors.empty()) {
+			auto color_itr = Team_Colors.find(currentTeamColor);
 
-		++color_itr;
-		if (color_itr == Team_Colors.end())
-			color_itr = Team_Colors.begin();
-		currentTeamColor = color_itr->first;
+			++color_itr;
+			if (color_itr == Team_Colors.end())
+				color_itr = Team_Colors.begin();
+			currentTeamColor = color_itr->first;
+		}
 	}
 
 	void setTeamColor(SCP_string teamColor) {
 		currentTeamColor = std::move(teamColor);
 	}
 
+	SCP_string getCurrentTeamColor()
+	{
+		return currentTeamColor;
+	}
+
 	void resetView() {}
 
 	void setRenderFlag(LabRenderFlag flag, bool value) { renderFlags.set(flag, value); }
 
-	int setAmbientFactor(int factor) { 
-		ambientFactor = factor; 
-		Cmdline_ambient_factor = factor;
-		gr_calculate_ambient_factor();
-
+	static float setAmbientFactor(float factor) { 
+		lighting_profile::lab_set_ambient(factor);
 		return factor; 
 	}
 
-	float setDirectionalFactor(float factor) { 
-		directionalFactor = factor; 
-		static_light_factor = factor;
+	static float setLightFactor(float factor) {
+		lighting_profile::lab_set_light(factor);
+		return factor; 
+	}
+
+	static float setEmissiveFactor(float factor) { 
+		lighting_profile::lab_set_emissive(factor);
 		return factor; 
 	}
 
@@ -170,18 +192,22 @@ public:
 	}
 
 	void setTextureQuality(TextureQuality quality) { textureQuality = quality; }
+	TextureQuality getTextureQuality()
+	{
+		return textureQuality;
+	}
 
 	void setTextureOverride(TextureOverride, bool) {};
 
 	void resetTextureOverride() {};
+
+	void resetGraphicsSettings(gfx_options settings);
 
 	std::unique_ptr<LabCamera> &getCurrentCamera();
 	void setCurrentCamera(std::unique_ptr<LabCamera> &newcam);
 
 private:
 	flagset<LabRenderFlag> renderFlags;
-	int ambientFactor;
-	float directionalFactor;
 	int bloomLevel;
 	float exposureLevel;
 	TextureQuality textureQuality;

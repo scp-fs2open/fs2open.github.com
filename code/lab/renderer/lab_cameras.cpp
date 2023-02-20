@@ -14,9 +14,8 @@ void OrbitCamera::handleInput(int dx, int dy, bool, bool rmbDown, int modifierKe
 
 	if (rmbDown) {
 		if (modifierKeys & KEY_SHIFTED) {
-			distance *= 1.0f + (dy / 20.0f);
-			if (distance < 1.0f)
-				distance = 1.0f;
+			distance *= 1.0f + (dy / 200.0f);
+			CLAMP(distance, 1.0f, 10000000.0f);
 		}
 		else {
 			theta += dx / 100.0f;

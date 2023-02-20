@@ -194,7 +194,8 @@ void HudGaugeLock::renderOld(float frametime)
 		return;
 	}
 
-	if (Player->target_is_dying) {
+	// 1 is the only value for which your target is actually dying
+	if (Player->target_is_dying == 1) {
 		return;
 	}
 
@@ -835,14 +836,15 @@ void hud_lock_acquire_uncaged_target(lock_info *current_lock, weapon_info *wip)
 	bool actively_locking = false;
 
 	for ( A = GET_FIRST(&obj_used_list); A !=END_OF_LIST(&obj_used_list); A = GET_NEXT(A) ) {
-		ship* sp = &Ships[A->instance];
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 
 		if (!weapon_multilock_can_lock_on_target(Player_obj, A, wip, &dot))
 			continue;
 
 		bool in_range = weapon_secondary_world_pos_in_range(Player_obj, wip, &A->pos);
 
-		if ( Ship_info[sp->ship_info_index].is_big_or_huge() ) {
+		if ( A->type == OBJ_SHIP && Ship_info[Ships[A->instance].ship_info_index].is_big_or_huge() ) {
 			lock_info temp_lock;
 
 			temp_lock.obj = A;
@@ -916,6 +918,9 @@ void hud_lock_acquire_uncaged_target_weapon(lock_info* current_lock, weapon_info
 	bool actively_locking = false;
 
 	for (A = GET_FIRST(&obj_used_list); A != END_OF_LIST(&obj_used_list); A = GET_NEXT(A)) {
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		if (!weapon_multilock_can_lock_on_target(Player_obj, A, wip, &dot, true))
 			continue;
 
@@ -1547,6 +1552,12 @@ void hud_do_lock_indicators(float frametime)
 		}
 
 		if ( lock_slot->obj->type == OBJ_SHIP && Ships[lock_slot->obj->instance].flags[Ship::Ship_Flags::Dying] ) {
+			ship_clear_lock(lock_slot);
+			continue;
+		}
+
+		// Target ship is protected from Aspect Locks. Since this flag can be given mid mission, we need to cut short a lock attempt.
+		if ( wip->is_locked_homing() && lock_slot->obj->type == OBJ_SHIP && Ships[lock_slot->obj->instance].flags[Ship::Ship_Flags::Aspect_immune] ) {
 			ship_clear_lock(lock_slot);
 			continue;
 		}

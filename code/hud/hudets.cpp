@@ -23,6 +23,7 @@
 #include "ship/subsysdamage.h"
 #include "weapon/emp.h"
 #include "weapon/weapon.h"
+#include "globalincs/alphacolors.h"
 
 float Energy_levels[NUM_ENERGY_LEVELS] = {0.0f,  0.0833f, 0.167f, 0.25f, 0.333f, 0.417f, 0.5f, 0.583f, 0.667f, 0.75f, 0.833f, 0.9167f, 1.0f};
 bool Weapon_energy_cheat = false;
@@ -220,10 +221,14 @@ void ai_manage_ets(object* obj)
 	}
 
 	// also check if the ship has no shields and if the AI is allowed to manage weapons and engines --wookieejedi
-	if ( !(ship_p->ship_max_shield_strength) && !( (aip->ai_profile_flags[AI::Profile_Flags::all_nonshielded_ships_can_manage_ets]) || 
-		( (ship_info_p->is_fighter_bomber()) && (aip->ai_profile_flags[AI::Profile_Flags::fightercraft_nonshielded_ships_can_manage_ets])) ) ) {
+	if ( !(ship_p->ship_max_shield_strength) && !( (aip->ai_profile_flags[AI::Profile_Flags::All_nonshielded_ships_can_manage_ets]) || 
+		( (ship_info_p->is_fighter_bomber()) && (aip->ai_profile_flags[AI::Profile_Flags::Fightercraft_nonshielded_ships_can_manage_ets])) ) ) {
 		return;
 	}
+
+	// also check if the ship is playing dead --Goober5000
+	if (aip->mode == AIM_PLAY_DEAD && aip->ai_profile_flags[AI::Profile_Flags::Ships_playing_dead_dont_manage_ets])
+		return;
 
 	float weapon_left_percent = ship_p->weapon_energy/ship_info_p->max_weapon_reserve;
 
@@ -871,6 +876,24 @@ void HudGaugeEts::blitGauge(int index)
 	clip_h = fl2i( (1 - Energy_levels[index]) * ETS_bar_h );
 
 	bm_get_info(Ets_bar.first_frame,&w,&h);
+
+	if (HUD_shadows) {
+		// These act more as a backing black layer.
+
+		gr_set_color_fast(&Color_black);
+		// draw the top portion
+		x = position[0] + Top_offsets[0];
+		y = position[1] + Top_offsets[1];
+		
+		renderBitmapEx(Ets_bar.first_frame,x,y,w,ETS_bar_h,0,0);
+
+		// draw the bottom portion
+		x = position[0] + Bottom_offsets[0];
+		y = position[1] + Bottom_offsets[1];
+
+		renderBitmapEx(Ets_bar.first_frame, x, y, w, y + ETS_bar_h, 0, 0);
+		gr_set_color_fast(&gauge_color);
+	}
 
 	if ( index < NUM_ENERGY_LEVELS-1 ) {
 		// some portion of dark needs to be drawn

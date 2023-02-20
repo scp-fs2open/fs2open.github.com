@@ -956,3 +956,25 @@ void gr_opengl_stop_decal_pass() {
 	};
 	glDrawBuffers(5, buffers2);
 }
+
+void gr_opengl_calculate_irrmap()
+{
+
+	auto previous_target = gr_screen.rendering_to_texture;
+	int irr_shader = gr_opengl_maybe_create_shader(SDR_TYPE_IRRADIANCE_MAP_GEN, 0);
+	opengl_shader_set_current(irr_shader);
+	auto env_tex = bm_get_gr_info<tcache_slot_opengl>(ENVMAP);
+	glBindTexture(env_tex->texture_target, env_tex->texture_id);
+	GL_state.Texture.Enable(0, GL_TEXTURE_CUBE_MAP, env_tex->texture_id);
+	Current_shader->program->Uniforms.setTextureUniform("envmap", 0);
+
+	for (int i = 0; i < 6; i++) {
+		bm_set_render_target(gr_screen.irrmap_render_target, i);
+		gr_clear();
+		opengl_set_generic_uniform_data<graphics::generic_data::irrmap_data>(
+			[&](graphics::generic_data::irrmap_data* data) { data->face = i; });
+		opengl_draw_full_screen_textured(-1.0f, -1.0f, 1.0f, 1.0f);
+	}
+
+	bm_set_render_target(previous_target);
+}

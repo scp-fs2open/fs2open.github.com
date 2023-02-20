@@ -8,6 +8,7 @@
 #include "freespace.h"
 
 #include "gamesequence/gamesequence.h"
+#include "libs/discord/discord.h"
 #include "mission/missiontraining.h"
 #include "network/multi.h"
 #include "parse/parselo.h"
@@ -24,31 +25,69 @@
 #include "scripting/util/LuaValueDeserializer.h"
 #include "scripting/util/LuaValueSerializer.h"
 #include "utils/Random.h"
+#include "cmdline/cmdline.h"
+
 
 namespace scripting {
+extern SCP_string ade_tostring(lua_State* L, int argnum, bool add_typeinfo);
+	
 namespace api {
 using Random = ::util::Random;
 
 //**********LIBRARY: Base
 ADE_LIB(l_Base, "Base", "ba", "Base FreeSpace 2 functions");
 
-ADE_FUNC(print, l_Base, "string Message", "Prints a string", NULL, NULL)
+ADE_FUNC(print, l_Base, "string Message", "Prints a string", nullptr, nullptr)
 {
-	mprintf(("%s", lua_tostring(L, -1)));
+#ifndef NDEBUG
+	auto str = ade_tostring(L, -1, false);
+	nprintf(("scripting", "%s", str.c_str()));
+#else
+	SCP_UNUSED(L);
+#endif
 
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(warning, l_Base, "string Message", "Displays a FreeSpace warning (debug build-only) message with the string provided", NULL, NULL)
+ADE_FUNC(println, l_Base, "string Message", "Prints a string with a newline", nullptr, nullptr)
 {
-	Warning(LOCATION, "%s", lua_tostring(L, -1));
+#ifndef NDEBUG
+	auto str = ade_tostring(L, -1, false);
+	nprintf(("scripting", "%s\n", str.c_str()));
+#else
+	SCP_UNUSED(L);
+#endif
 
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(error, l_Base, "string Message", "Displays a FreeSpace error message with the string provided", NULL, NULL)
+ADE_FUNC(warning, l_Base, "string Message", "Displays a FreeSpace warning (debug build-only) message with the string provided", nullptr, nullptr)
 {
-	Error(LOCATION, "%s", lua_tostring(L, -1));
+#ifndef NDEBUG
+	auto str = ade_tostring(L, -1, false);
+
+	if (Cmdline_lua_devmode) {
+		nprintf(("scripting", "WARNING: %s\n", str.c_str()));
+	} else {
+		Warning(LOCATION, "%s", str.c_str());
+	}
+#else
+	SCP_UNUSED(L);
+	Global_warning_count++;
+#endif
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(error, l_Base, "string Message", "Displays a FreeSpace error message with the string provided", nullptr, nullptr)
+{
+	auto str = ade_tostring(L, -1, false);
+
+	if (Cmdline_lua_devmode) {
+		nprintf(("scripting", "ERROR: %s\n", str.c_str()));
+	} else {
+		Error(LOCATION, "%s", lua_tostring(L, -1));
+	}
 
 	return ADE_RETURN_NIL;
 }
@@ -522,6 +561,14 @@ ADE_FUNC(inMissionEditor, l_Base, nullptr, "Determine if the current script is r
 	return ade_set_args(L, "b", Fred_running != 0);
 }
 
+ADE_FUNC(inDebug, l_Base, nullptr, "Determines if FSO is running in Release or Debug", "boolean", "true if debug, false if release") {
+	#ifndef NDEBUG
+		return ADE_RETURN_TRUE;
+	#else
+		return ADE_RETURN_FALSE;
+	#endif
+}
+
 ADE_FUNC(isEngineVersionAtLeast,
 		 l_Base,
 		 "number major, number minor, number build, [number revision = 0]",
@@ -580,6 +627,53 @@ ADE_FUNC(getVersionString, l_Base, nullptr,
 {
 	auto str = gameversion::get_version_string();
 	return ade_set_args(L, "s", str.c_str());
+}
+
+ADE_FUNC(getModTitle, l_Base, nullptr,
+         "Returns the title of the current mod as defined in game_settings.tbl. Will return an empty string if not defined.",
+         "string", "The mod title")
+{
+	auto str = Mod_title;
+	return ade_set_args(L, "s", str.c_str());
+}
+
+ADE_FUNC(getModVersion, l_Base, nullptr,
+         "Returns the version of the current mod as defined in game_settings.tbl. If the version is semantic versioning then the "
+		 "returned numbers will reflect that. String always returns the complete string. If semantic version is not used then "
+		 "the returned numbers will all be -1",
+         "string, number, number, number", "The mod version string; the major, minor, patch version numbers or -1 if invalid")
+{
+	auto version = Mod_version;
+
+	int major = -1;
+	int minor = -1;
+	int patch = -1;
+	
+	int i = 0;
+	auto str = Mod_version;
+	while (i <= 3) {
+		size_t pos = str.find_first_of('.');
+		if (pos != SCP_string::npos) {
+			auto ver = str.substr(0, pos);
+			if(!ver.empty() && std::find_if(ver.begin(), ver.end(), [](char c) { return !std::isdigit(c, SCP_default_locale); }) == ver.end()){
+				if (major < 0) {
+					major = std::stoi(str.c_str());
+				} else if (minor < 0) {
+					minor = std::stoi(str.c_str());
+				}
+				str.erase(0, pos + 1);
+			} else if (major < 0) {
+				break; //Break out of the loop if the first string is not a digit. In this case we only return the whole string.
+			}
+		} else if ((major > -1) && (minor > -1) && (!str.empty() && std::find_if(str.begin(), str.end(), [](char c) {
+					   return !std::isdigit(c, SCP_default_locale);
+				   }) == str.end())) {
+			patch = std::stoi(str.c_str());
+		}
+		i++;
+	}
+
+	return ade_set_args(L, "siii", version.c_str(), major, minor, patch);
 }
 
 ADE_VIRTVAR(MultiplayerMode, l_Base, "boolean", "Determines if the game is currently in single- or multiplayer mode",
@@ -657,6 +751,38 @@ ADE_FUNC(deserializeValue,
 		LuaError(L, "Failed to deserialize value: %s", e.what());
 		return ADE_RETURN_NIL;
 	}
+}
+
+
+ADE_FUNC(setDiscordPresence,
+	l_Base,
+	"string DisplayText, [boolean Gameplay]",
+	"Sets the Discord presence to a specific string. If Gameplay is true then the string is ignored and presence will "
+	"be set as if the player is in-mission. The latter will fail if the player is not in a mission.",
+	nullptr,
+	"nothing")
+{
+	const char* text;
+	bool gp = false;
+	if (!ade_get_args(L, "s|b", &text, &gp)) {
+		return ADE_RETURN_NIL;
+	}
+
+	if (gp) {
+		if ((Game_mode & GM_IN_MISSION) != 0){
+			libs::discord::set_presence_gameplay();
+		}
+	} else {
+		libs::discord::set_presence_string(text);
+	}
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(hasFocus, l_Base, nullptr, "Returns if the game engine has focus or not", "boolean", "True if the game has focus, false if it has been lost")
+{
+	return ade_set_args(L, "b", os_foreground());
+
 }
 
 //**********SUBLIBRARY: Base/Events

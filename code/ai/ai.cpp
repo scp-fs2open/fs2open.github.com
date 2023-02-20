@@ -52,34 +52,6 @@ void ai_free_slot(int ai_index)
 	Ai_info[ai_index].shipnum = -1;
 }
 
-int get_wingnum(int objnum)
-{
-	int	shipnum, ai_index;
-
-	shipnum = Objects[objnum].instance;
-
-	ai_index = Ships[shipnum].ai_index;
-
-	return Ai_info[ai_index].wing;
-}
-
-void set_wingnum(int objnum, int wingnum)
-{
-	int	shipnum, ai_index;
-
-	Assert(Objects[objnum].type == OBJ_SHIP);
-
-	shipnum = Objects[objnum].instance;
-
-	Assert((shipnum >= 0) && (shipnum < MAX_SHIPS));
-
-	ai_index = Ships[shipnum].ai_index;
-
-	Assert( (ai_index >= 0) && (ai_index < MAX_AI_INFO) );
-
-	Ai_info[ai_index].wing = wingnum;
-}
-
 const char *ai_get_goal_target_name(const char *name, int *index)
 {
 	Assertion(name != nullptr && index != nullptr, "Arguments cannot be null!");

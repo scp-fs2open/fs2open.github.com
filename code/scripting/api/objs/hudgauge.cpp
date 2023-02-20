@@ -31,6 +31,9 @@ ADE_VIRTVAR(Name, l_HudGauge, "string", "Custom HUD Gauge name", "string", "Cust
 	if (gauge->getObjectType() != HUD_OBJECT_CUSTOM)
 		return ADE_RETURN_NIL;
 
+	if (ADE_SETTING_VAR)
+		LuaError(L, "Setting the hud gauge name is not supported");
+
 	return ade_set_args(L, "s", gauge->getCustomGaugeName());
 }
 
@@ -83,6 +86,17 @@ ADE_FUNC(getPosition, l_HudGauge, nullptr, "Returns the position of the specifie
 	int x, y;
 	gauge->getPosition(&x, &y);
 	return ade_set_args(L, "ii", x, y);
+}
+
+ADE_FUNC(setPosition, l_HudGauge, "number, number", "Sets the position of the specified HUD gauge.", nullptr, nullptr)
+{
+	HudGauge* gauge;
+	int x, y;
+	if (!ade_get_args(L, "oii", l_HudGauge.Get(&gauge), &x, &y))
+		return ADE_RETURN_NIL;
+
+	gauge->setGaugeCoords(x, y);
+	return ADE_RETURN_NIL;
 }
 
 ADE_FUNC(getFont, l_HudGauge, nullptr, "Returns the font used by the specified HUD gauge.",

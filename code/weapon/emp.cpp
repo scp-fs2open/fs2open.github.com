@@ -115,6 +115,9 @@ void emp_apply(vec3d *pos, float inner_radius, float outer_radius, float emp_int
 	// all machines check to see if the blast hit a bomb. if so, shut it down (can't move anymore)	
 	for( mo = GET_FIRST(&Missile_obj_list); mo != END_OF_LIST(&Missile_obj_list); mo = GET_NEXT(mo) ) {
 		target = &Objects[mo->objnum];
+		if (target->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		if(target->type != OBJ_WEAPON){
 			continue;
 		}
@@ -151,6 +154,9 @@ void emp_apply(vec3d *pos, float inner_radius, float outer_radius, float emp_int
 
 	// See if there are any friendly ships present, if so return without preventing msg
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {		
+		if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		target = &Objects[so->objnum];
 		if(target->type != OBJ_SHIP){
 			continue;
@@ -370,9 +376,14 @@ void emp_process_ship(ship *shipp)
 	}
 }
 
+void emp_start_local(float intensity, float time)
+{
+	emp_start_local(intensity, time, "");
+}
+
 // start the emp effect for MYSELF (intensity == arbitrary intensity variable, time == time the effect will last)
 // NOTE : time should be in seconds
-void emp_start_local(float intensity, float time)
+void emp_start_local(float intensity, float time, const SCP_string &text)
 {
 	int idx;
 	float start_intensity;
@@ -406,14 +417,25 @@ void emp_start_local(float intensity, float time)
 		Emp_wacky_text[idx].stamp = -1;
 	}
 
-	// start the emp icon flashing
-	hud_start_text_flash(NOX("Emp"), 5000);
+	SCP_string display = XSTR("Emp", 1670);
+
+	// if text is set then use that instead
+	if (text.length() > 0)
+		display = text;
+
+	// start the emp icon flashing if display text is not "none"
+	if (stricmp(display.c_str(), "none") != 0)
+		hud_start_text_flash(display.c_str(), 5000);
 
 	// determine how much we have to decrement the effect per second
 	Emp_decr = Emp_intensity / time;
 
 	// play a flash
-	game_flash( 1.0f, 1.0f, 0.5f );
+	game_flash(
+		std::get<0>(Emp_pain_flash_color) * Emp_pain_flash_factor,
+		std::get<1>(Emp_pain_flash_color) * Emp_pain_flash_factor,
+		std::get<2>(Emp_pain_flash_color) * Emp_pain_flash_factor
+	);
 }
 
 // stop the emp effect cold

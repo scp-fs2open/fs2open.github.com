@@ -3,6 +3,11 @@ out vec4 fragOut0;
 uniform sampler2DArray ytex;
 uniform sampler2DArray utex;
 uniform sampler2DArray vtex;
+layout (std140) uniform movieData {
+	float alpha;
+	float pad[3];
+};
+
 void main()
 {
 	float y = texture(ytex, vec3(fragTexCoord.st, 0.0)).r;
@@ -12,5 +17,5 @@ void main()
 	fragOut0.r = dot(val, vec3(1.1640625, 0.0, 1.59765625));
 	fragOut0.g = dot(val, vec3(1.1640625, -0.390625, -0.8125));
 	fragOut0.b = dot(val, vec3(1.1640625, 2.015625, 0.0));
-	fragOut0.a = 1.0;
+	fragOut0.a = alpha;
 }

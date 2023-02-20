@@ -60,7 +60,7 @@ bool *Lcl_unexpected_tstring_check = nullptr;
 // add a new string to the code, you must assign it a new index.  Use the number below for
 // that index and increase the number below by one.
 // retail XSTR_SIZE = 1570
-#define XSTR_SIZE	1667
+#define XSTR_SIZE	1672
 
 
 // struct to allow for strings.tbl-determined x offset
@@ -143,24 +143,39 @@ void lcl_init(int lang_init)
 		}
 	}
 
-	// read the language from the registry
+	// read the language from the commandline and then registry
 	if (lang_init < 0) {
-		memset(lang_string, 0, 128);
-		// default to DEFAULT_LANGUAGE (which should be English so we don't have to put German text
-		// in tstrings in the #default section)
-		ret = os_config_read_string(nullptr, "Language", Lcl_languages[LCL_DEFAULT].lang_name);
-		strcpy_s(lang_string, ret);		
 
-		// look it up
 		lang = -1;
-		for(idx = 0; idx < (int)Lcl_languages.size(); idx++){
-			if(!stricmp(Lcl_languages[idx].lang_name, lang_string)){
-				lang = idx;
-				break;
+
+		// first try the commandline
+		if (!Cmdline_lang.empty()) {
+			for (idx = 0; idx < (int)Lcl_languages.size(); idx++) {
+				if (!stricmp(Lcl_languages[idx].lang_name, Cmdline_lang.c_str())) {
+					lang = idx;
+					break;
+				}
 			}
 		}
-		if(lang < 0){
-			lang = LCL_DEFAULT;
+
+		if (lang < 0) {
+			// now go the the registry if it's not found
+			memset(lang_string, 0, 128);
+			// default to DEFAULT_LANGUAGE (which should be English so we don't have to put German text
+			// in tstrings in the #default section)
+			ret = os_config_read_string(nullptr, "Language", Lcl_languages[LCL_DEFAULT].lang_name);
+			strcpy_s(lang_string, ret);
+
+			// look it up
+			for (idx = 0; idx < (int)Lcl_languages.size(); idx++) {
+				if (!stricmp(Lcl_languages[idx].lang_name, lang_string)) {
+					lang = idx;
+					break;
+				}
+			}
+			if (lang < 0) {
+				lang = LCL_DEFAULT;
+			}
 		}
 	} else {
 		Assert(lang_init == LCL_UNTRANSLATED || lang_init == LCL_RETAIL_HYBRID || (lang_init >= 0 && lang_init < (int)Lcl_languages.size()));
@@ -644,6 +659,37 @@ int lcl_add_dir_to_path_with_filename(char *current_path, size_t path_max)
 	return 1;
 }
 
+int lcl_add_dir_to_path_with_filename(SCP_string &current_path)
+{
+	int lang = lcl_get_current_lang_index();
+
+	// if the disk extension is 0 length, don't add anything
+	if (strlen(Lcl_languages[lang].lang_ext) <= 0) {
+		return 1;
+	}
+
+	SCP_string filename;
+
+	auto sep = current_path.find_last_of(DIR_SEPARATOR_CHAR);
+
+	if (sep == SCP_string::npos) {
+		filename = current_path;
+		current_path.clear();
+	} else {
+		filename = current_path.substr(sep+1);
+		current_path.erase(sep+1);
+	}
+
+	// add extension
+	current_path += Lcl_languages[lang].lang_ext;
+	current_path += DIR_SEPARATOR_STR;
+
+	// copy rest of filename
+	current_path += filename;
+
+	return 1;
+}
+
 
 // externalization of table/mission files ----------------------- 
 
@@ -676,7 +722,7 @@ void lcl_replace_stuff(SCP_string &text, bool force)
 	if (!Fred_running && Player != nullptr)
 	{
 		replace_all(text, "$callsign", Player->callsign);
-		replace_all(text, "$rank", Ranks[Player->stats.rank].name);
+		replace_all(text, "$rank", Ranks[verify_rank(Player->stats.rank)].name);
 	}
 
 	replace_all(text, "$quote", "\"");

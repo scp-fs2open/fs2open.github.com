@@ -311,7 +311,14 @@ void HudGaugeEscort::renderIcon(int x, int y, int index)
 		if (np_index >= 0) {
 			pl = Net_players[np_index].m_player;
 			objnum = pl->objnum;
+
+			// this can occassionally happen in multi when a player still needs to respawn.
+			if (objnum < 0 || Objects[objnum].type != OBJ_SHIP){
+				return;
+			}
+			
 		}
+
 	} else {
 		objnum = eship->objnum;
 	}
@@ -543,6 +550,11 @@ void hud_create_complete_escort_list()
 				continue;
 			}
 			objp = &Objects[so->objnum];
+			// don't process objects that should be dead
+			if (objp->flags[Object::Object_Flags::Should_be_dead]) {
+				continue;
+			}
+
 			Assert( objp->type == OBJ_SHIP );
 			if(objp->type != OBJ_SHIP){
 				continue;
@@ -574,11 +586,6 @@ void hud_create_complete_escort_list()
 				{
 					continue;
 				}
-			}
-
-			// don't process objects that should be dead
-			if ( objp->flags[Object::Object_Flags::Should_be_dead] ) {
-				continue;
 			}
 
 			// add the ship

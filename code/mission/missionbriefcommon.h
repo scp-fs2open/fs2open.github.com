@@ -63,6 +63,9 @@
 #define ICON_JUMP_NODE						33
 #define ICON_TRANSPORT						34
 
+#define BRIEF_ICON_TYPES					3
+
+//If any types are added here then be sure to update BRIEF_ICON_TYPES
 typedef struct briefing_icon_info {
 	generic_anim	regular;
 	hud_anim		fade;
@@ -112,6 +115,7 @@ extern const float		BRIEF_TEXT_WIPE_TIME;		// time in seconds for wipe to occur
 
 typedef struct brief_icon {
 	int		x,y,w,h;
+	int		scale;
 	int		hold_x, hold_y;	// 2D screen position of icon, used to place animations
 	int		ship_class;
 	int		modelnum;
@@ -154,10 +158,11 @@ public:
 	brief_icon	*icons;
 	int			num_lines;
 	brief_line	*lines;
+	bool		draw_grid;
 
 	brief_stage( ) 
-		: text( ), camera_time( 0 ), flags( 0 ), formula( -1 ),
-		  num_icons( 0 ), icons( NULL ), num_lines( 0 ), lines( NULL )
+		: text( ), camera_time( 0 ), flags( 0 ), formula( -1 ), num_icons(0), icons(NULL), num_lines(0), lines(NULL),
+		  draw_grid( true )
 	{ 
 		voice[ 0 ] = 0;
 		camera_pos = vmd_zero_vector;
@@ -235,14 +240,14 @@ extern int Brief_text_max_lines[GR_NUM_RESOLUTIONS];
 extern const char *Brief_static_name[GR_NUM_RESOLUTIONS];
 extern int Brief_static_coords[GR_NUM_RESOLUTIONS][2];
 
-// Needed for Fred
+/* Needed for Fred
 #define BRIEF_GRID3_X1						42
 #define BRIEF_GRID3_Y1						122
 #define BRIEF_GRID0_X2						585
 #define BRIEF_GRID0_Y2						371
 #define BRIEF_GRID_W							(BRIEF_GRID0_X2-BRIEF_GRID3_X1+1)
 #define BRIEF_GRID_H							(BRIEF_GRID0_Y2-BRIEF_GRID3_Y1+1)
-/*
+
 #define BRIEF_GRID0_X1						63
 #define BRIEF_GRID0_Y1						122
 #define BRIEF_GRID1_X1						575
@@ -262,7 +267,7 @@ extern int Brief_static_coords[GR_NUM_RESOLUTIONS][2];
 
 typedef struct brief_screen
 {
-	int map_x1, map_x2, map_y1, map_y2;
+	int map_x1, map_x2, map_y1, map_y2, resize;
 /*	int btext_x1, btext_x2, btext_y1, btext_y2;
 	int cup_x1, cup_x2, cup_y1, cup_y2;
 	int cupinfo_x1, cupinfo_x2, cupinfo_y1, cupinfo_y2;*/

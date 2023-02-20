@@ -24,8 +24,7 @@
 #include "object/object.h"
 #include "object/objectdock.h"
 #include "object/objectshield.h"
-#include "scripting/scripting.h"
-#include "scripting/api/objs/vecmath.h"
+#include "scripting/global_hooks.h"
 #include "playerman/player.h"
 #include "render/3d.h"			// needed for View_position, which is used when playing 3d sound
 #include "ship/ship.h"
@@ -790,7 +789,7 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 	// We will try not to worry about the left over time in the frame
 	// heavy's position unchanged by collision
 	// light's position is heavy's position plus relative position from heavy
-	if (should_collide){
+	if (should_collide && !lighter->flags[Object::Object_Flags::Immobile]){
 		vm_vec_add(&lighter->pos, &heavy->pos, &ship_ship_hit_info->light_collision_cm_pos);
 	}
 
@@ -802,9 +801,11 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 
 	if (should_collide){
 
-		Assert( !vm_is_vec_nan(&direction_light) );
-		vm_vec_scale_add2(&heavy->pos, &direction_light,  0.2f * lighter->phys_info.mass / (heavy->phys_info.mass + lighter->phys_info.mass));
-		vm_vec_scale_add2(&heavy->pos, &ship_ship_hit_info->collision_normal, -0.1f * lighter->phys_info.mass / (heavy->phys_info.mass + lighter->phys_info.mass));
+		if (!heavy->flags[Object::Object_Flags::Immobile]) {
+			Assert(!vm_is_vec_nan(&direction_light));
+			vm_vec_scale_add2(&heavy->pos, &direction_light, 0.2f * lighter->phys_info.mass / (heavy->phys_info.mass + lighter->phys_info.mass));
+			vm_vec_scale_add2(&heavy->pos, &ship_ship_hit_info->collision_normal, -0.1f * lighter->phys_info.mass / (heavy->phys_info.mass + lighter->phys_info.mass));
+		}
 
 		// while we are in a block that has already checked if we should collide, set the MP client timestamps
 		if (MULTIPLAYER_CLIENT){
@@ -820,7 +821,7 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 	if (ship_ship_hit_info->is_landing) {
 		vm_vec_scale_add2(&lighter->pos, &ship_ship_hit_info->collision_normal, LANDING_POS_OFFSET);
 	}
-	else {
+	else if (!lighter->flags[Object::Object_Flags::Immobile]) {
 		vm_vec_scale_add2(&lighter->pos, &direction_light, -0.2f * heavy->phys_info.mass / (heavy->phys_info.mass + lighter->phys_info.mass));
 		vm_vec_scale_add2(&lighter->pos, &ship_ship_hit_info->collision_normal,  0.1f * heavy->phys_info.mass / (heavy->phys_info.mass + lighter->phys_info.mass));
 	}
@@ -1195,17 +1196,21 @@ int collide_ship_ship( obj_pair * pair )
 		{
 			bool a_override = false, b_override = false;
 
-			if (Script_system.IsActiveAction(CHA_COLLIDESHIP)) {
-				Script_system.SetHookObjects(4, "Self", A, "Object", B, "Ship", A, "ShipB", B);
-				Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(world_hit_pos));
-				a_override = Script_system.IsConditionOverride(CHA_COLLIDESHIP, A, B);
-				Script_system.RemHookVars({ "Self", "Object", "Ship", "ShipB", "Hitpos" });
+			if (scripting::hooks::OnShipCollision->isActive()) {
+				a_override = scripting::hooks::OnShipCollision->isOverride(scripting::hooks::CollisionConditions{{A, B}},
+					scripting::hook_param_list(scripting::hook_param("Self", 'o', A),
+						scripting::hook_param("Object", 'o', B),
+						scripting::hook_param("Ship", 'o', A),
+						scripting::hook_param("ShipB", 'o', B),
+						scripting::hook_param("Hitpos", 'o', world_hit_pos)));
 
 				// Yes, this should be reversed.
-				Script_system.SetHookObjects(4, "Self", B, "Object", A, "Ship", B, "ShipB", A);
-				Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(world_hit_pos));
-				b_override = Script_system.IsConditionOverride(CHA_COLLIDESHIP, B, A);
-				Script_system.RemHookVars({ "Self", "Object", "Ship", "ShipB", "Hitpos" });
+				b_override = scripting::hooks::OnShipCollision->isOverride(scripting::hooks::CollisionConditions{{A, B}},
+					scripting::hook_param_list(scripting::hook_param("Self", 'o', B),
+						scripting::hook_param("Object", 'o', A),
+						scripting::hook_param("Ship", 'o', B),
+						scripting::hook_param("ShipB", 'o', A),
+						scripting::hook_param("Hitpos", 'o', world_hit_pos)));
 			}
 
 			if(!a_override && !b_override)
@@ -1215,16 +1220,16 @@ int collide_ship_ship( obj_pair * pair )
 				// Moved here to properly handle ship-ship collision overrides and not process their physics when overridden by lua
 				//
 
-				ship *light_shipp = &Ships[ship_ship_hit_info.heavy->instance];
+				ship *light_shipp = &Ships[ship_ship_hit_info.light->instance];
 				ship *heavy_shipp = &Ships[ship_ship_hit_info.heavy->instance];
 
 				object* heavy_obj = ship_ship_hit_info.heavy;
 				object* light_obj = ship_ship_hit_info.light;
 				// Update ai to deal with collisions
-				if (heavy_obj - Objects == Ai_info[light_shipp->ai_index].target_objnum) {
+				if (OBJ_INDEX(heavy_obj) == Ai_info[light_shipp->ai_index].target_objnum) {
 					Ai_info[light_shipp->ai_index].ai_flags.set(AI::AI_Flags::Target_collision);
 				}
-				if (light_obj - Objects == Ai_info[heavy_shipp->ai_index].target_objnum) {
+				if (OBJ_INDEX(light_obj) == Ai_info[heavy_shipp->ai_index].target_objnum) {
 					Ai_info[heavy_shipp->ai_index].ai_flags.set(AI::AI_Flags::Target_collision);
 				}
 
@@ -1388,7 +1393,7 @@ int collide_ship_ship( obj_pair * pair )
 										// finally if the host is also a player, ignore making these adjustments for him because he is in a pure simulation.
 										if (&Ships[Objects[current_player.m_player->objnum].instance] != Player_ship) {
 											// temp set this as an uninterpolated ship, to make the collision look more natural until the next update comes in.
-											multi_oo_set_client_simulation_mode(Objects[current_player.m_player->objnum].net_signature);
+											Objects[current_player.m_player->objnum].interp_info.force_interpolation_mode();
 
 											// check to see if it has been long enough since the last collision, if not, negate the damage
 											if (!timestamp_elapsed(current_player.s_info.player_collision_timestamp)) {
@@ -1447,24 +1452,28 @@ int collide_ship_ship( obj_pair * pair )
 				}
 			}
 
-			if (!Script_system.IsActiveAction(CHA_COLLIDESHIP)) {
+			if (!scripting::hooks::OnShipCollision->isActive()) {
 				return 0;
 			}
 
 			if(!(b_override && !a_override))
 			{
-				Script_system.SetHookObjects(4, "Self", A, "Object", B, "Ship", A, "ShipB", B);
-				Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(world_hit_pos));
-				Script_system.RunCondition(CHA_COLLIDESHIP, A, B);
-				Script_system.RemHookVars({ "Self", "Object", "Ship", "ShipB", "Hitpos" });
+				scripting::hooks::OnShipCollision->run(scripting::hooks::CollisionConditions{{A, B}}, 
+					scripting::hook_param_list(scripting::hook_param("Self", 'o', A),
+														   scripting::hook_param("Object", 'o', B),
+														   scripting::hook_param("Ship", 'o', A),
+														   scripting::hook_param("ShipB", 'o', B),
+														   scripting::hook_param("Hitpos", 'o', world_hit_pos)));
 			}
 			if((b_override && !a_override) || (!b_override && !a_override))
 			{
 				// Yes, this should be reversed.
-				Script_system.SetHookObjects(4, "Self", B, "Object", A, "Ship", B, "ShipB", A);
-				Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(world_hit_pos));
-				Script_system.RunCondition(CHA_COLLIDESHIP, B, A);
-				Script_system.RemHookVars({ "Self", "Object", "Ship", "ShipB", "Hitpos" });
+				scripting::hooks::OnShipCollision->run(scripting::hooks::CollisionConditions{{A, B}}, 
+					scripting::hook_param_list(scripting::hook_param("Self", 'o', B),
+														   scripting::hook_param("Object", 'o', A),
+														   scripting::hook_param("Ship", 'o', B),
+														   scripting::hook_param("ShipB", 'o', A),
+														   scripting::hook_param("Hitpos", 'o', world_hit_pos)));
 			}
 
 			return 0;

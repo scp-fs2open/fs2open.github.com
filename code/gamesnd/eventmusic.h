@@ -50,9 +50,9 @@ extern float Master_event_music_volume;			// range is 0->1
 /////////////////////////////////////////////////////////////////////////////
 #define NUM_SCORES						5
 #define SCORE_BRIEFING					0
-#define SCORE_DEBRIEF_SUCCESS			1
-#define SCORE_DEBRIEF_AVERAGE			2
-#define SCORE_DEBRIEF_FAIL				3
+#define SCORE_DEBRIEFING_SUCCESS		1
+#define SCORE_DEBRIEFING_AVERAGE		2
+#define SCORE_DEBRIEFING_FAILURE		3
 #define SCORE_FICTION_VIEWER			4
 extern int Mission_music[NUM_SCORES];		// indicies into Spooled_music[]
 /////////////////////////////////////////////////////////////////////////////

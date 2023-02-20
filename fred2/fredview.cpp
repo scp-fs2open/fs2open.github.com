@@ -199,6 +199,10 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_UPDATE_COMMAND_UI(ID_SPEED50, OnUpdateSpeed50)
 	ON_COMMAND(ID_SPEED100, OnSpeed100)
 	ON_UPDATE_COMMAND_UI(ID_SPEED100, OnUpdateSpeed100)
+	ON_COMMAND(ID_SPEED500, OnSpeed500)
+	ON_UPDATE_COMMAND_UI(ID_SPEED500, OnUpdateSpeed500)
+	ON_COMMAND(ID_SPEED1000, OnSpeed1000)
+	ON_UPDATE_COMMAND_UI(ID_SPEED1000, OnUpdateSpeed1000)
 	ON_COMMAND(ID_SELECT, OnSelect)
 	ON_UPDATE_COMMAND_UI(ID_SELECT, OnUpdateSelect)
 	ON_COMMAND(ID_SELECT_AND_MOVE, OnSelectAndMove)
@@ -1475,8 +1479,8 @@ void CFREDView::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
 			// create a popup menu based on the ship models read in ship.cpp.
 			shipPopup.CreatePopupMenu();
 			shipPopup.AppendMenu(MF_STRING | MF_ENABLED, SHIP_TYPES + Id_select_type_waypoint, "Waypoint");
-			shipPopup.AppendMenu(MF_STRING | MF_ENABLED, SHIP_TYPES + Id_select_type_start, "Player Start");
 			shipPopup.AppendMenu(MF_STRING | MF_ENABLED, SHIP_TYPES + Id_select_type_jump_node, "Jump Node");
+			shipPopup.AppendMenu(MF_STRING | MF_ENABLED, SHIP_TYPES + Id_select_type_start, "Player Start");
 			for (i=0; i<(int)Species_info.size(); i++) {
 				species_submenu[i].CreatePopupMenu();
 				shipPopup.AppendMenu(MF_STRING | MF_POPUP | MF_ENABLED,
@@ -1551,79 +1555,6 @@ CFREDView *CFREDView::GetView()
   return (CFREDView *) pView;
 }
 
-/*void CFREDView::OnShipType0() 
-{
-	cur_model_index = 1;
-}
-
-void CFREDView::OnShipType1() 
-{
-	cur_model_index = 2;
-}
-
-void CFREDView::OnShipType2() 
-{
-	cur_model_index = 3;
-}
-
-void CFREDView::OnShipType3() 
-{
-	cur_model_index = 4;
-}
-
-void CFREDView::OnShipType4() 
-{
-	cur_model_index = 5;
-}
-
-void CFREDView::OnShipType5() 
-{
-	cur_model_index = 6;
-}
-
-void CFREDView::OnUpdateShipType1(CCmdUI* pCmdUI) 
-{
-	pCmdUI->SetCheck(cur_model_index == 2);
-}
-
-void CFREDView::OnUpdateShipType2(CCmdUI* pCmdUI) 
-{
-	pCmdUI->SetCheck(cur_model_index == 3);
-}
-
-void CFREDView::OnUpdateShipType3(CCmdUI* pCmdUI) 
-{
-	pCmdUI->SetCheck(cur_model_index == 4);
-}
-
-void CFREDView::OnUpdateShipType4(CCmdUI* pCmdUI) 
-{
-	pCmdUI->SetCheck(cur_model_index == 5);
-}
-
-void CFREDView::OnUpdateShipType5(CCmdUI* pCmdUI) 
-{
-	pCmdUI->SetCheck(cur_model_index == 6);
-}
-
-
-void CFREDView::OnUpdateShipType0(CCmdUI* pCmdUI) 
-{
-	pCmdUI->SetCheck(cur_model_index == 1);
-	
-}
-
-void CFREDView::OnEditShipType6() 
-{
-	cur_model_index = 7;
-	
-}
-
-void CFREDView::OnUpdateEditShipType6(CCmdUI* pCmdUI) 
-{
-	pCmdUI->SetCheck(cur_model_index == 7);
-} */
-
 
 // following code added by MWA 09/04/96
 // Implements messages for popup menu built on the fly.
@@ -1635,14 +1566,14 @@ BOOL CFREDView::OnCmdMsg(UINT nID, int nCode, void* pExtra, AFX_CMDHANDLERINFO* 
 	int id = (int) nID;
 
 	if (!pHandlerInfo) {
-		if ((id >= SHIP_TYPES) && (id < SHIP_TYPES + ship_info_size() + 3)) {
+		if ((id >= SHIP_TYPES) && (id < SHIP_TYPES + (int)ship_type_combo_box_size + 3)) {
 			if (nCode == CN_COMMAND) {
-				cur_model_index = id - SHIP_TYPES;
-				m_new_ship_type_combo_box.SetCurSelNEW(cur_model_index);
+				cur_ship_type_combo_index = id - SHIP_TYPES;
+				m_new_ship_type_combo_box.SetCurSel(cur_ship_type_combo_index);
 
 			} else if (nCode == CN_UPDATE_COMMAND_UI)	{
 				// Update UI element state
-				((CCmdUI*) pExtra)->SetCheck(cur_model_index + SHIP_TYPES == id);
+				((CCmdUI*) pExtra)->SetCheck(cur_ship_type_combo_index + SHIP_TYPES == id);
 				((CCmdUI*) pExtra)->Enable(TRUE);
 			}
 
@@ -1744,7 +1675,19 @@ void CFREDView::OnSpeed100()
 	set_physics_controls();
 }
 
-void CFREDView::OnRot1() 
+void CFREDView::OnSpeed500()
+{
+	physics_speed = 500;
+	set_physics_controls();
+}
+
+void CFREDView::OnSpeed1000()
+{
+	physics_speed = 1000;
+	set_physics_controls();
+}
+
+void CFREDView::OnRot1()
 {
 	physics_rot = 2;
 	set_physics_controls();
@@ -1814,7 +1757,17 @@ void CFREDView::OnUpdateSpeed100(CCmdUI* pCmdUI)
 	pCmdUI->SetCheck(physics_speed == 100);
 }
 
-void CFREDView::OnUpdateRot1(CCmdUI* pCmdUI) 
+void CFREDView::OnUpdateSpeed500(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetCheck(physics_speed == 500);
+}
+
+void CFREDView::OnUpdateSpeed1000(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetCheck(physics_speed == 1000);
+}
+
+void CFREDView::OnUpdateRot1(CCmdUI* pCmdUI)
 {
 	pCmdUI->SetCheck(physics_rot == 2);
 }
@@ -2950,14 +2903,14 @@ int CFREDView::global_error_check()
 		return i;
 	}
 
-	for (i=0; i<Num_mission_events; i++){
-		if (fred_check_sexp(Mission_events[i].formula, OPR_NULL, "mission event \"%s\"", Mission_events[i].name)){
+	for (i=0; i<(int)Mission_events.size(); i++){
+		if (fred_check_sexp(Mission_events[i].formula, OPR_NULL, "mission event \"%s\"", Mission_events[i].name.c_str())){
 			return -1;
 		}
 	}
 
-	for (i=0; i<Num_goals; i++){
-		if (fred_check_sexp(Mission_goals[i].formula, OPR_BOOL, "mission goal \"%s\"", Mission_goals[i].name)){
+	for (i=0; i<(int)Mission_goals.size(); i++){
+		if (fred_check_sexp(Mission_goals[i].formula, OPR_BOOL, "mission goal \"%s\"", Mission_goals[i].name.c_str())){
 			return -1;
 		}
 	}
@@ -2992,6 +2945,7 @@ int CFREDView::global_error_check()
 	for (i=0; i<MAX_WINGS; i++) {
 		int starting_wing;
 		std::set<size_t> default_orders;
+		int default_orders_idx = -1;
 
 		if ( !Wings[i].wave_count ){
 			continue;
@@ -3003,18 +2957,26 @@ int CFREDView::global_error_check()
 		// first, be sure this isn't a reinforcement wing.
 		if ( starting_wing && (Wings[i].flags[Ship::Wing_Flags::Reinforcement]) ) {
 			if ( error("Starting Wing %s marked as reinforcement.  This wing\nshould either be renamed, or unmarked as reinforcement.", Wings[i].name) ){
-// Goober5000				return 1;
+				return 1;
 			}
 		}
 		
 		for ( j = 0; j < Wings[i].wave_count; j++ ) {
 			std::set<size_t> orders;
 
+			// exclude players from the check
+			if (Objects[Ships[Wings[i].ship_index[j]].objnum].type == OBJ_START) {
+				continue;
+			}
+
 			orders = Ships[Wings[i].ship_index[j]].orders_accepted;
-			if ( j == 0 ) {
+
+			if ( default_orders_idx < 0 ) {
+				default_orders_idx = j;
 				default_orders = orders;
+
 			} else if ( default_orders != orders ) {
-				if (error("%s and %s will accept different orders. All ships in a wing must accept the same Player Orders.", Ships[Wings[i].ship_index[j]].ship_name, Ships[Wings[i].ship_index[0]].ship_name ) ){
+				if (error("%s and %s will accept different orders. All ships in a wing must accept the same Player Orders.", Ships[Wings[i].ship_index[j]].ship_name, Ships[Wings[i].ship_index[default_orders_idx]].ship_name)) {
 					return 1;
 				}
 			}
@@ -3028,7 +2990,7 @@ int CFREDView::global_error_check()
 			} else {
 				if ( starting_orders != default_orders ) {
 					if ( error("Player starting wing %s has orders which don't match other starting wings\n", Wings[i].name) ){
-// Goober5000						return 1;
+						return 1;
 					}
 				}
 			}
@@ -3043,9 +3005,9 @@ int CFREDView::global_error_check()
 	}*/
 
 	// do error checking for asteroid targets
-	for (const auto& target_ship : Asteroid_target_ships) {
-		if (ship_name_lookup(target_ship.c_str(), 1) < 0) {
-			if (error("Asteroid target '%s' is not a valid ship", target_ship.c_str())) {
+	for (const auto& name : Asteroid_field.target_names) {
+		if (ship_name_lookup(name.c_str(), 1) < 0) {
+			if (error("Asteroid target '%s' is not a valid ship", name.c_str())) {
 				return 1;
 			}
 		}
@@ -3367,7 +3329,7 @@ int CFREDView::internal_error(const char *msg, ...)
 
 int CFREDView::fred_check_sexp(int sexp, int type, const char *msg, ...)
 {
-	SCP_string buf, sexp_buf, error_buf;
+	SCP_string buf, sexp_buf, error_buf, bad_node_str;
 	int err = 0, z, faulty_node;
 	va_list args;
 
@@ -3384,7 +3346,13 @@ int CFREDView::fred_check_sexp(int sexp, int type, const char *msg, ...)
 
 	convert_sexp_to_string(sexp_buf, sexp, SEXP_ERROR_CHECK_MODE);
 	truncate_message_lines(sexp_buf, 30);
-	sprintf(error_buf, "Error in %s: %s\n\nIn sexpression: %s\n\n(Bad node appears to be: %s)", buf.c_str(), sexp_error_message(z), sexp_buf.c_str(), Sexp_nodes[faulty_node].text);
+
+	stuff_sexp_text_string(bad_node_str, faulty_node, SEXP_ERROR_CHECK_MODE);
+	if (!bad_node_str.empty()) {	// the previous function adds a space at the end
+		bad_node_str.pop_back();
+	}
+
+	sprintf(error_buf, "Error in %s: %s\n\nIn sexpression: %s\n\n(Bad node appears to be: %s)", buf.c_str(), sexp_error_message(z), sexp_buf.c_str(), bad_node_str.c_str());
 
 	if (z < 0 && z > -100)
 		err = 1;
@@ -3579,7 +3547,7 @@ char *error_check_initial_orders(ai_goal *goals, int ship, int wing)
 		switch (goals[i].ai_mode) {
 			case AI_GOAL_DESTROY_SUBSYSTEM:
 				Assert(flag == 2 && inst >= 0);
-				if (ship_get_subsys_index(&Ships[inst], goals[i].docker.name) < 0)
+				if (ship_find_subsys(&Ships[inst], goals[i].docker.name) < 0)
 					return "Unknown subsystem type";
 
 				break;
@@ -3780,11 +3748,11 @@ void CFREDView::OnUpdateNewShipType(CCmdUI* pCmdUI)
 	int z;
 	CWnd *bar;
 
-	z = m_new_ship_type_combo_box.GetCurSelNEW();
+	z = m_new_ship_type_combo_box.GetCurSel();
 	if (z == CB_ERR)
-		m_new_ship_type_combo_box.SetCurSelNEW(cur_model_index);
+		m_new_ship_type_combo_box.SetCurSel(cur_ship_type_combo_index);
 	else
-		cur_model_index = z;
+		cur_ship_type_combo_index = z;
 
 	bar = GetDlgItem(pCmdUI->m_nID);
 	if (!bar) {

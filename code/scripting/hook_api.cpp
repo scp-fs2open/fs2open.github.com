@@ -2,7 +2,7 @@
 
 #include "globalincs/pstypes.h"
 
-#include <utility>
+#include "scripting/api/objs/vecmath.h"
 
 namespace scripting {
 
@@ -55,6 +55,10 @@ ade_odata_setter<object_h> convert_arg_type(object* objp)
 {
 	return ade_object_to_odata(objp != nullptr ? OBJ_INDEX(objp) : -1);
 }
+ade_odata_setter<vec3d> convert_arg_type(vec3d vec)
+{
+	return scripting::api::l_Vector.Set(vec);
+}
 } // namespace detail
 
 HookVariableDocumentation::HookVariableDocumentation(const char* name_, ade_type_info type_, const char* description_)
@@ -65,8 +69,10 @@ HookVariableDocumentation::HookVariableDocumentation(const char* name_, ade_type
 HookBase::HookBase(SCP_string hookName,
 				   SCP_string description,
 				   SCP_vector<HookVariableDocumentation> parameters,
+				   const SCP_unordered_map<SCP_string, const std::unique_ptr<const ParseableCondition>>& conditions,
+				   tl::optional<HookDeprecationOptions> deprecation,
 				   int32_t hookId)
-	: _hookName(std::move(hookName)), _description(std::move(description)), _parameters(std::move(parameters))
+	: _conditions(conditions), _hookName(std::move(hookName)), _description(std::move(description)), _parameters(std::move(parameters)), _deprecation(std::move(deprecation))
 {
 	// If we specify a forced id then use that. This is for special hooks that need a guaranteed id
 	if (hookId >= 0) {
@@ -80,52 +86,12 @@ HookBase::HookBase(SCP_string hookName,
 const SCP_string& HookBase::getHookName() const { return _hookName; }
 const SCP_string& HookBase::getDescription() const { return _description; }
 const SCP_vector<HookVariableDocumentation>& HookBase::getParameters() const { return _parameters; }
+const tl::optional<HookDeprecationOptions>& HookBase::getDeprecation() const { return _deprecation; }
 int32_t HookBase::getHookId() const { return _hookId; }
 HookBase::~HookBase() = default;
 
-std::shared_ptr<Hook> Hook::Factory(SCP_string hookName,
-									SCP_string description,
-									SCP_vector<HookVariableDocumentation> parameters,
-									int32_t hookId)
-{
-	return std::make_shared<Hook>(std::move(hookName), std::move(description), std::move(parameters), hookId);
-}
-std::shared_ptr<Hook> Hook::Factory(SCP_string hookName, int32_t hookId)
-{
-	return std::make_shared<Hook>(std::move(hookName), SCP_string(), SCP_vector<HookVariableDocumentation>(), hookId);
-}
-Hook::Hook(SCP_string hookName,
-		   SCP_string description,
-		   SCP_vector<HookVariableDocumentation> parameters,
-		   int32_t hookId)
-	: HookBase(std::move(hookName), std::move(description), std::move(parameters), hookId)
-{
-}
-Hook::~Hook() = default;
-
-bool Hook::isOverridable() const { return false; }
-
-OverridableHook::OverridableHook(SCP_string hookName,
-								 SCP_string description,
-								 SCP_vector<HookVariableDocumentation> parameters,
-								 int32_t hookId)
-	: Hook(std::move(hookName), std::move(description), std::move(parameters), hookId)
-{
-}
-OverridableHook::~OverridableHook() = default;
-
-std::shared_ptr<OverridableHook> OverridableHook::Factory(SCP_string hookName,
-														  SCP_string description,
-														  SCP_vector<HookVariableDocumentation> parameters,
-														  int32_t hookId)
-{
-	return std::make_shared<OverridableHook>(std::move(hookName),
-											 std::move(description),
-											 std::move(parameters),
-											 hookId);
-}
-bool OverridableHook::isOverridable() const { return true; }
-
 const SCP_vector<HookBase*>& getHooks() { return getHookManager().getHooks(); }
+
+const SCP_unordered_map<SCP_string, const std::unique_ptr<const ParseableCondition>> HookImpl<void>::emptyConditions{};
 
 } // namespace scripting

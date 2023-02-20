@@ -579,7 +579,7 @@ void std_multi_init_framecap_slider(HWND hwndDlg);
 void std_multi_init_multi_controls(HWND hwndDlg);
 
 // return the handle to the item matching the given parameters
-HTREEITEM std_multi_get_goal_item(char *goal_string,int type);
+HTREEITEM std_multi_get_goal_item(const char *goal_string,int type);
 
 // set the mission time in seconds
 void std_multi_set_standalone_missiontime(float mission_time)
@@ -654,11 +654,11 @@ void std_multi_add_goals()
 	tree_insert.hInsertAfter = TVI_LAST;	
 
 	perm_goal_flags = 0;
-	for(idx=0;idx<Num_goals;idx++){		
+	for (const auto& goal: Mission_goals) {
 		// reset the goal flags
 		goal_flags = 0;
 
-      switch(Mission_goals[idx].type & GOAL_TYPE_MASK){
+      switch(goal.type & GOAL_TYPE_MASK){
 		// primary goal
 		case PRIMARY_GOAL :
 			goal_flags |= (1<<1);		// (image index == 1, primary goal)						
@@ -683,11 +683,11 @@ void std_multi_add_goals()
 		}
 		
       // first select whether to insert under primary, secondary, or bonus tree roots
-		tree_insert.hParent = Goal_items[Mission_goals[idx].type & GOAL_TYPE_MASK];  
+		tree_insert.hParent = Goal_items[goal.type & GOAL_TYPE_MASK];
 
 		// set the goal name
 		new_item.pszText = goal_name;
-		strcpy(new_item.pszText,Mission_goals[idx].name);
+		strcpy(new_item.pszText, goal.name.c_str());
 		
 		// set the correct image indices
 		new_item.iImage = (goal_flags & (1<<0)) ? 3 : 0;
@@ -742,15 +742,15 @@ void std_multi_update_goals()
 {
 	HTREEITEM update_item;
 	TV_ITEM setting,lookup;
-	int idx,should_update;
+	bool should_update;
 
    setting.mask = TVIF_IMAGE | TVIF_SELECTEDIMAGE;
 
 	// go through all the goals
-	for(idx=0;idx<Num_goals;idx++){
+	for(const auto& goal: Mission_goals){
 		// get a handle to the tree item
 		update_item = NULL;
-		update_item = std_multi_get_goal_item(Mission_goals[idx].name,Mission_goals[idx].type & GOAL_TYPE_MASK);
+		update_item = std_multi_get_goal_item(goal.name.c_str(), goal.type & GOAL_TYPE_MASK);
 
 		// continue if we didn't get a valid item
 		if(update_item == NULL){
@@ -766,7 +766,7 @@ void std_multi_update_goals()
 		
 		should_update = 0;		
 		// determine what image to set for each one (failed, satisfied, incomplete, etc)
-		switch(Mission_goals[idx].satisfied){
+		switch(goal.satisfied){
 		case GOAL_FAILED : 			
 			// determine if we should update the item
 			if((lookup.iImage != 4) && (lookup.iSelectedImage != 4)){
@@ -970,7 +970,7 @@ void std_multi_init_multi_controls(HWND hwndDlg)
 }
 
 // return the handle to the item matching the given parameters
-HTREEITEM std_multi_get_goal_item(char *goal_string,int type)
+HTREEITEM std_multi_get_goal_item(const char *goal_string,int type)
 {
 	HTREEITEM ret,moveup;
 	TV_ITEM lookup;

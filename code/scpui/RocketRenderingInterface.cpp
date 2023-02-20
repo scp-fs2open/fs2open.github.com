@@ -22,8 +22,11 @@
 #include "graphics/2d.h"
 #include "graphics/generic.h"
 #include "graphics/material.h"
+#include "mod_table/mod_table.h"
 #include "tracing/categories.h"
 #include "tracing/tracing.h"
+#define BMPMAN_INTERNAL
+#include "bmpman/bm_internal.h"
 
 using namespace Rocket::Core;
 
@@ -130,6 +133,59 @@ bool RocketRenderingInterface::LoadTexture(TextureHandle& texture_handle, Vector
 {
 	TRACE_SCOPE(tracing::RocketLoadTexture);
 	GR_DEBUG_SCOPE("libRocket::LoadTexture");
+
+	if (source.Find("data:image/") == 0) {
+		//Special mode to catch blob textures
+		String submode = source.Substring(11);
+
+		if (submode.Find("png;base64,") == 0) {
+			SCP_string data = submode.Substring(11).CString();
+
+			int w, h, bpp;
+			png_read_header(data, &w, &h, &bpp);
+			if (w * h < 0)
+				return false;
+
+			//if it's not 32-bit, we expand when we read it
+			bpp = 32;
+			int d_size = bpp >> 3;
+
+			//we waste memory if it turns out to be 24-bit, but the way this whole thing works is dodgy anyway
+			ubyte* rawdata = new ubyte[w * h * d_size];
+			if (rawdata == nullptr)
+				return false;
+
+			memset(rawdata, 0, w * h * d_size);
+			png_read_bitmap(data, rawdata, &bpp);
+
+			texture_dimensions = { w, h };
+			bool success = RocketRenderingInterface::GenerateTexture(texture_handle, rawdata, texture_dimensions);
+			
+			delete[] rawdata;
+
+			return success;
+		}
+		else if (submode.Find("bmpman,") == 0) {
+			int handle = std::atoi(submode.Substring(7).CString());
+
+			auto* entry = bm_get_entry(handle);
+			if (entry->handle != handle)
+				return false;
+
+			entry->load_count++;
+
+			bm_get_info(handle, &texture_dimensions.x, &texture_dimensions.y);
+
+			std::unique_ptr<Texture> tex(new Texture());
+			tex->bm_handle = handle;
+			texture_handle = get_texture_handle(tex.release());
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+
 	SCP_string filename;
 	int dir_type;
 	if (!RocketFileInterface::getCFilePath(source, filename, dir_type)) {
@@ -143,7 +199,8 @@ bool RocketRenderingInterface::LoadTexture(TextureHandle& texture_handle, Vector
 
 	std::unique_ptr<Texture> tex(new Texture());
 	// If there is a file that ends with an animation extension, try to load that
-	if (generic_anim_init_and_stream(&tex->animation, filename.c_str(), BM_TYPE_NONE, true) == 0) {
+	if (generic_anim_init_and_stream(&tex->animation, filename.c_str(), BM_TYPE_NONE, SCPUI_loads_hi_res_animations) ==
+		0) {
 		tex->is_animation = true;
 
 		texture_dimensions.x = tex->animation.width;

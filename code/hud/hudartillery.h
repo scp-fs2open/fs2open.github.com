@@ -46,8 +46,8 @@ typedef struct ssm_info {
 
 // creation info for the strike (useful for multiplayer)
 typedef struct ssm_firing_info {
-	SCP_vector<int>		delay_stamp;	// timestamps
-	SCP_vector<vec3d>	start_pos;		// start positions
+	SCP_vector<TIMESTAMP>	delay_stamp;	// timestamps
+	SCP_vector<vec3d>		start_pos;		// start positions
 
 	int					count;			// The ssm_info count may be variable; this stores the actual number of projectiles for this strike.
 	size_t				ssm_index;		// index into ssm_info array

@@ -22,6 +22,7 @@
 #include "io/timer.h"
 #include "mission/missionhotkey.h"
 #include "missionui/missionscreencommon.h"
+#include "mod_table/mod_table.h"
 #include "object/object.h"
 #include "parse/parselo.h"
 #include "playerman/player.h"
@@ -327,7 +328,6 @@ void mission_hotkey_set_defaults()
 	int		i,j;
 	wing		*wp;
 	ship		*sp;
-	object	*A;
 
 	for ( i = 0; i < MAX_KEYED_TARGETS; i++ ) {
 		hud_target_hotkey_clear(i);
@@ -347,9 +347,11 @@ void mission_hotkey_set_defaults()
 
 	// Check for ships with a hotkey assigned
 	obj_merge_created_list();
-	for ( A = GET_FIRST(&obj_used_list); A !=END_OF_LIST(&obj_used_list); A = GET_NEXT(A) ) {
-
-		if ( (A == &obj_used_list) || (A->type != OBJ_SHIP) || ((Game_mode & GM_NORMAL) && (A == Player_obj)) ) {
+	for (auto so: list_range(&Ship_obj_list)) {
+		auto A = &Objects[so->objnum];
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+		if ( (A->type != OBJ_SHIP) || ((Game_mode & GM_NORMAL) && (A == Player_obj)) ) {
 			continue;
 		}
 
@@ -477,6 +479,8 @@ void mission_hotkey_validate()
 			// ensure this object is still valid and in the obj_used_list
 			obj_valid = FALSE;
 			for ( A = GET_FIRST(&obj_used_list); A !=END_OF_LIST(&obj_used_list); A = GET_NEXT(A) ) {
+				if (A->flags[Object::Object_Flags::Should_be_dead])
+					continue;
 				if ( A->signature == hitem->objp->signature ) {
 					obj_valid = TRUE;
 					break;
@@ -601,6 +605,9 @@ int hotkey_build_team_listing(int enemy_team_mask, int y, bool list_enemies)
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		bool add_it;
 
+		if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		// don't process non-ships, or the player ship
 		if ( (Game_mode & GM_NORMAL) && (so->objnum == OBJ_INDEX(Player_obj)) )
 			continue;
@@ -623,7 +630,7 @@ int hotkey_build_team_listing(int enemy_team_mask, int y, bool list_enemies)
 		// if a ship's hotkey is the last hotkey on the list, then maybe make the hotkey -1 if
 		// we are now in mission.  Otherwise, skip this ship
 		if ( shipp->hotkey == MAX_KEYED_TARGETS ) {
-			if ( !(Game_mode & GM_IN_MISSION) )
+			if ((!(Game_mode & GM_IN_MISSION)) || Hotkey_always_hide_hidden_ships)
 				continue;										// skip to next ship
 			shipp->hotkey = -1;
 		}
@@ -866,6 +873,8 @@ void save_hotkeys()
 	for (i=0; i<MAX_KEYED_TARGETS; i++) {
 		hud_target_hotkey_clear(i);
 		for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
+			if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+				continue;
 			if ( Hotkey_bits[Objects[so->objnum].instance] & (1 << i) ) {
 				hud_target_hotkey_add_remove(i, &Objects[so->objnum], HOTKEY_USER_ADDED );
 			}
@@ -1205,7 +1214,7 @@ void mission_hotkey_do_frame(float  /*frametime*/)
 	// draw the big "F10" in the little box	
 	font::set_font(font::FONT2);
 	gr_set_color_fast(&Color_text_normal);
-	strcpy_s(buf, Scan_code_text[Key_sets[Cur_hotkey]]);
+	strcpy_s(buf, textify_scancode(Key_sets[Cur_hotkey]));
 	gr_get_string_size(&w, &h, buf);
 	gr_printf_menu(Hotkey_function_name_coords[gr_screen.res][0] + (Hotkey_function_name_coords[gr_screen.res][2] - w) / 2, Hotkey_function_name_coords[gr_screen.res][1], "%s", buf);
 
@@ -1278,7 +1287,7 @@ void mission_hotkey_do_frame(float  /*frametime*/)
 		if (hotkeys) {
 			for (i=0; i<MAX_KEYED_TARGETS; i++) {
 				if (hotkeys & (1 << i)) {
-					gr_printf_menu(Hotkey_list_coords[gr_screen.res][0] + Hotkey_function_field_width[gr_screen.res]*i, y, "%s", Scan_code_text[Key_sets[i]]);
+					gr_printf_menu(Hotkey_list_coords[gr_screen.res][0] + Hotkey_function_field_width[gr_screen.res]*i, y, "%s", textify_scancode(Key_sets[i]));
 				}
 			}
 /*

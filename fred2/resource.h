@@ -203,8 +203,8 @@
 #define IDC_GALATEA                     1034
 #define IDC_TYPE_STRING                 1034
 #define IDC_DOGFIGHT                    1034
-#define IDC_PASSIVE_SHIP                1034
-#define IDC_FIELD_SHIP                  1034
+#define IDC_PASSIVE_DEBRIS              1034
+#define IDC_FIELD_DEBRIS                1034
 #define IDC_SEP_UNDERSCORES             1034
 #define IDC_EXPORT_EVERYTHING           1034
 #define IDC_CONTAINER_LIST              1034
@@ -313,10 +313,14 @@
 #define IDC_SOUND_CLIP_VOLUME           1063
 #define IDC_ADD_SBITMAP                 1063
 #define IDC_GENERATE_SCRIPT             1063
+#define IDC_MESSAGE_PERSONAS_TO_SHIPS   1064
 #define IDC_MISSION_NOTES               1065
 #define IDC_PRIORITY6                   1065
+#define IDC_SHIP_PERSONAS_TO_MESSAGES   1065
 #define IDC_MISSION_TITLE               1066
 #define IDC_SPIN6                       1066
+#define IDC_SET_HEAD_ANIS_USING_MESSAGES_TBL 1066
+#define IDC_CLEAR_PERSONAS_FROM_NON_SENDERS 1067
 #define ID_SHOW_FIGHTERS                1071
 #define IDC_PRIORITY7                   1071
 #define ID_SHOW_CAPITALSHIPS            1072
@@ -529,6 +533,7 @@
 #define IDC_FILTER_STARTS               1212
 #define IDC_FILTER_SHIPS                1213
 #define IDC_IFF_LIST                    1214
+#define IDC_WING_FORMATION_SCALE        1215
 #define IDC_ALL                         1218
 #define IDC_CLEAR                       1219
 #define IDC_INVERT                      1220
@@ -544,6 +549,7 @@
 #define ID_NUMBERS                      1229
 #define ID_SHIPS                        1230
 #define ID_WINGS                        1231
+#define IDC_WING_FORMATION_ALIGN        1232
 #define IDC_TRANSFORM_INDEPENDENT       1233
 #define IDC_TRANSFORM_RELATIVE          1234
 #define IDC_POSITION_X                  1235
@@ -781,6 +787,7 @@
 #define IDC_INSERT_STAGE                1384
 #define IDC_ICON_CLOSEUP_LABEL          1385
 #define IDC_INSERT                      1385
+#define IDC_ICON_SCALE					1386
 #define IDC_GOTO_VIEW                   1388
 #define IDC_SAVE_VIEW                   1389
 #define IDC_BROWSE_AVI                  1390
@@ -847,6 +854,7 @@
 #define IDC_EXACT_PLAYERS               1455
 #define IDC_HEADING                     1456
 #define IDC_NO_ARRIVAL_MESSAGE          1457
+#define IDC_NO_GRID						1458
 #define IDC_NO_MUSIC                    1459
 #define ID_UPDATE                       1460
 #define IDC_SHIP_LOCKED                 1461
@@ -954,6 +962,7 @@
 #define IDC_SBITMAP_SCALE_Y             1529
 #define IDC_LASER_PROTECT_SHIP          1529
 #define IDC_MISSILE_PROTECT_SHIP        1530
+#define IDC_NEB2_BACKGROUND_BITMAPS     1535
 #define IDC_SBITMAP_DIV_X               1536
 #define IDC_SBITMAP_DIV_Y               1537
 #define IDC_STATS_TEXT                  1537
@@ -1055,8 +1064,10 @@
 #define IDC_EXPORT                      1581
 #define IDC_SECONDARIES_LOCKED          1582
 #define IDC_SUBSTITUTE_BRIEFING_MUSIC   1582
+#define IDC_SYNC_PERSONAS               1582
 #define IDC_PLAYER_START_CHASE          1583
 #define IDC_RESTRICT_PATHS_LABEL        1584
+#define IDC_LBL_NOTE                    1584
 #define IDC_PATH_LIST                   1585
 #define IDC_LISTITEM                    1586
 #define IDC_ENVMAP                      1589
@@ -1150,7 +1161,7 @@
 #define IDC_ORIGIN_LIST                 1671
 #define IDC_SATELLITE_LIST              1672
 #define IDC_DISTANCE                    1673
-#define IDC_IGNORE_ORDERS_LIST			1674
+#define IDC_IGNORE_ORDERS_LIST          1674
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774
 #define ID_VIEW_ROTATE                  32775
@@ -1279,7 +1290,9 @@
 #define ID_SPEED50                      32917
 #define ID_SPEED100                     32918
 #define ID_SELECT_LIST                  32919
+#define ID_SPEED500                     32920
 #define ID_CONSTRAIN_Y                  32921
+#define ID_SPEED1000                    32922
 #define ID_ZOOM                         32924
 #define ID_SELECTION_LOCK               32925
 #define ID_DISSOLVE_WING                32927
@@ -1444,7 +1457,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        329
+#define _APS_NEXT_RESOURCE_VALUE        330
 #define _APS_NEXT_COMMAND_VALUE         33102
 #define _APS_NEXT_CONTROL_VALUE         1665
 #define _APS_NEXT_SYMED_VALUE           105

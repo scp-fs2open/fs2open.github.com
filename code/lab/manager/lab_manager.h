@@ -1,11 +1,15 @@
 #pragma once
 
-#include "lab/wmcgui.h"
 #include "globalincs/vmallocator.h"
-#include "lab/dialogs/lab_dialog.h"
+#include "lab/labv2.h"
+#include "lab/dialogs/lab_ui.h"
 #include "lab/renderer/lab_renderer.h"
-#include <initializer_list>
+#include "model/modelanimation.h"
+
 #include <gamesequence/gamesequence.h>
+#include "osapi/osapi.h"
+#include "ship/ship.h"
+
 
 enum class LabRotationMode { Both, Yaw, Pitch, Roll };
 
@@ -29,7 +33,7 @@ public:
 
 	void close() {
 		animation::ModelAnimationSet::stopAnimations();
-  
+
 		LabRenderer::close();
 
 		Game_mode &= ~GM_LAB;
@@ -39,9 +43,6 @@ public:
 		gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
 	}
 
-	std::unique_ptr<GUIScreen> Screen;
-	// points to an object inside Screen, so we can't use smart pointer
-	Window* Toolbar;
 	std::unique_ptr<LabRenderer> Renderer;
 
 	LabMode CurrentMode = LabMode::None;
@@ -72,6 +73,8 @@ public:
 	void notify_close() {
 		CloseThis = true;
 	}
+	
+	void resetGraphicsSettings();
 
 	int FirePrimaries = 0;
 	int FireSecondaries = 0;
@@ -80,13 +83,14 @@ public:
 	float RotationSpeedDivisor = 100.0f;
 
 	flagset<ManagerFlags> Flags;
-private:
-	SCP_vector<std::shared_ptr<LabDialog>> Dialogs;
 
+	gfx_options graphicsSettings;
+  private:
 	float Lab_thrust_len = 0.0f;
 	bool Lab_thrust_afterburn = false;
 	bool Weapons_loaded = false;
 	bool CloseThis = false;
+	LabUi labUi;
 
 	void changeShipInternal();
 };

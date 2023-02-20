@@ -199,7 +199,7 @@ static scrollback_buttons Buttons[GR_NUM_RESOLUTIONS][NUM_BUTTONS] = {
 	}
 };
 
-const auto OnHudMessageReceivedHook = scripting::Hook::Factory(
+const auto OnHudMessageReceivedHook = scripting::Hook<>::Factory(
 	"On HUD Message Received",
 	"Called when a HUD message is received. For normal messages this will be called with the final text that appears "
 	"on the HUD (e.g. [ship]: [message]). Will also be called for engine generated messages.",
@@ -603,8 +603,10 @@ void hud_sourced_print(int source, const char *msg)
 	HUD_msg_buffer.push_back(new_msg);
 
 	// Invoke the scripting hook
-	OnHudMessageReceivedHook->run(scripting::hook_param_list(scripting::hook_param("Text", 's', msg),
-															 scripting::hook_param("SourceType", 'i', source)));
+	if (OnHudMessageReceivedHook->isActive()) {
+		OnHudMessageReceivedHook->run(scripting::hook_param_list(scripting::hook_param("Text", 's', msg),
+			scripting::hook_param("SourceType", 'i', source)));
+	}
 }
 
 int hud_query_scrollback_size()

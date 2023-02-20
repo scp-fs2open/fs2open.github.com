@@ -73,6 +73,7 @@ opengl_uniform_block_binding GL_uniform_blocks[] = {
     {uniform_block_type::DecalGlobals, "decalGlobalData"},
     {uniform_block_type::DeferredGlobals, "globalDeferredData"},
     {uniform_block_type::Matrices, "matrixData"},
+	{uniform_block_type::MovieData, "movieData"},
     {uniform_block_type::GenericData, "genericData"},
 };
 
@@ -158,7 +159,10 @@ static opengl_shader_type_t GL_shader_types[] = {
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "SMAA Neighborhood Blending", false },
 
 	{ SDR_TYPE_ENVMAP_SPHERE_WARP, "post-v.sdr", "envmap-sphere-warp-f.sdr", nullptr,
-		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Environment Map Generation", false },
+		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Environment Map Export", false },
+
+	{ SDR_TYPE_IRRADIANCE_MAP_GEN, "post-v.sdr", "irrmap-f.sdr", nullptr,
+		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Irradiance Map Generation", false },
 };
 // clang-format on
 
@@ -167,50 +171,9 @@ static opengl_shader_type_t GL_shader_types[] = {
  * When adding a new shader variant for a shader, list all associated uniforms and attributes here
  */
 static opengl_shader_variant_t GL_shader_variants[] = {
-	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_LIGHT, "FLAG_LIGHT", {}, "Lighting"},
-
-	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_FOG, "FLAG_FOG", {}, "Fog Effect"},
-
-	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_DIFFUSE_MAP, "FLAG_DIFFUSE_MAP", {}, "Diffuse Mapping"},
-
-	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_GLOW_MAP, "FLAG_GLOW_MAP", {}, "Glow Mapping"},
-
-	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_SPEC_MAP, "FLAG_SPEC_MAP", {}, "Specular Mapping"},
-
-	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_NORMAL_MAP, "FLAG_NORMAL_MAP", {}, "Normal Mapping"},
-
-	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_HEIGHT_MAP, "FLAG_HEIGHT_MAP", {}, "Parallax Mapping"},
-
-	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_ENV_MAP, "FLAG_ENV_MAP", {}, "Environment Mapping"},
-
-	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_ANIMATED, "FLAG_ANIMATED", {}, "Animated Effects"},
-
-	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_MISC_MAP, "FLAG_MISC_MAP", {}, "Utility mapping"},
-
-	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_TEAMCOLOR, "FLAG_TEAMCOLOR", {}, "Team Colors"},
-
-	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_DEFERRED, "FLAG_DEFERRED", {}, "Deferred lighting"},
-
 	{SDR_TYPE_MODEL, true, SDR_FLAG_MODEL_SHADOW_MAP, "FLAG_SHADOW_MAP", {}, "Shadow Mapping"},
 
-	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_SHADOWS, "FLAG_SHADOWS", {}, "Shadows"},
-
-	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_THRUSTER, "FLAG_THRUSTER", {}, "Thruster scaling"},
-
-	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_TRANSFORM, "FLAG_TRANSFORM", {}, "Submodel Transforms"},
-
-	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_CLIP, "FLAG_CLIP", {}, "Clip Plane"},
-
-	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_HDR, "FLAG_HDR", {}, "High Dynamic Range"},
-
-	{ SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_AMBIENT_MAP, "FLAG_AMBIENT_MAP",
-		{  }, "Ambient Occlusion Map"},
-
-	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_NORMAL_ALPHA, "FLAG_NORMAL_ALPHA", {}, "Normal Alpha"},
-
 	{SDR_TYPE_MODEL, true, SDR_FLAG_MODEL_THICK_OUTLINES, "FLAG_THICK_OUTLINE", {}, "Thick outlines"},
-
-	{SDR_TYPE_MODEL, false, SDR_FLAG_MODEL_ALPHA_MULT, "FLAG_ALPHA_MULT", {}, "Alpha multiplier"},
 
 	{SDR_TYPE_EFFECT_PARTICLE,
 	 true,
@@ -389,7 +352,7 @@ static SCP_string opengl_load_shader(const char* filename) {
 	}
 
 	//If we're still here, proceed with internals
-	mprintf(("   Loading built-in default shader for: %s\n", filename));
+	nprintf(("shaders","   Loading built-in default shader for: %s\n", filename));
 	auto def_shader = defaults_get_file(filename);
 	content.assign(reinterpret_cast<const char*>(def_shader.data), def_shader.size);
 
@@ -695,8 +658,8 @@ void opengl_compile_shader_actual(shader_type sdr, const uint &flags, opengl_sha
 	opengl_shader_type_t *sdr_info = &GL_shader_types[sdr];
 
 	Assert(sdr_info->type_id == sdr);
-	mprintf(("Compiling new shader:\n"));
-	mprintf(("	%s\n", sdr_info->description));
+	nprintf(("shaders","Compiling new shader:\n"));
+	nprintf(("shaders","	%s\n", sdr_info->description));
 
 	// figure out if the variant requested needs a geometry shader
 	bool use_geo_sdr = false;
@@ -786,7 +749,7 @@ void opengl_compile_shader_actual(shader_type sdr, const uint &flags, opengl_sha
 		}
 	}
 
-	mprintf(("Shader Variant Features:\n"));
+	nprintf(("shaders","Shader Variant Features:\n"));
 
 	// initialize all uniforms and attributes that are specific to this variant
 	for (int i = 0; i < GL_num_shader_variants; ++i) {
@@ -798,7 +761,7 @@ void opengl_compile_shader_actual(shader_type sdr, const uint &flags, opengl_sha
 				new_shader.program->initAttribute(attr_info.name, attr_info.attribute_id, attr_info.default_value);
 			}
 
-			mprintf(("	%s\n", variant.description));
+			nprintf(("shaders","	%s\n", variant.description));
 		}
 	}
 
@@ -958,10 +921,10 @@ void opengl_shader_init()
 	gr_opengl_maybe_create_shader(SDR_TYPE_DEFERRED_CLEAR, 0);
 
 	// compile passthrough shader
-	mprintf(("Compiling passthrough shader...\n"));
+	nprintf(("shaders","Compiling passthrough shader...\n"));
 	gr_opengl_maybe_create_shader(SDR_TYPE_PASSTHROUGH_RENDER, 0);
 
-	mprintf(("\n"));
+	nprintf(("shaders","\n"));
 }
 
 /**

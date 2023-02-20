@@ -53,7 +53,7 @@ AsteroidEditorDialog::AsteroidEditorDialog(FredView *parent, EditorViewport* vie
 	debrisComboBoxes = ui->fieldProperties->findChildren<QComboBox *>(QString(), Qt::FindDirectChildrenOnly);
 	std::sort(debrisComboBoxes.begin(), debrisComboBoxes.end(), sort_qcombobox_by_name);
 
-	QString debris_size[NUM_DEBRIS_SIZES] = { "Small", "Medium", "Large" };
+	QString debris_size[NUM_ASTEROID_SIZES] = { "Small", "Medium", "Large" };
 	QStringList debris_names("None");
 	for (const auto& i : Species_info)  // each species
 	{
@@ -75,7 +75,7 @@ AsteroidEditorDialog::AsteroidEditorDialog(FredView *parent, EditorViewport* vie
 	connect(ui->radioButtonActiveField, &QRadioButton::toggled, this, &AsteroidEditorDialog::setFieldActive);
 	connect(ui->radioButtonPassiveField, &QRadioButton::toggled, this, &AsteroidEditorDialog::setFieldPassive);
 	connect(ui->radioButtonAsteroid, &QRadioButton::toggled, this, &AsteroidEditorDialog::setGenreAsteroid);
-	connect(ui->radioButtonShip, &QRadioButton::toggled, this, &AsteroidEditorDialog::setGenreShip);
+	connect(ui->radioButtonShip, &QRadioButton::toggled, this, &AsteroidEditorDialog::setGenreDebris);
 
 	// lineEdit signals/slots
 	connect(ui->lineEdit_obox_minX, &QLineEdit::textEdited, this, \
@@ -210,9 +210,9 @@ void AsteroidEditorDialog::setGenreAsteroid()
 	updateUI();
 }
 
-void AsteroidEditorDialog::setGenreShip()
+void AsteroidEditorDialog::setGenreDebris()
 {
-	_model->setDebrisGenre(DG_SHIP);
+	_model->setDebrisGenre(DG_DEBRIS);
 	updateUI();
 }
 

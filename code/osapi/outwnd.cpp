@@ -25,11 +25,20 @@
 #include "cfile/cfilesystem.h"
 #include "parse/parselo.h"
 
+static const char *FILTERS_ENABLED_BY_DEFAULT[] =
+{
+	"error",
+	"warning",
+	"general",
+	"scripting"
+};
+
 struct outwnd_filter_struct {
 	char name[NAME_LENGTH];
 	bool enabled;
 };
 
+// This technique is necessary to avoid a crash in FRED.  See commit e624f6c1.
 static SCP_vector<outwnd_filter_struct>& filter_vector()
 {
 	static SCP_vector<outwnd_filter_struct> vec;
@@ -58,7 +67,16 @@ void load_filter_info()
 	FILE* fp;
 	char pathname[MAX_PATH_LEN];
 	char inbuf[NAME_LENGTH + 4];
-	outwnd_filter_struct new_filter;
+	outwnd_filter_struct* filter_ptr;
+
+	// add default-enabled filters
+	for (const char *name : FILTERS_ENABLED_BY_DEFAULT) {
+		filter_vector().emplace_back();
+		filter_ptr = &filter_vector().back();
+
+		strcpy_s(filter_ptr->name, name);
+		filter_ptr->enabled = true;
+	}
 
 	outwnd_filter_loaded = 1;
 
@@ -69,30 +87,18 @@ void load_filter_info()
 
 	if (!fp) {
 		Outwnd_no_filter_file = 1;
-
-		strcpy_s( new_filter.name, "error" );
-		new_filter.enabled = true;
-		filter_vector().push_back( new_filter );
-
-		strcpy_s( new_filter.name, "general" );
-		new_filter.enabled = true;
-		filter_vector().push_back( new_filter );
-
-		strcpy_s( new_filter.name, "warning" );
-		new_filter.enabled = true;
-		filter_vector().push_back( new_filter );
-
 		return;
 	}
 
 	Outwnd_no_filter_file = 0;
 
 	while ( fgets(inbuf, NAME_LENGTH+3, fp) ) {
+		bool enabled;
 
 		if (*inbuf == '+')
-			new_filter.enabled = true;
+			enabled = true;
 		else if (*inbuf == '-')
-			new_filter.enabled = false;
+			enabled = false;
 		else
 			continue;	// skip everything else
 
@@ -101,17 +107,24 @@ void load_filter_info()
 			inbuf[z] = 0;
 
 		Assert( strlen(inbuf+1) < NAME_LENGTH );
-		strcpy_s(new_filter.name, inbuf + 1);
+		const char *name = &inbuf[1];
 
-		if ( !stricmp(new_filter.name, "error") ) {
-			new_filter.enabled = true;
-		} else if ( !stricmp(new_filter.name, "general") ) {
-			new_filter.enabled = true;
-		} else if ( !stricmp(new_filter.name, "warning") ) {
-			new_filter.enabled = true;
+		// find it, or create it
+		filter_ptr = nullptr;
+		for (auto &filter : filter_vector()) {
+			if (!stricmp(filter.name, name)) {
+				filter_ptr = &filter;
+				break;
+			}
+		}
+		if (filter_ptr == nullptr) {
+			filter_vector().emplace_back();
+			filter_ptr = &filter_vector().back();
+			strcpy_s(filter_ptr->name, name);
 		}
 
-		filter_vector().push_back( new_filter );
+		// set it as enabled or not, depending on config
+		filter_ptr->enabled = enabled;
 	}
 
 	if ( ferror(fp) && !feof(fp) )
@@ -192,8 +205,8 @@ void outwnd_print(const char *id, const char *tmp)
 		Outwnd_no_filter_file = 2;
 
 		outwnd_print("general", "==========================================================================\n");
-		outwnd_print("general", "DEBUG SPEW: No debug_filter.cfg found, so only general, error, and warning\n");
-		outwnd_print("general", "categories can be shown and no debug_filter.cfg info will be saved.\n");
+		outwnd_print("general", "DEBUG SPEW: No debug_filter.cfg found, so only general, error, warning and\n");
+		outwnd_print("general", "scripting categories can be shown and no debug_filter.cfg info will be saved.\n");
 		outwnd_print("general", "==========================================================================\n");
 	}
 
@@ -206,11 +219,18 @@ void outwnd_print(const char *id, const char *tmp)
 			return;
 
 		Assert( strlen(id)+1 < NAME_LENGTH );
+
 		outwnd_filter_struct new_filter;
-
+		new_filter.enabled = false;
 		strcpy_s(new_filter.name, id);
-		new_filter.enabled = stricmp(new_filter.name, "general") == 0 || stricmp(new_filter.name, "error") == 0 || stricmp(new_filter.name, "warning") == 0;
 
+		for (const char *name : FILTERS_ENABLED_BY_DEFAULT){
+			if (stricmp(new_filter.name, name) == 0)
+			{
+				new_filter.enabled = true;
+				break;
+			}
+		}
 		filter_vector().push_back( new_filter );
 		save_filter_info();
 	}

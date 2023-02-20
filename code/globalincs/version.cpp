@@ -19,13 +19,17 @@ bool check_at_least(const version& v) {
 	return get_executable_version() >= v;
 }
 
-SCP_string format_version(const version& v) {
+SCP_string format_version(const version& v, bool exclude_build) {
 	SCP_stringstream ss;
 
-	ss << v.major << "." << v.minor << "." << v.build;
+	ss << v.major << "." << v.minor;
 
-	if (v.revision != 0) {
-		ss << "." << v.revision;
+	if (!exclude_build) {
+		ss << "." << v.build;
+
+		if (v.revision != 0) {
+			ss << "." << v.revision;
+		}
 	}
 
 	return ss.str();
@@ -45,6 +49,43 @@ version parse_version() {
 	if (optional_string("+Revision:")) {
 		stuff_int(&v.revision);
 	}
+
+	return v;
+}
+version parse_version_inline() {
+	version v;
+
+	SCP_string input;
+	stuff_string(input, F_RAW);
+
+	size_t start_pos = 0;
+	size_t end_pos = input.find('.');
+
+	v.major = std::atoi(input.substr(start_pos, end_pos - start_pos).c_str());
+
+	if (end_pos == SCP_string::npos)
+		return v;
+
+	start_pos = end_pos + 1;
+	end_pos = input.find('.', start_pos);
+
+	v.minor = std::atoi(input.substr(start_pos, end_pos - start_pos).c_str());
+
+	if (end_pos == SCP_string::npos)
+		return v;
+
+	start_pos = end_pos + 1;
+	end_pos = input.find('.', start_pos);
+
+	v.build = std::atoi(input.substr(start_pos, end_pos - start_pos).c_str());
+
+	if (end_pos == SCP_string::npos)
+		return v;
+
+	start_pos = end_pos + 1;
+	end_pos = input.find('.', start_pos);
+
+	v.revision = std::atoi(input.substr(start_pos, end_pos - start_pos).c_str());
 
 	return v;
 }

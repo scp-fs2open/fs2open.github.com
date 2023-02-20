@@ -52,11 +52,8 @@ int modelstats_num_sortnorms = 0;
 int modelstats_num_boxes = 0;
 #endif
 
-extern fix game_get_overall_frametime();	// for texture animation
-
 typedef struct model_light {
 	ubyte r, g, b;
-	ubyte spec_r, spec_g, spec_b;
 } model_light;
 
 // a lighting object
@@ -115,6 +112,9 @@ public:
 
 	void generate_triangles(int texture, vertex *vert_ptr, vec3d* norm_ptr);
 	void generate_lines(int texture, vertex *vert_ptr);
+
+	SCP_set<int> get_textures_used() const;
+	void replace_textures_used(const SCP_map<int, int>& replacementMap);
 };
 
 /**
@@ -205,7 +205,6 @@ int Interp_detail_level = 0;
 
 // forward references
 int model_should_render_engine_glow(int objnum, int bank_obj);
-int model_interp_get_texture(texture_info *tinfo, fix base_frametime);
 
 void model_deallocate_interp_data()
 {
@@ -1160,112 +1159,7 @@ void moldel_calc_facing_pts( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, fl
 	vm_vec_scale_add( bot, &temp, &uvec, -w/2.0f );	
 }
 
-// Fills in an array with points from a model.
-// Only gets up to max_num verts;
-// Returns number of verts found;
-static int submodel_get_points_internal(int model_num, int submodel_num)
-{
-	polymodel * pm;
-
-	pm = model_get(model_num);
-
-	if ( submodel_num < 0 )	{
-		submodel_num = pm->detail[0];
-	}
-
-	ubyte *p = pm->submodel[submodel_num].bsp_data;
-	int chunk_type, chunk_size;
-
-	chunk_type = w(p);
-	chunk_size = w(p+4);
-
-	while (chunk_type != OP_EOF)	{
-		switch (chunk_type) {
-		case OP_DEFPOINTS:	{
-				uint n;
-				uint nverts = uw(p+8);				
-				uint offset = uw(p+16);
-				uint nnorms = 0;			
-
-				ubyte * normcount = p+20;
-				vec3d *src = vp(p+offset);
-
-				for (n = 0; n < nverts; n++) {
-					nnorms += normcount[n];
-				}
-
-				model_allocate_interp_data(nverts, nnorms);
-
-				// this must happen only after the interp_data allocation call (since the address changes)
-				vec3d **verts = Interp_verts;
-				vec3d **norms = Interp_norms;
-
-				for (n=0; n<nverts; n++ )	{
-					*verts++ = src;
-					*norms++ = src + 1;		// first normal associated with the point
-
-					src += normcount[n]+1;
-				} 
-				return nverts;		// Read in 'n' points
-			}
-			break;
-		case OP_FLATPOLY:		break;
-		case OP_TMAPPOLY:		break;
-		case OP_SORTNORM:		break;
-		case OP_SORTNORM2:		break;
-		case OP_BOUNDBOX:		break;
-		case OP_TMAP2POLY:		break;
-		default:
-			mprintf(( "Bad chunk type %d, len=%d in submodel_get_points\n", chunk_type, chunk_size ));
-			Int3();		// Bad chunk type!
-			return 0;
-		}
-		p += chunk_size;
-		chunk_type = w(p);
-		chunk_size = w(p+4);
-	}
-	return 0;		// Couldn't find 'em
-}
-
-/**
- * Gets two random points on a model
- */
-void submodel_get_two_random_points(int model_num, int submodel_num, vec3d *v1, vec3d *v2, vec3d *n1, vec3d *n2 )
-{
-	int nv = submodel_get_points_internal(model_num, submodel_num);
-
-	// this is not only because of the immediate div-0 error but also because of the less immediate expectation for at least one point (preferably two) to be found
-	if (nv <= 0) {
-		polymodel *pm = model_get(model_num);
-		Error(LOCATION, "Model %d ('%s') must have at least one point from submodel_get_points_internal!", model_num, (pm == NULL) ? "<null model?!?>" : pm->filename);
-
-		// in case people ignore the error...
-		vm_vec_zero(v1);
-		vm_vec_zero(v2);
-		if (n1 != NULL) {
-			vm_vec_zero(n1);
-		}
-		if (n2 != NULL) {
-			vm_vec_zero(n2);
-		}
-		return;
-	}
-
-	int vn1 = Random::next(nv);
-	int vn2 = Random::next(nv);
-
-	*v1 = *Interp_verts[vn1];
-	*v2 = *Interp_verts[vn2];
-
-	if(n1 != NULL){
-		*n1 = *Interp_norms[vn1];
-	}
-	if(n2 != NULL){
-		*n2 = *Interp_norms[vn2];
-	}
-}
-
-void submodel_get_two_random_points_better(int model_num, int submodel_num, vec3d *v1, vec3d *v2, int seed)
+vec3d submodel_get_random_point(int model_num, int submodel_num, int seed)
 {
 	polymodel *pm = model_get(model_num);
 
@@ -1274,35 +1168,25 @@ void submodel_get_two_random_points_better(int model_num, int submodel_num, vec3
 			submodel_num = pm->detail[0];
 		}
 
-		// the Shivan Comm Node does not have a collision tree, for one
-		if (pm->submodel[submodel_num].collision_tree_index < 0) {
-			nprintf(("Model", "In submodel_get_two_random_points_better(), model %s does not have a collision tree!  Falling back to submodel_get_two_random_points().\n", pm->filename));
-
-			submodel_get_two_random_points(model_num, submodel_num, v1, v2);
-			return;
-		}
-
 		bsp_collision_tree *tree = model_get_bsp_collision_tree(pm->submodel[submodel_num].collision_tree_index);
 
 		int nv = tree->n_verts;
 
 		// this is not only because of the immediate div-0 error but also because of the less immediate expectation for at least one point (preferably two) to be found
 		if (nv <= 0) {
-			Error(LOCATION, "Model %d ('%s') must have at least one point from submodel_get_points_internal!", model_num, (pm == NULL) ? "<null model?!?>" : pm->filename);
+			Error(LOCATION, "Model %d ('%s') must have at least one point in its collision tree!", model_num, (pm == NULL) ? "<null model?!?>" : pm->filename);
 
 			// in case people ignore the error...
-			vm_vec_zero(v1);
-			vm_vec_zero(v2);
-
-			return;
+			return vmd_zero_vector;
 		}
 
 		int seed_num = seed == -1 ? Random::next() : seed;
 		int vn1 = static_rand(seed_num) % nv;
-		int vn2 = static_rand(seed_num) % nv;
 
-		*v1 = tree->point_list[vn1];
-		*v2 = tree->point_list[vn2];
+		return tree->point_list[vn1];
+	} else {
+		Assertion(false, "submodel_get_random_point called on an invalid model!");
+		return vmd_zero_vector;
 	}
 }
 
@@ -1313,12 +1197,6 @@ void submodel_get_cross_sectional_avg_pos(int model_num, int submodel_num, float
 	if (pm != nullptr) {
 		if (submodel_num < 0) {
 			submodel_num = pm->detail[0];
-		}
-
-		// the Shivan Comm Node does not have a collision tree, for one
-		if (pm->submodel[submodel_num].collision_tree_index < 0) {
-			nprintf(("Model", "In submodel_get_cross_sectional_avg_pos(), model %s does not have a collision tree!\n", pm->filename));
-			return;
 		}
 
 		bsp_collision_tree* tree = model_get_bsp_collision_tree(pm->submodel[submodel_num].collision_tree_index);
@@ -1618,8 +1496,6 @@ void model_page_in_textures(int modelnum, int ship_info_index)
 // "release" should only be set if called from model_unload()!!!
 void model_page_out_textures(int model_num, bool release)
 {
-	int i, j;
-
 	if (model_num < 0)
 		return;
 
@@ -1631,14 +1507,23 @@ void model_page_out_textures(int model_num, bool release)
 	if (release && (pm->used_this_mission > 0))
 		return;
 
+	model_page_out_textures(pm, release);
+}
 
+void model_page_out_textures(polymodel* pm, bool release, const SCP_set<int>& skipTextures, const SCP_set<int>& skipGlowBanks)
+{
+	int i, j;
 	for (i = 0; i < pm->n_textures; i++) {
+		if (skipTextures.count(i) > 0)
+			continue;
 		pm->maps[i].PageOut(release);
 	}
 
 	// NOTE: "release" doesn't work here for some, as of yet unknown, reason - taylor
 	for (j = 0; j < pm->n_glow_point_banks; j++) {
-		glow_point_bank *bank = &pm->glow_point_banks[j];
+		if(skipGlowBanks.count(j) > 0)
+			continue;
+		glow_point_bank* bank = &pm->glow_point_banks[j];
 
 		if (bank->glow_bitmap >= 0) {
 		//	if (release) {
@@ -2282,7 +2167,7 @@ bool model_interp_config_buffer(indexed_vertex_source *vert_src, vertex_buffer *
 	return true;
 }
 
-void interp_configure_vertex_buffers(polymodel *pm, int mn)
+void interp_configure_vertex_buffers(polymodel *pm, int mn, const model_read_deferred_tasks& deferredTasks)
 {
 	TRACE_SCOPE(tracing::ModelConfigureVertexBuffers);
 
@@ -2302,6 +2187,10 @@ void interp_configure_vertex_buffers(polymodel *pm, int mn)
 	int milliseconds = timer_get_milliseconds();
 
 	bsp_polygon_data *bsp_polies = new bsp_polygon_data(model->bsp_data);
+
+	auto textureReplace = deferredTasks.texture_replacements.find(mn);
+	if (textureReplace != deferredTasks.texture_replacements.end())
+		bsp_polies->replace_textures_used(textureReplace->second.replacementIds);
 
 	for (i = 0; i < MAX_MODEL_TEXTURES; i++) {
 		int vert_count = bsp_polies->get_num_triangles(i) * 3;
@@ -2761,10 +2650,10 @@ int model_should_render_engine_glow(int objnum, int bank_obj)
 
 // Goober5000
 // uses same algorithms as in ship_do_thruster_frame
-int model_interp_get_texture(texture_info *tinfo, fix base_frametime)
+int model_interp_get_texture(texture_info *tinfo, int elapsed_time)
 {
-	int texture, frame, num_frames;
-	float cur_time, total_time;
+	int texture, frame, cur_time, num_frames;
+	float total_time;
 
 	// get texture
 	num_frames = tinfo->GetNumFrames();
@@ -2776,11 +2665,12 @@ int model_interp_get_texture(texture_info *tinfo, fix base_frametime)
 	{
 		// sanity check total_time first thing
 		Assert(total_time > 0.0f);
+		total_time *= MILLISECONDS_PER_SECOND;
 
-		cur_time = f2fl((game_get_overall_frametime() - base_frametime) % fl2f(total_time));
+		cur_time = elapsed_time % fl2i(total_time);
 
 		// get animation frame
-		frame = fl2i((cur_time * num_frames) / total_time);
+		frame = fl2i((cur_time * num_frames) / total_time + 0.5f);
 		CLAMP(frame, 0, num_frames - 1);
 
 		// advance to the correct frame
@@ -3391,4 +3281,28 @@ void bsp_polygon_data::generate_lines(int texture, vertex *vert_ptr)
 			num_verts += 2;
 		}
 	}
+}
+
+SCP_set<int> bsp_polygon_data::get_textures_used() const {
+	SCP_set<int> textures;
+	for (const auto& poly : Polygons)
+		textures.emplace(poly.texture);
+	return textures;
+}
+
+void bsp_polygon_data::replace_textures_used(const SCP_map<int, int>& replacementMap) {
+	for (auto& poly : Polygons) {
+		auto it = replacementMap.find(poly.texture);
+		if (it != replacementMap.end()) {
+			poly.texture = it->second;
+			Num_verts[it->first] -= poly.Num_verts;
+			Num_verts[it->second] += poly.Num_verts;
+			--Num_polies[it->first];
+			++Num_polies[it->first];
+		}
+	}
+}
+
+SCP_set<int> model_get_textures_used(const polymodel* pm, int submodel) {
+	return bsp_polygon_data{ pm->submodel[submodel].bsp_data }.get_textures_used();
 }

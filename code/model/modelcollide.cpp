@@ -1060,25 +1060,25 @@ NoHit:
 	// Check all of this subobject's children
 	i = sm->first_child;
 	while ( i >= 0 )	{
-		matrix instance_orient;
-		bool blown_off;
-		bool collision_checked;
-		bsp_info * csm = &Mc_pm->submodel[i];
+		auto csm = &Mc_pm->submodel[i];
+		matrix instance_orient = vmd_identity_matrix;
+		vec3d instance_offset = csm->offset;
+		bool blown_off = false;
+		bool collision_checked = false;
 		
 		if ( Mc_pmi ) {
-			instance_orient = Mc_pmi->submodel[i].canonical_orient;
-			blown_off = Mc_pmi->submodel[i].blown_off;
-			collision_checked = Mc_pmi->submodel[i].collision_checked;
-		} else {
-			instance_orient = vmd_identity_matrix;
-			blown_off = false;
-			collision_checked = false;
+			auto csmi = &Mc_pmi->submodel[i];
+			instance_orient = csmi->canonical_orient;
+			vm_vec_add2(&instance_offset, &csmi->canonical_offset);
+
+			blown_off = csmi->blown_off;
+			collision_checked = csmi->collision_checked;
 		}
 
 		// Don't check it or its children if it is destroyed
 		// or if it's set to no collision
 		if ( !blown_off && !collision_checked && !csm->flags[Model::Submodel_flags::No_collisions] )	{
-			vm_vec_unrotate(&Mc_base, &csm->offset, &saved_orient);
+			vm_vec_unrotate(&Mc_base, &instance_offset, &saved_orient);
 			vm_vec_add2(&Mc_base, &saved_base);
 
 			vm_matrix_x_matrix(&Mc_orient, &saved_orient, &instance_orient);

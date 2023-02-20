@@ -5,9 +5,9 @@
 namespace scripting {
 namespace api {
 
-DECLARE_ADE_LIB(l_Graphics);
+extern model_draw_list *Current_scene;
 
-void graphics_on_frame();
+DECLARE_ADE_LIB(l_Graphics);
 
 }
 }

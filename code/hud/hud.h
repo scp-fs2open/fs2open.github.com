@@ -70,6 +70,7 @@ enum class HudAlignment
 
 extern int HUD_draw;
 extern int HUD_contrast;
+extern bool HUD_shadows;
 
 #define HUD_NUM_COLOR_LEVELS	16
 extern color HUD_color_defaults[HUD_NUM_COLOR_LEVELS];
@@ -208,6 +209,7 @@ int hud_disabled_except_messages();
 // contrast stuff
 void hud_toggle_contrast();
 void hud_set_contrast(int high);
+void hud_toggle_shadows();
 
 class HudGauge 
 {
@@ -242,6 +244,7 @@ protected:
 	int flash_next;
 	bool flash_status;
 	bool only_render_in_chase_view;
+	int render_for_cockpit_toggle;
 
 	// custom gauge specific stuff
 	bool custom_gauge;
@@ -301,6 +304,7 @@ public:
 	void updatePopUp(bool pop_up_flag);
 	void updateSexpOverride(bool sexp);
 	void initChase_view_only(bool chase_view_only);
+	void initCockpit_view_choice(int cockpit_view_choice);
 
 	// SEXP interfacing functions
 	// For flashing gauges in training missions
@@ -311,8 +315,6 @@ public:
 
 	// For updating custom gauges
 	const char* getCustomGaugeName();
-	void updateCustomGaugeCoords(int _x, int _y);
-	void updateCustomGaugeFrame(int frame_offset);
 	void updateCustomGaugeText(const char* txt);
 	void updateCustomGaugeText(const SCP_string& txt);
 	const char* getCustomGaugeText();
@@ -333,7 +335,9 @@ public:
 	
 	void setFont();
 	void setGaugeColor(int bright_index = HUD_C_NONE);
-	
+	void setGaugeCoords(int _x, int _y);
+	void setGaugeFrame(int frame_offset);
+
 	// rendering functions
 	void renderBitmap(int x, int y);
 	void renderBitmap(int frame, int x, int y);
@@ -513,6 +517,7 @@ protected:
 	int text_val_offset_y;
 	int text_dock_offset_x;
 	int text_dock_val_offset_x;
+	bool enable_rearm_timer;
 public:
 	HudGaugeSupport();
 	void initBitmaps(const char *fname);
@@ -520,6 +525,7 @@ public:
 	void initTextValueOffsetY(int y);
 	void initTextDockOffsetX(int x);
 	void initTextDockValueOffsetX(int x);
+	void initRearmTimer(bool choice);
 	void render(float frametime) override;
 	void pageIn() override;
 };
@@ -568,13 +574,16 @@ public:
 	void render(float frametime) override;
 };
 
-HudGauge* hud_get_custom_gauge(const char* name, bool check_all_gauges = false);
-int hud_get_default_gauge_index(const char* name);
+HudGauge *hud_get_custom_gauge(const char *name, bool check_all_gauges = false);
+int hud_get_default_gauge_index(const char *name);
+HudGauge *hud_get_gauge(const char *name);
 
 extern SCP_vector<std::unique_ptr<HudGauge>> default_hud_gauges;
 
 extern flag_def_list Hud_gauge_types[];
 extern int Num_hud_gauge_types;
+
+extern bool Extra_target_info;
 
 #endif	/* __HUD_H__ */
 

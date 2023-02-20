@@ -328,6 +328,10 @@ void parse_species_tbl(const char *filename)
 			if (optional_string("$Countermeasure type:"))
 				stuff_string(species->cmeasure_name, F_NAME, NAME_LENGTH);
 
+			// ditto for support ships - naomimyselfandi
+			if (optional_string("$Support ship:"))
+				stuff_string(species->support_ship_name, F_NAME, NAME_LENGTH);
+
 			if (optional_string("$Borrows Briefing Icons from:")) {
 				char temp_name[NAME_LENGTH];
 				stuff_string(temp_name, F_NAME, NAME_LENGTH);
@@ -340,6 +344,17 @@ void parse_species_tbl(const char *filename)
 				}
 			}
 
+			if (optional_string("$Borrows Flyby Sounds from:")) {
+				char temp_name[NAME_LENGTH];
+				stuff_string(temp_name, F_NAME, NAME_LENGTH);
+				int idx = species_info_lookup(temp_name);
+				if (idx >= 0) {
+					species->borrows_flyby_sounds_species = idx;
+				} else {
+					Warning(LOCATION, "Species %s for '$Borrows Flyby Sounds from' in Species %s is either invalid or not yet parsed."
+									  "The Species doing the borrowing must be defined after the Species it is borrowing from\n", temp_name, species->species_name);
+				}
+			}
 
 			// don't add new entry if this is just a modified one
 			if (!no_create)

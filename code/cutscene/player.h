@@ -110,7 +110,7 @@ class Player {
 	 * @param x2 The X coordinate of the bottom right corner
 	 * @param y2 The Y coordinate of the bottom right corner
 	 */
-	void draw(float x1, float y1, float x2, float y2);
+	void draw(float x1, float y1, float x2, float y2, float alpha = 1.0f);
 
 	/**
 	 * @brief Gets the subtitle text that should be displayed now
