@@ -85,16 +85,17 @@ void volumetric_nebula::renderVolumeBitmap(float r, float g, float b) {
 			mc.p1 = &end;
 			bool hit = model_collide(&mc);
 			size_t zStart = static_cast<size_t>((mc.hit_point_world.xyz.z - bl.xyz.z) / size.xyz.z * static_cast<float>(n << (oversampling - 1)));
-			
+			size_t zEnd = zStart;
+
 			if (hit) {
 				mc.p0 = &end;
 				mc.p1 = &start;
 				model_collide(&mc);
-				size_t zEnd = static_cast<size_t>((mc.hit_point_world.xyz.z - bl.xyz.z) / size.xyz.z * static_cast<float>(n << (oversampling - 1)));
+				zEnd = static_cast<size_t>((mc.hit_point_world.xyz.z - bl.xyz.z) / size.xyz.z * static_cast<float>(n << (oversampling - 1)));
+			}
 
-				for (size_t z = 0; z < nSample; z++) {
-					volumeSampleCache[x * nSample * nSample + y * nSample + z] = z >= zStart && z < zEnd;
-				}
+			for (size_t z = 0; z < nSample; z++) {
+				volumeSampleCache[x * nSample * nSample + y * nSample + z] = z >= zStart && z < zEnd;
 			}
 		}
 	}
