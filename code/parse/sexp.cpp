@@ -16375,8 +16375,6 @@ int sexp_are_wing_flags_set(int node)
 
 int sexp_is_ship_emp_active(int n)
 {
-	int count, num_known;
-
 	Assert(n >= 0);
 
 	while (n != -1) {
