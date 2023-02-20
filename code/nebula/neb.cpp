@@ -70,11 +70,7 @@ const float PROBABLY_TOO_MANY_POOFS = 100000.0f;
 int32_t Neb2_poof_flags = 0;
 
 // array of neb2 bitmaps
-char Neb2_bitmap_filenames[MAX_NEB2_BITMAPS][MAX_FILENAME_LEN] = {
-	"", "", "", "", "", ""
-};
-int Neb2_bitmap[MAX_NEB2_BITMAPS] = { -1, -1, -1, -1, -1, -1 };
-int Neb2_bitmap_count = 0;
+SCP_vector<SCP_string> Neb2_bitmap_filenames;
 
 // texture to use for this level
 char Neb2_texture_name[MAX_FILENAME_LEN] = "";
@@ -196,13 +192,12 @@ void parse_nebula_table(const char* filename)
 				continue;
 			}
 
-			if (Neb2_bitmap_count < MAX_NEB2_BITMAPS) {
-				strcpy_s(Neb2_bitmap_filenames[Neb2_bitmap_count++], name);
-			}
-			else {
-				WarningEx(LOCATION, "nebula.tbl\nExceeded maximum number of nebulas (%d)!\nSkipping %s.", MAX_NEB2_BITMAPS, name);
-			}
+			Neb2_bitmap_filenames.push_back(name);
 		}
+
+		// allow modular tables to not define poofs
+		if (Parsing_modular_table && check_for_eof())
+			return;
 
 		// poofs
 		while (required_string_one_of(3, "#end", "+Poof:", "$Name:")) {
@@ -337,7 +332,6 @@ void parse_nebula_table(const char* filename)
 // initialize neb2 stuff at game startup
 void neb2_init()
 {
-	Neb2_bitmap_count = 0;
 
 	// first parse the default table
 	parse_nebula_table("nebula.tbl");

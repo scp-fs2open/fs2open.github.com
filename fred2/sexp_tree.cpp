@@ -7206,10 +7206,8 @@ sexp_list_item *sexp_tree::get_listing_opf_nebula_patterns()
 
 	head.add_data(SEXP_NONE_STRING);
 
-	for (int i = 0; i < MAX_NEB2_BITMAPS; i++) {
-		if (strlen(Neb2_bitmap_filenames[i]) > 0) {
-			head.add_data(Neb2_bitmap_filenames[i]);
-		}
+	for (int i = 0; i < (int)Neb2_bitmap_filenames.size(); i++) {
+		head.add_data(Neb2_bitmap_filenames[i].c_str());
 	}
 
 	return head.next;
