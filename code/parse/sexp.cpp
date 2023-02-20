@@ -16379,11 +16379,7 @@ int sexp_is_ship_emp_active(int n)
 
 	Assert(n >= 0);
 
-	count = 0;
-	num_known = 0;
-
 	while (n != -1) {
-		count++;
 
 		auto ship_entry = eval_ship(n);
 		if (!ship_entry)
@@ -16398,8 +16394,8 @@ int sexp_is_ship_emp_active(int n)
 		}
 		// ship is in mission
 		else if (ship_entry->shipp) {
-			if (ship_entry->shipp->emp_intensity > 0.0f) {
-				num_known++;
+			if (ship_entry->shipp->emp_intensity <= 0.0f) {
+				return SEXP_FALSE;
 			}
 		}
 		// ship probably vanished
@@ -16409,10 +16405,7 @@ int sexp_is_ship_emp_active(int n)
 		n = CDR(n);
 	}
 
-	if (count == num_known)
-		return SEXP_TRUE;
-	else
-		return SEXP_FALSE;
+	return SEXP_TRUE;
 }
 
 void sexp_alter_ship_flag(int node)
