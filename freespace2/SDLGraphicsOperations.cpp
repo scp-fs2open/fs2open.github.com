@@ -155,8 +155,10 @@ SDLGraphicsOperations::SDLGraphicsOperations() {
 }
 SDLGraphicsOperations::~SDLGraphicsOperations() {
 	SDL_QuitSubSystem(SDL_INIT_VIDEO);
+	
+	ImGui_ImplSDL2_Shutdown();
+
 	if (!Cmdline_vulkan) {
-		ImGui_ImplSDL2_Shutdown();
 		ImGui_ImplOpenGL3_Shutdown();
 	}
 }
