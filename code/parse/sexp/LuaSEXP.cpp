@@ -554,9 +554,9 @@ void LuaSEXP::parseTable() {
 
 				//If we're making a new Enum based off another one, let's give it a unique name
 				if (list_position >= 0) {
-					char newName[NAME_LENGTH];
-					strcpy_s(newName, enum_name.c_str());
-					strcat(newName, std::to_string(list_position).c_str());
+					SCP_string newName;
+					newName = enum_name;
+					newName.append(std::to_string(list_position));
 					thisList.name = newName;
 				}
 
