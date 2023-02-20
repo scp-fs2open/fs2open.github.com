@@ -74,17 +74,27 @@ void volumetric_nebula::renderVolumeBitmap(float r, float g, float b) {
 
 	for (size_t x = 0; x < nSample; x++) {
 		for (size_t y = 0; y < nSample; y++) {
-			for (size_t z = 0; z < nSample; z++) {
-				vec3d targetPos = bl;
-				targetPos += vec3d{ {static_cast<float>(x) * size.xyz.x / static_cast<float>(n << (oversampling - 1)),
-									 static_cast<float>(y) * size.xyz.y / static_cast<float>(n << (oversampling - 1)),
-									 static_cast<float>(z) * size.xyz.z / static_cast<float>(n << (oversampling - 1))} };
-				mc.p0 = &targetPos;
+			vec3d start = bl;
+			start += vec3d{ {static_cast<float>(x) * size.xyz.x / static_cast<float>(n << (oversampling - 1)),
+							 static_cast<float>(y) * size.xyz.y / static_cast<float>(n << (oversampling - 1)),
+							 0.0f } };
+			vec3d end = start;
+			end.xyz.z += size.xyz.z;
 
-				//currently, model_collide will not return the exact number of collisions a ray has with a model, hence we're limited to convex hulls for now.
-				//Also, backface collision seems to not yet be working.
+			mc.p0 = &start;
+			mc.p1 = &end;
+			bool hit = model_collide(&mc);
+			size_t zStart = static_cast<size_t>((mc.hit_point_world.xyz.z - bl.xyz.z) / size.xyz.z * static_cast<float>(n << (oversampling - 1)));
+			
+			if (hit) {
+				mc.p0 = &end;
+				mc.p1 = &start;
 				model_collide(&mc);
-				volumeSampleCache[x * nSample * nSample + y * nSample + z] = mc.num_hits == 0;
+				size_t zEnd = static_cast<size_t>((mc.hit_point_world.xyz.z - bl.xyz.z) / size.xyz.z * static_cast<float>(n << (oversampling - 1)));
+
+				for (size_t z = 0; z < nSample; z++) {
+					volumeSampleCache[x * nSample * nSample + y * nSample + z] = z >= zStart && z < zEnd;
+				}
 			}
 		}
 	}
