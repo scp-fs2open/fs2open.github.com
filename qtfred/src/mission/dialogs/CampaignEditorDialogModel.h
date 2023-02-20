@@ -213,7 +213,13 @@ private:
 		void connect(const SCP_unordered_set<const CampaignMissionData*>& missions);
 
 	// constants
-		enum BranchType { INVALID, REPEAT, NEXT, NEXT_NOT_FOUND, END, };
+		enum BranchType { INVALID, //initial state
+						  REPEAT, //mission branch to self (commonly failure)
+						  NEXT, //branch to different mission (commonly success/progress)
+						  NEXT_NOT_FOUND, //specified mission file does not (yet) exist
+						  END, //branch to end campaign
+						};
+		//how mission names are prefixed in the progress condition sexptree widget
 		static const SCP_map<BranchType, QString> branchTexts;
 
 	// state
