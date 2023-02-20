@@ -452,8 +452,7 @@ void parse_stringstbl_common(const char *filename, const bool external)
 			}
 
 			if (!external) {
-				Xstr_table_map.insert(std::make_pair(index, item));
-				Xstr_table_map[index] = item; //not sure why the above doesn't copy over the data, but this one does
+				Xstr_table_map.emplace(index, item);
 			}
 
 			// clear out our vars
