@@ -60,7 +60,7 @@ bool *Lcl_unexpected_tstring_check = nullptr;
 // add a new string to the code, you must assign it a new index.  Use the number below for
 // that index and increase the number below by one.
 // retail XSTR_SIZE = 1570
-#define XSTR_SIZE	1672
+// #define XSTR_SIZE	1672
 
 
 // struct to allow for strings.tbl-determined x offset
@@ -71,7 +71,7 @@ typedef struct {
 	int  offset_x_hi;			// string offset in 1024
 } lcl_xstr;
 
-lcl_xstr Xstr_table[XSTR_SIZE];
+SCP_unordered_map<int, lcl_xstr> Xstr_table_map;
 bool Xstr_inited = false;
 
 
@@ -332,7 +332,7 @@ void parse_stringstbl_common(const char *filename, const bool external)
 			if (external && index < 0) {
 				error_display(0, "Invalid tstrings table index specified (%i). The index must be positive.", index);
 				return;
-			} else if (!external && (index < 0 || index >= XSTR_SIZE)) {
+			} else if (!external && index < 0) {
 				Error(LOCATION, "Invalid strings table index specified (%i)", index);
 			}
 
@@ -410,22 +410,23 @@ void parse_stringstbl_common(const char *filename, const bool external)
 				if ( external && (Lcl_ext_str.find(index) != Lcl_ext_str.end()) ) {
 					vm_free((void *) Lcl_ext_str[index]);
 					Lcl_ext_str.erase(Lcl_ext_str.find(index));
-				} else if ( !external && (Xstr_table[index].str != NULL) ) {
-					vm_free((void *) Xstr_table[index].str);
-					Xstr_table[index].str = NULL;
+				} else if (!external && (Xstr_table_map[index].str != nullptr)) {
+					vm_free((void*)Xstr_table_map[index].str);
+					Xstr_table_map.erase(Xstr_table_map.find(index));
 				}
 			}
 
 			if (external && (Lcl_ext_str.find(index) != Lcl_ext_str.end())) {
 				Warning(LOCATION, "Tstrings table index %d used more than once", index);
-			} else if (!external && (Xstr_table[index].str != NULL)) {
+			} else if (!external && (Xstr_table_map[index].str != nullptr)) {
 				Warning(LOCATION, "Strings table index %d used more than once", index);
 			}
 
+			lcl_xstr item;
 			if (external) {
 				Lcl_ext_str.insert(std::make_pair(index, vm_strdup(buf)));
 			} else {
-				Xstr_table[index].str = vm_strdup(buf);
+				item.str = vm_strdup(buf);
 			}
 
 			// the rest of this loop applies only to strings.tbl,
@@ -442,12 +443,18 @@ void parse_stringstbl_common(const char *filename, const bool external)
 				}
 			}
 
-			Xstr_table[index].offset_x = offset_lo;
+			item.offset_x = offset_lo;
 
-			if (num_offsets_on_this_line == 2)
-				Xstr_table[index].offset_x_hi = offset_hi;
-			else
-				Xstr_table[index].offset_x_hi = offset_lo;
+			if (num_offsets_on_this_line == 2) {
+				item.offset_x_hi = offset_hi;
+			} else {
+				item.offset_x_hi = offset_lo;
+			}
+
+			if (!external) {
+				Xstr_table_map.insert(std::make_pair(index, item));
+				Xstr_table_map[index] = item; //not sure why the above doesn't copy over the data, but this one does
+			}
 
 			// clear out our vars
 			p_offset = NULL;
@@ -475,8 +482,7 @@ void parse_tstringstbl(const char *filename)
 // initialize the xstr table
 void lcl_xstr_init()
 {
-	for (auto &xstr_entry : Xstr_table)
-		xstr_entry.str = nullptr;
+	Xstr_table_map.clear();
 
 	Assertion(Lcl_ext_str.empty() && Lcl_ext_str_explicit_default.empty(), "Localize system was not shut down properly!");
 	Lcl_ext_str.clear();
@@ -547,12 +553,13 @@ void lcl_xstr_init()
 // free Xstr table
 void lcl_xstr_close()
 {
-	for (auto &xstr_entry : Xstr_table) {
-		if (xstr_entry.str != nullptr) {
-			vm_free((void *)xstr_entry.str);
-			xstr_entry.str = nullptr;
+
+	for (const auto& entry : Xstr_table_map) {
+		if (entry.second.str != nullptr) {
+			vm_free((void*)entry.second.str);
 		}
 	}
+	Xstr_table_map.clear();
 
 	for (const auto& entry : Lcl_ext_str) {
 		if (entry.second != nullptr) {
@@ -1181,11 +1188,11 @@ const char *XSTR(const char *str, int index, bool force_lookup)
 	if (Lcl_current_lang != LCL_UNTRANSLATED || force_lookup)
 	{
 		// perform a lookup
-		if (index >= 0 && index < XSTR_SIZE)
+		if (index >= 0)
 		{
 			// return translation of string
-			if (Xstr_table[index].str)
-				return Xstr_table[index].str;
+			if (Xstr_table_map[index].str)
+				return Xstr_table_map[index].str;
 #ifndef NDEBUG
 			else
 			{
@@ -1209,9 +1216,9 @@ const char *XSTR(const char *str, int index, bool force_lookup)
 int lcl_get_xstr_offset(int index, int res)
 {
 	if (res == GR_640) {
-		return Xstr_table[index].offset_x;
+		return Xstr_table_map[index].offset_x;
 	} else {
-		return Xstr_table[index].offset_x_hi;
+		return Xstr_table_map[index].offset_x_hi;
 	}
 }
 
