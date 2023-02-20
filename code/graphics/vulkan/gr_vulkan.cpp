@@ -4,6 +4,8 @@
 #include "VulkanRenderer.h"
 #include "vulkan_stubs.h"
 
+#include "backends/imgui_impl_sdl.h"
+#include "backends/imgui_impl_vulkan.h"
 #include "mod_table/mod_table.h"
 
 namespace graphics {

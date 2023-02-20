@@ -31,7 +31,10 @@ jobs:
           # cached: ${{ steps.cache-qt-lin.outputs.cache-hit }}
           # setup-python: 'false'
           # aqtversion: ==1.1.3
-
+      - name: Add curl to the container
+        run: |    
+          apt-get update -y
+          apt -y install curl jq
       - uses: actions/checkout@v1
         name: Checkout
         with:
@@ -42,6 +45,12 @@ jobs:
           [[ "${{ github.ref }}" =~ ^refs\/heads\/test\/(.*)$ ]]
           # Override the revision string so that the builds are named correctly
           echo "set(FSO_VERSION_REVISION_STR ${BASH_REMATCH[1]})" > "version_override.cmake"
+      - name: Prepare Vulkan SDK
+        uses: humbletim/setup-vulkan-sdk@v1.2.0
+        with:
+          vulkan-query-version: 1.3.204.0
+          vulkan-components: Vulkan-Headers, Vulkan-Loader
+          vulkan-use-cache: true
       - name: Configure CMake
         env:
           CONFIGURATION: ${{ matrix.configuration }}
@@ -146,7 +155,12 @@ jobs:
           # arch: win64_msvc2017_64
           # cached: ${{ steps.cache-qt-win.outputs.cache-hit }}
           # aqtversion: ==0.8
-
+      - name: Prepare Vulkan SDK
+        uses: humbletim/setup-vulkan-sdk@v1.2.0
+        with:
+          vulkan-query-version: 1.3.204.0
+          vulkan-components: Vulkan-Headers, Vulkan-Loader
+          vulkan-use-cache: true
       - name: Configure CMake
         env:
           CONFIGURATION: ${{ matrix.configuration }}
@@ -157,11 +171,19 @@ jobs:
           mkdir build
           cd build
 
-          cmake -DCMAKE_INSTALL_PREFIX="$(pwd)/install" -DFSO_USE_SPEECH="ON" \
-            -DFSO_USE_VOICEREC="ON" -DMSVC_SIMD_INSTRUCTIONS="$SIMD" \
-            -DFSO_BUILD_QTFRED=OFF -DFSO_BUILD_TESTS=ON \
-            -DFSO_INSTALL_DEBUG_FILES="ON" -A "$ARCHITECTURE" \
-            -G "Visual Studio 16 2019" -T "v142" ..
+          if [ "$ARCHITECTURE" = "Win32" ]; then
+              cmake -DCMAKE_INSTALL_PREFIX="$(pwd)/install" -DFSO_USE_SPEECH="ON" \
+                -DFSO_USE_VOICEREC="ON" -DMSVC_SIMD_INSTRUCTIONS="$SIMD" \
+                -DFSO_BUILD_QTFRED=OFF -DFSO_BUILD_TESTS=ON \
+                -DFSO_INSTALL_DEBUG_FILES="ON" -DFSO_BUILD_WITH_VULKAN="OFF" -A "$ARCHITECTURE" \
+                -G "Visual Studio 16 2019" -T "v142" ..
+          else
+              cmake -DCMAKE_INSTALL_PREFIX="$(pwd)/install" -DFSO_USE_SPEECH="ON" \
+                -DFSO_USE_VOICEREC="ON" -DMSVC_SIMD_INSTRUCTIONS="$SIMD" \
+                -DFSO_BUILD_QTFRED=OFF -DFSO_BUILD_TESTS=ON \
+                -DFSO_INSTALL_DEBUG_FILES="ON" -A "$ARCHITECTURE" \
+                -G "Visual Studio 16 2019" -T "v142" ..
+          fi
       - name: Compile
         working-directory: ./build
         env:
@@ -249,12 +271,17 @@ jobs:
           # setup-python: 'false'
           # aqtversion: ==1.1.3
           # py7zrversion: '==0.19.*'
-
       - uses: actions/checkout@v1
         name: Checkout
         with:
           submodules: true
           fetch-depth: 0
+      - name: Prepare Vulkan SDK
+        uses: humbletim/setup-vulkan-sdk@v1.2.0
+        with:
+          vulkan-query-version: 1.3.204.0
+          vulkan-components: Vulkan-Headers, Vulkan-Loader
+          vulkan-use-cache: true
       - name: Set up test version
         shell: bash
         run: |
