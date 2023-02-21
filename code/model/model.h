@@ -1297,7 +1297,7 @@ inline void mc_info_init(mc_info *mc)
 #define MC_SUBMODEL				(1<<6)			// If this is set, only check the submodel specified in mc->submodel_num. Use with MC_CHECK_MODEL
 #define MC_SUBMODEL_INSTANCE	(1<<7)			// Check submodel and its children (of a rotating submodel)
 #define MC_CHECK_INVISIBLE_FACES (1<<8)		// Check the invisible faces.
-#define MC_COLLIDE_ALL (1<<8)				// Returns ALL hits via hit_points_all, including backfacing polies hits
+#define MC_COLLIDE_ALL (1<<9)				// Returns ALL hits via hit_points_all, including backfacing polies hits
 
 
 /*
