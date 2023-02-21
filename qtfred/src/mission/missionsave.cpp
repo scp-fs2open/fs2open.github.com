@@ -1090,6 +1090,12 @@ int CFred_mission_save::save_briefing()
 			parse_comments();
 			fout(" %d", bs->camera_time);
 
+			if (!bs->draw_grid) {
+				if (save_format != MissionFormat::RETAIL) {
+					fout("\n$no_grid");
+				}
+			}
+
 			required_string_fred("$num_lines:");
 			parse_comments();
 			fout(" %d", bs->num_lines);
@@ -1166,6 +1172,15 @@ int CFred_mission_save::save_briefing()
 
 						fout_ext(" ", "%s", bi->closeup_label);
 					}
+				}
+
+				if (save_format != MissionFormat::RETAIL) {
+					if (optional_string_fred("$icon scale:"))
+						parse_comments();
+					else
+						fout("\n$icon scale:");
+
+					fout(" %d", bi->scale);
 				}
 
 				if (optional_string_fred("+id:")) {
@@ -2215,7 +2230,8 @@ int CFred_mission_save::save_mission_info()
 
 	required_string_fred("$Version:");
 	parse_comments(2);
-	fout(" %.2f", FRED_MISSION_VERSION);
+	// Since previous versions of FreeSpace interpret this as a float, this can only have one decimal point
+	fout(" %d.%d", The_mission.required_fso_version.major, The_mission.required_fso_version.minor);
 
 	// XSTR
 	required_string_fred("$Name:");
@@ -2224,7 +2240,7 @@ int CFred_mission_save::save_mission_info()
 
 	required_string_fred("$Author:");
 	parse_comments();
-	fout(" %s", The_mission.author);
+	fout(" %s", The_mission.author.c_str());
 
 	required_string_fred("$Created:");
 	parse_comments();
@@ -2492,7 +2508,7 @@ int CFred_mission_save::save_mission_info()
 		const auto& moveable_triggers = The_mission.skybox_model_animations.getRegisteredMoveables();
 
 		if (!anim_triggers.empty() || !moveable_triggers.empty()) {
-			fso_comment_push(";;FSO 22.4.0;;");
+			fso_comment_push(";;FSO 23.0.0;;");
 			if (!anim_triggers.empty()) {
 				if (optional_string_fred("$Skybox Model Animations:")) {
 					parse_comments(1);
@@ -2612,8 +2628,10 @@ void CFred_mission_save::save_mission_internal(const char* pathname)
 
 	time(&rawtime);
 	auto timeinfo = localtime(&rawtime);
-
 	strftime(The_mission.modified, sizeof(The_mission.modified), "%x at %X", timeinfo);
+
+	// Migrate the version!
+	The_mission.required_fso_version = MISSION_VERSION;
 
 	reset_parse();
 	fred_parse_flag = 0;
@@ -3747,6 +3765,9 @@ int CFred_mission_save::save_players()
 		parse_comments();
 		fout(" (\n");
 
+		int num_dogfight_weapons = 0;
+		SCP_vector<SCP_string> dogfight_ships;
+
 		for (j = 0; j < Team_data[i].num_ship_choices; j++) {
 			// Check to see if a variable name should be written for the class rather than a number
 			if (strlen(Team_data[i].ship_list_variables[j])) {
@@ -3769,9 +3790,33 @@ int CFred_mission_save::save_players()
 			} else {
 				fout("%d\n", Team_data[i].ship_count[j]);
 			}
+
+			// Check the weapons pool for at least one dogfight weapon for this ship type
+			if (IS_MISSION_MULTI_DOGFIGHT) {
+				for (int wepCount = 0; wepCount < Team_data[i].num_weapon_choices; wepCount++) {
+					if (Ship_info[Team_data[i].ship_list[j]].allowed_weapons[Team_data[i].weaponry_pool[wepCount]] & DOGFIGHT_WEAPON) {
+						num_dogfight_weapons++;
+						break;
+					} else {
+						dogfight_ships.push_back(Ship_info[Team_data[i].ship_list[j]].name);
+					}
+				}
+			}
 		}
 
 		fout(")");
+
+		// make sure we have at least one dogfight weapon for each ship type in a dogfight mission
+		if (IS_MISSION_MULTI_DOGFIGHT && (num_dogfight_weapons != Team_data[i].num_ship_choices)) {
+			for (int numErrors = 0; numErrors < (int)dogfight_ships.size(); numErrors++) {
+				mprintf(("Warning: Ship %s has no dogfight weapons allowed\n", dogfight_ships[numErrors].c_str()));
+			}
+			MessageBox(nullptr,
+				"Warning: This mission is a dogfight mission but no dogfight weapons are available for at least one "
+				"ship in the loadout! In Debug mode a list of ships will be printed to the log.",
+				"No dogfight weapons",
+				MB_OK);
+		}
 
 		if (optional_string_fred("+Weaponry Pool:", "$Starting Shipname:")) {
 			parse_comments(2);

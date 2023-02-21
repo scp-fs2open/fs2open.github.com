@@ -58,10 +58,8 @@ extern float Neb2_fog_visibility_fireball_scaled_factor;
 extern int Neb2_poof_flags;
 const size_t MAX_NEB2_POOFS = 32;
 
-#define MAX_NEB2_BITMAPS			10
-
 // pof texture filenames
-extern char Neb2_bitmap_filenames[MAX_NEB2_BITMAPS][MAX_FILENAME_LEN];
+extern SCP_vector<SCP_string> Neb2_bitmap_filenames;
 
 // texture to use for this level
 extern char Neb2_texture_name[MAX_FILENAME_LEN];

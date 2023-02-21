@@ -438,6 +438,9 @@ int collide_predict_large_ship(object *objp, float distance)
 	vm_vec_scale_add(&goal_pos, &cur_pos, &objp->orient.vec.fvec, distance);
 
 	for ( objp2 = GET_FIRST(&obj_used_list); objp2 != END_OF_LIST(&obj_used_list); objp2 = GET_NEXT(objp2) ) {
+		if (objp2->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		if ((objp != objp2) && (objp2->type == OBJ_SHIP)) {
 			if (Ship_info[Ships[objp2->instance].ship_info_index].is_big_or_huge()) {
 				if (dock_check_find_docked_object(objp, objp2))
@@ -1038,4 +1041,29 @@ void obj_sort_and_collide(SCP_vector<int>* Collision_list)
 		obj_quicksort_colliders(&sort_list_z, 0, (int)(sort_list_z.size() - 1), 2);
 	}
 	obj_find_overlap_colliders(sort_list_y, sort_list_z, 2, true);
+}
+
+void collide_apply_gravity_flags_weapons() {
+	for (object* obj = GET_FIRST(&obj_used_list); obj != END_OF_LIST(&obj_used_list); obj = GET_NEXT(obj)) {
+		if (obj->type != OBJ_WEAPON || obj->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
+		weapon* wp = &Weapons[obj->instance];
+		weapon_info* wip = &Weapon_info[wp->weapon_info_index];
+
+		if (!wip->is_homing() || (wp->weapon_flags[Weapon::Weapon_Flags::No_homing])) {
+			// homing weapons dont get any gravity stuff
+			if (wip->acceleration_time <= 0.0f || Missiontime - wp->creation_time >= fl2f(wip->acceleration_time)) {
+				// if the weapon doesn't accelerate, or has finished accelerating...
+				if (The_mission.gravity == vmd_zero_vector || obj->phys_info.gravity_const == 0.0f) {
+					obj->phys_info.flags |= PF_CONST_VEL;
+					obj->phys_info.flags &= ~PF_BALLISTIC;
+				}
+				else {
+					obj->phys_info.flags |= PF_BALLISTIC;
+					obj->phys_info.flags &= ~PF_CONST_VEL;
+				}
+			}
+		}
+	}
 }

@@ -661,16 +661,17 @@ int ai_big_maybe_start_strafe(ai_info *aip, ship_info *sip)
 	// are near
 	if ( sip->is_small_ship() ) {
 		if ( timestamp_elapsed(aip->scan_for_enemy_timestamp) ) {
-			ship_obj	*so;
 			object	*test_objp;
 			ship		*test_sp;
 			float		dist_squared;
 			
 			aip->scan_for_enemy_timestamp = timestamp(SCAN_FIGHTERS_INTERVAL);
 			// iterate through ships, and see if any fighter/bomber from opposite team are near
-			so = GET_FIRST(&Ship_obj_list);
-			while( so != END_OF_LIST(&Ship_obj_list) ) {
+			for (auto so: list_range(&Ship_obj_list)) {
 				test_objp = &Objects[so->objnum];
+				if (test_objp->flags[Object::Object_Flags::Should_be_dead])
+					continue;
+
 				test_sp = &Ships[test_objp->instance];
 
 				if ( iff_x_attacks_y(Ships[Pl_objp->instance].team, test_sp->team) ) {
@@ -681,7 +682,6 @@ int ai_big_maybe_start_strafe(ai_info *aip, ship_info *sip)
 						}
 					}
 				}
-				so = GET_NEXT(so);
 			}
 		}
 	}
@@ -706,6 +706,9 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 		if (Pl_objp->phys_info.speed < 3.0f) {
 			object *objp;
 			for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
+				if (objp->flags[Object::Object_Flags::Should_be_dead])
+					continue;
+
 				if ((objp->type == OBJ_WEAPON) && (iff_x_attacks_y(Ships[Pl_objp->instance].team, Weapons[objp->instance].team)))
 					if (Weapon_info[Weapons[objp->instance].weapon_info_index].subtype == WP_LASER) {
 						vec3d	in_vec;
@@ -867,9 +870,9 @@ void ai_big_chase_ct()
 	ai_chase_ct();
 }
 
-extern void ai_select_secondary_weapon(object *objp, ship_weapon *swp, int priority1 = -1, int priority2 = -1);
+extern bool ai_select_secondary_weapon(object *objp, ship_weapon *swp, int priority1 = -1, int priority2 = -1);
 extern float set_secondary_fire_delay(ai_info *aip, ship *shipp, weapon_info *swip, bool burst);
-extern void ai_choose_secondary_weapon(object *objp, ai_info *aip, object *en_objp);
+extern bool ai_choose_secondary_weapon(object *objp, ai_info *aip, object *en_objp);
 extern int maybe_avoid_big_ship(object *objp, object *ignore_objp, ai_info *aip, vec3d *goal_point, float delta_time, float time_scale = 1.f);
 
 extern void maybe_cheat_fire_synaptic(object *objp);
@@ -921,9 +924,9 @@ static void ai_big_maybe_fire_weapons(float dist_to_enemy, float dot_to_enemy)
 
 			if (tswp->num_secondary_banks > 0) {
 				if (!(En_objp->flags[Object::Object_Flags::Protected]) || (aip->goals[0].ai_mode & (AI_GOAL_DISABLE_SHIP | AI_GOAL_DISARM_SHIP))) {
-					ai_choose_secondary_weapon(Pl_objp, aip, En_objp);
+					bool valid_secondary = ai_choose_secondary_weapon(Pl_objp, aip, En_objp);
 					int current_bank = tswp->current_secondary_bank;
-					if (current_bank > -1) {
+					if (current_bank > -1 && valid_secondary) {
 						weapon_info	*swip = &Weapon_info[tswp->secondary_bank_weapons[current_bank]];
 
 						if(!(En_objp->flags[Object::Object_Flags::Protected]) || ((aip->goals[0].ai_mode & (AI_GOAL_DISABLE_SHIP | AI_GOAL_DISARM_SHIP)) && swip->wi_flags[Weapon::Info_Flags::Puncture] )) { //override lockdown on protected ships when using anti subsystem weapons - Valathil

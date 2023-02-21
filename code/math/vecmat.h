@@ -89,7 +89,7 @@ extern matrix4 vmd_zero_matrix4;
 extern angles vmd_zero_angles;
 
 //Here's a handy constant
-
+#define ZERO_ANGLES { 0.0f, 0.0f, 0.0f }
 #define ZERO_VECTOR { { { 0.0f, 0.0f, 0.0f } } }
 #define SCALE_IDENTITY_VECTOR { { { 1.0f, 1.0f, 1.0f } } }
 //#define IDENTITY_MATRIX {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f}
@@ -677,6 +677,14 @@ inline matrix operator-(const matrix& left, const matrix& right)
 inline matrix& operator-=(matrix& left, const matrix& right)
 {
 	vm_matrix_sub2(&left, &right);
+	return left;
+}
+
+inline angles& operator+=(angles& left, const angles& right)
+{
+	left.p += right.p;
+	left.b += right.b;
+	left.h += right.h;
 	return left;
 }
 

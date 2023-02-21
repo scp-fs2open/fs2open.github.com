@@ -118,6 +118,20 @@ obj_flag_name Object_flag_names[] = {
 	{ Object::Object_Flags::Attackable_if_no_collide, "ai-attackable-if-no-collide",	},
 };
 
+obj_flag_description Object_flag_descriptions[] = {
+    { Object::Object_Flags::Invulnerable,				"Stops ship from taking any damage."},
+	{ Object::Object_Flags::Protected,					"Ship and Turret AI will ignore and not attack ship."},
+	{ Object::Object_Flags::Beam_protected,				"Turrets with beam weapons will ignore and not attack ship."},
+	{ Object::Object_Flags::No_shields,					"Ship will have no shields (ETS will be rebalanced if shields were off and are enabled)."},
+	{ Object::Object_Flags::Targetable_as_bomb,			"Allows ship to be targeted with the bomb targeting key."},
+	{ Object::Object_Flags::Flak_protected,				"Turrets with flak weapons will ignore and not attack ship."},
+	{ Object::Object_Flags::Laser_protected,			"Turrets with laser weapons will ignore and not attack ship."},
+	{ Object::Object_Flags::Missile_protected,			"Turrets with missile weapons will ignore and not attack ship."},
+	{ Object::Object_Flags::Immobile,					"Will not let a ship move or rotate in any fashion. Upon destruction the ship will still do the death roll and explosion."},
+	{ Object::Object_Flags::Collides,					"Causes a ship to vanish (no deathroll, no debris, no explosion) when destroyed."},
+	{ Object::Object_Flags::Attackable_if_no_collide,	"Allows the AI to attack this object, even if no-collide is set."},
+};
+
 extern const int Num_object_flag_names = sizeof(Object_flag_names) / sizeof(obj_flag_name);
 
 #ifdef OBJECT_CHECK
@@ -1587,8 +1601,12 @@ void obj_move_all(float frametime)
 	model_do_intrinsic_motions(nullptr);
 
 	//	After all objects have been moved, move all docked objects.
-	objp = GET_FIRST(&obj_used_list);
-	while( objp !=END_OF_LIST(&obj_used_list) )	{
+	for (objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
+		// skip objects which should be dead
+		if (objp->flags[Object::Object_Flags::Should_be_dead]) {
+			continue;
+		}
+
 		dock_move_docked_objects(objp);
 
 		//Valathil - Move the screen rotation calculation for billboards here to get the updated orientation matrices caused by docking interpolation
@@ -1621,7 +1639,6 @@ void obj_move_all(float frametime)
 				Physics_viewer_bank -= 2.0f * PI; 	 
 			}
 		}
-		objp = GET_NEXT(objp);
 	}
 
 	if (!cmeasure_list.empty())
@@ -1774,74 +1791,6 @@ void obj_init_all_ships_physics()
 
 }
 
-/**
- * Do client-side pre-interpolation object movement
- */
-void obj_client_pre_interpolate()
-{
-	object *objp;
-	
-	// duh
-	obj_delete_all_that_should_be_dead();
-
-	// client side processing of warping in effect stages
-	multi_do_client_warp(flFrametime);     
-
-	// client side movement of an observer
-	if((Net_player->flags & NETINFO_FLAG_OBSERVER) || (Player_obj->type == OBJ_OBSERVER)){
-		obj_observer_move(flFrametime);   
-	}
-	
-	// run everything except ships through physics (and ourselves of course)	
-	obj_merge_created_list();						// must merge any objects created by the host!
-
-	objp = GET_FIRST(&obj_used_list);
-	for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) )	{
-		if((objp != Player_obj) && (objp->type == OBJ_SHIP)){
-			continue;
-		}
-
-		// for all non-dead object which are _not_ ships
-		if ( !(objp->flags[Object::Object_Flags::Should_be_dead]) )	{				
-			// pre-move step
-			obj_move_all_pre(objp, flFrametime);
-
-			// store position and orientation
-			objp->last_pos = objp->pos;
-			objp->last_orient = objp->orient;
-
-			// call physics
-			obj_move_call_physics(objp, flFrametime);
-
-			// post-move step
-			obj_move_all_post(objp, flFrametime);
-		}
-	}
-}
-
-/**
- * Do client-side post-interpolation object movement
- */
-void obj_client_post_interpolate()
-{
-	object *objp;
-
-	//	After all objects have been moved, move all docked objects.
-	objp = GET_FIRST(&obj_used_list);
-	while( objp !=END_OF_LIST(&obj_used_list) )	{
-		if ( objp != Player_obj ) {
-			dock_move_docked_objects(objp);
-		}
-		objp = GET_NEXT(objp);
-	}	
-
-	// check collisions
-	obj_sort_and_collide();
-
-	// do post-collision stuff for beam weapons
-	beam_move_all_post();
-}
-
 void obj_observer_move(float frame_time)
 {
 	object *objp;
@@ -1868,15 +1817,16 @@ void obj_observer_move(float frame_time)
 void obj_get_average_ship_pos( vec3d *pos )
 {
 	int count;
-	object *objp;
 
 	vm_vec_zero( pos );
 
    // average up all ship positions
 	count = 0;
-	for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
-		if ( objp->type != OBJ_SHIP )
+	for (auto so: list_range(&Ship_obj_list)) {
+		auto objp = &Objects[so->objnum];
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
 			continue;
+
 		vm_vec_add2( pos, &objp->pos );
 		count++;
 	}
@@ -1968,17 +1918,15 @@ void obj_reset_all_collisions()
 	obj_reset_colliders();
 
 	// now add every object back into the object collision pairs
-	object *moveup;
-	moveup = GET_FIRST(&obj_used_list);
-	while(moveup != END_OF_LIST(&obj_used_list)){
+	for (auto moveup: list_range(&obj_used_list)) {
+		if (moveup->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		// he's not in the collision list
 		moveup->flags.set(Object::Object_Flags::Not_in_coll);
 
 		// recalc pairs for this guy
 		obj_add_collider(OBJ_INDEX(moveup));
-
-		// next
-		moveup = GET_NEXT(moveup);
 	}
 }
 
@@ -2042,14 +1990,13 @@ int obj_get_by_signature(int sig)
 {
 	Assert(sig > 0);
 
-	object *objp = GET_FIRST(&obj_used_list);
-	while( objp !=END_OF_LIST(&obj_used_list) )
+	for (auto objp: list_range(&obj_used_list))
 	{
-		if(objp->signature == sig)
+		// don't skip over should-be-dead objects, since we assume we know what we're doing
+		if (objp->signature == sig)
 			return OBJ_INDEX(objp);
-
-		objp = GET_NEXT(objp);
 	}
+
 	return -1;
 }
 

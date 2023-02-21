@@ -111,6 +111,9 @@ ADE_FUNC(forAllShips, l_OSWPT, "function(ship ship) => void body", "Applies this
 	case OSWPT_TYPE_WHOLE_TEAM:
 		for (auto so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
 		{
+			if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+				continue;
+
 			if (Ships[Objects[so->objnum].instance].team == oswpt.team)
 			{
 				luacpp::LuaValueList args;

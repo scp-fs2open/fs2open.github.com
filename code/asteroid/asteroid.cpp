@@ -90,11 +90,15 @@ SCP_vector<asteroid_target> Asteroid_targets;
 static int count_incident_asteroids(int target_objnum)
 {
 	object* asteroid_objp;
-	int		count;
+	int		count = 0;
 
-	count = 0;
+	Assertion(GET_FIRST(&Asteroid_obj_list) != nullptr, "count_incident_asteroids() called before Asteroid_obj_list was initialized; this shouldn't happen. Get a coder!");
 
-	for (asteroid_objp = GET_FIRST(&obj_used_list); asteroid_objp != END_OF_LIST(&obj_used_list); asteroid_objp = GET_NEXT(asteroid_objp)) {
+	for (auto aop: list_range(&Asteroid_obj_list)) {
+		asteroid_objp = &Objects[aop->objnum];
+		if (asteroid_objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		if (asteroid_objp->type == OBJ_ASTEROID) {
 			asteroid* asp = &Asteroids[asteroid_objp->instance];
 
@@ -150,6 +154,8 @@ static int asteroid_obj_list_add(int objnum)
 {
 	int index;
 
+	Assertion(GET_FIRST(&Asteroid_obj_list) != nullptr, "asteroid_obj_list_add() called before Asteroid_obj_list was initialized; this shouldn't happen. Get a coder!");
+
 	asteroid *cur_asteroid = &Asteroids[Objects[objnum].instance];
 	index = (int)(cur_asteroid - Asteroids);
 
@@ -171,6 +177,8 @@ static int asteroid_obj_list_add(int objnum)
 static void asteroid_obj_list_remove(object * obj)
 {
 	int index = obj->instance;
+
+	Assertion(GET_FIRST(&Asteroid_obj_list) != nullptr, "asteroid_obj_list_remove() called before Asteroid_obj_list was initialized; this shouldn't happen. Get a coder!");
 
 	Assert(index >= 0 && index < MAX_ASTEROID_OBJS);
 	Assert(Asteroid_objs[index].flags & ASTEROID_OBJ_USED);
@@ -428,6 +436,12 @@ object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int asteroi
 
 	// ensure vel is valid
 	Assert( !vm_is_vec_nan(&objp->phys_info.vel) );	
+
+	if (scripting::hooks::OnAsteroidCreated->isActive()) {
+		scripting::hooks::OnAsteroidCreated->run(
+			scripting::hook_param_list(
+				scripting::hook_param("Asteroid", 'o', objp)));
+	}
 
 	return objp;
 }
@@ -731,7 +745,10 @@ void asteroid_create_asteroid_field(int num_asteroids, int field_type, int aster
 
 	Asteroid_field.target_names = targets;
 
-	asteroid_create_all();
+	// Only create asteroids if we have some to create
+	if ((count > 0) && (num_asteroids > 0)) {
+		asteroid_create_all();
+	}
 }
 
 // will replace any existing asteroid or debris field with a debris field
@@ -786,7 +803,10 @@ void asteroid_create_debris_field(int num_asteroids, int asteroid_speed, int deb
 
 	Asteroid_field.bound_rad = MAX(3000.0f, b_rad);
 
-	asteroid_create_all();
+	// Only create debris if we have some to create
+	if ((count > 0) && (num_asteroids > 0)) {
+		asteroid_create_all();
+	}
 }
 
 /**
@@ -918,6 +938,8 @@ static int asteroid_is_targeted(object *objp)
 
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		ship_objp = &Objects[so->objnum];
+		if (ship_objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 		if ( Ai_info[Ships[ship_objp->instance].ai_index].target_objnum == asteroid_obj_index ) {
 			return 1;
 		}
@@ -1063,8 +1085,8 @@ void asteroid_delete( object * obj )
  */
 static void asteroid_maybe_reposition(object *objp, asteroid_field *asfieldp)
 {
-	// passive field does not wrap
-	if (asfieldp->field_type == FT_PASSIVE) {
+	// passive field does not wrap if there is no gravity
+	if (IS_VEC_NULL(&The_mission.gravity) && (asfieldp->field_type == FT_PASSIVE)) {
 		return;
 	}
 
@@ -1090,22 +1112,27 @@ static void asteroid_maybe_reposition(object *objp, asteroid_field *asfieldp)
 					asteroid_wrap_pos(objp, asfieldp);
 					asteroid* astp = &Asteroids[objp->instance];
 
-					// this doesnt count as a thrown asteroid anymore
-					for (asteroid_target& target : Asteroid_targets)
-						if (target.objnum == astp->target_objnum)
-							target.incoming_asteroids--;
+					if (asfieldp->field_type == FT_ACTIVE) {
+						// this doesnt count as a thrown asteroid anymore
+						for (asteroid_target& target : Asteroid_targets)
+							if (target.objnum == astp->target_objnum)
+								target.incoming_asteroids--;
 
-					astp->target_objnum = -1;
+						astp->target_objnum = -1;
+					}
 
 					dist = vm_vec_normalized_dir(&vec_to_asteroid, &objp->pos, &Eye_position);
 					dot = vm_vec_dot(&Eye_matrix.vec.fvec, &vec_to_asteroid);
 					
-					if ( (dot > 0.7f) && (dist < (asfieldp->bound_rad * 1.3f)) ) {
-						// player would see asteroid pop out other side, so reverse velocity instead of wrapping						
-						objp->pos = old_asteroid_pos;		
-						vm_vec_copy_scale(&objp->phys_info.vel, &old_vel, -1.0f);
-						objp->phys_info.desired_vel = objp->phys_info.vel;
-						Asteroids[objp->instance].target_objnum = -1;
+					//probably don't reverse direction if there's gravity involved
+					if (IS_VEC_NULL(&The_mission.gravity)) {
+						if ((dot > 0.7f) && (dist < (asfieldp->bound_rad * 1.3f))) {
+							// player would see asteroid pop out other side, so reverse velocity instead of wrapping
+							objp->pos = old_asteroid_pos;
+							vm_vec_copy_scale(&objp->phys_info.vel, &old_vel, -1.0f);
+							objp->phys_info.desired_vel = objp->phys_info.vel;
+							Asteroids[objp->instance].target_objnum = -1;
+						}
 					}
 
 					// update last pos (after vel is known)
@@ -1113,8 +1140,10 @@ static void asteroid_maybe_reposition(object *objp, asteroid_field *asfieldp)
 
 					asteroid_update_collide(objp);
 
-					if ( MULTIPLAYER_MASTER )
-						send_asteroid_throw( objp );
+					if (asfieldp->field_type == FT_ACTIVE) {
+						if (MULTIPLAYER_MASTER)
+							send_asteroid_throw(objp);
+					}
 				}
 			}
 		}
@@ -1566,9 +1595,11 @@ static void asteroid_do_area_effect(object *asteroid_objp)
 
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		ship_objp = &Objects[so->objnum];
-	
-		// don't blast navbuoys
-		if ( ship_get_SIF(ship_objp->instance)[Ship::Info_Flags::Navbuoy] ) {
+		if (ship_objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
+		// don't blast no-collide or navbuoys
+		if ( !ship_objp->flags[Object::Object_Flags::Collides] || ship_get_SIF(ship_objp->instance)[Ship::Info_Flags::Navbuoy] ) {
 			continue;
 		}
 
@@ -1954,12 +1985,11 @@ void asteroid_process_post(object * obj)
 		
 		asteroid	*asp = &Asteroids[num];
 
-		// Only wrap if active field
-		if (Asteroid_field.field_type == FT_ACTIVE) {
-			if ( timestamp_elapsed(asp->check_for_wrap) ) {
-				asteroid_maybe_reposition(obj, &Asteroid_field);
-				asp->check_for_wrap = _timestamp(ASTEROID_CHECK_WRAP_TIMESTAMP);
-			}
+		//Passive fields might wrap if there's gravity so do
+		//this for all fields now-Mjn
+		if ( timestamp_elapsed(asp->check_for_wrap) ) {
+			asteroid_maybe_reposition(obj, &Asteroid_field);
+			asp->check_for_wrap = _timestamp(ASTEROID_CHECK_WRAP_TIMESTAMP);
 		}
 
 		asteroid_verify_collide_objnum(asp);
@@ -2466,6 +2496,8 @@ static int set_asteroid_throw_objnum()
 
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		ship_objp = &Objects[so->objnum];
+		if (ship_objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 
 		if (Ship_info[Ships[ship_objp->instance].ship_info_index].is_big_or_huge()) {
 			if (asteroid_is_ship_inside_field(&Asteroid_field, &ship_objp->pos, ship_objp->radius))
@@ -2512,6 +2544,8 @@ void asteroid_show_brackets()
 	object	*asteroid_objp, *player_target;
 	asteroid	*asp;
 
+	Assertion(GET_FIRST(&Asteroid_obj_list) != nullptr, "asteroid_show_brackets() called before Asteroid_obj_list was initialized; this shouldn't happen. Get a coder!");
+
 	// get pointer to player target, so we don't need to take OBJ_INDEX() of asteroid_objp to compare to target_objnum
 	if ( Player_ai->target_objnum >= 0 ) {
 		player_target = &Objects[Player_ai->target_objnum];
@@ -2519,7 +2553,10 @@ void asteroid_show_brackets()
 		player_target = NULL;
 	}
 
-	for ( asteroid_objp = GET_FIRST(&obj_used_list); asteroid_objp !=END_OF_LIST(&obj_used_list); asteroid_objp = GET_NEXT(asteroid_objp) ) {
+	for (auto aop: list_range(&Asteroid_obj_list)) {
+		asteroid_objp = &Objects[aop->objnum];
+		if (asteroid_objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 		if (asteroid_objp->type != OBJ_ASTEROID ) {
 			continue;
 		}
@@ -2554,7 +2591,12 @@ void asteroid_target_closest_danger()
 	asteroid	*asp;
 	float		dist, closest_dist = 999999.0f;
 
-	for ( asteroid_objp = GET_FIRST(&obj_used_list); asteroid_objp !=END_OF_LIST(&obj_used_list); asteroid_objp = GET_NEXT(asteroid_objp) ) {
+	Assertion(GET_FIRST(&Asteroid_obj_list) != nullptr, "asteroid_target_closest_danger() called before Asteroid_obj_list was initialized; this shouldn't happen. Get a coder!");
+
+	for (auto aop: list_range(&Asteroid_obj_list)) {
+		asteroid_objp = &Objects[aop->objnum];
+		if (asteroid_objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 		if (asteroid_objp->type != OBJ_ASTEROID ) {
 			continue;
 		}

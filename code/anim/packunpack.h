@@ -58,7 +58,6 @@ typedef struct anim {
 	ubyte			xparent_g;		// green component for the transparent color in source image
 	ubyte			xparent_b;		// blue component for the transparent color in source image
 	int			flags;
-	uint			screen_sig;	
 	int			file_offset;	// file offset to start of frame data
 	int			cache_file_offset;
 	ubyte			*cache;
@@ -105,7 +104,6 @@ anim_instance *init_anim_instance(anim *ptr, int bpp);
 void	free_anim_instance(anim_instance *inst);
 ubyte *anim_get_next_raw_buffer(anim_instance *inst, int xlate_pal, int aabitmap, int bpp);
 void	anim_set_palette(anim *a);
-void	anim_check_for_palette_change(anim_instance *inst);
 
 
 #endif  /* __PACKUNPACK_H__ */

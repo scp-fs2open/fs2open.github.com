@@ -27,6 +27,7 @@ extern bool Fixed_missile_detonation;
 extern bool Damage_impacted_subsystem_first;
 extern bool Cutscene_camera_displays_hud;
 extern bool Alternate_chaining_behavior;
+extern bool Fixed_chaining_to_repeat;
 extern bool Use_host_orientation_for_set_camera_facing;
 extern bool Use_3d_ship_select;
 extern int Default_ship_select_effect;
@@ -60,6 +61,7 @@ extern SCP_string Window_title;
 extern SCP_string Mod_title;
 extern SCP_string Mod_version;
 extern bool Unicode_text_mode;
+extern SCP_vector<SCP_string> Splash_screens;
 extern bool Use_tabled_strings_for_default_language;
 extern bool Dont_preempt_training_voice;
 extern SCP_string Movie_subtitle_font;
@@ -91,6 +93,7 @@ extern float Arc_width_radius_multiplier_emp;
 extern float Arc_width_no_multiply_over_radius_emp;
 extern float Arc_width_minimum_emp;
 extern bool Use_engine_wash_intensity;
+extern bool Apply_shudder_to_chase_view;
 extern bool Swarmers_lead_targets;
 extern SCP_vector<gr_capability> Required_render_ext;
 extern float Weapon_SS_Threshold_Turret_Inaccuracy;
@@ -126,6 +129,10 @@ extern bool Always_use_distant_firepoints;
 extern bool Discord_presence;
 extern bool Hotkey_always_hide_hidden_ships;
 extern bool Use_weapon_class_sounds_for_hits_to_player;
+extern bool SCPUI_loads_hi_res_animations;
+extern bool Countermeasures_use_capacity;
+extern bool Play_thruster_sounds_for_player;
+extern std::array<std::tuple<float, float>, 6> Fred_spacemouse_nonlinearity;
 
 void mod_table_init();
 void mod_table_post_process();
@@ -150,3 +157,5 @@ void mod_table_reset();
  * @return @c true if the mod specified support for this or a later version, @c false otherwise
  */
 bool mod_supports_version(int major, int minor, int build);
+
+bool mod_supports_version(const gameversion::version& version);

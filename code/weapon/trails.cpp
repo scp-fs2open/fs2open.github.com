@@ -127,13 +127,6 @@ void trail_render( trail * trailp )
 	if (trailp->tail == trailp->head)
 		return;
 
-	// if this trail is on the player ship, and he's in any padlock view except rear view, don't draw	
-	if ( (Player_ship != NULL) && trail_is_on_ship(trailp, Player_ship) &&
-		(Viewer_mode & (VM_PADLOCK_UP | VM_PADLOCK_LEFT | VM_PADLOCK_RIGHT)) )
-	{
-		return;
-	}
-
 	trail_info *ti	= &trailp->info;
 
 	int n = trailp->tail;

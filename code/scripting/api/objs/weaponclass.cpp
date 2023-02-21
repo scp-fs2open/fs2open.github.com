@@ -7,6 +7,7 @@
 #include "graphics/matrix.h"
 #include "vecmath.h"
 #include "missionui/missionscreencommon.h"
+#include "model/modelrender.h"
 
 namespace scripting {
 namespace api {
@@ -712,18 +713,7 @@ ADE_FUNC(renderTechModel,
 	int idx;
 	float zoom = 1.3f;
 	bool lighting = true;
-	if (!ade_get_args(L,
-			"oiiii|ffffb",
-			l_Weaponclass.Get(&idx),
-			&x1,
-			&y1,
-			&x2,
-			&y2,
-			&rot_angles.h,
-			&rot_angles.p,
-			&rot_angles.b,
-			&zoom,
-			&lighting))
+	if (!ade_get_args(L, "oiiii|ffffb", l_Weaponclass.Get(&idx), &x1, &y1, &x2, &y2, &rot_angles.h, &rot_angles.p, &rot_angles.b, &zoom, &lighting))
 		return ade_set_error(L, "b", false);
 
 	if (idx < 0 || idx >= weapon_info_size())
@@ -736,20 +726,6 @@ ADE_FUNC(renderTechModel,
 	CLAMP(rot_angles.b, 0.0f, 100.0f);
 	CLAMP(rot_angles.h, 0.0f, 100.0f);
 
-	weapon_info* wip = &Weapon_info[idx];
-	model_render_params render_info;
-
-	int modelNum;
-	//Load the model if it exists or exit early
-	if (VALID_FNAME(wip->tech_model)) {
-		modelNum = model_load(wip->tech_model, 0, nullptr, 0);
-	} else {
-		return ade_set_args(L, "b", false);
-	}
-
-	if (modelNum < 0)
-		return ade_set_args(L, "b", false);
-
 	// Handle angles
 	matrix orient = vmd_identity_matrix;
 	angles view_angles = {-0.6f, 0.0f, 0.0f};
@@ -760,45 +736,7 @@ ADE_FUNC(renderTechModel,
 	rot_angles.h = (rot_angles.h * 0.01f) * PI2;
 	vm_rotate_matrix_by_angles(&orient, &rot_angles);
 
-	// Clip
-	gr_set_clip(x1, y1, x2 - x1, y2 - y1, GR_RESIZE_NONE);
-
-	// Handle 3D init stuff
-	g3_start_frame(1);
-	g3_set_view_matrix(&wip->closeup_pos, &vmd_identity_matrix, wip->closeup_zoom * zoom);
-
-	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-	gr_set_view_matrix(&Eye_position, &Eye_matrix);
-
-	// Handle light
-	light_reset();
-	vec3d light_dir = vmd_zero_vector;
-	light_dir.xyz.y = 1.0f;
-	light_add_directional(&light_dir, 0.65f, 1.0f, 1.0f, 1.0f);
-	light_rotate_all();
-
-	// Draw the ship!!
-	model_clear_instance(modelNum);
-	render_info.set_detail_level_lock(0);
-
-	uint render_flags = MR_AUTOCENTER | MR_NO_FOGGING;
-
-	if (!lighting || (wip->wi_flags[Weapon::Info_Flags::Mr_no_lighting]))
-		render_flags |= MR_NO_LIGHTING;
-
-	render_info.set_flags(render_flags);
-
-	model_render_immediate(&render_info, modelNum, &orient, &vmd_zero_vector);
-
-	// OK we're done
-	gr_end_view_matrix();
-	gr_end_proj_matrix();
-
-	// Bye!!
-	g3_end_frame();
-	gr_reset_clip();
-
-	return ade_set_args(L, "b", true);
+	return ade_set_args(L, "b", render_tech_model(false, x1, y1, x2, y2, zoom, lighting, idx, &orient));
 }
 
 // Nuke's alternate tech model rendering function
@@ -822,62 +760,10 @@ ADE_FUNC(renderTechModel2,
 	if (x2 < x1 || y2 < y1)
 		return ade_set_args(L, "b", false);
 
-	weapon_info* wip = &Weapon_info[idx];
-	model_render_params render_info;
-
-	int modelNum;
-	// Load the model if it exists or exit early
-	if (VALID_FNAME(wip->tech_model)) {
-		modelNum = model_load(wip->tech_model, 0, nullptr, 0);
-	} else {
-		return ade_set_args(L, "b", false);
-	}
-
-	if (modelNum < 0)
-		return ade_set_args(L, "b", false);
-
 	// Handle angles
 	matrix* orient = mh->GetMatrix();
 
-	// Clip
-	gr_set_clip(x1, y1, x2 - x1, y2 - y1, GR_RESIZE_NONE);
-
-	// Handle 3D init stuff
-	g3_start_frame(1);
-	g3_set_view_matrix(&wip->closeup_pos, &vmd_identity_matrix, wip->closeup_zoom * zoom);
-
-	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-	gr_set_view_matrix(&Eye_position, &Eye_matrix);
-
-	// Handle light
-	light_reset();
-	vec3d light_dir = vmd_zero_vector;
-	light_dir.xyz.y = 1.0f;
-	light_add_directional(&light_dir, 0.65f, 1.0f, 1.0f, 1.0f);
-	light_rotate_all();
-
-	// Draw the ship!!
-	model_clear_instance(modelNum);
-	render_info.set_detail_level_lock(0);
-
-	uint render_flags = MR_AUTOCENTER | MR_NO_FOGGING;
-
-	if (wip->wi_flags[Weapon::Info_Flags::Mr_no_lighting])
-		render_flags |= MR_NO_LIGHTING;
-
-	render_info.set_flags(render_flags);
-
-	model_render_immediate(&render_info, modelNum, orient, &vmd_zero_vector);
-
-	// OK we're done
-	gr_end_view_matrix();
-	gr_end_proj_matrix();
-
-	// Bye!!
-	g3_end_frame();
-	gr_reset_clip();
-
-	return ade_set_args(L, "b", true);
+	return ade_set_args(L, "b", render_tech_model(false, x1, y1, x2, y2, zoom, true, idx, orient));
 }
 
 ADE_FUNC(renderSelectModel,

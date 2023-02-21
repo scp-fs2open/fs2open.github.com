@@ -550,6 +550,11 @@ void hud_create_complete_escort_list()
 				continue;
 			}
 			objp = &Objects[so->objnum];
+			// don't process objects that should be dead
+			if (objp->flags[Object::Object_Flags::Should_be_dead]) {
+				continue;
+			}
+
 			Assert( objp->type == OBJ_SHIP );
 			if(objp->type != OBJ_SHIP){
 				continue;
@@ -581,11 +586,6 @@ void hud_create_complete_escort_list()
 				{
 					continue;
 				}
-			}
-
-			// don't process objects that should be dead
-			if ( objp->flags[Object::Object_Flags::Should_be_dead] ) {
-				continue;
 			}
 
 			// add the ship

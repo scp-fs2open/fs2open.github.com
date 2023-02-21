@@ -238,5 +238,15 @@ ADE_VIRTVAR(isGoalValid, l_Goals, nullptr, "The goal validity", "boolean", "true
 	return ade_set_args(L, "b", !(Mission_goals[current].type & INVALID_GOAL));
 }
 
+ADE_FUNC(isValid, l_Goals, nullptr, "Detect if the handle is valid", "boolean", "true if valid, false otherwise")
+{
+	int current = -1;
+
+	if (!ade_get_args(L, "o", l_Goals.Get(&current)))
+		return ADE_RETURN_FALSE;
+
+	return ade_set_args(L, "b", (current >= 0) && (current < (int)Mission_goals.size()));
+}
+
 } // namespace api
 } // namespace scripting

@@ -300,6 +300,18 @@ ADE_FUNC(isValid, l_Object, NULL, "Detects whether handle is valid", "boolean", 
 	return ade_set_args(L, "b", oh->IsValid());
 }
 
+ADE_FUNC(isExpiring, l_Object, nullptr, "Checks whether the object has the should-be-dead flag set, which will cause it to be deleted within one frame", "boolean", "true or false according to the flag, or nil if a syntax/type error occurs")
+{
+	object_h* oh;
+	if (!ade_get_args(L, "o", l_Object.GetPtr(&oh)))
+		return ADE_RETURN_NIL;
+
+	if (!oh->IsValid())
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "b", oh->objp->flags[Object::Object_Flags::Should_be_dead]);
+}
+
 ADE_FUNC(getBreedName, l_Object, NULL, "Gets object type", "string", "Object type name, or empty string if handle is invalid")
 {
 	object_h *objh;
@@ -312,7 +324,7 @@ ADE_FUNC(getBreedName, l_Object, NULL, "Gets object type", "string", "Object typ
 	return ade_set_args(L, "s", Object_type_names[objh->objp->type]);
 }
 
-ADE_VIRTVAR(CollisionGroups, l_Object, "number", "Collision group data", "number", "Current collision group signature. NOTE: This is a bitfield, NOT a normal number.")
+ADE_VIRTVAR(CollisionGroups, l_Object, "number", "Collision group data", "number", "Current set of collision groups. NOTE: This is a bitfield, NOT a normal number.")
 {
 	object_h *objh = NULL;
 	int id = 0;
@@ -343,6 +355,8 @@ ADE_FUNC(addToCollisionGroup, l_Object, "number group", "Adds this object to the
 
 	if (group >= 0 && group <= 31)
 		objh->objp->collision_group_id |= (1 << group);
+	else
+		Warning(LOCATION, "In addToCollisionGroup, group %d must be between 0 and 31, inclusive", group);
 
 	return ADE_RETURN_NIL;
 }
@@ -360,6 +374,8 @@ ADE_FUNC(removeFromCollisionGroup, l_Object, "number group", "Removes this objec
 
 	if (group >= 0 && group <= 31)
 		objh->objp->collision_group_id &= ~(1 << group);
+	else
+		Warning(LOCATION, "In removeFromCollisionGroup, group %d must be between 0 and 31, inclusive", group);
 
 	return ADE_RETURN_NIL;
 }

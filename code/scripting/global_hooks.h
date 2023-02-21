@@ -6,7 +6,6 @@ namespace scripting {
 namespace hooks {
 
 extern const std::shared_ptr<Hook<>>									OnGameInit;
-extern const std::shared_ptr<OverridableHook<>>							OnSplashScreen;
 //The On State Start hook previously used to pass OldState to the conditions, but no semantically sensible condition read the value, so we pretend it has no local condition
 extern const std::shared_ptr<OverridableHook<>>							OnStateStart;
 
@@ -30,6 +29,7 @@ extern const std::shared_ptr<Hook<ShipSourceConditions>>				OnWaypointsDone;
 extern const std::shared_ptr<Hook<ShipSourceConditions>>				OnGoalsCleared;
 
 extern const std::shared_ptr<Hook<ShipSourceConditions>>				OnDebrisCreated;
+extern const std::shared_ptr<Hook<>>									OnAsteroidCreated;
 
 extern const std::shared_ptr<OverridableHook<CollisionConditions>>		OnShipCollision;
 extern const std::shared_ptr<OverridableHook<CollisionConditions>>		OnWeaponCollision;
@@ -78,6 +78,7 @@ extern const std::shared_ptr<OverridableHook<>>							OnStateEndHook;
 extern const std::shared_ptr<Hook<>>									OnCameraSetUpHook;
 
 // deprecated
+extern const std::shared_ptr<OverridableHook<>>							OnSplashScreen;
 extern const std::shared_ptr<OverridableHook<ObjectDeathConditions>>	OnDeath;
 
 }

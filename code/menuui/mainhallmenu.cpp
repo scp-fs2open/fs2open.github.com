@@ -847,19 +847,6 @@ void main_hall_do(float frametime)
 			gamesnd_play_iface(InterfaceSounds::IFACE_MOUSE_CLICK);
 			gameseq_post_event(GS_EVENT_LAB);
 			break;
-	#ifndef NDEBUG
-		case KEY_1:
-			// no soup for you!
-			movie::play("endprt2b.mve");
-			break;
-		case KEY_2:
-			// no soup for you!
-			movie::play_two("endprt2a.mve", "endprt2b.mve");
-			break;
-		case KEY_3:
-			main_hall_campaign_cheat();
-			break;
-	#endif
 	}
 
 	// do any processing based upon what happened to the snazzy menu

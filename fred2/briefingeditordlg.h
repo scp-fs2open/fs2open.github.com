@@ -54,6 +54,7 @@ public:
 	int		m_icon_image;
 	CString	m_icon_label;
 	CString	m_icon_closeup_label;
+	int		m_icon_scale;
 	CString	m_stage_title;
 	CString	m_text;
 	CString	m_time;
@@ -66,6 +67,7 @@ public:
 	CString	m_substitute_briefing_music;
 	BOOL	m_cut_next;
 	BOOL	m_cut_prev;
+	BOOL	m_no_grid;
 	int		m_current_briefing;
 	BOOL	m_flipicon;
 	BOOL	m_use_wing;

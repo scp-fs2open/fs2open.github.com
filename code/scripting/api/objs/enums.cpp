@@ -327,7 +327,7 @@ ADE_FUNC(__mul,
 	return ade_set_args(L, "o", l_Enum.Set(*e1 & *e2));
 }
 
-ADE_VIRTVAR_DEPRECATED(IntValue, l_Enum, "enumeration", "Internal value of the enum.  Probably not useful unless this enum is a bitfield or corresponds to a #define somewhere else in the source code.", "number", "Integer (index) value of the enum", gameversion::version(22, 4), "Deprecated in favor of Value")
+ADE_VIRTVAR_DEPRECATED(IntValue, l_Enum, "enumeration", "Internal value of the enum.  Probably not useful unless this enum is a bitfield or corresponds to a #define somewhere else in the source code.", "number", "Integer (index) value of the enum", gameversion::version(23), "Deprecated in favor of Value")
 {
 	enum_h* e = nullptr;
 	if (!ade_get_args(L, "o", l_Enum.GetPtr(&e))) {

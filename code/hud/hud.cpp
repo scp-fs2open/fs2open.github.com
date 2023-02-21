@@ -2835,15 +2835,16 @@ int hud_get_dock_time( object *docker_objp )
  */
 int hud_support_find_closest( int objnum )
 {
-	ship_obj		*sop;
 	ai_info		*aip;
 	object		*objp;
 	int i;
 
 	objp = &Objects[objnum];
 
-	sop = GET_FIRST(&Ship_obj_list);
-	while(sop != END_OF_LIST(&Ship_obj_list)){
+	for (auto sop: list_range(&Ship_obj_list)) {
+		if (Objects[sop->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		if ( Ship_info[Ships[Objects[sop->objnum].instance].ship_info_index].flags[Ship::Info_Flags::Support] ) {
 			int pship_index, sindex;
 
@@ -2870,7 +2871,6 @@ int hud_support_find_closest( int objnum )
 				}
 			}
 		}
-		sop = GET_NEXT(sop);
 	}
 
 	return -1;

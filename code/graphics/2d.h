@@ -212,30 +212,10 @@ enum shader_type {
 	NUM_SHADER_TYPES
 };
 
+
 // Shader flags
-#define SDR_FLAG_MODEL_LIGHT		(1<<0)
-#define SDR_FLAG_MODEL_FOG			(1<<1)
-#define SDR_FLAG_MODEL_DIFFUSE_MAP	(1<<2)
-#define SDR_FLAG_MODEL_GLOW_MAP		(1<<3)
-#define SDR_FLAG_MODEL_SPEC_MAP		(1<<4)
-#define SDR_FLAG_MODEL_NORMAL_MAP	(1<<5)
-#define SDR_FLAG_MODEL_HEIGHT_MAP	(1<<6)
-#define SDR_FLAG_MODEL_ENV_MAP		(1<<7)
-#define SDR_FLAG_MODEL_ANIMATED		(1<<8)
-#define SDR_FLAG_MODEL_MISC_MAP		(1<<9)
-#define SDR_FLAG_MODEL_TEAMCOLOR	(1<<10)
-#define SDR_FLAG_MODEL_TRANSFORM	(1<<11)
-#define SDR_FLAG_MODEL_DEFERRED		(1<<12)
 #define SDR_FLAG_MODEL_SHADOW_MAP	(1<<13)
-#define SDR_FLAG_MODEL_GEOMETRY		(1<<14)
-#define SDR_FLAG_MODEL_SHADOWS		(1<<15)
-#define SDR_FLAG_MODEL_THRUSTER		(1<<16)
-#define SDR_FLAG_MODEL_CLIP			(1<<17)
-#define SDR_FLAG_MODEL_HDR			(1<<18)
-#define SDR_FLAG_MODEL_AMBIENT_MAP	(1<<19)
-#define SDR_FLAG_MODEL_UNUSED20		(1<<20)
 #define SDR_FLAG_MODEL_THICK_OUTLINES (1<<21) // Renders the model geometry as an outline with configurable line width
-#define SDR_FLAG_MODEL_ALPHA_MULT (1<<22) 
 
 #define SDR_FLAG_PARTICLE_POINT_GEN			(1<<0)
 
@@ -245,6 +225,7 @@ enum shader_type {
 #define SDR_FLAG_NANOVG_EDGE_AA		(1<<0)
 
 #define SDR_FLAG_DECAL_USE_NORMAL_MAP (1<<0)
+
 
 enum class uniform_block_type {
 	Lights = 0,
@@ -360,7 +341,6 @@ extern int gr_stencil_mode;
  * of the values you want to use in the shade primitive.
  */
 typedef struct shader {
-	uint screen_sig;  // current mode this is in
 	ubyte r, g, b, c; // factors and constant
 	ubyte lookup[256];
 } shader;
@@ -373,7 +353,6 @@ typedef struct shader {
 // If you need to get the rgb values of a "color" struct call
 // gr_get_colors after calling gr_set_colors_fast.
 typedef struct color {
-	uint		screen_sig;
 	int		is_alphacolor;
 	int		alphacolor;
 	int		magic;
@@ -654,7 +633,6 @@ enum class BufferUsageHint { Static, Dynamic, Streaming, PersistentMapping };
 typedef void* gr_sync;
 
 typedef struct screen {
-	uint signature = 0;       // changes when mode or palette or width or height changes
 	int max_w = 0, max_h = 0; // Width and height
 	int max_w_unscaled = 0, max_h_unscaled = 0;
 	int max_w_unscaled_zoomed = 0, max_h_unscaled_zoomed = 0;
@@ -920,6 +898,8 @@ typedef struct screen {
 	std::function<void(gr_sync sync)> gf_sync_delete;
 
 	std::function<void(int x, int y, int width, int height)> gf_set_viewport;
+
+	std::function<void(bool set_override)> gf_override_fog;
 } screen;
 
 // handy macro
@@ -1123,6 +1103,8 @@ inline void gr_post_process_restore_zbuffer()
 #define gr_shadow_map_start				GR_CALL(gr_screen.gf_shadow_map_start)
 #define gr_shadow_map_end				GR_CALL(gr_screen.gf_shadow_map_end)
 #define gr_render_shield_impact			GR_CALL(gr_screen.gf_render_shield_impact)
+
+#define gr_override_fog					GR_CALL(gr_screen.gf_override_fog)
 
 inline void gr_render_primitives(material* material_info,
 	primitive_type prim_type,

@@ -26,6 +26,7 @@
 #include "missionui/missioncmdbrief.h"
 #include "missionui/redalert.h"
 #include "nebula/neb.h"
+#include "nebula/neblightning.h"
 #include "object/objcollide.h"
 #include "parse/parselo.h"
 #include "parse/sexp.h"
@@ -84,9 +85,46 @@ extern TIMESTAMP Game_shudder_time;
 extern int Game_shudder_total;
 extern float Game_shudder_intensity;
 
+constexpr int COUNT_OBJECTS = -1000;
+
+// Returns the indexth object subclass
+template <typename A>
+int object_subclass_at_index(A& object_subclass_array, size_t array_size, int index)
+{
+	int count = 0;
+
+	for (size_t i = 0; i < array_size; ++i)
+	{
+		int objnum = object_subclass_array[i].objnum;
+		if (objnum < 0 || objnum >= MAX_OBJECTS)
+			continue;
+		if (Objects[objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
+		++count;
+
+		if (count == index)
+		{
+			return object_subclass_array[i].objnum;
+		}
+	}
+
+	if (index == COUNT_OBJECTS)
+		return count;
+	else
+		return -1;
+}
+
+// Counts the number of indexable objects
+template <typename A>
+int object_subclass_count(A& object_subclass_array, size_t array_size)
+{
+	return object_subclass_at_index(object_subclass_array, array_size, COUNT_OBJECTS);
+}
+
+
 namespace scripting {
 namespace api {
-
 
 //**********LIBRARY: Mission
 ADE_LIB(l_Mission, "Mission", "mn", "Mission library");
@@ -186,12 +224,12 @@ ADE_INDEXER(l_Mission_Asteroids, "number Index", "Gets asteroid", "asteroid", "A
 	if( !ade_get_args(L, "*i", &idx) ) {
 		return ade_set_error( L, "o", l_Asteroid.Set( object_h() ) );
 	}
-	if( idx > -1 && idx < asteroid_count() ) {
-		idx--; //Convert from Lua to C, as lua indices start from 1, not 0
-		return ade_set_args(L, "o", l_Asteroid.Set(object_h(&Objects[Asteroids[idx].objnum])));
-	}
 
-	return ade_set_error(L, "o", l_Asteroid.Set( object_h() ) );
+	int objnum = -1;
+	if (idx > 0)
+		objnum = object_subclass_at_index(Asteroids, MAX_ASTEROIDS, idx);
+
+	return ade_set_args(L, "o", l_Asteroid.Set( object_h(objnum) ) );
 }
 
 ADE_FUNC(__len, l_Mission_Asteroids, NULL,
@@ -200,7 +238,7 @@ ADE_FUNC(__len, l_Mission_Asteroids, NULL,
 		 "Number of asteroids in the mission, or 0 if asteroids are not enabled")
 {
 	if(Asteroids_enabled) {
-		return ade_set_args(L, "i", asteroid_count());
+		return ade_set_args(L, "i", object_subclass_count(Asteroids, MAX_ASTEROIDS));
 	}
 	return ade_set_args(L, "i", 0);
 }
@@ -384,32 +422,20 @@ ADE_INDEXER(l_Mission_Ships, "number/string IndexOrName", "Gets ship", "ship", "
 
 	int idx = ship_name_lookup(name);
 
-	if(idx > -1)
+	if (idx >= 0)
 	{
 		return ade_set_args(L, "o", l_Ship.Set(object_h(&Objects[Ships[idx].objnum])));
 	}
 	else
 	{
 		idx = atoi(name);
-		if(idx > 0)
-		{
-			int count=1;
 
-			for(int i = 0; i < MAX_SHIPS; i++)
-			{
-				if (Ships[i].objnum < 0 || Objects[Ships[i].objnum].type != OBJ_SHIP)
-					continue;
+		int objnum = -1;
+		if (idx > 0)
+			objnum = object_subclass_at_index(Ships, MAX_SHIPS, idx);
 
-				if(count == idx) {
-					return ade_set_args(L, "o", l_Ship.Set(object_h(&Objects[Ships[i].objnum])));
-				}
-
-				count++;
-			}
-		}
+		return ade_set_args(L, "o", l_Ship.Set(object_h(objnum)));
 	}
-
-	return ade_set_error(L, "o", l_Ship.Set(object_h()));
 }
 
 ADE_FUNC(__len, l_Mission_Ships, NULL,
@@ -419,10 +445,7 @@ ADE_FUNC(__len, l_Mission_Ships, NULL,
 		 "number",
 		 "Number of ships in the mission, or 0 if ships haven't been initialized yet")
 {
-	if(Ships_inited)
-		return ade_set_args(L, "i", ship_get_num_ships());
-	else
-		return ade_set_args(L, "i", 0);
+	return ade_set_args(L, "i", object_subclass_count(Ships, MAX_SHIPS));
 }
 
 //****SUBLIBRARY: Mission/ParsedShips
@@ -480,7 +503,7 @@ ADE_INDEXER(l_Mission_Waypoints, "number Index", "Array of waypoints in the curr
 	object *ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list))
 	{
-		if (ptr->type == OBJ_WAYPOINT)
+		if (ptr->type == OBJ_WAYPOINT && !ptr->flags[Object::Object_Flags::Should_be_dead])
 			count++;
 
 		if(count == idx) {
@@ -495,11 +518,15 @@ ADE_INDEXER(l_Mission_Waypoints, "number Index", "Array of waypoints in the curr
 
 ADE_FUNC(__len, l_Mission_Waypoints, NULL, "Gets number of waypoints in mission. Note that this is only accurate for one frame.", "number", "Number of waypoints in the mission")
 {
-	uint count=0;
-	for(uint i = 0; i < MAX_OBJECTS; i++)
+	int count=0;
+
+	object *ptr = GET_FIRST(&obj_used_list);
+	while (ptr != END_OF_LIST(&obj_used_list))
 	{
-		if (Objects[i].type == OBJ_WAYPOINT)
+		if (ptr->type == OBJ_WAYPOINT && !ptr->flags[Object::Object_Flags::Should_be_dead])
 			count++;
+
+		ptr = GET_NEXT(ptr);
 	}
 
 	return ade_set_args(L, "i", count);
@@ -547,26 +574,15 @@ ADE_INDEXER(l_Mission_Weapons, "number Index", "Gets handle to a weapon object i
 	if(!ade_get_args(L, "*i", &idx))
 		return ade_set_error(L, "o", l_Weapon.Set(object_h()));
 
-	//Remember, Lua indices start at 0.
-	int count=1;
+	int objnum = -1;
+	if (idx > 0)
+		objnum = object_subclass_at_index(Weapons, MAX_WEAPONS, idx);
 
-	for(int i = 0; i < MAX_WEAPONS; i++)
-	{
-		if (Weapons[i].weapon_info_index < 0 || Weapons[i].objnum < 0 || Objects[Weapons[i].objnum].type != OBJ_WEAPON)
-			continue;
-
-		if(count == idx) {
-			return ade_set_args(L, "o", l_Weapon.Set(object_h(&Objects[Weapons[i].objnum])));
-		}
-
-		count++;
-	}
-
-	return ade_set_error(L, "o", l_Weapon.Set(object_h()));
+	return ade_set_args(L, "o", l_Weapon.Set(object_h(objnum)));
 }
 ADE_FUNC(__len, l_Mission_Weapons, NULL, "Number of weapon objects in mission. Note that this is only accurate for one frame.", "number", "Number of weapon objects in mission")
 {
-	return ade_set_args(L, "i", Num_weapons);
+	return ade_set_args(L, "i", object_subclass_count(Weapons, MAX_WEAPONS));
 }
 
 //****SUBLIBRARY: Mission/Beams
@@ -578,26 +594,15 @@ ADE_INDEXER(l_Mission_Beams, "number Index", "Gets handle to a beam object in th
 	if(!ade_get_args(L, "*i", &idx))
 		return ade_set_error(L, "o", l_Beam.Set(object_h()));
 
-	//Remember, Lua indices start at 0.
-	int count=1;
+	int objnum = -1;
+	if (idx > 0)
+		objnum = object_subclass_at_index(Beams, MAX_BEAMS, idx);
 
-	for(int i = 0; i < MAX_BEAMS; i++)
-	{
-		if (Beams[i].weapon_info_index < 0 || Beams[i].objnum < 0 || Objects[Beams[i].objnum].type != OBJ_BEAM)
-			continue;
-
-		if(count == idx) {
-			return ade_set_args(L, "o", l_Beam.Set(object_h(&Objects[Beams[i].objnum])));
-		}
-
-		count++;
-	}
-
-	return ade_set_error(L, "o", l_Beam.Set(object_h()));
+	return ade_set_args(L, "o", l_Beam.Set(object_h(objnum)));
 }
 ADE_FUNC(__len, l_Mission_Beams, NULL, "Number of beam objects in mission. Note that this is only accurate for one frame.", "number", "Number of beam objects in mission")
 {
-	return ade_set_args(L, "i", Beam_count);
+	return ade_set_args(L, "i", object_subclass_count(Beams, MAX_BEAMS));
 }
 
 //****SUBLIBRARY: Mission/Wings
@@ -797,27 +802,15 @@ ADE_INDEXER(l_Mission_Fireballs, "number Index", "Gets handle to a fireball obje
 	if (!ade_get_args(L, "*i", &idx))
 		return ade_set_error(L, "o", l_Fireball.Set(object_h()));
 
-	//Remember, Lua indices start at 1.
-	int count = 1;
+	int objnum = -1;
+	if (idx > 0)
+		objnum = object_subclass_at_index(Fireballs, MAX_FIREBALLS, idx);
 
-	for (auto& current_fireball : Fireballs) {
-		if (current_fireball.fireball_info_index < 0 || current_fireball.objnum < 0 || Objects[current_fireball.objnum].type != OBJ_FIREBALL)
-			continue;
-
-		if (count == idx) {
-			return ade_set_args(L, "o", l_Fireball.Set(object_h(&Objects[current_fireball.objnum])));
-		}
-
-		count++;
-
-	}
-
-	return ade_set_error(L, "o", l_Fireball.Set(object_h()));
+	return ade_set_args(L, "o", l_Fireball.Set(object_h(objnum)));
 }
 ADE_FUNC(__len, l_Mission_Fireballs, NULL, "Number of fireball objects in mission. Note that this is only accurate for one frame.", "number", "Number of fireball objects in mission")
 {
-	int count = fireball_get_count();
-	return ade_set_args(L, "i", count);
+	return ade_set_args(L, "i", object_subclass_count(Fireballs, MAX_FIREBALLS));
 }
 
 ADE_FUNC(addMessage, l_Mission, "string name, string text, [persona persona]", "Adds a message", "message", "The new message or invalid handle on error")
@@ -1350,6 +1343,31 @@ ADE_FUNC(createExplosion,
 		return ade_set_error(L, "o", l_Fireball.Set(object_h()));
 }
 
+ADE_FUNC(createBolt,
+	l_Mission,
+	"string BoltName, vector Origin, vector Target, [boolean PlaySound = true]",
+	"Creates a lightning bolt between the origin and target vectors. BoltName is name of a bolt from lightning.tbl",
+	"boolean",
+	"True if successful, false if the bolt could't be created.")
+{
+	const char* boltname;
+	vec3d origin = vmd_zero_vector;
+	vec3d dest = vmd_zero_vector;
+	bool playSound = true;
+
+	if (!ade_get_args(L, "soo|b", &boltname, l_Vector.Get(&origin), l_Vector.Get(&dest), &playSound)) {
+		return ADE_RETURN_FALSE;
+	}
+	
+	int boltclass = get_bolt_type_by_name(boltname);
+
+	if (boltclass < 0) {
+		return ADE_RETURN_FALSE;
+	}
+
+	return ade_set_args(L, "b", nebl_bolt(boltclass, &origin, &dest, playSound));
+}
+
 ADE_FUNC(getMissionFilename, l_Mission, NULL, "Gets mission filename", "string", "Mission filename, or empty string if game is not in a mission")
 {
 	char temp[MAX_FILENAME_LEN];
@@ -1465,11 +1483,13 @@ ADE_FUNC(loadMission, l_Mission, "string missionName", "Loads a mission", "boole
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(unloadMission, l_Mission, NULL, "Stops the current mission and unloads it", NULL, NULL)
+ADE_FUNC(unloadMission, l_Mission, "[boolean forceUnload]", "Stops the current mission and unloads it. If forceUnload is true "
+	"then the mission unload logic will run regardless of if a mission is loaded or not. Use with caution.", nullptr, nullptr)
 {
-	SCP_UNUSED(L); // unused parameter
+	bool forceUnload = false;
+	ade_get_args(L, "|b", &forceUnload);
 
-	if(Game_mode & GM_IN_MISSION)
+	if(forceUnload || Game_mode & GM_IN_MISSION)
 	{
 		game_level_close();
 		Game_mode &= ~GM_IN_MISSION;
@@ -1605,7 +1625,14 @@ ADE_VIRTVAR(Gravity, l_Mission, "vector", "Gravity acceleration vector in meters
 
 	if (ADE_SETTING_VAR && ade_get_args(L, "*o", l_Vector.GetPtr(&gravity_vec)))
 	{
+		vec3d old_gravity = The_mission.gravity;
 		The_mission.gravity = *gravity_vec;
+
+		if ((IS_VEC_NULL(&old_gravity) && !IS_VEC_NULL(&The_mission.gravity)) || 
+			(!IS_VEC_NULL(&old_gravity) && IS_VEC_NULL(&The_mission.gravity))) {
+			// gravity was turned on or turned off
+			collide_apply_gravity_flags_weapons();
+		}
 	}
 
 	return ade_set_args(L, "o", l_Vector.Set(The_mission.gravity));
@@ -2288,6 +2315,16 @@ ADE_FUNC(getShipList,
 		//Similarly, an empty list is defined by the head's next element being itself, hence an empty list will immediately return nil just fine
 		so = GET_NEXT(so);
 
+		// skip should-be-dead ships
+		if (so != nullptr) {
+			while (so != END_OF_LIST(&Ship_obj_list)) {
+				if (!Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead]) {
+					break;
+				}
+				so = GET_NEXT(so);
+			}
+		}
+
 		if (so == END_OF_LIST(&Ship_obj_list) || so == nullptr) {
 			return luacpp::LuaValueList{ luacpp::LuaValue::createNil(LInner) };
 		}
@@ -2309,6 +2346,16 @@ ADE_FUNC(getMissileList,
 		//Since the first element of a list is the next element from the head, and we start this function with the the captured "mo" object being the head, this GET_NEXT will return the first element on first call of this lambda.
 		//Similarly, an empty list is defined by the head's next element being itself, hence an empty list will immediately return nil just fine
 		mo = GET_NEXT(mo);
+
+		// skip should-be-dead missiles
+		if (mo != nullptr) {
+			while (mo != END_OF_LIST(&Missile_obj_list)) {
+				if (!Objects[mo->objnum].flags[Object::Object_Flags::Should_be_dead]) {
+					break;
+				}
+				mo = GET_NEXT(mo);
+			}
+		}
 
 		if (mo == END_OF_LIST(&Missile_obj_list) || mo == nullptr) {
 			return luacpp::LuaValueList{ luacpp::LuaValue::createNil(LInner) };

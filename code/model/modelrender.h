@@ -307,6 +307,7 @@ bool model_render_check_detail_box(vec3d *view_pos, polymodel *pm, int submodel_
 void model_render_arc(vec3d *v1, vec3d *v2, color *primary, color *secondary, float arc_width);
 void model_render_insignias(insignia_draw_data *insignia);
 void model_render_set_wireframe_color(color* clr);
+bool render_tech_model(bool is_ship, int x1, int y1, int x2, int y2, float zoom, bool lighting, int class_idx, matrix* orient);
 
 float model_render_get_diameter_clamped_to_min_pixel_size(const vec3d* pos, float diameter, float min_pixel_size);
 

@@ -47,10 +47,6 @@ target_link_libraries(code PUBLIC libRocket)
 
 target_link_libraries(code PUBLIC pcp)
 
-if (FSO_BUILD_WITH_VULKAN)
-	target_link_libraries(code PUBLIC vulkan-hpp)
-endif()
-
 target_link_libraries(code PUBLIC parsers)
 
 target_link_libraries(code PUBLIC mdns)
@@ -69,6 +65,8 @@ target_link_libraries(code PUBLIC variant)
 target_link_libraries(code PUBLIC any)
 
 target_link_libraries(code PUBLIC optional)
+
+target_link_libraries(code PUBLIC hidapi::hidapi)
 
 target_link_libraries(code PUBLIC imgui)
 
@@ -95,6 +93,10 @@ if (FSO_BUILD_WITH_OPENGL)
 endif()
 if (FSO_BUILD_WITH_VULKAN)
 	target_compile_definitions(code PUBLIC WITH_VULKAN)
+	find_package(Vulkan REQUIRED)
+	target_link_libraries(code PRIVATE Vulkan::Vulkan)
+
+	target_compile_definitions(code PUBLIC WITH_VULKAN VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1 VK_NO_PROTOTYPES)
 endif()
 
 include(shaders.cmake)

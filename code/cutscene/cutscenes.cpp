@@ -175,6 +175,9 @@ void parse_cutscene_table(const char* filename)
 				if (flag)
 					csnp->flags.set(Cutscene::Cutscene_Flags::Never_viewable);
 			}
+			if (optional_string("$Custom data:")) {
+				parse_string_map(csnp->custom_data, "$end_custom_data", "+Val:");
+			}
 
 		}
 
