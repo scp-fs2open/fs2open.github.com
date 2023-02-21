@@ -612,6 +612,8 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$use adjusted AI class autoscale:", AI::Profile_Flags::Adjusted_AI_class_autoscale);
 
+				set_flag(profile, "$carry shield difficulty scaling bug:", AI::Profile_Flags::Carry_shield_difficulty_scaling_bug);
+
 
 				// if we've been through once already and are at the same place, force a move
 				if (saved_Mp && (saved_Mp == Mp))
@@ -654,12 +656,21 @@ void ai_profiles_init()
 	// init retail entry first
 	parse_ai_profiles_tbl(NULL);
 
+	// Allow mission_profiles.tbl to be a alias of ai_profiles.tbl, but only load one or the other.
+	// mission_profiles.tbl would be newer so assume intended, but print to the log to be sure - Mjn
+	char filename[MAX_FILENAME_LEN] = "ai_profiles.tbl";
+	if (cf_exists_full("mission_profiles.tbl", CF_TYPE_TABLES)) {
+		mprintf(("mission_profiles.tbl was found! Using that instead of ai_profiles.tbl...\n"));
+		strcpy_s(filename, "mission_profiles.tbl");
+	}
+
 	// now parse the supplied table (if any)
-	if (cf_exists_full("ai_profiles.tbl", CF_TYPE_TABLES))
-		parse_ai_profiles_tbl("ai_profiles.tbl");
+	if (cf_exists_full(filename, CF_TYPE_TABLES))
+		parse_ai_profiles_tbl(filename);
 
 	// parse any modular tables
 	parse_modular_table("*-aip.tbm", parse_ai_profiles_tbl);
+	parse_modular_table("*-msp.tbm", parse_ai_profiles_tbl);
 
 	// set default if specified
 	temp = ai_profile_lookup(Default_profile_name);
@@ -771,6 +782,10 @@ void ai_profile_t::reset()
 	// and this flag has been enabled ever since 3.6.10
 	if (mod_supports_version(3, 6, 10)) {
 		flags.set(AI::Profile_Flags::Reset_last_hit_target_time_for_player_hits);
+	}
+	// backwards compatible flag for a bug accidentally introduced during this time
+	if (mod_supports_version(3, 6, 14) && !mod_supports_version(23, 1, 0)) {
+		flags.set(AI::Profile_Flags::Carry_shield_difficulty_scaling_bug);
 	}
 	if (mod_supports_version(21, 4, 0)) {
 		flags.set(AI::Profile_Flags::Fixed_ship_weapon_collision);

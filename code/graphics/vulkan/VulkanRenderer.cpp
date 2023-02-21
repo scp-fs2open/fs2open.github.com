@@ -3,6 +3,8 @@
 
 #include "globalincs/version.h"
 
+#include "backends/imgui_impl_sdl.h"
+#include "backends/imgui_impl_vulkan.h"
 #include "def_files/def_files.h"
 #include "graphics/2d.h"
 #include "libs/renderdoc/renderdoc.h"
@@ -69,7 +71,7 @@ bool isDeviceUnsuitable(PhysicalDeviceValues& values, const vk::UniqueSurfaceKHR
 		values.properties.deviceType != vk::PhysicalDeviceType::eIntegratedGpu &&
 		values.properties.deviceType != vk::PhysicalDeviceType::eVirtualGpu) {
 		mprintf(("Rejecting %s (%d) because the device type is unsuitable.\n",
-			values.properties.deviceName,
+			values.properties.deviceName.data(),
 			values.properties.deviceID));
 		return true;
 	}
@@ -99,33 +101,33 @@ bool isDeviceUnsuitable(PhysicalDeviceValues& values, const vk::UniqueSurfaceKHR
 
 	if (!values.graphicsQueueIndex.initialized) {
 		mprintf(("Rejecting %s (%d) because the device does not have a graphics queue.\n",
-			values.properties.deviceName,
+			values.properties.deviceName.data(),
 			values.properties.deviceID));
 		return true;
 	}
 	if (!values.transferQueueIndex.initialized) {
 		mprintf(("Rejecting %s (%d) because the device does not have a transfer queue.\n",
-			values.properties.deviceName,
+			values.properties.deviceName.data(),
 			values.properties.deviceID));
 		return true;
 	}
 	if (!values.presentQueueIndex.initialized) {
 		mprintf(("Rejecting %s (%d) because the device does not have a presentation queue.\n",
-			values.properties.deviceName,
+			values.properties.deviceName.data(),
 			values.properties.deviceID));
 		return true;
 	}
 
 	if (!checkDeviceExtensionSupport(values)) {
 		mprintf(("Rejecting %s (%d) because the device does not support our required extensions.\n",
-			values.properties.deviceName,
+			values.properties.deviceName.data(),
 			values.properties.deviceID));
 		return true;
 	}
 
 	if (!checkSwapChainSupport(values, surface)) {
 		mprintf(("Rejecting %s (%d) because the device swap chain was not compatible.\n",
-			values.properties.deviceName,
+			values.properties.deviceName.data(),
 			values.properties.deviceID));
 		return true;
 	}
@@ -133,7 +135,7 @@ bool isDeviceUnsuitable(PhysicalDeviceValues& values, const vk::UniqueSurfaceKHR
 	return false;
 }
 
-int32_t deviceTypeScore(vk::PhysicalDeviceType type)
+uint32_t deviceTypeScore(vk::PhysicalDeviceType type)
 {
 	switch (type) {
 	case vk::PhysicalDeviceType::eIntegratedGpu:
@@ -141,17 +143,19 @@ int32_t deviceTypeScore(vk::PhysicalDeviceType type)
 	case vk::PhysicalDeviceType::eDiscreteGpu:
 		return 2;
 	case vk::PhysicalDeviceType::eVirtualGpu:
-		return 0;
+	case vk::PhysicalDeviceType::eCpu:
+	case vk::PhysicalDeviceType::eOther:
 	default:
-		return -1;
+		return 0;
 	}
 }
 
-int32_t scoreDevice(const PhysicalDeviceValues& device)
+uint32_t scoreDevice(const PhysicalDeviceValues& device)
 {
-	int32_t score = 0;
+	uint32_t score = 0;
 
 	score += deviceTypeScore(device.properties.deviceType) * 1000;
+	score += device.properties.apiVersion * 100;
 
 	return score;
 }
@@ -164,7 +168,7 @@ bool compareDevices(const PhysicalDeviceValues& left, const PhysicalDeviceValues
 void printPhysicalDevice(const PhysicalDeviceValues& values)
 {
 	mprintf(("  Found %s (%d) of type %s. API version %d.%d.%d, Driver version %d.%d.%d. Scored as %d\n",
-		values.properties.deviceName,
+		values.properties.deviceName.data(),
 		values.properties.deviceID,
 		to_string(values.properties.deviceType).c_str(),
 		VK_VERSION_MAJOR(values.properties.apiVersion),
@@ -282,15 +286,15 @@ bool VulkanRenderer::initialize()
 	return true;
 }
 
-bool VulkanRenderer::initDisplayDevice()
+bool VulkanRenderer::initDisplayDevice() const
 {
 	os::ViewPortProperties attrs;
 	attrs.enable_opengl = false;
 	attrs.enable_vulkan = true;
 
 	attrs.display = os_config_read_uint("Video", "Display", 0);
-	attrs.width = (uint32_t)gr_screen.max_w;
-	attrs.height = (uint32_t)gr_screen.max_h;
+	attrs.width = static_cast<uint32_t>(gr_screen.max_w);
+	attrs.height = static_cast<uint32_t>(gr_screen.max_h);
 
 	attrs.title = Osreg_title;
 	if (!Window_title.empty()) {
@@ -322,7 +326,7 @@ bool VulkanRenderer::initDisplayDevice()
 		return false;
 	}
 
-	auto port = os::addViewport(std::move(viewPort));
+	const auto port = os::addViewport(std::move(viewPort));
 	os::setMainViewPort(port);
 
 	return true;
@@ -367,7 +371,7 @@ bool VulkanRenderer::initializeInstance()
 	const auto supportedExtensions = vk::enumerateInstanceExtensionProperties();
 	mprintf(("Instance extensions:\n"));
 	for (const auto& ext : supportedExtensions) {
-		mprintf(("  Found support for %s version %" PRIu32 "\n", ext.extensionName, ext.specVersion));
+		mprintf(("  Found support for %s version %" PRIu32 "\n", ext.extensionName.data(), ext.specVersion));
 		if (FSO_DEBUG || Cmdline_graphics_debug_output) {
 			if (!stricmp(ext.extensionName, VK_EXT_DEBUG_REPORT_EXTENSION_NAME)) {
 				extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
@@ -381,8 +385,8 @@ bool VulkanRenderer::initializeInstance()
 	mprintf(("Instance layers:\n"));
 	for (const auto& layer : supportedLayers) {
 		mprintf(("  Found layer %s(%s). Spec version %d.%d.%d and implementation %" PRIu32 "\n",
-			layer.layerName,
-			layer.description,
+			layer.layerName.data(),
+			layer.description.data(),
 			VK_VERSION_MAJOR(layer.specVersion),
 			VK_VERSION_MINOR(layer.specVersion),
 			VK_VERSION_PATCH(layer.specVersion),
@@ -450,7 +454,7 @@ bool VulkanRenderer::initializeSurface()
 		return false;
 	}
 
-	vk::ObjectDestroy<vk::Instance, VULKAN_HPP_DEFAULT_DISPATCHER_TYPE> deleter(*m_vkInstance,
+	const vk::ObjectDestroy<vk::Instance, VULKAN_HPP_DEFAULT_DISPATCHER_TYPE> deleter(*m_vkInstance,
 		nullptr,
 		VULKAN_HPP_DEFAULT_DISPATCHER);
 	m_vkSurface = vk::UniqueSurfaceKHR(vk::SurfaceKHR(surface), deleter);
@@ -494,24 +498,24 @@ bool VulkanRenderer::pickPhysicalDevice(PhysicalDeviceValues& deviceValues)
 
 	deviceValues = values.back();
 	mprintf(("Selected device %s (%d) as the primary Vulkan device.\n",
-		deviceValues.properties.deviceName,
+		deviceValues.properties.deviceName.data(),
 		deviceValues.properties.deviceID));
 	mprintf(("Device extensions:\n"));
 	for (const auto& extProp : deviceValues.extensions) {
-		mprintf(("  Found support for %s version %" PRIu32 "\n", extProp.extensionName, extProp.specVersion));
+		mprintf(("  Found support for %s version %" PRIu32 "\n", extProp.extensionName.data(), extProp.specVersion));
 	}
 
 	return true;
 }
 
-bool VulkanRenderer::createLogicalDevice(PhysicalDeviceValues& deviceValues)
+bool VulkanRenderer::createLogicalDevice(const PhysicalDeviceValues& deviceValues)
 {
 	float queuePriority = 1.0f;
 
 	std::vector<vk::DeviceQueueCreateInfo> queueInfos;
-	std::set<uint32_t> familyIndices{deviceValues.graphicsQueueIndex.index,
-		deviceValues.transferQueueIndex.index,
-		deviceValues.presentQueueIndex.index};
+	const std::set<uint32_t> familyIndices{deviceValues.graphicsQueueIndex.index,
+	                                       deviceValues.transferQueueIndex.index,
+	                                       deviceValues.presentQueueIndex.index};
 
 	queueInfos.reserve(familyIndices.size());
 	for (auto index : familyIndices) {
@@ -535,7 +539,7 @@ bool VulkanRenderer::createLogicalDevice(PhysicalDeviceValues& deviceValues)
 
 	return true;
 }
-bool VulkanRenderer::createSwapChain(PhysicalDeviceValues& deviceValues)
+bool VulkanRenderer::createSwapChain(const PhysicalDeviceValues& deviceValues)
 {
 	// Choose one more than the minimum to avoid driver synchronization if it is not done with a thread yet
 	uint32_t imageCount = deviceValues.surfaceCapabilities.minImageCount + 1;
@@ -555,7 +559,7 @@ bool VulkanRenderer::createSwapChain(PhysicalDeviceValues& deviceValues)
 	createInfo.imageArrayLayers = 1;
 	createInfo.imageUsage = vk::ImageUsageFlagBits::eColorAttachment;
 
-	uint32_t queueFamilyIndices[] = {deviceValues.graphicsQueueIndex.index, deviceValues.presentQueueIndex.index};
+	const uint32_t queueFamilyIndices[] = {deviceValues.graphicsQueueIndex.index, deviceValues.presentQueueIndex.index};
 	if (deviceValues.graphicsQueueIndex.index != deviceValues.presentQueueIndex.index) {
 		createInfo.imageSharingMode = vk::SharingMode::eConcurrent;
 		createInfo.queueFamilyIndexCount = 2;
@@ -603,11 +607,11 @@ bool VulkanRenderer::createSwapChain(PhysicalDeviceValues& deviceValues)
 }
 vk::UniqueShaderModule VulkanRenderer::loadShader(const SCP_string& name)
 {
-	auto def_file = defaults_get_file(name.c_str());
+	const auto def_file = defaults_get_file(name.c_str());
 
 	vk::ShaderModuleCreateInfo createInfo;
 	createInfo.codeSize = def_file.size;
-	createInfo.pCode = reinterpret_cast<const uint32_t*>(def_file.data);
+	createInfo.pCode = static_cast<const uint32_t*>(def_file.data);
 
 	return m_device->createShaderModuleUnique(createInfo);
 }
@@ -615,7 +619,7 @@ void VulkanRenderer::createFrameBuffers()
 {
 	m_swapChainFramebuffers.reserve(m_swapChainImageViews.size());
 	for (const auto& imageView : m_swapChainImageViews) {
-		vk::ImageView attachments[] = {
+		const vk::ImageView attachments[] = {
 			imageView.get(),
 		};
 
@@ -791,7 +795,7 @@ void VulkanRenderer::createGraphicsPipeline()
 	pipelineInfo.basePipelineHandle = nullptr;
 	pipelineInfo.basePipelineIndex = -1;
 
-	m_graphicsPipeline = m_device->createGraphicsPipelineUnique(nullptr, pipelineInfo);
+	m_graphicsPipeline = m_device->createGraphicsPipelineUnique(nullptr, pipelineInfo).value;
 }
 void VulkanRenderer::createCommandPool(const PhysicalDeviceValues& values)
 {

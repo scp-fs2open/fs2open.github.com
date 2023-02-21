@@ -97,7 +97,7 @@ DCF_INT2(sn_part, sn_particles, 0, INT_MAX, "Sets number of supernova particles 
 void supernova_do_particles()
 {
 	int idx;
-	vec3d a, b, ta, tb;
+	vec3d a, b;
 	vec3d norm, sun_temp;
 
 	// no player ship
@@ -128,7 +128,8 @@ void supernova_do_particles()
 
 		// emit
 		for(idx=0; idx<10; idx++) {
-			submodel_get_two_random_points_better(Ship_info[Player_ship->ship_info_index].model_num, 0, &ta, &tb);
+			vec3d ta = submodel_get_random_point(Ship_info[Player_ship->ship_info_index].model_num, 0);
+			vec3d tb = submodel_get_random_point(Ship_info[Player_ship->ship_info_index].model_num, 0);
 
 			// rotate into world space
 			vm_vec_unrotate(&a, &ta, &Player_obj->orient);

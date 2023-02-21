@@ -1405,7 +1405,7 @@ bool game_start_mission()
 		if ( !(Game_mode & GM_MULTIPLAYER) ) {
 			// the version will have been assigned before loading was aborted
 			if (!gameversion::check_at_least(The_mission.required_fso_version)) {
-				popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("This mission requires FSO version %s", 1671), format_version(The_mission.required_fso_version).c_str());
+				popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("This mission requires FSO version %s", 1671), format_version(The_mission.required_fso_version, true).c_str());
 			}
 			// standard load failure
 			else {
@@ -1875,7 +1875,7 @@ void game_init()
 
 	control_config_common_init();				// sets up localization stuff in the control config
 
-	parse_rank_tbl();
+	rank_init();
 	parse_traitor_tbl();
 	medals_init();
 
@@ -1983,6 +1983,10 @@ void game_init()
 	Script_system.RunInitFunctions();
 	if (scripting::hooks::OnGameInit->isActive()) {
 		scripting::hooks::OnGameInit->run();
+	}
+	//Technically after the splash screen, but the best we can do these days. Since the override is hard-deprecated, we don't need to check it.
+	if (scripting::hooks::OnSplashScreen->isActive()) {
+		scripting::hooks::OnSplashScreen->run();
 	}
 
 	game_title_screen_close();
@@ -2942,8 +2946,13 @@ void apply_view_shake(matrix *eye_orient)
 	tangles.h = 0.0f;
 	tangles.b = 0.0f;
 
-	// do shakes that only affect the HUD (unless disabled by cmdline in singleplayer)
-	if (Viewer_obj == Player_obj && (!Cmdline_no_screenshake || Game_mode & GM_MULTIPLAYER)) {
+	bool do_hud_shudder = (Viewer_obj == Player_obj);
+
+	if ((Viewer_mode & VM_CHASE) && Apply_shudder_to_chase_view)
+		do_hud_shudder = true;
+
+	// do shakes that only affect the HUD (unless disabled by cmdline in singleplayer or enabled by mod flag)
+	if (do_hud_shudder && (!Cmdline_no_screenshake || Game_mode & GM_MULTIPLAYER)) {
 		physics_info *pi = &Player_obj->phys_info;
 
 		// Make eye shake due to afterburner
@@ -3435,8 +3444,10 @@ void game_render_frame( camid cid )
 		gr_end_proj_matrix();
 		gr_end_view_matrix();
 
+		gr_override_fog(true);
 		GR_DEBUG_SCOPE("Render Cockpit");
 		ship_render_player_ship(Viewer_obj);
+		gr_override_fog(false);
 
 		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
 		gr_set_view_matrix(&Eye_position, &Eye_matrix);
@@ -7451,53 +7462,42 @@ int game_hacked_data()
 
 void game_title_screen_display()
 {
-	bool condhook_override = false;
-	if (scripting::hooks::OnSplashScreen->isActive()) {
-		condhook_override = scripting::hooks::OnSplashScreen->isOverride();
+	//As the script system isn't available here (it needs tables loaded and stuff), the on Splash Screen hook is removed from here.
+	//It is deprecated as of 23.0 (where it was nonfunctional anyways), and will only be called for compatibility once the init has occurred after the splash screen -Lafiel
+
+	Game_title_logo = bm_load(Game_logo_screen_fname[gr_screen.res]);
+
+	if (!Splash_screens.empty()) {
+		Game_title_bitmap = bm_load(Splash_screens[Random::next(0, (int)Splash_screens.size() - 1)].c_str());
+	} else {
+		Game_title_bitmap = bm_load(Game_title_screen_fname[gr_screen.res]);
 	}
 
-	mprintf(("SCRIPTING: Splash screen overrides checked\n"));
-	if(!condhook_override)
+	if (Game_title_bitmap != -1)
 	{
-		Game_title_logo = bm_load(Game_logo_screen_fname[gr_screen.res]);
+		// set
+		gr_set_bitmap(Game_title_bitmap);
 
-		if (!Splash_screens.empty()) {
-			Game_title_bitmap = bm_load(Splash_screens[Random::next(0, (int)Splash_screens.size())].c_str());
-		} else {
-			Game_title_bitmap = bm_load(Game_title_screen_fname[gr_screen.res]);
-		}
+		// get bitmap's width and height
+		int width, height;
+		bm_get_info(Game_title_bitmap, &width, &height);
 
-		if (Game_title_bitmap != -1)
+		// set the screen scale to the bitmap's dimensions
+		gr_set_screen_scale(width, height);
+
+		// draw it in the center of the screen
+		gr_bitmap((gr_screen.max_w_unscaled - width)/2, (gr_screen.max_h_unscaled - height)/2, GR_RESIZE_MENU);
+
+		if (Game_title_logo != -1)
 		{
-			// set
-			gr_set_bitmap(Game_title_bitmap);
+			gr_set_bitmap(Game_title_logo);
 
-			// get bitmap's width and height
-			int width, height;
-			bm_get_info(Game_title_bitmap, &width, &height);
+			gr_bitmap(0, 0, GR_RESIZE_MENU);
 
-			// set the screen scale to the bitmap's dimensions
-			gr_set_screen_scale(width, height);
-
-			// draw it in the center of the screen
-			gr_bitmap((gr_screen.max_w_unscaled - width)/2, (gr_screen.max_h_unscaled - height)/2, GR_RESIZE_MENU);
-
-			if (Game_title_logo != -1)
-			{
-				gr_set_bitmap(Game_title_logo);
-
-				gr_bitmap(0, 0, GR_RESIZE_MENU);
-
-			}
-
-			gr_reset_screen_scale();
 		}
+
+		gr_reset_screen_scale();
 	}
-
-	if (scripting::hooks::OnSplashScreen->isActive())
-		scripting::hooks::OnSplashScreen->run();
-
-	mprintf(("SCRIPTING: Splash screen conditional hook has been run\n"));
 
 	// flip
 	gr_flip();

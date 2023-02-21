@@ -1090,6 +1090,12 @@ int CFred_mission_save::save_briefing()
 			parse_comments();
 			fout(" %d", bs->camera_time);
 
+			if (!bs->draw_grid) {
+				if (save_format != MissionFormat::RETAIL) {
+					fout("\n$no_grid");
+				}
+			}
+
 			required_string_fred("$num_lines:");
 			parse_comments();
 			fout(" %d", bs->num_lines);
@@ -1166,6 +1172,15 @@ int CFred_mission_save::save_briefing()
 
 						fout_ext(" ", "%s", bi->closeup_label);
 					}
+				}
+
+				if (save_format != MissionFormat::RETAIL) {
+					if (optional_string_fred("$icon scale:"))
+						parse_comments();
+					else
+						fout("\n$icon scale:");
+
+					fout(" %d", bi->scale);
 				}
 
 				if (optional_string_fred("+id:")) {
@@ -2215,7 +2230,8 @@ int CFred_mission_save::save_mission_info()
 
 	required_string_fred("$Version:");
 	parse_comments(2);
-	fout(" %d.%d.%d", The_mission.required_fso_version.major, The_mission.required_fso_version.minor, The_mission.required_fso_version.build);
+	// Since previous versions of FreeSpace interpret this as a float, this can only have one decimal point
+	fout(" %d.%d", The_mission.required_fso_version.major, The_mission.required_fso_version.minor);
 
 	// XSTR
 	required_string_fred("$Name:");
@@ -2224,7 +2240,7 @@ int CFred_mission_save::save_mission_info()
 
 	required_string_fred("$Author:");
 	parse_comments();
-	fout(" %s", The_mission.author);
+	fout(" %s", The_mission.author.c_str());
 
 	required_string_fred("$Created:");
 	parse_comments();

@@ -174,7 +174,7 @@ static auto WindowModeOption = options::OptionBuilder<os::ViewportState>("Graphi
 								   .finish();
 
 const std::shared_ptr<scripting::OverridableHook<>> OnFrameHook = scripting::OverridableHook<>::Factory(
-	"On Frame", "Called every frame as the last action before showing the frame result to the user.", {}, CHA_ONFRAME);
+	"On Frame", "Called every frame as the last action before showing the frame result to the user.", {}, tl::nullopt, CHA_ONFRAME);
 
 // z-buffer stuff
 int gr_zbuffering        = 0;
@@ -1536,6 +1536,9 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 	if (d_depth != GR_DEFAULT) {
 		depth = d_depth;
 	}
+
+	if (Cmdline_vulkan)
+		mode = GR_VULKAN;
 
 	// if we are in standalone mode then just use special defaults
 	if (Is_standalone) {

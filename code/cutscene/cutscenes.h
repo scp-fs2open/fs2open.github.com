@@ -32,6 +32,7 @@ typedef struct cutscene_info
 	char name[NAME_LENGTH];
 	char* description;
 	flagset<Cutscene::Cutscene_Flags> flags;
+	SCP_map<SCP_string, SCP_string> custom_data;
 } cutscene_info;
 
 extern SCP_vector<cutscene_info> Cutscenes;

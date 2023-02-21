@@ -26,7 +26,7 @@ void credits_init();
 void credits_do_frame(float frametime);
 void credits_close();
 
-void credits_parse();
+void credits_parse(bool split_lines = true);
 void credits_scp_position();
 const char* credits_get_music_filename(const char* music);
 extern SCP_vector<SCP_string> Credit_text_parts;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "globalincs/pstypes.h"
+#include "globalincs/version.h"
 
 #include "ade_api.h"
 #include "scripting.h"
@@ -8,6 +9,7 @@
 #include "utils/tuples.h"
 
 #include <utility>
+#include <tl/optional.hpp>
 
 namespace scripting {
 
@@ -94,6 +96,16 @@ struct HookVariableDocumentation {
 	HookVariableDocumentation(const char* name_, scripting::ade_type_info type_, const char* description_);
 };
 
+struct HookDeprecationOptions {
+	gameversion::version deprecatedSince;
+	enum class DeprecationLevel { 
+		LEVEL_WARN, //Will warn a user if an engine version before deprecatedSince is targeted and error if a later version is targeted.
+		LEVEL_ERROR //Will always error if used.
+	} level_hook, level_override;
+
+	HookDeprecationOptions(gameversion::version version, DeprecationLevel _level_hook, DeprecationLevel _level_override) : deprecatedSince(std::move(version)), level_hook(_level_hook), level_override(_level_override) { }
+	HookDeprecationOptions(gameversion::version version, DeprecationLevel _level_hook = DeprecationLevel::LEVEL_WARN) : HookDeprecationOptions(std::move(version), _level_hook, _level_hook) { }
+};
 
 class HookBase {
   public:
@@ -101,12 +113,14 @@ class HookBase {
 			 SCP_string description,
 			 SCP_vector<HookVariableDocumentation> parameters,
 			 const SCP_unordered_map<SCP_string, const std::unique_ptr<const ParseableCondition>>& conditions,
+			 tl::optional<HookDeprecationOptions> deprecation,
 			 int32_t hookId = -1);
 	virtual ~HookBase();
 
 	const SCP_string& getHookName() const;
 	const SCP_string& getDescription() const;
 	const SCP_vector<HookVariableDocumentation>& getParameters() const;
+	const tl::optional<HookDeprecationOptions>& getDeprecation() const;
 	int32_t getHookId() const;
 
 	virtual bool isActive() const = 0;
@@ -118,6 +132,7 @@ class HookBase {
 	SCP_string _hookName;
 	SCP_string _description;
 	SCP_vector<HookVariableDocumentation> _parameters;
+	tl::optional<HookDeprecationOptions> _deprecation;
 	int32_t _hookId = 0;
 	
 	bool hasParameter(const SCP_string& param) const
@@ -131,8 +146,8 @@ class HookBase {
 template<typename condition_t>
 class HookImpl : public HookBase {
   protected:
-	HookImpl(SCP_string hookName, SCP_string description, SCP_vector<HookVariableDocumentation> parameters, int32_t hookId)
-		: HookBase(std::move(hookName), std::move(description), std::move(parameters), condition_t::conditions, hookId) { };
+	HookImpl(SCP_string hookName, SCP_string description, SCP_vector<HookVariableDocumentation> parameters, tl::optional<HookDeprecationOptions> deprecation, int32_t hookId)
+		: HookBase(std::move(hookName), std::move(description), std::move(parameters), condition_t::conditions, std::move(deprecation), hookId) { };
 
 	template <typename... Args>
 	int run(condition_t condition, detail::HookParameterInstanceList<Args...> argsList = hook_param_list<Args...>()) const
@@ -162,8 +177,8 @@ template<>
 class HookImpl<void> : public HookBase {
 	static const SCP_unordered_map<SCP_string, const std::unique_ptr<const ParseableCondition>> emptyConditions;
   protected:
-	HookImpl(SCP_string hookName, SCP_string description, SCP_vector<HookVariableDocumentation> parameters, int32_t hookId)
-		: HookBase(std::move(hookName), std::move(description), std::move(parameters), emptyConditions, hookId) { };
+	HookImpl(SCP_string hookName, SCP_string description, SCP_vector<HookVariableDocumentation> parameters, tl::optional<HookDeprecationOptions> deprecation, int32_t hookId)
+		: HookBase(std::move(hookName), std::move(description), std::move(parameters), emptyConditions, std::move(deprecation), hookId) { };
 
 	template <typename... Args>
 	int run(detail::HookParameterInstanceList<Args...> argsList = hook_param_list<Args...>()) const
@@ -199,11 +214,9 @@ class Hook : public HookImpl<condition_t> {
 	static std::shared_ptr<Hook<condition_t>> Factory(SCP_string hookName,
 		SCP_string description,
 		SCP_vector<HookVariableDocumentation> parameters,
+		tl::optional<HookDeprecationOptions> deprecation = tl::nullopt,
 		int32_t hookId = -1) {
-		return std::shared_ptr<Hook<condition_t>>(new Hook<condition_t>(std::move(hookName), std::move(description), std::move(parameters), hookId));
-	}
-	static std::shared_ptr<Hook<condition_t>> Factory(SCP_string hookName, int32_t hookId) {
-		return std::shared_ptr<Hook<condition_t>>(new Hook<condition_t>(std::move(hookName), SCP_string(), SCP_vector<HookVariableDocumentation>(), hookId));
+		return std::shared_ptr<Hook<condition_t>>(new Hook<condition_t>(std::move(hookName), std::move(description), std::move(parameters), std::move(deprecation), hookId));
 	}
 
 	bool isActive() const override {
@@ -220,8 +233,8 @@ class Hook : public HookImpl<condition_t> {
 template<typename condition_t>
 class OverridableHookImpl : public Hook<condition_t> {
   protected:
-	OverridableHookImpl(SCP_string hookName, SCP_string description, SCP_vector<HookVariableDocumentation> parameters, int32_t hookId) 
-		: Hook<condition_t>(std::move(hookName), std::move(description), std::move(parameters), hookId) { }
+	OverridableHookImpl(SCP_string hookName, SCP_string description, SCP_vector<HookVariableDocumentation> parameters, tl::optional<HookDeprecationOptions> deprecation, int32_t hookId)
+		: Hook<condition_t>(std::move(hookName), std::move(description), std::move(parameters), std::move(deprecation), hookId) { }
 
 	template <typename... Args>
 	bool isOverride(condition_t condition, detail::HookParameterInstanceList<Args...> argsList = hook_param_list<Args...>()) const
@@ -251,8 +264,8 @@ class OverridableHookImpl : public Hook<condition_t> {
 template<>
 class OverridableHookImpl<void> : public Hook<void> {
 protected:
-	OverridableHookImpl(SCP_string hookName, SCP_string description, SCP_vector<HookVariableDocumentation> parameters, int32_t hookId)
-		: Hook<void>(std::move(hookName), std::move(description), std::move(parameters), hookId) { }
+	OverridableHookImpl(SCP_string hookName, SCP_string description, SCP_vector<HookVariableDocumentation> parameters, tl::optional<HookDeprecationOptions> deprecation, int32_t hookId)
+		: Hook<void>(std::move(hookName), std::move(description), std::move(parameters), std::move(deprecation), hookId) { }
 
 	template <typename... Args>
 	bool isOverride(detail::HookParameterInstanceList<Args...> argsList = hook_param_list<Args...>()) const
@@ -289,10 +302,12 @@ class OverridableHook : public OverridableHookImpl<condition_t> {
 	static std::shared_ptr<OverridableHook<condition_t>> Factory(SCP_string hookName,
 		SCP_string description,
 		SCP_vector<HookVariableDocumentation> parameters,
+		tl::optional<HookDeprecationOptions> deprecation = tl::nullopt,
 		int32_t hookId = -1) {
 		return std::shared_ptr<OverridableHook<condition_t>>(new OverridableHook<condition_t>(std::move(hookName),
 			std::move(description),
 			std::move(parameters),
+			std::move(deprecation),
 			hookId));
 	}
 

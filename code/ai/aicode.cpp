@@ -218,6 +218,11 @@ ai_flag_name Ai_flag_names[] = {
 	{AI::AI_Flags::Free_afterburner_use,	"free-afterburner-use",	},
 };
 
+ai_flag_description Ai_flag_descriptions[] = {
+	{AI::AI_Flags::No_dynamic,				"Will stop allowing the AI to pursue dynamic goals (eg: chasing ships it was not ordered to)."},
+	{AI::AI_Flags::Free_afterburner_use,	"Will allow AI to use afterburners when attacking a big ship, flying to a target position, guarding a ship, and flying in formation."},
+};
+
 extern const int Num_ai_flag_names = sizeof(Ai_flag_names) / sizeof(ai_flag_name);
 
 const char *Skill_level_names(int level, int translate)
@@ -579,8 +584,9 @@ int ai_maybe_autoscale(int absolute_index)
  */
 void init_ai_class(ai_class *aicp)
 {
-	int i;
-	for (i = 0; i < NUM_SKILL_LEVELS; i++)
+
+	// AI Class main attributes
+	for (int i = 0; i < NUM_SKILL_LEVELS; i++)
 	{
 		aicp->ai_cmeasure_fire_chance[i] = FLT_MIN;
 		aicp->ai_in_range_time[i] = FLT_MIN;
@@ -605,13 +611,18 @@ void init_ai_class(ai_class *aicp)
 		aicp->ai_chance_to_use_missiles_on_plr[i] = INT_MIN;
 		aicp->ai_max_aim_update_delay[i] = FLT_MIN;
 		aicp->ai_turret_max_aim_update_delay[i] = FLT_MIN;
+		// Set the lowest values here so the table can be modular
+		aicp->ai_accuracy[i] = FLT_MIN;
+		aicp->ai_evasion[i] = FLT_MIN;
+		aicp->ai_courage[i] = FLT_MIN;
+		aicp->ai_patience[i] = FLT_MIN;
 	}
     aicp->ai_profile_flags.reset();
     aicp->ai_profile_flags_set.reset();
 
 	//AI Class autoscale overrides
 	//INT_MIN and FLT_MIN represent the "not set" state
-	for (i = 0; i < NUM_SKILL_LEVELS; i++)
+	for (int i = 0; i < NUM_SKILL_LEVELS; i++)
 	{
 		aicp->ai_aburn_use_factor[i] = INT_MIN;
 		aicp->ai_shockwave_evade_chance[i] = FLT_MIN;
@@ -639,28 +650,76 @@ void set_aic_flag(ai_class *aicp, const char *name, AI::Profile_Flags flag)
 		set->remove(flag);
 }
 
+static ai_class* get_ai_class_pointer(const char* class_name)
+{
+	for (int i = 0; i < Num_ai_classes; i++) {
+		if (!stricmp(class_name, Ai_classes[i].name)) {
+			return &Ai_classes[i];
+		}
+	}
+
+	// Didn't find anything.
+	return nullptr;
+}
+
+static bool class_added_in_tbm = false;
+
 void parse_ai_class()
 {
-	ai_class	*aicp = &Ai_classes[Num_ai_classes];
-
-	init_ai_class(aicp);
+	ai_class	*aicp;
+	bool create_if_not_found = true;
+	char thisName[NAME_LENGTH];
 
 	required_string("$Name:");
-	stuff_string(aicp->name, F_NAME, NAME_LENGTH);
+	stuff_string(thisName, F_NAME, NAME_LENGTH);
 
-	Ai_class_names[Num_ai_classes] = aicp->name;
+	if (optional_string("+nocreate")) {
+		if (!Parsing_modular_table) {
+			Warning(LOCATION, "+nocreate flag used for ai class in non-modular table\n");
+		}
+		create_if_not_found = false;
+	}
 
-	required_string("$accuracy:");
-	parse_float_list(aicp->ai_accuracy, NUM_SKILL_LEVELS);
+	// Does this class exist already?
+	// If so, load this new info into it
+	aicp = get_ai_class_pointer(thisName);
+	if (aicp != nullptr) {
+		if (!Parsing_modular_table) {
+			error_display(1, "Error:  AI Class %s already exists.  All class names must be unique.", thisName);
+		}
+	} else {
+		// Don't create class if it has +nocreate and is in a modular table.
+		if (!create_if_not_found && Parsing_modular_table) {
+			return;
+		}
 
-	required_string("$evasion:");
-	parse_float_list(aicp->ai_evasion, NUM_SKILL_LEVELS);
+		// Setup a new ai class
+		aicp = &Ai_classes[Num_ai_classes];
+		strcpy(aicp->name, thisName);
 
-	required_string("$courage:");
-	parse_float_list(aicp->ai_courage, NUM_SKILL_LEVELS);
+		init_ai_class(aicp);
+		Ai_class_names[Num_ai_classes] = aicp->name;
 
-	required_string("$patience:");
-	parse_float_list(aicp->ai_patience, NUM_SKILL_LEVELS);
+		Num_ai_classes++;
+
+		if (Parsing_modular_table) {
+			mprintf(("New Ai Class '%s' found in modular table\n", aicp->name));
+			class_added_in_tbm = true;
+		}
+
+	}
+
+	if (optional_string("$accuracy:"))
+		parse_float_list(aicp->ai_accuracy, NUM_SKILL_LEVELS);
+
+	if (optional_string("$evasion:"))
+		parse_float_list(aicp->ai_evasion, NUM_SKILL_LEVELS);
+
+	if (optional_string("$courage:"))
+		parse_float_list(aicp->ai_courage, NUM_SKILL_LEVELS);
+
+	if (optional_string("$patience:"))
+		parse_float_list(aicp->ai_patience, NUM_SKILL_LEVELS);
 
 	if (optional_string("$Afterburner Use Factor:"))
 		parse_int_list(aicp->ai_aburn_use_factor, NUM_SKILL_LEVELS);
@@ -833,27 +892,17 @@ void reset_ai_class_names()
 }
 
 #define AI_CLASS_INCREMENT		10
-void parse_aitbl()
+void parse_aitbl(const char* filename)
 {
 	try {
-		read_file_text("ai.tbl", CF_TYPE_TABLES);
+		read_file_text(filename, CF_TYPE_TABLES);
 		reset_parse();
-
-		//Just in case parse_aitbl is called twice
-		free_ai_stuff();
-
-		Num_ai_classes = 0;
-		Num_alloced_ai_classes = AI_CLASS_INCREMENT;
-		Ai_classes = (ai_class*) vm_malloc(Num_alloced_ai_classes * sizeof(ai_class));
-		Ai_class_names = (char**) vm_malloc(Num_alloced_ai_classes * sizeof(char*));
 
 		required_string("#AI Classes");
 
 		while (required_string_either("#End", "$Name:")) {
 
 			parse_ai_class();
-
-			Num_ai_classes++;
 
 			if(Num_ai_classes >= Num_alloced_ai_classes)
 			{
@@ -868,11 +917,10 @@ void parse_aitbl()
 			}
 		}
 
-		atexit(free_ai_stuff);
 	}
 	catch (const parse::ParseException& e)
 	{
-		mprintf(("TABLES: Unable to parse 'ai.tbl'!  Error message = %s.\n", e.what()));
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
 		return;
 	}
 }
@@ -888,14 +936,23 @@ void ai_init()
 {
 	if ( !ai_inited )	{
 		// Do the first time initialization stuff here		
-		try
-		{
-			parse_aitbl();
+		free_ai_stuff();
+
+		Num_ai_classes = 0;
+		Num_alloced_ai_classes = AI_CLASS_INCREMENT;
+		Ai_classes = (ai_class*)vm_malloc(Num_alloced_ai_classes * sizeof(ai_class));
+		Ai_class_names = (char**)vm_malloc(Num_alloced_ai_classes * sizeof(char*));
+
+		parse_aitbl("ai.tbl");
+
+		parse_modular_table("*-aic.tbm", parse_aitbl);
+
+		if (class_added_in_tbm) {
+			mprintf(("One or more Ai Classes were added in a modular table. This may affect "
+					 "ai autoscaling. If that's not desired then use a tbl instead of a tbm!\n"));
 		}
-		catch (const parse::ParseException& e)
-		{
-			mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "ai.tbl", e.what()));
-		}
+
+		atexit(free_ai_stuff);
 
 		ai_inited = 1;
 	}
