@@ -76,6 +76,14 @@ void parse_sexp_table(const char* filename) {
 						item.resize(NAME_LENGTH - 1);
 					}
 
+					// Case insensitive check if the item already exists in the list
+					for (int i = 0; i < (int)thisList.list.size(); i++) {
+						if (!stricmp(item.c_str(), thisList.list[i].c_str())) {
+							error_display(0, "Enum item '%s' already exists in list %s. Skipping!\n", item.c_str(), thisList.name.c_str());
+							continue;
+						}
+					}
+
 					thisList.list.push_back(item);
 				}
 
