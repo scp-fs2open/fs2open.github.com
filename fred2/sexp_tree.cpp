@@ -1982,6 +1982,13 @@ void sexp_tree::start_operator_edit(HTREEITEM h)
 	Assertion(item_index >= 0 && item_index < (int)tree_nodes.size() && !tree_nodes.empty(), "Unknown node being edited!");
 	Assertion(tree_nodes[item_index].handle == item_handle, "Mismatch between tree node and item handle!");
 
+	// we are editing an operator, so find out which type it should be
+	int i;
+	for (i = 0; i < (int)tree_nodes.size(); i++)
+		if (tree_nodes[i].handle == h)
+			break;
+	auto opf_type = query_node_argument_type(i);
+
 	// do first-time setup
 	if (!m_operator_popup_created)
 	{
@@ -2014,7 +2021,7 @@ void sexp_tree::start_operator_edit(HTREEITEM h)
 	// create or just position it
 	if (!m_operator_popup_created)
 	{
-		m_operator_box.Create(WS_CHILD | WS_VISIBLE | WS_VSCROLL | CBS_SIMPLE | CBS_HASSTRINGS, dropdown_rect, this, IDC_SEXP_POPUP_LIST);
+		m_operator_box.Create(WS_CHILD | WS_VISIBLE | WS_VSCROLL | CBS_SIMPLE | CBS_HASSTRINGS | CBS_OWNERDRAWFIXED, dropdown_rect, this, IDC_SEXP_POPUP_LIST);
 		m_operator_box.SetFont(GetFont());
 		m_operator_popup_created = true;
 	}
@@ -2023,7 +2030,7 @@ void sexp_tree::start_operator_edit(HTREEITEM h)
 		m_operator_box.MoveWindow(&dropdown_rect);
 	}
 
-	m_operator_box.refresh_popup_operators();
+	m_operator_box.refresh_popup_operators(opf_type);
 
 	m_operator_box.ShowWindow(SW_SHOWNORMAL);
 	m_operator_box.SetFocus();

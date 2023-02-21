@@ -2183,46 +2183,8 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 
 			type2 = query_operator_return_type(op2);
 			if (recursive) {
-				switch (type) {
-					case OPF_NUMBER:
-						t = OPR_NUMBER;
-						break;
-
-					case OPF_POSITIVE:
-						t = OPR_POSITIVE;
-						break;
-
-					case OPF_BOOL:
-						t = OPR_BOOL;
-						break;
-
-					case OPF_NULL:
-						t = OPR_NULL;
-						break;
-
-					// Goober5000
-					case OPF_FLEXIBLE_ARGUMENT:
-						t = OPR_FLEXIBLE_ARGUMENT;
-						break;
-
-					case OPF_AI_GOAL:
-						t = OPR_AI_GOAL;
-						break;
-
-					// special case for modify-variable
-					case OPF_AMBIGUOUS:
-						t = OPR_AMBIGUOUS;
-						break;
-
-					// these types can accept either lists of strings or indexes
-					case OPF_GAME_SND:
-					case OPF_FIREBALL:
-					case OPF_WEAPON_BANK_NUMBER:
-						t = OPR_POSITIVE;
-						break;
-
-					default:
-						return SEXP_CHECK_UNKNOWN_TYPE;  // no other return types available
+				if (!map_opf_to_opr(type, t)) {
+					return SEXP_CHECK_UNKNOWN_TYPE;
 				}
 
 				if ((z = check_sexp_syntax(i, t, recursive, bad_node)) != 0) {
@@ -29163,6 +29125,56 @@ DCF(sexp,"Runs the given sexp")
 
 	int sexp_val = run_sexp(sexp.c_str());
 	dc_printf("SEXP '%s' run, sexp_val = %d\n", sexp.c_str(), sexp_val);
+}
+
+bool map_opf_to_opr(int opf_type, int &opr_type)
+{
+	opr_type = OPR_NONE;
+
+	switch (opf_type)
+	{
+		case OPF_NUMBER:
+			opr_type = OPR_NUMBER;
+			break;
+
+		case OPF_POSITIVE:
+			opr_type = OPR_POSITIVE;
+			break;
+
+		case OPF_BOOL:
+			opr_type = OPR_BOOL;
+			break;
+
+		case OPF_NULL:
+			opr_type = OPR_NULL;
+			break;
+
+		// Goober5000
+		case OPF_FLEXIBLE_ARGUMENT:
+			opr_type = OPR_FLEXIBLE_ARGUMENT;
+			break;
+
+		case OPF_AI_GOAL:
+			opr_type = OPR_AI_GOAL;
+			break;
+
+		// special case for modify-variable
+		case OPF_AMBIGUOUS:
+			opr_type = OPR_AMBIGUOUS;
+			break;
+
+		// these types can accept either lists of strings or indexes
+		case OPF_GAME_SND:
+		case OPF_FIREBALL:
+		case OPF_WEAPON_BANK_NUMBER:
+			opr_type = OPR_POSITIVE;
+			break;
+
+		default:
+			return false;	// no other return types available
+	}
+
+	return opr_type != OPR_NONE;
 }
 
 // returns the data type returned by an operator

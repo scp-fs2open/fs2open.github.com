@@ -164,14 +164,17 @@ int get_dynamic_parameter_index(const SCP_string &op_name, int param);
 int get_dynamic_enum_position(const SCP_string &enum_name);
 
 // Operand return types
-#define	OPR_NUMBER				1	// returns number
-#define	OPR_BOOL				2	// returns true/false value
-#define	OPR_NULL				3	// doesn't return a value
-#define	OPR_AI_GOAL				4	// is an ai operator (doesn't really return a value, but used for type matching)
-#define	OPR_POSITIVE			5	// returns a non-negative number
-#define	OPR_STRING				6	// not really a return type, but used for type matching.
-#define	OPR_AMBIGUOUS			7	// not really a return type, but used for type matching.
-#define OPR_FLEXIBLE_ARGUMENT	8	// Goober5000 - is an argument operator (doesn't really return a value, but used for type matching)
+enum : int {
+	OPR_NONE,
+	OPR_NUMBER,             // returns number
+	OPR_BOOL,               // returns true/false value
+	OPR_NULL,               // doesn't return a value
+	OPR_AI_GOAL,	        // is an ai operator (doesn't really return a value, but used for type matching)
+	OPR_POSITIVE,	        // returns a non-negative number
+	OPR_STRING,             // not really a return type, but used for type matching.
+	OPR_AMBIGUOUS,          // not really a return type, but used for type matching.
+	OPR_FLEXIBLE_ARGUMENT,  // Goober5000 - is an argument operator (doesn't really return a value, but used for type matching)
+};
 
 #define	OP_INSERT_FLAG			0x8000
 #define	OP_REPLACE_FLAG			0x4000
@@ -1391,6 +1394,7 @@ extern int stuff_sexp_variable_list();
 extern int eval_sexp(int cur_node, int referenced_node = -1);
 extern int eval_num(int n, bool &is_nan, bool &is_nan_forever);
 extern bool is_sexp_true(int cur_node, int referenced_node = -1);
+extern bool map_opf_to_opr(int opf_type, int &opr_type);
 extern int query_operator_return_type(int op);
 extern int query_operator_argument_type(int op, int argnum);
 extern void update_sexp_references(const char *old_name, const char *new_name);

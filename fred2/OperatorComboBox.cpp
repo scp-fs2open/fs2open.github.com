@@ -20,7 +20,7 @@ BEGIN_MESSAGE_MAP(OperatorComboBoxList, CListBox)
 END_MESSAGE_MAP()
 
 OperatorComboBox::OperatorComboBox(const char* (*help_callback)(int))
-	: m_listbox(help_callback)
+	: m_listbox(help_callback, OPF_NONE)
 {
 	m_help_callback = help_callback;
 
@@ -68,8 +68,11 @@ void OperatorComboBox::OnDestroy()
 	CComboBox::OnDestroy();
 }
 
-void OperatorComboBox::refresh_popup_operators()
+void OperatorComboBox::refresh_popup_operators(int opf_type)
 {
+	// operator type might have changed
+	m_listbox.SetOpfType(opf_type);
+
 	// add all operators and their constants
 	ResetContent();
 	for (int i = 0; i < (int)m_sorted_operators.size(); ++i)
@@ -118,9 +121,15 @@ INT_PTR OperatorComboBox::OnToolHitTest(CPoint point, TOOLINFO *pTI) const
 	return -1;
 }
 
-OperatorComboBoxList::OperatorComboBoxList(const char* (*help_callback)(int))
+OperatorComboBoxList::OperatorComboBoxList(const char* (*help_callback)(int), int opf_type)
 {
 	m_help_callback = help_callback;
+	SetOpfType(opf_type);
+}
+
+void OperatorComboBoxList::SetOpfType(int opf_type)
+{
+	map_opf_to_opr(opf_type, m_expected_opr_type);
 }
 
 //here we supply the text for the item
@@ -149,38 +158,115 @@ BOOL OperatorComboBoxList::OnToolTipText(UINT id, NMHDR* pNMHDR, LRESULT* pResul
 	if (item >= 0 && item < GetCount())
 	{
 		int op_const = (int)GetItemData(item);
+		auto helptext = m_help_callback(op_const);
 
-		SCP_string helptext = m_help_callback(op_const);
-		replace_all(helptext, "\t", "    ");
-		m_tooltiptextA = helptext.c_str();
-		m_tooltiptextW = helptext.c_str();
+		if (helptext != nullptr && *helptext != '\0')
+		{
+			SCP_string buffer = helptext;
+			replace_all(buffer, "\t", "    ");
+			m_tooltiptextA = buffer.c_str();
+			m_tooltiptextW = buffer.c_str();
 
 #ifndef _UNICODE
-		if (pNMHDR->code == TTN_NEEDTEXTA)
-		{
-			pTTTA->lpszText = (LPSTR)(LPCSTR)m_tooltiptextA;
-			::SendMessage(pTTTA->hdr.hwndFrom, TTM_SETMAXTIPWIDTH, 0, 400);
-		}
-		else
-		{
-			pTTTW->lpszText = (LPWSTR)(LPCWSTR)m_tooltiptextW;
-			::SendMessage(pTTTW->hdr.hwndFrom, TTM_SETMAXTIPWIDTH, 0, 400);
-		}
+			if (pNMHDR->code == TTN_NEEDTEXTA)
+			{
+				pTTTA->lpszText = (LPSTR)(LPCSTR)m_tooltiptextA;
+				::SendMessage(pTTTA->hdr.hwndFrom, TTM_SETMAXTIPWIDTH, 0, 400);
+			}
+			else
+			{
+				pTTTW->lpszText = (LPWSTR)(LPCWSTR)m_tooltiptextW;
+				::SendMessage(pTTTW->hdr.hwndFrom, TTM_SETMAXTIPWIDTH, 0, 400);
+			}
 #else
-		if (pNMHDR->code == TTN_NEEDTEXTA)
-		{
-			pTTTA->lpszText = (LPSTR)(LPCSTR)m_tooltiptextA;
-			::SendMessage(pTTTA->hdr.hwndFrom, TTM_SETMAXTIPWIDTH, 0, 400);
-		}
-		else
-		{
-			pTTTW->lpszText = (LPWSTR)(LPCWSTR)m_tooltiptextW;
-			::SendMessage(pTTTW->hdr.hwndFrom, TTM_SETMAXTIPWIDTH, 0, 400);
-		}
+			if (pNMHDR->code == TTN_NEEDTEXTA)
+			{
+				pTTTA->lpszText = (LPSTR)(LPCSTR)m_tooltiptextA;
+				::SendMessage(pTTTA->hdr.hwndFrom, TTM_SETMAXTIPWIDTH, 0, 400);
+			}
+			else
+			{
+				pTTTW->lpszText = (LPWSTR)(LPCWSTR)m_tooltiptextW;
+				::SendMessage(pTTTW->hdr.hwndFrom, TTM_SETMAXTIPWIDTH, 0, 400);
+			}
 #endif
+		}
 	}
 
 	*pResult = 0;
 
 	return TRUE;    // message was handled
+}
+
+// visual part of disabled items is based on example at:
+// https://www.codeproject.com/Articles/451/CListBox-with-disabled-items
+
+void OperatorComboBoxList::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
+{
+	ASSERT(lpDrawItemStruct->CtlType == ODT_LISTBOX);
+	ASSERT((GetStyle() & (LBS_OWNERDRAWFIXED | LBS_HASSTRINGS)) == (LBS_OWNERDRAWFIXED | LBS_HASSTRINGS));
+
+	CDC* pDC = CDC::FromHandle(lpDrawItemStruct->hDC);
+
+	if (((LONG)(lpDrawItemStruct->itemID) >= 0) &&
+		(lpDrawItemStruct->itemAction & (ODA_DRAWENTIRE | ODA_SELECT)))
+	{
+		BOOL fDisabled = !IsWindowEnabled() || !IsItemEnabled(lpDrawItemStruct->itemID);
+
+		COLORREF newTextColor = fDisabled ?
+			RGB(0x80, 0x80, 0x80) : GetSysColor(COLOR_WINDOWTEXT);  // light gray
+
+		COLORREF oldTextColor = pDC->SetTextColor(newTextColor);
+
+		COLORREF newBkColor = GetSysColor(COLOR_WINDOW);
+		COLORREF oldBkColor = pDC->SetBkColor(newBkColor);
+
+		if (newTextColor == newBkColor)
+			newTextColor = RGB(0xC0, 0xC0, 0xC0);   // dark gray
+
+		if (!fDisabled && ((lpDrawItemStruct->itemState & ODS_SELECTED) != 0))
+		{
+			pDC->SetTextColor(GetSysColor(COLOR_HIGHLIGHTTEXT));
+			pDC->SetBkColor(GetSysColor(COLOR_HIGHLIGHT));
+		}
+
+		CString strText;
+		GetText(lpDrawItemStruct->itemID, strText);
+
+		const RECT& rc = lpDrawItemStruct->rcItem;
+
+		pDC->ExtTextOut(rc.left + 2,
+			rc.top + 2,// + max(0, (cyItem - m_cyText) / 2),
+			ETO_OPAQUE, &rc,
+			strText, strText.GetLength(), NULL);
+
+		pDC->SetTextColor(oldTextColor);
+		pDC->SetBkColor(oldBkColor);
+	}
+
+	if ((lpDrawItemStruct->itemAction & ODA_FOCUS) != 0)
+		pDC->DrawFocusRect(&lpDrawItemStruct->rcItem);
+}
+
+// we need to override this method when we create an owner-drawn combo box
+void OperatorComboBox::MeasureItem(LPMEASUREITEMSTRUCT lpMeasureItemStruct)
+{
+	// do nothing; the supplied width and height are fine
+}
+
+BOOL OperatorComboBoxList::IsItemEnabled(UINT nIndex) const
+{
+	int op_const = (int)GetItemData(nIndex);
+	int opr_type = query_operator_return_type(op_const);
+
+	// check for special cases
+	if (opr_type == OPR_AMBIGUOUS)										// OPR_AMBIGUOUS matches everything
+		return true;
+	if (opr_type == OPR_POSITIVE && m_expected_opr_type == OPR_NUMBER)	// positive data type can map to number data type just fine
+		return true;
+	if (opr_type == OPR_NUMBER && m_expected_opr_type == OPR_POSITIVE)	// this isn't kosher, but we hack it to make it work
+		return true;
+
+	// check that types match
+	return opr_type == m_expected_opr_type;
 }
