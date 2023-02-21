@@ -251,10 +251,10 @@ void debris_process_post(object * obj, float frame_time)
 
 			int n, n_arcs = Random::next(1, 3);		// Create 1-3 sparks
 
-			vec3d v1, v2, v3, v4;
-
-			submodel_get_two_random_points_better(db->model_num, db->submodel_num, &v1, &v2);
-			submodel_get_two_random_points_better(db->model_num, db->submodel_num, &v3, &v4);
+			vec3d v1 = submodel_get_random_point(db->model_num, db->submodel_num);
+			vec3d v2 = submodel_get_random_point(db->model_num, db->submodel_num);
+			vec3d v3 = submodel_get_random_point(db->model_num, db->submodel_num);
+			vec3d v4 = submodel_get_random_point(db->model_num, db->submodel_num);
 
 			n = 0;
 
@@ -327,11 +327,7 @@ void debris_process_post(object * obj, float frame_time)
 				// Maybe move a vertex....  20% of the time maybe?
 				int mr = Random::next();
 				if ( mr < Random::MAX_VALUE/5 )	{
-					vec3d v1, v2;
-
-					submodel_get_two_random_points_better(db->model_num, db->submodel_num, &v1, &v2);
-
-					db->arc_pts[i][mr % 2] = v1;
+					db->arc_pts[i][mr % 2] = submodel_get_random_point(db->model_num, db->submodel_num);
 				}
 			}
 		}

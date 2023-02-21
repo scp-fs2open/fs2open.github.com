@@ -1025,6 +1025,8 @@ void opengl_setup_function_pointers()
 
 	gr_screen.gf_set_viewport = gr_opengl_set_viewport;
 
+	gr_screen.gf_override_fog = gr_opengl_override_fog;
+
 	// NOTE: All function pointers here should have a Cmdline_nohtl check at the top
 	//       if they shouldn't be run in non-HTL mode, Don't keep separate entries.
 	// *****************************************************************************

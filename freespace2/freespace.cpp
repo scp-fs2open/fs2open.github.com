@@ -1405,7 +1405,7 @@ bool game_start_mission()
 		if ( !(Game_mode & GM_MULTIPLAYER) ) {
 			// the version will have been assigned before loading was aborted
 			if (!gameversion::check_at_least(The_mission.required_fso_version)) {
-				popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("This mission requires FSO version %s", 1671), format_version(The_mission.required_fso_version).c_str());
+				popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("This mission requires FSO version %s", 1671), format_version(The_mission.required_fso_version, true).c_str());
 			}
 			// standard load failure
 			else {
@@ -2946,8 +2946,13 @@ void apply_view_shake(matrix *eye_orient)
 	tangles.h = 0.0f;
 	tangles.b = 0.0f;
 
-	// do shakes that only affect the HUD (unless disabled by cmdline in singleplayer)
-	if (Viewer_obj == Player_obj && (!Cmdline_no_screenshake || Game_mode & GM_MULTIPLAYER)) {
+	bool do_hud_shudder = (Viewer_obj == Player_obj);
+
+	if ((Viewer_mode & VM_CHASE) && Apply_shudder_to_chase_view)
+		do_hud_shudder = true;
+
+	// do shakes that only affect the HUD (unless disabled by cmdline in singleplayer or enabled by mod flag)
+	if (do_hud_shudder && (!Cmdline_no_screenshake || Game_mode & GM_MULTIPLAYER)) {
 		physics_info *pi = &Player_obj->phys_info;
 
 		// Make eye shake due to afterburner
@@ -3439,8 +3444,10 @@ void game_render_frame( camid cid )
 		gr_end_proj_matrix();
 		gr_end_view_matrix();
 
+		gr_override_fog(true);
 		GR_DEBUG_SCOPE("Render Cockpit");
 		ship_render_player_ship(Viewer_obj);
+		gr_override_fog(false);
 
 		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
 		gr_set_view_matrix(&Eye_position, &Eye_matrix);

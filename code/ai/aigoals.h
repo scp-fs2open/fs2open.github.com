@@ -187,8 +187,8 @@ extern void ai_copy_mission_wing_goal( ai_goal *aigp, ai_info *aip );
 extern void ai_mission_goal_complete( ai_info *aip );
 extern void ai_mission_wing_goal_complete( int wingnum, ai_goal *remove_goalp );
 
-extern void ai_update_goal_references(ai_goal *goals, int type, const char *old_name, const char *new_name);
-extern int query_referenced_in_ai_goals(ai_goal *goals, int type, const char *name);
+extern void ai_update_goal_references(ai_goal *goals, sexp_ref_type type, const char *old_name, const char *new_name);
+extern bool query_referenced_in_ai_goals(ai_goal *goals, sexp_ref_type type, const char *name);
 extern char *ai_add_dock_name(const char *str);
 
 extern int ai_query_goal_valid( int ship, int ai_goal_type );

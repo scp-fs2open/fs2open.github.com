@@ -547,6 +547,37 @@ ship_flag_name Ship_flag_names[] = {
 	{ Ship_Flags::No_targeting_limits,			"no-targeting-limits"}
 };
 
+ship_flag_description Ship_flag_descriptions[] = {
+	{ Ship_Flags::Vaporize,						"Causes a ship to vanish (no deathroll, no debris, no explosion) when destroyed."},
+	{ Ship_Flags::Warp_broken,					"Causes a ship's subspace drive to break. Can be repaired by a support ship."},
+	{ Ship_Flags::Warp_never,					"Causes a ship's subspace drive to never work. Cannot be repaired by a support ship."},
+	{ Ship_Flags::Scannable,					"Whether or not the ship can be scanned."},
+	{ Ship_Flags::Cargo_revealed,				"If set, the ship's cargo can be seen without scanning the ship."},
+	{ Ship_Flags::Hidden_from_sensors,			"If set, the ship can't be targeted and appears on radar as a blinking dot."},
+	{ Ship_Flags::Stealth,						"If set, the ship can't be targeted, is invisible on radar, and is ignored by AI unless firing."},
+	{ Ship_Flags::Friendly_stealth_invis,		"If set, the ship can't be targeted even by ships on the same team."},
+	{ Ship_Flags::Hide_ship_name,				"If set, the ship name can't be seen when the ship is targeted."},
+	{ Ship_Flags::Primitive_sensors,			"Targets will only be a blip on the radar. Ships cannot targeted and aspect lock cannot be used."},
+	{ Ship_Flags::Afterburner_locked,			"Will stop a ship from firing their afterburner."},
+	{ Ship_Flags::Primaries_locked,				"Will stop a ship from firing their primary weapons."},
+	{ Ship_Flags::Secondaries_locked,			"Will stop a ship from firing their secondary weapons."},
+	{ Ship_Flags::No_subspace_drive,			"Will not allow a ship to jump into subspace."},
+	{ Ship_Flags::Dont_collide_invis,			"Will cause polygons with an invisible texture to stop colliding with objects."},
+	{ Ship_Flags::No_ets,						"Will not allow a ship to alter its ETS system."},
+	{ Ship_Flags::Toggle_subsystem_scanning,	"Switches between being able to scan a whole ship or individual subsystems."},
+	{ Ship_Flags::No_secondary_lockon,			"Will disable target acquisition for secondaries of all types (does not affect turrets)."},
+	{ Ship_Flags::No_disabled_self_destruct,	"Ship will not self-destruct after 90 seconds if engines or weapons destroyed."},
+	{ Ship_Flags::Hide_mission_log,				"Mission log events generated for this ship will not be viewable."},
+	{ Ship_Flags::No_passive_lightning,			"Disables ship passive lightning."},
+	{ Ship_Flags::Glowmaps_disabled,			"Ship is rendered without glowmaps."},
+	{ Ship_Flags::No_thrusters,					"Thrusters on this ship are not rendered."},
+	{ Ship_Flags::Fail_sound_locked_primary,	"Play the firing fail sound when the weapon is locked."},
+	{ Ship_Flags::Fail_sound_locked_secondary,	"Play the firing fail sound when the weapon is locked."},
+	{ Ship_Flags::Aspect_immune,				"Ship cannot be targeted by Aspect Seekers."},
+	{ Ship_Flags::Cannot_perform_scan,			"Ship cannot scan other ships."},
+	{ Ship_Flags::No_targeting_limits,			"Ship is always targetable regardless of AWACS or targeting range limits."}
+};
+
 extern const size_t Num_ship_flag_names = sizeof(Ship_flag_names) / sizeof(ship_flag_name);
 
 // Ditto for wings
@@ -557,6 +588,15 @@ wing_flag_name Wing_flag_names[] = {
 	{ Wing_Flags::No_departure_warp,				"no-departure-warp" },
 	{ Wing_Flags::Same_arrival_warp_when_docked,	"same-arrival-warp-when-docked" },
 	{ Wing_Flags::Same_departure_warp_when_docked,	"same-departure-warp-when-docked" }
+};
+
+wing_flag_description Wing_flag_descriptions[] = {
+	{ Wing_Flags::No_arrival_music,					"Arrival music will not be played when this wing arrives."},
+	{ Wing_Flags::No_arrival_message,				"Arrival messages will not be sent when this wing arrives."},
+	{ Wing_Flags::No_arrival_warp,					"No ship in the wing will use a warp effect upon arrival."},
+	{ Wing_Flags::No_departure_warp,				"No ship in the wing will use a warp effect upon departure."},
+	{ Wing_Flags::Same_arrival_warp_when_docked,	"All ships in the wing will use the same warp effect size upon arrival as if they were not docked instead of the enlarged aggregate size."},
+	{ Wing_Flags::Same_departure_warp_when_docked,	"All ships in the wing will use the same warp effect size upon departure as if they were not docked instead of the enlarged aggregate size."}
 };
 
 extern const size_t Num_wing_flag_names = sizeof(Wing_flag_names) / sizeof(wing_flag_name);
@@ -1134,6 +1174,9 @@ void ship_info::clone(const ship_info& other)
 	newtonian_damp_override = other.newtonian_damp_override;
 
 	autoaim_fov = other.autoaim_fov;
+	for (int i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++) {
+		bank_autoaim_fov[i] = other.bank_autoaim_fov[i];
+	}
 	autoaim_lock_snd = other.autoaim_lock_snd;
 	autoaim_lost_snd = other.autoaim_lost_snd;
 
@@ -1462,6 +1505,9 @@ void ship_info::move(ship_info&& other)
 	newtonian_damp_override = other.newtonian_damp_override;
 
 	autoaim_fov = other.autoaim_fov;
+	for (int i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++) {
+		bank_autoaim_fov[i] = other.bank_autoaim_fov[i];
+	}
 	autoaim_lock_snd = other.autoaim_lock_snd;
 	autoaim_lost_snd = other.autoaim_lost_snd;
 
@@ -1566,7 +1612,6 @@ ship_info::ship_info(ship_info&& other) noexcept
 
 ship_info::ship_info()
 {
-	int i;
 
 	name[0] = '\0';
 	display_name[0] = '\0';
@@ -1759,7 +1804,7 @@ ship_info::ship_info()
 	cmeasure_max = 0;
 
 	num_primary_banks = 0;
-	for ( i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++ )
+	for (int i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++ )
 	{
 		primary_bank_weapons[i] = -1;
 		draw_primary_models[i] = false;
@@ -1767,7 +1812,7 @@ ship_info::ship_info()
 	}
 	
 	num_secondary_banks = 0;
-	for ( i = 0; i < MAX_SHIP_SECONDARY_BANKS; i++ )
+	for (int i = 0; i < MAX_SHIP_SECONDARY_BANKS; i++ )
 	{
 		secondary_bank_weapons[i] = -1;
 		draw_secondary_models[i] = false;
@@ -1788,7 +1833,7 @@ ship_info::ship_info()
 	auto_shield_spread_from_lod = -1;
 	auto_shield_spread_min_span = -1.0f;
 
-	for (i = 0; i < 4; i++)
+	for (int i = 0; i < 4; i++)
 	{
 		shield_point_augment_ctrls[i] = -1;
 	}
@@ -1907,6 +1952,9 @@ ship_info::ship_info()
 	newtonian_damp_override = false;
 
 	autoaim_fov = 0.0f;
+	for (int i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++) {
+		bank_autoaim_fov[i] = 0.0f;
+	}
 	autoaim_lock_snd = gamesnd_id();
 	autoaim_lost_snd = gamesnd_id();
 
@@ -1925,7 +1973,7 @@ ship_info::ship_info()
 
 	custom_data.clear();
 
-	for (i = 0; i < MAX_MAN_THRUSTERS; i++)
+	for (int i = 0; i < MAX_MAN_THRUSTERS; i++)
 	{
         maneuvering[i].reset();
 	}
@@ -3383,6 +3431,15 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 
 		parse_game_sound("+Autoaim Lock Snd:", &sip->autoaim_lock_snd);
 		parse_game_sound("+Autoaim Lost Snd:", &sip->autoaim_lost_snd);
+	}
+	int bank_fov_count = 0;
+	while (optional_string("+Primary Bank Autoaim FOV:")) {
+
+		if (bank_fov_count < sip->num_primary_banks) {
+			stuff_float(&sip->bank_autoaim_fov[bank_fov_count]);
+		} else {
+			error_display(1, "Too many bank autoaims defined. Ship only has %i banks!", sip->num_primary_banks);
+		}
 	}
 
 	if(optional_string("$Convergence:"))
@@ -6358,7 +6415,6 @@ vec3d get_submodel_offset(int model, int submodel){
 // Reset all ship values to empty/unused.
 void ship::clear()
 {
-	int i;
 
 	objnum = -1;
 	ai_index = -1;
@@ -6484,7 +6540,7 @@ void ship::clear()
 	weapons.clear();
 
 	// ---------- special weapons init that isn't setting things to 0
-	for (i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++)
+	for (int i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++)
 	{
 		// not part of weapons!
 		primary_rotate_rate[i] = 0.0f;
@@ -6529,7 +6585,7 @@ void ship::clear()
 
 	total_damage_received = 0.0f;
 	memset(&damage_ship, 0, MAX_DAMAGE_SLOTS * sizeof(float));
-	for(i = 0; i < MAX_DAMAGE_SLOTS; i++)
+	for(int i = 0; i < MAX_DAMAGE_SLOTS; i++)
 		damage_ship_id[i] = -1;
 
 	persona_index = -1;
@@ -6542,11 +6598,11 @@ void ship::clear()
 	ts_index = -1;
 
 	large_ship_blowup_index = -1;
-	for (i = 0; i < NUM_SUB_EXPL_HANDLES; i++)
+	for (int i = 0; i < NUM_SUB_EXPL_HANDLES; i++)
 		sub_expl_sound_handle[i] = sound_handle::invalid();
 
 	memset(&arc_pts, 0, MAX_SHIP_ARCS * 2 * sizeof(vec3d));
-	for (i = 0; i < MAX_SHIP_ARCS; i++)
+	for (int i = 0; i < MAX_SHIP_ARCS; i++)
 		arc_timestamp[i] = TIMESTAMP::invalid();
 	memset(&arc_type, 0, MAX_SHIP_ARCS * sizeof(ubyte));
 	arc_next_time = timestamp(-1);
@@ -6582,7 +6638,7 @@ void ship::clear()
 
 	current_viewpoint = -1;
 
-	for (i = 0; i < MAX_SHIP_CONTRAILS; i++)
+	for (int i = 0; i < MAX_SHIP_CONTRAILS; i++)
 		ABtrail_ptr[i] = NULL;
 	memset(&ab_info, 0, MAX_SHIP_CONTRAILS * sizeof(trail_info));
 	ab_count = 0;
@@ -6604,7 +6660,7 @@ void ship::clear()
 	bay_doors_need_open = false;
 	bay_doors_parent_shipnum = -1;
 
-	for(i = 0; i < MAX_MAN_THRUSTERS; i++)
+	for(int i = 0; i < MAX_MAN_THRUSTERS; i++)
 	{
 		thrusters_start[i] = timestamp(-1);
 		thrusters_sounds[i] = -1;
@@ -6638,6 +6694,9 @@ void ship::clear()
 	team_change_time = 0;
 
 	autoaim_fov = 0.0f;
+	for (int i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++) {
+		bank_autoaim_fov[i] = 0.0f;
+	}
 
 	cockpit_model_instance = -1;
 
@@ -6836,7 +6895,6 @@ void wing::clear()
 // NOTE: Now that the clear() member function exists, this function only sets the stuff associated with the object and ship class.
 static void ship_set(int ship_index, int objnum, int ship_type)
 {
-	int i;
 	ship		*shipp = &Ships[ship_index];
 	object		*objp = &Objects[objnum];
 	ship_info	*sip = &(Ship_info[ship_type]);
@@ -6912,7 +6970,12 @@ static void ship_set(int ship_index, int objnum, int ship_type)
 
 	shipp->afterburner_fuel = sip->afterburner_fuel_capacity;
 
-	shipp->cmeasure_count = sip->cmeasure_max;
+	if (Countermeasures_use_capacity) {
+		float cm_cargo_size = Weapon_info[sip->cmeasure_type].cargo_size;
+		shipp->cmeasure_count = fl2i(sip->cmeasure_max / cm_cargo_size);
+	} else {
+		shipp->cmeasure_count = sip->cmeasure_max;
+	}
 	shipp->current_cmeasure = sip->cmeasure_type;
 
 	if (sip->num_primary_banks == 0 || swp->primary_bank_weapons[0] < 0) {
@@ -6930,7 +6993,7 @@ static void ship_set(int ship_index, int objnum, int ship_type)
 	// handle ballistic primaries - kinda hackish; is this actually necessary?
 	// because I think it's not needed - when I accidentally left this unreachable
 	// it didn't cause any problems - Goober5000
-	for ( i = 0; i < sip->num_primary_banks; i++ )
+	for (int i = 0; i < sip->num_primary_banks; i++ )
 	{
 		float weapon_size = Weapon_info[sip->primary_bank_weapons[i]].cargo_size;
 
@@ -6943,7 +7006,7 @@ static void ship_set(int ship_index, int objnum, int ship_type)
 		}
 	}
 
-	for ( i = 0; i < sip->num_secondary_banks; i++ )
+	for (int i = 0; i < sip->num_secondary_banks; i++ )
 	{
 		if (Weapon_info[swp->secondary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo]) {
 			swp->secondary_bank_ammo[i] = 0;
@@ -6961,7 +7024,7 @@ static void ship_set(int ship_index, int objnum, int ship_type)
 
 	// set initial reload percentages... used to be done in ship::clear()
 	int max_points_per_bank = 0;
-	for (i = 0; i < sip->num_secondary_banks; ++i)
+	for (int i = 0; i < sip->num_secondary_banks; ++i)
 	{
 		int slots = pm->missile_banks[i].num_slots;
 		if (slots > max_points_per_bank)
@@ -6994,12 +7057,16 @@ static void ship_set(int ship_index, int objnum, int ship_type)
 
 	shipp->autoaim_fov = sip->autoaim_fov;
 
+	for (int i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++) {
+		shipp->bank_autoaim_fov[i] = sip->bank_autoaim_fov[i];
+	}
+
 	shipp->multi_client_collision_timestamp = TIMESTAMP::immediate();
 
 	shipp->max_shield_regen_per_second = sip->max_shield_regen_per_second;
 	shipp->max_weapon_regen_per_second = sip->max_weapon_regen_per_second;
 	
-	for (i = 0; i < (int)sip->ship_passive_arcs.size(); i++)
+	for (int i = 0; i < (int)sip->ship_passive_arcs.size(); i++)
 		shipp->passive_arc_next_times.push_back(timestamp(0));
 
 }
@@ -7179,6 +7246,7 @@ void ship_subsys::clear()
 	turret_next_fire_pos = 0;
 	turret_time_enemy_in_range = 0.0f;
 	turret_inaccuracy = 0.0f;
+	turret_last_fired = TIMESTAMP::never();
 
 	for (i = 0; i < NUM_TURRET_ORDER_TYPES; i++)
 		turret_targeting_order[i] = -1;
@@ -8737,11 +8805,11 @@ static void ship_dying_frame(object *objp, int ship_num)
 		// Do fireballs for Big ship with propagating explostion, but not Kamikaze
 		if (!(Ai_info[shipp->ai_index].ai_flags[AI::AI_Flags::Kamikaze]) && ship_get_exp_propagates(shipp) && (sip->death_roll_r_mult > 0.0f)) {
 			if ( timestamp_elapsed(shipp->next_fireball))	{
-				vec3d outpnt, pnt1, pnt2;
+				vec3d outpnt;
 				polymodel *pm = model_get(sip->model_num);
 
-				// Gets two random points on the surface of a submodel
-				submodel_get_two_random_points_better(pm->id, pm->detail[0], &pnt1, &pnt2);
+				// Get a random point on the surface of a submodel
+				vec3d pnt1 = submodel_get_random_point(pm->id, pm->detail[0]);
 
 				model_instance_local_to_global_point(&outpnt, &pnt1, shipp->model_instance_num, pm->detail[0], &objp->orient, &objp->pos );
 
@@ -8852,10 +8920,11 @@ static void ship_dying_frame(object *objp, int ship_num)
 				}
 				// Find two random vertices on the model, then average them
 				// and make the piece start there.
-				vec3d tmp, outpnt, pnt1, pnt2;
+				vec3d tmp, outpnt;
 
 				// Gets two random points on the surface of a submodel [KNOSSOS]
-				submodel_get_two_random_points_better(pm->id, pm->detail[0], &pnt1, &pnt2);
+				vec3d pnt1 = submodel_get_random_point(pm->id, pm->detail[0]);
+				vec3d pnt2 = submodel_get_random_point(pm->id, pm->detail[0]);
 
 				vm_vec_avg( &tmp, &pnt1, &pnt2 );
 				model_instance_local_to_global_point(&outpnt, &tmp, pm, pmi, pm->detail[0], &objp->orient, &objp->pos );
@@ -11308,7 +11377,15 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	delete [] subsys_pcts;
 
 	sp->afterburner_fuel = MAX(0, sip->afterburner_fuel_capacity - (sip_orig->afterburner_fuel_capacity - sp->afterburner_fuel));
-	sp->cmeasure_count = MAX(0, sip->cmeasure_max - (sip_orig->cmeasure_max - sp->cmeasure_count));
+
+	// handle countermeasure counts
+	if (Countermeasures_use_capacity) {
+		float cm_cargo_size = Weapon_info[sp->current_cmeasure].cargo_size;
+		int cm_used = fl2i(sip_orig->cmeasure_max / cm_cargo_size) - sp->cmeasure_count;
+		sp->cmeasure_count = MAX(0, fl2i(sip->cmeasure_max / cm_cargo_size) - cm_used);
+	} else {
+		sp->cmeasure_count = MAX(0, sip->cmeasure_max - (sip_orig->cmeasure_max - sp->cmeasure_count));
+	}
 
 	// avoid cases where either of these are 0
 	if (sp->current_max_speed != 0 && sip_orig->max_speed != 0) {
@@ -11854,13 +11931,13 @@ bool in_autoaim_fov(ship *shipp, int bank_to_fire, object *obj)
 	weapon_info* winfo_p = &Weapon_info[weapon_idx];
 
 	has_converging_autoaim = ((sip->aiming_flags[Ship::Aiming_Flags::Autoaim_convergence] || (The_mission.ai_profile->player_autoaim_fov[Game_skill_level] > 0.0f && !( Game_mode & GM_MULTIPLAYER ))) && aip->target_objnum != -1);
-	has_autoaim = ((has_converging_autoaim || (sip->aiming_flags[Ship::Aiming_Flags::Autoaim]) || (winfo_p->autoaim_fov > 0.0f)) && aip->target_objnum != -1);
+	has_autoaim = ((has_converging_autoaim || (sip->aiming_flags[Ship::Aiming_Flags::Autoaim]) || (winfo_p->autoaim_fov > 0.0f) || (sip->bank_autoaim_fov[bank_to_fire] > 0.0f)) && aip->target_objnum != -1);
 
 	if (!has_autoaim) {
 		return false;
 	}
 
-	autoaim_fov = std::max({shipp->autoaim_fov, The_mission.ai_profile->player_autoaim_fov[Game_skill_level], winfo_p->autoaim_fov});
+	autoaim_fov = std::max({shipp->autoaim_fov, The_mission.ai_profile->player_autoaim_fov[Game_skill_level], winfo_p->autoaim_fov, sip->bank_autoaim_fov[bank_to_fire]});
 
 	if (aip->targeted_subsys != nullptr) {
 		get_subsystem_world_pos(&Objects[aip->target_objnum], aip->targeted_subsys, &target_position);
@@ -12009,12 +12086,12 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 		// lets start gun convergence / autoaim code from here - Wanderer
 		// in order to do this per weapon, this needs to be moved here from above -Mjn
 		has_converging_autoaim = ((sip->aiming_flags[Ship::Aiming_Flags::Autoaim_convergence] || (The_mission.ai_profile->player_autoaim_fov[Game_skill_level] > 0.0f && !( Game_mode & GM_MULTIPLAYER ))) && aip->target_objnum != -1);
-		has_autoaim = ((has_converging_autoaim || (sip->aiming_flags[Ship::Aiming_Flags::Autoaim]) || (winfo_p->autoaim_fov > 0.0f)) && aip->target_objnum != -1);
+		has_autoaim = ((has_converging_autoaim || (sip->aiming_flags[Ship::Aiming_Flags::Autoaim]) || (winfo_p->autoaim_fov > 0.0f) || (sip->bank_autoaim_fov[bank_to_fire] > 0.0f)) && aip->target_objnum != -1);
 		needs_target_pos = ((has_autoaim || (sip->aiming_flags[Ship::Aiming_Flags::Auto_convergence])) && aip->target_objnum != -1);
 
 		if (needs_target_pos) {
 			if (has_autoaim) {
-				autoaim_fov = std::max({shipp->autoaim_fov, The_mission.ai_profile->player_autoaim_fov[Game_skill_level], winfo_p->autoaim_fov});
+				autoaim_fov = std::max({shipp->autoaim_fov, The_mission.ai_profile->player_autoaim_fov[Game_skill_level], winfo_p->autoaim_fov, sip->bank_autoaim_fov[bank_to_fire]});
 			}
 
 			// If a subsystem is targeted, fire in that direction instead
@@ -14925,7 +15002,12 @@ int ship_do_rearm_frame( object *objp, float frametime )
 	}
 
 	// AL 1-16-98: Replenish countermeasures
-	shipp->cmeasure_count = sip->cmeasure_max;
+	if (Countermeasures_use_capacity) {
+		float cm_cargo_size = Weapon_info[sip->cmeasure_type].cargo_size;
+		shipp->cmeasure_count = fl2i(sip->cmeasure_max / cm_cargo_size);
+	} else {
+		shipp->cmeasure_count = sip->cmeasure_max;
+	}
 
 	// Do shield repair here
 	if ( !(objp->flags[Object::Object_Flags::No_shields]) )

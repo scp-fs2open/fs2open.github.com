@@ -280,6 +280,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "are-ship-flags-set",				OP_ARE_SHIP_FLAGS_SET,					2,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},	// Karajorma
 	{ "are-wing-flags-set",				OP_ARE_WING_FLAGS_SET,					2,	INT_MAX,	SEXP_BOOLEAN_OPERATOR, },	// Goober5000
 	{ "has-armor-type",					OP_HAS_ARMOR_TYPE,						3,	3,			SEXP_BOOLEAN_OPERATOR, },	// MjnMixael
+	{ "is-ship-emp-active",				OP_IS_SHIP_EMP_ACTIVE,					1,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},	// MjnMixael
 
 	//Shields, Engines and Weapons Sub-Category
 	{ "has-primary-weapon",				OP_HAS_PRIMARY_WEAPON,					3,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},	// Karajorma
@@ -287,6 +288,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "is-primary-selected",			OP_IS_PRIMARY_SELECTED,					2,	2,			SEXP_BOOLEAN_OPERATOR,	},
 	{ "is-secondary-selected",			OP_IS_SECONDARY_SELECTED,				2,	2,			SEXP_BOOLEAN_OPERATOR,	},
 	{ "primary-fired-since",			OP_PRIMARY_FIRED_SINCE,					3,	3,			SEXP_INTEGER_OPERATOR,	},	// Karajorma
+	{ "turret-fired-since",				OP_TURRET_FIRED_SINCE,					3,	3,			SEXP_INTEGER_OPERATOR, },	// Asteroth
 	{ "secondary-fired-since",			OP_SECONDARY_FIRED_SINCE,				3,	3,			SEXP_INTEGER_OPERATOR,	},	// Karajorma
 	{ "primary-ammo-pct",				OP_PRIMARY_AMMO_PCT,					2,	2,			SEXP_INTEGER_OPERATOR,	},
 	{ "secondary-ammo-pct",				OP_SECONDARY_AMMO_PCT,					2,	2,			SEXP_INTEGER_OPERATOR,	},
@@ -294,6 +296,8 @@ SCP_vector<sexp_oper> Operators = {
 	{ "get-secondary-ammo",				OP_GET_SECONDARY_AMMO,					2,	2,			SEXP_INTEGER_OPERATOR,	}, // Karajorma
 	{ "turret-get-primary-ammo",		OP_TURRET_GET_PRIMARY_AMMO,				3,	3,			SEXP_INTEGER_OPERATOR,	},	// DahBlount
 	{ "turret-get-secondary-ammo",		OP_TURRET_GET_SECONDARY_AMMO,			3,	3,			SEXP_INTEGER_OPERATOR,	},	// DahBlount
+	{ "turret-has-primary-weapon",		OP_TURRET_HAS_PRIMARY_WEAPON,			4,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},	// MjnMixael
+	{ "turret-has-secondary-weapon",	OP_TURRET_HAS_SECONDARY_WEAPON,			4,	INT_MAX,	SEXP_BOOLEAN_OPERATOR,	},	// MjnMixael
 	{ "get-num-countermeasures",		OP_GET_NUM_COUNTERMEASURES,				1,	1,			SEXP_INTEGER_OPERATOR,	}, // Karajorma
 	{ "weapon-energy-pct",				OP_WEAPON_ENERGY_LEFT,					1,	1,			SEXP_INTEGER_OPERATOR,	},
 	{ "afterburner-energy-pct",			OP_AFTERBURNER_LEFT,					1,	1,			SEXP_INTEGER_OPERATOR,	},
@@ -527,8 +531,8 @@ SCP_vector<sexp_oper> Operators = {
 	{ "ship-subsys-ignore_if_dead",		OP_SHIP_SUBSYS_IGNORE_IF_DEAD,			3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// FUBAR
 	{ "awacs-set-radius",				OP_AWACS_SET_RADIUS,					3,	3,			SEXP_ACTION_OPERATOR,	},
 	{ "alter-ship-flag",				OP_ALTER_SHIP_FLAG,						3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma 
-	{ "alter-wing-flag",				OP_ALTER_WING_FLAG,						2,	INT_MAX,	SEXP_ACTION_OPERATOR, },	// Goober5000
-	{ "cancel-future-waves",			OP_CANCEL_FUTURE_WAVES,						1,	INT_MAX,	SEXP_ACTION_OPERATOR,	}, // naomimyselfandi
+	{ "alter-wing-flag",				OP_ALTER_WING_FLAG,						2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "cancel-future-waves",			OP_CANCEL_FUTURE_WAVES,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	}, // naomimyselfandi
 
 	//Cargo Sub-Category
 	{ "transfer-cargo",					OP_TRANSFER_CARGO,						2,	2,			SEXP_ACTION_OPERATOR,	},
@@ -764,6 +768,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "ship-vaporize",					OP_SHIP_VAPORIZE,						1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "ship-no-vaporize",				OP_SHIP_NO_VAPORIZE,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-explosion-option",			OP_SET_EXPLOSION_OPTION,				3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "create-bolt",					OP_CREATE_BOLT,							7,	8,			SEXP_ACTION_OPERATOR,	},	// MjnMixael
 	{ "explosion-effect",				OP_EXPLOSION_EFFECT,					11,	14,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "warp-effect",					OP_WARP_EFFECT,							12, 14,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "clear-weapons",					OP_CLEAR_WEAPONS,						0,	1,			SEXP_ACTION_OPERATOR,	},	// Karajorma
@@ -926,6 +931,18 @@ int get_dynamic_parameter_index(SCP_string op_name, int param)
 				int last_param = (int)Dynamic_parameters[i].parameter_map.size() - 1;
 				return Dynamic_parameters[i].parameter_map[last_param].second;
 			}
+		}
+	}
+
+	// Didn't find anything.
+	return -1;
+}
+
+int get_dynamic_enum_position(SCP_string enum_name)
+{
+	for (int i = 0; i < (int)Dynamic_enums.size(); i++) {
+		if (!stricmp(enum_name.c_str(), Dynamic_enums[i].name.c_str())) {
+			return i;
 		}
 	}
 
@@ -2094,7 +2111,7 @@ bool check_variable_data_type(int type, int var_type, int op, int argnum, const 
  * @return 0 if ok, negative if there's an error in expression..
  * See the returns types in sexp.h
  */
-int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, int mode)
+int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, sexp_mode mode)
 {
 	int i = 0, z, t, type, argnum = 0, count, op, type2 = 0, op2;
 	int op_node;
@@ -3213,7 +3230,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					return SEXP_CHECK_TYPE_MISMATCH;
 
 				if (Fred_running) {
-					if (mode == SEXP_MODE_CAMPAIGN) {
+					if (mode == sexp_mode::CAMPAIGN) {
 						for (i=0; i<Campaign.num_missions; i++)
 							if (!stricmp(CTEXT(node), Campaign.missions[i].name)) {
 								if ((i != Sexp_useful_number) && (Campaign.missions[i].level >= Campaign.missions[Sexp_useful_number].level))
@@ -3249,7 +3266,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 				// we only need to check the campaign list if running in Fred and are in campaign mode.
 				// otherwise, check the set of current goals/events
-				if (Fred_running && (mode == SEXP_MODE_CAMPAIGN)) {
+				if (Fred_running && (mode == sexp_mode::CAMPAIGN)) {
 					z = find_parent_operator(node);
 					Assert(z >= 0);
 					z = Sexp_nodes[z].rest;  // first argument of operator should be mission name
@@ -4052,6 +4069,16 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 				if (stricmp(CTEXT(node), SEXP_NONE_STRING) && (get_motion_debris_by_name(CTEXT(node)) < 0)) {
 					return SEXP_CHECK_INVALID_MOTION_DEBRIS;
+				}
+				break;
+
+			case OPF_BOLT_TYPE:
+				if (type2 != SEXP_ATOM_STRING) {
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+
+				if (get_bolt_type_by_name(CTEXT(node)) < 0) {
+					return SEXP_CHECK_INVALID_BOLT_TYPE;
 				}
 				break;
 
@@ -13499,6 +13526,37 @@ void sexp_set_explosion_option(int node)
 	}
 }
 
+void sexp_create_bolt(int n)
+{
+	int bolt = get_bolt_type_by_name(CTEXT(n));
+
+	if (bolt < 0)
+		return;
+
+	float coords[6];
+	bool is_nan, is_nan_forever;
+	for (int i = 0; i <= 5; i++) {
+		n = CDR(n);
+		int buf = eval_num(n, is_nan, is_nan_forever);
+
+		if (is_nan || is_nan_forever)
+			return;
+
+		coords[i] = i2fl(buf);
+	}
+	n = CDR(n);
+
+	bool playSound = true;
+	
+	if (n >= 0)
+		playSound = eval_sexp(CDR(n));
+
+	vec3d origin = vm_vec_new(coords[0], coords[1], coords[2]);
+	vec3d dest = vm_vec_new(coords[3], coords[4], coords[5]);
+	
+	nebl_bolt(bolt, &origin, &dest, playSound);
+}
+
 // Goober5000
 // Basically, this function pretends that there's a ship at the origin that's blowing up, and
 // it does stuff accordingly.  In some places, it has to tiptoe around a little because the
@@ -16456,6 +16514,39 @@ int sexp_are_wing_flags_set(int node)
 	return SEXP_TRUE; 
 }
 
+int sexp_is_ship_emp_active(int n)
+{
+	Assert(n >= 0);
+
+	while (n != -1) {
+
+		auto ship_entry = eval_ship(n);
+		if (!ship_entry)
+			return SEXP_FALSE;
+		if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
+			return SEXP_CANT_EVAL;
+
+		// see if the ship has already exited the mission (either through departure or destruction)
+		if (ship_entry->exited_index >= 0) {
+			return SEXP_KNOWN_FALSE;
+
+		}
+		// ship is in mission
+		else if (ship_entry->shipp) {
+			if (ship_entry->shipp->emp_intensity <= 0.0f) {
+				return SEXP_FALSE;
+			}
+		}
+		// ship probably vanished
+		else
+			return SEXP_NAN_FOREVER;
+
+		n = CDR(n);
+	}
+
+	return SEXP_TRUE;
+}
+
 void sexp_alter_ship_flag(int node)
 {
 	Object::Object_Flags object_flag = Object::Object_Flags::NUM_VALUES;
@@ -16899,6 +16990,51 @@ void sexp_set_mission_mood (int node)
 	Warning(LOCATION, "Sexp-mission-mood attempted to set mood %s which does not exist in messages.tbl", mood);
 }
 
+int sexp_turret_fired_delay(int node)
+{
+	ship* shipp;
+	bool is_nan, is_nan_forever;
+
+	auto ship_entry = eval_ship(node);
+	if (!ship_entry) {
+		return SEXP_FALSE;
+	}
+	if (ship_entry->status == ShipStatus::EXITED) {
+		return SEXP_KNOWN_FALSE;
+	}
+	if (ship_entry->status == ShipStatus::NOT_YET_PRESENT) {
+		return SEXP_CANT_EVAL;
+	}
+	shipp = ship_entry->shipp;
+
+	// get the subsystem
+	node = CDR(node);
+	auto turret = ship_get_subsys(shipp, CTEXT(node));
+	if (!turret || turret->system_info->type != SUBSYSTEM_TURRET)
+		return SEXP_KNOWN_FALSE;
+
+	// get the delay
+	node = CDR(node);
+	int delay = eval_num(node, is_nan, is_nan_forever);
+	if (is_nan_forever) {
+		return SEXP_KNOWN_FALSE;
+	}
+	else if (is_nan || delay <= 0) {
+		return SEXP_FALSE;
+	}
+
+	if (turret->turret_last_fired.isNever()) {
+		// weapon was never fired
+		return SEXP_FALSE;
+	}
+		
+	if (timestamp_since(turret->turret_last_fired) < delay) {
+		return SEXP_TRUE;
+	}
+
+	return SEXP_FALSE;
+}
+
 int sexp_weapon_fired_delay(int node, int op_num)
 {
 	ship *shipp;
@@ -16965,14 +17101,9 @@ int sexp_weapon_fired_delay(int node, int op_num)
 
 int sexp_has_weapon(int node, int op_num)
 {
+	// Get the ship to check
 	ship *shipp;
-	bool is_nan, is_nan_forever;
-	int i;
-	int requested_bank;
-	int weapon_index;
-	int num_weapon_banks = 0;
-	int *weapon_banks = nullptr;
-
+	
 	auto ship_entry = eval_ship(node);
 	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		return SEXP_NAN;
@@ -16981,8 +17112,28 @@ int sexp_has_weapon(int node, int op_num)
 	node = CDR(node);
 
 	shipp = ship_entry->shipp;
+	ship_subsys *turret = nullptr;
+
+	switch (op_num){
+		case OP_TURRET_HAS_PRIMARY_WEAPON:
+		case OP_TURRET_HAS_SECONDARY_WEAPON:
+			// get the subsystem
+			turret = ship_get_subsys(shipp, CTEXT(node));
+			if (!turret || turret->system_info->type != SUBSYSTEM_TURRET)
+				return SEXP_NAN_FOREVER;
+
+			node = CDR(node);
+			break;
+
+		default:
+			break;
+	}
+
 
 	// Get the bank to check
+	int requested_bank;
+	bool is_nan, is_nan_forever;
+
 	if (!strcmp(CTEXT(node), SEXP_ALL_BANKS_STRING)) {
 		requested_bank = -1;
 	}
@@ -16997,6 +17148,10 @@ int sexp_has_weapon(int node, int op_num)
 	}
 	node = CDR(node);
  
+	// Get the banks of the ship or turret
+	int num_weapon_banks = 0;
+	int* weapon_banks = nullptr;
+
 	switch (op_num) {
 		case OP_HAS_PRIMARY_WEAPON:
 			weapon_banks = shipp->weapons.primary_bank_weapons;
@@ -17008,6 +17163,16 @@ int sexp_has_weapon(int node, int op_num)
 			num_weapon_banks = shipp->weapons.num_secondary_banks;
 			break;
 
+		case OP_TURRET_HAS_PRIMARY_WEAPON:
+			weapon_banks = turret->weapons.primary_bank_weapons;
+			num_weapon_banks = turret->weapons.num_primary_banks;
+			break;
+
+		case OP_TURRET_HAS_SECONDARY_WEAPON:
+			weapon_banks = turret->weapons.secondary_bank_weapons;
+			num_weapon_banks = turret->weapons.num_secondary_banks;
+			break;
+
 		default:
 			Warning(LOCATION, "Unrecognised bank type used in has-x-weapon. Returning false");
 			return SEXP_FALSE;
@@ -17015,13 +17180,15 @@ int sexp_has_weapon(int node, int op_num)
 	
 
 	//loop through the weapons and test them
+	int weapon_index;
+
 	while (node > -1) {
 		weapon_index = weapon_info_lookup(CTEXT(node));
 		Assertion (weapon_index >= 0, "Weapon name %s is unknown.", CTEXT(node));
 
 		// if we're checking every bank
 		if (requested_bank == -1) {
-			for (i = 0; i < num_weapon_banks; i++) {
+			for (int i = 0; i < num_weapon_banks; i++) {
 				if (weapon_index == weapon_banks[i]) {
 					return SEXP_TRUE;
 				}
@@ -19475,15 +19642,26 @@ void sexp_set_countermeasures(int node)
 	shipp = ship_entry->shipp;
 	node = CDR(node);
 
+	float cm_cargo_size = 1.0f;
+	if (Countermeasures_use_capacity)
+		cm_cargo_size = Weapon_info[shipp->current_cmeasure].cargo_size;
+
 	num_cmeasures = eval_num(node, is_nan, is_nan_forever);
 	if (is_nan || is_nan_forever) {
 		return;
 	}
 	if (num_cmeasures < 0) {
 		num_cmeasures = 0;
-	}
-	else if (num_cmeasures > Ship_info[shipp->ship_info_index].cmeasure_max) {
-		num_cmeasures = Ship_info[shipp->ship_info_index].cmeasure_max;
+	} else {
+		if (Countermeasures_use_capacity) {
+			if (num_cmeasures > fl2i(Ship_info[shipp->ship_info_index].cmeasure_max / cm_cargo_size)) {
+				num_cmeasures = fl2i(Ship_info[shipp->ship_info_index].cmeasure_max / cm_cargo_size);
+			}
+		} else {
+			if (num_cmeasures > Ship_info[shipp->ship_info_index].cmeasure_max) {
+				num_cmeasures = Ship_info[shipp->ship_info_index].cmeasure_max;
+			}
+		}
 	}
 
 	shipp->cmeasure_count = num_cmeasures;
@@ -26474,6 +26652,10 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_are_wing_flags_set(node);
 				break;
 
+			case OP_IS_SHIP_EMP_ACTIVE:
+				sexp_val = sexp_is_ship_emp_active(node);
+				break;
+
 			case OP_CAP_SUBSYS_CARGO_KNOWN_DELAY:
 				sexp_val = sexp_cap_subsys_cargo_known_delay(node);
 				break;
@@ -26971,7 +27153,13 @@ int eval_sexp(int cur_node, int referenced_node)
 			case OP_SET_ORDER_ALLOWED_TARGET:
 				sexp_set_order_allowed_for_target(node);
 				sexp_val = SEXP_TRUE;
-				break; 
+				break;
+
+			// MjnMixael
+			case OP_CREATE_BOLT:
+				sexp_create_bolt(node);
+				sexp_val = SEXP_TRUE;
+				break;
 
 			// Goober5000
 			case OP_EXPLOSION_EFFECT:
@@ -27946,6 +28134,10 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_TURRET_FIRED_SINCE:
+				sexp_val = sexp_turret_fired_delay(node);
+				break;
+
 			case OP_PRIMARY_FIRED_SINCE:
 			case OP_SECONDARY_FIRED_SINCE:
 				sexp_val = sexp_weapon_fired_delay(node, op_num); 
@@ -27953,6 +28145,8 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			case OP_HAS_PRIMARY_WEAPON:
 			case OP_HAS_SECONDARY_WEAPON:
+			case OP_TURRET_HAS_PRIMARY_WEAPON:
+			case OP_TURRET_HAS_SECONDARY_WEAPON:
 				sexp_val = sexp_has_weapon(node, op_num);
 				break;
 
@@ -28994,10 +29188,13 @@ int query_operator_return_type(int op)
 		case OP_NAV_ISLINKED:
 		case OP_IS_PLAYER:
 		case OP_PRIMARY_FIRED_SINCE:
+		case OP_TURRET_FIRED_SINCE:
 		case OP_SECONDARY_FIRED_SINCE:
 		case OP_IS_FACING:
 		case OP_HAS_PRIMARY_WEAPON:
 		case OP_HAS_SECONDARY_WEAPON:
+		case OP_TURRET_HAS_PRIMARY_WEAPON:
+		case OP_TURRET_HAS_SECONDARY_WEAPON:
 		case OP_IS_BIT_SET:
 		case OP_IS_NAN:
 		case OP_DIRECTIVE_VALUE:
@@ -29008,6 +29205,7 @@ int query_operator_return_type(int op)
 		case OP_PLAYER_IS_CHEATING_BASTARD:
 		case OP_ARE_SHIP_FLAGS_SET:
 		case OP_ARE_WING_FLAGS_SET:
+		case OP_IS_SHIP_EMP_ACTIVE:
 		case OP_IS_IN_TURRET_FOV:
 		case OP_IS_LANGUAGE:
 		case OP_USED_CHEAT:
@@ -29300,6 +29498,7 @@ int query_operator_return_type(int op)
 		case OP_SET_SOUND_ENVIRONMENT:
 		case OP_UPDATE_SOUND_ENVIRONMENT:
 		case OP_ADJUST_AUDIO_VOLUME:
+		case OP_CREATE_BOLT:
 		case OP_EXPLOSION_EFFECT:
 		case OP_WARP_EFFECT:
 		case OP_SET_OBJECT_POSITION:
@@ -30657,6 +30856,14 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_PLAYER_NOT_USE_AI:
 			return OPF_NONE;
 
+		case OP_CREATE_BOLT:
+			if (argnum == 0)
+				return OPF_BOLT_TYPE;
+			else if (argnum == 7)
+				return OPF_BOOL;
+			else
+				return OPF_NUMBER;
+
 		case OP_EXPLOSION_EFFECT:
 			if (argnum <= 2)
 				return OPF_NUMBER;
@@ -30928,6 +31135,9 @@ int query_operator_argument_type(int op, int argnum)
 			} else {
 				return OPF_WING_FLAG;
 			}
+
+		case OP_IS_SHIP_EMP_ACTIVE:
+			return OPF_SHIP;
 
 		case OP_CAP_SUBSYS_CARGO_KNOWN_DELAY:
 			if ( argnum == 0 ) {
@@ -31699,6 +31909,14 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_CURRENT_SPEED:
 			return OPF_SHIP_WING;
+
+		case OP_TURRET_FIRED_SINCE:
+			if (argnum == 0)
+				return OPF_SHIP;
+			else if (argnum == 1)
+				return OPF_SUBSYSTEM;
+			else
+				return OPF_POSITIVE;
 			
 		case OP_PRIMARY_FIRED_SINCE:
 		case OP_SECONDARY_FIRED_SINCE:
@@ -31714,6 +31932,17 @@ int query_operator_argument_type(int op, int argnum)
 			else if (argnum == 1) 
 				return OPF_WEAPON_BANK_NUMBER;
 			else 
+				return OPF_WEAPON_NAME;
+
+		case OP_TURRET_HAS_PRIMARY_WEAPON:
+		case OP_TURRET_HAS_SECONDARY_WEAPON:
+			if (argnum == 0)
+				return OPF_SHIP;
+			else if (argnum == 1)
+				return OPF_SUBSYSTEM;
+			else if (argnum == 2)
+				return OPF_WEAPON_BANK_NUMBER;
+			else
 				return OPF_WEAPON_NAME;
 			
 		case OP_DIRECTIVE_VALUE:
@@ -32295,7 +32524,7 @@ void update_sexp_references(const char *old_name, const char *new_name, int form
 	}
 }
 
-int query_referenced_in_sexp(int  /*mode*/, const char *name, int *node)
+std::pair<int, sexp_src> query_referenced_in_sexp(sexp_ref_type  /*type*/, const char *name, int &node)
 {
 	int i, n, j;
 
@@ -32308,51 +32537,49 @@ int query_referenced_in_sexp(int  /*mode*/, const char *name, int *node)
 	}
 
 	if (n == Num_sexp_nodes){
-		return 0;
+		return std::make_pair(-1, sexp_src::NONE);
 	}
 
-	if (node){
-		*node = n;
-	}
+	node = n;
 
 	// so we know it's being used somewhere..  Time to find out where..
 	for (i=0; i<MAX_SHIPS; i++)
 		if (Ships[i].objnum >= 0) {
 			if (query_node_in_sexp(n, Ships[i].arrival_cue)){
-				return i | SRC_SHIP_ARRIVAL;
+				return std::make_pair(i, sexp_src::SHIP_ARRIVAL);
 			}
 			if (query_node_in_sexp(n, Ships[i].departure_cue)){
-				return i | SRC_SHIP_DEPARTURE;
+				return std::make_pair(i, sexp_src::SHIP_DEPARTURE);
 			}
 		}
 
 	for (i=0; i<MAX_WINGS; i++){
 		if (Wings[i].wave_count) {
 			if (query_node_in_sexp(n, Wings[i].arrival_cue)){
-				return i | SRC_WING_ARRIVAL;
+				return std::make_pair(i, sexp_src::WING_ARRIVAL);
 			}
 			if (query_node_in_sexp(n, Wings[i].departure_cue)){
-				return i | SRC_WING_DEPARTURE;
+				return std::make_pair(i, sexp_src::WING_DEPARTURE);
 			}
 		}
 	}
 
 	for (i=0; i<(int)Mission_events.size(); i++){
 		if (query_node_in_sexp(n, Mission_events[i].formula)){
-			return i | SRC_EVENT;
+			return std::make_pair(i, sexp_src::EVENT);
 		}
 	}
 
 	for (i=0; i<(int)Mission_goals.size(); i++){
 		if (query_node_in_sexp(n, Mission_goals[i].formula)){
-			return i | SRC_MISSION_GOAL;
+			return std::make_pair(i, sexp_src::MISSION_GOAL);
 		}
 	}
 
 	for (j=0; j<Num_teams; j++) {
 		for (i=0; i<Debriefings[j].num_stages; i++) {
 			if (query_node_in_sexp(n, Debriefings[j].stages[i].formula)){
-				return i | SRC_DEBRIEFING;
+				return std::make_pair(i, sexp_src::DEBRIEFING);
 			}
 		}
 	}
@@ -32360,12 +32587,12 @@ int query_referenced_in_sexp(int  /*mode*/, const char *name, int *node)
 	for (j=0; j<Num_teams; j++) {
 		for (i=0; i<Briefings[j].num_stages; i++) {
 			if (query_node_in_sexp(n, Briefings[j].stages[i].formula)){
-				return i | SRC_BRIEFING;
+				return std::make_pair(i, sexp_src::BRIEFING);
 			}
 		}
 	}
 
-	return SRC_UNKNOWN;
+	return std::make_pair(-1, sexp_src::UNKNOWN);
 }
 
 void skip_white(const char **str)
@@ -32776,6 +33003,9 @@ const char *sexp_error_message(int num)
 
 		case SEXP_CHECK_INVALID_MOTION_DEBRIS:
 			return "Invalid motion debris type";
+
+		case SEXP_CHECK_INVALID_BOLT_TYPE:
+			return "Invalid lightning bolt type";
 
 		default:
 			Warning(LOCATION, "Unhandled sexp error code %d!", num);
@@ -33898,6 +34128,7 @@ int get_category(int op_id)
 		case OP_AFTERBURNER_LEFT:
 		case OP_WEAPON_ENERGY_LEFT:
 		case OP_GET_ETS_VALUE:
+		case OP_TURRET_FIRED_SINCE:
 		case OP_PRIMARY_FIRED_SINCE:
 		case OP_SECONDARY_FIRED_SINCE:
 		case OP_GET_THROTTLE_SPEED:
@@ -33924,6 +34155,8 @@ int get_category(int op_id)
 		case OP_ARE_SHIP_FLAGS_SET:
 		case OP_TURRET_GET_PRIMARY_AMMO:
 		case OP_TURRET_GET_SECONDARY_AMMO:
+		case OP_TURRET_HAS_PRIMARY_WEAPON:
+		case OP_TURRET_HAS_SECONDARY_WEAPON:
 		case OP_IS_DOCKED:
 		case OP_IS_IN_TURRET_FOV:
 		case OP_GET_HOTKEY:
@@ -33940,6 +34173,7 @@ int get_category(int op_id)
 		case OP_MAP_HAS_DATA_ITEM:
 		case OP_ANGLE_FVEC_TARGET:
 		case OP_ARE_WING_FLAGS_SET:
+		case OP_IS_SHIP_EMP_ACTIVE:
 		case OP_PLAYER_IS_CHEATING_BASTARD:
 		case OP_USED_CHEAT:
 			return OP_CATEGORY_STATUS;
@@ -34069,6 +34303,7 @@ int get_category(int op_id)
 		case OP_CHANGE_SOUNDTRACK:
 		case OP_TECH_ADD_INTEL:
 		case OP_TECH_RESET_TO_DEFAULT:
+		case OP_CREATE_BOLT:
 		case OP_EXPLOSION_EFFECT:
 		case OP_WARP_EFFECT:
 		case OP_SET_OBJECT_FACING:
@@ -34776,6 +35011,7 @@ int get_subcategory(int op_id)
 		case OP_SHIP_VAPORIZE:
 		case OP_SHIP_NO_VAPORIZE:
 		case OP_SET_EXPLOSION_OPTION:
+		case OP_CREATE_BOLT:
 		case OP_EXPLOSION_EFFECT:
 		case OP_WARP_EFFECT:
 		case OP_CLEAR_WEAPONS:
@@ -34863,6 +35099,7 @@ int get_subcategory(int op_id)
 		case OP_NAV_ISLINKED:
 		case OP_ARE_SHIP_FLAGS_SET:
 		case OP_ARE_WING_FLAGS_SET:
+		case OP_IS_SHIP_EMP_ACTIVE:
 			return STATUS_SUBCATEGORY_SHIP_STATUS;
 
 		case OP_SHIELD_RECHARGE_PCT:
@@ -34877,6 +35114,8 @@ int get_subcategory(int op_id)
 		case OP_GET_SECONDARY_AMMO:
 		case OP_TURRET_GET_PRIMARY_AMMO:
 		case OP_TURRET_GET_SECONDARY_AMMO:
+		case OP_TURRET_HAS_PRIMARY_WEAPON:
+		case OP_TURRET_HAS_SECONDARY_WEAPON:
 		case OP_GET_NUM_COUNTERMEASURES:
 		case OP_AFTERBURNER_LEFT:
 		case OP_WEAPON_ENERGY_LEFT:
@@ -34886,6 +35125,7 @@ int get_subcategory(int op_id)
 		case OP_HAS_SECONDARY_WEAPON:
 		case OP_GET_ETS_VALUE:
 		case OP_IS_IN_TURRET_FOV:
+		case OP_TURRET_FIRED_SINCE:
 			return STATUS_SUBCATEGORY_SHIELDS_ENGINES_AND_WEAPONS;
 			
 		case OP_CARGO_KNOWN_DELAY:
@@ -36520,6 +36760,19 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"Use Add-Data to specify additional explosion options in repeating option-value pairs, just like Send-Message-List can have additional messages in source-priority-message-delay groups.\r\n\r\n"
 		"IMPORTANT: Each additional option in the list MUST HAVE two entries; any option without the two proper fields will be ignored, as will any successive options." },
 
+	// MjnMixael
+	{ OP_CREATE_BOLT, "create-bolt\r\n"
+		"\tCreates a lightning bolt at the specified location  "
+		"Takes 8 arguments...\r\n"
+		"\t1:  The bolt type to create\r\n"
+		"\t2:  Origin X\r\n"
+		"\t3:  Origin Y\r\n"
+		"\t4:  Origin Z\r\n"
+		"\t5:  Strike X\r\n"
+		"\t6:  Strike Y\r\n"
+		"\t7:  Strike Z\r\n"
+		"\t8:  (Optional) Whether or not to play the default lightning sounds. Defaults to true\r\n" },
+			
 	// Goober5000
 	{ OP_EXPLOSION_EFFECT, "explosion-effect\r\n"
 		"\tCauses an explosion at a given origin, with the given parameters.  "
@@ -37115,6 +37368,11 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"Takes 2 or more arguments...\r\n"
 		"\t1:\tName of the wing."
 		"\tRest:\tWing flags which might be set for this wing." },
+
+	{ OP_IS_SHIP_EMP_ACTIVE, "Is ship emp active (Boolean operator)\r\n"
+		"\tReturns true if all of the specified ships are currently experiencing EMP effects.\r\n\r\n"
+		"Returns a boolean value if all ships are currently EMP'd.  Takes 1 or more arguments...\r\n"
+		"\tAll:\tName of the ships to check." },
 
 	{ OP_CAP_SUBSYS_CARGO_KNOWN_DELAY, "Is capital ship subsystem cargo known (delay) (Boolean operator)\r\n"
 		"\tReturns true if all of the specified subsystem cargo is known by the player.\r\n"
@@ -38733,6 +38991,14 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tName of the object"
 	},
 
+	// Asteroth
+	{ OP_TURRET_FIRED_SINCE, "turret-fired-since\r\n"
+		"\tReturns true if the turret has been fired within the supplied window of time. Takes 3 arguments...\r\n\r\n"
+		"\t1:\tShip name\r\n"
+		"\t2:\tTurret name\r\n"
+		"\t3:\tTime period to check if the turret was fired (in milliseconds)\r\n"
+	},
+
 	// Karajora
 	{ OP_PRIMARY_FIRED_SINCE, "primary-fired-since\r\n"
 		"\tReturns true if the primary weapon bank specified has been fired within the supplied window of time. Takes 3 arguments...\r\n\r\n"
@@ -38762,6 +39028,24 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tReturns true if the secondary weapon bank specified has any of the weapons listed. Takes 3 or more arguments...\r\n\r\n"
 		"\t1:\tShip name\r\n"
 		"\t2:\tWeapon bank number (This is a zero-based index. The first bank is numbered 0.)\r\n"
+		"\tRest:\tWeapon name\r\n"
+	},
+
+	// MjnMixael
+	{ OP_TURRET_HAS_PRIMARY_WEAPON, "turret-has-primary-weapon\r\n"
+		"\tReturns true if the turret specified has any of the weapons listed. Takes 3 or more arguments...\r\n\r\n"
+		"\t1:\tShip name\r\n"
+		"\t2:\tTurret to check\r\n"
+		"\t3:\tTurret bank number (This is a zero-based index. The first bank is numbered 0.)\r\n"
+		"\tRest:\tWeapon name\r\n"
+	},
+
+	// MjnMixael
+	{ OP_TURRET_HAS_SECONDARY_WEAPON, "turret-has-secondary-weapon\r\n"
+		"\tReturns true if the turret specified has any of the weapons listed. Takes 3 or more arguments...\r\n\r\n"
+		"\t1:\tShip name\r\n"
+		"\t2:\tTurret to check\r\n"
+		"\t3:\tTurret bank number (This is a zero-based index. The first bank is numbered 0.)\r\n"
 		"\tRest:\tWeapon name\r\n"
 	},
 

@@ -1537,6 +1537,9 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 		depth = d_depth;
 	}
 
+	if (Cmdline_vulkan)
+		mode = GR_VULKAN;
+
 	// if we are in standalone mode then just use special defaults
 	if (Is_standalone) {
 		mode = GR_STUB;

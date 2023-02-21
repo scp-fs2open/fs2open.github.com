@@ -93,6 +93,7 @@ extern float Arc_width_radius_multiplier_emp;
 extern float Arc_width_no_multiply_over_radius_emp;
 extern float Arc_width_minimum_emp;
 extern bool Use_engine_wash_intensity;
+extern bool Apply_shudder_to_chase_view;
 extern bool Swarmers_lead_targets;
 extern SCP_vector<gr_capability> Required_render_ext;
 extern float Weapon_SS_Threshold_Turret_Inaccuracy;
@@ -129,6 +130,7 @@ extern bool Discord_presence;
 extern bool Hotkey_always_hide_hidden_ships;
 extern bool Use_weapon_class_sounds_for_hits_to_player;
 extern bool SCPUI_loads_hi_res_animations;
+extern bool Countermeasures_use_capacity;
 extern bool Play_thruster_sounds_for_player;
 extern std::array<std::tuple<float, float>, 6> Fred_spacemouse_nonlinearity;
 

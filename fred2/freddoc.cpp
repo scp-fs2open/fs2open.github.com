@@ -234,7 +234,7 @@ bool CFREDDoc::load_mission(char *pathname, int flags) {
 
 		// the version will have been assigned before loading was aborted
 		if (!gameversion::check_at_least(The_mission.required_fso_version)) {
-			sprintf(name, "The file \"%s\" cannot be %sed because it requires FSO version %s", pathname, term, format_version(The_mission.required_fso_version).c_str());
+			sprintf(name, "The file \"%s\" cannot be %sed because it requires FSO version %s", pathname, term, format_version(The_mission.required_fso_version, true).c_str());
 		} else {
 			sprintf(name, "Unable to %s the file \"%s\".", term, pathname);
 		}
@@ -258,9 +258,9 @@ bool CFREDDoc::load_mission(char *pathname, int flags) {
 	// message 3: warning about saving under a new version
 	if (!(flags & MPF_IMPORT_FSM) && (The_mission.required_fso_version != LEGACY_MISSION_VERSION) && (MISSION_VERSION > The_mission.required_fso_version)) {
 		SCP_string msg = "This mission's file format is ";
-		msg += format_version(The_mission.required_fso_version);
+		msg += format_version(The_mission.required_fso_version, true);
 		msg += ".  When you save this mission, the file format will be migrated to ";
-		msg += format_version(MISSION_VERSION);
+		msg += format_version(MISSION_VERSION, true);
 		msg += ".  FSO versions earlier than this will not be able to load the mission.";
 		Fred_view_wnd->MessageBox(msg.c_str());
 	}
@@ -292,7 +292,7 @@ bool CFREDDoc::load_mission(char *pathname, int flags) {
 				old_name = Ships[Wings[i].ship_index[j]].ship_name;
 				if (stricmp(name, old_name)) {  // need to fix name
 					update_sexp_references(old_name, name);
-					ai_update_goal_references(REF_TYPE_SHIP, old_name, name);
+					ai_update_goal_references(sexp_ref_type::SHIP, old_name, name);
 					update_texture_replacements(old_name, name);
 					for (k = 0; k < Num_reinforcements; k++)
 						if (!strcmp(old_name, Reinforcements[k].name)) {

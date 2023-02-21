@@ -107,6 +107,13 @@ typedef struct mission_cutscene {
 	int formula;
 } mission_cutscene;
 
+// descriptions of flags for FRED
+template <class T>
+struct parse_object_flag_description {
+	T def;
+	SCP_string flag_desc;
+};
+
 typedef struct mission {
 	char	name[NAME_LENGTH];
 	SCP_string	author;
@@ -225,6 +232,7 @@ extern const char *Goal_type_names[MAX_GOAL_TYPE_NAMES];
 extern const char *Reinforcement_type_names[];
 extern char *Object_flags[];
 extern flag_def_list_new<Mission::Parse_Object_Flags> Parse_object_flags[];
+extern parse_object_flag_description<Mission::Parse_Object_Flags> Parse_object_flag_descriptions[];
 extern const size_t Num_parse_object_flags;
 extern const char *Icon_names[];
 extern const char *Mission_event_log_flags[];

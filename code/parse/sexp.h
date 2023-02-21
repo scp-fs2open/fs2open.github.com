@@ -12,6 +12,10 @@
 
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"	// for NULL
+#include "object/object_flags.h"
+#include "ship/ship_flags.h"
+#include "mission/mission_flags.h"
+#include "ai/ai_flags.h"
 
 class ship_subsys;
 class ship;
@@ -133,7 +137,8 @@ enum : int {
 	OPF_ASTEROID_DEBRIS,			// MjnMixael - Debris types as defined in asteroids.tbl
 	OPF_WING_FORMATION,				// Goober5000 - as defined in ships.tbl
 	OPF_MOTION_DEBRIS,				// MjnMixael - Motion debris types as defined in stars.tbl
-	OPF_TURRET_TYPE,
+	OPF_TURRET_TYPE,				// MjnMixael - Turret types as defined in aiturret.cpp
+	OPF_BOLT_TYPE,					// MjnMixael - Lightning bolt types as defined in lightning.tbl
 
 	//Must always be at the end of the list
 	First_available_opf_id
@@ -154,6 +159,8 @@ struct dynamic_sexp_parameter_list {
 extern SCP_vector<dynamic_sexp_parameter_list> Dynamic_parameters;
 
 int get_dynamic_parameter_index(SCP_string op_name, int param);
+
+int get_dynamic_enum_position(SCP_string enum_name);
 
 // Operand return types
 #define	OPR_NUMBER				1	// returns number
@@ -426,6 +433,8 @@ enum : int {
 	OP_IS_IN_MISSION, // Goober5000
 	OP_ARE_SHIP_FLAGS_SET, // Karajorma
 	OP_TURRET_GET_PRIMARY_AMMO, // DahBlount, part of the turret ammo code
+	OP_TURRET_HAS_PRIMARY_WEAPON,      // MjnMixael
+	OP_TURRET_HAS_SECONDARY_WEAPON, // MjnMixael
 	OP_HAS_ARMOR_TYPE, // MjnMixael
 	
 	OP_TURRET_GET_SECONDARY_AMMO,	// DahBlount, part of the turret ammo code
@@ -446,7 +455,9 @@ enum : int {
 	OP_ANGLE_FVEC_TARGET, // Lafiel
 	
 	OP_ARE_WING_FLAGS_SET, // Goober5000
+	OP_IS_SHIP_EMP_ACTIVE,	// MjnMixael
 	OP_PLAYER_IS_CHEATING_BASTARD,	// The E
+	OP_TURRET_FIRED_SINCE,	// Asteroth
 	
 	// OP_CATEGORY_CONDITIONAL
 	// conditional sexpressions
@@ -584,6 +595,7 @@ enum : int {
 	OP_CHANGE_SOUNDTRACK,	// Goober5000
 	OP_TECH_ADD_INTEL,	// Goober5000
 	OP_TECH_RESET_TO_DEFAULT,	// Goober5000
+	OP_CREATE_BOLT,		//MjnMixael
 	OP_EXPLOSION_EFFECT,	// Goober5000
 	OP_WARP_EFFECT,	// Goober5000
 	OP_SET_OBJECT_FACING,	// Goober5000
@@ -993,28 +1005,36 @@ const char *CTEXT(int n);
 #define CADDDDR(n)	CAR(CDDDDR(n))
 #define CADDDDDR(n)	CAR(CDDDDDR(n))
 
-#define REF_TYPE_SHIP		1
-#define REF_TYPE_WING		2
-#define REF_TYPE_PLAYER		3
-#define REF_TYPE_WAYPOINT	4
-#define REF_TYPE_PATH		5	// waypoint path
+enum class sexp_ref_type
+{
+	SHIP = 1,
+	WING,
+	PLAYER,
+	WAYPOINT,
+	WAYPOINT_PATH
+};
 
-#define SRC_SHIP_ARRIVAL	0x10000
-#define SRC_SHIP_DEPARTURE	0x20000
-#define SRC_WING_ARRIVAL	0x30000
-#define SRC_WING_DEPARTURE	0x40000
-#define SRC_EVENT				0x50000
-#define SRC_MISSION_GOAL	0x60000
-#define SRC_SHIP_ORDER		0x70000
-#define SRC_WING_ORDER		0x80000
-#define SRC_DEBRIEFING		0x90000
-#define SRC_BRIEFING			0xa0000
-#define SRC_UNKNOWN			0xffff0000
-#define SRC_MASK				0xffff0000
-#define SRC_DATA_MASK		0xffff
+enum class sexp_src
+{
+	NONE = 0,
+	SHIP_ARRIVAL,
+	SHIP_DEPARTURE,
+	WING_ARRIVAL,
+	WING_DEPARTURE,
+	EVENT,
+	MISSION_GOAL,
+	SHIP_ORDER,
+	WING_ORDER,
+	DEBRIEFING,
+	BRIEFING,
+	UNKNOWN
+};
 
-#define SEXP_MODE_GENERAL	0
-#define SEXP_MODE_CAMPAIGN	1
+enum class sexp_mode
+{
+	GENERAL = 0,
+	CAMPAIGN
+};
 
 // defines for type field of sexp nodes.  The actual type of the node will be stored in the lower
 // two bytes of the field.  The upper two bytes will be used for flags (bleah...)
@@ -1188,6 +1208,7 @@ enum sexp_error_check
 	SEXP_CHECK_INVALID_WING_FORMATION,
 	SEXP_CHECK_INVALID_ASTEROID,
 	SEXP_CHECK_INVALID_MOTION_DEBRIS,
+	SEXP_CHECK_INVALID_BOLT_TYPE,
 };
 
 
@@ -1360,7 +1381,7 @@ extern int get_operator_index(int node);
 extern int get_operator_const(const char *token);
 extern int get_operator_const(int node);
 
-extern int check_sexp_syntax(int node, int return_type = OPR_BOOL, int recursive = 0, int *bad_node = 0 /*NULL*/, int mode = 0);
+extern int check_sexp_syntax(int node, int return_type = OPR_BOOL, int recursive = 0, int *bad_node = 0 /*NULL*/, sexp_mode mode = sexp_mode::GENERAL);
 extern int get_sexp_main(void);	//	Returns start node
 extern int run_sexp(const char* sexpression, bool run_eval_num = false, bool *is_nan_or_nan_forever = nullptr); // debug and lua sexps
 extern int stuff_sexp_variable_list();
@@ -1371,7 +1392,7 @@ extern int query_operator_return_type(int op);
 extern int query_operator_argument_type(int op, int argnum);
 extern void update_sexp_references(const char *old_name, const char *new_name);
 extern void update_sexp_references(const char *old_name, const char *new_name, int format);
-extern int query_referenced_in_sexp(int mode, const char *name, int *node);
+extern std::pair<int, sexp_src> query_referenced_in_sexp(sexp_ref_type type, const char *name, int &node);
 extern void stuff_sexp_text_string(SCP_string &dest, int node, int mode);
 extern int build_sexp_string(SCP_string &accumulator, int cur_node, int level, int mode);
 extern int sexp_query_type_match(int opf, int opr);
@@ -1525,5 +1546,8 @@ struct object_ship_wing_point_team
 };
 
 void eval_object_ship_wing_point_team(object_ship_wing_point_team* oswpt, int node, const char* ctext_override = nullptr);
+
+bool sexp_check_flag_arrays(const char *flag_name, Object::Object_Flags &object_flag, Ship::Ship_Flags &ship_flag, Mission::Parse_Object_Flags &parse_obj_flag, AI::AI_Flags &ai_flag);
+bool sexp_check_flag_array(const char* flag_name, Ship::Wing_Flags& wing_flag);
 
 #endif

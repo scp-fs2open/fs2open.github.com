@@ -51,7 +51,7 @@ class VulkanRenderer {
   private:
 	static constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 2;
 
-	bool initDisplayDevice();
+	bool initDisplayDevice() const;
 
 	bool initializeInstance();
 
@@ -59,9 +59,9 @@ class VulkanRenderer {
 
 	bool pickPhysicalDevice(PhysicalDeviceValues& deviceValues);
 
-	bool createLogicalDevice(PhysicalDeviceValues& deviceValues);
+	bool createLogicalDevice(const PhysicalDeviceValues& deviceValues);
 
-	bool createSwapChain(PhysicalDeviceValues& deviceValues);
+	bool createSwapChain(const PhysicalDeviceValues& deviceValues);
 
 	vk::UniqueShaderModule loadShader(const SCP_string& name);
 

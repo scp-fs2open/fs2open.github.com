@@ -99,6 +99,7 @@ float Arc_width_radius_multiplier_emp;
 float Arc_width_no_multiply_over_radius_emp;
 float Arc_width_minimum_emp;
 bool Use_engine_wash_intensity;
+bool Apply_shudder_to_chase_view;
 bool Framerate_independent_turning; // an in-depth explanation how this flag is supposed to work can be found in #2740 PR description
 bool Ai_respect_tabled_turntime_rotdamp;
 bool Swarmers_lead_targets;
@@ -133,6 +134,7 @@ bool Discord_presence;
 bool Hotkey_always_hide_hidden_ships;
 bool Use_weapon_class_sounds_for_hits_to_player;
 bool SCPUI_loads_hi_res_animations;
+bool Countermeasures_use_capacity;
 bool Play_thruster_sounds_for_player;
 std::array<std::tuple<float, float>, 6> Fred_spacemouse_nonlinearity;
 
@@ -1104,6 +1106,10 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Use_engine_wash_intensity);
 		}
 
+		if (optional_string("$Apply HUD shudder to chase view:")) {
+			stuff_boolean(&Apply_shudder_to_chase_view);
+		}
+
 		if (optional_string("$Swarmers Lead Targets:")) {
 			stuff_boolean(&Swarmers_lead_targets);
 		}
@@ -1172,6 +1178,9 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Hotkey_always_hide_hidden_ships);
 		}
 
+		if (optional_string("$Countermeasures use capacity:")) {
+			stuff_boolean(&Countermeasures_use_capacity);
+		}
 
 		required_string("#END");
 	}
@@ -1294,6 +1303,7 @@ void mod_table_reset()
 	Arc_width_no_multiply_over_radius_emp = 500.0f;
 	Arc_width_minimum_emp = 0.2f;
 	Use_engine_wash_intensity = false;
+	Apply_shudder_to_chase_view = false;
 	Framerate_independent_turning = true;
 	Ai_respect_tabled_turntime_rotdamp = false;
 	Chase_view_default = false;
@@ -1329,6 +1339,7 @@ void mod_table_reset()
 	Hotkey_always_hide_hidden_ships = false;
 	Use_weapon_class_sounds_for_hits_to_player = false;
 	SCPUI_loads_hi_res_animations = true;
+	Countermeasures_use_capacity = false;
 	Play_thruster_sounds_for_player = false;
 	Fred_spacemouse_nonlinearity = std::array<std::tuple<float, float>, 6>{{
 			std::tuple<float, float>{ 1.0f, 1.0f },
