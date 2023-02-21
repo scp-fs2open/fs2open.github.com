@@ -1246,6 +1246,9 @@ typedef struct mc_info {
 	bool		edge_hit;			// Set if an edge got hit.  Only valid if MC_CHECK_THICK is set.	
 	ubyte		*f_poly;				// pointer to flat poly where we intersected
 	ubyte		*t_poly;				// pointer to tmap poly where we intersected
+	SCP_vector<vec3d> hit_points_all;   // used only with MC_COLLIDE_ALL, contains all collision points, in world space, 
+										//     including those against backfacing polies, in arbitrary order
+	SCP_vector<int> hit_submodels_all;  // the corresponding hit submodels of the above points
 	bsp_collision_leaf *bsp_leaf;
 
 										// flags can be changed for the case of sphere check finds an edge hit
@@ -1294,6 +1297,7 @@ inline void mc_info_init(mc_info *mc)
 #define MC_SUBMODEL				(1<<6)			// If this is set, only check the submodel specified in mc->submodel_num. Use with MC_CHECK_MODEL
 #define MC_SUBMODEL_INSTANCE	(1<<7)			// Check submodel and its children (of a rotating submodel)
 #define MC_CHECK_INVISIBLE_FACES (1<<8)		// Check the invisible faces.
+#define MC_COLLIDE_ALL (1<<9)				// Returns ALL hits via hit_points_all, including backfacing polies hits
 
 
 /*
