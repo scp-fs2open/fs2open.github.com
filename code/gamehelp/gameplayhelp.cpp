@@ -423,6 +423,9 @@ SCP_vector<gameplay_help_section> gameplay_help_init_text()
 
 			break;
 
+		default:
+			continue;
+
 		}
 
 		complete_help_text.push_back(thisHelp);
