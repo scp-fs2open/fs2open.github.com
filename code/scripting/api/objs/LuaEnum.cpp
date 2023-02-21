@@ -57,17 +57,23 @@ ADE_FUNC(addEnumItem,
 	l_LuaEnum,
 	"string itemname",
 	"Adds an enum item with the given string.",
-	nullptr,
-	"Returns nothing")
+	"boolean",
+	"Returns true if successful, false otherwise")
 {
 	lua_enum_h lua_enum;
 	const char* item_name;
 	if (!ade_get_args(L, "os", l_LuaEnum.Get(&lua_enum) , &item_name))
-		return ade_set_error(L, "o", l_LuaEnum.Set(lua_enum_h()));
+		return ADE_RETURN_FALSE;
+
+	for (int i = 0; i < (int)lua_enum.getEnum()->list.size(); i++) {
+		if (!stricmp(item_name, lua_enum.getEnum()->list[i].c_str())) {
+			return ADE_RETURN_FALSE;
+		}
+	}
 
 	lua_enum.getEnum()->list.push_back(item_name);
 
-	return ADE_RETURN_NIL;
+	return ADE_RETURN_TRUE;
 }
 
 } // namespace api
