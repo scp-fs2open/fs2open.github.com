@@ -444,6 +444,7 @@ enum : int {
 	OP_ANGLE_FVEC_TARGET, // Lafiel
 	
 	OP_ARE_WING_FLAGS_SET, // Goober5000
+	OP_IS_SHIP_EMP_ACTIVE,	// MjnMixael
 	OP_PLAYER_IS_CHEATING_BASTARD,	// The E
 	OP_TURRET_FIRED_SINCE,	// Asteroth
 	
