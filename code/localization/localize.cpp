@@ -66,7 +66,7 @@ bool *Lcl_unexpected_tstring_check = nullptr;
 // struct to allow for strings.tbl-determined x offset
 // offset is 0 for english, by default
 typedef struct {
-	const char *str;
+	SCP_string str;
 	int  offset_x;				// string offset in 640
 	int  offset_x_hi;			// string offset in 1024
 } lcl_xstr;
@@ -295,7 +295,7 @@ void parse_stringstbl_common(const char *filename, const bool external)
 	char chr, buf[4096];
 	char language_tag[512];
 	int z, index;
-	char *p_offset = NULL;
+	char *p_offset = nullptr;
 	int offset_lo = 0, offset_hi = 0;
 	int lcl_index = lcl_get_current_lang_index();
 
@@ -410,15 +410,14 @@ void parse_stringstbl_common(const char *filename, const bool external)
 				if ( external && (Lcl_ext_str.find(index) != Lcl_ext_str.end()) ) {
 					vm_free((void *) Lcl_ext_str[index]);
 					Lcl_ext_str.erase(Lcl_ext_str.find(index));
-				} else if (!external && (Xstr_table_map[index].str != nullptr)) {
-					vm_free((void*)Xstr_table_map[index].str);
+				} else if (!external && !Xstr_table_map[index].str.empty()) {
 					Xstr_table_map.erase(Xstr_table_map.find(index));
 				}
 			}
 
 			if (external && (Lcl_ext_str.find(index) != Lcl_ext_str.end())) {
 				Warning(LOCATION, "Tstrings table index %d used more than once", index);
-			} else if (!external && (Xstr_table_map[index].str != nullptr)) {
+			} else if (!external && !Xstr_table_map[index].str.empty()) {
 				Warning(LOCATION, "Strings table index %d used more than once", index);
 			}
 
@@ -436,7 +435,7 @@ void parse_stringstbl_common(const char *filename, const bool external)
 			}
 
 			// read offset information, assume 0 if nonexistant
-			if (p_offset != NULL) {
+			if (p_offset != nullptr) {
 				if (sscanf(p_offset, "%d%d", &offset_lo, &offset_hi) < num_offsets_on_this_line) {
 					// whatever is in the file ain't a proper offset
 					Error(LOCATION, "%s is corrupt", filename);
@@ -452,11 +451,11 @@ void parse_stringstbl_common(const char *filename, const bool external)
 			}
 
 			if (!external) {
-				Xstr_table_map.emplace(index, item);
+				Xstr_table_map[index] = item;
 			}
 
 			// clear out our vars
-			p_offset = NULL;
+			p_offset = nullptr;
 			offset_lo = 0;
 			offset_hi = 0;
 		}
@@ -553,11 +552,6 @@ void lcl_xstr_init()
 void lcl_xstr_close()
 {
 
-	for (const auto& entry : Xstr_table_map) {
-		if (entry.second.str != nullptr) {
-			vm_free((void*)entry.second.str);
-		}
-	}
 	Xstr_table_map.clear();
 
 	for (const auto& entry : Lcl_ext_str) {
@@ -1190,8 +1184,8 @@ const char *XSTR(const char *str, int index, bool force_lookup)
 		if (index >= 0)
 		{
 			// return translation of string
-			if (Xstr_table_map[index].str)
-				return Xstr_table_map[index].str;
+			if (!Xstr_table_map[index].str.empty())
+				return Xstr_table_map[index].str.c_str();
 #ifndef NDEBUG
 			else
 			{
