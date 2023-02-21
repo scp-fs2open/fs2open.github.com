@@ -218,6 +218,11 @@ ai_flag_name Ai_flag_names[] = {
 	{AI::AI_Flags::Free_afterburner_use,	"free-afterburner-use",	},
 };
 
+ai_flag_description Ai_flag_descriptions[] = {
+	{AI::AI_Flags::No_dynamic,				"Will stop allowing the AI to pursue dynamic goals (eg: chasing ships it was not ordered to)."},
+	{AI::AI_Flags::Free_afterburner_use,	"Will allow AI to use afterburners when attacking a big ship, flying to a target position, guarding a ship, and flying in formation."},
+};
+
 extern const int Num_ai_flag_names = sizeof(Ai_flag_names) / sizeof(ai_flag_name);
 
 const char *Skill_level_names(int level, int translate)

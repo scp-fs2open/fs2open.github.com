@@ -12,6 +12,10 @@
 
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"	// for NULL
+#include "object/object_flags.h"
+#include "ship/ship_flags.h"
+#include "mission/mission_flags.h"
+#include "ai/ai_flags.h"
 
 class ship_subsys;
 class ship;
@@ -1528,5 +1532,8 @@ struct object_ship_wing_point_team
 };
 
 void eval_object_ship_wing_point_team(object_ship_wing_point_team* oswpt, int node, const char* ctext_override = nullptr);
+
+bool sexp_check_flag_arrays(const char *flag_name, Object::Object_Flags &object_flag, Ship::Ship_Flags &ship_flag, Mission::Parse_Object_Flags &parse_obj_flag, AI::AI_Flags &ai_flag);
+bool sexp_check_flag_array(const char* flag_name, Ship::Wing_Flags& wing_flag);
 
 #endif

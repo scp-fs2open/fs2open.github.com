@@ -110,7 +110,13 @@ typedef struct obj_flag_name {
 	char flag_name[TOKEN_LENGTH];
 } obj_flag_name;
 
+typedef struct obj_flag_description {
+	Object::Object_Flags flag;
+	SCP_string flag_desc;
+} obj_flag_description;
+
 extern obj_flag_name Object_flag_names[];
+extern obj_flag_description Object_flag_descriptions[];
 extern const int Num_object_flag_names;
 
 struct dock_instance;

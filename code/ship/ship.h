@@ -454,7 +454,13 @@ typedef struct ship_flag_name {
 	char flag_name[TOKEN_LENGTH];		// the name written to the mission file for its corresponding parse_object flag
 } ship_flag_name;
 
+typedef struct ship_flag_description {
+	Ship::Ship_Flags flag;
+	SCP_string flag_desc;
+} ship_flag_description;
+
 extern ship_flag_name Ship_flag_names[];
+extern ship_flag_description Ship_flag_descriptions[];
 extern const size_t Num_ship_flag_names;
 
 typedef struct wing_flag_name {
@@ -462,7 +468,13 @@ typedef struct wing_flag_name {
 	char flag_name[TOKEN_LENGTH];
 } wing_flag_name;
 
+typedef struct wing_flag_description {
+	Ship::Wing_Flags flag;
+	SCP_string flag_desc;
+} wing_flag_description;
+
 extern wing_flag_name Wing_flag_names[];
+extern wing_flag_description Wing_flag_descriptions[];
 extern const size_t Num_wing_flag_names;
 
 #define DEFAULT_SHIP_PRIMITIVE_SENSOR_RANGE		10000	// Goober5000

@@ -547,6 +547,37 @@ ship_flag_name Ship_flag_names[] = {
 	{ Ship_Flags::No_targeting_limits,			"no-targeting-limits"}
 };
 
+ship_flag_description Ship_flag_descriptions[] = {
+	{ Ship_Flags::Vaporize,						"Causes a ship to vanish (no deathroll, no debris, no explosion) when destroyed."},
+	{ Ship_Flags::Warp_broken,					"Causes a ship's subspace drive to break. Can be repaired by a support ship."},
+	{ Ship_Flags::Warp_never,					"Causes a ship's subspace drive to never work. Cannot be repaired by a support ship."},
+	{ Ship_Flags::Scannable,					"Whether or not the ship can be scanned."},
+	{ Ship_Flags::Cargo_revealed,				"If set, the ship's cargo can be seen without scanning the ship."},
+	{ Ship_Flags::Hidden_from_sensors,			"If set, the ship can't be targeted and appears on radar as a blinking dot."},
+	{ Ship_Flags::Stealth,						"If set, the ship can't be targeted, is invisible on radar, and is ignored by AI unless firing."},
+	{ Ship_Flags::Friendly_stealth_invis,		"If set, the ship can't be targeted even by ships on the same team."},
+	{ Ship_Flags::Hide_ship_name,				"If set, the ship name can't be seen when the ship is targeted."},
+	{ Ship_Flags::Primitive_sensors,			"Targets will only be a blip on the radar. Ships cannot targeted and aspect lock cannot be used."},
+	{ Ship_Flags::Afterburner_locked,			"Will stop a ship from firing their afterburner."},
+	{ Ship_Flags::Primaries_locked,				"Will stop a ship from firing their primary weapons."},
+	{ Ship_Flags::Secondaries_locked,			"Will stop a ship from firing their secondary weapons."},
+	{ Ship_Flags::No_subspace_drive,			"Will not allow a ship to jump into subspace."},
+	{ Ship_Flags::Dont_collide_invis,			"Will cause polygons with an invisible texture to stop colliding with objects."},
+	{ Ship_Flags::No_ets,						"Will not allow a ship to alter its ETS system."},
+	{ Ship_Flags::Toggle_subsystem_scanning,	"Switches between being able to scan a whole ship or individual subsystems."},
+	{ Ship_Flags::No_secondary_lockon,			"Will disable target acquisition for secondaries of all types (does not affect turrets)."},
+	{ Ship_Flags::No_disabled_self_destruct,	"Ship will not self-destruct after 90 seconds if engines or weapons destroyed."},
+	{ Ship_Flags::Hide_mission_log,				"Mission log events generated for this ship will not be viewable."},
+	{ Ship_Flags::No_passive_lightning,			"Disables ship passive lightning."},
+	{ Ship_Flags::Glowmaps_disabled,			"Ship is rendered without glowmaps."},
+	{ Ship_Flags::No_thrusters,					"Thrusters on this ship are not rendered."},
+	{ Ship_Flags::Fail_sound_locked_primary,	"Play the firing fail sound when the weapon is locked."},
+	{ Ship_Flags::Fail_sound_locked_secondary,	"Play the firing fail sound when the weapon is locked."},
+	{ Ship_Flags::Aspect_immune,				"Ship cannot be targeted by Aspect Seekers."},
+	{ Ship_Flags::Cannot_perform_scan,			"Ship cannot scan other ships."},
+	{ Ship_Flags::No_targeting_limits,			"Ship is always targetable regardless of AWACS or targeting range limits."}
+};
+
 extern const size_t Num_ship_flag_names = sizeof(Ship_flag_names) / sizeof(ship_flag_name);
 
 // Ditto for wings
@@ -557,6 +588,15 @@ wing_flag_name Wing_flag_names[] = {
 	{ Wing_Flags::No_departure_warp,				"no-departure-warp" },
 	{ Wing_Flags::Same_arrival_warp_when_docked,	"same-arrival-warp-when-docked" },
 	{ Wing_Flags::Same_departure_warp_when_docked,	"same-departure-warp-when-docked" }
+};
+
+wing_flag_description Wing_flag_descriptions[] = {
+	{ Wing_Flags::No_arrival_music,					"Arrival music will not be played when this wing arrives."},
+	{ Wing_Flags::No_arrival_message,				"Arrival messages will not be sent when this wing arrives."},
+	{ Wing_Flags::No_arrival_warp,					"No ship in the wing will use a warp effect upon arrival."},
+	{ Wing_Flags::No_departure_warp,				"No ship in the wing will use a warp effect upon departure."},
+	{ Wing_Flags::Same_arrival_warp_when_docked,	"All ships in the wing will use the same warp effect size upon arrival as if they were not docked instead of the enlarged aggregate size."},
+	{ Wing_Flags::Same_departure_warp_when_docked,	"All ships in the wing will use the same warp effect size upon departure as if they were not docked instead of the enlarged aggregate size."}
 };
 
 extern const size_t Num_wing_flag_names = sizeof(Wing_flag_names) / sizeof(wing_flag_name);
