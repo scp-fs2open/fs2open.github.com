@@ -424,6 +424,8 @@ enum : int {
 	OP_IS_IN_MISSION, // Goober5000
 	OP_ARE_SHIP_FLAGS_SET, // Karajorma
 	OP_TURRET_GET_PRIMARY_AMMO, // DahBlount, part of the turret ammo code
+	OP_TURRET_HAS_PRIMARY_WEAPON,      // MjnMixael
+	OP_TURRET_HAS_SECONDARY_WEAPON, // MjnMixael
 	OP_HAS_ARMOR_TYPE, // MjnMixael
 	
 	OP_TURRET_GET_SECONDARY_AMMO,	// DahBlount, part of the turret ammo code
