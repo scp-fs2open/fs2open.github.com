@@ -869,7 +869,7 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 
 		weapon *wp = &Weapons[other_obj->instance];
 		wp->collisionInfo = new mc_info;	// The weapon will free this memory later
-		memcpy(wp->collisionInfo, &mc, sizeof(mc_info));
+		*wp->collisionInfo = mc;
 
 		return mc.num_hits;
 	}

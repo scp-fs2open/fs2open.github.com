@@ -2980,9 +2980,9 @@ int beam_collide_ship(obj_pair *pair)
 	}
 
 	// set up collision structs, part 2
-	memcpy(&mc_shield, &mc, sizeof(mc_info));
-	memcpy(&mc_hull_enter, &mc, sizeof(mc_info));
-	memcpy(&mc_hull_exit, &mc, sizeof(mc_info));
+	mc = mc_shield;
+	mc = mc_hull_enter;
+	mc = mc_hull_exit;
 	
 	// reverse this vector so that we check for exit holes as opposed to entrance holes
 	mc_hull_exit.p1 = &a_beam->last_start;
@@ -3084,12 +3084,12 @@ int beam_collide_ship(obj_pair *pair)
 	// see which impact we use
 	if (shield_collision && valid_hit_occurred)
 	{
-		memcpy(&mc, &mc_shield, sizeof(mc_info));
+		mc = mc_shield;
 		Assert(quadrant_num >= 0);
 	}
 	else if (hull_enter_collision)
 	{
-		memcpy(&mc, &mc_hull_enter, sizeof(mc_info));
+		mc = mc_hull_enter;
 		valid_hit_occurred = 1;
 	}
 
