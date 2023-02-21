@@ -583,6 +583,7 @@ void LuaSEXP::parseTable() {
 					if (SCP_string_lcase_equal_to()(item, thisList.list[i])) {
 						error_display(0, "Enum item '%s' already exists in list %s. Skipping!\n", item.c_str(), thisList.name.c_str());
 						skip = true;
+						break;
 					}
 				}
 
