@@ -34,7 +34,7 @@
 
 // different gameplay help pages
 enum : int {
-	// The first 9 are the retail pages
+	// The first 9 are the basic retail pages
 	GP_HELP_BASIC_KEYS,
 	GP_HELP_MOVEMENT_KEYS,
 	GP_HELP_COMMON_TARGET_KEYS,
@@ -44,17 +44,20 @@ enum : int {
 	GP_HELP_THROTTLE_AND_ETS_KEYS,
 	GP_HELP_VIEW_KEYS,
 	GP_HELP_MISC_KEYS,
+
+	// Plus one for multi only
 	GP_HELP_MULTI_KEYS,
 
 	// Any others defined here will have unique sections within the vector
 	// but will need special handling to display in the retail UI
-	GP_HELP_FUNCTION_KEYS
+	GP_HELP_FUNCTION_KEYS, 
+
+	First_avialable_section
 };
 
 #define GP_FIRST_SCREEN									0		// keep up to date
 #define GP_LAST_SCREEN_SINGLE							8		// keep up to date
 #define GP_LAST_SCREEN_MULTI							9		// keep up to date
-#define GP_NUM_HELP_SECTIONS							10		// keep up to date
 
 // set this to GP_LAST_SCREEN_SINGLE or GP_LAST_SCREEN_MULTI based upon what game mode we're in
 static int Gp_last_screen;
@@ -193,7 +196,7 @@ SCP_vector<gameplay_help_section> gameplay_help_init_text()
 {
 	SCP_vector<gameplay_help_section> complete_help_text;
 
-	for (int i = 0; i <= GP_NUM_HELP_SECTIONS; i++) {
+	for (int i = 0; i < First_avialable_section; i++) {
 
 		gameplay_help_section thisHelp;
 
