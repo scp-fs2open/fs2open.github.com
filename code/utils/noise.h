@@ -18,7 +18,7 @@ public:
 
 
 template<size_t dimensions>
-class worley : noise<dimensions> {
+class worley : public noise<dimensions> {
 	SCP_vector<coordinates> points;
 	size_t ptPerEdge;
 	bool seamless;

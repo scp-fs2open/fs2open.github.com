@@ -19,6 +19,8 @@ class volumetric_nebula {
 	int resolution = 6;
 	//Oversampling of 3D-Texture. Will quadruple loading computation time for each increment, but improves banding especially at lower resolutions. 1 - 3. Mostly Loading time cost.
 	int oversampling = 2;
+	//Resolution of Noise 3D-Texture as 2^n. 5 - 8 recommended. Mostly VRAM cost
+	int noiseResolution = 6;
 
 	//General Visibility
 	//The distance in meters until the target translucity is reached
@@ -40,10 +42,22 @@ class volumetric_nebula {
 	//Distance factor for global light vs nebula translucity. Values > 1 means the nebula is brighter than it ought to be when it's deeper, values < 0 means it's darker when its shallower
 	float globalLightDistanceFactor = 1.0f;
 
-	//Instance Data
+	//Edge noise settings
+	//The near distance at which the edge noise starts to fade off
+	float noiseNear = 1.0f;
+	//The far distance at which the edge noise is gone
+	float noiseFar = 5.0f;
+	//The detail of the noise's three levels, >= 3
+	std::tuple<int, int, int> noiseDetail = { 5, 15, 25 };
+	//The scale of the edge noise, specified in the size of the noise cube
+	float noiseScale = 1.0f;
 
+	//Instance Data
 	int volumeBitmapHandle = -1;
 	std::unique_ptr<ubyte[]> volumeBitmapData = nullptr;
+
+	int noiseVolumeBitmapHandle = -1;
+	std::unique_ptr<ubyte[]> noiseVolumeBitmapData = nullptr;
 
 public:
 	volumetric_nebula() = default;
@@ -62,7 +76,13 @@ public:
 	float getHenyeyGreensteinCoeff() const;
 	float getGlobalLightDistanceFactor() const;
 
+	float getNoiseNear() const;
+	float getNoiseFar() const;
+	float getNoiseScale() const;
+
 	bool isVolumeBitmapValid() const;
 	void renderVolumeBitmap(float r, float g, float b);
 	int getVolumeBitmapHandle() const;
+	int getNoiseVolumeBitmapHandle() const;
 };
+

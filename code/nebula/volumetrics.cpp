@@ -2,6 +2,7 @@
 
 #include "bmpman/bmpman.h"
 #include "model/model.h"
+#include "utils/noise.h"
 
 volumetric_nebula::~volumetric_nebula() {
 	if (isVolumeBitmapValid()) {
@@ -45,8 +46,20 @@ float volumetric_nebula::getGlobalLightDistanceFactor() const {
 	return globalLightDistanceFactor;
 }
 
+float volumetric_nebula::getNoiseNear() const {
+	return noiseNear;
+}
+
+float volumetric_nebula::getNoiseFar() const {
+	return noiseFar;
+}
+
+float volumetric_nebula::getNoiseScale() const {
+	return noiseScale;
+}
+
 bool volumetric_nebula::isVolumeBitmapValid() const {
-	return volumeBitmapHandle >= 0;
+	return volumeBitmapHandle >= 0 && noiseVolumeBitmapHandle >= 0;
 }
 
 void volumetric_nebula::renderVolumeBitmap(float r, float g, float b) {
@@ -128,9 +141,34 @@ void volumetric_nebula::renderVolumeBitmap(float r, float g, float b) {
 	}
 
 	volumeBitmapHandle = bm_create_3d(32, n, n, n, volumeBitmapData.get());
+
+	util::noise::worley<3> worley1(std::get<0>(noiseDetail), true), worley2(std::get<1>(noiseDetail), true), worley3(std::get<2>(noiseDetail), true);
+	int nNoise = 1 << noiseResolution;
+
+	noiseVolumeBitmapData = make_unique<ubyte[]>(nNoise * nNoise * nNoise * 4);
+	for (size_t x = 0; x < nNoise; x++) {
+		for (size_t y = 0; y < nNoise; y++) {
+			for (size_t z = 0; z < nNoise; z++) {
+				util::noise::worley<3>::coordinates noiseCoords = { static_cast<float>(x) / static_cast<float>(nNoise),
+																	static_cast<float>(y) / static_cast<float>(nNoise),
+																	static_cast<float>(z) / static_cast<float>(nNoise) };
+
+				noiseVolumeBitmapData[x * n * n * 4 + y * n * 4 + z * 4] = static_cast<ubyte>(worley1.sample(noiseCoords) * 255.0f);
+				noiseVolumeBitmapData[x * n * n * 4 + y * n * 4 + z * 4 + 1] = static_cast<ubyte>(worley2.sample(noiseCoords) * 255.0f);
+				noiseVolumeBitmapData[x * n * n * 4 + y * n * 4 + z * 4 + 2] = static_cast<ubyte>(worley3.sample(noiseCoords) * 255.0f);
+				noiseVolumeBitmapData[x * n * n * 4 + y * n * 4 + z * 4 + 3] = 0xFFU;
+			}
+		}
+	}
+	noiseVolumeBitmapHandle = bm_create_3d(32, nNoise, nNoise, nNoise, noiseVolumeBitmapData.get());
 }
 
 int volumetric_nebula::getVolumeBitmapHandle() const {
 	Assertion(volumeBitmapHandle >= 0, "Tried to access volume bitmap without creating it!");
 	return volumeBitmapHandle;
+}
+
+int volumetric_nebula::getNoiseVolumeBitmapHandle() const {
+	Assertion(noiseVolumeBitmapHandle >= 0, "Tried to access noise volume bitmap without creating it!");
+	return noiseVolumeBitmapHandle;
 }
