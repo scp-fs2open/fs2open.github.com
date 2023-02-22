@@ -783,7 +783,6 @@ void shipfx_warpout_frame( object *objp, float frametime )
  */
 bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int sun_n )
 {
-	mc_info mc;
 	object *objp;
 	ship_obj *so;
 
@@ -794,7 +793,7 @@ bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int sun_n )
 	// every time the mc variable is reused, every parameter that model_collide reads from is reassigned.
 	// Therefore the stale fields in the rest of the struct do not matter because either a) they are never
 	// read from, or b) they are overwritten by the new collision calculation.
-	mc_info_init(&mc);
+	mc_info mc;
 
 	rp0 = *eye_pos;	
 	
