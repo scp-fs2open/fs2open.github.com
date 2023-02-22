@@ -321,8 +321,8 @@ struct volumetric_fog_data {
 	float henyeyGreensteinCoeff;
 	int directionalLightSampleSteps;
 	float directionalLightStepSize;
-	float noiseNear, noiseFar, noiseScale;
-	float pad;
+	//float noiseNear, noiseFar, noiseScale;
+	//float pad;
 };
 
 struct blur_data {

@@ -67,7 +67,7 @@ float volumetric_nebula::getNoiseScale() const {
 }
 
 bool volumetric_nebula::isVolumeBitmapValid() const {
-	return volumeBitmapHandle >= 0 && noiseVolumeBitmapHandle >= 0;
+	return volumeBitmapHandle >= 0/* && noiseVolumeBitmapHandle >= 0*/;
 }
 
 void volumetric_nebula::renderVolumeBitmap(float r, float g, float b) {
@@ -156,7 +156,7 @@ void volumetric_nebula::renderVolumeBitmap(float r, float g, float b) {
 
 	volumeBitmapHandle = bm_create_3d(32, n, n, n, volumeBitmapData.get());
 
-	util::noise::worley<3> worley1(std::get<0>(noiseDetail), true), worley2(std::get<1>(noiseDetail), true), worley3(std::get<2>(noiseDetail), true);
+	/*util::noise::worley<3> worley1(std::get<0>(noiseDetail), true), worley2(std::get<1>(noiseDetail), true), worley3(std::get<2>(noiseDetail), true);
 	int nNoise = 1 << noiseResolution;
 
 	noiseVolumeBitmapData = make_unique<ubyte[]>(nNoise * nNoise * nNoise * 4);
@@ -168,13 +168,13 @@ void volumetric_nebula::renderVolumeBitmap(float r, float g, float b) {
 																	static_cast<float>(z) / static_cast<float>(nNoise) };
 
 				noiseVolumeBitmapData[x * n * n * 4 + y * n * 4 + z * 4] = static_cast<ubyte>(worley1.sample(noiseCoords) * 255.0f); // B
-				noiseVolumeBitmapData[x * n * n * 4 + y * n * 4 + z * 4 + 1] = 0xFFU;//static_cast<ubyte>(worley2.sample(noiseCoords) * 255.0f); // G
-				noiseVolumeBitmapData[x * n * n * 4 + y * n * 4 + z * 4 + 2] = 0xFFU;//static_cast<ubyte>(worley3.sample(noiseCoords) * 255.0f); // R
+				noiseVolumeBitmapData[x * n * n * 4 + y * n * 4 + z * 4 + 1] = static_cast<ubyte>(worley2.sample(noiseCoords) * 255.0f); // G
+				noiseVolumeBitmapData[x * n * n * 4 + y * n * 4 + z * 4 + 2] = static_cast<ubyte>(worley3.sample(noiseCoords) * 255.0f); // R
 				noiseVolumeBitmapData[x * n * n * 4 + y * n * 4 + z * 4 + 3] = 0xFFU;
 			}
 		}
 	}
-	noiseVolumeBitmapHandle = bm_create_3d(32, nNoise, nNoise, nNoise, noiseVolumeBitmapData.get());
+	noiseVolumeBitmapHandle = bm_create_3d(32, nNoise, nNoise, nNoise, noiseVolumeBitmapData.get());*/
 }
 
 int volumetric_nebula::getVolumeBitmapHandle() const {

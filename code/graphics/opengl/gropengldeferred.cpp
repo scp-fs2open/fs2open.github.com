@@ -369,7 +369,7 @@ void gr_opengl_deferred_lighting_finish()
 			float u_scale, v_scale;
 			uint32_t array_index;
 			gr_opengl_tcache_set(neb.getVolumeBitmapHandle(), TCACHE_TYPE_3DTEX, &u_scale, &v_scale, &array_index, 3);
-			gr_opengl_tcache_set(neb.getNoiseVolumeBitmapHandle(), TCACHE_TYPE_3DTEX, &u_scale, &v_scale, &array_index, 4);
+			//gr_opengl_tcache_set(neb.getNoiseVolumeBitmapHandle(), TCACHE_TYPE_3DTEX, &u_scale, &v_scale, &array_index, 4);
 		}
 
 		opengl_set_generic_uniform_data<graphics::generic_data::volumetric_fog_data>([&](graphics::generic_data::volumetric_fog_data* data) {
@@ -391,9 +391,9 @@ void gr_opengl_deferred_lighting_finish()
 			data->henyeyGreensteinCoeff = neb.getHenyeyGreensteinCoeff();
 			data->directionalLightSampleSteps = neb.getGlobalLightSteps();
 			data->directionalLightStepSize = neb.getVisibility() / static_cast<float>(neb.getGlobalLightSteps()) * neb.getGlobalLightDistanceFactor();
-			data->noiseNear = neb.getNoiseNear();
-			data->noiseFar = neb.getNoiseFar();
-			data->noiseScale = 1.0f / neb.getNoiseScale();
+			//data->noiseNear = neb.getNoiseNear();
+			//data->noiseFar = neb.getNoiseFar();
+			//data->noiseScale = 1.0f / neb.getNoiseScale();
 			});
 
 		opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);

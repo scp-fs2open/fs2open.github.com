@@ -28,7 +28,7 @@ class volumetric_nebula {
 
 	//General Visibility
 	//The distance in meters until the target translucity is reached
-	float visibility = 7.5f;
+	float visibility = 5.0f;
 	//The target translucity. The nebula won't get more opaque than what is specified here. 0 is not possible.
 	float alphaLim = 0.001f;
 
@@ -54,7 +54,7 @@ class volumetric_nebula {
 	//The detail of the noise's three levels, >= 3
 	std::tuple<int, int, int> noiseDetail = { 5, 15, 25 };
 	//The scale of the edge noise, specified in the size of the noise cube
-	float noiseScale = 20.0f;
+	float noiseScale = 45.0f;
 
 	//Instance Data
 	int volumeBitmapHandle = -1;

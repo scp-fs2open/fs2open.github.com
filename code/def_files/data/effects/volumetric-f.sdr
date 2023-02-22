@@ -7,7 +7,7 @@ layout (binding = 0) uniform sampler2D composite;
 layout (binding = 1) uniform sampler2D emissive;
 layout (binding = 2) uniform sampler2D depth;
 layout (binding = 3) uniform sampler3D volume_tex;
-layout (binding = 4) uniform sampler3D noise_volume_tex;
+//layout (binding = 4) uniform sampler3D noise_volume_tex;
 
 layout (std140) uniform genericData {
 	mat4 p_inv;
@@ -28,9 +28,9 @@ layout (std140) uniform genericData {
 	float henyeyGreensteinCoeff;
 	int directionalLightSampleSteps;
 	float directionalLightStepSize;
-	float noiseNear;
-	float noiseFar;
-	float noiseScale;
+	//float noiseNear;
+	//float noiseFar;
+	//float noiseScale;
 };
 
 const float sqrt2_inv = inversesqrt(2);
@@ -72,8 +72,8 @@ void main()
 
 	float cumOMAlpha = 1;
 	float cumnebdist = 0;
-	float cumnoisedist = 0;
-	float noisemax = 0;
+	//float cumnoisedist = 0;
+	//float noisemax = 0;
 	vec3 cumcolor = vec3(0, 0, 0);
 
 	for(float step = maxtMin; step < mintMax; step += stepsize) {
@@ -82,12 +82,11 @@ void main()
 		vec4 volume_sample = texture(volume_tex, position / nebSize + 0.5);
 		float stepcolor_alpha = volume_sample.a;
 
-		//Noise
-		cumnoisedist += stepcolor_alpha * stepsize;
-		vec3 noise = texture(noise_volume_tex, position * noiseScale).rgb;
-		noisemax = max(noisemax, (1.0 - (noise.r * noise.g * noise.b * (1.0 - smoothstep(noiseNear, noiseFar, cumnoisedist)))) * smoothstep(0.05, 0.15, stepcolor_alpha));
-		stepcolor_alpha *= noisemax;
-		cumnebdist += stepcolor_alpha * stepsize;
+		//Noise - Technically, this should do noise, but I'm not very happy with how it turned out. The cloud needs to be "eroded" by the noise, but it's unclear as to how that can be achieved.
+		//cumnoisedist += stepcolor_alpha * stepsize;
+		//vec3 noise = texture(noise_volume_tex, position * noiseScale).rgb;
+		//noisemax = max(noisemax, (1.0 - (noise.r * noise.g * noise.b * 1.5 * (1.0 - smoothstep(noiseNear, noiseFar, cumnoisedist)))) * smoothstep(0.05, 0.15, stepcolor_alpha));
+		//stepcolor_alpha *= noisemax;
 
 		//Diffuse
 		vec3 stepcolor_diffuse = volume_sample.rgb * henyey_greenstein(dot(rayDirection, globalLightDirection));
@@ -98,9 +97,10 @@ void main()
 			float dlstepalpha = texture(volume_tex, (position - globalLightDirection * (dlstep * directionalLightStepSize)) / 60.0 + 0.5).a;
 			directionalLightDepth += dlstepalpha * directionalLightStep;
 		}
-		stepcolor_diffuse *= beer_powder_norm * (1 - exp(-directionalLightDepth * 2.0)) * exp(-directionalLightDepth) * noise;
+		stepcolor_diffuse *= beer_powder_norm * (1 - exp(-directionalLightDepth * 2.0)) * exp(-directionalLightDepth);
 
 		//Emissive
+		cumnebdist += stepcolor_alpha * stepsize;
 		vec3 emissive_lod = textureLod(emissive, fragTexCoord.xy, clamp(cumnebdist * emissiveSpreadFactor, 0, float(textureQueryLevels(emissive) - 1))).rgb;
 		vec3 stepcolor_emissive = emissive_lod.rgb * pow(1 - globalstepalpha, (depth - step) * emissiveFalloff) * emissiveIntensity;
 
