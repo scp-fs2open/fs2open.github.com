@@ -84,7 +84,7 @@ void main()
 
 		//Noise
 		cumnoisedist += stepcolor_alpha * stepsize;
-		vec3 noise = texture(noise_volume_tex, position * noiseScale);
+		vec3 noise = texture(noise_volume_tex, position * noiseScale).rgb;
 		noisemax = max(noisemax, (1.0 - (noise.r * noise.g * noise.b * (1.0 - smoothstep(noiseNear, noiseFar, cumnoisedist)))) * smoothstep(0.05, 0.15, stepcolor_alpha));
 		stepcolor_alpha *= noisemax;
 		cumnebdist += stepcolor_alpha * stepsize;
