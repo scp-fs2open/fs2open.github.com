@@ -377,9 +377,11 @@ void gr_opengl_deferred_lighting_finish()
 			vm_inverse_matrix4(&data->v_inv, &gr_view_matrix);
 			data->zNear = Min_draw_distance;
 			data->zFar = Max_draw_distance;
-			data->camera_pos = Eye_position;
+			data->cameraPos = Eye_position;
 			data->globalLightDirection = global_light ? global_light->vec : vec3d(ZERO_VECTOR);
 			data->globalLightDiffuse = global_light_diffuse;
+			data->nebPos = neb.getPos();
+			data->nebSize = neb.getSize();
 			data->stepsize = neb.getVisibility() / static_cast<float>(neb.getSteps());
 			data->globalstepalpha = -(powf(neb.getAlphaLim(), 1.0f / static_cast<float>(neb.getSteps())) - 1.0f);
 			data->alphalimit = neb.getAlphaLim();

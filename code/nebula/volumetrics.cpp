@@ -10,6 +10,14 @@ volumetric_nebula::~volumetric_nebula() {
 	}
 }
 
+const vec3d& volumetric_nebula::getPos() const {
+	return pos;
+}
+
+const vec3d& volumetric_nebula::getSize() const {
+	return size;
+}
+
 int volumetric_nebula::getSteps() const {
 	return steps; //potentially adjust for graphics settings in F2 menu
 }
@@ -71,6 +79,12 @@ void volumetric_nebula::renderVolumeBitmap(float r, float g, float b) {
 
 	int modelnum = model_load(hullPof.c_str(), 0, nullptr);
 
+	const polymodel* pm = model_get(modelnum);
+	//Scale up by 2% to ensure that the 3d volume texture does not end on an axis aligned edge with full opacity
+	constexpr float scaleFactor = 1.02f;
+	size = pm->maxs - pm->mins;
+	size *= scaleFactor;
+
 	mc_info mc;
 
 	mc.model_num = modelnum;
@@ -81,8 +95,8 @@ void volumetric_nebula::renderVolumeBitmap(float r, float g, float b) {
 
 	mc.flags = MC_CHECK_MODEL /* | MC_CHECK_SPHERELINE*/ | MC_COLLIDE_ALL;
 
-	vec3d bl;
-	vm_vec_copy_scale(&bl, &size, -0.5f);
+	//Calculate minimum "bottom left" corner of scaled size box
+	vec3d bl = pm->mins - (size * ((scaleFactor - 1.0f) / 2.0f / scaleFactor));
 
 	for (size_t x = 0; x < nSample; x++) {
 		for (size_t y = 0; y < nSample; y++) {

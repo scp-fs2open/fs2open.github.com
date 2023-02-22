@@ -1,14 +1,18 @@
 #pragma once
 
 #include "globalincs/pstypes.h"
+#include "math/vecmat.h"
 
 #include <memory>
 
 class volumetric_nebula {
 	//Instance Settings
+	
 	//Type
+	//The name of the POF file specifying the hull of the nebula. Can be convex. Can be multiple disjunct meshes. Each mesh must be watertight. Mesh polies may not intersect, however one mesh may be completely contained in another.
 	SCP_string hullPof = "neb.pof";
-	vec3d pos = {{0, 0, 0}}, size = {{60, 60, 60}};
+	//The position and size of the bounding box of the volumetrics.
+	vec3d pos = ZERO_VECTOR, size = ZERO_VECTOR;
 
 	//Quality
 	//How many steps are used to nebulify the volume until the visibility is reached. In theory purely quality and can be changed without changing the aesthetics. Mostly FPS Cost
@@ -62,6 +66,9 @@ class volumetric_nebula {
 public:
 	volumetric_nebula() = default;
 	~volumetric_nebula();
+
+	const vec3d& getPos() const;
+	const vec3d& getSize() const;
 
 	int getSteps() const;
 	int getGlobalLightSteps() const;

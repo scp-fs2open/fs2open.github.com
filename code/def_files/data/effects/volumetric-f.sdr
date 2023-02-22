@@ -18,7 +18,9 @@ layout (std140) uniform genericData {
 	float zFar;
 	vec3 globalLightDiffuse;
 	float stepsize;
+	vec3 nebPos;
 	float globalstepalpha;
+	vec3 nebSize;
 	float alphalim;
 	float emissiveSpreadFactor;
 	float emissiveIntensity;
@@ -54,8 +56,8 @@ void main()
 
 	vec4 color_in = texture(composite, fragTexCoord.xy);
 
-	vec3 lCorner = vec3(-30, -30, -30);
-	vec3 rCorner = vec3(30, 30, 30);
+	vec3 lCorner = nebPos - nebSize * 0.5;
+	vec3 rCorner = nebPos + nebSize * 0.5;
 	
 	vec3 t1 = (lCorner - camera) / rayDirection;
 	vec3 t2 = (rCorner - camera) / rayDirection;
@@ -77,7 +79,7 @@ void main()
 	for(float step = maxtMin; step < mintMax; step += stepsize) {
 		//Step setup
 		vec3 position = camera + rayDirection * step;
-		vec4 volume_sample = texture(volume_tex, position / 60.0 + 0.5);
+		vec4 volume_sample = texture(volume_tex, position / nebSize + 0.5);
 		float stepcolor_alpha = volume_sample.a;
 
 		//Noise
