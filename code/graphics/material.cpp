@@ -266,6 +266,7 @@ uint material::get_shader_flags() const
 	return 0;
 }
 
+
 int material::get_shader_handle() const
 {
 	return gr_maybe_create_shader(Sdr_type, get_shader_flags());
@@ -293,6 +294,7 @@ bool material::is_textured() const
 	Texture_maps[TM_SPECULAR_TYPE]	> -1 ||
 	Texture_maps[TM_NORMAL_TYPE]	> -1 ||
 	Texture_maps[TM_HEIGHT_TYPE]	> -1 ||
+	Texture_maps[TM_AMBIENT_TYPE]	> -1 ||
 	Texture_maps[TM_MISC_TYPE]		> -1;
 }
 
@@ -552,7 +554,7 @@ void model_material::set_shadow_receiving(bool enabled) {
 }
 
 bool model_material::is_shadow_receiving() const {
-	return Shadow_receiving;
+	return Shadow_receiving && !Shadow_override;
 }
 
 void model_material::set_light_factor(float factor)
@@ -580,10 +582,21 @@ void model_material::set_deferred_lighting(bool enabled)
 	Deferred = enabled;
 }
 
+bool model_material::is_deferred() const
+{
+	return Deferred;
+}
+
 void model_material::set_high_dynamic_range(bool enabled)
 {
 	HDR = enabled;
 }
+
+bool model_material::is_hdr() const
+{
+	return HDR;
+}
+
 
 void model_material::set_center_alpha(int c_alpha)
 {
@@ -614,6 +627,11 @@ void model_material::set_team_color(const team_color &team_clr)
 void model_material::set_team_color()
 {
 	Team_color_set = false;
+}
+
+bool model_material::is_team_color_set() const
+{
+	return Team_color_set;
 }
 
 const team_color& model_material::get_team_color() const
@@ -710,90 +728,15 @@ uint model_material::get_shader_flags() const
 {
 	uint Shader_flags = 0;
 
-	if ( is_clipped() ) {
-		Shader_flags |= SDR_FLAG_MODEL_CLIP;
-	}
-
-	if ( is_batched() ) {
-		Shader_flags |= SDR_FLAG_MODEL_TRANSFORM;
-	}
-
-	if ( Shadow_casting ) {
+	if (Shadow_casting) {
 		// if we're building the shadow map, we likely only need the flags here and above so bail
 		Shader_flags |= SDR_FLAG_MODEL_SHADOW_MAP;
 
 		return Shader_flags;
 	}
-	
-	if ( is_fogged() ) {
-		Shader_flags |= SDR_FLAG_MODEL_FOG;
-	}
 
-	if ( Animated_effect >= 0 ) {
-		Shader_flags |= SDR_FLAG_MODEL_ANIMATED;
-	}
-
-	if ( get_texture_map(TM_BASE_TYPE) > 0) {
-		Shader_flags |= SDR_FLAG_MODEL_DIFFUSE_MAP;
-	}
-
-	if ( get_texture_map(TM_GLOW_TYPE) > 0 ) {
-		Shader_flags |= SDR_FLAG_MODEL_GLOW_MAP;
-	}
-
-	if ( get_texture_map(TM_SPECULAR_TYPE) > 0 || get_texture_map(TM_SPEC_GLOSS_TYPE) > 0 ) {
-		Shader_flags |= SDR_FLAG_MODEL_SPEC_MAP;
-	}
-	if ( (ENVMAP > 0) && !Envmap_override ) {
-		Shader_flags |= SDR_FLAG_MODEL_ENV_MAP;
-	}
-
-	if ( get_texture_map(TM_NORMAL_TYPE) > 0 ) {
-		Shader_flags |= SDR_FLAG_MODEL_NORMAL_MAP;
-	}
-
-	if ( get_texture_map(TM_HEIGHT_TYPE) > 0 ) {
-		Shader_flags |= SDR_FLAG_MODEL_HEIGHT_MAP;
-	}
-
-	if ( get_texture_map(TM_AMBIENT_TYPE) > 0) {
-		Shader_flags |= SDR_FLAG_MODEL_AMBIENT_MAP;
-	}
-
-	if ( lighting ) {
-		Shader_flags |= SDR_FLAG_MODEL_LIGHT;
-		
-		if ( Shadow_receiving && !Shadow_override ) {
-			Shader_flags |= SDR_FLAG_MODEL_SHADOWS;
-		}
-	}
-
-	if ( get_texture_map(TM_MISC_TYPE) > 0 ) {
-		Shader_flags |= SDR_FLAG_MODEL_MISC_MAP;
-
-		if ( Team_color_set ) {
-			Shader_flags |= SDR_FLAG_MODEL_TEAMCOLOR;
-		}
-	}
-
-	if ( Deferred ) {
-		Shader_flags |= SDR_FLAG_MODEL_DEFERRED;
-	}
-
-	if ( HDR ) {
-		Shader_flags |= SDR_FLAG_MODEL_HDR;
-	}
-
-	if ( Thrust_scale > 0.0f ) {
-		Shader_flags |= SDR_FLAG_MODEL_THRUSTER;
-	}
-
-	if ( uses_thick_outlines() ) {
+	if (uses_thick_outlines()) {
 		Shader_flags |= SDR_FLAG_MODEL_THICK_OUTLINES;
-	}
-
-	if (is_alpha_mult_active()) {
-		Shader_flags |= SDR_FLAG_MODEL_ALPHA_MULT;
 	}
 
 	return Shader_flags;

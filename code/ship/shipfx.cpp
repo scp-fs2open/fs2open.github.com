@@ -58,6 +58,10 @@ sound_handle Player_engine_wash_loop = sound_handle::invalid();
 
 extern float splode_level;
 
+const auto OnWarpOutCompleteHook = scripting::OverridableHook<scripting::hooks::ShipSourceConditions>::Factory(
+	"On Warp Out Complete", "Called when a ship has completed the warp out animation",
+	{{"Self", "ship", "The object that is warping out."}});
+
 const auto OnWarpOutHook = scripting::OverridableHook<scripting::hooks::ShipSourceConditions>::Factory(
 	"On Warp Out", "Called when a ship warps out.", {{"Self", "ship", "The object that is warping out."}});
 
@@ -362,10 +366,9 @@ void shipfx_blow_up_model(object *obj, int submodel, int ndebris, vec3d *exp_cen
 	}
 
 	for (i=0; i<ndebris; i++ )	{
-		vec3d pnt1, pnt2;
-
 		// Gets two random points on the surface of a submodel
-		submodel_get_two_random_points_better(pm->id, submodel, &pnt1, &pnt2);
+		vec3d pnt1 = submodel_get_random_point(pm->id, submodel);
+		vec3d pnt2 = submodel_get_random_point(pm->id, submodel);
 
 		vec3d tmp, outpnt;
 
@@ -590,8 +593,23 @@ static void shipfx_actually_warpout(ship *shipp, object *objp)
 	// let physics in on it too.
 	objp->phys_info.flags &= (~PF_WARP_OUT);
 
+	if (OnWarpOutCompleteHook->isActive()) {
+		auto params = scripting::hook_param_list(scripting::hook_param("Self", 'o', objp));
+		auto conditions = scripting::hooks::ShipSourceConditions{ shipp };
+		if (OnWarpOutCompleteHook->isOverride(conditions, params)) {
+			OnWarpOutCompleteHook->run(conditions, params);
+			return;
+		}
+	}
+	
 	// Once we get through effect, make the ship go away
 	ship_actually_depart(objp->instance);
+
+	if (OnWarpOutCompleteHook->isActive()) {
+		auto params = scripting::hook_param_list(scripting::hook_param("Self", 'o', objp));
+		auto conditions = scripting::hooks::ShipSourceConditions{shipp};
+		OnWarpOutCompleteHook->run(conditions, params);
+	}
 }
 
 void WE_Default::compute_warpout_stuff(float *warp_time, vec3d *warp_pos)
@@ -765,7 +783,6 @@ void shipfx_warpout_frame( object *objp, float frametime )
  */
 bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int sun_n )
 {
-	mc_info mc;
 	object *objp;
 	ship_obj *so;
 
@@ -776,7 +793,7 @@ bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int sun_n )
 	// every time the mc variable is reused, every parameter that model_collide reads from is reassigned.
 	// Therefore the stale fields in the rest of the struct do not matter because either a) they are never
 	// read from, or b) they are overwritten by the new collision calculation.
-	mc_info_init(&mc);
+	mc_info mc;
 
 	rp0 = *eye_pos;	
 	
@@ -2238,9 +2255,10 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 
 		int n, n_arcs = Random::next(1, 3);
 
-		vec3d v1, v2, v3, v4;
-		submodel_get_two_random_points_better(model_num, -1, &v1, &v2);
-		submodel_get_two_random_points_better(model_num, -1, &v3, &v4);
+		vec3d v1 = submodel_get_random_point(model_num, -1);
+		vec3d v2 = submodel_get_random_point(model_num, -1);
+		vec3d v3 = submodel_get_random_point(model_num, -1);
+		vec3d v4 = submodel_get_random_point(model_num, -1);
 
 		// For large ships, cap the length to be 25% of max radius
 		if ( obj->radius > 200.0f )	{
@@ -2350,8 +2368,7 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 				// Maybe move a vertex....  20% of the time maybe?
 				int mr = Random::next();
 				if ( mr < Random::MAX_VALUE/5 )	{
-					vec3d v1, v2;
-					submodel_get_two_random_points_better(model_num, -1, &v1, &v2);
+					vec3d v1 = submodel_get_random_point(model_num, -1);
 
 					vec3d static_one;
 
@@ -2460,7 +2477,8 @@ void shipfx_do_lightning_frame( ship * /*shipp*/ )
 	count = (int)frand_range(0.0f, (float)count);
 	while(count > 0){
 		// get 2 points on the hull of the ship
-		submodel_get_two_random_points(shipp->modelnum, 0, &v1, &v2, &n1, &n2);
+		v1 = submodel_get_random_point(shipp->modelnum, 0);
+		v2 = submodel_get_random_point(shipp->modelnum, 0);
 
 		// make up to 2 bolts
 		if(objp->radius > l_max_radius){

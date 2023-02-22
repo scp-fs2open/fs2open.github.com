@@ -39,10 +39,6 @@ include(libRocket.cmake)
 
 add_subdirectory(libpcp)
 
-if (FSO_BUILD_WITH_VULKAN)
-	add_subdirectory(vulkan-hpp)
-endif()
-
 include(antlr4.cmake)
 
 include(vulkan.cmake)
@@ -56,5 +52,9 @@ add_subdirectory(any)
 add_subdirectory(optional)
 
 ADD_SUBDIRECTORY(lz4)
+
+set(HIDAPI_WITH_LIBUSB OFF)
+set(HIDAPI_WITH_HIDRAW ON)
+add_subdirectory(hidapi)
 
 ADD_SUBDIRECTORY(imgui)

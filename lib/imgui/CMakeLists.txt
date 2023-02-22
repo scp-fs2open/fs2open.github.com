@@ -20,6 +20,13 @@ SET(IMGUI_SOURCES
     extensions/ImGuizmo.h
 )
 
+if (FSO_BUILD_WITH_VULKAN)
+    list(APPEND IMGUI_SOURCES
+        backends/imgui_impl_vulkan.h
+        backends/imgui_impl_vulkan.cpp
+    )
+endif()
+
 ADD_LIBRARY(imgui STATIC ${IMGUI_SOURCES})
 
 target_include_directories(imgui SYSTEM PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
@@ -31,4 +38,8 @@ set_target_properties(imgui PROPERTIES FOLDER "3rdparty")
 TARGET_LINK_LIBRARIES(imgui PUBLIC sdl2)
 target_link_libraries(imgui PUBLIC compiler)
 
-
+if (FSO_BUILD_WITH_VULKAN)
+	find_package(Vulkan REQUIRED)
+    target_compile_definitions(imgui INTERFACE VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1 VK_NO_PROTOTYPES)
+	target_link_libraries(imgui PRIVATE Vulkan::Vulkan)
+endif()

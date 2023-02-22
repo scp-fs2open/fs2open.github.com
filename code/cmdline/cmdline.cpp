@@ -273,6 +273,7 @@ Flag exe_params[] =
 	{ "-slow_frames_ok",	"Don't adjust timestamps for slow frames",	true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-slow_frames_ok", },
 	{ "-imgui_debug",		"Show imgui debug/demo window in the lab",  true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-imgui_debug", },
 	{ "-luadev",			"Make lua errors non-fatal",				true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-luadev", },
+	{"-vulkan",			"Use vulkan render backend",				true,	0,									  EASY_DEFAULT,				"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-vulkan", },
 };
 // clang-format on
 
@@ -527,6 +528,7 @@ cmdline_parm fixed_seed_rand("-seed", nullptr, AT_INT);	// Cmdline_rng_seed,Cmdl
 cmdline_parm luadev_arg("-luadev", "Make lua errors non-fatal", AT_NONE);	// Cmdline_lua_devmode
 cmdline_parm override_arg("-override_data", "Enable override directory", AT_NONE);	// Cmdline_override_data
 cmdline_parm imgui_debug_arg("-imgui_debug", nullptr, AT_NONE);
+cmdline_parm vulkan("-vulkan", nullptr, AT_NONE);
 
 char *Cmdline_start_mission = NULL;
 int Cmdline_dis_collisions = 0;
@@ -562,6 +564,7 @@ bool Cmdline_slow_frames_ok = false;
 bool Cmdline_lua_devmode = false;
 bool Cmdline_override_data = false;
 bool Cmdline_show_imgui_debug = false;
+bool Cmdline_vulkan = false;
 
 // Other
 cmdline_parm get_flags_arg(GET_FLAGS_STRING, "Output the launcher flags file", AT_STRING);
@@ -2205,6 +2208,10 @@ bool SetCmdlineParams()
 	if (show_video_info.found())
 	{
 		Cmdline_show_video_info = true;
+	}
+
+	if (vulkan.found()) {
+		Cmdline_vulkan = true;
 	}
 
 	//Deprecated flags - CommanderDJ

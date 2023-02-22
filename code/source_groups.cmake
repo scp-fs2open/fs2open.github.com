@@ -250,6 +250,7 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/main-f.sdr
 	def_files/data/effects/main-g.sdr
 	def_files/data/effects/main-v.sdr
+	def_files/data/effects/model_shader_flags.h
 	def_files/data/effects/nanovg-f.sdr
 	def_files/data/effects/nanovg-v.sdr
 	def_files/data/effects/normals.sdr
@@ -657,6 +658,8 @@ add_file_folder("Io"
 	io/joy-sdl.cpp
 	io/joy_ff.h
 	io/joy_ff-sdl.cpp
+	io/spacemouse.cpp
+	io/spacemouse.h
 )
 
 # jpgutils files

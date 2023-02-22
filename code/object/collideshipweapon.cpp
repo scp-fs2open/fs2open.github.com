@@ -215,8 +215,8 @@ static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, f
 		weapon_end_pos -= The_mission.gravity * flFrametime * flFrametime * (1.f / 12);
 	}
 
-	// Goober5000 - I tried to make collision code here much saner... here begin the (major) changes
-	mc_info_init(&mc);
+
+	// Goober5000 - I tried to make collision code much saner... here begin the (major) changes
 
 	// set up collision structs
 	mc.model_instance_num = shipp->model_instance_num;
@@ -227,8 +227,8 @@ static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, f
 	mc.p0 = &weapon_start_pos;
 	mc.p1 = &weapon_end_pos;
 	mc.lod = sip->collision_lod;
-	memcpy(&mc_shield, &mc, sizeof(mc_info));
-	memcpy(&mc_hull, &mc, sizeof(mc_info));
+	mc_shield = mc;
+	mc_hull = mc;
 
 	// (btw, these are leftover comments from below...)
 	//
@@ -382,7 +382,7 @@ static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, f
 	// If we found a shield collision but were only checking for a simple model
 	// collision, we can re-use the same collision info for the hull as well
 	if (shield_collision && mc_shield.flags == MC_CHECK_MODEL) {
-		memcpy(&mc_hull, &mc_shield, sizeof(mc_info));
+		mc_hull = mc_shield;
 		hull_collision = shield_collision;
 
 		// The weapon has impacted on the hull, so if it should therefore bypass
@@ -446,13 +446,13 @@ static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, f
 	// see which impact we use
 	if (shield_collision)
 	{
-		memcpy(&mc, &mc_shield, sizeof(mc_info));
+		mc = mc_shield;
 		Assert(quadrant_num >= 0);
 		valid_hit_occurred = 1;
 	}
 	else if (hull_collision)
 	{
-		memcpy(&mc, &mc_hull, sizeof(mc_info));
+		mc = mc_hull;
 		valid_hit_occurred = 1;
 	}
 
@@ -468,7 +468,7 @@ static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, f
 	if ( valid_hit_occurred )
 	{
 		wp->collisionInfo = new mc_info;	// The weapon will free this memory later
-		memcpy(wp->collisionInfo, &mc, sizeof(mc_info));
+		*wp->collisionInfo = mc;
 
 		bool ship_override = false, weapon_override = false;
 

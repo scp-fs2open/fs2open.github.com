@@ -218,6 +218,11 @@ ai_flag_name Ai_flag_names[] = {
 	{AI::AI_Flags::Free_afterburner_use,	"free-afterburner-use",	},
 };
 
+ai_flag_description Ai_flag_descriptions[] = {
+	{AI::AI_Flags::No_dynamic,				"Will stop allowing the AI to pursue dynamic goals (eg: chasing ships it was not ordered to)."},
+	{AI::AI_Flags::Free_afterburner_use,	"Will allow AI to use afterburners when attacking a big ship, flying to a target position, guarding a ship, and flying in formation."},
+};
+
 extern const int Num_ai_flag_names = sizeof(Ai_flag_names) / sizeof(ai_flag_name);
 
 const char *Skill_level_names(int level, int translate)
@@ -7352,11 +7357,9 @@ int avoid_player(object *objp, vec3d *goal_pos)
 //	If so, stuff *collision_point.
 int will_collide_pp(vec3d *p0, vec3d *p1, float radius, object *big_objp, vec3d *collision_point)
 {
-	mc_info	mc;
-	mc_info_init(&mc);
-
 	polymodel *pm = model_get(Ship_info[Ships[big_objp->instance].ship_info_index].model_num);
 
+	mc_info	mc;
 	mc.model_instance_num = -1;
 	mc.model_num = pm->id;				// Fill in the model to check
 	mc.orient = &big_objp->orient;			// The object's orient
@@ -16517,8 +16520,6 @@ bool test_line_of_sight(vec3d* from, vec3d* to, std::unordered_set<const object*
 		}
 
 		mc_info hull_check;
-		mc_info_init(&hull_check);
-
 		hull_check.model_instance_num = model_instance_num;
 		hull_check.model_num = model_num;
 		hull_check.orient = &objp->orient;

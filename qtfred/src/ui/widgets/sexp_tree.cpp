@@ -20,6 +20,7 @@
 #include "asteroid/asteroid.h"
 #include "mission/missionmessage.h"
 #include "mission/missioncampaign.h"
+#include "mission/missionparse.h"
 #include "hud/hudsquadmsg.h"
 #include "stats/medals.h"
 #include "controlconfig/controlsconfig.h"
@@ -1690,6 +1691,18 @@ int sexp_tree::query_default_argument_available(int op, int i) {
 		}
 		return 0;
 
+	case OPF_MOTION_DEBRIS:
+		if (Motion_debris_info.size() > 0) {
+			return 1;
+		}
+		return 0;
+
+	case OPF_BOLT_TYPE:
+		if (Bolt_types.size() > 0) {
+			return 1;
+		}
+		return 0;
+
 	case OPF_ASTEROID_DEBRIS:
 		if ((Asteroid_info.size() - NUM_ASTEROID_POFS) > 0) {
 			return 1;
@@ -2884,6 +2897,90 @@ void sexp_tree::update_help(QTreeWidgetItem* h) {
 					}
 				}
 			}
+
+			// If the node is a ship flag, then display the flag's description
+			if (query_operator_argument_type(index, c) == OPF_SHIP_FLAG) {
+				Object::Object_Flags object_flag = Object::Object_Flags::NUM_VALUES;
+				Ship::Ship_Flags ship_flag = Ship::Ship_Flags::NUM_VALUES;
+				Mission::Parse_Object_Flags parse_obj_flag = Mission::Parse_Object_Flags::NUM_VALUES;
+				AI::AI_Flags ai_flag = AI::AI_Flags::NUM_VALUES;
+				SCP_string desc;
+
+				sexp_check_flag_arrays(tree_nodes[i].text, object_flag, ship_flag, parse_obj_flag, ai_flag);
+
+				// Ship flags are pulled from multiple categories, so we have to search them all. Ew.
+				if (object_flag != Object::Object_Flags::NUM_VALUES) {
+					for (size_t n = 0; n < (size_t)Num_object_flag_names; n++) {
+						if (object_flag == Object_flag_descriptions[n].flag) {
+							desc = Object_flag_descriptions[n].flag_desc;
+							break;
+						}
+					}
+				}
+
+				if (ship_flag != Ship::Ship_Flags::NUM_VALUES) {
+					for (size_t n = 0; n < (size_t)Num_ship_flag_names; n++) {
+						if (ship_flag == Ship_flag_descriptions[n].flag) {
+							desc = Ship_flag_descriptions[n].flag_desc;
+							break;
+						}
+					}
+				}
+
+				if (ai_flag != AI::AI_Flags::NUM_VALUES) {
+					for (size_t n = 0; n < (size_t)Num_ai_flag_names; n++) {
+						if (ai_flag == Ai_flag_descriptions[n].flag) {
+							desc = Ai_flag_descriptions[n].flag_desc;
+							break;
+						}
+					}
+				}
+
+				// Only check through parse object flags if we haven't found anything yet
+				if (desc.empty()) {
+					if (parse_obj_flag != Mission::Parse_Object_Flags::NUM_VALUES) {
+						for (size_t n = 0; n < (size_t)Num_parse_object_flags; n++) {
+							if (parse_obj_flag == Parse_object_flag_descriptions[n].def) {
+								desc = Parse_object_flag_descriptions[n].flag_desc;
+								break;
+							}
+						}
+					}
+				}
+
+				// If we still didn't find anything, say so!
+				if (desc.empty())
+					desc = "Unknown flag. Let a coder know!";
+
+				auto text = QString("%s").arg(desc.c_str());
+				helpChanged(text);
+				return;
+			}
+
+			// If the node is a wing flag, then display the flag's description
+			if (query_operator_argument_type(index, c) == OPF_WING_FLAG) {
+				Ship::Wing_Flags wing_flag = Ship::Wing_Flags::NUM_VALUES;
+				SCP_string desc;
+
+				sexp_check_flag_array(tree_nodes[i].text, wing_flag);
+
+				if (wing_flag != Ship::Wing_Flags::NUM_VALUES) {
+					for (size_t n = 0; n < (size_t)Num_wing_flag_names; n++) {
+						if (wing_flag == Wing_flag_descriptions[n].flag) {
+							desc = Wing_flag_descriptions[n].flag_desc;
+							break;
+						}
+					}
+				}
+
+				// If we still didn't find anything, say so!
+				if (desc.empty())
+					desc = "Unknown flag. Let a coder know!";
+
+				auto text = QString("%s").arg(desc.c_str());
+				helpChanged(text);
+				return;
+			}
 		}
 
 		i = z;
@@ -3370,6 +3467,14 @@ sexp_list_item* sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 		list = get_listing_opf_wing_formation();
 		break;
 
+	case OPF_MOTION_DEBRIS:
+		list = get_listing_opf_motion_debris();
+		break;
+
+	case OPF_BOLT_TYPE:
+		list = get_listing_opf_bolt_types();
+		break;
+
 	default:
 		// We're at the end of the list so check for any dynamic enums
 		list = check_for_dynamic_sexp_enum(opf);
@@ -3687,7 +3792,8 @@ sexp_list_item* sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 
 	// first child node
 	child = tree_nodes[parent_node].child;
-	Assert(child >= 0);
+	if (child < 0)
+		return nullptr;
 
 	switch (op) {
 		// where we care about hull strength
@@ -3742,7 +3848,7 @@ sexp_list_item* sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 
 			// iterate to the next field two times
 			child = tree_nodes[child].next;
-			Assert(child >= 0);
+			if (child < 0) return nullptr;
 			child = tree_nodes[child].next;
 		} else {
 			Assert(arg_index == 1);
@@ -3772,9 +3878,9 @@ sexp_list_item* sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 	case OP_QUERY_ORDERS:
 		// iterate to the next field three times
 		child = tree_nodes[child].next;
-		Assert(child >= 0);
+		if (child < 0) return nullptr;
 		child = tree_nodes[child].next;
-		Assert(child >= 0);
+		if (child < 0) return nullptr;
 		child = tree_nodes[child].next;
 		break;
 
@@ -3782,15 +3888,15 @@ sexp_list_item* sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 	case OP_BEAM_FLOATING_FIRE:
 		// iterate to the next field six times
 		child = tree_nodes[child].next;
-		Assert(child >= 0);
+		if (child < 0) return nullptr;
 		child = tree_nodes[child].next;
-		Assert(child >= 0);
+		if (child < 0) return nullptr;
 		child = tree_nodes[child].next;
-		Assert(child >= 0);
+		if (child < 0) return nullptr;
 		child = tree_nodes[child].next;
-		Assert(child >= 0);
+		if (child < 0) return nullptr;
 		child = tree_nodes[child].next;
-		Assert(child >= 0);
+		if (child < 0) return nullptr;
 		child = tree_nodes[child].next;
 		break;
 
@@ -3798,19 +3904,19 @@ sexp_list_item* sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 	case OP_WEAPON_CREATE:
 		// iterate to the next field eight times
 		child = tree_nodes[child].next;
-		Assert(child >= 0);
+		if (child < 0) return nullptr;
 		child = tree_nodes[child].next;
-		Assert(child >= 0);
+		if (child < 0) return nullptr;
 		child = tree_nodes[child].next;
-		Assert(child >= 0);
+		if (child < 0) return nullptr;
 		child = tree_nodes[child].next;
-		Assert(child >= 0);
+		if (child < 0) return nullptr;
 		child = tree_nodes[child].next;
-		Assert(child >= 0);
+		if (child < 0) return nullptr;
 		child = tree_nodes[child].next;
-		Assert(child >= 0);
+		if (child < 0) return nullptr;
 		child = tree_nodes[child].next;
-		Assert(child >= 0);
+		if (child < 0) return nullptr;
 		child = tree_nodes[child].next;
 		break;
 
@@ -3818,15 +3924,17 @@ sexp_list_item* sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 	case OP_TURRET_SET_FORCED_SUBSYS_TARGET:
 		if (arg_index >= 3) {
 			child = tree_nodes[child].next;
-			Assert(child >= 0);
+			if (child < 0) return nullptr;
 			child = tree_nodes[child].next;
 		}
 		break;
 
 	}
 
+	if (child < 0)
+		return nullptr;
+
 	// now find the ship and add all relevant subsystems
-	Assert(child >= 0);
 	sh = ship_name_lookup(tree_nodes[child].text, 1);
 	if (sh >= 0) {
 		subsys = GET_FIRST(&Ships[sh].subsys_list);
@@ -3896,7 +4004,8 @@ sexp_list_item* sexp_tree::get_listing_opf_subsystem_type(int parent_node) {
 
 	// first child node
 	child = tree_nodes[parent_node].child;
-	Assert(child >= 0);
+	if (child < 0)
+		return nullptr;
 
 	// now find the ship
 	shipnum = ship_name_lookup(tree_nodes[child].text, 1);
@@ -4078,7 +4187,9 @@ sexp_list_item* sexp_tree::get_listing_opf_ai_goal(int parent_node) {
 
 	Assert(parent_node >= 0);
 	child = tree_nodes[parent_node].child;
-	Assert(child >= 0);
+	if (child < 0)
+		return nullptr;
+
 	n = ship_name_lookup(tree_nodes[child].text, 1);
 	if (n >= 0) {
 		// add operators if it's an ai-goal and ai-goal is allowed for that ship
@@ -4126,17 +4237,20 @@ sexp_list_item* sexp_tree::get_listing_opf_docker_point(int parent_node) {
 
 	if (!stricmp(tree_nodes[parent_node].text, "ai-dock")) {
 		z = tree_nodes[parent_node].parent;
-		Assert(z >= 0);
+		if (z < 0)
+			return nullptr;
 		Assert(!stricmp(tree_nodes[z].text, "add-ship-goal") || !stricmp(tree_nodes[z].text, "add-wing-goal")
 				   || !stricmp(tree_nodes[z].text, "add-goal"));
 
 		z = tree_nodes[z].child;
-		Assert(z >= 0);
-
+		if (z < 0)
+			return nullptr;
 		sh = ship_name_lookup(tree_nodes[z].text, 1);
 	} else if (!stricmp(tree_nodes[parent_node].text, "set-docked")) {
 		//Docker ship should be the first child node
 		z = tree_nodes[parent_node].child;
+		if (z < 0)
+			return nullptr;
 		sh = ship_name_lookup(tree_nodes[z].text, 1);
 	}
 
@@ -4160,14 +4274,18 @@ sexp_list_item* sexp_tree::get_listing_opf_dockee_point(int parent_node) {
 
 	if (!stricmp(tree_nodes[parent_node].text, "ai-dock")) {
 		z = tree_nodes[parent_node].child;
-		Assert(z >= 0);
+		if (z < 0)
+			return nullptr;
 
 		sh = ship_name_lookup(tree_nodes[z].text, 1);
 	} else if (!stricmp(tree_nodes[parent_node].text, "set-docked")) {
 		//Dockee ship should be the third child node
-		z = tree_nodes[parent_node].child;    // 1
+		z = tree_nodes[parent_node].child;     // 1
+		if (z < 0) return nullptr;
 		z = tree_nodes[z].next;                // 2
+		if (z < 0) return nullptr;
 		z = tree_nodes[z].next;                // 3
+		if (z < 0) return nullptr;
 
 		sh = ship_name_lookup(tree_nodes[z].text, 1);
 	}
@@ -4459,7 +4577,8 @@ sexp_list_item* sexp_tree::get_listing_opf_goal_name(int parent_node) {
 
 		Assert(parent_node >= 0);
 		child = tree_nodes[parent_node].child;
-		Assert(child >= 0);
+		if (child < 0)
+			return nullptr;
 
 		for (m = 0; m < Campaign.num_missions; m++)
 			if (!stricmp(Campaign.missions[m].name, tree_nodes[child].text))
@@ -4550,7 +4669,8 @@ sexp_list_item* sexp_tree::get_listing_opf_event_name(int parent_node) {
 	if (m_mode == MODE_CAMPAIGN) {
 		Assert(parent_node >= 0);
 		auto child = tree_nodes[parent_node].child;
-		Assert(child >= 0);
+		if (child < 0)
+			return nullptr;
 
 		for (m = 0; m < Campaign.num_missions; m++)
 			if (!stricmp(Campaign.missions[m].name, tree_nodes[child].text))
@@ -4876,8 +4996,8 @@ sexp_list_item* sexp_tree::get_listing_opf_damage_type() {
 sexp_list_item* sexp_tree::get_listing_opf_animation_type() {
 	sexp_list_item head;
 
-	for (const auto &animation_type_name: animation::Animation_types) {
-		head.add_data(animation_type_name.second.first);
+	for (const auto &animation_type: animation::Animation_types) {
+		head.add_data(animation_type.second.first);
 	}
 
 	return head.next;
@@ -4961,10 +5081,34 @@ sexp_list_item* sexp_tree::get_listing_opf_nebula_patterns() {
 
 	head.add_data(SEXP_NONE_STRING);
 
-	for (int i = 0; i < MAX_NEB2_BITMAPS; i++) {
-		if (strlen(Neb2_bitmap_filenames[i]) > 0) {
-			head.add_data(Neb2_bitmap_filenames[i]);
-		}
+	for (int i = 0; i < (int)Neb2_bitmap_filenames.size(); i++) {
+		head.add_data(Neb2_bitmap_filenames[i].c_str());
+	}
+
+	return head.next;
+}
+
+sexp_list_item* sexp_tree::get_listing_opf_motion_debris()
+{
+	sexp_list_item head;
+
+	head.add_data(SEXP_NONE_STRING);
+
+	for (int i = 0; i < (int)Motion_debris_info.size(); i++) {
+		head.add_data(Motion_debris_info[i].name.c_str());
+	}
+
+	return head.next;
+}
+
+sexp_list_item* sexp_tree::get_listing_opf_bolt_types()
+{
+	sexp_list_item head;
+
+	head.add_data(SEXP_NONE_STRING);
+
+	for (int i = 0; i < (int)Bolt_types.size(); i++) {
+		head.add_data(Bolt_types[i].name);
 	}
 
 	return head.next;
@@ -5057,7 +5201,8 @@ sexp_list_item *sexp_tree::get_listing_opf_animation_name(int parent_node)
 
 	// first child node
 	child = tree_nodes[parent_node].child;
-	Assert(child >= 0);
+	if (child < 0)
+		return nullptr;
 	sh = ship_name_lookup(tree_nodes[child].text, 1);
 
 	switch(op) {

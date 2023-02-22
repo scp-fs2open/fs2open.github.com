@@ -9,12 +9,8 @@ namespace hooks {
 const std::shared_ptr<Hook<>> OnGameInit = Hook<>::Factory("On Game Init",
 	"Executed at the start of the engine after all game data has been loaded.",
 	{},
+	tl::nullopt,
 	CHA_GAMEINIT);
-
-const std::shared_ptr<OverridableHook<>> OnSplashScreen = OverridableHook<>::Factory("On Splash Screen",
-	"Will be called once when the splash screen shows for the first time.",
-	{},
-	CHA_SPLASHSCREEN);
 
 const std::shared_ptr<OverridableHook<>> OnStateStart = OverridableHook<>::Factory("On State Start",
 	"Executed whenever a new state is entered.",
@@ -324,6 +320,7 @@ const std::shared_ptr<OverridableHook<ObjectDrawConditions>> OnHudDraw = Overrid
 		{"Self", "object", "The object from which the scene is viewed."},
 		{"Player", "object", "The player object."} 
 	},
+	tl::nullopt,
 	CHA_HUDDRAW);
 
 const std::shared_ptr<OverridableHook<ObjectDrawConditions>> OnObjectRender = OverridableHook<ObjectDrawConditions>::Factory("On Object Render",
@@ -335,6 +332,7 @@ const std::shared_ptr<OverridableHook<ObjectDrawConditions>> OnObjectRender = Ov
 const std::shared_ptr<Hook<>> OnSimulation = Hook<>::Factory("On Simulation",
 	"Invoked every time that FSO processes physics and AI.",
 	{},
+	tl::nullopt,
 	CHA_SIMULATION);
 
 const std::shared_ptr<OverridableHook<>> OnDialogInit = OverridableHook<>::Factory("On Dialog Init",
@@ -343,8 +341,9 @@ const std::shared_ptr<OverridableHook<>> OnDialogInit = OverridableHook<>::Facto
 		{"Choices",
 			"table",
 			"A table containing the different choices for this dialog. Contains subtables, each consisting of "
-			"Positivity (an int, 0 if neutral, 1 if positive, and -1 if negative) and "
-			"Text (a string, the text of the button)."},
+			"Positivity (an int, 0 if neutral, 1 if positive, and -1 if negative), "
+			"Text (a string, the text of the button), and "
+			"Shorcut (a string, the keypress that should activate the choice or nil if no valid shortcut)."},
 		{"Title", "string", "The title of the popup window. Nil for a death popup."},
 		{"Text", "string", "The text to be displayed in the popup window. Nil for a death popup."},
 		{"IsTimeStopped", "boolean", "True if mission time was interrupted for this popup."},
@@ -403,8 +402,14 @@ const std::shared_ptr<Hook<>> OnCameraSetUpHook = Hook<>::Factory("On Camera Set
 
 // ========== DEPRECATED ==========
 
+const std::shared_ptr<OverridableHook<>> OnSplashScreen = OverridableHook<>::Factory("On Splash Screen",
+	"Will be called once when the splash screen shows for the first time.",
+	{},
+	HookDeprecationOptions(gameversion::version(23, 0), HookDeprecationOptions::DeprecationLevel::LEVEL_WARN, HookDeprecationOptions::DeprecationLevel::LEVEL_ERROR),
+	CHA_SPLASHSCREEN);
+
 const std::shared_ptr<OverridableHook<ObjectDeathConditions>> OnDeath = OverridableHook<ObjectDeathConditions>::Factory("On Death",
-	"Invoked when an object (ship or asteroid) has been destroyed.  Deprecated in favor of On Ship Destroyed and On Asteroid Destroyed.",
+	"Invoked when an object (ship or asteroid) has been destroyed.  Deprecated in favor of On Ship Death and On Asteroid Death.",
 	{
 		{"Self", "object", "The object that was killed"},
 		{"Ship", "ship", "The ship that was destroyed (only set for ships)"},
@@ -412,7 +417,8 @@ const std::shared_ptr<OverridableHook<ObjectDeathConditions>> OnDeath = Overrida
 		{"Hitpos",
 			"vector",
 			"The position of the hit that caused the death (only set for ships and only if available)"},
-	});
+	},
+	HookDeprecationOptions(gameversion::version(23, 0)));
 
 } // namespace hooks
 } // namespace scripting

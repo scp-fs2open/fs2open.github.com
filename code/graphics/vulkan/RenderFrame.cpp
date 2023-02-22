@@ -7,8 +7,8 @@ namespace vulkan {
 RenderFrame::RenderFrame(vk::Device device, vk::SwapchainKHR swapChain, vk::Queue graphicsQueue, vk::Queue presentQueue)
 	: m_device(device), m_swapChain(swapChain), m_graphicsQueue(graphicsQueue), m_presentQueue(presentQueue)
 {
-	vk::SemaphoreCreateInfo semaphoreCreateInfo;
-	vk::FenceCreateInfo fenceCreateInfo;
+	constexpr vk::SemaphoreCreateInfo semaphoreCreateInfo;
+	constexpr vk::FenceCreateInfo fenceCreateInfo;
 
 	m_imageAvailableSemaphore = device.createSemaphoreUnique(semaphoreCreateInfo);
 	m_renderingFinishedSemaphore = device.createSemaphoreUnique(semaphoreCreateInfo);
@@ -29,7 +29,7 @@ void RenderFrame::waitForFinish()
 	}
 	m_frameFinishedCallbacks.clear();
 
-	// Our fence has been signalled so we are no longer in flight and ready to be reused
+	// Our fence has been signaled so we are no longer in flight and ready to be reused
 	m_inFlight = false;
 }
 void RenderFrame::onFrameFinished(std::function<void()> finishFunc)
@@ -55,8 +55,8 @@ void RenderFrame::submitAndPresent(const std::vector<vk::CommandBuffer>& cmdBuff
 {
 	Assertion(!m_inFlight, "Cannot submit a frame for presentation when it is still in flight.");
 
-	std::array<vk::PipelineStageFlags, 1> waitStages = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
-	std::array<vk::Semaphore, 1> waitSemaphores = {m_imageAvailableSemaphore.get()};
+	const std::array<vk::PipelineStageFlags, 1> waitStages = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
+	const std::array<vk::Semaphore, 1> waitSemaphores = {m_imageAvailableSemaphore.get()};
 
 	vk::SubmitInfo submitInfo;
 	submitInfo.waitSemaphoreCount = 1;
@@ -66,7 +66,7 @@ void RenderFrame::submitAndPresent(const std::vector<vk::CommandBuffer>& cmdBuff
 	submitInfo.commandBufferCount = static_cast<uint32_t>(cmdBuffers.size());
 	submitInfo.pCommandBuffers = cmdBuffers.data();
 
-	std::array<vk::Semaphore, 1> signalSemaphores = {m_renderingFinishedSemaphore.get()};
+	const std::array<vk::Semaphore, 1> signalSemaphores = {m_renderingFinishedSemaphore.get()};
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = signalSemaphores.data();
 
@@ -79,7 +79,7 @@ void RenderFrame::submitAndPresent(const std::vector<vk::CommandBuffer>& cmdBuff
 	presentInfo.waitSemaphoreCount = 1;
 	presentInfo.pWaitSemaphores = signalSemaphores.data();
 
-	std::array<vk::SwapchainKHR, 1> swapChains = {m_swapChain};
+	const std::array<vk::SwapchainKHR, 1> swapChains = {m_swapChain};
 	presentInfo.swapchainCount = 1;
 	presentInfo.pSwapchains = swapChains.data();
 	presentInfo.pImageIndices = &m_swapChainIdx;

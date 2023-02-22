@@ -1895,6 +1895,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 
 				parent_ship->last_fired_turret = turret;
 				turret->last_fired_weapon_info_index = turret_weapon_class;
+				turret->turret_last_fired = _timestamp();
 
 				if (scripting::hooks::OnTurretFired->isActive()) {
 					scripting::hooks::OnTurretFired->run(scripting::hooks::WeaponUsedConditions{ parent_ship , turret_enemy_objp, SCP_vector<int>{ turret_weapon_class }, true },
@@ -2037,6 +2038,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 
 					parent_ship->last_fired_turret = turret;
 					turret->last_fired_weapon_info_index = wp->weapon_info_index;
+					turret->turret_last_fired = _timestamp();
 
 					wp->target_num = turret->turret_enemy_objnum;
 					// AL 1-6-97: Store pointer to turret subsystem
@@ -2163,6 +2165,7 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 
 		Ships[Objects[tsi->parent_objnum].instance].last_fired_turret = tsi->turret;
 		tsi->turret->last_fired_weapon_info_index = tsi->weapon_class;
+		tsi->turret->turret_last_fired = _timestamp();
 
 		if (scripting::hooks::OnTurretFired->isActive()) {
 			scripting::hooks::OnTurretFired->run(scripting::hooks::WeaponUsedConditions{
@@ -2736,7 +2739,6 @@ void ai_turret_execute_behavior(ship *shipp, ship_subsys *ss)
 				vm_vec_scale_add(&end, &gpos, &gvec, model_get_radius(model_num));
 
 				mc_info hull_check;
-				mc_info_init(&hull_check);
 				hull_check.model_instance_num = shipp->model_instance_num;
 				hull_check.model_num = model_num;
 				hull_check.orient = &objp->orient;
