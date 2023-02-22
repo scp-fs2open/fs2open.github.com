@@ -17,7 +17,7 @@ class volumetric_nebula {
 	int globalLightSteps = 6;
 	//Resolution of 3D texture as 2^n. 5 - 8 recommended. Mostly VRAM cost
 	int resolution = 6;
-	//Oversampling of 3D-Texture. Will octuple loading computation time for each value, but improves banding especially at lower resolutions. 1 - 3. Mostly Loading time cost.
+	//Oversampling of 3D-Texture. Will quadruple loading computation time for each increment, but improves banding especially at lower resolutions. 1 - 3. Mostly Loading time cost.
 	int oversampling = 2;
 
 	//General Visibility

@@ -59,15 +59,14 @@ void volumetric_nebula::renderVolumeBitmap(float r, float g, float b) {
 	int modelnum = model_load(hullPof.c_str(), 0, nullptr);
 
 	mc_info mc;
-	mc_info_init(&mc);
 
 	mc.model_num = modelnum;
 	mc.orient = &vmd_identity_matrix;
 	mc.pos = &vmd_zero_vector;
 	mc.p1 = &vmd_zero_vector;
-	mc.radius = 0.1f;
+	//mc.radius = 0.1f;
 
-	mc.flags = MC_CHECK_MODEL | MC_CHECK_SPHERELINE;
+	mc.flags = MC_CHECK_MODEL /* | MC_CHECK_SPHERELINE*/ | MC_COLLIDE_ALL;
 
 	vec3d bl;
 	vm_vec_copy_scale(&bl, &size, -0.5f);
@@ -83,19 +82,22 @@ void volumetric_nebula::renderVolumeBitmap(float r, float g, float b) {
 
 			mc.p0 = &start;
 			mc.p1 = &end;
-			bool hit = model_collide(&mc);
-			size_t zStart = static_cast<size_t>((mc.hit_point_world.xyz.z - bl.xyz.z) / size.xyz.z * static_cast<float>(n << (oversampling - 1)));
-			size_t zEnd = zStart;
+			mc.hit_points_all.clear();
+			mc.hit_submodels_all.clear();
+			model_collide(&mc);
 
-			if (hit) {
-				mc.p0 = &end;
-				mc.p1 = &start;
-				model_collide(&mc);
-				zEnd = static_cast<size_t>((mc.hit_point_world.xyz.z - bl.xyz.z) / size.xyz.z * static_cast<float>(n << (oversampling - 1)));
-			}
+			SCP_multiset<size_t> collisionZIndices;
+			for(const vec3d& hitpnt : mc.hit_points_all)
+				collisionZIndices.emplace(static_cast<size_t>((hitpnt.xyz.z - bl.xyz.z) / size.xyz.z * static_cast<float>(n << (oversampling - 1))));
 
+			size_t hitcnt = 0;
+			auto hitpntit = collisionZIndices.cbegin();
 			for (size_t z = 0; z < nSample; z++) {
-				volumeSampleCache[x * nSample * nSample + y * nSample + z] = z >= zStart && z < zEnd;
+				while (hitpntit != collisionZIndices.cend() && *hitpntit < z) {
+					++hitpntit;
+					++hitcnt;
+				}
+				volumeSampleCache[x * nSample * nSample + y * nSample + z] = hitcnt % 2 != 0;
 			}
 		}
 	}
