@@ -76,15 +76,20 @@ void main()
 	//float noisemax = 0;
 	vec3 cumcolor = vec3(0, 0, 0);
 
+	//While not perfectly accurate, it's sufficient to assume all gradients for the 3d texture lookups are identical
+	vec3 initialPos = (camera + rayDirection * maxtMin) / nebSize + 0.5;
+	vec3 gradX = dFdx(initialPos);
+	vec3 gradY = dFdy(initialPos);
+
 	for(float step = maxtMin; step < mintMax; step += stepsize) {
 		//Step setup
 		vec3 position = camera + rayDirection * step;
-		vec4 volume_sample = texture(volume_tex, position / nebSize + 0.5);
+		vec4 volume_sample = textureGrad(volume_tex, position / nebSize + 0.5, gradX, gradY);
 		float stepcolor_alpha = volume_sample.a;
 
 		//Noise - Technically, this should do noise, but I'm not very happy with how it turned out. The cloud needs to be "eroded" by the noise, but it's unclear as to how that can be achieved.
 		//cumnoisedist += stepcolor_alpha * stepsize;
-		//vec3 noise = texture(noise_volume_tex, position * noiseScale).rgb;
+		//vec3 noise = textureGrad(noise_volume_tex, position * noiseScale, gradX, gradY).rgb;
 		//noisemax = max(noisemax, (1.0 - (noise.r * noise.g * noise.b * 1.5 * (1.0 - smoothstep(noiseNear, noiseFar, cumnoisedist)))) * smoothstep(0.05, 0.15, stepcolor_alpha));
 		//stepcolor_alpha *= noisemax;
 
@@ -94,7 +99,7 @@ void main()
 		float directionalLightDepth = 0.1;
 		for(int dlstep = 1; dlstep <= directionalLightSampleSteps; dlstep++){
 			//TODO Sample these in a cone towards the sun, not just a line. Also add the high-distance sample for concave nebulae
-			float dlstepalpha = texture(volume_tex, (position - globalLightDirection * (dlstep * directionalLightStepSize)) / 60.0 + 0.5).a;
+			float dlstepalpha = textureGrad(volume_tex, (position - globalLightDirection * (dlstep * directionalLightStepSize)) / 60.0 + 0.5, gradX, gradY).a;
 			directionalLightDepth += dlstepalpha * directionalLightStep;
 		}
 		stepcolor_diffuse *= beer_powder_norm * (1 - exp(-directionalLightDepth * 2.0)) * exp(-directionalLightDepth);
