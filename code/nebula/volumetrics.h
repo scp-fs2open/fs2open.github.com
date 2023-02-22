@@ -50,7 +50,7 @@ class volumetric_nebula {
 	//The detail of the noise's three levels, >= 3
 	std::tuple<int, int, int> noiseDetail = { 5, 15, 25 };
 	//The scale of the edge noise, specified in the size of the noise cube
-	float noiseScale = 1.0f;
+	float noiseScale = 15.0f;
 
 	//Instance Data
 	int volumeBitmapHandle = -1;

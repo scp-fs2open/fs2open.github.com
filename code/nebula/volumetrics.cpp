@@ -153,9 +153,9 @@ void volumetric_nebula::renderVolumeBitmap(float r, float g, float b) {
 																	static_cast<float>(y) / static_cast<float>(nNoise),
 																	static_cast<float>(z) / static_cast<float>(nNoise) };
 
-				noiseVolumeBitmapData[x * n * n * 4 + y * n * 4 + z * 4] = static_cast<ubyte>(worley1.sample(noiseCoords) * 255.0f);
-				noiseVolumeBitmapData[x * n * n * 4 + y * n * 4 + z * 4 + 1] = static_cast<ubyte>(worley2.sample(noiseCoords) * 255.0f);
-				noiseVolumeBitmapData[x * n * n * 4 + y * n * 4 + z * 4 + 2] = static_cast<ubyte>(worley3.sample(noiseCoords) * 255.0f);
+				noiseVolumeBitmapData[x * n * n * 4 + y * n * 4 + z * 4] = static_cast<ubyte>(worley1.sample(noiseCoords) * 255.0f); // B
+				noiseVolumeBitmapData[x * n * n * 4 + y * n * 4 + z * 4 + 1] = static_cast<ubyte>(worley2.sample(noiseCoords) * 255.0f); // G
+				noiseVolumeBitmapData[x * n * n * 4 + y * n * 4 + z * 4 + 2] = static_cast<ubyte>(worley3.sample(noiseCoords) * 255.0f); // R
 				noiseVolumeBitmapData[x * n * n * 4 + y * n * 4 + z * 4 + 3] = 0xFFU;
 			}
 		}

@@ -389,6 +389,9 @@ void gr_opengl_deferred_lighting_finish()
 			data->henyeyGreensteinCoeff = neb.getHenyeyGreensteinCoeff();
 			data->directionalLightSampleSteps = neb.getGlobalLightSteps();
 			data->directionalLightStepSize = neb.getVisibility() / static_cast<float>(neb.getGlobalLightSteps()) * neb.getGlobalLightDistanceFactor();
+			data->noiseNear = neb.getNoiseNear();
+			data->noiseFar = neb.getNoiseFar();
+			data->noiseScale = 1.0f / neb.getNoiseScale();
 			});
 
 		opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
