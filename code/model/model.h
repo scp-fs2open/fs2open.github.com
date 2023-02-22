@@ -1222,64 +1222,39 @@ int submodel_get_num_polys(int model_num, int submodel_num);
 // the input values and call model_check_collision
 typedef struct mc_info {
 	// Input values
-	int		model_instance_num;
-	int		model_num;			// What model to check
-	int		submodel_num;		// What submodel to check if MC_SUBMODEL is set
-	matrix	*orient;				// The orient of the model
-	vec3d	*pos;					// The pos of the model in world coordinates
-	vec3d	*p0;					// The starting point of the ray (sphere) to check
-	vec3d	*p1;					// The ending point of the ray (sphere) to check
-	int		flags;				// Flags that the model_collide code looks at.  See MC_??? defines
-	float	radius;				// If MC_CHECK_THICK is set, checks a sphere moving with the radius.
-	int		lod;				// Which detail level of the submodel to check instead
-	
+	int     model_instance_num = -1;
+	int     model_num = -1;             // What model to check
+	int     submodel_num = -1;          // What submodel to check if MC_SUBMODEL is set
+	matrix  *orient = nullptr;          // The orient of the model
+	vec3d   *pos = nullptr;             // The pos of the model in world coordinates
+	vec3d   *p0 = nullptr;              // The starting point of the ray (sphere) to check
+	vec3d   *p1 = nullptr;              // The ending point of the ray (sphere) to check
+	int     flags = 0;                  // Flags that the model_collide code looks at.  See MC_??? defines
+	float   radius = 0;                 // If MC_CHECK_THICK is set, checks a sphere moving with the radius.
+	int     lod = 0;                    // Which detail level of the submodel to check instead
+
 	// Return values
-	int		num_hits;			// How many collisions were found
-	float		hit_dist;			// The distance from p0 to hitpoint
-	vec3d	hit_point;			// Where the collision occurred at in hit_submodel's coordinate system
-	vec3d	hit_point_world;	// Where the collision occurred at in world coordinates
-	int		hit_submodel;		// Which submodel got hit.
-	int		hit_bitmap;			// Which texture got hit.  -1 if not a textured poly
-	float		hit_u, hit_v;		// Where on hit_bitmap the ray hit.  Invalid if hit_bitmap < 0
-	int		shield_hit_tri;	// Which triangle on the shield got hit or -1 if none
-	vec3d	hit_normal;			//	Vector normal of polygon of collision (This is in submodel RF). CAN BE ZERO, if edge_hit is true
-	bool		edge_hit;			// Set if an edge got hit.  Only valid if MC_CHECK_THICK is set.	
-	ubyte		*f_poly;				// pointer to flat poly where we intersected
-	ubyte		*t_poly;				// pointer to tmap poly where we intersected
+	int     num_hits = 0;               // How many collisions were found
+	float   hit_dist = 0.0f;            // The distance from p0 to hitpoint
+	vec3d   hit_point = vmd_zero_vector;        // Where the collision occurred at in hit_submodel's coordinate system
+	vec3d   hit_point_world = vmd_zero_vector;  // Where the collision occurred at in world coordinates
+	int     hit_submodel = -1;          // Which submodel got hit.
+	int     hit_bitmap = -1;            // Which texture got hit.  -1 if not a textured poly
+	float   hit_u = 0.0f;               // Where on hit_bitmap the ray hit.  Invalid if hit_bitmap < 0
+	float   hit_v = 0.0f;               // ditto
+	int     shield_hit_tri = -1;        // Which triangle on the shield got hit or -1 if none
+	vec3d   hit_normal = vmd_zero_vector;       //	Vector normal of polygon of collision (This is in submodel RF). CAN BE ZERO, if edge_hit is true
+	bool    edge_hit = false;           // Set if an edge got hit.  Only valid if MC_CHECK_THICK is set.
+	ubyte   *f_poly = nullptr;          // pointer to flat poly where we intersected
+	ubyte   *t_poly = nullptr;          // pointer to tmap poly where we intersected
+	bsp_collision_leaf* bsp_leaf = nullptr;
+
 	SCP_vector<vec3d> hit_points_all;   // used only with MC_COLLIDE_ALL, contains all collision points, in world space, 
-										//     including those against backfacing polies, in arbitrary order
+	                                    //     including those against backfacing polies, in arbitrary order
 	SCP_vector<int> hit_submodels_all;  // the corresponding hit submodels of the above points
-	bsp_collision_leaf *bsp_leaf;
 
-										// flags can be changed for the case of sphere check finds an edge hit
+	                                    // NOTE: flags can be changed for the case of sphere check finds an edge hit
 } mc_info;
-
-inline void mc_info_init(mc_info *mc)
-{
-	mc->model_instance_num = -1;
-	mc->model_num = -1;
-	mc->submodel_num = -1;
-	mc->orient = nullptr;
-	mc->pos = nullptr;
-	mc->p0 = nullptr;
-	mc->p1 = nullptr;
-	mc->flags = 0;
-	mc->lod = 0;
-	mc->radius = 0;
-	mc->num_hits = 0; 
-	mc->hit_dist = 0;
-	mc->hit_point = vmd_zero_vector;
-	mc->hit_point_world = vmd_zero_vector;
-	mc->hit_submodel = -1;
-	mc->hit_bitmap = -1;
-	mc->hit_u = 0; mc->hit_v = 0;
-	mc->shield_hit_tri = -1;
-	mc->hit_normal = vmd_zero_vector;
-	mc->edge_hit = false;
-	mc->f_poly = nullptr;
-	mc->t_poly = nullptr;
-	mc->bsp_leaf = nullptr;
-}
 
 
 //======== MODEL_COLLIDE ============

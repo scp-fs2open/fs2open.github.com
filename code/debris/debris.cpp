@@ -829,7 +829,6 @@ void debris_hit(object *debris_obj, object * /*other_obj*/, vec3d *hitpos, float
 int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, collision_info_struct *debris_hit_info, vec3d* hitNormal)
 {
 	mc_info	mc;
-	mc_info_init(&mc);
 
 	Assert( pdebris->type == OBJ_DEBRIS );
 

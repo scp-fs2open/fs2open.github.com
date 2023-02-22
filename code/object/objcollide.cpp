@@ -390,11 +390,9 @@ int weapon_will_never_hit( object *obj_weapon, object *other, obj_pair * current
 //	radius is radius of object moving from curpos to goalpos.
 int pp_collide(vec3d *curpos, vec3d *goalpos, object *goalobjp, float radius)
 {
-	mc_info mc;
-	mc_info_init(&mc);
-
 	Assert(goalobjp->type == OBJ_SHIP);
 
+	mc_info mc;
 	mc.model_instance_num = Ships[goalobjp->instance].model_instance_num;
 	mc.model_num = Ship_info[Ships[goalobjp->instance].ship_info_index].model_num;			// Fill in the model to check
 	mc.orient = &goalobjp->orient;	// The object's orient

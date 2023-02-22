@@ -500,8 +500,6 @@ ADE_FUNC(
 	}
 
 	mc_info hull_check;
-	mc_info_init(&hull_check);
-
 	hull_check.model_num = model_num;
 	hull_check.model_instance_num = model_instance_num;
 	hull_check.submodel_num = submodel;

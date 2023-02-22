@@ -215,8 +215,8 @@ static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, f
 		weapon_end_pos -= The_mission.gravity * flFrametime * flFrametime * (1.f / 12);
 	}
 
-	// Goober5000 - I tried to make collision code here much saner... here begin the (major) changes
-	mc_info_init(&mc);
+
+	// Goober5000 - I tried to make collision code much saner... here begin the (major) changes
 
 	// set up collision structs
 	mc.model_instance_num = shipp->model_instance_num;
