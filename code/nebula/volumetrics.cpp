@@ -3,6 +3,8 @@
 #include "bmpman/bmpman.h"
 #include "model/model.h"
 
+#include <anl.h>
+
 volumetric_nebula::~volumetric_nebula() {
 	if (volumeBitmapHandle >= 0) {
 		bm_release(volumeBitmapHandle);
@@ -162,20 +164,33 @@ void volumetric_nebula::renderVolumeBitmap(float r, float g, float b) {
 
 	volumeBitmapHandle = bm_create_3d(32, n, n, n, volumeBitmapData.get());
 
-	
-	/*int nNoise = 1 << noiseResolution;
+
+	int nNoise = 1 << noiseResolution;
 	noiseVolumeBitmapData = make_unique<ubyte[]>(nNoise * nNoise * nNoise * 4);
-	for (size_t x = 0; x < nNoise; x++) {
-		for (size_t y = 0; y < nNoise; y++) {
-			for (size_t z = 0; z < nNoise; z++) {
-				noiseVolumeBitmapData[x * n * n * 4 + y * n * 4 + z * 4] = 0xFFU; // B
-				noiseVolumeBitmapData[x * n * n * 4 + y * n * 4 + z * 4 + 1] = 0xFFU; // G
-				noiseVolumeBitmapData[x * n * n * 4 + y * n * 4 + z * 4 + 2] = 0xFFU; // R
+
+	anl::CKernel kernel;
+
+	anl::CArray3Dd img(nNoise, nNoise, nNoise);
+	anl::SMappingRanges ranges(
+		0.0f, 1.0f,
+		0.0f, 1.0f,
+		0.0f, 1.0f);
+	
+	anl::CInstructionIndex instruction = kernel.valueBasis(kernel.constant(3), kernel.seed(0));
+	anl::map3D(anl::SEAMLESS_XYZ, img, kernel, ranges, instruction);
+
+	for (int x = 0; x < nNoise; x++) {
+		for (int y = 0; y < nNoise; y++) {
+			for (int z = 0; z < nNoise; z++) {
+				const auto& noisePixel = img.get(x, y, z);
+				noiseVolumeBitmapData[x * n * n * 4 + y * n * 4 + z * 4] = static_cast<ubyte>(noisePixel * 255.0f); // B
+				noiseVolumeBitmapData[x * n * n * 4 + y * n * 4 + z * 4 + 1] = static_cast<ubyte>(noisePixel * 255.0f); // G
+				noiseVolumeBitmapData[x * n * n * 4 + y * n * 4 + z * 4 + 2] = static_cast<ubyte>(noisePixel * 255.0f); // R
 				noiseVolumeBitmapData[x * n * n * 4 + y * n * 4 + z * 4 + 3] = 0xFFU;
 			}
 		}
-	}*/
-	//noiseVolumeBitmapHandle = bm_create_3d(32, nNoise, nNoise, nNoise, noiseVolumeBitmapData.get());
+	}
+	noiseVolumeBitmapHandle = bm_create_3d(32, nNoise, nNoise, nNoise, noiseVolumeBitmapData.get());
 }
 
 int volumetric_nebula::getVolumeBitmapHandle() const {
