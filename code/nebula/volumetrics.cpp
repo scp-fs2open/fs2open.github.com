@@ -93,7 +93,7 @@ void volumetric_nebula::renderVolumeBitmap(float r, float g, float b) {
 	mc.p1 = &vmd_zero_vector;
 	//mc.radius = 0.1f;
 
-	mc.flags = MC_CHECK_MODEL /* | MC_CHECK_SPHERELINE*/ | MC_COLLIDE_ALL;
+	mc.flags = MC_CHECK_MODEL /* | MC_CHECK_SPHERELINE*/ | MC_COLLIDE_ALL | MC_CHECK_INVISIBLE_FACES;
 
 	//Calculate minimum "bottom left" corner of scaled size box
 	vec3d bl = pm->mins - (size * ((scaleFactor - 1.0f) / 2.0f / scaleFactor));

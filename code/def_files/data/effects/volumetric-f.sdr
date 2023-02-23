@@ -81,11 +81,24 @@ void main()
 	vec3 gradX = dFdx(initialPos);
 	vec3 gradY = dFdy(initialPos);
 
+	vec3 sidestep = 1.0 / vec3(textureSize(volume_tex, 0));
+
 	for(float step = maxtMin; step < mintMax; step += stepsize) {
 		//Step setup
 		vec3 position = camera + rayDirection * step;
-		vec4 volume_sample = textureGrad(volume_tex, position / nebSize + 0.5, gradX, gradY);
-		float stepcolor_alpha = volume_sample.a;
+		vec3 sampleposition = position / nebSize + 0.5;
+		vec4 volume_sample = textureGrad(volume_tex, sampleposition, gradX, gradY);
+
+		//Average 3D texel with texels on corner, in an attempt to reduce jagged edges.
+		float stepcolor_alpha = volume_sample.a / 2.0 + (
+			textureGrad(volume_tex, sampleposition + vec3(sidestep.x, sidestep.y, sidestep.z), gradX, gradY).a +
+			textureGrad(volume_tex, sampleposition + vec3(sidestep.x, sidestep.y, -sidestep.z), gradX, gradY).a + 
+			textureGrad(volume_tex, sampleposition + vec3(sidestep.x, -sidestep.y, sidestep.z), gradX, gradY).a + 
+			textureGrad(volume_tex, sampleposition + vec3(sidestep.x, -sidestep.y, -sidestep.z), gradX, gradY).a + 
+			textureGrad(volume_tex, sampleposition + vec3(-sidestep.x, sidestep.y, sidestep.z), gradX, gradY).a + 
+			textureGrad(volume_tex, sampleposition + vec3(-sidestep.x, sidestep.y, -sidestep.z), gradX, gradY).a + 
+			textureGrad(volume_tex, sampleposition + vec3(-sidestep.x, -sidestep.y, sidestep.z), gradX, gradY).a + 
+			textureGrad(volume_tex, sampleposition + vec3(-sidestep.x, -sidestep.y, -sidestep.z), gradX, gradY).a) / 16.0;
 
 		//Noise - Technically, this should do noise, but I'm not very happy with how it turned out. The cloud needs to be "eroded" by the noise, but it's unclear as to how that can be achieved.
 		//cumnoisedist += stepcolor_alpha * stepsize;

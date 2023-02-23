@@ -16,9 +16,9 @@ class volumetric_nebula {
 
 	//Quality
 	//How many steps are used to nebulify the volume until the visibility is reached. In theory purely quality and can be changed without changing the aesthetics. Mostly FPS Cost
-	int steps = 15;
+	int steps = 7;
 	//Number of steps per nebula slice to test towards the sun. Mostly FPS Cost
-	int globalLightSteps = 6;
+	int globalLightSteps = 4;
 	//Resolution of 3D texture as 2^n. 5 - 8 recommended. Mostly VRAM cost
 	int resolution = 6;
 	//Oversampling of 3D-Texture. Will quadruple loading computation time for each increment, but improves banding especially at lower resolutions. 1 - 3. Mostly Loading time cost.
