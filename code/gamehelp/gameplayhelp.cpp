@@ -52,7 +52,7 @@ enum : int {
 	// but will need special handling to display in the retail UI
 	GP_HELP_FUNCTION_KEYS, 
 
-	First_avialable_section
+	First_available_section
 };
 
 #define GP_FIRST_SCREEN									0		// keep up to date
@@ -196,7 +196,7 @@ SCP_vector<gameplay_help_section> gameplay_help_init_text()
 {
 	SCP_vector<gameplay_help_section> complete_help_text;
 
-	for (int i = 0; i < First_avialable_section; i++) {
+	for (int i = 0; i < First_available_section; i++) {
 
 		gameplay_help_section thisHelp;
 
