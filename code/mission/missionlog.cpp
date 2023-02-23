@@ -796,17 +796,11 @@ void message_log_init_scrollback(int pw)
 				break;
 
 			case LOG_SHIP_SUBSYS_DESTROYED: {
-				int si_index, model_index;
-
-				si_index = (int)((entry->index >> 16) & 0xffff);
-				model_index = (int)(entry->index & 0xffff);
+				int model_index = (int)(entry->index & 0xffff);
+				int idx = ship_name_lookup(entry->pname, 1);
+				const char* subsys_name = ship_subsys_get_name(Ships[idx].subsys_list_indexer[model_index]);
 
 				message_log_add_segs(XSTR("Subsystem ", 410), LOG_COLOR_NORMAL, 0, &thisEntry.actions);
-				//message_log_add_segs(entry->sname, LOG_COLOR_BRIGHT);
-				const char *subsys_name = Ship_info[si_index].subsystems[model_index].subobj_name;
-				if (Ship_info[si_index].subsystems[model_index].type == SUBSYSTEM_TURRET) {
-					subsys_name = XSTR("Turret", 1487);
-				}
 				message_log_add_segs(subsys_name, LOG_COLOR_BRIGHT, 0, &thisEntry.actions);
 				message_log_add_segs(XSTR(" destroyed", 411), LOG_COLOR_NORMAL, 0, &thisEntry.actions);
 				break;
