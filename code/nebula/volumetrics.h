@@ -54,7 +54,7 @@ class volumetric_nebula {
 	//The far distance at which the edge noise is gone
 	float noiseFar = 15.0f;
 	//The detail of the noise's three levels, >= 3
-	std::tuple<int, int, int> noiseDetail = { 5, 15, 25 };
+	std::tuple<float, float, float> noiseDetail = { 5.0f, 15.0f, 25.0f };
 	//The scale of the edge noise, specified in the size of the noise cube
 	float noiseScale = 45.0f;
 
