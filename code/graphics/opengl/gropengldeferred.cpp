@@ -349,6 +349,7 @@ void gr_opengl_deferred_lighting_finish()
 	}
 	else if (true) {
 		static volumetric_nebula neb;
+
 		if (!neb.isVolumeBitmapValid())
 			neb.renderVolumeBitmap(1, 0, 0);
 
@@ -356,7 +357,7 @@ void gr_opengl_deferred_lighting_finish()
 		gr_set_view_matrix(&Eye_position, &Eye_matrix);
 		GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
 		gr_zbuffer_set(GR_ZBUFF_NONE);
-		opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_VOLUMETRIC_FOG, 0));
+		opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_VOLUMETRIC_FOG, neb.getEdgeSmoothing() ? SDR_FLAG_VOLUMETRICS_DO_EDGE_SMOOTHING : 0));
 
 		GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_composite_texture);
 		GL_state.Texture.Enable(1, GL_TEXTURE_2D, Scene_emissive_texture);

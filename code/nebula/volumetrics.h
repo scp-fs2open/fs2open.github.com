@@ -15,6 +15,8 @@ class volumetric_nebula {
 	vec3d pos = ZERO_VECTOR, size = ZERO_VECTOR;
 
 	//Quality
+	//Whether or not edge smoothing is enabled. Disabling this causes jagged edges when looking at the nebula axis aligned, but it's expensive
+	bool doEdgeSmoothing = false;
 	//How many steps are used to nebulify the volume until the visibility is reached. In theory purely quality and can be changed without changing the aesthetics. Mostly FPS Cost
 	int steps = 7;
 	//Number of steps per nebula slice to test towards the sun. Mostly FPS Cost
@@ -70,6 +72,7 @@ public:
 	const vec3d& getPos() const;
 	const vec3d& getSize() const;
 
+	bool getEdgeSmoothing() const;
 	int getSteps() const;
 	int getGlobalLightSteps() const;
 
