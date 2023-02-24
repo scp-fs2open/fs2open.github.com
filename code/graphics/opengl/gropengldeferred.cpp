@@ -351,7 +351,7 @@ void gr_opengl_deferred_lighting_finish()
 		static volumetric_nebula neb;
 
 		if (!neb.isVolumeBitmapValid())
-			neb.renderVolumeBitmap(1, 0, 0);
+			neb.renderVolumeBitmap();
 
 		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
 		gr_set_view_matrix(&Eye_position, &Eye_matrix);
@@ -393,9 +393,11 @@ void gr_opengl_deferred_lighting_finish()
 			data->henyeyGreensteinCoeff = neb.getHenyeyGreensteinCoeff();
 			data->directionalLightSampleSteps = neb.getGlobalLightSteps();
 			data->directionalLightStepSize = neb.getVisibility() / static_cast<float>(neb.getGlobalLightSteps()) * neb.getGlobalLightDistanceFactor();
-			//data->noiseNear = neb.getNoiseNear();
-			//data->noiseFar = neb.getNoiseFar();
-			//data->noiseScale = 1.0f / neb.getNoiseScale();
+			data->noiseColor[0] = std::get<0>(neb.getNoiseColor());
+			data->noiseColor[1] = std::get<1>(neb.getNoiseColor());
+			data->noiseColor[2] = std::get<2>(neb.getNoiseColor());
+			data->noiseColorScale1 = std::get<0>(neb.getNoiseColorScale());
+			data->noiseColorScale2 = std::get<1>(neb.getNoiseColorScale());
 			});
 
 		opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);

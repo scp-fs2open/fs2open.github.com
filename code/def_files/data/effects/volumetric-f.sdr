@@ -28,9 +28,9 @@ layout (std140) uniform genericData {
 	float henyeyGreensteinCoeff;
 	int directionalLightSampleSteps;
 	float directionalLightStepSize;
-	//float noiseNear;
-	//float noiseFar;
-	//float noiseScale;
+	vec3 noiseColor;
+	float noiseColorScale1;
+	float noiseColorScale2;
 };
 
 const float sqrt2_inv = inversesqrt(2);
@@ -115,7 +115,8 @@ void main()
 		//stepcolor_alpha *= noisemax;
 
 		//Diffuse
-		vec3 stepcolor_neb = mix(volume_sample.rgb, vec3(0,0,1), textureGrad(noise_volume_tex, position / 15.0, gradX, gradY).r);
+		vec3 stepcolor_neb = mix(volume_sample.rgb, noiseColor, smoothstep(0.5, 1.0,
+			(textureGrad(noise_volume_tex, position / noiseColorScale1, gradX, gradY).r + textureGrad(noise_volume_tex, position / noiseColorScale2, gradX, gradY).g) / 2.0 ));
 		vec3 stepcolor_diffuse = stepcolor_neb * henyey_greenstein(dot(rayDirection, globalLightDirection));
 		float directionalLightStep = 4.0 / float(directionalLightSampleSteps);
 		float directionalLightDepth = 0.1;

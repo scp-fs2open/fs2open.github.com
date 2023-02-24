@@ -4,6 +4,7 @@
 #include "math/vecmat.h"
 
 #include <memory>
+#include <tl/optional.hpp>
 
 class volumetric_nebula {
 	//Instance Settings
@@ -13,20 +14,22 @@ class volumetric_nebula {
 	SCP_string hullPof = "neb.pof";
 	//The position and size of the bounding box of the volumetrics.
 	vec3d pos = ZERO_VECTOR, size = ZERO_VECTOR;
+	//Main color
+	std::tuple<float, float, float> nebulaColor = { 1, 0, 0 };
 
 	//Quality
 	//Whether or not edge smoothing is enabled. Disabling this causes jagged edges when looking at the nebula axis aligned, but it's expensive
 	bool doEdgeSmoothing = false;
 	//How many steps are used to nebulify the volume until the visibility is reached. In theory purely quality and can be changed without changing the aesthetics. Mostly FPS Cost
-	int steps = 7;
+	int steps = 5;
 	//Number of steps per nebula slice to test towards the sun. Mostly FPS Cost
-	int globalLightSteps = 4;
+	int globalLightSteps = 3;
 	//Resolution of 3D texture as 2^n. 5 - 8 recommended. Mostly VRAM cost
 	int resolution = 6;
 	//Oversampling of 3D-Texture. Will quadruple loading computation time for each increment, but improves banding especially at lower resolutions. 1 - 3. Mostly Loading time cost.
 	int oversampling = 2;
 	//Resolution of Noise 3D-Texture as 2^n. 5 - 8 recommended. Mostly VRAM cost
-	int noiseResolution = 6;
+	int noiseResolution = 5;
 
 	//General Visibility
 	//The distance in meters until the target translucity is reached
@@ -49,14 +52,12 @@ class volumetric_nebula {
 	float globalLightDistanceFactor = 1.0f;
 
 	//Edge noise settings
-	//The near distance at which the edge noise starts to fade off
-	float noiseNear = 5.0f;
-	//The far distance at which the edge noise is gone
-	float noiseFar = 15.0f;
-	//The detail of the noise's three levels, >= 3
-	std::tuple<float, float, float> noiseDetail = { 5.0f, 15.0f, 25.0f };
-	//The scale of the edge noise, specified in the size of the noise cube
-	float noiseScale = 45.0f;
+	//The size of the noise's two levels, in meters. The fraction of the two levels should have a large denominator to avoid visible harmonics
+	std::tuple<float, float> noiseScale = { 25.0f, 14.0f };
+	//Noise functions. ANL's DSL for noise. Leave empty to use default noise. Default is representable by: translate(bias(scale(valueBasis(3,0),3),scale(valueBasis(3,1),8)),scale(simplexBasis(2),4)*0.6)
+	tl::optional<SCP_string> noiseColorFunc1 = tl::nullopt, noiseColorFunc2 = tl::nullopt;
+	//Noise color
+	std::tuple<float, float, float> noiseColor = { 0.5f, 0.3f, 0.0f };
 
 	//Instance Data
 	int volumeBitmapHandle = -1;
@@ -86,12 +87,11 @@ public:
 	float getHenyeyGreensteinCoeff() const;
 	float getGlobalLightDistanceFactor() const;
 
-	float getNoiseNear() const;
-	float getNoiseFar() const;
-	float getNoiseScale() const;
+	const std::tuple<float, float>& getNoiseColorScale() const;
+	const std::tuple<float, float, float>& getNoiseColor() const;
 
 	bool isVolumeBitmapValid() const;
-	void renderVolumeBitmap(float r, float g, float b);
+	void renderVolumeBitmap();
 	int getVolumeBitmapHandle() const;
 	int getNoiseVolumeBitmapHandle() const;
 };

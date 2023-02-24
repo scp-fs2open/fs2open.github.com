@@ -62,23 +62,34 @@ float volumetric_nebula::getGlobalLightDistanceFactor() const {
 	return globalLightDistanceFactor;
 }
 
-float volumetric_nebula::getNoiseNear() const {
-	return noiseNear;
-}
-
-float volumetric_nebula::getNoiseFar() const {
-	return noiseFar;
-}
-
-float volumetric_nebula::getNoiseScale() const {
+const std::tuple<float, float>& volumetric_nebula::getNoiseColorScale() const {
 	return noiseScale;
+}
+
+const std::tuple<float, float, float>& volumetric_nebula::getNoiseColor() const {
+	return noiseColor;
 }
 
 bool volumetric_nebula::isVolumeBitmapValid() const {
 	return volumeBitmapHandle >= 0/* && noiseVolumeBitmapHandle >= 0*/;
 }
 
-void volumetric_nebula::renderVolumeBitmap(float r, float g, float b) {
+static anl::CInstructionIndex getDefaultNoise(anl::CKernel& kernel, int seedOffset) {
+	return kernel.translateDomain(
+		kernel.bias(
+			kernel.scaleDomain(kernel.valueBasis(kernel.constant(3), kernel.seed(seedOffset + 0)), kernel.constant(3)),
+			kernel.scaleDomain(kernel.valueBasis(kernel.constant(3), kernel.seed(seedOffset + 1)), kernel.constant(8))),
+		kernel.multiply(
+			kernel.scaleDomain(kernel.simplexBasis(kernel.seed(seedOffset + 2)), kernel.constant(4)),
+			kernel.constant(0.6)));
+}
+
+static anl::CInstructionIndex getCustomNoise(anl::CKernel& kernel, const SCP_string& expression) {
+	anl::CExpressionBuilder builder(kernel);
+	return builder.eval(expression);
+}
+
+void volumetric_nebula::renderVolumeBitmap() {
 	Assertion(!isVolumeBitmapValid(), "Volume bitmap was already rendered!");
 
 	int n = 1 << resolution;
@@ -143,9 +154,9 @@ void volumetric_nebula::renderVolumeBitmap(float r, float g, float b) {
 	for (size_t x = 0; x < n; x++) {
 		for (size_t y = 0; y < n; y++) {
 			for (size_t z = 0; z < n; z++) {
-				volumeBitmapData[x * n * n * 4 + y * n * 4 + z * 4] = static_cast<ubyte>(b * 255.0f);
-				volumeBitmapData[x * n * n * 4 + y * n * 4 + z * 4 + 1] = static_cast<ubyte>(g * 255.0f);
-				volumeBitmapData[x * n * n * 4 + y * n * 4 + z * 4 + 2] = static_cast<ubyte>(r * 255.0f);
+				volumeBitmapData[x * n * n * 4 + y * n * 4 + z * 4] = static_cast<ubyte>(std::get<2>(nebulaColor) * 255.0f);
+				volumeBitmapData[x * n * n * 4 + y * n * 4 + z * 4 + 1] = static_cast<ubyte>(std::get<1>(nebulaColor) * 255.0f);
+				volumeBitmapData[x * n * n * 4 + y * n * 4 + z * 4 + 2] = static_cast<ubyte>(std::get<0>(nebulaColor) * 255.0f);
 				
 				float sum = 0.0f;
 				for (size_t sx = x * oversampling; sx <= (x + 1) * oversampling; sx++) {
@@ -170,23 +181,27 @@ void volumetric_nebula::renderVolumeBitmap(float r, float g, float b) {
 
 	anl::CKernel kernel;
 
-	anl::CArray3Dd img(nNoise, nNoise, nNoise);
+	anl::CArray3Dd img(nNoise, nNoise, nNoise), img2(nNoise, nNoise, nNoise);
 	anl::SMappingRanges ranges(
 		0.0f, 1.0f,
 		0.0f, 1.0f,
 		0.0f, 1.0f);
-	
-	anl::CInstructionIndex instruction = kernel.valueBasis(kernel.constant(3), kernel.seed(0));
-	anl::map3D(anl::SEAMLESS_XYZ, img, kernel, ranges, instruction);
+
+	anl::CInstructionIndex wispyNoise = noiseColorFunc1 ? getCustomNoise(kernel, *noiseColorFunc1) : getDefaultNoise(kernel, 0);
+	anl::CInstructionIndex wispyNoise2 = noiseColorFunc2 ? getCustomNoise(kernel, *noiseColorFunc2) : getDefaultNoise(kernel, 3);
+
+	anl::map3D(anl::SEAMLESS_XYZ, img, kernel, ranges, wispyNoise);
+	anl::map3D(anl::SEAMLESS_XYZ, img2, kernel, ranges, wispyNoise2);
 
 	for (int x = 0; x < nNoise; x++) {
 		for (int y = 0; y < nNoise; y++) {
 			for (int z = 0; z < nNoise; z++) {
 				const auto& noisePixel = img.get(x, y, z);
-				noiseVolumeBitmapData[x * n * n * 4 + y * n * 4 + z * 4] = static_cast<ubyte>(noisePixel * 255.0f); // B
-				noiseVolumeBitmapData[x * n * n * 4 + y * n * 4 + z * 4 + 1] = static_cast<ubyte>(noisePixel * 255.0f); // G
-				noiseVolumeBitmapData[x * n * n * 4 + y * n * 4 + z * 4 + 2] = static_cast<ubyte>(noisePixel * 255.0f); // R
-				noiseVolumeBitmapData[x * n * n * 4 + y * n * 4 + z * 4 + 3] = 0xFFU;
+				const auto& noisePixel2 = img2.get(x, y, z);
+				noiseVolumeBitmapData[x * nNoise * nNoise * 4 + y * nNoise * 4 + z * 4] = 0; // B. Reserved for surface noise
+				noiseVolumeBitmapData[x * nNoise * nNoise * 4 + y * nNoise * 4 + z * 4 + 1] = static_cast<ubyte>(noisePixel2 * 255.0f); // G. Color noise 2, sampled at detail 2
+				noiseVolumeBitmapData[x * nNoise * nNoise * 4 + y * nNoise * 4 + z * 4 + 2] = static_cast<ubyte>(noisePixel * 255.0f); // R. Color noise 1, sampled at detail 1
+				noiseVolumeBitmapData[x * nNoise * nNoise * 4 + y * nNoise * 4 + z * 4 + 3] = 0; // A. Reserved for surface noise.
 			}
 		}
 	}
