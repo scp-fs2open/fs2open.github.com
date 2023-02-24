@@ -915,9 +915,10 @@ bool lcl_ext_localize_sub(const char *in, char *text_str, char *out, size_t max_
 		}
 
 		// get the string if it exists
-		if (lookup_map->find(xstr_id) != lookup_map->end())
+		auto entry = lookup_map->find(xstr_id);
+		if (entry != lookup_map->end())
 		{
-			xstr_str = (*lookup_map)[xstr_id];
+			xstr_str = entry->second;
 		}
 		// otherwise use what we have, but complain about it
 		else
@@ -1076,9 +1077,10 @@ bool lcl_ext_localize_sub(const SCP_string &in, SCP_string &text_str, SCP_string
 		}
 
 		// get the string if it exists
-		if (lookup_map->find(xstr_id) != lookup_map->end())
+		auto entry = lookup_map->find(xstr_id);
+		if (entry != lookup_map->end())
 		{
-			xstr_str = (*lookup_map)[xstr_id];
+			xstr_str = entry->second;
 		}
 		// otherwise use what we have, but complain about it
 		else
