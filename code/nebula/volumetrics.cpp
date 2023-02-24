@@ -1,6 +1,7 @@
 #include "volumetrics.h"
 
 #include "bmpman/bmpman.h"
+#include "mission/missionparse.h"
 #include "model/model.h"
 #include "parse/parselo.h"
 
@@ -68,7 +69,7 @@ volumetric_nebula::volumetric_nebula() {
 	}
 
 	//Noise settings
-	if (optional_string("$Noise:")) {
+	if (optional_string("+Noise:")) {
 		noiseActive = true;
 
 		required_string("+Scale:");
@@ -264,6 +265,7 @@ void volumetric_nebula::renderVolumeBitmap() {
 	model_unload(modelnum);
 
 	volumeBitmapData = make_unique<ubyte[]>(n * n * n * 4);
+	float oversamplingDivisor = 255.0f / static_cast<float>((1 << (oversampling - 1)) + 1);
 	for (size_t x = 0; x < n; x++) {
 		for (size_t y = 0; y < n; y++) {
 			for (size_t z = 0; z < n; z++) {
@@ -281,7 +283,7 @@ void volumetric_nebula::renderVolumeBitmap() {
 					}
 				}
 				
-				volumeBitmapData[x * n * n * 4 + y * n * 4 + z * 4 + 3] = static_cast<ubyte>(sum * 255.0f / static_cast<float>((1 << oversampling) * (1 << oversampling) * (1 << oversampling)));
+				volumeBitmapData[x * n * n * 4 + y * n * 4 + z * 4 + 3] = static_cast<ubyte>(sum * oversamplingDivisor);
 			}
 		}
 	}
@@ -331,4 +333,9 @@ int volumetric_nebula::getVolumeBitmapHandle() const {
 int volumetric_nebula::getNoiseVolumeBitmapHandle() const {
 	Assertion(noiseVolumeBitmapHandle >= 0, "Tried to access noise volume bitmap without creating it!");
 	return noiseVolumeBitmapHandle;
+}
+
+void volumetrics_level_close() {
+	if (The_mission.volumetrics)
+		The_mission.volumetrics.reset();
 }

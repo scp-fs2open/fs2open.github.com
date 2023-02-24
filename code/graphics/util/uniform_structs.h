@@ -319,9 +319,9 @@ struct volumetric_fog_data {
 	float alphalimit;
 	float emissiveSpreadFactor, emissiveIntensity, emissiveFalloff;
 	float henyeyGreensteinCoeff;
+	float noiseColor[3];
 	int directionalLightSampleSteps;
 	float directionalLightStepSize;
-	float noiseColor[3];
 	float noiseColorScale1, noiseColorScale2;
 	float pad[3];
 };

@@ -15,7 +15,7 @@ class volumetric_nebula {
 	//The position and size of the bounding box of the volumetrics.
 	vec3d pos = ZERO_VECTOR, size = ZERO_VECTOR;
 	//Main color
-	std::tuple<float, float, float> nebulaColor = { 0, 0, 0 };
+	std::tuple<float, float, float> nebulaColor = { 0.0f, 0.0f, 0.0f };
 
 	//Quality
 	//Whether or not edge smoothing is enabled. Disabling this causes jagged edges when looking at the nebula axis aligned, but it's expensive
@@ -55,11 +55,11 @@ class volumetric_nebula {
 	//Is the noise even active
 	bool noiseActive = false;
 	//The size of the noise's two levels, in meters. The fraction of the two levels should have a large denominator to avoid visible harmonics
-	std::tuple<float, float> noiseScale = { 1, 1 };
+	std::tuple<float, float> noiseScale = { 1.0f, 1.0f };
 	//Noise functions. ANL's DSL for noise. Leave empty to use default noise. Default is representable by: translate(bias(scale(valueBasis(3,0),3),scale(valueBasis(3,1),8)),scale(simplexBasis(2),4)*0.6)
 	tl::optional<SCP_string> noiseColorFunc1 = tl::nullopt, noiseColorFunc2 = tl::nullopt;
 	//Noise color
-	std::tuple<float, float, float> noiseColor = { 0, 0, 0 };
+	std::tuple<float, float, float> noiseColor = { 0.0f, 0.0f, 0.0f };
 
 	//Instance Data
 	int volumeBitmapHandle = -1;
@@ -99,3 +99,4 @@ public:
 	int getNoiseVolumeBitmapHandle() const;
 };
 
+void volumetrics_level_close();

@@ -28,9 +28,9 @@ layout (std140) uniform genericData {
 	float emissiveIntensity;
 	float emissiveFalloff;
 	float henyeyGreensteinCoeff;
+	vec3 noiseColor;
 	int directionalLightSampleSteps;
 	float directionalLightStepSize;
-	vec3 noiseColor;
 	float noiseColorScale1;
 	float noiseColorScale2;
 };
@@ -85,9 +85,9 @@ void main()
 
 	vec3 sidestep = 1.0 / vec3(textureSize(volume_tex, 0));
 
-	for(float step = maxtMin; step < mintMax; step += stepsize) {
+	for(float stept = maxtMin; stept < mintMax; stept += stepsize) {
 		//Step setup
-		vec3 position = camera + rayDirection * step;
+		vec3 position = camera + rayDirection * stept - nebPos;
 		vec3 sampleposition = position / nebSize + 0.5;
 		vec4 volume_sample = textureGrad(volume_tex, sampleposition, gradX, gradY);
 
@@ -118,8 +118,7 @@ void main()
 
 		//Diffuse
 #ifdef NOISE
-		vec3 stepcolor_neb = mix(volume_sample.rgb, noiseColor, smoothstep(0.5, 1.0,
-			(textureGrad(noise_volume_tex, position / noiseColorScale1, gradX, gradY).r + textureGrad(noise_volume_tex, position / noiseColorScale2, gradX, gradY).g) / 2.0 ));
+		vec3 stepcolor_neb = mix(volume_sample.rgb, noiseColor, (textureGrad(noise_volume_tex, position / noiseColorScale1, gradX, gradY).r + textureGrad(noise_volume_tex, position / noiseColorScale2, gradX, gradY).g) / 2.0 );
 #else
 		vec3 stepcolor_neb = volume_sample.rgb;
 #endif
@@ -128,7 +127,8 @@ void main()
 		float directionalLightDepth = 0.1;
 		for(int dlstep = 1; dlstep <= directionalLightSampleSteps; dlstep++){
 			//TODO Sample these in a cone towards the sun, not just a line. Also add the high-distance sample for concave nebulae
-			float dlstepalpha = textureGrad(volume_tex, (position - globalLightDirection * (dlstep * directionalLightStepSize)) / 60.0 + 0.5, gradX, gradY).a;
+			vec3 dlsteppos = (position - globalLightDirection * (dlstep * directionalLightStepSize)) / nebSize + 0.5;
+			float dlstepalpha = textureGrad(volume_tex, dlsteppos, gradX, gradY).a * step(0, dlsteppos.x) * step(dlsteppos.x, 1) * step(0, dlsteppos.y) * step(dlsteppos.y, 1) * step(0, dlsteppos.z) * step(dlsteppos.z, 1);
 			directionalLightDepth += dlstepalpha * directionalLightStep;
 		}
 		stepcolor_diffuse *= beer_powder_norm * (1 - exp(-directionalLightDepth * 2.0)) * exp(-directionalLightDepth);
@@ -136,7 +136,7 @@ void main()
 		//Emissive
 		cumnebdist += stepcolor_alpha * stepsize;
 		vec3 emissive_lod = textureLod(emissive, fragTexCoord.xy, clamp(cumnebdist * emissiveSpreadFactor, 0, float(textureQueryLevels(emissive) - 1))).rgb;
-		vec3 stepcolor_emissive = emissive_lod.rgb * pow(1 - globalstepalpha, (depth - step) * emissiveFalloff) * emissiveIntensity;
+		vec3 stepcolor_emissive = emissive_lod.rgb * pow(1 - globalstepalpha, (depth - stept) * emissiveFalloff) * emissiveIntensity;
 
 		//Step finish
 		vec3 stepcolor = clamp(stepcolor_diffuse + stepcolor_emissive, 0, 1);
