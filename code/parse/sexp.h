@@ -151,7 +151,7 @@ struct dynamic_sexp_enum_list {
 
 extern SCP_vector<dynamic_sexp_enum_list> Dynamic_enums;
 
-int get_dynamic_enum_position(SCP_string enum_name);
+int get_dynamic_enum_position(const SCP_string &enum_name);
 
 // Operand return types
 #define	OPR_NUMBER				1	// returns number
