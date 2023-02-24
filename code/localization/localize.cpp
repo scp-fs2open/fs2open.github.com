@@ -59,6 +59,8 @@ bool *Lcl_unexpected_tstring_check = nullptr;
 // the english version (in the code) to a foreign version (in the table).  Thus, if you
 // add a new string to the code, you must assign it a new index.  Use the number below for
 // that index and increase the number below by one.
+// NOTE: with map storage of XSTR strings, the indexes no longer need to be contiguous,
+// but internal strings should still increment XSTR_SIZE to avoid collisions.
 // retail XSTR_SIZE = 1570
 // #define XSTR_SIZE	1672
 
@@ -66,7 +68,7 @@ bool *Lcl_unexpected_tstring_check = nullptr;
 // struct to allow for strings.tbl-determined x offset
 // offset is 0 for english, by default
 typedef struct {
-	SCP_string str;
+	const char *str;
 	int  offset_x;				// string offset in 640
 	int  offset_x_hi;			// string offset in 1024
 } lcl_xstr;
@@ -407,25 +409,31 @@ void parse_stringstbl_common(const char *filename, const bool external)
 
 			// write into Xstr_table (for strings.tbl) or Lcl_ext_str (for tstrings.tbl)
 			if (Parsing_modular_table) {
-				if ( external && (Lcl_ext_str.find(index) != Lcl_ext_str.end()) ) {
-					vm_free((void *) Lcl_ext_str[index]);
-					Lcl_ext_str.erase(Lcl_ext_str.find(index));
-				} else if (!external && !Xstr_table_map[index].str.empty()) {
-					Xstr_table_map.erase(Xstr_table_map.find(index));
+				if (external) {
+					auto entry = Lcl_ext_str.find(index);
+					if (entry != Lcl_ext_str.end()) {
+						vm_free((void*)entry->second);
+						Lcl_ext_str.erase(entry);
+					}
+				} else {
+					auto entry = Xstr_table_map.find(index);
+					if (entry != Xstr_table_map.end()) {
+						vm_free((void*)entry->second.str);
+						Xstr_table_map.erase(entry);
+					}
 				}
 			}
 
 			if (external && (Lcl_ext_str.find(index) != Lcl_ext_str.end())) {
 				Warning(LOCATION, "Tstrings table index %d used more than once", index);
-			} else if (!external && !Xstr_table_map[index].str.empty()) {
+			} else if (!external && (Xstr_table_map.find(index) != Xstr_table_map.end())) {
 				Warning(LOCATION, "Strings table index %d used more than once", index);
 			}
 
-			lcl_xstr item;
 			if (external) {
 				Lcl_ext_str.insert(std::make_pair(index, vm_strdup(buf)));
 			} else {
-				item.str = vm_strdup(buf);
+				Xstr_table_map.insert(std::make_pair(index, lcl_xstr{ vm_strdup(buf), 0, 0 }));
 			}
 
 			// the rest of this loop applies only to strings.tbl,
@@ -442,16 +450,12 @@ void parse_stringstbl_common(const char *filename, const bool external)
 				}
 			}
 
-			item.offset_x = offset_lo;
+			Xstr_table_map[index].offset_x = offset_lo;
 
 			if (num_offsets_on_this_line == 2) {
-				item.offset_x_hi = offset_hi;
+				Xstr_table_map[index].offset_x_hi = offset_hi;
 			} else {
-				item.offset_x_hi = offset_lo;
-			}
-
-			if (!external) {
-				Xstr_table_map[index] = item;
+				Xstr_table_map[index].offset_x_hi = offset_lo;
 			}
 
 			// clear out our vars
@@ -551,7 +555,11 @@ void lcl_xstr_init()
 // free Xstr table
 void lcl_xstr_close()
 {
-
+	for (const auto& entry : Xstr_table_map) {
+		if (entry.second.str != nullptr) {
+			vm_free((void*)entry.second.str);
+		}
+	}
 	Xstr_table_map.clear();
 
 	for (const auto& entry : Lcl_ext_str) {
@@ -907,9 +915,10 @@ bool lcl_ext_localize_sub(const char *in, char *text_str, char *out, size_t max_
 		}
 
 		// get the string if it exists
-		if (lookup_map->find(xstr_id) != lookup_map->end())
+		auto entry = lookup_map->find(xstr_id);
+		if (entry != lookup_map->end())
 		{
-			xstr_str = (*lookup_map)[xstr_id];
+			xstr_str = entry->second;
 		}
 		// otherwise use what we have, but complain about it
 		else
@@ -1068,9 +1077,10 @@ bool lcl_ext_localize_sub(const SCP_string &in, SCP_string &text_str, SCP_string
 		}
 
 		// get the string if it exists
-		if (lookup_map->find(xstr_id) != lookup_map->end())
+		auto entry = lookup_map->find(xstr_id);
+		if (entry != lookup_map->end())
 		{
-			xstr_str = (*lookup_map)[xstr_id];
+			xstr_str = entry->second;
 		}
 		// otherwise use what we have, but complain about it
 		else
@@ -1184,8 +1194,9 @@ const char *XSTR(const char *str, int index, bool force_lookup)
 		if (index >= 0)
 		{
 			// return translation of string
-			if (!Xstr_table_map[index].str.empty())
-				return Xstr_table_map[index].str.c_str();
+			auto entry = Xstr_table_map.find(index);
+			if (entry != Xstr_table_map.end())
+				return entry->second.str;
 #ifndef NDEBUG
 			else
 			{
@@ -1208,10 +1219,14 @@ const char *XSTR(const char *str, int index, bool force_lookup)
 // retrieve the offset for a localized string
 int lcl_get_xstr_offset(int index, int res)
 {
+	auto entry = Xstr_table_map.find(index);
+	if (entry == Xstr_table_map.end())
+		return 0;
+
 	if (res == GR_640) {
-		return Xstr_table_map[index].offset_x;
+		return entry->second.offset_x;
 	} else {
-		return Xstr_table_map[index].offset_x_hi;
+		return entry->second.offset_x_hi;
 	}
 }
 
