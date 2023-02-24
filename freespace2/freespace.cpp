@@ -122,6 +122,7 @@
 #include "model/modelreplace.h"
 #include "nebula/neb.h"
 #include "nebula/neblightning.h"
+#include "nebula/volumetrics.h"
 #include "network/multi.h"
 #include "network/multi_dogfight.h"
 #include "network/multi_endgame.h"
@@ -864,6 +865,7 @@ void game_level_close()
 		waypoint_level_close();
 		flak_level_close();						// unload flak stuff
 		neb2_level_close();						// shutdown gaseous nebula stuff
+		volumetrics_level_close();
 		ct_level_close();
 		beam_level_close();
 		mflash_level_close();

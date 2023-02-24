@@ -681,7 +681,7 @@ void bm_free_data(bitmap_slot* bs, bool release)
 
 	// Don't free up memory for user defined bitmaps, since
 	// BmpMan isn't the one in charge of allocating/deallocing them.
-	if (be->type==BM_TYPE_USER) {
+	if (be->type == BM_TYPE_USER || be->type == BM_TYPE_3D) {
 #ifdef BMPMAN_NDEBUG
 		if ( be->data_size != 0 )
 			bm_texture_ram -= be->data_size;
@@ -737,7 +737,7 @@ void bm_free_data_fast(int handle)
 
 	// Don't free up memory for user defined bitmaps, since
 	// BmpMan isn't the one in charge of allocating/deallocing them.
-	if (be->type == BM_TYPE_USER) {
+	if (be->type == BM_TYPE_USER || be->type == BM_TYPE_3D) {
 #ifdef BMPMAN_NDEBUG
 		if ( be->data_size != 0 )
 			bm_texture_ram -= be->data_size;
@@ -3210,7 +3210,7 @@ int bm_unload_fast(int handle, int clear_render_targets) {
 		return -1;		// Already been released
 	}
 
-	if (be->type == BM_TYPE_USER) {
+	if (be->type == BM_TYPE_USER || be->type == BM_TYPE_3D) {
 		return -1;
 	}
 
