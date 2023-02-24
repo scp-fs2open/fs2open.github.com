@@ -50,14 +50,13 @@
 #define LOG_FLAG_GOAL_FAILED	(1<<0)
 #define LOG_FLAG_GOAL_TRUE		(1<<1)
 
-typedef struct log_text_seg {
-	char	*text;				// the text
+struct log_text_seg {
+	SCP_vm_unique_ptr<char>	text;	// the text
 	int	color;				// color text should be displayed in
 	int	x;						// x offset to display text at
 	int	flags;				// used to possibly print special characters when displaying the log
-} log_text_seg;
+};
 
-int Num_log_lines;
 static int X, P_width;
 
 struct log_line_complete {
@@ -68,6 +67,7 @@ struct log_line_complete {
 
 // used for displaying the mission log scrollback in a human readable format
 SCP_vector<log_line_complete> Log_scrollback_vec;
+int Num_log_lines;
 
 std::array<log_entry, MAX_LOG_ENTRIES> log_entries;	// static array because John says....
 int last_entry;
@@ -620,7 +620,7 @@ int mission_log_get_count( LogType type, const char *pname, const char *sname )
 void message_log_add_seg(log_text_seg* entry, int x, int msg_color, const char* text, int flags = 0)
 {
 	// set the vector
-	entry->text = vm_strdup(text);
+	entry->text.reset(vm_strdup(text));
 	entry->color = msg_color;
 	entry->x = x;
 	entry->flags = flags;
@@ -657,7 +657,7 @@ void message_log_add_segs(const char* source_string, int msg_color, int flags = 
 		if (split != str) {
 			log_text_seg new_seg;
 			message_log_add_seg(&new_seg, X, msg_color, str, flags);
-			entry->push_back(new_seg);
+			entry->push_back(std::move(new_seg));
 		}
 
 		if (!split) {
@@ -691,7 +691,6 @@ void message_log_init_scrollback(int pw)
 	mission_log_cull_obsolete_entries();  // compact array so we don't have gaps
 
 	Log_scrollback_vec.clear();
-	
 	Num_log_lines = 0;
 
 	log_entry* entry;
@@ -712,7 +711,7 @@ void message_log_init_scrollback(int pw)
 
 		log_line_complete thisEntry;
 
-		// track time of event (normal timestamp milliseconds format)
+		// track time of event (normal Missiontime format)
 		thisEntry.timestamp = entry->timestamp;
 
 		// keep track of base color for the entry
@@ -874,17 +873,14 @@ void message_log_init_scrollback(int pw)
 				break;
 		}
 
-		Log_scrollback_vec.push_back(thisEntry);
-
+		Log_scrollback_vec.push_back(std::move(thisEntry));
 		Num_log_lines++;
-
 	}
 }
 
 void message_log_shutdown_scrollback()
 {
 	Log_scrollback_vec.clear();
-
 	Num_log_lines = 0;
 }
 
@@ -931,14 +927,14 @@ void mission_log_scrollback(int line_offset, int list_x, int list_y, int list_w,
 		}
 			
 		char buf[256];
-		strcpy_s(buf, Log_scrollback_vec[i].objective.text);
+		strcpy_s(buf, Log_scrollback_vec[i].objective.text.get());
 		font::force_fit_string(buf, 256, ACTION_X - OBJECT_X - 8);
 		gr_string(list_x + Log_scrollback_vec[i].objective.x, list_y + y, buf, GR_RESIZE_MENU);
 
 		// print the actions
 		for (int j = 0; j < (int)Log_scrollback_vec[i].actions.size(); j++) {
 
-			log_text_seg thisSeg = Log_scrollback_vec[i].actions[j];
+			const auto& thisSeg = Log_scrollback_vec[i].actions[j];
 
 			switch (thisSeg.color) {
 				case LOG_COLOR_BRIGHT:
@@ -960,7 +956,7 @@ void mission_log_scrollback(int line_offset, int list_x, int list_y, int list_w,
 				}
 			}
 
-			strcpy_s(buf, thisSeg.text);
+			strcpy_s(buf, thisSeg.text.get());
 			font::force_fit_string(buf, 256, list_w - thisSeg.x);
 			gr_string(list_x + thisSeg.x, list_y + y, buf, GR_RESIZE_MENU);
 
