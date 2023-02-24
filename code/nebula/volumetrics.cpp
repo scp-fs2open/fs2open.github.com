@@ -2,8 +2,117 @@
 
 #include "bmpman/bmpman.h"
 #include "model/model.h"
+#include "parse/parselo.h"
 
 #include <anl.h>
+
+volumetric_nebula::volumetric_nebula() {
+	//This expects that the constructor was called in an if(optional_string("Volumetrics")) or something
+	stuff_string(hullPof, F_PATHNAME);
+
+	//General Settings
+	required_string("+Position:");
+	stuff_vec3d(&pos);
+	
+	required_string("+Color:");
+	int rgb[3];
+	size_t number = stuff_int_list(rgb, 3);
+	if (number != 3) {
+		error_display(1, "Volumetric nebula color must be fully specified.");
+		return;
+	}
+	nebulaColor = { static_cast<float>(rgb[0]) / 255.0f, static_cast<float>(rgb[1]) / 255.0f , static_cast<float>(rgb[2]) / 255.0f };
+
+	required_string("+Visibility Opacity:");
+	stuff_float(&alphaLim);
+
+	required_string("+Visibility Distance:");
+	stuff_float(&visibility);
+
+	if(optional_string("+Steps:")) {
+		stuff_int(&steps);
+	}
+
+	if (optional_string("+Resolution:")) {
+		stuff_int(&resolution);
+		if (resolution > 8) {
+			error_display(0, "Volumetric nebula resolution was set to %d. Maximum is 8.", resolution);
+			resolution = 8;
+		}
+	}
+
+	if (optional_string("+Oversampling:")) {
+		stuff_int(&oversampling);
+	}
+
+	//Lighting settings
+	if (optional_string("+Heyney Greenstein Coefficient:")) {
+		stuff_float(&henyeyGreensteinCoeff);
+	}
+
+	if (optional_string("+Sun Falloff Factor:")) {
+		stuff_float(&globalLightDistanceFactor);
+	}
+
+	//Emissive settings
+	if (optional_string("+Emissive Light Spread:")) {
+		stuff_float(&emissiveSpread);
+	}
+
+	if (optional_string("+Emissive Light Intensity:")) {
+		stuff_float(&emissiveIntensity);
+	}
+
+	if (optional_string("+Emissive Light Falloff:")) {
+		stuff_float(&emissiveFalloff);
+	}
+
+	//Noise settings
+	if (optional_string("$Noise:")) {
+		noiseActive = true;
+
+		required_string("+Scale:");
+		float scale[2];
+		number = stuff_float_list(scale, 2);
+		if (number == 0) {
+			error_display(1, "Volumetric nebula noise scale must have at least the base scale.");
+			return;
+		}
+		else if (number == 1) {
+			//Set smaller scale to about half, but with low-ish periodicity
+			scale[1] = scale[0] * (14.0f / 25.0f);
+		}
+		noiseScale = { scale[0], scale[1] };
+
+		required_string("+Color:");
+		number = stuff_int_list(rgb, 3);
+		if (number != 3) {
+			error_display(1, "Volumetric nebula noise color must be fully specified.");
+			return;
+		}
+		noiseColor = { static_cast<float>(rgb[0]) / 255.0f, static_cast<float>(rgb[1]) / 255.0f , static_cast<float>(rgb[2]) / 255.0f };
+
+		if (optional_string("+Function Base:")) {
+			SCP_string func;
+			stuff_string(func, F_RAW);
+			noiseColorFunc1 = std::move(func);
+		}
+
+		if (optional_string("+Function Sub:")) {
+			SCP_string func;
+			stuff_string(func, F_RAW);
+			noiseColorFunc2 = std::move(func);
+		}
+
+		if (optional_string("+Resolution:")) {
+			stuff_int(&noiseResolution);
+			if (noiseResolution > 8) {
+				error_display(0, "Volumetric nebula noise resolution was set to %d. Maximum is 8.", noiseResolution);
+				noiseResolution = 8;
+			}
+		}
+	}
+}
 
 volumetric_nebula::~volumetric_nebula() {
 	if (volumeBitmapHandle >= 0) {
@@ -60,6 +169,10 @@ float volumetric_nebula::getHenyeyGreensteinCoeff() const {
 
 float volumetric_nebula::getGlobalLightDistanceFactor() const {
 	return globalLightDistanceFactor;
+}
+
+bool volumetric_nebula::getNoiseActive() const {
+	return noiseActive;
 }
 
 const std::tuple<float, float>& volumetric_nebula::getNoiseColorScale() const {
@@ -175,6 +288,8 @@ void volumetric_nebula::renderVolumeBitmap() {
 
 	volumeBitmapHandle = bm_create_3d(32, n, n, n, volumeBitmapData.get());
 
+	if (!noiseActive)
+		return;
 
 	int nNoise = 1 << noiseResolution;
 	noiseVolumeBitmapData = make_unique<ubyte[]>(nNoise * nNoise * nNoise * 4);

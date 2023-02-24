@@ -7,7 +7,9 @@ layout (binding = 0) uniform sampler2D composite;
 layout (binding = 1) uniform sampler2D emissive;
 layout (binding = 2) uniform sampler2D depth;
 layout (binding = 3) uniform sampler3D volume_tex;
+#ifdef NOISE
 layout (binding = 4) uniform sampler3D noise_volume_tex;
+#endif
 
 layout (std140) uniform genericData {
 	mat4 p_inv;
@@ -115,8 +117,12 @@ void main()
 		//stepcolor_alpha *= noisemax;
 
 		//Diffuse
+#ifdef NOISE
 		vec3 stepcolor_neb = mix(volume_sample.rgb, noiseColor, smoothstep(0.5, 1.0,
 			(textureGrad(noise_volume_tex, position / noiseColorScale1, gradX, gradY).r + textureGrad(noise_volume_tex, position / noiseColorScale2, gradX, gradY).g) / 2.0 ));
+#else
+		vec3 stepcolor_neb = volume_sample.rgb;
+#endif
 		vec3 stepcolor_diffuse = stepcolor_neb * henyey_greenstein(dot(rayDirection, globalLightDirection));
 		float directionalLightStep = 4.0 / float(directionalLightSampleSteps);
 		float directionalLightDepth = 0.1;

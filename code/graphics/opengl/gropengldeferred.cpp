@@ -356,7 +356,10 @@ void gr_opengl_deferred_lighting_finish()
 		gr_set_view_matrix(&Eye_position, &Eye_matrix);
 		GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
 		gr_zbuffer_set(GR_ZBUFF_NONE);
-		opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_VOLUMETRIC_FOG, neb.getEdgeSmoothing() ? SDR_FLAG_VOLUMETRICS_DO_EDGE_SMOOTHING : 0));
+		opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_VOLUMETRIC_FOG,
+			(neb.getEdgeSmoothing() ? SDR_FLAG_VOLUMETRICS_DO_EDGE_SMOOTHING : 0) |
+			(neb.getNoiseActive() ? SDR_FLAG_VOLUMETRICS_NOISE : 0)
+		));
 
 		GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_composite_texture);
 		GL_state.Texture.Enable(1, GL_TEXTURE_2D, Scene_emissive_texture);
@@ -369,7 +372,8 @@ void gr_opengl_deferred_lighting_finish()
 			float u_scale, v_scale;
 			uint32_t array_index;
 			gr_opengl_tcache_set(neb.getVolumeBitmapHandle(), TCACHE_TYPE_3DTEX, &u_scale, &v_scale, &array_index, 3);
-			gr_opengl_tcache_set(neb.getNoiseVolumeBitmapHandle(), TCACHE_TYPE_3DTEX, &u_scale, &v_scale, &array_index, 4);
+			if(neb.getNoiseActive())
+				gr_opengl_tcache_set(neb.getNoiseVolumeBitmapHandle(), TCACHE_TYPE_3DTEX, &u_scale, &v_scale, &array_index, 4);
 		}
 
 		opengl_set_generic_uniform_data<graphics::generic_data::volumetric_fog_data>([&](graphics::generic_data::volumetric_fog_data* data) {

@@ -228,6 +228,7 @@ enum shader_type {
 #define SDR_FLAG_DECAL_USE_NORMAL_MAP (1<<0)
 
 #define SDR_FLAG_VOLUMETRICS_DO_EDGE_SMOOTHING (1<<0)
+#define SDR_FLAG_VOLUMETRICS_NOISE (1<<1)
 
 
 enum class uniform_block_type {

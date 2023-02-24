@@ -11,19 +11,19 @@ class volumetric_nebula {
 	
 	//Type
 	//The name of the POF file specifying the hull of the nebula. Can be convex. Can be multiple disjunct meshes. Each mesh must be watertight. Mesh polies may not intersect, however one mesh may be completely contained in another.
-	SCP_string hullPof = "neb.pof";
+	SCP_string hullPof;
 	//The position and size of the bounding box of the volumetrics.
 	vec3d pos = ZERO_VECTOR, size = ZERO_VECTOR;
 	//Main color
-	std::tuple<float, float, float> nebulaColor = { 1, 0, 0 };
+	std::tuple<float, float, float> nebulaColor = { 0, 0, 0 };
 
 	//Quality
 	//Whether or not edge smoothing is enabled. Disabling this causes jagged edges when looking at the nebula axis aligned, but it's expensive
 	bool doEdgeSmoothing = false;
 	//How many steps are used to nebulify the volume until the visibility is reached. In theory purely quality and can be changed without changing the aesthetics. Mostly FPS Cost
-	int steps = 5;
+	int steps = 15;
 	//Number of steps per nebula slice to test towards the sun. Mostly FPS Cost
-	int globalLightSteps = 3;
+	int globalLightSteps = 6;
 	//Resolution of 3D texture as 2^n. 5 - 8 recommended. Mostly VRAM cost
 	int resolution = 6;
 	//Oversampling of 3D-Texture. Will quadruple loading computation time for each increment, but improves banding especially at lower resolutions. 1 - 3. Mostly Loading time cost.
@@ -52,12 +52,14 @@ class volumetric_nebula {
 	float globalLightDistanceFactor = 1.0f;
 
 	//Edge noise settings
+	//Is the noise even active
+	bool noiseActive = false;
 	//The size of the noise's two levels, in meters. The fraction of the two levels should have a large denominator to avoid visible harmonics
-	std::tuple<float, float> noiseScale = { 25.0f, 14.0f };
+	std::tuple<float, float> noiseScale = { 1, 1 };
 	//Noise functions. ANL's DSL for noise. Leave empty to use default noise. Default is representable by: translate(bias(scale(valueBasis(3,0),3),scale(valueBasis(3,1),8)),scale(simplexBasis(2),4)*0.6)
 	tl::optional<SCP_string> noiseColorFunc1 = tl::nullopt, noiseColorFunc2 = tl::nullopt;
 	//Noise color
-	std::tuple<float, float, float> noiseColor = { 0.5f, 0.3f, 0.0f };
+	std::tuple<float, float, float> noiseColor = { 0, 0, 0 };
 
 	//Instance Data
 	int volumeBitmapHandle = -1;
@@ -67,7 +69,7 @@ class volumetric_nebula {
 	std::unique_ptr<ubyte[]> noiseVolumeBitmapData = nullptr;
 
 public:
-	volumetric_nebula() = default;
+	volumetric_nebula();
 	~volumetric_nebula();
 
 	const vec3d& getPos() const;
@@ -87,6 +89,7 @@ public:
 	float getHenyeyGreensteinCoeff() const;
 	float getGlobalLightDistanceFactor() const;
 
+	bool getNoiseActive() const;
 	const std::tuple<float, float>& getNoiseColorScale() const;
 	const std::tuple<float, float, float>& getNoiseColor() const;
 
