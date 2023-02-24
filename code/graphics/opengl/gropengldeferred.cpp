@@ -347,11 +347,10 @@ void gr_opengl_deferred_lighting_finish()
 
 		opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
 	}
-	else if (true) {
-		static volumetric_nebula neb;
+	else if (The_mission.volumetrics) {
+		const volumetric_nebula& neb = *The_mission.volumetrics;
 
-		if (!neb.isVolumeBitmapValid())
-			neb.renderVolumeBitmap();
+		Assertion(neb.isVolumeBitmapValid(), "The volumetric nebula was not properly initialized!");
 
 		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
 		gr_set_view_matrix(&Eye_position, &Eye_matrix);
