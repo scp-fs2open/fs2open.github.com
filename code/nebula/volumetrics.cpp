@@ -133,7 +133,7 @@ const vec3d& volumetric_nebula::getSize() const {
 }
 
 bool volumetric_nebula::getEdgeSmoothing() const {
-	return doEdgeSmoothing;
+	return doEdgeSmoothing; //potentially adjust for graphics settings in F2 menu
 }
 
 int volumetric_nebula::getSteps() const {

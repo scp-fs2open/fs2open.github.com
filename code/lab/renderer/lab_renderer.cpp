@@ -284,6 +284,11 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 		if (optional_string("+Flags:"))
 			stuff_flagset(&flags);
 
+		//if (optional_string("+Volumetric Nebula:")) {
+			//Parsing is handled by the volumetrics class' constructor.
+		//	The_mission.volumetrics.emplace();
+		//}
+
 		// Are we using a skybox?
 		skip_to_start_of_string_either("$Skybox Model:", "#Background bitmaps");
 
