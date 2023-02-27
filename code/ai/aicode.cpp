@@ -878,6 +878,8 @@ void parse_ai_class()
 	set_aic_flag(aicp, "$ai can slow down when attacking big ships:", AI::Profile_Flags::Ai_can_slow_down_attacking_big_ships);
 
 	set_aic_flag(aicp, "$use actual primary range:", AI::Profile_Flags::Use_actual_primary_range);
+
+	set_aic_flag(aicp, "$firing requires exact los:", AI::Profile_Flags::Require_exact_los);
 }
 
 void reset_ai_class_names()
