@@ -390,6 +390,47 @@ void LabUi::show_render_options()
 			}
 		}
 
+		if (The_mission.volumetrics) {
+			with_CollapsingHeader("Volumetric nebula options")
+			{
+				bool set_to_origin = static_cast<bool>(volumetrics_pos_backup);
+				Checkbox("Move Volumetrics to Origin", &set_to_origin);
+				if (set_to_origin != static_cast<bool>(volumetrics_pos_backup)) {
+					if (set_to_origin) {
+						volumetrics_pos_backup = The_mission.volumetrics->pos;
+						The_mission.volumetrics->pos = vec3d ZERO_VECTOR;
+					}
+					else {
+						The_mission.volumetrics->pos = *volumetrics_pos_backup;
+						volumetrics_pos_backup.reset();
+					}
+				}
+				Separator();
+				Text("Quality Settings:");
+				Checkbox("Enable Edge Smoothing", &The_mission.volumetrics->doEdgeSmoothing);
+				SliderInt("Steps Until Opaque", &The_mission.volumetrics->steps, 2, 30);
+				SliderInt("Steps Towards Sun", &The_mission.volumetrics->globalLightSteps, 2, 10);
+				Separator();
+				Text("Visibility Settings:");
+				SliderFloat("Visibility Distance", &The_mission.volumetrics->visibility, 0.1f, 100.0f);
+				SliderFloat("Visibility Opacity", &The_mission.volumetrics->alphaLim, 0.0001f, 1.0f, "%.4f", ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);
+				Separator();
+				Text("Emissive Settings:");
+				SliderFloat("Emissive Light Spreading", &The_mission.volumetrics->emissiveSpread, 0.1f, 2.0f);
+				SliderFloat("Emissive Light Intensity", &The_mission.volumetrics->emissiveIntensity, 0.0f, 2.0f);
+				SliderFloat("Emissive Light Falloff", &The_mission.volumetrics->emissiveFalloff, 0.1f, 2.0f);
+				Separator();
+				Text("Global Light Settings:");
+				SliderFloat("Henyey-Greenstein", &The_mission.volumetrics->henyeyGreensteinCoeff, -1.0f, 1.0f);
+				SliderFloat("Sun Falloff Factor", &The_mission.volumetrics->globalLightDistanceFactor, 0.1f, 3.0f);
+				Separator();
+				Text("Noise Settings:");
+				Checkbox("Noise Active", &The_mission.volumetrics->noiseActive);
+				SliderFloat("Noise Scale Base", &std::get<0>(The_mission.volumetrics->noiseScale), 1.0f, 50.0f);
+				SliderFloat("Noise Scale Sub", &std::get<1>(The_mission.volumetrics->noiseScale), 1.0f, 50.0f);
+			}
+		}
+
 		if (getLabManager()->Renderer->currentMissionBackground != LAB_MISSION_NONE_STRING) {
 			if (Button("Export environment cubemap", ImVec2(-FLT_MIN, GetTextLineHeight()*2))) {
 				gr_dump_envmap(getLabManager()->Renderer->currentMissionBackground.c_str());

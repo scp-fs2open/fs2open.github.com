@@ -68,6 +68,8 @@ class volumetric_nebula {
 	int noiseVolumeBitmapHandle = -1;
 	std::unique_ptr<ubyte[]> noiseVolumeBitmapData = nullptr;
 
+	friend class LabUi;
+
 public:
 	volumetric_nebula();
 	~volumetric_nebula();
