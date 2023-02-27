@@ -42,7 +42,7 @@ void ship_subsys_h::deserialize(lua_State* /*L*/, const scripting::ade_table_ent
 	GET_USHORT(net_signature);
 	GET_INT(subsys);
 	object* obj = multi_get_network_object(net_signature);
-	new(data_ptr) ship_subsys_h(obj, obj == nullptr || subsys == -1 ? nullptr : ship_get_indexed_subsys(&Ships[obj->instance], subsys));
+	new(data_ptr) ship_subsys_h(obj, obj == nullptr || obj->type != OBJ_SHIP || subsys == -1 ? nullptr : ship_get_indexed_subsys(&Ships[obj->instance], subsys));
 }
 
 //**********HANDLE: Subsystem

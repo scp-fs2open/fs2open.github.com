@@ -241,7 +241,7 @@ void enum_h::serialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tab
 	ADD_INT(enumeration.index);
 	if (enumeration.index == lua_enum::ENUM_COMBINATION) {
 		ADD_INT(*enumeration.value);
-		//If networked enums should have the name string tracking, it needs to be set here. Howeever, due to bandwidth, this is disabled for now
+		//If networked enums should have the name string tracking, it needs to be set here. However, due to bandwidth, this is disabled for now
 	}
 }
 

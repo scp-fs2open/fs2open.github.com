@@ -13,18 +13,6 @@ static SCP_unordered_map<ushort, scripting::api::rpc_h_ref> rpc_map;
 
 enum class lua_net_data_type : uint8_t { NIL, BOOL, NUMBER, STRING8, STRING16, USERDATA, TABLE };
 
-union lua_packet_header {
-	struct {
-		unsigned short target : 13;
-		unsigned short isOrdered : 1;
-		unsigned short toServer : 1;
-		unsigned short toClient : 1;
-	} data;
-	unsigned short packed;
-};
-static_assert(sizeof(lua_packet_header) == 2, "Lua Packet Header is not properly packed!");
-
-
 static bool need_toss_packet(ushort target, short packet_source, ushort packetTime, UI_TIMESTAMP localTime) {
 	//Ordering is enforced for packet source and execution targets. Meaning we neither order packets form different sources
 	//(due to incomparibility of timestamps) or to different targets (due to semantic insignificance)
@@ -271,19 +259,19 @@ void process_lua_packet(ubyte* data, header* hinfo, bool reliable) {
 
 	offset = HEADER_LENGTH;
 
-	lua_packet_header packet_header;
+	ushort packet_header;
 	ushort packet_size;
 	
-	GET_USHORT(packet_header.packed);
+	GET_USHORT(packet_header);
 	GET_USHORT(packet_size);
-	if (packet_header.data.isOrdered != 0) {
+	if (packet_header & lua_net_bitmask_ordered != 0) {
 		ushort packetTime;
 		UI_TIMESTAMP packetLocalTime = ui_timestamp();
 
 		const int timeOffset = offset;
 		GET_USHORT(packetTime);
 
-		if (need_toss_packet(packet_header.data.target, hinfo->id, packetTime, packetLocalTime)) {
+		if (need_toss_packet(packet_header & lua_net_bitmask_rpchash, hinfo->id, packetTime, packetLocalTime)) {
 			//If this packet has elapsed, toss it. Don't send it on either.
 			hinfo->bytes_processed = packet_size;
 			return;
@@ -299,14 +287,14 @@ void process_lua_packet(ubyte* data, header* hinfo, bool reliable) {
 	//Before we keep ourselves busy with any sort of deserialization, check who this packet is for and potentially forward it first.
 	//Clients don't need to worry though. Neither will they have to forward, not will they recieve packets not meant for them.
 	if (MULTIPLAYER_MASTER) {
-		if (packet_header.data.toClient != 0) {
+		if (packet_header & lua_net_bitmask_client != 0) {
 			//Need to send to all clients, except the one we got it from.
 			if (reliable)
 				multi_io_send_to_all_reliable(data, packet_size, &Net_players[find_player_index(hinfo->id)]);
 			else
 				multi_io_send_to_all(data, packet_size, &Net_players[find_player_index(hinfo->id)]);
 		}
-		if (packet_header.data.toServer) {
+		if (packet_header & lua_net_bitmask_server == 0) {
 			//And it wasn't even meant for the server. Very sad.
 			hinfo->bytes_processed = packet_size;
 			return; 
@@ -317,10 +305,10 @@ void process_lua_packet(ubyte* data, header* hinfo, bool reliable) {
 		luacpp::LuaValue value = process_lua_data(data, offset, L);
 		
 		//Let's find the actual function to call.
-		const auto it = rpc_map.find(packet_header.data.target);
+		const auto it = rpc_map.find(packet_header & lua_net_bitmask_rpchash);
 		if (it == rpc_map.end() || it->second.expired()) {
 			//No RPC available. Since, in very rare case, this can be intentional, just log this.
-			nprintf(("Network", "Failed to find an RPC handler for packet with hash %#06X.\n", packet_header.data.target));
+			nprintf(("Network", "Failed to find an RPC handler for packet with hash %#06X.\n", packet_header & lua_net_bitmask_rpchash));
 		}
 		else {
 			const scripting::api::rpc_h rpc_ptr = it->second.lock();
@@ -353,11 +341,11 @@ bool send_lua_packet(const luacpp::LuaValue& value, ushort target, lua_net_mode 
 
 	bool isOrdered = mode == lua_net_mode::ORDERED;
 
-	lua_packet_header packet_header;
-	packet_header.data.target = target & 0b0001111111111111U; // : 13
-	packet_header.data.isOrdered = isOrdered ? 1 : 0;
-	packet_header.data.toClient = reciever != lua_net_reciever::SERVER ? 1 : 0;
-	packet_header.data.toServer = reciever != lua_net_reciever::CLIENTS ? 1 : 0;
+	uint16_t packet_header = 0U;
+	packet_header |= target & lua_net_bitmask_rpchash; // : 13
+	packet_header |= isOrdered ? lua_net_bitmask_ordered : 0U;
+	packet_header |= reciever != lua_net_reciever::SERVER ? lua_net_bitmask_client : 0U;
+	packet_header |= reciever != lua_net_reciever::CLIENTS ? lua_net_bitmask_server : 0U;
 	ADD_USHORT(packet_header.packed);
 
 	const int size_loc = packet_size;

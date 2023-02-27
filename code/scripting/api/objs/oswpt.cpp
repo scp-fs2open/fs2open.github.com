@@ -62,7 +62,6 @@ void object_ship_wing_point_team::deserialize(lua_State* /*L*/, const scripting:
 	case oswpt_type::PARSE_OBJECT: {
 		ushort net_signature;
 		GET_USHORT(net_signature);
-		GET_USHORT(net_signature);
 		new(data_ptr) object_ship_wing_point_team(mission_parse_get_arrival_ship(net_signature));
 		break;
 	}

@@ -22,7 +22,7 @@ rpc_h rpc_h_impl::create(lua_State* L, SCP_string name) {
 	return newRPC;
 }
 
-rpc_h_impl::rpc_h_impl(SCP_string _name) : hash(static_cast<ushort>(hash_fnv1a(_name) & 0b0001111111111111U /* : 13 */)), name(std::move(_name)) { }
+rpc_h_impl::rpc_h_impl(SCP_string _name) : hash(static_cast<ushort>(hash_fnv1a(_name) & lua_net_bitmask_rpchash /* : 13 */)), name(std::move(_name)) { }
 
 rpc_h_impl::~rpc_h_impl() {
 	//This destructor needs to unregister the function. Once this gets called, we have no further access to the RPC method. It can't be called anymore, and shouldn't recieve packets
