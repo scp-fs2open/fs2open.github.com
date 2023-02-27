@@ -455,6 +455,37 @@ int skip_to_start_of_string_either(const char *pstr1, const char *pstr2, const c
 	return 1;
 }
 
+int skip_to_start_of_string_one_of(const SCP_vector<SCP_string>& pstr, const char* end) {
+	size_t endlen;
+
+	ignore_white_space();
+	if (end)
+		endlen = strlen(end);
+	else
+		endlen = 0;
+
+	while (*Mp != '\0') {
+		for (const SCP_string& pstr_i : pstr) {
+			if (strnicmp(pstr_i.c_str(), Mp, pstr_i.size()) != 0)
+				break;
+		}
+
+		if (end && *Mp == '#')
+			return 0;
+
+		if (end && !strnicmp(end, Mp, endlen))
+			return 0;
+
+		advance_to_eoln(NULL);
+		ignore_white_space();
+	}
+
+	if (!Mp || *Mp == '\0')
+		return 0;
+
+	return 1;
+}
+
 // Find a required string.
 // If not found, display an error message, but try up to RS_MAX_TRIES times
 // to find the string.  (This is the groundwork for ignoring non-understood
