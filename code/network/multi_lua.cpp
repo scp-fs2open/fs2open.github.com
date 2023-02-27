@@ -294,7 +294,7 @@ void process_lua_packet(ubyte* data, header* hinfo, bool reliable) {
 			else
 				multi_io_send_to_all(data, packet_size, &Net_players[find_player_index(hinfo->id)]);
 		}
-		if (packet_header & lua_net_bitmask_server == 0) {
+		if ((packet_header & lua_net_bitmask_server) == 0) {
 			//And it wasn't even meant for the server. Very sad.
 			hinfo->bytes_processed = packet_size;
 			return; 
