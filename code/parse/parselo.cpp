@@ -467,7 +467,7 @@ int skip_to_start_of_string_one_of(const SCP_vector<SCP_string>& pstr, const cha
 	while (*Mp != '\0') {
 		bool foundStart = false;
 		for (const SCP_string& pstr_i : pstr) {
-			if (strnicmp(pstr_i.c_str(), Mp, pstr_i.size()) != 0) {
+			if (strnicmp(pstr_i.c_str(), Mp, pstr_i.size()) == 0) {
 				foundStart = true;
 				break;
 			}
