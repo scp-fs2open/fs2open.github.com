@@ -133,15 +133,15 @@ const vec3d& volumetric_nebula::getSize() const {
 }
 
 bool volumetric_nebula::getEdgeSmoothing() const {
-	return doEdgeSmoothing; //potentially adjust for graphics settings in F2 menu
+	return doEdgeSmoothing; //potentially adjust for graphics settings in F2 menu. Only for highest setting.
 }
 
 int volumetric_nebula::getSteps() const {
-	return steps; //potentially adjust for graphics settings in F2 menu
+	return steps; //potentially adjust for graphics settings in F2 menu. 8 to 16 for normal nebulae.
 }
 
 int volumetric_nebula::getGlobalLightSteps() const {
-	return globalLightSteps; //potentially adjust for graphics settings in F2 menu
+	return globalLightSteps; //potentially adjust for graphics settings in F2 menu. 4 to 8 for normal nebulae.
 }
 
 float volumetric_nebula::getVisibility() const {

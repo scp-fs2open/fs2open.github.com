@@ -39,11 +39,11 @@ class volumetric_nebula {
 
 	//Emissive Light Fogging
 	//How quickly the emissive will widen in the nebula. The larger the value, the wider will emissives be drawn even with only little nebula to obscure it.
-	float emissiveSpread = 1.0f;
+	float emissiveSpread = 0.7f;
 	//How intense emissives will be added. The higher, the brighter the emissives.
-	float emissiveIntensity = 0.2f;
+	float emissiveIntensity = 1.1f;
 	//Correcting factor for emissive alpha. Values > 1 will darken the added emissive closer to the actual source, values < 1 will lighten the added emissive closer to the actual source.
-	float emissiveFalloff = 1.33f;
+	float emissiveFalloff = 1.5f;
 
 	//Sun-based illumination
 	//HG coefficient for backlit nebulae. (-1, 1), but should probably be in the range of (0.05, 0.75)
