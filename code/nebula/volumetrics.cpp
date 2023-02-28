@@ -213,8 +213,8 @@ void volumetric_nebula::renderVolumeBitmap() {
 	int modelnum = model_load(hullPof.c_str(), 0, nullptr);
 
 	const polymodel* pm = model_get(modelnum);
-	//Scale up by 2% to ensure that the 3d volume texture does not end on an axis aligned edge with full opacity
-	constexpr float scaleFactor = 1.02f;
+	//Scale up by 5% to ensure that the 3d volume texture does not end on an axis aligned edge with full opacity. Alternatively, set texture to not repeat but rather to clip
+	constexpr float scaleFactor = 1.05f;
 	size = pm->maxs - pm->mins;
 	size *= scaleFactor;
 
@@ -245,6 +245,17 @@ void volumetric_nebula::renderVolumeBitmap() {
 			mc.hit_points_all.clear();
 			mc.hit_submodels_all.clear();
 			model_collide(&mc);
+
+			//Annoying hack cause sometimes, if edges of polygons get too close to the ray, the collisions are missed / too many. At least find odd rays and fix those, since these are very visible
+			while (mc.hit_points_all.size() % 2 != 0) {
+				start += vec3d{ { size.xyz.x / static_cast<float>(n << (oversampling - 1)) * (Random::INV_F_MAX_VALUE * Random::next() - 0.5f),
+								  size.xyz.y / static_cast<float>(n << (oversampling - 1)) * (Random::INV_F_MAX_VALUE * Random::next() - 0.5f), 0.0f } };
+				end += vec3d{ { size.xyz.x / static_cast<float>(n << (oversampling - 1)) * (Random::INV_F_MAX_VALUE * Random::next() - 0.5f),
+								size.xyz.y / static_cast<float>(n << (oversampling - 1)) * (Random::INV_F_MAX_VALUE * Random::next() - 0.5f), 0.0f } };
+				mc.hit_points_all.clear();
+				mc.hit_submodels_all.clear();
+				model_collide(&mc);
+			}
 
 			SCP_multiset<size_t> collisionZIndices;
 			for(const vec3d& hitpnt : mc.hit_points_all)
