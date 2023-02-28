@@ -386,7 +386,7 @@ void gr_opengl_deferred_lighting_finish()
 			data->globalLightDiffuse = global_light_diffuse;
 			data->nebPos = neb.getPos();
 			//Flip size to match OpenGL component order
-			data->nebSize = { {neb.getSize().xyz.z, neb.getSize().xyz.y, neb.getSize().xyz.x} };
+			data->nebSize = neb.getSize();
 			data->stepsize = neb.getVisibility() / static_cast<float>(neb.getSteps());
 			data->globalstepalpha = -(powf(neb.getAlphaLim(), 1.0f / static_cast<float>(neb.getSteps())) - 1.0f);
 			data->alphalimit = neb.getAlphaLim();

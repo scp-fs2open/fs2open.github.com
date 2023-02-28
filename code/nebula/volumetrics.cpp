@@ -269,9 +269,9 @@ void volumetric_nebula::renderVolumeBitmap() {
 	for (size_t x = 0; x < n; x++) {
 		for (size_t y = 0; y < n; y++) {
 			for (size_t z = 0; z < n; z++) {
-				volumeBitmapData[x * n * n * 4 + y * n * 4 + z * 4] = static_cast<ubyte>(std::get<2>(nebulaColor) * 255.0f);
-				volumeBitmapData[x * n * n * 4 + y * n * 4 + z * 4 + 1] = static_cast<ubyte>(std::get<1>(nebulaColor) * 255.0f);
-				volumeBitmapData[x * n * n * 4 + y * n * 4 + z * 4 + 2] = static_cast<ubyte>(std::get<0>(nebulaColor) * 255.0f);
+				volumeBitmapData[z * n * n * 4 + y * n * 4 + x * 4] = static_cast<ubyte>(std::get<2>(nebulaColor) * 255.0f);
+				volumeBitmapData[z * n * n * 4 + y * n * 4 + x * 4 + 1] = static_cast<ubyte>(std::get<1>(nebulaColor) * 255.0f);
+				volumeBitmapData[z * n * n * 4 + y * n * 4 + x * 4 + 2] = static_cast<ubyte>(std::get<0>(nebulaColor) * 255.0f);
 				
 				float sum = 0.0f;
 				for (size_t sx = x * oversampling; sx <= (x + 1) * oversampling; sx++) {
@@ -283,7 +283,7 @@ void volumetric_nebula::renderVolumeBitmap() {
 					}
 				}
 				
-				volumeBitmapData[x * n * n * 4 + y * n * 4 + z * 4 + 3] = static_cast<ubyte>(sum * oversamplingDivisor);
+				volumeBitmapData[z * n * n * 4 + y * n * 4 + x * 4 + 3] = static_cast<ubyte>(sum * oversamplingDivisor);
 			}
 		}
 	}
