@@ -335,6 +335,10 @@ int volumetric_nebula::getNoiseVolumeBitmapHandle() const {
 	return noiseVolumeBitmapHandle;
 }
 
+float volumetric_nebula::getAlphaToPos(const vec3d& pnt, float distance_mult) const {
+	return 1.0f;
+}
+
 void volumetrics_level_close() {
 	if (The_mission.volumetrics)
 		The_mission.volumetrics.reset();

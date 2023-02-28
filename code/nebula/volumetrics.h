@@ -99,6 +99,8 @@ public:
 	void renderVolumeBitmap();
 	int getVolumeBitmapHandle() const;
 	int getNoiseVolumeBitmapHandle() const;
+
+	float getAlphaToPos(const vec3d& pnt, float distance_mult) const;
 };
 
 void volumetrics_level_close();

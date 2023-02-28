@@ -1025,7 +1025,7 @@ void neb2_get_adjusted_fog_values(float *fnear, float *ffar, float *fdensity, ob
 
 // given a position, returns 0 - 1 the fog visibility of that position, 0 = completely obscured
 // distance_mult will multiply the result, use for things that can be obscured but can 'shine through' the nebula more than normal
-float neb2_get_fog_visibility(vec3d *pos, float distance_mult)
+float neb2_get_fog_visibility(const vec3d *pos, float distance_mult)
 {
 	float pct;
 
@@ -1035,6 +1035,18 @@ float neb2_get_fog_visibility(vec3d *pos, float distance_mult)
     CLAMP(pct, 0.0f, 1.0f);
 
 	return pct;
+}
+
+bool nebula_handle_alpha(float& alpha, const vec3d* pos, float distance_mult) {
+	if (The_mission.flags[Mission::Mission_Flags::Fullneb]) {
+		alpha *= neb2_get_fog_visibility(pos, distance_mult);
+		return true;
+	}
+	else if (The_mission.volumetrics) {
+		alpha *= The_mission.volumetrics->getAlphaToPos(*pos, distance_mult);
+		return true;
+	}
+	return false;
 }
 
 // fogging stuff --------------------------------------------------------------------
