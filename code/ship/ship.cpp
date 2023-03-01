@@ -1062,6 +1062,7 @@ void ship_info::clone(const ship_info& other)
 
 	max_hull_strength = other.max_hull_strength;
 	ship_recoil_modifier = other.ship_recoil_modifier;
+	ship_shudder_modifier = other.ship_shudder_modifier;
 	max_shield_strength = other.max_shield_strength;
 	max_shield_recharge = other.max_shield_recharge;
 	auto_shield_spread = other.auto_shield_spread;
@@ -1394,6 +1395,7 @@ void ship_info::move(ship_info&& other)
 
 	max_hull_strength = other.max_hull_strength;
 	ship_recoil_modifier = other.ship_recoil_modifier;
+	ship_shudder_modifier = other.ship_shudder_modifier;
 	max_shield_strength = other.max_shield_strength;
 	max_shield_recharge = other.max_shield_recharge;
 	auto_shield_spread = other.auto_shield_spread;
@@ -1822,6 +1824,7 @@ ship_info::ship_info()
 	weapon_model_draw_distance = 200.0f;
 
 	ship_recoil_modifier = 1.0f;
+	ship_shudder_modifier = 1.0f;
 
 	max_hull_strength = 100.0f;
 	max_shield_strength = 0.0f;
@@ -3655,6 +3658,10 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 
 	if (optional_string("$Ship Recoil Modifier:")){
 		stuff_float(&sip->ship_recoil_modifier);
+	}
+
+	if (optional_string("$Ship Shudder Modifier:")) {
+		stuff_float(&sip->ship_shudder_modifier);
 	}
 
 	if(optional_string("$Shields:")) {
@@ -12660,7 +12667,7 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 							if((winfo_p->wi_flags[Weapon::Info_Flags::Shudder]) && (obj == Player_obj) && !(Game_mode & GM_STANDALONE_SERVER)){
 								// calculate some arbitrary value between 100
 								// (mass * velocity) / 10
-								game_shudder_apply(500, (winfo_p->mass * winfo_p->max_speed) * 0.1f);
+								game_shudder_apply(500, (winfo_p->mass * winfo_p->max_speed) * 0.1f * sip->ship_shudder_modifier * winfo_p->shudder_modifier);
 							}
 
 							num_fired++;
@@ -13400,7 +13407,7 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 				if((wip->wi_flags[Weapon::Info_Flags::Shudder]) && (obj == Player_obj) && !(Game_mode & GM_STANDALONE_SERVER)){
 					// calculate some arbitrary value between 100
 					// (mass * velocity) / 10
-					game_shudder_apply(500, (wip->mass * wip->max_speed) * 0.1f);
+					game_shudder_apply(500, (wip->mass * wip->max_speed) * 0.1f * sip->ship_shudder_modifier * wip->shudder_modifier);
 				}
 
 				num_fired++;

@@ -496,6 +496,8 @@ struct weapon_info
 	// Recoil effect
 	float recoil_modifier;
 
+	float shudder_modifier;
+
 	// Energy suck effect
 	float weapon_reduce;					// how much energy removed from weapons systems
 	float afterburner_reduce;			// how much energy removed from weapons systems
