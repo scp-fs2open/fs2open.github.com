@@ -426,6 +426,7 @@ void LabUi::show_render_options()
 				Separator();
 				Text("Noise Settings:");
 				Checkbox("Noise Active", &The_mission.volumetrics->noiseActive);
+				SliderFloat("Noise Intensity", &The_mission.volumetrics->noiseColorIntensity, 0.0f, 3.0f);
 				SliderFloat("Noise Scale Base", &std::get<0>(The_mission.volumetrics->noiseScale), 1.0f, 50.0f);
 				SliderFloat("Noise Scale Sub", &std::get<1>(The_mission.volumetrics->noiseScale), 1.0f, 50.0f);
 			}
