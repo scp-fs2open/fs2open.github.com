@@ -371,9 +371,12 @@ void gr_opengl_deferred_lighting_finish()
 			//The following are not required, but the graphics API still returns them
 			float u_scale, v_scale;
 			uint32_t array_index;
+			gr_set_texture_addressing(TMAP_ADDRESS_CLAMP);
 			gr_opengl_tcache_set(neb.getVolumeBitmapHandle(), TCACHE_TYPE_3DTEX, &u_scale, &v_scale, &array_index, 3);
-			if(neb.getNoiseActive())
+			if (neb.getNoiseActive()) {
+				gr_set_texture_addressing(TMAP_ADDRESS_WRAP);
 				gr_opengl_tcache_set(neb.getNoiseVolumeBitmapHandle(), TCACHE_TYPE_3DTEX, &u_scale, &v_scale, &array_index, 4);
+			}
 		}
 
 		opengl_set_generic_uniform_data<graphics::generic_data::volumetric_fog_data>([&](graphics::generic_data::volumetric_fog_data* data) {

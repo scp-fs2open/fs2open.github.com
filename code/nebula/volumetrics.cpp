@@ -252,8 +252,8 @@ void volumetric_nebula::renderVolumeBitmap() {
 	int modelnum = model_load(hullPof.c_str(), 0, nullptr);
 
 	const polymodel* pm = model_get(modelnum);
-	//Scale up by 5% to ensure that the 3d volume texture does not end on an axis aligned edge with full opacity. Alternatively, set texture to not repeat but rather to clip
-	constexpr float scaleFactor = 1.05f;
+	//Scale up by 2% to ensure that the 3d volume texture does not end on an axis aligned edge with full opacity.
+	constexpr float scaleFactor = 1.02f;
 	size = pm->maxs - pm->mins;
 	size *= scaleFactor;
 
