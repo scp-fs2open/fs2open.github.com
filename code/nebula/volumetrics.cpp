@@ -62,6 +62,10 @@ volumetric_nebula::volumetric_nebula() {
 		stuff_float(&globalLightDistanceFactor);
 	}
 
+	if (optional_string("+Sun Steps:")) {
+		stuff_int(&globalLightSteps);
+	}
+
 	//Emissive settings
 	if (optional_string("+Emissive Light Spread:")) {
 		stuff_float(&emissiveSpread);
@@ -144,15 +148,23 @@ const vec3d& volumetric_nebula::getSize() const {
 }
 
 bool volumetric_nebula::getEdgeSmoothing() const {
-	return doEdgeSmoothing; //potentially adjust for graphics settings in F2 menu. Only for highest setting.
+	return Detail.nebula_detail == MAX_DETAIL_LEVEL || doEdgeSmoothing; //Only for highest setting, or when the lab has an override.
 }
 
 int volumetric_nebula::getSteps() const {
-	return steps; //potentially adjust for graphics settings in F2 menu. 8 to 16 for normal nebulae.
+	if (Detail.nebula_detail == 0)
+		return 8;
+
+	//Minimal setting (if not hard-set to 8) is steps / 2, max settings is steps.  Ensure it doesn't drop below 8, 10, 12, 14, 16.
+	return std::max(steps * (MAX_DETAIL_LEVEL + 1) / (2 * (MAX_DETAIL_LEVEL + 1) - Detail.nebula_detail), 8 + 2 * Detail.nebula_detail);
 }
 
 int volumetric_nebula::getGlobalLightSteps() const {
-	return globalLightSteps; //potentially adjust for graphics settings in F2 menu. 4 to 8 for normal nebulae.
+	if (Detail.nebula_detail == 0)
+		return 4;
+
+	//Minimal setting (if not hard-set to 4) is globalLightSteps / 2, max settings is globalLightSteps. Ensure it doesn't drop below 4, 5, 6, 7, 8.
+	return std::max(globalLightSteps * (MAX_DETAIL_LEVEL + 1) / (2 * (MAX_DETAIL_LEVEL + 1) - Detail.nebula_detail), 4 + Detail.nebula_detail);
 }
 
 float volumetric_nebula::getVisibility() const {
