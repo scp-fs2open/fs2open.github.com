@@ -309,7 +309,7 @@ const std::shared_ptr<Hook<WeaponUsedConditions>> OnTurretFired = Hook<WeaponUse
 const std::shared_ptr<Hook<WeaponUsedConditions>> OnBeamFired = Hook<WeaponUsedConditions>::Factory("On Beam Fire",
 	"Invoked when a beam is fired.",
 	{
-		{"Ship", "ship", "The ship that has fired the turret."},
+		{"User", "ship", "The ship that has fired the turret."},
 		{"Beam", "beam", "The spawned beam object."},
 		{"Target", "object", "The current target of the shot."},
 	});
