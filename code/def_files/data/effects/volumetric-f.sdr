@@ -40,7 +40,7 @@ const float sqrt2_inv = inversesqrt(2);
 const float sqrt4pi_inv = inversesqrt(4.0 * 3.14159);
 const float beer_powder_norm = 3.0/2.0 * sqrt(3.0);
 
-//HG assumes that the scatter vectors between which is theta both point away from the point of scatter
+//This HG implementation assumes that the scatter vectors between which is theta both point away from the point of scatter
 float henyey_greenstein(float cosTheta) {
 	float radicant = 1.0 + henyeyGreensteinCoeff * henyeyGreensteinCoeff + 2.0 * henyeyGreensteinCoeff * cosTheta;
 	return sqrt4pi_inv * (1.0 - henyeyGreensteinCoeff * henyeyGreensteinCoeff) / pow(radicant, 3.0 / 2.0);
@@ -70,13 +70,16 @@ void main()
 
 	float depth = 2.0 * zNear * zFar / (zFar + zNear - (2 * texture(depth, fragTexCoord.xy).x - 1) * (zFar - zNear));
 
+	//The t at which the ray enters the nebula cube
 	float maxtMin = max(0,max(tMin.x, max(tMin.y, tMin.z)));
+	//The t at which the ray leaves the nebula cube
 	float mintMax = min(depth, min(tMax.x, min(tMax.y, tMax.z)));
 
+	//The cumulative one minus alpha value of the nebula. Corresponds to the multiplier of the current step when additively drawing to a fragment for which the steps closer to the camera are already drawn.
 	float cumOMAlpha = 1;
+	//The cumulative distance already travelled through the nebula.
 	float cumnebdist = 0;
-	//float cumnoisedist = 0;
-	//float noisemax = 0;
+	//The color of the current fragment
 	vec3 cumcolor = vec3(0, 0, 0);
 
 	//While not perfectly accurate, it's sufficient to assume all gradients for the 3d texture lookups are identical
@@ -111,14 +114,12 @@ void main()
 		float stepcolor_alpha = volume_sample.a;
 #endif
 
-		//Noise - Technically, this should do noise, but I'm not very happy with how it turned out. The cloud needs to be "eroded" by the noise, but it's unclear as to how that can be achieved.
-		//cumnoisedist += stepcolor_alpha * stepsize;
-		//vec3 noise = textureGrad(noise_volume_tex, position * noiseScale, gradX, gradY).rgb;
-		//noisemax = max(noisemax, (1.0 - (noise.r * noise.g * noise.b * 1.5 * (1.0 - smoothstep(noiseNear, noiseFar, cumnoisedist)))) * smoothstep(0.05, 0.15, stepcolor_alpha));
-		//stepcolor_alpha *= noisemax;
+		//Noise - Technically, we need to do edge noise here but I'm not very happy with how it turned out. The cloud needs to be "eroded" by the noise as per the SIGGRAPH talk, but it's unclear as to how that can be achieved.
+		//So for now, don't do edge noise. noise_volume_tex.ba are still reserved for noise data for edge erosion.
 
 		//Diffuse
 #ifdef NOISE
+		//Mix the actual nebula color with the noise color depending on the product of the noise channels multiplied with intensity, smooth-clamped from 0 to 1
 		vec3 stepcolor_neb = mix(volume_sample.rgb, noiseColor,
 			smoothstep(0, 1, (textureGrad(noise_volume_tex, position / noiseColorScale1, gradX, gradY).r + textureGrad(noise_volume_tex, position / noiseColorScale2, gradX, gradY).g) / 2.0 * noiseIntensity));
 #else
@@ -127,6 +128,7 @@ void main()
 		vec3 stepcolor_diffuse = stepcolor_neb * henyey_greenstein(dot(rayDirection, globalLightDirection));
 		float directionalLightStep = 4.0 / float(directionalLightSampleSteps);
 		float directionalLightDepth = 0.1;
+		//From the current position in the volumetric cloud, sample towards the sun to test whether or not the current part of the nebula is bright or not
 		for(int dlstep = 1; dlstep <= directionalLightSampleSteps; dlstep++){
 			//TODO Sample these in a cone towards the sun, not just a line. Also add the high-distance sample for concave nebulae
 			vec3 dlsteppos = (position - globalLightDirection * (dlstep * directionalLightStepSize)) / nebSize + 0.5;
