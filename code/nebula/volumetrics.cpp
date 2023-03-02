@@ -7,6 +7,12 @@
 
 #include <anl.h>
 
+#define OFFSET_R 2
+#define OFFSET_G 1
+#define OFFSET_B 0
+#define OFFSET_A 3
+#define COLOR_3D_ARRAY_POS(n, color, x, y, z) (z * n * n * 4 + y * n * 4 + x * 4 + OFFSET_##color)
+
 volumetric_nebula::volumetric_nebula() {
 	//This expects that the constructor was called in an if(optional_string("Volumetrics")) or something
 	stuff_string(hullPof, F_PATHNAME);
@@ -280,9 +286,9 @@ void volumetric_nebula::renderVolumeBitmap() {
 	for (size_t x = 0; x < n; x++) {
 		for (size_t y = 0; y < n; y++) {
 			for (size_t z = 0; z < n; z++) {
-				volumeBitmapData[z * n * n * 4 + y * n * 4 + x * 4] = static_cast<ubyte>(std::get<2>(nebulaColor) * 255.0f);
-				volumeBitmapData[z * n * n * 4 + y * n * 4 + x * 4 + 1] = static_cast<ubyte>(std::get<1>(nebulaColor) * 255.0f);
-				volumeBitmapData[z * n * n * 4 + y * n * 4 + x * 4 + 2] = static_cast<ubyte>(std::get<0>(nebulaColor) * 255.0f);
+				volumeBitmapData[COLOR_3D_ARRAY_POS(n, R, x, y, z)] = static_cast<ubyte>(std::get<0>(nebulaColor) * 255.0f);
+				volumeBitmapData[COLOR_3D_ARRAY_POS(n, G, x, y, z)] = static_cast<ubyte>(std::get<1>(nebulaColor) * 255.0f);
+				volumeBitmapData[COLOR_3D_ARRAY_POS(n, B, x, y, z)] = static_cast<ubyte>(std::get<2>(nebulaColor) * 255.0f);
 				
 				float sum = 0.0f;
 				for (size_t sx = x * oversampling; sx <= (x + 1) * oversampling; sx++) {
@@ -294,7 +300,7 @@ void volumetric_nebula::renderVolumeBitmap() {
 					}
 				}
 				
-				volumeBitmapData[z * n * n * 4 + y * n * 4 + x * 4 + 3] = static_cast<ubyte>(sum * oversamplingDivisor);
+				volumeBitmapData[COLOR_3D_ARRAY_POS(n, A, x, y, z)] = static_cast<ubyte>(sum * oversamplingDivisor);
 			}
 		}
 	}
@@ -326,10 +332,10 @@ void volumetric_nebula::renderVolumeBitmap() {
 			for (int z = 0; z < nNoise; z++) {
 				const auto& noisePixel = img.get(x, y, z);
 				const auto& noisePixel2 = img2.get(x, y, z);
-				noiseVolumeBitmapData[x * nNoise * nNoise * 4 + y * nNoise * 4 + z * 4] = 0; // B. Reserved for surface noise
-				noiseVolumeBitmapData[x * nNoise * nNoise * 4 + y * nNoise * 4 + z * 4 + 1] = static_cast<ubyte>(noisePixel2 * 255.0f); // G. Color noise 2, sampled at detail 2
-				noiseVolumeBitmapData[x * nNoise * nNoise * 4 + y * nNoise * 4 + z * 4 + 2] = static_cast<ubyte>(noisePixel * 255.0f); // R. Color noise 1, sampled at detail 1
-				noiseVolumeBitmapData[x * nNoise * nNoise * 4 + y * nNoise * 4 + z * 4 + 3] = 0; // A. Reserved for surface noise.
+				noiseVolumeBitmapData[COLOR_3D_ARRAY_POS(nNoise, R, x, y, z)] = static_cast<ubyte>(noisePixel * 255.0f); // R. Color noise 1, sampled at detail 1
+				noiseVolumeBitmapData[COLOR_3D_ARRAY_POS(nNoise, G, x, y, z)] = static_cast<ubyte>(noisePixel2 * 255.0f); // G. Color noise 2, sampled at detail 2
+				noiseVolumeBitmapData[COLOR_3D_ARRAY_POS(nNoise, B, x, y, z)] = 0; // B. Reserved for surface noise
+				noiseVolumeBitmapData[COLOR_3D_ARRAY_POS(nNoise, A, x, y, z)] = 0; // A. Reserved for surface noise.
 			}
 		}
 	}
