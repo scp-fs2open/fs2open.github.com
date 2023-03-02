@@ -1367,6 +1367,15 @@ void ai_turn_towards_vector(vec3d* dest, object* objp, vec3d* slide_vec, vec3d* 
 		acc_limit.xyz.z *= 0.2f;
 	}
 
+	// finally, maybe override the limits based on some ship flags
+	if (objp->type == OBJ_SHIP) {
+		ship_info* sip = &Ship_info[Ships[objp->instance].ship_info_index];
+		if (sip->flags[Ship::Info_Flags::Dont_clamp_max_velocity])
+			vel_limit = vm_vec_new(200.0f, 200.0f, 200.0f); // 200 rad/s should be enough to get anywhere within a 1/60th of a second
+		if (sip->flags[Ship::Info_Flags::Instantaneous_acceleration])
+			acc_limit = vm_vec_new(12000.0f, 12000.0f, 12000.0f); // enough to get to 200 rad/s in 1/60th of a second
+	}
+
 	src = objp->pos;
 
 	if (rel_pos != NULL) {
