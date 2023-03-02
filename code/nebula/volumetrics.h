@@ -13,7 +13,7 @@ class volumetric_nebula {
 	//The name of the POF file specifying the hull of the nebula. Can be convex. Can be multiple disjunct meshes. Each mesh must be watertight. Mesh polies may not intersect, however one mesh may be completely contained in another.
 	SCP_string hullPof;
 	//The position and size of the bounding box of the volumetrics.
-	vec3d pos = ZERO_VECTOR, size = ZERO_VECTOR;
+	vec3d pos = ZERO_VECTOR, size = ZERO_VECTOR, bb_min = ZERO_VECTOR, bb_max = ZERO_VECTOR;
 	//Main color
 	std::tuple<float, float, float> nebulaColor = { 0.0f, 0.0f, 0.0f };
 
@@ -82,6 +82,8 @@ public:
 	int getGlobalLightSteps() const;
 
 	float getVisibility() const;
+	float getStepsize() const;
+	float getStepalpha() const;
 	float getAlphaLim() const;
 
 	float getEmissiveSpread() const;
@@ -90,6 +92,7 @@ public:
 
 	float getHenyeyGreensteinCoeff() const;
 	float getGlobalLightDistanceFactor() const;
+	float getGlobalLightStepsize() const;
 
 	bool getNoiseActive() const;
 	const std::tuple<float, float>& getNoiseColorScale() const;

@@ -4,6 +4,7 @@
 #include "mission/missionparse.h"
 #include "model/model.h"
 #include "parse/parselo.h"
+#include "render/3d.h"
 
 #include <anl.h>
 
@@ -154,6 +155,14 @@ float volumetric_nebula::getVisibility() const {
 	return visibility;
 }
 
+float volumetric_nebula::getStepsize() const {
+	return getVisibility() / static_cast<float>(getSteps());
+}
+
+float volumetric_nebula::getStepalpha() const {
+	return -(powf(getAlphaLim(), 1.0f / static_cast<float>(getSteps())) - 1.0f);
+}
+
 float volumetric_nebula::getAlphaLim() const {
 	return alphaLim;
 }
@@ -176,6 +185,10 @@ float volumetric_nebula::getHenyeyGreensteinCoeff() const {
 
 float volumetric_nebula::getGlobalLightDistanceFactor() const {
 	return globalLightDistanceFactor;
+}
+
+float volumetric_nebula::getGlobalLightStepsize() const {
+	return getVisibility() / static_cast<float>(getGlobalLightSteps()) * getGlobalLightDistanceFactor();
 }
 
 bool volumetric_nebula::getNoiseActive() const {
@@ -224,15 +237,17 @@ void volumetric_nebula::renderVolumeBitmap() {
 	size = pm->maxs - pm->mins;
 	size *= scaleFactor;
 
+	bb_min = pos - (size * 0.5f);
+	bb_min = pos + (size * 0.5f);
+
 	mc_info mc;
 
 	mc.model_num = modelnum;
 	mc.orient = &vmd_identity_matrix;
 	mc.pos = &vmd_zero_vector;
 	mc.p1 = &vmd_zero_vector;
-	//mc.radius = 0.1f;
 
-	mc.flags = MC_CHECK_MODEL /* | MC_CHECK_SPHERELINE*/ | MC_COLLIDE_ALL | MC_CHECK_INVISIBLE_FACES;
+	mc.flags = MC_CHECK_MODEL | MC_COLLIDE_ALL | MC_CHECK_INVISIBLE_FACES;
 
 	//Calculate minimum "bottom left" corner of scaled size box
 	vec3d bl = pm->mins - (size * ((scaleFactor - 1.0f) / 2.0f / scaleFactor));
@@ -353,7 +368,43 @@ int volumetric_nebula::getNoiseVolumeBitmapHandle() const {
 }
 
 float volumetric_nebula::getAlphaToPos(const vec3d& pnt, float distance_mult) const {
-	return 1.0f;
+	// This pretty much emulates the volumetric shader. This could be slow, so I hope it's not needed too often
+	vec3d ray_direction;
+	vm_vec_normalized_dir(&ray_direction, &pnt, &Eye_position);
+
+	vec3d t1 = (bb_min - Eye_position) / ray_direction;
+	vec3d t2 = (bb_min - Eye_position) / ray_direction;
+
+	float maxTmin = 0;
+	float minTmax = FLT_MAX;
+
+	for (size_t i = 0; i < 3; i++) {
+		std::pair<const float&, const float&> tmin_tmax = t1.a1d[i] < t2.a1d[i] ? 
+			std::pair<const float&, const float&>{t1.a1d[i], t2.a1d[i]} : 
+			std::pair<const float&, const float&>{t2.a1d[i], t1.a1d[i]};
+		
+		maxTmin = MAX(maxTmin, tmin_tmax.first);
+		minTmax = MIN(minTmax, tmin_tmax.second);
+	}
+
+	float alpha = 1.0f;
+	const float stepalpha = getStepalpha();
+	const int n = 1 << resolution;
+	for (float stept = maxTmin; stept < minTmax; stept += getStepsize()) {
+		vec3d localpos = (Eye_position + (ray_direction * stept) - bb_min) / size * static_cast<float>(n);
+		int x = static_cast<int>(localpos.xyz.x);
+		int y = static_cast<int>(localpos.xyz.y);
+		int z = static_cast<int>(localpos.xyz.z);
+		CLAMP(x, 0, n - 1);
+		CLAMP(y, 0, n - 1);
+		CLAMP(z, 0, n - 1);
+		alpha *= 1.0f - (stepalpha * (static_cast<float>(volumeBitmapData[COLOR_3D_ARRAY_POS(n, A, x, y, z)]) / 255.0f));
+
+		if (alpha <= alphaLim)
+			break;
+	}
+
+	return alpha;
 }
 
 void volumetrics_level_close() {

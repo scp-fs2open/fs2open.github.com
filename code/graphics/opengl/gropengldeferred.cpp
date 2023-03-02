@@ -385,17 +385,16 @@ void gr_opengl_deferred_lighting_finish()
 			data->globalLightDirection = global_light ? global_light->vec : vec3d(ZERO_VECTOR);
 			data->globalLightDiffuse = global_light_diffuse;
 			data->nebPos = neb.getPos();
-			//Flip size to match OpenGL component order
 			data->nebSize = neb.getSize();
-			data->stepsize = neb.getVisibility() / static_cast<float>(neb.getSteps());
-			data->globalstepalpha = -(powf(neb.getAlphaLim(), 1.0f / static_cast<float>(neb.getSteps())) - 1.0f);
+			data->stepsize = neb.getStepsize();
+			data->globalstepalpha = neb.getStepalpha();
 			data->alphalimit = neb.getAlphaLim();
 			data->emissiveSpreadFactor = neb.getEmissiveSpread();
 			data->emissiveIntensity = neb.getEmissiveIntensity();
 			data->emissiveFalloff = neb.getEmissiveFalloff();
 			data->henyeyGreensteinCoeff = neb.getHenyeyGreensteinCoeff();
 			data->directionalLightSampleSteps = neb.getGlobalLightSteps();
-			data->directionalLightStepSize = neb.getVisibility() / static_cast<float>(neb.getGlobalLightSteps()) * neb.getGlobalLightDistanceFactor();
+			data->directionalLightStepSize = neb.getGlobalLightStepsize();
 			data->noiseColor[0] = std::get<0>(neb.getNoiseColor());
 			data->noiseColor[1] = std::get<1>(neb.getNoiseColor());
 			data->noiseColor[2] = std::get<2>(neb.getNoiseColor());
