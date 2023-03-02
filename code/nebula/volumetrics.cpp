@@ -258,7 +258,7 @@ void volumetric_nebula::renderVolumeBitmap() {
 	size *= scaleFactor;
 
 	bb_min = pos - (size * 0.5f);
-	bb_min = pos + (size * 0.5f);
+	bb_max = pos + (size * 0.5f);
 
 	mc_info mc;
 
@@ -390,13 +390,11 @@ int volumetric_nebula::getNoiseVolumeBitmapHandle() const {
 float volumetric_nebula::getAlphaToPos(const vec3d& pnt, float distance_mult) const {
 	// This pretty much emulates the volumetric shader. This could be slow, so I hope it's not needed too often
 	vec3d ray_direction;
-	vm_vec_normalized_dir(&ray_direction, &pnt, &Eye_position);
+	float maxTmin = 0;
+	float minTmax = vm_vec_normalized_dir(&ray_direction, &pnt, &Eye_position);
 
 	vec3d t1 = (bb_min - Eye_position) / ray_direction;
-	vec3d t2 = (bb_min - Eye_position) / ray_direction;
-
-	float maxTmin = 0;
-	float minTmax = FLT_MAX;
+	vec3d t2 = (bb_max - Eye_position) / ray_direction;
 
 	for (size_t i = 0; i < 3; i++) {
 		std::pair<const float&, const float&> tmin_tmax = t1.a1d[i] < t2.a1d[i] ? 
@@ -418,12 +416,13 @@ float volumetric_nebula::getAlphaToPos(const vec3d& pnt, float distance_mult) co
 		CLAMP(x, 0, n - 1);
 		CLAMP(y, 0, n - 1);
 		CLAMP(z, 0, n - 1);
-		alpha *= 1.0f - (stepalpha * (static_cast<float>(volumeBitmapData[COLOR_3D_ARRAY_POS(n, A, x, y, z)]) / 255.0f));
+		alpha *= 1.0f - (stepalpha * (static_cast<float>(volumeBitmapData[COLOR_3D_ARRAY_POS(n, A, x, y, z)]) / 255.0f) / distance_mult);
 
 		if (alpha <= alphaLim)
 			break;
 	}
-
+	
+	CLAMP(alpha, 0.0f, 1.0f);
 	return alpha;
 }
 
