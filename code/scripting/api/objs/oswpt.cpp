@@ -69,7 +69,10 @@ void object_ship_wing_point_team::deserialize(lua_State* /*L*/, const scripting:
 	case oswpt_type::WING_NOT_PRESENT: {
 		int wingidx;
 		GET_INT(wingidx);
-		new(data_ptr) object_ship_wing_point_team(&Wings[wingidx]);
+		if((wingidx < 0) || (wingidx >= Num_wings) || (Wings[wingidx].num_waves == -1))
+			new(data_ptr) object_ship_wing_point_team;
+		else
+			new(data_ptr) object_ship_wing_point_team(&Wings[wingidx]);
 		break;
 	}
 	case oswpt_type::SHIP_ON_TEAM:
