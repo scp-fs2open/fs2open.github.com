@@ -204,7 +204,7 @@ const std::tuple<float, float, float>& volumetric_nebula::getNoiseColor() const 
 }
 
 bool volumetric_nebula::isVolumeBitmapValid() const {
-	return volumeBitmapHandle >= 0/* && noiseVolumeBitmapHandle >= 0*/;
+	return volumeBitmapHandle >= 0 && (!getNoiseActive() || noiseVolumeBitmapHandle >= 0);
 }
 
 static anl::CInstructionIndex getDefaultNoise(anl::CKernel& kernel, int seedOffset) {
