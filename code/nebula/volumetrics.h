@@ -60,6 +60,8 @@ class volumetric_nebula {
 	tl::optional<SCP_string> noiseColorFunc1 = tl::nullopt, noiseColorFunc2 = tl::nullopt;
 	//Noise color
 	std::tuple<float, float, float> noiseColor = { 0.0f, 0.0f, 0.0f };
+	//Noise Intensity
+	float noiseColorIntensity = 1.0f;
 
 	//Instance Data
 	int volumeBitmapHandle = -1;
@@ -97,6 +99,7 @@ public:
 	bool getNoiseActive() const;
 	const std::tuple<float, float>& getNoiseColorScale() const;
 	const std::tuple<float, float, float>& getNoiseColor() const;
+	float getNoiseColorIntensity() const;
 
 	bool isVolumeBitmapValid() const;
 	void renderVolumeBitmap();

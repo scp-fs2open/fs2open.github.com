@@ -400,6 +400,7 @@ void gr_opengl_deferred_lighting_finish()
 			data->noiseColor[2] = std::get<2>(neb.getNoiseColor());
 			data->noiseColorScale1 = std::get<0>(neb.getNoiseColorScale());
 			data->noiseColorScale2 = std::get<1>(neb.getNoiseColorScale());
+			data->noiseColorIntensity = neb.getNoiseColorIntensity();
 			});
 
 		opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);

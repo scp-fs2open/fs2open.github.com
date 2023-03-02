@@ -100,6 +100,10 @@ volumetric_nebula::volumetric_nebula() {
 		}
 		noiseColor = { static_cast<float>(rgb[0]) / 255.0f, static_cast<float>(rgb[1]) / 255.0f , static_cast<float>(rgb[2]) / 255.0f };
 
+		if (optional_string("+Intensity:")) {
+			stuff_float(&noiseColorIntensity);
+		}
+
 		if (optional_string("+Function Base:")) {
 			SCP_string func;
 			stuff_string(func, F_RAW);
@@ -201,6 +205,10 @@ const std::tuple<float, float>& volumetric_nebula::getNoiseColorScale() const {
 
 const std::tuple<float, float, float>& volumetric_nebula::getNoiseColor() const {
 	return noiseColor;
+}
+
+float volumetric_nebula::getNoiseColorIntensity() const {
+	return noiseColorIntensity;
 }
 
 bool volumetric_nebula::isVolumeBitmapValid() const {

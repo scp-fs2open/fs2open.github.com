@@ -33,6 +33,7 @@ layout (std140) uniform genericData {
 	float directionalLightStepSize;
 	float noiseColorScale1;
 	float noiseColorScale2;
+	float noiseIntensity;
 };
 
 const float sqrt2_inv = inversesqrt(2);
@@ -118,7 +119,8 @@ void main()
 
 		//Diffuse
 #ifdef NOISE
-		vec3 stepcolor_neb = mix(volume_sample.rgb, noiseColor, (textureGrad(noise_volume_tex, position / noiseColorScale1, gradX, gradY).r + textureGrad(noise_volume_tex, position / noiseColorScale2, gradX, gradY).g) / 2.0 );
+		vec3 stepcolor_neb = mix(volume_sample.rgb, noiseColor,
+			smoothstep(0, 1, (textureGrad(noise_volume_tex, position / noiseColorScale1, gradX, gradY).r + textureGrad(noise_volume_tex, position / noiseColorScale2, gradX, gradY).g) / 2.0 * noiseIntensity));
 #else
 		vec3 stepcolor_neb = volume_sample.rgb;
 #endif
