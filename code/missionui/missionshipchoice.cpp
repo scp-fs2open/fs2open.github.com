@@ -1084,7 +1084,7 @@ void ship_select_blit_ship_info()
 		if(sum != 0)
 			sprintf(str, "%d", sum);
 		else
-			strcpy_s(str, "None");
+			strcpy_s(str, XSTR("None", 1673));
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, str, GR_RESIZE_MENU);
 	}
 	else
@@ -1098,7 +1098,7 @@ void ship_select_blit_ship_info()
 		}
 		else
 		{
-			strcpy_s(str, "None");
+			strcpy_s(str, XSTR("None", 1673));
 		}
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, str, GR_RESIZE_MENU);
 	}
@@ -1120,7 +1120,7 @@ void ship_select_blit_ship_info()
 		}
 		else
 		{
-			strcpy_s(str, "None");
+			strcpy_s(str, XSTR("None", 1673));
 		}
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, str, GR_RESIZE_MENU);
 	}
