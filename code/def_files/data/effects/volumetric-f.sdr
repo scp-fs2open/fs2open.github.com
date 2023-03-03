@@ -114,38 +114,44 @@ void main()
 		float stepcolor_alpha = volume_sample.a;
 #endif
 
-		//Noise - Technically, we need to do edge noise here but I'm not very happy with how it turned out. The cloud needs to be "eroded" by the noise as per the SIGGRAPH talk, but it's unclear as to how that can be achieved.
-		//So for now, don't do edge noise. noise_volume_tex.ba are still reserved for noise data for edge erosion.
-
-		//Diffuse
-#ifdef NOISE
-		//Mix the actual nebula color with the noise color depending on the product of the noise channels multiplied with intensity, smooth-clamped from 0 to 1
-		vec3 stepcolor_neb = mix(volume_sample.rgb, noiseColor,
-			smoothstep(0, 1, (textureGrad(noise_volume_tex, position / noiseColorScale1, gradX, gradY).r + textureGrad(noise_volume_tex, position / noiseColorScale2, gradX, gradY).g) / 2.0 * noiseIntensity));
-#else
-		vec3 stepcolor_neb = volume_sample.rgb;
-#endif
-		vec3 stepcolor_diffuse = stepcolor_neb * henyey_greenstein(dot(rayDirection, globalLightDirection));
-		float directionalLightStep = 4.0 / float(directionalLightSampleSteps);
-		float directionalLightDepth = 0.1;
-		//From the current position in the volumetric cloud, sample towards the sun to test whether or not the current part of the nebula is bright or not
-		for(int dlstep = 1; dlstep <= directionalLightSampleSteps; dlstep++){
-			//TODO Sample these in a cone towards the sun, not just a line. Also add the high-distance sample for concave nebulae
-			vec3 dlsteppos = (position - globalLightDirection * (dlstep * directionalLightStepSize)) / nebSize + 0.5;
-			float dlstepalpha = textureGrad(volume_tex, dlsteppos, gradX, gradY).a * step(0, dlsteppos.x) * step(dlsteppos.x, 1) * step(0, dlsteppos.y) * step(dlsteppos.y, 1) * step(0, dlsteppos.z) * step(dlsteppos.z, 1);
-			directionalLightDepth += dlstepalpha * directionalLightStep;
-		}
-		stepcolor_diffuse *= beer_powder_norm * (1 - exp(-directionalLightDepth * 2.0)) * exp(-directionalLightDepth);
-
-		//Emissive
-		cumnebdist += stepcolor_alpha * stepsize;
-		vec3 emissive_lod = textureLod(emissive, fragTexCoord.xy, clamp(cumnebdist * emissiveSpreadFactor, 0, float(textureQueryLevels(emissive) - 1))).rgb;
-		vec3 stepcolor_emissive = emissive_lod.rgb * pow(1 - globalstepalpha, (depth - stept) * emissiveFalloff) * emissiveIntensity;
-
-		//Step finish
-		vec3 stepcolor = clamp(stepcolor_diffuse + stepcolor_emissive, 0, 1);
 		float stepalpha = globalstepalpha * stepcolor_alpha;
-		cumcolor += stepalpha * cumOMAlpha * stepcolor;
+		//All the following computations are just required if we have a stepcoloralpha that is non-zero.
+		if(stepcolor_alpha > 0.01)
+		{
+			//Noise - Technically, we need to do edge noise here but I'm not very happy with how it turned out. The cloud needs to be "eroded" by the noise as per the SIGGRAPH talk, but it's unclear as to how that can be achieved.
+			//So for now, don't do edge noise. noise_volume_tex.ba are still reserved for noise data for edge erosion.
+
+			//Diffuse
+#ifdef NOISE
+			//Mix the actual nebula color with the noise color depending on the product of the noise channels multiplied with intensity, smooth-clamped from 0 to 1
+			vec3 stepcolor_neb = mix(volume_sample.rgb, noiseColor,
+				smoothstep(0, 1, (textureGrad(noise_volume_tex, position / noiseColorScale1, gradX, gradY).r + textureGrad(noise_volume_tex, position / noiseColorScale2, gradX, gradY).g) / 2.0 * noiseIntensity));
+#else
+			vec3 stepcolor_neb = volume_sample.rgb;
+#endif
+			vec3 stepcolor_diffuse = stepcolor_neb * henyey_greenstein(dot(rayDirection, globalLightDirection));
+			float directionalLightStep = 4.0 / float(directionalLightSampleSteps);
+			float directionalLightDepth = 0.1;
+			//From the current position in the volumetric cloud, sample towards the sun to test whether or not the current part of the nebula is bright or not
+			for(int dlstep = 1; dlstep <= directionalLightSampleSteps; dlstep++){
+				//TODO Sample these in a cone towards the sun, not just a line. Also add the high-distance sample for concave nebulae
+				vec3 dlsteppos = (position - globalLightDirection * (dlstep * directionalLightStepSize)) / nebSize + 0.5;
+				float dlstepalpha = textureGrad(volume_tex, dlsteppos, gradX, gradY).a * step(0, dlsteppos.x) * step(dlsteppos.x, 1) * step(0, dlsteppos.y) * step(dlsteppos.y, 1) * step(0, dlsteppos.z) * step(dlsteppos.z, 1);
+				directionalLightDepth += dlstepalpha * directionalLightStep;
+			}
+			stepcolor_diffuse *= beer_powder_norm * (1 - exp(-directionalLightDepth * 2.0)) * exp(-directionalLightDepth);
+
+			//Emissive
+			cumnebdist += stepcolor_alpha * stepsize;
+			vec3 emissive_lod = textureLod(emissive, fragTexCoord.xy, clamp(cumnebdist * emissiveSpreadFactor, 0, float(textureQueryLevels(emissive) - 1))).rgb;
+			vec3 stepcolor_emissive = emissive_lod.rgb * pow(1 - globalstepalpha, (depth - stept) * emissiveFalloff) * emissiveIntensity;
+
+			//Step finish
+			vec3 stepcolor = clamp(stepcolor_diffuse + stepcolor_emissive, 0, 1);
+			float stepalpha = globalstepalpha * stepcolor_alpha;
+			cumcolor += stepalpha * cumOMAlpha * stepcolor;
+		}
+
 		cumOMAlpha *= 1.0 - stepalpha;
 
 		if(cumOMAlpha < alphalim)
