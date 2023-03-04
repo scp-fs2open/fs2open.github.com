@@ -2291,9 +2291,11 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 		ai_update_lethality(ship_objp, other_obj, damage);
 	}
 
+	// damage scaling due to big damage, supercap, etc
+	float damage_scale = 1.0f; 
 	// if this is a weapon
 	if (other_obj_is_weapon)
-		damage *= weapon_get_damage_scale(&Weapon_info[Weapons[other_obj->instance].weapon_info_index], other_obj, ship_objp);
+		damage_scale = weapon_get_damage_scale(&Weapon_info[Weapons[other_obj->instance].weapon_info_index], other_obj, ship_objp);
 
 	MONITOR_INC( ShipHits, 1 );
 
@@ -2364,7 +2366,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 	// out how much damage is left over.
 	if ( quadrant >= 0 && !(ship_objp->flags[Object::Object_Flags::No_shields]) )	{
 //		mprintf(("applying damage ge to shield\n"));
-		float shield_damage = damage;
+		float shield_damage = damage * damage_scale;
 
 		if ( damage > 0.0f ) {
 			float piercing_pct = 0.0f;
@@ -2406,6 +2408,9 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 
 		// apply damage to subsystems, and get back any remaining damage that needs to go to the hull
 		damage = do_subobj_hit_stuff(ship_objp, other_obj, hitpos, submodel_num, damage, &apply_hull_armor);
+
+		// damage scaling doesn't apply to subsystems, but it does to the hull
+		damage *= damage_scale;
 		
 		// Do armor stuff
 		if (apply_hull_armor && shipp->armor_type_idx != -1)		{			
