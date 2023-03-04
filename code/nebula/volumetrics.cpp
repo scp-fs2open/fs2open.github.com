@@ -275,9 +275,9 @@ void volumetric_nebula::renderVolumeBitmap() {
 	for (int x = 0; x < nSample; x++) {
 		for (int y = 0; y < nSample; y++) {
 			vec3d start = bl;
-			start += vec3d{ {static_cast<float>(x) * size.xyz.x / static_cast<float>(n << (oversampling - 1)),
+			start += vec3d{ {{static_cast<float>(x) * size.xyz.x / static_cast<float>(n << (oversampling - 1)),
 							 static_cast<float>(y) * size.xyz.y / static_cast<float>(n << (oversampling - 1)),
-							 0.0f } };
+							 0.0f }} };
 			vec3d end = start;
 			end.xyz.z += size.xyz.z;
 
@@ -289,10 +289,10 @@ void volumetric_nebula::renderVolumeBitmap() {
 
 			//Annoying hack cause sometimes, if edges of polygons get too close to the ray, the collisions are missed / too many. At least find odd rays and fix those, since these are very visible
 			while (mc.hit_points_all.size() % 2 != 0) {
-				start += vec3d{ { size.xyz.x / static_cast<float>(n << (oversampling - 1)) * (Random::INV_F_MAX_VALUE * Random::next() - 0.5f),
-								  size.xyz.y / static_cast<float>(n << (oversampling - 1)) * (Random::INV_F_MAX_VALUE * Random::next() - 0.5f), 0.0f } };
-				end += vec3d{ { size.xyz.x / static_cast<float>(n << (oversampling - 1)) * (Random::INV_F_MAX_VALUE * Random::next() - 0.5f),
-								size.xyz.y / static_cast<float>(n << (oversampling - 1)) * (Random::INV_F_MAX_VALUE * Random::next() - 0.5f), 0.0f } };
+				start += vec3d{ {{ size.xyz.x / static_cast<float>(n << (oversampling - 1)) * (Random::INV_F_MAX_VALUE * Random::next() - 0.5f),
+								  size.xyz.y / static_cast<float>(n << (oversampling - 1)) * (Random::INV_F_MAX_VALUE * Random::next() - 0.5f), 0.0f }} };
+				end += vec3d{ {{ size.xyz.x / static_cast<float>(n << (oversampling - 1)) * (Random::INV_F_MAX_VALUE * Random::next() - 0.5f),
+								size.xyz.y / static_cast<float>(n << (oversampling - 1)) * (Random::INV_F_MAX_VALUE * Random::next() - 0.5f), 0.0f }} };
 				mc.hit_points_all.clear();
 				mc.hit_submodels_all.clear();
 				model_collide(&mc);
