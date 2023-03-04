@@ -798,7 +798,7 @@ void message_log_init_scrollback(int pw)
 			case LOG_SHIP_SUBSYS_DESTROYED: {
 				int model_index = (int)(entry->index & 0xffff);
 				int idx = ship_name_lookup(entry->pname, 1);
-				const char* subsys_name = ship_subsys_get_name(Ships[idx].subsys_list_indexer[model_index]);
+				const char* subsys_name = ship_subsys_get_name(ship_get_indexed_subsys(&Ships[idx], model_index));
 
 				message_log_add_segs(XSTR("Subsystem ", 410), LOG_COLOR_NORMAL, 0, &thisEntry.actions);
 				message_log_add_segs(subsys_name, LOG_COLOR_BRIGHT, 0, &thisEntry.actions);
