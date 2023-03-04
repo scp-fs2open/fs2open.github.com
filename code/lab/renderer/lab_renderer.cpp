@@ -275,7 +275,7 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 	// (DahBlount) - Remember to load the debris anims
 	stars_load_debris(false);
 
-	if (mission_name != "None") {
+	if (mission_name != LAB_MISSION_NONE_STRING) {
 		read_file_text((mission_name + ".fs2").c_str(), CF_TYPE_MISSIONS);
 		reset_parse();
 

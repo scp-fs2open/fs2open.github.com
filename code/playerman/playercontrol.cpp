@@ -1561,7 +1561,9 @@ int player_inspect_cargo(float frametime, char *outstr)
 	// if cargo is already revealed
 	if ( cargo_sp->flags[Ship::Ship_Flags::Cargo_revealed] ) {
 		if ( !(cargo_sp->flags[Ship::Ship_Flags::Scannable]) ) {
-			char *cargo_name = Cargo_names[cargo_sp->cargo1 & CARGO_INDEX_MASK];
+			auto cargo_name = (cargo_sp->cargo1 & CARGO_INDEX_MASK) == 0
+				? XSTR("Nothing", 1674)
+				: Cargo_names[cargo_sp->cargo1 & CARGO_INDEX_MASK];
             Assert(cargo_sip->flags[Ship::Info_Flags::Cargo] || cargo_sip->flags[Ship::Info_Flags::Transport]);
 
 			if ( cargo_name[0] == '#' ) {
@@ -1661,7 +1663,9 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 	// if cargo is already revealed
 	if (subsys->flags[Ship::Subsystem_Flags::Cargo_revealed]) {
 		if ( !(cargo_sp->flags[Ship::Ship_Flags::Scannable]) ) {
-			char *cargo_name = Cargo_names[subsys->subsys_cargo_name & CARGO_INDEX_MASK];
+			auto cargo_name = (subsys->subsys_cargo_name & CARGO_INDEX_MASK) == 0
+				? XSTR("Nothing", 1674)
+				: Cargo_names[subsys->subsys_cargo_name & CARGO_INDEX_MASK];
 
 			if ( cargo_name[0] == '#' ) {
 				sprintf(outstr, XSTR("passengers: %s", 83), cargo_name+1 );

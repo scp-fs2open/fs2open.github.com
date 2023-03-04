@@ -643,7 +643,9 @@ const char *translate_key(char *key)
 
 	if (!first.empty() && !second.empty()) {
 		strcpy_s(text, first.textify().c_str());
-		strcat_s(text, " or ");
+		strcat_s(text, " ");
+		strcat_s(text, XSTR("or", 1672));
+		strcat_s(text, " ");
 		strcat_s(text, second.textify().c_str());
 
 	} else if (!first.empty()) {
@@ -653,7 +655,7 @@ const char *translate_key(char *key)
 		strcpy_s(text, second.textify().c_str());
 
 	} else {
-			strcpy_s(text, "None");
+			strcpy_s(text, XSTR("None", 1673));
 	}
 
 	return text;
@@ -664,7 +666,7 @@ const char *textify_scancode(int code)
 	static char text[BTN_MSG_LEN];
 
 	if (code < 0)
-		return "None";
+		return XSTR("None", 1673);
 
 	int keycode = code & KEY_MASK;
 
