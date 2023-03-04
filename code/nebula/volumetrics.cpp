@@ -245,8 +245,8 @@ static anl::CInstructionIndex getCustomNoise(anl::CKernel& kernel, const SCP_str
 void volumetric_nebula::renderVolumeBitmap() {
 	Assertion(!isVolumeBitmapValid(), "Volume bitmap was already rendered!");
 
-	size_t n = 1 << resolution;
-	size_t nSample = (n << (oversampling - 1)) + 1;
+	int n = 1 << resolution;
+	int nSample = (n << (oversampling - 1)) + 1;
 	auto volumeSampleCache = make_unique<bool[]>(nSample * nSample * nSample);
 
 	int modelnum = model_load(hullPof.c_str(), 0, nullptr);
@@ -272,8 +272,8 @@ void volumetric_nebula::renderVolumeBitmap() {
 	//Calculate minimum "bottom left" corner of scaled size box
 	vec3d bl = pm->mins - (size * ((scaleFactor - 1.0f) / 2.0f / scaleFactor));
 
-	for (size_t x = 0; x < nSample; x++) {
-		for (size_t y = 0; y < nSample; y++) {
+	for (int x = 0; x < nSample; x++) {
+		for (int y = 0; y < nSample; y++) {
 			vec3d start = bl;
 			start += vec3d{ {static_cast<float>(x) * size.xyz.x / static_cast<float>(n << (oversampling - 1)),
 							 static_cast<float>(y) * size.xyz.y / static_cast<float>(n << (oversampling - 1)),
@@ -298,13 +298,13 @@ void volumetric_nebula::renderVolumeBitmap() {
 				model_collide(&mc);
 			}
 
-			SCP_multiset<size_t> collisionZIndices;
+			SCP_multiset<int> collisionZIndices;
 			for(const vec3d& hitpnt : mc.hit_points_all)
-				collisionZIndices.emplace(static_cast<size_t>((hitpnt.xyz.z - bl.xyz.z) / size.xyz.z * static_cast<float>(n << (oversampling - 1))));
+				collisionZIndices.emplace(static_cast<int>((hitpnt.xyz.z - bl.xyz.z) / size.xyz.z * static_cast<float>(n << (oversampling - 1))));
 
 			size_t hitcnt = 0;
 			auto hitpntit = collisionZIndices.cbegin();
-			for (size_t z = 0; z < nSample; z++) {
+			for (int z = 0; z < nSample; z++) {
 				while (hitpntit != collisionZIndices.cend() && *hitpntit < z) {
 					++hitpntit;
 					++hitcnt;
@@ -318,17 +318,17 @@ void volumetric_nebula::renderVolumeBitmap() {
 
 	volumeBitmapData = make_unique<ubyte[]>(n * n * n * 4);
 	float oversamplingDivisor = 255.0f / static_cast<float>((1 << (oversampling - 1)) + 1);
-	for (size_t x = 0; x < n; x++) {
-		for (size_t y = 0; y < n; y++) {
-			for (size_t z = 0; z < n; z++) {
+	for (int x = 0; x < n; x++) {
+		for (int y = 0; y < n; y++) {
+			for (int z = 0; z < n; z++) {
 				volumeBitmapData[COLOR_3D_ARRAY_POS(n, R, x, y, z)] = static_cast<ubyte>(std::get<0>(nebulaColor) * 255.0f);
 				volumeBitmapData[COLOR_3D_ARRAY_POS(n, G, x, y, z)] = static_cast<ubyte>(std::get<1>(nebulaColor) * 255.0f);
 				volumeBitmapData[COLOR_3D_ARRAY_POS(n, B, x, y, z)] = static_cast<ubyte>(std::get<2>(nebulaColor) * 255.0f);
 				
 				float sum = 0.0f;
-				for (size_t sx = x * oversampling; sx <= (x + 1) * oversampling; sx++) {
-					for (size_t sy = y * oversampling; sy <= (y + 1) * oversampling; sy++) {
-						for (size_t sz = z * oversampling; sz <= (z + 1) * oversampling; sz++) {
+				for (int sx = x * oversampling; sx <= (x + 1) * oversampling; sx++) {
+					for (int sy = y * oversampling; sy <= (y + 1) * oversampling; sy++) {
+						for (int sz = z * oversampling; sz <= (z + 1) * oversampling; sz++) {
 							if (volumeSampleCache[sx * nSample * nSample + sy * nSample + sz])
 								sum += 1.0f;
 						}
