@@ -324,7 +324,7 @@ struct volumetric_fog_data {
 	float directionalLightStepSize;
 	float noiseColorScale1, noiseColorScale2;
 	float noiseColorIntensity;
-	float pad[2];
+	float aspect, fov;
 };
 
 struct blur_data {

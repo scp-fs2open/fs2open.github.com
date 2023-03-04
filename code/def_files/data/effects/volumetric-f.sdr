@@ -34,9 +34,10 @@ layout (std140) uniform genericData {
 	float noiseColorScale1;
 	float noiseColorScale2;
 	float noiseIntensity;
+	float aspect;
+	float fov;
 };
 
-const float sqrt2_inv = inversesqrt(2);
 const float sqrt4pi_inv = inversesqrt(4.0 * 3.14159);
 const float beer_powder_norm = 3.0/2.0 * sqrt(3.0);
 
@@ -68,7 +69,9 @@ void main()
 	vec3 tMin = min(t1, t2);
 	vec3 tMax = max(t1, t2);
 
-	float depth = 2.0 * zNear * zFar / (zFar + zNear - (2 * texture(depth, fragTexCoord.xy).x - 1) * (zFar - zNear));
+	vec2 fragcoordAngle = (fragTexCoord.xy - 0.5) * fov;
+	fragcoordAngle.x *= aspect;
+	float depth = (2.0 * zNear * zFar / (zFar + zNear - (2 * texture(depth, fragTexCoord.xy).x - 1) * (zFar - zNear))) * sqrt(1.0 + tan(fragcoordAngle.x) * tan(fragcoordAngle.x) + tan(fragcoordAngle.y) * tan(fragcoordAngle.y));
 
 	//The t at which the ray enters the nebula cube
 	float maxtMin = max(0,max(tMin.x, max(tMin.y, tMin.z)));
