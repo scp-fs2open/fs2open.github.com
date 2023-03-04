@@ -55,8 +55,10 @@ extern SCP_vector<message_extra> Message_waves;
 // define used for sender of a message when you want it to be Terran Command
 #define DEFAULT_COMMAND			"Command"
 
-// defines for message id's used in FreeSpace code.  Callers to message_send_to_player() should
-// probably use these defines.
+extern SCP_vector<SCP_string> Builtin_moods;
+extern int Current_mission_mood;
+
+// Builtin messages
 
 typedef struct builtin_message {
 	const char		*name;
@@ -65,59 +67,75 @@ typedef struct builtin_message {
 	int				min_delay;
 } builtin_message;
 
-extern SCP_vector<SCP_string> Builtin_moods;
-extern int Current_mission_mood;
+#define BUILTIN_MESSAGE_TYPES                                            \
+/* Orders */                                                             \
+X(MESSAGE_ATTACK_TARGET,       "Attack Target",        100, -1,  0),     \
+X(MESSAGE_DISABLE_TARGET,      "Disable Target",       100, -1,  0),     \
+X(MESSAGE_DISARM_TARGET,       "Disarm Target",        100, -1,  0),     \
+X(MESSAGE_IGNORE,              "Ignore Target",        100, -1,  0),     \
+X(MESSAGE_ENGAGE,              "Engage",               100, -1,  0),     \
+X(MESSAGE_WARP_OUT,            "Depart",               100, -1,  0),     \
+X(MESSAGE_DOCK_YES,            "Docking Start",        100, -1,  0),     \
+X(MESSAGE_YESSIR,              "Yes",                  100, -1,  0),     \
+X(MESSAGE_NOSIR,               "No",                   100, -1,  0),     \
+X(MESSAGE_NO_TARGET,           "No Target",            100, -1,  0),     \
+                                                                         \
+/* Friendly arrival */                                                   \
+X(MESSAGE_BETA_ARRIVED,        "Beta Arrived",         100, -1,  0),     \
+X(MESSAGE_GAMMA_ARRIVED,       "Gamma Arrived",        100, -1,  0),     \
+X(MESSAGE_DELTA_ARRIVED,       "Delta Arrived",        100, -1,  0),     \
+X(MESSAGE_EPSILON_ARRIVED,     "Epsilon Arrived",      100, -1,  0),     \
+X(MESSAGE_REINFORCEMENTS,      "Backup",               100, -1,  0),     \
+                                                                         \
+/* Player status */                                                      \
+X(MESSAGE_CHECK_6,             "Check 6",              100,  2,  6000),  \
+X(MESSAGE_PLAYER_DIED,         "Player Dead",          100, -1,  0),     \
+X(MESSAGE_PRAISE,              "Praise",               100, 10,  60000), \
+X(MESSAGE_HIGH_PRAISE,         "High Praise",          100, -1,  0),     \
+                                                                         \
+/* Wingmate status */                                                    \
+X(MESSAGE_HELP,                "Help",                 100, 10,  60000), \
+X(MESSAGE_WINGMAN_SCREAM,      "Death",                 50, 10,  60000), \
+X(MESSAGE_PRAISE_SELF,         "Praise Self",           10,  4,  60000), \
+X(MESSAGE_REARM_REQUEST,       "Rearm",                100, -1,  0),     \
+X(MESSAGE_REPAIR_REQUEST,      "Repair",               100, -1,  0),     \
+X(MESSAGE_PRIMARIES_LOW,       "Primaries Low",        100, -1,  0),     \
+X(MESSAGE_REARM_PRIMARIES,     "Rearm Primaries",      100, -1,  0),     \
+                                                                         \
+/* Support status */                                                     \
+X(MESSAGE_REARM_WARP,          "Rearm Warping In",     100, -1,  0),     \
+X(MESSAGE_ON_WAY,              "On Way",               100, -1,  0),     \
+X(MESSAGE_REARM_ON_WAY,        "Rearm On Way",         100, -1,  0),     \
+X(MESSAGE_REPAIR_DONE,         "Repair Done",          100, -1,  0),     \
+X(MESSAGE_REPAIR_ABORTED,      "Repair Aborted",       100, -1,  0),     \
+X(MESSAGE_SUPPORT_KILLED,      "Support Killed",       100, -1,  0),     \
+                                                                         \
+/* Global status */                                                      \
+X(MESSAGE_ALL_ALONE,           "All Alone",            100, -1,  0),     \
+X(MESSAGE_ARRIVE_ENEMY,        "Arrive Enemy",         100, -1,  0),     \
+X(MESSAGE_OOPS,                "Oops 1",               100, -1,  0),     \
+X(MESSAGE_HAMMER_SWINE,        "Traitor",              100, -1,  0),     \
+                                                                         \
+/* Misc */                                                               \
+X(MESSAGE_AWACS_75,            "AWACS at 75",          100, -1,  0),     \
+X(MESSAGE_AWACS_25,            "AWACS at 25",          100, -1,  0),     \
+X(MESSAGE_STRAY_WARNING,       "Stray Warning",        100, -1,  0),     \
+X(MESSAGE_STRAY_WARNING_FINAL, "Stray Warning Final",  100, -1,  0),     \
+X(MESSAGE_INSTRUCTOR_HIT,      "Instructor Hit",       100, -1,  0),     \
+X(MESSAGE_INSTRUCTOR_ATTACK,   "Instructor Attack",    100, -1,  0),     \
+                                                                         \
+/* Unused */                                                             \
+X(MESSAGE_ALL_CLEAR,           "All Clear",            100, -1,  0),     \
+X(MESSAGE_PERMISSION,          "Permission",           100, -1,  0),     \
+X(MESSAGE_STRAY,               "Stray",                100, -1,  0)
 
-// this number in this define should match the number of elements in the next array
-#define MAX_BUILTIN_MESSAGE_TYPES	45
+enum {
+  #define X(NAME, ...) NAME
+	NO_MESSAGE = -1, BUILTIN_MESSAGE_TYPES, MAX_BUILTIN_MESSAGE_TYPES
+	#undef X
+};
 
-extern builtin_message Builtin_messages[];
-
-#define MESSAGE_ARRIVE_ENEMY		0
-#define MESSAGE_ATTACK_TARGET		1
-#define MESSAGE_BETA_ARRIVED		2
-#define MESSAGE_CHECK_6				3
-#define MESSAGE_ENGAGE				4
-#define MESSAGE_GAMMA_ARRIVED		5
-#define MESSAGE_HELP				6
-#define MESSAGE_PRAISE				7
-#define MESSAGE_REINFORCEMENTS		8
-#define MESSAGE_IGNORE				9
-#define MESSAGE_NOSIR				10
-#define MESSAGE_OOPS				11
-#define MESSAGE_PERMISSION			12
-#define MESSAGE_STRAY				13
-#define MESSAGE_WARP_OUT			14
-#define MESSAGE_YESSIR				15
-#define MESSAGE_REARM_ON_WAY		16
-#define MESSAGE_ON_WAY				17
-#define MESSAGE_REARM_WARP			18
-#define MESSAGE_NO_TARGET			19
-#define MESSAGE_DOCK_YES			20
-#define MESSAGE_REPAIR_DONE			21
-#define MESSAGE_REPAIR_ABORTED		22
-#define MESSAGE_HAMMER_SWINE		23
-#define MESSAGE_REARM_REQUEST		24		// wingman messages player when he calls a support ship
-#define MESSAGE_DISABLE_TARGET		25
-#define MESSAGE_DISARM_TARGET		26
-#define MESSAGE_PLAYER_DIED			27		// message sent when player starts death roll
-#define MESSAGE_WINGMAN_SCREAM		28
-#define MESSAGE_SUPPORT_KILLED		29
-#define MESSAGE_ALL_CLEAR			30
-#define MESSAGE_ALL_ALONE			31		// message sent when player is last ship left and primary objectives still exist
-#define MESSAGE_REPAIR_REQUEST		32
-#define MESSAGE_DELTA_ARRIVED		33
-#define MESSAGE_EPSILON_ARRIVED		34
-#define MESSAGE_INSTRUCTOR_HIT		35
-#define MESSAGE_INSTRUCTOR_ATTACK	36
-#define MESSAGE_STRAY_WARNING		37
-#define MESSAGE_STRAY_WARNING_FINAL		38
-#define MESSAGE_AWACS_75			39
-#define MESSAGE_AWACS_25			40
-#define MESSAGE_PRAISE_SELF			41
-#define MESSAGE_HIGH_PRAISE			42
-#define MESSAGE_REARM_PRIMARIES		43
-#define MESSAGE_PRIMARIES_LOW		44
+extern builtin_message Builtin_messages[MAX_BUILTIN_MESSAGE_TYPES];
 
 typedef struct MissionMessage {
 	char	name[NAME_LENGTH];					// used to identify this message

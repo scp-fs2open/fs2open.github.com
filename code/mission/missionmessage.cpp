@@ -44,60 +44,10 @@ SCP_vector<SCP_string> Builtin_moods;
 int Current_mission_mood;
 
 int Valid_builtin_message_types[MAX_BUILTIN_MESSAGE_TYPES];
-// here is the list of the builtin message names and the settings which control how frequently
-// they are heard.  These names are used to match against names read in for builtin message
-// radio bits to see what message to play.
-// These are generic names, meaning that there will be the same message type for a
-// number of different personas
-builtin_message Builtin_messages[] =
-{
-//XSTR:OFF
-	{"Arrive Enemy",			100,	-1,		0}, 
-	{"Attack Target",			100,	-1,		0}, 
-	{"Beta Arrived",			100,	-1,		0}, 
-	{"Check 6",					100,	2,		6000}, 
-	{"Engage",					100,	-1,		0}, 
-	{"Gamma Arrived",			100,	-1,		0}, 
-	{"Help",					100,	10,		60000}, 
-	{"Praise",					100,	10,		60000}, 
-	{"Backup",					100,	-1,		0}, 
-	{"Ignore Target",			100,	-1,		0}, 
-	{"No",						100,	-1,		0}, 
-	{"Oops 1",					100,	-1,		0}, 
-	{"Permission",				100,	-1,		0}, 		// AL: no code support yet
-	{"Stray",					100,	-1,		0}, 			// DA: no code support
-	{"Depart",					100,	-1,		0}, 
-	{"yes",						100,	-1,		0}, 
-	{"Rearm on Way",			100,	-1,		0}, 
-	{"On way",					100,	-1,		0}, 
-	{"Rearm warping in",		100,	-1,		0}, 
-	{"No Target",				100,	-1,		0}, 
-	{"Docking Start",			100,	-1,		0}, 		// AL: no message seems to exist for this
-	{"Repair Done",				100,	-1,		0}, 
-	{"Repair Aborted",			100,	-1,		0}, 
-	{"Traitor",					100,	-1,		0}, 
-	{"Rearm",					100,	-1,		0}, 
-	{"Disable Target",			100,	-1,		0}, 
-	{"Disarm Target",			100,	-1,		0}, 
-	{"Player Dead",				100,	-1,		0}, 
-	{"Death",					50,		10,		60000}, 
-	{"Support Killed",			100,	-1,		0}, 
-	{"All Clear",				100,	-1,		0}, 			// DA: no code support
-	{"All Alone",				100,	-1,		0}, 
-	{"Repair",					100,	-1,		0}, 
-	{"Delta Arrived",			100,	-1,		0}, 
-	{"Epsilon Arrived",			100,	-1,		0}, 
-	{"Instructor Hit",			100,	-1,		0}, 
-	{"Instructor Attack",		100,	-1,		0}, 
-	{"Stray Warning",			100,	-1,		0}, 
-	{"Stray Warning Final",		100,	-1,		0}, 
-	{"AWACS at 75",				100,	-1,		0}, 
-	{"AWACS at 25",				100,	-1,		0}, 
-	{"Praise Self",				10,		4,		60000}, 
-	{"High Praise",				100,	-1,		0}, 
-	{"Rearm Primaries",			100,	-1,		0}, 
-	{"Primaries Low",			100,	-1,		0}, 
-	//XSTR:ON
+builtin_message Builtin_messages[] = {
+  #define X(NAME, ...) { __VA_ARGS__ }
+	BUILTIN_MESSAGE_TYPES
+	#undef X
 };
 
 SCP_vector<MMessage> Messages;
