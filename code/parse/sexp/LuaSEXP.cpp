@@ -663,7 +663,7 @@ void LuaSEXP::parseTable() {
 		}
 		bool parent_required = false;
 		for (int i = 0; i < (int)parent_parameter_required.size(); i++) {
-			if (strcmp(type.first.c_str(), parent_parameter_required[i].c_str()) == 0) {
+			if (type.first == parent_parameter_required[i]) {
 				parent_required = true;
 				break;
 			}
@@ -680,7 +680,7 @@ void LuaSEXP::parseTable() {
 
 			if (this_index >= (param_index + 1)) {
 				error_display(1,
-					"Ship Paramater Index '%i' cannot be greater or equal to %i (the current parameter index)!\n",
+					"Ship Parameter Index '%i' cannot be greater or equal to %i (the current parameter index)!\n",
 					this_index,
 					param_index + 1);
 			}
@@ -690,7 +690,7 @@ void LuaSEXP::parseTable() {
 			// check if this operator already has an entry for dynamic parameters
 			int dyn_index = -1;
 			for (int i = 0; i < (int)Dynamic_parameters.size(); i++) {
-				if (!stricmp(Dynamic_parameters[i].operator_name.c_str(), _name.c_str())) {
+				if (SCP_string_lcase_equal_to()(Dynamic_parameters[i].operator_name, _name)) {
 					dyn_index = i;
 				}
 			}

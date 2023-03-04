@@ -901,14 +901,14 @@ SCP_vector<dynamic_sexp_enum_list> Dynamic_enums;
 
 SCP_vector<dynamic_sexp_parameter_list> Dynamic_parameters;
 
-int get_dynamic_parameter_index(SCP_string op_name, int param)
+int get_dynamic_parameter_index(const SCP_string &op_name, int param)
 {
 	for (int i = 0; i < (int)Dynamic_parameters.size(); i++) {
-		if (!stricmp(Dynamic_parameters[i].operator_name.c_str(), op_name.c_str())) {
+		if (SCP_string_lcase_equal_to()(Dynamic_parameters[i].operator_name, op_name)) {
 
 			// Make sure there are actually parameters for this operator
-			if ((int)Dynamic_parameters[i].parameter_map.size() > 0) {
-
+			if (!Dynamic_parameters[i].parameter_map.empty()) {
+				
 				// Now we know what sexp we're working with, let's find the parameter
 				for (int j = 0; j < (int)Dynamic_parameters[i].parameter_map.size(); j++) {
 

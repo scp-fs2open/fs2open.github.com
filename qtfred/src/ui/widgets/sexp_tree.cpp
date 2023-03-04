@@ -4245,7 +4245,7 @@ sexp_list_item* sexp_tree::get_listing_opf_ai_goal(int parent_node) {
 	return head.next;
 }
 
-sexp_list_item* sexp_tree::get_listing_opf_docker_point(int parent_node, int argnum) {
+sexp_list_item* sexp_tree::get_listing_opf_docker_point(int parent_node, int arg_num) {
 	int z;
 	sexp_list_item head;
 	int sh = -1;

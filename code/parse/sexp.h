@@ -158,7 +158,7 @@ struct dynamic_sexp_parameter_list {
 
 extern SCP_vector<dynamic_sexp_parameter_list> Dynamic_parameters;
 
-int get_dynamic_parameter_index(SCP_string op_name, int param);
+int get_dynamic_parameter_index(const SCP_string &op_name, int param);
 
 int get_dynamic_enum_position(SCP_string enum_name);
 
