@@ -10,7 +10,7 @@ Token::Token(const Token &rhs)
 }
 Token::~Token() {}
 
-const Token::ETokenTypes Token::GetType() const
+Token::ETokenTypes Token::GetType() const
 {
     return type_;
 }
