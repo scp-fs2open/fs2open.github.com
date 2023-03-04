@@ -6,6 +6,12 @@
 #include <memory>
 #include <tl/optional.hpp>
 
+namespace fso {
+	namespace fred {
+		class CFred_mission_save;
+	}
+}
+
 class volumetric_nebula {
 	//Instance Settings
 	
@@ -70,8 +76,10 @@ class volumetric_nebula {
 	int noiseVolumeBitmapHandle = -1;
 	std::unique_ptr<ubyte[]> noiseVolumeBitmapData = nullptr;
 
-	friend class LabUi;
-
+	//Friend things that are allowed to directly manipulate "current" volumetrics. Only FRED and the Lab. In all other cases, "sensibly constant" values behave properly RAII and stay constant afterwards.
+	friend class LabUi; //Lab
+	friend class CFred_mission_save; //FRED
+	friend class fso::fred::CFred_mission_save; //QtFRED
 public:
 	volumetric_nebula();
 	~volumetric_nebula();
