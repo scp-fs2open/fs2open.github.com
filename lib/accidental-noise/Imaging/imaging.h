@@ -99,7 +99,7 @@ struct SChunk
     CInstructionIndex at;
     double z;
 
-    SChunk(CInstructionIndex a) : at(a) {}
+    SChunk(CInstructionIndex a_) : at(a_) {}
 };
 
 struct SChunk3D
@@ -112,7 +112,7 @@ struct SChunk3D
     SMappingRanges ranges;
     CInstructionIndex at;
 
-    SChunk3D(CInstructionIndex a) : at(a) {}
+    SChunk3D(CInstructionIndex a_) : at(a_) {}
 };
 
 struct SRGBAChunk
@@ -126,7 +126,7 @@ struct SRGBAChunk
     double z;
     CInstructionIndex at;
 
-    SRGBAChunk(CInstructionIndex a) : at(a) {}
+    SRGBAChunk(CInstructionIndex a_) : at(a_) {}
 };
 
 void map2D(int seamlessmode, CArray2Dd &a, CKernel &k, SMappingRanges ranges, double z, CInstructionIndex at);
