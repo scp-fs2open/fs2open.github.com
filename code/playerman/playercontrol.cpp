@@ -1487,12 +1487,12 @@ int player_process_pending_praise()
 			// Only praise if above 50% integrity
 			if ( get_hull_pct(&Objects[Ships[ship_index].objnum]) > 0.5f ) {
 				// This cutoff should probably be in the AI profile or mission file rather than hardcoded
-			  auto message = (Player->stats.m_kill_count_ok > 10) ? MESSAGE_HIGH_PRAISE : MESSAGE_PRAISE;
+				auto message = (Player->stats.m_kill_count_ok > 10) ? MESSAGE_HIGH_PRAISE : MESSAGE_PRAISE;
 				if (message_send_builtin_to_player(message, &Ships[ship_index], 0, 0, -1, -1)) {
-				  Player->allow_praise_timestamp = timestamp(Builtin_messages[MESSAGE_PRAISE].min_delay * (Game_skill_level+1) );
-				  Player->allow_scream_timestamp = timestamp(20000);		// prevent death scream following praise
-				  Player->praise_count++;
-				  return 1;
+					Player->allow_praise_timestamp = timestamp(Builtin_messages[MESSAGE_PRAISE].min_delay * (Game_skill_level+1) );
+					Player->allow_scream_timestamp = timestamp(20000);		// prevent death scream following praise
+					Player->praise_count++;
+					return 1;
 				}
 			}
 		}
