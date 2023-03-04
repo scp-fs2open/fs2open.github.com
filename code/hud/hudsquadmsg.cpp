@@ -1142,7 +1142,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 				ai_mode = AI_GOAL_DESTROY_SUBSYSTEM;
 				ai_submode = ship_find_subsys( &Ships[Objects[ainfo->target_objnum].instance], ainfo->targeted_subsys->system_info->subobj_name );
 				special_index = ai_submode;
-				message = MESSAGE_ATTACK_TARGET;
+				message = MESSAGE_ATTACK_SUBSYSTEM;
 				break;
 
 			case CAPTURE_TARGET_ITEM:
@@ -1171,7 +1171,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 
 				ai_mode = AI_GOAL_GUARD;
 				ai_submode = AIS_GUARD_PATROL;
-				message = MESSAGE_YESSIR;
+				message = MESSAGE_PROTECT_TARGET;
 				break;
 
 			case IGNORE_TARGET_ITEM:
@@ -1184,7 +1184,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 				break;
 
 			case FORMATION_ITEM:
-				message = MESSAGE_YESSIR;
+				message = MESSAGE_FORM_ON_MY_WING;
 				target_shipname = ordering_shipp->ship_name;
 				ai_mode = AI_GOAL_FORM_ON_WING;
 				ai_submode = 0;
@@ -1194,7 +1194,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 				ai_mode = AI_GOAL_GUARD;
 				ai_submode = AIS_GUARD_PATROL;
 				target_shipname = ordering_shipp->ship_name;
-				message = MESSAGE_YESSIR;
+				message = MESSAGE_COVER_ME;
 				break;
 
 			case ENGAGE_ENEMY_ITEM:
@@ -1434,7 +1434,7 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 
 				ai_mode = AI_GOAL_GUARD;
 				ai_submode = AIS_GUARD_PATROL;
-				message = MESSAGE_YESSIR;
+				message = MESSAGE_PROTECT_TARGET;
 				break;
 
 			case IGNORE_TARGET_ITEM:
@@ -1447,7 +1447,7 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 				break;
 
 			case FORMATION_ITEM:
-				message = MESSAGE_YESSIR;
+				message = MESSAGE_FORM_ON_MY_WING;
 				target_shipname = ordering_shipp->ship_name;
 				ai_mode = AI_GOAL_FORM_ON_WING;
 				ai_submode = 0;
@@ -1457,7 +1457,7 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 				ai_mode = AI_GOAL_GUARD;
 				ai_submode = AIS_GUARD_PATROL;
 				target_shipname = ordering_shipp->ship_name;
-				message = MESSAGE_YESSIR;
+				message = MESSAGE_COVER_ME;
 				break;
 
 			case ENGAGE_ENEMY_ITEM:
