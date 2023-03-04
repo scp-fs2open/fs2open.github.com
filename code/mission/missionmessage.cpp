@@ -44,60 +44,17 @@ SCP_vector<SCP_string> Builtin_moods;
 int Current_mission_mood;
 
 int Valid_builtin_message_types[MAX_BUILTIN_MESSAGE_TYPES];
-// here is the list of the builtin message names and the settings which control how frequently
-// they are heard.  These names are used to match against names read in for builtin message
-// radio bits to see what message to play.
-// These are generic names, meaning that there will be the same message type for a
-// number of different personas
-builtin_message Builtin_messages[] =
-{
-//XSTR:OFF
-	{"Arrive Enemy",			100,	-1,		0}, 
-	{"Attack Target",			100,	-1,		0}, 
-	{"Beta Arrived",			100,	-1,		0}, 
-	{"Check 6",					100,	2,		6000}, 
-	{"Engage",					100,	-1,		0}, 
-	{"Gamma Arrived",			100,	-1,		0}, 
-	{"Help",					100,	10,		60000}, 
-	{"Praise",					100,	10,		60000}, 
-	{"Backup",					100,	-1,		0}, 
-	{"Ignore Target",			100,	-1,		0}, 
-	{"No",						100,	-1,		0}, 
-	{"Oops 1",					100,	-1,		0}, 
-	{"Permission",				100,	-1,		0}, 		// AL: no code support yet
-	{"Stray",					100,	-1,		0}, 			// DA: no code support
-	{"Depart",					100,	-1,		0}, 
-	{"yes",						100,	-1,		0}, 
-	{"Rearm on Way",			100,	-1,		0}, 
-	{"On way",					100,	-1,		0}, 
-	{"Rearm warping in",		100,	-1,		0}, 
-	{"No Target",				100,	-1,		0}, 
-	{"Docking Start",			100,	-1,		0}, 		// AL: no message seems to exist for this
-	{"Repair Done",				100,	-1,		0}, 
-	{"Repair Aborted",			100,	-1,		0}, 
-	{"Traitor",					100,	-1,		0}, 
-	{"Rearm",					100,	-1,		0}, 
-	{"Disable Target",			100,	-1,		0}, 
-	{"Disarm Target",			100,	-1,		0}, 
-	{"Player Dead",				100,	-1,		0}, 
-	{"Death",					50,		10,		60000}, 
-	{"Support Killed",			100,	-1,		0}, 
-	{"All Clear",				100,	-1,		0}, 			// DA: no code support
-	{"All Alone",				100,	-1,		0}, 
-	{"Repair",					100,	-1,		0}, 
-	{"Delta Arrived",			100,	-1,		0}, 
-	{"Epsilon Arrived",			100,	-1,		0}, 
-	{"Instructor Hit",			100,	-1,		0}, 
-	{"Instructor Attack",		100,	-1,		0}, 
-	{"Stray Warning",			100,	-1,		0}, 
-	{"Stray Warning Final",		100,	-1,		0}, 
-	{"AWACS at 75",				100,	-1,		0}, 
-	{"AWACS at 25",				100,	-1,		0}, 
-	{"Praise Self",				10,		4,		60000}, 
-	{"High Praise",				100,	-1,		0}, 
-	{"Rearm Primaries",			100,	-1,		0}, 
-	{"Primaries Low",			100,	-1,		0}, 
-	//XSTR:ON
+builtin_message Builtin_messages[] = {
+  #define X(_, NAME, CHANCE, COUNT, DELAY, PRIORITY, TIME) { \
+    NAME,                                                    \
+    CHANCE,                                                  \
+    COUNT,                                                   \
+    DELAY,                                                   \
+    MESSAGE_PRIORITY_ ## PRIORITY,                           \
+    MESSAGE_TIME_ ## TIME                                    \
+  }
+  BUILTIN_MESSAGE_TYPES
+  #undef X
 };
 
 SCP_vector<MMessage> Messages;
@@ -1968,7 +1925,7 @@ typedef	struct matching_builtin {
 // send builtin_to_player sends a message (from messages.tbl) to the player.  These messages are
 // the generic informational type messages.  The have priorities like misison specific messages,
 // and use a timing to tell how long we should wait before playing this message
-void message_send_builtin_to_player( int type, ship *shipp, int priority, int timing, int group, int delay, int multi_target, int multi_team_filter )
+void message_send_builtin_to_player(int type, ship *shipp, int group, int delay, int multi_target, int multi_team_filter)
 {
 	int i, persona_index = -1, persona_species_bitfield = -1, message_index = -1, random_selection = -1;
 	int source;
@@ -1978,7 +1935,6 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 
 	matching_builtin current_builtin;
 	SCP_vector <matching_builtin> matching_builtins; 
-
 
 	// if we aren't showing builtin msgs, bail
 	if (The_mission.flags[Mission::Mission_Flags::No_builtin_msgs])
@@ -2006,6 +1962,8 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 			return;
 		}
 	}
+	int priority = Builtin_messages[type].priority;
+	int timing = Builtin_messages[type].timing;
 
 	// see if there is a persona assigned to this ship.  If not, then try to assign one!!!
 	if ( shipp ) {
