@@ -160,7 +160,7 @@ extern SCP_vector<dynamic_sexp_parameter_list> Dynamic_parameters;
 
 int get_dynamic_parameter_index(const SCP_string &op_name, int param);
 
-int get_dynamic_enum_position(SCP_string enum_name);
+int get_dynamic_enum_position(const SCP_string &enum_name);
 
 // Operand return types
 #define	OPR_NUMBER				1	// returns number

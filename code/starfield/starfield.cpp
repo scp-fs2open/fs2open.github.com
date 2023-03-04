@@ -1863,16 +1863,25 @@ void stars_draw_stars()
 		vDst.x = fl2i(p1.screen.xyw.x) - fl2i(p2.screen.xyw.x);
 		vDst.y = fl2i(p1.screen.xyw.y) - fl2i(p2.screen.xyw.y);
 
-		if ( ((vDst.x * vDst.x) + (vDst.y * vDst.y)) <= 4 ) {
+		float len = sqrtf((float)((vDst.x * vDst.x) + (vDst.y * vDst.y)));
+
+		color col = sp->col;
+		if (len <= 2.0f ) {
 			p1.screen.xyw.x = p2.screen.xyw.x + 1.0f;
 			p1.screen.xyw.y = p2.screen.xyw.y;
+		} else {
+			// gamma correction
+			col.red = (ubyte)((float)col.red / powf(len, 1.0f / 2.2f));
+			col.green = (ubyte)((float)col.green / powf(len, 1.0f / 2.2f));
+			col.blue = (ubyte)((float)col.blue / powf(len, 1.0f / 2.2f));
+			col.alpha = (ubyte)((float)col.alpha  / powf(len, 1.0f / 2.2f));
 		}
 		path->beginPath();
 
 		path->moveTo(p1.screen.xyw.x, p1.screen.xyw.y);
 		path->lineTo(p2.screen.xyw.x, p2.screen.xyw.y);
 
-		path->setStrokeColor(&sp->col);
+		path->setStrokeColor(&col);
 		path->stroke();
 	}
 	path->endFrame();

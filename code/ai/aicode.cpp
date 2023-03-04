@@ -878,6 +878,8 @@ void parse_ai_class()
 	set_aic_flag(aicp, "$ai can slow down when attacking big ships:", AI::Profile_Flags::Ai_can_slow_down_attacking_big_ships);
 
 	set_aic_flag(aicp, "$use actual primary range:", AI::Profile_Flags::Use_actual_primary_range);
+
+	set_aic_flag(aicp, "$firing requires exact los:", AI::Profile_Flags::Require_exact_los);
 }
 
 void reset_ai_class_names()
@@ -1363,6 +1365,15 @@ void ai_turn_towards_vector(vec3d* dest, object* objp, vec3d* slide_vec, vec3d* 
 	// for formation flying
 	if ((flags & AITTV_SLOW_BANK_ACCEL)) {
 		acc_limit.xyz.z *= 0.2f;
+	}
+
+	// finally, maybe override the limits based on some ship flags
+	if (objp->type == OBJ_SHIP) {
+		ship_info* sip = &Ship_info[Ships[objp->instance].ship_info_index];
+		if (sip->flags[Ship::Info_Flags::Dont_clamp_max_velocity])
+			vel_limit = vm_vec_new(200.0f, 200.0f, 200.0f); // 200 rad/s should be enough to get anywhere within a 1/60th of a second
+		if (sip->flags[Ship::Info_Flags::Instantaneous_acceleration])
+			acc_limit = vm_vec_new(12000.0f, 12000.0f, 12000.0f); // enough to get to 200 rad/s in 1/60th of a second
 	}
 
 	src = objp->pos;
@@ -7357,11 +7368,9 @@ int avoid_player(object *objp, vec3d *goal_pos)
 //	If so, stuff *collision_point.
 int will_collide_pp(vec3d *p0, vec3d *p1, float radius, object *big_objp, vec3d *collision_point)
 {
-	mc_info	mc;
-	mc_info_init(&mc);
-
 	polymodel *pm = model_get(Ship_info[Ships[big_objp->instance].ship_info_index].model_num);
 
+	mc_info	mc;
 	mc.model_instance_num = -1;
 	mc.model_num = pm->id;				// Fill in the model to check
 	mc.orient = &big_objp->orient;			// The object's orient
@@ -16522,8 +16531,6 @@ bool test_line_of_sight(vec3d* from, vec3d* to, std::unordered_set<const object*
 		}
 
 		mc_info hull_check;
-		mc_info_init(&hull_check);
-
 		hull_check.model_instance_num = model_instance_num;
 		hull_check.model_num = model_num;
 		hull_check.orient = &objp->orient;

@@ -938,10 +938,10 @@ int get_dynamic_parameter_index(const SCP_string &op_name, int param)
 	return -1;
 }
 
-int get_dynamic_enum_position(SCP_string enum_name)
+int get_dynamic_enum_position(const SCP_string &enum_name)
 {
 	for (int i = 0; i < (int)Dynamic_enums.size(); i++) {
-		if (!stricmp(enum_name.c_str(), Dynamic_enums[i].name.c_str())) {
+		if (SCP_string_lcase_equal_to()(enum_name, Dynamic_enums[i].name)) {
 			return i;
 		}
 	}

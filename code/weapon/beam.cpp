@@ -2960,7 +2960,6 @@ int beam_collide_ship(obj_pair *pair)
 
 
 	// Goober5000 - I tried to make collision code much saner... here begin the (major) changes
-	mc_info_init(&mc);
 
 	// set up collision structs, part 1
 	mc.model_instance_num = shipp->model_instance_num;
@@ -2980,9 +2979,9 @@ int beam_collide_ship(obj_pair *pair)
 	}
 
 	// set up collision structs, part 2
-	memcpy(&mc_shield, &mc, sizeof(mc_info));
-	memcpy(&mc_hull_enter, &mc, sizeof(mc_info));
-	memcpy(&mc_hull_exit, &mc, sizeof(mc_info));
+	mc_shield = mc;
+	mc_hull_enter = mc;
+	mc_hull_exit = mc;
 	
 	// reverse this vector so that we check for exit holes as opposed to entrance holes
 	mc_hull_exit.p1 = &a_beam->last_start;
@@ -3084,12 +3083,12 @@ int beam_collide_ship(obj_pair *pair)
 	// see which impact we use
 	if (shield_collision && valid_hit_occurred)
 	{
-		memcpy(&mc, &mc_shield, sizeof(mc_info));
+		mc = mc_shield;
 		Assert(quadrant_num >= 0);
 	}
 	else if (hull_enter_collision)
 	{
-		memcpy(&mc, &mc_hull_enter, sizeof(mc_info));
+		mc = mc_hull_enter;
 		valid_hit_occurred = 1;
 	}
 
@@ -3166,7 +3165,6 @@ int beam_collide_ship(obj_pair *pair)
 int beam_collide_asteroid(obj_pair *pair)
 {
 	beam * a_beam;
-	mc_info test_collide;		
 	int model_num;
 
 	// bogus
@@ -3208,7 +3206,7 @@ int beam_collide_asteroid(obj_pair *pair)
 #endif
 
 	// do the collision
-	mc_info_init(&test_collide);
+	mc_info test_collide;
 	test_collide.model_instance_num = -1;
 	test_collide.model_num = model_num;
 	test_collide.submodel_num = -1;
@@ -3277,7 +3275,6 @@ int beam_collide_asteroid(obj_pair *pair)
 int beam_collide_missile(obj_pair *pair)
 {
 	beam *a_beam;	
-	mc_info test_collide;		
 	int model_num;
 
 	// bogus
@@ -3317,7 +3314,7 @@ int beam_collide_missile(obj_pair *pair)
 #endif
 
 	// do the collision
-	mc_info_init(&test_collide);
+	mc_info test_collide;
 	test_collide.model_instance_num = -1;
 	test_collide.model_num = model_num;
 	test_collide.submodel_num = -1;
@@ -3384,7 +3381,6 @@ int beam_collide_missile(obj_pair *pair)
 int beam_collide_debris(obj_pair *pair)
 {	
 	beam * a_beam;
-	mc_info test_collide;		
 	int model_num;
 
 	// bogus
@@ -3427,7 +3423,7 @@ int beam_collide_debris(obj_pair *pair)
 #endif
 
 	// do the collision
-	mc_info_init(&test_collide);
+	mc_info test_collide;
 	test_collide.model_instance_num = -1;
 	test_collide.model_num = model_num;
 	test_collide.submodel_num = -1;

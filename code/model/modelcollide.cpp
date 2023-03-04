@@ -129,7 +129,7 @@ static void mc_check_face(int nv, vec3d **verts, vec3d *plane_pnt, vec3d *plane_
 
 	// Check to see if poly is facing away from ray.  If so, don't bother
 	// checking it.
-	if (vm_vec_dot(&Mc_direction,plane_norm) > 0.0f)	{
+	if (!(Mc->flags & MC_COLLIDE_ALL) && vm_vec_dot(&Mc_direction,plane_norm) > 0.0f)	{
 		return;
 	}
 
@@ -140,7 +140,7 @@ static void mc_check_face(int nv, vec3d **verts, vec3d *plane_pnt, vec3d *plane_
 	if ( !(Mc->flags & MC_CHECK_RAY) && (dist > 1.0f) ) return; // The ray isn't long enough to intersect the plane
 
 	// If the ray hits, but a closer intersection has already been found, return
-	if ( Mc->num_hits && (dist >= Mc->hit_dist ) ) return;	
+	if (!(Mc->flags & MC_COLLIDE_ALL) && Mc->num_hits && (dist >= Mc->hit_dist ) ) return;
 
 	// Find the hit point
 	vm_vec_scale_add( &hit_point, &Mc_p0, &Mc_direction, dist );
@@ -152,8 +152,13 @@ static void mc_check_face(int nv, vec3d **verts, vec3d *plane_pnt, vec3d *plane_
 
 		Mc->hit_point = hit_point;
 		Mc->hit_submodel = Mc_submodel;
-
 		Mc->hit_normal = *plane_norm;
+
+		if (Mc->flags & MC_COLLIDE_ALL) {
+			Mc->hit_points_all.push_back(hit_point);
+			Mc->hit_submodels_all.push_back(Mc_submodel);
+		}
+
 
 		if ( uvl_list )	{
 			Mc->hit_u = u;
@@ -202,7 +207,7 @@ static void mc_check_sphereline_face( int nv, vec3d ** verts, vec3d * plane_pnt,
 	// Check to see if poly is facing away from ray.  If so, don't bother
 	// checking it.
 
-	if (vm_vec_dot(&Mc_direction,plane_norm) > 0.0f)	{
+	if (!(Mc->flags & MC_COLLIDE_ALL) && vm_vec_dot(&Mc_direction,plane_norm) > 0.0f)	{
 		return;
 	}
 
@@ -224,7 +229,7 @@ static void mc_check_sphereline_face( int nv, vec3d ** verts, vec3d * plane_pnt,
 	}
 
 	// If the ray hits, but a closer intersection has already been found, don't check face
-	if ( Mc->num_hits && (face_t >= Mc->hit_dist ) ) {
+	if (!(Mc->flags & MC_COLLIDE_ALL) && Mc->num_hits && (face_t >= Mc->hit_dist ) ) {
 		check_face = 0;		// The ray isn't long enough to intersect the plane
 	}
 
@@ -248,6 +253,11 @@ static void mc_check_sphereline_face( int nv, vec3d ** verts, vec3d * plane_pnt,
 			Mc->hit_normal = *plane_norm;
 			Mc->hit_submodel = Mc_submodel;			
 			Mc->edge_hit = false;
+
+			if (Mc->flags & MC_COLLIDE_ALL) {
+				Mc->hit_points_all.push_back(hit_point);
+				Mc->hit_submodels_all.push_back(Mc_submodel);
+			}
 
 			if ( uvl_list )	{
 				Mc->hit_u = u;
@@ -310,12 +320,18 @@ static void mc_check_sphereline_face( int nv, vec3d ** verts, vec3d * plane_pnt,
 //			Assert( vm_vec_dot( &temp_dir, &Mc_direction ) > 0 );
 			*/
 
-			if ( (Mc->num_hits==0) || (sphere_time < Mc->hit_dist) ) {
+			if ((Mc->flags & MC_COLLIDE_ALL) || (Mc->num_hits==0) || (sphere_time < Mc->hit_dist) ) {
 				// This is closer than best so far
 				Mc->hit_dist = sphere_time;
 				Mc->hit_point = hit_point;
 				Mc->hit_submodel = Mc_submodel;
 				Mc->edge_hit = true;
+
+				if (Mc->flags & MC_COLLIDE_ALL) {
+					Mc->hit_points_all.push_back(hit_point);
+					Mc->hit_submodels_all.push_back(Mc_submodel);
+				}
+
 				if ( ntmap < 0 ) {
 					Mc->hit_bitmap = -1;
 				} else {
@@ -1216,6 +1232,24 @@ int model_collide(mc_info *mc_info_obj)
 				model_local_to_global_point(&Mc->hit_point_world, &Mc->hit_point, Mc_pm, Mc->hit_submodel, Mc->orient, Mc->pos);
 			}
 		}
+		
+		// do the same for the list of hitpoints, if necessary
+		if (Mc->flags & MC_COLLIDE_ALL) {
+			for (size_t i = 0; i < Mc->hit_points_all.size(); i++) {
+				if (Mc->flags & MC_SUBMODEL) {
+					vm_vec_unrotate(&Mc->hit_points_all[i], &Mc->hit_points_all[i], Mc->orient);
+					vm_vec_add2(&Mc->hit_points_all[i], Mc->pos);
+				} else {
+					if (Mc_pmi) {
+						model_instance_local_to_global_point(&Mc->hit_points_all[i], &Mc->hit_points_all[i], Mc_pm, Mc_pmi, Mc->hit_submodels_all[i], Mc->orient, Mc->pos);
+					}
+					else {
+						model_local_to_global_point(&Mc->hit_points_all[i], &Mc->hit_points_all[i], Mc_pm, Mc->hit_submodels_all[i], Mc->orient, Mc->pos);
+					}
+				}
+			}
+		}
+
 	}
 
 	return Mc->num_hits;
