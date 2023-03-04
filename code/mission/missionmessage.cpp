@@ -44,8 +44,8 @@ SCP_vector<SCP_string> Builtin_moods;
 int Current_mission_mood;
 
 builtin_message Builtin_messages[] = {
-  #define X(_, NAME, CHANCE, COUNT, DELAY, PRIORITY, TIME, FALLBACK) { \
-	  NAME,                                                              \
+	#define X(_, NAME, CHANCE, COUNT, DELAY, PRIORITY, TIME, FALLBACK) { \
+		NAME,                                                              \
 		CHANCE,                                                            \
 		COUNT,                                                             \
 		DELAY,                                                             \
