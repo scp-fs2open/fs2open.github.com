@@ -92,8 +92,8 @@ X(REINFORCEMENTS,      "Backup",               100, -1,  0,     LOW, SOON),     
 /* Player status */                                                               \
 X(CHECK_6,             "Check 6",              100,  2,  6000,  HIGH, IMMEDIATE), \
 X(PLAYER_DIED,         "Player Dead",          100, -1,  0,     HIGH, IMMEDIATE), \
-X(PRAISE,              "Praise",               100, 10,  60000, HIGH, SOON),      \
-X(HIGH_PRAISE,         "High Praise",          100, -1,  0,     HIGH, SOON),      \
+X(PRAISE,              "Praise",                50, 10,  60000, HIGH, SOON),      \
+X(HIGH_PRAISE,         "High Praise",           50, -1,  0,     HIGH, SOON),      \
                                                                                   \
 /* Wingmate status */                                                             \
 X(HELP,                "Help",                 100, 10,  60000, HIGH, IMMEDIATE), \
@@ -113,7 +113,7 @@ X(REPAIR_ABORTED,      "Repair Aborted",       100, -1,  0,     NORMAL, SOON),  
 X(SUPPORT_KILLED,      "Support Killed",       100, -1,  0,     HIGH, SOON),      \
                                                                                   \
 /* Global status */                                                               \
-X(ALL_ALONE,           "All Alone",            100, -1,  0,     HIGH, ANYTIME),   \
+X(ALL_ALONE,           "All Alone",             50, -1,  0,     HIGH, ANYTIME),   \
 X(ARRIVE_ENEMY,        "Arrive Enemy",         100, -1,  0,     LOW, SOON),       \
 X(OOPS,                "Oops 1",               100, -1,  0,     HIGH, ANYTIME),   \
 X(HAMMER_SWINE,        "Traitor",              100, -1,  0,     HIGH, ANYTIME),   \
@@ -230,7 +230,7 @@ void	message_queue_message(int message_num, int priority, int timing, const char
 
 // functions which send messages to player -- called externally
 void	message_send_unique_to_player(const char *id, const void *data, int source, int priority, int group, int delay, int event_num_to_cancel = -1);
-void	message_send_builtin_to_player(int type, ship *shipp, int group, int delay, int multi_target, int multi_team_filter);
+bool	message_send_builtin_to_player(int type, ship *shipp, int group, int delay, int multi_target, int multi_team_filter);
 
 // functions to deal with personas
 int message_persona_name_lookup(const char* name);

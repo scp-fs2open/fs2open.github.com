@@ -1925,7 +1925,7 @@ typedef	struct matching_builtin {
 // send builtin_to_player sends a message (from messages.tbl) to the player.  These messages are
 // the generic informational type messages.  The have priorities like misison specific messages,
 // and use a timing to tell how long we should wait before playing this message
-void message_send_builtin_to_player(int type, ship *shipp, int group, int delay, int multi_target, int multi_team_filter)
+bool message_send_builtin_to_player(int type, ship *shipp, int group, int delay, int multi_target, int multi_team_filter)
 {
 	int i, persona_index = -1, persona_species_bitfield = -1, message_index = -1, random_selection = -1;
 	int source;
@@ -1936,34 +1936,43 @@ void message_send_builtin_to_player(int type, ship *shipp, int group, int delay,
 	matching_builtin current_builtin;
 	SCP_vector <matching_builtin> matching_builtins; 
 
-	// if we aren't showing builtin msgs, bail
-	if (The_mission.flags[Mission::Mission_Flags::No_builtin_msgs])
-		return;
+	// If we aren't showing builtin msgs, bail.
+	if (The_mission.flags[Mission::Mission_Flags::No_builtin_msgs]) {
+		return false;
+	}
 
 	// Karajorma - If we aren't showing builtin msgs from command and this is not a ship, bail
-	if ( (shipp == NULL) && (The_mission.flags[Mission::Mission_Flags::No_builtin_command]) ) 
-		return;
+	if ((shipp == NULL) && (The_mission.flags[Mission::Mission_Flags::No_builtin_command])) {
+		return false;
+	}
+
+	// Respect the tabled occurrence chance.
+	int occurrence_chance = Builtin_messages[type].occurrence_chance;
+	if (occurrence_chance < 100 && (int)(frand()*100) > occurrence_chance) {
+		return false;
+	}
+
+	int priority = Builtin_messages[type].priority;
+	int timing = Builtin_messages[type].timing;
 
 	// builtin type isn't supported by this version of the table
 	if (!Valid_builtin_message_types[type]) {
 		// downgrade certain message types to more generic ones more likely to be supported
-		if (type == MESSAGE_HIGH_PRAISE ) {
+		if (type == MESSAGE_HIGH_PRAISE) {
 			type = MESSAGE_PRAISE; 
 		}
-		else if ( type == MESSAGE_REARM_PRIMARIES ) {
+		else if (type == MESSAGE_REARM_PRIMARIES) {
 			type = MESSAGE_REARM_REQUEST; 
 		}
 		else {
-			return;
+			return false;
 		}
 
 		// check if the downgraded type is also invalid
 		if (!Valid_builtin_message_types[type]) {
-			return;
+			return false;
 		}
 	}
-	int priority = Builtin_messages[type].priority;
-	int timing = Builtin_messages[type].timing;
 
 	// see if there is a persona assigned to this ship.  If not, then try to assign one!!!
 	if ( shipp ) {
@@ -2059,7 +2068,7 @@ void message_send_builtin_to_player(int type, ship *shipp, int group, int delay,
 			nprintf(("MESSAGING", "Couldn't find builtin message %s for persona %d with a none excluded mood\n", Builtin_messages[type].name, persona_index));
 			if (!(Personas[persona_index].flags & PERSONA_FLAG_SUBSTITUTE_MISSING_MESSAGES)) {
 				nprintf(("MESSAGING", "Persona does not allow substitution, skipping message.\n"));
-				return;
+				return false;
 			}
 			else
 				nprintf(("MESSAGING", "using an excluded message for this persona\n"));
@@ -2068,7 +2077,7 @@ void message_send_builtin_to_player(int type, ship *shipp, int group, int delay,
 			nprintf(("MESSAGING", "Couldn't find builtin message %s for persona %d\n", Builtin_messages[type].name, persona_index));
 			if (!(Personas[persona_index].flags & PERSONA_FLAG_SUBSTITUTE_MISSING_MESSAGES)) {
 				nprintf(("MESSAGING", "Persona does not allow substitution, skipping message.\n"));
-				return;
+				return false;
 			}
 			else
 				nprintf(("MESSAGING", "using a message for any persona of that species\n"));
@@ -2077,14 +2086,14 @@ void message_send_builtin_to_player(int type, ship *shipp, int group, int delay,
 			nprintf(("MESSAGING", "Couldn't find builtin message %s for persona %d\n", Builtin_messages[type].name, persona_index));
 			if (!(Personas[persona_index].flags & PERSONA_FLAG_SUBSTITUTE_MISSING_MESSAGES)) {
 				nprintf(("MESSAGING", "Persona does not allow substitution, skipping message.\n"));
-				return;
+				return false;
 			}
 			else
 				nprintf(("MESSAGING", "looking for message for any persona of any species\n"));
 			break;
 		case -1:
 			Error(LOCATION, "Couldn't find any builtin message of type %d\n", type);
-			return;
+			return false;
 	}
 
 	
@@ -2148,6 +2157,7 @@ void message_send_builtin_to_player(int type, ship *shipp, int group, int delay,
 			send_mission_message_packet( message_index, who_from, priority, timing, source, type, multi_target, multi_team_filter );
 		}
 	}
+	return true;
 }
 
 // message_is_playing()

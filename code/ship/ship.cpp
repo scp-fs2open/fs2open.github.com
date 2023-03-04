@@ -16951,10 +16951,6 @@ void ship_maybe_warn_player(ship *enemy_sp, float dist)
 // player has just killed a ship, maybe offer send a 'good job' message
 void ship_maybe_praise_player(ship *deader_sp)
 {
-	if (Random::flip_coin()) {
-		return;
-	}
-
 	// First check if the player has reached the maximum number of praises for a mission
 	if ((Builtin_messages[MESSAGE_PRAISE].max_count > -1) && (Player->praise_count >= Builtin_messages[MESSAGE_PRAISE].max_count )) {
 		return;
@@ -16993,10 +16989,6 @@ void ship_maybe_praise_self(ship *deader_sp, ship *killer_sp)
 {
 	int j; 
 	bool wingman = false;
-
-	if ( (int)(frand()*100) > Builtin_messages[MESSAGE_PRAISE_SELF].occurrence_chance ) {
-		return;
-	}
 
 	if (Game_mode & GM_MULTIPLAYER) {
 		return;
@@ -17216,10 +17208,6 @@ void ship_maybe_scream(ship *sp)
 	// if screaming is enabled, skip all checks
 	if (!(sp->flags[Ship_Flags::Always_death_scream]))
 	{
-		// only scream x% of the time 
-		if ( (int)(frand()*100) > Builtin_messages[MESSAGE_WINGMAN_SCREAM].occurrence_chance ) {
-			return;
-		}
 
 		// check if enough time has elapsed since last scream; if not, leave
 		if (!timestamp_elapsed(Player->allow_scream_timestamp))
