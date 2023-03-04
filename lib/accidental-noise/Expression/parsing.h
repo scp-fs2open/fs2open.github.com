@@ -30,7 +30,7 @@ public:
     Token(const Token &rhs);
     virtual ~Token();
 
-    const ETokenTypes GetType() const;
+    ETokenTypes GetType() const;
     const std::string &GetToken() const;
 
 protected:

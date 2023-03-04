@@ -29,7 +29,7 @@ volumetric_nebula::volumetric_nebula() {
 		error_display(1, "Volumetric nebula color must be fully specified.");
 		return;
 	}
-	nebulaColor = { static_cast<float>(rgb[0]) / 255.0f, static_cast<float>(rgb[1]) / 255.0f , static_cast<float>(rgb[2]) / 255.0f };
+	nebulaColor = std::make_tuple(static_cast<float>(rgb[0]) / 255.0f, static_cast<float>(rgb[1]) / 255.0f , static_cast<float>(rgb[2]) / 255.0f);
 
 	required_string("+Visibility Opacity:");
 	stuff_float(&alphaLim);
@@ -94,7 +94,7 @@ volumetric_nebula::volumetric_nebula() {
 			//Set smaller scale to about half, but with low-ish periodicity
 			scale[1] = scale[0] * (14.0f / 25.0f);
 		}
-		noiseScale = { scale[0], scale[1] };
+		noiseScale = std::make_tuple(scale[0], scale[1]);
 
 		required_string("+Color:");
 		number = stuff_int_list(rgb, 3);
@@ -102,7 +102,7 @@ volumetric_nebula::volumetric_nebula() {
 			error_display(1, "Volumetric nebula noise color must be fully specified.");
 			return;
 		}
-		noiseColor = { static_cast<float>(rgb[0]) / 255.0f, static_cast<float>(rgb[1]) / 255.0f , static_cast<float>(rgb[2]) / 255.0f };
+		noiseColor = std::make_tuple(static_cast<float>(rgb[0]) / 255.0f, static_cast<float>(rgb[1]) / 255.0f , static_cast<float>(rgb[2]) / 255.0f);
 
 		if (optional_string("+Intensity:")) {
 			stuff_float(&noiseColorIntensity);
@@ -245,8 +245,8 @@ static anl::CInstructionIndex getCustomNoise(anl::CKernel& kernel, const SCP_str
 void volumetric_nebula::renderVolumeBitmap() {
 	Assertion(!isVolumeBitmapValid(), "Volume bitmap was already rendered!");
 
-	int n = 1 << resolution;
-	int nSample = (n << (oversampling - 1)) + 1;
+	size_t n = 1 << resolution;
+	size_t nSample = (n << (oversampling - 1)) + 1;
 	auto volumeSampleCache = make_unique<bool[]>(nSample * nSample * nSample);
 
 	int modelnum = model_load(hullPof.c_str(), 0, nullptr);
