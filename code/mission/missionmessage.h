@@ -61,76 +61,78 @@ extern int Current_mission_mood;
 // Builtin messages
 
 typedef struct builtin_message {
-	const char		*name;
-	int				occurrence_chance;
-	int				max_count;
-	int				min_delay;
+	const char* name;
+	int         occurrence_chance;
+	int         max_count;
+	int         min_delay;
+	int         priority;
+	int         timing;
 } builtin_message;
 
-#define BUILTIN_MESSAGE_TYPES                                            \
-/* Orders */                                                             \
-X(MESSAGE_ATTACK_TARGET,       "Attack Target",        100, -1,  0),     \
-X(MESSAGE_DISABLE_TARGET,      "Disable Target",       100, -1,  0),     \
-X(MESSAGE_DISARM_TARGET,       "Disarm Target",        100, -1,  0),     \
-X(MESSAGE_IGNORE,              "Ignore Target",        100, -1,  0),     \
-X(MESSAGE_ENGAGE,              "Engage",               100, -1,  0),     \
-X(MESSAGE_WARP_OUT,            "Depart",               100, -1,  0),     \
-X(MESSAGE_DOCK_YES,            "Docking Start",        100, -1,  0),     \
-X(MESSAGE_YESSIR,              "Yes",                  100, -1,  0),     \
-X(MESSAGE_NOSIR,               "No",                   100, -1,  0),     \
-X(MESSAGE_NO_TARGET,           "No Target",            100, -1,  0),     \
-                                                                         \
-/* Friendly arrival */                                                   \
-X(MESSAGE_BETA_ARRIVED,        "Beta Arrived",         100, -1,  0),     \
-X(MESSAGE_GAMMA_ARRIVED,       "Gamma Arrived",        100, -1,  0),     \
-X(MESSAGE_DELTA_ARRIVED,       "Delta Arrived",        100, -1,  0),     \
-X(MESSAGE_EPSILON_ARRIVED,     "Epsilon Arrived",      100, -1,  0),     \
-X(MESSAGE_REINFORCEMENTS,      "Backup",               100, -1,  0),     \
-                                                                         \
-/* Player status */                                                      \
-X(MESSAGE_CHECK_6,             "Check 6",              100,  2,  6000),  \
-X(MESSAGE_PLAYER_DIED,         "Player Dead",          100, -1,  0),     \
-X(MESSAGE_PRAISE,              "Praise",               100, 10,  60000), \
-X(MESSAGE_HIGH_PRAISE,         "High Praise",          100, -1,  0),     \
-                                                                         \
-/* Wingmate status */                                                    \
-X(MESSAGE_HELP,                "Help",                 100, 10,  60000), \
-X(MESSAGE_WINGMAN_SCREAM,      "Death",                 50, 10,  60000), \
-X(MESSAGE_PRAISE_SELF,         "Praise Self",           10,  4,  60000), \
-X(MESSAGE_REARM_REQUEST,       "Rearm",                100, -1,  0),     \
-X(MESSAGE_REPAIR_REQUEST,      "Repair",               100, -1,  0),     \
-X(MESSAGE_PRIMARIES_LOW,       "Primaries Low",        100, -1,  0),     \
-X(MESSAGE_REARM_PRIMARIES,     "Rearm Primaries",      100, -1,  0),     \
-                                                                         \
-/* Support status */                                                     \
-X(MESSAGE_REARM_WARP,          "Rearm Warping In",     100, -1,  0),     \
-X(MESSAGE_ON_WAY,              "On Way",               100, -1,  0),     \
-X(MESSAGE_REARM_ON_WAY,        "Rearm On Way",         100, -1,  0),     \
-X(MESSAGE_REPAIR_DONE,         "Repair Done",          100, -1,  0),     \
-X(MESSAGE_REPAIR_ABORTED,      "Repair Aborted",       100, -1,  0),     \
-X(MESSAGE_SUPPORT_KILLED,      "Support Killed",       100, -1,  0),     \
-                                                                         \
-/* Global status */                                                      \
-X(MESSAGE_ALL_ALONE,           "All Alone",            100, -1,  0),     \
-X(MESSAGE_ARRIVE_ENEMY,        "Arrive Enemy",         100, -1,  0),     \
-X(MESSAGE_OOPS,                "Oops 1",               100, -1,  0),     \
-X(MESSAGE_HAMMER_SWINE,        "Traitor",              100, -1,  0),     \
-                                                                         \
-/* Misc */                                                               \
-X(MESSAGE_AWACS_75,            "AWACS at 75",          100, -1,  0),     \
-X(MESSAGE_AWACS_25,            "AWACS at 25",          100, -1,  0),     \
-X(MESSAGE_STRAY_WARNING,       "Stray Warning",        100, -1,  0),     \
-X(MESSAGE_STRAY_WARNING_FINAL, "Stray Warning Final",  100, -1,  0),     \
-X(MESSAGE_INSTRUCTOR_HIT,      "Instructor Hit",       100, -1,  0),     \
-X(MESSAGE_INSTRUCTOR_ATTACK,   "Instructor Attack",    100, -1,  0),     \
-                                                                         \
-/* Unused */                                                             \
-X(MESSAGE_ALL_CLEAR,           "All Clear",            100, -1,  0),     \
-X(MESSAGE_PERMISSION,          "Permission",           100, -1,  0),     \
-X(MESSAGE_STRAY,               "Stray",                100, -1,  0)
+#define BUILTIN_MESSAGE_TYPES                                                     \
+/* Orders */                                                                      \
+X(ATTACK_TARGET,       "Attack Target",        100, -1,  0,     NORMAL, ANYTIME), \
+X(DISABLE_TARGET,      "Disable Target",       100, -1,  0,     NORMAL, ANYTIME), \
+X(DISARM_TARGET,       "Disarm Target",        100, -1,  0,     NORMAL, ANYTIME), \
+X(IGNORE,              "Ignore Target",        100, -1,  0,     NORMAL, ANYTIME), \
+X(ENGAGE,              "Engage",               100, -1,  0,     NORMAL, ANYTIME), \
+X(WARP_OUT,            "Depart",               100, -1,  0,     NORMAL, ANYTIME), \
+X(DOCK_YES,            "Docking Start",        100, -1,  0,     NORMAL, ANYTIME), \
+X(YESSIR,              "Yes",                  100, -1,  0,     NORMAL, ANYTIME), \
+X(NOSIR,               "No",                   100, -1,  0,     NORMAL, ANYTIME), \
+X(NO_TARGET,           "No Target",            100, -1,  0,     NORMAL, ANYTIME), \
+                                                                                  \
+/* Friendly arrival */                                                            \
+X(BETA_ARRIVED,        "Beta Arrived",         100, -1,  0,     LOW, SOON),       \
+X(GAMMA_ARRIVED,       "Gamma Arrived",        100, -1,  0,     LOW, SOON),       \
+X(DELTA_ARRIVED,       "Delta Arrived",        100, -1,  0,     LOW, SOON),       \
+X(EPSILON_ARRIVED,     "Epsilon Arrived",      100, -1,  0,     LOW, SOON),       \
+X(REINFORCEMENTS,      "Backup",               100, -1,  0,     LOW, SOON),       \
+                                                                                  \
+/* Player status */                                                               \
+X(CHECK_6,             "Check 6",              100,  2,  6000,  HIGH, IMMEDIATE), \
+X(PLAYER_DIED,         "Player Dead",          100, -1,  0,     HIGH, IMMEDIATE), \
+X(PRAISE,              "Praise",               100, 10,  60000, HIGH, SOON),      \
+X(HIGH_PRAISE,         "High Praise",          100, -1,  0,     HIGH, SOON),      \
+                                                                                  \
+/* Wingmate status */                                                             \
+X(HELP,                "Help",                 100, 10,  60000, HIGH, IMMEDIATE), \
+X(WINGMAN_SCREAM,      "Death",                 50, 10,  60000, HIGH, IMMEDIATE), \
+X(PRAISE_SELF,         "Praise Self",           10,  4,  60000, HIGH, SOON),      \
+X(REARM_REQUEST,       "Rearm",                100, -1,  0,     NORMAL, SOON),    \
+X(REPAIR_REQUEST,      "Repair",               100, -1,  0,     NORMAL, SOON),    \
+X(PRIMARIES_LOW,       "Primaries Low",        100, -1,  0,     NORMAL, SOON),    \
+X(REARM_PRIMARIES,     "Rearm Primaries",      100, -1,  0,     NORMAL, SOON),    \
+                                                                                  \
+/* Support status */                                                              \
+X(REARM_WARP,          "Rearm Warping In",     100, -1,  0,     NORMAL, SOON),    \
+X(ON_WAY,              "On Way",               100, -1,  0,     NORMAL, SOON),    \
+X(REARM_ON_WAY,        "Rearm On Way",         100, -1,  0,     NORMAL, SOON),    \
+X(REPAIR_DONE,         "Repair Done",          100, -1,  0,     LOW, SOON),       \
+X(REPAIR_ABORTED,      "Repair Aborted",       100, -1,  0,     NORMAL, SOON),    \
+X(SUPPORT_KILLED,      "Support Killed",       100, -1,  0,     HIGH, SOON),      \
+                                                                                  \
+/* Global status */                                                               \
+X(ALL_ALONE,           "All Alone",            100, -1,  0,     HIGH, ANYTIME),   \
+X(ARRIVE_ENEMY,        "Arrive Enemy",         100, -1,  0,     LOW, SOON),       \
+X(OOPS,                "Oops 1",               100, -1,  0,     HIGH, ANYTIME),   \
+X(HAMMER_SWINE,        "Traitor",              100, -1,  0,     HIGH, ANYTIME),   \
+                                                                                  \
+/* Misc */                                                                        \
+X(AWACS_75,            "AWACS at 75",          100, -1,  0,     HIGH, IMMEDIATE), \
+X(AWACS_25,            "AWACS at 25",          100, -1,  0,     HIGH, IMMEDIATE), \
+X(STRAY_WARNING,       "Stray Warning",        100, -1,  0,     HIGH, SOON),      \
+X(STRAY_WARNING_FINAL, "Stray Warning Final",  100, -1,  0,     HIGH, IMMEDIATE), \
+X(INSTRUCTOR_HIT,      "Instructor Hit",       100, -1,  0,     HIGH, IMMEDIATE), \
+X(INSTRUCTOR_ATTACK,   "Instructor Attack",    100, -1,  0,     HIGH, IMMEDIATE), \
+                                                                                  \
+/* Unused */                                                                      \
+X(ALL_CLEAR,           "All Clear",            100, -1,  0,     LOW, SOON),       \
+X(PERMISSION,          "Permission",           100, -1,  0,     LOW, SOON),       \
+X(STRAY,               "Stray",                100, -1,  0,     LOW, SOON)
 
 enum {
-  #define X(NAME, ...) NAME
+  #define X(NAME, ...) MESSAGE_ ## NAME
 	NO_MESSAGE = -1, BUILTIN_MESSAGE_TYPES, MAX_BUILTIN_MESSAGE_TYPES
 	#undef X
 };
@@ -227,8 +229,8 @@ void	message_kill_all( int kill_all );
 void	message_queue_message(int message_num, int priority, int timing, const char *who_from, int source, int group, int delay, int builtin_type, int event_num_to_cancel);
 
 // functions which send messages to player -- called externally
-void	message_send_unique_to_player( const char *id, const void *data, int source, int priority, int group, int delay, int event_num_to_cancel = -1);
-void	message_send_builtin_to_player( int type, ship *shipp, int priority, int timing, int group, int delay, int multi_target, int multi_team_filter );
+void	message_send_unique_to_player(const char *id, const void *data, int source, int priority, int group, int delay, int event_num_to_cancel = -1);
+void	message_send_builtin_to_player(int type, ship *shipp, int group, int delay, int multi_target, int multi_team_filter);
 
 // functions to deal with personas
 int message_persona_name_lookup(const char* name);

@@ -7498,9 +7498,9 @@ void mission_eval_arrivals()
 
 		rship = ship_get_random_player_wing_ship(SHIP_GET_UNSILENCED);
 		if ((rship < 0) || use_terran_cmd)
-			message_send_builtin_to_player(MESSAGE_ARRIVE_ENEMY, NULL, MESSAGE_PRIORITY_LOW, MESSAGE_TIME_SOON, 0, 0, -1, -1);
+			message_send_builtin_to_player(MESSAGE_ARRIVE_ENEMY, NULL, 0, 0, -1, -1);
 		else if (rship >= 0)
-			message_send_builtin_to_player(MESSAGE_ARRIVE_ENEMY, &Ships[rship], MESSAGE_PRIORITY_LOW, MESSAGE_TIME_SOON, 0, 0, -1, -1);
+			message_send_builtin_to_player(MESSAGE_ARRIVE_ENEMY, &Ships[rship], 0, 0, -1, -1);
 
 		Arrival_message_delay_timestamp = timestamp(-1);		// make the stamp invalid
 	}
@@ -7627,7 +7627,7 @@ bool mission_maybe_make_wing_arrive(int wingnum, bool force_arrival)
 				Allow_arrival_message_timestamp_m[multi_team_filter] = timestamp(ARRIVAL_MESSAGE_MIN_SEPARATION);
 						
 				// send to the proper team
-				message_send_builtin_to_player(MESSAGE_ARRIVE_ENEMY, NULL, MESSAGE_PRIORITY_LOW, MESSAGE_TIME_SOON, 0, 0, -1, multi_team_filter);
+				message_send_builtin_to_player(MESSAGE_ARRIVE_ENEMY, NULL, 0, 0, -1, multi_team_filter);
 			}
 		}
 		// does the player attack this ship?
@@ -7659,7 +7659,7 @@ bool mission_maybe_make_wing_arrive(int wingnum, bool force_arrival)
 				{
 					if (!stricmp(message_name.c_str(), Builtin_messages[j].name))
 					{
-						message_send_builtin_to_player(j, &Ships[rship], MESSAGE_PRIORITY_LOW, MESSAGE_TIME_SOON, 0, 0, -1, -1);
+						message_send_builtin_to_player(j, &Ships[rship], 0, 0, -1, -1);
 						break;
 					}
 				}

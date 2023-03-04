@@ -45,7 +45,14 @@ int Current_mission_mood;
 
 int Valid_builtin_message_types[MAX_BUILTIN_MESSAGE_TYPES];
 builtin_message Builtin_messages[] = {
-  #define X(NAME, ...) { __VA_ARGS__ }
+  #define X(_, NAME, CHANCE, COUNT, DELAY, PRIORITY, TIME) { \
+	  NAME,                                                    \
+		CHANCE,                                                  \
+		COUNT,                                                   \
+		DELAY,                                                   \
+		MESSAGE_PRIORITY_ ## PRIORITY,                           \
+		MESSAGE_TIME_ ## TIME                                    \
+	}
 	BUILTIN_MESSAGE_TYPES
 	#undef X
 };
@@ -1918,7 +1925,7 @@ typedef	struct matching_builtin {
 // send builtin_to_player sends a message (from messages.tbl) to the player.  These messages are
 // the generic informational type messages.  The have priorities like misison specific messages,
 // and use a timing to tell how long we should wait before playing this message
-void message_send_builtin_to_player( int type, ship *shipp, int priority, int timing, int group, int delay, int multi_target, int multi_team_filter )
+void message_send_builtin_to_player(int type, ship *shipp, int group, int delay, int multi_target, int multi_team_filter)
 {
 	int i, persona_index = -1, persona_species_bitfield = -1, message_index = -1, random_selection = -1;
 	int source;
@@ -1928,7 +1935,6 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 
 	matching_builtin current_builtin;
 	SCP_vector <matching_builtin> matching_builtins; 
-
 
 	// if we aren't showing builtin msgs, bail
 	if (The_mission.flags[Mission::Mission_Flags::No_builtin_msgs])
@@ -1956,6 +1962,8 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 			return;
 		}
 	}
+	int priority = Builtin_messages[type].priority;
+	int timing = Builtin_messages[type].timing;
 
 	// see if there is a persona assigned to this ship.  If not, then try to assign one!!!
 	if ( shipp ) {
