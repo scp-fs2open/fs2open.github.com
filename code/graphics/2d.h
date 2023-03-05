@@ -1316,7 +1316,7 @@ class DebugScope {
 };
 }
 
-#ifndef NDEBUG
+#if !defined(NDEBUG) || defined(FS_OPENGL_DEBUG)
 #define GR_DEBUG_SCOPE(name) ::graphics::DebugScope SCP_TOKEN_CONCAT(gr_scope, __LINE__)(name)
 #else
 #define GR_DEBUG_SCOPE(name) do {} while(false)
