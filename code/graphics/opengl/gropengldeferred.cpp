@@ -347,7 +347,7 @@ void gr_opengl_deferred_lighting_finish()
 
 		opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
 	}
-	else if (The_mission.volumetrics) {
+	else if (The_mission.volumetrics && !override_fog) {
 		const volumetric_nebula& neb = *The_mission.volumetrics;
 
 		Assertion(neb.isVolumeBitmapValid(), "The volumetric nebula was not properly initialized!");
