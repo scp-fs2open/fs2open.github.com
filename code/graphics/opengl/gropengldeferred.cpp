@@ -348,6 +348,7 @@ void gr_opengl_deferred_lighting_finish()
 		opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
 	}
 	else if (The_mission.volumetrics && !override_fog) {
+		GR_DEBUG_SCOPE("Volumetric Nebulae");
 		const volumetric_nebula& neb = *The_mission.volumetrics;
 
 		Assertion(neb.isVolumeBitmapValid(), "The volumetric nebula was not properly initialized!");
@@ -408,8 +409,10 @@ void gr_opengl_deferred_lighting_finish()
 			data->fov = Proj_fov;
 			});
 
-		opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
-
+		{
+			GR_DEBUG_SCOPE("Volumetric Nebulae Draw");
+			opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
+		}
 		GL_state.Texture.Enable(Scene_emissive_texture);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
