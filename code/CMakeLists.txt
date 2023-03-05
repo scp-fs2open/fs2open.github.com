@@ -20,6 +20,9 @@ TARGET_INCLUDE_DIRECTORIES(code PUBLIC ${GENERATED_SOURCE_DIR}/code)
 
 if (FSO_BUILD_WITH_OPENGL)
 	target_link_libraries(code PUBLIC OpenGL)
+	if(FSO_BUILD_WITH_OPENGL_DEBUG)
+		add_definitions(-DFS_OPENGL_DEBUG)
+	endif()
 endif()
 
 TARGET_LINK_LIBRARIES(code PUBLIC openal)
