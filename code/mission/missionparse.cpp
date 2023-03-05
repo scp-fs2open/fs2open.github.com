@@ -7646,23 +7646,14 @@ bool mission_maybe_make_wing_arrive(int wingnum, bool force_arrival)
 			}
 		}
 		// everything else
-		else
-		{
+		else {
 			rship = ship_get_random_ship_in_wing(wingnum, SHIP_GET_UNSILENCED);
-			if (rship >= 0)
-			{
-				SCP_string message_name;
+			if (rship >= 0) {
+				char message_name[40];
 				sprintf(message_name, "%s Arrived", wingp->name);
-
-				// see if this wing has an arrival message associated with it
-				for (int j = 0; j < MAX_BUILTIN_MESSAGE_TYPES; j++)
-				{
-					if (!stricmp(message_name.c_str(), Builtin_messages[j].name))
-					{
-						message_send_builtin_to_player(j, &Ships[rship], 0, 0, -1, -1);
-						break;
-					}
-				}
+				int enable_generic = The_mission.ai_profile->flags[AI::Profile_Flags::Enable_generic_reinforcements_messages];
+				int arrival_message = get_builtin_message(message_name, enable_generic ? MESSAGE_REINFORCEMENTS : MESSAGE_NONE);
+				message_send_builtin_to_player(arrival_message, &Ships[rship], 0, 0, -1, -1);
 			}
 		}
 

@@ -27,7 +27,7 @@ class ai_profile_t {
 public:
 	char profile_name[NAME_LENGTH];
 
-    flagset<AI::Profile_Flags> flags;
+  flagset<AI::Profile_Flags> flags;
 
 	// difficulty-related values
 	int max_incoming_asteroids[NUM_SKILL_LEVELS];			// max number of asteroids thrown at friendlies
@@ -117,7 +117,7 @@ public:
 	// how often turrets shoulds check for new targets, milliseconds
 	float turret_target_recheck_time;
 
-    void reset();
+	void reset();
 };
 
 

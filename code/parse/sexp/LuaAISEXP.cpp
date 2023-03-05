@@ -158,23 +158,13 @@ void LuaAISEXP::parseTable() {
 		}
 
 		if (optional_string("+Acknowledge Message:")) {
-			int result = -1;
-
 			SCP_string message;
 			stuff_string(message, F_NAME);
-
-			for (int i = 0; i < MAX_BUILTIN_MESSAGE_TYPES; i++) {
-				if (Builtin_messages[i].name == message) {
-					result = i;
-					break;
-				}
-			}
-
+			int result = get_builtin_message(message.c_str());
 			if (result == -1) {
 				error_display(0, "Unknown acknowledge message for player order %s. Assuming \"yes\".", order.displayText.c_str());
 				order.ai_message = MESSAGE_YESSIR;
-			}
-			else {
+			} else {
 				order.ai_message = result;
 			}
 		}

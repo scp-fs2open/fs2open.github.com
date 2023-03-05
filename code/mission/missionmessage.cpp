@@ -43,7 +43,7 @@
 SCP_vector<SCP_string> Builtin_moods;
 int Current_mission_mood;
 
-builtin_message Builtin_messages[] = {
+SCP_vector<builtin_message> Builtin_messages = {
 	#define X(_, NAME, CHANCE, COUNT, DELAY, PRIORITY, TIME, FALLBACK) { \
 		NAME,                                                              \
 		CHANCE,                                                            \
@@ -56,6 +56,16 @@ builtin_message Builtin_messages[] = {
 	BUILTIN_MESSAGE_TYPES
 	#undef X
 };
+
+int get_builtin_message(const char* name, int if_absent) {
+	int count = (int) Builtin_messages.size();
+	for (int i = 0; i < count; i++) {
+		if (!stricmp(name, Builtin_messages[i].name)) {
+			return i;
+		}
+	}
+	return if_absent;
+}
 
 SCP_vector<MMessage> Messages;
 
@@ -458,23 +468,14 @@ void message_parse(bool importing_from_fsm)
 	Messages.push_back(msg); 
 }
 
-void message_frequency_parse()
-{
+void message_frequency_parse() {
 	char name[32];
-	int i, max_count, min_delay, occurrence_chance;  
-	int builtin_type = -1; 
+	int max_count, min_delay, occurrence_chance;
 
 	required_string("$Name:");
 	stuff_string(name, F_NAME, NAME_LENGTH);
-
-	for (i = 0; i < MAX_BUILTIN_MESSAGE_TYPES; i++) {
-		if (!strcmp(name, Builtin_messages[i].name)) {
-			builtin_type = i;
-			break;
-		}
-	}
-
-	if (builtin_type == -1) {
+	int builtin_type = get_builtin_message(name);
+	if (builtin_type == MESSAGE_NONE) {
 		Warning(LOCATION, "Unknown Builtin Message Type Detected. Type : %s not supported", name);
 		return;
 	}
