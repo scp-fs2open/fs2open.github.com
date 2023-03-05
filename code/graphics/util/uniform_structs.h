@@ -306,25 +306,40 @@ struct fog_data {
 
 //Yes, the interleaved vec3d / float packing seems to be necessary, as OpenGL seems to really not like two vec3's following each other without padding in a uniform buffer
 struct volumetric_fog_data {
-	matrix4 p_inv, v_inv;
+	matrix4 p_inv;
+	matrix4 v_inv;
+	
 	vec3d cameraPos;
 	float zNear;
+	
 	vec3d globalLightDirection;
 	float zFar;
+	
 	vec3d globalLightDiffuse;
 	float stepsize;
+	
 	vec3d nebPos;
 	float globalstepalpha;
+	
 	vec3d nebSize;
 	float alphalimit;
-	float emissiveSpreadFactor, emissiveIntensity, emissiveFalloff;
+	
+	float emissiveSpreadFactor;
+	float emissiveIntensity;
+	float emissiveFalloff;
 	float henyeyGreensteinCoeff;
+	
 	float noiseColor[3];
 	int directionalLightSampleSteps;
+	
 	float directionalLightStepSize;
-	float noiseColorScale1, noiseColorScale2;
+	float noiseColorScale1;
+	float noiseColorScale2;
 	float noiseColorIntensity;
-	float aspect, fov;
+	
+	float aspect;
+	float fov;
+	float pad[2];
 };
 
 struct blur_data {
