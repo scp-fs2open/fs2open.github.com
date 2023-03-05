@@ -1805,12 +1805,16 @@ void message_send_unique_to_player( const char *id, const void *data, int m_sour
 }
 
 bool should_skip_builtin_message(int type, ship* shipp) {
+	if (type == MESSAGE_NONE) {
+		return true;
+	}
+
 	// If we aren't showing builtin msgs, bail.
 	if (The_mission.flags[Mission::Mission_Flags::No_builtin_msgs]) {
 		return true;
 	}
 
-	// Karajorma - If we aren't showing builtin msgs from command and this is not a ship, bail
+	// Karajorma - If we aren't showing builtin msgs from command and this is not a ship, bail.
 	if ((shipp == NULL) && (The_mission.flags[Mission::Mission_Flags::No_builtin_command])) {
 		return true;
 	}
