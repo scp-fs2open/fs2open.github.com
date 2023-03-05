@@ -137,6 +137,7 @@ option(FSO_RELEASE_LOGGING "Enable logging output for release builds" OFF)
 OPTION(FSO_BUILD_WITH_FFMPEG "Enable the usage of FFmpeg for sound and custscenes" ON)
 
 OPTION(FSO_BUILD_WITH_OPENGL "Enable compilation of the OpenGL renderer" ON)
+OPTION(FSO_BUILD_WITH_OPENGL_DEBUG "Enables debug option for OpenGL" OFF)
 
 OPTION(FSO_BUILD_WITH_VULKAN "Enable compilation of the Vulkan renderer" ON)
 
@@ -151,6 +152,7 @@ mark_as_advanced(FORCE ENABLE_COTIRE)
 mark_as_advanced(FORCE FSO_RELEASE_LOGGING)
 mark_as_advanced(FORCE FSO_BUILD_WITH_FFMPEG)
 mark_as_advanced(FORCE FSO_BUILD_WITH_OPENGL)
+mark_as_advanced(FORCE FSO_BUILD_WITH_OPENGL_DEBUG)
 mark_as_advanced(FORCE FSO_BUILD_WITH_VULKAN)
 
 # Include cotire file from https://github.com/sakra/cotire/
