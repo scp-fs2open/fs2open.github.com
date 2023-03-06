@@ -40,7 +40,8 @@ int LuaAISEXP::getArgumentType(int argnum) const {
 	}
 };
 
-int LuaAISEXP::execute(int /*node*/) {
+int LuaAISEXP::execute(int /*node*/, int /*parent_node*/)
+{
 	UNREACHABLE("Tried to execute AI Lua SEXP %s! AI-Goal SEXPs should never be run.", _name.c_str());
 	return SEXP_CANT_EVAL;
 }

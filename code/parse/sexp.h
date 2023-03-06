@@ -151,6 +151,15 @@ struct dynamic_sexp_enum_list {
 
 extern SCP_vector<dynamic_sexp_enum_list> Dynamic_enums;
 
+struct dynamic_sexp_parameter_list {
+	SCP_string operator_name;
+	SCP_vector<std::pair<int, int>> parameter_map;
+};
+
+extern SCP_vector<dynamic_sexp_parameter_list> Dynamic_parameters;
+
+int get_dynamic_parameter_index(const SCP_string &op_name, int param);
+
 int get_dynamic_enum_position(const SCP_string &enum_name);
 
 // Operand return types

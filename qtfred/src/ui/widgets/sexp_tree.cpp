@@ -3148,7 +3148,7 @@ sexp_list_item* sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 		break;
 
 	case OPF_DOCKER_POINT:
-		list = get_listing_opf_docker_point(parent_node);
+		list = get_listing_opf_docker_point(parent_node, arg_index);
 		break;
 
 	case OPF_DOCKEE_POINT:
@@ -3919,7 +3919,7 @@ sexp_list_item* sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 		if (child < 0) return nullptr;
 		child = tree_nodes[child].next;
 		break;
-
+    
 	// this sexp checks the third entry, but only for the 4th argument
 	case OP_TURRET_SET_FORCED_SUBSYS_TARGET:
 		if (arg_index >= 3) {
@@ -3928,6 +3928,24 @@ sexp_list_item* sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 			child = tree_nodes[child].next;
 		}
 		break;
+
+	default:
+		if (op < First_available_operator_id) {
+			break;
+		} else {
+			int this_index = get_dynamic_parameter_index(tree_nodes[parent_node].text, arg_index);
+
+			if (this_index >= 0) {
+				for (int count = 0; count < this_index; count++) {
+					child = tree_nodes[child].next;
+				}
+			} else {
+				error_display(1,
+					"Expected to find a dynamic lua parent parameter for node %i in operator %s but found nothing!",
+					arg_index,
+					tree_nodes[parent_node].text);
+			}
+		}
 
 	}
 
@@ -4227,13 +4245,14 @@ sexp_list_item* sexp_tree::get_listing_opf_ai_goal(int parent_node) {
 	return head.next;
 }
 
-sexp_list_item* sexp_tree::get_listing_opf_docker_point(int parent_node) {
+sexp_list_item* sexp_tree::get_listing_opf_docker_point(int parent_node, int arg_num) {
 	int z;
 	sexp_list_item head;
 	int sh = -1;
 
 	Assert(parent_node >= 0);
-	Assert(!stricmp(tree_nodes[parent_node].text, "ai-dock") || !stricmp(tree_nodes[parent_node].text, "set-docked"));
+	Assert(!stricmp(tree_nodes[parent_node].text, "ai-dock") || !stricmp(tree_nodes[parent_node].text, "set-docked") ||
+		   get_operator_const(tree_nodes[parent_node].text) >= (int)First_available_operator_id);
 
 	if (!stricmp(tree_nodes[parent_node].text, "ai-dock")) {
 		z = tree_nodes[parent_node].parent;
@@ -4252,6 +4271,25 @@ sexp_list_item* sexp_tree::get_listing_opf_docker_point(int parent_node) {
 		if (z < 0)
 			return nullptr;
 		sh = ship_name_lookup(tree_nodes[z].text, 1);
+	}
+	// for Lua sexps
+	else if (get_operator_const(tree_nodes[parent_node].text) >= (int)First_available_operator_id) {
+		int this_index = get_dynamic_parameter_index(tree_nodes[parent_node].text, arg_num);
+
+		if (this_index >= 0) {
+			z = tree_nodes[parent_node].child;
+
+			for (int j = 0; j < this_index; j++) {
+				z = tree_nodes[z].next;
+			}
+
+			sh = ship_name_lookup(tree_nodes[z].text, 1);
+		} else {
+			error_display(1,
+				"Expected to find a dynamic lua parent parameter for node %i in operator %s but found nothing!",
+				arg_num,
+				tree_nodes[parent_node].text);
+		}
 	}
 
 	if (sh >= 0) {
