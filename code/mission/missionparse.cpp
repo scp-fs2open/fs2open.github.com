@@ -617,8 +617,7 @@ void parse_mission_info(mission *pm, bool basic = false)
 	}
 
 	if (optional_string("+Volumetric Nebula:")) {
-		//Parsing is handled by the volumetrics class' constructor.
-		pm->volumetrics.emplace();
+		pm->volumetrics.emplace().parse_volumetric_nebula();
 	}
 
 	// Goober5000 - ship contrail speed threshold

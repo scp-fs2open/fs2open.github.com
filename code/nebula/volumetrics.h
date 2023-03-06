@@ -84,6 +84,8 @@ public:
 	volumetric_nebula();
 	~volumetric_nebula();
 
+	volumetric_nebula& parse_volumetric_nebula();
+
 	const vec3d& getPos() const;
 	const vec3d& getSize() const;
 

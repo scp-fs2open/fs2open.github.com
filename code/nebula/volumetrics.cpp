@@ -14,8 +14,10 @@
 #define OFFSET_A 3
 #define COLOR_3D_ARRAY_POS(n, color, x, y, z) (z * n * n * 4 + y * n * 4 + x * 4 + OFFSET_##color)
 
-volumetric_nebula::volumetric_nebula() {
-	//This expects that the constructor was called in an if(optional_string("Volumetrics")) or something
+volumetric_nebula::volumetric_nebula() { }
+
+volumetric_nebula& volumetric_nebula::parse_volumetric_nebula() {
+	//This expects that parse_volumetric_nebula was called in an if(optional_string("Volumetrics")) or something
 	stuff_string(hullPof, F_PATHNAME);
 
 	//General Settings
@@ -128,6 +130,8 @@ volumetric_nebula::volumetric_nebula() {
 			}
 		}
 	}
+
+	return *this;
 }
 
 volumetric_nebula::~volumetric_nebula() {
@@ -243,6 +247,7 @@ static anl::CInstructionIndex getCustomNoise(anl::CKernel& kernel, const SCP_str
 }
 
 void volumetric_nebula::renderVolumeBitmap() {
+	Assertion(!hullPof.empty(), "Volumetric Nebula was not properly configured. Did you call parse_volumetric_nebula()?");
 	Assertion(!isVolumeBitmapValid(), "Volume bitmap was already rendered!");
 
 	int n = 1 << resolution;
