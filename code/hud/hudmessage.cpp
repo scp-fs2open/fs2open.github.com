@@ -659,7 +659,7 @@ int hud_get_scroll_max_pos()
 			max = 0;
 		} else {
 
-			for (int i = 0; i < (int)Msg_scrollback_lines.size(); i++) {
+			for (size_t i = 0; i < Msg_scrollback_lines.size(); i++) {
 				if (Msg_scrollback_lines[i].source != HUD_SOURCE_HIDDEN) {
 
 					if (excess > 0) {
@@ -845,9 +845,8 @@ void hud_initialize_scrollback_lines()
 				strcpy_s(c_text, node_msg.text.c_str());
 
 				char* text = c_text;
-				char* split = nullptr;
 
-				split = split_str_once(text, max_width);
+				char* split = split_str_once(text, max_width);
 				Msg_scrollback_lines.push_back({node_msg.time, node_msg.source, node_msg.x, 1, node_msg.underline_width, text});
 
 				while (split != nullptr) {
