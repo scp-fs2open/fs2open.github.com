@@ -8582,8 +8582,11 @@ void weapon_render(object* obj, model_draw_list *scene)
 				if (wip->wi_flags[Weapon::Info_Flags::Transparent])
 					alpha = fl2i(wp->alpha_current * 255.0f);
 
-				if (The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb_affects_weapons)
-					alpha = (int)(alpha * neb2_get_fog_visibility(&obj->pos, Neb2_fog_visibility_weapon));
+				if (Neb_affects_weapons) {
+					float nebalpha = 1.0f;
+					if(nebula_handle_alpha(nebalpha, &obj->pos, Neb2_fog_visibility_weapon))
+						alpha = (int)(alpha * nebalpha);
+				}
 
 				vec3d headp;
 				vm_vec_scale_add(&headp, &obj->pos, &obj->orient.vec.fvec, wip->laser_length);
@@ -8670,8 +8673,11 @@ void weapon_render(object* obj, model_draw_list *scene)
 					alpha = weapon_glow_alpha;
 				}
 
-				if (The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb_affects_weapons)
-					alpha = (int)(alpha * neb2_get_fog_visibility(&obj->pos, Neb2_fog_visibility_weapon));
+				if (Neb_affects_weapons) {
+					float nebalpha = 1.0f;
+					if (nebula_handle_alpha(nebalpha, &obj->pos, Neb2_fog_visibility_weapon))
+						alpha = (int)(alpha * nebalpha);
+				}
 
 				// Scale the laser so that it always appears some configured amount of pixels wide, no matter the distance.
 				// Only affects width, length remains unchanged.

@@ -174,8 +174,11 @@ void trail_render( trail * trailp )
 			current_alpha = (ubyte)fl2i((fade * a_size + ti->a_start) * 255.0f);
 		}
 
-		if (The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb_affects_weapons)
-			current_alpha = (ubyte)(current_alpha * neb2_get_fog_visibility(&trailp->pos[n], Neb2_fog_visibility_trail));
+		if (Neb_affects_weapons) {
+			float nebalpha = 1.0f;
+			if(nebula_handle_alpha(nebalpha, &trailp->pos[n], Neb2_fog_visibility_trail))
+				current_alpha = (ubyte)(current_alpha * nebalpha);
+		}
 
 		// get the direction of the trail
 		vec3d trail_direction;

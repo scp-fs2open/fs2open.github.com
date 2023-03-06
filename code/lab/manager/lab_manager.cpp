@@ -21,6 +21,8 @@ void lab_exit() {
 }
 
 LabManager::LabManager() {
+	The_mission.Reset();
+
 	if (The_mission.ai_profile == nullptr)
 		The_mission.ai_profile = &Ai_profiles[Default_ai_profile];
 

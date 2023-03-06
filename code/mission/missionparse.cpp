@@ -616,6 +616,10 @@ void parse_mission_info(mission *pm, bool basic = false)
 		stuff_float(&Neb2_fog_far_mult);
 	}
 
+	if (optional_string("+Volumetric Nebula:")) {
+		pm->volumetrics.emplace().parse_volumetric_nebula();
+	}
+
 	// Goober5000 - ship contrail speed threshold
 	if (optional_string("$Contrail Speed Threshold:")){
 		stuff_int(&pm->contrail_threshold);
@@ -6332,6 +6336,9 @@ bool post_process_mission(mission *pm)
 	}
 	Last_file_checksum = Current_file_checksum;
 
+	if (pm->volumetrics)
+		pm->volumetrics->renderVolumeBitmap();
+
 	// success
 	return true;
 }
@@ -6449,6 +6456,8 @@ void mission::Reset()
 	cutscenes.clear( );
 
 	gravity = vmd_zero_vector;
+
+	volumetrics.reset();
 }
 
 /**

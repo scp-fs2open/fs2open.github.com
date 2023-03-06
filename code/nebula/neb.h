@@ -161,7 +161,8 @@ void neb2_get_adjusted_fog_values(float *fnear, float *ffar, float *fdensity = n
 
 // given a position, returns 0 - 1 the fog visibility of that position, 0 = completely obscured
 // distance_mult will multiply the result, use for things that can be obscured but can 'shine through' the nebula more than normal
-float neb2_get_fog_visibility (vec3d* pos, float distance_mult);
+// Don't use unless you know what you're doing. Use nebula_handle_alpha instead.
+float neb2_get_fog_visibility (const vec3d* pos, float distance_mult);
 
 // should we not render this object because its obscured by the nebula?
 int neb2_skip_render(object *objp, float z_depth);
@@ -172,5 +173,10 @@ float neb2_get_lod_scale(int objnum);
 // fogging stuff --------------------------------------------------
 
 void neb2_get_fog_color(ubyte *r, ubyte *g, ubyte *b);
+
+// given a position, multiplies alpha by 0 - 1 based on the visibility of Fullneb2 / Volumetric Fogging if present in mission
+// distance_mult will multiply the result, use for things that can be obscured but can 'shine through' the nebula more than normal
+// returns true if there is a nebula present that could have influence
+bool nebula_handle_alpha(float& alpha, const vec3d* pos, float distance_mult);
 
 #endif

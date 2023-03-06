@@ -53,6 +53,7 @@ extern bool Scene_framebuffer_in_frame;
 #define TCACHE_TYPE_INTERFACE				3		// for graphics that are using in the interface (for special filtering or sizing)
 #define TCACHE_TYPE_COMPRESSED				4		// Compressed bitmap type (DXT1, DXT3, DXT5)
 #define TCACHE_TYPE_CUBEMAP					5
+#define TCACHE_TYPE_3DTEX					6		// True 3D-Texture
 
 #define NEBULA_COLORS 20
 

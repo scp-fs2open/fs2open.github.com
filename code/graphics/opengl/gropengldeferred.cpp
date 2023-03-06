@@ -17,6 +17,7 @@
 #include "mission/mission_flags.h"
 #include "mission/missionparse.h"
 #include "nebula/neb.h"
+#include "nebula/volumetrics.h"
 #include "render/3d.h"
 #include "tracing/tracing.h"
 
@@ -70,8 +71,8 @@ void gr_opengl_deferred_lighting_begin(bool clearNonColorBufs)
 	glReadBuffer(GL_COLOR_ATTACHMENT0);
 	glBlitFramebuffer(0, 0, gr_screen.max_w, gr_screen.max_h, 0, 0, gr_screen.max_w, gr_screen.max_h, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
-	GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4 };
-	glDrawBuffers(5, buffers);
+	GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4, GL_COLOR_ATTACHMENT6 };
+	glDrawBuffers(6, buffers);
 
 	static const float black[] = { 0, 0, 0, 1.0f };
 
@@ -80,6 +81,7 @@ void gr_opengl_deferred_lighting_begin(bool clearNonColorBufs)
 		glClearBufferfv(GL_COLOR, 1, black);
 		glClearBufferfv(GL_COLOR, 2, black);
 		glClearBufferfv(GL_COLOR, 3, black);
+		glClearBufferfv(GL_COLOR, 5, black);
 	}
 }
 
@@ -117,8 +119,19 @@ void gr_opengl_deferred_lighting_finish()
 
 	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_DEFERRED_LIGHTING, 0));
 
-	// Render on top of the emissive buffer texture
-	glDrawBuffer(GL_COLOR_ATTACHMENT4);
+	// Render on top of the composite buffer texture
+	glDrawBuffer(GL_COLOR_ATTACHMENT6);
+	glReadBuffer(GL_COLOR_ATTACHMENT4);
+	glBlitFramebuffer(0,
+		0,
+		gr_screen.max_w,
+		gr_screen.max_h,
+		0,
+		0,
+		gr_screen.max_w,
+		gr_screen.max_h,
+		GL_COLOR_BUFFER_BIT,
+		GL_NEAREST);
 
 	GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_color_texture);
 	GL_state.Texture.Enable(1, GL_TEXTURE_2D, Scene_normal_texture);
@@ -140,6 +153,10 @@ void gr_opengl_deferred_lighting_finish()
 	// Get a uniform buffer for our data
 	auto buffer          = gr_get_uniform_buffer(uniform_block_type::Lights, num_data_elements);
 	auto& uniformAligner = buffer.aligner();
+
+	// This is the light which is responsible for shadows and volumetric nebula lighting
+	const light* global_light = nullptr;
+	vec3d global_light_diffuse;
 
 	{
 		GR_DEBUG_SCOPE("Build buffer data");
@@ -187,6 +204,13 @@ void gr_opengl_deferred_lighting_finish()
 				if (Shadow_quality != ShadowQuality::Disabled) {
 					light_data->enable_shadows = first_directional ? 1 : 0;
 				}
+
+				// Global light direction should match shadow light direction
+				if (first_directional) {
+					global_light = &l;
+					global_light_diffuse = diffuse;
+				}
+				
 				vec4 light_dir;
 				light_dir.xyzw.x = -l.vec.xyz.x;
 				light_dir.xyzw.y = -l.vec.xyz.y;
@@ -300,7 +324,7 @@ void gr_opengl_deferred_lighting_finish()
 		gr_zbuffer_set(GR_ZBUFF_NONE);
 		opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_SCENE_FOG, 0));
 
-		GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_emissive_texture);
+		GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_composite_texture);
 		GL_state.Texture.Enable(1, GL_TEXTURE_2D, Scene_depth_texture);
 
 		float fog_near, fog_far, fog_density;
@@ -322,10 +346,83 @@ void gr_opengl_deferred_lighting_finish()
 		});
 
 		opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
-	} else {
+	}
+	else if (The_mission.volumetrics && !override_fog) {
+		GR_DEBUG_SCOPE("Volumetric Nebulae");
+		const volumetric_nebula& neb = *The_mission.volumetrics;
+
+		Assertion(neb.isVolumeBitmapValid(), "The volumetric nebula was not properly initialized!");
+
+		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+		gr_set_view_matrix(&Eye_position, &Eye_matrix);
+		GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
+		gr_zbuffer_set(GR_ZBUFF_NONE);
+		opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_VOLUMETRIC_FOG,
+			(neb.getEdgeSmoothing() ? SDR_FLAG_VOLUMETRICS_DO_EDGE_SMOOTHING : 0) |
+			(neb.getNoiseActive() ? SDR_FLAG_VOLUMETRICS_NOISE : 0)
+		));
+
+		GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_composite_texture);
+		GL_state.Texture.Enable(1, GL_TEXTURE_2D, Scene_emissive_texture);
+		glGenerateMipmap(GL_TEXTURE_2D);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		GL_state.Texture.Enable(2, GL_TEXTURE_2D, Scene_depth_texture);
+		
+		{
+			//The following are not required, but the graphics API still returns them
+			float u_scale, v_scale;
+			uint32_t array_index;
+			gr_set_texture_addressing(TMAP_ADDRESS_CLAMP);
+			gr_opengl_tcache_set(neb.getVolumeBitmapHandle(), TCACHE_TYPE_3DTEX, &u_scale, &v_scale, &array_index, 3);
+			if (neb.getNoiseActive()) {
+				gr_set_texture_addressing(TMAP_ADDRESS_WRAP);
+				gr_opengl_tcache_set(neb.getNoiseVolumeBitmapHandle(), TCACHE_TYPE_3DTEX, &u_scale, &v_scale, &array_index, 4);
+			}
+		}
+
+		opengl_set_generic_uniform_data<graphics::generic_data::volumetric_fog_data>([&](graphics::generic_data::volumetric_fog_data* data) {
+			vm_inverse_matrix4(&data->p_inv, &gr_projection_matrix);
+			vm_inverse_matrix4(&data->v_inv, &gr_view_matrix);
+			data->zNear = Min_draw_distance;
+			data->zFar = Max_draw_distance;
+			data->cameraPos = Eye_position;
+			data->globalLightDirection = global_light ? global_light->vec : vec3d(ZERO_VECTOR);
+			data->globalLightDiffuse = global_light_diffuse;
+			data->nebPos = neb.getPos();
+			data->nebSize = neb.getSize();
+			data->stepsize = neb.getStepsize();
+			data->globalstepalpha = neb.getStepalpha();
+			data->alphalimit = neb.getAlphaLim();
+			data->emissiveSpreadFactor = neb.getEmissiveSpread();
+			data->emissiveIntensity = neb.getEmissiveIntensity();
+			data->emissiveFalloff = neb.getEmissiveFalloff();
+			data->henyeyGreensteinCoeff = neb.getHenyeyGreensteinCoeff();
+			data->directionalLightSampleSteps = neb.getGlobalLightSteps();
+			data->directionalLightStepSize = neb.getGlobalLightStepsize();
+			data->noiseColor[0] = std::get<0>(neb.getNoiseColor());
+			data->noiseColor[1] = std::get<1>(neb.getNoiseColor());
+			data->noiseColor[2] = std::get<2>(neb.getNoiseColor());
+			data->noiseColorScale1 = std::get<0>(neb.getNoiseColorScale());
+			data->noiseColorScale2 = std::get<1>(neb.getNoiseColorScale());
+			data->noiseColorIntensity = neb.getNoiseColorIntensity();
+			data->aspect = gr_screen.clip_aspect;
+			data->fov = Proj_fov;
+			});
+
+		{
+			GR_DEBUG_SCOPE("Volumetric Nebulae Draw");
+			opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
+		}
+		GL_state.Texture.Enable(Scene_emissive_texture);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+		gr_end_view_matrix();
+		gr_end_proj_matrix();
+	}
+	else {
 		// Transfer the resolved lighting back to the color texture
 		// TODO: Maybe this could be improved so that it doesn't require the copy back operation?
-		glReadBuffer(GL_COLOR_ATTACHMENT4);
+		glReadBuffer(GL_COLOR_ATTACHMENT6);
 		glBlitFramebuffer(0,
 						  0,
 						  gr_screen.max_w,

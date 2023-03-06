@@ -146,6 +146,9 @@ static opengl_shader_type_t GL_shader_types[] = {
 	{ SDR_TYPE_SCENE_FOG, "post-v.sdr", "fog-f.sdr", nullptr,
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Scene fogging", false },
 
+	{ SDR_TYPE_VOLUMETRIC_FOG, "post-v.sdr", "volumetric-f.sdr", nullptr,
+		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Volumetric fogging", false },
+
 	{ SDR_TYPE_ROCKET_UI, "rocketui-v.sdr",	"rocketui-f.sdr", nullptr,
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::COLOR, opengl_vert_attrib::TEXCOORD }, "libRocket UI", false },
 
@@ -189,6 +192,10 @@ static opengl_shader_variant_t GL_shader_variants[] = {
 	{SDR_TYPE_NANOVG, false, SDR_FLAG_NANOVG_EDGE_AA, "EDGE_AA", {}, "NanoVG edge anti-alias"},
 
 	{SDR_TYPE_DECAL, false, SDR_FLAG_DECAL_USE_NORMAL_MAP, "USE_NORMAL_MAP", {}, "Decal use scene normal map"},
+
+	{SDR_TYPE_VOLUMETRIC_FOG, false, SDR_FLAG_VOLUMETRICS_DO_EDGE_SMOOTHING, "DO_EDGE_SMOOTHING", {}, "Perform costly edge smoothing lookups"},
+
+	{SDR_TYPE_VOLUMETRIC_FOG, false, SDR_FLAG_VOLUMETRICS_NOISE, "NOISE", {}, "Add noise to volumetrics"}
 };
 
 static const int GL_num_shader_variants = sizeof(GL_shader_variants) / sizeof(opengl_shader_variant_t);

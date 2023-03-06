@@ -1730,12 +1730,12 @@ void model_render_glowpoint_bitmap(int point_num, vec3d *pos, matrix *orient, gl
 
 
 				// fade them in the nebula as well
-				if ( The_mission.flags[Mission::Mission_Flags::Fullneb] ) {
+				nebula_handle_alpha(d, &world_pnt, Neb2_fog_visibility_glowpoint);
+				if (The_mission.flags[Mission::Mission_Flags::Fullneb]) {
 					//vec3d npnt;
 					//vm_vec_add(&npnt, &loc_offset, pos);
 
-					d *= neb2_get_fog_visibility(&world_pnt, Neb2_fog_visibility_glowpoint);
-					w *= 1.5;	//make it bigger in a nebula
+					w *= 1.5;	//make it bigger in a nebula (but fullneb only)
 				}
 				
 				g3_transfer_vertex(&p, &world_pnt);
@@ -2316,20 +2316,10 @@ void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, in
 			float fog_int = 1.0f;
 
 			// fade them in the nebula as well
-			if (The_mission.flags[Mission::Mission_Flags::Fullneb]) {
-				vm_vec_unrotate(&npnt, &gpt->pnt, orient);
-				vm_vec_add2(&npnt, pos);
-
-				fog_int = neb2_get_fog_visibility(&npnt, Neb2_fog_visibility_thruster);
-
-				if (fog_int > 1.0f)
-					fog_int = 1.0f;
-
-				d *= fog_int;
-
-				if (d > 1.0f)
-					d = 1.0f;
-			}
+			vm_vec_unrotate(&npnt, &gpt->pnt, orient);
+			vm_vec_add2(&npnt, pos);
+			nebula_handle_alpha(fog_int, &npnt, Neb2_fog_visibility_thruster);
+			d *= fog_int;
 
 			// Scale the thrusters so they always appears at least some configured amount of pixels wide.
 			float scaled_thruster_radius = model_render_get_diameter_clamped_to_min_pixel_size(
@@ -2379,8 +2369,8 @@ void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, in
 
 					if (The_mission.flags[Mission::Mission_Flags::Fullneb]) {
 						vm_vec_add(&npnt, &pnt, pos);
-						d *= fog_int;
 					}
+					d *= fog_int;
 
 					batching_add_beam(thruster_info.secondary_glow_bitmap, &pnt, &norm2, wVal*thruster_info.secondary_glow_rad_factor*0.5f, d);
 

@@ -199,6 +199,7 @@ enum shader_type {
 	SDR_TYPE_NANOVG,
 	SDR_TYPE_DECAL,
 	SDR_TYPE_SCENE_FOG,
+	SDR_TYPE_VOLUMETRIC_FOG,
 	SDR_TYPE_ROCKET_UI,
 
 	SDR_TYPE_POST_PROCESS_SMAA_EDGE,
@@ -225,6 +226,9 @@ enum shader_type {
 #define SDR_FLAG_NANOVG_EDGE_AA		(1<<0)
 
 #define SDR_FLAG_DECAL_USE_NORMAL_MAP (1<<0)
+
+#define SDR_FLAG_VOLUMETRICS_DO_EDGE_SMOOTHING (1<<0)
+#define SDR_FLAG_VOLUMETRICS_NOISE (1<<1)
 
 
 enum class uniform_block_type {
