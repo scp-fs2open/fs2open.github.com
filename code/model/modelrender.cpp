@@ -3082,7 +3082,9 @@ void model_render_set_wireframe_color(color* clr)
 	Wireframe_color = *clr;
 }
 
-bool render_tech_model(bool is_ship, int x1, int y1, int x2, int y2, float zoom, bool lighting, int class_idx, matrix* orient)
+// renders a model as if in the tech room or briefing UI
+// model_type 1 for ship class, 2 for weapon class, 3 for pof
+bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int y2, float zoom, bool lighting, int class_idx, matrix* orient, SCP_string pof_filename, float close_zoom, vec3d close_pos)
 {
 
 	model_render_params render_info;
@@ -3090,43 +3092,69 @@ bool render_tech_model(bool is_ship, int x1, int y1, int x2, int y2, float zoom,
 	float closeup_zoom;
 	int model_num;
 	bool model_lighting = true;
+	uint render_flags = MR_AUTOCENTER | MR_NO_FOGGING;
 
-	if (is_ship) {
-		ship_info* sip;
-		sip = &Ship_info[class_idx];
+	switch (model_type) {
+		case TECH_SHIP:
+			ship_info* sip;
+			sip = &Ship_info[class_idx];
 
-		closeup_pos = sip->closeup_pos;
-		closeup_zoom = sip->closeup_zoom;
+			closeup_pos = sip->closeup_pos;
+			closeup_zoom = sip->closeup_zoom;
 
-		if (sip->uses_team_colors) {
-			render_info.set_team_color(sip->default_team_name, "none", 0, 0);
-		}
+			if (sip->uses_team_colors) {
+				render_info.set_team_color(sip->default_team_name, "none", 0, 0);
+			}
 
-		if (sip->flags[Ship::Info_Flags::No_lighting]) {
+			if (sip->flags[Ship::Info_Flags::No_lighting]) {
+				model_lighting = false;
+			}
+
+			// Make sure model is loaded
+			model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0], 0);
+
+			break;
+
+		case TECH_WEAPON:
+			weapon_info* wip;
+			wip = &Weapon_info[class_idx];
+
+			closeup_pos = wip->closeup_pos;
+			closeup_zoom = wip->closeup_zoom;
+
+			if (wip->wi_flags[Weapon::Info_Flags::Mr_no_lighting]) {
+				model_lighting = false;
+			}
+
+			// Make sure model is loaded
+			if (VALID_FNAME(wip->tech_model)) {
+				model_num = model_load(wip->tech_model, 0, nullptr, 0);
+			} else {
+				// no tech model!!
+				return false;
+			}
+
+			break;
+
+		case TECH_POF:
+			closeup_pos = close_pos;
+			closeup_zoom = close_zoom;
+			model_num = model_load(pof_filename.c_str(), 0, nullptr);
+
+			break;
+
+		case TECH_JUMP_NODE:
+			closeup_pos = close_pos;
+			closeup_zoom = close_zoom;
+			model_num = model_load(pof_filename.c_str(), 0, nullptr);
+			render_info.set_color(HUD_color_red, HUD_color_green, HUD_color_blue);
+			render_flags |= MR_NO_POLYS | MR_SHOW_OUTLINE_HTL | MR_NO_TEXTURING;
 			model_lighting = false;
-		}
 
-		// Make sure model is loaded
-		model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0], 0);
+			break;
 
-	} else {
-		weapon_info* wip;
-		wip = &Weapon_info[class_idx];
-
-		closeup_pos = wip->closeup_pos;
-		closeup_zoom = wip->closeup_zoom;
-
-		if (wip->wi_flags[Weapon::Info_Flags::Mr_no_lighting]) {
-			model_lighting = false;
-		}
-
-		// Make sure model is loaded
-		if (VALID_FNAME(wip->tech_model)) {
-			model_num = model_load(wip->tech_model, 0, nullptr, 0);
-		} else {
-			// no tech model!!
+		default:
 			return false;
-		}
 	}
 
 	//check if the model was loaded
@@ -3152,14 +3180,12 @@ bool render_tech_model(bool is_ship, int x1, int y1, int x2, int y2, float zoom,
 	int model_instance = -1;
 
 	// Create an instance for ships that can be used to clear out destroyed subobjects from rendering
-	if (is_ship) {
+	if (model_type == TECH_SHIP) {
 		model_instance = model_create_instance(-1, model_num);
 		model_set_up_techroom_instance(&Ship_info[class_idx], model_instance);
 	}
 
 	render_info.set_detail_level_lock(0);
-
-	uint render_flags = MR_AUTOCENTER | MR_NO_FOGGING;
 
 	if (!lighting || !model_lighting)
 		render_flags |= MR_NO_LIGHTING;
@@ -3169,7 +3195,7 @@ bool render_tech_model(bool is_ship, int x1, int y1, int x2, int y2, float zoom,
 	bool s_save = Shadow_override;
 	Shadow_override = true;
 
-	if (is_ship) {
+	if (model_type == TECH_SHIP) {
 		model_render_immediate(&render_info, model_num, model_instance, orient, &vmd_zero_vector);
 	} else {
 		model_render_immediate(&render_info, model_num, orient, &vmd_zero_vector);
@@ -3186,7 +3212,7 @@ bool render_tech_model(bool is_ship, int x1, int y1, int x2, int y2, float zoom,
 	gr_reset_clip();
 
 	// Now that we've rendered the frame we can remove the instance if one was created for ships
-	if (is_ship)
+	if (model_type == TECH_SHIP)
 		model_delete_instance(model_instance);
 
 	return true;
