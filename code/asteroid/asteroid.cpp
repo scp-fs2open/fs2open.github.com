@@ -966,7 +966,8 @@ static void asteroid_aim_at_target(object *objp, object *asteroid_objp, float de
 		vm_vec_add2(&rand_vec, &objp->orient.vec.rvec);
 	vm_vec_normalize(&rand_vec);
 
-	speed = Asteroid_info[ASTEROID_TYPE_LARGE].max_speed * (frand()/2.0f + 0.5f);
+	auto asp = &Asteroids[asteroid_objp->instance];
+	speed = Asteroid_info[asp->asteroid_type].max_speed * (frand()/2.0f + 0.5f);
 	
 	vm_vec_copy_scale(&asteroid_objp->phys_info.vel, &rand_vec, -speed);
 	asteroid_objp->phys_info.desired_vel = asteroid_objp->phys_info.vel;
