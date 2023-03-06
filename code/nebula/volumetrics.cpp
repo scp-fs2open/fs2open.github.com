@@ -29,7 +29,7 @@ volumetric_nebula& volumetric_nebula::parse_volumetric_nebula() {
 	size_t number = stuff_int_list(rgb, 3);
 	if (number != 3) {
 		error_display(1, "Volumetric nebula color must be fully specified.");
-		return;
+		return *this;
 	}
 	nebulaColor = std::make_tuple(static_cast<float>(rgb[0]) / 255.0f, static_cast<float>(rgb[1]) / 255.0f , static_cast<float>(rgb[2]) / 255.0f);
 
@@ -90,7 +90,7 @@ volumetric_nebula& volumetric_nebula::parse_volumetric_nebula() {
 		number = stuff_float_list(scale, 2);
 		if (number == 0) {
 			error_display(1, "Volumetric nebula noise scale must have at least the base scale.");
-			return;
+			return *this;
 		}
 		else if (number == 1) {
 			//Set smaller scale to about half, but with low-ish periodicity
@@ -102,7 +102,7 @@ volumetric_nebula& volumetric_nebula::parse_volumetric_nebula() {
 		number = stuff_int_list(rgb, 3);
 		if (number != 3) {
 			error_display(1, "Volumetric nebula noise color must be fully specified.");
-			return;
+			return *this;
 		}
 		noiseColor = std::make_tuple(static_cast<float>(rgb[0]) / 255.0f, static_cast<float>(rgb[1]) / 255.0f , static_cast<float>(rgb[2]) / 255.0f);
 
