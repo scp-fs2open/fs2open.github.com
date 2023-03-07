@@ -2856,32 +2856,22 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 
 	for (i = 0; i < pm->n_models; i++) {
 		if (pm->submodel[i].parent < 0) {
-			// to make sure the can_move flag is properly propagated from parent to child, we must recursively traverse through children
-			SCP_vector<int> submodel_stack;
-			submodel_stack.push_back(i);
+			model_iterate_submodel_tree(pm, i, [&](int submodel, int /*level*/, bool /*isLeaf*/)
+				{
+					auto sm = &pm->submodel[submodel];
 
-			while (!submodel_stack.empty()) {
-				int n = submodel_stack[submodel_stack.size() - 1];
-				submodel_stack.pop_back();
-				auto sm = &pm->submodel[n];
-
-				auto parent_sm = &pm->submodel[sm->parent];
-				bool is_turret = false;
-				for (const auto& subsystem : subsystemParseList.weapons_subsystems) {
-					if (n == subsystem.second.gun_subobj_nr && sm->parent >= 0 && subsystem.first == sm->parent) {
-						is_turret = true;
-						break;
+					auto parent_sm = &pm->submodel[sm->parent];
+					bool is_turret = false;
+					for (const auto& subsystem : subsystemParseList.weapons_subsystems) {
+						if (submodel == subsystem.second.gun_subobj_nr && sm->parent >= 0 && subsystem.first == sm->parent) {
+							is_turret = true;
+							break;
+						}
 					}
-				}
 
-				do_movement_sanity_checks(sm, parent_sm, pm->filename, true, is_turret);
-				do_movement_sanity_checks(sm, parent_sm, pm->filename, false, is_turret);
-
-				if (sm->first_child >= 0)
-					submodel_stack.push_back(sm->first_child);
-				if (sm->next_sibling >= 0)
-					submodel_stack.push_back(sm->next_sibling);
-			}
+					do_movement_sanity_checks(sm, parent_sm, pm->filename, true, is_turret);
+					do_movement_sanity_checks(sm, parent_sm, pm->filename, false, is_turret);
+				});
 		}
 	}
 
