@@ -910,6 +910,12 @@ void mission_log_scrollback(int line_offset, int list_x, int list_y, int list_w,
 		// print the objective
 		color obj_color = log_line_get_color(Log_scrollback_vec[i].objective.color);
 		gr_set_color_fast(&obj_color);
+
+		// check the flags
+		if ((Log_scrollback_vec[i].objective.flags & LOG_FLAG_GOAL_TRUE) || (Log_scrollback_vec[i].objective.flags & LOG_FLAG_GOAL_FAILED)) {
+			printSymbols = true;
+			symbolFlag = Log_scrollback_vec[i].objective.flags;
+		}
 			
 		char buf[256];
 		strcpy_s(buf, Log_scrollback_vec[i].objective.text.get());
@@ -928,10 +934,6 @@ void mission_log_scrollback(int line_offset, int list_x, int list_y, int list_w,
 			font::force_fit_string(buf, 256, list_w - thisSeg.x);
 			gr_string(list_x + thisSeg.x, list_y + y, buf, GR_RESIZE_MENU);
 
-			if ((thisSeg.flags & LOG_FLAG_GOAL_TRUE) || (thisSeg.flags & LOG_FLAG_GOAL_FAILED)) {
-				printSymbols = true;
-				symbolFlag = thisSeg.flags;
-			}
 		}
 
 		if (printSymbols) {
