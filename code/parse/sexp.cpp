@@ -2633,7 +2633,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 						break;
 
 					default:
-						if (op_node < First_available_operator_id) {
+						if (get_operator_const(op_node) < First_available_operator_id) {
 							ship_node = CDR(op_node);
 						} else {
 							ship_node = get_dynamic_parameter_index(Sexp_nodes[op_node].text, argnum);
