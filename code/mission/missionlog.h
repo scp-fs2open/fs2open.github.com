@@ -14,6 +14,7 @@
 
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
+#include "graphics/2d.h"
 
 // defined for different mission log entries
 
@@ -46,6 +47,15 @@ enum LogType {
 #define MLF_OBSOLETE						(1 << 1)	// this entry is obsolete and will be removed
 #define MLF_HIDDEN							(1 << 2)	// entry doesn't show up in displayed log.
 
+// defines for log flags
+#define LOG_FLAG_GOAL_FAILED (1 << 0)
+#define LOG_FLAG_GOAL_TRUE (1 << 1)
+
+// defines for log colors
+#define LOG_COLOR_NORMAL 0
+#define LOG_COLOR_BRIGHT 1
+#define LOG_COLOR_OTHER 2
+
 struct log_entry {
 	LogType type;            // one of the log #defines in MissionLog.h
 	int flags;               // flags used for status of this log entry
@@ -62,6 +72,20 @@ struct log_entry {
 	SCP_string sname_display;
 };
 
+struct log_text_seg {
+	SCP_vm_unique_ptr<char> text; // the text
+	int color;                    // color text should be displayed in
+	int x;                        // x offset to display text at
+	int flags;                    // used to possibly print special characters when displaying the log
+};
+
+struct log_line_complete {
+	fix timestamp;
+	log_text_seg objective;
+	SCP_vector<log_text_seg> actions;
+};
+
+extern SCP_vector<log_line_complete> Log_scrollback_vec;
 extern int Num_log_lines;
 
 // function prototypes
@@ -84,6 +108,12 @@ extern int mission_log_get_time_indexed(LogType type, const char *name, const ch
 
 // get the number of times an event happened
 extern int mission_log_get_count(LogType type, const char *pname, const char *sname);
+
+// get the team for a log item
+extern int message_log_color_get_team(int msg_color);
+
+// get the actual color for a line item
+extern color log_line_get_color(int tag);
 
 void message_log_init_scrollback(int pw);
 void message_log_shutdown_scrollback();

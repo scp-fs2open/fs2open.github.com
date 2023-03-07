@@ -41,31 +41,10 @@
 #define OBJECT_X		75
 #define ACTION_X		250
 
-#define LOG_COLOR_NORMAL	0
-#define LOG_COLOR_BRIGHT	1
-#define LOG_COLOR_OTHER		2
 #define NUM_LOG_COLORS		3
-
-// defines for log flags
-#define LOG_FLAG_GOAL_FAILED	(1<<0)
-#define LOG_FLAG_GOAL_TRUE		(1<<1)
-
-struct log_text_seg {
-	SCP_vm_unique_ptr<char>	text;	// the text
-	int	color;				// color text should be displayed in
-	int	x;						// x offset to display text at
-	int	flags;				// used to possibly print special characters when displaying the log
-};
 
 static int X, P_width;
 
-struct log_line_complete {
-	fix timestamp;
-	log_text_seg objective;
-	SCP_vector<log_text_seg> actions;
-};
-
-// used for displaying the mission log scrollback in a human readable format
 SCP_vector<log_line_complete> Log_scrollback_vec;
 int Num_log_lines;
 
@@ -736,6 +715,16 @@ void message_log_init_scrollback(int pw)
 			message_log_add_seg(&thisEntry.objective, OBJECT_X, thisColor, entry->pname_display.c_str());
 		}
 
+		//Set the flags for objectives
+		if ((entry->type == LOG_GOAL_SATISFIED) || (entry->type == LOG_GOAL_FAILED)) {
+			if (entry->type == LOG_GOAL_SATISFIED)
+				thisEntry.objective.flags = LOG_FLAG_GOAL_TRUE;
+			if (entry->type == LOG_GOAL_FAILED)
+				thisEntry.objective.flags = LOG_FLAG_GOAL_FAILED;
+		} else {
+			thisEntry.objective.flags = 0;
+		}
+
 		// now on to the actual message itself
 		X = ACTION_X;
 
@@ -859,7 +848,7 @@ void message_log_init_scrollback(int pw)
 				else
 					strcat_s(text, XSTR( "failed.", 421));
 
-				message_log_add_segs(text, LOG_COLOR_BRIGHT, (entry->type == LOG_GOAL_SATISFIED?LOG_FLAG_GOAL_TRUE:LOG_FLAG_GOAL_FAILED), &thisEntry.actions );
+				message_log_add_segs(text, LOG_COLOR_BRIGHT, 0, &thisEntry.actions );
 				break;
 			}	// matches case statement!
 			default:
@@ -876,6 +865,25 @@ void message_log_shutdown_scrollback()
 {
 	Log_scrollback_vec.clear();
 	Num_log_lines = 0;
+}
+
+color log_line_get_color(int tag)
+{
+	switch (tag) {
+		case LOG_COLOR_BRIGHT:
+			return Color_bright;
+
+		case LOG_COLOR_OTHER:
+			return Color_normal;
+
+		default: {
+			int team = message_log_color_get_team(tag);
+			if (team < 0)
+				return Color_text_normal;
+			else
+				return *iff_get_color_by_team(team, -1, 1);
+		}
+	}
 }
 
 // message_log_scrollback displays the contents of the mesasge log currently much like the HUD
@@ -900,25 +908,8 @@ void mission_log_scrollback(int line_offset, int list_x, int list_y, int list_w,
 		gr_print_timestamp(list_x + TIME_X, list_y + y, Log_scrollback_vec[i].timestamp, GR_RESIZE_MENU);
 
 		// print the objective
-		switch (Log_scrollback_vec[i].objective.color) {
-			case LOG_COLOR_BRIGHT:
-				gr_set_color_fast(&Color_bright);
-				break;
-
-			case LOG_COLOR_OTHER:
-				gr_set_color_fast(&Color_normal);
-				break;
-
-			default: {
-				int team = message_log_color_get_team(Log_scrollback_vec[i].objective.color);
-				if (team < 0)
-					gr_set_color_fast(&Color_text_normal);
-				else
-					gr_set_color_fast(iff_get_color_by_team(team, -1, 1));
-
-				break;
-			}
-		}
+		color obj_color = log_line_get_color(Log_scrollback_vec[i].objective.color);
+		gr_set_color_fast(&obj_color);
 			
 		char buf[256];
 		strcpy_s(buf, Log_scrollback_vec[i].objective.text.get());
@@ -930,25 +921,8 @@ void mission_log_scrollback(int line_offset, int list_x, int list_y, int list_w,
 
 			const auto& thisSeg = Log_scrollback_vec[i].actions[j];
 
-			switch (thisSeg.color) {
-				case LOG_COLOR_BRIGHT:
-					gr_set_color_fast(&Color_bright);
-					break;
-
-				case LOG_COLOR_OTHER:
-					gr_set_color_fast(&Color_normal);
-					break;
-
-				default: {
-					int team = message_log_color_get_team(thisSeg.color);
-					if (team < 0)
-						gr_set_color_fast(&Color_text_normal);
-					else
-						gr_set_color_fast(iff_get_color_by_team(team, -1, 1));
-
-					break;
-				}
-			}
+			color this_color = log_line_get_color(Log_scrollback_vec[i].actions[j].color);
+			gr_set_color_fast(&this_color);
 
 			strcpy_s(buf, thisSeg.text.get());
 			font::force_fit_string(buf, 256, list_w - thisSeg.x);
