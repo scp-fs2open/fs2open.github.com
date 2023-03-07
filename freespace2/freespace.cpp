@@ -2965,7 +2965,7 @@ void apply_view_shake(matrix *eye_orient)
 
 		// Make eye shake due to engine wash
 		if (Player_obj->type == OBJ_SHIP && (Ships[Player_obj->instance].wash_intensity > 0) && Wash_on ) {
-			float wash_intensity = Ships[Player_obj->instance].wash_intensity;
+			float wash_intensity = Ships[Player_obj->instance].wash_intensity * Ship_info[Ships[Player_obj->instance].ship_info_index].ship_shudder_modifier;
 	
 			tangles.p += get_shake(0.07f * wash_intensity, -1, 0);
 			tangles.h += get_shake(0.07f * wash_intensity, -1, 0);

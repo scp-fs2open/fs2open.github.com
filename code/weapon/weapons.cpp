@@ -2265,6 +2265,14 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		stuff_float(&wip->recoil_modifier);
 	}
 
+	if (optional_string("$Shudder Modifier:")) {
+		if (!(wip->wi_flags[Weapon::Info_Flags::Shudder])) {
+			Warning(LOCATION, "$Shudder Modifier specified for weapon %s but this weapon does not have the \"shudder\" weapon flag set. Automatically setting the flag", wip->name);
+			wip->wi_flags.set(Weapon::Info_Flags::Shudder);
+		}
+		stuff_float(&wip->shudder_modifier);
+	}
+
 	// Energy suck optional stuff (if WIF_ENERGY_SUCK is not set, none of this matters anyway)
 	if( optional_string("$Leech Weapon:") ){
 		stuff_float(&wip->weapon_reduce);
@@ -9051,6 +9059,7 @@ void weapon_info::reset()
 	this->emp_time = EMP_DEFAULT_TIME;	// Goober5000: <-- Look!  I fixed a Volition bug!  Gimme $5, Dave!
 
 	this->recoil_modifier = 1.0f;
+	this->shudder_modifier = 1.0f;
 
 	this->weapon_reduce = ESUCK_DEFAULT_WEAPON_REDUCE;
 	this->afterburner_reduce = ESUCK_DEFAULT_AFTERBURNER_REDUCE;
