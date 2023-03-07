@@ -44,7 +44,7 @@ ADE_VIRTVAR(Header, l_Help_Section, nullptr, "The header of the help section", "
 	return ade_set_args(L, "s", current.getSection()->header);
 }
 
-ADE_VIRTVAR(Keys, l_Help_Section, nullptr, "Gets a table of keys (each as a string) in the help section", "table", "The keys table") 
+ADE_VIRTVAR(Keys, l_Help_Section, nullptr, "Gets a table of keys in the help section", "{ number => string ... }", "The keys table") 
 {
 	help_section_h current;
 	if (!ade_get_args(L, "o", l_Help_Section.Get(&current))) {
@@ -60,7 +60,7 @@ ADE_VIRTVAR(Keys, l_Help_Section, nullptr, "Gets a table of keys (each as a stri
 	return ade_set_args(L, "t", &table);	
 }
 
-ADE_VIRTVAR(Texts, l_Help_Section, nullptr, "Gets a table of texts (each as a string) in the help section", "table", "The texts table")
+ADE_VIRTVAR(Texts, l_Help_Section, nullptr, "Gets a table of texts in the help section", "{ number => string ... }", "The texts table")
 {
 	help_section_h current;
 	if (!ade_get_args(L, "o", l_Help_Section.Get(&current))) {
