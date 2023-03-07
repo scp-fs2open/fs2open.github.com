@@ -1606,7 +1606,7 @@ ADE_FUNC(initGameHelp, l_UserInterface_GameHelp, nullptr, "Initializes the Game 
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(closeGameHelp, l_UserInterface_GameHelp, nullptr, "Clears the Game Help data.", nullptr, nullptr)
+ADE_FUNC(closeGameHelp, l_UserInterface_GameHelp, nullptr, "Clears the Game Help data. Should be used when finished accessing Help Sections.", nullptr, nullptr)
 {
 	SCP_UNUSED(L);
 
@@ -1626,6 +1626,10 @@ ADE_INDEXER(l_Help_Sections,
 	if (!ade_get_args(L, "*i", &idx))
 		return ade_set_error(L, "o", l_Help_Section.Set(help_section_h()));
 	idx--; //Convert to Lua's 1 based index system
+
+	if ((idx < 0) || (idx >= (int)Help_text.size()))
+		return ade_set_error(L, "o", l_Help_Section.Set(help_section_h()));
+
 	return ade_set_args(L, "o", l_Help_Section.Set(help_section_h(idx)));
 }
 

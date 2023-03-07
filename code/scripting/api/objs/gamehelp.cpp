@@ -44,7 +44,7 @@ ADE_VIRTVAR(Header, l_Help_Section, nullptr, "The header of the help section", "
 	return ade_set_args(L, "s", current.getSection()->header);
 }
 
-ADE_VIRTVAR(Keys, l_Help_Section, nullptr, "Gets a table of keys (as a string) in the help section", "table", "The keys table") 
+ADE_VIRTVAR(Keys, l_Help_Section, nullptr, "Gets a table of keys (each as a string) in the help section", "table", "The keys table") 
 {
 	help_section_h current;
 	if (!ade_get_args(L, "o", l_Help_Section.Get(&current))) {
@@ -53,15 +53,14 @@ ADE_VIRTVAR(Keys, l_Help_Section, nullptr, "Gets a table of keys (as a string) i
 
 	auto table = luacpp::LuaTable::create(L);
 
-	for (size_t i = 0; i < current.getSection()->key.size(); i++) 
-	{
+	for (size_t i = 0; i < current.getSection()->key.size(); i++) {
 		table.addValue(i + 1, current.getSection()->key[i]); //translate to Lua index
 	}
 
 	return ade_set_args(L, "t", &table);	
 }
 
-ADE_VIRTVAR(Texts, l_Help_Section, nullptr, "Gets a table of texts (as a string) in the help section", "table", "The texts table")
+ADE_VIRTVAR(Texts, l_Help_Section, nullptr, "Gets a table of texts (each as a string) in the help section", "table", "The texts table")
 {
 	help_section_h current;
 	if (!ade_get_args(L, "o", l_Help_Section.Get(&current))) {
