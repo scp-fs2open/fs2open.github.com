@@ -43,53 +43,38 @@ ADE_VIRTVAR(Header, l_Help_Section, nullptr, "The header of the help section", "
 
 	return ade_set_args(L, "s", current.getSection()->header);
 }
-//This won't work. Needs to be ADE_FUNC to getKeys() and getTexts() then index from there. ew.
-ADE_LIB_DERIV(l_Help_Section_Keys, "keys", nullptr, nullptr, l_Help_Section);
-ADE_INDEXER(l_Help_Section_Keys,
-	"number idx",
-	"Array of help section keys",
-	"string",
-	"the key as a string, or empty string if invalid")
+
+ADE_VIRTVAR(Keys, l_Help_Section, nullptr, "Gets a table of keys (as a string) in the help section", "table", "The keys table") 
 {
 	help_section_h current;
-	int idx;
-	if (!ade_get_args(L, "oi", l_Help_Section.Get(&current), &idx))
-		return ade_set_error(L, "s", "");
-	idx--; // Convert to Lua's 1 based index system
-	return ade_set_args(L, "s", current.getSection()->key[idx]);
+	if (!ade_get_args(L, "o", l_Help_Section.Get(&current))) {
+		return ADE_RETURN_NIL;
+	}
+
+	auto table = luacpp::LuaTable::create(L);
+
+	for (size_t i = 0; i < current.getSection()->key.size(); i++) 
+	{
+		table.addValue(i + 1, current.getSection()->key[i]); //translate to Lua index
+	}
+
+	return ade_set_args(L, "t", &table);	
 }
 
-ADE_FUNC(__len, l_Help_Section_Keys, nullptr, "The number of keys in the section", "number", "The number of keys.")
+ADE_VIRTVAR(Texts, l_Help_Section, nullptr, "Gets a table of texts (as a string) in the help section", "table", "The texts table")
 {
 	help_section_h current;
-	if (!ade_get_args(L, "o", l_Help_Section.Get(&current)))
-		return ade_set_error(L, "s", "");
+	if (!ade_get_args(L, "o", l_Help_Section.Get(&current))) {
+		return ADE_RETURN_NIL;
+	}
 
-	return ade_set_args(L, "i", (int)current.getSection()->key.size());
-}
+	auto table = luacpp::LuaTable::create(L);
 
-ADE_LIB_DERIV(l_Help_Section_Texts, "texts", nullptr, nullptr, l_Help_Section);
-ADE_INDEXER(l_Help_Section_Texts,
-	"number idx",
-	"Array of help section texts",
-	"string",
-	"the text as a string, or empty string if invalid")
-{
-	help_section_h current;
-	int idx;
-	if (!ade_get_args(L, "oi", l_Help_Section.Get(&current), &idx))
-		return ade_set_error(L, "s", "");
-	idx--; // Convert to Lua's 1 based index system
-	return ade_set_args(L, "s", current.getSection()->text[idx]);
-}
+	for (size_t i = 0; i < current.getSection()->text.size(); i++) {
+		table.addValue(i + 1, current.getSection()->text[i]); //translate to Lua index
+	}
 
-ADE_FUNC(__len, l_Help_Section_Texts, nullptr, "The number of texts in the section", "number", "The number of texts.")
-{
-	help_section_h current;
-	if (!ade_get_args(L, "o", l_Help_Section.Get(&current)))
-		return ade_set_error(L, "s", "");
-
-	return ade_set_args(L, "i", (int)current.getSection()->text.size());
+	return ade_set_args(L, "t", &table);
 }
 
 } // namespace api
