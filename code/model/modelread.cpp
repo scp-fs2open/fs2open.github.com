@@ -1943,8 +1943,6 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				if (in(p, props, "$lod0_name"))
 					get_user_prop_value(p+10, sm->lod_name);
 
-				sm->flags.set(Model::Submodel_flags::Attach_thrusters, in(props, "$attach_thrusters"));
-
 				if (in(p, props, "$detail_box:")) {
 					p += 12;
 					while (*p == ' ') p++;
