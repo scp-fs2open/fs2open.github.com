@@ -1740,7 +1740,7 @@ ADE_INDEXER(l_Log_Messages,
 		return ade_set_error(L, "o", l_Message_Entry.Set(message_entry_h()));
 	idx--; //Convert to Lua's 1 based index system
 
-	if ((idx < 0) || (idx >= (int)Log_scrollback_vec.size()))
+	if ((idx < 0) || (idx >= (int)Msg_scrollback_vec.size()))
 		return ade_set_error(L, "o", l_Message_Entry.Set(message_entry_h()));
 
 	return ade_set_args(L, "o", l_Message_Entry.Set(message_entry_h(idx)));
