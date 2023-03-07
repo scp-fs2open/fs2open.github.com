@@ -2850,19 +2850,39 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 		}
 	}
 
+	create_family_tree(pm);
+
 	// ---------- submodel movement sanity checks ----------
 
 	for (i = 0; i < pm->n_models; i++) {
-		auto sm = &pm->submodel[i];		
-		auto parent_sm = sm->parent >= 0 ? &pm->submodel[sm->parent] : nullptr;
-		bool is_turret = false;
-		for (const auto& subsystem : subsystemParseList.weapons_subsystems) {
-			if (i == subsystem.second.gun_subobj_nr && sm->parent >= 0 && subsystem.first == sm->parent) 
-				is_turret = true;			
-		}
+		if (pm->submodel[i].parent < 0) {
+			// to make sure the can_move flag is properly propagated from parent to child, we must recursively traverse through children
+			SCP_vector<int> submodel_stack;
+			submodel_stack.push_back(i);
 
-		do_movement_sanity_checks(sm, parent_sm, pm->filename, true, is_turret);
-		do_movement_sanity_checks(sm, parent_sm, pm->filename, false, is_turret);
+			while (!submodel_stack.empty()) {
+				int n = submodel_stack[submodel_stack.size() - 1];
+				submodel_stack.pop_back();
+				auto sm = &pm->submodel[n];
+
+				auto parent_sm = &pm->submodel[sm->parent];
+				bool is_turret = false;
+				for (const auto& subsystem : subsystemParseList.weapons_subsystems) {
+					if (n == subsystem.second.gun_subobj_nr && sm->parent >= 0 && subsystem.first == sm->parent) {
+						is_turret = true;
+						break;
+					}
+				}
+
+				do_movement_sanity_checks(sm, parent_sm, pm->filename, true, is_turret);
+				do_movement_sanity_checks(sm, parent_sm, pm->filename, false, is_turret);
+
+				if (sm->first_child >= 0)
+					submodel_stack.push_back(sm->first_child);
+				if (sm->next_sibling >= 0)
+					submodel_stack.push_back(sm->next_sibling);
+			}
+		}
 	}
 
 	// ---------- done submodel movement sanity checks ----------
@@ -3314,8 +3334,6 @@ int model_load(const  char* filename, int n_subsystems, model_subsystem* subsyst
 		}
 
 	}
-
-	create_family_tree(pm);
 
 	// maybe generate vertex buffers
 	create_vertex_buffer(pm, deferredTasks);
