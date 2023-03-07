@@ -6725,7 +6725,6 @@ void game_shutdown(void)
 	particle::close();			// close out the particle system
 	weapon_close();					// free any memory that was allocated for the weapons
 	ship_close();					// free any memory that was allocated for the ships
-	hud_free_scrollback_list();// free space allocated to store hud messages in hud scrollback
 
 	decals::shutdown();
 

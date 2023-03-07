@@ -36,17 +36,13 @@ typedef struct HUD_message_data {
 } HUD_message_data;
 
 typedef struct line_node {
-	line_node* next;
-	line_node* prev;
 	fix time;  // timestamp when message was added
 	int source;  // who/what the source of the message was (for color coding)
 	int x;
 	int y;
 	int underline_width;
-	char *text;
+	SCP_string text;
 } line_node;
-
-extern line_node Msg_scrollback_used_list;
 
 typedef struct Hud_display_info {
 	HUD_message_data msg;
@@ -74,7 +70,6 @@ void HUD_init_fixed_text();			//	Clear all pending fixed text.
 void HUD_add_to_scrollback(const char *text, int source);
 void hud_add_line_to_scrollback(const char *text, int source, int t, int x, int y, int w);
 void hud_add_msg_to_scrollback(const char *text, int source, int t);
-void hud_free_scrollback_list();
 
 class HudGaugeMessages: public HudGauge // HUD_MESSAGE_LINES
 {
