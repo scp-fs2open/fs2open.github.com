@@ -2636,8 +2636,11 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 						if (get_operator_const(op_node) < First_available_operator_id) {
 							ship_node = CDR(op_node);
 						} else {
-							ship_node = op_node + get_dynamic_parameter_index(Sexp_nodes[op_node].text, argnum); //error checking uses the whole tree
-							ship_node++; //dynamic params are saved at a 0 based index, but with the whole tree we need to move up a spot
+							int r_count = get_dynamic_parameter_index(Sexp_nodes[op_node].text, argnum) + 1; //account for the node header
+							while (r_count >= 0) {
+								ship_node = CDR(op_node);
+								r_count--;
+							}
 
 							if (ship_node < op_node)
 								error_display(1, "Expected to find a dynamic lua parent parameter for node %i in operator %s but found nothing!",
@@ -3361,9 +3364,11 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 							ship_node = CDR(z);
 						} else if (type == OPF_DOCKER_POINT) {
 							if (get_operator_const(op_node) >= First_available_operator_id) {
-
-								ship_node = op_node + get_dynamic_parameter_index(Sexp_nodes[op_node].text, argnum); //error checking uses the whole tree
-								ship_node++; //dynamic params are saved at a 0 based index, but with the whole tree we need to move up a spot
+								int r_count = get_dynamic_parameter_index(Sexp_nodes[op_node].text, argnum) + 1; //account for the node header
+								while (r_count >= 0) {
+									ship_node = CDR(op_node);
+									r_count--;
+								}
 
 								if (ship_node < 0)
 									error_display(1,
@@ -3378,9 +3383,11 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 						} else if (type == OPF_DOCKEE_POINT) {
 							ship_node = CDDDR(z);
 						} else if (get_operator_const(op_node) >= First_available_operator_id) {
-
-							ship_node = op_node + get_dynamic_parameter_index(Sexp_nodes[op_node].text, argnum);//error checking uses the whole tree
-							ship_node++; //dynamic params are saved at a 0 based index, but with the whole tree we need to move up a spot
+							int r_count = get_dynamic_parameter_index(Sexp_nodes[op_node].text, argnum) + 1; //account for the node header
+							while (r_count >= 0) {
+								ship_node = CDR(op_node);
+								r_count--;
+							}
 
 							if (ship_node < 0)
 								error_display(1,
