@@ -98,15 +98,9 @@ static const char *Hotkey_mask_fname[GR_NUM_RESOLUTIONS] = {
 #define HOTKEY_X		575
 #define HOTKEY_Y		41
 */
- 
-#define HOTKEY_LINE_HEADING	1
-#define HOTKEY_LINE_WING		2
-#define HOTKEY_LINE_SHIP		3
-#define HOTKEY_LINE_SUBSHIP	4  // ship that is in a wing
 
 #define WING_FLAG	0x80000
 
-#define MAX_LINES					200
 #define NUM_BUTTONS				10
 #define LIST_BUTTONS_MAX		50
 
@@ -258,15 +252,7 @@ static UI_XSTR Hotkey_text[GR_NUM_RESOLUTIONS][HOTKEY_NUM_TEXT] = {
 	}
 };
 
-
-
-static struct {
-	SCP_string label;
-	int type;
-	int index;
-	int y;  // Y coordinate of line
-} Hotkey_lines[MAX_LINES];
-
+hotkey_line Hotkey_lines[MAX_LINES];
 static int Cur_hotkey = 0;
 static int Scroll_offset;
 static int Num_lines;
@@ -523,6 +509,11 @@ int get_wing_hotkeys(int n)
 	return total;
 }
 
+int get_ship_hotkeys(int n)
+{
+	return Hotkey_bits[Hotkey_lines[n].index];
+}
+
 // add a line of hotkey smuck to end of list
 int hotkey_line_add(const char *text, int type, int index, int y)
 {
@@ -723,6 +714,11 @@ int hotkey_build_team_listing(int enemy_team_mask, int y, bool list_enemies)
 
 	y += font_height + 8;
 	return y;
+}
+
+void hotkey_set_selected_line(int line)
+{
+	Selected_line = line;
 }
 
 void hotkey_build_listing()

@@ -27,6 +27,7 @@
 #include "missionui/missiondebrief.h"
 #include "mission/missiongoals.h"
 #include "mission/missioncampaign.h"
+#include "mission/missionhotkey.h"
 #include "missionui/redalert.h"
 #include "missionui/missionpause.h"
 #include "mod_table/mod_table.h"
@@ -46,6 +47,7 @@
 #include "scripting/api/objs/briefing.h"
 #include "scripting/api/objs/debriefing.h"
 #include "scripting/api/objs/shipwepselect.h"
+#include "scripting/api/objs/missionhotkey.h"
 #include "scripting/api/objs/color.h"
 #include "scripting/api/objs/enums.h"
 #include "scripting/api/objs/player.h"
@@ -1672,6 +1674,91 @@ ADE_VIRTVAR(Complete, l_UserInterface_Credits, nullptr, "The complete credits st
 
 	return ade_set_args(L, "s", credits_complete);
 }
+
+//**********SUBLIBRARY: UserInterface/Hotkeys
+ADE_LIB_DERIV(l_UserInterface_Hotkeys,
+	"GameHelp",
+	nullptr,
+	"API for accessing data related to the mission hotkeys UI.<br><b>Warning:</b> This is an internal "
+	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	l_UserInterface);
+
+ADE_FUNC(initHotkeysList,
+	l_UserInterface_Hotkeys,
+	nullptr,
+	"Initializes the hotkeys list. Must be used before the hotkeys list is accessed.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	hotkey_set_selected_line(1);
+	hotkey_build_listing();
+
+	// We want to allow the API to handle expanding wings on its own,
+	// so lets expand every wing in the list and not try to handle it after that.
+	for (int i = 0; i <= MAX_LINES; i++) {
+		auto item = Hotkey_lines[i];
+		if (item.type == HOTKEY_LINE_WING) {
+			hotkey_set_selected_line(i);
+			expand_wing();
+		}
+	}
+
+	// Reset the selected line back to 1
+	hotkey_set_selected_line(1);
+
+	return ADE_RETURN_NIL;
+}
+
+/*ADE_FUNC(closeHotkeysList,
+	l_UserInterface_Hotkeys,
+	nullptr,
+	"Clears the hotkeys list. Should be used when finished accessing hotkeys.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	Help_text.clear();
+
+	return ADE_RETURN_NIL;
+}*/
+
+ADE_LIB_DERIV(l_Hotkeys, "Hotkeys_List", nullptr, nullptr, l_UserInterface_Hotkeys);
+ADE_INDEXER(l_Hotkeys,
+	"number Index",
+	"Array of Hotkey'd ships",
+	"hotkey_ship",
+	"hotkey ship handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "o", l_Hotkey.Set(hotkey_h()));
+	idx--; // Convert to Lua's 1 based index system
+
+	if ((idx < 0) || (idx > MAX_LINES))
+		return ade_set_error(L, "o", l_Hotkey.Set(hotkey_h()));
+
+	return ade_set_args(L, "o", l_Hotkey.Set(hotkey_h(idx)));
+}
+
+ADE_FUNC(__len, l_Hotkeys, nullptr, "The number of valid hotkey ships", "number", "The number of valid hotkey ships.")
+{
+	int s = 0;
+
+	for (int i = 0; i <= MAX_LINES; i++) {
+		auto item = Hotkey_lines[i];
+		if (item.type == 0) {
+			s = i - 1;
+			break;
+		}
+	}
+	
+	return ade_set_args(L, "i", s);
+}
+
+
 //**********SUBLIBRARY: UserInterface/PauseScreen
 ADE_LIB_DERIV(l_UserInterface_PauseScreen,
 	"PauseScreen",
