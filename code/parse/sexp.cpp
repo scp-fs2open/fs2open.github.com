@@ -2636,9 +2636,10 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 						if (get_operator_const(op_node) < First_available_operator_id) {
 							ship_node = CDR(op_node);
 						} else {
-							ship_node = get_dynamic_parameter_index(Sexp_nodes[op_node].text, argnum);
+							ship_node = op_node + get_dynamic_parameter_index(Sexp_nodes[op_node].text, argnum); //error checking uses the whole tree
+							ship_node++; //dynamic params are saved at a 0 based index, but with the whole tree we need to move up a spot
 
-							if (ship_node < 0)
+							if (ship_node < op_node)
 								error_display(1, "Expected to find a dynamic lua parent parameter for node %i in operator %s but found nothing!",
 									argnum,
 									Sexp_nodes[op_node].text);
@@ -3356,15 +3357,30 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 					} else {
 						z = op_node;
 
-						if (get_operator_const(op_node) == OP_AI_DOCK)	// ai-dock with dockee
+						if (get_operator_const(op_node) == OP_AI_DOCK) { // ai-dock with dockee
 							ship_node = CDR(z);
-						else if (type == OPF_DOCKER_POINT)
-							ship_node = CDR(z);
-						else if (type == OPF_DOCKEE_POINT)
-							ship_node = CDDDR(z);
-						else if (get_operator_const(op_node) >= First_available_operator_id) {
+						} else if (type == OPF_DOCKER_POINT) {
+							if (get_operator_const(op_node) >= First_available_operator_id) {
 
-							ship_node = get_dynamic_parameter_index(Sexp_nodes[op_node].text, argnum);
+								ship_node = op_node + get_dynamic_parameter_index(Sexp_nodes[op_node].text, argnum); //error checking uses the whole tree
+								ship_node++; //dynamic params are saved at a 0 based index, but with the whole tree we need to move up a spot
+
+								if (ship_node < 0)
+									error_display(1,
+										"Expected to find a dynamic lua parent parameter for node %i in operator %s "
+										"but found nothing!",
+										argnum,
+										Sexp_nodes[op_node].text);
+								break;
+							} else {
+								ship_node = CDR(z);
+							}
+						} else if (type == OPF_DOCKEE_POINT) {
+							ship_node = CDDDR(z);
+						} else if (get_operator_const(op_node) >= First_available_operator_id) {
+
+							ship_node = op_node + get_dynamic_parameter_index(Sexp_nodes[op_node].text, argnum);//error checking uses the whole tree
+							ship_node++; //dynamic params are saved at a 0 based index, but with the whole tree we need to move up a spot
 
 							if (ship_node < 0)
 								error_display(1,
