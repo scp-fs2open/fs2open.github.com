@@ -82,7 +82,7 @@ struct log_text_seg {
 struct log_line_complete {
 	fix timestamp;
 	log_text_seg objective;
-	SCP_vector<log_text_seg> actions;
+	SCP_vector<log_text_seg> segments;
 };
 
 extern SCP_vector<log_line_complete> Log_scrollback_vec;

@@ -102,12 +102,12 @@ ADE_VIRTVAR(ObjectiveColor, l_Log_Entry, nullptr, "The objective color of the lo
 	return ade_set_args(L, "o", l_Color.Set(ac));
 }
 
-ADE_VIRTVAR(ActionTexts,
+ADE_VIRTVAR(SegmentTexts,
 	l_Log_Entry,
 	nullptr,
-	"Gets a table of action texts in the log entry",
+	"Gets a table of segment texts in the log entry",
 	"{ number => string ... }",
-	"The action texts table")
+	"The segment texts table")
 {
 	log_entry_h current;
 	if (!ade_get_args(L, "o", l_Log_Entry.Get(&current))) {
@@ -116,19 +116,19 @@ ADE_VIRTVAR(ActionTexts,
 
 	auto table = luacpp::LuaTable::create(L);
 
-	for (size_t i = 0; i < current.getSection()->actions.size(); i++) {
-		table.addValue(i + 1, current.getSection()->actions[i].text.get()); // translate to Lua index
+	for (size_t i = 0; i < current.getSection()->segments.size(); i++) {
+		table.addValue(i + 1, current.getSection()->segments[i].text.get()); // translate to Lua index
 	}
 
 	return ade_set_args(L, "t", &table);
 }
 
-ADE_VIRTVAR(ActionColors,
+ADE_VIRTVAR(SegmentColors,
 	l_Log_Entry,
 	nullptr,
-	"Gets a table of action colors in the log entry.",
+	"Gets a table of segment colors in the log entry.",
 	"{ number => color ... }",
-	"The action colors table")
+	"The segment colors table")
 {
 	log_entry_h current;
 	if (!ade_get_args(L, "o", l_Log_Entry.Get(&current))) {
@@ -137,9 +137,9 @@ ADE_VIRTVAR(ActionColors,
 
 	auto table = luacpp::LuaTable::create(L);
 
-	for (size_t i = 0; i < current.getSection()->actions.size(); i++) {
+	for (size_t i = 0; i < current.getSection()->segments.size(); i++) {
 
-		color ac = log_line_get_color(current.getSection()->actions[i].color);
+		color ac = log_line_get_color(current.getSection()->segments[i].color);
 		table.addValue(i + 1, l_Color.Set(ac)); // translate to Lua index
 	}
 
