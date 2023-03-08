@@ -5904,8 +5904,8 @@ void model_subsystem::reset()
     turret_norm.xyz.x = turret_norm.xyz.y = turret_norm.xyz.z = 0.0f;
     
     turret_fov = 0;
-    turret_max_fov = 0;
-    turret_base_fov = 0;
+    turret_max_fov = 1;
+    turret_base_fov = -1;
     turret_num_firing_points = 0;
     for (auto it = std::begin(turret_firing_point); it != std::end(turret_firing_point); ++it)
         it->xyz.x = it->xyz.y = it->xyz.z = 0.0f;
