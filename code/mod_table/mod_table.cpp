@@ -137,6 +137,7 @@ bool SCPUI_loads_hi_res_animations;
 bool Countermeasures_use_capacity;
 bool Play_thruster_sounds_for_player;
 std::array<std::tuple<float, float>, 6> Fred_spacemouse_nonlinearity;
+bool Stars_no_gamma_correction;
 
 static auto DiscordOption = options::OptionBuilder<bool>("Other.Discord", "Discord Presence", "Toggle Discord Rich Presence")
 							 .category("Other")
@@ -807,6 +808,10 @@ void parse_mod_table(const char *filename)
 			}
 		}
 
+		if (optional_string("$Don't gamma correct stars:")) {
+			stuff_boolean(&Stars_no_gamma_correction);
+		}
+
 		optional_string("#SOUND SETTINGS");
 
 		if (optional_string("$Default Sound Volume:")) {
@@ -1349,6 +1354,7 @@ void mod_table_reset()
 			std::tuple<float, float>{ 1.0f, 1.0f },
 			std::tuple<float, float>{ 1.0f, 1.0f }
 		}};
+	Stars_no_gamma_correction = false;
 }
 
 void mod_table_set_version_flags()

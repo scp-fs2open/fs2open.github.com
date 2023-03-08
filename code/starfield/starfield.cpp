@@ -1869,7 +1869,7 @@ void stars_draw_stars()
 		if (len <= 2.0f ) {
 			p1.screen.xyw.x = p2.screen.xyw.x + 1.0f;
 			p1.screen.xyw.y = p2.screen.xyw.y;
-		} else {
+		} else if (!Stars_no_gamma_correction){
 			// gamma correction
 			col.red = (ubyte)((float)col.red / powf(len, 1.0f / 2.2f));
 			col.green = (ubyte)((float)col.green / powf(len, 1.0f / 2.2f));

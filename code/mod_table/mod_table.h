@@ -133,6 +133,7 @@ extern bool SCPUI_loads_hi_res_animations;
 extern bool Countermeasures_use_capacity;
 extern bool Play_thruster_sounds_for_player;
 extern std::array<std::tuple<float, float>, 6> Fred_spacemouse_nonlinearity;
+extern bool Stars_no_gamma_correction;
 
 void mod_table_init();
 void mod_table_post_process();
