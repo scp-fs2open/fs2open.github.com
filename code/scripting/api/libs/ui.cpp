@@ -1692,16 +1692,16 @@ ADE_FUNC(initHotkeysList,
 {
 	SCP_UNUSED(L);
 
+	reset_hotkeys();
 	hotkey_set_selected_line(1);
 	hotkey_build_listing();
 
 	// We want to allow the API to handle expanding wings on its own,
 	// so lets expand every wing in the list and not try to handle it after that.
-	for (int i = 0; i <= MAX_LINES; i++) {
+	for (int i = 0; i < MAX_LINES; i++) {
 		auto item = Hotkey_lines[i];
 		if (item.type == HOTKEY_LINE_WING) {
-			hotkey_set_selected_line(i);
-			expand_wing();
+			expand_wing(i);
 		}
 	}
 
@@ -1711,19 +1711,33 @@ ADE_FUNC(initHotkeysList,
 	return ADE_RETURN_NIL;
 }
 
-/*ADE_FUNC(closeHotkeysList,
+ADE_FUNC(resetHotkeys,
 	l_UserInterface_Hotkeys,
 	nullptr,
-	"Clears the hotkeys list. Should be used when finished accessing hotkeys.",
+	"Resets the hotkeys list to mission defaults. Returns nothing.",
 	nullptr,
 	nullptr)
 {
 	SCP_UNUSED(L);
 
-	Help_text.clear();
+	reset_hotkeys();
 
 	return ADE_RETURN_NIL;
-}*/
+}
+
+ADE_FUNC(saveHotkeys,
+	l_UserInterface_Hotkeys,
+	nullptr,
+	"Saves changes to the hotkey list. Returns nothing.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	save_hotkeys();
+
+	return ADE_RETURN_NIL;
+}
 
 ADE_LIB_DERIV(l_Hotkeys, "Hotkeys_List", nullptr, nullptr, l_UserInterface_Hotkeys);
 ADE_INDEXER(l_Hotkeys,
@@ -1747,7 +1761,7 @@ ADE_FUNC(__len, l_Hotkeys, nullptr, "The number of valid hotkey ships", "number"
 {
 	int s = 0;
 
-	for (int i = 0; i <= MAX_LINES; i++) {
+	for (int i = 0; i < MAX_LINES; i++) {
 		auto item = Hotkey_lines[i];
 		if (item.type == 0) {
 			s = i - 1;

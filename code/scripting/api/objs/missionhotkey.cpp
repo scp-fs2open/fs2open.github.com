@@ -1,7 +1,6 @@
 #include "missionhotkey.h"
 
 #include "mission/missionhotkey.h"
-#include "player.h"
 
 namespace scripting {
 namespace api {
@@ -85,6 +84,71 @@ ADE_VIRTVAR(Keys,
 	}
 
 	return ade_set_args(L, "t", &table);
+}
+
+ADE_FUNC(addHotkey,
+	l_Hotkey,
+	"number Key",
+	"Adds a hotkey to the to the ship in the list. 1-8 correspond to F5-F12. Returns nothing.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	hotkey_h current;
+	int key;
+	if (!ade_get_args(L, "oi", l_Hotkey.Get(&current), &key)) {
+		return ADE_RETURN_NIL;
+	}
+	key--;
+
+	int hotkey = Key_sets[key];
+
+	add_hotkey(current.getIndex(), hotkey);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(removeHotkey,
+	l_Hotkey,
+	"number Key",
+	"Removes a hotkey from the ship in the list. 1-8 correspond to F5-F12. Returns nothing.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	hotkey_h current;
+	int key;
+	if (!ade_get_args(L, "oi", l_Hotkey.Get(&current), &key)) {
+		return ADE_RETURN_NIL;
+	}
+	key--;
+
+	int hotkey = Key_sets[key];
+
+	remove_hotkey(current.getIndex(), hotkey);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(clearHotkeys,
+	l_Hotkey,
+	nullptr,
+	"Clears all hotkeys from the ship in the list. Returns nothing.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	hotkey_h current;
+	if (!ade_get_args(L, "o", l_Hotkey.Get(&current))) {
+		return ADE_RETURN_NIL;
+	}
+
+	clear_hotkeys(current.getIndex());
+
+	return ADE_RETURN_NIL;
 }
 
 } // namespace api
