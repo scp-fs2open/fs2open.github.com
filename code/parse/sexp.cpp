@@ -2637,17 +2637,19 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 							ship_node = CDR(op_node);
 						} else {
 							int r_count = get_dynamic_parameter_index(Sexp_nodes[op_node].text, argnum) + 1; //account for the node header
+							
+							if (r_count < 0)
+								error_display(1,
+									"Expected to find a dynamic lua parent parameter for node %i in operator %s but "
+									"found nothing!",
+									argnum,
+									Sexp_nodes[op_node].text);
+							
 							ship_node = 0; //initialize it I guess
 							while (r_count >= 0) {
 								ship_node = CDR(op_node);
 								r_count--;
 							}
-
-							if (ship_node < op_node)
-								error_display(1, "Expected to find a dynamic lua parent parameter for node %i in operator %s but found nothing!",
-									argnum,
-									Sexp_nodes[op_node].text);
-
 						}
 						break;
 				}
@@ -3366,18 +3368,19 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 						} else if (type == OPF_DOCKER_POINT) {
 							if (get_operator_const(op_node) >= First_available_operator_id) {
 								int r_count = get_dynamic_parameter_index(Sexp_nodes[op_node].text, argnum) + 1; //account for the node header
-								ship_node = 0;   // initialize it I guess
-								while (r_count >= 0) {
-									ship_node = CDR(op_node);
-									r_count--;
-								}
-
-								if (ship_node < 0)
+								
+								if (r_count < 0)
 									error_display(1,
 										"Expected to find a dynamic lua parent parameter for node %i in operator %s "
 										"but found nothing!",
 										argnum,
 										Sexp_nodes[op_node].text);
+								
+								ship_node = 0;   // initialize it I guess
+								while (r_count >= 0) {
+									ship_node = CDR(op_node);
+									r_count--;
+								}
 								break;
 							} else {
 								ship_node = CDR(z);
@@ -3386,18 +3389,19 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 							ship_node = CDDDR(z);
 						} else if (get_operator_const(op_node) >= First_available_operator_id) {
 							int r_count = get_dynamic_parameter_index(Sexp_nodes[op_node].text, argnum) + 1; //account for the node header
-							ship_node = 0;   // initialize it I guess
-							while (r_count >= 0) {
-								ship_node = CDR(op_node);
-								r_count--;
-							}
-
-							if (ship_node < 0)
+							
+							if (r_count < 0)
 								error_display(1,
 									"Expected to find a dynamic lua parent parameter for node %i in operator %s "
 									"but found nothing!",
 									argnum,
 									Sexp_nodes[op_node].text);
+							
+							ship_node = 0;   // initialize it I guess
+							while (r_count >= 0) {
+								ship_node = CDR(op_node);
+								r_count--;
+							}
 							break;
 						} else {
 							UNREACHABLE("Unhandled case for OPF_DOCKER_POINT/OPF_DOCKEE_POINT");
