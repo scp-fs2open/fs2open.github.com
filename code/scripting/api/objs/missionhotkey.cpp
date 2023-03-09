@@ -69,9 +69,9 @@ ADE_VIRTVAR(Keys,
 	int hotkeys;
 
 	if (current.getLine()->type == HOTKEY_LINE_WING)
-		hotkeys = get_wing_hotkeys(current.getLine()->index); // for wings
+		hotkeys = get_wing_hotkeys(current.getIndex()); // for wings
 	else
-		hotkeys = get_ship_hotkeys(current.getLine()->index); // for everything else (there's mastercard)
+		hotkeys = get_ship_hotkeys(current.getIndex()); // for everything else (there's mastercard)
 
 	auto table = luacpp::LuaTable::create(L);
 
@@ -104,7 +104,7 @@ ADE_FUNC(addHotkey,
 
 	int hotkey = Key_sets[key];
 
-	add_hotkey(current.getIndex(), hotkey);
+	add_hotkey(hotkey, current.getIndex());
 
 	return ADE_RETURN_NIL;
 }
@@ -127,7 +127,7 @@ ADE_FUNC(removeHotkey,
 
 	int hotkey = Key_sets[key];
 
-	remove_hotkey(current.getIndex(), hotkey);
+	remove_hotkey(hotkey, current.getIndex());
 
 	return ADE_RETURN_NIL;
 }

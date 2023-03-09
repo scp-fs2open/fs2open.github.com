@@ -479,19 +479,21 @@ void mission_hotkey_validate()
 // get the Hotkey_bits of a whole wing (bits must be set in all ships of wing for a hotkey bit to be set)
 int get_wing_hotkeys(int n)
 {
+	int idx = Hotkey_lines[n].index;
+	
 	int total = 0xffffffff;
 
-	Assert((n >= 0) && (n < Num_wings));
-	for (int i=0; i<Wings[n].current_count; i++) {
+	Assert((idx >= 0) && (idx < Num_wings));
+	for (int i = 0; i < Wings[idx].current_count; i++) {
 		int ship_index;
 
 		// don't count the player ship for the total -- you cannot assign the player since bad things
 		// can happen on the hud.
-		ship_index = Wings[n].ship_index[i];
+		ship_index = Wings[idx].ship_index[i];
 		if ( &Ships[ship_index] == Player_ship )
 			continue;
 
-		total &= Hotkey_bits[Wings[n].ship_index[i]];
+		total &= Hotkey_bits[Wings[idx].ship_index[i]];
 	}
 
 	return total;
@@ -835,7 +837,7 @@ void clear_hotkeys(int line)
 
 	if (z == HOTKEY_LINE_WING) {
 		z = Hotkey_lines[line].index;
-		int b = ~get_wing_hotkeys(z);
+		int b = ~get_wing_hotkeys(line);
 		for (int i=0; i<Wings[z].current_count; i++)
 			Hotkey_bits[Wings[z].ship_index[i]] &= b;
 
@@ -1157,12 +1159,12 @@ void mission_hotkey_do_frame(float  /*frametime*/)
 			int hotkeys = -1;
 			switch (Hotkey_lines[Selected_line].type) {
 				case HOTKEY_LINE_WING:
-					hotkeys = get_wing_hotkeys(Hotkey_lines[Selected_line].index);
+					hotkeys = get_wing_hotkeys(Selected_line);
 					break;
 
 				case HOTKEY_LINE_SHIP:
 				case HOTKEY_LINE_SUBSHIP:
-					hotkeys = Hotkey_bits[Hotkey_lines[Selected_line].index];
+					hotkeys = get_ship_hotkeys(Selected_line);
 					break;
 			}
 
@@ -1233,12 +1235,12 @@ void mission_hotkey_do_frame(float  /*frametime*/)
 //				gr_line(ICON_LIST_X + 6, i, ICON_LIST_X + 8, i, GR_RESIZE_MENU);
 //				gr_line(ICON_LIST_X + 4, i + 2, ICON_LIST_X + 4, i + 4, GR_RESIZE_MENU);
 
-				hotkeys = get_wing_hotkeys(Hotkey_lines[line].index);
+				hotkeys = get_wing_hotkeys(line);
 				break;
 
 			case HOTKEY_LINE_SHIP:
 			case HOTKEY_LINE_SUBSHIP:
-				hotkeys = Hotkey_bits[Hotkey_lines[line].index];
+				hotkeys = get_ship_hotkeys(line);
 				break;
 
 			default:
