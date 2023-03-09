@@ -1761,10 +1761,11 @@ ADE_FUNC(__len, l_Hotkeys, nullptr, "The number of valid hotkey ships", "number"
 {
 	int s = 0;
 
+	// this is dumb, but whatever
 	for (int i = 0; i < MAX_LINES; i++) {
 		auto item = Hotkey_lines[i];
 		if (item.type == 0) {
-			s = i - 1;
+			s = i;
 			break;
 		}
 	}
