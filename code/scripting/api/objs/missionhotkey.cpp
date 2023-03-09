@@ -1,6 +1,7 @@
 #include "missionhotkey.h"
 
 #include "mission/missionhotkey.h"
+#include "playerman/player.h"
 
 namespace scripting {
 namespace api {

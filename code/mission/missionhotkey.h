@@ -13,8 +13,6 @@
 #define __MISSIONHOTKEY_H__
 
 #include "globalincs/globals.h"
-#include "io/key.h"
-#include "playerman/player.h"
 
 #define MAX_LINES MAX_SHIPS // retail was 200, bump it to match MAX_SHIPS
 
