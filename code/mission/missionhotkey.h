@@ -13,6 +13,8 @@
 #define __MISSIONHOTKEY_H__
 
 #include "globalincs/globals.h"
+#include "io/key.h"
+#include "playerman/player.h"
 
 #define MAX_LINES MAX_SHIPS // retail was 200, bump it to match MAX_SHIPS
 
@@ -21,6 +23,8 @@
 #define HOTKEY_LINE_WING 2
 #define HOTKEY_LINE_SHIP 3
 #define HOTKEY_LINE_SUBSHIP 4 // ship that is in a wing
+
+extern int Key_sets[MAX_KEYED_TARGETS];
 
 struct hotkey_line {
 	SCP_string label;
@@ -48,15 +52,29 @@ void hotkey_build_listing();
 // function to set the selected hotkey line
 void hotkey_set_selected_line(int line);
 
-// function to expand a wing in the hotkey list
-// uses the Selected_line var, so set that first
-void expand_wing();
+// function to expand a wing in the hotkey list and sets Selected_line to the first ship in the wing
+void expand_wing(int line);
 
 // function to return the hotkeys for a wing
 extern int get_wing_hotkeys(int n);
 
 // function to return the hotkeys for a ship
 extern int get_ship_hotkeys(int n);
+
+// function to add a hotkey to a hotkey line
+void add_hotkey(int hotkey, int line);
+
+// function to remove a hotkey from a hotkey line
+void remove_hotkey(int hotkey, int line);
+
+// function to clear all hotkeys from a hotkey line
+void clear_hotkeys(int line);
+
+// function to reset the mission hotkeys
+void reset_hotkeys();
+
+// function to save hotkey changes
+void save_hotkeys();
 
 // function to return the hotkey set number of the given key
 extern int mission_hotkey_get_set_num( int k );
