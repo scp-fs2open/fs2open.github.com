@@ -1677,7 +1677,7 @@ ADE_VIRTVAR(Complete, l_UserInterface_Credits, nullptr, "The complete credits st
 
 //**********SUBLIBRARY: UserInterface/Hotkeys
 ADE_LIB_DERIV(l_UserInterface_Hotkeys,
-	"GameHelp",
+	"MissionHotkeys",
 	nullptr,
 	"API for accessing data related to the mission hotkeys UI.<br><b>Warning:</b> This is an internal "
 	"API for the new UI system. This should not be used by other code and may be removed in the future!",
