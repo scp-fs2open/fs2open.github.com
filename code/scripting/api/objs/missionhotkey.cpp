@@ -69,9 +69,9 @@ ADE_VIRTVAR(Keys,
 	int hotkeys;
 
 	if (current.getLine()->type == HOTKEY_LINE_WING)
-		hotkeys = get_wing_hotkeys(Hotkey_lines[current.getIndex()].index); // for wings
+		hotkeys = get_wing_hotkeys(current.getLine()->index); // for wings
 	else
-		hotkeys = get_ship_hotkeys(Hotkey_lines[current.getIndex()].index); // for everything else (there's mastercard)
+		hotkeys = get_ship_hotkeys(current.getLine()->index); // for everything else (there's mastercard)
 
 	auto table = luacpp::LuaTable::create(L);
 
