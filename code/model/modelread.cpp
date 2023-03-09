@@ -2857,8 +2857,8 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 			model_iterate_submodel_tree(pm, i, [&](int submodel, int /*level*/, bool /*isLeaf*/)
 				{
 					auto sm = &pm->submodel[submodel];
+					auto parent_sm = sm->parent < 0 ? nullptr : &pm->submodel[sm->parent];
 
-					auto parent_sm = &pm->submodel[sm->parent];
 					bool is_turret = false;
 					for (const auto& subsystem : subsystemParseList.weapons_subsystems) {
 						if (submodel == subsystem.second.gun_subobj_nr && sm->parent >= 0 && subsystem.first == sm->parent) {
