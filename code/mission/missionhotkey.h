@@ -24,8 +24,6 @@
 #define HOTKEY_LINE_SHIP 3
 #define HOTKEY_LINE_SUBSHIP 4 // ship that is in a wing
 
-extern int Key_sets[MAX_KEYED_TARGETS];
-
 struct hotkey_line {
 	SCP_string label;
 	int type; // type 0 is an unused line
@@ -38,7 +36,7 @@ extern hotkey_line Hotkey_lines[MAX_LINES];
 void mission_hotkey_init();
 void mission_hotkey_close();
 void mission_hotkey_do_frame(float frametime);
-void mission_hotkey_set_defaults();
+void mission_hotkey_set_defaults(bool restore = true);
 void mission_hotkey_validate();
 void mission_hotkey_maybe_save_sets();
 void mission_hotkey_reset_saved();
@@ -70,7 +68,8 @@ void remove_hotkey(int hotkey, int line);
 // function to clear all hotkeys from a hotkey line
 void clear_hotkeys(int line);
 
-// function to reset the mission hotkeys
+// function to reset the mission hotkeys for this specific session in the ui
+// does not reset to mission defaults!
 void reset_hotkeys();
 
 // function to save hotkey changes

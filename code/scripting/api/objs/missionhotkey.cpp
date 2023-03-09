@@ -102,9 +102,7 @@ ADE_FUNC(addHotkey,
 	}
 	key--;
 
-	int hotkey = Key_sets[key];
-
-	add_hotkey(hotkey, current.getIndex());
+	add_hotkey(key, current.getIndex());
 
 	return ADE_RETURN_NIL;
 }
@@ -125,9 +123,7 @@ ADE_FUNC(removeHotkey,
 	}
 	key--;
 
-	int hotkey = Key_sets[key];
-
-	remove_hotkey(hotkey, current.getIndex());
+	remove_hotkey(key, current.getIndex());
 
 	return ADE_RETURN_NIL;
 }

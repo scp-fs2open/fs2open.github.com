@@ -33,7 +33,7 @@
 #include "weapon/weapon.h"
 
 
-int Key_sets[MAX_KEYED_TARGETS] = {
+static int Key_sets[MAX_KEYED_TARGETS] = {
 	KEY_F5,
 	KEY_F6,
 	KEY_F7,
@@ -305,9 +305,10 @@ void mission_hotkey_maybe_restore()
 // mission_hotkey_set_defaults()
 //
 // Set up the hotkey lists for the player based on the mission designer
-// defaults.  
+// defaults. 
+// Set restore to false to explicitely ignore player saved values. 
 //
-void mission_hotkey_set_defaults()
+void mission_hotkey_set_defaults(bool restore)
 {
 
 	for (int i = 0; i < MAX_KEYED_TARGETS; i++ ) {
@@ -321,7 +322,7 @@ void mission_hotkey_set_defaults()
 	// if we have hotkeys saved from the previous run of this mission, then simply keep the cleared
 	// sets, and let the restore code take care of it!  This works because this function is currently
 	// only called from one place -- after the mission loads.
-	if ( Num_hotkeys_saved > 0 ) {
+	if ( restore && (Num_hotkeys_saved > 0) ) {
 		mission_hotkey_maybe_restore();
 		return;
 	}

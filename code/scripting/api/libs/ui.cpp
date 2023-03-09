@@ -1714,7 +1714,7 @@ ADE_FUNC(initHotkeysList,
 ADE_FUNC(resetHotkeys,
 	l_UserInterface_Hotkeys,
 	nullptr,
-	"Resets the hotkeys list to mission defaults. Returns nothing.",
+	"Resets the hotkeys list to previous setting, removing anything that wasn't saved. Returns nothing.",
 	nullptr,
 	nullptr)
 {
@@ -1735,6 +1735,24 @@ ADE_FUNC(saveHotkeys,
 	SCP_UNUSED(L);
 
 	save_hotkeys();
+
+	return ADE_RETURN_NIL;
+}
+
+// This is not a retail UI feature, but it's just good design to allow it.
+// This will allow SCPUI to create a restore to mission defaults button.
+ADE_FUNC(resetHotkeysDefault,
+	l_UserInterface_Hotkeys,
+	nullptr,
+	"Resets the hotkeys list to the default mission setting. Returns nothing.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	// argument to false, because if we're doing this we explicitely do not want
+	// to restore player's saved values
+	mission_hotkey_set_defaults(false);
 
 	return ADE_RETURN_NIL;
 }
