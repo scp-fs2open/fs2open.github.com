@@ -2636,7 +2636,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 						if (get_operator_const(op_node) < First_available_operator_id) {
 							ship_node = CDR(op_node);
 						} else {
-							int r_count = get_dynamic_parameter_index(Sexp_nodes[op_node].text, argnum);
+							int r_count = get_dynamic_parameter_index(Sexp_nodes[op_node].text, argnum) + 1; //account for the node header
 							
 							if (r_count < 0)
 								error_display(1,
@@ -2645,10 +2645,9 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 									argnum,
 									Sexp_nodes[op_node].text);
 							
-							r_count++; //account for the node header
-							ship_node = op_node; //initialize it I guess
+							ship_node = 0; //initialize it I guess
 							while (r_count >= 0) {
-								ship_node = CDR(ship_node);
+								ship_node = CDR(op_node);
 								r_count--;
 							}
 						}
@@ -3368,7 +3367,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 							ship_node = CDR(z);
 						} else if (type == OPF_DOCKER_POINT) {
 							if (get_operator_const(op_node) >= First_available_operator_id) {
-								int r_count = get_dynamic_parameter_index(Sexp_nodes[op_node].text, argnum);
+								int r_count = get_dynamic_parameter_index(Sexp_nodes[op_node].text, argnum) + 1; //account for the node header
 								
 								if (r_count < 0)
 									error_display(1,
@@ -3377,10 +3376,9 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 										argnum,
 										Sexp_nodes[op_node].text);
 								
-								r_count++; //account for the node header
-								ship_node = op_node;   // initialize it I guess
+								ship_node = 0;   // initialize it I guess
 								while (r_count >= 0) {
-									ship_node = CDR(ship_node);
+									ship_node = CDR(op_node);
 									r_count--;
 								}
 								break;
@@ -3390,7 +3388,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 						} else if (type == OPF_DOCKEE_POINT) {
 							ship_node = CDDDR(z);
 						} else if (get_operator_const(op_node) >= First_available_operator_id) {
-							int r_count = get_dynamic_parameter_index(Sexp_nodes[op_node].text, argnum);
+							int r_count = get_dynamic_parameter_index(Sexp_nodes[op_node].text, argnum) + 1; //account for the node header
 							
 							if (r_count < 0)
 								error_display(1,
@@ -3399,10 +3397,9 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 									argnum,
 									Sexp_nodes[op_node].text);
 							
-							r_count++; //account for the node header
-							ship_node = op_node;   // initialize it I guess
+							ship_node = 0;   // initialize it I guess
 							while (r_count >= 0) {
-								ship_node = CDR(ship_node);
+								ship_node = CDR(op_node);
 								r_count--;
 							}
 							break;
