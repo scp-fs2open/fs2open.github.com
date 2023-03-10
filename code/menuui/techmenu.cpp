@@ -390,7 +390,7 @@ void techroom_select_new_entry()
 					Techroom_modelnum = model_load(wip->tech_model, 0, nullptr, 0);
 				}
 
-				if (Techroom_modelnum > 0) {
+				if (Techroom_modelnum >= 0) {
 					weaponLoaded = true;
 
 					if (Techroom_model_instance >= 0) {
@@ -1475,7 +1475,7 @@ void techroom_do_frame(float frametime)
 			break;
 
 		case WEAPONS_DATA_TAB:
-			if (Techroom_modelnum > 0) {
+			if (Techroom_modelnum >= 0) {
 				techroom_ships_render(frametime);
 			} else {
 				techroom_anim_render(frametime);
