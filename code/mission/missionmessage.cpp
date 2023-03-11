@@ -57,6 +57,15 @@ builtin_message Builtin_messages[] = {
   #undef X
 };
 
+int get_builtin_message_type(const char* name) {
+	for (int i = 0; i < MAX_BUILTIN_MESSAGE_TYPES; i++) {
+		if (!stricmp(Builtin_messages[i].name, name)) {
+			return i;
+		}
+	}
+	return MESSAGE_NONE;
+}
+
 SCP_vector<MMessage> Messages;
 
 int Num_messages, Num_message_avis, Num_message_waves;
@@ -522,20 +531,12 @@ void message_parse(bool importing_from_fsm)
 void message_frequency_parse()
 {
 	char name[32];
-	int i, max_count, min_delay, occurrence_chance;  
-	int builtin_type = -1; 
+	int max_count, min_delay, occurrence_chance;
 
 	required_string("$Name:");
 	stuff_string(name, F_NAME, NAME_LENGTH);
-
-	for (i = 0; i < MAX_BUILTIN_MESSAGE_TYPES; i++) {
-		if (!strcmp(name, Builtin_messages[i].name)) {
-			builtin_type = i;
-			break;
-		}
-	}
-
-	if (builtin_type == -1) {
+	int builtin_type = get_builtin_message_type(name);
+	if (builtin_type == MESSAGE_NONE) {
 		Warning(LOCATION, "Unknown Builtin Message Type Detected. Type : %s not supported", name);
 		return;
 	}

@@ -144,6 +144,8 @@ enum {
 
 extern builtin_message Builtin_messages[MAX_BUILTIN_MESSAGE_TYPES];
 
+int get_builtin_message_type(const char* name);
+
 typedef struct MessageFilter {
 	SCP_vector<SCP_string> ship_name;
 	SCP_vector<SCP_string> callsign;
