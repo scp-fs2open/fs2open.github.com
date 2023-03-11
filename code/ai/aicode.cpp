@@ -10943,10 +10943,10 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 			// send appropriate messages here
 			if (Game_mode & GM_NORMAL || MULTIPLAYER_MASTER) {
 				if ( how == REPAIR_INFO_KILLED ){
-					message_send_builtin(MESSAGE_SUPPORT_KILLED, nullptr, nullptr, 0, 0, p_index, p_team);
+					message_send_builtin(MESSAGE_SUPPORT_KILLED, nullptr, nullptr, p_index, p_team);
 				} else {
 					if ( repair_objp ){
-						message_send_builtin(MESSAGE_REPAIR_ABORTED, &Ships[repair_objp->instance], nullptr, 0, 0, p_index, p_team);
+						message_send_builtin(MESSAGE_REPAIR_ABORTED, &Ships[repair_objp->instance], nullptr, p_index, p_team);
 					}
 				}
 			}
@@ -10968,7 +10968,7 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 			hud_support_view_stop();			
 			
 			if (Game_mode & GM_NORMAL || MULTIPLAYER_MASTER) {
-				message_send_builtin(MESSAGE_REPAIR_DONE, &Ships[repair_objp->instance], nullptr, 0, 0, p_index, p_team);
+				message_send_builtin(MESSAGE_REPAIR_DONE, &Ships[repair_objp->instance], nullptr, p_index, p_team);
 			}
 		}
 		stamp = timestamp((int) ((30 + 10*frand()) * 1000));
@@ -15474,9 +15474,9 @@ void process_friendly_hit_message( int message, object *objp )
 
 	if ( index >= 0 ) 
 	{
-		message_send_builtin(message, &Ships[index], nullptr, 0, 0, -1, -1);
+		message_send_builtin(message, &Ships[index], nullptr, -1, -1);
 	} else {
-		message_send_builtin(message, nullptr, nullptr, 0, 0, -1, -1);
+		message_send_builtin(message, nullptr, nullptr, -1, -1);
 	}
 }
 
@@ -15585,7 +15585,7 @@ void maybe_process_friendly_hit(object *objp_hitter, object *objp_hit, object *o
 			if (is_instructor(objp_hit)) {
 				// it's not nice to hit your instructor
 				if (pp->friendly_damage > FRIENDLY_DAMAGE_THRESHOLD) {
-					message_send_builtin(MESSAGE_INSTRUCTOR_ATTACK, nullptr, nullptr, 0, 0, -1, -1);
+					message_send_builtin(MESSAGE_INSTRUCTOR_ATTACK, nullptr, nullptr, -1, -1);
 					pp->last_warning_message_time = Missiontime;
 					ship_set_subsystem_strength( Player_ship, SUBSYSTEM_WEAPONS, 0.0f);
 
@@ -15597,7 +15597,7 @@ void maybe_process_friendly_hit(object *objp_hitter, object *objp_hit, object *o
 				} else if (Missiontime - pp->last_warning_message_time > F1_0*4) {
 					// warning every 4 sec
 					// use NULL as the message sender here since it is the Terran Command persona
-					message_send_builtin(MESSAGE_INSTRUCTOR_HIT, nullptr, nullptr, 0, 0, -1, -1);
+					message_send_builtin(MESSAGE_INSTRUCTOR_HIT, nullptr, nullptr, -1, -1);
 					pp->last_warning_message_time = Missiontime;
 				}
 

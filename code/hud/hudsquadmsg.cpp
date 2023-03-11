@@ -657,22 +657,22 @@ void hud_squadmsg_repair_rearm( int toggle_state, object *objp)
 	// message and bail
 	if ( is_support_allowed(tobj) ) {
 		if ( mission_is_repair_scheduled( tobj ) ) {
-			message_send_builtin(MESSAGE_ALREADY_ON_WAY, nullptr, nullptr, 0, 0, multi_player_num, multi_player_team);
+			message_send_builtin(MESSAGE_ALREADY_ON_WAY, nullptr, nullptr, multi_player_num, multi_player_team);
 		} else {
 			robjnum = hud_support_find_closest(OBJ_INDEX(tobj));
 			if ( robjnum != -1 ) {
-				message_send_builtin(MESSAGE_ALREADY_ON_WAY, &Ships[Objects[robjnum].instance], nullptr, 0, 0, multi_player_num, multi_player_team);
+				message_send_builtin(MESSAGE_ALREADY_ON_WAY, &Ships[Objects[robjnum].instance], nullptr, multi_player_num, multi_player_team);
 			} else {
 				// request a rearm.  Next function returns -1 if ship is warping in, objnum of repair ship otherwise
 				robjnum = ai_issue_rearm_request( tobj );
 				if ( robjnum != -1) {
 					robjp = &Objects[robjnum];
-					message_send_builtin(MESSAGE_ON_WAY, &Ships[robjp->instance], nullptr, 0, 0, multi_player_num, multi_player_team);
+					message_send_builtin(MESSAGE_ON_WAY, &Ships[robjp->instance], nullptr, multi_player_num, multi_player_team);
 
 				} else {
 					// if we are in this part of the if statement, a support ship has been warped in to
 					// service us.  Issue appropriate message
-					message_send_builtin(MESSAGE_REARM_WARP, nullptr, nullptr, 0, 0, multi_player_num, multi_player_team);
+					message_send_builtin(MESSAGE_REARM_WARP, nullptr, nullptr, multi_player_num, multi_player_team);
 				}
 
 				mission_log_add_entry(LOG_PLAYER_CALLED_FOR_REARM, Ships[tobj->instance].ship_name, NULL);
@@ -1298,7 +1298,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 	
 	// this is the _response_
 	if (send_message && (!(Ships[shipnum].flags[Ship::Ship_Flags::No_builtin_messages]))) {
-		message_send_builtin(message, &Ships[shipnum], target, 0, 0, player_num, message_team_filter);
+		message_send_builtin(message, &Ships[shipnum], target, player_num, message_team_filter);
 	}
 	
 	return send_message;
@@ -1539,7 +1539,7 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 		// menu, but the get_random_ship* functions won't return dying ships.
 		// Karajorma - No valid ships will be found if all the remaining ships have been silence either. 
 		if (ship_num != -1) {
-			message_send_builtin(message, &Ships[ship_num], target, 0, 0, player_num, message_team_filter);
+			message_send_builtin(message, &Ships[ship_num], target, player_num, message_team_filter);
 			message_sent = 1;
 		}
 	}

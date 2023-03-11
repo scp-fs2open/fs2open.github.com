@@ -2077,7 +2077,7 @@ int get_builtin_message(int type, int persona, ship* sender, ship* subject, bool
 // send builtin_to_player sends a message (from messages.tbl) to the player. These messages are
 // the generic informational type messages. The have priorities like misison specific messages,
 // and use a timing to tell how long we should wait before playing this message
-bool message_send_builtin(int type, ship* sender, ship* subject, int group, int delay, int multi_target, int multi_team_filter) {
+bool message_send_builtin(int type, ship* sender, ship* subject, int multi_target, int multi_team_filter) {
 	if (should_skip_builtin_message(type, sender)) {
 		return false;
 	}
@@ -2118,7 +2118,7 @@ bool message_send_builtin(int type, ship* sender, ship* subject, int group, int 
 	if (!(Game_mode & GM_MULTIPLAYER) || ((multi_target == -1) || (multi_target == MY_NET_PLAYER_NUM))) {
 		// if this filter matches mine
 		if ((multi_team_filter < 0) || !(Netgame.type_flags & NG_TYPE_TEAM) || ((Net_player != NULL) && (Net_player->p_info.team == multi_team_filter))) {
-			message_queue_message(message_index, priority, timing, who_from, source, group, delay, type, -1);
+			message_queue_message(message_index, priority, timing, who_from, source, 0, 0, type, -1);
 		}
 	}
 

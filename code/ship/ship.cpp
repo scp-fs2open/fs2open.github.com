@@ -9549,7 +9549,7 @@ static void ship_check_player_distance_sub(player *p, int multi_target=-1)
 		}
 		// issue up to max warnings
 		if (p->distance_warning_count <= PLAYER_DISTANCE_MAX_WARNINGS) {
-			message_send_builtin(MESSAGE_STRAY_WARNING, nullptr, nullptr, 0, 0, multi_target, -1);
+			message_send_builtin(MESSAGE_STRAY_WARNING, nullptr, nullptr, multi_target, -1);
 		}
 
 		if (p->distance_warning_count > PLAYER_DISTANCE_MAX_WARNINGS) {
@@ -9560,7 +9560,7 @@ static void ship_check_player_distance_sub(player *p, int multi_target=-1)
 	if ( !(p->flags & PLAYER_FLAGS_FORCE_MISSION_OVER) && ((p->distance_warning_count > PLAYER_DISTANCE_MAX_WARNINGS) || (dist > PLAYER_MAX_DIST_END)) ) {
 //		DKA 5/17/99 - DON'T force warpout.  Won't work multiplayer.  Blow up ship.
 		if ( !(p->flags & PLAYER_FLAGS_DIST_TO_BE_KILLED) ) {
-			message_send_builtin(MESSAGE_STRAY_WARNING_FINAL, nullptr, nullptr, 0, 0, multi_target, -1);
+			message_send_builtin(MESSAGE_STRAY_WARNING_FINAL, nullptr, nullptr, multi_target, -1);
 			p->flags |= PLAYER_FLAGS_DIST_TO_BE_KILLED;
 			p->distance_warning_time = timestamp(PLAYER_DEATH_DELTA_TIME);
 		}
@@ -16932,9 +16932,9 @@ void ship_maybe_warn_player(ship *enemy_sp, float dist)
 		// multiplayer - make sure I just send to myself
 		bool sent;
 		if (Game_mode & GM_MULTIPLAYER) {
-			sent = message_send_builtin(MESSAGE_CHECK_6, &Ships[ship_index], enemy_sp, 0, 0, MY_NET_PLAYER_NUM, -1);
+			sent = message_send_builtin(MESSAGE_CHECK_6, &Ships[ship_index], enemy_sp, MY_NET_PLAYER_NUM, -1);
 		} else {
-			sent = message_send_builtin(MESSAGE_CHECK_6, &Ships[ship_index], enemy_sp, 0, 0, -1, -1);
+			sent = message_send_builtin(MESSAGE_CHECK_6, &Ships[ship_index], enemy_sp, -1, -1);
 		}
 		if (sent) {
 			Player->allow_warn_timestamp = timestamp(Builtin_messages[MESSAGE_CHECK_6].min_delay);
@@ -17031,7 +17031,7 @@ void ship_maybe_praise_self(ship *deader_sp, ship *killer_sp)
 		return;
 	}
 
-	if (message_send_builtin(MESSAGE_PRAISE_SELF, killer_sp, deader_sp, 0, 0, -1, -1)) {
+	if (message_send_builtin(MESSAGE_PRAISE_SELF, killer_sp, deader_sp, -1, -1)) {
 		Player->praise_self_timestamp = timestamp(Builtin_messages[MESSAGE_PRAISE_SELF].min_delay);
 		Player->praise_self_count++;
 	}
@@ -17063,7 +17063,7 @@ static void awacs_maybe_ask_for_help(ship *sp, int multi_team_filter)
 	}
 
 	if (message >= 0) {
-		if (message_send_builtin(message, sp, nullptr, 0, 0, -1, multi_team_filter)) {
+		if (message_send_builtin(message, sp, nullptr, -1, multi_team_filter)) {
 			Player->allow_ask_help_timestamp = timestamp(Builtin_messages[MESSAGE_HELP].min_delay);
 			Player->ask_help_count++;
 		}
@@ -17139,7 +17139,7 @@ play_ask_help:
 		return;
 	}
 
-	if (message_send_builtin(MESSAGE_HELP, sp, attacker, 0, 0, -1, multi_team_filter)) {
+	if (message_send_builtin(MESSAGE_HELP, sp, attacker, -1, multi_team_filter)) {
 		Player->allow_ask_help_timestamp = timestamp(Builtin_messages[MESSAGE_HELP].min_delay);
 		Player->ask_help_count++;
 
@@ -17165,7 +17165,7 @@ void ship_maybe_lament()
 	if (Random::next(4) == 0) {
 		ship_index = ship_get_random_player_wing_ship(SHIP_GET_UNSILENCED);
 		if (ship_index >= 0) {
-			message_send_builtin(MESSAGE_PLAYER_DIED, &Ships[ship_index], nullptr, 0, 0, -1, -1);
+			message_send_builtin(MESSAGE_PLAYER_DIED, &Ships[ship_index], nullptr, -1, -1);
 		}
 	}
 }
@@ -17191,7 +17191,7 @@ void ship_scream(ship *sp)
 	if (The_mission.ai_profile->flags[AI::Profile_Flags::Check_comms_for_non_player_ships] && hud_communications_state(sp, true) <= COMM_DAMAGED)
 		return;
 
-	if (message_send_builtin(MESSAGE_WINGMAN_SCREAM, sp, nullptr, 0, 0, -1, multi_team_filter)) {
+	if (message_send_builtin(MESSAGE_WINGMAN_SCREAM, sp, nullptr, -1, multi_team_filter)) {
 		Player->allow_scream_timestamp = timestamp(Builtin_messages[MESSAGE_WINGMAN_SCREAM].min_delay);
 		Player->scream_count++;
 
@@ -17304,7 +17304,7 @@ void ship_maybe_tell_about_low_ammo(ship *sp)
 						multi_team_filter = sp->team;
 					}
 
-					if (message_send_builtin(MESSAGE_PRIMARIES_LOW, sp, nullptr, 0, 0, -1, multi_team_filter)) {
+					if (message_send_builtin(MESSAGE_PRIMARIES_LOW, sp, nullptr, -1, multi_team_filter)) {
 						Player->allow_ammo_timestamp = timestamp(PLAYER_LOW_AMMO_MSG_INTERVAL);
 						Player->request_repair_timestamp = timestamp(PLAYER_REQUEST_REPAIR_MSG_INTERVAL);
 						Player->low_ammo_complaint_count++;
@@ -17387,13 +17387,13 @@ void ship_maybe_tell_about_rearm(ship *sp)
 	int multi_team_filter = -1;
 
 	// multiplayer tvt
-	if(MULTI_TEAM)
+	if (MULTI_TEAM) {
 		multi_team_filter = sp->team;
-
+	}
 
 	if (message_type >= 0) {
 		if (Random::flip_coin()) {
-			if (message_send_builtin(message_type, sp, nullptr, 0, 0, -1, multi_team_filter)) {
+			if (message_send_builtin(message_type, sp, nullptr, -1, multi_team_filter)) {
 				Player->request_repair_timestamp = timestamp(PLAYER_REQUEST_REPAIR_MSG_INTERVAL);
 			}
 		}
