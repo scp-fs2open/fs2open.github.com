@@ -7,8 +7,6 @@
  *
 */ 
 
-
-
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -449,6 +447,7 @@ fix Mission_end_time;
 static int Allow_arrival_music_timestamp;
 static int Allow_arrival_message_timestamp;
 static int Arrival_message_delay_timestamp;
+static int Arrival_message_subject;
 
 // multi TvT
 static int Allow_arrival_music_timestamp_m[2];
@@ -6318,6 +6317,7 @@ bool post_process_mission(mission *pm)
 	Allow_arrival_music_timestamp=timestamp(0);
 	Allow_arrival_message_timestamp=timestamp(0);
 	Arrival_message_delay_timestamp = timestamp(-1);
+	Arrival_message_subject = -1;
 
 	int idx;
 	for(idx=0; idx<2; idx++){
@@ -7491,51 +7491,50 @@ int parse_object_on_arrival_list(p_object *pobjp)
 /**
  * Check the lists of arriving ships and wings, creating new ships/wings if the arrival criteria have been met
  */
-void mission_eval_arrivals()
-{
+void mission_eval_arrivals() {
 	int rship = -1;
 
 	// before checking arrivals, check to see if we should play a message concerning arrivals
 	// of other wings.  We use the timestamps to delay the arrival message slightly for
 	// better effect
-	if (timestamp_valid(Arrival_message_delay_timestamp) && timestamp_elapsed(Arrival_message_delay_timestamp) && !MULTI_TEAM)
-	{
-		int use_terran_cmd;
-
+	if (timestamp_valid(Arrival_message_delay_timestamp) && timestamp_elapsed(Arrival_message_delay_timestamp) && !MULTI_TEAM) {
 		// use terran command 25% of time
-		use_terran_cmd = ((frand() - 0.75) > 0.0f) ? 1 : 0;
+		bool use_terran_cmd = ((frand() - 0.75) > 0.0f);
 
 		rship = ship_get_random_player_wing_ship(SHIP_GET_UNSILENCED);
-		if ((rship < 0) || use_terran_cmd)
-			message_send_builtin(MESSAGE_ARRIVE_ENEMY, NULL, 0, 0, -1, -1);
-		else if (rship >= 0)
-			message_send_builtin(MESSAGE_ARRIVE_ENEMY, &Ships[rship], 0, 0, -1, -1);
+		ship* subject = (Arrival_message_subject < 0) ? nullptr : &Ships[Arrival_message_subject];
+		if ((rship < 0) || use_terran_cmd) {
+			message_send_builtin(MESSAGE_ARRIVE_ENEMY, nullptr, subject, 0, 0, -1, -1);
+		} else if (rship >= 0) {
+			message_send_builtin(MESSAGE_ARRIVE_ENEMY, &Ships[rship], subject, 0, 0, -1, -1);
+		}
 
 		Arrival_message_delay_timestamp = timestamp(-1);		// make the stamp invalid
+		Arrival_message_subject = -1;
 	}
 
 	// check the arrival list
 	// Goober5000 - we can't run through the list the usual way because we might
 	// remove a bunch of objects and completely screw up the list linkage
-	for (SCP_vector<p_object>::iterator ii = Parse_objects.begin(); ii != Parse_objects.end(); ++ii)
-	{
+	for (SCP_vector<p_object>::iterator ii = Parse_objects.begin(); ii != Parse_objects.end(); ++ii) {
 		p_object* pobjp = &(*ii);
 
 		// make sure we're on the arrival list
-		if (!parse_object_on_arrival_list(pobjp))
+		if (!parse_object_on_arrival_list(pobjp)) {
 			continue;
+		}
 
 		// if this object has a wing, don't create it -- let code for wings determine if it should be created
-		if (pobjp->wingnum >= 0)
+		if (pobjp->wingnum >= 0) {
 			continue;
+		}
 
 		// make it arrive
 		mission_maybe_make_ship_arrive(pobjp);
 	}
 
 	// check the support ship arrival list
-	if (Arriving_support_ship)
-	{
+	if (Arriving_support_ship) {
 		// make it arrive (support ships are not put on the arrival list)
 		mission_maybe_make_ship_arrive(Arriving_support_ship);
 	}
@@ -7543,8 +7542,7 @@ void mission_eval_arrivals()
 	// we must also check to see if there are waves of a wing that must
 	// reappear if all the ships of the current wing have been destroyed or
 	// have departed. If this is the case, then create the next wave.
-	for (int i = 0; i < Num_wings; i++)
-	{
+	for (int i = 0; i < Num_wings; i++) {
 		// make it arrive
 		mission_maybe_make_wing_arrive(i);
 	}
@@ -7636,7 +7634,7 @@ bool mission_maybe_make_wing_arrive(int wingnum, bool force_arrival)
 				Allow_arrival_message_timestamp_m[multi_team_filter] = timestamp(ARRIVAL_MESSAGE_MIN_SEPARATION);
 						
 				// send to the proper team
-				message_send_builtin(MESSAGE_ARRIVE_ENEMY, NULL, 0, 0, -1, multi_team_filter);
+				message_send_builtin(MESSAGE_ARRIVE_ENEMY, nullptr, nullptr, 0, 0, -1, multi_team_filter);
 			}
 		}
 		// does the player attack this ship?
@@ -7650,6 +7648,7 @@ bool mission_maybe_make_wing_arrive(int wingnum, bool force_arrival)
 				if (!timestamp_valid(Arrival_message_delay_timestamp))
 				{
 					Arrival_message_delay_timestamp = timestamp_rand(ARRIVAL_MESSAGE_DELAY_MIN, ARRIVAL_MESSAGE_DELAY_MAX);
+					Arrival_message_subject = wingp->ship_index[0];
 				}
 				Allow_arrival_message_timestamp = timestamp(ARRIVAL_MESSAGE_MIN_SEPARATION);
 			}
@@ -7668,7 +7667,7 @@ bool mission_maybe_make_wing_arrive(int wingnum, bool force_arrival)
 				{
 					if (!stricmp(message_name.c_str(), Builtin_messages[j].name))
 					{
-						message_send_builtin(j, &Ships[rship], 0, 0, -1, -1);
+						message_send_builtin(j, &Ships[rship], nullptr, 0, 0, -1, -1);
 						break;
 					}
 				}

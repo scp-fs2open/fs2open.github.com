@@ -1488,7 +1488,7 @@ int player_process_pending_praise()
 			if ( get_hull_pct(&Objects[Ships[ship_index].objnum]) > 0.5f ) {
 				// This cutoff should probably be in the AI profile or mission file rather than hardcoded
 				auto message = (Player->stats.m_kill_count_ok > 10) ? MESSAGE_HIGH_PRAISE : MESSAGE_PRAISE;
-				if (message_send_builtin(message, &Ships[ship_index], 0, 0, -1, -1)) {
+				if (message_send_builtin(message, &Ships[ship_index], nullptr, 0, 0, -1, -1)) {
 					Player->allow_praise_timestamp = timestamp(Builtin_messages[MESSAGE_PRAISE].min_delay * (Game_skill_level+1) );
 					Player->allow_scream_timestamp = timestamp(20000);		// prevent death scream following praise
 					Player->praise_count++;
@@ -1982,7 +1982,7 @@ void player_maybe_play_all_alone_msg()
 		}
 	}
 
-	message_send_builtin(MESSAGE_ALL_ALONE, NULL, 0, 0, -1, -1);
+	message_send_builtin(MESSAGE_ALL_ALONE, nullptr, nullptr, 0, 0, -1, -1);
 	Player->flags |= PLAYER_FLAGS_NO_CHECK_ALL_ALONE_MSG;
 } 
 

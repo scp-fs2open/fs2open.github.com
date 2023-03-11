@@ -7,10 +7,6 @@
  *
 */ 
 
-
- 
-
-
 #include "ai/aigoals.h"
 #include "ai/ailua.h"
 #include "gamesnd/gamesnd.h"
@@ -661,22 +657,22 @@ void hud_squadmsg_repair_rearm( int toggle_state, object *objp)
 	// message and bail
 	if ( is_support_allowed(tobj) ) {
 		if ( mission_is_repair_scheduled( tobj ) ) {
-			message_send_builtin(MESSAGE_ALREADY_ON_WAY, NULL, 0, 0, multi_player_num, multi_player_team);
+			message_send_builtin(MESSAGE_ALREADY_ON_WAY, nullptr, nullptr, 0, 0, multi_player_num, multi_player_team);
 		} else {
 			robjnum = hud_support_find_closest(OBJ_INDEX(tobj));
 			if ( robjnum != -1 ) {
-				message_send_builtin(MESSAGE_ALREADY_ON_WAY, &Ships[Objects[robjnum].instance], 0, 0, multi_player_num, multi_player_team);
+				message_send_builtin(MESSAGE_ALREADY_ON_WAY, &Ships[Objects[robjnum].instance], nullptr, 0, 0, multi_player_num, multi_player_team);
 			} else {
 				// request a rearm.  Next function returns -1 if ship is warping in, objnum of repair ship otherwise
 				robjnum = ai_issue_rearm_request( tobj );
 				if ( robjnum != -1) {
 					robjp = &Objects[robjnum];
-					message_send_builtin(MESSAGE_ON_WAY, &Ships[robjp->instance], 0, 0, multi_player_num, multi_player_team);
+					message_send_builtin(MESSAGE_ON_WAY, &Ships[robjp->instance], nullptr, 0, 0, multi_player_num, multi_player_team);
 
 				} else {
 					// if we are in this part of the if statement, a support ship has been warped in to
 					// service us.  Issue appropriate message
-					message_send_builtin(MESSAGE_REARM_WARP, NULL, 0, 0, multi_player_num, multi_player_team);
+					message_send_builtin(MESSAGE_REARM_WARP, nullptr, nullptr, 0, 0, multi_player_num, multi_player_team);
 				}
 
 				mission_log_add_entry(LOG_PLAYER_CALLED_FOR_REARM, Ships[tobj->instance].ship_name, NULL);
@@ -1021,6 +1017,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 {
 	ai_info *ainfo;
 	int ai_mode, ai_submode;					// ai mode and submode needed for ship commands
+	ship *target;
 	char *target_shipname;						// ship number of possible targets
 	ai_lua_parameters lua_target;
 	int message;
@@ -1059,17 +1056,19 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 	// a shortcut to save on repetitive coding.  If the order is a 'target' order, make the default
 	// mesage be "no target"
 	message = MESSAGE_NOSIR;
-	if ( target_messages.count((size_t)command) > 0 && (ainfo->target_objnum == -1) )
+	if (target_messages.count((size_t)command) > 0 && (ainfo->target_objnum == -1)) {
 		message = MESSAGE_NO_TARGET;
+	}
 
-	if ( hud_squadmsg_is_target_order_valid((size_t) command, ainfo) ) {
+	if (hud_squadmsg_is_target_order_valid((size_t) command, ainfo)) {
 
-		target_shipname = NULL;
+		target_shipname = nullptr;
 		target_team = -1;
-		if ( ainfo->target_objnum != -1) {
-			if ( Objects[ainfo->target_objnum].type == OBJ_SHIP ) {
-				if ( ainfo->target_objnum != Ships[shipnum].objnum ) {
-					target_shipname = Ships[Objects[ainfo->target_objnum].instance].ship_name;		// I think this is right
+		if (ainfo->target_objnum != -1) {
+			if (Objects[ainfo->target_objnum].type == OBJ_SHIP) {
+				if (ainfo->target_objnum != Ships[shipnum].objnum) {
+					target = &Ships[Objects[ainfo->target_objnum].instance];
+					target_shipname = Ships[Objects[ainfo->target_objnum].instance].ship_name;
 					target_team = Ships[Objects[ainfo->target_objnum].instance].team;
 				}
 			}
@@ -1207,7 +1206,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 			} else {
 				message = MESSAGE_YESSIR;
 			}
-			target_shipname = NULL;
+			target_shipname = nullptr;
 			break;
 		
 		case DEPART_ITEM:
@@ -1299,7 +1298,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 	
 	// this is the _response_
 	if (send_message && (!(Ships[shipnum].flags[Ship::Ship_Flags::No_builtin_messages]))) {
-		message_send_builtin(message, &Ships[shipnum], 0, 0, player_num, message_team_filter);
+		message_send_builtin(message, &Ships[shipnum], target, 0, 0, player_num, message_team_filter);
 	}
 	
 	return send_message;
@@ -1315,7 +1314,8 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 {
 	ai_info *ainfo;
 	int ai_mode, ai_submode;					// ai mode and submode needed for ship commands
-	char *target_shipname;						// ship number of possible targets
+	ship *target;
+	char *target_shipname;
 	ai_lua_parameters lua_target;
 	int message_sent, message;
 	int target_team, wing_team;				// team for the wing and the player's target
@@ -1350,9 +1350,6 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 	Assert(ainfo->shipnum != -1);
 	ordering_shipp = &Ships[ainfo->shipnum];
 
-	// get the shipnum of the ship the player has targeted.  Used in enough places to do this just
-	// once.  If the ship targeted is part of the wing that was messages -- bail out!!!
-
 	// a shortcut to save on repetative coding
 	message = MESSAGE_NOSIR;
 	if ((target_messages.count((size_t)command) > 0) && (ainfo->target_objnum == -1)) {
@@ -1360,11 +1357,11 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 	}
 
 	if (hud_squadmsg_is_target_order_valid((size_t)command, ainfo)) {
-
-		target_shipname = NULL;
+		target_shipname = nullptr;
 		target_team = -1;
 		if (ainfo->target_objnum != -1) {
 			if (Objects[ainfo->target_objnum].type == OBJ_SHIP) {
+				target = &Ships[Objects[ainfo->target_objnum].instance];
 				target_shipname = Ships[Objects[ainfo->target_objnum].instance].ship_name;
 				target_team = Ships[Objects[ainfo->target_objnum].instance].team;
 			}
@@ -1542,7 +1539,7 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 		// menu, but the get_random_ship* functions won't return dying ships.
 		// Karajorma - No valid ships will be found if all the remaining ships have been silence either. 
 		if (ship_num != -1) {
-			message_send_builtin(message, &Ships[ship_num], 0, 0, player_num, message_team_filter);
+			message_send_builtin(message, &Ships[ship_num], target, 0, 0, player_num, message_team_filter);
 			message_sent = 1;
 		}
 	}

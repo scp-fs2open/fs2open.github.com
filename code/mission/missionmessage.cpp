@@ -1991,7 +1991,7 @@ bool filters_match(MessageFilter& filter, ship* it) {
 	}
 }
 
-int get_builtin_message(int type, int persona, ship* sender, bool require_exact_persona_match) {
+int get_builtin_message(int type, int persona, ship* sender, ship* subject, bool require_exact_persona_match) {
 	static const int BUILTIN_MATCHES_TYPE    = 0;
 	static const int BUILTIN_MATCHES_FILTER  = 1;
 	static const int BUILTIN_MATCHES_MOOD    = 2;
@@ -2025,8 +2025,20 @@ int get_builtin_message(int type, int persona, ship* sender, bool require_exact_
 			continue;
 		}
 
+		// Apply sender filters
 		if (has_filters(Messages[i].sender_filter)) {
 			if (filters_match(Messages[i].sender_filter, sender)) {
+				// Boost messages that have at least one filter
+				match_level |= BUILTIN_MATCHES_FILTER;
+			} else {
+				// Ignore messages where any filter doesn't match
+				continue;
+			}
+		}
+
+		// Ditto with subject filters
+		if (has_filters(Messages[i].subject_filter)) {
+			if (filters_match(Messages[i].subject_filter, subject)) {
 				// Boost messages that have at least one filter
 				match_level |= BUILTIN_MATCHES_FILTER;
 			} else {
@@ -2052,9 +2064,9 @@ int get_builtin_message(int type, int persona, ship* sender, bool require_exact_
 	} else {
 		int fallback = Builtin_messages[type].fallback;
 		if (fallback != MESSAGE_NONE) {
-			return get_builtin_message(fallback, persona, sender, true);
+			return get_builtin_message(fallback, persona, sender, subject, true);
 		} else if (require_exact_persona_match && persona_allows_substitution(persona)) {
-			return get_builtin_message(fallback, persona, sender, false);
+			return get_builtin_message(fallback, persona, sender, subject, false);
 		} else {
 			return MESSAGE_NONE;
 		}
@@ -2064,13 +2076,13 @@ int get_builtin_message(int type, int persona, ship* sender, bool require_exact_
 // send builtin_to_player sends a message (from messages.tbl) to the player. These messages are
 // the generic informational type messages. The have priorities like misison specific messages,
 // and use a timing to tell how long we should wait before playing this message
-bool message_send_builtin(int type, ship* shipp, int group, int delay, int multi_target, int multi_team_filter) {
-	if (should_skip_builtin_message(type, shipp)) {
+bool message_send_builtin(int type, ship* sender, ship* subject, int group, int delay, int multi_target, int multi_team_filter) {
+	if (should_skip_builtin_message(type, sender)) {
 		return false;
 	}
 
-	int persona_index = get_persona(shipp);
-	int message_index = get_builtin_message(type, persona_index, shipp, true);
+	int persona_index = get_persona(sender);
+	int message_index = get_builtin_message(type, persona_index, sender, subject, true);
 	if (message_index == MESSAGE_NONE) {
 		return false;
 	}
@@ -2078,9 +2090,9 @@ bool message_send_builtin(int type, ship* shipp, int group, int delay, int multi
 	// Get the message's source for HUD purposes
 	int source;
 	const char *who_from;
-	if (shipp) {
-		who_from = shipp->ship_name;
-		source = HUD_team_get_source(shipp->team);
+	if (sender) {
+		who_from = sender->ship_name;
+		source = HUD_team_get_source(sender->team);
 	} else if (type == MESSAGE_ALREADY_ON_WAY) {
 		// If the player called for support while a support ship is arriving, have it acknowledge the request
 		who_from = SUPPORT_NAME;
