@@ -1953,11 +1953,50 @@ bool persona_allows_substitution(int persona) {
 	return (persona >= 0) && (Personas[persona].flags & PERSONA_FLAG_SUBSTITUTE_MISSING_MESSAGES);
 }
 
-int get_builtin_message(int type, int persona, bool require_exact_persona_match = true) {
+bool has_filters(MessageFilter& filter) {
+	return !filter.ship_name.empty()
+	    || !filter.callsign.empty()
+			|| !filter.class_name.empty()
+			|| !filter.wing_name.empty()
+			||  filter.species_bitfield
+			||  filter.type_bitfield;
+}
+
+bool filter_matches(SCP_string value, SCP_vector<SCP_string>& filter) {
+	for (SCP_vector<SCP_string>::iterator iter = filter.begin(); iter != filter.end(); ++iter) {
+		if (value == *iter) {
+			return true;
+		}
+	}
+	return filter.empty();
+}
+
+bool filter_matches(int value, int filter) {
+	return (filter == 0) || ((1 << value) & filter);
+}
+
+bool filters_match(MessageFilter& filter, ship* it) {
+	Assert (has_filters(filter));
+	if (it == nullptr) {
+		return false;
+	} else {
+		int wing_index = it->wingnum;
+		SCP_string wing_name = (wing_index < 0) ? "" : Wings[wing_index].name;
+		return filter_matches(it->ship_name, filter.ship_name)
+	      && filter_matches(hud_get_ship_callsign(it), filter.callsign)
+		    && filter_matches(hud_get_ship_class(it), filter.class_name)
+		    && filter_matches(wing_name, filter.wing_name)
+		    && filter_matches(Ship_info[it->ship_info_index].species, filter.species_bitfield)
+		    && filter_matches(Ship_info[it->ship_info_index].class_type, filter.type_bitfield);
+	}
+}
+
+int get_builtin_message(int type, int persona, ship* sender, bool require_exact_persona_match) {
 	static const int BUILTIN_MATCHES_TYPE    = 0;
-	static const int BUILTIN_MATCHES_MOOD    = 1;
-	static const int BUILTIN_MATCHES_SPECIES = 2;
-	static const int BUILTIN_MATCHES_PERSONA = 4;
+	static const int BUILTIN_MATCHES_FILTER  = 1;
+	static const int BUILTIN_MATCHES_MOOD    = 2;
+	static const int BUILTIN_MATCHES_SPECIES = 4;
+	static const int BUILTIN_MATCHES_PERSONA = 8;
 
 	const char* name = Builtin_messages[type].name;
 	SCP_vector<int> matching_builtins;
@@ -1986,6 +2025,16 @@ int get_builtin_message(int type, int persona, bool require_exact_persona_match 
 			continue;
 		}
 
+		if (has_filters(Messages[i].sender_filter)) {
+			if (filters_match(Messages[i].sender_filter, sender)) {
+				// Boost messages that have at least one filter
+				match_level |= BUILTIN_MATCHES_FILTER;
+			} else {
+				// Ignore messages where any filter doesn't match
+				continue;
+			}
+		}
+
 		if (match_level == best_match_level) {
 			matching_builtins.push_back(i);
 		} else if (match_level > best_match_level) {
@@ -2003,9 +2052,9 @@ int get_builtin_message(int type, int persona, bool require_exact_persona_match 
 	} else {
 		int fallback = Builtin_messages[type].fallback;
 		if (fallback != MESSAGE_NONE) {
-			return get_builtin_message(fallback, persona);
+			return get_builtin_message(fallback, persona, sender, true);
 		} else if (require_exact_persona_match && persona_allows_substitution(persona)) {
-			return get_builtin_message(fallback, persona, false);
+			return get_builtin_message(fallback, persona, sender, false);
 		} else {
 			return MESSAGE_NONE;
 		}
@@ -2021,7 +2070,7 @@ bool message_send_builtin(int type, ship* shipp, int group, int delay, int multi
 	}
 
 	int persona_index = get_persona(shipp);
-	int message_index = get_builtin_message(type, persona_index);
+	int message_index = get_builtin_message(type, persona_index, shipp, true);
 	if (message_index == MESSAGE_NONE) {
 		return false;
 	}
