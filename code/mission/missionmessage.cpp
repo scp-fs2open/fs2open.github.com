@@ -1597,7 +1597,7 @@ void message_queue_message( int message_num, int priority, int timing, const cha
 
 	// some messages can get queued quickly.  Try to filter out certain types of messages before
 	// they get queued if there are other messages of the same type already queued
-	if ( (builtin_type == MESSAGE_REARM_ON_WAY) || (builtin_type == MESSAGE_OOPS) ) {
+	if ( (builtin_type == MESSAGE_ALREADY_ON_WAY) || (builtin_type == MESSAGE_OOPS) ) {
 		// if it is already playing, then don't play it
 		if ( message_playing_specific_builtin(builtin_type) ) 
 			return;
@@ -1971,7 +1971,7 @@ bool message_send_builtin_to_player(int type, ship* shipp, int group, int delay,
 	if (shipp) {
 		who_from = shipp->ship_name;
 		source = HUD_team_get_source(shipp->team);
-	} else if (type == MESSAGE_REARM_ON_WAY) {
+	} else if (type == MESSAGE_ALREADY_ON_WAY) {
 		// If the player called for support while a support ship is arriving, have it acknowledge the request
 		who_from = SUPPORT_NAME;
 		source = HUD_SOURCE_TERRAN_CMD;
