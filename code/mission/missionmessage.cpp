@@ -1733,7 +1733,7 @@ int message_filter_multi(int id)
 
 // send_unique_to_player sends a mission unique (specific) message to the player (possibly a multiplayer
 // person).  These messages are *not* the builtin messages
-void message_send_unique_to_player( const char *id, const void *data, int m_source, int priority, int group, int delay, int event_num_to_cancel )
+void message_send_unique( const char *id, const void *data, int m_source, int priority, int group, int delay, int event_num_to_cancel )
 {
 	int i, source;
 	const char *who_from;
@@ -1954,7 +1954,7 @@ int get_builtin_message(int type, int persona, bool require_exact_persona_match 
 // send builtin_to_player sends a message (from messages.tbl) to the player. These messages are
 // the generic informational type messages. The have priorities like misison specific messages,
 // and use a timing to tell how long we should wait before playing this message
-bool message_send_builtin_to_player(int type, ship* shipp, int group, int delay, int multi_target, int multi_team_filter) {
+bool message_send_builtin(int type, ship* shipp, int group, int delay, int multi_target, int multi_team_filter) {
 	if (should_skip_builtin_message(type, shipp)) {
 		return false;
 	}

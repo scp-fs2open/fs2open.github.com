@@ -14010,7 +14010,7 @@ void sexp_send_one_message( const char *name, const char *who_from, const char *
 	shipp = nullptr;
 	source = MESSAGE_SOURCE_COMMAND;
 	if ( who_from[0] == '#' ) {
-		message_send_unique_to_player( name, &(who_from[1]), MESSAGE_SOURCE_SPECIAL, ipriority, group, delay, event_num );
+		message_send_unique( name, &(who_from[1]), MESSAGE_SOURCE_SPECIAL, ipriority, group, delay, event_num );
 		return;
 	} else if (!stricmp(who_from, "<any allied>")) {
 		return;
@@ -14050,7 +14050,7 @@ void sexp_send_one_message( const char *name, const char *who_from, const char *
 		source = MESSAGE_SOURCE_SHIP;
 	}
 
-	message_send_unique_to_player( name, shipp, source, ipriority, group, delay, event_num );
+	message_send_unique( name, shipp, source, ipriority, group, delay, event_num );
 }
 
 void sexp_send_message(int n)

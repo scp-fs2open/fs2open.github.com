@@ -812,7 +812,7 @@ void process_debug_keys(int k)
 			}
 			
 			// play the message
-			message_send_unique_to_player( Messages[Message_debug_index].name, Message_waves[Messages[Message_debug_index].wave_info.index].name, MESSAGE_SOURCE_SPECIAL, MESSAGE_PRIORITY_HIGH, 0, 0 );			
+			message_send_unique( Messages[Message_debug_index].name, Message_waves[Messages[Message_debug_index].wave_info.index].name, MESSAGE_SOURCE_SPECIAL, MESSAGE_PRIORITY_HIGH, 0, 0 );			
 			if (Messages[Message_debug_index].avi_info.index == -1) {
 				HUD_printf("No anim set for message \"%s\"; None will play!", Messages[Message_debug_index].name);
 			}
@@ -835,7 +835,7 @@ void process_debug_keys(int k)
 			}
 			
 			// play the message
-			message_send_unique_to_player( Messages[Message_debug_index].name, Message_waves[Messages[Message_debug_index].wave_info.index].name, MESSAGE_SOURCE_SPECIAL, MESSAGE_PRIORITY_HIGH, 0, 0 );
+			message_send_unique( Messages[Message_debug_index].name, Message_waves[Messages[Message_debug_index].wave_info.index].name, MESSAGE_SOURCE_SPECIAL, MESSAGE_PRIORITY_HIGH, 0, 0 );
 			if (Messages[Message_debug_index].avi_info.index == -1) {
 				HUD_printf("No avi associated with this message; None will play!");
 			}
