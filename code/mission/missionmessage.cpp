@@ -330,6 +330,54 @@ int add_wave( const char *wave_name )
 	return ((int)Message_waves.size() - 1);
 }
 
+void message_filter_clear(MessageFilter& filter) {
+	filter.species_bitfield = 0;
+	filter.type_bitfield = 0;
+}
+
+void message_filter_parse(MessageFilter& filter) {
+	SCP_string buf;
+	message_filter_clear(filter);
+	while (optional_string("+Ship name:")) {
+		stuff_string(buf, F_NAME);
+		filter.ship_name.push_back(buf);
+	}
+	while (optional_string("+Callsign:")) {
+		stuff_string(buf, F_NAME);
+		filter.callsign.push_back(buf);
+	}
+	while (optional_string("+Class name:")) {
+		stuff_string(buf, F_NAME);
+		filter.class_name.push_back(buf);
+	}
+	while (optional_string("+Wing name:")) {
+		stuff_string(buf, F_NAME);
+		filter.wing_name.push_back(buf);
+	}
+	while (optional_string("+Species:")) {
+		stuff_string(buf, F_NAME);
+		int species = species_info_lookup(buf.c_str());
+		if (species < 0) {
+			Warning(LOCATION, "Unknown species %s in messages.tbl", buf.c_str());
+		} else if (species >= 32) {
+			Warning(LOCATION, "Species %s is index 32 or higher and therefore cannot be used in a message filter", buf.c_str());
+		} else {
+			filter.species_bitfield |= (1 << species);
+		}
+	}
+	while (optional_string("+Type:")) {
+		stuff_string(buf, F_NAME);
+		int type = ship_type_name_lookup(buf.c_str());
+		if (type < 0) {
+			Warning(LOCATION, "Unknown type %s in messages.tbl", buf.c_str());
+		} else if (type >= 32) {
+			Warning(LOCATION, "Type %s is index 32 or higher and therefore cannot be used in a message filter", buf.c_str());
+		} else {
+			filter.type_bitfield |= (1 << type);
+		}
+	}
+}
+
 // parses an individual message
 void message_parse(bool importing_from_fsm)
 {
@@ -395,10 +443,11 @@ void message_parse(bool importing_from_fsm)
 		}
 	}
 
-	if ( !Fred_running )
+	if (!Fred_running) {
 		msg.wave_info.index = -1;
-	else
+	} else {
 		msg.wave_info.name = NULL;
+	}
 
 	if ( optional_string("+Wave Name:") ) {
 		char wave_name[MAX_FILENAME_LEN];
@@ -452,6 +501,18 @@ void message_parse(bool importing_from_fsm)
 				Warning(LOCATION, "Message.tbl has an entry for exclude mood type %s, but this mood is not in the #Moods section of the table.", parsed_moods->c_str()); 
 			}
 		}
+	}
+
+	if (optional_string("$Filter by sender:")) {
+		message_filter_parse(msg.sender_filter);
+	} else {
+		message_filter_clear(msg.sender_filter);
+	}
+
+	if (optional_string("$Filter by subject:")) {
+		message_filter_parse(msg.subject_filter);
+	} else {
+		message_filter_clear(msg.subject_filter);
 	}
 
 	Num_messages++;

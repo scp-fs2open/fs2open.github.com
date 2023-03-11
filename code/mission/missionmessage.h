@@ -144,6 +144,15 @@ enum {
 
 extern builtin_message Builtin_messages[MAX_BUILTIN_MESSAGE_TYPES];
 
+typedef struct MessageFilter {
+	SCP_vector<SCP_string> ship_name;
+	SCP_vector<SCP_string> callsign;
+	SCP_vector<SCP_string> class_name;
+	SCP_vector<SCP_string> wing_name;
+	int                    species_bitfield;
+	int                    type_bitfield;
+} MessageFilter;
+
 typedef struct MissionMessage {
 	char	name[NAME_LENGTH];					// used to identify this message
 	char	message[MESSAGE_LENGTH];			// actual message
@@ -151,6 +160,9 @@ typedef struct MissionMessage {
 	int	multi_team;								// multiplayer team filter (important for TvT only)
 	int				mood;
 	SCP_vector<int> excluded_moods;
+
+	MessageFilter sender_filter;
+	MessageFilter subject_filter;
 
 	// unions for avi/wave information.  Because of issues with Fred, we are using
 	// the union to specify either the index into the avi or wave arrays above,
