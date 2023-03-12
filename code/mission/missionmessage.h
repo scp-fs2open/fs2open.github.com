@@ -89,7 +89,7 @@ X(NO_TARGET,           "No Target",            100, -1,  0,     NORMAL, ANYTIME,
                                                                                                  \
 /* Player status */                                                                              \
 X(CHECK_6,             "Check 6",              100,  2,  6000,  HIGH, IMMEDIATE, NONE),          \
-X(PLAYER_DIED,         "Player Dead",          100, -1,  0,     HIGH, IMMEDIATE, NONE),          \
+X(PLAYER_DIED,         "Player Dead",           25, -1,  0,     HIGH, IMMEDIATE, NONE),          \
 X(PRAISE,              "Praise",                50, 10,  60000, HIGH, SOON, NONE),               \
 X(HIGH_PRAISE,         "High Praise",           50, -1,  0,     HIGH, SOON, PRAISE),             \
                                                                                                  \
@@ -98,10 +98,10 @@ X(BACKUP,              "Backup",               100, -1,  0,     LOW, SOON, NONE)
 X(HELP,                "Help",                 100, 10,  60000, HIGH, IMMEDIATE, NONE),          \
 X(WINGMAN_SCREAM,      "Death",                 50, 10,  60000, HIGH, IMMEDIATE, NONE),          \
 X(PRAISE_SELF,         "Praise Self",           10,  4,  60000, HIGH, SOON, NONE),               \
-X(REARM_REQUEST,       "Rearm",                100, -1,  0,     NORMAL, SOON, NONE),             \
-X(REPAIR_REQUEST,      "Repair",               100, -1,  0,     NORMAL, SOON, NONE),             \
+X(REARM_REQUEST,       "Rearm",                 50, -1,  0,     NORMAL, SOON, NONE),             \
+X(REPAIR_REQUEST,      "Repair",                50, -1,  0,     NORMAL, SOON, NONE),             \
 X(PRIMARIES_LOW,       "Primaries Low",        100, -1,  0,     NORMAL, SOON, NONE),             \
-X(REARM_PRIMARIES,     "Rearm Primaries",      100, -1,  0,     NORMAL, SOON, REARM_REQUEST),    \
+X(REARM_PRIMARIES,     "Rearm Primaries",       50, -1,  0,     NORMAL, SOON, REARM_REQUEST),    \
                                                                                                  \
 /* Support status */                                                                             \
 X(REARM_WARP,          "Rearm Warping In",     100, -1,  0,     NORMAL, SOON, NONE),             \

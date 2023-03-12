@@ -17340,7 +17340,7 @@ void ship_maybe_tell_about_rearm(ship *sp)
 	// AL 1-4-98:	If ship integrity is low, tell player you want to get repaired.  Otherwise, tell
 	// the player you want to get re-armed.
 
-	int message_type = -1;
+	int message_type = MESSAGE_NONE;
 	int heavily_damaged = (get_hull_pct(&Objects[sp->objnum]) < 0.4);
 
 	if (heavily_damaged || (sp->flags[Ship_Flags::Disabled]))
@@ -17391,11 +17391,9 @@ void ship_maybe_tell_about_rearm(ship *sp)
 		multi_team_filter = sp->team;
 	}
 
-	if (message_type >= 0) {
-		if (Random::flip_coin()) {
-			if (message_send_builtin(message_type, sp, nullptr, -1, multi_team_filter)) {
-				Player->request_repair_timestamp = timestamp(PLAYER_REQUEST_REPAIR_MSG_INTERVAL);
-			}
+	if (message_type != MESSAGE_NONE) {
+		if (message_send_builtin(message_type, sp, nullptr, -1, multi_team_filter)) {
+			Player->request_repair_timestamp = timestamp(PLAYER_REQUEST_REPAIR_MSG_INTERVAL);
 		}
 	}
 }
