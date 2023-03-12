@@ -5313,11 +5313,9 @@ void parse_messages(mission *pm, int flags)
 
 	mprintf(("Starting mission message count : %d\n", (int)Message_waves.size()));
 
-	// the message_parse function can be found in MissionMessage.h.  The format in the
-	// mission file takes the same format as the messages in messages,tbl.  Make parsing
-	// a whole lot easier!!!
-	while ( required_string_either("#Reinforcements", "$Name")){
-		message_parse((flags & MPF_IMPORT_FSM) != 0);		// call the message parsing system
+	while (required_string_either("#Reinforcements", "$Name")) {
+		MessageFormat format = (flags & MPF_IMPORT_FSM) ? MessageFormat::FS1_MISSION : MessageFormat::FS2_MISSION;
+		message_parse(format);
 	}
 
 	mprintf(("Ending mission message count : %d\n", (int)Message_waves.size()));
@@ -7654,23 +7652,10 @@ bool mission_maybe_make_wing_arrive(int wingnum, bool force_arrival)
 			}
 		}
 		// everything else
-		else
-		{
+		else {
 			rship = ship_get_random_ship_in_wing(wingnum, SHIP_GET_UNSILENCED);
-			if (rship >= 0)
-			{
-				SCP_string message_name;
-				sprintf(message_name, "%s Arrived", wingp->name);
-
-				// see if this wing has an arrival message associated with it
-				for (int j = 0; j < MAX_BUILTIN_MESSAGE_TYPES; j++)
-				{
-					if (!stricmp(message_name.c_str(), Builtin_messages[j].name))
-					{
-						message_send_builtin(j, &Ships[rship], nullptr, -1, -1);
-						break;
-					}
-				}
+			if (rship >= 0) {
+				message_send_builtin(MESSAGE_BACKUP, &Ships[rship], nullptr, -1, -1);
 			}
 		}
 

@@ -40,6 +40,8 @@
 #include "utils/Random.h"
 #include "weapon/emp.h"
 
+bool Allow_generic_backup_messages = false;
+
 SCP_vector<SCP_string> Builtin_moods;
 int Current_mission_mood;
 
@@ -387,9 +389,19 @@ void message_filter_parse(MessageFilter& filter) {
 	}
 }
 
+void handle_legacy_backup_message(MissionMessage& msg, SCP_string wing_name) {
+	static bool warned = false;
+	if (!warned) {
+		Warning(LOCATION, "Converting legacy '%s Arrived' message. Consult the documention on message filters for more information.", wing_name.c_str());
+		warned = true;
+	}
+	static const char* backup = Builtin_messages[MESSAGE_BACKUP].name;
+	msg.sender_filter.wing_name.push_back(wing_name);
+	strcpy(msg.name, backup);
+}
+
 // parses an individual message
-void message_parse(bool importing_from_fsm)
-{
+void message_parse(MessageFormat format) {
 	MissionMessage msg;
 	char persona_name[NAME_LENGTH];
 
@@ -398,23 +410,23 @@ void message_parse(bool importing_from_fsm)
 
 	// team
 	msg.multi_team = -1;
-	if(optional_string("$Team:")){
+	if (optional_string("$Team:")) {
 		int mt;
 		stuff_int(&mt);
 
 		// keep it real
-		if((mt < 0) || (mt >= MAX_TVT_TEAMS)){
+		if ((mt < 0) || (mt >= MAX_TVT_TEAMS)) {
 			mt = -1;
 		}
 
 		// only bother with filters in-game if multiplayer and TvT
-		if(Fred_running || (MULTI_TEAM) ){
+		if (Fred_running || (MULTI_TEAM)) {
 			msg.multi_team = mt;
 		}
 	}
 
 	// backwards compatibility for old fred missions - all new ones should use $MessageNew
-	if(optional_string("$Message:")){
+	if (optional_string("$Message:")) {
 		stuff_string(msg.message, F_MESSAGE, MESSAGE_LENGTH);
 	} else {
 		required_string("$MessageNew:");
@@ -422,30 +434,32 @@ void message_parse(bool importing_from_fsm)
 	}
 
 	msg.persona_index = -1;
-	if ( optional_string("+Persona:") ) {
+	if (optional_string("+Persona:")) {
 		stuff_string(persona_name, F_NAME, NAME_LENGTH);
-		msg.persona_index = message_persona_name_lookup( persona_name );
+		msg.persona_index = message_persona_name_lookup(persona_name);
 
-		if ( msg.persona_index == -1 )
+		if (msg.persona_index == -1) {
 			WarningEx(LOCATION, "Unknown persona in message %s in messages.tbl -- %s\n", msg.name, persona_name );
+		}
 	}
 
-	if ( !Fred_running)
+	if (!Fred_running) {
 		msg.avi_info.index = -1;
-	else
+	} else {
 		msg.avi_info.name = NULL;
+	}
 
-	if ( optional_string("+AVI Name:") ) {
+	if (optional_string("+AVI Name:")) {
 		char avi_name[MAX_FILENAME_LEN];
 
 		stuff_string(avi_name, F_NAME, MAX_FILENAME_LEN);
 
-		// Goober5000 - for some reason :V: swapped Head-TP1
-		// and Head-TP4 in FS2
-		if (importing_from_fsm && !strnicmp(avi_name, "Head-TP1", 8))
+		// Goober5000 - for some reason :V: swapped Head-TP1 and Head-TP4 in FS2
+		if (format == MessageFormat::FS1_MISSION && !strnicmp(avi_name, "Head-TP1", 8)) {
 			avi_name[7] = '4';
+		}
 
-		if ( !Fred_running ) {
+		if (!Fred_running) {
 			msg.avi_info.index = add_avi(avi_name);
 		} else {
 			msg.avi_info.name = vm_strdup(avi_name);
@@ -458,18 +472,18 @@ void message_parse(bool importing_from_fsm)
 		msg.wave_info.name = NULL;
 	}
 
-	if ( optional_string("+Wave Name:") ) {
+	if (optional_string("+Wave Name:")) {
 		char wave_name[MAX_FILENAME_LEN];
 
 		stuff_string(wave_name, F_NAME, MAX_FILENAME_LEN);
-		if ( !Fred_running ) {
+		if (!Fred_running) {
 			msg.wave_info.index = add_wave(wave_name);
 		} else {
 			msg.wave_info.name = vm_strdup(wave_name);
 		}
 	}
 
-	if ( optional_string("$Mood:")) {
+	if (optional_string("$Mood:")) {
 		SCP_string buf; 
 		bool found = false;
 
@@ -491,7 +505,7 @@ void message_parse(bool importing_from_fsm)
 		msg.mood = 0;
 	}
 
-	if ( optional_string("$Exclude Mood:")) {
+	if (optional_string("$Exclude Mood:")) {
 		SCP_vector<SCP_string> buff;
 		bool found = false;
 
@@ -522,6 +536,20 @@ void message_parse(bool importing_from_fsm)
 		message_filter_parse(msg.subject_filter);
 	} else {
 		message_filter_clear(msg.subject_filter);
+	}
+
+	if (format == MessageFormat::TABLED) {
+		if (!stricmp(msg.name, "Beta Arrived")) {
+			handle_legacy_backup_message(msg, "Beta");
+		} else if (!stricmp(msg.name, "Gamma Arrived")) {
+			handle_legacy_backup_message(msg, "Gamma");
+		} else if (!stricmp(msg.name, "Delta Arrived")) {
+			handle_legacy_backup_message(msg, "Delta");
+		} else if (!stricmp(msg.name, "Epsilon Arrived")) {
+			handle_legacy_backup_message(msg, "Epsilon");
+		} if (get_builtin_message_type(msg.name) == MESSAGE_NONE) {
+			Warning(LOCATION, "Unknown builtin message type %s in messages.tbl", msg.name);
+		}
 	}
 
 	Num_messages++;
@@ -608,6 +636,12 @@ void parse_msgtbl()
 		}
 
 		// now we can start parsing
+		if (optional_string("#Message Settings")) {
+			if (optional_string("$Allow Any Ship To Send Backup Messages:")) {
+				stuff_boolean(&Allow_generic_backup_messages);
+			}
+		}
+
 		if (optional_string("#Message Frequencies")) {
 			while (!required_string_one_of(3, "$Name:", "#Personas", "#Moods" )) {
 				message_frequency_parse();
@@ -619,15 +653,14 @@ void parse_msgtbl()
 			message_moods_parse();
 		}
 
-
 		required_string("#Personas");
 		while ( required_string_either("#Messages", "$Persona:")){
 			persona_parse();
 		}
 
 		required_string("#Messages");
-		while (required_string_either("#End", "$Name:")){
-			message_parse();
+		while (required_string_either("#End", "$Name:")) {
+			message_parse(MessageFormat::TABLED);
 		}
 
 		required_string("#End");
@@ -2035,6 +2068,12 @@ int get_builtin_message(int type, int persona, ship* sender, ship* subject, bool
 				// Ignore messages where any filter doesn't match
 				continue;
 			}
+		} else if (type == MESSAGE_BACKUP && !Allow_generic_backup_messages) {
+			// Historically, only certain wings were allowed to send Backup messages.
+			// The hardcoded requirement has been moved to message filters, but it
+			// would break backwards compatibility if we suddenly start sending Backup
+			// messages for wings that previously couldn't.
+			continue;
 		}
 
 		// Ditto with subject filters

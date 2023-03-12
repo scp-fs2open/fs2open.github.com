@@ -87,13 +87,6 @@ X(YESSIR,              "Yes",                  100, -1,  0,     NORMAL, ANYTIME,
 X(NOSIR,               "No",                   100, -1,  0,     NORMAL, ANYTIME, NONE),          \
 X(NO_TARGET,           "No Target",            100, -1,  0,     NORMAL, ANYTIME, NOSIR),         \
                                                                                                  \
-/* Friendly arrival */                                                                           \
-X(BETA_ARRIVED,        "Beta Arrived",         100, -1,  0,     LOW, SOON, BACKUP),              \
-X(GAMMA_ARRIVED,       "Gamma Arrived",        100, -1,  0,     LOW, SOON, BACKUP),              \
-X(DELTA_ARRIVED,       "Delta Arrived",        100, -1,  0,     LOW, SOON, BACKUP),              \
-X(EPSILON_ARRIVED,     "Epsilon Arrived",      100, -1,  0,     LOW, SOON, BACKUP),              \
-X(BACKUP,              "Backup",               100, -1,  0,     LOW, SOON, NONE),                \
-                                                                                                 \
 /* Player status */                                                                              \
 X(CHECK_6,             "Check 6",              100,  2,  6000,  HIGH, IMMEDIATE, NONE),          \
 X(PLAYER_DIED,         "Player Dead",          100, -1,  0,     HIGH, IMMEDIATE, NONE),          \
@@ -101,6 +94,7 @@ X(PRAISE,              "Praise",                50, 10,  60000, HIGH, SOON, NONE
 X(HIGH_PRAISE,         "High Praise",           50, -1,  0,     HIGH, SOON, PRAISE),             \
                                                                                                  \
 /* Wingmate status */                                                                            \
+X(BACKUP,              "Backup",               100, -1,  0,     LOW, SOON, NONE),                \
 X(HELP,                "Help",                 100, 10,  60000, HIGH, IMMEDIATE, NONE),          \
 X(WINGMAN_SCREAM,      "Death",                 50, 10,  60000, HIGH, IMMEDIATE, NONE),          \
 X(PRAISE_SELF,         "Praise Self",           10,  4,  60000, HIGH, SOON, NONE),               \
@@ -232,9 +226,9 @@ extern int Num_personas;
 extern int Default_command_persona;
 extern int Praise_self_percentage;
 
-// function to parse a message from either messages.tbl or the mission file.  Both files have the
-// exact same format, so this function just gets reused in both instances.
-void	message_parse(bool importing_from_fsm = false);
+enum class MessageFormat { FS1_MISSION, FS2_MISSION, TABLED };
+
+void	message_parse(MessageFormat format);
 void	persona_parse();
 
 void	messages_init();
