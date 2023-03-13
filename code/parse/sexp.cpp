@@ -2645,7 +2645,6 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 									argnum,
 									Sexp_nodes[op_node].text);
 							
-							r_count++;     // account for the node header
 							ship_node = op_node; //initialize it I guess
 							while (r_count >= 0) {
 								ship_node = CDR(ship_node);
@@ -3377,7 +3376,6 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 										argnum,
 										Sexp_nodes[op_node].text);
 								
-								r_count++;           // account for the node header
 								ship_node = op_node; // initialize it I guess
 								while (r_count >= 0) {
 									ship_node = CDR(ship_node);
@@ -3399,7 +3397,6 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 									argnum,
 									Sexp_nodes[op_node].text);
 							
-							r_count++;           // account for the node header
 							ship_node = op_node; // initialize it I guess
 							while (r_count >= 0) {
 								ship_node = CDR(ship_node);
