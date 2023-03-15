@@ -110,13 +110,13 @@ class SexpTreeEditorInterface {
 	virtual bool hasDefaultMessageParamter();
 	virtual SCP_vector<SCP_string> getMessages();
 
-	virtual SCP_vector<SCP_string> getMissionGoals(const SCP_string& reference_name);
+	virtual QStringList getMissionGoals(const QString& reference_name);
 	virtual bool hasDefaultGoal(int operator_value);
 
-	virtual SCP_vector<SCP_string> getMissionEvents(const SCP_string& reference_name);
+	virtual QStringList getMissionEvents(const QString& reference_name);
 	virtual bool hasDefaultEvent(int operator_value);
 
-	virtual SCP_vector<SCP_string> getMissionNames();
+	virtual QStringList getMissionNames();
 	virtual bool hasDefaultMissionName();
 
 	virtual int getRootReturnType() const;
@@ -124,6 +124,8 @@ class SexpTreeEditorInterface {
 	const flagset<TreeFlags>& getFlags() const;
 
 	virtual bool requireCampaignOperators() const;
+
+	virtual QList<QAction *> getContextMenuExtras(QObject *parent = nullptr);
 };
 
 /*
@@ -189,6 +191,7 @@ class sexp_tree: public QTreeWidget {
 	QTreeWidgetItem* handle(int node);
 	int get_type(QTreeWidgetItem* h);
 	int get_node(QTreeWidgetItem* h);
+	int get_root(int node);
 	int query_false(int node = -1);
 	int add_default_operator(int op, int argnum);
 	int get_default_value(sexp_list_item* item, char* text_buf, int op, int i);
@@ -379,6 +382,7 @@ class sexp_tree: public QTreeWidget {
 	void rootNodeDeleted(int node);
 	void rootNodeRenamed(int node);
 	void rootNodeFormulaChanged(int old, int node);
+	void nodeChanged(int node);
 
 	void selectedRootChanged(int formula);
 

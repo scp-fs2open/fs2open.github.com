@@ -152,8 +152,9 @@ SCP_vector<SCP_string> SexpTreeEditorInterface::getMessages() {
 
 	return list;
 }
-SCP_vector<SCP_string> SexpTreeEditorInterface::getMissionGoals(const SCP_string&  /*reference_name*/) {
-	SCP_vector<SCP_string> list;
+QStringList SexpTreeEditorInterface::getMissionGoals(const QString&  /*reference_name*/) {
+	QStringList list;
+	list.reserve(Num_goals);
 
 	for (const auto &goal: Mission_goals) {
 		auto temp_name = goal.name;
@@ -163,8 +164,9 @@ SCP_vector<SCP_string> SexpTreeEditorInterface::getMissionGoals(const SCP_string
 
 	return list;
 }
-SCP_vector<SCP_string> SexpTreeEditorInterface::getMissionEvents(const SCP_string&  /*reference_name*/) {
-	SCP_vector<SCP_string> list;
+QStringList SexpTreeEditorInterface::getMissionEvents(const QString&  /*reference_name*/) {
+	QStringList list;
+	list.reserve(Num_mission_events);
 
 	for (const auto &event: Mission_events) {
 		auto temp_name = event.name;
@@ -174,8 +176,8 @@ SCP_vector<SCP_string> SexpTreeEditorInterface::getMissionEvents(const SCP_strin
 
 	return list;
 }
-SCP_vector<SCP_string> SexpTreeEditorInterface::getMissionNames() {
-	return { SCP_string(Mission_filename) };
+QStringList SexpTreeEditorInterface::getMissionNames() {
+	return { Mission_filename };
 }
 bool SexpTreeEditorInterface::hasDefaultMissionName() {
 	return *Mission_filename != '\0';
@@ -197,6 +199,9 @@ int SexpTreeEditorInterface::getRootReturnType() const {
 }
 bool SexpTreeEditorInterface::requireCampaignOperators() const {
 	return false;
+}
+QList<QAction *> SexpTreeEditorInterface::getContextMenuExtras(QObject */*parent*/) {
+	return {};
 }
 SexpTreeEditorInterface::~SexpTreeEditorInterface() = default;
 
@@ -885,6 +890,7 @@ void sexp_tree::add_or_replace_operator(int op, int replace_flag) {
 					set_node(item_index, (SEXPT_OPERATOR | SEXPT_VALID), Operators[op].text.c_str());
 					tree_nodes[item_index].handle->setText(0, QString::fromStdString(Operators[op].text));
 					tree_nodes[item_index].flags = OPERAND;
+					nodeChanged(item_index);
 					return;
 				}
 			}
@@ -2345,6 +2351,8 @@ void sexp_tree::replace_data(const char* new_data, int type) {
 	// check remaining data beyond replaced data for validity (in case any of it is dependent on data just replaced)
 	verify_and_fix_arguments(tree_nodes[item_index].parent);
 
+	nodeChanged(item_index);
+
 	modified();
 	update_help(currentItem());
 }
@@ -2378,6 +2386,8 @@ void sexp_tree::replace_variable_data(int var_idx, int type) {
 
 	// check remaining data beyond replaced data for validity (in case any of it is dependent on data just replaced)
 	verify_and_fix_arguments(tree_nodes[item_index].parent);
+
+	nodeChanged(item_index);
 
 	modified();
 	update_help(currentItem());
@@ -2503,6 +2513,7 @@ void sexp_tree::replace_operator(const char* op) {
 	set_node(item_index, (SEXPT_OPERATOR | SEXPT_VALID), op);
 	h->setText(0, op);
 	tree_nodes[item_index].flags = OPERAND;
+	nodeChanged(item_index);
 	modified();
 	update_help(currentItem());
 
@@ -2747,6 +2758,13 @@ int sexp_tree::get_node(QTreeWidgetItem* h) {
 	}
 
 	return i;
+}
+
+int sexp_tree::get_root(int node) {
+	while (tree_nodes[node].parent >= 0) {
+		node = tree_nodes[node].parent;
+	}
+	return node;
 }
 
 void sexp_tree::update_help(QTreeWidgetItem* h) {
@@ -4574,7 +4592,7 @@ sexp_list_item* sexp_tree::get_listing_opf_mission_name() {
 	sexp_list_item head;
 
 	for (auto& mission : _interface->getMissionNames()) {
-		head.add_data(mission.c_str());
+		head.add_data(qPrintable(mission));
 	}
 
 	// This code is kept until the campaign editor is added
@@ -4599,13 +4617,10 @@ sexp_list_item* sexp_tree::get_listing_opf_goal_name(int parent_node) {
 	auto child = tree_nodes[parent_node].child;
 
 	// This is used by the campaign editor to show the entries for specific missions
-	SCP_string reference;
-	if (child >= 0) {
-		reference = tree_nodes[child].text;
-	}
+	QString reference{ child >= 0 ? tree_nodes[child].text : "" };
 
 	for (auto& entry : _interface->getMissionGoals(reference)) {
-		head.add_data(entry.c_str());
+		head.add_data(qPrintable(entry));
 	}
 
 	// This code is kept for reference purposes until the campaign editor is added
@@ -4693,13 +4708,10 @@ sexp_list_item* sexp_tree::get_listing_opf_event_name(int parent_node) {
 	auto child = tree_nodes[parent_node].child;
 
 	// This is used by the campaign editor to show the entries for specific missions
-	SCP_string reference;
-	if (child >= 0) {
-		reference = tree_nodes[child].text;
-	}
+	QString reference{ child >= 0 ? tree_nodes[child].text : "" };
 
 	for (auto& entry : _interface->getMissionEvents(reference)) {
-		head.add_data(entry.c_str());
+		head.add_data(qPrintable(entry));
 	}
 
 	// This code is kept until the campaign editor is added
@@ -5689,7 +5701,6 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 	auto modify_variable_act = popup_menu->addAction(tr("Modify Variable"), this, []() {});
 
 	auto replace_variable_menu = popup_menu->addMenu(tr("Replace Variable"));
-
 	popup_menu->addSeparator();
 
 	popup_menu->addSection("Containers");
@@ -5698,6 +5709,17 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 	add_modify_container_act->setEnabled(false);
 	auto replace_container_name_menu = popup_menu->addMenu(tr("Replace Container Name"));
 	auto replace_container_data_menu = popup_menu->addMenu(tr("Replace Container Data"));
+  
+  if (_interface) {
+		auto extra_acts = _interface->getContextMenuExtras(popup_menu.get());
+		if (! extra_acts.isEmpty()) {
+			popup_menu->addSection("Special Actions");
+
+			for (QAction *act : extra_acts) {
+				popup_menu->addAction(act);
+			}
+		}
+	}
 
 	update_help(h);
 	//SelectDropTarget(h);  // WTF: Why was this here???
@@ -6829,6 +6851,9 @@ void sexp_tree::handleItemChange(QTreeWidgetItem* item, int  /*column*/) {
 
 	if (update_node) {
 		modified();
+
+		nodeChanged(node);
+
 		auto strBytes = str.toUtf8(); // avoid using dangling ptr
 		strncpy(tree_nodes[node].text, strBytes.constData(), len);
 		tree_nodes[node].text[len] = 0;
