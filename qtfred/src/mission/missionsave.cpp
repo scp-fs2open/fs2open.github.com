@@ -3918,11 +3918,10 @@ int CFred_mission_save::save_players()
 			for (int numErrors = 0; numErrors < (int)dogfight_ships.size(); numErrors++) {
 				mprintf(("Warning: Ship %s has no dogfight weapons allowed\n", dogfight_ships[numErrors].c_str()));
 			}
-			SCP_string text = "Warning: This mission is a dogfight mission but no dogfight weapons are available for at least one "
-			text += "ship in the loadout! In Debug mode a list of ships will be printed to the log.";
 			_viewport->dialogProvider->showButtonDialog(DialogType::Warning,
 				"No dogfight weapons",
-				text,
+				"Warning: This mission is a dogfight mission but no dogfight weapons are available for at least one "
+				"ship in the loadout! In Debug mode a list of ships will be printed to the log.",
 				{DialogButton::Ok});
 		}
 
