@@ -3918,11 +3918,11 @@ int CFred_mission_save::save_players()
 			for (int numErrors = 0; numErrors < (int)dogfight_ships.size(); numErrors++) {
 				mprintf(("Warning: Ship %s has no dogfight weapons allowed\n", dogfight_ships[numErrors].c_str()));
 			}
-/*			MessageBox(nullptr,
+			_viewport->dialogProvider->showButtonDialog(DialogType::Warning,
+				"No dogfight weapons",
 				"Warning: This mission is a dogfight mission but no dogfight weapons are available for at least one "
 				"ship in the loadout! In Debug mode a list of ships will be printed to the log.",
-				"No dogfight weapons",
-				MB_OK);*/
+				{DialogButton::Ok});
 		}
 
 		if (optional_string_fred("+Weaponry Pool:", "$Starting Shipname:")) {
