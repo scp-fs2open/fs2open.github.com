@@ -4266,6 +4266,9 @@ void game_set_frametime(int state)
 	float frame_cap_diff;
 	bool do_pre_player_skip = false;
 
+	// sync all timestamps across the entire frame
+	timer_start_frame();
+
 	thistime = timer_get_fixed_seconds();
 
 	if ( Last_time == 0 )	
