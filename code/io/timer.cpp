@@ -41,6 +41,9 @@ static bool Timestamp_sudo_paused = false;
 static uint64_t Timestamp_microseconds_at_mission_start = 0;
 
 
+static uint64_t timestamp_get_raw(bool start_frame = false);
+
+
 static uint64_t get_performance_counter()
 {
 	Assertion(Timer_inited, "This function can only be used when the timer system is initialized!");
@@ -73,6 +76,12 @@ void timer_init()
 
 		atexit(timer_close);
 	}
+}
+
+void timer_start_frame()
+{
+	// take a snapshot of the raw timestamp at the beginning of the frame
+	timestamp_get_raw(true);
 }
 
 // ======================================== getting time ========================================
@@ -129,15 +138,21 @@ std::uint64_t timer_get_nanoseconds()
     return static_cast<uint64_t>(time * Timer_to_nanoseconds);
 }
 
-static uint64_t timestamp_get_raw()
+static uint64_t timestamp_get_raw(bool start_frame)
 {
-	uint64_t timestamp_raw;
-	if (Timestamp_is_paused) {
-		timestamp_raw = Timestamp_paused_at_counter;
-	} else {
-		timestamp_raw = get_performance_counter();
+	static uint64_t timestamp_raw = 0;
+
+	// The simulation timestamp is only updated at the beginning of the frame
+	// because we want all timestamps within a frame to be identical.
+	if (start_frame)
+	{
+		if (Timestamp_is_paused)
+			timestamp_raw = Timestamp_paused_at_counter;
+		else
+			timestamp_raw = get_performance_counter();
+
+		timestamp_raw -= Timestamp_offset_from_counter;
 	}
-	timestamp_raw -= Timestamp_offset_from_counter;
 
 	return timestamp_raw;
 }
