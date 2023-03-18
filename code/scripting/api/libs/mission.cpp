@@ -1684,6 +1684,11 @@ ADE_FUNC(isNebula, l_Mission, nullptr, "Get whether or not the current mission b
 	return ade_set_args(L, "b", The_mission.flags[Mission::Mission_Flags::Fullneb]);
 }
 
+ADE_FUNC(hasVolumetricNebula, l_Mission, nullptr, "Get whether or not the current mission being played contains a volumetric nebula", "boolean", "true if has a volumetric nebula, false if not")
+{
+	return ade_set_args(L, "b", static_cast<bool>(The_mission.volumetrics));
+}
+
 ADE_VIRTVAR(NebulaSensorRange, l_Mission, "number", "Gets or sets the Neb2_awacs variable.  This is multiplied by a species-specific factor to get the \"scan range\".  Within the scan range, a ship is at least partially targetable (fuzzy blip); within half the scan range, a ship is fully targetable.  Beyond the scan range, a ship is not targetable.", "number", "the Neb2_awacs variable")
 {
 	float range = -1.0f;
@@ -1692,6 +1697,26 @@ ADE_VIRTVAR(NebulaSensorRange, l_Mission, "number", "Gets or sets the Neb2_awacs
 		Neb2_awacs = range;
 
 	return ade_set_args(L, "f", Neb2_awacs);
+}
+
+ADE_VIRTVAR(NebulaNearMult, l_Mission, "number", "Gets or sets the multiplier of the near plane of the current nebula.", "number", "The multiplier of the near plane.")
+{
+	float near = 0.0f;
+
+	if (ADE_SETTING_VAR && ade_get_args(L, "*f", &near))
+		Neb2_fog_near_mult = near;
+
+	return ade_set_args(L, "f", Neb2_fog_near_mult);
+}
+
+ADE_VIRTVAR(NebulaFarMult, l_Mission, "number", "Gets or sets the multiplier of the far plane of the current nebula.", "number", "The multiplier of the far plane.")
+{
+	float far = 0.0f;
+
+	if (ADE_SETTING_VAR && ade_get_args(L, "*f", &far))
+		Neb2_fog_far_mult = far;
+
+	return ade_set_args(L, "f", Neb2_fog_far_mult);
 }
 
 ADE_FUNC(isSubspace, l_Mission, nullptr, "Get whether or not the current mission being played is set in subspace", "boolean", "true if in subspace, false if not")
