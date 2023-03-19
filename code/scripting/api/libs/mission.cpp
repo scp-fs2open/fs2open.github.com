@@ -1701,20 +1701,20 @@ ADE_VIRTVAR(NebulaSensorRange, l_Mission, "number", "Gets or sets the Neb2_awacs
 
 ADE_VIRTVAR(NebulaNearMult, l_Mission, "number", "Gets or sets the multiplier of the near plane of the current nebula.", "number", "The multiplier of the near plane.")
 {
-	float near = 0.0f;
+	float fog_near = 0.0f;
 
-	if (ADE_SETTING_VAR && ade_get_args(L, "*f", &near))
-		Neb2_fog_near_mult = near;
+	if (ADE_SETTING_VAR && ade_get_args(L, "*f", &fog_near))
+		Neb2_fog_near_mult = fog_near;
 
 	return ade_set_args(L, "f", Neb2_fog_near_mult);
 }
 
 ADE_VIRTVAR(NebulaFarMult, l_Mission, "number", "Gets or sets the multiplier of the far plane of the current nebula.", "number", "The multiplier of the far plane.")
 {
-	float far = 0.0f;
+	float fog_far = 0.0f;
 
-	if (ADE_SETTING_VAR && ade_get_args(L, "*f", &far))
-		Neb2_fog_far_mult = far;
+	if (ADE_SETTING_VAR && ade_get_args(L, "*f", &fog_far))
+		Neb2_fog_far_mult = fog_far;
 
 	return ade_set_args(L, "f", Neb2_fog_far_mult);
 }
