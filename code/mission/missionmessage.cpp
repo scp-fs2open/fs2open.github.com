@@ -1969,18 +1969,12 @@ int get_persona(ship* shipp) {
 		return The_mission.command_persona;
 	} else if (shipp->persona_index != -1) {
 		return shipp->persona_index;
+	} else if (!Auto_assign_personas) {
+		// If the game does not allow auto assignment, then bail
+		return -1;
 	} else {
 		return shipp->persona_index = pick_persona(shipp);
 	}
-}
-
-bool excludes_current_mood(int message) {
-	for (SCP_vector<int>::iterator iter = Messages[message].excluded_moods.begin(); iter != Messages[message].excluded_moods.end(); ++iter) {
-		if (*iter == Current_mission_mood) {
-			return true;
-		}
-	}
-	return false;
 }
 
 bool persona_allows_substitution(int persona) {
