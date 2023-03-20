@@ -2019,6 +2019,15 @@ bool filters_match(MessageFilter& filter, ship* it) {
 	}
 }
 
+bool excludes_current_mood(int message) {
+	for (SCP_vector<int>::iterator iter = Messages[message].excluded_moods.begin(); iter != Messages[message].excluded_moods.end(); ++iter) {
+		if (*iter == Current_mission_mood) {
+			return true;
+		}
+	}
+	return false;
+}
+
 int get_builtin_message(int type, int persona, ship* sender, ship* subject, bool require_exact_persona_match) {
 	static const int BUILTIN_MATCHES_TYPE    = 0;
 	static const int BUILTIN_MATCHES_FILTER  = 1;
