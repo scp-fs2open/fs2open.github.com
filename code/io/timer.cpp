@@ -497,6 +497,28 @@ bool ui_timestamp_elapsed(UI_TIMESTAMP ui_stamp) {
 	return timer_get_milliseconds() >= ui_stamp.value();
 }
 
+bool timestamp_elapsed_last_frame(TIMESTAMP stamp) {
+	if (!stamp.isValid() || stamp.isNever()) {
+		return false;
+	}
+	if (stamp.isImmediate()) {
+		return true;
+	}
+
+	return timestamp_ms() > stamp.value();
+}
+
+bool ui_timestamp_elapsed_last_frame(UI_TIMESTAMP ui_stamp) {
+	if (!ui_stamp.isValid() || ui_stamp.isNever()) {
+		return false;
+	}
+	if (ui_stamp.isImmediate()) {
+		return true;
+	}
+
+	return timer_get_milliseconds() > ui_stamp.value();
+}
+
 bool timestamp_elapsed_safe(int a, int b) {
 	if (a == 0) {
 		return true;

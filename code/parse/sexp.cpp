@@ -17471,7 +17471,9 @@ int sexp_event_delay_status( int n, int want_true, bool use_msecs = false)
 			if (!Fixed_chaining_to_repeat && Mission_events[i].flags & MEF_TIMESTAMP_HAS_INTERVAL) {
 				/* do not set rval */;
 			}
-			else if (!timestamp_elapsed(timestamp_delta(Mission_events[i].timestamp, delay))) {
+			// note that if the event and the timestamp happen simultaneously, at least one frame must elapse first;
+			// this matches the delay check in the original public source code release
+			else if (!timestamp_elapsed_last_frame(timestamp_delta(Mission_events[i].timestamp, delay))) {
 				rval = SEXP_FALSE;
 				break;
 			}
