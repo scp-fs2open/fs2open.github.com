@@ -1017,8 +1017,8 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 {
 	ai_info *ainfo;
 	int ai_mode, ai_submode;					// ai mode and submode needed for ship commands
-	ship *target;
-	char *target_shipname;						// ship number of possible targets
+	ship *target = nullptr;
+	char *target_shipname;
 	ai_lua_parameters lua_target;
 	int message;
 	int target_team, ship_team;				// team id's for the ship getting message and any target the player has
@@ -1314,7 +1314,7 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 {
 	ai_info *ainfo;
 	int ai_mode, ai_submode;					// ai mode and submode needed for ship commands
-	ship *target;
+	ship *target = nullptr;
 	char *target_shipname;
 	ai_lua_parameters lua_target;
 	int message_sent, message;
