@@ -19,7 +19,7 @@ static int Player_flight_group = 0;
 // vazor222
 void parse_xwi_mission_info(mission *pm, const XWingMission *xwim)
 {
-	strcpy_s(pm->author, "X-Wing");
+	pm->author = "X-Wing";
 	strcpy_s(pm->created, "00/00/00 at 00:00:00");
 
 	// NOTE: Y and Z are swapped and the units are in km
@@ -43,6 +43,8 @@ bool is_fighter_or_bomber(const XWMFlightGroup *fg)
 		case XWMFlightGroupType::fg_Gunboat:
 		case XWMFlightGroupType::fg_TIE_Advanced:
 			return true;
+		default:
+			break;
 	}
 	return false;
 }
@@ -66,7 +68,7 @@ void xwi_add_attack_check(const XWingMission *xwim, const XWMFlightGroup *fg)
 {
 	char fg_name[NAME_LENGTH] = "";
 	char event_name[NAME_LENGTH];
-	char sexp_buf[SEXP_LENGTH];
+	char sexp_buf[NAME_LENGTH + 50];
 
 	int fg_index = xwi_flightgroup_lookup(xwim, fg);
 	Assertion(fg_index >= 0, "Flight Group index must be valid");
@@ -79,8 +81,9 @@ void xwi_add_attack_check(const XWingMission *xwim, const XWMFlightGroup *fg)
 	if (mission_event_lookup(event_name) >= 0)
 		return;
 
-	auto event = &Mission_events[Num_mission_events++];
-	strcpy_s(event->name, event_name);
+	Mission_events.emplace_back();
+	auto event = &Mission_events.back();
+	event->name = event_name;
 
 	if (is_wing(fg))
 		sprintf(sexp_buf, "( when ( true ) ( fotg-wing-attacked-init \"%s\" ) )", fg_name);
@@ -94,7 +97,7 @@ int xwi_determine_arrival_cue(const XWingMission *xwim, const XWMFlightGroup *fg
 {
 	const XWMFlightGroup *arrival_fg = nullptr;
 	char arrival_fg_name[NAME_LENGTH] = "";
-	char sexp_buf[SEXP_LENGTH];
+	char sexp_buf[NAME_LENGTH * 2 + 80];
 
 	bool check_wing = false;
 	if (fg->arrivalFlightGroup >= 0)
@@ -258,6 +261,8 @@ const char *xwi_determine_base_ship_class(const XWMFlightGroup *fg)
 			return nullptr;
 		case XWMFlightGroupType::fg_B_Wing:
 			return "B-wing Starfighter";
+		default:
+			break;
 	}
 
 	return nullptr;
@@ -305,6 +310,8 @@ int xwi_determine_ship_class(const XWMFlightGroup *fg)
 
 const char *xwi_determine_team(const XWingMission *xwim, const XWMFlightGroup *fg, const ship_info *sip)
 {
+	SCP_UNUSED(sip);
+
 	auto player_iff = xwim->flightgroups[Player_flight_group].craftIFF;
 
 	if (fg->craftIFF == XWMCraftIFF::iff_imperial)
@@ -379,6 +386,11 @@ const char *xwi_determine_ai_class(const XWMFlightGroup *fg)
 void xwi_determine_orientation(matrix *orient, const XWMFlightGroup *fg, const vec3d *start1, const vec3d *start2, const vec3d *start3,
 	const vec3d *waypoint1, const vec3d *waypoint2, const vec3d *waypoint3, const vec3d *hyperspace)
 {
+	SCP_UNUSED(start2);
+	SCP_UNUSED(start3);
+	SCP_UNUSED(waypoint2);
+	SCP_UNUSED(waypoint3);
+	SCP_UNUSED(hyperspace);
 	vec3d fvec;
 
 	// RandomStarfighter says:
@@ -402,6 +414,8 @@ void xwi_determine_orientation(matrix *orient, const XWMFlightGroup *fg, const v
 
 void parse_xwi_flightgroup(mission *pm, const XWingMission *xwim, const XWMFlightGroup *fg)
 {
+	SCP_UNUSED(pm);
+
 	int arrival_cue = xwi_determine_arrival_cue(xwim, fg);
 
 	int number_in_wave = fg->numberInWave;
@@ -472,13 +486,13 @@ void parse_xwi_flightgroup(mission *pm, const XWingMission *xwim, const XWMFligh
 	}
 
 	// similarly for the AI
+	int ai_index = sip->ai_class;
 	auto ai_name = xwi_determine_ai_class(fg);
-	int ai_class = 0;
 	if (ai_name)
 	{
 		int index = string_lookup(ai_name, Ai_class_names, Num_ai_classes);
 		if (index >= 0)
-			ai_class = index;
+			ai_index = index;
 		else
 			Warning(LOCATION, "Could not find AI class %s", ai_name);
 	}
@@ -540,7 +554,7 @@ void parse_xwi_flightgroup(mission *pm, const XWingMission *xwim, const XWMFligh
 		pobj.ship_class = ship_class;
 
 		// initialize class-specific fields
-		pobj.ai_class = sip->ai_class;
+		pobj.ai_class = ai_index;
 		pobj.warpin_params_index = sip->warpin_params_index;
 		pobj.warpout_params_index = sip->warpout_params_index;
 		pobj.ship_max_shield_strength = sip->max_shield_strength;
@@ -551,8 +565,6 @@ void parse_xwi_flightgroup(mission *pm, const XWingMission *xwim, const XWMFligh
 		pobj.score = sip->score;
 
 		pobj.team = team;
-		pobj.ai_class = ai_class;
-
 		pobj.pos = start1;
 		pobj.orient = orient;
 
@@ -614,9 +626,10 @@ void parse_xwi_flightgroup(mission *pm, const XWingMission *xwim, const XWMFligh
 void parse_xwi_mission(mission *pm, const XWingMission *xwim)
 {
 	int index = -1;
+	char sexp_buf[35];
 
 	// find player flight group
-	for (int i = 0; i < xwim->flightgroups.size(); i++)
+	for (int i = 0; i < (int)xwim->flightgroups.size(); i++)
 	{
 		if (xwim->flightgroups[i].playerPos > 0)
 		{
@@ -647,9 +660,12 @@ void parse_xwi_mission(mission *pm, const XWingMission *xwim)
 	strcpy_s(TVT_wing_names[0], Starting_wing_names[0]);
 
 	// indicate we are using X-Wing options
-	auto config_event = &Mission_events[Num_mission_events++];
-	strcpy_s(config_event->name, "XWI Import");
-	Mp = "( when ( true ) ( do-nothing ) )";
+	Mission_events.emplace_back();
+	auto config_event = &Mission_events.back();
+	config_event->name = "XWI Import";
+
+	sprintf(sexp_buf, "( when ( true ) ( do-nothing ) )");
+	Mp = sexp_buf;
 	config_event->formula = get_sexp_main();
 
 	// load flight groups
@@ -659,6 +675,9 @@ void parse_xwi_mission(mission *pm, const XWingMission *xwim)
 
 void post_process_xwi_mission(mission *pm, const XWingMission *xwim)
 {
+	SCP_UNUSED(pm);
+	SCP_UNUSED(xwim);
+
 	for (int wingnum = 0; wingnum < Num_wings; wingnum++)
 	{
 		auto wingp = &Wings[wingnum];
@@ -693,12 +712,12 @@ void post_process_xwi_mission(mission *pm, const XWingMission *xwim)
 */
 void parse_xwi_briefing(mission *pm, const XWingBriefing *xwBrief)
 {
-	brief_stage *bs;
-	briefing *bp;
+	SCP_UNUSED(pm);
+	SCP_UNUSED(xwBrief);
 
-	bp = &Briefings[0];
+	auto bp = &Briefings[0];
 	bp->num_stages = 1;  // xwing briefings only have one stage
-	bs = &bp->stages[0];
+	auto bs = &bp->stages[0];
 
 	/*
 	if (xwBrief != NULL)
@@ -713,7 +732,7 @@ void parse_xwi_briefing(mission *pm, const XWingBriefing *xwBrief)
 		bs->text = "Prepare for the next X-Wing mission!";
 		strcpy_s(bs->voice, "none.wav");
 		vm_vec_zero(&bs->camera_pos);
-		bs->camera_orient = SCALE_IDENTITY_VECTOR;
+		bs->camera_orient = IDENTITY_MATRIX;
 		bs->camera_time = 500;
 		bs->num_lines = 0;
 		bs->num_icons = 0;
