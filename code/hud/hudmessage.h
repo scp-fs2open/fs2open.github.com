@@ -44,6 +44,8 @@ typedef struct line_node {
 	SCP_string text;
 } line_node;
 
+extern SCP_vector<line_node> Msg_scrollback_vec;
+
 typedef struct Hud_display_info {
 	HUD_message_data msg;
 	int y;						// y Coordinate to draw message at
