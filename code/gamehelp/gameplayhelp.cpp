@@ -121,7 +121,7 @@ static int Gameplay_help_inited = 0;
 
 static int Current_help_page;
 
-static SCP_vector<gameplay_help_section> Help_text;
+SCP_vector<gameplay_help_section> Help_text;
 
 void gameplay_help_init_control_line(int id, gameplay_help_section &thisHelp)
 {
@@ -448,6 +448,7 @@ void gameplay_help_init()
 	}
 
 	// init all the help text
+	Help_text.clear(); //Make sure the array is empty before we start.
 	Help_text = gameplay_help_init_text();
 
 	common_set_interface_palette("InterfacePalette");  // set the interface palette
@@ -515,6 +516,8 @@ void gameplay_help_leave()
 	// unpause all game sounds
 	weapon_unpause_sounds();
 	audiostream_unpause_all();
+
+	Help_text.clear();
 
 	gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
 	game_flush();

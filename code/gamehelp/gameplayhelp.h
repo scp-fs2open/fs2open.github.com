@@ -19,6 +19,8 @@ struct gameplay_help_section {
 	SCP_vector<SCP_string> text;
 };
 
+extern SCP_vector<gameplay_help_section> Help_text;
+
 SCP_vector<gameplay_help_section> gameplay_help_init_text();
 
 void gameplay_help_init();
