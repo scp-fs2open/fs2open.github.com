@@ -48,6 +48,7 @@
 #include "scripting/api/objs/debriefing.h"
 #include "scripting/api/objs/shipwepselect.h"
 #include "scripting/api/objs/missionhotkey.h"
+#include "scripting/api/objs/gamehelp.h"
 #include "scripting/api/objs/missionlog.h"
 #include "scripting/api/objs/color.h"
 #include "scripting/api/objs/enums.h"
@@ -1791,6 +1792,57 @@ ADE_FUNC(__len, l_Hotkeys, nullptr, "The number of valid hotkey ships", "number"
 	
 	return ade_set_args(L, "i", s);
 }
+
+//**********SUBLIBRARY: UserInterface/GameHelp
+ADE_LIB_DERIV(l_UserInterface_GameHelp,
+	"GameHelp",
+	nullptr,
+	"API for accessing data related to the game help UI.<br><b>Warning:</b> This is an internal "
+	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	l_UserInterface);
+
+ADE_FUNC(initGameHelp, l_UserInterface_GameHelp, nullptr, "Initializes the Game Help data. Must be used before Help Sections is accessed.", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	Help_text.clear(); // Make sure the vector is empty before we start
+	Help_text = gameplay_help_init_text();
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(closeGameHelp, l_UserInterface_GameHelp, nullptr, "Clears the Game Help data. Should be used when finished accessing Help Sections.", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	Help_text.clear();
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_LIB_DERIV(l_Help_Sections, "Help_Sections", nullptr, nullptr, l_UserInterface_GameHelp);
+ADE_INDEXER(l_Help_Sections,
+	"number Index",
+	"Array of help sections",
+	"help_section",
+	"help section handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "o", l_Help_Section.Set(help_section_h()));
+	idx--; //Convert to Lua's 1 based index system
+
+	if ((idx < 0) || (idx >= (int)Help_text.size()))
+		return ade_set_error(L, "o", l_Help_Section.Set(help_section_h()));
+
+	return ade_set_args(L, "o", l_Help_Section.Set(help_section_h(idx)));
+}
+
+ADE_FUNC(__len, l_Help_Sections, nullptr, "The number of help sections", "number", "The number of help sections.")
+{
+	return ade_set_args(L, "i", (int)Help_text.size());
+}
+
 
 
 

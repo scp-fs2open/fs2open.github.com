@@ -1344,6 +1344,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/font.h
 	scripting/api/objs/gameevent.cpp
 	scripting/api/objs/gameevent.h
+	scripting/api/objs/gamehelp.cpp
+	scripting/api/objs/gamehelp.h
 	scripting/api/objs/gamestate.cpp
 	scripting/api/objs/gamestate.h
 	scripting/api/objs/hudgauge.cpp
