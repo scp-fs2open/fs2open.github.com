@@ -2320,6 +2320,14 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		if(optional_string("+Twist:")) {
 			stuff_float(&wip->cs_twist);
 		}
+
+		if (optional_string("+Random Start Angle:")) {
+			stuff_boolean(&wip->cs_random_angle);
+		}
+
+		if (optional_string("+Start Angle:")) {
+			stuff_float(&wip->cs_angle);
+		}
 	}
 
 	//electronics tag optional stuff
@@ -9081,8 +9089,10 @@ void weapon_info::reset()
 	this->cs_num_fired = 4;
 	this->cs_radius = 1.25f;
 	this->cs_delay = 30;
-	this->cs_crotate = 1;
+	this->cs_crotate = true;
 	this->cs_twist = 5.0f;
+	this->cs_random_angle = false;
+	this->cs_angle = 0.0f;
 
 	this->elec_time = 8000;
 	this->elec_eng_mult = 1.0f;

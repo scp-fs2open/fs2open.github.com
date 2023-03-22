@@ -524,8 +524,10 @@ struct weapon_info
 	int cs_num_fired;
 	float cs_radius;
 	float cs_twist;
-	int cs_crotate;
+	bool cs_crotate;
 	int cs_delay;
+	bool cs_random_angle;
+	float cs_angle;
 
 	//electronics info - phreak 5/3/03
 	int elec_time;				//how long it lasts, in milliseconds
