@@ -311,16 +311,20 @@ int campaign_tree_wnd::error_checker()
 
 	g_err = 0;
 	for (i=0; i<Total_links; i++) {
+		// #1 check: illegal source mission
 		if ( (Links[i].from < 0) || (Links[i].from >= Campaign.num_missions) )
 			return internal_error("Branch #%d has illegal source mission", i);
+		// #2 check: illegal target mission
 		if ( (Links[i].to < -1) || (Links[i].to >= Campaign.num_missions) )
 			return internal_error("Branch #%d has illegal target mission", i);
+		// #3 check: formula syntax
 		Sexp_useful_number = Links[i].from;
 		if (fred_check_sexp(Links[i].sexp, OPR_BOOL, "formula of branch #%d", i))
 			return -1;
 
 		z = Links[i].from;
 
+		// #4 check: always true loop
 		if (Links[i].is_mission_loop || Links[i].is_mission_fork) {
 			if (Links[i].sexp == Locked_sexp_true) {
 				if (error("Mission \"%s\" has a loop branch that is always true", Campaign.missions[z].name))
@@ -333,11 +337,13 @@ int campaign_tree_wnd::error_checker()
 		// total number of regular links
 		mcount[z]++;
 
+		// #5 check: always false branch
 		if (Links[i].sexp == Locked_sexp_false) {
 			if (error("Mission \"%s\" branch %d is always false", Campaign.missions[z].name, mcount[z]))
 				return 1;
 		}
 
+		// #6 check: true middle branch
 		if (Links[i].sexp == Locked_sexp_true) {
 			if (true_at[z] >= 0)
 				if (error("Mission \"%s\" branch %d is true but is not last branch", Campaign.missions[z].name, true_at[z]))
@@ -347,6 +353,32 @@ int campaign_tree_wnd::error_checker()
 		}
 	}
 
+	// #7 check: not always true last branch
+	for (i=0; i<Campaign.num_missions; i++)
+		if (mcount[i] && true_at[i] < mcount[i])
+			if (error("Mission \"%s\" last branch isn't set to true", Campaign.missions[i].name))
+				return 1;
+
+	// #8 check: duplicate mission
+	for (i=z=0; i<Campaign.num_missions; i++) {
+		for (j=0; j<Campaign.num_missions; j++)
+			if ((i != j) && !stricmp(Campaign.missions[i].name, Campaign.missions[j].name))
+				return internal_error("Mission \"%s\" is listed twice in campaign", Campaign.missions[i].name);
+
+		if (!Campaign.missions[i].level)
+			z++;
+	}
+
+	// #9 check: no first mission
+	if (!z)
+		if (error("No top level mission present in tree"))
+			return 1;
+
+	// #10 check: duplicate first mission
+	if (z > 1)
+		return internal_error("More than one top level mission present in tree");
+
+	// #11 check: Multi player number
 	// check that all missions in a multiplayer game have the same number of players
 	if ( Campaign.type != CAMPAIGN_TYPE_SINGLE ) {
 		for (i = 0; i < Campaign.num_missions; i++ ) {
@@ -359,27 +391,6 @@ int campaign_tree_wnd::error_checker()
 			}
 		}
 	}
-
-	for (i=0; i<Campaign.num_missions; i++)
-		if (mcount[i] && true_at[i] < mcount[i])
-			if (error("Mission \"%s\" last branch isn't set to true", Campaign.missions[i].name))
-				return 1;
-
-	for (i=z=0; i<Campaign.num_missions; i++) {
-		for (j=0; j<Campaign.num_missions; j++)
-			if ((i != j) && !stricmp(Campaign.missions[i].name, Campaign.missions[j].name))
-				return internal_error("Mission \"%s\" is listed twice in campaign", Campaign.missions[i].name);
-
-		if (!Campaign.missions[i].level)
-			z++;
-	}
-
-	if (!z)
-		if (error("No top level mission present in tree"))
-			return 1;
-
-	if (z > 1)
-		return internal_error("More than one top level mission present in tree");
 
 	return 0;
 }

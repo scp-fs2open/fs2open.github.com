@@ -145,6 +145,13 @@ int cscrew_create(object *obj)
 	// get the "center" pointing vector
 	vec3d neg;
 	neg = obj->orient.vec.uvec;
+
+	if (wip->cs_random_angle) {
+		vm_rot_point_around_line(&neg, &neg, frand_range(0.0f, PI2), &vmd_zero_vector, &obj->orient.vec.fvec);
+	} else {
+		vm_rot_point_around_line(&neg, &neg, wip->cs_angle, &vmd_zero_vector, &obj->orient.vec.fvec);
+	}
+
 	if(Corkscrew_down_first){
 		vm_vec_negate(&neg);
 	}

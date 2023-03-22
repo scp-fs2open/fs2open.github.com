@@ -1364,6 +1364,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/message.h
 	scripting/api/objs/missionhotkey.cpp
 	scripting/api/objs/missionhotkey.h
+	scripting/api/objs/missionlog.cpp
+	scripting/api/objs/missionlog.h
 	scripting/api/objs/model.cpp
 	scripting/api/objs/model.h
 	scripting/api/objs/modelinstance.cpp

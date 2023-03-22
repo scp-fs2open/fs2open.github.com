@@ -531,6 +531,7 @@ ship_flag_name Ship_flag_names[] = {
 	{ Ship_Flags::Primaries_locked,				"primaries-locked" },
 	{ Ship_Flags::Secondaries_locked,			"secondaries-locked" },
 	{ Ship_Flags::No_subspace_drive,			"no-subspace-drive" },
+	{ Ship_Flags::No_departure_warp,			"no-departure-warp"},
 	{ Ship_Flags::Dont_collide_invis,			"don't-collide-invisible" },
 	{ Ship_Flags::No_ets,						"no-ets" },
 	{ Ship_Flags::Toggle_subsystem_scanning,	"toggle-subsystem-scanning" },
@@ -544,7 +545,11 @@ ship_flag_name Ship_flag_names[] = {
 	{ Ship_Flags::Fail_sound_locked_secondary, 	"fail-sound-locked-secondary"},
 	{ Ship_Flags::Aspect_immune, 				"aspect-immune"},
 	{ Ship_Flags::Cannot_perform_scan,			"cannot-perform-scan"},
-	{ Ship_Flags::No_targeting_limits,			"no-targeting-limits"}
+	{ Ship_Flags::No_targeting_limits,			"no-targeting-limits"},
+	{ Ship_Flags::No_death_scream,				"no-death-scream"},
+	{ Ship_Flags::Always_death_scream,			"always-death-scream"},
+	{ Ship_Flags::No_builtin_messages,			"no-builtin-messages"},
+	{ Ship_Flags::Scramble_messages,			"scramble-messages"},
 };
 
 ship_flag_description Ship_flag_descriptions[] = {
@@ -562,6 +567,7 @@ ship_flag_description Ship_flag_descriptions[] = {
 	{ Ship_Flags::Primaries_locked,				"Will stop a ship from firing their primary weapons."},
 	{ Ship_Flags::Secondaries_locked,			"Will stop a ship from firing their secondary weapons."},
 	{ Ship_Flags::No_subspace_drive,			"Will not allow a ship to jump into subspace."},
+	{ Ship_Flags::No_departure_warp,			"The ship will depart without the normal warp-out effect."},
 	{ Ship_Flags::Dont_collide_invis,			"Will cause polygons with an invisible texture to stop colliding with objects."},
 	{ Ship_Flags::No_ets,						"Will not allow a ship to alter its ETS system."},
 	{ Ship_Flags::Toggle_subsystem_scanning,	"Switches between being able to scan a whole ship or individual subsystems."},
@@ -575,7 +581,11 @@ ship_flag_description Ship_flag_descriptions[] = {
 	{ Ship_Flags::Fail_sound_locked_secondary,	"Play the firing fail sound when the weapon is locked."},
 	{ Ship_Flags::Aspect_immune,				"Ship cannot be targeted by Aspect Seekers."},
 	{ Ship_Flags::Cannot_perform_scan,			"Ship cannot scan other ships."},
-	{ Ship_Flags::No_targeting_limits,			"Ship is always targetable regardless of AWACS or targeting range limits."}
+	{ Ship_Flags::No_targeting_limits,			"Ship is always targetable regardless of AWACS or targeting range limits."},
+	{ Ship_Flags::No_death_scream,				"Ship will never send a death message when destroyed."},
+	{ Ship_Flags::Always_death_scream,			"Ship will always send a death message when destroyed."},
+	{ Ship_Flags::No_builtin_messages,			"Ship will not send any persona messages."},
+	{ Ship_Flags::Scramble_messages,			"All messages sent from this ship will appear scrambled, as if the ship had been hit by an EMP."},
 };
 
 extern const size_t Num_ship_flag_names = sizeof(Ship_flag_names) / sizeof(ship_flag_name);

@@ -193,7 +193,13 @@ flag_def_list Hud_gauge_types[] = {
 	{ "Missile indicator",	HUD_OBJECT_MISSILE_TRI,			0},
 	{ "Kills",				HUD_OBJECT_KILLS,				0},
 	{ "Fixed messages",		HUD_OBJECT_FIXED_MESSAGES,		0},		// Not in legacy list
-	{ "Ets retail",			HUD_OBJECT_ETS_RETAIL,			0}
+	{ "Ets retail",			HUD_OBJECT_ETS_RETAIL,			0},
+	{ "Flight path",		HUD_OBJECT_FLIGHT_PATH,			0},		// Not in legacy list
+	{ "Warhead count",		HUD_OBJECT_WARHEAD_COUNT,		0},		// Not in legacy list
+	{ "Hardpoints",			HUD_OBJECT_HARDPOINTS,			0},		// Not in legacy list
+	{ "Primary weapons",	HUD_OBJECT_PRIMARY_WEAPONS,		0},		// Not in legacy list
+	{ "Secondary weapons",	HUD_OBJECT_SECONDARY_WEAPONS,	0},		// Not in legacy list
+	{ "Scripting",			HUD_OBJECT_SCRIPTING,			0}		// Not in legacy list
 };
 int Num_hud_gauge_types = sizeof(Hud_gauge_types)/sizeof(flag_def_list);
 
