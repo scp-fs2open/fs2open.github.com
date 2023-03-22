@@ -790,6 +790,29 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&SCPUI_loads_hi_res_animations);
 		}
 
+		if (optional_string("$Far clip plane:")) {
+			stuff_float(&Max_draw_distance);
+
+			if (fl_near_zero(Max_draw_distance)) {
+				Warning(LOCATION, "The $Far clip plane must be above 0. Using default value.\n");
+				Max_draw_distance = Default_max_draw_distance;
+			} 
+		}
+
+		if (optional_string("$Near clip plane:")) {
+			stuff_float(&Min_draw_distance);
+
+			if (fl_near_zero(Min_draw_distance)) {
+				Warning(LOCATION, "The $Near clip plane must be above 0. Using default value.\n");
+				Min_draw_distance = Default_min_draw_distance;
+			}
+			if (Min_draw_distance >= Max_draw_distance) {
+				Warning(LOCATION, "The $Near clip plane must be strictly less than the far clip plane. Using default values for both.\n");
+				Min_draw_distance = Default_min_draw_distance;
+				Max_draw_distance = Default_max_draw_distance;
+			}
+		}
+
 		optional_string("#NETWORK SETTINGS");
 
 		if (optional_string("$FS2NetD port:")) {
