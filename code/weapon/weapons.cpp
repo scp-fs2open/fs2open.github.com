@@ -2265,6 +2265,14 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		stuff_float(&wip->recoil_modifier);
 	}
 
+	if (optional_string("$Shudder Modifier:")) {
+		if (!(wip->wi_flags[Weapon::Info_Flags::Shudder])) {
+			Warning(LOCATION, "$Shudder Modifier specified for weapon %s but this weapon does not have the \"shudder\" weapon flag set. Automatically setting the flag", wip->name);
+			wip->wi_flags.set(Weapon::Info_Flags::Shudder);
+		}
+		stuff_float(&wip->shudder_modifier);
+	}
+
 	// Energy suck optional stuff (if WIF_ENERGY_SUCK is not set, none of this matters anyway)
 	if( optional_string("$Leech Weapon:") ){
 		stuff_float(&wip->weapon_reduce);
@@ -2311,6 +2319,14 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 		if(optional_string("+Twist:")) {
 			stuff_float(&wip->cs_twist);
+		}
+
+		if (optional_string("+Random Start Angle:")) {
+			stuff_boolean(&wip->cs_random_angle);
+		}
+
+		if (optional_string("+Start Angle:")) {
+			stuff_float(&wip->cs_angle);
 		}
 	}
 
@@ -8582,8 +8598,11 @@ void weapon_render(object* obj, model_draw_list *scene)
 				if (wip->wi_flags[Weapon::Info_Flags::Transparent])
 					alpha = fl2i(wp->alpha_current * 255.0f);
 
-				if (The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb_affects_weapons)
-					alpha = (int)(alpha * neb2_get_fog_visibility(&obj->pos, Neb2_fog_visibility_weapon));
+				if (Neb_affects_weapons) {
+					float nebalpha = 1.0f;
+					if(nebula_handle_alpha(nebalpha, &obj->pos, Neb2_fog_visibility_weapon))
+						alpha = (int)(alpha * nebalpha);
+				}
 
 				vec3d headp;
 				vm_vec_scale_add(&headp, &obj->pos, &obj->orient.vec.fvec, wip->laser_length);
@@ -8670,8 +8689,11 @@ void weapon_render(object* obj, model_draw_list *scene)
 					alpha = weapon_glow_alpha;
 				}
 
-				if (The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb_affects_weapons)
-					alpha = (int)(alpha * neb2_get_fog_visibility(&obj->pos, Neb2_fog_visibility_weapon));
+				if (Neb_affects_weapons) {
+					float nebalpha = 1.0f;
+					if (nebula_handle_alpha(nebalpha, &obj->pos, Neb2_fog_visibility_weapon))
+						alpha = (int)(alpha * nebalpha);
+				}
 
 				// Scale the laser so that it always appears some configured amount of pixels wide, no matter the distance.
 				// Only affects width, length remains unchanged.
@@ -9045,6 +9067,7 @@ void weapon_info::reset()
 	this->emp_time = EMP_DEFAULT_TIME;	// Goober5000: <-- Look!  I fixed a Volition bug!  Gimme $5, Dave!
 
 	this->recoil_modifier = 1.0f;
+	this->shudder_modifier = 1.0f;
 
 	this->weapon_reduce = ESUCK_DEFAULT_WEAPON_REDUCE;
 	this->afterburner_reduce = ESUCK_DEFAULT_AFTERBURNER_REDUCE;
@@ -9066,8 +9089,10 @@ void weapon_info::reset()
 	this->cs_num_fired = 4;
 	this->cs_radius = 1.25f;
 	this->cs_delay = 30;
-	this->cs_crotate = 1;
+	this->cs_crotate = true;
 	this->cs_twist = 5.0f;
+	this->cs_random_angle = false;
+	this->cs_angle = 0.0f;
 
 	this->elec_time = 8000;
 	this->elec_eng_mult = 1.0f;

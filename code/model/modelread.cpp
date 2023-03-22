@@ -1450,7 +1450,7 @@ void maybe_adjust_movement_axis(bool is_rotation, bsp_info *sm)
 	}
 }
 
-void do_movement_sanity_checks(bool is_rotation, bsp_info *sm, bsp_info *parent_sm, const char *filename)
+void do_movement_sanity_checks(bsp_info *sm, bsp_info *parent_sm, const char *filename, bool is_rotation, bool is_turret)
 {
 	int *movement_axis_id, *movement_type;
 	vec3d *movement_axis;
@@ -1465,34 +1465,31 @@ void do_movement_sanity_checks(bool is_rotation, bsp_info *sm, bsp_info *parent_
 	// (do this before the compatibility check below to prevent doing it twice)
 	maybe_adjust_movement_axis(is_rotation, sm);
 
-	if (is_rotation)
+	if (is_rotation && is_turret)
 	{
 		// important compatibility check: if there are multipart turrets without rotation axes defined, define them
 		// also, some of the retail models got the axes wrong, so fix those :-/
 		// what this boils down to is that we must force turret axes for submodels with frame_of_reference defined
 		//     and also for turrets which don't have their axes set to "other"
-		if (parent_sm && in(parent_sm->name, "turret"))
+		auto base = parent_sm;
+		auto gun = sm;
+
+		if (!vm_matrix_equal(base->frame_of_reference, vmd_identity_matrix)
+			|| (base->rotation_axis_id != MOVEMENT_AXIS_OTHER))
 		{
-			auto base = parent_sm;
-			auto gun = sm;
+			base->rotation_axis_id = MOVEMENT_AXIS_Y;
+			base->rotation_axis = vmd_y_vector;
+			base->rotation_type = MOVEMENT_TYPE_TURRET;
+			maybe_adjust_movement_axis(true, base);
+		}
 
-			if (!vm_matrix_equal(base->frame_of_reference, vmd_identity_matrix)
-				|| (base->rotation_axis_id != MOVEMENT_AXIS_OTHER))
-			{
-				base->rotation_axis_id = MOVEMENT_AXIS_Y;
-				base->rotation_axis = vmd_y_vector;
-				base->rotation_type = MOVEMENT_TYPE_TURRET;
-				maybe_adjust_movement_axis(true, base);
-			}
-
-			if (!vm_matrix_equal(gun->frame_of_reference, vmd_identity_matrix)
-				|| (gun->rotation_axis_id != MOVEMENT_AXIS_OTHER))
-			{
-				gun->rotation_axis_id = MOVEMENT_AXIS_X;
-				gun->rotation_axis = vmd_x_vector;
-				gun->rotation_type = MOVEMENT_TYPE_TURRET;
-				maybe_adjust_movement_axis(true, gun);
-			}
+		if (!vm_matrix_equal(gun->frame_of_reference, vmd_identity_matrix)
+			|| (gun->rotation_axis_id != MOVEMENT_AXIS_OTHER))
+		{
+			gun->rotation_axis_id = MOVEMENT_AXIS_X;
+			gun->rotation_axis = vmd_x_vector;
+			gun->rotation_type = MOVEMENT_TYPE_TURRET;
+			maybe_adjust_movement_axis(true, gun);
 		}
 	}
 
@@ -1943,8 +1940,6 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				if (in(p, props, "$lod0_name"))
 					get_user_prop_value(p+10, sm->lod_name);
 
-				sm->flags.set(Model::Submodel_flags::Attach_thrusters, in(props, "$attach_thrusters"));
-
 				if (in(p, props, "$detail_box:")) {
 					p += 12;
 					while (*p == ' ') p++;
@@ -2066,13 +2061,6 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				} else {
 					sm->frame_of_reference = parent_sm ? parent_sm->frame_of_reference : vmd_identity_matrix;
 				}
-
-				// ---------- submodel movement sanity checks ----------
-
-				do_movement_sanity_checks(true, sm, parent_sm, pm->filename);
-				do_movement_sanity_checks(false, sm, parent_sm, pm->filename);
-
-				// ---------- done submodel movement sanity checks ----------
 
 				{
 					int nchunks = cfread_int( fp );		// Throw away nchunks
@@ -2860,6 +2848,33 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 		}
 	}
 
+	create_family_tree(pm);
+
+	// ---------- submodel movement sanity checks ----------
+
+	for (i = 0; i < pm->n_models; i++) {
+		if (pm->submodel[i].parent < 0) {
+			model_iterate_submodel_tree(pm, i, [&](int submodel, int /*level*/, bool /*isLeaf*/)
+				{
+					auto sm = &pm->submodel[submodel];
+					auto parent_sm = sm->parent < 0 ? nullptr : &pm->submodel[sm->parent];
+
+					bool is_turret = false;
+					for (const auto& subsystem : subsystemParseList.weapons_subsystems) {
+						if (submodel == subsystem.second.gun_subobj_nr && sm->parent >= 0 && subsystem.first == sm->parent) {
+							is_turret = true;
+							break;
+						}
+					}
+
+					do_movement_sanity_checks(sm, parent_sm, pm->filename, true, is_turret);
+					do_movement_sanity_checks(sm, parent_sm, pm->filename, false, is_turret);
+				});
+		}
+	}
+
+	// ---------- done submodel movement sanity checks ----------
+
 	// handle look_at
 	for (i = 0; i < pm->n_models; i++) {
 		auto sm = &pm->submodel[i];
@@ -3307,8 +3322,6 @@ int model_load(const  char* filename, int n_subsystems, model_subsystem* subsyst
 		}
 
 	}
-
-	create_family_tree(pm);
 
 	// maybe generate vertex buffers
 	create_vertex_buffer(pm, deferredTasks);

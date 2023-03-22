@@ -134,6 +134,7 @@ bool Discord_presence;
 bool Hotkey_always_hide_hidden_ships;
 bool Use_weapon_class_sounds_for_hits_to_player;
 bool SCPUI_loads_hi_res_animations;
+bool Auto_assign_personas;
 bool Countermeasures_use_capacity;
 bool Play_thruster_sounds_for_player;
 std::array<std::tuple<float, float>, 6> Fred_spacemouse_nonlinearity;
@@ -1178,6 +1179,10 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Hotkey_always_hide_hidden_ships);
 		}
 
+		if (optional_string("$Allow automatically assigning personas:")) {
+			stuff_boolean(&Auto_assign_personas);
+		}
+
 		if (optional_string("$Countermeasures use capacity:")) {
 			stuff_boolean(&Countermeasures_use_capacity);
 		}
@@ -1339,6 +1344,7 @@ void mod_table_reset()
 	Hotkey_always_hide_hidden_ships = false;
 	Use_weapon_class_sounds_for_hits_to_player = false;
 	SCPUI_loads_hi_res_animations = true;
+	Auto_assign_personas = true;
 	Countermeasures_use_capacity = false;
 	Play_thruster_sounds_for_player = false;
 	Fred_spacemouse_nonlinearity = std::array<std::tuple<float, float>, 6>{{

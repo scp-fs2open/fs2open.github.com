@@ -1312,7 +1312,7 @@ void api_sim_room_build_mission_list(bool API_Access)
 //
 void sim_room_do_frame(float  /*frametime*/)
 {
-	char buf[256];
+	char buf[CF_MAX_PATHNAME_LENGTH + 4]; // must hold at most the Campaign.name and a file extension (4 chars)
 	int i, k, y, line;
 	int font_height = gr_get_font_height();
 	int select_tease_line = -1;  // line mouse is down on, but won't be selected until button released	
@@ -1440,8 +1440,8 @@ void sim_room_do_frame(float  /*frametime*/)
 			gr_printf_menu(list_x2, Mission_list_coords[gr_screen.res][1], "%s", buf);
 
 			// blit the proper icons if necessary
-			char full_name[256];
-			memset(full_name, 0, 256);
+			char full_name[CF_MAX_PATHNAME_LENGTH + 4];
+			memset(full_name, 0, CF_MAX_PATHNAME_LENGTH + 4);
 			strcpy_s(full_name, cf_add_ext(Campaign.filename,FS_CAMPAIGN_FILE_EXT));
 			fs_builtin_mission *fb = game_find_builtin_mission(full_name);
 			if(fb != NULL){

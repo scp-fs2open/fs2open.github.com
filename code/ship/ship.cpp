@@ -531,6 +531,7 @@ ship_flag_name Ship_flag_names[] = {
 	{ Ship_Flags::Primaries_locked,				"primaries-locked" },
 	{ Ship_Flags::Secondaries_locked,			"secondaries-locked" },
 	{ Ship_Flags::No_subspace_drive,			"no-subspace-drive" },
+	{ Ship_Flags::No_departure_warp,			"no-departure-warp"},
 	{ Ship_Flags::Dont_collide_invis,			"don't-collide-invisible" },
 	{ Ship_Flags::No_ets,						"no-ets" },
 	{ Ship_Flags::Toggle_subsystem_scanning,	"toggle-subsystem-scanning" },
@@ -544,7 +545,11 @@ ship_flag_name Ship_flag_names[] = {
 	{ Ship_Flags::Fail_sound_locked_secondary, 	"fail-sound-locked-secondary"},
 	{ Ship_Flags::Aspect_immune, 				"aspect-immune"},
 	{ Ship_Flags::Cannot_perform_scan,			"cannot-perform-scan"},
-	{ Ship_Flags::No_targeting_limits,			"no-targeting-limits"}
+	{ Ship_Flags::No_targeting_limits,			"no-targeting-limits"},
+	{ Ship_Flags::No_death_scream,				"no-death-scream"},
+	{ Ship_Flags::Always_death_scream,			"always-death-scream"},
+	{ Ship_Flags::No_builtin_messages,			"no-builtin-messages"},
+	{ Ship_Flags::Scramble_messages,			"scramble-messages"},
 };
 
 ship_flag_description Ship_flag_descriptions[] = {
@@ -562,6 +567,7 @@ ship_flag_description Ship_flag_descriptions[] = {
 	{ Ship_Flags::Primaries_locked,				"Will stop a ship from firing their primary weapons."},
 	{ Ship_Flags::Secondaries_locked,			"Will stop a ship from firing their secondary weapons."},
 	{ Ship_Flags::No_subspace_drive,			"Will not allow a ship to jump into subspace."},
+	{ Ship_Flags::No_departure_warp,			"The ship will depart without the normal warp-out effect."},
 	{ Ship_Flags::Dont_collide_invis,			"Will cause polygons with an invisible texture to stop colliding with objects."},
 	{ Ship_Flags::No_ets,						"Will not allow a ship to alter its ETS system."},
 	{ Ship_Flags::Toggle_subsystem_scanning,	"Switches between being able to scan a whole ship or individual subsystems."},
@@ -575,7 +581,11 @@ ship_flag_description Ship_flag_descriptions[] = {
 	{ Ship_Flags::Fail_sound_locked_secondary,	"Play the firing fail sound when the weapon is locked."},
 	{ Ship_Flags::Aspect_immune,				"Ship cannot be targeted by Aspect Seekers."},
 	{ Ship_Flags::Cannot_perform_scan,			"Ship cannot scan other ships."},
-	{ Ship_Flags::No_targeting_limits,			"Ship is always targetable regardless of AWACS or targeting range limits."}
+	{ Ship_Flags::No_targeting_limits,			"Ship is always targetable regardless of AWACS or targeting range limits."},
+	{ Ship_Flags::No_death_scream,				"Ship will never send a death message when destroyed."},
+	{ Ship_Flags::Always_death_scream,			"Ship will always send a death message when destroyed."},
+	{ Ship_Flags::No_builtin_messages,			"Ship will not send any persona messages."},
+	{ Ship_Flags::Scramble_messages,			"All messages sent from this ship will appear scrambled, as if the ship had been hit by an EMP."},
 };
 
 extern const size_t Num_ship_flag_names = sizeof(Ship_flag_names) / sizeof(ship_flag_name);
@@ -1062,6 +1072,7 @@ void ship_info::clone(const ship_info& other)
 
 	max_hull_strength = other.max_hull_strength;
 	ship_recoil_modifier = other.ship_recoil_modifier;
+	ship_shudder_modifier = other.ship_shudder_modifier;
 	max_shield_strength = other.max_shield_strength;
 	max_shield_recharge = other.max_shield_recharge;
 	auto_shield_spread = other.auto_shield_spread;
@@ -1394,6 +1405,7 @@ void ship_info::move(ship_info&& other)
 
 	max_hull_strength = other.max_hull_strength;
 	ship_recoil_modifier = other.ship_recoil_modifier;
+	ship_shudder_modifier = other.ship_shudder_modifier;
 	max_shield_strength = other.max_shield_strength;
 	max_shield_recharge = other.max_shield_recharge;
 	auto_shield_spread = other.auto_shield_spread;
@@ -1822,6 +1834,7 @@ ship_info::ship_info()
 	weapon_model_draw_distance = 200.0f;
 
 	ship_recoil_modifier = 1.0f;
+	ship_shudder_modifier = 1.0f;
 
 	max_hull_strength = 100.0f;
 	max_shield_strength = 0.0f;
@@ -3655,6 +3668,10 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 
 	if (optional_string("$Ship Recoil Modifier:")){
 		stuff_float(&sip->ship_recoil_modifier);
+	}
+
+	if (optional_string("$Ship Shudder Modifier:")) {
+		stuff_float(&sip->ship_shudder_modifier);
 	}
 
 	if(optional_string("$Shields:")) {
@@ -12660,7 +12677,7 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 							if((winfo_p->wi_flags[Weapon::Info_Flags::Shudder]) && (obj == Player_obj) && !(Game_mode & GM_STANDALONE_SERVER)){
 								// calculate some arbitrary value between 100
 								// (mass * velocity) / 10
-								game_shudder_apply(500, (winfo_p->mass * winfo_p->max_speed) * 0.1f);
+								game_shudder_apply(500, (winfo_p->mass * winfo_p->max_speed) * 0.1f * sip->ship_shudder_modifier * winfo_p->shudder_modifier);
 							}
 
 							num_fired++;
@@ -13400,7 +13417,7 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 				if((wip->wi_flags[Weapon::Info_Flags::Shudder]) && (obj == Player_obj) && !(Game_mode & GM_STANDALONE_SERVER)){
 					// calculate some arbitrary value between 100
 					// (mass * velocity) / 10
-					game_shudder_apply(500, (wip->mass * wip->max_speed) * 0.1f);
+					game_shudder_apply(500, (wip->mass * wip->max_speed) * 0.1f * sip->ship_shudder_modifier * wip->shudder_modifier);
 				}
 
 				num_fired++;
@@ -20698,7 +20715,7 @@ void ship_render(object* obj, model_draw_list* scene)
 	// small ships
 	if ( !( shipp->flags[Ship_Flags::Cloaked] ) ) {
 		if ( ( The_mission.flags[Mission::Mission_Flags::Fullneb] ) && ( sip->is_small_ship() ) ) {			
-			// force detail levels
+			// force detail levels, but only in fullneb not volumetric nebula
 			float fog_val = neb2_get_fog_visibility(&obj->pos, 1.0f);
 			if ( fog_val <= 0.15f ) {
 				render_info.set_detail_level_lock(2);

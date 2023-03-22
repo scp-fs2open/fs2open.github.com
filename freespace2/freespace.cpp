@@ -122,6 +122,7 @@
 #include "model/modelreplace.h"
 #include "nebula/neb.h"
 #include "nebula/neblightning.h"
+#include "nebula/volumetrics.h"
 #include "network/multi.h"
 #include "network/multi_dogfight.h"
 #include "network/multi_endgame.h"
@@ -864,6 +865,7 @@ void game_level_close()
 		waypoint_level_close();
 		flak_level_close();						// unload flak stuff
 		neb2_level_close();						// shutdown gaseous nebula stuff
+		volumetrics_level_close();
 		ct_level_close();
 		beam_level_close();
 		mflash_level_close();
@@ -2963,7 +2965,7 @@ void apply_view_shake(matrix *eye_orient)
 
 		// Make eye shake due to engine wash
 		if (Player_obj->type == OBJ_SHIP && (Ships[Player_obj->instance].wash_intensity > 0) && Wash_on ) {
-			float wash_intensity = Ships[Player_obj->instance].wash_intensity;
+			float wash_intensity = Ships[Player_obj->instance].wash_intensity * Ship_info[Ships[Player_obj->instance].ship_info_index].ship_shudder_modifier;
 	
 			tangles.p += get_shake(0.07f * wash_intensity, -1, 0);
 			tangles.h += get_shake(0.07f * wash_intensity, -1, 0);
@@ -4263,6 +4265,9 @@ void game_set_frametime(int state)
 	fix thistime;
 	float frame_cap_diff;
 	bool do_pre_player_skip = false;
+
+	// sync all timestamps across the entire frame
+	timer_start_frame();
 
 	thistime = timer_get_fixed_seconds();
 
@@ -6723,7 +6728,6 @@ void game_shutdown(void)
 	particle::close();			// close out the particle system
 	weapon_close();					// free any memory that was allocated for the weapons
 	ship_close();					// free any memory that was allocated for the ships
-	hud_free_scrollback_list();// free space allocated to store hud messages in hud scrollback
 
 	decals::shutdown();
 

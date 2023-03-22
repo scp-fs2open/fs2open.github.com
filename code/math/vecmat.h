@@ -116,6 +116,14 @@ typedef struct plane {
 //ok for dest to equal either source, but should use vm_vec_add2() if so
 void vm_vec_add(vec3d *dest, const vec3d *src0, const vec3d *src1);
 
+//Component-wise multiplication of two vectors
+void vm_vec_cmult(vec3d* dest, const vec3d* src0, const vec3d* src1);
+void vm_vec_cmult2(vec3d* dest, const vec3d* src);
+
+//Component-wise division of two vectors
+void vm_vec_cdiv(vec3d* dest, const vec3d* src0, const vec3d* src1);
+void vm_vec_cdiv2(vec3d* dest, const vec3d* src);
+
 //adds src onto dest vector, returns ptr to dest
 void vm_vec_add2(vec3d *dest, const vec3d *src);
 
@@ -627,6 +635,30 @@ inline vec3d operator-(const vec3d& left, const vec3d& right)
 inline vec3d& operator-=(vec3d& left, const vec3d& right)
 {
 	vm_vec_sub2(&left, &right);
+	return left;
+}
+
+inline vec3d operator*(const vec3d& left, const vec3d& right)
+{
+	vec3d res;
+	vm_vec_cmult(&res, &left, &right);
+	return res;
+}
+inline vec3d& operator*=(vec3d& left, const vec3d& right)
+{
+	vm_vec_cmult2(&left, &right);
+	return left;
+}
+
+inline vec3d operator/(const vec3d& left, const vec3d& right)
+{
+	vec3d res;
+	vm_vec_cdiv(&res, &left, &right);
+	return res;
+}
+inline vec3d& operator/=(vec3d& left, const vec3d& right)
+{
+	vm_vec_cdiv2(&left, &right);
 	return left;
 }
 

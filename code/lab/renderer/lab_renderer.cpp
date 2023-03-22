@@ -284,6 +284,15 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 		if (optional_string("+Flags:"))
 			stuff_flagset(&flags);
 
+		skip_to_start_of_string_one_of(SCP_vector<SCP_string>{ "+Volumetric Nebula:", "$Skybox Model:", "#Background bitmaps" });
+		if (optional_string("+Volumetric Nebula:")) {
+			//Rendering usually happens in post-mission-init, just do it now in the lab
+			The_mission.volumetrics.emplace().parse_volumetric_nebula().renderVolumeBitmap();
+		}
+		else {
+			volumetrics_level_close();
+		}
+
 		// Are we using a skybox?
 		skip_to_start_of_string_either("$Skybox Model:", "#Background bitmaps");
 

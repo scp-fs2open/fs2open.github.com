@@ -79,7 +79,9 @@ enum BM_TYPE
 	BM_TYPE_CUBEMAP_DDS,    //!< generic DDS cubemap (uncompressed cubemap surface)
 	BM_TYPE_CUBEMAP_DXT1,   //!< 24-bit cubemap        (compressed cubemap surface)
 	BM_TYPE_CUBEMAP_DXT3,   //!< 32-bit cubemap        (compressed cubemap surface)
-	BM_TYPE_CUBEMAP_DXT5    //!< 32-bit cubemap        (compressed cubemap surface)
+	BM_TYPE_CUBEMAP_DXT5,    //!< 32-bit cubemap        (compressed cubemap surface)
+
+	BM_TYPE_3D				//!< 3D in-memory
 };
 
 /**
@@ -90,6 +92,7 @@ struct bitmap
 {
 	short	w;          //!< Width, in number of pixels
 	short	h;          //!< Height, in number of pixels
+	short	d;			//!< Depth, in number of pixels
 	short	rowsize;    //!< What you need to add to go to next row
 	int	bpp;        //!< Requested bitdepth of each pixel. ( 7, 8, 15, 16, 24, 32)
 	int	true_bpp;   //!< The image's actual bitdepth
@@ -216,6 +219,19 @@ int bm_load_duplicate(const char *filename);
  * @note The used RAM cannot be freed until bm_release is called on the created bitmap
  */
 int bm_create(int bpp, int w, int h, void *data = NULL, int flags = 0);
+
+/**
+ * Loads a 3D bitmap which exists somewhere in the RAM.
+ *
+ * @param bpp The bitdepth of the bitmap
+ * @param w The width of the bitmap
+ * @param h The height of the bitmap
+ * @param d The depth of the bitmap
+ * @param[in] data The bitmap's data glob
+ *
+ * @note The used RAM cannot be freed until bm_release is called on the created bitmap
+ */
+int bm_create_3d(int bpp, int w, int h, int d, void* data = nullptr);
 
 /**
  * @brief Unloads a bitmap's data, but not the bitmap info
@@ -372,6 +388,16 @@ int bm_is_valid(int handle);
  * @returns -1 on failure
  */
 int bm_get_info(int handle, int *w = nullptr, int * h = nullptr, ushort* flags = nullptr, int *nframes = nullptr, int *fps = nullptr);
+
+/**
+ * @brief Gets 3D info on the bitmap indexed by handle.
+ *
+ * @param[out] depth      If non-null, gets the depth
+ *
+ * @returns The handle on success
+ * @returns -1 on failure
+ */
+int bm_get_depth(int handle, int* depth);
 
 /**
  * @brief Gets the filename of the bitmap indexed by handle

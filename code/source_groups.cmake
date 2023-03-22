@@ -273,6 +273,7 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/tonemapping-f.sdr
 	def_files/data/effects/video-f.sdr
 	def_files/data/effects/video-v.sdr
+	def_files/data/effects/volumetric-f.sdr
 )
 
 add_file_folder("Default files\\\\data\\\\maps"
@@ -877,6 +878,8 @@ add_file_folder("Nebula"
 	nebula/neb.h
 	nebula/neblightning.cpp
 	nebula/neblightning.h
+	nebula/volumetrics.cpp
+	nebula/volumetrics.h
 )
 
 # Network files
@@ -1361,6 +1364,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/mc_info.h
 	scripting/api/objs/message.cpp
 	scripting/api/objs/message.h
+	scripting/api/objs/missionlog.cpp
+	scripting/api/objs/missionlog.h
 	scripting/api/objs/model.cpp
 	scripting/api/objs/model.h
 	scripting/api/objs/modelinstance.cpp

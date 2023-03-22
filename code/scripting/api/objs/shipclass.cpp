@@ -1200,7 +1200,7 @@ ADE_FUNC(renderTechModel,
 	rot_angles.h = (rot_angles.h*0.01f) * PI2;
 	vm_rotate_matrix_by_angles(&orient, &rot_angles);
 
-	return ade_set_args(L, "b", render_tech_model(true, x1, y1, x2, y2, zoom, lighting, idx, &orient));
+	return ade_set_args(L, "b", render_tech_model(TECH_SHIP, x1, y1, x2, y2, zoom, lighting, idx, &orient));
 }
 
 // Nuke's alternate tech model rendering function
@@ -1222,7 +1222,7 @@ ADE_FUNC(renderTechModel2, l_Shipclass, "number X1, number Y1, number X2, number
 	//Handle angles
 	matrix *orient = mh->GetMatrix();
 
-	return ade_set_args(L, "b", render_tech_model(true, x1, y1, x2, y2, zoom, true, idx, orient));
+	return ade_set_args(L, "b", render_tech_model(TECH_SHIP, x1, y1, x2, y2, zoom, true, idx, orient));
 }
 
 ADE_FUNC(renderSelectModel,

@@ -1281,6 +1281,9 @@ public:
 	// Recoil modifier for the ship
 	float ship_recoil_modifier;
 
+	// Shudder modifier for the ship
+	float ship_shudder_modifier;
+
 	float	max_hull_strength;				// Max hull strength of this class of ship.
 	float	max_shield_strength;
 	float	auto_shield_spread;				// Thickness of the shield

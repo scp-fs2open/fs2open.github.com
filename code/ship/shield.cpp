@@ -491,9 +491,7 @@ void render_shield(int shield_num)
 		bitmap_id = sa->first_frame + frame_num;
 
 		float alpha = 0.9999f;
-		if(The_mission.flags[Mission::Mission_Flags::Fullneb]){
-			alpha *= neb2_get_fog_visibility(centerp, Neb2_fog_visibility_shield);
-		}
+		nebula_handle_alpha(alpha, centerp, Neb2_fog_visibility_shield);
 
 		ubyte r, g, b;
 		r = (ubyte)(Shield_hits[shield_num].rgb[0] * alpha);
