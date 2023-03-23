@@ -1333,7 +1333,7 @@ int brief_setup_closeup(brief_icon *bi, bool api_access)
 	case ICON_ASTEROID_FIELD:
 		strcpy_s(pof_filename, Asteroid_icon_closeup_model);
 		if (Closeup_icon->closeup_label[0] == '\0') {
-			strcpy_s(Closeup_icon->closeup_label, XSTR("asteroid", 431));
+			strcpy_s(Closeup_icon->closeup_label, XSTR("Asteroid", 431));
 		}
 		Closeup_cam_pos = Asteroid_icon_closeup_position;
 		Closeup_zoom = Asteroid_icon_closeup_zoom;
@@ -1343,7 +1343,7 @@ int brief_setup_closeup(brief_icon *bi, bool api_access)
 	case ICON_JUMP_NODE:
 		strcpy_s(pof_filename, NOX("subspacenode.pof"));
 		if (Closeup_icon->closeup_label[0] == '\0') {
-			strcpy_s(Closeup_icon->closeup_label, XSTR("jump node", 432));
+			strcpy_s(Closeup_icon->closeup_label, XSTR("Jump Node", 432));
 		}
 		vm_vec_make(&Closeup_cam_pos, 0.0f, 0.0f, -2700.0f);
 		Closeup_zoom = 0.5f;
@@ -1355,7 +1355,7 @@ int brief_setup_closeup(brief_icon *bi, bool api_access)
 	case ICON_UNKNOWN_WING:
 		strcpy_s(pof_filename, NOX("unknownship.pof"));
 		if (Closeup_icon->closeup_label[0] == '\0') {
-			strcpy_s(Closeup_icon->closeup_label, XSTR("unknown", 433));
+			strcpy_s(Closeup_icon->closeup_label, XSTR("Unknown", 433));
 		}
 		vm_vec_make(&Closeup_cam_pos, 0.0f, 0.0f, -22.0f);
 		Closeup_zoom = 0.5f;
