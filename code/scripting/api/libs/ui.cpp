@@ -10,6 +10,7 @@
 #include "cutscene/cutscenes.h"
 #include "gamesnd/eventmusic.h"
 #include "gamesequence/gamesequence.h"
+#include "io/key.h"
 #include "menuui/barracks.h"
 #include "menuui/credits.h"
 #include "menuui/mainhallmenu.h"
@@ -1956,6 +1957,29 @@ ADE_FUNC(CloseControlConfig,
 	SCP_UNUSED(L);
 
 	control_config_close(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(DetectKeypress,
+	l_UserInterface_ControlConfig,
+	nullptr,
+	"Suspends UI key detection and waits for a keypress to use as a keybind.",
+	nullptr,
+	nullptr)
+{
+	auto ctx = scpui::getContext();
+
+	if (ctx == nullptr) {
+		LuaError(L, "Context is not a valid context handle!");
+		return ADE_RETURN_NIL;
+	}
+	
+	game_flush();
+	
+	//This is where we should run the keybind code
+
+	scpui::enableInput(ctx);
 
 	return ADE_RETURN_NIL;
 }

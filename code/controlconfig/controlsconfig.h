@@ -725,6 +725,11 @@ void control_config_do_frame(float frametime);
 void control_config_close(bool API_Access);
 
 /*!
+ * @brief setup for binding a control
+ */
+void control_config_do_bind(bool API_Access);
+
+/*!
  * @brief Cancel configuration of controls, revert any changes, return to previous menu/game state
  */
 void control_config_cancel_exit();

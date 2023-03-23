@@ -36,6 +36,11 @@ void setOffset(float x, float y);
 void reloadAllContexts();
 
 /**
+ * @brief Returns the current context
+ */
+Rocket::Core::Context* getContext();
+
+/**
  * @brief Enables mouse and text input on the specified input
  *
  * If there was another context with input enabled then input will be disabled for that context before enabling input

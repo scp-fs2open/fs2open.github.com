@@ -1129,25 +1129,28 @@ void control_config_toggle_invert()
 /*!
  * Sets menu in bind mode.  Menu will watch controller input and bind to the currently selected item, if any.
  */
-void control_config_do_bind()
+void control_config_do_bind(bool API_Access = false)
 {
 	short i;
 
 	game_flush();
-//	if ((Selected_line < 0) || (Cc_lines[Selected_line].cc_index & JOY_AXIS)) {
-	if (Selected_line < 0) {
-		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
-		return;
-	}
 
-	for (i=0; i<NUM_BUTTONS; i++) {
-		if (i != CANCEL_BUTTON) {
-			CC_Buttons[gr_screen.res][i].button.reset_status();
-			CC_Buttons[gr_screen.res][i].button.disable();
+	if (!API_Access) {
+		//	if ((Selected_line < 0) || (Cc_lines[Selected_line].cc_index & JOY_AXIS)) {
+		if (Selected_line < 0) {
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
+			return;
 		}
+
+		for (i = 0; i < NUM_BUTTONS; i++) {
+			if (i != CANCEL_BUTTON) {
+				CC_Buttons[gr_screen.res][i].button.reset_status();
+				CC_Buttons[gr_screen.res][i].button.disable();
+			}
+		}
+		CC_Buttons[gr_screen.res][CANCEL_BUTTON].button.enable();
+		CC_Buttons[gr_screen.res][CANCEL_BUTTON].button.set_hotkey(KEY_ESC);
 	}
-	CC_Buttons[gr_screen.res][CANCEL_BUTTON].button.enable();
-	CC_Buttons[gr_screen.res][CANCEL_BUTTON].button.set_hotkey(KEY_ESC);
 
 	for (short j = CID_JOY0; j < CID_JOY_MAX; ++j) {
 		for (i=0; i<JOY_TOTAL_BUTTONS; ++i) {
@@ -1162,7 +1165,10 @@ void control_config_do_bind()
 	Search_mode = 0;
 	Last_key = -1;
 	Axis_override.clear();
-	gamesnd_play_iface(InterfaceSounds::USER_SELECT);
+
+	if (!API_Access) {
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
+	}
 }
 
 /*!
