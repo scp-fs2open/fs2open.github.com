@@ -816,8 +816,6 @@ ADE_VIRTVAR(Medals,
 		LuaError(L, "This property is read only.");
 	}
 
-	ssh->get()->medal_counts;
-
 	auto table = luacpp::LuaTable::create(L);
 
 	for (int i = 0; i < (int)Medals.size(); i++) {
