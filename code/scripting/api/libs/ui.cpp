@@ -53,6 +53,8 @@
 #include "scripting/api/objs/color.h"
 #include "scripting/api/objs/enums.h"
 #include "scripting/api/objs/player.h"
+#include "scripting/api/objs/medals.h"
+#include "scripting/api/objs/rank.h"
 #include "scripting/api/objs/texture.h"
 #include "scripting/api/objs/vecmath.h"
 #include "scripting/lua/LuaTable.h"
@@ -1675,6 +1677,46 @@ ADE_VIRTVAR(Complete, l_UserInterface_Credits, nullptr, "The complete credits st
 	}
 
 	return ade_set_args(L, "s", credits_complete);
+}
+
+//**********SUBLIBRARY: UserInterface/Medals
+ADE_LIB_DERIV(l_UserInterface_Medals,
+	"Medals",
+	nullptr,
+	"API for accessing data related to the medals UI.<br><b>Warning:</b> This is an internal "
+	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	l_UserInterface);
+
+ADE_LIB_DERIV(l_Medals, "Medals_List", nullptr, nullptr, l_UserInterface_Medals);
+ADE_INDEXER(l_Medals,
+	"number Index",
+	"Array of Medals",
+	"medal",
+	"medal handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "o", l_Medal.Set(medal_h()));
+	idx--; // Convert to Lua's 1 based index system
+
+	if ((idx < 0) || (idx >= (int)Medals.size()))
+		return ade_set_error(L, "o", l_Medal.Set(medal_h()));
+
+	return ade_set_args(L, "o", l_Medal.Set(medal_h(idx)));
+}
+
+ADE_LIB_DERIV(l_Ranks, "Ranks_List", nullptr, nullptr, l_UserInterface_Medals);
+ADE_INDEXER(l_Ranks, "number Index", "Array of Ranks", "rank", "rank handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "o", l_Rank.Set(rank_h()));
+	idx--; // Convert to Lua's 1 based index system
+
+	if ((idx < 0) || (idx >= (int)Ranks.size()))
+		return ade_set_error(L, "o", l_Rank.Set(rank_h()));
+
+	return ade_set_args(L, "o", l_Rank.Set(rank_h(idx)));
 }
 
 //**********SUBLIBRARY: UserInterface/Hotkeys
