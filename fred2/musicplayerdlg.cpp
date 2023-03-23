@@ -116,8 +116,7 @@ void music_player_dlg::PlayMusic()
 		audiostream_play(m_music_id, 1.0f, 0);
 	} else {
 		thisMusic = m_music_item;
-		mprintf(("FRED failed to open music file %s in the music player\n", thisMusic.c_str()));
-		return;
+		Warning(LOCATION, "FRED failed to open music file %s in the music player\n", thisMusic.c_str());
 	}
 }
 
@@ -143,7 +142,7 @@ bool music_player_dlg::SelectNextTrack()
 
 bool music_player_dlg::SelectPrevTrack()
 {
-	if ((m_cursor_pos > 0) && (m_cursor_pos <= (m_num_music_files - 1))) {
+	if ((m_cursor_pos > 0) && (m_cursor_pos < m_num_music_files)) {
 		m_cursor_pos--;
 		m_music_list.SetCurSel(m_cursor_pos);
 		UpdateSelection();

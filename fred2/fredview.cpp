@@ -4129,7 +4129,7 @@ void CFREDView::OnCalcRelativeCoords()
 
 void CFREDView::OnMusicPlayer()
 {
-	Assert(Music_player_dialog.GetSafeHwnd());
+	Assertion(Music_player_dialog.GetSafeHwnd(), "Unable to create music player window!");
 
 	if (!theApp.init_window(&MusPlayer_wnd_data, &Music_player_dialog))
 		return;
