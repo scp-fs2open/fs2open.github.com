@@ -295,13 +295,13 @@ void main()
 		if (FLAG_ACTIVE(MODEL_SDR_FLAG_LIGHT)) {
 			// Ambient lighting still needs to be done since that counts as an "emissive" color
 			vec3 lightAmbient = (emissionFactor + ambientFactor * ambientFactor) * aoFactors.x; // ambientFactor^2 due to legacy OpenGL compatibility behavior
-			emissiveColor.rgb += baseColor.rgb * lightAmbient;
+			emissiveColor.rgb += srgb_to_linear(baseColor.rgb) * lightAmbient;
 		} else {
 			if (FLAG_ACTIVE(MODEL_SDR_FLAG_SPEC)) {
 				baseColor.rgb += pow(1.0 - clamp(dot(eyeDir, normal), 0.0, 1.0), 5.0 * clamp(glossData, 0.01, 1.0)) * specColor.rgb;
 			}
 			// If there is no lighting then we copy the color data so far into the
-			emissiveColor.rgb += baseColor.rgb;
+			emissiveColor.rgb += srgb_to_linear(baseColor.rgb);
 		}
 	} else {
 		if (FLAG_ACTIVE(MODEL_SDR_FLAG_LIGHT)) {
@@ -373,7 +373,7 @@ void main()
 				glowColor = team_glow_enabled ? mix(max(team_color_glow, vec3(0.0)), glowColor, clamp(glowColorLuminance - teamMask.b - teamMask.a, 0.0, 1.0)) : glowColor;
 			}
 		}
-		emissiveColor.rgb += glowColor * GLOW_MAP_INTENSITY;
+		emissiveColor.rgb += srgb_to_linear(glowColor) * GLOW_MAP_INTENSITY;
 	}
 
 	if (FLAG_ACTIVE(MODEL_SDR_FLAG_FOG)) {
@@ -416,16 +416,17 @@ void main()
 		}
 	}
 
+	if (FLAG_ACTIVE(MODEL_SDR_FLAG_HDR)) {
+		baseColor.rgb = srgb_to_linear(baseColor.rgb);
+		specColor.rgb = srgb_to_linear(specColor.rgb);
+	}
+
 	if (!(FLAG_ACTIVE(MODEL_SDR_FLAG_DEFERRED))) {
 		// emissive colors won't be added later when we are using forward rendering so we need to do that here
 		baseColor.rgb += emissiveColor.rgb;
 	}
 
-	if (FLAG_ACTIVE(MODEL_SDR_FLAG_HDR)) {
-		baseColor.rgb = srgb_to_linear(baseColor.rgb);
-		specColor.rgb = srgb_to_linear(specColor.rgb);
-		emissiveColor.rgb = srgb_to_linear(emissiveColor.rgb);
-	}
+
 
 	fragOut0 = baseColor;
 
