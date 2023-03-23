@@ -52,7 +52,6 @@ extern char *Cmdline_center_res;
 // FSO OPTIONS -------------------------------------------------
 
 // Graphics related
-extern float Cmdline_clip_dist;
 extern float Cmdline_ambient_power;
 extern float Cmdline_emissive_power;
 extern float Cmdline_light_power;

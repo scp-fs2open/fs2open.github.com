@@ -330,7 +330,6 @@ int Cmdline_use_last_pilot = 0;
 // Graphics related
 cmdline_parm fov_arg("-fov", "Vertical field-of-view factor", AT_FLOAT);					// Cmdline_fov  -- comand line FOV -Bobboau
 cmdline_parm fov_cockpit_arg("-fov_cockpit", "Vertical field-of-view factor for Cockpits", AT_FLOAT);
-cmdline_parm clip_dist_arg("-clipdist", "Changes the distance from the viewpoint for the near-clipping plane", AT_FLOAT);		// Cmdline_clip_dist
 cmdline_parm ambient_power_arg("-ambient", "Multiplies the brightness of all ambient light", AT_FLOAT);
 cmdline_parm light_power_arg("-light", "Multiplies the brightness of all light", AT_FLOAT);
 cmdline_parm emissive_power_arg("-emissive", "Multiplies the brightness of all ambient light", AT_FLOAT);
@@ -361,7 +360,6 @@ cmdline_parm no_deferred_lighting_arg("-no_deferred", NULL, AT_NONE);	// Cmdline
 cmdline_parm deferred_lighting_cockpit_arg("-deferred_cockpit", nullptr, AT_NONE);
 cmdline_parm anisotropy_level_arg("-anisotropic_filter", NULL, AT_INT);
 
-float Cmdline_clip_dist = Default_min_draw_distance;
 float Cmdline_ambient_power = 1.0f;
 float Cmdline_emissive_power = 0.0f;
 float Cmdline_light_power = 1.0f;
@@ -1838,10 +1836,6 @@ bool SetCmdlineParams()
 		else {
 			COCKPIT_ZOOM_DEFAULT = VIEWER_ZOOM_DEFAULT;
 		}
-	}
-
-	if( clip_dist_arg.found() ) {
-		Min_draw_distance = Cmdline_clip_dist = clip_dist_arg.get_float();
 	}
 
 	if (orb_radar.found())
