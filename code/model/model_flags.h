@@ -19,7 +19,6 @@ namespace Model {
 		Collide_invisible,				//SUSHI: If set, this submodel should allow collisions for invisible textures. For the "replacement" collision model scheme.
 		Use_render_box_offset,			// whether an offset has been defined; needed because one can't tell just by looking at render_box_offset
 		Use_render_sphere_offset,		// whether an offset has been defined; needed because one can't tell just by looking at render_sphere_offset
-		Attach_thrusters,				//zookeeper: If set and this submodel or any of its parents rotates, also rotates associated thrusters.
 
 		NUM_VALUES
 	};

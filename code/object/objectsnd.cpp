@@ -454,7 +454,7 @@ void obj_snd_do_frame()
 	if ( Obj_snd_enabled == FALSE )
 		return;
 
-	if ( ui_timestamp_since(Obj_snd_last_update) > 100 ) {
+	if ( ui_timestamp_since(Obj_snd_last_update) > 20 ) {
 		Obj_snd_last_update = ui_timestamp();
 	} else {
 		return;

@@ -15,6 +15,7 @@
 
 #include "ai/ai.h"
 #include "ai/ai_profiles.h"
+#include "globalincs/version.h"
 #include "graphics/2d.h"
 #include "io/keycontrol.h"
 #include "model/model.h"
@@ -23,6 +24,7 @@
 #include "parse/sexp.h"
 #include "sound/sound.h"
 #include "mission/mission_flags.h"
+#include "nebula/volumetrics.h"
 
 //WMC - This should be here
 #define FS_MISSION_FILE_EXT				NOX(".fs2")
@@ -42,12 +44,11 @@ struct p_dock_instance;
 
 int get_special_anchor(const char *name);
 
-// update version when mission file format changes, and add approprate code
-// to check loaded mission version numbers in the parse code.  Also, be sure
-// to update both MissionParse and MissionSave (FRED) when changing the
-// mission file format!
-#define	MISSION_VERSION 0.10f
-#define	FRED_MISSION_VERSION 0.10f
+// MISSION_VERSION should be the earliest version of FSO that can load the current mission format without
+// requiring version-specific comments.  It should be updated whenever the format changes, but it should
+// not be updated simply because the engine's version changed.
+extern const gameversion::version MISSION_VERSION;
+extern const gameversion::version LEGACY_MISSION_VERSION;
 
 #define WING_PLAYER_BASE	0x80000  // used by Fred to tell ship_index in a wing points to a player
 
@@ -107,10 +108,17 @@ typedef struct mission_cutscene {
 	int formula;
 } mission_cutscene;
 
+// descriptions of flags for FRED
+template <class T>
+struct parse_object_flag_description {
+	T def;
+	SCP_string flag_desc;
+};
+
 typedef struct mission {
 	char	name[NAME_LENGTH];
-	char	author[NAME_LENGTH];
-	float	version;
+	SCP_string	author;
+	gameversion::version	required_fso_version;
 	char	created[DATE_TIME_LENGTH];
 	char	modified[DATE_TIME_LENGTH];
 	char	notes[NOTES_LENGTH];
@@ -133,6 +141,7 @@ typedef struct mission {
 	int		ambient_light_level;
 	float	neb_far_multi;
 	float	neb_near_multi;
+	tl::optional<volumetric_nebula> volumetrics;
 	sound_env	sound_environment;
 	vec3d   gravity;
 
@@ -225,6 +234,7 @@ extern const char *Goal_type_names[MAX_GOAL_TYPE_NAMES];
 extern const char *Reinforcement_type_names[];
 extern char *Object_flags[];
 extern flag_def_list_new<Mission::Parse_Object_Flags> Parse_object_flags[];
+extern parse_object_flag_description<Mission::Parse_Object_Flags> Parse_object_flag_descriptions[];
 extern const size_t Num_parse_object_flags;
 extern const char *Icon_names[];
 extern const char *Mission_event_log_flags[];
@@ -342,6 +352,7 @@ public:
 	SCP_set<size_t> orders_accepted;		// which orders this ship will accept from the player
 	p_dock_instance	*dock_list = nullptr;				// Goober5000 - parse objects this parse object is docked to
 	object *created_object = nullptr;					// Goober5000
+	int collision_group_id = 0;							// Goober5000
 	int	group = -1;								// group object is within or -1 if none.
 	int	persona_index = -1;
 	int	kamikaze_damage = 0;					// base damage for a kamikaze attack

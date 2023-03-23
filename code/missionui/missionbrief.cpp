@@ -194,6 +194,7 @@ matrix Closeup_orient;
 vec3d Closeup_pos;
 int Closeup_font_height;
 int Closeup_x1, Closeup_y1;
+char Closeup_type_name[NAME_LENGTH];
 
 // used for the 3d view of a closeup ship
 float Closeup_zoom;
@@ -306,7 +307,7 @@ int Brief_max_line_width[GR_NUM_RESOLUTIONS] = {
 // --------------------------------------------------------------------------------------
 // Forward declarations
 // --------------------------------------------------------------------------------------
-int brief_setup_closeup(brief_icon *bi);
+int brief_setup_closeup(brief_icon *bi, bool api_access = false);
 void brief_maybe_blit_scene_cut(float frametime);
 void brief_transition_reset();
 
@@ -701,7 +702,7 @@ brief_icon *brief_get_closeup_icon()
 }
 
 // stop showing the closeup view of an icon
-void brief_turn_off_closeup_icon()
+void brief_turn_off_closeup_icon(bool api_access)
 {
 	// turn off closeup
 	if ( Closeup_icon != NULL ) {
@@ -710,8 +711,11 @@ void brief_turn_off_closeup_icon()
 			Closeup_icon->model_instance_num = -1;
 		}
 
-		gamesnd_play_iface(InterfaceSounds::BRIEF_ICON_SELECT);
-		Closeup_icon = NULL;
+		if (!api_access) {
+			gamesnd_play_iface(InterfaceSounds::BRIEF_ICON_SELECT);
+		}
+		Closeup_icon = nullptr;
+		Closeup_type_name[0] = '\0';
 		Closeup_close_button.disable();
 		Closeup_close_button.hide();
 	}
@@ -1301,7 +1305,7 @@ void brief_set_closeup_pos(brief_icon * /*bi*/)
 //
 // exit: 0	=>		set-up icon sucessfully
 //			-1	=>		could not setup closeup icon
-int brief_setup_closeup(brief_icon *bi)
+int brief_setup_closeup(brief_icon *bi, bool api_access)
 {
 	char				pof_filename[NAME_LENGTH];
 	ship_info		*sip=NULL;
@@ -1329,35 +1333,39 @@ int brief_setup_closeup(brief_icon *bi)
 	case ICON_ASTEROID_FIELD:
 		strcpy_s(pof_filename, Asteroid_icon_closeup_model);
 		if (Closeup_icon->closeup_label[0] == '\0') {
-			strcpy_s(Closeup_icon->closeup_label, XSTR("asteroid", 431));
+			strcpy_s(Closeup_icon->closeup_label, XSTR("Asteroid", 431));
 		}
 		Closeup_cam_pos = Asteroid_icon_closeup_position;
 		Closeup_zoom = Asteroid_icon_closeup_zoom;
+		strcpy_s(Closeup_type_name, pof_filename);
 		break;
 
 	case ICON_JUMP_NODE:
 		strcpy_s(pof_filename, NOX("subspacenode.pof"));
 		if (Closeup_icon->closeup_label[0] == '\0') {
-			strcpy_s(Closeup_icon->closeup_label, XSTR("jump node", 432));
+			strcpy_s(Closeup_icon->closeup_label, XSTR("Jump Node", 432));
 		}
 		vm_vec_make(&Closeup_cam_pos, 0.0f, 0.0f, -2700.0f);
 		Closeup_zoom = 0.5f;
 		Closeup_one_revolution_time = ONE_REV_TIME * 3;
+		strcpy_s(Closeup_type_name, pof_filename);
 		break;
 
 	case ICON_UNKNOWN:
 	case ICON_UNKNOWN_WING:
 		strcpy_s(pof_filename, NOX("unknownship.pof"));
 		if (Closeup_icon->closeup_label[0] == '\0') {
-			strcpy_s(Closeup_icon->closeup_label, XSTR("unknown", 433));
+			strcpy_s(Closeup_icon->closeup_label, XSTR("Unknown", 433));
 		}
 		vm_vec_make(&Closeup_cam_pos, 0.0f, 0.0f, -22.0f);
 		Closeup_zoom = 0.5f;
+		strcpy_s(Closeup_type_name, pof_filename);
 		break;
 
 	default:
 		Assert( Closeup_icon->ship_class != -1 );
 		sip = &Ship_info[Closeup_icon->ship_class];
+		strcpy_s(Closeup_type_name, sip->name);
 
 		if (Closeup_icon->closeup_label[0] == '\0') {
 			strcpy_s(Closeup_icon->closeup_label, sip->get_display_name());
@@ -1370,27 +1378,29 @@ int brief_setup_closeup(brief_icon *bi)
 		break;
 	}
 	
-	if ( Closeup_icon->modelnum < 0 ) {
-		if ( sip == nullptr ) {
-			Closeup_icon->modelnum = model_load(pof_filename, 0, nullptr);
-		} else {
-			Closeup_icon->modelnum = model_load(sip, true);
-			Closeup_icon->model_instance_num = model_create_instance(-1, Closeup_icon->modelnum);
-			model_set_up_techroom_instance(sip, Closeup_icon->model_instance_num);
+	if (!api_access) {
+		if (Closeup_icon->modelnum < 0) {
+			if (sip == nullptr) {
+				Closeup_icon->modelnum = model_load(pof_filename, 0, nullptr);
+			} else {
+				Closeup_icon->modelnum = model_load(sip, true);
+				Closeup_icon->model_instance_num = model_create_instance(-1, Closeup_icon->modelnum);
+				model_set_up_techroom_instance(sip, Closeup_icon->model_instance_num);
+			}
 		}
-	}
 
-	if ( Closeup_icon->modelnum >= 0 ) {
-		Closeup_icon->radius = model_get_radius(Closeup_icon->modelnum);
-	}
+		if (Closeup_icon->modelnum >= 0) {
+			Closeup_icon->radius = model_get_radius(Closeup_icon->modelnum);
+		}
 
-	vm_set_identity(&Closeup_orient);
-	vm_vec_make(&tvec, 0.0f, 0.0f, -1.0f);
-	Closeup_orient.vec.fvec = tvec;
-	vm_vec_zero(&Closeup_pos);
-	Closeup_angles.p  = 0.0f;
-	Closeup_angles.b  = 0.0f;
-	Closeup_angles.h  = PI;
+		vm_set_identity(&Closeup_orient);
+		vm_vec_make(&tvec, 0.0f, 0.0f, -1.0f);
+		Closeup_orient.vec.fvec = tvec;
+		vm_vec_zero(&Closeup_pos);
+		Closeup_angles.p = 0.0f;
+		Closeup_angles.b = 0.0f;
+		Closeup_angles.h = PI;
+	}
 
 	brief_set_closeup_pos(bi);
 
@@ -1452,14 +1462,20 @@ void brief_update_closeup_icon(int mode)
 // brief_check_for_anim()
 //
 //
-void brief_check_for_anim()
+void brief_check_for_anim(bool api_access, int api_x, int api_y)
 {
 	int				mx, my, i, iw, ih, x, y;
 	brief_stage		*bs;
 	brief_icon		*bi = NULL;
 
 	bs = &Briefing->stages[Current_brief_stage];
-	mouse_get_pos_unscaled( &mx, &my );
+
+	if (!api_access) {
+		mouse_get_pos_unscaled(&mx, &my);
+	} else {
+		mx = api_x;
+		my = api_y;
+	}
 
 	// if mouse click is over the VCR controls, don't launch an icon
 	// FIXME - should prolly push these into defines instead of hardcoding this
@@ -1495,14 +1511,18 @@ void brief_check_for_anim()
 	}
 
 	if ( i == bs->num_icons ) {
-		brief_turn_off_closeup_icon();
+		brief_turn_off_closeup_icon(api_access);
 		return;
 	}
 
-	if ( brief_setup_closeup(bi) == 0 ) {
-		gamesnd_play_iface(InterfaceSounds::BRIEF_ICON_SELECT);
+	if (brief_setup_closeup(bi, api_access) == 0) {
+		if (!api_access) {
+			gamesnd_play_iface(InterfaceSounds::BRIEF_ICON_SELECT);
+		}
 	} else {
-		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
+		if (!api_access) {
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
+		}
 	}
 }
 
@@ -1882,12 +1902,6 @@ void brief_do_frame(float frametime)
 void brief_api_do_frame(float frametime)
 {
 
-	// This may be needed by a future PR to get map icon clicking working through the API - Mjn
-	// if (Closeup_icon) {
-	//	Brief_mouse_up_flag = 0;
-	//}
-	//gr_reset_clip();
-
 	if (!Background_playing) {
 		int time = -1;
 		int check_jump_flag = 1;
@@ -1947,11 +1961,9 @@ void brief_api_do_frame(float frametime)
 				time,
 				Current_brief_stage);
 
-			//A few items commented out, but keeping a record for closeup icon fixing in a later PR - Mjn
-			// Brief_playing_fade_sound = 0;
 			Last_brief_stage = Current_brief_stage;
 			brief_reset_icons(Current_brief_stage);
-			// brief_update_closeup_icon(0);
+			brief_update_closeup_icon(0);
 		}
 
 	Transition_done:
@@ -1963,17 +1975,6 @@ void brief_api_do_frame(float frametime)
 		brief_api_render(frametime);
 		brief_camera_move(frametime, Current_brief_stage);
 
-		// More methods for dealing with clicking on ship icons to be solved in a future PR - Mjn
-		//if (Closeup_icon) {
-		//	gr_bitmap(Closeup_coords[gr_screen.res][BRIEF_X_COORD],
-		//		Closeup_coords[gr_screen.res][BRIEF_Y_COORD],
-		//		GR_RESIZE_MENU);
-		//}
-
-		// This may be needed in by a future PR to get map icon clicking working through the API - Mjn
-		// if (Closeup_icon) {
-		//	brief_render_closeup(Closeup_icon->ship_class, frametime);
-		//}
 	}
 }
 

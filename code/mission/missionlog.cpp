@@ -27,7 +27,6 @@
 
 
 #define MAX_LOG_ENTRIES		700
-#define MAX_LOG_LINES		1000
 
 // used for high water mark for culling out log entries
 #define LOG_CULL_MARK				((int)(MAX_LOG_ENTRIES * 0.95f))
@@ -42,29 +41,12 @@
 #define OBJECT_X		75
 #define ACTION_X		250
 
-#define LOG_COLOR_NORMAL	0
-#define LOG_COLOR_BRIGHT	1
-#define LOG_COLOR_OTHER		2
 #define NUM_LOG_COLORS		3
 
-// defines for log flags
-#define LOG_FLAG_GOAL_FAILED	(1<<0)
-#define LOG_FLAG_GOAL_TRUE		(1<<1)
-
-typedef struct log_text_seg {
-	log_text_seg *next;		// linked list
-	char	*text;				// the text
-	int	color;				// color text should be displayed in
-	int	x;						// x offset to display text at
-	int	flags;				// used to possibly print special characters when displaying the log
-} log_text_seg;
-
-int Num_log_lines;
 static int X, P_width;
 
-// Log_lines is used for scrollback display purposes.
-static log_text_seg *Log_lines[MAX_LOG_LINES];
-static fix Log_line_timestamps[MAX_LOG_LINES];
+SCP_vector<log_line_complete> Log_scrollback_vec;
+int Num_log_lines;
 
 std::array<log_entry, MAX_LOG_ENTRIES> log_entries;	// static array because John says....
 int last_entry;
@@ -614,28 +596,16 @@ int mission_log_get_count( LogType type, const char *pname, const char *sname )
 }
 
 
-void message_log_add_seg(int n, int x, int msg_color, const char *text, int flags = 0)
+void message_log_add_seg(log_text_seg* entry, int x, int msg_color, const char* text, int flags = 0)
 {
-	log_text_seg *seg, **parent;
-
-	if ((n < 0) || (n >= MAX_LOG_LINES))
-		return;
-
-	parent = &Log_lines[n];
-	while (*parent)
-		parent = &((*parent)->next);
-
-	seg = (log_text_seg *) vm_malloc(sizeof(log_text_seg));
-	Assert(seg);
-	seg->text = vm_strdup(text);
-	seg->color = msg_color;
-	seg->x = x;
-	seg->flags = flags;
-	seg->next = NULL;
-	*parent = seg;
+	// set the vector
+	entry->text.reset(vm_strdup(text));
+	entry->color = msg_color;
+	entry->x = x;
+	entry->flags = flags;
 }
 
-void message_log_add_segs(const char *source_string, int msg_color, int flags = 0)
+void message_log_add_segs(const char* source_string, int msg_color, int flags = 0, SCP_vector<log_text_seg> *entry = nullptr)
 {
 	if (!source_string) {
 		mprintf(("Why are you passing a NULL pointer to message_log_add_segs?\n"));
@@ -663,8 +633,11 @@ void message_log_add_segs(const char *source_string, int msg_color, int flags = 
 		else
 			split = split_str_once(str, P_width - X);
 
-		if (split != str)
-			message_log_add_seg(Num_log_lines, X, msg_color, str, flags);
+		if (split != str) {
+			log_text_seg new_seg;
+			message_log_add_seg(&new_seg, X, msg_color, str, flags);
+			entry->push_back(std::move(new_seg));
+		}
 
 		if (!split) {
 			gr_get_string_size(&w, NULL, str);
@@ -672,31 +645,12 @@ void message_log_add_segs(const char *source_string, int msg_color, int flags = 
 			break;
 		}
 
-		Assertion(Num_log_lines < MAX_LOG_LINES, "Too many log lines!  There might have been a text split failure.");
-		Num_log_lines++;
 		X = ACTION_X;
 		str = split;
 	}
 
 	// free the buffer
 	vm_free(dup_string);
-}
-
-void message_log_remove_segs(int n)
-{
-	log_text_seg *ptr, *ptr2;
-
-	if ((n < 0) || (n >= MAX_LOG_LINES))
-		return;
-
-	ptr = Log_lines[n];
-	while (ptr) {
-		ptr2 = ptr->next;
-		vm_free(ptr);
-		ptr = ptr2;
-	}
-
-	Log_lines[n] = NULL;
 }
 
 int message_log_color_get_team(int msg_color)
@@ -712,81 +666,99 @@ int message_log_team_get_color(int team)
 // pw = total pixel width
 void message_log_init_scrollback(int pw)
 {
-	char text[256];
-	log_entry *entry;
-	int i, c, kill, type;
-
 	P_width = pw;
 	mission_log_cull_obsolete_entries();  // compact array so we don't have gaps
-	
-	// initialize the log lines data
-	Num_log_lines = 0;
-	for (i=0; i<MAX_LOG_LINES; i++) {
-		Log_lines[i] = NULL;
-		Log_line_timestamps[i] = 0;
-	}
 
-	for (i=0; i<last_entry; i++) {
+	Log_scrollback_vec.clear();
+	Num_log_lines = 0;
+
+	log_entry* entry;
+	for (int i=0; i<last_entry; i++) {
 		entry = &log_entries[i];
 
 		if (entry->flags & MLF_HIDDEN)
 			continue;
 
-		// track time of event (normal timestamp milliseconds format)
-		Log_line_timestamps[Num_log_lines] = entry->timestamp;
+		// don't display failed bonus goals
+		if (entry->type == LOG_GOAL_FAILED) {
+			int type = Mission_goals[entry->index].type & GOAL_TYPE_MASK;
+
+			if (type == BONUS_GOAL) {
+				continue;
+			}
+		}
+
+		log_line_complete thisEntry;
+
+		// track time of event (normal Missiontime format)
+		thisEntry.timestamp = entry->timestamp;
+
+		// keep track of base color for the entry
+		int thisColor;
 
 		// Goober5000
 		if ((entry->type == LOG_GOAL_SATISFIED) || (entry->type == LOG_GOAL_FAILED))
-			c = LOG_COLOR_BRIGHT;
+			thisColor = LOG_COLOR_BRIGHT;
 		else if (entry->primary_team >= 0)
-			c = message_log_team_get_color(entry->primary_team);
+			thisColor = message_log_team_get_color(entry->primary_team);
 		else
-			c = LOG_COLOR_OTHER;
+			thisColor = LOG_COLOR_OTHER;
 
 		if ( (Lcl_gr) && ((entry->type == LOG_GOAL_FAILED) || (entry->type == LOG_GOAL_SATISFIED)) ) {
 			// in german goal events, just say "objective" instead of objective name
 			// this is cuz we can't translate objective names
-			message_log_add_seg(Num_log_lines, OBJECT_X, c, "Einsatzziel");
+			message_log_add_seg(&thisEntry.objective, OBJECT_X, thisColor, "Einsatzziel");
 		} else if ( (Lcl_pl) && ((entry->type == LOG_GOAL_FAILED) || (entry->type == LOG_GOAL_SATISFIED)) ) {
 			// same thing for polish
-			message_log_add_seg(Num_log_lines, OBJECT_X, c, "Cel misji");
+			message_log_add_seg(&thisEntry.objective, OBJECT_X, thisColor, "Cel misji");
 		} else {
-			message_log_add_seg(Num_log_lines, OBJECT_X, c, entry->pname_display.c_str());
+			message_log_add_seg(&thisEntry.objective, OBJECT_X, thisColor, entry->pname_display.c_str());
+		}
+
+		//Set the flags for objectives
+		if ((entry->type == LOG_GOAL_SATISFIED) || (entry->type == LOG_GOAL_FAILED)) {
+			if (entry->type == LOG_GOAL_SATISFIED)
+				thisEntry.objective.flags = LOG_FLAG_GOAL_TRUE;
+			if (entry->type == LOG_GOAL_FAILED)
+				thisEntry.objective.flags = LOG_FLAG_GOAL_FAILED;
+		} else {
+			thisEntry.objective.flags = 0;
 		}
 
 		// now on to the actual message itself
 		X = ACTION_X;
-		kill = 0;
 
 		// Goober5000
 		if (entry->secondary_team >= 0)
-			c = message_log_team_get_color(entry->secondary_team);
+			thisColor = message_log_team_get_color(entry->secondary_team);
 		else
-			c = LOG_COLOR_NORMAL;
+			thisColor = LOG_COLOR_NORMAL;
+
+		char text[256];
 
 		switch (entry->type) {
 			case LOG_SHIP_DESTROYED:
-				message_log_add_segs(XSTR( "Destroyed", 404), LOG_COLOR_NORMAL);
+				message_log_add_segs(XSTR( "Destroyed", 404), LOG_COLOR_NORMAL, 0, &thisEntry.segments);
 				if (!entry->sname_display.empty()) {
-					message_log_add_segs(XSTR( "  Kill: ", 405), LOG_COLOR_NORMAL);
-					message_log_add_segs(entry->sname_display.c_str(), c);
+					message_log_add_segs(XSTR("  Kill: ", 405), LOG_COLOR_NORMAL, 0, &thisEntry.segments);
+					message_log_add_segs(entry->sname_display.c_str(), thisColor, 0, &thisEntry.segments);
 					if (entry->index >= 0) {
 						sprintf(text, NOX(" (%d%%)"), entry->index);
-						message_log_add_segs(text, LOG_COLOR_BRIGHT);
+						message_log_add_segs(text, LOG_COLOR_BRIGHT, 0, &thisEntry.segments);
 					}
 				}
 				break;
 
 			case LOG_SELF_DESTRUCTED:
-				message_log_add_segs(XSTR( "Self destructed", 1476), LOG_COLOR_NORMAL);
+				message_log_add_segs(XSTR("Self destructed", 1476), LOG_COLOR_NORMAL, 0, &thisEntry.segments);
 				break;
 
 			case LOG_WING_DESTROYED:
-				message_log_add_segs(XSTR( "Destroyed", 404), LOG_COLOR_NORMAL);
+				message_log_add_segs(XSTR("Destroyed", 404), LOG_COLOR_NORMAL, 0, &thisEntry.segments);
 				break;
 
 			case LOG_SHIP_ARRIVED:
-				message_log_add_segs(XSTR( "Arrived", 406), LOG_COLOR_NORMAL);
+				message_log_add_segs(XSTR("Arrived", 406), LOG_COLOR_NORMAL, 0, &thisEntry.segments);
 				break;
 
 			case LOG_WING_ARRIVED:
@@ -795,101 +767,93 @@ void message_log_init_scrollback(int pw)
 				} else {
 					strcpy_s(text, XSTR( "Arrived", 406));
 				}
-				message_log_add_segs(text, LOG_COLOR_NORMAL);
+				message_log_add_segs(text, LOG_COLOR_NORMAL, 0, &thisEntry.segments);
 				break;
 
 			case LOG_SHIP_DEPARTED:
-				message_log_add_segs(XSTR( "Departed", 408), LOG_COLOR_NORMAL);
+				message_log_add_segs(XSTR("Departed", 408), LOG_COLOR_NORMAL, 0, &thisEntry.segments);
 				break;
 
 			case LOG_WING_DEPARTED:
-				message_log_add_segs(XSTR( "Departed", 408), LOG_COLOR_NORMAL);
+				message_log_add_segs(XSTR("Departed", 408), LOG_COLOR_NORMAL, 0, &thisEntry.segments);
 				break;
 
 			case LOG_SHIP_DOCKED:
-				message_log_add_segs(XSTR( "Docked with ", 409), LOG_COLOR_NORMAL);
-				message_log_add_segs(entry->sname_display.c_str(), c);
+				message_log_add_segs(XSTR("Docked with ", 409), LOG_COLOR_NORMAL, 0, &thisEntry.segments);
+				message_log_add_segs(entry->sname_display.c_str(), thisColor, 0, &thisEntry.segments);
 				break;
 
 			case LOG_SHIP_SUBSYS_DESTROYED: {
-				int si_index, model_index;
-
-				si_index = (int)((entry->index >> 16) & 0xffff);
-				model_index = (int)(entry->index & 0xffff);
-
-				message_log_add_segs(XSTR( "Subsystem ", 410), LOG_COLOR_NORMAL);
-				//message_log_add_segs(entry->sname, LOG_COLOR_BRIGHT);
-				const char *subsys_name = Ship_info[si_index].subsystems[model_index].subobj_name;
-				if (Ship_info[si_index].subsystems[model_index].type == SUBSYSTEM_TURRET) {
-					subsys_name = XSTR("Turret", 1487);
+				ship_info* sip = &Ship_info[(int)((entry->index >> 16) & 0xffff)];
+				int model_index = (int)(entry->index & 0xffff);
+				const char* subsys_name;
+				if (strlen(sip->subsystems[model_index].alt_sub_name)) {
+					subsys_name = sip->subsystems[model_index].alt_sub_name;
+				} else {
+					subsys_name = sip->subsystems[model_index].name;
 				}
-				message_log_add_segs(subsys_name, LOG_COLOR_BRIGHT);
-				message_log_add_segs(XSTR( " destroyed", 411), LOG_COLOR_NORMAL);
+
+				message_log_add_segs(XSTR("Subsystem ", 410), LOG_COLOR_NORMAL, 0, &thisEntry.segments);
+				message_log_add_segs(subsys_name, LOG_COLOR_BRIGHT, 0, &thisEntry.segments);
+				message_log_add_segs(XSTR(" destroyed", 411), LOG_COLOR_NORMAL, 0, &thisEntry.segments);
 				break;
 			}
 
 			case LOG_SHIP_UNDOCKED:
-				message_log_add_segs(XSTR( "Undocked with ", 412), LOG_COLOR_NORMAL);
-				message_log_add_segs(entry->sname_display.c_str(), c);
+				message_log_add_segs(XSTR("Undocked with ", 412), LOG_COLOR_NORMAL, 0, &thisEntry.segments);
+				message_log_add_segs(entry->sname_display.c_str(), thisColor, 0, &thisEntry.segments);
 				break;
 
 			case LOG_SHIP_DISABLED:
-				message_log_add_segs(XSTR( "Disabled", 413), LOG_COLOR_NORMAL);
+				message_log_add_segs(XSTR("Disabled", 413), LOG_COLOR_NORMAL, 0, &thisEntry.segments);
 				break;
 
 			case LOG_SHIP_DISARMED:
-				message_log_add_segs(XSTR( "Disarmed", 414), LOG_COLOR_NORMAL);
+				message_log_add_segs(XSTR("Disarmed", 414), LOG_COLOR_NORMAL, 0, &thisEntry.segments);
 				break;
 
 			case LOG_PLAYER_CALLED_FOR_REARM:
-				message_log_add_segs(XSTR( " called for rearm", 415), LOG_COLOR_NORMAL);
+				message_log_add_segs(XSTR(" called for rearm", 415), LOG_COLOR_NORMAL, 0, &thisEntry.segments);
 				break;
 
 			case LOG_PLAYER_ABORTED_REARM:
-				message_log_add_segs(XSTR( " aborted rearm", 416), LOG_COLOR_NORMAL);
+				message_log_add_segs(XSTR(" aborted rearm", 416), LOG_COLOR_NORMAL, 0, &thisEntry.segments);
 				break;
 
 			case LOG_PLAYER_CALLED_FOR_REINFORCEMENT:
-				message_log_add_segs(XSTR( "Called in as reinforcement", 417), LOG_COLOR_NORMAL);
+				message_log_add_segs(XSTR("Called in as reinforcement", 417), LOG_COLOR_NORMAL, 0, &thisEntry.segments);
 				break;
 
 			case LOG_CARGO_REVEALED:
 				Assert( entry->index >= 0 );
 				Assert(!(entry->index & CARGO_NO_DEPLETE));
 
-				message_log_add_segs(XSTR( "Cargo revealed: ", 418), LOG_COLOR_NORMAL);
+				message_log_add_segs(XSTR("Cargo revealed: ", 418), LOG_COLOR_NORMAL, 0, &thisEntry.segments);
 				strncpy(text, Cargo_names[entry->index], sizeof(text) - 1);
-				message_log_add_segs( text, LOG_COLOR_BRIGHT );
+				message_log_add_segs(text, LOG_COLOR_BRIGHT, 0, &thisEntry.segments);
 				break;
 
 			case LOG_CAP_SUBSYS_CARGO_REVEALED:
 				Assert( entry->index >= 0 );
 				Assert(!(entry->index & CARGO_NO_DEPLETE));
 
-				message_log_add_segs(entry->sname_display.c_str(), LOG_COLOR_NORMAL);
-				message_log_add_segs(XSTR( " subsystem cargo revealed: ", 1488), LOG_COLOR_NORMAL);
+				message_log_add_segs(entry->sname_display.c_str(), LOG_COLOR_NORMAL, 0, &thisEntry.segments);
+				message_log_add_segs(XSTR( " subsystem cargo revealed: ", 1488), LOG_COLOR_NORMAL, 0, &thisEntry.segments);
 				strncpy(text, Cargo_names[entry->index], sizeof(text) - 1);
-				message_log_add_segs( text, LOG_COLOR_BRIGHT );
+				message_log_add_segs(text, LOG_COLOR_BRIGHT, 0, &thisEntry.segments);
 				break;
 
 
 			case LOG_GOAL_SATISFIED:
 			case LOG_GOAL_FAILED: {
-				type = Mission_goals[entry->index].type & GOAL_TYPE_MASK;
-
-				// don't display failed bonus goals
-				if ( (type == BONUS_GOAL) && (entry->type == LOG_GOAL_FAILED) ) {
-					kill = 1;
-					break;  // don't display this line
-				}
-
+				int type = Mission_goals[entry->index].type & GOAL_TYPE_MASK;
 				sprintf( text, XSTR( "%s objective ", 419), Goal_type_text(type) );
 				if ( entry->type == LOG_GOAL_SATISFIED )
 					strcat_s(text, XSTR( "satisfied.", 420));
 				else
 					strcat_s(text, XSTR( "failed.", 421));
 
-				message_log_add_segs(text, LOG_COLOR_BRIGHT, (entry->type == LOG_GOAL_SATISFIED?LOG_FLAG_GOAL_TRUE:LOG_FLAG_GOAL_FAILED) );
+				message_log_add_segs(text, LOG_COLOR_BRIGHT, 0, &thisEntry.segments);
 				break;
 			}	// matches case statement!
 			default:
@@ -897,99 +861,103 @@ void message_log_init_scrollback(int pw)
 				break;
 		}
 
-		if (kill) {
-			message_log_remove_segs(Num_log_lines);
-
-		} else {
-			if (Num_log_lines < MAX_LOG_LINES-1)
-				Num_log_lines++;
-		}
+		Log_scrollback_vec.push_back(std::move(thisEntry));
+		Num_log_lines++;
 	}
 }
 
 void message_log_shutdown_scrollback()
 {
-	int i;
-
-	for (i=0; i<MAX_LOG_LINES; i++)
-		message_log_remove_segs(i);
-
+	Log_scrollback_vec.clear();
 	Num_log_lines = 0;
+}
+
+color log_line_get_color(int tag)
+{
+	switch (tag) {
+		case LOG_COLOR_BRIGHT:
+			return Color_bright;
+
+		case LOG_COLOR_OTHER:
+			return Color_normal;
+
+		default: {
+			int team = message_log_color_get_team(tag);
+			if (team < 0)
+				return Color_text_normal;
+			else
+				return *iff_get_color_by_team(team, -1, 1);
+		}
+	}
 }
 
 // message_log_scrollback displays the contents of the mesasge log currently much like the HUD
 // message scrollback system.  I'm sure this system will be overhauled.		
-void mission_log_scrollback(int line, int list_x, int list_y, int list_w, int list_h)
+void mission_log_scrollback(int line_offset, int list_x, int list_y, int list_w, int list_h)
 {
-	char buf[256];
-	int y;
 	int font_h = gr_get_font_height();
-	log_text_seg *seg;
 
-	y = 0;
-	while (y + font_h <= list_h) {
-		if (line >= Num_log_lines)
+	int y = 0;
+
+	for (int i = line_offset; i < (int)Log_scrollback_vec.size(); i++) {
+
+		// if we're beyond the printable area stop printing!
+		if (y + font_h > list_h)
 			break;
 
-		if (Log_line_timestamps[line]) {
-			gr_set_color_fast(&Color_text_normal);
-			gr_print_timestamp(list_x + TIME_X, list_y + y, Log_line_timestamps[line], GR_RESIZE_MENU);
+		bool printSymbols = false;
+		int symbolFlag = 0;
+
+		// print the timestamp
+		gr_set_color_fast(&Color_text_normal);
+		gr_print_timestamp(list_x + TIME_X, list_y + y, Log_scrollback_vec[i].timestamp, GR_RESIZE_MENU);
+
+		// print the objective
+		color obj_color = log_line_get_color(Log_scrollback_vec[i].objective.color);
+		gr_set_color_fast(&obj_color);
+
+		// check the flags
+		if ((Log_scrollback_vec[i].objective.flags & LOG_FLAG_GOAL_TRUE) || (Log_scrollback_vec[i].objective.flags & LOG_FLAG_GOAL_FAILED)) {
+			printSymbols = true;
+			symbolFlag = Log_scrollback_vec[i].objective.flags;
+		}
+			
+		char buf[256];
+		strcpy_s(buf, Log_scrollback_vec[i].objective.text.get());
+		font::force_fit_string(buf, 256, ACTION_X - OBJECT_X - 8);
+		gr_string(list_x + Log_scrollback_vec[i].objective.x, list_y + y, buf, GR_RESIZE_MENU);
+
+		// print the segments
+		for (int j = 0; j < (int)Log_scrollback_vec[i].segments.size(); j++) {
+
+			const auto& thisSeg = Log_scrollback_vec[i].segments[j];
+
+			color this_color = log_line_get_color(Log_scrollback_vec[i].segments[j].color);
+			gr_set_color_fast(&this_color);
+
+			strcpy_s(buf, thisSeg.text.get());
+			font::force_fit_string(buf, 256, list_w - thisSeg.x);
+			gr_string(list_x + thisSeg.x, list_y + y, buf, GR_RESIZE_MENU);
+
 		}
 
-		seg = Log_lines[line];
-		while (seg) {
-			switch (seg->color) {
-				case LOG_COLOR_BRIGHT:
-					gr_set_color_fast(&Color_bright);
-					break;
-
-				case LOG_COLOR_OTHER:
-					gr_set_color_fast(&Color_normal);
-					break;
-
-				default:
-				{
-					int team = message_log_color_get_team(seg->color);
-					if (team < 0)
-						gr_set_color_fast(&Color_text_normal);
-					else
-						gr_set_color_fast(iff_get_color_by_team(team, -1, 1));
-
-					break;
-				}
-			}
-
-			strcpy_s(buf, seg->text);
-			if (seg->x < ACTION_X)
-				font::force_fit_string(buf, 256, ACTION_X - OBJECT_X - 8);
+		if (printSymbols) {
+			if (symbolFlag & LOG_FLAG_GOAL_FAILED)
+				gr_set_color_fast(&Color_bright_red);
 			else
-				font::force_fit_string(buf, 256, list_w - seg->x);
+				gr_set_color_fast(&Color_bright_green);
 
-			gr_string(list_x + seg->x, list_y + y, buf, GR_RESIZE_MENU);
+			int loc_y = list_y + y + font_h / 2 - 1;
+			gr_circle(list_x + TIME_X - 6, loc_y, 5, GR_RESIZE_MENU);
 
-			// possibly "print" some symbols for interesting log entries
-			if ( (seg->flags & LOG_FLAG_GOAL_TRUE) || (seg->flags & LOG_FLAG_GOAL_FAILED) ) {
-				int i;
-
-				if ( seg->flags & LOG_FLAG_GOAL_FAILED )
-					gr_set_color_fast(&Color_bright_red);
-				else
-					gr_set_color_fast(&Color_bright_green);
-
-				i = list_y + y + font_h / 2 - 1;
-				gr_circle(list_x + TIME_X - 6, i, 5, GR_RESIZE_MENU);
-
-				gr_set_color_fast(&Color_bright);
-				gr_line(list_x + TIME_X - 10, i, list_x + TIME_X - 8, i, GR_RESIZE_MENU);
-				gr_line(list_x + TIME_X - 6, i - 4, list_x + TIME_X - 6, i - 2, GR_RESIZE_MENU);
-				gr_line(list_x + TIME_X - 4, i, list_x + TIME_X - 2, i, GR_RESIZE_MENU);
-				gr_line(list_x + TIME_X - 6, i + 2, list_x + TIME_X - 6, i + 4, GR_RESIZE_MENU);
-			}
-
-			seg = seg->next;
+			gr_set_color_fast(&Color_bright);
+			gr_line(list_x + TIME_X - 10, loc_y, list_x + TIME_X - 8, loc_y, GR_RESIZE_MENU);
+			gr_line(list_x + TIME_X - 6, loc_y - 4, list_x + TIME_X - 6, loc_y - 2, GR_RESIZE_MENU);
+			gr_line(list_x + TIME_X - 4, loc_y, list_x + TIME_X - 2, loc_y, GR_RESIZE_MENU);
+			gr_line(list_x + TIME_X - 6, loc_y + 2, list_x + TIME_X - 6, loc_y + 4, GR_RESIZE_MENU);
 		}
 
 		y += font_h;
-		line++;
+
 	}
 }

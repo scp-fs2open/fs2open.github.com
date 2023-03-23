@@ -216,7 +216,7 @@ json_t* joystick_serializer(Joystick* joystick)
 SCP_string joystick_display(Joystick* stick)
 {
 	if (stick == nullptr) {
-		return "None";
+		return XSTR("None", 1673);
 	}
 	return stick->getName();
 }

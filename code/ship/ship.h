@@ -270,6 +270,9 @@ extern SCP_vector<DamageTypeStruct>	Damage_types;
 #define NUM_TURRET_ORDER_TYPES		3
 extern const char *Turret_target_order_names[NUM_TURRET_ORDER_TYPES];	//aiturret.cpp
 
+#define NUM_TURRET_TYPES 4
+extern const char* Turret_valid_types[NUM_TURRET_TYPES];
+
 // Swifty: Cockpit displays
 typedef struct cockpit_display {
 	int target;
@@ -356,6 +359,7 @@ public:
 	vec3d	turret_last_fire_direction;		//	direction pointing last time this turret fired
 	int		turret_next_enemy_check_stamp;	//	time at which to next look for a new enemy.
 	int		turret_next_fire_stamp;				// next time this turret can fire
+	TIMESTAMP		turret_last_fired;				// time when the turret last fired any weapon
 	int		turret_enemy_objnum;					//	object index of ship this turret is firing upon
 	int		turret_enemy_sig;						//	signature of object ship this turret is firing upon
 	int		turret_next_fire_pos;				// counter which tells us which gun position to fire from next
@@ -450,7 +454,13 @@ typedef struct ship_flag_name {
 	char flag_name[TOKEN_LENGTH];		// the name written to the mission file for its corresponding parse_object flag
 } ship_flag_name;
 
+typedef struct ship_flag_description {
+	Ship::Ship_Flags flag;
+	SCP_string flag_desc;
+} ship_flag_description;
+
 extern ship_flag_name Ship_flag_names[];
+extern ship_flag_description Ship_flag_descriptions[];
 extern const size_t Num_ship_flag_names;
 
 typedef struct wing_flag_name {
@@ -458,7 +468,13 @@ typedef struct wing_flag_name {
 	char flag_name[TOKEN_LENGTH];
 } wing_flag_name;
 
+typedef struct wing_flag_description {
+	Ship::Wing_Flags flag;
+	SCP_string flag_desc;
+} wing_flag_description;
+
 extern wing_flag_name Wing_flag_names[];
+extern wing_flag_description Wing_flag_descriptions[];
 extern const size_t Num_wing_flag_names;
 
 #define DEFAULT_SHIP_PRIMITIVE_SENSOR_RANGE		10000	// Goober5000
@@ -810,6 +826,7 @@ public:
 	int team_change_time;
 
 	float autoaim_fov;
+	float bank_autoaim_fov[MAX_SHIP_PRIMARY_BANKS];
 
 	int cockpit_model_instance;
 
@@ -1264,6 +1281,9 @@ public:
 	// Recoil modifier for the ship
 	float ship_recoil_modifier;
 
+	// Shudder modifier for the ship
+	float ship_shudder_modifier;
+
 	float	max_hull_strength;				// Max hull strength of this class of ship.
 	float	max_shield_strength;
 	float	auto_shield_spread;				// Thickness of the shield
@@ -1386,6 +1406,7 @@ public:
 	bool newtonian_damp_override; 
 
 	float autoaim_fov;
+	float bank_autoaim_fov[MAX_SHIP_PRIMARY_BANKS];
 
 	bool topdown_offset_def;
 	vec3d topdown_offset;
@@ -1801,7 +1822,7 @@ ship_subsys *ship_return_next_subsys(ship *shipp, int type, vec3d *attacker_pos)
 
 extern int ship_get_random_team_ship(int team_mask, int flags = SHIP_GET_ANY_SHIP, float max_dist = 0.0f);
 extern int ship_get_random_player_wing_ship(int flags = SHIP_GET_ANY_SHIP, float max_dist = 0.0f, int persona_index = -1, int get_first = 0, int multi_team = -1);
-extern int ship_get_random_ship_in_wing(int wingnum, int flags = SHIP_GET_ANY_SHIP, float max_dist = 0.0f, int get_first = 0);
+extern int ship_get_random_ship_in_wing(int wingnum, int flags = SHIP_GET_ANY_SHIP, float max_dist = 0.0f, int get_first = 0, int order_id = -1);
 
 // return ship index
 int ship_get_random_targetable_ship();

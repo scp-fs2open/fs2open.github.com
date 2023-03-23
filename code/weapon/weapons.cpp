@@ -137,7 +137,7 @@ special_flag_def_list_new<Weapon::Info_Flags, weapon_info*, flagset<Weapon::Info
 			}
 
 			flags.set(Weapon::Info_Flags::Spawn);
-			weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_type = (short)Num_spawn_types;
+			weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_wep_index = (short)Num_spawn_types;
 			size_t start_num = spawn.find_first_of(',');
 			if (start_num == SCP_string::npos) {
 				weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_count = DEFAULT_WEAPON_SPAWN_COUNT;
@@ -671,6 +671,28 @@ void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> preset_wi_
             Warning(LOCATION, "Swarm, Corkscrew, and Flak are mutually exclusive!  Removing Swarm and Corkscrew attributes from weapon %s.\n", weaponp->name);
         }
     }
+
+	if (weaponp->wi_flags[Weapon::Info_Flags::Beam]) {
+		//If we're not doing damage anyway, then we don't care.. but also this prevents a retail
+		//warning for the targeting laser
+		if (weaponp->damage != 0.0f) {
+			if ((weaponp->armor_factor != 1.0f) && !Beams_use_damage_factors) {
+				Warning(LOCATION,
+					"Armor factor defined as %f for beam type weapon %s while damage factors are disabled for beams!",
+					weaponp->armor_factor, weaponp->name);
+			}
+			if ((weaponp->shield_factor != 1.0f) && !Beams_use_damage_factors) {
+				Warning(LOCATION,
+					"Shield factor defined as %f for beam type weapon %s while damage factors are disabled for beams!",
+					weaponp->shield_factor, weaponp->name);
+			}
+			if ((weaponp->subsystem_factor != 1.0f) && !Beams_use_damage_factors) {
+				Warning(LOCATION,
+					"Subsystem factor defined as %f for beam type weapon %s while damage factors are disabled for beams!",
+					weaponp->subsystem_factor, weaponp->name);
+			}
+		}
+	}
 
     if (weaponp->wi_flags[Weapon::Info_Flags::Swarm] && weaponp->wi_flags[Weapon::Info_Flags::Corkscrew]) {
         weaponp->wi_flags.remove(Weapon::Info_Flags::Corkscrew);
@@ -2243,6 +2265,14 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		stuff_float(&wip->recoil_modifier);
 	}
 
+	if (optional_string("$Shudder Modifier:")) {
+		if (!(wip->wi_flags[Weapon::Info_Flags::Shudder])) {
+			Warning(LOCATION, "$Shudder Modifier specified for weapon %s but this weapon does not have the \"shudder\" weapon flag set. Automatically setting the flag", wip->name);
+			wip->wi_flags.set(Weapon::Info_Flags::Shudder);
+		}
+		stuff_float(&wip->shudder_modifier);
+	}
+
 	// Energy suck optional stuff (if WIF_ENERGY_SUCK is not set, none of this matters anyway)
 	if( optional_string("$Leech Weapon:") ){
 		stuff_float(&wip->weapon_reduce);
@@ -2289,6 +2319,14 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 		if(optional_string("+Twist:")) {
 			stuff_float(&wip->cs_twist);
+		}
+
+		if (optional_string("+Random Start Angle:")) {
+			stuff_boolean(&wip->cs_random_angle);
+		}
+
+		if (optional_string("+Start Angle:")) {
+			stuff_float(&wip->cs_angle);
 		}
 	}
 
@@ -3550,24 +3588,31 @@ void translate_spawn_types()
     {
         for (j = 0; j < Weapon_info[i].num_spawn_weapons_defined; j++)
         {
-            if ( (Weapon_info[i].spawn_info[j].spawn_type > -1) && (Weapon_info[i].spawn_info[j].spawn_type < Num_spawn_types) )
+            if ( (Weapon_info[i].spawn_info[j].spawn_wep_index > -1) && (Weapon_info[i].spawn_info[j].spawn_wep_index < Num_spawn_types) )
             {
-                int	spawn_type = Weapon_info[i].spawn_info[j].spawn_type;
+                int	spawn_type = Weapon_info[i].spawn_info[j].spawn_wep_index;
 
                 Assert( spawn_type < Num_spawn_types );
 
+				bool found_a_match = false;
                 for (k = 0; k < weapon_info_size(); k++)
                 {
                     if ( !stricmp(Spawn_names[spawn_type], Weapon_info[k].name) ) 
                     {
-                        Weapon_info[i].spawn_info[j].spawn_type = (short)k;
+                        Weapon_info[i].spawn_info[j].spawn_wep_index = (short)k;
 
                         if (i == k)
                             Warning(LOCATION, "Weapon %s spawns itself.  Infinite recursion?\n", Weapon_info[i].name);
 
+						found_a_match = true;
                         break;
                     }
                 }
+
+				if (!found_a_match) {
+					Warning(LOCATION, "Couldn't find spawn weapon %s for Weapon %s.\n", Spawn_names[spawn_type], Weapon_info[i].name);
+					Weapon_info[i].spawn_info[j].spawn_wep_index = -1;
+				}
             }
         }
     }
@@ -6645,14 +6690,18 @@ void spawn_child_weapons(object *objp, int spawn_index_override)
 			spawn_count = wip->spawn_info[i].spawn_count;
 		}
 
+		child_id = wip->spawn_info[i].spawn_wep_index;
+		if (child_id < 0)
+			continue;
+
+		child_wip = &Weapon_info[child_id];
+
 		for (int j = 0; j < spawn_count; j++)
 		{
 			int		weapon_objnum;
 			vec3d	tvec, pos;
 			matrix	orient;
 
-			child_id = wip->spawn_info[i].spawn_type;
-			child_wip = &Weapon_info[child_id];
 
 			// for multiplayer, use the static randvec functions based on the network signatures to provide
 			// the randomness so that it is the same on all machines.
@@ -7509,7 +7558,9 @@ void weapons_page_in()
 		// if it's got a spawn type then grab it
         for (j = 0; j < Weapon_info[i].num_spawn_weapons_defined; j++)
         {
-            used_weapons[(int)Weapon_info[i].spawn_info[j].spawn_type]++;
+			idx = (int)Weapon_info[i].spawn_info[j].spawn_wep_index;
+			if (idx >= 0)
+				used_weapons[idx]++;
         }
 	}
 
@@ -7704,7 +7755,9 @@ bool weapon_page_in(int weapon_type)
 	for (size_t x = 0; x < size; x++) {
 		if (Weapon_info[page_in_weapons.at(x)].num_spawn_weapons_defined > 0) {
 			for (int j = 0; j < Weapon_info[page_in_weapons.at(x)].num_spawn_weapons_defined; j++) {
-				page_in_weapons.push_back((int)Weapon_info[page_in_weapons.at(x)].spawn_info[j].spawn_type);
+				int idx = (int)Weapon_info[page_in_weapons.at(x)].spawn_info[j].spawn_wep_index;
+				if (idx >= 0)
+					page_in_weapons.push_back(idx);
 			}
 		}
 	}
@@ -8545,8 +8598,11 @@ void weapon_render(object* obj, model_draw_list *scene)
 				if (wip->wi_flags[Weapon::Info_Flags::Transparent])
 					alpha = fl2i(wp->alpha_current * 255.0f);
 
-				if (The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb_affects_weapons)
-					alpha = (int)(alpha * neb2_get_fog_visibility(&obj->pos, Neb2_fog_visibility_weapon));
+				if (Neb_affects_weapons) {
+					float nebalpha = 1.0f;
+					if(nebula_handle_alpha(nebalpha, &obj->pos, Neb2_fog_visibility_weapon))
+						alpha = (int)(alpha * nebalpha);
+				}
 
 				vec3d headp;
 				vm_vec_scale_add(&headp, &obj->pos, &obj->orient.vec.fvec, wip->laser_length);
@@ -8633,8 +8689,11 @@ void weapon_render(object* obj, model_draw_list *scene)
 					alpha = weapon_glow_alpha;
 				}
 
-				if (The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb_affects_weapons)
-					alpha = (int)(alpha * neb2_get_fog_visibility(&obj->pos, Neb2_fog_visibility_weapon));
+				if (Neb_affects_weapons) {
+					float nebalpha = 1.0f;
+					if (nebula_handle_alpha(nebalpha, &obj->pos, Neb2_fog_visibility_weapon))
+						alpha = (int)(alpha * nebalpha);
+				}
 
 				// Scale the laser so that it always appears some configured amount of pixels wide, no matter the distance.
 				// Only affects width, length remains unchanged.
@@ -8926,7 +8985,7 @@ void weapon_info::reset()
 	this->maximum_children_spawned = 0;
 	for (i = 0; i < MAX_SPAWN_TYPES_PER_WEAPON; i++)
 	{
-		this->spawn_info[i].spawn_type = -1;
+		this->spawn_info[i].spawn_wep_index = -1;
 		this->spawn_info[i].spawn_angle = 180;
 		this->spawn_info[i].spawn_min_angle = 0;
 		this->spawn_info[i].spawn_count = DEFAULT_WEAPON_SPAWN_COUNT;
@@ -9008,6 +9067,7 @@ void weapon_info::reset()
 	this->emp_time = EMP_DEFAULT_TIME;	// Goober5000: <-- Look!  I fixed a Volition bug!  Gimme $5, Dave!
 
 	this->recoil_modifier = 1.0f;
+	this->shudder_modifier = 1.0f;
 
 	this->weapon_reduce = ESUCK_DEFAULT_WEAPON_REDUCE;
 	this->afterburner_reduce = ESUCK_DEFAULT_AFTERBURNER_REDUCE;
@@ -9029,8 +9089,10 @@ void weapon_info::reset()
 	this->cs_num_fired = 4;
 	this->cs_radius = 1.25f;
 	this->cs_delay = 30;
-	this->cs_crotate = 1;
+	this->cs_crotate = true;
 	this->cs_twist = 5.0f;
+	this->cs_random_angle = false;
+	this->cs_angle = 0.0f;
 
 	this->elec_time = 8000;
 	this->elec_eng_mult = 1.0f;

@@ -89,6 +89,7 @@ public:
 
 extern void timer_init();
 extern void timer_close();
+extern void timer_start_frame();
 
 //==========================================================================
 // These functions return the time since the timer was initialized in
@@ -203,7 +204,9 @@ bool ui_timestamp_in_between(UI_TIMESTAMP stamp, UI_TIMESTAMP before, UI_TIMESTA
 
 bool timestamp_elapsed( int stamp );
 bool timestamp_elapsed( TIMESTAMP stamp );
+bool timestamp_elapsed_last_frame( TIMESTAMP stamp );
 bool ui_timestamp_elapsed( UI_TIMESTAMP stamp );
+bool ui_timestamp_elapsed_last_frame( UI_TIMESTAMP stamp );
 
 // safer version of timestamp
 bool timestamp_elapsed_safe(int a, int b);

@@ -102,7 +102,7 @@ int main(int argc, char* argv[]) {
 	// Expect that the platform library is in the same directory
 	QCoreApplication::addLibraryPath(QCoreApplication::applicationDirPath());	
 
-	QGuiApplication::setApplicationDisplayName(app.tr("qtFRED v%1").arg(FS_VERSION_FULL));
+	QGuiApplication::setApplicationDisplayName(QApplication::tr("qtFRED v%1").arg(FS_VERSION_FULL));
 
 #ifndef NDEBUG
 	QLoggingCategory::defaultCategory()->setEnabled(QtDebugMsg, true);
@@ -122,6 +122,7 @@ int main(int argc, char* argv[]) {
 	auto baseDir = QDir::toNativeSeparators(QDir::current().absolutePath());
 
 	typedef std::unordered_map<SubSystem, QString> SubsystemMap;
+
 	SubsystemMap initializers = {{ SubSystem::OS,                app.tr("Initializing OS interface") },
 								 { SubSystem::CommandLine,       app.tr("Parsing command line") },
 								 { SubSystem::Timer,             app.tr("Initializing Timer") },
@@ -158,6 +159,9 @@ int main(int argc, char* argv[]) {
 								 { SubSystem::EventMusic,        app.tr("Initializing event music") },
 								 { SubSystem::FictionViewer,     app.tr("Initializing fiction viewer") },
 								 { SubSystem::CommandBriefing,   app.tr("Initializing command briefing") },
+                 { SubSystem::Cutscenes,         app.tr("Initializing cutscenes")},
+								 { SubSystem::Mainhalls,         app.tr("Initializing mainhalls")},
+								 { SubSystem::Ranks,             app.tr("Initializing ranks")},
 								 { SubSystem::Campaign,          app.tr("Initializing campaign system") },
 								 { SubSystem::NebulaLightning,   app.tr("Initializing nebula lightning") },
 								 { SubSystem::FFmpeg,            app.tr("Initializing FFmpeg") },
@@ -176,7 +180,7 @@ int main(int argc, char* argv[]) {
 		return -1;
 	}
 
-	splash.showMessage(app.tr("Showing editor window"), Qt::AlignHCenter | Qt::AlignBottom, Qt::white);
+	splash.showMessage(QApplication::tr("Showing editor window"), Qt::AlignHCenter | Qt::AlignBottom, Qt::white);
 	splash.finish(qApp->activeWindow());
 
 	// Use this to keep the app responsive

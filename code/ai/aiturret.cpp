@@ -58,10 +58,18 @@ const char *Turret_target_order_names[NUM_TURRET_ORDER_TYPES] = {
 #define EEOF_BIG_ONLY		(1<<0)	// turret fires only at big and huge ships
 #define EEOF_SMALL_ONLY		(1<<1)	// turret fires only at small ships
 #define EEOF_TAGGED_ONLY	(1<<2)	// turret fires only at tagged ships
+
 #define EEOF_BEAM			(1<<3)	// turret is a beam
 #define EEOF_FLAK			(1<<4)	// turret is flak
 #define EEOF_LASER			(1<<5)	// turret is a laser
 #define EEOF_MISSILE		(1<<6)	// turret is a missile
+
+const char* Turret_valid_types[NUM_TURRET_TYPES] = {
+	"Beam",
+	"Flak",
+	"Laser",
+	"Missile",
+};
 
 typedef struct eval_enemy_obj_struct {
 	int			turret_parent_objnum;			// parent of turret
@@ -1887,9 +1895,10 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 
 				parent_ship->last_fired_turret = turret;
 				turret->last_fired_weapon_info_index = turret_weapon_class;
+				turret->turret_last_fired = _timestamp();
 
 				if (scripting::hooks::OnTurretFired->isActive()) {
-					scripting::hooks::OnTurretFired->run(scripting::hooks::WeaponUsedConditions{ parent_ship , turret_enemy_objp, turret_weapon_class, true },
+					scripting::hooks::OnTurretFired->run(scripting::hooks::WeaponUsedConditions{ parent_ship , turret_enemy_objp, SCP_vector<int>{ turret_weapon_class }, true },
 						scripting::hook_param_list(
 							scripting::hook_param("Ship", 'o', &Objects[parent_objnum]),
 							scripting::hook_param("Beam", 'o', objp),
@@ -2029,13 +2038,14 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 
 					parent_ship->last_fired_turret = turret;
 					turret->last_fired_weapon_info_index = wp->weapon_info_index;
+					turret->turret_last_fired = _timestamp();
 
 					wp->target_num = turret->turret_enemy_objnum;
 					// AL 1-6-97: Store pointer to turret subsystem
 					wp->turret_subsys = turret;	
 
 					if (scripting::hooks::OnTurretFired->isActive()) {
-						scripting::hooks::OnTurretFired->run(scripting::hooks::WeaponUsedConditions{ parent_ship , turret_enemy_objp, turret_weapon_class, wip->subtype == WP_LASER },
+						scripting::hooks::OnTurretFired->run(scripting::hooks::WeaponUsedConditions{ parent_ship , turret_enemy_objp, SCP_vector<int>{ turret_weapon_class }, wip->subtype == WP_LASER },
 							scripting::hook_param_list(
 								scripting::hook_param("Ship", 'o', &Objects[parent_objnum]),
 								scripting::hook_param("Weapon", 'o', objp),
@@ -2155,12 +2165,13 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 
 		Ships[Objects[tsi->parent_objnum].instance].last_fired_turret = tsi->turret;
 		tsi->turret->last_fired_weapon_info_index = tsi->weapon_class;
+		tsi->turret->turret_last_fired = _timestamp();
 
 		if (scripting::hooks::OnTurretFired->isActive()) {
 			scripting::hooks::OnTurretFired->run(scripting::hooks::WeaponUsedConditions{
 				&Ships[Objects[tsi->parent_objnum].instance],
 				&Objects[tsi->turret->turret_enemy_objnum], 
-				tsi->weapon_class, Weapon_info[tsi->weapon_class].subtype == WP_LASER
+				SCP_vector<int>{ tsi->weapon_class }, Weapon_info[tsi->weapon_class].subtype == WP_LASER
 				},
 				scripting::hook_param_list(
 					scripting::hook_param("Ship", 'o', &Objects[tsi->parent_objnum]),
@@ -2728,7 +2739,6 @@ void ai_turret_execute_behavior(ship *shipp, ship_subsys *ss)
 				vm_vec_scale_add(&end, &gpos, &gvec, model_get_radius(model_num));
 
 				mc_info hull_check;
-				mc_info_init(&hull_check);
 				hull_check.model_instance_num = shipp->model_instance_num;
 				hull_check.model_num = model_num;
 				hull_check.orient = &objp->orient;

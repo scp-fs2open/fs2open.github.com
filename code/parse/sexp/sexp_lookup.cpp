@@ -43,8 +43,68 @@ void parse_sexp_table(const char* filename) {
 		read_file_text(filename, CF_TYPE_TABLES);
 		reset_parse();
 
+		if (optional_string("#Lua Enums")) {
+			while (optional_string("$Name:")) {
+				SCP_string name;
+				stuff_string(name, F_NAME);
+
+				if (get_dynamic_enum_position(name) >= 0) {
+					error_display(0, "Lua Sexp Enum %s already exists! Skipping!\n", name.c_str());
+					continue;
+				}
+
+
+				dynamic_sexp_enum_list thisList;
+				thisList.name = name;
+
+				while (optional_string("+Enum:")) {
+					SCP_string item;
+					stuff_string(item, F_NAME);
+
+					// These characters may not appear in an Enum item
+					constexpr const char* ENUM_INVALID_CHARS = "()\"'\\/";
+					if (std::strpbrk(item.c_str(), ENUM_INVALID_CHARS) != nullptr) {
+						error_display(0, "ENUM item '%s' cannot include these characters [(,),\",',\\,/]. Skipping!\n", item.c_str());
+
+						// Skip the invalid entry
+						continue;
+
+					}
+
+					if (item.length() >= NAME_LENGTH) {
+						error_display(0, "Enum item '%s' is longer than %i characters. Truncating!\n", item.c_str(), NAME_LENGTH);
+						item.resize(NAME_LENGTH - 1);
+					}
+
+					bool skip = false;
+					// Case insensitive check if the item already exists in the list
+					for (int i = 0; i < (int)thisList.list.size(); i++) {
+						if (SCP_string_lcase_equal_to()(item, thisList.list[i])) {
+							error_display(0, "Enum item '%s' already exists in list %s. Skipping!\n", item.c_str(), thisList.name.c_str());
+							skip = true;
+							break;
+						}
+					}
+
+					if (skip)
+						continue;
+
+					thisList.list.push_back(item);
+				}
+
+				if (thisList.list.size() > 0) {
+					Dynamic_enums.push_back(thisList);
+					increment_enum_list_id();
+				} else {
+					error_display(0, "Parsed empty enum list '%s'. Ignoring!\n", thisList.name.c_str());
+				}
+			}
+			required_string("#End");
+		}
+
 		// These characters may not appear in a SEXP name
 		constexpr const char* INVALID_CHARS = "()\"'\t ";
+
 		if (optional_string("#Lua SEXPs")) {
 
 			while (optional_string("$Operator:")) {
@@ -199,13 +259,28 @@ DynamicSEXP* get_dynamic_sexp(int operator_const)
 
 	return iter->second.get();
 }
-int increment_enum_list_id()
+int get_category(const SCP_string& name)
 {
-	auto& global = globals();
-	return global.next_free_enum_list_id++;
+	for (auto& cat : op_menu) {
+		if (SCP_string_lcase_equal_to()(cat.name, name)) {
+			return cat.id;
+		}
+	}
+
+	return OP_CATEGORY_NONE;
+}
+int get_subcategory(const SCP_string& name, int category)
+{
+	for (auto& subcat : op_submenu) {
+		if (SCP_string_lcase_equal_to()(subcat.name, name) && get_category_of_subcategory(subcat.id) == category) {
+			return subcat.id;
+		}
+	}
+
+	return OP_SUBCATEGORY_NONE;
 }
 int get_category_of_subcategory(int subcategory_id)
-	{
+{
 	const auto& global = globals();
 
 	auto iter = global.subcategory_to_category.find(subcategory_id);
@@ -214,6 +289,11 @@ int get_category_of_subcategory(int subcategory_id)
 	}
 
 	return iter->second;
+}
+int increment_enum_list_id()
+{
+	auto& global = globals();
+	return global.next_free_enum_list_id++;
 }
 void dynamic_sexp_init()
 {

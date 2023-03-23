@@ -18,7 +18,8 @@ LD_LIBRARY_PATH=$Qt5_DIR/lib:$LD_LIBRARY_PATH
 if [ "$RUNNER_OS" = "macOS" ]; then
     CXXFLAGS="-mtune=generic -pipe -Wno-unknown-pragmas"
     CFLAGS="-mtune=generic -pipe -Wno-unknown-pragmas"
-    PLATFORM_CMAKE_OPTIONS=""
+    # TODO: Vulkan support is disabled on MacOS due to issues with the test suite not linking correctly
+    PLATFORM_CMAKE_OPTIONS="-DFSO_BUILD_WITH_VULKAN=OFF"
     export CMAKE_OSX_ARCHITECTURES="$ARCHITECTURE"
 else
     CXXFLAGS="-m64 -mtune=generic -mfpmath=sse -msse -msse2 -pipe -Wno-unknown-pragmas"

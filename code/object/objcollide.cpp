@@ -390,11 +390,9 @@ int weapon_will_never_hit( object *obj_weapon, object *other, obj_pair * current
 //	radius is radius of object moving from curpos to goalpos.
 int pp_collide(vec3d *curpos, vec3d *goalpos, object *goalobjp, float radius)
 {
-	mc_info mc;
-	mc_info_init(&mc);
-
 	Assert(goalobjp->type == OBJ_SHIP);
 
+	mc_info mc;
 	mc.model_instance_num = Ships[goalobjp->instance].model_instance_num;
 	mc.model_num = Ship_info[Ships[goalobjp->instance].ship_info_index].model_num;			// Fill in the model to check
 	mc.orient = &goalobjp->orient;	// The object's orient
@@ -1041,4 +1039,29 @@ void obj_sort_and_collide(SCP_vector<int>* Collision_list)
 		obj_quicksort_colliders(&sort_list_z, 0, (int)(sort_list_z.size() - 1), 2);
 	}
 	obj_find_overlap_colliders(sort_list_y, sort_list_z, 2, true);
+}
+
+void collide_apply_gravity_flags_weapons() {
+	for (object* obj = GET_FIRST(&obj_used_list); obj != END_OF_LIST(&obj_used_list); obj = GET_NEXT(obj)) {
+		if (obj->type != OBJ_WEAPON || obj->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
+		weapon* wp = &Weapons[obj->instance];
+		weapon_info* wip = &Weapon_info[wp->weapon_info_index];
+
+		if (!wip->is_homing() || (wp->weapon_flags[Weapon::Weapon_Flags::No_homing])) {
+			// homing weapons dont get any gravity stuff
+			if (wip->acceleration_time <= 0.0f || Missiontime - wp->creation_time >= fl2f(wip->acceleration_time)) {
+				// if the weapon doesn't accelerate, or has finished accelerating...
+				if (The_mission.gravity == vmd_zero_vector || obj->phys_info.gravity_const == 0.0f) {
+					obj->phys_info.flags |= PF_CONST_VEL;
+					obj->phys_info.flags &= ~PF_BALLISTIC;
+				}
+				else {
+					obj->phys_info.flags |= PF_BALLISTIC;
+					obj->phys_info.flags &= ~PF_CONST_VEL;
+				}
+			}
+		}
+	}
 }

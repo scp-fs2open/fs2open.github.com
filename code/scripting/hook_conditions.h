@@ -105,7 +105,7 @@ struct WeaponUsedConditions {
 	HOOK_DEFINE_CONDITIONS;
 	const ship* user_shipp;
 	const object* target; // As of yet unused
-	int weaponclass;
+	SCP_vector<int> weaponclasses;
 	bool isPrimary; // As of yet unused
 };
 

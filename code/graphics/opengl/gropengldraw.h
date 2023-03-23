@@ -26,6 +26,7 @@ extern GLuint Scene_specular_texture;
 extern GLuint Scene_emissive_texture;
 extern GLuint Scene_luminance_texture;
 extern GLuint Scene_effect_texture;
+extern GLuint Scene_composite_texture;
 extern GLuint Scene_depth_texture;
 extern GLuint Cockpit_depth_texture;
 extern GLuint Scene_stencil_buffer;

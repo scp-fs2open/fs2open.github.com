@@ -14,6 +14,7 @@
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
 #include "globalincs/flagset.h"
+#include "globalincs/version.h"
 #include "def_files/def_files.h"
 #include "utils/unicode.h"
 
@@ -106,6 +107,7 @@ extern void error_display(int error_level, SCP_FORMAT_STRING const char *format,
 extern int skip_to_string(const char *pstr, const char *end = NULL);
 extern int skip_to_start_of_string(const char *pstr, const char *end = NULL);
 extern int skip_to_start_of_string_either(const char *pstr1, const char *pstr2, const char *end = NULL);
+extern int skip_to_start_of_string_one_of(const SCP_vector<SCP_string>& pstr, const char* end = nullptr);
 extern void advance_to_eoln(const char *terminators);
 extern bool skip_eoln();
 extern void skip_token();
@@ -397,6 +399,17 @@ namespace parse
 	public:
 		explicit ParseException(const std::string& msg) : std::runtime_error(msg) {}
 		~ParseException() noexcept override = default;
+	};
+
+	class VersionException : public std::runtime_error
+	{
+	private:
+		gameversion::version _required_version;
+
+	public:
+		explicit VersionException(const std::string& msg, const gameversion::version& required_version) : std::runtime_error(msg), _required_version(required_version) {}
+		~VersionException() noexcept override = default;
+		const gameversion::version& required_version() { return _required_version; }
 	};
 
 	/**

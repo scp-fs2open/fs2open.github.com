@@ -21,6 +21,8 @@ void lab_exit() {
 }
 
 LabManager::LabManager() {
+	The_mission.Reset();
+
 	if (The_mission.ai_profile == nullptr)
 		The_mission.ai_profile = &Ai_profiles[Default_ai_profile];
 
@@ -93,7 +95,8 @@ void LabManager::resetGraphicsSettings() {
 }
 
 void LabManager::onFrame(float frametime) {
-	ImGui_ImplOpenGL3_NewFrame();
+	if (gr_screen.mode == GR_OPENGL)
+		ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplSDL2_NewFrame();
 	ImGui::NewFrame();
 
@@ -263,7 +266,8 @@ void LabManager::onFrame(float frametime) {
 	if (Cmdline_show_imgui_debug)
 		ImGui::ShowDemoWindow();
 	ImGui::Render();
-	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+	if (gr_screen.mode == GR_OPENGL)
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
 	if (CloseThis)
 		close();

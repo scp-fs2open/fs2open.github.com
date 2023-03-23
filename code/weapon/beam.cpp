@@ -1456,7 +1456,7 @@ void beam_render(beam *b, float u_offset)
 
 		float fade = 0.9999f;
 
-		if (The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb_affects_beams) {
+		if (Neb_affects_beams) {
 			vec3d nearest;
 			int result = vm_vec_dist_to_line(&Eye_position, &b->last_start, &b->last_shot, &nearest, nullptr);
 			if (result == 1)
@@ -1464,7 +1464,7 @@ void beam_render(beam *b, float u_offset)
 			if (result == -1)
 				nearest = b->last_start;
 
-			fade *= neb2_get_fog_visibility(&nearest, 
+			nebula_handle_alpha(fade, &nearest, 
 				Neb2_fog_visibility_beam_const + (b->beam_light_width * Neb2_fog_visibility_beam_scaled_factor));
 		}
 
@@ -1578,8 +1578,8 @@ static float get_muzzle_glow_alpha(beam* b)
 			return 0.0f;
 	}
 
-	if (The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb_affects_beams) {
-		alpha *= neb2_get_fog_visibility(&b->last_start, 
+	if (Neb_affects_beams) {
+		nebula_handle_alpha(alpha, &b->last_start, 
 			Neb2_fog_visibility_beam_const + (b->beam_light_width * Neb2_fog_visibility_beam_scaled_factor));
 	}
 
@@ -2185,7 +2185,7 @@ int beam_start_firing(beam *b)
 		Ships[b->objp->instance].weapons.primary_bank_ammo[b->bank]--;
 
 	if (scripting::hooks::OnBeamFired->isActive()) {
-		scripting::hooks::OnBeamFired->run(scripting::hooks::WeaponUsedConditions{ &Ships[b->objp->instance], b->target, b->weapon_info_index, true },
+		scripting::hooks::OnBeamFired->run(scripting::hooks::WeaponUsedConditions{ &Ships[b->objp->instance], b->target, SCP_vector<int>{ b->weapon_info_index }, true },
 			scripting::hook_param_list(
 				scripting::hook_param("Beam", 'o', &Objects[b->objnum]),
 				scripting::hook_param("User", 'o', b->objp),
@@ -2337,7 +2337,8 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 			vm_vec_zero(&b->binfo.dir_b);
 		} else {
 			// get random model points, this is useful for big ships, because we never miss when shooting at them
-			submodel_get_two_random_points_better(model_num, 0, &b->binfo.dir_a, &b->binfo.dir_b, seed);
+			b->binfo.dir_a = submodel_get_random_point(model_num, 0, seed);
+			b->binfo.dir_b = submodel_get_random_point(model_num, 0, seed);
 		}
 		break;
 
@@ -2428,8 +2429,8 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 		if (usable_target) {
 			// set up our two kinds of random points if needed
 			if (bwi->t5info.start_pos == Type5BeamPos::RANDOM_INSIDE || bwi->t5info.end_pos == Type5BeamPos::RANDOM_INSIDE) {
-				vec3d temp1, temp2;
-				submodel_get_two_random_points_better(model_num, 0, &temp1, &temp2, seed);
+				vec3d temp1 = submodel_get_random_point(model_num, 0, seed);
+				vec3d temp2 = submodel_get_random_point(model_num, 0, seed);
 				vm_vec_rotate(&rand1_on, &temp1, &b->target->orient);
 				vm_vec_rotate(&rand2_on, &temp2, &b->target->orient);
 				rand1_on += b->target->pos;
@@ -2959,7 +2960,6 @@ int beam_collide_ship(obj_pair *pair)
 
 
 	// Goober5000 - I tried to make collision code much saner... here begin the (major) changes
-	mc_info_init(&mc);
 
 	// set up collision structs, part 1
 	mc.model_instance_num = shipp->model_instance_num;
@@ -2979,9 +2979,9 @@ int beam_collide_ship(obj_pair *pair)
 	}
 
 	// set up collision structs, part 2
-	memcpy(&mc_shield, &mc, sizeof(mc_info));
-	memcpy(&mc_hull_enter, &mc, sizeof(mc_info));
-	memcpy(&mc_hull_exit, &mc, sizeof(mc_info));
+	mc_shield = mc;
+	mc_hull_enter = mc;
+	mc_hull_exit = mc;
 	
 	// reverse this vector so that we check for exit holes as opposed to entrance holes
 	mc_hull_exit.p1 = &a_beam->last_start;
@@ -3083,12 +3083,12 @@ int beam_collide_ship(obj_pair *pair)
 	// see which impact we use
 	if (shield_collision && valid_hit_occurred)
 	{
-		memcpy(&mc, &mc_shield, sizeof(mc_info));
+		mc = mc_shield;
 		Assert(quadrant_num >= 0);
 	}
 	else if (hull_enter_collision)
 	{
-		memcpy(&mc, &mc_hull_enter, sizeof(mc_info));
+		mc = mc_hull_enter;
 		valid_hit_occurred = 1;
 	}
 
@@ -3165,7 +3165,6 @@ int beam_collide_ship(obj_pair *pair)
 int beam_collide_asteroid(obj_pair *pair)
 {
 	beam * a_beam;
-	mc_info test_collide;		
 	int model_num;
 
 	// bogus
@@ -3207,7 +3206,7 @@ int beam_collide_asteroid(obj_pair *pair)
 #endif
 
 	// do the collision
-	mc_info_init(&test_collide);
+	mc_info test_collide;
 	test_collide.model_instance_num = -1;
 	test_collide.model_num = model_num;
 	test_collide.submodel_num = -1;
@@ -3276,7 +3275,6 @@ int beam_collide_asteroid(obj_pair *pair)
 int beam_collide_missile(obj_pair *pair)
 {
 	beam *a_beam;	
-	mc_info test_collide;		
 	int model_num;
 
 	// bogus
@@ -3316,7 +3314,7 @@ int beam_collide_missile(obj_pair *pair)
 #endif
 
 	// do the collision
-	mc_info_init(&test_collide);
+	mc_info test_collide;
 	test_collide.model_instance_num = -1;
 	test_collide.model_num = model_num;
 	test_collide.submodel_num = -1;
@@ -3383,7 +3381,6 @@ int beam_collide_missile(obj_pair *pair)
 int beam_collide_debris(obj_pair *pair)
 {	
 	beam * a_beam;
-	mc_info test_collide;		
 	int model_num;
 
 	// bogus
@@ -3426,7 +3423,7 @@ int beam_collide_debris(obj_pair *pair)
 #endif
 
 	// do the collision
-	mc_info_init(&test_collide);
+	mc_info test_collide;
 	test_collide.model_instance_num = -1;
 	test_collide.model_num = model_num;
 	test_collide.submodel_num = -1;

@@ -81,6 +81,13 @@
 #include "missionparse.h"
 
 
+// MISSION_VERSION should be the earliest version of FSO that can load the current mission format without
+// requiring version-specific comments.  It should be updated whenever the format changes, but it should
+// not be updated simply because the engine's version changed.
+// NOTE: The version can only have two numbers because old FRED builds expect the version to be a float.
+const gameversion::version MISSION_VERSION = gameversion::version(22, 3);
+const gameversion::version LEGACY_MISSION_VERSION = gameversion::version(0, 10);
+
 LOCAL struct {
 	char docker[NAME_LENGTH];
 	char dockee[NAME_LENGTH];
@@ -332,6 +339,70 @@ flag_def_list_new<Mission::Parse_Object_Flags> Parse_object_flags[] = {
 	{ "no-targeting-limits",				Mission::Parse_Object_Flags::SF_No_targeting_limits, true, false},
 };
 
+parse_object_flag_description<Mission::Parse_Object_Flags> Parse_object_flag_descriptions[] = {
+    { Mission::Parse_Object_Flags::SF_Cargo_known,					"If set, the ship's cargo can be seen without scanning the ship."},
+    { Mission::Parse_Object_Flags::SF_Ignore_count,					"Ignore this ship when counting ship types for goals."},
+    { Mission::Parse_Object_Flags::OF_Protected,					"Ship and Turret AI will ignore and not attack ship."},
+    { Mission::Parse_Object_Flags::SF_Reinforcement,				"This ship is a reinforcement ship."},
+    { Mission::Parse_Object_Flags::OF_No_shields,					"Ship will have no shields (ETS will be rebalanced if shields were off and are enabled)."},
+    { Mission::Parse_Object_Flags::SF_Escort,						"This ship is an escort ship."},
+    { Mission::Parse_Object_Flags::OF_Player_start,					"Ship is a player ship."},
+    { Mission::Parse_Object_Flags::SF_No_arrival_music,				"Don't play arrival music when ship arrives."},
+    { Mission::Parse_Object_Flags::SF_No_arrival_warp,				"No arrival warp-in effect."},
+    { Mission::Parse_Object_Flags::SF_No_departure_warp,			"No departure warp-in effect."},
+    { Mission::Parse_Object_Flags::SF_Locked,						"Ship cannot be changed in the Ship Loadout."},
+    { Mission::Parse_Object_Flags::OF_Invulnerable,					"Stops ship from taking any damage."},
+    { Mission::Parse_Object_Flags::SF_Hidden_from_sensors,			"If set, the ship can't be targeted and appears on radar as a blinking dot."},
+    { Mission::Parse_Object_Flags::SF_Scannable,					"Whether or not the ship can be scanned."},
+    { Mission::Parse_Object_Flags::AIF_Kamikaze,					"Ship will attack big ships by colliding with them and exploding."},
+    { Mission::Parse_Object_Flags::AIF_No_dynamic,					"Will stop allowing the AI to pursue dynamic goals (eg: chasing ships it was not ordered to)."},
+    { Mission::Parse_Object_Flags::SF_Red_alert_store_status,		"Ship status should be stored/restored if red alert mission."},
+    { Mission::Parse_Object_Flags::OF_Beam_protected,				"Turrets with beam weapons will ignore and not attack ship."},
+    { Mission::Parse_Object_Flags::OF_Flak_protected,				"Turrets with flak weapons will ignore and not attack ship."},
+    { Mission::Parse_Object_Flags::OF_Laser_protected,				"Turrets with laser weapons will ignore and not attack ship."},
+    { Mission::Parse_Object_Flags::OF_Missile_protected,			"Turrets with missile weapons will ignore and not attack ship."},
+    { Mission::Parse_Object_Flags::SF_Guardian,						"Ship health cannot be reduced below 1."},
+    { Mission::Parse_Object_Flags::Knossos_warp_in,					"Ship uses the special Knossos warp-in animation."},
+    { Mission::Parse_Object_Flags::SF_Vaporize,						"Causes a ship to vanish (no deathroll, no debris, no explosion) when destroyed."},
+    { Mission::Parse_Object_Flags::SF_Stealth,						"If set, the ship can't be targeted, is invisible on radar, and is ignored by AI unless firing."},
+    { Mission::Parse_Object_Flags::SF_Friendly_stealth_invis,		"If set and the ship is also flagged with stealth then the ship can't be targeted even by ships on the same team."},
+    { Mission::Parse_Object_Flags::SF_Dont_collide_invis,			"Will cause polygons with an invisible texture to stop colliding with objects."},
+    { Mission::Parse_Object_Flags::SF_Primitive_sensors,			"Targets will only be a blip on the radar. Ships cannot targeted and aspect lock cannot be used."},
+    { Mission::Parse_Object_Flags::SF_No_subspace_drive,			"Will not allow a ship to jump into subspace."},
+    { Mission::Parse_Object_Flags::SF_Nav_carry_status,				"This ship autopilots with the player."},
+    { Mission::Parse_Object_Flags::SF_Affected_by_gravity,			"Deprecated. Does nothing."},
+    { Mission::Parse_Object_Flags::SF_Toggle_subsystem_scanning,	"Switches between being able to scan a whole ship or individual subsystems."},
+    { Mission::Parse_Object_Flags::OF_Targetable_as_bomb,			"Allows ship to be targeted with the bomb targeting key."},
+    { Mission::Parse_Object_Flags::SF_No_builtin_messages,			"Ship will not send built-in messages."},
+    { Mission::Parse_Object_Flags::SF_Primaries_locked,				"Will stop a ship from firing their primary weapons."},
+    { Mission::Parse_Object_Flags::SF_Secondaries_locked,			"Will stop a ship from firing their secondary weapons."},
+    { Mission::Parse_Object_Flags::SF_No_death_scream,				"Ship will not send a death message."},
+    { Mission::Parse_Object_Flags::SF_Always_death_scream,			"Ship will always send a death message."},
+    { Mission::Parse_Object_Flags::SF_Nav_needslink,				"This ship requires \"linking\" for autopilot ."},
+    { Mission::Parse_Object_Flags::SF_Hide_ship_name,				"If set, the ship name can't be seen when the ship is targeted."},
+    { Mission::Parse_Object_Flags::SF_Set_class_dynamically,		"This ship should have its class assigned rather than simply read from the mission file."},
+    { Mission::Parse_Object_Flags::SF_Lock_all_turrets_initially,	"Lock all turrets on this ship at mission start or on arrival."},
+    { Mission::Parse_Object_Flags::SF_Afterburner_locked,			"Will stop a ship from firing their afterburner."},
+    { Mission::Parse_Object_Flags::OF_Force_shields_on,				"Shields will be activated regardless of other flags."},
+    { Mission::Parse_Object_Flags::OF_Immobile,						"Will not let a ship move or rotate in any fashion. Upon destruction the ship will still do the death roll and explosion."},
+    { Mission::Parse_Object_Flags::SF_No_ets,						"Will not allow a ship to alter its ETS system."},
+    { Mission::Parse_Object_Flags::SF_Cloaked,						"This ship will not be rendered."},
+    { Mission::Parse_Object_Flags::SF_Ship_locked,					"Prevents the player from changing the ship class on loadout screen."},
+    { Mission::Parse_Object_Flags::SF_Weapons_locked,				"Prevents the player from changing the weapons on the ship on the loadout screen."},
+    { Mission::Parse_Object_Flags::SF_Scramble_messages,			"All messages sent from this ship appear scrambled."},
+    { Mission::Parse_Object_Flags::OF_No_collide,					"Ship cannot be collided with."},
+    { Mission::Parse_Object_Flags::SF_No_disabled_self_destruct,	"Ship will not self-destruct after 90 seconds if engines or weapons destroyed."},
+    { Mission::Parse_Object_Flags::SF_Hide_mission_log,				"Mission log events generated for this ship will not be viewable."},
+    { Mission::Parse_Object_Flags::SF_Same_arrival_warp_when_docked,"Docked ships use the same warp effect size upon arrival as if they were not docked instead of the enlarged aggregate size."},
+    { Mission::Parse_Object_Flags::SF_Same_departure_warp_when_docked,"Docked ship use the same warp effect size upon departure as if they were not docked instead of the enlarged aggregate size."},
+    { Mission::Parse_Object_Flags::OF_Attackable_if_no_collide,		"Allows the AI to attack this object, even if no-collide is set."},
+    { Mission::Parse_Object_Flags::SF_Fail_sound_locked_primary,	"Play the firing fail sound when the weapon is locked."},
+    { Mission::Parse_Object_Flags::SF_Fail_sound_locked_secondary,	"Play the firing fail sound when the weapon is locked."},
+    { Mission::Parse_Object_Flags::SF_Aspect_immune,				"Ship cannot be targeted by Aspect Seekers."},
+	{ Mission::Parse_Object_Flags::SF_Cannot_perform_scan,			"Ship cannot scan other ships."},
+	{ Mission::Parse_Object_Flags::SF_No_targeting_limits,			"Ship is always targetable regardless of AWACS or targeting range limits."},
+};
+
 const size_t Num_parse_object_flags = sizeof(Parse_object_flags) / sizeof(flag_def_list_new<Mission::Parse_Object_Flags>);
 
 // These are only the flags that are saved to the mission file.  See the MEF_ #defines.
@@ -462,15 +533,16 @@ void parse_mission_info(mission *pm, bool basic = false)
 	required_string("#Mission Info");
 	
 	required_string("$Version:");
-	stuff_float(&pm->version);
-	if (pm->version != MISSION_VERSION)
-		mprintf(("Older mission, should update it (%.2f<-->%.2f)\n", pm->version, MISSION_VERSION));
+	pm->required_fso_version = gameversion::parse_version_inline();
+
+	if (!gameversion::check_at_least(pm->required_fso_version))
+		throw parse::VersionException("Mission requires version " + gameversion::format_version(pm->required_fso_version), pm->required_fso_version);
 
 	required_string("$Name:");
 	stuff_string(pm->name, F_NAME, NAME_LENGTH);
 
 	required_string("$Author:");
-	stuff_string(pm->author, F_NAME, NAME_LENGTH);
+	stuff_string(pm->author, F_NAME);
 
 	required_string("$Created:");
 	stuff_string(pm->created, F_DATE, DATE_TIME_LENGTH);
@@ -542,6 +614,10 @@ void parse_mission_info(mission *pm, bool basic = false)
 	}
 	if(optional_string("+Fog Far Mult:")){
 		stuff_float(&Neb2_fog_far_mult);
+	}
+
+	if (optional_string("+Volumetric Nebula:")) {
+		pm->volumetrics.emplace().parse_volumetric_nebula();
 	}
 
 	// Goober5000 - ship contrail speed threshold
@@ -1376,6 +1452,9 @@ void parse_briefing(mission * /*pm*/, int flags)
 			required_string("$camera_time:");
 			stuff_int(&bs->camera_time);
 
+			if (optional_string("$no_grid"))
+				bs->draw_grid = false;
+
 			if ( optional_string("$num_lines:") ) {
 				stuff_int(&bs->num_lines);
 
@@ -1493,6 +1572,10 @@ void parse_briefing(mission * /*pm*/, int flags)
 				bi->closeup_label[0] = 0;
 				if (optional_string("$closeup label:")) {
 					stuff_string(bi->closeup_label, F_MESSAGE, MAX_LABEL_LEN);
+				}
+				bi->scale = 100;
+				if (optional_string("$icon scale:")) {
+					stuff_int(&bi->scale);
 				}
 
 				if (optional_string("+id:")) {
@@ -1863,6 +1946,9 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 
 	// Goober5000 - make the parse object aware of what it was created as
 	p_objp->created_object = &Objects[objnum];
+
+	// Goober5000 - set the collision group if one was provided
+	Objects[objnum].collision_group_id = p_objp->collision_group_id;
 
 	// Goober5000 - if this object is being created because he's docked to something,
 	// and he's in a wing, then mark the wing as having arrived
@@ -2341,10 +2427,8 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 
 		for (iLoop = 0; iLoop < num_sparks; iLoop++)
 		{
-			vec3d v1, v2;
-
 			// DA 10/20/98 - sparks must be chosen on the hull and not any submodel
-			submodel_get_two_random_points_better(sip->model_num, pm->detail[0], &v1, &v2);
+			vec3d v1 = submodel_get_random_point(sip->model_num, pm->detail[0]);
 			ship_hit_sparks_no_rotate(&Objects[objnum], &v1);
 		}
 	}
@@ -6278,6 +6362,9 @@ bool post_process_mission(mission *pm)
 	}
 	Last_file_checksum = Current_file_checksum;
 
+	if (pm->volumetrics)
+		pm->volumetrics->renderVolumeBitmap();
+
 	// success
 	return true;
 }
@@ -6327,6 +6414,11 @@ int get_mission_info(const char *filename, mission *mission_p, bool basic, bool 
 		mprintf(("MISSIONS: Unable to parse '%s'!  Error message = %s.\n", real_fname, e.what()));
 		return -1;
 	}
+	catch (const parse::VersionException& e)
+	{
+		mprintf(("MISSIONS: Unable to parse '%s'!  %s", real_fname, e.what()));
+		return -1;
+	}
 
 	return 0;
 }
@@ -6334,8 +6426,8 @@ int get_mission_info(const char *filename, mission *mission_p, bool basic, bool 
 void mission::Reset()
 {
 	name[ 0 ] = '\0';
-	author[ 0 ] = '\0';
-	version = 0.;
+	author = "";
+	required_fso_version = LEGACY_MISSION_VERSION;
 	created[ 0 ] = '\0';
 	modified[ 0 ] = '\0';
 	notes[ 0 ] = '\0';
@@ -6390,6 +6482,8 @@ void mission::Reset()
 	cutscenes.clear( );
 
 	gravity = vmd_zero_vector;
+
+	volumetrics.reset();
 }
 
 /**
@@ -6464,6 +6558,9 @@ void mission_init(mission *pm)
 
 	Asteroid_field.num_initial_asteroids = 0;
 
+	// This could be set with a sexp, so we should reset it here
+	Motion_debris_override = false;
+
 	// reset background bitmaps and suns
 	stars_pre_level_init();
 	neb2_pre_level_init();
@@ -6533,6 +6630,12 @@ bool parse_main(const char *mission_name, int flags)
 		catch (const parse::ParseException& e)
 		{
 			mprintf(("MISSIONS: Unable to parse '%s'!  Error message = %s.\n", mission_name, e.what()));
+			rval = false;
+			break;
+		}
+		catch (const parse::VersionException& e)
+		{
+			mprintf(("MISSIONS: Unable to parse '%s'!  %s", mission_name, e.what()));
 			rval = false;
 			break;
 		}
@@ -6945,6 +7048,11 @@ int mission_parse_is_multi(const char *filename, char *mission_name)
 		catch (const parse::ParseException& e)
 		{
 			mprintf(("MISSIONS: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
+			break;
+		}
+		catch (const parse::VersionException& e)
+		{
+			mprintf(("MISSIONS: Unable to parse '%s'!  %s", filename, e.what()));
 			break;
 		}
 	} while (0);

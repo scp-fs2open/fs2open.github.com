@@ -77,6 +77,9 @@ using SCP_deque = std::deque<T, std::allocator<T>>;
 template <typename T>
 using SCP_set = std::set<T, std::less<T>, std::allocator<T>>;
 
+template <typename T>
+using SCP_multiset = std::multiset<T, std::less<T>, std::allocator<T>>;
+
 #if __cplusplus < 201402L
 template<class T, bool>
 struct enum_hasher_util {

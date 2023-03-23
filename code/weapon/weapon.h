@@ -279,7 +279,8 @@ typedef struct particle_spew_info {	//this will be used for multi spews
 
 typedef struct spawn_weapon_info 
 {
-	short	spawn_type;							//	Type of weapon to spawn when detonated.
+	short	spawn_wep_index;					//	weapon info index of the child weapon, during parsing instead an index into Spawn_names
+												//  MAY BE -1, if parsed weapon could not be found
 	short	spawn_count;						//	Number of weapons of spawn_type to spawn.
 	float	spawn_angle;						//  Angle to spawn the child weapons in.  default is 180
 	float	spawn_min_angle;					//  Angle of spawning 'deadzone' inside spawn angle. Default 0.
@@ -495,6 +496,8 @@ struct weapon_info
 	// Recoil effect
 	float recoil_modifier;
 
+	float shudder_modifier;
+
 	// Energy suck effect
 	float weapon_reduce;					// how much energy removed from weapons systems
 	float afterburner_reduce;			// how much energy removed from weapons systems
@@ -521,8 +524,10 @@ struct weapon_info
 	int cs_num_fired;
 	float cs_radius;
 	float cs_twist;
-	int cs_crotate;
+	bool cs_crotate;
 	int cs_delay;
+	bool cs_random_angle;
+	float cs_angle;
 
 	//electronics info - phreak 5/3/03
 	int elec_time;				//how long it lasts, in milliseconds

@@ -2258,7 +2258,6 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 //	mprintf(("doing damage\n"));
 
 	ship *shipp;	
-	float subsystem_damage = damage;			// damage to be applied to subsystems
 	bool other_obj_is_weapon;
 	bool other_obj_is_beam;
 	bool other_obj_is_shockwave;
@@ -2292,9 +2291,11 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 		ai_update_lethality(ship_objp, other_obj, damage);
 	}
 
+	// damage scaling due to big damage, supercap, etc
+	float damage_scale = 1.0f; 
 	// if this is a weapon
 	if (other_obj_is_weapon)
-		damage *= weapon_get_damage_scale(&Weapon_info[Weapons[other_obj->instance].weapon_info_index], other_obj, ship_objp);
+		damage_scale = weapon_get_damage_scale(&Weapon_info[Weapons[other_obj->instance].weapon_info_index], other_obj, ship_objp);
 
 	MONITOR_INC( ShipHits, 1 );
 
@@ -2358,103 +2359,67 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 		shiphit_hit_after_death(ship_objp, (damage * difficulty_scale_factor));
 		return;
 	}
+
+	int weapon_info_index = shiphit_get_damage_weapon(other_obj);
 	
 	//	If we hit the shield, reduce it's strength and found
 	// out how much damage is left over.
 	if ( quadrant >= 0 && !(ship_objp->flags[Object::Object_Flags::No_shields]) )	{
 //		mprintf(("applying damage ge to shield\n"));
-		float shield_factor = -1.0f;
-		int	weapon_info_index;
-
-		weapon_info_index = shiphit_get_damage_weapon(other_obj);
-		if ( weapon_info_index >= 0 ) {
-			shield_factor = Weapon_info[weapon_info_index].shield_factor;
-		}
-
-		if ( shield_factor >= 0.0f ) {
-			damage *= shield_factor;
-			subsystem_damage *= shield_factor;
-		}
+		float shield_damage = damage * damage_scale;
 
 		if ( damage > 0.0f ) {
-
 			float piercing_pct = 0.0f;
 
-			//Do armor stuff				
-			if(shipp->shield_armor_type_idx != -1)
-			{
+			// apply any armor types and the difficulty scaling
+			if(shipp->shield_armor_type_idx != -1) {
 				piercing_pct = Armor_types[shipp->shield_armor_type_idx].GetShieldPiercePCT(damage_type_idx);
-			}
-			
-			float pre_shield = damage; // Nuke: don't use the difficulty scaling in here, since its also applied in Armor_type.GetDamage. Don't want it to apply twice
-			float pre_shield_ss = subsystem_damage; // Nuke - same here
+				// reduce shield damage by the piercing percent
+				shield_damage = shield_damage * (1.0f - piercing_pct);
 
-			if (piercing_pct > 0.0f) {
-				damage = pre_shield * (1.0f - piercing_pct);
-			}
-
-			// Nuke: apply pre_shield difficulty scaling here, since it was meant to be applied through damage
-			pre_shield *= difficulty_scale_factor;
-
-			if(shipp->shield_armor_type_idx != -1)
-			{
 				// Nuke: this call will decide when to use the damage factor, but it will get used, unless the modder is dumb (like setting +Difficulty Scale Type: to 'manual' and not manually applying it in their calculations)
-				damage = Armor_types[shipp->shield_armor_type_idx].GetDamage(damage, damage_type_idx, difficulty_scale_factor, other_obj_is_beam);
-
-			} else { // Nuke: if that didn't get called, difficulty would not be applied to damage so apply it here
-				damage *= difficulty_scale_factor;
-			}
-
-			damage = shield_apply_damage(ship_objp, quadrant, damage);
-
-			if (damage > 0.0f) {
-				subsystem_damage *= (damage / pre_shield);
+				shield_damage = Armor_types[shipp->shield_armor_type_idx].GetDamage(shield_damage, damage_type_idx, difficulty_scale_factor, other_obj_is_beam);
 			} else {
-				subsystem_damage = 0.0f;
+				shield_damage *= difficulty_scale_factor;
 			}
 
-			if (piercing_pct > 0.0f) {
-				damage += (piercing_pct * pre_shield);
-				subsystem_damage += (piercing_pct * pre_shield_ss);
-			}
-		}
+			float shield_factor = 1.0f;
+			if (weapon_info_index >= 0 )
+				shield_factor = Weapon_info[weapon_info_index].shield_factor;
 
-		// if shield damage was increased, don't carry over leftover damage at scaled level
-		if ( shield_factor > 1.0f ) {
-			damage /= shield_factor;
+			// apply shield damage
+			float remaining_damage = shield_apply_damage(ship_objp, quadrant, shield_damage * shield_factor);
+			// remove the shield factor, since the overflow will no longer be thrown at shields
+			remaining_damage /= shield_factor;
 
-			subsystem_damage /= shield_factor;
+			// Unless the backwards compatible flag is on, remove difficulty scaling as well
+			// The hull/subsystem code below will re-add it where necessary
+			if (!The_mission.ai_profile->flags[AI::Profile_Flags::Carry_shield_difficulty_scaling_bug])
+				remaining_damage /= difficulty_scale_factor;
+
+			// the rest of the damage is what overflowed from the shield damage and pierced
+			damage = remaining_damage + (damage * piercing_pct);
 		}
 	}
 			
 	// Apply leftover damage to the ship's subsystem and hull.
-	if ( (damage > 0.0f) || (subsystem_damage > 0.0f) )	{
-		int	weapon_info_index;
-		float pre_subsys = subsystem_damage; // Nuke: should be the last time we need to do this in this function
+	if ( (damage > 0.0f) )	{
 		bool apply_hull_armor = true;
-		bool apply_diff_scale = true;
 
-		subsystem_damage = do_subobj_hit_stuff(ship_objp, other_obj, hitpos, submodel_num, subsystem_damage, &apply_hull_armor);
+		// apply damage to subsystems, and get back any remaining damage that needs to go to the hull
+		damage = do_subobj_hit_stuff(ship_objp, other_obj, hitpos, submodel_num, damage, &apply_hull_armor);
 
-		if (subsystem_damage > 0.0f) {
-			damage *= (subsystem_damage / pre_subsys);
+		// damage scaling doesn't apply to subsystems, but it does to the hull
+		damage *= damage_scale;
+		
+		// Do armor stuff
+		if (apply_hull_armor && shipp->armor_type_idx != -1)		{			
+			damage = Armor_types[shipp->armor_type_idx].GetDamage(damage, damage_type_idx, difficulty_scale_factor, other_obj_is_beam);
 		} else {
-			damage = 0.0f;
-		}
-
-		//Do armor stuff
-		if (apply_hull_armor)
-		{			
-			if(shipp->armor_type_idx != -1)
-			{
-				damage = Armor_types[shipp->armor_type_idx].GetDamage(damage, damage_type_idx, difficulty_scale_factor, other_obj_is_beam);
-				apply_diff_scale = false;
-			}
+			damage *= difficulty_scale_factor;
 		}
 
 		// if weapon is vampiric, slap healing on shooter instead of target
-		weapon_info_index = shiphit_get_damage_weapon(other_obj);
-
 		if (weapon_info_index >= 0) {
 			weapon_info* wip = &Weapon_info[weapon_info_index];
 
@@ -2473,12 +2438,6 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 					}
 				}
 			}
-		}
-
-
-		// Nuke: this is done incase difficulty scaling is not applied into damage by getDamage() above
-		if (apply_diff_scale) {
-			damage *= difficulty_scale_factor; // Nuke: we can finally stop doing this now
 		}
 
 		// continue with damage?

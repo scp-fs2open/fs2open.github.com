@@ -25,7 +25,7 @@ protected:
 	int _subcategory;
 
 	std::pair<SCP_string, int> getArgumentInternalType(int argnum) const;
-	luacpp::LuaValue sexpToLua(int node, int argnum) const;
+	luacpp::LuaValue sexpToLua(int node, int argnum, int parent_node) const;
 
 	// just a helper for parseTable
 	static bool parseCheckEndOfDescription();
@@ -33,8 +33,6 @@ protected:
  public:
 	static std::pair<SCP_string, int> get_parameter_type(const SCP_string& name);
 	static int get_return_type(const SCP_string& name);
-	static int get_category(const SCP_string& name);
-	static int get_subcategory(const SCP_string& name, int category);
 
 	explicit LuaSEXP(const SCP_string& name);
 
@@ -46,7 +44,7 @@ protected:
 
 	int getArgumentType(int argnum) const override;
 
-	int execute(int node) override;
+	int execute(int node, int parent_node = -1) override;
 
 	int getReturnType() override;
 
@@ -61,7 +59,7 @@ protected:
 	luacpp::LuaFunction getAction() const;
 	int getSexpReturnValue(const luacpp::LuaValueList& retVals) const;
 
-	luacpp::LuaValueList getSEXPArgumentList(int node) const;
+	luacpp::LuaValueList getSEXPArgumentList(int node, int parent_node = -1) const;
 };
 
 }

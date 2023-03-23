@@ -55,6 +55,32 @@
 
 #include <freespace.h>
 
+#define FRED_ENSURE_PROPERTY_VERSION(property, comments, formatstr, ...) do {\
+	if (optional_string_fred(property)) \
+		parse_comments(comments); \
+	else \
+		fout_version("\n" property); \
+	fout(formatstr, __VA_ARGS__); \
+} while(false)
+#define FRED_ENSURE_PROPERTY_VERSION_WITH_DEFAULT(property, comments, expected_version, default, formatstr, value) do {\
+	if (value != default) { \
+		FRED_ENSURE_PROPERTY_VERSION(property, comments, formatstr, value); \
+	} else \
+		bypass_comment(expected_version " " property); \
+} while(false)
+#define FRED_ENSURE_PROPERTY_VERSION_WITH_DEFAULT_F(property, comments, expected_version, default, formatstr, value) do {\
+	if (!fl_equal(value, default)) { \
+		FRED_ENSURE_PROPERTY_VERSION(property, comments, formatstr, value); \
+	} else \
+		bypass_comment(expected_version " " property); \
+} while(false)
+#define FRED_ENSURE_PROPERTY_VERSION_IF(property, comments, expected_version, ifcase, formatstr, ...) do {\
+	if (ifcase) { \
+		FRED_ENSURE_PROPERTY_VERSION(property, comments, formatstr, __VA_ARGS__); \
+	} else \
+		bypass_comment(expected_version " " property); \
+} while(false)
+
 int CFred_mission_save::autosave_mission_file(char *pathname)
 {
 	char backup_name[256], name2[256];
@@ -1085,6 +1111,12 @@ int CFred_mission_save::save_briefing()
 			parse_comments();
 			fout(" %d", bs->camera_time);
 
+			if (!bs->draw_grid) {
+				if (Mission_save_format != FSO_FORMAT_RETAIL) {
+					fout("\n$no_grid");
+				}
+			}
+
 			required_string_fred("$num_lines:");
 			parse_comments();
 			fout(" %d", bs->num_lines);
@@ -1158,6 +1190,15 @@ int CFred_mission_save::save_briefing()
 
 						fout_ext(" ", "%s", bi->closeup_label);
 					}
+				}
+
+				if (Mission_save_format != FSO_FORMAT_RETAIL) {
+					if (optional_string_fred("$icon scale:"))
+						parse_comments();
+					else
+						fout("\n$icon scale:");
+
+					fout(" %d", bi->scale);
 				}
 
 				if (optional_string_fred("+id:"))
@@ -2534,7 +2575,8 @@ int CFred_mission_save::save_mission_info()
 
 	required_string_fred("$Version:");
 	parse_comments(2);
-	fout(" %.2f", FRED_MISSION_VERSION);
+	// Since previous versions of FreeSpace interpret this as a float, this can only have one decimal point
+	fout(" %d.%d", The_mission.required_fso_version.major, The_mission.required_fso_version.minor);
 
 	// XSTR
 	required_string_fred("$Name:");
@@ -2543,7 +2585,7 @@ int CFred_mission_save::save_mission_info()
 
 	required_string_fred("$Author:");
 	parse_comments();
-	fout(" %s", The_mission.author);
+	fout(" %s", The_mission.author.c_str());
 
 	required_string_fred("$Created:");
 	parse_comments();
@@ -2613,6 +2655,87 @@ int CFred_mission_save::save_mission_info()
 		}
 	}
 
+	{
+		bool hasVolumetricNoise = false;
+
+		if (The_mission.volumetrics) {
+			fso_comment_push(";;FSO 23.1.0;;");
+
+			if (optional_string_fred("+Volumetric Nebula:"))
+				parse_comments(2);
+			else
+				fout_version("\n+Volumetric Nebula:");
+			fout(" %s", The_mission.volumetrics->hullPof.c_str());
+
+			FRED_ENSURE_PROPERTY_VERSION("+Position:", 1, " %f, %f, %f",
+				The_mission.volumetrics->pos.xyz.x,
+				The_mission.volumetrics->pos.xyz.y,
+				The_mission.volumetrics->pos.xyz.z);
+			FRED_ENSURE_PROPERTY_VERSION("+Color:", 1, " (%d, %d, %d)",
+				static_cast<ubyte>(std::get<0>(The_mission.volumetrics->nebulaColor) * 255.0f),
+				static_cast<ubyte>(std::get<1>(The_mission.volumetrics->nebulaColor) * 255.0f),
+				static_cast<ubyte>(std::get<2>(The_mission.volumetrics->nebulaColor) * 255.0f));
+			FRED_ENSURE_PROPERTY_VERSION("+Visibility Opacity:", 1, " %f", The_mission.volumetrics->alphaLim);
+			FRED_ENSURE_PROPERTY_VERSION("+Visibility Distance:", 1, " %f", The_mission.volumetrics->visibility);
+			FRED_ENSURE_PROPERTY_VERSION_WITH_DEFAULT("+Steps:", 1, ";;FSO 23.1.0;;", 15, " %d", The_mission.volumetrics->steps);
+			FRED_ENSURE_PROPERTY_VERSION_WITH_DEFAULT("+Resolution:", 1, ";;FSO 23.1.0;;", 6, " %d", The_mission.volumetrics->resolution);
+			FRED_ENSURE_PROPERTY_VERSION_WITH_DEFAULT("+Oversampling:", 1, ";;FSO 23.1.0;;", 2, " %d", The_mission.volumetrics->oversampling);
+			FRED_ENSURE_PROPERTY_VERSION_WITH_DEFAULT_F("+Heyney Greenstein Coefficient:", 1, ";;FSO 23.1.0;;", 0.2f, " %f", The_mission.volumetrics->henyeyGreensteinCoeff);
+			FRED_ENSURE_PROPERTY_VERSION_WITH_DEFAULT_F("+Sun Falloff Factor:", 1, ";;FSO 23.1.0;;", 1.0f, " %f", The_mission.volumetrics->globalLightDistanceFactor);
+			FRED_ENSURE_PROPERTY_VERSION_WITH_DEFAULT("+Sun Steps:", 1, ";;FSO 23.1.0;;", 6, " %d", The_mission.volumetrics->globalLightSteps);
+			FRED_ENSURE_PROPERTY_VERSION_WITH_DEFAULT_F("+Emissive Light Spread:", 1, ";;FSO 23.1.0;;", 0.7f, " %f", The_mission.volumetrics->emissiveSpread);
+			FRED_ENSURE_PROPERTY_VERSION_WITH_DEFAULT_F("+Emissive Light Intensity:", 1, ";;FSO 23.1.0;;", 1.1f, " %f", The_mission.volumetrics->emissiveIntensity);
+			FRED_ENSURE_PROPERTY_VERSION_WITH_DEFAULT_F("+Emissive Light Falloff:", 1, ";;FSO 23.1.0;;", 1.5f, " %f", The_mission.volumetrics->emissiveFalloff);
+
+			if (The_mission.volumetrics->noiseActive) {
+				hasVolumetricNoise = true;
+
+				if (optional_string_fred("+Noise:"))
+					parse_comments(1);
+				else
+					fout_version("\n+Noise:");
+
+				FRED_ENSURE_PROPERTY_VERSION("+Scale:", 1, " (%f, %f)", std::get<0>(The_mission.volumetrics->noiseScale), std::get<1>(The_mission.volumetrics->noiseScale));
+				FRED_ENSURE_PROPERTY_VERSION("+Color:", 1, " (%d, %d, %d)",
+					static_cast<ubyte>(std::get<0>(The_mission.volumetrics->noiseColor) * 255.0f),
+					static_cast<ubyte>(std::get<1>(The_mission.volumetrics->noiseColor) * 255.0f),
+					static_cast<ubyte>(std::get<2>(The_mission.volumetrics->noiseColor) * 255.0f));
+				FRED_ENSURE_PROPERTY_VERSION_WITH_DEFAULT_F("+Intensity:", 1, ";;FSO 23.1.0;;", 1.0f, " %f", The_mission.volumetrics->noiseColorIntensity);
+				FRED_ENSURE_PROPERTY_VERSION_IF("+Function Base:", 1, ";;FSO 23.1.0;;", The_mission.volumetrics->noiseColorFunc1, " %s", The_mission.volumetrics->noiseColorFunc1->c_str());
+				FRED_ENSURE_PROPERTY_VERSION_IF("+Function Sub:", 1, ";;FSO 23.1.0;;", The_mission.volumetrics->noiseColorFunc2, " %s", The_mission.volumetrics->noiseColorFunc2->c_str());
+				FRED_ENSURE_PROPERTY_VERSION_WITH_DEFAULT("+Resolution:", 1, ";;FSO 23.1.0;;", 5, " %d", The_mission.volumetrics->noiseResolution);
+			}
+
+			fso_comment_pop();
+		}
+		else {
+			bypass_comment(";;FSO 23.1.0;; +Volumetric Nebula:");
+			bypass_comment(";;FSO 23.1.0;; +Position:");
+			bypass_comment(";;FSO 23.1.0;; +Color:");
+			bypass_comment(";;FSO 23.1.0;; +Visibility Opacity:");
+			bypass_comment(";;FSO 23.1.0;; +Visibility Distance:");
+			bypass_comment(";;FSO 23.1.0;; +Steps:");
+			bypass_comment(";;FSO 23.1.0;; +Resolution:");
+			bypass_comment(";;FSO 23.1.0;; +Oversampling:");
+			bypass_comment(";;FSO 23.1.0;; +Heyney Greenstein Coefficient:");
+			bypass_comment(";;FSO 23.1.0;; +Sun Falloff Factor:");
+			bypass_comment(";;FSO 23.1.0;; +Sun Steps:");
+			bypass_comment(";;FSO 23.1.0;; +Emissive Light Spread:");
+			bypass_comment(";;FSO 23.1.0;; +Emissive Light Intensity:");
+			bypass_comment(";;FSO 23.1.0;; +Emissive Light Falloff:");
+		}
+
+		if (!hasVolumetricNoise) {
+			bypass_comment(";;FSO 23.1.0;; +Noise:");
+			bypass_comment(";;FSO 23.1.0;; +Scale:");
+			bypass_comment(";;FSO 23.1.0;; +Color:");
+			bypass_comment(";;FSO 23.1.0;; +Intensity:");
+			bypass_comment(";;FSO 23.1.0;; +Function Base:");
+			bypass_comment(";;FSO 23.1.0;; +Function Sub:");
+			bypass_comment(";;FSO 23.1.0;; +Resolution:");
+		}
+	}
+
 	// For multiplayer missions -- write out the number of player starts and number of respawns
 	if (The_mission.game_type & MISSION_TYPE_MULTI) {
 		if (optional_string_fred("+Num Players:"))
@@ -2664,7 +2787,7 @@ int CFred_mission_save::save_mission_info()
 	}
 
 	if (optional_string_fred("+Disallow Support:")) {
-		parse_comments(1);
+		parse_comments(2);
 	} else {
 		fout("\n+Disallow Support:");
 	}
@@ -2917,6 +3040,9 @@ void CFred_mission_save::save_mission_internal(const char *pathname)
 
 	t = CTime::GetCurrentTime();
 	strcpy_s(The_mission.modified, t.Format("%x at %X"));
+
+	// Migrate the version!
+	The_mission.required_fso_version = MISSION_VERSION;
 
 	reset_parse();
 	fred_parse_flag = 0;

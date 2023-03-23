@@ -67,8 +67,8 @@ namespace
 				return 0.0f;
 		}
 
-		if (The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb_affects_particles)
-			alpha *= neb2_get_fog_visibility(pos, 
+		if (Neb_affects_particles)
+			nebula_handle_alpha(alpha, pos, 
 				Neb2_fog_visibility_particle_const + (rad * Neb2_fog_visibility_particle_scaled_factor));
 
 		return alpha;

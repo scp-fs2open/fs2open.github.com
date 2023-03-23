@@ -463,7 +463,7 @@ int mission_campaign_load(const char* filename, const char* full_path, player* p
 
 		// copy filename to campaign structure minus the extension
 		auto len = strlen(filename) - 4;
-		Assert(len < MAX_FILENAME_LEN);
+		Assert(len + 1 < CF_MAX_PATHNAME_LENGTH);
 		strncpy(Campaign.filename, filename, len);
 		Campaign.filename[len] = '\0';
 

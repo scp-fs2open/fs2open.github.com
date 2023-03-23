@@ -251,10 +251,10 @@ void debris_process_post(object * obj, float frame_time)
 
 			int n, n_arcs = Random::next(1, 3);		// Create 1-3 sparks
 
-			vec3d v1, v2, v3, v4;
-
-			submodel_get_two_random_points_better(db->model_num, db->submodel_num, &v1, &v2);
-			submodel_get_two_random_points_better(db->model_num, db->submodel_num, &v3, &v4);
+			vec3d v1 = submodel_get_random_point(db->model_num, db->submodel_num);
+			vec3d v2 = submodel_get_random_point(db->model_num, db->submodel_num);
+			vec3d v3 = submodel_get_random_point(db->model_num, db->submodel_num);
+			vec3d v4 = submodel_get_random_point(db->model_num, db->submodel_num);
 
 			n = 0;
 
@@ -327,11 +327,7 @@ void debris_process_post(object * obj, float frame_time)
 				// Maybe move a vertex....  20% of the time maybe?
 				int mr = Random::next();
 				if ( mr < Random::MAX_VALUE/5 )	{
-					vec3d v1, v2;
-
-					submodel_get_two_random_points_better(db->model_num, db->submodel_num, &v1, &v2);
-
-					db->arc_pts[i][mr % 2] = v1;
+					db->arc_pts[i][mr % 2] = submodel_get_random_point(db->model_num, db->submodel_num);
 				}
 			}
 		}
@@ -833,7 +829,6 @@ void debris_hit(object *debris_obj, object * /*other_obj*/, vec3d *hitpos, float
 int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, collision_info_struct *debris_hit_info, vec3d* hitNormal)
 {
 	mc_info	mc;
-	mc_info_init(&mc);
 
 	Assert( pdebris->type == OBJ_DEBRIS );
 
@@ -873,7 +868,7 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 
 		weapon *wp = &Weapons[other_obj->instance];
 		wp->collisionInfo = new mc_info;	// The weapon will free this memory later
-		memcpy(wp->collisionInfo, &mc, sizeof(mc_info));
+		*wp->collisionInfo = mc;
 
 		return mc.num_hits;
 	}

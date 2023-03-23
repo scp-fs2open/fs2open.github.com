@@ -100,7 +100,7 @@ void bm_lock_apng( int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ushort fla
 void bm_lock_jpg( int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ushort flags );
 void bm_lock_pcx( int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ushort flags );
 void bm_lock_tga( int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ushort flags );
-void bm_lock_user( int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ushort flags );
+void bm_lock_user( int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ushort flags, bool convert = true );
 
 const size_t BM_BLOCK_SIZE = 4096;
 

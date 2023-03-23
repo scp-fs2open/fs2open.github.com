@@ -275,7 +275,7 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 	// (DahBlount) - Remember to load the debris anims
 	stars_load_debris(false);
 
-	if (mission_name != "None") {
+	if (mission_name != LAB_MISSION_NONE_STRING) {
 		read_file_text((mission_name + ".fs2").c_str(), CF_TYPE_MISSIONS);
 		reset_parse();
 
@@ -283,6 +283,15 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 		skip_to_start_of_string("+Flags");
 		if (optional_string("+Flags:"))
 			stuff_flagset(&flags);
+
+		skip_to_start_of_string_one_of(SCP_vector<SCP_string>{ "+Volumetric Nebula:", "$Skybox Model:", "#Background bitmaps" });
+		if (optional_string("+Volumetric Nebula:")) {
+			//Rendering usually happens in post-mission-init, just do it now in the lab
+			The_mission.volumetrics.emplace().parse_volumetric_nebula().renderVolumeBitmap();
+		}
+		else {
+			volumetrics_level_close();
+		}
 
 		// Are we using a skybox?
 		skip_to_start_of_string_either("$Skybox Model:", "#Background bitmaps");

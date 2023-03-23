@@ -250,6 +250,7 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/main-f.sdr
 	def_files/data/effects/main-g.sdr
 	def_files/data/effects/main-v.sdr
+	def_files/data/effects/model_shader_flags.h
 	def_files/data/effects/nanovg-f.sdr
 	def_files/data/effects/nanovg-v.sdr
 	def_files/data/effects/normals.sdr
@@ -272,6 +273,7 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/tonemapping-f.sdr
 	def_files/data/effects/video-f.sdr
 	def_files/data/effects/video-v.sdr
+	def_files/data/effects/volumetric-f.sdr
 )
 
 add_file_folder("Default files\\\\data\\\\maps"
@@ -656,6 +658,8 @@ add_file_folder("Io"
 	io/joy-sdl.cpp
 	io/joy_ff.h
 	io/joy_ff-sdl.cpp
+	io/spacemouse.cpp
+	io/spacemouse.h
 )
 
 # jpgutils files
@@ -874,6 +878,8 @@ add_file_folder("Nebula"
 	nebula/neb.h
 	nebula/neblightning.cpp
 	nebula/neblightning.h
+	nebula/volumetrics.cpp
+	nebula/volumetrics.h
 )
 
 # Network files
@@ -1338,6 +1344,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/font.h
 	scripting/api/objs/gameevent.cpp
 	scripting/api/objs/gameevent.h
+	scripting/api/objs/gamehelp.cpp
+	scripting/api/objs/gamehelp.h
 	scripting/api/objs/gamestate.cpp
 	scripting/api/objs/gamestate.h
 	scripting/api/objs/hudgauge.cpp
@@ -1346,6 +1354,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/intelentry.h
 	scripting/api/objs/loop_brief.cpp
 	scripting/api/objs/loop_brief.h
+	scripting/api/objs/LuaEnum.cpp
+	scripting/api/objs/LuaEnum.h
 	scripting/api/objs/LuaSEXP.cpp
 	scripting/api/objs/LuaSEXP.h
 	scripting/api/objs/luaaisexp.cpp
@@ -1354,6 +1364,10 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/mc_info.h
 	scripting/api/objs/message.cpp
 	scripting/api/objs/message.h
+	scripting/api/objs/missionhotkey.cpp
+	scripting/api/objs/missionhotkey.h
+	scripting/api/objs/missionlog.cpp
+	scripting/api/objs/missionlog.h
 	scripting/api/objs/model.cpp
 	scripting/api/objs/model.h
 	scripting/api/objs/modelinstance.cpp

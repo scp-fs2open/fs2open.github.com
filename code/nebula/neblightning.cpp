@@ -176,6 +176,18 @@ static storm_type* get_storm_type_pointer(const char* storm)
 	return nullptr;
 }
 
+int get_bolt_type_by_name(const char* bolt)
+{
+	for (int i = 0; i < (int)Bolt_types.size(); i++) {
+		if (!stricmp(bolt, Bolt_types[i].name)) {
+			return i;
+		}
+	}
+
+	// Didn't find anything.
+	return -1;
+}
+
 // initialize nebula lightning at game startup
 void parse_lightning_table(const char* filename)
 {
@@ -493,16 +505,6 @@ void nebl_render_all()
 	l_bolt *b;
 	bolt_type *bi;
 
-	// no lightning in non-nebula missions
-	if(!(The_mission.flags[Mission::Mission_Flags::Fullneb])){
-		return;
-	}
-
-	// if we have no storm
-	if(Storm == NULL){
-		return;
-	}
-
 	// traverse the list
 	for(size_t idx=0; idx<MAX_LIGHTNING_BOLTS; idx++){
 		b = &Nebl_bolts[idx];		
@@ -595,20 +597,28 @@ void nebl_render_all()
 					}					
 
 					// do some special stuff on the very first strike of the bolt
-					if(b->strikes_left == bi->num_strikes){					
+					if (b->strikes_left == bi->num_strikes) {					
 						// play a sound
-						float bang;
-						if(Nebl_bang < 40.0f){
-							bang = 1.0f;
-						} else if(Nebl_bang > 400.0f){
-							bang = 0.0f;
-						} else {
-							bang = 1.0f - (Nebl_bang / 400.0f);
-						}
-						if(frand_range(0.0f, 1.0f) < 0.5f){
-							snd_play(gamesnd_get_game_sound(GameSounds::LIGHTNING_2), 0.0f, bang, SND_PRIORITY_DOUBLE_INSTANCE);
-						} else {
-							snd_play(gamesnd_get_game_sound(GameSounds::LIGHTNING_1), 0.0f, bang, SND_PRIORITY_DOUBLE_INSTANCE);
+						if (b->play_sound) {
+							float bang;
+							if (Nebl_bang < 40.0f) {
+								bang = 1.0f;
+							} else if (Nebl_bang > 400.0f) {
+								bang = 0.0f;
+							} else {
+								bang = 1.0f - (Nebl_bang / 400.0f);
+							}
+							if (frand_range(0.0f, 1.0f) < 0.5f) {
+								snd_play(gamesnd_get_game_sound(GameSounds::LIGHTNING_2),
+									0.0f,
+									bang,
+									SND_PRIORITY_DOUBLE_INSTANCE);
+							} else {
+								snd_play(gamesnd_get_game_sound(GameSounds::LIGHTNING_1),
+									0.0f,
+									bang,
+									SND_PRIORITY_DOUBLE_INSTANCE);
+							}
 						}
 
 						// apply em pulse
@@ -711,7 +721,7 @@ void nebl_process()
 }
 
 // create a lightning bolt
-void nebl_bolt(int type, vec3d *start, vec3d *strike)
+bool nebl_bolt(int type, vec3d *start, vec3d *strike, bool play_sound)
 {
 	vec3d dir;
 	l_bolt *bolt;
@@ -720,10 +730,6 @@ void nebl_bolt(int type, vec3d *start, vec3d *strike)
 	bool found;		
 	bolt_type *bi;
 	float bolt_len;
-
-	if(!(The_mission.flags[Mission::Mission_Flags::Fullneb])){
-		return;
-	}
 
 	// find a free bolt
 	found = 0;
@@ -734,11 +740,11 @@ void nebl_bolt(int type, vec3d *start, vec3d *strike)
 		}
 	}
 	if(!found){
-		return;
+		return false;
 	}
 
 	if( type >= (int)Bolt_types.size() ){
-		return;
+		return false;
 	}
 	bi = &Bolt_types[type];	
 
@@ -752,7 +758,8 @@ void nebl_bolt(int type, vec3d *start, vec3d *strike)
 	bolt->delay = -1;
 	bolt->type = (char)type;
 	bolt->first_frame = 1;
-	bolt->bolt_life = timestamp(bi->lifetime / bi->num_strikes);		
+	bolt->bolt_life = timestamp(bi->lifetime / bi->num_strikes);	
+	bolt->play_sound = play_sound;
 
 	Nebl_bolt_start = *start;
 	Nebl_bolt_strike = *strike;
@@ -784,7 +791,7 @@ void nebl_bolt(int type, vec3d *start, vec3d *strike)
 			nebl_release(bolt->head);
 		}
 
-		return;
+		return false;
 	}
 
 	Num_lbolts++;	
@@ -797,6 +804,8 @@ void nebl_bolt(int type, vec3d *start, vec3d *strike)
 	if(MULTIPLAYER_MASTER){
 		send_lightning_packet(type, start, strike);
 	}
+
+	return true;
 }
 
 // "new" a lightning node

@@ -26,6 +26,7 @@
 #include "missionui/missioncmdbrief.h"
 #include "missionui/redalert.h"
 #include "nebula/neb.h"
+#include "nebula/neblightning.h"
 #include "object/objcollide.h"
 #include "parse/parselo.h"
 #include "parse/sexp.h"
@@ -35,6 +36,7 @@
 #include "parse/sexp/sexp_lookup.h"
 #include "playerman/player.h"
 #include "scripting/api/LuaPromise.h"
+#include "scripting/api/objs/LuaEnum.h"
 #include "scripting/api/objs/LuaSEXP.h"
 #include "scripting/api/objs/luaaisexp.h"
 #include "scripting/api/objs/asteroid.h"
@@ -1341,6 +1343,31 @@ ADE_FUNC(createExplosion,
 		return ade_set_error(L, "o", l_Fireball.Set(object_h()));
 }
 
+ADE_FUNC(createBolt,
+	l_Mission,
+	"string BoltName, vector Origin, vector Target, [boolean PlaySound = true]",
+	"Creates a lightning bolt between the origin and target vectors. BoltName is name of a bolt from lightning.tbl",
+	"boolean",
+	"True if successful, false if the bolt could't be created.")
+{
+	const char* boltname;
+	vec3d origin = vmd_zero_vector;
+	vec3d dest = vmd_zero_vector;
+	bool playSound = true;
+
+	if (!ade_get_args(L, "soo|b", &boltname, l_Vector.Get(&origin), l_Vector.Get(&dest), &playSound)) {
+		return ADE_RETURN_FALSE;
+	}
+	
+	int boltclass = get_bolt_type_by_name(boltname);
+
+	if (boltclass < 0) {
+		return ADE_RETURN_FALSE;
+	}
+
+	return ade_set_args(L, "b", nebl_bolt(boltclass, &origin, &dest, playSound));
+}
+
 ADE_FUNC(getMissionFilename, l_Mission, NULL, "Gets mission filename", "string", "Mission filename, or empty string if game is not in a mission")
 {
 	char temp[MAX_FILENAME_LEN];
@@ -1598,7 +1625,14 @@ ADE_VIRTVAR(Gravity, l_Mission, "vector", "Gravity acceleration vector in meters
 
 	if (ADE_SETTING_VAR && ade_get_args(L, "*o", l_Vector.GetPtr(&gravity_vec)))
 	{
+		vec3d old_gravity = The_mission.gravity;
 		The_mission.gravity = *gravity_vec;
+
+		if ((IS_VEC_NULL(&old_gravity) && !IS_VEC_NULL(&The_mission.gravity)) || 
+			(!IS_VEC_NULL(&old_gravity) && IS_VEC_NULL(&The_mission.gravity))) {
+			// gravity was turned on or turned off
+			collide_apply_gravity_flags_weapons();
+		}
 	}
 
 	return ade_set_args(L, "o", l_Vector.Set(The_mission.gravity));
@@ -1650,6 +1684,11 @@ ADE_FUNC(isNebula, l_Mission, nullptr, "Get whether or not the current mission b
 	return ade_set_args(L, "b", The_mission.flags[Mission::Mission_Flags::Fullneb]);
 }
 
+ADE_FUNC(hasVolumetricNebula, l_Mission, nullptr, "Get whether or not the current mission being played contains a volumetric nebula", "boolean", "true if has a volumetric nebula, false if not")
+{
+	return ade_set_args(L, "b", static_cast<bool>(The_mission.volumetrics));
+}
+
 ADE_VIRTVAR(NebulaSensorRange, l_Mission, "number", "Gets or sets the Neb2_awacs variable.  This is multiplied by a species-specific factor to get the \"scan range\".  Within the scan range, a ship is at least partially targetable (fuzzy blip); within half the scan range, a ship is fully targetable.  Beyond the scan range, a ship is not targetable.", "number", "the Neb2_awacs variable")
 {
 	float range = -1.0f;
@@ -1658,6 +1697,26 @@ ADE_VIRTVAR(NebulaSensorRange, l_Mission, "number", "Gets or sets the Neb2_awacs
 		Neb2_awacs = range;
 
 	return ade_set_args(L, "f", Neb2_awacs);
+}
+
+ADE_VIRTVAR(NebulaNearMult, l_Mission, "number", "Gets or sets the multiplier of the near plane of the current nebula.", "number", "The multiplier of the near plane.")
+{
+	float fog_near = 0.0f;
+
+	if (ADE_SETTING_VAR && ade_get_args(L, "*f", &fog_near))
+		Neb2_fog_near_mult = fog_near;
+
+	return ade_set_args(L, "f", Neb2_fog_near_mult);
+}
+
+ADE_VIRTVAR(NebulaFarMult, l_Mission, "number", "Gets or sets the multiplier of the far plane of the current nebula.", "number", "The multiplier of the far plane.")
+{
+	float fog_far = 0.0f;
+
+	if (ADE_SETTING_VAR && ade_get_args(L, "*f", &fog_far))
+		Neb2_fog_far_mult = fog_far;
+
+	return ade_set_args(L, "f", Neb2_fog_far_mult);
 }
 
 ADE_FUNC(isSubspace, l_Mission, nullptr, "Get whether or not the current mission being played is set in subspace", "boolean", "true if in subspace, false if not")
@@ -2098,6 +2157,70 @@ ADE_FUNC(updateSpecialSubmodelMoveable, l_Mission, "string target, string name, 
 	}
 
 	return set->updateMoveable(pmi, name, valuesMoveable) ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
+}
+
+ADE_LIB_DERIV(l_Mission_LuaEnums, "LuaEnums", nullptr, "Lua Enums", l_Mission);
+
+ADE_INDEXER(l_Mission_LuaEnums,
+	"string/number NameOrIndex",
+	"Gets a handle of a Lua Enum",
+	"LuaEnum",
+	"Lua Enum handle or invalid handle on error")
+{
+	const char* name = nullptr;
+	if (!ade_get_args(L, "*s", &name)) {
+		return ade_set_error(L, "o", l_LuaEnum.Set(lua_enum_h()));
+	}
+
+	if (name == nullptr) {
+		return ade_set_error(L, "o", l_LuaEnum.Set(lua_enum_h()));
+	}
+
+	int idx = get_dynamic_enum_position(name);
+
+	if (idx > -1) {
+		return ade_set_args(L, "o", l_LuaEnum.Set(lua_enum_h(idx)));
+	} else {
+		idx = atoi(name);
+
+		if ((idx > 0) && (idx < (int)Dynamic_enums.size())) {
+			return ade_set_args(L, "o", l_LuaEnum.Set(lua_enum_h(idx)));
+		}
+	}
+
+	return ade_set_args(L, "o", l_LuaEnum.Set(lua_enum_h()));
+}
+
+ADE_FUNC(__len, l_Mission_LuaEnums, nullptr, "The number of Lua enums", "number", "The number of Lua enums.")
+{
+	return ade_set_args(L, "i", (int)Dynamic_enums.size());
+}
+
+ADE_FUNC(addLuaEnum,
+	l_Mission,
+	"string name",
+	"Adds an enum with the given name if it's unique.",
+	"LuaEnum",
+	"Returns the enum handle or an invalid handle if the name was not unique.")
+{
+	const char* enum_name;
+	if (!ade_get_args(L, "s", &enum_name))
+		return ade_set_error(L, "o", l_LuaEnum.Set(lua_enum_h()));
+
+	int idx = get_dynamic_enum_position(enum_name);
+
+	if (idx > -1) {
+		return ade_set_error(L, "o", l_LuaEnum.Set(lua_enum_h()));
+	} else {
+		dynamic_sexp_enum_list this_list;
+		this_list.name = enum_name;
+
+		Dynamic_enums.push_back(this_list);
+
+		idx = get_dynamic_enum_position(enum_name);
+
+		return ade_set_args(L, "o", l_LuaEnum.Set(lua_enum_h(idx)));
+	}
 }
 
 ADE_LIB_DERIV(l_Mission_LuaSEXPs, "LuaSEXPs", nullptr, "Lua SEXPs", l_Mission);

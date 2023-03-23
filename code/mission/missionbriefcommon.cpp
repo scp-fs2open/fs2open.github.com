@@ -1111,8 +1111,8 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 		}
 		gr_unsize_screen_posf(&sx, &sy, NULL, NULL, this_resize);
 	
-		scaled_w = icon_w * w_scale_factor;
-		scaled_h = icon_h * h_scale_factor;
+		scaled_w = i2fl(((icon_w * bi->scale) / 100) * w_scale_factor);
+		scaled_h = i2fl(((icon_h * bi->scale) / 100) * h_scale_factor);
 		bxf = sx - scaled_w / 2.0f + 0.5f;
 		byf = sy - scaled_h / 2.0f + 0.5f;
 		bx = fl2i(bxf);
@@ -1167,7 +1167,7 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 
 		if ( !(bi->flags & BI_FADEIN) ) {
 			gr_set_bitmap(icon_bitmap);
-			gr_aabitmap(bx, by, bscreen.resize, mirror_icon);
+			gr_aabitmap(bx, by, bscreen.resize, mirror_icon, bi->scale);
 
 			// draw text centered over the icon (make text darker)
 			if ( bi->type == ICON_FIGHTER_PLAYER || bi->type == ICON_BOMBER_PLAYER ) {
@@ -1288,7 +1288,9 @@ void brief_render_map(int stage_num, float frametime)
 	g3_set_view_matrix(&Current_cam_pos, &Current_cam_orient, Briefing_window_FOV);
 
 	brief_maybe_create_new_grid(The_grid, &Current_cam_pos, &Current_cam_orient);
-	brief_render_grid(The_grid);
+
+	if (Briefing->stages[stage_num].draw_grid)
+		brief_render_grid(The_grid);
 
 	brief_render_fade_outs(frametime);
 

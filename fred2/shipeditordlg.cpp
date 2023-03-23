@@ -300,14 +300,25 @@ BOOL CShipEditorDlg::Create()
 
 	for ( i = 0; i < Num_personas; i++ ) {
 		if ( Personas[i].flags & PERSONA_FLAG_WINGMAN ) {
-			// don't bother putting any vasudan personas on the list -- done automatically by code
-//			if ( Personas[i].flags & PERSONA_FLAG_VASUDAN ){
-//				continue;
-//			}
-
 			CString persona_name = Personas[i].name;
-			if ( Personas[i].flags & PERSONA_FLAG_VASUDAN ){
-				persona_name += " -Vas";
+
+			// see if the bitfield matches one and only one species
+			int species = -1;
+			for (size_t j = 0; j < 32 && j < Species_info.size(); j++) {
+				if (Personas[i].species_bitfield == (1 << j)) {
+					species = (int)j;
+					break;
+				}
+			}
+
+			// if it is an exact species that isn't the first
+			if (species > 0) {
+				persona_name += "-";
+
+				auto species_name = Species_info[species].species_name;
+				size_t len = strlen(species_name);
+				for (size_t j = 0; j < 3 && j < len; j++)
+					persona_name += species_name[j];
 			}
 
 			index = ptr->AddString(persona_name);
@@ -1209,7 +1220,7 @@ int CShipEditorDlg::update_data(int redraw)
 		str = Ships[single_ship].ship_name;
 		if (strcmp(old_name, str)) {
 			update_sexp_references(old_name, str);
-			ai_update_goal_references(REF_TYPE_SHIP, old_name, str);
+			ai_update_goal_references(sexp_ref_type::SHIP, old_name, str);
 			update_texture_replacements(old_name, str);
 			for (i=0; i<Num_reinforcements; i++)
 				if (!strcmp(old_name, Reinforcements[i].name)) {

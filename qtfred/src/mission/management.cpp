@@ -23,7 +23,10 @@
 #include <menuui/techmenu.h>
 #include <localization/fhash.h>
 #include <gamesnd/eventmusic.h>
+#include <cutscene/cutscenes.h>
 #include <missionui/fictionviewer.h>
+#include <menuui/mainhallmenu.h>
+#include <stats/scoring.h>
 #include <mission/missioncampaign.h>
 #include <nebula/neblightning.h>
 #include <libs/ffmpeg/FFmpeg.h>
@@ -237,6 +240,15 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 	cmd_brief_reset();
 	Show_waypoints = TRUE;
 
+	listener(SubSystem::Cutscenes);
+	cutscene_init();
+
+	listener(SubSystem::Mainhalls);
+	main_hall_table_init();
+
+	listener(SubSystem::Ranks);
+	parse_rank_tbl();
+
 	listener(SubSystem::Campaign);
 	mission_campaign_clear();
 
@@ -259,6 +271,10 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 	Script_system.RunInitFunctions();
 	if (scripting::hooks::OnGameInit->isActive()) {
 		scripting::hooks::OnGameInit->run();
+	}
+	//Technically after the splash screen, but the best we can do these days. Since the override is hard-deprecated, we don't need to check it.
+	if (scripting::hooks::OnSplashScreen->isActive()) {
+		scripting::hooks::OnSplashScreen->run();
 	}
 
 	return true;

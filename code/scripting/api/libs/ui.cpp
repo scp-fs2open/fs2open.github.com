@@ -27,7 +27,9 @@
 #include "missionui/missiondebrief.h"
 #include "mission/missiongoals.h"
 #include "mission/missioncampaign.h"
+#include "mission/missionhotkey.h"
 #include "missionui/redalert.h"
+#include "missionui/missionpause.h"
 #include "mod_table/mod_table.h"
 #include "network/multi.h"
 #include "network/multiteamselect.h"
@@ -45,11 +47,16 @@
 #include "scripting/api/objs/briefing.h"
 #include "scripting/api/objs/debriefing.h"
 #include "scripting/api/objs/shipwepselect.h"
+#include "scripting/api/objs/missionhotkey.h"
+#include "scripting/api/objs/gamehelp.h"
+#include "scripting/api/objs/missionlog.h"
 #include "scripting/api/objs/color.h"
 #include "scripting/api/objs/enums.h"
 #include "scripting/api/objs/player.h"
 #include "scripting/api/objs/texture.h"
+#include "scripting/api/objs/vecmath.h"
 #include "scripting/lua/LuaTable.h"
+#include "sound/audiostr.h"
 #include "stats/medals.h"
 #include "stats/stats.h"
 
@@ -710,6 +717,66 @@ ADE_FUNC(commitToMission,
 	return ade_set_args(L, "i", static_cast<int>(commit_pressed(true)));
 }
 
+ADE_FUNC(renderBriefingModel,
+	l_UserInterface_Brief,
+	"string PofName, number CloseupZoom, vector CloseupPos, number X1, number Y1, number X2, number Y2, [number RotationPercent =0, number PitchPercent =0, "
+	"number "
+	"BankPercent=40, number Zoom=1.3, boolean Lighting=true, boolean Jumpnode=false]",
+	"Draws a pof. True for regular lighting, false for flat lighting.",
+	"boolean",
+	"Whether pof was rendered")
+{
+	int x1, y1, x2, y2;
+	angles rot_angles = {0.0f, 0.0f, 40.0f};
+	const char* pof;
+	float closeup_zoom;
+	vec3d closeup_pos;
+	float zoom = 1.3f;
+	bool lighting = true;
+	bool jumpNode = false;
+	if (!ade_get_args(L,
+			"sfoiiii|ffffbb",
+			&pof,
+			&closeup_zoom,
+			l_Vector.Get(&closeup_pos),
+			&x1,
+			&y1,
+			&x2,
+			&y2,
+			&rot_angles.h,
+			&rot_angles.p,
+			&rot_angles.b,
+			&zoom,
+			&lighting,
+			&jumpNode))
+		return ade_set_error(L, "b", false);
+
+	if (x2 < x1 || y2 < y1)
+		return ade_set_args(L, "b", false);
+
+	CLAMP(rot_angles.p, 0.0f, 100.0f);
+	CLAMP(rot_angles.b, 0.0f, 100.0f);
+	CLAMP(rot_angles.h, 0.0f, 100.0f);
+
+	// Handle angles
+	matrix orient = vmd_identity_matrix;
+	angles view_angles = {-0.6f, 0.0f, 0.0f};
+	vm_angles_2_matrix(&orient, &view_angles);
+
+	rot_angles.p = (rot_angles.p * 0.01f) * PI2;
+	rot_angles.b = (rot_angles.b * 0.01f) * PI2;
+	rot_angles.h = (rot_angles.h * 0.01f) * PI2;
+	vm_rotate_matrix_by_angles(&orient, &rot_angles);
+
+	tech_render_type thisType = TECH_POF;
+
+	if (jumpNode) {
+		thisType = TECH_JUMP_NODE;
+	}
+
+	return ade_set_args(L, "b", render_tech_model(thisType, x1, y1, x2, y2, zoom, lighting, -1, &orient, pof, closeup_zoom, closeup_pos));
+}
+
 ADE_FUNC(drawBriefingMap,
 	l_UserInterface_Brief,
 	"number x, number y, [number width = 888, number height = 371]",
@@ -743,6 +810,31 @@ ADE_FUNC(drawBriefingMap,
 	brief_api_do_frame(flRealframetime);
 
 	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(checkStageIcons,
+	l_UserInterface_Brief,
+	"number xPos, number yPos",
+	"Sends the mouse position to the brief map rendering functions to properly highlight icons.",
+	"string, number, vector, string, number",
+	"If an icon is highlighted then this will return the ship name for ships or the pof to render for asteroid, jumpnode, or unknown icons. "
+	"also returns the closeup zoom, the closeup position, the closeup label, and the icon id. Otherwise it returns nil")
+{
+	int x;
+	int y;
+
+	if (!ade_get_args(L, "ii", &x, &y)) {
+		LuaError(L, "X and Y coordinates not provided!");
+		return ADE_RETURN_NIL;
+	}
+
+	brief_check_for_anim(true, x, y);
+
+	if (Closeup_icon == nullptr) {
+		return ADE_RETURN_NIL;
+	} else {
+		return ade_set_args(L, "sfosi", Closeup_type_name, Closeup_zoom, l_Vector.Set(Closeup_cam_pos), Closeup_icon->closeup_label, Closeup_icon->id);
+	}
 }
 
 ADE_FUNC(callNextMapStage,
@@ -1449,10 +1541,11 @@ ADE_FUNC(buildCredits,
 	"number",
 	"Returns 1 when completed")
 {
-	credits_parse();
+	credits_parse(false);
 	credits_scp_position();
 
 	size_t count = Credit_text_parts.size();
+	credits_complete.clear();
 
 	for (size_t i = 0; i < count; i++) {
 		credits_complete.append(Credit_text_parts[i]);
@@ -1582,6 +1675,299 @@ ADE_VIRTVAR(Complete, l_UserInterface_Credits, nullptr, "The complete credits st
 	}
 
 	return ade_set_args(L, "s", credits_complete);
+}
+
+//**********SUBLIBRARY: UserInterface/Hotkeys
+ADE_LIB_DERIV(l_UserInterface_Hotkeys,
+	"MissionHotkeys",
+	nullptr,
+	"API for accessing data related to the mission hotkeys UI.<br><b>Warning:</b> This is an internal "
+	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	l_UserInterface);
+
+ADE_FUNC(initHotkeysList,
+	l_UserInterface_Hotkeys,
+	nullptr,
+	"Initializes the hotkeys list. Must be used before the hotkeys list is accessed.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	reset_hotkeys();
+	hotkey_set_selected_line(1);
+	hotkey_build_listing();
+
+	// We want to allow the API to handle expanding wings on its own,
+	// so lets expand every wing in the list and not try to handle it after that.
+	for (int i = 0; i < MAX_LINES; i++) {
+		auto item = Hotkey_lines[i];
+		if (item.type == HOTKEY_LINE_WING) {
+			expand_wing(i);
+		}
+	}
+
+	// Reset the selected line back to 1
+	hotkey_set_selected_line(1);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(resetHotkeys,
+	l_UserInterface_Hotkeys,
+	nullptr,
+	"Resets the hotkeys list to previous setting, removing anything that wasn't saved. Returns nothing.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	reset_hotkeys();
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(saveHotkeys,
+	l_UserInterface_Hotkeys,
+	nullptr,
+	"Saves changes to the hotkey list. Returns nothing.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	save_hotkeys();
+
+	return ADE_RETURN_NIL;
+}
+
+// This is not a retail UI feature, but it's just good design to allow it.
+// This will allow SCPUI to create a restore to mission defaults button.
+ADE_FUNC(resetHotkeysDefault,
+	l_UserInterface_Hotkeys,
+	nullptr,
+	"Resets the hotkeys list to the default mission setting. Returns nothing.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	// argument to false, because if we're doing this we explicitely do not want
+	// to restore player's saved values
+	mission_hotkey_set_defaults(false);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_LIB_DERIV(l_Hotkeys, "Hotkeys_List", nullptr, nullptr, l_UserInterface_Hotkeys);
+ADE_INDEXER(l_Hotkeys,
+	"number Index",
+	"Array of Hotkey'd ships",
+	"hotkey_ship",
+	"hotkey ship handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "o", l_Hotkey.Set(hotkey_h()));
+	idx--; // Convert to Lua's 1 based index system
+
+	if ((idx < 0) || (idx > MAX_LINES))
+		return ade_set_error(L, "o", l_Hotkey.Set(hotkey_h()));
+
+	return ade_set_args(L, "o", l_Hotkey.Set(hotkey_h(idx)));
+}
+
+ADE_FUNC(__len, l_Hotkeys, nullptr, "The number of valid hotkey ships", "number", "The number of valid hotkey ships.")
+{
+	int s = 0;
+
+	// this is dumb, but whatever
+	for (int i = 0; i < MAX_LINES; i++) {
+		auto item = Hotkey_lines[i];
+		if (item.type == 0) {
+			s = i;
+			break;
+		}
+	}
+	
+	return ade_set_args(L, "i", s);
+}
+
+//**********SUBLIBRARY: UserInterface/GameHelp
+ADE_LIB_DERIV(l_UserInterface_GameHelp,
+	"GameHelp",
+	nullptr,
+	"API for accessing data related to the game help UI.<br><b>Warning:</b> This is an internal "
+	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	l_UserInterface);
+
+ADE_FUNC(initGameHelp, l_UserInterface_GameHelp, nullptr, "Initializes the Game Help data. Must be used before Help Sections is accessed.", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	Help_text.clear(); // Make sure the vector is empty before we start
+	Help_text = gameplay_help_init_text();
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(closeGameHelp, l_UserInterface_GameHelp, nullptr, "Clears the Game Help data. Should be used when finished accessing Help Sections.", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	Help_text.clear();
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_LIB_DERIV(l_Help_Sections, "Help_Sections", nullptr, nullptr, l_UserInterface_GameHelp);
+ADE_INDEXER(l_Help_Sections,
+	"number Index",
+	"Array of help sections",
+	"help_section",
+	"help section handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "o", l_Help_Section.Set(help_section_h()));
+	idx--; //Convert to Lua's 1 based index system
+
+	if ((idx < 0) || (idx >= (int)Help_text.size()))
+		return ade_set_error(L, "o", l_Help_Section.Set(help_section_h()));
+
+	return ade_set_args(L, "o", l_Help_Section.Set(help_section_h(idx)));
+}
+
+ADE_FUNC(__len, l_Help_Sections, nullptr, "The number of help sections", "number", "The number of help sections.")
+{
+	return ade_set_args(L, "i", (int)Help_text.size());
+}
+
+
+
+
+//**********SUBLIBRARY: UserInterface/MissionLog
+ADE_LIB_DERIV(l_UserInterface_MissionLog,
+	"MissionLog",
+	nullptr,
+	"API for accessing data related to the mission log UI.<br><b>Warning:</b> This is an internal "
+	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	l_UserInterface);
+
+ADE_FUNC(initMissionLog, l_UserInterface_MissionLog, nullptr, "Initializes the Mission Log data. Must be used before Mission Log is accessed.", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	Log_scrollback_vec.clear(); // Make sure the vector is empty before we start
+
+	// Width here is used to determine if a log line needs to be split into multiple lines.
+	// That makes sense for retail, but not so much for the API. Telling it to use the entire screen width
+	// should be sufficient to prevent unnecessary line breaks given how short most log lines are in the mission log.
+	message_log_init_scrollback(gr_screen.max_w);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(closeMissionLog, l_UserInterface_MissionLog, nullptr, "Clears the Mission Log data. Should be used when finished accessing Mission Log Entries.", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	message_log_shutdown_scrollback();
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_LIB_DERIV(l_Log_Entries, "Log_Entries", nullptr, nullptr, l_UserInterface_MissionLog);
+ADE_INDEXER(l_Log_Entries,
+	"number Index",
+	"Array of mission log entries",
+	"log_entry",
+	"log entry handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "o", l_Log_Entry.Set(log_entry_h()));
+	idx--; //Convert to Lua's 1 based index system
+
+	if ((idx < 0) || (idx >= (int)Log_scrollback_vec.size()))
+		return ade_set_error(L, "o", l_Log_Entry.Set(log_entry_h()));
+
+	return ade_set_args(L, "o", l_Log_Entry.Set(log_entry_h(idx)));
+}
+
+ADE_FUNC(__len, l_Log_Entries, nullptr, "The number of mission log entries", "number", "The number of log entries.")
+{
+	return ade_set_args(L, "i", (int)Log_scrollback_vec.size());
+}
+
+ADE_LIB_DERIV(l_Log_Messages, "Log_Messages", nullptr, nullptr, l_UserInterface_MissionLog);
+ADE_INDEXER(l_Log_Messages,
+	"number Index",
+	"Array of message log entries",
+	"message_entry",
+	"message entry handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "o", l_Message_Entry.Set(message_entry_h()));
+	idx--; //Convert to Lua's 1 based index system
+
+	if ((idx < 0) || (idx >= (int)Msg_scrollback_vec.size()))
+		return ade_set_error(L, "o", l_Message_Entry.Set(message_entry_h()));
+
+	return ade_set_args(L, "o", l_Message_Entry.Set(message_entry_h(idx)));
+}
+
+ADE_FUNC(__len, l_Log_Messages, nullptr, "The number of mission message entries", "number", "The number of message entries.")
+{
+	return ade_set_args(L, "i", (int)Msg_scrollback_vec.size());
+}
+
+//**********SUBLIBRARY: UserInterface/PauseScreen
+ADE_LIB_DERIV(l_UserInterface_PauseScreen,
+	"PauseScreen",
+	nullptr,
+	"API for accessing data related to the pause screen UI.<br><b>Warning:</b> This is an internal "
+	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	l_UserInterface);
+
+ADE_VIRTVAR(isPaused, l_UserInterface_PauseScreen, nullptr, "Returns true if the game is paused, false otherwise", "boolean", "true if paused, false if unpaused")
+{
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "b", Paused);
+}
+
+ADE_FUNC(initPause, l_UserInterface_PauseScreen, nullptr, "Makes sure everything is done correctly to pause the game.", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	weapon_pause_sounds();
+	audiostream_pause_all();
+
+	Paused = true;
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(closePause, l_UserInterface_PauseScreen, nullptr, "Makes sure everything is done correctly to unpause the game.", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	weapon_unpause_sounds();
+	audiostream_unpause_all();
+
+	// FSO can run pause_init() before the actual games state change when the game loses focus
+	// so this is required to make sure that the saved screen is cleared if SCPUI takes over
+	// after the game state change
+	gr_free_screen(Pause_saved_screen);
+	Pause_saved_screen = -1;
+
+	Paused = false;
+
+	return ADE_RETURN_NIL;
 }
 
 } // namespace api

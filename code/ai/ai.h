@@ -34,7 +34,13 @@ typedef struct ai_flag_name {
 	char flag_name[TOKEN_LENGTH];
 } ai_flag_name;
 
+typedef struct ai_flag_description {
+	AI::AI_Flags flag;
+	SCP_string flag_desc;
+} ai_flag_description;
+
 extern ai_flag_name Ai_flag_names[];
+extern ai_flag_description Ai_flag_descriptions[];
 extern const int Num_ai_flag_names;
 
 //	dock_orient_and_approach() modes.

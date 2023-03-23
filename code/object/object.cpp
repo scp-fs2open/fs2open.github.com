@@ -118,6 +118,20 @@ obj_flag_name Object_flag_names[] = {
 	{ Object::Object_Flags::Attackable_if_no_collide, "ai-attackable-if-no-collide",	},
 };
 
+obj_flag_description Object_flag_descriptions[] = {
+    { Object::Object_Flags::Invulnerable,				"Stops ship from taking any damage."},
+	{ Object::Object_Flags::Protected,					"Ship and Turret AI will ignore and not attack ship."},
+	{ Object::Object_Flags::Beam_protected,				"Turrets with beam weapons will ignore and not attack ship."},
+	{ Object::Object_Flags::No_shields,					"Ship will have no shields (ETS will be rebalanced if shields were off and are enabled)."},
+	{ Object::Object_Flags::Targetable_as_bomb,			"Allows ship to be targeted with the bomb targeting key."},
+	{ Object::Object_Flags::Flak_protected,				"Turrets with flak weapons will ignore and not attack ship."},
+	{ Object::Object_Flags::Laser_protected,			"Turrets with laser weapons will ignore and not attack ship."},
+	{ Object::Object_Flags::Missile_protected,			"Turrets with missile weapons will ignore and not attack ship."},
+	{ Object::Object_Flags::Immobile,					"Will not let a ship move or rotate in any fashion. Upon destruction the ship will still do the death roll and explosion."},
+	{ Object::Object_Flags::Collides,					"Causes a ship to vanish (no deathroll, no debris, no explosion) when destroyed."},
+	{ Object::Object_Flags::Attackable_if_no_collide,	"Allows the AI to attack this object, even if no-collide is set."},
+};
+
 extern const int Num_object_flag_names = sizeof(Object_flag_names) / sizeof(obj_flag_name);
 
 #ifdef OBJECT_CHECK

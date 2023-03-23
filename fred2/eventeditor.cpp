@@ -1699,7 +1699,6 @@ BOOL event_sexp_tree::OnToolTipText(UINT id, NMHDR *pNMHDR, LRESULT *pResult)
 	TOOLTIPTEXTA* pTTTA = (TOOLTIPTEXTA*)pNMHDR;
 	TOOLTIPTEXTW* pTTTW = (TOOLTIPTEXTW*)pNMHDR;
 
-	CString strTipText;
 	UINT_PTR nID = pNMHDR->idFrom;
 
 	// Do not process the message from built in tooltip 
@@ -1726,18 +1725,31 @@ BOOL event_sexp_tree::OnToolTipText(UINT id, NMHDR *pNMHDR, LRESULT *pResult)
 
 			if (ea->comment != default_ea.comment && !ea->comment.empty())
 			{
-				strTipText = ea->comment.c_str();
+				m_tooltiptextA = ea->comment.c_str();
+				m_tooltiptextW = ea->comment.c_str();
 
 #ifndef _UNICODE
 				if (pNMHDR->code == TTN_NEEDTEXTA)
-					lstrcpyn(pTTTA->szText, strTipText, 80);
+				{
+					pTTTA->lpszText = (LPSTR)(LPCSTR)m_tooltiptextA;
+					::SendMessage(pTTTA->hdr.hwndFrom, TTM_SETMAXTIPWIDTH, 0, 400);
+				}
 				else
-					_mbstowcsz(pTTTW->szText, strTipText, 80);
+				{
+					pTTTW->lpszText = (LPWSTR)(LPCWSTR)m_tooltiptextW;
+					::SendMessage(pTTTW->hdr.hwndFrom, TTM_SETMAXTIPWIDTH, 0, 400);
+				}
 #else
 				if (pNMHDR->code == TTN_NEEDTEXTA)
-					_wcstombsz(pTTTA->szText, strTipText, 80);
+				{
+					pTTTA->lpszText = (LPSTR)(LPCSTR)m_tooltiptextA;
+					::SendMessage(pTTTA->hdr.hwndFrom, TTM_SETMAXTIPWIDTH, 0, 400);
+				}
 				else
-					lstrcpyn(pTTTW->szText, strTipText, 80);
+				{
+					pTTTW->lpszText = (LPWSTR)(LPCWSTR)m_tooltiptextW;
+					::SendMessage(pTTTW->hdr.hwndFrom, TTM_SETMAXTIPWIDTH, 0, 400);
+				}
 #endif
 			}
 		}

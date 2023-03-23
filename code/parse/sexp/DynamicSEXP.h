@@ -59,7 +59,7 @@ class DynamicSEXP {
 	 * @param node The SEXP node containing the first parameter of the parameter list
 	 * @return The return value of the SEXP
 	 */
-	virtual int execute(int node) = 0;
+	virtual int execute(int node, int parent_node = -1) = 0;
 
 	/**
 	 * @brief Gets the return type of the SEXP
