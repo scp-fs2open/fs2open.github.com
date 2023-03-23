@@ -39,6 +39,7 @@
 #include "weapon/weapon.h"
 #include "scpui/SoundPlugin.h"
 #include "scpui/rocket_ui.h"
+#include "scripting/api/objs/control_config.h"
 #include "scripting/api/objs/techroom.h"
 #include "scripting/api/objs/loop_brief.h"
 #include "scripting/api/objs/redalert.h"
@@ -1922,6 +1923,67 @@ ADE_FUNC(__len, l_Log_Messages, nullptr, "The number of mission message entries"
 {
 	return ade_set_args(L, "i", (int)Msg_scrollback_vec.size());
 }
+
+//**********SUBLIBRARY: UserInterface/ControlConfig
+ADE_LIB_DERIV(l_UserInterface_ControlConfig,
+	"ControlConfig",
+	nullptr,
+	"API for accessing data related to the control config UI.<br><b>Warning:</b> This is an internal "
+	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	l_UserInterface);
+
+ADE_FUNC(InitControlConfig,
+	l_UserInterface_ControlConfig,
+	nullptr,
+	"Inits the control config UI elements. Must be used before access control config elements!",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	control_config_init(true);
+	
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(CloseControlConfig,
+	l_UserInterface_ControlConfig,
+	nullptr,
+	"Closes the control config UI elements. Must be used when finished accessing control config elements!",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	control_config_close(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_LIB_DERIV(l_Controls, "Controls", nullptr, nullptr, l_UserInterface_ControlConfig);
+ADE_INDEXER(l_Controls,
+	"number Index",
+	"Array of controls",
+	"control",
+	"control handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "o", l_Control.Set(control_h()));
+	idx--; // Convert to Lua's 1 based index system
+
+	if ((idx < 0) || (idx >= (int)Control_config.size()))
+		return ade_set_error(L, "o", l_Control.Set(control_h()));
+
+	return ade_set_args(L, "o", l_Control.Set(control_h(idx)));
+}
+
+ADE_FUNC(__len, l_Controls, nullptr, "The number of controls", "number", "The number of controls.")
+{
+	return ade_set_args(L, "i", (int)Control_config.size());
+}
+
+//must handle controls presets!
 
 //**********SUBLIBRARY: UserInterface/PauseScreen
 ADE_LIB_DERIV(l_UserInterface_PauseScreen,

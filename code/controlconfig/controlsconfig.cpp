@@ -136,17 +136,6 @@ int Conflict_bright = 0;
 
 static int Num_cc_lines;	// Number of Cc_lines to display on the current page. Is, at worse, CCFG_MAX + NUM_JOY_AXIS_ACTIONS
 
-/**
- * @struct cc_line
- * @brief Defines an interactable line to display control names and their bindings
- */
-struct cc_line {
-	const char *label;
-	int cc_index;  // index into Control_config of item
-	int y;  // Y coordinate of line
-	int kx, kw, jx, jw;  // x start and width of keyboard and joystick bound text
-};
-
 enum class selItem : int {
 	selItem_REND,	// Must be first to allow cycling
 
@@ -189,11 +178,6 @@ static UI_WINDOW Ui_window;
 static unsigned int Defaults_cycle_pos = 0; // the controls preset that was last selected
 
 int Control_config_overlay_id;
-
-struct conflict {
-	int first = -1;  // index of other control in conflict with this one
-	int second = -1; // index of other control in conflict with this one
-};
 
 SCP_vector<conflict> Conflicts;
 
@@ -1463,7 +1447,7 @@ const char *control_config_tooltip_handler(const char *str)
 	return NULL;
 }
 
-void control_config_init()
+void control_config_init(bool API_Access = false)
 {
 	int i;
 	ui_button_info *b;
@@ -1477,14 +1461,16 @@ void control_config_init()
 	Conflicts.clear();
 	Conflicts.resize(Control_config.size());
 
-	// Init Cc_lines
-	Cc_lines.clear();
-	Cc_lines.resize(Control_config.size());	// Can't use CCFG_MAX here, since scripts or might add controls
+	if (!API_Access) {
+		// Init Cc_lines
+		Cc_lines.clear();
+		Cc_lines.resize(Control_config.size()); // Can't use CCFG_MAX here, since scripts or might add controls
 
-	common_set_interface_palette(NOX("ControlConfigPalette"));  // set the interface palette
-	Ui_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
-	Ui_window.set_mask_bmap(Conflict_background_bitmap_mask_fname[gr_screen.res]);
-	Ui_window.tooltip_handler = control_config_tooltip_handler;
+		common_set_interface_palette(NOX("ControlConfigPalette")); // set the interface palette
+		Ui_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
+		Ui_window.set_mask_bmap(Conflict_background_bitmap_mask_fname[gr_screen.res]);
+		Ui_window.tooltip_handler = control_config_tooltip_handler;
+	}
 
 	// Init preset cycling system
 	auto preset_it = control_config_get_current_preset();
@@ -1495,82 +1481,88 @@ void control_config_init()
 		Defaults_cycle_pos = static_cast<unsigned int>(std::distance(Control_config_presets.begin(), preset_it));
 	}
 
-	// load in help overlay bitmap	
-	Control_config_overlay_id = help_overlay_get_index(CONTROL_CONFIG_OVERLAY);
-	help_overlay_set_state(Control_config_overlay_id,gr_screen.res,0);
+	if (!API_Access) {
+		// load in help overlay bitmap
+		Control_config_overlay_id = help_overlay_get_index(CONTROL_CONFIG_OVERLAY);
+		help_overlay_set_state(Control_config_overlay_id, gr_screen.res, 0);
 
-	// reset conflict flashing
-	Conflict_stamp = UI_TIMESTAMP::invalid();
+		// reset conflict flashing
+		Conflict_stamp = UI_TIMESTAMP::invalid();
 
-	for (i=0; i<NUM_BUTTONS; i++) {
-		b = &CC_Buttons[gr_screen.res][i];
+		for (i = 0; i < NUM_BUTTONS; i++) {
+			b = &CC_Buttons[gr_screen.res][i];
 
-		if (b->hotspot < 0) {  // temporary
-			b->button.create(&Ui_window, NOX("Clear other"), b->x, b->y, 150, 30, 0, 1);  // temporary
+			if (b->hotspot < 0) {                                                            // temporary
+				b->button.create(&Ui_window, NOX("Clear other"), b->x, b->y, 150, 30, 0, 1); // temporary
+				b->button.set_highlight_action(common_play_highlight_sound);
+				continue;
+			}
+
+			b->button
+				.create(&Ui_window, "", b->x, b->y, 60, 30, ((i == SCROLL_UP_BUTTON) || (i == SCROLL_DOWN_BUTTON)), 1);
+
+			// set up callback for when a mouse first goes over a button
 			b->button.set_highlight_action(common_play_highlight_sound);
-			continue;
+			if (i < 4) {
+				b->button.set_bmaps(b->filename, 5, 1); // a bit of a hack here, but buttons 0-3 need 4 frames loaded
+			} else {
+				b->button.set_bmaps(b->filename);
+			}
+			b->button.link_hotspot(b->hotspot);
 		}
 
-		b->button.create(&Ui_window, "", b->x, b->y, 60, 30, ((i == SCROLL_UP_BUTTON) || (i == SCROLL_DOWN_BUTTON)), 1);
-
-		// set up callback for when a mouse first goes over a button
-		b->button.set_highlight_action(common_play_highlight_sound);		
-		if (i<4) {
-			b->button.set_bmaps(b->filename, 5, 1);		// a bit of a hack here, but buttons 0-3 need 4 frames loaded
-		} else {
-			b->button.set_bmaps(b->filename);
+		// create all text
+		for (i = 0; i < CC_NUM_TEXT; i++) {
+			Ui_window.add_XSTR(&CC_text[gr_screen.res][i]);
 		}
-		b->button.link_hotspot(b->hotspot);
-	}	
 
-	// create all text
-	for(i=0; i<CC_NUM_TEXT; i++){
-		Ui_window.add_XSTR(&CC_text[gr_screen.res][i]);
+		for (i = 0; i < LIST_BUTTONS_MAX; i++) {
+			List_buttons[i].create(&Ui_window, "", 0, 0, 60, 30, 0, 1);
+			List_buttons[i].hide();
+			List_buttons[i].disable();
+		}
+
+		// set up hotkeys for buttons so we draw the correct animation frame when a key is pressed
+		CC_Buttons[gr_screen.res][SCROLL_UP_BUTTON].button.set_hotkey(KEY_PAGEUP);
+		CC_Buttons[gr_screen.res][SCROLL_DOWN_BUTTON].button.set_hotkey(KEY_PAGEDOWN);
+		CC_Buttons[gr_screen.res][BIND_BUTTON].button.set_hotkey(KEY_ENTER);
+		CC_Buttons[gr_screen.res][CLEAR_OTHER_BUTTON].button.set_hotkey(KEY_CTRLED | KEY_DELETE);
+		CC_Buttons[gr_screen.res][UNDO_BUTTON].button.set_hotkey(KEY_CTRLED | KEY_Z);
+		CC_Buttons[gr_screen.res][CLEAR_BUTTON].button.set_hotkey(KEY_DELETE);
+		CC_Buttons[gr_screen.res][ACCEPT_BUTTON].button.set_hotkey(KEY_CTRLED | KEY_ENTER);
+		CC_Buttons[gr_screen.res][HELP_BUTTON].button.set_hotkey(KEY_F1);
+		CC_Buttons[gr_screen.res][RESET_BUTTON].button.set_hotkey(KEY_CTRLED | KEY_R);
+		CC_Buttons[gr_screen.res][INVERT_AXIS].button.set_hotkey(KEY_I);
+
+		CC_Buttons[gr_screen.res][CANCEL_BUTTON].button.disable();
+		CC_Buttons[gr_screen.res][CLEAR_OTHER_BUTTON].button.disable();
+
+		Background_bitmap = bm_load(Conflict_background_bitmap_fname[gr_screen.res]);
+
+		Scroll_offset = Selected_line = 0;
+
+		// setup strings
+		Invert_text[0] = vm_strdup(XSTR("N", 1032));
+		Invert_text[1] = vm_strdup(XSTR("Y", 1033));
 	}
 
-	for (i=0; i<LIST_BUTTONS_MAX; i++) {
-		List_buttons[i].create(&Ui_window, "", 0, 0, 60, 30, 0, 1);
-		List_buttons[i].hide();
-		List_buttons[i].disable();
-	}
-
-	// set up hotkeys for buttons so we draw the correct animation frame when a key is pressed
-	CC_Buttons[gr_screen.res][SCROLL_UP_BUTTON].button.set_hotkey(KEY_PAGEUP);
-	CC_Buttons[gr_screen.res][SCROLL_DOWN_BUTTON].button.set_hotkey(KEY_PAGEDOWN);
-	CC_Buttons[gr_screen.res][BIND_BUTTON].button.set_hotkey(KEY_ENTER);
-	CC_Buttons[gr_screen.res][CLEAR_OTHER_BUTTON].button.set_hotkey(KEY_CTRLED | KEY_DELETE);
-	CC_Buttons[gr_screen.res][UNDO_BUTTON].button.set_hotkey(KEY_CTRLED | KEY_Z);
-	CC_Buttons[gr_screen.res][CLEAR_BUTTON].button.set_hotkey(KEY_DELETE);
-	CC_Buttons[gr_screen.res][ACCEPT_BUTTON].button.set_hotkey(KEY_CTRLED | KEY_ENTER);
-	CC_Buttons[gr_screen.res][HELP_BUTTON].button.set_hotkey(KEY_F1);
-	CC_Buttons[gr_screen.res][RESET_BUTTON].button.set_hotkey(KEY_CTRLED | KEY_R);
-	CC_Buttons[gr_screen.res][INVERT_AXIS].button.set_hotkey(KEY_I);
-
-	CC_Buttons[gr_screen.res][CANCEL_BUTTON].button.disable();
-	CC_Buttons[gr_screen.res][CLEAR_OTHER_BUTTON].button.disable();
-
-	Background_bitmap = bm_load(Conflict_background_bitmap_fname[gr_screen.res]);	
-
-	Scroll_offset = Selected_line = 0;
 	control_config_conflict_check();
-
-	// setup strings
-	Invert_text[0] = vm_strdup(XSTR("N", 1032));
-	Invert_text[1] = vm_strdup(XSTR("Y", 1033));
 
 	control_config_list_prepare();
 }
 
-void control_config_close()
+void control_config_close(bool API_Access = false)
 {
 	int idx;
 	
-	if (Background_bitmap){
-		bm_release(Background_bitmap);
-	}
+	if (!API_Access) {
+		if (Background_bitmap) {
+			bm_release(Background_bitmap);
+		}
 
-	Ui_window.destroy();
-	common_free_interface_palette();		// restore game palette
+		Ui_window.destroy();
+		common_free_interface_palette(); // restore game palette
+	}
 	hud_squadmsg_save_keys();				// rebuild map for saving/restoring keys in squadmsg mode
 	game_flush();
 
@@ -1580,11 +1572,13 @@ void control_config_close()
 		Pilot.save_savefile();
 	}
 
-	// free strings
-	for (idx = 0; idx < NUM_INVERT_TEXT; idx++) {
-		if (Invert_text[idx] != nullptr) {
-			vm_free(Invert_text[idx]);
-			Invert_text[idx] = nullptr;
+	if (!API_Access) {
+		// free strings
+		for (idx = 0; idx < NUM_INVERT_TEXT; idx++) {
+			if (Invert_text[idx] != nullptr) {
+				vm_free(Invert_text[idx]);
+				Invert_text[idx] = nullptr;
+			}
 		}
 	}
 

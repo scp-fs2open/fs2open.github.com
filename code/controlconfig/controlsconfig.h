@@ -433,6 +433,26 @@ private:
 	short btn = -1;     //!< The button, key combo, or axis that's bound.
 };
 
+/**
+ * @struct cc_line
+ * @brief Defines an interactable line to display control names and their bindings
+ */
+struct cc_line {
+	const char* label;
+	int cc_index;       // index into Control_config of item
+	int y;              // Y coordinate of line
+	int kx, kw, jx, jw; // x start and width of keyboard and joystick bound text
+};
+
+/**
+ * @struct conflict
+ * @brief Defines an conflict between bindings
+ */
+struct conflict {
+	int first = -1;  // index of other control in conflict with this one
+	int second = -1; // index of other control in conflict with this one
+};
+
 /*!
  * A pair of bindings.
  * @note Please don't set the bindings directly, use ::take() instead.
@@ -649,6 +669,9 @@ extern int Joy_sensitivity;
 
 extern int Control_config_overlay_id;
 
+extern SCP_vector<cc_line> Cc_lines; //!< Stores the keyboard details for the UI
+extern SCP_vector<conflict> Conflicts; //!< Stores conflict data for the keybinds
+
 extern SCP_vector<CCI> Control_config;		//!< Stores the keyboard configuration
 extern SCP_vector<CC_preset> Control_config_presets; // tabled control presets; pointers to config_item arrays
 extern const char **Joy_button_text;			// String table of button labels.  XSTR'd on init.
@@ -689,7 +712,7 @@ void control_config_common_close();
 /*!
  * @brief init config menu
  */
-void control_config_init();
+void control_config_init(bool API_Acess);
 
 /*!
  * @brief do a frame of the config menu
@@ -699,7 +722,7 @@ void control_config_do_frame(float frametime);
 /*!
  * @brief close config menu
  */
-void control_config_close();
+void control_config_close(bool API_Access);
 
 /*!
  * @brief Cancel configuration of controls, revert any changes, return to previous menu/game state
