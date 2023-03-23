@@ -14,7 +14,7 @@ rank_stuff* rank_h::getRank() const
 }
 
 //**********HANDLE: rank
-ADE_OBJ(l_Rank, rank_h, "medal", "Medal handle");
+ADE_OBJ(l_Rank, rank_h, "rank", "Rank handle");
 
 ADE_VIRTVAR(Name, l_Rank, nullptr, "The name of the rank", "string", "The name")
 {
