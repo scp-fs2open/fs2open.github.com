@@ -1705,6 +1705,11 @@ ADE_INDEXER(l_Medals,
 	return ade_set_args(L, "o", l_Medal.Set(medal_h(idx)));
 }
 
+ADE_FUNC(__len, l_Medals, nullptr, "The number of valid medals", "number", "The number of valid medals.")
+{
+	return ade_set_args(L, "i", Medals.size());
+}
+
 ADE_LIB_DERIV(l_Ranks, "Ranks_List", nullptr, nullptr, l_UserInterface_Medals);
 ADE_INDEXER(l_Ranks, "number Index", "Array of Ranks", "rank", "rank handle, or invalid handle if index is invalid")
 {
@@ -1717,6 +1722,11 @@ ADE_INDEXER(l_Ranks, "number Index", "Array of Ranks", "rank", "rank handle, or 
 		return ade_set_error(L, "o", l_Rank.Set(rank_h()));
 
 	return ade_set_args(L, "o", l_Rank.Set(rank_h(idx)));
+}
+
+ADE_FUNC(__len, l_Ranks, nullptr, "The number of valid ranks", "number", "The number of valid ranks.")
+{
+	return ade_set_args(L, "i", Ranks.size());
 }
 
 //**********SUBLIBRARY: UserInterface/Hotkeys
