@@ -10,6 +10,7 @@
 #include "mission/missioncampaign.h"
 #include "pilotfile/pilotfile.h"
 #include "playerman/player.h"
+#include "stats/medals.h"
 #include "scripting/api/objs/shipclass.h"
 #include "scripting/lua/LuaTable.h"
 #include "ship/ship.h"
@@ -796,6 +797,51 @@ ADE_FUNC(setMissionShipclassKills,
 	ssh->get()->m_kills[ship_idx] = setv;
 
 	return ADE_RETURN_TRUE;
+}
+
+ADE_VIRTVAR(Medals,
+	l_ScoringStats,
+	nullptr,
+	"Gets a table of medals that the player has earned. The number returned is the number of times the player has won that medal. "
+	"The index position in the table is an index into Medals.",
+	"{ number => number ... }",
+	"The medals table")
+{
+	scoring_stats_h* ssh;
+	if (!ade_get_args(L, "o", l_ScoringStats.GetPtr(&ssh))) {
+		return ADE_RETURN_NIL;
+	}
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	auto table = luacpp::LuaTable::create(L);
+
+	for (int i = 0; i < (int)Medals.size(); i++) {
+		table.addValue(i + 1, ssh->get()->medal_counts[i]); // translate to Lua index
+	}
+
+	return ade_set_args(L, "t", &table);
+}
+
+ADE_VIRTVAR(Rank,
+	l_ScoringStats,
+	nullptr, 
+	"Returns the player's rank as in index into Ranks",
+	"number",
+	"The rank index")
+{
+	scoring_stats_h* ssh;
+	if (!ade_get_args(L, "o", l_ScoringStats.GetPtr(&ssh))) {
+		return ADE_RETURN_NIL;
+	}
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "i", verify_rank(ssh->get()->rank));
 }
 }
 }

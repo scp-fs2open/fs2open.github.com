@@ -1362,6 +1362,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/luaaisexp.h
 	scripting/api/objs/mc_info.cpp
 	scripting/api/objs/mc_info.h
+	scripting/api/objs/medals.cpp
+	scripting/api/objs/medals.h
 	scripting/api/objs/message.cpp
 	scripting/api/objs/message.h
 	scripting/api/objs/missionhotkey.cpp
@@ -1394,6 +1396,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/player.h
 	scripting/api/objs/promise.cpp
 	scripting/api/objs/promise.h
+	scripting/api/objs/rank.cpp
+	scripting/api/objs/rank.h
 	scripting/api/objs/redalert.cpp
 	scripting/api/objs/redalert.h
 	scripting/api/objs/sexpvar.cpp
