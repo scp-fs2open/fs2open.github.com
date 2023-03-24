@@ -750,14 +750,6 @@ void control_config_bind(int i, const CC_bind &new_bind, selItem order)
 bool control_config_remove_binding(int ctrl, selItem item, bool API_Access)
 {
 	bool success = true;
-	
-	if (ctrl < 0) {
-		
-		if (!API_Access)
-			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
-
-		return false;
-	}
 
 	switch (item) {
 	case selItem::None:
@@ -829,12 +821,6 @@ bool control_config_remove_binding(int ctrl, selItem item, bool API_Access)
  */
 bool control_config_clear_other(int ctrl, bool API_Access)
 {
-	if (ctrl < 0) {
-		if (!API_Access)
-			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
-		return false;
-	}
-
 	const auto& selected = Control_config[ctrl];
 
 	// Fail if selected item is empty
@@ -1425,7 +1411,11 @@ void control_config_button_pressed(int n)
 			break;
 
 		case CLEAR_BUTTON:
-			control_config_remove_binding(Cc_lines[Selected_line].cc_index, Selected_item);
+			if (Selected_line < 0) {
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
+			} else {
+				control_config_remove_binding(Cc_lines[Selected_line].cc_index, Selected_item);
+			}
 			break;
 
 		case HELP_BUTTON:
@@ -1446,7 +1436,11 @@ void control_config_button_pressed(int n)
 			break;
 
 		case CLEAR_OTHER_BUTTON:
-			control_config_clear_other(Cc_lines[Selected_line].cc_index);
+			if (Selected_line < 0) {
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
+			} else {
+				control_config_clear_other(Cc_lines[Selected_line].cc_index);
+			}
 			break;
 
 		case CLEAR_ALL_BUTTON:
