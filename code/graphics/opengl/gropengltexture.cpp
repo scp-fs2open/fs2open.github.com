@@ -47,6 +47,18 @@ extern int GLOWMAP;
 extern int SPECMAP;
 extern int ENVMAP;
 
+const SCP_vector<std::pair<int, SCP_string>> TextureFilteringValues = {{ 0, "Bilinear" },
+                                                                      { 1, "Trilinear" }, };
+
+static auto TextureFilteringOption = options::OptionBuilder<int>("Graphics.TextureFilter", "Texture Filtering", "Texture filtering option")
+								 .importance(1)
+								 .category("Graphics")
+								 .values(TextureFilteringValues)
+								 .default_val(0)
+								 .bind_to_once(&GL_mipmap_filter)
+								 .flags({options::OptionFlags::ForceMultiValueSelection})
+								 .finish();
+
 static SCP_vector<float> anisotropic_value_enumerator()
 {
 	float max;
