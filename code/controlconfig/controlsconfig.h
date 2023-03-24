@@ -661,6 +661,15 @@ private:
 	SCP_vector<CCI>& ControlConfig;
 };
 
+enum class selItem : int {
+	selItem_REND, // Must be first to allow cycling
+
+	None,
+	Primary,
+	Secondary,
+
+	selItem_END // Must be last to allow cycling
+};
 
 extern int Failed_key_index;
 
@@ -712,7 +721,7 @@ void control_config_common_close();
 /*!
  * @brief init config menu
  */
-void control_config_init(bool API_Acess);
+void control_config_init(bool API_Acess = false);
 
 /*!
  * @brief do a frame of the config menu
@@ -722,12 +731,58 @@ void control_config_do_frame(float frametime);
 /*!
  * @brief close config menu
  */
-void control_config_close(bool API_Access);
+void control_config_close(bool API_Access = false);
 
 /*!
  * @brief setup for binding a control
  */
-void control_config_do_bind(bool API_Access);
+void control_config_do_bind();
+
+/**
+ * @brief Unbinds the selected control
+ */
+bool control_config_remove_binding(int ctrl, selItem item, bool API_Access = false);
+
+/**
+ * @brief Clears all conflicting control bindings, except the selected control
+ */
+bool control_config_clear_other(int ctrl, bool API_Access = false);
+
+/**
+ * @brief Unbinds ALL controls
+ * TODO: unbind axes and reset inversion
+ */
+bool control_config_clear_all(bool API_Access = false);
+
+/**
+ * @brief Reverts all bindings to their preset. If already default, cycle to the next presets.
+ */
+bool control_config_do_reset(bool API_Access = false, bool cycle = true);
+
+/**
+ * @brief Toggles a modifier on or off for a control binding
+ */
+bool control_config_toggle_modifier(int bit, int ctrl, bool API_Access = false);
+
+/**
+ * @brief Toggles inversion for the selected axis control
+ */
+bool control_config_toggle_invert(int ctrl, selItem item, bool API_Access = false);
+
+/*!
+ * @brief Performs a single undo opration, reverting the most recent change to bindings, if any
+ */
+void control_config_do_undo(bool API_Access = false);
+
+/*!
+ *@brief Runs every frame to check for input and binds the input if appropriate
+ */
+bool control_config_bind_key_on_frame(int ctrl, bool API_Access = false);
+
+/*!
+ * Does a cursory conflict check, then accepts changes to the bindings, if any, and request the menu to close.
+ */
+int control_config_accept();
 
 /*!
  * @brief Cancel configuration of controls, revert any changes, return to previous menu/game state
