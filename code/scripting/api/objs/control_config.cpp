@@ -19,6 +19,36 @@ conflict* control_h::getConflict() const
 	return &Conflicts[control];
 }
 
+int control_h::getIndex() const
+{
+	return control;
+}
+
+preset_h::preset_h() : preset(-1) {}
+preset_h::preset_h(int l_preset) : preset(l_preset) {}
+
+CC_preset* preset_h::getPreset() const
+{
+	return &Control_config_presets[preset];
+}
+
+//**********HANDLE: preset
+ADE_OBJ(l_Preset, preset_h, "preset", "Control Preset handle");
+
+ADE_VIRTVAR(Name, l_Preset, nullptr, "The name of the preset", "string", "The name")
+{
+	preset_h current;
+	if (!ade_get_args(L, "o", l_Preset.Get(&current))) {
+		return ADE_RETURN_NIL;
+	}
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "s", current.getPreset()->name.c_str());
+}
+
 //**********HANDLE: control
 ADE_OBJ(l_Control, control_h, "control", "Control handle");
 
@@ -58,7 +88,7 @@ ADE_VIRTVAR(Bindings,
 	return ade_set_args(L, "t", &table);
 }
 
-ADE_VIRTVAR(Inversions,
+ADE_VIRTVAR(Inverted,
 	l_Control,
 	nullptr,
 	"Gets a table of inversions for the control",
@@ -244,6 +274,111 @@ ADE_VIRTVAR(Conflicted,
 	}
 
 	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(DetectKeypress,
+	l_Control,
+	nullptr,
+	"Waits for a keypress to use as a keybind. Binds the key if found. Will need to disable UI input if enabled first. Should run On Frame.",
+	"boolean",
+	"True if successful, false otherwise")
+{
+	control_h current;
+	if (!ade_get_args(L, "oi", l_Control.Get(&current))) {
+		return ADE_RETURN_FALSE;
+	}
+
+	int idx = current.getIndex();
+
+	return ade_set_args(L, "b", control_config_bind_key_on_frame(idx, true));
+}
+
+ADE_FUNC(ClearBind,
+	l_Control,
+	"number Item",
+	"Clears the control binding. Item is all controls (1), first control (2), or second control (3)",
+	"boolean",
+	"Returns true if successful, false otherwise")
+{
+	control_h current;
+	int item;
+	if (!ade_get_args(L, "oi", l_Control.Get(&current), &item)) {
+		return ADE_RETURN_FALSE;
+	}
+
+	int idx = current.getIndex();
+
+	return ade_set_args(L, "b", control_config_remove_binding(idx, (selItem)item, true));
+}
+
+ADE_FUNC(ClearConflicts,
+	l_Control,
+	nullptr,
+	"Clears all binds that conflict with the selected bind index.",
+	"boolean",
+	"Returns true if successful, false otherwise")
+{
+	control_h current;
+	if (!ade_get_args(L, "o", l_Control.Get(&current))) {
+		return ADE_RETURN_FALSE;
+	}
+
+	int idx = current.getIndex();
+
+	return ade_set_args(L, "b", control_config_clear_other(idx, true));
+}
+
+ADE_FUNC(ToggleShifted,
+	l_Control,
+	nullptr,
+	"Toggles whether or not the current bind uses SHIFT modifier.",
+	"boolean",
+	"Returns true if successful, false otherwise")
+{
+	control_h current;
+	if (!ade_get_args(L, "o", l_Control.Get(&current))) {
+		return ADE_RETURN_FALSE;
+	}
+
+	int idx = current.getIndex();
+
+	return ade_set_args(L, "b", control_config_toggle_modifier(KEY_SHIFTED, idx, true));
+}
+
+ADE_FUNC(ToggleAlted,
+	l_Control,
+	nullptr,
+	"Toggles whether or not the current bind uses ALT modifier.",
+	"boolean",
+	"Returns true if successful, false otherwise")
+{
+	control_h current;
+	if (!ade_get_args(L, "o", l_Control.Get(&current))) {
+		return ADE_RETURN_FALSE;
+	}
+
+	int idx = current.getIndex();
+
+	return ade_set_args(L, "b", control_config_toggle_modifier(KEY_ALTED, idx, true));
+}
+
+ADE_FUNC(ToggleInverted,
+	l_Control,
+	"number Item",
+	"Toggles whether or not the current bind axis is inverted. Item is all controls (1), first control (2), or second "
+	"control (3)",
+	"boolean",
+	"Returns true if successful, false otherwise")
+{
+	control_h current;
+	int item;
+	if (!ade_get_args(L, "oi", l_Control.Get(&current), &item)) {
+		return ADE_RETURN_FALSE;
+	}
+
+	int idx = current.getIndex();
+
+	return ade_set_args(L, "b", control_config_toggle_invert(idx, (selItem)item, true));
 }
 
 } // namespace api

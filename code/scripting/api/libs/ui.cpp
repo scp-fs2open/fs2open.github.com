@@ -93,6 +93,18 @@ ADE_FUNC(setOffset, l_UserInterface, "number x, number y",
 	return ADE_RETURN_TRUE;
 }
 
+/* ADE_FUNC(getContext,
+	l_UserInterface,
+	nullptr,
+	"Returns the current scpui context",
+	"boolean",
+	"True if successful, false otherwise")
+{
+	SCP_UNUSED(L);
+
+	return ade_set_args(L, "o", scpui::getContext());
+}*/
+
 ADE_FUNC(enableInput,
 	l_UserInterface,
 	"any context /* A libRocket Context value */",
@@ -1961,30 +1973,128 @@ ADE_FUNC(CloseControlConfig,
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(DetectKeypress,
+ADE_FUNC(ClearAll,
 	l_UserInterface_ControlConfig,
 	nullptr,
-	"Suspends UI key detection and waits for a keypress to use as a keybind.",
+	"Clears all control bindings.",
+	"boolean",
+	"Returns true if successful, false otherwise")
+{
+	SCP_UNUSED(L);
+
+	return ade_set_args(L, "b", control_config_clear_all(true));
+}
+
+ADE_FUNC(ResetToPreset,
+	l_UserInterface_ControlConfig,
+	nullptr,
+	"Resets all control bindings to the current preset defaults.",
+	"boolean",
+	"Returns true if successful, false otherwise")
+{
+	SCP_UNUSED(L);
+
+	return ade_set_args(L, "b", control_config_do_reset(true, false));
+}
+
+ADE_FUNC(UsePreset,
+	l_UserInterface_ControlConfig,
+	"string PresetName",
+	"Uses a defined preset if it can be found.",
+	"boolean",
+	"Returns true if successful, false otherwise")
+{
+	const char* preset = nullptr;
+	if (!ade_get_args(L, "s", &preset)) {
+		return ADE_RETURN_FALSE;
+	}
+
+	SCP_string name = preset;
+
+	return ade_set_args(L, "b", control_config_use_preset_by_name(name));
+}
+
+ADE_FUNC(Undo,
+	l_UserInterface_ControlConfig,
+	nullptr,
+	"Reverts the last change to the control bindings",
 	nullptr,
 	nullptr)
 {
-	auto ctx = scpui::getContext();
+	SCP_UNUSED(L);
 
-	if (ctx == nullptr) {
-		LuaError(L, "Context is not a valid context handle!");
-		return ADE_RETURN_NIL;
-	}
-	
-	game_flush();
-	
-	//This is where we should run the keybind code
-
-	scpui::enableInput(ctx);
+	control_config_do_undo(true);
 
 	return ADE_RETURN_NIL;
 }
 
-ADE_LIB_DERIV(l_Controls, "Controls", nullptr, nullptr, l_UserInterface_ControlConfig);
+ADE_FUNC(Accept,
+	l_UserInterface_ControlConfig,
+	nullptr,
+	"Accepts changes to the keybindings, checks for conflicts and prompts for saving the preset if applicable. Will return to previous game state. THIS IS WIP, DO NOT MERGE!",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	control_config_accept();
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(Cancel,
+	l_UserInterface_ControlConfig,
+	nullptr,
+	"Cancels changes to the keybindings, checks for conflicts and prompts for saving the preset if applicable. Will return to previous game state. THIS IS "
+	"WIP, DO NOT MERGE!",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	control_config_cancel_exit();
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(getCurrentPreset,
+	l_UserInterface_ControlConfig,
+	nullptr,
+	"Returns the name of the current controls preset.",
+	"string",
+	"The name of the preset")
+{
+	SCP_UNUSED(L);
+
+	auto it = control_config_get_current_preset();
+
+	return ade_set_args(L, "s", it->name.c_str());
+}
+
+ADE_LIB_DERIV(l_Presets, "ControlPresets", nullptr, nullptr, l_UserInterface_ControlConfig);
+ADE_INDEXER(l_Presets,
+	"number Index",
+	"Array of control presets",
+	"preset",
+	"control preset handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "o", l_Preset.Set(preset_h()));
+	idx--; // Convert to Lua's 1 based index system
+
+	if ((idx < 0) || (idx >= (int)Control_config.size()))
+		return ade_set_error(L, "o", l_Preset.Set(preset_h()));
+
+	return ade_set_args(L, "o", l_Preset.Set(preset_h(idx)));
+}
+
+ADE_FUNC(__len, l_Presets, nullptr, "The number of control presets", "number", "The number of control presets.")
+{
+	return ade_set_args(L, "i", (int)Control_config_presets.size());
+}
+
+ADE_LIB_DERIV(l_Controls, "ControlConfigs", nullptr, nullptr, l_UserInterface_ControlConfig);
 ADE_INDEXER(l_Controls,
 	"number Index",
 	"Array of controls",

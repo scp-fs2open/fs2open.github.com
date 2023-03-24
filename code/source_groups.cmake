@@ -1312,8 +1312,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/cockpit_display.h
 	scripting/api/objs/control_binding.cpp
 	scripting/api/objs/control_binding.h
-	scripting/api/objs/control_line.cpp
-	scripting/api/objs/control_line.h
+	scripting/api/objs/control_config.cpp
+	scripting/api/objs/control_config.h
 	scripting/api/objs/color.cpp
 	scripting/api/objs/color.h
 	scripting/api/objs/control_info.cpp
