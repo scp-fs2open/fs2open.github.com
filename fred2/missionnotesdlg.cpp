@@ -426,7 +426,7 @@ BOOL CMissionNotesDlg::OnInitDialog()
 	}
 
 	box = (CComboBox *) GetDlgItem(IDC_COMMAND_PERSONA);
-	for (i=0; i<Num_personas; i++){
+	for (i = 0; i < (int)Personas.size(); i++) {
 		if (Personas[i].flags & PERSONA_FLAG_COMMAND){
 			box->AddString(Personas[i].name);
 			box->SetItemData(box_index, i);

@@ -6734,7 +6734,6 @@ void game_shutdown(void)
 	io::mouse::CursorManager::shutdown();
 
 	mission_campaign_clear();	// clear out the campaign stuff
-	message_mission_close();	// clear loaded table data from message.tbl
 	mission_parse_close();		// clear out any extra memory that may be in use by mission parsing
 	multi_voice_close();			// close down multiplayer voice (including freeing buffers, etc)
 	multi_log_close();

@@ -127,8 +127,7 @@ int MessageQ_num;			// keeps track of number of entries on the queue.
 #define MESSAGE_SOON_TIMESTAMP			5000		// "soon" messages must play within 5 seconds
 
 // Persona information
-int Num_personas;
-Persona *Personas = NULL;
+SCP_vector<Persona> Personas;
 
 const char *Persona_type_names[MAX_PERSONA_TYPES] =
 {
@@ -196,52 +195,31 @@ int comm_between_player_and_ship(int other_shipnum, bool for_death_scream);
 
 // following functions to parse messages.tbl -- code pretty much ripped from weapon/ship table parsing code
 
-static void persona_parse_close()
-{
-	if (Personas != NULL) {
-		vm_free(Personas);
-		Personas = NULL;
-	}
-}
-
 // functions to deal with parsing personas.  Personas are just a list of names that give someone
 // sending a message an identity which spans the life of the mission
 void persona_parse()
 {
-	int i;
-	char type[NAME_LENGTH];
-
-	static bool done_at_exit = false;
-	if ( !done_at_exit ) {
-		atexit( persona_parse_close );
-		done_at_exit = true;
-	}
-
-	// this way should cause the least amount of problems on the various platforms - taylor
-	Personas = (Persona*)vm_realloc( Personas, sizeof(Persona) * (Num_personas + 1) );
-
-	if (Personas == NULL)
-		Error(LOCATION, "Not enough memory to allocate Personas!" );
-
-	memset(&Personas[Num_personas], 0, sizeof(Persona));
+	Persona this_persona;
 
 	required_string("$Persona:");
-	stuff_string(Personas[Num_personas].name, F_NAME, NAME_LENGTH);
+	stuff_string(this_persona.name, F_NAME, NAME_LENGTH);
+	
+	bool dup = false;
+	if (message_persona_name_lookup(this_persona.name) >= 0) {
+		Warning(LOCATION, "Duplicate Persona %s found!", this_persona.name);
+		dup = true;
+	}
 
 	// get the type name and set the appropriate flag
 	required_string("$Type:");
+	char type[NAME_LENGTH];
 	stuff_string( type, F_NAME, NAME_LENGTH );
+
+	int i;
 	for ( i = 0; i < MAX_PERSONA_TYPES; i++ ) {
 		if ( !stricmp( type, Persona_type_names[i]) ) {
 
-			Personas[Num_personas].flags |= (1<<i);
-
-			// save the Command persona in a global
-			if ( Personas[Num_personas].flags & PERSONA_FLAG_COMMAND ) {
-				// always use the most recent Command persona
-				// found, since that's how retail does it
-				Default_command_persona = Num_personas;
-			}
+			this_persona.flags |= (1 << i);
 
 			break;
 		}
@@ -259,29 +237,29 @@ void persona_parse()
 		if (j >= 0)
 		{
 			if (j < 32)
-				Personas[Num_personas].species_bitfield |= (1 << j);
+				this_persona.species_bitfield |= (1 << j);
 			else
 				Warning(LOCATION, "Species %s is index 32 or higher and therefore cannot be assigned to the persona species bitfield of %s",
-					Species_info[j].species_name, Personas[Num_personas].name);
+					Species_info[j].species_name, this_persona.name);
 		}
 		else
 			WarningEx(LOCATION, "Unknown species in messages.tbl -- %s\n", cstrtemp );
 	}
 
 	// if no species were assigned, the persona should default to the first species, since that's how retail did it
-	if (Personas[Num_personas].species_bitfield == 0)
-		Personas[Num_personas].species_bitfield = (1 << 0);
+	if (this_persona.species_bitfield == 0)
+		this_persona.species_bitfield = (1 << 0);
 
 	if (optional_string("$Allow substitution of missing messages:"))
 	{
 		bool temp;
 		stuff_boolean(&temp);
 		if (temp)
-			Personas[Num_personas].flags |= PERSONA_FLAG_SUBSTITUTE_MISSING_MESSAGES;
+			this_persona.flags |= PERSONA_FLAG_SUBSTITUTE_MISSING_MESSAGES;
 	}
 	else 
 	{
-		Personas[Num_personas].flags |= PERSONA_FLAG_SUBSTITUTE_MISSING_MESSAGES;
+		this_persona.flags |= PERSONA_FLAG_SUBSTITUTE_MISSING_MESSAGES;
 	}
 
 	if (optional_string("$No automatic assignment:"))
@@ -289,10 +267,19 @@ void persona_parse()
 		bool temp;
 		stuff_boolean(&temp);
 		if (temp)
-			Personas[Num_personas].flags |= PERSONA_FLAG_NO_AUTOMATIC_ASSIGNMENT;
+			this_persona.flags |= PERSONA_FLAG_NO_AUTOMATIC_ASSIGNMENT;
 	}
 
-	Num_personas++;
+	if (!dup) {
+		Personas.push_back(this_persona);
+
+		// save the Command persona in a global
+		if (this_persona.flags & PERSONA_FLAG_COMMAND) {
+			// always use the most recent Command persona
+			// found, since that's how retail does it
+			Default_command_persona = ((int)Personas.size() - 1);
+		}
+	}
 }
 
 // two functions to add avi/wave names into a table
@@ -392,9 +379,18 @@ void message_filter_parse(MessageFilter& filter) {
 void handle_legacy_backup_message(MissionMessage& msg, SCP_string wing_name) {
 	static bool warned = false;
 	if (!warned) {
-		Warning(LOCATION, "Converting legacy '%s Arrived' message. Consult the documention on message filters for more information.", wing_name.c_str());
+		WarningEx(LOCATION,
+			"Converting legacy '%s Arrived' message. Consult the documention on message filters for more information. "
+			"A complete list will be printed to the log.",
+			wing_name.c_str());
 		warned = true;
-	}
+	} 
+	
+	mprintf(("Converting legacy '%s Arrived' message for message %s with persona %s.\n",
+			wing_name.c_str(),
+			msg.name,
+			Personas[msg.persona_index].name));
+
 	static const char* backup = Builtin_messages[MESSAGE_BACKUP].name;
 	msg.sender_filter.wing_name.push_back(wing_name);
 	strcpy(msg.name, backup);
@@ -591,6 +587,17 @@ void message_frequency_parse()
 	}	
 }
 
+bool message_moods_check_existing(const SCP_string& mood)
+{
+	for (int i = 0; i < (int)Builtin_moods.size(); i++) {
+		if (mood == Builtin_moods[i]) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
 void message_moods_parse()
 {	
 
@@ -600,38 +607,35 @@ void message_moods_parse()
 		required_string("$Mood:");
 		stuff_string(buf, F_NAME);
 
-		Builtin_moods.push_back(buf);
+		if (!message_moods_check_existing(buf)) {
+			Builtin_moods.push_back(buf);
+		} else {
+			mprintf(("Message mood %s already exists. Skipping!", buf.c_str()));
+		}
 	}
 
 	required_string("#End");
 }
 
-void parse_msgtbl()
+void parse_msgtbl(const char* filename)
 {
-	//speed things up a little by setting the capacities for the message vectors to roughly the FS2 amounts
-	Messages.reserve(500);
-	Message_waves.reserve(300);
-	Message_avis.reserve(30);
-
 	try {
-		read_file_text("messages.tbl", CF_TYPE_TABLES);
+		read_file_text(filename, CF_TYPE_TABLES);
 		reset_parse();
-		Num_messages = 0;
-		Num_personas = 0;
 
 		// Goober5000 - ugh, ugly hack to fix the FS2 retail tables
-		char *pVawacs25 = strstr(Mp, "Vawacs25.wav");
-		if (pVawacs25)
-		{
-			char *pAwacs75 = strstr(pVawacs25, "Awacs75.wav");
-			if (pAwacs75)
-			{
-				// move the 'V' from the first filename to the second, and adjust the 'A' case
-				*pVawacs25 = 'A';
-				for (int i = 1; i < (pAwacs75 - pVawacs25) - 1; i++)
-					pVawacs25[i] = pVawacs25[i+1];
-				pAwacs75[-1] = 'V';
-				pAwacs75[0] = 'a';
+		if (!Parsing_modular_table) {
+			char* pVawacs25 = strstr(Mp, "Vawacs25.wav");
+			if (pVawacs25) {
+				char* pAwacs75 = strstr(pVawacs25, "Awacs75.wav");
+				if (pAwacs75) {
+					// move the 'V' from the first filename to the second, and adjust the 'A' case
+					*pVawacs25 = 'A';
+					for (int i = 1; i < (pAwacs75 - pVawacs25) - 1; i++)
+						pVawacs25[i] = pVawacs25[i + 1];
+					pAwacs75[-1] = 'V';
+					pAwacs75[0] = 'a';
+				}
 			}
 		}
 
@@ -653,53 +657,41 @@ void parse_msgtbl()
 			message_moods_parse();
 		}
 
-		required_string("#Personas");
-		while ( required_string_either("#Messages", "$Persona:")){
-			persona_parse();
+		if (optional_string("#Personas")) {
+			while (required_string_one_of(3, "#Messages", "$Persona:", "#End")) {
+				persona_parse();
+			}
 		}
 
-		required_string("#Messages");
-		while (required_string_either("#End", "$Name:")) {
-			message_parse(MessageFormat::TABLED);
+		if (optional_string("#Messages")) {
+			while (required_string_either("#End", "$Name:")) {
+				message_parse(MessageFormat::TABLED);
+			}
 		}
 
 		required_string("#End");
 
-		// save the number of builtin message things -- make initing between missions easier
-		Num_builtin_messages = Num_messages;
-		Num_builtin_avis = Num_message_avis;
-		Num_builtin_waves = Num_message_waves;
-
-		// additional table part!
-		Generic_message_filenames.clear();
-		Generic_message_filenames.push_back("none");
-		Generic_message_filenames.push_back("cuevoice");
-		Generic_message_filenames.push_back("cue_voice");
-		Generic_message_filenames.push_back("emptymsg");
-		Generic_message_filenames.push_back("generic");
-		Generic_message_filenames.push_back("msgstart");
-
 		if (optional_string("#Simulated Speech Overrides"))
 		{
-			char filename[MAX_FILENAME_LEN];
+			char file[MAX_FILENAME_LEN];
 
 			while (required_string_either("#End", "$File Name:"))
 			{
 				required_string("$File Name:");
-				stuff_string(filename, F_NAME, MAX_FILENAME_LEN);
+				stuff_string(file, F_NAME, MAX_FILENAME_LEN);
 
 				// get extension
-				char *ptr = strchr(filename, '.');
+				char* ptr = strchr(file, '.');
 				if (ptr == NULL)
 				{
-					Warning(LOCATION, "Simulated speech override file '%s' was provided with no extension!", filename);
+					Warning(LOCATION, "Simulated speech override file '%s' was provided with no extension!", file);
 					continue;
 				}
 
 				// test extension
 				if (stricmp(ptr, ".ogg") != 0 && stricmp(ptr, ".wav") != 0)
 				{
-					Warning(LOCATION, "Simulated speech override file '%s' was provided with an extension other than .wav or .ogg!", filename);
+					Warning(LOCATION, "Simulated speech override file '%s' was provided with an extension other than .wav or .ogg!", file);
 					continue;
 				}
 
@@ -707,7 +699,7 @@ void parse_msgtbl()
 				*ptr = '\0';
 
 				// add truncated file name
-				Generic_message_filenames.push_back(filename);
+				Generic_message_filenames.push_back(file);
 			}
 
 			required_string("#End");
@@ -715,7 +707,7 @@ void parse_msgtbl()
 	}
 	catch (const parse::ParseException& e)
 	{
-		mprintf(("MISSIONCAMPAIGN: Unable to parse 'messages.tbl'!  Error message = %s.\n", e.what()));
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
 		return;
 	}
 }
@@ -728,17 +720,35 @@ void messages_init()
 
 	if ( !table_read ) {
 		Default_command_persona = -1;
-		
-		try
-		{
-			parse_msgtbl();
-			table_read = 1;
-		}
-		catch (const parse::ParseException& e)
-		{
-			mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "messages.tbl", e.what()));
-			return;
-		}
+
+		// speed things up a little by setting the capacities for the message vectors to roughly the FS2 amounts
+		Messages.reserve(500);
+		Message_waves.reserve(300);
+		Message_avis.reserve(30);
+
+		Num_messages = 0;
+
+		// Add built-in generic filenames
+		Generic_message_filenames.clear();
+		Generic_message_filenames.push_back("none");
+		Generic_message_filenames.push_back("cuevoice");
+		Generic_message_filenames.push_back("cue_voice");
+		Generic_message_filenames.push_back("emptymsg");
+		Generic_message_filenames.push_back("generic");
+		Generic_message_filenames.push_back("msgstart");
+
+		// first parse the default table
+		parse_msgtbl("messages.tbl");
+
+		// parse any modular tables
+		parse_modular_table("*-msg.tbm", parse_msgtbl);
+
+		// save the number of builtin message things -- make initing between missions easier
+		Num_builtin_messages = Num_messages;
+		Num_builtin_avis = Num_message_avis;
+		Num_builtin_waves = Num_message_waves;
+
+		table_read = 1;
 	}
 
 	Current_mission_mood = 0;
@@ -778,7 +788,7 @@ void messages_init()
 	}
 
 	// reinitialize the personas.  mark them all as not used
-	for ( i = 0; i < Num_personas; i++ ){
+	for (i = 0; i < (int)Personas.size(); i++) {
 		Personas[i].flags &= ~PERSONA_FLAG_USED;
 	}
 
@@ -831,16 +841,6 @@ void message_mission_shutdown()
 
 	// Goober5000 - free up special messages (done automatically via unique_ptr)
 	MessageQ.clear();
-}
-
-// call from game_shutdown() ONLY!!!
-void message_mission_close()
-{
-	// free the persona data
-	if (Personas != NULL) {
-		vm_free( Personas );
-		Personas = NULL;
-	}
 }
 
 // functions to deal with queuing messages to the message system.
@@ -1933,7 +1933,7 @@ int pick_persona(ship* shipp) {
 	ship_info* sip = &Ship_info[shipp->ship_info_index];
 	int species = sip->species;
 	int persona_type = get_persona_type(sip);
-	for (int i = 0; i < Num_personas; i++) {
+	for (int i = 0; i < (int)Personas.size(); i++) {
 		if (species >= 32 || (Personas[i].species_bitfield & (1 << species)) == 0) {
 			// The persona's species is incompatible with the ship's
 			continue;
@@ -1954,7 +1954,7 @@ int pick_persona(ship* shipp) {
 			return i;
 		}
 	}
-	int count = candidates.size();
+	int count = (int)candidates.size();
 	if (count == 0) {
 		return -1;
 	} else if (count == 1) {
@@ -2195,7 +2195,7 @@ int message_persona_name_lookup(const char* name)
 {
 	int i;
 
-	for (i = 0; i < Num_personas; i++ ) {
+	for (i = 0; i < (int)Personas.size(); i++) {
 		if ( !stricmp(Personas[i].name, name) )
 			return i;
 	}
