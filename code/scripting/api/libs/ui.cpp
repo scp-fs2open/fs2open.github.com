@@ -93,6 +93,7 @@ ADE_FUNC(setOffset, l_UserInterface, "number x, number y",
 	return ADE_RETURN_TRUE;
 }
 
+// Would be useful. Just need to return it in a useful way.
 /* ADE_FUNC(getContext,
 	l_UserInterface,
 	nullptr,
