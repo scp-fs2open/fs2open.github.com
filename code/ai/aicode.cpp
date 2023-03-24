@@ -10943,10 +10943,10 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 			// send appropriate messages here
 			if (Game_mode & GM_NORMAL || MULTIPLAYER_MASTER) {
 				if ( how == REPAIR_INFO_KILLED ){
-					message_send_builtin_to_player( MESSAGE_SUPPORT_KILLED, NULL, MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_SOON, 0, 0, p_index, p_team );
+					message_send_builtin(MESSAGE_SUPPORT_KILLED, nullptr, nullptr, p_index, p_team);
 				} else {
 					if ( repair_objp ){
-						message_send_builtin_to_player( MESSAGE_REPAIR_ABORTED, &Ships[repair_objp->instance], MESSAGE_PRIORITY_NORMAL, MESSAGE_TIME_SOON, 0, 0, p_index, p_team );
+						message_send_builtin(MESSAGE_REPAIR_ABORTED, &Ships[repair_objp->instance], nullptr, p_index, p_team);
 					}
 				}
 			}
@@ -10968,7 +10968,7 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 			hud_support_view_stop();			
 			
 			if (Game_mode & GM_NORMAL || MULTIPLAYER_MASTER) {
-				message_send_builtin_to_player(MESSAGE_REPAIR_DONE, &Ships[repair_objp->instance], MESSAGE_PRIORITY_LOW, MESSAGE_TIME_SOON, 0, 0, p_index, p_team);
+				message_send_builtin(MESSAGE_REPAIR_DONE, &Ships[repair_objp->instance], nullptr, p_index, p_team);
 			}
 		}
 		stamp = timestamp((int) ((30 + 10*frand()) * 1000));
@@ -15474,9 +15474,9 @@ void process_friendly_hit_message( int message, object *objp )
 
 	if ( index >= 0 ) 
 	{
-		message_send_builtin_to_player( message, &Ships[index], MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_ANYTIME, 0, 0, -1, -1 );
+		message_send_builtin(message, &Ships[index], nullptr, -1, -1);
 	} else {
-		message_send_builtin_to_player( message, NULL, MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_ANYTIME, 0, 0, -1, -1 );
+		message_send_builtin(message, nullptr, nullptr, -1, -1);
 	}
 }
 
@@ -15585,7 +15585,7 @@ void maybe_process_friendly_hit(object *objp_hitter, object *objp_hit, object *o
 			if (is_instructor(objp_hit)) {
 				// it's not nice to hit your instructor
 				if (pp->friendly_damage > FRIENDLY_DAMAGE_THRESHOLD) {
-					message_send_builtin_to_player( MESSAGE_INSTRUCTOR_ATTACK, NULL, MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_IMMEDIATE, 0, 0, -1, -1);
+					message_send_builtin(MESSAGE_INSTRUCTOR_ATTACK, nullptr, nullptr, -1, -1);
 					pp->last_warning_message_time = Missiontime;
 					ship_set_subsystem_strength( Player_ship, SUBSYSTEM_WEAPONS, 0.0f);
 
@@ -15597,7 +15597,7 @@ void maybe_process_friendly_hit(object *objp_hitter, object *objp_hit, object *o
 				} else if (Missiontime - pp->last_warning_message_time > F1_0*4) {
 					// warning every 4 sec
 					// use NULL as the message sender here since it is the Terran Command persona
-					message_send_builtin_to_player( MESSAGE_INSTRUCTOR_HIT, NULL, MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_IMMEDIATE, 0, 0, -1, -1);
+					message_send_builtin(MESSAGE_INSTRUCTOR_HIT, nullptr, nullptr, -1, -1);
 					pp->last_warning_message_time = Missiontime;
 				}
 
@@ -15827,10 +15827,10 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hit_normal)
 
 	// Added OBJ_BEAM for traitor detection - FUBAR
 	if ((hit_objp->type == OBJ_WEAPON) || (hit_objp->type == OBJ_BEAM)) {
-		if(hit_objp->parent < 0){
+		if (hit_objp->parent < 0) {
 			return;
 		}
-		if ( hit_objp->parent_sig != Objects[hit_objp->parent].signature ){
+		if (hit_objp->parent_sig != Objects[hit_objp->parent].signature) {
 			return;
 		}
 
@@ -15878,7 +15878,8 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hit_normal)
 
 		maybe_process_friendly_hit(objp_hitter, objp_ship, hit_objp);		//	Deal with player's friendly fire.
 
-		ship_maybe_ask_for_help(shipp);
+		ship* attacker = &Ships[objp_hitter->instance];
+		ship_maybe_ask_for_help(shipp, attacker);
 	} else if (hit_objp->type == OBJ_SHIP) {
 		if (shipp->team == Ships[hit_objp->instance].team)		//	Don't have AI react to collisions between teammates.
 			return;

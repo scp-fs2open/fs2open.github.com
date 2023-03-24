@@ -871,7 +871,7 @@ int sendMessage_sub(lua_State* L, const void* sender, int messageSource, int mes
 		}
 	}
 
-	message_send_unique_to_player(Messages[messageIdx].name, sender, messageSource, priority, 0, fl2i(delay * MILLISECONDS_PER_SECOND));
+	message_send_unique(Messages[messageIdx].name, sender, messageSource, priority, 0, fl2i(delay * MILLISECONDS_PER_SECOND));
 
 	return ADE_RETURN_TRUE;
 }

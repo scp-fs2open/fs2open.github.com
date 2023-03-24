@@ -1849,7 +1849,7 @@ int	ship_return_seconds_to_goal(ship *sp);
 void	ship_maybe_warn_player(ship *enemy_sp, float dist);
 void	ship_maybe_praise_player(ship *deader_sp);
 void	ship_maybe_praise_self(ship *deader_sp, ship *killer_sp);
-void	ship_maybe_ask_for_help(ship *sp);
+void	ship_maybe_ask_for_help(ship *sp, ship *attacker);
 void	ship_scream(ship *sp);
 void	ship_maybe_scream(ship *sp);
 void	ship_maybe_tell_about_rearm(ship *sp);

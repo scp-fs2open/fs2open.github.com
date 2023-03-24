@@ -1583,10 +1583,8 @@ int multi_message_should_broadcast(int type)
 {
 	switch (type) {
 		case MESSAGE_ARRIVE_ENEMY:
-		case MESSAGE_BETA_ARRIVED:
-		case MESSAGE_GAMMA_ARRIVED:
 		case MESSAGE_HELP:
-		case MESSAGE_REINFORCEMENTS:
+		case MESSAGE_BACKUP:
 		case MESSAGE_SUPPORT_KILLED:
 			return 1; 
 		default:
