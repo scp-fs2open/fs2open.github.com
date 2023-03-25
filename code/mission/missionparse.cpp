@@ -7496,8 +7496,7 @@ void mission_eval_arrivals() {
 	// of other wings.  We use the timestamps to delay the arrival message slightly for
 	// better effect
 	if (timestamp_valid(Arrival_message_delay_timestamp) && timestamp_elapsed(Arrival_message_delay_timestamp) && !MULTI_TEAM) {
-		// use terran command 25% of time
-		bool use_terran_cmd = ((frand() - 0.75) > 0.0f);
+		bool use_terran_cmd = (Command_announces_enemy_arrival_chance >= 0) && (frand() < Command_announces_enemy_arrival_chance);
 
 		rship = ship_get_random_player_wing_ship(SHIP_GET_UNSILENCED);
 		ship* subject = (Arrival_message_subject < 0) ? nullptr : &Ships[Arrival_message_subject];
