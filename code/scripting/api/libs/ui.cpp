@@ -1755,7 +1755,7 @@ ADE_FUNC(initHotkeysList,
 	for (int i = 0; i < MAX_LINES; i++) {
 		auto item = Hotkey_lines[i];
 		if (item.type == HOTKEY_LINE_WING) {
-			expand_wing(i);
+			expand_wing(i, true);
 		}
 	}
 
