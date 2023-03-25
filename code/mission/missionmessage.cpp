@@ -649,7 +649,7 @@ void parse_msgtbl()
 					Command_announces_enemy_arrival_chance = 0;
 				} else if (scratch > 100) {
 					Warning(LOCATION, "$Chance for Command to announce enemy arrival: is over 100; assuming 100");
-					Command_announces_enemy_arrival_chance = 100;
+					Command_announces_enemy_arrival_chance = 1;
 				} else {
 					Command_announces_enemy_arrival_chance = static_cast<float>(scratch) / 100;
 				}
