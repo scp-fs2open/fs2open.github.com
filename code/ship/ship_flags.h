@@ -270,10 +270,10 @@ namespace Ship {
 
 
     // Not all wing flags are parseable or saveable in mission files. Right now, the only ones which can be set by mission designers are:
-    // ignore_count, reinforcement, no_arrival_music, no_arrival_message, no_arrival_warp, no_departure_warp,
+    // ignore_count, reinforcement, no_arrival_music, no_arrival_message, no_first_wave_message, no_arrival_warp, no_departure_warp,
 	// same_arrival_warp_when_docked, same_departure_warp_when_docked, no_dynamic, and nav_carry_status
     // Should that change, bump this variable and make sure to make the necessary changes to parse_wing (in missionparse)
-#define PARSEABLE_WING_FLAGS 10
+#define PARSEABLE_WING_FLAGS 11
 	
     FLAG_LIST(Wing_Flags) {
 		Gone,					// all ships were either destroyed or departed
@@ -292,6 +292,7 @@ namespace Ship {
 		Nav_carry,				// Kazan - Wing has nav-carry-status
 		Same_arrival_warp_when_docked,		// Goober5000
 		Same_departure_warp_when_docked,	// Goober5000
+		No_first_wave_message,		// don't play arrival message for the first wave
 
 		NUM_VALUES
 	};

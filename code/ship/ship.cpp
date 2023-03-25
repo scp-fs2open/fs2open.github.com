@@ -592,6 +592,7 @@ extern const size_t Num_ship_flag_names = sizeof(Ship_flag_names) / sizeof(ship_
 wing_flag_name Wing_flag_names[] = {
 	{ Wing_Flags::No_arrival_music,					"no-arrival-music" },
 	{ Wing_Flags::No_arrival_message,				"no-arrival-message" },
+	{ Wing_Flags::No_first_wave_message,		"no-first-wave-message" },
 	{ Wing_Flags::No_arrival_warp,					"no-arrival-warp" },
 	{ Wing_Flags::No_departure_warp,				"no-departure-warp" },
 	{ Wing_Flags::Same_arrival_warp_when_docked,	"same-arrival-warp-when-docked" },
@@ -601,6 +602,7 @@ wing_flag_name Wing_flag_names[] = {
 wing_flag_description Wing_flag_descriptions[] = {
 	{ Wing_Flags::No_arrival_music,					"Arrival music will not be played when this wing arrives."},
 	{ Wing_Flags::No_arrival_message,				"Arrival messages will not be sent when this wing arrives."},
+	{ Wing_Flags::No_first_wave_message,		"Arrival messages will not be sent when the first wave of wing arrives."},
 	{ Wing_Flags::No_arrival_warp,					"No ship in the wing will use a warp effect upon arrival."},
 	{ Wing_Flags::No_departure_warp,				"No ship in the wing will use a warp effect upon departure."},
 	{ Wing_Flags::Same_arrival_warp_when_docked,	"All ships in the wing will use the same warp effect size upon arrival as if they were not docked instead of the enlarged aggregate size."},

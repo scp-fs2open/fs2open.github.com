@@ -64,6 +64,7 @@ wing_editor::wing_editor(CWnd* pParent /*=NULL*/)
 	m_no_arrival_music = FALSE;
 	m_departure_target = -1;
 	m_no_arrival_message = FALSE;
+	m_no_first_wave_message = FALSE;
 	m_no_arrival_warp = FALSE;
 	m_no_departure_warp = FALSE;
 	m_same_arrival_warp_when_docked = FALSE;
@@ -102,6 +103,7 @@ void wing_editor::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_NO_ARRIVAL_MUSIC, m_no_arrival_music);
 	DDX_CBIndex(pDX, IDC_DEPARTURE_TARGET, m_departure_target);
 	DDX_Check(pDX, IDC_NO_ARRIVAL_MESSAGE, m_no_arrival_message);
+	DDX_Check(pDX, IDC_NO_FIRST_WAVE_MESSAGE, m_no_first_wave_message);
 	DDX_Check(pDX, IDC_NO_ARRIVAL_WARP, m_no_arrival_warp);
 	DDX_Check(pDX, IDC_NO_DEPARTURE_WARP, m_no_departure_warp);
 	DDX_Check(pDX, IDC_SAME_ARRIVAL_WARP_WHEN_DOCKED, m_same_arrival_warp_when_docked);
@@ -303,6 +305,7 @@ void wing_editor::initialize_data_safe(int full_update)
 		m_ignore_count = 0;
 		m_no_arrival_music = FALSE;
 		m_no_arrival_message = FALSE;
+		m_no_first_wave_message = FALSE;
 		m_no_arrival_warp = FALSE;
 		m_no_departure_warp = FALSE;
 		m_same_arrival_warp_when_docked = FALSE;
@@ -417,6 +420,7 @@ void wing_editor::initialize_data_safe(int full_update)
 
 		m_no_arrival_music = Wings[cur_wing].flags[Ship::Wing_Flags::No_arrival_music] ? TRUE : FALSE;
 		m_no_arrival_message = Wings[cur_wing].flags[Ship::Wing_Flags::No_arrival_message] ? TRUE : FALSE;
+		m_no_first_wave_message = Wings[cur_wing].flags[Ship::Wing_Flags::No_first_wave_message] ? TRUE : FALSE;
 
 		m_no_arrival_warp = Wings[cur_wing].flags[Ship::Wing_Flags::No_arrival_warp] ? TRUE : FALSE;
 		m_no_departure_warp = Wings[cur_wing].flags[Ship::Wing_Flags::No_departure_warp] ? TRUE : FALSE;
@@ -506,6 +510,7 @@ void wing_editor::initialize_data_safe(int full_update)
 	GetDlgItem(IDC_IGNORE_COUNT)->EnableWindow(enable);
 	GetDlgItem(IDC_NO_ARRIVAL_MUSIC)->EnableWindow(enable);
 	GetDlgItem(IDC_NO_ARRIVAL_MESSAGE)->EnableWindow(enable);
+	GetDlgItem(IDC_NO_FIRST_WAVE_MESSAGE)->EnableWindow(enable);
 	GetDlgItem(IDC_NO_ARRIVAL_WARP)->EnableWindow(enable);
 	GetDlgItem(IDC_NO_DEPARTURE_WARP)->EnableWindow(enable);
 	GetDlgItem(IDC_SAME_ARRIVAL_WARP_WHEN_DOCKED)->EnableWindow(enable);
@@ -876,6 +881,18 @@ void wing_editor::update_data_safe()
         if (Wings[cur_wing].flags[Ship::Wing_Flags::No_arrival_message])
             set_modified();
         Wings[cur_wing].flags.remove(Ship::Wing_Flags::No_arrival_message);
+    }
+
+    if (m_no_first_wave_message) {
+        if (!(Wings[cur_wing].flags[Ship::Wing_Flags::No_first_wave_message]))
+            set_modified();
+        Wings[cur_wing].flags.set(Ship::Wing_Flags::No_first_wave_message);
+
+    }
+    else {
+        if (Wings[cur_wing].flags[Ship::Wing_Flags::No_first_wave_message])
+            set_modified();
+        Wings[cur_wing].flags.remove(Ship::Wing_Flags::No_first_wave_message);
     }
 
     // set the no warp effect for wings flag

@@ -1162,6 +1162,7 @@
 #define IDC_SATELLITE_LIST              1672
 #define IDC_DISTANCE                    1673
 #define IDC_IGNORE_ORDERS_LIST          1674
+#define IDC_NO_ARRIVAL_MESSAGE					1675
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774
 #define ID_VIEW_ROTATE                  32775
