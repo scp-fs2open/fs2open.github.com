@@ -56,6 +56,7 @@ float Briefing_window_FOV;
 int Briefing_window_resolution[2];
 bool Disable_hc_message_ani;
 SCP_vector<SCP_string> Custom_head_anis;
+SCP_vector<SCP_string> Ignored_music_player_files;
 bool Red_alert_applies_to_delayed_ships;
 bool Beams_use_damage_factors;
 float Generic_pain_flash_factor;
@@ -925,6 +926,18 @@ void parse_mod_table(const char *filename)
 			}
 		}
 
+
+		if (optional_string("$Ignore Music Files In Music Player:")) {
+			SCP_string music_name;
+			while (optional_string("+File:")) {
+				stuff_string(music_name, F_NAME);
+
+				drop_extension(music_name);
+
+				Ignored_music_player_files.push_back(music_name);
+			}
+		}
+
 		if (optional_string("$FRED spacemouse nonlinearities:")) {
 #define SPACEMOUSE_NONLINEARITY(name, id) \
 			if (optional_string("+" name " exponent:")) \
@@ -938,6 +951,7 @@ void parse_mod_table(const char *filename)
 			SPACEMOUSE_NONLINEARITY("Bank", 4);
 			SPACEMOUSE_NONLINEARITY("Heading", 5);
 #undef SPACEMOUSE_NONLINEARITY
+
 		}
 
 		optional_string("#OTHER SETTINGS");

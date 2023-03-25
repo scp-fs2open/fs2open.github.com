@@ -269,6 +269,7 @@ protected:
 	afx_msg void OnUpdateLookatObj(CCmdUI* pCmdUI);
 	afx_msg void OnEditorsAdjustGrid();
 	afx_msg void OnCalcRelativeCoords();
+	afx_msg void OnMusicPlayer();
 	afx_msg void OnEditorsShieldSys();
 	afx_msg void OnLevelObj();
 	afx_msg void OnAlignObj();

@@ -51,6 +51,7 @@ extern float Briefing_window_FOV;
 extern int Briefing_window_resolution[2];
 extern bool Disable_hc_message_ani;
 extern SCP_vector<SCP_string> Custom_head_anis;
+extern SCP_vector<SCP_string> Ignored_music_player_files;
 extern bool Red_alert_applies_to_delayed_ships;
 extern bool Beams_use_damage_factors;
 extern float Generic_pain_flash_factor;

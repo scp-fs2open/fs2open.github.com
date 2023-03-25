@@ -240,6 +240,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
 	Ship_editor_dialog.Create();
 	Wing_editor_dialog.Create();
 	Waypoint_editor_dialog.Create();
+	Music_player_dialog.Create();
 	init_tools();
 	LoadBarState("Tools state");
 	return 0;

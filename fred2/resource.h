@@ -80,10 +80,13 @@
 #define IDD_CALC_RELATIVE_COORDS        235
 #define IDD_INITIAL_SHIPS               238
 #define IDB_CHAINED                     239
+#define IDB_STOP                        240
+#define IDB_NEXT                        241
 #define IDD_CMD_BRIEF                   242
 #define IDD_SHIP_FLAGS                  243
 #define IDB_PLAY                        244
 #define IDI_PLAY                        245
+#define IDB_PREV                        246
 #define IDB_ROOT_DIRECTIVE              247
 #define IDB_CHAINED_DIRECTIVE           248
 #define IDB_GREEN_DOT                   249
@@ -128,6 +131,7 @@
 #define IDB_COMMENT                     322
 #define IDD_EDIT_CONTAINER              323
 #define IDD_EDIT_CONTAINER_NAME         324
+#define IDD_MUSIC_PLAYER                330
 #define IDC_SHIP_CLASS                  1003
 #define IDC_SHIP_WING                   1004
 #define IDC_SOUND_CLIP_NAME             1007
@@ -437,9 +441,15 @@
 #define IDC_PREF_STARFIELD              1167
 #define IDC_GOALS_TREE                  1169
 #define IDC_DISPLAY_GOAL_TYPES_DROP     1173
+#define IDC_BUTTON_NEXT_MUSIC			1174
+#define IDC_BUTTON_PREV_MUSIC			1175
 #define IDC_GOAL_DESC                   1176
+#define IDC_BUTTON_STOP_MUSIC           1177
+#define IDC_BUTTON_MUSIC_TBL            1178
+#define IDC_MUSIC_AUTOPLAY              1179
 #define IDC_GOAL_RATING                 1180
 #define IDC_GOAL_TYPE_DROP              1181
+#define IDC_BUTTON_PLAY_MUSIC           1182
 #define IDC_BUTTON_NEW_GOAL             1183
 #define IDC_BUTTON_VERIFY               1184
 #define IDC_SHIP_TEAM                   1185
@@ -1159,6 +1169,7 @@
 #define IDC_CONTAINER_ETERNAL_PERSIST   1669
 #define IDC_RENAME_CONTAINER            1670
 #define IDC_ORIGIN_LIST                 1671
+#define IDC_MUSIC_LIST                  1671
 #define IDC_SATELLITE_LIST              1672
 #define IDC_DISTANCE                    1673
 #define IDC_IGNORE_ORDERS_LIST          1674
@@ -1447,6 +1458,7 @@
 #define ID_EDIT_CLONEMARKEDOBJECTS      33099
 #define ID_EDIT_SEXP_TREE_EDIT_CONTAINERS 33100
 #define ID_MISC_POINTUSINGUVEC          33101
+#define ID_MUSIC_PLAYER                 33102
 #define ID_INDICATOR_MODE               59142
 #define ID_INDICATOR_LEFT               59143
 #define ID_INDICATOR_RIGHT              59144

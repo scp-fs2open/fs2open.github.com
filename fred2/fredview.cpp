@@ -58,6 +58,7 @@
 #include "sound/audiostr.h"
 #include "mission/missiongrid.h"
 #include "calcrelativecoordsdlg.h"
+#include "musicplayerdlg.h"
 
 #include "osapi/osapi.h"
 
@@ -308,6 +309,7 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_UPDATE_COMMAND_UI(ID_LOOKAT_OBJ, OnUpdateLookatObj)
 	ON_COMMAND(ID_EDITORS_ADJUST_GRID, OnEditorsAdjustGrid)
 	ON_COMMAND(ID_CALC_RELATIVE_COORDS, OnCalcRelativeCoords)
+	ON_COMMAND(ID_MUSIC_PLAYER, OnMusicPlayer)
 	ON_COMMAND(ID_EDITORS_SHIELD_SYS, OnEditorsShieldSys)
 	ON_COMMAND(ID_LEVEL_OBJ, OnLevelObj)
 	ON_COMMAND(ID_ALIGN_OBJ, OnAlignObj)
@@ -4123,6 +4125,17 @@ void CFREDView::OnCalcRelativeCoords()
 	calc_relative_coords_dlg dlg;
 
 	dlg.DoModal();
+}
+
+void CFREDView::OnMusicPlayer()
+{
+	Assertion(Music_player_dialog.GetSafeHwnd(), "Unable to create music player window!");
+
+	if (!theApp.init_window(&MusPlayer_wnd_data, &Music_player_dialog))
+		return;
+
+	Music_player_dialog.SetWindowPos(&wndTop, 0, 0, 0, 0, SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
+	Music_player_dialog.ShowWindow(SW_RESTORE);
 }
 
 void CFREDView::OnEditorsShieldSys() 
