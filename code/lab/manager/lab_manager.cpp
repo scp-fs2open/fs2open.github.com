@@ -191,6 +191,10 @@ void LabManager::onFrame(float frametime) {
 				RotationSpeedDivisor = 100.f;
 			break;
 
+		case KEY_M:
+			gr_dump_envmap(Renderer->currentMissionBackground.c_str());
+			break;
+
 		case KEY_ESC:
 			notify_close();
 			break;
