@@ -1568,7 +1568,9 @@ void control_config_init(bool API_Access)
 
 	control_config_conflict_check();
 
-	control_config_list_prepare();
+	if (!API_Access) {
+		control_config_list_prepare();
+	}
 }
 
 void control_config_close(bool API_Access)

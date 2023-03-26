@@ -63,7 +63,18 @@ ADE_VIRTVAR(Name, l_Control, nullptr, "The name of the control", "string", "The 
 		LuaError(L, "This property is read only.");
 	}
 
-	return ade_set_args(L, "s", XSTR(current.getControl()->text.c_str(), current.getControl()->indexXSTR, true));
+	CCI* item = current.getControl();
+	SCP_string name;
+
+	if (item->indexXSTR > 1) {
+		name = XSTR(item->text.c_str(), item->indexXSTR, true);
+	} else if (item->indexXSTR == 1) {
+		name = XSTR(item->text.c_str(), CONTROL_CONFIG_XSTR + current.getIndex(), true);
+	} else {
+		name = item->text.c_str();
+	}
+
+	return ade_set_args(L, "s", name.c_str());
 }
 
 ADE_VIRTVAR(Bindings,
