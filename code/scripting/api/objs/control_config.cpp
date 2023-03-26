@@ -99,70 +99,87 @@ ADE_VIRTVAR(Bindings,
 	return ade_set_args(L, "t", &table);
 }
 
-ADE_VIRTVAR(Inverted,
+ADE_FUNC(isBindInverted,
 	l_Control,
-	nullptr,
-	"Gets a table of inversions for the control",
-	"{ number => boolean ... }",
-	"The inversions table. True if inverted, false otherwise.")
+	"number Bind",
+	"Returns if the selected bind is inverted. Number is 1 for first bind 2 for second.",
+	"boolean",
+	"True if inverted, false otherwise. False if the bind is not an axis.")
 {
 	control_h current;
-	if (!ade_get_args(L, "o", l_Control.Get(&current))) {
+	int item;
+	if (!ade_get_args(L, "oi", l_Control.Get(&current), &item)) {
 		return ADE_RETURN_NIL;
 	}
 
-	auto table = luacpp::LuaTable::create(L);
+	bool inverted = false;
 
-	// Using a table so that if the number of bindings is ever increased the API
-	// will only need minimal adjustments.
-	table.addValue(1, current.getControl()->first.is_inverted());
-	table.addValue(2, current.getControl()->second.is_inverted());
+	if (current.getControl()->is_axis()) {
+		switch (item) {
+		case (1):
+			if (current.getControl()->first.is_inverted()) {
+				inverted = true;
+			}
+			break;
+		case (2):
+			if (current.getControl()->second.is_inverted()) {
+				inverted = true;
+			}
+			break;
+		default:
+			break;
+		}
+	}
 
-	return ade_set_args(L, "t", &table);
+	return ade_set_args(L, "b", inverted);
 }
 
 ADE_VIRTVAR(Shifted,
 	l_Control,
 	nullptr,
-	"Gets a table of shifted for the control",
-	"{ number => boolean ... }",
-	"The shifted table. True if shifted, false otherwise.")
+	"Returns whether or not the keybind is Shifted",
+	"boolean",
+	"True if shifted, false otherwise.")
 {
 	control_h current;
 	if (!ade_get_args(L, "o", l_Control.Get(&current))) {
 		return ADE_RETURN_NIL;
 	}
 
-	auto table = luacpp::LuaTable::create(L);
+	int k = current.getControl()->get_btn(CID_KEYBOARD);
+	bool shifted = false;
 
-	// Using a table so that if the number of bindings is ever increased the API
-	// will only need minimal adjustments.
-	table.addValue(1, (bool)(current.getControl()->first.get_btn() & KEY_SHIFTED));
-	table.addValue(2, (bool)(current.getControl()->second.get_btn() & KEY_SHIFTED));
+	if (k >= 0) {
+		if (k & KEY_SHIFTED) {
+			shifted = true;
+		}
+	}
 
-	return ade_set_args(L, "t", &table);
+	return ade_set_args(L, "b", shifted);
 }
 
 ADE_VIRTVAR(Alted,
 	l_Control,
 	nullptr,
-	"Gets a table of alts for the control",
-	"{ number => boolean ... }",
-	"The alted table. True if alted, false otherwise.")
+	"Returns whether or not the keybind is Alted",
+	"boolean",
+	"True if alted, false otherwise.")
 {
 	control_h current;
 	if (!ade_get_args(L, "o", l_Control.Get(&current))) {
 		return ADE_RETURN_NIL;
 	}
 
-	auto table = luacpp::LuaTable::create(L);
+	int k = current.getControl()->get_btn(CID_KEYBOARD);
+	bool alted = false;
 
-	// Using a table so that if the number of bindings is ever increased the API
-	// will only need minimal adjustments.
-	table.addValue(1, (bool)(current.getControl()->first.get_btn() & KEY_ALTED));
-	table.addValue(2, (bool)(current.getControl()->second.get_btn() & KEY_ALTED));
+	if (k >= 0) {
+		if (k & KEY_ALTED) {
+			alted = true;
+		}
+	}
 
-	return ade_set_args(L, "t", &table);
+	return ade_set_args(L, "b", alted);
 }
 
 ADE_VIRTVAR(Tab,
