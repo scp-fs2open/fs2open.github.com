@@ -1700,6 +1700,46 @@ void control_config_draw_selected_preset() {
 	}
 }
 
+bool control_config_delete_preset(CC_preset preset) {
+	return delete_preset_file(preset);
+}
+
+bool control_config_clone_preset(CC_preset preset, SCP_string newName) {
+
+	// Check if a hardcoded preset with name already exists. If so, complain to user and force retry
+	auto it = std::find_if(Control_config_presets.begin(), Control_config_presets.end(), [newName](CC_preset& p) {
+		return (p.name == newName) && ((p.type == Preset_t::tbl) || (p.type == Preset_t::hardcode));
+	});
+
+	if (it != Control_config_presets.end()) {
+		return false;
+	}
+
+	// Check if a preset file with name already exists.  If so, prompt the user
+	CFILE* fp = cfopen((newName + ".json").c_str(),
+		"r",
+		CFILE_NORMAL,
+		CF_TYPE_PLAYER_BINDS,
+		false,
+		CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
+	if (fp) {
+		cfclose(fp);
+		return false;
+	}
+
+	CC_preset newPreset = preset;
+	newPreset.name = newName;
+
+	// Reload the presets from file.
+	Control_config_presets.resize(1);
+	load_preset_files();
+
+	// use the newly cloned preset
+	control_config_use_preset_by_name(newName);
+
+	return save_preset_file(newPreset, false);
+}
+
 /**
  * Sets the color for binding text according to various states
  *
@@ -1840,13 +1880,22 @@ int control_config_draw_list(int select_tease_line) {
 	return conflict;
 }
 
-bool control_config_bind_key_on_frame(int ctrl, bool API_Access)
+bool control_config_bind_key_on_frame(int ctrl, selItem item, bool API_Access)
 {
 	bool bind = false; // is true if binding should happen.  Actually is an "Input detected" flag.
 	bool done = false; // is true if we're done binding and ready for exiting this mode
 
+	//set valid timestamp from the API
+	if (API_Access) {
+		Bind_time = ui_timestamp();
+	}
+
 	// Poll for keypress
 	int k = game_poll(); // polled key.  Can be masked with SHIFT and/or ALT
+
+	if (k > 0) {
+		int junk = k;
+	}
 
 	if (!API_Access) {
 		Ui_window.use_hack_to_get_around_stupid_problem_flag = 1;
@@ -1910,7 +1959,7 @@ bool control_config_bind_key_on_frame(int ctrl, bool API_Access)
 		if (!API_Access) {
 			control_config_do_cancel();
 		} else {
-			return false;
+			return true;
 		}
 
 	} else if (Control_config[ctrl].is_axis()) {
@@ -1924,7 +1973,7 @@ bool control_config_bind_key_on_frame(int ctrl, bool API_Access)
 
 		if (!done && bind) {
 			if (!Axis_override.empty()) {
-				control_config_bind(ctrl, Axis_override, Selected_item);
+				control_config_bind(ctrl, Axis_override, item);
 				done = true;
 				strcpy_s(bound_string, Axis_override.textify().c_str());
 
@@ -1933,7 +1982,7 @@ bool control_config_bind_key_on_frame(int ctrl, bool API_Access)
 				if (!API_Access) {
 					control_config_do_cancel(1);
 				} else {
-					return false;
+					return true;
 				}
 			}
 		}
@@ -1971,7 +2020,7 @@ bool control_config_bind_key_on_frame(int ctrl, bool API_Access)
 		if (!done && (k > 0)) {
 			// Bind the key
 			Assert(!Control_config[ctrl].is_axis());
-			control_config_bind(ctrl, CC_bind(CID_KEYBOARD, static_cast<short>(k)), Selected_item);
+			control_config_bind(ctrl, CC_bind(CID_KEYBOARD, static_cast<short>(k)), item);
 
 			strcpy_s(bound_string, textify_scancode(k));
 			done = true;
@@ -1980,7 +2029,7 @@ bool control_config_bind_key_on_frame(int ctrl, bool API_Access)
 		if (!done && (j < JOY_TOTAL_BUTTONS)) {
 			// Bind the joy button
 			Assert(!Control_config[ctrl].is_axis());
-			control_config_bind(ctrl, CC_bind(static_cast<CID>(joy), j), Selected_item);
+			control_config_bind(ctrl, CC_bind(static_cast<CID>(joy), j), item);
 
 			strcpy_s(bound_string, Joy_button_text[j]);
 			done = true;
@@ -2016,7 +2065,7 @@ bool control_config_bind_key_on_frame(int ctrl, bool API_Access)
 
 					if (mouse_down(mouse_bind)) {
 						Assert(!Control_config[ctrl].is_axis());
-						control_config_bind(ctrl, mouse_bind, Selected_item);
+						control_config_bind(ctrl, mouse_bind, item);
 
 						strcpy_s(bound_string, Joy_button_text[i]);
 						done = true;
@@ -2049,7 +2098,7 @@ void control_config_do_frame(float frametime)
 	timer += frametime;
 
 	if (Binding_mode) {
-		bool done = control_config_bind_key_on_frame(z);
+		bool done = control_config_bind_key_on_frame(z, Selected_item);
 
 		if (done) {
 			// done with binding mode, clean up and prepare for display

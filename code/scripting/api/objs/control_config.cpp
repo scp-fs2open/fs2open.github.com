@@ -49,6 +49,59 @@ ADE_VIRTVAR(Name, l_Preset, nullptr, "The name of the preset", "string", "The na
 	return ade_set_args(L, "s", current.getPreset()->name.c_str());
 }
 
+ADE_FUNC(clonePreset,
+	l_Preset,
+	"string Name",
+	"Clones the preset into a new preset with the specified name. Sets it as the active preset",
+	"boolean",
+	"Returns true if successful, false otherwise")
+{
+	preset_h current;
+	const char* newName;
+	if (!ade_get_args(L, "os", l_Preset.Get(&current), &newName)) {
+		return ADE_RETURN_FALSE;
+	}
+
+	SCP_string name = current.getPreset()->name;
+
+	auto oldPreset = std::find_if(Control_config_presets.begin(), Control_config_presets.end(), [name](CC_preset& preset) {
+		return preset.name == name;
+	});
+
+	if (oldPreset == Control_config_presets.end()) {
+		// Couldn't find
+		return ADE_RETURN_FALSE;
+	}
+
+	return ade_set_args(L, "b", control_config_clone_preset(*oldPreset, newName));
+}
+
+ADE_FUNC(deletePreset,
+	l_Preset,
+	nullptr,
+	"Deletes the preset file entirely. Cannot delete a currently active preset.",
+	"boolean",
+	"Returns true if successful, false otherwise")
+{
+	preset_h current;
+	if (!ade_get_args(L, "o", l_Preset.Get(&current))) {
+		return ADE_RETURN_FALSE;
+	}
+
+	SCP_string name = current.getPreset()->name;
+
+	auto it = std::find_if(Control_config_presets.begin(), Control_config_presets.end(), [name](CC_preset& preset) {
+		return preset.name == name;
+	});
+
+	if (it == Control_config_presets.end()) {
+		// Couldn't find
+		return ADE_RETURN_FALSE;
+	}
+
+	return ade_set_args(L, "b", control_config_delete_preset(*it));
+}
+
 //**********HANDLE: control
 ADE_OBJ(l_Control, control_h, "control", "Control handle");
 
@@ -306,19 +359,20 @@ ADE_VIRTVAR(Conflicted,
 
 ADE_FUNC(DetectKeypress,
 	l_Control,
-	nullptr,
-	"Waits for a keypress to use as a keybind. Binds the key if found. Will need to disable UI input if enabled first. Should run On Frame.",
+	"number Item",
+	"Waits for a keypress to use as a keybind. Binds the key if found. Will need to disable UI input if enabled first. Should run On Frame. Item is first bind (1) or second bind (2)",
 	"boolean",
 	"True if successful, false otherwise")
 {
 	control_h current;
-	if (!ade_get_args(L, "oi", l_Control.Get(&current))) {
+	int item;
+	if (!ade_get_args(L, "oi", l_Control.Get(&current), &item)) {
 		return ADE_RETURN_FALSE;
 	}
 
 	int idx = current.getIndex();
 
-	return ade_set_args(L, "b", control_config_bind_key_on_frame(idx, true));
+	return ade_set_args(L, "b", control_config_bind_key_on_frame(idx, (selItem)item, true));
 }
 
 ADE_FUNC(ClearBind,
