@@ -47,48 +47,7 @@ int HC_fname_coords[GR_NUM_RESOLUTIONS][4] = {
 };
 
 HUD_CONFIG_TYPE HUD_config;	// Player HUD configuration
- 
-char Hud_Gauge_Names[NUM_HUD_GAUGES][NAME_LENGTH] = {
-	"lead indicator",
-	"target orientation",
-	"closest attacking hostile",
-	"current target direction",
-	"mission time",
-	"reticle",
-	"throttle",
-	"radar",
-	"target monitor",
-	"center of reticle",
-	"extra target info",
-	"target shield",
-	"player shield",
-	"power management",
-	"auto-target icon",
-	"auto-speed-match icon",
-	"weapons display",
-	"monitoring view",
-	"directives view",
-	"threat gauge",
-	"afterburner energy",
-	"weapons energy",
-	"weapon linking",
-	"target hull/shield icon",
-	"offscreen indicator",
-	"comm video",
-	"damage display",
-	"message output",
-	"locked missile direction",
-	"countermeasures",
-	"objective notify",
-	"wingmen status",
-	"offscreen range",
-	"kills gauge",
-	"attacking target count",
-	"warning flash",
-	"comm menu",
-	"support gauge",
-	"lag gauge"
-};
+
 
 // specify the max distance that the radar should detect objects
 // See RR_ #defines in HUDconfig.h.
@@ -241,21 +200,6 @@ const char *Hud_config_fname[GR_NUM_RESOLUTIONS] = {
 const char *Hud_config_mask_fname[GR_NUM_RESOLUTIONS] = {
 	"HUDConfig-m",
 	"2_HUDConfig-m"
-};
-
-struct HC_gauge_region
-{
-	const char		*filename;
-	int			x,y;
-	int			hotspot;
-	int			use_iff;
-	int			can_popup;
-	int			bitmap;
-	int			nframes;
-	int			color;
-	UI_BUTTON	button;
-
-	HC_gauge_region(const char *name, int x1, int y1, int h, int iff, int cp, int b, int nf, int cl) : filename(name), x(x1), y(y1), hotspot(h), use_iff(iff), can_popup(cp), bitmap(b), nframes(nf), color(cl){}
 };
 
 // hud config gauges
@@ -837,6 +781,7 @@ void hud_config_render_gauges()
 		// draw
 		if ( HC_gauge_regions[gr_screen.res][i].bitmap >= 0 ) {
 			gr_set_bitmap(HC_gauge_regions[gr_screen.res][i].bitmap);
+			//This is where we need to apply an offset
 			gr_aabitmap(HC_gauge_regions[gr_screen.res][i].x, HC_gauge_regions[gr_screen.res][i].y, GR_RESIZE_MENU);
 		}
 		

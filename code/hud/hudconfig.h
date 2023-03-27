@@ -66,6 +66,29 @@ typedef struct HUD_CONFIG_TYPE {
 
 extern HUD_CONFIG_TYPE HUD_config;
 
+struct HC_gauge_region
+{
+	const char		*filename;
+	int			x,y;
+	int			hotspot;
+	int			use_iff;
+	int			can_popup;
+	int			bitmap;
+	int			nframes;
+	int			color;
+	UI_BUTTON	button;
+
+	HC_gauge_region(const char *name, int x1, int y1, int h, int iff, int cp, int b, int nf, int cl) : filename(name), x(x1), y(y1), hotspot(h), use_iff(iff), can_popup(cp), bitmap(b), nframes(nf), color(cl){}
+};
+
+extern struct HC_gauge_region HC_gauge_regions[GR_NUM_RESOLUTIONS][NUM_HUD_GAUGES];
+
+extern int HC_gauge_hot;
+extern int HC_gauge_selected;
+extern int HC_select_all;
+
+const char* HC_gauge_descriptions(int n);
+
 void hud_config_init();
 void hud_config_do_frame(float frametime);
 void hud_config_close();

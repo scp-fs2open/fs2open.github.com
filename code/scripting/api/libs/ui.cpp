@@ -50,6 +50,7 @@
 #include "scripting/api/objs/missionhotkey.h"
 #include "scripting/api/objs/gamehelp.h"
 #include "scripting/api/objs/missionlog.h"
+#include "scripting/api/objs/hudconfig.h"
 #include "scripting/api/objs/color.h"
 #include "scripting/api/objs/enums.h"
 #include "scripting/api/objs/player.h"
@@ -1973,6 +1974,70 @@ ADE_INDEXER(l_Log_Messages,
 ADE_FUNC(__len, l_Log_Messages, nullptr, "The number of mission message entries", "number", "The number of message entries.")
 {
 	return ade_set_args(L, "i", (int)Msg_scrollback_vec.size());
+}
+
+//**********SUBLIBRARY: UserInterface/HUDConfig
+ADE_LIB_DERIV(l_UserInterface_HUDConfig,
+	"HudConfig",
+	nullptr,
+	"API for accessing data related to the HUD Config UI.<br><b>Warning:</b> This is an internal "
+	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	l_UserInterface);
+
+ADE_FUNC(initHudConfig,
+	l_UserInterface_HUDConfig,
+	nullptr,
+	"Initializes the Mission Log data. Must be used before Mission Log is accessed.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	//Log_scrollback_vec.clear(); // Make sure the vector is empty before we start
+
+	// Width here is used to determine if a log line needs to be split into multiple lines.
+	// That makes sense for retail, but not so much for the API. Telling it to use the entire screen width
+	// should be sufficient to prevent unnecessary line breaks given how short most log lines are in the mission log.
+	//message_log_init_scrollback(gr_screen.max_w);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(closeHudConfig,
+	l_UserInterface_HUDConfig,
+	nullptr,
+	"Clears the Mission Log data. Should be used when finished accessing Mission Log Entries.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	//message_log_shutdown_scrollback();
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_LIB_DERIV(l_HUD_Gauges, "GaugeConfigs", nullptr, nullptr, l_UserInterface_HUDConfig);
+ADE_INDEXER(l_HUD_Gauges,
+	"number Index",
+	"Array of built-in gauge configs",
+	"gauge_config",
+	"gauge_config handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "o", l_Gauge_Config.Set(gauge_config_h()));
+	idx--; // Convert to Lua's 1 based index system
+
+	if ((idx < 0) || (idx >= (int)Log_scrollback_vec.size()))
+		return ade_set_error(L, "o", l_Gauge_Config.Set(gauge_config_h()));
+
+	return ade_set_args(L, "o", l_Gauge_Config.Set(gauge_config_h(idx)));
+}
+
+ADE_FUNC(__len, l_Log_Entries, nullptr, "The number of gauge configs", "number", "The number of gauge configs.")
+{
+	return ade_set_args(L, "i", NUM_HUD_GAUGES);
 }
 
 //**********SUBLIBRARY: UserInterface/PauseScreen
