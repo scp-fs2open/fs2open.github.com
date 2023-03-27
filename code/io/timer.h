@@ -89,7 +89,6 @@ public:
 
 extern void timer_init();
 extern void timer_close();
-extern void timer_start_frame();
 
 //==========================================================================
 // These functions return the time since the timer was initialized in
