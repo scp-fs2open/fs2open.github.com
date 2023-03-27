@@ -73,9 +73,10 @@ class player;
 // Version 57 - 6/5/2022 - Upgrade interpolation, fix multiplayer sexp handling, and enable player orders to exceed 16
 // Version 58 - 11/14/2022 - Enable turret movement on clients, and fix in-game joining
 // Version 59 - 12/9/2022 - New IDs for SEXP operators
+// Version 60 - 3/27/2023 - Added generic lua data packet
 // STANDALONE_ONLY
 
-#define MULTI_FS_SERVER_VERSION							59
+#define MULTI_FS_SERVER_VERSION							60
 
 #define MULTI_FS_SERVER_COMPATIBLE_VERSION			MULTI_FS_SERVER_VERSION
 
@@ -278,6 +279,7 @@ class player;
 
 #define VARIABLE_UPDATE				0xF0		// Karajorma - a variable update packet from server to all clients
 #define SEXP						0xF1		// Karajorma - a general packet which can be used to update clients with changes caused by SEXPs
+#define LUA_DATA_PACKET				0xF2		// Lafiel - any generic data sent by lua
 
 #define MAX_TYPE_ID					0xFF		// better not try to send > 255 in a single byte buddy
 

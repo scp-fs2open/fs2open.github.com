@@ -1,6 +1,9 @@
 
 #include "gameevent.h"
 
+#include "network/multi.h"
+#include "network/multimsgs.h"
+#include "network/multiutil.h"
 
 namespace scripting {
 namespace api {
@@ -18,6 +21,18 @@ bool gameevent_h::IsValid() {
 
 int gameevent_h::Get() {
 	return edx;
+}
+
+void gameevent_h::serialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, const luacpp::LuaValue& value, ubyte* data, int& packet_size) {
+	gameevent_h event;
+	value.getValue(l_GameEvent.Get(&event));
+	ADD_INT(event.edx);
+}
+
+void gameevent_h::deserialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, char* data_ptr, ubyte* data, int& offset) {
+	int index;
+	GET_INT(index);
+	new(data_ptr) gameevent_h(index);
 }
 
 ADE_OBJ(l_GameEvent, gameevent_h, "gameevent", "Game event");

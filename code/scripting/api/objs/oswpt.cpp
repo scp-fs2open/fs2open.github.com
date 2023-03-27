@@ -8,6 +8,91 @@
 #include "waypoint.h"
 #include "wing.h"
 #include "ship/ship.h"
+#include "mission/missionparse.h"
+
+#include "network/multi.h"
+#include "network/multimsgs.h"
+#include "network/multiutil.h"
+
+void object_ship_wing_point_team::serialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, const luacpp::LuaValue& value, ubyte* data, int& packet_size) {
+	object_ship_wing_point_team oswpt;
+	value.getValue(scripting::api::l_OSWPT.Get(&oswpt));
+	uint8_t oswpttype = static_cast<uint8_t>(oswpt.type);
+	ADD_DATA(oswpttype);
+	switch (oswpt.type) {
+	case oswpt_type::SHIP:
+	case oswpt_type::WAYPOINT:
+		ADD_USHORT(oswpt.objp->net_signature);
+		break;
+	case oswpt_type::PARSE_OBJECT:
+		ADD_USHORT(oswpt.ship_entry->p_objp->net_signature);
+		break;
+	case oswpt_type::WING:
+	case oswpt_type::WING_NOT_PRESENT: {
+		int wingidx = WING_INDEX(oswpt.wingp);
+		ADD_INT(wingidx);
+		break;
+	}
+	case oswpt_type::SHIP_ON_TEAM:
+	case oswpt_type::WHOLE_TEAM:
+		ADD_INT(oswpt.team);
+		break;
+	case oswpt_type::NONE:
+	case oswpt_type::EXITED:
+	default:
+		break;
+	}
+}
+
+void object_ship_wing_point_team::deserialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, char* data_ptr, ubyte* data, int& offset) {
+	uint8_t oswpttype;
+	GET_DATA(oswpttype);
+	switch (static_cast<oswpt_type>(oswpttype)) {
+	case oswpt_type::SHIP:
+	case oswpt_type::WAYPOINT: {
+		ushort net_signature;
+		GET_USHORT(net_signature);
+		object_ship_wing_point_team oswpt;
+		oswpt.type = static_cast<oswpt_type>(oswpttype);
+		//This doesn't constitute a valid waypoint oswpt, but it will work for everything that lua has access to, so it's fine
+		oswpt.objp = multi_get_network_object(net_signature);
+		new(data_ptr) object_ship_wing_point_team(std::move(oswpt));
+		break;
+	}
+	case oswpt_type::PARSE_OBJECT: {
+		ushort net_signature;
+		GET_USHORT(net_signature);
+		new(data_ptr) object_ship_wing_point_team(mission_parse_get_arrival_ship(net_signature));
+		break;
+	}
+	case oswpt_type::WING:
+	case oswpt_type::WING_NOT_PRESENT: {
+		int wingidx;
+		GET_INT(wingidx);
+		if((wingidx < 0) || (wingidx >= Num_wings) || (Wings[wingidx].num_waves == -1))
+			new(data_ptr) object_ship_wing_point_team;
+		else
+			new(data_ptr) object_ship_wing_point_team(&Wings[wingidx]);
+		break;
+	}
+	case oswpt_type::SHIP_ON_TEAM:
+	case oswpt_type::WHOLE_TEAM: {
+		int oswpt_team;
+		GET_INT(oswpt_team);
+		object_ship_wing_point_team oswpt;
+		oswpt.team = oswpt_team;
+		oswpt.type = static_cast<oswpt_type>(oswpttype);
+		new(data_ptr) object_ship_wing_point_team(std::move(oswpt));
+		break;
+	}
+	case oswpt_type::NONE:
+	case oswpt_type::EXITED:
+	default:
+		new(data_ptr) object_ship_wing_point_team;
+		break;
+	}
+}
+
 
 
 #define OSWPT_TYPE_NONE				oswpt_type::NONE

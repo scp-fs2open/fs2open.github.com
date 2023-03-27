@@ -166,6 +166,14 @@ private:
 	object& operator= (const object & other); // no implementation
 };
 
+struct lua_State;
+namespace scripting {
+	class ade_table_entry;
+}
+namespace luacpp {
+	class LuaValue;
+}
+
 extern int Num_objects;
 extern object Objects[];
 
@@ -173,9 +181,9 @@ struct object_h {
 	object *objp;
 	int sig;
 
-	bool IsValid() const {return (objp != NULL && objp->signature == sig && sig > 0);}
-	object_h(object *in){objp=in; sig = (in == nullptr) ? -1 : in->signature;}
-	object_h(){objp=NULL;sig=-1;}
+	bool IsValid() const {return (objp != nullptr && objp->signature == sig && sig > 0); }
+	object_h(object *in) {objp = in; sig = (in == nullptr) ? -1 : in->signature; }
+	object_h() { objp = nullptr; sig = -1; }
 
 	object_h(int objnum)
 	{
@@ -190,6 +198,9 @@ struct object_h {
 			sig = -1;
 		}
 	}
+
+	static void serialize(lua_State* L, const scripting::ade_table_entry& tableEntry, const luacpp::LuaValue& value, ubyte* data, int& packet_size);
+	static void deserialize(lua_State* L, const scripting::ade_table_entry& tableEntry, char* data_ptr, ubyte* data, int& offset);
 };
 
 // object backup struct used by Fred.

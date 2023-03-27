@@ -294,7 +294,7 @@ ADE_FUNC(__len, l_Loadout_Weapon, nullptr, "The number of weapon banks in the sl
 }
 
 //**********HANDLE: loadout ship
-ADE_OBJ(l_Loadout_Ship, int, "loadout_ship", "Loadout handle");
+ADE_OBJ_NO_MULTI(l_Loadout_Ship, int, "loadout_ship", "Loadout handle");
 
 ADE_VIRTVAR(ShipClassIndex,
 	l_Loadout_Ship,

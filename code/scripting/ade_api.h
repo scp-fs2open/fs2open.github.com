@@ -10,6 +10,11 @@
 #include "scripting/ade_args.h"
 #include "scripting/ade_doc.h"
 
+class lua_net_exception : public std::runtime_error {
+public:
+	lua_net_exception(const char* msg);
+};
+
 namespace scripting {
 
 const size_t INVALID_ID = (size_t) -1; // Use -1 to get highest possible unsigned number
@@ -26,6 +31,56 @@ class ade_lib_handle {
 
 	size_t GetIdx() const { return LibIdx; }
 };
+
+namespace internal {
+	template<typename T> void ade_multi_serialize_fundamental(lua_State* L, const scripting::ade_table_entry& tableEntry, const luacpp::LuaValue& value, ubyte* data, int& packet_size);
+
+	template<typename T> void ade_multi_deserialize_fundamental(lua_State* L, const scripting::ade_table_entry& tableEntry, char* data_ptr, ubyte* data, int& offset);
+
+	inline void ade_multi_serialize_unsupported(lua_State* L, const scripting::ade_table_entry& tableEntry, const luacpp::LuaValue& /*value*/, ubyte* /*data*/, int& /*packet_size*/) {
+		LuaError(L, "Cannot serialize data of type %s for sending over network!", tableEntry.GetName());
+		throw lua_net_exception("Cannot serialize data of given userdata type to network");
+	}
+
+	inline void ade_multi_deserialize_unsupported(lua_State* L, const scripting::ade_table_entry& tableEntry, char* /*data_ptr*/, ubyte* /*data*/, int& /*offset*/) {
+		LuaError(L, "Cannot deserialize data of type %s from network! Make sure all players are running the same version!", tableEntry.GetName());
+		throw lua_net_exception("Cannot deserialize data of recieved userdata type from network");
+	}
+
+	enum class ade_multi_serialize_mode : size_t { NATIVE, FUNDAMENTAL, UNSUPPORTED };
+
+	template <typename T, typename = int>
+	struct ade_serializable : std::false_type { };
+
+	template <typename T>
+	struct ade_serializable <T, decltype((void)T::serialize, 0)> : std::true_type { };
+
+	template<typename T, ade_multi_serialize_mode mode>
+	struct ade_multi_serialize_dispatcher {};
+
+	template<typename T>
+	struct ade_multi_serialize_dispatcher<T, ade_multi_serialize_mode::NATIVE> {
+		static constexpr ade_serialize_func serialize = &T::serialize;
+		static constexpr ade_deserialize_func deserialize = &T::deserialize;
+	};
+
+	template<typename T>
+	struct ade_multi_serialize_dispatcher<T, ade_multi_serialize_mode::FUNDAMENTAL> {
+		static constexpr ade_serialize_func serialize = &ade_multi_serialize_fundamental<T>;
+		static constexpr ade_deserialize_func deserialize = &ade_multi_deserialize_fundamental<T>;
+	};
+
+	template<typename T>
+	struct ade_multi_serialize_dispatcher<T, ade_multi_serialize_mode::UNSUPPORTED> {
+		static constexpr ade_serialize_func serialize = &ade_multi_serialize_unsupported;
+		static constexpr ade_deserialize_func deserialize = &ade_multi_deserialize_unsupported;
+	};
+}
+
+template<typename T>
+struct ade_multi_serializer : public internal::ade_multi_serialize_dispatcher<T,
+	internal::ade_serializable<T>::value ? internal::ade_multi_serialize_mode::NATIVE :
+	(std::is_fundamental<T>::value ? internal::ade_multi_serialize_mode::FUNDAMENTAL : internal::ade_multi_serialize_mode::UNSUPPORTED)> {};
 
 /**
  * @ingroup ade_api
@@ -50,7 +105,7 @@ class ade_obj : public ade_lib_handle {
 	}
 
   public:
-	ade_obj(const char* in_name, const char* in_desc, const ade_lib_handle* in_deriv = nullptr)
+	ade_obj(const char* in_name, const char* in_desc, const ade_lib_handle* in_deriv = nullptr, size_t size = 0, ade_serialize_func serializer = nullptr, ade_deserialize_func deserializer = nullptr)
 	{
 		ade_table_entry ate;
 
@@ -61,6 +116,9 @@ class ade_obj : public ade_lib_handle {
 		}
 		ate.Type        = 'o';
 		ate.Description = in_desc;
+		ate.Size = size;
+		ate.Serializer = serializer;
+		ate.Deserializer = deserializer;
 
 		if (!std::is_trivially_destructible<StoreType>::value) {
 			// If this type is not trivial then we need to have a destructor
@@ -100,10 +158,10 @@ class ade_obj : public ade_lib_handle {
 /**
  * @warning Utility macro. DO NOT USE!
  */
-#define ADE_OBJ_DERIV_IMPL(field, type, name, desc, deriv)                                                             \
+#define ADE_OBJ_DERIV_IMPL(field, type, name, desc, deriv, ...)                                                 \
 	const ::scripting::ade_obj<type>& SCP_TOKEN_CONCAT(get_, field)()                                                  \
 	{                                                                                                                  \
-		static ::scripting::ade_obj<type> obj(name, desc, deriv);                                                      \
+		static ::scripting::ade_obj<type> obj(name, desc, deriv, sizeof(type), __VA_ARGS__::serialize, __VA_ARGS__::deserialize);\
 		return obj;                                                                                                    \
 	}                                                                                                                  \
 	const ::scripting::ade_obj<type>& field = SCP_TOKEN_CONCAT(get_, field)()
@@ -121,7 +179,23 @@ class ade_obj : public ade_lib_handle {
  *
  * @ingroup ade_api
  */
-#define ADE_OBJ(field, type, name, desc) ADE_OBJ_DERIV_IMPL(field, type, name, desc, nullptr)
+#define ADE_OBJ(field, type, name, desc) ADE_OBJ_DERIV_IMPL(field, type, name, desc, nullptr, ade_multi_serializer<type>)
+
+ /**
+  * @brief Define an API object that cannot be serialized for multi, despite a serialization handler existing
+  *
+  * An object is similar to a C++ class. Use this if you want to return a special type from a function that should be
+  * able to do more on its own.
+  *
+  * @param field The name of the field by which the class should be accessible
+  * @param type The type of the data the class contains
+  * @param name The name the class should have in the documentation
+  * @param desc Documentation about what this class is
+  *
+  * @ingroup ade_api
+  */
+#define ADE_OBJ_NO_MULTI(field, type, name, desc) ADE_OBJ_DERIV_IMPL(field, type, name, desc, nullptr, internal::ade_multi_serialize_dispatcher<type, internal::ade_multi_serialize_mode::UNSUPPORTED>)
+
 
 /**
  * @brief Define an API object that derives from another
@@ -137,7 +211,7 @@ class ade_obj : public ade_lib_handle {
  * @ingroup ade_api
  */
 #define ADE_OBJ_DERIV(field, type, name, desc, deriv)                                                                  \
-	ADE_OBJ_DERIV_IMPL(field, type, name, desc, &SCP_TOKEN_CONCAT(get_, deriv)())
+	ADE_OBJ_DERIV_IMPL(field, type, name, desc, &SCP_TOKEN_CONCAT(get_, deriv)(), ade_multi_serializer<type>)
 
 /**
  * @brief Declare an API object but don't define it
