@@ -6107,7 +6107,7 @@ bool post_process_mission(mission *pm)
 	// determine if player start has initial velocity and set forward cruise percent to relect this
 	// this should check prev_ramp_vel because that is in local coordinates --wookieejedi
 	if ( Player_obj->phys_info.prev_ramp_vel.xyz.z > 0.0f )
-		Player->ci.forward_cruise_percent = Player_obj->phys_info.prev_ramp_vel.xyz.z / Player_ship->current_max_speed * 100.0f;
+		Player->ci.forward_cruise_percent = Player_obj->phys_info.prev_ramp_vel.xyz.z / Player_obj->phys_info.max_vel.xyz.z * 100.0f;
 
 	// Kazan - player use AI at start?
 	if (pm->flags[Mission::Mission_Flags::Player_start_ai])

@@ -6534,7 +6534,6 @@ void ship::clear()
 	weapon_recharge_index = INTIAL_WEAPON_RECHARGE_INDEX;
 	engine_recharge_index = INTIAL_ENGINE_RECHARGE_INDEX;
 	weapon_energy = 0;
-	current_max_speed = 0.0f;
 	next_manage_ets = timestamp(0);
 
 	flags.reset();
@@ -6961,8 +6960,6 @@ static void ship_set(int ship_index, int objnum, int ship_type)
 	}
 
 	ets_init_ship(objp);	// init ship fields that are used for the ETS
-
-	shipp->current_max_speed = Ship_info[ship_type].max_speed;
 
 	shipp->flags.set(Ship_Flags::Engines_on);
 
@@ -11397,14 +11394,6 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		sp->cmeasure_count = MAX(0, fl2i(sip->cmeasure_max / cm_cargo_size) - cm_used);
 	} else {
 		sp->cmeasure_count = MAX(0, sip->cmeasure_max - (sip_orig->cmeasure_max - sp->cmeasure_count));
-	}
-
-	// avoid cases where either of these are 0
-	if (sp->current_max_speed != 0 && sip_orig->max_speed != 0) {
-		sp->current_max_speed = sip->max_speed * (sp->current_max_speed / sip_orig->max_speed);
-	}
-	else {
-		sp->current_max_speed = sip->max_speed;
 	}
 
 	ship_set_default_weapons(sp, sip);
@@ -16728,9 +16717,9 @@ int ship_return_seconds_to_goal(ship *sp)
 
 	// Goober5000 - handle cap
 	if (aip->waypoint_speed_cap > 0)
-		max_speed = MIN(sp->current_max_speed, aip->waypoint_speed_cap);
+		max_speed = MIN(objp->phys_info.max_vel.xyz.z, aip->waypoint_speed_cap);
 	else
-		max_speed = sp->current_max_speed;
+		max_speed = objp->phys_info.max_vel.xyz.z;
 
 	if ( aip->mode == AIM_WAYPOINTS ) {
 		// Is traveling a waypoint path

@@ -714,7 +714,7 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 
 				//SUSHI: If gliding, don't do anything for speed matching
 				if (!( (Objects[Player->objnum].phys_info.flags & PF_GLIDING) || (Objects[Player->objnum].phys_info.flags & PF_FORCE_GLIDE) )) {
-					pmax_speed = Ships[Player_obj->instance].current_max_speed;
+					pmax_speed = Player_obj->phys_info.max_vel.xyz.z;
 					if (pmax_speed > 0.0f) {
 						ci->forward_cruise_percent = (tspeed / pmax_speed) * 100.0f;
 					} else {
@@ -1011,9 +1011,9 @@ void read_player_controls(object *objp, float frametime)
 					gameseq_post_event( GS_EVENT_PLAYER_WARPOUT_STOP );
 				} else {
 					if ( Warpout_forced ) {
-						Ships[objp->instance].current_max_speed = target_warpout_speed * 2.0f;
-					} else if (Ships[objp->instance].current_max_speed < target_warpout_speed) {
-						Ships[objp->instance].current_max_speed = target_warpout_speed + 5.0f;
+						objp->phys_info.max_vel.xyz.z = target_warpout_speed * 2.0f;
+					} else if (objp->phys_info.max_vel.xyz.z < target_warpout_speed) {
+						objp->phys_info.max_vel.xyz.z = target_warpout_speed + 5.0f;
 					}
 
 					diff = target_warpout_speed - objp->phys_info.fspeed;
@@ -1021,7 +1021,7 @@ void read_player_controls(object *objp, float frametime)
 					if ( diff < 0.0f ) 
 						diff = 0.0f;
 					
-					Player->ci.forward = ((target_warpout_speed + diff) / Ships[objp->instance].current_max_speed);
+					Player->ci.forward = ((target_warpout_speed + diff) / objp->phys_info.max_vel.xyz.z);
 				}
 			
 				if ( Player->control_mode == PCM_WARPOUT_STAGE1 )
@@ -1052,10 +1052,6 @@ void read_player_controls(object *objp, float frametime)
 		}
 	}
 
-	// the ships maximum velocity now depends on the energy flowing to engines
-	if(objp->type != OBJ_OBSERVER){
-		objp->phys_info.max_vel.xyz.z = Ships[objp->instance].current_max_speed;
-	} 
 	if(Player_obj->type == OBJ_SHIP && !Player_use_ai){	
 		// only read player control info if player ship is not dead
 		// or if Player_use_ai is disabed

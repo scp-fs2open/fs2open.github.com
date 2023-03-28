@@ -2193,7 +2193,7 @@ void HudGaugeTargetBox::showTargetData(float  /*frametime*/)
 			gr_printf_no_resize(sx, sy, "%s", outstr);
 			sy += dy;
 
-			gr_printf_no_resize(sx, sy, "Max speed = %d, (%d%%)", (int) shipp->current_max_speed, (int) (100.0f * vm_vec_mag(&target_objp->phys_info.vel)/shipp->current_max_speed));
+			gr_printf_no_resize(sx, sy, "Max speed = %d, (%d%%)", (int)target_objp->phys_info.max_vel.xyz.z, (int) (100.0f * vm_vec_mag(&target_objp->phys_info.vel)/target_objp->phys_info.max_vel.xyz.z));
 			sy += dy;
 			
 			// data can be found in target montior
@@ -2231,7 +2231,7 @@ void HudGaugeTargetBox::showTargetData(float  /*frametime*/)
 			// print out energy transfer information on the ship
 			sy = gr_screen.center_offset_y + 70;
 
-			sprintf(outstr,"MAX G/E: %.0f/%.0f",shipp->weapon_energy,shipp->current_max_speed);
+			sprintf(outstr,"MAX G/E: %.0f/%.0f",shipp->weapon_energy, target_objp->phys_info.max_vel.xyz.z);
 			gr_printf_no_resize(sx, sy, "%s", outstr);
 			sy += dy;
 			 
