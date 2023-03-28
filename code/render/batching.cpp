@@ -874,8 +874,8 @@ void batching_add_quad(int texture, vertex *verts)
 
 void batching_add_quad(int texture, vertex *verts, primitive_batch *batch)
 {
+	Assertion((texture >= 0), "batching_add_...() attempted for invalid texture");
 	if ( texture < 0 ) {
-		Int3();
 		return;
 	}
 
@@ -895,8 +895,8 @@ void batching_add_tri(int texture, vertex *verts)
 
 void batching_add_tri(int texture, vertex *verts, primitive_batch *batch)
 {
+	Assertion((texture >= 0), "batching_add_...() attempted for invalid texture");
 	if ( texture < 0 ) {
-		Int3();
 		return;
 	}
 
