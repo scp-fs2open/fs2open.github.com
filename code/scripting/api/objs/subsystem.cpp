@@ -14,7 +14,7 @@
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
 
-bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, vec3d *turret_pos, vec3d *firing_vec, vec3d *predicted_pos = nullptr, float flak_range_override = 100.0f);
+bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, vec3d *turret_pos, vec3d *firing_vec, vec3d *predicted_pos = nullptr, float flak_range_override = 100.0f, bool play_sound = true);
 
 namespace scripting {
 namespace api {

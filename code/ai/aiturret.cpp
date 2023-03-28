@@ -1771,7 +1771,7 @@ void turret_update_enemy_in_range(ship_subsys *turret, float seconds)
 /**
  * Fire a weapon from a turret
  */
-bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, vec3d *turret_pos, vec3d *firing_vec, vec3d *predicted_pos = nullptr, float flak_range_override = 100.0f)
+bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, vec3d *turret_pos, vec3d *firing_vec, vec3d *predicted_pos = nullptr, float flak_range_override = 100.0f, bool play_sound = true)
 {
 	matrix	turret_orient;
 	int weapon_objnum;
@@ -2088,7 +2088,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 						}
 					}
 
-					if ( wip->launch_snd.isValid() ) {
+					if ( play_sound && wip->launch_snd.isValid() ) {
 						// Don't play turret firing sound if turret sits on player ship... it gets annoying.
 						if ( parent_objnum != OBJ_INDEX(Player_obj) || (turret->flags[Ship::Subsystem_Flags::Play_sound_for_player]) ) {						
 							snd_play_3d( gamesnd_get_game_sound(wip->launch_snd), turret_pos, &View_position );
@@ -2628,6 +2628,9 @@ void ai_turret_execute_behavior(ship *shipp, ship_subsys *ss)
 			number_of_firings = num_valid;
 		}
 
+		//
+		auto sound_played = gamesnd_id();
+
 		for (int i = 0; i < number_of_firings; ++i)
 		{
 			int valid_index;
@@ -2636,6 +2639,13 @@ void ai_turret_execute_behavior(ship *shipp, ship_subsys *ss)
 			else
 				valid_index = i;
 			auto wip = get_turret_weapon_wip(&ss->weapons, valid_weapons[valid_index]);
+
+			bool play_sound = true;
+
+			if (sound_played == wip->launch_snd) {
+				sound_played = wip->launch_snd;
+				play_sound = false;
+			}
 
 			// Forces the firing turret to retain the firingpoints of their weapons:
 			// if the turret has multiple banks, the first bank will only fire from the first firepoint,
@@ -2791,7 +2801,7 @@ void ai_turret_execute_behavior(ship *shipp, ship_subsys *ss)
 					flak_jitter_aim(&shoot_vector, dist_to_enemy, ship_get_subsystem_strength(shipp, SUBSYSTEM_WEAPONS), wip);
 				}
 
-				turret_fire_weapon(valid_weapons[valid_index], ss, parent_objnum, &gpos, &shoot_vector, &predicted_enemy_pos);
+				turret_fire_weapon(valid_weapons[valid_index], ss, parent_objnum, &gpos, &shoot_vector, &predicted_enemy_pos, play_sound);
 			}
 			else
 			{
