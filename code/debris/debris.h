@@ -83,7 +83,7 @@ void debris_create_set_velocity(debris *db, ship *source_shipp, vec3d *exp_cente
 void debris_create_fire_hook(object *obj, object *source_obj);
 
 int debris_check_collision( object * obj, object * other_obj, vec3d * hitpos, collision_info_struct *debris_hit_info=NULL, vec3d* hitnormal = NULL );
-void debris_hit( object * debris_obj, object * other_obj, vec3d * hitpos, float damage );
+void debris_hit( object * debris_obj, object * other_obj, vec3d * hitpos, float damage, vec3d* force );
 int debris_get_team(object *objp);
 
 void debris_add_to_hull_list(debris *db);
