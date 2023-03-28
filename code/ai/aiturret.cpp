@@ -2628,7 +2628,6 @@ void ai_turret_execute_behavior(ship *shipp, ship_subsys *ss)
 			number_of_firings = num_valid;
 		}
 
-		//
 		auto sound_played = gamesnd_id();
 
 		for (int i = 0; i < number_of_firings; ++i)
