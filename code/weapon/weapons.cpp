@@ -7082,7 +7082,7 @@ void weapon_area_apply_blast(vec3d * /*force_apply_pos*/, object *objp, vec3d *b
 
 	vm_vec_sub(&vec_ship_to_impact, blast_pos, &objp->pos);
 
-	int model_num;
+	int model_num = -1;
 	switch (objp->type) {
 		case OBJ_SHIP: 
 			model_num = Ship_info[Ships[objp->instance].ship_info_index].model_num;
