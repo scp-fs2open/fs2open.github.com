@@ -215,20 +215,5 @@ ADE_FUNC(setSelected, l_Gauge_Config, "boolean", "Sets if the gauge is the curre
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(setHighlighted, l_Gauge_Config, "boolean", "Sets if the gauge is the currently highlighted gauge for drawing as highlighted.", nullptr, nullptr)
-{
-	gauge_config_h current;
-	bool highlight;
-	if (!ade_get_args(L, "o|b", l_Gauge_Config.Get(&current), &highlight)) {
-		return ADE_RETURN_NIL;
-	}
-
-	if (highlight) {
-		HC_gauge_hot = current.getIndex();
-	}
-
-	return ADE_RETURN_NIL;
-}
-
 } // namespace api
 } // namespace scripting

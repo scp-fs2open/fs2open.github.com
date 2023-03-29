@@ -13,6 +13,7 @@
 #define _HUDCONFIG_H
 
 #include "hud/hud.h"
+#include "ui/ui.h"
 
 class player;
 class ship;
@@ -87,11 +88,30 @@ extern int HC_gauge_hot;
 extern int HC_gauge_selected;
 extern int HC_select_all;
 
+struct HUD_Gauge_Config {
+	SCP_string name;
+	SCP_string filename;
+	int bitmap;
+	int x;
+	int y;
+	int width;
+	int height;
+	color cur_color;
+	bool visible;
+	bool popup;
+	bool can_popup;
+	bool uses_iff_color;
+};
+
+// Used by the API to set and render hud gauges for the hud configuration menu
+// This is instead of hacking in the usage of UI_Button objects
+extern SCP_vector<HUD_Gauge_Config> HUD_gauge_configs;
+
 const char* HC_gauge_descriptions(int n);
 
-void hud_config_init();
-void hud_config_do_frame(float frametime);
-void hud_config_close();
+void hud_config_init(bool API_Access = false, int x = 0, int y = 0);
+void hud_config_do_frame(float frametime, bool API_Access = false, int mx = 0, int my = 0);
+void hud_config_close(bool API_Access = false);
 
 void hud_set_default_hud_config(player *p);
 void hud_config_set_gauge_flags(int gauge_index, int on_flag, int popup_flag);

@@ -1986,19 +1986,17 @@ ADE_LIB_DERIV(l_UserInterface_HUDConfig,
 
 ADE_FUNC(initHudConfig,
 	l_UserInterface_HUDConfig,
-	nullptr,
-	"Initializes the Mission Log data. Must be used before Mission Log is accessed.",
+	"[number X, number Y]",
+	"Initializes the HUD Configuration data. Must be used before HUD Configuration data accessed. "
+	"X and Y are the coordinates where the HUD preview will be drawn when drawHudConfig is used.",
 	nullptr,
 	nullptr)
 {
-	SCP_UNUSED(L);
+	int x = 0;
+	int y = 0;
+	ade_get_args(L, "|ii", &x, &y);
 
-	//Log_scrollback_vec.clear(); // Make sure the vector is empty before we start
-
-	// Width here is used to determine if a log line needs to be split into multiple lines.
-	// That makes sense for retail, but not so much for the API. Telling it to use the entire screen width
-	// should be sufficient to prevent unnecessary line breaks given how short most log lines are in the mission log.
-	//message_log_init_scrollback(gr_screen.max_w);
+	hud_config_init(true, x, y);
 
 	return ADE_RETURN_NIL;
 }
@@ -2006,15 +2004,35 @@ ADE_FUNC(initHudConfig,
 ADE_FUNC(closeHudConfig,
 	l_UserInterface_HUDConfig,
 	nullptr,
-	"Clears the Mission Log data. Should be used when finished accessing Mission Log Entries.",
+	"Cleans the HUD Configuration data. Should be used when finished accessing HUD Configuration.",
 	nullptr,
 	nullptr)
 {
 	SCP_UNUSED(L);
 
-	//message_log_shutdown_scrollback();
+	hud_config_close();
 
 	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(drawHudConfig,
+	l_UserInterface_HUDConfig,
+	"[number MouseX, number MouseY]",
+	"Draws the HUD for the HUD Config UI. Should be called On Frame.",
+	"gauge_config",
+	"Returns the gauge currently being hovered over, or empty handle if nothing is hovered")
+{
+	int mx = 0;
+	int my = 0;
+	ade_get_args(L, "|ii", &mx, &my);
+
+	hud_config_do_frame(0.0f, true, mx, my);
+
+	if (HC_gauge_hot >= 0) {
+		return ade_set_args(L, "o", l_Gauge_Config.Set(gauge_config_h(HC_gauge_hot)));
+	} else {
+		return ade_set_error(L, "o", l_Gauge_Config.Set(gauge_config_h()));
+	}
 }
 
 ADE_LIB_DERIV(l_HUD_Gauges, "GaugeConfigs", nullptr, nullptr, l_UserInterface_HUDConfig);
@@ -2035,7 +2053,7 @@ ADE_INDEXER(l_HUD_Gauges,
 	return ade_set_args(L, "o", l_Gauge_Config.Set(gauge_config_h(idx)));
 }
 
-ADE_FUNC(__len, l_Log_Entries, nullptr, "The number of gauge configs", "number", "The number of gauge configs.")
+ADE_FUNC(__len, l_HUD_Gauges, nullptr, "The number of gauge configs", "number", "The number of gauge configs.")
 {
 	return ade_set_args(L, "i", NUM_HUD_GAUGES);
 }
