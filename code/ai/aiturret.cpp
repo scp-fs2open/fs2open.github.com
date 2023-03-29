@@ -2639,11 +2639,11 @@ void ai_turret_execute_behavior(ship *shipp, ship_subsys *ss)
 				valid_index = i;
 			auto wip = get_turret_weapon_wip(&ss->weapons, valid_weapons[valid_index]);
 
-			bool play_sound = true;
+			bool play_sound = false;
 
-			if (sound_played == wip->launch_snd) {
+			if (sound_played != wip->launch_snd) {
 				sound_played = wip->launch_snd;
-				play_sound = false;
+				play_sound = true;
 			}
 
 			// Forces the firing turret to retain the firingpoints of their weapons:
@@ -2800,7 +2800,7 @@ void ai_turret_execute_behavior(ship *shipp, ship_subsys *ss)
 					flak_jitter_aim(&shoot_vector, dist_to_enemy, ship_get_subsystem_strength(shipp, SUBSYSTEM_WEAPONS), wip);
 				}
 
-				turret_fire_weapon(valid_weapons[valid_index], ss, parent_objnum, &gpos, &shoot_vector, &predicted_enemy_pos, play_sound);
+				turret_fire_weapon(valid_weapons[valid_index], ss, parent_objnum, &gpos, &shoot_vector, &predicted_enemy_pos, 100.0f, play_sound);
 			}
 			else
 			{
