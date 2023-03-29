@@ -224,7 +224,7 @@ bool delete_preset_file(CC_preset preset);
  * @details If a preset file is unique, it is loaded into the game and available for use by the player.  However, if
  * a preset is a duplicate of another preset, it is ignored, and the player is warned of it
  */
-void load_preset_files();
+void load_preset_files(SCP_string clone = "");
 
 /**
  * @brief Checks if the given preset is a duplicate within Control_config_presets vector

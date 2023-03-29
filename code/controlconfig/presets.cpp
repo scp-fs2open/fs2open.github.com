@@ -35,7 +35,7 @@ Section lookupSectionValue(const char* name) {
 	return Section::Invalid;
 }
 
-void load_preset_files() {
+void load_preset_files(SCP_string clone) {
 	SCP_vector<SCP_string> filelist;
 	cf_get_file_list(filelist, CF_TYPE_PLAYER_BINDS, NOX("*.json"), CF_SORT_NAME, nullptr,
 	                 CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
@@ -128,7 +128,8 @@ void load_preset_files() {
 		// Done with the file
 		auto it = preset_find_duplicate(preset);
 
-		if (it == Control_config_presets.end()) {
+		// If we just cloned the file, then allow the duplicate. Just this once.
+		if ((clone == preset.name) || (it == Control_config_presets.end())) {
 			Control_config_presets.push_back(preset);
 
 		} else if ((it->name != preset.name) || (it->type != Preset_t::pst)) {

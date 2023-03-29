@@ -1730,14 +1730,16 @@ bool control_config_clone_preset(CC_preset preset, SCP_string newName) {
 	CC_preset newPreset = preset;
 	newPreset.name = newName;
 
+	bool success = save_preset_file(newPreset, false);
+
 	// Reload the presets from file.
 	Control_config_presets.resize(1);
-	load_preset_files();
+	load_preset_files(newName);
 
 	// use the newly cloned preset
-	control_config_use_preset_by_name(newName);
+	control_config_use_preset_by_name(newPreset.name);
 
-	return save_preset_file(newPreset, false);
+	return success;
 }
 
 /**
@@ -1892,10 +1894,6 @@ bool control_config_bind_key_on_frame(int ctrl, selItem item, bool API_Access)
 
 	// Poll for keypress
 	int k = game_poll(); // polled key.  Can be masked with SHIFT and/or ALT
-
-	if (k > 0) {
-		int junk = k;
-	}
 
 	if (!API_Access) {
 		Ui_window.use_hack_to_get_around_stupid_problem_flag = 1;
