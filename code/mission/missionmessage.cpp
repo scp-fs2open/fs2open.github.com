@@ -41,6 +41,7 @@
 #include "weapon/emp.h"
 
 bool Allow_generic_backup_messages = false;
+float Command_announces_enemy_arrival_chance = 0.25;
 
 SCP_vector<SCP_string> Builtin_moods;
 int Current_mission_mood;
@@ -639,6 +640,19 @@ void parse_msgtbl()
 		if (optional_string("#Message Settings")) {
 			if (optional_string("$Allow Any Ship To Send Backup Messages:")) {
 				stuff_boolean(&Allow_generic_backup_messages);
+			}
+			if (optional_string("$Chance for Command to announce enemy arrival:")) {
+				int scratch;
+				stuff_int(&scratch);
+				if (scratch < 0) {
+					Warning(LOCATION, "$Chance for Command to announce enemy arrival: is negative; assuming 0");
+					Command_announces_enemy_arrival_chance = 0;
+				} else if (scratch > 100) {
+					Warning(LOCATION, "$Chance for Command to announce enemy arrival: is over 100; assuming 100");
+					Command_announces_enemy_arrival_chance = 1;
+				} else {
+					Command_announces_enemy_arrival_chance = static_cast<float>(scratch) / 100;
+				}
 			}
 		}
 
