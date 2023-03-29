@@ -1731,6 +1731,18 @@ void gr_get_color( int *r, int *g, int *b )
 	if (b) *b = gr_screen.current_color.blue;
 }
 
+// clamps a color value to 0-255
+void gr_clamp_color_value(int &val)
+{
+	if (val < 0) {
+		val = 0;
+	}
+
+	if (val > 255) {
+		val = 255;
+	}
+}
+
 void gr_init_color(color *c, int r, int g, int b)
 {
 	CAP(r, 0, 255);
