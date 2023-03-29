@@ -123,7 +123,7 @@ void hud_config_as_observer(ship *shipp,ai_info *aif);
 void hud_config_as_player();
 
 // leave hud config without accepting changes
-void hud_config_cancel();
+void hud_config_cancel(bool change_state = true);
 
 // leave hud config with accepting changes
 void hud_config_commit();

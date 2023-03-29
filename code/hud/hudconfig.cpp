@@ -988,10 +988,13 @@ void hud_config_stuff_colors(int r, int g, int b)
 }
 
 // leave hud config without accepting changes
-void hud_config_cancel()
+void hud_config_cancel(bool change_state)
 {
 	hud_config_restore();
-	gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
+
+	if (change_state) {
+		gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
+	}
 }
 
 // leave hud config with accepting changes

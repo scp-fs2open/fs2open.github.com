@@ -2003,12 +2003,19 @@ ADE_FUNC(initHudConfig,
 
 ADE_FUNC(closeHudConfig,
 	l_UserInterface_HUDConfig,
-	nullptr,
-	"Cleans the HUD Configuration data. Should be used when finished accessing HUD Configuration.",
+	"boolean Save",
+	"If True then saves the gauge configuration, discards if false. Defaults to false. Then cleans up memory. Should be used when finished accessing HUD Configuration.",
 	nullptr,
 	nullptr)
 {
-	SCP_UNUSED(L);
+	bool save = false;
+	ade_get_args(L, "|b", &save);
+
+	if (save) {
+		//hud_config_commit();
+	} else {
+		hud_config_cancel(false);
+	}
 
 	hud_config_close();
 

@@ -70,7 +70,7 @@ ADE_VIRTVAR(Coordinates,
 
 ADE_VIRTVAR(CurrentColor,
 	l_Gauge_Config,
-	nullptr,
+	"color",
 	"Gets the current color of the gauge. If setting the color, gauges that use IFF for color cannot be set.",
 	"color",
 	"The gauge color")
