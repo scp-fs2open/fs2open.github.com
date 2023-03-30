@@ -2044,6 +2044,71 @@ ADE_FUNC(drawHudConfig,
 	}
 }
 
+ADE_FUNC(selectAllGauges,
+	l_UserInterface_HUDConfig,
+	"boolean Toggle",
+	"Sets all gauges as selected. True for select all, False to unselect all. Defaults to False.",
+	nullptr,
+	nullptr)
+{
+	bool toggle = false;
+	ade_get_args(L, "|b", &toggle);
+
+	hud_config_select_all_toggle(toggle, true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(setToDefault,
+	l_UserInterface_HUDConfig,
+	"string Filename",
+	"Sets all gauges to the defined default. If no filename is provided [then hud_3.hcf] is used.",
+	nullptr,
+	nullptr)
+{
+	const char* filename = "hud_3.hcf";
+	ade_get_args(L, "|s", &filename);
+
+	hud_config_select_all_toggle(0, true);
+	hud_set_default_hud_config(Player, filename);
+	HUD_init_hud_color_array();
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(saveToPreset,
+	l_UserInterface_HUDConfig,
+	"string Filename",
+	"Saves all gauges to the file with the name provided.",
+	nullptr,
+	nullptr)
+{
+	const char* filename;
+	ade_get_args(L, "s", &filename);
+
+	// check string length here!
+
+	hud_config_color_save(filename);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(usePresetFile,
+	l_UserInterface_HUDConfig,
+	"string Filename",
+	"Sets all gauges to the defined default. If no filename is provided [then hud_3.hcf] is used.",
+	nullptr,
+	nullptr)
+{
+	const char* filename;
+	ade_get_args(L, "s", &filename);
+
+	hud_config_color_load(filename);
+	HUD_init_hud_color_array();
+
+	return ADE_RETURN_NIL;
+}
+
 ADE_LIB_DERIV(l_HUD_Gauges, "GaugeConfigs", nullptr, nullptr, l_UserInterface_HUDConfig);
 ADE_INDEXER(l_HUD_Gauges,
 	"number Index",
@@ -2056,7 +2121,7 @@ ADE_INDEXER(l_HUD_Gauges,
 		return ade_set_error(L, "o", l_Gauge_Config.Set(gauge_config_h()));
 	idx--; // Convert to Lua's 1 based index system
 
-	if ((idx < 0) || (idx >= (int)Log_scrollback_vec.size()))
+	if ((idx < 0) || (idx > NUM_HUD_GAUGES))
 		return ade_set_error(L, "o", l_Gauge_Config.Set(gauge_config_h()));
 
 	return ade_set_args(L, "o", l_Gauge_Config.Set(gauge_config_h(idx)));
@@ -2065,6 +2130,29 @@ ADE_INDEXER(l_HUD_Gauges,
 ADE_FUNC(__len, l_HUD_Gauges, nullptr, "The number of gauge configs", "number", "The number of gauge configs.")
 {
 	return ade_set_args(L, "i", NUM_HUD_GAUGES);
+}
+
+ADE_LIB_DERIV(l_HUD_Presets, "GaugePresets", nullptr, nullptr, l_UserInterface_HUDConfig);
+ADE_INDEXER(l_HUD_Presets,
+	"number Index",
+	"Array of HUD Preset files",
+	"hud_preset",
+	"hud_preset handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "o", l_HUD_Preset.Set(hud_preset_h()));
+	idx--; // Convert to Lua's 1 based index system
+
+	if ((idx < 0) || (idx > HC_num_files))
+		return ade_set_error(L, "o", l_HUD_Preset.Set(hud_preset_h()));
+
+	return ade_set_args(L, "o", l_HUD_Preset.Set(hud_preset_h(idx)));
+}
+
+ADE_FUNC(__len, l_HUD_Gauges, nullptr, "The number of hud presets", "number", "The number of hud presets.")
+{
+	return ade_set_args(L, "i", HC_num_files);
 }
 
 //**********SUBLIBRARY: UserInterface/PauseScreen

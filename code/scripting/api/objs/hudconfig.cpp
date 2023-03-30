@@ -27,6 +27,38 @@ const char* gauge_config_h::getName() const
 	return HC_gauge_descriptions(gauge);
 }
 
+hud_preset_h::hud_preset_h() : preset(-1) {}
+hud_preset_h::hud_preset_h(int l_preset) : preset(l_preset) {}
+
+int hud_preset_h::getIndex() const
+{
+	return preset;
+}
+
+const char* hud_preset_h::getName() const
+{
+	return HC_filenames[preset];
+}
+
+//**********HANDLE: hud preset
+ADE_OBJ(l_HUD_Preset, hud_preset_h, "hud_preset", "Hud preset handle");
+
+ADE_VIRTVAR(Name, l_HUD_Preset, nullptr, "The name of this preset", "string", "The name")
+{
+	hud_preset_h current;
+	if (!ade_get_args(L, "o", l_HUD_Preset.Get(&current))) {
+		return ADE_RETURN_NIL;
+	}
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "s", current.getName());
+}
+
+//ADE_FUNC(deletePreset)
+
 //**********HANDLE: gauge config
 ADE_OBJ(l_Gauge_Config, gauge_config_h, "gauge_config", "Gauge config handle");
 

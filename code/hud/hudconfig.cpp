@@ -30,7 +30,6 @@
 // Game-wide Globals
 //////////////////////////////////////////////////////////////////////////////
 
-#define MAX_HCF_FILES			30
 int HC_num_files = -1;						// num known hcf files
 int HC_current_file = -1;					// current hcf file
 char *HC_filenames[MAX_HCF_FILES];
@@ -181,9 +180,6 @@ int HUD_default_popup_mask2 =
 	0	|
 	0											// kills gauge
 };
-
-void hud_config_color_save(char *name);
-void hud_config_select_all_toggle(int toggle);
 
 int HC_select_all = 0;
 
@@ -1604,7 +1600,7 @@ void hud_config_close(bool API_Access)
 }
 
 // hud_set_default_hud_config() will set the hud configuration to default values
-void hud_set_default_hud_config(player * /*p*/)
+void hud_set_default_hud_config(player * /*p*/, const char* filename)
 {
 	int idx;
 
@@ -1628,7 +1624,7 @@ void hud_set_default_hud_config(player * /*p*/)
 	HUD_config.is_observer = 0;
 
 	// load up the default colors
-	hud_config_color_load("hud_3.hcf");
+	hud_config_color_load(filename);
 }
 
 // hud_config_restore() will restore the hud configuration the player started with when the 
@@ -1671,7 +1667,7 @@ void hud_config_as_player()
 // RGB color stuff
 //
 
-void hud_config_color_save(char *name)
+void hud_config_color_save(const char *name)
 {
 	int idx;
 	CFILE* out     = cfopen(name, "wt", CFILE_NORMAL, CF_TYPE_PLAYERS, false,
@@ -1899,19 +1895,21 @@ void hud_config_color_close()
 	}
 }
 
-void hud_config_select_all_toggle(int toggle)
+void hud_config_select_all_toggle(int toggle, bool API_Access)
 {	
 	int r, g, b, a;
 
 	// if we're turning off
 	if(!toggle){				
 		// determine if on/off/popup buttons should be shown
-		hud_config_set_button_state();
+		if (!API_Access) {
+			hud_config_set_button_state();
+		}
 
 		HC_select_all = 0;
 	} else {
 		// synch stuff up
-		hud_config_synch_ui(false);
+		hud_config_synch_ui(API_Access);
 		
 		// if we had a gauge previously selected, use its color everywhere
 		if(HC_gauge_selected < 0){
@@ -1931,26 +1929,28 @@ void hud_config_select_all_toggle(int toggle)
 		HC_gauge_selected = -1;		
 
 		// enable all sliders
-		HC_color_sliders[HCS_RED].enable();
-		HC_color_sliders[HCS_GREEN].enable();
-		HC_color_sliders[HCS_BLUE].enable();
-		HC_color_sliders[HCS_ALPHA].enable();
-		HC_color_sliders[HCS_RED].unhide();
-		HC_color_sliders[HCS_GREEN].unhide();
-		HC_color_sliders[HCS_BLUE].unhide();
-		HC_color_sliders[HCS_ALPHA].unhide();
-		HC_color_sliders[HCS_RED].force_currentItem( HCS_CONV(r) );
-		HC_color_sliders[HCS_GREEN].force_currentItem( HCS_CONV(g) );
-		HC_color_sliders[HCS_BLUE].force_currentItem( HCS_CONV(b) );
-		HC_color_sliders[HCS_ALPHA].force_currentItem( HCS_CONV(a) );
+		if (!API_Access) {
+			HC_color_sliders[HCS_RED].enable();
+			HC_color_sliders[HCS_GREEN].enable();
+			HC_color_sliders[HCS_BLUE].enable();
+			HC_color_sliders[HCS_ALPHA].enable();
+			HC_color_sliders[HCS_RED].unhide();
+			HC_color_sliders[HCS_GREEN].unhide();
+			HC_color_sliders[HCS_BLUE].unhide();
+			HC_color_sliders[HCS_ALPHA].unhide();
+			HC_color_sliders[HCS_RED].force_currentItem(HCS_CONV(r));
+			HC_color_sliders[HCS_GREEN].force_currentItem(HCS_CONV(g));
+			HC_color_sliders[HCS_BLUE].force_currentItem(HCS_CONV(b));
+			HC_color_sliders[HCS_ALPHA].force_currentItem(HCS_CONV(a));
 
-		// recalc alpha
-		hud_config_recalc_alpha_slider();
+			// recalc alpha
+			hud_config_recalc_alpha_slider();
 
-		// disable all three buttons
-		hud_config_button_disable(HCB_ON);
-		hud_config_button_disable(HCB_OFF);
-		hud_config_button_disable(HCB_POPUP);
+			// disable all three buttons
+			hud_config_button_disable(HCB_ON);
+			hud_config_button_disable(HCB_OFF);
+			hud_config_button_disable(HCB_POPUP);
+		}
 
 		HC_select_all = 1;
 	}
