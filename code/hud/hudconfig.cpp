@@ -293,6 +293,13 @@ struct HC_gauge_region	HC_gauge_regions[GR_NUM_RESOLUTIONS][NUM_HUD_GAUGES] =
 	}
 };
 
+struct gauge_coords {
+	int x;
+	int y;
+};
+
+static SCP_vector<gauge_coords> HC_gauge_coords;
+
 
 int HC_gauge_description_coords[GR_NUM_RESOLUTIONS][3] = {
 	{	// GR_640
@@ -504,8 +511,7 @@ static UI_WINDOW					HC_ui_window;
 
 int							HC_gauge_hot;			// mouse is over this gauge
 int							HC_gauge_selected;	// gauge is selected
-
-SCP_vector<HUD_Gauge_Config> HUD_gauge_configs;
+float						HC_gauge_scale; // scale used for drawing the hud gauges
 
 // HUD colors
 typedef struct hc_col {
@@ -583,10 +589,50 @@ void hud_config_synch_ui(bool API_Access)
 }
 
 // Init the UI components
-void hud_config_init_ui(bool API_Access, int x, int y)
+void hud_config_init_ui(bool API_Access, int x, int y, int w)
 {
 	int i;
 	struct ui_button_info			*hb;
+
+	HC_gauge_coords.clear();
+	HC_gauge_coords.resize(NUM_HUD_GAUGES);
+
+	if (w < 0) {
+		HC_gauge_scale = 1.0f;
+	} else {
+
+		float sw = 0; // will be highest w value
+
+		// this is probably not the most efficient way to do this, but I
+		// can't find a better one. Need to get the furthest right and bottom
+		// pixels to be rendered to calculate the percent change. That is then
+		// used to rescale each gauge correctly for the rendering size and position. - Mjn
+		for (auto gauge : HC_gauge_regions[gr_screen.res]) {
+			if (!stricmp(gauge.filename, NOX("none"))) {
+				continue;
+			}
+
+			int bm = bm_load(gauge.filename);
+
+			int bw;
+			bm_get_info(bm, &bw);
+			bm_release(bm);
+
+			bw += gauge.x;
+
+			if (bw > sw) {
+				sw = (float)bw;
+			}
+		}
+
+		// calculate the percent change
+		HC_gauge_scale = (float)w / sw;
+
+		// we don't work with negative scales here, so reverse if it is
+		if (HC_gauge_scale < 0) {
+			HC_gauge_scale *= -1;
+		}
+	}
 
 	hud_config_synch_ui(API_Access);
 
@@ -614,8 +660,23 @@ void hud_config_init_ui(bool API_Access, int x, int y)
 	int x_offset = 0 + x;
 	int y_offset = 0 + y;
 	if (API_Access) {
-		x_offset += (HC_gauge_regions[gr_screen.res][8].x * -1); // the furthest left gauge
-		y_offset += (HC_gauge_regions[gr_screen.res][24].y * -1); // the furthest top gauge
+		int sx = HC_gauge_regions[gr_screen.res][0].x; // will be lowest x value
+		int sy = HC_gauge_regions[gr_screen.res][0].y; // will be lowest y value
+		for (auto gauge : HC_gauge_regions[gr_screen.res]) {
+			if (!stricmp(gauge.filename, NOX("none"))) {
+				continue;
+			}
+			if (gauge.x < sx) {
+				sx = gauge.x;
+			}
+			if (gauge.y < sy) {
+				sy = gauge.y;
+			}
+		}
+
+		// now add the offsets with the correct scaling
+		x_offset += ((int)(sx * HC_gauge_scale) * -1); // the furthest left gauge
+		y_offset += ((int)(sy * HC_gauge_scale) * -1); // the furthest top gauge
 	}
 
 	for (i=0; i<NUM_HUD_GAUGES; i++) {
@@ -624,20 +685,27 @@ void hud_config_init_ui(bool API_Access, int x, int y)
 		if (!stricmp(hg->filename, NOX("none"))) {
 			continue;
 		}
-		hg->x += x_offset;
-		hg->y += y_offset;
-		hg->button.create(&HC_ui_window, "", hg->x, hg->y, 60, 30, 0, 1);
+
+		// scale the x/y coords
+		int gx = (int)(hg->x * HC_gauge_scale);
+		int gy = (int)(hg->y * HC_gauge_scale);
+
+		// apply the offset
+		gx += x_offset;
+		gy += y_offset;
+
+		// save the values and drop the decimals
+		HC_gauge_coords[i] = {gx, gy};
+
+		hg->button.create(&HC_ui_window, "", gx, gy, 60, 30, 0, 1);
 		// set up callback for when a mouse first goes over a button
 		//		hg->button.set_highlight_action(common_play_highlight_sound);
 		hg->button.hide();
 		hg->button.link_hotspot(hg->hotspot);
 
-		// if ( hg->use_iff ) {
-		// 			hg->bitmap = bm_load_animation(hg->filename, &hg->nframes);
-		// 	} else {
 		hg->bitmap = bm_load(hg->filename);
 		hg->nframes = 1;
-			// }
+
 	}
 
 	if (!API_Access){
@@ -820,7 +888,7 @@ void hud_config_render_gauges(bool API_Access)
 				resize = GR_RESIZE_NONE;
 			}
 
-			gr_aabitmap(HC_gauge_regions[gr_screen.res][i].x, HC_gauge_regions[gr_screen.res][i].y, resize);
+			gr_aabitmap(HC_gauge_coords[i].x, HC_gauge_coords[i].y, resize, false, (int)(HC_gauge_scale * 100));
 		}
 		
 		/*
@@ -852,9 +920,9 @@ void hud_config_render_gauges(bool API_Access)
 }
 
 // hud_config_init() is called when the game enters the state GS_STATE_HUD_CONFIG
-void hud_config_init(bool API_Access, int x, int y)
+void hud_config_init(bool API_Access, int x, int y, int w)
 {
-	hud_config_init_ui(API_Access, x, y);
+	hud_config_init_ui(API_Access, x, y, w);
 	hud_config_backup(); // save the HUD configuration in case the player decides to cancel changes
 	HUD_config_inited = 1;
 }
@@ -921,15 +989,17 @@ void hud_config_check_regions_by_mouse(int mx, int my)
 		HC_gauge_region *bi = &HC_gauge_regions[gr_screen.res][i];
 		int iw = 0;
 		int ih = 0;
-		if (bi->bitmap > -0) {
-			bm_get_info(bi->bitmap, &iw, &ih, NULL);
-			if (mx < bi->x)
+		if (bi->bitmap > 0) {
+			bm_get_info(bi->bitmap, &iw, &ih, nullptr);
+			iw = (int)(iw * HC_gauge_scale);
+			ih = (int)(ih * HC_gauge_scale);
+			if (mx < HC_gauge_coords[i].x)
 				continue;
-			if (mx > (bi->x + iw))
+			if (mx > (HC_gauge_coords[i].x + iw))
 				continue;
-			if (my < bi->y)
+			if (my < HC_gauge_coords[i].y)
 				continue;
-			if (my > (bi->y + ih))
+			if (my > (HC_gauge_coords[i].y + ih))
 				continue;
 			// if we've got here, must be a hit
 			HC_gauge_hot = i;
