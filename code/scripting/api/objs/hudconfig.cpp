@@ -44,30 +44,6 @@ ADE_VIRTVAR(Name, l_Gauge_Config, nullptr, "The name of this gauge", "string", "
 	return ade_set_args(L, "s", current.getName());
 }
 
-ADE_VIRTVAR(Coordinates,
-	l_Gauge_Config,
-	nullptr,
-	"The coordinates of the gauge",
-	"number, number, number, number",
-	"X, Y, Width, Height")
-{
-	gauge_config_h current;
-	if (!ade_get_args(L, "o", l_Gauge_Config.Get(&current))) {
-		return ADE_RETURN_NIL;
-	}
-
-	if (ADE_SETTING_VAR) {
-		LuaError(L, "This property is read only.");
-	}
-
-	UI_BUTTON button = current.getGauge()->button;
-
-	int x, y, w, h;
-	button.get_dimensions(&x, &y, &w, &h);
-
-	return ade_set_args(L, "iiii", x, y, w, h);
-}
-
 ADE_VIRTVAR(CurrentColor,
 	l_Gauge_Config,
 	"color",
