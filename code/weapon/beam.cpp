@@ -2177,6 +2177,8 @@ int beam_start_firing(beam *b)
 	}	
 
 	// "shot" sound
+	if (b->objp == Player_obj && b->flags & BF_IS_FIGHTER_BEAM && Weapon_info[b->weapon_info_index].cockpit_launch_snd.isValid())
+		snd_play(gamesnd_get_game_sound(Weapon_info[b->weapon_info_index].cockpit_launch_snd), 0.0f, 10.f, SND_PRIORITY_MUST_PLAY);
 	if (Weapon_info[b->weapon_info_index].launch_snd.isValid())
 		snd_play_3d(gamesnd_get_game_sound(Weapon_info[b->weapon_info_index].launch_snd), &b->last_start, &View_position);
 
