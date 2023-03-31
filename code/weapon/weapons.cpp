@@ -2577,6 +2577,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 	// beam weapon optional stuff
 	if ( optional_string("$BeamInfo:") ) {
+		wip->wi_flags.set(Weapon::Info_Flags::Beam);
 		// beam type
 		if(optional_string("+Type:")) {
 			stuff_string(fname, F_NAME, NAME_LENGTH);
