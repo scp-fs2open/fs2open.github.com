@@ -33,6 +33,7 @@
 #include "mod_table/mod_table.h"
 #include "network/multi.h"
 #include "network/multiteamselect.h"
+#include "pilotfile/pilotfile.h"
 #include "playerman/managepilot.h"
 #include "radar/radarsetup.h"
 #include "ship/ship.h"
@@ -2014,7 +2015,7 @@ ADE_FUNC(closeHudConfig,
 	ade_get_args(L, "|b", &save);
 
 	if (save) {
-		//hud_config_commit();
+		Pilot.save_savefile();
 	} else {
 		hud_config_cancel(false);
 	}
@@ -2062,7 +2063,7 @@ ADE_FUNC(selectAllGauges,
 ADE_FUNC(setToDefault,
 	l_UserInterface_HUDConfig,
 	"string Filename",
-	"Sets all gauges to the defined default. If no filename is provided [then hud_3.hcf] is used.",
+	"Sets all gauges to the defined default. If no filename is provided then 'hud_3.hcf' is used.",
 	nullptr,
 	nullptr)
 {
@@ -2091,18 +2092,6 @@ ADE_FUNC(saveToPreset,
 	strncpy(trim, filename, MAX_FILENAME_LEN - 3);
 	trim[MAX_FILENAME_LEN - 4] = '\0';
 
-	// if the file doesn't exist, then add it to the vector
-	bool add = true;
-	for (int idx = 0; idx < (int)HC_preset_filenames.size(); idx++) {
-		if (!stricmp(HC_preset_filenames[idx].c_str(), trim)) {
-			add = false;
-		}
-	}
-
-	if (add) {
-		HC_preset_filenames.push_back(trim);
-	}
-
 	// add extension
 	char* name = cf_add_ext(trim, ".hcf");
 
@@ -2117,7 +2106,7 @@ ADE_FUNC(saveToPreset,
 ADE_FUNC(usePresetFile,
 	l_UserInterface_HUDConfig,
 	"string Filename",
-	"Sets all gauges to the defined default. If no filename is provided [then hud_3.hcf] is used.",
+	"Sets all gauges to the provided preset file settings.",
 	nullptr,
 	nullptr)
 {

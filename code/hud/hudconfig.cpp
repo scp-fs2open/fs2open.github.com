@@ -1576,16 +1576,16 @@ void hud_config_close(bool API_Access)
 
 	HC_preset_filenames.clear();
 
-	if (HC_background_bitmap != -1) {
-		bm_release(HC_background_bitmap);
-	}
-
 	if (!API_Access) {
-		HC_ui_window.destroy();
-	}
+		if (HC_background_bitmap != -1) {
+			bm_release(HC_background_bitmap);
+		}
 
-	if (HC_background_bitmap_mask != -1) {
-		bm_release(HC_background_bitmap_mask);
+		HC_ui_window.destroy();
+
+		if (HC_background_bitmap_mask != -1) {
+			bm_release(HC_background_bitmap_mask);
+		}
 	}
 
 	HUD_config_inited = 0;
