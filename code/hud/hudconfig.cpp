@@ -30,9 +30,8 @@
 // Game-wide Globals
 //////////////////////////////////////////////////////////////////////////////
 
-int HC_num_files = -1;						// num known hcf files
 int HC_current_file = -1;					// current hcf file
-char *HC_filenames[MAX_HCF_FILES];
+SCP_vector<SCP_string> HC_preset_filenames;
 
 char HC_fname[MAX_FILENAME_LEN+1] = "";
 UI_INPUTBOX HC_fname_input;
@@ -532,8 +531,7 @@ void hud_config_alpha_slider_up();
 void hud_config_alpha_slider_down();
 void hud_config_recalc_alpha_slider();
 void hud_config_process_colors();
-void hud_config_color_init();
-void hud_config_color_close();
+void hud_config_preset_init();
 #define NUM_HC_SLIDERS			4
 #define HCS_RED					0
 #define HCS_GREEN					1
@@ -724,7 +722,7 @@ void hud_config_init_ui(bool API_Access, int x, int y, int w)
 											255, HC_slider_fname[gr_screen.res], hud_config_alpha_slider_up, hud_config_alpha_slider_down, NULL);
 	}
 	
-	hud_config_color_init();
+	hud_config_preset_init();
 
 	if (!API_Access) {
 		for (i = 0; i < NUM_HUD_BUTTONS; i++) {
@@ -1254,8 +1252,8 @@ void hud_config_button_do(int n)
 		HC_fname_input.get_text(name);
 		if(name[0] != '\0'){
 			// if the filename in there already exists
-			for(idx=0; idx<HC_num_files; idx++){
-				if(!stricmp(HC_filenames[idx], name)){
+			for (idx = 0; idx < (int)HC_preset_filenames.size(); idx++) {
+				if (!stricmp(HC_preset_filenames[idx].c_str(), name)) {
 					exists = 1;
 				}
 			}
@@ -1269,58 +1267,52 @@ void hud_config_button_do(int n)
 			break;
 		}
 
-		// otherwise we have to create a new file
-		if(HC_num_files >= MAX_HCF_FILES){
-			popup(PF_USE_AFFIRMATIVE_ICON, 1, "OK", "Max number of hud config files reached!");
-			break;
-		}
-
 		// save the file, maybe generating a new filename
 		if(strlen(name) <= 0){
-			sprintf(name, "hud_%d.hcf", HC_num_files + 1);
+			sprintf(name, "hud_%d.hcf", (int)HC_preset_filenames.size());
 			out = name;
 		} else {
 			out = cf_add_ext(name, ".hcf");
 		}
-		HC_filenames[HC_num_files++] = vm_strdup(out);
+		HC_preset_filenames.push_back(out);
 		hud_config_color_save(out);		
 
 		HC_fname_input.set_text(out);
 		break;
 
 	case HCB_PREV_HCF:
-		if(HC_num_files <= 0){
+		if (HC_preset_filenames.size() <= 0) {
 			break;
 		}
 
 		if(HC_current_file <= 0){
-			HC_current_file = HC_num_files - 1;
+			HC_current_file = (int)(HC_preset_filenames.size() - 1);
 		} else {
 			HC_current_file--;
 		}
 		// load em up
-		hud_config_color_load(HC_filenames[HC_current_file]);
+		hud_config_color_load(HC_preset_filenames[HC_current_file].c_str());
 		hud_config_synch_ui(false);
 
-		HC_fname_input.set_text(HC_filenames[HC_current_file]);
+		HC_fname_input.set_text(HC_preset_filenames[HC_current_file].c_str());
 		break;
 
 	case HCB_NEXT_HCF:
-		if(HC_num_files <= 0){
+		if (HC_preset_filenames.size() <= 0) {
 			break;
 		}
 
-		if(HC_current_file >= HC_num_files - 1){
+		if (HC_current_file >= HC_preset_filenames.size()) {
 			HC_current_file = 0;
 		} else {
 			HC_current_file++;
 		}
 
 		// load em up		
-		hud_config_color_load(HC_filenames[HC_current_file]);
+		hud_config_color_load(HC_preset_filenames[HC_current_file].c_str());
 		hud_config_synch_ui(false);
 
-		HC_fname_input.set_text(HC_filenames[HC_current_file]);
+		HC_fname_input.set_text(HC_preset_filenames[HC_current_file].c_str());
 		break;
 
 	case HCB_SELECT_ALL:				
@@ -1582,7 +1574,7 @@ void hud_config_close(bool API_Access)
 //	common_free_interface_palette();		// restore game palette
 	hud_config_unload_gauges();
 
-	hud_config_color_close();
+	HC_preset_filenames.clear();
 
 	if (HC_background_bitmap != -1) {
 		bm_release(HC_background_bitmap);
@@ -1872,27 +1864,22 @@ void hud_config_process_colors()
 {	
 }
 
-void hud_config_color_init()
+void hud_config_preset_init()
 {
 	HC_current_file = -1;
-
-	// get a list of all hcf files
-	memset(HC_filenames, 0, sizeof(char*) * MAX_HCF_FILES);
-	HC_num_files = cf_get_file_list(MAX_HCF_FILES, HC_filenames, CF_TYPE_PLAYERS, "*.hcf", CF_SORT_NAME, nullptr,
-	                                CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
+	HC_preset_filenames.clear();
+	cf_get_file_list(HC_preset_filenames, CF_TYPE_PLAYERS, "*.hcf", CF_SORT_NAME, nullptr,
+						CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 }
 
-void hud_config_color_close()
+void hud_config_delete_preset(SCP_string filename)
 {
-	int idx;
+	filename += ".hcf"; //cfile strips the extension when adding to the list, so add it back here
+	cf_delete(filename.c_str(), CF_TYPE_PLAYERS,
+		CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 
-	// free all 
-	for(idx=0; idx<HC_num_files; idx++){
-		if(HC_filenames[idx] != NULL){
-			vm_free(HC_filenames[idx]);
-			HC_filenames[idx] = NULL;
-		}
-	}
+	// Reload the presets from file.
+	hud_config_preset_init();
 }
 
 void hud_config_select_all_toggle(int toggle, bool API_Access)

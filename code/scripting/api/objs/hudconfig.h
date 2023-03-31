@@ -20,7 +20,7 @@ struct hud_preset_h {
 	hud_preset_h();
 	explicit hud_preset_h(int l_preset);
 	int getIndex() const;
-	const char* getName() const;
+	SCP_string getName() const;
 };
 
 DECLARE_ADE_OBJ(l_Gauge_Config, gauge_config_h);

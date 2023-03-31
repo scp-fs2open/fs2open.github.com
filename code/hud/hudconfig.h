@@ -40,11 +40,7 @@ extern const char *Radar_range_text(int range_num);
 
 #define RP_DEFAULT ( RP_SHOW_DEBRIS | RP_SHOW_FRIENDLY_MISSILES | RP_SHOW_HOSTILE_MISSILES )
 
-#define MAX_HCF_FILES 30
-
-extern char* HC_filenames[MAX_HCF_FILES];
-
-extern int HC_num_files;
+extern SCP_vector<SCP_string> HC_preset_filenames;
 
 extern int HUD_observer_default_flags;
 extern int HUD_observer_default_flags2;
@@ -102,8 +98,9 @@ void hud_config_do_frame(float frametime, bool API_Access = false, int mx = 0, i
 void hud_config_close(bool API_Access = false);
 
 void hud_config_select_all_toggle(int toggle, bool API_Access = false);
-
+void hud_config_preset_init();
 void hud_set_default_hud_config(player* p, const char* filename = "hud_3.hcf");
+void hud_config_delete_preset(SCP_string filename);
 void hud_config_set_gauge_flags(int gauge_index, int on_flag, int popup_flag);
 
 void hud_config_restore();

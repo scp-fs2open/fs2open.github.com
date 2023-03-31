@@ -35,9 +35,9 @@ int hud_preset_h::getIndex() const
 	return preset;
 }
 
-const char* hud_preset_h::getName() const
+SCP_string hud_preset_h::getName() const
 {
-	return HC_filenames[preset];
+	return HC_preset_filenames[preset];
 }
 
 //**********HANDLE: hud preset
@@ -54,10 +54,20 @@ ADE_VIRTVAR(Name, l_HUD_Preset, nullptr, "The name of this preset", "string", "T
 		LuaError(L, "This property is read only.");
 	}
 
-	return ade_set_args(L, "s", current.getName());
+	return ade_set_args(L, "s", current.getName().c_str());
 }
 
-//ADE_FUNC(deletePreset)
+ADE_FUNC(deletePreset, l_HUD_Preset, nullptr, "Deletes the preset file", nullptr, nullptr)
+{
+	hud_preset_h current;
+	if (!ade_get_args(L, "o", l_HUD_Preset.Get(&current))) {
+		return ADE_RETURN_NIL;
+	}
+
+	hud_config_delete_preset(current.getName());
+
+	return ADE_RETURN_NIL;
+}
 
 //**********HANDLE: gauge config
 ADE_OBJ(l_Gauge_Config, gauge_config_h, "gauge_config", "Gauge config handle");

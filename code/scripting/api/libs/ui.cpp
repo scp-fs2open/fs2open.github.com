@@ -2079,16 +2079,37 @@ ADE_FUNC(setToDefault,
 ADE_FUNC(saveToPreset,
 	l_UserInterface_HUDConfig,
 	"string Filename",
-	"Saves all gauges to the file with the name provided.",
+	"Saves all gauges to the file with the name provided. Filename should not include '.hcf' extension and not be longer than 28 characters.",
 	nullptr,
 	nullptr)
 {
 	const char* filename;
 	ade_get_args(L, "s", &filename);
 
-	// check string length here!
+	// trim filename length to leave room for adding the extension
+	char trim[MAX_FILENAME_LEN - 3];
+	strncpy(trim, filename, MAX_FILENAME_LEN - 3);
+	trim[MAX_FILENAME_LEN - 4] = '\0';
 
-	hud_config_color_save(filename);
+	// if the file doesn't exist, then add it to the vector
+	bool add = true;
+	for (int idx = 0; idx < (int)HC_preset_filenames.size(); idx++) {
+		if (!stricmp(HC_preset_filenames[idx].c_str(), trim)) {
+			add = false;
+		}
+	}
+
+	if (add) {
+		HC_preset_filenames.push_back(trim);
+	}
+
+	// add extension
+	char* name = cf_add_ext(trim, ".hcf");
+
+	hud_config_color_save(name);
+
+	// reload the preset list for sorting
+	hud_config_preset_init();
 
 	return ADE_RETURN_NIL;
 }
@@ -2144,15 +2165,15 @@ ADE_INDEXER(l_HUD_Presets,
 		return ade_set_error(L, "o", l_HUD_Preset.Set(hud_preset_h()));
 	idx--; // Convert to Lua's 1 based index system
 
-	if ((idx < 0) || (idx > HC_num_files))
+	if ((idx < 0) || (idx >= HC_preset_filenames.size()))
 		return ade_set_error(L, "o", l_HUD_Preset.Set(hud_preset_h()));
 
 	return ade_set_args(L, "o", l_HUD_Preset.Set(hud_preset_h(idx)));
 }
 
-ADE_FUNC(__len, l_HUD_Gauges, nullptr, "The number of hud presets", "number", "The number of hud presets.")
+ADE_FUNC(__len, l_HUD_Presets, nullptr, "The number of hud presets", "number", "The number of hud presets.")
 {
-	return ade_set_args(L, "i", HC_num_files);
+	return ade_set_args(L, "i", HC_preset_filenames.size());
 }
 
 //**********SUBLIBRARY: UserInterface/PauseScreen
