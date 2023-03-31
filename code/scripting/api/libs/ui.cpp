@@ -2154,7 +2154,7 @@ ADE_INDEXER(l_HUD_Presets,
 		return ade_set_error(L, "o", l_HUD_Preset.Set(hud_preset_h()));
 	idx--; // Convert to Lua's 1 based index system
 
-	if ((idx < 0) || (idx >= HC_preset_filenames.size()))
+	if ((idx < 0) || (idx >= (int)HC_preset_filenames.size()))
 		return ade_set_error(L, "o", l_HUD_Preset.Set(hud_preset_h()));
 
 	return ade_set_args(L, "o", l_HUD_Preset.Set(hud_preset_h(idx)));

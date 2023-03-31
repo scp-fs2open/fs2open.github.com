@@ -875,7 +875,6 @@ void hud_config_render_gauges(bool API_Access)
 		// draw
 		if ( HC_gauge_regions[gr_screen.res][i].bitmap >= 0 ) {
 			gr_set_bitmap(HC_gauge_regions[gr_screen.res][i].bitmap);
-			//This is where we need to apply an offset
 
 			int resize = GR_RESIZE_MENU;
 			if (API_Access) {
