@@ -4602,7 +4602,7 @@ void parse_wing(mission *pm)
 	}
 
 	if (optional_string("+Flags:")) {
-		auto count = (int)stuff_string_list( wing_flag_strings, PARSEABLE_WING_FLAGS);
+		auto count = (int) stuff_string_list(wing_flag_strings, PARSEABLE_WING_FLAGS);
 
 		for (i = 0; i < count; i++) {
 			if (!stricmp(wing_flag_strings[i], NOX("ignore-count")))
@@ -4613,6 +4613,8 @@ void parse_wing(mission *pm)
 				wingp->flags.set(Ship::Wing_Flags::No_arrival_music);
 			else if (!stricmp(wing_flag_strings[i], NOX("no-arrival-message")))
 				wingp->flags.set(Ship::Wing_Flags::No_arrival_message);
+			else if (!stricmp(wing_flag_strings[i], NOX("no-first-wave-message")))
+				wingp->flags.set(Ship::Wing_Flags::No_first_wave_message);
 			else if (!stricmp(wing_flag_strings[i], NOX("no-arrival-warp")))
 				wingp->flags.set(Ship::Wing_Flags::No_arrival_warp);
 			else if (!stricmp(wing_flag_strings[i], NOX("no-departure-warp")))
@@ -7614,7 +7616,8 @@ bool mission_maybe_make_wing_arrive(int wingnum, bool force_arrival)
 
 	// If the current wave of this wing is 0, then we haven't created the ships in the wing yet.
 	// If the threshold of the wing has been reached, then we need to create more ships.
-	if ((wingp->current_wave == 0) || (wingp->current_count <= wingp->threshold))
+	bool is_first_wave = wingp->current_wave == 0;
+	if (is_first_wave || (wingp->current_count <= wingp->threshold))
 	{
 		// Call parse_wing_create_ships to try and create it.  That function will eval the arrival
 		// cue of the wing and create the ships if necessary.
@@ -7635,6 +7638,8 @@ bool mission_maybe_make_wing_arrive(int wingnum, bool force_arrival)
 		// probably send a message to the player when this wing arrives.
 		// if no message, nothing more to do for this wing
 		if (wingp->flags[Ship::Wing_Flags::No_arrival_message])
+			return true;
+		if (wingp->flags[Ship::Wing_Flags::No_first_wave_message] && is_first_wave)
 			return true;
 
 		// multiplayer team vs. team

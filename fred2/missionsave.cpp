@@ -4866,6 +4866,8 @@ int CFred_mission_save::save_wings()
 			fout(" \"no-arrival-music\"");
 		if (Wings[i].flags[Ship::Wing_Flags::No_arrival_message])
 			fout(" \"no-arrival-message\"");
+		if (Wings[i].flags[Ship::Wing_Flags::No_first_wave_message])
+			fout(" \"no-first-wave-message\"");
 		if (Wings[i].flags[Ship::Wing_Flags::No_arrival_warp])
 			fout(" \"no-arrival-warp\"");
 		if (Wings[i].flags[Ship::Wing_Flags::No_departure_warp])
