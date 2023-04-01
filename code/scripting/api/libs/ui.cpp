@@ -1949,7 +1949,7 @@ ADE_LIB_DERIV(l_UserInterface_ControlConfig,
 ADE_FUNC(initControlConfig,
 	l_UserInterface_ControlConfig,
 	nullptr,
-	"Inits the control config UI elements. Must be used before access control config elements!",
+	"Inits the control config UI elements. Must be used before accessing control config elements!",
 	nullptr,
 	nullptr)
 {
@@ -2032,22 +2032,19 @@ ADE_FUNC(undoLastChange,
 ADE_FUNC(acceptBinding,
 	l_UserInterface_ControlConfig,
 	nullptr,
-	"Accepts changes to the keybindings, checks for conflicts and prompts for saving the preset if applicable. Will return to previous game state. THIS IS WIP, DO NOT MERGE!",
-	nullptr,
-	nullptr)
+	"Accepts changes to the keybindings. Returns true if successful, false if there are key conflicts or the preset needs to be saved.",
+	"boolean",
+	"The return status")
 {
 	SCP_UNUSED(L);
 
-	control_config_accept();
-
-	return ADE_RETURN_NIL;
+	return ade_set_args(L, "b", control_config_accept(true));
 }
 
 ADE_FUNC(cancelBinding,
 	l_UserInterface_ControlConfig,
 	nullptr,
-	"Cancels changes to the keybindings, checks for conflicts and prompts for saving the preset if applicable. Will return to previous game state. THIS IS "
-	"WIP, DO NOT MERGE!",
+	"Cancels changes to the keybindings, reverting changes to the state it was when initControlConfig was called.",
 	nullptr,
 	nullptr)
 {

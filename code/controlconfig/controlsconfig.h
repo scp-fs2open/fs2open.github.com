@@ -782,12 +782,12 @@ bool control_config_bind_key_on_frame(int ctrl, selItem item, bool API_Access = 
 /*!
  * Does a cursory conflict check, then accepts changes to the bindings, if any, and request the menu to close.
  */
-int control_config_accept();
+bool control_config_accept(bool API_Access = false);
 
 /*!
  * @brief Cancel configuration of controls, revert any changes, return to previous menu/game state
  */
-void control_config_cancel_exit();
+void control_config_cancel_exit(bool API_Access = false);
 
 /*!
  * @brief Copies all bindings within preset into Control_config

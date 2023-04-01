@@ -63,18 +63,7 @@ ADE_FUNC(clonePreset,
 		return ADE_RETURN_FALSE;
 	}
 
-	SCP_string name = current.getPreset()->name;
-
-	auto oldPreset = std::find_if(Control_config_presets.begin(), Control_config_presets.end(), [name](CC_preset& preset) {
-		return preset.name == name;
-	});
-
-	if (oldPreset == Control_config_presets.end()) {
-		// Couldn't find
-		return ADE_RETURN_FALSE;
-	}
-
-	return ade_set_args(L, "b", control_config_clone_preset(*oldPreset, newName));
+	return ade_set_args(L, "b", control_config_clone_preset(*current.getPreset(), newName));
 }
 
 ADE_FUNC(deletePreset,
@@ -89,46 +78,7 @@ ADE_FUNC(deletePreset,
 		return ADE_RETURN_FALSE;
 	}
 
-	SCP_string name = current.getPreset()->name;
-
-	auto it = std::find_if(Control_config_presets.begin(), Control_config_presets.end(), [name](CC_preset& preset) {
-		return preset.name == name;
-	});
-
-	if (it == Control_config_presets.end()) {
-		// Couldn't find
-		return ADE_RETURN_FALSE;
-	}
-
-	return ade_set_args(L, "b", control_config_delete_preset(*it));
-}
-
-ADE_FUNC(checkForDuplicate,
-	l_Preset,
-	nullptr,
-	"Checks if the preset is a duplicate of any other preset.",
-	"boolean",
-	"Returns true if duplicate, false otherwise")
-{
-	preset_h current;
-	if (!ade_get_args(L, "o", l_Preset.Get(&current))) {
-		return ADE_RETURN_FALSE;
-	}
-
-	auto it = preset_find_duplicate(*current.getPreset());
-
-	// If we just cloned the file, then allow the duplicate. Just this once.
-	if (it == Control_config_presets.end()) {
-		return ADE_RETURN_FALSE;
-
-	} else if ((it->name != current.getPreset()->name) || (it->type != Preset_t::pst)) {
-		// Complain and ignore if the preset names or the type differs
-		Warning(LOCATION,
-			"PST => Preset '%s' is a duplicate of an existing preset, ignoring",
-			current.getPreset()->name.c_str());
-	}
-
-	return ade_set_args(L, "b", control_config_delete_preset(*it));
+	return ade_set_args(L, "b", control_config_delete_preset(*current.getPreset()));
 }
 
 //**********HANDLE: control

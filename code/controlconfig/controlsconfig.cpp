@@ -1248,7 +1248,7 @@ void control_config_do_undo(bool API_Access) {
 /*!
  * Does a cursory conflict check, then accepts changes to the bindings, if any, and request the menu to close.
  */
-int control_config_accept()
+bool control_config_accept(bool API_Access)
 {
 	int i;
 
@@ -1259,80 +1259,104 @@ int control_config_accept()
 	}
 
 	if (i < NUM_TABS) {
-		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
-		return -1;
+		if (!API_Access) {
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
+		}
+		return false;
 	}
 
 	if (control_config_get_current_preset() == Control_config_presets.end()) {
-		// We have a custom preset to save, prompt the user
-		int flags = PF_TITLE_WHITE;
-		char * cstr;	// Must be a char *, because popup_input may return nullptr and std::string don't like it
-		
+		if (!API_Access) {
+			// We have a custom preset to save, prompt the user
+			int flags = PF_TITLE_WHITE;
+			char* cstr; // Must be a char *, because popup_input may return nullptr and std::string don't like it
+
 		retry:;
-		cstr = popup_input(flags, "Confirm new custom preset name.\n\nThe name must not be empty.\n\n Press [Enter] to accept, [Esc] to abort to config menu.", 32 - 6, Player->callsign);
-		if (cstr == nullptr) {
-			// Abort
-			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
-			return -1;
-
-		} else if (strcmp(cstr, "") == 0) {
-			// retry
-			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
-			
-			goto retry;
-		}
-
-		SCP_string str = cstr;
-		
-		// Check if a hardcoded preset with name already exists. If so, complain to user and force retry
-		auto it = std::find_if(Control_config_presets.begin(), Control_config_presets.end(),
-							  [str](CC_preset& p) { return (p.name == str) && ((p.type == Preset_t::tbl) || (p.type == Preset_t::hardcode)); });
-
-		if (it != Control_config_presets.end()) {
-			popup(flags, 1, POPUP_OK, "You may not overwrite a default preset.  Please choose another name.");
-			goto retry;
-		}
-
-		// Check if a preset file with name already exists.  If so, prompt the user
-		CFILE* fp = cfopen((str + ".json").c_str(), "r", CFILE_NORMAL, CF_TYPE_PLAYER_BINDS, false,
-						   CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
-		if (fp) {
-			cfclose(fp);
-			int n = popup(flags, 2, POPUP_OK, POPUP_CANCEL, "'%s'\n Already exists!\n Press OK to overwrite existing preset, or CANCEL to input another name", str.c_str());
-			if ((n == 1) || (n == -1)) {
-				// If Cancel button was pressed, or popup dismissed:
-				// retry
+			cstr = popup_input(flags,
+				"Confirm new custom preset name.\n\nThe name must not be empty.\n\n Press [Enter] to accept, [Esc] to "
+				"abort to config menu.",
+				32 - 6,
+				Player->callsign);
+			if (cstr == nullptr) {
+				// Abort
 				gamesnd_play_iface(InterfaceSounds::USER_SELECT);
+				return false;
+
+			} else if (strcmp(cstr, "") == 0) {
+				// retry
+				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
+
 				goto retry;
 			}
+
+			SCP_string str = cstr;
+
+			// Check if a hardcoded preset with name already exists. If so, complain to user and force retry
+			auto it = std::find_if(Control_config_presets.begin(), Control_config_presets.end(), [str](CC_preset& p) {
+				return ((p.name == str) && ((p.type == Preset_t::tbl) || (p.type == Preset_t::hardcode)));
+			});
+
+			if (it != Control_config_presets.end()) {
+				popup(flags, 1, POPUP_OK, "You may not overwrite a default preset.  Please choose another name.");
+				goto retry;
+			}
+
+			// Check if a preset file with name already exists.  If so, prompt the user
+			CFILE* fp = cfopen((str + ".json").c_str(),
+				"r",
+				CFILE_NORMAL,
+				CF_TYPE_PLAYER_BINDS,
+				false,
+				CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
+			if (fp) {
+				cfclose(fp);
+				int n = popup(flags,
+					2,
+					POPUP_OK,
+					POPUP_CANCEL,
+					"'%s'\n Already exists!\n Press OK to overwrite existing preset, or CANCEL to input another name",
+					str.c_str());
+				if ((n == 1) || (n == -1)) {
+					// If Cancel button was pressed, or popup dismissed:
+					// retry
+					gamesnd_play_iface(InterfaceSounds::USER_SELECT);
+					goto retry;
+				}
+			}
+
+			// Pack the current bindings into a preset, then save the file
+			CC_preset preset;
+			preset.name = str;
+			std::copy(Control_config.begin(), Control_config.end(), std::back_inserter(preset.bindings));
+			Control_config_presets.push_back(preset);
+			save_preset_file(preset, true);
+
+			// Reload the presets from file. Do this instead of just pushing the preset to the vector direct to get
+			// consistant ordering
+			Control_config_presets.resize(1);
+			load_preset_files();
+		} else {
+			return false;
 		}
-
-		// Pack the current bindings into a preset, then save the file
-		CC_preset preset;
-		preset.name = str;
-		std::copy(Control_config.begin(), Control_config.end(), std::back_inserter(preset.bindings));
-		Control_config_presets.push_back(preset);
-		save_preset_file(preset, true);
-
-		// Reload the presets from file. Do this instead of just pushing the preset to the vector direct to get consistant ordering
-		Control_config_presets.resize(1);
-		load_preset_files();
 	}
 	
 
 	hud_squadmsg_save_keys();  // rebuild map for saving/restoring keys in squadmsg mode
-	gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
-	gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
-	return 0;
+
+	if (!API_Access) {
+		gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
+		gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
+	}
+	return true;
 }
 
 /*!
  * Reverts all changes, if any, and requests the menu to close.
  */
-void control_config_cancel_exit()
+void control_config_cancel_exit(bool API_Access)
 {
 	// Check if any changes were made
-	if (control_config_get_current_preset() == Control_config_presets.end()) {
+	if (!API_Access && (control_config_get_current_preset() == Control_config_presets.end())) {
 		// Changes were made, prompt the user first.
 		int flags = PF_TITLE_WHITE;
 		int choice = popup(flags, 2, POPUP_NO, POPUP_YES, "You have unsaved changes.\n\n\n Do you wish to continue without saving?");
@@ -1356,7 +1380,9 @@ void control_config_cancel_exit()
 	// Restore all bindings with the backup
 	std::move(Control_config_backup.begin(), Control_config_backup.end(), Control_config.begin());
 
-	gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
+	if (!API_Access) {
+		gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
+	}
 }
 
 /**
