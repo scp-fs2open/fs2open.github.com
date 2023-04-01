@@ -2532,7 +2532,7 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 
 		// now the offsets
 		float scale_factor;
-		if (b->target != nullptr) {
+		if (usable_target && b->target != nullptr) {
 			if (bwi->t5info.target_scale_positions)
 				scale_factor = b->target->radius;
 			else
