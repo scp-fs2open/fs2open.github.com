@@ -645,7 +645,6 @@ public:
 	int	weapon_recharge_index;			// index into array holding the weapon recharge rate
 	int	engine_recharge_index;			// index into array holding the engine recharge rate
 	float	weapon_energy;						// Number of EUs in energy reserves
-	float	current_max_speed;				// Max ship speed (based on energy diverted to engines)
 	int	next_manage_ets;					// timestamp for when ai can next modify ets ( -1 means never )
 
 	flagset<Ship::Ship_Flags>	flags;		// flag variable to contain ship state

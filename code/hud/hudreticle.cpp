@@ -544,7 +544,7 @@ void HudGaugeThrottle::render(float  /*frametime*/)
 		current_speed = 0.0f;
 	}
 
-	max_speed = Ships[Player_obj->instance].current_max_speed;
+	max_speed = Player_obj->phys_info.max_vel.xyz.z;
 	if ( max_speed <= 0 ) {
 		max_speed = sip->max_vel.xyz.z;
 	}
