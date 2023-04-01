@@ -386,7 +386,7 @@ ADE_VIRTVAR(Conflicted,
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(DetectKeypress,
+ADE_FUNC(detectKeypress,
 	l_Control,
 	"number Item",
 	"Waits for a keypress to use as a keybind. Binds the key if found. Will need to disable UI input if enabled first. Should run On Frame. Item is first bind (1) or second bind (2)",
@@ -404,7 +404,7 @@ ADE_FUNC(DetectKeypress,
 	return ade_set_args(L, "b", control_config_bind_key_on_frame(idx, (selItem)item, true));
 }
 
-ADE_FUNC(ClearBind,
+ADE_FUNC(clearBind,
 	l_Control,
 	"number Item",
 	"Clears the control binding. Item is all controls (1), first control (2), or second control (3)",
@@ -422,7 +422,7 @@ ADE_FUNC(ClearBind,
 	return ade_set_args(L, "b", control_config_remove_binding(idx, (selItem)item, true));
 }
 
-ADE_FUNC(ClearConflicts,
+ADE_FUNC(clearConflicts,
 	l_Control,
 	nullptr,
 	"Clears all binds that conflict with the selected bind index.",
@@ -439,7 +439,7 @@ ADE_FUNC(ClearConflicts,
 	return ade_set_args(L, "b", control_config_clear_other(idx, true));
 }
 
-ADE_FUNC(ToggleShifted,
+ADE_FUNC(toggleShifted,
 	l_Control,
 	nullptr,
 	"Toggles whether or not the current bind uses SHIFT modifier.",
@@ -456,7 +456,7 @@ ADE_FUNC(ToggleShifted,
 	return ade_set_args(L, "b", control_config_toggle_modifier(KEY_SHIFTED, idx, true));
 }
 
-ADE_FUNC(ToggleAlted,
+ADE_FUNC(toggleAlted,
 	l_Control,
 	nullptr,
 	"Toggles whether or not the current bind uses ALT modifier.",
@@ -473,7 +473,7 @@ ADE_FUNC(ToggleAlted,
 	return ade_set_args(L, "b", control_config_toggle_modifier(KEY_ALTED, idx, true));
 }
 
-ADE_FUNC(ToggleInverted,
+ADE_FUNC(toggleInverted,
 	l_Control,
 	"number Item",
 	"Toggles whether or not the current bind axis is inverted. Item is all controls (1), first control (2), or second "

@@ -1946,7 +1946,7 @@ ADE_LIB_DERIV(l_UserInterface_ControlConfig,
 	"API for the new UI system. This should not be used by other code and may be removed in the future!",
 	l_UserInterface);
 
-ADE_FUNC(InitControlConfig,
+ADE_FUNC(initControlConfig,
 	l_UserInterface_ControlConfig,
 	nullptr,
 	"Inits the control config UI elements. Must be used before access control config elements!",
@@ -1960,7 +1960,7 @@ ADE_FUNC(InitControlConfig,
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(CloseControlConfig,
+ADE_FUNC(closeControlConfig,
 	l_UserInterface_ControlConfig,
 	nullptr,
 	"Closes the control config UI elements. Must be used when finished accessing control config elements!",
@@ -1974,7 +1974,7 @@ ADE_FUNC(CloseControlConfig,
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(ClearAll,
+ADE_FUNC(clearAll,
 	l_UserInterface_ControlConfig,
 	nullptr,
 	"Clears all control bindings.",
@@ -1986,7 +1986,7 @@ ADE_FUNC(ClearAll,
 	return ade_set_args(L, "b", control_config_clear_all(true));
 }
 
-ADE_FUNC(ResetToPreset,
+ADE_FUNC(resetToPreset,
 	l_UserInterface_ControlConfig,
 	nullptr,
 	"Resets all control bindings to the current preset defaults.",
@@ -1998,7 +1998,7 @@ ADE_FUNC(ResetToPreset,
 	return ade_set_args(L, "b", control_config_do_reset(true, false));
 }
 
-ADE_FUNC(UsePreset,
+ADE_FUNC(usePreset,
 	l_UserInterface_ControlConfig,
 	"string PresetName",
 	"Uses a defined preset if it can be found.",
@@ -2015,7 +2015,7 @@ ADE_FUNC(UsePreset,
 	return ade_set_args(L, "b", control_config_use_preset_by_name(name));
 }
 
-ADE_FUNC(Undo,
+ADE_FUNC(undoLastChange,
 	l_UserInterface_ControlConfig,
 	nullptr,
 	"Reverts the last change to the control bindings",
@@ -2029,7 +2029,7 @@ ADE_FUNC(Undo,
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(Accept,
+ADE_FUNC(acceptBinding,
 	l_UserInterface_ControlConfig,
 	nullptr,
 	"Accepts changes to the keybindings, checks for conflicts and prompts for saving the preset if applicable. Will return to previous game state. THIS IS WIP, DO NOT MERGE!",
@@ -2043,7 +2043,7 @@ ADE_FUNC(Accept,
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(Cancel,
+ADE_FUNC(cancelBinding,
 	l_UserInterface_ControlConfig,
 	nullptr,
 	"Cancels changes to the keybindings, checks for conflicts and prompts for saving the preset if applicable. Will return to previous game state. THIS IS "
