@@ -2042,7 +2042,7 @@ bool excludes_current_mood(int message) {
 	return false;
 }
 
-int get_builtin_message(int type, int persona, ship* sender, ship* subject, bool require_exact_persona_match) {
+int get_builtin_message_inner(int type, int persona, ship* sender, ship* subject, bool require_exact_persona_match) {
 	static const int BUILTIN_MATCHES_TYPE    = 0;
 	static const int BUILTIN_MATCHES_FILTER  = 1;
 	static const int BUILTIN_MATCHES_MOOD    = 2;
@@ -2121,12 +2121,20 @@ int get_builtin_message(int type, int persona, ship* sender, ship* subject, bool
 	} else {
 		int fallback = Builtin_messages[type].fallback;
 		if (fallback != MESSAGE_NONE) {
-			return get_builtin_message(fallback, persona, sender, subject, true);
-		} else if (require_exact_persona_match && persona_allows_substitution(persona)) {
-			return get_builtin_message(fallback, persona, sender, subject, false);
+			return get_builtin_message_inner(fallback, persona, sender, subject, require_exact_persona_match);
 		} else {
 			return MESSAGE_NONE;
 		}
+	}
+}
+
+int get_builtin_message(int type, int persona, ship* sender, ship* subject) {
+	int result = get_builtin_message_inner(type, persona, sender, subject, true);
+	if (result != MESSAGE_NONE) {
+		return result;
+	} else {
+		// Only borrow messages from other personae as an absolute last-ditch effort
+		return get_builtin_message_inner(type, persona, sender, subject, false);
 	}
 }
 
@@ -2139,7 +2147,7 @@ bool message_send_builtin(int type, ship* sender, ship* subject, int multi_targe
 	}
 
 	int persona_index = get_persona(sender);
-	int message_index = get_builtin_message(type, persona_index, sender, subject, true);
+	int message_index = get_builtin_message(type, persona_index, sender, subject);
 	if (message_index == MESSAGE_NONE) {
 		return false;
 	}
