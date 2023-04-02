@@ -1007,6 +1007,11 @@ int hud_squadmsg_enemies_present()
 inline bool override_protect_ship_type(ship_info* sip) {
     return sip->is_fighter_bomber() || sip->flags[Ship::Info_Flags::Freighter] || sip->flags[Ship::Info_Flags::Transport];
 }
+
+int enemy_message(int message) {
+	return hud_squadmsg_enemies_present() ? message : MESSAGE_YESSIR;
+}
+
 // function which sends a message to a specific ship.  This routine can be called from one of two
 // places.  Either after selecting a ship when using a hotkey, or after selecting a command when
 // using the entire messaging menu system
@@ -1171,7 +1176,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 
 			ai_mode = AI_GOAL_GUARD;
 			ai_submode = AIS_GUARD_PATROL;
-			message = MESSAGE_PROTECT_TARGET;
+			message = enemy_message(MESSAGE_PROTECT_TARGET);
 			break;
 
 		case IGNORE_TARGET_ITEM:
@@ -1194,18 +1199,13 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 			ai_mode = AI_GOAL_GUARD;
 			ai_submode = AIS_GUARD_PATROL;
 			target_shipname = ordering_shipp->ship_name;
-			message = MESSAGE_COVER_ME;
+			message = enemy_message(MESSAGE_COVER_ME);
 			break;
 		
 		case ENGAGE_ENEMY_ITEM:
 			ai_mode = AI_GOAL_CHASE_ANY;
 			ai_submode = SM_ATTACK;
-			// if no enemies present, use the affirmative, instead of engaging enemies message
-			if (hud_squadmsg_enemies_present()) {
-				message = MESSAGE_ENGAGE;
-			} else {
-				message = MESSAGE_YESSIR;
-			}
+			message = enemy_message(MESSAGE_ENGAGE);
 			target_shipname = nullptr;
 			break;
 		
@@ -1433,7 +1433,7 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 
 			ai_mode = AI_GOAL_GUARD;
 			ai_submode = AIS_GUARD_PATROL;
-			message = MESSAGE_PROTECT_TARGET;
+			message = enemy_message(MESSAGE_PROTECT_TARGET);
 			break;
 
 		case IGNORE_TARGET_ITEM:
@@ -1456,18 +1456,13 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 			ai_mode = AI_GOAL_GUARD;
 			ai_submode = AIS_GUARD_PATROL;
 			target_shipname = ordering_shipp->ship_name;
-			message = MESSAGE_COVER_ME;
+			message = enemy_message(MESSAGE_COVER_ME);
 			break;
 
 		case ENGAGE_ENEMY_ITEM:
 			ai_mode = AI_GOAL_CHASE_ANY;
 			ai_submode = SM_ATTACK;
-			// if no enemies present, use the affirmative, instead of engaging enemies message
-			if (hud_squadmsg_enemies_present()) {
-				message = MESSAGE_ENGAGE;
-			} else {
-				message = MESSAGE_YESSIR;
-			}
+			message = enemy_message(MESSAGE_ENGAGE);
 			target_shipname = NULL;
 			break;
 
