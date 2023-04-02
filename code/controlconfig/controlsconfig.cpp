@@ -704,7 +704,7 @@ int cc_line_query_visible(int n)
 /**
  * @brief Wrapper for CC_bind::take(), binds a given control
  */
-void control_config_bind(int i, const CC_bind& new_bind, selItem order, bool API_Access = false)
+void control_config_bind(int i, const CC_bind &new_bind, selItem order, bool API_Access = false)
 {
 	int sel = -1;
 	switch (order) {
@@ -915,7 +915,7 @@ bool control_config_clear_all(bool API_Access)
 /**
  * @brief Reverts all bindings to their preset. If already default, cycle to the next presets if cycle is true.
  */
-bool control_config_do_reset(bool API_Access, bool cycle)
+bool control_config_do_reset(bool cycle, bool API_Access)
 {
 	int total = 0;
 	Undo_stack stack;

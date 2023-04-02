@@ -721,7 +721,7 @@ void control_config_common_close();
 /*!
  * @brief init config menu
  */
-void control_config_init(bool API_Acess = false);
+void control_config_init(bool API_Access = false);
 
 /*!
  * @brief do a frame of the config menu
@@ -762,7 +762,7 @@ bool control_config_clear_all(bool API_Access = false);
 /**
  * @brief Reverts all bindings to their preset. If already default, cycle to the next presets.
  */
-bool control_config_do_reset(bool API_Access = false, bool cycle = true);
+bool control_config_do_reset(bool cycle = true, bool API_Access = false);
 
 /**
  * @brief Toggles a modifier on or off for a control binding

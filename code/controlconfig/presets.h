@@ -211,7 +211,7 @@ bool save_preset_file(CC_preset preset, bool overwrite);
 
 /**
  * @brief Deletes the given preset to file.
- * @param[in] preset    The preset to save
+ * @param[in] preset    The preset to delete
  *
  * @returns True    if successful, or
  * @returns False   Preset is default, or
@@ -223,6 +223,8 @@ bool delete_preset_file(CC_preset preset);
  * @brief Loads in all preset .json files from 'players/presets'
  * @details If a preset file is unique, it is loaded into the game and available for use by the player.  However, if
  * a preset is a duplicate of another preset, it is ignored, and the player is warned of it
+ * 
+ * @param[in] clone Used to check if we just cloned a particular preset and allows just that clone in without warning
  */
 void load_preset_files(SCP_string clone = "");
 

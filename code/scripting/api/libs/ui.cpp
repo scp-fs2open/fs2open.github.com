@@ -1995,7 +1995,7 @@ ADE_FUNC(resetToPreset,
 {
 	SCP_UNUSED(L);
 
-	return ade_set_args(L, "b", control_config_do_reset(true, false));
+	return ade_set_args(L, "b", control_config_do_reset(false, true));
 }
 
 ADE_FUNC(usePreset,
@@ -2136,7 +2136,7 @@ ADE_INDEXER(l_Controls,
 	int idx;
 	if (!ade_get_args(L, "*i", &idx))
 		return ade_set_error(L, "o", l_Control.Set(control_h()));
-	idx--; // Convert to Lua's 1 based index system
+	idx--; // Convert from Lua's 1 based index system
 
 	if ((idx < 0) || (idx >= (int)Control_config.size()))
 		return ade_set_error(L, "o", l_Control.Set(control_h()));
