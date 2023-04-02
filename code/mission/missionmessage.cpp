@@ -1978,16 +1978,21 @@ int pick_persona(ship* shipp) {
 	}
 }
 
+bool can_auto_assign_persona(ship* shipp) {
+	// If the Auto_assign_personas flag is on, we can assign them for any ship
+	// Otherwise, we can only assign them for support
+	return Auto_assign_personas || Ship_info[shipp->ship_info_index].flags[Ship::Info_Flags::Support];
+}
+
 int get_persona(ship* shipp) {
 	if (shipp == NULL) {
 		return The_mission.command_persona;
 	} else if (shipp->persona_index != -1) {
 		return shipp->persona_index;
-	} else if (!Auto_assign_personas) {
-		// If the game does not allow auto assignment, then bail
-		return -1;
-	} else {
+	} else if (can_auto_assign_persona(shipp)) {
 		return shipp->persona_index = pick_persona(shipp);
+	} else {
+		return -1;
 	}
 }
 
