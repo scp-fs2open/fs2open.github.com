@@ -340,8 +340,8 @@ ADE_FUNC(detectKeypress,
 	l_Control,
 	"number Item",
 	"Waits for a keypress to use as a keybind. Binds the key if found. Will need to disable UI input if enabled first. Should run On Frame. Item is first bind (1) or second bind (2)",
-	"boolean",
-	"True if successful, false otherwise")
+	"number",
+	"1 if successful or ESC was pressed, 0 otherwise. Returns -1 if the keypress is invalid")
 {
 	control_h current;
 	int item;
@@ -351,7 +351,7 @@ ADE_FUNC(detectKeypress,
 
 	int idx = current.getIndex();
 
-	return ade_set_args(L, "b", control_config_bind_key_on_frame(idx, (selItem)item, true));
+	return ade_set_args(L, "i", control_config_bind_key_on_frame(idx, (selItem)item, true));
 }
 
 ADE_FUNC(clearBind,

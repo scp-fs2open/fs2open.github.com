@@ -738,6 +738,11 @@ void control_config_close(bool API_Access = false);
  */
 void control_config_do_bind(bool API_Access = false);
 
+/*!
+ * @brief setup for searching a control
+ */
+void control_config_do_search(bool API_Access = false);
+
 /**
  * @brief Unbinds the selected control
  */
@@ -777,7 +782,12 @@ void control_config_do_undo(bool API_Access = false);
 /*!
  *@brief Runs every frame to check for input and binds the input if appropriate
  */
-bool control_config_bind_key_on_frame(int ctrl, selItem item, bool API_Access = false);
+int control_config_bind_key_on_frame(int ctrl, selItem item, bool API_Access = false);
+
+/*!
+ *@brief Runs every frame to check for input. Returns the index of the item the key is bound to or -1 if nothing.
+ */
+int control_config_search_key_on_frame(bool API_Access = false);
 
 /*!
  * Does a cursory conflict check, then accepts changes to the bindings, if any, and request the menu to close.
@@ -827,12 +837,20 @@ SCP_vector<CC_preset>::iterator control_config_get_current_preset(bool invert_ag
 bool control_config_delete_preset(CC_preset preset);
 
 /*!
- * @brief Saves a preset
+ * @brief Clones a preset
  *
  * @returns TRUE if successful
  * @returns FALSE if the preset already exists with that name
  */
 bool control_config_clone_preset(CC_preset preset, SCP_string name);
+
+/*!
+ * @brief Saves a preset with the current controls
+ *
+ * @returns TRUE if successful
+ * @returns FALSE if the preset already exists with that name
+ */
+bool control_config_create_new_preset(SCP_string name);
 
 /*!
  * Returns the IoActionId (index within Control_config[]) of a control bound to the given key

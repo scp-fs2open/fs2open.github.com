@@ -2015,6 +2015,21 @@ ADE_FUNC(usePreset,
 	return ade_set_args(L, "b", control_config_use_preset_by_name(name));
 }
 
+ADE_FUNC(createPreset,
+	l_UserInterface_ControlConfig,
+	"string Name",
+	"Creaets a new preset with the given name. Returns true if successful, false otherwise.",
+	"boolean",
+	"The return status")
+{
+	const char* preset;
+	ade_get_args(L, "s", &preset);
+
+	SCP_string name = preset;
+
+	return ade_set_args(L, "b", control_config_create_new_preset(name));
+}
+
 ADE_FUNC(undoLastChange,
 	l_UserInterface_ControlConfig,
 	nullptr,
@@ -2027,6 +2042,21 @@ ADE_FUNC(undoLastChange,
 	control_config_do_undo(true);
 
 	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(searchBinds,
+	l_UserInterface_ControlConfig,
+	nullptr,
+	"Waits for a keypress to search for. Returns index into Control Configs if the key matches a bind. Should run On Frame.",
+	"number",
+	"Control Config index, or 0 if no key was found. Returns -1 if Escape was pressed.")
+{
+	SCP_UNUSED(L);
+
+	int idx = control_config_search_key_on_frame(true);
+	idx++; //convert to lua
+
+	return ade_set_args(L, "i", idx);
 }
 
 ADE_FUNC(acceptBinding,
@@ -2065,6 +2095,10 @@ ADE_FUNC(getCurrentPreset,
 	SCP_UNUSED(L);
 
 	auto it = control_config_get_current_preset();
+
+	if (it == Control_config_presets.end()) {
+		LuaError(L, "There is no current preset. This can only happen if acceptChanges() was called without verifying the controls have been saved!");
+	}
 
 	return ade_set_args(L, "s", it->name.c_str());
 }

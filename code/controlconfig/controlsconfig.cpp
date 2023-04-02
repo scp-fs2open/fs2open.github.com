@@ -1185,19 +1185,26 @@ void control_config_do_bind(bool API_Access)
 /*!
  * @brief Sets menu in search mode.  Menu will watch for control input, search for the item that is bound to it, and then focus/highlight the item if found.
  */
-void control_config_do_search()
+void control_config_do_search(bool API_Access)
 {
 	short i;
 
-	for (i=0; i<NUM_BUTTONS; i++){
-		if (i != CANCEL_BUTTON) {
-			CC_Buttons[gr_screen.res][i].button.reset_status();
-			CC_Buttons[gr_screen.res][i].button.disable();
-		}
+	// flush for the API so mouse clicks can be detected
+	if (API_Access) {
+		game_flush();
 	}
 
-	CC_Buttons[gr_screen.res][CANCEL_BUTTON].button.enable();
-	CC_Buttons[gr_screen.res][CANCEL_BUTTON].button.set_hotkey(KEY_ESC);
+	if (!API_Access) {
+		for (i = 0; i < NUM_BUTTONS; i++) {
+			if (i != CANCEL_BUTTON) {
+				CC_Buttons[gr_screen.res][i].button.reset_status();
+				CC_Buttons[gr_screen.res][i].button.disable();
+			}
+		}
+
+		CC_Buttons[gr_screen.res][CANCEL_BUTTON].button.enable();
+		CC_Buttons[gr_screen.res][CANCEL_BUTTON].button.set_hotkey(KEY_ESC);
+	}
 
 	for (short j = CID_JOY0; j < CID_JOY_MAX; ++j) {
 		for (i=0; i<JOY_TOTAL_BUTTONS; i++) {
@@ -1208,7 +1215,9 @@ void control_config_do_search()
 	Binding_mode = 0;
 	Search_mode = 1;
 	Last_key = -1;
-	gamesnd_play_iface(InterfaceSounds::USER_SELECT);
+	if (!API_Access) {
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
+	}
 }
 
 /*!
@@ -1740,6 +1749,61 @@ bool control_config_delete_preset(CC_preset preset) {
 	return delete_preset_file(preset);
 }
 
+bool control_config_create_new_preset(SCP_string newName)
+{
+
+	// Check if a hardcoded preset with name already exists. If so, complain to user and force retry
+	auto it = std::find_if(Control_config_presets.begin(), Control_config_presets.end(), [newName](CC_preset& p) {
+		return (p.name == newName) && ((p.type == Preset_t::tbl) || (p.type == Preset_t::hardcode));
+	});
+
+	if (it != Control_config_presets.end()) {
+		return false;
+	}
+
+	// Check if a preset file with name already exists.
+	CFILE* fp = cfopen((newName + ".json").c_str(),
+		"r",
+		CFILE_NORMAL,
+		CF_TYPE_PLAYER_BINDS,
+		false,
+		CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
+	if (fp) {
+		cfclose(fp);
+		return false;
+	}
+
+	// Pack the current bindings into a preset, then save the file
+	CC_preset preset;
+	preset.name = newName;
+	std::copy(Control_config.begin(), Control_config.end(), std::back_inserter(preset.bindings));
+
+	// Done with the file
+	auto clone = preset_find_duplicate(preset);
+
+	// Do not create a duplicate preset
+	if (clone == Control_config_presets.end()) {
+		Control_config_presets.push_back(preset);
+		save_preset_file(preset, true);
+
+		// Reload the presets from file.
+		Control_config_presets.resize(1);
+		load_preset_files(newName);
+
+		// use the newly created preset
+		control_config_use_preset_by_name(preset.name);
+
+		return true;
+
+	} else if ((clone->name != preset.name) || (clone->type != Preset_t::pst)) {
+		// Complain and ignore if the preset names or the type differs
+		return false;
+
+	}
+
+	return false; //should be unreachable, but just in case
+}
+
 bool control_config_clone_preset(CC_preset preset, SCP_string newName) {
 
 	// Check if a hardcoded preset with name already exists. If so, complain to user and force retry
@@ -1751,7 +1815,7 @@ bool control_config_clone_preset(CC_preset preset, SCP_string newName) {
 		return false;
 	}
 
-	// Check if a preset file with name already exists.  If so, prompt the user
+	// Check if a preset file with name already exists.
 	CFILE* fp = cfopen((newName + ".json").c_str(),
 		"r",
 		CFILE_NORMAL,
@@ -1918,7 +1982,7 @@ int control_config_draw_list(int select_tease_line) {
 	return conflict;
 }
 
-bool control_config_bind_key_on_frame(int ctrl, selItem item, bool API_Access)
+int control_config_bind_key_on_frame(int ctrl, selItem item, bool API_Access)
 {
 	bool bind = false; // is true if binding should happen.  Actually is an "Input detected" flag.
 	bool done = false; // is true if we're done binding and ready for exiting this mode
@@ -2000,9 +2064,9 @@ bool control_config_bind_key_on_frame(int ctrl, selItem item, bool API_Access)
 		strcpy_s(bound_string, XSTR("Canceled", 206));
 		bound_timestamp = ui_timestamp(2500);
 
-		control_config_do_cancel(API_Access);
+		control_config_do_cancel(0, API_Access);
 		if (API_Access) {
-			return true;
+			return 1;
 		}
 
 	} else if (Control_config[ctrl].is_axis()) {
@@ -2023,9 +2087,9 @@ bool control_config_bind_key_on_frame(int ctrl, selItem item, bool API_Access)
 
 			} else {
 				// Canceled
-				control_config_do_cancel(API_Access);
+				control_config_do_cancel(1, API_Access);
 				if (API_Access) {
-					return true;
+					return 1;
 				}
 			}
 		}
@@ -2055,7 +2119,11 @@ bool control_config_bind_key_on_frame(int ctrl, selItem item, bool API_Access)
 
 		if ((k > 0) && !Config_allowed[k & KEY_MASK]) {
 			// This key isn't allowed to be bound.  Consume k and inform the player
-			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("That is a non-bindable key.  Please try again.", 207));
+			if (!API_Access){
+				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("That is a non-bindable key.  Please try again.", 207));
+			} else {
+				return -1;
+			}
 			k = 0;
 		}
 
@@ -2120,63 +2188,65 @@ bool control_config_bind_key_on_frame(int ctrl, selItem item, bool API_Access)
 		}
 	}
 
-	// The API needs to reset itself if a bind was found
+	// The API needs to reset itself if a bind was found as well as check for conflicts
 	if (API_Access && done) {
-		Binding_mode = 0;
+		control_config_do_cancel();
+		control_config_conflict_check();
 	}
 
-	return done;
+	return (int)done;
 }
 
-void control_config_do_frame(float frametime)
+// returns the index of the bind the detected key is matched to. returns -1 if no match or -2 if ESCAPE
+int control_config_search_key_on_frame(bool API_Access)
 {
-	const char *str;
-	char buf[256];
-	int i; // generic index
-	const int CCFG_SIZE = static_cast<int>(Control_config.size());	// hack to get around signed/unsigned mismatch errors
-	int w, x, y, conflict;
-	int k; // polled key.  Can be masked with SHIFT and/or ALT
-	short j = JOY_TOTAL_BUTTONS; // polled joy button
-	short joy = -1;              // polled joystick id
-	int z = Cc_lines[Selected_line].cc_index; // Selected line's cc_index; value: (z &= ~JOY_AXIS); Is an axis index if (z & JOY_AXIS) == true;
-	int font_height = gr_get_font_height();
-	int select_tease_line = -1;  // line mouse is down on, but won't be selected until button released
-	static float timer = 0.0f;
-	
-	timer += frametime;
+	// API mode needs to run this once before beginning
+	if (API_Access && (Search_mode != 1)) {
+		control_config_do_search(API_Access);
+	}
 
-	if (Binding_mode) {
-		bool done = control_config_bind_key_on_frame(z, Selected_item);
+	// Poll for keypress
+	int k;
 
-		if (done) {
-			// done with binding mode, clean up and prepare for display
-			font::force_fit_string(bound_string, 39, Conflict_wnd_coords[gr_screen.res][CONTROL_W_COORD]);
-			bound_timestamp = ui_timestamp(2500);
-			control_config_conflict_check();
-			control_config_list_prepare();
-			control_config_do_cancel();
-			for (j = 0; j < NUM_BUTTONS; j++) {
-				CC_Buttons[gr_screen.res][j].button.reset();
-			}
-		}
+	if (!API_Access)
+		k = game_poll(); // polled key.  Can be masked with SHIFT and/or ALT
+	else {
+		// In API-Access mode, game_poll has already happened this frame. Either by the state we're actually running in,
+		// or by the game_poll hardcoded into overrided OnFrame hooks. Hence, polling again is incorrect. The key is
+		// available in Current_key_down, and mouse and joy states are still up-to-date
+		extern int Current_key_down;
+		k = Current_key_down;
+	}
 
-	} else if (Search_mode) {
-		// Poll for keys
-		k = game_poll();
+	if (!API_Access) {
 		Ui_window.use_hack_to_get_around_stupid_problem_flag = 1;
 		Ui_window.process(0);
+	}
 
-		// Poll for joy buttons
-		for (joy = CID_JOY0; joy < CID_JOY_MAX; ++joy) {
-			for (j = 0; j < JOY_TOTAL_BUTTONS; j++) {
-				if (joy_down_count(CC_bind(static_cast<CID>(joy), j), 1)) {
-					// btn is down, save it in joy and j
-					goto search_found_joy_btn;
-				}
+	short j = JOY_TOTAL_BUTTONS; // polled joy button
+	short joy = -1;              // polled joystick id
+
+	// Poll for joy btn presses
+	// Stop polling all joys if a btn was detected
+	for (joy = CID_JOY0; joy < CID_JOY_MAX; joy++) {
+		if (!joy_present(joy)) {
+			continue;
+		}
+		bool brk = false;
+		for (j = 0; j < JOY_TOTAL_BUTTONS; j++) {
+			if (joy_down_count(CC_bind(static_cast<CID>(joy), j), 1)) {
+				// btn is down, save it in j and joy
+				// Cancel axis bind if any button is pressed
+				brk = true;
+				break;
 			}
 		}
-		search_found_joy_btn:;
 
+		if (brk)
+			break;
+	}
+
+	if (!API_Access) {
 		if (help_overlay_active(Control_config_overlay_id)) {
 			// Help overlay is active.  Reset the Help button state and ignore gadgets
 			CC_Buttons[gr_screen.res][HELP_BUTTON].button.reset_status();
@@ -2192,102 +2262,154 @@ void control_config_do_frame(float frametime)
 			// Overlay not active, watch gadgets
 			Ui_window.set_ignore_gadgets(0);
 		}
+	}
 
-		if (k == KEY_ESC) {
-			// Cancel search if ESC is pressed
-			control_config_do_cancel();
+	if (k == KEY_ESC) {
+		// Cancel search if ESC is pressed
+		control_config_do_cancel(0, API_Access);
+		return -2;
 
-		} else {
-			if ((k > 0) && !Config_allowed[k & KEY_MASK]) {
-				// Ignore disallowed keys
-				k = 0;
-			}
+	} else {
+		if ((k > 0) && !Config_allowed[k & KEY_MASK]) {
+			// Ignore disallowed keys
+			k = 0;
+		}
 
-			k &= (KEY_MASK | KEY_SHIFTED | KEY_ALTED);
-			z = -1;
-			// If not done, Find the control bound to the given key
-			if ((z < 0) && (k > 0)) {
-				for (i=0; i < CCFG_SIZE; ++i) {
-					if (Control_config[i].first == CC_bind(CID_KEYBOARD, static_cast<short>(k))) {
-						Selected_item = selItem::Primary;
-						z = i;
-						break;
-					} else if (Control_config[i].second == CC_bind(CID_KEYBOARD, static_cast<short>(k))) {
-						Selected_item = selItem::Secondary;
-						z = i;
-						break;
-					}
-				}
-			}
+		const int CCFG_SIZE = static_cast<int>(Control_config.size());	// hack to get around signed/unsigned mismatch errors
 
-			// If not done, Find the control bound to the given joy
-			if ((z < 0) && (joy < CID_JOY_MAX)) {
-				for (i = 0; i < CCFG_SIZE; ++i) {
-					if (Control_config[i].first == CC_bind(static_cast<CID>(joy), j)) {
-						Selected_item = selItem::Primary;
-						z = i;
-						break;
-					} else if (Control_config[i].second == CC_bind(static_cast<CID>(joy), j)) {
-						Selected_item = selItem::Secondary;
-						z = i;
-						break;
-					}
-				}
-			}
-
-			// check if not on enabled button
-			for (i = 0; i < NUM_BUTTONS; ++i){
-				if ( (CC_Buttons[gr_screen.res][i].button.is_mouse_on()) && (CC_Buttons[gr_screen.res][i].button.enabled()) ){
+		k &= (KEY_MASK | KEY_SHIFTED | KEY_ALTED);
+		int ctrl = -1;
+		// If not done, Find the control bound to the given key
+		if ((ctrl < 0) && (k > 0)) {
+			for (int i = 0; i < CCFG_SIZE; ++i) {
+				if (Control_config[i].first == CC_bind(CID_KEYBOARD, static_cast<short>(k))) {
+					Selected_item = selItem::Primary;
+					ctrl = i;
+					break;
+				} else if (Control_config[i].second == CC_bind(CID_KEYBOARD, static_cast<short>(k))) {
+					Selected_item = selItem::Secondary;
+					ctrl = i;
 					break;
 				}
 			}
+		}
 
-			// If not done, and no buttons pressed, poll the mouse and find controls bound to buttons
-			if ((z < 0) && (i == NUM_BUTTONS)) {
-				for (j = 0; j < MOUSE_NUM_BUTTONS; ++j) {
-					if (mouse_down(CC_bind(CID_MOUSE, j))) {
-						// Find the control bound to the given mouse button
-						for (i = 0; i < CCFG_SIZE; ++i) {
-							if (Control_config[i].first == CC_bind(CID_MOUSE, j)) {
-								Selected_item = selItem::Primary;
-								z = i;
-								break;
-							} else if (Control_config[i].second == CC_bind(CID_MOUSE, j)) {
-								Selected_item = selItem::Secondary;
-								z = i;
-								break;
-							}
-						}
-						break;
-					}
+		// If not done, Find the control bound to the given joy
+		if ((ctrl < 0) && (joy < CID_JOY_MAX)) {
+			for (int i = 0; i < CCFG_SIZE; ++i) {
+				if (Control_config[i].first == CC_bind(static_cast<CID>(joy), j)) {
+					Selected_item = selItem::Primary;
+					ctrl = i;
+					break;
+				} else if (Control_config[i].second == CC_bind(static_cast<CID>(joy), j)) {
+					Selected_item = selItem::Secondary;
+					ctrl = i;
+					break;
 				}
 			}
+		}
 
-			// If done, Focus on the found control
-			if (z >= 0) {
-				Tab = Control_config[z].tab;
-				control_config_list_prepare();
-				Selected_line = Scroll_offset = 0;
-				
-				// Reverse Lookup cc_index to find the line its on
-				for (i=0; i<Num_cc_lines; i++) {
-					if (Cc_lines[i].cc_index == z) {
-						Selected_line = i;
-						break;
+		// check if not on enabled button
+		int i;
+		if (!API_Access) {
+			for (i = 0; i < NUM_BUTTONS; i++) {
+				if ((CC_Buttons[gr_screen.res][i].button.is_mouse_on()) &&
+					(CC_Buttons[gr_screen.res][i].button.enabled())) {
+					break;
+				}
+			}
+		} else {
+			i = NUM_BUTTONS; // this is kind of hacky but working out how to detangle the UI from the mouse binding is messy
+		}
+
+		// If not done, and no buttons pressed, poll the mouse and find controls bound to buttons
+		if ((ctrl < 0) && (i == NUM_BUTTONS)) {
+			for (j = 0; j < MOUSE_NUM_BUTTONS; ++j) {
+				if (mouse_down(CC_bind(CID_MOUSE, j))) {
+					// Find the control bound to the given mouse button
+					for (i = 0; i < CCFG_SIZE; ++i) {
+						if (Control_config[i].first == CC_bind(CID_MOUSE, j)) {
+							Selected_item = selItem::Primary;
+							ctrl = i;
+							break;
+						} else if (Control_config[i].second == CC_bind(CID_MOUSE, j)) {
+							Selected_item = selItem::Secondary;
+							ctrl = i;
+							break;
+						}
 					}
+					break;
 				}
-				Assert(i != Num_cc_lines);
+			}
+		}
 
-				// Scroll to line if it is not visible
-				while (!cc_line_query_visible(Selected_line)) {
-					Scroll_offset++;
-					Assert(Scroll_offset < Num_cc_lines);
-				}
+		// The API needs to reset itself if a bind was found
+		if (API_Access && (ctrl >= 0)) {
+			Search_mode = 0;
+		}
 
-				// Reset all nav buttons
-				for (size_t buttonid = 0; buttonid < NUM_BUTTONS; buttonid++) {
-					CC_Buttons[gr_screen.res][buttonid].button.reset();
+		return ctrl;
+	}
+}
+
+void control_config_do_frame(float frametime)
+{
+	const char *str;
+	char buf[256];
+	int i; // generic index
+	int w, x, y, conflict;
+	int k; // polled key.  Can be masked with SHIFT and/or ALT
+	short j = JOY_TOTAL_BUTTONS; // polled joy button
+	short joy = -1;              // polled joystick id
+	int z = Cc_lines[Selected_line].cc_index; // Selected line's cc_index; value: (z &= ~JOY_AXIS); Is an axis index if (z & JOY_AXIS) == true;
+	int font_height = gr_get_font_height();
+	int select_tease_line = -1;  // line mouse is down on, but won't be selected until button released
+	static float timer = 0.0f;
+	
+	timer += frametime;
+
+	if (Binding_mode) {
+		bool done = (bool)control_config_bind_key_on_frame(z, Selected_item);
+
+		if (done) {
+			// done with binding mode, clean up and prepare for display
+			font::force_fit_string(bound_string, 39, Conflict_wnd_coords[gr_screen.res][CONTROL_W_COORD]);
+			bound_timestamp = ui_timestamp(2500);
+			control_config_conflict_check();
+			control_config_list_prepare();
+			control_config_do_cancel();
+			for (j = 0; j < NUM_BUTTONS; j++) {
+				CC_Buttons[gr_screen.res][j].button.reset();
+			}
+		}
+
+	} else if (Search_mode) {
+		int ctrl = control_config_search_key_on_frame();
+
+		// If done, Focus on the found control
+		if (ctrl >= 0) {
+			Tab = Control_config[ctrl].tab;
+			control_config_list_prepare();
+			Selected_line = Scroll_offset = 0;
+
+			// Reverse Lookup cc_index to find the line its on
+			for (i = 0; i < Num_cc_lines; i++) {
+				if (Cc_lines[i].cc_index == ctrl) {
+					Selected_line = i;
+					break;
 				}
+			}
+			Assert(i != Num_cc_lines);
+
+			// Scroll to line if it is not visible
+			while (!cc_line_query_visible(Selected_line)) {
+				Scroll_offset++;
+				Assert(Scroll_offset < Num_cc_lines);
+			}
+
+			// Reset all nav buttons
+			for (size_t buttonid = 0; buttonid < NUM_BUTTONS; buttonid++) {
+				CC_Buttons[gr_screen.res][buttonid].button.reset();
 			}
 		}
 
