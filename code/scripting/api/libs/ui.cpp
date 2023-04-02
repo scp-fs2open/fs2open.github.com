@@ -2050,7 +2050,7 @@ ADE_FUNC(cancelBinding,
 {
 	SCP_UNUSED(L);
 
-	control_config_cancel_exit();
+	control_config_cancel_exit(true);
 
 	return ADE_RETURN_NIL;
 }

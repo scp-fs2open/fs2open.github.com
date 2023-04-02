@@ -736,7 +736,7 @@ void control_config_close(bool API_Access = false);
 /*!
  * @brief setup for binding a control
  */
-void control_config_do_bind();
+void control_config_do_bind(bool API_Access = false);
 
 /**
  * @brief Unbinds the selected control

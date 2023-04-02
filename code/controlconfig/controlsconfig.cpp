@@ -704,7 +704,7 @@ int cc_line_query_visible(int n)
 /**
  * @brief Wrapper for CC_bind::take(), binds a given control
  */
-void control_config_bind(int i, const CC_bind &new_bind, selItem order)
+void control_config_bind(int i, const CC_bind& new_bind, selItem order, bool API_Access = false)
 {
 	int sel = -1;
 	switch (order) {
@@ -739,7 +739,9 @@ void control_config_bind(int i, const CC_bind &new_bind, selItem order)
 	if (old == Control_config[i]) {
 		// Binding didn't take
 		Undo_controls.undo();
-		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
+		if (!API_Access) {
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
+		}
 	}
 }
 
@@ -1138,26 +1140,28 @@ bool control_config_toggle_invert(int ctrl, selItem item, bool API_Access)
 /*!
  * Sets menu in bind mode.  Menu will watch controller input and bind to the currently selected item, if any.
  */
-void control_config_do_bind()
+void control_config_do_bind(bool API_Access)
 {
 	short i;
 
 	game_flush();
 
-	//	if ((Selected_line < 0) || (Cc_lines[Selected_line].cc_index & JOY_AXIS)) {
-	if (Selected_line < 0) {
-		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
-		return;
-	}
-
-	for (i = 0; i < NUM_BUTTONS; i++) {
-		if (i != CANCEL_BUTTON) {
-			CC_Buttons[gr_screen.res][i].button.reset_status();
-			CC_Buttons[gr_screen.res][i].button.disable();
+	if (!API_Access) {
+		//	if ((Selected_line < 0) || (Cc_lines[Selected_line].cc_index & JOY_AXIS)) {
+		if (Selected_line < 0) {
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
+			return;
 		}
+
+		for (i = 0; i < NUM_BUTTONS; i++) {
+			if (i != CANCEL_BUTTON) {
+				CC_Buttons[gr_screen.res][i].button.reset_status();
+				CC_Buttons[gr_screen.res][i].button.disable();
+			}
+		}
+		CC_Buttons[gr_screen.res][CANCEL_BUTTON].button.enable();
+		CC_Buttons[gr_screen.res][CANCEL_BUTTON].button.set_hotkey(KEY_ESC);
 	}
-	CC_Buttons[gr_screen.res][CANCEL_BUTTON].button.enable();
-	CC_Buttons[gr_screen.res][CANCEL_BUTTON].button.set_hotkey(KEY_ESC);
 
 	for (short j = CID_JOY0; j < CID_JOY_MAX; ++j) {
 		for (i=0; i<JOY_TOTAL_BUTTONS; ++i) {
@@ -1173,7 +1177,9 @@ void control_config_do_bind()
 	Last_key = -1;
 	Axis_override.clear();
 
-	gamesnd_play_iface(InterfaceSounds::USER_SELECT);
+	if (!API_Access) {
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
+	}
 }
 
 /*!
@@ -1208,29 +1214,33 @@ void control_config_do_search()
 /*!
  * (Re)sets the menu mode to Browse mode.  This mode lets users browse through the bindings using controller input to navigate the item lists
  */
-void control_config_do_cancel(int fail = 0)
+void control_config_do_cancel(int fail = 0, bool API_Access = false)
 {
 	int i;
 
 	game_flush();
 
-	for (i=0; i<NUM_BUTTONS; i++){
-		if ( (i != CANCEL_BUTTON) && (i != INVERT_AXIS) ){
-			CC_Buttons[gr_screen.res][i].button.enable();
+	if (!API_Access) {
+		for (i = 0; i < NUM_BUTTONS; i++) {
+			if ((i != CANCEL_BUTTON) && (i != INVERT_AXIS)) {
+				CC_Buttons[gr_screen.res][i].button.enable();
+			}
 		}
+
+		CC_Buttons[gr_screen.res][CANCEL_BUTTON].button.reset_status();
+		CC_Buttons[gr_screen.res][CANCEL_BUTTON].button.disable();
+		CC_Buttons[gr_screen.res][CANCEL_BUTTON].button.set_hotkey(-1);
+		CC_Buttons[gr_screen.res][BIND_BUTTON].button.reset_status();
+		CC_Buttons[gr_screen.res][SEARCH_MODE].button.reset_status();
 	}
 
-	CC_Buttons[gr_screen.res][CANCEL_BUTTON].button.reset_status();
-	CC_Buttons[gr_screen.res][CANCEL_BUTTON].button.disable();
-	CC_Buttons[gr_screen.res][CANCEL_BUTTON].button.set_hotkey(-1);
-	CC_Buttons[gr_screen.res][BIND_BUTTON].button.reset_status();
-	CC_Buttons[gr_screen.res][SEARCH_MODE].button.reset_status();
-
 	Binding_mode = Search_mode = 0;
-	if (fail){
-		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
-	} else {
-		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
+	if (!API_Access) {
+		if (fail) {
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
+		} else {
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
+		}
 	}
 }
 
@@ -1913,13 +1923,23 @@ bool control_config_bind_key_on_frame(int ctrl, selItem item, bool API_Access)
 	bool bind = false; // is true if binding should happen.  Actually is an "Input detected" flag.
 	bool done = false; // is true if we're done binding and ready for exiting this mode
 
-	//set valid timestamp from the API
-	if (API_Access) {
-		Bind_time = ui_timestamp();
+	//API mode needs to run this once before beginning
+	if (API_Access && (Binding_mode != 1)) {
+		control_config_do_bind(API_Access);
 	}
 
 	// Poll for keypress
-	int k = game_poll(); // polled key.  Can be masked with SHIFT and/or ALT
+	int k;
+
+	if (!API_Access)
+		k = game_poll(); // polled key.  Can be masked with SHIFT and/or ALT
+	else {
+		// In API-Access mode, game_poll has already happened this frame. Either by the state we're actually running in,
+		// or by the game_poll hardcoded into overrided OnFrame hooks. Hence, polling again is incorrect. The key is
+		// available in Current_key_down, and mouse and joy states are still up-to-date
+		extern int Current_key_down;
+		k = Current_key_down;
+	}
 
 	if (!API_Access) {
 		Ui_window.use_hack_to_get_around_stupid_problem_flag = 1;
@@ -1980,9 +2000,8 @@ bool control_config_bind_key_on_frame(int ctrl, selItem item, bool API_Access)
 		strcpy_s(bound_string, XSTR("Canceled", 206));
 		bound_timestamp = ui_timestamp(2500);
 
-		if (!API_Access) {
-			control_config_do_cancel();
-		} else {
+		control_config_do_cancel(API_Access);
+		if (API_Access) {
 			return true;
 		}
 
@@ -1997,15 +2016,15 @@ bool control_config_bind_key_on_frame(int ctrl, selItem item, bool API_Access)
 
 		if (!done && bind) {
 			if (!Axis_override.empty()) {
-				control_config_bind(ctrl, Axis_override, item);
+				control_config_bind(ctrl, Axis_override, item, API_Access);
+				control_config_bind(ctrl, Axis_override, item, API_Access);
 				done = true;
 				strcpy_s(bound_string, Axis_override.textify().c_str());
 
 			} else {
 				// Canceled
-				if (!API_Access) {
-					control_config_do_cancel(1);
-				} else {
+				control_config_do_cancel(API_Access);
+				if (API_Access) {
 					return true;
 				}
 			}
@@ -2044,7 +2063,7 @@ bool control_config_bind_key_on_frame(int ctrl, selItem item, bool API_Access)
 		if (!done && (k > 0)) {
 			// Bind the key
 			Assert(!Control_config[ctrl].is_axis());
-			control_config_bind(ctrl, CC_bind(CID_KEYBOARD, static_cast<short>(k)), item);
+			control_config_bind(ctrl, CC_bind(CID_KEYBOARD, static_cast<short>(k)), item, API_Access);
 
 			strcpy_s(bound_string, textify_scancode(k));
 			done = true;
@@ -2053,7 +2072,7 @@ bool control_config_bind_key_on_frame(int ctrl, selItem item, bool API_Access)
 		if (!done && (j < JOY_TOTAL_BUTTONS)) {
 			// Bind the joy button
 			Assert(!Control_config[ctrl].is_axis());
-			control_config_bind(ctrl, CC_bind(static_cast<CID>(joy), j), item);
+			control_config_bind(ctrl, CC_bind(static_cast<CID>(joy), j), item, API_Access);
 
 			strcpy_s(bound_string, Joy_button_text[j]);
 			done = true;
@@ -2089,7 +2108,7 @@ bool control_config_bind_key_on_frame(int ctrl, selItem item, bool API_Access)
 
 					if (mouse_down(mouse_bind)) {
 						Assert(!Control_config[ctrl].is_axis());
-						control_config_bind(ctrl, mouse_bind, item);
+						control_config_bind(ctrl, mouse_bind, item, API_Access);
 
 						strcpy_s(bound_string, Joy_button_text[i]);
 						done = true;
@@ -2099,6 +2118,11 @@ bool control_config_bind_key_on_frame(int ctrl, selItem item, bool API_Access)
 				}
 			}
 		}
+	}
+
+	// The API needs to reset itself if a bind was found
+	if (API_Access && done) {
+		Binding_mode = 0;
 	}
 
 	return done;
