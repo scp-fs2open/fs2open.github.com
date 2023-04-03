@@ -2090,14 +2090,14 @@ ADE_FUNC(getCurrentPreset,
 	nullptr,
 	"Returns the name of the current controls preset.",
 	"string",
-	"The name of the preset")
+	"The name of the preset or nil if the current binds do not match a preset")
 {
 	SCP_UNUSED(L);
 
 	auto it = control_config_get_current_preset();
 
 	if (it == Control_config_presets.end()) {
-		LuaError(L, "There is no current preset. This can only happen if acceptChanges() was called without verifying the controls have been saved!");
+		return ADE_RETURN_NIL;
 	}
 
 	return ade_set_args(L, "s", it->name.c_str());
