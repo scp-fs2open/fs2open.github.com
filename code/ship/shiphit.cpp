@@ -1909,7 +1909,19 @@ void ship_hit_kill(object *ship_objp, object *other_obj, vec3d *hitpos, float pe
 			}
 		}
 
-		if(!self_destruct){
+		if (self_destruct) {
+			// try and find a player
+			if(Game_mode & GM_MULTIPLAYER){
+				int np_index = multi_find_player_by_object(ship_objp);
+				if((np_index >= 0) && (np_index < MAX_PLAYERS) && (Net_players[np_index].m_player != NULL)){
+					mission_log_add_entry(LOG_SELF_DESTRUCTED, Net_players[np_index].m_player->callsign, NULL );
+				} else {
+					mission_log_add_entry(LOG_SELF_DESTRUCTED, Ships[ship_objp->instance].ship_name, NULL );
+				}
+			} else {
+				mission_log_add_entry(LOG_SELF_DESTRUCTED, Ships[ship_objp->instance].ship_name, NULL );
+			}
+		} else {
 			// multiplayer
 			if(Game_mode & GM_MULTIPLAYER){
 				char name1[256] = "";
@@ -2015,18 +2027,6 @@ void ship_self_destruct( object *objp )
 {	
 	Assert ( objp->type == OBJ_SHIP );
 
-	// try and find a player
-	if((Game_mode & GM_MULTIPLAYER) && (multi_find_player_by_object(objp) >= 0)){
-		int np_index = multi_find_player_by_object(objp);
-		if((np_index >= 0) && (np_index < MAX_PLAYERS) && (Net_players[np_index].m_player != NULL)){
-			mission_log_add_entry(LOG_SELF_DESTRUCTED, Net_players[np_index].m_player->callsign, NULL );
-		} else {
-			mission_log_add_entry(LOG_SELF_DESTRUCTED, Ships[objp->instance].ship_name, NULL );
-		}
-	} else {
-		mission_log_add_entry(LOG_SELF_DESTRUCTED, Ships[objp->instance].ship_name, NULL );
-	}
-	
 	// check to see if this ship needs to be respawned
 	if(MULTIPLAYER_MASTER){
 		// player ship?
