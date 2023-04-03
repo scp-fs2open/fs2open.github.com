@@ -1922,7 +1922,7 @@ float model_render_get_point_activation(glow_point_bank* bank, glow_point_bank_o
 	if ( off_time) {
   		x = (timestamp() - disp_time) % ( on_time + off_time ) - off_time;
 	} else {
-  		x = (timestamp() - disp_time) % gpo->pulse_period;
+  		x = (timestamp() - disp_time) % period;
 	}
 
 	switch (gpo->pulse_type) {
@@ -1940,7 +1940,7 @@ float model_render_get_point_activation(glow_point_bank* bank, glow_point_bank_o
 		if(off_time) {
 			x %= on_time + off_time;
 		} else {
-			x %= gpo->pulse_period;
+			x %= period;
 		}
 		FALLTHROUGH;
 
