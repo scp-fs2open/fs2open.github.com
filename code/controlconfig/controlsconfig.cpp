@@ -1762,14 +1762,7 @@ bool control_config_create_new_preset(SCP_string newName)
 	}
 
 	// Check if a preset file with name already exists.
-	CFILE* fp = cfopen((newName + ".json").c_str(),
-		"r",
-		CFILE_NORMAL,
-		CF_TYPE_PLAYER_BINDS,
-		false,
-		CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
-	if (fp) {
-		cfclose(fp);
+	if ((cf_exists_full((newName + ".json").c_str(), CF_TYPE_PLAYER_BINDS)) != 0) {
 		return false;
 	}
 
@@ -1816,14 +1809,7 @@ bool control_config_clone_preset(CC_preset preset, SCP_string newName) {
 	}
 
 	// Check if a preset file with name already exists.
-	CFILE* fp = cfopen((newName + ".json").c_str(),
-		"r",
-		CFILE_NORMAL,
-		CF_TYPE_PLAYER_BINDS,
-		false,
-		CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
-	if (fp) {
-		cfclose(fp);
+	if ((cf_exists_full((newName + ".json").c_str(), CF_TYPE_PLAYER_BINDS)) != 0) {
 		return false;
 	}
 
