@@ -2237,7 +2237,7 @@ static void parse_ship(const char *filename, bool replace)
 	}
 	if( optional_string( "+Use Ship as Template:" ) ) {
 		if ( !create_if_not_found ) {
-			Warning(LOCATION, "Both '+nocreate' and '+Use Ship as Template:' were specified for ship class '%s', ignoring '+Use Ship as Template:'\n", fname);
+			Warning(LOCATION, "Either '+nocreate' or '+Use Template:' were specified with '+Use Ship as Template:' for ship class '%s', ignoring '+Use Ship as Template:'\n", fname);
 		}
 		else {
 			char template_name[SHIP_MULTITEXT_LENGTH];
