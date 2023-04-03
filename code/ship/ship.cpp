@@ -2228,9 +2228,29 @@ static void parse_ship(const char *filename, bool replace)
 				sip->clone(Ship_templates[template_id]);
 				strcpy_s(sip->name, fname);
 				new_name = true;
+				create_if_not_found = false;
 			}
 			else {
 				Warning(LOCATION, "Unable to find ship template '%s' requested by ship class '%s', ignoring template request...", template_name, fname);
+			}
+		}
+	}
+	if( optional_string( "+Use Ship as Template:" ) ) {
+		if ( !create_if_not_found ) {
+			Warning(LOCATION, "Both '+nocreate' and '+Use Ship as Template:' were specified for ship class '%s', ignoring '+Use Ship as Template:'\n", fname);
+		}
+		else {
+			char template_name[SHIP_MULTITEXT_LENGTH];
+			stuff_string(template_name, F_NAME, SHIP_MULTITEXT_LENGTH);
+			int template_id = ship_info_lookup_sub(template_name);
+			if ( template_id != -1 ) {
+				first_time = false;
+				sip->clone(Ship_info[template_id]);
+				strcpy_s(sip->name, fname);
+				new_name = true;
+			}
+			else {
+				Warning(LOCATION, "Unable to find ship class '%s' (name must be exact, check table loading order) requested by ship class '%s', ignoring template request...", template_name, fname);
 			}
 		}
 	}
