@@ -2137,9 +2137,11 @@ int get_builtin_message(int type, int persona, ship* sender, ship* subject) {
 	int result = get_builtin_message_inner(type, persona, sender, subject, true);
 	if (result != MESSAGE_NONE) {
 		return result;
-	} else {
+	} else if (persona_allows_substitution(persona)) {
 		// Only borrow messages from other personae as an absolute last-ditch effort
 		return get_builtin_message_inner(type, persona, sender, subject, false);
+	} else {
+		return MESSAGE_NONE;
 	}
 }
 
