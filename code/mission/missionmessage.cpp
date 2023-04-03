@@ -1978,16 +1978,21 @@ int pick_persona(ship* shipp) {
 	}
 }
 
+bool can_auto_assign_persona(ship* shipp) {
+	// If the Auto_assign_personas flag is on, we can assign them for any ship
+	// Otherwise, we can only assign them for support
+	return Auto_assign_personas || Ship_info[shipp->ship_info_index].flags[Ship::Info_Flags::Support];
+}
+
 int get_persona(ship* shipp) {
 	if (shipp == NULL) {
 		return The_mission.command_persona;
 	} else if (shipp->persona_index != -1) {
 		return shipp->persona_index;
-	} else if (!Auto_assign_personas) {
-		// If the game does not allow auto assignment, then bail
-		return -1;
-	} else {
+	} else if (can_auto_assign_persona(shipp)) {
 		return shipp->persona_index = pick_persona(shipp);
+	} else {
+		return -1;
 	}
 }
 
@@ -2042,7 +2047,7 @@ bool excludes_current_mood(int message) {
 	return false;
 }
 
-int get_builtin_message(int type, int persona, ship* sender, ship* subject, bool require_exact_persona_match) {
+int get_builtin_message_inner(int type, int persona, ship* sender, ship* subject, bool require_exact_persona_match) {
 	static const int BUILTIN_MATCHES_TYPE    = 0;
 	static const int BUILTIN_MATCHES_FILTER  = 1;
 	static const int BUILTIN_MATCHES_MOOD    = 2;
@@ -2121,12 +2126,22 @@ int get_builtin_message(int type, int persona, ship* sender, ship* subject, bool
 	} else {
 		int fallback = Builtin_messages[type].fallback;
 		if (fallback != MESSAGE_NONE) {
-			return get_builtin_message(fallback, persona, sender, subject, true);
-		} else if (require_exact_persona_match && persona_allows_substitution(persona)) {
-			return get_builtin_message(fallback, persona, sender, subject, false);
+			return get_builtin_message_inner(fallback, persona, sender, subject, require_exact_persona_match);
 		} else {
 			return MESSAGE_NONE;
 		}
+	}
+}
+
+int get_builtin_message(int type, int persona, ship* sender, ship* subject) {
+	int result = get_builtin_message_inner(type, persona, sender, subject, true);
+	if (result != MESSAGE_NONE) {
+		return result;
+	} else if (persona_allows_substitution(persona)) {
+		// Only borrow messages from other personae as an absolute last-ditch effort
+		return get_builtin_message_inner(type, persona, sender, subject, false);
+	} else {
+		return MESSAGE_NONE;
 	}
 }
 
@@ -2139,7 +2154,7 @@ bool message_send_builtin(int type, ship* sender, ship* subject, int multi_targe
 	}
 
 	int persona_index = get_persona(sender);
-	int message_index = get_builtin_message(type, persona_index, sender, subject, true);
+	int message_index = get_builtin_message(type, persona_index, sender, subject);
 	if (message_index == MESSAGE_NONE) {
 		return false;
 	}
