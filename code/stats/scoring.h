@@ -146,7 +146,7 @@ extern traitor_stuff Traitor;
 int verify_rank(int rank);
 
 void rank_init();
-void parse_traitor_tbl();
+void traitor_init();
 void scoring_close();
 
 void scoring_level_init( scoring_struct *score );
