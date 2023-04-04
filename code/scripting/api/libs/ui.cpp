@@ -2018,7 +2018,7 @@ ADE_FUNC(usePreset,
 ADE_FUNC(createPreset,
 	l_UserInterface_ControlConfig,
 	"string Name",
-	"Creaets a new preset with the given name. Returns true if successful, false otherwise.",
+	"Creates a new preset with the given name. Returns true if successful, false otherwise.",
 	"boolean",
 	"The return status")
 {
