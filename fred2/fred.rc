@@ -922,14 +922,14 @@ BEGIN
     CONTROL         "All Ships Beam-Freed By Default",IDC_BEAM_FREE_ALL_BY_DEFAULT,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,101,123,10
     CONTROL         "No Briefing",IDC_NO_BRIEFING,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,111,72,10
-    CONTROL         "Toggle Debriefing (On/Off)",IDC_NO_DEBRIEFING,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,121,102,10
+    CONTROL         "Toggle Debriefing (On/Off)",IDC_TOGGLE_DEBRIEFING,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,121,102,10
     CONTROL         "Use Autopilot Cinematics",IDC_USE_AUTOPILOT_CINEMATICS,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,131,123,10
     CONTROL         "Deactivate Hardcoded Autopilot",IDC_DEACTIVATE_AUTOPILOT,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,141,123,10
     CONTROL         "Player Starts under AI Control (NO MULTI)",IDC_PLAYER_START_AI,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,151,146,10
-    CONTROL         "Player Starts in Chase View",IDC_PLAYER_START_CHASE,
+    CONTROL         "Toggle Starting in Chase View",IDC_TOGGLE_START_CHASE,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,161,146,10
     CONTROL         "2D Mission",IDC_2D_MISSION,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,171,123,10
     LTEXT           "AI Profile",IDC_STATIC,320,229,32,8
