@@ -218,7 +218,7 @@ ADE_FUNC(run,
 
 ADE_FUNC(awaitRunOnFrame,
 	l_Async,
-	"function() => any body, [bool clearScreen = false]",
+	"function() => any body,",
 	"Runs an asynchronous function in an OnFrameExecutor context and busy-waits for the coroutine to finish. "
 	"Inside this function you can use async.await to suspend the function until a promise resolves. "
 	"This is useful for cases where you need a scripting process to run over multiple frames, even when "
@@ -229,7 +229,7 @@ ADE_FUNC(awaitRunOnFrame,
 	luacpp::LuaFunction body;
 	std::shared_ptr<executor::IExecutionContext> context;
 
-	if (!ade_get_args(L, "u|ob", &body)) {
+	if (!ade_get_args(L, "u", &body)) {
 		return ADE_RETURN_NIL;
 	}
 
