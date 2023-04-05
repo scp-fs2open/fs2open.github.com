@@ -137,7 +137,7 @@ namespace animation {
 
 	void ModelAnimationMoveableTranslation::update(polymodel_instance* pmi, const std::vector<linb::any>& args) {
 		if(args.size() < 3){
-			Error(LOCATION,"Tried updating moveable rotation with too few (%d of 3) arguments!", (int) args.size());
+			Error(LOCATION,"Tried updating moveable translation with too few (%d of 3) arguments!", (int) args.size());
 			return;
 		}
 
@@ -153,7 +153,7 @@ namespace animation {
 
 			ModelAnimationSubmodelBuffer buffer;
 			buffer[translation.m_submodel].data.position = ZERO_VECTOR;
-			//Will now only contain the delta of the rotation
+			//Will now only contain the delta of the translation
 			anim->m_animation->calculateAnimation(buffer, anim->getTime(pmi->id), pmi->id);
 
 			anim->forceRecalculate(pmi);
@@ -165,7 +165,7 @@ namespace animation {
 			anim->start(pmi, ModelAnimationDirection::FWD);
 		}
 		catch(const linb::bad_any_cast& e){
-			Error(LOCATION, "Argument error trying to update rotation moveable: %s", e.what());
+			Error(LOCATION, "Argument error trying to update translation moveable: %s", e.what());
 		}
 	}
 
@@ -203,7 +203,7 @@ namespace animation {
 
 		auto submodel = ModelAnimationParseHelper::parseSubmodel();
 		if(submodel == nullptr)
-			error_display(1, "Could not create moveable! Moveable Rotation has no target submodel!");
+			error_display(1, "Could not create moveable! Moveable Translation has no target submodel!");
 
 		return std::shared_ptr<ModelAnimationMoveableTranslation>(new ModelAnimationMoveableTranslation(submodel, angle, velocity, acceleration));
 	}
