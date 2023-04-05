@@ -1599,6 +1599,7 @@ namespace animation {
 		{"$Segment Parallel:", 	ModelAnimationSegmentParallel::parser},
 		{"$Wait:", 				ModelAnimationSegmentWait::parser},
 		{"$Set Orientation:", 	ModelAnimationSegmentSetOrientation::parser},
+		{"$Set Offset:", 	ModelAnimationSegmentSetOffset::parser},
 		{"$Set Angle:", 			ModelAnimationSegmentSetAngle::parser},
 		{"$Rotation:",		 	ModelAnimationSegmentRotation::parser},
 		{"$Axis Rotation:", 	ModelAnimationSegmentAxisRotation::parser},
@@ -1611,6 +1612,7 @@ namespace animation {
 		{"Orientation", 			ModelAnimationMoveableOrientation::parser},
 		{"Rotation", 				ModelAnimationMoveableRotation::parser},
 		{"Axis Rotation", 		ModelAnimationMoveableAxisRotation::parser},
+		{"Translation",				ModelAnimationMoveableTranslation::parser},
 		{"Inverse Kinematics", 	ModelAnimationMoveableIK::parser}
 	};
 

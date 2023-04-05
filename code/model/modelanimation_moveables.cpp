@@ -132,6 +132,83 @@ namespace animation {
 	}
 
 
+	ModelAnimationMoveableTranslation::ModelAnimationMoveableTranslation(std::shared_ptr<ModelAnimationSubmodel> submodel, const vec3d& defaultOffset, const vec3d& velocity, const tl::optional<vec3d>& acceleration) :
+		  m_submodel(std::move(submodel)), m_defaultOffset(defaultOffset), m_velocity(velocity), m_acceleration(acceleration) { }
+
+	void ModelAnimationMoveableTranslation::update(polymodel_instance* pmi, const std::vector<linb::any>& args) {
+		if(args.size() < 3){
+			Error(LOCATION,"Tried updating moveable rotation with too few (%d of 3) arguments!", (int) args.size());
+			return;
+		}
+
+		auto& anim = m_instances[pmi->id].animation;
+
+		try {
+			auto x = linb::any_cast<int>(args[0]), y = linb::any_cast<int>(args[1]), z = linb::any_cast<int>(args[2]);
+
+
+			auto& sequence = *std::static_pointer_cast<ModelAnimationSegmentSerial>(anim->m_animation);
+			auto& setOffset = *std::static_pointer_cast<ModelAnimationSegmentSetOffset>(sequence.m_segments[0]);
+			auto& translation = *std::static_pointer_cast<ModelAnimationSegmentTranslation>(sequence.m_segments[1]);
+
+			ModelAnimationSubmodelBuffer buffer;
+			buffer[translation.m_submodel].data.position = ZERO_VECTOR;
+			//Will now only contain the delta of the rotation
+			anim->m_animation->calculateAnimation(buffer, anim->getTime(pmi->id), pmi->id);
+
+			anim->forceRecalculate(pmi);
+
+			setOffset.m_target = buffer[translation.m_submodel].data.position;
+
+			translation.m_target = vec3d{{{x * 0.01f, y * 0.01f, z * 0.01f}}};
+
+			anim->start(pmi, ModelAnimationDirection::FWD);
+		}
+		catch(const linb::bad_any_cast& e){
+			Error(LOCATION, "Argument error trying to update rotation moveable: %s", e.what());
+		}
+	}
+
+	void ModelAnimationMoveableTranslation::initialize(ModelAnimationSet* parentSet, polymodel_instance* pmi) {
+		auto& anim = m_instances[pmi->id].animation;
+
+		anim = std::shared_ptr<ModelAnimation>(new ModelAnimation(false, false, true, parentSet));
+
+		auto submodel = parentSet->getSubmodel(m_submodel);
+
+		auto sequence = std::shared_ptr<ModelAnimationSegmentSerial>(new ModelAnimationSegmentSerial());
+		sequence->addSegment(std::shared_ptr<ModelAnimationSegment>(new ModelAnimationSegmentSetOffset(submodel, m_defaultOffset, ModelAnimationCoordinateRelation::RELATIVE_COORDS)));
+		sequence->addSegment(std::shared_ptr<ModelAnimationSegment>(new ModelAnimationSegmentTranslation(submodel, m_defaultOffset, m_velocity, tl::nullopt, m_acceleration, ModelAnimationSegmentTranslation::CoordinateSystem::COORDS_PARENT, ModelAnimationCoordinateRelation::ABSOLUTE_COORDS)));
+
+		anim->setAnimation(sequence);
+
+		anim->start(pmi,ModelAnimationDirection::FWD);
+	}
+
+	std::shared_ptr<ModelAnimationMoveable> ModelAnimationMoveableTranslation::parser() {
+		required_string("+Target:");
+		vec3d angle;
+		stuff_vec3d(&angle);
+
+		required_string("+Velocity:");
+		vec3d velocity;
+		stuff_vec3d(&velocity);
+
+		tl::optional<vec3d> acceleration;
+		if (optional_string("+Acceleration:")) {
+			vec3d parse;
+			stuff_vec3d(&parse);
+			acceleration = parse;
+		}
+
+		auto submodel = ModelAnimationParseHelper::parseSubmodel();
+		if(submodel == nullptr)
+			error_display(1, "Could not create moveable! Moveable Rotation has no target submodel!");
+
+		return std::shared_ptr<ModelAnimationMoveableTranslation>(new ModelAnimationMoveableTranslation(submodel, angle, velocity, acceleration));
+	}
+
+
 	ModelAnimationMoveableAxisRotation::ModelAnimationMoveableAxisRotation(std::shared_ptr<ModelAnimationSubmodel> submodel, const float& velocity, const tl::optional<float>& acceleration, const vec3d& axis) :
 			m_submodel(std::move(submodel)), m_velocity(velocity), m_acceleration(acceleration), m_axis(axis) { }
 
