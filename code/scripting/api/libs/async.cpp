@@ -11,6 +11,8 @@
 #include "scripting/api/objs/promise.h"
 #include "scripting/lua/LuaThread.h"
 
+#include "freespace.h"
+
 namespace scripting {
 namespace api {
 
@@ -212,6 +214,58 @@ ADE_FUNC(run,
 	return ade_set_args(L,
 		"o",
 		l_Promise.Set(runAsyncCoroutine(std::move(coroutine), executor.getExecutor(), std::move(context))));
+}
+
+ADE_FUNC(awaitRunOnFrame,
+	l_Async,
+	"function() => any body, [bool clearScreen = false]",
+	"Runs an asynchronous function in an OnFrameExecutor context and busy-waits for the coroutine to finish. "
+	"Inside this function you can use async.await to suspend the function until a promise resolves. "
+	"This is useful for cases where you need a scripting process to run over multiple frames, even when "
+	"the engine is not in a stable game state (such as showing animations during game state switches, etc.).",
+	"any... | nil",
+	"The result of the function body or nil if the function errored")
+{
+	luacpp::LuaFunction body;
+	std::shared_ptr<executor::IExecutionContext> context;
+
+	if (!ade_get_args(L, "u|ob", &body)) {
+		return ADE_RETURN_NIL;
+	}
+
+	context = executor::GameStateExecutionContext::captureContext();
+
+
+	auto coroutine = luacpp::LuaThread::create(L, body);
+	coroutine.setErrorCallback([](lua_State*, lua_State* thread) {
+		LuaError(thread);
+		return true;
+	});
+
+	auto promise = runAsyncCoroutine(std::move(coroutine), executor::OnFrameExecutor, std::move(context));
+
+	int screen_id = gr_save_screen();
+
+	//Keep drawing pretend-frames until we have the promise resolved
+	while (promise.isValid() && !(promise.isResolved() || promise.isErrored())){
+		os_poll();
+
+		game_set_frametime(-1);
+		game_do_state_common(gameseq_get_state(), 1);	// do stuff common to all states
+
+		gr_restore_screen(screen_id);
+		gr_flip();
+	}
+
+	if(promise.isErrored())
+		return ADE_RETURN_NIL;
+
+	// We can't use our usual functions for returning here since we return a variable amount of values
+	const auto& retVals = promise.resolveValue();
+	for (const auto& retVal : retVals) {
+		retVal.pushValue(L);
+	}
+	return static_cast<int>(retVals.size());
 }
 
 ADE_FUNC(await,
