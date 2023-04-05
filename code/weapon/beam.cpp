@@ -2177,7 +2177,9 @@ int beam_start_firing(beam *b)
 	}	
 
 	// "shot" sound
-	if (Weapon_info[b->weapon_info_index].launch_snd.isValid())
+	if (b->objp == Player_obj && b->flags & BF_IS_FIGHTER_BEAM && Weapon_info[b->weapon_info_index].cockpit_launch_snd.isValid())
+		snd_play(gamesnd_get_game_sound(Weapon_info[b->weapon_info_index].cockpit_launch_snd), 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY);
+	else if (Weapon_info[b->weapon_info_index].launch_snd.isValid())
 		snd_play_3d(gamesnd_get_game_sound(Weapon_info[b->weapon_info_index].launch_snd), &b->last_start, &View_position);
 
 	// if this is a fighter ballistic beam, always take at least one ammo to start with

@@ -11667,7 +11667,9 @@ int ship_launch_countermeasure(object *objp, int rand_val)
 
 		// Play sound effect for counter measure launch
 		Assert(shipp->current_cmeasure < weapon_info_size());
-		if ( Weapon_info[shipp->current_cmeasure].launch_snd.isValid() ) {
+		if (Player_obj == objp && Weapon_info[shipp->current_cmeasure].cockpit_launch_snd.isValid()) {
+			snd_play(gamesnd_get_game_sound(Weapon_info[shipp->current_cmeasure].cockpit_launch_snd));
+		} else if ( Weapon_info[shipp->current_cmeasure].launch_snd.isValid() ) {
 			snd_play_3d( gamesnd_get_game_sound(Weapon_info[shipp->current_cmeasure].launch_snd), &pos, &View_position );
 		}
 
@@ -12704,43 +12706,43 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 			if ( sound_played != winfo_p->launch_snd ) {
 				sound_played = winfo_p->launch_snd;
 				if ( obj == Player_obj ) {
-					if ( winfo_p->launch_snd.isValid() ) {
-						weapon_info *wip;
-						ship_weapon *sw_pl;
+					weapon_info *wip;
+					ship_weapon *sw_pl;
 
-						//Update the last timestamp until continous fire is over, so we have the timestamp of the cease-fire.
-						if (shipp->was_firing_last_frame[bank_to_fire] == 1) {
-							swp->last_primary_fire_sound_stamp[bank_to_fire] = timestamp();
-						}
+					//Update the last timestamp until continous fire is over, so we have the timestamp of the cease-fire.
+					if (shipp->was_firing_last_frame[bank_to_fire] == 1) {
+						swp->last_primary_fire_sound_stamp[bank_to_fire] = timestamp();
+					}
 
-						//Check for pre-launch sound and play if relevant
-						if( (winfo_p->pre_launch_snd.isValid())									//If this weapon type has a pre-fire sound
-							&& ((timestamp() - swp->last_primary_fire_sound_stamp[bank_to_fire]) >= winfo_p->pre_launch_snd_min_interval)	//and if we're past our minimum delay from the last cease-fire
-							&& (shipp->was_firing_last_frame[bank_to_fire] == 0)				//and if we are at the beginning of a firing stream
-						){ 
-							snd_play( gamesnd_get_game_sound(winfo_p->pre_launch_snd), 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY); //play it
-						} else { //Otherwise, play normal firing sounds
-							// HACK
-							if(winfo_p->launch_snd == gamesnd_id(GameSounds::AUTOCANNON_SHOT)){
-								snd_play( gamesnd_get_game_sound(winfo_p->launch_snd), 0.0f, 1.0f, SND_PRIORITY_TRIPLE_INSTANCE );
-							} else {
-								snd_play( gamesnd_get_game_sound(winfo_p->launch_snd), 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY );
-							}
+					//Check for pre-launch sound and play if relevant
+					if( (winfo_p->pre_launch_snd.isValid())									//If this weapon type has a pre-fire sound
+						&& ((timestamp() - swp->last_primary_fire_sound_stamp[bank_to_fire]) >= winfo_p->pre_launch_snd_min_interval)	//and if we're past our minimum delay from the last cease-fire
+						&& (shipp->was_firing_last_frame[bank_to_fire] == 0)				//and if we are at the beginning of a firing stream
+					){ 
+						snd_play( gamesnd_get_game_sound(winfo_p->pre_launch_snd), 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY); //play it
+					} else { //Otherwise, play normal firing sounds
+						// HACK
+						if(winfo_p->launch_snd == gamesnd_id(GameSounds::AUTOCANNON_SHOT)){
+							snd_play( gamesnd_get_game_sound(winfo_p->launch_snd), 0.0f, 1.0f, SND_PRIORITY_TRIPLE_INSTANCE );
+						} else if (winfo_p->cockpit_launch_snd.isValid()) {
+							snd_play(gamesnd_get_game_sound(winfo_p->cockpit_launch_snd), 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY);
+						} else if (winfo_p->launch_snd.isValid()) {
+							snd_play( gamesnd_get_game_sound(winfo_p->launch_snd), 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY );
 						}
+					}
 	
-						sw_pl = &Player_ship->weapons;
-						if (sw_pl->current_primary_bank >= 0)
-						{
-							wip = &Weapon_info[sw_pl->primary_bank_weapons[sw_pl->current_primary_bank]];
-							int force_level = (int) ((wip->armor_factor + wip->shield_factor * 0.2f) * (wip->damage * wip->damage - 7.5f) * 0.45f + 0.6f) * 10 + 2000;
+					sw_pl = &Player_ship->weapons;
+					if (sw_pl->current_primary_bank >= 0)
+					{
+						wip = &Weapon_info[sw_pl->primary_bank_weapons[sw_pl->current_primary_bank]];
+						int force_level = (int) ((wip->armor_factor + wip->shield_factor * 0.2f) * (wip->damage * wip->damage - 7.5f) * 0.45f + 0.6f) * 10 + 2000;
 
-							// modify force feedback for ballistics: make it stronger
-							if (wip->wi_flags[Weapon::Info_Flags::Ballistic])
-								joy_ff_play_primary_shoot(force_level * 2);
-							// no ballistics
-							else
-								joy_ff_play_primary_shoot(force_level);
-						}
+						// modify force feedback for ballistics: make it stronger
+						if (wip->wi_flags[Weapon::Info_Flags::Ballistic])
+							joy_ff_play_primary_shoot(force_level * 2);
+						// no ballistics
+						else
+							joy_ff_play_primary_shoot(force_level);
 					}
 				}else {
 					if ( winfo_p->launch_snd.isValid() ) {
@@ -13431,16 +13433,19 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 	}
 
 	if ( obj == Player_obj ) {
-		if ( Weapon_info[weapon_idx].launch_snd.isValid() ) {
-			snd_play( gamesnd_get_game_sound(Weapon_info[weapon_idx].launch_snd), 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY );
-			swp = &Player_ship->weapons;
-			if (bank >= 0) {
-				wip = &Weapon_info[swp->secondary_bank_weapons[bank]];
-				if (Player_ship->flags[Ship_Flags::Secondary_dual_fire]){
-					joy_ff_play_secondary_shoot((int) (wip->cargo_size * 2.0f));
-				} else {
-					joy_ff_play_secondary_shoot((int) wip->cargo_size);
-				}
+		if ( Weapon_info[weapon_idx].cockpit_launch_snd.isValid() ) {
+			snd_play( gamesnd_get_game_sound(Weapon_info[weapon_idx].cockpit_launch_snd), 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY );
+		} else if (Weapon_info[weapon_idx].launch_snd.isValid()) {
+			snd_play(gamesnd_get_game_sound(Weapon_info[weapon_idx].launch_snd), 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY);
+		}
+
+		swp = &Player_ship->weapons;
+		if (bank >= 0) {
+			wip = &Weapon_info[swp->secondary_bank_weapons[bank]];
+			if (Player_ship->flags[Ship_Flags::Secondary_dual_fire]){
+				joy_ff_play_secondary_shoot((int) (wip->cargo_size * 2.0f));
+			} else {
+				joy_ff_play_secondary_shoot((int) wip->cargo_size);
 			}
 		}
 

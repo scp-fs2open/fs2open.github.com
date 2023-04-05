@@ -1755,6 +1755,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	//Launch sound
 	parse_game_sound("$LaunchSnd:", &wip->launch_snd);
 
+	//Cockpit Launch sound
+	parse_game_sound("$CockpitLaunchSnd:", &wip->cockpit_launch_snd);
+
 	//Impact sound
 	parse_game_sound("$ImpactSnd:", &wip->impact_snd);
 
@@ -9030,6 +9033,7 @@ void weapon_info::reset()
 	this->pre_launch_snd_min_interval = 0;
 
 	this->launch_snd = gamesnd_id();
+	this->cockpit_launch_snd = gamesnd_id();
 	this->impact_snd = gamesnd_id();
 	this->disarmed_impact_snd = gamesnd_id();
 	this->shield_impact_snd = gamesnd_id();
