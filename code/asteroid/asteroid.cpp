@@ -2454,6 +2454,10 @@ void asteroid_init()
 	// parse any modular tables
 	parse_modular_table("*-ast.tbm", asteroid_parse_tbl);
 
+	//No asteroids defined. Bail!
+	if (asteroid_list.empty())
+		return;
+
 	// now verify the asteroids were found and put them in the correct order
 	verify_asteroid_list();
 
@@ -2609,6 +2613,9 @@ void asteroid_target_closest_danger()
 
 void asteroid_page_in()
 {
+	if (Asteroid_info.empty())
+		return;
+
 	if (Asteroid_field.num_initial_asteroids > 0 ) {
 		int i, j, k;
 
