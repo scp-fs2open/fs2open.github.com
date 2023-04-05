@@ -257,6 +257,8 @@ ADE_FUNC(awaitRunOnFrame,
 		gr_flip();
 	}
 
+	gr_free_screen(screen_id);
+
 	if(promise.isErrored())
 		return ADE_RETURN_NIL;
 
