@@ -102,6 +102,7 @@ public:
 class VirtualPOFOperationAddDockPoint : public VirtualPOFOperation {
 	SCP_string sourcedock;
 	tl::optional<SCP_string> renameDock;
+	SCP_unordered_map<SCP_string, SCP_string> renamePaths;
 	tl::optional<SCP_string> targetParentSubsystem;
 	SCP_string appendingPOF;
 public:

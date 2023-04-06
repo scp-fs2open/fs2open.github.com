@@ -803,6 +803,21 @@ VirtualPOFOperationAddDockPoint::VirtualPOFOperationAddDockPoint() {
 	required_string("+Source Dock Point:");
 	stuff_string(sourcedock, F_NAME);
 
+	if (optional_string("+Rename Dockpoint:")) {
+		SCP_string name;
+		stuff_string(name, F_NAME);
+		renameDock = std::move(name);
+	}
+
+	while (optional_string("+Rename Path:")) {
+		SCP_string from, to;
+		required_string("+From:");
+		stuff_string(from, F_NAME);
+		required_string("+To:");
+		stuff_string(to, F_NAME);
+		renamePaths.emplace(std::move(from), std::move(to));
+	}
+
 	if (optional_string("+Parent Submodel:")) {
 		SCP_string name;
 		stuff_string(name, F_NAME);
@@ -840,10 +855,13 @@ void VirtualPOFOperationAddDockPoint::process(polymodel* pm, model_read_deferred
 	}
 
 	for (int i = 0; i < appendingPM->docking_bays[dockpoint].num_spline_paths; i++) {
-		const auto& targetSplineName = appendingPM->paths[appendingPM->docking_bays[dockpoint].splines[i]].name;
+		const auto& originalName = appendingPM->paths[appendingPM->docking_bays[dockpoint].splines[i]].name;
+		auto renamed = renamePaths.find(originalName);
+		const SCP_string& targetSplineName = renamed == renamePaths.end() ? originalName : renamed->second;
+
 		for (int j = 0; j < pm->n_paths; j++) {
-			if (stricmp(targetSplineName, pm->paths[j].name) == 0) {
-				Warning(LOCATION, "Path %s already exists on POF %s for virtual POF %s. Returning original POF", targetSplineName, pm->filename, virtualPof.name.c_str());
+			if (stricmp(targetSplineName.c_str(), pm->paths[j].name) == 0) {
+				Warning(LOCATION, "Path %s already exists on POF %s for virtual POF %s. Returning original POF", targetSplineName.c_str(), pm->filename, virtualPof.name.c_str());
 				return;
 			}
 		}
@@ -858,6 +876,10 @@ void VirtualPOFOperationAddDockPoint::process(polymodel* pm, model_read_deferred
 		if (targetParentSubsystem) {
 			strcpy_s(pm->paths[i + splinefrom].parent_name, targetParentSubsystem->c_str());
 			pm->paths[i + splinefrom].parent_submodel = submodel_index;
+		}
+		auto renamed = renamePaths.find(pm->paths[i + splinefrom].name);
+		if (renamed != renamePaths.end()) {
+			strcpy_s(pm->paths[i + splinefrom].name, renamed->second.c_str());
 		}
 		pm->docking_bays[destdock].splines[i] = i + splinefrom;
 	}

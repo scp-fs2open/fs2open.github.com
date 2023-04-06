@@ -5121,7 +5121,7 @@ int model_find_dock_index(int modelnum, int dock_type, int index_to_start_at)
 {
 	polymodel* pm;
 
-	// get model and make sure it has dockpoints
+	// get model
 	pm = model_get(modelnum);
 
 	return model_find_dock_index(pm, dock_type, index_to_start_at);
@@ -5131,6 +5131,7 @@ int model_find_dock_index(const polymodel* pm, int dock_type, int index_to_start
 {
 	int i;
 
+	// make sure it has dockpoints
 	if ( pm->n_docks <= 0 )
 		return -1;
 
@@ -5152,7 +5153,7 @@ int model_find_dock_name_index(int modelnum, const char* name)
 {
 	polymodel* pm;
 
-	// get model and make sure it has dockpoints
+	// get model
 	pm = model_get(modelnum);
 
 	return model_find_dock_name_index(pm, name);
@@ -5162,6 +5163,7 @@ int model_find_dock_name_index(const polymodel* pm, const char* name)
 {
 	int i;
 
+	// make sure it has dockpoints
 	if ( pm->n_docks <= 0 )
 		return -1;
 
