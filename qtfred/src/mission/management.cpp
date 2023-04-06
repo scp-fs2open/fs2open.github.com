@@ -175,6 +175,9 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 	listener(SubSystem::SEXPs);
 	sexp_startup();
 
+	listener(SubSystem::ModelAnimations);
+	animation::ModelAnimationParseHelper::parseTables();
+
 	listener(SubSystem::Objects);
 	obj_init();
 
