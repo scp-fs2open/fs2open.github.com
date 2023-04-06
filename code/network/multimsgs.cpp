@@ -19,6 +19,7 @@
 #include "network/multi.h"
 #include "globalincs/linklist.h"
 #include "gamesequence/gamesequence.h"
+#include "hud/hudets.h"
 #include "hud/hudmessage.h"
 #include "hud/hudsquadmsg.h"
 #include "freespace.h"
@@ -6267,12 +6268,8 @@ void process_post_sync_data_packet(ubyte *data, header *hinfo)
 
 		// get ship ets
 		GET_USHORT(ship_ets);
-		// shield ets
-		shipp->shield_recharge_index = ((ship_ets & 0x0f00) >> 8);
-		// weapon ets
-		shipp->weapon_recharge_index = ((ship_ets & 0x00f0) >> 4);
-		// engine ets
-		shipp->engine_recharge_index = (ship_ets & 0x000f);	
+		// shield, weapons, and engines ets in that order
+		set_recharge_rates(&Objects[shipp->objnum], ((ship_ets & 0x0f00) >> 8), ((ship_ets & 0x00f0) >> 4), (ship_ets & 0x000f));
 	}
 	PACKET_SET_SIZE();
 

@@ -47,6 +47,7 @@ void ai_manage_ets(object* obj);
 void increase_recharge_rate(object* obj, SYSTEM_TYPE enum_value);
 void decrease_recharge_rate(object* obj, SYSTEM_TYPE enum_value);
 void set_default_recharge_rates(object* obj);
+void set_recharge_rates(object* obj, int shields, int weapons, int engines);
 
 void transfer_energy_to_shields(object* obj);
 void transfer_energy_to_weapons(object* obj);

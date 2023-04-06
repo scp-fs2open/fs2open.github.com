@@ -11555,9 +11555,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		}
 
 		// While we're at it, let's copy over the ETS settings too
-		sp->weapon_recharge_index = orig_wep_rechg_idx;
-		sp->shield_recharge_index = orig_shd_rechg_idx;
-		sp->engine_recharge_index = orig_eng_rechg_idx;
+		set_recharge_rates(&Objects[sp->objnum], orig_shd_rechg_idx, orig_wep_rechg_idx, orig_eng_rechg_idx);
 	}
 
 	// zookeeper - If we're switching in the loadout screen, make sure we retain initial velocity set in FRED
