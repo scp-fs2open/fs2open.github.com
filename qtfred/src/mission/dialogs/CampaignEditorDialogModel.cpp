@@ -13,11 +13,9 @@
 extern int Skip_packfile_search;
 
 //from missionparse.cpp, to parse relevant parts of available mission files only (parseMnPart)
-extern void parse_init(bool basic);
 extern void parse_mission_info(mission *mn, bool basic);
 extern void parse_events(mission *mn);
-extern void parse_goals(mission* mn);
-extern int Subsys_status_size;
+extern void parse_goals(mission *mn);
 
 namespace fso {
 namespace fred {
@@ -33,7 +31,7 @@ QString loadOrCreateFile(QString file, const QString& campaignType) {
 	}
 	//FRED is to enforce that only on new campaigns a campaign type may be given
 	Assertion(campaignType.isEmpty(), "The editor should only allow setting a campaign type when a new campaign is created. Please report.");
-	parse_init(false);
+
 	if (mission_campaign_load(qPrintable(file.replace('/',DIR_SEPARATOR_CHAR)), nullptr, 0))
 		return {};
 
@@ -77,21 +75,13 @@ SCP_vector<SCP_string> getMissions(){
 
 bool parseMnPart(mission *mn, const char *filename){
 	try {
-		read_file_text(filename, CF_TYPE_MISSIONS);
+		get_mission_info(filename, mn);
 
-		parse_init(false);
-		Subsys_index = 0;
-		Subsys_status_size = 0;
-		if (Subsys_status != nullptr) {
-			vm_free( Subsys_status );
-			Subsys_status = nullptr;
-		}
-
-		parse_mission_info(mn, true);
+		// also get events and goals, since they will be assigned within CampaignMissionData
+		Mission_goals.clear();
+		Mission_events.clear();
 		skip_to_start_of_string("#Events");
-		Num_mission_events = 0;
 		parse_events(mn);
-		Num_goals = 0;
 		parse_goals(mn);
 	} catch ( const parse::ParseException& ) {
 		return false;
@@ -146,7 +136,6 @@ CampaignEditorDialogModel::CampaignEditorDialogModel(CampaignEditorDialog* _pare
 		firstMission = Campaign.missions[0].name;
 
 	//reparse campaign after parsing missions
-	parse_init(false);
 	if (!campaignFile.isEmpty()){
 		QString temp = campaignFile;
 		bool reloaded = !mission_campaign_load(qPrintable(temp.replace('/',DIR_SEPARATOR_CHAR)), nullptr, 0);
@@ -677,15 +666,15 @@ void CampaignEditorDialogModel::trackMissionUncheck(const QModelIndex &idx, cons
 namespace { //helpers for CampaignMissionData construction
 	inline QStringList getParsedEvts() {
 		QStringList ret;
-		for (int i = 0; i < Num_mission_events; i++)
-			ret << Mission_events[i].name;
+		for (const auto &e : Mission_events)
+			ret << e.name.c_str();
 		return ret;
 	}
 
 	inline QStringList getParsedGoals() {
 		QStringList ret;
-		for (int i = 0; i < Num_goals; i++)
-			ret << Mission_goals[i].name;
+		for (const auto &g : Mission_goals)
+			ret << g.name.c_str();
 		return ret;
 	}
 

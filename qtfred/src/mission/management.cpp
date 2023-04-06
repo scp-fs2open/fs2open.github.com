@@ -247,7 +247,7 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 	main_hall_table_init();
 
 	listener(SubSystem::Ranks);
-	parse_rank_tbl();
+	rank_init();
 
 	listener(SubSystem::Campaign);
 	mission_campaign_clear();
