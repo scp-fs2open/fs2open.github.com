@@ -5086,11 +5086,18 @@ int model_find_submodel_index(int modelnum, const char *name)
 // Goober5000 - now finds more than one dockpoint of this type
 int model_find_dock_index(int modelnum, int dock_type, int index_to_start_at)
 {
-	int i;
-	polymodel *pm;
+	polymodel* pm;
 
-	// get model and make sure it has dockpoints
 	pm = model_get(modelnum);
+
+	return model_find_dock_index(pm, dock_type, index_to_start_at);
+}
+
+int model_find_dock_index(const polymodel* pm, int dock_type, int index_to_start_at)
+{
+	int i;
+
+	// make sure it has dockpoints
 	if ( pm->n_docks <= 0 )
 		return -1;
 
@@ -5110,11 +5117,18 @@ int model_find_dock_index(int modelnum, int dock_type, int index_to_start_at)
 // so that a desginer doesn't have to know exact names if building a mission from hand.
 int model_find_dock_name_index(int modelnum, const char* name)
 {
-	int i;
-	polymodel *pm;
-
-	// get model and make sure it has dockpoints
+	polymodel* pm;
+	
 	pm = model_get(modelnum);
+
+	return model_find_dock_name_index(pm, name);
+}
+
+int model_find_dock_name_index(const polymodel* pm, const char* name)
+{
+	int i;
+
+	// make sure it has dockpoints
 	if ( pm->n_docks <= 0 )
 		return -1;
 
@@ -5123,7 +5137,7 @@ int model_find_dock_name_index(int modelnum, const char* name)
 	for(i = 0; i < Num_dock_type_names; i++)
 	{
 		if(!stricmp(name, Dock_type_names[i].name)) {
-			return model_find_dock_index(modelnum, Dock_type_names[i].def);
+			return model_find_dock_index(pm, Dock_type_names[i].def);
 		}
 	}
 	/*
