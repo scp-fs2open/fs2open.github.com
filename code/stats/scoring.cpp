@@ -245,7 +245,6 @@ void sort_ranks()
 
 void rank_init()
 {
-
 	// first parse the default table
 	parse_rank_table("rank.tbl");
 

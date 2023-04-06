@@ -24,6 +24,7 @@ enum class SubSystem {
 	Iff,
 	Objects,
 	Models,
+	ModelAnimations,
 	Species,
 	BriefingIcons,
 	HudCommOrders,

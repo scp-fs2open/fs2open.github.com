@@ -544,7 +544,7 @@
         </layout>
        </item>
 	   <item>
-		<widget class="QCheckBox" name="prevStage">
+		<widget class="QCheckBox" name="disableGrid">
 		 <property name="text">
 		  <string>Disable grid rendering</string>
 		</property>

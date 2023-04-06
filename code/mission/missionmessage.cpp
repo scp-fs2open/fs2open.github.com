@@ -1968,7 +1968,7 @@ int pick_persona(ship* shipp) {
 			return i;
 		}
 	}
-	int count = candidates.size();
+	int count = (int)candidates.size();
 	if (count == 0) {
 		return -1;
 	} else if (count == 1) {
