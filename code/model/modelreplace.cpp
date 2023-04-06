@@ -803,7 +803,7 @@ VirtualPOFOperationAddDockPoint::VirtualPOFOperationAddDockPoint() {
 	required_string("+Source Dock Point:");
 	stuff_string(sourcedock, F_NAME);
 
-	if (optional_string("+Rename Dockpoint:")) {
+	if (optional_string("+Rename Dock Point:")) {
 		SCP_string name;
 		stuff_string(name, F_NAME);
 		renameDock = std::move(name);

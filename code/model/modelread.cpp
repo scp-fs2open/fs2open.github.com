@@ -5121,7 +5121,6 @@ int model_find_dock_index(int modelnum, int dock_type, int index_to_start_at)
 {
 	polymodel* pm;
 
-	// get model
 	pm = model_get(modelnum);
 
 	return model_find_dock_index(pm, dock_type, index_to_start_at);
@@ -5152,8 +5151,7 @@ int model_find_dock_index(const polymodel* pm, int dock_type, int index_to_start
 int model_find_dock_name_index(int modelnum, const char* name)
 {
 	polymodel* pm;
-
-	// get model
+	
 	pm = model_get(modelnum);
 
 	return model_find_dock_name_index(pm, name);
