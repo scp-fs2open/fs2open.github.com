@@ -503,7 +503,7 @@ struct w_bank
 		return *this;
 	}
 	w_bank(const w_bank& other) = default;
-	w_bank& operator=(const w_bank& other) = default;
+	w_bank& operator=(const w_bank& other) = delete;
 };
 
 struct glow_point{
