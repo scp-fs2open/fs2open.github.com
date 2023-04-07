@@ -908,6 +908,8 @@ add_file_folder("Network"
 	network/multi_kick.h
 	network/multi_log.cpp
 	network/multi_log.h
+	network/multi_lua.cpp
+	network/multi_lua.h
 	network/multi_mdns.cpp
 	network/multi_mdns.h
 	network/multi_obj.cpp
@@ -1312,6 +1314,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/cockpit_display.h
 	scripting/api/objs/control_binding.cpp
 	scripting/api/objs/control_binding.h
+	scripting/api/objs/control_config.cpp
+	scripting/api/objs/control_config.h
 	scripting/api/objs/color.cpp
 	scripting/api/objs/color.h
 	scripting/api/objs/control_info.cpp
@@ -1402,6 +1406,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/rank.h
 	scripting/api/objs/redalert.cpp
 	scripting/api/objs/redalert.h
+	scripting/api/objs/rpc.cpp
+	scripting/api/objs/rpc.h
 	scripting/api/objs/sexpvar.cpp
 	scripting/api/objs/sexpvar.h
 	scripting/api/objs/shields.cpp

@@ -10,6 +10,7 @@
 #include "cutscene/cutscenes.h"
 #include "gamesnd/eventmusic.h"
 #include "gamesequence/gamesequence.h"
+#include "io/key.h"
 #include "menuui/barracks.h"
 #include "menuui/credits.h"
 #include "menuui/mainhallmenu.h"
@@ -40,6 +41,7 @@
 #include "weapon/weapon.h"
 #include "scpui/SoundPlugin.h"
 #include "scpui/rocket_ui.h"
+#include "scripting/api/objs/control_config.h"
 #include "scripting/api/objs/techroom.h"
 #include "scripting/api/objs/loop_brief.h"
 #include "scripting/api/objs/redalert.h"
@@ -1757,7 +1759,7 @@ ADE_FUNC(initHotkeysList,
 	for (int i = 0; i < MAX_LINES; i++) {
 		auto item = Hotkey_lines[i];
 		if (item.type == HOTKEY_LINE_WING) {
-			expand_wing(i);
+			expand_wing(i, true);
 		}
 	}
 
@@ -1975,6 +1977,217 @@ ADE_INDEXER(l_Log_Messages,
 ADE_FUNC(__len, l_Log_Messages, nullptr, "The number of mission message entries", "number", "The number of message entries.")
 {
 	return ade_set_args(L, "i", (int)Msg_scrollback_vec.size());
+}
+
+//**********SUBLIBRARY: UserInterface/ControlConfig
+ADE_LIB_DERIV(l_UserInterface_ControlConfig,
+	"ControlConfig",
+	nullptr,
+	"API for accessing data related to the control config UI.<br><b>Warning:</b> This is an internal "
+	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	l_UserInterface);
+
+ADE_FUNC(initControlConfig,
+	l_UserInterface_ControlConfig,
+	nullptr,
+	"Inits the control config UI elements. Must be used before accessing control config elements!",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	control_config_init(true);
+	
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(closeControlConfig,
+	l_UserInterface_ControlConfig,
+	nullptr,
+	"Closes the control config UI elements. Must be used when finished accessing control config elements!",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	control_config_close(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(clearAll,
+	l_UserInterface_ControlConfig,
+	nullptr,
+	"Clears all control bindings.",
+	"boolean",
+	"Returns true if successful, false otherwise")
+{
+	SCP_UNUSED(L);
+
+	return ade_set_args(L, "b", control_config_clear_all(true));
+}
+
+ADE_FUNC(resetToPreset,
+	l_UserInterface_ControlConfig,
+	nullptr,
+	"Resets all control bindings to the current preset defaults.",
+	"boolean",
+	"Returns true if successful, false otherwise")
+{
+	SCP_UNUSED(L);
+
+	return ade_set_args(L, "b", control_config_do_reset(false, true));
+}
+
+ADE_FUNC(usePreset,
+	l_UserInterface_ControlConfig,
+	"string PresetName",
+	"Uses a defined preset if it can be found.",
+	"boolean",
+	"Returns true if successful, false otherwise")
+{
+	const char* preset = nullptr;
+	if (!ade_get_args(L, "s", &preset)) {
+		return ADE_RETURN_FALSE;
+	}
+
+	SCP_string name = preset;
+
+	return ade_set_args(L, "b", control_config_use_preset_by_name(name));
+}
+
+ADE_FUNC(createPreset,
+	l_UserInterface_ControlConfig,
+	"string Name",
+	"Creates a new preset with the given name. Returns true if successful, false otherwise.",
+	"boolean",
+	"The return status")
+{
+	const char* preset;
+	ade_get_args(L, "s", &preset);
+
+	SCP_string name = preset;
+
+	return ade_set_args(L, "b", control_config_create_new_preset(name));
+}
+
+ADE_FUNC(undoLastChange,
+	l_UserInterface_ControlConfig,
+	nullptr,
+	"Reverts the last change to the control bindings",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	control_config_do_undo(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(searchBinds,
+	l_UserInterface_ControlConfig,
+	nullptr,
+	"Waits for a keypress to search for. Returns index into Control Configs if the key matches a bind. Should run On Frame.",
+	"number",
+	"Control Config index, or 0 if no key was found. Returns -1 if Escape was pressed.")
+{
+	SCP_UNUSED(L);
+
+	int idx = control_config_search_key_on_frame(true);
+	idx++; //convert to lua
+
+	return ade_set_args(L, "i", idx);
+}
+
+ADE_FUNC(acceptBinding,
+	l_UserInterface_ControlConfig,
+	nullptr,
+	"Accepts changes to the keybindings. Returns true if successful, false if there are key conflicts or the preset needs to be saved.",
+	"boolean",
+	"The return status")
+{
+	SCP_UNUSED(L);
+
+	return ade_set_args(L, "b", control_config_accept(true));
+}
+
+ADE_FUNC(cancelBinding,
+	l_UserInterface_ControlConfig,
+	nullptr,
+	"Cancels changes to the keybindings, reverting changes to the state it was when initControlConfig was called.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	control_config_cancel_exit(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(getCurrentPreset,
+	l_UserInterface_ControlConfig,
+	nullptr,
+	"Returns the name of the current controls preset.",
+	"string",
+	"The name of the preset or nil if the current binds do not match a preset")
+{
+	SCP_UNUSED(L);
+
+	auto it = control_config_get_current_preset();
+
+	if (it == Control_config_presets.end()) {
+		return ADE_RETURN_NIL;
+	}
+
+	return ade_set_args(L, "s", it->name.c_str());
+}
+
+ADE_LIB_DERIV(l_Presets, "ControlPresets", nullptr, nullptr, l_UserInterface_ControlConfig);
+ADE_INDEXER(l_Presets,
+	"number Index",
+	"Array of control presets",
+	"preset",
+	"control preset handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "o", l_Preset.Set(preset_h()));
+	idx--; // Convert to Lua's 1 based index system
+
+	if ((idx < 0) || (idx >= (int)Control_config.size()))
+		return ade_set_error(L, "o", l_Preset.Set(preset_h()));
+
+	return ade_set_args(L, "o", l_Preset.Set(preset_h(idx)));
+}
+
+ADE_FUNC(__len, l_Presets, nullptr, "The number of control presets", "number", "The number of control presets.")
+{
+	return ade_set_args(L, "i", (int)Control_config_presets.size());
+}
+
+ADE_LIB_DERIV(l_Controls, "ControlConfigs", nullptr, nullptr, l_UserInterface_ControlConfig);
+ADE_INDEXER(l_Controls,
+	"number Index",
+	"Array of controls",
+	"control",
+	"control handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "o", l_Control.Set(control_h()));
+	idx--; // Convert from Lua's 1 based index system
+
+	if ((idx < 0) || (idx >= (int)Control_config.size()))
+		return ade_set_error(L, "o", l_Control.Set(control_h()));
+
+	return ade_set_args(L, "o", l_Control.Set(control_h(idx)));
+}
+
+ADE_FUNC(__len, l_Controls, nullptr, "The number of controls", "number", "The number of controls.")
+{
+	return ade_set_args(L, "i", (int)Control_config.size());
 }
 
 //**********SUBLIBRARY: UserInterface/HUDConfig

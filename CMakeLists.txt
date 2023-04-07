@@ -139,7 +139,7 @@ OPTION(FSO_BUILD_WITH_FFMPEG "Enable the usage of FFmpeg for sound and custscene
 OPTION(FSO_BUILD_WITH_OPENGL "Enable compilation of the OpenGL renderer" ON)
 OPTION(FSO_BUILD_WITH_OPENGL_DEBUG "Enables debug option for OpenGL" OFF)
 
-OPTION(FSO_BUILD_WITH_VULKAN "Enable compilation of the Vulkan renderer" ON)
+OPTION(FSO_BUILD_WITH_VULKAN "Enable compilation of the Vulkan renderer" OFF)
 
 MARK_AS_ADVANCED(FORCE FSO_CMAKE_DEBUG)
 MARK_AS_ADVANCED(FORCE FSO_BUILD_INCLUDED_LIBS)

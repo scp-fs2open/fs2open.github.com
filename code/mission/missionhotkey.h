@@ -49,7 +49,7 @@ void hotkey_build_listing();
 void hotkey_set_selected_line(int line);
 
 // function to expand a wing in the hotkey list and sets Selected_line to the first ship in the wing
-void expand_wing(int line);
+void expand_wing(int line, bool forceExpand = false);
 
 // function to return the hotkeys for a wing
 extern int get_wing_hotkeys(int n);

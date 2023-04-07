@@ -482,12 +482,28 @@ struct w_bank
 	vec3d	*norm = nullptr;
 	float   *external_model_angle_offset = nullptr;
 
+	w_bank() { }
+
 	~w_bank()
 	{
 		delete[] pnt;
 		delete[] norm;
 		delete[] external_model_angle_offset;
 	}
+
+	w_bank& operator=(w_bank&& other) {
+		this->~w_bank();
+		num_slots = other.num_slots;
+		pnt = other.pnt;
+		norm = other.norm;
+		external_model_angle_offset = other.external_model_angle_offset;
+		other.pnt = nullptr;
+		other.norm = nullptr;
+		other.external_model_angle_offset = nullptr;
+		return *this;
+	}
+	w_bank(const w_bank& other) = default;
+	w_bank& operator=(const w_bank& other) = delete;
 };
 
 struct glow_point{
@@ -1197,7 +1213,9 @@ extern int model_find_submodel_index(const polymodel* pm, const char* name);
 // Returns the index.  second functions returns the index of the docking bay with
 // the specified name
 extern int model_find_dock_index(int modelnum, int dock_type, int index_to_start_at = 0);
+extern int model_find_dock_index(const polymodel* pm, int dock_type, int index_to_start_at = 0);
 extern int model_find_dock_name_index(int modelnum, const char* name);
+extern int model_find_dock_name_index(const polymodel* pm, const char* name);
 
 // returns the actual name of a docking point on a model, needed by Fred.
 char *model_get_dock_name(int modelnum, int index);

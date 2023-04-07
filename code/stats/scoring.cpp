@@ -245,7 +245,6 @@ void sort_ranks()
 
 void rank_init()
 {
-
 	// first parse the default table
 	parse_rank_table("rank.tbl");
 
@@ -273,28 +272,26 @@ int verify_rank(int ranki)
 	return ranki;
 }
 
-void parse_traitor_tbl()
+void parse_traitor_tbl(const char* filename)
 {
 	try
 	{
-		read_file_text("traitor.tbl", CF_TYPE_TABLES);
+		read_file_text(filename, CF_TYPE_TABLES);
 		reset_parse();
 
-		// simplified form of the debriefing stuff.
-		auto debrief = &Traitor_debriefing;
 		required_string("#Debriefing_info");
 
-		//required_string("$Num stages:");			// would assert if non 1 value was parsed so let's just skip it -Mjn
-		//stuff_int(&debrief->num_stages);
-		//Assert(debrief->num_stages == 1);
-		debrief->num_stages = 1; // must always be 1
+		// no longer used
+		if (optional_string("$Num stages:")) {
+			int junk;
+			stuff_int(&junk); //consume the data and ignore it
+		}
 
-		int stage_num = 0;
-		auto stagep = &debrief->stages[stage_num++];
-
-		//required_string("$Formula:");				// the table value was just ignored so let's skip it -Mjn
-		stagep->formula = 1;						// sexp nodes aren't initialized yet, but node 1 will be Locked_sexp_true
-		skip_to_start_of_string("$multi text");		// just skip over the sexp, since it must always be locked-true anyway
+		// no longer used
+		if (optional_string("$Formula:")) {
+			bool junk[1];
+			stuff_bool_list(junk, 1); // consume the data and ignore it
+		}
 
 		while (check_for_string("$multi text"))
 		{
@@ -316,22 +313,39 @@ void parse_traitor_tbl()
 			Traitor.debriefing_text[persona] = text;
 		}
 
-		if (Traitor.debriefing_text.find(-1) == Traitor.debriefing_text.end())
-		{
-			Warning(LOCATION, "Traitor is missing default debriefing information.\n");
-			Traitor.debriefing_text[-1] = "";
-		}
-
 		if (optional_string("$Voice:"))
 			stuff_string(Traitor.traitor_voice_base, F_FILESPEC, MAX_FILENAME_LEN);
 
-		required_string("$Recommendation text:");
-		stuff_string(Traitor.recommendation_text, F_MULTITEXT);
+		if (optional_string("$Recommendation text:"))
+			stuff_string(Traitor.recommendation_text, F_MULTITEXT);
 	}
 	catch (const parse::ParseException& e)
 	{
 		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "traitor.tbl", e.what()));
 		return;
+	}
+}
+
+// initialize traitor stuff at game startup
+void traitor_init()
+{
+	// there is only ever one traitor debriefing stage
+	Traitor_debriefing.num_stages = 1;
+	Traitor_debriefing.stages[0].formula = 1;
+
+	// initialize this to an empty string so it can be optional
+	Traitor.recommendation_text = "";
+
+	// first parse the default table
+	parse_traitor_tbl("traitor.tbl");
+
+	// parse any modular tables
+	parse_modular_table("*-trtr.tbm", parse_traitor_tbl);
+
+	// check that we have the default traitor info
+	if (Traitor.debriefing_text.find(-1) == Traitor.debriefing_text.end()) {
+		Warning(LOCATION, "Traitor is missing default debriefing information.\n");
+		Traitor.debriefing_text[-1] = "";
 	}
 }
 

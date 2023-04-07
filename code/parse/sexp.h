@@ -1511,7 +1511,7 @@ void maybe_write_to_event_log(int result);
 
 //OSWPT Stuff
 
-enum class oswpt_type
+enum class oswpt_type : uint8_t
 {
 	NONE = 0,
 	SHIP,
@@ -1523,6 +1523,14 @@ enum class oswpt_type
 	EXITED,
 	WING_NOT_PRESENT	// a wing that hasn't arrived yet or is between waves
 };
+
+namespace scripting {
+	class ade_table_entry;
+}
+namespace luacpp {
+	class LuaValue;
+}
+struct lua_State;
 
 // Goober5000
 struct object_ship_wing_point_team
@@ -1543,6 +1551,9 @@ struct object_ship_wing_point_team
 	object_ship_wing_point_team(wing* wp);
 
 	void clear();
+
+	void serialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, const luacpp::LuaValue& value, ubyte* data, int& packet_size);
+	void deserialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, char* data_ptr, ubyte* data, int& offset);
 };
 
 void eval_object_ship_wing_point_team(object_ship_wing_point_team* oswpt, int node, const char* ctext_override = nullptr);

@@ -1755,6 +1755,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	//Launch sound
 	parse_game_sound("$LaunchSnd:", &wip->launch_snd);
 
+	//Cockpit Launch sound
+	parse_game_sound("$CockpitLaunchSnd:", &wip->cockpit_launch_snd);
+
 	//Impact sound
 	parse_game_sound("$ImpactSnd:", &wip->impact_snd);
 
@@ -2577,6 +2580,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 	// beam weapon optional stuff
 	if ( optional_string("$BeamInfo:") ) {
+		wip->wi_flags.set(Weapon::Info_Flags::Beam);
 		// beam type
 		if(optional_string("+Type:")) {
 			stuff_string(fname, F_NAME, NAME_LENGTH);
@@ -6005,6 +6009,11 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 		if (parent_objp != NULL && Ships[parent_objp->instance].team == target_team){
 			targeting_same = 1;
 
+			// Goober5000 - if the team actually attacks itself, allow it
+			if (iff_x_attacks_y(Ships[parent_objp->instance].team, Ships[parent_objp->instance].team)) {
+				targeting_same = 0;
+			}
+
 			// Goober5000 - if we're going bonkers, pretend we're not targeting our own team
 			ai_info *parent_aip = &Ai_info[Ships[parent_objp->instance].ai_index];
 			if (parent_aip->active_goal != AI_GOAL_NONE && parent_aip->active_goal != AI_ACTIVE_GOAL_DYNAMIC) {
@@ -9024,6 +9033,7 @@ void weapon_info::reset()
 	this->pre_launch_snd_min_interval = 0;
 
 	this->launch_snd = gamesnd_id();
+	this->cockpit_launch_snd = gamesnd_id();
 	this->impact_snd = gamesnd_id();
 	this->disarmed_impact_snd = gamesnd_id();
 	this->shield_impact_snd = gamesnd_id();

@@ -799,11 +799,15 @@ void hotkey_scroll_line_down()
 		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 }
 
-void expand_wing(int line)
+void expand_wing(int line, bool forceExpand)
 {
 	if (Hotkey_lines[line].type == HOTKEY_LINE_WING) {
 		int i = Hotkey_lines[line].index;
-        Wings[i].flags.toggle(Ship::Wing_Flags::Expanded);
+		if (forceExpand) {
+			Wings[i].flags.set(Ship::Wing_Flags::Expanded);
+		} else {
+			Wings[i].flags.toggle(Ship::Wing_Flags::Expanded);
+		}
 		hotkey_build_listing();
 		for (int z=0; z<Num_lines; z++)
 			if ((Hotkey_lines[z].type == HOTKEY_LINE_WING) && (Hotkey_lines[z].index == i)) {

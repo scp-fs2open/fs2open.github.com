@@ -6,6 +6,10 @@
 #include "object/objectsnd.h"
 #include "scripting/ade.h"
 
+#include "network/multi.h"
+#include "network/multimsgs.h"
+#include "network/multiutil.h"
+
 namespace scripting {
 namespace api {
 
@@ -143,7 +147,13 @@ const lua_enum_def_list Enumerations[] = {
 	{"DC_IS_HULL", LE_DC_IS_HULL, (1 << 0), true},
 	{"DC_VAPORIZE", LE_DC_VAPORIZE, (1 << 1), true},
 	{"DC_SET_VELOCITY", LE_DC_SET_VELOCITY, (1 << 2), true},
-	{"DC_FIRE_HOOK", LE_DC_FIRE_HOOK, (1 << 3), true}
+	{"DC_FIRE_HOOK", LE_DC_FIRE_HOOK, (1 << 3), true},
+	{"RPC_SERVER", LE_RPC_SERVER, true},
+	{"RPC_CLIENTS", LE_RPC_CLIENTS, true},
+	{"RPC_BOTH", LE_RPC_BOTH, true},
+	{"RPC_RELIABLE", LE_RPC_RELIABLE, true},
+	{"RPC_ORDERED", LE_RPC_ORDERED, true},
+	{"RPC_UNRELIABLE", LE_RPC_UNRELIABLE, true},
 };
 
 const size_t Num_enumerations = sizeof(Enumerations) / sizeof(lua_enum_def_list);
@@ -223,6 +233,30 @@ enum_h operator|(const enum_h& l, const enum_h& other) {
 	enumerator.last_op = enum_h::last_combine_op::OR;
 
 	return enumerator;
+}
+
+void enum_h::serialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, const luacpp::LuaValue& lvalue, ubyte* data, int& packet_size) {
+	enum_h enumeration;
+	lvalue.getValue(l_Enum.Get(&enumeration));
+	ADD_INT(enumeration.index);
+	if (enumeration.index == lua_enum::ENUM_COMBINATION) {
+		ADD_INT(*enumeration.value);
+		//If networked enums should have the name string tracking, it needs to be set here. However, due to bandwidth, this is disabled for now
+	}
+}
+
+void enum_h::deserialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, char* data_ptr, ubyte* data, int& offset) {
+	int enum_index;
+	GET_INT(enum_index);
+	enum_h deserialized{ static_cast<lua_enum>(enum_index) };
+	if (static_cast<lua_enum>(enum_index) == lua_enum::ENUM_COMBINATION) {
+		int enum_value;
+		GET_INT(enum_value);
+		deserialized.value = enum_value;
+		deserialized.name = "<network transmitted enum>";
+	}
+
+	new(data_ptr) enum_h(std::move(deserialized));
 }
 
 ADE_OBJ(l_Enum, enum_h, "enumeration", "Enumeration object");

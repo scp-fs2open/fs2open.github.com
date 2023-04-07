@@ -52,6 +52,9 @@ void ets_init_ship(object* obj)
 		sp->next_manage_ets = -1;
 	}
 	set_default_recharge_rates(obj);
+
+	float y = Energy_levels[sp->engine_recharge_index];
+	obj->phys_info.max_vel.xyz.z = ets_get_max_speed(obj, y);
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -117,11 +120,6 @@ void update_ets(object* objp, float fl_frametime)
 		}
 	}
 
-	// calculate the top speed of the ship based on the energy flow to engines
-	float y = Energy_levels[ship_p->engine_recharge_index];
-
-	ship_p->current_max_speed = ets_get_max_speed(objp, y);
-
 	// AL 11-15-97: Rules for engine strength affecting max speed:
 	//						1. if strength >= 0.5 no affect 
 	//						2. if strength < 0.5 then max_speed = sqrt(strength)
@@ -133,7 +131,7 @@ void update_ets(object* objp, float fl_frametime)
 	// don't let engine strength affect max speed when playing on lowest skill level
 	if ( (objp != Player_obj) || (Game_skill_level > 0) ) {
 		if ( strength < SHIP_MIN_ENGINES_FOR_FULL_SPEED ) {
-			ship_p->current_max_speed *= fl_sqrt(strength);
+			objp->phys_info.max_vel.xyz.z *= fl_sqrt(strength);
 		}
 	}
 
@@ -483,6 +481,12 @@ void increase_recharge_rate(object* obj, SYSTEM_TYPE ship_system)
 
 	if ( obj == Player_obj )
 		snd_play( gamesnd_get_game_sound(GameSounds::ENERGY_TRANS), 0.0f );
+
+
+	// calculate the top speed of the ship based on the energy flow to engines
+	float y = Energy_levels[ship_p->engine_recharge_index];
+
+	obj->phys_info.max_vel.xyz.z = ets_get_max_speed(obj, y);
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -602,6 +606,11 @@ void decrease_recharge_rate(object* obj, SYSTEM_TYPE ship_system)
 
 	if ( obj == Player_obj )
 		snd_play( gamesnd_get_game_sound(GameSounds::ENERGY_TRANS), 0.0f );
+
+	// calculate the top speed of the ship based on the energy flow to engines
+	float y = Energy_levels[ship_p->engine_recharge_index];
+
+	obj->phys_info.max_vel.xyz.z = ets_get_max_speed(obj, y);
 }
 
 void transfer_energy_weapon_common(object *objp, float from_field, float to_field, float *from_delta, float *to_delta, float from_max, float to_max, float scale, float eff)

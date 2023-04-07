@@ -83,7 +83,7 @@
 // requiring version-specific comments.  It should be updated whenever the format changes, but it should
 // not be updated simply because the engine's version changed.
 // NOTE: The version can only have two numbers because old FRED builds expect the version to be a float.
-const gameversion::version MISSION_VERSION = gameversion::version(22, 3);
+const gameversion::version MISSION_VERSION = gameversion::version(23, 1);
 const gameversion::version LEGACY_MISSION_VERSION = gameversion::version(0, 10);
 
 LOCAL struct {
@@ -4602,7 +4602,7 @@ void parse_wing(mission *pm)
 	}
 
 	if (optional_string("+Flags:")) {
-		auto count = (int)stuff_string_list( wing_flag_strings, PARSEABLE_WING_FLAGS);
+		auto count = (int) stuff_string_list(wing_flag_strings, PARSEABLE_WING_FLAGS);
 
 		for (i = 0; i < count; i++) {
 			if (!stricmp(wing_flag_strings[i], NOX("ignore-count")))
@@ -4613,6 +4613,8 @@ void parse_wing(mission *pm)
 				wingp->flags.set(Ship::Wing_Flags::No_arrival_music);
 			else if (!stricmp(wing_flag_strings[i], NOX("no-arrival-message")))
 				wingp->flags.set(Ship::Wing_Flags::No_arrival_message);
+			else if (!stricmp(wing_flag_strings[i], NOX("no-first-wave-message")))
+				wingp->flags.set(Ship::Wing_Flags::No_first_wave_message);
 			else if (!stricmp(wing_flag_strings[i], NOX("no-arrival-warp")))
 				wingp->flags.set(Ship::Wing_Flags::No_arrival_warp);
 			else if (!stricmp(wing_flag_strings[i], NOX("no-departure-warp")))
@@ -5639,7 +5641,7 @@ void parse_bitmaps(mission *pm)
 
 void parse_asteroid_fields(mission *pm)
 {
-	int i, count, subtype;
+	int i, count;
 
 	Assert(pm != NULL);
 
@@ -5676,35 +5678,61 @@ void parse_asteroid_fields(mission *pm)
 		Asteroid_field.field_debris_type[0] = -1;
 		Asteroid_field.field_debris_type[1] = -1;
 		Asteroid_field.field_debris_type[2] = -1;
+
+		// Debris types
 		if (Asteroid_field.debris_genre == DG_DEBRIS) {
-			if (optional_string("+Field Debris Type:")) {
-				stuff_int(&Asteroid_field.field_debris_type[0]);
-				count++;
+
+			// Obsolete and only for backwards compatibility
+			for (int j = 0; j < MAX_ACTIVE_DEBRIS_TYPES; j++) {
+				if (optional_string("+Field Debris Type:")) {
+					stuff_int(&Asteroid_field.field_debris_type[j]);
+					count++;
+				}
 			}
-			if (optional_string("+Field Debris Type:")) {
-				stuff_int(&Asteroid_field.field_debris_type[1]);
-				count++;
+
+			// Get asteroids by name
+			for (int j = 0; j < MAX_ACTIVE_DEBRIS_TYPES; j++) {
+				if (optional_string("+Field Debris Type Name:")) {
+					SCP_string ast_name;
+					stuff_string(ast_name, F_NAME);
+					int subtype;
+					subtype = get_asteroid_index(ast_name.c_str());
+					if (subtype >= 0) {
+						Asteroid_field.field_debris_type[j] = subtype;
+						count++;
+					} else {
+						WarningEx(LOCATION, "Mission %s\n Invalid asteroid debris %s!", pm->name, ast_name.c_str());
+					}
+				}
 			}
-			if (optional_string("+Field Debris Type:")) {
-				stuff_int(&Asteroid_field.field_debris_type[2]);
-				count++;
-			}
+
+		// Asteroid types
 		} else {
-			// debris asteroid
-			if (optional_string("+Field Debris Type:")) {
-				stuff_int(&subtype);
-				Asteroid_field.field_debris_type[subtype] = 1;
-				count++;
+
+			// Obsolete and only for backwards compatibility
+			for (int j = 0; j < MAX_ACTIVE_DEBRIS_TYPES; j++) {
+				if (optional_string("+Field Debris Type:")) {
+					int subtype;
+					stuff_int(&subtype);
+					Asteroid_field.field_debris_type[subtype] = 1;
+					count++;
+				}
 			}
-			if (optional_string("+Field Debris Type:")) {
-				stuff_int(&subtype);
-				Asteroid_field.field_debris_type[subtype] = 1;
-				count++;
-			}
-			if (optional_string("+Field Debris Type:")) {
-				stuff_int(&subtype);
-				Asteroid_field.field_debris_type[subtype] = 1;
-				count++;
+
+			// Get asteroids by name
+			for (int j = 0; j < MAX_ACTIVE_DEBRIS_TYPES; j++) {
+				if (optional_string("+Field Debris Type Name:")) {
+					SCP_string ast_name;
+					stuff_string(ast_name, F_NAME);
+					int subtype = get_asteroid_index(ast_name.c_str());
+					// If the returned index is valid but not one of the first three then it's a debris type instead of asteroid
+					if ((subtype >= 0) && (subtype < NUM_ASTEROID_SIZES)) {
+						Asteroid_field.field_debris_type[subtype] = 1;
+						count++;
+					} else {
+						WarningEx(LOCATION, "Mission %s\n Invalid asteroid %s!", pm->name, ast_name.c_str());
+					}
+				}
 			}
 		}
 
@@ -6081,7 +6109,7 @@ bool post_process_mission(mission *pm)
 	// determine if player start has initial velocity and set forward cruise percent to relect this
 	// this should check prev_ramp_vel because that is in local coordinates --wookieejedi
 	if ( Player_obj->phys_info.prev_ramp_vel.xyz.z > 0.0f )
-		Player->ci.forward_cruise_percent = Player_obj->phys_info.prev_ramp_vel.xyz.z / Player_ship->current_max_speed * 100.0f;
+		Player->ci.forward_cruise_percent = Player_obj->phys_info.prev_ramp_vel.xyz.z / Player_obj->phys_info.max_vel.xyz.z * 100.0f;
 
 	// Kazan - player use AI at start?
 	if (pm->flags[Mission::Mission_Flags::Player_start_ai])
@@ -7496,8 +7524,7 @@ void mission_eval_arrivals() {
 	// of other wings.  We use the timestamps to delay the arrival message slightly for
 	// better effect
 	if (timestamp_valid(Arrival_message_delay_timestamp) && timestamp_elapsed(Arrival_message_delay_timestamp) && !MULTI_TEAM) {
-		// use terran command 25% of time
-		bool use_terran_cmd = ((frand() - 0.75) > 0.0f);
+		bool use_terran_cmd = !The_mission.flags[Mission::Mission_Flags::No_builtin_command] && (Command_announces_enemy_arrival_chance >= 0) && (frand() < Command_announces_enemy_arrival_chance);
 
 		rship = ship_get_random_player_wing_ship(SHIP_GET_UNSILENCED);
 		ship* subject = (Arrival_message_subject < 0) ? nullptr : &Ships[Arrival_message_subject];
@@ -7589,7 +7616,8 @@ bool mission_maybe_make_wing_arrive(int wingnum, bool force_arrival)
 
 	// If the current wave of this wing is 0, then we haven't created the ships in the wing yet.
 	// If the threshold of the wing has been reached, then we need to create more ships.
-	if ((wingp->current_wave == 0) || (wingp->current_count <= wingp->threshold))
+	bool is_first_wave = wingp->current_wave == 0;
+	if (is_first_wave || (wingp->current_count <= wingp->threshold))
 	{
 		// Call parse_wing_create_ships to try and create it.  That function will eval the arrival
 		// cue of the wing and create the ships if necessary.
@@ -7610,6 +7638,8 @@ bool mission_maybe_make_wing_arrive(int wingnum, bool force_arrival)
 		// probably send a message to the player when this wing arrives.
 		// if no message, nothing more to do for this wing
 		if (wingp->flags[Ship::Wing_Flags::No_arrival_message])
+			return true;
+		if (wingp->flags[Ship::Wing_Flags::No_first_wave_message] && is_first_wave)
 			return true;
 
 		// multiplayer team vs. team

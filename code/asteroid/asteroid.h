@@ -175,7 +175,7 @@ float asteroid_time_to_impact(object *asteroid_objp);
 void	asteroid_show_brackets();
 void	asteroid_target_closest_danger();
 void asteroid_add_target(object* objp);
-int get_asteroid_position(const char* name);
+int get_asteroid_index(const char* asteroid_name);
 
 // need to extern for multiplayer
 void asteroid_sub_create(object *parent_objp, int asteroid_type, vec3d *relvec);

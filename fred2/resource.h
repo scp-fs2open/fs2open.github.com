@@ -893,7 +893,7 @@
 #define IDC_KDAMAGE                     1478
 #define IDC_NO_BRIEFING                 1478
 #define IDC_NO_DYNAMIC                  1479
-#define IDC_NO_DEBRIEFING               1479
+#define IDC_TOGGLE_DEBRIEFING           1479
 #define IDC_KAMIKAZE                    1480
 #define IDC_NUM_PLAYERS                 1481
 #define IDC_REDALERTCARRY               1481
@@ -1075,7 +1075,7 @@
 #define IDC_SECONDARIES_LOCKED          1582
 #define IDC_SUBSTITUTE_BRIEFING_MUSIC   1582
 #define IDC_SYNC_PERSONAS               1582
-#define IDC_PLAYER_START_CHASE          1583
+#define IDC_TOGGLE_START_CHASE          1583
 #define IDC_RESTRICT_PATHS_LABEL        1584
 #define IDC_LBL_NOTE                    1584
 #define IDC_PATH_LIST                   1585
@@ -1173,6 +1173,7 @@
 #define IDC_SATELLITE_LIST              1672
 #define IDC_DISTANCE                    1673
 #define IDC_IGNORE_ORDERS_LIST          1674
+#define IDC_NO_FIRST_WAVE_MESSAGE       1675
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774
 #define ID_VIEW_ROTATE                  32775

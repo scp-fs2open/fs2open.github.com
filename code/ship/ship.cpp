@@ -592,6 +592,7 @@ extern const size_t Num_ship_flag_names = sizeof(Ship_flag_names) / sizeof(ship_
 wing_flag_name Wing_flag_names[] = {
 	{ Wing_Flags::No_arrival_music,					"no-arrival-music" },
 	{ Wing_Flags::No_arrival_message,				"no-arrival-message" },
+	{ Wing_Flags::No_first_wave_message,		"no-first-wave-message" },
 	{ Wing_Flags::No_arrival_warp,					"no-arrival-warp" },
 	{ Wing_Flags::No_departure_warp,				"no-departure-warp" },
 	{ Wing_Flags::Same_arrival_warp_when_docked,	"same-arrival-warp-when-docked" },
@@ -601,6 +602,7 @@ wing_flag_name Wing_flag_names[] = {
 wing_flag_description Wing_flag_descriptions[] = {
 	{ Wing_Flags::No_arrival_music,					"Arrival music will not be played when this wing arrives."},
 	{ Wing_Flags::No_arrival_message,				"Arrival messages will not be sent when this wing arrives."},
+	{ Wing_Flags::No_first_wave_message,		"Arrival messages will not be sent when the first wave of wing arrives."},
 	{ Wing_Flags::No_arrival_warp,					"No ship in the wing will use a warp effect upon arrival."},
 	{ Wing_Flags::No_departure_warp,				"No ship in the wing will use a warp effect upon departure."},
 	{ Wing_Flags::Same_arrival_warp_when_docked,	"All ships in the wing will use the same warp effect size upon arrival as if they were not docked instead of the enlarged aggregate size."},
@@ -2226,9 +2228,29 @@ static void parse_ship(const char *filename, bool replace)
 				sip->clone(Ship_templates[template_id]);
 				strcpy_s(sip->name, fname);
 				new_name = true;
+				create_if_not_found = false;
 			}
 			else {
 				Warning(LOCATION, "Unable to find ship template '%s' requested by ship class '%s', ignoring template request...", template_name, fname);
+			}
+		}
+	}
+	if( optional_string( "+Use Ship as Template:" ) ) {
+		if ( !create_if_not_found ) {
+			Warning(LOCATION, "Either '+nocreate' or '+Use Template:' were specified with '+Use Ship as Template:' for ship class '%s', ignoring '+Use Ship as Template:'\n", fname);
+		}
+		else {
+			char template_name[SHIP_MULTITEXT_LENGTH];
+			stuff_string(template_name, F_NAME, SHIP_MULTITEXT_LENGTH);
+			int template_id = ship_info_lookup_sub(template_name);
+			if ( template_id != -1 ) {
+				first_time = false;
+				sip->clone(Ship_info[template_id]);
+				strcpy_s(sip->name, fname);
+				new_name = true;
+			}
+			else {
+				Warning(LOCATION, "Unable to find ship class '%s' (name must be exact, check table loading order) requested by ship class '%s', ignoring template request...", template_name, fname);
 			}
 		}
 	}
@@ -6534,7 +6556,6 @@ void ship::clear()
 	weapon_recharge_index = INTIAL_WEAPON_RECHARGE_INDEX;
 	engine_recharge_index = INTIAL_ENGINE_RECHARGE_INDEX;
 	weapon_energy = 0;
-	current_max_speed = 0.0f;
 	next_manage_ets = timestamp(0);
 
 	flags.reset();
@@ -6961,8 +6982,6 @@ static void ship_set(int ship_index, int objnum, int ship_type)
 	}
 
 	ets_init_ship(objp);	// init ship fields that are used for the ETS
-
-	shipp->current_max_speed = Ship_info[ship_type].max_speed;
 
 	shipp->flags.set(Ship_Flags::Engines_on);
 
@@ -11399,14 +11418,6 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		sp->cmeasure_count = MAX(0, sip->cmeasure_max - (sip_orig->cmeasure_max - sp->cmeasure_count));
 	}
 
-	// avoid cases where either of these are 0
-	if (sp->current_max_speed != 0 && sip_orig->max_speed != 0) {
-		sp->current_max_speed = sip->max_speed * (sp->current_max_speed / sip_orig->max_speed);
-	}
-	else {
-		sp->current_max_speed = sip->max_speed;
-	}
-
 	ship_set_default_weapons(sp, sip);
 	physics_ship_init(&Objects[sp->objnum]);
 	ets_init_ship(&Objects[sp->objnum]);
@@ -11676,7 +11687,9 @@ int ship_launch_countermeasure(object *objp, int rand_val)
 
 		// Play sound effect for counter measure launch
 		Assert(shipp->current_cmeasure < weapon_info_size());
-		if ( Weapon_info[shipp->current_cmeasure].launch_snd.isValid() ) {
+		if (Player_obj == objp && Weapon_info[shipp->current_cmeasure].cockpit_launch_snd.isValid()) {
+			snd_play(gamesnd_get_game_sound(Weapon_info[shipp->current_cmeasure].cockpit_launch_snd));
+		} else if ( Weapon_info[shipp->current_cmeasure].launch_snd.isValid() ) {
 			snd_play_3d( gamesnd_get_game_sound(Weapon_info[shipp->current_cmeasure].launch_snd), &pos, &View_position );
 		}
 
@@ -12713,43 +12726,43 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 			if ( sound_played != winfo_p->launch_snd ) {
 				sound_played = winfo_p->launch_snd;
 				if ( obj == Player_obj ) {
-					if ( winfo_p->launch_snd.isValid() ) {
-						weapon_info *wip;
-						ship_weapon *sw_pl;
+					weapon_info *wip;
+					ship_weapon *sw_pl;
 
-						//Update the last timestamp until continous fire is over, so we have the timestamp of the cease-fire.
-						if (shipp->was_firing_last_frame[bank_to_fire] == 1) {
-							swp->last_primary_fire_sound_stamp[bank_to_fire] = timestamp();
-						}
+					//Update the last timestamp until continous fire is over, so we have the timestamp of the cease-fire.
+					if (shipp->was_firing_last_frame[bank_to_fire] == 1) {
+						swp->last_primary_fire_sound_stamp[bank_to_fire] = timestamp();
+					}
 
-						//Check for pre-launch sound and play if relevant
-						if( (winfo_p->pre_launch_snd.isValid())									//If this weapon type has a pre-fire sound
-							&& ((timestamp() - swp->last_primary_fire_sound_stamp[bank_to_fire]) >= winfo_p->pre_launch_snd_min_interval)	//and if we're past our minimum delay from the last cease-fire
-							&& (shipp->was_firing_last_frame[bank_to_fire] == 0)				//and if we are at the beginning of a firing stream
-						){ 
-							snd_play( gamesnd_get_game_sound(winfo_p->pre_launch_snd), 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY); //play it
-						} else { //Otherwise, play normal firing sounds
-							// HACK
-							if(winfo_p->launch_snd == gamesnd_id(GameSounds::AUTOCANNON_SHOT)){
-								snd_play( gamesnd_get_game_sound(winfo_p->launch_snd), 0.0f, 1.0f, SND_PRIORITY_TRIPLE_INSTANCE );
-							} else {
-								snd_play( gamesnd_get_game_sound(winfo_p->launch_snd), 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY );
-							}
+					//Check for pre-launch sound and play if relevant
+					if( (winfo_p->pre_launch_snd.isValid())									//If this weapon type has a pre-fire sound
+						&& ((timestamp() - swp->last_primary_fire_sound_stamp[bank_to_fire]) >= winfo_p->pre_launch_snd_min_interval)	//and if we're past our minimum delay from the last cease-fire
+						&& (shipp->was_firing_last_frame[bank_to_fire] == 0)				//and if we are at the beginning of a firing stream
+					){ 
+						snd_play( gamesnd_get_game_sound(winfo_p->pre_launch_snd), 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY); //play it
+					} else { //Otherwise, play normal firing sounds
+						// HACK
+						if(winfo_p->launch_snd == gamesnd_id(GameSounds::AUTOCANNON_SHOT)){
+							snd_play( gamesnd_get_game_sound(winfo_p->launch_snd), 0.0f, 1.0f, SND_PRIORITY_TRIPLE_INSTANCE );
+						} else if (winfo_p->cockpit_launch_snd.isValid()) {
+							snd_play(gamesnd_get_game_sound(winfo_p->cockpit_launch_snd), 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY);
+						} else if (winfo_p->launch_snd.isValid()) {
+							snd_play( gamesnd_get_game_sound(winfo_p->launch_snd), 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY );
 						}
+					}
 	
-						sw_pl = &Player_ship->weapons;
-						if (sw_pl->current_primary_bank >= 0)
-						{
-							wip = &Weapon_info[sw_pl->primary_bank_weapons[sw_pl->current_primary_bank]];
-							int force_level = (int) ((wip->armor_factor + wip->shield_factor * 0.2f) * (wip->damage * wip->damage - 7.5f) * 0.45f + 0.6f) * 10 + 2000;
+					sw_pl = &Player_ship->weapons;
+					if (sw_pl->current_primary_bank >= 0)
+					{
+						wip = &Weapon_info[sw_pl->primary_bank_weapons[sw_pl->current_primary_bank]];
+						int force_level = (int) ((wip->armor_factor + wip->shield_factor * 0.2f) * (wip->damage * wip->damage - 7.5f) * 0.45f + 0.6f) * 10 + 2000;
 
-							// modify force feedback for ballistics: make it stronger
-							if (wip->wi_flags[Weapon::Info_Flags::Ballistic])
-								joy_ff_play_primary_shoot(force_level * 2);
-							// no ballistics
-							else
-								joy_ff_play_primary_shoot(force_level);
-						}
+						// modify force feedback for ballistics: make it stronger
+						if (wip->wi_flags[Weapon::Info_Flags::Ballistic])
+							joy_ff_play_primary_shoot(force_level * 2);
+						// no ballistics
+						else
+							joy_ff_play_primary_shoot(force_level);
 					}
 				}else {
 					if ( winfo_p->launch_snd.isValid() ) {
@@ -13440,16 +13453,19 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 	}
 
 	if ( obj == Player_obj ) {
-		if ( Weapon_info[weapon_idx].launch_snd.isValid() ) {
-			snd_play( gamesnd_get_game_sound(Weapon_info[weapon_idx].launch_snd), 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY );
-			swp = &Player_ship->weapons;
-			if (bank >= 0) {
-				wip = &Weapon_info[swp->secondary_bank_weapons[bank]];
-				if (Player_ship->flags[Ship_Flags::Secondary_dual_fire]){
-					joy_ff_play_secondary_shoot((int) (wip->cargo_size * 2.0f));
-				} else {
-					joy_ff_play_secondary_shoot((int) wip->cargo_size);
-				}
+		if ( Weapon_info[weapon_idx].cockpit_launch_snd.isValid() ) {
+			snd_play( gamesnd_get_game_sound(Weapon_info[weapon_idx].cockpit_launch_snd), 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY );
+		} else if (Weapon_info[weapon_idx].launch_snd.isValid()) {
+			snd_play(gamesnd_get_game_sound(Weapon_info[weapon_idx].launch_snd), 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY);
+		}
+
+		swp = &Player_ship->weapons;
+		if (bank >= 0) {
+			wip = &Weapon_info[swp->secondary_bank_weapons[bank]];
+			if (Player_ship->flags[Ship_Flags::Secondary_dual_fire]){
+				joy_ff_play_secondary_shoot((int) (wip->cargo_size * 2.0f));
+			} else {
+				joy_ff_play_secondary_shoot((int) wip->cargo_size);
 			}
 		}
 
@@ -16728,9 +16744,9 @@ int ship_return_seconds_to_goal(ship *sp)
 
 	// Goober5000 - handle cap
 	if (aip->waypoint_speed_cap > 0)
-		max_speed = MIN(sp->current_max_speed, aip->waypoint_speed_cap);
+		max_speed = MIN(objp->phys_info.max_vel.xyz.z, aip->waypoint_speed_cap);
 	else
-		max_speed = sp->current_max_speed;
+		max_speed = objp->phys_info.max_vel.xyz.z;
 
 	if ( aip->mode == AIM_WAYPOINTS ) {
 		// Is traveling a waypoint path

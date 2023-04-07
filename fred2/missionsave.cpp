@@ -749,28 +749,48 @@ int CFred_mission_save::save_asteroid_fields()
 		}
 		fout(" %d", Asteroid_field.debris_genre);
 
-		// field_debris_type (only if ship genre)
+		// field_debris_type (only if debris genre)
 		if (Asteroid_field.debris_genre == DG_DEBRIS) {
-			for (int idx = 0; idx < 3; idx++) {
+			for (int idx = 0; idx < MAX_ACTIVE_DEBRIS_TYPES; idx++) {
 				if (Asteroid_field.field_debris_type[idx] != -1) {
-					if (optional_string_fred("+Field Debris Type:")) {
-						parse_comments();
+
+					if (Mission_save_format == FSO_FORMAT_RETAIL) {
+						if (optional_string_fred("+Field Debris Type:")) {
+							parse_comments();
+						} else {
+							fout("\n+Field Debris Type:");
+						}
+						fout(" %d", Asteroid_field.field_debris_type[idx]);
 					} else {
-						fout("\n+Field Debris Type:");
+						if (optional_string_fred("+Field Debris Type Name:")) {
+							parse_comments();
+						} else {
+							fout("\n+Field Debris Type Name:");
+						}
+						fout(" %s", Asteroid_info[Asteroid_field.field_debris_type[idx]].name);
 					}
-					fout(" %d", Asteroid_field.field_debris_type[idx]);
 				}
 			}
 		} else {
 			// asteroid subtypes stored in field_debris_type as -1 or 1
-			for (auto idx = 0; idx < 3; idx++) {
+			for (int idx = 0; idx < MAX_ACTIVE_DEBRIS_TYPES; idx++) {
 				if (Asteroid_field.field_debris_type[idx] != -1) {
-					if (optional_string_fred("+Field Debris Type:")) {
-						parse_comments();
+
+					if (Mission_save_format == FSO_FORMAT_RETAIL) {
+						if (optional_string_fred("+Field Debris Type:")) {
+							parse_comments();
+						} else {
+							fout("\n+Field Debris Type:");
+						}
+						fout(" %d", idx);
 					} else {
-						fout("\n+Field Debris Type:");
+						if (optional_string_fred("+Field Debris Type Name:")) {
+							parse_comments();
+						} else {
+							fout("\n+Field Debris Type Name:");
+						}
+						fout(" %s", Asteroid_info[idx].name);
 					}
-					fout(" %d", idx);
 				}
 			}
 		}
@@ -4846,6 +4866,8 @@ int CFred_mission_save::save_wings()
 			fout(" \"no-arrival-music\"");
 		if (Wings[i].flags[Ship::Wing_Flags::No_arrival_message])
 			fout(" \"no-arrival-message\"");
+		if (Wings[i].flags[Ship::Wing_Flags::No_first_wave_message])
+			fout(" \"no-first-wave-message\"");
 		if (Wings[i].flags[Ship::Wing_Flags::No_arrival_warp])
 			fout(" \"no-arrival-warp\"");
 		if (Wings[i].flags[Ship::Wing_Flags::No_departure_warp])
