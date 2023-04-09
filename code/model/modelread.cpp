@@ -716,36 +716,36 @@ void set_subsystem_info(int model_num, model_subsystem *subsystemp, char *props,
 
 		// don't set the turret FOV values if they have already been set (e.g. through ships.tbl)
 		if (!subsystemp->flags[Model::Subsystem_Flags::Turret_barrel_fov_overridden]) {
-			if (in(p, props, "$fov"))
+			if (in(p, props, "$fov")) {
 				get_user_prop_value(p + 4, buf);			// get the value of the fov
-			else
-				strcpy_s(buf, "180");
-			float value = (float)atoi(buf);
-			CLAMP(value, 0.0f, 360.0f);
-			float angle = fl_radians(value) / 2.0f;
-			subsystemp->turret_fov = cosf(angle);
+				float value = (float)atoi(buf);
+				CLAMP(value, 0.0f, 360.0f);
+				float angle = fl_radians(value) / 2.0f;
+				subsystemp->turret_fov = cosf(angle);
+			} else
+				subsystemp->turret_fov = 0.0f;
 		}		
 
 		if (!subsystemp->flags[Model::Subsystem_Flags::Turret_base_fov_overridden]) {
-			if (in(p, props, "$base_fov"))
+			if (in(p, props, "$base_fov")) {
 				get_user_prop_value(p + 9, buf);			// get the value of the fov
-			else
-				strcpy_s(buf, "360");
-			float value = (float)atoi(buf);
-			CLAMP(value, 0.0f, 360.0f);
-			float angle = fl_radians(value) / 2.0f;
-			subsystemp->turret_base_fov = cosf(angle);
+				float value = (float)atoi(buf);
+				CLAMP(value, 0.0f, 360.0f);
+				float angle = fl_radians(value) / 2.0f;
+				subsystemp->turret_base_fov = cosf(angle);
+			} else
+				subsystemp->turret_base_fov = -1.0f;
 		}
 
 		if (!subsystemp->flags[Model::Subsystem_Flags::Turret_max_fov_overridden]) {
-			if (in(p, props, "$max_fov"))
+			if (in(p, props, "$max_fov")) {
 				get_user_prop_value(p + 8, buf);			// get the value of the fov
-			else
-				strcpy_s(buf, "90");
-			float value = (float)atoi(buf);
-			CLAMP(value, 0.0f, 90.0f);
-			float angle = (PI / 2.0f) - fl_radians(value);
-			subsystemp->turret_max_fov = cosf(angle);
+				float value = (float)atoi(buf);
+				CLAMP(value, 0.0f, 90.0f);
+				float angle = (PI / 2.0f) - fl_radians(value);
+				subsystemp->turret_max_fov = cosf(angle);
+			} else
+				subsystemp->turret_max_fov = 1.0f;
 		}
 
 		subsystemp->turret_num_firing_points = 0;
