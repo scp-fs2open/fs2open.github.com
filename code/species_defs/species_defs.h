@@ -64,6 +64,9 @@ public:
 	thrust_pair_bitmap thruster_tertiary_glow_info;
 	thrust_pair_bitmap thruster_distortion_info;
 
+	int warpin_params_index;
+	int warpout_params_index;
+
 	// the members below this comment are not parsed in species_defs.tbl
 
 	game_snd snd_flyby_fighter;
@@ -83,6 +86,9 @@ public:
 
 	species_info()
 	{
+		warpin_params_index = -1;
+		warpout_params_index = -1;
+
 		for (int i = 0; i < MIN_BRIEF_ICONS; i++)
 			bii_indices[i] = -1;
 

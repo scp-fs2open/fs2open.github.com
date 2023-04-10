@@ -377,8 +377,10 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 
 	particle::ParticleManager::init();
 
-	iff_init();			// Goober5000
-	species_init();		// Kazan
+	gamesnd_parse_soundstbl(true);
+	iff_init();						// Goober5000
+	species_init();					// Kazan
+	gamesnd_parse_soundstbl(false);
 
 	brief_icons_init();
 
@@ -405,7 +407,6 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 
 	alpha_colors_init();
 	
-	gamesnd_parse_soundstbl();		// needs to be loaded after species stuff but before interface/weapon/ship stuff - taylor
 	mission_brief_common_init();	
 
 	sexp_startup(); // Must happen before ship init for LuaAI
