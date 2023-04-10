@@ -5003,6 +5003,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			float	turning_rate;
 			float	percentage_of_hits;
 			bool turret_has_base_fov = false;
+			bool turret_has_max_fov = false;
 			bool turret_has_barrel_fov = false;
 			model_subsystem *sp = NULL;			// to append on the ships list of subsystems
 			
@@ -5164,26 +5165,27 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			}
 
 			if(optional_string("$Maximum Barrel Elevation:")){
-				int value;
-				stuff_int(&value);
-				CAP(value, 0, 90);
-				float angle = fl_radians(90 - value);
+				float value;
+				stuff_float(&value);
+				CAP(value, 0.0f, 90.0f);
+				float angle = fl_radians(90.0f - value);
 				sp->turret_max_fov = cosf(angle);
+				turret_has_max_fov = true;
 			}
 
 			if(optional_string("$Turret Base FOV:")) {
-				int value;
-				stuff_int(&value);
-				CAP(value, 0, 359);
+				float value;
+				stuff_float(&value);
+				CAP(value, 0.0f, 360.0f);
 				float angle = fl_radians(value)/2.0f;
 				sp->turret_base_fov = cosf(angle);
 				turret_has_base_fov = true;
 			}
 
 			if (optional_string("$Turret Barrel FOV:")) {
-				int value;
-				stuff_int(&value);
-				CAP(value, 0, 359);
+				float value;
+				stuff_float(&value);
+				CAP(value, 0.0f, 360.0f);
 				float angle = fl_radians(value) / 2.0f;
 				sp->turret_fov = cosf(angle);
 				turret_has_barrel_fov = true;
@@ -5283,10 +5285,12 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 					sip->flags.set(Ship::Info_Flags::Allow_landings);
 			}
 
-            if (turret_has_base_fov)
-                sp->flags.set(Model::Subsystem_Flags::Turret_base_restricted_fov);
 			if (turret_has_barrel_fov)
-				sp->flags.set(Model::Subsystem_Flags::Turret_barrel_override_fov);
+				sp->flags.set(Model::Subsystem_Flags::Turret_barrel_fov_overridden);
+			if (turret_has_base_fov)
+				sp->flags.set(Model::Subsystem_Flags::Turret_base_fov_overridden);
+			if (turret_has_max_fov)
+				sp->flags.set(Model::Subsystem_Flags::Turret_max_fov_overridden);
 
 			if (optional_string("+non-targetable")) {
 				Warning(LOCATION, "Grammar error in table file.  Please change \"+non-targetable\" to \"+untargetable\".");

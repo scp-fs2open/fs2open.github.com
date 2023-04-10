@@ -711,18 +711,42 @@ void set_subsystem_info(int model_num, model_subsystem *subsystemp, char *props,
 	} else if ( strstr(lcdname, "radar") ) {
 		subsystemp->type = SUBSYSTEM_RADAR;
 	} else if ( strstr(lcdname, "turret") ) {
-		float angle;
 
 		subsystemp->type = SUBSYSTEM_TURRET;
-		if (in(p, props, "$fov"))
-			get_user_prop_value(p+4, buf);			// get the value of the fov
-		else
-			strcpy_s(buf,"180");
-		angle = fl_radians(atoi(buf))/2.0f;
 
-		// don't set the turret FOV if it has already been set (e.g. through ships.tbl)
-		if (!subsystemp->flags[Model::Subsystem_Flags::Turret_barrel_override_fov])
-			subsystemp->turret_fov = cosf(angle);
+		// don't set the turret FOV values if they have already been set (e.g. through ships.tbl)
+		if (!subsystemp->flags[Model::Subsystem_Flags::Turret_barrel_fov_overridden]) {
+			if (in(p, props, "$fov")) {
+				get_user_prop_value(p + 4, buf);			// get the value of the fov
+				float value = (float)atoi(buf);
+				CLAMP(value, 0.0f, 360.0f);
+				float angle = fl_radians(value) / 2.0f;
+				subsystemp->turret_fov = cosf(angle);
+			} else
+				subsystemp->turret_fov = 0.0f;
+		}		
+
+		if (!subsystemp->flags[Model::Subsystem_Flags::Turret_base_fov_overridden]) {
+			if (in(p, props, "$base_fov")) {
+				get_user_prop_value(p + 9, buf);			// get the value of the fov
+				float value = (float)atoi(buf);
+				CLAMP(value, 0.0f, 360.0f);
+				float angle = fl_radians(value) / 2.0f;
+				subsystemp->turret_base_fov = cosf(angle);
+			} else
+				subsystemp->turret_base_fov = -1.0f;
+		}
+
+		if (!subsystemp->flags[Model::Subsystem_Flags::Turret_max_fov_overridden]) {
+			if (in(p, props, "$max_fov")) {
+				get_user_prop_value(p + 8, buf);			// get the value of the fov
+				float value = (float)atoi(buf);
+				CLAMP(value, 0.0f, 90.0f);
+				float angle = (PI / 2.0f) - fl_radians(value);
+				subsystemp->turret_max_fov = cosf(angle);
+			} else
+				subsystemp->turret_max_fov = 1.0f;
+		}
 
 		subsystemp->turret_num_firing_points = 0;
 
@@ -4332,8 +4356,6 @@ int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, ship_
 	auto base_smi = &pmi->submodel[turret->subobj_num];
 	auto gun_smi = &pmi->submodel[turret->turret_gun_sobj];
 
-	bool limited_base_rotation = false;
-
 	// Check for a valid turret
 	Assert( turret->turret_num_firing_points > 0 );
 	// Check for a valid subsystem
@@ -4399,9 +4421,6 @@ int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, ship_
 		}
 	}
 
-	if (turret->flags[Model::Subsystem_Flags::Turret_base_restricted_fov])
-		limited_base_rotation = true;
-
 	// figure out how much time we need to account for.  This only varies in mulitplayer
 	// in singleplayer or multiplayer servers info_from_server_stamp will always be Timestamp::never()
 	float calc_time;
@@ -4425,7 +4444,7 @@ int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, ship_
 	else
 		ss->rotation_timestamp = timestamp(turret->turret_reset_delay);
 
-	base_delta = vm_interp_angle(&base_smi->cur_angle, desired_base_angle, step_size, limited_base_rotation);
+	base_delta = vm_interp_angle(&base_smi->cur_angle, desired_base_angle, step_size, turret->turret_base_fov > -1.0f);
 	gun_delta = vm_interp_angle(&gun_smi->cur_angle, desired_gun_angle, step_size);
 
 	submodel_canonicalize_rotation(base_sm, base_smi, true);
@@ -5914,8 +5933,8 @@ void model_subsystem::reset()
     turret_norm.xyz.x = turret_norm.xyz.y = turret_norm.xyz.z = 0.0f;
     
     turret_fov = 0;
-    turret_max_fov = 0;
-    turret_base_fov = 0;
+    turret_max_fov = 1;
+    turret_base_fov = -1;
     turret_num_firing_points = 0;
     for (auto it = std::begin(turret_firing_point); it != std::end(turret_firing_point); ++it)
         it->xyz.x = it->xyz.y = it->xyz.z = 0.0f;
