@@ -16130,6 +16130,9 @@ void sexp_deal_with_ship_flag(int node, bool process_subsequent_nodes, Object::O
 			if (object_flag == Object::Object_Flags::No_shields) {
 				if (set_it) {
 					zero_one_ets(&ship_entry->shipp->shield_recharge_index, &ship_entry->shipp->weapon_recharge_index, &ship_entry->shipp->engine_recharge_index);
+
+					float x = Energy_levels[Ships[ship_entry->objp->instance].engine_recharge_index];
+					ship_entry->objp->phys_info.max_vel.xyz.z = ets_get_max_speed(ship_entry->objp, x);
 				} else if (object_flag_orig[Object::Object_Flags::No_shields]) {
 					set_default_recharge_rates(ship_entry->objp);
 				}
@@ -16215,6 +16218,9 @@ void multi_sexp_deal_with_ship_flag()
 			if (object_flag == (int)Object::Object_Flags::No_shields) {
 				if (set_it) {
 					zero_one_ets(&shipp->shield_recharge_index, &shipp->weapon_recharge_index, &shipp->engine_recharge_index);
+
+					float x = Energy_levels[shipp->engine_recharge_index];
+					Objects[shipp->objnum].phys_info.max_vel.xyz.z = ets_get_max_speed(&Objects[shipp->objnum], x);
 				} else if (object_flag_orig[Object::Object_Flags::No_shields]) {
 					set_default_recharge_rates(&Objects[shipp->objnum]);
 				}
@@ -16345,6 +16351,9 @@ void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future
 			if (object_flag == Object::Object_Flags::No_shields) {
 				if (set_flag) {
 					zero_one_ets(&oswpt.ship_entry->shipp->shield_recharge_index, &oswpt.ship_entry->shipp->weapon_recharge_index, &oswpt.ship_entry->shipp->engine_recharge_index);
+
+					float x = Energy_levels[oswpt.ship_entry->shipp->engine_recharge_index];
+					Objects[oswpt.ship_entry->shipp->objnum].phys_info.max_vel.xyz.z = ets_get_max_speed(&Objects[oswpt.ship_entry->shipp->objnum], x);
 				} else if (object_flag_orig[Object::Object_Flags::No_shields]) {
 					set_default_recharge_rates(oswpt.objp);
 				}
@@ -19240,9 +19249,7 @@ void multi_sexp_set_ets_values()
 		Current_sexp_network_packet.get_int(ets_idx[SHIELDS]);
 		Current_sexp_network_packet.get_int(ets_idx[WEAPONS]);
 
-		Ships[sindex].engine_recharge_index = ets_idx[ENGINES];
-		Ships[sindex].shield_recharge_index = ets_idx[SHIELDS];
-		Ships[sindex].weapon_recharge_index = ets_idx[WEAPONS];
+		set_recharge_rates(&Objects[Ships[sindex].objnum], ets_idx[SHIELDS], ets_idx[WEAPONS], ets_idx[ENGINES]);
 	}
 }
 
