@@ -31,7 +31,7 @@ void ship_subsys_h::serialize(lua_State* /*L*/, const scripting::ade_table_entry
 	ship_subsys_h subsys;
 	value.getValue(l_Subsystem.Get(&subsys));
 	const ushort& netsig = subsys.IsValid() ? subsys.objp->net_signature : 0;
-	const int& subsys_index = subsys.isSubsystemValid() ? subsys.ss->parent_subsys_index : -1;
+	const int& subsys_index = subsys.isSubsystemValid() ? ship_get_subsys_index(subsys.ss) : -1;
 	ADD_USHORT(netsig);
 	ADD_INT(subsys_index);
 }
