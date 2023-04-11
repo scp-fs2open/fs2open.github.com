@@ -1715,9 +1715,9 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 
 		// get the ships ets settings
 		GET_DATA(val);
-		shield_ets = val;
-		GET_DATA(val);
 		weapon_ets = val;
+		GET_DATA(val);
+		shield_ets = val;
 		GET_DATA(val);
 		engine_ets = val;		
 		set_recharge_rates(objp, shield_ets, weapon_ets, engine_ets);
