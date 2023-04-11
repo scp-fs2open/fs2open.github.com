@@ -3105,6 +3105,13 @@ void stuff_float_list(SCP_vector<float>& flp)
 		}, "float");
 }
 
+//	Stuff a vec2d struct, which is 2 floats.
+void stuff_vec2d(vec2d* vp)
+{
+	stuff_float(&vp->x);
+	stuff_float(&vp->y);
+}
+
 //	Stuff a vec3d struct, which is 3 floats.
 void stuff_vec3d(vec3d *vp)
 {
@@ -3120,6 +3127,26 @@ void stuff_angles_deg_phb(angles* ap) {
 	ap->p = fl_radians(ap->p);
 	ap->h = fl_radians(ap->h);
 	ap->b = fl_radians(ap->b);
+}
+
+void stuff_parenthesized_vec2d(vec2d* vp)
+{
+	ignore_white_space();
+
+	if (*Mp != '(') {
+		error_display(1, "Reading parenthesized vec2d.  Found [%c].  Expected '('.\n", *Mp);
+		throw parse::ParseException("Syntax error");
+	}
+	else {
+		Mp++;
+		stuff_vec2d(vp);
+		ignore_white_space();
+		if (*Mp != ')') {
+			error_display(1, "Reading parenthesized vec2d.  Found [%c].  Expected ')'.\n", *Mp);
+			throw parse::ParseException("Syntax error");
+		}
+		Mp++;
+	}
 }
 
 void stuff_parenthesized_vec3d(vec3d *vp)

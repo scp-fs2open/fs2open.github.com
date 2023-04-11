@@ -231,6 +231,7 @@ extern void stuff_float_list(SCP_vector<float>& flp);
 extern size_t stuff_vec3d_list(vec3d *vlp, size_t max_vecs);
 extern void stuff_vec3d_list(SCP_vector<vec3d> &vec_list);
 extern size_t stuff_bool_list(bool *blp, size_t max_bools);
+extern void stuff_vec2d(vec2d* vp);
 extern void stuff_vec3d(vec3d *vp);
 extern void stuff_matrix(matrix *mp);
 extern void stuff_angles_deg_phb(angles* vp);
@@ -241,6 +242,7 @@ extern void find_and_stuff_or_add(const char *id, int *addr, int f_type, char *s
 	int max, const char *description);
 extern int get_string(char *str, int max = -1);
 extern void get_string(SCP_string &str);
+extern void stuff_parenthesized_vec2d(vec2d* vp);
 extern void stuff_parenthesized_vec3d(vec3d *vp);
 extern void stuff_boolean(int *i, bool a_to_eol=true);
 extern void stuff_boolean(bool *b, bool a_to_eol=true);
