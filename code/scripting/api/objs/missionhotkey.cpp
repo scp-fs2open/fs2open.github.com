@@ -11,6 +11,9 @@ hotkey_h::hotkey_h(int l_line) : line(l_line) {}
 
 hotkey_line* hotkey_h::getLine() const
 {
+	if (!isValid())
+		return nullptr;
+
 	return &Hotkey_lines[line];
 }
 
@@ -19,14 +22,31 @@ int hotkey_h::getIndex() const
 	return line;
 }
 
+bool hotkey_h::isValid() const
+{
+	return line >= 0 && line < MAX_LINES;
+}
+
 //**********HANDLE: help section
-ADE_OBJ(l_Hotkey, hotkey_h, "hotkey_ship", "Help Section handle");
+ADE_OBJ(l_Hotkey, hotkey_h, "hotkey_ship", "Hotkey handle");
+
+ADE_FUNC(isValid, l_Hotkey, nullptr, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
+{
+	hotkey_h current;
+	if (!ade_get_args(L, "o", l_Hotkey.Get(&current)))
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "b", current.isValid());
+}
 
 ADE_VIRTVAR(Text, l_Hotkey, nullptr, "The text of this hotkey line", "string", "The text")
 {
 	hotkey_h current;
 	if (!ade_get_args(L, "o", l_Hotkey.Get(&current))) {
 		return ADE_RETURN_NIL;
+	}
+	if (!current.isValid()) {
+		return ade_set_error(L, "s", "");
 	}
 
 	if (ADE_SETTING_VAR) {
@@ -46,6 +66,9 @@ ADE_VIRTVAR(Type,
 	hotkey_h current;
 	if (!ade_get_args(L, "o", l_Hotkey.Get(&current))) {
 		return ADE_RETURN_NIL;
+	}
+	if (!current.isValid()) {
+		return ade_set_error(L, "i", 0);
 	}
 
 	if (ADE_SETTING_VAR) {
@@ -67,20 +90,19 @@ ADE_VIRTVAR(Keys,
 		return ADE_RETURN_NIL;
 	}
 
-	int hotkeys;
+	auto table = luacpp::LuaTable::create(L);
+	if (!current.isValid()) {
+		return ade_set_error(L, "t", &table);
+	}
 
+	int hotkeys;
 	if (current.getLine()->type == HOTKEY_LINE_WING)
 		hotkeys = get_wing_hotkeys(current.getIndex()); // for wings
 	else
 		hotkeys = get_ship_hotkeys(current.getIndex()); // for everything else (there's mastercard)
 
-	auto table = luacpp::LuaTable::create(L);
-
 	for (int i = 0; i < MAX_KEYED_TARGETS; i++) {
-		bool key_active = false;
-		if (hotkeys & (1 << i)) {
-			key_active = true;
-		}
+		bool key_active = hotkeys & (1 << i);
 		table.addValue(i + 1, key_active); // translate to Lua index
 	}
 
@@ -99,6 +121,9 @@ ADE_FUNC(addHotkey,
 	hotkey_h current;
 	int key;
 	if (!ade_get_args(L, "oi", l_Hotkey.Get(&current), &key)) {
+		return ADE_RETURN_NIL;
+	}
+	if (!current.isValid()) {
 		return ADE_RETURN_NIL;
 	}
 	key--;
@@ -122,6 +147,9 @@ ADE_FUNC(removeHotkey,
 	if (!ade_get_args(L, "oi", l_Hotkey.Get(&current), &key)) {
 		return ADE_RETURN_NIL;
 	}
+	if (!current.isValid()) {
+		return ADE_RETURN_NIL;
+	}
 	key--;
 
 	remove_hotkey(key, current.getIndex());
@@ -140,6 +168,9 @@ ADE_FUNC(clearHotkeys,
 
 	hotkey_h current;
 	if (!ade_get_args(L, "o", l_Hotkey.Get(&current))) {
+		return ADE_RETURN_NIL;
+	}
+	if (!current.isValid()) {
 		return ADE_RETURN_NIL;
 	}
 

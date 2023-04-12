@@ -1838,7 +1838,7 @@ ADE_INDEXER(l_Hotkeys,
 		return ade_set_error(L, "o", l_Hotkey.Set(hotkey_h()));
 	idx--; // Convert to Lua's 1 based index system
 
-	if ((idx < 0) || (idx > MAX_LINES))
+	if ((idx < 0) || (idx >= MAX_LINES))
 		return ade_set_error(L, "o", l_Hotkey.Set(hotkey_h()));
 
 	return ade_set_args(L, "o", l_Hotkey.Set(hotkey_h(idx)));

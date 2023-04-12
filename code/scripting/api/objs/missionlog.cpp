@@ -16,7 +16,15 @@ log_entry_h::log_entry_h(int l_section) : section(l_section) {}
 
 log_line_complete* log_entry_h::getSection() const
 {
+	if (!isValid())
+		return nullptr;
+
 	return &Log_scrollback_vec[section];
+}
+
+bool log_entry_h::isValid() const
+{
+	return section >= 0 && section < (int)Log_scrollback_vec.size();
 }
 
 message_entry_h::message_entry_h() : section(-1) {}
@@ -24,17 +32,37 @@ message_entry_h::message_entry_h(int l_section) : section(l_section) {}
 
 line_node* message_entry_h::getSection() const
 {
+	if (!isValid())
+		return nullptr;
+
 	return &Msg_scrollback_vec[section];
+}
+
+bool message_entry_h::isValid() const
+{
+	return section >= 0 && section < (int)Msg_scrollback_vec.size();
 }
 
 //**********HANDLE: log entry
 ADE_OBJ(l_Log_Entry, log_entry_h, "log_entry", "Log Entry handle");
+
+ADE_FUNC(isValid, l_Log_Entry, nullptr, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
+{
+	log_entry_h current;
+	if (!ade_get_args(L, "o", l_Log_Entry.Get(&current)))
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "b", current.isValid());
+}
 
 ADE_VIRTVAR(Timestamp, l_Log_Entry, nullptr, "The timestamp of the log entry", "string", "The timestamp")
 {
 	log_entry_h current;
 	if (!ade_get_args(L, "o", l_Log_Entry.Get(&current))) {
 		return ADE_RETURN_NIL;
+	}
+	if (!current.isValid()) {
+		return ade_set_error(L, "s", "");
 	}
 
 	if (ADE_SETTING_VAR) {
@@ -50,11 +78,14 @@ ADE_VIRTVAR(Timestamp, l_Log_Entry, nullptr, "The timestamp of the log entry", "
 	return ade_set_args(L, "s", time.c_str());
 }
 
-ADE_VIRTVAR(Flags, l_Log_Entry, nullptr, "The flag of the log entry. 1 for Goal True, 2 for Goal Failed, 0 otherwise.", "string", "The flag")
+ADE_VIRTVAR(Flags, l_Log_Entry, nullptr, "The flag of the log entry. 1 for Goal True, 2 for Goal Failed, 0 otherwise.", "number", "The flag")
 {
 	log_entry_h current;
 	if (!ade_get_args(L, "o", l_Log_Entry.Get(&current))) {
 		return ADE_RETURN_NIL;
+	}
+	if (!current.isValid()) {
+		return ade_set_error(L, "i", 0);
 	}
 
 	if (ADE_SETTING_VAR) {
@@ -78,6 +109,9 @@ ADE_VIRTVAR(ObjectiveText, l_Log_Entry, nullptr, "The objective text of the log 
 	if (!ade_get_args(L, "o", l_Log_Entry.Get(&current))) {
 		return ADE_RETURN_NIL;
 	}
+	if (!current.isValid()) {
+		return ade_set_error(L, "s", "");
+	}
 
 	if (ADE_SETTING_VAR) {
 		LuaError(L, "This property is read only.");
@@ -91,6 +125,9 @@ ADE_VIRTVAR(ObjectiveColor, l_Log_Entry, nullptr, "The objective color of the lo
 	log_entry_h current;
 	if (!ade_get_args(L, "o", l_Log_Entry.Get(&current))) {
 		return ADE_RETURN_NIL;
+	}
+	if (!current.isValid()) {
+		return ade_set_error(L, "o", l_Color.Set(Color_text_normal));
 	}
 
 	if (ADE_SETTING_VAR) {
@@ -115,6 +152,9 @@ ADE_VIRTVAR(SegmentTexts,
 	}
 
 	auto table = luacpp::LuaTable::create(L);
+	if (!current.isValid()) {
+		return ade_set_error(L, "t", &table);
+	}
 
 	for (size_t i = 0; i < current.getSection()->segments.size(); i++) {
 		table.addValue(i + 1, current.getSection()->segments[i].text.get()); // translate to Lua index
@@ -136,6 +176,9 @@ ADE_VIRTVAR(SegmentColors,
 	}
 
 	auto table = luacpp::LuaTable::create(L);
+	if (!current.isValid()) {
+		return ade_set_error(L, "t", &table);
+	}
 
 	for (size_t i = 0; i < current.getSection()->segments.size(); i++) {
 
@@ -147,13 +190,25 @@ ADE_VIRTVAR(SegmentColors,
 }
 
 //**********HANDLE: message entry
-ADE_OBJ(l_Message_Entry, message_entry_h, "message_entry", "Log Entry handle");
+ADE_OBJ(l_Message_Entry, message_entry_h, "message_entry", "Message Entry handle");
+
+ADE_FUNC(isValid, l_Message_Entry, nullptr, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
+{
+	message_entry_h current;
+	if (!ade_get_args(L, "o", l_Message_Entry.Get(&current)))
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "b", current.isValid());
+}
 
 ADE_VIRTVAR(Timestamp, l_Message_Entry, nullptr, "The timestamp of the message entry", "string", "The timestamp")
 {
 	message_entry_h current;
 	if (!ade_get_args(L, "o", l_Message_Entry.Get(&current))) {
 		return ADE_RETURN_NIL;
+	}
+	if (!current.isValid()) {
+		return ade_set_error(L, "s", "");
 	}
 
 	if (ADE_SETTING_VAR) {
@@ -174,6 +229,9 @@ ADE_VIRTVAR(Color, l_Message_Entry, nullptr, "The color of the message entry.", 
 	message_entry_h current;
 	if (!ade_get_args(L, "o", l_Message_Entry.Get(&current))) {
 		return ADE_RETURN_NIL;
+	}
+	if (!current.isValid()) {
+		return ade_set_error(L, "o", l_Color.Set(Color_text_normal));
 	}
 
 	if (ADE_SETTING_VAR) {
@@ -215,6 +273,9 @@ ADE_VIRTVAR(Text, l_Message_Entry, nullptr, "The text of the message entry", "st
 	message_entry_h current;
 	if (!ade_get_args(L, "o", l_Message_Entry.Get(&current))) {
 		return ADE_RETURN_NIL;
+	}
+	if (!current.isValid()) {
+		return ade_set_error(L, "s", "");
 	}
 
 	if (ADE_SETTING_VAR) {

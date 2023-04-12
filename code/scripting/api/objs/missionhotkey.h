@@ -12,6 +12,7 @@ struct hotkey_h {
 	explicit hotkey_h(int l_line);
 	hotkey_line* getLine() const;
 	int getIndex() const;
+	bool isValid() const;
 };
 
 DECLARE_ADE_OBJ(l_Hotkey, hotkey_h);
