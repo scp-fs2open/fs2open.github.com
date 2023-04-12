@@ -11,6 +11,7 @@ struct help_section_h {
 	help_section_h();
 	explicit help_section_h(int l_section);
 	gameplay_help_section* getSection() const;
+	bool isValid() const;
 };
 
 DECLARE_ADE_OBJ(l_Help_Section, help_section_h);

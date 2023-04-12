@@ -10,17 +10,37 @@ rank_h::rank_h(int l_rank) : rank(l_rank) {}
 
 rank_stuff* rank_h::getRank() const
 {
+	if (!isValid())
+		return nullptr;
+
 	return &Ranks[rank];
+}
+
+bool rank_h::isValid() const
+{
+	return rank >= 0 && rank < (int)Ranks.size();
 }
 
 //**********HANDLE: rank
 ADE_OBJ(l_Rank, rank_h, "rank", "Rank handle");
+
+ADE_FUNC(isValid, l_Rank, nullptr, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
+{
+	rank_h current;
+	if (!ade_get_args(L, "o", l_Rank.Get(&current)))
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "b", current.isValid());
+}
 
 ADE_VIRTVAR(Name, l_Rank, nullptr, "The name of the rank", "string", "The name")
 {
 	rank_h current;
 	if (!ade_get_args(L, "o", l_Rank.Get(&current))) {
 		return ADE_RETURN_NIL;
+	}
+	if (!current.isValid()) {
+		return ade_set_error(L, "s", "");
 	}
 
 	if (ADE_SETTING_VAR) {
@@ -35,6 +55,9 @@ ADE_VIRTVAR(Bitmap, l_Rank, nullptr, "The bitmap of the rank", "string", "The bi
 	rank_h current;
 	if (!ade_get_args(L, "o", l_Rank.Get(&current))) {
 		return ADE_RETURN_NIL;
+	}
+	if (!current.isValid()) {
+		return ade_set_error(L, "s", "");
 	}
 
 	if (ADE_SETTING_VAR) {

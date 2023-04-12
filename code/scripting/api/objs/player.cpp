@@ -812,11 +812,14 @@ ADE_VIRTVAR(Medals,
 		return ADE_RETURN_NIL;
 	}
 
+	auto table = luacpp::LuaTable::create(L);
+	if (!ssh->isValid()) {
+		return ade_set_error(L, "t", &table);
+	}
+
 	if (ADE_SETTING_VAR) {
 		LuaError(L, "This property is read only.");
 	}
-
-	auto table = luacpp::LuaTable::create(L);
 
 	for (int i = 0; i < (int)Medals.size(); i++) {
 		table.addValue(i + 1, ssh->get()->medal_counts[i]); // translate to Lua index
@@ -836,6 +839,9 @@ ADE_VIRTVAR(Rank,
 	if (!ade_get_args(L, "o", l_ScoringStats.GetPtr(&ssh))) {
 		return ADE_RETURN_NIL;
 	}
+	if (!ssh->isValid()) {
+		return ade_set_error(L, "i", 0);
+	}
 
 	if (ADE_SETTING_VAR) {
 		LuaError(L, "This property is read only.");
@@ -843,6 +849,7 @@ ADE_VIRTVAR(Rank,
 
 	return ade_set_args(L, "i", verify_rank(ssh->get()->rank));
 }
+
 }
 }
 
