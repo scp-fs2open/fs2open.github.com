@@ -80,25 +80,6 @@ enum class LR_Objecttypes { LRO_SHIPS, LRO_WEAPONS };
 
 #define MAX_SPAWN_TYPES_PER_WEAPON 5
 
-enum class WeaponState : uint32_t
-{
-	INVALID,
-
-	// States for laser weapons
-	NORMAL, //!< For laser weapons that have only one state
-
-	// Missile states following
-	FREEFLIGHT, //!< The initial flight state where the missile is "unpowered"
-	IGNITION, //!< The moment when the missile comes out of free flight
-	HOMED_FLIGHT, //!< The missile is homing in on its target
-	UNHOMED_FLIGHT, //!< The missile does not currently target an object
-};
-struct WeaponStateHash {
-	size_t operator()(const WeaponState& state) const {
-		return static_cast<size_t>(state);
-	}
-};
-
 typedef struct weapon {
 	int		weapon_info_index;			// index into weapon_info array
 	int		objnum;							// object number for this weapon

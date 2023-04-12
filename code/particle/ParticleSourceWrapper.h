@@ -51,6 +51,8 @@ namespace particle
 
 		void moveToObject(object* obj, vec3d* localPos);
 
+		void moveToBeam(object* obj);
+
 		void moveTo(vec3d* pos);
 
 		void setVelocity(vec3d* vel);

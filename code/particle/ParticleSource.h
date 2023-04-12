@@ -25,6 +25,7 @@ namespace particle {
 enum class SourceOriginType {
 	NONE, //!< Invalid origin
 	VECTOR, //!< World-space offset
+	BEAM,
 	OBJECT, //!< An object
 	PARTICLE //!< A particle
 };
@@ -65,6 +66,9 @@ class SourceOrigin {
 
 	/**
 	 * @brief Gets the current, global position of the origin
+	 * 
+	 * Be aware for beam soruces this will give *random* points along its length
+	 * 
 	 * @param posOut The pointer where the location will be stored
 	 */
 	void getGlobalPosition(vec3d* posOut) const;
@@ -111,6 +115,12 @@ class SourceOrigin {
 	 * @param pos The world position
 	 */
 	void moveTo(vec3d* pos);
+
+	/**
+	 * @brief Moves the source to the specified beam object
+	 * @param objp The hosting beam
+	 */
+	void moveToBeam(object* objp);
 
 	/**
 	 * @brief Moves the source to the specified object with an offset
