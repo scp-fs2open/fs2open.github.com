@@ -1171,6 +1171,9 @@ void mission_hotkey_do_frame(float  /*frametime*/)
 				case HotkeyLineType::SUBSHIP:
 					hotkeys = get_ship_hotkeys(Selected_line);
 					break;
+
+				default:
+					break;
 			}
 
 			if (hotkeys != -1) {
