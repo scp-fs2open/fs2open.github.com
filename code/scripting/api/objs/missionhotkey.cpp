@@ -1,4 +1,5 @@
 #include "missionhotkey.h"
+#include "enums.h"
 
 #include "mission/missionhotkey.h"
 #include "playerman/player.h"
@@ -78,9 +79,6 @@ ADE_VIRTVAR(Type,
 	}
 
 	switch (current.getLine()->type) {
-		case HotkeyLineType::NONE:
-			eh_idx = LE_HOTKEY_LINE_NONE;
-			break;
 		case HotkeyLineType::HEADING:
 			eh_idx = LE_HOTKEY_LINE_HEADING;
 			break;
@@ -92,6 +90,10 @@ ADE_VIRTVAR(Type,
 			break;
 		case HotkeyLineType::SUBSHIP:
 			eh_idx = LE_HOTKEY_LINE_SUBSHIP;
+			break;
+		case HotkeyLineType::NONE:
+		default:
+			eh_idx = LE_HOTKEY_LINE_NONE;
 			break;
 	}
 
