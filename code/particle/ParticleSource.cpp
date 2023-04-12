@@ -42,14 +42,14 @@ void SourceOrigin::getGlobalPosition(vec3d* posOut) const {
 		case SourceOriginType::BEAM: {
 			auto beam = &Beams[m_origin.m_object.objp->instance];
 			*posOut = beam->last_start;
-			// randomly weighted towards the start
+			// weight the random points towards the start linearly
 			// proportion along the beam the beam stopped, of its total potential length
 			float dist_adjusted = vm_vec_dist(&beam->last_start, &beam->last_shot) / beam->range;
 			// randomly sample from the weighted distribution, excluding points beyond the last_shot
 			auto t = (1.0f - sqrtf(frand_range(powf(1.f - dist_adjusted, 2.0f), 1.0f)));
 			vec3d dir;
 			vm_vec_normalized_dir(&dir, &beam->last_shot, &beam->last_start);
-			*posOut += (dir * beam->range) * (t);
+			*posOut += (dir * beam->range) * t;
 			offset = m_offset;
 			break;
 		}
