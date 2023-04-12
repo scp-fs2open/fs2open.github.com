@@ -25,7 +25,7 @@ namespace particle {
 enum class SourceOriginType {
 	NONE, //!< Invalid origin
 	VECTOR, //!< World-space offset
-	BEAM,
+	BEAM, //!< A beam
 	OBJECT, //!< An object
 	PARTICLE //!< A particle
 };

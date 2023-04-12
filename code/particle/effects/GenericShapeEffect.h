@@ -109,8 +109,8 @@ class GenericShapeEffect : public ParticleEffect {
 				float km;
 				float remainder = modf(dist, &km);
 				uint old_num = num;
-				num = (uint)(old_num * remainder); // try to add any remainders if we have more than 1 per kilometer
-				num += (uint)(old_num * km); // multiply by the number of kilometers
+				num = (uint)(old_num * km); // multiply by the number of kilometers
+				num += (uint)(old_num * remainder); // try to add any remainders if we have more than 1 per kilometer
 				// if we still have nothing let's give it one last shot
 				if (num < 1 && frand() < remainder * old_num)
 					num += 1;
