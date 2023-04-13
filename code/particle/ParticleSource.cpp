@@ -63,6 +63,7 @@ void SourceOrigin::getGlobalPosition(vec3d* posOut) const {
 	vm_vec_add2(posOut, &offset);
 }
 void SourceOrigin::getHostOrientation(matrix* matOut) const {
+	vec3d vec;
 	switch (m_originType) {
 	case SourceOriginType::OBJECT:
 		*matOut = m_origin.m_object.objp->orient;
@@ -71,7 +72,7 @@ void SourceOrigin::getHostOrientation(matrix* matOut) const {
 		vm_vector_2_matrix(matOut, &m_origin.m_particle.lock()->velocity, nullptr, nullptr);
 		break;
 	case SourceOriginType::BEAM:
-		vec3d vec = vmd_zero_vector;
+		vec = vmd_zero_vector;
 		vm_vec_normalized_dir(&vec, &Beams[m_origin.m_object.objp->instance].last_shot, &Beams[m_origin.m_object.objp->instance].last_start);
 		vm_vector_2_matrix(matOut, &vec, nullptr, nullptr);
 		break;
