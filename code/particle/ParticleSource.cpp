@@ -95,12 +95,7 @@ void SourceOrigin::applyToParticleInfo(particle_info& info, bool allowRelative) 
 				info.pos = m_offset;
 				break;
 			}
-			case SourceOriginType::BEAM: {
-				// although the source has an 'attached object', this does not apply to particles it creates
-				info.attached_objnum = -1;
-				info.attached_sig = -1;
-				this->getGlobalPosition(&info.pos);
-			}
+			case SourceOriginType::BEAM: // Intentional fall-through
 			case SourceOriginType::PARTICLE: // Intentional fall-through
 			case SourceOriginType::VECTOR: // Intentional fall-through
 			default: {
