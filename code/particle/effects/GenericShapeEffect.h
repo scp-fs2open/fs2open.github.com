@@ -107,7 +107,7 @@ class GenericShapeEffect : public ParticleEffect {
 				object* b_obj = source->getOrigin()->getObjectHost();
 				float dist = vm_vec_dist(&Beams[b_obj->instance].last_start, &Beams[b_obj->instance].last_shot) / 1000.0f;
 				float km;
-				float remainder = modf(dist, &km);
+				float remainder = modff(dist, &km);
 				uint old_num = num;
 				num = (uint)(old_num * km); // multiply by the number of kilometers
 				num += (uint)(old_num * remainder); // try to add any remainders if we have more than 1 per kilometer
