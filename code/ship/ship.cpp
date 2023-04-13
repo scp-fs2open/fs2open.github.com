@@ -8917,7 +8917,7 @@ static void ship_dying_frame(object *objp, int ship_num)
 				pe.max_rad = pef.max_rad; // * objp->radius;
 
 				if (pe.num_high > 0) {
-					particle::emit( &pe, particle::PARTICLE_SMOKE2, 0, 50 );
+					particle::emit( &pe, particle::PARTICLE_SMOKE2, 0 );
 				}
 
 				// do sound - maybe start a random sound, if it has played far enough.
