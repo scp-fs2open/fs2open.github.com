@@ -31,7 +31,7 @@ struct deferred_global_data {
 	float invScreenWidth;
 	float invScreenHeight;
 
-	float pad;
+	float pad[2];
 };
 
 /**
