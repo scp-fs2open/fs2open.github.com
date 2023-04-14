@@ -5120,9 +5120,9 @@ void parse_event(mission *pm)
 
 				if (optional_string("+Background Color:")) {
 					stuff_ubyte(&ea.r);
-					check_first_non_whitespace_char(Mp, ',', &Mp);
+					check_first_non_grayspace_char(Mp, ',', &Mp);
 					stuff_ubyte(&ea.g);
-					check_first_non_whitespace_char(Mp, ',', &Mp);
+					check_first_non_grayspace_char(Mp, ',', &Mp);
 					stuff_ubyte(&ea.b);
 				}
 

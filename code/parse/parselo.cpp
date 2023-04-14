@@ -2537,7 +2537,7 @@ int stuff_float(float *f, bool optional)
 		error_display(1, "Expected float, found [%.32s].\n", next_tokens(true));
 	}
 
-	if (check_first_non_whitespace_char(Mp, ',', &Mp))
+	if (check_first_non_grayspace_char(Mp, ',', &Mp))
 		comma = true;
 
 	if (optional && !success)
@@ -2605,7 +2605,7 @@ int stuff_int(int *i, bool optional)
 		error_display(1, "Expected int, found [%.32s].\n", next_tokens(true));
 	}
 
-	if (check_first_non_whitespace_char(Mp, ',', &Mp))
+	if (check_first_non_grayspace_char(Mp, ',', &Mp))
 		comma = true;
 
 	if (optional && !success)
@@ -2673,7 +2673,7 @@ int stuff_long(long *l, bool optional)
 		error_display(1, "Expected long, found [%.32s].\n", next_tokens(true));
 	}
 
-	if (check_first_non_whitespace_char(Mp, ',', &Mp))
+	if (check_first_non_grayspace_char(Mp, ',', &Mp))
 		comma = true;
 
 	if (optional && !success)
