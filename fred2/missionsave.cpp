@@ -1549,6 +1549,10 @@ int CFred_mission_save::save_cmd_brief()
 		parse_comments();
 		fout(" %s", Cur_cmd_brief->stage[stage].ani_filename);
 
+		if (!drop_white_space(Cur_cmd_brief->stage[stage].wave_filename)[0]) {
+			strcpy_s(Cur_cmd_brief->stage[stage].wave_filename, "None");
+		}
+
 		required_string_fred("+Wave Filename:", "$Ani Filename:");
 		parse_comments();
 		fout(" %s", Cur_cmd_brief->stage[stage].wave_filename);
