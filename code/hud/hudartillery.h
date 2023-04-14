@@ -14,6 +14,7 @@
 
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
+#include "fireball/fireballs.h"
 
 // -----------------------------------------------------------------------------------------------------------------------
 // ARTILLERY DEFINES/VARS
@@ -26,22 +27,28 @@
 
 // global ssm types
 typedef struct ssm_info {
-	char		name[NAME_LENGTH];		// strike name
-	int			count;					// # of missiles in this type of strike
-	int			max_count;				// Maximum # of missiles in this type of strike (-1 for no variance)
-	int			weapon_info_index;		// missile type
-	int			fireball_idx;			// Type of fireball to use for warp effect (defaults to FIREBALL_WARP)
-	float		warp_radius;			// radius of associated warp effect
-	float		warp_time;				// how long the warp effect lasts
-	float		radius;					// radius around the target ship
-	float		max_radius;				// Maximum radius around the target ship (-1.0f for no variance)
-	float		offset;					// offset in front of the target ship
-	float		max_offset;				// Maximum offset in front of the target ship (-1.0f for no variance)
-	char		message[NAME_LENGTH];
-	bool		use_custom_message;
-	bool		send_message;
-	gamesnd_id	sound_index;
-	int			shape;
+	char        name[NAME_LENGTH];          // strike name
+	int         count = 1;                  // # of missiles in this type of strike
+	int         max_count = -1;             // Maximum # of missiles in this type of strike (-1 for no variance)
+	int         weapon_info_index = -1;     // missile type
+	int         fireball_type = FIREBALL_WARP;  // Type of fireball to use for warp effect (defaults to FIREBALL_WARP)
+	float       warp_radius = 50.0f;        // radius of associated warp effect
+	float       warp_time = 4.0f;           // how long the warp effect lasts
+	float       radius = 500.0f;            // radius around the target ship
+	float       max_radius = -1.0f;         // Maximum radius around the target ship (-1.0f for no variance)
+	float       offset = 0.0f;              // offset in front of the target ship
+	float       max_offset = -1.0f;         // Maximum offset in front of the target ship (-1.0f for no variance)
+	bool        send_message = true;
+	bool        use_custom_message = false;
+	char        custom_message[NAME_LENGTH];
+	gamesnd_id  sound_index;
+	int         shape = SSM_SHAPE_CIRCLE;
+
+	ssm_info()
+	{
+		name[0] = '\0';
+		custom_message[0] = '\0';
+	}
 } ssm_info;
 
 // creation info for the strike (useful for multiplayer)
