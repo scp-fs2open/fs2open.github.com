@@ -474,7 +474,7 @@ namespace particle
 				batching_add_laser(framenum + cur_frame, &p0, part->radius, &p1, part->radius);
 			}
 			else {
-				// it will subtract Physics_viewer_bank, so without the flah we counter that make it screen-aligned again
+				// it will subtract Physics_viewer_bank, so without the flag we counter that and make it screen-aligned again
 				batching_add_volume_bitmap_rotated(framenum + cur_frame, &pos, Randomize_particle_rotation ? part->angle : Physics_viewer_bank, part->radius, alpha);
 			}
 
