@@ -141,7 +141,7 @@ namespace particle
 		adjusted_dist /= info->rad;
 		float cull_start_dist = 1000.f;
 		if (adjusted_dist > cull_start_dist) {
-			if (frand() > 1.0f / (log2(adjusted_dist) - (log2(cull_start_dist) - 1.0f)))
+			if (frand() > 1.0f / (log2(adjusted_dist / cull_start_dist) + 1.0f))
 				return false;
 		}
 
