@@ -2195,10 +2195,10 @@ ADE_FUNC(createColor,
 		return ADE_RETURN_NIL;
 	}
 
-	gr_clamp_color_value(r);
-	gr_clamp_color_value(g);
-	gr_clamp_color_value(b);
-	gr_clamp_color_value(a);
+	CLAMP(r, 0, 255);
+	CLAMP(g, 0, 255);
+	CLAMP(b, 0, 255);
+	CLAMP(a, 0, 255);
 
 	color thisColor;
 	gr_init_alphacolor(&thisColor, r, g, b, a);

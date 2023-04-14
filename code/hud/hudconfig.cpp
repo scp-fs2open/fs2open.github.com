@@ -531,7 +531,6 @@ void hud_config_alpha_slider_up();
 void hud_config_alpha_slider_down();
 void hud_config_recalc_alpha_slider();
 void hud_config_process_colors();
-void hud_config_preset_init();
 #define NUM_HC_SLIDERS			4
 #define HCS_RED					0
 #define HCS_GREEN					1

@@ -1265,7 +1265,6 @@ inline void gr_sync_delete(gr_sync sync)
 
 // color functions
 void gr_init_color(color *c, int r, int g, int b);
-void gr_clamp_color_value(int& val);
 void gr_init_alphacolor(color* clr, int r, int g, int b, int alpha, int type = AC_TYPE_HUD);
 void gr_set_color( int r, int g, int b );
 void gr_set_color_fast(color *dst);
