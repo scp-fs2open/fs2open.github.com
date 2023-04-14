@@ -40,7 +40,10 @@ extern const char *Radar_range_text(int range_num);
 
 #define RP_DEFAULT ( RP_SHOW_DEBRIS | RP_SHOW_FRIENDLY_MISSILES | RP_SHOW_HOSTILE_MISSILES )
 
-// defined in hudconfig.cpp
+/*!
+ * @brief Vector for storing the filenames of hud preset files
+ * @note main definition in hudconfig.cpp
+ */
 extern SCP_vector<SCP_string> HC_preset_filenames;
 
 extern int HUD_observer_default_flags;
@@ -89,7 +92,10 @@ struct HC_gauge_region
 	HC_gauge_region(const char *name, int x1, int y1, int h, int iff, int cp, int b, int nf, int cl) : filename(name), x(x1), y(y1), hotspot(h), use_iff(iff), can_popup(cp), bitmap(b), nframes(nf), color(cl){}
 };
 
-//defined in hudconfig.cpp
+/*!
+ * @brief Array of hud gauges to be displayed in the hud config ui and configured by the player
+ * @note main definition in hudconfig.cpp
+ */
 extern struct HC_gauge_region HC_gauge_regions[GR_NUM_RESOLUTIONS][NUM_HUD_GAUGES];
 
 extern int HC_gauge_hot;
