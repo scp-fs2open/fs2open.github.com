@@ -158,9 +158,9 @@ namespace particle
 		part->attached_objnum = info->attached_objnum;
 		part->attached_sig = info->attached_sig;
 		part->reverse = info->reverse;
-		part->particle_index = (int) Persistent_particles.size();
 		part->looping = false;
 		part->length = info->length;
+		part->angle = frand_range(0.0f, PI2);
 
 		switch (info->type)
 		{
@@ -474,7 +474,8 @@ namespace particle
 				batching_add_laser(framenum + cur_frame, &p0, part->radius, &p1, part->radius);
 			}
 			else {
-				batching_add_volume_bitmap(framenum + cur_frame, &pos, part->particle_index % 8, part->radius, alpha);
+				// it will subtract Physics_viewer_bank, so without the flah we counter that make it screen-aligned again
+				batching_add_volume_bitmap_rotated(framenum + cur_frame, &pos, Randomize_particle_rotation ? part->angle : Physics_viewer_bank, part->radius, alpha);
 			}
 
 
