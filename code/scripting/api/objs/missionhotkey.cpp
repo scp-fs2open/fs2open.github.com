@@ -1,4 +1,5 @@
 #include "missionhotkey.h"
+#include "enums.h"
 
 #include "mission/missionhotkey.h"
 #include "playerman/player.h"
@@ -59,23 +60,44 @@ ADE_VIRTVAR(Text, l_Hotkey, nullptr, "The text of this hotkey line", "string", "
 ADE_VIRTVAR(Type,
 	l_Hotkey,
 	nullptr,
-	"The type of this hotkey line. 0 for nothing, 1 for heading, 2 for wing, 3 for ship, 4 for ship in a wing",
-	"number",
+	"The type of this hotkey line: HOTKEY_LINE_NONE, HOTKEY_LINE_HEADING, HOTKEY_LINE_WING, HOTKEY_LINE_SHIP, or HOTKEY_LINE_SUBSHIP.",
+	"enumeration",
 	"The type")
 {
 	hotkey_h current;
+	lua_enum eh_idx = ENUM_INVALID;
+
 	if (!ade_get_args(L, "o", l_Hotkey.Get(&current))) {
 		return ADE_RETURN_NIL;
 	}
 	if (!current.isValid()) {
-		return ade_set_error(L, "i", 0);
+		return ade_set_error(L, "o", l_Enum.Set(enum_h(eh_idx)));
 	}
 
 	if (ADE_SETTING_VAR) {
 		LuaError(L, "This property is read only.");
 	}
 
-	return ade_set_args(L, "i", current.getLine()->type);
+	switch (current.getLine()->type) {
+		case HotkeyLineType::HEADING:
+			eh_idx = LE_HOTKEY_LINE_HEADING;
+			break;
+		case HotkeyLineType::WING:
+			eh_idx = LE_HOTKEY_LINE_WING;
+			break;
+		case HotkeyLineType::SHIP:
+			eh_idx = LE_HOTKEY_LINE_SHIP;
+			break;
+		case HotkeyLineType::SUBSHIP:
+			eh_idx = LE_HOTKEY_LINE_SUBSHIP;
+			break;
+		case HotkeyLineType::NONE:
+		default:
+			eh_idx = LE_HOTKEY_LINE_NONE;
+			break;
+	}
+
+	return ade_set_args(L, "o", l_Enum.Set(enum_h(eh_idx)));
 }
 
 ADE_VIRTVAR(Keys,
@@ -96,7 +118,7 @@ ADE_VIRTVAR(Keys,
 	}
 
 	int hotkeys;
-	if (current.getLine()->type == HOTKEY_LINE_WING)
+	if (current.getLine()->type == HotkeyLineType::WING)
 		hotkeys = get_wing_hotkeys(current.getIndex()); // for wings
 	else
 		hotkeys = get_ship_hotkeys(current.getIndex()); // for everything else (there's mastercard)

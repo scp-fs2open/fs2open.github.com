@@ -506,7 +506,7 @@ int get_ship_hotkeys(int n)
 }
 
 // add a line of hotkey smuck to end of list
-int hotkey_line_add(const char *text, int type, int index, int y)
+int hotkey_line_add(const char *text, HotkeyLineType type, int index, int y)
 {
 	if (Num_lines >= MAX_LINES)
 		return 0;
@@ -519,7 +519,7 @@ int hotkey_line_add(const char *text, int type, int index, int y)
 }
 
 // insert a line of hotkey smuck before line 'n'.
-int hotkey_line_insert(int n, const char *text, int type, int index)
+int hotkey_line_insert(int n, const char *text, HotkeyLineType type, int index)
 {
 
 	if (Num_lines >= MAX_LINES)
@@ -539,18 +539,18 @@ int hotkey_line_insert(int n, const char *text, int type, int index)
 
 // insert a line of hotkey smuck somewhere between 'start' and end of list such that it is
 // sorted by name
-int hotkey_line_add_sorted(const char *text, int type, int index, int start)
+int hotkey_line_add_sorted(const char *text, HotkeyLineType type, int index, int start)
 {
 
 	if (Num_lines >= MAX_LINES)
 		return -1;
 
 	int z = Num_lines - 1;
-	while ((z >= start) && ((Hotkey_lines[z].type == HOTKEY_LINE_SUBSHIP) || (stricmp(text, Hotkey_lines[z].label.c_str()) < 0)))
+	while ((z >= start) && ((Hotkey_lines[z].type == HotkeyLineType::SUBSHIP) || (stricmp(text, Hotkey_lines[z].label.c_str()) < 0)))
 		z--;
 
 	z++;
-	while ((z < Num_lines) && (Hotkey_lines[z].type == HOTKEY_LINE_SUBSHIP))
+	while ((z < Num_lines) && (Hotkey_lines[z].type == HotkeyLineType::SUBSHIP))
 		z++;
 
 	return hotkey_line_insert(z, text, type, index);
@@ -575,7 +575,7 @@ int hotkey_build_team_listing(int enemy_team_mask, int y, bool list_enemies)
 		hotkey_team = IFF_hotkey_team::Friendly;
 	}
 
-	hotkey_line_add(str, HOTKEY_LINE_HEADING, 0, y);
+	hotkey_line_add(str, HotkeyLineType::HEADING, 0, y);
 	y += 2;
 
 	int start = Num_lines;
@@ -623,7 +623,7 @@ int hotkey_build_team_listing(int enemy_team_mask, int y, bool list_enemies)
 
 		// add it if the teams match or if the IFF says to
 		if (add_it) {
-			hotkey_line_add_sorted(shipp->get_display_name(), HOTKEY_LINE_SHIP, shipnum, start);
+			hotkey_line_add_sorted(shipp->get_display_name(), HotkeyLineType::SHIP, shipnum, start);
 		}
 	}
 
@@ -674,12 +674,12 @@ int hotkey_build_team_listing(int enemy_team_mask, int y, bool list_enemies)
 			strcpy_s(wing_name, Wings[i].name);
 			end_string_at_first_hash_symbol(wing_name);
 
-			int z = hotkey_line_add_sorted(wing_name, HOTKEY_LINE_WING, i, start);
+			int z = hotkey_line_add_sorted(wing_name, HotkeyLineType::WING, i, start);
 			if (Wings[i].flags[Ship::Wing_Flags::Expanded]) {
 				for (j=0; j<Wings[i].current_count; j++) {
 					int s = Wings[i].ship_index[j];
 					if (!Ships[s].is_dying_or_departing()) {
-						z = hotkey_line_insert(z + 1, Ships[s].get_display_name(), HOTKEY_LINE_SUBSHIP, s);
+						z = hotkey_line_insert(z + 1, Ships[s].get_display_name(), HotkeyLineType::SUBSHIP, s);
 					}
 				}
 			}
@@ -696,7 +696,7 @@ int hotkey_build_team_listing(int enemy_team_mask, int y, bool list_enemies)
 	int font_height = gr_get_font_height();
 
 	for (int i=start; i<Num_lines; i++) {
-		if (Hotkey_lines[i].type == HOTKEY_LINE_SUBSHIP)
+		if (Hotkey_lines[i].type == HotkeyLineType::SUBSHIP)
 			y += font_height;
 		else
 			y += font_height + 2;
@@ -742,7 +742,7 @@ void hotkey_scroll_screen_up()
 	if (Scroll_offset) {
 		Scroll_offset--;
 		Assert(Selected_line > Scroll_offset);
-		while (!hotkey_line_query_visible(Selected_line) || (Hotkey_lines[Selected_line].type == HOTKEY_LINE_HEADING))
+		while (!hotkey_line_query_visible(Selected_line) || (Hotkey_lines[Selected_line].type == HotkeyLineType::HEADING))
 			Selected_line--;
 
 		gamesnd_play_iface(InterfaceSounds::SCROLL);
@@ -755,7 +755,7 @@ void hotkey_scroll_line_up()
 {
 	if (Selected_line > 1) {
 		Selected_line--;
-		while (Hotkey_lines[Selected_line].type == HOTKEY_LINE_HEADING)
+		while (Hotkey_lines[Selected_line].type == HotkeyLineType::HEADING)
 			Selected_line--;
 
 		if (Selected_line < Scroll_offset)
@@ -771,7 +771,7 @@ void hotkey_scroll_screen_down()
 {
 	if (Hotkey_lines[Num_lines - 1].y + gr_get_font_height() > Hotkey_lines[Scroll_offset].y + Hotkey_list_coords[gr_screen.res][3]) {
 		Scroll_offset++;
-		while (!hotkey_line_query_visible(Selected_line) || (Hotkey_lines[Selected_line].type == HOTKEY_LINE_HEADING)) {
+		while (!hotkey_line_query_visible(Selected_line) || (Hotkey_lines[Selected_line].type == HotkeyLineType::HEADING)) {
 			Selected_line++;
 			Assert(Selected_line < Num_lines);
 		}
@@ -786,7 +786,7 @@ void hotkey_scroll_line_down()
 {
 	if (Selected_line < Num_lines - 1) {
 		Selected_line++;
-		while (Hotkey_lines[Selected_line].type == HOTKEY_LINE_HEADING)
+		while (Hotkey_lines[Selected_line].type == HotkeyLineType::HEADING)
 			Selected_line++;
 
 		Assert(Selected_line > Scroll_offset);
@@ -801,7 +801,7 @@ void hotkey_scroll_line_down()
 
 void expand_wing(int line, bool forceExpand)
 {
-	if (Hotkey_lines[line].type == HOTKEY_LINE_WING) {
+	if (Hotkey_lines[line].type == HotkeyLineType::WING) {
 		int i = Hotkey_lines[line].index;
 		if (forceExpand) {
 			Wings[i].flags.set(Ship::Wing_Flags::Expanded);
@@ -810,7 +810,7 @@ void expand_wing(int line, bool forceExpand)
 		}
 		hotkey_build_listing();
 		for (int z=0; z<Num_lines; z++)
-			if ((Hotkey_lines[z].type == HOTKEY_LINE_WING) && (Hotkey_lines[z].index == i)) {
+			if ((Hotkey_lines[z].type == HotkeyLineType::WING) && (Hotkey_lines[z].index == i)) {
 				Selected_line = z;
 				break;
 			}
@@ -838,15 +838,15 @@ void reset_hotkeys()
 
 void clear_hotkeys(int line)
 {
-	int z = Hotkey_lines[line].type;
+	auto type = Hotkey_lines[line].type;
 
-	if (z == HOTKEY_LINE_WING) {
-		z = Hotkey_lines[line].index;
+	if (type == HotkeyLineType::WING) {
+		int z = Hotkey_lines[line].index;
 		int b = ~get_wing_hotkeys(line);
 		for (int i=0; i<Wings[z].current_count; i++)
 			Hotkey_bits[Wings[z].ship_index[i]] &= b;
 
-	} else if ((z == HOTKEY_LINE_SHIP) || (z == HOTKEY_LINE_SUBSHIP)) {
+	} else if ((type == HotkeyLineType::SHIP) || (type == HotkeyLineType::SUBSHIP)) {
 		Hotkey_bits[Hotkey_lines[line].index] = 0;
 	}
 }
@@ -869,28 +869,28 @@ void save_hotkeys()
 
 void add_hotkey(int hotkey, int line)
 {
-	int z = Hotkey_lines[line].type;
+	auto type = Hotkey_lines[line].type;
 
-	if (z == HOTKEY_LINE_WING) {
-		z = Hotkey_lines[line].index;
+	if (type == HotkeyLineType::WING) {
+		int z = Hotkey_lines[line].index;
 		for (int i=0; i<Wings[z].current_count; i++)
 			Hotkey_bits[Wings[z].ship_index[i]] |= (1 << hotkey);
 
-	} else if ((z == HOTKEY_LINE_SHIP) || (z == HOTKEY_LINE_SUBSHIP)) {
+	} else if ((type == HotkeyLineType::SHIP) || (type == HotkeyLineType::SUBSHIP)) {
 		Hotkey_bits[Hotkey_lines[line].index] |= (1 << hotkey);
 	}
 }
 
 void remove_hotkey(int hotkey, int line)
 {
-	int z = Hotkey_lines[line].type;
+	auto type = Hotkey_lines[line].type;
 
-	if (z == HOTKEY_LINE_WING) {
-		z = Hotkey_lines[line].index;
+	if (type == HotkeyLineType::WING) {
+		int z = Hotkey_lines[line].index;
 		for (int i=0; i<Wings[z].current_count; i++)
 			Hotkey_bits[Wings[z].ship_index[i]] &= ~(1 << hotkey);
 
-	} else if ((z == HOTKEY_LINE_SHIP) || (z == HOTKEY_LINE_SUBSHIP)) {
+	} else if ((type == HotkeyLineType::SHIP) || (type == HotkeyLineType::SUBSHIP)) {
 		Hotkey_bits[Hotkey_lines[line].index] &= ~(1 << hotkey);
 	}
 }
@@ -1163,13 +1163,16 @@ void mission_hotkey_do_frame(float  /*frametime*/)
 			Selected_line = i + Scroll_offset;
 			int hotkeys = -1;
 			switch (Hotkey_lines[Selected_line].type) {
-				case HOTKEY_LINE_WING:
+				case HotkeyLineType::WING:
 					hotkeys = get_wing_hotkeys(Selected_line);
 					break;
 
-				case HOTKEY_LINE_SHIP:
-				case HOTKEY_LINE_SUBSHIP:
+				case HotkeyLineType::SHIP:
+				case HotkeyLineType::SUBSHIP:
 					hotkeys = get_ship_hotkeys(Selected_line);
+					break;
+
+				default:
 					break;
 			}
 
@@ -1215,7 +1218,7 @@ void mission_hotkey_do_frame(float  /*frametime*/)
 		int width = 0;
 
 		switch (Hotkey_lines[line].type) {
-			case HOTKEY_LINE_HEADING:
+			case HotkeyLineType::HEADING:
 				gr_set_color_fast(&Color_text_heading);
 
 				gr_get_string_size(&w, &h, Hotkey_lines[line].label.c_str());
@@ -1224,7 +1227,7 @@ void mission_hotkey_do_frame(float  /*frametime*/)
 				gr_line(Hotkey_ship_x[gr_screen.res] + w + 1, width, Hotkey_list_coords[gr_screen.res][0] + Hotkey_list_coords[gr_screen.res][2], width, GR_RESIZE_MENU);
 				break;
 
-			case HOTKEY_LINE_WING:
+			case HotkeyLineType::WING:
 				gr_set_bitmap(Wing_bmp);
 				bm_get_info(Wing_bmp, nullptr, &h, nullptr);
 				width = y + font_height / 2 - h / 2 - 1;
@@ -1243,8 +1246,8 @@ void mission_hotkey_do_frame(float  /*frametime*/)
 				hotkeys = get_wing_hotkeys(line);
 				break;
 
-			case HOTKEY_LINE_SHIP:
-			case HOTKEY_LINE_SUBSHIP:
+			case HotkeyLineType::SHIP:
+			case HotkeyLineType::SUBSHIP:
 				hotkeys = get_ship_hotkeys(line);
 				break;
 
@@ -1252,7 +1255,7 @@ void mission_hotkey_do_frame(float  /*frametime*/)
 				Int3();
 		}
 
-		if (Hotkey_lines[line].type != HOTKEY_LINE_HEADING) {
+		if (Hotkey_lines[line].type != HotkeyLineType::HEADING) {
 			Assert( (line - Scroll_offset) < LIST_BUTTONS_MAX );
 			List_buttons[line - Scroll_offset].update_dimensions(Hotkey_list_coords[gr_screen.res][0], y, Hotkey_list_coords[gr_screen.res][0] + Hotkey_list_coords[gr_screen.res][2] - Hotkey_list_coords[gr_screen.res][0], font_height);
 			List_buttons[line - Scroll_offset].enable();
@@ -1298,7 +1301,7 @@ void mission_hotkey_do_frame(float  /*frametime*/)
 	
 		// draw ship/wing name
 		strcpy_s(buf, Hotkey_lines[line].label.c_str());
-		if (Hotkey_lines[line].type == HOTKEY_LINE_SUBSHIP) {
+		if (Hotkey_lines[line].type == HotkeyLineType::SUBSHIP) {
 			// indent
 			font::force_fit_string(buf, 255, Hotkey_list_coords[gr_screen.res][0] + Hotkey_list_coords[gr_screen.res][2] - (Hotkey_ship_x[gr_screen.res]+20));
 			gr_printf_menu(Hotkey_ship_x[gr_screen.res]+20, y, "%s", buf);
