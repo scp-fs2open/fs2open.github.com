@@ -206,7 +206,7 @@ void persona_parse()
 	
 	bool dup = false;
 	if (message_persona_name_lookup(this_persona.name) >= 0) {
-		Warning(LOCATION, "Duplicate Persona %s found!", this_persona.name);
+		Warning(LOCATION, "Duplicate Persona %s found, ignoring!", this_persona.name);
 		dup = true;
 	}
 
