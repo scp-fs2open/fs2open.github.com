@@ -218,7 +218,7 @@ ADE_FUNC(run,
 
 ADE_FUNC(awaitRunOnFrame,
 	l_Async,
-	"function() => any body",
+	"function() => any body, [boolean allowMultiProcessing = false]",
 	"Runs an asynchronous function in an OnFrameExecutor context and busy-waits for the coroutine to finish. "
 	"Inside this function you can use async.await to suspend the function until a promise resolves. "
 	"This is useful for cases where you need a scripting process to run over multiple frames, even when "
@@ -227,9 +227,10 @@ ADE_FUNC(awaitRunOnFrame,
 	"The result of the function body or nil if the function errored")
 {
 	luacpp::LuaFunction body;
+	bool allowMulti = false;
 	std::shared_ptr<executor::IExecutionContext> context;
 
-	if (!ade_get_args(L, "u", &body)) {
+	if (!ade_get_args(L, "u|b", &body, &allowMulti)) {
 		return ADE_RETURN_NIL;
 	}
 
@@ -251,7 +252,7 @@ ADE_FUNC(awaitRunOnFrame,
 		os_poll();
 
 		game_set_frametime(-1);
-		game_do_state_common(gameseq_get_state(), 1);	// do stuff common to all states
+		game_do_state_common(gameseq_get_state(), allowMulti ? 0 : 1);	// do stuff common to all states
 
 		gr_restore_screen(screen_id);
 		gr_flip();
@@ -259,7 +260,7 @@ ADE_FUNC(awaitRunOnFrame,
 
 	gr_free_screen(screen_id);
 
-	if(promise.isErrored())
+	if (!promise.isValid() || promise.isErrored())
 		return ADE_RETURN_NIL;
 
 	// We can't use our usual functions for returning here since we return a variable amount of values
