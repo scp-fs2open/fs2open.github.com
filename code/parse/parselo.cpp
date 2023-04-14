@@ -2835,7 +2835,7 @@ void stuff_ubyte(ubyte *i)
 }
 
 template <typename T, typename F>
-void stuff_token_list(SCP_vector<T> &list, F stuff_one_token, const char *type_as_string)
+void stuff_token_list(SCP_vector<T> &list, F stuff_one_token, const char *type_as_string, bool skip_comma = true)
 {
 	list.clear();
 
@@ -2848,30 +2848,24 @@ void stuff_token_list(SCP_vector<T> &list, F stuff_one_token, const char *type_a
 	}
 	Mp++;
 
-	ignore_white_space();
-
-	while (*Mp != ')')
+	while (!check_first_non_whitespace_char(Mp, ')', &Mp))
 	{
+		ignore_white_space();
+
 		T item;
 		if (stuff_one_token(&item))
 			list.push_back(std::move(item));
 
-		ignore_white_space();
-
-		if (*Mp == ',')
-		{
-			Mp++;
-			ignore_white_space();
-		}
+		if (skip_comma)
+			check_first_non_grayspace_char(Mp, ',', &Mp);
 	}
-	Mp++;
 }
 
 template <typename T, typename F>
-size_t stuff_token_list(T *listp, size_t list_max, F stuff_one_token, const char *type_as_string)
+size_t stuff_token_list(T *listp, size_t list_max, F stuff_one_token, const char *type_as_string, bool skip_comma = true)
 {
 	SCP_vector<T> list;
-	stuff_token_list(list, stuff_one_token, type_as_string);
+	stuff_token_list(list, stuff_one_token, type_as_string, skip_comma);
 
 	if (list_max < list.size())
 	{
@@ -3131,7 +3125,7 @@ size_t stuff_float_list(float* flp, size_t max_floats)
 	return stuff_token_list(flp, max_floats, [](float *f)->bool {
 		stuff_float(f);
 		return true;
-	}, "float");
+	}, "float", false);	// don't skip the comma in stuff_token_list because stuff_float also skips one
 }
 
 // ditto the above, but a vector of floats...
@@ -3140,7 +3134,7 @@ void stuff_float_list(SCP_vector<float>& flp)
 	stuff_token_list(flp, [](float* buf)->bool {
 		stuff_float(buf);
 		return true;
-		}, "float");
+	}, "float", false);	// don't skip the comma in stuff_token_list because stuff_float also skips one
 }
 
 //	Stuff a vec3d struct, which is 3 floats.
