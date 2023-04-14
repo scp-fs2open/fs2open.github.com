@@ -1545,6 +1545,10 @@ int CFred_mission_save::save_cmd_brief()
 		required_string_fred("$end_multi_text", "$Stage Text:");
 		parse_comments();
 
+		if (!drop_white_space(Cur_cmd_brief->stage[stage].ani_filename)[0]) {
+			strcpy_s(Cur_cmd_brief->stage[stage].ani_filename, "<default>");
+		}
+
 		required_string_fred("$Ani Filename:");
 		parse_comments();
 		fout(" %s", Cur_cmd_brief->stage[stage].ani_filename);
