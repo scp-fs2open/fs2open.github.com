@@ -1398,6 +1398,7 @@ void mod_table_reset()
 			std::tuple<float, float>{ 1.0f, 1.0f },
 			std::tuple<float, float>{ 1.0f, 1.0f }
 		}};
+	Randomize_particle_rotation = false;
 }
 
 void mod_table_set_version_flags()
