@@ -143,7 +143,7 @@ ADE_VIRTVAR(CurrentColor,
 	}
 
 	if (!current.isValid()) {
-		return ADE_RETURN_NIL;
+		return ade_set_error(L, "o", l_Color.Set(Color_text_normal));
 	}
 
 	if (ADE_SETTING_VAR) {
