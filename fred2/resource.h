@@ -779,6 +779,7 @@
 #define IDC_HULL_SPIN                   1355
 #define IDC_HULL                        1356
 #define IDC_AI_CLASS2                   1357
+#define IDC_OPACITY                     1357
 #define ID_OK                           1360
 #define ID_CLOSE                        1361
 #define ID_LOAD                         1362
@@ -1185,8 +1186,13 @@
 #define IDC_SATELLITE_LIST              1672
 #define IDC_COLOR_B                     1672
 #define IDC_DISTANCE                    1673
+#define IDC_SPIN_OPACITY                1673
 #define IDC_IGNORE_ORDERS_LIST          1674
+#define IDC_SPIN_OPACITY_DISTANCE       1674
 #define IDC_NO_FIRST_WAVE_MESSAGE       1675
+#define IDC_OPACITY_DISTANCE            1675
+#define IDC_STEPS                       1676
+#define IDC_SPIN_STEPS                  1677
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774
 #define ID_VIEW_ROTATE                  32775
@@ -1473,6 +1479,7 @@
 #define ID_EDIT_SEXP_TREE_EDIT_CONTAINERS 33100
 #define ID_MISC_POINTUSINGUVEC          33101
 #define ID_MUSIC_PLAYER                 33102
+#define ID_EDITORS_VOLUMETRICS          33102
 #define ID_INDICATOR_MODE               59142
 #define ID_INDICATOR_LEFT               59143
 #define ID_INDICATOR_RIGHT              59144
@@ -1484,8 +1491,8 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        334
-#define _APS_NEXT_COMMAND_VALUE         33102
-#define _APS_NEXT_CONTROL_VALUE         1673
+#define _APS_NEXT_COMMAND_VALUE         33103
+#define _APS_NEXT_CONTROL_VALUE         1677
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif

@@ -59,6 +59,7 @@
 #include "mission/missiongrid.h"
 #include "calcrelativecoordsdlg.h"
 #include "musicplayerdlg.h"
+#include "volumetricsdlg.h"
 
 #include "osapi/osapi.h"
 
@@ -253,6 +254,7 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_COMMAND(ID_EDITORS_MESSAGE, OnEditorsMessage)
 	ON_COMMAND(ID_EDITORS_STARFIELD, OnEditorsStarfield)
 	ON_COMMAND(ID_EDITORS_BG_BITMAPS, OnEditorsBgBitmaps)
+	ON_COMMAND(ID_EDITORS_VOLUMETRICS, OnEditorsVolumetrics)
 	ON_COMMAND(ID_EDITORS_REINFORCEMENT, OnEditorsReinforcement)
 	ON_COMMAND(ID_ERROR_CHECKER, OnErrorChecker)
 	ON_COMMAND(ID_EDITORS_WAYPOINT, OnEditorsWaypoint)
@@ -2367,6 +2369,13 @@ void CFREDView::OnEditorsBgBitmaps()
 	Bg_bitmap_dialog->SetWindowPos(&wndTop, 0, 0, 0, 0,
 		SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
 	Bg_bitmap_dialog->ShowWindow(SW_RESTORE);
+}
+
+void CFREDView::OnEditorsVolumetrics()
+{
+	volumetrics_dlg dlg;
+
+	dlg.DoModal();
 }
 
 void CFREDView::OnEditorsReinforcement()

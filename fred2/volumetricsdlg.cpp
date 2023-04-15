@@ -25,7 +25,10 @@ volumetrics_dlg::volumetrics_dlg(CWnd* pParent /*=nullptr*/) : CDialog(volumetri
 	m_enabled(false),
 	m_volumetrics_hull(""),
 	m_position(ZERO_VECTOR),
-	m_color({255, 255, 255})
+	m_color({255, 255, 255}), 
+	m_opacity(0.001f),
+	m_distance(5.0f),
+	m_steps(15)
 {}
 
 volumetrics_dlg::~volumetrics_dlg()
@@ -34,6 +37,10 @@ volumetrics_dlg::~volumetrics_dlg()
 
 BOOL volumetrics_dlg::OnInitDialog()
 {
+	m_toolTip.Create(this);
+	m_toolTip.AddTool(GetDlgItem(IDC_OPACITY_DISTANCE), _T("This is how far something has to be in the nebula to be obscured to the maximum opacity."));
+	m_toolTip.Activate(TRUE);
+
 	if (The_mission.volumetrics) {
 		const volumetric_nebula& volumetrics = *The_mission.volumetrics;
 		m_enabled = true;
@@ -42,6 +49,9 @@ BOOL volumetrics_dlg::OnInitDialog()
 		m_color = { static_cast<int>(std::get<0>(volumetrics.nebulaColor) * 255.0f),
 					static_cast<int>(std::get<1>(volumetrics.nebulaColor) * 255.0f),
 					static_cast<int>(std::get<2>(volumetrics.nebulaColor) * 255.0f) };
+		m_opacity = volumetrics.alphaLim;
+		m_distance = volumetrics.visibility;
+		m_steps = volumetrics.steps;
 	}
 	UpdateData(FALSE);
 	return TRUE;
@@ -52,6 +62,9 @@ void volumetrics_dlg::OnClose()
 	UpdateData(TRUE);
 	if (!m_enabled) {
 		The_mission.volumetrics.reset();
+
+		CDialog::OnOK();
+		CDialog::OnClose();
 		return;
 	}
 
@@ -60,6 +73,12 @@ void volumetrics_dlg::OnClose()
 	volumetrics.hullPof = CT2CA(m_volumetrics_hull);
 	volumetrics.pos = m_position;
 	volumetrics.nebulaColor = {static_cast<float>(m_color[0]) / 255.0f, static_cast<float>(m_color[1]) / 255.0f, static_cast<float>(m_color[2]) / 255.0f};
+	volumetrics.alphaLim = m_opacity;
+	volumetrics.visibility = m_distance;
+	volumetrics.steps = m_steps;
+
+	CDialog::OnOK();
+	CDialog::OnClose();
 }
 
 void volumetrics_dlg::DoDataExchange(CDataExchange* pDX)
@@ -76,6 +95,18 @@ void volumetrics_dlg::DoDataExchange(CDataExchange* pDX)
 	DDV_MinMaxInt(pDX, m_color[1], 0, 255);
 	DDX_Text(pDX, IDC_COLOR_B, m_color[2]);
 	DDV_MinMaxInt(pDX, m_color[2], 0, 255);
+	DDX_Text(pDX, IDC_OPACITY, m_opacity);
+	DDV_MinMaxFloat(pDX, m_opacity, 0.0001f, 1.0f);
+	DDX_Text(pDX, IDC_OPACITY_DISTANCE, m_distance);
+	DDV_MinMaxFloat(pDX, m_distance, 0.1f, FLT_MAX);
+	DDX_Text(pDX, IDC_STEPS, m_steps);
+	DDV_MinMaxInt(pDX, m_steps, 1, 100);
+}
+
+BOOL volumetrics_dlg::PreTranslateMessage(MSG* pMsg)
+{
+	m_toolTip.RelayEvent(pMsg);
+	return CDialog::PreTranslateMessage(pMsg);
 }
 
 BEGIN_MESSAGE_MAP(volumetrics_dlg, CDialog)
@@ -87,7 +118,10 @@ BEGIN_MESSAGE_MAP(volumetrics_dlg, CDialog)
 	ON_NOTIFY(UDN_DELTAPOS, IDC_SPIN_COLOR_R, &volumetrics_dlg::OnDeltaposColorRSpin)
 	ON_NOTIFY(UDN_DELTAPOS, IDC_SPIN_COLOR_G, &volumetrics_dlg::OnDeltaposColorGSpin)
 	ON_NOTIFY(UDN_DELTAPOS, IDC_SPIN_COLOR_B, &volumetrics_dlg::OnDeltaposColorBSpin)
-END_MESSAGE_MAP()
+	ON_NOTIFY(UDN_DELTAPOS, IDC_SPIN_OPACITY, &volumetrics_dlg::OnDeltaposSpinOpacity)
+	ON_NOTIFY(UDN_DELTAPOS, IDC_SPIN_OPACITY_DISTANCE, &volumetrics_dlg::OnDeltaposSpinOpacityDistance)
+	ON_NOTIFY(UDN_DELTAPOS, IDC_SPIN_STEPS, &volumetrics_dlg::OnDeltaposSpinSteps)
+	END_MESSAGE_MAP()
 
 
 
@@ -159,5 +193,27 @@ void volumetrics_dlg::OnDeltaposColorGSpin(NMHDR* pNMHDR, LRESULT* pResult)
 void volumetrics_dlg::OnDeltaposColorBSpin(NMHDR* pNMHDR, LRESULT* pResult)
 {
 	handle_spinner_color(reinterpret_cast<LPNMUPDOWN>(pNMHDR), m_color, 2);
+	*pResult = 0;
+}
+
+void volumetrics_dlg::OnDeltaposSpinOpacity(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	LPNMUPDOWN pNMUpDown = reinterpret_cast<LPNMUPDOWN>(pNMHDR);
+	UpdateData(TRUE);
+	//This is the cube root of 10, so by clicking up or down thrice you'll have multiplied the value by 10 for a logarithmic spinner
+	m_opacity *= pNMUpDown->iDelta > 0 ? 1.0f / 2.15443469003f : 2.15443469003f; 
+	UpdateData(FALSE);
+	*pResult = 0;
+}
+
+void volumetrics_dlg::OnDeltaposSpinOpacityDistance(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	handle_spinner(reinterpret_cast<LPNMUPDOWN>(pNMHDR), m_distance);
+	*pResult = 0;
+}
+
+void volumetrics_dlg::OnDeltaposSpinSteps(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	handle_spinner(reinterpret_cast<LPNMUPDOWN>(pNMHDR), m_steps);
 	*pResult = 0;
 }
