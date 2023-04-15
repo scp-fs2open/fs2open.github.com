@@ -852,29 +852,6 @@ ADE_VIRTVAR(Rank,
 	return ade_set_args(L, "o", l_Rank.Set(rank_h(rank_index)));
 }
 
-ADE_VIRTVAR(RankIndex,
-	l_ScoringStats,
-	nullptr, 
-	"Returns the player's rank as in index into Ranks",
-	"number",
-	"The rank index")
-{
-	scoring_stats_h* ssh;
-	if (!ade_get_args(L, "o", l_ScoringStats.GetPtr(&ssh))) {
-		return ADE_RETURN_NIL;
-	}
-	if (!ssh->isValid()) {
-		return ade_set_error(L, "i", 0);
-	}
-
-	if (ADE_SETTING_VAR) {
-		LuaError(L, "This property is read only.");
-	}
-
-	int rank_index = verify_rank(ssh->get()->rank);
-	return ade_set_args(L, "i", rank_index + 1); // Convert to Lua's 1 based index system
-}
-
 }
 }
 
