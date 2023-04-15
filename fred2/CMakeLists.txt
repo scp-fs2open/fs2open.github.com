@@ -134,6 +134,8 @@ set(FRED2_SOURCES
 	textviewdlg.h
 	voiceactingmanager.cpp
 	voiceactingmanager.h
+	volumetricsdlg.cpp
+	volumetricsdlg.h
 	warpparamsdlg.cpp
 	warpparamsdlg.h
 	waypointpathdlg.cpp
