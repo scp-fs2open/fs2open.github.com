@@ -2448,6 +2448,53 @@ void debug_show_mission_text()
 		printf("%c", ch);
 }
 
+// Returns whether the first character encountered in str that is not whitespace is the character to look for.
+// If so, and if after_ch is non-nullptr, it will be set to point to the first character after the character to look for.
+bool check_first_non_whitespace_char(const char *str, char char_to_look_for, char **after_ch)
+{
+	auto active_ch = str;
+	while (true)
+	{
+		if (*active_ch == '\0')
+			return false;
+		if (!is_white_space(*active_ch))
+			break;
+		active_ch++;
+	}
+
+	if (*active_ch == char_to_look_for)
+	{
+		if (after_ch != nullptr)
+			*after_ch = const_cast<char*>(active_ch + 1);	// this is ugly, but strtof and strtod do the same thing
+		return true;
+	}
+
+	return false;
+}
+
+// Do the same thing for grayspace
+bool check_first_non_grayspace_char(const char *str, char char_to_look_for, char **after_ch)
+{
+	auto active_ch = str;
+	while (true)
+	{
+		if (*active_ch == '\0')
+			return false;
+		if (!is_gray_space(*active_ch))
+			break;
+		active_ch++;
+	}
+
+	if (*active_ch == char_to_look_for)
+	{
+		if (after_ch != nullptr)
+			*after_ch = const_cast<char*>(active_ch + 1);	// this is ugly, but strtof and strtod do the same thing
+		return true;
+	}
+
+	return false;
+}
+
 bool unexpected_numeric_char(char ch)
 {
 	return (ch != '\0') && (ch != ',') && (ch != ')') && !is_white_space(ch);
@@ -2490,11 +2537,8 @@ int stuff_float(float *f, bool optional)
 		error_display(1, "Expected float, found [%.32s].\n", next_tokens(true));
 	}
 
-	if (*Mp == ',')
-	{
+	if (check_first_non_grayspace_char(Mp, ',', &Mp))
 		comma = true;
-		Mp++;
-	}
 
 	if (optional && !success)
 		Mp = str_start;
@@ -2561,11 +2605,8 @@ int stuff_int(int *i, bool optional)
 		error_display(1, "Expected int, found [%.32s].\n", next_tokens(true));
 	}
 
-	if (*Mp == ',')
-	{
+	if (check_first_non_grayspace_char(Mp, ',', &Mp))
 		comma = true;
-		Mp++;
-	}
 
 	if (optional && !success)
 		Mp = str_start;
@@ -2632,11 +2673,8 @@ int stuff_long(long *l, bool optional)
 		error_display(1, "Expected long, found [%.32s].\n", next_tokens(true));
 	}
 
-	if (*Mp == ',')
-	{
+	if (check_first_non_grayspace_char(Mp, ',', &Mp))
 		comma = true;
-		Mp++;
-	}
 
 	if (optional && !success)
 		Mp = str_start;
@@ -2797,7 +2835,7 @@ void stuff_ubyte(ubyte *i)
 }
 
 template <typename T, typename F>
-void stuff_token_list(SCP_vector<T> &list, F stuff_one_token, const char *type_as_string)
+void stuff_token_list(SCP_vector<T> &list, F stuff_one_token, const char *type_as_string, bool skip_comma = true)
 {
 	list.clear();
 
@@ -2810,30 +2848,24 @@ void stuff_token_list(SCP_vector<T> &list, F stuff_one_token, const char *type_a
 	}
 	Mp++;
 
-	ignore_white_space();
-
-	while (*Mp != ')')
+	while (!check_first_non_whitespace_char(Mp, ')', &Mp))
 	{
+		ignore_white_space();
+
 		T item;
 		if (stuff_one_token(&item))
 			list.push_back(std::move(item));
 
-		ignore_white_space();
-
-		if (*Mp == ',')
-		{
-			Mp++;
-			ignore_white_space();
-		}
+		if (skip_comma)
+			check_first_non_grayspace_char(Mp, ',', &Mp);
 	}
-	Mp++;
 }
 
 template <typename T, typename F>
-size_t stuff_token_list(T *listp, size_t list_max, F stuff_one_token, const char *type_as_string)
+size_t stuff_token_list(T *listp, size_t list_max, F stuff_one_token, const char *type_as_string, bool skip_comma = true)
 {
 	SCP_vector<T> list;
-	stuff_token_list(list, stuff_one_token, type_as_string);
+	stuff_token_list(list, stuff_one_token, type_as_string, skip_comma);
 
 	if (list_max < list.size())
 	{
@@ -3093,7 +3125,7 @@ size_t stuff_float_list(float* flp, size_t max_floats)
 	return stuff_token_list(flp, max_floats, [](float *f)->bool {
 		stuff_float(f);
 		return true;
-	}, "float");
+	}, "float", false);	// don't skip the comma in stuff_token_list because stuff_float also skips one
 }
 
 // ditto the above, but a vector of floats...
@@ -3102,7 +3134,7 @@ void stuff_float_list(SCP_vector<float>& flp)
 	stuff_token_list(flp, [](float* buf)->bool {
 		stuff_float(buf);
 		return true;
-		}, "float");
+	}, "float", false);	// don't skip the comma in stuff_token_list because stuff_float also skips one
 }
 
 //	Stuff a vec3d struct, which is 3 floats.
