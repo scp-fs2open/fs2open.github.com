@@ -1332,8 +1332,9 @@ int brief_setup_closeup(brief_icon *bi, bool api_access)
 
 	case ICON_ASTEROID_FIELD:
 		if(Asteroid_icon_closeup_model[0] == '\0') {
-			Error(LOCATION, "Tried to display an asteroid field icon, but no asteroids are available.");
-			break;
+			Warning(LOCATION, "Tried to display an asteroid field icon, but no asteroids are available.");
+			Closeup_icon = nullptr;
+			return -1;
 		}
 
 		strcpy_s(pof_filename, Asteroid_icon_closeup_model);
