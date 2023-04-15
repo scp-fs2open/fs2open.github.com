@@ -158,6 +158,7 @@
 #define IDC_WING_WAVES                  1015
 #define IDC_WEAPON_SPEED                1015
 #define IDC_SPIN_POSITIONY              1016
+#define IDC_COLOR_G                     1016
 #define IDC_POS_Z                       1017
 #define IDC_WING_WAVE_THRESHOLD         1017
 #define IDC_WEAPON_DAMAGE               1017
@@ -404,6 +405,7 @@
 #define IDC_SHIP_NAME                   1126
 #define IDC_POS_X                       1127
 #define IDC_SHIP_IFF                    1128
+#define IDC_COLOR_R                     1128
 #define IDC_SHIP_AI_CLASS               1129
 #define IDC_SHIP_STATUS                 1130
 #define IDC_SHIP_ARRIVAL                1131
@@ -505,6 +507,7 @@
 #define IDC_FORUMS                      1198
 #define IDC_ALT_CLASS_ADD               1198
 #define IDC_CONTAINER_INSERT            1198
+#define IDC_SET_HULL                    1198
 #define IDC_DELETE_STAGE                1199
 #define IDC_DELETE_MSG                  1199
 #define IDC_TOGGLE_LOOP                 1199
@@ -608,6 +611,7 @@
 #define IDC_OBJECT5                     1250
 #define IDC_COMBO10                     1251
 #define IDC_BEHAVIOR5                   1251
+#define IDC_SPIN_COLOR_R                1251
 #define IDC_COMBO11                     1252
 #define IDC_OBJECT6                     1252
 #define IDC_COMBO12                     1253
@@ -1164,14 +1168,22 @@
 #define IDC_CONTAINER_NETWORK           1664
 #define IDC_REMOVE_FIELD_TARGET         1664
 #define IDC_DELETE_CONTAINER            1665
+#define IDC_ENABLE                      1665
 #define IDC_CONTAINER_NO_PERSIST        1666
+#define IDC_SPIN_POS_X                  1666
 #define IDC_CONTAINER_PLAYER_PERSIST    1667
+#define IDC_SPIN_POS_Y                  1667
 #define IDC_CONTAINER_CAMPAIGN_PERSIST  1668
+#define IDC_SPIN_POS_Z                  1668
 #define IDC_CONTAINER_ETERNAL_PERSIST   1669
 #define IDC_RENAME_CONTAINER            1670
+#define IDC_SPIN_COLOR_G                1670
 #define IDC_ORIGIN_LIST                 1671
 #define IDC_MUSIC_LIST                  1671
+#define IDC_COLOR_B_SPIN                1671
+#define IDC_SPIN_COLOR_B                1671
 #define IDC_SATELLITE_LIST              1672
+#define IDC_COLOR_B                     1672
 #define IDC_DISTANCE                    1673
 #define IDC_IGNORE_ORDERS_LIST          1674
 #define IDC_NO_FIRST_WAVE_MESSAGE       1675
@@ -1473,7 +1485,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        334
 #define _APS_NEXT_COMMAND_VALUE         33102
-#define _APS_NEXT_CONTROL_VALUE         1665
+#define _APS_NEXT_CONTROL_VALUE         1673
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif
