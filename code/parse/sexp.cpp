@@ -813,27 +813,27 @@ SCP_vector<sexp_oper> Operators = {
 	{ "do-nothing",						OP_NOP,									0,	0,			SEXP_ACTION_OPERATOR,	},
 	
 	//AI Goals Category
-	{ "ai-chase",						OP_AI_CHASE,							2,	3,			SEXP_GOAL_OPERATOR,	},
-	{ "ai-chase-wing",					OP_AI_CHASE_WING,						2,	3,			SEXP_GOAL_OPERATOR,	},
-	{ "ai-chase-ship-class",			OP_AI_CHASE_SHIP_CLASS,					2,	3,			SEXP_GOAL_OPERATOR, },
-	{ "ai-chase-any",					OP_AI_CHASE_ANY,						1,	1,			SEXP_GOAL_OPERATOR,	},
-	{ "ai-guard",						OP_AI_GUARD,							2,	2,			SEXP_GOAL_OPERATOR,	},
-	{ "ai-guard-wing",					OP_AI_GUARD_WING,						2,	2,			SEXP_GOAL_OPERATOR,	},
-	{ "ai-destroy-subsystem",			OP_AI_DESTROY_SUBSYS,					3,	4,			SEXP_GOAL_OPERATOR,	},
-	{ "ai-disable-ship",				OP_AI_DISABLE_SHIP,						2,	3,			SEXP_GOAL_OPERATOR,	},
-	{ "ai-disarm-ship",					OP_AI_DISARM_SHIP,						2,	3,			SEXP_GOAL_OPERATOR,	},
+	{ "ai-chase",						OP_AI_CHASE,							2,	4,			SEXP_GOAL_OPERATOR,	},
+	{ "ai-chase-wing",					OP_AI_CHASE_WING,						2,	4,			SEXP_GOAL_OPERATOR,	},
+	{ "ai-chase-ship-class",			OP_AI_CHASE_SHIP_CLASS,					2,	4,			SEXP_GOAL_OPERATOR, },
+	{ "ai-chase-any",					OP_AI_CHASE_ANY,						1,	2,			SEXP_GOAL_OPERATOR,	},
+	{ "ai-guard",						OP_AI_GUARD,							2,	3,			SEXP_GOAL_OPERATOR,	},
+	{ "ai-guard-wing",					OP_AI_GUARD_WING,						2,	3,			SEXP_GOAL_OPERATOR,	},
+	{ "ai-destroy-subsystem",			OP_AI_DESTROY_SUBSYS,					3,	5,			SEXP_GOAL_OPERATOR,	},
+	{ "ai-disable-ship",				OP_AI_DISABLE_SHIP,						2,	4,			SEXP_GOAL_OPERATOR,	},
+	{ "ai-disarm-ship",					OP_AI_DISARM_SHIP,						2,	4,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-warp",						OP_AI_WARP,								2,	2,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-warp-out",					OP_AI_WARP_OUT,							1,	1,			SEXP_GOAL_OPERATOR,	},
-	{ "ai-dock",						OP_AI_DOCK,								4,	4,			SEXP_GOAL_OPERATOR,	},
+	{ "ai-dock",						OP_AI_DOCK,								4,	5,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-undock",						OP_AI_UNDOCK,							1,	2,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-rearm-repair",				OP_AI_REARM_REPAIR,						2,	2,			SEXP_GOAL_OPERATOR, },
-	{ "ai-waypoints",					OP_AI_WAYPOINTS,						2,	2,			SEXP_GOAL_OPERATOR,	},
-	{ "ai-waypoints-once",				OP_AI_WAYPOINTS_ONCE,					2,	2,			SEXP_GOAL_OPERATOR,	},
+	{ "ai-waypoints",					OP_AI_WAYPOINTS,						2,	3,			SEXP_GOAL_OPERATOR,	},
+	{ "ai-waypoints-once",				OP_AI_WAYPOINTS_ONCE,					2,	3,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-ignore",						OP_AI_IGNORE,							2,	2,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-ignore-new",					OP_AI_IGNORE_NEW,						2,	2,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-form-on-wing",				OP_AI_FORM_ON_WING,						1,	1,			SEXP_GOAL_OPERATOR, },
-	{ "ai-fly-to-ship",					OP_AI_FLY_TO_SHIP,						2,	2,			SEXP_GOAL_OPERATOR, },
-	{ "ai-stay-near-ship",				OP_AI_STAY_NEAR_SHIP,					2,	3,			SEXP_GOAL_OPERATOR,	},
+	{ "ai-fly-to-ship",					OP_AI_FLY_TO_SHIP,						2,	3,			SEXP_GOAL_OPERATOR, },
+	{ "ai-stay-near-ship",				OP_AI_STAY_NEAR_SHIP,					2,	4,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-evade-ship",					OP_AI_EVADE_SHIP,						2,	2,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-keep-safe-distance",			OP_AI_KEEP_SAFE_DISTANCE,				1,	1,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-stay-still",					OP_AI_STAY_STILL,						2,	2,			SEXP_GOAL_OPERATOR,	},
@@ -4275,6 +4275,7 @@ int get_sexp()
 	int start, node, last, op;
 	char token[TOKEN_LENGTH];
 	char variable_text[TOKEN_LENGTH];
+	bool prune_extra_args = false;
 
 	Assert(*(Mp-1) == '(');
 
@@ -4430,9 +4431,10 @@ int get_sexp()
 				strcpy_s(token, "set-object-facing");
 			else if (!stricmp(token, "set-ship-facing-object"))
 				strcpy_s(token, "set-object-facing-object");
-			else if (!stricmp(token, "ai-chase-any-except"))
+			else if (!stricmp(token, "ai-chase-any-except")) {
 				strcpy_s(token, "ai-chase-any");
-			else if (!stricmp(token, "change-ship-model"))
+				prune_extra_args = true;
+			} else if (!stricmp(token, "change-ship-model"))
 				strcpy_s(token, "change-ship-class");
 			else if (!stricmp(token, "radar-set-max-range"))
 				strcpy_s(token, "hud-set-max-targeting-range");
@@ -4503,7 +4505,7 @@ int get_sexp()
 
 	
 	// Goober5000 - backwards compatibility for removed ai-chase-any-except
-	if (get_operator_const(start) == OP_AI_CHASE_ANY)
+	if (get_operator_const(start) == OP_AI_CHASE_ANY && prune_extra_args)
 	{
 		// if there is more than one argument, free the extras
 		int n = CDR(CDR(start));
@@ -4513,7 +4515,7 @@ int get_sexp()
 			free_sexp2(n, CDR(start));
 		}
 	}
-
+	
 	// Goober5000 - preload stuff for certain sexps
 	if (!Fred_running)
 	{
@@ -29968,10 +29970,12 @@ int query_operator_argument_type(int op, int argnum)
 		
 		case OP_AI_WAYPOINTS:
 		case OP_AI_WAYPOINTS_ONCE:
-			if ( argnum == 0 )
+			if (argnum == 0)
 				return OPF_WAYPOINT_PATH;
-			else
+			else if (argnum == 1)
 				return OPF_POSITIVE;
+			else
+				return OPF_BOOL;
 
 		case OP_TURRET_PROTECT_SHIP:
 		case OP_TURRET_UNPROTECT_SHIP:
@@ -30656,10 +30660,12 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_AI_IGNORE_NEW:
 		case OP_AI_FLY_TO_SHIP:
 		case OP_AI_REARM_REPAIR:
-			if (!argnum)
+			if (argnum == 0)
 				return OPF_SHIP;
-			else
+			else if (argnum == 1)
 				return OPF_POSITIVE;
+			else
+				return OPF_BOOL;
 
 		case OP_AI_CHASE:
 			if (argnum == 0)
@@ -30686,16 +30692,20 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_BOOL;
 
 		case OP_AI_GUARD:
-			if (!argnum)
+			if (argnum == 0)
 				return OPF_SHIP_WING;
-			else
+			else if (argnum == 1)
 				return OPF_POSITIVE;
+			else
+				return OPF_BOOL;
 
 		case OP_AI_GUARD_WING:
-			if (!argnum)
+			if (argnum == 0)
 				return OPF_WING;
-			else
+			else if (argnum == 1)
 				return OPF_POSITIVE;
+			else
+				return OPF_BOOL;
 
 		case OP_AI_KEEP_SAFE_DISTANCE:
 			return OPF_POSITIVE;
@@ -30707,8 +30717,10 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_DOCKER_POINT;
 			else if (argnum == 2)
 				return OPF_DOCKEE_POINT;
-			else
+			else if(argnum == 3)
 				return OPF_POSITIVE;
+			else
+				return OPF_BOOL;
 
 		case OP_AI_UNDOCK:
 			if (argnum == 0)
@@ -31108,9 +31120,14 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_POSITIVE;
 
+		case OP_AI_CHASE_ANY:
+			if (!argnum)
+				return OPF_POSITIVE;
+			else
+				return OPF_BOOL;
+
 		case OP_AI_PLAY_DEAD:
 		case OP_AI_PLAY_DEAD_PERSISTENT:
-		case OP_AI_CHASE_ANY:
 			return OPF_POSITIVE;
 
 		case OP_AI_STAY_STILL:
@@ -36946,32 +36963,36 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_AI_CHASE, "Ai-chase (Ship goal)\r\n"
 		"\tCauses the specified ship to chase and attack the specified target.\r\n\r\n"
-		"Takes 2 or 3 arguments...\r\n"
+		"Takes 2 to 4 arguments...\r\n"
 		"\t1:\tName of ship to chase.\r\n"
 		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100).\r\n"
-		"\t3 (optional):\tWhether to attack the target even if it is on the same team; defaults to false."
+		"\t3 (optional):\tWhether to attack the target even if it is on the same team; defaults to false.\r\n"
+		"\t4 (optional):\tWhether to afterburn as hard as possible to the target; defaults to false."
 	},
 
 	{ OP_AI_CHASE_WING, "Ai-chase wing (Ship goal)\r\n"
 		"\tCauses the specified ship to chase and attack the specified target.\r\n\r\n"
-		"Takes 2 or 3 arguments...\r\n"
+		"Takes 2 to 4 arguments...\r\n"
 		"\t1:\tName of wing to chase.\r\n"
 		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100).\r\n"
-		"\t3 (optional):\tWhether to attack the target even if it is on the same team; defaults to false."
+		"\t3 (optional):\tWhether to attack the target even if it is on the same team; defaults to false.\r\n"
+		"\t4 (optional):\tWhether to afterburn as hard as possible to the target; defaults to false."
 	},
 
 	{ OP_AI_CHASE_SHIP_CLASS, "Ai-chase ship class (Ship goal)\r\n"
 		"\tCauses the specified ship to chase and attack the specified target ship class.\r\n\r\n"
-		"Takes 2 or 3 arguments...\r\n"
+		"Takes 2 to 4 arguments...\r\n"
 		"\t1:\tName of ship class to chase.\r\n"
 		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100).\r\n"
-		"\t3 (optional):\tWhether to attack the target even if it is on the same team; defaults to false."
+		"\t3 (optional):\tWhether to attack the target even if it is on the same team; defaults to false.\r\n"
+		"\t4 (optional):\tWhether to afterburn as hard as possible to the target; defaults to false."
 	},
 
 	{ OP_AI_CHASE_ANY, "Ai-chase-any (Ship goal)\r\n"
 		"\tCauses the specified ship to chase and attack any ship on the opposite team.\r\n\r\n"
-		"Takes 1 argument...\r\n"
-		"\t1:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100)."
+		"Takes 1 or 2 arguments...\r\n"
+		"\t1:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100).\r\n"
+		"\t2 (optional):\tWhether to afterburn as hard as possible to the target; defaults to false."
 	},
 
 	{ OP_AI_DOCK, "Ai-dock (Ship goal)\r\n"
@@ -36980,7 +37001,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tName of dockee ship (The ship that \"docker\" will dock with).\r\n"
 		"\t2:\tDocker's docking point - Which dock point docker uses to dock.\r\n"
 		"\t3:\tDockee's docking point - Which dock point on dockee docker will move to.\r\n"
-		"\t4:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100)." },
+		"\t4:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100).\r\n"
+		"\t5 (optional):\tWhether to afterburn as hard as possible to the target; defaults to false." },
 
 	{ OP_AI_UNDOCK, "Ai-undock (Ship goal)\r\n"
 		"\tCauses the specified ship to undock from who it is currently docked with.\r\n\r\n"
@@ -36999,13 +37021,15 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tCauses the specified ship to fly a waypoint path continuously.\r\n\r\n"
 		"Takes 2 arguments...\r\n"
 		"\t1:\tName of waypoint path to fly.\r\n"
-		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100)." },
+		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100).\r\n"
+		"\t3 (optional):\tWhether to afterburn as hard as possible to the target; defaults to false." },
 
 	{ OP_AI_WAYPOINTS_ONCE, "Ai-waypoints once (Ship goal)\r\n"
 		"\tCauses the specified ship to fly a waypoint path.\r\n\r\n"
 		"Takes 2 arguments...\r\n"
 		"\t1:\tName of waypoint path to fly.\r\n"
-		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100)." },
+		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100).\r\n"
+		"\t3 (optional):\tWhether to afterburn as hard as possible to the target; defaults to false." },
 
 	{ OP_AI_DESTROY_SUBSYS, "Ai-destroy subsys (Ship goal)\r\n"
 		"\tCauses the specified ship to attack and try and destroy the specified subsystem "
@@ -37014,7 +37038,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tName of ship subsystem is on.\r\n"
 		"\t2:\tName of subsystem on the ship to attack and destroy.\r\n"
 		"\t3:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100).\r\n"
-		"\t4 (optional):\tWhether to attack the target even if it is on the same team; defaults to false."
+		"\t4 (optional):\tWhether to attack the target even if it is on the same team; defaults to false.\r\n"
+		"\t5 (optional):\tWhether to afterburn as hard as possible to the target; defaults to false."
 	},
 
 	{ OP_AI_DISABLE_SHIP, "Ai-disable-ship (Ship/wing goal)\r\n"
@@ -37028,7 +37053,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"Takes 2 or 3 arguments...\r\n"
 		"\t1:\tName of ship whose engine subsystems should be destroyed\r\n"
 		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100).\r\n"
-		"\t3 (optional):\tWhether to attack the target even if it is on the same team; defaults to false."
+		"\t3 (optional):\tWhether to attack the target even if it is on the same team; defaults to false.\r\n"
+		"\t4 (optional):\tWhether to afterburn as hard as possible to the target; defaults to false."
 	},
 
 	{ OP_AI_DISARM_SHIP, "Ai-disarm-ship (Ship/wing goal)\r\n"
@@ -37042,27 +37068,31 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"Takes 2 arguments...\r\n"
 		"\t1:\tName of ship whose turret subsystems should be destroyed\r\n"
 		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100).\r\n"
-		"\t3 (optional):\tWhether to attack the target even if it is on the same team; defaults to false."
+		"\t3 (optional):\tWhether to attack the target even if it is on the same team; defaults to false.\r\n"
+		"\t4 (optional):\tWhether to afterburn as hard as possible to the target; defaults to false."
 	},
 
 	{ OP_AI_GUARD, "Ai-guard (Ship goal)\r\n"
 		"\tCauses the specified ship to guard a ship from other ships not on the same team.\r\n\r\n"
 		"Takes 2 arguments...\r\n"
 		"\t1:\tName of ship to guard.\r\n"
-		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100)." },
+		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100).\r\n"
+		"\t3 (optional):\tWhether to afterburn as hard as possible to the target; defaults to false." },
 
 	{ OP_AI_GUARD_WING, "Ai-guard wing (Ship goal)\r\n"
 		"\tCauses the specified ship to guard a wing of ships from other ships not on the "
 		"same team.\r\n\r\n"
 		"Takes 2 arguments...\r\n"
 		"\t1:\tName of wing to guard.\r\n"
-		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100)." },
+		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100).\r\n"
+		"\t3 (optional):\tWhether to afterburn as hard as possible to the target; defaults to false." },
 
 	{ OP_AI_FLY_TO_SHIP, "Ai-fly-to-ship (Ship goal)\r\n"
 		"\tCauses the specified ship to fly towards another ship's position.\r\n\r\n"
 		"Takes 2 arguments...\r\n"
 		"\t1:\tName of ship to fly towards.\r\n"
-		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100)." },
+		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100).\r\n"
+		"\t3 (optional):\tWhether to afterburn as hard as possible to the target; defaults to false."  },
 
 	{ OP_AI_REARM_REPAIR, "Ai-rearm-repair (Ship goal)\r\n"
 		"\tCauses the specified ship to rearm and/or repair another ship.  Typically only works on support ships.\r\n\r\n"
@@ -37527,7 +37557,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"Takes 2 to 3 arguments...\r\n"
 		"\t1:\tName of ship to stay near.\r\n"
 		"\t2:\tGoal priority (number between 0 and 89).\r\n"
-		"\t3:\tDistance to stay within (optional; defaults to 300)." },
+		"\t3:\tDistance to stay within (optional; defaults to 300).\r\n"
+		"\t4 (optional):\tWhether to afterburn as hard as possible to the target; defaults to false." },
 
 	{ OP_AI_KEEP_SAFE_DISTANCE, "Ai-keep safe distance (Ship goal)\r\n"
 		"\tTells the specified ship to stay a safe distance away from any ship that isn't on the "

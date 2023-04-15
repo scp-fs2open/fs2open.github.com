@@ -45,7 +45,8 @@ namespace AI {
 		Purge,				// purge this goal next time we process
 		Goals_purged,		// this goal has already caused other goals to get purged
 		Depart_sound_played,// Goober5000 - replacement for AL's hack ;)
-		Target_own_team,
+		Target_own_team,	// this attack goal is allowed to target friendlies
+		Afterburn_hard,		// afterburn as hard as possible to the goal
 
 		NUM_VALUES
 	};
@@ -152,6 +153,7 @@ namespace AI {
 		Disable_bay_emerge_timeout,
 		Adjusted_AI_class_autoscale,
 		Carry_shield_difficulty_scaling_bug,
+		Dynamic_goals_afterburn_hard,
 
 		NUM_VALUES
 	};

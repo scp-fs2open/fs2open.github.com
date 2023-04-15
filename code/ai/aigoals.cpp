@@ -1125,6 +1125,33 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, char
 			aigp->flags.set(AI::Goal_Flags::Target_own_team);
 	}
 
+	// maybe get the afterburn hard flag
+	if (op == OP_AI_CHASE_ANY) {
+		if ((CDDR(node) != -1) && is_sexp_true(CDDR(node)))
+			aigp->flags.set(AI::Goal_Flags::Afterburn_hard);
+	}
+	if (op == OP_AI_GUARD || 
+		op == OP_AI_GUARD_WING || 
+		op == OP_AI_WAYPOINTS || 
+		op == OP_AI_WAYPOINTS_ONCE || 
+		op == OP_AI_FLY_TO_SHIP) {
+		if ((CDDDR(node) != -1) && is_sexp_true(CDDDR(node)))
+			aigp->flags.set(AI::Goal_Flags::Afterburn_hard);
+	}
+	if (op == OP_AI_CHASE || 
+		op == OP_AI_CHASE_WING || 
+		op == OP_AI_CHASE_SHIP_CLASS || 
+		op == OP_AI_DISABLE_SHIP || 
+		op == OP_AI_DISARM_SHIP || 
+		op == OP_AI_STAY_NEAR_SHIP) {
+		if ((CDDDDR(node) != -1) && is_sexp_true(CDDDDR(node)))
+			aigp->flags.set(AI::Goal_Flags::Afterburn_hard);
+	}	
+	if (op == OP_AI_DESTROY_SUBSYS || op == OP_AI_DOCK) {
+		if ((CDDDDDR(node) != -1) && is_sexp_true(CDDDDDR(node)))
+			aigp->flags.set(AI::Goal_Flags::Afterburn_hard);
+	}
+
 	// Goober5000 - since none of the goals act on the actor,
 	// don't assign the goal if the actor's goal target is itself
 	if (aigp->target_name != NULL && !strcmp(aigp->target_name, actor_name))
