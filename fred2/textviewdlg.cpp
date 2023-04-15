@@ -224,7 +224,7 @@ void TextViewDlg::LoadMusicTblText()
 
 	SCP_vector<SCP_string> tbl_file_names;
 
-	// done with ships.tbl, so now check all modular ship tables...
+	// done with music.tbl, so now check all modular music tables...
 	int num_files = cf_get_file_list(tbl_file_names, CF_TYPE_TABLES, NOX("*-mus.tbm"), CF_SORT_REVERSE);
 
 	for (int n = 0; n < num_files; n++) {
