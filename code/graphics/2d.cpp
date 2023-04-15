@@ -1772,7 +1772,7 @@ void gr_set_color( int r, int g, int b )
 	gr_init_color( &gr_screen.current_color, r, g, b );	
 }
 
-void gr_set_color_fast(color *dst)
+void gr_set_color_fast(const color *dst)
 {
 	gr_screen.current_color = *dst;
 }

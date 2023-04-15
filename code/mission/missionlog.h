@@ -113,7 +113,7 @@ extern int mission_log_get_count(LogType type, const char *pname, const char *sn
 extern int message_log_color_get_team(int msg_color);
 
 // get the actual color for a line item
-extern color log_line_get_color(int tag);
+extern const color *log_line_get_color(int tag);
 
 void message_log_init_scrollback(int pw);
 void message_log_shutdown_scrollback();
