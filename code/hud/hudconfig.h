@@ -108,24 +108,35 @@ const char* HC_gauge_descriptions(int n);
 /*!
  * @brief init hud config screen, setting up the hud preview display
  * 
- * param[in] x	the x coord to render the preview display
- * param[in] y	the y coord to render the preview display
- * param[in] w	the width to render the preview display
+ * param[in] API_Access		whether or not this method has been called from the lua api
+ * param[in] x				the x coord to render the preview display
+ * param[in] y				the y coord to render the preview display
+ * param[in] w				the width to render the preview display
  */
 void hud_config_init(bool API_Access = false, int x = 0, int y = 0, int w = -1);
 
 /*!
  * @brief do a hud config frame, including rendering the preview display and checking for button presses
+ * 
+ * param[in] frametime		unused
+ * param[in] API_Access		whether or not this method has been called from the lua api
+ * param[in] mx				mouse x coordinate
+ * param[in] my				mouse y coordinate
  */
 void hud_config_do_frame(float frametime, bool API_Access = false, int mx = 0, int my = 0);
 
 /*!
  * @brief close hud config and release all the bitmaps
+ * 
+ * param[in] API_Access		whether or not this method has been called from the lua api
  */
 void hud_config_close(bool API_Access = false);
 
 /*!
  * @brief toggles selecting of all gauges for color modification
+ * 
+ * param[in] toggle			1 to toggle on, 0 for off
+ * param[in] API_Access		whether or not this method has been called from the lua api
  */
 void hud_config_select_all_toggle(int toggle, bool API_Access = false);
 

@@ -2300,15 +2300,17 @@ ADE_FUNC(saveToPreset,
 	const char* filename;
 	ade_get_args(L, "s", &filename);
 
+	SCP_string name = filename;
+
 	// trim filename length to leave room for adding the extension
-	char trim[MAX_FILENAME_LEN - 3];
-	strncpy(trim, filename, MAX_FILENAME_LEN - 3);
-	trim[MAX_FILENAME_LEN - 4] = '\0';
+	if (name.size() > MAX_FILENAME_LEN - 4) {
+		name.resize(MAX_FILENAME_LEN - 4);
+	}
 
 	// add extension
-	char* name = cf_add_ext(trim, ".hcf");
+	name += ".hcf";
 
-	hud_config_color_save(name);
+	hud_config_color_save(name.c_str());
 
 	// reload the preset list for sorting
 	hud_config_preset_init();
@@ -2342,7 +2344,7 @@ ADE_INDEXER(l_HUD_Gauges,
 	int idx;
 	if (!ade_get_args(L, "*i", &idx))
 		return ade_set_error(L, "o", l_Gauge_Config.Set(gauge_config_h()));
-	idx--; // Convert to Lua's 1 based index system
+	idx--; // Convert from Lua's 1 based index system
 
 	if ((idx < 0) || (idx > NUM_HUD_GAUGES))
 		return ade_set_error(L, "o", l_Gauge_Config.Set(gauge_config_h()));
@@ -2365,7 +2367,7 @@ ADE_INDEXER(l_HUD_Presets,
 	int idx;
 	if (!ade_get_args(L, "*i", &idx))
 		return ade_set_error(L, "o", l_HUD_Preset.Set(hud_preset_h()));
-	idx--; // Convert to Lua's 1 based index system
+	idx--; // Convert from Lua's 1 based index system
 
 	if ((idx < 0) || (idx >= (int)HC_preset_filenames.size()))
 		return ade_set_error(L, "o", l_HUD_Preset.Set(hud_preset_h()));

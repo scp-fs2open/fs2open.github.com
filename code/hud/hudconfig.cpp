@@ -288,12 +288,17 @@ struct HC_gauge_region	HC_gauge_regions[GR_NUM_RESOLUTIONS][NUM_HUD_GAUGES] =
 	}
 };
 
+/**
+ * @brief x y coordinates of gauges for hud preview display
+ * 
+ * @note used for scaling the positions properly when the preview display is scaled
+ */
 struct gauge_coords {
-	int x;
-	int y;
+	int x; // x coordinate position
+	int y; // y coordinate position
 };
 
-static SCP_vector<gauge_coords> HC_gauge_coords;
+SCP_vector<gauge_coords> HC_gauge_coords;
 
 
 int HC_gauge_description_coords[GR_NUM_RESOLUTIONS][3] = {
@@ -569,7 +574,11 @@ void hud_config_synch_sliders(int i)
 	}
 }
 
-// reset some ui components based on HUD config data
+/*!
+ * @brief reset some ui components based on HUD config data
+ *
+ * param[in] API_Access		whether or not this method has been called from the lua api
+ */
 void hud_config_synch_ui(bool API_Access)
 {
 	HUD_init_hud_color_array();
@@ -581,7 +590,14 @@ void hud_config_synch_ui(bool API_Access)
 	}
 }
 
-// Init the UI components
+/*!
+ * @brief init the UI components
+ *
+ * param[in] API_Access		whether or not this method has been called from the lua api
+ * param[in] x				the x coord to render the preview display
+ * param[in] y				the y coord to render the preview display
+ * param[in] w				the width of the preview display
+ */
 void hud_config_init_ui(bool API_Access, int x, int y, int w)
 {
 	int i;
@@ -835,7 +851,11 @@ void hud_config_popup_flag_clear(int i)
 	}
 }
 
-// render all the hud config gauges
+/*!
+ * @brief render all the hud config gauges
+ *
+ * param[in] API_Access		whether or not this method has been called from the lua api
+ */
 void hud_config_render_gauges(bool API_Access)
 {
 	int i;
@@ -911,7 +931,6 @@ void hud_config_render_gauges(bool API_Access)
 	}
 }
 
-// hud_config_init() is called when the game enters the state GS_STATE_HUD_CONFIG
 void hud_config_init(bool API_Access, int x, int y, int w)
 {
 	hud_config_init_ui(API_Access, x, y, w);
@@ -919,7 +938,10 @@ void hud_config_init(bool API_Access, int x, int y, int w)
 	HUD_config_inited = 1;
 }
 
-// check for the mouse over gauge regions
+/*!
+ * @brief check mouse position against all ui buttons using the ui mask
+ *
+ */
 void hud_config_check_regions()
 {
 	int			i;
@@ -974,7 +996,10 @@ void hud_config_check_regions()
 	}
 }
 
-// same as above but manually checks which gauges are active by mouse coordinates rather than with a mask
+/*!
+ * @brief check mouse position against all hud gauge preview display using mouse coordinates instead of a mask
+ *
+ */
 void hud_config_check_regions_by_mouse(int mx, int my)
 {
 	for (int i = 0; i < NUM_HUD_GAUGES; i++) {
@@ -1049,7 +1074,6 @@ void hud_config_stuff_colors(int r, int g, int b)
 	}
 }
 
-// leave hud config without accepting changes
 void hud_config_cancel(bool change_state)
 {
 	hud_config_restore();
@@ -1059,7 +1083,6 @@ void hud_config_cancel(bool change_state)
 	}
 }
 
-// leave hud config with accepting changes
 void hud_config_commit()
 {
 	gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
@@ -1475,10 +1498,7 @@ void hud_config_redraw_pressed_buttons()
 	}
 }
 
-// hud_config_do_frame() is called from the main freespace loop while the game is in the state
-// GS_STATE_HUD_CONFIG.
-//
-void hud_config_do_frame(float  /*frametime*/, bool API_Access, int mx, int my) 
+void hud_config_do_frame(float  frametime, bool API_Access, int mx, int my) 
 {
 	int k;
 
