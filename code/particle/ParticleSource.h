@@ -67,7 +67,7 @@ class SourceOrigin {
 	/**
 	 * @brief Gets the current, global position of the origin
 	 * 
-	 * Be aware for beam soruces this will give *random* points along its length
+	 * Be aware for beam sources this will give *random* points along its length
 	 * 
 	 * @param posOut The pointer where the location will be stored
 	 */
