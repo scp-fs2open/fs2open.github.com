@@ -37,7 +37,7 @@ const char* gauge_config_h::getName() const
 
 bool gauge_config_h::isValid() const
 {
-	return gauge >= 0 && gauge <= NUM_HUD_GAUGES;
+	return gauge >= 0 && gauge < NUM_HUD_GAUGES;
 }
 
 hud_preset_h::hud_preset_h() : preset(-1) {}
@@ -91,7 +91,7 @@ ADE_FUNC(deletePreset, l_HUD_Preset, nullptr, "Deletes the preset file", nullptr
 	}
 
 	if (!current.isValid()) {
-		return ade_set_error(L, "s", "");
+		return ADE_RETURN_NIL;
 	}
 
 	hud_config_delete_preset(current.getName());
@@ -134,7 +134,7 @@ ADE_VIRTVAR(CurrentColor,
 	"color",
 	"Gets the current color of the gauge. If setting the color, gauges that use IFF for color cannot be set.",
 	"color",
-	"The gauge color")
+	"The gauge color or nil if the gauge is invalid")
 {
 	gauge_config_h current;
 	color newColor;
@@ -143,7 +143,7 @@ ADE_VIRTVAR(CurrentColor,
 	}
 
 	if (!current.isValid()) {
-		return ade_set_error(L, "s", "");
+		return ADE_RETURN_NIL;
 	}
 
 	if (ADE_SETTING_VAR) {
@@ -181,7 +181,7 @@ ADE_VIRTVAR(ShowGaugeFlag,
 	}
 
 	if (!current.isValid()) {
-		return ade_set_error(L, "s", "");
+		return ade_set_error(L, "b", false);
 	}
 
 	if (ADE_SETTING_VAR) {
@@ -209,7 +209,7 @@ ADE_VIRTVAR(PopupGaugeFlag,
 	}
 
 	if (!current.isValid()) {
-		return ade_set_error(L, "s", "");
+		return ade_set_error(L, "b", false);
 	}
 
 	if (ADE_SETTING_VAR) {
@@ -240,7 +240,7 @@ ADE_VIRTVAR(CanPopup,
 	}
 
 	if (!current.isValid()) {
-		return ade_set_error(L, "s", "");
+		return ade_set_error(L, "b", false);
 	}
 
 	if (ADE_SETTING_VAR) {
@@ -267,7 +267,7 @@ ADE_VIRTVAR(UsesIffForColor,
 	}
 
 	if (!current.isValid()) {
-		return ade_set_error(L, "s", "");
+		return ade_set_error(L, "b", false);
 	}
 
 	if (ADE_SETTING_VAR) {
@@ -290,7 +290,7 @@ ADE_FUNC(setSelected, l_Gauge_Config, "boolean", "Sets if the gauge is the curre
 	}
 
 	if (!current.isValid()) {
-		return ade_set_error(L, "s", "");
+		return ADE_RETURN_NIL;
 	}
 
 	if (select) {
