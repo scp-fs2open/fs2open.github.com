@@ -5,8 +5,7 @@
 #include "nebula/volumetrics.h"
 
 static constexpr char* Model_file_ext = "Model Files (*.pof)|*.pof||";
-static constexpr std::initializer_list<int> Interactible_fields = {
-	IDC_HULL,
+static constexpr std::initializer_list<int> Interactible_fields = {IDC_HULL,
 	IDC_POS_X,
 	IDC_SPIN_POS_X,
 	IDC_POS_Y,
@@ -18,8 +17,16 @@ static constexpr std::initializer_list<int> Interactible_fields = {
 	IDC_COLOR_G,
 	IDC_SPIN_COLOR_G,
 	IDC_COLOR_B,
-	IDC_SPIN_COLOR_B
+	IDC_SPIN_COLOR_B,
+	IDC_OPACITY,
+	IDC_SPIN_OPACITY,
+	IDC_OPACITY_DISTANCE,
+	IDC_SPIN_OPACITY_DISTANCE,
+	IDC_STEPS,
+	IDC_SPIN_STEPS
 };
+
+static constexpr char* Tooltip_distance = _T("This is how far something has to be in the nebula to be obscured to the maximum opacity.");
 
 volumetrics_dlg::volumetrics_dlg(CWnd* pParent /*=nullptr*/) : CDialog(volumetrics_dlg::IDD, pParent),
 	m_enabled(false),
@@ -38,7 +45,8 @@ volumetrics_dlg::~volumetrics_dlg()
 BOOL volumetrics_dlg::OnInitDialog()
 {
 	m_toolTip.Create(this);
-	m_toolTip.AddTool(GetDlgItem(IDC_OPACITY_DISTANCE), _T("This is how far something has to be in the nebula to be obscured to the maximum opacity."));
+	m_toolTip.AddTool(GetDlgItem(IDC_OPACITY_DISTANCE), Tooltip_distance);
+	m_toolTip.AddTool(GetDlgItem(IDC_SPIN_OPACITY_DISTANCE), Tooltip_distance);
 	m_toolTip.Activate(TRUE);
 
 	if (The_mission.volumetrics) {
@@ -121,8 +129,7 @@ BEGIN_MESSAGE_MAP(volumetrics_dlg, CDialog)
 	ON_NOTIFY(UDN_DELTAPOS, IDC_SPIN_OPACITY, &volumetrics_dlg::OnDeltaposSpinOpacity)
 	ON_NOTIFY(UDN_DELTAPOS, IDC_SPIN_OPACITY_DISTANCE, &volumetrics_dlg::OnDeltaposSpinOpacityDistance)
 	ON_NOTIFY(UDN_DELTAPOS, IDC_SPIN_STEPS, &volumetrics_dlg::OnDeltaposSpinSteps)
-	END_MESSAGE_MAP()
-
+END_MESSAGE_MAP()
 
 
 void volumetrics_dlg::OnBnClickedSetHull()
@@ -202,18 +209,19 @@ void volumetrics_dlg::OnDeltaposSpinOpacity(NMHDR* pNMHDR, LRESULT* pResult)
 	UpdateData(TRUE);
 	//This is the cube root of 10, so by clicking up or down thrice you'll have multiplied the value by 10 for a logarithmic spinner
 	m_opacity *= pNMUpDown->iDelta > 0 ? 1.0f / 2.15443469003f : 2.15443469003f; 
+	CAP(m_opacity, 0.0001f, 1.0f);
 	UpdateData(FALSE);
 	*pResult = 0;
 }
 
 void volumetrics_dlg::OnDeltaposSpinOpacityDistance(NMHDR* pNMHDR, LRESULT* pResult)
 {
-	handle_spinner(reinterpret_cast<LPNMUPDOWN>(pNMHDR), m_distance);
+	handle_spinner(reinterpret_cast<LPNMUPDOWN>(pNMHDR), m_distance, 0.1f, FLT_MAX);
 	*pResult = 0;
 }
 
 void volumetrics_dlg::OnDeltaposSpinSteps(NMHDR* pNMHDR, LRESULT* pResult)
 {
-	handle_spinner(reinterpret_cast<LPNMUPDOWN>(pNMHDR), m_steps);
+	handle_spinner(reinterpret_cast<LPNMUPDOWN>(pNMHDR), m_steps, 1, 100);
 	*pResult = 0;
 }

@@ -30,10 +30,11 @@ protected:
 
 	void handle_spinner_vec3d(LPNMUPDOWN spinner, vec3d& vec, float decltype(vec3d::xyz)::*dimension);
 	void handle_spinner_color(LPNMUPDOWN spinner, std::array<int, 3>& color, size_t idx);
-	template<typename T> void handle_spinner(LPNMUPDOWN spinner, T& data)
+	template<typename T> void handle_spinner(LPNMUPDOWN spinner, T& data, T min, T max)
 	{
 		UpdateData(TRUE);
 		data -= static_cast<T>(spinner->iDelta);
+		CAP(data, min, max);
 		UpdateData(FALSE);
 	}
 
