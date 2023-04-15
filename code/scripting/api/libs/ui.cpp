@@ -2346,7 +2346,7 @@ ADE_INDEXER(l_HUD_Gauges,
 		return ade_set_error(L, "o", l_Gauge_Config.Set(gauge_config_h()));
 	idx--; // Convert from Lua's 1 based index system
 
-	if ((idx < 0) || (idx > NUM_HUD_GAUGES))
+	if ((idx < 0) || (idx >= NUM_HUD_GAUGES))
 		return ade_set_error(L, "o", l_Gauge_Config.Set(gauge_config_h()));
 
 	return ade_set_args(L, "o", l_Gauge_Config.Set(gauge_config_h(idx)));

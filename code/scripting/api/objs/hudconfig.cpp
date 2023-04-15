@@ -14,6 +14,10 @@ gauge_config_h::gauge_config_h(int l_gauge) : gauge(l_gauge) {}
 
 HC_gauge_region* gauge_config_h::getGauge() const
 {
+	if (!isValid()) {
+		return nullptr;
+	}
+
 	return &HC_gauge_regions[GR_1024][gauge];
 }
 
@@ -24,7 +28,16 @@ int gauge_config_h::getIndex() const
 
 const char* gauge_config_h::getName() const
 {
+	if (!isValid()) {
+		return nullptr;
+	}
+
 	return HC_gauge_descriptions(gauge);
+}
+
+bool gauge_config_h::isValid() const
+{
+	return gauge >= 0 && gauge <= NUM_HUD_GAUGES;
 }
 
 hud_preset_h::hud_preset_h() : preset(-1) {}
@@ -35,9 +48,18 @@ int hud_preset_h::getIndex() const
 	return preset;
 }
 
-SCP_string hud_preset_h::getName() const
+const SCP_string &hud_preset_h::getName() const
 {
+	if (!isValid()) {
+		return nullptr;
+	}
+
 	return HC_preset_filenames[preset];
+}
+
+bool hud_preset_h::isValid() const
+{
+	return preset >= 0 && preset < (int)HC_preset_filenames.size();
 }
 
 //**********HANDLE: hud preset
@@ -48,6 +70,10 @@ ADE_VIRTVAR(Name, l_HUD_Preset, nullptr, "The name of this preset", "string", "T
 	hud_preset_h current;
 	if (!ade_get_args(L, "o", l_HUD_Preset.Get(&current))) {
 		return ADE_RETURN_NIL;
+	}
+
+	if (!current.isValid()) {
+		return ade_set_error(L, "s", "");
 	}
 
 	if (ADE_SETTING_VAR) {
@@ -64,9 +90,22 @@ ADE_FUNC(deletePreset, l_HUD_Preset, nullptr, "Deletes the preset file", nullptr
 		return ADE_RETURN_NIL;
 	}
 
+	if (!current.isValid()) {
+		return ade_set_error(L, "s", "");
+	}
+
 	hud_config_delete_preset(current.getName());
 
 	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(isValid, l_HUD_Preset, nullptr, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
+{
+	hud_preset_h current;
+	if (!ade_get_args(L, "o", l_HUD_Preset.Get(&current)))
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "b", current.isValid());
 }
 
 //**********HANDLE: gauge config
@@ -77,6 +116,10 @@ ADE_VIRTVAR(Name, l_Gauge_Config, nullptr, "The name of this gauge", "string", "
 	gauge_config_h current;
 	if (!ade_get_args(L, "o", l_Gauge_Config.Get(&current))) {
 		return ADE_RETURN_NIL;
+	}
+
+	if (!current.isValid()) {
+		return ade_set_error(L, "s", "");
 	}
 
 	if (ADE_SETTING_VAR) {
@@ -99,25 +142,29 @@ ADE_VIRTVAR(CurrentColor,
 		return ADE_RETURN_NIL;
 	}
 
+	if (!current.isValid()) {
+		return ade_set_error(L, "s", "");
+	}
+
 	if (ADE_SETTING_VAR) {
 		if (!current.getGauge()->use_iff) {
 			HUD_config.clr[current.getIndex()] = newColor;
 		}
 	}
 
-	color thisColor;
+	const color *thisColor;
 	
 	if (!current.getGauge()->use_iff) {
-		thisColor = HUD_config.clr[current.getIndex()];
+		thisColor = &HUD_config.clr[current.getIndex()];
 	} else {
 		if (current.getGauge()->color == 1) {
-			thisColor = *iff_get_color(IFF_COLOR_TAGGED, 0);
+			thisColor = iff_get_color(IFF_COLOR_TAGGED, 0);
 		} else {
-			thisColor = Color_bright_red;
+			thisColor = &Color_bright_red;
 		}
 	}
 
-	return ade_set_args(L, "o", l_Color.Set(thisColor));
+	return ade_set_args(L, "o", l_Color.Set(*thisColor));
 }
 
 ADE_VIRTVAR(ShowGaugeFlag,
@@ -131,6 +178,10 @@ ADE_VIRTVAR(ShowGaugeFlag,
 	bool show;
 	if (!ade_get_args(L, "o|b", l_Gauge_Config.Get(&current), &show)) {
 		return ADE_RETURN_NIL;
+	}
+
+	if (!current.isValid()) {
+		return ade_set_error(L, "s", "");
 	}
 
 	if (ADE_SETTING_VAR) {
@@ -155,6 +206,10 @@ ADE_VIRTVAR(PopupGaugeFlag,
 	bool popup;
 	if (!ade_get_args(L, "o|b", l_Gauge_Config.Get(&current), &popup)) {
 		return ADE_RETURN_NIL;
+	}
+
+	if (!current.isValid()) {
+		return ade_set_error(L, "s", "");
 	}
 
 	if (ADE_SETTING_VAR) {
@@ -184,6 +239,10 @@ ADE_VIRTVAR(CanPopup,
 		return ADE_RETURN_NIL;
 	}
 
+	if (!current.isValid()) {
+		return ade_set_error(L, "s", "");
+	}
+
 	if (ADE_SETTING_VAR) {
 		LuaError(L, "This property is read only.");
 	}
@@ -207,6 +266,10 @@ ADE_VIRTVAR(UsesIffForColor,
 		return ADE_RETURN_NIL;
 	}
 
+	if (!current.isValid()) {
+		return ade_set_error(L, "s", "");
+	}
+
 	if (ADE_SETTING_VAR) {
 		LuaError(L, "This property is read only.");
 	}
@@ -226,11 +289,24 @@ ADE_FUNC(setSelected, l_Gauge_Config, "boolean", "Sets if the gauge is the curre
 		return ADE_RETURN_NIL;
 	}
 
+	if (!current.isValid()) {
+		return ade_set_error(L, "s", "");
+	}
+
 	if (select) {
 		HC_gauge_selected = current.getIndex();
 	}
 
 	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(isValid, l_Gauge_Config, nullptr, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
+{
+	gauge_config_h current;
+	if (!ade_get_args(L, "o", l_Gauge_Config.Get(&current)))
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "b", current.isValid());
 }
 
 } // namespace api

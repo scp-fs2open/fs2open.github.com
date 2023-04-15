@@ -2182,16 +2182,16 @@ ADE_FUNC(freeAllModels, l_Graphics, nullptr, "Releases all loaded models and fre
 
 ADE_FUNC(createColor,
 	l_Graphics,
-	"number Red, number Green, number Blue, number Alpha",
-	"Creates a color object. Values are capped 0-255.",
+	"number Red, number Green, number Blue, [number Alpha]",
+	"Creates a color object. Values are capped 0-255. Alpha defaults to 255.",
 	"color",
 	"The color")
 {
 	int r;
 	int g;
 	int b;
-	int a;
-	if (!ade_get_args(L, "iiii", &r, &g, &b, &a)) {
+	int a = 255;
+	if (!ade_get_args(L, "iii|i", &r, &g, &b, &a)) {
 		return ADE_RETURN_NIL;
 	}
 

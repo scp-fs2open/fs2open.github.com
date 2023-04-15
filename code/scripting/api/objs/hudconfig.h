@@ -13,6 +13,7 @@ struct gauge_config_h {
 	HC_gauge_region* getGauge() const;
 	int getIndex() const;
 	const char* getName() const;
+	bool isValid() const;
 };
 
 struct hud_preset_h {
@@ -20,7 +21,8 @@ struct hud_preset_h {
 	hud_preset_h();
 	explicit hud_preset_h(int l_preset);
 	int getIndex() const;
-	SCP_string getName() const;
+	const SCP_string &getName() const;
+	bool isValid() const;
 };
 
 DECLARE_ADE_OBJ(l_Gauge_Config, gauge_config_h);
