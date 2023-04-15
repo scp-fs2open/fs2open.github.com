@@ -782,7 +782,7 @@ ADE_INDEXER(l_Mission_Personas, "number/string IndexOrName", "Personas of the mi
 		idx = message_persona_name_lookup(name);
 	}
 
-	if (idx < 0 || idx >= Num_personas)
+	if (idx < 0 || idx >= (int)Personas.size())
 		return ade_set_args(L, "o", l_Persona.Set(-1));
 	else
 		return ade_set_args(L, "o", l_Persona.Set(idx));
@@ -790,7 +790,7 @@ ADE_INDEXER(l_Mission_Personas, "number/string IndexOrName", "Personas of the mi
 
 ADE_FUNC(__len, l_Mission_Personas, NULL, "Number of personas in the mission", "number", "Number of messages in mission")
 {
-	return ade_set_args(L, "i", Num_personas);
+	return ade_set_args(L, "i", (int)Personas.size());
 }
 
 //****SUBLIBRARY: Mission/Fireballs
@@ -825,7 +825,7 @@ ADE_FUNC(addMessage, l_Mission, "string name, string text, [persona persona]", "
 	if (name == NULL || text == NULL)
 		return ade_set_error(L, "o", l_Message.Set(-1));
 
-	if (personaIdx < 0 || personaIdx >= Num_personas)
+	if (personaIdx < 0 || personaIdx >= (int)Personas.size())
 		personaIdx = -1;
 
 	add_message(name, text, personaIdx, 0);

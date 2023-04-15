@@ -3985,12 +3985,21 @@ int CFred_mission_save::save_objects()
 
 		// deal with the persona for this ship as well.
 		if (shipp->persona_index != -1) {
-			if (optional_string_fred("+Persona Index:", "$Name:"))
-				parse_comments();
-			else
-				fout("\n+Persona Index:");
+			if (Mission_save_format == FSO_FORMAT_RETAIL) {
+				if (optional_string_fred("+Persona Index:", "$Name:"))
+					parse_comments();
+				else
+					fout("\n+Persona Index:");
 
-			fout(" %d", shipp->persona_index);
+				fout(" %d", shipp->persona_index);
+			} else {
+				if (optional_string_fred("+Persona Name:", "$Name:"))
+					parse_comments();
+				else
+					fout("\n+Persona Name:");
+
+				fout(" %s", Personas[shipp->persona_index].name);
+			}
 		}
 
 		// Goober5000 - deal with texture replacement ----------------

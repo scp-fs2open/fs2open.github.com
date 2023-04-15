@@ -216,14 +216,14 @@ extern SCP_vector<SCP_string> Generic_message_filenames;
 #define PERSONA_FLAG_SUBSTITUTE_MISSING_MESSAGES    (1<<30)
 #define PERSONA_FLAG_USED                           (1<<31)
 
-typedef struct persona_s {
-	char	name[NAME_LENGTH];
-	int	flags;
+struct Persona {
+	char name[NAME_LENGTH];
+	int flags;
 	int species_bitfield;
-} Persona;
+};
 
-extern Persona *Personas;
-extern int Num_personas;
+extern SCP_vector<Persona> Personas;
+
 extern int Default_command_persona;
 extern int Praise_self_percentage;
 
@@ -234,7 +234,6 @@ void	persona_parse();
 
 void	messages_init();
 void	message_mission_shutdown();
-void	message_mission_close();
 void	message_queue_process();
 int	message_is_playing();
 void	message_maybe_distort();

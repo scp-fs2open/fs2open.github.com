@@ -312,7 +312,7 @@ BOOL event_editor::OnInitDialog()
 	box = (CComboBox *) GetDlgItem(IDC_PERSONA_NAME);
 	box->ResetContent();
 	box->AddString("<None>");
-	for (i = 0; i < Num_personas; i++ ){
+	for (i = 0; i < (int)Personas.size(); i++) {
 		box->AddString( Personas[i].name );
 	}
 
@@ -1425,7 +1425,7 @@ void event_editor::update_persona()
 
 	if ((m_wave_filename[0] >= '1') && (m_wave_filename[0] <= '9') && (m_wave_filename[1] == '_') ) {
 		i = m_wave_filename[0] - '1';
-		if ( (i < Num_personas) && (Personas[i].flags & PERSONA_FLAG_WINGMAN) )	{
+		if ((i < (int)Personas.size()) && (Personas[i].flags & PERSONA_FLAG_WINGMAN)) {
 			m_persona = i + 1;
 			if ((m_persona==1) || (m_persona==2)) 
 				m_avi_filename = "HEAD-TP1";
@@ -1451,7 +1451,7 @@ void event_editor::update_persona()
 			m_avi_filename = "HEAD-CM1";
 		}
 
-		for (i=0; i<Num_personas; i++)
+		for (i = 0; i < (int)Personas.size(); i++)
 			if (Personas[i].flags & mask)
 				m_persona = i + 1;
 	}

@@ -3461,13 +3461,13 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
-				for (i=0; i < Num_personas ; i++) {
+				for (i = 0; i < (int)Personas.size(); i++) {
 					if (!strcmp(CTEXT(node), Personas[i].name)) {
 						break;
 					}
 				}
 
-				if (i == Num_personas) {
+				if (i == (int)Personas.size()) {
 					return SEXP_CHECK_INVALID_PERSONA_NAME; 
 				}
 				break;
@@ -16960,7 +16960,7 @@ void sexp_set_persona (int node)
 	int persona_index = -1;
 	auto persona_name = CTEXT(node);
 
-	for (int i = 0 ; i < Num_personas; ++i) {
+	for (int i = 0; i < (int)Personas.size(); ++i) {
 		if (!strcmp(persona_name, Personas[i].name) && (Personas[i].flags & PERSONA_FLAG_WINGMAN)) {
 			persona_index = i;
 			break;

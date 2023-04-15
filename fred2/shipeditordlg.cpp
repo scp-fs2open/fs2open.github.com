@@ -298,7 +298,7 @@ BOOL CShipEditorDlg::Create()
 		ptr->SetItemData(index, NO_PERSONA_INDEX);
 	}	
 
-	for ( i = 0; i < Num_personas; i++ ) {
+	for (i = 0; i < (int)Personas.size(); i++) {
 		if ( Personas[i].flags & PERSONA_FLAG_WINGMAN ) {
 			CString persona_name = Personas[i].name;
 
