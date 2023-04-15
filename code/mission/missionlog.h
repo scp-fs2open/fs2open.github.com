@@ -115,7 +115,7 @@ extern int message_log_color_get_team(int msg_color);
 // get the actual color for a line item
 extern color log_line_get_color(int tag);
 
-void message_log_init_scrollback(int pw);
+void message_log_init_scrollback(int pw, bool split_string = true);
 void message_log_shutdown_scrollback();
 void mission_log_scrollback(int line_offset, int list_x, int list_y, int list_w, int list_h);
 

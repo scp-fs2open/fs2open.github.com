@@ -1927,10 +1927,8 @@ ADE_FUNC(initMissionLog, l_UserInterface_MissionLog, nullptr, "Initializes the M
 
 	Log_scrollback_vec.clear(); // Make sure the vector is empty before we start
 
-	// Width here is used to determine if a log line needs to be split into multiple lines.
-	// That makes sense for retail, but not so much for the API. Telling it to use the entire screen width
-	// should be sufficient to prevent unnecessary line breaks given how short most log lines are in the mission log.
-	message_log_init_scrollback(gr_screen.max_w);
+	//explicitely do not split lines!
+	message_log_init_scrollback(0, false);
 
 	return ADE_RETURN_NIL;
 }
