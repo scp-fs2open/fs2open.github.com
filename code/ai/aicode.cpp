@@ -4715,9 +4715,11 @@ void ai_fly_to_target_position(vec3d* target_pos, bool* pl_done_p=NULL, bool* pl
 			ab_allowed = false;
 	}
 
-	if (!(aip->ai_flags[AI::AI_Flags::Free_afterburner_use] || 
+	if (!(sip->flags[Ship::Info_Flags::Afterburner]) || (shipp->flags[Ship::Ship_Flags::Afterburner_locked]) ||
+		!(aip->ai_flags[AI::AI_Flags::Free_afterburner_use] ||
 		aip->ai_profile_flags[AI::Profile_Flags::Free_afterburner_use] || 
-		ai_willing_to_afterburn_hard(aip))) {
+		ai_willing_to_afterburn_hard(aip)))
+	{
 		ab_allowed = false;
 	}
 
@@ -10657,7 +10659,10 @@ void ai_big_guard()
 
 
 		bool free_ab_use = aip->ai_flags[AI::AI_Flags::Free_afterburner_use] || aip->ai_profile_flags[AI::Profile_Flags::Free_afterburner_use];
-		if ((free_ab_use || ai_willing_to_afterburn_hard(aip)) && (cur_guard_rad > 1.1f * max_guard_dist)) {
+		if (!(shipp->flags[Ship::Ship_Flags::Afterburner_locked]) && 
+			(free_ab_use || ai_willing_to_afterburn_hard(aip)) && 
+			(cur_guard_rad > 1.1f * max_guard_dist)) 
+		{
 			vec3d	v2g;
 			float	dot_to_goal_point;
 
@@ -10785,7 +10790,10 @@ void ai_guard()
 			ai_turn_towards_vector(&goal_point, Pl_objp, nullptr, nullptr, 0.0f, 0, &rvec);
 
 			bool free_ab_use = aip->ai_flags[AI::AI_Flags::Free_afterburner_use] || aip->ai_profile_flags[AI::Profile_Flags::Free_afterburner_use];
-			if ((free_ab_use || ai_willing_to_afterburn_hard(aip)) && (accel_scale * (0.25f + dist_to_goal_point/700.0f) > 0.8f)) {
+			if (!(shipp->flags[Ship::Ship_Flags::Afterburner_locked]) && 
+				(free_ab_use || ai_willing_to_afterburn_hard(aip)) && 
+				(accel_scale * (0.25f + dist_to_goal_point/700.0f) > 0.8f)) 
+			{
 				if (ai_willing_to_afterburn_hard(aip))
 					ai_afterburn_hard(Pl_objp, aip);
 				else if (ai_maybe_fire_afterburner(Pl_objp, aip)) {

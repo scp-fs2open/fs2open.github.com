@@ -850,7 +850,7 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 			} else {
 				accelerate_ship(aip, accel);
 
-				if (ai_willing_to_afterburn_hard(aip) && accel > 0.99f) {
+				if (ai_willing_to_afterburn_hard(aip) && accel > 0.99f && !(shipp->flags[Ship::Ship_Flags::Afterburner_locked])) {
 					ai_afterburn_hard(Pl_objp, aip);
 				} else if ((aip->ai_flags[AI::AI_Flags::Free_afterburner_use] || aip->ai_profile_flags[AI::Profile_Flags::Free_afterburner_use]) && !(shipp->flags[Ship::Ship_Flags::Afterburner_locked]) && (accel > 0.95f)) {
 					if (ai_maybe_fire_afterburner(Pl_objp, aip)) {
