@@ -21,7 +21,7 @@ struct hud_preset_h {
 	hud_preset_h();
 	explicit hud_preset_h(int l_preset);
 	int getIndex() const;
-	const SCP_string &getName() const;
+	SCP_string getName() const;
 	bool isValid() const;
 };
 

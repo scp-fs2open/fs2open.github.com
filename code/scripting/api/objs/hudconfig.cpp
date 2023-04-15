@@ -48,10 +48,10 @@ int hud_preset_h::getIndex() const
 	return preset;
 }
 
-const SCP_string &hud_preset_h::getName() const
+SCP_string hud_preset_h::getName() const
 {
 	if (!isValid()) {
-		return nullptr;
+		return "";
 	}
 
 	return HC_preset_filenames[preset];
