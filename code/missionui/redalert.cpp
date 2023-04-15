@@ -1019,8 +1019,7 @@ void red_alert_bash_wingman_status()
 		// same condition as in ship_obj loop
 		if ( !(pobjp->flags[Mission::Parse_Object_Flags::SF_From_player_wing]) && !(pobjp->flags[Mission::Parse_Object_Flags::SF_Red_alert_store_status]) ) {
 			continue;
-		}
-
+			
 		char pobjp_name_to_check[NAME_LENGTH];
 		strcpy_s(pobjp_name_to_check, pobjp->name);
 

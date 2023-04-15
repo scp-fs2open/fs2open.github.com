@@ -1255,7 +1255,7 @@ void wss_direct_restore_loadout()
 				if ( p_objp->wingnum == WING_INDEX(wp) ) {
 					// niffiwan: don't overrun the array
 					if (j >= MAX_WING_SLOTS) {
-						Warning(LOCATION, "Starting Wing '%s' has more than 'MAX_WING_SLOTS' ships\n", Starting_wing_names[i]);
+						Warning(LOCATION, "Starting Wing '%s' has more than 'MAX_WING_SLOTS' ships\n", Starting_wing_names[i].c_str());
 						break;
 					}
 					slot = &Player_loadout.unit_data[valid_wing_index*MAX_WING_SLOTS+j];

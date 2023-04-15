@@ -467,7 +467,7 @@ int hud_squadmsg_count_wings( int add_to_menu )
 	count = 0;
 
 	// add the player starting wings first
-	for ( i = 0; i < MAX_STARTING_WINGS; i++ ) {
+	for ( i = 0; i < static_cast<int>(Starting_wings.size()); i++ ) {
 		int wingnum;
 
 		wingnum = Starting_wings[i];
@@ -489,11 +489,11 @@ int hud_squadmsg_count_wings( int add_to_menu )
 
 	for ( i = 0; i < Num_wings; i++ ) {
 		// if this wing is a player starting wing, skip it since we added it above
-		for ( j = 0; j < MAX_STARTING_WINGS; j++ ) {
+		for ( j = 0; j < static_cast<int>(Starting_wings.size()); j++ ) {
 			if ( i == Starting_wings[j] )
 				break;
 		}
-		if ( j < MAX_STARTING_WINGS )
+		if ( j < static_cast<int>(Starting_wings.size()))
 			continue;
 
 		if ( hud_squadmsg_wing_valid(&Wings[i]) ) {

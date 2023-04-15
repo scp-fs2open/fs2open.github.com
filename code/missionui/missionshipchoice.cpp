@@ -1841,6 +1841,7 @@ bool check_for_gaps_in_weapon_slots()
 		{
 			// if the player can't modify the weapons, then an empty bank is not his fault
 			auto ss_slot = &Ss_wings[slot / MAX_WING_SLOTS].ss_slots[slot % MAX_WING_SLOTS];
+
 			if (ss_slot->status & WING_SLOT_WEAPONS_DISABLED)
 				continue;
 
@@ -2812,7 +2813,7 @@ int ss_fixup_team_data(team_data *tdata)
 	ship_in_parse_player = 0;
 	list_size = p_team_data->num_ship_choices;
 
-	for ( i = 0; i < MAX_STARTING_WINGS; i++ ) {
+	for ( i = 0; i < RETAIL_MAX_STARTING_WINGS; i++ ) {
 		wing *wp;
 		if ( Starting_wings[i] == -1 )
 			continue;
@@ -3031,7 +3032,7 @@ void ss_clear_wings()
 
 	Assert( Ss_wings != NULL );
 
-	for(idx=0;idx<MAX_STARTING_WINGS;idx++){
+	for(idx=0;idx<RETAIL_MAX_STARTING_WINGS;idx++){
 		Ss_wings[idx].wingnum = -1;
 		Ss_wings[idx].num_slots = 0;
 		Ss_wings[idx].is_late = 0;
@@ -3058,8 +3059,9 @@ void ss_init_wing_info(int wing_num,int starting_wing_num)
 
 	wp = &Wings[ss_wing->wingnum];
 	// niffiwan: don't overrun the array
+	// TODO: FIX ME!
 	if (wp->current_count > MAX_WING_SLOTS) {
-		Warning(LOCATION, "Starting Wing '%s' has '%d' ships. Truncating ship selection to 'MAX_WING_SLOTS'\n", Starting_wing_names[ss_wing->wingnum],wp->current_count);
+		Warning(LOCATION, "Starting Wing '%s' has '%d' ships. Truncating ship selection to 'MAX_WING_SLOTS'\n", Starting_wing_names[ss_wing->wingnum].c_str(), wp->current_count);
 		ss_wing->num_slots = MAX_WING_SLOTS;
 	} else {
 		ss_wing->num_slots = wp->current_count;
@@ -3074,7 +3076,7 @@ void ss_init_wing_info(int wing_num,int starting_wing_num)
 			if ( p_objp->wingnum == WING_INDEX(wp) ) {
 				// niffiwan: don't overrun the array
 				if (ss_wing->num_slots >= MAX_WING_SLOTS) {
-					Warning(LOCATION, "Starting Wing '%s' has more than 'MAX_WING_SLOTS' ships\n", Starting_wing_names[ss_wing->wingnum]);
+					Warning(LOCATION, "Starting Wing '%s' has more than 'MAX_WING_SLOTS' ships\n", Starting_wing_names[ss_wing->wingnum].c_str());
 					break;
 				}
 				slot = &ss_wing->ss_slots[ss_wing->num_slots++];
@@ -3121,10 +3123,11 @@ void ss_init_units()
 
 		ss_wing = &Ss_wings[i];
 
-		if ( ss_wing->wingnum < 0 ) {
-			Int3();
+		// Cyborg - This is temporary anyway. After overhault, Ss_wings will not exist.
+		Assert(ss_wing->wingnum > -1);
+
+		if (ss_wing->wingnum < 0)
 			continue;
-		}
 
 		wp = &Wings[ss_wing->wingnum];
 
@@ -3253,7 +3256,7 @@ void ship_select_init_team_data(int team_num)
 		ss_init_wing_info(0,team_num);			
 	} else {			
 		// now setup wings for easy reference
-		for (idx = 0; idx < MAX_STARTING_WINGS; idx++) {
+		for (idx = 0; idx < RETAIL_MAX_STARTING_WINGS; idx++) {
 			ss_init_wing_info(Wss_num_wings, idx);	
 		}
 	}
@@ -3276,7 +3279,7 @@ void ship_select_common_init(bool API_Access)
 
 	if(MULTI_TEAM){		
 		// initialize for all teams in the game
-		for(idx=0;idx<MULTI_TS_MAX_TVT_TEAMS;idx++){	
+		for(idx=0;idx<MAX_TVT_TEAMS;idx++){	
 			ship_select_init_team_data(idx);
 		}		
 

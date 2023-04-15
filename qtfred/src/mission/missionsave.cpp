@@ -2803,12 +2803,11 @@ int CFred_mission_save::save_mission_info()
 		fout("\n");
 
 		// starting wings
-		if (strcmp(Starting_wing_names[0], "Alpha") != 0 || strcmp(Starting_wing_names[1], "Beta") != 0
-			|| strcmp(Starting_wing_names[2], "Gamma") != 0) {
+		if (!Starting_wing_names.empty()) {
 			fout("\n$Starting wing names: ( ");
 
-			for (i = 0; i < MAX_STARTING_WINGS; i++) {
-				fout("\"%s\" ", Starting_wing_names[i]);
+			for (auto& wing_name : Starting_wing_names) {
+				fout("\"%s\" ", wing_name);
 			}
 
 			fout(")");
@@ -2831,8 +2830,12 @@ int CFred_mission_save::save_mission_info()
 		if (strcmp(TVT_wing_names[0], "Alpha") != 0 || strcmp(TVT_wing_names[1], "Zeta") != 0) {
 			fout("\n$Team-versus-team wing names: ( ");
 
-			for (i = 0; i < MAX_TVT_WINGS; i++) {
-				fout("\"%s\" ", TVT_wing_names[i]);
+			// If we ever expand the number of wings available, the code below will need to be changed.
+			static_assert(MAX_TVT_WINGS_PER_TEAM == 1);
+
+			// for now use the old syntax and only use the first wing defined, since that's the only one that FSO can use anyway.
+			for (i = 0; i < MAX_TVT_TEAMS; i++) {
+				fout("\"%s\" ", TVT_wing_names[i][0]);
 			}
 
 			fout(")");

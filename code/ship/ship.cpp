@@ -140,16 +140,16 @@ wing	Wings[MAX_WINGS];
 bool	Ships_inited = false;
 bool	Armor_inited = false;
 
-int	Starting_wings[MAX_STARTING_WINGS];  // wings player starts a mission with (-1 = none)
+SCP_vector<int>	Starting_wings;  // wings player starts a mission with (-1 = none)
 
 // Goober5000
-int Squadron_wings[MAX_SQUADRON_WINGS];
-int TVT_wings[MAX_TVT_WINGS];
+SCP_vector<int> Squadron_wings;
+std::array<SCP_vector<int>, MAX_TVT_TEAMS> TVT_wings;
 
 // Goober5000
-char Starting_wing_names[MAX_STARTING_WINGS][NAME_LENGTH];
-char Squadron_wing_names[MAX_SQUADRON_WINGS][NAME_LENGTH];
-char TVT_wing_names[MAX_TVT_WINGS][NAME_LENGTH];
+SCP_vector<SCP_string> Starting_wing_names;
+SCP_vector<SCP_string> Squadron_wing_names;
+std::array<SCP_vector<SCP_string>, MAX_TVT_TEAMS> TVT_wing_names;
 
 SCP_vector<engine_wash_info> Engine_wash_info;
 
@@ -654,18 +654,18 @@ static void ship_obj_list_reset_slot(int index)
  */
 static int ship_in_my_squadron(ship *shipp)
 {
-	int i;
-
-	for (i=0; i<MAX_STARTING_WINGS; i++)
+	for (auto& wing_index : Starting_wings)
 	{
-		if (shipp->wingnum == Starting_wings[i])
+		if (shipp->wingnum == wing_index)
 			return 1;
 	}
 
-	for (i=0; i<MAX_TVT_WINGS; i++)
+	for (auto& team : TVT_wings)
 	{
-		if (shipp->wingnum == TVT_wings[i])
-			return 1;
+		for (auto& wing_index : team){
+			if (shipp->wingnum == wing_index)
+				return 1;
+		}
 	}
 
 	// not in
@@ -6175,32 +6175,35 @@ void ship_level_init()
 	for (i = 0; i < MAX_WINGS; i++ )
 		Wings[i].clear();
 
-	for (i=0; i<MAX_STARTING_WINGS; i++)
-		Starting_wings[i] = -1;
+	Starting_wings.clear();
+	Squadron_wings.clear();
 
-	for (i=0; i<MAX_SQUADRON_WINGS; i++)
-		Squadron_wings[i] = -1;
-
-	for (i=0; i<MAX_TVT_WINGS; i++)
-		TVT_wings[i] = -1;
+	for (i=0; i<MAX_TVT_TEAMS; i++)
+		TVT_wings[i].clear();
 
 	// Goober5000
 
 	// set starting wing names to default
-	strcpy_s(Starting_wing_names[0], "Alpha");
-	strcpy_s(Starting_wing_names[1], "Beta");
-	strcpy_s(Starting_wing_names[2], "Gamma");
+	Starting_wing_names.clear();
+	Starting_wing_names.emplace_back("Alpha");
+	Starting_wing_names.emplace_back("Beta");
+	Starting_wing_names.emplace_back("Gamma");
 
 	// set squadron wing names to default
-	strcpy_s(Squadron_wing_names[0], "Alpha");
-	strcpy_s(Squadron_wing_names[1], "Beta");
-	strcpy_s(Squadron_wing_names[2], "Gamma");
-	strcpy_s(Squadron_wing_names[3], "Delta");
-	strcpy_s(Squadron_wing_names[4], "Epsilon");
+	Squadron_wing_names.clear();
+	Squadron_wing_names.emplace_back("Alpha");
+	Squadron_wing_names.emplace_back("Beta");
+	Squadron_wing_names.emplace_back("Gamma");
+	Squadron_wing_names.emplace_back("Delta");
+	Squadron_wing_names.emplace_back("Epsilon");
 
-	// set tvt wing names to default
-	strcpy_s(TVT_wing_names[0], "Alpha");
-	strcpy_s(TVT_wing_names[1], "Zeta");
+
+	// set tvt wing names to default, each team has its own vector within the fixed length array
+	TVT_wing_names[0].clear();
+	TVT_wing_names[1].clear();
+
+	TVT_wing_names[0].emplace_back("Alpha");
+	TVT_wing_names[1].emplace_back("Zeta");
 
 	// clear out ship registry
 	Ship_registry.clear();
@@ -15886,6 +15889,11 @@ int ship_get_random_player_wing_ship( int flags, float max_dist, int persona_ind
 	int i, j, ship_index, count;
 	int slist[MAX_SIZE], which_one;
 
+	if (MULTI_TEAM){
+		Assertion(multi_team > -1 && multi_team < MAX_TVT_TEAMS, "Invalid team of %d passed to function during TVT game in ship_get_random_player_wing_ship. Please report!", multi_team);
+		return -1;
+	}
+	
 	// iterate through starting wings of player.  Add ship indices of ships which meet
 	// given criteria
 	count = 0;
@@ -15896,15 +15904,15 @@ int ship_get_random_player_wing_ship( int flags, float max_dist, int persona_ind
 		int wingnum = -1;
 
 		// multi-team?
-		if(multi_team >= 0){
-			if( i == TVT_wings[multi_team] ) {
-				wingnum = i;
-			} else {
-				continue;
+		if(MULTI_TEAM){
+			for (auto& wing : TVT_wings[multi_team]){
+				if( i == wing) {
+					wingnum = i;
+				}
 			}
 		} else {
 			// first check for a player starting wing
-			for ( j = 0; j < MAX_STARTING_WINGS; j++ ) {
+			for ( j = 0; j < static_cast<int>(Starting_wings.size()); j++ ) {
 				if ( i == Starting_wings[j] ) {
 					wingnum = i;
 					break;
@@ -15913,7 +15921,7 @@ int ship_get_random_player_wing_ship( int flags, float max_dist, int persona_ind
 
 			// if not found, then check all squad wings (Goober5000)
 			if ( wingnum == -1 ) {
-				for ( j = 0; j < MAX_SQUADRON_WINGS; j++ ) {
+				for ( j = 0; j < static_cast<int>(Squadron_wings.size()); j++ ) {
 					if ( i == Squadron_wings[j] ) {
 						wingnum = i;
 						break;
@@ -17059,7 +17067,7 @@ void ship_maybe_praise_self(ship *deader_sp, ship *killer_sp)
 	if (killer_sp->wingnum == -1) {
 		return; 
 	}
-	for ( j = 0; j < MAX_STARTING_WINGS; j++ ) {
+	for ( j = 0; j < static_cast<int>(Starting_wings.size()); j++ ) {
 		if ( Starting_wings[j] == killer_sp->wingnum) {
 			wingman = true; 
 			break;
@@ -19217,16 +19225,16 @@ int ship_starting_wing_lookup(const char *wing_name)
 {
 	Assertion(wing_name != nullptr, "NULL wing_name passed to ship_starting_wing_lookup");
 
-	for (int i = 0; i < MAX_STARTING_WINGS; i++)
+	for (int i = 0; i < static_cast<int>(Starting_wing_names.size()); ++i)
 	{
-		if (!stricmp(Starting_wing_names[i], wing_name))
+		if (!stricmp(Starting_wing_names[i].c_str(), wing_name))
 			return i;
 	}
 
 	return -1;
 }
 
-// Goober5000
+// Goober5000, returns the index of the wing in the hud wingman status gauge.
 int ship_squadron_wing_lookup(const char *wing_name)
 {
 	Assertion(wing_name != nullptr, "NULL wing_name passed to ship_squadron_wing_lookup");
@@ -19234,9 +19242,14 @@ int ship_squadron_wing_lookup(const char *wing_name)
 	// TvT uses a different set of wing names from everything else
 	if (MULTI_TEAM)
 	{
-		for (int i = 0; i < MAX_TVT_WINGS; i++)
+		for (int i = 0; i < MAX_TVT_TEAMS; i++)
 		{
-			if (!stricmp(TVT_wing_names[i], wing_name))
+			Assertion(!TVT_wing_names[i].empty(), "Yo bro, FSO thinks team %d is empty when it can't be because it's a TVT mission. Maybe we should call the SCP or somethin`", i);
+			// This will return the correct wing for now because team 1 
+			// CAUTION!  This will now just return the team that the wing name belongs to.
+			// If TVT code ever changes to allow more than one wing per team (which requires hud changes anyway)
+			// this section must be changed!
+			if (!stricmp(TVT_wing_names[i][0].c_str(), wing_name))
 				return i;
 		}
 	}
@@ -19248,7 +19261,7 @@ int ship_squadron_wing_lookup(const char *wing_name)
 
 		for (int i = 0; i < MAX_SQUADRON_WINGS; i++)
 		{
-			if (!strnicmp(Squadron_wing_names[i], wing_name, std::max(len, strlen(Squadron_wing_names[i]))))
+			if (!strnicmp(Squadron_wing_names[i].c_str(), wing_name, std::max(len, strlen(Squadron_wing_names[i].c_str()))))
 				return i;
 		}
 	}
@@ -19257,13 +19270,13 @@ int ship_squadron_wing_lookup(const char *wing_name)
 }
 
 // Goober5000
-int ship_tvt_wing_lookup(const char *wing_name)
+int ship_tvt_wing_lookup(const char *wing_name, int team)
 {
 	Assertion(wing_name != nullptr, "NULL wing_name passed to ship_tvt_wing_lookup");
 
-	for (int i = 0; i < MAX_TVT_WINGS; i++)
+	for (int i = 0; i < static_cast<int>(TVT_wing_names[team].size()); i++)
 	{
-		if (!stricmp(TVT_wing_names[i], wing_name))
+		if (!stricmp(TVT_wing_names[team][i].c_str(), wing_name))
 			return i;
 	}
 

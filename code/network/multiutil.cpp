@@ -2503,10 +2503,10 @@ void multi_process_valid_join_request(join_request *jr, net_addr *who_from, int 
 			if(Netgame.type_flags & NG_TYPE_TEAM)
 			{
 			/*	int i, j;
-				int team_nums[MULTI_TS_MAX_TVT_TEAMS] = {0, 0};\
+				int team_nums[MAX_TVT_TEAMS] = {0, 0};\
 
 				//First get the number of players on each team
-				for(i = 0; i < MULTI_TS_MAX_TVT_TEAMS; i++)
+				for(i = 0; i < MAX_TVT_TEAMS; i++)
 				{
 					for(j = 0; j < MULTI_TS_NUM_SHIP_SLOTS; j++)
 					{
@@ -2519,7 +2519,7 @@ void multi_process_valid_join_request(join_request *jr, net_addr *who_from, int 
 				//Find the lowest team
 				//Init this to the first team, so it works properly
 				int lowest_team[2] = {team_nums[0], 0};
-				for(i = 0; i < MULTI_TS_MAX_TVT_TEAMS;i++)
+				for(i = 0; i < MAX_TVT_TEAMS;i++)
 				{
 					if(Multi_ts_team[i] < lowest_team[0])
 					{

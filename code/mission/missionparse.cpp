@@ -725,17 +725,30 @@ void parse_mission_info(mission *pm, bool basic = false)
 	// the wing name arrays are initialized in ship_level_init
 	if (optional_string("$Starting wing names:"))
 	{
-		stuff_string_list(Starting_wing_names, MAX_STARTING_WINGS);
+		stuff_string_list(Starting_wing_names);
 	}
 
 	if (optional_string("$Squadron wing names:"))
 	{
-		stuff_string_list(Squadron_wing_names, MAX_SQUADRON_WINGS);
+		stuff_string_list(Squadron_wing_names);
 	}
 
 	if (optional_string("$Team-versus-team wing names:"))
 	{
-		stuff_string_list(TVT_wing_names, MAX_TVT_WINGS);
+		SCP_vector<SCP_string> temp_names;
+
+		stuff_string_list(temp_names);
+
+		// Yes, the underlying data structs are able to handle more than the first two wings,
+		// but for now, just take the first two, because specifying which wing belongs to which 
+		// team is going to need mission file changes, anyway.
+		if (!temp_names.empty()){
+			TVT_wing_names[0].push_back(temp_names.front());
+		}
+
+		if (temp_names.size() > 1){
+			TVT_wing_names[1].push_back(temp_names[1]);
+		}
 	}
 	// end of wing stuff -------------------------------------------------
 
@@ -2013,8 +2026,14 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 	shipp->respawn_priority = p_objp->respawn_priority;
 
 	// if this is a multiplayer dogfight game, and its from a player wing, make it team traitor
-	if (MULTI_DOGFIGHT && (p_objp->wingnum >= 0) && p_objp->flags[Mission::Parse_Object_Flags::SF_From_player_wing])
-		shipp->team = Iff_traitor;
+	if (MULTI_DOGFIGHT && (p_objp->wingnum >= 0))
+	{
+		for (auto& wing_name : Starting_wing_names)
+		{
+			if (!stricmp(wing_name.c_str(), Wings[p_objp->wingnum].name))
+				shipp->team = Iff_traitor;
+		}
+	}
 
 	// alternate stuff
 	shipp->alt_type_index = p_objp->alt_type_index;
@@ -2568,6 +2587,13 @@ void parse_bring_in_docked_wing(p_object *p_objp, int wingnum, int shipnum)
 	// copy to parse object
 	p_objp->wing_status_wing_index = Ships[shipnum].wing_status_wing_index;
 	p_objp->wing_status_wing_pos = Ships[shipnum].wing_status_wing_pos;
+
+	// set flag if necessary
+	for (auto& wing_name : Starting_wing_names)
+	{
+		if (!stricmp(wing_name.c_str(), wingp->name))
+			Ships[shipnum].flags[Ship::Ship_Flags::From_player_wing];
+	}
 
 	// handle AI
 	ai_info *aip = &Ai_info[Ships[shipnum].ai_index];
@@ -4333,6 +4359,27 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 			}
 		}
 
+		// flag ship with SF_FROM_PLAYER_WING if a member of player starting wings
+		if (MULTI_TEAM)
+		{
+			// different for tvt -- Goober5000
+			// now we go through each team one at a time
+			for (auto& team : TVT_wing_names){
+				for (auto& wing_name : team){
+					if (!stricmp(wing_name.c_str(), wingp->name))
+						Ships[Objects[objnum].instance].flags.set(Ship::Ship_Flags::From_player_wing);
+				}
+			}
+		}
+		else
+		{
+			for (auto& wing_name : Starting_wing_names)
+			{
+				if (!stricmp(wing_name.c_str(), wingp->name))
+					Ships[Objects[objnum].instance].flags.set(Ship::Ship_Flags::From_player_wing);
+			}
+		}
+
 		// keep track of how many ships to create.  Stop when we have done all that we are supposed to do.
 		num_to_create--;
 		if (num_to_create == 0)
@@ -4376,12 +4423,12 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 
 		// see if this wing is a player starting wing, and if so, call the maybe_add_form_goal
 		// function to possibly make the wing form on the player
-		for (it = 0; it < MAX_STARTING_WINGS; it++ ) {
+		for (it = 0; it < static_cast<int>(Starting_wings.size()); it++ ) {
 			if ( Starting_wings[it] == wingnum ){
 				break;
 			}
 		}
-		if ( it < MAX_STARTING_WINGS ){
+		if ( it < static_cast<int>(Starting_wings.size()) ){
 			ai_maybe_add_form_goal( wingp );
 		}
 
@@ -4645,8 +4692,8 @@ void parse_wing(mission *pm)
 	// error checking against the player ship wings (i.e. starting & tvt) to be sure that wave count doesn't exceed one for
 	// these wings.
 	if ( MULTI_NOT_TEAM ) {
-		for (i = 0; i < MAX_STARTING_WINGS; i++ ) {
-			if ( !stricmp(Starting_wing_names[i], wingp->name) ) {
+		for (auto& wing_name : Starting_wing_names) {
+			if ( !stricmp(wing_name.c_str(), wingp->name) ) {
 				if ( wingp->num_waves > 1 ) {
 					// only end the game if we're the server - clients will eventually find out :)
 					if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
@@ -4657,12 +4704,14 @@ void parse_wing(mission *pm)
 		}
 	}
 	else if (MULTI_TEAM) {
-		for (i = 0; i < MAX_TVT_WINGS; i++ ) {
-			if ( !stricmp(TVT_wing_names[i], wingp->name) ) {
-				if ( wingp->num_waves > 1 ) {
-					// only end the game if we're the server - clients will eventually find out :)
-					if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
-						multi_quit_game(PROMPT_NONE, MULTI_END_NOTIFY_NONE, MULTI_END_ERROR_WAVE_COUNT);																
+		for (i = 0; i < MAX_TVT_TEAMS; i++ ) {
+			for (auto& wing_name : TVT_wing_names[i]){
+				if ( !stricmp(wing_name.c_str(), wingp->name) ) {
+					if ( wingp->num_waves > 1 ) {
+						// only end the game if we're the server - clients will eventually find out :)
+						if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
+							multi_quit_game(PROMPT_NONE, MULTI_END_NOTIFY_NONE, MULTI_END_ERROR_WAVE_COUNT);																
+						}
 					}
 				}
 			}
@@ -4838,28 +4887,33 @@ void post_process_path_stuff()
 // Goober5000
 void post_process_ships_wings()
 {
-	// error checking for custom wings
-	if (strcmp(Starting_wing_names[0], TVT_wing_names[0]) != 0)
-	{
-		Error(LOCATION, "The first starting wing and the first team-versus-team wing must have the same wing name.\n");
+	Starting_wings.clear();
+	Starting_wings.resize(Starting_wing_names.size());
+	Squadron_wings.clear();
+	Squadron_wings.resize(Squadron_wing_names.size());
+
+	for (int i = 0; i < MAX_TVT_TEAMS; ++i){
+		TVT_wings[i].clear();
+		TVT_wings[i].resize(TVT_wing_names[i].size());
 	}
 
+
 	// set up wing indexes
-	for (int i = 0; i < MAX_STARTING_WINGS; i++)
-		Starting_wings[i] = wing_name_lookup(Starting_wing_names[i], 1);
-	for (int i = 0; i < MAX_SQUADRON_WINGS; i++)
-		Squadron_wings[i] = wing_name_lookup(Squadron_wing_names[i], 1);
-	for (int i = 0; i < MAX_TVT_WINGS; i++)
-		TVT_wings[i] = wing_name_lookup(TVT_wing_names[i], 1);
+	for (int i = 0; i < static_cast<int>(Starting_wing_names.size()); ++i)
+		Starting_wings[i] = wing_name_lookup(Starting_wing_names[i].c_str(), 1);
+	for (int i = 0; i < static_cast<int>(Squadron_wings.size()); ++i)
+		Squadron_wings[i] = wing_name_lookup(Squadron_wing_names[i].c_str(), 1);
+	for (int i = 0; i < MAX_TVT_TEAMS; ++i)
+		TVT_wings[i][0] = wing_name_lookup(TVT_wing_names[i][0].c_str(), 1);
 
 	// when TVT, hack starting wings to be team wings
 	if (MULTI_TEAM)
 	{
-		Assert(MAX_TVT_WINGS <= MAX_STARTING_WINGS);
-		for (int i = 0; i < MAX_STARTING_WINGS; i++)
+		for (int i = 0; i < static_cast<int>(Starting_wings.size()); i++)
 		{
-			if (i < MAX_TVT_WINGS)
-				Starting_wings[i] = TVT_wings[i];
+			// FIX ME! This will need to be reworked if the hack is not removed and the TVT is allowed to have more than two wings
+			if (i < MAX_TVT_TEAMS)
+				Starting_wings[i] = TVT_wings[i][0];
 			else
 				Starting_wings[i] = -1;
 		}
@@ -4888,7 +4942,7 @@ void post_process_ships_wings()
 		// set a flag if this parse object is in a starting wing
 		if (p_obj.wingnum >= 0)
 		{
-			for (int i = 0; i < MAX_STARTING_WINGS; i++)
+			for (int i = 0; i < static_cast<int>(Starting_wings.size()); i++)
 				if (p_obj.wingnum == Starting_wings[i])
 					p_obj.flags.set(Mission::Parse_Object_Flags::SF_From_player_wing);
 		}
@@ -4960,6 +5014,12 @@ void post_process_ships_wings()
 	// ----------------- at this point the ships have been created -----------------
 	// Now set up the wings.  This must be done after both dock stuff and ship stuff.
 
+	// error checking for custom wings
+	if (strcmp(Starting_wing_names[0].c_str(), TVT_wing_names[0][0].c_str()) != 0)
+	{
+		Error(LOCATION, "The first starting wing and the first team-versus-team wing must have the same wing name.\n");
+	}
+
 	// Goober5000 - for FRED, the ships are initialized after the wings, so we must now tell the wings
 	// where their ships are
 	if (Fred_running)
@@ -4997,43 +5057,57 @@ void post_process_ships_wings()
 	// ----------------- at this point wings and ships should both be valid -----------------
 	// Now do some error checking for multi
 
+	// Cyborg - TODO: Challenge accepted
 	static_assert(MAX_TVT_WINGS_PER_TEAM == 1, "Unless you also update the section of code below or redo the loadout code, for TvT, there should be just one player wing, otherwise, wings may start disappearing in game.");
 
 	// now see if we found the missing wing.  We're looking for a wing that is there after a wing that is not.
 	// for now TvT mission do not have enough player wings to be affected by this bug.
 	if (The_mission.game_type & (MISSION_TYPE_MULTI | MISSION_TYPE_MULTI_COOP)) {
-		bool Squadron_wing_names_found[MAX_SQUADRON_WINGS];
+		SCP_vector<bool> squadron_wing_names_found;
 
 		// quickly look through the squadron wing names to see if we have to warn the modder about this mission
 		// to avoid them avoid the multi missing wing bug.
-		for (int i = 0; i < MAX_SQUADRON_WINGS; i++) {
-			Squadron_wing_names_found[i] = false;
+		for (auto& wing_name : Squadron_wing_names) {
+			squadron_wing_names_found.push_back(false);
 
 			for (int j = 0; j < Num_wings; j++) {
-				if (!strcmp(Wings[j].name, Squadron_wing_names[i])) {
-					Squadron_wing_names_found[i] = true;
+				if (!strcmp(Wings[j].name, wing_name.c_str())) {
+					squadron_wing_names_found.back() = true;
+					break;
 				}
 			}
 		}
 
-		bool found = false;
-		do {
-			found = false;
-			// we only search up to the MAX_STARTING_WINGS because non-starting wings should not be in starting wing indices (0-2)
-			for (int i = 1; i < MAX_STARTING_WINGS; i++) {
-				// If there was a wing for this squadron entry, check the last one. If it's empty, we found a mistake, so move the wing names over.
-				if (Squadron_wing_names_found[i] && !Squadron_wing_names_found[i - 1]) {
-					Warning(LOCATION, "Squadron wings are not in the correct order and may cause wings to disappear in multi.\n\nEither wing %s should exist or the %s entry needs to come before it in the list.\n\nPlease go back and fix the mission.", Squadron_wing_names[i - 1], Squadron_wing_names[i]);
-					char temp_chars[NAME_LENGTH];
-					strcpy_s(temp_chars, Squadron_wing_names[i - 1]);
-					strcpy_s(Squadron_wing_names[i - 1], Squadron_wing_names[i]);
-					strcpy_s(Squadron_wing_names[i], temp_chars);
-					Squadron_wing_names_found[i] = !Squadron_wing_names_found[i];
-					Squadron_wing_names_found[i - 1] = !Squadron_wing_names_found[i - 1];
-					found = true;
+		SCP_vector<int> to_remove;
+
+		for (size_t i = squadron_wing_names_found.size(); i > 0; --i) {
+			// If there was a wing for this squadron entry, check the last one. If it's empty, we found a mistake, so move the wing names over.
+			if (squadron_wing_names_found[i] && !squadron_wing_names_found[i - 1]) {
+				for (size_t j = i - 1; j > 0; --j){
+					// retrieve *all* missing wings for removal.
+					if (!squadron_wing_names_found[j])
+						to_remove.push_back(j);
+					else {
+						i = j;
+						// break since we found a used wing again
+						break;
+					}
 				}
 			}
-		} while (found);
+		}
+
+		if (!to_remove.empty()){
+			Warning(LOCATION, "Squadron wings are not in the correct order and may cause wings to disappear in multi.  Check the debug log for a list of wings that are missing.");
+			mprintf(("Mission parse code found these missing wings while trying to run a multiplayer mission: "));
+			for (auto& index : to_remove){
+				mprintf(("%s ", Squadron_wing_names[index].c_str()));
+			}
+			mprintf(("\n"));
+
+			for (auto item = to_remove.crbegin(); item != to_remove.crend(); ++item){
+				Squadron_wing_names.erase(Squadron_wing_names.cbegin() + *item);
+			}
+		}
 	}
 }
 
@@ -6168,6 +6242,39 @@ bool post_process_mission(mission *pm)
 		mprintf(("Reassigning player to squadron %s\n", pm->squad_name));
 		player_set_squad(Player, pm->squad_name);
 		player_set_squad_bitmap(Player, pm->squad_filename, false);
+	}
+
+	Starting_wings.clear();
+
+	// set up wing indexes
+	for (auto& wing_name : Starting_wing_names) {
+		Starting_wings.push_back(wing_name_lookup(wing_name.c_str(), 1));
+	}
+
+	Squadron_wings.clear();
+
+	for (auto& wing_name : Squadron_wing_names) {
+		Squadron_wings.push_back(wing_name_lookup(wing_name.c_str(), 1));
+	}
+
+	for (i = 0; i < MAX_TVT_TEAMS; ++i){
+		TVT_wings[i].clear();
+		for (auto& wing_name : TVT_wing_names[i]) {
+			TVT_wings[i].push_back(wing_name_lookup(wing_name.c_str(), 1));
+		}
+	}
+
+	// TODO: CYBORG FIX! This is nonsense.  Make sure that we *dont* need to do this hack
+	// by the time we've finished the overhaul.
+	// when TVT, hack starting wings to be team wings
+	if(MULTI_TEAM){
+		for (i=0; i<static_cast<int>(Starting_wings.size()); i++)
+		{
+			if (i<MAX_TVT_TEAMS)
+				Starting_wings[i] = TVT_wings[i][0];
+			else
+				Starting_wings[i] = -1;
+		}
 	}
 
 	init_ai_system();

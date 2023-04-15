@@ -1591,13 +1591,13 @@ typedef struct wing {
 
 extern wing Wings[MAX_WINGS];
 
-extern int Starting_wings[MAX_STARTING_WINGS];
-extern int Squadron_wings[MAX_SQUADRON_WINGS];
-extern int TVT_wings[MAX_TVT_WINGS];
+extern SCP_vector<int> Starting_wings;
+extern SCP_vector<int> Squadron_wings;
+extern std::array<SCP_vector<int>, MAX_TVT_TEAMS> TVT_wings;
 
-extern char Starting_wing_names[MAX_STARTING_WINGS][NAME_LENGTH];
-extern char Squadron_wing_names[MAX_SQUADRON_WINGS][NAME_LENGTH];
-extern char TVT_wing_names[MAX_TVT_WINGS][NAME_LENGTH];
+extern SCP_vector<SCP_string> Starting_wing_names;
+extern SCP_vector<SCP_string> Squadron_wing_names;
+extern std::array<SCP_vector<SCP_string>, MAX_TVT_TEAMS> TVT_wing_names;
 
 extern int ai_paused;
 
@@ -2000,7 +2000,7 @@ void ship_end_render_cockpit_display(size_t cockpit_display_num);
 // Goober5000
 int ship_starting_wing_lookup(const char *wing_name);
 int ship_squadron_wing_lookup(const char *wing_name);
-int ship_tvt_wing_lookup(const char *wing_name);
+int ship_tvt_wing_lookup(const char *wing_name, int team);
 
 // Goober5000
 int ship_class_compare(int ship_class_1, int ship_class_2);

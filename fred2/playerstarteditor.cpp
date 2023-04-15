@@ -168,16 +168,16 @@ BOOL player_start_editor::OnInitDialog()
 
 	if (The_mission.game_type & MISSION_TYPE_MULTI_TEAMS) { 
 		for (i=0; i<MAX_TVT_TEAMS; i++) {
-			for (j=0; j<MAX_TVT_WINGS_PER_TEAM; j++) {
-				generate_ship_usage_list(ship_usage[i], TVT_wings[(i*MAX_TVT_WINGS_PER_TEAM) + j]);
-				generate_weaponry_usage_list(weapon_usage[i], TVT_wings[(i*MAX_TVT_WINGS_PER_TEAM) + j]);
+			for (j=0; j<static_cast<int>(TVT_wings[i].size()); j++) {
+				generate_ship_usage_list(ship_usage[i], TVT_wings[i][j]);
+				generate_weaponry_usage_list(weapon_usage[i], TVT_wings[i][j]);
 			}			
 		}
 	}
 	else {
-		for (i=0; i<MAX_STARTING_WINGS; i++) {
-			generate_ship_usage_list(ship_usage[0], Starting_wings[i]);
-			generate_weaponry_usage_list(weapon_usage[0], Starting_wings[i]);
+		for (auto& wing : Starting_wings) {
+			generate_ship_usage_list(ship_usage[0], wing);
+			generate_weaponry_usage_list(weapon_usage[0], wing);
 		}
 	}
 

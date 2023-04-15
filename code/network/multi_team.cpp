@@ -501,10 +501,12 @@ void multi_team_mark_ship(ship *sp)
 	int i;
 	
 	// look through TVT wings... each wing corresponds to a team
-	for (i = 0; i < MAX_TVT_WINGS; i++)
+	for (i = 0; i < MAX_TVT_TEAMS; ++i)
 	{
-		if (sp->wingnum == TVT_wings[i])
-			sp->team = i;
+		for (auto& wing : TVT_wings[i]){
+			if (sp->wingnum == wing)
+				sp->team = i;
+		}
 	}
 
 	// verify that we have valid team stuff

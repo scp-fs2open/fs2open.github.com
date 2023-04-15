@@ -202,21 +202,21 @@ void ai_maybe_add_form_goal(wing* wingp)
 		// need to add a form on my wing goal here.  Ships are always forming on the player's wing.
 		// it is sufficient enough to check the first goal entry to see if it has a valid goal
 		if (aip->goals[0].ai_mode == AI_GOAL_NONE) {
-			// Need to have a more specific target in multi, or they may end up trying to target standalone placeholder.
+			// Need to have a more specific target in multi.
 			// So form on their team leader.  In dogfight, all player-slot ai die, so just exclude.
 			if (MULTIPLAYER_MASTER && !(Netgame.type_flags & NG_TYPE_DOGFIGHT)) {
 				int wingnum;
 				if (Netgame.type_flags & NG_TYPE_TEAM) {
 					const ship_registry_entry* ship_regp = ship_registry_get(Ships[wingp->ship_index[j]].ship_name);
-					wingnum = TVT_wings[ship_regp->p_objp->team];
+					wingnum = TVT_wings[ship_regp->p_objp->team][0];
 					ai_add_ship_goal_player(AIG_TYPE_PLAYER_SHIP, AI_GOAL_FORM_ON_WING, -1, Ships[Wings[wingnum].ship_index[Wings[wingnum].special_ship]].ship_name, aip);
-				} else {
+				} else {					
 					wingnum = Starting_wings[0];
 					ai_add_ship_goal_player(AIG_TYPE_PLAYER_SHIP, AI_GOAL_FORM_ON_WING, -1, Ships[Wings[wingnum].ship_index[Wings[wingnum].special_ship]].ship_name, aip);
 				}
 			} else if (!(Game_mode & GM_MULTIPLAYER)) {
 				ai_add_ship_goal_player(AIG_TYPE_PLAYER_SHIP, AI_GOAL_FORM_ON_WING, -1, Player_ship->ship_name, aip);
-			}
+			} // otherwise there is nobody to form on, as there are no starting wings. (Special SP set up or Dogfight MP mission)
 		}
 	}
 }
@@ -224,7 +224,6 @@ void ai_maybe_add_form_goal(wing* wingp)
 void ai_post_process_mission()
 {
 	object *objp;
-	int i;
 
 	// make sure team visibility is updated first
 	if ( !Fred_running ) {
@@ -240,13 +239,9 @@ void ai_post_process_mission()
 		//	MK, 5/9/98: Used to iterate through MAX_STARTING_WINGS, but this was too many ships forming on player.
 		// Goober5000 - MK originally iterated on only the first wing; now we iterate on only the player wing
 		// because the player wing may not be first
-		for ( i = 0; i < MAX_STARTING_WINGS; i++ ) {	
-			if (Starting_wings[i] >= 0 && Starting_wings[i] == Player_ship->wingnum) {
-				wing *wingp;
-
-				wingp = &Wings[Starting_wings[i]];
-
-				ai_maybe_add_form_goal( wingp );
+		for (auto& index : Starting_wings) {	
+			if (index >= 0 && index == Player_ship->wingnum) {
+				ai_maybe_add_form_goal(&Wings[index]);
 			}
 		}
 	}

@@ -1624,12 +1624,12 @@ void Editor::generate_team_weaponry_usage_list(int team, int* arr) {
 	if (The_mission.game_type & MISSION_TYPE_MULTI_TEAMS) {
 		Assert (team >= 0 && team < MAX_TVT_TEAMS);
 
-		for (i = 0; i < MAX_TVT_WINGS_PER_TEAM; i++) {
-			generate_wing_weaponry_usage_list(arr, TVT_wings[(team * MAX_TVT_WINGS_PER_TEAM) + i]);
+		for (i = 0; i < static_cast<int>(TVT_wings[team].size()); i++) {
+			generate_wing_weaponry_usage_list(arr, TVT_wings[team][i]);
 		}
 	} else {
-		for (i = 0; i < MAX_STARTING_WINGS; i++) {
-			generate_wing_weaponry_usage_list(arr, Starting_wings[i]);
+		for (auto& wing : Starting_wings) {
+			generate_wing_weaponry_usage_list(arr, wing);
 		}
 	}
 }
@@ -2088,15 +2088,15 @@ int Editor::global_error_check_impl() {
 			bool is_in_loadout_screen = (ptr->type == OBJ_START);
 			if (!is_in_loadout_screen && wing >= 0) {
 				if (multi && The_mission.game_type & MISSION_TYPE_MULTI_TEAMS) {
-					for (n = 0; n < MAX_TVT_WINGS; n++) {
-						if (!strcmp(Wings[wing].name, TVT_wing_names[n])) {
+					for (n = 0; n < static_cast<int>(TVT_wing_names.size()); n++) {
+						if (!strcmp(Wings[wing].name, TVT_wing_names[n].c_str())) {
 							is_in_loadout_screen = true;
 							break;
 						}
 					}
 				} else {
-					for (n = 0; n < MAX_STARTING_WINGS; n++) {
-						if (!strcmp(Wings[wing].name, Starting_wing_names[n])) {
+					for (auto& wing_name : Starting_wing_names) {
+						if (!strcmp(Wings[wing].name, wing_name.c_str())) {
 							is_in_loadout_screen = true;
 							break;
 						}
@@ -2821,8 +2821,7 @@ SCP_vector<SCP_string> Editor::get_docking_list(int model_index) {
 }
 int Editor::global_error_check_player_wings(int multi) {
 	int i, z, err;
-	int starting_wing_count[MAX_STARTING_WINGS];
-	int tvt_wing_count[MAX_TVT_WINGS];
+	int tvt_wing_count[MAX_TVT_TEAMS] = {0, 0};
 
 	object *ptr;
 	SCP_string starting_wing_list = "";
@@ -2831,11 +2830,11 @@ int Editor::global_error_check_player_wings(int multi) {
 	// check team wings in tvt
 	if ( multi && The_mission.game_type & MISSION_TYPE_MULTI_TEAMS )
 	{
-		for (i=0; i<MAX_TVT_WINGS; i++)
+		for (i=0; i<MAX_TVT_TEAMS; i++)
 		{
-			if (ship_tvt_wing_lookup(TVT_wing_names[i]) == -1)
+			if (TVT_wings[i][0] < 0 || ship_tvt_wing_lookup(Wings[TVT_wings[i][0]].name) == -1, i)
 			{
-				if (error("%s wing is required for multiplayer team vs. team missions", TVT_wing_names[i]))
+				if (error("%s wing is required for multiplayer team vs. team missions", TVT_wing_names[i][0]))
 					return 1;
 			}
 		}
@@ -2850,24 +2849,26 @@ int Editor::global_error_check_player_wings(int multi) {
 	{
 		if ( The_mission.game_type & MISSION_TYPE_MULTI_TEAMS )
 		{
-			for (i=0; i<MAX_TVT_WINGS; i++)
+			for (i=0; i<TVT_wings.size(); i++)
 			{
-				if (TVT_wings[i] >= 0 && Wings[TVT_wings[i]].num_waves > 1)
-				{
-					Wings[TVT_wings[i]].num_waves = 1;
-					if (error("%s wing must contain only 1 wave.\nThis change has been made for you.", TVT_wing_names[i]))
-						return 1;
+				for (int j = 0; j < TVT_wings[i].size(); ++j ){
+					if (TVT_wings[i][j] >= 0 && Wings[TVT_wings[i][j]].num_waves > 1)
+					{
+						Wings[TVT_wings[i][j]].num_waves = 1;
+						if (error("%s wing must contain only 1 wave.\nThis change has been made for you.", TVT_wing_names[i][j]))
+							return 1;
+					}
 				}
 			}
 		}
 		else
 		{
-			for (i=0; i<MAX_STARTING_WINGS; i++)
+			for (auto& wing : Starting_wings)
 			{
-				if (Starting_wings[i] >= 0 && Wings[Starting_wings[i]].num_waves > 1)
+				if (wing >= 0 && Wings[wing].num_waves > 1)
 				{
-					Wings[Starting_wings[i]].num_waves = 1;
-					if (error("%s wing must contain only 1 wave.\nThis change has been made for you.", Starting_wing_names[i]))
+					Wings[wing].num_waves = 1;
+					if (error("%s wing must contain only 1 wave.\nThis change has been made for you.", Wings[wing].name))
 						return 1;
 				}
 			}
@@ -2877,18 +2878,20 @@ int Editor::global_error_check_player_wings(int multi) {
 	// check number of ships in player wing
 	if ( multi && The_mission.game_type & MISSION_TYPE_MULTI_TEAMS )
 	{
-		for (i=0; i<MAX_TVT_WINGS; i++)
-		{
-			if (TVT_wings[i] >= 0 && Wings[TVT_wings[i]].wave_count > 4)
+		for (auto& team : TVT_wings){
+			for (auto& wing : team)
 			{
-				if (error("%s wing has too many ships.  Should only have 4 max.", TVT_wing_names[i]))
-					return 1;
+				if (wing >= 0 && Wings[wing].wave_count > 4)
+				{
+					if (error("%s wing has too many ships.  Should only have 4 max.", Wings[wing].name))
+						return 1;
+				}
 			}
 		}
 	}
 	else
 	{
-		for (i=0; i<MAX_STARTING_WINGS; i++)
+		for (i=0; i < static_cast<int>(Starting_wing_names.size()); i++)
 		{
 			if (Starting_wings[i] >= 0 && Wings[Starting_wings[i]].wave_count > 4)
 			{
@@ -2901,12 +2904,14 @@ int Editor::global_error_check_player_wings(int multi) {
 	// check arrival delay in tvt
 	if ( multi && The_mission.game_type & MISSION_TYPE_MULTI_TEAMS )
 	{
-		for (i=0; i<MAX_TVT_WINGS; i++)
-		{
-			if (TVT_wings[i] >= 0 && Wings[TVT_wings[i]].arrival_delay > 0)
+		for (auto& team : TVT_wings){
+			for (auto& wing : team)
 			{
-				if (error("%s wing shouldn't have a non-zero arrival delay", TVT_wing_names[i]))
-					return 1;
+				if (wing >= 0 && Wings[wing].arrival_delay > 0)
+				{
+					if (error("%s wing shouldn't have a non-zero arrival delay", Wings[wing].name))
+						return 1;
+				}
 			}
 		}
 	}
@@ -2916,36 +2921,37 @@ int Editor::global_error_check_player_wings(int multi) {
 	{
 		if ( The_mission.game_type & MISSION_TYPE_MULTI_TEAMS )
 		{
-			for (i=0; i<MAX_TVT_WINGS; i++)
-			{
-				if (TVT_wings[i] >= 0)
+			for(auto& team : TVT_wings){
+				for (auto& wing : team)
 				{
-					if (global_error_check_mixed_player_wing(TVT_wings[i]))
-						return 1;
+					if (wing >= 0)
+					{
+						if (global_error_check_mixed_player_wing(wing))
+							return 1;
+					}
 				}
 			}
 		}
 		else
 		{
-			for (i=0; i<MAX_STARTING_WINGS; i++)
+			for (auto& wing : Starting_wings)
 			{
-				if (Starting_wings[i] >= 0)
+				if (wing >= 0)
 				{
-					if (global_error_check_mixed_player_wing(Starting_wings[i]))
+					if (global_error_check_mixed_player_wing(wing))
 						return 1;
 				}
 			}
 		}
 	}
 
-	for (i=0; i<MAX_STARTING_WINGS; i++)
+	for (i=0; i < static_cast<int>(Starting_wing_names.size()); ++i)
 	{
-		starting_wing_count[i] = 0;
 
-		if (i < MAX_STARTING_WINGS - 1)
+		if (i < static_cast<int>(Starting_wing_names.size()) - 1)
 		{
 			starting_wing_list += Starting_wing_names[i];
-			if (MAX_STARTING_WINGS > 2)
+			if (Starting_wing_names.size() > 2)
 				starting_wing_list += ",";
 			starting_wing_list += " ";
 		}
@@ -2955,21 +2961,39 @@ int Editor::global_error_check_player_wings(int multi) {
 			starting_wing_list += Starting_wing_names[i];
 		}
 	}
-	for (i=0; i<MAX_TVT_WINGS; i++)
-	{
-		tvt_wing_count[i] = 0;
+	// If we ever expand the number of teams, somehow, then the code below needs to be updated.
+	static_assert(MAX_TVT_TEAMS == 2);
 
-		if (i < MAX_TVT_WINGS - 1)
+	// handle each team individually.
+	for (i=0; i<TVT_wing_names[0].size(); i++)
+	{
+		if (i == 0)
 		{
-			tvt_wing_list += TVT_wing_names[i];
-			if (MAX_TVT_WINGS > 2)
-				tvt_wing_list += ",";
-			tvt_wing_list += " ";
+			tvt_wing_list += TVT_wing_names[0][i];
 		}
 		else
 		{
-			tvt_wing_list += "or ";
-			tvt_wing_list += TVT_wing_names[i];
+			tvt_wing_list += ",";
+			tvt_wing_list += ", ";
+			tvt_wing_list += TVT_wing_names[0][i];
+		}
+	}
+
+	if (!tvt_wing_list.empty())
+		tvt_wing_list += "or ";
+
+	// team 2
+	for (i=0; i<TVT_wing_names[1].size(); i++)
+	{
+		if (i == 0)
+		{
+			tvt_wing_list += TVT_wing_names[1][i];
+		}
+		else
+		{
+			tvt_wing_list += ",";
+			tvt_wing_list += ", ";
+			tvt_wing_list += TVT_wing_names[1][i];
 		}
 	}
 
@@ -2995,20 +3019,21 @@ int Editor::global_error_check_player_wings(int multi) {
 				int in_tvt_wing = 0;
 
 				// check which wing the player is in
-				for (i=0; i<MAX_STARTING_WINGS; i++)
+				for (auto& index : Starting_wings)
 				{
-					if (Starting_wings[i] == z)
+					if (index == z)
 					{
 						in_starting_wing = 1;
-						starting_wing_count[i]++;
 					}
 				}
-				for (i=0; i<MAX_TVT_WINGS; i++)
+				for (i=0; i<MAX_TVT_TEAMS; i++)
 				{
-					if (TVT_wings[i] == z)
-					{
-						in_tvt_wing = 1;
-						tvt_wing_count[i]++;
+					for (int j = 0; j < TVT_wings[i].size(); ++j){
+						if (TVT_wings[i][j] == z)
+						{
+							in_tvt_wing = 1;
+							tvt_wing_count[i]++;
+						}
 					}
 				}
 
@@ -3047,14 +3072,17 @@ int Editor::global_error_check_player_wings(int multi) {
 		ptr = GET_NEXT(ptr);
 	}
 
+	// If we ever expand the number of wings available, the code below will need to be changed slightly.
+	static_assert(MAX_TVT_WINGS_PER_TEAM == 1);
+
 	// check all wings in tvt have players
 	if (The_mission.game_type & MISSION_TYPE_MULTI_TEAMS)
 	{
-		for (i=0; i<MAX_TVT_WINGS; i++)
+		for (i=0; i<MAX_TVT_TEAMS; i++)
 		{
 			if (!tvt_wing_count[i])
 			{
-				if (error("%s wing doesn't contain any players (which it should)", TVT_wing_names[i]))
+				if (error("%s wing doesn't contain any players (which it should)", TVT_wing_names[i][0]))
 					return 1;
 			}
 		}

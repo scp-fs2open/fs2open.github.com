@@ -1461,7 +1461,7 @@ ADE_FUNC(__len, l_Loadout_Wings, nullptr, "The number of loadout wings", "number
 {
 	int count = 0;
 
-	for (int i = 0; i < MAX_STARTING_WINGS; i++) {
+	for (int i = 0; i < RETAIL_MAX_STARTING_WINGS; i++) {
 		if (Ss_wings[i].ss_slots[0].in_mission)
 			count++;
 	};

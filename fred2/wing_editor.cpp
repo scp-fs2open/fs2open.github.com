@@ -320,17 +320,19 @@ void wing_editor::initialize_data_safe(int full_update)
 		{
 			if (The_mission.game_type & MISSION_TYPE_MULTI_TEAMS)
 			{
-				for (i=0; i<MAX_TVT_WINGS; i++)
-				{
-					if (cur_wing == TVT_wings[i])
-						player_enabled = 0;
+				for (auto& team : TVT_wings){				
+					for (auto& wing : team)
+					{
+						if (cur_wing == team)
+							player_enabled = 0;
+					}
 				}
 			}
 			else
 			{
-				for (i=0; i<MAX_STARTING_WINGS; i++)
+				for (auto& wing : Starting_wings)
 				{
-					if (cur_wing == Starting_wings[i])
+					if (cur_wing == wing)
 						player_enabled = 0;
 				}
 			}
@@ -1316,17 +1318,22 @@ void wing_editor::OnSelchangeHotkey()
 	UpdateData(TRUE);
 	set_num = m_hotkey - 1;	// hotkey sets are 1 index based
 
+	bool found = false;
+	
 	// first, determine if we are currently working with a starting wing
-	for ( i = 0; i < MAX_STARTING_WINGS; i++ ) {
-		if ( !stricmp( Wings[cur_wing].name, Starting_wing_names[i]) )
+	for (auto& wing_name : Starting_wing_names) {
+		if ( !stricmp( Wings[cur_wing].name, wing_name.c_str()) )
+			found = true;
 			break;
 	}
-	if ( i == MAX_STARTING_WINGS )
+	if (!found)
 		return;
 
+	bool hotkey_warned = false;
 	// we have a player starting wing.  See if we assigned a non-standard hotkey
-	if ( (set_num >= MAX_STARTING_WINGS) || (set_num != i) ) {
-		sprintf(buf, "Assigning nonstandard hotkey to wing %s (default is F%d)", Wings[cur_wing].name, 5+i);
+	if ( (set_num >= RETAIL_MAX_STARTING_WINGS) || (set_num != i) && !hotkey_warned) {
+		sprintf(buf, "The first 3 hotkeys are usually reserved for starting wings by convention.\nYou are free to follow or ignore this, but this assignment may confuse players.");
+		hotkey_warned = true;
 		MessageBox(buf, NULL, MB_OK | MB_ICONEXCLAMATION );
 	}
 }

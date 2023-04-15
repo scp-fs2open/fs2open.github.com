@@ -30,8 +30,8 @@ public:
 	CString	m_starting_1;
 	CString	m_starting_2;
 	CString	m_starting_3;
-	CString	m_tvt_1;
-	CString	m_tvt_2;
+	CString	m_tvt_1_1;
+	CString	m_tvt_2_1;
 	//}}AFX_DATA
 
 

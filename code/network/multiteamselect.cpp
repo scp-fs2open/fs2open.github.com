@@ -361,10 +361,10 @@ typedef struct ts_team_data {
 	int multi_ts_flag[MULTI_TS_NUM_SHIP_SLOTS];								// flags indicating the "status" of a slot
 	int multi_players_locked;														// are the players locked into place
 } ts_team_data;
-ts_team_data Multi_ts_team[MULTI_TS_MAX_TVT_TEAMS];								// data for all teams
+ts_team_data Multi_ts_team[MAX_TVT_TEAMS];								// data for all teams
 
 // deleted ship objnums
-int Multi_ts_deleted_objnums[MULTI_TS_MAX_TVT_TEAMS * MULTI_TS_NUM_SHIP_SLOTS];
+int Multi_ts_deleted_objnums[MAX_TVT_TEAMS * MULTI_TS_NUM_SHIP_SLOTS];
 int Multi_ts_num_deleted;
 
 //XSTR:ON
@@ -532,7 +532,7 @@ void multi_ts_common_init()
 	}
 
 	// deleted ship information
-	memset(Multi_ts_deleted_objnums,0,sizeof(int) * MULTI_TS_MAX_TVT_TEAMS * MULTI_TS_NUM_SHIP_SLOTS);
+	memset(Multi_ts_deleted_objnums,0,sizeof(int) * MAX_TVT_TEAMS * MULTI_TS_NUM_SHIP_SLOTS);
 	Multi_ts_num_deleted = 0;
 
 	// mouse hotspot information
@@ -561,7 +561,7 @@ void multi_ts_common_init()
 void multi_ts_common_level_init()
 {
 	// blast the team data clean
-	memset(Multi_ts_team,0,sizeof(ts_team_data) * MULTI_TS_MAX_TVT_TEAMS);
+	memset(Multi_ts_team,0,sizeof(ts_team_data) * MAX_TVT_TEAMS);
 }
 
 // do frame for team select
@@ -833,20 +833,42 @@ void multi_ts_assign_players_all()
 	// get the # of players currently in the game
 	player_count = multi_num_players();
 
+	// What :V: thought:
 	// always assign the host to the wing leader of one of the TVT wings
 	// this is valid for coop games as well because the first starting wing
 	// and the first tvt wing must have the same name
+
+	// Cyborg - Except that is a dirty hack and you should be ashamed.  Assign
+	// the player to the first valid player ship in the correct category!
+
 	memset(name_lookup,0,100);
 
 	if(Netgame.type_flags & NG_TYPE_TEAM) {
-		sprintf(name_lookup, "%s 1", TVT_wing_names[Netgame.host->p_info.team]);
+		for (auto& wing : TVT_wings[Netgame.host->p_info.team]){
+			for (int i = 0; i < Wings[wing].wave_count; ++i){
+				if (Wings[wing].ship_index[i] < 0 || Ships[Wings[wing].ship_index[i]].objnum < 0){
+					// invalid ship.
+					continue;
+				}
+
+				if (Objects[Ships[Wings[wing].ship_index[i]].objnum].flags[Object::Object_Flags::Player_ship]){
+					wing_bash_ship_name(name_lookup, Wings[wing].name, i + 1);
+				}
+			}
+		}
 	}
 	else {
-		// To account for cases where <Wingname> 1 is not a player ship
-		for (int i = 0; i < MAX_SHIPS_PER_WING; i++) {
-			wing_bash_ship_name(name_lookup, TVT_wing_names[0], i + 1);
-			if (!stricmp(name_lookup, Player_start_shipname))
-				break;
+		for (auto& wing : Starting_wings){
+			for (int i = 0; i < Wings[wing].wave_count; ++i){
+				if (Wings[wing].ship_index[i] < 0 || Ships[Wings[wing].ship_index[i]].objnum < 0){
+					// invalid ship.
+					continue;
+				}
+
+				if (Objects[Ships[Wings[wing].ship_index[i]].objnum].flags[Object::Object_Flags::Player_ship]){
+					wing_bash_ship_name(name_lookup, Wings[wing].name, i + 1);
+				}
+			}
 		}
 	}
 		
@@ -963,7 +985,7 @@ void multi_ts_create_wings()
 	
 	// check status of all ships and delete or change ship type as necessary
 	Multi_ts_num_deleted = 0;
-	for(idx=0;idx<MULTI_TS_MAX_TVT_TEAMS;idx++){
+	for(idx=0;idx<MAX_TVT_TEAMS;idx++){
 		for(s_idx=0;s_idx<MULTI_TS_NUM_SHIP_SLOTS;s_idx++){	
 			// otherwise if there's a valid ship in this spot
 			if(Multi_ts_team[idx].multi_ts_flag[s_idx] >= 0){
@@ -1004,7 +1026,7 @@ void multi_ts_handle_player_drop()
 	int idx,s_idx;
 
 	// find the player
-	for(idx=0;idx<MULTI_TS_MAX_TVT_TEAMS;idx++){
+	for(idx=0;idx<MAX_TVT_TEAMS;idx++){
 		for(s_idx=0;s_idx<MULTI_TS_NUM_SHIP_SLOTS;s_idx++){
 			// if we found him, clear his player slot and set his object back to being  OF_COULD_BE_PLAYER
 			if((Multi_ts_team[idx].multi_ts_player[s_idx] != NULL) && !MULTI_CONNECTED((*Multi_ts_team[idx].multi_ts_player[s_idx]))){
@@ -1645,7 +1667,7 @@ void multi_ts_init_objnums()
 	int idx,s_idx,team_index,slot_index;
 
 	// zero out the indices
-	for(idx=0;idx<MULTI_TS_MAX_TVT_TEAMS;idx++){
+	for(idx=0;idx<MAX_TVT_TEAMS;idx++){
 		for(s_idx=0;s_idx<MULTI_TS_NUM_SHIP_SLOTS;s_idx++){
 			Multi_ts_team[idx].multi_ts_objnum[s_idx] = -1;
 		}		
@@ -1695,7 +1717,7 @@ void multi_ts_get_team_and_slot(char* ship_name, int* team_index, int* slot_inde
 		// get the wing index first.
 		int wing_index = ship_regp->p_objp->wing_status_wing_index;
 		// only if the wing index is valid do we set a slot index.
-		if (wing_index >= 0 && wing_index < MAX_STARTING_WINGS) {
+		if (wing_index >= 0 && wing_index < RETAIL_MAX_STARTING_WINGS) {
 			*slot_index = wing_index * MULTI_TS_NUM_SHIP_SLOTS_TEAM + ship_regp->p_objp->pos_in_wing; 
 		}
 	}
@@ -1705,12 +1727,52 @@ void multi_ts_get_team_and_slot(char* ship_name, int* team_index, int* slot_inde
 // parameters
 void multi_ts_get_shipname( char *ship_name, int team, int slot_index )
 {
+	Assertion(team > -1, "Invalid team of %d sent to multi_ts_get_shipname. This means a coder made a mistake, please report!", team);
+
 	if ( Netgame.type_flags & NG_TYPE_TEAM ) {
-		Assert( (team >= 0) && (team < MULTI_TS_MAX_TVT_TEAMS) );
-		wing_bash_ship_name(ship_name, TVT_wing_names[team], slot_index);
+		Assertion(team < MAX_TVT_TEAMS, "Invalid team of %d sent to multi_ts_get_shipname. This exceeds the maximum and means a coder made a mistake, please report!", team);
+
+		// To keep wing sizes from having to be max 4 we need to manually go through the wings and see how large each is.
+		SCP_string wing_name = "";
+		int j = 0;
+
+		for (auto& i : TVT_wings[team]){
+			if (j + Wings[i].wave_count > slot_index)
+				wing_name = Wings[i].name;
+				break;
+			
+			j += Wings[i].wave_count;
+		}
+
+		Assert(wing_name != "");
+		Assert(slot_index - j > -1);
+
+		if (wing_name == ""){
+			wing_name = TVT_wing_names[team][0];
+		}
+
+		wing_bash_ship_name(ship_name, wing_name.c_str(), slot_index - j);
 	} else {
-		Assert( team == 0 );
-		wing_bash_ship_name(ship_name, Starting_wing_names[slot_index / MULTI_TS_NUM_SHIP_SLOTS_TEAM], slot_index % MULTI_TS_NUM_SHIP_SLOTS_TEAM);
+		SCP_string wing_name = "";
+		int j = 0;
+
+		// To keep wing sizes from having to be max 4 we need to manually go through the wings and see how large each is.
+		for (auto& i : Starting_wings){
+			if (j + Wings[i].wave_count > slot_index)
+				wing_name = Wings[i].name;
+				break;
+			
+			j += Wings[i].wave_count;
+		}
+
+		Assert(wing_name != "");
+		Assert(slot_index - j > -1);
+
+		if (wing_name == ""){
+			wing_name = Starting_wings[0];
+		}
+
+		wing_bash_ship_name(ship_name, wing_name.c_str(), slot_index - j);	
 	}
 }
 
@@ -1720,7 +1782,7 @@ void multi_ts_init_flags()
 	int idx,s_idx;
 
 	// zero out the flags
-	for(idx=0;idx<MULTI_TS_MAX_TVT_TEAMS;idx++){
+	for(idx=0;idx<MAX_TVT_TEAMS;idx++){
 		for(s_idx=0;s_idx<MULTI_TS_NUM_SHIP_SLOTS;s_idx++){
 			Multi_ts_team[idx].multi_ts_flag[s_idx] = MULTI_TS_FLAG_NONE;			
 		}
@@ -1728,7 +1790,7 @@ void multi_ts_init_flags()
 
 	// in a team vs. team situation
 	if(Netgame.type_flags & NG_TYPE_TEAM){
-		for(idx=0;idx<MULTI_TS_MAX_TVT_TEAMS;idx++){
+		for(idx=0;idx<MAX_TVT_TEAMS;idx++){
 			for(s_idx=0;s_idx<MULTI_TS_NUM_SHIP_SLOTS_TEAM;s_idx++){
 				// if the there is an objnum here but no ship class, we know its currently empty
 				if((Multi_ts_team[idx].multi_ts_objnum[s_idx] != -1) && (Wss_slots_teams[idx][s_idx].ship_class == -1)){
@@ -2482,18 +2544,15 @@ int multi_ts_can_grab_player(int slot_index, int player_index)
 // get the team # of the given ship
 int multi_ts_get_team(char *ship_name)
 {
-	int idx;//,s_idx;
+	const ship_registry_entry* ship_regp = ship_registry_get(ship_name);
 
-	// lookup through all team ship names
-	Assert(MAX_TVT_WINGS == MULTI_TS_MAX_TVT_TEAMS);
-	for(idx=0;idx<MAX_TVT_WINGS;idx++)
-	{
-		if (!strnicmp(ship_name, TVT_wing_names[idx], strlen(TVT_wing_names[idx])))
-			return idx;
+	// For a player usable ship, there has to be a parse object, a team and a position within a wing.
+	if (ship_regp == nullptr || ship_regp->p_objp == nullptr) {
+		return 0 ;
 	}
 
-	// always on team 0 if not found otherwise
-	return 0;
+	// this should send the original team, in case the team changes via sexp or scripting
+	return ship_regp->p_objp->team;
 }
 
 // return the bitmap index into the ships icon array (in ship select) which should be displayed for the given slot

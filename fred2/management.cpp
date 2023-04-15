@@ -2321,13 +2321,13 @@ void generate_weaponry_usage_list(int team, int *arr)
     if (The_mission.game_type & MISSION_TYPE_MULTI_TEAMS) {
 		Assert (team >= 0 && team < MAX_TVT_TEAMS);
 
-		for (i=0; i<MAX_TVT_WINGS_PER_TEAM; i++) {
-			generate_weaponry_usage_list(arr, TVT_wings[(team * MAX_TVT_WINGS_PER_TEAM) + i]);
+		for (i=0; i<static_cast<int>(TVT_wings[team].size()); i++) {
+			generate_weaponry_usage_list(arr, TVT_wings[team][i]);
 		}
 	}
 	else {
-		for (i=0; i<MAX_STARTING_WINGS; i++) {
-			generate_weaponry_usage_list(arr, Starting_wings[i]);
+		for (auto& wing : Starting_wings) {
+			generate_weaponry_usage_list(arr, wing);
 		}
 	}
 }
@@ -2446,17 +2446,18 @@ int wing_is_player_wing(int wing)
 
 	if (The_mission.game_type & MISSION_TYPE_MULTI_TEAMS)
 	{
-		for (i=0; i<MAX_TVT_WINGS; i++)
-		{
-			if (wing == TVT_wings[i])
-				return 1;
+		for (auto& team : TVT_wings){
+			for (auto& index : team){
+				if (wing == index)
+					return 1;
+			}
 		}
 	}
 	else
 	{
-		for (i=0; i<MAX_STARTING_WINGS; i++)
+		for (auto& index : Starting_wings)
 		{
-			if (wing == Starting_wings[i])
+			if (wing == index)
 				return 1;
 		}
 	}
@@ -2471,19 +2472,27 @@ void update_custom_wing_indexes()
 {
 	int i;
 
-	for (i = 0; i < MAX_STARTING_WINGS; i++)
+	Starting_wings.clear();
+
+	for (auto& wing : Starting_wing_names)
 	{
-		Starting_wings[i] = wing_name_lookup(Starting_wing_names[i], 1);
+		Starting_wings.push_back();
 	}
 
-	for (i = 0; i < MAX_SQUADRON_WINGS; i++)
+	Squadron_wings.clear();
+
+	for (auto& wing : Squadron_wing_names)
 	{
-		Squadron_wings[i] = wing_name_lookup(Squadron_wing_names[i], 1);
+		Squadron_wings.push_back(wing_name_lookup(wing.c_str(), 1));
 	}
 
-	for (i = 0; i < MAX_TVT_WINGS; i++)
+	for (i = 0; i < MAX_TVT_TEAMS; i++)
 	{
-		TVT_wings[i] = wing_name_lookup(TVT_wing_names[i], 1);
+		TVT_wings[i].clear();
+		
+		for (int j = 0; j < static_cast<int>(TVT_wing_names[i].size()); ++j){
+			TVT_wings[i].push_back(wing_name_lookup(TVT_wing_names[i], 1));
+		}
 	}
 }
 
