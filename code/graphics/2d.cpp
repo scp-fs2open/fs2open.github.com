@@ -2572,7 +2572,7 @@ void gr_flip(bool execute_scripting)
 
 void gr_print_timestamp(int x, int y, fix timestamp, int resize_mode)
 {
-	int seconds = fl2i(f2fl(timestamp));
+	int seconds = f2i(timestamp);
 
 	// format the time information into strings
 	SCP_string time;
