@@ -1498,7 +1498,7 @@ void hud_config_redraw_pressed_buttons()
 	}
 }
 
-void hud_config_do_frame(float  frametime, bool API_Access, int mx, int my) 
+void hud_config_do_frame(float /*frametime*/, bool API_Access, int mx, int my)
 {
 	int k;
 
