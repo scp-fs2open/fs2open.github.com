@@ -7067,7 +7067,7 @@ void weapon_area_apply_blast(vec3d * /*force_apply_pos*/, object *objp, vec3d *b
 	vec3d		force, vec_blast_to_ship, vec_ship_to_impact;
 	polymodel		*pm;
 
-	Assertion(objp->type == OBJ_SHIP || objp->type == OBJ_ASTEROID || objp->type == OBJ_DEBRIS, "weapon_area_apply_blast can only be called on ships asteroids or debris");
+	Assertion(objp->type == OBJ_SHIP || objp->type == OBJ_ASTEROID || objp->type == OBJ_DEBRIS, "weapon_area_apply_blast can only be called on ships, asteroids, or debris");
 	if (!(objp->type == OBJ_SHIP || objp->type == OBJ_ASTEROID || objp->type == OBJ_DEBRIS))
 		return;
 
@@ -7082,21 +7082,7 @@ void weapon_area_apply_blast(vec3d * /*force_apply_pos*/, object *objp, vec3d *b
 
 	vm_vec_sub(&vec_ship_to_impact, blast_pos, &objp->pos);
 
-	int model_num = -1;
-	switch (objp->type) {
-		case OBJ_SHIP: 
-			model_num = Ship_info[Ships[objp->instance].ship_info_index].model_num;
-			break;
-		case OBJ_ASTEROID:
-			model_num = Ship_info[Ships[objp->instance].ship_info_index].model_num;
-			break;
-		case OBJ_DEBRIS:
-			model_num = Ship_info[Ships[objp->instance].ship_info_index].model_num;
-			break;
-		default:
-			UNREACHABLE("unhandled object type");
-	}
-
+	int model_num = object_get_model(objp);
 	pm = model_get(model_num);
 	Assert ( pm != NULL );
 	if (!pm)
