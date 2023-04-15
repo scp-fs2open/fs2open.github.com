@@ -742,7 +742,7 @@ void set_subsystem_info(int model_num, model_subsystem *subsystemp, char *props,
 				get_user_prop_value(p + 8, buf);			// get the value of the fov
 				float value = (float)atoi(buf);
 				CLAMP(value, 0.0f, 90.0f);
-				float angle = (PI / 2.0f) - fl_radians(value);
+				float angle = PI_2 - fl_radians(value);
 				subsystemp->turret_max_fov = cosf(angle);
 			} else
 				subsystemp->turret_max_fov = 1.0f;

@@ -716,11 +716,10 @@ void message_log_init_scrollback(int pw)
 		}
 
 		//Set the flags for objectives
-		if ((entry->type == LOG_GOAL_SATISFIED) || (entry->type == LOG_GOAL_FAILED)) {
-			if (entry->type == LOG_GOAL_SATISFIED)
-				thisEntry.objective.flags = LOG_FLAG_GOAL_TRUE;
-			if (entry->type == LOG_GOAL_FAILED)
-				thisEntry.objective.flags = LOG_FLAG_GOAL_FAILED;
+		if (entry->type == LOG_GOAL_SATISFIED) {
+			thisEntry.objective.flags = LOG_FLAG_GOAL_TRUE;
+		} else if (entry->type == LOG_GOAL_FAILED) {
+			thisEntry.objective.flags = LOG_FLAG_GOAL_FAILED;
 		} else {
 			thisEntry.objective.flags = 0;
 		}
