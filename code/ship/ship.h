@@ -1219,6 +1219,7 @@ public:
 	float			debris_damage_mult;
 	float			debris_arc_percent;
 	float			debris_gravity_const;			// see gravity_const above
+	float			debris_density;
 	gamesnd_id		debris_ambient_sound;
 	gamesnd_id		debris_collision_sound_light;
 	gamesnd_id		debris_collision_sound_heavy;

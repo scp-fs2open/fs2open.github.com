@@ -1002,6 +1002,7 @@ void ship_info::clone(const ship_info& other)
 	debris_damage_mult = other.debris_damage_mult;
 	debris_arc_percent = other.debris_arc_percent;
 	debris_gravity_const = other.debris_gravity_const;
+	debris_density = other.debris_density;
 	debris_ambient_sound = other.debris_ambient_sound;
 	debris_collision_sound_light = other.debris_collision_sound_light;
 	debris_collision_sound_heavy = other.debris_collision_sound_heavy;
@@ -1351,6 +1352,7 @@ void ship_info::move(ship_info&& other)
 	debris_damage_mult = other.debris_damage_mult;
 	debris_arc_percent = other.debris_arc_percent;
 	debris_gravity_const = other.debris_gravity_const;
+	debris_density = other.debris_density;
 	debris_ambient_sound = other.debris_ambient_sound;
 	debris_collision_sound_light = other.debris_collision_sound_light;
 	debris_collision_sound_heavy = other.debris_collision_sound_heavy;
@@ -1775,6 +1777,7 @@ ship_info::ship_info()
 	debris_damage_mult = 1.0f;
 	debris_arc_percent = 0.5f;
 	debris_gravity_const = 1.0f;
+	debris_density = 1.0f;
 	debris_ambient_sound = GameSounds::DEBRIS;
 	debris_collision_sound_light = gamesnd_id();
 	debris_collision_sound_heavy = gamesnd_id();
@@ -3303,6 +3306,10 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		} else if (first_time) {
 			sip->debris_gravity_const = sip->dying_gravity_const;
 		}
+
+		if (optional_string("+Debris Density"))
+			stuff_float(&sip->debris_density);
+
 		gamesnd_id ambient_snd, collision_snd_light, collision_snd_heavy, explosion_snd;
 		if (parse_game_sound("+Ambient Sound:", &ambient_snd))
 			sip->debris_ambient_sound = ambient_snd;
@@ -5079,6 +5086,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 
 				sp->turret_max_bomb_ownage = -1;
 				sp->turret_max_target_ownage = -1;
+				sp->density = 1.0f;
 			}
 			sfo_return = stuff_float_optional(&percentage_of_hits);
 			if(sfo_return==2)
@@ -5260,6 +5268,10 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 						Warning(LOCATION, "RoF multiplier not set for subsystem\n'%s' in %s '%s'.", sp->subobj_name, info_type_name, sip->name);
 					}
 				}
+			}
+
+			if (optional_string("$Debris Density:")) {
+				stuff_float(&sp->density);
 			}
 
 			if (optional_string("$Flags:")) {
