@@ -12,9 +12,9 @@
 
 SCP_vector<Curve> Curves;
 
-int curve_get_by_name(SCP_string in_name) {
+int curve_get_by_name(SCP_string& in_name) {
 	for (int i = 0; i < (int)Curves.size(); i++) {
-		if (Curves[i].name == in_name)
+		if (SCP_string_lcase_equal_to()(Curves[i].name, in_name))
 			return i;
 	}
 
@@ -27,7 +27,7 @@ void parse_curve_table(const char* filename) {
 		read_file_text(filename, CF_TYPE_TABLES);
 		reset_parse();
 
-		optional_string("#Curves");
+		required_string("#Curves");
 
 		while (optional_string("$Name:")) {
 			SCP_string name;
@@ -112,7 +112,7 @@ void curves_init() {
 
 Curve::Curve(SCP_string in_name)
 {
-	name = in_name;
+	name = std::move(in_name);
 }
 
 void Curve::ParseData()
