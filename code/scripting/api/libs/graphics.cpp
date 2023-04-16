@@ -4,6 +4,7 @@
 #include "graphics.h"
 
 #include "scripting/api/objs/camera.h"
+#include "scripting/api/objs/color.h"
 #include "scripting/api/objs/enums.h"
 #include "scripting/api/objs/font.h"
 #include "scripting/api/objs/model.h"
@@ -2177,6 +2178,32 @@ ADE_FUNC(freeAllModels, l_Graphics, nullptr, "Releases all loaded models and fre
 	model_free_all();
 
 	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(createColor,
+	l_Graphics,
+	"number Red, number Green, number Blue, [number Alpha]",
+	"Creates a color object. Values are capped 0-255. Alpha defaults to 255.",
+	"color",
+	"The color")
+{
+	int r;
+	int g;
+	int b;
+	int a = 255;
+	if (!ade_get_args(L, "iii|i", &r, &g, &b, &a)) {
+		return ADE_RETURN_NIL;
+	}
+
+	CLAMP(r, 0, 255);
+	CLAMP(g, 0, 255);
+	CLAMP(b, 0, 255);
+	CLAMP(a, 0, 255);
+
+	color thisColor;
+	gr_init_alphacolor(&thisColor, r, g, b, a);
+
+	return ade_set_args(L, "o", l_Color.Set(thisColor));
 }
 
 } // namespace api

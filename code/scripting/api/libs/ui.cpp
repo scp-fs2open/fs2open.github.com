@@ -34,6 +34,7 @@
 #include "mod_table/mod_table.h"
 #include "network/multi.h"
 #include "network/multiteamselect.h"
+#include "pilotfile/pilotfile.h"
 #include "playerman/managepilot.h"
 #include "radar/radarsetup.h"
 #include "ship/ship.h"
@@ -52,6 +53,7 @@
 #include "scripting/api/objs/missionhotkey.h"
 #include "scripting/api/objs/gamehelp.h"
 #include "scripting/api/objs/missionlog.h"
+#include "scripting/api/objs/hudconfig.h"
 #include "scripting/api/objs/color.h"
 #include "scripting/api/objs/enums.h"
 #include "scripting/api/objs/player.h"
@@ -94,19 +96,6 @@ ADE_FUNC(setOffset, l_UserInterface, "number x, number y",
 
 	return ADE_RETURN_TRUE;
 }
-
-// Would be useful. Just need to return it in a useful way.
-/* ADE_FUNC(getContext,
-	l_UserInterface,
-	nullptr,
-	"Returns the current scpui context",
-	"boolean",
-	"True if successful, false otherwise")
-{
-	SCP_UNUSED(L);
-
-	return ade_set_args(L, "o", scpui::getContext());
-}*/
 
 ADE_FUNC(enableInput,
 	l_UserInterface,
@@ -2199,7 +2188,195 @@ ADE_FUNC(__len, l_Controls, nullptr, "The number of controls", "number", "The nu
 	return ade_set_args(L, "i", (int)Control_config.size());
 }
 
-//must handle controls presets!
+//**********SUBLIBRARY: UserInterface/HUDConfig
+ADE_LIB_DERIV(l_UserInterface_HUDConfig,
+	"HudConfig",
+	nullptr,
+	"API for accessing data related to the HUD Config UI.<br><b>Warning:</b> This is an internal "
+	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	l_UserInterface);
+
+ADE_FUNC(initHudConfig,
+	l_UserInterface_HUDConfig,
+	"[number X, number Y, number Width]",
+	"Initializes the HUD Configuration data. Must be used before HUD Configuration data accessed. "
+	"X and Y are the coordinates where the HUD preview will be drawn when drawHudConfig is used. "
+	"Width is the pixel width to draw the gauges preview.",
+	nullptr,
+	nullptr)
+{
+	int x = 0;
+	int y = 0;
+	int w = 0;
+	ade_get_args(L, "|iii", &x, &y, &w);
+
+	hud_config_init(true, x, y, w);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(closeHudConfig,
+	l_UserInterface_HUDConfig,
+	"boolean Save",
+	"If True then saves the gauge configuration, discards if false. Defaults to false. Then cleans up memory. Should be used when finished accessing HUD Configuration.",
+	nullptr,
+	nullptr)
+{
+	bool save = false;
+	ade_get_args(L, "|b", &save);
+
+	if (save) {
+		Pilot.save_savefile();
+	} else {
+		hud_config_cancel(false);
+	}
+
+	hud_config_close(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(drawHudConfig,
+	l_UserInterface_HUDConfig,
+	"[number MouseX, number MouseY]",
+	"Draws the HUD for the HUD Config UI. Should be called On Frame.",
+	"gauge_config",
+	"Returns the gauge currently being hovered over, or empty handle if nothing is hovered")
+{
+	int mx = 0;
+	int my = 0;
+	ade_get_args(L, "|ii", &mx, &my);
+
+	hud_config_do_frame(0.0f, true, mx, my);
+
+	if (HC_gauge_hot >= 0) {
+		return ade_set_args(L, "o", l_Gauge_Config.Set(gauge_config_h(HC_gauge_hot)));
+	} else {
+		return ade_set_error(L, "o", l_Gauge_Config.Set(gauge_config_h()));
+	}
+}
+
+ADE_FUNC(selectAllGauges,
+	l_UserInterface_HUDConfig,
+	"boolean Toggle",
+	"Sets all gauges as selected. True for select all, False to unselect all. Defaults to False.",
+	nullptr,
+	nullptr)
+{
+	bool toggle = false;
+	ade_get_args(L, "|b", &toggle);
+
+	hud_config_select_all_toggle(toggle, true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(setToDefault,
+	l_UserInterface_HUDConfig,
+	"string Filename",
+	"Sets all gauges to the defined default. If no filename is provided then 'hud_3.hcf' is used.",
+	nullptr,
+	nullptr)
+{
+	const char* filename = "hud_3.hcf";
+	ade_get_args(L, "|s", &filename);
+
+	hud_config_select_all_toggle(0, true);
+	hud_set_default_hud_config(Player, filename);
+	HUD_init_hud_color_array();
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(saveToPreset,
+	l_UserInterface_HUDConfig,
+	"string Filename",
+	"Saves all gauges to the file with the name provided. Filename should not include '.hcf' extension and not be longer than 28 characters.",
+	nullptr,
+	nullptr)
+{
+	const char* filename;
+	ade_get_args(L, "s", &filename);
+
+	SCP_string name = filename;
+
+	// trim filename length to leave room for adding the extension
+	if (name.size() > MAX_FILENAME_LEN - 4) {
+		name.resize(MAX_FILENAME_LEN - 4);
+	}
+
+	// add extension
+	name += ".hcf";
+
+	hud_config_color_save(name.c_str());
+
+	// reload the preset list for sorting
+	hud_config_preset_init();
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(usePresetFile,
+	l_UserInterface_HUDConfig,
+	"string Filename",
+	"Sets all gauges to the provided preset file settings.",
+	nullptr,
+	nullptr)
+{
+	const char* filename;
+	ade_get_args(L, "s", &filename);
+
+	hud_config_color_load(filename);
+	HUD_init_hud_color_array();
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_LIB_DERIV(l_HUD_Gauges, "GaugeConfigs", nullptr, nullptr, l_UserInterface_HUDConfig);
+ADE_INDEXER(l_HUD_Gauges,
+	"number Index",
+	"Array of built-in gauge configs",
+	"gauge_config",
+	"gauge_config handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "o", l_Gauge_Config.Set(gauge_config_h()));
+	idx--; // Convert from Lua's 1 based index system
+
+	if ((idx < 0) || (idx >= NUM_HUD_GAUGES))
+		return ade_set_error(L, "o", l_Gauge_Config.Set(gauge_config_h()));
+
+	return ade_set_args(L, "o", l_Gauge_Config.Set(gauge_config_h(idx)));
+}
+
+ADE_FUNC(__len, l_HUD_Gauges, nullptr, "The number of gauge configs", "number", "The number of gauge configs.")
+{
+	return ade_set_args(L, "i", NUM_HUD_GAUGES);
+}
+
+ADE_LIB_DERIV(l_HUD_Presets, "GaugePresets", nullptr, nullptr, l_UserInterface_HUDConfig);
+ADE_INDEXER(l_HUD_Presets,
+	"number Index",
+	"Array of HUD Preset files",
+	"hud_preset",
+	"hud_preset handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "o", l_HUD_Preset.Set(hud_preset_h()));
+	idx--; // Convert from Lua's 1 based index system
+
+	if ((idx < 0) || (idx >= (int)HC_preset_filenames.size()))
+		return ade_set_error(L, "o", l_HUD_Preset.Set(hud_preset_h()));
+
+	return ade_set_args(L, "o", l_HUD_Preset.Set(hud_preset_h(idx)));
+}
+
+ADE_FUNC(__len, l_HUD_Presets, nullptr, "The number of hud presets", "number", "The number of hud presets.")
+{
+	return ade_set_args(L, "i", HC_preset_filenames.size());
+}
 
 //**********SUBLIBRARY: UserInterface/PauseScreen
 ADE_LIB_DERIV(l_UserInterface_PauseScreen,
