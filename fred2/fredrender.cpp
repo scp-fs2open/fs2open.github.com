@@ -949,6 +949,9 @@ void game_do_frame() {
 
 	inc_mission_time();
 
+	// sync all timestamps across the entire frame
+	timer_start_frame();
+
 	viewer_position = my_orient.vec.fvec;
 	vm_vec_scale(&viewer_position, my_pos.xyz.z);
 
