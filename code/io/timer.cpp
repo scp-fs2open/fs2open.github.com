@@ -121,7 +121,7 @@ int timer_get_milliseconds()
 		return 0;
 	}
 
-	return static_cast<int>(timer_get_microseconds() / 1000);
+	return static_cast<int>(timer_get_microseconds() / MICROSECONDS_PER_MILLISECOND);
 }
 
 std::uint64_t timer_get_microseconds()
@@ -163,7 +163,7 @@ static uint64_t timestamp_get_microseconds()
 }
 
 static int timestamp_ms() {
-	return static_cast<int>(timestamp_get_microseconds() / 1000);
+	return static_cast<int>(timestamp_get_microseconds() / MICROSECONDS_PER_MILLISECOND);
 }
 
 int timestamp() {
@@ -596,7 +596,7 @@ void timestamp_adjust_pause_offset(int delta_milliseconds)
 	if (Timestamp_offset_from_counter == 0) {
 		Timestamp_offset_from_counter = get_performance_counter();
 	} else {
-		Timestamp_offset_from_counter += static_cast<uint64_t>(static_cast<uint64_t>(delta_milliseconds) * 1000 / Timer_to_microseconds);
+		Timestamp_offset_from_counter += static_cast<uint64_t>(static_cast<uint64_t>(delta_milliseconds) * MICROSECONDS_PER_MILLISECOND / Timer_to_microseconds);
 	}
 }
 
