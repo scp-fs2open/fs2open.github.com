@@ -672,8 +672,8 @@ void batching_add_laser_internal(primitive_batch *batch, int texture, vec3d *p0,
 
 void batching_add_bitmap(int texture, vertex *pnt, int orient, float rad, float alpha, float depth)
 {
-	if (texture < 0) {
-		Int3();
+	Assertion((texture >= 0), "batching_add_...() attempted for invalid texture");
+	if ( texture < 0 ) {
 		return;
 	}
 
@@ -687,8 +687,8 @@ void batching_add_bitmap(int texture, vertex *pnt, int orient, float rad, float 
 
 void batching_add_volume_bitmap(int texture, vertex *pnt, int orient, float rad, float alpha, float depth)
 {
-	if (texture < 0) {
-		Int3();
+	Assertion((texture >= 0), "batching_add_...() attempted for invalid texture");
+	if ( texture < 0 ) {
 		return;
 	}
 
@@ -708,8 +708,8 @@ void batching_add_volume_bitmap(int texture, vertex *pnt, int orient, float rad,
 
 void batching_add_volume_bitmap_rotated(int texture, vertex *pnt, float angle, float rad, float alpha, float depth)
 {
+	Assertion((texture >= 0), "batching_add_...() attempted for invalid texture");
 	if ( texture < 0 ) {
-		Int3();
 		return;
 	}
 
@@ -729,8 +729,8 @@ void batching_add_volume_bitmap_rotated(int texture, vertex *pnt, float angle, f
 
 void batching_add_distortion_bitmap_rotated(int texture, vertex *pnt, float angle, float rad, float alpha, float depth)
 {
-	if (texture < 0) {
-		Int3();
+	Assertion((texture >= 0), "batching_add_...() attempted for invalid texture");
+	if ( texture < 0 ) {
 		return;
 	}
 
@@ -748,8 +748,8 @@ void batching_add_distortion_bitmap_rotated(int texture, vertex *pnt, float angl
 
 void batching_add_distortion_beam(int texture, vec3d *start, vec3d *end, float width, float intensity, float offset)
 {
-	if (texture < 0) {
-		Int3();
+	Assertion((texture >= 0), "batching_add_...() attempted for invalid texture");
+	if ( texture < 0 ) {
 		return;
 	}
 
@@ -767,8 +767,8 @@ void batching_add_distortion_beam(int texture, vec3d *start, vec3d *end, float w
 
 void batching_add_beam(int texture, vec3d *start, vec3d *end, float width, float intensity)
 {
-	if (texture < 0) {
-		Int3();
+	Assertion((texture >= 0), "batching_add_...() attempted for invalid texture");
+	if ( texture < 0 ) {
 		return;
 	}
 
@@ -836,8 +836,9 @@ void batching_add_line(vec3d *start, vec3d *end, float widthStart, float widthEn
 
 void batching_add_laser(int texture, vec3d *p0, float width1, vec3d *p1, float width2, int r, int g, int b)
 {
-	if (texture < 0) {
-		Int3();
+	Assertion((texture >= 0), "batching_add_...() attempted for invalid texture");
+	if ( texture < 0 ) {
+		return;
 	}
 
 	primitive_batch *batch = batching_find_batch(texture, batch_info::FLAT_EMISSIVE);
@@ -847,8 +848,8 @@ void batching_add_laser(int texture, vec3d *p0, float width1, vec3d *p1, float w
 
 void batching_add_polygon(int texture, vec3d *pos, matrix *orient, float width, float height, float alpha)
 {
-	if (texture < 0) {
-		Int3();
+	Assertion((texture >= 0), "batching_add_...() attempted for invalid texture");
+	if ( texture < 0 ) {
 		return;
 	}
 
@@ -862,8 +863,8 @@ void batching_add_polygon(int texture, vec3d *pos, matrix *orient, float width, 
 
 void batching_add_quad(int texture, vertex *verts)
 {
+	Assertion((texture >= 0), "batching_add_...() attempted for invalid texture");
 	if ( texture < 0 ) {
-		Int3();
 		return;
 	}
 
@@ -883,8 +884,8 @@ void batching_add_quad(int texture, vertex *verts, primitive_batch *batch)
 }
 void batching_add_tri(int texture, vertex *verts)
 {
+	Assertion((texture >= 0), "batching_add_...() attempted for invalid texture");
 	if ( texture < 0 ) {
-		Int3();
 		return;
 	}
 
