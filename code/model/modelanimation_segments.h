@@ -91,6 +91,33 @@ namespace animation {
 		ModelAnimationSegmentSetOrientation(std::shared_ptr<ModelAnimationSubmodel> submodel, const matrix& orientation, ModelAnimationCoordinateRelation relationType);
 	};
 
+	//This segment changes or sets a submodels offset to a defined Vector.
+	class ModelAnimationSegmentSetOffset : public ModelAnimationSegment {
+		struct instance_data {
+			vec3d offset;
+		};
+
+		//PMI ID -> Instance Data
+		std::map<int, instance_data> m_instances;
+
+		//configurables:
+	  public:
+		std::shared_ptr<ModelAnimationSubmodel> m_submodel;
+		vec3d m_target;
+		ModelAnimationCoordinateRelation m_relationType;
+
+	  private:
+		ModelAnimationSegment* copy() const override;
+		void recalculate(ModelAnimationSubmodelBuffer& base, ModelAnimationSubmodelBuffer& currentAnimDelta, polymodel_instance* pmi) override;
+		void calculateAnimation(ModelAnimationSubmodelBuffer& base, float /*time*/, int pmi_id) const override;
+		void executeAnimation(const ModelAnimationSubmodelBuffer& /*state*/, float /*timeboundLower*/, float /*timeboundUpper*/, ModelAnimationDirection /*direction*/, int /*pmi_id*/) override { };
+		void exchangeSubmodelPointers(ModelAnimationSet& replaceWith) override;
+
+	  public:
+		static std::shared_ptr<ModelAnimationSegment> parser(ModelAnimationParseHelper* data);
+		ModelAnimationSegmentSetOffset(std::shared_ptr<ModelAnimationSubmodel> submodel, const vec3d& offset, ModelAnimationCoordinateRelation relationType);
+	};
+
 	//This segment rotates a submodels orientation by a certain amount around its defined rotation axis
 	class ModelAnimationSegmentSetAngle : public ModelAnimationSegment {
 		//configurables:

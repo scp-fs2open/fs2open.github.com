@@ -39772,6 +39772,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tThree numbers, x, y, z rotation respectively, in degrees\r\n"
 		"Rotation:\r\n"
 		"\tThree numbers, x, y, z rotation respectively, in degrees\r\n"
+		"Translation:\r\n"
+		"\tThree required numbers: x, y, z position target relative to base, in 1/100th meters\r\n"
 		"Axis Rotation:\r\n"
 		"\tOne number, rotation angle in degrees\r\n"
 		"Inverse Kinematics:\r\n"
