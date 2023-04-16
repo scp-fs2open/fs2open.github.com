@@ -225,7 +225,7 @@ SCP_vector<squadmsg_history> Squadmsg_history;
 // forward declarations
 void hud_add_issued_order(const char *name, int order);
 void hud_update_last_order(const char *target, int order_source, int special_index);
-bool hud_squadmsg_is_target_order_valid(size_t order, ai_info *aip = nullptr);
+bool hud_squadmsg_is_target_order_valid(size_t order, ai_info *aip = nullptr, bool isWing = false);
 bool hud_squadmsg_ship_valid(ship *shipp, object *objp = nullptr);
 
 // function to set up variables needed when messaging mode is started
@@ -757,7 +757,7 @@ bool hud_squadmsg_ship_order_valid( int shipnum, int order )
 // returns true or false if the Players target is valid for the given order
 // find_order is true when we need to search the comm_orders array for the order entry.  We have
 // to do this action in some cases since all we know is the actual "value" of the order
-bool hud_squadmsg_is_target_order_valid(size_t order, ai_info *aip )
+bool hud_squadmsg_is_target_order_valid(size_t order, ai_info *aip, bool isWing )
 {
 	int target_objnum;
 	ship *shipp, *ordering_shipp;
@@ -771,7 +771,7 @@ bool hud_squadmsg_is_target_order_valid(size_t order, ai_info *aip )
 
 	//If it's a lua order, defer to luaai
 	if (Player_orders[order].lua_id != -1) {
-		return ai_lua_is_valid_target(Player_orders[order].lua_id, target_objnum, ordering_shipp, order);
+		return ai_lua_is_valid_ship(Player_orders[order].lua_id, isWing, ordering_shipp) && ai_lua_is_valid_target(Player_orders[order].lua_id, target_objnum, ordering_shipp, order);
 	}
 
 	// orders which don't operate on targets are always valid
@@ -1356,7 +1356,7 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 		message = MESSAGE_NO_TARGET;
 	}
 
-	if (hud_squadmsg_is_target_order_valid((size_t)command, ainfo)) {
+	if (hud_squadmsg_is_target_order_valid((size_t)command, ainfo, true)) {
 		target_shipname = nullptr;
 		target_team = -1;
 		if (ainfo->target_objnum != -1) {
@@ -2088,7 +2088,7 @@ void hud_squadmsg_wing_command()
 
 		// do some other checks to possibly gray out other items.
 		// if no target, remove any items which are associated with the players target
-		if ( !hud_squadmsg_is_target_order_valid((int)order_id, 0) )
+		if ( !hud_squadmsg_is_target_order_valid((int)order_id, 0, true) )
 			MsgItems[Num_menu_items].active = 0;
 
 		// if no ship in the wing can depart then gray out the departure order
