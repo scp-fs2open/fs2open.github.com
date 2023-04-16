@@ -67,5 +67,22 @@ ADE_VIRTVAR(Bitmap, l_Rank, nullptr, "The bitmap of the rank", "string", "The bi
 	return ade_set_args(L, "s", current.getRank()->bitmap);
 }
 
+ADE_VIRTVAR(Index, l_Rank, nullptr, "The index of the rank within the Ranks list", "number", "The rank index")
+{
+	rank_h current;
+	if (!ade_get_args(L, "o", l_Rank.Get(&current))) {
+		return ADE_RETURN_NIL;
+	}
+	if (!current.isValid()) {
+		return ade_set_error(L, "i", 0);
+	}
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "i", current.rank + 1); // Convert to Lua's 1 based index system
+}
+
 } // namespace api
 } // namespace scripting
