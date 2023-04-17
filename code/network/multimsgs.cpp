@@ -6889,12 +6889,11 @@ void send_asteroid_hit( object *objp, object *other_objp, vec3d *hitpos, float d
 {
 	int packet_size;
 	ubyte data[MAX_PACKET_SIZE], packet_type;
-	vec3d vec = vmd_zero_vector;
 
 	if ( hitpos == nullptr )
-		hitpos = &vec;
+		hitpos = &vmd_zero_vector;
 	if ( force == nullptr )
-		force = &vec;
+		force = &vmd_zero_vector;
 
 	// build up an asteroid hit packet
 	BUILD_HEADER( ASTEROID_INFO );
