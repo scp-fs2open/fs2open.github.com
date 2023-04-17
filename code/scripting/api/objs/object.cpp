@@ -16,6 +16,7 @@
 #include "object/objectshield.h"
 #include "object/objectsnd.h"
 #include "scripting/api/LuaEventCallback.h"
+#include "scripting/api/objs/color.h"
 #include "scripting/lua/LuaFunction.h"
 #include "ship/ship.h"
 #include "weapon/weapon.h"
@@ -661,27 +662,28 @@ ADE_FUNC(removeSound, l_Object, "soundentry GameSnd, [subsystem Subsys=nil]",
 }
 
 
-ADE_FUNC(getIFFColor, l_Object, "number, number, number", 
-	"Gets the IFF color of the object",
-	"number, number, number", 
+ADE_FUNC(getIFFColor, l_Object, "boolean ReturnType", 
+	"Gets the IFF color of the object. True to return raw rgb, false to return color object. Defaults to true.",
+	"number, number, number | color", 
 	"IFF rgb color of the object or nil if object invalid")
 {
 	object_h* objh;
+	bool rc = true;
 
-	if (!ade_get_args(L, "o", l_Object.GetPtr(&objh)))
+	if (!ade_get_args(L, "o|b", l_Object.GetPtr(&objh), &rc))
 		return ADE_RETURN_NIL;
 
 	if (!objh->IsValid())
 		return ADE_RETURN_NIL;
 
 	auto objp = objh->objp;
-	color* col = hud_get_iff_color(objp);
+	color* cur = hud_get_iff_color(objp);
 
-	int r = col->red;
-	int g = col->green;
-	int b = col->blue;
-
-	return ade_set_args(L, "iii", r, g, b);
+	if (rc) {
+		return ade_set_args(L, "iii", (int)cur->red, (int)cur->green, (int)cur->blue, (int)cur->alpha);
+	} else {
+		return ade_set_args(L, "o", l_Color.Set(*cur));
+	}
 }
 
 } // namespace api

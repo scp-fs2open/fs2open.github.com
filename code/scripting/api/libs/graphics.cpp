@@ -284,13 +284,30 @@ ADE_FUNC(clear, l_Graphics, nullptr, "Calls gr_clear(), which fills the entire s
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(clearScreen, l_Graphics, "[number red, number green, number blue, number alpha]",
-         "Clears the screen to black, or the color specified.", nullptr, nullptr)
+ADE_FUNC(clearScreen, l_Graphics, "[number red, number green, number blue, number alpha] | [color Color]",
+	"Clears the screen to black, or the color specified.",
+	nullptr,
+	nullptr)
 {
-	int r,g,b,a;
-	r=g=b=0;
-	a=255;
-	ade_get_args(L, "|iiii", &r, &g, &b, &a);
+	int r, g, b, a;
+	r = g = b = 0;
+	a = 255;
+
+	if (lua_isnumber(L, 1)) {
+		ade_get_args(L, "|iiii", &r, &g, &b, &a);
+
+	} else {
+		color col;
+		gr_init_alphacolor(&col, 0, 0, 0, 255);
+
+		ade_get_args(L, "|o", l_Color.Get(&col));
+		r = col.red;
+		g = col.green;
+		b = col.blue;
+		a = col.alpha;
+	}
+
+	
 
 	//WMC - Set to valid values
 	if(r != 0 || g != 0 || b != 0 || a!= 255)
@@ -502,31 +519,56 @@ ADE_FUNC(setCamera, l_Graphics, "[camera Camera]", "Sets current camera, or rese
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(setColor, l_Graphics, "number Red, number Green, number Blue, [number Alpha]",
-         "Sets 2D drawing color; each color number should be from 0 (darkest) to 255 (brightest)", nullptr, nullptr)
+ADE_FUNC(setColor,
+	l_Graphics,
+	"number Red, number Green, number Blue, [number Alpha] | color Color",
+	"Sets 2D drawing color; each color number should be from 0 (darkest) to 255 (brightest)",
+	nullptr,
+	nullptr)
 {
-	if(!Gr_inited)
+	if (!Gr_inited)
 		return ADE_RETURN_NIL;
 
-	int r,g,b,a=255;
+	int r, g, b, a = 255;
+	color col;
 
-	if(!ade_get_args(L, "iii|i", &r, &g, &b, &a))
-		return ADE_RETURN_NIL;
+	if (lua_isnumber(L, 1)) {
+		if (!ade_get_args(L, "iii|i", &r, &g, &b, &a))
+			return ADE_RETURN_NIL;
 
-	color ac;
-	gr_init_alphacolor(&ac,r,g,b,a);
-	gr_set_color_fast(&ac);
+		gr_init_alphacolor(&col, r, g, b, a);
+
+	} else {
+		gr_init_alphacolor(&col, 0, 0, 0, 255);
+
+		ade_get_args(L, "o", l_Color.Get(&col));
+	}
+
+	gr_set_color_fast(&col);
 
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(getColor, l_Graphics, nullptr, "Gets the active 2D drawing color", "number, number, number, number" , "rgba color which is currently in use for 2D drawing")
+ADE_FUNC(getColor,
+	l_Graphics,
+	"boolean",
+	"Gets the active 2D drawing color. True to return raw rgb, false to return a color object. Defaults to true.",
+	"number, number, number, number | color",
+	"rgba color which is currently in use for 2D drawing")
 {
 	if(!Gr_inited)
 		return ADE_RETURN_NIL;
 
+	bool rc = true;
+	ade_get_args(L, "|b", &rc);
+
 	color cur = gr_screen.current_color;
-	return ade_set_args(L, "iiii", (int)cur.red, (int)cur.green, (int)cur.blue, (int)cur.alpha);
+
+	if (rc) {
+		return ade_set_args(L, "iiii", (int)cur.red, (int)cur.green, (int)cur.blue, (int)cur.alpha);
+	} else {
+		return ade_set_args(L, "o", l_Color.Set(cur));
+	}
 }
 
 ADE_FUNC(setLineWidth, l_Graphics, "[number width=1.0]", "Sets the line width for lines. This call might fail if the specified width is not supported by the graphics implementation. Then the width will be the nearest supported value.", "boolean", "true if succeeded, false otherwise")
@@ -1843,15 +1885,34 @@ ADE_FUNC(getImageHeight, l_Graphics, "string name", "Gets image height", "number
 	return ade_set_args(L, "i", h);
 }
 
-ADE_FUNC(flashScreen, l_Graphics, "number Red, number Green, number Blue", "Flashes the screen", NULL, NULL)
+ADE_FUNC(flashScreen,
+	l_Graphics,
+	"number Red, number Green, number Blue | color Color",
+	"Flashes the screen",
+	nullptr,
+	nullptr)
 {
 	if(!Gr_inited)
 		return ADE_RETURN_NIL;
 
-	int r,g,b;
+	int r, g, b;
 
-	if(!ade_get_args(L, "iii", &r, &g, &b))
-		return ADE_RETURN_NIL;
+	if (lua_isnumber(L, 1)) {
+		if (!ade_get_args(L, "iii", &r, &g, &b))
+			return ADE_RETURN_NIL;
+
+	} else {
+		color col;
+
+		gr_init_alphacolor(&col, 0, 0, 0, 255);
+
+		if (!ade_get_args(L, "o", l_Color.Get(&col)))
+			return ADE_RETURN_NIL;
+
+		r = col.red;
+		g = col.green;
+		b = col.blue;
+	}
 
 	gr_flash(r,g,b);
 
