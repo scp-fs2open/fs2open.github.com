@@ -139,6 +139,7 @@ bool Auto_assign_personas;
 bool Countermeasures_use_capacity;
 bool Play_thruster_sounds_for_player;
 std::array<std::tuple<float, float>, 6> Fred_spacemouse_nonlinearity;
+bool Randomize_particle_rotation;
 
 static auto DiscordOption = options::OptionBuilder<bool>("Other.Discord", "Discord Presence", "Toggle Discord Rich Presence")
 							 .category("Other")
@@ -815,6 +816,10 @@ void parse_mod_table(const char *filename)
 			Max_draw_distance = Default_max_draw_distance;
 		}
 
+		if (optional_string("$Randomize particle rotation:")) {
+			stuff_boolean(&Randomize_particle_rotation);
+		}
+
 		optional_string("#NETWORK SETTINGS");
 
 		if (optional_string("$FS2NetD port:")) {
@@ -1393,6 +1398,7 @@ void mod_table_reset()
 			std::tuple<float, float>{ 1.0f, 1.0f },
 			std::tuple<float, float>{ 1.0f, 1.0f }
 		}};
+	Randomize_particle_rotation = false;
 }
 
 void mod_table_set_version_flags()

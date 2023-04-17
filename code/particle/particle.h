@@ -93,8 +93,8 @@ namespace particle
 		int		attached_objnum;	// if this is set, pos is relative to the attached object. velocity is ignored
 		int		attached_sig;		// to check for dead/nonexistent objects
 		bool	reverse;			// play any animations in reverse
-		int		particle_index;		// used to keep particle offset in dynamic array for orient usage
 		float   length;				// the length of the particle for laser-style rendering
+		float	angle;
 	} particle;
 
 	typedef std::weak_ptr<particle> WeakParticlePtr;
