@@ -1824,10 +1824,10 @@ DCF(blight, "Sets the beam light scale factor (Default is 25.5f)")
 {
 	dc_stuff_float(&blight);
 }
-
+namespace ltp = lighting_profiles;
 float beam_current_light_radius(beam *bm, weapon_info *wip, beam_weapon_info *bwi, float noise)
 {
-	auto lp = lighting_profile::current();
+	auto lp = ltp::current();
 	float width = lp->beam_light_radius.handle(wip->light_radius);
 
 	if(bwi->beam_light_as_multiplier)
@@ -1922,7 +1922,7 @@ void beam_add_light_small(beam *bm, object *objp, vec3d *pt)
 	beam_light_color(wip, &light_color);
 	light_color.i(light_color.i() * pct);
 
-	auto lp = lighting_profile::current();
+	auto lp = ltp::current();
 	light_color.i(lp->beam_light_brightness.handle(light_color.i()));
 
 	if (light_color.i() <= 0.0f || light_rad <= 0.0f)
@@ -1950,7 +1950,7 @@ void beam_add_light_large(beam *bm, object *objp, vec3d *pt0, vec3d *pt1)
 
 	if (bwi->beam_light_flicker)
 		light_color.i(light_color.i() * noise);
-	auto lp = lighting_profile::current();
+	auto lp = ltp::current();
 	light_color.i(lp->beam_light_brightness.handle(light_color.i()));
 	light_rad = lp->beam_light_radius.handle(light_rad);
 	if (light_color.i() <= 0.0f || light_rad <= 0.0f)

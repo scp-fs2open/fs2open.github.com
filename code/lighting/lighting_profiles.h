@@ -3,8 +3,9 @@
 
 #include "globalincs/vmallocator.h"
 
-// This file handles the lighting_profiles.tbl and -ltp.tbm files. The purpose of these files is to provide control over
-// the HDR lighting pipeline and enviroment, and related matters.
+namespace lighting_profiles {
+// This file handles the profiles.tbl and -ltp.tbm files. The purpose of these files is to provide control over the HDR
+// lighting pipeline and enviroment, and related matters.
 
 // Tonemapping options, aside from the previous standard UC2, pulled from wookiejedi and qazwsxal's
 // work on testing them for FSO, which itself was based on these references:
@@ -80,28 +81,8 @@ struct lighting_profile_value {
 	float maximum;
 };
 
-class lighting_profile {
+class profile {
   public:
-	static lighting_profile* current();
-	static enum TonemapperAlgorithm name_to_tonemapper(SCP_string& name);
-	static SCP_string tonemapper_to_name(TonemapperAlgorithm tnm);
-	static void load_profiles();
-	static TonemapperAlgorithm current_tonemapper();
-	static const piecewise_power_curve_values& current_piecewise_values();
-	static piecewise_power_curve_intermediates current_piecewise_intermediates();
-	static piecewise_power_curve_intermediates calc_intermediates(piecewise_power_curve_values input);
-	static float current_exposure();
-	static void lab_set_exposure(float exIn);
-	static void lab_set_tonemapper(TonemapperAlgorithm tnin);
-	static void lab_set_ppc(piecewise_power_curve_values ppcin);
-	static piecewise_power_curve_values lab_get_ppc();
-	static float lab_get_light();
-	static void lab_set_light(float in);
-	static float lab_get_ambient();
-	static void lab_set_ambient(float in);
-	static float lab_get_emissive();
-	static void lab_set_emissive(float in);
-
 	SCP_string name;
 	TonemapperAlgorithm tonemapper;
 	piecewise_power_curve_values ppc_values;
@@ -128,8 +109,28 @@ class lighting_profile {
 	void reset();
 
   private:
-	static lighting_profile default_profile;
-	static void parse_all();
-	static void parse_file(const char* filename);
-	static void parse_default_section(const char* filename);
 };
+
+profile* current();
+enum TonemapperAlgorithm name_to_tonemapper(SCP_string& name);
+SCP_string tonemapper_to_name(TonemapperAlgorithm tnm);
+void load_profiles();
+TonemapperAlgorithm current_tonemapper();
+const piecewise_power_curve_values& current_piecewise_values();
+piecewise_power_curve_intermediates current_piecewise_intermediates();
+piecewise_power_curve_intermediates calc_intermediates(piecewise_power_curve_values input);
+float current_exposure();
+void lab_set_exposure(float exIn);
+void lab_set_tonemapper(TonemapperAlgorithm tnin);
+void lab_set_ppc(piecewise_power_curve_values ppcin);
+piecewise_power_curve_values lab_get_ppc();
+float lab_get_light();
+void lab_set_light(float in);
+float lab_get_ambient();
+void lab_set_ambient(float in);
+float lab_get_emissive();
+void lab_set_emissive(float in);
+void parse_all();
+void parse_file(const char* filename);
+void parse_default_section(const char* filename);
+} // namespace lighting_profiles end

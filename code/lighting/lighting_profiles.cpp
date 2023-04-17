@@ -12,6 +12,17 @@
 #include "parse/parsehi.h"
 #include "parse/parselo.h"
 
+namespace lighting_profiles {
+//*************************************************
+//			profile management
+//*************************************************
+
+profile default_profile;
+
+profile* current()
+{
+	return &default_profile;
+}
 
 //*************************************************
 //			lighting_profile_value funcs
@@ -172,7 +183,7 @@ bool lighting_profile_value::parse(const char* filename,
 	return false;
 }
 
-void lighting_profile::reset()
+void profile::reset()
 {
 	name = "";
 
@@ -227,7 +238,7 @@ void lighting_profile::reset()
 	cockpit_light_radius_modifier.set_multiplier(1.0f);
 }
 
-TonemapperAlgorithm lighting_profile::name_to_tonemapper(SCP_string& name)
+TonemapperAlgorithm name_to_tonemapper(SCP_string& name)
 {
 	SCP_tolower(name);
 	TonemapperAlgorithm r = tnm_Invalid;
@@ -261,7 +272,7 @@ TonemapperAlgorithm lighting_profile::name_to_tonemapper(SCP_string& name)
 	return r;
 }
 
-SCP_string lighting_profile::tonemapper_to_name(TonemapperAlgorithm tnm)
+SCP_string tonemapper_to_name(TonemapperAlgorithm tnm)
 {
 	switch (tnm) {
 	case TonemapperAlgorithm::tnm_Aces:
@@ -289,35 +300,26 @@ SCP_string lighting_profile::tonemapper_to_name(TonemapperAlgorithm tnm)
 	}
 }
 
-lighting_profile lighting_profile::default_profile;
-
-lighting_profile* lighting_profile::current()
-{
-	// in time this may host more complex logic to allow such things as blending between two different profiles and
-	// managing a temporary profile. put in place now so that access can be generally future-proofed from here out.
-	return &lighting_profile::default_profile;
-}
-
-void lighting_profile::load_profiles()
+void load_profiles()
 {
 	parse_all();
 }
 
 // The logic for grabbing all the parseable files
 
-void lighting_profile::parse_all()
+void parse_all()
 {
 	default_profile.reset();
 	if (cf_exists_full("lighting_profiles.tbl", CF_TYPE_TABLES)) {
 		mprintf(("TABLES: Starting parse of lighting profiles.tbl\n"));
-		lighting_profile::parse_file("lighting_profiles.tbl");
+		parse_file("lighting_profiles.tbl");
 	}
 
 	mprintf(("TBM  =>  Starting parse of lighting profiles ...\n"));
-	parse_modular_table("*-ltp.tbm", lighting_profile::parse_file);
+	parse_modular_table("*-ltp.tbm", parse_file);
 }
 
-void lighting_profile::parse_default_section(const char* filename)
+void parse_default_section(const char* filename)
 {
 	bool parsed;
 	SCP_string buffer;
@@ -327,7 +329,7 @@ void lighting_profile::parse_default_section(const char* filename)
 		parsed = false;
 		if (optional_string("$Tonemapper:")) {
 			stuff_string(buffer, F_NAME);
-			tn = lighting_profile::name_to_tonemapper(buffer);
+			tn = name_to_tonemapper(buffer);
 			default_profile.tonemapper = tn;
 			parsed = true;
 		}
@@ -427,11 +429,11 @@ void lighting_profile::parse_default_section(const char* filename)
 }
 
 // Handle an individual file.
-void lighting_profile::parse_file(const char* filename)
+void parse_file(const char* filename)
 {
 	try {
 		if (filename == nullptr) {
-			// All defaults currently handled by lighting_profile.reset()
+			// All defaults currently handled by profile.reset()
 			return;
 		}
 		read_file_text(filename, CF_TYPE_TABLES);
@@ -449,25 +451,25 @@ void lighting_profile::parse_file(const char* filename)
 
 // these accessor stubs are futureproofing abstraction
 
-TonemapperAlgorithm lighting_profile::current_tonemapper()
+TonemapperAlgorithm current_tonemapper()
 {
 	return default_profile.tonemapper;
 }
 
-const piecewise_power_curve_values& lighting_profile::current_piecewise_values()
+const piecewise_power_curve_values& current_piecewise_values()
 {
 	return default_profile.ppc_values;
 }
 
-float lighting_profile::current_exposure()
+float current_exposure()
 {
 	return default_profile.exposure;
 }
-piecewise_power_curve_intermediates lighting_profile::current_piecewise_intermediates()
+piecewise_power_curve_intermediates current_piecewise_intermediates()
 {
 	return calc_intermediates(default_profile.ppc_values);
 }
-piecewise_power_curve_intermediates lighting_profile::calc_intermediates(piecewise_power_curve_values input)
+piecewise_power_curve_intermediates calc_intermediates(piecewise_power_curve_values input)
 {
 
 	piecewise_power_curve_intermediates ppci;
@@ -503,56 +505,57 @@ piecewise_power_curve_intermediates lighting_profile::calc_intermediates(piecewi
 	ppci.sh_offsetY = 1.0f + overshootY;               // F,P,S
 	return ppci;
 }
-void lighting_profile::lab_set_exposure(float exIn)
+void lab_set_exposure(float exIn)
 {
 	default_profile.exposure = exIn;
 }
 
-void lighting_profile::lab_set_tonemapper(TonemapperAlgorithm tnin)
+void lab_set_tonemapper(TonemapperAlgorithm tnin)
 {
 	default_profile.tonemapper = tnin;
 }
 
-void lighting_profile::lab_set_ppc(piecewise_power_curve_values ppcin)
+void lab_set_ppc(piecewise_power_curve_values ppcin)
 {
 	default_profile.ppc_values = ppcin;
 }
 
-piecewise_power_curve_values lighting_profile::lab_get_ppc()
+piecewise_power_curve_values lab_get_ppc()
 {
 	return default_profile.ppc_values;
 }
 
-float lighting_profile::lab_get_light()
+float lab_get_light()
 {
 	float r;
 	default_profile.overall_brightness.read_multiplier(&r);
 
 	return r;
 }
-float lighting_profile::lab_get_ambient()
+float lab_get_ambient()
 {
 	float r;
 	default_profile.ambient_light_brightness.read_multiplier(&r);
 
 	return r;
 }
-float lighting_profile::lab_get_emissive()
+float lab_get_emissive()
 {
 	float r;
 	default_profile.ambient_light_brightness.read_adjust(&r);
 
 	return r;
 }
-void lighting_profile::lab_set_light(float in)
+void lab_set_light(float in)
 {
 	default_profile.overall_brightness.set_multiplier(in);
 }
-void lighting_profile::lab_set_ambient(float in)
+void lab_set_ambient(float in)
 {
 	default_profile.ambient_light_brightness.set_multiplier(in);
 }
-void lighting_profile::lab_set_emissive(float in)
+void lab_set_emissive(float in)
 {
 	default_profile.ambient_light_brightness.set_adjust(MAX(0.0f, in));
 }
+} // namespace lighting_profiles

@@ -58,6 +58,9 @@ static GLuint Smaa_output_tex               = 0;
 static GLuint Smaa_search_tex = 0;
 static GLuint Smaa_area_tex   = 0;
 
+namespace ltp = lighting_profiles;
+using namespace ltp;
+
 void opengl_post_pass_tonemap()
 {
 	GR_DEBUG_SCOPE("Tonemapping");
@@ -69,8 +72,8 @@ void opengl_post_pass_tonemap()
 	
 	opengl_set_generic_uniform_data<graphics::generic_data::tonemapping_data>(
 		[](graphics::generic_data::tonemapping_data* data) {
-		auto ppc = lighting_profile::current_piecewise_intermediates();
-		auto tn = lighting_profile::current_tonemapper();
+		auto ppc = ltp::current_piecewise_intermediates();
+		auto tn = ltp::current_tonemapper();
 		data->tonemapper = tn;
 		data->sh_B = ppc.sh_B;
 		data->sh_lnA = ppc.sh_lnA;
@@ -81,7 +84,7 @@ void opengl_post_pass_tonemap()
 		data->x0 = ppc.x0;
 		data->x1 = ppc.x1;
 		data->y0 = ppc.y0; 
-		data->exposure = lighting_profile::current_exposure(); });
+		data->exposure = ltp::current_exposure(); });
 
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Scene_ldr_texture, 0);
 

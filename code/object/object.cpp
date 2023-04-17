@@ -1240,7 +1240,7 @@ void obj_move_all_post(object *objp, float frametime)
 				}
 				if (cast_light) {
 					weapon_info* wi = &Weapon_info[Weapons[objp->instance].weapon_info_index];
-					auto lp = lighting_profile::current();
+					auto lp = lighting_profiles::current();
 					hdr_color light_color;
 					// If there is no specific color set in the table, laser render weapons have a dynamic color.
 					if (!wi->light_color_set && wi->render_type == WRT_LASER) {
