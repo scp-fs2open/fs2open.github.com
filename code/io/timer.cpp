@@ -41,6 +41,9 @@ static bool Timestamp_sudo_paused = false;
 static uint64_t Timestamp_microseconds_at_mission_start = 0;
 
 
+static uint64_t timestamp_get_raw(bool start_frame = false);
+
+
 static uint64_t get_performance_counter()
 {
 	Assertion(Timer_inited, "This function can only be used when the timer system is initialized!");
@@ -73,6 +76,12 @@ void timer_init()
 
 		atexit(timer_close);
 	}
+}
+
+void timer_start_frame()
+{
+	// take a snapshot of the raw timestamp at the beginning of the frame
+	timestamp_get_raw(true);
 }
 
 // ======================================== getting time ========================================
@@ -112,7 +121,7 @@ int timer_get_milliseconds()
 		return 0;
 	}
 
-	return static_cast<int>(timer_get_microseconds() / 1000);
+	return static_cast<int>(timer_get_microseconds() / MICROSECONDS_PER_MILLISECOND);
 }
 
 std::uint64_t timer_get_microseconds()
@@ -129,15 +138,21 @@ std::uint64_t timer_get_nanoseconds()
     return static_cast<uint64_t>(time * Timer_to_nanoseconds);
 }
 
-static uint64_t timestamp_get_raw()
+static uint64_t timestamp_get_raw(bool start_frame)
 {
-	static uint64_t timestamp_raw;
-	if (Timestamp_is_paused) {
-		timestamp_raw = Timestamp_paused_at_counter;
-	} else {
-		timestamp_raw = get_performance_counter();
+	static uint64_t timestamp_raw = 0;
+
+	// The simulation timestamp is only updated at the beginning of the frame
+	// because we want all timestamps within a frame to be identical.
+	if (start_frame)
+	{
+		if (Timestamp_is_paused)
+			timestamp_raw = Timestamp_paused_at_counter;
+		else
+			timestamp_raw = get_performance_counter();
+
+		timestamp_raw -= Timestamp_offset_from_counter;
 	}
-	timestamp_raw -= Timestamp_offset_from_counter;
 
 	return timestamp_raw;
 }
@@ -148,7 +163,7 @@ static uint64_t timestamp_get_microseconds()
 }
 
 static int timestamp_ms() {
-	return static_cast<int>(timestamp_get_microseconds() / 1000);
+	return static_cast<int>(timestamp_get_microseconds() / MICROSECONDS_PER_MILLISECOND);
 }
 
 int timestamp() {
@@ -581,7 +596,7 @@ void timestamp_adjust_pause_offset(int delta_milliseconds)
 	if (Timestamp_offset_from_counter == 0) {
 		Timestamp_offset_from_counter = get_performance_counter();
 	} else {
-		Timestamp_offset_from_counter += static_cast<uint64_t>(static_cast<uint64_t>(delta_milliseconds) * 1000 / Timer_to_microseconds);
+		Timestamp_offset_from_counter += static_cast<uint64_t>(static_cast<uint64_t>(delta_milliseconds) * MICROSECONDS_PER_MILLISECOND / Timer_to_microseconds);
 	}
 }
 
@@ -619,7 +634,9 @@ void timestamp_update_time_compression()
 	}
 
 	// grab the independent variable of the equation before we change anything
-	auto timestamp_raw = timestamp_get_raw();
+	// (we need to get the live value to be accurate, which takes a new snapshot,
+	// but this is ok since time compression is only updated at the start of the frame)
+	auto timestamp_raw = timestamp_get_raw(true);
 
 	// we need to move the counter offset to make the raw timestamp zero (so that it can start ticking with a new multiplier)
 	Timestamp_offset_from_counter += timestamp_raw;
@@ -632,6 +649,9 @@ void timestamp_update_time_compression()
 	// now we can set the new info
 	Timestamp_current_time_compression = Game_time_compression;
 	Timestamp_time_compression_multiplier = static_cast<float>(Game_time_compression) / F1_0;
+
+	// and now take a new snapshot so that the raw timestamp is correct for this frame
+	timestamp_get_raw(true);
 }
 
 // ======================================== mission-specific stuff ========================================

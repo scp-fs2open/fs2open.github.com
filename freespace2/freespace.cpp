@@ -4237,26 +4237,20 @@ void lock_time_compression(bool is_locked)
 
 void change_time_compression(float multiplier)
 {
-	fix modified = fl2f( f2fl(Game_time_compression) * multiplier );
-
-	Desired_time_compression = Game_time_compression = modified;
+	Desired_time_compression = fl2f( f2fl(Game_time_compression) * multiplier );
 	Time_compression_change_rate = 0;
-
-	timestamp_update_time_compression();
 }
 
-void set_time_compression(float multiplier, float change_time)
+void set_time_compression(float compression, float change_time)
 {
+	Desired_time_compression = fl2f(compression);
+
 	if(change_time <= 0.0f)
 	{
-		Game_time_compression = Desired_time_compression = fl2f(multiplier);
 		Time_compression_change_rate = 0;
-
-		timestamp_update_time_compression();
 		return;
 	}
 
-	Desired_time_compression = fl2f(multiplier);
 	Time_compression_change_rate = fl2f( f2fl(Desired_time_compression - Game_time_compression) / change_time );
 }
 
@@ -4265,6 +4259,9 @@ void game_set_frametime(int state)
 	fix thistime;
 	float frame_cap_diff;
 	bool do_pre_player_skip = false;
+
+	// sync all timestamps across the entire frame
+	timer_start_frame();
 
 	thistime = timer_get_fixed_seconds();
 
@@ -4323,18 +4320,24 @@ void game_set_frametime(int state)
 	//Handle changes in time compression
 	if(Game_time_compression != Desired_time_compression)
 	{
-		bool ascending = Desired_time_compression > Game_time_compression;
-		if(Time_compression_change_rate)
-		{
-			Game_time_compression += fixmul(Time_compression_change_rate, Frametime);
-			timestamp_update_time_compression();
-		}
-		if((ascending && Game_time_compression > Desired_time_compression)
-			|| (!ascending && Game_time_compression < Desired_time_compression))
+		if (Time_compression_change_rate == 0)
 		{
 			Game_time_compression = Desired_time_compression;
-			timestamp_update_time_compression();
 		}
+		else
+		{
+			bool ascending = Desired_time_compression > Game_time_compression;
+
+			Game_time_compression += fixmul(Time_compression_change_rate, Frametime);
+
+			if((ascending && Game_time_compression > Desired_time_compression)
+				|| (!ascending && Game_time_compression < Desired_time_compression))
+			{
+				Game_time_compression = Desired_time_compression;
+			}
+		}
+
+		timestamp_update_time_compression();
 	}
 
 	Frametime = fixmul(Frametime, Game_time_compression);

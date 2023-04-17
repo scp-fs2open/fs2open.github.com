@@ -421,6 +421,9 @@ void EditorViewport::game_do_frame(const int cur_object_index) {
 		return;
 	}
 
+	// sync all timestamps across the entire frame
+	timer_start_frame();
+
 	viewer_position = my_orient.vec.fvec;
 	vm_vec_scale(&viewer_position, my_pos.xyz.z);
 
