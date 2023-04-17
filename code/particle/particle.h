@@ -161,7 +161,7 @@ namespace particle
 
 	// Creates a bunch of particles. You pass a structure
 	// rather than a bunch of parameters.
-	void emit(particle_emitter *pe, ParticleType type, int optional_data, float range = 1.0);
+	void emit(particle_emitter *pe, ParticleType type, int optional_data);
 }
 
 #endif // _PARTICLE_H
