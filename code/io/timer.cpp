@@ -634,8 +634,8 @@ void timestamp_update_time_compression()
 	}
 
 	// grab the independent variable of the equation before we change anything
-	// (we need to take a new snapshot to get the accurate value, but this is ok
-	// since time compression is only updated at the start of the frame)
+	// (we need to get the live value to be accurate, which takes a new snapshot,
+	// but this is ok since time compression is only updated at the start of the frame)
 	auto timestamp_raw = timestamp_get_raw(true);
 
 	// we need to move the counter offset to make the raw timestamp zero (so that it can start ticking with a new multiplier)
@@ -649,6 +649,9 @@ void timestamp_update_time_compression()
 	// now we can set the new info
 	Timestamp_current_time_compression = Game_time_compression;
 	Timestamp_time_compression_multiplier = static_cast<float>(Game_time_compression) / F1_0;
+
+	// and now take a new snapshot so that the raw timestamp is correct for this frame
+	timestamp_get_raw(true);
 }
 
 // ======================================== mission-specific stuff ========================================
