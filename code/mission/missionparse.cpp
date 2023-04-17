@@ -3433,8 +3433,15 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 	}
 
 	// parse the persona index if present
+	// For backwards compatbility only
 	if (optional_string("+Persona Index:"))
 		stuff_int(&p_objp->persona_index);
+
+	if (optional_string("+Persona Name:")) {
+		SCP_string persona;
+		stuff_string(persona, F_NAME);
+		p_objp->persona_index = message_persona_name_lookup(persona.c_str());
+	}
 
 	// texture replacement - Goober5000
 	if (optional_string("$Texture Replace:") || optional_string("$Duplicate Model Texture Replace:"))
@@ -5120,11 +5127,9 @@ void parse_event(mission *pm)
 
 				if (optional_string("+Background Color:")) {
 					stuff_ubyte(&ea.r);
-					if (*Mp == ',')
-						Mp++;
+					check_first_non_grayspace_char(Mp, ',', &Mp);
 					stuff_ubyte(&ea.g);
-					if (*Mp == ',')
-						Mp++;
+					check_first_non_grayspace_char(Mp, ',', &Mp);
 					stuff_ubyte(&ea.b);
 				}
 

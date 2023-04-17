@@ -656,6 +656,11 @@ void reloadAllContexts()
 	}
 }
 
+Rocket::Core::Context* getContext()
+{
+	return input_context;
+}
+
 void enableInput(Rocket::Core::Context* main_ctx)
 {
 	Assertion(main_ctx != nullptr, "Invalid context pointer detected!");

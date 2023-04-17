@@ -175,6 +175,9 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 	listener(SubSystem::SEXPs);
 	sexp_startup();
 
+	listener(SubSystem::ModelAnimations);
+	animation::ModelAnimationParseHelper::parseTables();
+
 	listener(SubSystem::Objects);
 	obj_init();
 
@@ -247,7 +250,7 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 	main_hall_table_init();
 
 	listener(SubSystem::Ranks);
-	parse_rank_tbl();
+	rank_init();
 
 	listener(SubSystem::Campaign);
 	mission_campaign_clear();

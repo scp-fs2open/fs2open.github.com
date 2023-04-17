@@ -1,4 +1,5 @@
 #include "missionhotkey.h"
+#include "enums.h"
 
 #include "mission/missionhotkey.h"
 #include "playerman/player.h"
@@ -11,6 +12,9 @@ hotkey_h::hotkey_h(int l_line) : line(l_line) {}
 
 hotkey_line* hotkey_h::getLine() const
 {
+	if (!isValid())
+		return nullptr;
+
 	return &Hotkey_lines[line];
 }
 
@@ -19,14 +23,31 @@ int hotkey_h::getIndex() const
 	return line;
 }
 
+bool hotkey_h::isValid() const
+{
+	return line >= 0 && line < MAX_LINES;
+}
+
 //**********HANDLE: help section
-ADE_OBJ(l_Hotkey, hotkey_h, "hotkey_ship", "Help Section handle");
+ADE_OBJ(l_Hotkey, hotkey_h, "hotkey_ship", "Hotkey handle");
+
+ADE_FUNC(isValid, l_Hotkey, nullptr, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
+{
+	hotkey_h current;
+	if (!ade_get_args(L, "o", l_Hotkey.Get(&current)))
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "b", current.isValid());
+}
 
 ADE_VIRTVAR(Text, l_Hotkey, nullptr, "The text of this hotkey line", "string", "The text")
 {
 	hotkey_h current;
 	if (!ade_get_args(L, "o", l_Hotkey.Get(&current))) {
 		return ADE_RETURN_NIL;
+	}
+	if (!current.isValid()) {
+		return ade_set_error(L, "s", "");
 	}
 
 	if (ADE_SETTING_VAR) {
@@ -39,20 +60,44 @@ ADE_VIRTVAR(Text, l_Hotkey, nullptr, "The text of this hotkey line", "string", "
 ADE_VIRTVAR(Type,
 	l_Hotkey,
 	nullptr,
-	"The type of this hotkey line. 0 for nothing, 1 for heading, 2 for wing, 3 for ship, 4 for ship in a wing",
-	"number",
+	"The type of this hotkey line: HOTKEY_LINE_NONE, HOTKEY_LINE_HEADING, HOTKEY_LINE_WING, HOTKEY_LINE_SHIP, or HOTKEY_LINE_SUBSHIP.",
+	"enumeration",
 	"The type")
 {
 	hotkey_h current;
+	lua_enum eh_idx = ENUM_INVALID;
+
 	if (!ade_get_args(L, "o", l_Hotkey.Get(&current))) {
 		return ADE_RETURN_NIL;
+	}
+	if (!current.isValid()) {
+		return ade_set_error(L, "o", l_Enum.Set(enum_h(eh_idx)));
 	}
 
 	if (ADE_SETTING_VAR) {
 		LuaError(L, "This property is read only.");
 	}
 
-	return ade_set_args(L, "i", current.getLine()->type);
+	switch (current.getLine()->type) {
+		case HotkeyLineType::HEADING:
+			eh_idx = LE_HOTKEY_LINE_HEADING;
+			break;
+		case HotkeyLineType::WING:
+			eh_idx = LE_HOTKEY_LINE_WING;
+			break;
+		case HotkeyLineType::SHIP:
+			eh_idx = LE_HOTKEY_LINE_SHIP;
+			break;
+		case HotkeyLineType::SUBSHIP:
+			eh_idx = LE_HOTKEY_LINE_SUBSHIP;
+			break;
+		case HotkeyLineType::NONE:
+		default:
+			eh_idx = LE_HOTKEY_LINE_NONE;
+			break;
+	}
+
+	return ade_set_args(L, "o", l_Enum.Set(enum_h(eh_idx)));
 }
 
 ADE_VIRTVAR(Keys,
@@ -67,20 +112,19 @@ ADE_VIRTVAR(Keys,
 		return ADE_RETURN_NIL;
 	}
 
-	int hotkeys;
+	auto table = luacpp::LuaTable::create(L);
+	if (!current.isValid()) {
+		return ade_set_error(L, "t", &table);
+	}
 
-	if (current.getLine()->type == HOTKEY_LINE_WING)
+	int hotkeys;
+	if (current.getLine()->type == HotkeyLineType::WING)
 		hotkeys = get_wing_hotkeys(current.getIndex()); // for wings
 	else
 		hotkeys = get_ship_hotkeys(current.getIndex()); // for everything else (there's mastercard)
 
-	auto table = luacpp::LuaTable::create(L);
-
 	for (int i = 0; i < MAX_KEYED_TARGETS; i++) {
-		bool key_active = false;
-		if (hotkeys & (1 << i)) {
-			key_active = true;
-		}
+		bool key_active = hotkeys & (1 << i);
 		table.addValue(i + 1, key_active); // translate to Lua index
 	}
 
@@ -99,6 +143,9 @@ ADE_FUNC(addHotkey,
 	hotkey_h current;
 	int key;
 	if (!ade_get_args(L, "oi", l_Hotkey.Get(&current), &key)) {
+		return ADE_RETURN_NIL;
+	}
+	if (!current.isValid()) {
 		return ADE_RETURN_NIL;
 	}
 	key--;
@@ -122,6 +169,9 @@ ADE_FUNC(removeHotkey,
 	if (!ade_get_args(L, "oi", l_Hotkey.Get(&current), &key)) {
 		return ADE_RETURN_NIL;
 	}
+	if (!current.isValid()) {
+		return ADE_RETURN_NIL;
+	}
 	key--;
 
 	remove_hotkey(key, current.getIndex());
@@ -140,6 +190,9 @@ ADE_FUNC(clearHotkeys,
 
 	hotkey_h current;
 	if (!ade_get_args(L, "o", l_Hotkey.Get(&current))) {
+		return ADE_RETURN_NIL;
+	}
+	if (!current.isValid()) {
 		return ADE_RETURN_NIL;
 	}
 

@@ -37,6 +37,7 @@
 #include "network/multiteamselect.h"
 #include "missionui/missionweaponchoice.h"
 #include "network/multi_endgame.h"
+#include "hud/hudets.h"
 #include "hud/hudshield.h"
 #include "mission/missionhotkey.h"
 #include "globalincs/alphacolors.h"
@@ -1590,6 +1591,7 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 	int player_num;
 	short sval;
 	fix mission_time;
+	int shield_ets, weapon_ets, engine_ets;
 
 	// get the code
 	GET_INT(code);
@@ -1713,11 +1715,12 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 
 		// get the ships ets settings
 		GET_DATA(val);
-		Player_ship->weapon_recharge_index = val;
+		weapon_ets = val;
 		GET_DATA(val);
-		Player_ship->shield_recharge_index = val;
+		shield_ets = val;
 		GET_DATA(val);
-		Player_ship->engine_recharge_index = val;		
+		engine_ets = val;		
+		set_recharge_rates(objp, shield_ets, weapon_ets, engine_ets);
 
 		// get current primary and secondary banks, and add link status
 		GET_DATA(val);

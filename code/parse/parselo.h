@@ -146,6 +146,8 @@ extern char* alloc_block(const char* startstr, const char* endstr, int extra_cha
 // the default string length if using the F_NAME case.
 extern char *stuff_and_malloc_string(int type, const char *terminators = nullptr);
 extern void stuff_malloc_string(char **dest, int type, const char *terminators = nullptr);
+extern bool check_first_non_whitespace_char(const char *str, char ch_to_look_for, char **after_ch = nullptr);
+extern bool check_first_non_grayspace_char(const char *str, char ch_to_look_for, char **after_ch = nullptr);
 extern int stuff_float(float *f, bool optional = false);
 extern int stuff_int(int *i, bool optional = false);
 extern int stuff_long(long *l, bool optional = false);

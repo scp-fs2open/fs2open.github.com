@@ -154,6 +154,11 @@ const lua_enum_def_list Enumerations[] = {
 	{"RPC_RELIABLE", LE_RPC_RELIABLE, true},
 	{"RPC_ORDERED", LE_RPC_ORDERED, true},
 	{"RPC_UNRELIABLE", LE_RPC_UNRELIABLE, true},
+	{"HOTKEY_LINE_NONE", LE_HOTKEY_LINE_NONE, true},
+	{"HOTKEY_LINE_HEADING", LE_HOTKEY_LINE_HEADING, true},
+	{"HOTKEY_LINE_WING", LE_HOTKEY_LINE_WING, true},
+	{"HOTKEY_LINE_SHIP", LE_HOTKEY_LINE_SHIP, true},
+	{"HOTKEY_LINE_SUBSHIP", LE_HOTKEY_LINE_SUBSHIP, true},
 };
 
 const size_t Num_enumerations = sizeof(Enumerations) / sizeof(lua_enum_def_list);

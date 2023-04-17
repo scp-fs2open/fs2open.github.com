@@ -18,6 +18,7 @@
 #include "network/multiutil.h"
 #include "missionui/missionweaponchoice.h"
 #include "gamesequence/gamesequence.h"
+#include "hud/hudets.h"
 #include "hud/hudconfig.h"
 #include "hud/hudobserver.h"
 #include "hud/hudmessage.h"
@@ -440,11 +441,7 @@ void multi_respawn_player(net_player *pl, char cur_primary_bank, char cur_second
 	Assert( ship_ets != 0 );		// find dave or allender
 
 	// restore the correct ets settings
-	shipp->shield_recharge_index = ((ship_ets & 0x0f00) >> 8);
-	// weapon ets
-	shipp->weapon_recharge_index = ((ship_ets & 0x00f0) >> 4);
-	// engine ets
-	shipp->engine_recharge_index = (ship_ets & 0x000f);
+	set_recharge_rates(&Objects[shipp->objnum], ((ship_ets & 0x0f00) >> 8), ((ship_ets & 0x00f0) >> 4), (ship_ets & 0x000f));
 
 	// give the current bank a half-second timestamp so that we don't fire immediately unpon respawn
 	shipp->weapons.next_secondary_fire_stamp[shipp->weapons.current_secondary_bank] = timestamp(500);

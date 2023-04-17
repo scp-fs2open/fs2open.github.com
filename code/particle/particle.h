@@ -95,10 +95,10 @@ namespace particle
 		int		attached_objnum;	// if this is set, pos is relative to the attached object. velocity is ignored
 		int		attached_sig;		// to check for dead/nonexistent objects
 		bool	reverse;			// play any animations in reverse
-		int		particle_index;		// used to keep particle offset in dynamic array for orient usage
 		float   length;				// the length of the particle for laser-style rendering
+		float	angle;
 		int		size_lifetime_curve;// a curve idx for size over lifetime, if applicable
-		int vel_lifetime_curve;		// a curve idx for velocity over lifetime, if applicable
+		int		vel_lifetime_curve;		// a curve idx for velocity over lifetime, if applicable
 	} particle;
 
 	typedef std::weak_ptr<particle> WeakParticlePtr;
@@ -165,7 +165,7 @@ namespace particle
 
 	// Creates a bunch of particles. You pass a structure
 	// rather than a bunch of parameters.
-	void emit(particle_emitter *pe, ParticleType type, int optional_data, float range = 1.0);
+	void emit(particle_emitter *pe, ParticleType type, int optional_data);
 }
 
 #endif // _PARTICLE_H

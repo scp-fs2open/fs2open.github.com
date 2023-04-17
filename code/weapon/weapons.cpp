@@ -1755,6 +1755,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	//Launch sound
 	parse_game_sound("$LaunchSnd:", &wip->launch_snd);
 
+	//Cockpit Launch sound
+	parse_game_sound("$CockpitLaunchSnd:", &wip->cockpit_launch_snd);
+
 	//Impact sound
 	parse_game_sound("$ImpactSnd:", &wip->impact_snd);
 
@@ -2197,7 +2200,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			emitter.vel = vmd_zero_vector;
 
 			auto emitterEffect = new ParticleEmitterEffect();
-			emitterEffect->setValues(emitter, effectIndex, 10.0f);
+			emitterEffect->setValues(emitter, effectIndex);
 			wip->piercing_impact_effect = ParticleManager::get()->addEffect(emitterEffect);
 
 			if (back_velocity != 0.0f)
@@ -2208,7 +2211,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				emitter.num_low /= 2;
 
 				auto secondaryEffect = new ParticleEmitterEffect();
-				secondaryEffect->setValues(emitter, effectIndex, 10.0f);
+				secondaryEffect->setValues(emitter, effectIndex);
 				wip->piercing_impact_secondary_effect = ParticleManager::get()->addEffect(secondaryEffect);
 			}
 		}
@@ -9030,6 +9033,7 @@ void weapon_info::reset()
 	this->pre_launch_snd_min_interval = 0;
 
 	this->launch_snd = gamesnd_id();
+	this->cockpit_launch_snd = gamesnd_id();
 	this->impact_snd = gamesnd_id();
 	this->disarmed_impact_snd = gamesnd_id();
 	this->shield_impact_snd = gamesnd_id();

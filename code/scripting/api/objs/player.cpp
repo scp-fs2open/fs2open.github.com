@@ -11,6 +11,7 @@
 #include "pilotfile/pilotfile.h"
 #include "playerman/player.h"
 #include "stats/medals.h"
+#include "scripting/api/objs/rank.h"
 #include "scripting/api/objs/shipclass.h"
 #include "scripting/lua/LuaTable.h"
 #include "ship/ship.h"
@@ -812,11 +813,14 @@ ADE_VIRTVAR(Medals,
 		return ADE_RETURN_NIL;
 	}
 
+	auto table = luacpp::LuaTable::create(L);
+	if (!ssh->isValid()) {
+		return ade_set_error(L, "t", &table);
+	}
+
 	if (ADE_SETTING_VAR) {
 		LuaError(L, "This property is read only.");
 	}
-
-	auto table = luacpp::LuaTable::create(L);
 
 	for (int i = 0; i < (int)Medals.size(); i++) {
 		table.addValue(i + 1, ssh->get()->medal_counts[i]); // translate to Lua index
@@ -828,21 +832,26 @@ ADE_VIRTVAR(Medals,
 ADE_VIRTVAR(Rank,
 	l_ScoringStats,
 	nullptr, 
-	"Returns the player's rank as in index into Ranks",
-	"number",
-	"The rank index")
+	"Returns the player's current rank",
+	"rank",
+	"The current rank")
 {
 	scoring_stats_h* ssh;
 	if (!ade_get_args(L, "o", l_ScoringStats.GetPtr(&ssh))) {
 		return ADE_RETURN_NIL;
+	}
+	if (!ssh->isValid()) {
+		return ade_set_error(L, "o", l_Rank.Set(rank_h()));
 	}
 
 	if (ADE_SETTING_VAR) {
 		LuaError(L, "This property is read only.");
 	}
 
-	return ade_set_args(L, "i", verify_rank(ssh->get()->rank));
+	int rank_index = verify_rank(ssh->get()->rank);
+	return ade_set_args(L, "o", l_Rank.Set(rank_h(rank_index)));
 }
+
 }
 }
 

@@ -74,17 +74,6 @@ namespace
 
 		return alpha;
 	}
-
-	inline int get_percent(int count)
-	{
-		if (count == 0)
-			return 0;
-
-		// this should basically return a scale like:
-		//  50, 75, 100, 125, 150, ...
-		// based on value of 'count' (detail level)
-		return (50 + (25 * (count - 1)));
-	}
 }
 
 namespace particle
@@ -147,6 +136,16 @@ namespace particle
 			return false;
 		}
 
+		// treat particles on lower detail levels as 'further away' for the purposes of culling
+		float adjusted_dist = vm_vec_dist(&Eye_position, &info->pos) * powf(2.5f, (float)(NUM_DEFAULT_DETAIL_LEVELS - Detail.num_particles));
+		// treat bigger particles as 'closer'
+		adjusted_dist /= info->rad;
+		float cull_start_dist = 1000.f;
+		if (adjusted_dist > cull_start_dist) {
+			if (frand() > 1.0f / (log2(adjusted_dist / cull_start_dist) + 1.0f))
+				return false;
+		}
+
 		int fps = 1;
 
 		part->pos = info->pos;
@@ -159,9 +158,9 @@ namespace particle
 		part->attached_objnum = info->attached_objnum;
 		part->attached_sig = info->attached_sig;
 		part->reverse = info->reverse;
-		part->particle_index = (int) Persistent_particles.size();
 		part->looping = false;
 		part->length = info->length;
+		part->angle = frand_range(0.0f, PI2);
 		part->size_lifetime_curve = info->size_lifetime_curve;
 		part->vel_lifetime_curve = info->vel_lifetime_curve;
 
@@ -487,7 +486,8 @@ namespace particle
 				batching_add_laser(framenum + cur_frame, &p0, radius, &p1, radius);
 			}
 			else {
-				batching_add_volume_bitmap(framenum + cur_frame, &pos, part->particle_index % 8, radius, alpha);
+				// it will subtract Physics_viewer_bank, so without the flag we counter that and make it screen-aligned again
+				batching_add_volume_bitmap_rotated(framenum + cur_frame, &pos, Randomize_particle_rotation ? part->angle : Physics_viewer_bank, radius, alpha);
 			}
 
 
@@ -551,33 +551,15 @@ namespace particle
 
 	// Creates a bunch of particles. You pass a structure
 	// rather than a bunch of parameters.
-	void emit(particle_emitter* pe, ParticleType type, int optional_data, float range)
+	void emit(particle_emitter* pe, ParticleType type, int optional_data)
 	{
 		int i, n;
 
 		if (!Particles_enabled)
 			return;
 
-		int n1, n2;
-
-		// Account for detail
-		int percent = get_percent(Detail.num_particles);
-
-		//Particle rendering drops out too soon.  Seems to be around 150 m.  Is it detail level controllable?  I'd like it to be 500-1000
-		float min_dist = 125.0f;
-		float dist = vm_vec_dist_quick(&pe->pos, &Eye_position) / range;
-		if (dist > min_dist)
-		{
-			percent = fl2i(i2fl(percent) * min_dist / dist);
-			if (percent < 1)
-			{
-				return;
-			}
-		}
-		//mprintf(( "Dist = %.1f, percent = %d%%\n", dist, percent ));
-
-		n1 = (pe->num_low * percent) / 100;
-		n2 = (pe->num_high * percent) / 100;
+		int n1 = (int)(pe->num_low * 1.25);
+		int n2 = (int)(pe->num_high * 1.25);
 
 		// How many to emit?
 		n = Random::next(n1, n2);

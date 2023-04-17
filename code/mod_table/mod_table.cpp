@@ -104,7 +104,7 @@ bool Apply_shudder_to_chase_view;
 bool Framerate_independent_turning; // an in-depth explanation how this flag is supposed to work can be found in #2740 PR description
 bool Ai_respect_tabled_turntime_rotdamp;
 bool Swarmers_lead_targets;
-bool Chase_view_default;
+bool Default_start_chase_view;
 SCP_vector<gr_capability> Required_render_ext;
 float Weapon_SS_Threshold_Turret_Inaccuracy;
 bool Render_player_mflash;
@@ -139,6 +139,7 @@ bool Auto_assign_personas;
 bool Countermeasures_use_capacity;
 bool Play_thruster_sounds_for_player;
 std::array<std::tuple<float, float>, 6> Fred_spacemouse_nonlinearity;
+bool Randomize_particle_rotation;
 
 static auto DiscordOption = options::OptionBuilder<bool>("Other.Discord", "Discord Presence", "Toggle Discord Rich Presence")
 							 .category("Other")
@@ -815,6 +816,10 @@ void parse_mod_table(const char *filename)
 			Max_draw_distance = Default_max_draw_distance;
 		}
 
+		if (optional_string("$Randomize particle rotation:")) {
+			stuff_boolean(&Randomize_particle_rotation);
+		}
+
 		optional_string("#NETWORK SETTINGS");
 
 		if (optional_string("$FS2NetD port:")) {
@@ -1175,7 +1180,7 @@ void parse_mod_table(const char *filename)
 		}
 		
 		if (optional_string("$Player starts in third person/chase view by default:")) {
-			stuff_boolean(&Chase_view_default);
+			stuff_boolean(&Default_start_chase_view);
 		}
 		
 		if (optional_string("$Custom briefing icons always override standard icons:")) {
@@ -1349,7 +1354,7 @@ void mod_table_reset()
 	Apply_shudder_to_chase_view = false;
 	Framerate_independent_turning = true;
 	Ai_respect_tabled_turntime_rotdamp = false;
-	Chase_view_default = false;
+	Default_start_chase_view = false;
 	Swarmers_lead_targets = false;
 	Required_render_ext.clear();
 	Weapon_SS_Threshold_Turret_Inaccuracy = 0.7f; // Defaults to retail value of 0.7 --wookieejedi
@@ -1393,6 +1398,7 @@ void mod_table_reset()
 			std::tuple<float, float>{ 1.0f, 1.0f },
 			std::tuple<float, float>{ 1.0f, 1.0f }
 		}};
+	Randomize_particle_rotation = false;
 }
 
 void mod_table_set_version_flags()

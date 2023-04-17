@@ -10,6 +10,7 @@
 #include "cutscene/cutscenes.h"
 #include "gamesnd/eventmusic.h"
 #include "gamesequence/gamesequence.h"
+#include "io/key.h"
 #include "menuui/barracks.h"
 #include "menuui/credits.h"
 #include "menuui/mainhallmenu.h"
@@ -33,12 +34,14 @@
 #include "mod_table/mod_table.h"
 #include "network/multi.h"
 #include "network/multiteamselect.h"
+#include "pilotfile/pilotfile.h"
 #include "playerman/managepilot.h"
 #include "radar/radarsetup.h"
 #include "ship/ship.h"
 #include "weapon/weapon.h"
 #include "scpui/SoundPlugin.h"
 #include "scpui/rocket_ui.h"
+#include "scripting/api/objs/control_config.h"
 #include "scripting/api/objs/techroom.h"
 #include "scripting/api/objs/loop_brief.h"
 #include "scripting/api/objs/redalert.h"
@@ -50,6 +53,7 @@
 #include "scripting/api/objs/missionhotkey.h"
 #include "scripting/api/objs/gamehelp.h"
 #include "scripting/api/objs/missionlog.h"
+#include "scripting/api/objs/hudconfig.h"
 #include "scripting/api/objs/color.h"
 #include "scripting/api/objs/enums.h"
 #include "scripting/api/objs/player.h"
@@ -1754,7 +1758,7 @@ ADE_FUNC(initHotkeysList,
 	// so lets expand every wing in the list and not try to handle it after that.
 	for (int i = 0; i < MAX_LINES; i++) {
 		auto item = Hotkey_lines[i];
-		if (item.type == HOTKEY_LINE_WING) {
+		if (item.type == HotkeyLineType::WING) {
 			expand_wing(i, true);
 		}
 	}
@@ -1823,7 +1827,7 @@ ADE_INDEXER(l_Hotkeys,
 		return ade_set_error(L, "o", l_Hotkey.Set(hotkey_h()));
 	idx--; // Convert to Lua's 1 based index system
 
-	if ((idx < 0) || (idx > MAX_LINES))
+	if ((idx < 0) || (idx >= MAX_LINES))
 		return ade_set_error(L, "o", l_Hotkey.Set(hotkey_h()));
 
 	return ade_set_args(L, "o", l_Hotkey.Set(hotkey_h(idx)));
@@ -1836,7 +1840,7 @@ ADE_FUNC(__len, l_Hotkeys, nullptr, "The number of valid hotkey ships", "number"
 	// this is dumb, but whatever
 	for (int i = 0; i < MAX_LINES; i++) {
 		auto item = Hotkey_lines[i];
-		if (item.type == 0) {
+		if (item.type == HotkeyLineType::NONE) {
 			s = i;
 			break;
 		}
@@ -1912,10 +1916,8 @@ ADE_FUNC(initMissionLog, l_UserInterface_MissionLog, nullptr, "Initializes the M
 
 	Log_scrollback_vec.clear(); // Make sure the vector is empty before we start
 
-	// Width here is used to determine if a log line needs to be split into multiple lines.
-	// That makes sense for retail, but not so much for the API. Telling it to use the entire screen width
-	// should be sufficient to prevent unnecessary line breaks given how short most log lines are in the mission log.
-	message_log_init_scrollback(gr_screen.max_w);
+	//explicitely do not split lines!
+	message_log_init_scrollback(0, false);
 
 	return ADE_RETURN_NIL;
 }
@@ -1973,6 +1975,407 @@ ADE_INDEXER(l_Log_Messages,
 ADE_FUNC(__len, l_Log_Messages, nullptr, "The number of mission message entries", "number", "The number of message entries.")
 {
 	return ade_set_args(L, "i", (int)Msg_scrollback_vec.size());
+}
+
+//**********SUBLIBRARY: UserInterface/ControlConfig
+ADE_LIB_DERIV(l_UserInterface_ControlConfig,
+	"ControlConfig",
+	nullptr,
+	"API for accessing data related to the control config UI.<br><b>Warning:</b> This is an internal "
+	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	l_UserInterface);
+
+ADE_FUNC(initControlConfig,
+	l_UserInterface_ControlConfig,
+	nullptr,
+	"Inits the control config UI elements. Must be used before accessing control config elements!",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	control_config_init(true);
+	
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(closeControlConfig,
+	l_UserInterface_ControlConfig,
+	nullptr,
+	"Closes the control config UI elements. Must be used when finished accessing control config elements!",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	control_config_close(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(clearAll,
+	l_UserInterface_ControlConfig,
+	nullptr,
+	"Clears all control bindings.",
+	"boolean",
+	"Returns true if successful, false otherwise")
+{
+	SCP_UNUSED(L);
+
+	return ade_set_args(L, "b", control_config_clear_all(true));
+}
+
+ADE_FUNC(resetToPreset,
+	l_UserInterface_ControlConfig,
+	nullptr,
+	"Resets all control bindings to the current preset defaults.",
+	"boolean",
+	"Returns true if successful, false otherwise")
+{
+	SCP_UNUSED(L);
+
+	return ade_set_args(L, "b", control_config_do_reset(false, true));
+}
+
+ADE_FUNC(usePreset,
+	l_UserInterface_ControlConfig,
+	"string PresetName",
+	"Uses a defined preset if it can be found.",
+	"boolean",
+	"Returns true if successful, false otherwise")
+{
+	const char* preset = nullptr;
+	if (!ade_get_args(L, "s", &preset)) {
+		return ADE_RETURN_FALSE;
+	}
+
+	SCP_string name = preset;
+
+	return ade_set_args(L, "b", control_config_use_preset_by_name(name));
+}
+
+ADE_FUNC(createPreset,
+	l_UserInterface_ControlConfig,
+	"string Name",
+	"Creates a new preset with the given name. Returns true if successful, false otherwise.",
+	"boolean",
+	"The return status")
+{
+	const char* preset;
+	ade_get_args(L, "s", &preset);
+
+	SCP_string name = preset;
+
+	return ade_set_args(L, "b", control_config_create_new_preset(name));
+}
+
+ADE_FUNC(undoLastChange,
+	l_UserInterface_ControlConfig,
+	nullptr,
+	"Reverts the last change to the control bindings",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	control_config_do_undo(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(searchBinds,
+	l_UserInterface_ControlConfig,
+	nullptr,
+	"Waits for a keypress to search for. Returns index into Control Configs if the key matches a bind. Should run On Frame.",
+	"number",
+	"Control Config index, or 0 if no key was found. Returns -1 if Escape was pressed.")
+{
+	SCP_UNUSED(L);
+
+	int idx = control_config_search_key_on_frame(true);
+	idx++; //convert to lua
+
+	return ade_set_args(L, "i", idx);
+}
+
+ADE_FUNC(acceptBinding,
+	l_UserInterface_ControlConfig,
+	nullptr,
+	"Accepts changes to the keybindings. Returns true if successful, false if there are key conflicts or the preset needs to be saved.",
+	"boolean",
+	"The return status")
+{
+	SCP_UNUSED(L);
+
+	return ade_set_args(L, "b", control_config_accept(true));
+}
+
+ADE_FUNC(cancelBinding,
+	l_UserInterface_ControlConfig,
+	nullptr,
+	"Cancels changes to the keybindings, reverting changes to the state it was when initControlConfig was called.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	control_config_cancel_exit(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(getCurrentPreset,
+	l_UserInterface_ControlConfig,
+	nullptr,
+	"Returns the name of the current controls preset.",
+	"string",
+	"The name of the preset or nil if the current binds do not match a preset")
+{
+	SCP_UNUSED(L);
+
+	auto it = control_config_get_current_preset();
+
+	if (it == Control_config_presets.end()) {
+		return ADE_RETURN_NIL;
+	}
+
+	return ade_set_args(L, "s", it->name.c_str());
+}
+
+ADE_LIB_DERIV(l_Presets, "ControlPresets", nullptr, nullptr, l_UserInterface_ControlConfig);
+ADE_INDEXER(l_Presets,
+	"number Index",
+	"Array of control presets",
+	"preset",
+	"control preset handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "o", l_Preset.Set(preset_h()));
+	idx--; // Convert to Lua's 1 based index system
+
+	if ((idx < 0) || (idx >= (int)Control_config.size()))
+		return ade_set_error(L, "o", l_Preset.Set(preset_h()));
+
+	return ade_set_args(L, "o", l_Preset.Set(preset_h(idx)));
+}
+
+ADE_FUNC(__len, l_Presets, nullptr, "The number of control presets", "number", "The number of control presets.")
+{
+	return ade_set_args(L, "i", (int)Control_config_presets.size());
+}
+
+ADE_LIB_DERIV(l_Controls, "ControlConfigs", nullptr, nullptr, l_UserInterface_ControlConfig);
+ADE_INDEXER(l_Controls,
+	"number Index",
+	"Array of controls",
+	"control",
+	"control handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "o", l_Control.Set(control_h()));
+	idx--; // Convert from Lua's 1 based index system
+
+	if ((idx < 0) || (idx >= (int)Control_config.size()))
+		return ade_set_error(L, "o", l_Control.Set(control_h()));
+
+	return ade_set_args(L, "o", l_Control.Set(control_h(idx)));
+}
+
+ADE_FUNC(__len, l_Controls, nullptr, "The number of controls", "number", "The number of controls.")
+{
+	return ade_set_args(L, "i", (int)Control_config.size());
+}
+
+//**********SUBLIBRARY: UserInterface/HUDConfig
+ADE_LIB_DERIV(l_UserInterface_HUDConfig,
+	"HudConfig",
+	nullptr,
+	"API for accessing data related to the HUD Config UI.<br><b>Warning:</b> This is an internal "
+	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	l_UserInterface);
+
+ADE_FUNC(initHudConfig,
+	l_UserInterface_HUDConfig,
+	"[number X, number Y, number Width]",
+	"Initializes the HUD Configuration data. Must be used before HUD Configuration data accessed. "
+	"X and Y are the coordinates where the HUD preview will be drawn when drawHudConfig is used. "
+	"Width is the pixel width to draw the gauges preview.",
+	nullptr,
+	nullptr)
+{
+	int x = 0;
+	int y = 0;
+	int w = 0;
+	ade_get_args(L, "|iii", &x, &y, &w);
+
+	hud_config_init(true, x, y, w);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(closeHudConfig,
+	l_UserInterface_HUDConfig,
+	"boolean Save",
+	"If True then saves the gauge configuration, discards if false. Defaults to false. Then cleans up memory. Should be used when finished accessing HUD Configuration.",
+	nullptr,
+	nullptr)
+{
+	bool save = false;
+	ade_get_args(L, "|b", &save);
+
+	if (save) {
+		Pilot.save_savefile();
+	} else {
+		hud_config_cancel(false);
+	}
+
+	hud_config_close(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(drawHudConfig,
+	l_UserInterface_HUDConfig,
+	"[number MouseX, number MouseY]",
+	"Draws the HUD for the HUD Config UI. Should be called On Frame.",
+	"gauge_config",
+	"Returns the gauge currently being hovered over, or empty handle if nothing is hovered")
+{
+	int mx = 0;
+	int my = 0;
+	ade_get_args(L, "|ii", &mx, &my);
+
+	hud_config_do_frame(0.0f, true, mx, my);
+
+	if (HC_gauge_hot >= 0) {
+		return ade_set_args(L, "o", l_Gauge_Config.Set(gauge_config_h(HC_gauge_hot)));
+	} else {
+		return ade_set_error(L, "o", l_Gauge_Config.Set(gauge_config_h()));
+	}
+}
+
+ADE_FUNC(selectAllGauges,
+	l_UserInterface_HUDConfig,
+	"boolean Toggle",
+	"Sets all gauges as selected. True for select all, False to unselect all. Defaults to False.",
+	nullptr,
+	nullptr)
+{
+	bool toggle = false;
+	ade_get_args(L, "|b", &toggle);
+
+	hud_config_select_all_toggle(toggle, true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(setToDefault,
+	l_UserInterface_HUDConfig,
+	"string Filename",
+	"Sets all gauges to the defined default. If no filename is provided then 'hud_3.hcf' is used.",
+	nullptr,
+	nullptr)
+{
+	const char* filename = "hud_3.hcf";
+	ade_get_args(L, "|s", &filename);
+
+	hud_config_select_all_toggle(0, true);
+	hud_set_default_hud_config(Player, filename);
+	HUD_init_hud_color_array();
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(saveToPreset,
+	l_UserInterface_HUDConfig,
+	"string Filename",
+	"Saves all gauges to the file with the name provided. Filename should not include '.hcf' extension and not be longer than 28 characters.",
+	nullptr,
+	nullptr)
+{
+	const char* filename;
+	ade_get_args(L, "s", &filename);
+
+	SCP_string name = filename;
+
+	// trim filename length to leave room for adding the extension
+	if (name.size() > MAX_FILENAME_LEN - 4) {
+		name.resize(MAX_FILENAME_LEN - 4);
+	}
+
+	// add extension
+	name += ".hcf";
+
+	hud_config_color_save(name.c_str());
+
+	// reload the preset list for sorting
+	hud_config_preset_init();
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(usePresetFile,
+	l_UserInterface_HUDConfig,
+	"string Filename",
+	"Sets all gauges to the provided preset file settings.",
+	nullptr,
+	nullptr)
+{
+	const char* filename;
+	ade_get_args(L, "s", &filename);
+
+	hud_config_color_load(filename);
+	HUD_init_hud_color_array();
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_LIB_DERIV(l_HUD_Gauges, "GaugeConfigs", nullptr, nullptr, l_UserInterface_HUDConfig);
+ADE_INDEXER(l_HUD_Gauges,
+	"number Index",
+	"Array of built-in gauge configs",
+	"gauge_config",
+	"gauge_config handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "o", l_Gauge_Config.Set(gauge_config_h()));
+	idx--; // Convert from Lua's 1 based index system
+
+	if ((idx < 0) || (idx >= NUM_HUD_GAUGES))
+		return ade_set_error(L, "o", l_Gauge_Config.Set(gauge_config_h()));
+
+	return ade_set_args(L, "o", l_Gauge_Config.Set(gauge_config_h(idx)));
+}
+
+ADE_FUNC(__len, l_HUD_Gauges, nullptr, "The number of gauge configs", "number", "The number of gauge configs.")
+{
+	return ade_set_args(L, "i", NUM_HUD_GAUGES);
+}
+
+ADE_LIB_DERIV(l_HUD_Presets, "GaugePresets", nullptr, nullptr, l_UserInterface_HUDConfig);
+ADE_INDEXER(l_HUD_Presets,
+	"number Index",
+	"Array of HUD Preset files",
+	"hud_preset",
+	"hud_preset handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "o", l_HUD_Preset.Set(hud_preset_h()));
+	idx--; // Convert from Lua's 1 based index system
+
+	if ((idx < 0) || (idx >= (int)HC_preset_filenames.size()))
+		return ade_set_error(L, "o", l_HUD_Preset.Set(hud_preset_h()));
+
+	return ade_set_args(L, "o", l_HUD_Preset.Set(hud_preset_h(idx)));
+}
+
+ADE_FUNC(__len, l_HUD_Presets, nullptr, "The number of hud presets", "number", "The number of hud presets.")
+{
+	return ade_set_args(L, "i", HC_preset_filenames.size());
 }
 
 //**********SUBLIBRARY: UserInterface/PauseScreen

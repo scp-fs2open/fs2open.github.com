@@ -2344,9 +2344,7 @@ ADE_FUNC(EtsSetIndexes, l_Ship, "number EngineIndex, number ShieldIndex, number 
 
 	int sindex = objh->objp->instance;
 	if (validate_ship_ets_indxes(sindex, ets_idx)) {
-		Ships[sindex].engine_recharge_index = ets_idx[ENGINES];
-		Ships[sindex].shield_recharge_index = ets_idx[SHIELDS];
-		Ships[sindex].weapon_recharge_index = ets_idx[WEAPONS];
+		set_recharge_rates(objh->objp, ets_idx[SHIELDS], ets_idx[WEAPONS], ets_idx[ENGINES]);
 		return ADE_RETURN_TRUE;
 	} else {
 		return ADE_RETURN_FALSE;

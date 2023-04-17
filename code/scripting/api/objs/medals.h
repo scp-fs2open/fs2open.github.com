@@ -11,6 +11,7 @@ struct medal_h {
 	medal_h();
 	explicit medal_h(int l_medal);
 	medal_stuff* getMedal() const;
+	bool isValid() const;
 };
 
 DECLARE_ADE_OBJ(l_Medal, medal_h);

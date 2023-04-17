@@ -100,7 +100,7 @@ extern SCP_vector<gr_capability> Required_render_ext;
 extern float Weapon_SS_Threshold_Turret_Inaccuracy;
 extern bool Framerate_independent_turning;
 extern bool Ai_respect_tabled_turntime_rotdamp;
-extern bool Chase_view_default;
+extern bool Default_start_chase_view;
 extern bool Render_player_mflash;
 extern bool Neb_affects_beams;
 extern bool Neb_affects_weapons;
@@ -135,6 +135,7 @@ extern bool Auto_assign_personas;
 extern bool Countermeasures_use_capacity;
 extern bool Play_thruster_sounds_for_player;
 extern std::array<std::tuple<float, float>, 6> Fred_spacemouse_nonlinearity;
+extern bool Randomize_particle_rotation;
 
 void mod_table_init();
 void mod_table_post_process();
