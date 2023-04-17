@@ -126,6 +126,10 @@ void batching_add_laser(int texture, vec3d *p0, float width1, vec3d *p1, float w
 void batching_add_quad(int texture, vertex *verts);
 void batching_add_tri(int texture, vertex *verts);
 
+//these require some blurring the lines between things, but finding the batch in every call gets expensive in some cases such as trails.
+void batching_add_quad(int texture, vertex *verts, primitive_batch* batch);
+void batching_add_tri(int texture, vertex *verts, primitive_batch* batch);
+
 void batching_render_all(bool render_distortions = false);
 
 void batching_shutdown();
