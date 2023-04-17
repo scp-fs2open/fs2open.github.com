@@ -950,8 +950,6 @@ ADE_FUNC(initDebriefing,
 	"number",
 	"Returns true when completed")
 {
-	//This is used to skip some UI preloading in debrief init
-	API_Access = true;
 	
 	// stop all looping mission sounds
 	game_stop_looped_sounds();
@@ -959,9 +957,7 @@ ADE_FUNC(initDebriefing,
 	 // fail all incomplete goals before entering debriefing
 	mission_goal_fail_incomplete();
 	hud_config_as_player();
-	debrief_init();
-
-	API_Access = false;
+	debrief_init(true);
 	
 	return ade_set_args(L, "b", true);
 }
@@ -1121,16 +1117,11 @@ ADE_FUNC(replayMission,
 
 	ade_get_args(L, "|b", &restart);
 
-	// This is used to skip some UI preloading in debrief init
-	API_Access = true;
-
-	debrief_close();
+	debrief_close(true);
 
 	if (restart) {
 		gameseq_post_event(GS_EVENT_START_GAME);
 	}
-
-	API_Access = false;
 
 	return ADE_RETURN_NIL;
 }
@@ -1147,18 +1138,13 @@ ADE_FUNC(acceptMission,
 
 	ade_get_args(L, "|b", &start);
 
-	// This is used to skip some UI preloading in debrief init
-	API_Access = true;
-
 	if (start) {
-		debrief_accept(1);
+		debrief_accept(1, true);
 	} else {
-		debrief_accept(0);
+		debrief_accept(0, true);
 	};
 
-	debrief_close();
-
-	API_Access = false;
+	debrief_close(true);
 
 	return ADE_RETURN_NIL;
 }
