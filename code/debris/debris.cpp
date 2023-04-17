@@ -374,6 +374,7 @@ MONITOR(NumHullDebris)
  * @param exp_center	Explosion center in global coordinates
  * @param hull_flag		Whether this debris is a chunk of a ship's hull (as opposed to shrapnel)
  * @param exp_force		Explosion force, used to assign velocity to pieces. 1.0f assigns velocity like before. 2.0f assigns twice as much to non-inherited part of velocity
+ * @param source_subsys	The subsystem this debris came from, if any
  */
 object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d *pos, vec3d *exp_center, bool hull_flag, float exp_force, ship_subsys* source_subsys)
 {
