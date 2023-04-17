@@ -380,6 +380,8 @@ add_file_folder("Generated Files"
 
 # GlobalIncs files
 add_file_folder("GlobalIncs"
+	globalincs/adjustment.cpp
+	globalincs/adjustment.h
 	globalincs/alphacolors.cpp
 	globalincs/alphacolors.h
 	globalincs/crashdump.cpp

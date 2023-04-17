@@ -1,6 +1,7 @@
 // clang-format on
 #include "lighting/lighting_profiles.h"
 
+#include "globalincs/adjustment.h"
 #include "globalincs/pstypes.h"
 #include "globalincs/safe_strings.h"
 #include "globalincs/vmallocator.h"
@@ -22,165 +23,6 @@ profile default_profile;
 profile* current()
 {
 	return &default_profile;
-}
-
-//*************************************************
-//			lighting_profile_value funcs
-//*************************************************
-
-/**
- * @brief Processes an input according to the user's configuration and returns the result.
- */
-float lighting_profile_value::handle(float input)
-{
-	if (only_positive && input < 0.0f)
-		input = base;
-	if (has_multiplier)
-		input *= multipier;
-	// handling adjust after multiplier makes it possible to multiply by 0 and still adjust.
-	if (has_adjust)
-		input += adjust;
-	if (has_minimum)
-		input = MAX(input, minimum);
-	if (has_maximum)
-		input = MIN(input, maximum);
-	return input;
-}
-
-void lighting_profile_value::reset()
-{
-	base = 1.0f;
-	has_adjust = false;
-	has_minimum = false;
-	has_maximum = false;
-	has_multiplier = false;
-	only_positive = true;
-}
-
-void lighting_profile_value::set_adjust(float in)
-{
-	has_adjust = true;
-	adjust = in;
-}
-
-void lighting_profile_value::set_multiplier(float in)
-{
-	has_multiplier = true;
-	multipier = in;
-}
-
-void lighting_profile_value::stack_multiplier(float in)
-{
-	if (has_multiplier) {
-		multipier *= in;
-	} else {
-		multipier = in;
-		has_multiplier = true;
-	}
-}
-
-void lighting_profile_value::set_maximum(float in)
-{
-	has_maximum = true;
-	maximum = in;
-}
-
-void lighting_profile_value::set_minimum(float in)
-{
-	has_minimum = true;
-	minimum = in;
-}
-
-void lighting_profile_value::stack_minimum(float in)
-{
-	if (has_minimum) {
-		minimum = MAX(minimum, in);
-	} else {
-		minimum = in;
-		has_minimum = true;
-	}
-}
-bool lighting_profile_value::read_adjust(float* out) const
-{
-	*out = adjust;
-	return has_adjust;
-}
-bool lighting_profile_value::read_multiplier(float* out) const
-{
-	*out = multipier;
-	return has_multiplier;
-}
-/**
- * @brief for use during the parsing of a light profile to attempt to read in an LPV
- *
- * @param filename for error reporting primairly
- * @param valuename Text of the field
- * @param profile_name The name of the profile being parsed, for error reporting
- * @param value_target The profile object parsing into
- * @param required If false it is an error for this to not find a value.
- * @return true if a succesful parse, false otherwise
- */
-bool lighting_profile_value::parse(const char* filename,
-	const char* valuename,
-	const SCP_string& profile_name,
-	lighting_profile_value* value_target,
-	bool required)
-{
-	if (optional_string(valuename)) {
-		bool parsed = true;
-		int parses = 0;
-		while (parsed) {
-			parsed = false;
-			if (parse_optional_float_into("+default:", &value_target->base)) {
-				parsed = true;
-				parses++;
-			}
-			if (parse_optional_float_into("+maximum:", &value_target->maximum)) {
-				value_target->has_maximum = true;
-				parsed = true;
-				parses++;
-			}
-			if (parse_optional_float_into("+minimum:", &value_target->minimum)) {
-				value_target->has_minimum = true;
-				parsed = true;
-				parses++;
-			}
-			if (parse_optional_float_into("+multiplier:", &value_target->multipier)) {
-				value_target->has_multiplier = true;
-				parsed = true;
-				parses++;
-			}
-			if (parse_optional_float_into("+adjust:", &value_target->adjust)) {
-				value_target->has_adjust = true;
-				parsed = true;
-				parses++;
-			}
-		}
-		if (parses == 0) {
-			Warning(LOCATION,
-				"Lighting profile value '%s' in file '%s' profile '%s' parsed but set no properties, possible "
-				"malformed table.",
-				valuename,
-				filename,
-				profile_name.c_str());
-		} else if (parses > 5) {
-			Warning(LOCATION,
-				"Lighting profile value '%s' in file '%s' profile '%s' parsed too many properties, possible "
-				"malformed table.",
-				valuename,
-				filename,
-				profile_name.c_str());
-		}
-		return true;
-
-	} else if (required) {
-		Error(LOCATION,
-			"Expected lightingprofile value '%s' in file '%s' profile '%s' not found",
-			valuename,
-			filename,
-			profile_name.c_str());
-	}
-	return false;
 }
 
 void profile::reset()
@@ -340,63 +182,48 @@ void parse_default_section(const char* filename)
 		parsed |= parse_optional_float_into("$PPC Shoulder Angle:", &default_profile.ppc_values.shoulder_angle);
 		parsed |= parse_optional_float_into("$Exposure:", &default_profile.exposure);
 
-		parsed |= lighting_profile_value::parse(filename,
+		parsed |= adjustment::parse(filename,
 			"$Missile light brightness:",
 			profile_name,
 			&default_profile.missile_light_brightness);
-		parsed |= lighting_profile_value::parse(filename,
-			"$Missile light radius:",
-			profile_name,
-			&default_profile.missile_light_radius);
+		parsed |=
+			adjustment::parse(filename, "$Missile light radius:", profile_name, &default_profile.missile_light_radius);
 
-		parsed |= lighting_profile_value::parse(filename,
+		parsed |= adjustment::parse(filename,
 			"$Laser light brightness:",
 			profile_name,
 			&default_profile.laser_light_brightness);
-		parsed |= lighting_profile_value::parse(filename,
-			"$Laser light radius:",
-			profile_name,
-			&default_profile.laser_light_radius);
+		parsed |=
+			adjustment::parse(filename, "$Laser light radius:", profile_name, &default_profile.laser_light_radius);
 
-		parsed |= lighting_profile_value::parse(filename,
+		parsed |= adjustment::parse(filename,
 			"$Beam light brightness:",
 			profile_name,
 			&default_profile.beam_light_brightness);
-		parsed |= lighting_profile_value::parse(filename,
-			"$Beam light radius:",
-			profile_name,
-			&default_profile.beam_light_radius);
+		parsed |= adjustment::parse(filename, "$Beam light radius:", profile_name, &default_profile.beam_light_radius);
 
-		parsed |= lighting_profile_value::parse(filename,
+		parsed |= adjustment::parse(filename,
 			"$Tube light brightness:",
 			profile_name,
 			&default_profile.tube_light_brightness);
-		parsed |= lighting_profile_value::parse(filename,
-			"$Tube light radius:",
-			profile_name,
-			&default_profile.tube_light_radius);
+		parsed |= adjustment::parse(filename, "$Tube light radius:", profile_name, &default_profile.tube_light_radius);
 
-		parsed |= lighting_profile_value::parse(filename,
+		parsed |= adjustment::parse(filename,
 			"$Point light brightness:",
 			profile_name,
 			&default_profile.point_light_brightness);
-		parsed |= lighting_profile_value::parse(filename,
-			"$Point light radius:",
-			profile_name,
-			&default_profile.point_light_radius);
-		parsed |= lighting_profile_value::parse(filename,
+		parsed |=
+			adjustment::parse(filename, "$Point light radius:", profile_name, &default_profile.point_light_radius);
+		parsed |= adjustment::parse(filename,
 			"$Directional light brightness:",
 			profile_name,
 			&default_profile.directional_light_brightness);
-		parsed |= lighting_profile_value::parse(filename,
-			"$Cone light radius:",
-			profile_name,
-			&default_profile.cone_light_radius);
-		parsed |= lighting_profile_value::parse(filename,
+		parsed |= adjustment::parse(filename, "$Cone light radius:", profile_name, &default_profile.cone_light_radius);
+		parsed |= adjustment::parse(filename,
 			"$Cone light brightness:",
 			profile_name,
 			&default_profile.cone_light_brightness);
-		if (lighting_profile_value::parse(filename,
+		if (adjustment::parse(filename,
 				"$Ambient light brightness:",
 				profile_name,
 				&default_profile.ambient_light_brightness)) {
@@ -406,17 +233,14 @@ void parse_default_section(const char* filename)
 			default_profile.ambient_light_brightness.stack_minimum(Cmdline_emissive_power);
 		}
 
-		if (lighting_profile_value::parse(filename,
-				"$Overall brightness:",
-				profile_name,
-				&default_profile.overall_brightness)) {
+		if (adjustment::parse(filename, "$Overall brightness:", profile_name, &default_profile.overall_brightness)) {
 			parsed = true;
 			default_profile.overall_brightness.stack_multiplier(Cmdline_light_power);
 		}
 
 		parsed |= parse_optional_float_into("$Exposure:", &default_profile.exposure);
 
-		parsed |= lighting_profile_value::parse(filename,
+		parsed |= adjustment::parse(filename,
 			"$Cockpit light radius modifier:",
 			profile_name,
 			&default_profile.cockpit_light_radius_modifier);
