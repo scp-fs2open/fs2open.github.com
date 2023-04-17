@@ -50,6 +50,38 @@ namespace animation {
 		instanceData.time = 0;
 	}
 
+	enum class AnimationTimeWrapMode { BOUNCE, BOUNCE_ONCE, TRUNC, WRAP };
+	static std::pair<float, bool> animationTimeWrap(float frametime, float minBounds, float maxBounds, AnimationTimeWrapMode mode) {
+		bool flip = false;
+		switch (mode){
+			//BOUNCE mode will assume that on reaching any bounds, direction would have changed.
+			case AnimationTimeWrapMode::BOUNCE:
+				while(frametime > maxBounds || frametime < minBounds) {
+					flip = !flip;
+					frametime = 2.0f * (frametime > maxBounds ? maxBounds : minBounds) - frametime;
+				}
+				break;
+			//BOUNCE_ONCE mode will assume that on reaching any bounds the first time, direction would have changed.
+			case AnimationTimeWrapMode::BOUNCE_ONCE:
+				if(frametime > maxBounds || frametime < minBounds) {
+					flip = true;
+					frametime = 2.0f * (frametime > maxBounds ? maxBounds : minBounds) - frametime;
+				}
+				CAP(frametime, minBounds, maxBounds);
+				break;
+			//TRUNC mode will stop on bounds.
+			case AnimationTimeWrapMode::TRUNC:
+				CAP(frametime, minBounds, maxBounds);
+				break;
+			//WRAP mode will assume that on reaching any bounds, time will be set to the other bound and direction will keep constant
+			case AnimationTimeWrapMode::WRAP:
+				frametime = std::fmod(frametime - minBounds, maxBounds - minBounds);
+				frametime += (frametime < 0.0f ? maxBounds : minBounds);
+				break;
+		}
+		return std::make_pair(frametime, flip);
+	}
+
 	ModelAnimationState ModelAnimation::play(float frametime, polymodel_instance* pmi, ModelAnimationSubmodelBuffer& applyBuffer, bool applyOnly) {
 		instance_data& instanceData = m_instances[pmi->id];
 		
@@ -97,42 +129,53 @@ namespace animation {
 		case ModelAnimationState::RUNNING_FWD:
 			instanceData.time += frametime;
 
+			if (m_flags[Animation_Flags::Seamless_with_startup] && !instanceData.instance_flags[Animation_Instance_Flags::Seamless_fully_started] && instanceData.time > m_flagData.loopsFrom){
+				instanceData.instance_flags.set(Animation_Instance_Flags::Seamless_fully_started);
+			}
+
 			//Cap time if needed
 			if (instanceData.time > instanceData.duration) {
-				instanceData.time = instanceData.duration;
-				if (m_flags[Animation_Flags::Auto_Reverse])
-					//Reverse
+				if (m_flags[Animation_Flags::Auto_Reverse]) {
+					// Reverse
 					instanceData.state = ModelAnimationState::RUNNING_RWD;
+					instanceData.time = animationTimeWrap(instanceData.time, 0, instanceData.duration, AnimationTimeWrapMode::BOUNCE_ONCE).first;
+				}
 				else if (m_flags[Animation_Flags::Loop]) {
 					if (m_flags[Animation_Flags::Reset_at_completion]) {
 						//Loop from start
-						instanceData.time = 0;
+						instanceData.time = animationTimeWrap(instanceData.time, 0, instanceData.duration, AnimationTimeWrapMode::WRAP).first;
 
 						//Reset at completion triggers count as a full next loop, so we need to stop here.
 						if (instanceData.instance_flags[Animation_Instance_Flags::Stop_after_next_loop])
 							stop(pmi, false);
 					}
 					else if (m_flags[Animation_Flags::Seamless_with_startup]) {
-						//Loop from start
-						instanceData.time = m_flagData.loopsFrom;
-
 						//We need to go into final shutdown mode. Go to start of seamless segment, and play backwards
 						if (instanceData.instance_flags[Animation_Instance_Flags::Stop_after_next_loop]) {
+							instanceData.time = animationTimeWrap(instanceData.time - instanceData.duration, 0, m_flagData.loopsFrom, AnimationTimeWrapMode::BOUNCE_ONCE).first;
 							instanceData.state = ModelAnimationState::RUNNING_RWD;
 							instanceData.instance_flags.set(Animation_Instance_Flags::Seamless_loop_shutdown);
+						}
+						else {
+							//Loop from start
+							instanceData.time = animationTimeWrap(instanceData.time, m_flagData.loopsFrom, instanceData.duration, AnimationTimeWrapMode::WRAP).first;
 						}
 					}
 					else {
 						//Loop back
-						instanceData.state = ModelAnimationState::RUNNING_RWD;
+						auto newState = animationTimeWrap(instanceData.time, 0, instanceData.duration, AnimationTimeWrapMode::BOUNCE);
+						instanceData.time = newState.first;
+						instanceData.state = newState.second ? ModelAnimationState::RUNNING_RWD : ModelAnimationState::RUNNING_FWD;
 					}
 				}
 				else if (m_flags[Animation_Flags::Reset_at_completion])
 					//Stop animation at start, not end
 					stop(pmi, false);
-				else
-					//Normal execution, stop aniamtion at end
+				else {
+					instanceData.time = animationTimeWrap(instanceData.time, 0, instanceData.duration, AnimationTimeWrapMode::TRUNC).first;
+					// Normal execution, stop aniamtion at end
 					instanceData.state = ModelAnimationState::COMPLETED;
+				}
 			}
 
 			m_animation->calculateAnimation(applyBuffer, instanceData.time, pmi->id);
@@ -151,16 +194,22 @@ namespace animation {
 				if (m_flags[Animation_Flags::Loop]) {
 					if (m_flags[Animation_Flags::Reset_at_completion]) {
 						//Loop from end. This happens when a Loop + Reset at completion animation is started in reverse.
-						instanceData.time = instanceData.duration;
+						instanceData.time = animationTimeWrap(instanceData.time, 0, instanceData.duration, AnimationTimeWrapMode::WRAP).first;
 					}
 					else if (m_flags[Animation_Flags::Seamless_with_startup]) {
-						//We're either in final shutdown, or reversed before we reached the seamless part. Either way, ensure the stop flag is set to fully stop
-						instanceData.instance_flags.set(Animation_Instance_Flags::Stop_after_next_loop);
+						if (instanceData.instance_flags[Animation_Instance_Flags::Seamless_loop_shutdown] || !instanceData.instance_flags[Animation_Instance_Flags::Seamless_fully_started]) {
+							// We're either in final shutdown, or reversed before we reached the seamless part. Either way, ensure the stop flag is set to fully stop
+							instanceData.instance_flags.set(Animation_Instance_Flags::Stop_after_next_loop);
+						}
+						else {
+							instanceData.time = animationTimeWrap(instanceData.time, m_flagData.loopsFrom, instanceData.duration, AnimationTimeWrapMode::WRAP).first;
+						}
 					}
 					else {
 						//Loop back
-						instanceData.time = 0;
-						instanceData.state = ModelAnimationState::RUNNING_FWD;
+						auto newState = animationTimeWrap(instanceData.time, 0, instanceData.duration, AnimationTimeWrapMode::BOUNCE);
+						instanceData.time = newState.first;
+						instanceData.state = newState.second ? ModelAnimationState::RUNNING_FWD : ModelAnimationState::RUNNING_RWD;
 					}
 					//For backwards, ALL completion triggers are considered finishes, so always stop if we need to
 					if (instanceData.instance_flags[Animation_Instance_Flags::Stop_after_next_loop])
@@ -174,7 +223,7 @@ namespace animation {
 				if (instanceData.instance_flags[Animation_Instance_Flags::Stop_after_next_loop])
 					instanceData.instance_flags.set(Animation_Instance_Flags::Seamless_loop_shutdown);
 				else
-					instanceData.time = instanceData.duration;
+					instanceData.time = animationTimeWrap(instanceData.time, m_flagData.loopsFrom, instanceData.duration, AnimationTimeWrapMode::WRAP).first;
 			}
 
 			m_animation->calculateAnimation(applyBuffer, instanceData.time, pmi->id);
