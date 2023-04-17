@@ -13,7 +13,9 @@
 #include "FRED.h"
 #include "WeaponEditorDlg.h"
 #include "globalincs/linklist.h"
+#include "globalincs/vmallocator.h"
 #include "Management.h"
+#include "lighting/lighting_profiles.h"
 #include "weapon/weapon.h"
 #include "ship/ship.h"
 

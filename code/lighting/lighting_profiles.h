@@ -74,10 +74,13 @@ class profile {
 	adjustment cockpit_light_radius_modifier;
 
 	void reset();
+	profile& operator=(const profile& rhs);
+	void parse(const char* filename, SCP_string& profile_name, SCP_string& end_tag);
 
   private:
 };
 
+SCP_string default_name();
 profile* current();
 enum TonemapperAlgorithm name_to_tonemapper(SCP_string& name);
 SCP_string tonemapper_to_name(TonemapperAlgorithm tnm);
@@ -97,7 +100,6 @@ float lab_get_ambient();
 void lab_set_ambient(float in);
 float lab_get_emissive();
 void lab_set_emissive(float in);
-void parse_all();
-void parse_file(const char* filename);
-void parse_default_section(const char* filename);
+SCP_vector<SCP_string> list_profiles();
+void switch_to(SCP_string& name);
 } // namespace lighting_profiles

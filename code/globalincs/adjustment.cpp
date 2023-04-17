@@ -161,3 +161,35 @@ bool adjustment::parse(const char* filename,
 	}
 	return false;
 }
+
+adjustment::adjustment(const adjustment& rhs){
+	*this = rhs;
+	/*
+	has_adjust = rhs.has_adjust;
+	adjust = rhs.adjust;
+	has_multiplier = rhs.has_multiplier;
+	multipier = rhs.multipier;
+	has_minimum = rhs.has_minimum;
+	minimum = rhs.minimum;
+	has_maximum = rhs.has_maximum;
+	maximum = rhs.maximum;*/
+}
+adjustment& adjustment::operator= (const adjustment& rhs){
+	has_adjust = rhs.has_adjust;
+	adjust = rhs.adjust;
+	has_multiplier = rhs.has_multiplier;
+	multipier = rhs.multipier;
+	has_minimum = rhs.has_minimum;
+	minimum = rhs.minimum;
+	has_maximum = rhs.has_maximum;
+	maximum = rhs.maximum;
+	return *this;
+}
+/*
+adjustment::adjustment(const adjustment& l, const adjustment& r, const float& fact) {
+	float f = fact;
+	CLAMP(f, 0.0f, 1.0f);
+	//TODO: implement this shit
+
+
+}*/

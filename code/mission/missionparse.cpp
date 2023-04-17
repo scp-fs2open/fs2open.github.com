@@ -32,6 +32,7 @@
 #include "io/timer.h"
 #include "jumpnode/jumpnode.h"
 #include "lighting/lighting.h"
+#include "lighting/lighting_profiles.h"
 #include "localization/localize.h"
 #include "math/fvi.h"
 #include "math/staticrand.h"
@@ -791,6 +792,14 @@ void parse_mission_info(mission *pm, bool basic = false)
 		else
 			WarningEx(LOCATION, "Mission: %s\nUnknown AI profile %s!", pm->name, temp );
 	}
+
+	if (optional_string("$Lighting Profile:"))
+	{
+		stuff_string(The_mission.lighting_profile_name, F_NAME);
+	}
+	else
+		The_mission.lighting_profile_name = lighting_profiles::default_name();
+	lighting_profiles::switch_to(The_mission.lighting_profile_name);
 
 	if (optional_string("$Sound Environment:")) {
 		char preset[65] = { '\0' };
@@ -6506,6 +6515,8 @@ void mission::Reset()
 	substitute_briefing_music_name[ 0 ] = '\0';
 
 	ai_profile = &Ai_profiles[Default_ai_profile];
+	lighting_profile_name = lighting_profiles::default_name();
+
 	cutscenes.clear( );
 
 	gravity = vmd_zero_vector;

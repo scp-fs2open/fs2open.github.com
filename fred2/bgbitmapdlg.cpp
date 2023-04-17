@@ -10,10 +10,12 @@
 
 
 
+#include "globalincs/vmallocator.h"
 #include "stdafx.h"
 #include "FRED.h"
 #include "BgBitmapDlg.h"
 #include "listitemchooser.h"
+#include "lighting/lighting_profiles.h"
 #include "starfield/starfield.h"
 #include "bmpman/bmpman.h"
 #include "graphics/light.h"
@@ -76,6 +78,7 @@ bg_bitmap_dlg::bg_bitmap_dlg(CWnd* pParent) : CDialog(bg_bitmap_dlg::IDD, pParen
 	m_sky_flag_4 = The_mission.skybox_flags & MR_NO_CULL ? 1 : 0;
 	m_sky_flag_5 = The_mission.skybox_flags & MR_NO_GLOWMAPS ? 1 : 0;
 	m_sky_flag_6 = The_mission.skybox_flags & MR_FORCE_CLAMP ? 1 : 0;
+	m_light_profile_index = 0;
 	//}}AFX_DATA_INIT
 }
 
@@ -140,6 +143,7 @@ void bg_bitmap_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_SKY_FLAG_CLAMP, m_sky_flag_6);
 	DDX_Text(pDX, IDC_NEB2_FAR_MULTIPLIER, m_neb_far_multi);
 	DDX_Text(pDX, IDC_NEB2_NEAR_MULTIPLIER, m_neb_near_multi);
+	DDX_CBIndex(pDX, IDC_LIGHT_PROFILE, m_light_profile_index);
 	DDX_Text(pDX, IDC_NEB2_FOG_R, m_fog_r);
 	DDV_MinMaxInt(pDX, m_fog_r, 0, 255);
 	DDX_Text(pDX, IDC_NEB2_FOG_G, m_fog_g);
@@ -385,6 +389,17 @@ void bg_bitmap_dlg::create()
 	m_neb_near_multi = Neb2_fog_near_mult;
 	m_neb_far_multi = Neb2_fog_far_mult;
 
+	box = (CComboBox *) GetDlgItem(IDC_LIGHT_PROFILE);
+	SCP_vector<SCP_string> profiles = lighting_profiles::list_profiles();
+	m_light_profile_index = 0;
+	for(int idx = 0; idx<profiles.size();idx++){
+		SCP_string n = profiles[idx];
+		box->AddString(profiles[idx].c_str());
+		if(The_mission.lighting_profile_name == n)
+			m_light_profile_index = idx;
+	}
+	box->SetCurSel(m_light_profile_index);
+
 	background_flags_init();
 
 	UpdateData(FALSE);
@@ -499,6 +514,7 @@ void bg_bitmap_dlg::OnClose()
 	Neb2_fog_near_mult = m_neb_near_multi;
 	Neb2_fog_far_mult = m_neb_far_multi;
 
+	The_mission.lighting_profile_name = lighting_profiles::list_profiles()[m_light_profile_index];
 	// close sun data
 	sun_data_close();
 
