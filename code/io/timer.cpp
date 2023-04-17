@@ -634,7 +634,9 @@ void timestamp_update_time_compression()
 	}
 
 	// grab the independent variable of the equation before we change anything
-	auto timestamp_raw = timestamp_get_raw();
+	// (we need to take a new snapshot to get the accurate value, but this is ok
+	// since time compression is only updated at the start of the frame)
+	auto timestamp_raw = timestamp_get_raw(true);
 
 	// we need to move the counter offset to make the raw timestamp zero (so that it can start ticking with a new multiplier)
 	Timestamp_offset_from_counter += timestamp_raw;
