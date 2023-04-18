@@ -17945,7 +17945,8 @@ void sexp_reset_event(int node)
 			eventp->result = 0;
 			eventp->timestamp = TIMESTAMP::invalid();
 
-			// clear some flags but not all
+			// clear the flags that are changed over the course of the event's lifetime,
+			// leaving alone the flags that define how the event is configured
 			eventp->flags &= ~MEF_CURRENT;
 			eventp->flags &= ~MEF_DIRECTIVE_SPECIAL;
 			eventp->flags &= ~MEF_DIRECTIVE_TEMP_TRUE;
@@ -17956,9 +17957,10 @@ void sexp_reset_event(int node)
 			eventp->born_on_date = TIMESTAMP::invalid();
 			eventp->previous_result = 0;
 
-			if (eventp->formula >= 0)
-				flush_sexp_tree(eventp->formula);
+			flush_sexp_tree(eventp->formula);
 		}
+		else
+			Warning(LOCATION, "Could not find event '%s'", name);
 	}
 }
 
@@ -17976,9 +17978,10 @@ void sexp_reset_goal(int node)
 			auto goalp = &Mission_goals[goal_num];
 
 			goalp->satisfied = GOAL_INCOMPLETE;
-			if (goalp->formula >= 0)
-				flush_sexp_tree(goalp->formula);
+			flush_sexp_tree(goalp->formula);
 		}
+		else
+			Warning(LOCATION, "Could not find goal '%s'", name);
 	}
 }
 
