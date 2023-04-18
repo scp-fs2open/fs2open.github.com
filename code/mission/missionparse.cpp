@@ -3356,7 +3356,12 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 	if (optional_string("+Destroy At:"))
 	{
 		stuff_int(&p_objp->destroy_before_mission_time);
-		Assert (p_objp->destroy_before_mission_time >= 0);
+		if (p_objp->destroy_before_mission_time < 0)
+		{
+			Warning(LOCATION, "Cannot set a negative 'destroy before mission' value (ship %s)", p_objp->name);
+			p_objp->destroy_before_mission_time = 0;
+		}
+
 		p_objp->arrival_cue = Locked_sexp_true;
 		p_objp->arrival_delay = timestamp(0);
 	}
@@ -4176,10 +4181,6 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 		ai_info *aip;
 		p_object *p_objp = &(*ii);
 
-		// ensure on arrival list
-		if (!parse_object_on_arrival_list(p_objp))
-			continue;
-
 		// compare the wingnums.  When they are equal, we can create the ship.  In the case of
 		// wings that have multiple waves, this code implies that we essentially creating clones
 		// of the ships that were created in Fred for the wing when more ships for a new wave
@@ -4188,7 +4189,26 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 		if (p_objp->wingnum != wingnum)
 			continue;
 
-		Assert( (p_objp->pos_in_wing >= 0) && (p_objp->pos_in_wing < MAX_SHIPS_PER_WING) );
+		Assert((p_objp->pos_in_wing >= 0) && (p_objp->pos_in_wing < MAX_SHIPS_PER_WING));
+
+		// skip ships destroyed before mission in a similar way that red-alert-deleted ships are skipped
+		if (p_objp->destroy_before_mission_time >= 0)
+		{
+			num_to_create--;
+			num_create_save--;
+			ship_add_ship_type_count(p_objp->ship_class, -1);
+			wingp->red_alert_skipped_ships++;	// even though it isn't red-alert, this is needed for keeping indexes correct
+
+			// skip over this parse object
+			if (num_to_create == 0)
+				break;
+			else
+				continue;
+		}
+
+		// ensure on arrival list
+		if (!parse_object_on_arrival_list(p_objp))
+			continue;
 	
 		// when ingame joining, we need to create a specific ship out of the list of ships for a
 		// wing.  specific_instance is a 0 based integer which specified which ship in the wing
@@ -6088,6 +6108,9 @@ bool post_process_mission(mission *pm)
 	ship_weapon	*swp;
 	ship_obj *so;
 
+	// Goober5000 - this must be done even before post_process_ships_wings because it is a prerequisite
+	ship_clear_ship_type_counts();
+
 	// Goober5000 - must be done before all other post processing
 	post_process_ships_wings();
 
@@ -6266,10 +6289,9 @@ bool post_process_mission(mission *pm)
 		ai_post_process_mission();
 	}
 
-	// first we need to clear out the counts for this mission
-	ship_clear_ship_type_counts();
+	// [ship_clear_ship_type_counts() moved to top of function]
 
-	// we must also count all of the ships of particular types.  We count all of the ships that do not have
+	// we must count all of the ships of particular types.  We count all of the ships that do not have
 	// their SF_IGNORE_COUNT flag set.  We don't count ships in wings when the equivalent wing flag is set.
 	// in counting ships in wings, we increment the count by the wing's wave count to account for everyone.
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
