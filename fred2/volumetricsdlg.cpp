@@ -39,8 +39,6 @@ static constexpr std::initializer_list<int> Interactible_noise_fields = {
 	//IDC_NOISE_BASE, IDC_NOISE_SUB //ToDo: Add once buttons are implemented
 };
 
-static constexpr char* Tooltip_distance = _T("This is how far something has to be in the nebula to be obscured to the maximum opacity.");
-
 volumetrics_dlg::volumetrics_dlg(CWnd* pParent /*=nullptr*/) : CDialog(volumetrics_dlg::IDD, pParent),
 	m_enabled(false),
 	m_volumetrics_hull("hull_pof"),
@@ -72,8 +70,30 @@ volumetrics_dlg::~volumetrics_dlg()
 BOOL volumetrics_dlg::OnInitDialog()
 {
 	m_toolTip.Create(this);
+	static constexpr char* Tooltip_distance = _T("This is how far something has to be in the nebula to be obscured to the maximum opacity.");
+	static constexpr char* Tooltip_steps = _T("If you see banding on ships in the volumetrics, increase this.");
+	static constexpr char* Tooltip_oversampling = _T("Increasing this improves the nebula's edge's smoothness especially for large nebula at low resolutions.");
+	static constexpr char* Tooltip_henyey = _T("Values greater than 0 cause a cloud-like light shine-through, values smaller than 0 cause a highly reflective nebula.");
+	static constexpr char* Tooltip_sun_falloff = _T("Values greater than 1 means the nebula's depths are brighter than they ought to be, values smaller than 0 means they're darker.");
+	static constexpr char* Tooltip_steps_sun = _T("If you see banding in the volumetrics' light and shadow, increase this.");
+	static constexpr char* Tooltip_em_spread = _T("How much light sources will scatter in the nebula.");
+	static constexpr char* Tooltip_em_falloff = _T("Values greater than 1 will cause light sources in the nebula to spread more evenly, values smaller than 1 will cause them to be more intense in their center.");
 	m_toolTip.AddTool(GetDlgItem(IDC_OPACITY_DISTANCE), Tooltip_distance);
 	m_toolTip.AddTool(GetDlgItem(IDC_SPIN_OPACITY_DISTANCE), Tooltip_distance);
+	m_toolTip.AddTool(GetDlgItem(IDC_STEPS), Tooltip_steps);
+	m_toolTip.AddTool(GetDlgItem(IDC_SPIN_STEPS), Tooltip_steps);
+	m_toolTip.AddTool(GetDlgItem(IDC_OVERSAMPLING), Tooltip_oversampling);
+	m_toolTip.AddTool(GetDlgItem(IDC_SPIN_OVERSAMPLING), Tooltip_oversampling);
+	m_toolTip.AddTool(GetDlgItem(IDC_HGCOEFF), Tooltip_henyey);
+	m_toolTip.AddTool(GetDlgItem(IDC_SPIN_HGCOEFF), Tooltip_henyey);
+	m_toolTip.AddTool(GetDlgItem(IDC_SUN_FALLOFF), Tooltip_sun_falloff);
+	m_toolTip.AddTool(GetDlgItem(IDC_SPIN_SUN_FALLOFF), Tooltip_sun_falloff);
+	m_toolTip.AddTool(GetDlgItem(IDC_STEPS_SUN), Tooltip_steps_sun);
+	m_toolTip.AddTool(GetDlgItem(IDC_SPIN_STEPS_SUN), Tooltip_steps_sun);
+	m_toolTip.AddTool(GetDlgItem(IDC_EM_SPREAD), Tooltip_em_spread);
+	m_toolTip.AddTool(GetDlgItem(IDC_SPIN_EM_SPREAD), Tooltip_em_spread);
+	m_toolTip.AddTool(GetDlgItem(IDC_EM_FALLOFF), Tooltip_em_falloff);
+	m_toolTip.AddTool(GetDlgItem(IDC_SPIN_EM_FALLOFF), Tooltip_em_falloff);
 	m_toolTip.Activate(TRUE);
 
 	if (The_mission.volumetrics) {
