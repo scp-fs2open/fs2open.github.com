@@ -12595,7 +12595,7 @@ int ai_formation()
 	ship_info *sip = &Ship_info[shipp->ship_info_index];
 	bool ab_allowed = false;
 	if ((sip->flags[Ship::Info_Flags::Afterburner]) && !(shipp->flags[Ship::Ship_Flags::Afterburner_locked]) && 
-		(aip->ai_flags[AI::AI_Flags::Free_afterburner_use] || aip->ai_profile_flags[AI::Profile_Flags::Free_afterburner_use]) || ai_willing_to_afterburn_hard(aip)) {
+		((aip->ai_flags[AI::AI_Flags::Free_afterburner_use] || aip->ai_profile_flags[AI::Profile_Flags::Free_afterburner_use]) || ai_willing_to_afterburn_hard(aip))) {
 		ab_allowed = true;
 	} else {
 		if (Pl_objp->phys_info.flags & PF_AFTERBURNER_ON)

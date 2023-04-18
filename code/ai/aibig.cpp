@@ -628,15 +628,16 @@ bool ai_new_maybe_reposition_attack_subsys() {
 	// full speed until you're close, then slow down a bit
 	accelerate_ship(aip, subsys_distance > 200.0f ? 1.0f : subsys_distance / 200.0f);
 
-	if (ai_willing_to_afterburn_hard(aip) && subsys_distance > 1000.0f)
-		ai_afterburn_hard(Pl_objp, aip);
-	else if (subsys_distance > 300.0f) {
-		if (ai_maybe_fire_afterburner(Pl_objp, aip)) {
-			afterburners_start(Pl_objp);
-			aip->afterburner_stop_time = Missiontime + 2 * F1_0;
+	if (!(Ships[Pl_objp->instance].flags[Ship::Ship_Flags::Afterburner_locked])) {
+		if (ai_willing_to_afterburn_hard(aip) && subsys_distance > 1000.0f)
+			ai_afterburn_hard(Pl_objp, aip);
+		else if (subsys_distance > 300.0f) {
+			if (ai_maybe_fire_afterburner(Pl_objp, aip)) {
+				afterburners_start(Pl_objp);
+				aip->afterburner_stop_time = Missiontime + 2 * F1_0;
+			}
 		}
-	}
-	else
+	} else
 		afterburners_stop(Pl_objp);
 
 	return true;
