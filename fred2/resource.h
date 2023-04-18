@@ -1193,6 +1193,24 @@
 #define IDC_OPACITY_DISTANCE            1675
 #define IDC_STEPS                       1676
 #define IDC_SPIN_STEPS                  1677
+#define IDC_RESOLUTION                  1678
+#define IDC_SPIN_RESOLUTION             1679
+#define IDC_OVERSAMPLING                1680
+#define IDC_SPIN_OVERSAMPLING           1681
+#define IDC_HGCOEFF                     1682
+#define IDC_SPIN_HGCOEFF                1683
+#define IDC_SUN_FALLOFF                 1684
+#define IDC_SPIN_SUN_FALLOFF            1685
+#define IDC_STEPS_SUN                   1686
+#define IDC_SPIN_STEPS_SUN              1687
+#define IDC_NOISE_ENABLE                1688
+#define IDC_EM_SPREAD                   1690
+#define IDC_SPIN_EM_SPREAD              1691
+#define IDC_EM_INTENSITY                1692
+#define IDC_SPIN_EM_INTENSITY           1693
+#define IDC_EM_FALLOFF                  1694
+#define IDC_SPIN_STEPS9                 1695
+#define IDC_SPIN_EM_FALLOFF             1695
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774
 #define ID_VIEW_ROTATE                  32775
@@ -1492,7 +1510,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        334
 #define _APS_NEXT_COMMAND_VALUE         33103
-#define _APS_NEXT_CONTROL_VALUE         1677
+#define _APS_NEXT_CONTROL_VALUE         1689
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif

@@ -4,26 +4,28 @@
 
 #include "nebula/volumetrics.h"
 
+#define ID_AND_SPIN(name) IDC_##name, IDC_SPIN_##name
+
 static constexpr char* Model_file_ext = "Model Files (*.pof)|*.pof||";
-static constexpr std::initializer_list<int> Interactible_fields = {IDC_HULL,
-	IDC_POS_X,
-	IDC_SPIN_POS_X,
-	IDC_POS_Y,
-	IDC_SPIN_POS_Y,
-	IDC_POS_Z,
-	IDC_SPIN_POS_Z,
-	IDC_COLOR_R,
-	IDC_SPIN_COLOR_R,
-	IDC_COLOR_G,
-	IDC_SPIN_COLOR_G,
-	IDC_COLOR_B,
-	IDC_SPIN_COLOR_B,
-	IDC_OPACITY,
-	IDC_SPIN_OPACITY,
-	IDC_OPACITY_DISTANCE,
-	IDC_SPIN_OPACITY_DISTANCE,
-	IDC_STEPS,
-	IDC_SPIN_STEPS
+static constexpr std::initializer_list<int> Interactible_fields = {
+	IDC_HULL, IDC_SET_HULL,
+	ID_AND_SPIN(POS_X),
+	ID_AND_SPIN(POS_Y),
+	ID_AND_SPIN(POS_Z),
+	ID_AND_SPIN(COLOR_R),
+	ID_AND_SPIN(COLOR_G),
+	ID_AND_SPIN(COLOR_B),
+	ID_AND_SPIN(OPACITY),
+	ID_AND_SPIN(OPACITY_DISTANCE),
+	ID_AND_SPIN(STEPS),
+	ID_AND_SPIN(RESOLUTION),
+	ID_AND_SPIN(OVERSAMPLING),
+	ID_AND_SPIN(HGCOEFF),
+	ID_AND_SPIN(SUN_FALLOFF),
+	ID_AND_SPIN(STEPS_SUN),
+	ID_AND_SPIN(EM_SPREAD),
+	ID_AND_SPIN(EM_INTENSITY),
+	ID_AND_SPIN(EM_FALLOFF)
 };
 
 static constexpr char* Tooltip_distance = _T("This is how far something has to be in the nebula to be obscured to the maximum opacity.");
@@ -35,7 +37,15 @@ volumetrics_dlg::volumetrics_dlg(CWnd* pParent /*=nullptr*/) : CDialog(volumetri
 	m_color({255, 255, 255}), 
 	m_opacity(0.001f),
 	m_distance(5.0f),
-	m_steps(15)
+	m_steps(15),
+	m_resolution(6),
+	m_oversampling(2),
+	m_henyeyGreenstein(0.2f),
+	m_sunFalloffFactor(1.0f),
+	m_sunSteps(6),
+	m_emissiveSpread(0.7f),
+	m_emissiveIntensity(1.1f),
+	m_emissiveFalloff(1.5f)
 {}
 
 volumetrics_dlg::~volumetrics_dlg()
@@ -60,6 +70,14 @@ BOOL volumetrics_dlg::OnInitDialog()
 		m_opacity = volumetrics.alphaLim;
 		m_distance = volumetrics.visibility;
 		m_steps = volumetrics.steps;
+		m_resolution = volumetrics.resolution;
+		m_oversampling = volumetrics.oversampling;
+		m_henyeyGreenstein = volumetrics.henyeyGreensteinCoeff;
+		m_sunFalloffFactor = volumetrics.globalLightDistanceFactor;
+		m_sunSteps = volumetrics.globalLightSteps;
+		m_emissiveSpread = volumetrics.emissiveSpread;
+		m_emissiveIntensity = volumetrics.emissiveIntensity;
+		m_emissiveFalloff = volumetrics.emissiveFalloff;
 	}
 	UpdateData(FALSE);
 	return TRUE;
@@ -84,6 +102,14 @@ void volumetrics_dlg::OnClose()
 	volumetrics.alphaLim = m_opacity;
 	volumetrics.visibility = m_distance;
 	volumetrics.steps = m_steps;
+	volumetrics.resolution = m_resolution;
+	volumetrics.oversampling = m_oversampling;
+	volumetrics.henyeyGreensteinCoeff = m_henyeyGreenstein;
+	volumetrics.globalLightDistanceFactor = m_sunFalloffFactor;
+	volumetrics.globalLightSteps= m_sunSteps;
+	volumetrics.emissiveSpread = m_emissiveSpread;
+	volumetrics.emissiveIntensity = m_emissiveIntensity;
+	volumetrics.emissiveFalloff = m_emissiveFalloff;
 
 	CDialog::OnOK();
 	CDialog::OnClose();
@@ -109,6 +135,22 @@ void volumetrics_dlg::DoDataExchange(CDataExchange* pDX)
 	DDV_MinMaxFloat(pDX, m_distance, 0.1f, FLT_MAX);
 	DDX_Text(pDX, IDC_STEPS, m_steps);
 	DDV_MinMaxInt(pDX, m_steps, 1, 100);
+	DDX_Text(pDX, IDC_RESOLUTION, m_resolution);
+	DDV_MinMaxInt(pDX, m_resolution, 6, 8);
+	DDX_Text(pDX, IDC_STEPS, m_oversampling);
+	DDV_MinMaxInt(pDX, m_oversampling, 1, 3);
+	DDX_Text(pDX, IDC_HGCOEFF, m_henyeyGreenstein);
+	DDV_MinMaxFloat(pDX, m_henyeyGreenstein, -1.0f, 1.0f);
+	DDX_Text(pDX, IDC_SUN_FALLOFF, m_sunFalloffFactor);
+	DDV_MinMaxFloat(pDX, m_sunFalloffFactor, 0.001f, 100.0f);
+	DDX_Text(pDX, IDC_STEPS_SUN, m_sunSteps);
+	DDV_MinMaxInt(pDX, m_sunSteps, 2, 16);
+	DDX_Text(pDX, IDC_EM_SPREAD, m_emissiveSpread);
+	DDV_MinMaxFloat(pDX, m_emissiveSpread, 0.0f, 5.0f);
+	DDX_Text(pDX, IDC_EM_INTENSITY, m_emissiveIntensity);
+	DDV_MinMaxFloat(pDX, m_emissiveIntensity, 0.0f, 100.0f);
+	DDX_Text(pDX, IDC_EM_FALLOFF, m_emissiveFalloff);
+	DDV_MinMaxFloat(pDX, m_emissiveFalloff, 0.01f, 10.0f);
 }
 
 BOOL volumetrics_dlg::PreTranslateMessage(MSG* pMsg)
@@ -123,14 +165,21 @@ BEGIN_MESSAGE_MAP(volumetrics_dlg, CDialog)
 	ON_NOTIFY(UDN_DELTAPOS, IDC_SPIN_POS_X, &volumetrics_dlg::OnDeltaposSpinPosX)
 	ON_NOTIFY(UDN_DELTAPOS, IDC_SPIN_POS_Y, &volumetrics_dlg::OnDeltaposSpinPosY)
 	ON_NOTIFY(UDN_DELTAPOS, IDC_SPIN_POS_Z, &volumetrics_dlg::OnDeltaposSpinPosZ)
-	ON_NOTIFY(UDN_DELTAPOS, IDC_SPIN_COLOR_R, &volumetrics_dlg::OnDeltaposColorRSpin)
-	ON_NOTIFY(UDN_DELTAPOS, IDC_SPIN_COLOR_G, &volumetrics_dlg::OnDeltaposColorGSpin)
-	ON_NOTIFY(UDN_DELTAPOS, IDC_SPIN_COLOR_B, &volumetrics_dlg::OnDeltaposColorBSpin)
+	ON_NOTIFY(UDN_DELTAPOS, IDC_SPIN_COLOR_R, &volumetrics_dlg::OnDeltaposSpinColorR)
+	ON_NOTIFY(UDN_DELTAPOS, IDC_SPIN_COLOR_G, &volumetrics_dlg::OnDeltaposSpinColorG)
+	ON_NOTIFY(UDN_DELTAPOS, IDC_SPIN_COLOR_B, &volumetrics_dlg::OnDeltaposSpinColorB)
 	ON_NOTIFY(UDN_DELTAPOS, IDC_SPIN_OPACITY, &volumetrics_dlg::OnDeltaposSpinOpacity)
 	ON_NOTIFY(UDN_DELTAPOS, IDC_SPIN_OPACITY_DISTANCE, &volumetrics_dlg::OnDeltaposSpinOpacityDistance)
 	ON_NOTIFY(UDN_DELTAPOS, IDC_SPIN_STEPS, &volumetrics_dlg::OnDeltaposSpinSteps)
+	ON_NOTIFY(UDN_DELTAPOS, IDC_SPIN_RESOLUTION, &volumetrics_dlg::OnDeltaposSpinResolution)
+	ON_NOTIFY(UDN_DELTAPOS, IDC_SPIN_OVERSAMPLING, &volumetrics_dlg::OnDeltaposSpinResolutionOversampling)
+	ON_NOTIFY(UDN_DELTAPOS, IDC_SPIN_HGCOEFF, &volumetrics_dlg::OnDeltaposSpinHGCoeff)
+	ON_NOTIFY(UDN_DELTAPOS, IDC_SPIN_SUN_FALLOFF, &volumetrics_dlg::OnDeltaposSpinSunFalloff)
+	ON_NOTIFY(UDN_DELTAPOS, IDC_SPIN_STEPS_SUN, &volumetrics_dlg::OnDeltaposSpinStepsSun)
+	ON_NOTIFY(UDN_DELTAPOS, IDC_SPIN_EM_SPREAD, &volumetrics_dlg::OnDeltaposSpinEMSpread)
+	ON_NOTIFY(UDN_DELTAPOS, IDC_SPIN_EM_INTENSITY, &volumetrics_dlg::OnDeltaposSpinEMIntensity)
+	ON_NOTIFY(UDN_DELTAPOS, IDC_SPIN_EM_FALLOFF, &volumetrics_dlg::OnDeltaposSpinEMFalloff)
 END_MESSAGE_MAP()
-
 
 void volumetrics_dlg::OnBnClickedSetHull()
 {
@@ -153,75 +202,88 @@ void volumetrics_dlg::OnBnClickedSetHull()
 		cfile_pop_dir();
 }
 
-void volumetrics_dlg::handle_spinner_vec3d(LPNMUPDOWN spinner, vec3d& vec, float decltype(vec3d::xyz)::*dimension)
+void volumetrics_dlg::handle_spinner(LPNMUPDOWN spinner, vec3d& vec, float decltype(vec3d::xyz)::*dimension)
 {
 	UpdateData(TRUE);
 	vec.xyz.*dimension -= static_cast<float>(spinner->iDelta);
 	UpdateData(FALSE);
 }
 
-void volumetrics_dlg::handle_spinner_color(LPNMUPDOWN spinner, std::array<int, 3>& color, size_t idx) {
+void volumetrics_dlg::handle_spinner(LPNMUPDOWN spinner, std::array<int, 3>& color, size_t idx)
+{
 	UpdateData(TRUE);
 	color[idx] -= spinner->iDelta;
 	CAP(color[idx], 0, 0xFF);
 	UpdateData(FALSE);
 }
 
-void volumetrics_dlg::OnDeltaposSpinPosX(NMHDR* pNMHDR, LRESULT* pResult)
+void volumetrics_dlg::handle_spinner(LPNMUPDOWN spinner, int& data, int min, int max)
 {
-	handle_spinner_vec3d(reinterpret_cast<LPNMUPDOWN>(pNMHDR), m_position, &decltype(vec3d::xyz)::x);
-	*pResult = 0;
-}
-
-void volumetrics_dlg::OnDeltaposSpinPosY(NMHDR* pNMHDR, LRESULT* pResult)
-{
-	handle_spinner_vec3d(reinterpret_cast<LPNMUPDOWN>(pNMHDR), m_position, &decltype(vec3d::xyz)::y);
-	*pResult = 0;
-}
-
-void volumetrics_dlg::OnDeltaposSpinPosZ(NMHDR* pNMHDR, LRESULT* pResult)
-{
-	handle_spinner_vec3d(reinterpret_cast<LPNMUPDOWN>(pNMHDR), m_position, &decltype(vec3d::xyz)::z);
-	*pResult = 0;
-}
-
-void volumetrics_dlg::OnDeltaposColorRSpin(NMHDR* pNMHDR, LRESULT* pResult)
-{
-	handle_spinner_color(reinterpret_cast<LPNMUPDOWN>(pNMHDR), m_color, 0);
-	*pResult = 0;
-}
-
-void volumetrics_dlg::OnDeltaposColorGSpin(NMHDR* pNMHDR, LRESULT* pResult)
-{
-	handle_spinner_color(reinterpret_cast<LPNMUPDOWN>(pNMHDR), m_color, 1);
-	*pResult = 0;
-}
-
-void volumetrics_dlg::OnDeltaposColorBSpin(NMHDR* pNMHDR, LRESULT* pResult)
-{
-	handle_spinner_color(reinterpret_cast<LPNMUPDOWN>(pNMHDR), m_color, 2);
-	*pResult = 0;
-}
-
-void volumetrics_dlg::OnDeltaposSpinOpacity(NMHDR* pNMHDR, LRESULT* pResult)
-{
-	LPNMUPDOWN pNMUpDown = reinterpret_cast<LPNMUPDOWN>(pNMHDR);
 	UpdateData(TRUE);
-	//This is the cube root of 10, so by clicking up or down thrice you'll have multiplied the value by 10 for a logarithmic spinner
-	m_opacity *= pNMUpDown->iDelta > 0 ? 1.0f / 2.15443469003f : 2.15443469003f; 
-	CAP(m_opacity, 0.0001f, 1.0f);
+	data -= spinner->iDelta;
+	CAP(data, min, max);
 	UpdateData(FALSE);
-	*pResult = 0;
 }
 
-void volumetrics_dlg::OnDeltaposSpinOpacityDistance(NMHDR* pNMHDR, LRESULT* pResult)
+void volumetrics_dlg::handle_spinner(LPNMUPDOWN spinner, float& data, float min, float max, float factor)
 {
-	handle_spinner(reinterpret_cast<LPNMUPDOWN>(pNMHDR), m_distance, 0.1f, FLT_MAX);
-	*pResult = 0;
+	UpdateData(TRUE);
+	data -= static_cast<float>(spinner->iDelta) * factor;
+	CAP(data, min, max);
+	UpdateData(FALSE);
 }
 
-void volumetrics_dlg::OnDeltaposSpinSteps(NMHDR* pNMHDR, LRESULT* pResult)
+void volumetrics_dlg::handle_spinner_exp(LPNMUPDOWN spinner, float& data, float min, float max, float factor)
 {
-	handle_spinner(reinterpret_cast<LPNMUPDOWN>(pNMHDR), m_steps, 1, 100);
-	*pResult = 0;
+	UpdateData(TRUE);
+	data *= spinner->iDelta > 0 ? 1.0f / factor : factor;
+	CAP(data, min, max);
+	UpdateData(FALSE);
 }
+
+void volumetrics_dlg::handle_spinner_factor(LPNMUPDOWN spinner, float& data, float min, float max, float factor)
+{
+	UpdateData(TRUE);
+	// This is a factor-spinner. Above 1, it is x, below 1 it is 1/x. To enable a smoother transition: If the next de/increment would enter the new mode, already use the new mode now
+	if (spinner->iDelta < 0) {
+		data = data > 0.5f ? data + factor : 1.0f / (-factor + 1.0f / data);
+	} else {
+		data = data > 2.0f ? data - factor : 1.0f / (factor + 1.0f / data);
+	}
+	CAP(data, min, max);
+	UpdateData(FALSE);
+}
+
+#define SPIN_LINEAR handle_spinner
+#define SPIN_EXP handle_spinner_exp
+#define SPIN_FACTOR handle_spinner_factor
+#define SPINNER_IMPL(type, name, var, ...)                                      \
+	void volumetrics_dlg::OnDeltaposSpin##name(NMHDR* pNMHDR, LRESULT* pResult) \
+	{                                                                           \
+		type(reinterpret_cast<LPNMUPDOWN>(pNMHDR), var, __VA_ARGS__);           \
+		*pResult = 0;                                                           \
+	}
+
+SPINNER_IMPL(SPIN_LINEAR, PosX, m_position, &decltype(vec3d::xyz)::x)
+SPINNER_IMPL(SPIN_LINEAR, PosY, m_position, &decltype(vec3d::xyz)::y)
+SPINNER_IMPL(SPIN_LINEAR, PosZ, m_position, &decltype(vec3d::xyz)::z)
+
+SPINNER_IMPL(SPIN_LINEAR, ColorR, m_color, 0)
+SPINNER_IMPL(SPIN_LINEAR, ColorG, m_color, 1)
+SPINNER_IMPL(SPIN_LINEAR, ColorB, m_color, 2)
+
+//This is the cube root of 10, so by clicking up or down thrice you'll have multiplied the value by 10 for a logarithmic spinner
+SPINNER_IMPL(SPIN_EXP, Opacity, m_opacity, 0.0001f, 1.0f, 2.15443469003f)
+SPINNER_IMPL(SPIN_LINEAR, OpacityDistance, m_distance, 0.1f, FLT_MAX)
+
+SPINNER_IMPL(SPIN_LINEAR, Steps, m_steps, 1, 100)
+SPINNER_IMPL(SPIN_LINEAR, Resolution, m_resolution, 5, 8)
+SPINNER_IMPL(SPIN_LINEAR, ResolutionOversampling, m_oversampling, 1, 3)
+
+SPINNER_IMPL(SPIN_LINEAR, HGCoeff, m_henyeyGreenstein, -1.0f, 1.0f, 0.1f)
+SPINNER_IMPL(SPIN_FACTOR, SunFalloff, m_sunFalloffFactor, 0.001f, 100.0f)
+SPINNER_IMPL(SPIN_LINEAR, StepsSun, m_sunSteps, 2, 16)
+
+SPINNER_IMPL(SPIN_LINEAR, EMSpread, m_emissiveSpread, 0.0f, 5.0f, 0.1f)
+SPINNER_IMPL(SPIN_LINEAR, EMIntensity, m_emissiveIntensity, 0.0f, 100.0f, 0.1f)
+SPINNER_IMPL(SPIN_FACTOR, EMFalloff, m_sunFalloffFactor, 0.01f, 10.0f, 0.2f)
