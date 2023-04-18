@@ -48,7 +48,6 @@ ADE_FUNC(getColor,
 	"rgb color for the specified team or nil if invalid")
 {
 	int idx;
-	int r,g,b;
 	bool rc = true;
 	if(!ade_get_args(L, "o|b", l_Team.Get(&idx), &rc))
 		return ADE_RETURN_NIL;

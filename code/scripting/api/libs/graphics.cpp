@@ -284,7 +284,7 @@ ADE_FUNC(clear, l_Graphics, nullptr, "Calls gr_clear(), which fills the entire s
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(clearScreen, l_Graphics, "[number red, number green, number blue, number alpha] | [color Color]",
+ADE_FUNC(clearScreen, l_Graphics, "[number|color /* red value or color object */, number green, number blue, number alpha]",
 	"Clears the screen to black, or the color specified.",
 	nullptr,
 	nullptr)
@@ -521,7 +521,7 @@ ADE_FUNC(setCamera, l_Graphics, "[camera Camera]", "Sets current camera, or rese
 
 ADE_FUNC(setColor,
 	l_Graphics,
-	"number Red, number Green, number Blue, [number Alpha] | color Color",
+	"number|color /* red value or color object */, number Green, number Blue, [number Alpha]",
 	"Sets 2D drawing color; each color number should be from 0 (darkest) to 255 (brightest)",
 	nullptr,
 	nullptr)
@@ -1887,7 +1887,7 @@ ADE_FUNC(getImageHeight, l_Graphics, "string name", "Gets image height", "number
 
 ADE_FUNC(flashScreen,
 	l_Graphics,
-	"number Red, number Green, number Blue | color Color",
+	"number|color /* red value or color object */, number Green, number Blue",
 	"Flashes the screen",
 	nullptr,
 	nullptr)

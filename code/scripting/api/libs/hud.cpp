@@ -104,7 +104,7 @@ ADE_FUNC(getHUDConfigShowStatus, l_HUD, "number|string gaugeNameOrIndex", "Gets 
 }
 
 ADE_FUNC(setHUDGaugeColor, l_HUD,
-         "number|string gaugeNameOrIndex, [number red, number green, number blue, number alpha] | [color Color]",
+         "number|string gaugeNameOrIndex, [number|color /* red value or color object */, number green, number blue, number alpha]",
 	"Modifies color used to draw the gauge in the pilot config",
 	"boolean",
 	"If the operation was successful")
@@ -166,7 +166,7 @@ ADE_FUNC(getHUDGaugeColor,
 }
 
 ADE_FUNC(setHUDGaugeColorInMission, l_HUD,
-         "number|string gaugeNameOrIndex, [number red, number green, number blue, number alpha] | [color Color]",
+         "number|string gaugeNameOrIndex, [number|color /* red value or color object */, number green, number blue, number alpha]",
 	"Set color currently used to draw the gauge",
 	"boolean",
 	"If the operation was successful")
@@ -206,7 +206,7 @@ ADE_FUNC(getHUDGaugeColorInMission,
 	l_HUD,
 	"number|string gaugeNameOrIndex, [boolean ReturnType]",
 	"Color currently used to draw the gauge",
-	"number, number, number, number",
+	"number, number, number, number | color",
 	"Red, green, blue, and alpha of the gauge")
 {
 	int idx = getDefaultGaugeIndex(L);
