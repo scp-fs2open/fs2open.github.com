@@ -919,12 +919,21 @@ void message_training_queue_check()
 	int i, iship_num;
 
 	// get the instructor's ship.
-	iship_num = ship_name_lookup(NOX("instructor"));
-
-	// if the instructor is dying or departing, do nothing
-	if ( iship_num != -1 )	// added by Goober5000
-		if (Ships[iship_num].is_dying_or_departing())
+	auto ship_entry = ship_registry_get(NOX("instructor"));
+	if (ship_entry != nullptr)
+	{
+		if (ship_entry->status == ShipStatus::PRESENT)
+		{
+			// if the instructor is dying or departing, do nothing
+			if (ship_entry->shipp->is_dying_or_departing())
+				return;
+		}
+		else
+		{
+			// if the instructor has left the mission, or hasn't arrived yet, do nothing
 			return;
+		}
+	}
 
 	if (Training_failure)
 		return;
