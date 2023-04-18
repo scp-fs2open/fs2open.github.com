@@ -30,6 +30,12 @@ protected:
 	float m_emissiveSpread;
 	float m_emissiveIntensity;
 	float m_emissiveFalloff;
+	BOOL m_noise;
+	std::array<int, 3> m_noisecolor;
+	float m_noiseScaleBase;
+	float m_noiseScaleSub;
+	float m_noiseIntensity;
+	int m_noiseResolution;
 
 	virtual void DoDataExchange(CDataExchange* pDX) override; 
 	virtual BOOL OnInitDialog() override; 
@@ -46,6 +52,7 @@ protected:
 
 	DECLARE_MESSAGE_MAP()
   public:
+	afx_msg void OnBnClickedEnable();
 	afx_msg void OnBnClickedSetHull();
 	afx_msg void OnDeltaposSpinPosX(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnDeltaposSpinPosY(NMHDR* pNMHDR, LRESULT* pResult);
@@ -64,4 +71,11 @@ protected:
 	afx_msg void OnDeltaposSpinEMSpread(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnDeltaposSpinEMIntensity(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnDeltaposSpinEMFalloff(NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg void OnDeltaposSpinNoiseColorR(NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg void OnDeltaposSpinNoiseColorG(NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg void OnDeltaposSpinNoiseColorB(NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg void OnDeltaposSpinNoiseScaleB(NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg void OnDeltaposSpinNoiseScaleS(NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg void OnDeltaposSpinNoiseIntensity(NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg void OnDeltaposSpinNoiseResolution(NMHDR* pNMHDR, LRESULT* pResult);
 };

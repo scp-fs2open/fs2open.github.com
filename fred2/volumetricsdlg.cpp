@@ -25,7 +25,18 @@ static constexpr std::initializer_list<int> Interactible_fields = {
 	ID_AND_SPIN(STEPS_SUN),
 	ID_AND_SPIN(EM_SPREAD),
 	ID_AND_SPIN(EM_INTENSITY),
-	ID_AND_SPIN(EM_FALLOFF)
+	ID_AND_SPIN(EM_FALLOFF),
+	IDC_NOISE_ENABLE
+};
+static constexpr std::initializer_list<int> Interactible_noise_fields = {
+	ID_AND_SPIN(NOISE_COLOR_R),
+	ID_AND_SPIN(NOISE_COLOR_G),
+	ID_AND_SPIN(NOISE_COLOR_B),
+	ID_AND_SPIN(NOISE_SCALE_B),
+	ID_AND_SPIN(NOISE_SCALE_S),
+	ID_AND_SPIN(NOISE_INTENSITY),
+	ID_AND_SPIN(NOISE_RESOLUTION),
+	//IDC_NOISE_BASE, IDC_NOISE_SUB //ToDo: Add once buttons are implemented
 };
 
 static constexpr char* Tooltip_distance = _T("This is how far something has to be in the nebula to be obscured to the maximum opacity.");
@@ -45,7 +56,13 @@ volumetrics_dlg::volumetrics_dlg(CWnd* pParent /*=nullptr*/) : CDialog(volumetri
 	m_sunSteps(6),
 	m_emissiveSpread(0.7f),
 	m_emissiveIntensity(1.1f),
-	m_emissiveFalloff(1.5f)
+	m_emissiveFalloff(1.5f),
+	m_noise(false),
+	m_noisecolor({0, 0, 0}),
+	m_noiseScaleBase(25.0f),
+	m_noiseScaleSub(14.0f),
+	m_noiseIntensity(1.0f),
+	m_noiseResolution(5)
 {}
 
 volumetrics_dlg::~volumetrics_dlg()
@@ -78,7 +95,17 @@ BOOL volumetrics_dlg::OnInitDialog()
 		m_emissiveSpread = volumetrics.emissiveSpread;
 		m_emissiveIntensity = volumetrics.emissiveIntensity;
 		m_emissiveFalloff = volumetrics.emissiveFalloff;
+		if (volumetrics.noiseActive) {
+			m_noisecolor = { static_cast<int>(std::get<0>(volumetrics.noiseColor) * 255.0f),
+							 static_cast<int>(std::get<1>(volumetrics.noiseColor) * 255.0f),
+							 static_cast<int>(std::get<2>(volumetrics.noiseColor) * 255.0f) };
+			m_noiseScaleBase = std::get<0>(volumetrics.noiseScale);
+			m_noiseScaleSub = std::get<1>(volumetrics.noiseScale);
+			m_noiseIntensity = volumetrics.noiseColorIntensity;
+			m_noiseResolution = volumetrics.noiseResolution;
+		}
 	}
+
 	UpdateData(FALSE);
 	return TRUE;
 }
@@ -110,6 +137,14 @@ void volumetrics_dlg::OnClose()
 	volumetrics.emissiveSpread = m_emissiveSpread;
 	volumetrics.emissiveIntensity = m_emissiveIntensity;
 	volumetrics.emissiveFalloff = m_emissiveFalloff;
+
+	volumetrics.noiseActive = m_noise;
+	if (m_noise) {
+		volumetrics.noiseColor = {static_cast<float>(m_noisecolor[0]) / 255.0f, static_cast<float>(m_noisecolor[1]) / 255.0f, static_cast<float>(m_noisecolor[2]) / 255.0f};
+		volumetrics.noiseScale = {m_noiseScaleBase, m_noiseScaleSub};
+		volumetrics.noiseColorIntensity = m_noiseIntensity;
+		volumetrics.noiseResolution = m_noiseResolution;
+	}
 
 	CDialog::OnOK();
 	CDialog::OnClose();
@@ -151,6 +186,21 @@ void volumetrics_dlg::DoDataExchange(CDataExchange* pDX)
 	DDV_MinMaxFloat(pDX, m_emissiveIntensity, 0.0f, 100.0f);
 	DDX_Text(pDX, IDC_EM_FALLOFF, m_emissiveFalloff);
 	DDV_MinMaxFloat(pDX, m_emissiveFalloff, 0.01f, 10.0f);
+	DDX_Check(pDX, IDC_NOISE_ENABLE, m_noise);
+	DDX_Text(pDX, IDC_NOISE_COLOR_R, m_noisecolor[0]);
+	DDV_MinMaxInt(pDX, m_noisecolor[0], 0, 255);
+	DDX_Text(pDX, IDC_NOISE_COLOR_G, m_noisecolor[1]);
+	DDV_MinMaxInt(pDX, m_noisecolor[1], 0, 255);
+	DDX_Text(pDX, IDC_NOISE_COLOR_B, m_noisecolor[2]);
+	DDV_MinMaxInt(pDX, m_noisecolor[2], 0, 255);
+	DDX_Text(pDX, IDC_NOISE_SCALE_B, m_noiseScaleBase);
+	DDV_MinMaxFloat(pDX, m_noiseScaleBase, 0.01f, 1000.0f);
+	DDX_Text(pDX, IDC_NOISE_SCALE_S, m_noiseScaleSub);
+	DDV_MinMaxFloat(pDX, m_noiseScaleSub, 0.01f, 1000.0f);
+	DDX_Text(pDX, IDC_NOISE_INTENSITY, m_noiseIntensity);
+	DDV_MinMaxFloat(pDX, m_noiseIntensity, 0.1f, 100.0f);
+	DDX_Text(pDX, IDC_NOISE_RESOLUTION, m_noiseResolution);
+	DDV_MinMaxInt(pDX, m_noiseResolution, 4, 8);
 }
 
 BOOL volumetrics_dlg::PreTranslateMessage(MSG* pMsg)
@@ -161,6 +211,8 @@ BOOL volumetrics_dlg::PreTranslateMessage(MSG* pMsg)
 
 BEGIN_MESSAGE_MAP(volumetrics_dlg, CDialog)
 	ON_WM_CLOSE()
+	ON_BN_CLICKED(IDC_ENABLE, &volumetrics_dlg::OnBnClickedEnable)
+	ON_BN_CLICKED(IDC_NOISE_ENABLE, &volumetrics_dlg::OnBnClickedEnable)
 	ON_BN_CLICKED(IDC_SET_HULL, &volumetrics_dlg::OnBnClickedSetHull)
 	ON_NOTIFY(UDN_DELTAPOS, IDC_SPIN_POS_X, &volumetrics_dlg::OnDeltaposSpinPosX)
 	ON_NOTIFY(UDN_DELTAPOS, IDC_SPIN_POS_Y, &volumetrics_dlg::OnDeltaposSpinPosY)
@@ -179,6 +231,13 @@ BEGIN_MESSAGE_MAP(volumetrics_dlg, CDialog)
 	ON_NOTIFY(UDN_DELTAPOS, IDC_SPIN_EM_SPREAD, &volumetrics_dlg::OnDeltaposSpinEMSpread)
 	ON_NOTIFY(UDN_DELTAPOS, IDC_SPIN_EM_INTENSITY, &volumetrics_dlg::OnDeltaposSpinEMIntensity)
 	ON_NOTIFY(UDN_DELTAPOS, IDC_SPIN_EM_FALLOFF, &volumetrics_dlg::OnDeltaposSpinEMFalloff)
+	ON_NOTIFY(UDN_DELTAPOS, IDC_SPIN_NOISE_COLOR_R, &volumetrics_dlg::OnDeltaposSpinNoiseColorR)
+	ON_NOTIFY(UDN_DELTAPOS, IDC_SPIN_NOISE_COLOR_R, &volumetrics_dlg::OnDeltaposSpinNoiseColorG)
+	ON_NOTIFY(UDN_DELTAPOS, IDC_SPIN_NOISE_COLOR_R, &volumetrics_dlg::OnDeltaposSpinNoiseColorB)
+	ON_NOTIFY(UDN_DELTAPOS, IDC_SPIN_NOISE_SCALE_B, &volumetrics_dlg::OnDeltaposSpinNoiseScaleB)
+	ON_NOTIFY(UDN_DELTAPOS, IDC_SPIN_NOISE_SCALE_S, &volumetrics_dlg::OnDeltaposSpinNoiseScaleS)
+	ON_NOTIFY(UDN_DELTAPOS, IDC_SPIN_NOISE_INTENSITY, &volumetrics_dlg::OnDeltaposSpinNoiseIntensity)
+	ON_NOTIFY(UDN_DELTAPOS, IDC_SPIN_NOISE_RESOLUTION, &volumetrics_dlg::OnDeltaposSpinNoiseResolution)
 END_MESSAGE_MAP()
 
 void volumetrics_dlg::OnBnClickedSetHull()
@@ -200,6 +259,19 @@ void volumetrics_dlg::OnBnClickedSetHull()
 	// restore directory
 	if (!z)
 		cfile_pop_dir();
+}
+
+void volumetrics_dlg::OnBnClickedEnable()
+{
+	UpdateData(TRUE);
+
+	for (const int& id : Interactible_fields) {
+		GetDlgItem(id)->EnableWindow(m_enabled);
+	}
+
+	for (const int& id : Interactible_noise_fields) {
+		GetDlgItem(id)->EnableWindow(m_enabled && m_noise);
+	}
 }
 
 void volumetrics_dlg::handle_spinner(LPNMUPDOWN spinner, vec3d& vec, float decltype(vec3d::xyz)::*dimension)
@@ -287,3 +359,13 @@ SPINNER_IMPL(SPIN_LINEAR, StepsSun, m_sunSteps, 2, 16)
 SPINNER_IMPL(SPIN_LINEAR, EMSpread, m_emissiveSpread, 0.0f, 5.0f, 0.1f)
 SPINNER_IMPL(SPIN_LINEAR, EMIntensity, m_emissiveIntensity, 0.0f, 100.0f, 0.1f)
 SPINNER_IMPL(SPIN_FACTOR, EMFalloff, m_sunFalloffFactor, 0.01f, 10.0f, 0.2f)
+
+SPINNER_IMPL(SPIN_LINEAR, NoiseColorR, m_noisecolor, 0)
+SPINNER_IMPL(SPIN_LINEAR, NoiseColorG, m_noisecolor, 1)
+SPINNER_IMPL(SPIN_LINEAR, NoiseColorB, m_noisecolor, 2)
+
+SPINNER_IMPL(SPIN_LINEAR, NoiseScaleB, m_noiseScaleBase, 0.01f, 1000.0f)
+SPINNER_IMPL(SPIN_LINEAR, NoiseScaleS, m_noiseScaleSub, 0.01f, 1000.0f)
+
+SPINNER_IMPL(SPIN_LINEAR, NoiseIntensity, m_noiseIntensity, 0.1f, 100.0f)
+SPINNER_IMPL(SPIN_LINEAR, NoiseResolution, m_noiseResolution, 5, 8)
