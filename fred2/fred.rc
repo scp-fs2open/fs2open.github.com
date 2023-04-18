@@ -325,13 +325,14 @@ BEGIN
         MENUITEM "&Events\tShift+E",            32974
         MENUITEM "Team Loadout\tShift+P",       32972
         MENUITEM "Background\tShift+I",         32976
-        MENUITEM "Volumetric Nebula",           33102
+        MENUITEM "Reinforcements\tShift+R",     32977
         MENUITEM "Asteroid Field\tShift+A",     32984
         MENUITEM "&Mission Specs\tShift+N",     32771
         MENUITEM "&Briefing\tShift+B",          33006
         MENUITEM "&Debriefing\tShift+D",        33007
         MENUITEM "Command Briefing\tShift+C",   33054
         MENUITEM "Fiction Viewer\tShift+F",     ID_EDITORS_FICTION
+        MENUITEM "Volumetric Nebula",           33102
         MENUITEM "Shield System",               33033
         MENUITEM "Set Global Ship Flags",       33073
         MENUITEM "Voice Acting Manager",        ID_EDITORS_VOICE
