@@ -43,7 +43,7 @@ static constexpr char* Tooltip_distance = _T("This is how far something has to b
 
 volumetrics_dlg::volumetrics_dlg(CWnd* pParent /*=nullptr*/) : CDialog(volumetrics_dlg::IDD, pParent),
 	m_enabled(false),
-	m_volumetrics_hull(""),
+	m_volumetrics_hull("hull_pof"),
 	m_position(ZERO_VECTOR),
 	m_color({255, 255, 255}), 
 	m_opacity(0.001f),
@@ -107,6 +107,7 @@ BOOL volumetrics_dlg::OnInitDialog()
 	}
 
 	UpdateData(FALSE);
+	OnBnClickedEnable();
 	return TRUE;
 }
 
@@ -155,6 +156,8 @@ void volumetrics_dlg::DoDataExchange(CDataExchange* pDX)
 	CDialog::DoDataExchange(pDX);
 	DDX_Check(pDX, IDC_ENABLE, m_enabled);
 	DDX_Text(pDX, IDC_HULL, m_volumetrics_hull);
+	if (m_volumetrics_hull.IsEmpty())
+		pDX->Fail();
 	DDX_Text(pDX, IDC_POS_X, m_position.xyz.x);
 	DDX_Text(pDX, IDC_POS_Y, m_position.xyz.y);
 	DDX_Text(pDX, IDC_POS_Z, m_position.xyz.z);
@@ -172,7 +175,7 @@ void volumetrics_dlg::DoDataExchange(CDataExchange* pDX)
 	DDV_MinMaxInt(pDX, m_steps, 1, 100);
 	DDX_Text(pDX, IDC_RESOLUTION, m_resolution);
 	DDV_MinMaxInt(pDX, m_resolution, 6, 8);
-	DDX_Text(pDX, IDC_STEPS, m_oversampling);
+	DDX_Text(pDX, IDC_OVERSAMPLING, m_oversampling);
 	DDV_MinMaxInt(pDX, m_oversampling, 1, 3);
 	DDX_Text(pDX, IDC_HGCOEFF, m_henyeyGreenstein);
 	DDV_MinMaxFloat(pDX, m_henyeyGreenstein, -1.0f, 1.0f);
@@ -317,11 +320,8 @@ void volumetrics_dlg::handle_spinner_factor(LPNMUPDOWN spinner, float& data, flo
 {
 	UpdateData(TRUE);
 	// This is a factor-spinner. Above 1, it is x, below 1 it is 1/x. To enable a smoother transition: If the next de/increment would enter the new mode, already use the new mode now
-	if (spinner->iDelta < 0) {
-		data = data > 0.5f ? data + factor : 1.0f / (-factor + 1.0f / data);
-	} else {
-		data = data > 2.0f ? data - factor : 1.0f / (factor + 1.0f / data);
-	}
+	factor *= spinner->iDelta;
+	data = data > 1.0f + (factor / 2.0f) ? data - factor : 1.0f / (factor + 1.0f / data);
 	CAP(data, min, max);
 	UpdateData(FALSE);
 }
@@ -358,7 +358,7 @@ SPINNER_IMPL(SPIN_LINEAR, StepsSun, m_sunSteps, 2, 16)
 
 SPINNER_IMPL(SPIN_LINEAR, EMSpread, m_emissiveSpread, 0.0f, 5.0f, 0.1f)
 SPINNER_IMPL(SPIN_LINEAR, EMIntensity, m_emissiveIntensity, 0.0f, 100.0f, 0.1f)
-SPINNER_IMPL(SPIN_FACTOR, EMFalloff, m_sunFalloffFactor, 0.01f, 10.0f, 0.2f)
+SPINNER_IMPL(SPIN_FACTOR, EMFalloff, m_emissiveFalloff, 0.01f, 10.0f, 0.2f)
 
 SPINNER_IMPL(SPIN_LINEAR, NoiseColorR, m_noisecolor, 0)
 SPINNER_IMPL(SPIN_LINEAR, NoiseColorG, m_noisecolor, 1)
