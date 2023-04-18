@@ -17738,7 +17738,7 @@ int sexp_event_status( int n, int want_true )
 		// look for the event name; check its status.  If formula is gone, we know the state won't ever change.
 		if ( !stricmp(Mission_events[i].name.c_str(), name) ) {
 			int result = Mission_events[i].result;
-			if (Mission_events[i].formula < 0) {
+			if (Mission_events[i].formula < 0 || Mission_events[i].flags & MEF_EVENT_IS_DONE) {
 				if ( (want_true && result) || (!want_true && !result) )
 					rval = SEXP_KNOWN_TRUE;
 				else
@@ -17817,7 +17817,7 @@ int sexp_event_delay_status( int n, int want_true, bool use_msecs = false)
 			}
 
 			int result = Mission_events[i].result;
-			if (Mission_events[i].formula < 0) {
+			if (Mission_events[i].formula < 0 || Mission_events[i].flags & MEF_EVENT_IS_DONE) {
 				if ( (want_true && result) || (!want_true && !result) ) {
 					rval = SEXP_KNOWN_TRUE;
 					break;
@@ -17861,7 +17861,8 @@ int sexp_event_incomplete(int n)
 		if ( !stricmp(Mission_events[i].name.c_str(), name ) ) {
 			// if the formula is still >= 0 (meaning it is still getting eval'ed), then
 			// the event is incomplete
-			if ( Mission_events[i].formula != -1 )
+			// Goober5000 - also check the flag
+			if ( (Mission_events[i].formula != -1) && !(Mission_events[i].flags & MEF_EVENT_IS_DONE))
 				rval = SEXP_TRUE;
 			else
 				rval = SEXP_KNOWN_FALSE;
@@ -17951,6 +17952,7 @@ void sexp_reset_event(int node)
 			eventp->flags &= ~MEF_DIRECTIVE_SPECIAL;
 			eventp->flags &= ~MEF_DIRECTIVE_TEMP_TRUE;
 			eventp->flags &= ~MEF_TIMESTAMP_HAS_INTERVAL;
+			eventp->flags &= ~MEF_EVENT_IS_DONE;
 
 			eventp->count = 0;
 			eventp->satisfied_time = TIMESTAMP::invalid();

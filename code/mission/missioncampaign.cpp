@@ -942,17 +942,20 @@ void mission_campaign_store_goals_and_events()
 		} else
 			strncpy_s(stored_event.name, event.name.c_str(), NAME_LENGTH - 1);
 
+		// Old method:
 		// getting status for the events is a little different.  If the formula value for the event entry
 		// is -1, then we know the value of the result field will never change.  If the formula is
 		// not -1 (i.e. still being evaluated at mission end time), we will write "incomplete" for the
 		// event evaluation
-		if ( event.formula == -1 ) {
+		// New method: check a flag.  Also, even with the old method, events are always
+		// forced satisfied or failed at the end of a mission
+		if ( (event.formula == -1) || (event.flags & MEF_EVENT_IS_DONE) ) {
 			if ( event.result )
 				stored_event.status = static_cast<int>(EventStatus::SATISFIED);
 			else
 				stored_event.status = static_cast<int>(EventStatus::FAILED);
 		} else
-			UNREACHABLE("Mission event formula should be -1 at end-of-mission");
+			UNREACHABLE("Mission event formula should be marked MEF_EVENT_IS_DONE at end-of-mission");
 	}
 }
 
