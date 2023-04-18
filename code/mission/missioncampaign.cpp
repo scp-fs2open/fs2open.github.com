@@ -949,7 +949,7 @@ void mission_campaign_store_goals_and_events()
 		// event evaluation
 		// New method: check a flag.  Also, even with the old method, events are always
 		// forced satisfied or failed at the end of a mission
-		if ( (event.formula == -1) || (event.flags & MEF_EVENT_IS_DONE) ) {
+		if (event.flags & MEF_EVENT_IS_DONE) {
 			if ( event.result )
 				stored_event.status = static_cast<int>(EventStatus::SATISFIED);
 			else
