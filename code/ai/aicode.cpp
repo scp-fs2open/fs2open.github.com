@@ -3435,7 +3435,7 @@ void ai_dock_with_object(object *docker, int docker_index, object *dockee, int d
 		// make sure we have a path
 		if (path_num < 0)
 		{
-			Error(LOCATION, "Cannot find a dock path for ship %s, dock index %d.  Aborting dock.\n", Ships[dockee->instance].ship_name, dockee_index);
+			Warning(LOCATION, "Cannot find a dock path for ship %s, dock index %d.  Aborting dock.\n", Ships[dockee->instance].ship_name, dockee_index);
 			ai_mission_goal_complete(aip);
 			return;
 		}
