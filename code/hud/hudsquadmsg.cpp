@@ -2093,14 +2093,16 @@ void hud_squadmsg_wing_command()
 
 		// if no ship in the wing can depart then gray out the departure order
 		if (order_id == DEPART_ITEM) {
-			int active = 0;
-			for (int i = 0; i < wingp->current_count; i++) {
-				if (hud_squadmsg_ship_order_valid(wingp->ship_index[i], (int)order_id)) {
-					active = 1;
-					break;
+			if (MsgItems[Num_menu_items].active) {
+				int active = 0;
+				for (int i = 0; i < wingp->current_count; i++) {
+					if (hud_squadmsg_ship_order_valid(wingp->ship_index[i], (int)order_id)) {
+						active = 1;
+						break;
+					}
 				}
+				MsgItems[Num_menu_items].active = active;
 			}
-			MsgItems[Num_menu_items].active = active;
 		}
 
 		Num_menu_items++;
