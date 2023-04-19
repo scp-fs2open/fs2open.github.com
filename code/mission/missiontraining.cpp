@@ -916,8 +916,6 @@ void message_training_remove_from_queue(int idx)
  */
 void message_training_queue_check()
 {
-	int i, iship_num;
-
 	// get the instructor's ship.
 	auto ship_entry = ship_registry_get(NOX("instructor"));
 	if (ship_entry != nullptr)
@@ -949,7 +947,7 @@ void message_training_queue_check()
 			return;
 	}
 
-	for (i=0; i<Training_message_queue_count; i++) {
+	for (int i=0; i<Training_message_queue_count; i++) {
 		if (timestamp_elapsed(Training_message_queue[i].timestamp)) {
 			message_training_setup(Training_message_queue[i].num, Training_message_queue[i].length, Training_message_queue[i].special_message);
 
