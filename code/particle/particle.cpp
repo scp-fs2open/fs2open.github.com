@@ -15,6 +15,7 @@
 #include "debugconsole/console.h"
 #include "globalincs/systemvars.h"
 #include "graphics/2d.h"
+#include "math/curve.h"
 #include "render/3d.h"
 #include "render/batching.h"
 #include "tracing/tracing.h"
@@ -160,6 +161,8 @@ namespace particle
 		part->looping = false;
 		part->length = info->length;
 		part->angle = frand_range(0.0f, PI2);
+		part->size_lifetime_curve = info->size_lifetime_curve;
+		part->vel_lifetime_curve = info->vel_lifetime_curve;
 
 		switch (info->type)
 		{
@@ -327,8 +330,13 @@ namespace particle
 			return true;
 		}
 
+		float vel_scalar = 1.0f;
+		if (part->vel_lifetime_curve >= 0) {
+			vel_scalar = Curves[part->vel_lifetime_curve].GetValue(part->age / part->max_life);
+		}
+
 		// move as a regular particle
-		vm_vec_scale_add2(&part->pos, &part->velocity, frametime);
+		part->pos += (part->velocity * vel_scalar) * frametime;
 
 		return false;
 	}
@@ -462,6 +470,11 @@ namespace particle
 
 			Assert( cur_frame < part->nframes );
 
+			float radius = part->radius;
+			if (part->size_lifetime_curve >= 0) {
+				radius *= Curves[part->size_lifetime_curve].GetValue(part->age / part->max_life);
+			}
+
 			if (part->length != 0.0f) {
 				vec3d p0 = part->pos;
 
@@ -470,11 +483,11 @@ namespace particle
 				p1 *= part->length;
 				p1 += part->pos;
 
-				batching_add_laser(framenum + cur_frame, &p0, part->radius, &p1, part->radius);
+				batching_add_laser(framenum + cur_frame, &p0, radius, &p1, radius);
 			}
 			else {
 				// it will subtract Physics_viewer_bank, so without the flag we counter that and make it screen-aligned again
-				batching_add_volume_bitmap_rotated(framenum + cur_frame, &pos, Randomize_particle_rotation ? part->angle : Physics_viewer_bank, part->radius, alpha);
+				batching_add_volume_bitmap_rotated(framenum + cur_frame, &pos, Randomize_particle_rotation ? part->angle : Physics_viewer_bank, radius, alpha);
 			}
 
 

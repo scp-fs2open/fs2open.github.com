@@ -24,10 +24,11 @@ private:
 	SCP_vector<int> m_bitmap_list;
 	::util::UniformRange<size_t> m_bitmap_range;
 	::util::UniformFloatRange m_radius;
-
 	bool m_hasLifetime = false;
 	::util::UniformFloatRange m_lifetime;
 	::util::UniformFloatRange m_length;
+	int m_size_lifetime_curve;
+	int m_vel_lifetime_curve;
 
 	ParticleProperties();
 

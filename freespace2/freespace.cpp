@@ -90,6 +90,7 @@
 #include "lighting/lighting_profiles.h"
 #include "localization/localize.h"
 #include "math/staticrand.h"
+#include "math/curve.h"
 #include "menuui/barracks.h"
 #include "menuui/credits.h"
 #include "menuui/mainhallmenu.h"
@@ -1866,6 +1867,7 @@ void game_init()
 		bm_set_low_mem(0);		// Use all frames of bitmaps
 	}
 	
+	curves_init();
 	particle::ParticleManager::init();
 
 	iff_init();						// Goober5000 - this must be done even before species_defs :p

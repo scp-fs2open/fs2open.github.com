@@ -75,6 +75,8 @@ namespace particle
 		bool reverse = false;					// play any animations in reverse
 		bool lifetime_from_animation = true;	// if the particle plays an animation then use the anim length for the particle life
 		float length = 0.f;						// if set, makes the particle render like a laser, oriented along its path
+		int size_lifetime_curve = -1;			// a curve idx for size over lifetime, if applicable
+		int vel_lifetime_curve = -1;			// a curve idx for velocity over lifetime, if applicable
 	} particle_info;
 
 	typedef struct particle {
@@ -95,6 +97,8 @@ namespace particle
 		bool	reverse;			// play any animations in reverse
 		float   length;				// the length of the particle for laser-style rendering
 		float	angle;
+		int		size_lifetime_curve;// a curve idx for size over lifetime, if applicable
+		int		vel_lifetime_curve;		// a curve idx for velocity over lifetime, if applicable
 	} particle;
 
 	typedef std::weak_ptr<particle> WeakParticlePtr;
