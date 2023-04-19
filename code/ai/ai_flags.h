@@ -152,6 +152,8 @@ namespace AI {
 		Disable_bay_emerge_timeout,
 		Adjusted_AI_class_autoscale,
 		Carry_shield_difficulty_scaling_bug,
+		Whackable_debris,
+		Whackable_asteroids,
 
 		NUM_VALUES
 	};

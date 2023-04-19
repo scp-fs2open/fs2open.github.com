@@ -338,10 +338,11 @@ void shockwave_move(object *shockwave_objp, float frametime)
 				weapon_do_electronics_effect(objp, &sw->pos, sw->weapon_info_index);
 			}
 			ship_apply_global_damage(objp, shockwave_objp, &sw->pos, damage, sw->damage_type_idx );
-			weapon_area_apply_blast(NULL, objp, &sw->pos, blast, 1);
+			weapon_area_apply_blast(nullptr, objp, &sw->pos, blast, true);
 			break;
 		case OBJ_ASTEROID:
-			asteroid_hit(objp, NULL, NULL, damage);
+			weapon_area_apply_blast(nullptr, objp, &sw->pos, blast, true);
+			asteroid_hit(objp, nullptr, nullptr, damage, nullptr);
 			break;
 		case OBJ_WEAPON:
 			wip = &Weapon_info[Weapons[objp->instance].weapon_info_index];

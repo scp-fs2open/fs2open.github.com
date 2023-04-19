@@ -466,7 +466,7 @@ void process_ai_info_update_packet(ubyte *data, header *hinfo);
 
 void send_asteroid_create(object *new_objp, object *parent_objp, int asteroid_type, vec3d *relvec);
 void send_asteroid_throw(object *objp);
-void send_asteroid_hit(object *objp, object *other_objp, vec3d *hitpos, float damage);
+void send_asteroid_hit(object *objp, object *other_objp, vec3d *hitpos, float damage, vec3d* force);
 void process_asteroid_info(ubyte *data, header *hinfo);
 
 void send_countermeasure_success_packet(int objnum);

@@ -5504,7 +5504,7 @@ void process_debris_update_packet(ubyte *data, header *hinfo)
 	// blow it up
 	case DEBRIS_UPDATE_NUKE:
 		if(objp != &bogus_object)
-			debris_hit(objp,NULL,&objp->pos,1000000.0f);
+			debris_hit(objp, nullptr,&objp->pos,1000000.0f, nullptr);
 		break;
 	}
 
@@ -6882,15 +6882,15 @@ void send_asteroid_throw( object *objp )
 	multi_io_send_to_all(data, packet_size);
 }
 
-void send_asteroid_hit( object *objp, object *other_objp, vec3d *hitpos, float damage )
+void send_asteroid_hit( object *objp, object *other_objp, vec3d *hitpos, float damage, vec3d* force )
 {
 	int packet_size;
 	ubyte data[MAX_PACKET_SIZE], packet_type;
-	vec3d vec;
 
-	vm_vec_zero(&vec);
-	if ( hitpos != NULL )
-		vec = *hitpos;
+	if ( hitpos == nullptr )
+		hitpos = &vmd_zero_vector;
+	if ( force == nullptr )
+		force = &vmd_zero_vector;
 
 	// build up an asteroid hit packet
 	BUILD_HEADER( ASTEROID_INFO );
@@ -6904,8 +6904,9 @@ void send_asteroid_hit( object *objp, object *other_objp, vec3d *hitpos, float d
 	} else {
 		ADD_USHORT( other_objp->net_signature );
 	}
-	ADD_VECTOR( vec );
+	ADD_VECTOR( (*hitpos) );
 	ADD_FLOAT( damage );
+	ADD_VECTOR( (*force) );
 	
 	multi_io_send_to_all(data, packet_size);
 }
@@ -6968,13 +6969,14 @@ void process_asteroid_info( ubyte *data, header *hinfo )
 	case ASTEROID_HIT: {
 		ushort signature, osignature;
 		object *objp, *other_objp;
-		vec3d hitpos;
+		vec3d hitpos, force;
 		float damage;
 
 		GET_USHORT( signature );
 		GET_USHORT( osignature );
 		GET_VECTOR( hitpos );
 		GET_FLOAT( damage );
+		GET_VECTOR( force );
 
 		objp = multi_get_network_object( signature );
 		if(osignature == 0xffff){
@@ -6988,9 +6990,9 @@ void process_asteroid_info( ubyte *data, header *hinfo )
 		}
 
 		if ( IS_VEC_NULL(&hitpos) ){
-			asteroid_hit( objp, other_objp, NULL, damage );
+			asteroid_hit( objp, other_objp, NULL, damage, &force );
 		} else {
-			asteroid_hit( objp, other_objp, &hitpos, damage );
+			asteroid_hit( objp, other_objp, &hitpos, damage, &force);
 		}
 		
 		// if we know the other object is a weapon, then do a weapon hit to kill the weapon

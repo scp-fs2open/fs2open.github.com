@@ -769,7 +769,7 @@ void debris_create_fire_hook(object *obj, object *source_obj)
  * Alas, poor debris_obj got whacked.  Fortunately, we know who did it, where and how hard, so we
  * can do something about it.
  */
-void debris_hit(object *debris_obj, object * /*other_obj*/, vec3d *hitpos, float damage)
+void debris_hit(object *debris_obj, object * /*other_obj*/, vec3d *hitpos, float damage, vec3d* force)
 {
 	debris	*debris_p = &Debris[debris_obj->instance];
 
@@ -807,6 +807,11 @@ void debris_hit(object *debris_obj, object * /*other_obj*/, vec3d *hitpos, float
 
 	if ( damage < 0.0f ) {
 		damage = 0.0f;
+	}
+
+	if (hitpos && force && The_mission.ai_profile->flags[AI::Profile_Flags::Whackable_debris]) {
+		vec3d rel_hit_pos = *hitpos - debris_obj->pos;
+		physics_calculate_and_apply_whack(force, &rel_hit_pos, &debris_obj->phys_info, &debris_obj->orient, &debris_obj->phys_info.I_body_inv);
 	}
 
 	debris_obj->hull_strength -= damage;

@@ -13745,22 +13745,27 @@ void sexp_explosion_effect(int n)
 				{
 					continue;
 				}
-	
+
+				vec3d force = vmd_zero_vector;
+				vec3d vec_ship_to_impact = objp->pos - origin;	
 				switch ( objp->type )
 				{
 					case OBJ_SHIP:
 						ship_apply_global_damage( objp, nullptr, &origin, t_damage, -1 );
-						vec3d force, vec_ship_to_impact;
-						vm_vec_sub( &vec_ship_to_impact, &objp->pos, &origin );
+						vec_ship_to_impact = objp->pos - origin;
 						if (!IS_VEC_NULL_SQ_SAFE( &vec_ship_to_impact )) {
 							vm_vec_copy_normalize( &force, &vec_ship_to_impact );
-							vm_vec_scale( &force, (float)max_blast );
+							force *= (float)max_blast;
 							ship_apply_whack( &force, &origin, objp );
 						}
 						break;
 
 					case OBJ_ASTEROID:
-						asteroid_hit(objp, nullptr, nullptr, t_damage);
+						if (!IS_VEC_NULL_SQ_SAFE(&vec_ship_to_impact)) {
+							vm_vec_copy_normalize(&force, &vec_ship_to_impact);
+							force *= (float)max_blast;
+						}
+						asteroid_hit(objp, nullptr, nullptr, t_damage, &force);
 						break;
 	
 					default:

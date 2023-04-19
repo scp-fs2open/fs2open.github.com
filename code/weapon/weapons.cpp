@@ -7063,7 +7063,7 @@ int weapon_area_calc_damage(object *objp, vec3d *pos, float inner_rad, float out
 }
 
 /**
- * Apply the blast effects of an explosion to a ship
+ * Apply the blast effects of an explosion to an object
  *
  * @param force_apply_pos	World pos of where force is applied to object
  * @param ship_objp			Object pointer of ship receiving the blast
@@ -7071,37 +7071,44 @@ int weapon_area_calc_damage(object *objp, vec3d *pos, float inner_rad, float out
  * @param blast				Force of blast
  * @param make_shockwave	Boolean, whether to create a shockwave or not
  */
-void weapon_area_apply_blast(vec3d * /*force_apply_pos*/, object *ship_objp, vec3d *blast_pos, float blast, int make_shockwave)
+void weapon_area_apply_blast(vec3d * /*force_apply_pos*/, object *objp, vec3d *blast_pos, float blast, bool make_shockwave)
 {
 	vec3d		force, vec_blast_to_ship, vec_ship_to_impact;
 	polymodel		*pm;
+
+	Assertion(objp->type == OBJ_SHIP || objp->type == OBJ_ASTEROID || objp->type == OBJ_DEBRIS, "weapon_area_apply_blast can only be called on ships, asteroids, or debris");
+	if (!(objp->type == OBJ_SHIP || objp->type == OBJ_ASTEROID || objp->type == OBJ_DEBRIS))
+		return;
 
 	// don't waste time here if there is no blast force
 	if ( blast == 0.0f )
 		return;
 
 	// apply blast force based on distance from center of explosion
-	vm_vec_sub(&vec_blast_to_ship, &ship_objp->pos, blast_pos);
+	vm_vec_sub(&vec_blast_to_ship, &objp->pos, blast_pos);
 	vm_vec_normalize_safe(&vec_blast_to_ship);
 	vm_vec_copy_scale(&force, &vec_blast_to_ship, blast );
 
-	vm_vec_sub(&vec_ship_to_impact, blast_pos, &ship_objp->pos);
+	vm_vec_sub(&vec_ship_to_impact, blast_pos, &objp->pos);
 
-	pm = model_get(Ship_info[Ships[ship_objp->instance].ship_info_index].model_num);
+	int model_num = object_get_model(objp);
+	pm = model_get(model_num);
 	Assert ( pm != NULL );
+	if (!pm)
+		return;
 
 	if (make_shockwave) {
-		if (object_is_docked(ship_objp)) {
+		if (object_is_docked(objp)) {
 			// TODO: this sales down the effect properly but physics_apply_shock will apply
 			// forces based on this ship's bbox, rather than the whole assembly's bbox like it should
-			blast *= ship_objp->phys_info.mass / dock_calc_total_docked_mass(ship_objp);
+			blast *= objp->phys_info.mass / dock_calc_total_docked_mass(objp);
 		}
-		physics_apply_shock (&force, blast, &ship_objp->phys_info, &ship_objp->orient, &pm->mins, &pm->maxs, pm->rad);
-		if (ship_objp == Player_obj) {
+		physics_apply_shock (&force, blast, &objp->phys_info, &objp->orient, &pm->mins, &pm->maxs, pm->rad);
+		if (objp == Player_obj) {
 			joy_ff_play_vector_effect(&vec_blast_to_ship, blast * 2.0f);
 		}
 	} else {
-		ship_apply_whack( &force, blast_pos, ship_objp);
+		ship_apply_whack( &force, blast_pos, objp);
 	}
 }
 
@@ -7161,10 +7168,11 @@ void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos
 				weapon_do_electronics_effect(objp, pos, Weapons[wobjp->instance].weapon_info_index);
 			}
 			ship_apply_global_damage(objp, wobjp, pos, damage, wip->shockwave.damage_type_idx);
-			weapon_area_apply_blast(NULL, objp, pos, blast, 0);
+			weapon_area_apply_blast(nullptr, objp, pos, blast, false);
 			break;
 		case OBJ_ASTEROID:
-			asteroid_hit(objp, NULL, NULL, damage);
+			weapon_area_apply_blast(nullptr, objp, pos, blast, true);
+			asteroid_hit(objp, nullptr, nullptr, damage, nullptr);
 			break;
 		case OBJ_WEAPON:
 			target_wip = &Weapon_info[Weapons[objp->instance].weapon_info_index];

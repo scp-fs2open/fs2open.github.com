@@ -3873,9 +3873,15 @@ void beam_handle_collisions(beam *b)
 
 			switch(Objects[target].type){
 			case OBJ_DEBRIS:
+			{
+				vec3d force = b->last_shot - b->last_start; // Valathil - use the beam direction as the force direction (like a high pressure water jet)
+				vm_vec_normalize(&force);
+				force *= wi->mass;
+
 				// hit the debris - the debris hit code takes care of checking for MULTIPLAYER_CLIENT, etc
-				debris_hit(&Objects[target], &Objects[b->objnum], &b->f_collisions[idx].cinfo.hit_point_world, wi->damage);
+				debris_hit(&Objects[target], &Objects[b->objnum], &b->f_collisions[idx].cinfo.hit_point_world, wi->damage, &force);
 				break;
+			}
 
 			case OBJ_WEAPON:
 				if (The_mission.ai_profile->flags[AI::Profile_Flags::Beams_damage_weapons]) {
@@ -3930,7 +3936,11 @@ void beam_handle_collisions(beam *b)
 			case OBJ_ASTEROID:
 				// hit the asteroid
 				if (!(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_MASTER) {
-					asteroid_hit(&Objects[target], &Objects[b->objnum], &b->f_collisions[idx].cinfo.hit_point_world, wi->damage);
+					vec3d force = b->last_shot - b->last_start; // Valathil - use the beam direction as the force direction (like a high pressure water jet)
+					vm_vec_normalize(&force);
+					force *= wi->mass;
+
+					asteroid_hit(&Objects[target], &Objects[b->objnum], &b->f_collisions[idx].cinfo.hit_point_world, wi->damage, &force);
 				}
 				break;
 			case OBJ_SHIP:	
