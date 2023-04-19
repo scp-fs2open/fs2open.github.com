@@ -1152,7 +1152,7 @@ void cf_build_file_list()
 
 #ifndef NDEBUG
 	// if some special/critical files might be shadowed then make sure the user knows about it
-	if ( !critical_shadowed.empty() ) {
+	if ( !critical_shadowed.empty() && !running_unittests ) {
 		SCP_string shadowed;
 		const auto count = critical_shadowed.size();
 
@@ -1163,10 +1163,10 @@ void cf_build_file_list()
 
 		Warning(LOCATION, "Some critical files might be shadowed! Please check the debug log for details.\n\n"
 							"%lu file(s) detected, including:\n%s", count, shadowed.c_str());
-
-		critical_shadowed.clear();
-		critical_shadowed.shrink_to_fit();
 	}
+
+	critical_shadowed.clear();
+	critical_shadowed.shrink_to_fit();
 #endif
 }
 
