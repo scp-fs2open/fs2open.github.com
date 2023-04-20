@@ -4476,22 +4476,30 @@ int get_sexp()
 		if (start == -1) {
 			start = node;
 		} else {
+			const char *message = nullptr;
 			Assert(last != -1);
+
 			// Locked_sexp_true and Locked_sexp_false are only meant to represent operator
 			// nodes with no arguments, i.e. (true) and (false). If they appear as "bare"
 			// arguments to another operator, or have arguments of their own, the global
 			// SEXP node structure can become corrupted; we hack around this by always
 			// wrapping them in their own list in these cases and warning the user.
 			if (last == start && (start == Locked_sexp_false || start == Locked_sexp_true)) {
-				Warning(LOCATION, "Found true or false operator at the start of a list, likely in a handwritten SEXP.");
+				message = "Found true or false operator at the start of a list, likely in a handwritten SEXP.";
 				start = alloc_sexp("", SEXP_LIST, SEXP_ATOM_LIST, start, -1);
 				last = start;
 			}
 			if (node == Locked_sexp_false || node == Locked_sexp_true) {
-				Warning(LOCATION, "Found true or false operator in non-operator position, likely in a handwritten SEXP.");
+				message = "Found true or false operator in non-operator position, likely in a handwritten SEXP.";
 				node = alloc_sexp("", SEXP_LIST, SEXP_ATOM_LIST, node, -1);
 			}
 			Sexp_nodes[last].rest = node;
+
+			if (message != nullptr) {
+				SCP_string context;
+				convert_sexp_to_string(context, start, SEXP_ERROR_CHECK_MODE);
+				Warning(LOCATION, "%s\n\nCurrently parsed SEXP, with fixed operator:\n%s\n", message, context.c_str());
+			}
 		}
 
 		Assert(node != -1);  // ran out of nodes.  Time to raise the MAX!
