@@ -3744,6 +3744,33 @@ void ai_update_aim(ai_info *aip)
 	}
 }
 
+// returns if the currently active goal trying to afterburn hard
+bool ai_willing_to_afterburn_hard(ai_info* aip) {
+	return aip->active_goal == AI_ACTIVE_GOAL_DYNAMIC ?
+		The_mission.ai_profile->flags[AI::Profile_Flags::Dynamic_goals_afterburn_hard] :
+		aip->goals[aip->active_goal].flags[AI::Goal_Flags::Afterburn_hard];
+}
+
+// pedal to the metal!!1!
+void ai_afterburn_hard(object* objp, ai_info* aip) {
+	ship* shipp = &Ships[objp->instance];
+
+	if (!(objp->phys_info.flags & PF_AFTERBURNER_ON)) {
+		if (shipp->afterburner_fuel > Ship_info[shipp->ship_info_index].afterburner_fuel_capacity * 0.3) {
+			afterburners_start(Pl_objp);
+			aip->afterburner_stop_time = Missiontime + 5 * F1_0;
+		}
+	}
+	else {
+		if (shipp->afterburner_fuel > 0.0f) {
+			afterburners_start(Pl_objp);
+			aip->afterburner_stop_time = Missiontime + 5 * F1_0;
+		}
+	}
+
+	accelerate_ship(aip, 1.0f);
+};
+
 //	Given an ai_info struct, by reading current goal and path information,
 //	extract base path information and return in pmp and pmpv.
 //	Return true if found, else return false.
@@ -3894,6 +3921,9 @@ void set_accel_for_docking(object *objp, ai_info *aip, float dot, float dot_to_n
 		} else {
 			change_acceleration(aip, -1.0f);	//	-1.0f means subtract off flFrametime from acceleration value in 0.0..1.0
 		}
+	} else if (max_allowed_speed <= 0.0f && ai_willing_to_afterburn_hard(aip) && dist_to_goal > 1000.0f && dot > 0.99f) {
+		// BOOK IT
+		ai_afterburn_hard(Pl_objp, aip);
 	} else {
 		float max_bay_speed = sip->max_speed;
 
@@ -4685,7 +4715,11 @@ void ai_fly_to_target_position(vec3d* target_pos, bool* pl_done_p=NULL, bool* pl
 			ab_allowed = false;
 	}
 
-	if (!(sip->flags[Ship::Info_Flags::Afterburner]) || (shipp->flags[Ship::Ship_Flags::Afterburner_locked]) || !(aip->ai_flags[AI::AI_Flags::Free_afterburner_use] || aip->ai_profile_flags[AI::Profile_Flags::Free_afterburner_use])) {
+	if (!(sip->flags[Ship::Info_Flags::Afterburner]) || (shipp->flags[Ship::Ship_Flags::Afterburner_locked]) ||
+		!(aip->ai_flags[AI::AI_Flags::Free_afterburner_use] ||
+		aip->ai_profile_flags[AI::Profile_Flags::Free_afterburner_use] || 
+		ai_willing_to_afterburn_hard(aip)))
+	{
 		ab_allowed = false;
 	}
 
@@ -7268,8 +7302,10 @@ void attack_set_accel(ai_info *aip, ship_info *sip, float dist_to_enemy, float d
 		optimal_range = wip->optimum_range;
 
 	if (dist_to_enemy > optimal_range + vm_vec_mag_quick(&En_objp->phys_info.vel) * dot_from_enemy + Pl_objp->phys_info.speed * speed_ratio) {
-		if (ai_maybe_fire_afterburner(Pl_objp, aip)) {
-			if (dist_to_enemy > optimal_range + 600.0f) {
+		if (dist_to_enemy > optimal_range + 600.0f) {
+			if (ai_willing_to_afterburn_hard(aip)) {
+				ai_afterburn_hard(Pl_objp, aip);
+			} else if (ai_maybe_fire_afterburner(Pl_objp, aip)) {
 				if (!( Pl_objp->phys_info.flags & PF_AFTERBURNER_ON )) {
 					float percent_left;
 					ship_info *sip_local;
@@ -7344,8 +7380,10 @@ static void get_behind_ship(ai_info *aip)
 	ai_turn_towards_vector(&new_pos, Pl_objp, nullptr, nullptr, 0.0f, 0);
 
 	dot = vm_vec_dot(&vec_from_enemy, &En_objp->orient.vec.fvec);
-
-	if (dot > 0.25f) {
+	
+	if (ai_willing_to_afterburn_hard(aip) && dot > 0.9f && vm_vec_dist(&Pl_objp->pos, &En_objp->pos) > 1000.0f) {
+		ai_afterburn_hard(Pl_objp, aip);
+	} else if (dot > 0.25f) {
 		accelerate_ship(aip, 1.0f);
 	} else {
 		accelerate_ship(aip, (dot + 1.0f)/2.0f);
@@ -7562,6 +7600,10 @@ int maybe_avoid_big_ship(object *objp, object *ignore_objp, ai_info *aip, vec3d 
 		float dot = vm_vec_dot(&objp->orient.vec.fvec, &v2g);
 		float d2 = (1.0f + dot) * (1.0f + dot);
 		accelerate_ship(aip, d2/4.0f);
+
+		if (ai_willing_to_afterburn_hard(aip) && dot > 0.99f)
+			ai_afterburn_hard(Pl_objp, aip);
+
 		return 1;
 	}
 
@@ -8561,6 +8603,10 @@ void ai_cruiser_chase()
 	if (aip->ai_flags[AI::AI_Flags::Kamikaze]) {
 		ai_turn_towards_vector(&En_objp->pos, Pl_objp, nullptr, nullptr, 0.0f, 0);
 		accelerate_ship(aip, 1.0f);
+
+		float dot = vm_vec_dot_to_point(&Pl_objp->orient.vec.fvec, &Pl_objp->pos, &En_objp->pos);
+		if (ai_willing_to_afterburn_hard(aip) && dot > 0.99f)
+			ai_afterburn_hard(Pl_objp, aip);
 	} 
 	
 	// really track down and chase
@@ -10611,16 +10657,25 @@ void ai_big_guard()
 		ai_turn_towards_vector(&goal_pt, Pl_objp, nullptr, nullptr, 0.0f, 0);
 		accelerate_ship(aip, 1.0f);
 
-		if ((aip->ai_flags[AI::AI_Flags::Free_afterburner_use] || aip->ai_profile_flags[AI::Profile_Flags::Free_afterburner_use]) && !(shipp->flags[Ship::Ship_Flags::Afterburner_locked]) && (cur_guard_rad > 1.1f * max_guard_dist)) {
+
+		bool free_ab_use = aip->ai_flags[AI::AI_Flags::Free_afterburner_use] || aip->ai_profile_flags[AI::Profile_Flags::Free_afterburner_use];
+		if (!(shipp->flags[Ship::Ship_Flags::Afterburner_locked]) && 
+			(free_ab_use || ai_willing_to_afterburn_hard(aip)) && 
+			(cur_guard_rad > 1.1f * max_guard_dist)) 
+		{
 			vec3d	v2g;
 			float	dot_to_goal_point;
 
 			vm_vec_normalized_dir(&v2g, &goal_pt, &Pl_objp->pos);
 			dot_to_goal_point = vm_vec_dot(&v2g, &Pl_objp->orient.vec.fvec);
 
-			if (ai_maybe_fire_afterburner(Pl_objp, aip) && dot_to_goal_point > 0.75f) {
-				afterburners_start(Pl_objp);
-				aip->afterburner_stop_time = Missiontime + 3*F1_0;
+			if (dot_to_goal_point > 0.75f) {
+				if (ai_willing_to_afterburn_hard(aip))
+					ai_afterburn_hard(Pl_objp, aip);
+				else if (ai_maybe_fire_afterburner(Pl_objp, aip)) {
+					afterburners_start(Pl_objp);
+					aip->afterburner_stop_time = Missiontime + 3 * F1_0;
+				}
 			}
 		} else if (Pl_objp->phys_info.flags & PF_AFTERBURNER_ON) {
 			afterburners_stop(Pl_objp);
@@ -10734,8 +10789,14 @@ void ai_guard()
 			compute_desired_rvec(&rvec, &goal_point, &Pl_objp->pos);
 			ai_turn_towards_vector(&goal_point, Pl_objp, nullptr, nullptr, 0.0f, 0, &rvec);
 
-			if ((aip->ai_flags[AI::AI_Flags::Free_afterburner_use] || aip->ai_profile_flags[AI::Profile_Flags::Free_afterburner_use]) && !(shipp->flags[Ship::Ship_Flags::Afterburner_locked]) && (accel_scale * (0.25f + dist_to_goal_point/700.0f) > 0.8f)) {
-				if (ai_maybe_fire_afterburner(Pl_objp, aip)) {
+			bool free_ab_use = aip->ai_flags[AI::AI_Flags::Free_afterburner_use] || aip->ai_profile_flags[AI::Profile_Flags::Free_afterburner_use];
+			if (!(shipp->flags[Ship::Ship_Flags::Afterburner_locked]) && 
+				(free_ab_use || ai_willing_to_afterburn_hard(aip)) && 
+				(accel_scale * (0.25f + dist_to_goal_point/700.0f) > 0.8f)) 
+			{
+				if (ai_willing_to_afterburn_hard(aip))
+					ai_afterburn_hard(Pl_objp, aip);
+				else if (ai_maybe_fire_afterburner(Pl_objp, aip)) {
 					afterburners_start(Pl_objp);
 					aip->afterburner_stop_time = Missiontime + 3*F1_0;
 				}
@@ -11319,6 +11380,10 @@ void ai_stay_near()
 		if (dist > max_dist) {
 			turn_towards_point(Pl_objp, &goal_pos, NULL, 0.0f);
 			accelerate_ship(aip, dist / max_dist - 0.8f);
+
+			float dot = vm_vec_dot_to_point(&Pl_objp->orient.vec.fvec, &Pl_objp->pos, &goal_pos);
+			if (ai_willing_to_afterburn_hard(aip) && dot > 0.99f && dist - max_dist > 700.0f)
+				ai_afterburn_hard(Pl_objp, aip);
 		}
 	
 	}
@@ -12529,7 +12594,8 @@ int ai_formation()
 
 	ship_info *sip = &Ship_info[shipp->ship_info_index];
 	bool ab_allowed = false;
-	if ((sip->flags[Ship::Info_Flags::Afterburner]) && !(shipp->flags[Ship::Ship_Flags::Afterburner_locked]) && (aip->ai_flags[AI::AI_Flags::Free_afterburner_use] || aip->ai_profile_flags[AI::Profile_Flags::Free_afterburner_use])) {
+	if ((sip->flags[Ship::Info_Flags::Afterburner]) && !(shipp->flags[Ship::Ship_Flags::Afterburner_locked]) && 
+		((aip->ai_flags[AI::AI_Flags::Free_afterburner_use] || aip->ai_profile_flags[AI::Profile_Flags::Free_afterburner_use]) || ai_willing_to_afterburn_hard(aip))) {
 		ab_allowed = true;
 	} else {
 		if (Pl_objp->phys_info.flags & PF_AFTERBURNER_ON)

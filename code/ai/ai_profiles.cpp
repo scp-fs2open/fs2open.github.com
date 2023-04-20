@@ -618,6 +618,8 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$asteroids affected by physics whacks:", AI::Profile_Flags::Whackable_asteroids);
 
+				set_flag(profile, "$dynamic goals afterburn hard:", AI::Profile_Flags::Dynamic_goals_afterburn_hard);
+
 				// if we've been through once already and are at the same place, force a move
 				if (saved_Mp && (saved_Mp == Mp))
 				{

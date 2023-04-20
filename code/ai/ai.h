@@ -594,6 +594,8 @@ extern int ai_fire_primary_weapon(object *objp);	//changed to return weather it 
 extern int ai_fire_secondary_weapon(object *objp);
 extern float ai_get_weapon_dist(ship_weapon *swp);
 extern void turn_towards_point(object *objp, vec3d *point, vec3d *slide_vec, float bank_override, matrix* target_orient = nullptr, int flags = 0);
+extern bool ai_willing_to_afterburn_hard(ai_info* aip);
+extern void ai_afterburn_hard(object* objp, ai_info* aip);
 extern int ai_maybe_fire_afterburner(object *objp, ai_info *aip);
 extern void set_predicted_enemy_pos(vec3d *predicted_enemy_pos, object *pobjp, vec3d *enemy_pos, vec3d *enemy_vel, ai_info *aip);
 

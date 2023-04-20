@@ -629,15 +629,17 @@ bool ai_new_maybe_reposition_attack_subsys() {
 	accelerate_ship(aip, subsys_distance > 200.0f ? 1.0f : subsys_distance / 200.0f);
 
 	if (!(Ships[Pl_objp->instance].flags[Ship::Ship_Flags::Afterburner_locked])) {
-		if (subsys_distance > 300.0f) {
+		if (ai_willing_to_afterburn_hard(aip) && subsys_distance > 1000.0f)
+			ai_afterburn_hard(Pl_objp, aip);
+		else if (subsys_distance > 300.0f) {
 			if (ai_maybe_fire_afterburner(Pl_objp, aip)) {
 				afterburners_start(Pl_objp);
 				aip->afterburner_stop_time = Missiontime + 2 * F1_0;
 			}
 		}
-		else
-			afterburners_stop(Pl_objp);
-	}
+	} else
+		afterburners_stop(Pl_objp);
+
 	return true;
 
 }
@@ -757,7 +759,7 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 			if (ai_new_maybe_reposition_attack_subsys())
 				return;
 		} else if ( ai_big_maybe_follow_subsys_path() ) {
-			if ((Pl_objp->phys_info.flags & PF_AFTERBURNER_ON) && !(aip->ai_flags[AI::AI_Flags::Kamikaze])) {
+			if ((Pl_objp->phys_info.flags & PF_AFTERBURNER_ON) && !(aip->ai_flags[AI::AI_Flags::Kamikaze]) && !ai_willing_to_afterburn_hard(aip)) {
 				afterburners_stop(Pl_objp);
 			}
 			return;
@@ -849,7 +851,9 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 			} else {
 				accelerate_ship(aip, accel);
 
-				if ((aip->ai_flags[AI::AI_Flags::Free_afterburner_use] || aip->ai_profile_flags[AI::Profile_Flags::Free_afterburner_use]) && !(shipp->flags[Ship::Ship_Flags::Afterburner_locked]) && (accel > 0.95f)) {
+				if (ai_willing_to_afterburn_hard(aip) && accel > 0.99f && !(shipp->flags[Ship::Ship_Flags::Afterburner_locked])) {
+					ai_afterburn_hard(Pl_objp, aip);
+				} else if ((aip->ai_flags[AI::AI_Flags::Free_afterburner_use] || aip->ai_profile_flags[AI::Profile_Flags::Free_afterburner_use]) && !(shipp->flags[Ship::Ship_Flags::Afterburner_locked]) && (accel > 0.95f)) {
 					if (ai_maybe_fire_afterburner(Pl_objp, aip)) {
 						afterburners_start(Pl_objp);
 						aip->afterburner_stop_time = Missiontime + 3*F1_0;
