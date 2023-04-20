@@ -722,11 +722,10 @@ void message_log_init_scrollback(int pw, bool split_string)
 		}
 
 		//Set the flags for objectives
-		if ((entry->type == LOG_GOAL_SATISFIED) || (entry->type == LOG_GOAL_FAILED)) {
-			if (entry->type == LOG_GOAL_SATISFIED)
-				thisEntry.objective.flags = LOG_FLAG_GOAL_TRUE;
-			if (entry->type == LOG_GOAL_FAILED)
-				thisEntry.objective.flags = LOG_FLAG_GOAL_FAILED;
+		if (entry->type == LOG_GOAL_SATISFIED) {
+			thisEntry.objective.flags = LOG_FLAG_GOAL_TRUE;
+		} else if (entry->type == LOG_GOAL_FAILED) {
+			thisEntry.objective.flags = LOG_FLAG_GOAL_FAILED;
 		} else {
 			thisEntry.objective.flags = 0;
 		}
@@ -878,21 +877,21 @@ void message_log_shutdown_scrollback()
 	Num_log_lines = 0;
 }
 
-color log_line_get_color(int tag)
+const color *log_line_get_color(int tag)
 {
 	switch (tag) {
 		case LOG_COLOR_BRIGHT:
-			return Color_bright;
+			return &Color_bright;
 
 		case LOG_COLOR_OTHER:
-			return Color_normal;
+			return &Color_normal;
 
 		default: {
 			int team = message_log_color_get_team(tag);
 			if (team < 0)
-				return Color_text_normal;
+				return &Color_text_normal;
 			else
-				return *iff_get_color_by_team(team, -1, 1);
+				return iff_get_color_by_team(team, -1, 1);
 		}
 	}
 }
@@ -919,8 +918,8 @@ void mission_log_scrollback(int line_offset, int list_x, int list_y, int list_w,
 		gr_print_timestamp(list_x + TIME_X, list_y + y, Log_scrollback_vec[i].timestamp, GR_RESIZE_MENU);
 
 		// print the objective
-		color obj_color = log_line_get_color(Log_scrollback_vec[i].objective.color);
-		gr_set_color_fast(&obj_color);
+		auto obj_color = log_line_get_color(Log_scrollback_vec[i].objective.color);
+		gr_set_color_fast(obj_color);
 
 		// check the flags
 		if ((Log_scrollback_vec[i].objective.flags & LOG_FLAG_GOAL_TRUE) || (Log_scrollback_vec[i].objective.flags & LOG_FLAG_GOAL_FAILED)) {
@@ -938,8 +937,8 @@ void mission_log_scrollback(int line_offset, int list_x, int list_y, int list_w,
 
 			const auto& thisSeg = Log_scrollback_vec[i].segments[j];
 
-			color this_color = log_line_get_color(Log_scrollback_vec[i].segments[j].color);
-			gr_set_color_fast(&this_color);
+			auto this_color = log_line_get_color(Log_scrollback_vec[i].segments[j].color);
+			gr_set_color_fast(this_color);
 
 			strcpy_s(buf, thisSeg.text.get());
 			font::force_fit_string(buf, 256, list_w - thisSeg.x);

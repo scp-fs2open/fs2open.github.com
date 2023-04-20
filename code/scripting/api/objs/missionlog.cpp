@@ -69,7 +69,7 @@ ADE_VIRTVAR(Timestamp, l_Log_Entry, nullptr, "The timestamp of the log entry", "
 		LuaError(L, "This property is read only.");
 	}
 
-	int seconds = fl2i(f2fl(current.getSection()->timestamp));
+	int seconds = f2i(current.getSection()->timestamp);
 
 	// format the time information into strings
 	SCP_string time;
@@ -134,9 +134,9 @@ ADE_VIRTVAR(ObjectiveColor, l_Log_Entry, nullptr, "The objective color of the lo
 		LuaError(L, "This property is read only.");
 	}
 
-	color ac = log_line_get_color(current.getSection()->objective.color);
+	auto ac = log_line_get_color(current.getSection()->objective.color);
 
-	return ade_set_args(L, "o", l_Color.Set(ac));
+	return ade_set_args(L, "o", l_Color.Set(*ac));
 }
 
 ADE_VIRTVAR(SegmentTexts,
@@ -182,8 +182,8 @@ ADE_VIRTVAR(SegmentColors,
 
 	for (size_t i = 0; i < current.getSection()->segments.size(); i++) {
 
-		color ac = log_line_get_color(current.getSection()->segments[i].color);
-		table.addValue(i + 1, l_Color.Set(ac)); // translate to Lua index
+		auto ac = log_line_get_color(current.getSection()->segments[i].color);
+		table.addValue(i + 1, l_Color.Set(*ac)); // translate to Lua index
 	}
 
 	return ade_set_args(L, "t", &table);
@@ -215,7 +215,7 @@ ADE_VIRTVAR(Timestamp, l_Message_Entry, nullptr, "The timestamp of the message e
 		LuaError(L, "This property is read only.");
 	}
 
-	int seconds = fl2i(f2fl(current.getSection()->time));
+	int seconds = f2i(current.getSection()->time);
 
 	// format the time information into strings
 	SCP_string time;
@@ -237,35 +237,35 @@ ADE_VIRTVAR(Color, l_Message_Entry, nullptr, "The color of the message entry.", 
 	if (ADE_SETTING_VAR) {
 		LuaError(L, "This property is read only.");
 	}
-	color this_color;
+	const color *this_color;
 
 	int team = HUD_source_get_team(current.getSection()->source);
 
 	if (team >= 0) {
-		this_color = *iff_get_color_by_team(team, Player_ship->team, 0);
+		this_color = iff_get_color_by_team(team, Player_ship->team, 0);
 	} else {
 		switch (current.getSection()->source) {
 		case HUD_SOURCE_TRAINING:
-			this_color = Color_bright_blue;
+			this_color = &Color_bright_blue;
 			break;
 
 		case HUD_SOURCE_TERRAN_CMD:
-			this_color = Color_bright_white;
+			this_color = &Color_bright_white;
 			break;
 
 		case HUD_SOURCE_IMPORTANT:
 		case HUD_SOURCE_FAILED:
 		case HUD_SOURCE_SATISFIED:
-			this_color = Color_bright_white;
+			this_color = &Color_bright_white;
 			break;
 
 		default:
-			this_color = Color_text_normal;
+			this_color = &Color_text_normal;
 			break;
 		}
 	}
 
-	return ade_set_args(L, "o", l_Color.Set(this_color));
+	return ade_set_args(L, "o", l_Color.Set(*this_color));
 }
 
 ADE_VIRTVAR(Text, l_Message_Entry, nullptr, "The text of the message entry", "string", "The text")

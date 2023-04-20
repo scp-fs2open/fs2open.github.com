@@ -22,7 +22,6 @@ music_player_dlg::music_player_dlg(CWnd* pParent /*=nullptr*/)
 	m_music_id = -1;
 	m_cursor_pos = -1;
 	m_autoplay = FALSE;
-	m_num_music_files = 0;
 
 }
 
@@ -82,7 +81,7 @@ BOOL music_player_dlg::OnInitDialog()
 
 		// check if the file was asked to be ignored in game_settings
 		for (auto& thisFile : Ignored_music_player_files) {
-			if (!stricmp(thisFile.c_str(), file.c_str())) {
+			if (SCP_string_lcase_equal_to()(thisFile, file)) {
 				addItem = false;
 				break;
 			}
@@ -91,7 +90,6 @@ BOOL music_player_dlg::OnInitDialog()
 		//add item if not ignored
 		if (addItem) {
 			m_music_list.AddString(file.c_str());
-			m_num_music_files++;
 		}
 	}
 
@@ -130,7 +128,7 @@ void music_player_dlg::StopMusic()
 
 bool music_player_dlg::SelectNextTrack()
 {
-	if ((m_cursor_pos >= 0) && (m_cursor_pos < (m_num_music_files - 1))) {
+	if ((m_cursor_pos >= 0) && (m_cursor_pos < (m_music_list.GetCount() - 1))) {
 		m_cursor_pos++;
 		m_music_list.SetCurSel(m_cursor_pos);
 		UpdateSelection();
@@ -142,7 +140,7 @@ bool music_player_dlg::SelectNextTrack()
 
 bool music_player_dlg::SelectPrevTrack()
 {
-	if ((m_cursor_pos > 0) && (m_cursor_pos < m_num_music_files)) {
+	if ((m_cursor_pos > 0) && (m_cursor_pos < m_music_list.GetCount())) {
 		m_cursor_pos--;
 		m_music_list.SetCurSel(m_cursor_pos);
 		UpdateSelection();
@@ -150,6 +148,25 @@ bool music_player_dlg::SelectPrevTrack()
 	}
 
 	return false;
+}
+
+bool music_player_dlg::IsPlayerActive()
+{
+	return m_music_id >= 0;
+}
+
+void music_player_dlg::DoFrame()
+{
+	//If the music has finished playing
+	if (!audiostream_is_playing(m_music_id)) {
+
+		//if autoplay is on and we just finished a track then select the next music track and play it
+		if (m_autoplay && SelectNextTrack()) {
+			PlayMusic();
+		} else {
+			StopMusic();
+		}
+	}
 }
 
 void music_player_dlg::UpdateSelection()
