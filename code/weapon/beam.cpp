@@ -2177,7 +2177,9 @@ int beam_start_firing(beam *b)
 	}	
 
 	// "shot" sound
-	if (Weapon_info[b->weapon_info_index].launch_snd.isValid())
+	if (b->objp == Player_obj && b->flags & BF_IS_FIGHTER_BEAM && Weapon_info[b->weapon_info_index].cockpit_launch_snd.isValid())
+		snd_play(gamesnd_get_game_sound(Weapon_info[b->weapon_info_index].cockpit_launch_snd), 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY);
+	else if (Weapon_info[b->weapon_info_index].launch_snd.isValid())
 		snd_play_3d(gamesnd_get_game_sound(Weapon_info[b->weapon_info_index].launch_snd), &b->last_start, &View_position);
 
 	// if this is a fighter ballistic beam, always take at least one ammo to start with
@@ -3871,9 +3873,15 @@ void beam_handle_collisions(beam *b)
 
 			switch(Objects[target].type){
 			case OBJ_DEBRIS:
+			{
+				vec3d force = b->last_shot - b->last_start; // Valathil - use the beam direction as the force direction (like a high pressure water jet)
+				vm_vec_normalize(&force);
+				force *= wi->mass;
+
 				// hit the debris - the debris hit code takes care of checking for MULTIPLAYER_CLIENT, etc
-				debris_hit(&Objects[target], &Objects[b->objnum], &b->f_collisions[idx].cinfo.hit_point_world, wi->damage);
+				debris_hit(&Objects[target], &Objects[b->objnum], &b->f_collisions[idx].cinfo.hit_point_world, wi->damage, &force);
 				break;
+			}
 
 			case OBJ_WEAPON:
 				if (The_mission.ai_profile->flags[AI::Profile_Flags::Beams_damage_weapons]) {
@@ -3928,7 +3936,11 @@ void beam_handle_collisions(beam *b)
 			case OBJ_ASTEROID:
 				// hit the asteroid
 				if (!(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_MASTER) {
-					asteroid_hit(&Objects[target], &Objects[b->objnum], &b->f_collisions[idx].cinfo.hit_point_world, wi->damage);
+					vec3d force = b->last_shot - b->last_start; // Valathil - use the beam direction as the force direction (like a high pressure water jet)
+					vm_vec_normalize(&force);
+					force *= wi->mass;
+
+					asteroid_hit(&Objects[target], &Objects[b->objnum], &b->f_collisions[idx].cinfo.hit_point_world, wi->damage, &force);
 				}
 				break;
 			case OBJ_SHIP:	
@@ -4028,7 +4040,6 @@ int beam_ok_to_fire(beam *b)
 
 			if (b->flags & BF_IS_FIGHTER_BEAM) {
 				turret_normal = b->objp->orient.vec.fvec;
-                b->subsys->system_info->flags.remove(Model::Subsystem_Flags::Turret_base_restricted_fov);
 			} else {
 				model_instance_local_to_global_dir(&turret_normal, &b->subsys->system_info->turret_norm, Ships[b->objp->instance].model_instance_num, b->subsys->system_info->subobj_num, &b->objp->orient, true);
 			}

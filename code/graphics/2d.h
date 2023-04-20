@@ -1267,7 +1267,7 @@ inline void gr_sync_delete(gr_sync sync)
 void gr_init_color(color *c, int r, int g, int b);
 void gr_init_alphacolor( color *clr, int r, int g, int b, int alpha, int type = AC_TYPE_HUD );
 void gr_set_color( int r, int g, int b );
-void gr_set_color_fast(color *dst);
+void gr_set_color_fast(const color *dst);
 
 // shader functions
 void gr_create_shader(shader *shade, ubyte r, ubyte g, ubyte b, ubyte c);

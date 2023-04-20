@@ -1772,7 +1772,7 @@ void gr_set_color( int r, int g, int b )
 	gr_init_color( &gr_screen.current_color, r, g, b );	
 }
 
-void gr_set_color_fast(color *dst)
+void gr_set_color_fast(const color *dst)
 {
 	gr_screen.current_color = *dst;
 }
@@ -2572,7 +2572,7 @@ void gr_flip(bool execute_scripting)
 
 void gr_print_timestamp(int x, int y, fix timestamp, int resize_mode)
 {
-	int seconds = fl2i(f2fl(timestamp));
+	int seconds = f2i(timestamp);
 
 	// format the time information into strings
 	SCP_string time;

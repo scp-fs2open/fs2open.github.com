@@ -1672,21 +1672,40 @@ void game_process_keys()
 						break;
 					}
 
-					//If topdown view in non-2D mission, go back to cockpit view.
-					if ( (Viewer_mode & VM_TOPDOWN) && !(The_mission.flags[Mission::Mission_Flags::Mission_2d]) && !(Perspective_locked) ) {
-						Viewer_mode &= ~VM_TOPDOWN;
-						break;
+					bool changed_view = false;
+
+					if (!Perspective_locked) {
+						bool default_is_chase = (Default_start_chase_view != The_mission.flags[Mission::Mission_Flags::Toggle_start_chase_view]);
+
+						//If topdown view in non-2D mission, revert
+						if ((Viewer_mode & VM_TOPDOWN) && !(The_mission.flags[Mission::Mission_Flags::Mission_2d])) {
+							Viewer_mode &= ~VM_TOPDOWN;
+							changed_view = true;
+						}
+
+						// if in external view, revert
+						if ((Viewer_mode & (VM_EXTERNAL | VM_OTHER_SHIP))) {
+							Viewer_mode &= ~(VM_EXTERNAL | VM_OTHER_SHIP);
+							changed_view = true;
+						}
+
+						// if in non-default chase/cockpit view, revert
+						if (default_is_chase) {
+							if (!(Viewer_mode & VM_CHASE)) {
+								Viewer_mode |= VM_CHASE;
+								changed_view = true;
+							}
+						} else {
+							if (Viewer_mode & VM_CHASE) {
+								Viewer_mode &= ~VM_CHASE;
+								changed_view = true;
+							}
+						}
 					}
 
-					// if in external view or chase view, go back to cockpit view
-					if ( (Viewer_mode & (VM_EXTERNAL|VM_CHASE|VM_OTHER_SHIP)) && !(Perspective_locked) ) {
-						Viewer_mode &= ~(VM_EXTERNAL|VM_CHASE|VM_OTHER_SHIP);
-						break;
-					}
-
-					if (!(Game_mode & GM_DEAD_DIED))
+					// if we haven't done anything yet, show the popup
+					if (!changed_view && !(Game_mode & GM_DEAD_DIED))
 						game_do_end_mission_popup();
-
 				}
 				break;
 

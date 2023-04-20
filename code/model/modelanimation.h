@@ -67,6 +67,7 @@ namespace animation {
 	FLAG_LIST(Animation_Instance_Flags) {
 		Stop_after_next_loop,	//Once a looping animation would start the next loop, stop the animation instead. Only valid for looping animations
 		Seamless_loop_shutdown, //Set whenever a seamlessly looping animation is in its final shutdown phase
+		Seamless_fully_started, //Set once the seamless animation has reached the seamless part
 		NUM_VALUES
 	};
 

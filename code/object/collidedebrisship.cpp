@@ -125,7 +125,8 @@ int collide_debris_ship( obj_pair * pair )
 				}
 
 				// apply damage to debris
-				debris_hit( debris_objp, ship_objp, &hitpos, debris_damage);		// speed => damage
+				// no need for force, already handled in calculate_ship_ship_collision_physics
+				debris_hit( debris_objp, ship_objp, &hitpos, debris_damage, nullptr);		// speed => damage
 				int apply_ship_damage;
 
 				// apply damage to ship unless 1) debris is from ship
@@ -312,7 +313,7 @@ int collide_asteroid_ship( obj_pair * pair )
 				asteroid_damage = (asteroid_damage > ship_damage) ? asteroid_damage : ship_damage;
 
 				// apply damage to asteroid
-				asteroid_hit( asteroid_objp, ship_objp, &hitpos, asteroid_damage);		// speed => damage
+				asteroid_hit( asteroid_objp, ship_objp, &hitpos, asteroid_damage, nullptr);		// speed => damage
 
 				int ast_damage_type = Asteroid_info[Asteroids[asteroid_objp->instance].asteroid_type].damage_type_idx;
 

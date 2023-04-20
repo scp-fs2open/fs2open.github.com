@@ -71,19 +71,19 @@ void debris_delete( object * obj );
 void debris_process_post( object * obj, float frame_time);
 
 // Create debris, set velocity, and fire scripting hook
-object *debris_create( object *source_obj, int model_num, int submodel_num, vec3d *pos, vec3d *exp_center, bool hull_flag, float exp_force );
+object *debris_create( object *source_obj, int model_num, int submodel_num, vec3d *pos, vec3d *exp_center, bool hull_flag, float exp_force, ship_subsys* source_subsys = nullptr );
 
 // Create debris but don't do anything else
 object *debris_create_only(int parent_objnum, int parent_ship_class, int alt_type_index, int team, float hull_strength, int spark_timeout, int model_num, int submodel_num, vec3d *pos, matrix *orient, bool hull_flag, bool vaporize, int damage_type_idx);
 
 // Set velocity after debris creation
-void debris_create_set_velocity(debris *db, ship *source_shipp, vec3d *exp_center, float exp_force);
+void debris_create_set_velocity(debris *db, ship *source_shipp, vec3d *exp_center, float exp_force, ship_subsys* source_subsys = nullptr);
 
 // Fire scripting hook after debris creation
 void debris_create_fire_hook(object *obj, object *source_obj);
 
 int debris_check_collision( object * obj, object * other_obj, vec3d * hitpos, collision_info_struct *debris_hit_info=NULL, vec3d* hitnormal = NULL );
-void debris_hit( object * debris_obj, object * other_obj, vec3d * hitpos, float damage );
+void debris_hit( object * debris_obj, object * other_obj, vec3d * hitpos, float damage, vec3d* force );
 int debris_get_team(object *objp);
 
 void debris_add_to_hull_list(debris *db);

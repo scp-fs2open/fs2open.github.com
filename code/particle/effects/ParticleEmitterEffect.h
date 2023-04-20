@@ -14,7 +14,6 @@ class ParticleEmitterEffect: public ParticleEffect {
  private:
 	particle_emitter m_emitter;
 	int m_particleBitmap = -1;
-	float m_range = -1;
 
  public:
 	ParticleEmitterEffect();
@@ -25,7 +24,7 @@ class ParticleEmitterEffect: public ParticleEffect {
 
 	void pageIn() override;
 
-	void setValues(const particle_emitter& emitter, int bitmap, float range);
+	void setValues(const particle_emitter& emitter, int bitmap);
 };
 }
 }

@@ -459,6 +459,7 @@ struct weapon_info
 	gamesnd_id pre_launch_snd;
 	int	pre_launch_snd_min_interval;	//Minimum interval in ms between the last time the pre-launch sound was played and the next time it can play, as a limiter in case the player is pumping the trigger
 	gamesnd_id	launch_snd;
+	gamesnd_id	cockpit_launch_snd;
 	gamesnd_id	impact_snd;
 	gamesnd_id  disarmed_impact_snd;
 	gamesnd_id  shield_impact_snd;
@@ -742,7 +743,7 @@ void spawn_child_weapons( object *objp, int spawn_index_override = -1);
 // call to detonate a weapon. essentially calls weapon_hit() with other_obj as NULL, and sends a packet in multiplayer
 void weapon_detonate(object *objp);
 
-void	weapon_area_apply_blast(vec3d *force_apply_pos, object *ship_objp, vec3d *blast_pos, float blast, int make_shockwave);
+void	weapon_area_apply_blast(vec3d *force_apply_pos, object *ship_objp, vec3d *blast_pos, float blast, bool make_shockwave);
 int	weapon_area_calc_damage(object *objp, vec3d *pos, float inner_rad, float outer_rad, float max_blast, float max_damage,
 										float *blast, float *damage, float limit);
 

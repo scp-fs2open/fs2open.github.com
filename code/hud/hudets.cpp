@@ -52,9 +52,6 @@ void ets_init_ship(object* obj)
 		sp->next_manage_ets = -1;
 	}
 	set_default_recharge_rates(obj);
-
-	float y = Energy_levels[sp->engine_recharge_index];
-	obj->phys_info.max_vel.xyz.z = ets_get_max_speed(obj, y);
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -286,6 +283,19 @@ void ai_manage_ets(object* obj)
 	}
 }
 
+void set_recharge_rates(object* obj, int shields, int weapons, int engines) {
+	Assertion(obj->type == OBJ_SHIP, "Can't set ets values on a non-ship");
+	if (obj->type != OBJ_SHIP)
+		return;
+
+	Ships[obj->instance].shield_recharge_index = shields;
+	Ships[obj->instance].weapon_recharge_index = weapons;
+	Ships[obj->instance].engine_recharge_index = engines;
+
+	float x = Energy_levels[Ships[obj->instance].engine_recharge_index];
+	obj->phys_info.max_vel.xyz.z = ets_get_max_speed(obj, x);
+}
+
 // -------------------------------------------------------------------------------------------------
 // set_default_recharge_rates() will set the charge levels for the weapons, shields and
 // engines to their default levels
@@ -312,45 +322,31 @@ void set_default_recharge_rates(object* obj)
 	// the default charge rate depends on what systems are on each ship
 	switch ( ship_properties ) {
 		case HAS_ENGINES | HAS_WEAPONS | HAS_SHIELDS:
-			ship_p->shield_recharge_index = INTIAL_SHIELD_RECHARGE_INDEX;
-			ship_p->weapon_recharge_index = INTIAL_WEAPON_RECHARGE_INDEX;
-			ship_p->engine_recharge_index = INTIAL_ENGINE_RECHARGE_INDEX;
+			set_recharge_rates(obj, INTIAL_SHIELD_RECHARGE_INDEX, INTIAL_WEAPON_RECHARGE_INDEX, INTIAL_ENGINE_RECHARGE_INDEX);
 			break;
 
 		case HAS_ENGINES | HAS_SHIELDS:
-			ship_p->shield_recharge_index = ONE_HALF_INDEX;
-			ship_p->weapon_recharge_index = ZERO_INDEX;
-			ship_p->engine_recharge_index = ONE_HALF_INDEX;
+			set_recharge_rates(obj, ONE_HALF_INDEX, ZERO_INDEX, ONE_HALF_INDEX);
 			break;
 
 		case HAS_WEAPONS | HAS_SHIELDS:
-			ship_p->shield_recharge_index = ONE_HALF_INDEX;
-			ship_p->weapon_recharge_index = ONE_HALF_INDEX;
-			ship_p->engine_recharge_index = ZERO_INDEX;
+			set_recharge_rates(obj, ONE_HALF_INDEX, ONE_HALF_INDEX, ZERO_INDEX);
 			break;
 
 		case HAS_ENGINES | HAS_WEAPONS:
-			ship_p->shield_recharge_index = ZERO_INDEX;
-			ship_p->weapon_recharge_index = ONE_HALF_INDEX;
-			ship_p->engine_recharge_index = ONE_HALF_INDEX;
+			set_recharge_rates(obj, ZERO_INDEX, ONE_HALF_INDEX, ONE_HALF_INDEX);
 			break;
 
 		case HAS_SHIELDS:
-			ship_p->shield_recharge_index = ALL_INDEX;
-			ship_p->weapon_recharge_index = ZERO_INDEX;
-			ship_p->engine_recharge_index = ZERO_INDEX;
+			set_recharge_rates(obj, ALL_INDEX, ZERO_INDEX, ZERO_INDEX);
 			break;
 
 		case HAS_ENGINES:
-			ship_p->shield_recharge_index = ZERO_INDEX;
-			ship_p->weapon_recharge_index = ZERO_INDEX;
-			ship_p->engine_recharge_index = ALL_INDEX;
+			set_recharge_rates(obj, ZERO_INDEX, ZERO_INDEX, ALL_INDEX);
 			break;
 
 		case HAS_WEAPONS:
-			ship_p->shield_recharge_index = ZERO_INDEX;
-			ship_p->weapon_recharge_index = ALL_INDEX;
-			ship_p->engine_recharge_index = ZERO_INDEX;
+			set_recharge_rates(obj, ZERO_INDEX, ALL_INDEX, ZERO_INDEX);
 			break;
 
 		default:

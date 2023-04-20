@@ -1315,9 +1315,17 @@ int CFred_mission_save::save_cmd_brief()
 		required_string_fred("$end_multi_text", "$Stage Text:");
 		parse_comments();
 
+		if (!drop_white_space(Cur_cmd_brief->stage[stage].ani_filename)[0]) {
+			strcpy_s(Cur_cmd_brief->stage[stage].ani_filename, "<default>");
+		}
+
 		required_string_fred("$Ani Filename:");
 		parse_comments();
 		fout(" %s", Cur_cmd_brief->stage[stage].ani_filename);
+
+		if (!drop_white_space(Cur_cmd_brief->stage[stage].wave_filename)[0]) {
+			strcpy_s(Cur_cmd_brief->stage[stage].wave_filename, "None");
+		}
 
 		required_string_fred("+Wave Filename:", "$Ani Filename:");
 		parse_comments();
@@ -3975,13 +3983,21 @@ int CFred_mission_save::save_objects()
 
 		// deal with the persona for this ship as well.
 		if (shipp->persona_index != -1) {
-			if (optional_string_fred("+Persona Index:", "$Name:")) {
-				parse_comments();
-			} else {
-				fout("\n+Persona Index:");
-			}
+			if (Mission_save_format == FSO_FORMAT_RETAIL) {
+				if (optional_string_fred("+Persona Index:", "$Name:"))
+					parse_comments();
+				else
+					fout("\n+Persona Index:");
 
-			fout(" %d", shipp->persona_index);
+				fout(" %d", shipp->persona_index);
+			} else {
+				if (optional_string_fred("+Persona Name:", "$Name:"))
+					parse_comments();
+				else
+					fout("\n+Persona Name:");
+
+				fout(" %s", Personas[shipp->persona_index].name);
+			}
 		}
 
 		// Goober5000 - deal with texture replacement ----------------

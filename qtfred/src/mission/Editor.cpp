@@ -424,7 +424,6 @@ void Editor::clearMission() {
 
 	strcpy_s(The_mission.name, "Untitled");
 	The_mission.author = userName;
-	The_mission.author[NAME_LENGTH - 1] = 0;
 	strcpy_s(The_mission.created, time_buffer);
 	strcpy_s(The_mission.modified, The_mission.created);
 	strcpy_s(The_mission.notes, "This is a FRED2_OPEN created mission.\n");

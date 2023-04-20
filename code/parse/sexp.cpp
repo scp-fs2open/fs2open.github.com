@@ -3461,13 +3461,13 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
-				for (i=0; i < Num_personas ; i++) {
+				for (i = 0; i < (int)Personas.size(); i++) {
 					if (!strcmp(CTEXT(node), Personas[i].name)) {
 						break;
 					}
 				}
 
-				if (i == Num_personas) {
+				if (i == (int)Personas.size()) {
 					return SEXP_CHECK_INVALID_PERSONA_NAME; 
 				}
 				break;
@@ -4478,22 +4478,30 @@ int get_sexp()
 		if (start == -1) {
 			start = node;
 		} else {
+			const char *message = nullptr;
 			Assert(last != -1);
+
 			// Locked_sexp_true and Locked_sexp_false are only meant to represent operator
 			// nodes with no arguments, i.e. (true) and (false). If they appear as "bare"
 			// arguments to another operator, or have arguments of their own, the global
 			// SEXP node structure can become corrupted; we hack around this by always
 			// wrapping them in their own list in these cases and warning the user.
 			if (last == start && (start == Locked_sexp_false || start == Locked_sexp_true)) {
-				Warning(LOCATION, "Found true or false operator at the start of a list, likely in a handwritten SEXP.");
+				message = "Found true or false operator at the start of a list, likely in a handwritten SEXP.";
 				start = alloc_sexp("", SEXP_LIST, SEXP_ATOM_LIST, start, -1);
 				last = start;
 			}
 			if (node == Locked_sexp_false || node == Locked_sexp_true) {
-				Warning(LOCATION, "Found true or false operator in non-operator position, likely in a handwritten SEXP.");
+				message = "Found true or false operator in non-operator position, likely in a handwritten SEXP.";
 				node = alloc_sexp("", SEXP_LIST, SEXP_ATOM_LIST, node, -1);
 			}
 			Sexp_nodes[last].rest = node;
+
+			if (message != nullptr) {
+				SCP_string context;
+				convert_sexp_to_string(context, start, SEXP_ERROR_CHECK_MODE);
+				Warning(LOCATION, "%s\n\nCurrently parsed SEXP, with fixed operator:\n%s\n", message, context.c_str());
+			}
 		}
 
 		Assert(node != -1);  // ran out of nodes.  Time to raise the MAX!
@@ -13747,22 +13755,27 @@ void sexp_explosion_effect(int n)
 				{
 					continue;
 				}
-	
+
+				vec3d force = vmd_zero_vector;
+				vec3d vec_ship_to_impact = objp->pos - origin;	
 				switch ( objp->type )
 				{
 					case OBJ_SHIP:
 						ship_apply_global_damage( objp, nullptr, &origin, t_damage, -1 );
-						vec3d force, vec_ship_to_impact;
-						vm_vec_sub( &vec_ship_to_impact, &objp->pos, &origin );
+						vec_ship_to_impact = objp->pos - origin;
 						if (!IS_VEC_NULL_SQ_SAFE( &vec_ship_to_impact )) {
 							vm_vec_copy_normalize( &force, &vec_ship_to_impact );
-							vm_vec_scale( &force, (float)max_blast );
+							force *= (float)max_blast;
 							ship_apply_whack( &force, &origin, objp );
 						}
 						break;
 
 					case OBJ_ASTEROID:
-						asteroid_hit(objp, nullptr, nullptr, t_damage);
+						if (!IS_VEC_NULL_SQ_SAFE(&vec_ship_to_impact)) {
+							vm_vec_copy_normalize(&force, &vec_ship_to_impact);
+							force *= (float)max_blast;
+						}
+						asteroid_hit(objp, nullptr, nullptr, t_damage, &force);
 						break;
 	
 					default:
@@ -16132,6 +16145,9 @@ void sexp_deal_with_ship_flag(int node, bool process_subsequent_nodes, Object::O
 			if (object_flag == Object::Object_Flags::No_shields) {
 				if (set_it) {
 					zero_one_ets(&ship_entry->shipp->shield_recharge_index, &ship_entry->shipp->weapon_recharge_index, &ship_entry->shipp->engine_recharge_index);
+
+					float x = Energy_levels[Ships[ship_entry->objp->instance].engine_recharge_index];
+					ship_entry->objp->phys_info.max_vel.xyz.z = ets_get_max_speed(ship_entry->objp, x);
 				} else if (object_flag_orig[Object::Object_Flags::No_shields]) {
 					set_default_recharge_rates(ship_entry->objp);
 				}
@@ -16217,6 +16233,9 @@ void multi_sexp_deal_with_ship_flag()
 			if (object_flag == (int)Object::Object_Flags::No_shields) {
 				if (set_it) {
 					zero_one_ets(&shipp->shield_recharge_index, &shipp->weapon_recharge_index, &shipp->engine_recharge_index);
+
+					float x = Energy_levels[shipp->engine_recharge_index];
+					Objects[shipp->objnum].phys_info.max_vel.xyz.z = ets_get_max_speed(&Objects[shipp->objnum], x);
 				} else if (object_flag_orig[Object::Object_Flags::No_shields]) {
 					set_default_recharge_rates(&Objects[shipp->objnum]);
 				}
@@ -16347,6 +16366,9 @@ void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future
 			if (object_flag == Object::Object_Flags::No_shields) {
 				if (set_flag) {
 					zero_one_ets(&oswpt.ship_entry->shipp->shield_recharge_index, &oswpt.ship_entry->shipp->weapon_recharge_index, &oswpt.ship_entry->shipp->engine_recharge_index);
+
+					float x = Energy_levels[oswpt.ship_entry->shipp->engine_recharge_index];
+					Objects[oswpt.ship_entry->shipp->objnum].phys_info.max_vel.xyz.z = ets_get_max_speed(&Objects[oswpt.ship_entry->shipp->objnum], x);
 				} else if (object_flag_orig[Object::Object_Flags::No_shields]) {
 					set_default_recharge_rates(oswpt.objp);
 				}
@@ -16953,7 +16975,7 @@ void sexp_set_persona (int node)
 	int persona_index = -1;
 	auto persona_name = CTEXT(node);
 
-	for (int i = 0 ; i < Num_personas; ++i) {
+	for (int i = 0; i < (int)Personas.size(); ++i) {
 		if (!strcmp(persona_name, Personas[i].name) && (Personas[i].flags & PERSONA_FLAG_WINGMAN)) {
 			persona_index = i;
 			break;
@@ -19242,9 +19264,7 @@ void multi_sexp_set_ets_values()
 		Current_sexp_network_packet.get_int(ets_idx[SHIELDS]);
 		Current_sexp_network_packet.get_int(ets_idx[WEAPONS]);
 
-		Ships[sindex].engine_recharge_index = ets_idx[ENGINES];
-		Ships[sindex].shield_recharge_index = ets_idx[SHIELDS];
-		Ships[sindex].weapon_recharge_index = ets_idx[WEAPONS];
+		set_recharge_rates(&Objects[Ships[sindex].objnum], ets_idx[SHIELDS], ets_idx[WEAPONS], ets_idx[ENGINES]);
 	}
 }
 
@@ -39796,6 +39816,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tThree numbers, x, y, z rotation respectively, in degrees\r\n"
 		"Rotation:\r\n"
 		"\tThree numbers, x, y, z rotation respectively, in degrees\r\n"
+		"Translation:\r\n"
+		"\tThree required numbers: x, y, z position target relative to base, in 1/100th meters\r\n"
 		"Axis Rotation:\r\n"
 		"\tOne number, rotation angle in degrees\r\n"
 		"Inverse Kinematics:\r\n"

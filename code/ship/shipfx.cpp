@@ -151,7 +151,7 @@ static void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, ship *s
 		fireball_create(&end_world_pos, fireball_type, FIREBALL_MEDIUM_EXPLOSION, OBJ_INDEX(ship_objp), pm->submodel[live_debris_submodel].rad);
 
 		// create debris
-		live_debris_obj = debris_create(ship_objp, pm->id, live_debris_submodel, &end_world_pos, exp_center, 1, exp_mag);
+		live_debris_obj = debris_create(ship_objp, pm->id, live_debris_submodel, &end_world_pos, exp_center, 1, exp_mag, subsys);
 
 		// only do if debris is created
 		if (live_debris_obj) {
@@ -2013,7 +2013,7 @@ static void maybe_fireball_wipe(clip_ship* half_ship, sound_handle* handle_array
 			}
 
 			if (pe.num_high > 0) {
-				particle::emit( &pe, particle::PARTICLE_SMOKE2, 0, range );
+				particle::emit( &pe, particle::PARTICLE_SMOKE2, 0 );
 			}
 
 			if (sip->generic_debris_model_num >= 0) {

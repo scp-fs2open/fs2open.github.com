@@ -154,24 +154,24 @@ SCP_vector<SCP_string> SexpTreeEditorInterface::getMessages() {
 }
 QStringList SexpTreeEditorInterface::getMissionGoals(const QString&  /*reference_name*/) {
 	QStringList list;
-	list.reserve(Num_goals);
+	list.reserve((int)Mission_goals.size());
 
 	for (const auto &goal: Mission_goals) {
 		auto temp_name = goal.name;
 		SCP_truncate(temp_name, NAME_LENGTH);
-		list.emplace_back(temp_name);
+		list << temp_name.c_str();
 	}
 
 	return list;
 }
 QStringList SexpTreeEditorInterface::getMissionEvents(const QString&  /*reference_name*/) {
 	QStringList list;
-	list.reserve(Num_mission_events);
+	list.reserve((int)Mission_events.size());
 
 	for (const auto &event: Mission_events) {
 		auto temp_name = event.name;
 		SCP_truncate(temp_name, NAME_LENGTH);
-		list.emplace_back(temp_name);
+		list << temp_name.c_str();
 	}
 
 	return list;

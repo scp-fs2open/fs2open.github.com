@@ -153,6 +153,11 @@ enum lua_enum : int32_t {
 	LE_RPC_RELIABLE,
 	LE_RPC_ORDERED,
 	LE_RPC_UNRELIABLE,
+	LE_HOTKEY_LINE_NONE, // the sequence and offsets of these five #defines should correspond to the HotkeyLineType enums
+	LE_HOTKEY_LINE_HEADING,
+	LE_HOTKEY_LINE_WING,
+	LE_HOTKEY_LINE_SHIP,
+	LE_HOTKEY_LINE_SUBSHIP,
 	ENUM_NEXT_INDEX,
 	ENUM_COMBINATION,
 	ENUM_INVALID

@@ -605,7 +605,7 @@ void message_log_add_seg(log_text_seg* entry, int x, int msg_color, const char* 
 	entry->flags = flags;
 }
 
-void message_log_add_segs(const char* source_string, int msg_color, int flags = 0, SCP_vector<log_text_seg> *entry = nullptr)
+void message_log_add_segs(const char* source_string, int msg_color, int flags = 0, SCP_vector<log_text_seg> *entry = nullptr, bool split_string = false)
 {
 	if (!source_string) {
 		mprintf(("Why are you passing a NULL pointer to message_log_add_segs?\n"));
@@ -622,31 +622,37 @@ void message_log_add_segs(const char* source_string, int msg_color, int flags = 
 	char *str = dup_string;
 	char *split = NULL;
 
-	while (true) {
-		if (X == ACTION_X) {
-			while (is_white_space(*str))
-				str++;
-		}
-        
-		if (P_width - X < 1)
-			split = str;
-		else
-			split = split_str_once(str, P_width - X);
+	if (split_string) {
+		while (true) {
+			if (X == ACTION_X) {
+				while (is_white_space(*str))
+					str++;
+			}
 
-		if (split != str) {
-			log_text_seg new_seg;
-			message_log_add_seg(&new_seg, X, msg_color, str, flags);
-			entry->push_back(std::move(new_seg));
-		}
+			if (P_width - X < 1)
+				split = str;
+			else
+				split = split_str_once(str, P_width - X);
 
-		if (!split) {
-			gr_get_string_size(&w, NULL, str);
-			X += w;
-			break;
-		}
+			if (split != str) {
+				log_text_seg new_seg;
+				message_log_add_seg(&new_seg, X, msg_color, str, flags);
+				entry->push_back(std::move(new_seg));
+			}
 
-		X = ACTION_X;
-		str = split;
+			if (!split) {
+				gr_get_string_size(&w, NULL, str);
+				X += w;
+				break;
+			}
+
+			X = ACTION_X;
+			str = split;
+		}
+	} else {
+		log_text_seg new_seg;
+		message_log_add_seg(&new_seg, X, msg_color, str, flags);
+		entry->push_back(std::move(new_seg));
 	}
 
 	// free the buffer
@@ -664,7 +670,7 @@ int message_log_team_get_color(int team)
 }
 
 // pw = total pixel width
-void message_log_init_scrollback(int pw)
+void message_log_init_scrollback(int pw, bool split_string)
 {
 	P_width = pw;
 	mission_log_cull_obsolete_entries();  // compact array so we don't have gaps
@@ -716,11 +722,10 @@ void message_log_init_scrollback(int pw)
 		}
 
 		//Set the flags for objectives
-		if ((entry->type == LOG_GOAL_SATISFIED) || (entry->type == LOG_GOAL_FAILED)) {
-			if (entry->type == LOG_GOAL_SATISFIED)
-				thisEntry.objective.flags = LOG_FLAG_GOAL_TRUE;
-			if (entry->type == LOG_GOAL_FAILED)
-				thisEntry.objective.flags = LOG_FLAG_GOAL_FAILED;
+		if (entry->type == LOG_GOAL_SATISFIED) {
+			thisEntry.objective.flags = LOG_FLAG_GOAL_TRUE;
+		} else if (entry->type == LOG_GOAL_FAILED) {
+			thisEntry.objective.flags = LOG_FLAG_GOAL_FAILED;
 		} else {
 			thisEntry.objective.flags = 0;
 		}
@@ -738,27 +743,27 @@ void message_log_init_scrollback(int pw)
 
 		switch (entry->type) {
 			case LOG_SHIP_DESTROYED:
-				message_log_add_segs(XSTR( "Destroyed", 404), LOG_COLOR_NORMAL, 0, &thisEntry.segments);
+				message_log_add_segs(XSTR( "Destroyed", 404), LOG_COLOR_NORMAL, 0, &thisEntry.segments, split_string);
 				if (!entry->sname_display.empty()) {
-					message_log_add_segs(XSTR("  Kill: ", 405), LOG_COLOR_NORMAL, 0, &thisEntry.segments);
-					message_log_add_segs(entry->sname_display.c_str(), thisColor, 0, &thisEntry.segments);
+					message_log_add_segs(XSTR("  Kill: ", 405), LOG_COLOR_NORMAL, 0, &thisEntry.segments, split_string);
+					message_log_add_segs(entry->sname_display.c_str(), thisColor, 0, &thisEntry.segments, split_string);
 					if (entry->index >= 0) {
 						sprintf(text, NOX(" (%d%%)"), entry->index);
-						message_log_add_segs(text, LOG_COLOR_BRIGHT, 0, &thisEntry.segments);
+						message_log_add_segs(text, LOG_COLOR_BRIGHT, 0, &thisEntry.segments, split_string);
 					}
 				}
 				break;
 
 			case LOG_SELF_DESTRUCTED:
-				message_log_add_segs(XSTR("Self destructed", 1476), LOG_COLOR_NORMAL, 0, &thisEntry.segments);
+				message_log_add_segs(XSTR("Self destructed", 1476), LOG_COLOR_NORMAL, 0, &thisEntry.segments, split_string);
 				break;
 
 			case LOG_WING_DESTROYED:
-				message_log_add_segs(XSTR("Destroyed", 404), LOG_COLOR_NORMAL, 0, &thisEntry.segments);
+				message_log_add_segs(XSTR("Destroyed", 404), LOG_COLOR_NORMAL, 0, &thisEntry.segments, split_string);
 				break;
 
 			case LOG_SHIP_ARRIVED:
-				message_log_add_segs(XSTR("Arrived", 406), LOG_COLOR_NORMAL, 0, &thisEntry.segments);
+				message_log_add_segs(XSTR("Arrived", 406), LOG_COLOR_NORMAL, 0, &thisEntry.segments, split_string);
 				break;
 
 			case LOG_WING_ARRIVED:
@@ -767,20 +772,20 @@ void message_log_init_scrollback(int pw)
 				} else {
 					strcpy_s(text, XSTR( "Arrived", 406));
 				}
-				message_log_add_segs(text, LOG_COLOR_NORMAL, 0, &thisEntry.segments);
+				message_log_add_segs(text, LOG_COLOR_NORMAL, 0, &thisEntry.segments, split_string);
 				break;
 
 			case LOG_SHIP_DEPARTED:
-				message_log_add_segs(XSTR("Departed", 408), LOG_COLOR_NORMAL, 0, &thisEntry.segments);
+				message_log_add_segs(XSTR("Departed", 408), LOG_COLOR_NORMAL, 0, &thisEntry.segments, split_string);
 				break;
 
 			case LOG_WING_DEPARTED:
-				message_log_add_segs(XSTR("Departed", 408), LOG_COLOR_NORMAL, 0, &thisEntry.segments);
+				message_log_add_segs(XSTR("Departed", 408), LOG_COLOR_NORMAL, 0, &thisEntry.segments, split_string);
 				break;
 
 			case LOG_SHIP_DOCKED:
-				message_log_add_segs(XSTR("Docked with ", 409), LOG_COLOR_NORMAL, 0, &thisEntry.segments);
-				message_log_add_segs(entry->sname_display.c_str(), thisColor, 0, &thisEntry.segments);
+				message_log_add_segs(XSTR("Docked with ", 409), LOG_COLOR_NORMAL, 0, &thisEntry.segments, split_string);
+				message_log_add_segs(entry->sname_display.c_str(), thisColor, 0, &thisEntry.segments, split_string);
 				break;
 
 			case LOG_SHIP_SUBSYS_DESTROYED: {
@@ -793,54 +798,54 @@ void message_log_init_scrollback(int pw)
 					subsys_name = sip->subsystems[model_index].name;
 				}
 
-				message_log_add_segs(XSTR("Subsystem ", 410), LOG_COLOR_NORMAL, 0, &thisEntry.segments);
-				message_log_add_segs(subsys_name, LOG_COLOR_BRIGHT, 0, &thisEntry.segments);
-				message_log_add_segs(XSTR(" destroyed", 411), LOG_COLOR_NORMAL, 0, &thisEntry.segments);
+				message_log_add_segs(XSTR("Subsystem ", 410), LOG_COLOR_NORMAL, 0, &thisEntry.segments, split_string);
+				message_log_add_segs(subsys_name, LOG_COLOR_BRIGHT, 0, &thisEntry.segments, split_string);
+				message_log_add_segs(XSTR(" destroyed", 411), LOG_COLOR_NORMAL, 0, &thisEntry.segments, split_string);
 				break;
 			}
 
 			case LOG_SHIP_UNDOCKED:
-				message_log_add_segs(XSTR("Undocked with ", 412), LOG_COLOR_NORMAL, 0, &thisEntry.segments);
-				message_log_add_segs(entry->sname_display.c_str(), thisColor, 0, &thisEntry.segments);
+				message_log_add_segs(XSTR("Undocked with ", 412), LOG_COLOR_NORMAL, 0, &thisEntry.segments, split_string);
+				message_log_add_segs(entry->sname_display.c_str(), thisColor, 0, &thisEntry.segments, split_string);
 				break;
 
 			case LOG_SHIP_DISABLED:
-				message_log_add_segs(XSTR("Disabled", 413), LOG_COLOR_NORMAL, 0, &thisEntry.segments);
+				message_log_add_segs(XSTR("Disabled", 413), LOG_COLOR_NORMAL, 0, &thisEntry.segments, split_string);
 				break;
 
 			case LOG_SHIP_DISARMED:
-				message_log_add_segs(XSTR("Disarmed", 414), LOG_COLOR_NORMAL, 0, &thisEntry.segments);
+				message_log_add_segs(XSTR("Disarmed", 414), LOG_COLOR_NORMAL, 0, &thisEntry.segments, split_string);
 				break;
 
 			case LOG_PLAYER_CALLED_FOR_REARM:
-				message_log_add_segs(XSTR(" called for rearm", 415), LOG_COLOR_NORMAL, 0, &thisEntry.segments);
+				message_log_add_segs(XSTR(" called for rearm", 415), LOG_COLOR_NORMAL, 0, &thisEntry.segments, split_string);
 				break;
 
 			case LOG_PLAYER_ABORTED_REARM:
-				message_log_add_segs(XSTR(" aborted rearm", 416), LOG_COLOR_NORMAL, 0, &thisEntry.segments);
+				message_log_add_segs(XSTR(" aborted rearm", 416), LOG_COLOR_NORMAL, 0, &thisEntry.segments, split_string);
 				break;
 
 			case LOG_PLAYER_CALLED_FOR_REINFORCEMENT:
-				message_log_add_segs(XSTR("Called in as reinforcement", 417), LOG_COLOR_NORMAL, 0, &thisEntry.segments);
+				message_log_add_segs(XSTR("Called in as reinforcement", 417), LOG_COLOR_NORMAL, 0, &thisEntry.segments, split_string);
 				break;
 
 			case LOG_CARGO_REVEALED:
 				Assert( entry->index >= 0 );
 				Assert(!(entry->index & CARGO_NO_DEPLETE));
 
-				message_log_add_segs(XSTR("Cargo revealed: ", 418), LOG_COLOR_NORMAL, 0, &thisEntry.segments);
+				message_log_add_segs(XSTR("Cargo revealed: ", 418), LOG_COLOR_NORMAL, 0, &thisEntry.segments, split_string);
 				strncpy(text, Cargo_names[entry->index], sizeof(text) - 1);
-				message_log_add_segs(text, LOG_COLOR_BRIGHT, 0, &thisEntry.segments);
+				message_log_add_segs(text, LOG_COLOR_BRIGHT, 0, &thisEntry.segments, split_string);
 				break;
 
 			case LOG_CAP_SUBSYS_CARGO_REVEALED:
 				Assert( entry->index >= 0 );
 				Assert(!(entry->index & CARGO_NO_DEPLETE));
 
-				message_log_add_segs(entry->sname_display.c_str(), LOG_COLOR_NORMAL, 0, &thisEntry.segments);
-				message_log_add_segs(XSTR( " subsystem cargo revealed: ", 1488), LOG_COLOR_NORMAL, 0, &thisEntry.segments);
+				message_log_add_segs(entry->sname_display.c_str(), LOG_COLOR_NORMAL, 0, &thisEntry.segments, split_string);
+				message_log_add_segs(XSTR( " subsystem cargo revealed: ", 1488), LOG_COLOR_NORMAL, 0, &thisEntry.segments, split_string);
 				strncpy(text, Cargo_names[entry->index], sizeof(text) - 1);
-				message_log_add_segs(text, LOG_COLOR_BRIGHT, 0, &thisEntry.segments);
+				message_log_add_segs(text, LOG_COLOR_BRIGHT, 0, &thisEntry.segments, split_string);
 				break;
 
 
@@ -853,7 +858,7 @@ void message_log_init_scrollback(int pw)
 				else
 					strcat_s(text, XSTR( "failed.", 421));
 
-				message_log_add_segs(text, LOG_COLOR_BRIGHT, 0, &thisEntry.segments);
+				message_log_add_segs(text, LOG_COLOR_BRIGHT, 0, &thisEntry.segments, split_string);
 				break;
 			}	// matches case statement!
 			default:
@@ -872,21 +877,21 @@ void message_log_shutdown_scrollback()
 	Num_log_lines = 0;
 }
 
-color log_line_get_color(int tag)
+const color *log_line_get_color(int tag)
 {
 	switch (tag) {
 		case LOG_COLOR_BRIGHT:
-			return Color_bright;
+			return &Color_bright;
 
 		case LOG_COLOR_OTHER:
-			return Color_normal;
+			return &Color_normal;
 
 		default: {
 			int team = message_log_color_get_team(tag);
 			if (team < 0)
-				return Color_text_normal;
+				return &Color_text_normal;
 			else
-				return *iff_get_color_by_team(team, -1, 1);
+				return iff_get_color_by_team(team, -1, 1);
 		}
 	}
 }
@@ -913,8 +918,8 @@ void mission_log_scrollback(int line_offset, int list_x, int list_y, int list_w,
 		gr_print_timestamp(list_x + TIME_X, list_y + y, Log_scrollback_vec[i].timestamp, GR_RESIZE_MENU);
 
 		// print the objective
-		color obj_color = log_line_get_color(Log_scrollback_vec[i].objective.color);
-		gr_set_color_fast(&obj_color);
+		auto obj_color = log_line_get_color(Log_scrollback_vec[i].objective.color);
+		gr_set_color_fast(obj_color);
 
 		// check the flags
 		if ((Log_scrollback_vec[i].objective.flags & LOG_FLAG_GOAL_TRUE) || (Log_scrollback_vec[i].objective.flags & LOG_FLAG_GOAL_FAILED)) {
@@ -932,8 +937,8 @@ void mission_log_scrollback(int line_offset, int list_x, int list_y, int list_w,
 
 			const auto& thisSeg = Log_scrollback_vec[i].segments[j];
 
-			color this_color = log_line_get_color(Log_scrollback_vec[i].segments[j].color);
-			gr_set_color_fast(&this_color);
+			auto this_color = log_line_get_color(Log_scrollback_vec[i].segments[j].color);
+			gr_set_color_fast(this_color);
 
 			strcpy_s(buf, thisSeg.text.get());
 			font::force_fit_string(buf, 256, list_w - thisSeg.x);

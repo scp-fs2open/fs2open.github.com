@@ -183,7 +183,7 @@ ADE_FUNC(runSEXP, l_Mission, "string", "Runs the defined SEXP script within a `w
 {
 	const char* s;
 	int r_val;
-	char buf[8192];
+	SCP_string buf;
 
 	if(!ade_get_args(L, "s", &s))
 		return ADE_RETURN_FALSE;
@@ -196,18 +196,18 @@ ADE_FUNC(runSEXP, l_Mission, "string", "Runs the defined SEXP script within a `w
 		if (!Warned_about_runSEXP_parentheses)
 		{
 			Warned_about_runSEXP_parentheses = true;
-			Warning(LOCATION, "Invalid SEXP syntax: SEXPs must be surrounded by parentheses.  For backwards compatibility, the string has been enclosed in parentheses.  This may not be correct in all use cases.");
+			Warning(LOCATION, "Invalid SEXP syntax: SEXPs must be surrounded by parentheses.  For backwards compatibility, the string has been enclosed in parentheses.  This may not be correct in all use cases.\n\nrunSEXP string:\n%s\n", s);
 		}
 		// this is the old sexp handling method, which is incorrect
-		snprintf(buf, 8191, "( when ( true ) ( %s ) )", s);
+		sprintf(buf, "( when ( true ) ( %s ) )", s);
 	}
 	else
 	{
 		// this is correct usage
-		snprintf(buf, 8191, "( when ( true ) %s )", s);
+		sprintf(buf, "( when ( true ) %s )", s);
 	}
 
-	r_val = run_sexp(buf);
+	r_val = run_sexp(buf.c_str());
 
 	if (r_val == SEXP_TRUE)
 		return ADE_RETURN_TRUE;
@@ -782,7 +782,7 @@ ADE_INDEXER(l_Mission_Personas, "number/string IndexOrName", "Personas of the mi
 		idx = message_persona_name_lookup(name);
 	}
 
-	if (idx < 0 || idx >= Num_personas)
+	if (idx < 0 || idx >= (int)Personas.size())
 		return ade_set_args(L, "o", l_Persona.Set(-1));
 	else
 		return ade_set_args(L, "o", l_Persona.Set(idx));
@@ -790,7 +790,7 @@ ADE_INDEXER(l_Mission_Personas, "number/string IndexOrName", "Personas of the mi
 
 ADE_FUNC(__len, l_Mission_Personas, NULL, "Number of personas in the mission", "number", "Number of messages in mission")
 {
-	return ade_set_args(L, "i", Num_personas);
+	return ade_set_args(L, "i", (int)Personas.size());
 }
 
 //****SUBLIBRARY: Mission/Fireballs
@@ -825,7 +825,7 @@ ADE_FUNC(addMessage, l_Mission, "string name, string text, [persona persona]", "
 	if (name == NULL || text == NULL)
 		return ade_set_error(L, "o", l_Message.Set(-1));
 
-	if (personaIdx < 0 || personaIdx >= Num_personas)
+	if (personaIdx < 0 || personaIdx >= (int)Personas.size())
 		personaIdx = -1;
 
 	add_message(name, text, personaIdx, 0);

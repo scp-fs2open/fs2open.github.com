@@ -1607,7 +1607,7 @@ static void asteroid_do_area_effect(object *asteroid_objp)
 			continue;
 
 		ship_apply_global_damage(ship_objp, asteroid_objp, &asteroid_objp->pos, damage, asip->damage_type_idx);
-		weapon_area_apply_blast(NULL, ship_objp, &asteroid_objp->pos, blast, 0);
+		weapon_area_apply_blast(nullptr, ship_objp, &asteroid_objp->pos, blast, false);
 	}	// end for
 }
 
@@ -1619,7 +1619,7 @@ static void asteroid_do_area_effect(object *asteroid_objp)
  * @param hitpos		world position asteroid was hit, can be NULL if hit by area effect
  * @param damage		amount of damage to apply to asteroid
  */
-void asteroid_hit( object * pasteroid_obj, object * other_obj, vec3d * hitpos, float damage )
+void asteroid_hit( object * pasteroid_obj, object * other_obj, vec3d * hitpos, float damage, vec3d* force )
 {
 	float		explosion_life;
 	asteroid	*asp;
@@ -1631,7 +1631,13 @@ void asteroid_hit( object * pasteroid_obj, object * other_obj, vec3d * hitpos, f
 	}
 
 	if ( MULTIPLAYER_MASTER ){
-		send_asteroid_hit( pasteroid_obj, other_obj, hitpos, damage );
+		send_asteroid_hit( pasteroid_obj, other_obj, hitpos, damage, force );
+	}
+
+	if (hitpos && force && The_mission.ai_profile->flags[AI::Profile_Flags::Whackable_asteroids]) {
+		vec3d rel_hit_pos = *hitpos - pasteroid_obj->pos;
+		physics_calculate_and_apply_whack(force, &rel_hit_pos, &pasteroid_obj->phys_info, &pasteroid_obj->orient, &pasteroid_obj->phys_info.I_body_inv);
+		pasteroid_obj->phys_info.desired_vel = pasteroid_obj->phys_info.vel;
 	}
 
 	pasteroid_obj->hull_strength -= damage;
@@ -2454,6 +2460,10 @@ void asteroid_init()
 	// parse any modular tables
 	parse_modular_table("*-ast.tbm", asteroid_parse_tbl);
 
+	//No asteroids defined. Bail!
+	if (asteroid_list.empty())
+		return;
+
 	// now verify the asteroids were found and put them in the correct order
 	verify_asteroid_list();
 
@@ -2609,6 +2619,9 @@ void asteroid_target_closest_danger()
 
 void asteroid_page_in()
 {
+	if (Asteroid_info.empty())
+		return;
+
 	if (Asteroid_field.num_initial_asteroids > 0 ) {
 		int i, j, k;
 

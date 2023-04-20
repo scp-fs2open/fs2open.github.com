@@ -23,11 +23,9 @@ extern int Promoted;
 extern debriefing Traitor_debriefing;
 extern debrief_stage Promotion_stage, Badge_stage;
 
-extern bool API_Access;
-
-void debrief_init();
+void debrief_init(bool API_Access = false);
 void debrief_do_frame(float frametime);
-void debrief_close();
+void debrief_close(bool API_Access = false);
 
 // useful so that the server can reset the list and ship slots if a player drops
 void debrief_rebuild_player_list();
@@ -39,7 +37,7 @@ void debrief_assemble_optional_mission_popup_text(char *buffer, char *mission_lo
 
 int debrief_select_music();
 void debrief_choose_medal_variant(char* buf, int medal_earned, int zero_based_version_index);
-void debrief_accept(int ok_to_post_start_game_event = 1);
+void debrief_accept(int ok_to_post_start_game_event = 1, bool API_Access = false);
 
 // multiplayer call to set up the client side debriefings
 void debrief_multi_server_stuff();

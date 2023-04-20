@@ -146,6 +146,8 @@ extern char* alloc_block(const char* startstr, const char* endstr, int extra_cha
 // the default string length if using the F_NAME case.
 extern char *stuff_and_malloc_string(int type, const char *terminators = nullptr);
 extern void stuff_malloc_string(char **dest, int type, const char *terminators = nullptr);
+extern bool check_first_non_whitespace_char(const char *str, char ch_to_look_for, char **after_ch = nullptr);
+extern bool check_first_non_grayspace_char(const char *str, char ch_to_look_for, char **after_ch = nullptr);
 extern int stuff_float(float *f, bool optional = false);
 extern int stuff_int(int *i, bool optional = false);
 extern int stuff_long(long *l, bool optional = false);
@@ -231,6 +233,7 @@ extern void stuff_float_list(SCP_vector<float>& flp);
 extern size_t stuff_vec3d_list(vec3d *vlp, size_t max_vecs);
 extern void stuff_vec3d_list(SCP_vector<vec3d> &vec_list);
 extern size_t stuff_bool_list(bool *blp, size_t max_bools);
+extern void stuff_vec2d(vec2d* vp);
 extern void stuff_vec3d(vec3d *vp);
 extern void stuff_matrix(matrix *mp);
 extern void stuff_angles_deg_phb(angles* vp);
@@ -241,6 +244,7 @@ extern void find_and_stuff_or_add(const char *id, int *addr, int f_type, char *s
 	int max, const char *description);
 extern int get_string(char *str, int max = -1);
 extern void get_string(SCP_string &str);
+extern void stuff_parenthesized_vec2d(vec2d* vp);
 extern void stuff_parenthesized_vec3d(vec3d *vp);
 extern void stuff_boolean(int *i, bool a_to_eol=true);
 extern void stuff_boolean(bool *b, bool a_to_eol=true);

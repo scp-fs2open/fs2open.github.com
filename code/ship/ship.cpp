@@ -1002,6 +1002,7 @@ void ship_info::clone(const ship_info& other)
 	debris_damage_mult = other.debris_damage_mult;
 	debris_arc_percent = other.debris_arc_percent;
 	debris_gravity_const = other.debris_gravity_const;
+	debris_density = other.debris_density;
 	debris_ambient_sound = other.debris_ambient_sound;
 	debris_collision_sound_light = other.debris_collision_sound_light;
 	debris_collision_sound_heavy = other.debris_collision_sound_heavy;
@@ -1351,6 +1352,7 @@ void ship_info::move(ship_info&& other)
 	debris_damage_mult = other.debris_damage_mult;
 	debris_arc_percent = other.debris_arc_percent;
 	debris_gravity_const = other.debris_gravity_const;
+	debris_density = other.debris_density;
 	debris_ambient_sound = other.debris_ambient_sound;
 	debris_collision_sound_light = other.debris_collision_sound_light;
 	debris_collision_sound_heavy = other.debris_collision_sound_heavy;
@@ -1775,6 +1777,7 @@ ship_info::ship_info()
 	debris_damage_mult = 1.0f;
 	debris_arc_percent = 0.5f;
 	debris_gravity_const = 1.0f;
+	debris_density = 1.0f;
 	debris_ambient_sound = GameSounds::DEBRIS;
 	debris_collision_sound_light = gamesnd_id();
 	debris_collision_sound_heavy = gamesnd_id();
@@ -2228,9 +2231,29 @@ static void parse_ship(const char *filename, bool replace)
 				sip->clone(Ship_templates[template_id]);
 				strcpy_s(sip->name, fname);
 				new_name = true;
+				create_if_not_found = false;
 			}
 			else {
 				Warning(LOCATION, "Unable to find ship template '%s' requested by ship class '%s', ignoring template request...", template_name, fname);
+			}
+		}
+	}
+	if( optional_string( "+Use Ship as Template:" ) ) {
+		if ( !create_if_not_found ) {
+			Warning(LOCATION, "Either '+nocreate' or '+Use Template:' were specified with '+Use Ship as Template:' for ship class '%s', ignoring '+Use Ship as Template:'\n", fname);
+		}
+		else {
+			char template_name[SHIP_MULTITEXT_LENGTH];
+			stuff_string(template_name, F_NAME, SHIP_MULTITEXT_LENGTH);
+			int template_id = ship_info_lookup_sub(template_name);
+			if ( template_id != -1 ) {
+				first_time = false;
+				sip->clone(Ship_info[template_id]);
+				strcpy_s(sip->name, fname);
+				new_name = true;
+			}
+			else {
+				Warning(LOCATION, "Unable to find ship class '%s' (name must be exact, check table loading order) requested by ship class '%s', ignoring template request...", template_name, fname);
 			}
 		}
 	}
@@ -3283,6 +3306,10 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		} else if (first_time) {
 			sip->debris_gravity_const = sip->dying_gravity_const;
 		}
+
+		if (optional_string("+Debris Density"))
+			stuff_float(&sip->debris_density);
+
 		gamesnd_id ambient_snd, collision_snd_light, collision_snd_heavy, explosion_snd;
 		if (parse_game_sound("+Ambient Sound:", &ambient_snd))
 			sip->debris_ambient_sound = ambient_snd;
@@ -4983,6 +5010,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			float	turning_rate;
 			float	percentage_of_hits;
 			bool turret_has_base_fov = false;
+			bool turret_has_max_fov = false;
 			bool turret_has_barrel_fov = false;
 			model_subsystem *sp = NULL;			// to append on the ships list of subsystems
 			
@@ -5058,6 +5086,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 
 				sp->turret_max_bomb_ownage = -1;
 				sp->turret_max_target_ownage = -1;
+				sp->density = 1.0f;
 			}
 			sfo_return = stuff_float_optional(&percentage_of_hits);
 			if(sfo_return==2)
@@ -5144,26 +5173,27 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			}
 
 			if(optional_string("$Maximum Barrel Elevation:")){
-				int value;
-				stuff_int(&value);
-				CAP(value, 0, 90);
-				float angle = fl_radians(90 - value);
+				float value;
+				stuff_float(&value);
+				CAP(value, 0.0f, 90.0f);
+				float angle = fl_radians(90.0f - value);
 				sp->turret_max_fov = cosf(angle);
+				turret_has_max_fov = true;
 			}
 
 			if(optional_string("$Turret Base FOV:")) {
-				int value;
-				stuff_int(&value);
-				CAP(value, 0, 359);
+				float value;
+				stuff_float(&value);
+				CAP(value, 0.0f, 360.0f);
 				float angle = fl_radians(value)/2.0f;
 				sp->turret_base_fov = cosf(angle);
 				turret_has_base_fov = true;
 			}
 
 			if (optional_string("$Turret Barrel FOV:")) {
-				int value;
-				stuff_int(&value);
-				CAP(value, 0, 359);
+				float value;
+				stuff_float(&value);
+				CAP(value, 0.0f, 360.0f);
 				float angle = fl_radians(value) / 2.0f;
 				sp->turret_fov = cosf(angle);
 				turret_has_barrel_fov = true;
@@ -5240,6 +5270,10 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 				}
 			}
 
+			if (optional_string("$Debris Density:")) {
+				stuff_float(&sp->density);
+			}
+
 			if (optional_string("$Flags:")) {
                 SCP_vector<SCP_string> errors;
                 flagset<Model::Subsystem_Flags> tmp_flags;
@@ -5263,10 +5297,12 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 					sip->flags.set(Ship::Info_Flags::Allow_landings);
 			}
 
-            if (turret_has_base_fov)
-                sp->flags.set(Model::Subsystem_Flags::Turret_base_restricted_fov);
 			if (turret_has_barrel_fov)
-				sp->flags.set(Model::Subsystem_Flags::Turret_barrel_override_fov);
+				sp->flags.set(Model::Subsystem_Flags::Turret_barrel_fov_overridden);
+			if (turret_has_base_fov)
+				sp->flags.set(Model::Subsystem_Flags::Turret_base_fov_overridden);
+			if (turret_has_max_fov)
+				sp->flags.set(Model::Subsystem_Flags::Turret_max_fov_overridden);
 
 			if (optional_string("+non-targetable")) {
 				Warning(LOCATION, "Grammar error in table file.  Please change \"+non-targetable\" to \"+untargetable\".");
@@ -8670,17 +8706,18 @@ static void ship_blow_up_area_apply_blast( object *exp_objp)
 				continue;
 			}
 
+			vec3d force, vec_to_impact;
+			vm_vec_sub(&vec_to_impact, &objp->pos, &exp_objp->pos);
+			vm_vec_copy_normalize(&force, &vec_to_impact);
+			vm_vec_scale(&force, blast);
+
 			switch ( objp->type ) {
 			case OBJ_SHIP:
 				ship_apply_global_damage( objp, exp_objp, &exp_objp->pos, damage, sip->shockwave.damage_type_idx);
-				vec3d force, vec_ship_to_impact;
-				vm_vec_sub( &vec_ship_to_impact, &objp->pos, &exp_objp->pos );
-				vm_vec_copy_normalize( &force, &vec_ship_to_impact );
-				vm_vec_scale( &force, blast );
 				ship_apply_whack( &force, &exp_objp->pos, objp );
 				break;
 			case OBJ_ASTEROID:
-				asteroid_hit(objp, NULL, NULL, damage);
+				asteroid_hit(objp, NULL, &exp_objp->pos, damage, &force);
 				break;
 			default:
 				Int3();
@@ -8893,7 +8930,7 @@ static void ship_dying_frame(object *objp, int ship_num)
 				pe.max_rad = pef.max_rad; // * objp->radius;
 
 				if (pe.num_high > 0) {
-					particle::emit( &pe, particle::PARTICLE_SMOKE2, 0, 50 );
+					particle::emit( &pe, particle::PARTICLE_SMOKE2, 0 );
 				}
 
 				// do sound - maybe start a random sound, if it has played far enough.
@@ -11535,9 +11572,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		}
 
 		// While we're at it, let's copy over the ETS settings too
-		sp->weapon_recharge_index = orig_wep_rechg_idx;
-		sp->shield_recharge_index = orig_shd_rechg_idx;
-		sp->engine_recharge_index = orig_eng_rechg_idx;
+		set_recharge_rates(&Objects[sp->objnum], orig_shd_rechg_idx, orig_wep_rechg_idx, orig_eng_rechg_idx);
 	}
 
 	// zookeeper - If we're switching in the loadout screen, make sure we retain initial velocity set in FRED
@@ -11667,7 +11702,9 @@ int ship_launch_countermeasure(object *objp, int rand_val)
 
 		// Play sound effect for counter measure launch
 		Assert(shipp->current_cmeasure < weapon_info_size());
-		if ( Weapon_info[shipp->current_cmeasure].launch_snd.isValid() ) {
+		if (Player_obj == objp && Weapon_info[shipp->current_cmeasure].cockpit_launch_snd.isValid()) {
+			snd_play(gamesnd_get_game_sound(Weapon_info[shipp->current_cmeasure].cockpit_launch_snd));
+		} else if ( Weapon_info[shipp->current_cmeasure].launch_snd.isValid() ) {
 			snd_play_3d( gamesnd_get_game_sound(Weapon_info[shipp->current_cmeasure].launch_snd), &pos, &View_position );
 		}
 
@@ -12704,43 +12741,43 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 			if ( sound_played != winfo_p->launch_snd ) {
 				sound_played = winfo_p->launch_snd;
 				if ( obj == Player_obj ) {
-					if ( winfo_p->launch_snd.isValid() ) {
-						weapon_info *wip;
-						ship_weapon *sw_pl;
+					weapon_info *wip;
+					ship_weapon *sw_pl;
 
-						//Update the last timestamp until continous fire is over, so we have the timestamp of the cease-fire.
-						if (shipp->was_firing_last_frame[bank_to_fire] == 1) {
-							swp->last_primary_fire_sound_stamp[bank_to_fire] = timestamp();
-						}
+					//Update the last timestamp until continous fire is over, so we have the timestamp of the cease-fire.
+					if (shipp->was_firing_last_frame[bank_to_fire] == 1) {
+						swp->last_primary_fire_sound_stamp[bank_to_fire] = timestamp();
+					}
 
-						//Check for pre-launch sound and play if relevant
-						if( (winfo_p->pre_launch_snd.isValid())									//If this weapon type has a pre-fire sound
-							&& ((timestamp() - swp->last_primary_fire_sound_stamp[bank_to_fire]) >= winfo_p->pre_launch_snd_min_interval)	//and if we're past our minimum delay from the last cease-fire
-							&& (shipp->was_firing_last_frame[bank_to_fire] == 0)				//and if we are at the beginning of a firing stream
-						){ 
-							snd_play( gamesnd_get_game_sound(winfo_p->pre_launch_snd), 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY); //play it
-						} else { //Otherwise, play normal firing sounds
-							// HACK
-							if(winfo_p->launch_snd == gamesnd_id(GameSounds::AUTOCANNON_SHOT)){
-								snd_play( gamesnd_get_game_sound(winfo_p->launch_snd), 0.0f, 1.0f, SND_PRIORITY_TRIPLE_INSTANCE );
-							} else {
-								snd_play( gamesnd_get_game_sound(winfo_p->launch_snd), 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY );
-							}
+					//Check for pre-launch sound and play if relevant
+					if( (winfo_p->pre_launch_snd.isValid())									//If this weapon type has a pre-fire sound
+						&& ((timestamp() - swp->last_primary_fire_sound_stamp[bank_to_fire]) >= winfo_p->pre_launch_snd_min_interval)	//and if we're past our minimum delay from the last cease-fire
+						&& (shipp->was_firing_last_frame[bank_to_fire] == 0)				//and if we are at the beginning of a firing stream
+					){ 
+						snd_play( gamesnd_get_game_sound(winfo_p->pre_launch_snd), 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY); //play it
+					} else { //Otherwise, play normal firing sounds
+						// HACK
+						if(winfo_p->launch_snd == gamesnd_id(GameSounds::AUTOCANNON_SHOT)){
+							snd_play( gamesnd_get_game_sound(winfo_p->launch_snd), 0.0f, 1.0f, SND_PRIORITY_TRIPLE_INSTANCE );
+						} else if (winfo_p->cockpit_launch_snd.isValid()) {
+							snd_play(gamesnd_get_game_sound(winfo_p->cockpit_launch_snd), 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY);
+						} else if (winfo_p->launch_snd.isValid()) {
+							snd_play( gamesnd_get_game_sound(winfo_p->launch_snd), 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY );
 						}
+					}
 	
-						sw_pl = &Player_ship->weapons;
-						if (sw_pl->current_primary_bank >= 0)
-						{
-							wip = &Weapon_info[sw_pl->primary_bank_weapons[sw_pl->current_primary_bank]];
-							int force_level = (int) ((wip->armor_factor + wip->shield_factor * 0.2f) * (wip->damage * wip->damage - 7.5f) * 0.45f + 0.6f) * 10 + 2000;
+					sw_pl = &Player_ship->weapons;
+					if (sw_pl->current_primary_bank >= 0)
+					{
+						wip = &Weapon_info[sw_pl->primary_bank_weapons[sw_pl->current_primary_bank]];
+						int force_level = (int) ((wip->armor_factor + wip->shield_factor * 0.2f) * (wip->damage * wip->damage - 7.5f) * 0.45f + 0.6f) * 10 + 2000;
 
-							// modify force feedback for ballistics: make it stronger
-							if (wip->wi_flags[Weapon::Info_Flags::Ballistic])
-								joy_ff_play_primary_shoot(force_level * 2);
-							// no ballistics
-							else
-								joy_ff_play_primary_shoot(force_level);
-						}
+						// modify force feedback for ballistics: make it stronger
+						if (wip->wi_flags[Weapon::Info_Flags::Ballistic])
+							joy_ff_play_primary_shoot(force_level * 2);
+						// no ballistics
+						else
+							joy_ff_play_primary_shoot(force_level);
 					}
 				}else {
 					if ( winfo_p->launch_snd.isValid() ) {
@@ -13431,16 +13468,19 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 	}
 
 	if ( obj == Player_obj ) {
-		if ( Weapon_info[weapon_idx].launch_snd.isValid() ) {
-			snd_play( gamesnd_get_game_sound(Weapon_info[weapon_idx].launch_snd), 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY );
-			swp = &Player_ship->weapons;
-			if (bank >= 0) {
-				wip = &Weapon_info[swp->secondary_bank_weapons[bank]];
-				if (Player_ship->flags[Ship_Flags::Secondary_dual_fire]){
-					joy_ff_play_secondary_shoot((int) (wip->cargo_size * 2.0f));
-				} else {
-					joy_ff_play_secondary_shoot((int) wip->cargo_size);
-				}
+		if ( Weapon_info[weapon_idx].cockpit_launch_snd.isValid() ) {
+			snd_play( gamesnd_get_game_sound(Weapon_info[weapon_idx].cockpit_launch_snd), 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY );
+		} else if (Weapon_info[weapon_idx].launch_snd.isValid()) {
+			snd_play(gamesnd_get_game_sound(Weapon_info[weapon_idx].launch_snd), 0.0f, 1.0f, SND_PRIORITY_MUST_PLAY);
+		}
+
+		swp = &Player_ship->weapons;
+		if (bank >= 0) {
+			wip = &Weapon_info[swp->secondary_bank_weapons[bank]];
+			if (Player_ship->flags[Ship_Flags::Secondary_dual_fire]){
+				joy_ff_play_secondary_shoot((int) (wip->cargo_size * 2.0f));
+			} else {
+				joy_ff_play_secondary_shoot((int) wip->cargo_size);
 			}
 		}
 

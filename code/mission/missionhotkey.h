@@ -17,14 +17,18 @@
 #define MAX_LINES MAX_SHIPS // retail was 200, bump it to match MAX_SHIPS
 
 // Types of items that can be in the hotkey list
-#define HOTKEY_LINE_HEADING 1
-#define HOTKEY_LINE_WING 2
-#define HOTKEY_LINE_SHIP 3
-#define HOTKEY_LINE_SUBSHIP 4 // ship that is in a wing
+enum class HotkeyLineType
+{
+	NONE = 0,
+	HEADING,
+	WING,
+	SHIP,
+	SUBSHIP,
+};
 
 struct hotkey_line {
 	SCP_string label;
-	int type; // type 0 is an unused line
+	HotkeyLineType type; // NONE is an unused line
 	int index;
 	int y; // Y coordinate of line
 };

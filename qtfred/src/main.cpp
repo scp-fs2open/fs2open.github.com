@@ -138,6 +138,7 @@ int main(int argc, char* argv[]) {
 								 { SubSystem::Iff,               app.tr("Initializing IFF") },
 								 { SubSystem::Objects,           app.tr("Initializing objects") },
 								 { SubSystem::Models,            app.tr("Initializing model system") },
+								 { SubSystem::ModelAnimations,   app.tr("Initializing model animations") },
 								 { SubSystem::Species,           app.tr("Initializing species") },
 								 { SubSystem::BriefingIcons,     app.tr("Initializing briefing icons") },
 								 { SubSystem::HudCommOrders,     app.tr("Initializing HUD comm orders") },

@@ -186,6 +186,24 @@ bool ai_lua_is_valid_target(int sexp_op, int target_objnum, ship* self, size_t o
 	return ai_lua_is_valid_target_lua(mode, target_objnum, self);
 }
 
+bool ai_lua_is_valid_ship(int sexp_op, bool isWing, ship* self)
+{
+	const player_order_lua& order = *ai_lua_find_player_order(sexp_op);
+
+	switch (order.shipRestrictions) {
+	case player_order_lua::ship_restrictions::ANY:
+		return true;
+	case player_order_lua::ship_restrictions::WING:
+		return isWing;
+	case player_order_lua::ship_restrictions::IN_PLAYER_WING:
+		return self->wingnum != -1 && Ships[Player_obj->instance].wingnum == self->wingnum;
+	case player_order_lua::ship_restrictions::PLAYER_WING:
+		return isWing && self->wingnum != -1 && Ships[Player_obj->instance].wingnum == self->wingnum;
+	}
+
+	return false;
+}
+
 ai_achievability ai_lua_is_achievable(const ai_goal* aigp, int objnum){
 	const auto& lua_ai = Lua_ai_modes.at(aigp->ai_submode);
 

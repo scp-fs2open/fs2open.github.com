@@ -158,6 +158,17 @@ void LuaAISEXP::parseTable() {
 			}
 		}
 
+		if (optional_string("+Ship Restrictions:")) {
+			int result = optional_string_one_of(4, "Any", "Wing", "On Player Wing", "Player Wing");
+			if (result == -1) {
+				error_display(0, "Unknown ship restriction for player order %s. Assuming \"	Any\".", order.displayText.c_str());
+				order.shipRestrictions = player_order_lua::ship_restrictions::ANY;
+			}
+			else {
+				order.shipRestrictions = static_cast<player_order_lua::ship_restrictions>(result);
+			}
+		}
+
 		if (optional_string("+Acknowledge Message:")) {
 			SCP_string message;
 			stuff_string(message, F_NAME);
