@@ -663,12 +663,12 @@ ADE_FUNC(removeSound, l_Object, "soundentry GameSnd, [subsystem Subsys=nil]",
 
 
 ADE_FUNC(getIFFColor, l_Object, "boolean ReturnType", 
-	"Gets the IFF color of the object. True to return raw rgb, false to return color object. Defaults to true.",
-	"number, number, number | color", 
+	"Gets the IFF color of the object. False to return raw rgb, true to return color object. Defaults to false.",
+	"number, number, number, number | color", 
 	"IFF rgb color of the object or nil if object invalid")
 {
 	object_h* objh;
-	bool rc = true;
+	bool rc = false;
 
 	if (!ade_get_args(L, "o|b", l_Object.GetPtr(&objh), &rc))
 		return ADE_RETURN_NIL;
@@ -679,8 +679,8 @@ ADE_FUNC(getIFFColor, l_Object, "boolean ReturnType",
 	auto objp = objh->objp;
 	color* cur = hud_get_iff_color(objp);
 
-	if (rc) {
-		return ade_set_args(L, "iii", (int)cur->red, (int)cur->green, (int)cur->blue, (int)cur->alpha);
+	if (!rc) {
+		return ade_set_args(L, "iiii", (int)cur->red, (int)cur->green, (int)cur->blue, (int)cur->alpha);
 	} else {
 		return ade_set_args(L, "o", l_Color.Set(*cur));
 	}

@@ -552,19 +552,19 @@ ADE_FUNC(setColor,
 ADE_FUNC(getColor,
 	l_Graphics,
 	"boolean",
-	"Gets the active 2D drawing color. True to return raw rgb, false to return a color object. Defaults to true.",
+	"Gets the active 2D drawing color. False to return raw rgb, true to return a color object. Defaults to false.",
 	"number, number, number, number | color",
 	"rgba color which is currently in use for 2D drawing")
 {
 	if(!Gr_inited)
 		return ADE_RETURN_NIL;
 
-	bool rc = true;
+	bool rc = false;
 	ade_get_args(L, "|b", &rc);
 
 	color cur = gr_screen.current_color;
 
-	if (rc) {
+	if (!rc) {
 		return ade_set_args(L, "iiii", (int)cur.red, (int)cur.green, (int)cur.blue, (int)cur.alpha);
 	} else {
 		return ade_set_args(L, "o", l_Color.Set(cur));

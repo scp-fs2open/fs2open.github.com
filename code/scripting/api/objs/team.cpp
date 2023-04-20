@@ -43,12 +43,12 @@ ADE_VIRTVAR(Name, l_Team, "string", "Team name", "string", "Team name, or empty 
 ADE_FUNC(getColor,
 	l_Team,
 	"boolean ReturnType",
-	"Gets the IFF color of the specified Team. True to return raw rgb, false to return color object. Defaults to true.",
-	"number, number, number",
+	"Gets the IFF color of the specified Team. False to return raw rgb, true to return color object. Defaults to false.",
+	"number, number, number, number | color",
 	"rgb color for the specified team or nil if invalid")
 {
 	int idx;
-	bool rc = true;
+	bool rc = false;
 	if(!ade_get_args(L, "o|b", l_Team.Get(&idx), &rc))
 		return ADE_RETURN_NIL;
 
@@ -57,8 +57,8 @@ ADE_FUNC(getColor,
 
 	color* cur = iff_get_color_by_team(idx, 0, 0);
 
-	if (rc) {
-		return ade_set_args(L, "iii", (int)cur->red, (int)cur->green, (int)cur->blue, (int)cur->alpha);
+	if (!rc) {
+		return ade_set_args(L, "iiii", (int)cur->red, (int)cur->green, (int)cur->blue, (int)cur->alpha);
 	} else {
 		return ade_set_args(L, "o", l_Color.Set(*cur));
 	}
