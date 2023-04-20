@@ -183,7 +183,7 @@ ADE_FUNC(runSEXP, l_Mission, "string", "Runs the defined SEXP script within a `w
 {
 	const char* s;
 	int r_val;
-	char buf[8192];
+	SCP_string buf;
 
 	if(!ade_get_args(L, "s", &s))
 		return ADE_RETURN_FALSE;
@@ -196,18 +196,18 @@ ADE_FUNC(runSEXP, l_Mission, "string", "Runs the defined SEXP script within a `w
 		if (!Warned_about_runSEXP_parentheses)
 		{
 			Warned_about_runSEXP_parentheses = true;
-			Warning(LOCATION, "Invalid SEXP syntax: SEXPs must be surrounded by parentheses.  For backwards compatibility, the string has been enclosed in parentheses.  This may not be correct in all use cases.");
+			Warning(LOCATION, "Invalid SEXP syntax: SEXPs must be surrounded by parentheses.  For backwards compatibility, the string has been enclosed in parentheses.  This may not be correct in all use cases.\n\nrunSEXP string:\n%s\n", s);
 		}
 		// this is the old sexp handling method, which is incorrect
-		snprintf(buf, 8191, "( when ( true ) ( %s ) )", s);
+		sprintf(buf, "( when ( true ) ( %s ) )", s);
 	}
 	else
 	{
 		// this is correct usage
-		snprintf(buf, 8191, "( when ( true ) %s )", s);
+		sprintf(buf, "( when ( true ) %s )", s);
 	}
 
-	r_val = run_sexp(buf);
+	r_val = run_sexp(buf.c_str());
 
 	if (r_val == SEXP_TRUE)
 		return ADE_RETURN_TRUE;
