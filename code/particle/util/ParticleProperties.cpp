@@ -7,7 +7,7 @@
 
 namespace particle {
 namespace util {
-ParticleProperties::ParticleProperties() : m_radius(0.0f, 1.0f), m_lifetime(0.0f, 1.0f), m_length (0.0f), m_size_lifetime_curve (-1){
+ParticleProperties::ParticleProperties() : m_radius(0.0f, 1.0f), m_lifetime(0.0f, 1.0f), m_length (0.0f), m_size_lifetime_curve (-1), m_vel_lifetime_curve (-1){
 }
 
 void ParticleProperties::parse(bool nocreate) {
