@@ -67,8 +67,6 @@ const int DEBRIEFING_FONT = font::FONT1;
 
 extern float Brief_text_wipe_time_elapsed;
 
-bool API_Access = false;
-
 // 3rd coord is max width in pixels
 int Debrief_title_coords[GR_NUM_RESOLUTIONS][3] = {
 	{ // GR_640
@@ -382,7 +380,6 @@ static int Debrief_skip_popup_already_shown = 0;
 
 void debrief_text_init();
 bool debrief_can_accept();
-void debrief_accept(int ok_to_post_start_game_event);
 void debrief_kick_selected_player();
 
 
@@ -1278,7 +1275,7 @@ bool debrief_can_accept()
 }
 
 // what to do when the accept button is hit
-void debrief_accept(int ok_to_post_start_game_event)
+void debrief_accept(int ok_to_post_start_game_event, bool API_Access)
 {
 	int go_loop = 0;
 
@@ -1908,7 +1905,7 @@ static void debrief_init_music()
 	common_music_init(score);
 }
 
-void debrief_init()
+void debrief_init(bool API_Access)
 {
 	Assert(!Debrief_inited);
 //	Campaign.loop_enabled = 0;
@@ -2041,7 +2038,7 @@ void debrief_init()
 
 // --------------------------------------------------------------------------------------
 //	debrief_close()
-void debrief_close()
+void debrief_close(bool API_Access)
 {
 	int i;
 	scoring_struct *sc;

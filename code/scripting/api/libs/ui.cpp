@@ -77,9 +77,8 @@
 namespace scripting {
 namespace api {
 
-//*************************Testing stuff*************************
-// This section is for stuff that's considered experimental.
-ADE_LIB(l_UserInterface, "UserInterface", "ui", "Functions for managing the \"scpui\" user interface system.");
+//*************************Global UI stuff*************************
+ADE_LIB(l_UserInterface, "UserInterface", "ui", "Functions for managing the \"SCPUI\" user interface system.");
 
 ADE_FUNC(setOffset, l_UserInterface, "number x, number y",
          "Sets the offset from the top left corner at which <b>all</b> rocket contexts will be rendered", "boolean",
@@ -270,8 +269,7 @@ ADE_FUNC(linkTexture, l_UserInterface, "texture texture", "Links a texture direc
 
 //**********SUBLIBRARY: UserInterface/PilotSelect
 ADE_LIB_DERIV(l_UserInterface_PilotSelect, "PilotSelect", nullptr,
-              "API for accessing values specific to the pilot select screen.<br><b>Warning:</b> This is an internal "
-              "API for the new UI system. This should not be used by other code and may be removed in the future!",
+              "API for accessing values specific to the Pilot Select UI.",
               l_UserInterface);
 
 ADE_VIRTVAR(MAX_PILOTS, l_UserInterface_PilotSelect, nullptr, "Gets the maximum number of possible pilots.", "number",
@@ -393,8 +391,7 @@ ADE_VIRTVAR(CmdlinePilot, l_UserInterface_PilotSelect, nullptr,
 
 //**********SUBLIBRARY: UserInterface/MainHall
 ADE_LIB_DERIV(l_UserInterface_MainHall, "MainHall", nullptr,
-              "API for accessing values specific to the main hall screen.<br><b>Warning:</b> This is an internal "
-              "API for the new UI system. This should not be used by other code and may be removed in the future!",
+              "API for accessing values specific to the Main Hall UI.",
               l_UserInterface);
 
 ADE_FUNC(startAmbientSound, l_UserInterface_MainHall, nullptr, "Starts the ambient mainhall sound.", nullptr, "nothing")
@@ -420,8 +417,7 @@ ADE_FUNC(startMusic, l_UserInterface_MainHall, nullptr, "Starts the mainhall mus
 
 //**********SUBLIBRARY: UserInterface/Barracks
 ADE_LIB_DERIV(l_UserInterface_Barracks, "Barracks", nullptr,
-              "API for accessing values specific to the barracks screen.<br><b>Warning:</b> This is an internal "
-              "API for the new UI system. This should not be used by other code and may be removed in the future!",
+              "API for accessing values specific to the Barracks UI.",
               l_UserInterface);
 
 ADE_FUNC(listPilotImages, l_UserInterface_Barracks, nullptr, "Lists the names of the available pilot images.",
@@ -469,8 +465,7 @@ ADE_FUNC(acceptPilot, l_UserInterface_Barracks, "player selection", "Accept the 
 ADE_LIB_DERIV(l_UserInterface_Options,
 	"OptionsMenu",
 	nullptr,
-	"API for accessing values specific to the options screen.<br><b>Warning:</b> This is an internal "
-	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	"API for accessing values specific to the Options UI.",
 	l_UserInterface);
 
 ADE_FUNC(playVoiceClip,
@@ -488,8 +483,7 @@ ADE_FUNC(playVoiceClip,
 ADE_LIB_DERIV(l_UserInterface_Campaign,
 	"CampaignMenu",
 	nullptr,
-	"API for accessing data related to the campaign UI.<br><b>Warning:</b> This is an internal "
-	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	"API for accessing data related to the Campaign UI.",
 	l_UserInterface);
 
 ADE_FUNC(loadCampaignList,
@@ -566,8 +560,7 @@ ADE_FUNC(resetCampaign,
 ADE_LIB_DERIV(l_UserInterface_Brief,
 	"Briefing",
 	nullptr,
-	"API for accessing data related to the briefing UI.<br><b>Warning:</b> This is an internal "
-	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	"API for accessing data related to the Briefing UI.",
 	l_UserInterface);
 
 ADE_FUNC(getBriefingMusicName,
@@ -706,10 +699,6 @@ ADE_FUNC(skipTraining,
 	return ADE_RETURN_NIL;
 }
 
-// For now any loadout error checking needs to happen in the script to prevent FSO from
-// generating a popup that will not be interactible from Librocket. A later update to this
-// method will introduce return values instead of generating popups and those return values
-// can be used to handle loadout popups on the script side
 ADE_FUNC(commitToMission,
 	l_UserInterface_Brief,
 	nullptr,
@@ -920,8 +909,7 @@ ADE_FUNC(__len, l_Briefing_Goals, nullptr, "The number of goals in the mission",
 ADE_LIB_DERIV(l_UserInterface_CmdBrief,
 	"CommandBriefing",
 	nullptr,
-	"API for accessing data related to the command briefing UI.<br><b>Warning:</b> This is an internal "
-	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	"API for accessing data related to the Command Briefing UI.",
 	l_UserInterface);
 
 ADE_FUNC(getCmdBriefing,
@@ -939,8 +927,7 @@ ADE_FUNC(getCmdBriefing,
 ADE_LIB_DERIV(l_UserInterface_Debrief,
 	"Debriefing",
 	nullptr,
-	"API for accessing data related to the debriefing UI.<br><b>Warning:</b> This is an internal "
-	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	"API for accessing data related to the Debriefing UI.",
 	l_UserInterface);
 
 ADE_FUNC(initDebriefing,
@@ -950,8 +937,6 @@ ADE_FUNC(initDebriefing,
 	"number",
 	"Returns true when completed")
 {
-	//This is used to skip some UI preloading in debrief init
-	API_Access = true;
 	
 	// stop all looping mission sounds
 	game_stop_looped_sounds();
@@ -959,9 +944,7 @@ ADE_FUNC(initDebriefing,
 	 // fail all incomplete goals before entering debriefing
 	mission_goal_fail_incomplete();
 	hud_config_as_player();
-	debrief_init();
-
-	API_Access = false;
+	debrief_init(true);
 	
 	return ade_set_args(L, "b", true);
 }
@@ -1121,16 +1104,11 @@ ADE_FUNC(replayMission,
 
 	ade_get_args(L, "|b", &restart);
 
-	// This is used to skip some UI preloading in debrief init
-	API_Access = true;
-
-	debrief_close();
+	debrief_close(true);
 
 	if (restart) {
 		gameseq_post_event(GS_EVENT_START_GAME);
 	}
-
-	API_Access = false;
 
 	return ADE_RETURN_NIL;
 }
@@ -1147,18 +1125,13 @@ ADE_FUNC(acceptMission,
 
 	ade_get_args(L, "|b", &start);
 
-	// This is used to skip some UI preloading in debrief init
-	API_Access = true;
-
 	if (start) {
-		debrief_accept(1);
+		debrief_accept(1, true);
 	} else {
-		debrief_accept(0);
+		debrief_accept(0, true);
 	};
 
-	debrief_close();
-
-	API_Access = false;
+	debrief_close(true);
 
 	return ADE_RETURN_NIL;
 }
@@ -1167,8 +1140,7 @@ ADE_FUNC(acceptMission,
 ADE_LIB_DERIV(l_UserInterface_LoopBrief,
 	"LoopBrief",
 	nullptr,
-	"API for accessing data related to the loop brief UI.<br><b>Warning:</b> This is an internal "
-	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	"API for accessing data related to the Loop Brief UI.",
 	l_UserInterface);
 
 ADE_FUNC(getLoopBrief,
@@ -1204,8 +1176,7 @@ ADE_FUNC(setLoopChoice, l_UserInterface_LoopBrief, "boolean", "Accepts mission o
 ADE_LIB_DERIV(l_UserInterface_RedAlert,
 	"RedAlert",
 	nullptr,
-	"API for accessing data related to the Red Alert UI.<br><b>Warning:</b> This is an internal "
-	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	"API for accessing data related to the Red Alert UI.",
 	l_UserInterface);
 
  ADE_FUNC(getRedAlert,
@@ -1240,8 +1211,7 @@ ADE_FUNC(replayPreviousMission,
 ADE_LIB_DERIV(l_UserInterface_FictionViewer,
 	"FictionViewer",
 	nullptr,
-	"API for accessing data related to the fiction viewer UI.<br><b>Warning:</b> This is an internal "
-	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	"API for accessing data related to the Fiction Viewer UI.",
 	l_UserInterface);
 
 ADE_FUNC(getFiction, l_UserInterface_FictionViewer, nullptr, "Get the fiction.", "fiction_viewer_stage", "The fiction data")
@@ -1265,8 +1235,7 @@ ADE_FUNC(getFictionMusicName, l_UserInterface_FictionViewer, nullptr,
 ADE_LIB_DERIV(l_UserInterface_ShipWepSelect,
 	"ShipWepSelect",
 	nullptr,
-	"API for accessing data related to the ship and weapon select UIs.<br><b>Warning:</b> This is an internal "
-	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	"API for accessing data related to the Ship and Weapon Select UIs.",
 	l_UserInterface);
 
 ADE_FUNC(initSelect,
@@ -1519,8 +1488,7 @@ ADE_FUNC(__len, l_Loadout_Ships, nullptr, "The number of loadout ships", "number
 ADE_LIB_DERIV(l_UserInterface_TechRoom,
 	"TechRoom",
 	nullptr,
-	"API for accessing data related to the tech room UI.<br><b>Warning:</b> This is an internal "
-	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	"API for accessing data related to the Tech Room UIs.",
 	l_UserInterface);
 
 ADE_FUNC(buildMissionList,
@@ -1687,8 +1655,7 @@ ADE_VIRTVAR(Complete, l_UserInterface_Credits, nullptr, "The complete credits st
 ADE_LIB_DERIV(l_UserInterface_Medals,
 	"Medals",
 	nullptr,
-	"API for accessing data related to the medals UI.<br><b>Warning:</b> This is an internal "
-	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	"API for accessing data related to the Medals UI.",
 	l_UserInterface);
 
 ADE_LIB_DERIV(l_Medals, "Medals_List", nullptr, nullptr, l_UserInterface_Medals);
@@ -1737,8 +1704,7 @@ ADE_FUNC(__len, l_Ranks, nullptr, "The number of valid ranks", "number", "The nu
 ADE_LIB_DERIV(l_UserInterface_Hotkeys,
 	"MissionHotkeys",
 	nullptr,
-	"API for accessing data related to the mission hotkeys UI.<br><b>Warning:</b> This is an internal "
-	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	"API for accessing data related to the Mission Hotkeys UI.",
 	l_UserInterface);
 
 ADE_FUNC(initHotkeysList,
@@ -1853,8 +1819,7 @@ ADE_FUNC(__len, l_Hotkeys, nullptr, "The number of valid hotkey ships", "number"
 ADE_LIB_DERIV(l_UserInterface_GameHelp,
 	"GameHelp",
 	nullptr,
-	"API for accessing data related to the game help UI.<br><b>Warning:</b> This is an internal "
-	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	"API for accessing data related to the Game Help UI.",
 	l_UserInterface);
 
 ADE_FUNC(initGameHelp, l_UserInterface_GameHelp, nullptr, "Initializes the Game Help data. Must be used before Help Sections is accessed.", nullptr, nullptr)
@@ -1906,8 +1871,7 @@ ADE_FUNC(__len, l_Help_Sections, nullptr, "The number of help sections", "number
 ADE_LIB_DERIV(l_UserInterface_MissionLog,
 	"MissionLog",
 	nullptr,
-	"API for accessing data related to the mission log UI.<br><b>Warning:</b> This is an internal "
-	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	"API for accessing data related to the Mission Log UI.",
 	l_UserInterface);
 
 ADE_FUNC(initMissionLog, l_UserInterface_MissionLog, nullptr, "Initializes the Mission Log data. Must be used before Mission Log is accessed.", nullptr, nullptr)
@@ -1981,8 +1945,7 @@ ADE_FUNC(__len, l_Log_Messages, nullptr, "The number of mission message entries"
 ADE_LIB_DERIV(l_UserInterface_ControlConfig,
 	"ControlConfig",
 	nullptr,
-	"API for accessing data related to the control config UI.<br><b>Warning:</b> This is an internal "
-	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	"API for accessing data related to the Control Config UI.",
 	l_UserInterface);
 
 ADE_FUNC(initControlConfig,
@@ -2192,8 +2155,7 @@ ADE_FUNC(__len, l_Controls, nullptr, "The number of controls", "number", "The nu
 ADE_LIB_DERIV(l_UserInterface_HUDConfig,
 	"HudConfig",
 	nullptr,
-	"API for accessing data related to the HUD Config UI.<br><b>Warning:</b> This is an internal "
-	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	"API for accessing data related to the HUD Config UI.",
 	l_UserInterface);
 
 ADE_FUNC(initHudConfig,
@@ -2382,8 +2344,7 @@ ADE_FUNC(__len, l_HUD_Presets, nullptr, "The number of hud presets", "number", "
 ADE_LIB_DERIV(l_UserInterface_PauseScreen,
 	"PauseScreen",
 	nullptr,
-	"API for accessing data related to the pause screen UI.<br><b>Warning:</b> This is an internal "
-	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	"API for accessing data related to the Pause Screen UI.",
 	l_UserInterface);
 
 ADE_VIRTVAR(isPaused, l_UserInterface_PauseScreen, nullptr, "Returns true if the game is paused, false otherwise", "boolean", "true if paused, false if unpaused")
