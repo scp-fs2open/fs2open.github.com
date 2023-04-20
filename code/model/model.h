@@ -247,6 +247,8 @@ public:
 
 	actions::ProgramSet beam_warmdown_program;
 
+	float density;
+
     void reset();
 
     model_subsystem();
