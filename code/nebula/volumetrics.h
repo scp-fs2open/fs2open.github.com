@@ -79,6 +79,7 @@ class volumetric_nebula {
 	//Friend things that are allowed to directly manipulate "current" volumetrics. Only FRED and the Lab. In all other cases, "sensibly constant" values behave properly RAII and stay constant afterwards.
 	friend class LabUi; //Lab
 	friend class CFred_mission_save; //FRED
+	friend class volumetrics_dlg; //FRED
 	friend class fso::fred::CFred_mission_save; //QtFRED
 public:
 	volumetric_nebula();

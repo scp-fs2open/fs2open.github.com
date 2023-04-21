@@ -213,6 +213,7 @@ protected:
 	afx_msg void OnEditorsMessage();
 	afx_msg void OnEditorsStarfield();
 	afx_msg void OnEditorsBgBitmaps();
+	afx_msg void OnEditorsVolumetrics();
 	afx_msg void OnEditorsReinforcement();
 	afx_msg void OnErrorChecker();
 	afx_msg void OnEditorsWaypoint();
