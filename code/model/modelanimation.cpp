@@ -1453,6 +1453,12 @@ namespace animation {
 		char atype[NAME_LENGTH];
 		stuff_string(atype, F_NAME, NAME_LENGTH);
 		animation::ModelAnimationTriggerType type = anim_match_type(atype);
+		if (type == ModelAnimationTriggerType::None) {
+			Warning(LOCATION, "Unknown animation type %s, not adding animation!", atype);
+			skip_to_start_of_string_one_of({"$animation:", "$Subsystem:", "#End"});
+			return;
+		}
+
 		int subtype = ModelAnimationSet::SUBTYPE_DEFAULT;
 		char sub_name[NAME_LENGTH];
 		SCP_string name = anim_name_from_subsys(sp);
