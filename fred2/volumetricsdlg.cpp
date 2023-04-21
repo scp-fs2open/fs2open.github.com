@@ -45,7 +45,7 @@ volumetrics_dlg::volumetrics_dlg(CWnd* pParent /*=nullptr*/) : CDialog(volumetri
 	m_position(ZERO_VECTOR),
 	m_color({255, 255, 255}), 
 	m_opacity(0.001f),
-	m_distance(5.0f),
+	m_opacityDistance(5.0f),
 	m_steps(15),
 	m_resolution(6),
 	m_oversampling(2),
@@ -107,7 +107,7 @@ BOOL volumetrics_dlg::OnInitDialog()
 					static_cast<int>(std::get<1>(volumetrics.nebulaColor) * 255.0f),
 					static_cast<int>(std::get<2>(volumetrics.nebulaColor) * 255.0f) };
 		m_opacity = volumetrics.alphaLim;
-		m_distance = volumetrics.visibility;
+		m_opacityDistance = volumetrics.opacityDistance;
 		m_steps = volumetrics.steps;
 		m_resolution = volumetrics.resolution;
 		m_oversampling = volumetrics.oversampling;
@@ -150,7 +150,7 @@ void volumetrics_dlg::OnClose()
 	volumetrics.pos = m_position;
 	volumetrics.nebulaColor = {static_cast<float>(m_color[0]) / 255.0f, static_cast<float>(m_color[1]) / 255.0f, static_cast<float>(m_color[2]) / 255.0f};
 	volumetrics.alphaLim = m_opacity;
-	volumetrics.visibility = m_distance;
+	volumetrics.opacityDistance = m_opacityDistance;
 	volumetrics.steps = m_steps;
 	volumetrics.resolution = m_resolution;
 	volumetrics.oversampling = m_oversampling;
@@ -191,8 +191,8 @@ void volumetrics_dlg::DoDataExchange(CDataExchange* pDX)
 	DDV_MinMaxInt(pDX, m_color[2], 0, 255);
 	DDX_Text(pDX, IDC_OPACITY, m_opacity);
 	DDV_MinMaxFloat(pDX, m_opacity, 0.0001f, 1.0f);
-	DDX_Text(pDX, IDC_OPACITY_DISTANCE, m_distance);
-	DDV_MinMaxFloat(pDX, m_distance, 0.1f, FLT_MAX);
+	DDX_Text(pDX, IDC_OPACITY_DISTANCE, m_opacityDistance);
+	DDV_MinMaxFloat(pDX, m_opacityDistance, 0.1f, FLT_MAX);
 	DDX_Text(pDX, IDC_STEPS, m_steps);
 	DDV_MinMaxInt(pDX, m_steps, 1, 100);
 	DDX_Text(pDX, IDC_RESOLUTION, m_resolution);

@@ -2684,7 +2684,7 @@ int CFred_mission_save::save_mission_info()
 				static_cast<ubyte>(std::get<1>(The_mission.volumetrics->nebulaColor) * 255.0f),
 				static_cast<ubyte>(std::get<2>(The_mission.volumetrics->nebulaColor) * 255.0f));
 			FRED_ENSURE_PROPERTY_VERSION("+Visibility Opacity:", 1, " %f", The_mission.volumetrics->alphaLim);
-			FRED_ENSURE_PROPERTY_VERSION("+Visibility Distance:", 1, " %f", The_mission.volumetrics->visibility);
+			FRED_ENSURE_PROPERTY_VERSION("+Visibility Distance:", 1, " %f", The_mission.volumetrics->opacityDistance);
 			FRED_ENSURE_PROPERTY_VERSION_WITH_DEFAULT("+Steps:", 1, ";;FSO 23.1.0;;", 15, " %d", The_mission.volumetrics->steps);
 			FRED_ENSURE_PROPERTY_VERSION_WITH_DEFAULT("+Resolution:", 1, ";;FSO 23.1.0;;", 6, " %d", The_mission.volumetrics->resolution);
 			FRED_ENSURE_PROPERTY_VERSION_WITH_DEFAULT("+Oversampling:", 1, ";;FSO 23.1.0;;", 2, " %d", The_mission.volumetrics->oversampling);

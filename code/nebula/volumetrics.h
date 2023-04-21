@@ -39,7 +39,7 @@ class volumetric_nebula {
 
 	//General Visibility
 	//The distance in meters until the target translucity is reached
-	float visibility = 5.0f;
+	float opacityDistance = 5.0f;
 	//The target translucity. The nebula won't get more opaque than what is specified here. 0 is not possible.
 	float alphaLim = 0.001f;
 
@@ -94,7 +94,7 @@ public:
 	int getSteps() const;
 	int getGlobalLightSteps() const;
 
-	float getVisibility() const;
+	float getOpacityDistance() const;
 	float getStepsize() const;
 	float getStepalpha() const;
 	float getAlphaLim() const;
