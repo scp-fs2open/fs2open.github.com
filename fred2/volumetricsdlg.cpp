@@ -368,7 +368,7 @@ SPINNER_IMPL(SPIN_LINEAR, ColorB, m_color, 2)
 
 //This is the cube root of 10, so by clicking up or down thrice you'll have multiplied the value by 10 for a logarithmic spinner
 SPINNER_IMPL(SPIN_EXP, Opacity, m_opacity, 0.0001f, 1.0f, 2.15443469003f)
-SPINNER_IMPL(SPIN_LINEAR, OpacityDistance, m_distance, 0.1f, FLT_MAX)
+SPINNER_IMPL(SPIN_LINEAR, OpacityDistance, m_opacityDistance, 0.1f, FLT_MAX)
 
 SPINNER_IMPL(SPIN_LINEAR, Steps, m_steps, 1, 100)
 SPINNER_IMPL(SPIN_LINEAR, Resolution, m_resolution, 5, 8)
