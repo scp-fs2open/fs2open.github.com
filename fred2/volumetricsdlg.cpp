@@ -69,6 +69,8 @@ volumetrics_dlg::~volumetrics_dlg()
 
 BOOL volumetrics_dlg::OnInitDialog()
 {
+	CDialog::OnInitDialog();
+
 	m_toolTip.Create(this);
 	static constexpr char* Tooltip_distance = _T("This is how far something has to be in the nebula to be obscured to the maximum opacity.");
 	static constexpr char* Tooltip_steps = _T("If you see banding on ships in the volumetrics, increase this.");
