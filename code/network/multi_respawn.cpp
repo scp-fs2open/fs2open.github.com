@@ -13,6 +13,7 @@
 #include "network/multi_respawn.h"
 #include "network/multi.h"
 #include "object/object.h"
+#include "object/objcollide.h"
 #include "globalincs/linklist.h"
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
@@ -886,21 +887,21 @@ void multi_respawn_place(object *new_obj, int team)
 
 #define WITHIN_BBOX()	do { \
 	if (pm != NULL) { \
-		float scale = 2.0f; \
-		collided = 0; \
+		constexpr float scale = 2.0f; \
+		collided = false; \
 		vec3d temp = new_obj->pos; \
 		vec3d gpos; \
 		vm_vec_sub2(&temp, &hit_check->pos); \
 		vm_vec_rotate(&gpos, &temp, &hit_check->orient); \
 		if((gpos.xyz.x >= pm->mins.xyz.x * scale) && (gpos.xyz.y >= pm->mins.xyz.y * scale) && (gpos.xyz.z >= pm->mins.xyz.z * scale) && (gpos.xyz.x <= pm->maxs.xyz.x * scale) && (gpos.xyz.y <= pm->maxs.xyz.y * scale) && (gpos.xyz.z <= pm->maxs.xyz.z * scale)) { \
-			collided = 1; \
+			collided = true; \
 		} \
 	} \
 } while(false)
 
 #define MOVE_AWAY_BBOX() do { \
 	if (pm != NULL) { \
-		switch((int)frand_range(0.0f, 3.9f)){ \
+		switch(Random::next(6)) { \
 		case 0: \
 			new_obj->pos.xyz.x += 200.0f; \
 			break; \
@@ -913,34 +914,48 @@ void multi_respawn_place(object *new_obj, int team)
 		case 3: \
 			new_obj->pos.xyz.y -= 200.0f; \
 			break; \
-		default : \
+		case 4: \
+			new_obj->pos.xyz.z += 200.0f; \
+			break; \
+		case 5: \
 			new_obj->pos.xyz.z -= 200.0f; \
+			break; \
+		default: \
+			UNREACHABLE("Invalid random number in MOVE_AWAY_BBOX"); \
 			break; \
 		} \
 	} \
 } while(false)
 
-
 void prevent_spawning_collision(object *new_obj)
 {
-	int collided;
+	bool collided;
 	ship_obj *moveup;
 	object *hit_check;
 	ship *s_check;
 
+	if (!new_obj->flags[Object::Object_Flags::Collides])
+		return;
+
 	do {
-		collided = 0;
+		collided = false;
 
 		for (moveup = GET_FIRST(&Ship_obj_list); moveup != END_OF_LIST(&Ship_obj_list); moveup = GET_NEXT(moveup))
 		{
-			if (Objects[moveup->objnum].flags[Object::Object_Flags::Should_be_dead])
-				continue;
-
 			// don't check the new object itself!!
 			if (moveup->objnum == OBJ_INDEX(new_obj))
 				continue;
 
 			hit_check = &Objects[moveup->objnum];
+
+			if (hit_check->flags[Object::Object_Flags::Should_be_dead])
+				continue;
+
+			// consider collision configuration
+			if (!hit_check->flags[Object::Object_Flags::Collides])
+				continue;
+			if (reject_due_collision_groups(new_obj, hit_check))
+				continue;
 
 			Assert(hit_check->type == OBJ_SHIP);
 			Assert(hit_check->instance >= 0);
