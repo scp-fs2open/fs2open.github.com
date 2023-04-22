@@ -2,6 +2,7 @@
 //
 
 #include "hud.h"
+#include "scripting/api/objs/color.h"
 #include "scripting/api/objs/enums.h"
 #include "scripting/api/objs/hudgauge.h"
 #include "scripting/api/objs/object.h"
@@ -103,17 +104,33 @@ ADE_FUNC(getHUDConfigShowStatus, l_HUD, "number|string gaugeNameOrIndex", "Gets 
 }
 
 ADE_FUNC(setHUDGaugeColor, l_HUD,
-         "number|string gaugeNameOrIndex, [number red, number green, number blue, number alpha]",
-         "Modifies color used to draw the gauge in the pilot config", "boolean", "If the operation was successful")
+         "number|string gaugeNameOrIndex, [number|color /* red value or color object */, number green, number blue, number alpha]",
+	"Modifies color used to draw the gauge in the pilot config",
+	"boolean",
+	"If the operation was successful")
 {
 	int idx = getDefaultGaugeIndex(L);
 	int r = 0;
 	int g = 0;
 	int b = 0;
 	int a = 0;
+	color col;
 
-	if(!ade_get_args(L, "|iiii", &r, &g, &b, &a))
-		return ADE_RETURN_FALSE;
+	if (lua_isnumber(L, 2)) {
+		if (!ade_get_args(L, "*|iiii", &r, &g, &b, &a))
+			return ADE_RETURN_FALSE;
+
+	} else {
+		gr_init_alphacolor(&col, 0, 0, 0, 0);
+
+		if (!ade_get_args(L, "*o", l_Color.Get(&col)))
+			return ADE_RETURN_FALSE;
+
+		r = col.red;
+		g = col.green;
+		b = col.blue;
+		a = col.alpha;
+	}
 
 	if ((idx < 0) || (idx >= NUM_HUD_GAUGES))
 		return ADE_RETURN_FALSE;
@@ -125,33 +142,57 @@ ADE_FUNC(setHUDGaugeColor, l_HUD,
 
 ADE_FUNC(getHUDGaugeColor,
 	l_HUD,
-	"number|string gaugeNameOrIndex",
-	"Color specified in the config to draw the gauge",
-	"number, number, number, number",
+	"number|string gaugeNameOrIndex, [boolean ReturnType]",
+	"Color specified in the config to draw the gauge. False to return raw rgba, true to return color object. Defaults to false.",
+	"number, number, number, number | color",
 	"Red, green, blue, and alpha of the gauge")
 {
 	int idx = getDefaultGaugeIndex(L);
 
+	bool rc = false;
+	ade_get_args(L, "*|b", &rc);
+
 	if ((idx < 0) || (idx >= NUM_HUD_GAUGES))
 		return ADE_RETURN_NIL;
 
-	color c = HUD_config.clr[idx];
+	color cur = HUD_config.clr[idx];
 
-	return ade_set_args(L, "iiii", (int) c.red, (int) c.green, (int) c.blue, (int) c.alpha);
+	if (!rc) {
+		return ade_set_args(L, "iiii", (int)cur.red, (int)cur.green, (int)cur.blue, (int)cur.alpha);
+	} else {
+		return ade_set_args(L, "o", l_Color.Set(cur));
+	}
+
 }
 
 ADE_FUNC(setHUDGaugeColorInMission, l_HUD,
-         "number|string gaugeNameOrIndex, [number red, number green, number blue, number alpha]",
-         "Set color currently used to draw the gauge", "boolean", "If the operation was successful")
+         "number|string gaugeNameOrIndex, [number|color /* red value or color object */, number green, number blue, number alpha]",
+	"Set color currently used to draw the gauge",
+	"boolean",
+	"If the operation was successful")
 {
 	int idx = getDefaultGaugeIndex(L);
 	int r = 0;
 	int g = 0;
 	int b = 0;
 	int a = 255;
+	color col;
 
-	if(!ade_get_args(L, "|iiii", &r, &g, &b, &a))
-		return ADE_RETURN_FALSE;
+	if (lua_isnumber(L, 2)) {
+		if (!ade_get_args(L, "*|iiii", &r, &g, &b, &a))
+			return ADE_RETURN_FALSE;
+
+	} else {
+		gr_init_alphacolor(&col, 0, 0, 0, 255);
+
+		if (!ade_get_args(L, "*|o", l_Color.Get(&col)))
+			return ADE_RETURN_FALSE;
+
+		r = col.red;
+		g = col.green;
+		b = col.blue;
+		a = col.alpha;
+	}
 
 	if ((idx < 0) || (idx >= (int)default_hud_gauges.size()))
 		return ADE_RETURN_FALSE;
@@ -163,19 +204,26 @@ ADE_FUNC(setHUDGaugeColorInMission, l_HUD,
 
 ADE_FUNC(getHUDGaugeColorInMission,
 	l_HUD,
-	"number|string gaugeNameOrIndex",
-	"Color currently used to draw the gauge",
-	"number, number, number, number",
+	"number|string gaugeNameOrIndex, [boolean ReturnType]",
+	"Color currently used to draw the gauge. False returns raw rgb, true returns color object. Defaults to false.",
+	"number, number, number, number | color",
 	"Red, green, blue, and alpha of the gauge")
 {
 	int idx = getDefaultGaugeIndex(L);
 
+	bool rc = false;
+	ade_get_args(L, "*|b", &rc);
+
 	if ((idx < 0) || (idx >= (int)default_hud_gauges.size()))
 		return ADE_RETURN_NIL;
 
-	color c = default_hud_gauges[idx]->getColor();
+	color cur = default_hud_gauges[idx]->getColor();
 
-	return ade_set_args(L, "iiii", (int) c.red, (int) c.green, (int) c.blue, (int) c.alpha);
+	if (!rc) {
+		return ade_set_args(L, "iiii", (int)cur.red, (int)cur.green, (int)cur.blue, (int)cur.alpha);
+	} else {
+		return ade_set_args(L, "o", l_Color.Set(cur));
+	}
 }
 
 ADE_FUNC(getHUDGaugeHandle, l_HUD, "string Name", "Returns a handle to a specified HUD gauge", "HudGauge", "HUD Gauge handle, or nil if invalid")
