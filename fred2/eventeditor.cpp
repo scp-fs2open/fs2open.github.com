@@ -312,8 +312,8 @@ BOOL event_editor::OnInitDialog()
 	box = (CComboBox *) GetDlgItem(IDC_PERSONA_NAME);
 	box->ResetContent();
 	box->AddString("<None>");
-	for (i = 0; i < (int)Personas.size(); i++) {
-		box->AddString( Personas[i].name );
+	for (const auto &persona: Personas) {
+		box->AddString(persona.name);
 	}
 
 	// set the first message to be the first non-builtin message (if it exists)

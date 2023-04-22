@@ -3412,7 +3412,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 			return 0;
 
 		case OPF_PERSONA:
-			return (Personas.size() > 0) ? 1 : 0;
+			return Personas.empty() ? 0 : 1;
 
 		case OPF_POINT:
 		case OPF_WAYPOINT_PATH:
@@ -6540,12 +6540,11 @@ sexp_list_item *sexp_tree::get_listing_opf_message()
 
 sexp_list_item *sexp_tree::get_listing_opf_persona()
 {
-	int i;
 	sexp_list_item head;
 
-	for (i = 0; i < (int)Personas.size(); i++) {
-		if (Personas[i].flags & PERSONA_FLAG_WINGMAN) {
-			head.add_data(Personas[i].name);
+	for (const auto &persona: Personas) {
+		if (persona.flags & PERSONA_FLAG_WINGMAN) {
+			head.add_data(persona.name);
 		}
 	}
 

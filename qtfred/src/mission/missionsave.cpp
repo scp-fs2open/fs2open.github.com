@@ -3983,7 +3983,7 @@ int CFred_mission_save::save_objects()
 
 		// deal with the persona for this ship as well.
 		if (shipp->persona_index != -1) {
-			if (Mission_save_format == FSO_FORMAT_RETAIL) {
+			if (save_format == MissionFormat::RETAIL) {
 				if (optional_string_fred("+Persona Index:", "$Name:"))
 					parse_comments();
 				else
