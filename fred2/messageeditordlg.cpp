@@ -130,8 +130,8 @@ BOOL CMessageEditorDlg::OnInitDialog()
 	box = (CComboBox *)GetDlgItem(IDC_PERSONA_NAME);
 	box->ResetContent();
 	box->AddString("<None>");
-	for (i = 0; i < (int)Personas.size(); i++)
-		box->AddString( Personas[i].name );
+	for (const auto &persona: Personas)
+		box->AddString(persona.name);
 
 	box = (CComboBox *) GetDlgItem(IDC_SENDER);
 	for (i=0; i<MAX_SHIPS; i++)

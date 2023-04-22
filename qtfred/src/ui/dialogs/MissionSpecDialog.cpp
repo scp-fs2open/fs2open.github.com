@@ -204,7 +204,7 @@ void MissionSpecDialog::updateCmdMessage() {
 
 	save_idx = _model->getCommandPersona();
 	ui->personaComboBox->clear();
-	for (i = 0; i < Num_personas; i++) {
+	for (i = 0; i < (int)Personas.size(); i++) {
 		if (Personas[i].flags & PERSONA_FLAG_COMMAND) {
 			ui->personaComboBox->addItem(Personas[i].name, QVariant(i));
 		}

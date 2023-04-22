@@ -316,12 +316,11 @@ void ShipEditorDialog::updateColumnOne()
 void ShipEditorDialog::updateColumnTwo()
 {
 	util::SignalBlockers blockers(this);
-	int i;
 	ui->wing->setText(_model->getWing().c_str());
 
 	ui->personaCombo->clear();
 	ui->personaCombo->addItem("<none>", QVariant(-1));
-	for (i = 0; i < Num_personas; i++) {
+	for (size_t i = 0; i < Personas.size(); i++) {
 		if (Personas[i].flags & PERSONA_FLAG_WINGMAN) {
 			SCP_string persona_name = Personas[i].name;
 

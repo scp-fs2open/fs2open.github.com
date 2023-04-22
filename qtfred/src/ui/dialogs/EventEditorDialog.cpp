@@ -520,8 +520,8 @@ void EventEditorDialog::initPersonas() {
 	auto box = ui->personaCombo;
 	box->clear();
 	box->addItem("<None>");
-	for (auto i = 0; i < Num_personas; i++) {
-		box->addItem(Personas[i].name);
+	for (const auto &persona: Personas) {
+		box->addItem(persona.name);
 	}
 }
 void EventEditorDialog::set_current_message(int msg) {
@@ -936,7 +936,7 @@ void EventEditorDialog::updatePersona() {
 
 	if ((wave_name[0] >= '1') && (wave_name[0] <= '9') && (wave_name[1] == '_')) {
 		auto i = wave_name[0] - '1';
-		if ((i < Num_personas) && (Personas[i].flags & PERSONA_FLAG_WINGMAN)) {
+		if ((i < (int)Personas.size()) && (Personas[i].flags & PERSONA_FLAG_WINGMAN)) {
 			m_messages[m_cur_msg].persona_index = i;
 			if (i == 0 || i == 1) {
 				avi_name = "HEAD-TP1";
@@ -961,7 +961,7 @@ void EventEditorDialog::updatePersona() {
 			avi_name = "HEAD-CM1";
 		}
 
-		for (auto i = 0; i < Num_personas; i++) {
+		for (auto i = 0; i < (int)Personas.size(); i++) {
 			if (Personas[i].flags & mask) {
 				m_messages[m_cur_msg].persona_index = i;
 			}

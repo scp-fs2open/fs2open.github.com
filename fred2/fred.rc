@@ -332,7 +332,7 @@ BEGIN
         MENUITEM "&Debriefing\tShift+D",        33007
         MENUITEM "Command Briefing\tShift+C",   33054
         MENUITEM "Fiction Viewer\tShift+F",     ID_EDITORS_FICTION
-        MENUITEM "Volumetric Nebula",           33102
+        MENUITEM "Volumetric Nebula",           ID_EDITORS_VOLUMETRICS
         MENUITEM "Shield System",               33033
         MENUITEM "Set Global Ship Flags",       33073
         MENUITEM "Voice Acting Manager",        ID_EDITORS_VOICE
@@ -381,7 +381,7 @@ BEGIN
         MENUITEM "Point Ships Using UVec",      33101
         MENUITEM "Move Ships When Undocking",   33098, CHECKED
         MENUITEM "Mission Statistics\tCtrl+Shift+D", 33067
-        MENUITEM "Music Player",                33102
+        MENUITEM "Music Player",                ID_MUSIC_PLAYER
         MENUITEM SEPARATOR
         MENUITEM "Error checker\tShift+H",      32978
     END
