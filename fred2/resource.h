@@ -450,8 +450,8 @@
 #define IDC_PREF_STARFIELD              1167
 #define IDC_GOALS_TREE                  1169
 #define IDC_DISPLAY_GOAL_TYPES_DROP     1173
-#define IDC_BUTTON_NEXT_MUSIC			1174
-#define IDC_BUTTON_PREV_MUSIC			1175
+#define IDC_BUTTON_NEXT_MUSIC           1174
+#define IDC_BUTTON_PREV_MUSIC           1175
 #define IDC_GOAL_DESC                   1176
 #define IDC_BUTTON_STOP_MUSIC           1177
 #define IDC_BUTTON_MUSIC_TBL            1178
@@ -812,7 +812,7 @@
 #define IDC_INSERT_STAGE                1384
 #define IDC_ICON_CLOSEUP_LABEL          1385
 #define IDC_INSERT                      1385
-#define IDC_ICON_SCALE					1386
+#define IDC_ICON_SCALE                  1386
 #define IDC_GOTO_VIEW                   1388
 #define IDC_SAVE_VIEW                   1389
 #define IDC_BROWSE_AVI                  1390
@@ -879,7 +879,7 @@
 #define IDC_EXACT_PLAYERS               1455
 #define IDC_HEADING                     1456
 #define IDC_NO_ARRIVAL_MESSAGE          1457
-#define IDC_NO_GRID						1458
+#define IDC_NO_GRID                     1458
 #define IDC_NO_MUSIC                    1459
 #define ID_UPDATE                       1460
 #define IDC_SHIP_LOCKED                 1461
@@ -1226,6 +1226,7 @@
 #define IDC_SPIN_NOISE_INTENSITY        1701
 #define IDC_NOISE_RESOLUTION            1702
 #define IDC_SPIN_NOISE_RESOLUTION       1703
+#define IDC_REQUIRED_WEAPONS            1704
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774
 #define ID_VIEW_ROTATE                  32775
@@ -1523,9 +1524,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        334
+#define _APS_NEXT_RESOURCE_VALUE        335
 #define _APS_NEXT_COMMAND_VALUE         33104
-#define _APS_NEXT_CONTROL_VALUE         1704
+#define _APS_NEXT_CONTROL_VALUE         1705
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif
