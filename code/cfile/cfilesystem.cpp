@@ -1157,7 +1157,7 @@ void cf_build_file_list()
 		const auto count = critical_shadowed.size();
 
 		// only report a few of the files so that the warning dialog doesn't get freakishly large
-		for (size_t j = 0; (j < 5) && (j < critical_shadowed.size()); ++j) {
+		for (size_t j = 0; (j < 5) && (j < count); ++j) {
 			shadowed += critical_shadowed[j] + '\n';
 		}
 
