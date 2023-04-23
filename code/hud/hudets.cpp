@@ -55,9 +55,9 @@ void ets_init_ship(object* obj)
 }
 
 // -------------------------------------------------------------------------------------------------
-// update_ets() is called once per frame for every OBJ_SHIP in the game.  The amount of energy
-// to send to the weapons and shields is calculated.  The
-// amount of time elapsed from the previous call is passed in as the parameter fl_frametime.
+// update_ets() is called once per frame for every OBJ_SHIP in the game.  
+// The amount of energy to send to the weapons and shields is calculated.
+// The amount of time elapsed from the previous call is passed in as the parameter fl_frametime.
 //
 // parameters:   obj          ==> object that is updating their energy system
 //               fl_frametime ==> game frametime (in seconds)
