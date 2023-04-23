@@ -6572,7 +6572,7 @@ void ship::clear()
 	weapon_recharge_index = INTIAL_WEAPON_RECHARGE_INDEX;
 	engine_recharge_index = INTIAL_ENGINE_RECHARGE_INDEX;
 	weapon_energy = 0;
-	prev_engine_aggregate_hits = 1.0f;
+	prev_engine_aggregate_strength = 1.0f;
 	next_manage_ets = timestamp(0);
 
 	flags.reset();

@@ -118,7 +118,6 @@ void update_ets(object* objp, float fl_frametime)
 		}
 	}
 
-	// update max speed, moved from 'update_ets' function as part of max speed cleanup -Asteroth and wookieejedi
 	// AL 11-15-97: Rules for engine strength affecting max speed:
 	//						1. if strength >= 0.5 no affect
 	//						2. if strength < 0.5 then max_speed = sqrt(strength)
@@ -130,9 +129,9 @@ void update_ets(object* objp, float fl_frametime)
 
 	// only update max speed if aggregate engine health has changed
 	// which helps minimze amount of overrides to max speed
-	if (eng_current_strength != ship_p->prev_engine_aggregate_hits) {
+	if (eng_current_strength != ship_p->prev_engine_aggregate_strength) {
 		ets_update_max_speed(objp);
-		ship_p->prev_engine_aggregate_hits = eng_current_strength;
+		ship_p->prev_engine_aggregate_strength = eng_current_strength;
 
 		// check if newly updated max speed should be reduced due to engine damage
 		// don't let engine strength affect max speed when playing on lowest skill level
