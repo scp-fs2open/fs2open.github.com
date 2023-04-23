@@ -37,7 +37,7 @@ volumetric_nebula& volumetric_nebula::parse_volumetric_nebula() {
 	stuff_float(&alphaLim);
 
 	required_string("+Visibility Distance:");
-	stuff_float(&visibility);
+	stuff_float(&opacityDistance);
 
 	if(optional_string("+Steps:")) {
 		stuff_int(&steps);
@@ -171,12 +171,12 @@ int volumetric_nebula::getGlobalLightSteps() const {
 	return std::max(globalLightSteps * (MAX_DETAIL_LEVEL + 1) / (2 * (MAX_DETAIL_LEVEL + 1) - Detail.nebula_detail), 4 + Detail.nebula_detail);
 }
 
-float volumetric_nebula::getVisibility() const {
-	return visibility;
+float volumetric_nebula::getOpacityDistance() const {
+	return opacityDistance;
 }
 
 float volumetric_nebula::getStepsize() const {
-	return getVisibility() / static_cast<float>(getSteps());
+	return getOpacityDistance() / static_cast<float>(getSteps());
 }
 
 float volumetric_nebula::getStepalpha() const {
@@ -208,7 +208,7 @@ float volumetric_nebula::getGlobalLightDistanceFactor() const {
 }
 
 float volumetric_nebula::getGlobalLightStepsize() const {
-	return getVisibility() / static_cast<float>(getGlobalLightSteps()) * getGlobalLightDistanceFactor();
+	return getOpacityDistance() / static_cast<float>(getGlobalLightSteps()) * getGlobalLightDistanceFactor();
 }
 
 bool volumetric_nebula::getNoiseActive() const {

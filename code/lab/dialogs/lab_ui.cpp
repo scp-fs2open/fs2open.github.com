@@ -412,8 +412,8 @@ void LabUi::show_render_options()
 				SliderInt("Steps Towards Sun", &The_mission.volumetrics->globalLightSteps, 2, 10);
 				Separator();
 				Text("Visibility Settings:");
-				SliderFloat("Visibility Distance", &The_mission.volumetrics->visibility, 0.1f, 100.0f);
-				SliderFloat("Visibility Opacity", &The_mission.volumetrics->alphaLim, 0.0001f, 1.0f, "%.4f", ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);
+				SliderFloat("Maximum Opacity", &The_mission.volumetrics->alphaLim, 0.0001f, 1.0f, "%.4f", ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoRoundToFormat);
+				SliderFloat("Opacity Distance", &The_mission.volumetrics->opacityDistance, 0.1f, 100.0f);
 				Separator();
 				Text("Emissive Settings:");
 				SliderFloat("Emissive Light Spreading", &The_mission.volumetrics->emissiveSpread, 0.1f, 2.0f);

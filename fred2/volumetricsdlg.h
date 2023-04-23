@@ -20,7 +20,7 @@ protected:
 	vec3d m_position;
 	std::array<int, 3> m_color;
 	float m_opacity;
-	float m_distance;
+	float m_opacityDistance;
 	int m_steps;
 	int m_resolution;
 	int m_oversampling;
