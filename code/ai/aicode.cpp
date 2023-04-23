@@ -159,8 +159,8 @@ const char *Submode_text[] = {
 "STLTH_SWP",
 "BIG_APPR",
 "BIG_CIRC",
-"BIG_PARL"
-"GLIDE_ATK"
+"BIG_PARL",
+"GLIDE_ATK",
 "CIR_STRAFE"
 };
 
