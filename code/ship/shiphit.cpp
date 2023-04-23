@@ -2410,8 +2410,6 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 		// apply damage to subsystems, and get back any remaining damage that needs to go to the hull
 		damage = do_subobj_hit_stuff(ship_objp, other_obj, hitpos, submodel_num, damage, &apply_hull_armor);
 
-		ets_update_max_speed(ship_objp);
-
 		// damage scaling doesn't apply to subsystems, but it does to the hull
 		damage *= damage_scale;
 		

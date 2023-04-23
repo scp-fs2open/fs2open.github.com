@@ -57,6 +57,7 @@ void ets_init_ship(object* obj)
 // -------------------------------------------------------------------------------------------------
 // update_ets() is called once per frame for every OBJ_SHIP in the game.  
 // The amount of energy to send to the weapons and shields is calculated.
+// The max speed is also updated if there is a change in aggregate engine health.
 // The amount of time elapsed from the previous call is passed in as the parameter fl_frametime.
 //
 // parameters:   obj          ==> object that is updating their energy system
@@ -82,7 +83,7 @@ void update_ets(object* objp, float fl_frametime)
 		return;
 	}
 
-//	new_energy = fl_frametime * sinfo_p->power_output;
+	//	new_energy = fl_frametime * sinfo_p->power_output;
 
 	// update weapon energy
 	max_new_weapon_energy = fl_frametime * ship_p->max_weapon_regen_per_second * max_g;
@@ -114,6 +115,31 @@ void update_ets(object* objp, float fl_frametime)
 	if ( (_ss = shield_get_strength(objp)) > max_shield ){
 		for (int i=0; i<objp->n_quadrants; i++){
 			objp->shield_quadrant[i] *= max_shield / _ss;
+		}
+	}
+
+	// update max speed, moved from 'update_ets' function as part of max speed cleanup -Asteroth and wookieejedi
+	// AL 11-15-97: Rules for engine strength affecting max speed:
+	//						1. if strength >= 0.5 no affect
+	//						2. if strength < 0.5 then max_speed = sqrt(strength)
+	//
+	//					 This will translate to 71% max speed at 50% engines, and 31% max speed at 10% engines
+	//
+
+	float eng_current_strength = ship_get_subsystem_strength(ship_p, SUBSYSTEM_ENGINE);
+
+	// only update max speed if aggregate engine health has changed
+	// which helps minimze amount of overrides to max speed
+	if (eng_current_strength != ship_p->prev_engine_aggregate_hits) {
+		ets_update_max_speed(objp);
+		ship_p->prev_engine_aggregate_hits = eng_current_strength;
+
+		// check if newly updated max speed should be reduced due to engine damage
+		// don't let engine strength affect max speed when playing on lowest skill level
+		if ((objp != Player_obj) || (Game_skill_level > 0)) {
+			if (eng_current_strength < SHIP_MIN_ENGINES_FOR_FULL_SPEED) {
+				objp->phys_info.max_vel.xyz.z *= fl_sqrt(eng_current_strength);
+			}
 		}
 	}
 
@@ -164,30 +190,9 @@ void ets_update_max_speed(object* ship_objp)
 	Assertion(ship_objp != nullptr, "Invalid object pointer passed!");
 	Assertion(ship_objp->type == OBJ_SHIP, "Object needs to be a ship object!");
 
-	// get max possible speed then adjust and set based on engine health
-	ship* shipp = &Ships[ship_objp->instance];
-
 	// calculate the top speed of the ship based on the energy flow to engines
-	float x = Energy_levels[shipp->engine_recharge_index];
-	float max_current = ets_get_max_speed(ship_objp, x);
-
-	// update max speed, moved from 'update_ets' function as part of max speed cleanup -Asteroth and wookieejedi
-	// AL 11-15-97: Rules for engine strength affecting max speed:
-	//						1. if strength >= 0.5 no affect
-	//						2. if strength < 0.5 then max_speed = sqrt(strength)
-	//
-	//					 This will translate to 71% max speed at 50% engines, and 31% max speed at 10% engines
-	//
-
-	// don't let engine strength affect max speed when playing on lowest skill level
-	if ((ship_objp != Player_obj) || (Game_skill_level > 0)) {
-		float strength = ship_get_subsystem_strength(shipp, SUBSYSTEM_ENGINE);
-		if (strength < SHIP_MIN_ENGINES_FOR_FULL_SPEED) {
-			max_current *= fl_sqrt(strength);
-		}
-	}
-
-	ship_objp->phys_info.max_vel.xyz.z = max_current;
+	float x = Energy_levels[Ships[ship_objp->instance].engine_recharge_index];
+	ship_objp->phys_info.max_vel.xyz.z = ets_get_max_speed(ship_objp, x);
 }
 
 
