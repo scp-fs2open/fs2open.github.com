@@ -159,8 +159,11 @@ float ets_get_max_speed(object* objp, float engine_energy)
 	}
 }
 
-void update_max_speed(object* ship_objp)
+void ets_update_max_speed(object* ship_objp)
 {
+	Assertion(ship_objp != nullptr, "Invalid object pointer passed!");
+	Assertion(ship_objp->type == OBJ_SHIP, "Object needs to be a ship object!");
+
 	// get max possible speed then adjust and set based on engine health
 	ship* shipp = &Ships[ship_objp->instance];
 
@@ -305,7 +308,7 @@ void set_recharge_rates(object* obj, int shields, int weapons, int engines) {
 	Ships[obj->instance].weapon_recharge_index = weapons;
 	Ships[obj->instance].engine_recharge_index = engines;
 
-	update_max_speed(obj);
+	ets_update_max_speed(obj);
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -490,7 +493,7 @@ void increase_recharge_rate(object* obj, SYSTEM_TYPE ship_system)
 	if ( obj == Player_obj )
 		snd_play( gamesnd_get_game_sound(GameSounds::ENERGY_TRANS), 0.0f );
 
-	update_max_speed(obj);
+	ets_update_max_speed(obj);
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -611,7 +614,7 @@ void decrease_recharge_rate(object* obj, SYSTEM_TYPE ship_system)
 	if ( obj == Player_obj )
 		snd_play( gamesnd_get_game_sound(GameSounds::ENERGY_TRANS), 0.0f );
 
-	update_max_speed(obj);
+	ets_update_max_speed(obj);
 }
 
 void transfer_energy_weapon_common(object *objp, float from_field, float to_field, float *from_delta, float *to_delta, float from_max, float to_max, float scale, float eff)
