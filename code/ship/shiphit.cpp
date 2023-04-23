@@ -21,6 +21,7 @@
 #include "gamesnd/gamesnd.h"
 #include "globalincs/linklist.h"
 #include "hud/hud.h"
+#include "hud/hudets.h"
 #include "hud/hudmessage.h"
 #include "hud/hudtarget.h"
 #include "iff_defs/iff_defs.h"
@@ -2408,6 +2409,8 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 
 		// apply damage to subsystems, and get back any remaining damage that needs to go to the hull
 		damage = do_subobj_hit_stuff(ship_objp, other_obj, hitpos, submodel_num, damage, &apply_hull_armor);
+
+		update_max_speed(ship_objp);
 
 		// damage scaling doesn't apply to subsystems, but it does to the hull
 		damage *= damage_scale;
