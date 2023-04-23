@@ -2119,18 +2119,18 @@ int get_builtin_message_inner(int type, int persona, ship* sender, ship* subject
 	}
 
 	int matches = (int) matching_builtins.size();
-	if (matches == 1) {
-		return matching_builtins[0];
-	} else if (matches > 1) {
-		return matching_builtins[Random::next(0, matches)];
-	} else {
-		int fallback = Builtin_messages[type].fallback;
-		if (fallback != MESSAGE_NONE) {
-			return get_builtin_message_inner(fallback, persona, sender, subject, require_exact_persona_match);
-		} else {
-			return MESSAGE_NONE;
-		}
+	if (matches != 0) {
+		return matching_builtins[Random::next(matches)];
 	}
+
+	// We're still here, so look for a fallback message
+	int fallback = Builtin_messages[type].fallback;
+	if (fallback != MESSAGE_NONE) {
+		return get_builtin_message_inner(fallback, persona, sender, subject, require_exact_persona_match);
+	} 
+
+	// Still here? Guess we're staying silent
+	return MESSAGE_NONE;
 }
 
 int get_builtin_message(int type, int persona, ship* sender, ship* subject) {
