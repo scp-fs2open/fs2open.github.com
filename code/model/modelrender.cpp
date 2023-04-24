@@ -1672,11 +1672,14 @@ void model_render_glowpoint_bitmap(int point_num, vec3d *pos, matrix *orient, gl
 		vm_vec_sub(&loc_offset, &gpt->pnt, &submodel_static_offset);
 
 		tempv = loc_offset;
-		if (IS_VEC_NULL(&loc_norm)) {	// zero vectors are allowed for glowpoint norms
-			model_instance_local_to_global_point(&loc_offset, &tempv, pm, pmi, bank->submodel_parent);
-		} else {
-			vec3d tempn = loc_norm;
-			model_instance_local_to_global_point_dir(&loc_offset, &loc_norm, &tempv, &tempn, pm, pmi, bank->submodel_parent);
+		if (pmi) {
+			if (IS_VEC_NULL(&loc_norm)) {	// zero vectors are allowed for glowpoint norms
+				model_instance_local_to_global_point(&loc_offset, &tempv, pm, pmi, bank->submodel_parent);
+			}
+			else {
+				vec3d tempn = loc_norm;
+				model_instance_local_to_global_point_dir(&loc_offset, &loc_norm, &tempv, &tempn, pm, pmi, bank->submodel_parent);
+			}
 		}
 	}
 
