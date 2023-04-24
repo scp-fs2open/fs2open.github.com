@@ -660,16 +660,6 @@ typedef struct bsp_light {
 	int				type;		// See BSP_LIGHT_TYPE_?? for values
 } bsp_light;
 
-// model_octant - There are 8 of these per model.  They are a handy way to categorize
-// a lot of model properties to get some easy 8x optimizations for model stuff.
-typedef struct model_octant { //remove
-	vec3d		min, max;				// The bounding box that makes up this octant defined as 2 points.
-	int			nverts;					// how many vertices are in this octant
-	vec3d		**verts;					// The vertices in this octant in the high-res hull.  A vertex can only be in one octant.
-	int			nshield_tris;			// how many shield triangles are in the octant
-	shield_tri	**shield_tris;			// the shield triangles that make up this octant. A tri could be in multiple octants.
-} model_octant;
-
 #define MAX_EYES	10
 
 typedef struct eye {
