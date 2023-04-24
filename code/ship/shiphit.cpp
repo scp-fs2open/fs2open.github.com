@@ -21,6 +21,7 @@
 #include "gamesnd/gamesnd.h"
 #include "globalincs/linklist.h"
 #include "hud/hud.h"
+#include "hud/hudets.h"
 #include "hud/hudmessage.h"
 #include "hud/hudtarget.h"
 #include "iff_defs/iff_defs.h"

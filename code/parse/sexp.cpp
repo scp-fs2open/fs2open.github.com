@@ -16146,8 +16146,7 @@ void sexp_deal_with_ship_flag(int node, bool process_subsequent_nodes, Object::O
 				if (set_it) {
 					zero_one_ets(&ship_entry->shipp->shield_recharge_index, &ship_entry->shipp->weapon_recharge_index, &ship_entry->shipp->engine_recharge_index);
 
-					float x = Energy_levels[Ships[ship_entry->objp->instance].engine_recharge_index];
-					ship_entry->objp->phys_info.max_vel.xyz.z = ets_get_max_speed(ship_entry->objp, x);
+					ets_update_max_speed(ship_entry->objp);
 				} else if (object_flag_orig[Object::Object_Flags::No_shields]) {
 					set_default_recharge_rates(ship_entry->objp);
 				}
@@ -16234,8 +16233,7 @@ void multi_sexp_deal_with_ship_flag()
 				if (set_it) {
 					zero_one_ets(&shipp->shield_recharge_index, &shipp->weapon_recharge_index, &shipp->engine_recharge_index);
 
-					float x = Energy_levels[shipp->engine_recharge_index];
-					Objects[shipp->objnum].phys_info.max_vel.xyz.z = ets_get_max_speed(&Objects[shipp->objnum], x);
+					ets_update_max_speed(&Objects[shipp->objnum]);
 				} else if (object_flag_orig[Object::Object_Flags::No_shields]) {
 					set_default_recharge_rates(&Objects[shipp->objnum]);
 				}
@@ -16367,8 +16365,7 @@ void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future
 				if (set_flag) {
 					zero_one_ets(&oswpt.ship_entry->shipp->shield_recharge_index, &oswpt.ship_entry->shipp->weapon_recharge_index, &oswpt.ship_entry->shipp->engine_recharge_index);
 
-					float x = Energy_levels[oswpt.ship_entry->shipp->engine_recharge_index];
-					Objects[oswpt.ship_entry->shipp->objnum].phys_info.max_vel.xyz.z = ets_get_max_speed(&Objects[oswpt.ship_entry->shipp->objnum], x);
+					ets_update_max_speed(&Objects[oswpt.ship_entry->shipp->objnum]);
 				} else if (object_flag_orig[Object::Object_Flags::No_shields]) {
 					set_default_recharge_rates(oswpt.objp);
 				}

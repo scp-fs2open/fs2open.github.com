@@ -55,9 +55,10 @@ void ets_init_ship(object* obj)
 }
 
 // -------------------------------------------------------------------------------------------------
-// update_ets() is called once per frame for every OBJ_SHIP in the game.  The amount of energy
-// to send to the weapons and shields is calculated, and the top ship speed is calculated.  The
-// amount of time elapsed from the previous call is passed in as the parameter fl_frametime.
+// update_ets() is called once per frame for every OBJ_SHIP in the game.  
+// The amount of energy to send to the weapons and shields is calculated.
+// The max speed is also updated if there is a change in aggregate engine health.
+// The amount of time elapsed from the previous call is passed in as the parameter fl_frametime.
 //
 // parameters:   obj          ==> object that is updating their energy system
 //               fl_frametime ==> game frametime (in seconds)
@@ -82,7 +83,7 @@ void update_ets(object* objp, float fl_frametime)
 		return;
 	}
 
-//	new_energy = fl_frametime * sinfo_p->power_output;
+	//	new_energy = fl_frametime * sinfo_p->power_output;
 
 	// update weapon energy
 	max_new_weapon_energy = fl_frametime * ship_p->max_weapon_regen_per_second * max_g;
@@ -118,17 +119,26 @@ void update_ets(object* objp, float fl_frametime)
 	}
 
 	// AL 11-15-97: Rules for engine strength affecting max speed:
-	//						1. if strength >= 0.5 no affect 
+	//						1. if strength >= 0.5 no affect
 	//						2. if strength < 0.5 then max_speed = sqrt(strength)
-	//					 
+	//
 	//					 This will translate to 71% max speed at 50% engines, and 31% max speed at 10% engines
 	//
-	float strength = ship_get_subsystem_strength(ship_p, SUBSYSTEM_ENGINE);
 
-	// don't let engine strength affect max speed when playing on lowest skill level
-	if ( (objp != Player_obj) || (Game_skill_level > 0) ) {
-		if ( strength < SHIP_MIN_ENGINES_FOR_FULL_SPEED ) {
-			objp->phys_info.max_vel.xyz.z *= fl_sqrt(strength);
+	float eng_current_strength = ship_get_subsystem_strength(ship_p, SUBSYSTEM_ENGINE);
+
+	// only update max speed if aggregate engine health has changed
+	// which helps minimze amount of overrides to max speed
+	if (eng_current_strength != ship_p->prev_engine_aggregate_strength) {
+		ets_update_max_speed(objp);
+		ship_p->prev_engine_aggregate_strength = eng_current_strength;
+
+		// check if newly updated max speed should be reduced due to engine damage
+		// don't let engine strength affect max speed when playing on lowest skill level
+		if ((objp != Player_obj) || (Game_skill_level > 0)) {
+			if (eng_current_strength < SHIP_MIN_ENGINES_FOR_FULL_SPEED) {
+				objp->phys_info.max_vel.xyz.z *= fl_sqrt(eng_current_strength);
+			}
 		}
 	}
 
@@ -172,6 +182,16 @@ float ets_get_max_speed(object* objp, float engine_energy)
 			return sip->max_speed + (engine_energy - Energy_levels[INTIAL_ENGINE_RECHARGE_INDEX]) * (sip->max_overclocked_speed - sip->max_speed) / (1.0f - Energy_levels[INTIAL_ENGINE_RECHARGE_INDEX]);
 		}
 	}
+}
+
+void ets_update_max_speed(object* ship_objp)
+{
+	Assertion(ship_objp != nullptr, "Invalid object pointer passed!");
+	Assertion(ship_objp->type == OBJ_SHIP, "Object needs to be a ship object!");
+
+	// calculate the top speed of the ship based on the energy flow to engines
+	float x = Energy_levels[Ships[ship_objp->instance].engine_recharge_index];
+	ship_objp->phys_info.max_vel.xyz.z = ets_get_max_speed(ship_objp, x);
 }
 
 
@@ -292,8 +312,7 @@ void set_recharge_rates(object* obj, int shields, int weapons, int engines) {
 	Ships[obj->instance].weapon_recharge_index = weapons;
 	Ships[obj->instance].engine_recharge_index = engines;
 
-	float x = Energy_levels[Ships[obj->instance].engine_recharge_index];
-	obj->phys_info.max_vel.xyz.z = ets_get_max_speed(obj, x);
+	ets_update_max_speed(obj);
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -478,11 +497,7 @@ void increase_recharge_rate(object* obj, SYSTEM_TYPE ship_system)
 	if ( obj == Player_obj )
 		snd_play( gamesnd_get_game_sound(GameSounds::ENERGY_TRANS), 0.0f );
 
-
-	// calculate the top speed of the ship based on the energy flow to engines
-	float y = Energy_levels[ship_p->engine_recharge_index];
-
-	obj->phys_info.max_vel.xyz.z = ets_get_max_speed(obj, y);
+	ets_update_max_speed(obj);
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -603,10 +618,7 @@ void decrease_recharge_rate(object* obj, SYSTEM_TYPE ship_system)
 	if ( obj == Player_obj )
 		snd_play( gamesnd_get_game_sound(GameSounds::ENERGY_TRANS), 0.0f );
 
-	// calculate the top speed of the ship based on the energy flow to engines
-	float y = Energy_levels[ship_p->engine_recharge_index];
-
-	obj->phys_info.max_vel.xyz.z = ets_get_max_speed(obj, y);
+	ets_update_max_speed(obj);
 }
 
 void transfer_energy_weapon_common(object *objp, float from_field, float to_field, float *from_delta, float *to_delta, float from_max, float to_max, float scale, float eff)
