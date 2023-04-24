@@ -610,7 +610,7 @@ void model_collide_parse_bsp(bsp_collision_tree *tree, void *model_ptr, int vers
 	p += chunk_size;
 
 	bsp_collision_node new_node;
-	bsp_collision_leaf new_leaf;
+	bsp_collision_leaf new_leaf{ vmd_zero_vector, 0, 0, 0, 0 };
 
 	SCP_vector<bsp_collision_node> node_buffer;
 	SCP_vector<bsp_collision_leaf> leaf_buffer;
