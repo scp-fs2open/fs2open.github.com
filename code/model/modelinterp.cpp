@@ -659,31 +659,27 @@ void model_draw_debug_points( polymodel *pm, bsp_info * submodel, uint flags )
 	} else {
 		gr_set_color(0,255,0);
 
-		int j;
-		for (j=0; j<8; j++ )	{
+		vec3d	bounding_box[8];		// caclulated fron min/max
+		model_calc_bound_box(bounding_box,&pm->mins, &pm->maxs);
 
-			vec3d	bounding_box[8];		// caclulated fron min/max
-			model_calc_bound_box(bounding_box,&pm->octants[j].min,&pm->octants[j].max);
+		for (i=0; i<8; i++ )	{
+			g3_rotate_vertex( &pts[i], &bounding_box[i] );
+		}
+		gr_set_color(128,0,0);
+		g3_draw_line( &pts[0], &pts[1] );
+		g3_draw_line( &pts[1], &pts[2] );
+		g3_draw_line( &pts[2], &pts[3] );
+		g3_draw_line( &pts[3], &pts[0] );
 
-			for (i=0; i<8; i++ )	{
-				g3_rotate_vertex( &pts[i], &bounding_box[i] );
-			}
-			gr_set_color(128,0,0);
-			g3_draw_line( &pts[0], &pts[1] );
-			g3_draw_line( &pts[1], &pts[2] );
-			g3_draw_line( &pts[2], &pts[3] );
-			g3_draw_line( &pts[3], &pts[0] );
+		g3_draw_line( &pts[4], &pts[5] );
+		g3_draw_line( &pts[5], &pts[6] );
+		g3_draw_line( &pts[6], &pts[7] );
+		g3_draw_line( &pts[7], &pts[4] );
 
-			g3_draw_line( &pts[4], &pts[5] );
-			g3_draw_line( &pts[5], &pts[6] );
-			g3_draw_line( &pts[6], &pts[7] );
-			g3_draw_line( &pts[7], &pts[4] );
-
-			g3_draw_line( &pts[0], &pts[4] );
-			g3_draw_line( &pts[1], &pts[5] );
-			g3_draw_line( &pts[2], &pts[6] );
-			g3_draw_line( &pts[3], &pts[7] );			
-		}		
+		g3_draw_line( &pts[0], &pts[4] );
+		g3_draw_line( &pts[1], &pts[5] );
+		g3_draw_line( &pts[2], &pts[6] );
+		g3_draw_line( &pts[3], &pts[7] );			
 	}
 }
 

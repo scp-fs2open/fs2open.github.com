@@ -736,21 +736,22 @@ void model_collide_parse_bsp(bsp_collision_tree *tree, void *model_ptr, int vers
 
 				while ( next_chunk_type != OP_EOF ) {
 					if ( next_chunk_type == OP_TMAPPOLY ) {
-
 						model_collide_parse_bsp_tmappoly(&new_leaf, &vert_buffer, next_p);
-
-						leaf_buffer.push_back(new_leaf);
-
-						leaf_buffer.back().next = (int)leaf_buffer.size();
 					} else if ( next_chunk_type == OP_FLATPOLY ) {
 						model_collide_parse_bsp_flatpoly(&new_leaf, &vert_buffer, next_p);
-
-						leaf_buffer.push_back(new_leaf);
-
-						leaf_buffer.back().next = (int)leaf_buffer.size();
 					} else {
 						Int3();
 					}
+
+					vec3d center = vmd_zero_vector;
+					for (int j = 0; j < new_leaf.num_verts; j++) {
+						center += *Mc_point_list[vert_buffer[new_leaf.vert_start + j].vertnum];
+					}
+					tree->poly_centers.push_back(center / (float)new_leaf.num_verts);
+
+					leaf_buffer.push_back(new_leaf);
+
+					leaf_buffer.back().next = (int)leaf_buffer.size();
 
 					next_p += next_chunk_size;
 					next_chunk_type = w(next_p);
@@ -776,6 +777,12 @@ void model_collide_parse_bsp(bsp_collision_tree *tree, void *model_ptr, int vers
 			node_buffer[i].leaf = (int)leaf_buffer.size();
 
 			model_collide_parse_bsp_tmap2poly(&new_leaf, &vert_buffer, p);
+
+			vec3d center = vmd_zero_vector;
+			for (int j = 0; j < new_leaf.num_verts; j++) {
+				center += *Mc_point_list[vert_buffer[new_leaf.vert_start + j].vertnum];				
+			}
+			tree->poly_centers.push_back(center / (float)new_leaf.num_verts);
 
 			leaf_buffer.push_back(new_leaf);
 
@@ -939,19 +946,9 @@ void mc_check_shield()
 		mc_check_sldc(0); // see if we hit the SLDC
 	}
 	else
-	{
-		int o;
-		for (o=0; o<8; o++ )	{
-			model_octant * poct1 = &Mc_pm->octants[o];
-
-			if (!mc_ray_boundingbox( &poct1->min, &poct1->max, &Mc_p0, &Mc_direction, NULL ))	{
-				continue;
-			}
-			
-			for (i = 0; i < poct1->nshield_tris; i++) {
-				shield_tri	* tri = poct1->shield_tris[i];
-				mc_shield_check_common(tri);
-			}
+	{				
+		for (i = 0; i < Mc_pm->shield.ntris; i++) {
+			mc_shield_check_common(&Mc_pm->shield.tris[i]);
 		}
 	}//model has shield_collsion_tree
 }

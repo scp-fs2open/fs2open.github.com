@@ -73,29 +73,6 @@ beam Beam_free_list;					// free beams
 beam Beam_used_list;					// used beams
 int Beam_count = 0;					// how many beams are in use
 
-// octant indices. These are "good" pairs of octants to use for beam target
-#define BEAM_NUM_GOOD_OCTANTS			8
-int Beam_good_slash_octants[BEAM_NUM_GOOD_OCTANTS][4] = {		
-	{ 2, 5, 1, 0 },					// octant, octant, min/max pt, min/max pt
-	{ 7, 0, 1, 0 },
-	{ 1, 6, 1, 0 },					
-	{ 6, 1, 0, 1 },
-	{ 5, 2, 0, 1 },	
-	{ 0, 7, 0, 1 },		
-	{ 7, 1, 1, 0 },
-	{ 6, 0, 1, 0 },
-};
-int Beam_good_shot_octants[BEAM_NUM_GOOD_OCTANTS][4] = {		
-	{ 5, 0, 1, 0 },					// octant, octant, min/max pt, min/max pt
-	{ 7, 2, 1, 0 },
-	{ 7, 1, 1, 0 },					
-	{ 6, 0, 1, 0 },
-	{ 7, 3, 1, 0 },	
-	{ 6, 2, 1, 0 },
-	{ 5, 1, 1, 0 },
-	{ 4, 0, 1, 0 },
-};
-
 // debug stuff - keep track of how many collision tests we perform a second and how many we toss a second
 #define BEAM_TEST_STAMP_TIME		4000	// every 4 seconds
 int Beam_test_stamp = -1;
@@ -183,7 +160,7 @@ void beam_type_antifighter_get_status(beam *b, int *shot_index, int *fire_wait);
 void beam_type_normal_move(beam *b);
 
 // given a model #, and an object, stuff 2 good world coord points
-void beam_get_octant_points(int modelnum, object *objp, int oct_index, int oct_array[BEAM_NUM_GOOD_OCTANTS][4], vec3d *v1, vec3d *v2);
+void beam_get_octant_points(int modelnum, object *objp, int seed, vec3d *v1, vec3d *v2);
 
 // given an object, return its model num
 int beam_get_model(object *objp);
@@ -2351,7 +2328,7 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 			pos1 = b->target_pos1;
 			pos2 = b->target_pos2;
 		} else {
-			beam_get_octant_points(model_num, b->target, seed % BEAM_NUM_GOOD_OCTANTS, Beam_good_slash_octants, &pos1, &pos2);
+			beam_get_octant_points(model_num, b->target, seed, &pos1, &pos2);
 		}
 
 		// point 1
@@ -2439,7 +2416,7 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 				rand2_on += b->target->pos;
 			}
 			if (bwi->t5info.start_pos == Type5BeamPos::RANDOM_OUTSIDE || bwi->t5info.end_pos == Type5BeamPos::RANDOM_OUTSIDE)
-				beam_get_octant_points(model_num, usable_target, seed % BEAM_NUM_GOOD_OCTANTS, Beam_good_slash_octants, &rand1_off, &rand2_off);
+				beam_get_octant_points(model_num, usable_target, seed, &rand1_off, &rand2_off);
 
 			// get start and end points
 			switch (bwi->t5info.start_pos) {
@@ -2814,26 +2791,64 @@ void beam_aim(beam *b)
 		OBJ_RECALC_PAIRS((&Objects[b->objnum]));
 }
 
+// - - -  0     left bottom rear
+// - - +  1     left bottom front
+// - + -  2     left top rear
+// - + +  3     left top front
+// + - -  4     right bottom rear
+// + - +  5     right bottom front
+// + + -  6     right top rear
+// + + +  7     right top front
+// 
+// 
+// int Beam_good_slash_octants[BEAM_NUM_GOOD_OCTANTS][4] = {		
+//	{ 2, 5, 1, 0 },	center top center bot				
+//	{ 7, 0, 1, 0 }, trf blb
+//	{ 1, 6, 1, 0 }, center front center back
+//	{ 6, 1, 0, 1 }, center back center front
+//	{ 5, 2, 0, 1 }, center bot center top
+//	{ 0, 7, 0, 1 }, blb trf
+//	{ 7, 1, 1, 0 }, trf center bot left
+//	{ 6, 0, 1, 0 }, center top right blb
+
 // given a model #, and an object, stuff 2 good world coord points
-void beam_get_octant_points(int modelnum, object *objp, int oct_index, int oct_array[BEAM_NUM_GOOD_OCTANTS][4], vec3d *v1, vec3d *v2)
+void beam_get_octant_points(int modelnum, object *objp, int seed, vec3d *v1, vec3d *v2)
 {	
-	vec3d t1, t2, temp;
-	polymodel *m = model_get(modelnum);
+	polymodel *pm = model_get(modelnum);
 
 	// bad bad bad bad bad bad
-	if(m == NULL){
+	if(pm == nullptr){
 		Int3();
 		return;
 	}
 
-	Assert((oct_index >= 0) && (oct_index < BEAM_NUM_GOOD_OCTANTS));
+	vec3d t1 = vmd_zero_vector;
+	vec3d t2 = vmd_zero_vector;
+
+	// make the seed go from [1-26] (0 would make it choose the center, which we dont want
+	seed %= 26;
+	seed += 1;
 
 	// randomly pick octants	
-	t1 = oct_array[oct_index][2] ? m->octants[oct_array[oct_index][0]].max : m->octants[oct_array[oct_index][0]].min;
-	t2 = oct_array[oct_index][3] ? m->octants[oct_array[oct_index][1]].max : m->octants[oct_array[oct_index][1]].min;
+	for (int i = 0; i < 3; i++) {
+		// seed % 3
+		// seed / 3 % 3
+		// seed / 9 % 3
+		// 3 numbers, each is 2, 1 or 0
+		// max->min, min->max, or no movement  on each axis
+		int num = (seed / (int)pow(3, i)) % 3;
+		if (num == 2) {
+			t1.a1d[i] = pm->maxs.a1d[i];
+			t2.a1d[i] = pm->mins.a1d[i];
+		} else if (num == 1) {
+			t1.a1d[i] = pm->mins.a1d[i];
+			t2.a1d[i] = pm->maxs.a1d[i];
+		}
+	}
 	Assert(!vm_vec_same(&t1, &t2));
 
 	// get them in world coords
+	vec3d  temp;
 	vm_vec_unrotate(&temp, &t1, &objp->orient);
 	vm_vec_add(v1, &temp, &objp->pos);
 	vm_vec_unrotate(&temp, &t2, &objp->orient);

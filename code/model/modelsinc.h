@@ -79,12 +79,6 @@ class polymodel;
 #define fl(p)	(*reinterpret_cast<float*>(p))
 #define cfl(p)  (*reinterpret_cast<const float*>(p))
 
-// Creates the octants for a given polygon model
-void model_octant_create( polymodel * pm );
-
-// frees the memory the octants use for a given polygon model
-void model_octant_free( polymodel * pm );
-
 void model_calc_bound_box( vec3d *box, vec3d *big_mn, vec3d *big_mx);
 
 void interp_clear_instance();

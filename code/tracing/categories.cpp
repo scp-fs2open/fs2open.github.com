@@ -123,7 +123,6 @@ Category LoadPostMissionLoad("Mission load post processing", false);
 Category LoadModelFile("Load model file", false);
 Category ReadModelFile("Read model file", false);
 Category ModelCreateVertexBuffers("Create model vertex buffers", false);
-Category ModelCreateOctants("Create model octants", false);
 Category ModelParseAllBSPTrees("Parse all BSP trees", false);
 Category ModelParseBSPTree("Parse BSP tree", false);
 Category ModelConfigureVertexBuffers("Model configure vertex buffers", false);
