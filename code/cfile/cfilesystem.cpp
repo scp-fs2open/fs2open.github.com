@@ -775,9 +775,10 @@ int is_ext_in_list( const char *ext_list, const char *ext )
 // Run a basic test for indexed files that may be shadowed
 #ifndef NDEBUG
 	#define ENABLE_SHADOW_CHECK		1
+	SCP_vector<SCP_string> critical_shadowed;
 #endif
 
-static void check_file_shadows(const int root_index __UNUSED, const int pathtype __UNUSED, const SCP_string &name __UNUSED, const SCP_string sub_path __UNUSED)
+static void check_file_shadows(const int root_index __UNUSED, const int pathtype __UNUSED, const SCP_string &name __UNUSED, const SCP_string &sub_path __UNUSED)
 {
 #if ENABLE_SHADOW_CHECK
 	if ( !cf_should_scan_subdirs(pathtype) ) {
@@ -786,6 +787,7 @@ static void check_file_shadows(const int root_index __UNUSED, const int pathtype
 
 	SCP_string curfile, newfile;
 
+	const bool critical = ((pathtype == CF_TYPE_TABLES) || (pathtype == CF_TYPE_MISSIONS));
 	const auto root = cf_get_root(root_index);
 
 	newfile = root->path + ((root->roottype == CF_ROOTTYPE_PACK) ? "::" : "");
@@ -820,8 +822,13 @@ static void check_file_shadows(const int root_index __UNUSED, const int pathtype
 		curfile += f->sub_path + f->name_ext;
 
 		// this log message occurs in the middle of an existing line, hence the extra new lines
-		mprintf(("\nWARNING! A file being indexed may be shadowed by an existing file!\n New:\n  %s\n Existing:\n  %s\n",
+		mprintf(("\nWARNING! A %sfile being indexed may be shadowed by an existing file!\n New:\n  %s\n Existing:\n  %s\n",
+				critical ? "critical " : "",
 				newfile.c_str(), curfile.c_str()));
+
+		if (critical) {
+			critical_shadowed.push_back(name);
+		}
 
 		break;
 	}
@@ -1143,6 +1150,24 @@ void cf_build_file_list()
 		}
 	}
 
+#ifndef NDEBUG
+	// if some special/critical files might be shadowed then make sure the user knows about it
+	if ( !critical_shadowed.empty() && !running_unittests ) {
+		SCP_string shadowed;
+		const auto count = critical_shadowed.size();
+
+		// only report a few of the files so that the warning dialog doesn't get freakishly large
+		for (size_t j = 0; (j < 5) && (j < count); ++j) {
+			shadowed += critical_shadowed[j] + '\n';
+		}
+
+		Warning(LOCATION, "Some critical files might be shadowed! Please check the debug log for details.\n\n"
+							"%lu file(s) detected, including:\n%s", count, shadowed.c_str());
+	}
+
+	critical_shadowed.clear();
+	critical_shadowed.shrink_to_fit();
+#endif
 }
 
 
