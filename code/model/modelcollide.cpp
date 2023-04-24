@@ -743,6 +743,7 @@ void model_collide_parse_bsp(bsp_collision_tree *tree, void *model_ptr, int vers
 						Int3();
 					}
 
+					// add another polygon center
 					vec3d center = vmd_zero_vector;
 					for (int j = 0; j < new_leaf.num_verts; j++) {
 						center += *Mc_point_list[vert_buffer[new_leaf.vert_start + j].vertnum];
@@ -778,6 +779,7 @@ void model_collide_parse_bsp(bsp_collision_tree *tree, void *model_ptr, int vers
 
 			model_collide_parse_bsp_tmap2poly(&new_leaf, &vert_buffer, p);
 
+			// add another polygon center
 			vec3d center = vmd_zero_vector;
 			for (int j = 0; j < new_leaf.num_verts; j++) {
 				center += *Mc_point_list[vert_buffer[new_leaf.vert_start + j].vertnum];				
