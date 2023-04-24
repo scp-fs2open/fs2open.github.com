@@ -2791,26 +2791,6 @@ void beam_aim(beam *b)
 		OBJ_RECALC_PAIRS((&Objects[b->objnum]));
 }
 
-// - - -  0     left bottom rear
-// - - +  1     left bottom front
-// - + -  2     left top rear
-// - + +  3     left top front
-// + - -  4     right bottom rear
-// + - +  5     right bottom front
-// + + -  6     right top rear
-// + + +  7     right top front
-// 
-// 
-// int Beam_good_slash_octants[BEAM_NUM_GOOD_OCTANTS][4] = {		
-//	{ 2, 5, 1, 0 },	center top center bot				
-//	{ 7, 0, 1, 0 }, trf blb
-//	{ 1, 6, 1, 0 }, center front center back
-//	{ 6, 1, 0, 1 }, center back center front
-//	{ 5, 2, 0, 1 }, center bot center top
-//	{ 0, 7, 0, 1 }, blb trf
-//	{ 7, 1, 1, 0 }, trf center bot left
-//	{ 6, 0, 1, 0 }, center top right blb
-
 // given a model #, and an object, stuff 2 good world coord points
 void beam_get_octant_points(int modelnum, object *objp, int seed, vec3d *v1, vec3d *v2)
 {	
