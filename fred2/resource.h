@@ -63,7 +63,8 @@
 #define IDD_INITIAL_STATUS              214
 #define IDD_ASTEROID_EDITOR             215
 #define IDD_CAMPAIGN                    216
-#define IDD_TEXT_VIEW                   218
+#define IDD_TEXT_VIEW                   217
+#define IDD_CHECKLIST_VIEW              218
 #define IDC_CURSOR1                     219
 #define IDC_CURSOR2                     220
 #define IDD_BRIEFING_EDITOR             221

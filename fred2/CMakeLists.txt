@@ -33,6 +33,8 @@ set(FRED2_SOURCES
 	campaigntreeview.h
 	campaigntreewnd.cpp
 	campaigntreewnd.h
+	checkboxlistdlg.cpp
+	checkboxlistdlg.h
 	cmdbrief.cpp
 	cmdbrief.h
 	createwingdlg.cpp
