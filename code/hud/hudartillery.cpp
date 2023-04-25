@@ -22,6 +22,7 @@
 #include "network/multi.h"
 #include "object/object.h"
 #include "parse/parselo.h"
+#include "ship/shipfx.h"
 #include "sound/sound.h"
 #include "utils/Random.h"
 #include "weapon/beam.h"
@@ -59,6 +60,7 @@ int ssm_info_lookup(const char *name)
 
 void parse_ssm(const char *filename)
 {
+	char ssm_name[NAME_LENGTH];
 	char weapon_name[NAME_LENGTH];
 
 	try
@@ -67,155 +69,167 @@ void parse_ssm(const char *filename)
 		reset_parse();
 
 		// parse the table
-		while(required_string_either("#end", "$SSM:")) {
-			required_string("$SSM:");
-			ssm_info s;
+		while(required_string_either("#end", "$SSM:"))
+		{
+			bool no_create = false;
 			int string_index;
+			ssm_info *s, new_ssm;
+
+			s = &new_ssm;
 
 			// name
-			stuff_string(s.name, F_NAME, NAME_LENGTH);
-			if (*s.name == 0) {
-				sprintf(s.name, "SSM " SIZE_T_ARG, Ssm_info.size());
-				mprintf(("Found an SSM entry without a name.  Assigning \"%s\".\n", s.name));
+			required_string("$SSM:");
+			stuff_string(ssm_name, F_NAME, NAME_LENGTH);
+			if (*ssm_name == 0)
+			{
+				sprintf(ssm_name, "SSM " SIZE_T_ARG, Ssm_info.size());
+				mprintf(("Found an SSM entry without a name.  Assigning \"%s\".\n", ssm_name));
+			}
+
+			if (optional_string("+nocreate"))
+			{
+				no_create = true;
+
+				int i = ssm_info_lookup(ssm_name);
+				if (i >= 0)
+					s = &Ssm_info[i];
+			}
+			else
+			{
+				strcpy_s(s->name, ssm_name);
 			}
 
 			// stuff data
-			required_string("+Weapon:");
-			stuff_string(weapon_name, F_NAME, NAME_LENGTH);
+			if (optional_string("+Weapon:"))
+			{
+				stuff_string(weapon_name, F_NAME, NAME_LENGTH);
 
-			// see if we have a valid weapon
-			s.weapon_info_index = weapon_info_lookup(weapon_name);
-			if (s.weapon_info_index < 0) {
-				error_display(0, "Unknown weapon [%s] for SSM strike [%s]; this SSM strike will be discarded.", weapon_name, s.name);
+				// see if we have a valid weapon
+				s->weapon_info_index = weapon_info_lookup(weapon_name);
+				if (s->weapon_info_index < 0)
+					error_display(0, "Unknown weapon [%s] for SSM strike [%s]; this SSM strike will be discarded.", weapon_name, s->name);
 			}
 
 			string_index = optional_string_either("+Count:", "+Min Count:");
-			if (string_index == 0) {
-				stuff_int(&s.count);
-				s.max_count = -1;
-			} else if (string_index == 1) {
-				stuff_int(&s.count);
+			if (string_index == 0)
+			{
+				stuff_int(&s->count);
+				s->max_count = -1;
+			}
+			else if (string_index == 1)
+			{
+				stuff_int(&s->count);
 				required_string("+Max Count:");
-				stuff_int(&s.max_count);
-			} else {
-				s.count = 1;
-				s.max_count = -1;
+				stuff_int(&s->max_count);
 			}
 
-			if (optional_string("+WarpEffect:")) {
-				int temp;
-				if (stuff_int_optional(&temp) != 2) {
+			if (optional_string("+WarpEffect:"))
+			{
+				char unique_id[NAME_LENGTH];
+				stuff_string(unique_id, F_NAME, NAME_LENGTH);
+
+				if (can_construe_as_integer(unique_id))
+				{
+					int temp = atoi(unique_id);
+
+					if ((temp < 0) || (temp >= Num_fireball_types))
+						error_display(0, "Fireball index [%d] out of range (should be 0-%d) for SSM strike [%s]", temp, Num_fireball_types - 1, s->name);
+					else
+						s->fireball_type = temp;
+				}
+				else
+				{
 					// We have a string to parse instead.
-					char unique_id[NAME_LENGTH];
-					memset(unique_id, 0, NAME_LENGTH);
-					stuff_string(unique_id, F_NAME, NAME_LENGTH);
 					int fireball_type = fireball_info_lookup(unique_id);
-					if (fireball_type < 0) {
-						error_display(0, "Unknown fireball [%s] to use as warp effect for SSM strike [%s]", unique_id, s.name);
-						s.fireball_idx = FIREBALL_WARP;
-					} else {
-						s.fireball_idx = fireball_type;
-					}
-				} else {
-					if ((temp < 0) || (temp >= Num_fireball_types)) {
-						error_display(0, "Fireball index [%d] out of range (should be 0-%d) for SSM strike [%s]", temp, Num_fireball_types - 1, s.name);
-						s.fireball_idx = FIREBALL_WARP;
-					} else {
-						s.fireball_idx = temp;
-					}
+					if (fireball_type < 0)
+						error_display(0, "Unknown fireball [%s] to use as warp effect for SSM strike [%s]", unique_id, s->name);
+					else
+						s->fireball_type = fireball_type;
 				}
-			} else {
-				s.fireball_idx = FIREBALL_WARP;
 			}
 
-			required_string("+WarpRadius:");
-			stuff_float(&s.warp_radius);
+			if (optional_string("+WarpRadius:"))
+			{
+				stuff_float(&s->warp_radius);
+			}
 
-			if (optional_string("+WarpTime:")) {
-				stuff_float(&s.warp_time);
+			if (optional_string("+WarpTime:"))
+			{
+				stuff_float(&s->warp_time);
+
 				// According to fireballs.cpp, "Warp lifetime must be at least 4 seconds!"
-				if ( (s.warp_time) < 4.0f) {
+				if (s->warp_time < 4.0f)
+				{
 					// So let's warn them before they try to use it, shall we?
-					error_display(0, "Expected a '+WarpTime:' value equal or greater than 4.0, found '%f' in SSM strike [%s].\nSetting to 4.0, please check and set to a number 4.0 or greater!", s.warp_time, s.name);
+					error_display(0, "Expected a '+WarpTime:' value equal or greater than 4.0, found '%f' in SSM strike [%s].\nSetting to 4.0, please check and set to a number 4.0 or greater!", s->warp_time, s->name);
 					// And then make the Assert obsolete -- Zacam
-					s.warp_time = 4.0f;
+					s->warp_time = 4.0f;
 				}
-			} else {
-				s.warp_time = 4.0f;
 			}
 
-			string_index = required_string_either("+Radius:", "+Min Radius:");
-			if (string_index == 0) {
-				required_string("+Radius:");
-				stuff_float(&s.radius);
-				s.max_radius = -1.0f;
-			} else {
-				required_string("+Min Radius:");
-				stuff_float(&s.radius);
+			string_index = optional_string_either("+Radius:", "+Min Radius:");
+			if (string_index == 0)
+			{
+				stuff_float(&s->radius);
+				s->max_radius = -1.0f;
+			}
+			else if (string_index == 1)
+			{
+				stuff_float(&s->radius);
 				required_string("+Max Radius:");
-				stuff_float(&s.max_radius);
+				stuff_float(&s->max_radius);
 			}
 
 			string_index = optional_string_either("+Offset:", "+Min Offset:");
-			if (string_index == 0) {
-				stuff_float(&s.offset);
-				s.max_offset = -1.0f;
-			} else if (string_index == 1) {
-				stuff_float(&s.offset);
+			if (string_index == 0)
+			{
+				stuff_float(&s->offset);
+				s->max_offset = -1.0f;
+			}
+			else if (string_index == 1)
+			{
+				stuff_float(&s->offset);
 				required_string("+Max Offset:");
-				stuff_float(&s.max_offset);
-			} else {
-				s.offset = 0.0f;
-				s.max_offset = -1.0f;
+				stuff_float(&s->max_offset);
 			}
 			
-			if (optional_string("+Shape:")) {
-				switch(required_string_one_of(3, "Point", "Circle", "Sphere")) {
-				case 0:
-					required_string("Point");
-					s.shape = SSM_SHAPE_POINT;
-					break;
-				case 1:
-					required_string("Circle");
-					FALLTHROUGH;
-				case -1:	// If we're ignoring parse errors and can't identify the shape, go with a circle.
-					s.shape = SSM_SHAPE_CIRCLE;
-					break;
-				case 2:
-					required_string("Sphere");
-					s.shape = SSM_SHAPE_SPHERE;
-					break;
-				default:
-					UNREACHABLE("Impossible return value from required_string_one_of(); get a coder!\n");
+			if (optional_string("+Shape:"))
+			{
+				switch (required_string_one_of(3, "Point", "Circle", "Sphere"))
+				{
+					case 0:
+						required_string("Point");
+						s->shape = SSM_SHAPE_POINT;
+						break;
+					case 1:
+						required_string("Circle");
+						FALLTHROUGH;
+					case -1:	// If we're ignoring parse errors and can't identify the shape, go with a circle.
+						s->shape = SSM_SHAPE_CIRCLE;
+						break;
+					case 2:
+						required_string("Sphere");
+						s->shape = SSM_SHAPE_SPHERE;
+						break;
+					default:
+						UNREACHABLE("Impossible return value from required_string_one_of(); get a coder!\n");
 				}
-			} else {
-				s.shape = SSM_SHAPE_CIRCLE;
 			}
 
 			if (optional_string("+HUD Message:"))
-				stuff_boolean(&s.send_message);
-			else
-				s.send_message = true;
+				stuff_boolean(&s->send_message);
 
-			if (optional_string("+Custom Message:")) {
-				stuff_string(s.message, F_NAME, NAME_LENGTH);
-				s.use_custom_message = true;
-			} else {
-				s.use_custom_message = false;
+			if (optional_string("+Custom Message:"))
+			{
+				stuff_string(s->custom_message, F_NAME, NAME_LENGTH);
+				s->use_custom_message = true;
 			}
 
-			s.sound_index = gamesnd_id();
-			parse_game_sound("+Alarm Sound:", &s.sound_index);
+			parse_game_sound("+Alarm Sound:", &s->sound_index);
 
-			if(s.weapon_info_index >= 0) {
-				// valid
-				int existing = ssm_info_lookup(s.name);
-				if (existing >= 0) {	// Redefined the existing entry instead of adding a duplicate.
-					Ssm_info[existing] = s;
-				} else {
-					Ssm_info.push_back(s);
-				}
-			} // We already warned the modder that the SSM strike was invalid without a valid weapon.
+			// don't add new entry if this is just a modified one
+			if (!no_create)
+				Ssm_info.push_back(new_ssm);
 		}
 	}
 	catch (const parse::ParseException& e)
@@ -233,6 +247,15 @@ void ssm_init()
 		parse_ssm("ssm.tbl");
 	}
 	parse_modular_table(NOX("*-ssm.tbm"), parse_ssm);
+
+	// We already warned the modder that an SSM strike is invalid without a valid weapon, so now remove any that are in the list
+	Ssm_info.erase(
+		std::remove_if(Ssm_info.begin(), Ssm_info.end(), [](const ssm_info &ssm)
+		{
+			return ssm.weapon_info_index < 0;
+		}),
+		Ssm_info.end()
+	);
 
 	// Now that we've populated Ssm_info, let's validate weapon $SSM: entries.
 	validate_SSM_entries();
@@ -361,7 +384,7 @@ void ssm_create(object *target, vec3d *start, size_t ssm_index, ssm_firing_info 
 		if (!Ssm_info[ssm_index].use_custom_message)
 			HUD_printf("%s", XSTR("Firing artillery", 1570));
 		else
-			HUD_printf("%s", Ssm_info[ssm_index].message);
+			HUD_printf("%s", Ssm_info[ssm_index].custom_message);
 	}
 	if (Ssm_info[ssm_index].sound_index.isValid()) {
 		snd_play(gamesnd_get_game_sound(Ssm_info[ssm_index].sound_index));
@@ -464,7 +487,7 @@ void ssm_process()
                     vm_vec_sub(&temp, &moveup->sinfo.target->pos, &moveup->sinfo.start_pos[idx]);
 					vm_vec_normalize(&temp);
 					vm_vector_2_matrix(&orient, &temp, NULL, NULL);
-					moveup->fireballs[idx] = fireball_create(&moveup->sinfo.start_pos[idx], si->fireball_idx, FIREBALL_WARP_EFFECT, -1, si->warp_radius, false, &vmd_zero_vector, si->warp_time, 0, &orient);
+					moveup->fireballs[idx] = fireball_create(&moveup->sinfo.start_pos[idx], si->fireball_type, FIREBALL_WARP_EFFECT, -1, si->warp_radius, false, &vmd_zero_vector, si->warp_time, 0, &orient);
 				}
 			}
 		}
