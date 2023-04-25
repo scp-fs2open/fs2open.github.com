@@ -112,7 +112,7 @@ bool CheckBoxListDlg::IsChecked(int index)
 	}
 	else
 	{
-		if (index < 0 || index >= m_offline_options.size())
+		if (index < 0 || index >= (int)m_offline_options.size())
 			return FALSE;
 
 		return m_offline_options[index].second;
@@ -131,7 +131,7 @@ void CheckBoxListDlg::SetChecked(int index, bool checked)
 	}
 	else
 	{
-		if (index < 0 || index >= m_offline_options.size())
+		if (index < 0 || index >= (int)m_offline_options.size())
 			return;
 
 		m_offline_options[index].second = checked;
