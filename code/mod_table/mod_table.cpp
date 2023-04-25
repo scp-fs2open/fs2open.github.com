@@ -141,7 +141,7 @@ bool Play_thruster_sounds_for_player;
 std::array<std::tuple<float, float>, 6> Fred_spacemouse_nonlinearity;
 bool Randomize_particle_rotation;
 
-static auto DiscordOption = options::OptionBuilder<bool>("Other.Discord", "Discord Presence", "Toggle Discord Rich Presence")
+static auto DiscordOption __UNUSED = options::OptionBuilder<bool>("Other.Discord", "Discord Presence", "Toggle Discord Rich Presence")
 							 .category("Other")
 							 .default_val(Discord_presence)
 							 .level(options::ExpertLevel::Advanced)

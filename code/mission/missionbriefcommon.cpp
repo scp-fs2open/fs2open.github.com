@@ -127,7 +127,7 @@ debriefing	*Debriefing;						// pointer to correct debriefing
 
 bool Briefing_voice_enabled = true; // flag which turn on/off voice playback of briefings/debriefings
 
-static auto BriefingVoiceOption = options::OptionBuilder<bool>("Audio.BriefingVoice", "Briefing voice",
+static auto BriefingVoiceOption __UNUSED = options::OptionBuilder<bool>("Audio.BriefingVoice", "Briefing voice",
                                                                "Enable or disable voice playback in the briefing.")
                                       .category("Audio")
                                       .level(options::ExpertLevel::Beginner)

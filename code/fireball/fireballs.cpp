@@ -48,7 +48,7 @@ bool fireballs_parsed = false;
 
 bool Fireball_use_3d_warp = false;
 
-static auto WarpOption = options::OptionBuilder<bool>("Graphics.3dWarp", "3D Warp", "Use a 3D model for warp effects")
+static auto WarpOption __UNUSED = options::OptionBuilder<bool>("Graphics.3dWarp", "3D Warp", "Use a 3D model for warp effects")
                              .category("Graphics")
                              .default_val(true)
                              .level(options::ExpertLevel::Advanced)

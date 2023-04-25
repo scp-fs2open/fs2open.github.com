@@ -256,7 +256,7 @@ static SCP_string skill_level_display(int value)
 	return SCP_string(Skill_level_names(value, true));
 }
 
-static auto GameSkillOption =
+static auto GameSkillOption __UNUSED =
     options::OptionBuilder<int>("Game.SkillLevel", "Skill Level", "The skill level for the game.")
         .category("Game")
         .range(0, 4)

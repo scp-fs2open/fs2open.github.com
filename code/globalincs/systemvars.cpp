@@ -251,14 +251,14 @@ const SCP_vector<std::pair<int, SCP_string>> DetailLevelValues = {{ 0, "Minimum"
                                                                   { 3, "High" },
                                                                   { 4, "Ultra" }, };
 
-const auto ModelDetailOption =
+const auto ModelDetailOption __UNUSED =
 	options::OptionBuilder<int>("Graphics.Detail", "Model Detail", "Detail level of models").importance(8).category(
 		"Graphics").values(DetailLevelValues).default_val(MAX_DETAIL_LEVEL).change_listener([](int val, bool) {
 		Detail.detail_distance = val;
 		return true;
 	}).finish();
 
-const auto TexturesOption = options::OptionBuilder<int>("Graphics.Texture",
+const auto TexturesOption __UNUSED = options::OptionBuilder<int>("Graphics.Texture",
                                                         "3D Hardware Textures",
                                                         "Level of detail of textures").importance(6).category("Graphics").values(
 	DetailLevelValues).default_val(MAX_DETAIL_LEVEL).change_listener([](int val, bool) {
@@ -266,7 +266,7 @@ const auto TexturesOption = options::OptionBuilder<int>("Graphics.Texture",
 	return true;
 }).finish();
 
-const auto ParticlesOption = options::OptionBuilder<int>("Graphics.Particles",
+const auto ParticlesOption __UNUSED = options::OptionBuilder<int>("Graphics.Particles",
                                                          "Particles",
                                                          "Level of detail for particles").importance(5).category(
 	"Graphics").values(DetailLevelValues).default_val(MAX_DETAIL_LEVEL).change_listener([](int val, bool) {
@@ -274,7 +274,7 @@ const auto ParticlesOption = options::OptionBuilder<int>("Graphics.Particles",
 	return true;
 }).finish();
 
-const auto SmallDebrisOption =
+const auto SmallDebrisOption __UNUSED =
 	options::OptionBuilder<int>("Graphics.SmallDebris", "Impact Effects", "Level of detail of impact effects").category(
 		"Graphics").values(DetailLevelValues).default_val(MAX_DETAIL_LEVEL).importance(4).change_listener([](int val,
 	                                                                                                         bool) {
@@ -282,7 +282,7 @@ const auto SmallDebrisOption =
 		return true;
 	}).finish();
 
-const auto ShieldEffectsOption = options::OptionBuilder<int>("Graphics.ShieldEffects",
+const auto ShieldEffectsOption __UNUSED = options::OptionBuilder<int>("Graphics.ShieldEffects",
                                                              "Shield Hit Effects",
                                                              "Level of detail of shield impacts").importance(3).category(
 	"Graphics").values(DetailLevelValues).default_val(MAX_DETAIL_LEVEL).change_listener([](int val, bool) {
@@ -290,7 +290,7 @@ const auto ShieldEffectsOption = options::OptionBuilder<int>("Graphics.ShieldEff
 	return true;
 }).finish();
 
-const auto StarsOption =
+const auto StarsOption __UNUSED =
 	options::OptionBuilder<int>("Graphics.Stars", "Stars", "Number of stars in the mission").importance(2).category(
 		"Graphics").values(DetailLevelValues).default_val(MAX_DETAIL_LEVEL).change_listener([](int val, bool) {
 		Detail.num_stars = val;

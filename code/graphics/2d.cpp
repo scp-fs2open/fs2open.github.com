@@ -111,7 +111,7 @@ static bool gamma_change_listener(float new_val, bool initial)
 	return true;
 }
 
-static auto GammaOption =
+static auto GammaOption __UNUSED =
     options::OptionBuilder<float>("Graphics.Gamma", "Brightness", "The brighness value used for the game window")
         .category("Graphics")
         .default_val(1.0f)
@@ -127,7 +127,7 @@ const SCP_vector<std::pair<int, SCP_string>> DetailLevelValues = {{ 0, "Minimum"
                                                                   { 3, "High" },
                                                                   { 4, "Ultra" }, };
 
-const auto LightingOption = options::OptionBuilder<int>("Graphics.Lighting", "Lighting", "Level of detail of the lighting")
+const auto LightingOption __UNUSED = options::OptionBuilder<int>("Graphics.Lighting", "Lighting", "Level of detail of the lighting")
 		.importance(1)
 		.category("Graphics")
 		.values(DetailLevelValues)
@@ -161,7 +161,7 @@ static bool mode_change_func(os::ViewportState state, bool initial)
 	return true;
 }
 
-static auto WindowModeOption = options::OptionBuilder<os::ViewportState>("Graphics.WindowMode", "Window Mode",
+static auto WindowModeOption __UNUSED = options::OptionBuilder<os::ViewportState>("Graphics.WindowMode", "Window Mode",
 																		 "Controls how the game window is created.")
 								   .category("Graphics")
 								   .level(options::ExpertLevel::Beginner)
@@ -373,7 +373,7 @@ static auto ResolutionOption =
 
 bool Gr_enable_soft_particles = false;
 
-static auto SoftParticlesOption = options::OptionBuilder<bool>("Graphics.SoftParticles", "Soft Particles",
+static auto SoftParticlesOption __UNUSED = options::OptionBuilder<bool>("Graphics.SoftParticles", "Soft Particles",
                                                                "Enable or disable soft particle rendering.")
                                       .category("Graphics")
                                       .level(options::ExpertLevel::Advanced)
@@ -384,7 +384,7 @@ static auto SoftParticlesOption = options::OptionBuilder<bool>("Graphics.SoftPar
 
 flagset<FramebufferEffects> Gr_framebuffer_effects;
 
-static auto FramebufferEffectsOption =
+static auto FramebufferEffectsOption __UNUSED =
     options::OptionBuilder<flagset<FramebufferEffects>>(
         "Graphics.FramebufferEffects", "Framebuffer effects",
         "Controls which framebuffer effects will be applied to the scene.")
@@ -402,7 +402,7 @@ static auto FramebufferEffectsOption =
 AntiAliasMode Gr_aa_mode = AntiAliasMode::None;
 AntiAliasMode Gr_aa_mode_last_frame = AntiAliasMode::None;
 
-static auto AAOption = options::OptionBuilder<AntiAliasMode>("Graphics.AAMode", "Anti Aliasing",
+static auto AAOption __UNUSED = options::OptionBuilder<AntiAliasMode>("Graphics.AAMode", "Anti Aliasing",
                                                              "Controls the anti aliasing mode of the engine.")
                            .category("Graphics")
                            .level(options::ExpertLevel::Advanced)
@@ -429,7 +429,7 @@ bool gr_is_smaa_mode(AntiAliasMode mode) {
 
 bool Gr_post_processing_enabled = true;
 
-static auto PostProcessOption =
+static auto PostProcessOption __UNUSED =
     options::OptionBuilder<bool>("Graphics.PostProcessing", "Post processing",
                                  "Controls whether post processing is enabled in the engine")
         .category("Graphics")
@@ -441,7 +441,7 @@ static auto PostProcessOption =
 
 bool Gr_enable_vsync = true;
 
-static auto VSyncOption = options::OptionBuilder<bool>("Graphics.VSync", "Vertical Sync",
+static auto VSyncOption __UNUSED = options::OptionBuilder<bool>("Graphics.VSync", "Vertical Sync",
                                                        "Controls how the engine does vertical synchronization")
                               .category("Graphics")
                               .level(options::ExpertLevel::Advanced)
