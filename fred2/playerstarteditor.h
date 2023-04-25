@@ -65,6 +65,7 @@ protected:
 	afx_msg void OnSelchangeWeaponVariablesList();
 	afx_msg void OnSelchangeShipVariablesCombo();
 	afx_msg void OnSelchangeWeaponVariablesCombo();
+	afx_msg void OnRequiredWeapons();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 
@@ -93,6 +94,8 @@ private:
 	// ship and weapon usage pools
 	int ship_usage[MAX_TVT_TEAMS][MAX_SHIP_CLASSES];
 	int weapon_usage[MAX_TVT_TEAMS][MAX_WEAPON_TYPES];
+
+	bool weapon_is_required[MAX_TVT_TEAMS][MAX_WEAPON_TYPES];
 
 	// regenerate all controls
 	void reset_controls();
