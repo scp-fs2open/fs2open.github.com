@@ -238,6 +238,13 @@ namespace animation {
 		static void driverTime(ModelAnimation& anim, instance_data& instance, polymodel_instance* pmi, float frametime);
 		ModelAnimationState play(float frametime, polymodel_instance* pmi, ModelAnimationSubmodelBuffer& applyBuffer, bool applyOnly = false);
 
+		//The main driver for the animation "time"
+		std::function<void(ModelAnimation&, instance_data&, polymodel_instance*, float)> m_driver = driverTime;
+		//The registered animation property drivers
+		std::vector<std::function<void(ModelAnimation&, instance_data&, polymodel_instance*)>> m_propertyDrivers;
+		//The registered animation startup property drivers
+		std::vector<std::function<void(ModelAnimation&, instance_data&, polymodel_instance*)>> m_startupDrivers;
+
 		friend class ModelAnimationSet;
 		friend class ModelAnimationParseHelper;
 	public:

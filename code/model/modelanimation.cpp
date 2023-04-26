@@ -227,7 +227,7 @@ namespace animation {
 
 			/* fall-thru */
 		case ModelAnimationState::RUNNING:
-			driverTime(*this, instanceData, pmi, frametime);
+			m_driver(*this, instanceData, pmi, frametime);
 
 			m_animation->calculateAnimation(applyBuffer, instanceData.time, pmi->id);
 			m_animation->executeAnimation(applyBuffer, MIN(prevTime, instanceData.time), MAX(prevTime, instanceData.time), instanceData.canonicalDirection, pmi->id);
