@@ -31,7 +31,7 @@ namespace animation {
 
 	enum class ModelAnimationDirection { FWD, RWD };
 
-	enum class ModelAnimationState { UNTRIGGERED, RUNNING_FWD, COMPLETED, RUNNING_RWD, PAUSED, NEED_RECALC };
+	enum class ModelAnimationState { UNTRIGGERED, RUNNING, PAUSED, NEED_RECALC };
 
 	enum class ModelAnimationTriggerType : int {
 		None = -1,       // No animation
@@ -208,6 +208,7 @@ namespace animation {
 	class ModelAnimation : public std::enable_shared_from_this <ModelAnimation> {
 		struct instance_data {
 			ModelAnimationState state = ModelAnimationState::UNTRIGGERED;
+			ModelAnimationDirection canonicalDirection = ModelAnimationDirection::FWD;
 			float time = 0.0f;
 			float duration = 0.0f;
 			flagset<animation::Animation_Instance_Flags> instance_flags;
@@ -234,6 +235,7 @@ namespace animation {
 		} m_flagData;
 
 	private:
+		static void driverTime(ModelAnimation& anim, instance_data& instance, polymodel_instance* pmi, float frametime);
 		ModelAnimationState play(float frametime, polymodel_instance* pmi, ModelAnimationSubmodelBuffer& applyBuffer, bool applyOnly = false);
 
 		friend class ModelAnimationSet;
