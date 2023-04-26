@@ -4728,7 +4728,7 @@ void ai_fly_to_target_position(vec3d* target_pos, bool* pl_done_p=NULL, bool* pl
 	float   max_allowed_ab_speed = 10000.1f;
 	float	self_ab_speed = 10000.0f;
 
-	if (shipp->wingnum != -1) {
+	if (shipp->wingnum != -1 && !ai_willing_to_afterburn_hard(aip)) {
 		max_allowed_speed = 0.9f * get_wing_lowest_max_speed(Pl_objp);
 		max_allowed_ab_speed = 0.95f * get_wing_lowest_av_ab_speed(Pl_objp);
 		if (ab_allowed) {
