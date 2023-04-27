@@ -69,6 +69,9 @@ SCP_string Mod_title;
 SCP_string Mod_version;
 bool Unicode_text_mode;
 SCP_vector<SCP_string> Splash_screens;
+int Splash_fade_in_time;
+int Splash_fade_out_time;
+bool Splash_logo_center;
 bool Use_tabled_strings_for_default_language;
 bool Dont_preempt_training_voice;
 SCP_string Movie_subtitle_font;
@@ -235,6 +238,32 @@ void parse_mod_table(const char *filename)
 
 				Splash_screens.push_back(splash_bitmap);
 			}
+		}
+
+		if (optional_string("$Splash fade in multiplier:")) {
+			int val;
+			stuff_int(&val);
+			
+			if (val <= 0) {
+				mprintf(("Game Settings Table: Got splash fade in multiplier of %i. It must be > 0! Ignoring!", val));
+			} else {
+				Splash_fade_in_time = val;
+			}
+		}
+
+		if (optional_string("$Splash fade out multiplier:")) {
+			int val;
+			stuff_int(&val);
+
+			if (val <= 0) {
+				mprintf(("Game Settings Table: Got splash fade out multiplier of %i. It must be > 0! Ignoring!", val));
+			} else {
+				Splash_fade_out_time = val;
+			}
+		}
+
+		if (optional_string("$Center splash logo:")) {
+			stuff_boolean(&Splash_logo_center);
 		}
 
 		optional_string("#LOCALIZATION SETTINGS");
@@ -1320,6 +1349,9 @@ void mod_table_reset()
 	Mod_title = "";
 	Mod_version = "";
 	Unicode_text_mode = false;
+	Splash_fade_in_time = 1;
+	Splash_fade_out_time = 1;
+	Splash_logo_center = false;
 	Use_tabled_strings_for_default_language = false;
 	Dont_preempt_training_voice = false;
 	Movie_subtitle_font = "font01.vf";
