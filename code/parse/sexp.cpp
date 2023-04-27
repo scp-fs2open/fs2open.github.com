@@ -37491,19 +37491,19 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_HAS_BEEN_TAGGED_DELAY, "Has ship been tagged (delay) (Boolean operator)\r\n"
 		"\tReturns true if all of the specified ships have been tagged.\r\n\r\n"
 		"Returns a boolean value after <delay> seconds when all ships have been tagged.  Takes 2 or more arguments...\r\n"
-		"\t1:\tDelay in seconds after which sexpression will return true when all cargo scanned."
+		"\t1:\tDelay in seconds after which sexpression will return true when all ships have been tagged.\r\n"
 		"\tRest:\tNames of ships to check if tagged.." },
 
 	{ OP_ARE_SHIP_FLAGS_SET, "Are ship flags set (Boolean operator)\r\n"
 		"\tReturns true if all of the specified flags have been set for this particular ship.\r\n\r\n"
 		"Takes 2 or more arguments...\r\n"
-		"\t1:\tName of the ship."
+		"\t1:\tName of the ship.\r\n"
 		"\tRest:\tShip, object, parse object, or ai flags which might be set for this ship." },
 
 	{ OP_ARE_WING_FLAGS_SET, "Are wing flags set (Boolean operator)\r\n"
 		"\tReturns true if all of the specified flags have been set for this particular wing.\r\n\r\n"
 		"Takes 2 or more arguments...\r\n"
-		"\t1:\tName of the wing."
+		"\t1:\tName of the wing.\r\n"
 		"\tRest:\tWing flags which might be set for this wing." },
 
 	{ OP_IS_SHIP_EMP_ACTIVE, "Is ship emp active (Boolean operator)\r\n"
