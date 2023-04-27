@@ -17,6 +17,7 @@
 #include "object/object.h"
 #include "Management.h"
 #include "weapon/weapon.h"
+#include "checkboxlistdlg.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -75,6 +76,7 @@ BEGIN_MESSAGE_MAP(player_start_editor, CDialog)
 	ON_CBN_SELCHANGE(IDC_SHIP_VARIABLES_COMBO, OnSelchangeShipVariablesCombo)
 	ON_WM_CLOSE()
 	ON_CBN_SELCHANGE(IDC_WEAPON_VARIABLES_COMBO, OnSelchangeWeaponVariablesCombo)
+	ON_BN_CLICKED(IDC_REQUIRED_WEAPONS, OnRequiredWeapons)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -164,7 +166,6 @@ BOOL player_start_editor::OnInitDialog()
 	memset(ship_usage, 0, sizeof(int) * MAX_TVT_TEAMS * MAX_SHIP_CLASSES);
 	memset(weapon_usage, 0, sizeof(int) * MAX_TVT_TEAMS * MAX_WEAPON_TYPES);
 
-
 	if (The_mission.game_type & MISSION_TYPE_MULTI_TEAMS) { 
 		for (i=0; i<MAX_TVT_TEAMS; i++) {
 			for (j=0; j<MAX_TVT_WINGS_PER_TEAM; j++) {
@@ -178,7 +179,12 @@ BOOL player_start_editor::OnInitDialog()
 			generate_ship_usage_list(ship_usage[0], Starting_wings[i]);
 			generate_weaponry_usage_list(weapon_usage[0], Starting_wings[i]);
 		}
-	}	
+	}
+
+	// initialize weapon required flags
+	for (i = 0; i < MAX_TVT_TEAMS; i++) {
+		memcpy_s(weapon_is_required[i], sizeof(bool) * MAX_WEAPON_TYPES, Team_data[i].weapon_required, sizeof(bool) * MAX_WEAPON_TYPES);
+	}
 
 	// entry delay time
 	m_delay = f2i(Entry_delay_time);
@@ -724,6 +730,31 @@ void player_start_editor::OnSelchangeWeaponVariablesCombo()
 	UpdateData(FALSE);
 }
 
+void player_start_editor::OnRequiredWeapons()
+{
+	// create a list of options with just the weapons that are in the static pool
+	SCP_vector<int> weapon_indexes;
+	SCP_vector<std::pair<CString, bool>> options;
+	for (int i = 0; i < MAX_WEAPON_TYPES; i++)
+	{
+		if (static_weapon_pool[selected_team][i] > 0)
+		{
+			weapon_indexes.push_back(i);
+			options.emplace_back(Weapon_info[i].name, weapon_is_required[selected_team][i]);
+		}
+	}
+
+	// display the checklist
+	CheckBoxListDlg dlg;
+	dlg.SetCaption("Required Weapons");
+	dlg.SetOptions(options);
+	dlg.DoModal();
+
+	// reassign required weapons
+	for (int i = 0; i < (int)options.size(); i++)
+		weapon_is_required[selected_team][weapon_indexes[i]] = dlg.IsChecked(i);
+}
+
 // cancel
 void player_start_editor::OnCancel()
 {
@@ -908,6 +939,24 @@ void player_start_editor::OnOK()
 			}
 		}
 		Team_data[i].num_weapon_choices = num_choices; 
+	}
+
+	// store required weapons
+	for (i = 0; i < MAX_TVT_TEAMS; i++) {
+		for (idx = 0; idx < weapon_info_size(); idx++) {
+			Team_data[i].weapon_required[idx] = false;
+
+			if (weapon_is_required[i][idx]) {
+				if (static_weapon_pool[i][idx] > 0) {
+					Team_data[i].weapon_required[idx] = true;
+				} else {
+					SCP_string buffer = "Cannot require a weapon (";
+					buffer += Weapon_info[idx].name;
+					buffer += ") that is not in the static weaponry pool!  This weapon will be skipped.";
+					MessageBox(buffer.c_str());
+				}
+			}
+		}
 	}
 
 	theApp.record_window_data(&Player_wnd_data, this);
