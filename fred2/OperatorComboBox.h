@@ -45,6 +45,8 @@ public:
 	INT_PTR OnToolHitTest(CPoint point, TOOLINFO* pTI) const;
 
 	void refresh_popup_operators(int opf_type = OPF_NONE);
+	int GetOpConst(int index) const;
+	bool IsItemEnabled(int index) const;
 
 protected:
 	virtual void PreSubclassWindow();

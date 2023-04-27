@@ -82,6 +82,16 @@ void OperatorComboBox::refresh_popup_operators(int opf_type)
 	}
 }
 
+int OperatorComboBox::GetOpConst(int index) const
+{
+	return (int)m_listbox.GetItemData(index);
+}
+
+bool OperatorComboBox::IsItemEnabled(int index) const
+{
+	return m_listbox.IsItemEnabled(index);
+}
+
 // tooltip stuff is based on example at
 // https://www.codeproject.com/articles/1761/ctreectrl-clistctrl-clistbox-with-tooltip-based-on
 
@@ -104,12 +114,13 @@ INT_PTR OperatorComboBox::OnToolHitTest(CPoint point, TOOLINFO *pTI) const
 
 	if (item >= 0 && item < GetCount())
 	{
-		CRect rect;
-		m_listbox.GetItemRect(item, &rect);
 		int op_const = (int)GetItemData(item);
 		auto helptext = m_help_callback(op_const);
 		if (helptext == nullptr)
 			return -1;
+
+		CRect rect;
+		m_listbox.GetItemRect(item, &rect);
 
 		pTI->hwnd = m_listbox.GetSafeHwnd();
 		pTI->uId = item;

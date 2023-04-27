@@ -2561,8 +2561,29 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 			switch (data)
 			{
 				case CBN_SELCHANGE:
-					end_operator_edit(true);
+				{
+					int index = m_operator_box.GetCurSel();
+					if (index >= 0)
+					{
+						if (m_operator_box.IsItemEnabled(index))
+						{
+							// close the popup
+							end_operator_edit(true);
+
+							// do the operator replacement
+							int popup_op_const = m_operator_box.GetOpConst(index);
+							op = find_operator_index(popup_op_const);
+							add_or_replace_operator(op, 1);
+							expand_branch(item_handle);
+							return 1;
+						}
+						// if the selected item wasn't enabled, do nothing
+					}
+					else
+						end_operator_edit(false);
+
 					break;
+				}
 
 				case CBN_KILLFOCUS:
 					end_operator_edit(false);

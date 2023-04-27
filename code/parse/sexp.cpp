@@ -1861,7 +1861,6 @@ int get_operator_index(int node)
 	return index;
 }
 
-
 /**
  * From an operator name, return its constant (the number it was define'd with)
  */
@@ -1891,6 +1890,15 @@ int get_operator_const(int node)
 		return OP_NOT_AN_OP;
 
 	return Operators[idx].value;
+}
+
+int find_operator_index(int op_const)
+{
+	for (int i = 0; i < (int)Operators.size(); ++i)
+		if (Operators[i].value == op_const)
+			return i;
+
+	return -1;
 }
 
 int query_sexp_args_count(int node, bool only_valid_args = false)

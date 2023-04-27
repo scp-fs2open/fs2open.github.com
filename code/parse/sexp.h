@@ -1386,6 +1386,7 @@ extern int get_operator_index(const char *token);
 extern int get_operator_index(int node);
 extern int get_operator_const(const char *token);
 extern int get_operator_const(int node);
+extern int find_operator_index(int op_const);
 
 extern int check_sexp_syntax(int node, int return_type = OPR_BOOL, int recursive = 0, int *bad_node = 0 /*NULL*/, sexp_mode mode = sexp_mode::GENERAL);
 extern int get_sexp_main(void);	//	Returns start node
