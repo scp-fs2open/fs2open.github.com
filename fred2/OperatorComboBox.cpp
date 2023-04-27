@@ -116,7 +116,7 @@ INT_PTR OperatorComboBox::OnToolHitTest(CPoint point, TOOLINFO *pTI) const
 	{
 		int op_const = (int)GetItemData(item);
 		auto helptext = m_help_callback(op_const);
-		if (helptext == nullptr)
+		if (helptext == nullptr && m_listbox.IsItemEnabled(item))	// a disabled item will show a tooltip regardless
 			return -1;
 
 		CRect rect;
@@ -171,9 +171,23 @@ BOOL OperatorComboBoxList::OnToolTipText(UINT id, NMHDR* pNMHDR, LRESULT* pResul
 		int op_const = (int)GetItemData(item);
 		auto helptext = m_help_callback(op_const);
 
-		if (helptext != nullptr && *helptext != '\0')
+		if ((helptext != nullptr && *helptext != '\0') || !IsItemEnabled(item))
 		{
-			SCP_string buffer = helptext;
+			SCP_string buffer;
+			if (!IsItemEnabled(item))
+			{
+				int op_index = find_operator_index(op_const);
+				buffer = "The operator \"";
+				buffer += op_index >= 0 ? Operators[op_index].text : "<invalid operator>";
+				buffer += "\" cannot be selected because it has an incompatible return type.\r\n\tReturns: ";
+				buffer += opr_type_name(query_operator_return_type(op_const));
+				buffer += "\r\n\tExpected: ";
+				buffer += opr_type_name(m_expected_opr_type);
+			}
+			else
+			{
+				buffer = helptext;	// never mind the MSVC warning; helptext will be non-null and non-empty here
+			}
 			replace_all(buffer, "\t", "    ");
 			m_tooltiptextA = buffer.c_str();
 			m_tooltiptextW = buffer.c_str();

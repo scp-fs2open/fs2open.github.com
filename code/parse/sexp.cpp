@@ -29185,6 +29185,33 @@ bool map_opf_to_opr(int opf_type, int &opr_type)
 	return opr_type != OPR_NONE;
 }
 
+const char *opr_type_name(int opr_type)
+{
+	switch (opr_type)
+	{
+		case OPR_NONE:
+			return "<invalid return type>";
+		case OPR_NUMBER:
+			return "number";
+		case OPR_BOOL:
+			return "boolean";
+		case OPR_NULL:
+			return "no value";
+		case OPR_AI_GOAL:
+			return "[ai goal type]";
+		case OPR_POSITIVE:
+			return "positive number";
+		case OPR_STRING:
+			return "string";
+		case OPR_AMBIGUOUS:
+			return "[variable/container type]";
+		case OPR_FLEXIBLE_ARGUMENT:
+			return "[argument type]";
+		default:
+			return "<unknown return type>";
+	}
+}
+
 // returns the data type returned by an operator
 int query_operator_return_type(int op)
 {
