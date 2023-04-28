@@ -240,23 +240,23 @@ void parse_mod_table(const char *filename)
 			}
 		}
 
-		if (optional_string("$Splash fade in multiplier:")) {
+		if (optional_string("$Splash fade in time:")) {
 			int val;
 			stuff_int(&val);
 			
-			if (val <= 0) {
-				mprintf(("Game Settings Table: Got splash fade in multiplier of %i. It must be > 0! Ignoring!", val));
+			if (val < 0) {
+				mprintf(("Game Settings Table: Got splash fade in time of %i. It must be >= 0! Ignoring!", val));
 			} else {
 				Splash_fade_in_time = val;
 			}
 		}
 
-		if (optional_string("$Splash fade out multiplier:")) {
+		if (optional_string("$Splash fade out time:")) {
 			int val;
 			stuff_int(&val);
 
-			if (val <= 0) {
-				mprintf(("Game Settings Table: Got splash fade out multiplier of %i. It must be > 0! Ignoring!", val));
+			if (val < 0) {
+				mprintf(("Game Settings Table: Got splash fade out time of %i. It must be >= 0! Ignoring!", val));
 			} else {
 				Splash_fade_out_time = val;
 			}
@@ -1349,8 +1349,8 @@ void mod_table_reset()
 	Mod_title = "";
 	Mod_version = "";
 	Unicode_text_mode = false;
-	Splash_fade_in_time = 1;
-	Splash_fade_out_time = 1;
+	Splash_fade_in_time = 0;
+	Splash_fade_out_time = 0;
 	Splash_logo_center = false;
 	Use_tabled_strings_for_default_language = false;
 	Dont_preempt_training_voice = false;

@@ -7467,6 +7467,11 @@ int game_hacked_data()
 
 void game_title_screen_draw(float alpha)
 {
+	game_set_frametime(-1); //Set the frame time
+	
+	// clamp alpha to avoid any funny business because this is a splash screen not a comedy sketch
+	CLAMP(alpha, 0.0f, 1.0f);
+
 	gr_clear();
 	if (Game_title_bitmap != -1) {
 		// set
@@ -7510,10 +7515,7 @@ void game_title_screen_display()
 {
 	//As the script system isn't available here (it needs tables loaded and stuff), the on Splash Screen hook is removed from here.
 	//It is deprecated as of 23.0 (where it was nonfunctional anyways), and will only be called for compatibility once the init has occurred after the splash screen -Lafiel
-
-	float alpha = 0.0f;
-	float a_inc = 1.0f / Splash_fade_in_time;
-
+	
 	Game_title_logo = bm_load(Game_logo_screen_fname[gr_screen.res]);
 
 	if (!Splash_screens.empty()) {
@@ -7522,21 +7524,42 @@ void game_title_screen_display()
 		Game_title_bitmap = bm_load(Game_title_screen_fname[gr_screen.res]);
 	}
 
-	while (alpha <= 1.0f) {
-		game_title_screen_draw(alpha);
-		alpha += a_inc;
+	if (Splash_fade_in_time > 0) {
+		float alpha = 0.0f;
+		int timer = timer_get_milliseconds() + Splash_fade_in_time;
+
+		while (timer_get_milliseconds() < timer) {
+			game_title_screen_draw(alpha); // draw the splash image
+
+			// increment alpha to the next value
+			float a_inc = 1.0f / ((Splash_fade_in_time / 1000) / flFrametime);
+			alpha += a_inc;
+		}
+	} else {
+		game_title_screen_draw(1.0f);
 	}
 
 }
 
 void game_title_screen_close()
 {
-	float alpha = 1.0f;
-	float a_inc = 1.0f / Splash_fade_out_time;
+	
+	if (Splash_fade_out_time > 0) {
+		//draw a starting splash image. This also reset the frametime
+		//after asset loading messed with it. Helps to keep the fade out
+		//nice and smooooooooth, baby.
+		game_title_screen_draw(1.0f);
 
-	while (alpha >= 0.0f) {
-		game_title_screen_draw(alpha);
-		alpha -= a_inc;
+		float alpha = 1.0f;
+		int timer = timer_get_milliseconds() + Splash_fade_out_time;
+
+		while (timer_get_milliseconds() < timer) {
+			game_title_screen_draw(alpha); // draw the splash image
+
+			// decrement alpha to the next value
+			float a_inc = 1.0f / ((Splash_fade_out_time / 1000) / flFrametime);
+			alpha -= a_inc;
+		}
 	}
 
 	if (Game_title_bitmap != -1) {
