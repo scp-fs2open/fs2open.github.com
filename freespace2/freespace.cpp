@@ -1820,11 +1820,7 @@ void game_init()
 	font::init();					// loads up all fonts
 	
 	// add title screen
-	if(!Is_standalone){
-		// #Kazan# - moved this down - WATCH THESE calls - anything that shares code between standalone and normal
-		// cannot make gr_* calls in standalone mode because all gr_ calls are NULL pointers
-		game_title_screen_display();
-	}
+	game_title_screen_display();
 	
 	// attempt to load up master tracker registry info (login and password)
 	Multi_tracker_id = -1;		
@@ -7513,6 +7509,12 @@ void game_title_screen_draw(float alpha)
 
 void game_title_screen_display()
 {
+	// anything that shares code between standalone and normal cannot make
+	// gr_* calls in standalone mode because all gr_ calls are NULL pointers
+	if (Is_standalone) {
+		return;
+	}
+	
 	//As the script system isn't available here (it needs tables loaded and stuff), the on Splash Screen hook is removed from here.
 	//It is deprecated as of 23.0 (where it was nonfunctional anyways), and will only be called for compatibility once the init has occurred after the splash screen -Lafiel
 	
@@ -7543,7 +7545,12 @@ void game_title_screen_display()
 
 void game_title_screen_close()
 {
-	
+	// anything that shares code between standalone and normal cannot make
+	// gr_* calls in standalone mode because all gr_ calls are NULL pointers
+	if (Is_standalone) {
+		return;
+	}
+
 	if (Splash_fade_out_time > 0) {
 		//draw a starting splash image. This also reset the frametime
 		//after asset loading messed with it. Helps to keep the fade out
