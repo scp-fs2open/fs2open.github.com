@@ -6029,6 +6029,12 @@ int rand_sexp(int node, bool multiple)
 		// set .value and .text so random number is generated only once.
 		Sexp_nodes[node].value = SEXP_NUM_EVAL;
 		sprintf(Sexp_nodes[node].text, "%d", rand_num);
+		// any cached value is no longer relevant because we just changed the text
+		if (Sexp_nodes[node].cache)
+		{
+			delete Sexp_nodes[node].cache;
+			Sexp_nodes[node].cache = nullptr;
+		}
 	}
 	// if this is multiple with a nonzero seed provided
 	else if (seed > 0)
