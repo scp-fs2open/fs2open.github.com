@@ -1711,6 +1711,8 @@ void model_render_glowpoint_bitmap(int point_num, vec3d *pos, matrix *orient, gl
 		{
 			float d = 1.0f;
 			float pulse = model_render_get_point_activation(bank, gpo);
+			if (pulse == 0.0f)
+				return;
 
 			if ( IS_VEC_NULL(&world_norm) ) {
 				d = 1.0f;	//if given a nul vector then always show it
@@ -1866,6 +1868,8 @@ void model_render_glowpoint_add_light(int point_num, vec3d *pos, matrix *orient,
 	if( (gpo->type_override?gpo->type:bank->type)==0)
 	{
 		float pulse = model_render_get_point_activation(bank, gpo);
+		if (pulse == 0.0f)
+			return;
 		vec3d lightcolor;
 		//fade between mix and normal color depending on pulse state
 		lightcolor.xyz.x =pulse * gpo->light_color.xyz.x + (1.0f-pulse) * gpo->light_mix_color.xyz.x;
@@ -1905,7 +1909,7 @@ float model_render_get_point_activation(glow_point_bank* bank, glow_point_bank_o
 	}
 
 	float pulse = 1.0f;
-	int period;
+	int period = 0;
 
 	if (gpo->pulse_period_override) {
 		period = gpo->pulse_period;
@@ -1916,6 +1920,9 @@ float model_render_get_point_activation(glow_point_bank* bank, glow_point_bank_o
 			period = 2 * bank->on_time;
 		}
 	}
+
+	if (period == 0)
+		return 0.0f;
 
 	int x = 0;
 	int disp_time = gpo->disp_time_override ? gpo->disp_time : bank->disp_time;
