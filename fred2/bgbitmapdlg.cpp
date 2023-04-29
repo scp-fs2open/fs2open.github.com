@@ -26,6 +26,7 @@
 #include "nebula/neblightning.h"
 #include "parse/parselo.h"
 #include "mission/missionparse.h"
+#include <vcruntime.h>
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -392,11 +393,11 @@ void bg_bitmap_dlg::create()
 	box = (CComboBox *) GetDlgItem(IDC_LIGHT_PROFILE);
 	SCP_vector<SCP_string> profiles = lighting_profiles::list_profiles();
 	m_light_profile_index = 0;
-	for(int idx = 0; idx<profiles.size();idx++){
+	for(size_t idx = 0; idx<profiles.size();idx++){
 		SCP_string n = profiles[idx];
 		box->AddString(profiles[idx].c_str());
 		if(The_mission.lighting_profile_name == n)
-			m_light_profile_index = idx;
+			m_light_profile_index = (int) idx;
 	}
 	box->SetCurSel(m_light_profile_index);
 
