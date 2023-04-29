@@ -3021,6 +3021,16 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			}
 		}
 
+		if (optional_string("+Firing Length Effect:")) {
+			auto effetIdx = particle::util::parseEffect(wip->name);
+			wip->state_effects.insert(std::make_pair(WeaponState::FIRING, effetIdx));
+		}
+
+		if (optional_string("+Paused Length Effect:")) {
+			auto effetIdx = particle::util::parseEffect(wip->name);
+			wip->state_effects.insert(std::make_pair(WeaponState::PAUSED, effetIdx));
+		}
+
 		if (optional_string("+Beam Flags:")) {
 			parse_string_flag_list(wip->b_info.flags, Beam_info_flags, Num_beam_info_flags, nullptr);
 		}

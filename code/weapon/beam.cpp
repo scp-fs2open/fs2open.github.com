@@ -298,6 +298,35 @@ float beam_get_widest(beam* b)
 	return widest;
 }
 
+static void beam_set_state(weapon_info* wip, beam* bm, WeaponState state)
+{
+	if (bm->weapon_state == state)
+	{
+		// No change
+		return;
+	}
+
+	bm->weapon_state = state;
+
+	auto map_entry = wip->state_effects.find(bm->weapon_state);
+
+	if ((map_entry != wip->state_effects.end()) && map_entry->second.isValid())
+	{
+		auto source = particle::ParticleManager::get()->createSource(map_entry->second);
+
+		object* objp = &Objects[bm->objnum];
+		source.moveToBeam(objp);
+		source.setWeaponState(bm->weapon_state);
+		// make a "fake" but still possibly useful velocity
+		vec3d vel;
+		vm_vec_normalized_dir(&vel, &bm->last_start, &bm->last_shot);
+		vel *= wip->max_speed;
+		source.setVelocity(&vel);
+
+		source.finish();
+	}
+}
+
 // return false if the particular beam fire method doesn't have all the required, and specific to its fire method, info
 bool beam_has_valid_params(beam_fire_info* fire_info) {
 	switch (fire_info->fire_method) {
@@ -556,6 +585,8 @@ int beam_fire(beam_fire_info *fire_info)
 
 	// start the warmup phase
 	beam_start_warmup(new_item);
+
+	beam_set_state(wip, new_item, WeaponState::WARMUP);
 
 	return objnum;
 }
@@ -952,6 +983,9 @@ void beam_type_antifighter_move(beam *b)
 	b->flags &= ~BF_SAFETY;
 	if(fire_wait){
 		b->flags |= BF_SAFETY;
+		beam_set_state(&Weapon_info[b->weapon_info_index], b, WeaponState::PAUSED);
+	} else {
+		beam_set_state(&Weapon_info[b->weapon_info_index], b, WeaponState::FIRING);
 	}
 
 	// put the "last_shot" point arbitrarily far away
@@ -2186,6 +2220,8 @@ int beam_start_firing(beam *b)
 	if (b->flags & BF_IS_FIGHTER_BEAM && wip->wi_flags[Weapon::Info_Flags::Ballistic])
 		Ships[b->objp->instance].weapons.primary_bank_ammo[b->bank]--;
 
+	beam_set_state(wip, b, WeaponState::FIRING);
+
 	if (scripting::hooks::OnBeamFired->isActive()) {
 		scripting::hooks::OnBeamFired->run(scripting::hooks::WeaponUsedConditions{ &Ships[b->objp->instance], b->target, SCP_vector<int>{ b->weapon_info_index }, true },
 			scripting::hook_param_list(
@@ -2223,6 +2259,8 @@ void beam_start_warmdown(beam *b)
 			&vmd_identity_matrix,
 			b->subsys->system_info->subobj_num);
 	}
+
+	beam_set_state(&Weapon_info[b->weapon_info_index], b, WeaponState::WARMDOWN);
 }
 
 // recalculate beam sounds (looping sounds relative to the player)
