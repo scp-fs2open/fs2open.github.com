@@ -2200,7 +2200,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			emitter.vel = vmd_zero_vector;
 
 			auto emitterEffect = new ParticleEmitterEffect();
-			emitterEffect->setValues(emitter, effectIndex);
+			emitterEffect->setValues(emitter, effectIndex, 10.0f);
 			wip->piercing_impact_effect = ParticleManager::get()->addEffect(emitterEffect);
 
 			if (back_velocity != 0.0f)
@@ -2211,7 +2211,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				emitter.num_low /= 2;
 
 				auto secondaryEffect = new ParticleEmitterEffect();
-				secondaryEffect->setValues(emitter, effectIndex);
+				secondaryEffect->setValues(emitter, effectIndex, 10.0f);
 				wip->piercing_impact_secondary_effect = ParticleManager::get()->addEffect(secondaryEffect);
 			}
 		}

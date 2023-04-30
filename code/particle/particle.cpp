@@ -74,6 +74,17 @@ namespace
 
 		return alpha;
 	}
+
+	inline int get_percent(int count)
+	{
+		if (count == 0)
+			return 0;
+
+		// this should basically return a scale like:
+		//  50, 75, 100, 125, 150, ...
+		// based on value of 'count' (detail level)
+		return (50 + (25 * (count - 1)));
+	}
 }
 
 namespace particle
@@ -551,15 +562,33 @@ namespace particle
 
 	// Creates a bunch of particles. You pass a structure
 	// rather than a bunch of parameters.
-	void emit(particle_emitter* pe, ParticleType type, int optional_data)
+	void emit(particle_emitter* pe, ParticleType type, int optional_data, float range)
 	{
 		int i, n;
 
 		if (!Particles_enabled)
 			return;
 
-		int n1 = (int)(pe->num_low * 1.25);
-		int n2 = (int)(pe->num_high * 1.25);
+		int n1, n2;
+
+		// Account for detail
+		int percent = get_percent(Detail.num_particles);
+
+		//Particle rendering drops out too soon.  Seems to be around 150 m.  Is it detail level controllable?  I'd like it to be 500-1000
+		float min_dist = 125.0f;
+		float dist = vm_vec_dist_quick(&pe->pos, &Eye_position) / range;
+		if (dist > min_dist)
+		{
+			percent = fl2i(i2fl(percent) * min_dist / dist);
+			if (percent < 1)
+			{
+				return;
+			}
+		}
+		//mprintf(( "Dist = %.1f, percent = %d%%\n", dist, percent ));
+
+		n1 = (pe->num_low * percent) / 100;
+		n2 = (pe->num_high * percent) / 100;
 
 		// How many to emit?
 		n = Random::next(n1, n2);
