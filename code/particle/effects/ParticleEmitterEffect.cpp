@@ -15,7 +15,7 @@ bool ParticleEmitterEffect::processSource(ParticleSource* source) {
 	source->getOrigin()->getGlobalPosition(&emitter.pos);
 	emitter.normal = source->getOrientation()->getDirectionVector(source->getOrigin());
 
-	emit(&emitter, PARTICLE_BITMAP, m_particleBitmap);
+	emit(&emitter, PARTICLE_BITMAP, m_particleBitmap, m_range);
 
 	return false;
 }
@@ -28,11 +28,12 @@ void ParticleEmitterEffect::pageIn() {
 	bm_page_in_texture(m_particleBitmap);
 }
 
-void ParticleEmitterEffect::setValues(const particle_emitter& emitter, int bitmap) {
+void ParticleEmitterEffect::setValues(const particle_emitter& emitter, int bitmap, float range) {
 	Assert(bm_is_valid(bitmap));
 
 	m_emitter = emitter;
 	m_particleBitmap = bitmap;
+	m_range = range;
 }
 }
 }

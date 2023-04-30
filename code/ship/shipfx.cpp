@@ -2013,7 +2013,7 @@ static void maybe_fireball_wipe(clip_ship* half_ship, sound_handle* handle_array
 			}
 
 			if (pe.num_high > 0) {
-				particle::emit( &pe, particle::PARTICLE_SMOKE2, 0 );
+				particle::emit( &pe, particle::PARTICLE_SMOKE2, 0, range );
 			}
 
 			if (sip->generic_debris_model_num >= 0) {
