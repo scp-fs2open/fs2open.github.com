@@ -239,9 +239,19 @@ void ai_post_process_mission()
 		//	MK, 5/9/98: Used to iterate through MAX_STARTING_WINGS, but this was too many ships forming on player.
 		// Goober5000 - MK originally iterated on only the first wing; now we iterate on only the player wing
 		// because the player wing may not be first
-		for (auto& index : Starting_wings) {	
-			if (index >= 0 && index == Player_ship->wingnum) {
-				ai_maybe_add_form_goal(&Wings[index]);
+		// Cyborg - And we should be dealing with TVT wings properly, as well.
+		if (!MULTI_TEAM){
+			for (auto& index : Starting_wings) {
+				// MULTI_COOP check allows us to continue if we are the server or standalone, but *only* in co-op.	
+				if (index >= 0 && (index == Player_ship->wingnum || MULTI_COOP)) {
+					ai_maybe_add_form_goal(&Wings[index]);
+				}
+			}
+		} else {
+			// The logic here will need to be changed if/when there is more than one wing per team. 
+			for (auto& team : TVT_wings){
+				if (!team.empty() && team[0] >= 0)
+					ai_maybe_add_form_goal(&Wings[team[0]]);
 			}
 		}
 	}

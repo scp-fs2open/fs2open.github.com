@@ -652,7 +652,7 @@ static void ship_obj_list_reset_slot(int index)
 /**
  * If the given ship is in my squadron wings
  */
-static int ship_in_my_squadron(ship *shipp)
+static int ship_in_player_squadron(ship *shipp)
 {
 	for (auto& wing_index : Starting_wings)
 	{
@@ -20519,7 +20519,7 @@ int ship_render_get_insignia(object* obj, ship* shipp)
 	// Goober5000 - and also on wings that have their logos set
 
 	// if its an object in my squadron
-	if ( ship_in_my_squadron(shipp) ) {
+	if ( ship_in_player_squadron(shipp) ) {
 		return Player->insignia_texture;
 	}
 
