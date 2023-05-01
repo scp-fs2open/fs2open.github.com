@@ -13,11 +13,11 @@
 
 #include "stdafx.h"
 #include "FRED.h"
-#include "FolderDlg.h"
 
 #include <stdlib.h>
 //#include <atlbase.h>
 //#include <atlconv.h>
+#include <shlobj.h>
 
 #include "FREDDoc.h"
 #include "FREDView.h"
@@ -426,11 +426,6 @@ void CFREDDoc::OnFileImportFSM() {
 	memset(dest_directory, 0, sizeof(dest_directory));
 
 	// get location to save to    
-#if ( _MFC_VER >= 0x0700 )
-	//ITEMIDLIST fs2_mission_pidl = {0};
-
-	//SHParseDisplayName(A2CW(fs2_mission_path), NULL, fs2_mission_pidl, 0, 0);
-
 	BROWSEINFO bi;
 	bi.hwndOwner = theApp.GetMainWnd()->GetSafeHwnd();
 	//bi.pidlRoot = &fs2_mission_pidl;
@@ -448,13 +443,6 @@ void CFREDDoc::OnFileImportFSM() {
 		return;
 
 	SHGetPathFromIDList(ret_val, dest_directory);
-#else
-	CFolderDialog dlgFolder(_T("Select a location to save in"), fs2_mission_path, NULL);
-	if (dlgFolder.DoModal() != IDOK)
-		return;
-
-	strcpy_s(dest_directory, dlgFolder.GetFolderPath());
-#endif
 
 	// clean things up first
 	if (Briefing_dialog)

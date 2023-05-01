@@ -19,7 +19,6 @@
 #include "ShipClassEditorDlg.h"
 #include "MissionNotesDlg.h"
 #include "Grid.h"
-#include "dialog1.h"
 
 #include "species_defs/species_defs.h"
 #include "iff_defs/iff_defs.h"
@@ -48,7 +47,6 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_COMMAND(IDR_MENU_POPUP_TOGGLE1, OnMenuPopupToggle1)
 	ON_UPDATE_COMMAND_UI(IDR_MENU_POPUP_TOGGLE1, OnUpdateMenuPopupToggle1)
 	ON_WM_RBUTTONDOWN()
-	ON_COMMAND(ID_HELP_INPUT_INTERFACE, OnHelpInputInterface)
 	ON_WM_CLOSE()
 	ON_WM_INITMENU()
 	ON_COMMAND(ID_HELP_FINDER, OnFredHelp)
@@ -272,12 +270,6 @@ void CMainFrame::OnFredHelp() {
 
 	// shell_open url
 	url_launch(res.full_name.c_str());
-}
-
-void CMainFrame::OnHelpInputInterface() {
-	dialog1	dlg;
-
-	dlg.DoModal();
 }
 
 void CMainFrame::OnInitMenu(CMenu* pMenu) {
