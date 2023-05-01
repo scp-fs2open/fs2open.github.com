@@ -65,11 +65,16 @@ void gr_opengl_deferred_lighting_begin(bool clearNonColorBufs)
 	Deferred_lighting = true;
 	GL_state.ColorMask(true, true, true, true);
 
+	//GL_state.BindFrameBuffer(Scene_framebuffer_ms, GL_DRAW_FRAMEBUFFER);
+	//GL_state.BindFrameBuffer(Scene_framebuffer, GL_READ_FRAMEBUFFER);
+
 	// Copy the existing color data into the emissive part of the G-buffer since everything that already existed is
 	// treated as emissive
 	glDrawBuffer(GL_COLOR_ATTACHMENT4);
 	glReadBuffer(GL_COLOR_ATTACHMENT0);
 	glBlitFramebuffer(0, 0, gr_screen.max_w, gr_screen.max_h, 0, 0, gr_screen.max_w, gr_screen.max_h, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+	//GL_state.BindFrameBuffer(Scene_framebuffer_ms);
 
 	GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4, GL_COLOR_ATTACHMENT6 };
 	glDrawBuffers(6, buffers);

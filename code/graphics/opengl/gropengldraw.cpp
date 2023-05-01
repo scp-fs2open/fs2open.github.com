@@ -29,16 +29,23 @@
 #include "tracing/tracing.h"
 
 GLuint Scene_framebuffer;
+GLuint Scene_framebuffer_ms;
 GLuint Scene_ldr_texture;
 GLuint Scene_color_texture;
 GLuint Scene_position_texture;
 GLuint Scene_normal_texture;
 GLuint Scene_specular_texture;
 GLuint Scene_emissive_texture;
+GLuint Scene_color_texture_ms;
+GLuint Scene_position_texture_ms;
+GLuint Scene_normal_texture_ms;
+GLuint Scene_specular_texture_ms;
+GLuint Scene_emissive_texture_ms;
 GLuint Scene_composite_texture;
 GLuint Scene_luminance_texture;
 GLuint Scene_effect_texture;
 GLuint Scene_depth_texture;
+GLuint Scene_depth_texture_ms;
 GLuint Cockpit_depth_texture;
 GLuint Scene_stencil_buffer;
 
@@ -360,6 +367,150 @@ void opengl_setup_scene_textures()
 		Gr_enable_soft_particles = false;
 		return;
 	}
+
+	// create framebuffer
+	glGenFramebuffers(1, &Scene_framebuffer_ms);
+	GL_state.BindFrameBuffer(Scene_framebuffer_ms);
+	opengl_set_object_label(GL_FRAMEBUFFER, Scene_framebuffer_ms, "Scene framebuffer multisampling");
+
+	// setup high dynamic range color texture
+	glGenTextures(1, &Scene_color_texture_ms);
+
+	GL_state.Texture.SetActiveUnit(0);
+	GL_state.Texture.SetTarget(GL_TEXTURE_2D_MULTISAMPLE);
+	GL_state.Texture.Enable(Scene_color_texture_ms);
+
+	glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE,
+		4,
+		GL_RGBA16F,
+		Scene_texture_width,
+		Scene_texture_height,
+		GL_TRUE);
+
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, Scene_color_texture_ms, 0);
+	opengl_set_object_label(GL_TEXTURE, Scene_color_texture_ms, "Scene color texture multisampling");
+
+	// setup position render texture
+	glGenTextures(1, &Scene_position_texture_ms);
+
+	GL_state.Texture.SetActiveUnit(0);
+	GL_state.Texture.SetTarget(GL_TEXTURE_2D_MULTISAMPLE);
+	GL_state.Texture.Enable(Scene_position_texture_ms);
+
+	glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE,
+		4,
+		GL_RGBA16F,
+		Scene_texture_width,
+		Scene_texture_height,
+		GL_TRUE);
+	opengl_set_object_label(GL_TEXTURE, Scene_position_texture_ms, "Scene Position texture multisampling");
+
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D_MULTISAMPLE, Scene_position_texture_ms, 0);
+
+	// setup normal render texture
+	glGenTextures(1, &Scene_normal_texture_ms);
+
+	GL_state.Texture.SetActiveUnit(0);
+	GL_state.Texture.SetTarget(GL_TEXTURE_2D_MULTISAMPLE);
+	GL_state.Texture.Enable(Scene_normal_texture_ms);
+
+	glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE,
+		4,
+		GL_RGBA16F,
+		Scene_texture_width,
+		Scene_texture_height,
+		GL_TRUE);
+	opengl_set_object_label(GL_TEXTURE, Scene_normal_texture_ms, "Scene Normal texture multisampling");
+
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D_MULTISAMPLE, Scene_normal_texture_ms, 0);
+
+	// setup specular render texture
+	glGenTextures(1, &Scene_specular_texture_ms);
+
+	GL_state.Texture.SetActiveUnit(0);
+	GL_state.Texture.SetTarget(GL_TEXTURE_2D_MULTISAMPLE);
+	GL_state.Texture.Enable(Scene_specular_texture_ms);
+
+	glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE,
+		4,
+		GL_RGBA8,
+		Scene_texture_width,
+		Scene_texture_height,
+		GL_TRUE);
+	opengl_set_object_label(GL_TEXTURE, Scene_specular_texture_ms, "Scene Specular texture multisample");
+
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT3, GL_TEXTURE_2D_MULTISAMPLE, Scene_specular_texture_ms, 0);
+
+	// setup emissive render texture
+	glGenTextures(1, &Scene_emissive_texture_ms);
+
+	GL_state.Texture.SetActiveUnit(0);
+	GL_state.Texture.SetTarget(GL_TEXTURE_2D_MULTISAMPLE);
+	GL_state.Texture.Enable(Scene_emissive_texture_ms);
+
+	glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE,
+		4,
+		GL_RGBA16F,
+		Scene_texture_width,
+		Scene_texture_height,
+		GL_TRUE);
+	glGenerateMipmap(GL_TEXTURE_2D_MULTISAMPLE);
+	opengl_set_object_label(GL_TEXTURE, Scene_emissive_texture_ms, "Scene Emissive texture multisample");
+
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT4, GL_TEXTURE_2D_MULTISAMPLE, Scene_emissive_texture_ms, 0);
+
+	// setup main depth texture
+	glGenTextures(1, &Scene_depth_texture_ms);
+
+	GL_state.Texture.SetActiveUnit(0);
+	GL_state.Texture.SetTarget(GL_TEXTURE_2D_MULTISAMPLE);
+	GL_state.Texture.Enable(Scene_depth_texture_ms);
+
+	glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_COMPARE_MODE, GL_NONE);
+
+	glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE,
+		4,
+		GL_DEPTH_COMPONENT24,
+		Scene_texture_width,
+		Scene_texture_height,
+		GL_TRUE);
+	opengl_set_object_label(GL_TEXTURE, Scene_depth_texture_ms, "Scene depth texture multisample");
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, Scene_depth_texture_ms, 0);
 
 	//Setup thruster distortion framebuffer
     if (Gr_framebuffer_effects.any_set())
