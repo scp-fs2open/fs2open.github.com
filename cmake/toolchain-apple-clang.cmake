@@ -13,6 +13,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated -Wno-char-subscripts")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fcolor-diagnostics")
 
-set(CMAKE_CXX_FLAGS_RELEASE "-Wno-unused-variable")
+set(CMAKE_CXX_FLAGS_RELEASE "-O2 -Wno-unused-variable -Wno-unused-parameter")
 
-set(CMAKE_CXX_FLAGS_DEBUG "-Wextra -Wshadow -Wno-unused-parameter")
+set(CMAKE_CXX_FLAGS_DEBUG "-Og -g -Wshadow")
