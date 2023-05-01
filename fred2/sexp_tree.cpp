@@ -1977,17 +1977,16 @@ void sexp_tree::start_operator_edit(HTREEITEM h)
 	if (m_operator_popup_active)
 		return;
 
+	// this can get out of sync if we add an event and then try to edit an operator in a different event
+	update_item(h);
+
 	// sanity checks
 	Assertion(item_handle == h, "Mismatch between item handle and the handle being edited!");
 	Assertion(item_index >= 0 && item_index < (int)tree_nodes.size() && !tree_nodes.empty(), "Unknown node being edited!");
 	Assertion(tree_nodes[item_index].handle == item_handle, "Mismatch between tree node and item handle!");
 
 	// we are editing an operator, so find out which type it should be
-	int i;
-	for (i = 0; i < (int)tree_nodes.size(); i++)
-		if (tree_nodes[i].handle == h)
-			break;
-	auto opf_type = query_node_argument_type(i);
+	auto opf_type = query_node_argument_type(item_index);
 
 	// do first-time setup
 	if (!m_operator_popup_created)
