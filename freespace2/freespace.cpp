@@ -7505,6 +7505,7 @@ void game_title_screen_draw(float alpha)
 
 	// flip
 	gr_flip();
+	os_poll();
 }
 
 void game_title_screen_display()
