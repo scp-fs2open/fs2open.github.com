@@ -1233,6 +1233,18 @@ int arg_item::is_empty()
 }
 //-------------------------------------------------------------------------------------------------
 
+void clear_cache(int node)
+{
+	// free anything cached
+	if (Sexp_nodes[node].cache)
+	{
+		delete Sexp_nodes[node].cache;
+		Sexp_nodes[node].cache = nullptr;
+	}
+
+	// note that cached_variable_index is not reset here because it is a parallel cache (c.f. sexp_get_variable_index)
+}
+
 void sexp_nodes_init()
 {
 	if (Num_sexp_nodes == 0 || Sexp_nodes == nullptr)
@@ -1253,11 +1265,7 @@ void sexp_nodes_init()
 			Sexp_nodes[i].type = SEXP_NOT_USED;			// it's not needed
 
 		// free anything cached
-		if (Sexp_nodes[i].cache)
-		{
-			delete Sexp_nodes[i].cache;
-			Sexp_nodes[i].cache = nullptr;
-		}
+		clear_cache(i);
 	}
 
 	nprintf(("SEXP", "Last persistent node index is %d.\n", last_persistent_node));
@@ -1290,13 +1298,7 @@ static void sexp_nodes_close()
 	{
 		// free anything cached
 		for (int i = 0; i < Num_sexp_nodes; i++)
-		{
-			if (Sexp_nodes[i].cache)
-			{
-				delete Sexp_nodes[i].cache;
-				Sexp_nodes[i].cache = nullptr;
-			}
-		}
+			clear_cache(i);
 
 		vm_free(Sexp_nodes);
 		Sexp_nodes = nullptr;
@@ -1520,11 +1522,7 @@ int free_one_sexp(int num)
 		return 0;
 
 	Sexp_nodes[num].type = SEXP_NOT_USED;
-	if (Sexp_nodes[num].cache)
-	{
-		delete Sexp_nodes[num].cache;
-		Sexp_nodes[num].cache = nullptr;
-	}
+	clear_cache(num);
 	return 1;
 }
 
@@ -1548,11 +1546,7 @@ int free_sexp(int num, int calling_node)
 		return 0;
 
 	Sexp_nodes[num].type = SEXP_NOT_USED;
-	if (Sexp_nodes[num].cache)
-	{
-		delete Sexp_nodes[num].cache;
-		Sexp_nodes[num].cache = nullptr;
-	}
+	clear_cache(num);
 	count++;
 
 	i = Sexp_nodes[num].first;
@@ -1616,11 +1610,7 @@ void flush_sexp_tree(int node)
 	}
 
 	Sexp_nodes[node].value = SEXP_UNKNOWN;
-	if (Sexp_nodes[node].cache)
-	{
-		delete Sexp_nodes[node].cache;
-		Sexp_nodes[node].cache = nullptr;
-	}
+	clear_cache(node);
 	Sexp_nodes[node].cached_variable_index = -1;
 
 	flush_sexp_tree(Sexp_nodes[node].first);
@@ -6029,12 +6019,9 @@ int rand_sexp(int node, bool multiple)
 		// set .value and .text so random number is generated only once.
 		Sexp_nodes[node].value = SEXP_NUM_EVAL;
 		sprintf(Sexp_nodes[node].text, "%d", rand_num);
+
 		// any cached value is no longer relevant because we just changed the text
-		if (Sexp_nodes[node].cache)
-		{
-			delete Sexp_nodes[node].cache;
-			Sexp_nodes[node].cache = nullptr;
-		}
+		clear_cache(node);
 	}
 	// if this is multiple with a nonzero seed provided
 	else if (seed > 0)
@@ -6042,6 +6029,9 @@ int rand_sexp(int node, bool multiple)
 		// Set the seed to a new seeded random value. This will ensure that the next time the method
 		// is called it will return a predictable but different number from the previous time. 
 		sprintf(Sexp_nodes[CDDR(node)].text, "%d", rand_internal(1, INT_MAX, seed));
+
+		// any cached value is no longer relevant because we just changed the text
+		clear_cache(CDDR(node));
 	}
 
 	return rand_num;
