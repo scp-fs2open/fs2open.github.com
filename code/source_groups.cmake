@@ -399,6 +399,7 @@ add_file_folder("GlobalIncs"
 	globalincs/toolchain.h
 	globalincs/undosys.cpp
 	globalincs/undosys.h
+	globalincs/utility.h
 	globalincs/version.cpp
 	globalincs/version.h
 	globalincs/vmallocator.h

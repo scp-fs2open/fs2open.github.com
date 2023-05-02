@@ -13,6 +13,7 @@
 #include "ai/aigoals.h"
 #include "ai/ailua.h"
 #include "globalincs/linklist.h"
+#include "globalincs/utility.h"
 #include "mission/missionlog.h"
 #include "mission/missionparse.h"
 #include "network/multi.h"

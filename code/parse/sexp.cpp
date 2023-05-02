@@ -38,6 +38,7 @@
 #include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"
 #include "globalincs/systemvars.h"
+#include "globalincs/utility.h"
 #include "globalincs/version.h"
 #include "graphics/2d.h"
 #include "graphics/font.h"
@@ -32831,7 +32832,7 @@ int verify_vector(const char *text)
 /**
  * Check if operator return type opr is a valid match for operator argument type opf
  */
-int sexp_query_type_match(int opf, int opr)
+bool sexp_query_type_match(int opf, int opr)
 {
 	switch (opf) {
 		case OPF_NUMBER:
@@ -32856,13 +32857,35 @@ int sexp_query_type_match(int opf, int opr)
 		case OPF_CONTAINER_VALUE: // jg18
 		case OPF_DATA_OR_STR_CONTAINER: // jg18
 			// don't match any operators, only data
-			return 0;
+			return false;
 
 		case OPF_AI_GOAL:
 			return (opr == OPR_AI_GOAL);
 	}
 
-	return 0;
+	return false;
+}
+
+int sexp_match_closest_operator(const SCP_string &str, int opf)
+{
+	int best = -1, min = -1;
+
+	for (int i = 0; i < (int)Operators.size(); i++)
+	{
+		int opr = query_operator_return_type(i);			// figure out which type this operator returns
+
+		if (sexp_query_type_match(opf, opr))
+		{
+			int dist = (int)GeneralizedLevenshteinDistance(str, Operators[i].text, 2, 2, 3);
+			if (min < 0 || dist < min)
+			{
+				min = dist;
+				best = i;
+			}
+		}
+	}
+
+	return best;
 }
 
 bool sexp_recoverable_error(int num)

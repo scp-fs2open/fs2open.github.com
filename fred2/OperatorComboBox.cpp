@@ -140,7 +140,7 @@ OperatorComboBoxList::OperatorComboBoxList(const char* (*help_callback)(int), in
 
 void OperatorComboBoxList::SetOpfType(int opf_type)
 {
-	map_opf_to_opr(opf_type, m_expected_opr_type);
+	m_opf_type = opf_type;
 }
 
 //here we supply the text for the item
@@ -176,13 +176,16 @@ BOOL OperatorComboBoxList::OnToolTipText(UINT id, NMHDR* pNMHDR, LRESULT* pResul
 			SCP_string buffer;
 			if (!IsItemEnabled(item))
 			{
+				int opr_type;
+				map_opf_to_opr(m_opf_type, opr_type);
+
 				int op_index = find_operator_index(op_const);
 				buffer = "The operator \"";
 				buffer += op_index >= 0 ? Operators[op_index].text : "<invalid operator>";
 				buffer += "\" cannot be selected because it has an incompatible return type.\r\n\tReturns: ";
 				buffer += opr_type_name(query_operator_return_type(op_const));
 				buffer += "\r\n\tExpected: ";
-				buffer += opr_type_name(m_expected_opr_type);
+				buffer += opr_type_name(opr_type);
 			}
 			else
 			{
@@ -284,14 +287,5 @@ BOOL OperatorComboBoxList::IsItemEnabled(UINT nIndex) const
 	int op_const = (int)GetItemData(nIndex);
 	int opr_type = query_operator_return_type(op_const);
 
-	// check for special cases
-	if (opr_type == OPR_AMBIGUOUS)										// OPR_AMBIGUOUS matches everything
-		return true;
-	if (opr_type == OPR_POSITIVE && m_expected_opr_type == OPR_NUMBER)	// positive data type can map to number data type just fine
-		return true;
-	if (opr_type == OPR_NUMBER && m_expected_opr_type == OPR_POSITIVE)	// this isn't kosher, but we hack it to make it work
-		return true;
-
-	// check that types match
-	return opr_type == m_expected_opr_type;
+	return sexp_query_type_match(m_opf_type, opr_type);
 }

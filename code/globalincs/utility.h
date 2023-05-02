@@ -1,0 +1,107 @@
+
+#ifndef _FSO_UTILITY_H
+#define _FSO_UTILITY_H
+
+#include <vector>
+
+#include "globalincs/globals.h"
+#include "globalincs/toolchain.h"
+
+
+// Goober5000
+// A sort for use with small or almost-sorted lists.  Iteration time is O(n) for a fully-sorted list.
+// This uses a type-safe version of the function prototype for stdlib's qsort, although the size is an int rather than a size_t (for the reasons that j is an int).
+// The fncompare function should return <0, 0, or >0 as the left item is less than, equal to, or greater than the right item.
+template <typename array_t, typename T>
+void insertion_sort(array_t& array_base, int array_size, int (*fncompare)(const T*, const T*))
+{
+	// NOTE: j *must* be a signed type because j reaches -1 and j+1 must be 0.
+	int i, j;
+	T *current, *current_buf;
+
+	// allocate space for the element being moved
+	// (Taylor says that for optimization purposes malloc/free should be used rather than vm_malloc/vm_free here)
+	current_buf = new T();
+	if (current_buf == nullptr)
+	{
+		UNREACHABLE("Malloc failed!");
+		return;
+	}
+
+	// loop
+	for (i = 1; i < array_size; i++)
+	{
+		// grab the current element
+		// this does a lazy move/copy because if the array is mostly sorted,
+		// there's no sense copying sorted items to their own places
+		bool lazily_copied = false;
+		current = &array_base[i];
+
+		// bump other elements toward the end of the array
+		for (j = i - 1; (j >= 0) && (fncompare(&array_base[j], current) > 0); j--)
+		{
+			if (!lazily_copied)
+			{
+				// this may look strange but it is just copying the data
+				// into the buffer, then pointing to the buffer
+				*current_buf = std::move(*current);
+				current = current_buf;
+				lazily_copied = true;
+			}
+
+			array_base[j + 1] = std::move(array_base[j]);
+		}
+
+		if (lazily_copied)
+		{
+			// insert the current element at the correct place
+			array_base[j + 1] = std::move(*current);
+		}
+	}
+
+	// free the allocated space
+	delete current_buf;
+}
+
+//
+// See https://en.wikibooks.org/wiki/Algorithm_Implementation/Strings/Levenshtein_distance#C++
+//
+template<typename T>
+typename T::size_type GeneralizedLevenshteinDistance(const T &source,
+	const T &target,
+	typename T::size_type insert_cost = 1,
+	typename T::size_type delete_cost = 1,
+	typename T::size_type replace_cost = 1) {
+	if (source.size() > target.size()) {
+		return GeneralizedLevenshteinDistance(target, source, delete_cost, insert_cost, replace_cost);
+	}
+
+	using TSizeType = typename T::size_type;
+	const TSizeType min_size = source.size(), max_size = target.size();
+	std::vector<TSizeType> lev_dist(min_size + 1);
+
+	lev_dist[0] = 0;
+	for (TSizeType i = 1; i <= min_size; ++i) {
+		lev_dist[i] = lev_dist[i - 1] + delete_cost;
+	}
+
+	for (TSizeType j = 1; j <= max_size; ++j) {
+		TSizeType previous_diagonal = lev_dist[0], previous_diagonal_save;
+		lev_dist[0] += insert_cost;
+
+		for (TSizeType i = 1; i <= min_size; ++i) {
+			previous_diagonal_save = lev_dist[i];
+			if (source[i - 1] == target[j - 1]) {
+				lev_dist[i] = previous_diagonal;
+			}
+			else {
+				lev_dist[i] = std::min(std::min(lev_dist[i - 1] + delete_cost, lev_dist[i] + insert_cost), previous_diagonal + replace_cost);
+			}
+			previous_diagonal = previous_diagonal_save;
+		}
+	}
+
+	return lev_dist[min_size];
+}
+
+#endif

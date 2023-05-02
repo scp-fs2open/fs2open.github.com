@@ -13,6 +13,7 @@
 #include "cfile/cfile.h"
 #include "gamesequence/gamesequence.h"
 #include "globalincs/alphacolors.h"
+#include "globalincs/utility.h"
 #include "hud/hudmessage.h"
 #include "io/timer.h"
 #include "mission/missiongoals.h"

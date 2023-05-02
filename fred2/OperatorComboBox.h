@@ -25,7 +25,7 @@ protected:
 	CStringA m_tooltiptextA;
 	CStringW m_tooltiptextW;
 
-	int m_expected_opr_type;
+	int m_opf_type;
 
 	DECLARE_MESSAGE_MAP()
 };

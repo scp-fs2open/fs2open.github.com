@@ -12,6 +12,7 @@
 #include "anim/animplay.h"
 #include "gamesequence/gamesequence.h"
 #include "gamesnd/gamesnd.h"
+#include "globalincs/utility.h"
 #include "hud/hud.h"
 #include "hud/hudconfig.h"
 #include "hud/hudgauges.h"

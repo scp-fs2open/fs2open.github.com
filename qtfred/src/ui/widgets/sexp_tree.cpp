@@ -790,54 +790,12 @@ int sexp_tree::query_node_argument_type(int node) const {
 	return query_operator_argument_type(op_num, argnum);
 }
 
-//
-// See https://en.wikibooks.org/wiki/Algorithm_Implementation/Strings/Levenshtein_distance#C++
-//
-template<typename T>
-typename T::size_type GeneralizedLevensteinDistance(const T &source,
-	const T &target,
-	typename T::size_type insert_cost = 1,
-	typename T::size_type delete_cost = 1,
-	typename T::size_type replace_cost = 1) {
-	if (source.size() > target.size()) {
-		return GeneralizedLevensteinDistance(target, source, delete_cost, insert_cost, replace_cost);
-	}
-
-	using TSizeType = typename T::size_type;
-	const TSizeType min_size = source.size(), max_size = target.size();
-	std::vector<TSizeType> lev_dist(min_size + 1);
-
-	lev_dist[0] = 0;
-	for (TSizeType i = 1; i <= min_size; ++i) {
-		lev_dist[i] = lev_dist[i - 1] + delete_cost;
-	}
-
-	for (TSizeType j = 1; j <= max_size; ++j) {
-		TSizeType previous_diagonal = lev_dist[0], previous_diagonal_save;
-		lev_dist[0] += insert_cost;
-
-		for (TSizeType i = 1; i <= min_size; ++i) {
-			previous_diagonal_save = lev_dist[i];
-			if (source[i - 1] == target[j - 1]) {
-				lev_dist[i] = previous_diagonal;
-			}
-			else {
-				lev_dist[i] = std::min(std::min(lev_dist[i - 1] + delete_cost, lev_dist[i] + insert_cost), previous_diagonal + replace_cost);
-			}
-			previous_diagonal = previous_diagonal_save;
-		}
-	}
-
-	return lev_dist[min_size];
-}
-
 // Look for the valid operator that is the closest match for 'str' and return the operator
 // number of it.  What operators are valid is determined by 'node', and an operator is valid
 // if it is allowed to fit at position 'node'
 //
-SCP_string sexp_tree::match_closest_operator(const SCP_string &str, int node) {
-	int z, i, op, arg_num, opf, opr;
-	int min = -1, best = -1;
+const SCP_string &sexp_tree::match_closest_operator(const SCP_string &str, int node) {
+	int z, op, arg_num, opf;
 
 	z = tree_nodes[node].parent;
 	if (z < 0) {
@@ -853,19 +811,10 @@ SCP_string sexp_tree::match_closest_operator(const SCP_string &str, int node) {
 	arg_num = find_argument_number(z, node);
 	opf = query_operator_argument_type(op, arg_num);	// check argument type at this position
 
-	for (i = 0; i < (int) Operators.size(); i++) {
-		opr = query_operator_return_type(i);			// figure out which type this operator returns
-
-		if (sexp_query_type_match(opf, opr)) {
-			int dist = (int)GeneralizedLevensteinDistance(str, Operators[i].text, 2, 2, 3);
-			if (min < 0 || dist < min) {
-				min = dist;
-				best = i;
-			}
-		}
-	}
-
-	Assert(best >= 0);  // we better have some valid operator at this point.
+	// find the best operator
+	int best = sexp_match_closest_operator(str, opf);
+	if (best < 0)
+		return str;
 	return Operators[best].text;
 }
 
