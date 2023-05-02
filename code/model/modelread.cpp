@@ -247,8 +247,6 @@ void model_free(polymodel* pm)
 	}
 #endif
 
-	model_octant_free(pm);
-
 	if (pm->submodel) {
 		for (i = 0; i < pm->n_models; i++) {
 			pm->submodel[i].buffer.clear();
@@ -3440,9 +3438,6 @@ int model_load(const  char* filename, int n_subsystems, model_subsystem* subsyst
 		}
 
 	}
-
-
-	model_octant_create( pm );
 
 	TRACE_SCOPE(tracing::ModelParseAllBSPTrees);
 

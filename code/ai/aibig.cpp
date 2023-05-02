@@ -67,7 +67,6 @@ int	ai_big_maybe_follow_subsys_path(int do_dot_check=1);
 void ai_big_strafe_position();
 static int ai_big_strafe_maybe_retreat(const vec3d *target_pos);
 
-extern int model_which_octant_distant_many( vec3d *pnt, int model_num,matrix *model_orient, vec3d * model_pos, polymodel **pm, int *octs);
 extern void compute_desired_rvec(vec3d *rvec, vec3d *goal_pos, vec3d *cur_pos);
 extern void big_ship_collide_recover_start(object *objp, object *big_objp, vec3d *collision_normal);
 
@@ -83,10 +82,9 @@ void ai_bpap(object *objp, vec3d *attacker_objp_pos, vec3d *attacker_objp_fvec, 
 	vec3d	result_point, best_point;
 	vec3d	rel_point;
 	int		num_tries;
-	model_octant	*octp;
-	polymodel	*pm;
-	int		i, q, octs[4];	
+	int		i;	
 	ship_info *sip = &Ship_info[Ships[objp->instance].ship_info_index];
+	polymodel* pm = model_get(sip->model_num);
 	model_subsystem *tp = NULL;
 	if (ss != NULL)
 		tp = ss->system_info;	
@@ -94,63 +92,53 @@ void ai_bpap(object *objp, vec3d *attacker_objp_pos, vec3d *attacker_objp_fvec, 
 	best_point = objp->pos;
 	nearest_dist = weapon_travel_dist;
 
-	model_which_octant_distant_many(attacker_objp_pos, sip->model_num, &objp->orient, &objp->pos, &pm, octs);
-
+	// attempt anywhere from 16 to 4 times, more if we're closer
 	num_tries = (int) (vm_vec_dist(&objp->pos, attacker_objp_pos)/objp->radius);
-
 	if (num_tries >= 4)
 		num_tries = 1;
 	else
-		num_tries = 4 - num_tries;
+		num_tries = (4 - num_tries) * 4;
 
-	//	Index #0 is best one.
-	if ( pm->octants[octs[0]].verts ) {
-		*local_attack_point = *pm->octants[octs[0]].verts[0];	//	Set just in case it doesn't get set below.
-	} else {
-		vm_vec_zero(local_attack_point);
-	}
+	vm_vec_zero(local_attack_point);
 
-	for (q=0; q<4; q++) {
-		octp = &pm->octants[octs[q]];
-		if (octp->nverts > 0) {
+	auto collision_tree = model_get_bsp_collision_tree(pm->submodel[pm->detail[0]].collision_tree_index);
 
-			if (num_tries > octp->nverts)
-				num_tries = octp->nverts;
+	if (!collision_tree->poly_centers.empty()) {
+		int num_polies = (int)collision_tree->poly_centers.size();
 
-			if (num_tries > octp->nverts)
-				num_tries = octp->nverts;
+		if (num_tries > num_polies)
+			num_tries = num_polies;
 
-			for (i=0; i<num_tries; i++) {
-				int	index;
-				float	dist, dot;
-				vec3d	v2p;
+		for (i=0; i<num_tries; i++) {
+			int	index;
+			float	dist, dot;
+			vec3d	v2p;
 
-				index = (int) (frand() * (octp->nverts));
+			index = (int) (frand() * num_polies);
 
-				rel_point = *octp->verts[index];
-				vm_vec_unrotate(&result_point, &rel_point, &objp->orient);
-				vm_vec_add2(&result_point, &objp->pos);
+			rel_point = collision_tree->poly_centers[index];
+			vm_vec_unrotate(&result_point, &rel_point, &objp->orient);
+			vm_vec_add2(&result_point, &objp->pos);
 
-				dist = vm_vec_normalized_dir(&v2p, &result_point, attacker_objp_pos);
-				bool in_fov = false;
+			dist = vm_vec_normalized_dir(&v2p, &result_point, attacker_objp_pos);
+			bool in_fov = false;
 
-				dot = vm_vec_dot(&v2p, attacker_objp_fvec);
-				if (tp == NULL) {
-					if (dot > fov)
-						in_fov = true;
-				} else {
-					in_fov = turret_fov_test(ss, attacker_objp_fvec, &v2p);
-				}
+			dot = vm_vec_dot(&v2p, attacker_objp_fvec);
+			if (tp == NULL) {
+				if (dot > fov)
+					in_fov = true;
+			} else {
+				in_fov = turret_fov_test(ss, attacker_objp_fvec, &v2p);
+			}
 
-				if (in_fov) {
-					if (dist < nearest_dist) {
-						nearest_dist = dist;
-						best_point = result_point;
-						*local_attack_point = rel_point;
-						Assert( !vm_is_vec_nan(local_attack_point) );
-						if (dot > (1.0f + fov)/2.0f)	//	If this point is quite good, quit searching for a better one.
-							goto done_1;
-					}
+			if (in_fov) {
+				if (dist < nearest_dist) {
+					nearest_dist = dist;
+					best_point = result_point;
+					*local_attack_point = rel_point;
+					Assert( !vm_is_vec_nan(local_attack_point) );
+					if (dot > (1.0f + fov)/2.0f)	//	If this point is quite good, quit searching for a better one.
+						goto done_1;
 				}
 			}
 		}

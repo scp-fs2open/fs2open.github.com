@@ -864,7 +864,6 @@ add_file_folder("Model"
 	model/modelanimation_segments.h
 	model/modelcollide.cpp
 	model/modelinterp.cpp
-	model/modeloctant.cpp
 	model/modelread.cpp
 	model/modelrender.h
 	model/modelrender.cpp

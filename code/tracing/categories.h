@@ -137,7 +137,6 @@ extern Category LoadPostMissionLoad;
 extern Category LoadModelFile;
 extern Category ReadModelFile;
 extern Category ModelCreateVertexBuffers;
-extern Category ModelCreateOctants;
 extern Category ModelParseAllBSPTrees;
 extern Category ModelParseBSPTree;
 extern Category ModelConfigureVertexBuffers;

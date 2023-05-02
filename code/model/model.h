@@ -353,6 +353,7 @@ struct bsp_collision_tree {
 
 	model_tmap_vert *vert_list;
 	vec3d *point_list;
+	SCP_vector<vec3d> poly_centers;
 
 	int n_verts;
 	bool used;
@@ -659,16 +660,6 @@ typedef struct bsp_light {
 	int				type;		// See BSP_LIGHT_TYPE_?? for values
 } bsp_light;
 
-// model_octant - There are 8 of these per model.  They are a handy way to categorize
-// a lot of model properties to get some easy 8x optimizations for model stuff.
-typedef struct model_octant {
-	vec3d		min, max;				// The bounding box that makes up this octant defined as 2 points.
-	int			nverts;					// how many vertices are in this octant
-	vec3d		**verts;					// The vertices in this octant in the high-res hull.  A vertex can only be in one octant.
-	int			nshield_tris;			// how many shield triangles are in the octant
-	shield_tri	**shield_tris;			// the shield triangles that make up this octant. A tri could be in multiple octants.
-} model_octant;
-
 #define MAX_EYES	10
 
 typedef struct eye {
@@ -798,7 +789,6 @@ public:
 		memset(&debris_objects, 0, MAX_DEBRIS_OBJECTS * sizeof(int));
 		memset(&bounding_box, 0, 8 * sizeof(vec3d));
 		memset(&view_positions, 0, MAX_EYES * sizeof(eye));
-		memset(&octants, 0, 8 * sizeof(model_octant));
 		memset(&split_plane, 0, MAX_SPLIT_PLANE * sizeof(float));
 		memset(&ins, 0, MAX_MODEL_INSIGNIAS * sizeof(insignia));
 
@@ -867,9 +857,7 @@ public:
 	// physics info
 	float			mass;
 	vec3d		center_of_mass;
-	matrix		moment_of_inertia;
-	
-	model_octant	octants[8];
+	matrix		moment_of_inertia;	
 
 	int num_xc;				// number of cross sections
 	cross_section* xc;	// pointer to array of cross sections (used in big ship explosions)
@@ -1349,34 +1337,6 @@ bsp_collision_tree *model_get_bsp_collision_tree(int tree_index);
 void model_remove_bsp_collision_tree(int tree_index);
 int model_create_bsp_collision_tree();
 
-//=========================== MODEL OCTANT STUFF ================================
-
-//  Models are now divided into 8 octants.    Shields too.
-//  This made the collision code faster.   Shield is 4x and ship faces
-//  are about 2x faster.
-
-//  Before, calling model_collide with flags=0 didn't check the shield
-//  but did check the model itself.   Setting the shield flags caused
-//  the shield to get check along with the ship.
-//  Now, you need to explicitly tell the model_collide code to check
-//  the model, so you can check the model or shield or both.
-
-//  If you need to check them both, do it in one call; this saves some
-//  time.    If checking the shield is sufficient for determining 
-//  something   (like if it is under the hud) then use just shield 
-//  check, it is at least 5x faster than checking the model itself.
-
-
-// Model octant ordering - this is a made up ordering, but it makes sense.
-// X Y Z  index description
-// - - -  0     left bottom rear
-// - - +  1     left bottom front
-// - + -  2     left top rear
-// - + +  3     left top front
-// + - -  4     right bottom rear
-// + - +  5     right bottom front
-// + + -  6     right top rear
-// + + +  7     right top front
 
 typedef struct mst_info {
 	int primary_bitmap;
