@@ -432,9 +432,11 @@ namespace
 				{
 				case VFNT_FONT:
 					if (Unicode_text_mode) {
-						error_display(1, "Bitmap fonts are not supported in Unicode text mode!");
+						WarningEx(LOCATION, "Bitmap fonts are not supported in Unicode text mode! Font %s will be ignored.", fontName.c_str());
+						skip_to_start_of_string_one_of({"$TrueType:", "$Font:", "#End"});
+					} else {
+						parse_vfnt_font(fontName);
 					}
-					parse_vfnt_font(fontName);
 					break;
 				case NVG_FONT:
 					parse_nvg_font(fontName);
