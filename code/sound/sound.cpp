@@ -62,7 +62,7 @@ static bool effects_volume_change_listener(float new_val, bool /*initial*/)
 	return true;
 }
 
-static auto EffectVolumeOption =
+static auto EffectVolumeOption __UNUSED =
     options::OptionBuilder<float>("Audio.Effects", "Effects", "Volume used for playing in-game effects")
         .category("Audio")
         .default_val(Default_sound_volume)
@@ -83,7 +83,7 @@ static bool voice_volume_change_listener(float new_val, bool /*initial*/)
 	return true;
 }
 
-static auto VoiceVolumeOption =
+static auto VoiceVolumeOption __UNUSED =
     options::OptionBuilder<float>("Audio.Voice", "Voice", "Volume used for playing voice audio")
         .category("Audio")
         .default_val(Default_voice_volume)

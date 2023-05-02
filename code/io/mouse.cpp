@@ -56,7 +56,7 @@ int Mouse_dz = 0;
 
 int Mouse_sensitivity = 4;
 
-static auto MouseSensitivityOption =
+static auto MouseSensitivityOption __UNUSED =
     options::OptionBuilder<int>("Input.MouseSensitivity", "Sensitivity", "The sentitivity of the mouse input.")
         .category("Input")
         .range(0, 9)
@@ -70,7 +70,7 @@ bool Use_mouse_to_fly = false;
 
 static SCP_string mouse_mode_display(bool mode) { return mode ? "Joy-0" : "Mouse"; }
 
-static auto UseMouseOption = options::OptionBuilder<bool>("Input.UseMouse", "Mouse", "Use the mouse for flying")
+static auto UseMouseOption __UNUSED = options::OptionBuilder<bool>("Input.UseMouse", "Mouse", "Use the mouse for flying")
                                  .category("Input")
 				 .display(mouse_mode_display) 
                                  .level(options::ExpertLevel::Beginner)

@@ -50,7 +50,7 @@ extern int ENVMAP;
 const SCP_vector<std::pair<int, SCP_string>> TextureFilteringValues = {{ 0, "Bilinear" },
                                                                       { 1, "Trilinear" }, };
 
-static auto TextureFilteringOption = options::OptionBuilder<int>("Graphics.TextureFilter", "Texture Filtering", "Texture filtering option")
+static auto TextureFilteringOption __UNUSED = options::OptionBuilder<int>("Graphics.TextureFilter", "Texture Filtering", "Texture filtering option")
 								 .importance(1)
 								 .category("Graphics")
 								 .values(TextureFilteringValues)

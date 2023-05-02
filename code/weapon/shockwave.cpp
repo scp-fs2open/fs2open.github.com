@@ -52,7 +52,7 @@ static SCP_string shockwave_mode_display(bool mode) { return mode ? "3D" : "2D";
 
 static bool Use_3D_shockwaves = true;
 
-static auto Shockwave3DMode =
+static auto Shockwave3DMode __UNUSED =
     options::OptionBuilder<bool>("Graphics.3DShockwaves", "Shockwaves", "The way shockwaves are displayed.")
         .category("Graphics")
         .display(shockwave_mode_display)

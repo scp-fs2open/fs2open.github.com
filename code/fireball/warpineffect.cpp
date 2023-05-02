@@ -24,7 +24,7 @@
 
 bool Fireball_warp_flash = false;
 
-static auto WarpFlashOption = options::OptionBuilder<bool>("Graphics.WarpFlash", "Warp Flash", "Show flash upon warp open or close")
+static auto WarpFlashOption __UNUSED = options::OptionBuilder<bool>("Graphics.WarpFlash", "Warp Flash", "Show flash upon warp open or close")
 							 .category("Graphics")
 							 .default_val(true)
 							 .level(options::ExpertLevel::Advanced)

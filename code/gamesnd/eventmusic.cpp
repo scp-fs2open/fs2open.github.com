@@ -45,7 +45,7 @@ static bool music_volume_change_listener(float new_val, bool /*initial*/)
 	return true;
 }
 
-static auto MusicVolumeOption = options::OptionBuilder<float>("Audio.Music", "Music", "Volume used for playing music")
+static auto MusicVolumeOption __UNUSED = options::OptionBuilder<float>("Audio.Music", "Music", "Volume used for playing music")
                                     .category("Audio")
                                     .default_val(Default_music_volume)
                                     .range(0.0f, 1.0f)
