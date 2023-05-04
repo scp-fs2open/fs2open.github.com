@@ -1820,11 +1820,7 @@ void game_init()
 	font::init();					// loads up all fonts
 	
 	// add title screen
-	if(!Is_standalone){
-		// #Kazan# - moved this down - WATCH THESE calls - anything that shares code between standalone and normal
-		// cannot make gr_* calls in standalone mode because all gr_ calls are NULL pointers
-		game_title_screen_display();
-	}
+	game_title_screen_display();
 	
 	// attempt to load up master tracker registry info (login and password)
 	Multi_tracker_id = -1;		
@@ -1984,6 +1980,8 @@ void game_init()
 	// Do this before the initial scripting hook runs in case that hook does something with the UI
 	scpui::initialize();
 
+	game_title_screen_close();
+
 	Script_system.RunInitFunctions();
 	if (scripting::hooks::OnGameInit->isActive()) {
 		scripting::hooks::OnGameInit->run();
@@ -1992,8 +1990,6 @@ void game_init()
 	if (scripting::hooks::OnSplashScreen->isActive()) {
 		scripting::hooks::OnSplashScreen->run();
 	}
-
-	game_title_screen_close();
 
 	// convert old pilot files (if they need it)
 	convert_pilot_files();
@@ -7465,23 +7461,17 @@ int game_hacked_data()
     return 0;
 }
 
-void game_title_screen_display()
+void game_title_screen_draw(float alpha)
 {
-	//As the script system isn't available here (it needs tables loaded and stuff), the on Splash Screen hook is removed from here.
-	//It is deprecated as of 23.0 (where it was nonfunctional anyways), and will only be called for compatibility once the init has occurred after the splash screen -Lafiel
+	game_set_frametime(-1); //Set the frame time
+	
+	// clamp alpha to avoid any funny business because this is a splash screen not a comedy sketch
+	CLAMP(alpha, 0.0f, 1.0f);
 
-	Game_title_logo = bm_load(Game_logo_screen_fname[gr_screen.res]);
-
-	if (!Splash_screens.empty()) {
-		Game_title_bitmap = bm_load(Splash_screens[Random::next(0, (int)Splash_screens.size() - 1)].c_str());
-	} else {
-		Game_title_bitmap = bm_load(Game_title_screen_fname[gr_screen.res]);
-	}
-
-	if (Game_title_bitmap != -1)
-	{
+	gr_clear();
+	if (Game_title_bitmap != -1) {
 		// set
-		gr_set_bitmap(Game_title_bitmap);
+		gr_set_bitmap(Game_title_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha);
 
 		// get bitmap's width and height
 		int width, height;
@@ -7491,25 +7481,95 @@ void game_title_screen_display()
 		gr_set_screen_scale(width, height);
 
 		// draw it in the center of the screen
-		gr_bitmap((gr_screen.max_w_unscaled - width)/2, (gr_screen.max_h_unscaled - height)/2, GR_RESIZE_MENU);
+		gr_bitmap((gr_screen.max_w_unscaled - width) / 2, (gr_screen.max_h_unscaled - height) / 2, GR_RESIZE_MENU);
+	}
 
-		if (Game_title_logo != -1)
-		{
-			gr_set_bitmap(Game_title_logo);
+	if (Game_title_logo != -1) {
+		gr_set_bitmap(Game_title_logo, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha);
+			
+		// get bitmap's width and height
+		int width, height;
+		bm_get_info(Game_title_logo, &width, &height);
 
+		// set the screen scale to the screen's dimensions
+		gr_set_screen_scale(gr_screen.max_w, gr_screen.max_h);
+
+		if (Splash_logo_center){
+			gr_bitmap((gr_screen.max_w_unscaled - width) / 2, (gr_screen.max_h_unscaled - height) / 2, GR_RESIZE_MENU);
+		} else {
 			gr_bitmap(0, 0, GR_RESIZE_MENU);
-
 		}
+	}
 
 		gr_reset_screen_scale();
-	}
 
 	// flip
 	gr_flip();
+	os_poll();
+}
+
+void game_title_screen_display()
+{
+	// anything that shares code between standalone and normal cannot make
+	// gr_* calls in standalone mode because all gr_ calls are NULL pointers
+	if (Is_standalone) {
+		return;
+	}
+	
+	//As the script system isn't available here (it needs tables loaded and stuff), the on Splash Screen hook is removed from here.
+	//It is deprecated as of 23.0 (where it was nonfunctional anyways), and will only be called for compatibility once the init has occurred after the splash screen -Lafiel
+	
+	Game_title_logo = bm_load(Game_logo_screen_fname[gr_screen.res]);
+
+	if (!Splash_screens.empty()) {
+		Game_title_bitmap = bm_load(Splash_screens[Random::next(0, (int)Splash_screens.size() - 1)].c_str());
+	} else {
+		Game_title_bitmap = bm_load(Game_title_screen_fname[gr_screen.res]);
+	}
+
+	if (Splash_fade_in_time > 0) {
+		float alpha = 0.0f;
+		int timer = timer_get_milliseconds() + Splash_fade_in_time;
+
+		while (timer_get_milliseconds() < timer) {
+			game_title_screen_draw(alpha); // draw the splash image
+
+			// increment alpha to the next value
+			float a_inc = 1.0f / ((Splash_fade_in_time / 1000) / flFrametime);
+			alpha += a_inc;
+		}
+	} else {
+		game_title_screen_draw(1.0f);
+	}
+
 }
 
 void game_title_screen_close()
 {
+	// anything that shares code between standalone and normal cannot make
+	// gr_* calls in standalone mode because all gr_ calls are NULL pointers
+	if (Is_standalone) {
+		return;
+	}
+
+	if (Splash_fade_out_time > 0) {
+		//draw a starting splash image. This also reset the frametime
+		//after asset loading messed with it. Helps to keep the fade out
+		//nice and smooooooooth, baby.
+		game_title_screen_draw(1.0f);
+
+		float alpha = 1.0f;
+		int timer = timer_get_milliseconds() + Splash_fade_out_time;
+
+		while (timer_get_milliseconds() < timer) {
+			game_title_screen_draw(alpha); // draw the splash image
+
+			// decrement alpha to the next value
+			float a_inc = 1.0f / ((Splash_fade_out_time / 1000) / flFrametime);
+			alpha -= a_inc;
+		}
+	}
+
 	if (Game_title_bitmap != -1) {
 		bm_release(Game_title_bitmap);
 		Game_title_bitmap = -1;
