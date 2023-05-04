@@ -637,7 +637,7 @@ static int check_inside_radius_for_big_ships( object *ship, object *weapon_obj, 
 	if (max_error < 2)
 		max_error = 2.0f;
 
-	float weapon_max_vel = weapon_obj->phys_info.max_vel.xyz.z;
+	float weapon_max_vel = MAX(weapon_obj->phys_info.max_vel.xyz.z, vm_vec_mag(&weapon_obj->phys_info.vel));
 	Assertion(IS_VEC_NULL(&The_mission.gravity) || weapon_obj->phys_info.gravity_const == 0.0f, "check_inside_radius_for_big_ships being used for a ballistic weapon");
 
 	time_to_exit_sphere = (ship->radius + vm_vec_dist(&ship->pos, &weapon_obj->pos)) / (weapon_max_vel - ship->phys_info.max_vel.xyz.z);
