@@ -206,6 +206,7 @@ namespace animation {
 	};
 
 	class ModelAnimation : public std::enable_shared_from_this <ModelAnimation> {
+	public:
 		struct instance_data {
 			ModelAnimationState state = ModelAnimationState::UNTRIGGERED;
 			ModelAnimationDirection canonicalDirection = ModelAnimationDirection::FWD;
@@ -214,6 +215,8 @@ namespace animation {
 			flagset<animation::Animation_Instance_Flags> instance_flags;
 			float speed = 1.0f;
 		};
+
+	private:
 		//PMI ID -> Instance Data
 		SCP_unordered_map<int, instance_data> m_instances;
 

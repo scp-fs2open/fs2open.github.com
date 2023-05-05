@@ -1,7 +1,7 @@
 #pragma once
 
 #include "math/ik_solver.h"
-#include "model/modelanimation.h"
+#include "model/animation/modelanimation.h"
 
 namespace animation {
 
