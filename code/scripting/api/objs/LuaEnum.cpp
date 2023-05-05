@@ -38,6 +38,7 @@ ADE_INDEXER(l_LuaEnum, "number Index", "Array of enum items", "string", "enum it
 	if (!ade_get_args(L, "o|i", l_LuaEnum.Get(&lua_enum), &idx))
 		return ADE_RETURN_NIL;
 
+	idx--; //Convert from lua 1 based index
 	if ((idx < 0) || (idx >= (int)lua_enum.getEnum()->list.size()))
 		return ADE_RETURN_NIL;
 
