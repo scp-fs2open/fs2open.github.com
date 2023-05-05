@@ -69,6 +69,7 @@ extern int Cmdline_no_deferred_lighting;
 extern bool Cmdline_deferred_lighting_cockpit;
 extern int Cmdline_emissive;
 extern int Cmdline_aniso_level;
+extern bool Cmdline_msaa_enabled;
 
 // Game Speed related
 extern int Cmdline_NoFPSCap;
