@@ -2529,12 +2529,15 @@ int stuff_float(float *f, bool optional)
 	if (success)
 		Mp = str_end;
 
-	// if an unexpected character is part of the number, the number parsing should fail
+	// if an unexpected character is part of the number, warn about it
 	if (success && unexpected_numeric_char(*Mp))
 	{
-		Mp = str_start;
-		success = false;
-		error_display(1, "Expected float, found [%.32s].\n", next_tokens(true));
+		error_display(0, "Expected float, found [%.32s].\n", next_tokens(true));
+		// Rather than back up to str_start, do what retail did and continue
+		// merrily parsing along at the next character.  (Optional numbers
+		// will still back up to str_start - c.f. a few lines down.)
+		if (optional)
+			success = false;
 	}
 
 	if (check_first_non_grayspace_char(Mp, ',', &Mp))
@@ -2597,12 +2600,15 @@ int stuff_int(int *i, bool optional)
 	if (success)
 		Mp += span;
 
-	// if an unexpected character is part of the number, the number parsing should fail
+	// if an unexpected character is part of the number, warn about it
 	if (success && unexpected_numeric_char(*Mp))
 	{
-		Mp = str_start;
-		success = false;
-		error_display(1, "Expected int, found [%.32s].\n", next_tokens(true));
+		error_display(0, "Expected int, found [%.32s].\n", next_tokens(true));
+		// Rather than back up to str_start, do what retail did and continue
+		// merrily parsing along at the next character.  (Optional numbers
+		// will still back up to str_start - c.f. a few lines down.)
+		if (optional)
+			success = false;
 	}
 
 	if (check_first_non_grayspace_char(Mp, ',', &Mp))
@@ -2665,12 +2671,15 @@ int stuff_long(long *l, bool optional)
 	if (success)
 		Mp += span;
 
-	// if an unexpected character is part of the number, the number parsing should fail
+	// if an unexpected character is part of the number, warn about it
 	if (success && unexpected_numeric_char(*Mp))
 	{
-		Mp = str_start;
-		success = false;
-		error_display(1, "Expected long, found [%.32s].\n", next_tokens(true));
+		error_display(0, "Expected long, found [%.32s].\n", next_tokens(true));
+		// Rather than back up to str_start, do what retail did and continue
+		// merrily parsing along at the next character.  (Optional numbers
+		// will still back up to str_start - c.f. a few lines down.)
+		if (optional)
+			success = false;
 	}
 
 	if (check_first_non_grayspace_char(Mp, ',', &Mp))
