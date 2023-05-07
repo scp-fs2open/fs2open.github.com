@@ -44,7 +44,8 @@ void main()
 
 	for(int i = 0; i < samples; i++) {
 		vec4 localPos = texelFetch(texPos, texel, i);
-		float localWeight = smoothstep(minDist + minDist * texelWidthFactor * (voxelDepth + voxelDepthFalloff), minDist + minDist * texelWidthFactor * voxelDepth, localPos.z);
+		//Calculate local weight from distance Voxel, but if the distance is 0 (i.e. no model at all), set weight to 1 to allow stuff like background emissive
+		float localWeight = max(step(-0.001, minDist), smoothstep(minDist + minDist * texelWidthFactor * (voxelDepth + voxelDepthFalloff), minDist + minDist * texelWidthFactor * voxelDepth, localPos.z));
 
 		pos += localPos * localWeight;
 		color += texelFetch(texColor, texel, i) * localWeight;
