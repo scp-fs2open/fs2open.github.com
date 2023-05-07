@@ -7841,8 +7841,13 @@ void ship_render_player_ship(object* objp) {
 
 	Shadow_view_matrix_render = gr_view_matrix;
 
-	if (Cmdline_deferred_lighting_cockpit)
+	if (Cmdline_deferred_lighting_cockpit) {
 		gr_deferred_lighting_begin(true);
+
+		//When MSAA is enabled, we've just switched to the MS buffer. These still have the Z-Buffer we saved earlier, so clear that too
+		if(Cmdline_msaa_enabled)
+			gr_zbuffer_clear(true);
+	}
 
 	uint render_flags = MR_NORMAL;
 	render_flags |= MR_NO_FOGGING;
