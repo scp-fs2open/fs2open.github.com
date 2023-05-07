@@ -227,6 +227,7 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/bloom-comp-f.sdr
 	def_files/data/effects/blur-f.sdr
 	def_files/data/effects/brightpass-f.sdr
+	def_files/data/effects/copy-f.sdr
 	def_files/data/effects/decal-f.sdr
 	def_files/data/effects/decal-v.sdr
 	def_files/data/effects/deferred-clear-f.sdr
@@ -251,6 +252,7 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/main-g.sdr
 	def_files/data/effects/main-v.sdr
 	def_files/data/effects/model_shader_flags.h
+	def_files/data/effects/msaa-f.sdr
 	def_files/data/effects/nanovg-f.sdr
 	def_files/data/effects/nanovg-v.sdr
 	def_files/data/effects/normals.sdr

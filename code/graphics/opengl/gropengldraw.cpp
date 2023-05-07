@@ -635,7 +635,7 @@ void gr_opengl_scene_texture_begin()
 	TRACE_SCOPE(tracing::SceneTextureBegin);
 
 	GL_state.PushFramebufferState();
-	GL_state.BindFrameBuffer(Cmdline_msaa_enabled ? Scene_framebuffer_ms : Scene_framebuffer);
+	GL_state.BindFrameBuffer(Scene_framebuffer);
 
 	if (GL_rendering_to_texture)
 	{
@@ -662,6 +662,18 @@ void gr_opengl_scene_texture_begin()
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		opengl_clear_deferred_buffers();
+
+		if (Cmdline_msaa_enabled) {
+			GL_state.BindFrameBuffer(Scene_framebuffer_ms);
+
+			glDrawBuffers(6, buffers);
+
+			glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			opengl_clear_deferred_buffers();
+
+			GL_state.BindFrameBuffer(Scene_framebuffer);
+		}
 
 		glDrawBuffer(GL_COLOR_ATTACHMENT0);
 	}

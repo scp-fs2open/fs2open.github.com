@@ -60,22 +60,36 @@ void gr_opengl_deferred_lighting_begin(bool clearNonColorBufs)
 	if ( Cmdline_no_deferred_lighting)
 		return;
 
+	static const float black[] = {0, 0, 0, 1.0f};
+
 	GR_DEBUG_SCOPE("Deferred lighting begin");
 
 	Deferred_lighting = true;
 	GL_state.ColorMask(true, true, true, true);
-
-	// Copy the existing color data into the emissive part of the G-buffer since everything that already existed is
-	// treated as emissive
-	glDrawBuffer(GL_COLOR_ATTACHMENT4);
-	glReadBuffer(GL_COLOR_ATTACHMENT0);
-	glBlitFramebuffer(0, 0, gr_screen.max_w, gr_screen.max_h, 0, 0, gr_screen.max_w, gr_screen.max_h, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-
+	
 	GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4, GL_COLOR_ATTACHMENT6 };
+
+	if (Cmdline_msaa_enabled) {
+		//Ensure MSAA Mode if necessary
+		GL_state.BindFrameBuffer(Scene_framebuffer_ms);
+		glDrawBuffer(GL_COLOR_ATTACHMENT4);
+
+		opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_COPY, 0));
+		GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_color_texture);
+		Current_shader->program->Uniforms.setTextureUniform("tex", 0);
+		GL_state.SetAlphaBlendMode(gr_alpha_blend::ALPHA_BLEND_NONE);
+		GL_state.SetZbufferType(ZBUFFER_TYPE_NONE);
+		opengl_draw_full_screen_textured(0, 0, 1, 1);
+	} else {
+		// Copy the existing color data into the emissive part of the G-buffer since everything that already existed is
+		// treated as emissive
+		glDrawBuffer(GL_COLOR_ATTACHMENT4);
+		glReadBuffer(GL_COLOR_ATTACHMENT0);
+		glBlitFramebuffer(0, 0, gr_screen.max_w, gr_screen.max_h, 0, 0, gr_screen.max_w, gr_screen.max_h, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+	}
+	
 	glDrawBuffers(6, buffers);
-
-	static const float black[] = { 0, 0, 0, 1.0f };
-
 	glClearBufferfv(GL_COLOR, 0, black);
 	if (clearNonColorBufs) {
 		glClearBufferfv(GL_COLOR, 1, black);
@@ -114,7 +128,7 @@ void gr_opengl_deferred_lighting_end()
 				0,
 				gr_screen.max_w,
 				gr_screen.max_h,
-				GL_COLOR_BUFFER_BIT,
+				GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT,
 				GL_NEAREST);
 		}
 		
