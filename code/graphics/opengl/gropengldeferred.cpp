@@ -156,7 +156,6 @@ void gr_opengl_deferred_lighting_end()
 		Current_shader->program->Uniforms.setTextureUniform("texDepth", 5);
 		opengl_set_generic_uniform_data<graphics::generic_data::msaa_data>([&](graphics::generic_data::msaa_data* data) {
 			data->samples = 4;
-			data->aspect = gr_screen.clip_aspect;
 			data->fov = Proj_fov;
 		});
 		GL_state.SetAlphaBlendMode(gr_alpha_blend::ALPHA_BLEND_NONE);
