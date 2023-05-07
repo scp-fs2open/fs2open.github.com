@@ -107,7 +107,7 @@ void gr_opengl_deferred_lighting_end()
 	GR_DEBUG_SCOPE("Deferred lighting end");
 
 	if (Cmdline_msaa_enabled) {
-		GL_state.BindFrameBuffer(Scene_framebuffer, GL_DRAW_FRAMEBUFFER);
+		/* GL_state.BindFrameBuffer(Scene_framebuffer, GL_DRAW_FRAMEBUFFER);
 		GL_state.BindFrameBuffer(Scene_framebuffer_ms, GL_READ_FRAMEBUFFER);
 
 		GLenum buffers[] = {GL_COLOR_ATTACHMENT0,
@@ -131,8 +131,38 @@ void gr_opengl_deferred_lighting_end()
 				GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT,
 				GL_NEAREST);
 		}
-		
+		*/
 		GL_state.BindFrameBuffer(Scene_framebuffer);
+
+		GLenum buffers[] = {GL_COLOR_ATTACHMENT0,
+			GL_COLOR_ATTACHMENT1,
+			GL_COLOR_ATTACHMENT2,
+			GL_COLOR_ATTACHMENT3,
+			GL_COLOR_ATTACHMENT4,
+			GL_COLOR_ATTACHMENT6};
+		glDrawBuffers(6, buffers);
+
+		opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_MSAA_RESOLVE, 0));
+		GL_state.Texture.Enable(0, GL_TEXTURE_2D_MULTISAMPLE, Scene_color_texture_ms);
+		GL_state.Texture.Enable(1, GL_TEXTURE_2D_MULTISAMPLE, Scene_position_texture_ms);
+		GL_state.Texture.Enable(2, GL_TEXTURE_2D_MULTISAMPLE, Scene_normal_texture_ms);
+		GL_state.Texture.Enable(3, GL_TEXTURE_2D_MULTISAMPLE, Scene_specular_texture_ms);
+		GL_state.Texture.Enable(4, GL_TEXTURE_2D_MULTISAMPLE, Scene_emissive_texture_ms);
+		GL_state.Texture.Enable(5, GL_TEXTURE_2D_MULTISAMPLE, Scene_depth_texture_ms);
+		Current_shader->program->Uniforms.setTextureUniform("texColor", 0);
+		Current_shader->program->Uniforms.setTextureUniform("texPos", 1);
+		Current_shader->program->Uniforms.setTextureUniform("texNormal", 2);
+		Current_shader->program->Uniforms.setTextureUniform("texSpecular", 3);
+		Current_shader->program->Uniforms.setTextureUniform("texEmissive", 4);
+		Current_shader->program->Uniforms.setTextureUniform("texDepth", 5);
+		opengl_set_generic_uniform_data<graphics::generic_data::msaa_data>([&](graphics::generic_data::msaa_data* data) {
+			data->samples = 4;
+			data->aspect = gr_screen.clip_aspect;
+			data->fov = Proj_fov;
+		});
+		GL_state.SetAlphaBlendMode(gr_alpha_blend::ALPHA_BLEND_NONE);
+		GL_state.SetZbufferType(ZBUFFER_TYPE_WRITE);
+		opengl_draw_full_screen_textured(0, 0, 1, 1);
 	}
 
 	Deferred_lighting = false;

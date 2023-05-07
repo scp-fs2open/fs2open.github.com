@@ -1,9 +1,52 @@
 in vec4 fragTexCoord;
 out vec4 fragOut0;
+out vec4 fragOut1;
+out vec4 fragOut2;
+out vec4 fragOut3;
+out vec4 fragOut4;
+out vec4 fragOut5;
+out float gl_FragDepth;
 
-uniform sampler2D tex;
+uniform sampler2DMS texColor;
+uniform sampler2DMS texPos;
+uniform sampler2DMS texNormal;
+uniform sampler2DMS texSpecular;
+uniform sampler2DMS texEmissive;
+uniform sampler2DMS texDepth;
+
+layout (std140) uniform genericData {
+	int samples;
+	float aspect;
+	float fov;
+};
 
 void main()
 {
-	fragOut0 = texture(tex, fragTexCoord.xy);
+	float weight = 0.0f;
+	ivec2 texel = ivec2(textureSize(texColor) * fragTexCoord.xy);
+
+	vec4 color = vec4(0);
+	vec4 pos = vec4(0);
+	vec4 normal = vec4(0);
+	vec4 specular = vec4(0);
+	vec4 emissive = vec4(0);
+	float depth = 0;
+
+	for(int i = 0; i < 1; i++) {
+		color += texelFetch(texColor, texel, i);
+		pos += texelFetch(texPos, texel, i);
+		normal += texelFetch(texNormal, texel, i);
+		specular += texelFetch(texSpecular, texel, i);
+		emissive += texelFetch(texEmissive, texel, i);
+		depth += texelFetch(texDepth, texel, i).x;
+		weight += 1.0f;
+	}
+
+	fragOut0 = color / weight;
+	fragOut1 = pos / weight;
+	fragOut2 = vec4(normalize(normal.xyz), normal.a / weight);
+	fragOut3 = specular / weight;
+	fragOut4 = emissive / weight;
+	fragOut5 = vec4(0);
+	gl_FragDepth = depth / weight;
 }

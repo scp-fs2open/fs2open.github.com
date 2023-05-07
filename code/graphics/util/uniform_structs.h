@@ -341,6 +341,13 @@ struct volumetric_fog_data {
 	float pad[2];
 };
 
+struct msaa_data {
+	int samples;
+	float aspect;
+	float fov;
+	float pad[1];
+};
+
 struct blur_data {
 	float texSize;
 	int level;
