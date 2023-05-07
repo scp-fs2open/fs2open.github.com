@@ -32,21 +32,21 @@ void main()
 	vec4 emissive = vec4(0);
 	float depth = 0;
 
-	for(int i = 0; i < 1; i++) {
+	for(int i = 0; i < samples; i++) {
+		vec4 posLocal = texelFetch(texPos, texel, i);
 		color += texelFetch(texColor, texel, i);
-		pos += texelFetch(texPos, texel, i);
+		pos += posLocal;
 		normal += texelFetch(texNormal, texel, i);
 		specular += texelFetch(texSpecular, texel, i);
-		emissive += texelFetch(texEmissive, texel, i);
+		emissive += texelFetch(texEmissive, texel, i) + step(posLocal.z, -100);
 		depth += texelFetch(texDepth, texel, i).x;
 		weight += 1.0f;
 	}
 
 	fragOut0 = color / weight;
 	fragOut1 = pos / weight;
-	fragOut2 = vec4(normalize(normal.xyz), normal.a / weight);
+	fragOut2 = normalize(normal);
 	fragOut3 = specular / weight;
 	fragOut4 = emissive / weight;
-	fragOut5 = vec4(0);
 	gl_FragDepth = depth / weight;
 }

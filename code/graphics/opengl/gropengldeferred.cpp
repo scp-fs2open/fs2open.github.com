@@ -138,9 +138,8 @@ void gr_opengl_deferred_lighting_end()
 			GL_COLOR_ATTACHMENT1,
 			GL_COLOR_ATTACHMENT2,
 			GL_COLOR_ATTACHMENT3,
-			GL_COLOR_ATTACHMENT4,
-			GL_COLOR_ATTACHMENT6};
-		glDrawBuffers(6, buffers);
+			GL_COLOR_ATTACHMENT4};
+		glDrawBuffers(5, buffers);
 
 		opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_MSAA_RESOLVE, 0));
 		GL_state.Texture.Enable(0, GL_TEXTURE_2D_MULTISAMPLE, Scene_color_texture_ms);
