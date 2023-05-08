@@ -379,7 +379,7 @@ bool Cmdline_force_lightshaft_off = false;
 int Cmdline_no_deferred_lighting = 0;
 bool Cmdline_deferred_lighting_cockpit = false;
 int Cmdline_aniso_level = 0;
-bool Cmdline_msaa_enabled = false;
+int Cmdline_msaa_enabled = 0;
 
 // Game Speed related
 cmdline_parm no_fpscap("-no_fps_capping", "Don't limit frames-per-second", AT_NONE);	// Cmdline_NoFPSCap
@@ -1935,7 +1935,7 @@ bool SetCmdlineParams()
 	}
 
 	if (msaa_enabled_arg.found()) {
-		Cmdline_msaa_enabled = true;
+		Cmdline_msaa_enabled = msaa_enabled_arg.get_int();
 	}
 
 	if ( glow_arg.found() )

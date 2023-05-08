@@ -69,7 +69,7 @@ void gr_opengl_deferred_lighting_begin(bool clearNonColorBufs)
 	
 	GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4, GL_COLOR_ATTACHMENT6 };
 
-	if (Cmdline_msaa_enabled) {
+	if (Cmdline_msaa_enabled > 0) {
 		//Ensure MSAA Mode if necessary
 		GL_state.BindFrameBuffer(Scene_framebuffer_ms);
 		glDrawBuffer(GL_COLOR_ATTACHMENT4);
@@ -106,7 +106,7 @@ void gr_opengl_deferred_lighting_end()
 
 	GR_DEBUG_SCOPE("Deferred lighting end");
 
-	if (Cmdline_msaa_enabled) {
+	if (Cmdline_msaa_enabled > 0) {
 		/* GL_state.BindFrameBuffer(Scene_framebuffer, GL_DRAW_FRAMEBUFFER);
 		GL_state.BindFrameBuffer(Scene_framebuffer_ms, GL_READ_FRAMEBUFFER);
 
@@ -155,7 +155,7 @@ void gr_opengl_deferred_lighting_end()
 		Current_shader->program->Uniforms.setTextureUniform("texEmissive", 4);
 		Current_shader->program->Uniforms.setTextureUniform("texDepth", 5);
 		opengl_set_generic_uniform_data<graphics::generic_data::msaa_data>([&](graphics::generic_data::msaa_data* data) {
-			data->samples = 4;
+			data->samples = Cmdline_msaa_enabled;
 			data->fov = Proj_fov;
 		});
 		GL_state.SetAlphaBlendMode(gr_alpha_blend::ALPHA_BLEND_NONE);

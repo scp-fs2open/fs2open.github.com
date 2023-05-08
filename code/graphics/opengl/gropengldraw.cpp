@@ -368,7 +368,7 @@ void opengl_setup_scene_textures()
 		return;
 	}
 
-	if (Cmdline_msaa_enabled) {
+	if (Cmdline_msaa_enabled > 0) {
 		// create framebuffer
 		glGenFramebuffers(1, &Scene_framebuffer_ms);
 		GL_state.BindFrameBuffer(Scene_framebuffer_ms);
@@ -382,7 +382,7 @@ void opengl_setup_scene_textures()
 		GL_state.Texture.Enable(Scene_color_texture_ms);
 
 		glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE,
-			4,
+			Cmdline_msaa_enabled,
 			GL_RGBA16F,
 			Scene_texture_width,
 			Scene_texture_height,
@@ -403,7 +403,7 @@ void opengl_setup_scene_textures()
 		GL_state.Texture.Enable(Scene_position_texture_ms);
 
 		glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE,
-			4,
+			Cmdline_msaa_enabled,
 			GL_RGBA16F,
 			Scene_texture_width,
 			Scene_texture_height,
@@ -424,7 +424,7 @@ void opengl_setup_scene_textures()
 		GL_state.Texture.Enable(Scene_normal_texture_ms);
 
 		glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE,
-			4,
+			Cmdline_msaa_enabled,
 			GL_RGBA16F,
 			Scene_texture_width,
 			Scene_texture_height,
@@ -445,7 +445,7 @@ void opengl_setup_scene_textures()
 		GL_state.Texture.Enable(Scene_specular_texture_ms);
 
 		glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE,
-			4,
+			Cmdline_msaa_enabled,
 			GL_RGBA8,
 			Scene_texture_width,
 			Scene_texture_height,
@@ -466,7 +466,7 @@ void opengl_setup_scene_textures()
 		GL_state.Texture.Enable(Scene_emissive_texture_ms);
 
 		glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE,
-			4,
+			Cmdline_msaa_enabled,
 			GL_RGBA16F,
 			Scene_texture_width,
 			Scene_texture_height,
@@ -486,7 +486,7 @@ void opengl_setup_scene_textures()
 		GL_state.Texture.Enable(Scene_depth_texture_ms);
 
 		glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE,
-			4,
+			Cmdline_msaa_enabled,
 			GL_DEPTH_COMPONENT24,
 			Scene_texture_width,
 			Scene_texture_height,
@@ -663,7 +663,7 @@ void gr_opengl_scene_texture_begin()
 
 		opengl_clear_deferred_buffers();
 
-		if (Cmdline_msaa_enabled) {
+		if (Cmdline_msaa_enabled > 0) {
 			GL_state.BindFrameBuffer(Scene_framebuffer_ms);
 
 			glDrawBuffers(6, buffers);

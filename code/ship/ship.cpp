@@ -7845,7 +7845,7 @@ void ship_render_player_ship(object* objp) {
 		gr_deferred_lighting_begin(true);
 
 		//When MSAA is enabled, we've just switched to the MS buffer. These still have the Z-Buffer we saved earlier, so clear that too
-		if(Cmdline_msaa_enabled)
+		if(Cmdline_msaa_enabled > 0)
 			gr_zbuffer_clear(true);
 	}
 
