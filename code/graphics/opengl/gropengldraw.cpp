@@ -369,6 +369,23 @@ void opengl_setup_scene_textures()
 	}
 
 	if (Cmdline_msaa_enabled > 0) {
+		glEnable(GL_MULTISAMPLE);
+
+		// Make sure our MSAA setting are valid
+		int maxSamples;
+		glGetIntegerv(GL_MAX_SAMPLES, &maxSamples);
+		if (maxSamples < Cmdline_msaa_enabled) {
+			Warning(LOCATION, "Requested MSAA level of %d is not supported by the GPU. Max MSAA level is %d.", Cmdline_msaa_enabled, maxSamples);
+			Cmdline_msaa_enabled = maxSamples;
+		}
+		else if (Cmdline_msaa_enabled & (Cmdline_msaa_enabled - 1)) {
+			int newLevel = 1 << (sizeof(int) * 8 - 2);
+			while ((newLevel & Cmdline_msaa_enabled) == 0)
+				newLevel = newLevel >> 1;
+			Warning(LOCATION, "Requested MSAA level of %d is not a power of 2. Setting to %d.", Cmdline_msaa_enabled, newLevel);
+			Cmdline_msaa_enabled = newLevel;
+		}
+
 		// create framebuffer
 		glGenFramebuffers(1, &Scene_framebuffer_ms);
 		GL_state.BindFrameBuffer(Scene_framebuffer_ms);
