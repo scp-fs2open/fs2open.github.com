@@ -776,7 +776,7 @@ namespace animation {
 	}
 
 	ModelAnimationSet::AnimationList ModelAnimationSet::get(polymodel_instance* pmi, ModelAnimationTriggerType type, const SCP_string& name, int subtype) const {
-		if (pmi == nullptr)
+		if (pmi == nullptr || pmi->id < 0)
 			return ModelAnimationSet::AnimationList();
 
 		ModelAnimationSet::AnimationList list{ pmi };
@@ -805,7 +805,7 @@ namespace animation {
 	}
 
 	ModelAnimationSet::AnimationList ModelAnimationSet::getAll(polymodel_instance* pmi, ModelAnimationTriggerType type, int subtype, bool strict) const {
-		if (pmi == nullptr)
+		if (pmi == nullptr || pmi->id < 0)
 			return ModelAnimationSet::AnimationList();
 
 		ModelAnimationSet::AnimationList list{ pmi };
@@ -831,7 +831,7 @@ namespace animation {
 	}
 
 	ModelAnimationSet::AnimationList ModelAnimationSet::getBlanket(polymodel_instance* pmi, ModelAnimationTriggerType type) const {
-		if (pmi == nullptr)
+		if (pmi == nullptr || pmi->id < 0)
 			return ModelAnimationSet::AnimationList();
 
 		ModelAnimationSet::AnimationList list{ pmi };
@@ -850,7 +850,7 @@ namespace animation {
 
 	//Yes why of course does this need special handling...
 	ModelAnimationSet::AnimationList ModelAnimationSet::getDockBayDoors(polymodel_instance* pmi, int subtype) const {
-		if (pmi == nullptr)
+		if (pmi == nullptr || pmi->id < 0)
 			return ModelAnimationSet::AnimationList();
 
 		ModelAnimationSet::AnimationList list{ pmi };
@@ -903,6 +903,9 @@ namespace animation {
 	}
 
 	bool ModelAnimationSet::AnimationList::start(ModelAnimationDirection direction, bool forced, bool instant, bool pause) const {
+		if (pmi_id < 0)
+			return false;
+
 		polymodel_instance* pmi = model_get_instance(pmi_id);
 		for(auto anim : animations)
 			anim->start(pmi, direction, forced, instant, pause);
@@ -911,6 +914,9 @@ namespace animation {
 	}
 
 	int ModelAnimationSet::AnimationList::getTime() const {
+		if (pmi_id < 0)
+			return 0.0f;
+
 		float duration = 0.0f;
 
 		for (const auto& anim : animations) {
@@ -924,11 +930,17 @@ namespace animation {
 	}
 
 	void ModelAnimationSet::AnimationList::setFlag(Animation_Instance_Flags flag, bool set) const {
+		if (pmi_id < 0)
+			return;
+
 		for (const auto& anim : animations)
 			anim->m_instances[pmi_id].instance_flags.set(flag, set);
 	}
 
 	void ModelAnimationSet::AnimationList::setSpeed(float speed) const {
+		if (pmi_id < 0)
+			return;
+
 		for (const auto& anim : animations)
 			anim->m_instances[pmi_id].speed = speed;
 	};
