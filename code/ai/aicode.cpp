@@ -3338,6 +3338,8 @@ void ai_do_objects_undocked_stuff( object *docker, object *dockee )
 		dockee_aip->support_ship_objnum = -1;
 		docker_aip->support_ship_signature = -1;
 		dockee_aip->support_ship_signature = -1;
+		// clear out points for docker 
+		docker_aip->path_start = -1;
 	}
 
 	// unlink the two objects
