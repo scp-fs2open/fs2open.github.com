@@ -2153,11 +2153,9 @@ void validate_mission_goals(int objnum, ai_info *aip)
 
 	// if the active goal is a rearm/repair or undock goal, 
 	// then put all other valid goals (which are not rearm/repair or undock goals) on hold
-	if ( (aip->goals[0].ai_mode == AI_GOAL_REARM_REPAIR || aip->goals[0].ai_mode == AI_GOAL_UNDOCK) &&
-		object_is_docked(&Objects[objnum]) ) {
+	if ( (aip->goals[0].ai_mode == AI_GOAL_REARM_REPAIR || aip->goals[0].ai_mode == AI_GOAL_UNDOCK) && object_is_docked(&Objects[objnum]) ) {
 		for ( i = 1; i < MAX_AI_GOALS; i++ ) {
-			if ( (aip->goals[i].ai_mode == AI_GOAL_NONE) ||
-				(aip->goals[i].ai_mode == AI_GOAL_UNDOCK || aip->goals[i].ai_mode == AI_GOAL_REARM_REPAIR) )
+			if ( aip->goals[i].ai_mode == AI_GOAL_NONE || aip->goals[i].ai_mode == AI_GOAL_REARM_REPAIR || aip->goals[i].ai_mode == AI_GOAL_UNDOCK )
 				continue;
 			aip->goals[i].flags.set(AI::Goal_Flags::Goal_on_hold);
 		}
