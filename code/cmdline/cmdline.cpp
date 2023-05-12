@@ -1936,6 +1936,17 @@ bool SetCmdlineParams()
 
 	if (msaa_enabled_arg.found()) {
 		Cmdline_msaa_enabled = msaa_enabled_arg.get_int();
+		switch (Cmdline_msaa_enabled) {
+		case 0:
+		case 4:
+		case 8:
+		case 16:
+			break;
+		default:
+			Warning(LOCATION, "Requested illegal MSAA sample count %d. Allowed are: 0, 4, 8, 16. Setting to 0.", Cmdline_msaa_enabled);
+			Cmdline_msaa_enabled = 0;
+			break;
+		}
 	}
 
 	if ( glow_arg.found() )
