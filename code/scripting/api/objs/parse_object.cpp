@@ -87,6 +87,35 @@ ADE_VIRTVAR(
 	return ade_set_args(L, "s", poh->getObject()->get_display_name());
 }
 
+ADE_FUNC(isPlayer, l_ParseObject, nullptr, "Checks whether the parsed ship is a player ship", "boolean", "Whether the parsed ship is a player ship")
+{
+	parse_object_h *poh = nullptr;
+	if (!ade_get_args(L, "o", l_ParseObject.GetPtr(&poh)))
+		return ade_set_error(L, "b", false);
+
+	if (!poh->isValid())
+		return ade_set_error(L, "b", false);
+
+	// singleplayer
+	if (!(Game_mode & GM_MULTIPLAYER))
+	{
+		if (poh->getObject()->flags[Mission::Parse_Object_Flags::OF_Player_start])
+			return ADE_RETURN_TRUE;
+		else
+			return ADE_RETURN_FALSE;
+	}
+	// multiplayer
+	else
+	{
+		// try and find the player
+		int np_index = multi_find_player_by_parse_object(poh->getObject());
+		if ((np_index >= 0) && (np_index < MAX_PLAYERS))
+			return ADE_RETURN_TRUE;
+		else
+			return ADE_RETURN_FALSE;
+	}
+}
+
 ADE_FUNC(setFlag, l_ParseObject, "boolean set_it, string flag_name", "Sets or clears one or more flags - this function can accept an arbitrary number of flag arguments.  The flag names can be any string that the alter-ship-flag SEXP operator supports.", nullptr, "Returns nothing")
 {
 	parse_object_h *poh = nullptr;

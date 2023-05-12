@@ -24,6 +24,7 @@
 #include "mission/missionlog.h"
 #include "mission/missionmessage.h"
 #include "model/model.h"
+#include "network/multiutil.h"
 #include "object/object.h"
 #include "object/objectdock.h"
 #include "parse/parselo.h"
@@ -409,6 +410,35 @@ ADE_VIRTVAR(DisplayName, l_Ship, "string", "Ship display name", "string", "The d
 	}
 
 	return ade_set_args(L, "s", shipp->display_name.c_str());
+}
+
+ADE_FUNC(isPlayer, l_Ship, nullptr, "Checks whether the ship is a player ship", "boolean", "Whether the ship is a player ship")
+{
+	object_h* objh;
+	if (!ade_get_args(L, "o", l_Ship.GetPtr(&objh)))
+		return ade_set_error(L, "b", false);
+
+	if (!objh->IsValid())
+		return ade_set_error(L, "b", false);
+
+	// singleplayer
+	if (!(Game_mode & GM_MULTIPLAYER))
+	{
+		if (Player_obj == objh->objp)
+			return ADE_RETURN_TRUE;
+		else
+			return ADE_RETURN_FALSE;
+	}
+	// multiplayer
+	else
+	{
+		// try and find the player
+		int np_index = multi_find_player_by_object(objh->objp);
+		if ((np_index >= 0) && (np_index < MAX_PLAYERS))
+			return ADE_RETURN_TRUE;
+		else
+			return ADE_RETURN_FALSE;
+	}
 }
 
 ADE_VIRTVAR(AfterburnerFuelLeft, l_Ship, "number", "Afterburner fuel left", "number", "Afterburner fuel left, or 0 if handle is invalid")
