@@ -945,7 +945,7 @@ void VirtualPOFOperationAddPath::process(polymodel* pm, model_read_deferred_task
 	int submodel_index = -1;
 	bool clear_parent = false;
 	if (targetParentSubsystem) {
-		if (*targetParentSubsystem == "<none>")
+		if (SCP_string_lcase_equal_to()(*targetParentSubsystem, "<none>"))
 			clear_parent = true;
 		else
 			submodel_index = model_find_submodel_index(pm, targetParentSubsystem->c_str());
