@@ -374,8 +374,13 @@ void opengl_setup_scene_textures()
 		// Make sure our MSAA setting are valid
 		int maxSamples;
 		glGetIntegerv(GL_MAX_SAMPLES, &maxSamples);
+
+		//Disallow >16 samples due to manual sorting networks in shader
+		if (maxSamples > 16)
+			maxSamples = 16;
+
 		if (maxSamples < Cmdline_msaa_enabled) {
-			Warning(LOCATION, "Requested MSAA level of %d is not supported by the GPU. Max MSAA level is %d.", Cmdline_msaa_enabled, maxSamples);
+			Warning(LOCATION, "Requested MSAA level of %d is not supported. Max MSAA level is %d.", Cmdline_msaa_enabled, maxSamples);
 			Cmdline_msaa_enabled = maxSamples;
 		}
 		else if (Cmdline_msaa_enabled & (Cmdline_msaa_enabled - 1)) {

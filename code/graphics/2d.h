@@ -229,6 +229,10 @@ enum shader_type {
 
 #define SDR_FLAG_DECAL_USE_NORMAL_MAP (1<<0)
 
+#define SDR_FLAG_MSAA_SAMPLES_4 (1 << 0)
+#define SDR_FLAG_MSAA_SAMPLES_8 (1 << 1)
+#define SDR_FLAG_MSAA_SAMPLES_16 (1 << 2)
+
 #define SDR_FLAG_VOLUMETRICS_DO_EDGE_SMOOTHING (1<<0)
 #define SDR_FLAG_VOLUMETRICS_NOISE (1<<1)
 

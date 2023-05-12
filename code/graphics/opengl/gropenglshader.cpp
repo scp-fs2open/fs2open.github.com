@@ -199,6 +199,12 @@ static opengl_shader_variant_t GL_shader_variants[] = {
 
 	{SDR_TYPE_DECAL, false, SDR_FLAG_DECAL_USE_NORMAL_MAP, "USE_NORMAL_MAP", {}, "Decal use scene normal map"},
 
+	{SDR_TYPE_MSAA_RESOLVE, false, SDR_FLAG_MSAA_SAMPLES_4, "SAMPLES_4", {}, "Sets the MSAA resolve shader to 4 samples"},
+
+	{SDR_TYPE_MSAA_RESOLVE, false, SDR_FLAG_MSAA_SAMPLES_8, "SAMPLES_8", {}, "Sets the MSAA resolve shader to 8 samples"},
+
+	{SDR_TYPE_MSAA_RESOLVE, false, SDR_FLAG_MSAA_SAMPLES_16, "SAMPLES_16", {}, "Sets the MSAA resolve shader to 16 samples"},
+
 	{SDR_TYPE_VOLUMETRIC_FOG, false, SDR_FLAG_VOLUMETRICS_DO_EDGE_SMOOTHING, "DO_EDGE_SMOOTHING", {}, "Perform costly edge smoothing lookups"},
 
 	{SDR_TYPE_VOLUMETRIC_FOG, false, SDR_FLAG_VOLUMETRICS_NOISE, "NOISE", {}, "Add noise to volumetrics"}

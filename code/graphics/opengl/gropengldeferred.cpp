@@ -141,7 +141,23 @@ void gr_opengl_deferred_lighting_end()
 			GL_COLOR_ATTACHMENT4};
 		glDrawBuffers(5, buffers);
 
-		opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_MSAA_RESOLVE, 0));
+		int msaa_resolve_flags = 0;
+		switch (Cmdline_msaa_enabled) {
+		case 4:
+			msaa_resolve_flags = SDR_FLAG_MSAA_SAMPLES_4;
+			break;
+		case 8:
+			msaa_resolve_flags = SDR_FLAG_MSAA_SAMPLES_8;
+			break;
+		case 16:
+			msaa_resolve_flags = SDR_FLAG_MSAA_SAMPLES_16;
+			break;
+		default:
+			UNREACHABLE("Disallowed MSAA shader sample count!");
+			break;
+		}
+
+		opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_MSAA_RESOLVE, msaa_resolve_flags));
 		GL_state.Texture.Enable(0, GL_TEXTURE_2D_MULTISAMPLE, Scene_color_texture_ms);
 		GL_state.Texture.Enable(1, GL_TEXTURE_2D_MULTISAMPLE, Scene_position_texture_ms);
 		GL_state.Texture.Enable(2, GL_TEXTURE_2D_MULTISAMPLE, Scene_normal_texture_ms);
