@@ -890,6 +890,13 @@ void VirtualPOFOperationAddDockPoint::process(polymodel* pm, model_read_deferred
 
 	if (renameDock) {
 		strcpy_s(pm->docking_bays[destdock].name, renameDock->c_str());
+
+		// the name has changed, so the type_flags should be regenerated;
+		// c.f. parsing ID_DOCK in modelread.cpp
+		if ( !strnicmp(pm->docking_bays[destdock].name, "cargo", 5) )
+			pm->docking_bays[destdock].type_flags = DOCK_TYPE_CARGO;
+		else
+			pm->docking_bays[destdock].type_flags = (DOCK_TYPE_REARM | DOCK_TYPE_GENERIC);
 	}
 }
 
