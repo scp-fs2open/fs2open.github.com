@@ -43,6 +43,10 @@ namespace animation {
 	}
 
 	std::function<float(polymodel_instance*)> parse_object_property_driver_source() {
+		auto precedence = parse_generic_property_driver_source();
+		if (precedence)
+			return precedence;
+
 		switch(optional_string_one_of(5,
 				"Speed",
 				"SpeedForward",
@@ -80,6 +84,10 @@ namespace animation {
 	}
 
 	std::function<float(polymodel_instance*)> parse_ship_property_driver_source() {
+		auto precedence = parse_object_property_driver_source();
+		if (precedence)
+			return precedence;
+
 		switch(optional_string_one_of(3,
 				"ETSShield",
 				"ETSEngine",
