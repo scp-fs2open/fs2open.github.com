@@ -877,6 +877,10 @@ void VirtualPOFOperationAddDockPoint::process(polymodel* pm, model_read_deferred
 			strcpy_s(pm->paths[i + splinefrom].parent_name, targetParentSubsystem->c_str());
 			pm->paths[i + splinefrom].parent_submodel = submodel_index;
 		}
+		else {
+			//Make sure that the path's parent name is cleared in this case
+			pm->paths[i + splinefrom].parent_name[0] = '\0';
+		}
 		auto renamed = renamePaths.find(pm->paths[i + splinefrom].name);
 		if (renamed != renamePaths.end()) {
 			strcpy_s(pm->paths[i + splinefrom].name, renamed->second.c_str());
@@ -938,26 +942,33 @@ void VirtualPOFOperationAddPath::process(polymodel* pm, model_read_deferred_task
 		return;
 	}
 
-	if (appendingPM->paths[sourcePathNr].parent_submodel >= 0 && !targetParentSubsystem) {
-		Warning(LOCATION, "Path %s must have a parent submodel specified for virtual POF %s. Returning original POF", sourcepath.c_str(), virtualPof.name.c_str());
-		return;
+	int submodel_index = -1;
+	bool clear_parent = false;
+	if (targetParentSubsystem) {
+		if (*targetParentSubsystem == "<none>")
+			clear_parent = true;
+		else
+			submodel_index = model_find_submodel_index(pm, targetParentSubsystem->c_str());
+		//Not finding this is okay, it means that the parent is a subsystem, not a submodel. Blame whoever designed this field to be double-function
 	}
 
-	int submodel_index = -1;
-	if (targetParentSubsystem) {
-		submodel_index = model_find_submodel_index(pm, targetParentSubsystem->c_str());
-		if (submodel_index < 0) {
-			Warning(LOCATION, "Submodel %s does not exist on POF %s for virtual POF %s. Returning original POF", targetParentSubsystem->c_str(), pm->filename, virtualPof.name.c_str());
-			return;
-		}
+	if (appendingPM->paths[sourcePathNr].parent_submodel >= 0 && submodel_index < 0) {
+		Warning(LOCATION, "Path %s must have a parent submodel specified for virtual POF %s. Returning original POF", sourcepath.c_str(), virtualPof.name.c_str());
+		return;
 	}
 
 	int destpath = reallocate_and_copy_array_vmalloc(pm->paths, pm->n_paths, 1);
 	pm->paths[destpath] = object_copy_including_array_member(appendingPM->paths[sourcePathNr], &model_path::nverts, &model_path::verts);
 
 	if (targetParentSubsystem) {
-		strcpy_s(pm->paths[destpath].parent_name, targetParentSubsystem->c_str());
-		pm->paths[destpath].parent_submodel = submodel_index;
+		if(clear_parent){
+			pm->paths[destpath].parent_name[0] = '\0';
+			pm->paths[destpath].parent_submodel = -1;
+		}
+		else {
+			strcpy_s(pm->paths[destpath].parent_name, targetParentSubsystem->c_str());
+			pm->paths[destpath].parent_submodel = submodel_index;
+		}
 	}
 
 	if (renamePath) {
