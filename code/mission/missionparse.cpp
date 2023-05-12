@@ -5270,6 +5270,7 @@ void parse_waypoints_and_jumpnodes(mission *pm)
 
 	char file_name[MAX_FILENAME_LEN] = { 0 };
 	char jump_name[NAME_LENGTH] = { 0 };
+	char jump_display_name[NAME_LENGTH] = {0};
 
 	while (optional_string("$Jump Node:")) {
 		stuff_vec3d(&pos);
@@ -5278,6 +5279,13 @@ void parse_waypoints_and_jumpnodes(mission *pm)
 		if (optional_string("$Jump Node Name:") || optional_string("+Jump Node Name:")) {
 			stuff_string(jump_name, F_NAME, NAME_LENGTH);
 			jnp.SetName(jump_name);
+		}
+
+		if (optional_string("+Display Name:")) {
+			stuff_string(jump_display_name, F_NAME, NAME_LENGTH);
+			jnp.SetDisplayName(jump_display_name);
+		} else {
+			jnp.SetDisplayName(jump_name);
 		}
 
 		if(optional_string("+Model File:")){

@@ -56,6 +56,7 @@
 #define IDD_WAYPOINT_PATH_EDITOR        210
 #define IDR_WAYPOINT_PATH_EDIT_MENU     211
 #define IDD_WING_CREATE                 212
+#define IDD_JUMPNODE_EDITOR				213
 #define IDD_INITIAL_STATUS              214
 #define IDD_ASTEROID_EDITOR             215
 #define IDD_CAMPAIGN                    216
@@ -66,6 +67,7 @@
 #define IDD_BRIEFING_EDITOR             221
 #define IDD_IGNORE_ORDERS               222
 #define IDD_DEBRIEFING_EDITOR           223
+#define IDR_JUMPNODE_EDIT_MENU     224
 #define IDB_OPERATOR                    226
 #define IDB_DATA                        227
 #define IDB_ROOT                        228
@@ -677,15 +679,21 @@
 #define IDC_USES_SPIN                   1306
 #define IDC_ADD                         1308
 #define IDC_BROWSE                      1309
+#define IDC_NODE_R                      1310
+#define IDC_NODE_G                      1311
 #define IDC_BEHAVIOR                    1312
 #define IDC_ARRIVAL_DELAY               1313
+#define IDC_NODE_B                      1314
 #define IDC_DEPARTURE_DELAY             1315
+#define IDC_NODE_A                      1316
+#define IDC_NODE_HIDDEN                 1317
 #define IDC_ARRIVAL_DELAY_SPIN          1318
 #define IDC_WING                        1321
 #define IDC_NAME                        1322
 #define IDC_REINFORCEMENT               1323
 #define IDC_MAIN_HALL                   1323
 #define IDC_DEBRIEFING_PERSONA          1324
+#define IDC_ALT_NAME                    1325
 #define IDC_DOCK1                       1327
 #define IDC_INNER_MIN_X                 1327
 #define IDC_DOCK2                       1328
@@ -1407,6 +1415,7 @@
 #define ID_ASTEROID_EDITOR              32984
 #define ID_RUN_FREESPACE                32985
 #define ID_EDITOR_CAMPAIGN              32986
+#define ID_EDITORS_JUMPNODE             32987
 #define ID_SHOW_IFF_9                   32988
 #define ID_SHOW_HOSTILE                 32989
 #define ID_SHOW_SHIPS                   32990

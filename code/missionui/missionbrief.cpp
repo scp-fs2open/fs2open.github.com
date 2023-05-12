@@ -26,6 +26,7 @@
 #include "io/key.h"
 #include "io/mouse.h"
 #include "io/timer.h"
+#include "jumpnode/jumpnode.h"
 #include "lighting/lighting.h"
 #include "menuui/snazzyui.h"
 #include "mission/missionbriefcommon.h"
@@ -1345,7 +1346,7 @@ int brief_setup_closeup(brief_icon *bi, bool api_access)
 		break;
 
 	case ICON_JUMP_NODE:
-		strcpy_s(pof_filename, NOX("subspacenode.pof"));
+		strcpy_s(pof_filename, NOX(JN_DEFAULT_MODEL));
 		if (Closeup_icon->closeup_label[0] == '\0') {
 			strcpy_s(Closeup_icon->closeup_label, XSTR("Jump Node", 432));
 		}

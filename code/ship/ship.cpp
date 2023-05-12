@@ -8486,7 +8486,7 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 		// the secondary mission log field
 		auto jnp = jumpnode_get_which_in(objp);
 		if (jnp)
-			jumpnode_name = jnp->GetName();
+			jumpnode_name = jnp->GetDisplayName();
 
 		mission_log_add_entry(LOG_SHIP_DEPARTED, shipp->ship_name, jumpnode_name, shipp->wingnum);
 	}

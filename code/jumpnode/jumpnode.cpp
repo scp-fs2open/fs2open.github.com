@@ -23,6 +23,7 @@ CJumpNode::CJumpNode()
     gr_init_alphacolor(&m_display_color, 0, 255, 0, 255);
 
 	m_name[0] = '\0';
+	m_display[0] = '\0';
 	
     m_pos.xyz.x = 0.0f;
     m_pos.xyz.y = 0.0f;
@@ -40,9 +41,12 @@ CJumpNode::CJumpNode(const vec3d* position)
 	
 	// Set m_name
 	sprintf(m_name, XSTR( "Jump Node %d", 632), Jump_nodes.size());
+
+	// Set m_display
+	sprintf(m_display, XSTR("Jump Node %d", 632), Jump_nodes.size());
 	
 	// Set m_modelnum and m_radius
-	m_modelnum = model_load(NOX("subspacenode.pof"), 0, NULL, 0);
+	m_modelnum = model_load(NOX(JN_DEFAULT_MODEL), 0, NULL, 0);
 	if (m_modelnum == -1) {
 		Warning(LOCATION, "Could not load default model for %s", m_name);
 	} else {
@@ -81,6 +85,7 @@ CJumpNode::CJumpNode(CJumpNode&& other) noexcept
 	m_pos = other.m_pos;
 
 	strcpy_s(m_name, other.m_name);
+	strcpy_s(m_display, other.m_display);
 }
 
 CJumpNode& CJumpNode::operator=(CJumpNode&& other) noexcept
@@ -103,6 +108,7 @@ CJumpNode& CJumpNode::operator=(CJumpNode&& other) noexcept
 		m_pos = other.m_pos;
 
 		strcpy_s(m_name, other.m_name);
+		strcpy_s(m_display, other.m_display);
 	}
 
 	return *this;
@@ -132,6 +138,14 @@ CJumpNode::~CJumpNode()
 const char *CJumpNode::GetName()
 {
 	return m_name;
+}
+
+/**
+ * @return Display Name of jump node
+ */
+const char* CJumpNode::GetDisplayName()
+{
+	return m_display;
 }
 
 /**
@@ -254,6 +268,18 @@ void CJumpNode::SetName(const char *new_name)
 	#endif
     
 	strcpy_s(m_name, new_name);
+}
+
+/**
+ * Set jump node name
+ *
+ * @param new_name New name to set
+ */
+void CJumpNode::SetDisplayName(const char* new_name)
+{
+	Assert(new_name != NULL);
+
+	strcpy_s(m_display, new_name);
 }
 
 /**
