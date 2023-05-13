@@ -107,6 +107,7 @@ void gr_opengl_deferred_lighting_end()
 	GR_DEBUG_SCOPE("Deferred lighting end");
 
 	if (Cmdline_msaa_enabled > 0) {
+		GR_DEBUG_SCOPE("MSAA Pass");
 		GL_state.BindFrameBuffer(Scene_framebuffer);
 
 		GLenum buffers[] = {GL_COLOR_ATTACHMENT0,
