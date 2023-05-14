@@ -19,12 +19,11 @@ typedef int profile_index;
 //*************************************************
 //			profile management
 //*************************************************
-TIMESTAMP switch_start;
-TIMESTAMP switch_end;
+//TIMESTAMP switch_start;
+//TIMESTAMP switch_end;
 
 profile _current;
-// SCP_unordered_map<typename Key, typename T, typename Hash>
-SCP_map<SCP_string, profile> Profiles;
+SCP_unordered_map<SCP_string, profile> Profiles;
 SCP_string default_profile_name;
 
 SCP_string default_name()
