@@ -20,6 +20,7 @@ void lab_exit() {
 	getLabManager()->notify_close();
 }
 
+namespace ltp = lighting_profiles;
 LabManager::LabManager() {
 	The_mission.Reset();
 
@@ -74,13 +75,14 @@ LabManager::LabManager() {
 
 	Game_mode |= GM_LAB;
 
+	using namespace ltp;
 	graphicsSettings = gfx_options();
-	graphicsSettings.ppcv = lighting_profile::lab_get_ppc();
-	graphicsSettings.ambient_factor = lighting_profile::lab_get_ambient();
-	graphicsSettings.light_factor = lighting_profile::lab_get_light();
-	graphicsSettings.emissive_factor = lighting_profile::lab_get_emissive();
-	graphicsSettings.exposure_level = lighting_profile::current_exposure();
-	graphicsSettings.tonemapper = lighting_profile::current_tonemapper();
+	graphicsSettings.ppcv = ltp::lab_get_ppc();
+	graphicsSettings.ambient_factor = ltp::lab_get_ambient();
+	graphicsSettings.light_factor = ltp::lab_get_light();
+	graphicsSettings.emissive_factor = ltp::lab_get_emissive();
+	graphicsSettings.exposure_level = ltp::current_exposure();
+	graphicsSettings.tonemapper = ltp::current_tonemapper();
 	graphicsSettings.bloom_level = gr_bloom_intensity();
 	graphicsSettings.aa_mode = Gr_aa_mode;
 }

@@ -1949,7 +1949,7 @@ void game_init()
 
 	cheat_table_init();
 
-	lighting_profile::load_profiles();
+	lighting_profiles::load_profiles();
 
 	// load the list of pilot pic filenames (for barracks and pilot select popup quick reference)
 	pilot_load_pic_list();	

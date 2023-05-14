@@ -303,16 +303,18 @@ void LabUi::build_antialiasing_combobox()
 		}
 	}
 }
+namespace ltp = lighting_profiles;
+using namespace ltp;
 
 void LabUi::build_tone_mapper_combobox()
 {
-	with_Combo("Tonemapper", lighting_profile::tonemapper_to_name(lighting_profile::current_tonemapper()).c_str())
+	with_Combo("Tonemapper", ltp::tonemapper_to_name(ltp::current_tonemapper()).c_str())
 	{
 		for (int n = 0; n < IM_ARRAYSIZE(tonemappers); n++) {
 			const bool is_selected =
-				lighting_profile::tonemapper_to_name(lighting_profile::current_tonemapper()) == tonemappers[n];
+				ltp::tonemapper_to_name(ltp::current_tonemapper()) == tonemappers[n];
 			if (Selectable(tonemappers[n].c_str(), is_selected))
-				lighting_profile::lab_set_tonemapper(lighting_profile::name_to_tonemapper(tonemappers[n]));
+				ltp::lab_set_tonemapper(ltp::name_to_tonemapper(tonemappers[n]));
 
 			if (is_selected)
 				SetItemDefaultFocus();
@@ -323,11 +325,11 @@ void LabUi::build_tone_mapper_combobox()
 void LabUi::show_render_options()
 {
 	int bloom_level = gr_bloom_intensity();
-	float ambient_factor = lighting_profile::lab_get_ambient();
-	float light_factor = lighting_profile::lab_get_light();
-	float emissive_factor = lighting_profile::lab_get_emissive();
-	float exposure_level = lighting_profile::current_exposure();
-	auto ppcv = lighting_profile::lab_get_ppc();
+	float ambient_factor = ltp::lab_get_ambient();
+	float light_factor = ltp::lab_get_light();
+	float emissive_factor = ltp::lab_get_emissive();
+	float exposure_level = ltp::current_exposure();
+	auto ppcv = ltp::lab_get_ppc();
 
 	bool skip_setting_light_options_this_frame = false;
 
@@ -380,8 +382,8 @@ void LabUi::show_render_options()
 
 			build_tone_mapper_combobox();
 
-			if (lighting_profile::current_tonemapper() == tnm_PPC ||
-				lighting_profile::current_tonemapper() == tnm_PPC_RGB) {
+			if (ltp::current_tonemapper() == tnm_PPC ||
+				ltp::current_tonemapper() == tnm_PPC_RGB) {
 				SliderFloat("PPC Toe Strength", &ppcv.toe_strength, 0.0f, 1.0f);
 				SliderFloat("PPC Toe Length", &ppcv.toe_length, 0.0f, 1.0f);
 				SliderFloat("PPC Shoulder Angle", &ppcv.shoulder_angle, 0.0f, 1.0f);

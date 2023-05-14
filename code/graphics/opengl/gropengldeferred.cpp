@@ -100,6 +100,8 @@ void gr_opengl_deferred_lighting_end()
 
 extern SCP_vector<light> Lights;
 extern int Num_lights;
+namespace ltp = lighting_profiles;
+using namespace ltp; 
 static bool override_fog = false;
 
 void gr_opengl_deferred_lighting_finish()
@@ -161,7 +163,7 @@ void gr_opengl_deferred_lighting_finish()
 	{
 		GR_DEBUG_SCOPE("Build buffer data");
 
-		auto lp = lighting_profile::current();
+		auto lp = ltp::current();
 
 		auto header = uniformAligner.getHeader<deferred_global_data>();
 		if (Shadow_quality != ShadowQuality::Disabled) {
