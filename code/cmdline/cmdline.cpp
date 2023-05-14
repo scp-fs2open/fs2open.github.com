@@ -351,6 +351,7 @@ cmdline_parm deprecated_fxaa_arg("-fxaa", nullptr, AT_NONE);
 cmdline_parm deprecated_fxaa_preset_arg("-fxaa_preset", "FXAA quality (0-2), requires post-processing and -fxaa", AT_INT);
 cmdline_parm deprecated_smaa_arg("-smaa", nullptr, AT_NONE);
 cmdline_parm deprecated_smaa_preset_arg("-smaa_preset", "SMAA quality (0-3), requires post-processing and -smaa", AT_INT);
+cmdline_parm msaa_enabled_arg("-msaa", nullptr, AT_INT);
 cmdline_parm fb_explosions_arg("-fb_explosions", NULL, AT_NONE);
 cmdline_parm fb_thrusters_arg("-fb_thrusters", NULL, AT_NONE);
 cmdline_parm flightshaftsoff_arg("-nolightshafts", NULL, AT_NONE);
@@ -378,6 +379,7 @@ bool Cmdline_force_lightshaft_off = false;
 int Cmdline_no_deferred_lighting = 0;
 bool Cmdline_deferred_lighting_cockpit = false;
 int Cmdline_aniso_level = 0;
+int Cmdline_msaa_enabled = 0;
 
 // Game Speed related
 cmdline_parm no_fpscap("-no_fps_capping", "Don't limit frames-per-second", AT_NONE);	// Cmdline_NoFPSCap
@@ -1929,6 +1931,21 @@ bool SetCmdlineParams()
 				Gr_aa_mode = AntiAliasMode::SMAA_Ultra;
 				break;
 			}
+		}
+	}
+
+	if (msaa_enabled_arg.found()) {
+		Cmdline_msaa_enabled = msaa_enabled_arg.get_int();
+		switch (Cmdline_msaa_enabled) {
+		case 0:
+		case 4:
+		case 8:
+		case 16:
+			break;
+		default:
+			Warning(LOCATION, "Requested illegal MSAA sample count %d. Allowed are: 0, 4, 8, 16. Setting to 0.", Cmdline_msaa_enabled);
+			Cmdline_msaa_enabled = 0;
+			break;
 		}
 	}
 
