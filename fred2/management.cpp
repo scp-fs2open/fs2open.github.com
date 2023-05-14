@@ -444,6 +444,9 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	cmd_brief_reset();
 	Show_waypoints = TRUE;
 
+	// mission creation requires the existence of a timestamp snapshot
+	timer_start_frame();
+
 	mission_campaign_clear();
 	create_new_mission();
 

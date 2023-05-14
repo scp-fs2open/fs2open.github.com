@@ -252,10 +252,11 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 	listener(SubSystem::Ranks);
 	rank_init();
 
+	// mission creation requires the existence of a timestamp snapshot
+	timer_start_frame();
+
 	listener(SubSystem::Campaign);
 	mission_campaign_clear();
-
-	stars_post_level_init();
 
 	// neb lightning
 	listener(SubSystem::NebulaLightning);
