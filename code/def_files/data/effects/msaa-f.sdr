@@ -25,7 +25,7 @@ const float voxelDepthFalloff = 2.5f;
 #define SORT(a, b) if (a > b) { float t = dists[a]; dists[a] = dists[b]; dists[b] = t; }
 
 //The following sorting networks for median calculation are NOT complete. Calculations that don't affect the
-//median entry are remive, and thus, while the median element is correct, the rest of the array is NOT fully sorted
+//median entry are removed, and thus, while the median element is correct, the rest of the array is NOT fully sorted
 
 #ifdef SAMPLES_4
 
