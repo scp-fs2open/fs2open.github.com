@@ -5215,8 +5215,15 @@ player *get_player_from_ship_entry(const ship_registry_entry *ship_entry, bool t
 
 	// singleplayer
 	if (!(Game_mode & GM_MULTIPLAYER)) {
-		if (Player_obj == ship_entry->objp) {
-			return Player;
+		if (ship_entry->objp) {
+			if (Player_obj == ship_entry->objp) {
+				return Player;
+			}
+		}
+		if (ship_entry->p_objp) {
+			if (ship_entry->p_objp->flags[Mission::Parse_Object_Flags::OF_Player_start]) {
+				return Player;
+			}
 		}
 		return nullptr;
 	}
