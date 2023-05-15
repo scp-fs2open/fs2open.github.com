@@ -1064,20 +1064,27 @@ void debrief_traitor_init()
 
 		// if traitor, set up persona-specific traitor debriefing
 		auto stagep = &Traitor_debriefing.stages[0];
+		
+		// see if we are using a traitor override
+		if (The_mission.trtr_override != nullptr) {
+			stagep->text = The_mission.trtr_override->text;
+			strcpy_s(stagep->voice, The_mission.trtr_override->voice_filename);
+			stagep->recommendation_text = The_mission.trtr_override->recommendation_text;
+		} else {
+			// see if we have a persona
+			int persona_index = The_mission.debriefing_persona;
 
-		// see if we have a persona
-		int persona_index = The_mission.debriefing_persona;
+			// use persona-specific traitor text if it exists; otherwise, use default
+			if (Traitor.debriefing_text.find(persona_index) != Traitor.debriefing_text.end())
+				stagep->text = Traitor.debriefing_text[persona_index];
+			else
+				stagep->text = Traitor.debriefing_text[-1];
 
-		// use persona-specific traitor text if it exists; otherwise, use default
-		if (Traitor.debriefing_text.find(persona_index) != Traitor.debriefing_text.end())
-			stagep->text = Traitor.debriefing_text[persona_index];
-		else
-			stagep->text = Traitor.debriefing_text[-1];
+			// choose appropriate traitor voice for this mission
+			debrief_choose_voice(stagep->voice, sizeof(stagep->voice), Traitor.traitor_voice_base, persona_index, 1);
 
-		// choose appropriate traitor voice for this mission
-		debrief_choose_voice(stagep->voice, sizeof(stagep->voice), Traitor.traitor_voice_base, persona_index, 1);
-
-		stagep->recommendation_text = Traitor.recommendation_text;
+			stagep->recommendation_text = Traitor.recommendation_text;
+		}
 	}
 
 	if (!(Game_mode & GM_MULTIPLAYER) && (Game_mode & GM_CAMPAIGN_MODE)) {

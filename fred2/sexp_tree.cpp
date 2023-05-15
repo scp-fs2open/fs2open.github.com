@@ -3519,6 +3519,12 @@ int sexp_tree::query_default_argument_available(int op, int i)
 			}
 			return 0;
 
+		case OPF_TRAITOR_OVERRIDE:
+			if (Traitor_overrides.size() > 0) {
+				return 1;
+			}
+			return 0;
+
 		default:
 			if (!Dynamic_enums.empty()) {
 				if ((type - First_available_opf_id) < (int)Dynamic_enums.size()) {
@@ -5592,6 +5598,10 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = get_listing_opf_bolt_types();
 			break;
 
+		case OPF_TRAITOR_OVERRIDE:
+			list = get_listing_opf_traitor_overrides();
+			break;
+
 		default:
 			//We're at the end of the list so check for any dynamic enums
 			list = check_for_dynamic_sexp_enum(opf);
@@ -7371,6 +7381,19 @@ sexp_list_item* sexp_tree::get_listing_opf_bolt_types()
 
 	for (int i = 0; i < (int)Bolt_types.size(); i++) {
 		head.add_data(Bolt_types[i].name);
+	}
+
+	return head.next;
+}
+
+sexp_list_item* sexp_tree::get_listing_opf_traitor_overrides()
+{
+	sexp_list_item head;
+
+	head.add_data(SEXP_NONE_STRING);
+
+	for (int i = 0; i < (int)Traitor_overrides.size(); i++) {
+		head.add_data(Traitor_overrides[i].name.c_str());
 	}
 
 	return head.next;

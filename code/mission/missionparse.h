@@ -25,6 +25,7 @@
 #include "sound/sound.h"
 #include "mission/mission_flags.h"
 #include "nebula/volumetrics.h"
+#include "stats/scoring.h"
 
 //WMC - This should be here
 #define FS_MISSION_FILE_EXT				NOX(".fs2")
@@ -149,6 +150,7 @@ typedef struct mission {
 	int	command_persona;
 	char command_sender[NAME_LENGTH];
 	int debriefing_persona;
+	traitor_override *trtr_override;
 
 	// Goober5000
 	char event_music_name[NAME_LENGTH];

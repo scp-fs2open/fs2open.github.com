@@ -139,6 +139,7 @@ enum : int {
 	OPF_MOTION_DEBRIS,				// MjnMixael - Motion debris types as defined in stars.tbl
 	OPF_TURRET_TYPE,				// MjnMixael - Turret types as defined in aiturret.cpp
 	OPF_BOLT_TYPE,					// MjnMixael - Lightning bolt types as defined in lightning.tbl
+	OPF_TRAITOR_OVERRIDE,			// MjnMixael - Traitor overrides as defined in traitor.tbl
 
 	//Must always be at the end of the list
 	First_available_opf_id
@@ -831,6 +832,7 @@ enum : int {
 	OP_CHANGE_BACKGROUND,	// Goober5000
 	OP_CLEAR_DEBRIS,	// Goober5000
 	OP_SET_DEBRIEFING_PERSONA,	// Goober5000
+	OP_SET_TRAITOR_OVERRIDE,	//MjnMixael
 	OP_ADD_TO_COLGROUP_NEW,	// Goober5000
 	OP_REMOVE_FROM_COLGROUP_NEW,	// Goober5000
 	OP_GET_POWER_OUTPUT,	// The E
@@ -1209,6 +1211,7 @@ enum sexp_error_check
 	SEXP_CHECK_INVALID_ASTEROID,
 	SEXP_CHECK_INVALID_MOTION_DEBRIS,
 	SEXP_CHECK_INVALID_BOLT_TYPE,
+	SEXP_CHECK_INVALID_TRAITOR_OVERRIDE,
 };
 
 

@@ -40,6 +40,7 @@ enum class SubSystem {
 	Ships,
 	Parse,
 	TechroomIntel,
+	Traitor,
 	Nebulas,
 	Stars,
 	Ssm,

@@ -633,6 +633,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "end-of-campaign",				OP_END_OF_CAMPAIGN,						0,	0,			SEXP_ACTION_OPERATOR,	},
 	{ "set-debriefing-toggled",			OP_SET_DEBRIEFING_TOGGLED,				1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-debriefing-persona",			OP_SET_DEBRIEFING_PERSONA,				1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "set-traitor-override",			OP_SET_TRAITOR_OVERRIDE,				1,	1,			SEXP_ACTION_OPERATOR,	},	// MjnMixael
 	{ "allow-treason",					OP_ALLOW_TREASON,						1,	1,			SEXP_ACTION_OPERATOR,	},	// Karajorma
 	{ "grant-promotion",				OP_GRANT_PROMOTION,						0,	0,			SEXP_ACTION_OPERATOR,	},
 	{ "grant-medal",					OP_GRANT_MEDAL,							1,	1,			SEXP_ACTION_OPERATOR,	},
@@ -4099,6 +4100,16 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 
 				if (get_bolt_type_by_name(CTEXT(node)) < 0) {
 					return SEXP_CHECK_INVALID_BOLT_TYPE;
+				}
+				break;
+
+			case OPF_TRAITOR_OVERRIDE:
+				if (type2 != SEXP_ATOM_STRING) {
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+
+				if (stricmp(CTEXT(node), SEXP_NONE_STRING) && (get_traitor_override_pointer(CTEXT(node)) == nullptr)) {
+					return SEXP_CHECK_INVALID_TRAITOR_OVERRIDE;
 				}
 				break;
 
@@ -15821,6 +15832,18 @@ void sexp_set_debriefing_persona(int node)
 	The_mission.debriefing_persona = persona;
 }
 
+// MjnMixael
+void sexp_set_traitor_override(int node)
+{
+	SCP_string override = CTEXT(node);
+
+	if (!stricmp(override.c_str(), "none")) {
+		The_mission.trtr_override = nullptr;
+	}else{
+		The_mission.trtr_override = get_traitor_override_pointer(override);
+	}
+}
+
 /**
  * Toggle the status bit for the AI code which tells the AI if it is a good time to rearm.
  *
@@ -27424,6 +27447,12 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			// MjnMixael
+			case OP_SET_TRAITOR_OVERRIDE:
+				sexp_set_traitor_override(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			// Goober5000
 			case OP_FORCE_JUMP:
 				sexp_force_jump();
@@ -29421,6 +29450,7 @@ int query_operator_return_type(int op)
 		case OP_END_MISSION:
 		case OP_SET_DEBRIEFING_TOGGLED:
 		case OP_SET_DEBRIEFING_PERSONA:
+		case OP_SET_TRAITOR_OVERRIDE:
 		case OP_FORCE_JUMP:
 		case OP_SET_SUBSYSTEM_STRNGTH:
 		case OP_DESTROY_SUBSYS_INSTANTLY:
@@ -30815,6 +30845,9 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_SET_DEBRIEFING_PERSONA:
 			return OPF_POSITIVE;
+
+		case OP_SET_TRAITOR_OVERRIDE:
+			return OPF_TRAITOR_OVERRIDE;
 
 		case OP_SET_PLAYER_ORDERS:
 		case OP_SET_ORDER_ALLOWED_TARGET:
@@ -33069,6 +33102,9 @@ const char *sexp_error_message(int num)
 		case SEXP_CHECK_INVALID_BOLT_TYPE:
 			return "Invalid lightning bolt type";
 
+		case SEXP_CHECK_INVALID_TRAITOR_OVERRIDE:
+			return "Invalid traitor override";
+
 		default:
 			Warning(LOCATION, "Unhandled sexp error code %d!", num);
 			return "Unhandled sexp error code!";
@@ -34585,6 +34621,7 @@ int get_category(int op_id)
 		case OP_CHANGE_BACKGROUND:
 		case OP_CLEAR_DEBRIS:
 		case OP_SET_DEBRIEFING_PERSONA:
+		case OP_SET_TRAITOR_OVERRIDE:
 		case OP_ADD_TO_COLGROUP_NEW:
 		case OP_REMOVE_FROM_COLGROUP_NEW:
 		case OP_GET_POWER_OUTPUT:
@@ -34939,6 +34976,7 @@ int get_subcategory(int op_id)
 		case OP_END_CAMPAIGN:
 		case OP_SET_DEBRIEFING_TOGGLED:
 		case OP_SET_DEBRIEFING_PERSONA:
+		case OP_SET_TRAITOR_OVERRIDE:
 		case OP_ALLOW_TREASON:
 		case OP_GRANT_PROMOTION:
 		case OP_GRANT_MEDAL:
@@ -37893,6 +37931,11 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	// Goober5000
 	{ OP_SET_DEBRIEFING_PERSONA, "set-debriefing-persona\r\n"
 		"\tSets the numeric prefix to be used for debriefing voice files in automatic debriefing stages (promotions, ace badges, traitor).  This is usually specified in the campaign editor, but it can be overridden mid-mission with this sexp.  Takes 1 argument.\r\n"
+	},
+
+	// MjnMixael
+	{ OP_SET_TRAITOR_OVERRIDE, "set-traitor-override\r\n"
+		"\tSets the override debriefing info for the traitor debrief. Must be tabled in traitor.tbl."
 	},
 
 	// Goober5000

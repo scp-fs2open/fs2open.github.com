@@ -74,6 +74,13 @@ struct traitor_stuff {
 	SCP_string recommendation_text;
 };
 
+struct traitor_override {
+	SCP_string name;
+	SCP_string text;
+	char       voice_filename[MAX_FILENAME_LEN];
+	SCP_string recommendation_text;
+};
+
 #define STATS_FLAG_INVALID			(1<<0)
 #define STATS_FLAG_CAMPAIGN		(1<<1)
 #define STATS_FLAG_MULTIPLAYER	(1<<2)
@@ -142,6 +149,7 @@ public:
 
 extern SCP_vector<rank_stuff> Ranks;
 extern traitor_stuff Traitor;
+extern SCP_vector<traitor_override> Traitor_overrides;
 
 int verify_rank(int rank);
 
@@ -167,5 +175,7 @@ void scoring_eval_hit(object *hit_obj, object *other_obj, int from_blast = 0);
 
 // get a scaling factor for adding/subtracting from mission score
 float scoring_get_scale_factor();
+
+traitor_override* get_traitor_override_pointer(const SCP_string& name);
 
 #endif
