@@ -547,7 +547,7 @@ namespace joystick
 	{
 		_joystick = SDL_JoystickOpen(device_id);
 
-		if (_joystick != nullptr)
+		if (_joystick == nullptr)
 			throw std::exception("Failed to open a joystick, get a coder!");
 
 		fillValues();
