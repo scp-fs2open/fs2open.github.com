@@ -322,10 +322,20 @@ void enumerateJoysticks(SCP_vector<JoystickPtr>& outVec)
 	mprintf(("Printing joystick info:\n"));
 
 	for (auto i = 0; i < num; ++i) {
-		auto ptr = JoystickPtr(new Joystick(i));
-		ptr->printInfo();
+			try
+			{
+				auto ptr = JoystickPtr(new Joystick(i));
+				ptr->printInfo();
 
-		outVec.push_back(std::move(ptr));
+				outVec.push_back(std::move(ptr));
+			}
+			catch (const std::exception e)
+			{
+				mprintf(("  An error occured while attempting to enumerate joystick %i.\n", i));
+				mprintf(("    %s\n", e.what()));
+				mprintf(("    %s\n", SDL_GetError()));
+				SDL_ClearError();
+			}
 	}
 }
 
@@ -537,7 +547,8 @@ namespace joystick
 	{
 		_joystick = SDL_JoystickOpen(device_id);
 
-		Assertion(_joystick != nullptr, "Failed to open a joystick, get a coder!");
+		if (_joystick != nullptr)
+			throw std::exception("Failed to open a joystick, get a coder!");
 
 		fillValues();
 	}
