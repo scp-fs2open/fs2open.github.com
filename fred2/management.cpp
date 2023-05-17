@@ -20,6 +20,7 @@
 #include "globalincs/linklist.h"
 #include "globalincs/version.h"
 #include "globalincs/alphacolors.h"
+#include "math/curve.h"
 #include "mission/missiongrid.h"
 #include "mission/missionparse.h"
 #include "mission/missionmessage.h"
@@ -375,6 +376,7 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	key_init();
 	mouse_init();
 
+	curves_init();
 	particle::ParticleManager::init();
 
 	iff_init();			// Goober5000
