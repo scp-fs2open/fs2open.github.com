@@ -928,6 +928,12 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 			if (ship_objp->flags[Object::Object_Flags::Player_ship]){
 				ss_dif_scale = The_mission.ai_profile->subsys_damage_scale[Game_skill_level];
 			}
+
+			// maybe modify damage FROM player ships
+			if (other_obj && other_obj->parent >= 0 && Objects[other_obj->parent].signature == other_obj->parent_sig) {
+				if (Objects[other_obj->parent].flags[Object::Object_Flags::Player_ship])
+					ss_dif_scale *= The_mission.ai_profile->player_damage_inflicted_scale[Game_skill_level];
+			}
 		
 			// Goober5000 - subsys guardian
 			if (subsystem->subsys_guardian_threshold > 0)
@@ -2297,6 +2303,11 @@ static void ship_do_damage(object *ship_objp, object *other_obj, vec3d *hitpos, 
 	// if this is a weapon
 	if (other_obj_is_weapon)
 		damage_scale = weapon_get_damage_scale(&Weapon_info[Weapons[other_obj->instance].weapon_info_index], other_obj, ship_objp);
+
+	if (other_obj && other_obj->parent >= 0 && Objects[other_obj->parent].signature == other_obj->parent_sig) {
+		if(Objects[other_obj->parent].flags[Object::Object_Flags::Player_ship])
+			difficulty_scale_factor *= The_mission.ai_profile->player_damage_inflicted_scale[Game_skill_level];
+	}
 
 	MONITOR_INC( ShipHits, 1 );
 

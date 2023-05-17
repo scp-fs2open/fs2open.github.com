@@ -223,6 +223,9 @@ void parse_ai_profiles_tbl(const char *filename)
 				if (optional_string("$Player Subsys Damage Factor:") || optional_string("$AI Damage Reduction to Player Subsys:"))
 					parse_float_list(profile->subsys_damage_scale, NUM_SKILL_LEVELS);
 
+				if (optional_string("$Player Damage Inflicted Factor:"))
+					parse_float_list(profile->player_damage_inflicted_scale, NUM_SKILL_LEVELS);
+
 				// represented in fractions of F1_0
 				if (optional_string("$Predict Position Delay:"))
 				{
@@ -729,6 +732,7 @@ void ai_profile_t::reset()
         shield_energy_scale[i] = 0;
         afterburner_recharge_scale[i] = 0;
         player_damage_scale[i] = 0;
+		player_damage_inflicted_scale[i] = 0;
 
         subsys_damage_scale[i] = 0;
         beam_friendly_damage_cap[i] = 0;
