@@ -713,6 +713,7 @@ void Editor::fix_ship_name(int ship) {
 void Editor::createNewMission() {
 	clearMission();
 	create_player(0, &vmd_zero_vector, &vmd_identity_matrix);
+	stars_post_level_init();
 }
 void Editor::hideMarkedObjects() {
 	object* ptr;
