@@ -15837,10 +15837,10 @@ void sexp_set_traitor_override(int node)
 {
 	SCP_string override = CTEXT(node);
 
-	if (!stricmp(override.c_str(), "none")) {
-		The_mission.trtr_override = nullptr;
+	if (!stricmp(override.c_str(), SEXP_NONE_STRING)) {
+		The_mission.traitor_override_t = nullptr;
 	}else{
-		The_mission.trtr_override = get_traitor_override_pointer(override);
+		The_mission.traitor_override_t = get_traitor_override_pointer(override);
 	}
 }
 

@@ -1716,10 +1716,7 @@ int sexp_tree::query_default_argument_available(int op, int i) {
 		return 0;
 
 	case OPF_TRAITOR_OVERRIDE:
-		if (Traitor_overrides.size() > 0) {
-			return 1;
-		}
-		return 0;
+		return Traitor_overrides.empty() ? 0 : 1;
 
 	default:
 		if (!Dynamic_enums.empty()) {

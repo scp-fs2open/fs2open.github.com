@@ -6499,7 +6499,7 @@ void mission::Reset()
 	command_persona = Default_command_persona;
 	strcpy_s(command_sender, DEFAULT_COMMAND);
 	debriefing_persona = debrief_find_persona_index();
-	trtr_override = nullptr;
+	traitor_override_t = nullptr;
 
 	event_music_name[ 0 ] = '\0';
 	briefing_music_name[ 0 ] = '\0';
