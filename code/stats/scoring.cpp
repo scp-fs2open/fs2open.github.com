@@ -45,7 +45,7 @@ float Assist_percentage = 0.15f;
 extern debriefing Traitor_debriefing;
 traitor_stuff Traitor;
 
-SCP_vector<traitor_override> Traitor_overrides;
+SCP_vector<traitor_override_t> Traitor_overrides;
 
 // these tables are overwritten with the values from rank.tbl
 SCP_vector<rank_stuff> Ranks;
@@ -59,7 +59,7 @@ float Scoring_scale_factors[NUM_SKILL_LEVELS] = {
 	1.25f					// insane
 };
 
-traitor_override* get_traitor_override_pointer(const SCP_string& name)
+traitor_override_t* get_traitor_override_pointer(const SCP_string& name)
 {
 	for (int i = 0; i < (int)Traitor_overrides.size(); i++) {
 		if (!stricmp(name.c_str(), Traitor_overrides[i].name.c_str())) {
@@ -350,7 +350,7 @@ void parse_traitor_tbl(const char* filename)
 				SCP_string rec;
 				stuff_string(rec, F_MULTITEXT);
 
-				traitor_override traitor;
+				traitor_override_t traitor;
 				traitor.name = name;
 				traitor.text = text;
 				traitor.recommendation_text = rec;

@@ -150,7 +150,7 @@ typedef struct mission {
 	int	command_persona;
 	char command_sender[NAME_LENGTH];
 	int debriefing_persona;
-	traitor_override* traitor_override_t;
+	traitor_override_t* traitor_override;
 
 	// Goober5000
 	char event_music_name[NAME_LENGTH];

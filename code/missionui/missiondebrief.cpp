@@ -1066,10 +1066,10 @@ void debrief_traitor_init()
 		auto stagep = &Traitor_debriefing.stages[0];
 		
 		// see if we are using a traitor override
-		if (The_mission.traitor_override_t != nullptr) {
-			stagep->text = The_mission.traitor_override_t->text;
-			strcpy_s(stagep->voice, The_mission.traitor_override_t->voice_filename);
-			stagep->recommendation_text = The_mission.traitor_override_t->recommendation_text;
+		if (The_mission.traitor_override != nullptr) {
+			stagep->text = The_mission.traitor_override->text;
+			strcpy_s(stagep->voice, The_mission.traitor_override->voice_filename);
+			stagep->recommendation_text = The_mission.traitor_override->recommendation_text;
 		} else {
 			// see if we have a persona
 			int persona_index = The_mission.debriefing_persona;
