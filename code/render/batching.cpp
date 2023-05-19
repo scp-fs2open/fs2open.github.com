@@ -390,7 +390,7 @@ void batching_add_polygon_internal(primitive_batch *batch, int texture, vec3d *p
 		v[i].a = clr->alpha;
 		v[i].tex_coord.xyz.z = (float)array_index;
 
-		v[i].radius = MAX(width * 0.5, height * 0.5);
+		v[i].radius = MAX(width * 0.5f, height * 0.5f);
 	}
 
 	v[0].tex_coord.xyz.x = 1.0f;
