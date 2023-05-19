@@ -43,6 +43,7 @@
 #include "MessageEditorDlg.h"
 #include "EventEditor.h"
 #include "MissionGoalsDlg.h"
+#include "MissionCutscenesDlg.h"
 #include "ShieldSysDlg.h"
 #include "gamesnd/eventmusic.h"
 #include "DebriefingEditorDlg.h"
@@ -1982,6 +1983,14 @@ int reference_handler(char *name, sexp_ref_type type, int obj)
 
 				break;
 
+			case sexp_src::MISSION_CUTSCENE:
+				if (The_mission.cutscenes[n].filename[0] != '\0')
+					sprintf(text, "mission cutscene \"%s\"", The_mission.cutscenes[n].filename);
+				else
+					sprintf(text, "mission cutscene #%d", n);
+
+				break;
+
 			case sexp_src::DEBRIEFING:
 				sprintf(text, "debriefing #%d", n);
 				break;
@@ -2178,6 +2187,14 @@ int sexp_reference_handler(int node, sexp_src source, int source_index, char *ms
 
 		case sexp_src::MISSION_GOAL: {
 			CMissionGoalsDlg dlg;
+
+			dlg.select_sexp_node = node;
+			dlg.DoModal();
+			break;
+		}
+
+		case sexp_src::MISSION_CUTSCENE: {
+			CMissionCutscenesDlg dlg;
 
 			dlg.select_sexp_node = node;
 			dlg.DoModal();

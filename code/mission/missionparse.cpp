@@ -1019,7 +1019,7 @@ void parse_cutscenes(mission *pm)
 
 		while (!optional_string("#end"))
 		{
-			// this list should correspond to the MOVIE_* #defines
+			// this list should correspond to the MOVIE_* enums
 			scene.type = optional_string_one_of(8,
 				"$Fiction Viewer Cutscene:",
 				"$Command Brief Cutscene:",
@@ -1028,16 +1028,11 @@ void parse_cutscenes(mission *pm)
 				"$Debriefing Cutscene:",
 				"$Post-debriefing Cutscene:",
 				"$Campaign End Cutscene:",
-				// this is not a #define, but a synonym for one
 				"$Post-briefing Cutscene:");
 
 			// no more cutscenes specified?
 			if (scene.type < 0)
 				break;
-
-			// post-briefing is the same as pre-game
-			if (scene.type == 7)
-				scene.type = MOVIE_PRE_GAME;
 
 			// get the cutscene file
 			stuff_string(scene.filename, F_NAME, NAME_LENGTH);

@@ -1976,6 +1976,9 @@ int CFred_mission_save::save_cutscenes()
 					case MOVIE_END_CAMPAIGN:
 						strcpy_s(type, "$Campaign End Cutscene:");
 						break;
+					case MOVIE_POST_BRIEF:
+						strcpy_s(type, "$Post-briefing Cutscene:");
+						break;
 					default:
 						Int3();
 						continue;

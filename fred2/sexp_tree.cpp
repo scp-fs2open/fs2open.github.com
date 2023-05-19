@@ -19,6 +19,7 @@
 #include "globalincs/linklist.h"
 #include "EventEditor.h"
 #include "MissionGoalsDlg.h"
+#include "MissionCutscenesDlg.h"
 #include "ai/aigoals.h"
 #include "mission/missionmessage.h"
 #include "mission/missioncampaign.h"

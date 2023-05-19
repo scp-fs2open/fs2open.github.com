@@ -93,13 +93,21 @@ typedef struct support_ship_info {
 } support_ship_info;
 
 // movie type defines
-#define	MOVIE_PRE_FICTION		0
-#define	MOVIE_PRE_CMD_BRIEF		1
-#define	MOVIE_PRE_BRIEF			2
-#define	MOVIE_PRE_GAME			3
-#define	MOVIE_PRE_DEBRIEF		4
-#define	MOVIE_POST_DEBRIEF		5
-#define	MOVIE_END_CAMPAIGN		6
+// If you add one here, you must also add a description to missioncutscenedlg.cpp for FRED
+// and update the dropdown list in fred.rc for the mission cutscene dialog editor.
+enum : int {
+	MOVIE_PRE_FICTION,
+	MOVIE_PRE_CMD_BRIEF,
+	MOVIE_PRE_BRIEF,
+	MOVIE_PRE_GAME,
+	MOVIE_PRE_DEBRIEF,
+	MOVIE_POST_DEBRIEF,
+	MOVIE_END_CAMPAIGN,
+	MOVIE_POST_BRIEF, //functionally a pseudonym for MOVIE_PRE_GAME
+
+	// Must always be at the end of the list
+	First_available_movie_id
+};
 
 // defines a mission cutscene.
 typedef struct mission_cutscene {

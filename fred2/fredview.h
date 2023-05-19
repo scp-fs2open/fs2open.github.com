@@ -126,6 +126,7 @@ protected:
 	afx_msg void OnUpdateChangeViewpointFollow(CCmdUI* pCmdUI);
 	afx_msg void OnChangeViewpointFollow();
 	afx_msg void OnEditorsGoals();
+	afx_msg void OnEditorsCutscenes();
 	afx_msg void OnSpeed1();
 	afx_msg void OnSpeed2();
 	afx_msg void OnSpeed5();
