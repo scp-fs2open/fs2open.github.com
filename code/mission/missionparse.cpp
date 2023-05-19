@@ -1015,25 +1015,31 @@ void parse_cutscenes(mission *pm)
 
 		while (!optional_string("#end"))
 		{
-			// this list should correspond to the MOVIE_* #defines
-			scene.type = optional_string_one_of(8,
+			// this list should correspond to the MOVIE_* enums
+			scene.type = optional_string_one_of(7,
 				"$Fiction Viewer Cutscene:",
 				"$Command Brief Cutscene:",
 				"$Briefing Cutscene:",
 				"$Pre-game Cutscene:",
 				"$Debriefing Cutscene:",
 				"$Post-debriefing Cutscene:",
-				"$Campaign End Cutscene:",
-				// this is not a #define, but a synonym for one
-				"$Post-briefing Cutscene:");
+				"$Campaign End Cutscene:");
 
-			// no more cutscenes specified?
-			if (scene.type < 0)
-				break;
+			// Didn't find one of the valid cutscene types
+			if (scene.type < 0) {
 
-			// post-briefing is the same as pre-game
-			if (scene.type == 7)
-				scene.type = MOVIE_PRE_GAME;
+				// $Post-briefing cutscene was added as an alias of $Pre-game cutscene when
+				// this section was only editable by hand. Now that there's a dialog that explains
+				// what each option is, we can drop the alias and quietly convert it if it's found
+				// for backwards compatibility. Log print just in case.
+				if (optional_string("$Post-briefing Cutscene:")) {
+					scene.type = MOVIE_PRE_GAME;
+					mprintf(("Found cutscene defined as '$Post-briefing Cutscene' and converted it to '$Pre-game cutscene'\n"));
+				} else {
+					// no more cutscenes specified?
+					break;
+				}
+			}
 
 			// get the cutscene file
 			stuff_string(scene.filename, F_NAME, NAME_LENGTH);
