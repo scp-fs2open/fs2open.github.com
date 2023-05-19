@@ -491,8 +491,6 @@ void Editor::initialSetup() {
 
 	Id_select_type_waypoint = (int) (Ship_info.size());
 	Id_select_type_jump_node = (int) (Ship_info.size() + 1);
-
-	createNewMission();
 }
 
 void Editor::setupCurrentObjectIndices(int selectedObj) {
