@@ -419,6 +419,20 @@ static auto AAOption __UNUSED = options::OptionBuilder<AntiAliasMode>("Graphics.
                            .importance(79)
                            .finish();
 
+extern int Cmdline_msaa_enabled;
+static auto MSAAOption __UNUSED = options::OptionBuilder<int>("Graphics.MSAASamples", "Multisample Anti Aliasing",
+                                                             "Controls whether multisample anti aliasing is enabled, and with how many samples.")
+                           .category("Graphics")
+                           .level(options::ExpertLevel::Advanced)
+                           .values({{0, "Off"},
+                                    {4, "4 Samples"},
+                                    {8, "8 Samples"},
+                                    {16, "16 Samples"}})
+                           .default_val(0)
+                           .bind_to(&Cmdline_msaa_enabled)
+                           .importance(78)
+                           .finish();
+
 bool gr_is_fxaa_mode(AntiAliasMode mode)
 {
 	return mode == AntiAliasMode::FXAA_Low || mode == AntiAliasMode::FXAA_Medium || mode == AntiAliasMode::FXAA_High;

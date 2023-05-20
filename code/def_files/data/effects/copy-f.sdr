@@ -1,0 +1,9 @@
+in vec4 fragTexCoord;
+out vec4 fragOut0;
+
+uniform sampler2D tex;
+
+void main()
+{
+	fragOut0 = texture(tex, fragTexCoord.xy);
+}

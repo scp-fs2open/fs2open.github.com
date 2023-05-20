@@ -20,6 +20,7 @@
 #include "globalincs/linklist.h"
 #include "globalincs/version.h"
 #include "globalincs/alphacolors.h"
+#include "math/curve.h"
 #include "mission/missiongrid.h"
 #include "mission/missionparse.h"
 #include "mission/missionmessage.h"
@@ -376,6 +377,7 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	key_init();
 	mouse_init();
 
+	curves_init();
 	particle::ParticleManager::init();
 
 	iff_init();			// Goober5000
@@ -426,6 +428,7 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	hud_positions_init();
 	asteroid_init();
 	lighting_profiles::load_profiles();
+	traitor_init();
 
 	// get fireball IDs for sexpression usage
 	// (we don't need to init the entire system via fireball_init, we just need the information)
@@ -445,6 +448,9 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	fiction_viewer_reset();
 	cmd_brief_reset();
 	Show_waypoints = TRUE;
+
+	// mission creation requires the existence of a timestamp snapshot
+	timer_start_frame();
 
 	mission_campaign_clear();
 	create_new_mission();

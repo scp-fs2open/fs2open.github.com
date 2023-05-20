@@ -204,6 +204,8 @@ int main(int argc, char* argv[]) {
 		QTimer::singleShot(500, [&]() {
 			fred->loadMission(Cmdline_start_mission);
 		});
+	} else {
+		fred->createNewMission();
 	}
 
 	// Render first correct frame

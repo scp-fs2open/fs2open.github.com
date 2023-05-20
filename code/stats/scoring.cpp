@@ -45,6 +45,8 @@ float Assist_percentage = 0.15f;
 extern debriefing Traitor_debriefing;
 traitor_stuff Traitor;
 
+SCP_vector<traitor_override_t> Traitor_overrides;
+
 // these tables are overwritten with the values from rank.tbl
 SCP_vector<rank_stuff> Ranks;
 
@@ -56,6 +58,17 @@ float Scoring_scale_factors[NUM_SKILL_LEVELS] = {
 	1.0f,					// hard
 	1.25f					// insane
 };
+
+traitor_override_t* get_traitor_override_pointer(const SCP_string& name)
+{
+	for (int i = 0; i < (int)Traitor_overrides.size(); i++) {
+		if (SCP_string_lcase_equal_to()(name, Traitor_overrides[i].name)) {
+			return &Traitor_overrides[i];
+		}
+	}
+
+	return nullptr;
+}
 
 static rank_stuff* get_rank_pointer(const char* rank_name)
 {
@@ -279,45 +292,73 @@ void parse_traitor_tbl(const char* filename)
 		read_file_text(filename, CF_TYPE_TABLES);
 		reset_parse();
 
-		required_string("#Debriefing_info");
+		if (optional_string("#Debriefing_info")) {
 
-		// no longer used
-		if (optional_string("$Num stages:")) {
-			int junk;
-			stuff_int(&junk); //consume the data and ignore it
-		}
-
-		// no longer used
-		if (optional_string("$Formula:")) {
-			bool junk[1];
-			stuff_bool_list(junk, 1); // consume the data and ignore it
-		}
-
-		while (check_for_string("$multi text"))
-		{
-			SCP_string text;
-			int persona = -1;
-
-			required_string("$multi text");
-			stuff_string(text, F_MULTITEXT);
-
-			if (optional_string("+Persona:"))
-			{
-				stuff_int(&persona);
-				if (persona < 0)
-				{
-					Warning(LOCATION, "Traitor information is assigned to an invalid persona: %i (must be 0 or greater).\n", persona);
-					continue;
-				}
+			// no longer used
+			if (optional_string("$Num stages:")) {
+				int junk;
+				stuff_int(&junk); // consume the data and ignore it
 			}
-			Traitor.debriefing_text[persona] = text;
+
+			// no longer used
+			if (optional_string("$Formula:")) {
+				bool junk[1];
+				stuff_bool_list(junk, 1); // consume the data and ignore it
+			}
+
+			while (check_for_string("$multi text")) {
+				SCP_string text;
+				int persona = -1;
+
+				required_string("$multi text");
+				stuff_string(text, F_MULTITEXT);
+
+				if (optional_string("+Persona:")) {
+					stuff_int(&persona);
+					if (persona < 0) {
+						Warning(LOCATION,
+							"Traitor information is assigned to an invalid persona: %i (must be 0 or greater).\n",
+							persona);
+						continue;
+					}
+				}
+				Traitor.debriefing_text[persona] = text;
+			}
+
+			if (optional_string("$Voice:"))
+				stuff_string(Traitor.traitor_voice_base, F_FILESPEC, MAX_FILENAME_LEN);
+
+			if (optional_string("$Recommendation text:"))
+				stuff_string(Traitor.recommendation_text, F_MULTITEXT);
 		}
 
-		if (optional_string("$Voice:"))
-			stuff_string(Traitor.traitor_voice_base, F_FILESPEC, MAX_FILENAME_LEN);
+		if (optional_string("#Traitor Overrides")) {
+			
+			while (optional_string("$Name:")) {
+				SCP_string name;
+				stuff_string(name, F_NAME);
 
-		if (optional_string("$Recommendation text:"))
-			stuff_string(Traitor.recommendation_text, F_MULTITEXT);
+				required_string("$Text:");
+				SCP_string text;
+				stuff_string(text, F_MULTITEXT);
+
+				required_string("$Voice Filename:");
+				char file[MAX_FILENAME_LEN];
+				stuff_string(file, F_FILESPEC, MAX_FILENAME_LEN);
+
+				required_string("$Recommendation text:");
+				SCP_string rec;
+				stuff_string(rec, F_MULTITEXT);
+
+				traitor_override_t traitor;
+				traitor.name = name;
+				traitor.text = text;
+				traitor.recommendation_text = rec;
+				strcpy_s(traitor.voice_filename, file);
+
+				Traitor_overrides.push_back(traitor);
+			}
+		}
 	}
 	catch (const parse::ParseException& e)
 	{
