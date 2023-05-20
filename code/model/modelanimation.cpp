@@ -915,7 +915,7 @@ namespace animation {
 
 	int ModelAnimationSet::AnimationList::getTime() const {
 		if (pmi_id < 0)
-			return 0.0f;
+			return 0;
 
 		float duration = 0.0f;
 

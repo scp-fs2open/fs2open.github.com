@@ -188,9 +188,6 @@ typedef struct mission {
 extern mission The_mission;
 extern char Mission_filename[80];  // filename of mission in The_mission (Fred only)
 
-#define	MAX_FORMATION_NAMES	3
-#define	MAX_STATUS_NAMES		3
-
 // defines for arrival locations.  These defines should match their counterparts in the arrival location
 // array
 #define	MAX_ARRIVAL_NAMES				4
@@ -227,10 +224,6 @@ typedef struct path_restriction_t {
 
 extern const char *Ship_class_names[MAX_SHIP_CLASSES];
 extern const char *Ai_behavior_names[MAX_AI_BEHAVIORS];
-extern char *Formation_names[MAX_FORMATION_NAMES];
-extern const char *Status_desc_names[MAX_STATUS_NAMES];
-extern const char *Status_type_names[MAX_STATUS_NAMES];
-extern const char *Status_target_names[MAX_STATUS_NAMES];
 extern const char *Arrival_location_names[MAX_ARRIVAL_NAMES];
 extern const char *Departure_location_names[MAX_DEPARTURE_NAMES];
 extern const char *Goal_type_names[MAX_GOAL_TYPE_NAMES];
@@ -255,9 +248,7 @@ extern int	Num_iff;
 extern int	Num_ai_behaviors;
 extern int	Num_ai_classes;
 extern int	Num_cargo;
-extern int	Num_status_names;
 extern int	Num_arrival_names;
-extern int	Num_formation_names;
 extern int	Num_goal_type_names;
 extern int	Num_reinforcement_type_names;
 extern int	Player_starts;

@@ -60,6 +60,7 @@ inline bool SCP_truncate(SCP_string &str, size_t c_str_size) {
 
 extern void SCP_tolower(char *str);
 extern void SCP_toupper(char *str);
+extern void SCP_totitle(char *str);
 
 
 template <typename T, typename U>

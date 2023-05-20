@@ -425,3 +425,24 @@ void SCP_toupper(char *str)
 	for (; *str != '\0'; ++str)
 		*str = SCP_toupper(*str);
 }
+
+// this is a bit naive but it is good enough for the time being
+void SCP_totitle(char *str)
+{
+	bool prev_alpha = false;
+
+	for (; *str != '\0'; ++str)
+	{
+		bool this_alpha = (*str >= 'a' && *str <= 'z') || (*str >= 'A' && *str <= 'Z');
+
+		if (this_alpha)
+		{
+			if (prev_alpha)
+				*str = SCP_tolower(*str);
+			else
+				*str = SCP_toupper(*str);
+		}
+
+		prev_alpha = this_alpha;
+	}
+}

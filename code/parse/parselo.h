@@ -298,6 +298,7 @@ extern void stop_parse();
 // utility
 extern void compact_multitext_string(char *str);
 extern void compact_multitext_string(SCP_string &str);
+extern void read_file_bytes(const char *filename, int mode, char *raw_bytes = nullptr);
 extern void read_file_text(const char *filename, int mode = CF_TYPE_ANY, char *processed_text = NULL, char *raw_text = NULL);
 extern void read_file_text_from_default(const default_file& file, char *processed_text = NULL, char *raw_text = NULL);
 extern void read_raw_file_text(const char *filename, int mode = CF_TYPE_ANY, char *raw_text = NULL);

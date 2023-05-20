@@ -35859,7 +35859,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_GOAL_INCOMPLETE, "Mission Goal Incomplete (Boolean operator)\r\n"
 		"\tReturns true if the specified goal in the this mission is incomplete.  This "
 		"sexpression will only be useful in conjunction with another sexpression like"
-		"has-time-elapsed.  Used alone, it will return true upon misison startup."
+		"has-time-elapsed.  Used alone, it will return true upon mission startup."
 		"Returns a boolean value.  Takes 1 argument...\r\n"
 		"\t1:\tName of the event in the mission."},
 
@@ -35902,7 +35902,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_EVENT_INCOMPLETE, "Mission Event Incomplete (Boolean operator)\r\n"
 		"\tReturns true if the specified event in the this mission is incomplete.  This "
 		"sexpression will only be useful in conjunction with another sexpression like"
-		"has-time-elapsed.  Used alone, it will return true upon misison startup."
+		"has-time-elapsed.  Used alone, it will return true upon mission startup."
 		"Returns a boolean value.  Takes 1 argument...\r\n"
 		"\t1:\tName of the event in the mission."},
 

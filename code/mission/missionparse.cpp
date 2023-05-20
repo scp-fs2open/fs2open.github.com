@@ -103,7 +103,6 @@ int Mission_palette;  // index into Nebula_palette_filenames[] of palette file t
 int Nebula_index;  // index into Nebula_filenames[] of nebula to use in mission.
 int Num_ai_behaviors = MAX_AI_BEHAVIORS;
 int Num_cargo = 0;
-int Num_status_names = MAX_STATUS_NAMES;
 int Num_arrival_names = MAX_ARRIVAL_NAMES;
 int Num_goal_type_names = MAX_GOAL_TYPE_NAMES;
 int Num_parse_goals;
@@ -235,18 +234,6 @@ const char *Icon_names[MIN_BRIEF_ICONS] = {
 	"Bomber", "Bomber Wing", "Cruiser", "Cruiser Wing", "Unknown", "Unknown Wing",
 	"Player Fighter", "Player Fighter Wing", "Player Bomber", "Player Bomber Wing",
 	"Knossos Device", "Transport Wing", "Corvette", "Gas Miner", "Awacs", "Supercap", "Sentry Gun", "Jump Node", "Transport"
-};
-
-const char *Status_desc_names[MAX_STATUS_NAMES] = {
-	"Shields Critical", "Engines Damaged", "Fully Operational",
-};
-
-const char *Status_type_names[MAX_STATUS_NAMES] = {
-	"Damaged", "Disabled", "Corroded",
-};
-
-const char *Status_target_names[MAX_STATUS_NAMES] = {
-	"Weapons", "Engines", "Cable TV",
 };
 
 // definitions for arrival locations for ships/wings
@@ -6013,7 +6000,7 @@ bool parse_mission(mission *pm, int flags)
 	reset_parse();
 	mission_init(pm);
 
-	parse_mission_info(pm); 
+	parse_mission_info(pm);
 
 	Current_file_checksum = netmisc_calc_checksum(pm,MISSION_CHECKSUM_SIZE);
 
@@ -6094,9 +6081,8 @@ bool parse_mission(mission *pm, int flags)
 		}
 	}
 
-	if (!post_process_mission(pm)) {
+	if (!post_process_mission(pm))
 		return false;
-	}
 
 	if ((saved_warning_count - Global_warning_count) > 10 || (saved_error_count - Global_error_count) > 0) {
 		char text[512];
@@ -6615,9 +6601,9 @@ void mission_init(mission *pm)
 	Mission_palette = 1;
 }
 
-// main parse routine for parsing a mission.  The default parameter flags tells us which information
+// Main parse routine for parsing a mission.  The default parameter flags tells us which information
 // to get when parsing the mission.  0 means get everything (default).  Other flags just gets us basic
-// info such as game type, number of players etc.
+// info such as game type, number of players etc. or whether we are importing from a different format.
 bool parse_main(const char *mission_name, int flags)
 {
 	int i;
@@ -6653,17 +6639,18 @@ bool parse_main(const char *mission_name, int flags)
 
 		try
 		{
-			// import?
+			// import FS1 mission
 			if (flags & MPF_IMPORT_FSM) {
 				read_file_text(mission_name, CF_TYPE_ANY);
 				convertFSMtoFS2();
+				rval = parse_mission(&The_mission, flags);
 			}
+			// regular mission load
 			else {
 				read_file_text(mission_name, CF_TYPE_MISSIONS);
+				rval = parse_mission(&The_mission, flags);
 			}
 
-			The_mission.Reset();
-			rval = parse_mission(&The_mission, flags);
 			display_parse_diagnostics();
 		}
 		catch (const parse::ParseException& e)
