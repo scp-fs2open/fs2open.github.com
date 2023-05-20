@@ -446,3 +446,50 @@ void SCP_totitle(char *str)
 		prev_alpha = this_alpha;
 	}
 }
+
+bool lcase_equal(const SCP_string& _Left, const SCP_string& _Right)
+{
+	if (_Left.size() != _Right.size())
+		return false;
+
+	auto l_it = _Left.cbegin();
+	auto r_it = _Right.cbegin();
+
+	while (l_it != _Left.cend())
+	{
+		if (SCP_tolower(*l_it) != SCP_tolower(*r_it))
+			return false;
+
+		++l_it;
+		++r_it;
+	}
+
+	return true;
+}
+
+bool lcase_lessthan(const SCP_string& _Left, const SCP_string& _Right)
+{
+	auto l_it = _Left.cbegin();
+	auto r_it = _Right.cbegin();
+
+	while (true)
+	{
+		if (l_it == _Left.cend())
+			return (r_it != _Right.cend());
+		else if (r_it == _Right.cend())
+			return false;
+
+		auto lch = SCP_tolower(*l_it);
+		auto rch = SCP_tolower(*r_it);
+
+		if (lch < rch)
+			return true;
+		else if (lch > rch)
+			return false;
+
+		++l_it;
+		++r_it;
+	}
+
+	return true;
+}

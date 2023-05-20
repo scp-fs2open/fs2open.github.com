@@ -315,9 +315,9 @@ int CMissionGoalsDlg::query_modified()
 		return 1;
 
 	for (i=0; i<(int)Mission_goals.size(); i++) {
-		if (!SCP_string_lcase_equal_to()(Mission_goals[i].name, m_goals[i].name))
+		if (!lcase_equal(Mission_goals[i].name, m_goals[i].name))
 			return 1;
-		if (!SCP_string_lcase_equal_to()(Mission_goals[i].message, m_goals[i].message))
+		if (!lcase_equal(Mission_goals[i].message, m_goals[i].message))
 			return 1;
 		if (Mission_goals[i].type != m_goals[i].type)
 			return 1;

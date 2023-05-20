@@ -675,7 +675,7 @@ bool EventEditorDialog::query_modified() {
 	}
 
 	for (auto i = 0; i < (int)m_events.size(); i++) {
-		if (!SCP_string_lcase_equal_to()(m_events[i].name, Mission_events[i].name)) {
+		if (!lcase_equal(m_events[i].name, Mission_events[i].name)) {
 			return true;
 		}
 		if (m_events[i].repeat_count != Mission_events[i].repeat_count) {
@@ -693,10 +693,10 @@ bool EventEditorDialog::query_modified() {
 		if (m_events[i].chain_delay != Mission_events[i].chain_delay) {
 			return true;
 		}
-		if (!SCP_string_lcase_equal_to()(m_events[i].objective_text, Mission_events[i].objective_text)) {
+		if (!lcase_equal(m_events[i].objective_text, Mission_events[i].objective_text)) {
 			return true;
 		}
-		if (!SCP_string_lcase_equal_to()(m_events[i].objective_key_text, Mission_events[i].objective_key_text)) {
+		if (!lcase_equal(m_events[i].objective_key_text, Mission_events[i].objective_key_text)) {
 			return true;
 		}
 		if (m_events[i].mission_log_flags != Mission_events[i].mission_log_flags) {

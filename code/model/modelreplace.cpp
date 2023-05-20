@@ -930,7 +930,7 @@ void VirtualPOFOperationAddPath::process(polymodel* pm, model_read_deferred_task
 
 	int sourcePathNr = -1;
 	for (int i = 0; i < appendingPM->n_paths; i++) {
-		if (SCP_string_lcase_equal_to()(sourcepath, appendingPM->paths[i].name)) {
+		if (lcase_equal(sourcepath, appendingPM->paths[i].name)) {
 			sourcePathNr = i;
 			break;
 		}
@@ -938,7 +938,7 @@ void VirtualPOFOperationAddPath::process(polymodel* pm, model_read_deferred_task
 
 	const SCP_string& targetName = renamePath ? *renamePath : sourcepath;
 	for (int i = 0; i < pm->n_paths; i++) {
-		if (SCP_string_lcase_equal_to()(targetName, pm->paths[i].name)) {
+		if (lcase_equal(targetName, pm->paths[i].name)) {
 			Warning(LOCATION, "Path %s already exists on POF %s for virtual POF %s. Returning original POF", targetName.c_str(), pm->filename, virtualPof.name.c_str());
 			return;
 		}
@@ -952,7 +952,7 @@ void VirtualPOFOperationAddPath::process(polymodel* pm, model_read_deferred_task
 	int submodel_index = -1;
 	bool clear_parent = false;
 	if (targetParentSubsystem) {
-		if (SCP_string_lcase_equal_to()(*targetParentSubsystem, "<none>"))
+		if (lcase_equal(*targetParentSubsystem, "<none>"))
 			clear_parent = true;
 		else
 			submodel_index = model_find_submodel_index(pm, targetParentSubsystem->c_str());
