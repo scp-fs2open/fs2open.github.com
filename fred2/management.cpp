@@ -59,6 +59,7 @@
 #include "nebula/neb.h"
 #include "nebula/neblightning.h"
 #include "species_defs/species_defs.h"
+#include "lighting/lighting_profiles.h"
 #include "osapi/osapi.h"
 #include "graphics/font.h"
 #include "object/objectdock.h"
@@ -426,6 +427,7 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	techroom_intel_init();
 	hud_positions_init();
 	asteroid_init();
+	lighting_profiles::load_profiles();
 	traitor_init();
 
 	// get fireball IDs for sexpression usage

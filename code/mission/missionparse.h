@@ -161,6 +161,8 @@ typedef struct mission {
 	// Goober5000
 	ai_profile_t *ai_profile;
 
+	SCP_string lighting_profile_name;
+
 	SCP_vector<mission_cutscene> cutscenes;
 
 	void Reset( );

@@ -77,6 +77,7 @@ private:
 	void designerNotesChanged();
 
 	void aiProfileIndexChanged(int index);
+	void lightProfileIndexChanged(int index);
 	
 };
 

@@ -161,3 +161,19 @@ bool adjustment::parse(const char* filename,
 	}
 	return false;
 }
+
+adjustment::adjustment(const adjustment& rhs){
+	*this = rhs;
+}
+
+adjustment& adjustment::operator= (const adjustment& rhs){
+	has_adjust = rhs.has_adjust;
+	adjust = rhs.adjust;
+	has_multiplier = rhs.has_multiplier;
+	multipier = rhs.multipier;
+	has_minimum = rhs.has_minimum;
+	minimum = rhs.minimum;
+	has_maximum = rhs.has_maximum;
+	maximum = rhs.maximum;
+	return *this;
+}

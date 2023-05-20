@@ -1,10 +1,12 @@
 #include "lab_ui.h"
+#include "globalincs/vmallocator.h"
 
 #include "lab_ui_helpers.h"
 
 #include "graphics/debug_sphere.h"
 #include "graphics/matrix.h"
 #include "lab/labv2_internal.h"
+#include "lighting/lighting_profiles.h"
 #include "ship/shiphit.h"
 #include "weapon/weapon.h"
 #include "mission/missionload.h"
@@ -324,6 +326,7 @@ void LabUi::build_tone_mapper_combobox()
 
 void LabUi::show_render_options()
 {
+	auto profile_list = ltp::list_profiles();
 	int bloom_level = gr_bloom_intensity();
 	float ambient_factor = ltp::lab_get_ambient();
 	float light_factor = ltp::lab_get_light();
@@ -389,6 +392,16 @@ void LabUi::show_render_options()
 				SliderFloat("PPC Shoulder Angle", &ppcv.shoulder_angle, 0.0f, 1.0f);
 				SliderFloat("PPC Shoulder Length", &ppcv.shoulder_length, 0.0f, 10.0f);
 				SliderFloat("PPC Shoulder Strength", &ppcv.shoulder_strength, 0.0f, 1.0f);
+			}
+
+			if (profile_list.size()>1) {
+				with_CollapsingHeader("Load lighting profile...") {
+					for (auto s : profile_list) {
+						if (Button(s.c_str(), ImVec2(-FLT_MIN, GetTextLineHeight() * 2))) {
+							ltp::switch_to(s);
+						}
+					}
+				}
 			}
 		}
 
