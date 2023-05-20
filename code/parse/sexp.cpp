@@ -17514,11 +17514,16 @@ int sexp_event_delay_status( int n, int want_true, bool use_msecs = false)
 				}
 			}
 
-			// check that the event delay has elapsed, again using the same logic as in mission_process_event()
-			if (!Fixed_chaining_to_repeat && Mission_events[i].flags & MEF_TIMESTAMP_HAS_INTERVAL) {
+			// Events that have never fired are not subject to the delay check. This matches the behavior of the
+			// original public source code release and also allows checks for these events to work in debriefings.
+			if (!Mission_events[i].timestamp.isValid()) {
 				/* do not set rval */;
 			}
-			// note that if the event and the timestamp happen simultaneously, at least one frame must elapse first;
+			// Check that the event delay has elapsed, again using the same logic as in mission_process_event()
+			else if (!Fixed_chaining_to_repeat && Mission_events[i].flags & MEF_TIMESTAMP_HAS_INTERVAL) {
+				/* do not set rval */;
+			}
+			// Note that if the event and the timestamp happen simultaneously, at least one frame must elapse first;
 			// this matches the delay check in the original public source code release
 			else if (!timestamp_elapsed_last_frame(timestamp_delta(Mission_events[i].timestamp, delay))) {
 				rval = SEXP_FALSE;
