@@ -53,6 +53,7 @@ public:
 	float shield_energy_scale[NUM_SKILL_LEVELS];			// shield energy available
 	float afterburner_recharge_scale[NUM_SKILL_LEVELS];		// speed of afterburner recharge
 	float player_damage_scale[NUM_SKILL_LEVELS];			// damage applied to the player
+	float player_damage_inflicted_scale[NUM_SKILL_LEVELS];	// damage applied by the player
 	
 	float subsys_damage_scale[NUM_SKILL_LEVELS];			// damage applied to a player subsystem
 	float beam_friendly_damage_cap[NUM_SKILL_LEVELS];		// damage cap values for friendly beam fire
