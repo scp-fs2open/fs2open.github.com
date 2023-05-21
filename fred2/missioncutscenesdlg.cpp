@@ -442,7 +442,7 @@ void CMissionCutscenesDlg::insert_handler(int old, int node)
 void CMissionCutscenesDlg::move_handler(int node1, int node2, bool insert_before)
 {
 	int index1, index2, s;
-	mission_cutscene g;
+	mission_cutscene fu;
 
 	for (index1 = 0; index1 < (int)m_cutscenes.size(); index1++) {
 		if (m_cutscenes[index1].formula == node1) {
@@ -458,7 +458,7 @@ void CMissionCutscenesDlg::move_handler(int node1, int node2, bool insert_before
 	}
 	Assert(index2 < (int)m_cutscenes.size());
 
-	g = m_cutscenes[index1];
+	fu = m_cutscenes[index1];
 	s = m_sig[index1];
 
 	int offset = insert_before ? -1 : 0;
@@ -474,6 +474,6 @@ void CMissionCutscenesDlg::move_handler(int node1, int node2, bool insert_before
 		index1--;
 	}
 
-	m_cutscenes[index1] = g;
+	m_cutscenes[index1] = fu;
 	m_sig[index1] = s;
 }
