@@ -101,7 +101,7 @@ static SCP_string conditionParseString(const SCP_string& name) {
 
 static int conditionParseActionId(const SCP_string& name) {
 	for (int i = 0; i < (int)Control_config.size(); i++) {
-		if (SCP_string_lcase_equal_to{}(Control_config[i].text, name))
+		if (lcase_equal(Control_config[i].text, name))
 			return i;
 	}
 	return -1;

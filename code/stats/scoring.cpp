@@ -62,7 +62,7 @@ float Scoring_scale_factors[NUM_SKILL_LEVELS] = {
 traitor_override_t* get_traitor_override_pointer(const SCP_string& name)
 {
 	for (int i = 0; i < (int)Traitor_overrides.size(); i++) {
-		if (SCP_string_lcase_equal_to()(name, Traitor_overrides[i].name)) {
+		if (lcase_equal(name, Traitor_overrides[i].name)) {
 			return &Traitor_overrides[i];
 		}
 	}

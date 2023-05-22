@@ -81,7 +81,7 @@ BOOL music_player_dlg::OnInitDialog()
 
 		// check if the file was asked to be ignored in game_settings
 		for (auto& thisFile : Ignored_music_player_files) {
-			if (SCP_string_lcase_equal_to()(thisFile, file)) {
+			if (lcase_equal(thisFile, file)) {
 				addItem = false;
 				break;
 			}

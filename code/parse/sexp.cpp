@@ -905,7 +905,7 @@ SCP_vector<dynamic_sexp_parameter_list> Dynamic_parameters;
 int get_dynamic_parameter_index(const SCP_string &op_name, int param)
 {
 	for (int i = 0; i < (int)Dynamic_parameters.size(); i++) {
-		if (SCP_string_lcase_equal_to()(Dynamic_parameters[i].operator_name, op_name)) {
+		if (lcase_equal(Dynamic_parameters[i].operator_name, op_name)) {
 
 			// Make sure there are actually parameters for this operator
 			if (!Dynamic_parameters[i].parameter_map.empty()) {
@@ -942,7 +942,7 @@ int get_dynamic_parameter_index(const SCP_string &op_name, int param)
 int get_dynamic_enum_position(const SCP_string &enum_name)
 {
 	for (int i = 0; i < (int)Dynamic_enums.size(); i++) {
-		if (SCP_string_lcase_equal_to()(enum_name, Dynamic_enums[i].name)) {
+		if (lcase_equal(enum_name, Dynamic_enums[i].name)) {
 			return i;
 		}
 	}

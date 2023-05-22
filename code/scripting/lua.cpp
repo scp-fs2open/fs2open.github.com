@@ -199,8 +199,7 @@ static bool sort_table_entries(const ade_table_entry* left, const ade_table_entr
 		return false;
 	}
 
-	SCP_string_lcase_less_than lt;
-	return lt(leftCmp, rightCmp);
+	return lcase_lessthan(leftCmp, rightCmp);
 }
 
 static bool sort_doc_entries(const ade_table_entry* left, const ade_table_entry* right) {

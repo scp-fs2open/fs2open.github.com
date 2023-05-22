@@ -186,7 +186,7 @@ static bool Irr_cubemap_drawn = false;
 
 int get_motion_debris_by_name(const SCP_string &name) {
 	for (int i = 0; i < (int)Motion_debris_info.size(); i++) {
-		if (SCP_string_lcase_equal_to()(Motion_debris_info[i].name, name)) {
+		if (lcase_equal(Motion_debris_info[i].name, name)) {
 			return i;
 		}
 	}

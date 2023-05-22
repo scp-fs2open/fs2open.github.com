@@ -449,7 +449,7 @@ int event_editor::query_modified()
 		return 1;
 
 	for (i=0; i<(int)m_events.size(); i++) {
-		if (!SCP_string_lcase_equal_to()(m_events[i].name, Mission_events[i].name))
+		if (!lcase_equal(m_events[i].name, Mission_events[i].name))
 			return 1;
 		if (m_events[i].repeat_count != Mission_events[i].repeat_count)
 			return 1;
@@ -461,9 +461,9 @@ int event_editor::query_modified()
 			return 1;
 		if (m_events[i].chain_delay != Mission_events[i].chain_delay)
 			return 1;
-		if (!SCP_string_lcase_equal_to()(m_events[i].objective_text, Mission_events[i].objective_text))
+		if (!lcase_equal(m_events[i].objective_text, Mission_events[i].objective_text))
 			return 1;
-		if (!SCP_string_lcase_equal_to()(m_events[i].objective_key_text, Mission_events[i].objective_key_text))
+		if (!lcase_equal(m_events[i].objective_key_text, Mission_events[i].objective_key_text))
 			return 1;
 		if (m_events[i].flags != Mission_events[i].flags)
 			return 1;
