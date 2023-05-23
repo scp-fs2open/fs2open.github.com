@@ -827,10 +827,10 @@ int CFred_mission_save::save_asteroid_fields()
 
 		if (Asteroid_field.enhanced_visibility_checks) {
 			if (Mission_save_format != FSO_FORMAT_RETAIL) {
-				if (optional_string_fred("+Consider Range:")) {
+				if (optional_string_fred("+Use Enhanced Checks:")) {
 					parse_comments();
 				} else {
-					fout("\n+Consider Range:");
+					fout("\n+Use Enhanced Checks:");
 				}
 				fout(" %b", Asteroid_field.enhanced_visibility_checks);
 			}
