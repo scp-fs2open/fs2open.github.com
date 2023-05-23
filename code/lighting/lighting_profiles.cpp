@@ -255,10 +255,12 @@ void load_profiles()
 
 void parse_all()
 {
+	Profiles[default_profile_name] = profile();
+	Profiles[default_profile_name].reset();
 	_current.reset();
-	if (cf_exists_full("profiles.tbl", CF_TYPE_TABLES)) {
+	if (cf_exists_full("lighting_profiles.tbl", CF_TYPE_TABLES)) {
 		mprintf(("TABLES: Starting parse of lighting profiles.tbl\n"));
-		parse_file("profiles.tbl");
+		parse_file("lighting_profiles.tbl");
 	}
 
 	mprintf(("TBM  =>  Starting parse of lighting profiles ...\n"));
@@ -331,7 +333,7 @@ void profile::parse(const char* filename, SCP_string& profile_name, SCP_string& 
 		if (optional_string("$Tonemapper:")) {
 			stuff_string(buffer, F_NAME);
 			TonemapperAlgorithm tn = name_to_tonemapper(buffer);
-			_current.tonemapper = tn;
+			tonemapper = tn;
 			parsed = true;
 		}
 		parsed |= parse_optional_float_into("$PPC Toe Strength:", &ppc_values.toe_strength);
