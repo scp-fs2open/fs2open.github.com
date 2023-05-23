@@ -265,7 +265,7 @@ static void inner_bound_pos_fixup(asteroid_field *asfieldp, vec3d *pos)
 /**
  * Create a single asteroid 
  */
-object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int asteroid_subtype, bool check_visibility = false)
+object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int asteroid_subtype, bool check_visibility)
 {
 	int				n, objnum;
 	matrix			orient;
@@ -359,7 +359,7 @@ object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int asteroi
 	// If the generated asteroid position is within the player view then abort
 	// I'm unsure how Eyepoint is handled for multiplayer, so this may need to move up into the SP
 	// only section - Mjn
-	if (check_visibility && asteroid_is_within_view(&pos, -1.0f, false)) {
+	if (check_visibility && asteroid_is_within_view(&pos, -1.0f, true)) {
 		return nullptr;
 	}
 
@@ -750,6 +750,13 @@ void asteroid_create_asteroid_field(int num_asteroids, int field_type, int aster
 		Asteroid_field.inner_max_bound = i_max;
 	}
 
+	Asteroid_field.enhanced_visibility_checks = false;
+
+	// For now this cannot be adjusted via sexp because altering the sexp that uses
+	// repeating arguments proves challenging. If requested a specific 
+	// field-use-enhanced-checks sexp could be created.
+	Asteroid_field.enhanced_visibility_checks = false;
+
 	Asteroid_field.target_names = targets;
 
 	// Only create asteroids if we have some to create
@@ -1001,7 +1008,7 @@ static void sanitize_asteroid_targets_list() {
 * Checks if an asteroid will be within the player's view
 *
 **/
-static bool asteroid_is_within_view(vec3d *pos, float range, bool check_range = true)
+bool asteroid_is_within_view(vec3d *pos, float range, bool range_override)
 {
 	vec3d vec_to_asteroid;
 
@@ -1011,12 +1018,12 @@ static bool asteroid_is_within_view(vec3d *pos, float range, bool check_range = 
 
 	// if asteroid is within view or far enough away then wrap
 	if (cur_dot > cos(Proj_fov)) {
-		if (check_range) {
+		if (range_override) {
+			return true;
+		} else {
 			if (cur_dist < range) {
 				return true;
 			}
-		} else {
-			return true;
 		}
 	}
 
@@ -1063,7 +1070,7 @@ static void maybe_throw_asteroid()
 		if (subtype < 0)
 			return;
 
-		object *objp = asteroid_create(&Asteroid_field, ASTEROID_TYPE_LARGE, subtype, false);
+		object* objp = asteroid_create(&Asteroid_field, ASTEROID_TYPE_LARGE, subtype, Asteroid_field.enhanced_visibility_checks);
 		if (objp != nullptr) {
 			asteroid_aim_at_target(target_objp, objp, ASTEROID_MIN_COLLIDE_TIME + frand() * 20.0f);
 
@@ -1132,45 +1139,32 @@ static void asteroid_maybe_reposition(object *objp, asteroid_field *asfieldp)
 
 		bool wrap = false;
 		bool reverse = false;
-		bool destroy = false;
 
-		// If asteroid is targeted, maybe destroy instead of wrap
-		if (!asteroid_is_targeted(objp)) {
-			wrap = true;
-		} else {
-			// new feature.. destroy an asteroid instead of letting it leave the field as long as it's targeted
-			destroy = true;
+		// If asteroid is targeted then we cannot wrap because they player would see it and say "SHENANIGANS!"
+		// So we bail
+		if (asteroid_is_targeted(objp)) {
+			return;
 		}
 
-		// if asteroid is not within view then wrap
-		if (asteroid_is_within_view(&objp->pos, asfieldp->bound_rad, true)) {
-			wrap = true;
-		} else {
-			// new feature.. destroy an asteroid instead of letting it leave the field if it's within view
-			destroy = true;
+		// if asteroid is not within view...
+		if (asteroid_is_within_view(&objp->pos, asfieldp->bound_rad, asfieldp->enhanced_visibility_checks)) {
+
+			// if asteroid new position is within view then reverse velocity, otherwise wrap
+			if (asteroid_is_within_view(&objp->pos, (asfieldp->bound_rad * 1.3f), asfieldp->enhanced_visibility_checks)) {
+
+				// if the mission has gravity, then we can't reverse. So make sure gravity is null
+				if (IS_VEC_NULL(&The_mission.gravity)) {
+					reverse = true;
+				}
+
+			} else {
+				wrap = true;
+			}
+
 		}
 
-		// if asteroid new position is not within view then wrap, otherwise reverse velocity
-		if (asteroid_is_within_view(&objp->pos, (asfieldp->bound_rad * 1.3f), true)) {
-			reverse = true;
-		} else {
-			wrap = true;
-		}
-
-		// Only allow reversing direction if gravity is null
-		if (IS_VEC_NULL(&The_mission.gravity)) {
-			reverse = true;
-		} else {
-			reverse = false;
-		}
-
-		// we have too many asteroids, so destroy this one instead of wrapping
+		// we can wrap, but we have too many asteroids, so destroy this one instead
 		if (wrap && (Num_asteroids > MAX_ASTEROIDS - 10)) {
-			destroy = true;
-		}
-
-		// Destroy it! Cast it into the fire!
-		if (destroy) {
 			objp->flags.set(Object::Object_Flags::Should_be_dead);
 			return;
 		}
@@ -1206,7 +1200,6 @@ static void asteroid_maybe_reposition(object *objp, asteroid_field *asfieldp)
 				if (MULTIPLAYER_MASTER)
 					send_asteroid_throw(objp);
 			}
-			return;
 		}
 	}
 }

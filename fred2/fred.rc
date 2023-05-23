@@ -1659,6 +1659,8 @@ BEGIN
     LISTBOX         IDC_FIELD_TARGET_LIST,385,70,151,60,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
     PUSHBUTTON      "Add",IDC_ADD_FIELD_TARGET,385,136,41,14
     PUSHBUTTON      "Remove",IDC_REMOVE_FIELD_TARGET,430,136,40,14
+    CONTROL         "Use enhanced spawn checking",IDC_RANGE_OVERRIDE, "Button",BS_AUTOCHECKBOX | WS_TABSTOP,193,163,130,10
+    LTEXT           "(By default player range is checked in addition to the player view cone for spawning asteroids. In small fields you may want to override this behavior.)",IDC_STATIC,192,176,155,26
 END
 
 IDD_CAMPAIGN DIALOGEX 0, 0, 270, 441

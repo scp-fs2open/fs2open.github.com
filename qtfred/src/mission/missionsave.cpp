@@ -839,6 +839,17 @@ int CFred_mission_save::save_asteroid_fields()
 			save_vector(Asteroid_field.inner_max_bound);
 		}
 
+		if (Asteroid_field.enhanced_visibility_checks) {
+			if (save_format != MissionFormat::RETAIL) {
+				if (optional_string_fred("+Consider Range:")) {
+					parse_comments();
+				} else {
+					fout("\n+Consider Range:");
+				}
+				fout(" %b", Asteroid_field.enhanced_visibility_checks);
+			}
+		}
+
 		if (!Asteroid_field.target_names.empty()) {
 			fso_comment_push(";;FSO 22.0.0;;");
 			if (optional_string_fred("$Asteroid Targets:")) {
