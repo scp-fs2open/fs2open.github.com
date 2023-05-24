@@ -5809,8 +5809,8 @@ void parse_asteroid_fields(mission *pm)
 			Asteroid_field.has_inner_bound = false;
 		}
 
-		if (optional_string("+Use Enhanced Checks:")) {
-			stuff_boolean(&Asteroid_field.enhanced_visibility_checks);
+		if (optional_string("+Use Enhanced Checks")) {
+			Asteroid_field.enhanced_visibility_checks = true;
 		}
 
 		if (optional_string("$Asteroid Targets:")) {
