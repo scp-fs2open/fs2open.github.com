@@ -897,9 +897,9 @@ void cf_search_root_path(int root_index)
 
 		for (auto &file : files) {
 			auto ext_idx = file.name.rfind('.');
-			auto org_name = file.name;
+			auto orig_name = file.name;
 
-			if ( ext_idx != SCP_string::npos && file.name.substr(ext_idx) == ".lz4" ) {
+			if ( ext_idx != SCP_string::npos && SCP_string_lcase_equal_to()(file.name.substr(ext_idx), SCP_string(".lz4")) ) {
 				file.name = file.name.erase(ext_idx, file.name.length());
 				ext_idx = file.name.rfind('.');
 			}
@@ -908,7 +908,7 @@ void cf_search_root_path(int root_index)
 				continue;
 			}
 
-			check_file_shadows(root_index, i, file.name, file.sub_path, org_name.c_str());
+			check_file_shadows(root_index, i, file.name, file.sub_path, orig_name.c_str());
 
 			cf_file *cfile = cf_create_file();
 
@@ -918,7 +918,7 @@ void cf_search_root_path(int root_index)
 			cfile->write_time = file.m_time;
 			cfile->size = static_cast<int>(file.size);
 			cfile->pack_offset = 0;
-			cfile->real_name = search_path + DIR_SEPARATOR_STR + file.sub_path + org_name;
+			cfile->real_name = search_path + DIR_SEPARATOR_STR + file.sub_path + orig_name;
 			cfile->sub_path = file.sub_path;
 
 			++num_files;
