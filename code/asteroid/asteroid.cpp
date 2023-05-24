@@ -704,11 +704,29 @@ void asteroid_create_asteroid_field(int num_asteroids, int field_type, int aster
 
 	Asteroid_field.num_initial_asteroids = num_asteroids;
 
-	if (field_type == 0) {
-		Asteroid_field.field_type = FT_PASSIVE;
-	} else {
-		Asteroid_field.field_type = FT_ACTIVE;
+	switch (field_type) {
+		case 0:
+			Asteroid_field.field_type = FT_PASSIVE;
+			Asteroid_field.enhanced_visibility_checks = false;
+			break;
+		case 1:
+			Asteroid_field.field_type = FT_ACTIVE;
+			Asteroid_field.enhanced_visibility_checks = false;
+			break;
+		case 2:
+			Asteroid_field.field_type = FT_PASSIVE;
+			Asteroid_field.enhanced_visibility_checks = true;
+			break;
+		case 3:
+			Asteroid_field.field_type = FT_ACTIVE;
+			Asteroid_field.enhanced_visibility_checks = true;
+			break;
+		default: //Any other number will just give default behavior
+			Asteroid_field.field_type = FT_PASSIVE;
+			Asteroid_field.enhanced_visibility_checks = false;
+			break;
 	}
+
 	vm_vec_rand_vec_quick(&Asteroid_field.vel);
 	vm_vec_scale(&Asteroid_field.vel, (float)asteroid_speed);
 	Asteroid_field.speed = (float)asteroid_speed;
@@ -750,11 +768,6 @@ void asteroid_create_asteroid_field(int num_asteroids, int field_type, int aster
 		Asteroid_field.inner_max_bound = i_max;
 	}
 
-	// For now this cannot be adjusted via sexp because altering the sexp that uses
-	// repeating arguments proves challenging. If requested a specific 
-	// field-use-enhanced-checks sexp could be created.
-	Asteroid_field.enhanced_visibility_checks = false;
-
 	Asteroid_field.target_names = targets;
 
 	// Only create asteroids if we have some to create
@@ -764,13 +777,15 @@ void asteroid_create_asteroid_field(int num_asteroids, int field_type, int aster
 }
 
 // will replace any existing asteroid or debris field with a debris field
-void asteroid_create_debris_field(int num_asteroids, int asteroid_speed, int debris1, int debris2, int debris3, vec3d o_min, vec3d o_max)
+void asteroid_create_debris_field(int num_asteroids, int asteroid_speed, int debris1, int debris2, int debris3, vec3d o_min, vec3d o_max, bool enhanced)
 {
 	remove_all_asteroids();
 
 	Asteroid_field.num_initial_asteroids = num_asteroids;
 
 	Asteroid_field.field_type = FT_PASSIVE;
+
+	Asteroid_field.enhanced_visibility_checks = enhanced;
 
 	vm_vec_rand_vec_quick(&Asteroid_field.vel);
 	vm_vec_scale(&Asteroid_field.vel, (float)asteroid_speed);
