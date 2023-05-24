@@ -107,7 +107,7 @@ BEGIN_MESSAGE_MAP(asteroid_editor, CDialog)
 	ON_BN_CLICKED(IDC_REMOVE_FIELD_TARGET, OnRemoveFieldTarget)
 	ON_BN_CLICKED(IDC_RANGE_OVERRIDE, OnEnableRangeOverride)
 	//}}AFX_MSG_MAP
-	END_MESSAGE_MAP()
+END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
 // asteroid_editor message handlers

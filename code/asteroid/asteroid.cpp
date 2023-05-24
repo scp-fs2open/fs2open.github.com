@@ -750,8 +750,6 @@ void asteroid_create_asteroid_field(int num_asteroids, int field_type, int aster
 		Asteroid_field.inner_max_bound = i_max;
 	}
 
-	Asteroid_field.enhanced_visibility_checks = false;
-
 	// For now this cannot be adjusted via sexp because altering the sexp that uses
 	// repeating arguments proves challenging. If requested a specific 
 	// field-use-enhanced-checks sexp could be created.
@@ -1013,15 +1011,15 @@ bool asteroid_is_within_view(vec3d *pos, float range, bool range_override)
 	vec3d vec_to_asteroid;
 
 	// Distance and view cone for the position in relation to the player
-	float cur_dist = vm_vec_normalized_dir(&vec_to_asteroid, pos, &Eye_position);
-	float cur_dot = vm_vec_dot(&Eye_matrix.vec.fvec, &vec_to_asteroid);
+	float dist = vm_vec_normalized_dir(&vec_to_asteroid, pos, &Eye_position);
+	float dot = vm_vec_dot(&Eye_matrix.vec.fvec, &vec_to_asteroid);
 
 	// if asteroid is within view or far enough away then wrap
-	if (cur_dot > cos(Proj_fov)) {
+	if (dot > cos(Proj_fov)) {
 		if (range_override) {
 			return true;
 		} else {
-			if (cur_dist < range) {
+			if (dist < range) {
 				return true;
 			}
 		}
@@ -1070,7 +1068,7 @@ static void maybe_throw_asteroid()
 		if (subtype < 0)
 			return;
 
-		object* objp = asteroid_create(&Asteroid_field, ASTEROID_TYPE_LARGE, subtype, Asteroid_field.enhanced_visibility_checks);
+		object *objp = asteroid_create(&Asteroid_field, ASTEROID_TYPE_LARGE, subtype, Asteroid_field.enhanced_visibility_checks);
 		if (objp != nullptr) {
 			asteroid_aim_at_target(target_objp, objp, ASTEROID_MIN_COLLIDE_TIME + frand() * 20.0f);
 
@@ -1150,7 +1148,7 @@ static void asteroid_maybe_reposition(object *objp, asteroid_field *asfieldp)
 		if (asteroid_is_within_view(&objp->pos, asfieldp->bound_rad, asfieldp->enhanced_visibility_checks)) {
 
 			// if asteroid new position is within view then reverse velocity, otherwise wrap
-			if (asteroid_is_within_view(&objp->pos, (asfieldp->bound_rad * 1.3f), asfieldp->enhanced_visibility_checks)) {
+			if (asteroid_is_within_view(&new_pos, (asfieldp->bound_rad * 1.3f), asfieldp->enhanced_visibility_checks)) {
 
 				// if the mission has gravity, then we can't reverse. So make sure gravity is null
 				if (IS_VEC_NULL(&The_mission.gravity)) {
@@ -1180,11 +1178,11 @@ static void asteroid_maybe_reposition(object *objp, asteroid_field *asfieldp)
 		// We can wrap, so wrap!
 		if (wrap) {
 			objp->pos = new_pos;
-			asteroid* astp = &Asteroids[objp->instance];
+			asteroid *astp = &Asteroids[objp->instance];
 
 			if (asfieldp->field_type == FT_ACTIVE) {
 				// this doesnt count as a thrown asteroid anymore
-				for (asteroid_target& target : Asteroid_targets)
+				for (asteroid_target &target : Asteroid_targets)
 					if (target.objnum == astp->target_objnum)
 						target.incoming_asteroids--;
 
