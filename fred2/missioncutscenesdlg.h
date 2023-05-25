@@ -10,10 +10,9 @@
 
 
 #include "Sexp_tree.h"
-#include "mission/missiongoals.h"
 
 /////////////////////////////////////////////////////////////////////////////
-// CMissionGoalsDlg dialog
+// CMissionCutscenesDlg dialog
 
 #define OPERAND	0x01
 #define EDITABLE	0x02
