@@ -1030,7 +1030,7 @@ VirtualPOFOperationChangeSubsystemData::VirtualPOFOperationChangeSubsystemData()
 	}
 }
 
-void VirtualPOFOperationChangeSubsystemData::process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const {
+void VirtualPOFOperationChangeSubsystemData::process(polymodel* /*pm*/, model_read_deferred_tasks& deferredTasks, model_parse_depth /*depth*/, const VirtualPOFDefinition& virtualPof) const {
 	auto subsys_it = deferredTasks.model_subsystems.find(subsystem);
 
 	if (subsys_it == deferredTasks.model_subsystems.end()){
