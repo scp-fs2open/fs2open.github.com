@@ -60,9 +60,9 @@ CMissionCutscenesDlg::CMissionCutscenesDlg(CWnd* pParent /*=NULL*/)
 
 BOOL CMissionCutscenesDlg::OnInitDialog()
 {
-	int i, adjust = 0;
-
 	CDialog::OnInitDialog();  // let the base class do the default work
+
+	int adjust = 0;
 
 	if (!Show_sexp_help)
 	{
@@ -77,7 +77,7 @@ BOOL CMissionCutscenesDlg::OnInitDialog()
 	create_tree();
 
 	Cutscene_editor_dlg = this;
-	i = m_cutscenes_tree.select_sexp_node;
+	int i = m_cutscenes_tree.select_sexp_node;
 	if (i != -1) {
 		GetDlgItem(IDC_CUTSCENES_TREE)->SetFocus();
 		m_cutscenes_tree.hilite_item(i);
@@ -122,15 +122,13 @@ END_MESSAGE_MAP()
 // Initialization: sets up internal working copy of mission cutscenes and cutscene trees.
 void CMissionCutscenesDlg::load_tree()
 {
-	int i;
-
 	m_cutscenes_tree.select_sexp_node = select_sexp_node;
 	select_sexp_node = -1;
 
 	m_cutscenes_tree.clear_tree();
 	m_cutscenes.clear();
 	m_sig.clear();
-	for (i=0; i<(int)The_mission.cutscenes.size(); i++) {
+	for (int i=0; i<(int)The_mission.cutscenes.size(); i++) {
 		m_cutscenes.push_back(The_mission.cutscenes[i]);
 		m_sig.push_back(i);
 
@@ -148,18 +146,15 @@ void CMissionCutscenesDlg::load_tree()
 // create the CTreeCtrl tree from the cutscene tree, filtering based on m_display_cutscene_types
 void CMissionCutscenesDlg::create_tree()
 {
-	int i;
-	HTREEITEM h;
-
 	m_desc = _T(cutscene_descriptions[m_display_cutscene_types]);
 
 	m_cutscenes_tree.DeleteAllItems();
 	m_cutscenes_tree.reset_handles();
-	for (i = 0; i < (int)m_cutscenes.size(); i++) {
+	for (int i = 0; i < (int)m_cutscenes.size(); i++) {
 		if (m_cutscenes[i].type != m_display_cutscene_types)
 			continue;
 
-		h = m_cutscenes_tree.insert(m_cutscenes[i].filename);
+		HTREEITEM h = m_cutscenes_tree.insert(m_cutscenes[i].filename);
 		m_cutscenes_tree.SetItemData(h, m_cutscenes[i].formula);
 		m_cutscenes_tree.add_sub_tree(m_cutscenes[i].formula, h);
 	}
@@ -179,22 +174,25 @@ void CMissionCutscenesDlg::OnSelchangeDisplayCutsceneTypesDrop()
 // we need to update the display when this occurs.
 void CMissionCutscenesDlg::OnSelchangedCutscenesTree(NMHDR* pNMHDR, LRESULT* pResult)
 {
-	int i, z;
 	NM_TREEVIEW* pNMTreeView = (NM_TREEVIEW*)pNMHDR;
-	HTREEITEM h, h2;
 
-	h = pNMTreeView->itemNew.hItem;
+	HTREEITEM h = pNMTreeView->itemNew.hItem;
 	if (!h)
 		return;
 
+	HTREEITEM h2;
 	m_cutscenes_tree.update_help(h);
-	while ((h2 = m_cutscenes_tree.GetParentItem(h)) != 0)
+	while ((h2 = m_cutscenes_tree.GetParentItem(h)) != 0) {
 		h = h2;
+	}
 
-	z = (int)m_cutscenes_tree.GetItemData(h);
-	for (i = 0; i < (int)m_cutscenes.size(); i++)
-		if (m_cutscenes[i].formula == z)
+	int z = (int)m_cutscenes_tree.GetItemData(h);
+	int i;
+	for (i = 0; i < (int)m_cutscenes.size(); i++) {
+		if (m_cutscenes[i].formula == z) {
 			break;
+		}
+	}
 
 	Assert(i < (int)m_cutscenes.size());
 	cur_cutscene = i;
@@ -256,12 +254,11 @@ void CMissionCutscenesDlg::OnEndlabeleditCutscenesTree(NMHDR* pNMHDR, LRESULT* p
 
 void CMissionCutscenesDlg::OnOK()
 {
-	HWND h;
 	CWnd *w;
 
 	w = GetFocus();
 	if (w) {
-		h = w->m_hWnd;
+		HWND h = w->m_hWnd;
 		GetDlgItem(IDC_CUTSCENES_TREE)->SetFocus();
 		::SetFocus(h);
 	}
@@ -269,15 +266,13 @@ void CMissionCutscenesDlg::OnOK()
 
 int CMissionCutscenesDlg::query_modified()
 {
-	int i;
-
 	if (modified)
 		return 1;
 
 	if (The_mission.cutscenes.size() != m_cutscenes.size())
 		return 1;
 
-	for (i = 0; i < (int)The_mission.cutscenes.size(); i++) {
+	for (int i = 0; i < (int)The_mission.cutscenes.size(); i++) {
 		if (!stricmp(The_mission.cutscenes[i].filename, m_cutscenes[i].filename))
 			return 1;
 		if (The_mission.cutscenes[i].type != m_cutscenes[i].type)
@@ -312,19 +307,16 @@ void CMissionCutscenesDlg::OnOk()
 
 void CMissionCutscenesDlg::OnButtonNewCutscene()
 {
-	int index;
-	HTREEITEM h;
-
 	m_cutscenes.emplace_back();
 	m_sig.push_back(-1);
 
 	m_cutscenes.back().type = m_display_cutscene_types;
 	strcpy_s(m_cutscenes.back().filename, "cutscene filename");
-	h = m_cutscenes_tree.insert(m_cutscenes.back().filename);
+	HTREEITEM h = m_cutscenes_tree.insert(m_cutscenes.back().filename);
 
 	m_cutscenes_tree.item_index = -1;
 	m_cutscenes_tree.add_operator("true", h);
-	index = m_cutscenes.back().formula = m_cutscenes_tree.item_index;
+	int index = m_cutscenes.back().formula = m_cutscenes_tree.item_index;
 	m_cutscenes_tree.SetItemData(h, index);
 
 	m_cutscenes_tree.SelectItem(h);
@@ -332,22 +324,23 @@ void CMissionCutscenesDlg::OnButtonNewCutscene()
 
 int CMissionCutscenesDlg::handler(int code, int node)
 {
-	int i;
-
 	switch (code) {
-	case ROOT_DELETED:
-		for (i = 0; i < (int)m_cutscenes.size(); i++)
-			if (m_cutscenes[i].formula == node)
-				break;
+		case ROOT_DELETED:
+			int i;
+			for (i = 0; i < (int)m_cutscenes.size(); i++){
+				if (m_cutscenes[i].formula == node) {
+					break;
+				}
+			}
 
-		Assert(i < (int)m_cutscenes.size());
-		m_cutscenes.erase(m_cutscenes.begin() + i);
-		m_sig.erase(m_sig.begin() + i);
+			Assert(i < (int)m_cutscenes.size());
+			m_cutscenes.erase(m_cutscenes.begin() + i);
+			m_sig.erase(m_sig.begin() + i);
 
-		return node;
+			return node;
 
-	default:
-		Int3();
+		default:
+			Int3();
 	}
 
 	return -1;
@@ -355,8 +348,6 @@ int CMissionCutscenesDlg::handler(int code, int node)
 
 void CMissionCutscenesDlg::OnSelchangeCutsceneTypeDrop()
 {
-	HTREEITEM h, h2;
-
 	if (cur_cutscene < 0) {
 		return;
 	}
@@ -366,8 +357,10 @@ void CMissionCutscenesDlg::OnSelchangeCutsceneTypeDrop()
 
 	m_cutscenes[cur_cutscene].type = m_cutscene_type;
 
-	h = m_cutscenes_tree.GetSelectedItem();
+	HTREEITEM h = m_cutscenes_tree.GetSelectedItem();
 	Assert(h);
+
+	HTREEITEM h2;
 	while ((h2 = m_cutscenes_tree.GetParentItem(h)) != 0) {
 		h = h2;
 	}
@@ -379,18 +372,17 @@ void CMissionCutscenesDlg::OnSelchangeCutsceneTypeDrop()
 
 void CMissionCutscenesDlg::OnChangeCutsceneName()
 {
-	HTREEITEM h, h2;
-
 	if (cur_cutscene < 0) {
 		return;
 	}
 
 	UpdateData(TRUE);
-	h = m_cutscenes_tree.GetSelectedItem();
+	HTREEITEM h = m_cutscenes_tree.GetSelectedItem();
 	if (!h){
 		return;
 	}
 
+	HTREEITEM h2;
 	while ((h2 = m_cutscenes_tree.GetParentItem(h)) != 0) {
 		h = h2;
 	}
@@ -407,10 +399,8 @@ void CMissionCutscenesDlg::OnCancel()
 
 void CMissionCutscenesDlg::OnClose()
 {
-	int z;
-
 	if (query_modified()) {
-		z = MessageBox("Do you want to keep your changes?", "Close", MB_ICONQUESTION | MB_YESNOCANCEL);
+		int z = MessageBox("Do you want to keep your changes?", "Close", MB_ICONQUESTION | MB_YESNOCANCEL);
 		if (z == IDCANCEL)
 			return;
 
@@ -440,9 +430,7 @@ void CMissionCutscenesDlg::insert_handler(int old, int node)
 
 void CMissionCutscenesDlg::move_handler(int node1, int node2, bool insert_before)
 {
-	int index1, index2, s;
-	mission_cutscene fu;
-
+	int index1;
 	for (index1 = 0; index1 < (int)m_cutscenes.size(); index1++) {
 		if (m_cutscenes[index1].formula == node1) {
 			break;
@@ -450,6 +438,7 @@ void CMissionCutscenesDlg::move_handler(int node1, int node2, bool insert_before
 	}
 	Assert(index1 < (int)m_cutscenes.size());
 
+	int index2;
 	for (index2 = 0; index2 < (int)m_cutscenes.size(); index2++) {
 		if (m_cutscenes[index2].formula == node2) {
 			break;
@@ -457,8 +446,8 @@ void CMissionCutscenesDlg::move_handler(int node1, int node2, bool insert_before
 	}
 	Assert(index2 < (int)m_cutscenes.size());
 
-	fu = m_cutscenes[index1];
-	s = m_sig[index1];
+	mission_cutscene fu = m_cutscenes[index1];
+	int s = m_sig[index1];
 
 	int offset = insert_before ? -1 : 0;
 
