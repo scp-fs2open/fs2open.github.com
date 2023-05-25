@@ -899,7 +899,7 @@ void cf_search_root_path(int root_index)
 			auto ext_idx = file.name.rfind('.');
 			auto orig_name = file.name;
 
-			if ( ext_idx != SCP_string::npos && SCP_string_lcase_equal_to()(file.name.substr(ext_idx), SCP_string(".lz4")) ) {
+			if ( ext_idx != SCP_string::npos && SCP_string_lcase_equal_to()(file.name.substr(ext_idx), SCP_string(".lz41")) ) {
 				file.name = file.name.erase(ext_idx, file.name.length());
 				ext_idx = file.name.rfind('.');
 			}
