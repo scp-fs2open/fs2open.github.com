@@ -1020,19 +1020,28 @@ void parse_cutscenes(mission *pm)
 		while (!optional_string("#end"))
 		{
 			// this list should correspond to the MOVIE_* enums
-			scene.type = optional_string_one_of(8,
+			scene.type = optional_string_one_of(7,
 				"$Fiction Viewer Cutscene:",
 				"$Command Brief Cutscene:",
 				"$Briefing Cutscene:",
 				"$Pre-game Cutscene:",
 				"$Debriefing Cutscene:",
 				"$Post-debriefing Cutscene:",
-				"$Campaign End Cutscene:",
-				"$Post-briefing Cutscene:");
+				"$Campaign End Cutscene:");
 
-			// no more cutscenes specified?
-			if (scene.type < 0)
-				break;
+			if (scene.type < 0) {
+				// this is so dumb, but no one pushed back when goober added it and now
+				// it has to be dealt with so that the fred dialog editor works properly
+				if (optional_string("$Post-briefing Cutscene:")) {
+					scene.type = MOVIE_PRE_GAME;
+					Warning(LOCATION,
+						"Found cutscene defined as '$Post-briefing Cutscene' which has been deprecated. "
+						"Please use '$Pre-game cutscene' instead");
+				} else {
+					// no more cutscenes specified?
+					break;
+				}
+			}
 
 			// get the cutscene file
 			stuff_string(scene.filename, F_NAME, NAME_LENGTH);

@@ -5757,7 +5757,6 @@ void game_enter_state( int old_state, int new_state )
 			// maybe play a cutscene
 			if((old_state == GS_STATE_BRIEFING) || (old_state == GS_STATE_SHIP_SELECT) || 
 			   (old_state == GS_STATE_WEAPON_SELECT) || (old_state == GS_STATE_RED_ALERT) ) {
-				common_maybe_play_cutscene(MOVIE_POST_BRIEF);
 				common_maybe_play_cutscene(MOVIE_PRE_GAME); 
 			}
 

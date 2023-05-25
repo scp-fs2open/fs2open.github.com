@@ -103,7 +103,6 @@ enum : int {
 	MOVIE_PRE_DEBRIEF,
 	MOVIE_POST_DEBRIEF,
 	MOVIE_END_CAMPAIGN,
-	MOVIE_POST_BRIEF, //functionally a pseudonym for MOVIE_PRE_GAME
 
 	// Must always be at the end of the list
 	First_available_movie_id

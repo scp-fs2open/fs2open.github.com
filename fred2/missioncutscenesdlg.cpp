@@ -34,8 +34,7 @@ CString cutscene_descriptions[First_available_movie_id] =
 	"Plays just before the mission starts after Accept has been pressed",
 	"Plays just before the debriefing game state",
 	"Plays when the debriefing has been accepted but before exiting the mission",
-	"Plays when the campaign has been completed",
-	"Plays just before the mission starts after Accept has been pressed"
+	"Plays when the campaign has been completed"
 };
 
 /////////////////////////////////////////////////////////////////////////////
