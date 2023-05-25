@@ -1027,6 +1027,10 @@ VirtualPOFOperationChangeSubsystemData::VirtualPOFOperationChangeSubsystemData()
 	if (optional_string("+Set Properties:")) {
 		SCP_string& props = setProperties.emplace();
 		stuff_string(props, F_MULTITEXT);
+	} else if (optional_string("+Append Properties:")) {
+		propertyReplace = false;
+		SCP_string& props = setProperties.emplace();
+		stuff_string(props, F_MULTITEXT);
 	}
 }
 

@@ -133,6 +133,7 @@ class VirtualPOFOperationChangeSubsystemData : public VirtualPOFOperation {
 	tl::optional<vec3d> setPosition = tl::nullopt;
 	tl::optional<float> setRadius = tl::nullopt;
 	tl::optional<SCP_string> setProperties = tl::nullopt;
+	bool propertyReplace = true;
 public:
 	VirtualPOFOperationChangeSubsystemData();
 	void process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const override;
