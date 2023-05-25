@@ -1061,7 +1061,10 @@ void VirtualPOFOperationChangeSubsystemData::process(polymodel* /*pm*/, model_re
 	}
 
 	if (setProperties) {
-		subsys.props = *setProperties;
+		if (propertyReplace)
+			subsys.props = *setProperties;
+		else
+			subsys.props += '\n' + *setProperties;
 	}
 }
 
