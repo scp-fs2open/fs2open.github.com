@@ -96,13 +96,25 @@ class SourceOrigin {
 	 * @param info The particle_info this should be applied to
 	 * @param allowRelative If @c true then the location of the particle can be relative to the host
 	 */
-	void applyToParticleInfo(particle_info& info, bool allowRelative = false) const;
+	void applyToParticleInfo(particle_info& info) const;
 
 	/**
 	 * @brief Gets the velocity of the origin host
 	 * @return The velocity of the host
 	 */
 	vec3d getVelocity() const;
+
+	/**
+	 * @brief Gets the current scale of the origin host, always 1 for non-particles
+	 * @return The scale of the host
+	 */
+	float getScale() const;
+
+	/**
+	 * @brief Gets the remaining lifetime of the origin host, always -1.0 for non-particles
+	 * @return The lifeleft of the host
+	 */
+	float getLifetime() const;
 
 	/**
 	 * @brief Sets the weapon state in which this origin is valid
