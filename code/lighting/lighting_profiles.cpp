@@ -315,6 +315,7 @@ void parse_profile_section(const char* filename)
 		stuff_string(buffer, F_NAME);
 		if (Profiles.find(buffer) == Profiles.end()) {
 			Profiles[buffer] = profile();
+			Profiles[buffer].reset();
 		}
 		profile* p = &Profiles.at(buffer);
 		SCP_string endtag = "#END PROFILES";
