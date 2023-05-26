@@ -943,7 +943,7 @@ void neb2_render_poofs()
 			continue;
 
 		// render!
-		batching_add_polygon(pinfo->bitmap.first_frame + framenum, &pf.pt, &orient, pf.radius, pf.radius, alpha);
+		batching_add_volume_polygon(pinfo->bitmap.first_frame + framenum, &pf.pt, &orient, pf.radius, pf.radius, alpha);
 	}
 
 	// gr_set_color_fast(&Color_bright_red);

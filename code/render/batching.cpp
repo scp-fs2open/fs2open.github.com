@@ -389,6 +389,8 @@ void batching_add_polygon_internal(primitive_batch *batch, int texture, vec3d *p
 		v[i].b = clr->blue;
 		v[i].a = clr->alpha;
 		v[i].tex_coord.xyz.z = (float)array_index;
+
+		v[i].radius = MAX(width * 0.5f, height * 0.5f);
 	}
 
 	v[0].tex_coord.xyz.x = 1.0f;
@@ -844,6 +846,27 @@ void batching_add_laser(int texture, vec3d *p0, float width1, vec3d *p1, float w
 	primitive_batch *batch = batching_find_batch(texture, batch_info::FLAT_EMISSIVE);
 
 	batching_add_laser_internal(batch, texture, p0, width1, p1, width2, r, g, b);
+}
+
+void batching_add_volume_polygon(int texture, vec3d* pos, matrix* orient, float width, float height, float alpha)
+{
+	Assertion((texture >= 0), "batching_add_...() attempted for invalid texture");
+	if (texture < 0) {
+		return;
+	}
+
+	primitive_batch* batch;
+
+	if (gr_is_capable(CAPABILITY_SOFT_PARTICLES)) {
+		batch = batching_find_batch(texture, batch_info::VOLUME_EMISSIVE);
+	} else {
+		batch = batching_find_batch(texture, batch_info::FLAT_EMISSIVE);
+	}
+
+	color clr;
+	batching_determine_blend_color(&clr, texture, alpha);
+
+	batching_add_polygon_internal(batch, texture, pos, orient, width, height, &clr);
 }
 
 void batching_add_polygon(int texture, vec3d *pos, matrix *orient, float width, float height, float alpha)
