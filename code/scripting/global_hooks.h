@@ -60,6 +60,9 @@ extern const std::shared_ptr<Hook<WeaponDeselectedConditions>>			OnWeaponDeselec
 extern const std::shared_ptr<Hook<WeaponUsedConditions>>				OnTurretFired;
 extern const std::shared_ptr<Hook<WeaponUsedConditions>>				OnBeamFired;
 
+extern const std::shared_ptr<OverridableHook<>>							OnHudCommMenuOpened;
+extern const std::shared_ptr<OverridableHook<>>							OnHudCommMenuClosed;
+
 extern const std::shared_ptr<OverridableHook<ObjectDrawConditions>>		OnHudDraw;
 extern const std::shared_ptr<OverridableHook<ObjectDrawConditions>>		OnObjectRender;
 extern const std::shared_ptr<Hook<>>									OnSimulation;

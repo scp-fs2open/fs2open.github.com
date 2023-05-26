@@ -25,6 +25,7 @@
 #include "parse/parselo.h"
 #include "parse/sexp.h"
 #include "playerman/player.h"
+#include "scripting/global_hooks.h"
 #include "ship/ship.h"
 #include "ship/subsysdamage.h"
 #include "weapon/emp.h"
@@ -231,6 +232,16 @@ bool hud_squadmsg_ship_valid(ship *shipp, object *objp = nullptr);
 // function to set up variables needed when messaging mode is started
 void hud_squadmsg_start()
 {
+	if (scripting::hooks::OnHudCommMenuOpened->isActive())
+	{
+		auto paramList = scripting::hook_param_list(scripting::hook_param("Player", 'o', Player_obj));
+		if (scripting::hooks::OnHudCommMenuOpened->isOverride(paramList))
+		{
+			scripting::hooks::OnHudCommMenuOpened->run(paramList);
+			return;
+		}
+	}
+
 //	int i;
 
 	//if ( num_keys_saved < 0 )  // save the keys if they haven't been saved yet
@@ -255,11 +266,27 @@ void hud_squadmsg_start()
 #endif
 
 	snd_play( gamesnd_get_game_sound(GameSounds::SQUADMSGING_ON) );
+
+	if (scripting::hooks::OnHudCommMenuOpened->isActive())
+	{
+		auto paramList = scripting::hook_param_list(scripting::hook_param("Player", 'o', Player_obj));
+		scripting::hooks::OnHudCommMenuOpened->run(paramList);
+	}
 }
 
 // functions which will restore all of the key binding stuff when messaging mode is done
 void hud_squadmsg_end()
 {
+	if (scripting::hooks::OnHudCommMenuClosed->isActive())
+	{
+		auto paramList = scripting::hook_param_list(scripting::hook_param("Player", 'o', Player_obj));
+		if (scripting::hooks::OnHudCommMenuClosed->isOverride(paramList))
+		{
+			scripting::hooks::OnHudCommMenuClosed->run(paramList);
+			return;
+		}
+	}
+
 /*
 	int i;
 	key_store *ksp;
@@ -273,6 +300,12 @@ void hud_squadmsg_end()
 
 	if ( message_is_playing() == FALSE )
 		snd_play( gamesnd_get_game_sound(GameSounds::SQUADMSGING_OFF) );
+
+	if (scripting::hooks::OnHudCommMenuClosed->isActive())
+	{
+		auto paramList = scripting::hook_param_list(scripting::hook_param("Player", 'o', Player_obj));
+		scripting::hooks::OnHudCommMenuClosed->run(paramList);
+	}
 }
 
 // function which returns true if there are fighters/bombers on the players team in the mission
