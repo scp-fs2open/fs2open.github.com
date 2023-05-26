@@ -5552,6 +5552,10 @@ void parse_bitmaps(mission *pm)
 	// set the ambient light
 
 	// neb2 info
+
+	// all poofs on by default
+	for (size_t i = 0; i < Poof_info.size(); i++)
+		Neb2_poof_flags += (1 << i);
 	bool nebula = false;
 	if (optional_string("+Neb2:")) {
 		nebula = true;
