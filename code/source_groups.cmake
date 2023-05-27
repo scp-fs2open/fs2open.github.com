@@ -225,7 +225,8 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/batched-f.sdr
 	def_files/data/effects/batched-v.sdr
 	def_files/data/effects/bloom-comp-f.sdr
-	def_files/data/effects/blur-f.sdr
+	def_files/data/effects/bloom-downsample-f.sdr
+	def_files/data/effects/bloom-upsample-f.sdr
 	def_files/data/effects/brightpass-f.sdr
 	def_files/data/effects/copy-f.sdr
 	def_files/data/effects/decal-f.sdr
