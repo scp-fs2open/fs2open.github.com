@@ -28,6 +28,7 @@ enum class SubSystem {
 	Species,
 	BriefingIcons,
 	HudCommOrders,
+	HudGaugePositions,
 	AlphaColors,
 	GameSound,
 	MissionBrief,

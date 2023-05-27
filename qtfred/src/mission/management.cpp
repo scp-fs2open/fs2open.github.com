@@ -212,6 +212,9 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 	listener(SubSystem::TechroomIntel);
 	techroom_intel_init();
 
+	listener(SubSystem::HudGaugePositions);
+	hud_positions_init();
+
 	listener(SubSystem::Traitor);
 	traitor_init();
 
