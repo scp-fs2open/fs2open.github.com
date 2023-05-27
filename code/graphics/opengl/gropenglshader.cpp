@@ -95,14 +95,14 @@ static opengl_shader_type_t GL_shader_types[] = {
 	{ SDR_TYPE_POST_PROCESS_MAIN, "post-v.sdr", "post-f.sdr", 0,
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Post Processing", false },
 
-	{ SDR_TYPE_POST_PROCESS_BLUR, "post-v.sdr", "blur-f.sdr", 0,
-		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Gaussian Blur", false },
+	{ SDR_TYPE_POST_PROCESS_BLOOM_DOWNSAMPLE, "post-v.sdr", "bloom-downsample-f.sdr", 0,
+		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Bloom Downsampling", false },
+
+	{ SDR_TYPE_POST_PROCESS_BLOOM_UPSAMPLE, "post-v.sdr", "bloom-upsample-f.sdr", 0,
+		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Bloom Upsampling", false },
 
 	{ SDR_TYPE_POST_PROCESS_BLOOM_COMP, "post-v.sdr", "bloom-comp-f.sdr", 0,
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Bloom Compositing", false },
-
-	{ SDR_TYPE_POST_PROCESS_BRIGHTPASS, "post-v.sdr", "brightpass-f.sdr", 0,
-		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Bloom Brightpass", false },
 
 	{ SDR_TYPE_POST_PROCESS_FXAA, "fxaa-v.sdr", "fxaa-f.sdr", 0,
 		{ opengl_vert_attrib::POSITION }, "FXAA", false },
@@ -190,9 +190,9 @@ static opengl_shader_variant_t GL_shader_variants[] = {
 
 	{SDR_TYPE_EFFECT_PARTICLE, true, SDR_FLAG_PARTICLE_POINT_GEN, "FLAG_EFFECT_GEOMETRY", {opengl_vert_attrib::UVEC}, "Geometry shader point-based particles"},
 
-	{SDR_TYPE_POST_PROCESS_BLUR, false, SDR_FLAG_BLUR_HORIZONTAL, "PASS_0", {}, "Horizontal blur pass"},
+	{SDR_TYPE_POST_PROCESS_BLOOM_UPSAMPLE, false, SDR_FLAG_BLUR_HORIZONTAL, "PASS_0", {}, "Horizontal blur pass"},
 
-	{SDR_TYPE_POST_PROCESS_BLUR, false, SDR_FLAG_BLUR_VERTICAL, "PASS_1", {}, "Vertical blur pass"},
+	{SDR_TYPE_POST_PROCESS_BLOOM_UPSAMPLE, false, SDR_FLAG_BLUR_VERTICAL, "PASS_1", {}, "Vertical blur pass"},
 
 	{SDR_TYPE_NANOVG, false, SDR_FLAG_NANOVG_EDGE_AA, "EDGE_AA", {}, "NanoVG edge anti-alias"},
 

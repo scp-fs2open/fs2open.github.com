@@ -351,11 +351,11 @@ struct msaa_data {
 	float pad[2];
 };
 
-struct blur_data {
-	float texSize;
-	int level;
-
-	float pad[2];
+struct bloom_sample_data {
+	float xSize;
+	float ySize;
+	float mip;
+	float mip_lerp;
 };
 
 struct bloom_composition_data {
