@@ -41,6 +41,8 @@ public:
 	bool getEnabled();
 	void setInnerBoxEnabled(bool enabled);
 	bool getInnerBoxEnabled();
+	void setEnhancedEnabled(bool enabled);
+	bool getEnhancedEnabled();
 	void setAsteroidEnabled(_roid_types type, bool enabled);
 	bool getAsteroidEnabled(_roid_types type);
 	void setNumAsteroids(int num_asteroids);
@@ -72,6 +74,7 @@ private:
 
 	bool  _enable_asteroids;
 	bool  _enable_inner_bounds;
+	bool  _enable_enhanced_checking;
 	int   _num_asteroids;
 	int   _avg_speed;
 

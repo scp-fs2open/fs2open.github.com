@@ -749,7 +749,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "set-ambient-light",				OP_SET_AMBIENT_LIGHT,					3,	3,			SEXP_ACTION_OPERATOR,	},	// Karajorma
 	{ "toggle-asteroid-field",			OP_TOGGLE_ASTEROID_FIELD,				1,	1,			SEXP_ACTION_OPERATOR,	},	// MjnMixael
 	{ "set-asteroid-field",				OP_SET_ASTEROID_FIELD,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// MjnMixael
-	{ "set-debris-field",				OP_SET_DEBRIS_FIELD,					1,	11,			SEXP_ACTION_OPERATOR,	},	// MjnMixael
+	{ "set-debris-field",				OP_SET_DEBRIS_FIELD,					1,	12,			SEXP_ACTION_OPERATOR,	},	// MjnMixael
 	{ "set-motion-debris",			    OP_SET_MOTION_DEBRIS,					1,	1,			SEXP_ACTION_OPERATOR,	},	// MjnMixael
 
 	//Jump Node Sub-Category
@@ -15747,6 +15747,12 @@ void sexp_set_debris_field(int n)
 		}
 	}
 
+	bool enhanced = false;
+	if (n >= 0) {
+		enhanced = is_sexp_true(n);
+		n = CDR(n);
+	}
+
 	if (num_asteroids > MAX_ASTEROIDS) {
 		num_asteroids = MAX_ASTEROIDS;
 	}
@@ -15761,7 +15767,8 @@ void sexp_set_debris_field(int n)
 		debris2,
 		debris3,
 		o_min,
-		o_max);
+		o_max,
+		enhanced);
 }
 
 void sexp_set_motion_debris_type(int n)
@@ -32321,8 +32328,10 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_POSITIVE;
 			else if (argnum <= 4)
 				return OPF_ASTEROID_DEBRIS;
-			else
+			else if (argnum <= 10)
 				return OPF_NUMBER;
+			else
+				return OPF_BOOL;
 
 		case OP_SET_MOTION_DEBRIS:
 			return OPF_MOTION_DEBRIS;
@@ -39884,7 +39893,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tCreates or overwrites the asteroid or debris field with an asteroid field. \r\n"
 		"\tTakes 1 or more arguments...\r\n"
 		"\t1:\tNumber of asteroids in the field, or 0 to remove an existing field\r\n" 
-		"\t2:\t0 for active field, 1 for passive field, defaults to 0\r\n"
+		"\t2:\t0 for passive field, 1 for active field, 2 for enhanced passive, 3 for enhanced active, defaults to 0\r\n"
 		"\t3:\tThe speed of the asteroids, defaults to 0\r\n"
 		"\t4:\tTrue to enable brown asteroids, defaults to true\r\n"
 		"\t5:\tTrue to enable blue asteroids, defaults to false\r\n"
@@ -39919,6 +39928,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t9:\tOuterbox Max Y, defaults to 1000\r\n"
 		"\t10:\tOuterbox Min Z, defaults to -1000\r\n"
 		"\t11:\tOuterbox Max Z, defaults to 1000\r\n"
+		"\t12:\tIf the field uses enhanced spawning checks, defaults to false\r\n"
 	},
 
 	{ OP_SET_MOTION_DEBRIS, "set-motion-debris\r\n" 

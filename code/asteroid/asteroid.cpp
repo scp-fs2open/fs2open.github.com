@@ -265,7 +265,7 @@ static void inner_bound_pos_fixup(asteroid_field *asfieldp, vec3d *pos)
 /**
  * Create a single asteroid 
  */
-object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int asteroid_subtype)
+object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int asteroid_subtype, bool check_visibility)
 {
 	int				n, objnum;
 	matrix			orient;
@@ -354,6 +354,13 @@ object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int asteroi
 		angs.p = static_randf( rand_base++ ) * PI2;
 		angs.b = static_randf( rand_base++ ) * PI2;
 		angs.h = static_randf( rand_base++ ) * PI2;
+	}
+
+	// If the generated asteroid position is within the player view then abort
+	// I'm unsure how Eyepoint is handled for multiplayer, so this may need to move up into the SP
+	// only section - Mjn
+	if (check_visibility && asteroid_is_within_view(&pos, -1.0f, true)) {
+		return nullptr;
 	}
 
 	vm_angles_2_matrix(&orient, &angs);
@@ -697,11 +704,29 @@ void asteroid_create_asteroid_field(int num_asteroids, int field_type, int aster
 
 	Asteroid_field.num_initial_asteroids = num_asteroids;
 
-	if (field_type == 0) {
-		Asteroid_field.field_type = FT_PASSIVE;
-	} else {
-		Asteroid_field.field_type = FT_ACTIVE;
+	switch (field_type) {
+		case 0:
+			Asteroid_field.field_type = FT_PASSIVE;
+			Asteroid_field.enhanced_visibility_checks = false;
+			break;
+		case 1:
+			Asteroid_field.field_type = FT_ACTIVE;
+			Asteroid_field.enhanced_visibility_checks = false;
+			break;
+		case 2:
+			Asteroid_field.field_type = FT_PASSIVE;
+			Asteroid_field.enhanced_visibility_checks = true;
+			break;
+		case 3:
+			Asteroid_field.field_type = FT_ACTIVE;
+			Asteroid_field.enhanced_visibility_checks = true;
+			break;
+		default: //Any other number will just give default behavior
+			Asteroid_field.field_type = FT_PASSIVE;
+			Asteroid_field.enhanced_visibility_checks = false;
+			break;
 	}
+
 	vm_vec_rand_vec_quick(&Asteroid_field.vel);
 	vm_vec_scale(&Asteroid_field.vel, (float)asteroid_speed);
 	Asteroid_field.speed = (float)asteroid_speed;
@@ -752,13 +777,15 @@ void asteroid_create_asteroid_field(int num_asteroids, int field_type, int aster
 }
 
 // will replace any existing asteroid or debris field with a debris field
-void asteroid_create_debris_field(int num_asteroids, int asteroid_speed, int debris1, int debris2, int debris3, vec3d o_min, vec3d o_max)
+void asteroid_create_debris_field(int num_asteroids, int asteroid_speed, int debris1, int debris2, int debris3, vec3d o_min, vec3d o_max, bool enhanced)
 {
 	remove_all_asteroids();
 
 	Asteroid_field.num_initial_asteroids = num_asteroids;
 
 	Asteroid_field.field_type = FT_PASSIVE;
+
+	Asteroid_field.enhanced_visibility_checks = enhanced;
 
 	vm_vec_rand_vec_quick(&Asteroid_field.vel);
 	vm_vec_scale(&Asteroid_field.vel, (float)asteroid_speed);
@@ -889,37 +916,37 @@ static int asteroid_should_wrap(object *objp, asteroid_field *asfieldp)
 }
 
 /**
- * Wrap an asteroid from one end of the asteroid field to the other
+ * Generates a potential new position for an asteroid that might wrap
+ * from one end of the asteroid field to the other
  */
-static void asteroid_wrap_pos(object *objp, asteroid_field *asfieldp)
+static void asteroid_wrap_pos(vec3d *pos, asteroid_field *asfieldp)
 {
-	if (objp->pos.xyz.x < asfieldp->min_bound.xyz.x) {
-		objp->pos.xyz.x = asfieldp->max_bound.xyz.x + (objp->pos.xyz.x - asfieldp->min_bound.xyz.x);
+	if (pos->xyz.x < asfieldp->min_bound.xyz.x) {
+		pos->xyz.x = asfieldp->max_bound.xyz.x + (pos->xyz.x - asfieldp->min_bound.xyz.x);
 	}
 
-	if (objp->pos.xyz.y < asfieldp->min_bound.xyz.y) {
-		objp->pos.xyz.y = asfieldp->max_bound.xyz.y + (objp->pos.xyz.y - asfieldp->min_bound.xyz.y);
-	}
-	
-	if (objp->pos.xyz.z < asfieldp->min_bound.xyz.z) {
-		objp->pos.xyz.z = asfieldp->max_bound.xyz.z + (objp->pos.xyz.z - asfieldp->min_bound.xyz.z);
+	if (pos->xyz.y < asfieldp->min_bound.xyz.y) {
+		pos->xyz.y = asfieldp->max_bound.xyz.y + (pos->xyz.y - asfieldp->min_bound.xyz.y);
 	}
 
-	if (objp->pos.xyz.x > asfieldp->max_bound.xyz.x) {
-		objp->pos.xyz.x = asfieldp->min_bound.xyz.x + (objp->pos.xyz.x - asfieldp->max_bound.xyz.x);
+	if (pos->xyz.z < asfieldp->min_bound.xyz.z) {
+		pos->xyz.z = asfieldp->max_bound.xyz.z + (pos->xyz.z - asfieldp->min_bound.xyz.z);
 	}
 
-	if (objp->pos.xyz.y > asfieldp->max_bound.xyz.y) {
-		objp->pos.xyz.y = asfieldp->min_bound.xyz.y + (objp->pos.xyz.y - asfieldp->max_bound.xyz.y);
+	if (pos->xyz.x > asfieldp->max_bound.xyz.x) {
+		pos->xyz.x = asfieldp->min_bound.xyz.x + (pos->xyz.x - asfieldp->max_bound.xyz.x);
 	}
 
-	if (objp->pos.xyz.z > asfieldp->max_bound.xyz.z) {
-		objp->pos.xyz.z = asfieldp->min_bound.xyz.z + (objp->pos.xyz.z - asfieldp->max_bound.xyz.z);
+	if (pos->xyz.y > asfieldp->max_bound.xyz.y) {
+		pos->xyz.y = asfieldp->min_bound.xyz.y + (pos->xyz.y - asfieldp->max_bound.xyz.y);
+	}
+
+	if (pos->xyz.z > asfieldp->max_bound.xyz.z) {
+		pos->xyz.z = asfieldp->min_bound.xyz.z + (pos->xyz.z - asfieldp->max_bound.xyz.z);
 	}
 
 	// wrap on inner bound, check all 3 axes as needed, use of rand ok for multiplayer with send_asteroid_throw()
-	inner_bound_pos_fixup(asfieldp, &objp->pos);
-
+	inner_bound_pos_fixup(asfieldp, pos);
 }
 
 
@@ -991,6 +1018,32 @@ static void sanitize_asteroid_targets_list() {
 }
 
 /**
+* Checks if an asteroid will be within the player's view
+*
+**/
+bool asteroid_is_within_view(vec3d *pos, float range, bool range_override)
+{
+	vec3d vec_to_asteroid;
+
+	// Distance and view cone for the position in relation to the player
+	float dist = vm_vec_normalized_dir(&vec_to_asteroid, pos, &Eye_position);
+	float dot = vm_vec_dot(&Eye_matrix.vec.fvec, &vec_to_asteroid);
+
+	// if asteroid is within view or far enough away then wrap
+	if (dot > cos(Proj_fov)) {
+		if (range_override) {
+			return true;
+		} else {
+			if (dist < range) {
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+/**
  * Call once per frame to maybe throw some asteroids at one or more ships.
  *
  */
@@ -1030,7 +1083,7 @@ static void maybe_throw_asteroid()
 		if (subtype < 0)
 			return;
 
-		object *objp = asteroid_create(&Asteroid_field, ASTEROID_TYPE_LARGE, subtype);
+		object *objp = asteroid_create(&Asteroid_field, ASTEROID_TYPE_LARGE, subtype, Asteroid_field.enhanced_visibility_checks);
 		if (objp != nullptr) {
 			asteroid_aim_at_target(target_objp, objp, ASTEROID_MIN_COLLIDE_TIME + frand() * 20.0f);
 
@@ -1081,7 +1134,7 @@ void asteroid_delete( object * obj )
 }
 
 /**
- * See if we should reposition the asteroid.  
+ * See if we should reposition the asteroid.
  * Only reposition if oustide the bounding volume and the player isn't looking towards the asteroid.
  */
 static void asteroid_maybe_reposition(object *objp, asteroid_field *asfieldp)
@@ -1091,61 +1144,74 @@ static void asteroid_maybe_reposition(object *objp, asteroid_field *asfieldp)
 		return;
 	}
 
-	if ( asteroid_should_wrap(objp, asfieldp) ) {
-		vec3d	vec_to_asteroid, old_asteroid_pos, old_vel;
-		float		dot, dist;
+	if (asteroid_should_wrap(objp, asfieldp)) {
 
-		old_asteroid_pos = objp->pos;
-		old_vel = objp->phys_info.vel;
+		// Generate a possible new position if we do end up wrapping, but don't move the asteroid yet
+		vec3d new_pos;
+		asteroid_wrap_pos(&new_pos, asfieldp);
 
-		// don't wrap asteroid if it is a target of some ship
-		if ( !asteroid_is_targeted(objp) ) {
+		bool wrap = false;
+		bool reverse = false;
 
-			// only wrap if player won't see asteroid disappear/reverse direction
-			dist = vm_vec_normalized_dir(&vec_to_asteroid, &objp->pos, &Eye_position);
-			dot = vm_vec_dot(&Eye_matrix.vec.fvec, &vec_to_asteroid);
-			
-			if ( (dot < 0.7f) || (dist > asfieldp->bound_rad) ) {
-				if (Num_asteroids > MAX_ASTEROIDS-10) {
-					objp->flags.set(Object::Object_Flags::Should_be_dead);
-				} else {
-					// check to ensure player won't see asteroid appear either
-					asteroid_wrap_pos(objp, asfieldp);
-					asteroid* astp = &Asteroids[objp->instance];
+		// If asteroid is targeted then we cannot wrap because they player would see it and say "SHENANIGANS!"
+		// So we bail
+		if (asteroid_is_targeted(objp)) {
+			return;
+		}
 
-					if (asfieldp->field_type == FT_ACTIVE) {
-						// this doesnt count as a thrown asteroid anymore
-						for (asteroid_target& target : Asteroid_targets)
-							if (target.objnum == astp->target_objnum)
-								target.incoming_asteroids--;
+		// if asteroid is not within view...
+		if (asteroid_is_within_view(&objp->pos, asfieldp->bound_rad, asfieldp->enhanced_visibility_checks)) {
 
-						astp->target_objnum = -1;
-					}
+			// if asteroid new position is within view then reverse velocity, otherwise wrap
+			if (asteroid_is_within_view(&new_pos, (asfieldp->bound_rad * 1.3f), asfieldp->enhanced_visibility_checks)) {
 
-					dist = vm_vec_normalized_dir(&vec_to_asteroid, &objp->pos, &Eye_position);
-					dot = vm_vec_dot(&Eye_matrix.vec.fvec, &vec_to_asteroid);
-					
-					//probably don't reverse direction if there's gravity involved
-					if (IS_VEC_NULL(&The_mission.gravity)) {
-						if ((dot > 0.7f) && (dist < (asfieldp->bound_rad * 1.3f))) {
-							// player would see asteroid pop out other side, so reverse velocity instead of wrapping
-							objp->pos = old_asteroid_pos;
-							vm_vec_copy_scale(&objp->phys_info.vel, &old_vel, -1.0f);
-							objp->phys_info.desired_vel = objp->phys_info.vel;
-							Asteroids[objp->instance].target_objnum = -1;
-						}
-					}
-
-					// update last pos (after vel is known)
-					vm_vec_scale_add(&objp->last_pos, &objp->pos, &objp->phys_info.vel, -flFrametime);
-
-					asteroid_update_collide(objp);
-
-					if (asfieldp->field_type == FT_ACTIVE) {
-						if (MULTIPLAYER_MASTER)
-							send_asteroid_throw(objp);
-					}
+				// if the mission has gravity, then we can't reverse. So make sure gravity is null
+				if (IS_VEC_NULL(&The_mission.gravity)) {
+					reverse = true;
 				}
+
+			} else {
+				wrap = true;
+			}
+
+		}
+
+		// we can wrap, but we have too many asteroids, so destroy this one instead
+		if (wrap && (Num_asteroids > MAX_ASTEROIDS - 10)) {
+			objp->flags.set(Object::Object_Flags::Should_be_dead);
+			return;
+		}
+
+		// Reverse instead of wrap!
+		if (reverse) {
+			vm_vec_copy_scale(&objp->phys_info.vel, &objp->phys_info.vel, -1.0f);
+			objp->phys_info.desired_vel = objp->phys_info.vel;
+			Asteroids[objp->instance].target_objnum = -1;
+			return;
+		}
+
+		// We can wrap, so wrap!
+		if (wrap) {
+			objp->pos = new_pos;
+			asteroid *astp = &Asteroids[objp->instance];
+
+			if (asfieldp->field_type == FT_ACTIVE) {
+				// this doesnt count as a thrown asteroid anymore
+				for (asteroid_target &target : Asteroid_targets)
+					if (target.objnum == astp->target_objnum)
+						target.incoming_asteroids--;
+
+				astp->target_objnum = -1;
+			}
+
+			// update last pos (after vel is known)
+			vm_vec_scale_add(&objp->last_pos, &objp->pos, &objp->phys_info.vel, -flFrametime);
+
+			asteroid_update_collide(objp);
+
+			if (asfieldp->field_type == FT_ACTIVE) {
+				if (MULTIPLAYER_MASTER)
+					send_asteroid_throw(objp);
 			}
 		}
 	}

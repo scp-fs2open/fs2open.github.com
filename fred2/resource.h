@@ -953,6 +953,7 @@
 #define IDC_ESCORT_PRIORITY             1504
 #define IDC_ENABLE_INNER_BOX            1505
 #define IDC_ENABLE_SPECIAL_EXP          1506
+#define IDC_RANGE_OVERRIDE              1506
 #define IDC_SPECIAL_DAMAGE              1507
 #define IDC_ENABLE_SHOCKWAVE            1508
 #define IDC_SPECIAL_BLAST               1509
