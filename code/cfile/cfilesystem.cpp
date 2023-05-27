@@ -778,7 +778,7 @@ int is_ext_in_list( const char *ext_list, const char *ext )
 	SCP_vector<SCP_string> critical_shadowed;
 #endif
 
-static void check_file_shadows(const int root_index __UNUSED, const int pathtype __UNUSED, const SCP_string &name __UNUSED, const SCP_string &sub_path __UNUSED)
+static void check_file_shadows(const int root_index __UNUSED, const int pathtype __UNUSED, const SCP_string &name __UNUSED, const SCP_string &sub_path __UNUSED, const char *real_name = nullptr)
 {
 #if ENABLE_SHADOW_CHECK
 	if ( !cf_should_scan_subdirs(pathtype) ) {
@@ -792,7 +792,7 @@ static void check_file_shadows(const int root_index __UNUSED, const int pathtype
 
 	newfile = root->path + ((root->roottype == CF_ROOTTYPE_PACK) ? "::" : "");
 	newfile += cf_get_root_pathtype(root, pathtype) + DIR_SEPARATOR_CHAR;
-	newfile += sub_path + name;
+	newfile += sub_path + (real_name ? real_name : name);
 
 	for (uint i = 0; i < Num_files; ++i) {
 		const auto f = cf_get_file(i);
@@ -817,9 +817,13 @@ static void check_file_shadows(const int root_index __UNUSED, const int pathtype
 			continue;
 		}
 
-		curfile = r->path + ((r->roottype == CF_ROOTTYPE_PACK) ? "::" : "");
-		curfile += cf_get_root_pathtype(r, pathtype) + DIR_SEPARATOR_CHAR;
-		curfile += f->sub_path + f->name_ext;
+		if (r->roottype == CF_ROOTTYPE_PATH) {
+			curfile = f->real_name;
+		} else {
+			curfile = r->path + ((r->roottype == CF_ROOTTYPE_PACK) ? "::" : "");
+			curfile += cf_get_root_pathtype(r, pathtype) + DIR_SEPARATOR_CHAR;
+			curfile += f->sub_path + f->name_ext;
+		}
 
 		// this log message occurs in the middle of an existing line, hence the extra new lines
 		mprintf(("\nWARNING! A %sfile being indexed may be shadowed by an existing file!\n New:\n  %s\n Existing:\n  %s\n",
@@ -893,12 +897,18 @@ void cf_search_root_path(int root_index)
 
 		for (auto &file : files) {
 			auto ext_idx = file.name.rfind('.');
+			auto orig_name = file.name;
+
+			if ( ext_idx != SCP_string::npos && SCP_string_lcase_equal_to()(file.name.substr(ext_idx), SCP_string(".lz41")) ) {
+				file.name = file.name.erase(ext_idx, file.name.length());
+				ext_idx = file.name.rfind('.');
+			}
 
 			if ( ext_idx == SCP_string::npos || !is_ext_in_list(Pathtypes[i].extensions, file.name.substr(ext_idx+1).c_str()) ) {
 				continue;
 			}
 
-			check_file_shadows(root_index, i, file.name, file.sub_path);
+			check_file_shadows(root_index, i, file.name, file.sub_path, orig_name.c_str());
 
 			cf_file *cfile = cf_create_file();
 
@@ -908,7 +918,7 @@ void cf_search_root_path(int root_index)
 			cfile->write_time = file.m_time;
 			cfile->size = static_cast<int>(file.size);
 			cfile->pack_offset = 0;
-			cfile->real_name = search_path + DIR_SEPARATOR_STR + file.sub_path + file.name;
+			cfile->real_name = search_path + DIR_SEPARATOR_STR + file.sub_path + orig_name;
 			cfile->sub_path = file.sub_path;
 
 			++num_files;
