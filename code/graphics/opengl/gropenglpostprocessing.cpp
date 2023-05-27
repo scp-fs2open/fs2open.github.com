@@ -139,8 +139,8 @@ void opengl_post_pass_bloom()
 
 			opengl_set_generic_uniform_data<graphics::generic_data::bloom_sample_data>(
 				[&](graphics::generic_data::bloom_sample_data* data) {
-					data->xSize = 1.0f / i2fl(bloom_width);
-					data->ySize = 1.0f / i2fl(bloom_height);
+					data->xSize = 0.5f / i2fl(bloom_width); // 0.5f because we're sampling from a image twice the target size.
+					data->ySize = 0.5f / i2fl(bloom_height);
 					data->mip = i2fl(src_mip);
 				});
 
