@@ -1,5 +1,5 @@
 //? #version 150
-
+#include "filter-tent.sdr"
 
 // This shader performs upsampling on a texture,
 // as taken from Call Of Duty method, presented at ACM Siggraph 2014.
@@ -22,36 +22,6 @@ out vec4 fragOut0;
 
 void main()
 {
-    // The filter kernel is applied with a radius, specified in texture
-    // coordinates, so that the radius will vary across mip resolutions.
-    float x = xSize;
-    float y = ySize;
-
-    // Take 9 samples around current texel:
-    // a - b - c
-    // d - e - f
-    // g - h - i
-    // === ('e' is the current texel) ===
-    vec3 a = textureLod(srcTexture, vec2(fragTexCoord.x - x, fragTexCoord.y + y),mip).rgb;
-    vec3 b = textureLod(srcTexture, vec2(fragTexCoord.x,     fragTexCoord.y + y),mip).rgb;
-    vec3 c = texture(srcTexture, vec2(fragTexCoord.x + x, fragTexCoord.y + y),mip).rgb;
-
-    vec3 d = textureLod(srcTexture, vec2(fragTexCoord.x - x, fragTexCoord.y),mip).rgb;
-    vec3 e = textureLod(srcTexture, vec2(fragTexCoord.x,     fragTexCoord.y),mip).rgb;
-    vec3 f = textureLod(srcTexture, vec2(fragTexCoord.x + x, fragTexCoord.y),mip).rgb;
-
-    vec3 g = textureLod(srcTexture, vec2(fragTexCoord.x - x, fragTexCoord.y - y),mip).rgb;
-    vec3 h = textureLod(srcTexture, vec2(fragTexCoord.x,     fragTexCoord.y - y),mip).rgb;
-    vec3 i = textureLod(srcTexture, vec2(fragTexCoord.x + x, fragTexCoord.y - y),mip).rgb;
-
-    // Apply weighted distribution, by using a 3x3 tent filter:
-    //  1   | 1 2 1 |
-    // -- * | 2 4 2 |
-    // 16   | 1 2 1 |
-    vec3 upsample = e*4.0;
-    upsample += (b+d+f+h)*2.0;
-    upsample += (a+c+g+i);
-    upsample *= 1.0 / 16.0;
-	fragOut0.rgb = upsample;
+	fragOut0.rgb = blur(xSize, ySize, srcTexture, mip, fragTexCoord.xy);
 	fragOut0.a = mip_lerp;
 }
