@@ -329,7 +329,7 @@ void enumerateJoysticks(SCP_vector<JoystickPtr>& outVec)
 
 				outVec.push_back(std::move(ptr));
 			}
-			catch (const std::exception e)
+			catch (const std::exception &e)
 			{
 				mprintf(("  An error occured while attempting to enumerate joystick %i.\n", i));
 				mprintf(("    %s\n", e.what()));
