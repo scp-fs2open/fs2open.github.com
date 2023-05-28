@@ -345,6 +345,7 @@ cmdline_parm enable_3d_shockwave_arg("-3dshockwave", NULL, AT_NONE);
 cmdline_parm softparticles_arg("-soft_particles", NULL, AT_NONE);
 cmdline_parm no_postprocess_arg("-no_post_process", "Disables post-processing", AT_NONE);
 cmdline_parm bloom_intensity_arg("-bloom_intensity", "Set bloom intensity, requires post-processing", AT_INT);
+cmdline_parm bloom_width_arg("-bloom_width", "Set bloom width, requires post-processing", AT_FLOAT);
 cmdline_parm post_process_aa_arg("-aa", "Enables post-process antialiasing", AT_NONE);
 cmdline_parm post_process_aa_preset_arg("-aa_preset", "Sets the AA effect to use. See the wiki for details", AT_INT);
 cmdline_parm deprecated_fxaa_arg("-fxaa", nullptr, AT_NONE);
@@ -375,6 +376,7 @@ int Cmdline_height = 1;
 int Cmdline_enable_3d_shockwave = 0;
 int Cmdline_softparticles = 0;
 int Cmdline_bloom_intensity = 25;
+float Cmdline_bloom_width = 0.5;
 bool Cmdline_force_lightshaft_off = false;
 int Cmdline_no_deferred_lighting = 0;
 bool Cmdline_deferred_lighting_cockpit = false;
@@ -2091,6 +2093,11 @@ bool SetCmdlineParams()
 	if ( bloom_intensity_arg.found() )
 	{
 		Cmdline_bloom_intensity = bloom_intensity_arg.get_int();
+	}
+
+	if ( bloom_width_arg.found() ) 
+	{
+		Cmdline_bloom_width = bloom_width_arg.get_float();
 	}
 
 	if ( flightshaftsoff_arg.found() )
