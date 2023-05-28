@@ -1,4 +1,5 @@
 //? #version 150
+#include "filter-tent.sdr"
 
 
 in vec4 fragTexCoord;
@@ -6,14 +7,16 @@ in vec4 fragTexCoord;
 out vec4 fragOut0;
 
 uniform sampler2D bloomed;
+uniform sampler2D basetex;
 
 layout (std140) uniform genericData {
+	float xSize;
+	float ySize;
 	float bloom_intensity;
-	int levels;
 };
 
 void main() {
-	vec4 color_out = vec4(0.0, 0.0, 0.0, bloom_intensity);
-	color_out.rgb = texture(bloomed, fragTexCoord.xy).rgb;
-	fragOut0 = color_out;
+	vec3 blurred_bloom = blur(xSize, ySize, bloomed, 0.0f, fragTexCoord.xy);
+	fragOut0.rgb = blurred_bloom;
+	fragOut0.a = bloom_intensity;
 }

@@ -101,9 +101,11 @@ void opengl_post_pass_bloom()
 
 	// we need the scissor test disabled
 	GLboolean scissor_test = GL_state.ScissorTest(GL_FALSE);
-
-	// ------  begin bright pass ------
-	int width, height;
+	// bloom downsampling/upsampling passes are stored in a seperate texture.
+	// We run at half rez as it's blurry anyway.
+	int bloom_tex_width = Post_texture_width >> 1;
+	int bloom_tex_height = Post_texture_height >> 1;
+	// ------  begin downsampling pass ------
 	{
 		GR_DEBUG_SCOPE("Bloom Downsampling");
 		TRACE_SCOPE(tracing::BloomDownsampling);
@@ -111,10 +113,8 @@ void opengl_post_pass_bloom()
 		GL_state.BindFrameBuffer(Bloom_framebuffer);
 
 		// width and height are 1/2 for the bright pass
-		width = Post_texture_width >> 1;
-		height = Post_texture_height >> 1;
 
-		glViewport(0, 0, width, height);
+		glViewport(0, 0, bloom_tex_width, bloom_tex_height);
 
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
@@ -125,8 +125,8 @@ void opengl_post_pass_bloom()
 		int src_mip = 0; // The mip we're sampling *from*
 
 		for (int mipmap = 0; mipmap < MAX_MIP_BLUR_LEVELS; ++mipmap) {
-			int bloom_width = width >> mipmap;
-			int bloom_height = height >> mipmap;
+			int mip_width = bloom_tex_width >> mipmap;
+			int mip_height = bloom_tex_height >> mipmap;
 			// For our first bloom layer, we're downsampling the scene texture, otherwise it's the previous mip of the bloom tex.
 			if (mipmap == 0) {
 				GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_color_texture);
@@ -139,14 +139,14 @@ void opengl_post_pass_bloom()
 
 			opengl_set_generic_uniform_data<graphics::generic_data::bloom_sample_data>(
 				[&](graphics::generic_data::bloom_sample_data* data) {
-					data->xSize = 0.5f / i2fl(bloom_width); // 0.5f because we're sampling from a image twice the target size.
-					data->ySize = 0.5f / i2fl(bloom_height);
+					data->xSize = 0.5f / i2fl(mip_width); // 0.5f because we're sampling from a image twice the target size.
+					data->ySize = 0.5f / i2fl(mip_height);
 					data->mip = i2fl(src_mip);
 				});
 
 			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Bloom_texture, mipmap);
 
-			glViewport(0, 0, bloom_width, bloom_height);
+			glViewport(0, 0, mip_width, mip_height);
 
 			opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
 		}
@@ -164,23 +164,25 @@ void opengl_post_pass_bloom()
 		Current_shader->program->Uniforms.setTextureUniform("srcTexture", 0);
 
 		GL_state.Texture.Enable(0, GL_TEXTURE_2D, Bloom_texture);
-		GL_state.SetAlphaBlendMode(ALPHA_BLEND_ALPHA_BLEND_ALPHA); // Add togther as we step up the mips
+		// We're appoximating a "spiky" distribution with a set of different-scaled gaussians.
+		// Downsampling filter doesn't change overall brightness, just blurs the image.
+		// Therefore we need to "blend" as we step up the mip levels for energy conservation.
+		GL_state.SetAlphaBlendMode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
 
 		for (int mipmap = (MAX_MIP_BLUR_LEVELS - 1); mipmap >= 0; --mipmap) {
-			int bloom_width = width >> mipmap;
-			int bloom_height = height >> mipmap;
-			float aspect_r = i2fl(bloom_width) / i2fl(bloom_height);
+			int mip_width = bloom_tex_width >> mipmap;
+			int mip_height = bloom_tex_height >> mipmap;
 			opengl_set_generic_uniform_data<graphics::generic_data::bloom_sample_data>(
 				[&](graphics::generic_data::bloom_sample_data* data) {
-					data->xSize = 1.0f / i2fl(bloom_width);
-					data->ySize = 1.0f / i2fl(bloom_height);
+					data->xSize = 1.0f / i2fl(mip_width);
+					data->ySize = 1.0f / i2fl(mip_height);
 					data->mip = i2fl(mipmap + 1); // Sample from the mip below.
 					data->mip_lerp = 0.5f; // SHOULD BE TUNEABLE, CONTROLS WIDTH
 				});
 
 			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Bloom_texture, mipmap);
 
-			glViewport(0, 0, bloom_width, bloom_height);
+			glViewport(0, 0, mip_width, mip_height);
 
 			opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
 		}
@@ -194,15 +196,16 @@ void opengl_post_pass_bloom()
 
 		opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_POST_PROCESS_BLOOM_COMP, 0));
 
-		Current_shader->program->Uniforms.setTextureUniform("tex", 0);
+		Current_shader->program->Uniforms.setTextureUniform("bloomed", 0);
+		GL_state.Texture.Enable(0, GL_TEXTURE_2D, Bloom_texture);
 
 		opengl_set_generic_uniform_data<graphics::generic_data::bloom_composition_data>(
-			[](graphics::generic_data::bloom_composition_data* data) {
-				data->levels          = MAX_MIP_BLUR_LEVELS;
+			[&](graphics::generic_data::bloom_composition_data* data) {
+				data->xSize = 1.0f / i2fl(bloom_tex_width);
+				data->ySize = 1.0f / i2fl(bloom_tex_height);
 				data->bloom_intensity = gr_bloom_intensity() / 100.0f;
 			});
 
-		GL_state.Texture.Enable(0, GL_TEXTURE_2D, Bloom_texture);
 
 		// It's more physically accurate to *blend* between bloom and the rendered image.
 		// If light is scatted by optical flaws, dirt on the camera etc, then it's not going to
