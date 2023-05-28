@@ -177,7 +177,7 @@ void opengl_post_pass_bloom()
 					data->xSize = 1.0f / i2fl(mip_width);
 					data->ySize = 1.0f / i2fl(mip_height);
 					data->mip = i2fl(mipmap + 1); // Sample from the mip below.
-					data->mip_lerp = 0.5f; // SHOULD BE TUNEABLE, CONTROLS WIDTH
+					data->mip_lerp = gr_bloom_width(); // SHOULD BE TUNEABLE, CONTROLS WIDTH
 				});
 
 			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Bloom_texture, mipmap);

@@ -359,10 +359,9 @@ struct bloom_sample_data {
 };
 
 struct bloom_composition_data {
+	float xSize;
+	float ySize;
 	float bloom_intensity;
-	int levels;
-
-	float pad[2];
 };
 
 struct effect_data {

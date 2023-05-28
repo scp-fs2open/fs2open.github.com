@@ -53,16 +53,29 @@ static auto LightshaftsOption __UNUSED = options::OptionBuilder<bool>("Graphics.
 int Post_processing_bloom_intensity = 25; // using default value of Cmdline_bloom_intensity
 
 static auto BloomIntensityOption __UNUSED = options::OptionBuilder<int>("Graphics.BloomIntensity",
-                     std::pair<const char*, int>{"Bloom intensity", 1701},
-                     std::pair<const char*, int>{"Sets the bloom intensity (requires post-processing)", 1702})
-                     .category(std::make_pair("Graphics", 1825))
-                     .range(0, 200)
-                     .level(options::ExpertLevel::Advanced)
-                     .default_val(25)
-                     .bind_to(&Post_processing_bloom_intensity)
-                     .importance(55)
-                     .flags({options::OptionFlags::RangeTypeInteger})
-                     .finish();
+	std::pair<const char*, int>{"Bloom intensity", 1701},
+	std::pair<const char*, int>{"Sets the bloom intensity (requires post-processing)", 1702})
+	.category("Graphics")
+	.range(0, 100)
+	.level(options::ExpertLevel::Advanced)
+	.default_val(25)
+	.bind_to(&Post_processing_bloom_intensity)
+	.importance(55)
+	.finish();
+
+
+float Post_processing_bloom_width = 0.5; // using default value of Cmdline_bloom_width
+
+auto BloomWidthOption __UNUSED = options::OptionBuilder<float>("Graphics.BloomWidth",
+	std::pair<const char*, int>{"Bloom width", 1701}, //TODO figure out new string
+	std::pair<const char*, int>{"Set bloom width (requires post-processing)", 1702]) //TODO figure out new string
+	.category(std::make_pair("Graphics", 1825))
+	.range(0.0, 1.0)
+	.level(options::ExpertLevel::Advanced)
+	.default_val(0.5)
+	.bind_to(&Post_processing_bloom_width)
+	.importance(55)
+	.finish();
 } // namespace
 
 bool PostProcessingManager::parse_table()
@@ -248,4 +261,34 @@ void gr_set_bloom_intensity(int intensity)
 
 	graphics::Post_processing_bloom_intensity = intensity;
 	options::OptionsManager::instance()->set_ingame_range_option("Graphics.BloomIntensity", intensity);
+}
+
+float gr_bloom_width()
+{
+	if (gr_screen.mode == GR_STUB) {
+		return 0;
+	}
+
+	if (graphics::Post_processing_manager == nullptr || !graphics::Post_processing_manager->bloomShadersOk()) {
+		return 0;
+	}
+
+	if (Using_in_game_options) {
+		return graphics::Post_processing_bloom_width;
+	} else {
+		return Cmdline_bloom_width;
+	}
+}
+
+void gr_set_bloom_width(float width)
+{
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
+	if (Using_in_game_options) {
+		graphics::Post_processing_bloom_width = width;
+	} else {
+		Cmdline_bloom_width = width;
+	}
 }

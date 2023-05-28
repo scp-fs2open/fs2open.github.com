@@ -345,6 +345,8 @@ cmdline_parm normal_arg("-nonormal", NULL, AT_NONE);						// Cmdline_normal  -- 
 cmdline_parm height_arg("-noheight", NULL, AT_NONE);						// Cmdline_height  -- enable support for parallax mapping
 cmdline_parm softparticles_arg("-soft_particles", NULL, AT_NONE);
 cmdline_parm no_postprocess_arg("-no_post_process", "Disables post-processing", AT_NONE);
+cmdline_parm bloom_intensity_arg("-bloom_intensity", "Set bloom intensity, requires post-processing", AT_INT);
+cmdline_parm bloom_width_arg("-bloom_width", "Set bloom width, requires post-processing", AT_FLOAT);
 cmdline_parm post_process_aa_arg("-aa", "Enables post-process antialiasing", AT_NONE);
 cmdline_parm post_process_aa_preset_arg("-aa_preset", "Sets the AA effect to use. See the wiki for details", AT_INT);
 cmdline_parm deprecated_fxaa_arg("-fxaa", nullptr, AT_NONE);
@@ -372,6 +374,9 @@ int Cmdline_emissive = 0;
 int Cmdline_normal = 1;
 int Cmdline_height = 1;
 int Cmdline_softparticles = 0;
+int Cmdline_bloom_intensity = 25;
+float Cmdline_bloom_width = 0.5;
+bool Cmdline_force_lightshaft_off = false;
 int Cmdline_no_deferred_lighting = 0;
 bool Cmdline_deferred_lighting_cockpit = false;
 int Cmdline_aniso_level = 0;
@@ -2158,6 +2163,21 @@ bool SetCmdlineParams()
 	if ( no_postprocess_arg.found() )
 	{
 		Gr_post_processing_enabled = false;
+	}
+
+	if ( bloom_intensity_arg.found() )
+	{
+		Cmdline_bloom_intensity = bloom_intensity_arg.get_int();
+	}
+
+	if ( bloom_width_arg.found() ) 
+	{
+		Cmdline_bloom_width = bloom_width_arg.get_float();
+	}
+
+	if ( flightshaftsoff_arg.found() )
+	{
+		Cmdline_force_lightshaft_off = true;
 	}
 
 	if( reparse_mainhall_arg.found() )
