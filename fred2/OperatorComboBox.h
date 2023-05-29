@@ -18,6 +18,7 @@ public:
 	void DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct);
 	BOOL IsItemEnabled(UINT) const;
 
+	int GetOpfType() const;
 	void SetOpfType(int opf_type);
 
 protected:
@@ -41,10 +42,17 @@ public:
 	CEdit                  m_edit;
 	OperatorComboBoxList   m_listbox;
 
+	// for tracking key presses
+	virtual BOOL PreTranslateMessage(MSG* pMsg);
+
 	// for tooltips
 	INT_PTR OnToolHitTest(CPoint point, TOOLINFO* pTI) const;
 
 	void refresh_popup_operators(int opf_type = OPF_NONE);
+	void filter_popup_operators(const SCP_string &filter_string = "");
+	void cleanup(bool confirm);
+
+	bool PressedEnter() const;
 	int GetOpConst(int index) const;
 	bool IsItemEnabled(int index) const;
 
@@ -52,9 +60,12 @@ protected:
 	virtual void PreSubclassWindow();
 	afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
 	afx_msg void OnDestroy();
+	afx_msg BOOL OnEditChange();
 
 	SCP_vector<std::pair<SCP_string, int>> m_sorted_operators;
 	const char* (*m_help_callback)(int);
+	size_t m_max_operator_length;
+	bool m_pressed_enter;
 
 	DECLARE_MESSAGE_MAP()
 };

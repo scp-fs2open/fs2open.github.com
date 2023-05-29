@@ -2,6 +2,8 @@
 //
 
 #include "OperatorComboBox.h"
+#include "resource.h"
+#include "globalincs/utility.h"
 #include "parse/parselo.h"
 #include "parse/sexp.h"
 
@@ -9,6 +11,7 @@ BEGIN_MESSAGE_MAP(OperatorComboBox, CComboBox)
 	//{{AFX_MSG_MAP(OperatorComboBox)
 	ON_WM_CTLCOLOR()
 	ON_WM_DESTROY()
+	ON_CONTROL_REFLECT_EX(CBN_EDITCHANGE, OnEditChange)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -20,12 +23,15 @@ BEGIN_MESSAGE_MAP(OperatorComboBoxList, CListBox)
 END_MESSAGE_MAP()
 
 OperatorComboBox::OperatorComboBox(const char* (*help_callback)(int))
-	: m_listbox(help_callback, OPF_NONE)
+	: m_listbox(help_callback, OPF_NONE), m_help_callback(help_callback), m_max_operator_length(0), m_pressed_enter(false)
 {
-	m_help_callback = help_callback;
-
+	// add all operators and calculate max length
 	for (auto& op : Operators)
+	{
 		m_sorted_operators.emplace_back(op.text, op.value);
+		if (op.text.length() > m_max_operator_length)
+			m_max_operator_length = op.text.length();
+	}
 
 	// sort all operators case-insensitively
 	std::sort(m_sorted_operators.begin(), m_sorted_operators.end(), [](const std::pair<SCP_string, int>& a, const std::pair<SCP_string, int>& b)
@@ -39,7 +45,10 @@ OperatorComboBox::~OperatorComboBox()
 	m_sorted_operators.clear();
 }
 
-// See https://jeffpar.github.io/kbarchive/kb/174/Q174667/
+// ----------------------------------------
+// properly subclassing the edit and list components
+// see https://jeffpar.github.io/kbarchive/kb/174/Q174667/
+
 HBRUSH OperatorComboBox::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 {
 	if (nCtlColor == CTLCOLOR_EDIT)
@@ -58,7 +67,6 @@ HBRUSH OperatorComboBox::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 	return hbr;
 }
 
-// See https://jeffpar.github.io/kbarchive/kb/174/Q174667/
 void OperatorComboBox::OnDestroy()
 {
 	if (m_edit.GetSafeHwnd() != NULL)
@@ -68,29 +76,133 @@ void OperatorComboBox::OnDestroy()
 	CComboBox::OnDestroy();
 }
 
+// ----------------------------------------
+// handling edit changes
+// see https://www.codeproject.com/Articles/187753/Extended-CComboBox
+
+BOOL OperatorComboBox::PreTranslateMessage(MSG* pMsg)
+{
+	if (pMsg->message == WM_KEYDOWN)
+	{
+		// keep track of whether Enter was the most recent key pressed
+		m_pressed_enter = (pMsg->wParam == VK_RETURN);
+
+		// we don't need to check for DELETE and BACKSPACE here because the edit box isn't cleared because we don't use ResetContent
+	}
+
+	return CComboBox::PreTranslateMessage(pMsg);
+}
+
+BOOL OperatorComboBox::OnEditChange()
+{
+	CString typed_text;
+	GetWindowText(typed_text);
+
+	filter_popup_operators((LPCSTR)typed_text);
+
+	return FALSE;
+}
+
 void OperatorComboBox::refresh_popup_operators(int opf_type)
 {
 	// operator type might have changed
 	m_listbox.SetOpfType(opf_type);
 
-	// add all operators and their constants
-	ResetContent();
-	for (int i = 0; i < (int)m_sorted_operators.size(); ++i)
+	// reset filter
+	filter_popup_operators();
+}
+
+void OperatorComboBox::filter_popup_operators(const SCP_string &filter_string)
+{
+	int nIndex = 0;
+
+	// quick check to see if everything is already there
+	if (filter_string.empty() && GetCount() == (int)m_sorted_operators.size())
+		return;
+
+	// Remove all items in the combo box.  Don't use ResetContent() which also clears the edit control.
+	for (int i = GetCount() - 1; i >= 0; i--)
+		DeleteString(i);
+
+	// if we're not filtering, just add everything
+	if (filter_string.empty())
 	{
-		AddString(_T(m_sorted_operators[i].first.c_str()));
-		SetItemData(i, m_sorted_operators[i].second);
+		for (const auto &op_pair : m_sorted_operators)
+		{
+			AddString(_T(op_pair.first.c_str()));
+			SetItemData(nIndex++, op_pair.second);
+		}
+		return;
 	}
+
+	// if the filter string is just one character, add operators that start with that character
+	if (filter_string.length() == 1)
+	{
+		auto first_ch = SCP_tolower(filter_string[0]);
+
+		for (const auto& op_pair : m_sorted_operators)
+		{
+			if (first_ch == SCP_tolower(op_pair.first[0]))
+			{
+				AddString(_T(op_pair.first.c_str()));
+				SetItemData(nIndex++, op_pair.second);
+			}
+		}
+		return;
+	}
+
+	// add all the operators below a threshold stringcost
+	// "an input that has n unmatched chars will have at least MAX_LENGTH * MAX_LENGTH * n, so this sets it as max 2 unaccounted chars"
+	size_t threshold = m_max_operator_length * m_max_operator_length * 3;
+	for (const auto& op_pair : m_sorted_operators)
+	{
+		size_t cost = stringcost(op_pair.first, filter_string, m_max_operator_length);
+		if (cost < threshold)
+		{
+			AddString(_T(op_pair.first.c_str()));
+			SetItemData(nIndex++, op_pair.second);
+		}
+	}
+}
+
+void OperatorComboBox::cleanup(bool confirm)
+{
+	SCP_UNUSED(confirm);
+
+	// for now, all we do is clear what was in the edit box
+	SetWindowText("");
+}
+
+// ----------------------------------------
+
+bool OperatorComboBox::PressedEnter() const
+{
+	return m_pressed_enter;
 }
 
 int OperatorComboBox::GetOpConst(int index) const
 {
+	if (index < 0)
+	{
+		// choose the operator that is the best match
+		CString typed_text;
+		GetWindowText(typed_text);
+		auto op_index = sexp_match_closest_operator((LPCSTR)typed_text, m_listbox.GetOpfType());
+		return Operators[op_index].value;
+	}
+
 	return (int)m_listbox.GetItemData(index);
 }
 
 bool OperatorComboBox::IsItemEnabled(int index) const
 {
+	if (index < 0)
+		return false;
+
 	return m_listbox.IsItemEnabled(index);
 }
+
+// ----------------------------------------
 
 // tooltip stuff is based on example at
 // https://www.codeproject.com/articles/1761/ctreectrl-clistctrl-clistbox-with-tooltip-based-on
@@ -136,6 +248,11 @@ OperatorComboBoxList::OperatorComboBoxList(const char* (*help_callback)(int), in
 {
 	m_help_callback = help_callback;
 	SetOpfType(opf_type);
+}
+
+int OperatorComboBoxList::GetOpfType() const
+{
+	return m_opf_type;
 }
 
 void OperatorComboBoxList::SetOpfType(int opf_type)

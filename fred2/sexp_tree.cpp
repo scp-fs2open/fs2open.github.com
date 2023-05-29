@@ -1990,6 +1990,7 @@ void sexp_tree::end_operator_edit(bool confirm)
 	if (!m_operator_popup_active)
 		return;
 
+	m_operator_box.cleanup(confirm);
 	m_operator_box.ShowWindow(SW_HIDE);
 	m_operator_popup_active = false;
 }
@@ -2506,6 +2507,8 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 
 		case IDC_SEXP_POPUP_LIST:
 		{
+			bool command_handled = false;
+
 			switch (data)
 			{
 				case CBN_SELCHANGE:
@@ -2515,32 +2518,52 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 					{
 						if (m_operator_box.IsItemEnabled(index))
 						{
+							int popup_op_const = m_operator_box.GetOpConst(index);
+
 							// close the popup
 							end_operator_edit(true);
 
 							// do the operator replacement
-							int popup_op_const = m_operator_box.GetOpConst(index);
 							op = find_operator_index(popup_op_const);
 							add_or_replace_operator(op, 1);
 							expand_branch(item_handle);
-							return 1;
 						}
 						// if the selected item wasn't enabled, do nothing
 					}
 					else
 						end_operator_edit(false);
 
+					command_handled = true;
 					break;
 				}
 
 				case CBN_KILLFOCUS:
-					end_operator_edit(false);
+				{
+					if (m_operator_popup_active && m_operator_box.PressedEnter())
+					{
+						int popup_op_const = m_operator_box.GetOpConst(-1);
+
+						// close the popup
+						end_operator_edit(true);
+
+						// do the operator replacement
+						op = find_operator_index(popup_op_const);
+						add_or_replace_operator(op, 1);
+						expand_branch(item_handle);
+					}
+					else
+						end_operator_edit(false);
+
+					command_handled = true;
 					break;
+				}
 
 				default:
 					break;
 			}
-			return 1;
+
+			if (command_handled)
+				return TRUE;
 		}
 	}
 	

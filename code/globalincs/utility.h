@@ -104,4 +104,47 @@ typename T::size_type GeneralizedLevenshteinDistance(const T &source,
 	return lev_dist[min_size];
 }
 
+// Lafiel
+template<typename T>
+typename T::size_type stringcost(const T& op, const T& input, typename T::size_type max_expected_length = NAME_LENGTH) {
+	using TSizeType = typename T::size_type;
+
+    if(input.empty())
+        return T::npos;
+
+    struct string_search_it {
+		TSizeType count;
+		TSizeType lastpos;
+		TSizeType cost;
+    };
+    std::vector<string_search_it> iterators;
+
+    //Go through the input. If we find it split up into parts, prefer things that are least split, and within this prefer things that are closer together
+    for (TSizeType i = 0; i < op.length(); i++) {
+		std::vector<string_search_it> insert;
+        for (auto& it : iterators) {
+            if (it.count < input.length() && op[i] == input[it.count]) {
+                //We found something. There may be a better match for this later, so only make a copy.
+                insert.emplace_back(string_search_it{it.count + 1, i, i - it.lastpos <= 1 ? it.cost : max_expected_length + i - it.lastpos - 1});
+            }
+        }
+
+        iterators.insert(iterators.end(), insert.begin(), insert.end());
+
+        if (op[i] == input[0])
+            iterators.emplace_back(string_search_it{1, i, i});
+    }
+
+    auto cost = T::npos;
+
+    for (const auto& it : iterators) {
+        //Things that are missing letters are considered worse by default
+        auto localcost = (input.length() - it.count) * (max_expected_length * max_expected_length) + it.cost;
+        if (localcost < cost)
+            cost = localcost;
+    }
+
+    return cost;
+}
+
 #endif
