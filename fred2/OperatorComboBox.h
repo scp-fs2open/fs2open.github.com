@@ -48,7 +48,7 @@ public:
 	// for tooltips
 	INT_PTR OnToolHitTest(CPoint point, TOOLINFO* pTI) const;
 
-	void refresh_popup_operators(int opf_type = OPF_NONE);
+	void refresh_popup_operators(int opf_type = OPF_NONE, const SCP_string &filter_string = "");
 	void filter_popup_operators(const SCP_string &filter_string = "");
 	void cleanup(bool confirm);
 

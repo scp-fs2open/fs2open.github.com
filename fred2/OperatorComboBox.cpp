@@ -87,6 +87,10 @@ BOOL OperatorComboBox::PreTranslateMessage(MSG* pMsg)
 		// keep track of whether Enter was the most recent key pressed
 		m_pressed_enter = (pMsg->wParam == VK_RETURN);
 
+		// when we press Escape, kill the focus so that the CBN_KILLFOCUS handler in sexp_tree.cpp will close the popup
+		if (pMsg->wParam == VK_ESCAPE)
+			GetOwner()->SetFocus();
+
 		// we don't need to check for DELETE and BACKSPACE here because the edit box isn't cleared because we don't use ResetContent
 	}
 
@@ -103,13 +107,18 @@ BOOL OperatorComboBox::OnEditChange()
 	return FALSE;
 }
 
-void OperatorComboBox::refresh_popup_operators(int opf_type)
+void OperatorComboBox::refresh_popup_operators(int opf_type, const SCP_string &filter_string)
 {
 	// operator type might have changed
 	m_listbox.SetOpfType(opf_type);
 
 	// reset filter
-	filter_popup_operators();
+	filter_popup_operators(filter_string);
+
+	// set the text and select all of it
+	SetWindowText(filter_string.c_str());
+	if (!filter_string.empty())
+		SetEditSel(0, (int)filter_string.length());
 }
 
 void OperatorComboBox::filter_popup_operators(const SCP_string &filter_string)

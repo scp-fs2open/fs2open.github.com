@@ -1978,7 +1978,7 @@ void sexp_tree::start_operator_edit(HTREEITEM h)
 		m_operator_box.MoveWindow(&dropdown_rect);
 	}
 
-	m_operator_box.refresh_popup_operators(opf_type);
+	m_operator_box.refresh_popup_operators(opf_type, tree_nodes[item_index].text);
 
 	m_operator_box.ShowWindow(SW_SHOWNORMAL);
 	m_operator_box.SetFocus();
