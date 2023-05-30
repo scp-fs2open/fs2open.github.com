@@ -39,9 +39,11 @@ typedef struct trail {
 	int		head, tail;						// pointers into the queue for the trail points
 	vec3d	pos[NUM_TRAIL_SECTIONS];	// positions of trail points
 	vec3d	vel[NUM_TRAIL_SECTIONS];	// velocities of trail points (only non-zero if spread is set)
-	float	val[NUM_TRAIL_SECTIONS];	// for each point, a value that tells how much to fade out	
+	float	val[NUM_TRAIL_SECTIONS];	// for each point, a value that tells how much to fade out for normal trails
+										// uv offset for single segment trails
 	bool	object_died;					// set to zero as long as object	
 	int		trail_stamp;					// trail timestamp	
+	bool	single_segment;				// special case where the entire trail is a single, scrolling rectangle
 
 	// trail info
 	trail_info info;							// this is passed when creating a trail
@@ -67,8 +69,8 @@ void trail_render_all();
 // to deal with trails:
 
 // Returns -1 if failed
-trail *trail_create(trail_info *info);
-void trail_add_segment( trail *trailp, vec3d *pos , const matrix* orient );
+trail *trail_create(trail_info *info, bool const_vel = false);
+void trail_add_segment( trail *trailp, vec3d *pos , const matrix* orient, vec3d* velocity = nullptr );
 void trail_set_segment( trail *trailp, vec3d *pos );
 void trail_object_died( trail *trailp );
 int trail_stamp_elapsed( trail *trailp );

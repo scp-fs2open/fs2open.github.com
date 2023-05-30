@@ -6512,12 +6512,12 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	}
 
 	if (wip->wi_flags[Weapon::Info_Flags::Trail] /*&& !(wip->wi_flags[Weapon::Info_Flags::Corkscrew]) */) {
-		wp->trail_ptr = trail_create(&wip->tr_info);		
+		wp->trail_ptr = trail_create(&wip->tr_info, objp->phys_info.flags & PF_CONST_VEL);
 
 		if ( wp->trail_ptr != NULL )	{
 			// Add two segments.  One to stay at launch pos, one to move.
-			trail_add_segment( wp->trail_ptr, &objp->pos, &objp->orient );
-			trail_add_segment( wp->trail_ptr, &objp->pos, &objp->orient );
+			trail_add_segment( wp->trail_ptr, &objp->pos, &objp->orient, &objp->phys_info.vel);
+			trail_add_segment( wp->trail_ptr, &objp->pos, &objp->orient, &objp->phys_info.vel);
 		}
 	}
 	else
