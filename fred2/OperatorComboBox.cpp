@@ -26,7 +26,7 @@ OperatorComboBox::OperatorComboBox(const char* (*help_callback)(int))
 	: m_listbox(help_callback, OPF_NONE), m_help_callback(help_callback), m_max_operator_length(0), m_pressed_enter(false)
 {
 	// add all operators and calculate max length
-	for (auto& op : Operators)
+	for (const auto &op : Operators)
 	{
 		m_sorted_operators.emplace_back(op.text, op.value);
 		if (op.text.length() > m_max_operator_length)
@@ -34,9 +34,9 @@ OperatorComboBox::OperatorComboBox(const char* (*help_callback)(int))
 	}
 
 	// sort all operators case-insensitively
-	std::sort(m_sorted_operators.begin(), m_sorted_operators.end(), [](const std::pair<SCP_string, int>& a, const std::pair<SCP_string, int>& b)
+	std::sort(m_sorted_operators.begin(), m_sorted_operators.end(), [](const std::pair<SCP_string, int> &a, const std::pair<SCP_string, int> &b)
 		{
-			return SCP_string_lcase_less_than()(a.first, b.first);
+			return lcase_lessthan(a.first, b.first);
 		});
 }
 
@@ -140,7 +140,7 @@ void OperatorComboBox::filter_popup_operators(const SCP_string &filter_string)
 	{
 		auto first_ch = SCP_tolower(filter_string[0]);
 
-		for (const auto& op_pair : m_sorted_operators)
+		for (const auto &op_pair : m_sorted_operators)
 		{
 			if (first_ch == SCP_tolower(op_pair.first[0]))
 			{
@@ -151,17 +151,29 @@ void OperatorComboBox::filter_popup_operators(const SCP_string &filter_string)
 		return;
 	}
 
-	// add all the operators below a threshold stringcost
+	// find all the operators below a threshold stringcost
 	// "an input that has n unmatched chars will have at least MAX_LENGTH * MAX_LENGTH * n, so this sets it as max 2 unaccounted chars"
 	size_t threshold = m_max_operator_length * m_max_operator_length * 3;
-	for (const auto& op_pair : m_sorted_operators)
+	SCP_vector<std::tuple<SCP_string, int, size_t>> filtered_operators;
+	for (const auto &op_pair : m_sorted_operators)
 	{
 		size_t cost = stringcost(op_pair.first, filter_string, m_max_operator_length);
 		if (cost < threshold)
+			filtered_operators.emplace_back(op_pair.first, op_pair.second, cost);
+	}
+
+	// sort operators by cost
+	std::sort(filtered_operators.begin(), filtered_operators.end(), [](const std::tuple<SCP_string, int, size_t>& a, const std::tuple<SCP_string, int, size_t>& b)
 		{
-			AddString(_T(op_pair.first.c_str()));
-			SetItemData(nIndex++, op_pair.second);
-		}
+			// compare the size_t parts of both tuples
+			return std::get<2>(a) < std::get<2>(b);
+		});
+
+	// put them in the combo box
+	for (const auto &op_triple : filtered_operators)
+	{
+		AddString(_T(std::get<0>(op_triple).c_str()));
+		SetItemData(nIndex++, std::get<1>(op_triple));
 	}
 }
 

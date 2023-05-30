@@ -32866,20 +32866,50 @@ bool sexp_query_type_match(int opf, int opr)
 	return false;
 }
 
+/**
+ * Finds the operator that is the best textual match for the input string, given the required OPF type.  For equal matches,
+ * the alphabetically earliest operator is returned.
+ */
 int sexp_match_closest_operator(const SCP_string &str, int opf)
 {
-	int best = -1, min = -1;
+	int best = -1;
+	size_t min = SCP_string::npos;
 
-	for (int i = 0; i < (int)Operators.size(); i++)
+	// the stringcost function works better with a maxlength, so cache that
+	// also cache and sort the operators so we have a reasonable ordering when costs are equal
+	static size_t max_operator_length = 0;
+	static SCP_vector<std::tuple<SCP_string, int, int>> sorted_operators;
+	if (max_operator_length == 0)
 	{
-		int opr = query_operator_return_type(i);			// figure out which type this operator returns
+		for (int i = 0; i < (int)Operators.size(); ++i)
+		{
+			auto& text = Operators[i].text;
+			int opr = query_operator_return_type(i);			// figure out which type this operator returns
+
+			sorted_operators.emplace_back(text, i, opr);
+			if (text.length() > max_operator_length)
+				max_operator_length = text.length();
+		}
+
+		// sort all operators case-insensitively
+		std::sort(sorted_operators.begin(), sorted_operators.end(), [](const std::tuple<SCP_string, int, int> &a, const std::tuple<SCP_string, int, int> &b)
+			{
+				return lcase_lessthan(std::get<0>(a), std::get<0>(b));
+			});
+	}
+
+	for (const auto &op_tuple: sorted_operators)
+	{
+		auto& text = std::get<0>(op_tuple);
+		int i = std::get<1>(op_tuple);
+		int opr = std::get<2>(op_tuple);
 
 		if (sexp_query_type_match(opf, opr))
 		{
-			int dist = (int)GeneralizedLevenshteinDistance(str, Operators[i].text, 2, 2, 3);
-			if (min < 0 || dist < min)
+			size_t cost = stringcost(text, str, max_operator_length);
+			if (best < 0 || cost < min)
 			{
-				min = dist;
+				min = cost;
 				best = i;
 			}
 		}
