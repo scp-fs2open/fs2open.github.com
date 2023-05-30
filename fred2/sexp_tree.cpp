@@ -2518,13 +2518,12 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 					{
 						if (m_operator_box.IsItemEnabled(index))
 						{
-							int popup_op_const = m_operator_box.GetOpConst(index);
+							op = m_operator_box.GetOpIndex(index);
 
 							// close the popup
 							end_operator_edit(true);
 
 							// do the operator replacement
-							op = find_operator_index(popup_op_const);
 							add_or_replace_operator(op, 1);
 							expand_branch(item_handle);
 						}
@@ -2541,13 +2540,12 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 				{
 					if (m_operator_popup_active && m_operator_box.PressedEnter())
 					{
-						int popup_op_const = m_operator_box.GetOpConst(-1);
+						op = m_operator_box.GetOpIndex(-1);
 
 						// close the popup
 						end_operator_edit(true);
 
 						// do the operator replacement
-						op = find_operator_index(popup_op_const);
 						add_or_replace_operator(op, 1);
 						expand_branch(item_handle);
 					}

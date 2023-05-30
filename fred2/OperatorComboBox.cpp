@@ -26,9 +26,10 @@ OperatorComboBox::OperatorComboBox(const char* (*help_callback)(int))
 	: m_listbox(help_callback, OPF_NONE), m_help_callback(help_callback), m_max_operator_length(0), m_pressed_enter(false)
 {
 	// add all operators and calculate max length
-	for (const auto &op : Operators)
+	for (int i = 0; i < (int)Operators.size(); ++i)
 	{
-		m_sorted_operators.emplace_back(op.text, op.value);
+		const auto &op = Operators[i];
+		m_sorted_operators.emplace_back(op.text, i);
 		if (op.text.length() > m_max_operator_length)
 			m_max_operator_length = op.text.length();
 	}
@@ -201,15 +202,14 @@ bool OperatorComboBox::PressedEnter() const
 	return m_pressed_enter;
 }
 
-int OperatorComboBox::GetOpConst(int index) const
+int OperatorComboBox::GetOpIndex(int index) const
 {
 	if (index < 0)
 	{
 		// choose the operator that is the best match
 		CString typed_text;
 		GetWindowText(typed_text);
-		auto op_index = sexp_match_closest_operator((LPCSTR)typed_text, m_listbox.GetOpfType());
-		return Operators[op_index].value;
+		return sexp_match_closest_operator((LPCSTR)typed_text, m_listbox.GetOpfType());
 	}
 
 	return (int)m_listbox.GetItemData(index);
@@ -247,7 +247,8 @@ INT_PTR OperatorComboBox::OnToolHitTest(CPoint point, TOOLINFO *pTI) const
 
 	if (item >= 0 && item < GetCount())
 	{
-		int op_const = (int)GetItemData(item);
+		int op_index = (int)GetItemData(item);
+		int op_const = Operators[op_index].value;
 		auto helptext = m_help_callback(op_const);
 		if (helptext == nullptr && m_listbox.IsItemEnabled(item))	// a disabled item will show a tooltip regardless
 			return -1;
@@ -306,7 +307,8 @@ BOOL OperatorComboBoxList::OnToolTipText(UINT id, NMHDR* pNMHDR, LRESULT* pResul
 
 	if (item >= 0 && item < GetCount())
 	{
-		int op_const = (int)GetItemData(item);
+		int op_index = (int)GetItemData(item);
+		int op_const = Operators[op_index].value;
 		auto helptext = m_help_callback(op_const);
 
 		if ((helptext != nullptr && *helptext != '\0') || !IsItemEnabled(item))
@@ -317,7 +319,6 @@ BOOL OperatorComboBoxList::OnToolTipText(UINT id, NMHDR* pNMHDR, LRESULT* pResul
 				int opr_type;
 				map_opf_to_opr(m_opf_type, opr_type);
 
-				int op_index = find_operator_index(op_const);
 				buffer = "The operator \"";
 				buffer += op_index >= 0 ? Operators[op_index].text : "<invalid operator>";
 				buffer += "\" cannot be selected because it has an incompatible return type.\r\n\tReturns: ";
@@ -422,7 +423,8 @@ void OperatorComboBox::MeasureItem(LPMEASUREITEMSTRUCT lpMeasureItemStruct)
 
 BOOL OperatorComboBoxList::IsItemEnabled(UINT nIndex) const
 {
-	int op_const = (int)GetItemData(nIndex);
+	int op_index = (int)GetItemData(nIndex);
+	int op_const = Operators[op_index].value;
 	int opr_type = query_operator_return_type(op_const);
 
 	return sexp_query_type_match(m_opf_type, opr_type);

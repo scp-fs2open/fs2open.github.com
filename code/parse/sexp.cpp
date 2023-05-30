@@ -32869,6 +32869,8 @@ bool sexp_query_type_match(int opf, int opr)
 /**
  * Finds the operator that is the best textual match for the input string, given the required OPF type.  For equal matches,
  * the alphabetically earliest operator is returned.
+ * 
+ * Note: Returns the operator index, not the operator value.
  */
 int sexp_match_closest_operator(const SCP_string &str, int opf)
 {

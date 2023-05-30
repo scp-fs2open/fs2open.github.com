@@ -53,7 +53,7 @@ public:
 	void cleanup(bool confirm);
 
 	bool PressedEnter() const;
-	int GetOpConst(int index) const;
+	int GetOpIndex(int index) const;
 	bool IsItemEnabled(int index) const;
 
 protected:
@@ -62,7 +62,7 @@ protected:
 	afx_msg void OnDestroy();
 	afx_msg BOOL OnEditChange();
 
-	SCP_vector<std::pair<SCP_string, int>> m_sorted_operators;
+	SCP_vector<std::pair<SCP_string, int>> m_sorted_operators;	// stores the operator name and its index in the Operators vector
 	const char* (*m_help_callback)(int);
 	size_t m_max_operator_length;
 	bool m_pressed_enter;
