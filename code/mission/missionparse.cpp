@@ -780,13 +780,16 @@ void parse_mission_info(mission *pm, bool basic = false)
 			WarningEx(LOCATION, "Mission: %s\nUnknown AI profile %s!", pm->name, temp );
 	}
 
-	if (optional_string("$Lighting Profile:"))
-	{
+	if (optional_string("$Lighting Profile:")) {
 		stuff_string(The_mission.lighting_profile_name, F_NAME);
-	}
-	else
+	} else {
 		The_mission.lighting_profile_name = lighting_profiles::default_name();
-	lighting_profiles::switch_to(The_mission.lighting_profile_name);
+	}
+
+	// Only try to switch profiles if we have one defined!
+	if (The_mission.lighting_profile_name.length() > 0) {
+		lighting_profiles::switch_to(The_mission.lighting_profile_name);
+	}
 
 	if (optional_string("$Sound Environment:")) {
 		char preset[65] = { '\0' };
