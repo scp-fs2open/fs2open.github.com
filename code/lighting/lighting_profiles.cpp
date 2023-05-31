@@ -257,6 +257,8 @@ void parse_all()
 {
 	Profiles[default_profile_name] = profile();
 	Profiles[default_profile_name].reset();
+	//.reset() resets name to "" which makes sense in all cases but this one
+	Profiles[default_profile_name].name = default_profile_name;
 	_current.reset();
 	if (cf_exists_full("lighting_profiles.tbl", CF_TYPE_TABLES)) {
 		mprintf(("TABLES: Starting parse of lighting profiles.tbl\n"));
