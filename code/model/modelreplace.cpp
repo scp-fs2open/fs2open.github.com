@@ -20,6 +20,7 @@ static SCP_unordered_map<SCP_string, std::function<std::unique_ptr<VirtualPOFOpe
 	{"$Add Dock Point:", &make_unique<VirtualPOFOperationAddDockPoint> },
 	{"$Add Path:", &make_unique<VirtualPOFOperationAddPath> },
 	{"$Rename Subobjects:", &make_unique<VirtualPOFOperationRenameSubobjects> },
+	{"$Set Subsystem Data:", &make_unique<VirtualPOFOperationChangeSubsystemData> },
 	{"$Set Subobject Data:", &make_unique<VirtualPOFOperationChangeData> },
 	{"$Set Header Data:", &make_unique<VirtualPOFOperationHeaderData> }
 };
@@ -1007,6 +1008,64 @@ void VirtualPOFOperationRenameSubobjects::process(polymodel* pm, model_read_defe
 	for (const auto& entry : deferredTasks.engine_subsystems)
 		copy_engine_subsys.emplace(change_submodel_name(model_read_deferred_tasks::engine_subsystem_pair(entry), replacements));
 	deferredTasks.engine_subsystems = std::move(copy_engine_subsys);
+}
+
+VirtualPOFOperationChangeSubsystemData::VirtualPOFOperationChangeSubsystemData() {
+	required_string("+Subsystem:");
+	stuff_string(subsystem, F_NAME);
+
+	if (optional_string("+Set Position:")) {
+		vec3d& offset = setPosition.emplace();
+		stuff_vec3d(&offset);
+	}
+
+	if (optional_string("+Set Radius:")) {
+		float& rad = setRadius.emplace();
+		stuff_float(&rad);
+	}
+
+	if (optional_string("+Set Properties:")) {
+		SCP_string& props = setProperties.emplace();
+		stuff_string(props, F_MULTITEXT);
+	} else if (optional_string("+Append Properties:")) {
+		propertyReplace = false;
+		SCP_string& props = setProperties.emplace();
+		stuff_string(props, F_MULTITEXT);
+	}
+}
+
+void VirtualPOFOperationChangeSubsystemData::process(polymodel* /*pm*/, model_read_deferred_tasks& deferredTasks, model_parse_depth /*depth*/, const VirtualPOFDefinition& virtualPof) const {
+	auto subsys_it = deferredTasks.model_subsystems.find(subsystem);
+
+	if (subsys_it == deferredTasks.model_subsystems.end()){
+		Warning(LOCATION, "Failed to find subsystem %s to change data of in virtual POF %s. Returning original POF", subsystem.c_str(), virtualPof.name.c_str());
+		return;
+	}
+
+	model_read_deferred_tasks::model_subsystem_parse& subsys = subsys_it->second;
+
+	if (setPosition) {
+		if (subsys.subobj_nr < 0) {
+			subsys.pnt = *setPosition;
+		}
+		else
+			Warning(LOCATION, "Cannot change position of modelled subsystem %s in virtual POF %s. Not modifying position", subsystem.c_str(), virtualPof.name.c_str());
+	}
+
+	if (setRadius) {
+		if (subsys.subobj_nr < 0) {
+			subsys.rad = *setRadius;
+		}
+		else
+			Warning(LOCATION, "Cannot change radius of modelled subsystem %s in virtual POF %s. Not modifying radius", subsystem.c_str(), virtualPof.name.c_str());
+	}
+
+	if (setProperties) {
+		if (propertyReplace)
+			subsys.props = *setProperties;
+		else
+			subsys.props += '\n' + *setProperties;
+	}
 }
 
 VirtualPOFOperationChangeData::VirtualPOFOperationChangeData() {
