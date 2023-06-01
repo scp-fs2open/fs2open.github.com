@@ -385,8 +385,8 @@ void LabUi::show_render_options()
 
 			build_tone_mapper_combobox();
 
-			if (ltp::current_tonemapper() == tnm_PPC ||
-				ltp::current_tonemapper() == tnm_PPC_RGB) {
+			if (ltp::current_tonemapper() == TonemapperAlgorithm::PPC ||
+				ltp::current_tonemapper() == TonemapperAlgorithm::PPC_RGB) {
 				SliderFloat("PPC Toe Strength", &ppcv.toe_strength, 0.0f, 1.0f);
 				SliderFloat("PPC Toe Length", &ppcv.toe_length, 0.0f, 1.0f);
 				SliderFloat("PPC Shoulder Angle", &ppcv.shoulder_angle, 0.0f, 1.0f);
@@ -396,7 +396,7 @@ void LabUi::show_render_options()
 
 			if (profile_list.size()>1) {
 				with_CollapsingHeader("Load lighting profile...") {
-					for (auto s : profile_list) {
+					for (const auto &s : profile_list) {
 						if (Button(s.c_str(), ImVec2(-FLT_MIN, GetTextLineHeight() * 2))) {
 							ltp::switch_to(s);
 						}

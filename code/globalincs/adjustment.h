@@ -14,7 +14,7 @@ struct adjustment {
 	float base;
 	bool only_positive = true;
 
-	float handle(float input);
+	float handle(float input) const;
 	void reset();
 	void set_adjust(const float in);
 	void set_multiplier(const float in);

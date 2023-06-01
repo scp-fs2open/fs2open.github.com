@@ -5,6 +5,7 @@
 #include <project.h>
 #include <libs/ffmpeg/FFmpeg.h>
 
+#include <asteroid/asteroid.h>
 #include <cutscene/cutscenes.h>
 #include <gamesnd/eventmusic.h>
 #include <globalincs/alphacolors.h>
@@ -12,6 +13,7 @@
 #include <iff_defs/iff_defs.h>
 #include <io/key.h>
 #include <io/mouse.h>
+#include <lighting/lighting_profiles.h>
 #include <localization/fhash.h>
 #include <localization/localize.h>
 #include <math/curve.h>
@@ -215,6 +217,12 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 
 	listener(SubSystem::HudGaugePositions);
 	hud_positions_init();
+
+	listener(SubSystem::Asteroids);
+	asteroid_init();
+
+	listener(SubSystem::LightingProfiles);
+	lighting_profiles::load_profiles();
 
 	listener(SubSystem::Traitor);
 	traitor_init();

@@ -14,18 +14,18 @@ namespace lighting_profiles {
 // https://64.github.io/tonemapping/ Delta - Blog by 64: Tone Mapping
 // http://filmicworlds.com/blog/filmic-tonemapping-operators/ Filmic Worlds: Filmic Tonemapping Operators by John Hable
 
-enum TonemapperAlgorithm : int
+enum class TonemapperAlgorithm : int
 {
-	tnm_Invalid = -1,
-	tnm_Linear = 0,
-	tnm_Uncharted = 1,
-	tnm_Aces = 2,
-	tnm_Aces_Approx = 3,
-	tnm_Cineon = 4,
-	tnm_Reinhard_Jodie = 5,
-	tnm_Reinhard_Extended = 6,
-	tnm_PPC = 7,
-	tnm_PPC_RGB = 8
+	Invalid = -1,
+	Linear = 0,
+	Uncharted = 1,
+	Aces = 2,
+	Aces_Approx = 3,
+	Cineon = 4,
+	Reinhard_Jodie = 5,
+	Reinhard_Extended = 6,
+	PPC = 7,
+	PPC_RGB = 8
 };
 
 struct piecewise_power_curve_values {
@@ -75,14 +75,14 @@ class profile {
 
 	void reset();
 	profile& operator=(const profile& rhs);
-	void parse(const char* filename, SCP_string& profile_name, SCP_string& end_tag);
+	void parse(const char* filename, const SCP_string& profile_name, const SCP_string& end_tag);
 
   private:
 };
 
-SCP_string default_name();
-profile* current();
-enum TonemapperAlgorithm name_to_tonemapper(SCP_string& name);
+const SCP_string &default_name();
+const profile* current();
+enum TonemapperAlgorithm name_to_tonemapper(SCP_string name);
 SCP_string tonemapper_to_name(TonemapperAlgorithm tnm);
 void load_profiles();
 TonemapperAlgorithm current_tonemapper();
@@ -92,8 +92,8 @@ piecewise_power_curve_intermediates calc_intermediates(piecewise_power_curve_val
 float current_exposure();
 void lab_set_exposure(float exIn);
 void lab_set_tonemapper(TonemapperAlgorithm tnin);
-void lab_set_ppc(piecewise_power_curve_values ppcin);
-piecewise_power_curve_values lab_get_ppc();
+void lab_set_ppc(const piecewise_power_curve_values &ppcin);
+const piecewise_power_curve_values &lab_get_ppc();
 float lab_get_light();
 void lab_set_light(float in);
 float lab_get_ambient();
@@ -101,5 +101,5 @@ void lab_set_ambient(float in);
 float lab_get_emissive();
 void lab_set_emissive(float in);
 SCP_vector<SCP_string> list_profiles();
-void switch_to(SCP_string& name);
+void switch_to(const SCP_string& name);
 } // namespace lighting_profiles

@@ -3025,10 +3025,19 @@ int CFred_mission_save::save_mission_info()
 		fout_version("\n\n$AI Profile: %s", The_mission.ai_profile->profile_name);
 	}
 	fso_comment_pop();
+
+	// EatThePath's lighting profiles
 	if(The_mission.lighting_profile_name!=lighting_profiles::default_name()){
-		fso_comment_push(";;FSO 23.1.0;;"); //todo: bump after testing
-		fout_version("\n\n$Lighting Profile: %s", The_mission.lighting_profile_name.c_str());
+		fso_comment_push(";;FSO 23.1.0;;");
+		if (optional_string_fred("$Lighting Profile:")) {
+			parse_comments(2);
+			fout(" %s", The_mission.lighting_profile_name.c_str());
+		} else {
+			fout_version("\n\n$Lighting Profile: %s", The_mission.lighting_profile_name.c_str());
+		}
 		fso_comment_pop();
+	} else {
+		bypass_comment(";;FSO 23.1.0;; $Lighting Profile:");
 	}
 
 	// sound environment (EFX/EAX) - taylor

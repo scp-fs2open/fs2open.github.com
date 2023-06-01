@@ -26,12 +26,12 @@ profile _current;
 SCP_unordered_map<SCP_string, profile> Profiles;
 SCP_string default_profile_name;
 
-SCP_string default_name()
+const SCP_string &default_name()
 {
 	return default_profile_name;
 }
 
-profile* current()
+const profile* current()
 {
 	return &_current;
 }
@@ -40,12 +40,12 @@ SCP_vector<SCP_string> list_profiles()
 {
 	SCP_vector<SCP_string> r;
 	for (auto& p : Profiles) {
-		r.push_back(SCP_string(p.second.name));
+		r.push_back(p.second.name);
 	}
 	return r;
 }
 
-void switch_to(SCP_string& name)
+void switch_to(const SCP_string& name)
 {
 	if (Profiles.find(name) == Profiles.end()) {
 		Warning(LOCATION, "Attempted to switch to unknown lighting profile '%s';", name.c_str());
@@ -58,6 +58,7 @@ void update_current_profile()
 {
 	// processes any change-overs and transitions
 }
+
 //*************************************************
 //			General interface
 //*************************************************
@@ -75,13 +76,14 @@ float current_exposure()
 {
 	return _current.exposure;
 }
+
 piecewise_power_curve_intermediates current_piecewise_intermediates()
 {
 	return calc_intermediates(_current.ppc_values);
 }
+
 piecewise_power_curve_intermediates calc_intermediates(piecewise_power_curve_values input)
 {
-
 	piecewise_power_curve_intermediates ppci;
 
 	// Some safety clamping based on John Hable's implementation: https://github.com/johnhable/fw-public
@@ -116,36 +118,36 @@ piecewise_power_curve_intermediates calc_intermediates(piecewise_power_curve_val
 	return ppci;
 }
 
-TonemapperAlgorithm name_to_tonemapper(SCP_string& name)
+TonemapperAlgorithm name_to_tonemapper(SCP_string name)
 {
 	SCP_tolower(name);
-	TonemapperAlgorithm r = tnm_Invalid;
+	TonemapperAlgorithm r = TonemapperAlgorithm::Invalid;
 	if (name == "uncharted" || name == "uncharted 2") {
-		r = tnm_Uncharted;
+		r = TonemapperAlgorithm::Uncharted;
 	}
 	if (name == "linear") {
-		r = tnm_Linear;
+		r = TonemapperAlgorithm::Linear;
 	}
 	if (name == "aces") {
-		r = tnm_Aces;
+		r = TonemapperAlgorithm::Aces;
 	}
 	if (name == "aces approximate") {
-		r = tnm_Aces_Approx;
+		r = TonemapperAlgorithm::Aces_Approx;
 	}
 	if (name == "cineon") {
-		r = tnm_Cineon;
+		r = TonemapperAlgorithm::Cineon;
 	}
 	if (name == "reinhard jodie") {
-		r = tnm_Reinhard_Jodie;
+		r = TonemapperAlgorithm::Reinhard_Jodie;
 	}
 	if (name == "reinhard extended") {
-		r = tnm_Reinhard_Extended;
+		r = TonemapperAlgorithm::Reinhard_Extended;
 	}
 	if (name == "ppc" || name == "piecewise power curve") {
-		r = tnm_PPC;
+		r = TonemapperAlgorithm::PPC;
 	}
 	if (name == "ppc rgb" || name == "piecewise power curve (rgb)") {
-		r = tnm_PPC_RGB;
+		r = TonemapperAlgorithm::PPC_RGB;
 	}
 	return r;
 }
@@ -153,28 +155,28 @@ TonemapperAlgorithm name_to_tonemapper(SCP_string& name)
 SCP_string tonemapper_to_name(TonemapperAlgorithm tnm)
 {
 	switch (tnm) {
-	case TonemapperAlgorithm::tnm_Aces:
+	case TonemapperAlgorithm::Aces:
 		return "ACES";
-	case TonemapperAlgorithm::tnm_Aces_Approx:
+	case TonemapperAlgorithm::Aces_Approx:
 		return "ACES Approximate";
-	case TonemapperAlgorithm::tnm_Cineon:
+	case TonemapperAlgorithm::Cineon:
 		return "Cineon";
-	case TonemapperAlgorithm::tnm_Invalid:
+	case TonemapperAlgorithm::Invalid:
 		return "invalid";
-	case TonemapperAlgorithm::tnm_Linear:
+	case TonemapperAlgorithm::Linear:
 		return "Linear";
-	case TonemapperAlgorithm::tnm_PPC:
+	case TonemapperAlgorithm::PPC:
 		return "Piecewise Power Curve";
-	case TonemapperAlgorithm::tnm_PPC_RGB:
+	case TonemapperAlgorithm::PPC_RGB:
 		return "Piecewise Power Curve (RGB)";
-	case TonemapperAlgorithm::tnm_Reinhard_Extended:
+	case TonemapperAlgorithm::Reinhard_Extended:
 		return "Reinhard Extended";
-	case TonemapperAlgorithm::tnm_Reinhard_Jodie:
+	case TonemapperAlgorithm::Reinhard_Jodie:
 		return "Reinhard Jodie";
-	case TonemapperAlgorithm::tnm_Uncharted:
+	case TonemapperAlgorithm::Uncharted:
 		return "Uncharted 2";
 	default:
-		return "wtf";
+		return "<unknown algorithm>";
 	}
 }
 
@@ -192,12 +194,12 @@ void lab_set_tonemapper(TonemapperAlgorithm tnin)
 	_current.tonemapper = tnin;
 }
 
-void lab_set_ppc(piecewise_power_curve_values ppcin)
+void lab_set_ppc(const piecewise_power_curve_values &ppcin)
 {
 	_current.ppc_values = ppcin;
 }
 
-piecewise_power_curve_values lab_get_ppc()
+const piecewise_power_curve_values &lab_get_ppc()
 {
 	return _current.ppc_values;
 }
@@ -293,7 +295,7 @@ void parse_file(const char* filename)
 		}
 	} catch (const parse::ParseException& e) {
 		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n",
-			(filename) ? filename : "<default ai_profiles.tbl>",
+			(filename) ? filename : "<default lighting_profiles.tbl>",
 			e.what()));
 		return;
 	}
@@ -325,7 +327,7 @@ void parse_profile_section(const char* filename)
 	}
 }
 
-void profile::parse(const char* filename, SCP_string& profile_name, SCP_string& end_tag)
+void profile::parse(const char* filename, const SCP_string& profile_name, const SCP_string& end_tag)
 {
 	name = profile_name;
 	bool parsed;
@@ -394,7 +396,7 @@ void profile::reset()
 {
 	name = "";
 
-	tonemapper = tnm_Uncharted;
+	tonemapper = TonemapperAlgorithm::Uncharted;
 
 	ppc_values.toe_strength = 0.5f;
 	ppc_values.toe_length = 0.5f;
