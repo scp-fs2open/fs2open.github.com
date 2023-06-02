@@ -633,6 +633,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "end-of-campaign",				OP_END_OF_CAMPAIGN,						0,	0,			SEXP_ACTION_OPERATOR,	},
 	{ "set-debriefing-toggled",			OP_SET_DEBRIEFING_TOGGLED,				1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-debriefing-persona",			OP_SET_DEBRIEFING_PERSONA,				1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "set-traitor-override",			OP_SET_TRAITOR_OVERRIDE,				1,	1,			SEXP_ACTION_OPERATOR,	},	// MjnMixael
 	{ "allow-treason",					OP_ALLOW_TREASON,						1,	1,			SEXP_ACTION_OPERATOR,	},	// Karajorma
 	{ "grant-promotion",				OP_GRANT_PROMOTION,						0,	0,			SEXP_ACTION_OPERATOR,	},
 	{ "grant-medal",					OP_GRANT_MEDAL,							1,	1,			SEXP_ACTION_OPERATOR,	},
@@ -748,11 +749,12 @@ SCP_vector<sexp_oper> Operators = {
 	{ "set-ambient-light",				OP_SET_AMBIENT_LIGHT,					3,	3,			SEXP_ACTION_OPERATOR,	},	// Karajorma
 	{ "toggle-asteroid-field",			OP_TOGGLE_ASTEROID_FIELD,				1,	1,			SEXP_ACTION_OPERATOR,	},	// MjnMixael
 	{ "set-asteroid-field",				OP_SET_ASTEROID_FIELD,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// MjnMixael
-	{ "set-debris-field",				OP_SET_DEBRIS_FIELD,					1,	11,			SEXP_ACTION_OPERATOR,	},	// MjnMixael
+	{ "set-debris-field",				OP_SET_DEBRIS_FIELD,					1,	12,			SEXP_ACTION_OPERATOR,	},	// MjnMixael
 	{ "set-motion-debris",			    OP_SET_MOTION_DEBRIS,					1,	1,			SEXP_ACTION_OPERATOR,	},	// MjnMixael
 
 	//Jump Node Sub-Category
 	{ "set-jumpnode-name",				OP_JUMP_NODE_SET_JUMPNODE_NAME,			2,	2,			SEXP_ACTION_OPERATOR,	},	//CommanderDJ
+	{ "set-jumpnode-display-name",      OP_JUMP_NODE_SET_JUMPNODE_DISPLAY_NAME, 2,  2,          SEXP_ACTION_OPERATOR,   },  //MjnMixael
 	{ "set-jumpnode-color",				OP_JUMP_NODE_SET_JUMPNODE_COLOR,		5,	5,			SEXP_ACTION_OPERATOR,	},
 	{ "set-jumpnode-model",				OP_JUMP_NODE_SET_JUMPNODE_MODEL,		3,	3,			SEXP_ACTION_OPERATOR,	},
 	{ "show-jumpnode",					OP_JUMP_NODE_SHOW_JUMPNODE,				1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
@@ -904,7 +906,7 @@ SCP_vector<dynamic_sexp_parameter_list> Dynamic_parameters;
 int get_dynamic_parameter_index(const SCP_string &op_name, int param)
 {
 	for (int i = 0; i < (int)Dynamic_parameters.size(); i++) {
-		if (SCP_string_lcase_equal_to()(Dynamic_parameters[i].operator_name, op_name)) {
+		if (lcase_equal(Dynamic_parameters[i].operator_name, op_name)) {
 
 			// Make sure there are actually parameters for this operator
 			if (!Dynamic_parameters[i].parameter_map.empty()) {
@@ -941,7 +943,7 @@ int get_dynamic_parameter_index(const SCP_string &op_name, int param)
 int get_dynamic_enum_position(const SCP_string &enum_name)
 {
 	for (int i = 0; i < (int)Dynamic_enums.size(); i++) {
-		if (SCP_string_lcase_equal_to()(enum_name, Dynamic_enums[i].name)) {
+		if (lcase_equal(enum_name, Dynamic_enums[i].name)) {
 			return i;
 		}
 	}
@@ -4099,6 +4101,16 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 
 				if (get_bolt_type_by_name(CTEXT(node)) < 0) {
 					return SEXP_CHECK_INVALID_BOLT_TYPE;
+				}
+				break;
+
+			case OPF_TRAITOR_OVERRIDE:
+				if (type2 != SEXP_ATOM_STRING) {
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+
+				if (stricmp(CTEXT(node), SEXP_NONE_STRING) && (get_traitor_override_pointer(CTEXT(node)) == nullptr)) {
+					return SEXP_CHECK_INVALID_TRAITOR_OVERRIDE;
 				}
 				break;
 
@@ -15736,6 +15748,12 @@ void sexp_set_debris_field(int n)
 		}
 	}
 
+	bool enhanced = false;
+	if (n >= 0) {
+		enhanced = is_sexp_true(n);
+		n = CDR(n);
+	}
+
 	if (num_asteroids > MAX_ASTEROIDS) {
 		num_asteroids = MAX_ASTEROIDS;
 	}
@@ -15750,7 +15768,8 @@ void sexp_set_debris_field(int n)
 		debris2,
 		debris3,
 		o_min,
-		o_max);
+		o_max,
+		enhanced);
 }
 
 void sexp_set_motion_debris_type(int n)
@@ -15826,6 +15845,18 @@ void sexp_set_debriefing_persona(int node)
 	if (is_nan || is_nan_forever || persona < 0)
 		return;
 	The_mission.debriefing_persona = persona;
+}
+
+// MjnMixael
+void sexp_set_traitor_override(int node)
+{
+	SCP_string override = CTEXT(node);
+
+	if (!stricmp(override.c_str(), SEXP_NONE_STRING)) {
+		The_mission.traitor_override = nullptr;
+	}else{
+		The_mission.traitor_override = get_traitor_override_pointer(override);
+	}
 }
 
 /**
@@ -17491,11 +17522,16 @@ int sexp_event_delay_status( int n, int want_true, bool use_msecs = false)
 				}
 			}
 
-			// check that the event delay has elapsed, again using the same logic as in mission_process_event()
-			if (!Fixed_chaining_to_repeat && Mission_events[i].flags & MEF_TIMESTAMP_HAS_INTERVAL) {
+			// Events that have never fired are not subject to the delay check. This matches the behavior of the
+			// original public source code release and also allows checks for these events to work in debriefings.
+			if (!Mission_events[i].timestamp.isValid()) {
 				/* do not set rval */;
 			}
-			// note that if the event and the timestamp happen simultaneously, at least one frame must elapse first;
+			// Check that the event delay has elapsed, again using the same logic as in mission_process_event()
+			else if (!Fixed_chaining_to_repeat && Mission_events[i].flags & MEF_TIMESTAMP_HAS_INTERVAL) {
+				/* do not set rval */;
+			}
+			// Note that if the event and the timestamp happen simultaneously, at least one frame must elapse first;
 			// this matches the delay check in the original public source code release
 			else if (!timestamp_elapsed_last_frame(timestamp_delta(Mission_events[i].timestamp, delay))) {
 				rval = SEXP_FALSE;
@@ -25138,6 +25174,25 @@ void sexp_set_jumpnode_name(int n) //CommanderDJ
 	Current_sexp_network_packet.end_callback();
 }
 
+void sexp_set_jumpnode_display_name(int n) //MjnMixael
+{
+	auto node = CTEXT(n);
+	n = CDR(n);
+
+	auto jnp = jumpnode_get_by_name(node);
+	if (!jnp)
+		return;
+
+	auto display_name = CTEXT(n);
+	jnp->SetDisplayName(display_name);
+
+	//multiplayer callback
+	Current_sexp_network_packet.start_callback();
+	Current_sexp_network_packet.send_string(node);
+	Current_sexp_network_packet.send_string(display_name);
+	Current_sexp_network_packet.end_callback();
+}
+
 void multi_sexp_set_jumpnode_name() //CommanderDJ
 {
 	char old_name[TOKEN_LENGTH];
@@ -25151,6 +25206,21 @@ void multi_sexp_set_jumpnode_name() //CommanderDJ
 		return;
 
 	jnp->SetName(new_name);
+}
+
+void multi_sexp_set_jumpnode_display_name()
+{
+	char node[TOKEN_LENGTH];
+	char display_name[TOKEN_LENGTH];
+
+	Current_sexp_network_packet.get_string(node);
+	Current_sexp_network_packet.get_string(display_name);
+
+	CJumpNode* jnp = jumpnode_get_by_name(node);
+	if (jnp == nullptr)
+		return;
+
+	jnp->SetDisplayName(display_name);
 }
 
 void sexp_set_jumpnode_color(int n)
@@ -27431,6 +27501,12 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			// MjnMixael
+			case OP_SET_TRAITOR_OVERRIDE:
+				sexp_set_traitor_override(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			// Goober5000
 			case OP_FORCE_JUMP:
 				sexp_force_jump();
@@ -28410,6 +28486,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_set_jumpnode_name(node);
 				break;
 
+			case OP_JUMP_NODE_SET_JUMPNODE_DISPLAY_NAME:
+				sexp_val = SEXP_TRUE;
+				sexp_set_jumpnode_display_name(node);
+				break;
+
 			case OP_JUMP_NODE_SET_JUMPNODE_COLOR:
 				sexp_val = SEXP_TRUE;
 				sexp_set_jumpnode_color(node);
@@ -28890,6 +28971,10 @@ void multi_sexp_eval()
 
 			case OP_JUMP_NODE_SET_JUMPNODE_NAME:
 				multi_sexp_set_jumpnode_name();
+				break;
+
+			case OP_JUMP_NODE_SET_JUMPNODE_DISPLAY_NAME:
+				multi_sexp_set_jumpnode_display_name();
 				break;
 
 			case OP_IGNORE_KEY:
@@ -29428,6 +29513,7 @@ int query_operator_return_type(int op)
 		case OP_END_MISSION:
 		case OP_SET_DEBRIEFING_TOGGLED:
 		case OP_SET_DEBRIEFING_PERSONA:
+		case OP_SET_TRAITOR_OVERRIDE:
 		case OP_FORCE_JUMP:
 		case OP_SET_SUBSYSTEM_STRNGTH:
 		case OP_DESTROY_SUBSYS_INSTANTLY:
@@ -29638,6 +29724,7 @@ int query_operator_return_type(int op)
 		case OP_CUTSCENES_FORCE_PERSPECTIVE:
 		case OP_SET_CAMERA_SHUDDER:
 		case OP_JUMP_NODE_SET_JUMPNODE_NAME:
+		case OP_JUMP_NODE_SET_JUMPNODE_DISPLAY_NAME:
 		case OP_JUMP_NODE_SET_JUMPNODE_COLOR:
 		case OP_JUMP_NODE_SET_JUMPNODE_MODEL:
 		case OP_JUMP_NODE_SHOW_JUMPNODE:
@@ -30822,6 +30909,9 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_SET_DEBRIEFING_PERSONA:
 			return OPF_POSITIVE;
+
+		case OP_SET_TRAITOR_OVERRIDE:
+			return OPF_TRAITOR_OVERRIDE;
 
 		case OP_SET_PLAYER_ORDERS:
 		case OP_SET_ORDER_ALLOWED_TARGET:
@@ -32194,6 +32284,7 @@ int query_operator_argument_type(int op, int argnum)
 		//</Cutscenes>
 
 		case OP_JUMP_NODE_SET_JUMPNODE_NAME: //CommanderDJ
+		case OP_JUMP_NODE_SET_JUMPNODE_DISPLAY_NAME:
 			if(argnum==0)
 				return OPF_JUMP_NODE_NAME;
 			else if (argnum==1)
@@ -32283,8 +32374,10 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_POSITIVE;
 			else if (argnum <= 4)
 				return OPF_ASTEROID_DEBRIS;
-			else
+			else if (argnum <= 10)
 				return OPF_NUMBER;
+			else
+				return OPF_BOOL;
 
 		case OP_SET_MOTION_DEBRIS:
 			return OPF_MOTION_DEBRIS;
@@ -33081,6 +33174,9 @@ const char *sexp_error_message(int num)
 
 		case SEXP_CHECK_INVALID_BOLT_TYPE:
 			return "Invalid lightning bolt type";
+
+		case SEXP_CHECK_INVALID_TRAITOR_OVERRIDE:
+			return "Invalid traitor override";
 
 		default:
 			Warning(LOCATION, "Unhandled sexp error code %d!", num);
@@ -34427,6 +34523,7 @@ int get_category(int op_id)
 		case OP_CUTSCENES_RESET_TIME_COMPRESSION:
 		case OP_CUTSCENES_FORCE_PERSPECTIVE:
 		case OP_JUMP_NODE_SET_JUMPNODE_NAME:
+		case OP_JUMP_NODE_SET_JUMPNODE_DISPLAY_NAME:
 		case OP_JUMP_NODE_SET_JUMPNODE_COLOR:
 		case OP_JUMP_NODE_SET_JUMPNODE_MODEL:
 		case OP_JUMP_NODE_SHOW_JUMPNODE:
@@ -34598,6 +34695,7 @@ int get_category(int op_id)
 		case OP_CHANGE_BACKGROUND:
 		case OP_CLEAR_DEBRIS:
 		case OP_SET_DEBRIEFING_PERSONA:
+		case OP_SET_TRAITOR_OVERRIDE:
 		case OP_ADD_TO_COLGROUP_NEW:
 		case OP_REMOVE_FROM_COLGROUP_NEW:
 		case OP_GET_POWER_OUTPUT:
@@ -34952,6 +35050,7 @@ int get_subcategory(int op_id)
 		case OP_END_CAMPAIGN:
 		case OP_SET_DEBRIEFING_TOGGLED:
 		case OP_SET_DEBRIEFING_PERSONA:
+		case OP_SET_TRAITOR_OVERRIDE:
 		case OP_ALLOW_TREASON:
 		case OP_GRANT_PROMOTION:
 		case OP_GRANT_MEDAL:
@@ -35070,7 +35169,8 @@ int get_subcategory(int op_id)
 		case OP_SET_MOTION_DEBRIS:
 			return CHANGE_SUBCATEGORY_BACKGROUND_AND_NEBULA;
 
-		case OP_JUMP_NODE_SET_JUMPNODE_NAME: //CommanderDJ
+		case OP_JUMP_NODE_SET_JUMPNODE_NAME: //
+		case OP_JUMP_NODE_SET_JUMPNODE_DISPLAY_NAME:
 		case OP_JUMP_NODE_SET_JUMPNODE_COLOR:
 		case OP_JUMP_NODE_SET_JUMPNODE_MODEL:
 		case OP_JUMP_NODE_SHOW_JUMPNODE:
@@ -35827,7 +35927,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_GOAL_INCOMPLETE, "Mission Goal Incomplete (Boolean operator)\r\n"
 		"\tReturns true if the specified goal in the this mission is incomplete.  This "
 		"sexpression will only be useful in conjunction with another sexpression like"
-		"has-time-elapsed.  Used alone, it will return true upon misison startup."
+		"has-time-elapsed.  Used alone, it will return true upon mission startup."
 		"Returns a boolean value.  Takes 1 argument...\r\n"
 		"\t1:\tName of the event in the mission."},
 
@@ -35870,7 +35970,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_EVENT_INCOMPLETE, "Mission Event Incomplete (Boolean operator)\r\n"
 		"\tReturns true if the specified event in the this mission is incomplete.  This "
 		"sexpression will only be useful in conjunction with another sexpression like"
-		"has-time-elapsed.  Used alone, it will return true upon misison startup."
+		"has-time-elapsed.  Used alone, it will return true upon mission startup."
 		"Returns a boolean value.  Takes 1 argument...\r\n"
 		"\t1:\tName of the event in the mission."},
 
@@ -37908,6 +38008,11 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tSets the numeric prefix to be used for debriefing voice files in automatic debriefing stages (promotions, ace badges, traitor).  This is usually specified in the campaign editor, but it can be overridden mid-mission with this sexp.  Takes 1 argument.\r\n"
 	},
 
+	// MjnMixael
+	{ OP_SET_TRAITOR_OVERRIDE, "set-traitor-override\r\n"
+		"\tSets the override debriefing info for the traitor debrief. Must be tabled in traitor.tbl."
+	},
+
 	// Goober5000
 	{ OP_FORCE_JUMP, "force-jump\r\n"
 		"\tForces activation of the player's subspace drive, thus ending the mission.  Takes no arguments."
@@ -39397,6 +39502,12 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tNote: SEXPs referencing the old name will not work after the name change.\r\n"
 	},
 
+	{ OP_JUMP_NODE_SET_JUMPNODE_DISPLAY_NAME, "set-jumpnode-display-name\r\n"
+		"\tSets the display name of a jump node. Takes 2 arguments...\r\n"
+	    "\t1: Name of jump node to change display name for\r\n"
+	    "\t2: New display name for jump node\r\n"
+	},
+
 	{ OP_JUMP_NODE_SET_JUMPNODE_COLOR, "set-jumpnode-color\r\n"
 		"\tSets the color of a jump node.  "
 		"Takes 5 arguments...\r\n"
@@ -39842,7 +39953,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tCreates or overwrites the asteroid or debris field with an asteroid field. \r\n"
 		"\tTakes 1 or more arguments...\r\n"
 		"\t1:\tNumber of asteroids in the field, or 0 to remove an existing field\r\n" 
-		"\t2:\t0 for active field, 1 for passive field, defaults to 0\r\n"
+		"\t2:\t0 for passive field, 1 for active field, 2 for enhanced passive, 3 for enhanced active, defaults to 0\r\n"
 		"\t3:\tThe speed of the asteroids, defaults to 0\r\n"
 		"\t4:\tTrue to enable brown asteroids, defaults to true\r\n"
 		"\t5:\tTrue to enable blue asteroids, defaults to false\r\n"
@@ -39877,6 +39988,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t9:\tOuterbox Max Y, defaults to 1000\r\n"
 		"\t10:\tOuterbox Min Z, defaults to -1000\r\n"
 		"\t11:\tOuterbox Max Z, defaults to 1000\r\n"
+		"\t12:\tIf the field uses enhanced spawning checks, defaults to false\r\n"
 	},
 
 	{ OP_SET_MOTION_DEBRIS, "set-motion-debris\r\n" 

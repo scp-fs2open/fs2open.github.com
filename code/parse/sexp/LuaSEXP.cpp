@@ -645,7 +645,7 @@ void LuaSEXP::parseTable() {
 				bool skip = false;
 				// Case insensitive check if the item already exists in the list
 				for (int i = 0; i < (int)thisList.list.size(); i++) {
-					if (SCP_string_lcase_equal_to()(item, thisList.list[i])) {
+					if (lcase_equal(item, thisList.list[i])) {
 						error_display(0, "Enum item '%s' already exists in list %s. Skipping!\n", item.c_str(), thisList.name.c_str());
 						skip = true;
 						break;
@@ -703,7 +703,7 @@ void LuaSEXP::parseTable() {
 			// check if this operator already has an entry for dynamic parameters
 			int dyn_index = -1;
 			for (int i = 0; i < (int)Dynamic_parameters.size(); i++) {
-				if (SCP_string_lcase_equal_to()(Dynamic_parameters[i].operator_name, _name)) {
+				if (lcase_equal(Dynamic_parameters[i].operator_name, _name)) {
 					dyn_index = i;
 				}
 			}

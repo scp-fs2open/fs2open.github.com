@@ -32,6 +32,7 @@
 #include "io/timer.h"
 #include "jumpnode/jumpnode.h"
 #include "lighting/lighting.h"
+#include "lighting/lighting_profiles.h"
 #include "localization/localize.h"
 #include "math/fvi.h"
 #include "math/staticrand.h"
@@ -102,7 +103,6 @@ int Mission_palette;  // index into Nebula_palette_filenames[] of palette file t
 int Nebula_index;  // index into Nebula_filenames[] of nebula to use in mission.
 int Num_ai_behaviors = MAX_AI_BEHAVIORS;
 int Num_cargo = 0;
-int Num_status_names = MAX_STATUS_NAMES;
 int Num_arrival_names = MAX_ARRIVAL_NAMES;
 int Num_goal_type_names = MAX_GOAL_TYPE_NAMES;
 int Num_parse_goals;
@@ -234,18 +234,6 @@ const char *Icon_names[MIN_BRIEF_ICONS] = {
 	"Bomber", "Bomber Wing", "Cruiser", "Cruiser Wing", "Unknown", "Unknown Wing",
 	"Player Fighter", "Player Fighter Wing", "Player Bomber", "Player Bomber Wing",
 	"Knossos Device", "Transport Wing", "Corvette", "Gas Miner", "Awacs", "Supercap", "Sentry Gun", "Jump Node", "Transport"
-};
-
-const char *Status_desc_names[MAX_STATUS_NAMES] = {
-	"Shields Critical", "Engines Damaged", "Fully Operational",
-};
-
-const char *Status_type_names[MAX_STATUS_NAMES] = {
-	"Damaged", "Disabled", "Corroded",
-};
-
-const char *Status_target_names[MAX_STATUS_NAMES] = {
-	"Weapons", "Engines", "Cable TV",
 };
 
 // definitions for arrival locations for ships/wings
@@ -791,6 +779,14 @@ void parse_mission_info(mission *pm, bool basic = false)
 		else
 			WarningEx(LOCATION, "Mission: %s\nUnknown AI profile %s!", pm->name, temp );
 	}
+
+	if (optional_string("$Lighting Profile:"))
+	{
+		stuff_string(The_mission.lighting_profile_name, F_NAME);
+	}
+	else
+		The_mission.lighting_profile_name = lighting_profiles::default_name();
+	lighting_profiles::switch_to(The_mission.lighting_profile_name);
 
 	if (optional_string("$Sound Environment:")) {
 		char preset[65] = { '\0' };
@@ -5274,6 +5270,7 @@ void parse_waypoints_and_jumpnodes(mission *pm)
 
 	char file_name[MAX_FILENAME_LEN] = { 0 };
 	char jump_name[NAME_LENGTH] = { 0 };
+	char jump_display_name[NAME_LENGTH] = {0};
 
 	while (optional_string("$Jump Node:")) {
 		stuff_vec3d(&pos);
@@ -5282,6 +5279,13 @@ void parse_waypoints_and_jumpnodes(mission *pm)
 		if (optional_string("$Jump Node Name:") || optional_string("+Jump Node Name:")) {
 			stuff_string(jump_name, F_NAME, NAME_LENGTH);
 			jnp.SetName(jump_name);
+		}
+
+		if (optional_string("+Display Name:")) {
+			stuff_string(jump_display_name, F_NAME, NAME_LENGTH);
+			jnp.SetDisplayName(jump_display_name);
+		} else {
+			jnp.SetDisplayName(jump_name);
 		}
 
 		if(optional_string("+Model File:")){
@@ -5560,6 +5564,10 @@ void parse_bitmaps(mission *pm)
 	// set the ambient light
 
 	// neb2 info
+
+	// all poofs on by default
+	for (size_t i = 0; i < Poof_info.size(); i++)
+		Neb2_poof_flags += (1 << i);
 	bool nebula = false;
 	if (optional_string("+Neb2:")) {
 		nebula = true;
@@ -5817,6 +5825,10 @@ void parse_asteroid_fields(mission *pm)
 			Asteroid_field.has_inner_bound = false;
 		}
 
+		if (optional_string("+Use Enhanced Checks")) {
+			Asteroid_field.enhanced_visibility_checks = true;
+		}
+
 		if (optional_string("$Asteroid Targets:")) {
 			stuff_string_list(Asteroid_field.target_names);
 		}
@@ -6008,7 +6020,7 @@ bool parse_mission(mission *pm, int flags)
 	reset_parse();
 	mission_init(pm);
 
-	parse_mission_info(pm); 
+	parse_mission_info(pm);
 
 	Current_file_checksum = netmisc_calc_checksum(pm,MISSION_CHECKSUM_SIZE);
 
@@ -6089,9 +6101,8 @@ bool parse_mission(mission *pm, int flags)
 		}
 	}
 
-	if (!post_process_mission(pm)) {
+	if (!post_process_mission(pm))
 		return false;
-	}
 
 	if ((saved_warning_count - Global_warning_count) > 10 || (saved_error_count - Global_error_count) > 0) {
 		char text[512];
@@ -6503,6 +6514,7 @@ void mission::Reset()
 	command_persona = Default_command_persona;
 	strcpy_s(command_sender, DEFAULT_COMMAND);
 	debriefing_persona = debrief_find_persona_index();
+	traitor_override = nullptr;
 
 	event_music_name[ 0 ] = '\0';
 	briefing_music_name[ 0 ] = '\0';
@@ -6510,6 +6522,8 @@ void mission::Reset()
 	substitute_briefing_music_name[ 0 ] = '\0';
 
 	ai_profile = &Ai_profiles[Default_ai_profile];
+	lighting_profile_name = lighting_profiles::default_name();
+
 	cutscenes.clear( );
 
 	gravity = vmd_zero_vector;
@@ -6607,9 +6621,9 @@ void mission_init(mission *pm)
 	Mission_palette = 1;
 }
 
-// main parse routine for parsing a mission.  The default parameter flags tells us which information
+// Main parse routine for parsing a mission.  The default parameter flags tells us which information
 // to get when parsing the mission.  0 means get everything (default).  Other flags just gets us basic
-// info such as game type, number of players etc.
+// info such as game type, number of players etc. or whether we are importing from a different format.
 bool parse_main(const char *mission_name, int flags)
 {
 	int i;
@@ -6645,17 +6659,18 @@ bool parse_main(const char *mission_name, int flags)
 
 		try
 		{
-			// import?
+			// import FS1 mission
 			if (flags & MPF_IMPORT_FSM) {
 				read_file_text(mission_name, CF_TYPE_ANY);
 				convertFSMtoFS2();
+				rval = parse_mission(&The_mission, flags);
 			}
+			// regular mission load
 			else {
 				read_file_text(mission_name, CF_TYPE_MISSIONS);
+				rval = parse_mission(&The_mission, flags);
 			}
 
-			The_mission.Reset();
-			rval = parse_mission(&The_mission, flags);
 			display_parse_diagnostics();
 		}
 		catch (const parse::ParseException& e)

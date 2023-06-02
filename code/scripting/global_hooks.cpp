@@ -314,6 +314,18 @@ const std::shared_ptr<Hook<WeaponUsedConditions>> OnBeamFired = Hook<WeaponUsedC
 		{"Target", "object", "The current target of the shot."},
 	});
 
+const std::shared_ptr<OverridableHook<>> OnHudCommMenuOpened = OverridableHook<>::Factory("On HUD Comm Menu Opened",
+	"Invoked when the HUD comm menu, or squad message menu, is displayed.",
+	{
+		{"Player", "object", "The player object."}
+	});
+
+const std::shared_ptr<OverridableHook<>> OnHudCommMenuClosed = OverridableHook<>::Factory("On HUD Comm Menu Closed",
+	"Invoked when the HUD comm menu, or squad message menu, is hidden.",
+	{
+		{"Player", "object", "The player object."}
+	});
+
 const std::shared_ptr<OverridableHook<ObjectDrawConditions>> OnHudDraw = OverridableHook<ObjectDrawConditions>::Factory("On HUD Draw",
 	"Invoked when the HUD is rendered.",
 	{ 

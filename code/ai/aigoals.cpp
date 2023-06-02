@@ -904,7 +904,7 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, char
 		int ref_type;
 
 		ref_type = Sexp_nodes[CDR(node)].subtype;
-		if (ref_type == SEXP_ATOM_STRING) {  // referenced by name
+		if (ref_type == SEXP_ATOM_STRING || ref_type == SEXP_ATOM_CONTAINER_DATA) {  // referenced by name
 			// save the waypoint path name -- the list will get resolved when the goal is checked
 			// for achievability.
 			aigp->target_name = ai_get_goal_target_name(CTEXT(CDR(node)), &aigp->target_name_index);  // waypoint path name;

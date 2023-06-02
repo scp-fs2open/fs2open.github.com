@@ -2220,16 +2220,16 @@ void read_raw_file_text(const char *filename, int mode, char *raw_text)
 	mf = cfopen(filename, "rb", CFILE_NORMAL, mode);
 	if (mf == NULL)
 	{
-        nprintf(("Error", "Wokka!  Error opening file (%s)!\n", filename));
-        throw parse::ParseException("Failed to open file");
+		nprintf(("Error", "Wokka!  Error opening file (%s)!\n", filename));
+		throw parse::ParseException("Failed to open file");
 	}
 
 	// read the entire file in
 	int file_len = cfilelength(mf);
 
 	if(!file_len) {
-        nprintf(("Error", "Oh noes!!  File is empty! (%s)!\n", filename));
-        throw parse::ParseException("Failed to open file");
+		nprintf(("Error", "Oh noes!!  File is empty! (%s)!\n", filename));
+		throw parse::ParseException("Failed to open file");
 	}
 
 	// For the possible Latin1 -> UTF-8 conversion we need to reallocate the raw_text at some point and we can only do
@@ -2446,6 +2446,53 @@ void debug_show_mission_text()
 
 	while ((ch = *mp++) != '\0')
 		printf("%c", ch);
+}
+
+// Goober5000
+void read_file_bytes(const char *filename, int mode, char *raw_bytes)
+{
+	CFILE	*mf;
+
+	// copy the filename
+	if (!filename)
+		throw parse::ParseException("Invalid filename");
+
+	strcpy_s(Current_filename_sub, filename);
+
+	// if we are paused then raw_bytes must not be NULL!!
+	if ( !Bookmarks.empty() && (raw_bytes == nullptr) ) {
+		Error(LOCATION, "ERROR: raw_bytes may not be NULL when parsing is paused!!\n");
+	}
+
+	mf = cfopen(filename, "rb", CFILE_NORMAL, mode);
+	if (mf == nullptr)
+	{
+		nprintf(("Error", "Wokka!  Error opening file (%s)!\n", filename));
+		throw parse::ParseException("Failed to open file");
+	}
+
+	// read the entire file in
+	int file_len = cfilelength(mf);
+
+	if(!file_len) {
+		nprintf(("Error", "Oh noes!!  File is empty! (%s)!\n", filename));
+		throw parse::ParseException("Failed to open file");
+	}
+
+	if (raw_bytes == nullptr) {
+		// allocate, or reallocate, memory for Parse_text and Parse_text_raw based on size we need now
+		allocate_parse_text((size_t) (file_len + 1));
+		// NOTE: this always has to be done *after* the allocate_mission_text() call!!
+		raw_bytes = Parse_text_raw;
+	}
+
+	cfread(raw_bytes, file_len, 1, mf);
+
+	//WMC - Slap a NULL character on here for the odd error where we forgot a #End
+	// Goober5000 - for binary files, the equivalent is an EOF
+	raw_bytes[file_len] = EOF;
+
+	cfclose(mf);
 }
 
 // Returns whether the first character encountered in str that is not whitespace is the character to look for.

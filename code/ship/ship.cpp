@@ -14181,6 +14181,10 @@ int ship_info_lookup(const char *token)
 	if (idx >= 0)
 		return idx;
 
+	// we only need to do the rest if we're importing
+	if (!Fred_running)
+		return -1;
+
 	// ship copy types might be mismatched
 	p = get_pointer_to_first_hash_symbol(token);
 	if (p == NULL)
@@ -14252,6 +14256,12 @@ int ship_info_lookup(const char *token)
 		return -1;
 	}
 
+	// sanity check token lengths
+	if (strlen(token) > NAME_LENGTH - 1)
+		return -1;
+	if (strlen(p + 1) > NAME_LENGTH - 1)
+		return -1;
+
 	// get first part of new string
 	strcpy_s(temp1, token);
 	end_string_at_first_hash_symbol(temp1);
@@ -14262,11 +14272,10 @@ int ship_info_lookup(const char *token)
 	// found a hash
 	if (*p == '#')
 	{
-		if (strlen(token) > NAME_LENGTH-3) {
-			// If the below sprintf would exceed NAME_LENGTH (taking \0 terminator into account), give a warning and return.
-			Warning(LOCATION, "Token [%s] is too long to be parenthesized by ship_info_lookup()!\n", token);
+		// If the below sprintf would exceed NAME_LENGTH (taking \0 terminator into account), return.
+		if (strlen(token) > NAME_LENGTH-3)
 			return -1;
-		}
+
 		// assemble using parentheses
 		sprintf_safe(name, "%s (%s)", temp1, temp2);
 	}

@@ -8,6 +8,7 @@ AsteroidEditorDialogModel::AsteroidEditorDialogModel(QObject* parent, EditorView
 	AbstractDialogModel(parent, viewport),
 	_enable_asteroids(false),
 	_enable_inner_bounds(false),
+	_enable_enhanced_checking(false),
 	_num_asteroids(0),
 	_avg_speed(0),
 	_min_x(""),
@@ -81,6 +82,16 @@ void AsteroidEditorDialogModel::setInnerBoxEnabled(bool enabled)
 bool AsteroidEditorDialogModel::getInnerBoxEnabled()
 {
 	return _enable_inner_bounds;
+}
+
+void AsteroidEditorDialogModel::setEnhancedEnabled(bool enabled)
+{
+	_enable_enhanced_checking = enabled;
+}
+
+bool AsteroidEditorDialogModel::getEnhancedEnabled()
+{
+	return _enable_enhanced_checking;
 }
 
 void AsteroidEditorDialogModel::setAsteroidEnabled(_roid_types type, bool enabled)
@@ -388,12 +399,15 @@ void AsteroidEditorDialogModel::update_init()
 		}
 
 		modify(_a_field.has_inner_bound, _enable_inner_bounds);
+
+		modify(_a_field.enhanced_visibility_checks, _enable_enhanced_checking);
 	}
 
 	// get from temp asteroid field into class
 	_enable_asteroids = _a_field.num_initial_asteroids ? true : false;
 	_enable_inner_bounds = _a_field.has_inner_bound;
 	_num_asteroids = _a_field.num_initial_asteroids;
+	_enable_enhanced_checking = _a_field.enhanced_visibility_checks;
 	if (!_enable_asteroids) {
 		_num_asteroids = 10;
 	}

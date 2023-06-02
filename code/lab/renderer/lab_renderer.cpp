@@ -1,8 +1,10 @@
 #include "lab/renderer/lab_renderer.h"
+#include "globalincs/vmallocator.h"
 #include "lab/labv2_internal.h"
 #include "graphics/2d.h"
 #include "graphics/light.h"
 #include "lighting/lighting_profiles.h"
+#include "parse/parselo.h"
 #include "starfield/starfield.h"
 #include "starfield/nebula.h"
 #include "nebula/neb.h"
@@ -268,7 +270,7 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 	extern const char* Neb2_filenames[];
 
 	char envmap_name[MAX_FILENAME_LEN] = {0};
-
+	SCP_string ltp_name;
 	currentMissionBackground = mission_name;
 
 	stars_pre_level_init(true);
@@ -295,8 +297,12 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 			volumetrics_level_close();
 		}
 
+		ltp_name = ltp::default_name();
+
 		// Are we using a skybox?
-		skip_to_start_of_string_either("$Skybox Model:", "#Background bitmaps");
+		//skip to appears to skip to the end of the file if this are absent
+		//so if there's no skybox we need to advance past it
+		skip_to_start_of_string_either("$Skybox Model:","$Lighting Profile:");
 
 		strcpy_s(skybox_model, "");
 		if (optional_string("$Skybox Model:")) {
@@ -317,7 +323,18 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 			stars_set_background_model(skybox_model, nullptr, skybox_flags);
 			stars_set_background_orientation(&skybox_orientation);
 
-			skip_to_start_of_string("#Background bitmaps");
+		}
+		ltp_name="";
+		skip_to_start_of_string_either("$Lighting Profile:","#Background bitmap");
+		if(optional_string("$Lighting Profile:")){
+			stuff_string(ltp_name,F_NAME);
+		}
+		else {
+			ltp_name = ltp::default_name();
+		}
+	
+		if (ltp_name != ltp::current()->name) {
+				ltp::switch_to(ltp_name);
 		}
 
 		if (optional_string("#Background bitmaps")) {

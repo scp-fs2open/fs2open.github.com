@@ -212,6 +212,12 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 	listener(SubSystem::TechroomIntel);
 	techroom_intel_init();
 
+	listener(SubSystem::HudGaugePositions);
+	hud_positions_init();
+
+	listener(SubSystem::Traitor);
+	traitor_init();
+
 	// get fireball IDs for sexpression usage
 	// (we don't need to init the entire system via fireball_init, we just need the information)
 	fireball_parse_tbl();
@@ -252,10 +258,11 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 	listener(SubSystem::Ranks);
 	rank_init();
 
+	// mission creation requires the existence of a timestamp snapshot
+	timer_start_frame();
+
 	listener(SubSystem::Campaign);
 	mission_campaign_clear();
-
-	stars_post_level_init();
 
 	// neb lightning
 	listener(SubSystem::NebulaLightning);

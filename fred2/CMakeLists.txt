@@ -67,6 +67,8 @@ set(FRED2_SOURCES
 	initialships.h
 	initialstatus.cpp
 	initialstatus.h
+	jumpnodedlg.cpp
+	jumpnodedlg.h
 	listitemchooser.cpp
 	listitemchooser.h
 	mainfrm.cpp

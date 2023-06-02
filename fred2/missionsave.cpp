@@ -30,6 +30,7 @@
 #include "iff_defs/iff_defs.h"
 #include "jumpnode/jumpnode.h"
 #include "lighting/lighting.h"
+#include "lighting/lighting_profiles.h"
 #include "localization/fhash.h"
 #include "localization/localize.h"
 #include "math/vecmat.h"
@@ -822,6 +823,16 @@ int CFred_mission_save::save_asteroid_fields()
 			required_string_fred("$Maximum:");
 			parse_comments();
 			save_vector(Asteroid_field.inner_max_bound);
+		}
+
+		if (Asteroid_field.enhanced_visibility_checks) {
+			if (Mission_save_format != FSO_FORMAT_RETAIL) {
+				if (optional_string_fred("+Use Enhanced Checks")) {
+					parse_comments();
+				} else {
+					fout("\n+Use Enhanced Checks");
+				}
+			}
 		}
 
 		if (!Asteroid_field.target_names.empty()) {
@@ -3014,6 +3025,11 @@ int CFred_mission_save::save_mission_info()
 		fout_version("\n\n$AI Profile: %s", The_mission.ai_profile->profile_name);
 	}
 	fso_comment_pop();
+	if(The_mission.lighting_profile_name!=lighting_profiles::default_name()){
+		fso_comment_push(";;FSO 23.1.0;;"); //todo: bump after testing
+		fout_version("\n\n$Lighting Profile: %s", The_mission.lighting_profile_name.c_str());
+		fso_comment_pop();
+	}
 
 	// sound environment (EFX/EAX) - taylor
 	sound_env *m_env = &The_mission.sound_environment;
@@ -4584,22 +4600,35 @@ int CFred_mission_save::save_waypoints()
 		fout(" %s", jnp->GetName());
 
 		if (Mission_save_format != FSO_FORMAT_RETAIL) {
-			if (jnp->IsSpecialModel()) {
-				if (optional_string_fred("+Model File:", "$Jump Node:"))
+
+			if (jnp->GetDisplayName()[0] != '\0') {
+				if (optional_string_fred("+Display Name:", "$Jump Node:")) {
 					parse_comments();
-				else
+				} else {
+					fout("\n+Display Name:");
+				}
+					
+				fout_ext("", "%s", jnp->GetDisplayName());
+			}
+
+			if (jnp->IsSpecialModel()) {
+				if (optional_string_fred("+Model File:", "$Jump Node:")) {
+					parse_comments();
+				} else {
 					fout("\n+Model File:");
+				}
 
 				int model = jnp->GetModelNumber();
-				polymodel *pm = model_get(model);
+				polymodel* pm = model_get(model);
 				fout(" %s", pm->filename);
 			}
 
 			if (jnp->IsColored()) {
-				if (optional_string_fred("+Alphacolor:", "$Jump Node:"))
+				if (optional_string_fred("+Alphacolor:", "$Jump Node:")) {
 					parse_comments();
-				else
+				} else {
 					fout("\n+Alphacolor:");
+				}
 
 				color jn_color = jnp->GetColor();
 				fout(" %u %u %u %u", jn_color.red, jn_color.green, jn_color.blue, jn_color.alpha);

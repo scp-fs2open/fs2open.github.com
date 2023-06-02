@@ -20,6 +20,7 @@
 #include "globalincs/linklist.h"
 #include "globalincs/version.h"
 #include "globalincs/alphacolors.h"
+#include "math/curve.h"
 #include "mission/missiongrid.h"
 #include "mission/missionparse.h"
 #include "mission/missionmessage.h"
@@ -59,6 +60,7 @@
 #include "nebula/neb.h"
 #include "nebula/neblightning.h"
 #include "species_defs/species_defs.h"
+#include "lighting/lighting_profiles.h"
 #include "osapi/osapi.h"
 #include "graphics/font.h"
 #include "object/objectdock.h"
@@ -376,6 +378,7 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	key_init();
 	mouse_init();
 
+	curves_init();
 	particle::ParticleManager::init();
 
 	iff_init();			// Goober5000
@@ -425,6 +428,8 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	techroom_intel_init();
 	hud_positions_init();
 	asteroid_init();
+	lighting_profiles::load_profiles();
+	traitor_init();
 
 	// get fireball IDs for sexpression usage
 	// (we don't need to init the entire system via fireball_init, we just need the information)
@@ -444,6 +449,9 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	fiction_viewer_reset();
 	cmd_brief_reset();
 	Show_waypoints = TRUE;
+
+	// mission creation requires the existence of a timestamp snapshot
+	timer_start_frame();
 
 	mission_campaign_clear();
 	create_new_mission();
@@ -1002,6 +1010,7 @@ void set_cur_object_index(int obj)
 	set_cur_indices(obj);  // select the new object
 	Update_ship = Update_wing = 1;
 	Waypoint_editor_dialog.initialize_data(1);
+	Jumpnode_editor_dialog.initialize_data(1);
 	Update_window = 1;
 }
 
@@ -1120,6 +1129,15 @@ int update_dialog_boxes()
 		nprintf(("Fred routing", "waypoint dialog save failed\n"));
 		Waypoint_editor_dialog.SetWindowPos(&Fred_main_wnd->wndTop, 0, 0, 0, 0,
 			SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
+
+		return z;
+	}
+
+	z = Jumpnode_editor_dialog.update_data();
+	if (z) {
+		nprintf(("Fred routing", "jumpnode dialog save failed\n"));
+		Jumpnode_editor_dialog
+			.SetWindowPos(&Fred_main_wnd->wndTop, 0, 0, 0, 0, SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
 
 		return z;
 	}
@@ -1430,6 +1448,7 @@ void mark_object(int obj)
 		}
 		Update_ship = Update_wing = 1;
 		Waypoint_editor_dialog.initialize_data(1);
+		Jumpnode_editor_dialog.initialize_data(1);
 	}
 }
 
@@ -1457,6 +1476,7 @@ void unmark_object(int obj)
 		}
 		Update_ship = Update_wing = 1;
 		Waypoint_editor_dialog.initialize_data(1);
+		Jumpnode_editor_dialog.initialize_data(1);
 	}
 }
 

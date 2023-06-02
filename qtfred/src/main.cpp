@@ -142,6 +142,7 @@ int main(int argc, char* argv[]) {
 								 { SubSystem::Species,           app.tr("Initializing species") },
 								 { SubSystem::BriefingIcons,     app.tr("Initializing briefing icons") },
 								 { SubSystem::HudCommOrders,     app.tr("Initializing HUD comm orders") },
+								 { SubSystem::HudGaugePositions, app.tr("Initializing HUD gauge positions") },
 								 { SubSystem::AlphaColors,       app.tr("Initializing alpha colors") },
 								 { SubSystem::GameSound,         app.tr("Initializing briefing icons") },
 								 { SubSystem::MissionBrief,      app.tr("Initializing briefings") },
@@ -204,6 +205,8 @@ int main(int argc, char* argv[]) {
 		QTimer::singleShot(500, [&]() {
 			fred->loadMission(Cmdline_start_mission);
 		});
+	} else {
+		fred->createNewMission();
 	}
 
 	// Render first correct frame

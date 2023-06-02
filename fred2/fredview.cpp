@@ -260,6 +260,7 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_COMMAND(ID_EDITORS_REINFORCEMENT, OnEditorsReinforcement)
 	ON_COMMAND(ID_ERROR_CHECKER, OnErrorChecker)
 	ON_COMMAND(ID_EDITORS_WAYPOINT, OnEditorsWaypoint)
+	ON_COMMAND(ID_EDITORS_JUMPNODE, OnEditorsJumpnode)
 	ON_COMMAND(ID_VIEW_OUTLINES, OnViewOutlines)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_OUTLINES, OnUpdateViewOutlines)
 	ON_COMMAND(ID_VIEW_OUTLINES_ON_SELECTED, OnViewOutlinesOnSelected)
@@ -1445,7 +1446,7 @@ void CFREDView::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
 					str.Format("Edit %s", Ships[Objects[objnum].instance].ship_name);
 
 				else if (Objects[objnum].type == OBJ_JUMP_NODE) {
-					id = ID_EDITORS_WAYPOINT;
+					id = ID_EDITORS_JUMPNODE;
 					for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
 						if(jnp->GetSCPObject() == &Objects[objnum])
 							break;
@@ -1972,8 +1973,11 @@ void CFREDView::OnLButtonDblClk(UINT nFlags, CPoint point)
 				break;
 
 			case OBJ_WAYPOINT:
-			case OBJ_JUMP_NODE:
 				OnEditorsWaypoint();
+				break;
+
+			case OBJ_JUMP_NODE:
+				OnEditorsJumpnode();
 				break;
 		}
 
@@ -3396,6 +3400,17 @@ void CFREDView::OnEditorsWaypoint()
 	Waypoint_editor_dialog.SetWindowPos(&wndTop, 0, 0, 0, 0,
 		SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
 	Waypoint_editor_dialog.ShowWindow(SW_RESTORE);
+}
+
+void CFREDView::OnEditorsJumpnode()
+{
+	Assert(Jumpnode_editor_dialog.GetSafeHwnd());
+
+	if (!theApp.init_window(&Jumpnode_wnd_data, &Jumpnode_editor_dialog))
+		return;
+
+	Jumpnode_editor_dialog.SetWindowPos(&wndTop, 0, 0, 0, 0, SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
+	Jumpnode_editor_dialog.ShowWindow(SW_RESTORE);
 }
 
 char *error_check_initial_orders(ai_goal *goals, int ship, int wing)

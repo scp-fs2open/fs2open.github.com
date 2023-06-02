@@ -839,6 +839,16 @@ int CFred_mission_save::save_asteroid_fields()
 			save_vector(Asteroid_field.inner_max_bound);
 		}
 
+		if (Asteroid_field.enhanced_visibility_checks) {
+			if (save_format != MissionFormat::RETAIL) {
+				if (optional_string_fred("+Use Enhanced Checks")) {
+					parse_comments();
+				} else {
+					fout("\n+Use Enhanced Checks");
+				}
+			}
+		}
+
 		if (!Asteroid_field.target_names.empty()) {
 			fso_comment_push(";;FSO 22.0.0;;");
 			if (optional_string_fred("$Asteroid Targets:")) {
@@ -4744,11 +4754,21 @@ int CFred_mission_save::save_waypoints()
 		fout(" %s", jnp->GetName());
 
 		if (save_format != MissionFormat::RETAIL) {
+			
+			if (jnp->GetDisplayName()[0] != '\0') {
+				if (optional_string_fred("+Display Name:", "$Jump Node:")) {
+					parse_comments();
+				} else {
+					fout("\n+Display Name:");
+				}
+				
+				fout_ext("", "%s", jnp->GetDisplayName());
+			}
+			
 			if (jnp->IsSpecialModel()) {
 				if (optional_string_fred("+Model File:", "$Jump Node:")) {
 					parse_comments();
-				}
-				else {
+				} else {
 					fout("\n+Model File:");
 				}
 
@@ -4760,8 +4780,7 @@ int CFred_mission_save::save_waypoints()
 			if (jnp->IsColored()) {
 				if (optional_string_fred("+Alphacolor:", "$Jump Node:")) {
 					parse_comments();
-				}
-				else {
+				} else {
 					fout("\n+Alphacolor:");
 				}
 
