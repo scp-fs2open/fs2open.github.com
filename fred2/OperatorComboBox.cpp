@@ -23,27 +23,12 @@ BEGIN_MESSAGE_MAP(OperatorComboBoxList, CListBox)
 END_MESSAGE_MAP()
 
 OperatorComboBox::OperatorComboBox(const char* (*help_callback)(int))
-	: m_listbox(help_callback, OPF_NONE), m_help_callback(help_callback), m_max_operator_length(0), m_pressed_enter(false)
+	: m_listbox(help_callback, OPF_NONE), m_help_callback(help_callback), m_pressed_enter(false)
 {
-	// add all operators and calculate max length
-	for (int i = 0; i < (int)Operators.size(); ++i)
-	{
-		const auto &op = Operators[i];
-		m_sorted_operators.emplace_back(op.text, i);
-		if (op.text.length() > m_max_operator_length)
-			m_max_operator_length = op.text.length();
-	}
-
-	// sort all operators case-insensitively
-	std::sort(m_sorted_operators.begin(), m_sorted_operators.end(), [](const std::pair<SCP_string, int> &a, const std::pair<SCP_string, int> &b)
-		{
-			return lcase_lessthan(a.first, b.first);
-		});
 }
 
 OperatorComboBox::~OperatorComboBox()
 {
-	m_sorted_operators.clear();
 }
 
 // ----------------------------------------
@@ -108,7 +93,7 @@ BOOL OperatorComboBox::OnEditChange()
 	return FALSE;
 }
 
-void OperatorComboBox::refresh_popup_operators(int opf_type, const SCP_string &filter_string)
+void OperatorComboBox::refresh_popup_operators(sexp_opf_t opf_type, const SCP_string &filter_string)
 {
 	// operator type might have changed
 	m_listbox.SetOpfType(opf_type);
@@ -127,7 +112,7 @@ void OperatorComboBox::filter_popup_operators(const SCP_string &filter_string)
 	int nIndex = 0;
 
 	// quick check to see if everything is already there
-	if (filter_string.empty() && GetCount() == (int)m_sorted_operators.size())
+	if (filter_string.empty() && GetCount() == (int)Operators.size())
 		return;
 
 	// Remove all items in the combo box.  Don't use ResetContent() which also clears the edit control.
@@ -137,10 +122,10 @@ void OperatorComboBox::filter_popup_operators(const SCP_string &filter_string)
 	// if we're not filtering, just add everything
 	if (filter_string.empty())
 	{
-		for (const auto &op_pair : m_sorted_operators)
+		for (int op_index : Sorted_operator_indexes)
 		{
-			AddString(_T(op_pair.first.c_str()));
-			SetItemData(nIndex++, op_pair.second);
+			AddString(_T(Operators[op_index].text.c_str()));
+			SetItemData(nIndex++, op_index);
 		}
 		return;
 	}
@@ -150,12 +135,13 @@ void OperatorComboBox::filter_popup_operators(const SCP_string &filter_string)
 	{
 		auto first_ch = SCP_tolower(filter_string[0]);
 
-		for (const auto &op_pair : m_sorted_operators)
+		for (int op_index : Sorted_operator_indexes)
 		{
-			if (first_ch == SCP_tolower(op_pair.first[0]))
+			const auto &op_text = Operators[op_index].text;
+			if (first_ch == SCP_tolower(op_text[0]))
 			{
-				AddString(_T(op_pair.first.c_str()));
-				SetItemData(nIndex++, op_pair.second);
+				AddString(_T(op_text.c_str()));
+				SetItemData(nIndex++, op_index);
 			}
 		}
 		return;
@@ -163,27 +149,29 @@ void OperatorComboBox::filter_popup_operators(const SCP_string &filter_string)
 
 	// find all the operators below a threshold stringcost
 	// "an input that has n unmatched chars will have at least MAX_LENGTH * MAX_LENGTH * n, so this sets it as max 2 unaccounted chars"
-	size_t threshold = m_max_operator_length * m_max_operator_length * 3;
-	SCP_vector<std::tuple<SCP_string, int, size_t>> filtered_operators;
-	for (const auto &op_pair : m_sorted_operators)
+	size_t threshold = Max_operator_length * Max_operator_length * 3;
+	SCP_vector<std::pair<int, size_t>> filtered_operators;
+	for (int op_index : Sorted_operator_indexes)
 	{
-		size_t cost = stringcost(op_pair.first, filter_string, m_max_operator_length);
+		const auto &op_text = Operators[op_index].text;
+		size_t cost = stringcost(op_text, filter_string, Max_operator_length);
 		if (cost < threshold)
-			filtered_operators.emplace_back(op_pair.first, op_pair.second, cost);
+			filtered_operators.emplace_back(op_index, cost);
 	}
 
 	// sort operators by cost
-	std::sort(filtered_operators.begin(), filtered_operators.end(), [](const std::tuple<SCP_string, int, size_t>& a, const std::tuple<SCP_string, int, size_t>& b)
+	std::sort(filtered_operators.begin(), filtered_operators.end(), [](const std::pair<int, size_t> &a, const std::pair<int, size_t> &b)
 		{
-			// compare the size_t parts of both tuples
-			return std::get<2>(a) < std::get<2>(b);
+			// compare the size_t parts of both pairs
+			return std::get<1>(a) < std::get<1>(b);
 		});
 
 	// put them in the combo box
-	for (const auto &op_triple : filtered_operators)
+	for (const auto &op_pair : filtered_operators)
 	{
-		AddString(_T(std::get<0>(op_triple).c_str()));
-		SetItemData(nIndex++, std::get<1>(op_triple));
+		int op_index = std::get<0>(op_pair);
+		AddString(_T(Operators[op_index].text.c_str()));
+		SetItemData(nIndex++, op_index);
 	}
 }
 
@@ -266,18 +254,18 @@ INT_PTR OperatorComboBox::OnToolHitTest(CPoint point, TOOLINFO *pTI) const
 	return -1;
 }
 
-OperatorComboBoxList::OperatorComboBoxList(const char* (*help_callback)(int), int opf_type)
+OperatorComboBoxList::OperatorComboBoxList(const char* (*help_callback)(int), sexp_opf_t opf_type)
 {
 	m_help_callback = help_callback;
 	SetOpfType(opf_type);
 }
 
-int OperatorComboBoxList::GetOpfType() const
+sexp_opf_t OperatorComboBoxList::GetOpfType() const
 {
 	return m_opf_type;
 }
 
-void OperatorComboBoxList::SetOpfType(int opf_type)
+void OperatorComboBoxList::SetOpfType(sexp_opf_t opf_type)
 {
 	m_opf_type = opf_type;
 }
@@ -316,13 +304,13 @@ BOOL OperatorComboBoxList::OnToolTipText(UINT id, NMHDR* pNMHDR, LRESULT* pResul
 			SCP_string buffer;
 			if (!IsItemEnabled(item))
 			{
-				int opr_type;
+				sexp_opr_t opr_type;
 				map_opf_to_opr(m_opf_type, opr_type);
 
 				buffer = "The operator \"";
 				buffer += op_index >= 0 ? Operators[op_index].text : "<invalid operator>";
 				buffer += "\" cannot be selected because it has an incompatible return type.\r\n\tReturns: ";
-				buffer += opr_type_name(query_operator_return_type(op_const));
+				buffer += opr_type_name((sexp_opr_t)query_operator_return_type(op_const));
 				buffer += "\r\n\tExpected: ";
 				buffer += opr_type_name(opr_type);
 			}
@@ -334,7 +322,6 @@ BOOL OperatorComboBoxList::OnToolTipText(UINT id, NMHDR* pNMHDR, LRESULT* pResul
 			m_tooltiptextA = buffer.c_str();
 			m_tooltiptextW = buffer.c_str();
 
-#ifndef _UNICODE
 			if (pNMHDR->code == TTN_NEEDTEXTA)
 			{
 				pTTTA->lpszText = (LPSTR)(LPCSTR)m_tooltiptextA;
@@ -345,18 +332,6 @@ BOOL OperatorComboBoxList::OnToolTipText(UINT id, NMHDR* pNMHDR, LRESULT* pResul
 				pTTTW->lpszText = (LPWSTR)(LPCWSTR)m_tooltiptextW;
 				::SendMessage(pTTTW->hdr.hwndFrom, TTM_SETMAXTIPWIDTH, 0, 400);
 			}
-#else
-			if (pNMHDR->code == TTN_NEEDTEXTA)
-			{
-				pTTTA->lpszText = (LPSTR)(LPCSTR)m_tooltiptextA;
-				::SendMessage(pTTTA->hdr.hwndFrom, TTM_SETMAXTIPWIDTH, 0, 400);
-			}
-			else
-			{
-				pTTTW->lpszText = (LPWSTR)(LPCWSTR)m_tooltiptextW;
-				::SendMessage(pTTTW->hdr.hwndFrom, TTM_SETMAXTIPWIDTH, 0, 400);
-			}
-#endif
 		}
 	}
 
@@ -425,7 +400,7 @@ BOOL OperatorComboBoxList::IsItemEnabled(UINT nIndex) const
 {
 	int op_index = (int)GetItemData(nIndex);
 	int op_const = Operators[op_index].value;
-	int opr_type = query_operator_return_type(op_const);
+	auto opr_type = query_operator_return_type(op_const);
 
 	return sexp_query_type_match(m_opf_type, opr_type);
 }

@@ -1737,7 +1737,6 @@ BOOL event_sexp_tree::OnToolTipText(UINT id, NMHDR *pNMHDR, LRESULT *pResult)
 				m_tooltiptextA = ea->comment.c_str();
 				m_tooltiptextW = ea->comment.c_str();
 
-#ifndef _UNICODE
 				if (pNMHDR->code == TTN_NEEDTEXTA)
 				{
 					pTTTA->lpszText = (LPSTR)(LPCSTR)m_tooltiptextA;
@@ -1748,18 +1747,6 @@ BOOL event_sexp_tree::OnToolTipText(UINT id, NMHDR *pNMHDR, LRESULT *pResult)
 					pTTTW->lpszText = (LPWSTR)(LPCWSTR)m_tooltiptextW;
 					::SendMessage(pTTTW->hdr.hwndFrom, TTM_SETMAXTIPWIDTH, 0, 400);
 				}
-#else
-				if (pNMHDR->code == TTN_NEEDTEXTA)
-				{
-					pTTTA->lpszText = (LPSTR)(LPCSTR)m_tooltiptextA;
-					::SendMessage(pTTTA->hdr.hwndFrom, TTM_SETMAXTIPWIDTH, 0, 400);
-				}
-				else
-				{
-					pTTTW->lpszText = (LPWSTR)(LPCWSTR)m_tooltiptextW;
-					::SendMessage(pTTTW->hdr.hwndFrom, TTM_SETMAXTIPWIDTH, 0, 400);
-				}
-#endif
 			}
 		}
 	}

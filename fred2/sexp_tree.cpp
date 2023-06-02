@@ -1917,7 +1917,10 @@ const SCP_string &sexp_tree::match_closest_operator(const SCP_string &str, int n
 	// find the best operator
 	int best = sexp_match_closest_operator(str, opf);
 	if (best < 0)
+	{
+		Warning(LOCATION, "Unable to find an operator match for string '%s' and argument type %d", str.c_str(), opf);
 		return str;
+	}
 	return Operators[best].text;
 }
 
@@ -1935,7 +1938,7 @@ void sexp_tree::start_operator_edit(HTREEITEM h)
 	Assertion(tree_nodes[item_index].handle == item_handle, "Mismatch between tree node and item handle!");
 
 	// we are editing an operator, so find out which type it should be
-	auto opf_type = query_node_argument_type(item_index);
+	auto opf_type = (sexp_opf_t)query_node_argument_type(item_index);
 
 	// do first-time setup
 	if (!m_operator_popup_created)
@@ -2032,8 +2035,7 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 		case ID_EDIT_CUT:
 		case ID_DELETE:
 		case IDC_SEXP_POPUP_LIST:
-			if (id >= FIRST_OP && id < sexp::operator_upper_bound())
-				Error(LOCATION, "A resource definition (%d) overlaps with an operator value!", id);
+			Assertion(id >= sexp::operator_upper_bound(), "A resource definition (%d) must not overlap with an operator value!", id);
 			break;
 
 		default:
@@ -2043,8 +2045,7 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 				|| (id >= ID_CONTAINER_NAME_MENU) && (id < ID_CONTAINER_NAME_MENU + 511)
 				|| (id >= ID_CONTAINER_DATA_MENU) && (id < ID_CONTAINER_DATA_MENU + 511))
 			{
-				if (id >= FIRST_OP && id < sexp::operator_upper_bound())
-					Error(LOCATION, "A resource definition (%d) overlaps with an operator value!", id);
+				Assertion(id >= sexp::operator_upper_bound(), "A resource definition (%d) must not overlap with an operator value!", id);
 			}
 			break;
 	}

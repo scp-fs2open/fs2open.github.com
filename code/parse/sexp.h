@@ -31,7 +31,7 @@ struct ship_obj;
 #define MAX_SEXP_VARIABLES 250
 
 // Operator argument formats (data types of an argument)
-enum : int {
+enum sexp_opf_t : int {
 	OPF_UNUSED,						// argument types need to start at 1 instead of 0
 	OPF_NONE,						// argument cannot exist at this position if it's this
 	OPF_NULL,						// no value.  Can still be used for type matching, however
@@ -164,7 +164,7 @@ int get_dynamic_parameter_index(const SCP_string &op_name, int param);
 int get_dynamic_enum_position(const SCP_string &enum_name);
 
 // Operand return types
-enum : int {
+enum sexp_opr_t : int {
 	OPR_NONE,
 	OPR_NUMBER,             // returns number
 	OPR_BOOL,               // returns true/false value
@@ -1338,6 +1338,8 @@ extern sexp_variable Sexp_variables[MAX_SEXP_VARIABLES];
 extern sexp_variable Block_variables[MAX_SEXP_VARIABLES];
 
 extern SCP_vector<sexp_oper> Operators;
+extern SCP_vector<int> Sorted_operator_indexes;
+extern size_t Max_operator_length;
 
 extern int Locked_sexp_true, Locked_sexp_false;
 extern int Directive_count;
@@ -1395,8 +1397,8 @@ extern int stuff_sexp_variable_list();
 extern int eval_sexp(int cur_node, int referenced_node = -1);
 extern int eval_num(int n, bool &is_nan, bool &is_nan_forever);
 extern bool is_sexp_true(int cur_node, int referenced_node = -1);
-extern bool map_opf_to_opr(int opf_type, int &opr_type);
-const char *opr_type_name(int opr_type);
+extern bool map_opf_to_opr(sexp_opf_t opf_type, sexp_opr_t &opr_type);
+const char *opr_type_name(sexp_opr_t opr_type);
 extern int query_operator_return_type(int op);
 extern int query_operator_argument_type(int op, int argnum);
 extern void update_sexp_references(const char *old_name, const char *new_name);
