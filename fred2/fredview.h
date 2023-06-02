@@ -217,6 +217,7 @@ protected:
 	afx_msg void OnEditorsReinforcement();
 	afx_msg void OnErrorChecker();
 	afx_msg void OnEditorsWaypoint();
+	afx_msg void OnEditorsJumpnode();
 	afx_msg void OnViewOutlines();
 	afx_msg void OnUpdateViewOutlines(CCmdUI* pCmdUI);
 	afx_msg void OnViewOutlinesOnSelected();

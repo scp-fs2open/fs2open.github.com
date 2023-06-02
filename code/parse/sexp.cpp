@@ -754,6 +754,7 @@ SCP_vector<sexp_oper> Operators = {
 
 	//Jump Node Sub-Category
 	{ "set-jumpnode-name",				OP_JUMP_NODE_SET_JUMPNODE_NAME,			2,	2,			SEXP_ACTION_OPERATOR,	},	//CommanderDJ
+	{ "set-jumpnode-display-name",      OP_JUMP_NODE_SET_JUMPNODE_DISPLAY_NAME, 2,  2,          SEXP_ACTION_OPERATOR,   },  //MjnMixael
 	{ "set-jumpnode-color",				OP_JUMP_NODE_SET_JUMPNODE_COLOR,		5,	5,			SEXP_ACTION_OPERATOR,	},
 	{ "set-jumpnode-model",				OP_JUMP_NODE_SET_JUMPNODE_MODEL,		3,	3,			SEXP_ACTION_OPERATOR,	},
 	{ "show-jumpnode",					OP_JUMP_NODE_SHOW_JUMPNODE,				1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
@@ -25173,6 +25174,25 @@ void sexp_set_jumpnode_name(int n) //CommanderDJ
 	Current_sexp_network_packet.end_callback();
 }
 
+void sexp_set_jumpnode_display_name(int n) //MjnMixael
+{
+	auto node = CTEXT(n);
+	n = CDR(n);
+
+	auto jnp = jumpnode_get_by_name(node);
+	if (!jnp)
+		return;
+
+	auto display_name = CTEXT(n);
+	jnp->SetDisplayName(display_name);
+
+	//multiplayer callback
+	Current_sexp_network_packet.start_callback();
+	Current_sexp_network_packet.send_string(node);
+	Current_sexp_network_packet.send_string(display_name);
+	Current_sexp_network_packet.end_callback();
+}
+
 void multi_sexp_set_jumpnode_name() //CommanderDJ
 {
 	char old_name[TOKEN_LENGTH];
@@ -25186,6 +25206,21 @@ void multi_sexp_set_jumpnode_name() //CommanderDJ
 		return;
 
 	jnp->SetName(new_name);
+}
+
+void multi_sexp_set_jumpnode_display_name()
+{
+	char node[TOKEN_LENGTH];
+	char display_name[TOKEN_LENGTH];
+
+	Current_sexp_network_packet.get_string(node);
+	Current_sexp_network_packet.get_string(display_name);
+
+	CJumpNode* jnp = jumpnode_get_by_name(node);
+	if (jnp == nullptr)
+		return;
+
+	jnp->SetDisplayName(display_name);
 }
 
 void sexp_set_jumpnode_color(int n)
@@ -28451,6 +28486,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_set_jumpnode_name(node);
 				break;
 
+			case OP_JUMP_NODE_SET_JUMPNODE_DISPLAY_NAME:
+				sexp_val = SEXP_TRUE;
+				sexp_set_jumpnode_display_name(node);
+				break;
+
 			case OP_JUMP_NODE_SET_JUMPNODE_COLOR:
 				sexp_val = SEXP_TRUE;
 				sexp_set_jumpnode_color(node);
@@ -28931,6 +28971,10 @@ void multi_sexp_eval()
 
 			case OP_JUMP_NODE_SET_JUMPNODE_NAME:
 				multi_sexp_set_jumpnode_name();
+				break;
+
+			case OP_JUMP_NODE_SET_JUMPNODE_DISPLAY_NAME:
+				multi_sexp_set_jumpnode_display_name();
 				break;
 
 			case OP_IGNORE_KEY:
@@ -29680,6 +29724,7 @@ int query_operator_return_type(int op)
 		case OP_CUTSCENES_FORCE_PERSPECTIVE:
 		case OP_SET_CAMERA_SHUDDER:
 		case OP_JUMP_NODE_SET_JUMPNODE_NAME:
+		case OP_JUMP_NODE_SET_JUMPNODE_DISPLAY_NAME:
 		case OP_JUMP_NODE_SET_JUMPNODE_COLOR:
 		case OP_JUMP_NODE_SET_JUMPNODE_MODEL:
 		case OP_JUMP_NODE_SHOW_JUMPNODE:
@@ -32239,6 +32284,7 @@ int query_operator_argument_type(int op, int argnum)
 		//</Cutscenes>
 
 		case OP_JUMP_NODE_SET_JUMPNODE_NAME: //CommanderDJ
+		case OP_JUMP_NODE_SET_JUMPNODE_DISPLAY_NAME:
 			if(argnum==0)
 				return OPF_JUMP_NODE_NAME;
 			else if (argnum==1)
@@ -34471,6 +34517,7 @@ int get_category(int op_id)
 		case OP_CUTSCENES_RESET_TIME_COMPRESSION:
 		case OP_CUTSCENES_FORCE_PERSPECTIVE:
 		case OP_JUMP_NODE_SET_JUMPNODE_NAME:
+		case OP_JUMP_NODE_SET_JUMPNODE_DISPLAY_NAME:
 		case OP_JUMP_NODE_SET_JUMPNODE_COLOR:
 		case OP_JUMP_NODE_SET_JUMPNODE_MODEL:
 		case OP_JUMP_NODE_SHOW_JUMPNODE:
@@ -35116,7 +35163,8 @@ int get_subcategory(int op_id)
 		case OP_SET_MOTION_DEBRIS:
 			return CHANGE_SUBCATEGORY_BACKGROUND_AND_NEBULA;
 
-		case OP_JUMP_NODE_SET_JUMPNODE_NAME: //CommanderDJ
+		case OP_JUMP_NODE_SET_JUMPNODE_NAME: //
+		case OP_JUMP_NODE_SET_JUMPNODE_DISPLAY_NAME:
 		case OP_JUMP_NODE_SET_JUMPNODE_COLOR:
 		case OP_JUMP_NODE_SET_JUMPNODE_MODEL:
 		case OP_JUMP_NODE_SHOW_JUMPNODE:
@@ -39446,6 +39494,12 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1: Name of jump node to change name for\r\n"
 		"\t2: New name for jump node\r\n\r\n"
 		"\tNote: SEXPs referencing the old name will not work after the name change.\r\n"
+	},
+
+	{ OP_JUMP_NODE_SET_JUMPNODE_DISPLAY_NAME, "set-jumpnode-display-name\r\n"
+		"\tSets the display name of a jump node. Takes 2 arguments...\r\n"
+	    "\t1: Name of jump node to change display name for\r\n"
+	    "\t2: New display name for jump node\r\n"
 	},
 
 	{ OP_JUMP_NODE_SET_JUMPNODE_COLOR, "set-jumpnode-color\r\n"

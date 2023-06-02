@@ -4600,22 +4600,35 @@ int CFred_mission_save::save_waypoints()
 		fout(" %s", jnp->GetName());
 
 		if (Mission_save_format != FSO_FORMAT_RETAIL) {
-			if (jnp->IsSpecialModel()) {
-				if (optional_string_fred("+Model File:", "$Jump Node:"))
+
+			if (jnp->GetDisplayName()[0] != '\0') {
+				if (optional_string_fred("+Display Name:", "$Jump Node:")) {
 					parse_comments();
-				else
+				} else {
+					fout("\n+Display Name:");
+				}
+					
+				fout_ext("", "%s", jnp->GetDisplayName());
+			}
+
+			if (jnp->IsSpecialModel()) {
+				if (optional_string_fred("+Model File:", "$Jump Node:")) {
+					parse_comments();
+				} else {
 					fout("\n+Model File:");
+				}
 
 				int model = jnp->GetModelNumber();
-				polymodel *pm = model_get(model);
+				polymodel* pm = model_get(model);
 				fout(" %s", pm->filename);
 			}
 
 			if (jnp->IsColored()) {
-				if (optional_string_fred("+Alphacolor:", "$Jump Node:"))
+				if (optional_string_fred("+Alphacolor:", "$Jump Node:")) {
 					parse_comments();
-				else
+				} else {
 					fout("\n+Alphacolor:");
+				}
 
 				color jn_color = jnp->GetColor();
 				fout(" %u %u %u %u", jn_color.red, jn_color.green, jn_color.blue, jn_color.alpha);

@@ -28,10 +28,13 @@ class model_draw_list;
 #define JN_HIDE						(1<<2)		//Hides a jump node
 #define JN_SPECIAL_MODEL			(1<<3)		//If non-default model
 
+#define JN_DEFAULT_MODEL            "subspacenode.pof"
+
 class CJumpNode
 {
 private:
     char m_name[NAME_LENGTH];
+    char m_display[NAME_LENGTH];
     float m_radius {0.0f};
 
     int	m_modelnum {-1};
@@ -57,6 +60,7 @@ public:
 	
 	//Getting
     const char *GetName();
+	const char* GetDisplayName();
     int GetModelNumber();
     int GetSCPObjectNumber();
 	int GetPolymodelInstanceNum(); 
@@ -68,6 +72,7 @@ public:
     void SetAlphaColor(int r, int g, int b, int alpha);
     void SetModel(const char *model_name, bool show_polys=false);
     void SetName(const char *new_name);
+	void SetDisplayName(const char* new_name);
     void SetVisibility(bool enabled);
     
     //Query

@@ -1009,6 +1009,7 @@ void set_cur_object_index(int obj)
 	set_cur_indices(obj);  // select the new object
 	Update_ship = Update_wing = 1;
 	Waypoint_editor_dialog.initialize_data(1);
+	Jumpnode_editor_dialog.initialize_data(1);
 	Update_window = 1;
 }
 
@@ -1127,6 +1128,15 @@ int update_dialog_boxes()
 		nprintf(("Fred routing", "waypoint dialog save failed\n"));
 		Waypoint_editor_dialog.SetWindowPos(&Fred_main_wnd->wndTop, 0, 0, 0, 0,
 			SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
+
+		return z;
+	}
+
+	z = Jumpnode_editor_dialog.update_data();
+	if (z) {
+		nprintf(("Fred routing", "jumpnode dialog save failed\n"));
+		Jumpnode_editor_dialog
+			.SetWindowPos(&Fred_main_wnd->wndTop, 0, 0, 0, 0, SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
 
 		return z;
 	}
@@ -1437,6 +1447,7 @@ void mark_object(int obj)
 		}
 		Update_ship = Update_wing = 1;
 		Waypoint_editor_dialog.initialize_data(1);
+		Jumpnode_editor_dialog.initialize_data(1);
 	}
 }
 
@@ -1464,6 +1475,7 @@ void unmark_object(int obj)
 		}
 		Update_ship = Update_wing = 1;
 		Waypoint_editor_dialog.initialize_data(1);
+		Jumpnode_editor_dialog.initialize_data(1);
 	}
 }
 
