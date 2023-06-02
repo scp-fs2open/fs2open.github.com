@@ -943,6 +943,29 @@ ADE_FUNC(isWeaponRequired,
 	}
 }
 
+ADE_FUNC(isPlayerAllowed,
+	l_Weaponclass,
+	nullptr,
+	"Detects whether the weapon has the player allowed flag",
+	"boolean",
+	"true if player allowed, false otherwise, nil if a syntax/type error occurs")
+{
+	int idx;
+	if (!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
+		return ADE_RETURN_NIL;
+
+	if(idx < 0 || idx >= weapon_info_size())
+		return ADE_RETURN_FALSE;
+
+	weapon_info* wip = &Weapon_info[idx];
+
+	if (wip->wi_flags[Weapon::Info_Flags::Player_allowed]) {
+		return ADE_RETURN_TRUE;
+	}
+
+	return ADE_RETURN_FALSE;
+}
+
 // Checks if a weapon has been paged in (counted as used)
 ADE_FUNC(isWeaponUsed, l_Weaponclass, NULL, "Return true if the weapon is paged in.", "boolean", "True if the weapon is paged in, false if otherwise")
 {

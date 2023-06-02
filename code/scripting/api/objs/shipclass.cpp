@@ -1452,6 +1452,29 @@ ADE_FUNC(isModelLoaded, l_Shipclass, "[boolean Load = false]", "Checks if the mo
 		return ADE_RETURN_FALSE;
 }
 
+ADE_FUNC(isPlayerAllowed,
+	l_Shipclass,
+	nullptr,
+	"Detects whether the ship has the player allowed flag",
+	"boolean",
+	"true if player allowed, false otherwise, nil if a syntax/type error occurs")
+{
+	int idx;
+	if (!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
+		return ADE_RETURN_NIL;
+
+	if (idx < 0 || idx >= ship_info_size())
+		return ADE_RETURN_FALSE;
+
+	ship_info* sip = &Ship_info[idx];
+
+	if (sip->flags[Ship::Info_Flags::Player_ship]) {
+		return ADE_RETURN_TRUE;
+	}
+
+	return ADE_RETURN_FALSE;
+}
+
 ADE_FUNC(getShipClassIndex, l_Shipclass, nullptr, "Gets the index value of the ship class", "number", "index value of the ship class")
 {
 	int idx;
