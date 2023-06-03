@@ -52,7 +52,7 @@ void trail_level_close()
 
 //returns the number of a free trail
 //returns -1 if no free trails
-trail *trail_create(trail_info *info)
+trail *trail_create(trail_info *info, bool const_vel)
 {
 	// standalone server should never create trails
 	// No trails at slot 0
@@ -70,6 +70,7 @@ trail *trail_create(trail_info *info)
 	trailp->tail = 0;
 	trailp->head = 0;	
 	trailp->object_died = false;		
+	trailp->single_segment = const_vel && info->a_decay_exponent == 1.0f && info->spread == 0.0f && info->n_fade_out_sections == 0;
 	trailp->trail_stamp = timestamp(trailp->info.stamp);
 
 	//Add it to the front of the list
@@ -128,6 +129,60 @@ void trail_render( trail * trailp )
 		return;
 
 	trail_info *ti	= &trailp->info;
+	auto batchp = batching_find_batch(ti->texture.bitmap_id, batch_info::FLAT_EMISSIVE);
+
+	if (trailp->single_segment) {
+		Assertion(trailp->tail == 2, "Single segment trail with more than two values!");
+		// confusing, i know
+		int front = trailp->tail - 1;
+		int back = trailp->head;
+
+		float speed = vm_vec_mag(&trailp->vel[front]);
+
+		float total_len = speed * ti->max_life;
+		float t = vm_vec_dist(&trailp->pos[front], &trailp->pos[back]) / total_len;
+		float f_alpha, b_alpha, f_width, b_width;
+		if (trailp->object_died) {
+			f_alpha = t * (ti->a_start - ti->a_end) + ti->a_end;
+			b_alpha = ti->a_end;
+			f_width = t * (ti->w_start - ti->w_end) + ti->w_end;
+			b_width = ti->w_end;
+		} else {
+			f_alpha = ti->a_start;
+			b_alpha = t * (ti->a_end - ti->a_start) + ti->a_start;
+			f_width = ti->w_start;
+			b_width = t * (ti->w_end - ti->w_start) + ti->w_start;
+		}
+
+		vec3d trail_direction, ftop, fbot, btop, bbot;
+		vm_vec_normalized_dir(&trail_direction, &trailp->pos[back], &trailp->pos[front]);
+		trail_calc_facing_pts(&ftop, &fbot, &trail_direction, &trailp->pos[front], f_width);
+		trail_calc_facing_pts(&btop, &bbot, &trail_direction, &trailp->pos[back], b_width);
+
+		vertex verts[4];
+		verts[0].r = verts[0].g = verts[0].b = verts[0].a = (ubyte)fl2i(f_alpha * 255.0f);
+		verts[1].r = verts[1].g = verts[1].b = verts[1].a = (ubyte)fl2i(f_alpha * 255.0f);
+		verts[2].r = verts[2].g = verts[2].b = verts[2].a = (ubyte)fl2i(b_alpha * 255.0f);
+		verts[3].r = verts[3].g = verts[3].b = verts[3].a = (ubyte)fl2i(b_alpha * 255.0f);
+
+		verts[0].world = ftop;
+		verts[1].world = fbot;
+		verts[2].world = bbot;
+		verts[3].world = btop;
+
+		float uv_scale = (total_len / speed / ((float)ti->stamp / 1000.0f)) / ti->texture_stretch;
+
+		verts[0].texture_position.u = trailp->val[front] * uv_scale;
+		verts[1].texture_position.u = trailp->val[front] * uv_scale;
+		verts[2].texture_position.u = trailp->val[back] * uv_scale;
+		verts[3].texture_position.u = trailp->val[back] * uv_scale;
+
+		verts[0].texture_position.v = verts[3].texture_position.v = 0.0f;
+		verts[1].texture_position.v = verts[2].texture_position.v = 1.0f;
+
+		batching_add_quad(ti->texture.bitmap_id, verts, batchp);
+		return;
+	}
 
 	int n = trailp->tail;
 
@@ -155,7 +210,6 @@ void trail_render( trail * trailp )
 	vec3d prev_top, prev_bot; vm_vec_zero(&prev_top); vm_vec_zero(&prev_bot);
 	float prev_U = 0;
 	ubyte prev_alpha = 0;
-	auto batchp = batching_find_batch(ti->texture.bitmap_id, batch_info::FLAT_EMISSIVE);
 	for (int i = 0; i < num_sections; i++) {
 		n = sections[i];
 
@@ -271,10 +325,15 @@ void trail_render( trail * trailp )
 // In order for trailp's 'spread' field to have any effect, it must be nonzero and the orient must be non-null
 // If so, the orient's fvec is the treated as the direction of the trail, and the 
 // new trail point is given a random velocity orthogonal to the fvec (scaled by spread speed)
-void trail_add_segment( trail *trailp, vec3d *pos , const matrix* orient)
+void trail_add_segment( trail *trailp, vec3d *pos , const matrix* orient, vec3d* velocity)
 {
 	int next = trailp->tail;
-	trailp->tail++;
+
+	if (!trailp->single_segment || trailp->tail < 2)
+		trailp->tail++;
+	else
+		return;
+
 	if ( trailp->tail >= NUM_TRAIL_SECTIONS )
 		trailp->tail = 0;
 
@@ -288,7 +347,9 @@ void trail_add_segment( trail *trailp, vec3d *pos , const matrix* orient)
 	trailp->pos[next] = *pos;
 	trailp->val[next] = 0.0f;
 
-	if (orient != nullptr && trailp->info.spread > 0.0f) {
+	if (trailp->single_segment && velocity) {
+		trailp->vel[next] = *velocity;
+	} else if (orient != nullptr && trailp->info.spread > 0.0f) {
 		vm_vec_random_in_circle(&trailp->vel[next], &vmd_zero_vector, orient, trailp->info.spread, false, true);
 	} else 
 		vm_vec_zero(&trailp->vel[next]);
@@ -296,6 +357,9 @@ void trail_add_segment( trail *trailp, vec3d *pos , const matrix* orient)
 
 void trail_set_segment( trail *trailp, vec3d *pos )
 {
+	if (trailp->single_segment)
+		return;
+
 	int next = trailp->tail-1;
 	if ( next < 0 )	{
 		next = NUM_TRAIL_SECTIONS-1;
@@ -317,10 +381,32 @@ void trail_move_all(float frametime)
 		next_trail = trailp->next;
 
 		num_alive_segments = 0;
+		time_delta = frametime / trailp->info.max_life;
 
-		if ( trailp->tail != trailp->head )	{
+		if (trailp->single_segment) {
+			if (trailp->object_died) {
+				trailp->pos[0] += trailp->vel[0] * frametime; // only back keeps going...
+				trailp->val[0] += time_delta; 
+
+				if (trailp->val[0] >= trailp->val[1])
+					num_alive_segments = 0; // back has caught up to front and were dead
+				else
+					num_alive_segments = 2;
+			} else {
+				trailp->pos[1] += trailp->vel[1] * frametime;
+				trailp->val[1] += time_delta;
+
+				if (trailp->val[1] > 1.0f) {
+					// finished 'unfurling'
+					// back end moves too now
+					trailp->pos[0] += trailp->vel[0] * frametime;
+					trailp->val[0] += time_delta;
+				}
+
+				num_alive_segments = 2;
+			}
+		} else if ( trailp->tail != trailp->head )	{
 			n = trailp->tail;			
-			time_delta = frametime / trailp->info.max_life;
 			do	{
 				n--;
 				if ( n < 0 ) n = NUM_TRAIL_SECTIONS-1;
