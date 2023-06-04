@@ -38,6 +38,7 @@
 #include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"
 #include "globalincs/systemvars.h"
+#include "globalincs/utility.h"
 #include "globalincs/version.h"
 #include "graphics/2d.h"
 #include "graphics/font.h"
@@ -869,6 +870,8 @@ SCP_vector<sexp_oper> Operators = {
 	{ "set-training-context-fly-path",	OP_SET_TRAINING_CONTEXT_FLY_PATH,		2,	2,			SEXP_ACTION_OPERATOR,	},
 	{ "set-training-context-speed",		OP_SET_TRAINING_CONTEXT_SPEED,			2,	2,			SEXP_ACTION_OPERATOR,	},
 };
+SCP_vector<int> Sorted_operator_indexes;
+size_t Max_operator_length = 0;
 
 sexp_ai_goal_link Sexp_ai_goal_links[] = {
 	{ AI_GOAL_CHASE, OP_AI_CHASE },
@@ -1356,6 +1359,26 @@ void sexp_startup()
 #endif
 
 	sexp::dynamic_sexp_init();
+
+	// sort all operators case-insensitively by name
+	Sorted_operator_indexes.clear();
+	Sorted_operator_indexes.reserve(Operators.size());
+	Max_operator_length = 0;
+
+	for (int i = 0; i < (int)Operators.size(); ++i)
+	{
+		Sorted_operator_indexes.push_back(i);
+		auto len = Operators[i].text.length();
+		if (len > Max_operator_length)
+			Max_operator_length = len;
+	}
+
+	std::sort(Sorted_operator_indexes.begin(), Sorted_operator_indexes.end(), [](const int &index_a, const int &index_b)
+		{
+			const auto &op_a = Operators[index_a];
+			const auto &op_b = Operators[index_b];
+			return lcase_lessthan(op_a.text, op_b.text);
+		});
 }
 
 void sexp_shutdown()
@@ -1862,7 +1885,6 @@ int get_operator_index(int node)
 	return index;
 }
 
-
 /**
  * From an operator name, return its constant (the number it was define'd with)
  */
@@ -1892,6 +1914,15 @@ int get_operator_const(int node)
 		return OP_NOT_AN_OP;
 
 	return Operators[idx].value;
+}
+
+int find_operator_index(int op_const)
+{
+	for (int i = 0; i < (int)Operators.size(); ++i)
+		if (Operators[i].value == op_const)
+			return i;
+
+	return -1;
 }
 
 int query_sexp_args_count(int node, bool only_valid_args = false)
@@ -2105,7 +2136,7 @@ bool check_variable_data_type(int type, int var_type, int op, int argnum, const 
  */
 int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, sexp_mode mode)
 {
-	int i = 0, z, t, type, argnum = 0, count, op, type2 = 0, op2;
+	int i = 0, z, type, argnum = 0, count, op, type2 = 0, op2;
 	int op_node;
 	int var_index = -1;
 	size_t st;
@@ -2184,49 +2215,12 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 
 			type2 = query_operator_return_type(op2);
 			if (recursive) {
-				switch (type) {
-					case OPF_NUMBER:
-						t = OPR_NUMBER;
-						break;
-
-					case OPF_POSITIVE:
-						t = OPR_POSITIVE;
-						break;
-
-					case OPF_BOOL:
-						t = OPR_BOOL;
-						break;
-
-					case OPF_NULL:
-						t = OPR_NULL;
-						break;
-
-					// Goober5000
-					case OPF_FLEXIBLE_ARGUMENT:
-						t = OPR_FLEXIBLE_ARGUMENT;
-						break;
-
-					case OPF_AI_GOAL:
-						t = OPR_AI_GOAL;
-						break;
-
-					// special case for modify-variable
-					case OPF_AMBIGUOUS:
-						t = OPR_AMBIGUOUS;
-						break;
-
-					// these types can accept either lists of strings or indexes
-					case OPF_GAME_SND:
-					case OPF_FIREBALL:
-					case OPF_WEAPON_BANK_NUMBER:
-						t = OPR_POSITIVE;
-						break;
-
-					default:
-						return SEXP_CHECK_UNKNOWN_TYPE;  // no other return types available
+				sexp_opr_t opr;
+				if (!map_opf_to_opr((sexp_opf_t)type, opr)) {
+					return SEXP_CHECK_UNKNOWN_TYPE;
 				}
 
-				if ((z = check_sexp_syntax(i, t, recursive, bad_node)) != 0) {
+				if ((z = check_sexp_syntax(i, (int)opr, recursive, bad_node)) != 0) {
 					return z;
 				}
 			}
@@ -29216,6 +29210,84 @@ DCF(sexp,"Runs the given sexp")
 	dc_printf("SEXP '%s' run, sexp_val = %d\n", sexp.c_str(), sexp_val);
 }
 
+bool map_opf_to_opr(sexp_opf_t opf_type, sexp_opr_t &opr_type)
+{
+	opr_type = OPR_NONE;
+
+	switch (opf_type)
+	{
+		case OPF_NUMBER:
+			opr_type = OPR_NUMBER;
+			break;
+
+		case OPF_POSITIVE:
+			opr_type = OPR_POSITIVE;
+			break;
+
+		case OPF_BOOL:
+			opr_type = OPR_BOOL;
+			break;
+
+		case OPF_NULL:
+			opr_type = OPR_NULL;
+			break;
+
+		// Goober5000
+		case OPF_FLEXIBLE_ARGUMENT:
+			opr_type = OPR_FLEXIBLE_ARGUMENT;
+			break;
+
+		case OPF_AI_GOAL:
+			opr_type = OPR_AI_GOAL;
+			break;
+
+		// special case for modify-variable
+		case OPF_AMBIGUOUS:
+			opr_type = OPR_AMBIGUOUS;
+			break;
+
+		// these types can accept either lists of strings or indexes
+		case OPF_GAME_SND:
+		case OPF_FIREBALL:
+		case OPF_WEAPON_BANK_NUMBER:
+			opr_type = OPR_POSITIVE;
+			break;
+
+		default:
+			return false;	// no other return types available
+	}
+
+	Assertion(opr_type != OPR_NONE, "map_opf_to_opr should have found a type");
+	return true;
+}
+
+const char *opr_type_name(sexp_opr_t opr_type)
+{
+	switch (opr_type)
+	{
+		case OPR_NONE:
+			return "<invalid return type>";
+		case OPR_NUMBER:
+			return "number";
+		case OPR_BOOL:
+			return "boolean";
+		case OPR_NULL:
+			return "no value";
+		case OPR_AI_GOAL:
+			return "[ai goal type]";
+		case OPR_POSITIVE:
+			return "positive number";
+		case OPR_STRING:
+			return "string";
+		case OPR_AMBIGUOUS:
+			return "[variable/container type]";
+		case OPR_FLEXIBLE_ARGUMENT:
+			return "[argument type]";
+		default:
+			return "<unknown return type>";
+	}
+}
+
 // returns the data type returned by an operator
 int query_operator_return_type(int op)
 {
@@ -32839,7 +32911,7 @@ int verify_vector(const char *text)
 /**
  * Check if operator return type opr is a valid match for operator argument type opf
  */
-int sexp_query_type_match(int opf, int opr)
+bool sexp_query_type_match(int opf, int opr)
 {
 	switch (opf) {
 		case OPF_NUMBER:
@@ -32864,13 +32936,43 @@ int sexp_query_type_match(int opf, int opr)
 		case OPF_CONTAINER_VALUE: // jg18
 		case OPF_DATA_OR_STR_CONTAINER: // jg18
 			// don't match any operators, only data
-			return 0;
+			return false;
 
 		case OPF_AI_GOAL:
 			return (opr == OPR_AI_GOAL);
 	}
 
-	return 0;
+	return false;
+}
+
+/**
+ * Finds the operator that is the best textual match for the input string, given the required OPF type.  For equal matches,
+ * the alphabetically earliest operator is returned.
+ * 
+ * Note: Returns the operator index, not the operator value.
+ */
+int sexp_match_closest_operator(const SCP_string &str, int opf)
+{
+	int best = -1;
+	size_t min = SCP_string::npos;
+
+	for (int op_index : Sorted_operator_indexes)
+	{
+		const auto &op_text = Operators[op_index].text;
+		auto opr = query_operator_return_type(Operators[op_index].value);
+
+		if (sexp_query_type_match(opf, opr))
+		{
+			size_t cost = stringcost(op_text, str, Max_operator_length);
+			if (best < 0 || cost < min)
+			{
+				min = cost;
+				best = op_index;
+			}
+		}
+	}
+
+	return best;
 }
 
 bool sexp_recoverable_error(int num)
@@ -37536,19 +37638,19 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_HAS_BEEN_TAGGED_DELAY, "Has ship been tagged (delay) (Boolean operator)\r\n"
 		"\tReturns true if all of the specified ships have been tagged.\r\n\r\n"
 		"Returns a boolean value after <delay> seconds when all ships have been tagged.  Takes 2 or more arguments...\r\n"
-		"\t1:\tDelay in seconds after which sexpression will return true when all cargo scanned."
+		"\t1:\tDelay in seconds after which sexpression will return true when all ships have been tagged.\r\n"
 		"\tRest:\tNames of ships to check if tagged.." },
 
 	{ OP_ARE_SHIP_FLAGS_SET, "Are ship flags set (Boolean operator)\r\n"
 		"\tReturns true if all of the specified flags have been set for this particular ship.\r\n\r\n"
 		"Takes 2 or more arguments...\r\n"
-		"\t1:\tName of the ship."
+		"\t1:\tName of the ship.\r\n"
 		"\tRest:\tShip, object, parse object, or ai flags which might be set for this ship." },
 
 	{ OP_ARE_WING_FLAGS_SET, "Are wing flags set (Boolean operator)\r\n"
 		"\tReturns true if all of the specified flags have been set for this particular wing.\r\n\r\n"
 		"Takes 2 or more arguments...\r\n"
-		"\t1:\tName of the wing."
+		"\t1:\tName of the wing.\r\n"
 		"\tRest:\tWing flags which might be set for this wing." },
 
 	{ OP_IS_SHIP_EMP_ACTIVE, "Is ship emp active (Boolean operator)\r\n"

@@ -194,6 +194,11 @@ void free_lua_sexps(lua_State* /*L*/)
 
 namespace sexp {
 
+int operator_upper_bound()
+{
+	return globals().next_free_operator_id;
+}
+
 int add_dynamic_sexp(std::unique_ptr<DynamicSEXP>&& sexp, sexp_oper_type type)
 {
 	auto& global = globals();

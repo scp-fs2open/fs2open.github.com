@@ -836,9 +836,7 @@
 #define IDC_DELAY                       1407
 #define IDC_DELAY_SPIN                  1408
 #define IDC_HELP_BOX                    1409
-#define IDC_HELP_BOX2                   1410
 #define IDC_MINI_HELP_BOX               1410
-#define IDC_asdf                        1412
 #define IDC_DESTROY_SPIN                1413
 #define IDC_IGNORE_ORDERS               1414
 #define IDC_SPECIAL_EXP                 1415
@@ -1234,6 +1232,7 @@
 #define IDC_NOISE_RESOLUTION            1702
 #define IDC_SPIN_NOISE_RESOLUTION       1703
 #define IDC_REQUIRED_WEAPONS            1704
+#define IDC_SEXP_POPUP_LIST             32770
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774
 #define ID_VIEW_ROTATE                  32775
