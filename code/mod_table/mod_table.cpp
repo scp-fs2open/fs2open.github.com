@@ -745,6 +745,11 @@ void parse_mod_table(const char *filename)
 					mprintf(("Game Settings Table: '$Shadow Quality Default:' value for default shadow quality %d is invalid. Using default quality of %d...\n", quality, static_cast<int>(Shadow_quality)));
 					break;
 				}
+				
+				if (!gr_is_capable(CAPABILITY_SHADOWS) && Shadow_quality != ShadowQuality::Disabled) {
+					Warning(LOCATION, "The mod requests shadows to be enabled, but the system does not fulfill the requirements. Disabling shadows...");
+					Shadow_quality == ShadowQuality::Disabled;
+				}
 			}
 		}
 
