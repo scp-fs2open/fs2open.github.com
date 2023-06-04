@@ -62,7 +62,7 @@ namespace io
 			 *
 			 * @param device_id The SDL device index
 			 * 
-			 * @throws a std::exception if SDL_JoystickOpen() could not open the joystick. Clients creating a Joystick
+			 * @throws a std::runtime_error if SDL_JoystickOpen() could not open the joystick. Clients creating a Joystick
 			 *   instance should call SDL_GetError() afterwards to get details from SDL.
 			 */
 			explicit Joystick(int device_id);

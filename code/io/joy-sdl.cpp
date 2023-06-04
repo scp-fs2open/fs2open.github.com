@@ -547,8 +547,11 @@ namespace joystick
 	{
 		_joystick = SDL_JoystickOpen(device_id);
 
-		if (_joystick == nullptr)
-			throw std::exception("Failed to open a joystick, get a coder!");
+		if (_joystick == nullptr) {
+			SCP_stringstream msg;
+			msg << "Failed to open joystick with id " << device_id << ", get a coder!";
+			throw std::runtime_error(msg.str());
+		}
 
 		fillValues();
 	}
