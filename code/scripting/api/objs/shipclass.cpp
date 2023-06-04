@@ -694,10 +694,10 @@ ADE_VIRTVAR(CountermeasureClass, l_Shipclass, "weaponclass", "The default counte
 {
 	int idx;
 	if (!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
-		return ade_set_error(L, "i", 0);
+		return ade_set_error(L, "o", l_Weaponclass.Set(-1));
 
 	if (idx < 0 || idx >= ship_info_size())
-		return ade_set_error(L, "i", 0);
+		return ade_set_error(L, "o", l_Weaponclass.Set(-1));
 
 	ship_info* sip = &Ship_info[idx];
 
