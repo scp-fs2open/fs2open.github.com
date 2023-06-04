@@ -395,6 +395,10 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Always_warn_player_about_unbound_keys);
 		}
 
+		if (optional_string("$HUD drop shadows enabled by default:")) {
+			stuff_boolean(&HUD_shadows);
+		}
+
 		optional_string("#SEXP SETTINGS");
 
 		if (optional_string("$Loop SEXPs Then Arguments:")) {
@@ -1243,6 +1247,7 @@ void parse_mod_table(const char *filename)
 		if (optional_string("$Use distant firepoint for all turrets:")){
 			stuff_boolean(&Always_use_distant_firepoints);
 		}
+
 		if (optional_string("$Enable Discord rich presence:")) {
 			stuff_boolean(&Discord_presence);
 		}
