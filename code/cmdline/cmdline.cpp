@@ -2140,7 +2140,7 @@ bool SetCmdlineParams()
 
 		if (!gr_is_capable(CAPABILITY_SHADOWS) && Shadow_quality != ShadowQuality::Disabled) {
 			Warning(LOCATION, "Shadows are enabled, but the system does not fulfill the requirements. Disabling shadows...");
-			Shadow_quality == ShadowQuality::Disabled;
+			Shadow_quality = ShadowQuality::Disabled;
 		}
 	}
 
