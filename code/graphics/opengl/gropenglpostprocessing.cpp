@@ -177,7 +177,17 @@ void opengl_post_pass_bloom()
 					data->xSize = 1.0f / i2fl(mip_width);
 					data->ySize = 1.0f / i2fl(mip_height);
 					data->mip = i2fl(mipmap + 1); // Sample from the mip below.
-					data->mip_lerp = gr_bloom_width(); // SHOULD BE TUNEABLE, CONTROLS WIDTH
+					// This gross expression biases the bloom shader between "carrying up" blur from lower mip levels,
+					// and discarding them in favour of higher resolution terms. 
+					// if bloom width is low, higher resolution terms will contribute a lot
+					// if bloom width is high, higher resolution terms will contribute little.
+					data->mip_lerp = 1.0f / (
+						1.0f + 
+						exp(gr_bloom_width() * (
+								(float) mipmap - 
+								(float)MAX_MIP_BLUR_LEVELS * gr_bloom_width()
+							)
+						));
 				});
 
 			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Bloom_texture, mipmap);
