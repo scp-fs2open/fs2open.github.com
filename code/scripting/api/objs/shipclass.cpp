@@ -690,6 +690,28 @@ ADE_VIRTVAR(ScanTime, l_Shipclass, nullptr, "Ship scan time", "number", "Time re
 	return ade_set_args(L, "i", Ship_info[idx].scan_time);
 }
 
+ADE_VIRTVAR(CountermeasureClass, l_Shipclass, "weaponclass", "The default countermeasure class assigned to this ship class", "weaponclass", "Countermeasure hardpoint weapon class, or invalid weaponclass handle if no countermeasure class or ship handle is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
+		return ade_set_error(L, "o", l_Weaponclass.Set(-1));
+
+	if (idx < 0 || idx >= ship_info_size())
+		return ade_set_error(L, "o", l_Weaponclass.Set(-1));
+
+	ship_info* sip = &Ship_info[idx];
+
+	if(ADE_SETTING_VAR) {
+		LuaError(L, "Setting CountermeasureClass is not supported");
+	}
+
+	if (sip->cmeasure_type > -1) {
+		return ade_set_args(L, "o", l_Weaponclass.Set(sip->cmeasure_type));
+	} else {
+		return ade_set_error(L, "o", l_Weaponclass.Set(-1));
+	}
+}
+
 ADE_VIRTVAR(CountermeasuresMax, l_Shipclass, "number", "Maximum number of countermeasures the ship can carry", "number", "Countermeasure capacity, or 0 if handle is invalid")
 {
 	int idx;
