@@ -288,7 +288,7 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 		if (optional_string("+Flags:"))
 			stuff_flagset(&flags);
 
-		skip_to_start_of_string_one_of(SCP_vector<SCP_string>{ "+Volumetric Nebula:", "$Skybox Model:", "#Background bitmaps" });
+		skip_to_start_of_string_one_of(SCP_vector<SCP_string>{ "+Volumetric Nebula:", "$Skybox Model:", "$Lighting Profile:", "#Background bitmaps" });
 		if (optional_string("+Volumetric Nebula:")) {
 			//Rendering usually happens in post-mission-init, just do it now in the lab
 			The_mission.volumetrics.emplace().parse_volumetric_nebula().renderVolumeBitmap();
@@ -297,13 +297,10 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 			volumetrics_level_close();
 		}
 
-		ltp_name = ltp::default_name();
-
 		// Are we using a skybox?
-		//skip to appears to skip to the end of the file if this are absent
-		//so if there's no skybox we need to advance past it
-		skip_to_start_of_string_either("$Skybox Model:","$Lighting Profile:");
-
+		//skip will skip to the end of the file (or to the 'end' string) if any string is absent,
+		//so be sure to include any section that might be found
+		skip_to_start_of_string_one_of(SCP_vector<SCP_string>{ "$Skybox Model:", "$Lighting Profile:", "#Background bitmaps" });
 		strcpy_s(skybox_model, "");
 		if (optional_string("$Skybox Model:")) {
 			stuff_string(skybox_model, F_NAME, MAX_FILENAME_LEN);
@@ -322,17 +319,13 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 
 			stars_set_background_model(skybox_model, nullptr, skybox_flags);
 			stars_set_background_orientation(&skybox_orientation);
-
 		}
-		ltp_name="";
-		skip_to_start_of_string_either("$Lighting Profile:","#Background bitmap");
+
+		skip_to_start_of_string_either("$Lighting Profile:", "#Background bitmaps");
+		ltp_name = ltp::default_name();
 		if(optional_string("$Lighting Profile:")){
 			stuff_string(ltp_name,F_NAME);
 		}
-		else {
-			ltp_name = ltp::default_name();
-		}
-	
 		if (ltp_name != ltp::current()->name) {
 				ltp::switch_to(ltp_name);
 		}

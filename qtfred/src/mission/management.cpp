@@ -2,36 +2,36 @@
 #include "mission/management.h"
 
 #include "object.h"
+#include <project.h>
+#include <libs/ffmpeg/FFmpeg.h>
 
-#include <localization/localize.h>
-#include <ui/QtGraphicsOperations.h>
+#include <cutscene/cutscenes.h>
+#include <gamesnd/eventmusic.h>
+#include <globalincs/alphacolors.h>
+#include <hud/hudsquadmsg.h>
+#include <iff_defs/iff_defs.h>
 #include <io/key.h>
 #include <io/mouse.h>
-#include <iff_defs/iff_defs.h>
-#include <weapon/weapon.h>
-#include <stats/medals.h>
+#include <localization/fhash.h>
+#include <localization/localize.h>
+#include <math/curve.h>
+#include <menuui/mainhallmenu.h>
+#include <menuui/techmenu.h>
+#include <mission/missioncampaign.h>
+#include <missionui/fictionviewer.h>
 #include <model/modelreplace.h>
 #include <nebula/neb.h>
-#include <starfield/starfield.h>
-#include <sound/audiostr.h>
-#include <project.h>
+#include <nebula/neblightning.h>
+#include <parse/sexp/sexp_lookup.h>
 #include <scripting/scripting.h>
 #include <scripting/global_hooks.h>
-#include <hud/hudsquadmsg.h>
-#include <globalincs/alphacolors.h>
-
-#include <menuui/techmenu.h>
-#include <localization/fhash.h>
-#include <gamesnd/eventmusic.h>
-#include <cutscene/cutscenes.h>
-#include <missionui/fictionviewer.h>
-#include <menuui/mainhallmenu.h>
+#include <sound/audiostr.h>
+#include <starfield/starfield.h>
+#include <stats/medals.h>
 #include <stats/scoring.h>
-#include <mission/missioncampaign.h>
-#include <nebula/neblightning.h>
-#include <libs/ffmpeg/FFmpeg.h>
-#include <parse/sexp/sexp_lookup.h>
+#include <ui/QtGraphicsOperations.h>
 #include <utils/Random.h>
+#include <weapon/weapon.h>
 
 #include <clocale>
 
@@ -145,6 +145,7 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 	mouse_init();
 
 	listener(SubSystem::Particles);
+	curves_init();
 	particle::ParticleManager::init();
 
 	listener(SubSystem::Iff);
