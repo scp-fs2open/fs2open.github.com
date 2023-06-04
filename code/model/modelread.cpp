@@ -37,6 +37,7 @@
 #include "render/3dinternal.h"
 #include "ship/ship.h"
 #include "starfield/starfield.h"
+#include "graphics/shadows.h"
 #include "weapon/weapon.h"
 #include "tracing/tracing.h"
 
@@ -3194,7 +3195,9 @@ void model_load_texture(polymodel *pm, int i, char *file)
 	// -------------------------------------------------------------------------
 
 	// See if we need to compile a new shader for this material
-	gr_maybe_create_shader(SDR_TYPE_MODEL, SDR_FLAG_MODEL_SHADOW_MAP);
+	if (Shadow_quality != ShadowQuality::Disabled)
+		gr_maybe_create_shader(SDR_TYPE_MODEL, SDR_FLAG_MODEL_SHADOW_MAP);
+
 	gr_maybe_create_shader(SDR_TYPE_MODEL, 0);
 
 }
