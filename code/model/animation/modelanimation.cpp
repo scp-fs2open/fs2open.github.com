@@ -1,4 +1,6 @@
+#include "math/curve.h"
 #include "model/animation/modelanimation.h"
+#include "model/animation/modelanimation_driver.h"
 #include "model/animation/modelanimation_segments.h"
 #include "model/animation/modelanimation_moveables.h"
 #include "network/multi.h"
@@ -1433,6 +1435,41 @@ namespace animation {
 		set.changeShipName(sip->name);
 		
 		ModelAnimationParseHelper::parseAnimsetInfo(set, 's', sip->name);
+	}
+
+	void ModelAnimationParseHelper::parseAnimsetInfoDrivers(ModelAnimationSet& set, ship_info* sip) {
+		decltype(ModelAnimation::m_driver) driver;
+
+		if (optional_string("+Time Remap:")) {
+			required_string("+Source:");
+			std::function<float(polymodel_instance *)> remap_driver_source = parse_ship_property_driver_source();
+			tl::optional<Curve> curve = tl::nullopt;
+
+			if (optional_string("+Curve:")){
+				SCP_string curve_name;
+				stuff_string(curve_name, F_NAME);
+				curve = Curves[curve_get_by_name(curve_name)];
+			}
+			
+			driver = [remap_driver_source, curve](ModelAnimation&, ModelAnimation::instance_data& instance, polymodel_instance *pmi, float) {
+				float oldFrametime = instance.time;
+				instance.time = curve ? curve->GetValue(remap_driver_source(pmi)) : remap_driver_source(pmi);
+				CLAMP(instance.time, 0, instance.duration);
+				instance.canonicalDirection = oldFrametime < instance.time ? ModelAnimationDirection::FWD : ModelAnimationDirection::RWD;
+			};
+		}
+
+		required_string("+Affected Animations:");
+		ModelAnimationParseHelper::parseAnimsetInfo(set, sip);
+		for (auto& animTriggers : set.m_animationSet){
+			for (auto& animList : animTriggers.second){
+				for(auto& anim : animList.second) {
+					if (driver)
+						anim->m_driver = driver;
+
+				}
+			}
+		}
 	}
 
 	void ModelAnimationParseHelper::parseMoveablesetInfo(ModelAnimationSet& set) {

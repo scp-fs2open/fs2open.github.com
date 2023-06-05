@@ -5024,6 +5024,10 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		animation::ModelAnimationParseHelper::parseAnimsetInfo(sip->animations, sip);
 	}
 
+	if (optional_string("$Driven Animations:")) {
+		animation::ModelAnimationParseHelper::parseAnimsetInfoDrivers(sip->animations, sip);
+	}
+
 	if (optional_string("$Animation Moveables:")) {
 		animation::ModelAnimationParseHelper::parseMoveablesetInfo(sip->animations);
 	}

@@ -415,6 +415,7 @@ namespace animation {
 		static void parseTables();
 		static void parseAnimsetInfo(ModelAnimationSet& set, ship_info* sip);
 		static void parseAnimsetInfo(ModelAnimationSet& set, char uniqueTypePrefix, const SCP_string& uniqueParentName);
+		static void parseAnimsetInfoDrivers(ModelAnimationSet& set, ship_info* sip);
 		static void parseMoveablesetInfo(ModelAnimationSet& set);
 		//Parses the legacy animation table in ships.tbl of a single subsystem. Currently initial animations only
 		static void parseLegacyAnimationTable(model_subsystem* sp, ship_info* sip);
