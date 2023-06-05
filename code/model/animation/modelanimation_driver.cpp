@@ -104,5 +104,17 @@ namespace animation {
 		}
 	}
 
-	//std::function<void(ModelAnimation&, ModelAnimation::instance_data&, polymodel_instance*)> property_driver = parse_generic_property_driver();
+	ModelAnimationPropertyDriverTarget parse_property_driver_target() {
+		switch(optional_string_one_of(2,
+				"Speed",
+				"Time" //Is dangerous as a property driver target, but makes sense as a startup driver
+				)){
+			case 0:
+				return {&ModelAnimation::instance_data::speed, tl::nullopt};
+			case 1:
+				return {&ModelAnimation::instance_data::time, &ModelAnimation::instance_data::duration};
+			default:
+				return {};
+		}
+	}
 }

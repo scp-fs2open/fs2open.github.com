@@ -1444,26 +1444,68 @@ namespace animation {
 
 		while(optional_string("+Driver Set:")) {
 			decltype(ModelAnimation::m_driver) driver;
+			decltype(ModelAnimation::m_propertyDrivers) propertyDrivers;
+			decltype(ModelAnimation::m_startupDrivers) startupDrivers;
 
 			if (optional_string("+Time Remap:")) {
 				required_string("+Source:");
 				std::function<float(polymodel_instance *)> remap_driver_source = parse_ship_property_driver_source();
-				tl::optional<Curve> curve = tl::nullopt;
 
+				tl::optional<Curve> curve = tl::nullopt;
 				if (optional_string("+Curve:")) {
 					SCP_string curve_name;
 					stuff_string(curve_name, F_NAME);
 					curve = Curves[curve_get_by_name(curve_name)];
 				}
 
-				driver = [remap_driver_source, curve](ModelAnimation &, ModelAnimation::instance_data &instance,
-													  polymodel_instance *pmi, float) {
+				driver = [remap_driver_source, curve](ModelAnimation &, ModelAnimation::instance_data &instance, polymodel_instance *pmi, float) {
 					float oldFrametime = instance.time;
 					instance.time = curve ? curve->GetValue(remap_driver_source(pmi)) : remap_driver_source(pmi);
 					CLAMP(instance.time, 0, instance.duration);
-					instance.canonicalDirection =
-							oldFrametime < instance.time ? ModelAnimationDirection::FWD : ModelAnimationDirection::RWD;
+					instance.canonicalDirection = oldFrametime < instance.time ? ModelAnimationDirection::FWD : ModelAnimationDirection::RWD;
 				};
+			}
+			while (optional_string("+Property Driver:")){
+				required_string("+Source:");
+				std::function<float(polymodel_instance *)> driver_source = parse_ship_property_driver_source();
+				required_string("+Target:");
+				ModelAnimationPropertyDriverTarget target = parse_property_driver_target();
+
+				tl::optional<Curve> curve = tl::nullopt;
+				if (optional_string("+Curve:")) {
+					SCP_string curve_name;
+					stuff_string(curve_name, F_NAME);
+					curve = Curves[curve_get_by_name(curve_name)];
+				}
+
+				propertyDrivers.emplace_back([driver_source, curve, target](ModelAnimation &, ModelAnimation::instance_data &instance, polymodel_instance *pmi) {
+					float& property = instance.*(target.target);
+					property = curve ? curve->GetValue(driver_source(pmi)) : driver_source(pmi);
+					if(target.clamp) {
+						CLAMP(property, 0, instance.*(*target.clamp));
+					}
+				});
+			}
+			while (optional_string("+Startup Driver:")){
+				required_string("+Source:");
+				std::function<float(polymodel_instance *)> driver_source = parse_ship_property_driver_source();
+				required_string("+Target:");
+				ModelAnimationPropertyDriverTarget target = parse_property_driver_target();
+
+				tl::optional<Curve> curve = tl::nullopt;
+				if (optional_string("+Curve:")) {
+					SCP_string curve_name;
+					stuff_string(curve_name, F_NAME);
+					curve = Curves[curve_get_by_name(curve_name)];
+				}
+
+				startupDrivers.emplace_back([driver_source, curve, target](ModelAnimation &, ModelAnimation::instance_data &instance, polymodel_instance *pmi) {
+					float& property = instance.*(target.target);
+					property = curve ? curve->GetValue(driver_source(pmi)) : driver_source(pmi);
+					if(target.clamp) {
+						CLAMP(property, 0, instance.*(*target.clamp));
+					}
+				});
 			}
 
 			required_string("+Affected Animations:");
@@ -1478,6 +1520,8 @@ namespace animation {
 
 					if (driver)
 						anim->m_driver = driver;
+					anim->m_propertyDrivers = propertyDrivers;
+					anim->m_startupDrivers = startupDrivers;
 				}
 				else {
 					error_display(0, "Animation with name %s not found!", request.c_str());
