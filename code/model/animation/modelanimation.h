@@ -326,7 +326,7 @@ namespace animation {
 		ModelAnimationSet& operator=(const ModelAnimationSet& other);
 
 		//Helper function to shorten animation emplaces
-		void emplace(const std::shared_ptr<ModelAnimation>& animation, const SCP_string& request, const SCP_string& name, ModelAnimationTriggerType type, int subtype, unsigned int uniqueId);
+		std::shared_ptr<ModelAnimation> emplace(const std::shared_ptr<ModelAnimation>& animation, const SCP_string& request, const SCP_string& name, ModelAnimationTriggerType type, int subtype, unsigned int uniqueId);
 
 		void changeShipName(const SCP_string& name);
 

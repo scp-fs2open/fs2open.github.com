@@ -680,7 +680,7 @@ namespace animation {
 		return *this;
 	}
 
-	void ModelAnimationSet::emplace(const std::shared_ptr<ModelAnimation>& animation, const SCP_string& request, const SCP_string& name, ModelAnimationTriggerType type, int subtype, unsigned int uniqueId) {
+	std::shared_ptr<ModelAnimation> ModelAnimationSet::emplace(const std::shared_ptr<ModelAnimation>& animation, const SCP_string& request, const SCP_string& name, ModelAnimationTriggerType type, int subtype, unsigned int uniqueId) {
 		auto newAnim = std::shared_ptr<ModelAnimation>(new ModelAnimation(*animation));
 		newAnim->m_set = this;
 		newAnim->m_animation = std::shared_ptr<ModelAnimationSegment>(animation->m_animation->copy());
@@ -689,6 +689,7 @@ namespace animation {
 		newAnim->request = request;
 		ModelAnimationSet::s_animationById[uniqueId] = newAnim;
 		m_animationSet[{type, subtype}][name].push_back(newAnim);
+		return newAnim;
 	}
 
 	void ModelAnimationSet::changeShipName(const SCP_string& name) {
@@ -1438,35 +1439,48 @@ namespace animation {
 	}
 
 	void ModelAnimationParseHelper::parseAnimsetInfoDrivers(ModelAnimationSet& set, ship_info* sip) {
-		decltype(ModelAnimation::m_driver) driver;
+		set.m_animationSet.clear();
+		set.changeShipName(sip->name);
 
-		if (optional_string("+Time Remap:")) {
-			required_string("+Source:");
-			std::function<float(polymodel_instance *)> remap_driver_source = parse_ship_property_driver_source();
-			tl::optional<Curve> curve = tl::nullopt;
+		while(optional_string("+Driver Set:")) {
+			decltype(ModelAnimation::m_driver) driver;
 
-			if (optional_string("+Curve:")){
-				SCP_string curve_name;
-				stuff_string(curve_name, F_NAME);
-				curve = Curves[curve_get_by_name(curve_name)];
+			if (optional_string("+Time Remap:")) {
+				required_string("+Source:");
+				std::function<float(polymodel_instance *)> remap_driver_source = parse_ship_property_driver_source();
+				tl::optional<Curve> curve = tl::nullopt;
+
+				if (optional_string("+Curve:")) {
+					SCP_string curve_name;
+					stuff_string(curve_name, F_NAME);
+					curve = Curves[curve_get_by_name(curve_name)];
+				}
+
+				driver = [remap_driver_source, curve](ModelAnimation &, ModelAnimation::instance_data &instance,
+													  polymodel_instance *pmi, float) {
+					float oldFrametime = instance.time;
+					instance.time = curve ? curve->GetValue(remap_driver_source(pmi)) : remap_driver_source(pmi);
+					CLAMP(instance.time, 0, instance.duration);
+					instance.canonicalDirection =
+							oldFrametime < instance.time ? ModelAnimationDirection::FWD : ModelAnimationDirection::RWD;
+				};
 			}
-			
-			driver = [remap_driver_source, curve](ModelAnimation&, ModelAnimation::instance_data& instance, polymodel_instance *pmi, float) {
-				float oldFrametime = instance.time;
-				instance.time = curve ? curve->GetValue(remap_driver_source(pmi)) : remap_driver_source(pmi);
-				CLAMP(instance.time, 0, instance.duration);
-				instance.canonicalDirection = oldFrametime < instance.time ? ModelAnimationDirection::FWD : ModelAnimationDirection::RWD;
-			};
-		}
 
-		required_string("+Affected Animations:");
-		ModelAnimationParseHelper::parseAnimsetInfo(set, sip);
-		for (auto& animTriggers : set.m_animationSet){
-			for (auto& animList : animTriggers.second){
-				for(auto& anim : animList.second) {
+			required_string("+Affected Animations:");
+			SCP_vector<SCP_string> requestedAnimations;
+			stuff_string_list(requestedAnimations);
+
+			for (const SCP_string& request : requestedAnimations) {
+				auto animIt = s_animationsById.find(request);
+				if (animIt != s_animationsById.end()) {
+					const ParsedModelAnimation& foundAnim = animIt->second;
+					auto anim = set.emplace(foundAnim.anim, request, foundAnim.name, foundAnim.type, foundAnim.subtype, ModelAnimationParseHelper::getUniqueAnimationID(animIt->first, 's', sip->name));
+
 					if (driver)
 						anim->m_driver = driver;
-
+				}
+				else {
+					error_display(0, "Animation with name %s not found!", request.c_str());
 				}
 			}
 		}
