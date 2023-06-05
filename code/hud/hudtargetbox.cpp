@@ -1320,9 +1320,7 @@ void HudGaugeTargetBox::renderTargetJumpNode(object *target_objp)
 		renderTargetIntegrity(1);
 		setGaugeColor();
 
-		strcpy_s(outstr, jnp->GetDisplayName());
-		end_string_at_first_hash_symbol(outstr);
-		renderString(position[0] + Name_offsets[0], position[1] + Name_offsets[1], EG_TBOX_NAME, outstr);	
+		renderString(position[0] + Name_offsets[0], position[1] + Name_offsets[1], EG_TBOX_NAME, jnp->GetDisplayName());
 
 		dist = Player_ai->current_target_distance;
 		if ( Hud_unit_multiplier > 0.0f ) {	// use a different displayed distance scale

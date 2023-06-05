@@ -675,10 +675,7 @@ void HudGaugeBrackets::renderBoundingBrackets(int x1, int y1, int x2, int y2, in
 					if(jnp->GetSCPObject() == t_objp)
 						break;
 				}
-				
-				strcpy_s(temp_name, jnp->GetDisplayName());
-				end_string_at_first_hash_symbol(temp_name);
-				tinfo_name = temp_name;
+				tinfo_name = jnp->GetDisplayName();
 				break;
 		}
 

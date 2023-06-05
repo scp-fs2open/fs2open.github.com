@@ -68,6 +68,7 @@ BEGIN_MESSAGE_MAP(jumpnode_dlg, CDialog)
 	ON_BN_CLICKED(IDC_NODE_HIDDEN, OnHidden)
 	ON_WM_CLOSE()
 	ON_WM_INITMENU()
+	ON_EN_KILLFOCUS(IDC_NAME, OnKillfocusName)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -181,7 +182,7 @@ int jumpnode_dlg::update_data()
 	if (!GetSafeHwnd())
 		return 0;
 
-	if (Objects[cur_object_index].type == OBJ_JUMP_NODE) {
+	if (query_valid_object() && Objects[cur_object_index].type == OBJ_JUMP_NODE) {
 		for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
 			if(jnp->GetSCPObject() == &Objects[cur_object_index])
 				break;
@@ -375,4 +376,21 @@ void jumpnode_dlg::OnHidden()
 		m_hidden = 1;
 
 	((CButton*)GetDlgItem(IDC_NODE_HIDDEN))->SetCheck(m_hidden);
+}
+
+void jumpnode_dlg::OnKillfocusName()
+{
+	char buffer[NAME_LENGTH];
+
+	// Note, in this dialog, UpdateData(TRUE) is not used to move data from controls to variables until the dialog is closed, so we edit the control text directly
+
+	// grab the name
+	GetDlgItemText(IDC_NAME, buffer, NAME_LENGTH);
+
+	// if this name has a hash, truncate it for the display name
+	if (get_pointer_to_first_hash_symbol(buffer))
+		end_string_at_first_hash_symbol(buffer);
+
+	// set the display name derived from this name
+	SetDlgItemText(IDC_ALT_NAME, buffer);
 }

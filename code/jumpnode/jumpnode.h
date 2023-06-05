@@ -27,6 +27,7 @@ class model_draw_list;
 #define JN_SHOW_POLYS				(1<<1)		//Display model normally, rather than as wireframe
 #define JN_HIDE						(1<<2)		//Hides a jump node
 #define JN_SPECIAL_MODEL			(1<<3)		//If non-default model
+#define JN_HAS_DISPLAY_NAME			(1<<4)		//If it has a display name
 
 #define JN_DEFAULT_MODEL            "subspacenode.pof"
 
@@ -76,9 +77,10 @@ public:
     void SetVisibility(bool enabled);
     
     //Query
-    bool IsHidden();
-    bool IsColored();
-    bool IsSpecialModel();
+    bool IsHidden() const;
+    bool IsColored() const;
+    bool IsSpecialModel() const;
+    bool HasDisplayName() const;
 
     //Rendering
 	void Render(vec3d *pos, vec3d *view_pos = NULL);
