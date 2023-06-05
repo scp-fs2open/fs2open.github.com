@@ -261,6 +261,7 @@ void batching_add_bitmap_internal(primitive_batch *batch, int texture, vertex *p
 
 		// Set array index
 		verts[i].tex_coord.xyzw.z = (float) array_index;
+		verts[i].tex_coord.xyzw.w = 1.0f;
 	}
 
 	batch->add_triangle(&verts[5], &verts[4], &verts[3]);
@@ -336,6 +337,7 @@ void batching_add_bitmap_rotated_internal(primitive_batch *batch, int texture, v
 
 		verts[i].radius = radius;
 		verts[i].tex_coord.xyzw.z = (float)array_index;
+		verts[i].tex_coord.xyzw.w = 1.0f;
 	}
 
 	batch->add_triangle(&verts[0], &verts[1], &verts[2]);
@@ -389,6 +391,7 @@ void batching_add_polygon_internal(primitive_batch *batch, int texture, vec3d *p
 		v[i].b = clr->blue;
 		v[i].a = clr->alpha;
 		v[i].tex_coord.xyzw.z = (float)array_index;
+		v[i].tex_coord.xyzw.w = 1.0f;
 
 		v[i].radius = MAX(width * 0.5f, height * 0.5f);
 	}
@@ -409,7 +412,7 @@ void batching_add_polygon_internal(primitive_batch *batch, int texture, vec3d *p
 	batch->add_triangle(&v[0], &v[2], &v[3]);
 }
 
-void batching_add_quad_internal(primitive_batch *batch, int texture, vertex *verts)
+void batching_add_quad_internal(primitive_batch* batch, int texture, vertex* verts, float trapezoidal_correction = 1.0f)
 {
 	Assert(batch->get_render_info().prim_type == PRIM_TYPE_TRIS);
 
@@ -417,6 +420,12 @@ void batching_add_quad_internal(primitive_batch *batch, int texture, vertex *ver
 	batch_vertex v[NUM_VERTICES];
 
 	auto array_index = texture - batch->get_render_info().texture;
+
+	v[0].tex_coord = vm_vec4_new(verts[0].texture_position.u, verts[0].texture_position.v, (float)array_index, 1.0f);
+	v[1].tex_coord = vm_vec4_new(verts[1].texture_position.u, verts[1].texture_position.v, (float)array_index, 1.0f);
+	v[2].tex_coord = vm_vec4_new(verts[2].texture_position.u, verts[2].texture_position.v * trapezoidal_correction, (float)array_index, trapezoidal_correction);
+	v[3].tex_coord = vm_vec4_new(verts[3].texture_position.u, verts[3].texture_position.v, (float)array_index, trapezoidal_correction);
+
 	for ( int i = 0; i < NUM_VERTICES; i++ ) {
 		v[i].position = verts[i].world;
 		
@@ -424,10 +433,6 @@ void batching_add_quad_internal(primitive_batch *batch, int texture, vertex *ver
 		v[i].g = verts[i].g;
 		v[i].b = verts[i].b;
 		v[i].a = verts[i].a;
-
-		v[i].tex_coord.xyzw.x = verts[i].texture_position.u;
-		v[i].tex_coord.xyzw.y = verts[i].texture_position.v;
-		v[i].tex_coord.xyzw.z = (float)array_index;
 	}
 
 	batch->add_triangle(&v[0], &v[1], &v[2]);
@@ -453,6 +458,7 @@ void batching_add_tri_internal(primitive_batch *batch, int texture, vertex *vert
 		v[i].tex_coord.xyzw.x = verts[i].texture_position.u;
 		v[i].tex_coord.xyzw.y = verts[i].texture_position.v;
 		v[i].tex_coord.xyzw.z = (float)array_index;
+		v[i].tex_coord.xyzw.w = 1.0f;
 	}
 
 	batch->add_triangle(&v[0], &v[1], &v[2]);
@@ -522,6 +528,7 @@ void batching_add_beam_internal(primitive_batch *batch, int texture, vec3d *star
 			verts[i].radius = width;
 		}
 		verts[i].tex_coord.xyzw.z = (float)array_index;
+		verts[i].tex_coord.xyzw.w = 1.0f;
 	}
 
 	batch->add_triangle(&verts[0], &verts[1], &verts[2]);
@@ -589,6 +596,7 @@ void batching_add_line_internal(primitive_batch *batch, int texture, vec3d *star
 		vert.radius = width1;
 		
 		vert.tex_coord.xyzw.z = (float)array_index;
+		vert.tex_coord.xyzw.w = 1.0f;
 	}
 
 	batch->add_triangle(&verts[0], &verts[1], &verts[2]);
@@ -880,7 +888,7 @@ void batching_add_polygon(int texture, vec3d *pos, matrix *orient, float width, 
 	batching_add_polygon_internal(batch, texture, pos, orient, width, height, &clr);
 }
 
-void batching_add_quad(int texture, vertex *verts)
+void batching_add_quad(int texture, vertex *verts, float trapezoidal_correction)
 {
 	Assertion((texture >= 0), "batching_add_...() attempted for invalid texture");
 	if ( texture < 0 ) {
@@ -889,17 +897,17 @@ void batching_add_quad(int texture, vertex *verts)
 
 	primitive_batch *batch = batching_find_batch(texture, batch_info::FLAT_EMISSIVE);
 
-	batching_add_quad_internal(batch, texture, verts);
+	batching_add_quad_internal(batch, texture, verts, trapezoidal_correction);
 }
 
-void batching_add_quad(int texture, vertex *verts, primitive_batch *batch)
+void batching_add_quad(int texture, vertex *verts, primitive_batch *batch, float trapezoidal_correction)
 {
 	Assertion((texture >= 0), "batching_add_...() attempted for invalid texture");
 	if ( texture < 0 ) {
 		return;
 	}
 
-	batching_add_quad_internal(batch, texture, verts);
+	batching_add_quad_internal(batch, texture, verts, trapezoidal_correction);
 }
 void batching_add_tri(int texture, vertex *verts)
 {
