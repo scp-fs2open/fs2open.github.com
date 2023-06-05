@@ -15,7 +15,8 @@ layout (std140) uniform genericData {
 
 void main()
 {
-	vec4 baseColor = texture(baseMap, fragTexCoord.xyz);
+	float y =  fragTexCoord.y / fragTexCoord.w;
+	vec4 baseColor = texture(baseMap, vec3(fragTexCoord.x, y, fragTexCoord.z));
 
 	baseColor.rgb = srgb_to_linear(baseColor.rgb);
 	vec4 blendColor = vec4(srgb_to_linear(fragColor.rgb), fragColor.a);

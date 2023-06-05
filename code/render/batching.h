@@ -13,7 +13,7 @@
 
 struct batch_vertex {
 	vec3d position;
-	vec3d tex_coord; // 3D coordinate since we also include the array index
+	vec4 tex_coord; // 3D coordinate since we also include the array index
 	ubyte r, g, b, a;
 	float radius;
 	vec3d uvec;

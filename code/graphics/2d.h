@@ -262,7 +262,7 @@ struct vertex_format_data
 		COLOR4,
 		COLOR4F,
 		TEX_COORD2,
-		TEX_COORD3,
+		TEX_COORD4,
 		NORMAL,
 		TANGENT,
 		MODEL_ID,

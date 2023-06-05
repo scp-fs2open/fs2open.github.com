@@ -180,6 +180,18 @@ vec3d vm_vec_new(float x, float y, float z)
 	return vec;
 }
 
+vec4 vm_vec4_new(float x, float y, float z, float w)
+{
+	vec4 vec;
+
+	vec.xyzw.x = x;
+	vec.xyzw.y = y;
+	vec.xyzw.z = z;
+	vec.xyzw.w = w;
+
+	return vec;
+}
+
 matrix vm_matrix_new(float a0, float a1, float a2, float a3, float a4, float a5, float a6, float a7, float a8)
 {
 	matrix m;
