@@ -1011,7 +1011,7 @@ void nav_warp(bool prewarp=false)
 	vm_vec_scale(&velocity, (float)Ai_info[Ships[Autopilot_flight_leader->instance].ai_index].waypoint_speed_cap);
 
 	// Find all ships that are supposed to autopilot with the player and move them
-	// to the cinimatic location or the final destination
+	// to the cinematic location or the final destination
 	for (int i = 0; i < MAX_SHIPS; i++)
 	{
 		if (Ships[i].objnum != -1
@@ -1020,11 +1020,12 @@ void nav_warp(bool prewarp=false)
 		{
 				vm_vec_add(&Objects[Ships[i].objnum].pos, &Objects[Ships[i].objnum].pos, &targetPos);
 				Objects[Ships[i].objnum].phys_info.vel = velocity;
+
+				// retime collision pairs
+				if (Objects[Ships[i].objnum].flags[Object::Object_Flags::Collides])
+					obj_collide_retime_cached_pairs(&Objects[Ships[i].objnum]);
 		}
 	}
-
-	// retime all collision pairs
-	obj_collide_retime_cached_pairs();
 }
 
 // ********************************************************************************************

@@ -8766,7 +8766,6 @@ void sexp_set_object_position(int n)
 {
 	vec3d target_vec, orig_leader_vec;
 	object_ship_wing_point_team oswpt;
-	bool something_collides = false;
 
 	eval_object_ship_wing_point_team(&oswpt, n);
 	n = CDR(n);
@@ -8784,7 +8783,7 @@ void sexp_set_object_position(int n)
 			set_object_for_clients(oswpt.objp);
 
 			if (oswpt.objp->flags[Object::Object_Flags::Collides])
-				something_collides = true;
+				obj_collide_retime_cached_pairs(oswpt.objp);
 
 			break;
 		}
@@ -8828,7 +8827,7 @@ void sexp_set_object_position(int n)
 				}
 
 				if (objp->flags[Object::Object_Flags::Collides])
-					something_collides = true;
+					obj_collide_retime_cached_pairs(objp);
 			}
 
 			break;
@@ -8870,12 +8869,6 @@ void sexp_set_object_position(int n)
 		default:
 			break;
 	}
-
-	// retime all collision pairs (so they're checked again) if we moved something that collides
-	if (something_collides)
-	{
-		obj_collide_retime_cached_pairs();
-	}
 }
 
 // only for waypoints cause they don't get transferred the normal way
@@ -8902,7 +8895,6 @@ void sexp_set_object_orientation(int n)
 	angles a;
 	matrix target_orient;
 	object_ship_wing_point_team oswpt;
-	bool something_collides = false;
 
 	eval_object_ship_wing_point_team(&oswpt, n);
 	n = CDR(n);
@@ -8922,7 +8914,7 @@ void sexp_set_object_orientation(int n)
 			set_object_for_clients(oswpt.objp);
 
 			if (oswpt.objp->flags[Object::Object_Flags::Collides])
-				something_collides = true;
+				obj_collide_retime_cached_pairs(oswpt.objp);
 
 			break;
 		}
@@ -8943,7 +8935,7 @@ void sexp_set_object_orientation(int n)
 				set_object_for_clients(objp);
 
 				if (objp->flags[Object::Object_Flags::Collides])
-					something_collides = true;
+					obj_collide_retime_cached_pairs(objp);
 			}
 
 			break;
@@ -8963,12 +8955,6 @@ void sexp_set_object_orientation(int n)
 
 		default:
 			break;
-	}
-
-	// retime all collision pairs (so they're checked again) if we rotated something that collides
-	if (something_collides)
-	{
-		obj_collide_retime_cached_pairs();
 	}
 }
 

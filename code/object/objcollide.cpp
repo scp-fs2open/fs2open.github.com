@@ -612,6 +612,20 @@ void obj_collide_retime_cached_pairs()
 	}
 }
 
+void obj_collide_retime_cached_pairs(object *objp)
+{
+	int sig = objp->signature;
+
+	for ( auto& pair : Collision_cached_pairs ) {
+		auto& collision_check = pair.second;
+
+		if ( (collision_check.a == objp && collision_check.signature_a == sig)
+		  || (collision_check.b == objp && collision_check.signature_b == sig) ) {
+				collision_check.next_check_time = timestamp(0);
+		}
+	}
+}
+
 //local helper functions only used in objcollide.cpp
 namespace
 {
