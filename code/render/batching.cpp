@@ -335,7 +335,7 @@ void batching_add_bitmap_rotated_internal(primitive_batch *batch, int texture, v
 		verts[i].a = clr->alpha;
 
 		verts[i].radius = radius;
-		verts[i].tex_coord.xyzw.z = 0 ; //(float)array_index;
+		verts[i].tex_coord.xyzw.z = (float)array_index;
 	}
 
 	batch->add_triangle(&verts[0], &verts[1], &verts[2]);
@@ -388,7 +388,7 @@ void batching_add_polygon_internal(primitive_batch *batch, int texture, vec3d *p
 		v[i].g = clr->green;
 		v[i].b = clr->blue;
 		v[i].a = clr->alpha;
-		v[i].tex_coord.xyzw.z = 0; //(float)array_index;
+		v[i].tex_coord.xyzw.z = (float)array_index;
 
 		v[i].radius = MAX(width * 0.5f, height * 0.5f);
 	}
@@ -427,7 +427,7 @@ void batching_add_quad_internal(primitive_batch *batch, int texture, vertex *ver
 
 		v[i].tex_coord.xyzw.x = verts[i].texture_position.u;
 		v[i].tex_coord.xyzw.y = verts[i].texture_position.v;
-		v[i].tex_coord.xyzw.z = 0 ; //(float)array_index;
+		v[i].tex_coord.xyzw.z = (float)array_index;
 	}
 
 	batch->add_triangle(&v[0], &v[1], &v[2]);
@@ -452,7 +452,7 @@ void batching_add_tri_internal(primitive_batch *batch, int texture, vertex *vert
 
 		v[i].tex_coord.xyzw.x = verts[i].texture_position.u;
 		v[i].tex_coord.xyzw.y = verts[i].texture_position.v;
-		v[i].tex_coord.xyzw.z = 0 ; //(float)array_index;
+		v[i].tex_coord.xyzw.z = (float)array_index;
 	}
 
 	batch->add_triangle(&v[0], &v[1], &v[2]);
@@ -521,7 +521,7 @@ void batching_add_beam_internal(primitive_batch *batch, int texture, vec3d *star
 		} else {
 			verts[i].radius = width;
 		}
-		verts[i].tex_coord.xyzw.z = 0 ; //(float)array_index;
+		verts[i].tex_coord.xyzw.z = (float)array_index;
 	}
 
 	batch->add_triangle(&verts[0], &verts[1], &verts[2]);
@@ -588,7 +588,7 @@ void batching_add_line_internal(primitive_batch *batch, int texture, vec3d *star
 
 		vert.radius = width1;
 		
-		vert.tex_coord.xyzw.z = 0 ; //(float)array_index;
+		vert.tex_coord.xyzw.z = (float)array_index;
 	}
 
 	batch->add_triangle(&verts[0], &verts[1], &verts[2]);
