@@ -474,7 +474,7 @@ class CFred_mission_save {
 	 * @returns 0 for no error, or
 	 * @returns A negative value if an error occurred
 	 */
-	int save_vector(vec3d& v);
+	int save_vector(const vec3d& v);
 
 	/**
 	 * @brief Saves waypoints to file

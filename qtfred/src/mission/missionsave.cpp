@@ -4776,7 +4776,7 @@ void CFred_mission_save::save_container_options(const sexp_container &container)
 	fout("\n");
 }
 
-int CFred_mission_save::save_vector(vec3d& v)
+int CFred_mission_save::save_vector(const vec3d& v)
 {
 	fout(" %f, %f, %f", v.xyz.x, v.xyz.y, v.xyz.z);
 	return 0;
