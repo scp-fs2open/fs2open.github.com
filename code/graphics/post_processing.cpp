@@ -55,7 +55,7 @@ int Post_processing_bloom_intensity = 25; // using default value of Cmdline_bloo
 static auto BloomIntensityOption __UNUSED = options::OptionBuilder<int>("Graphics.BloomIntensity",
 	std::pair<const char*, int>{"Bloom intensity", 1701},
 	std::pair<const char*, int>{"Sets the bloom intensity (requires post-processing)", 1702})
-	.category("Graphics")
+	.category(std::make_pair("Graphics", 1825))
 	.range(0, 100)
 	.level(options::ExpertLevel::Advanced)
 	.default_val(25)
@@ -68,7 +68,7 @@ float Post_processing_bloom_width = 0.5; // using default value of Cmdline_bloom
 
 auto BloomWidthOption __UNUSED = options::OptionBuilder<float>("Graphics.BloomWidth",
 	std::pair<const char*, int>{"Bloom width", 1701}, //TODO figure out new string
-	std::pair<const char*, int>{"Set bloom width (requires post-processing)", 1702]) //TODO figure out new string
+	std::pair<const char*, int>{"Set bloom width (requires post-processing)", 1702}) // TODO figure out new string
 	.category(std::make_pair("Graphics", 1825))
 	.range(0.0, 1.0)
 	.level(options::ExpertLevel::Advanced)

@@ -2175,7 +2175,7 @@ bool SetCmdlineParams()
 		Cmdline_bloom_width = bloom_width_arg.get_float();
 	}
 
-	if ( flightshaftsoff_arg.found() )
+	if ( deprecated_flightshaftsoff_arg.found() )
 	{
 		Cmdline_force_lightshaft_off = true;
 	}

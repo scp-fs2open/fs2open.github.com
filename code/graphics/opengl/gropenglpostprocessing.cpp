@@ -105,6 +105,7 @@ void opengl_post_pass_bloom()
 	// We run at half rez as it's blurry anyway.
 	int bloom_tex_width = Post_texture_width >> 1;
 	int bloom_tex_height = Post_texture_height >> 1;
+	float total_bloom_contrib = 0.0;
 	// ------  begin downsampling pass ------
 	{
 		GR_DEBUG_SCOPE("Bloom Downsampling");
@@ -164,30 +165,31 @@ void opengl_post_pass_bloom()
 		Current_shader->program->Uniforms.setTextureUniform("srcTexture", 0);
 
 		GL_state.Texture.Enable(0, GL_TEXTURE_2D, Bloom_texture);
+		GL_state.SetAlphaBlendMode(ALPHA_BLEND_ADDITIVE);
 		// We're appoximating a "spiky" distribution with a set of different-scaled gaussians.
 		// Downsampling filter doesn't change overall brightness, just blurs the image.
-		// Therefore we need to "blend" as we step up the mip levels for energy conservation.
-		GL_state.SetAlphaBlendMode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
-
+		// Therefore we need to keep track of the total summed brightness in order to normalise at the end.
 		for (int mipmap = (MAX_MIP_BLUR_LEVELS - 1); mipmap >= 0; --mipmap) {
 			int mip_width = bloom_tex_width >> mipmap;
 			int mip_height = bloom_tex_height >> mipmap;
+			// We want a measure of how spread out a particular mip's bloom is. 
+			// As we're using mips that half in resolution at each step, each mip is twice as wide as the previous.
+			// we take the reciprocal to desibe 
+			float mip_freq = exp2f(-((float)(mipmap)));
+			// We user a bit of signal processing theory here and 
+			// construct a first-order high-pass filter to describe
+			// how much this layer should contribue to the overall image.
+			// We don't want a hard cutoff, as extremely bright stuff should bloom *somewhat*
+			float cutoff_freq = exp2f(-((float)(MAX_MIP_BLUR_LEVELS * gr_bloom_width())));
+			float layer_contrib = mip_freq / (mip_freq + cutoff_freq);
+			total_bloom_contrib += layer_contrib;
 			opengl_set_generic_uniform_data<graphics::generic_data::bloom_sample_data>(
 				[&](graphics::generic_data::bloom_sample_data* data) {
 					data->xSize = 1.0f / i2fl(mip_width);
 					data->ySize = 1.0f / i2fl(mip_height);
 					data->mip = i2fl(mipmap + 1); // Sample from the mip below.
-					// This gross expression biases the bloom shader between "carrying up" blur from lower mip levels,
-					// and discarding them in favour of higher resolution terms. 
-					// if bloom width is low, higher resolution terms will contribute a lot
-					// if bloom width is high, higher resolution terms will contribute little.
-					data->mip_lerp = 1.0f / (
-						1.0f + 
-						exp(gr_bloom_width() * (
-								(float) mipmap - 
-								(float)MAX_MIP_BLUR_LEVELS * gr_bloom_width()
-							)
-						));
+
+					data->intensity = layer_contrib;
 				});
 
 			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Bloom_texture, mipmap);
@@ -213,6 +215,7 @@ void opengl_post_pass_bloom()
 			[&](graphics::generic_data::bloom_composition_data* data) {
 				data->xSize = 1.0f / i2fl(bloom_tex_width);
 				data->ySize = 1.0f / i2fl(bloom_tex_height);
+				data->normalization = 1.0f / total_bloom_contrib;
 				data->bloom_intensity = gr_bloom_intensity() / 100.0f;
 			});
 

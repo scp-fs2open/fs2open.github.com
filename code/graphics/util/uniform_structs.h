@@ -355,12 +355,13 @@ struct bloom_sample_data {
 	float xSize;
 	float ySize;
 	float mip;
-	float mip_lerp;
+	float intensity;
 };
 
 struct bloom_composition_data {
 	float xSize;
 	float ySize;
+	float normalization;
 	float bloom_intensity;
 };
 
