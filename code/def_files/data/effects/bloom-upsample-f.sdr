@@ -13,7 +13,7 @@ layout (std140) uniform genericData {
 	float xSize;
 	float ySize;
 	float mip;
-	float mip_lerp;
+	float intensity;
 };
 
 in vec4 fragTexCoord;
@@ -22,6 +22,6 @@ out vec4 fragOut0;
 
 void main()
 {
-	fragOut0.rgb = blur(xSize, ySize, srcTexture, mip, fragTexCoord.xy);
-	fragOut0.a = mip_lerp;
+	fragOut0.rgb = intensity * blur(xSize, ySize, srcTexture, mip, fragTexCoord.xy);
+	fragOut0.a = 1.0;
 }
