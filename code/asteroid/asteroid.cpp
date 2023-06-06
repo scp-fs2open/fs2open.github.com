@@ -1147,7 +1147,7 @@ static void asteroid_maybe_reposition(object *objp, asteroid_field *asfieldp)
 	if (asteroid_should_wrap(objp, asfieldp)) {
 
 		// Generate a possible new position if we do end up wrapping, but don't move the asteroid yet
-		vec3d new_pos;
+		vec3d new_pos = objp->pos;
 		asteroid_wrap_pos(&new_pos, asfieldp);
 
 		bool wrap = false;
@@ -1160,7 +1160,7 @@ static void asteroid_maybe_reposition(object *objp, asteroid_field *asfieldp)
 		}
 
 		// if asteroid is not within view...
-		if (asteroid_is_within_view(&objp->pos, asfieldp->bound_rad, asfieldp->enhanced_visibility_checks)) {
+		if (!asteroid_is_within_view(&objp->pos, asfieldp->bound_rad, asfieldp->enhanced_visibility_checks)) {
 
 			// if asteroid new position is within view then reverse velocity, otherwise wrap
 			if (asteroid_is_within_view(&new_pos, (asfieldp->bound_rad * 1.3f), asfieldp->enhanced_visibility_checks)) {
