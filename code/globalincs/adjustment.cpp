@@ -10,7 +10,7 @@
 /**
  * @brief Processes an input according to the user's configuration and returns the result.
  */
-float adjustment::handle(float input)
+float adjustment::handle(float input) const
 {
 	if (only_positive && input < 0.0f)
 		input = base;
