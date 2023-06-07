@@ -6073,7 +6073,7 @@ uint align_bsp_data(ubyte* bsp_in, ubyte* bsp_out, uint bsp_size)
 	uint copied = 0;
 	end = bsp_in + bsp_size;
 
-	int bsp_chunk_type, bsp_chunk_size;
+	uint bsp_chunk_type, bsp_chunk_size;
 	do {
 		//Read Chunk type and size
 		memcpy(&bsp_chunk_type, bsp_in, 4);
@@ -6088,9 +6088,9 @@ uint align_bsp_data(ubyte* bsp_in, ubyte* bsp_out, uint bsp_size)
 
 		//Chunk size validation, if fails change it to copy the remaining data in chain
 		auto max_size = end - bsp_in;
-		if (bsp_chunk_size < 0 || bsp_chunk_size > max_size) {
-			Warning(LOCATION, "Invalid BSP Chunk size detected during BSP data align: Chunk Type: %d, Chunk Size: %d, Max Size: %d", bsp_chunk_type, bsp_chunk_size, static_cast<int>(max_size));
-			bsp_chunk_size = static_cast<int>(max_size);
+		if (bsp_chunk_size > max_size) {
+			Warning(LOCATION, "Invalid BSP Chunk size detected during BSP data align: Chunk Type: %d, Chunk Size: %d, Max Size: %d", bsp_chunk_type, bsp_chunk_size, static_cast<uint>(max_size));
+			bsp_chunk_size = static_cast<uint>(max_size);
 		}
 
 		//mprintf(("|%d | %d|\n",bsp_chunk_type,bsp_chunk_size));
@@ -6101,7 +6101,7 @@ uint align_bsp_data(ubyte* bsp_in, ubyte* bsp_out, uint bsp_size)
 			if ((bsp_chunk_size % 4) != 0) {
 				//mprintf(("BSP DEFPOINTS DATA ALIGNED.\n"));
 				//Get the new size
-				uint newsize = static_cast<uint>(bsp_chunk_size + 4 - (bsp_chunk_size % 4));
+				uint newsize = bsp_chunk_size + 4 - (bsp_chunk_size % 4);
 
 				if (bsp_out) {
 					//Copy the entire chunk to dest
@@ -6113,7 +6113,7 @@ uint align_bsp_data(ubyte* bsp_in, ubyte* bsp_out, uint bsp_size)
 					memcpy(&vertex_offset, bsp_in + 16, 4);
 					//Move vertex data to the back of the chunk
 					memmove(bsp_out + vertex_offset + (newsize - bsp_chunk_size), bsp_out + vertex_offset, bsp_chunk_size - vertex_offset);
-					vertex_offset += (newsize - static_cast<uint>(bsp_chunk_size));
+					vertex_offset += (newsize - bsp_chunk_size);
 					//Write new vertex offset
 					memcpy(bsp_out + 16, &vertex_offset, 4);
 					//Move pointers
@@ -6132,7 +6132,7 @@ uint align_bsp_data(ubyte* bsp_in, ubyte* bsp_out, uint bsp_size)
 				}
 
 				bsp_in += bsp_chunk_size;
-				copied += static_cast<uint>(bsp_chunk_size);
+				copied += bsp_chunk_size;
 			}
 		}
 		else {
@@ -6143,7 +6143,7 @@ uint align_bsp_data(ubyte* bsp_in, ubyte* bsp_out, uint bsp_size)
 			}
 
 			bsp_in += bsp_chunk_size;
-			copied += static_cast<uint>(bsp_chunk_size);
+			copied += bsp_chunk_size;
 		}
 	} while (bsp_in < end);
 

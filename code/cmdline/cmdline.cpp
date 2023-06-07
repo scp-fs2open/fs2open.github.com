@@ -2026,7 +2026,7 @@ bool SetCmdlineParams()
 	}
 
 	if (no_bsp_align_arg.found()) {
-		Cmdline_no_bsp_align = 1;
+		Cmdline_no_bsp_align = true;
 	}
 	
 #ifdef WIN32
