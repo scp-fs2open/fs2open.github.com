@@ -6089,8 +6089,7 @@ uint align_bsp_data(ubyte* bsp_in, ubyte* bsp_out, uint bsp_size)
 		//Chunk size validation, if fails change it to copy the remaining data in chain
 		auto max_size = end - bsp_in;
 		if (bsp_chunk_size < 0 || bsp_chunk_size > max_size) {
-			
-			mprintf(("Invalid BSP Chunk size detected during BSP data align: Chunk Type: %d, Chunk Size: %d, Max Size: %d\n", bsp_chunk_type, bsp_chunk_size, static_cast<int>(max_size)));
+			Warning(LOCATION, "Invalid BSP Chunk size detected during BSP data align: Chunk Type: %d, Chunk Size: %d, Max Size: %d", bsp_chunk_type, bsp_chunk_size, static_cast<int>(max_size));
 			bsp_chunk_size = static_cast<int>(max_size);
 		}
 
