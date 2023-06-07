@@ -217,6 +217,10 @@ namespace animation {
 			instanceData.state = ModelAnimationState::RUNNING;
 			instanceData.time = 0;
 
+			for (const auto& initialDriver : m_startupDrivers) {
+				initialDriver(*this, instanceData, pmi);
+			}
+
 			if (m_flags[Animation_Flags::Random_starting_phase]) {
 				instanceData.time = util::Random::next() * util::Random::INV_F_MAX_VALUE * instanceData.duration;
 				//Check if we might be on the way backwards
@@ -230,6 +234,10 @@ namespace animation {
 			/* fall-thru */
 		case ModelAnimationState::RUNNING:
 			m_driver(*this, instanceData, pmi, frametime);
+
+			for (const auto& driver : m_propertyDrivers) {
+				driver(*this, instanceData, pmi);
+			}
 
 			m_animation->calculateAnimation(applyBuffer, instanceData.time, pmi->id);
 			m_animation->executeAnimation(applyBuffer, MIN(prevTime, instanceData.time), MAX(prevTime, instanceData.time), instanceData.canonicalDirection, pmi->id);
