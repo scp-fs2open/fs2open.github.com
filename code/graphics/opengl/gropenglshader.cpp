@@ -929,8 +929,11 @@ void opengl_shader_init()
 	opengl_purge_old_shader_cache();
 
 	// compile effect shaders
-	gr_opengl_maybe_create_shader(SDR_TYPE_EFFECT_PARTICLE, 0);
-	gr_opengl_maybe_create_shader(SDR_TYPE_EFFECT_PARTICLE, SDR_FLAG_PARTICLE_POINT_GEN);
+	if (gr_opengl_is_capable(CAPABILITY_SOFT_PARTICLES)) {
+		// only compile soft particle shaders if they are supported, as to avoid introducing geo shaders if they aren't needed
+		gr_opengl_maybe_create_shader(SDR_TYPE_EFFECT_PARTICLE, 0);
+		gr_opengl_maybe_create_shader(SDR_TYPE_EFFECT_PARTICLE, SDR_FLAG_PARTICLE_POINT_GEN);
+	}
 	gr_opengl_maybe_create_shader(SDR_TYPE_EFFECT_DISTORTION, 0);
 
 	gr_opengl_maybe_create_shader(SDR_TYPE_SHIELD_DECAL, 0);

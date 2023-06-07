@@ -1394,17 +1394,16 @@ bool gr_opengl_is_capable(gr_capability capability)
 		return Cmdline_height ? true : false;
 	case CAPABILITY_SOFT_PARTICLES:
 	case CAPABILITY_DISTORTION:
-		return Gr_enable_soft_particles && !Cmdline_no_fbo;
+		return Gr_enable_soft_particles && !Cmdline_no_fbo && !Cmdline_no_geo_sdr_effects;
 	case CAPABILITY_POST_PROCESSING:
 		return Gr_post_processing_enabled  && !Cmdline_no_fbo;
 	case CAPABILITY_DEFERRED_LIGHTING:
 		return !Cmdline_no_fbo && !Cmdline_no_deferred_lighting;
 	case CAPABILITY_SHADOWS:
-		return true;
+	case CAPABILITY_THICK_OUTLINE:
+		return !Cmdline_no_geo_sdr_effects;
 	case CAPABILITY_BATCHED_SUBMODELS:
 		return true;
-	case CAPABILITY_POINT_PARTICLES:
-		return !Cmdline_no_geo_sdr_effects;
 	case CAPABILITY_TIMESTAMP_QUERY:
 		return GLAD_GL_ARB_timer_query != 0; // Timestamp queries are available from 3.3 onwards
 	case CAPABILITY_SEPARATE_BLEND_FUNCTIONS:

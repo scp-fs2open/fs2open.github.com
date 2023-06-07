@@ -6,7 +6,7 @@
 layout (triangles) in;
 // For every triangle line we generate 2 triangles which can be done with 4 vertices so in total we will need 12 vertices
 layout (triangle_strip, max_vertices = 12) out;
-#else
+#elif defined(FLAG_SHADOW_MAP)
 layout (triangles) in;
 layout (triangle_strip, max_vertices = 3) out;
 #endif
