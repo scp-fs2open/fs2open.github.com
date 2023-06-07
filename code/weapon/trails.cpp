@@ -180,7 +180,11 @@ void trail_render( trail * trailp )
 		verts[0].texture_position.v = verts[3].texture_position.v = 0.0f;
 		verts[1].texture_position.v = verts[2].texture_position.v = 1.0f;
 
-		batching_add_quad(ti->texture.bitmap_id, verts, batchp);
+		float ratio = b_width / f_width;
+		if (f_width <= 0.0f)
+			ratio = 999.0f;
+
+		batching_add_quad(ti->texture.bitmap_id, verts, batchp, ratio);
 		return;
 	}
 

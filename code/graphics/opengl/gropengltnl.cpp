@@ -76,7 +76,7 @@ static opengl_vertex_bind GL_array_binding_data[] =
 		{ vertex_format_data::COLOR4,		4, GL_UNSIGNED_BYTE,	GL_TRUE, opengl_vert_attrib::COLOR		},
 		{ vertex_format_data::COLOR4F,		4, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::COLOR		},
 		{ vertex_format_data::TEX_COORD2,	2, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::TEXCOORD	},
-		{ vertex_format_data::TEX_COORD3,	3, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::TEXCOORD	},
+		{ vertex_format_data::TEX_COORD4,	4, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::TEXCOORD	},
 		{ vertex_format_data::NORMAL,		3, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::NORMAL	},
 		{ vertex_format_data::TANGENT,		4, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::TANGENT	},
 		{ vertex_format_data::MODEL_ID,		1, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::MODEL_ID	},
