@@ -235,6 +235,7 @@ Flag exe_params[] =
 	{ "-prefer_ipv4",		"Prefer IPv4 DNS lookups",					true,	0,									EASY_DEFAULT,					"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-prefer_ipv4", },
 	{ "-prefer_ipv6",		"Prefer IPv6 DNS lookups",					true,	0,									EASY_DEFAULT,					"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-prefer_ipv6", },
 	{ "-log_multi_packet",	"Log multi packet types ",					true,	0,									EASY_DEFAULT,					"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-log_multi_packet",},
+	{ "-no_bsp_align",		"Disable pof BSP data alignment",			true,	0,									EASY_DEFAULT,					"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_bsp_align", },
 #ifdef WIN32
 	{ "-fix_registry",	"Use a different registry path",				true,	0,									EASY_DEFAULT,					"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-fix_registry", },
 #endif
@@ -467,6 +468,7 @@ cmdline_parm noshadercache_arg("-noshadercache", NULL, AT_NONE);
 cmdline_parm prefer_ipv4_arg("-prefer_ipv4", nullptr, AT_NONE);
 cmdline_parm prefer_ipv6_arg("-prefer_ipv6", nullptr, AT_NONE);
 cmdline_parm log_multi_packet_arg("-log_multi_packet", nullptr, AT_NONE);
+cmdline_parm no_bsp_align_arg("-no_bsp_align", nullptr, AT_NONE);
 #ifdef WIN32
 cmdline_parm fix_registry("-fix_registry", NULL, AT_NONE);
 #endif
@@ -488,6 +490,7 @@ bool Cmdline_noshadercache = false;
 bool Cmdline_prefer_ipv4 = false;
 bool Cmdline_prefer_ipv6 = false;
 bool Cmdline_dump_packet_type = false;
+bool Cmdline_no_bsp_align = false;
 #ifdef WIN32
 bool Cmdline_alternate_registry_path = false;
 #endif
@@ -2020,6 +2023,10 @@ bool SetCmdlineParams()
 	if (lang_arg.found()) 
 	{
 		Cmdline_lang = lang_arg.str();
+	}
+
+	if (no_bsp_align_arg.found()) {
+		Cmdline_no_bsp_align = 1;
 	}
 	
 #ifdef WIN32
