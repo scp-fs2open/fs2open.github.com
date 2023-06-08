@@ -2117,23 +2117,30 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 						// byte swap first thing
 						swap_bsp_data(pm, bsp_data);
 
-						auto bsp_data_size_aligned = align_bsp_data(bsp_data, nullptr, sm->bsp_data_size);
-
-						if (bsp_data_size_aligned != static_cast<uint>(sm->bsp_data_size)) {
-							auto bsp_data_aligned = reinterpret_cast<ubyte *>(vm_malloc(bsp_data_size_aligned));
-
-							align_bsp_data(bsp_data, bsp_data_aligned, sm->bsp_data_size);
-
-							// release unaligned data
-							vm_free(bsp_data);
-							bsp_data = nullptr;
-
-							nprintf(("Model", "BSP ALIGN => %s:%s resized by %d bytes (%d total)\n", pm->filename, sm->name, bsp_data_size_aligned-sm->bsp_data_size, bsp_data_size_aligned));
-
-							sm->bsp_data = bsp_data_aligned;
-							sm->bsp_data_size = bsp_data_size_aligned;
-						} else {
+						extern bool Cmdline_no_bsp_align;
+						if (Cmdline_no_bsp_align) {
 							sm->bsp_data = bsp_data;
+						}
+						else {
+							auto bsp_data_size_aligned = align_bsp_data(bsp_data, nullptr, sm->bsp_data_size);
+
+							if (bsp_data_size_aligned != static_cast<uint>(sm->bsp_data_size)) {
+								auto bsp_data_aligned = reinterpret_cast<ubyte*>(vm_malloc(bsp_data_size_aligned));
+
+								align_bsp_data(bsp_data, bsp_data_aligned, sm->bsp_data_size);
+
+								// release unaligned data
+								vm_free(bsp_data);
+								bsp_data = nullptr;
+
+								nprintf(("Model", "BSP ALIGN => %s:%s resized by %d bytes (%d total)\n", pm->filename, sm->name, bsp_data_size_aligned - sm->bsp_data_size, bsp_data_size_aligned));
+
+								sm->bsp_data = bsp_data_aligned;
+								sm->bsp_data_size = bsp_data_size_aligned;
+							}
+							else {
+								sm->bsp_data = bsp_data;
+							}
 						}
 					}
 					else {
@@ -6073,13 +6080,20 @@ uint align_bsp_data(ubyte* bsp_in, ubyte* bsp_out, uint bsp_size)
 	do {
 		//Read Chunk type and size
 		memcpy(&bsp_chunk_type, bsp_in, 4);
-		
+
 		//Chunk type 0 is EOF, but the size is read as 0, it needs to be adjusted
 		if (bsp_chunk_type == 0) {
 			bsp_chunk_size = 4;
 		}
 		else {
 			memcpy(&bsp_chunk_size, bsp_in + 4, 4);
+		}
+
+		//Chunk size validation, if fails change it to copy the remaining data in chain
+		auto max_size = end - bsp_in;
+		if (bsp_chunk_size > max_size) {
+			Warning(LOCATION, "Invalid BSP Chunk size detected during BSP data align: Chunk Type: %d, Chunk Size: %d, Max Size: %d", bsp_chunk_type, bsp_chunk_size, static_cast<uint>(max_size));
+			bsp_chunk_size = static_cast<uint>(max_size);
 		}
 
 		//mprintf(("|%d | %d|\n",bsp_chunk_type,bsp_chunk_size));
