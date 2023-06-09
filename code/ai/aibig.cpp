@@ -604,6 +604,7 @@ bool ai_new_maybe_reposition_attack_subsys() {
 		else
 			good_pos = &world_goal_pos;
 		aip->next_dynamic_path_check_time = timestamp( AI_DYNAMIC_PATH_RECHECK_DELAY );
+		aip->last_dynamic_path_goal = *good_pos;
 
 	}
 	else{ //Not enough time has passed till recheck.
