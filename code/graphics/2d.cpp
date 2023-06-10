@@ -30,6 +30,7 @@
 #include "graphics/util/GPUMemoryHeap.h"
 #include "graphics/util/UniformBuffer.h"
 #include "graphics/util/UniformBufferManager.h"
+#include "graphics/shadows.h"
 #include "io/mouse.h"
 #include "libs/jansson.h"
 #include "options/Option.h"
@@ -1692,6 +1693,11 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 	}
 
 	Gr_inited = 1;
+
+	if (!gr_is_capable(CAPABILITY_SHADOWS) && Shadow_quality != ShadowQuality::Disabled) {
+		Warning(LOCATION, "Shadows are enabled, but the system does not fulfill the requirements. Disabling shadows...");
+		Shadow_quality = ShadowQuality::Disabled;
+	}
 
 	return true;
 }
