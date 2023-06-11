@@ -67,6 +67,7 @@ void deconvert_multiline_string(char* dest, const CString& str, size_t max_len);
 void deconvert_multiline_string(SCP_string& dest, const CString& str);
 void strip_quotation_marks(CString& str);
 void pad_with_newline(CString& str, int max_size);
+void lcl_fred_replace_stuff(CString& text);
 
 bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps);
 void set_physics_controls();

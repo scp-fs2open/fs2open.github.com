@@ -16,8 +16,8 @@
 #include "CustomWingNames.h"
 #include "soundenvironmentdlg.h"
 #include "Management.h"
-#include "gamesnd/eventmusic.h"
 #include "cfile/cfile.h"
+#include "gamesnd/eventmusic.h"
 #include "mission/missionparse.h"
 #include "mission/missionmessage.h"
 
@@ -301,14 +301,13 @@ void CMissionNotesDlg::OnOK()
 		set_modified();
 	}
 
-	//if there's a odd number of quotation marks, the mission won't parse
-	//If there are an even number, nothing after the first one appears
-	//So just get rid of them
-	strip_quotation_marks(m_mission_title);
-	strip_quotation_marks(m_designer_name);
-	strip_quotation_marks(m_mission_notes);
-	strip_quotation_marks(m_mission_desc);
-	strip_quotation_marks(m_squad_name);
+	// originally the dialog stripped out quotation marks here;
+	// now it handles all special characters
+	lcl_fred_replace_stuff(m_mission_title);
+	lcl_fred_replace_stuff(m_designer_name);
+	lcl_fred_replace_stuff(m_mission_notes);
+	lcl_fred_replace_stuff(m_mission_desc);
+	lcl_fred_replace_stuff(m_squad_name);
 
 	// puts "$End Notes:" on a different line to ensure it's not interpreted as part of a comment
 	pad_with_newline(m_mission_notes, NOTES_LENGTH - 1);
