@@ -12984,7 +12984,7 @@ void ai_maybe_launch_cmeasure(object *objp, ai_info *aip)
 			if (weapon_objp->type == OBJ_WEAPON) {
 				if (weapon_objp->instance >= 0) {
 					ship_launch_countermeasure(objp);
-					shipp->cmeasure_fire_stamp = timestamp(static_cast<int> (cmeasure->cmeasure_firewait * cmeasure->cmeasure_sucess_delay_multiplier_ai));
+					shipp->cmeasure_fire_stamp = timestamp(static_cast<int> (cmeasure->cmeasure_firewait * cmeasure->cmeasure_success_delay_multiplier_ai));
 					return;
 				}
 			}

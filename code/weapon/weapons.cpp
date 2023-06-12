@@ -2562,7 +2562,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			if (delay_multiplier > 0) {
 				wip->cmeasure_failure_delay_multiplier_ai = delay_multiplier;
 			} else {
-				Warning(LOCATION,"\"+Failure Launch Delay Multiplier for AI:\" should be >= 0 (read %f). Value will not be used. ", delay_multiplier);
+				Warning(LOCATION,"\"+Failure Launch Delay Multiplier for AI:\" should be > 0 (read %f). Value will not be used. ", delay_multiplier);
 			}
 		}
 
@@ -2570,9 +2570,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			float delay_multiplier;
 			stuff_float(&delay_multiplier);
 			if (delay_multiplier > 0) {
-				wip->cmeasure_sucess_delay_multiplier_ai = delay_multiplier;
+				wip->cmeasure_success_delay_multiplier_ai = delay_multiplier;
 			} else {
-				Warning(LOCATION, "\"+Successful Launch Delay Multiplier for AI:\" should be >= 0 (read %f). Value will not be used. ", delay_multiplier);
+				Warning(LOCATION, "\"+Successful Launch Delay Multiplier for AI:\" should be > 0 (read %f). Value will not be used. ", delay_multiplier);
 			}
 		}
 
@@ -9229,7 +9229,7 @@ void weapon_info::reset()
 	this->cmeasure_firewait = CMEASURE_WAIT;
 	this->cmeasure_use_firewait = false;
 	this->cmeasure_failure_delay_multiplier_ai = -1.0f;
-	this->cmeasure_sucess_delay_multiplier_ai = 2.0f;
+	this->cmeasure_success_delay_multiplier_ai = 2.0f;
 
 	this->weapon_submodel_rotate_accell = 10.0f;
 	this->weapon_submodel_rotate_vel = 0.0f;
