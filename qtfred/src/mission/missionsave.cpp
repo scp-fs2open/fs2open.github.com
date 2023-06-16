@@ -4770,14 +4770,22 @@ int CFred_mission_save::save_waypoints()
 
 		if (save_format != MissionFormat::RETAIL) {
 			
-			if (jnp->GetDisplayName()[0] != '\0') {
-				if (optional_string_fred("+Display Name:", "$Jump Node:")) {
-					parse_comments();
-				} else {
-					fout("\n+Display Name:");
+			// The display name is only written if there was one at the start to avoid introducing inconsistencies
+			if (jnp->HasDisplayName()) {
+				char truncated_name[NAME_LENGTH];
+				strcpy_s(truncated_name, jnp->GetName());
+				end_string_at_first_hash_symbol(truncated_name);
+
+				// Also, the display name is not written if it's just the truncation of the name at the hash
+				if (strcmp(jnp->GetDisplayName(), truncated_name) != 0) {
+					if (optional_string_fred("+Display Name:", "$Jump Node:")) {
+						parse_comments();
+					} else {
+						fout("\n+Display Name:");
+					}
+
+					fout_ext("", "%s", jnp->GetDisplayName());
 				}
-				
-				fout_ext("", "%s", jnp->GetDisplayName());
 			}
 			
 			if (jnp->IsSpecialModel()) {

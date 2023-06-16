@@ -39,11 +39,9 @@ CJumpNode::CJumpNode(const vec3d* position)
 	
 	gr_init_alphacolor(&m_display_color, 0, 255, 0, 255);
 	
-	// Set m_name
+	// Set m_name and m_display
 	sprintf(m_name, XSTR( "Jump Node %d", 632), Jump_nodes.size());
-
-	// Set m_display
-	sprintf(m_display, XSTR("Jump Node %d", 632), Jump_nodes.size());
+	m_display[0] = '\0';
 	
 	// Set m_modelnum and m_radius
 	m_modelnum = model_load(NOX(JN_DEFAULT_MODEL), 0, NULL, 0);
@@ -145,7 +143,10 @@ const char *CJumpNode::GetName()
  */
 const char* CJumpNode::GetDisplayName()
 {
-	return m_display;
+	if (HasDisplayName())
+		return m_display;
+	else
+		return m_name;
 }
 
 /**
@@ -214,7 +215,15 @@ void CJumpNode::SetAlphaColor(int r, int g, int b, int alpha)
 	CLAMP(b, 0, 255);
 	CLAMP(alpha, 0, 255);
 	
-	m_flags |= JN_USE_DISPLAY_COLOR;
+	// see whether this is actually the default color
+	// (which actually means to use the HUD color rather than this exact color;
+	// it might be useful to change this design in the future, but beware of
+	// FRED calling this function in the background)
+	if (r == 0 && g == 255 && b == 0 && alpha == 255)
+		m_flags &= ~JN_USE_DISPLAY_COLOR;
+	else
+		m_flags |= JN_USE_DISPLAY_COLOR;
+
 	gr_init_alphacolor(&m_display_color, r, g, b, alpha);
 }
 
@@ -266,20 +275,38 @@ void CJumpNode::SetName(const char *new_name)
 	CJumpNode* check = jumpnode_get_by_name(new_name);
 	Assertion((check == this || !check), "Jumpnode %s is being renamed to %s, but a jump node with that name already exists in the mission!\n", m_name, new_name);
 	#endif
-    
+
 	strcpy_s(m_name, new_name);
+
+	// if this name has a hash, create a default display name
+	if (get_pointer_to_first_hash_symbol(new_name))
+	{
+		strcpy_s(m_display, new_name);
+		end_string_at_first_hash_symbol(m_display);
+		m_flags |= JN_HAS_DISPLAY_NAME;
+	}
 }
 
 /**
- * Set jump node name
+ * Set jump node display name
  *
- * @param new_name New name to set
+ * @param new_display_name New name to set
  */
-void CJumpNode::SetDisplayName(const char* new_name)
+void CJumpNode::SetDisplayName(const char *new_display_name)
 {
-	Assert(new_name != NULL);
+	Assert(new_display_name != NULL);
 
-	strcpy_s(m_display, new_name);
+	// if display name is blank or matches the actual name, clear it
+	if (*new_display_name == '\0' || !stricmp(new_display_name, m_name))
+	{
+		*m_display = '\0';
+		m_flags &= ~JN_HAS_DISPLAY_NAME;
+	}
+	else
+	{
+		strcpy_s(m_display, new_display_name);
+		m_flags |= JN_HAS_DISPLAY_NAME;
+	}
 }
 
 /**
@@ -307,7 +334,7 @@ void CJumpNode::SetVisibility(bool enabled)
 /**
  * @return Is the jump node hidden when rendering?
  */
-bool CJumpNode::IsHidden()
+bool CJumpNode::IsHidden() const
 {
 	if(m_flags & JN_HIDE)
 		return true;
@@ -318,7 +345,7 @@ bool CJumpNode::IsHidden()
 /**
  * @return Is the jump node colored any other color than default white?
  */
-bool CJumpNode::IsColored()
+bool CJumpNode::IsColored() const
 {
 	return ((m_flags & JN_USE_DISPLAY_COLOR) != 0);
 }
@@ -326,9 +353,17 @@ bool CJumpNode::IsColored()
 /**
  * @return Is the jump node model set differently from the default one?
  */
-bool CJumpNode::IsSpecialModel()
+bool CJumpNode::IsSpecialModel() const
 {
 	return ((m_flags & JN_SPECIAL_MODEL) != 0);
+}
+
+/**
+ * @return Does the jump node have a display name?
+ */
+bool CJumpNode::HasDisplayName() const
+{
+	return ((m_flags & JN_HAS_DISPLAY_NAME) != 0);
 }
 
 /**

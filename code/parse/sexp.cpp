@@ -35251,7 +35251,7 @@ int get_subcategory(int op_id)
 		case OP_SET_MOTION_DEBRIS:
 			return CHANGE_SUBCATEGORY_BACKGROUND_AND_NEBULA;
 
-		case OP_JUMP_NODE_SET_JUMPNODE_NAME: //
+		case OP_JUMP_NODE_SET_JUMPNODE_NAME:
 		case OP_JUMP_NODE_SET_JUMPNODE_DISPLAY_NAME:
 		case OP_JUMP_NODE_SET_JUMPNODE_COLOR:
 		case OP_JUMP_NODE_SET_JUMPNODE_MODEL:
@@ -39577,7 +39577,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t4: Everywhere (optional).  Whether the effect is applied to all camera views.\r\n"
 	},
 
-	{ OP_JUMP_NODE_SET_JUMPNODE_NAME, "set-jumpnode-name\r\n"
+	{ OP_JUMP_NODE_SET_JUMPNODE_NAME, "set-jumpnode-name (deprecated in favor of set-jumpnode-display-name)\r\n"
 		"\tSets the name of a jump node. Takes 2 arguments...\r\n"
 		"\t1: Name of jump node to change name for\r\n"
 		"\t2: New name for jump node\r\n\r\n"
