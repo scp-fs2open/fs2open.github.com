@@ -275,12 +275,9 @@ void bg_bitmap_dlg::create()
 	m_skybox_heading = fl2ir(fl_degrees(skybox_angles.h));
 
 	//make sure angle values are in the 0-359 degree range
-	if (m_skybox_pitch < 0)
-		m_skybox_pitch = m_skybox_pitch + 360;
-	if (m_skybox_bank < 0)
-		m_skybox_bank = m_skybox_bank + 360;
-	if (m_skybox_heading < 0)
-		m_skybox_heading = m_skybox_heading + 360;
+	if (m_skybox_pitch < 0) m_skybox_pitch += 360;
+	if (m_skybox_bank < 0) m_skybox_bank += 360;
+	if (m_skybox_heading < 0) m_skybox_heading += 360;
 
 
 	for (i = 0; i < (int)Neb2_bitmap_filenames.size(); i++) {
@@ -791,6 +788,13 @@ void bg_bitmap_dlg::OnSunChange()
 		s_heading = fl2ir(fl_degrees(sle->ang.h) + delta);
 		s_scale = sle->scale_x;
 
+		// make sure angles are in the 0-359 degree range;
+		// an angle of 6.28318310, which is less than 6.28318548,
+		// is converted to 359.999847, which is rounded to 360
+		if (s_pitch >= 360) s_pitch -= 360;
+		if (s_bank >= 360) s_bank -= 360;
+		if (s_heading >= 360) s_heading -= 360;
+
 		// stuff back into the controls
 		UpdateData(FALSE);
 
@@ -957,6 +961,11 @@ void bg_bitmap_dlg::OnBitmapChange()
 		b_scale_y = sle->scale_y;
 		b_div_x = sle->div_x;
 		b_div_y = sle->div_y;
+
+		// make sure angles are in the 0-359 degree range
+		if (b_pitch >= 360) b_pitch -= 360;
+		if (b_bank >= 360) b_bank -= 360;
+		if (b_heading >= 360) b_heading -= 360;
 
 		// stuff back into the controls
 		UpdateData(FALSE);
