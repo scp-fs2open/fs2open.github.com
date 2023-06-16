@@ -1866,8 +1866,10 @@ void game_init()
 	curves_init();
 	particle::ParticleManager::init();
 
+	gamesnd_parse_soundstbl(true);	// Goober5000 - this needs to be split
 	iff_init();						// Goober5000 - this must be done even before species_defs :p
 	species_init();					// Load up the species defs - this needs to be done FIRST -- Kazan
+	gamesnd_parse_soundstbl(false);
 
 	brief_icons_init();
 
@@ -1882,7 +1884,6 @@ void game_init()
 	cutscene_init();
 	key_init();
 	mouse_init();
-	gamesnd_parse_soundstbl();
 
 	gameseq_init();
 

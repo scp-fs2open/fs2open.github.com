@@ -1189,6 +1189,10 @@ void parse_sound_environments()
 	required_string("#Sound Environments End");
 }
 
+// Due to the cyclic depdendency between sounds and species, the parsing is now broken up into two stages.
+// First, just the sounds are parsed; and second, just the flyby sounds are parsed (or assigned).
+static bool Sound_table_first_stage = false;
+
 void parse_sound_table(const char* filename)
 {
 	try
@@ -1199,76 +1203,94 @@ void parse_sound_table(const char* filename)
 		// Parse the gameplay sounds section
 		if (optional_string("#Game Sounds Start"))
 		{
-			while (!check_for_string("#Game Sounds End"))
+			if (!Sound_table_first_stage)
+				skip_to_string("#Game Sounds End");
+			else
 			{
-				game_snd tempSound;
-				if (gamesnd_parse_line(&tempSound, "$Name:", &Snds))
+				while (!check_for_string("#Game Sounds End"))
 				{
-					Snds.push_back(game_snd(tempSound));
+					game_snd tempSound;
+					if (gamesnd_parse_line(&tempSound, "$Name:", &Snds))
+					{
+						Snds.push_back(game_snd(tempSound));
+					}
 				}
-			}
 
-			required_string("#Game Sounds End");
+				required_string("#Game Sounds End");
+			}
 		}
 
 		// Parse the interface sounds section
 		if (optional_string("#Interface Sounds Start"))
 		{
-			while (!check_for_string("#Interface Sounds End"))
+			if (!Sound_table_first_stage)
+				skip_to_string("#Interface Sounds End");
+			else
 			{
-				game_snd tempSound;
-				if (gamesnd_parse_line(&tempSound, "$Name:", &Snds_iface))
+				while (!check_for_string("#Interface Sounds End"))
 				{
-					Snds_iface.push_back(game_snd(tempSound));
-					Snds_iface_handle.push_back(sound_handle::invalid());
+					game_snd tempSound;
+					if (gamesnd_parse_line(&tempSound, "$Name:", &Snds_iface))
+					{
+						Snds_iface.push_back(game_snd(tempSound));
+						Snds_iface_handle.push_back(sound_handle::invalid());
+					}
 				}
-			}
 
-			required_string("#Interface Sounds End");
+				required_string("#Interface Sounds End");
+			}
 		}
 
 		// parse flyby sound section
 		if (optional_string("#Flyby Sounds Start"))
 		{
-			// try parsing sounds for each species
-			// Note 1: instead of going through Species_info and requiring a sound for each species,
-			// we now parse the token and extract the species name from it
-			// Note 2: if a species doesn't have a flyby sound, the flyby code will just not play anything
-			while (!check_for_string("#Flyby Sounds End"))
+			if (Sound_table_first_stage)
+				skip_to_string("#Flyby Sounds End");
+			else
 			{
-				char species_name_tag[NAME_LENGTH + 2];
-				stuff_string_until(species_name_tag, ":", NAME_LENGTH + 2);
-
-				if (species_name_tag[0] != '$')
+				// try parsing sounds for each species
+				// Note 1: instead of going through Species_info and requiring a sound for each species,
+				// we now parse the token and extract the species name from it
+				// Note 2: if a species doesn't have a flyby sound, the flyby code will just not play anything
+				while (!check_for_string("#Flyby Sounds End"))
 				{
-					error_display(0, "Unexpected token tag %s", species_name_tag);
-					advance_to_eoln(nullptr);
-					continue;
+					char species_name_tag[NAME_LENGTH + 2];
+					stuff_string_until(species_name_tag, ":", NAME_LENGTH + 2);
+
+					if (species_name_tag[0] != '$')
+					{
+						error_display(0, "Unexpected token tag %s", species_name_tag);
+						advance_to_eoln(nullptr);
+						continue;
+					}
+
+					int idx = species_info_lookup(&species_name_tag[1]);
+					if (idx < 0)
+					{
+						mprintf(("Skipping flyby sound for unknown species %s\n", &species_name_tag[1]));
+						advance_to_eoln(nullptr);
+						continue;
+					}
+
+					// now we have a known species
+					species_info* species = &Species_info[idx];
+					strcat_s(species_name_tag, ":");	// put back the terminator to restore the entire tag
+
+					// parse the two sounds for it
+					gamesnd_parse_line(&species->snd_flyby_fighter, ":");				// since we stuffed most of the tag, the : is all that remains on this line
+					gamesnd_parse_line(&species->snd_flyby_bomber, species_name_tag);	// for the subsequent line we use required_string on the whole tag
 				}
 
-				int idx = species_info_lookup(&species_name_tag[1]);
-				if (idx < 0)
-				{
-					mprintf(("Skipping flyby sound for unknown species %s\n", &species_name_tag[1]));
-					advance_to_eoln(nullptr);
-					continue;
-				}
-
-				// now we have a known species
-				species_info *species = &Species_info[idx];
-				strcat_s(species_name_tag, ":");	// put back the terminator to restore the entire tag
-
-				// parse the two sounds for it
-				gamesnd_parse_line(&species->snd_flyby_fighter, ":");				// since we stuffed most of the tag, the : is all that remains on this line
-				gamesnd_parse_line(&species->snd_flyby_bomber, species_name_tag);	// for the subsequent line we use required_string on the whole tag
+				required_string("#Flyby Sounds End");
 			}
-
-			required_string("#Flyby Sounds End");
 		}
 
 		if (optional_string("#Sound Environments Start"))
 		{
-			parse_sound_environments();
+			if (!Sound_table_first_stage)
+				skip_to_string("#Sound Environments End");
+			else
+				parse_sound_environments();
 		}
 	}
 	catch (const parse::ParseException& e)
@@ -1277,24 +1299,29 @@ void parse_sound_table(const char* filename)
 		return;
 	}
 
-	gamesnd_add_retail_default_enhanced_sound_data();
+	if (Sound_table_first_stage)
+		gamesnd_add_retail_default_enhanced_sound_data();
 }
 
 /**
  * Parse the sounds.tbl file, and load the specified sounds.
  */
-void gamesnd_parse_soundstbl()
+void gamesnd_parse_soundstbl(bool first_stage)
 {
+	Sound_table_first_stage = first_stage;
+
 	parse_sound_table("sounds.tbl");
 
 	parse_modular_table("*-snd.tbm", parse_sound_table);
 
-	//Set any flyby sounds for species that use the borrowed feature
-	for (size_t i = 0; i < Species_info.size(); i++) {
-		if (Species_info[i].borrows_flyby_sounds_species >= 0) {
-			int idx = Species_info[i].borrows_flyby_sounds_species;
-			Species_info[i].snd_flyby_fighter = Species_info[idx].snd_flyby_fighter;
-			Species_info[i].snd_flyby_bomber = Species_info[idx].snd_flyby_bomber;
+	if (!first_stage) {
+		//Set any flyby sounds for species that use the borrowed feature
+		for (size_t i = 0; i < Species_info.size(); i++) {
+			if (Species_info[i].borrows_flyby_sounds_species >= 0) {
+				int idx = Species_info[i].borrows_flyby_sounds_species;
+				Species_info[i].snd_flyby_fighter = Species_info[idx].snd_flyby_fighter;
+				Species_info[i].snd_flyby_bomber = Species_info[idx].snd_flyby_bomber;
+			}
 		}
 	}
 }

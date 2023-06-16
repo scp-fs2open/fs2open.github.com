@@ -1626,7 +1626,6 @@ ship_info::ship_info(ship_info&& other) noexcept
 
 ship_info::ship_info()
 {
-
 	name[0] = '\0';
 	display_name[0] = '\0';
 	sprintf(short_name, "ShipClass%d", ship_info_size());
@@ -3501,6 +3500,12 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 
             sip->aiming_flags.set(Ship::Aiming_Flags::Convergence_offset, !IS_VEC_NULL(&sip->convergence_offset));				
 		}
+	}
+
+	// the first time we get to this point, initialize to the species parameter indexes (which may be -1)
+	if (first_time) {
+		sip->warpin_params_index = Species_info[sip->species].warpin_params_index;
+		sip->warpout_params_index = Species_info[sip->species].warpout_params_index;
 	}
 
 	// get ship parameters for warpin and warpout

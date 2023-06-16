@@ -150,11 +150,17 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 	curves_init();
 	particle::ParticleManager::init();
 
+	listener(SubSystem::GameSound1);
+	gamesnd_parse_soundstbl(true);
+
 	listener(SubSystem::Iff);
 	iff_init();            // Goober5000
 
 	listener(SubSystem::Species);
 	species_init();        // Kazan
+
+	listener(SubSystem::GameSound2);
+	gamesnd_parse_soundstbl(false);
 
 	listener(SubSystem::BriefingIcons);
 	brief_icons_init();
@@ -167,9 +173,6 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 
 	listener(SubSystem::AlphaColors);
 	alpha_colors_init();
-
-	listener(SubSystem::GameSound);
-	gamesnd_parse_soundstbl();        // needs to be loaded after species stuff but before interface/weapon/ship stuff - taylor
 
 	listener(SubSystem::MissionBrief);
 	mission_brief_common_init();
