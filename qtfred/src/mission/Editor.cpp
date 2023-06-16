@@ -3154,6 +3154,15 @@ void Editor::pad_with_newline(SCP_string& str, size_t max_size) {
 	}
 }
 
+void Editor::lcl_fred_replace_stuff(QString& text)
+{
+	// this should be kept in sync with the function in localize.cpp
+	text.replace("\"", "$quote");
+	text.replace(";", "$semicolon");
+	text.replace("/", "$slash");
+	text.replace("\\", "$backslash");
+}
+
 
 } // namespace fred
 } // namespace fso

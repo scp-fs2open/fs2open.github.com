@@ -436,12 +436,18 @@ bool CampaignEditorDialogModel::_saveTo(QString file) const {
 
 	mission_campaign_clear();
 
-	strncpy(Campaign.name, qPrintable(campaignName), NAME_LENGTH);
+	// handle special characters
+	QString modified_name = campaignName;
+	QString modified_desc = campaignDescr.toPlainText();
+	_viewport->editor->lcl_fred_replace_stuff(modified_name);
+	_viewport->editor->lcl_fred_replace_stuff(modified_desc);
+
+	strncpy(Campaign.name, qPrintable(modified_name), NAME_LENGTH);
 
 	Campaign.type = campaignTypes.indexOf(campaignType);
 
-	if (! campaignDescr.isEmpty())
-		Campaign.desc = vm_strdup(qPrintable(campaignDescr.toPlainText()));
+	if (!modified_desc.isEmpty())
+		Campaign.desc = vm_strdup(qPrintable(modified_desc));
 
 	Campaign.num_players = numPlayers;
 
@@ -549,6 +555,7 @@ bool CampaignEditorDialogModel::_saveTo(QString file) const {
 						cm.flags |= CMISSION_FLAG_HAS_LOOP;
 
 						QString descr = br.loopDescr->toPlainText();
+						_viewport->editor->lcl_fred_replace_stuff(descr);
 						if (descr.isEmpty())
 							cm.mission_branch_desc = nullptr;
 						else

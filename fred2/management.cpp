@@ -221,64 +221,14 @@ void pad_with_newline(CString& str, int max_size) {
 	}
 }
 
-// medal_stuff Medals[NUM_MEDALS];
-/*
-void parse_medal_tbl()
+void lcl_fred_replace_stuff(CString &text)
 {
-	int rval, num_medals;
-
-	// open localization
-	lcl_ext_open();
-
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "medals.tbl", rval));
-		lcl_ext_close();
-		return;
-	} 
-
-	read_file_text("medals.tbl");
-	reset_parse();
-
-	// parse in all the rank names
-	num_medals = 0;
-	required_string("#Medals");
-	while ( required_string_either("#End", "$Name:") ) {
-		Assert ( num_medals < NUM_MEDALS);
-		required_string("$Name:");
-		stuff_string( Medals[num_medals].name, F_NAME, NULL );
-		required_string("$Bitmap:");
-		stuff_string( Medals[num_medals].bitmap, F_NAME, NULL );
-		required_string("$Num mods:");
-		stuff_int( &Medals[num_medals].num_versions);
-
-		// some medals are based on kill counts.  When string +Num Kills: is present, we know that
-		// this medal is a badge and should be treated specially
-		Medals[num_medals].kills_needed = 0;
-
-		if ( optional_string("+Num Kills:") ) {
-			char buf[MULTITEXT_LENGTH + 1];
-
-			stuff_int( &Medals[num_medals].kills_needed );
-
-			required_string("$Wavefile 1:");
-			stuff_string(buf, F_NAME, NULL, MAX_FILENAME_LEN);
-
-			required_string("$Wavefile 2:");
-			stuff_string(buf, F_NAME, NULL, MAX_FILENAME_LEN);
-
-			required_string("$Promotion Text:");
-			stuff_string(buf, F_MULTITEXT, NULL);
-		}
-
-		num_medals++;
-	}
-
-	required_string("#End");      
-
-	// close localization
-	lcl_ext_close();
+	// this should be kept in sync with the function in localize.cpp
+	text.Replace("\"", "$quote");
+	text.Replace(";", "$semicolon");
+	text.Replace("/", "$slash");
+	text.Replace("\\", "$backslash");
 }
-*/
 
 void brief_init_colors();
 

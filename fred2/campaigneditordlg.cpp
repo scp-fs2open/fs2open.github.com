@@ -186,8 +186,18 @@ void campaign_editor::load_campaign(const char *filename, const char *full_path)
 	else
 		m_current_campaign_path = _T("");
 
-	if (mission_campaign_load(filename, full_path, nullptr, 0)) {
-		MessageBox("Couldn't open Campaign file!", "Error");
+	auto result = mission_campaign_load(filename, full_path, nullptr, 0);
+	if (result != 0) {
+		if (result == CAMPAIGN_ERROR_CORRUPT)
+			MessageBox("Requested campaign file is corrupt.", "Could not load campaign file");
+		else if (result == CAMPAIGN_ERROR_SEXP_EXHAUSTED)
+			MessageBox("Requested campaign requires too many SEXPs.", "Could not load campaign file");
+		else if (result == CAMPAIGN_ERROR_SAVEFILE)
+			MessageBox("The pilot savefile for this campaign is invalid for the current mod.", "Could not load campaign file");
+		else if (result == CAMPAIGN_ERROR_IGNORED)
+			MessageBox("This campaign file is ignored by the current mod.", "Could not load campaign file");
+		else
+			MessageBox("Couldn't open Campaign file!", "Error");
 		Campaign_wnd->OnCpgnFileNew();
 		return;
 	}
@@ -278,6 +288,10 @@ void campaign_editor::update()
 
 	// get data from dlog box
 	UpdateData(TRUE);
+
+	// handle special characters
+	lcl_fred_replace_stuff(m_name);
+	lcl_fred_replace_stuff(m_desc);
 
 	// update campaign name
 	string_copy(Campaign.name, m_name, NAME_LENGTH - 1);
@@ -664,6 +678,9 @@ void campaign_editor::save_loop_desc_window()
 
 	// update only if active link and there is a mission has mission loop or fork
 	if ( (Cur_campaign_link >= 0) && (Links[Cur_campaign_link].is_mission_loop || Links[Cur_campaign_link].is_mission_fork) ) {
+		// handle special characters
+		lcl_fred_replace_stuff(m_branch_desc);
+
 		deconvert_multiline_string(buffer, m_branch_desc, MISSION_DESC_LENGTH - 1);
 		if (Links[Cur_campaign_link].mission_branch_txt) {
 			free(Links[Cur_campaign_link].mission_branch_txt);

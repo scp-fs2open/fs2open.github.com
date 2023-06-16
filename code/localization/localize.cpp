@@ -760,6 +760,7 @@ void lcl_fred_replace_stuff(SCP_string &text)
 	if (!Fred_running)
 		return;
 
+	// this should be kept in sync with the FRED functions in management.cpp and Editor.cpp
 	replace_all(text, "\"", "$quote");
 	replace_all(text, ";", "$semicolon");
 	replace_all(text, "/", "$slash");
