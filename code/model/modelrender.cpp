@@ -47,7 +47,7 @@ extern vec3d Arc_segment_points[];
 extern bool Scene_framebuffer_in_frame;
 color Wireframe_color;
 
-extern void interp_render_arc_segment( vec3d *v1, vec3d *v2, int depth );
+extern void interp_render_arc_segment(const vec3d *v1, const vec3d *v2, int depth);
 
 int model_render_determine_elapsed_time(int objnum, uint flags);
 
@@ -94,94 +94,95 @@ model_render_params::model_render_params() :
 model_render_params::~model_render_params() 
 {
 	if (Manage_replacement_textures)
-		vm_free(Replacement_textures);
+		vm_free(const_cast<int*>(Replacement_textures));
 }
 
-uint model_render_params::get_model_flags()
+uint model_render_params::get_model_flags() const
 {
 	return Model_flags; 
 }
 
-uint model_render_params::get_debug_flags()
+uint model_render_params::get_debug_flags() const
 {
 	return Debug_flags;
 }
 
-int model_render_params::get_object_number()
+int model_render_params::get_object_number() const
 { 
 	return Objnum; 
 }
 
-int model_render_params::get_detail_level_lock()
+int model_render_params::get_detail_level_lock() const
 { 
 	return Detail_level_locked; 
 }
 
-float model_render_params::get_depth_scale()
+float model_render_params::get_depth_scale() const
 { 
 	return Depth_scale; 
 }
 
-int model_render_params::get_warp_bitmap()
+int model_render_params::get_warp_bitmap() const
 { 
 	return Warp_bitmap; 
 }
 
-float model_render_params::get_warp_alpha()
+float model_render_params::get_warp_alpha() const
 { 
 	return Warp_alpha; 
 }
 
-const vec3d& model_render_params::get_warp_scale()
+const vec3d& model_render_params::get_warp_scale() const
 { 
 	return Warp_scale; 
 }
 
-const color& model_render_params::get_color()
+const color& model_render_params::get_color() const
 { 
 	return Color; 
 }
-float model_render_params::get_alpha()
+
+float model_render_params::get_alpha() const
 { 
 	return Xparent_alpha; 
 }
 
-int model_render_params::get_forced_bitmap()
+int model_render_params::get_forced_bitmap() const
 { 
 	return Forced_bitmap; 
 }
 
-int model_render_params::get_insignia_bitmap()
+int model_render_params::get_insignia_bitmap() const
 { 
 	return Insignia_bitmap; 
 }
 
-const int* model_render_params::get_replacement_textures()
+const int* model_render_params::get_replacement_textures() const
 { 
 	return Replacement_textures; 
 }
 
-const team_color& model_render_params::get_team_color()
+const team_color& model_render_params::get_team_color() const
 { 
 	return Current_team_color; 
 }
 
-const vec3d& model_render_params::get_clip_plane_pos()
+const vec3d& model_render_params::get_clip_plane_pos() const
 { 
 	return Clip_pos; 
 }
 
-const vec3d& model_render_params::get_clip_plane_normal()
+const vec3d& model_render_params::get_clip_plane_normal() const
 { 
 	return Clip_normal; 
 }
 
-int model_render_params::get_animated_effect_num()
+int model_render_params::get_animated_effect_num() const
 { 
 	return Animated_effect; 
 }
 
-float model_render_params::get_animated_effect_timer()
+float model_render_params::get_animated_effect_timer() const
 { 
 	return Animated_timer; 
 }
@@ -192,7 +193,7 @@ void model_render_params::set_animated_effect(int effect_num, float timer)
 	Animated_timer = timer;
 }
 
-void model_render_params::set_clip_plane(vec3d &pos, vec3d &normal)
+void model_render_params::set_clip_plane(const vec3d &pos, const vec3d &normal)
 {
 	Clip_plane_set = true;
 
@@ -200,12 +201,12 @@ void model_render_params::set_clip_plane(vec3d &pos, vec3d &normal)
 	Clip_pos = pos;
 }
 
-bool model_render_params::is_clip_plane_set()
+bool model_render_params::is_clip_plane_set() const
 {
 	return Clip_plane_set;
 }
 
-void model_render_params::set_team_color(team_color &clr)
+void model_render_params::set_team_color(const team_color &clr)
 {
 	Team_color_set = true;
 
@@ -217,22 +218,22 @@ void model_render_params::set_team_color(const SCP_string &team, const SCP_strin
 	Team_color_set = model_get_team_color(&Current_team_color, team, secondaryteam, timestamp, fadetime);
 }
 
-bool model_render_params::is_team_color_set()
+bool model_render_params::is_team_color_set() const
 {
 	return Team_color_set;
 }
 
-void model_render_params::set_replacement_textures(int *textures)
+void model_render_params::set_replacement_textures(const int *textures)
 {
 	Replacement_textures = textures;
 }
 
-void model_render_params::set_replacement_textures(int modelnum, SCP_vector<texture_replace>& replacement_textures)
+void model_render_params::set_replacement_textures(int modelnum, const SCP_vector<texture_replace>& replacement_textures)
 {
-	Replacement_textures = (int*)vm_malloc(MAX_REPLACEMENT_TEXTURES * sizeof(int));
+	auto textures = (int*)vm_malloc(MAX_REPLACEMENT_TEXTURES * sizeof(int));
 
 	for (int i = 0; i < MAX_REPLACEMENT_TEXTURES; i++)
-		Replacement_textures[i] = -1;
+		textures[i] = -1;
 
 	Manage_replacement_textures = true;
 
@@ -246,9 +247,11 @@ void model_render_params::set_replacement_textures(int modelnum, SCP_vector<text
 
 			int tnum = tmap->FindTexture(tr.old_texture);
 			if (tnum > -1)
-				Replacement_textures[i * TM_NUM_TYPES + tnum] = bm_load(tr.new_texture);
+				textures[i * TM_NUM_TYPES + tnum] = bm_load(tr.new_texture);
 		}
 	}
+
+	Replacement_textures = textures;
 }
 
 void model_render_params::set_insignia_bitmap(int bitmap)
@@ -266,7 +269,7 @@ void model_render_params::set_alpha(float alpha)
 	Xparent_alpha = alpha;
 }
 
-void model_render_params::set_color(color &clr)
+void model_render_params::set_color(const color &clr)
 {
 	Color = clr;
 }
@@ -276,7 +279,7 @@ void model_render_params::set_color(int r, int g, int b)
 	gr_init_color( &Color, r, g, b );
 }
 
-void model_render_params::set_warp_params(int bitmap, float alpha, vec3d &scale)
+void model_render_params::set_warp_params(int bitmap, float alpha, const vec3d &scale)
 {
 	Warp_bitmap = bitmap;
 	Warp_alpha = alpha;
@@ -308,14 +311,14 @@ void model_render_params::set_detail_level_lock(int detail_level_lock)
 	Detail_level_locked = detail_level_lock;
 }
 
-void model_render_params::set_thruster_info(mst_info &info)
+void model_render_params::set_thruster_info(const mst_info &info)
 {
 	Thruster_info = info;
 
 	CLAMP(Thruster_info.length.xyz.z, 0.1f, 1.0f);
 }
 
-const mst_info& model_render_params::get_thruster_info()
+const mst_info& model_render_params::get_thruster_info() const
 {
 	return Thruster_info;
 }
@@ -323,10 +326,10 @@ const mst_info& model_render_params::get_thruster_info()
 void model_render_params::set_outline_thickness(float thickness) {
 	Outline_thickness = thickness;
 }
-float model_render_params::get_outline_thickness() {
+float model_render_params::get_outline_thickness() const {
 	return Outline_thickness;
 }
-bool model_render_params::uses_thick_outlines() {
+bool model_render_params::uses_thick_outlines() const {
 	return Outline_thickness > 0.0f;
 }
 
@@ -335,12 +338,12 @@ void model_render_params::set_alpha_mult(float alpha) {
 	Use_alpha_mult = true;
 }
 
-bool model_render_params::is_alpha_mult_set()
+bool model_render_params::is_alpha_mult_set() const
 {
 	return Use_alpha_mult;
 }
 
-float model_render_params::get_alpha_mult()
+float model_render_params::get_alpha_mult() const
 {
 	return Alpha_mult;
 }
@@ -365,17 +368,17 @@ void model_batch_buffer::set_num_models(int n_models)
 	}
 }
 
-void model_batch_buffer::set_model_transform(matrix4 &transform, int model_id)
+void model_batch_buffer::set_model_transform(const matrix4 &transform, int model_id)
 {
 	Submodel_matrices[Current_offset + model_id] = transform;
 }
 
-void model_batch_buffer::add_matrix(matrix4 &mat)
+void model_batch_buffer::add_matrix(const matrix4 &mat)
 {
 	Submodel_matrices.push_back(mat);
 }
 
-size_t model_batch_buffer::get_buffer_offset()
+size_t model_batch_buffer::get_buffer_offset() const
 {
 	return Current_offset;
 }
@@ -455,7 +458,7 @@ void model_draw_list::add_submodel_to_batch(int model_num)
 	TransformBufferHandler.set_model_transform(transform, model_num);
 }
 
-void model_draw_list::add_arc(vec3d *v1, vec3d *v2, color *primary, color *secondary, float arc_width)
+void model_draw_list::add_arc(const vec3d *v1, const vec3d *v2, const color *primary, const color *secondary, float arc_width)
 {
 	arc_effect new_arc;
 
@@ -469,14 +472,14 @@ void model_draw_list::add_arc(vec3d *v1, vec3d *v2, color *primary, color *secon
 	Arcs.push_back(new_arc);
 }
 
-void model_draw_list::set_light_filter(vec3d *pos, float rad)
+void model_draw_list::set_light_filter(const vec3d *pos, float rad)
 {
 	Scene_light_handler.setLightFilter(pos, rad);
 
 	Current_lights_set = Scene_light_handler.bufferLights();
 }
 
-void model_draw_list::add_buffer_draw(model_material *render_material, indexed_vertex_source *vert_src, vertex_buffer *buffer, size_t texi, uint tmap_flags)
+void model_draw_list::add_buffer_draw(const model_material *render_material, const indexed_vertex_source *vert_src, const vertex_buffer *buffer, size_t texi, uint tmap_flags)
 {
 	queued_buffer_draw draw_data;
 	draw_data.render_material = *render_material;
@@ -529,7 +532,7 @@ void model_draw_list::add_buffer_draw(model_material *render_material, indexed_v
 	Render_keys.push_back((int) (Render_elements.size() - 1));
 }
 
-void model_draw_list::render_buffer(queued_buffer_draw &render_elements)
+void model_draw_list::render_buffer(const queued_buffer_draw &render_elements)
 {
 	GR_DEBUG_SCOPE("Render buffer");
 	TRACE_SCOPE(tracing::RenderBuffer);
@@ -537,10 +540,10 @@ void model_draw_list::render_buffer(queued_buffer_draw &render_elements)
 	gr_bind_uniform_buffer(uniform_block_type::ModelData, render_elements.uniform_buffer_offset,
 	                       sizeof(graphics::model_uniform_data), _dataBuffer.bufferHandle());
 
-	gr_render_model(&render_elements.render_material, render_elements.vert_src, render_elements.buffer, render_elements.texi);
+	gr_render_model(const_cast<model_material*>(&render_elements.render_material), const_cast<indexed_vertex_source*>(render_elements.vert_src), const_cast<vertex_buffer*>(render_elements.buffer), render_elements.texi);
 }
 
-vec3d model_draw_list::get_view_position()
+vec3d model_draw_list::get_view_position() const
 {
 	matrix basis_world;
 	matrix4 transform_mat = Transformations.get_transform();
@@ -562,7 +565,7 @@ vec3d model_draw_list::get_view_position()
 	return return_val;
 }
 
-void model_draw_list::push_transform(vec3d *pos, matrix *orient)
+void model_draw_list::push_transform(const vec3d *pos, const matrix *orient)
 {
 	Transformations.push(pos, orient);
 }
@@ -572,7 +575,7 @@ void model_draw_list::pop_transform()
 	Transformations.pop();
 }
 
-void model_draw_list::set_scale(vec3d *scale)
+void model_draw_list::set_scale(const vec3d *scale)
 {
 	if ( scale == NULL ) {
 		Current_scale.xyz.x = 1.0f;
@@ -630,7 +633,7 @@ void model_draw_list::render_all(gr_zbuffer_type depth_mode)
 	gr_alpha_mask_set(0, 1.0f);
 }
 
-void model_draw_list::render_arc(arc_effect &arc)
+void model_draw_list::render_arc(const arc_effect &arc)
 {
 	g3_start_instance_matrix(&arc.transform);	
 
@@ -650,7 +653,7 @@ void model_draw_list::render_arcs()
 	gr_zbuffer_set(mode);
 }
 
-void model_draw_list::add_insignia(model_render_params *params, polymodel *pm, int detail_level, int bitmap_num)
+void model_draw_list::add_insignia(const model_render_params *params, const polymodel *pm, int detail_level, int bitmap_num)
 {
 	insignia_draw_data new_insignia;
 
@@ -666,7 +669,7 @@ void model_draw_list::add_insignia(model_render_params *params, polymodel *pm, i
 	Insignias.push_back(new_insignia);
 }
 
-void model_draw_list::render_insignia(insignia_draw_data &insignia_info)
+void model_draw_list::render_insignia(const insignia_draw_data &insignia_info)
 {
 	if ( insignia_info.clip ) {
 		vec3d tmp;
@@ -695,7 +698,7 @@ void model_draw_list::render_insignias()
 	}
 }
 
-void model_draw_list::add_outline(vertex* vert_array, int n_verts, color *clr)
+void model_draw_list::add_outline(const vertex* vert_array, int n_verts, const color *clr)
 {
 	outline_draw draw_info;
 
@@ -716,7 +719,7 @@ void model_draw_list::render_outlines()
 	}
 }
 
-void model_draw_list::render_outline(outline_draw &outline_info)
+void model_draw_list::render_outline(const outline_draw &outline_info)
 {
 	g3_start_instance_matrix(&outline_info.transform);
 
@@ -726,15 +729,15 @@ void model_draw_list::render_outline(outline_draw &outline_info)
 	material_instance.set_blend_mode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
 	material_instance.set_color(outline_info.clr);
 
-	g3_render_primitives(&material_instance, outline_info.vert_array, outline_info.n_verts, PRIM_TYPE_LINES, false);
+	g3_render_primitives(&material_instance, const_cast<vertex*>(outline_info.vert_array), outline_info.n_verts, PRIM_TYPE_LINES, false);
 
 	g3_done_instance(true);
 }
 
-bool model_draw_list::sort_draw_pair(model_draw_list* target, const int a, const int b)
+bool model_draw_list::sort_draw_pair(const model_draw_list* target, const int a, const int b)
 {
-	queued_buffer_draw *draw_call_a = &target->Render_elements[a];
-	queued_buffer_draw *draw_call_b = &target->Render_elements[b];
+	auto draw_call_a = &target->Render_elements[a];
+	auto draw_call_b = &target->Render_elements[b];
 
 	if ( draw_call_a->sdr_flags != draw_call_b->sdr_flags ) {
 		return draw_call_a->sdr_flags < draw_call_b->sdr_flags;
@@ -817,7 +820,7 @@ model_draw_list::~model_draw_list() {
 	reset();
 }
 
-void model_render_add_lightning( model_draw_list *scene, model_render_params* interp, polymodel *pm, submodel_instance *smi )
+void model_render_add_lightning(model_draw_list *scene, const model_render_params* interp, const polymodel *pm, const submodel_instance *smi )
 {
 	int i;
 	float width = 0.9f;
@@ -912,7 +915,7 @@ void model_render_add_lightning( model_draw_list *scene, model_render_params* in
 	}
 }
 
-float model_render_determine_depth(int obj_num, int model_num, matrix* orient, vec3d* pos, int detail_level_locked)
+float model_render_determine_depth(int obj_num, int model_num, const matrix* orient, const vec3d* pos, int detail_level_locked)
 {
 	vec3d closest_pos;
 	float depth = model_find_closest_point( &closest_pos, model_num, -1, orient, pos, &Eye_position );
@@ -946,7 +949,7 @@ float model_render_determine_depth(int obj_num, int model_num, matrix* orient, v
 	return depth;
 }
 
-int model_render_determine_detail(float depth, int  /*obj_num*/, int model_num, matrix*  /*orient*/, vec3d*  /*pos*/, int  /*flags*/, int detail_level_locked)
+int model_render_determine_detail(float depth, int model_num, int detail_level_locked)
 {
 	int tmp_detail_level = Game_detail_level;
 
@@ -990,7 +993,7 @@ int model_render_determine_detail(float depth, int  /*obj_num*/, int model_num, 
 	}
 }
 
-void model_render_buffers(model_draw_list* scene, model_material *rendering_material, model_render_params* interp, vertex_buffer *buffer, polymodel *pm, int mn, int detail_level, uint tmap_flags)
+void model_render_buffers(model_draw_list* scene, model_material *rendering_material, const model_render_params* interp, const vertex_buffer *buffer, const polymodel *pm, int mn, int detail_level, uint tmap_flags)
 {
 	bsp_info *submodel = nullptr;
 	const uint model_flags = interp->get_model_flags();
@@ -1062,7 +1065,7 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 
 	for ( size_t i = 0; i < buffer_size; i++ ) {
 		int tmap_num = buffer->tex_buf[i].texture;
-		texture_map *tmap = &pm->maps[tmap_num];
+		auto tmap = &pm->maps[tmap_num];
 		int rt_begin_index = tmap_num*TM_NUM_TYPES;
 		float alpha = 1.0f;
 
@@ -1103,7 +1106,7 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 
 			// doing glow maps?
 			if ( !(model_flags & MR_NO_GLOWMAPS) ) {
-				texture_info *tglow = &tmap->textures[TM_GLOW_TYPE];
+				auto tglow = &tmap->textures[TM_GLOW_TYPE];
 
 				if ( (replacement_textures != NULL) && (replacement_textures[rt_begin_index + TM_GLOW_TYPE] >= 0) ) {
 					tex_replace[TM_GLOW_TYPE] = texture_info(replacement_textures[rt_begin_index + TM_GLOW_TYPE]);
@@ -1137,10 +1140,10 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 
 			if (detail_level < 2) {
 				// likewise, etc.
-				texture_info *norm_map = &tmap->textures[TM_NORMAL_TYPE];
-				texture_info *height_map = &tmap->textures[TM_HEIGHT_TYPE];
-				texture_info *ambient_map = &tmap->textures[TM_AMBIENT_TYPE];
-				texture_info *misc_map = &tmap->textures[TM_MISC_TYPE];
+				auto norm_map = &tmap->textures[TM_NORMAL_TYPE];
+				auto height_map = &tmap->textures[TM_HEIGHT_TYPE];
+				auto ambient_map = &tmap->textures[TM_AMBIENT_TYPE];
+				auto misc_map = &tmap->textures[TM_MISC_TYPE];
 
 				if (replacement_textures != NULL) {
 					if (replacement_textures[rt_begin_index + TM_NORMAL_TYPE] >= 0) {
@@ -1260,7 +1263,7 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 	}
 }
 
-void model_render_children_buffers(model_draw_list* scene, model_material *rendering_material, model_render_params* interp, polymodel* pm, polymodel_instance *pmi, int mn, int detail_level, uint tmap_flags, bool trans_buffer)
+void model_render_children_buffers(model_draw_list* scene, model_material *rendering_material, const model_render_params* interp, const polymodel* pm, const polymodel_instance *pmi, int mn, int detail_level, uint tmap_flags, bool trans_buffer)
 {
 	int i;
 
@@ -1340,7 +1343,7 @@ void model_render_children_buffers(model_draw_list* scene, model_material *rende
 	scene->pop_transform();
 }
 
-float model_render_determine_light_factor(model_render_params* interp, vec3d *pos, uint flags)
+float model_render_determine_light_factor(const model_render_params* interp, const vec3d *pos, uint flags)
 {
 	if ( flags & MR_IS_ASTEROID ) {
 		// Dim it based on distance
@@ -1404,7 +1407,7 @@ int model_render_determine_elapsed_time(int objnum, uint flags)
 	return timestamp_get_mission_time_in_milliseconds();
 }
 
-bool model_render_determine_autocenter(vec3d *auto_back, polymodel *pm, int detail_level, uint flags)
+bool model_render_determine_autocenter(vec3d *auto_back, const polymodel *pm, int detail_level, uint flags)
 {
 	if ( flags & MR_AUTOCENTER ) {
 		// standard autocenter using data in model
@@ -1454,7 +1457,7 @@ gr_alpha_blend model_render_determine_blend_mode(int base_bitmap, bool blending)
 	return ALPHA_BLEND_ALPHA_BLEND_ALPHA;
 }
 
-bool model_render_check_detail_box(vec3d *view_pos, polymodel *pm, int submodel_num, uint flags)
+bool model_render_check_detail_box(const vec3d *view_pos, const polymodel *pm, int submodel_num, uint flags)
 {
 	Assert(pm != NULL);
 
@@ -1502,7 +1505,7 @@ bool model_render_check_detail_box(vec3d *view_pos, polymodel *pm, int submodel_
 	return true;
 }
 
-void submodel_render_immediate(model_render_params *render_info, polymodel *pm, polymodel_instance *pmi, int submodel_num, matrix *orient, vec3d * pos)
+void submodel_render_immediate(const model_render_params *render_info, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *orient, const vec3d *pos)
 {
 	Assert(!pmi || pm->id == pmi->model_num);
 
@@ -1525,7 +1528,7 @@ void submodel_render_immediate(model_render_params *render_info, polymodel *pm, 
 	gr_reset_lighting();
 }
 
-void submodel_render_queue(model_render_params *render_info, model_draw_list *scene, polymodel *pm, polymodel_instance *pmi, int submodel_num, matrix *orient, vec3d * pos)
+void submodel_render_queue(const model_render_params *render_info, model_draw_list *scene, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *orient, const vec3d *pos)
 {
 	Assert(!pmi || pm->id == pmi->model_num);
 
@@ -1651,7 +1654,7 @@ void submodel_render_queue(model_render_params *render_info, model_draw_list *sc
 }
 
 //Renders the sprite for a glowpoint.
-void model_render_glowpoint_bitmap(int point_num, vec3d *pos, matrix *orient, glow_point_bank *bank, glow_point_bank_override *gpo, polymodel *pm, polymodel_instance *pmi, ship* shipp, bool use_depth_buffer)
+void model_render_glowpoint_bitmap(int point_num, const vec3d *pos, const matrix *orient, const glow_point_bank *bank, const glow_point_bank_override *gpo, const polymodel *pm, const polymodel_instance *pmi, const ship* shipp, bool use_depth_buffer)
 {
 	glow_point *gpt = &bank->points[point_num];
 	vec3d loc_offset = gpt->pnt;
@@ -1813,7 +1816,7 @@ void model_render_glowpoint_bitmap(int point_num, vec3d *pos, matrix *orient, gl
 }
 
 //adds the glowpoint's lights, if any, to the lights vector.
-void model_render_glowpoint_add_light(int point_num, vec3d *pos, matrix *orient, glow_point_bank *bank, glow_point_bank_override *gpo, polymodel *pm, polymodel_instance *pmi, ship* shipp)
+void model_render_glowpoint_add_light(int point_num, const vec3d *pos, const matrix *orient, const glow_point_bank *bank, const glow_point_bank_override *gpo, const polymodel *pm, const polymodel_instance *pmi, const ship* shipp)
 {
 	if(Detail.lighting <= 3 || !Deferred_lighting || gpo==nullptr || !gpo->is_lightsource) {
 		return;
@@ -1902,7 +1905,7 @@ void model_render_glowpoint_add_light(int point_num, vec3d *pos, matrix *orient,
 }
 
 //Returns the current brightness percentage of a glowpoint, from 1.0f to 0.0f
-float model_render_get_point_activation(glow_point_bank* bank, glow_point_bank_override* gpo)
+float model_render_get_point_activation(const glow_point_bank* bank, const glow_point_bank_override* gpo)
 {
 	if(gpo == nullptr ||  !(gpo->pulse_type)){
 		return 1.0f;
@@ -1971,7 +1974,7 @@ float model_render_get_point_activation(glow_point_bank* bank, glow_point_bank_o
 	return pulse;
 }
 
-void model_render_set_glow_points(polymodel *pm, int objnum)
+void model_render_set_glow_points(const polymodel *pm, int objnum)
 {
 	int time = timestamp();
 	glow_point_bank_override *gpo = NULL;
@@ -2033,7 +2036,7 @@ void model_render_set_glow_points(polymodel *pm, int objnum)
 }
 
 //Handle all the glow points of a model being rendered.
-void model_render_glow_points(polymodel *pm, polymodel_instance *pmi, ship *shipp, matrix *orient, vec3d *pos, bool use_depth_buffer = true,bool render_sprites = true, bool add_lights= true)
+void model_render_glow_points(const polymodel *pm, const polymodel_instance *pmi, const ship *shipp, const matrix *orient, const vec3d *pos, bool use_depth_buffer = true, bool render_sprites = true, bool add_lights= true)
 {
 	Assert(pmi == nullptr || pm->id == pmi->model_num);
 
@@ -2152,7 +2155,7 @@ float model_render_get_diameter_clamped_to_min_pixel_size(const vec3d* pos, floa
 	return scaled_diameter;
 }
 
-void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, int objnum, ship *shipp, matrix *orient, vec3d *pos)
+void model_queue_render_thrusters(const model_render_params *interp, const polymodel *pm, int objnum, const ship *shipp, const matrix *orient, const vec3d *pos)
 {
 	int i, j;
 	int n_q = 0;
@@ -2454,9 +2457,9 @@ void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, in
 	}
 }
 
-void model_render_insignias(insignia_draw_data *insignia_data)
+void model_render_insignias(const insignia_draw_data *insignia_data)
 {
-	polymodel *pm = insignia_data->pm;
+	auto pm = insignia_data->pm;
 	int detail_level = insignia_data->detail_level;
 	int bitmap_num = insignia_data->bitmap_num;
 
@@ -2522,7 +2525,7 @@ void model_render_insignias(insignia_draw_data *insignia_data)
 	}
 }
 
-void model_render_arc(vec3d *v1, vec3d *v2, color *primary, color *secondary, float arc_width)
+void model_render_arc(const vec3d *v1, const vec3d *v2, const color *primary, const color *secondary, float arc_width)
 {
 	Num_arc_segment_points = 0;
 
@@ -2542,7 +2545,7 @@ void model_render_arc(vec3d *v1, vec3d *v2, color *primary, color *secondary, fl
 	}
 }
 
-void model_render_debug_children(polymodel *pm, int mn, int detail_level, uint debug_flags)
+void model_render_debug_children(const polymodel *pm, int mn, int detail_level, uint debug_flags)
 {
 	int i;
 
@@ -2576,7 +2579,7 @@ void model_render_debug_children(polymodel *pm, int mn, int detail_level, uint d
 	g3_done_instance(true);
 }
 
-void model_render_debug(int model_num, matrix *orient, vec3d * pos, uint flags, uint debug_flags, int objnum, int detail_level_locked )
+void model_render_debug(int model_num, const matrix *orient, const vec3d *pos, uint flags, uint debug_flags, int objnum, int detail_level_locked )
 {
 	polymodel *pm = model_get(model_num);	
 	
@@ -2589,7 +2592,7 @@ void model_render_debug(int model_num, matrix *orient, vec3d * pos, uint flags, 
 		}
 	}
 	float depth = model_render_determine_depth(objnum, model_num, orient, pos, detail_level_locked);
-	int detail_level = model_render_determine_detail(depth, objnum, model_num, orient, pos, flags, detail_level_locked);
+	int detail_level = model_render_determine_detail(depth, model_num, detail_level_locked);
 
 	vec3d auto_back = ZERO_VECTOR;
 	bool set_autocen = model_render_determine_autocenter(&auto_back, pm, detail_level, flags);
@@ -2639,12 +2642,12 @@ void model_render_debug(int model_num, matrix *orient, vec3d * pos, uint flags, 
 	gr_zbuffer_set(save_gr_zbuffering_mode);
 }
 
-void model_render_immediate(model_render_params* render_info, int model_num, matrix* orient, vec3d* pos, int render, bool sort)
+void model_render_immediate(const model_render_params* render_info, int model_num, const matrix* orient, const vec3d* pos, int render, bool sort)
 {
 	model_render_immediate(render_info, model_num, -1, orient, pos, render, sort);
 }
 
-void model_render_immediate(model_render_params* render_info, int model_num, int model_instance_num, matrix* orient, vec3d* pos, int render, bool sort)
+void model_render_immediate(const model_render_params* render_info, int model_num, int model_instance_num, const matrix* orient, const vec3d* pos, int render, bool sort)
 {
 	model_draw_list model_list;
 
@@ -2685,12 +2688,12 @@ void model_render_immediate(model_render_params* render_info, int model_num, int
 	}
 }
 
-void model_render_queue(model_render_params* interp, model_draw_list* scene, int model_num, matrix* orient, vec3d* pos)
+void model_render_queue(const model_render_params* interp, model_draw_list* scene, int model_num, const matrix* orient, const vec3d* pos)
 {
 	model_render_queue(interp, scene, model_num, -1, orient, pos);
 }
 
-void model_render_queue(model_render_params* interp, model_draw_list* scene, int model_num, int model_instance_num, matrix* orient, vec3d* pos)
+void model_render_queue(const model_render_params* interp, model_draw_list* scene, int model_num, int model_instance_num, const matrix* orient, const vec3d* pos)
 {
 	int i;
 
@@ -2795,7 +2798,7 @@ void model_render_queue(model_render_params* interp, model_draw_list* scene, int
 	scene->push_transform(pos, orient);
 
 	float depth = model_render_determine_depth(objnum, model_num, orient, pos, interp->get_detail_level_lock());
-	int detail_level = model_render_determine_detail(depth, objnum, model_num, orient, pos, model_flags, interp->get_detail_level_lock());
+	int detail_level = model_render_determine_detail(depth, model_num, interp->get_detail_level_lock());
 
 	// If we're rendering attached weapon models, check against the ships' tabled Weapon Model Draw Distance (which defaults to 200)
 	if ( model_flags & MR_ATTACHED_MODEL && shipp != NULL ) {
@@ -3021,7 +3024,7 @@ void model_render_queue(model_render_params* interp, model_draw_list* scene, int
 }
 
 //Renders the glowpoint light sources of a model without rendering anything else of the model.
-void model_render_only_glowpoint_lights(model_render_params* interp, int model_num, int model_instance_num, matrix* orient, vec3d* pos)
+void model_render_only_glowpoint_lights(const model_render_params* interp, int model_num, int model_instance_num, const matrix* orient, const vec3d* pos)
 {
 	const int objnum = interp->get_object_number();
 	const int model_flags = interp->get_model_flags();
@@ -3077,18 +3080,18 @@ void model_render_only_glowpoint_lights(model_render_params* interp, int model_n
 	}
 }
 
-void model_render_set_wireframe_color(color* clr)
+void model_render_set_wireframe_color(const color* clr)
 {
 	Wireframe_color = *clr;
 }
 
 // renders a model as if in the tech room or briefing UI
 // model_type 1 for ship class, 2 for weapon class, 3 for pof
-bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int y2, float zoom, bool lighting, int class_idx, matrix* orient, SCP_string pof_filename, float close_zoom, vec3d close_pos)
+bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int y2, float zoom, bool lighting, int class_idx, const matrix* orient, const SCP_string &pof_filename, float close_zoom, const vec3d *close_pos)
 {
 
 	model_render_params render_info;
-	vec3d closeup_pos;
+	const vec3d *closeup_pos;
 	float closeup_zoom;
 	int model_num;
 	bool model_lighting = true;
@@ -3099,7 +3102,7 @@ bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int 
 			ship_info* sip;
 			sip = &Ship_info[class_idx];
 
-			closeup_pos = sip->closeup_pos;
+			closeup_pos = &sip->closeup_pos;
 			closeup_zoom = sip->closeup_zoom;
 
 			if (sip->uses_team_colors) {
@@ -3119,7 +3122,7 @@ bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int 
 			weapon_info* wip;
 			wip = &Weapon_info[class_idx];
 
-			closeup_pos = wip->closeup_pos;
+			closeup_pos = &wip->closeup_pos;
 			closeup_zoom = wip->closeup_zoom;
 
 			if (wip->wi_flags[Weapon::Info_Flags::Mr_no_lighting]) {
@@ -3166,7 +3169,7 @@ bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int 
 
 	// Handle 3D init stuff
 	g3_start_frame(1);
-	g3_set_view_matrix(&closeup_pos, &vmd_identity_matrix, closeup_zoom * zoom);
+	g3_set_view_matrix(closeup_pos, &vmd_identity_matrix, closeup_zoom * zoom);
 
 	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
 	gr_set_view_matrix(&Eye_position, &Eye_matrix);

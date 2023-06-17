@@ -769,7 +769,7 @@ ADE_FUNC(renderBriefingModel,
 		thisType = TECH_JUMP_NODE;
 	}
 
-	return ade_set_args(L, "b", render_tech_model(thisType, x1, y1, x2, y2, zoom, lighting, -1, &orient, pof, closeup_zoom, closeup_pos));
+	return ade_set_args(L, "b", render_tech_model(thisType, x1, y1, x2, y2, zoom, lighting, -1, &orient, pof, closeup_zoom, &closeup_pos));
 }
 
 ADE_FUNC(drawBriefingMap,
