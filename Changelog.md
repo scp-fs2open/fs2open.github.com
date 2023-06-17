@@ -3,6 +3,185 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [23.2.0] - 2023-06-16
+### Changes
+
+<details><summary> <b>Big Feature: MSAA</b> </summary>
+
+> The return of a long forgotten feature, with optimizations and improvements
+> Noticeable reduction to artifacts caused by subpixel geometry and glinting.
+</details>
+
+<details><summary> <b>Big Feature: SCPUI</b> </summary>
+
+> A modernized approach to defining menus in FS
+> Tired of having your Menus in FSO be at a resolution of potato? Use SCPUI to have them rendered from Fake-HTML to the actual screensize as opposed to a prebuilt graphics!
+> Tired of being limited to whatever people in the SCP hardcoded in for buttons? Use SCPUI to define buttons and all other manner of shenanigans as Lua-code just as you like.
+> Tired of needing to replace a bajillion interface graphics to reskin FSO? Use SCPUI, and especially Mjn's existing collection of Lua, CSS, Fake-HTML and images, and you only need to replace about 250 graphics.
+</details>
+
+<details><summary> <b>Big Feature: Localized Volumetric Nebulae</b> </summary>
+
+> Allows specifying a POF as the "hull" of a nebula, which will be rendered using ray marching
+> Further details can be found on the [GitHub Pull Request](https://github.com/scp-fs2open/fs2open.github.com/pull/5231)
+> Note: As this is a new feature, many improvements and optimizations remain to be made
+> Adapted from Andrew Schneider's 2015 SIGGRAPH talk "The real-time volumetric cloudscapes of Horizon: Zero Dawn"
+</details>
+
+<details><summary>Game: </summary>
+
+- Per bank autoaim
+</details>
+
+<details><summary>Animation: </summary>
+
+- Fix CTD on bad legacy animation data
+- Add proper time wrapping for Animations
+- Actually handle a mssing `Fade_anim` properly
+</details>
+
+<details><summary>Controls: </summary>
+
+- Organize and map additional keys to librocket
+- Catch when SDL fails to open a joystick that is enumerated by the OS
+</details>
+
+<details><summary>FRED: </summary> 
+
+- Add SpaceMouse support
+- Add pre-parse enums support
+- Add music player to FRED
+- Enhanced SEXP comments
+- FRED Dialog for Volumetrics
+- QoL improvements to Object Editor
+- Add FRED support for the "required weapon" feature
+- SEXP Tree search and filter
+</details>
+
+<details><summary>QtFRED: </summary>
+
+- Campaign Editor
+- Add SpaceMouse support
+- Make 'player starts in chase view' a toggle
+</details>
+
+<details><summary>Graphics: </summary>
+
+- "The other great shader flag removal effort"
+- Enhance handling of motion debris
+- Expose texture filtering as a built-in option
+- Improved particle culling and performance
+- Optimized trail renderer
+- Beam Particles
+- Multiple lighting profiles
+- Use volume particles for poofs
+- Optimize for simple trails
+- Kink shamed the laser bitmaps
+</details>
+
+<details><summary>HUD: </summary>
+
+- Flag to apply HUD shudder to chase view
+- Add missing HUD gauges
+- Explicitly do not split lines when making the message log
+</details>
+
+<details><summary>Localization: </summary>
+
+- Add some XSTR entries
+</details>
+
+<details><summary>Modding: </summary>
+
+- Mapify built-in strings
+- Allow `gameplay_profiles.tbl` to be an alias of `ai_profiles.tbl`
+- Modular rank table
+- Toggle auto-assigning personas
+- Add some parameters for corkscrew starting angle
+- Add clip planes to `game_settings.tbl`
+- Add `+Use ship` as a Template
+- Modular messages table
+- Add arbitrary curves support
+- Traitor overrides
+- Add support for loose lz4 compressed files
+- Add per-species warp effects
+</details>
+
+<details><summary>Models: </summary>
+
+- Fix submodel sanity check
+- Fix techroom modelnum references
+- Adjust movement sanity checks to account for more situations
+- Modular POF Features 2
+- Add fov values to .pof models
+- Add a Translation Moveable
+- Remove model octants
+- Fix glowpoints on animated submodels
+- Update type_flags when dock name changes
+- Add additional checks for Animation List handling of nonexistent polymodel instances
+- Virtual POFs: Modify Subsystems
+- Validate chunk size to avoid alignment crash and add align skip flag
+</details>
+
+<details><summary>Multiplayer: </summary>
+
+- Generic Lua Multiplayer RPC
+</details>
+
+<details><summary>Performance: </summary>
+
+- Increase sound update rate
+- Add `line of sight` as an optional AI override
+</details>
+
+<details><summary>SEXPs: </summary>
+
+- `turret-fired-since`, returns `true` if the specified turret has fired in the last `N` milliseconds
+- `is-ship-emp-active`, returns `true` if the specified ship or list of ships is currently under an EMP effect
+- `turret-has-primary` and `turret-has-secondary`, returns `true` if the specified turret contains the specified weapon
+- `has-armor-type`, returns `true` if the specified ship or subsystem has the specified armor type
+- `OPF_ANY_HUD_GAUGE` and `OPF_EVENT_NAME`, new Lua SEXP parameters
+- Enhance Dynamic SEXPs with parent parameters
+- Add "afterburn hard" AI goal flag
+</details>
+
+<details><summary>Scripting: </summary>
+
+- Add option to deprecate hooks
+- Get audiostream duration in float seconds
+- Lua method to check if the game has focus
+- `On warp complete` hook
+- Allow Lua to set the Discord presence to custom strings
+- Add virtvars for goal satisfaction and score
+- Allow scripts to read and add LuaEnums
+- Funcs and virtvars for SCPUI pause screen
+- Expose pausing weapon sounds
+- Make collision_group_id accessible to parse objects
+- Pass shortcut key character to Lua as a hook variable
+- Lua method to free all loaded models
+- `On Asteroid Created` hook
+- SCPUI methods required for handling closeup briefing icons
+- Expose some Nebula settings to Lua
+- SCPUI mission log
+- SCPUI APIsfor the Game Help UI, medals access, and control config
+- Force expand wings instead of toggle for SCPUI
+- Add misc. validity checks
+- Convert hotkey types to enum
+- Finalize SCPUI API
+- Blocking `On Frame` executor 
+- SCPUI Hud Config API
+- Configurable restriction for ships that accept Lua player orders
+- Add `ship::isPlayer()`
+- Lua access to default countermeasures class
+- Flag to check if a ship or weapon class is player allowed
+- Add hooks for comm menu opening/closing
+</details>
+
+<details><summary>Technical: </summary> 
+
+- Improve CFLAGS handling
+</details>
+
 ## [22.2.0] - 2022-08-06
 
 ```
