@@ -9,7 +9,7 @@ PLACEHOLDER
 
 Deprecations are a mechanism in FSO where a certain feature or aspect of the engine has changed or is no longer supported. Since this would normally break existing mods we have the mod table feature "[tt]$Target Version:[/tt]" with which a mod can specify what version of FSO it was developed with. The features listed above will be removed or changed when the target version of a mod is at least the version released in this post.
 
-[size=5pt]Previous [url=https://www.hard-light.net/forums/index.php?topic=98360.0]22.2.0 Release Thread[/url][/size]
+[size=5pt]Previous [url=https://www.hard-light.net/forums/index.php?topic=98682.0]23.0.0 Release Thread[/url][/size]
 
 Launchers, if you don't have one already:
 [b]All platforms: [/b] For every day use, we recommend [url=https://www.hard-light.net/forums/index.php?topic=94068.0]Knossos[/url], an integrated solution for downloading and launching mods.
