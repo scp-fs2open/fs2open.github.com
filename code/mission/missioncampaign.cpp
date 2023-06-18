@@ -857,7 +857,9 @@ int mission_campaign_previous_mission()
 	}
 
 	// copy backed up containers over
-	Campaign.persistent_containers = Campaign.red_alert_containers;
+	for (const auto& ra_container : Campaign.red_alert_containers) {
+		Campaign.persistent_containers.emplace_back(ra_container);
+	}
 	
 	Pilot.save_savefile();
 
@@ -1056,7 +1058,9 @@ void mission_campaign_store_containers(ContainerType persistence_type, bool stor
 	}
 
 	if (store_red_alert) {
-		Campaign.persistent_containers = Campaign.red_alert_containers;
+		for (const auto& current_con : Campaign.red_alert_containers) {
+			Campaign.persistent_containers.emplace_back(current_con);
+		}
 	}
 
 	for (const auto &container : get_all_sexp_containers()) {
