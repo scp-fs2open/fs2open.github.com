@@ -1272,7 +1272,7 @@ int CFred_mission_save::save_briefing()
 	return err;
 }
 
-int CFred_mission_save::save_campaign_file(char *pathname)
+int CFred_mission_save::save_campaign_file(const char *pathname)
 {
 	int i, j, m, flag;
 
@@ -2556,16 +2556,16 @@ int CFred_mission_save::save_messages()
 	return err;
 }
 
-int CFred_mission_save::save_mission_file(char *pathname)
+int CFred_mission_save::save_mission_file(const char *pathname)
 {
-	char backup_name[256], savepath[MAX_PATH_LEN], *p;
+	char savepath[MAX_PATH_LEN];
 
 	strcpy_s(savepath, "");
-	p = strrchr(pathname, '\\');
+	auto p = strrchr(pathname, '\\');
 	if (p) {
-		*p = '\0';
-		strcpy_s(savepath, pathname);
-		*p = '\\';
+		auto len = p - pathname;
+		strncpy(savepath, pathname, len);
+		savepath[len] = '\0';
 		strcat_s(savepath, "\\");
 	}
 	strcat_s(savepath, "saving.xxx");
@@ -2573,9 +2573,14 @@ int CFred_mission_save::save_mission_file(char *pathname)
 	save_mission_internal(savepath);
 
 	if (!err) {
+		char backup_name[MAX_PATH_LEN];
+
 		strcpy_s(backup_name, pathname);
-		if (backup_name[strlen(backup_name) - 4] == '.')
-			backup_name[strlen(backup_name) - 4] = 0;
+
+		// drop extension
+		auto ext_ch = strrchr(backup_name, '.');
+		if (ext_ch != nullptr)
+			*ext_ch = 0;
 
 		strcat_s(backup_name, ".bak");
 		cf_attrib(pathname, 0, FILE_ATTRIBUTE_READONLY, CF_TYPE_MISSIONS);

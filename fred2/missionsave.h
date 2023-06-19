@@ -150,7 +150,7 @@ public:
 	 *
 	 * @see save_mission_internal()
 	 */
-	int save_campaign_file(char *pathname);
+	int save_campaign_file(const char *pathname);
 
 	/**
 	 * @brief Saves the mission file to the given full pathname
@@ -164,7 +164,7 @@ public:
 	 *
 	 * @see save_mission_internal()
 	 */
-	int save_mission_file(char *pathname);
+	int save_mission_file(const char *pathname);
 
 	/**
 	 * @brief Save the reinforcements to file
