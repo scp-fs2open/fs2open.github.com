@@ -536,7 +536,7 @@ float Game_shudder_intensity = 0.0f;			// should be between 0.0 and 100.0
 sound_env Game_sound_env;
 sound_env Game_default_sound_env = { EAX_ENVIRONMENT_BATHROOM, 0.2f, 0.2f, 1.0f };
 
-fs_builtin_mission *game_find_builtin_mission(char *filename)
+const fs_builtin_mission *game_find_builtin_mission(const char *filename)
 {
 	// look through all existing builtin missions
 	for(int idx=0; idx<Game_builtin_mission_count; idx++){

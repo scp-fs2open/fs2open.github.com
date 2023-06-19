@@ -1491,7 +1491,7 @@ void mission_campaign_maybe_play_movie(int type)
 /**
  * Return the type of campaign of the passed filename
  */
-int mission_campaign_parse_is_multi(char *filename, char *name)
+int mission_campaign_parse_is_multi(const char *filename, char *name)
 {	
 	int i;
 	char temp[NAME_LENGTH];

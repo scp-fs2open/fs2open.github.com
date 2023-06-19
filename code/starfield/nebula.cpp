@@ -73,7 +73,7 @@ void project_2d_onto_sphere( vec3d *pnt, float u, float v )
 // 1.00 - initial version
 
 // returns 0 if failed
-int load_nebula_sub(char *filename)
+int load_nebula_sub(const char *filename)
 {
 	CFILE *fp;
 	char id[16];

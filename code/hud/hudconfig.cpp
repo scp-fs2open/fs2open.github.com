@@ -1266,7 +1266,7 @@ void hud_config_button_do(int n)
 
 	case HCB_SAVE_HCF:		
 		int exists;
-		char *out;
+		const char *out;
 
 		// get the text in the input control
 		exists = 0;
@@ -1708,10 +1708,9 @@ void hud_config_color_load(const char *name)
 {
 	int idx;
 	char str[1024];
-	char *fname;
 	ubyte r, g, b, a;
 
-	fname = cf_add_ext(name, ".hcf");
+	const char *fname = cf_add_ext(name, ".hcf");
 
 	try
 	{

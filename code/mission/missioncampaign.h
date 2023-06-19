@@ -177,7 +177,7 @@ extern void mission_campaign_savefile_delete(const char* cfilename);
 extern void mission_campaign_delete_all_savefiles( char *pilot_name );
 
 // if a given campaign is a multiplayer campaign, we can load and save the multiplayer info portion with these functions
-extern int mission_campaign_parse_is_multi(char *filename, char *name);
+extern int mission_campaign_parse_is_multi(const char *filename, char *name);
 
 // function which sets up internal variable for player to play next mission in the campaign
 extern int mission_campaign_next_mission( void );
