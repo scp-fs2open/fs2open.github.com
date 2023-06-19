@@ -2076,7 +2076,7 @@ void model_render_glow_points(polymodel *pm, polymodel_instance *pmi, ship *ship
 		if (bank->glow_bitmap == -1)
 			continue;
 
-		if (pmi != nullptr) {
+		if ((pmi != nullptr) && (bank->submodel_parent > -1)) {
 			auto smi = &pmi->submodel[bank->submodel_parent];
 			if (smi->blown_off) {
 				continue;
