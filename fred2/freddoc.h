@@ -48,7 +48,7 @@ public:
 	 *
 	 * @returns true on success, false on failure
 	 */
-	bool load_mission(char *pathname, int flags = 0);
+	bool load_mission(const char *pathname, int flags = 0);
 
 	/**
 	 * @brief Pushes an Undo item onto the stack
@@ -144,8 +144,6 @@ public:
 	 */
 	virtual void Dump(CDumpContext &dc) const;
 #endif
-
-	char mission_pathname[256];             //!< Full pathname to the opened mission
 
 	CString undo_desc[BACKUP_DEPTH + 1];    //!< String array of the undo descriptions
 

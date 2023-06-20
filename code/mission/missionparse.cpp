@@ -6410,19 +6410,25 @@ bool post_process_mission(mission *pm)
 
 int get_mission_info(const char *filename, mission *mission_p, bool basic, bool filename_is_full_path)
 {
-	int filelength;
-	char real_fname_buf[MAX_FILENAME_LEN];
-	const char *real_fname = real_fname_buf;
+	static SCP_string real_fname_buf;
+	const char *real_fname = nullptr;
 	
 	if (filename_is_full_path) {
 		real_fname = filename;
 	} else {
-		strncpy(real_fname_buf, filename, MAX_FILENAME_LEN-1);
-		real_fname_buf[sizeof(real_fname_buf)-1] = '\0';
-	
-		char *p = strrchr(real_fname_buf, '.');
-		if (p) *p = 0; // remove any extension
-		strcat_s(real_fname_buf, FS_MISSION_FILE_EXT);  // append mission extension
+		// replace any extension with the standard one
+		auto p = strrchr(filename, '.');
+		if (p == nullptr) {
+			real_fname_buf = filename;
+			real_fname_buf += FS_MISSION_FILE_EXT;
+			real_fname = real_fname_buf.c_str();
+		} else if (stricmp(p, FS_MISSION_FILE_EXT) == 0) {
+			real_fname = filename;
+		} else {
+			real_fname_buf.assign(filename, p - filename);
+			real_fname_buf += FS_MISSION_FILE_EXT;
+			real_fname = real_fname_buf.c_str();
+		}
 	}
 
 	// if mission_p is NULL, make it point to The_mission
@@ -6435,7 +6441,7 @@ int get_mission_info(const char *filename, mission *mission_p, bool basic, bool 
 	}
 
 	// 7/9/98 -- MWA -- check for 0 length file.
-	filelength = cfilelength(ftemp);
+	auto filelength = cfilelength(ftemp);
 	cfclose(ftemp);
 	if (filelength == 0) {
 		return -1;
