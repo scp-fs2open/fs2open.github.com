@@ -790,6 +790,7 @@ typedef struct screen {
 	std::function<void()> gf_post_process_restore_zbuffer;
 
 	std::function<void(bool clearNonColorBufs)> gf_deferred_lighting_begin;
+	std::function<void()> gf_deferred_lighting_msaa;
 	std::function<void()> gf_deferred_lighting_end;
 	std::function<void()> gf_deferred_lighting_finish;
 
@@ -1092,6 +1093,7 @@ inline void gr_post_process_restore_zbuffer()
 }
 
 #define gr_deferred_lighting_begin		GR_CALL(gr_screen.gf_deferred_lighting_begin)
+#define gr_deferred_lighting_msaa		GR_CALL(gr_screen.gf_deferred_lighting_msaa)
 #define gr_deferred_lighting_end		GR_CALL(gr_screen.gf_deferred_lighting_end)
 #define gr_deferred_lighting_finish		GR_CALL(gr_screen.gf_deferred_lighting_finish)
 

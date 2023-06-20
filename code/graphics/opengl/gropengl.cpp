@@ -972,6 +972,7 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_copy_effect_texture = gr_opengl_copy_effect_texture;
 
 	gr_screen.gf_deferred_lighting_begin = gr_opengl_deferred_lighting_begin;
+	gr_screen.gf_deferred_lighting_msaa = gr_opengl_deferred_lighting_msaa;
 	gr_screen.gf_deferred_lighting_end = gr_opengl_deferred_lighting_end;
 	gr_screen.gf_deferred_lighting_finish = gr_opengl_deferred_lighting_finish;
 
