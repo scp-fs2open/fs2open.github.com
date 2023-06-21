@@ -1595,10 +1595,13 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 	// MAX_FILENAME_LEN-10 == 5 character frame designator plus '.' plus 3 letter ext plus NULL terminator
 	// we only check for -5 here since the filename should already have the extension on it, and it must have passed the previous check
 	if (strlen(filename) > MAX_FILENAME_LEN - 5) {
-		Warning(LOCATION, "Passed filename, '%s', is too long to support an extension and frames!!\n\nMaximum length for an ANI/EFF/APNG, minus the extension, is %i characters.\n", filename, MAX_FILENAME_LEN - 10);
-		if (img_cfp != nullptr)
-			cfclose(img_cfp);
-		return -1;
+		// Don't check PNGs yet, because a PNG could be a regular non-animated image
+		if (type != BM_TYPE_PNG) {
+			Warning(LOCATION, "Passed filename, '%s', is too long to support an extension and frames!!\n\nMaximum length for an ANI/EFF/APNG, minus the extension, is %i characters.\n", filename, MAX_FILENAME_LEN - 10);
+			if (img_cfp != nullptr)
+				cfclose(img_cfp);
+			return -1;
+		}
 	}
 
 	// it's an effect file, any readable image type with eff being txt
@@ -1681,6 +1684,14 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 				nprintf(("apng","Failed to load apng: %s\n", e.what()));
 				return -1;
 			}
+		}
+
+		// Now do the same filename length check that was deferred for PNGs above
+		if (strlen(filename) > MAX_FILENAME_LEN - 5) {
+			Warning(LOCATION, "Passed filename, '%s', is too long to support an extension and frames!!\n\nMaximum length for an ANI/EFF/APNG, minus the extension, is %i characters.\n", filename, MAX_FILENAME_LEN - 10);
+			if (img_cfp != nullptr)
+				cfclose(img_cfp);
+			return -1;
 		}
 	}
 	else {
