@@ -1511,6 +1511,10 @@ void pilotfile::csg_reset_data()
 	Campaign.persistent_variables.clear();
 	Campaign.red_alert_variables.clear();
 
+	// clear out containers
+	Campaign.persistent_containers.clear();
+	Campaign.red_alert_containers.clear();
+
 	// clear red alert data
 	Red_alert_wingman_status.clear();
 
