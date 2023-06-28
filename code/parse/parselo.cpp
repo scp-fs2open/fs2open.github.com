@@ -3440,7 +3440,9 @@ char *split_str_once(char *src, int max_pixel_w)
 	bool last_was_white = false;
 
 	Assert(src);
-	Assert(max_pixel_w > 0);
+
+	if (max_pixel_w <= 0)
+		return src;  // if there's no width, skip everything else
 
 	gr_get_string_size(&w, nullptr, src);
 	if ( (w <= max_pixel_w) && !strstr(src, "\n") ) {
