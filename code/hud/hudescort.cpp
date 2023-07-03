@@ -347,19 +347,35 @@ void HudGaugeEscort::renderIcon(int x, int y, int index)
 	}
 
 	// print out ship name
-	strcpy_s(buf, sp->get_display_name());
+	// behavior largely taken from message_queue_process() in missionmessage.cpp,
+	// but with the multiplayer callsign behavior kept in accordance with #1674.
+	if (sp->callsign_index >= 0 && !pl)
+	{
+		// Without the !pl, this would just stuff short_callsign anyway, so may
+		// as well use the ship name and append it instead.
+		hud_stuff_ship_callsign(buf, sp);
+	}
+	else if (((Iff_info[sp->team].flags & IFFF_WING_NAME_HIDDEN) && (sp->wingnum != -1)) || (sp->flags[Ship::Ship_Flags::Hide_ship_name]))
+	{
+		// If we're hiding the ship name, we probably shouldn't append the callsign either
+		hud_stuff_ship_class(buf, sp);
+	}
+	else
+	{
+		hud_stuff_ship_name(buf, sp);
 
-	// maybe add callsign if multi and player ship
-	if (pl) {
-		SCP_string callsign;
+		// maybe add callsign if multi and player ship
+		if (pl) {
+			SCP_string callsign;
 
-		callsign.reserve(32);
+			callsign.reserve(32);
 
-		callsign += " (";
-		callsign += pl->short_callsign;
-		callsign += ")";
+			callsign += " (";
+			callsign += pl->short_callsign;
+			callsign += ")";
 
-		strcat_s(buf, callsign.c_str());
+			strcat_s(buf, callsign.c_str());
+		}
 	}
 
 	const int w = font::force_fit_string(buf, 255, ship_name_max_width);
