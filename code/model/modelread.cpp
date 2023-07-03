@@ -2925,12 +2925,38 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 		}
 	}
 
-	// handle dockpoint parent_submodels
+	// some dockpoint checks
 	for (i = 0; i < pm->n_docks; i++) {
 		auto dock = &pm->docking_bays[i];
 
+		// handle dockpoint parent_submodels
 		if (dock->parent_submodel >= 0) {
 			resolve_submodel_index(pm, dock->name, "$parent_submodel", dock->parent_submodel, dock_parent_submodel_names);
+		}
+
+		// reconcile paths
+		for (j = 0; j < dock->num_spline_paths; j++) {
+			auto path_num = dock->splines[j];
+
+			if (path_num < 0) {
+				continue;
+			} else if (path_num >= pm->n_paths) {
+				Warning(LOCATION, "On model '%s', path %d for dockpoint '%s' is not valid!  The index is %d but the total number of paths is %d.", pm->filename, j, dock->name, path_num, pm->n_paths);
+				dock->splines[j] = -1;
+				continue;
+			}
+
+			auto path = &pm->paths[path_num];
+
+			// most dockpoint paths will have a parent_name like $dock01-01 which does not resolve to a submodel
+			if (path->parent_submodel < 0) {
+				continue;
+			}
+			// for paths that have a parent, it had better match
+			if (path->parent_submodel != dock->parent_submodel) {
+				Warning(LOCATION, "On model '%s', the path for dockpoint '%s' does not have the same parent submodel as the dockpoint itself!", pm->filename, dock->name);
+				continue;
+			}
 		}
 	}
 
