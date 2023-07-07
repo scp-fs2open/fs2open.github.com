@@ -395,7 +395,8 @@ void HudGaugeTargetBox::render(float frametime)
 	setGaugeColor();
 
 	// blit the background frame
-	renderBitmap(Monitor_frame.first_frame, position[0], position[1]);
+	if (Monitor_frame.first_frame >= 0)
+		renderBitmap(Monitor_frame.first_frame, position[0], position[1]);
 
 	if ( Monitor_mask >= 0 ) {
 		// render the alpha mask
@@ -461,8 +462,9 @@ void HudGaugeTargetBox::render(float frametime)
 void HudGaugeTargetBox::renderTargetForeground()
 {
 	setGaugeColor();
-
-	renderBitmap(Monitor_frame.first_frame+1, position[0], position[1]);	
+	
+	if (Monitor_frame.first_frame + 1 >= 0)
+		renderBitmap(Monitor_frame.first_frame+1, position[0], position[1]);	
 }
 
 /**
@@ -473,7 +475,7 @@ void HudGaugeTargetBox::renderTargetIntegrity(int disabled,int force_obj_num)
 	int		clip_h,w,h;
 	char		buf[16];
 
-	if ( Integrity_bar.first_frame == -1 ) 
+	if ( Integrity_bar.first_frame < 0 ) 
 		return;
 
 	if ( disabled ) {
@@ -1580,7 +1582,7 @@ void HudGaugeExtraTargetData::render(float  /*frametime*/)
 		extra_data_shown=1;
 	}
 
-	if ( extra_data_shown ) {	
+	if ( extra_data_shown && bracket.first_frame >= 0) {
 		renderBitmap(bracket.first_frame, position[0] + bracket_offsets[0], position[1] + bracket_offsets[1]);		
 	}
 }

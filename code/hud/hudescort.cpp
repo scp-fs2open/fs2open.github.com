@@ -161,6 +161,7 @@ void HudGaugeEscort::pageIn()
 	int i;
 
 	for ( i = 0; i < NUM_ESCORT_FRAMES; i++ ) {
+		mprintf(("\n%s %d", LOCATION));
 		bm_page_in_aabitmap( Escort_gauges[i].first_frame, Escort_gauges[i].num_frames);
 	}
 }
@@ -237,6 +238,9 @@ int HudGaugeEscort::setGaugeColorEscort(int index, int team)
 void HudGaugeEscort::render(float  /*frametime*/)
 {
 	int	i = 0;
+
+	if (Escort_gauges[0].first_frame < 0)
+		return;
 
 	if ( !Show_escort_view ) {
 		return;

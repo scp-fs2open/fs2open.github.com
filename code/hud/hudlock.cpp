@@ -1693,7 +1693,7 @@ void HudGaugeLock::renderLockTrianglesOld(int center_x, int center_y, int radius
 // draw a frame of the rotating lock triangles animation
 void HudGaugeLock::renderLockTriangles(int center_x, int center_y, float frametime)
 {
-	if ( Lock_anim.first_frame == -1 ) {
+	if ( Lock_anim.first_frame < 0 ) {
 		renderLockTrianglesOld(center_x, center_y, Lock_target_box_width/2);
 	} else {
 		// render the anim
@@ -1734,7 +1734,7 @@ void HudGaugeLock::renderLockTriangles(int center_x, int center_y, float frameti
 
 void HudGaugeLock::renderLockTrianglesNew(int center_x, int center_y, float frametime, lock_info *slot)
 {
-	if ( Lock_anim.first_frame == -1 ) {
+	if ( Lock_anim.first_frame < 0 ) {
 		renderLockTrianglesOld(center_x, center_y, Lock_target_box_width/2);
 	} else {
 		// render the anim

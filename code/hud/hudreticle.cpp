@@ -249,7 +249,11 @@ void HudGaugeReticle::initFirepointDisplay(bool firepoint, int scaleX, int scale
 
 void HudGaugeReticle::render(float  /*frametime*/)
 {
-ship_info *sip = &Ship_info[Player_ship->ship_info_index];
+	if (crosshair.first_frame < 0) {
+		return;
+	}
+
+	ship_info *sip = &Ship_info[Player_ship->ship_info_index];
 
 	if (autoaim_frame_offset > 0 || sip->autoaim_lock_snd.isValid() || sip->autoaim_lost_snd.isValid()) {
 		ship *shipp = &Ships[Objects[Player->objnum].instance];
@@ -533,6 +537,10 @@ void HudGaugeThrottle::pageIn()
 
 void HudGaugeThrottle::render(float  /*frametime*/)
 {
+	if (throttle_frames.first_frame < 0) {
+		return;
+	}
+
 	float	desired_speed, max_speed, current_speed, absolute_speed, absolute_displayed_speed, max_displayed_speed, percent_max, percent_aburn_max;
 	int	desired_y_pos, y_end;
 
@@ -812,7 +820,9 @@ void HudGaugeThreatIndicator::pageIn()
 void HudGaugeThreatIndicator::render(float  /*frametime*/)
 {
 	setGaugeColor();
-	renderBitmap(threat_arc.first_frame+1, position[0], position[1]);
+
+	if (threat_arc.first_frame >= 0)
+		renderBitmap(threat_arc.first_frame+1, position[0], position[1]);
 
 	renderLaserThreat();
 	renderLockThreat();
@@ -820,6 +830,9 @@ void HudGaugeThreatIndicator::render(float  /*frametime*/)
 
 void HudGaugeThreatIndicator::renderLaserThreat()
 {
+	if (laser_warn.first_frame < 0)
+		return;
+
 	int frame_offset, num_frames;
 
 	//Check how many frames the ani actually has
@@ -845,6 +858,9 @@ void HudGaugeThreatIndicator::renderLaserThreat()
 
 void HudGaugeThreatIndicator::renderLockThreat()
 {
+	if (lock_warn.first_frame < 0)
+		return;
+
 	int frame_offset, num_frames;
 
 	//Let's find out how many frames our ani has, and adjust accordingly
