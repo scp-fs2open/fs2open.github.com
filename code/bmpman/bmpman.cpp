@@ -2605,11 +2605,9 @@ void bm_page_in_aabitmap(int handle, int nframes) {
 	if (handle < 0)
 		return;
 
-	mprintf(("bm_page_in_aabitmap"));
 	Assert(bm_get_entry(handle)->handle == handle);
 
 	for (i = 0; i<nframes; i++) {
-		mprintf(("bm_page_in_aabitmap2"));
 		auto frame_entry = bm_get_entry(handle + i);
 
 		frame_entry->preloaded = 2;

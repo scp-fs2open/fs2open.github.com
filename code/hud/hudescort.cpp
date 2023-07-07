@@ -161,7 +161,6 @@ void HudGaugeEscort::pageIn()
 	int i;
 
 	for ( i = 0; i < NUM_ESCORT_FRAMES; i++ ) {
-		mprintf(("\n%s %d", LOCATION));
 		bm_page_in_aabitmap( Escort_gauges[i].first_frame, Escort_gauges[i].num_frames);
 	}
 }

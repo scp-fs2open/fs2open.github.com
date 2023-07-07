@@ -109,7 +109,6 @@ extern SCP_vector<std::array<bitmap_slot, BM_BLOCK_SIZE>> bm_blocks;
 bitmap_slot* bm_get_slot(int handle, bool separate_ani_frames = true);
 
 inline bitmap_entry* bm_get_entry(int handle, bool separate_ani_frames = true) {
-	mprintf(("bm_get_entry"));
 	return &bm_get_slot(handle, separate_ani_frames)->entry;
 }
 
