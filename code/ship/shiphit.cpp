@@ -1050,7 +1050,7 @@ static void shiphit_record_player_killer(object *killer_objp, player *p)
 					nprintf(("Network", "Couldn't find player object of weapon for killer of %s\n", p->callsign));
 				}
 			} else {
-				strcpy_s(p->killer_parent_name, Ships[Objects[killer_objp->parent].instance].get_display_name());
+				strcpy_s(p->killer_parent_name, Ships[Objects[killer_objp->parent].instance].ship_name);
 			}
 		} else {
 			p->killer_species = -1;
@@ -1078,7 +1078,7 @@ static void shiphit_record_player_killer(object *killer_objp, player *p)
 				nprintf(("Network", "Couldn't find player object of shockwave for killer of %s\n", p->callsign));
 			}
 		} else {
-			strcpy_s(p->killer_parent_name, Ships[Objects[killer_objp->parent].instance].get_display_name());
+			strcpy_s(p->killer_parent_name, Ships[Objects[killer_objp->parent].instance].ship_name);
 		}
 		break;
 
@@ -1106,7 +1106,7 @@ static void shiphit_record_player_killer(object *killer_objp, player *p)
 				nprintf(("Network", "Couldn't find player object for killer of %s\n", p->callsign));
 			}
 		} else {
-			strcpy_s(p->killer_parent_name, Ships[killer_objp->instance].get_display_name());
+			strcpy_s(p->killer_parent_name, Ships[killer_objp->instance].ship_name);
 		}
 		break;
 	
@@ -1129,7 +1129,7 @@ static void shiphit_record_player_killer(object *killer_objp, player *p)
 		p->killer_objtype = OBJ_BEAM;
 		if(beam_obj != -1){			
 			if((Objects[beam_obj].type == OBJ_SHIP) && (Objects[beam_obj].instance >= 0)){
-				strcpy_s(p->killer_parent_name, Ships[Objects[beam_obj].instance].get_display_name());
+				strcpy_s(p->killer_parent_name, Ships[Objects[beam_obj].instance].ship_name);
 			}
 			p->killer_species = Ship_info[Ships[Objects[beam_obj].instance].ship_info_index].species;
 		} else {			

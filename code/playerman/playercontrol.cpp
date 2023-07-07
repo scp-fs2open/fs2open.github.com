@@ -1760,83 +1760,53 @@ float	player_farthest_weapon_range()
 }
 
 /**
- * Determine text name for the weapon that killed the player.
- *
- * @param weapon_info_index	Weapon type that killed the player (can be -1 if no weapon involved)
- * @param killer_species Species of ship that fired weapon
- * @param weapon_name (Output parameter) Stores weapon name generated in this function
- */
-const char *player_get_killer_weapon_name(int weapon_info_index, int killer_species)
-{
-	if ( weapon_info_index < 0 ) {
-		return "";
-	}
-
-#ifndef NDEBUG
-	if ( Show_killer_weapon || (killer_species == Ship_info[Player_ship->ship_info_index].species) ) {
-#else
-	if (killer_species == Ship_info[Player_ship->ship_info_index].species) {
-#endif
-		return Weapon_info[weapon_info_index].get_display_name();
-	} else {
-		if ( Weapon_info[weapon_info_index].subtype == WP_MISSILE ) {
-			return XSTR( "missile", 90);
-		} else {
-			return XSTR( "laser fire", 91);
-		}
-	}
-}
-
-/**
  * Generates the message for death of a player given the information stored in the player object.
  */
 void player_generate_death_message(player *player_p)
 {
 	SCP_string &msg = player_p->death_message;
-	int ship_index;
 
-	auto weapon_name = player_get_killer_weapon_name(player_p->killer_weapon_index, player_p->killer_species);
+	// killer_parent_name is always a ship name or a callsign (or blank).  If it's a ship name, get the ship and use the ship's display name
+	auto ship_entry = ship_registry_get(player_p->killer_parent_name);
+	auto killer_display_name = (ship_entry != nullptr && ship_entry->status == ShipStatus::PRESENT) ? ship_entry->shipp->get_display_name() : player_p->killer_parent_name;
 
 	switch (player_p->killer_objtype)
 	{
 		case OBJ_SHOCKWAVE:
-			if (weapon_name[0])
+			if (player_p->killer_weapon_index >= 0)
 			{
 				sprintf(msg, XSTR( "%s was killed by a missile shockwave", 92), player_p->callsign);
 			}
 			else
 			{
-				sprintf(msg, XSTR( "%s was killed by a shockwave from %s exploding", 93), player_p->callsign, player_p->killer_parent_name);
+				sprintf(msg, XSTR( "%s was killed by a shockwave from %s exploding", 93), player_p->callsign, killer_display_name);
 			}
 			break;
 
 		case OBJ_WEAPON:
-			Assert(weapon_name[0]);
-
 			// is this from a friendly ship?
-			ship_index = ship_name_lookup(player_p->killer_parent_name, 1);
-			if ((ship_index >= 0) && (Player_ship != NULL) && (Player_ship->team == Ships[ship_index].team))
+			if ((ship_entry != nullptr) && (ship_entry->status == ShipStatus::PRESENT) && (Player_ship != nullptr) && (Player_ship->team == ship_entry->shipp->team))
 			{
-				sprintf(msg, XSTR( "%s was killed by friendly fire from %s", 1338), player_p->callsign, player_p->killer_parent_name);
+				sprintf(msg, XSTR( "%s was killed by friendly fire from %s", 1338), player_p->callsign, killer_display_name);
 			}
 			else
 			{
-				sprintf(msg, XSTR( "%s was killed by %s", 94), player_p->callsign, player_p->killer_parent_name);
+				sprintf(msg, XSTR( "%s was killed by %s", 94), player_p->callsign, killer_display_name);
 			}
 			break;
 
 		case OBJ_SHIP:
 			if (player_p->flags & PLAYER_FLAGS_KILLED_BY_EXPLOSION)
 			{
-				sprintf(msg, XSTR( "%s was killed by a blast from %s exploding", 95), player_p->callsign, player_p->killer_parent_name);
+				sprintf(msg, XSTR( "%s was killed by a blast from %s exploding", 95), player_p->callsign, killer_display_name);
 			}
 			else if (player_p->flags & PLAYER_FLAGS_KILLED_BY_ENGINE_WASH)
 			{
-				sprintf(msg, XSTR( "%s was killed by engine wash from %s", 1494), player_p->callsign, player_p->killer_parent_name);
+				sprintf(msg, XSTR( "%s was killed by engine wash from %s", 1494), player_p->callsign, killer_display_name);
 			}
 			else
 			{
-				sprintf(msg, XSTR( "%s was killed by a collision with %s", 96), player_p->callsign, player_p->killer_parent_name);
+				sprintf(msg, XSTR( "%s was killed by a collision with %s", 96), player_p->callsign, killer_display_name);
 			}
 			break;
 
@@ -1857,14 +1827,13 @@ void player_generate_death_message(player *player_p)
 			else
 			{
 				// is this from a friendly ship?
-				ship_index = ship_name_lookup(player_p->killer_parent_name, 1);
-				if ((ship_index >= 0) && (Player_ship != NULL) && (Player_ship->team == Ships[ship_index].team))
+				if ((ship_entry != nullptr) && (ship_entry->status == ShipStatus::PRESENT) && (Player_ship != nullptr) && (Player_ship->team == ship_entry->shipp->team))
 				{
-					sprintf(msg, XSTR( "%s was destroyed by friendly beam fire from %s", 1339), player_p->callsign, player_p->killer_parent_name);
+					sprintf(msg, XSTR( "%s was destroyed by friendly beam fire from %s", 1339), player_p->callsign, killer_display_name);
 				}
 				else
 				{
-					sprintf(msg, XSTR( "%s was destroyed by a beam from %s", 1082), player_p->callsign, player_p->killer_parent_name);
+					sprintf(msg, XSTR( "%s was destroyed by a beam from %s", 1082), player_p->callsign, killer_display_name);
 				}			
 			}
 			break;
