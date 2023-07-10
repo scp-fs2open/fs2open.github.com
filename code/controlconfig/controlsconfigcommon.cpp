@@ -799,6 +799,8 @@ void control_config_common_init()
 	Mouse_button_text[6] = vm_strdup(XSTR("Wheel Down", 1656));
 	Mouse_button_text[7] = vm_strdup(XSTR("Wheel Left", 1657));
 	Mouse_button_text[8] = vm_strdup(XSTR("Wheel Right", 1658));
+
+	Script_system.OnStateDestroy.add([](lua_State*) -> void { Lua_hooks.clear(); });
 }
 
 /*
