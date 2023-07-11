@@ -143,6 +143,7 @@ bool Countermeasures_use_capacity;
 bool Play_thruster_sounds_for_player;
 std::array<std::tuple<float, float>, 6> Fred_spacemouse_nonlinearity;
 bool Randomize_particle_rotation;
+bool Flags_override_old_position;
 
 static auto DiscordOption __UNUSED = options::OptionBuilder<bool>("Other.Discord", "Discord Presence", "Toggle Discord Rich Presence")
 							 .category("Other")
@@ -1264,6 +1265,10 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Countermeasures_use_capacity);
 		}
 
+		if (optional_string("$Weapon flags override uses old position:")) {
+			stuff_boolean(&Flags_override_old_position);
+		}
+
 		required_string("#END");
 	}
 	catch (const parse::ParseException& e)
@@ -1436,6 +1441,7 @@ void mod_table_reset()
 			std::tuple<float, float>{ 1.0f, 1.0f }
 		}};
 	Randomize_particle_rotation = false;
+	Flags_override_old_position = false;
 }
 
 void mod_table_set_version_flags()
@@ -1450,5 +1456,8 @@ void mod_table_set_version_flags()
 	if (mod_supports_version(23, 0, 0)) {
 		Shockwaves_inherit_parent_damage_type = true;	// people intuitively expect shockwaves to default to the damage type of the weapon that spawned them
 		Fixed_chaining_to_repeat = true;
+	}
+	if (!mod_supports_version(23, 4, 0)) {
+		Flags_override_old_position = true; // backwards compatibility flag for old tables
 	}
 }
