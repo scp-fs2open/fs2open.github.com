@@ -133,7 +133,7 @@ ADE_VIRTVAR(Radius, l_Object, "number", "Radius of an object", "number", "Radius
 	return ade_set_args(L, "f", objh->objp->radius);
 }
 
-ADE_VIRTVAR(Position, l_Object, "vector", "Object world position (World vector)", "vector", "World position, or null vector if handle is invalid")
+ADE_VIRTVAR(Position, l_Object, "vector", "Object world position (World vector)", "vector", "World position, or null vector if handle is invalid. Setting this value will recalculate collision culling with regards to this object.")
 {
 	object_h *objh;
 	vec3d *v3=NULL;
@@ -157,6 +157,28 @@ ADE_VIRTVAR(Position, l_Object, "vector", "Object world position (World vector)"
 	return ade_set_args(L, "o", l_Vector.Set(objh->objp->pos));
 }
 
+ADE_FUNC(SetPositionNoCollideRetime, l_Object, "vector", "Object world position (World vector)", "vector", "Updates the position WITHOUT recalculating collisions. This is faster, but may cause incorrect collisions if moved too far.")
+{
+	object_h* objh = nullptr;
+	vec3d* v3 = nullptr;
+
+	if (!ade_get_args(L, "oo", l_Object.GetPtr(&objh), l_Vector.GetPtr(&v3)))
+		return ADE_RETURN_NIL;
+
+	if (!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	if (v3) {
+		objh->objp->pos = *v3;
+		if (objh->objp->type == OBJ_WAYPOINT) {
+			waypoint* wpt = find_waypoint_with_objnum(OBJ_INDEX(objh->objp));
+			wpt->set_pos(v3);
+		}
+	}
+
+	return ADE_RETURN_NIL;
+}
+
 ADE_VIRTVAR(LastPosition, l_Object, "vector", "Object world position as of last frame (World vector)", "vector", "World position, or null vector if handle is invalid")
 {
 	object_h *objh;
@@ -174,7 +196,7 @@ ADE_VIRTVAR(LastPosition, l_Object, "vector", "Object world position as of last 
 	return ade_set_args(L, "o", l_Vector.Set(objh->objp->last_pos));
 }
 
-ADE_VIRTVAR(Orientation, l_Object, "orientation", "Object world orientation (World orientation)", "orientation", "Orientation, or null orientation if handle is invalid")
+ADE_VIRTVAR(Orientation, l_Object, "orientation", "Object world orientation (World orientation)", "orientation", "Orientation, or null orientation if handle is invalid. Setting this value will recalculate collision culling with regards to this object.")
 {
 	object_h *objh;
 	matrix_h *mh=NULL;
@@ -192,6 +214,23 @@ ADE_VIRTVAR(Orientation, l_Object, "orientation", "Object world orientation (Wor
 	}
 
 	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&objh->objp->orient)));
+}
+
+ADE_FUNC(SetOrientNoCollideRetime, l_Object, "orientation", "Object world orientation (World orientation)", "vector", "Updates the orientation WITHOUT recalculating collisions. This is faster, but may cause incorrect collisions if moved too far.")
+{
+	object_h* objh = nullptr;
+	matrix_h* mh = nullptr;
+
+	if (!ade_get_args(L, "oo", l_Object.GetPtr(&objh), l_Matrix.GetPtr(&mh)))
+		return ADE_RETURN_NIL;
+
+	if (!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	if (mh)
+		objh->objp->orient = *mh->GetMatrix();
+
+	return ADE_RETURN_NIL;
 }
 
 ADE_VIRTVAR(LastOrientation, l_Object, "orientation", "Object world orientation as of last frame (World orientation)", "orientation", "Orientation, or null orientation if handle is invalid")
