@@ -1,6 +1,8 @@
 #ifndef SHIPWEAPONSDIALOG_H
 #define SHIPWEAPONSDIALOG_H
 
+#include "ShipEditorDialog.h"
+
 #include <mission/dialogs/ShipWeaponsDialogModel.h>
 #include <ui/FredView.h>
 
@@ -10,43 +12,61 @@ namespace fso {
 namespace fred {
 namespace dialogs {
 
-namespace ui {
+namespace Ui {
 class ShipWeaponsDialog;
 }
-
 class BankTreeItem {
   public:
-	explicit BankTreeItem(const QString& type, const QString& name, Banks* banks, BankTreeItem* parentItem = nullptr);
-	explicit BankTreeItem(const QString& type, Bank* bank, BankTreeItem* parentItem = nullptr);
 	explicit BankTreeItem(BankTreeItem* parentItem = nullptr);
-	~BankTreeItem();
-	QVariant data(int column) const;
+	virtual ~BankTreeItem();
+	virtual QVariant data(int column) const = 0;
 	void appendChild(BankTreeItem* child);
 	BankTreeItem* child(int row);
 	int childCount() const;
 	int childNumber() const;
 	BankTreeItem* parentItem();
-	bool insertChild(int position, const QString& type, const QString& name, Banks* banks);
-	bool insertChild(int position, const QString& type, Bank* bank);
+	bool insertLabel(int position, const QString& name, Banks* banks);
+	bool insertBank(int position, Bank* banks);
 
-	//setters
-	bool setWeapon(int id);
-	void setAIClass(int value);
-	//getters
-	QString getType() const;
-	int getId() const;
 	QString getName() const;
+	virtual bool setData(int column, const QVariant& value) = 0;
+	virtual Qt::ItemFlags getFlags(int column) = 0;
 
-	bool setData(int column, const QVariant& value);
+  protected:
+	QString name;
 
   private:
-	QList<BankTreeItem*> m_childItems;
 	BankTreeItem* m_parentItem;
+	QList<BankTreeItem*> m_childItems;
+};
+class BankTreeRoot : public BankTreeItem {
+	bool setData(int column, const QVariant& value) override;
+	QVariant data(int column) const override;
+	Qt::ItemFlags getFlags(int column) override;
+};
+class BankTreeBank : public BankTreeItem {
+  public:
+	explicit BankTreeBank(Bank* bank, BankTreeItem* parentItem = nullptr);
+	void setWeapon(int id);
+	void setAmmo(int value);
+	int getId() const;
+	bool setData(int column, const QVariant& value) override;
+	QVariant data(int column) const override;
+	Qt::ItemFlags getFlags(int column) override;
+
+  private:
 	Bank* bank;
+};
+class BankTreeLabel : public BankTreeItem {
+  public:
+	explicit BankTreeLabel(const QString& name, Banks* banks, BankTreeItem* parentItem = nullptr);
+	void setAIClass(int value);
+	bool setData(int column, const QVariant& value) override;
+	QVariant data(int column) const override;
+	Qt::ItemFlags getFlags(int column) override;
+
+  private:
 	Banks* banks;
-	QString name;
-	QString type;
-	int ammo;
 };
 
 class BankTreeModel : public QAbstractItemModel {
@@ -54,7 +74,6 @@ class BankTreeModel : public QAbstractItemModel {
   public:
 	BankTreeModel(const SCP_vector<Banks*>& data, QObject* parent = nullptr);
 	~BankTreeModel() override;
-	void SetAIClass(QModelIndexList& indexs, int value);
 	int columnCount(const QModelIndex& parent) const override;
 	QVariant data(const QModelIndex& index, int role) const override;
 
@@ -69,7 +88,8 @@ class BankTreeModel : public QAbstractItemModel {
 	bool canDropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& parent);
 	bool
 	dropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& parent) override;
-	bool setWeapon(const QModelIndex& index, int data);
+	void setWeapon(const QModelIndex& index, int data);
+	QVariant headerData(int section, Qt::Orientation orientation, int role) const;
 
   private:
 	void setupModelData(const SCP_vector<Banks*>& data, BankTreeItem* parent);
@@ -81,12 +101,11 @@ class ShipWeaponsDialog : public QDialog {
 	Q_OBJECT
 
   public:
-	explicit ShipWeaponsDialog(QDialog* parent, EditorViewport* viewport);
+	explicit ShipWeaponsDialog(QDialog* parent, EditorViewport* viewport, bool isMultiEdit);
 	~ShipWeaponsDialog() override;
 
   protected:
 	void closeEvent(QCloseEvent*) override;
-	void showEvent(QShowEvent*) override;
 
   private:
 	std::unique_ptr<Ui::ShipWeaponsDialog> ui;
@@ -96,6 +115,7 @@ class ShipWeaponsDialog : public QDialog {
 	EditorViewport* _viewport;
 	void updateUI();
 	BankTreeModel* bankModel;
+	int dialogMode;
 };
 
 } // namespace dialogs

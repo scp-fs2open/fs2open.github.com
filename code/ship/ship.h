@@ -1890,6 +1890,8 @@ float ship_get_secondary_weapon_range(ship *shipp);
 
 // Goober5000
 int get_max_ammo_count_for_primary_bank(int ship_class, int bank, int ammo_type);
+int get_max_ammo_count_for_primary_turret_bank(ship_weapon* swp, int bank, int ammo_type);
+
 
 int get_max_ammo_count_for_bank(int ship_class, int bank, int ammo_type);
 int get_max_ammo_count_for_turret_bank(ship_weapon *swp, int bank, int ammo_type);
