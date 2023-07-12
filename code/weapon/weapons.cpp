@@ -1551,6 +1551,20 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 					wip->seeker_strength = 2.0f;
 			}
 
+			if (optional_string("+Lock FOV:"))
+			{
+				float temp;
+				stuff_float(&temp);
+				if (temp > 360 || temp < 0)
+				{
+					error_display(0, "Lock FOV values should be between 0 and 360 degrees; ignoring value of %f for missile \'%s\'.", temp, wip->name);
+				}
+				else
+				{
+					wip->lock_fov = cosf(fl_radians(temp * 0.5f));
+				}
+			}
+
 			if (optional_string("+Target Lead Scaler:"))
 			{
 				stuff_float(&wip->target_lead_scaler);
