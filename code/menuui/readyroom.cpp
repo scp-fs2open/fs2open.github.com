@@ -1910,8 +1910,18 @@ void campaign_room_do_frame(float  /*frametime*/)
 
 	// If we don't have a mask, we don't have enough data to do anything with this screen.
 	if (Campaign_background_bitmap_mask == -1) {
-		{
-			//popup_game_feature_not_in_demo();
+		if ((Active_campaign_index < 0) || (Active_campaign_index >= Num_campaigns)) {
+			// Player is trying to use a regular pilot in the demo.
+			if (Num_campaigns < 1) {
+				// If there are no campaigns loaded, there's really nothing left to do.
+				popup_game_feature_not_in_demo();
+				return;
+			}
+			int select_default = popup(PF_USE_AFFIRMATIVE_ICON|PF_BODY_BIG, 2, "Exit", "Select first campaign", "Campaign Room only available in full version. However, you may select the first campaign found.");
+			if (select_default == 1) {
+				campaign_select_campaign(Campaign_file_names[0]);
+			}
+		} else {
 			int reset_campaign = popup(PF_USE_AFFIRMATIVE_ICON|PF_BODY_BIG, 2, "Exit", "Restart Campaign", "Campaign Room only available in full version. However, you may restart the campaign.");
 			if (reset_campaign == 1) {
 				// Rather than hardcoding the reset, let's reuse this.
