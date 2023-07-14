@@ -623,13 +623,9 @@ int weapon_info_get_index(weapon_info *wip)
 //	Parse the weapon flags.
 void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> preset_wi_flags)
 {
-	if (!Flags_override_old_position && optional_string("+override")) {
-		weaponp->wi_flags = preset_wi_flags;
-		weaponp->num_spawn_weapons_defined = 0;
-		required_string("$Flags:");
-	} else if (!optional_string("$Flags:"))
-		//Make sure we HAVE flags :p
-		return;
+    //Make sure we HAVE flags :p
+    if (!optional_string("$Flags:"))
+        return;
 
 	// To make sure +override doesn't overwrite previously parsed values we parse the flags into a separate flagset
     SCP_vector<SCP_string> unparsed;
@@ -637,11 +633,8 @@ void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> preset_wi_
     parse_string_flag_list_special(parsed_flags, Weapon_Info_Flags, &unparsed, weaponp, parsed_flags);
 
     if (optional_string("+override")) {
-		// resetting the flag values if set to override the existing flags
-		weaponp->wi_flags = preset_wi_flags;
-		if (!Flags_override_old_position) {
-			Warning(LOCATION, "Deprecated positioning of +override found for flags on weapon %s. If this is old table data, the mod should target version 23.2 or older.", weaponp->name);
-		}
+        // resetting the flag values if set to override the existing flags
+        weaponp->wi_flags = preset_wi_flags;
     }
 	// Now add the parsed flags to the weapon flags
 	weaponp->wi_flags |= parsed_flags;
