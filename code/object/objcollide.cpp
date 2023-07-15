@@ -25,6 +25,7 @@
 int Num_pairs = 0;
 int Num_pairs_checked = 0;
 
+SCP_vector<object*> Stale_collision_time_objects;
 SCP_vector<int> Collision_sort_list;
 
 class collider_pair
@@ -54,7 +55,7 @@ int reject_obj_pair_on_parent(object *A, object *B)
 {
 	if (A->flags[Object::Object_Flags::Collides_with_parent] || B->flags[Object::Object_Flags::Collides_with_parent])
 		return 0;
-
+	
 	if (A->type == OBJ_SHIP) {
 		if (B->type == OBJ_DEBRIS) {
 			if (B->parent_sig == A->signature) {
@@ -614,16 +615,22 @@ void obj_collide_retime_cached_pairs()
 
 void obj_collide_retime_cached_pairs(object *objp)
 {
-	int sig = objp->signature;
+	Stale_collision_time_objects.push_back(objp);
+	objp->flags.set(Object::Object_Flags::Collide_time_stale);
 
-	for ( auto& pair : Collision_cached_pairs ) {
+	//if (objp->flags[Object::Object_Flags::Collide_time_ignore])
+	//	return; // this object is being checked all the time regardless
+
+	//int sig = objp->signature;
+
+	/*for (auto& pair : Collision_cached_pairs) {
 		auto& collision_check = pair.second;
 
 		if ( (collision_check.a == objp && collision_check.signature_a == sig)
 		  || (collision_check.b == objp && collision_check.signature_b == sig) ) {
 				collision_check.next_check_time = timestamp(0);
 		}
-	}
+	}*/
 }
 
 //local helper functions only used in objcollide.cpp
@@ -885,14 +892,15 @@ void obj_collide_pair(object *A, object *B)
         collision_info->next_check_time = timestamp(0);
     }
 
+	if (A->flags[Object::Object_Flags::Collide_time_stale] || B->flags[Object::Object_Flags::Collide_time_stale])
+		collision_info->next_check_time = timestamp(0);
+
     if ( valid ) {
         // if this signature is valid, make the necessary checks to see if we need to collide check
         if ( collision_info->next_check_time == -1 ) {
             return;
-        } else {
-            if ( !timestamp_elapsed(collision_info->next_check_time) ) {
-                return;
-            }
+        } else if ( !timestamp_elapsed(collision_info->next_check_time) ) {
+			return;
         }
     } else {
         // only check debris:weapon collisions for player
@@ -1053,6 +1061,13 @@ void obj_sort_and_collide(SCP_vector<int>* Collision_list)
 		obj_quicksort_colliders(&sort_list_z, 0, (int)(sort_list_z.size() - 1), 2);
 	}
 	obj_find_overlap_colliders(sort_list_y, sort_list_z, 2, true);
+
+	for (auto objp : Stale_collision_time_objects) {
+		if (objp) {
+			objp->flags.remove(Object::Object_Flags::Collide_time_stale);
+		}
+	}
+	Stale_collision_time_objects.clear();
 }
 
 void collide_apply_gravity_flags_weapons() {
