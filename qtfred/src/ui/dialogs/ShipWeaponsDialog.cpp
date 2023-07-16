@@ -21,6 +21,8 @@ ShipWeaponsDialog::ShipWeaponsDialog(QDialog* parent, EditorViewport* viewport, 
 	connect(ui->radioPrimary, &QRadioButton::toggled, this, [this](bool param) { modeChanged(param, 0); });
 	connect(ui->radioSecondary, &QRadioButton::toggled, this, [this](bool param) { modeChanged(param, 1); });
 	connect(ui->radioTertiary, &QRadioButton::toggled, this, [this](bool param) { modeChanged(param, 2); });
+
+	//Used to prevent user from selecting subsystems and weapons at the same time
 	connect(this, &QDialog::accepted, _model.get(), &ShipWeaponsDialogModel::apply);
 	if (!_model->getPrimaryBanks().empty()) {
 		util::SignalBlockers blockers(this);
@@ -36,6 +38,10 @@ ShipWeaponsDialog::ShipWeaponsDialog(QDialog* parent, EditorViewport* viewport, 
 		Error("No Valid Weapon banks on ship");
 	}
 	ui->treeBanks->setModel(bankModel);
+	connect(ui->treeBanks->selectionModel(),
+		&QItemSelectionModel::selectionChanged,
+		this,
+		&ShipWeaponsDialog::processMultiSelect);
 	ui->treeBanks->expandAll();
 	updateUI();
 	// Resize the dialog to the minimum size
@@ -71,6 +77,10 @@ void ShipWeaponsDialog::modeChanged(bool enabled, int mode)
 			dialogMode = 0;
 		}
 		ui->treeBanks->setModel(bankModel);
+		connect(ui->treeBanks->selectionModel(),
+			&QItemSelectionModel::selectionChanged,
+			this,
+			&ShipWeaponsDialog::processMultiSelect);
 		ui->treeBanks->expandAll();
 	}
 	updateUI();
@@ -81,6 +91,27 @@ void ShipWeaponsDialog::updateUI()
 	ui->radioPrimary->setEnabled(!_model->getPrimaryBanks().empty());
 	ui->radioSecondary->setEnabled(!_model->getSecondaryBanks().empty());
 	ui->radioTertiary->setEnabled(false);
+}
+
+void ShipWeaponsDialog::processMultiSelect(const QItemSelection& selected, const QItemSelection& deselected) {
+	if (selected.empty())
+		bankModel->typeSelected = -1;
+		return;
+	QItemSelectionModel* selectionModel = ui->treeBanks->selectionModel();
+	QItemSelection selection = selectionModel->selection();
+	QModelIndexList  indexes = selection.indexes();
+	BankTreeItem* item = bankModel->getItem(indexes.first());
+	if (item) {
+		BankTreeBank* bankTest = dynamic_cast<BankTreeBank*>(item);
+		BankTreeLabel* labelTest = dynamic_cast<BankTreeLabel*>(item);
+		if (bankTest) {
+			bankModel->typeSelected = 0;
+		} else if (labelTest) {
+			bankModel->typeSelected = 1;
+		} else {
+			bankModel->typeSelected = -1;
+		}
+	}
 }
 
 BankTreeItem::BankTreeItem(BankTreeItem* parentItem) : m_parentItem(parentItem) {}
@@ -174,11 +205,15 @@ QVariant BankTreeBank::data(int column) const
 	}
 }
 
-Qt::ItemFlags BankTreeBank::getFlags(int column)
+Qt::ItemFlags BankTreeBank::getFlags(int column, int type)
 {
 	switch (column) {
 	case 0:
-		return Qt::ItemIsDropEnabled | Qt::ItemIsSelectable;
+		if (type == 0 || type == -1) {
+			return Qt::ItemIsDropEnabled | Qt::ItemIsSelectable;
+		} else {
+			return Qt::ItemIsDropEnabled;
+		}
 		break;
 	case 1:
 		return Qt::ItemIsEditable;
@@ -222,9 +257,13 @@ QVariant BankTreeLabel::data(int column) const
 	}
 }
 
-Qt::ItemFlags BankTreeLabel::getFlags(int column)
+Qt::ItemFlags BankTreeLabel::getFlags(int column, int type)
 {
-	return Qt::ItemIsSelectable;
+	if (type == 1 || type == -1) {
+		return Qt::ItemIsSelectable;
+	} else {
+		return {};
+	}
 }
 
 void BankTreeLabel::setAIClass(int value)
@@ -330,10 +369,11 @@ int BankTreeModel::rowCount(const QModelIndex& parent) const
 Qt::ItemFlags BankTreeModel::flags(const QModelIndex& index) const
 {
 	Qt::ItemFlags defaultFlags = QAbstractItemModel::flags(index);
+	defaultFlags.setFlag(Qt::ItemIsSelectable, false);
 
 	if (index.isValid()) {
 		auto* item = static_cast<BankTreeItem*>(index.internalPointer());
-		return item->getFlags(index.column()) | defaultFlags;
+		return item->getFlags(index.column(), typeSelected) | defaultFlags;
 	} else {
 		return Qt::NoItemFlags;
 	}
@@ -384,7 +424,7 @@ bool BankTreeModel::canDropMimeData(const QMimeData* data,
 	if (!data->hasFormat("application/weaponid"))
 		return false;
 	BankTreeItem* item = this->getItem(parent);
-	Qt::ItemFlags flags = item->getFlags(column);
+	Qt::ItemFlags flags = item->getFlags(column, typeSelected);
 	if (flags.testFlag(Qt::ItemIsDropEnabled)) {
 		return true;
 	} else {
@@ -449,8 +489,9 @@ QVariant BankTreeRoot::data(int column) const
 		return {};
 	}
 }
-Qt::ItemFlags BankTreeRoot::getFlags(int column)
+Qt::ItemFlags BankTreeRoot::getFlags(int column ,int type)
 {
+	Q_UNUSED(type)
 	return {};
 }
 } // namespace dialogs
