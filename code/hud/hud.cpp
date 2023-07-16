@@ -2961,6 +2961,9 @@ void HudGaugeSupport::render(float  /*frametime*/)
 	int	show_time, w, h;
 	char	outstr[64];
 
+	if (background.first_frame < 0)
+		return;
+
 	if ( !Hud_support_view_active ) {
 		return;
 	}

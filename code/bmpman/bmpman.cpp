@@ -2602,7 +2602,7 @@ void *bm_malloc(int n, size_t size) {
 void bm_page_in_aabitmap(int handle, int nframes) {
 	int i;
 
-	if (handle == -1)
+	if (handle < 0)
 		return;
 
 	Assert(bm_get_entry(handle)->handle == handle);

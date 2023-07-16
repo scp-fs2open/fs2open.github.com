@@ -238,6 +238,9 @@ void HudGaugeEscort::render(float  /*frametime*/)
 {
 	int	i = 0;
 
+	if (Escort_gauges[0].first_frame < 0)
+		return;
+
 	if ( !Show_escort_view ) {
 		return;
 	}

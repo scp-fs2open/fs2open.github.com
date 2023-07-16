@@ -236,7 +236,8 @@ void HudGaugeDirectives::render(float  /*frametime*/)
 	// draw top of objective display
 	setGaugeColor();
 
-	renderBitmap(directives_top.first_frame, position[0], position[1]);
+	if (directives_top.first_frame >= 0)
+		renderBitmap(directives_top.first_frame, position[0], position[1]);
 
 	// print out title
 	renderPrintf(position[0] + header_offsets[0], position[1] + header_offsets[1], EG_OBJ_TITLE, "%s", XSTR( "directives", 422));
@@ -303,12 +304,15 @@ void HudGaugeDirectives::render(float  /*frametime*/)
 		// blit the background frames
 		setGaugeColor();
 
-		renderBitmap(directives_middle.first_frame, bx, by);
+		if (directives_middle.first_frame >= 0)
+			renderBitmap(directives_middle.first_frame, bx, by);
 		
 		by += text_h;
 
 		if ( second_line ) {
-			renderBitmap(directives_middle.first_frame, bx, by);
+
+			if (directives_top.first_frame >= 0)
+				renderBitmap(directives_middle.first_frame, bx, by);
 			
 			by += text_h;
 		}
@@ -332,7 +336,8 @@ void HudGaugeDirectives::render(float  /*frametime*/)
 	// draw the bottom of objective display
 	setGaugeColor();
 
-	renderBitmap(directives_bottom.first_frame, bx, by + bottom_bg_offset);
+	if (directives_bottom.first_frame >= 0)
+		renderBitmap(directives_bottom.first_frame, bx, by + bottom_bg_offset);
 }
 
 /**

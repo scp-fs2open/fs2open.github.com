@@ -4826,7 +4826,8 @@ void HudGaugeAutoTarget::render(float  /*frametime*/)
 
 	// draw the box background
 	setGaugeColor();
-	renderBitmap(Toggle_frame.first_frame+frame_offset, position[0], position[1]);
+	if (Toggle_frame.first_frame + frame_offset >= 0)
+		renderBitmap(Toggle_frame.first_frame+frame_offset, position[0], position[1]);
 
 	// draw the text on top
 	if (frame_offset == 1) {
@@ -4912,7 +4913,8 @@ void HudGaugeAutoSpeed::render(float  /*frametime*/)
 
 	setGaugeColor();
 
-	renderBitmap(Toggle_frame.first_frame+frame_offset, position[0], position[1]);
+	if (Toggle_frame.first_frame + frame_offset >= 0)
+		renderBitmap(Toggle_frame.first_frame+frame_offset, position[0], position[1]);
 
 	// draw the text on top
 	if (frame_offset == 3) {
@@ -5501,9 +5503,8 @@ void HudGaugeCmeasures::pageIn()
 
 void HudGaugeCmeasures::render(float  /*frametime*/)
 {
-	if ( Cmeasure_gauge.first_frame == -1) {
-		Int3();	// failed to load coutermeasure gauge background
-		return;
+	if ( Cmeasure_gauge.first_frame < 0) {
+		return;	// failed to load coutermeasure gauge background
 	}
 
 	ship_info *sip = &Ship_info[Player_ship->ship_info_index];
@@ -5551,7 +5552,7 @@ void HudGaugeAfterburner::render(float  /*frametime*/)
 	float percent_left;
 	int	clip_h,w,h;
 
-	if ( Energy_bar.first_frame == -1 ){
+	if ( Energy_bar.first_frame < 0 ){
 		return;
 	}
 
@@ -5760,7 +5761,7 @@ void HudGaugeWeaponEnergy::render(float  /*frametime*/)
 		weapon_info *wip;
 		ship_weapon *sw;
 
-		if ( Energy_bar.first_frame == -1 ) {
+		if ( Energy_bar.first_frame < 0 ) {
 			return;
 		}
 
@@ -6125,7 +6126,8 @@ void HudGaugeWeapons::render(float  /*frametime*/)
 	setGaugeColor();
 
 	// draw top of primary display
-	renderBitmap(primary_top[ballistic_hud_index].first_frame, position[0] + top_offset_x[ballistic_hud_index], position[1]);
+	if (primary_top[ballistic_hud_index].first_frame >= 0)
+		renderBitmap(primary_top[ballistic_hud_index].first_frame, position[0] + top_offset_x[ballistic_hud_index], position[1]);
 
 	// render the header of this gauge
 	renderString(position[0] + Weapon_header_offsets[ballistic_hud_index][0], position[1] + Weapon_header_offsets[ballistic_hud_index][1], EG_WEAPON_TITLE, XSTR( "weapons", 328));
@@ -6145,10 +6147,11 @@ void HudGaugeWeapons::render(float  /*frametime*/)
 		// It is assumed that the top primary wep frame already has this rendered.
 		if(i == 1) {
 			// used to draw the second primary weapon background
-			renderBitmap(primary_middle[ballistic_hud_index].first_frame, position[0] + frame_offset_x[ballistic_hud_index], y);
+			if (primary_middle[ballistic_hud_index].first_frame >= 0)
+				renderBitmap(primary_middle[ballistic_hud_index].first_frame, position[0] + frame_offset_x[ballistic_hud_index], y);
 		} else if(i != 0) {
 			// used to draw the the third, fourth, fifth, etc...
-			if(primary_last[ballistic_hud_index].first_frame != -1)
+			if(primary_last[ballistic_hud_index].first_frame >= 0)
 				renderBitmap(primary_last[ballistic_hud_index].first_frame, position[0] + frame_offset_x[ballistic_hud_index], y);
 		}
 
@@ -6198,7 +6201,8 @@ void HudGaugeWeapons::render(float  /*frametime*/)
 		setGaugeColor(HUD_C_BRIGHT);
 	}
 
-	renderBitmap(secondary_top[ballistic_hud_index].first_frame, position[0] + frame_offset_x[ballistic_hud_index], y);
+	if (secondary_top[ballistic_hud_index].first_frame >= 0)
+		renderBitmap(secondary_top[ballistic_hud_index].first_frame, position[0] + frame_offset_x[ballistic_hud_index], y);
 	name_y = y + sname_start_offset_y;
 	y += top_secondary_h;
 
@@ -6207,7 +6211,7 @@ void HudGaugeWeapons::render(float  /*frametime*/)
 		setGaugeColor();
 		wip = &Weapon_info[sw->secondary_bank_weapons[i]];
 
-		if(i!=0) {
+		if(i!=0 && secondary_middle[ballistic_hud_index].first_frame >= 0) {
 			renderBitmap(secondary_middle[ballistic_hud_index].first_frame, position[0] + frame_offset_x[ballistic_hud_index], y);
 		}
 
@@ -6281,7 +6285,8 @@ void HudGaugeWeapons::render(float  /*frametime*/)
 
 	y -= 0;
 	// finish drawing the background
-	renderBitmap(secondary_bottom[ballistic_hud_index].first_frame, position[0] + frame_offset_x[ballistic_hud_index], y);
+	if (secondary_bottom[ballistic_hud_index].first_frame >= 0)
+		renderBitmap(secondary_bottom[ballistic_hud_index].first_frame, position[0] + frame_offset_x[ballistic_hud_index], y);
 }
 
 void hud_update_weapon_flash()
@@ -6843,7 +6848,8 @@ void HudGaugeWarheadCount::render(float  /*frametime*/)
 			column = i;
 		}
 
-		renderBitmap(Warhead.first_frame, position[0] + Warhead_count_offsets[0] + column * delta_x, position[1] + Warhead_count_offsets[1] + delta_y);
+		if (Warhead.first_frame >= 0)
+			renderBitmap(Warhead.first_frame, position[0] + Warhead_count_offsets[0] + column * delta_x, position[1] + Warhead_count_offsets[1] + delta_y);
 	}
 }
 
@@ -7012,7 +7018,8 @@ void HudGaugePrimaryWeapons::render(float  /*frametime*/)
 
 	setGaugeColor();
 
-	renderBitmap(_background_first.first_frame, position[0], position[1]);
+	if (_background_first.first_frame >= 0)
+		renderBitmap(_background_first.first_frame, position[0], position[1]);
 
 	// render the header of this gauge
 	renderString(position[0] + _header_offsets[0], position[1] + _header_offsets[1], EG_WEAPON_TITLE, header_text);
@@ -7025,7 +7032,8 @@ void HudGaugePrimaryWeapons::render(float  /*frametime*/)
 	for ( i = 0; i < num_primaries; ++i ) {
 		setGaugeColor();
 
-		renderBitmap(_background_entry.first_frame, position[0], position[1] + bg_y_offset);
+		if (_background_entry.first_frame >= 0)
+			renderBitmap(_background_entry.first_frame, position[0], position[1] + bg_y_offset);
 
 		auto weapon_name = Weapon_info[sw->primary_bank_weapons[i]].get_display_name();
 
@@ -7063,13 +7071,15 @@ void HudGaugePrimaryWeapons::render(float  /*frametime*/)
 	}
 
 	if ( num_primaries == 0 ) {
-		renderBitmap(_background_entry.first_frame, position[0], position[1] + bg_y_offset);
+		if (_background_entry.first_frame >= 0)
+			renderBitmap(_background_entry.first_frame, position[0], position[1] + bg_y_offset);
 		renderString(position[0] + _pname_offset_x, position[1] + text_y_offset, EG_WEAPON_P1, XSTR( "<none>", 329));
 
 		bg_y_offset += _background_entry_h;
 	}
 
-	renderBitmap(_background_last.first_frame, position[0], position[1] + bg_y_offset + _bg_last_offset_y);
+	if (_background_last.first_frame >= 0)
+		renderBitmap(_background_last.first_frame, position[0], position[1] + bg_y_offset + _bg_last_offset_y);
 }
 
 HudGaugeSecondaryWeapons::HudGaugeSecondaryWeapons():

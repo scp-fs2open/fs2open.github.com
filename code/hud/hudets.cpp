@@ -888,6 +888,10 @@ void HudGaugeEts::pageIn()
  */
 void HudGaugeEts::blitGauge(int index)
 {
+	if (Ets_bar.first_frame < 0) {
+		return;
+	}
+
 	int y_start, y_end, clip_h, w, h, x, y;
 
 	clip_h = fl2i( (1 - Energy_levels[index]) * ETS_bar_h );
