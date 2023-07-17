@@ -1023,7 +1023,7 @@ void nav_warp(bool prewarp=false)
 
 				// retime collision pairs
 				if (Objects[Ships[i].objnum].flags[Object::Object_Flags::Collides])
-					obj_collide_cache_stale();
+					obj_collide_obj_cache_stale(&Objects[Ships[i].objnum]);
 		}
 	}
 }

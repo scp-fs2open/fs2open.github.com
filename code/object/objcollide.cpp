@@ -608,21 +608,25 @@ void obj_reset_colliders()
 
 void obj_collide_retime_cached_pairs()
 {
+	TRACE_SCOPE(tracing::RetimeCollisionCache);
+
 	auto it = Collision_cached_pairs.begin();
 	while (it != Collision_cached_pairs.end()) {
 		auto &pair = it->second;
 		if (pair.signature_a != pair.a->signature || pair.signature_b != pair.b->signature) {
 			it = Collision_cached_pairs.erase(it);
-		} else {			
-			pair.next_check_time = timestamp(0);
+		} else {
+			if (pair.a->flags[Object::Object_Flags::Collision_cache_stale] || pair.b->flags[Object::Object_Flags::Collision_cache_stale])
+				pair.next_check_time = timestamp(0);
 			it++;
 		}
 	}
 }
 
-void obj_collide_cache_stale()
+void obj_collide_obj_cache_stale(object* objp)
 {
 	Collision_cache_stale = true;
+	objp->flags.set(Object::Object_Flags::Collision_cache_stale);
 }
 
 //local helper functions only used in objcollide.cpp
