@@ -129,6 +129,12 @@ void trail_render( trail * trailp )
 		return;
 
 	trail_info *ti	= &trailp->info;
+
+	if (ti->texture.bitmap_id <= 0) {
+		Warning(LOCATION, "Trail bitmap %s could not be loaded.", ti->texture.filename);
+		return;
+	}
+
 	auto batchp = batching_find_batch(ti->texture.bitmap_id, batch_info::FLAT_EMISSIVE);
 
 	if (trailp->single_segment) {
@@ -204,8 +210,6 @@ void trail_render( trail * trailp )
 
 	if (num_sections <= 1)
 		return;
-
-	Assertion(ti->texture.bitmap_id != -1, "Weapon trail %s could not be loaded", ti->texture.filename); // We can leave this as an assert, but tell them how to fix it. --Chief
 
 	float w_size = (ti->w_end - ti->w_start);
 	float a_size = (ti->a_end - ti->a_start);

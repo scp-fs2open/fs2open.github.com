@@ -842,7 +842,7 @@ void batching_add_line(vec3d *start, vec3d *end, float widthStart, float widthEn
 
 void batching_add_laser(int texture, vec3d *p0, float width1, vec3d *p1, float width2, int r, int g, int b)
 {
-	Assertion((texture >= 0), "batching_add_...() attempted for invalid texture");
+	Assertion((texture >= 0), "batching_add_laser() attempted for invalid texture");
 	if ( texture < 0 ) {
 		return;
 	}
@@ -854,7 +854,7 @@ void batching_add_laser(int texture, vec3d *p0, float width1, vec3d *p1, float w
 
 void batching_add_volume_polygon(int texture, vec3d* pos, matrix* orient, float width, float height, float alpha)
 {
-	Assertion((texture >= 0), "batching_add_...() attempted for invalid texture");
+	Assertion((texture >= 0), "batching_add_volume_polygon() attempted for invalid texture");
 	if (texture < 0) {
 		return;
 	}
@@ -875,7 +875,7 @@ void batching_add_volume_polygon(int texture, vec3d* pos, matrix* orient, float 
 
 void batching_add_polygon(int texture, vec3d *pos, matrix *orient, float width, float height, float alpha)
 {
-	Assertion((texture >= 0), "batching_add_...() attempted for invalid texture");
+	Assertion((texture >= 0), "batching_add_polygon() attempted for invalid texture");
 	if ( texture < 0 ) {
 		return;
 	}
@@ -890,7 +890,7 @@ void batching_add_polygon(int texture, vec3d *pos, matrix *orient, float width, 
 
 void batching_add_quad(int texture, vertex *verts, float trapezoidal_correction)
 {
-	Assertion((texture >= 0), "batching_add_...() attempted for invalid texture");
+	Assertion((texture >= 0), "batching_add_quad() attempted for invalid texture");
 	if ( texture < 0 ) {
 		return;
 	}
@@ -902,7 +902,7 @@ void batching_add_quad(int texture, vertex *verts, float trapezoidal_correction)
 
 void batching_add_quad(int texture, vertex *verts, primitive_batch *batch, float trapezoidal_correction)
 {
-	Assertion((texture >= 0), "batching_add_...() attempted for invalid texture");
+	Assertion((texture >= 0), "batching_add_quad() attempted for invalid texture");
 	if ( texture < 0 ) {
 		return;
 	}
@@ -911,7 +911,7 @@ void batching_add_quad(int texture, vertex *verts, primitive_batch *batch, float
 }
 void batching_add_tri(int texture, vertex *verts)
 {
-	Assertion((texture >= 0), "batching_add_...() attempted for invalid texture");
+	Assertion((texture >= 0), "batching_add_tri() attempted for invalid texture");
 	if ( texture < 0 ) {
 		return;
 	}
@@ -923,7 +923,7 @@ void batching_add_tri(int texture, vertex *verts)
 
 void batching_add_tri(int texture, vertex *verts, primitive_batch *batch)
 {
-	Assertion((texture >= 0), "batching_add_...() attempted for invalid texture");
+	Assertion((texture >= 0), "batching_add_tri() attempted for invalid texture");
 	if ( texture < 0 ) {
 		return;
 	}
