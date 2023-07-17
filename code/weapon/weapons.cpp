@@ -4140,7 +4140,7 @@ void weapon_load_bitmaps(int weapon_index)
 	if ((wip->wi_flags[Weapon::Info_Flags::Trail]) && (wip->tr_info.texture.bitmap_id < 0)) {
 		generic_bitmap_load(&wip->tr_info.texture);
 
-		if (ti->texture.bitmap_id == -1) {
+		if (wip->tr_info.texture.bitmap_id == -1) {
 			Warning(LOCATION, "Trail bitmap %s could not be loaded. Trail will not be rendered.", wip->tr_info.texture.filename);
 		}
 	}

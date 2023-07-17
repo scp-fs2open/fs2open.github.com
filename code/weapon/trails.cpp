@@ -131,7 +131,6 @@ void trail_render( trail * trailp )
 	trail_info *ti	= &trailp->info;
 
 	if (ti->texture.bitmap_id <= 0) {
-		Warning(LOCATION, "Trail bitmap %s could not be loaded.", ti->texture.filename);
 		return;
 	}
 
