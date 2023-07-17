@@ -45,6 +45,7 @@ public:
 	{}
 };
 
+static bool Collision_cache_stale = false;
 static SCP_unordered_map<uint, collider_pair> Collision_cached_pairs;
 
 class checkobject;
@@ -608,29 +609,22 @@ void obj_reset_colliders()
 
 void obj_collide_retime_cached_pairs()
 {
-	for ( auto& pair : Collision_cached_pairs ) {
-		pair.second.next_check_time = timestamp(0);
+	auto it = Collision_cached_pairs.begin();
+	while (it != Collision_cached_pairs.end()) {
+		auto &pair = it->second;
+		if (pair.signature_a != pair.a->signature || pair.signature_b != pair.b->signature) {
+			it = Collision_cached_pairs.erase(it);
+		} else {			
+			mprintf(("\n%d: %f and %f stale", Framecount, pair.a->radius, pair.b->radius));
+			pair.next_check_time = timestamp(0);
+			it++;
+		}
 	}
 }
 
-void obj_collide_retime_cached_pairs(object *objp)
+void obj_collide_cache_stale()
 {
-	Stale_collision_time_objects.push_back(objp);
-	objp->flags.set(Object::Object_Flags::Collide_time_stale);
-
-	//if (objp->flags[Object::Object_Flags::Collide_time_ignore])
-	//	return; // this object is being checked all the time regardless
-
-	//int sig = objp->signature;
-
-	/*for (auto& pair : Collision_cached_pairs) {
-		auto& collision_check = pair.second;
-
-		if ( (collision_check.a == objp && collision_check.signature_a == sig)
-		  || (collision_check.b == objp && collision_check.signature_b == sig) ) {
-				collision_check.next_check_time = timestamp(0);
-		}
-	}*/
+	//Collision_cache_stale = true;
 }
 
 //local helper functions only used in objcollide.cpp
@@ -892,14 +886,14 @@ void obj_collide_pair(object *A, object *B)
         collision_info->next_check_time = timestamp(0);
     }
 
-	if (A->flags[Object::Object_Flags::Collide_time_stale] || B->flags[Object::Object_Flags::Collide_time_stale])
-		collision_info->next_check_time = timestamp(0);
+	mprintf(("\n%d: %f and %f checking", Framecount, A->radius, B->radius));
 
     if ( valid ) {
         // if this signature is valid, make the necessary checks to see if we need to collide check
         if ( collision_info->next_check_time == -1 ) {
             return;
         } else if ( !timestamp_elapsed(collision_info->next_check_time) ) {
+			mprintf(("\n%d: %f and %f skipped", Framecount, A->radius, B->radius));
 			return;
         }
     } else {
@@ -971,8 +965,10 @@ void obj_collide_pair(object *A, object *B)
     if ( check_collision(&new_pair) ) {
         // don't have to check ever again
         collision_info->next_check_time = -1;
+		mprintf(("\n%d: %f and %f check never", Framecount, A->radius, B->radius));
     } else {
         collision_info->next_check_time = new_pair.next_check_time;
+		mprintf(("\n%d: %f and %f check %d", Framecount, A->radius, B->radius, new_pair.next_check_time));
     }
 }
 
@@ -1034,6 +1030,12 @@ void obj_sort_and_collide(SCP_vector<int>* Collision_list)
 
 	if ( !(Game_detail_flags & DETAIL_FLAG_COLLISION) )
 		return;
+
+	if (Collision_cache_stale) {
+		obj_collide_retime_cached_pairs();
+		Collision_cache_stale = false;
+	}
+
 
 	// the main use case is to go through the main Collision detection list, so use that if
 	// nothing is defined.
