@@ -25,7 +25,6 @@
 int Num_pairs = 0;
 int Num_pairs_checked = 0;
 
-SCP_vector<object*> Stale_collision_time_objects;
 SCP_vector<int> Collision_sort_list;
 
 class collider_pair
@@ -615,7 +614,6 @@ void obj_collide_retime_cached_pairs()
 		if (pair.signature_a != pair.a->signature || pair.signature_b != pair.b->signature) {
 			it = Collision_cached_pairs.erase(it);
 		} else {			
-			mprintf(("\n%d: %f and %f stale", Framecount, pair.a->radius, pair.b->radius));
 			pair.next_check_time = timestamp(0);
 			it++;
 		}
@@ -624,7 +622,7 @@ void obj_collide_retime_cached_pairs()
 
 void obj_collide_cache_stale()
 {
-	//Collision_cache_stale = true;
+	Collision_cache_stale = true;
 }
 
 //local helper functions only used in objcollide.cpp
@@ -886,14 +884,11 @@ void obj_collide_pair(object *A, object *B)
         collision_info->next_check_time = timestamp(0);
     }
 
-	mprintf(("\n%d: %f and %f checking", Framecount, A->radius, B->radius));
-
     if ( valid ) {
         // if this signature is valid, make the necessary checks to see if we need to collide check
         if ( collision_info->next_check_time == -1 ) {
             return;
         } else if ( !timestamp_elapsed(collision_info->next_check_time) ) {
-			mprintf(("\n%d: %f and %f skipped", Framecount, A->radius, B->radius));
 			return;
         }
     } else {
@@ -965,10 +960,8 @@ void obj_collide_pair(object *A, object *B)
     if ( check_collision(&new_pair) ) {
         // don't have to check ever again
         collision_info->next_check_time = -1;
-		mprintf(("\n%d: %f and %f check never", Framecount, A->radius, B->radius));
     } else {
         collision_info->next_check_time = new_pair.next_check_time;
-		mprintf(("\n%d: %f and %f check %d", Framecount, A->radius, B->radius, new_pair.next_check_time));
     }
 }
 
@@ -1063,13 +1056,6 @@ void obj_sort_and_collide(SCP_vector<int>* Collision_list)
 		obj_quicksort_colliders(&sort_list_z, 0, (int)(sort_list_z.size() - 1), 2);
 	}
 	obj_find_overlap_colliders(sort_list_y, sort_list_z, 2, true);
-
-	for (auto objp : Stale_collision_time_objects) {
-		if (objp) {
-			objp->flags.remove(Object::Object_Flags::Collide_time_stale);
-		}
-	}
-	Stale_collision_time_objects.clear();
 }
 
 void collide_apply_gravity_flags_weapons() {
