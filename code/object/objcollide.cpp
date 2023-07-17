@@ -44,7 +44,7 @@ public:
 	{}
 };
 
-static bool Collision_cache_stale = false;
+static SCP_vector<object*> Collision_cache_stale_objects;
 static SCP_unordered_map<uint, collider_pair> Collision_cached_pairs;
 
 class checkobject;
@@ -606,7 +606,7 @@ void obj_reset_colliders()
 	Collision_cached_pairs.clear();
 }
 
-void obj_collide_retime_cached_pairs()
+void obj_collide_retime_stale_pairs()
 {
 	TRACE_SCOPE(tracing::RetimeCollisionCache);
 
@@ -621,12 +621,16 @@ void obj_collide_retime_cached_pairs()
 			it++;
 		}
 	}
+
+	for (auto objp : Collision_cache_stale_objects)
+		objp->flags.remove(Object::Object_Flags::Collision_cache_stale);
+	Collision_cache_stale_objects.clear();
 }
 
 void obj_collide_obj_cache_stale(object* objp)
 {
-	Collision_cache_stale = true;
 	objp->flags.set(Object::Object_Flags::Collision_cache_stale);
+	Collision_cache_stale_objects.push_back(objp);
 }
 
 //local helper functions only used in objcollide.cpp
@@ -1028,9 +1032,8 @@ void obj_sort_and_collide(SCP_vector<int>* Collision_list)
 	if ( !(Game_detail_flags & DETAIL_FLAG_COLLISION) )
 		return;
 
-	if (Collision_cache_stale) {
-		obj_collide_retime_cached_pairs();
-		Collision_cache_stale = false;
+	if (!Collision_cache_stale_objects.empty()) {
+		obj_collide_retime_stale_pairs();
 	}
 
 	// the main use case is to go through the main Collision detection list, so use that if
