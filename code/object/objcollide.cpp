@@ -55,7 +55,7 @@ int reject_obj_pair_on_parent(object *A, object *B)
 {
 	if (A->flags[Object::Object_Flags::Collides_with_parent] || B->flags[Object::Object_Flags::Collides_with_parent])
 		return 0;
-	
+
 	if (A->type == OBJ_SHIP) {
 		if (B->type == OBJ_DEBRIS) {
 			if (B->parent_sig == A->signature) {
@@ -1028,7 +1028,6 @@ void obj_sort_and_collide(SCP_vector<int>* Collision_list)
 		obj_collide_retime_cached_pairs();
 		Collision_cache_stale = false;
 	}
-
 
 	// the main use case is to go through the main Collision detection list, so use that if
 	// nothing is defined.
