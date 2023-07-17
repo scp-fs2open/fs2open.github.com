@@ -133,7 +133,7 @@ ADE_VIRTVAR(Radius, l_Object, "number", "Radius of an object", "number", "Radius
 	return ade_set_args(L, "f", objh->objp->radius);
 }
 
-ADE_VIRTVAR(Position, l_Object, "vector", "Object world position (World vector)", "vector", "World position, or null vector if handle is invalid.")
+ADE_VIRTVAR(Position, l_Object, "vector", "Object world position (World vector)", "vector", "World position, or null vector if handle is invalid")
 {
 	object_h *objh;
 	vec3d *v3=NULL;
@@ -174,7 +174,7 @@ ADE_VIRTVAR(LastPosition, l_Object, "vector", "Object world position as of last 
 	return ade_set_args(L, "o", l_Vector.Set(objh->objp->last_pos));
 }
 
-ADE_VIRTVAR(Orientation, l_Object, "orientation", "Object world orientation (World orientation)", "orientation", "Orientation, or null orientation if handle is invalid.")
+ADE_VIRTVAR(Orientation, l_Object, "orientation", "Object world orientation (World orientation)", "orientation", "Orientation, or null orientation if handle is invalid")
 {
 	object_h *objh;
 	matrix_h *mh=NULL;
