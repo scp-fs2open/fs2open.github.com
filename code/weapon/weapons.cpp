@@ -631,8 +631,8 @@ void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> preset_wi_
 	// skip OVER flags, check for +override and reset num_spawn_weapons_defined
 	// otherwise if done afterward, new and old spawn weapons can get mixed up
 	pause_parse();
-	SCP_string flags;
-	stuff_string(flags, F_RAW);
+	SCP_vector<SCP_string> flags;
+	stuff_string_list(flags);
 	if (optional_string("+override")) {
 		// resetting the flag values if set to override the existing flags
 		weaponp->wi_flags = preset_wi_flags;
