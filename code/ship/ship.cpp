@@ -4646,6 +4646,9 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		stuff_string(name_tmp, F_NAME, NAME_LENGTH);
 		generic_bitmap_init(&ci->texture, name_tmp);
 		generic_bitmap_load(&ci->texture);
+		if (ci->texture.bitmap_id == -1) {
+			Warning(LOCATION, "Trail bitmap %s could not be loaded. Trail will not be rendered.", name_tmp);
+		}
 
 		if (optional_string("+Bitmap Stretch:")) {
 			stuff_float(&ci->texture_stretch);
