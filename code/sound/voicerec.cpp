@@ -56,10 +56,13 @@
 
 // FreeSpace includes
 #include "cfile/cfile.h"
+#include "gamesequence/gamesequence.h"
 #include "hud/hudsquadmsg.h"
 #include "io/keycontrol.h"
 #include "osapi/osapi.h"
 #include "playerman/player.h"
+#include "popup/popup.h"
+#include "popup/popupdead.h"
 #include "ship/ship.h"
 
 #include <SDL_syswm.h>
