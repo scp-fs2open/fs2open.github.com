@@ -44,7 +44,7 @@ public:
 	{}
 };
 
-static SCP_vector<object*> Collision_cache_stale_objects;
+static SCP_set<object*> Collision_cache_stale_objects;
 static SCP_unordered_map<uint, collider_pair> Collision_cached_pairs;
 
 class checkobject;
@@ -630,7 +630,7 @@ void obj_collide_retime_stale_pairs()
 void obj_collide_obj_cache_stale(object* objp)
 {
 	objp->flags.set(Object::Object_Flags::Collision_cache_stale);
-	Collision_cache_stale_objects.push_back(objp);
+	Collision_cache_stale_objects.insert(objp);
 }
 
 //local helper functions only used in objcollide.cpp
