@@ -44,6 +44,7 @@ public:
 	{}
 };
 
+static SCP_set<object*> Collision_cache_stale_objects;
 static SCP_unordered_map<uint, collider_pair> Collision_cached_pairs;
 
 class checkobject;
@@ -605,25 +606,31 @@ void obj_reset_colliders()
 	Collision_cached_pairs.clear();
 }
 
-void obj_collide_retime_cached_pairs()
+void obj_collide_retime_stale_pairs()
 {
-	for ( auto& pair : Collision_cached_pairs ) {
-		pair.second.next_check_time = timestamp(0);
-	}
-}
+	TRACE_SCOPE(tracing::RetimeCollisionCache);
 
-void obj_collide_retime_cached_pairs(object *objp)
-{
-	int sig = objp->signature;
-
-	for ( auto& pair : Collision_cached_pairs ) {
-		auto& collision_check = pair.second;
-
-		if ( (collision_check.a == objp && collision_check.signature_a == sig)
-		  || (collision_check.b == objp && collision_check.signature_b == sig) ) {
-				collision_check.next_check_time = timestamp(0);
+	auto it = Collision_cached_pairs.begin();
+	while (it != Collision_cached_pairs.end()) {
+		auto &pair = it->second;
+		if (pair.signature_a != pair.a->signature || pair.signature_b != pair.b->signature) {
+			it = Collision_cached_pairs.erase(it);
+		} else {
+			if (pair.a->flags[Object::Object_Flags::Collision_cache_stale] || pair.b->flags[Object::Object_Flags::Collision_cache_stale])
+				pair.next_check_time = timestamp(0);
+			it++;
 		}
 	}
+
+	for (auto objp : Collision_cache_stale_objects)
+		objp->flags.remove(Object::Object_Flags::Collision_cache_stale);
+	Collision_cache_stale_objects.clear();
+}
+
+void obj_collide_obj_cache_stale(object* objp)
+{
+	objp->flags.set(Object::Object_Flags::Collision_cache_stale);
+	Collision_cache_stale_objects.insert(objp);
 }
 
 //local helper functions only used in objcollide.cpp
@@ -889,10 +896,8 @@ void obj_collide_pair(object *A, object *B)
         // if this signature is valid, make the necessary checks to see if we need to collide check
         if ( collision_info->next_check_time == -1 ) {
             return;
-        } else {
-            if ( !timestamp_elapsed(collision_info->next_check_time) ) {
-                return;
-            }
+        } else if ( !timestamp_elapsed(collision_info->next_check_time) ) {
+			return;
         }
     } else {
         // only check debris:weapon collisions for player
@@ -1026,6 +1031,10 @@ void obj_sort_and_collide(SCP_vector<int>* Collision_list)
 
 	if ( !(Game_detail_flags & DETAIL_FLAG_COLLISION) )
 		return;
+
+	if (!Collision_cache_stale_objects.empty()) {
+		obj_collide_retime_stale_pairs();
+	}
 
 	// the main use case is to go through the main Collision detection list, so use that if
 	// nothing is defined.

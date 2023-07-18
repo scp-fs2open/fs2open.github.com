@@ -8783,7 +8783,7 @@ void sexp_set_object_position(int n)
 			set_object_for_clients(oswpt.objp);
 
 			if (oswpt.objp->flags[Object::Object_Flags::Collides])
-				obj_collide_retime_cached_pairs(oswpt.objp);
+				obj_collide_obj_cache_stale(oswpt.objp);
 
 			break;
 		}
@@ -8827,7 +8827,7 @@ void sexp_set_object_position(int n)
 				}
 
 				if (objp->flags[Object::Object_Flags::Collides])
-					obj_collide_retime_cached_pairs(objp);
+					obj_collide_obj_cache_stale(objp);
 			}
 
 			break;
@@ -8914,7 +8914,7 @@ void sexp_set_object_orientation(int n)
 			set_object_for_clients(oswpt.objp);
 
 			if (oswpt.objp->flags[Object::Object_Flags::Collides])
-				obj_collide_retime_cached_pairs(oswpt.objp);
+				obj_collide_obj_cache_stale(oswpt.objp);
 
 			break;
 		}
@@ -8935,7 +8935,7 @@ void sexp_set_object_orientation(int n)
 				set_object_for_clients(objp);
 
 				if (objp->flags[Object::Object_Flags::Collides])
-					obj_collide_retime_cached_pairs(objp);
+					obj_collide_obj_cache_stale(objp);
 			}
 
 			break;

@@ -54,6 +54,7 @@ extern Category LoadBatchingBuffers;
 extern Category SortColliders;
 extern Category FindOverlapColliders;
 extern Category CollidePair;
+extern Category RetimeCollisionCache;
 
 extern Category WeaponPostMove;
 extern Category ShipPostMove;

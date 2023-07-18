@@ -151,7 +151,7 @@ ADE_VIRTVAR(Position, l_Object, "vector", "Object world position (World vector)"
 		}
 
 		if (objh->objp->flags[Object::Object_Flags::Collides])
-			obj_collide_retime_cached_pairs(objh->objp);
+			obj_collide_obj_cache_stale(objh->objp);
 	}
 
 	return ade_set_args(L, "o", l_Vector.Set(objh->objp->pos));
@@ -188,7 +188,7 @@ ADE_VIRTVAR(Orientation, l_Object, "orientation", "Object world orientation (Wor
 		objh->objp->orient = *mh->GetMatrix();
 
 		if (objh->objp->flags[Object::Object_Flags::Collides])
-			obj_collide_retime_cached_pairs(objh->objp);
+			obj_collide_obj_cache_stale(objh->objp);
 	}
 
 	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&objh->objp->orient)));
