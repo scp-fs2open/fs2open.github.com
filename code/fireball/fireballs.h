@@ -40,8 +40,6 @@ class asteroid_info;
 
 #define FIREBALL_NUM_LARGE_EXPLOSIONS 2
 
-#define MAX_FIREBALLS	200
-
 extern int fireball_used[MAX_FIREBALL_TYPES];
 
 // all this moved here by Goober5000 because it makes more sense in the H file
