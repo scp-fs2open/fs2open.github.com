@@ -661,9 +661,7 @@ SCP_string message_translate_tokens(const char *text)
 				break;
 
 			// make sure we aren't going to have any type of out-of-bounds issues
-			if ( ((toke2 - text) < 0) || ((toke2 - text) >= (ptr_s)sizeof(temp)) ) {
-				Int3();
-			} else {
+			if ( (toke2 > text) && ((toke2 - text) < (ptr_s)sizeof(temp)) ) {
 				strncpy(temp, text, toke2 - text);  // isolate token into seperate buffer
 				temp[toke2 - text] = 0;  // null terminate string
 				ptr = translate_key(temp);  // try and translate key
@@ -698,9 +696,7 @@ SCP_string message_translate_tokens(const char *text)
 				break;
 
 			// make sure we aren't going to have any type of out-of-bounds issues
-			if ( ((toke1 - text) < 0) || ((toke1 - text) >= (ptr_s)sizeof(temp)) ) {
-				Int3();
-			} else {
+			if ( (toke1 > text) && ((toke1 - text) < (ptr_s)sizeof(temp)) ) {
 				strncpy(temp, text, toke1 - text);  // isolate token into seperate buffer
 				temp[toke1 - text] = 0;  // null terminate string
 				ptr = translate_message_token(temp);  // try and translate key
