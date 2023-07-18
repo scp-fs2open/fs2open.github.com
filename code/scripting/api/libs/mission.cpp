@@ -804,13 +804,13 @@ ADE_INDEXER(l_Mission_Fireballs, "number Index", "Gets handle to a fireball obje
 
 	int objnum = -1;
 	if (idx > 0)
-		objnum = object_subclass_at_index(Fireballs, MAX_FIREBALLS, idx);
+		objnum = object_subclass_at_index(Fireballs, Fireballs.size(), idx);
 
 	return ade_set_args(L, "o", l_Fireball.Set(object_h(objnum)));
 }
 ADE_FUNC(__len, l_Mission_Fireballs, NULL, "Number of fireball objects in mission. Note that this is only accurate for one frame.", "number", "Number of fireball objects in mission")
 {
-	return ade_set_args(L, "i", object_subclass_count(Fireballs, MAX_FIREBALLS));
+	return ade_set_args(L, "i", object_subclass_count(Fireballs, Fireballs.size()));
 }
 
 ADE_FUNC(addMessage, l_Mission, "string name, string text, [persona persona]", "Adds a message", "message", "The new message or invalid handle on error")
