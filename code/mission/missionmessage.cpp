@@ -141,7 +141,7 @@ const char *Persona_type_names[MAX_PERSONA_TYPES] =
 //XSTR:ON
 };
 
-int Default_command_persona;
+int Default_command_persona, Default_support_persona;
 
 // Goober5000
 // NOTE - these are truncated filenames, i.e. without extensions
@@ -202,6 +202,8 @@ int comm_between_player_and_ship(int other_shipnum, bool for_death_scream);
 void persona_parse()
 {
 	Persona this_persona;
+	this_persona.flags = 0;
+	this_persona.species_bitfield = 0;
 
 	required_string("$Persona:");
 	stuff_string(this_persona.name, F_NAME, NAME_LENGTH);
@@ -273,13 +275,16 @@ void persona_parse()
 	}
 
 	if (!dup) {
+		int persona_index = (int) Personas.size();
 		Personas.push_back(this_persona);
 
-		// save the Command persona in a global
+		// Save some important personae for later
 		if (this_persona.flags & PERSONA_FLAG_COMMAND) {
-			// always use the most recent Command persona
-			// found, since that's how retail does it
-			Default_command_persona = ((int)Personas.size() - 1);
+			// Always use the most recent Command persona found, since that's how retail does it
+			Default_command_persona = persona_index;
+		}
+		if ((this_persona.flags & PERSONA_FLAG_SUPPORT) && (Default_support_persona == -1)) {
+			Default_support_persona = persona_index;
 		}
 	}
 }
@@ -735,6 +740,7 @@ void messages_init()
 
 	if ( !table_read ) {
 		Default_command_persona = -1;
+		Default_support_persona = -1;
 
 		// speed things up a little by setting the capacities for the message vectors to roughly the FS2 amounts
 		Messages.reserve(500);
@@ -1969,14 +1975,18 @@ int pick_persona(ship* shipp) {
 			return i;
 		}
 	}
-	int count = (int)candidates.size();
-	if (count == 0) {
-		return -1;
-	} else if (count == 1) {
+	int count = (int) candidates.size();
+	if (count == 1) {
 		return candidates[0];
-	} else {
+	} else if (count > 1) {
 		return candidates[Random::next(0, count)];
-	}
+	} else if (persona_type & PERSONA_FLAG_SUPPORT) {
+		// Species without a support persona (e.g. the UEF) historically used the
+		// first support persona; retain that behavior
+		return Default_support_persona;
+	} else {
+		return -1;
+	} 
 }
 
 bool can_auto_assign_persona(ship* shipp) {
