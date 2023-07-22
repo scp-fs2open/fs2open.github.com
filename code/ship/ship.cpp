@@ -16587,7 +16587,9 @@ static const char* ship_get_ai_target_display_name(int goal, const char* name)
 	case AI_GOAL_UNDOCK:
 	case AI_GOAL_GUARD:
 	case AI_GOAL_DISABLE_SHIP:
+	case AI_GOAL_DISABLE_SHIP_TACTICAL:
 	case AI_GOAL_DISARM_SHIP:
+	case AI_GOAL_DISARM_SHIP_TACTICAL:
 	case AI_GOAL_EVADE_SHIP:
 	case AI_GOAL_REARM_REPAIR:
 	case AI_GOAL_FLY_TO_SHIP:
@@ -16675,7 +16677,9 @@ SCP_string ship_return_orders(ship* sp)
 	case AI_GOAL_UNDOCK:
 	case AI_GOAL_GUARD:
 	case AI_GOAL_DISABLE_SHIP:
+	case AI_GOAL_DISABLE_SHIP_TACTICAL:
 	case AI_GOAL_DISARM_SHIP:
+	case AI_GOAL_DISARM_SHIP_TACTICAL:
 	case AI_GOAL_EVADE_SHIP:
 	case AI_GOAL_REARM_REPAIR:
 	case AI_GOAL_FLY_TO_SHIP:
