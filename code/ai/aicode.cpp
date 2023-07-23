@@ -954,6 +954,21 @@ void ai_init()
 					 "ai autoscaling. If that's not desired then use a tbl instead of a tbm!\n"));
 		}
 
+		// autoscaling is meaningless if only one AI class has it, and will produce either ineffectual or
+		// divide-by-zero math expressions if $use adjusted AI class autoscale: is enabled
+		int num_autoscaled_classes = 0;
+		int autoscaled_class_index = -1;
+		for (int i = 0; i < Num_ai_classes; ++i) {
+			if (Ai_classes[i].ai_class_autoscale) {
+				num_autoscaled_classes++;
+				autoscaled_class_index = i;
+			}
+		}
+		if (num_autoscaled_classes == 1) {
+			Warning(LOCATION, "Autoscaling is meaningless when only one AI class has autoscaling enabled.  Turning off autoscaling for %s.", Ai_classes[autoscaled_class_index].name);
+			Ai_classes[autoscaled_class_index].ai_class_autoscale = false;
+		}
+
 		atexit(free_ai_stuff);
 
 		ai_inited = 1;
