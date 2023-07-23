@@ -1114,7 +1114,6 @@ void mission_campaign_mission_over(bool do_next_mission)
 
 	// Goober5000 - player-persistent variables are handled when the mission is
 	// over, not necessarily when the mission is accepted
-	Player->failures_this_session = 0;
 
 	// update campaign.mission stats (used to allow backout inRedAlert)
 	// .. but we don't do this if we are inside of the prev/current loop hack
