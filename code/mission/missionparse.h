@@ -165,6 +165,8 @@ typedef struct mission {
 
 	SCP_vector<mission_cutscene> cutscenes;
 
+	SCP_map<SCP_string, SCP_string> custom_data;
+
 	void Reset( );
 
 	mission( )

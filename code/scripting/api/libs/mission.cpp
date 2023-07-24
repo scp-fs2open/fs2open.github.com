@@ -1638,6 +1638,29 @@ ADE_VIRTVAR(Gravity, l_Mission, "vector", "Gravity acceleration vector in meters
 	return ade_set_args(L, "o", l_Vector.Set(The_mission.gravity));
 }
 
+ADE_VIRTVAR(CustomData, l_Mission, nullptr, "Gets the custom data table for this mission", "table", "The mission's custom data table") 
+{
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "Setting Custom Data is not supported");
+	}
+
+	auto table = luacpp::LuaTable::create(L);
+
+	for (const auto& pair : The_mission.custom_data)
+	{
+		table.addValue(pair.first, pair.second);
+	}
+
+	return ade_set_args(L, "t", &table);	
+}
+
+ADE_FUNC(hasCustomData, l_Mission, nullptr, "Detects whether the mission has any custom data", "boolean", "true if the mission's custom_data is not empty, false otherwise") 
+{
+
+	bool result = !The_mission.custom_data.empty();
+	return ade_set_args(L, "b", result);
+}
+
 ADE_FUNC(isInMission, l_Mission, nullptr, "get whether or not a mission is currently being played", "boolean", "true if in mission, false otherwise")
 {
 	return ade_set_args(L, "b", (Game_mode & GM_IN_MISSION) != 0);

@@ -6002,6 +6002,20 @@ void parse_sexp_containers()
 	}
 }
 
+void parse_custom_data(mission* pm)
+{
+	if (!optional_string("#Custom Data"))
+		return;
+
+	// This is essentially a duplicate of the above, but FRED has all it's things in
+	// unique sections and then I wanted to be sure the actual custom data map had a
+	// set of opening and closing tags.
+	if (optional_string("$begin_data_map")) {
+
+		parse_string_map(pm->custom_data, "$end_data_map", "+Val:");
+	}
+}
+
 bool parse_mission(mission *pm, int flags)
 {
 	int saved_warning_count = Global_warning_count;
@@ -6044,6 +6058,7 @@ bool parse_mission(mission *pm, int flags)
 	parse_bitmaps(pm);
 	parse_asteroid_fields(pm);
 	parse_music(pm, flags);
+	parse_custom_data(pm);
 
 	// if we couldn't load some mod data
 	if ((Num_unknown_ship_classes > 0) || ( Num_unknown_loadout_classes > 0 )) {
