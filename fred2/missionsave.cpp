@@ -3136,6 +3136,8 @@ void CFred_mission_save::save_mission_internal(const char *pathname)
 		err = -15;
 	else if (save_music())
 		err = -16;
+	else if (save_custom_data())
+		err = -17;
 	else {
 		required_string_fred("#End");
 		parse_comments(2);
@@ -3240,6 +3242,26 @@ int CFred_mission_save::save_music()
 	}
 
 	fso_comment_pop(true);
+
+	return err;
+}
+
+int CFred_mission_save::save_custom_data()
+{
+	if (Mission_save_format != FSO_FORMAT_RETAIL) {
+		required_string_fred("#Custom Data");
+		parse_comments(2);
+
+		if (The_mission.custom_data.size() > 0) {
+			required_string_fred("$begin_data_map");
+			parse_comments(2);
+			for (const auto& pair : The_mission.custom_data) {
+				fout("\n+Val: %s %s", pair.first.c_str(), pair.second.c_str());
+			}
+			required_string_fred("$end_data_map");
+			parse_comments(2);
+		}
+	}
 
 	return err;
 }
