@@ -426,6 +426,7 @@
 #define IDC_SOUND_CLIP_DELETE           1139
 #define IDC_SOUND_CLIP_WINDOW           1140
 #define IDC_SHIP_PREVIOUS               1141
+#define IDC_CUSTOM_DATA_DESC            1142
 #define IDC_WEAPON_NAME                 1143
 #define IDC_WEAPON_DESCRIPTION          1144
 #define IDC_WEAPON_MASS                 1145

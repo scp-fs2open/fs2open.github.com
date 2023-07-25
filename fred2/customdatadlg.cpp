@@ -134,6 +134,13 @@ void CustomDataDlg::OnListerSelectionChange()
 	const SCP_string& key = m_lister_keys[index];
 
 	update_text_edit_boxes(key, m_custom_data[key]);
+	update_help_text("No help text provided");
+
+	for (int i = 0; i < (int)Default_custom_data.size(); i++) {
+		if (Default_custom_data[i].key == key) {
+			update_help_text(Default_custom_data[i].description);
+		}
+	}
 
 }
 
@@ -171,6 +178,7 @@ void CustomDataDlg::OnPairRemove()
 	m_custom_data.erase(key);
 
 	update_data_lister();
+	update_help_text("");
 }
 
 void CustomDataDlg::OnPairUpdate()
@@ -230,6 +238,14 @@ bool CustomDataDlg::key_edit_box_has_valid_data()
 		return false;
 	}
 
+	for (const auto& pair : m_custom_data) {
+		const CString key = pair.first.c_str();
+		if (key == key_str) {
+			MessageBox("Keys must be unique!");
+			return false;
+		}
+	}
+
 	return true;
 }
 
@@ -268,6 +284,13 @@ void CustomDataDlg::update_text_edit_boxes(const SCP_string& key, const SCP_stri
 
 	CEdit* data_edit = (CEdit*)GetDlgItem(IDC_CUSTOM_DATA);
 	data_edit->SetWindowText(data.c_str());
+}
+
+void CustomDataDlg::update_help_text(const SCP_string& description)
+{
+	CEdit* desc_edit = (CEdit*)GetDlgItem(IDC_CUSTOM_DATA_DESC);
+	desc_edit->SetWindowText(description.c_str());
+
 }
 
 bool CustomDataDlg::query_modified() const

@@ -118,6 +118,8 @@ ushort Current_file_checksum = 0;
 ushort Last_file_checksum = 0;
 int    Current_file_length   = 0;
 
+SCP_vector<mission_default_custom_data> Default_custom_data;
+
 // alternate ship type names
 char Mission_alt_types[MAX_ALT_TYPE_NAMES][NAME_LENGTH];
 int Mission_alt_type_count = 0;
@@ -6007,12 +6009,24 @@ void parse_custom_data(mission* pm)
 	if (!optional_string("#Custom Data"))
 		return;
 
-	// This is essentially a duplicate of the above, but FRED has all it's things in
-	// unique sections and then I wanted to be sure the actual custom data map had a
-	// set of opening and closing tags.
 	if (optional_string("$begin_data_map")) {
 
 		parse_string_map(pm->custom_data, "$end_data_map", "+Val:");
+	}
+}
+
+void apply_default_custom_data(mission* pm)
+{
+	for (const auto& def : Default_custom_data) {
+		int count = 0;
+		for (const auto& listed : pm->custom_data) {
+			if (listed.first != def.key) {
+				count++;
+			}
+		}
+		if (count == pm->custom_data.size()) {
+			pm->custom_data.emplace(def.key, def.value);
+		}
 	}
 }
 
@@ -6419,6 +6433,8 @@ bool post_process_mission(mission *pm)
 	if (pm->volumetrics)
 		pm->volumetrics->renderVolumeBitmap();
 
+	apply_default_custom_data(pm);
+
 	// success
 	return true;
 }
@@ -6547,6 +6563,8 @@ void mission::Reset()
 	gravity = vmd_zero_vector;
 
 	volumetrics.reset();
+
+	custom_data.clear();
 }
 
 /**

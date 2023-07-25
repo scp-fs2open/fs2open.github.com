@@ -43,6 +43,7 @@ class CustomDataDlg : public CDialog {
 
 	void update_data_lister();
 	void update_text_edit_boxes(const SCP_string& key, const SCP_string& data);
+	void update_help_text(const SCP_string& desc);
 
 	bool edit_boxes_have_valid_data(bool dup_key_ok);
 	bool data_edit_box_has_valid_data();

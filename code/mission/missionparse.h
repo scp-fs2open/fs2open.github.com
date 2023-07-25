@@ -109,6 +109,12 @@ typedef struct mission_cutscene {
 	int formula;
 } mission_cutscene;
 
+typedef struct mission_default_custom_data {
+	SCP_string key;
+	SCP_string value;
+	SCP_string description;
+} mission_default_custom_data;
+
 // descriptions of flags for FRED
 template <class T>
 struct parse_object_flag_description {
@@ -263,6 +269,8 @@ extern int Num_unknown_loadout_classes;
 
 extern ushort Current_file_checksum;
 extern int    Current_file_length;
+
+extern SCP_vector<mission_default_custom_data> Default_custom_data;
 
 #define SUBSYS_STATUS_NO_CHANGE	-999
 
@@ -460,6 +468,9 @@ int parse_create_object(p_object *objp, bool standalone_ship = false);
 void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> &parse_flags);
 
 void mission_parse_close();
+
+// used in fred management.cpp when creating a new mission
+void apply_default_custom_data(mission* pm);
 
 bool mission_maybe_make_ship_arrive(p_object *p_objp, bool force_arrival = false);
 bool mission_maybe_make_wing_arrive(int wingnum, bool force_arrival = false);
