@@ -57,8 +57,13 @@ struct sexp_variable;
 #define CMISSION_FLAG_SKIPPED				(1<<1)	// set if skipped, else not
 #define CMISSION_FLAG_HAS_LOOP				(1<<2)	// mission loop, e.g. FS2 SOC loops
 #define CMISSION_FLAG_HAS_FORK				(1<<3)	// campaign fork, e.g. Scroll or BWO (mutually exclusive with loop)
-// internal flags start from the end
+
+// internal flags start from the end, except for some flags that are grandfathered in
 #define CMISSION_FLAG_FRED_LOAD_PENDING		(1<<31)	// originally handled by num_goals being set to -1
+#define CMISSION_FIRST_INTERNAL_FLAG		CMISSION_FLAG_FRED_LOAD_PENDING
+
+// all flags below FIRST_INTERNAL_FLAG, except SKIPPED, HAS_LOOP, and HAS_FORK
+#define CMISSION_EXTERNAL_FLAG_MASK		((static_cast<unsigned int>(CMISSION_FIRST_INTERNAL_FLAG) - 1) & ~CMISSION_FLAG_SKIPPED & ~CMISSION_FLAG_HAS_LOOP & ~CMISSION_FLAG_HAS_FORK)
 
 #define CAMPAIGN_LOOP_MISSION_UNINITIALIZED	-2
 
