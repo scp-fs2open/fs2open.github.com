@@ -492,7 +492,10 @@ protected:
 
 	int next_flash;
 	bool flash_status;
-public:
+
+	bool always_display;
+
+  public:
 	HudGaugeDamage();
 	void initBitmaps(const char *fname_top, const char *fname_middle, const char *fname_bottom);
 	void initHeaderOffsets(int x, int y);
@@ -503,6 +506,7 @@ public:
 	void initSubsysIntegValueOffsetX(int x);
 	void initBottomBgOffset(int offset);
 	void initLineHeight(int h);
+	void initDisplayValue(bool value);
 	void render(float frametime) override;
 	void pageIn() override;
 	void initialize() override;

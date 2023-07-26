@@ -4143,6 +4143,7 @@ void load_gauge_damage(gauge_settings* settings)
 	char fname_top[MAX_FILENAME_LEN] = "damage1";
 	char fname_middle[MAX_FILENAME_LEN] = "damage2";
 	char fname_bottom[MAX_FILENAME_LEN] = "damage3";
+	bool always_display = false;
 	
 	settings->origin[0] = 0.5f;
 	settings->origin[1] = 0.0f;
@@ -4200,6 +4201,9 @@ void load_gauge_damage(gauge_settings* settings)
 	if(optional_string("Bottom Background Offset:")) {
 		stuff_int(&bottom_bg_offset);
 	}
+	if(optional_string("Always Display:")) {
+		stuff_boolean(&always_display);
+	}
 
 	hud_gauge->initBitmaps(fname_top, fname_middle, fname_bottom);
 	hud_gauge->initHullIntegOffsets(hull_integ_offsets[0], hull_integ_offsets[1]);
@@ -4210,6 +4214,7 @@ void load_gauge_damage(gauge_settings* settings)
 	hud_gauge->initSubsysIntegValueOffsetX(subsys_integ_val_offset_x);
 	hud_gauge->initBottomBgOffset(bottom_bg_offset);
 	hud_gauge->initHeaderOffsets(header_offsets[0], header_offsets[1]);
+	hud_gauge->initDisplayValue(always_display);
 
 	gauge_assign_common(settings, std::move(hud_gauge));
 }
