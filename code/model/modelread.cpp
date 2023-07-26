@@ -80,6 +80,9 @@ static bool ss_warning_shown_mismatch = false;	// ditto but for a different warn
 // Anything less than this is considered incompatible.
 #define PM_COMPATIBLE_VERSION 1900
 
+// This begins the FS2 version history
+#define PM_FIRST_FREESPACE2_VERSION 2100
+
 // Anything greater than or equal to PM_COMPATIBLE_VERSION and 
 // whose major version is less than or equal to this is considered
 // compatible.  
@@ -1668,22 +1671,24 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 
 		switch (id) {
 
+			case ID_HDR2:
 			case ID_OHDR: {		//Object header
 				//vector v;
 
 				//mprintf(0,"Got chunk OHDR, len=%d\n",len);
 
-#if defined( FREESPACE1_FORMAT )
-				pm->n_models = cfread_int(fp);
-//				mprintf(( "Num models = %d\n", pm->n_models ));
-				pm->rad = cfread_float(fp);
-				pm->flags = cfread_int(fp);	// 1=Allow tiling
-#elif defined( FREESPACE2_FORMAT )
-				pm->rad = cfread_float(fp);
-				pm->flags = cfread_int(fp);	// 1=Allow tiling
-				pm->n_models = cfread_int(fp);
-//				mprintf(( "Num models = %d\n", pm->n_models ));
-#endif
+				if (id == ID_OHDR) {
+					pm->n_models = cfread_int(fp);
+//					mprintf(( "Num models = %d\n", pm->n_models ));
+					pm->rad = cfread_float(fp);
+					pm->flags = cfread_int(fp);	// 1=Allow tiling
+				}
+				if (id == ID_HDR2) {
+					pm->rad = cfread_float(fp);
+					pm->flags = cfread_int(fp);	// 1=Allow tiling
+					pm->n_models = cfread_int(fp);
+//					mprintf(( "Num models = %d\n", pm->n_models ));
+				}
                 Assertion(pm->n_models >= 1, "Models without any submodels are not supported!");
 
 				// Check for unrealistic radii
@@ -1818,6 +1823,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				break;
 			}
 			
+			case ID_OBJ2:
 			case ID_SOBJ: {		//Subobject header
 				int n, parent;
 				char *p, props[MAX_PROP_LEN];
@@ -1830,9 +1836,9 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				Assert(n < pm->n_models );
 				auto sm = &pm->submodel[n];
 
-#if defined( FREESPACE2_FORMAT )	
-				sm->rad = cfread_float(fp);		//radius
-#endif
+				if (id == ID_OBJ2) {
+					sm->rad = cfread_float(fp);		//radius
+				}
 
 				parent = cfread_int(fp);
 				sm->parent = parent;
@@ -1855,9 +1861,9 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 
 //			mprintf(( "Subobj %d, offs = %.1f, %.1f, %.1f\n", n, sm->offset.xyz.x, sm->offset.xyz.y, sm->offset.xyz.z ));
 	
-#if defined ( FREESPACE1_FORMAT )
-				sm->rad = cfread_float(fp);		//radius
-#endif
+				if (id == ID_SOBJ) {
+					sm->rad = cfread_float(fp);		//radius
+				}
 
 //				sm->tree_offset = cfread_int(fp);	//offset
 //				sm->data_offset = cfread_int(fp);	//offset
