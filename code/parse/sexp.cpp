@@ -36649,7 +36649,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"arrays and pointers.\r\n\r\nPlease note that only numeric variables are supported.  Any "
 		"attempt to access a string variable will result in a value of SEXP_NAN_FOREVER being returned.\r\n\r\n"
 		"Takes 1 argument...\r\n"
-		"\t1:\tIndex of variable, from 0 to MAX_SEXP_VARIABLES - 1." },
+		"\t1:\tIndex of variable, from 0 to " SCP_TOKEN_TO_STR(MAX_SEXP_VARIABLES) " - 1." },
 
 	{ OP_SET_VARIABLE_BY_INDEX, "set-variable-by-index (originally variable-array-set)\r\n"
 		"\tSets the value of the variable specified by the given index.  This is an alternate way "
@@ -36657,7 +36657,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"arrays and pointers.\r\n\r\nIn contrast to get-variable-by-index, note that this sexp "
 		"*does* allow the modification of string variables.\r\n\r\n"
 		"Takes 2 arguments...\r\n"
-		"\t1:\tIndex of variable, from 0 to MAX_SEXP_VARIABLES - 1.\r\n"
+		"\t1:\tIndex of variable, from 0 to " SCP_TOKEN_TO_STR(MAX_SEXP_VARIABLES) " - 1.\r\n"
 		"\t2:\tValue to be set." },
 
 	{ OP_COPY_VARIABLE_FROM_INDEX, "copy-variable-from-index\r\n"
@@ -36665,14 +36665,14 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"This is very similar to get-variable-by-index, except the result is stored in a new variable rather than "
 		"being returned by value.  One important difference is that this sexp can be used to copy string variables as well as numeric variables.\r\n\r\n"
 		"Takes 2 arguments...\r\n"
-		"\t1:\tIndex of source variable, from 0 to MAX_SEXP_VARIABLES - 1.\r\n"
+		"\t1:\tIndex of source variable, from 0 to " SCP_TOKEN_TO_STR(MAX_SEXP_VARIABLES) " - 1.\r\n"
 		"\t2:\tDestination variable.  The type of this variable must match the type of the variable referenced by the index." },
 
 	{ OP_COPY_VARIABLE_BETWEEN_INDEXES, "copy-variable-between-indexes\r\n"
 		"\tRetrieves the value of the variable specified by the first index and stores it in the variable specified by the second index.  The first variable is not modified.\r\n\r\n"
 		"Takes 2 arguments...\r\n"
-		"\t1:\tIndex of source variable, from 0 to MAX_SEXP_VARIABLES - 1.\r\n"
-		"\t2:\tIndex of destination variable, from 0 to MAX_SEXP_VARIABLES - 1.  The types of both variables must match." },
+		"\t1:\tIndex of source variable, from 0 to " SCP_TOKEN_TO_STR(MAX_SEXP_VARIABLES) " - 1.\r\n"
+		"\t2:\tIndex of destination variable, from 0 to " SCP_TOKEN_TO_STR(MAX_SEXP_VARIABLES) " - 1.  The types of both variables must match." },
 
 	// Karajorma/jg18
 	{ OP_CONTAINER_ADD_TO_LIST, "add-to-list\r\n"
@@ -37489,7 +37489,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	// Goober5000
 	{ OP_STRING_CONCATENATE, "string-concatenate (deprecated in favor of string-concatenate-block)\r\n"
 		"\tConcatenates two strings, putting the result into a string variable.  If the length of the string will "
-		"exceed the sexp variable token limit (currently 32), it will be truncated.\r\n\r\n"
+		"exceed the sexp variable token limit (" SCP_TOKEN_TO_STR(TOKEN_LENGTH) " - 1), it will be truncated.\r\n\r\n"
 		"Takes 3 arguments...\r\n"
 		"\t1: First string\r\n"
 		"\t2: Second string\r\n"
@@ -37498,7 +37498,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	// Goober5000
 	{ OP_STRING_CONCATENATE_BLOCK, "string-concatenate-block\r\n"
 		"\tConcatenates two or more strings, putting the result into a string variable.  If the length of the string will "
-		"exceed the sexp variable token limit (currently 32), it will be truncated.\r\n\r\n"
+		"exceed the sexp variable token limit (" SCP_TOKEN_TO_STR(TOKEN_LENGTH) " - 1), it will be truncated.\r\n\r\n"
 		"Takes 3 or more arguments...\r\n"
 		"\t1: String variable to hold the result\r\n"
 		"\tRest: Strings to concatenate.  At least two of these are required; the rest are optional.\r\n" },
@@ -37506,7 +37506,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	// Goober5000
 	{ OP_STRING_GET_SUBSTRING, "string-get-substring\r\n"
 		"\tExtracts a substring from a parent string, putting the result into a string variable.  If the length of the string will "
-		"exceed the sexp variable token limit (currently 32), it will be truncated.\r\n\r\n"
+		"exceed the sexp variable token limit (" SCP_TOKEN_TO_STR(TOKEN_LENGTH) " - 1), it will be truncated.\r\n\r\n"
 		"Takes 3 arguments...\r\n"
 		"\t1: Parent string\r\n"
 		"\t2: Index at which the substring begins (0-based)\r\n"
@@ -37516,7 +37516,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	// Goober5000
 	{ OP_STRING_SET_SUBSTRING, "string-set-substring\r\n"
 		"\tReplaces a substring from a parent string with a new string, putting the result into a string variable.  If the length of the string will "
-		"exceed the sexp variable token limit (currently 32), it will be truncated.\r\n\r\n"
+		"exceed the sexp variable token limit (" SCP_TOKEN_TO_STR(TOKEN_LENGTH) " - 1), it will be truncated.\r\n\r\n"
 		"Takes 3 arguments...\r\n"
 		"\t1: Parent string\r\n"
 		"\t2: Index at which the substring begins (0-based)\r\n"
