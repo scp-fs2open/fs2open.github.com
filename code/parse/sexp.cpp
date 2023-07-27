@@ -33364,7 +33364,12 @@ const char *CTEXT(int n)
 
 			if (!(Sexp_nodes[arg_n].flags & SNF_CHECKED_ARG_FOR_VAR))
 			{
-				Sexp_nodes[arg_n].cached_variable_index = check_sexp_node_text_for_sexp_variable(text);
+				// nodes that have an officially formatted variable will store the variable index in the token
+				if (Sexp_nodes[arg_n].type & SEXP_FLAG_VARIABLE)
+					Sexp_nodes[arg_n].cached_variable_index = atoi(text);
+				else
+					Sexp_nodes[arg_n].cached_variable_index = check_sexp_node_text_for_sexp_variable(text);
+
 				Sexp_nodes[arg_n].flags |= SNF_CHECKED_ARG_FOR_VAR;
 			}
 
