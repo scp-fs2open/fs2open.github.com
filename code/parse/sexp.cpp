@@ -4135,17 +4135,27 @@ bool get_unformatted_sexp_variable_name(char *unformatted, const char *formatted
 	// first character should be @
 	if (*formatted != SEXP_VARIABLE_CHAR)
 		return false;
-	formatted++;
+
+	auto intermediate = formatted + 1;
+	size_t n;
 
 	// get variable name (up to '[')
-	auto l_bracket = strchr(formatted, '[');
-
-	auto n = (l_bracket != nullptr) ? (l_bracket - formatted) : strlen(formatted);
+	auto l_bracket = strchr(intermediate, '[');
+	if (l_bracket) {
+		auto r_bracket = strchr(l_bracket, ']');
+		if (!r_bracket) {
+			error_display(0, "Malformed variable token: %s", formatted);
+			return false;
+		}
+		n = l_bracket - intermediate;
+	} else {
+		n = strlen(intermediate);
+	}
 
 	if (n >= TOKEN_LENGTH - 1)
 		return false;
 
-	strncpy(unformatted, formatted, n);
+	strncpy(unformatted, intermediate, n);
 	unformatted[n] = '\0';
 	return true;
 }
@@ -4354,53 +4364,67 @@ int get_sexp()
 
 		// Sexp container
 		else if (*Mp == sexp_container::DELIM) {
-			Mp++;
-
-			char container_name[sexp_container::NAME_MAX_LENGTH + 1];
-
-			if (*Mp == sexp_container::DELIM) {
-				// container name
-				Mp++;
-
-				// ' ' occurs if there are arguments after the container name
-				// ')' occurs if this is the SEXP's last argument
-				stuff_string(container_name, F_NAME, sizeof(container_name), " )");
-				if (*Mp != ')') {
-					Mp++;
+			size_t len = 0;
+			auto ch = Mp;
+			while (*ch != ')' && !is_white_space(*ch)) {
+				// end of string or end of file
+				if (*ch == '\0') {
+					error_display(0, "Unexpected end of sexp!");
+					return -1;
 				}
+				ch++;
+				len++;
+			}
+
+			// token is too long?
+			if (len >= TOKEN_LENGTH - 1) {
+				error_display(0, "Token %s is too long. Needs to be %d characters or shorter.", token, TOKEN_LENGTH - 1);
+				return -1;
+			}
+
+			strncpy(token, Mp, len);
+			token[len] = 0;
+
+			// bump past token
+			// (do it here because the container data path calls get_sexp())
+			Mp += len;
+
+			// container name
+			if (token[1] == sexp_container::DELIM) {
+				auto container_name = token + 2;
 
 				if (get_sexp_container(container_name) == nullptr) {
-					Error(LOCATION, "Attempt to use unknown container '%s'", container_name);
+					error_display(0, "Attempt to use unknown container '%s'", token);
 					return -1;
 				}
 
 				node = alloc_sexp(container_name, SEXP_ATOM, SEXP_ATOM_CONTAINER_NAME, -1, -1);
-			} else {
-				// container data
-				stuff_string(container_name, F_NAME, sizeof(container_name), sexp_container::DELIM_STR.c_str());
+			}
+			// container data
+			else {
+				if (token[len - 1] != sexp_container::DELIM) {
+					error_display(0, "Malformed container data token: %s", token);
+					return -1;
+				}
 
-				// bump past closing '&'
-				Mp += 2;
+				char container_name[TOKEN_LENGTH];
+				strcpy_s(container_name, token + 1);	// skip first delimiter
+				container_name[len - 2] = 0;			// truncate last delimiter
 
 				if (get_sexp_container(container_name) == nullptr) {
-					Error(LOCATION, "Attempt to use data from unknown container '%s'", container_name);
+					error_display(0, "Attempt to use data from unknown container '%s'", token);
 					return -1;
 				}
 
 				// advance to the container modifier, since we'll read them when calling get_sexp() below
-				while (*Mp != '(') {
-					// watch out for malformed input
-					if ('\n' == *Mp || '\0' == *Mp) {
-						break;
-					}
-					Mp++;
-				}
+				ignore_gray_space();
+				// watch out for malformed input
+				if (*Mp != '(')
+					break;
 				Mp++;
 
 				node = alloc_sexp(container_name, SEXP_ATOM, SEXP_ATOM_CONTAINER_DATA, get_sexp(), -1);
 			}
-
-			ignore_white_space();
 		}
 
 		// Sexp operator or number
