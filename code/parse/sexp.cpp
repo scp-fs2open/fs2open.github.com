@@ -33436,11 +33436,6 @@ const char *CTEXT(int n)
 
 			sexp_variable_index = Sexp_nodes[arg_n].cached_variable_index;
 		}
-		// just check the text of the argument for a variable
-		else
-		{
-			sexp_variable_index = check_sexp_node_text_for_sexp_variable(text);
-		}
 
 		// if we have a variable, return the variable value, else return the regular argument
 		if (sexp_variable_index >= 0)
