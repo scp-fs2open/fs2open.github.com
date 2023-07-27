@@ -4296,6 +4296,30 @@ void localize_sexp(int text_node, int id_node)
 	lcl_ext_localize(xstr.c_str(), Sexp_nodes[text_node].text, TOKEN_LENGTH - 1);
 }
 
+// Advance to and consume the closing parenthesis of a sexp, in case of a parse error.
+// If a closing parenthesis is not found, this advances to the end of the string.
+void skip_sexp()
+{
+	int level = 1;
+
+	while (*Mp != '\0')
+	{
+		if (*Mp == ')')
+		{
+			level--;
+			if (level == 0)
+			{
+				Mp++;
+				return;
+			}
+		}
+		else if (*Mp == '(')
+			level++;
+
+		Mp++;
+	}
+}
+
 /**
  * Returns the first sexp index of data this function allocates. (start of this sexp)
  *
@@ -4321,7 +4345,7 @@ int get_sexp()
 		// end of string or end of file
 		if (*Mp == '\0') {
 			error_display(0, "Unexpected end of sexp!");
-			return -1;
+			return Locked_sexp_false;
 		}
 
 		// Sexp list
@@ -4337,8 +4361,8 @@ int get_sexp()
 			// was closing quote not found?
 			if (*(Mp + 1 + len) != '\"') {
 				error_display(0, "Unexpected end of quoted string embedded in sexp!");
-				Mp += (len + 1);	// bump the right amount (closing quote not found)
-				return -1;
+				skip_sexp();
+				return Locked_sexp_false;
 			}
 			// bump past closing quote
 			Mp += (len + 2);
@@ -4355,7 +4379,8 @@ int get_sexp()
 				if (len >= TOKEN_LENGTH) {
 					SCP_string long_token(startp + 1, len);
 					error_display(0, "Token is too long. Needs to be %d characters or shorter:\n%s", TOKEN_LENGTH - 1, long_token.c_str());
-					return -1;
+					// here we can just truncate; we don't need to return
+					len = TOKEN_LENGTH - 1;
 				}
 
 				strncpy(token, startp + 1, len);
@@ -4372,7 +4397,12 @@ int get_sexp()
 				// end of string or end of file
 				if (*Mp == '\0') {
 					error_display(0, "Unexpected end of sexp!");
-					return -1;
+					return Locked_sexp_false;
+				}
+				// bad format
+				if (*Mp == '(') {
+					error_display(1, "Mismatched parentheses while parsing SEXP!  Current parse position:\n%s", Mp);
+					return Locked_sexp_false;
 				}
 				Mp++;
 				len++;
@@ -4382,7 +4412,8 @@ int get_sexp()
 			if (len >= TOKEN_LENGTH) {
 				SCP_string long_token(startp, len);
 				error_display(0, "Token is too long. Needs to be %d characters or shorter:\n%s", TOKEN_LENGTH - 1, long_token.c_str());
-				return -1;
+				skip_sexp();
+				return Locked_sexp_false;
 			}
 
 			strncpy(token, startp, len);
@@ -4394,7 +4425,8 @@ int get_sexp()
 
 				if (get_sexp_container(container_name) == nullptr) {
 					error_display(0, "Attempt to use unknown container '%s'", token);
-					return -1;
+					skip_sexp();
+					return Locked_sexp_false;
 				}
 
 				node = alloc_sexp(container_name, SEXP_ATOM, SEXP_ATOM_CONTAINER_NAME, -1, -1);
@@ -4403,7 +4435,8 @@ int get_sexp()
 			else {
 				if (token[len - 1] != sexp_container::DELIM) {
 					error_display(0, "Malformed container data token: %s", token);
-					return -1;
+					skip_sexp();
+					return Locked_sexp_false;
 				}
 
 				char container_name[TOKEN_LENGTH];
@@ -4412,7 +4445,8 @@ int get_sexp()
 
 				if (get_sexp_container(container_name) == nullptr) {
 					error_display(0, "Attempt to use data from unknown container '%s'", token);
-					return -1;
+					skip_sexp();
+					return Locked_sexp_false;
 				}
 
 				// advance to the container modifier, since we'll read them when calling get_sexp() below
@@ -4434,7 +4468,12 @@ int get_sexp()
 				// end of string or end of file
 				if (*Mp == '\0') {
 					error_display(0, "Unexpected end of sexp!");
-					return -1;
+					return Locked_sexp_false;
+				}
+				// bad format
+				if (*Mp == '(') {
+					error_display(1, "Mismatched parentheses while parsing SEXP!  Current parse position:\n%s", Mp);
+					return Locked_sexp_false;
 				}
 				Mp++;
 				len++;
@@ -4452,7 +4491,8 @@ int get_sexp()
 				if (len >= TOKEN_LENGTH) {
 					SCP_string long_token(startp, len);
 					error_display(0, "Token is too long. Needs to be %d characters or shorter:\n%s", TOKEN_LENGTH - 1, long_token.c_str());
-					return -1;
+					skip_sexp();
+					return Locked_sexp_false;
 				}
 
 				strncpy(token, startp, len);
