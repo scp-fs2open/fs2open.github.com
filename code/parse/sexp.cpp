@@ -4332,15 +4332,19 @@ int get_sexp()
 
 		// Sexp string
 		else if (*Mp == '\"') {
+			auto startp = Mp;
 			auto len = strcspn(Mp + 1, "\"");
 			// was closing quote not found?
 			if (*(Mp + 1 + len) != '\"') {
 				error_display(0, "Unexpected end of quoted string embedded in sexp!");
+				Mp += (len + 1);	// bump the right amount (closing quote not found)
 				return -1;
 			}
+			// bump past closing quote
+			Mp += (len + 2);
 
 			// it could be a string variable
-			int sexp_var_index = check_string_for_sexp_variable(Mp + 1, len);
+			int sexp_var_index = check_string_for_sexp_variable(startp + 1, len);
 			if (sexp_var_index >= 0) {
 				get_sexp_text_for_variable(token, sexp_var_index);
 				node = alloc_sexp(token, (SEXP_ATOM | SEXP_FLAG_VARIABLE), SEXP_ATOM_STRING, -1, -1);
@@ -4348,46 +4352,41 @@ int get_sexp()
 			// it's a regular string
 			else {
 				// token is too long?
-				if (len >= TOKEN_LENGTH - 1) {
-					error_display(0, "Token %s is too long. Needs to be %d characters or shorter.", Mp, TOKEN_LENGTH - 1);
+				if (len >= TOKEN_LENGTH) {
+					SCP_string long_token(startp + 1, len);
+					error_display(0, "Token is too long. Needs to be %d characters or shorter:\n%s", TOKEN_LENGTH - 1, long_token.c_str());
 					return -1;
 				}
 
-				strncpy(token, Mp + 1, len);
+				strncpy(token, startp + 1, len);
 				token[len] = 0;
 				node = alloc_sexp(token, SEXP_ATOM, SEXP_ATOM_STRING, -1, -1);
 			}
-
-			// bump past closing \"
-			Mp += (len + 2);
 		}
 
 		// Sexp container
 		else if (*Mp == sexp_container::DELIM) {
+			auto startp = Mp;
 			size_t len = 0;
-			auto ch = Mp;
-			while (*ch != ')' && !is_white_space(*ch)) {
+			while (*Mp != ')' && !is_white_space(*Mp)) {
 				// end of string or end of file
-				if (*ch == '\0') {
+				if (*Mp == '\0') {
 					error_display(0, "Unexpected end of sexp!");
 					return -1;
 				}
-				ch++;
+				Mp++;
 				len++;
 			}
 
 			// token is too long?
-			if (len >= TOKEN_LENGTH - 1) {
-				error_display(0, "Token %s is too long. Needs to be %d characters or shorter.", token, TOKEN_LENGTH - 1);
+			if (len >= TOKEN_LENGTH) {
+				SCP_string long_token(startp, len);
+				error_display(0, "Token is too long. Needs to be %d characters or shorter:\n%s", TOKEN_LENGTH - 1, long_token.c_str());
 				return -1;
 			}
 
-			strncpy(token, Mp, len);
+			strncpy(token, startp, len);
 			token[len] = 0;
-
-			// bump past token
-			// (do it here because the container data path calls get_sexp())
-			Mp += len;
 
 			// container name
 			if (token[1] == sexp_container::DELIM) {
@@ -4429,20 +4428,20 @@ int get_sexp()
 
 		// Sexp operator or number
 		else {
+			auto startp = Mp;
 			size_t len = 0;
-			auto ch = Mp;
-			while (*ch != ')' && !is_white_space(*ch)) {
+			while (*Mp != ')' && !is_white_space(*Mp)) {
 				// end of string or end of file
-				if (*ch == '\0') {
+				if (*Mp == '\0') {
 					error_display(0, "Unexpected end of sexp!");
 					return -1;
 				}
-				ch++;
+				Mp++;
 				len++;
 			}
 
 			// it could be a numeric variable
-			int sexp_var_index = check_string_for_sexp_variable(Mp, len);
+			int sexp_var_index = check_string_for_sexp_variable(startp, len);
 			if (sexp_var_index >= 0) {
 				get_sexp_text_for_variable(token, sexp_var_index);
 				node = alloc_sexp(token, (SEXP_ATOM | SEXP_FLAG_VARIABLE), SEXP_ATOM_NUMBER, -1, -1);
@@ -4450,12 +4449,13 @@ int get_sexp()
 			// it could be an operator
 			else {
 				// token is too long?
-				if (len >= TOKEN_LENGTH - 1) {
-					error_display(0, "Token %s is too long. Needs to be %d characters or shorter.", token, TOKEN_LENGTH - 1);
+				if (len >= TOKEN_LENGTH) {
+					SCP_string long_token(startp, len);
+					error_display(0, "Token is too long. Needs to be %d characters or shorter:\n%s", TOKEN_LENGTH - 1, long_token.c_str());
 					return -1;
 				}
 
-				strncpy(token, Mp, len);
+				strncpy(token, startp, len);
 				token[len] = 0;
 
 				// maybe replace deprecated names
@@ -4502,9 +4502,6 @@ int get_sexp()
 					node = alloc_sexp(token, SEXP_ATOM, SEXP_ATOM_NUMBER, -1, -1);
 				}
 			}
-
-			// bump past token
-			Mp += len;
 		}
 
 		// update links
@@ -12529,8 +12526,8 @@ void sexp_hud_set_directive(int n)
 	auto text = CTEXT(CDR(n));
 	SCP_string message = message_translate_tokens(text);
 
-	if (message.size() > MESSAGE_LENGTH) {
-		WarningEx(LOCATION, "Message %s is too long for use in a HUD gauge. Please shorten it to %d characters or less.", message.c_str(), MESSAGE_LENGTH);
+	if (message.size() >= MESSAGE_LENGTH) {
+		WarningEx(LOCATION, "Message %s is too long for use in a HUD gauge. Please shorten it to %d characters or less.", message.c_str(), MESSAGE_LENGTH - 1);
 		return;
 	}
 
