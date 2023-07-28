@@ -4367,7 +4367,7 @@ int get_sexp()
 			// was closing quote not found?
 			if (*(Mp + 1 + len) != '\"') {
 				error_display(0, "Unexpected end of quoted string embedded in sexp!");
-				skip_sexp(true);
+				skip_sexp(true);	// this will have the effect of skipping to the end of the file or string
 				return Locked_sexp_false;
 			}
 			// bump past closing quote
