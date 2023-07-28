@@ -6533,7 +6533,13 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		if ( wp->trail_ptr != NULL )	{
 			// Add two segments.  One to stay at launch pos, one to move.
 			trail_add_segment( wp->trail_ptr, &objp->pos, &objp->orient, &objp->phys_info.vel);
-			trail_add_segment( wp->trail_ptr, &objp->pos, &objp->orient, &objp->phys_info.vel);
+			if (wip->render_type == WRT_LASER) {
+				vec3d center_pos;
+				vm_vec_scale_add(&center_pos, &objp->pos, &objp->orient.vec.fvec, (wip->laser_length / 2));
+				trail_add_segment(wp->trail_ptr, &center_pos, &objp->orient, &objp->phys_info.vel);
+			} else {
+				trail_add_segment(wp->trail_ptr, &objp->pos, &objp->orient, &objp->phys_info.vel);
+			}
 		}
 	}
 	else

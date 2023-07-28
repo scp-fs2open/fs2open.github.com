@@ -146,6 +146,7 @@ void trail_render( trail * trailp )
 
 		float total_len = speed * ti->max_life;
 		float t = vm_vec_dist(&trailp->pos[front], &trailp->pos[back]) / total_len;
+		CLAMP(t, 0.0f, 1.0f);
 		float f_alpha, b_alpha, f_width, b_width;
 		if (trailp->object_died) {
 			f_alpha = t * (ti->a_start - ti->a_end) + ti->a_end;
@@ -364,9 +365,6 @@ void trail_add_segment( trail *trailp, vec3d *pos , const matrix* orient, vec3d*
 
 void trail_set_segment( trail *trailp, vec3d *pos )
 {
-	if (trailp->single_segment)
-		return;
-
 	int next = trailp->tail-1;
 	if ( next < 0 )	{
 		next = NUM_TRAIL_SECTIONS-1;
