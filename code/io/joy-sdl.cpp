@@ -742,58 +742,70 @@ namespace joystick
 
 		// Initialize values of the axes
 		auto numSticks = SDL_JoystickNumAxes(_joystick);
-		_axisValues.resize(static_cast<size_t>(numSticks));
-		for (auto i = 0; i < numSticks; ++i)
-		{
-			_axisValues[i] = SDL_JoystickGetAxis(_joystick, i);
+		if (numSticks >= 0) {
+			_axisValues.resize(static_cast<size_t>(numSticks));
+			for (auto i = 0; i < numSticks; ++i) {
+				_axisValues[i] = SDL_JoystickGetAxis(_joystick, i);
+			}
+
+		} else {
+			_axisValues.resize(0);
+			mprintf(("Failed to get number of axes for joystick %s: %s\n", _name.c_str(), SDL_GetError()));
 		}
 
 		// Initialize ball values
 		auto ballNum = SDL_JoystickNumBalls(_joystick);
-		_ballValues.resize(static_cast<size_t>(ballNum));
-		for (auto i = 0; i < ballNum; ++i)
-		{
-			coord2d coord;
-			if (SDL_JoystickGetBall(_joystick, i, &coord.x, &coord.y))
-			{
-				mprintf(("Failed to get ball %d value for joystick %s: %s\n", i, _name.c_str(), SDL_GetError()));
+		if (ballNum >= 0) {
+			_ballValues.resize(static_cast<size_t>(ballNum));
+
+			for (auto i = 0; i < ballNum; ++i) {
+				coord2d coord;
+				if (SDL_JoystickGetBall(_joystick, i, &coord.x, &coord.y)) {
+					mprintf(("Failed to get ball %d value for joystick %s: %s\n", i, _name.c_str(), SDL_GetError()));
+				}
 			}
+
+		} else {
+			mprintf(("Failed to get number of ball axes for joystick %s: %s\n", _name.c_str(), SDL_GetError()));
+			_ballValues.resize(0);
 		}
 
 		// Initialize buttons
 		auto buttonNum = SDL_JoystickNumButtons(_joystick);
-		_button.resize(static_cast<size_t>(buttonNum));
-		for (auto i = 0; i < buttonNum; ++i)
-		{
-			if (SDL_JoystickGetButton(_joystick, i) == 1)
-			{
-				_button[i].DownTimestamp = ui_timestamp();
+		if (buttonNum >= 0) {
+			_button.resize(static_cast<size_t>(buttonNum));
+			for (auto i = 0; i < buttonNum; ++i) {
+				if (SDL_JoystickGetButton(_joystick, i) == 1) {
+					_button[i].DownTimestamp = ui_timestamp();
+				
+				} else {
+					_button[i].DownTimestamp = UI_TIMESTAMP::invalid();
+				}
 			}
-			else
-			{
-				_button[i].DownTimestamp = UI_TIMESTAMP::invalid();
-			}
+
+		} else {
+			_button.resize(0);
+			mprintf(("Failed to get number of buttons for joystick %s: %s\n", _name.c_str(), SDL_GetError()));
 		}
 
 		// Initialize hats
 		auto hatNum = SDL_JoystickNumHats(_joystick);
-		_hat.resize(static_cast<size_t>(hatNum));
-		for (auto i = 0; i < hatNum; ++i)
-		{
-			std::bitset<4> hatset = SDL_JoystickGetHat(_joystick, i);
-			auto hatval = convertSDLHat(SDL_JoystickGetHat(_joystick, i));
-			_hat[i].Value = hatval;
+		if (hatNum >= 0) {
+			_hat.resize(static_cast<size_t>(hatNum));
+			for (auto i = 0; i < hatNum; ++i) {
+				std::bitset<4> hatset = SDL_JoystickGetHat(_joystick, i);
+				auto hatval = convertSDLHat(SDL_JoystickGetHat(_joystick, i));
+				_hat[i].Value = hatval;
 
-			// Reset timestampts
-			for (auto j = 0; j < 4; ++j) {
-				_hat[i].DownTimestamp4[j] = UI_TIMESTAMP::invalid();
-			}
-			for (auto j = 0; j < 8; ++j) {
-				_hat[i].DownTimestamp8[j] = UI_TIMESTAMP::invalid();
-			}
+				// Reset timestampts
+				for (auto j = 0; j < 4; ++j) {
+					_hat[i].DownTimestamp4[j] = UI_TIMESTAMP::invalid();
+				}
+				for (auto j = 0; j < 8; ++j) {
+					_hat[i].DownTimestamp8[j] = UI_TIMESTAMP::invalid();
+				}
 
-			if (_hat[i].Value != HAT_CENTERED)
-			{
+				if (_hat[i].Value != HAT_CENTERED) {
 				// Set the 4-pos timestamp(s)
 				if ((hatset[HAT_DOWN])) {
 					_hat[i].DownTimestamp4[HAT_DOWN] = ui_timestamp();
@@ -809,8 +821,12 @@ namespace joystick
 				}
 
 				// Set the 8-pos timestamp
-				_hat[i].DownTimestamp8[hatval] = ui_timestamp();
+					_hat[i].DownTimestamp8[hatval] = ui_timestamp();
+				}
 			}
+		} else {
+			_hat.resize(0);
+			mprintf(("Failed to get number of hats for joystick %s: %s", _name.c_str(), SDL_GetError()));
 		}
 	}
 
