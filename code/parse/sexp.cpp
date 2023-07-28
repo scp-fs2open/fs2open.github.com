@@ -4156,7 +4156,7 @@ bool get_unformatted_sexp_variable_name(char *unformatted, const char *formatted
 		return false;
 
 	strncpy(unformatted, intermediate, n);
-	unformatted[n] = '\0';
+	unformatted[n] = 0;
 	return true;
 }
 
@@ -4298,23 +4298,29 @@ void localize_sexp(int text_node, int id_node)
 
 // Advance to and consume the closing parenthesis of a sexp, in case of a parse error.
 // If a closing parenthesis is not found, this advances to the end of the string.
-void skip_sexp()
+void skip_sexp(bool within_quotes = false)
 {
 	int level = 1;
 
 	while (*Mp != '\0')
 	{
-		if (*Mp == ')')
+		if (*Mp == '\"')
+			within_quotes = !within_quotes;
+
+		if (!within_quotes)
 		{
-			level--;
-			if (level == 0)
+			if (*Mp == ')')
 			{
-				Mp++;
-				return;
+				level--;
+				if (level == 0)
+				{
+					Mp++;
+					return;
+				}
 			}
+			else if (*Mp == '(')
+				level++;
 		}
-		else if (*Mp == '(')
-			level++;
 
 		Mp++;
 	}
@@ -4361,7 +4367,7 @@ int get_sexp()
 			// was closing quote not found?
 			if (*(Mp + 1 + len) != '\"') {
 				error_display(0, "Unexpected end of quoted string embedded in sexp!");
-				skip_sexp();
+				skip_sexp(true);
 				return Locked_sexp_false;
 			}
 			// bump past closing quote
@@ -4401,7 +4407,8 @@ int get_sexp()
 				}
 				// bad format
 				if (*Mp == '(') {
-					error_display(1, "Mismatched parentheses while parsing SEXP!  Current parse position:\n%s", Mp);
+					char buf[512];
+					error_display(1, "Mismatched parentheses while parsing SEXP!  Current parse position:\n%s", three_dot_truncate(buf, Mp, 512));
 					return Locked_sexp_false;
 				}
 				Mp++;
@@ -4472,7 +4479,8 @@ int get_sexp()
 				}
 				// bad format
 				if (*Mp == '(') {
-					error_display(1, "Mismatched parentheses while parsing SEXP!  Current parse position:\n%s", Mp);
+					char buf[512];
+					error_display(1, "Mismatched parentheses while parsing SEXP!  Current parse position:\n%s", three_dot_truncate(buf, Mp, 512));
 					return Locked_sexp_false;
 				}
 				Mp++;
@@ -29160,11 +29168,7 @@ int get_sexp_main()
 	if (*Mp != '(')
 	{
 		char buf[512];
-		strncpy(buf, Mp, 512);
-		if (buf[511] != '\0')
-			strcpy(&buf[506], "[...]");
-
-		error_display(0, "Expected to find an open parenthesis in the following sexp:\n%s", buf);
+		error_display(0, "Expected to find an open parenthesis in the following sexp:\n%s", three_dot_truncate(buf, Mp, 512));
 		return -1;
 	}
 

@@ -4100,6 +4100,24 @@ void consolidate_double_characters(char *src, char ch)
 	}
 }
 
+char *three_dot_truncate(char *buffer, const char *source, size_t buffer_size)
+{
+	Assertion(buffer && source, "Arguments must not be null!");
+
+	// this would be silly
+	if (buffer_size < 6)
+	{
+		*buffer = '\0';
+		return buffer;
+	}
+
+	strncpy(buffer, source, buffer_size);
+	if (buffer[buffer_size - 1] != '\0')
+		strcpy(&buffer[buffer_size - 6], "[...]");
+
+	return buffer;
+}
+
 // Goober5000
 // Returns position of replacement, or a negative value if replacement failed: -1 if search string was not found, -2 if replacement would exceed max length, or -3 if any string argument is null
 // Note that the parameter here is max *length*, not max buffer size.  Leave room for the null-terminator!
