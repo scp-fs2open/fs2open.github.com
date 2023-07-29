@@ -79,6 +79,9 @@ extern int get_index_of_first_hash_symbol(SCP_string &src, bool ignore_doubled_h
 
 extern void consolidate_double_characters(char *str, char ch);
 
+// for limiting strings that may be very long; useful for dialog boxes
+char *three_dot_truncate(char *buffer, const char *source, size_t buffer_size);
+
 // white space
 extern int is_white_space(char ch);
 extern int is_white_space(unicode::codepoint_t cp);
