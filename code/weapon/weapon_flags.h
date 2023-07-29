@@ -93,6 +93,7 @@ namespace Weapon {
 		No_evasion,							// AI will not attempt to dodge this weapon - Asteroth
 		Dont_merge_indicators,				// This secondary lead indicator won't be merged with the primary lead indicator even if this is a homing weapon.
 		No_fred,							// not available in fred
+		Detonate_on_expiration,				// Secondary weapons always detonate when their lifetime runs out, but now primary weapons can too
 
         NUM_VALUES
 	};
