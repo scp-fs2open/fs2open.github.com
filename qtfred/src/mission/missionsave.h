@@ -47,7 +47,7 @@ class CFred_mission_save {
 	 * @brief Default constructor
 	 */
 	explicit CFred_mission_save(EditorViewport* viewport = nullptr, MissionFormat format = MissionFormat::STANDARD) :
-		raw_ptr(Parse_text_raw), save_format(format), _editor(viewport ? viewport->editor : nullptr), _viewport(viewport) {
+		save_format(format), _editor(viewport ? viewport->editor : nullptr), _viewport(viewport) {
 	}
 
 	/**

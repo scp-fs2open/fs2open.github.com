@@ -2259,6 +2259,7 @@ int CFred_mission_save::save_messages()
 int CFred_mission_save::save_campaign_file(const char *pathname)
 {
 	reset_parse();
+	raw_ptr = Parse_text_raw;
 	fred_parse_flag = 0;
 
 	pathname = cf_add_ext(pathname, FS_CAMPAIGN_FILE_EXT);
@@ -2494,8 +2495,13 @@ int CFred_mission_save::save_mission_info()
 
 	required_string_fred("$Version:");
 	parse_comments(2);
-	// Since previous versions of FreeSpace interpret this as a float, this can only have one decimal point
-	fout(" %d.%d", The_mission.required_fso_version.major, The_mission.required_fso_version.minor);
+	if (save_format == MissionFormat::RETAIL) {
+		// All retail missions, both FS1 and FS2, have the same version
+		fout(" %d.%d", LEGACY_MISSION_VERSION.major, LEGACY_MISSION_VERSION.minor);
+	} else {
+		// Since previous versions of FreeSpace interpret this as a float, this can only have one decimal point
+		fout(" %d.%d", The_mission.required_fso_version.major, The_mission.required_fso_version.minor);
+	}
 
 	// XSTR
 	required_string_fred("$Name:");
@@ -2993,7 +2999,9 @@ void CFred_mission_save::save_mission_internal(const char* pathname)
 	The_mission.required_fso_version = MISSION_VERSION;
 
 	reset_parse();
+	raw_ptr = Parse_text_raw;
 	fred_parse_flag = 0;
+
 	fp = cfopen(pathname, "wt", CFILE_NORMAL, CF_TYPE_MISSIONS);
 	if (!fp) {
 		nprintf(("Error", "Can't open mission file to save.\n"));
