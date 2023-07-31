@@ -24,6 +24,7 @@
 #include "gamesnd/eventmusic.h"
 #include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"
+#include "hud/hud.h"
 #include "hud/hudescort.h"
 #include "hud/hudets.h"
 #include "hud/hudsquadmsg.h"
@@ -6530,7 +6531,7 @@ void mission::Reset()
 	cutscenes.clear( );
 
 	gravity = vmd_zero_vector;
-
+	HUD_timer_padding = 0;
 	volumetrics.reset();
 }
 

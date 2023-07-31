@@ -1778,8 +1778,8 @@ void HudGaugeMissionTime::render(float  /*frametime*/)
 	int minutes=0;
 	int seconds=0;
 	
-	mission_time = f2fl(Missiontime);  // convert to seconds
-
+	mission_time = f2fl(Missiontime) + (float)The_mission.HUD_timer_padding;  // convert to seconds
+	
 	minutes=(int)(mission_time/60);
 	seconds=(int)mission_time%60;
 

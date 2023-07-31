@@ -373,6 +373,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "time-docked",					OP_TIME_DOCKED,							3,	3,			SEXP_INTEGER_OPERATOR,	},
 	{ "time-undocked",					OP_TIME_UNDOCKED,						3,	3,			SEXP_INTEGER_OPERATOR,	},
 	{ "time-to-goal",					OP_TIME_TO_GOAL,						1,	1,			SEXP_INTEGER_OPERATOR,	},	// tcrayford
+	{ "set-hud-timer-padding",			OP_SET_HUD_TIME_PAD,					1,	1,			SEXP_ACTION_OPERATOR,	},  // MjnMixael
 
 	//Conditionals Category
 	{ "cond",							OP_COND,								1,	INT_MAX,	SEXP_CONDITIONAL_OPERATOR,},
@@ -19156,6 +19157,18 @@ int sexp_time_to_goal(int n)
 	return time;
 }
 
+void sexp_set_hud_time_pad(int n)
+{
+	bool is_nan, is_nan_forever;
+	int pad;
+
+	pad = eval_num(n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
+
+	The_mission.HUD_timer_padding = pad;
+}
+
 // Karajorma
 void sexp_reset_orders (int  /*n*/)
 {
@@ -27814,6 +27827,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_time_to_goal(node);
 				break;
 
+			case OP_SET_HUD_TIME_PAD:
+				sexp_set_hud_time_pad(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 
 			// Karajorma
 			case OP_RESET_ORDERS:
@@ -29623,6 +29641,7 @@ int query_operator_return_type(int op)
 		case OP_NOP:
 		case OP_GOALS_ID:
 		case OP_SEND_MESSAGE:
+		case OP_SET_HUD_TIME_PAD:
 		case OP_SELF_DESTRUCT:
 		case OP_NEXT_MISSION:
 		case OP_END_CAMPAIGN:
@@ -30420,6 +30439,9 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_TIME_TO_GOAL:
 				return OPF_SHIP;
+
+		case OP_SET_HUD_TIME_PAD:
+			return OPF_POSITIVE;
 
 		case OP_WAS_DESTROYED_BY_DELAY:
 			if (argnum == 0)
@@ -34408,6 +34430,7 @@ int get_category(int op_id)
 		case OP_TIME_DOCKED:
 		case OP_TIME_UNDOCKED:
 		case OP_TIME_TO_GOAL:
+		case OP_SET_HUD_TIME_PAD:
 			return OP_CATEGORY_TIME;
 
 		case OP_SHIELDS_LEFT:
@@ -36297,6 +36320,14 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tReturns the number of seconds until a ship reaches its waypoint\r\n\r\n"
 		"Returns a number value.  Takes 1 argument...\r\n"
 		"\t1:\tName of ship to check waypoint time." },
+
+	// MjnMixael
+	{ OP_SET_HUD_TIME_PAD, "Set HUD Timer Padding (Action operator)\r\n"
+		"\tSets an additional padding that is added only to the visible clock on the HUD. "
+		"It does not affect the actual mission time or the mission log! Time is an illusion "
+		"and the illusion here exists only on the HUD.\r\n\r\n"
+		"Takes 1 argument...\r\n"
+		"\t1:\tThe amount of time to add to the clock in seconds." },
 
 	{ OP_AFTERBURNER_LEFT, "Afterburner left\r\n"
 		"\tReturns a ship's current engine energy as a percentage.\r\n"
