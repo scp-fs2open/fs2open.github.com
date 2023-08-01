@@ -129,7 +129,7 @@ void CustomDataDlg::OnListerSelectionChange()
 	}
 
 	Assert(m_data_lister.GetCount() > 0);
-	Assert(index >= 0 && index < m_custom_data.size());
+	Assert(index >= 0 && index < (int)m_custom_data.size());
 
 	const SCP_string& key = m_lister_keys[index];
 
@@ -172,7 +172,7 @@ void CustomDataDlg::OnPairRemove()
 {
 	const int index = m_data_lister.GetCurSel();
 
-	Assert(index >= 0 && index < m_custom_data.size());
+	Assert(index >= 0 && index < (int)m_custom_data.size());
 
 	const auto& key = m_lister_keys[index];
 	m_custom_data.erase(key);

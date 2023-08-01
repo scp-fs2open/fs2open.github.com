@@ -6024,7 +6024,7 @@ void apply_default_custom_data(mission* pm)
 				count++;
 			}
 		}
-		if (count == pm->custom_data.size()) {
+		if (count == (int)pm->custom_data.size()) {
 			pm->custom_data.emplace(def.key, def.value);
 		}
 	}
