@@ -1511,9 +1511,12 @@ int stars_get_next_frame(starfield_bitmap_instance &inst, starfield_bitmap &bm, 
 	// After frame 0 we check if we should animate
 	if (inst.timestamp > 0) {
 
+		int mpf = 1000 / bm.fps; // The expected ms per frame for this animation
+		int time_passed = timestamp_ms - inst.timestamp; // Amount of time passed since last check
+
 		// Has the ms-per-frame passed since the last frame update?
-		if ((timestamp_ms - inst.timestamp) >= (1000 / bm.fps)) {
-			bitmap_id = inst.cur_frame + 1;
+		if (time_passed >= mpf) {
+			bitmap_id = inst.cur_frame + (time_passed / mpf);
 
 			// Should we loop back to start?
 			if (bitmap_id >= (bm.bitmap_id + bm.n_frames)) {
