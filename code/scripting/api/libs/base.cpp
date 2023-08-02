@@ -629,6 +629,17 @@ ADE_FUNC(getVersionString, l_Base, nullptr,
 	return ade_set_args(L, "s", str.c_str());
 }
 
+ADE_FUNC(getModRootName, l_Base, nullptr,
+	"Returns the name of the current mod's root folder.", "string", "The mod root")
+{
+	SCP_string str = Cmdline_mod;
+
+	// Trim any trailing folders so we get just the name of the root mod folder
+	str = str.substr(0, str.find_first_of(DIR_SEPARATOR_CHAR));
+
+	return ade_set_args(L, "s", str.c_str());
+}
+
 ADE_FUNC(getModTitle, l_Base, nullptr,
          "Returns the title of the current mod as defined in game_settings.tbl. Will return an empty string if not defined.",
          "string", "The mod title")
