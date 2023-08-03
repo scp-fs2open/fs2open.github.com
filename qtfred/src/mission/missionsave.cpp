@@ -2248,6 +2248,15 @@ int CFred_mission_save::save_messages()
 			fout(" %s", Messages[i].wave_info.name);
 		}
 
+		if (Messages[i].note != "") {
+			if (optional_string_fred("+Note:", "$Name:"))
+				parse_comments();
+			else
+				fout("\n+Note:");
+
+			fout(" %s", Messages[i].note.c_str());
+		}
+
 		fso_comment_pop();
 	}
 

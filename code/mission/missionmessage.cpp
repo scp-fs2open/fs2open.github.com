@@ -486,6 +486,12 @@ void message_parse(MessageFormat format) {
 		}
 	}
 
+	if (optional_string("+Note:")) {
+		stuff_string(msg.note, F_NAME);
+	} else {
+		msg.note = "";
+	}
+
 	if (optional_string("$Mood:")) {
 		SCP_string buf; 
 		bool found = false;
