@@ -487,9 +487,12 @@ void message_parse(MessageFormat format) {
 	}
 
 	if (optional_string("+Note:")) {
-		stuff_string(msg.note, F_NAME);
-	} else {
-		msg.note = "";
+		if (Fred_running) { // Msg stage notes do nothing in FSO, so let's not even waste a few bytes
+			stuff_string(msg.note, F_NAME);
+		} else {
+			SCP_string junk;
+			stuff_string(junk, F_NAME);
+		}
 	}
 
 	if (optional_string("$Mood:")) {
