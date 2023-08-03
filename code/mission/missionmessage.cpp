@@ -492,7 +492,7 @@ void message_parse(MessageFormat format) {
 			lcl_replace_stuff(msg.note, true);
 		} else {
 			SCP_string junk;
-			stuff_string(junk, F_NAME);
+			stuff_string(junk, F_MULTITEXT);
 		}
 	}
 
