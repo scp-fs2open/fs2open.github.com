@@ -2556,7 +2556,14 @@ int CFred_mission_save::save_messages()
 			else
 				fout("\n+Note:");
 
-			fout(" %s", Messages[i].note.c_str());
+			auto copy = Messages[i].note;
+			lcl_fred_replace_stuff(copy);
+			fout(" %s", copy.c_str());
+
+			if (optional_string_fred("$end_multi_text", "$Name:"))
+				parse_comments();
+			else
+				fout_version("\n$end_multi_text");
 		}
 
 		fso_comment_pop();
