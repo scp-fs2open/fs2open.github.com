@@ -1357,10 +1357,13 @@ int CFred_mission_save::save_campaign_file(const char *pathname)
 		required_string_fred("+Flags:", "$Mission:");
 		parse_comments();
 
+		// don't save any internal flags
+		auto flags_to_save = Campaign.missions[m].flags & CMISSION_EXTERNAL_FLAG_MASK;
+
 		// Goober5000
 		if (Mission_save_format != FSO_FORMAT_RETAIL) {
 			// don't save Bastion flag
-			fout(" %d", Campaign.missions[m].flags & ~CMISSION_FLAG_BASTION);
+			fout(" %d", flags_to_save & ~CMISSION_FLAG_BASTION);
 
 			// new main hall stuff
 			if (optional_string_fred("+Main Hall:", "$Mission:"))
@@ -1371,7 +1374,7 @@ int CFred_mission_save::save_campaign_file(const char *pathname)
 			fout(" %s", Campaign.missions[m].main_hall.c_str());
 		} else {
 			// save Bastion flag properly
-			fout(" %d", Campaign.missions[m].flags | ((Campaign.missions[m].main_hall != "") ? CMISSION_FLAG_BASTION : 0));
+			fout(" %d", flags_to_save | ((Campaign.missions[m].main_hall != "") ? CMISSION_FLAG_BASTION : 0));
 		}
 
 		if (Campaign.missions[m].debrief_persona_index > 0) {

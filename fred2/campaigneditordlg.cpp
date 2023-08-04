@@ -919,7 +919,7 @@ void campaign_editor::OnCustomTechDB()
 		Campaign.flags &= ~CF_CUSTOM_TECH_DATABASE;
 }
 
-CString campaign_editor::GetPathWithoutFile()
+CString campaign_editor::GetPathWithoutFile() const
 {
 	if (m_current_campaign_path.IsEmpty())
 		return m_current_campaign_path;
@@ -931,4 +931,14 @@ CString campaign_editor::GetPathWithoutFile()
 	}
 
 	return path;
+}
+
+void campaign_editor::SetCurrentCampaignPath(const CString& path)
+{
+	m_current_campaign_path = path;
+}
+
+const CString &campaign_editor::GetCurrentCampaignPath() const
+{
+	return m_current_campaign_path;
 }
