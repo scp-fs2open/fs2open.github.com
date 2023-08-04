@@ -46,10 +46,10 @@ class CustomStringsDlg : public CDialog {
 	afx_msg void OnEnKillFocusEditString();
 
 	void update_data_lister();
-	void update_text_edit_boxes(const mission_custom_string *cs);
+	void update_text_edit_boxes(const SCP_string& key, const SCP_string& value, const SCP_string& text);
 	void update_help_text(const SCP_string& desc);
 
-	bool edit_boxes_have_valid_data(bool dup_key_ok);
+	bool edit_boxes_have_valid_data();
 	bool data_edit_box_has_valid_data();
 	bool key_edit_box_has_valid_data();
 	bool text_edit_box_has_valid_data();

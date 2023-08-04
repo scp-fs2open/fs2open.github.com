@@ -147,7 +147,7 @@ void CustomStringsDlg::OnListerSelectionChange()
 	}
 
 	if (cs != nullptr) {
-		update_text_edit_boxes(cs);
+		update_text_edit_boxes(cs->name, cs->value, cs->text);
 	}
 	/*update_help_text("No help text provided");
 
@@ -166,7 +166,7 @@ void CustomStringsDlg::OnStringAdd()
 
 void CustomStringsDlg::add_pair_entry()
 {
-	if (!edit_boxes_have_valid_data(false)) {
+	if (!edit_boxes_have_valid_data()) {
 		return;
 	}
 
@@ -190,7 +190,7 @@ void CustomStringsDlg::add_pair_entry()
 	m_custom_strings.push_back(cs);
 
 	update_data_lister();
-	//update_text_edit_boxes("", "");
+	update_text_edit_boxes("", "", "");
 }
 
 void CustomStringsDlg::OnStringRemove()
@@ -209,12 +209,12 @@ void CustomStringsDlg::OnStringRemove()
 	}
 
 	update_data_lister();
-	//update_help_text("");
+	update_text_edit_boxes("", "", "");
 }
 
 void CustomStringsDlg::OnStringUpdate()
 {
-	if (!edit_boxes_have_valid_data(true)) {
+	if (!edit_boxes_have_valid_data()) {
 		return;
 	}
 
@@ -242,7 +242,7 @@ void CustomStringsDlg::OnStringUpdate()
 	CEdit* data_edit = (CEdit*)GetDlgItem(IDC_CUSTOM_DATA);
 	CString data_str;
 	data_edit->GetWindowText(data_str);
-	m_custom_strings[i].name = data_str;
+	m_custom_strings[i].value = data_str;
 
 	CEdit* text_edit = (CEdit*)GetDlgItem(IDC_CUSTOM_STRING);
 	CString text_str;
@@ -250,19 +250,20 @@ void CustomStringsDlg::OnStringUpdate()
 	m_custom_strings[i].text = text_str;
 
 	update_data_lister();
-	//update_text_edit_boxes("", "");
+	update_text_edit_boxes("", "", "");
 }
 
-bool CustomStringsDlg::edit_boxes_have_valid_data(bool dup_key_ok)
+bool CustomStringsDlg::edit_boxes_have_valid_data()
 {
 	if (!data_edit_box_has_valid_data()) {
 		return false;
 	}
-	if (!dup_key_ok && !key_edit_box_has_valid_data()) {
+
+	if (!text_edit_box_has_valid_data()) {
 		return false;
 	}
 
-	if (!text_edit_box_has_valid_data()) {
+	if (!key_edit_box_has_valid_data()) {
 		return false;
 	}
 
@@ -286,11 +287,16 @@ bool CustomStringsDlg::key_edit_box_has_valid_data()
 		return false;
 	}
 
-	for (const auto& cs: m_custom_strings) {
-		const CString key = cs.name.c_str();
-		if (key == key_str) {
-			MessageBox("Names must be unique!");
-			return false;
+	const int index = m_data_lister.GetCurSel();
+	const auto& this_key = m_lister_keys[index];
+
+	if (strcmp(this_key.c_str(), key_str)) {
+		for (const auto& cs : m_custom_strings) {
+			const CString key = cs.name.c_str();
+			if (key == key_str) {
+				MessageBox("Names must be unique!");
+				return false;
+			}
 		}
 	}
 
@@ -339,16 +345,17 @@ void CustomStringsDlg::update_data_lister()
 	m_data_lister.EnableWindow(m_data_lister.GetCount() > 0);
 }
 
-void CustomStringsDlg::update_text_edit_boxes(const mission_custom_string* cs)
+void CustomStringsDlg::update_text_edit_boxes(const SCP_string& key, const SCP_string& value, const SCP_string& text)
 {
+	
 	CEdit* key_edit = (CEdit*)GetDlgItem(IDC_CUSTOM_KEY);
-	key_edit->SetWindowText(cs->name.c_str());
+	key_edit->SetWindowText(key.c_str());
 
 	CEdit* data_edit = (CEdit*)GetDlgItem(IDC_CUSTOM_DATA);
-	data_edit->SetWindowText(cs->value.c_str());
+	data_edit->SetWindowText(value.c_str());
 
 	CEdit* data_text = (CEdit*)GetDlgItem(IDC_CUSTOM_STRING);
-	data_text->SetWindowText(cs->text.c_str());
+	data_text->SetWindowText(text.c_str());
 }
 
 void CustomStringsDlg::OnEnSetFocusEditString()
