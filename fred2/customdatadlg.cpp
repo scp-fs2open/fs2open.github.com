@@ -238,11 +238,16 @@ bool CustomDataDlg::key_edit_box_has_valid_data()
 		return false;
 	}
 
-	for (const auto& pair : m_custom_data) {
-		const CString key = pair.first.c_str();
-		if (key == key_str) {
-			MessageBox("Keys must be unique!");
-			return false;
+	const int index = m_data_lister.GetCurSel();
+	const auto& this_key = m_lister_keys[index];
+
+	if (strcmp(this_key.c_str(), key_str)) {
+		for (const auto& pair : m_custom_data) {
+			const CString key = pair.first.c_str();
+			if (key == key_str) {
+				MessageBox("Keys must be unique!");
+				return false;
+			}
 		}
 	}
 
