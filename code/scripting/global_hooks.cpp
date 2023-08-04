@@ -362,7 +362,8 @@ const std::shared_ptr<OverridableHook<>> OnDialogInit = OverridableHook<>::Facto
 		{"IsStateRunning", "boolean", "True if the underlying state is still being processed and rendered."},
 		{"IsInputPopup", "boolean", "True if this popup is for entering text."},
 		{"IsDeathPopup", "boolean", "True if this popup is an in-mission death popup and should be styled as such."},
-		{"AllowedInput", "string", "A string of characters allowed to be present in the input popup. Nil if not an input popup."}
+		{"AllowedInput", "string", "A string of characters allowed to be present in the input popup. Nil if not an input popup."},
+		{"DeathMessage", "string", "The death message if the dialog is a death popup. Nil if not a death popup."}
 	 });
 
 const std::shared_ptr<OverridableHook<>> OnDialogFrame = OverridableHook<>::Factory("On Dialog Frame",
