@@ -189,19 +189,24 @@ ADE_INDEXER(l_Loadout_Amount,
 	idx--; // Convert from Lua
 	if (ADE_SETTING_VAR) {
 		ship_info* sip = &Ship_info[current.getBank()->ship_class];
-		weapon_info* wip = &Weapon_info[current.getBank()->wep[idx]];
-		int capacity = 0;
-		//Calculate max capacity of the weapon in the current bank
-		if (wip->subtype == WP_LASER) {
-			capacity = 1;
+		int widx = current.getBank()->wep[idx];
+		if (widx >= 0 && widx < (int)Weapon_info.size()) {
+			weapon_info* wip = &Weapon_info[idx];
+			int capacity = 0;
+			// Calculate max capacity of the weapon in the current bank
+			if (wip->subtype == WP_LASER) {
+				capacity = 1;
+			} else {
+				capacity = wl_calc_missile_fit(widx, sip->secondary_bank_ammo_capacity[idx - MAX_SHIP_PRIMARY_BANKS]);
+			}
+			if (amount > capacity) {
+				amount = capacity;
+			}
+			if (amount < -1) {
+				amount = -1;
+			}
 		} else {
-			capacity = wl_calc_missile_fit(current.getBank()->wep[idx],
-				sip->secondary_bank_ammo_capacity[idx - MAX_SHIP_PRIMARY_BANKS]);
-		}
-		if (amount > capacity) {
-			amount = capacity;
-		} 
-		if (amount < -1){
+			Warning(LOCATION, "Could not set amount for loadout weapon slot %i because the loaded weapon is invalid!", idx);
 			amount = -1;
 		}
 		current.getBank()->wep_count[idx] = amount;
