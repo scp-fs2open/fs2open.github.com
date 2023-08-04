@@ -115,6 +115,12 @@ typedef struct mission_default_custom_data {
 	SCP_string description;
 } mission_default_custom_data;
 
+typedef struct mission_custom_string {
+	SCP_string name;
+	SCP_string value;
+	SCP_string text;
+} mission_custom_string;
+
 // descriptions of flags for FRED
 template <class T>
 struct parse_object_flag_description {
@@ -172,6 +178,8 @@ typedef struct mission {
 	SCP_vector<mission_cutscene> cutscenes;
 
 	SCP_map<SCP_string, SCP_string> custom_data;
+
+	SCP_vector<mission_custom_string> custom_strings;
 
 	void Reset( );
 

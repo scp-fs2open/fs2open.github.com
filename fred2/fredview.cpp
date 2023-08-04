@@ -61,6 +61,7 @@
 #include "musicplayerdlg.h"
 #include "volumetricsdlg.h"
 #include "customdatadlg.h"
+#include "customstringsdlg.h"
 
 #include "osapi/osapi.h"
 

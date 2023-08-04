@@ -57,7 +57,7 @@
 #define IDD_WAYPOINT_PATH_EDITOR        210
 #define IDR_WAYPOINT_PATH_EDIT_MENU     211
 #define IDD_WING_CREATE                 212
-#define IDD_JUMPNODE_EDITOR				213
+#define IDD_JUMPNODE_EDITOR             213
 #define IDD_INITIAL_STATUS              214
 #define IDD_ASTEROID_EDITOR             215
 #define IDD_CAMPAIGN                    216
@@ -68,7 +68,7 @@
 #define IDD_BRIEFING_EDITOR             221
 #define IDD_IGNORE_ORDERS               222
 #define IDD_DEBRIEFING_EDITOR           223
-#define IDR_JUMPNODE_EDIT_MENU     224
+#define IDR_JUMPNODE_EDIT_MENU          224
 #define IDB_OPERATOR                    226
 #define IDB_DATA                        227
 #define IDB_ROOT                        228
@@ -133,6 +133,7 @@
 #define IDD_EDIT_CONTAINER_NAME         324
 #define IDD_MUSIC_PLAYER                330
 #define IDD_VOLUMETRICS                 332
+#define IDD_EDIT_CUSTOM_STRINGS         333
 #define IDC_SHIP_CLASS                  1003
 #define IDC_SHIP_WING                   1004
 #define IDC_SOUND_CLIP_NAME             1007
@@ -551,6 +552,7 @@
 #define IDC_YES_MESSAGE_LIST            1208
 #define IDC_ALT_CLASS_LIST              1208
 #define IDC_LIGHT_PROFILE               1208
+#define IDC_OPEN_CUSTOM_STRINGS         1208
 #define IDC_COMMAND_SENDER              1209
 #define IDC_COMMAND_PERSONA             1210
 #define IDC_FILTER_WAYPOINTS            1211
@@ -772,6 +774,8 @@
 #define IDC_SUN1_B                      1345
 #define IDC_ABBREV_COMMAND_BRIEFING     1345
 #define IDC_STARTING_WING_NAME_2        1345
+#define IDC_CUSTOM_KEY2                 1345
+#define IDC_CUSTOM_STRING               1345
 #define IDC_SUBSYS                      1346
 #define IDC_SPECIAL_SHOCK_SPEED         1346
 #define IDC_SBITMAP_B                   1346

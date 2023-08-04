@@ -6013,6 +6013,24 @@ void parse_custom_data(mission* pm)
 
 		parse_string_map(pm->custom_data, "$end_data_map", "+Val:");
 	}
+
+	if (optional_string("$begin_custom_strings")) {
+		while (optional_string("$Name:")) {
+			mission_custom_string cs;
+
+			stuff_string(cs.name, F_NAME);
+
+			required_string("+Value:");
+			stuff_string(cs.value, F_NAME);
+
+			required_string("+String:");
+			stuff_string(cs.text, F_MULTITEXT);
+
+			pm->custom_strings.push_back(cs);
+		}
+
+		required_string("$end_custom_strings");
+	}
 }
 
 void apply_default_custom_data(mission* pm)
@@ -6565,6 +6583,7 @@ void mission::Reset()
 	volumetrics.reset();
 
 	custom_data.clear();
+	custom_strings.clear();
 }
 
 /**

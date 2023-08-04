@@ -151,6 +151,7 @@ BEGIN_MESSAGE_MAP(CMissionNotesDlg, CDialog)
 	ON_BN_CLICKED(IDC_CUSTOM_WING_NAMES, OnCustomWingNames)
 	ON_BN_CLICKED(IDC_SOUND_ENVIRONMENT_BUTTON, OnSoundEnvironment)
 	ON_BN_CLICKED(IDC_OPEN_CUSTOM_DATA, OnCustomData)
+	ON_BN_CLICKED(IDC_OPEN_CUSTOM_STRINGS, OnCustomStrings)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -710,6 +711,17 @@ void CMissionNotesDlg::OnCustomData()
 	UpdateData(TRUE);
 
 	CustomDataDlg dlg;
+	dlg.DoModal();
+
+	UpdateData(FALSE);
+}
+
+
+void CMissionNotesDlg::OnCustomStrings()
+{
+	UpdateData(TRUE);
+
+	CustomStringsDlg dlg;
 	dlg.DoModal();
 
 	UpdateData(FALSE);
