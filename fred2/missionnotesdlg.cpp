@@ -20,6 +20,7 @@
 #include "gamesnd/eventmusic.h"
 #include "mission/missionparse.h"
 #include "mission/missionmessage.h"
+#include "scripting/global_hooks.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -352,6 +353,12 @@ void CMissionNotesDlg::OnOK()
 	Num_teams = 1;
 	if ( (The_mission.game_type & MISSION_TYPE_MULTI) && (The_mission.game_type & MISSION_TYPE_MULTI_TEAMS) ){
 		Num_teams = 2;
+	}
+
+	// This hook will allow for scripts to know when custom data or strings may be updated
+	// which will then allow them to update any LuaEnums that may be related to sexps
+	if (scripting::hooks::FredOnMissionSpecsSave->isActive()) {
+		scripting::hooks::FredOnMissionSpecsSave->run();
 	}
 
 	CDialog::OnOK();

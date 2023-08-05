@@ -412,6 +412,12 @@ const std::shared_ptr<Hook<>> OnCameraSetUpHook = Hook<>::Factory("On Camera Set
 		{"Camera", "camera", "The camera about to be used for rendering."},
 	});
 
+// ========== FRED HOOKS ==========
+
+const std::shared_ptr<Hook<>> FredOnMissionSpecsSave = Hook<>::Factory("FRED On Mission Specs Save",
+	"Invoked when the Mission Specs dialog OK Button has been hit and all data is sucessfully saved.",
+	{});
+
 // ========== DEPRECATED ==========
 
 const std::shared_ptr<OverridableHook<>> OnSplashScreen = OverridableHook<>::Factory("On Splash Screen",
