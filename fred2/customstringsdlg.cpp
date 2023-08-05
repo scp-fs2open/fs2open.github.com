@@ -139,7 +139,7 @@ void CustomStringsDlg::OnListerSelectionChange()
 	const SCP_string& key = m_lister_keys[index];
 	const mission_custom_string *cs = nullptr;
 
-	for (int i = 0; i <= m_custom_strings.size(); i++) {
+	for (int i = 0; i <= (int)m_custom_strings.size(); i++) {
 		if (m_custom_strings[i].name == key) {
 			cs = &m_custom_strings[i];
 			break;
@@ -201,7 +201,7 @@ void CustomStringsDlg::OnStringRemove()
 
 	const auto& key = m_lister_keys[index];
 
-	for (int i = 0; i <= m_custom_strings.size(); i++) {
+	for (int i = 0; i <= (int)m_custom_strings.size(); i++) {
 		if (m_custom_strings[i].name == key) {
 			m_custom_strings.erase(m_custom_strings.begin() + i);
 			break;
@@ -228,7 +228,7 @@ void CustomStringsDlg::OnStringUpdate()
 
 	int i;
 
-	for (i = 0; i <= m_custom_strings.size(); i++) {
+	for (i = 0; i <= (int)m_custom_strings.size(); i++) {
 		if (m_custom_strings[i].name == key) {
 			break;
 		}
