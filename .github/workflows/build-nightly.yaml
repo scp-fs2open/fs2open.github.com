@@ -15,7 +15,7 @@ jobs:
         configuration: [FastDebug, Release]
     name: Linux
     runs-on: ubuntu-latest
-    container: ghcr.io/scp-fs2open/linux_build:sha-8a6bbbe
+    container: ghcr.io/scp-fs2open/linux_build:sha-3d30dc5
     steps:
       # - name: Cache Qt
         # id: cache-qt-lin
@@ -31,11 +31,6 @@ jobs:
           # cached: ${{ steps.cache-qt-lin.outputs.cache-hit }}
           # setup-python: 'false'
           # aqtversion: ==1.1.3
-      # seriously, what the fuck why do i have to do this
-      - name: Add curl to the container
-        run: |    
-          apt-get update -y 
-          apt -y install curl jq
       - uses: actions/checkout@v1
         name: Checkout
         with:
