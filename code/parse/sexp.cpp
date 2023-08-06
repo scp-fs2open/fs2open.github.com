@@ -12624,6 +12624,12 @@ void sexp_hud_set_coords(int n)
 
 	HudGauge* hg = hud_get_gauge(gaugename);
 	if (hg) {
+		// we might need to adjust the coordinates
+		if (HUD_set_coords_screen_base_res[0] > 0 && HUD_set_coords_screen_base_res[1] > 0) {
+			coord_x = fl2i(i2fl(coord_x) * gr_screen.center_w / HUD_set_coords_screen_base_res[0]);
+			coord_y = fl2i(i2fl(coord_y) * gr_screen.center_h / HUD_set_coords_screen_base_res[1]);
+		}
+
 		hg->setGaugeCoords(coord_x, coord_y);
 	} else {
 		WarningEx(LOCATION, "Could not find a hud gauge named %s\n", gaugename);
@@ -39333,7 +39339,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	//WMC
 	{ OP_HUD_SET_COORDS, "hud-set-coords\r\n"
-		"\tSets the coordinates of a given HUD gauge. Works for custom and retail gauges. Takes 3 arguments...\r\n"
+		"\tSets the coordinates of a given HUD gauge. Works for custom and retail gauges. The coordinates can be configured to scale according to "
+		" screen resolution via the '$HUD-set-coords base resolution' option in game_settings.tbl. Takes 3 arguments...\r\n"
 		"\t1:\tHUD gauge to be modified\r\n"
 		"\t2:\tCoordinate X component\r\n"
 		"\t2:\tCoordinate Y component"
