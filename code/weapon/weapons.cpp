@@ -5546,8 +5546,6 @@ void weapon_process_pre( object *obj, float  frame_time)
 	}
 }
 
-int	Homing_hits = 0, Homing_misses = 0;
-
 
 MONITOR( NumWeapons )
 
@@ -5751,10 +5749,6 @@ void weapon_process_post(object * obj, float frame_time)
 			}
 		} else {
             obj->flags.set(Object::Object_Flags::Should_be_dead);
-		}
-
-		if (wip->is_homing()) {
-			Homing_misses++;
 		}
 		return;
 	}
