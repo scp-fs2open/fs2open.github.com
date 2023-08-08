@@ -833,8 +833,8 @@ SCP_vector<sexp_oper> Operators = {
 	{ "ai-dock",						OP_AI_DOCK,								4,	5,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-undock",						OP_AI_UNDOCK,							1,	2,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-rearm-repair",				OP_AI_REARM_REPAIR,						2,	2,			SEXP_GOAL_OPERATOR, },
-	{ "ai-waypoints",					OP_AI_WAYPOINTS,						2,	3,			SEXP_GOAL_OPERATOR,	},
-	{ "ai-waypoints-once",				OP_AI_WAYPOINTS_ONCE,					2,	3,			SEXP_GOAL_OPERATOR,	},
+	{ "ai-waypoints",					OP_AI_WAYPOINTS,						2,	5,			SEXP_GOAL_OPERATOR,	},
+	{ "ai-waypoints-once",				OP_AI_WAYPOINTS_ONCE,					2,	5,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-ignore",						OP_AI_IGNORE,							2,	2,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-ignore-new",					OP_AI_IGNORE_NEW,						2,	2,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-form-on-wing",				OP_AI_FORM_ON_WING,						1,	1,			SEXP_GOAL_OPERATOR, },
@@ -30285,9 +30285,9 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_AI_WAYPOINTS_ONCE:
 			if (argnum == 0)
 				return OPF_WAYPOINT_PATH;
-			else if (argnum == 1)
+			else if (argnum == 1 || argnum == 3)
 				return OPF_POSITIVE;
-			else
+			else if (argnum == 2 || argnum == 4)
 				return OPF_BOOL;
 
 		case OP_TURRET_PROTECT_SHIP:
@@ -37417,14 +37417,20 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"Takes 2 arguments...\r\n"
 		"\t1:\tName of waypoint path to fly.\r\n"
 		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100).\r\n"
-		"\t3 (optional):\tWhether to afterburn as hard as possible to the target; defaults to false." },
+		"\t3 (optional):\tWhether to afterburn as hard as possible to the target; defaults to false.\r\n"
+		"\t4 (optional):\tStarting index (1-n) of the waypoint path.\r\n"
+		"\t5 (optional):\tWhether to fly the waypoint path in reverse.\r\n"
+	},
 
 	{ OP_AI_WAYPOINTS_ONCE, "Ai-waypoints once (Ship goal)\r\n"
 		"\tCauses the specified ship to fly a waypoint path.\r\n\r\n"
 		"Takes 2 arguments...\r\n"
 		"\t1:\tName of waypoint path to fly.\r\n"
 		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100).\r\n"
-		"\t3 (optional):\tWhether to afterburn as hard as possible to the target; defaults to false." },
+		"\t3 (optional):\tWhether to afterburn as hard as possible to the target; defaults to false.\r\n"
+		"\t4 (optional):\tStarting index (1-n) of the waypoint path.\r\n"
+		"\t5 (optional):\tWhether to fly the waypoint path in reverse.\r\n"
+	},
 
 	{ OP_AI_DESTROY_SUBSYS, "Ai-destroy subsys (Ship goal)\r\n"
 		"\tCauses the specified ship to attack and try and destroy the specified subsystem "

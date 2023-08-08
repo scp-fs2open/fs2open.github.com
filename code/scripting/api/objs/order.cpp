@@ -240,9 +240,11 @@ ADE_VIRTVAR(Target, l_Order, "object", "Target of the order. Value may also be a
 							ohp->aigp->time = Missiontime;
 							if(ohp->odx == 0) {
 								int flags = 0;
-								if ( ohp->aigp->ai_mode == AI_GOAL_WAYPOINTS)
+								if (ohp->aigp->ai_mode == AI_GOAL_WAYPOINTS)
 									flags |= WPF_REPEAT;
-								ai_start_waypoints(ohp->objh.objp, wpl, flags);
+								if (ohp->aigp->flags[AI::Goal_Flags::Waypoints_in_reverse])
+									flags |= WPF_BACKTRACK;
+								ai_start_waypoints(ohp->objh.objp, wpl, flags, ohp->aigp->int_data);
 							}
 						}
 					}

@@ -908,8 +908,10 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, char
 	switch (op) {
 
 	case OP_AI_WAYPOINTS_ONCE:
-	case OP_AI_WAYPOINTS: {
+	case OP_AI_WAYPOINTS:
+	{
 		int ref_type;
+		bool is_nan, is_nan_forever;
 
 		ref_type = Sexp_nodes[CDR(node)].subtype;
 		if (ref_type == SEXP_ATOM_STRING || ref_type == SEXP_ATOM_CONTAINER_DATA) {  // referenced by name
@@ -924,6 +926,12 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, char
 		aigp->ai_mode = AI_GOAL_WAYPOINTS;
 		if ( op == OP_AI_WAYPOINTS_ONCE )
 			aigp->ai_mode = AI_GOAL_WAYPOINTS_ONCE;
+		if (CDDDDR(node) < 0)
+			aigp->int_data = 0;	// handle optional node separately because we don't subtract 1 here
+		else
+			aigp->int_data = eval_num(CDDDDR(node), is_nan, is_nan_forever) - 1;
+		if (is_sexp_true(CDDDDDR(node)))
+			aigp->flags.set(AI::Goal_Flags::Waypoints_in_reverse);
 		break;
 	}
 
@@ -2329,10 +2337,11 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 	case AI_GOAL_WAYPOINTS:				// do nothing for waypoints
 	case AI_GOAL_WAYPOINTS_ONCE: {
 		int flags = 0;
-
-		if ( current_goal->ai_mode == AI_GOAL_WAYPOINTS)
+		if (current_goal->ai_mode == AI_GOAL_WAYPOINTS)
 			flags |= WPF_REPEAT;
-		ai_start_waypoints(objp, current_goal->wp_list, flags);
+		if (current_goal->flags[AI::Goal_Flags::Waypoints_in_reverse])
+			flags |= WPF_BACKTRACK;
+		ai_start_waypoints(objp, current_goal->wp_list, flags, current_goal->int_data);
 		break;
 	}
 
