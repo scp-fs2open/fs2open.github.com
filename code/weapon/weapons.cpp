@@ -243,6 +243,7 @@ special_flag_def_list_new<Weapon::Info_Flags, weapon_info*, flagset<Weapon::Info
 	{ "no evasion",						Weapon::Info_Flags::No_evasion,						    true },
  	{ "don't merge lead indicators",	Weapon::Info_Flags::Dont_merge_indicators,			    true },
 	{ "no_fred",						Weapon::Info_Flags::No_fred,							true },
+	{ "detonate on expiration",			Weapon::Info_Flags::Detonate_on_expiration,				true },
 };
 
 const size_t num_weapon_info_flags = sizeof(Weapon_Info_Flags) / sizeof(special_flag_def_list_new<Weapon::Info_Flags, weapon_info*, flagset<Weapon::Info_Flags>&>);
@@ -972,6 +973,16 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	else
 	{
 		wip->subtype = subtype;
+	}
+
+	// assign subtype-specific flags
+	if (first_time)
+	{
+		if (wip->subtype == WP_MISSILE)
+		{
+			wip->wi_flags.set(Weapon::Info_Flags::Detonate_on_expiration);
+			preset_wi_flags.set(Weapon::Info_Flags::Detonate_on_expiration);
+		}
 	}
 
 	if (optional_string("+Title:")) {
@@ -3118,7 +3129,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			if ( optional_string("+Texture:") ) {
 				stuff_string(fname, F_NAME, NAME_LENGTH);
 
-				// invisible textures are okay - see weapon_clean_entries()
+				// invisible textures are okay - see weapon_post_process_entries()
 				generic_anim_init(&bsip->texture, fname);
 			}
 
@@ -3888,9 +3899,9 @@ void weapon_sort_by_type()
 }
 
 /**
- * Do any post-parse cleaning on weapon entries
+ * Do any post-parse processing on weapon entries
  */
-void weapon_clean_entries()
+void weapon_post_process_entries()
 {
 	for (auto &wi : Weapon_info) {
 		if (wi.wi_flags[Weapon::Info_Flags::Beam]) {
@@ -3926,6 +3937,11 @@ void weapon_clean_entries()
 			if (wi.b_info.beam_num_sections == 0) {
 				Warning(LOCATION, "The beam '%s' has 0 usable sections!", wi.name);
 			}
+		}
+
+		// if detonation range and lifetime range are the same, detonate on expiration
+		if (!fl_near_zero(wi.det_range, 0.01f) && fl_equal(wi.lifetime * wi.max_speed, wi.det_range, 0.01f)) {
+			wi.wi_flags.set(Weapon::Info_Flags::Detonate_on_expiration);
 		}
 	}
 }
@@ -4358,7 +4374,7 @@ void weapon_do_post_parse()
 	int first_cmeasure_index = -1;
 
 	weapon_sort_by_type();	// NOTE: This has to be first thing!
-	weapon_clean_entries();
+	weapon_post_process_entries();
 	weapon_generate_indexes_for_substitution();
 	weapon_generate_indexes_for_precedence();
 	weapon_finalize_shockwave_damage_types();
@@ -5530,8 +5546,6 @@ void weapon_process_pre( object *obj, float  frame_time)
 	}
 }
 
-int	Homing_hits = 0, Homing_misses = 0;
-
 
 MONITOR( NumWeapons )
 
@@ -5718,23 +5732,20 @@ void weapon_process_post(object * obj, float frame_time)
 
 
 	// check life left.  Multiplayer client code will go through here as well.  We must be careful in weapon_hit
-	// when killing a missile that spawn child weapons!!!!
+	// when killing a missile that spawns child weapons!!!!
 	if ( wp->lifeleft < 0.0f ) {
-		if ( wip->subtype & WP_MISSILE ) {
-			if(Game_mode & GM_MULTIPLAYER){				
-				if ( !MULTIPLAYER_CLIENT || (MULTIPLAYER_CLIENT && (wp->lifeleft < -2.0f)) || (MULTIPLAYER_CLIENT && (wip->wi_flags[Weapon::Info_Flags::Child]))) {					// don't call this function multiplayer client -- host will send this packet to us
+		if (wip->wi_flags[Weapon::Info_Flags::Detonate_on_expiration]) {
+			if (Game_mode & GM_MULTIPLAYER && wip->subtype & WP_MISSILE) {
+				// don't call this function if multiplayer client -- host will send this packet to us
+				if ( !MULTIPLAYER_CLIENT || (MULTIPLAYER_CLIENT && (wp->lifeleft < -2.0f)) || (MULTIPLAYER_CLIENT && (wip->wi_flags[Weapon::Info_Flags::Child]))) {
 					weapon_detonate(obj);					
 				}
 
 				if (MULTIPLAYER_MASTER) {
 					send_missile_kill_packet(obj);
 				}
-
 			} else {
 				weapon_detonate(obj);
-			}
-			if (wip->is_homing()) {
-				Homing_misses++;
 			}
 		} else {
             obj->flags.set(Object::Object_Flags::Should_be_dead);

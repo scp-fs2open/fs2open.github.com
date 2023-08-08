@@ -2056,8 +2056,6 @@ void ship_self_destruct( object *objp )
 	ship_hit_kill(objp, nullptr, nullptr, 1.0f, true);
 }
 
-extern int Homing_hits, Homing_misses;
-
 // Call this instead of physics_apply_whack directly to 
 // deal with two docked ships properly.
 // Goober5000 - note... hit_pos is in *world* coordinates
@@ -2806,20 +2804,9 @@ void ship_apply_local_damage(object *ship_objp, object *other_obj, vec3d *hitpos
 		}
 	}
 
-#ifndef NDEBUG
-	if (other_obj->type == OBJ_WEAPON) {
-		weapon_info	*wip = &Weapon_info[Weapons[other_obj->instance].weapon_info_index];
-		if (wip->is_homing()) {
-			Homing_hits++;
-			// nprintf(("AI", " Hit!  Hits = %i/%i\n", Homing_hits, (Homing_hits + Homing_misses)));
-		}
-	}
-#endif
-
 	if ( Event_Music_battle_started == 0 )	{
 		ship_hit_music(ship_objp, other_obj);
 	}
-	
 
 	if (damage < 0.0f){
 		damage = 0.0f;
