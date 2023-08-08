@@ -96,9 +96,8 @@ bool WaypointEditorDialogModel::apply() {
 			}
 		}
 
-		SCP_list<waypoint_list>::iterator ii;
-		for (ii = Waypoint_lists.begin(); ii != Waypoint_lists.end(); ++ii) {
-			if (!stricmp(ii->get_name(), _currentName.c_str()) && (&(*ii) != _editor->cur_waypoint_list)) {
+		for (const auto &ii: Waypoint_lists) {
+			if (!stricmp(ii.get_name(), _currentName.c_str()) && (&ii != _editor->cur_waypoint_list)) {
 				if (showErrorDialog("This waypoint path name is already being used by another waypoint path\n"
 										"Press OK to restore old name", "Error")) {
 					return false;
@@ -285,7 +284,7 @@ const SCP_vector<WaypointEditorDialogModel::PointListElement>& WaypointEditorDia
 }
 void WaypointEditorDialogModel::updateElementList() {
 	int i;
-	SCP_list<waypoint_list>::iterator ii;
+	SCP_vector<waypoint_list>::iterator ii;
 	SCP_list<CJumpNode>::iterator jnp;
 
 	_elements.clear();

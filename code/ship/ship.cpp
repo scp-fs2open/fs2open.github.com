@@ -16786,9 +16786,8 @@ int ship_return_seconds_to_goal(ship *sp)
 			Assert(aip->wp_index != INVALID_WAYPOINT_POSITION);
 			dist += vm_vec_dist_quick(&objp->pos, aip->wp_list->get_waypoints()[aip->wp_index].get_pos());
 
-			SCP_vector<waypoint>::iterator ii;
-			vec3d *prev_vec = NULL;
-			for (ii = (aip->wp_list->get_waypoints().begin() + aip->wp_index); ii != aip->wp_list->get_waypoints().end(); ++ii) {
+			const vec3d *prev_vec = nullptr;
+			for (auto ii = (aip->wp_list->get_waypoints().begin() + aip->wp_index); ii != aip->wp_list->get_waypoints().end(); ++ii) {
 				if (prev_vec != NULL) {
 					dist += vm_vec_dist_quick(ii->get_pos(), prev_vec);
 				}

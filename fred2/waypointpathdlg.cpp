@@ -72,7 +72,7 @@ BOOL waypoint_path_dlg::Create()
 void waypoint_path_dlg::OnInitMenu(CMenu* pMenu)
 {
 	int i;
-	SCP_list<waypoint_list>::iterator ii;
+	SCP_vector<waypoint_list>::iterator ii;
 	CMenu *m;
 
 	m = pMenu->GetSubMenu(0);
@@ -213,10 +213,9 @@ int waypoint_path_dlg::update_data(int redraw)
 			}
 		}
 
-		SCP_list<waypoint_list>::iterator ii;
-		for (ii = Waypoint_lists.begin(); ii != Waypoint_lists.end(); ++ii)
+		for (const auto &ii: Waypoint_lists)
 		{
-			if (!stricmp(ii->get_name(), m_name) && (&(*ii) != cur_waypoint_list)) {
+			if (!stricmp(ii.get_name(), m_name) && (&ii != cur_waypoint_list)) {
 				if (bypass_errors)
 					return 1;
 
