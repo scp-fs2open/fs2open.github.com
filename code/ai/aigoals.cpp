@@ -1023,14 +1023,18 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, char
 		break;
 
 	case OP_AI_STAY_NEAR_SHIP:
+	{
+		bool is_nan, is_nan_forever;
+
 		aigp->target_name = ai_get_goal_target_name( CTEXT(CDR(node)), &aigp->target_name_index );
 		aigp->priority = atoi( CTEXT(CDDR(node)) );
 		if ( CDDDR(node) < 0 )
 			aigp->float_data = 300.0f;
 		else
-			aigp->float_data = i2fl(atoi( CTEXT(CDDDR(node)) ));
+			aigp->float_data = i2fl(eval_num(CDDDR(node), is_nan, is_nan_forever));
 		aigp->ai_mode = AI_GOAL_STAY_NEAR_SHIP;
 		break;
+	}
 
 	case OP_AI_FORM_ON_WING:
 		aigp->priority = 99;
@@ -1118,17 +1122,17 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, char
 
 	// Goober5000 - we now have an extra optional chase argument to allow chasing our own team
 	if ( op == OP_AI_CHASE || op == OP_AI_CHASE_WING || op == OP_AI_CHASE_SHIP_CLASS || op == OP_AI_DISABLE_SHIP || op == OP_AI_DISARM_SHIP ) {
-		if ((CDDDR(node) != -1) && is_sexp_true(CDDDR(node)))
+		if (is_sexp_true(CDDDR(node)))
 			aigp->flags.set(AI::Goal_Flags::Target_own_team);
 	}
 	if ( op == OP_AI_DESTROY_SUBSYS ) {
-		if ((CDDDDR(node) != -1) && is_sexp_true(CDDDDR(node)))
+		if (is_sexp_true(CDDDDR(node)))
 			aigp->flags.set(AI::Goal_Flags::Target_own_team);
 	}
 
 	// maybe get the afterburn hard flag
 	if (op == OP_AI_CHASE_ANY) {
-		if ((CDDR(node) != -1) && is_sexp_true(CDDR(node)))
+		if (is_sexp_true(CDDR(node)))
 			aigp->flags.set(AI::Goal_Flags::Afterburn_hard);
 	}
 	if (op == OP_AI_GUARD || 
@@ -1136,7 +1140,7 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, char
 		op == OP_AI_WAYPOINTS || 
 		op == OP_AI_WAYPOINTS_ONCE || 
 		op == OP_AI_FLY_TO_SHIP) {
-		if ((CDDDR(node) != -1) && is_sexp_true(CDDDR(node)))
+		if (is_sexp_true(CDDDR(node)))
 			aigp->flags.set(AI::Goal_Flags::Afterburn_hard);
 	}
 	if (op == OP_AI_CHASE || 
@@ -1145,11 +1149,11 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, char
 		op == OP_AI_DISABLE_SHIP || 
 		op == OP_AI_DISARM_SHIP || 
 		op == OP_AI_STAY_NEAR_SHIP) {
-		if ((CDDDDR(node) != -1) && is_sexp_true(CDDDDR(node)))
+		if (is_sexp_true(CDDDDR(node)))
 			aigp->flags.set(AI::Goal_Flags::Afterburn_hard);
 	}	
 	if (op == OP_AI_DESTROY_SUBSYS || op == OP_AI_DOCK) {
-		if ((CDDDDDR(node) != -1) && is_sexp_true(CDDDDDR(node)))
+		if (is_sexp_true(CDDDDDR(node)))
 			aigp->flags.set(AI::Goal_Flags::Afterburn_hard);
 	}
 
