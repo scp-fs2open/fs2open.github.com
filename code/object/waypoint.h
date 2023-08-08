@@ -11,16 +11,17 @@ class waypoint
 {
 	public:
 		waypoint();
-		waypoint(vec3d *pos, waypoint_list *parent_list);
+		waypoint(const vec3d *pos, waypoint_list *parent_list);
 		~waypoint();
 
 		// accessors
-		vec3d *get_pos();
-		int get_objnum();
+		const vec3d *get_pos() const;
+		int get_objnum() const;
+		const waypoint_list *get_parent_list() const;
 		waypoint_list *get_parent_list();
 
 		// mutators
-		void set_pos(vec3d *pos);
+		void set_pos(const vec3d *pos);
 
 	private:
 		vec3d m_position;
@@ -38,7 +39,8 @@ class waypoint_list
 		~waypoint_list();
 
 		// accessors
-		char *get_name();
+		const char *get_name() const;
+		const SCP_vector<waypoint> &get_waypoints() const;
 		SCP_vector<waypoint> &get_waypoints();
 
 		// mutators
@@ -50,10 +52,10 @@ class waypoint_list
 };
 
 //********************GLOBALS********************
-extern SCP_list<waypoint_list> Waypoint_lists;
+extern SCP_vector<waypoint_list> Waypoint_lists;
 
 // bah
-extern const size_t INVALID_WAYPOINT_POSITION;
+extern const int INVALID_WAYPOINT_POSITION;
 
 //********************FUNCTIONS********************
 void waypoint_level_close();
@@ -81,20 +83,20 @@ waypoint *find_waypoint_with_instance(int waypoint_instance);
 // Find something at the specified index
 waypoint_list *find_waypoint_list_at_index(int index);
 waypoint *find_waypoint_at_index(waypoint_list *list, int index);
-int find_index_of_waypoint_list(waypoint_list *wp_list);
-int find_index_of_waypoint(waypoint_list *wp_list, waypoint *wpt);
+int find_index_of_waypoint_list(const waypoint_list *wp_list);
+int find_index_of_waypoint(const waypoint_list *wp_list, const waypoint *wpt);
 
 // Find a name that doesn't conflict with any current waypoint list
 void waypoint_find_unique_name(char *dest_name, int start_index);
 
 // Add a new list of waypoints.  Called from mission parsing.
-void waypoint_add_list(const char *name, SCP_vector<vec3d> &vec_list);
+void waypoint_add_list(const char *name, const SCP_vector<vec3d> &vec_list);
 
 // Attempts to create a waypoint with the specified instance (used to calculate list and index).
 // Returns the object number, or -1 on failure.  Used by scripting and FRED.
-int waypoint_add(vec3d *pos, int waypoint_instance);
+int waypoint_add(const vec3d *pos, int waypoint_instance);
 
 // Removes a waypoint, including its entire list if it's the last waypoint remaining.
-void waypoint_remove(waypoint *wpt);
+void waypoint_remove(const waypoint *wpt);
 
 #endif //_WAYPOINT_H
