@@ -1749,7 +1749,7 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 		}
 
 		default:
-			Int3();
+			UNREACHABLE("Unhandled AI goal %d", aigp->ai_mode);
 			status = 0;
 			break;
 	}
@@ -1864,7 +1864,7 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 		}
 
 		if ( (aigp->dockee.index == -1) || (aigp->docker.index == -1) ) {
-			Int3();			// for now, allender wants to know about these things!!!!
+			Warning(LOCATION, "Cannot determine docking information for %s!", Ships[objp->instance].ship_name);			// for now, allender wants to know about these things!!!!
 			return ai_achievability::NOT_ACHIEVABLE;
 		}
 
@@ -1940,7 +1940,7 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 				aigp->ai_submode = ship_find_subsys( &Ships[sindex], aigp->docker.name );
 				aigp->flags.remove(AI::Goal_Flags::Subsys_needs_fixup);
 			} else {
-				Int3();
+				UNREACHABLE("Target name %s is not an arrived ship!", aigp->target_name);
 				return ai_achievability::NOT_ACHIEVABLE;			// force this goal to be invalid
 			}
 		}
@@ -1983,7 +1983,7 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 			else if ( status == SHIP_STATUS_UNKNOWN )
 				return ai_achievability::NOT_KNOWN;
 
-			Int3();		// get allender -- bad logic
+			UNREACHABLE("get allender -- bad logic");		// get allender -- bad logic
 			break;
 		}
 
@@ -1995,7 +1995,7 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 			// short circuit a couple of cases.  Ship not arrived shouldn't happen.  Ship gone means
 			// we mark the goal as not achievable.
 			if ( status == SHIP_STATUS_NOT_ARRIVED ) {
-				Int3();										// get Allender.  this shouldn't happen!!!
+				UNREACHABLE("get Allender.  this shouldn't happen!!!");	// get Allender.  this shouldn't happen!!!
 				return ai_achievability::NOT_ACHIEVABLE;
 			}
 
@@ -2005,7 +2005,7 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 			sindex = ship_name_lookup( aigp->target_name );
 
 			if ( sindex < 0 ) {
-				Int3();
+				UNREACHABLE("Target name %s is not an arrived ship!", aigp->target_name);
 				return ai_achievability::NOT_ACHIEVABLE;
 			}
 
@@ -2041,7 +2041,7 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 		}
 
 		default:
-			Int3();			// invalid case in switch:
+			UNREACHABLE("Unhandled AI goal %d", aigp->ai_mode);			// invalid case in switch:
 	}
 
 	return ai_achievability::NOT_KNOWN;
