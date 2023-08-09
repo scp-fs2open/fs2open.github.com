@@ -622,7 +622,7 @@ int weapon_info_get_index(weapon_info *wip)
 }
 
 //	Parse the weapon flags.
-void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> preset_wi_flags)
+void parse_wi_flags(weapon_info *weaponp)
 {
     //Make sure we HAVE flags :p
     if (!optional_string("$Flags:"))
@@ -635,8 +635,35 @@ void parse_wi_flags(weapon_info *weaponp, flagset<Weapon::Info_Flags> preset_wi_
     SCP_vector<SCP_string> flags;
     stuff_string_list(flags);
     if (optional_string("+override")) {
+		// be careful to keep this up to date with any flag that is set while parsing some line other than the Flags line
+		const Weapon::Info_Flags preset_wi_flag_defs[] = {
+			Weapon::Info_Flags::Homing_heat,
+			Weapon::Info_Flags::Homing_aspect,
+			Weapon::Info_Flags::Cmeasure,
+			Weapon::Info_Flags::Homing_javelin,
+			Weapon::Info_Flags::Turns,
+			Weapon::Info_Flags::Swarm,
+			Weapon::Info_Flags::Trail,
+			Weapon::Info_Flags::Particle_spew,
+			Weapon::Info_Flags::Beam,
+			Weapon::Info_Flags::Tag,
+			Weapon::Info_Flags::Shudder,
+			Weapon::Info_Flags::Transparent,
+			Weapon::Info_Flags::Variable_lead_homing,
+			Weapon::Info_Flags::Custom_seeker_str,
+			Weapon::Info_Flags::Aoe_Electronics,
+			Weapon::Info_Flags::Apply_Recoil,
+			Weapon::Info_Flags::Has_display_name,
+			Weapon::Info_Flags::Vampiric,
+			Weapon::Info_Flags::Detonate_on_expiration
+		};
+
+		// clear all flags except for the ones that are preset by other fields in the weapon
+		flagset<Weapon::Info_Flags> cleared_wi_flags;
+		cleared_wi_flags.set_multiple_from_source(weaponp->wi_flags, std::begin(preset_wi_flag_defs), std::end(preset_wi_flag_defs));
+
     	// resetting the flag values if set to override the existing flags
-    	weaponp->wi_flags = preset_wi_flags;
+    	weaponp->wi_flags = cleared_wi_flags;
     	weaponp->num_spawn_weapons_defined = 0;
     }
     unpause_parse();
@@ -834,8 +861,6 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	bool first_time = false;
 	bool create_if_not_found = true;
 	bool remove_weapon = false;
-	// be careful to keep this up to date because modular tables can clear flags
-    flagset<Weapon::Info_Flags> preset_wi_flags;
 
 	required_string("$Name:");
 	stuff_string(fname, F_NAME, NAME_LENGTH);
@@ -932,7 +957,6 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			end_string_at_first_hash_symbol(wip->display_name, true);
 			consolidate_double_characters(wip->display_name, '#');
 			wip->wi_flags.set(Weapon::Info_Flags::Has_display_name);
-			preset_wi_flags.set(Weapon::Info_Flags::Has_display_name);
 		}
 
 		// do German translation
@@ -948,7 +972,6 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	{
 		stuff_string(wip->display_name, F_NAME, NAME_LENGTH);
 		wip->wi_flags.set(Weapon::Info_Flags::Has_display_name);
-		preset_wi_flags.set(Weapon::Info_Flags::Has_display_name);
 	}
 
 	//Set subtype
@@ -979,10 +1002,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	if (first_time)
 	{
 		if (wip->subtype == WP_MISSILE)
-		{
 			wip->wi_flags.set(Weapon::Info_Flags::Detonate_on_expiration);
-			preset_wi_flags.set(Weapon::Info_Flags::Detonate_on_expiration);
-		}
 	}
 
 	if (optional_string("+Title:")) {
@@ -1053,7 +1073,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	}
 
 	// Weapon fadein effect, used when no ani is specified or weapon_select_3d is active
-	wip->selection_effect = Default_weapon_select_effect; // By default, use the FS2 effect
+	if (first_time) {
+		wip->selection_effect = Default_weapon_select_effect; // By default, use the FS2 effect
+	}
 	if(optional_string("$Selection Effect:")) {
 		char effect[NAME_LENGTH];
 		stuff_string(effect, F_NAME, NAME_LENGTH);
@@ -1410,12 +1432,12 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		wip->autoaim_fov = fovt * PI / 180.0f;
 	}
 
-	bool is_homing=false;
+	bool temp_is_homing = false;	// this variable should ONLY be used to store the parse value.  All checks aside from the block five lines later should exclusively use wip->is_homing()
 	if(optional_string("$Homing:")) {
-		stuff_boolean(&is_homing);
+		stuff_boolean(&temp_is_homing);
 	}
 
-	if (is_homing || (wip->is_homing()))
+	if (temp_is_homing || (wip->is_homing()))
 	{
 		char	temp_type[NAME_LENGTH];
 
@@ -1429,7 +1451,6 @@ int parse_weapon(int subtype, bool replace, const char *filename)
                 wip->wi_flags.remove(Weapon::Info_Flags::Homing_javelin);
 
                 wip->wi_flags.set(Weapon::Info_Flags::Homing_heat);
-                preset_wi_flags.set(Weapon::Info_Flags::Homing_heat);
 			}
 			else if (!stricmp(temp_type, NOX("ASPECT")))
 			{
@@ -1437,7 +1458,6 @@ int parse_weapon(int subtype, bool replace, const char *filename)
                 wip->wi_flags.remove(Weapon::Info_Flags::Homing_javelin);
 
                 wip->wi_flags.set(Weapon::Info_Flags::Homing_aspect);
-                preset_wi_flags.set(Weapon::Info_Flags::Homing_aspect);
 			}
 			else if (!stricmp(temp_type, NOX("JAVELIN")))
 			{
@@ -1445,11 +1465,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
                 wip->wi_flags.remove(Weapon::Info_Flags::Homing_aspect);
 
                 wip->wi_flags.set(Weapon::Info_Flags::Homing_javelin);
-                preset_wi_flags.set(Weapon::Info_Flags::Homing_javelin);
 			}
 
             wip->wi_flags.set(Weapon::Info_Flags::Turns);
-            preset_wi_flags.set(Weapon::Info_Flags::Turns);
 			//If you want to add another weapon, remember you need to reset
 			//ALL homing flags.
 		}
@@ -1486,7 +1504,6 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				if (wip->seeker_strength > 0)
 				{
 					wip->wi_flags.set(Weapon::Info_Flags::Custom_seeker_str);
-					preset_wi_flags.set(Weapon::Info_Flags::Custom_seeker_str);
 				}
 				else
 				{
@@ -1494,7 +1511,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 					wip->seeker_strength = 3.0f;
 				}
 			}
-			else
+			else if (first_time)
 			{
 				if(!(wip->wi_flags[Weapon::Info_Flags::Custom_seeker_str]))
 					wip->seeker_strength = 3.0f;
@@ -1507,7 +1524,6 @@ int parse_weapon(int subtype, bool replace, const char *filename)
                     wip->wi_flags.remove(Weapon::Info_Flags::Variable_lead_homing);
 				else {
                     wip->wi_flags.set(Weapon::Info_Flags::Variable_lead_homing);
-                    preset_wi_flags.set(Weapon::Info_Flags::Variable_lead_homing);
 				}
 			}
 		}
@@ -1559,7 +1575,6 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				if (wip->seeker_strength > 0)
 				{
 					wip->wi_flags.set(Weapon::Info_Flags::Custom_seeker_str);
-					preset_wi_flags.set(Weapon::Info_Flags::Custom_seeker_str);
 				}
 				else
 				{
@@ -1567,7 +1582,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 					wip->seeker_strength = 2.0f;
 				}
 			} 
-			else
+			else if (first_time)
 			{
 				if(!(wip->wi_flags[Weapon::Info_Flags::Custom_seeker_str]))
 					wip->seeker_strength = 2.0f;
@@ -1580,7 +1595,6 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 					wip->wi_flags.remove(Weapon::Info_Flags::Variable_lead_homing);
 				else {
 					wip->wi_flags.set(Weapon::Info_Flags::Variable_lead_homing);
-					preset_wi_flags.set(Weapon::Info_Flags::Variable_lead_homing);
 				}
 			}
 
@@ -1710,7 +1724,6 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 		// flag as being a swarm weapon
 		wip->wi_flags.set(Weapon::Info_Flags::Swarm);
-		preset_wi_flags.set(Weapon::Info_Flags::Swarm);
 	}
 
 	// *Swarm wait token    -Et1
@@ -1735,7 +1748,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 	if(optional_string("$Free Flight Time:")) {
 		stuff_float(&(wip->free_flight_time));
-	} else if(first_time && is_homing) {
+	} else if(first_time && wip->is_homing()) {
 		if (subtype == WP_LASER) {
 			wip->free_flight_time = HOMING_DEFAULT_PRIMARY_FREE_FLIGHT_TIME;
 		}
@@ -1757,7 +1770,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			wip->free_flight_speed_factor = HOMING_DEFAULT_FREE_FLIGHT_FACTOR;
 		}
 	}
-	else if (first_time && is_homing) {
+	else if (first_time && wip->is_homing()) {
 		wip->free_flight_speed_factor = HOMING_DEFAULT_FREE_FLIGHT_FACTOR;
 	}
 
@@ -1910,9 +1923,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}
 	}
 
-	parse_wi_flags(wip, preset_wi_flags);
-
-	// preset_wi_flags does not need to be maintained after the above function is called
+	parse_wi_flags(wip);
 
 	// be friendly; make sure ballistic flags are synchronized - Goober5000
 	// primary
@@ -3432,7 +3443,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 	if (wip->weapon_hitpoints <= 0.0f && (wip->wi_flags[Weapon::Info_Flags::No_radius_doubling])) {
 		Warning(LOCATION, "Weapon \'%s\' is not interceptable but has \"no radius doubling\" set. Ignoring the flag", wip->name);
-		wip->wi_flags.set(Weapon::Info_Flags::No_radius_doubling, false);
+		wip->wi_flags.remove(Weapon::Info_Flags::No_radius_doubling);
 	}
 
 	if(optional_string("$Armor Type:")) {
