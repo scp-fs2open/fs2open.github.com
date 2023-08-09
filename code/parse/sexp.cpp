@@ -20940,7 +20940,6 @@ void sexp_set_armor_type(int node)
 {
 	int armor;
 	bool rset;
-	ship_subsys *ss = nullptr;
 	ship *shipp = nullptr;
 	ship_info *sip = nullptr;
 
@@ -20958,17 +20957,20 @@ void sexp_set_armor_type(int node)
 	node = CDR(node);
 
 	// get armor
-	if (!stricmp(SEXP_NONE_STRING, CTEXT(node))) {
+	auto armor_name = CTEXT(node);
+	if (!stricmp(SEXP_NONE_STRING, armor_name)) {
 		armor = -1;
 	} else {
-		armor = armor_type_get_idx(CTEXT(node));
+		armor = armor_type_get_idx(armor_name);
 	}
 	node = CDR(node);
 
 	//Set armor
 	for (; node != -1; node = CDR(node))
 	{
-		if (!stricmp(SEXP_HULL_STRING, CTEXT(node)))
+		auto subsys_name = CTEXT(node);
+
+		if (!stricmp(SEXP_HULL_STRING, subsys_name))
 		{
 			// we are setting the ship itself
 			if (!rset)
@@ -20976,7 +20978,7 @@ void sexp_set_armor_type(int node)
 			else
 				shipp->armor_type_idx = armor;
 		}
-		else if (!stricmp(SEXP_SHIELD_STRING, CTEXT(node)))
+		else if (!stricmp(SEXP_SHIELD_STRING, subsys_name))
 		{
 			// we are setting the ships shields
 			if (!rset)
@@ -20984,19 +20986,37 @@ void sexp_set_armor_type(int node)
 			else
 				shipp->shield_armor_type_idx = armor;
 		}
-		else 
+		else
 		{
-			// get the subsystem
-			ss = ship_get_subsys(shipp, CTEXT(node));
-			if(ss == nullptr){
-				continue;
+			int generic_type = get_generic_subsys(subsys_name);
+			if (generic_type != SUBSYSTEM_NONE)
+			{
+				// search through all subsystems
+				for (auto ss : list_range(&ship_entry->shipp->subsys_list))
+				{
+					if (generic_type == ss->system_info->type)
+					{
+						// set the range
+						if (!rset)
+							ss->armor_type_idx = ss->system_info->armor_type_idx;
+						else
+							ss->armor_type_idx = armor;
+					}
+				}
 			}
-		
-			// set the range
-			if (!rset)
-				ss->armor_type_idx = ss->system_info->armor_type_idx;
 			else
-				ss->armor_type_idx = armor;
+			{
+				// get the subsystem
+				auto ss = ship_get_subsys(shipp, subsys_name);
+				if (ss != nullptr)
+				{
+					// set the range
+					if (!rset)
+						ss->armor_type_idx = ss->system_info->armor_type_idx;
+					else
+						ss->armor_type_idx = armor;
+				}
+			}
 		}
 	}
 }
@@ -31796,7 +31816,7 @@ int query_operator_argument_type(int op, int argnum)
 			} else if(argnum == 2) {
 				return OPF_ARMOR_TYPE;
 			} else {
-				return OPF_SUBSYSTEM;
+				return OPF_SUBSYS_OR_GENERIC;
 			}
 
 		case OP_WEAPON_SET_DAMAGE_TYPE:
