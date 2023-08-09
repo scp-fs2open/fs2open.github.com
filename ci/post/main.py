@@ -138,7 +138,7 @@ def main():
 			"path": "public_html/builds/{type}/{version}/",
 			"mirrors": (
 				"https://perses.feralhosting.com/datacorder/builds/{type}/{version}/{file}",
-				"http://scp.indiegames.us/builds/{type}/{version}/{file}",
+				"https://scp.indiegames.us/builds/{type}/{version}/{file}",
 			),
 		},
 		"nebula": {

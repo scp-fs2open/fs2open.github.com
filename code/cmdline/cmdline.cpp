@@ -835,7 +835,7 @@ void os_validate_parms(int argc, char *argv[])
 				// if we got a -help, --help, -h, or -? then show the help text, otherwise show unknown option
 				if (!stricmp(token, "-help") || !stricmp(token, "--help") || !stricmp(token, "-h") || !stricmp(token, "-?")) {
 					printf("FreeSpace 2 Open, version %s\n", FS_VERSION_FULL);
-					printf("Website: http://scp.indiegames.us\n");
+					printf("Website: https://scp.indiegames.us\n");
 					printf("Github (bug reporting): https://github.com/scp-fs2open/fs2open.github.com/issues\n\n");
 					printf("Usage: fs2_open [options]\n");
 
