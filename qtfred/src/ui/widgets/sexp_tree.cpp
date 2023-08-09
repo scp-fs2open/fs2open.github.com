@@ -3926,6 +3926,20 @@ sexp_list_item* sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 	if (child < 0)
 		return nullptr;
 
+	
+	// if one of the subsystem strength operators, append the Hull string and the Simulated Hull string
+	if (special_subsys == OPS_STRENGTH) {
+		head.add_data(SEXP_HULL_STRING);
+		head.add_data(SEXP_SIM_HULL_STRING);
+	}
+
+	// if setting armor type we only need Hull and Shields
+	if (special_subsys == OPS_ARMOR) {
+		head.add_data(SEXP_HULL_STRING);
+		head.add_data(SEXP_SHIELD_STRING);
+	}
+
+
 	// now find the ship and add all relevant subsystems
 	sh = ship_name_lookup(tree_nodes[child].text, 1);
 	if (sh >= 0) {
@@ -3973,17 +3987,6 @@ sexp_list_item* sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 			// next subsystem
 			subsys = GET_NEXT(subsys);
 		}
-	}
-
-	// if one of the subsystem strength operators, append the Hull string and the Simulated Hull string
-	if (special_subsys == OPS_STRENGTH) {
-		head.add_data(SEXP_HULL_STRING);
-		head.add_data(SEXP_SIM_HULL_STRING);
-	}
-	// if setting armor type we only need Hull and Shields
-	if (special_subsys == OPS_ARMOR) {
-		head.add_data(SEXP_HULL_STRING);
-		head.add_data(SEXP_SHIELD_STRING);
 	}
 
 	return head.next;
