@@ -1821,9 +1821,16 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 	// Goober5000 - before doing anything else, check if this is a disarm goal for an arrived ship...
 	if ((status == SHIP_STATUS_ARRIVED) && (aigp->ai_mode == AI_GOAL_DISARM_SHIP))
 	{
-		// if the ship has no turrets, we can't disarm it!
-		if (Ships[ship_name_lookup(aigp->target_name)].subsys_info[SUBSYSTEM_TURRET].type_count == 0)
-			return ai_achievability::NOT_ACHIEVABLE;
+		sindex = ship_name_lookup(aigp->target_name);
+
+		if ( sindex >= 0 ) {
+			// if the ship has no turrets, we can't disarm it!
+			if (Ships[sindex].subsys_info[SUBSYSTEM_TURRET].type_count == 0)
+				return ai_achievability::NOT_ACHIEVABLE;
+		} else {
+			UNREACHABLE("Target name %s is not an arrived ship!", aigp->target_name);
+			return ai_achievability::NOT_ACHIEVABLE;			// force this goal to be invalid
+		}
 	}
 
 	// if the goal is an ignore/disable/disarm goal, then 
@@ -1874,7 +1881,10 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 
 		// we must also determine if we're prevented from docking for any reason
 		sindex = ship_name_lookup(aigp->target_name);
-		Assert( sindex >= 0 );
+		if (sindex < 0) {
+			UNREACHABLE("Target name %s is not an arrived ship!", aigp->target_name);
+			return ai_achievability::NOT_ACHIEVABLE;			// force this goal to be invalid
+		}
 		object *goal_objp = &Objects[Ships[sindex].objnum];
 
 		// if the ship that I am supposed to dock with is docked with something else, then I need to put my goal on hold
@@ -1924,9 +1934,16 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 		// might happen too, so err on the safe side.  (Yay for emergent paragraph justification!)
 		if ((aip->mode == AIM_DOCK) && (aip->submode >= AIS_UNDOCK_0))
 		{
-			// only put it on hold if it's someone other than the guy we're undocking from right now!!
-			if (aip->goal_objnum != Ships[ship_name_lookup(aigp->target_name)].objnum)
-				return ai_achievability::NOT_KNOWN;
+			sindex = ship_name_lookup(aigp->target_name);
+
+			if ( sindex >= 0 ) {
+				// only put it on hold if it's someone other than the guy we're undocking from right now!!
+				if (aip->goal_objnum != Ships[sindex].objnum)
+					return ai_achievability::NOT_KNOWN;
+			} else {
+				UNREACHABLE("Target name %s is not an arrived ship!", aigp->target_name);
+				return ai_achievability::NOT_ACHIEVABLE;			// force this goal to be invalid
+			}
 		}
 
 	} else if ( (aigp->ai_mode == AI_GOAL_DESTROY_SUBSYSTEM) && (status == SHIP_STATUS_ARRIVED) ) {
@@ -1949,7 +1966,10 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 
 		// for ignoring a ship, call the ai_ignore object function, then declare the goal satisfied
 		sindex = ship_name_lookup( aigp->target_name );
-		Assert( sindex != -1 );		// should be true because of above status
+		if (sindex < 0) {
+			UNREACHABLE("Target name %s is not an arrived ship!", aigp->target_name);
+			return ai_achievability::NOT_ACHIEVABLE;			// force this goal to be invalid
+		}
 		ignored = &Objects[Ships[sindex].objnum];
 
 		ai_ignore_object(objp, ignored, (aigp->ai_mode == AI_GOAL_IGNORE_NEW));
@@ -1983,7 +2003,7 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 			else if ( status == SHIP_STATUS_UNKNOWN )
 				return ai_achievability::NOT_KNOWN;
 
-			UNREACHABLE("get allender -- bad logic");		// get allender -- bad logic
+			UNREACHABLE("Invalid status variable %d for ship %s; get Allender or a SCP member", status, Ships[objp->instance].ship_name);		// get allender -- bad logic
 			break;
 		}
 
@@ -1995,7 +2015,7 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 			// short circuit a couple of cases.  Ship not arrived shouldn't happen.  Ship gone means
 			// we mark the goal as not achievable.
 			if ( status == SHIP_STATUS_NOT_ARRIVED ) {
-				UNREACHABLE("get Allender.  this shouldn't happen!!!");	// get Allender.  this shouldn't happen!!!
+				UNREACHABLE("Ship %s cannot rearm a ship that hasn't arrived; get Allender or a SCP member", Ships[objp->instance].ship_name);	// get Allender.  this shouldn't happen!!!
 				return ai_achievability::NOT_ACHIEVABLE;
 			}
 
@@ -2003,7 +2023,6 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 				return ai_achievability::NOT_ACHIEVABLE;
 
 			sindex = ship_name_lookup( aigp->target_name );
-
 			if ( sindex < 0 ) {
 				UNREACHABLE("Target name %s is not an arrived ship!", aigp->target_name);
 				return ai_achievability::NOT_ACHIEVABLE;
