@@ -37778,14 +37778,14 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t2:\tTime in seconds rearm window should last" },
 
 	{ OP_ALLOW_SHIP, "Allow ship (Action operator)\r\n"
-		"\tThis operator makes the given ship type available to the Terran team.  Players will be "
+		"\tThis operator makes the given ship type available to the player team.  Players will be "
 		"able to have ships of this type in their starting wings in all future missions of this "
 		"campaign.\r\n\r\n"
 		"Takes 1 argument...\r\n"
 		"\t1:\tName of ship type (or ship class) to allow." },
 
 	{ OP_ALLOW_WEAPON, "Allow weapon (Action operator)\r\n"
-		"\tThis operator makes the given weapon available to the Terran team.  Players will be "
+		"\tThis operator makes the given weapon available to the player team.  Players will be "
 		"able to equip ships with in all future missions of this campaign.\r\n\r\n"
 		"Takes 1 argument...\r\n"
 		"\t1:\tName of weapon (primary or secondary) to allow." },
@@ -37853,8 +37853,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t2:\tThe team to alter the score for. (0 will add the score to all teams!)"},
 
 	{ OP_AI_EVADE_SHIP, "Ai-evade ship (Ship goal)\r\n"
-		"\tCauses the specified ship to go into evade mode and run away like the weak "
-		"sally-boy it is.\r\n\r\n"
+		"\tCauses the specified ship to go into evade mode and run away like the "
+		"coward it is.\r\n\r\n"
 		"Takes 2 arguments...\r\n"
 		"\t1:\tName of ship to evade from.\r\n"
 		"\t2:\tGoal priority (number between 0 and 89)." },
