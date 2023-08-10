@@ -60,3 +60,5 @@ set(HIDAPI_WITH_HIDRAW ON)
 add_subdirectory(hidapi)
 
 ADD_SUBDIRECTORY(imgui)
+
+add_subdirectory(openxr)

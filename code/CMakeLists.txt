@@ -75,6 +75,9 @@ target_link_libraries(code PUBLIC hidapi::hidapi)
 
 target_link_libraries(code PUBLIC imgui)
 
+target_link_libraries(code PUBLIC OpenXR::openxr_loader)
+target_include_directories(code PUBLIC OpenXR::Headers)
+
 # Headers for standalone "gui" on UNIX
 IF(UNIX)
 	TARGET_LINK_LIBRARIES(code PUBLIC ${MONGOOSE_LIBS})
