@@ -137,8 +137,8 @@ def main():
 			"pass": os.environ["INDIEGAMES_SSHPASS"],
 			"path": "public_html/builds/{type}/{version}/",
 			"mirrors": (
-				"https://porphyrion.feralhosting.com/datacorder/builds/{type}/{version}/{file}",
-				"http://scp.indiegames.us/builds/{type}/{version}/{file}",
+				"https://perses.feralhosting.com/datacorder/builds/{type}/{version}/{file}",
+				"https://scp.indiegames.us/builds/{type}/{version}/{file}",
 			),
 		},
 		"nebula": {
