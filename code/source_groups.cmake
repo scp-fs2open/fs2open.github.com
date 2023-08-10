@@ -453,6 +453,8 @@ add_file_folder("Graphics"
 	graphics/material.h
 	graphics/matrix.cpp
 	graphics/matrix.h
+	graphics/openxr.cpp
+	graphics/openxr.h
 	graphics/post_processing.cpp
 	graphics/post_processing.h
 	graphics/render.cpp
