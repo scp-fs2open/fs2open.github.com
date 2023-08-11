@@ -455,6 +455,7 @@ add_file_folder("Graphics"
 	graphics/matrix.h
 	graphics/openxr.cpp
 	graphics/openxr.h
+	graphics/openxr_internal.h
 	graphics/post_processing.cpp
 	graphics/post_processing.h
 	graphics/render.cpp
@@ -477,6 +478,7 @@ if (FSO_BUILD_WITH_OPENGL)
 		graphics/opengl/gropenglbmpman.cpp
 		graphics/opengl/gropengldeferred.cpp
 		graphics/opengl/gropengldraw.cpp
+		graphics/opengl/gropenglopenxr.cpp
 		graphics/opengl/gropenglpostprocessing.cpp
 		graphics/opengl/gropenglquery.cpp
 		graphics/opengl/gropenglshader.cpp
@@ -493,6 +495,7 @@ if (FSO_BUILD_WITH_OPENGL)
 		graphics/opengl/gropenglbmpman.h
 		graphics/opengl/gropengldeferred.h
 		graphics/opengl/gropengldraw.h
+		graphics/opengl/gropenglopenxr.h
 		graphics/opengl/gropenglpostprocessing.h
 		graphics/opengl/gropenglquery.h
 		graphics/opengl/gropenglshader.h
