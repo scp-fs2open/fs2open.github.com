@@ -184,15 +184,16 @@ elseif(WIN32)
                                     CMAKE_CXX_FLAGS_RELEASE
                                     CMAKE_CXX_FLAGS_RELWITHDEBINFO)
                 # If building DLLs, force static CRT linkage
-                if(DYNAMIC_LOADER)
-                    if(${configuration} MATCHES "/MD")
-                        string(REGEX REPLACE "/MD" "/MT" ${configuration} "${${configuration}}")
-                    endif()
-                else() # Otherwise for static libs, link the CRT dynamically
-                    if(${configuration} MATCHES "/MT")
-                        string(REGEX REPLACE "/MT" "/MD" ${configuration} "${${configuration}}")
-                    endif()
-                endif()
+                # Lafiel: This just breaks FSO's build, so no
+                #if(DYNAMIC_LOADER)
+                #    if(${configuration} MATCHES "/MD")
+                #        string(REGEX REPLACE "/MD" "/MT" ${configuration} "${${configuration}}")
+                #    endif()
+                #else() # Otherwise for static libs, link the CRT dynamically
+                #    if(${configuration} MATCHES "/MT")
+                #        string(REGEX REPLACE "/MT" "/MD" ${configuration} "${${configuration}}")
+                #    endif()
+                #endif()
             endforeach()
         endif()
 
