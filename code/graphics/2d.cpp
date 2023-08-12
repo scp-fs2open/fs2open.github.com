@@ -25,6 +25,7 @@
 #include "cmdline/cmdline.h"
 #include "debugconsole/console.h"
 #include "executor/global_executors.h"
+#include "graphics/openxr.h"
 #include "graphics/paths/PathRenderer.h"
 #include "graphics/post_processing.h"
 #include "graphics/util/GPUMemoryHeap.h"
@@ -1025,6 +1026,8 @@ void gr_close()
 		return;
 	}
 
+	openxr_close();
+
 	if (Gr_original_gamma_ramp != nullptr && os::getSDLMainWindow() != nullptr) {
 		SDL_SetWindowGammaRamp(os::getSDLMainWindow(), Gr_original_gamma_ramp, (Gr_original_gamma_ramp + 256),
 		                       (Gr_original_gamma_ramp + 512));
@@ -1708,6 +1711,8 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 		Warning(LOCATION, "Shadows are enabled, but the system does not fulfill the requirements. Disabling shadows...");
 		Shadow_quality = ShadowQuality::Disabled;
 	}
+
+	openxr_init();
 
 	return true;
 }
@@ -2597,6 +2602,7 @@ void gr_flip(bool execute_scripting)
 	uniform_buffer_managers_retire_buffers();
 
 	TRACE_SCOPE(tracing::PageFlip);
+	gr_openxr_flip();
 	gr_screen.gf_flip();
 	gr_setup_frame();
 }
