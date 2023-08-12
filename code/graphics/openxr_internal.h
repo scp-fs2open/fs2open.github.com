@@ -7,5 +7,6 @@
 
 extern XrInstance xr_instance;
 extern XrSystemId xr_system;
+extern XrSession xr_session;
 
 PFN_xrVoidFunction openxr_getExtensionFunction(const char* const name);

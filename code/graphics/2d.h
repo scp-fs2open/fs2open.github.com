@@ -918,6 +918,7 @@ typedef struct screen {
 	//OpenXR functions
 	std::function<SCP_vector<const char*>()> gf_openxr_get_extensions;
 	std::function<bool()> gf_openxr_test_capabilities;
+	std::function<bool()> gf_openxr_create_session;
 } screen;
 
 // handy macro
@@ -1285,6 +1286,7 @@ inline void gr_sync_delete(gr_sync sync)
 //OpenXR
 #define gr_openxr_get_extensions GR_CALL(gr_screen.gf_openxr_get_extensions)
 #define gr_openxr_test_capabilities GR_CALL(gr_screen.gf_openxr_test_capabilities)
+#define gr_openxr_create_session GR_CALL(gr_screen.gf_openxr_create_session);
 
 // color functions
 void gr_init_color(color *c, int r, int g, int b);

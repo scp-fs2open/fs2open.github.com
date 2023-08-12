@@ -1059,6 +1059,7 @@ void opengl_setup_function_pointers()
 
 	gr_screen.gf_openxr_get_extensions = gr_opengl_openxr_get_extensions;
 	gr_screen.gf_openxr_test_capabilities = gr_opengl_openxr_test_capabilities;
+	gr_screen.gf_openxr_create_session = gr_opengl_openxr_create_session;
 
 	// NOTE: All function pointers here should have a Cmdline_nohtl check at the top
 	//       if they shouldn't be run in non-HTL mode, Don't keep separate entries.

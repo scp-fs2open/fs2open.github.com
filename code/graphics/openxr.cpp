@@ -11,6 +11,7 @@ bool openxr_initialized = false;
 
 XrInstance xr_instance;
 XrSystemId xr_system;
+XrSession xr_session;
 
 void openxr_init() {
 	const auto& extensions = gr_openxr_get_extensions();
@@ -38,7 +39,7 @@ void openxr_init() {
 		extensions.data()
 	};
 
-	strncpy_s(instanceCreateInfo.applicationInfo.applicationName, Mod_title.c_str(), XR_MAX_APPLICATION_NAME_SIZE);
+	strncpy_s(instanceCreateInfo.applicationInfo.applicationName, Mod_title.empty() ? "FreeSpace Open" : Mod_title.c_str(), XR_MAX_APPLICATION_NAME_SIZE);
 
 	if (xrCreateInstance(&instanceCreateInfo, &xr_instance) != XR_SUCCESS) {
 		return;
@@ -59,10 +60,13 @@ void openxr_init() {
 		return;
 	}
 
+	//Non OpenGL backends, like vulkan, may need to query certain extensions to be enabled here as well
+
 	openxr_initialized = true;
 }
 
 void openxr_close() {
+	xrDestroySession(xr_session);
 	xrDestroyInstance(xr_instance);
 }
 
