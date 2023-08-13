@@ -34,6 +34,7 @@
 #include "mod_table/mod_table.h"
 #include "network/multi.h"
 #include "network/multiteamselect.h"
+#include "network/multi_pxo.h"
 #include "pilotfile/pilotfile.h"
 #include "playerman/managepilot.h"
 #include "radar/radarsetup.h"
@@ -251,6 +252,17 @@ ADE_FUNC(playCutscene, l_UserInterface, "string Filename, boolean RestartMusic, 
 		return ADE_RETURN_NIL;
 
 	common_play_cutscene(filename, restart_music, score_index);
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(launchURL, l_UserInterface, "string url", "Launches the given URL in a web browser", nullptr, nullptr)
+{
+	const char* url;
+	if (!ade_get_args(L, "s", &url))
+		return ADE_RETURN_NIL;
+
+	multi_pxo_url(url);
+
 	return ADE_RETURN_NIL;
 }
 
