@@ -204,7 +204,7 @@ extern camid Main_camera;
 extern void game_level_init();
 extern void game_post_level_init();
 extern camid game_render_frame_setup();
-extern void game_render_frame(camid cid);
+extern void game_render_frame(camid cid, const vec3d* offset = nullptr, const matrix* rot_offset = nullptr);
 extern void game_simulation_frame();
 extern void game_update_missiontime();
 extern void game_render_post_frame();

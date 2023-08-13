@@ -2602,9 +2602,12 @@ void gr_flip(bool execute_scripting)
 	uniform_buffer_managers_retire_buffers();
 
 	TRACE_SCOPE(tracing::PageFlip);
-	gr_openxr_flip();
-	gr_screen.gf_flip();
-	gr_setup_frame();
+
+	//Prevent a real page flip if OpenXR is on and claims that that wasn't the full image yet
+	if (!gr_openxr_flip()) {
+		gr_screen.gf_flip();
+		gr_setup_frame();
+	}
 }
 
 void gr_print_timestamp(int x, int y, fix timestamp, int resize_mode)

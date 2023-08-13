@@ -64,6 +64,7 @@
 #include "graphics/font.h"
 #include "graphics/light.h"
 #include "graphics/matrix.h"
+#include "graphics/openxr.h"
 #include "graphics/shadows.h"
 #include "headtracking/headtracking.h"
 #include "hud/hud.h"
@@ -3339,7 +3340,7 @@ void clip_frame_view();
 // Does everything needed to render a frame
 extern SCP_vector<object*> effect_ships;
 extern SCP_vector<object*> transparent_objects;
-void game_render_frame( camid cid )
+void game_render_frame( camid cid, const vec3d* offset, const matrix* rot_offset)
 {
 	GR_DEBUG_SCOPE("Main Frame");
 	TRACE_SCOPE(tracing::RenderMainFrame);
@@ -3355,6 +3356,13 @@ void game_render_frame( camid cid )
 
 		//Get current camera info
 		cam->get_info(&eye_pos, &eye_orient);
+		if (offset != nullptr)
+			eye_pos += *offset;
+		if (rot_offset != nullptr) {
+			//matrix m;
+			//vm_copy_transpose(&m, rot_offset);
+			eye_orient = *rot_offset * eye_orient;
+		}
 
 		//Handle jitter if not cutscene camera
 		eye_no_jitter = eye_orient;
@@ -3446,7 +3454,7 @@ void game_render_frame( camid cid )
 
 		gr_override_fog(true);
 		GR_DEBUG_SCOPE("Render Cockpit");
-		ship_render_player_ship(Viewer_obj);
+		ship_render_player_ship(Viewer_obj, offset, rot_offset);
 		gr_override_fog(false);
 
 		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
@@ -3937,6 +3945,108 @@ void game_render_post_frame()
 #define DEBUG_GET_TIME(x)
 #endif
 
+void game_do_full_frame(/*fix& clear_time2, fix& render3_time1, fix& render3_time2, fix& render2_time1, fix& render2_time2, fix& flip_time1, fix& flip_time2, */const vec3d* offset = nullptr, const matrix* rot_offset = nullptr) {
+	// clear the screen to black
+	gr_reset_clip();
+	if ((Game_detail_flags & DETAIL_FLAG_CLEAR)) {
+		gr_clear();
+	}
+
+	DEBUG_GET_TIME(clear_time2)
+	DEBUG_GET_TIME(render3_time1)
+
+	camid cid = game_render_frame_setup();
+
+	game_render_frame(cid, offset, rot_offset);
+
+	//Cutscene bars
+	clip_frame_view();
+
+	// save the eye position and orientation
+	if (Game_mode & GM_MULTIPLAYER) {
+		cid.getCamera()->get_info(&Net_player->s_info.eye_pos, &Net_player->s_info.eye_orient);
+	}
+
+	Scripting_didnt_draw_hud = 1;
+	auto scripting_param_list = scripting::hook_param_list(
+		scripting::hook_param("Self", 'o', Viewer_obj),
+		scripting::hook_param("Player", 'o', Player_obj)
+	);
+
+	if (scripting::hooks::OnHudDraw->isActive()) {
+		Scripting_didnt_draw_hud = scripting::hooks::OnHudDraw->isOverride(scripting::hooks::ObjectDrawConditions{ Viewer_obj }, scripting_param_list) ? 0 : 1;
+	}
+
+	if (Scripting_didnt_draw_hud) {
+		GR_DEBUG_SCOPE("Render HUD");
+		TRACE_SCOPE(tracing::RenderHUD);
+
+		game_render_hud(cid);
+	}
+	HUD_reset_clip();
+
+	if ((Game_detail_flags & DETAIL_FLAG_HUD) && (!(Game_mode & GM_MULTIPLAYER) || ((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_OBSERVER)))) {
+		anim_render_all(0, flFrametime);
+	}
+
+	if (!(Viewer_mode & (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY)))
+	{
+		TRACE_SCOPE(tracing::RenderHUDHook);
+
+		if (scripting::hooks::OnHudDraw->isActive()) {
+			scripting::hooks::OnHudDraw->run(scripting::hooks::ObjectDrawConditions{ Viewer_obj }, scripting_param_list);
+		}
+	}
+
+	// check to see if we should display the death died popup
+	if (Game_mode & GM_DEAD_BLEW_UP) {
+		if (Game_mode & GM_MULTIPLAYER) {
+			// catch the situation where we're supposed to be warping out on this transition
+			if (Net_player->flags & NETINFO_FLAG_WARPING_OUT) {
+				multi_handle_sudden_mission_end();
+				send_debrief_event();
+			}
+			else if (Player_died_popup_wait.isValid() && ui_timestamp_elapsed(Player_died_popup_wait)) {
+				Player_died_popup_wait = UI_TIMESTAMP::invalid();
+				popupdead_start();
+			}
+		}
+		else {
+			if (Player_died_popup_wait.isValid() && ui_timestamp_elapsed(Player_died_popup_wait)) {
+				Player_died_popup_wait = UI_TIMESTAMP::invalid();
+				popupdead_start();
+			}
+		}
+	}
+
+	DEBUG_GET_TIME(render3_time2)
+	DEBUG_GET_TIME(render2_time1)
+
+	gr_reset_clip();
+	game_get_framerate();
+	game_show_framerate();
+	game_show_eye_pos(cid);
+
+	game_show_time_left();
+
+	gr_reset_clip();
+	game_render_post_frame();
+
+	game_tst_frame();
+
+	DEBUG_GET_TIME(render2_time2)
+
+	// maybe render and process the dead popup
+	game_maybe_do_dead_popup(flFrametime);
+
+	// If a regular popup is active, don't flip (popup code flips)
+	if (!popup_running_state()) {
+		DEBUG_GET_TIME(flip_time1)
+		game_flip_page_and_time_it();
+		DEBUG_GET_TIME(flip_time2)
+	}
+}
+
 void game_frame(bool paused)
 {
 #ifndef NDEBUG
@@ -4033,104 +4143,15 @@ void game_frame(bool paused)
 	if (!Pre_player_entry) {
 		if (! (Game_mode & GM_STANDALONE_SERVER)) {
 			DEBUG_GET_TIME( clear_time1 )
-			// clear the screen to black
-			gr_reset_clip();
-			if ( (Game_detail_flags & DETAIL_FLAG_CLEAR) ) {
-				gr_clear();
+			if (!openxr_enabled()) {
+				game_do_full_frame(/*clear_time2, render3_time1, render3_time2, render2_time1, render2_time2, flip_time1, flip_time2*/);
 			}
-
-			DEBUG_GET_TIME( clear_time2 )
-			DEBUG_GET_TIME( render3_time1 )
-			
-			camid cid = game_render_frame_setup();
-
-			game_render_frame( cid );
-			
-			//Cutscene bars
-			clip_frame_view();
-
-			// save the eye position and orientation
-			if ( Game_mode & GM_MULTIPLAYER ) {
-				cid.getCamera()->get_info(&Net_player->s_info.eye_pos, &Net_player->s_info.eye_orient);
+			else {
+				const auto& pose = openxr_start_stereo_frame();
+				game_do_full_frame(/*clear_time2, render3_time1, render3_time2, render2_time1, render2_time2, flip_time1, flip_time2, */ &pose.eyes[0].offset, &pose.eyes[0].orientation);
+				light_reset();
+				game_do_full_frame(/*clear_time2, render3_time1, render3_time2, render2_time1, render2_time2, flip_time1, flip_time2, */ &pose.eyes[1].offset, &pose.eyes[1].orientation);
 			}
-
-			Scripting_didnt_draw_hud = 1;
-			auto scripting_param_list = scripting::hook_param_list(
-				scripting::hook_param("Self", 'o', Viewer_obj),
-				scripting::hook_param("Player", 'o', Player_obj)
-			);
-
-			if (scripting::hooks::OnHudDraw->isActive()) {
-				Scripting_didnt_draw_hud = scripting::hooks::OnHudDraw->isOverride(scripting::hooks::ObjectDrawConditions{ Viewer_obj }, scripting_param_list) ? 0 : 1;
-			}
-
-			if(Scripting_didnt_draw_hud) {
-				GR_DEBUG_SCOPE("Render HUD");
-				TRACE_SCOPE(tracing::RenderHUD);
-
-				game_render_hud(cid);
-			}
-			HUD_reset_clip();
-
-			if( (Game_detail_flags & DETAIL_FLAG_HUD) && (!(Game_mode & GM_MULTIPLAYER) || ((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_OBSERVER))) ) {
-				anim_render_all(0, flFrametime);
-			}
-
-			if (!(Viewer_mode & (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY))) 
-			{
-				TRACE_SCOPE(tracing::RenderHUDHook);
-
-				if (scripting::hooks::OnHudDraw->isActive()) {
-					scripting::hooks::OnHudDraw->run(scripting::hooks::ObjectDrawConditions{ Viewer_obj }, scripting_param_list);
-				}
-			}
-			
-			// check to see if we should display the death died popup
-			if(Game_mode & GM_DEAD_BLEW_UP){				
-				if(Game_mode & GM_MULTIPLAYER){
-					// catch the situation where we're supposed to be warping out on this transition
-					if(Net_player->flags & NETINFO_FLAG_WARPING_OUT){
-						multi_handle_sudden_mission_end();
-						send_debrief_event();
-					} else if (Player_died_popup_wait.isValid() && ui_timestamp_elapsed(Player_died_popup_wait)) {
-						Player_died_popup_wait = UI_TIMESTAMP::invalid();
-						popupdead_start();
-					}
-				} else {
-					if (Player_died_popup_wait.isValid() && ui_timestamp_elapsed(Player_died_popup_wait)) {
-						Player_died_popup_wait = UI_TIMESTAMP::invalid();
-						popupdead_start();
-					}
-				}
-			}
-
-			DEBUG_GET_TIME( render3_time2 )
-			DEBUG_GET_TIME( render2_time1 )
-
-			gr_reset_clip();
-			game_get_framerate();
-			game_show_framerate();
-			game_show_eye_pos(cid);
-
-			game_show_time_left();
-
-			gr_reset_clip();
-			game_render_post_frame();
-
-			game_tst_frame();
-
-			DEBUG_GET_TIME( render2_time2 )
-
-			// maybe render and process the dead popup
-			game_maybe_do_dead_popup(flFrametime);
-			
-			// If a regular popup is active, don't flip (popup code flips)
-			if( !popup_running_state() ){
-				DEBUG_GET_TIME( flip_time1 )
-				game_flip_page_and_time_it();
-				DEBUG_GET_TIME( flip_time2 )
-			}
-
 		} else {
 			game_show_standalone_framerate();
 		}

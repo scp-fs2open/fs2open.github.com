@@ -498,6 +498,9 @@ bool is_valid_vec(const vec3d *vec);
 //	Return true if all elements of *m are legal, that is, not a NAN.
 bool is_valid_matrix(const matrix *m);
 
+// Converts quaterions to a respective rotation matrix
+void vm_quaternion_to_matrix(matrix* M, float a, float b, float c, float s);
+
 // Finds the rotation matrix corresponding to a rotation of theta about axis u
 void vm_quaternion_rotate(matrix *m, float theta, const vec3d *u);
 

@@ -19,6 +19,7 @@ std::array<std::unique_ptr<XrSwapchainHandler>, 2> xr_swapchains;
 std::array<XrView, 2> xr_views;
 XrFrameState xr_state;
 OpenXRFBStage xr_stage = OpenXRFBStage::NONE;
+float xr_scale = 1.0f;
 
 static XrBool32 handleXRError(XrDebugUtilsMessageSeverityFlagsEXT severity, XrDebugUtilsMessageTypeFlagsEXT type, const XrDebugUtilsMessengerCallbackDataEXT* callbackData, void* userData) {
 	SCP_string message;
@@ -55,7 +56,9 @@ static XrBool32 handleXRError(XrDebugUtilsMessageSeverityFlagsEXT severity, XrDe
 	return XR_FALSE;
 }
 
-void openxr_init() {
+void openxr_init(float scale) {
+	xr_scale = scale;
+
 	auto extensions = gr_openxr_get_extensions();
 
 	const gameversion::version& fso_version = gameversion::get_executable_version();
@@ -209,6 +212,10 @@ void openxr_close() {
 	xrDestroyInstance(xr_instance);
 }
 
+bool openxr_enabled() {
+	return openxr_initialized && openxr_recieve;
+}
+
 void openxr_poll() {
 	if (!openxr_initialized)
 		return;
@@ -286,7 +293,7 @@ PFN_xrVoidFunction openxr_getExtensionFunction(const char* const name) {
 	return func;
 }
 
-void openxr_update_view() {
+void openxr_start_frame() {
 	XrFrameWaitInfo frameWaitInfo {
 		XR_TYPE_FRAME_WAIT_INFO
 	};
@@ -319,10 +326,29 @@ void openxr_update_view() {
 		&views,
 		xr_views.data()
 	);
+
+	XrFrameBeginInfo beginFrameInfo{ XR_TYPE_FRAME_BEGIN_INFO };
+	xrBeginFrame(xr_session, &beginFrameInfo);
 }
 
-void openxr_start_stereo_frame() {
-	xr_stage = OpenXRFBStage::LEFT;
+OpenXRTrackingInfo openxr_start_stereo_frame() {
+	xr_stage = OpenXRFBStage::FIRST;
 
-	openxr_update_view();
+	openxr_start_frame();
+
+	OpenXRTrackingInfo info;
+
+	for (uint32_t i = 0; i < 2; i++) {
+		const auto& pos = xr_views[i].pose.position;
+		const auto& ori = xr_views[i].pose.orientation;
+		info.eyes[i].offset = vec3d{ {pos.x * xr_scale, pos.y * xr_scale, pos.z * xr_scale} };
+
+		matrix asymmetric_fov, orientation;
+		angles fix_asymmetric_fov{ 0, 0, xr_views[i].fov.angleLeft + xr_views[i].fov.angleRight };
+		vm_quaternion_to_matrix(&orientation, ori.x, ori.y, -ori.z, -ori.w);
+		vm_angles_2_matrix(&asymmetric_fov, &fix_asymmetric_fov);
+		vm_matrix_x_matrix(&info.eyes[i].orientation, &orientation, &asymmetric_fov);
+	}
+
+	return info;
 }

@@ -1544,6 +1544,21 @@ int vm_matrix_same(matrix *m1, matrix *m2)
 
 // --------------------------------------------------------------------------------------
 
+void vm_quaternion_to_matrix(matrix* M, float a, float b, float c, float s) {
+	// 1st ROW vector
+	M->vec.rvec.xyz.x = 1.0f - 2.0f * b * b - 2.0f * c * c;
+	M->vec.rvec.xyz.y = 2.0f * a * b + 2.0f * s * c;
+	M->vec.rvec.xyz.z = 2.0f * a * c - 2.0f * s * b;
+	// 2nd ROW vector
+	M->vec.uvec.xyz.x = 2.0f * a * b - 2.0f * s * c;
+	M->vec.uvec.xyz.y = 1.0f - 2.0f * a * a - 2.0f * c * c;
+	M->vec.uvec.xyz.z = 2.0f * b * c + 2.0f * s * a;
+	// 3rd ROW vector
+	M->vec.fvec.xyz.x = 2.0f * a * c + 2.0f * s * b;
+	M->vec.fvec.xyz.y = 2.0f * b * c - 2.0f * s * a;
+	M->vec.fvec.xyz.z = 1.0f - 2.0f * a * a - 2.0f * b * b;
+}
+
 void vm_quaternion_rotate(matrix *M, float theta, const vec3d *u)
 //  given an arbitrary rotation axis and rotation angle, function generates the
 //  corresponding rotation matrix
@@ -1561,18 +1576,7 @@ void vm_quaternion_rotate(matrix *M, float theta, const vec3d *u)
 	c = (u->xyz.z * sin_theta);
 	s = cosf(theta * 0.5f);
 
-// 1st ROW vector
-	M->vec.rvec.xyz.x = 1.0f - 2.0f*b*b - 2.0f*c*c;
-	M->vec.rvec.xyz.y = 2.0f*a*b + 2.0f*s*c;
-	M->vec.rvec.xyz.z = 2.0f*a*c - 2.0f*s*b;
-// 2nd ROW vector
-	M->vec.uvec.xyz.x = 2.0f*a*b - 2.0f*s*c;
-	M->vec.uvec.xyz.y = 1.0f - 2.0f*a*a - 2.0f*c*c;
-	M->vec.uvec.xyz.z = 2.0f*b*c + 2.0f*s*a;
-// 3rd ROW vector
-	M->vec.fvec.xyz.x = 2.0f*a*c + 2.0f*s*b;
-	M->vec.fvec.xyz.y = 2.0f*b*c - 2.0f*s*a;
-	M->vec.fvec.xyz.z = 1.0f - 2.0f*a*a - 2.0f*b*b;
+	vm_quaternion_to_matrix(M, a, b, c, s);
 }
 
 // --------------------------------------------------------------------------------------

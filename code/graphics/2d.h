@@ -921,7 +921,7 @@ typedef struct screen {
 	std::function<bool()> gf_openxr_create_session;
 	std::function<int64_t(const SCP_vector<int64_t>&)> gf_openxr_get_swapchain_format;
 	std::function<bool()> gf_openxr_acquire_swapchain_buffers;
-	std::function<void()> gf_openxr_flip;
+	std::function<bool()> gf_openxr_flip;
 } screen;
 
 // handy macro

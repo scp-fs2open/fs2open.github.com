@@ -7787,7 +7787,7 @@ static void ship_find_warping_ship_helper(object *objp, dock_function_info *info
 //WMC - used for FTL and maneuvering thrusters
 extern bool Rendering_to_shadow_map;
 
-void ship_render_player_ship(object* objp) {
+void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix* rot_offset) {
 	ship* shipp = &Ships[objp->instance];
 	ship_info* sip = &Ship_info[shipp->ship_info_index];
 
@@ -7812,9 +7812,17 @@ void ship_render_player_ship(object* objp) {
 
 	gr_reset_clip();
 
-	vec3d eye_pos, eye_offset;
+	vec3d eye_pos, eye_offset, leaning_backup = leaning_position;
 	matrix eye_orient;
 	ship_get_eye_local(&eye_pos, &eye_orient, objp);
+	if (cam_offset != nullptr)
+		leaning_position += *cam_offset;
+	if (rot_offset != nullptr) {
+		//matrix m;
+		//vm_copy_transpose(&m, rot_offset);
+		eye_orient = *rot_offset * eye_orient;
+	}
+
 	vm_vec_copy_scale(&eye_offset, &eye_pos, -1.0f);
 
 	fov_t fov_backup = Proj_fov;
@@ -7849,6 +7857,7 @@ void ship_render_player_ship(object* objp) {
 	//render the ship model with deferred rendering to keep visuals constant for the ship
 	if (!renderCockpitModel && !deferredRenderShipModel) {
 		Proj_fov = fov_backup;
+		leaning_position = leaning_backup;
 		return;
 	}
 
@@ -7959,6 +7968,7 @@ void ship_render_player_ship(object* objp) {
 	gr_end_view_matrix();
 	gr_end_proj_matrix();
 
+	leaning_position = leaning_backup;
 	Proj_fov = fov_backup;
 
 	//Restore the Shadow_override

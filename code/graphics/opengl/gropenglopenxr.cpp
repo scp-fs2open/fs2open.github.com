@@ -147,18 +147,18 @@ bool gr_opengl_openxr_acquire_swapchain_buffers() {
 	return true;
 }
 
-void gr_opengl_openxr_flip() {
-	if (!openxr_initialized)
-		return;
+bool gr_opengl_openxr_flip() {
+	if (!openxr_enabled())
+		return false;
 
 	//If a stereoscopic frame has started, we're good. Otherwise, this is a normal frame that still needs to be OpenXR-Initialized
 	if (xr_stage == OpenXRFBStage::NONE)
-		openxr_update_view();
+		openxr_start_frame();
 
-	XrFrameBeginInfo beginFrameInfo { XR_TYPE_FRAME_BEGIN_INFO };
-	XrResult result = xrBeginFrame(xr_session, &beginFrameInfo);
+	uint32_t startFrame = xr_stage == OpenXRFBStage::SECOND ? 1 : 0;
+	uint32_t endFrame = xr_stage == OpenXRFBStage::FIRST ? 1 : 2;
 
-	for (uint32_t i = 0; i < 2; i++) {
+	for (uint32_t i = startFrame; i < endFrame; i++) {
 		XrSwapchain swapchain = xr_swapchains[i]->swapchain;
 
 		XrSwapchainImageAcquireInfo acquireImageInfo {
@@ -197,6 +197,19 @@ void gr_opengl_openxr_flip() {
 		};
 
 		xrReleaseSwapchainImage(swapchain, &releaseImageInfo);
+	}
+
+	switch (xr_stage) {
+	case OpenXRFBStage::FIRST:
+		//We just rendered the first part of a stereo image. We now need to follow up with another one for the other eye
+		xr_stage = OpenXRFBStage::SECOND;
+		return true;
+	case OpenXRFBStage::SECOND:
+	case OpenXRFBStage::NONE:
+		//We just rendered the second part of a stereo image or a mono image. Barring further instruction, the next image may be mono again.
+		//Also, since that means we're done with whatever we just rendered, finish this frame
+		xr_stage = OpenXRFBStage::NONE;
+		break;
 	}
 
 	XrCompositionLayerProjectionView projectedViews[2];
@@ -240,4 +253,6 @@ void gr_opengl_openxr_flip() {
 	}
 
 	xrEndFrame(xr_session, &frameEndInfo);
+
+	return false;
 }

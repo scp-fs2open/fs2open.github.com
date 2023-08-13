@@ -26,8 +26,8 @@ extern std::array<std::unique_ptr<XrSwapchainHandler>, 2> xr_swapchains;
 extern std::array<XrView, 2> xr_views;
 extern XrFrameState xr_state;
 
-enum class OpenXRFBStage { NONE, LEFT, RIGHT };
+enum class OpenXRFBStage { NONE, FIRST, SECOND };
 extern OpenXRFBStage xr_stage;
 
 PFN_xrVoidFunction openxr_getExtensionFunction(const char* const name);
-void openxr_update_view();
+void openxr_start_frame();
