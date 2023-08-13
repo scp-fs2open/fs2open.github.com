@@ -5131,9 +5131,10 @@ int eval_num(int n, bool &is_nan, bool &is_nan_forever)
 	is_nan = false;
 	is_nan_forever = false;
 
-	Assert(n >= 0);
-	if (n < 0)
+	// see precedent in eval_sexp
+	if (n == -1)
 		return 0;
+	Assert(n >= 0);
 
 	if (CAR(n) != -1)				// if argument is a sexp
 	{
@@ -30904,7 +30905,6 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_BOOL;
 
 		case OP_AI_EVADE_SHIP:
-		case OP_AI_STAY_NEAR_SHIP:
 		case OP_AI_IGNORE:
 		case OP_AI_IGNORE_NEW:
 		case OP_AI_FLY_TO_SHIP:
@@ -30912,6 +30912,14 @@ int query_operator_argument_type(int op, int argnum)
 			if (argnum == 0)
 				return OPF_SHIP;
 			else if (argnum == 1)
+				return OPF_POSITIVE;
+			else
+				return OPF_BOOL;
+
+		case OP_AI_STAY_NEAR_SHIP:
+			if (argnum == 0)
+				return OPF_SHIP;
+			else if (argnum == 1 || argnum == 2)
 				return OPF_POSITIVE;
 			else
 				return OPF_BOOL;
