@@ -11,7 +11,18 @@ namespace api {
 bool streaminganim_h::IsValid() {
 	return (ga.num_frames > 0);
 }
-streaminganim_h::streaminganim_h(const char* filename) {
+streaminganim_h::streaminganim_h(const char* real_filename) {
+	char filename[MAX_FILENAME_LEN];
+
+	// make sure no one passed an extension
+	memset(filename, 0, MAX_FILENAME_LEN);
+	strncpy(filename, real_filename, MAX_FILENAME_LEN - 1);
+	char* p = strrchr(filename, '.');
+	if (p) {
+		mprintf(("Someone passed an extension to streaminganim_h for file '%s'\n", real_filename));
+		*p = 0;
+	}
+
 	generic_anim_init(&ga, filename);
 }
 streaminganim_h::~streaminganim_h() {
