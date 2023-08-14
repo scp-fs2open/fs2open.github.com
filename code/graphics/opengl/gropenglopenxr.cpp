@@ -18,8 +18,14 @@
 #define XR_USE_GRAPHICS_API_OPENGL
 #include "graphics/openxr_internal.h"
 
+#include "io/cursor.h"
+#include "io/mouse.h"
+#include "graphics/matrix.h"
 #include "graphics/opengl/gropengl.h"
+#include "graphics/opengl/gropengldraw.h"
+#include "graphics/opengl/gropenglshader.h"
 #include "graphics/opengl/gropenglstate.h"
+#include "graphics/opengl/ShaderProgram.h"
 #include "osapi/osapi.h"
 
 #include <SDL.h>
@@ -123,12 +129,32 @@ int64_t gr_opengl_openxr_get_swapchain_format(const SCP_vector<int64_t>& allowed
 std::array<SCP_vector<XrSwapchainImageOpenGLKHR>, 2> swapchainImages;
 
 GLuint xr_fbo;
+GLuint xr_swap_tex;
 
 bool gr_opengl_openxr_acquire_swapchain_buffers() {
 	// create framebuffer
 	glGenFramebuffers(1, &xr_fbo);
 	GL_state.BindFrameBuffer(xr_fbo);
 	opengl_set_object_label(GL_FRAMEBUFFER, xr_fbo, "XR Swapchain");
+
+	//While blitting from the backbuffer is fine for the 3d-scenes, when we render a flat scene, we need to bind the backbuffer as a texture.
+	//Since that doesn't work, we need an intermediary. Not pretty, but it doesn't need to be for the flat scenes
+	glGenTextures(1, &xr_swap_tex);
+
+	GL_state.Texture.SetActiveUnit(0);
+	GL_state.Texture.SetTarget(GL_TEXTURE_2D);
+	GL_state.Texture.Enable(xr_swap_tex);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, gr_screen.max_w, gr_screen.max_h, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, xr_swap_tex, 0);
+	opengl_set_object_label(GL_TEXTURE, xr_swap_tex, "XR Swap Texture");
 
 	for (uint32_t i = 0; i < 2; i++) {
 		uint32_t imageCount = 0;
@@ -155,6 +181,22 @@ bool gr_opengl_openxr_flip() {
 	if (xr_stage == OpenXRFBStage::NONE)
 		openxr_start_frame();
 
+	if (xr_stage == OpenXRFBStage::NONE) {
+		GR_DEBUG_SCOPE("XR Blit");
+
+		GL_state.BindFrameBuffer(0, GL_READ_FRAMEBUFFER);
+		GL_state.BindFrameBuffer(xr_fbo, GL_DRAW_FRAMEBUFFER);
+
+		glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, xr_swap_tex, 0);
+
+		glDrawBuffer(GL_COLOR_ATTACHMENT0);
+		glReadBuffer(GL_BACK);
+		glBlitFramebuffer(0, 0, gr_screen.max_w, gr_screen.max_h, 0, 0, gr_screen.max_w, gr_screen.max_h, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+		
+		glDrawBuffer(GL_BACK);
+		GL_state.BindFrameBuffer(0);
+	}
+
 	uint32_t startFrame = xr_stage == OpenXRFBStage::SECOND ? 1 : 0;
 	uint32_t endFrame = xr_stage == OpenXRFBStage::FIRST ? 1 : 2;
 
@@ -177,19 +219,121 @@ bool gr_opengl_openxr_flip() {
 
 		const XrSwapchainImageOpenGLKHR& image = swapchainImages[i][activeIndex];
 
-		//Blit
-		GR_DEBUG_SCOPE("VR Blit");
-		GL_state.BindFrameBuffer(0, GL_READ_FRAMEBUFFER);
-		GL_state.BindFrameBuffer(xr_fbo, GL_DRAW_FRAMEBUFFER);
+		if (xr_stage == OpenXRFBStage::NONE) {
+			GR_DEBUG_SCOPE("XR Plane");
+			GL_state.BindFrameBuffer(xr_fbo);
 
-		glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, image.image, 0);
-		glDrawBuffer(GL_COLOR_ATTACHMENT0);
-		glReadBuffer(GL_BACK);
-		glBlitFramebuffer(0, 0, gr_screen.max_w, gr_screen.max_h, 0, 0, xr_swapchains[i]->width, xr_swapchains[i]->height, GL_COLOR_BUFFER_BIT, GL_LINEAR);
-		glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, 0, 0);
+			glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, image.image, 0);
+			glDrawBuffer(GL_COLOR_ATTACHMENT0);
+			GL_state.Texture.Enable(0, GL_TEXTURE_2D, xr_swap_tex);
+			opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_COPY_WORLD, 0));
+			Current_shader->program->Uniforms.setTextureUniform("tex", 0);
 
-		glDrawBuffer(GL_BACK);
-		GL_state.BindFrameBuffer(0);
+			const auto& pos = xr_views[i].pose.position;
+			const auto& ori = xr_views[i].pose.orientation;
+			vec3d position{ { pos.x, pos.y, pos.z } };
+			matrix asymmetric_fov, orientation;
+			angles fix_asymmetric_fov{ 0, 0, xr_views[i].fov.angleLeft + xr_views[i].fov.angleRight };
+			vm_quaternion_to_matrix(&orientation, ori.x, ori.y, -ori.z, -ori.w);
+			vm_angles_2_matrix(&asymmetric_fov, &fix_asymmetric_fov);
+			vm_matrix_x_matrix(&orientation, &orientation, &asymmetric_fov);
+
+			gr_set_clip(0, 0, xr_swapchains[i]->width, xr_swapchains[i]->height, GR_RESIZE_REPLACE);
+			gr_set_proj_matrix(xr_views[i].fov.angleRight - xr_views[i].fov.angleLeft, i2fl(xr_swapchains[i]->width) / i2fl(xr_swapchains[i]->height), 0.01f, 1000);
+			gr_set_view_matrix(&position, &orientation);
+
+			glViewport(0, 0, xr_swapchains[i]->width, xr_swapchains[i]->height);
+			GL_state.ScissorTest(GL_FALSE);
+			GL_state.SetZbufferType(gr_zbuffer_type::ZBUFFER_TYPE_NONE);
+
+			GLfloat v[4][5] = {
+				{
+					-2.0f * gr_screen.clip_aspect, -1.0f, 5, 0, 0
+				},
+				{
+					2.0f * gr_screen.clip_aspect, -1.0f, 5, 1, 0
+				},
+				{
+					2.0f * gr_screen.clip_aspect, 3.0f, 5, 1, 1
+				},
+				{
+					-2.0f * gr_screen.clip_aspect, 3.0f, 5, 0, 1
+				}
+			};
+
+			vertex_layout vert_def;
+			vert_def.add_vertex_component(vertex_format_data::POSITION3, sizeof(GLfloat) * 5, 0);
+			vert_def.add_vertex_component(vertex_format_data::TEX_COORD2, sizeof(GLfloat) * 5, sizeof(GLfloat) * 3);
+
+			gr_matrix_set_uniforms();
+			gr_set_clear_color(20, 20, 20);
+			gr_clear();
+			gr_set_clear_color(0, 0, 0);
+			opengl_render_primitives_immediate(PRIM_TYPE_TRIFAN, &vert_def, 4, v, sizeof(v));
+
+			if (io::mouse::CursorManager::get()->isCursorShown()) {
+				float u_scale, v_scale;
+				uint32_t array_index;
+				int mouse_bm = io::mouse::CursorManager::get()->getCurrentCursor()->getBitmapHandle();
+				int mousex, mousey, mousew, mouseh;
+
+				bm_get_info(mouse_bm, &mousew, &mouseh);
+				gr_opengl_tcache_set(mouse_bm, TCACHE_TYPE_INTERFACE, &u_scale, &v_scale, &array_index);
+
+				mouse_get_pos(&mousex, &mousey);
+				float mouse_unscaled_x = i2fl(mousex) / i2fl(gr_screen.max_w) * 2.0f - 1.0f;
+				float mouse_unscaled_y = i2fl(mousey) / i2fl(gr_screen.max_h) * -2.0f + 1.0f;
+				float mouse_unscaled_w = i2fl(mousew) / i2fl(gr_screen.max_w);
+				float mouse_unscaled_h = i2fl(mouseh) / i2fl(gr_screen.max_h);
+
+				float left = 2.0f * gr_screen.clip_aspect * mouse_unscaled_x;
+				float right = left + 4.0f * gr_screen.clip_aspect * mouse_unscaled_w;
+				float top = 1 + 2.0f * mouse_unscaled_y;
+				float bottom = top - 4.0f * mouse_unscaled_h;
+
+				GLfloat vmouse[4][5] = {
+					{
+						left, bottom, 5, 0, 0
+					},
+					{
+						right, bottom, 5, 1, 0
+					},
+					{
+						right, top, 5, 1, 1
+					},
+					{
+						left, top, 5, 0, 1
+					}
+				};
+				opengl_render_primitives_immediate(PRIM_TYPE_TRIFAN, &vert_def, 4, vmouse, sizeof(vmouse));
+			}
+
+			gr_end_proj_matrix();
+			gr_end_view_matrix();
+			gr_reset_clip();
+			glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
+
+			GL_state.Texture.Enable(0);
+			glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, 0, 0);
+
+			glDrawBuffer(GL_BACK);
+			GL_state.BindFrameBuffer(0);
+		}
+		else {
+			//Blit
+			GR_DEBUG_SCOPE("XR Blit");
+			GL_state.BindFrameBuffer(0, GL_READ_FRAMEBUFFER);
+			GL_state.BindFrameBuffer(xr_fbo, GL_DRAW_FRAMEBUFFER);
+
+			glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, image.image, 0);
+			glDrawBuffer(GL_COLOR_ATTACHMENT0);
+			glReadBuffer(GL_BACK);
+			glBlitFramebuffer(0, 0, gr_screen.max_w, gr_screen.max_h, 0, 0, xr_swapchains[i]->width, xr_swapchains[i]->height, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+			glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, 0, 0);
+
+			glDrawBuffer(GL_BACK);
+			GL_state.BindFrameBuffer(0);
+		}
 
 		XrSwapchainImageReleaseInfo releaseImageInfo {
 			XR_TYPE_SWAPCHAIN_IMAGE_RELEASE_INFO,

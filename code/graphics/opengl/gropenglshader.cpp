@@ -155,6 +155,9 @@ static opengl_shader_type_t GL_shader_types[] = {
 	{ SDR_TYPE_COPY, "post-v.sdr",	"copy-f.sdr", nullptr,
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Texture copy", false },
 
+	{ SDR_TYPE_COPY_WORLD, "passthrough-v.sdr",	"copy-f.sdr", nullptr,
+		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Texture copy world space", false },
+
 	{ SDR_TYPE_MSAA_RESOLVE, "post-v.sdr",	"msaa-f.sdr", nullptr,
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "MSAA resolve shader", false },
 

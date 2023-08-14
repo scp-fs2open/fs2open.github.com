@@ -184,7 +184,7 @@ void openxr_init(float scale) {
 	XrReferenceSpaceCreateInfo spaceCreateInfo {
 		XR_TYPE_REFERENCE_SPACE_CREATE_INFO,
 		nullptr,
-		XR_REFERENCE_SPACE_TYPE_STAGE,
+		XR_REFERENCE_SPACE_TYPE_LOCAL,
 		XrPosef{ XrQuaternionf{ 0, 0, 0, 1 }, XrVector3f{ 0, 0, 0 } },
 	};
 
@@ -341,7 +341,7 @@ OpenXRTrackingInfo openxr_start_stereo_frame() {
 	for (uint32_t i = 0; i < 2; i++) {
 		const auto& pos = xr_views[i].pose.position;
 		const auto& ori = xr_views[i].pose.orientation;
-		info.eyes[i].offset = vec3d{ {pos.x * xr_scale, pos.y * xr_scale, pos.z * xr_scale} };
+		info.eyes[i].offset = vec3d{ {pos.x * xr_scale, pos.y * xr_scale - 1, pos.z * xr_scale} };
 
 		matrix asymmetric_fov, orientation;
 		angles fix_asymmetric_fov{ 0, 0, xr_views[i].fov.angleLeft + xr_views[i].fov.angleRight };

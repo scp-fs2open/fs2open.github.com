@@ -158,7 +158,7 @@ void gr_opengl_set_clip(int x, int y, int w, int h, int resize_mode)
 		y = 0;
 	}
 
-	int to_resize = (resize_mode != GR_RESIZE_NONE && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1)));
+	int to_resize = (resize_mode != GR_RESIZE_NONE && resize_mode != GR_RESIZE_REPLACE && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1)));
 
 	int max_w = ((to_resize) ? gr_screen.max_w_unscaled : gr_screen.max_w);
 	int max_h = ((to_resize) ? gr_screen.max_h_unscaled : gr_screen.max_h);
@@ -167,28 +167,30 @@ void gr_opengl_set_clip(int x, int y, int w, int h, int resize_mode)
 		gr_unsize_screen_pos(&max_w, &max_h);
 	}
 
-	if (x >= max_w) {
-		x = max_w - 1;
-	}
+	if (resize_mode != GR_RESIZE_REPLACE) {
+		if (x >= max_w) {
+			x = max_w - 1;
+		}
 
-	if (y >= max_h) {
-		y = max_h - 1;
-	}
+		if (y >= max_h) {
+			y = max_h - 1;
+		}
 
-	if (x + w > max_w) {
-		w = max_w - x;
-	}
+		if (x + w > max_w) {
+			w = max_w - x;
+		}
 
-	if (y + h > max_h) {
-		h = max_h - y;
-	}
+		if (y + h > max_h) {
+			h = max_h - y;
+		}
 
-	if (w > max_w) {
-		w = max_w;
-	}
+		if (w > max_w) {
+			w = max_w;
+		}
 
-	if (h > max_h) {
-		h = max_h;
+		if (h > max_h) {
+			h = max_h;
+		}
 	}
 
 	gr_screen.offset_x_unscaled = x;

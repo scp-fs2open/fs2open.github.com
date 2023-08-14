@@ -77,6 +77,11 @@ namespace io
 			 * @brief Called to set the correct frame
 			 */
 			void setCurrentFrame();
+
+			/**
+			 * @brief Query the cursors bitmap handle for bmpman
+			 */
+			int getBitmapHandle();
 		};
 
 		/**
