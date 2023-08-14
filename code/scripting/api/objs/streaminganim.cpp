@@ -1,6 +1,7 @@
 //
 //
 
+#include "scripting/api/libs/graphics.h"
 #include "streaminganim.h"
 #include "freespace.h"
 
@@ -268,7 +269,10 @@ ADE_FUNC(process, l_streaminganim, "[number x1, number y1, number x2, number y2,
 		if (x2 != INT_MAX) ge.width = x2 - x1;
 		if (y2 != INT_MAX) ge.height = y2 - y1;
 
-		// note; generic_anim_render will default to GR_RESIZE_NONE when ge is provided
+		// use the currently active resize mode for scripting
+		// (generic_anim_render will use this field when ge is provided)
+		ge.resize_mode = get_resize_mode();
+
 		generic_anim_render(&sah->ga, flFrametime, x1, y1, false, &ge);
 	}
 
