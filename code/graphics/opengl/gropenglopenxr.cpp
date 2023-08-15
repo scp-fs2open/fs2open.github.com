@@ -231,7 +231,7 @@ bool gr_opengl_openxr_flip() {
 
 			const auto& pos = xr_views[i].pose.position;
 			const auto& ori = xr_views[i].pose.orientation;
-			vec3d position{ { pos.x, pos.y, pos.z } };
+			vec3d position{ { pos.x, pos.y, -pos.z } };
 			matrix asymmetric_fov, orientation;
 			angles fix_asymmetric_fov{ 0, 0, xr_views[i].fov.angleLeft + xr_views[i].fov.angleRight };
 			vm_quaternion_to_matrix(&orientation, ori.x, ori.y, -ori.z, -ori.w);

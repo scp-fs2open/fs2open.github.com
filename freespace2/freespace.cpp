@@ -3356,8 +3356,11 @@ void game_render_frame( camid cid, const vec3d* offset, const matrix* rot_offset
 
 		//Get current camera info
 		cam->get_info(&eye_pos, &eye_orient);
-		if (offset != nullptr)
-			eye_pos += *offset;
+		if (offset != nullptr) {
+			vec3d offset_local;
+			vm_vec_unrotate(&offset_local, offset, &eye_orient);
+			eye_pos += offset_local;
+		}
 		if (rot_offset != nullptr) {
 			//matrix m;
 			//vm_copy_transpose(&m, rot_offset);
@@ -4767,6 +4770,8 @@ void game_process_event( int current_state, int event )
 
 			Start_time = f2fl(timer_get_approx_seconds());
 			mprintf(("Entering game at time = %7.3f\n", Start_time));
+
+			openxr_reset_offset();
 			break;
 
 		case GS_EVENT_END_GAME:

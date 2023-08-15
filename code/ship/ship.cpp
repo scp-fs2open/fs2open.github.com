@@ -7815,8 +7815,11 @@ void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix
 	vec3d eye_pos, eye_offset, leaning_backup = leaning_position;
 	matrix eye_orient;
 	ship_get_eye_local(&eye_pos, &eye_orient, objp);
-	if (cam_offset != nullptr)
-		leaning_position += *cam_offset;
+	if (cam_offset != nullptr) {
+		vec3d offset_local;
+		vm_vec_unrotate(&offset_local, cam_offset, &eye_orient);
+		leaning_position += offset_local;
+	}
 	if (rot_offset != nullptr) {
 		//matrix m;
 		//vm_copy_transpose(&m, rot_offset);

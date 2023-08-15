@@ -17,6 +17,7 @@ XrSpace xr_space;
 XrDebugUtilsMessengerEXT xr_debugMessenger;
 std::array<std::unique_ptr<XrSwapchainHandler>, 2> xr_swapchains;
 std::array<XrView, 2> xr_views;
+vec3d xr_offset = ZERO_VECTOR;
 XrFrameState xr_state;
 OpenXRFBStage xr_stage = OpenXRFBStage::NONE;
 float xr_scale = 1.0f;
@@ -216,6 +217,18 @@ bool openxr_enabled() {
 	return openxr_initialized && openxr_recieve;
 }
 
+void openxr_reset_offset() {
+	if (!openxr_initialized)
+		return;
+
+	xr_offset = ZERO_VECTOR;
+	for (uint32_t i = 0; i < 2; i++) {
+		const auto& pos = xr_views[i].pose.position;
+		xr_offset += vec3d{ {pos.x * xr_scale, pos.y * xr_scale, pos.z * -xr_scale} };
+	}
+	xr_offset /= 2;
+}
+
 void openxr_poll() {
 	if (!openxr_initialized)
 		return;
@@ -332,6 +345,9 @@ void openxr_start_frame() {
 }
 
 OpenXRTrackingInfo openxr_start_stereo_frame() {
+	if (!openxr_initialized)
+		return OpenXRTrackingInfo{};
+
 	xr_stage = OpenXRFBStage::FIRST;
 
 	openxr_start_frame();
@@ -341,7 +357,7 @@ OpenXRTrackingInfo openxr_start_stereo_frame() {
 	for (uint32_t i = 0; i < 2; i++) {
 		const auto& pos = xr_views[i].pose.position;
 		const auto& ori = xr_views[i].pose.orientation;
-		info.eyes[i].offset = vec3d{ {pos.x * xr_scale, pos.y * xr_scale - 1, pos.z * xr_scale} };
+		info.eyes[i].offset = vec3d{ {pos.x * xr_scale, pos.y * xr_scale, pos.z * -xr_scale} } - xr_offset;
 
 		matrix asymmetric_fov, orientation;
 		angles fix_asymmetric_fov{ 0, 0, xr_views[i].fov.angleLeft + xr_views[i].fov.angleRight };
