@@ -2252,26 +2252,26 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 	if (optional_string("$Inflight Effect:")) {
 		auto effetIdx = particle::util::parseEffect(wip->name);
-		wip->state_effects.insert(std::make_pair(WeaponState::NORMAL, effetIdx));
+		wip->state_effects[WeaponState::NORMAL] = effetIdx;
 	}
 
 	if (wip->subtype == WP_MISSILE)
 	{
 		if (optional_string("$Freeflight Effect:")) {
 			auto effetIdx = particle::util::parseEffect(wip->name);
-			wip->state_effects.insert(std::make_pair(WeaponState::FREEFLIGHT, effetIdx));
+			wip->state_effects[WeaponState::FREEFLIGHT] = effetIdx;
 		}
 		if (optional_string("$Ignition Effect:")) {
 			auto effetIdx = particle::util::parseEffect(wip->name);
-			wip->state_effects.insert(std::make_pair(WeaponState::IGNITION, effetIdx));
+			wip->state_effects[WeaponState::IGNITION] = effetIdx;
 		}
 		if (optional_string("$Homed Flight Effect:")) {
 			auto effetIdx = particle::util::parseEffect(wip->name);
-			wip->state_effects.insert(std::make_pair(WeaponState::HOMED_FLIGHT, effetIdx));
+			wip->state_effects[WeaponState::HOMED_FLIGHT] = effetIdx;
 		}
 		if (optional_string("$Unhomed Flight Effect:")) {
 			auto effetIdx = particle::util::parseEffect(wip->name);
-			wip->state_effects.insert(std::make_pair(WeaponState::UNHOMED_FLIGHT, effetIdx));
+			wip->state_effects[WeaponState::UNHOMED_FLIGHT] = effetIdx;
 		}
 	}
 
@@ -3056,12 +3056,12 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 		if (optional_string("+Firing Length Effect:")) {
 			auto effetIdx = particle::util::parseEffect(wip->name);
-			wip->state_effects.insert(std::make_pair(WeaponState::FIRING, effetIdx));
+			wip->state_effects[WeaponState::FIRING] = effetIdx;
 		}
 
 		if (optional_string("+Paused Length Effect:")) {
 			auto effetIdx = particle::util::parseEffect(wip->name);
-			wip->state_effects.insert(std::make_pair(WeaponState::PAUSED, effetIdx));
+			wip->state_effects[WeaponState::PAUSED] = effetIdx;
 		}
 
 		if (optional_string("+Beam Flags:")) {
