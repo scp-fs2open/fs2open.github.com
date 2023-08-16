@@ -3197,6 +3197,7 @@ bool WarpParams::operator==(const WarpParams &other)
 		&& time == other.time
 		&& accel_exp == other.accel_exp
 		&& warp_type == other.warp_type
+		&& special_warp_physics == other.special_warp_physics
 		&& warpout_engage_time == other.warpout_engage_time
 		&& warpout_player_speed == other.warpout_player_speed;
 }
@@ -3507,9 +3508,12 @@ int WE_Default::warpStart()
 		compute_warpout_stuff(&effect_time, &pos);
 		effect_time += SHIPFX_WARP_DELAY;
 
-		if (sip->flags[Ship::Info_Flags::Supercap]) {
-			// turn off warpin physics in case we're jumping out immediately
-			objp->phys_info.flags &= ~PF_SPECIAL_WARP_IN;
+		// turn off warpin physics in case we're jumping out immediately
+		objp->phys_info.flags &= ~PF_SPECIAL_WARP_IN;
+
+		// maybe turn on warpout physics
+		if (params->special_warp_physics) {
+			objp->phys_info.flags |= PF_SPECIAL_WARP_OUT;
 		}
 	}
 
@@ -3628,7 +3632,7 @@ int WE_Default::warpFrame(float frametime)
 			this->warpEnd();
 
 			// notify physics to slow down
-			if (sip->flags[Ship::Info_Flags::Supercap]) {
+			if (params->special_warp_physics) {
 				// let physics know this is a special warp in
 				objp->phys_info.flags |= PF_SPECIAL_WARP_IN;
 			}

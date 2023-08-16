@@ -33,6 +33,7 @@ public:
 	CString	m_accel_exp;
 	CString	m_radius;
 	CString	m_anim;
+	BOOL m_special_warp_physics;
 	CString	m_player_warpout_speed;
 	//}}AFX_DATA
 
