@@ -60,6 +60,8 @@ static float lua_Opacity = 1.0f;
 static int lua_Opacity_type = GR_ALPHABLEND_FILTER;
 static int lua_ResizeMode = GR_RESIZE_NONE;
 
+int get_resize_mode() { return lua_ResizeMode; }
+
 //****SUBLIBRARY: Graphics/Cameras
 ADE_LIB_DERIV(l_Graphics_Cameras, "Cameras", NULL, "Cameras", l_Graphics);
 
