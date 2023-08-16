@@ -82,7 +82,7 @@ CPoint Global_point2;
 /**
  * @brief Launches the default browser to open the given URL
  */
-void url_launch(const char *url);
+bool url_launch(const char *url);
 
 
 #ifdef _DEBUG
@@ -257,20 +257,19 @@ void CMainFrame::OnFileMissionnotes() {
 }
 
 void CMainFrame::OnFredHelp() {
+	// try included documentation
 	auto res = cf_find_file_location("index.html", CF_TYPE_FREDDOCS);
-	if (!res.found) {
-		ReleaseWarning(LOCATION, "Could not find FRED help files!");
-		return;
+
+	// We need an actual file location so VP files are not valid
+	if (res.found) {
+		if (res.offset == 0) {
+			url_launch(res.full_name.c_str());
+			return;
+		}
 	}
 
-	if (res.offset != 0) {
-		// We need an actual file location so VP files are not valid
-		Error(LOCATION, "The FRED documentation was found in a pack (VP) file. This is not valid!");
-		return;
-	}
-
-	// shell_open url
-	url_launch(res.full_name.c_str());
+	// try online as a fallback
+	url_launch("https://fredzone.hard-light.net/freddocs/");
 }
 
 void CMainFrame::OnInitMenu(CMenu* pMenu) {
@@ -482,7 +481,8 @@ int color_combo_box::GetItemIndex(int ship_class)
 	return -1;
 }
 
-void url_launch(const char *url) {
+bool url_launch(const char *url)
+{
 	int r;
 
 	r = (int) ShellExecute(NULL, "open", url, NULL, NULL, SW_SHOW);
@@ -501,13 +501,18 @@ void url_launch(const char *url) {
 		case SE_ERR_OOM: txt = XSTR("There was not enough memory to complete the operation.", 1115); break;
 		case SE_ERR_SHARE: txt = XSTR("A sharing violation occurred.", 1116); break;
 
-			// No browser installed message
-		case SE_ERR_NOASSOC:
+		// No browser installed message
+		case SE_ERR_NOASSOC: txt = XSTR("\r\nNo web browser found.  There isn't one installed or if \r\none is installed, it isn't set to be the default browser.\r\n\r\n", 1117); break;
+
 		case ERROR_FILE_NOT_FOUND:
 		case ERROR_PATH_NOT_FOUND: txt = XSTR("\r\nUnable to locate Fred Help file: \\data\\freddocs\\index.html\r\n", 1479); break;
 
 		default: txt = XSTR("Unknown error occurred.", 1118); break;
 		}
+
 		AfxMessageBox(txt, MB_OK | MB_ICONERROR);
+		return false;
 	}
+
+	return true;
 }
