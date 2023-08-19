@@ -91,6 +91,7 @@ extern int Cmdline_stretch_menu;
 extern bool Cmdline_capture_mouse;
 extern int Cmdline_no_screenshake;
 extern int Cmdline_deadzone;
+extern bool Cmdline_enable_vr;
 
 // Audio related
 extern int Cmdline_voice_recognition;

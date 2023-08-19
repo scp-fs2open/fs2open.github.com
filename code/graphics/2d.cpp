@@ -1026,7 +1026,8 @@ void gr_close()
 		return;
 	}
 
-	openxr_close();
+	if(Cmdline_enable_vr)
+		openxr_close();
 
 	if (Gr_original_gamma_ramp != nullptr && os::getSDLMainWindow() != nullptr) {
 		SDL_SetWindowGammaRamp(os::getSDLMainWindow(), Gr_original_gamma_ramp, (Gr_original_gamma_ramp + 256),
@@ -1712,7 +1713,8 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 		Shadow_quality = ShadowQuality::Disabled;
 	}
 
-	openxr_init();
+	if(Cmdline_enable_vr)
+		openxr_init();
 
 	return true;
 }
