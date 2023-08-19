@@ -181,6 +181,7 @@ jobs:
         with:
           name: windows-${{ matrix.configuration }}-${{ matrix.arch }}-${{ matrix.simd }}
           path: ${{ github.workspace }}/build/install/*
+
   windows_zip:
     name: Build Windows distribution zip
     needs: build_windows
@@ -328,3 +329,14 @@ jobs:
           DATACORDER_USER: ${{ secrets.DATACORDER_USER }}
           DATACORDER_SSHPASS: ${{ secrets.DATACORDER_PASSWORD }}
         run: $GITHUB_WORKSPACE/ci/linux/upload_dist_package.sh nightly
+
+  post_build:
+    name: Post builds to Nebula and Forum
+    needs: [linux_zip, windows_zip, mac_zip]
+    uses: ./.github/workflows/post-build-nightly.yaml
+    with:
+      linux_result: ${{ needs.linux_zip.result }}
+      windows_result: ${{ needs.windows_zip.result }}
+      mac_result: ${{ needs.mac_zip.result }}
+      releaseTag: ${{ github.ref_name }}
+    secrets: inherit
