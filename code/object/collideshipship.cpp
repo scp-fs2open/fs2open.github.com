@@ -110,7 +110,7 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info)
 {
 	object *heavy_obj	= ship_ship_hit_info->heavy;
 	object *light_obj = ship_ship_hit_info->light;
-	int	player_involved;	// flag to indicate that A or B is the Player_obj
+	__UNUSED int player_involved;	// flag to indicate that A or B is the Player_obj
 
 	Assert( heavy_obj->type == OBJ_SHIP );
 	Assert( light_obj->type == OBJ_SHIP );

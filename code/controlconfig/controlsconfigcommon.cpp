@@ -451,7 +451,7 @@ const char* Joy_button_text_french_u[] = {
 	"Bouton 13",		"Bouton 14",		"Bouton 15",		"Bouton 16",		"Bouton 17",		"Bouton 18",
 	"Bouton 19",		"Bouton 20",		"Bouton 21",		"Bouton 22",		"Bouton 23",		"Bouton 24",
 	"Bouton 25",		"Bouton 26",		"Bouton 27",		"Bouton 28",		"Bouton 29",		"Bouton 30",
-	"Bouton 31",		"Bouton 32",		"Chapeau Arri\xc3\xa8""re",		"Chapeau Avant",		"Chapeau Gauche",		"Chapeau Droite"
+	"Bouton 31",		"Bouton 32",		("Chapeau Arri\xc3\xa8""re"),		"Chapeau Avant",		"Chapeau Gauche",		"Chapeau Droite"
 };
 
 const char* Joy_button_text_polish_u[] = {
@@ -460,7 +460,7 @@ const char* Joy_button_text_polish_u[] = {
 	"Przyc.13",	"Przyc.14",	"Przyc.15",	"Przyc.16",	"Przyc.17",	"Przyc.18",
 	"Przyc.19",	"Przyc.20",	"Przyc.21",	"Przyc.22",	"Przyc.23",	"Przyc.24",
 	"Przyc.25",	"Przyc.26",	"Przyc.27",	"Przyc.28",	"Przyc.29",	"Przyc.30",
-	"Przyc.31",	"Przyc.32",	"Hat Ty\xc5\x82",		"Hat Prz\xc3\xb3""d",	"Hat Lewo",		"Hat Prawo"
+	"Przyc.31",	"Przyc.32",	"Hat Ty\xc5\x82",		("Hat Prz\xc3\xb3""d"),	"Hat Lewo",		"Hat Prawo"
 };
 
 const char* Joy_button_text_english_u[] = {

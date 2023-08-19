@@ -10,19 +10,19 @@ jobs:
     strategy:
       matrix:
         configuration: [Debug, Release]
-        compiler: [gcc-5, gcc-10, clang-9]
+        compiler: [gcc-5, gcc-13, clang-16]
         cmake_options: [""]
         include:
           # Also include configurations that check if the code compiles without the graphics backends
           - configuration: Debug
-            compiler: gcc-10
+            compiler: gcc-13
             cmake_options: -DFSO_BUILD_WITH_OPENGL=OFF -DFSO_BUILD_WITH_VULKAN=OFF
           - configuration: Release
-            compiler: gcc-10
+            compiler: gcc-13
             cmake_options: -DFSO_BUILD_WITH_OPENGL=OFF -DFSO_BUILD_WITH_VULKAN=OFF
     name: Linux
     runs-on: ubuntu-latest
-    container: ghcr.io/scp-fs2open/linux_build:sha-3d30dc5
+    container: ghcr.io/scp-fs2open/linux_build:sha-dfd9307
     steps:
       # - name: Cache Qt
         # id: cache-qt-lin
@@ -47,17 +47,16 @@ jobs:
         uses: hendrikmuhs/ccache-action@v1
         with:
           key: ${{ runner.os }}-${{ matrix.configuration }}-${{ matrix.compiler }}
-      - name: Prepare Vulkan SDK
-        uses: humbletim/setup-vulkan-sdk@v1.2.0
-        with:
-          vulkan-query-version: 1.3.204.0
-          vulkan-components: Vulkan-Headers, Vulkan-Loader
-          vulkan-use-cache: true
+          save: false # Caches are created by a separate job and only restored for PRs
+          verbose: 1
+      - name: Configure ccache
+        run: ccache --set-config=sloppiness=pch_defines,time_macros
       - name: Configure CMake
         env:
           CONFIGURATION: ${{ matrix.configuration }}
           COMPILER: ${{ matrix.compiler }}
           JOB_CMAKE_OPTIONS: ${{ matrix.cmake_options }}
+          CCACHE_PATH: /usr/local/bin/ccache
         run: $GITHUB_WORKSPACE/ci/linux/configure_cmake.sh
       - name: Compile
         working-directory: ./build
@@ -68,6 +67,8 @@ jobs:
           CONFIGURATION: ${{ matrix.configuration }}
           XDG_RUNTIME_DIR: /root
         run: $GITHUB_WORKSPACE/ci/linux/run_tests.sh
+      - name: Show CCache statistics
+        run: ccache --show-stats
       - name: Run Clang Tidy
         # Clang-tidy reuses the precompiled headers so this only makes sense for the clang compilers
         if: startsWith(matrix.compiler, 'clang-')
@@ -211,6 +212,7 @@ jobs:
         uses: hendrikmuhs/ccache-action@v1
         with:
           key: ${{ runner.os }}-${{ matrix.configuration }}-${{ matrix.compiler }}
+          save: false # Caches are created by a separate job and only restored for PRs
       - name: Prepare Vulkan SDK
         uses: humbletim/setup-vulkan-sdk@v1.2.0
         with:

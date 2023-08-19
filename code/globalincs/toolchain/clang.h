@@ -34,7 +34,7 @@
 #define ASSUME(x)
 
 #if defined(NDEBUG)
-#	define Assertion(expr, msg, ...)  do { } while (false)
+#	define Assertion(expr, msg, ...)  do { (void)sizeof(expr); } while (false)
 #else
 /*
  * NOTE: Assertion() can only use its proper functionality in compilers
