@@ -426,6 +426,36 @@ void gr_stub_delete_query_object(int  /*obj*/)
 {
 }
 
+SCP_vector<const char*> gr_stub_openxr_get_extensions() 
+{
+	return {}; 
+}
+
+bool gr_stub_openxr_test_capabilities() 
+{ 
+	return false; 
+}
+
+bool gr_stub_openxr_create_session()
+{ 
+	return false; 
+}
+
+int64_t gr_stub_openxr_get_swapchain_format(const SCP_vector<int64_t>& /*allowed*/)
+{ 
+	return 0; 
+}
+
+bool gr_stub_openxr_acquire_swapchain_buffers()
+{ 
+	return false; 
+}
+
+bool gr_stub_openxr_flip() 
+{
+	return false; 
+}
+
 bool gr_stub_init() 
 {
 	if (gr_screen.res != GR_640) {
@@ -577,6 +607,13 @@ bool gr_stub_init()
 	gr_screen.gf_set_viewport = [](int /*x*/, int /*y*/, int /*width*/, int /*height*/) {};
 
 	gr_screen.gf_override_fog = [](bool /*b*/) {};
+
+	gr_screen.gf_openxr_get_extensions = gr_stub_openxr_get_extensions;
+	gr_screen.gf_openxr_test_capabilities = gr_stub_openxr_test_capabilities;
+	gr_screen.gf_openxr_create_session = gr_stub_openxr_create_session;
+	gr_screen.gf_openxr_get_swapchain_format = gr_stub_openxr_get_swapchain_format;
+	gr_screen.gf_openxr_acquire_swapchain_buffers = gr_stub_openxr_acquire_swapchain_buffers;
+	gr_screen.gf_openxr_flip = gr_stub_openxr_flip;
 
 	return true;
 }
