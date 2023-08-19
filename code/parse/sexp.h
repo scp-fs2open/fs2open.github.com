@@ -899,8 +899,10 @@ enum : int {
 	OP_VALIDATE_GENERAL_ORDERS,		// MjnMixael
 	OP_USED_CHEAT,	// Kiloku
 	OP_SET_ASTEROID_FIELD,	// MjnMixael
+
 	OP_SET_DEBRIS_FIELD,	// MjnMixael
 	OP_SET_MOTION_DEBRIS,   // MjnMixael
+	OP_GOOD_PRIMARY_TIME,	// plieblang
 	
 	// OP_CATEGORY_AI
 	// defined for AI goals
