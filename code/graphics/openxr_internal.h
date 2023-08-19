@@ -22,6 +22,7 @@ extern XrInstance xr_instance;
 extern XrSystemId xr_system;
 extern XrSession xr_session;
 extern XrSpace xr_space;
+extern XrTime xr_time;
 extern std::array<std::unique_ptr<XrSwapchainHandler>, 2> xr_swapchains;
 extern std::array<XrView, 2> xr_views;
 extern XrFrameState xr_state;

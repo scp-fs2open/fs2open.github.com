@@ -1,8 +1,10 @@
 #include "openxr_internal.h"
 
+#include "camera/camera.h"
 #include "graphics/2d.h"
 #include "globalincs/version.h"
 #include "mod_table/mod_table.h"
+#include "render/3d.h"
 
 #define XR_MAKE_VERSION_SHORT(major, minor, patch) \
     ((((major) & 0x3ffU) << 20) | (((minor) & 0x3ffU) << 10) | ((patch) & 0x3ffU))
@@ -14,6 +16,7 @@ XrInstance xr_instance;
 XrSystemId xr_system;
 XrSession xr_session;
 XrSpace xr_space;
+XrTime xr_time;
 XrDebugUtilsMessengerEXT xr_debugMessenger;
 std::array<std::unique_ptr<XrSwapchainHandler>, 2> xr_swapchains;
 std::array<XrView, 2> xr_views;
@@ -198,6 +201,31 @@ void openxr_init(float scale) {
 	while (openxr_initialized && !openxr_recieve) {
 		os_poll();
 	}
+
+	XrViewLocateInfo viewLocateInfo {
+		XR_TYPE_VIEW_LOCATE_INFO,
+		nullptr,
+		XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO,
+		xr_time,
+		xr_space
+	};
+
+	XrViewState viewState{
+		XR_TYPE_VIEW_STATE
+	};
+
+	xr_views.fill({ XR_TYPE_VIEW });
+	uint32_t views;
+	xrLocateViews(
+		xr_session,
+		&viewLocateInfo,
+		&viewState,
+		2,
+		&views,
+		xr_views.data()
+	);
+
+	VIEWER_ZOOM_DEFAULT = COCKPIT_ZOOM_DEFAULT = (fabsf(xr_views[0].fov.angleLeft) + fabsf(xr_views[0].fov.angleRight) + fabsf(xr_views[1].fov.angleLeft) + fabsf(xr_views[1].fov.angleRight)) / (2.0f * PROJ_FOV_FACTOR);
 }
 
 void openxr_close() {
@@ -254,6 +282,8 @@ void openxr_poll() {
 		case XR_TYPE_EVENT_DATA_SESSION_STATE_CHANGED:
 		{
 			auto event = (XrEventDataSessionStateChanged*)&eventData;
+
+			xr_time = event->time;
 
 			switch (event->state)
 			{
@@ -323,6 +353,8 @@ void openxr_start_frame() {
 		xr_state.predictedDisplayTime,
 		xr_space
 	};
+
+	xr_time = xr_state.predictedDisplayTime;
 
 	XrViewState viewState {
 		XR_TYPE_VIEW_STATE
