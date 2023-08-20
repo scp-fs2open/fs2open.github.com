@@ -37,12 +37,10 @@ SCP_vector<const char*> gr_opengl_openxr_get_extensions() {
 }
 
 bool gr_opengl_openxr_test_capabilities() {
-	auto xrGetOpenGLGraphicsRequirementsKHR = (PFN_xrGetOpenGLGraphicsRequirementsKHR)openxr_getExtensionFunction("xrGetOpenGLGraphicsRequirementsKHR");
-
 	XrGraphicsRequirementsOpenGLKHR requirements;
 	requirements.type = XR_TYPE_GRAPHICS_REQUIREMENTS_OPENGL_KHR;
 
-	if (xrGetOpenGLGraphicsRequirementsKHR(xr_instance, xr_system, &requirements) != XR_SUCCESS) {
+	if (openxr_callExtensionFunction<PFN_xrGetOpenGLGraphicsRequirementsKHR>("xrGetOpenGLGraphicsRequirementsKHR", xr_instance, xr_system, &requirements) != XR_SUCCESS) {
 		return false;
 	}
 
@@ -55,21 +53,32 @@ bool gr_opengl_openxr_test_capabilities() {
 
 #ifdef SCP_UNIX
 bool gr_opengl_openxr_create_session() {
+	//TODO Untested:
 	/*SDL_SysWMinfo wmInfo;
 	SDL_VERSION(&wmInfo.version);
 	SDL_GetWindowWMInfo(os::getSDLMainWindow(), &wmInfo);
 
-	XrGraphicsBindingOpenGLXlibKHR graphicsBinding{
-		graphicsBinding.type = XR_TYPE_GRAPHICS_BINDING_OPENGL_XLIB_KHR,
+	XWindowAttributes wa;
+	XGetWindowAttributes(wmInfo.info.x11.display, wmInfo.info.x11.window, &wa);
+
+	GLXContext glxcontext = (GLXContext) SDL_GL_GetCurrentContext(); //uuuuuugly, and not technically allowed by the standard, but this "opaque" SDL_GLContext type is just the GLXContext on X11
+
+	int glxfbconfigid, glxscreenid;
+	glXQueryContext(wmInfo.info.x11.display, glxcontext, GLX_FBCONFIG_ID, &glxfbconfigid);
+	glXQueryContext(wmInfo.info.x11.display, glxcontext, GLX_SCREEN, &glxscreenid);
+
+	int nfbconfigs;
+	XrGraphicsBindingOpenGLXlibKHR graphicsBinding {
+		XR_TYPE_GRAPHICS_BINDING_OPENGL_XLIB_KHR,
 		nullptr,
-		graphicsBinding.hDC = wmInfo.info.x11.display,
-		0,
-		...,
+		wmInfo.info.x11.display,
+		XVisualIDFromVisual(wa.visual),
+		glXChooseFBConfig(wmInfo.info.x11.display, glxscreenid, {GLX_FBCONFIG_ID, glxfbconfigid, None}, &nfbconfigs)[0],
 		glXGetCurrentDrawable(),
-		(GLXContext) SDL_GL_GetCurrentContext() //uuuuuugly, and not technically allowed by the standard, but this "opaque" SDL_GLContext type is just the GLXContext on X11
+		glxcontext
 	};
 
-	XrSessionCreateInfo sessionCreateInfo{
+	XrSessionCreateInfo sessionCreateInfo {
 		sessionCreateInfo.type = XR_TYPE_SESSION_CREATE_INFO,
 		sessionCreateInfo.next = &graphicsBinding,
 		sessionCreateInfo.createFlags = 0,
@@ -178,10 +187,10 @@ bool gr_opengl_openxr_flip() {
 		return false;
 
 	//If a stereoscopic frame has started, we're good. Otherwise, this is a normal frame that still needs to be OpenXR-Initialized
-	if (xr_stage == OpenXRFBStage::NONE)
+	//In addition, since we don't actually blit one backbuffer per eye in monoframe mode, we need to make a copy of it to a readable texture now.
+	if (xr_stage == OpenXRFBStage::NONE) {
 		openxr_start_frame();
 
-	if (xr_stage == OpenXRFBStage::NONE) {
 		GR_DEBUG_SCOPE("XR Blit");
 
 		GL_state.BindFrameBuffer(0, GL_READ_FRAMEBUFFER);
@@ -219,6 +228,7 @@ bool gr_opengl_openxr_flip() {
 
 		const XrSwapchainImageOpenGLKHR& image = swapchainImages[i][activeIndex];
 
+		//Monoframe mode: We only have one image that FSO just tried to flip. We have it in a readable texture which we'll now render as a flat plane in a fake 3D scene directly to the swapchain
 		if (xr_stage == OpenXRFBStage::NONE) {
 			GR_DEBUG_SCOPE("XR Plane");
 			GL_state.BindFrameBuffer(xr_fbo);
@@ -271,6 +281,7 @@ bool gr_opengl_openxr_flip() {
 			gr_set_clear_color(0, 0, 0);
 			opengl_render_primitives_immediate(PRIM_TYPE_TRIFAN, &vert_def, 4, v, sizeof(v));
 
+			//And if we have a curser, it also needs to be put onscreen manually
 			if (io::mouse::CursorManager::get()->isCursorShown()) {
 				float u_scale, v_scale;
 				uint32_t array_index;
@@ -319,8 +330,8 @@ bool gr_opengl_openxr_flip() {
 			glDrawBuffer(GL_BACK);
 			GL_state.BindFrameBuffer(0);
 		}
+		//If we are in stereo mode, we just need to take the current backbuffer and blit it to the proper swapchain target
 		else {
-			//Blit
 			GR_DEBUG_SCOPE("XR Blit");
 			GL_state.BindFrameBuffer(0, GL_READ_FRAMEBUFFER);
 			GL_state.BindFrameBuffer(xr_fbo, GL_DRAW_FRAMEBUFFER);

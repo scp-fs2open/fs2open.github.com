@@ -1,9 +1,14 @@
 #pragma once
 
+//Don't include this file unless you know what you are doing and need to _directly_ interface with OpenXR
+
 #include "openxr.h"
 
 #include <openxr/openxr.h>
 #include <openxr/openxr_platform.h>
+
+#include <type_traits>
+#include <tl/optional.hpp>
 
 struct XrSwapchainHandler {
 	XrSwapchain swapchain;
@@ -16,19 +21,28 @@ struct XrSwapchainHandler {
 	}
 };
 
-extern bool openxr_initialized;
-
+extern bool openxr_initialized; //is true if initialization was successfull. Does NOT imply that we can render right now!
 extern XrInstance xr_instance;
 extern XrSystemId xr_system;
 extern XrSession xr_session;
 extern XrSpace xr_space;
-extern XrTime xr_time;
+extern XrTime xr_time; //The last known time something happened. May be the last state change or the (predicted) time of the last frame
 extern std::array<std::unique_ptr<XrSwapchainHandler>, 2> xr_swapchains;
 extern std::array<XrView, 2> xr_views;
 extern XrFrameState xr_state;
 
 enum class OpenXRFBStage { NONE, FIRST, SECOND };
-extern OpenXRFBStage xr_stage;
+extern OpenXRFBStage xr_stage; //State machine tracker for rendering. Needed since OpenXR needs to be able to tell whether this is a stereoscopic frame or not whenever the code flips
 
-PFN_xrVoidFunction openxr_getExtensionFunction(const char* const name);
 void openxr_start_frame();
+
+template<typename openxr_fnc, typename... arg_t>
+tl::optional<typename std::result_of<openxr_fnc(arg_t...)>::type> openxr_callExtensionFunction(const char* const name, arg_t&&... args) {
+	PFN_xrVoidFunction func;
+
+	if (xrGetInstanceProcAddr(xr_instance, name, &func) != XR_SUCCESS) {
+		return tl::nullopt;
+	}
+
+	return ((openxr_fnc)func)(std::forward<arg_t>(args)...);
+}

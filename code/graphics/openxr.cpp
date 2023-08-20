@@ -64,9 +64,7 @@ void openxr_prepare(float hudscale) {
 	Hud_global_scale = hudscale;
 }
 
-void openxr_init(float scale) {
-	xr_scale = scale;
-
+static bool openxr_init_instance() {
 	auto extensions = gr_openxr_get_extensions();
 
 	const gameversion::version& fso_version = gameversion::get_executable_version();
@@ -99,7 +97,7 @@ void openxr_init(float scale) {
 	strncpy_s(instanceCreateInfo.applicationInfo.applicationName, Mod_title.empty() ? "FreeSpace Open" : Mod_title.c_str(), XR_MAX_APPLICATION_NAME_SIZE);
 
 	if (xrCreateInstance(&instanceCreateInfo, &xr_instance) != XR_SUCCESS) {
-		return;
+		return false;
 	}
 
 #if !defined(NDEBUG)
@@ -112,51 +110,48 @@ void openxr_init(float scale) {
 		nullptr
 	};
 
-	auto xrCreateDebugUtilsMessengerEXT = (PFN_xrCreateDebugUtilsMessengerEXT)openxr_getExtensionFunction("xrCreateDebugUtilsMessengerEXT");
-	xrCreateDebugUtilsMessengerEXT(xr_instance, &debugMessengerCreateInfo, &xr_debugMessenger);
+	openxr_callExtensionFunction<PFN_xrCreateDebugUtilsMessengerEXT>("xrCreateDebugUtilsMessengerEXT", xr_instance, &debugMessengerCreateInfo, &xr_debugMessenger);
 #endif
 
+	return true;
+}
+
+static bool openxr_init_system() {
 	XrSystemGetInfo systemGetInfo {
-		XR_TYPE_SYSTEM_GET_INFO,
-		nullptr,
-		XR_FORM_FACTOR_HEAD_MOUNTED_DISPLAY
+	XR_TYPE_SYSTEM_GET_INFO,
+	nullptr,
+	XR_FORM_FACTOR_HEAD_MOUNTED_DISPLAY
 	};
 
 	if (xrGetSystem(xr_instance, &systemGetInfo, &xr_system) != XR_SUCCESS) {
 		xr_system = XR_NULL_SYSTEM_ID;
-		return;
+		return false;
 	}
 
-	if (!gr_openxr_test_capabilities()) {
-		return;
-	}
+	return true;
+}
 
-	//Non OpenGL backends, like vulkan, may need to query certain extensions to be enabled here as well
-
-	if (!gr_openxr_create_session()) {
-		return;
-	}
-
+static bool openxr_init_swapchains() {
 	uint32_t configurationViewsCount = 2;
 	SCP_vector<XrViewConfigurationView> configurationViews(configurationViewsCount, { XR_TYPE_VIEW_CONFIGURATION_VIEW });
 
 	if (xrEnumerateViewConfigurationViews(xr_instance, xr_system, XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, configurationViewsCount, &configurationViewsCount, configurationViews.data()) != XR_SUCCESS) {
-		return;
+		return false;
 	}
 
 	uint32_t formatCount = 0;
 	if (xrEnumerateSwapchainFormats(xr_session, 0, &formatCount, nullptr) != XR_SUCCESS) {
-		return;
+		return false;
 	}
 
 	SCP_vector<int64_t> formats(formatCount);
 	if (xrEnumerateSwapchainFormats(xr_session, formatCount, &formatCount, formats.data()) != XR_SUCCESS) {
-		return;
+		return false;
 	}
 
 	int64_t chosenFormat = gr_openxr_get_swapchain_format(formats);
 
-	XrSwapchain swapchains[2];
+	std::array<XrSwapchain, 2> swapchains;
 	for (uint32_t i = 0; i < 2; i++)
 	{
 		XrSwapchainCreateInfo swapchainCreateInfo {
@@ -173,22 +168,26 @@ void openxr_init(float scale) {
 			1
 		};
 
-		if(xrCreateSwapchain(xr_session, &swapchainCreateInfo, &swapchains[i]) != XR_SUCCESS) {
-			return;
+		if (xrCreateSwapchain(xr_session, &swapchainCreateInfo, &swapchains[i]) != XR_SUCCESS) {
+			return false;
 		}
 
-		xr_swapchains[i].reset(new XrSwapchainHandler{
+		xr_swapchains[i].reset(new XrSwapchainHandler {
 			swapchains[i],
 			chosenFormat,
 			configurationViews[i].recommendedImageRectWidth,
-			configurationViews[i].recommendedImageRectHeight 
+			configurationViews[i].recommendedImageRectHeight
 		});
 	}
 
 	if (!gr_openxr_acquire_swapchain_buffers()) {
-		return;
+		return false;
 	}
 
+	return true;
+}
+
+static bool openxr_init_space() {
 	XrReferenceSpaceCreateInfo spaceCreateInfo {
 		XR_TYPE_REFERENCE_SPACE_CREATE_INFO,
 		nullptr,
@@ -197,15 +196,13 @@ void openxr_init(float scale) {
 	};
 
 	if (xrCreateReferenceSpace(xr_session, &spaceCreateInfo, &xr_space) != XR_SUCCESS) {
-		return;
+		return false;
 	}
 
-	openxr_initialized = true;
+	return true;
+}
 
-	while (openxr_initialized && !openxr_recieve) {
-		os_poll();
-	}
-
+static void openxr_init_post() {
 	XrViewLocateInfo viewLocateInfo {
 		XR_TYPE_VIEW_LOCATE_INFO,
 		nullptr,
@@ -214,7 +211,7 @@ void openxr_init(float scale) {
 		xr_space
 	};
 
-	XrViewState viewState{
+	XrViewState viewState {
 		XR_TYPE_VIEW_STATE
 	};
 
@@ -232,6 +229,38 @@ void openxr_init(float scale) {
 	VIEWER_ZOOM_DEFAULT = COCKPIT_ZOOM_DEFAULT = (fabsf(xr_views[0].fov.angleLeft) + fabsf(xr_views[0].fov.angleRight) + fabsf(xr_views[1].fov.angleLeft) + fabsf(xr_views[1].fov.angleRight)) / (2.0f * PROJ_FOV_FACTOR);
 }
 
+void openxr_init(float scale) {
+	xr_scale = scale;
+
+	if (!openxr_init_instance())
+		return;
+
+	if (!openxr_init_system())
+		return;
+
+	if (!gr_openxr_test_capabilities())
+		return;
+
+	//Non OpenGL backends, like vulkan, may need to query certain extensions to be enabled here as well
+
+	if (!gr_openxr_create_session())
+		return;
+	
+	if (!openxr_init_swapchains())
+		return;
+
+	if (!openxr_init_space())
+		return;
+
+	openxr_initialized = true;
+
+	while (openxr_initialized && !openxr_recieve) {
+		os_poll();
+	}
+
+	openxr_init_post();
+}
+
 void openxr_close() {
 	xrDestroySpace(xr_space);
 	for (auto& sc : xr_swapchains)
@@ -239,7 +268,7 @@ void openxr_close() {
 	xrDestroySession(xr_session);
 
 #if !defined(NDEBUG)
-	((PFN_xrDestroyDebugUtilsMessengerEXT)openxr_getExtensionFunction("xrDestroyDebugUtilsMessengerEXT"))(xr_debugMessenger);
+	openxr_callExtensionFunction<PFN_xrDestroyDebugUtilsMessengerEXT>("xrDestroyDebugUtilsMessengerEXT", xr_debugMessenger);
 #endif
 
 	xrDestroyInstance(xr_instance);
@@ -330,15 +359,32 @@ void openxr_poll() {
 	}
 }
 
-PFN_xrVoidFunction openxr_getExtensionFunction(const char* const name) {
-	PFN_xrVoidFunction func;
+OpenXRTrackingInfo openxr_start_stereo_frame() {
+	if (!openxr_initialized)
+		return OpenXRTrackingInfo{};
 
-	if (xrGetInstanceProcAddr(xr_instance, name, &func) != XR_SUCCESS) {
-		return nullptr;
+	xr_stage = OpenXRFBStage::FIRST;
+
+	openxr_start_frame();
+
+	OpenXRTrackingInfo info{};
+
+	for (uint32_t i = 0; i < 2; i++) {
+		const auto& pos = xr_views[i].pose.position;
+		const auto& ori = xr_views[i].pose.orientation;
+		info.eyes[i].offset = vec3d{ {pos.x * xr_scale, pos.y * xr_scale, pos.z * -xr_scale} } - xr_offset;
+
+		matrix asymmetric_fov, orientation;
+		angles fix_asymmetric_fov{ 0, 0, xr_views[i].fov.angleLeft + xr_views[i].fov.angleRight };
+		vm_quaternion_to_matrix(&orientation, ori.x, ori.y, -ori.z, -ori.w);
+		vm_angles_2_matrix(&asymmetric_fov, &fix_asymmetric_fov);
+		vm_matrix_x_matrix(&info.eyes[i].orientation, &orientation, &asymmetric_fov);
 	}
 
-	return func;
+	return info;
 }
+
+//Internal Helper functions
 
 void openxr_start_frame() {
 	XrFrameWaitInfo frameWaitInfo {
@@ -378,29 +424,4 @@ void openxr_start_frame() {
 
 	XrFrameBeginInfo beginFrameInfo{ XR_TYPE_FRAME_BEGIN_INFO };
 	xrBeginFrame(xr_session, &beginFrameInfo);
-}
-
-OpenXRTrackingInfo openxr_start_stereo_frame() {
-	if (!openxr_initialized)
-		return OpenXRTrackingInfo{};
-
-	xr_stage = OpenXRFBStage::FIRST;
-
-	openxr_start_frame();
-
-	OpenXRTrackingInfo info;
-
-	for (uint32_t i = 0; i < 2; i++) {
-		const auto& pos = xr_views[i].pose.position;
-		const auto& ori = xr_views[i].pose.orientation;
-		info.eyes[i].offset = vec3d{ {pos.x * xr_scale, pos.y * xr_scale, pos.z * -xr_scale} } - xr_offset;
-
-		matrix asymmetric_fov, orientation;
-		angles fix_asymmetric_fov{ 0, 0, xr_views[i].fov.angleLeft + xr_views[i].fov.angleRight };
-		vm_quaternion_to_matrix(&orientation, ori.x, ori.y, -ori.z, -ori.w);
-		vm_angles_2_matrix(&asymmetric_fov, &fix_asymmetric_fov);
-		vm_matrix_x_matrix(&info.eyes[i].orientation, &orientation, &asymmetric_fov);
-	}
-
-	return info;
 }
