@@ -6482,7 +6482,9 @@ int sexp_string_compare(int n, int op)
 object_ship_wing_point_team::object_ship_wing_point_team(ship* sp)
 : object_name(sp->ship_name), type(OSWPT_TYPE_SHIP), objp(&Objects[sp->objnum])
 {
-	ship_entry = ship_registry_get(sp->ship_name);
+	ship_registry_index = ship_registry_get_index(sp->ship_name);
+	ship_entry = &Ship_registry[ship_registry_index];
+
 	if (ship_entry->status == ShipStatus::EXITED)
 	{
 		type = OSWPT_TYPE_EXITED;
@@ -6492,7 +6494,8 @@ object_ship_wing_point_team::object_ship_wing_point_team(ship* sp)
 object_ship_wing_point_team::object_ship_wing_point_team(p_object* pop)
 : object_name(pop->name), type(OSWPT_TYPE_PARSE_OBJECT)
 {
-	ship_entry = ship_registry_get(pop->name);
+	ship_registry_index = ship_registry_get_index(pop->name);
+	ship_entry = &Ship_registry[ship_registry_index];
 }
 
 object_ship_wing_point_team::object_ship_wing_point_team(ship_obj* sop)
@@ -6500,7 +6503,7 @@ object_ship_wing_point_team::object_ship_wing_point_team(ship_obj* sop)
 {}
 
 object_ship_wing_point_team::object_ship_wing_point_team(wing* wp)
-	: object_name(wp->name), wingp(wp)
+	: object_name(wp->name), wingp(wp), wing_index(WING_INDEX(wingp))
 {
 	if (wingp->current_count > 0)
 		type = OSWPT_TYPE_WING;
@@ -6520,6 +6523,25 @@ object_ship_wing_point_team::object_ship_wing_point_team(wing* wp)
 	}
 }
 
+bool object_ship_wing_point_team::matches(const ship *shipp) const
+{
+	switch (type)
+	{
+		case oswpt_type::SHIP:
+			return ship_entry->shipp == shipp;
+
+		case oswpt_type::SHIP_ON_TEAM:
+		case oswpt_type::WHOLE_TEAM:
+			return team == shipp->team;
+
+		case oswpt_type::WING:
+			return wing_index == shipp->wingnum;
+
+		default:
+			return false;
+	}
+}
+
 void object_ship_wing_point_team::clear()
 {
 	object_name = nullptr;
@@ -6530,6 +6552,45 @@ void object_ship_wing_point_team::clear()
 	wingp = nullptr;
 	waypointp = nullptr;
 	team = -1;
+
+	ship_registry_index = -1;
+	wing_index = -1;
+}
+
+bool object_ship_wing_point_team::operator==(const object_ship_wing_point_team &other) const
+{
+	if (type != other.type)
+		return false;
+
+	switch (type)
+	{
+		case oswpt_type::NONE:
+			return true;
+
+		case oswpt_type::PARSE_OBJECT:
+		case oswpt_type::SHIP:
+		case oswpt_type::EXITED:
+			return ship_registry_index == other.ship_registry_index;
+
+		case oswpt_type::SHIP_ON_TEAM:
+		case oswpt_type::WHOLE_TEAM:
+			return team == other.team;
+
+		case oswpt_type::WING:
+		case oswpt_type::WING_NOT_PRESENT:
+			return wing_index == other.wing_index;
+
+		case oswpt_type::WAYPOINT:
+			return waypointp == other.waypointp;
+
+		default:
+			return false;
+	}
+}
+
+bool object_ship_wing_point_team::operator!=(const object_ship_wing_point_team &other) const
+{
+	return !(operator==(other));
 }
 
 // Goober5000
@@ -6941,7 +7002,7 @@ int sexp_is_destroyed(int n, fix *latest_time)
 			// ship or wing isn't destroyed -- add to directive count
 			if (wingp)
 			{
-				wing_index = static_cast<int>(wingp - Wings);
+				wing_index = WING_INDEX(wingp);
 				Directive_count += Wings[wing_index].current_count;
 			}
 			else

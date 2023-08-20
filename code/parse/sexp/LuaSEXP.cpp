@@ -209,7 +209,7 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum, int parent_node) const
 	}
 	case OPF_WING: {
 		auto wingp = eval_wing(node);
-		int wingnum = static_cast<int>(wingp - Wings);
+		int wingnum = WING_INDEX(wingp);
 
 		return LuaValue::createValue(_action.getLuaState(), l_Wing.Set(wingnum));
 	}
