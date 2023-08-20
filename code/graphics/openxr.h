@@ -7,6 +7,7 @@ struct OpenXRTrackingInfo {
 	} eyes[2];
 };
 
+void openxr_prepare(float hudscale = 0.7f);
 void openxr_init(float scale = 1.0f);
 void openxr_close();
 void openxr_poll();

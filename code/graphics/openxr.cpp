@@ -60,6 +60,10 @@ static XrBool32 handleXRError(XrDebugUtilsMessageSeverityFlagsEXT severity, XrDe
 	return XR_FALSE;
 }
 
+void openxr_prepare(float hudscale) {
+	Hud_global_scale = hudscale;
+}
+
 void openxr_init(float scale) {
 	xr_scale = scale;
 

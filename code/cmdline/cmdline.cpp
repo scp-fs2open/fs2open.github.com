@@ -15,6 +15,7 @@
 #include "globalincs/pstypes.h"
 #include "globalincs/systemvars.h"
 #include "globalincs/version.h"
+#include "graphics/openxr.h"
 #include "graphics/shadows.h"
 #include "hud/hudconfig.h"
 #include "io/joy.h"
@@ -1873,6 +1874,7 @@ bool SetCmdlineParams()
 		if (fov_arg.found() || fov_cockpit_arg.found()) {
 			Warning(LOCATION, "FoV Command line settings found. VR-Mode will override these with the HMD's native FoV...");
 		}
+		openxr_prepare();
 	}
 
 	if (orb_radar.found())
