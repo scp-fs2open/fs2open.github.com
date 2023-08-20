@@ -3944,19 +3944,23 @@ void game_render_post_frame()
 
 #ifndef NDEBUG
 #define DEBUG_GET_TIME(x)	{ x = timer_get_fixed_seconds(); }
+#define DEBUG_TIMER_SIG fix& clear_time2, fix& render3_time1, fix& render3_time2, fix& render2_time1, fix& render2_time2, fix& flip_time1, fix& flip_time2,
+#define DEBUG_TIMER_CALL clear_time2, render3_time1, render3_time2, render2_time1, render2_time2, flip_time1, flip_time2, 
 #else
 #define DEBUG_GET_TIME(x)
+#define DEBUG_TIMER_SIG
+#define DEBUG_TIMER_CALL
 #endif
 
-void game_do_full_frame(/*fix& clear_time2, fix& render3_time1, fix& render3_time2, fix& render2_time1, fix& render2_time2, fix& flip_time1, fix& flip_time2, */const vec3d* offset = nullptr, const matrix* rot_offset = nullptr) {
+void game_do_full_frame(DEBUG_TIMER_SIG const vec3d* offset = nullptr, const matrix* rot_offset = nullptr) {
 	// clear the screen to black
 	gr_reset_clip();
 	if ((Game_detail_flags & DETAIL_FLAG_CLEAR)) {
 		gr_clear();
 	}
 
-	//DEBUG_GET_TIME(clear_time2)
-	//DEBUG_GET_TIME(render3_time1)
+	DEBUG_GET_TIME(clear_time2)
+	DEBUG_GET_TIME(render3_time1)
 
 	camid cid = game_render_frame_setup();
 
@@ -4022,8 +4026,8 @@ void game_do_full_frame(/*fix& clear_time2, fix& render3_time1, fix& render3_tim
 		}
 	}
 
-	//DEBUG_GET_TIME(render3_time2)
-	//DEBUG_GET_TIME(render2_time1)
+	DEBUG_GET_TIME(render3_time2)
+	DEBUG_GET_TIME(render2_time1)
 
 	gr_reset_clip();
 	game_get_framerate();
@@ -4037,16 +4041,16 @@ void game_do_full_frame(/*fix& clear_time2, fix& render3_time1, fix& render3_tim
 
 	game_tst_frame();
 
-	//DEBUG_GET_TIME(render2_time2)
+	DEBUG_GET_TIME(render2_time2)
 
 	// maybe render and process the dead popup
 	game_maybe_do_dead_popup(flFrametime);
 
 	// If a regular popup is active, don't flip (popup code flips)
 	if (!popup_running_state()) {
-		//DEBUG_GET_TIME(flip_time1)
+		DEBUG_GET_TIME(flip_time1)
 		game_flip_page_and_time_it();
-		//DEBUG_GET_TIME(flip_time2)
+		DEBUG_GET_TIME(flip_time2)
 	}
 }
 
@@ -4147,13 +4151,13 @@ void game_frame(bool paused)
 		if (! (Game_mode & GM_STANDALONE_SERVER)) {
 			DEBUG_GET_TIME( clear_time1 )
 			if (!openxr_enabled()) {
-				game_do_full_frame(/*clear_time2, render3_time1, render3_time2, render2_time1, render2_time2, flip_time1, flip_time2*/);
+				game_do_full_frame(DEBUG_TIMER_CALL nullptr, nullptr);
 			}
 			else {
 				const auto& pose = openxr_start_stereo_frame();
-				game_do_full_frame(/*clear_time2, render3_time1, render3_time2, render2_time1, render2_time2, flip_time1, flip_time2, */ &pose.eyes[0].offset, &pose.eyes[0].orientation);
+				game_do_full_frame(DEBUG_TIMER_CALL &pose.eyes[0].offset, &pose.eyes[0].orientation);
 				light_reset();
-				game_do_full_frame(/*clear_time2, render3_time1, render3_time2, render2_time1, render2_time2, flip_time1, flip_time2, */ &pose.eyes[1].offset, &pose.eyes[1].orientation);
+				game_do_full_frame(DEBUG_TIMER_CALL &pose.eyes[1].offset, &pose.eyes[1].orientation);
 			}
 		} else {
 			game_show_standalone_framerate();
