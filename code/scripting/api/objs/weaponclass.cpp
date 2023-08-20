@@ -6,6 +6,7 @@
 #include "weapon/weapon.h"
 #include "graphics/matrix.h"
 #include "vecmath.h"
+#include "mission/missioncampaign.h"
 #include "missionui/missionscreencommon.h"
 #include "model/modelrender.h"
 
@@ -635,6 +636,23 @@ ADE_VIRTVAR(InTechDatabase, l_Weaponclass, "boolean", "Gets or sets whether this
 	}
 
 	return ade_set_args(L, "b", Weapon_info[idx].wi_flags[Weapon::Info_Flags::In_tech_database]);
+}
+
+ADE_VIRTVAR(AllowedInCampaign, l_Weaponclass, "boolean", "Gets or sets whether this weapon class is allowed in loadouts in campaign mode", "boolean", "True or false")
+{
+	int idx;
+	bool new_value;
+	if (!ade_get_args(L, "o|b", l_Weaponclass.Get(&idx), &new_value))
+		return ade_set_error(L, "b", false);
+
+	if (idx < 0 || idx >= weapon_info_size())
+		return ade_set_error(L, "b", false);
+
+	if (ADE_SETTING_VAR) {
+		Campaign.weapons_allowed[idx] = new_value;
+	}
+
+	return Campaign.weapons_allowed[idx] ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
 }
 
 ADE_VIRTVAR(CargoSize, l_Weaponclass, "number", "The cargo size of this weapon class", "number", "The new cargo size or -1 on error")
