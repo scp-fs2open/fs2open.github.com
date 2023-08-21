@@ -207,7 +207,7 @@ bool gr_opengl_openxr_flip() {
 		glReadBuffer(GL_BACK);
 		glBlitFramebuffer(0, 0, gr_screen.max_w, gr_screen.max_h, 0, 0, gr_screen.max_w, gr_screen.max_h, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 		
-		glDrawBuffer(GL_BACK);
+		glDrawBuffer(GL_NONE);
 		GL_state.BindFrameBuffer(0);
 	}
 
@@ -332,7 +332,7 @@ bool gr_opengl_openxr_flip() {
 			GL_state.Texture.Enable(0);
 			glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, 0, 0);
 
-			glDrawBuffer(GL_BACK);
+			glDrawBuffer(GL_NONE);
 			GL_state.BindFrameBuffer(0);
 		}
 		//If we are in stereo mode, we just need to take the current backbuffer and blit it to the proper swapchain target
@@ -347,7 +347,7 @@ bool gr_opengl_openxr_flip() {
 			glBlitFramebuffer(0, 0, gr_screen.max_w, gr_screen.max_h, 0, 0, xr_swapchains[i]->width, xr_swapchains[i]->height, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 			glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, 0, 0);
 
-			glDrawBuffer(GL_BACK);
+			glDrawBuffer(GL_NONE);
 			GL_state.BindFrameBuffer(0);
 		}
 
