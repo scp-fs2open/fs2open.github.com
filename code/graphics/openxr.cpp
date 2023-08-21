@@ -217,7 +217,7 @@ static void openxr_init_post() {
 		0
 	};
 
-	xr_views.fill({ XR_TYPE_VIEW });
+	xr_views.fill({ XR_TYPE_VIEW, nullptr, XrPosef{}, XrFovf{} });
 	uint32_t views;
 	xrLocateViews(
 		xr_session,
@@ -421,7 +421,7 @@ void openxr_start_frame() {
 		0
 	};
 
-	xr_views.fill({ XR_TYPE_VIEW });
+	xr_views.fill({ XR_TYPE_VIEW, nullptr, XrPosef{}, XrFovf{} });
 
 	uint32_t views;
 	xrLocateViews(
@@ -433,6 +433,6 @@ void openxr_start_frame() {
 		xr_views.data()
 	);
 
-	XrFrameBeginInfo beginFrameInfo{ XR_TYPE_FRAME_BEGIN_INFO };
+	XrFrameBeginInfo beginFrameInfo{ XR_TYPE_FRAME_BEGIN_INFO, nullptr };
 	xrBeginFrame(xr_session, &beginFrameInfo);
 }

@@ -405,6 +405,8 @@ bool gr_opengl_openxr_flip() {
 		nullptr,
 		xr_state.predictedDisplayTime,
 		XR_ENVIRONMENT_BLEND_MODE_OPAQUE,
+		0,
+		nullptr
 	};
 
 	if (xr_state.shouldRender) {
