@@ -288,6 +288,9 @@ bool gr_opengl_openxr_flip() {
 
 			//And if we have a curser, it also needs to be put onscreen manually
 			if (io::mouse::CursorManager::get()->isCursorShown()) {
+				opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_COPY_WORLD, SDR_FLAG_COPY_FROM_ARRAY));
+				Current_shader->program->Uniforms.setTextureUniform("tex", 0);
+				
 				float u_scale, v_scale;
 				uint32_t array_index;
 				int mouse_bm = io::mouse::CursorManager::get()->getCurrentCursor()->getBitmapHandle();
@@ -309,16 +312,16 @@ bool gr_opengl_openxr_flip() {
 
 				GLfloat vmouse[4][5] = {
 					{
-						left, bottom, 5, 0, 0
+						left, bottom, 5, 0, 1
 					},
 					{
-						right, bottom, 5, 1, 0
+						right, bottom, 5, 1, 1
 					},
 					{
-						right, top, 5, 1, 1
+						right, top, 5, 1, 0
 					},
 					{
-						left, top, 5, 0, 1
+						left, top, 5, 0, 0
 					}
 				};
 				opengl_render_primitives_immediate(PRIM_TYPE_TRIFAN, &vert_def, 4, vmouse, sizeof(vmouse));
