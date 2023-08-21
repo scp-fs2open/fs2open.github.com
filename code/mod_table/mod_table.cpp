@@ -1377,7 +1377,7 @@ void mod_table_reset()
 	Splash_logo_center = false;
 	Use_tabled_strings_for_default_language = false;
 	Dont_preempt_training_voice = false;
-	Movie_subtitle_font = "font01.vf";
+	Movie_subtitle_font = "";
 	Enable_scripts_in_fred = false;
 	Window_icon_path = "app_icon_sse";
 	Disable_built_in_translations = false;
