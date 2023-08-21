@@ -25,7 +25,7 @@ XrFrameState xr_state;
 OpenXRFBStage xr_stage = OpenXRFBStage::NONE;
 float xr_scale = 1.0f;
 
-static XrBool32 handleXRError(XrDebugUtilsMessageSeverityFlagsEXT severity, XrDebugUtilsMessageTypeFlagsEXT type, const XrDebugUtilsMessengerCallbackDataEXT* callbackData, void* userData) {
+static XrBool32 handleXRError(XrDebugUtilsMessageSeverityFlagsEXT severity, XrDebugUtilsMessageTypeFlagsEXT type, const XrDebugUtilsMessengerCallbackDataEXT* callbackData, void* /*userData*/) {
 	SCP_string message;
 	switch (type)
 	{
@@ -133,7 +133,7 @@ static bool openxr_init_system() {
 
 static bool openxr_init_swapchains() {
 	uint32_t configurationViewsCount = 2;
-	SCP_vector<XrViewConfigurationView> configurationViews(configurationViewsCount, { XR_TYPE_VIEW_CONFIGURATION_VIEW });
+	SCP_vector<XrViewConfigurationView> configurationViews(configurationViewsCount, { XR_TYPE_VIEW_CONFIGURATION_VIEW, nullptr, 0, 0, 0, 0, 0, 0 });
 
 	if (xrEnumerateViewConfigurationViews(xr_instance, xr_system, XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, configurationViewsCount, &configurationViewsCount, configurationViews.data()) != XR_SUCCESS) {
 		return false;
@@ -212,7 +212,9 @@ static void openxr_init_post() {
 	};
 
 	XrViewState viewState {
-		XR_TYPE_VIEW_STATE
+		XR_TYPE_VIEW_STATE,
+		nullptr,
+		0
 	};
 
 	xr_views.fill({ XR_TYPE_VIEW });
@@ -350,6 +352,8 @@ void openxr_poll() {
 				openxr_initialized = false;
 				openxr_close();
 				break;
+			default:
+				break;
 			}
 			break;
 		}
@@ -388,10 +392,15 @@ OpenXRTrackingInfo openxr_start_stereo_frame() {
 
 void openxr_start_frame() {
 	XrFrameWaitInfo frameWaitInfo {
-		XR_TYPE_FRAME_WAIT_INFO
+		XR_TYPE_FRAME_WAIT_INFO,
+		nullptr
 	};
 	xr_state = XrFrameState {
-		XR_TYPE_FRAME_STATE
+		XR_TYPE_FRAME_STATE,
+		nullptr,
+		0,
+		0,
+		0
 	};
 
 	xrWaitFrame(xr_session, &frameWaitInfo, &xr_state);
@@ -407,7 +416,9 @@ void openxr_start_frame() {
 	xr_time = xr_state.predictedDisplayTime;
 
 	XrViewState viewState {
-		XR_TYPE_VIEW_STATE
+		XR_TYPE_VIEW_STATE,
+		nullptr,
+		0
 	};
 
 	xr_views.fill({ XR_TYPE_VIEW });

@@ -77,6 +77,12 @@ target_link_libraries(code PUBLIC imgui)
 
 target_link_libraries(code PUBLIC OpenXR::openxr_loader)
 target_include_directories(code PUBLIC OpenXR::Headers)
+IF(UNIX)
+	# On Linux, we need to access X11 window data.
+	# On Windows, SDL already provides everything, so no need to do anything
+	find_package(X11)
+	target_link_libraries(code PUBLIC ${X11_LIBRARIES})
+ENDIF()
 
 # Headers for standalone "gui" on UNIX
 IF(UNIX)

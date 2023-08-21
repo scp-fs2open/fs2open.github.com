@@ -1,8 +1,20 @@
 #include "gropenglopenxr.h"
 
+#include "io/cursor.h"
+#include "io/mouse.h"
+#include "graphics/matrix.h"
+#include "graphics/opengl/gropengl.h"
+#include "graphics/opengl/gropengldraw.h"
+#include "graphics/opengl/gropenglshader.h"
+#include "graphics/opengl/gropenglstate.h"
+#include "graphics/opengl/ShaderProgram.h"
+#include "osapi/osapi.h"
+
 #ifdef SCP_UNIX
 
 #define XR_USE_PLATFORM_XLIB
+#include<X11/Xlib.h>
+#include<glad/glad_glx.h>
 
 #elif defined WIN32
 
@@ -18,17 +30,6 @@
 #define XR_USE_GRAPHICS_API_OPENGL
 #include "graphics/openxr_internal.h"
 
-#include "io/cursor.h"
-#include "io/mouse.h"
-#include "graphics/matrix.h"
-#include "graphics/opengl/gropengl.h"
-#include "graphics/opengl/gropengldraw.h"
-#include "graphics/opengl/gropenglshader.h"
-#include "graphics/opengl/gropenglstate.h"
-#include "graphics/opengl/ShaderProgram.h"
-#include "osapi/osapi.h"
-
-#include <SDL.h>
 #include <SDL_syswm.h>
 
 //SETUP FUNCTIONS OGL
@@ -54,7 +55,7 @@ bool gr_opengl_openxr_test_capabilities() {
 #ifdef SCP_UNIX
 bool gr_opengl_openxr_create_session() {
 	//TODO Untested:
-	/*SDL_SysWMinfo wmInfo;
+	SDL_SysWMinfo wmInfo;
 	SDL_VERSION(&wmInfo.version);
 	SDL_GetWindowWMInfo(os::getSDLMainWindow(), &wmInfo);
 
@@ -63,17 +64,23 @@ bool gr_opengl_openxr_create_session() {
 
 	GLXContext glxcontext = (GLXContext) SDL_GL_GetCurrentContext(); //uuuuuugly, and not technically allowed by the standard, but this "opaque" SDL_GLContext type is just the GLXContext on X11
 
-	int glxfbconfigid, glxscreenid;
+	int glxfbconfigid, glxscreenid, nfbconfigs;
 	glXQueryContext(wmInfo.info.x11.display, glxcontext, GLX_FBCONFIG_ID, &glxfbconfigid);
 	glXQueryContext(wmInfo.info.x11.display, glxcontext, GLX_SCREEN, &glxscreenid);
 
-	int nfbconfigs;
+	const int fbconfigattrs[] = {GLX_FBCONFIG_ID, glxfbconfigid, None};
+	GLXFBConfig* fbconfigs = glXChooseFBConfig(wmInfo.info.x11.display, glxscreenid, fbconfigattrs, &nfbconfigs);
+
+	if (nfbconfigs < 1) {
+		return false;
+	}
+
 	XrGraphicsBindingOpenGLXlibKHR graphicsBinding {
 		XR_TYPE_GRAPHICS_BINDING_OPENGL_XLIB_KHR,
 		nullptr,
 		wmInfo.info.x11.display,
-		XVisualIDFromVisual(wa.visual),
-		glXChooseFBConfig(wmInfo.info.x11.display, glxscreenid, {GLX_FBCONFIG_ID, glxfbconfigid, None}, &nfbconfigs)[0],
+		static_cast<uint32_t>(XVisualIDFromVisual(wa.visual)),
+		fbconfigs[0],
 		glXGetCurrentDrawable(),
 		glxcontext
 	};
@@ -89,9 +96,7 @@ bool gr_opengl_openxr_create_session() {
 		return false;
 	}
 
-	return true;*/
-
-	return false;
+	return true;
 }
 #elif defined WIN32
 bool gr_opengl_openxr_create_session() {
