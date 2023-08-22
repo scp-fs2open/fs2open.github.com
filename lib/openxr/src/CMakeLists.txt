@@ -107,11 +107,8 @@ else()
     set(OPENXR_DEBUG_POSTFIX "" CACHE STRING "OpenXR loader debug postfix.")
 endif()
 
-if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-    option(DYNAMIC_LOADER "Build the loader as a .dll library" OFF)
-else()
-    option(DYNAMIC_LOADER "Build the loader as a .dll library" ON)
-endif()
+option(DYNAMIC_LOADER "Build the loader as a .dll library" OFF)
+
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/api_layers/CMakeLists.txt")
     option(BUILD_API_LAYERS "Build API layers" ON)
 endif()
@@ -123,9 +120,11 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/conformance/CMakeLists.txt")
 endif()
 include(CMakeDependentOption)
 
-cmake_dependent_option(
-    BUILD_WITH_SYSTEM_JSONCPP "Use system jsoncpp instead of vendored source" ON "JSONCPP_FOUND" OFF
-)
+#cmake_dependent_option(
+#    BUILD_WITH_SYSTEM_JSONCPP "Use system jsoncpp instead of vendored source" ON "JSONCPP_FOUND" OFF
+#)
+option(BUILD_WITH_SYSTEM_JSONCPP "Use system jsoncpp instead of vendored source" OFF)
+
 cmake_dependent_option(
     BUILD_WITH_STD_FILESYSTEM "Use std::[experimental::]filesystem." ON
     "HAVE_FILESYSTEM_WITHOUT_LIB OR HAVE_FILESYSTEM_NEEDING_LIBSTDCXXFS OR HAVE_FILESYSTEM_NEEDING_LIBCXXFS"
