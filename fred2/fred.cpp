@@ -670,8 +670,6 @@ void update_map_window() {
 
 	render_frame();	// "do the rendering!"
 
-	gr_flip();
-
 	show_control_mode();
 	process_pending_messages();
 
