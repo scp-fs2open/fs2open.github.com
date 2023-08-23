@@ -289,6 +289,49 @@ void event_music_init()
 
 	// look for any modular tables
 	parse_modular_table(NOX("*-mus.tbm"), event_music_parse_musictbl);
+
+
+	// now that we've parsed everything, check the validity
+	for (auto &soundtrack : Soundtracks)
+	{
+		bool all_patterns_found = true;
+
+		// Goober5000 - set the valid flag according to whether we can load all our patterns
+		// (since someone may be running an enhanced music.tbl without warble_fs1 installed)
+		for (int i = 0; i < soundtrack.num_patterns; i++)
+		{
+			auto filename = soundtrack.patterns[i].fname;
+
+			// check for "none"
+			if (!strlen(filename) || !strnicmp(filename, "none", 4))
+				continue;
+
+			// check for file with exact extension
+			// (since event music specifies samples and measures, the audio format is important; so we don't want to assume any format will work)
+			if (!cf_exists_full(filename, CF_TYPE_MUSIC))
+			{
+#ifndef NDEBUG
+				char truncated_filename[MAX_FILENAME_LEN];
+				strcpy_s(truncated_filename, filename);
+				auto ext_ch = strrchr(truncated_filename, '.');
+				if (ext_ch != nullptr)
+					*ext_ch = '\0';
+
+				// see if the file exists with a different extension
+				auto res = cf_find_file_location_ext(truncated_filename, NUM_AUDIO_EXT, audio_ext_list, CF_TYPE_MUSIC);
+				if (res.found)
+					Warning(LOCATION, "Soundtrack file %s was not found with its specified extension, but another file %s exists in the modpack.  Please update the extension and adjust audio specifications if necessary.", filename, res.name_ext.c_str());
+#endif
+
+				Warning(LOCATION, "One or more files in '%s' could not be loaded.  The soundtrack will not be used.", soundtrack.name);
+				all_patterns_found = false;
+				break;
+			}
+		}
+
+		if (all_patterns_found)
+			soundtrack.flags |= EMF_VALID;
+	}
 	
 	Event_music_inited = TRUE;
 	Event_music_begun = FALSE;
@@ -1284,23 +1327,6 @@ void parse_soundtrack()
 
 	//We're done here.
 	required_string("#SoundTrack End");
-
-
-	// Goober5000 - set the valid flag according to whether we can load all our patterns
-	// (since someone may be running an enhanced music.tbl without warble_fs1 installed)
-	for (i = 0; i < Soundtracks[strack_idx].num_patterns; i++)
-	{
-		// check for "none"
-		if (!strlen(Soundtracks[strack_idx].patterns[i].fname) || !strnicmp(Soundtracks[strack_idx].patterns[i].fname, "none", 4))
-			continue;
-
-		// check for file
-		if (!cf_exists_full_ext(Soundtracks[strack_idx].patterns[i].fname, CF_TYPE_MUSIC, NUM_AUDIO_EXT, audio_ext_list))
-			return;
-	}
-
-	// made it here okay, so it's valid
-	Soundtracks[strack_idx].flags |= EMF_VALID;
 }
 
 void parse_menumusic()

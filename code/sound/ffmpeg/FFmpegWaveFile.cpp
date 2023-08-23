@@ -209,7 +209,6 @@ bool FFmpegWaveFile::Open(const char* pszFilename, bool keep_ext)
 			}
 
 			auto res = cf_find_file_location(pszFilename, CF_TYPE_ANY);
-
 			if (!res.found) {
 #ifndef NDEBUG
 				char truncated_filename[MAX_FILENAME_LEN];
