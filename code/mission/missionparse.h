@@ -411,6 +411,7 @@ typedef struct {
 
 	// weapons
 	int		num_weapon_choices;
+	bool    do_not_validate;
 	int		weaponry_pool[MAX_WEAPON_TYPES];
 	int		weaponry_count[MAX_WEAPON_TYPES];
 	char	weaponry_pool_variable[MAX_WEAPON_TYPES][TOKEN_LENGTH];

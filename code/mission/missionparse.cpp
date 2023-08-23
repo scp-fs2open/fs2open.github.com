@@ -876,6 +876,12 @@ void parse_player_info2(mission *pm)
 		if ( optional_string("$Starting Shipname:") )
 			stuff_string( Player_start_shipname, F_NAME, NAME_LENGTH );
 
+		if (optional_string("+Do Not Validate Loadout")) {
+			ptr->do_not_validate = true;
+		} else {
+			ptr->do_not_validate = false;
+		}
+
 		required_string("$Ship Choices:");
 		stuff_loadout_list(list, MISSION_LOADOUT_SHIP_LIST);
 
