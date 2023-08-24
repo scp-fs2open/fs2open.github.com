@@ -311,14 +311,8 @@ void event_music_init()
 			if (!cf_exists_full(filename, CF_TYPE_MUSIC))
 			{
 #ifndef NDEBUG
-				char truncated_filename[MAX_FILENAME_LEN];
-				strcpy_s(truncated_filename, filename);
-				auto ext_ch = strrchr(truncated_filename, '.');
-				if (ext_ch != nullptr)
-					*ext_ch = '\0';
-
 				// see if the file exists with a different extension
-				auto res = cf_find_file_location_ext(truncated_filename, NUM_AUDIO_EXT, audio_ext_list, CF_TYPE_MUSIC);
+				auto res = cf_find_file_location_ext(filename, NUM_AUDIO_EXT, audio_ext_list, CF_TYPE_MUSIC);
 				if (res.found)
 					Warning(LOCATION, "Soundtrack file %s was not found with its specified extension, but another file %s exists in the modpack.  Please update the extension and adjust audio specifications if necessary.", filename, res.name_ext.c_str());
 #endif
