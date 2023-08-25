@@ -447,7 +447,7 @@ void event_music_do_frame()
 
 	// start off the music delayed
 	if ( timestamp_elapsed(Pattern_timer_id) ) {
-		Pattern_timer_id = TIMESTAMP::invalid();
+		Pattern_timer_id = TIMESTAMP::never();
 		Event_music_begun = TRUE;
 		if ( Current_pattern != -1  && Patterns[Current_pattern].handle >= 0) {
 			//WMC - removed in favor of if
@@ -681,7 +681,9 @@ void event_music_first_pattern()
 	// if we really are initializing the level
 	if (Missiontime == 0) {
 		Pattern_timer_id = TIMESTAMP::invalid();	// don't let this start quite yet; see event_music_set_start_delay()
-	} else {
+	}
+	// don't step on a timestamp in progress; only set it if it has elapsed at least once already
+	else if (Pattern_timer_id.isNever()) {
 		Pattern_timer_id = TIMESTAMP::immediate();	// start immediately
 	}
 	
@@ -1651,7 +1653,7 @@ void event_sexp_change_soundtrack(const char *name)
 	}
 
 	event_music_level_close();
-	Current_soundtrack_num = -1; 
+	Current_soundtrack_num = -1;
 	event_music_level_start(new_soundtrack);
 }
 
