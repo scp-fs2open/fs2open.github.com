@@ -570,7 +570,7 @@ ADE_FUNC(getBriefingMusicName,
 	"string",
 	"The file name or empty if no music")
 {
-	return ade_set_args(L, "s", common_music_get_filename(SCORE_BRIEFING).c_str());
+	return ade_set_args(L, "s", common_music_get_filename(SCORE_BRIEFING));
 }
 
 ADE_FUNC(runBriefingStageHook,
@@ -956,7 +956,7 @@ ADE_FUNC(getDebriefingMusicName,
 	"string",
 	"The file name or empty if no music")
 {
-	return ade_set_args(L, "s", common_music_get_filename(debrief_select_music()).c_str());
+	return ade_set_args(L, "s", common_music_get_filename(debrief_select_music()));
 }
 
 ADE_FUNC(getDebriefing, l_UserInterface_Debrief, nullptr, "Get the debriefing", "debriefing", "The debriefing data")
@@ -1228,7 +1228,7 @@ ADE_FUNC(getFictionMusicName, l_UserInterface_FictionViewer, nullptr,
 	"string",
 	"The file name or empty if no music")
 {
-	return ade_set_args(L, "s", common_music_get_filename(SCORE_FICTION_VIEWER).c_str());
+	return ade_set_args(L, "s", common_music_get_filename(SCORE_FICTION_VIEWER));
 }
 
 //**********SUBLIBRARY: UserInterface/ShipWepSelect
