@@ -3945,10 +3945,12 @@ void game_render_post_frame()
 #ifndef NDEBUG
 #define DEBUG_GET_TIME(x)	{ x = timer_get_fixed_seconds(); }
 #define DEBUG_TIMER_SIG fix& clear_time2, fix& render3_time1, fix& render3_time2, fix& render2_time1, fix& render2_time2, fix& flip_time1, fix& flip_time2,
-#define DEBUG_TIMER_CALL clear_time2, render3_time1, render3_time2, render2_time1, render2_time2, flip_time1, flip_time2, 
+#define DEBUG_TIMER_CALL_CLEAN clear_time2, render3_time1, render3_time2, render2_time1, render2_time2, flip_time1, flip_time2
+#define DEBUG_TIMER_CALL DEBUG_TIMER_CALL_CLEAN ,
 #else
 #define DEBUG_GET_TIME(x)
 #define DEBUG_TIMER_SIG
+#define DEBUG_TIMER_CALL_CLEAN
 #define DEBUG_TIMER_CALL
 #endif
 
@@ -4151,12 +4153,11 @@ void game_frame(bool paused)
 		if (! (Game_mode & GM_STANDALONE_SERVER)) {
 			DEBUG_GET_TIME( clear_time1 )
 			if (!openxr_enabled()) {
-				game_do_full_frame(DEBUG_TIMER_CALL nullptr, nullptr);
+				game_do_full_frame(DEBUG_TIMER_CALL_CLEAN);
 			}
 			else {
 				const auto& pose = openxr_start_stereo_frame();
 				game_do_full_frame(DEBUG_TIMER_CALL &pose.eyes[0].offset, &pose.eyes[0].orientation);
-				light_reset();
 				game_do_full_frame(DEBUG_TIMER_CALL &pose.eyes[1].offset, &pose.eyes[1].orientation);
 			}
 		} else {
