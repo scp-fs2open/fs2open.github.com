@@ -5,6 +5,7 @@
 #include "globalincs/version.h"
 #include "mod_table/mod_table.h"
 #include "render/3d.h"
+#include "starfield/starfield.h"
 
 #define XR_MAKE_VERSION_SHORT(major, minor, patch) \
     ((((major) & 0x3ffU) << 20) | (((minor) & 0x3ffU) << 10) | ((patch) & 0x3ffU))
@@ -24,6 +25,8 @@ vec3d xr_offset = ZERO_VECTOR;
 XrFrameState xr_state;
 OpenXRFBStage xr_stage = OpenXRFBStage::NONE;
 float xr_scale = 1.0f;
+
+std::unique_ptr<star[]> Stars_XRBuffer;
 
 static XrBool32 handleXRError(XrDebugUtilsMessageSeverityFlagsEXT severity, XrDebugUtilsMessageTypeFlagsEXT type, const XrDebugUtilsMessengerCallbackDataEXT* callbackData, void* /*userData*/) {
 	SCP_string message;
@@ -280,7 +283,7 @@ bool openxr_enabled() {
 	return openxr_initialized && openxr_recieve;
 }
 
-void openxr_reset_offset() {
+void openxr_start_mission() {
 	if (!openxr_initialized)
 		return;
 
@@ -290,6 +293,12 @@ void openxr_reset_offset() {
 		xr_offset += vec3d{ {pos.x * xr_scale, pos.y * xr_scale, pos.z * -xr_scale} };
 	}
 	xr_offset /= 2;
+
+	if (!static_cast<bool>(Stars_XRBuffer))
+		Stars_XRBuffer = make_unique<star[]>(MAX_STARS);
+
+	extern std::unique_ptr<star[]> Stars;
+	std::copy(Stars.get(), Stars.get() + MAX_STARS, Stars_XRBuffer.get());
 }
 
 void openxr_poll() {

@@ -14,7 +14,7 @@ struct OpenXRTrackingInfo {
  * @brief Performs required Setup actions for OpenXR before actually trying to initialize the graphics
  * @param hudscale Sets the scale at which the HUD is rendered. May need to be tweakable to make the hud visible to players with small FoV
  */
-void openxr_prepare(float hudscale = 0.7f);
+void openxr_prepare(float hudscale = 0.5f);
 
 /**
  * @brief Initializes the OpenXR API and opens a session to the point that we can render. As this waits for OpenXR, this may take a while
@@ -35,7 +35,7 @@ void openxr_poll();
 /**
  * @brief Grabs the last known HMD position and sets it as the zero-state (whereever the specified eyepoint is in mission / ship)
  */
-void openxr_reset_offset();
+void openxr_start_mission();
 
 /**
  * @brief Polls whether OpenXR is active and can render

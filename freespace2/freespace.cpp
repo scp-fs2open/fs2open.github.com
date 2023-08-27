@@ -4156,9 +4156,21 @@ void game_frame(bool paused)
 				game_do_full_frame(DEBUG_TIMER_CALL_CLEAN);
 			}
 			else {
+				// This is a VR frame. Essentially like a normal frame, but we need some additional cleanup
+				// 1. Make sure both eyes have identical random for stuff like screenshakes
+				// 2. Save and restore anything that makes a visual delta to the last frame (currently only retail stars)
+				extern std::unique_ptr<star[]> Stars, Stars_XRBuffer;
+				int random = util::Random::next();
+
 				const auto& pose = openxr_start_stereo_frame();
+
+				util::Random::seed(random);
 				game_do_full_frame(DEBUG_TIMER_CALL &pose.eyes[0].offset, &pose.eyes[0].orientation);
+				std::swap(Stars, Stars_XRBuffer);
+
+				util::Random::seed(random);
 				game_do_full_frame(DEBUG_TIMER_CALL &pose.eyes[1].offset, &pose.eyes[1].orientation);
+				std::swap(Stars, Stars_XRBuffer);
 			}
 		} else {
 			game_show_standalone_framerate();
@@ -4776,7 +4788,7 @@ void game_process_event( int current_state, int event )
 			Start_time = f2fl(timer_get_approx_seconds());
 			mprintf(("Entering game at time = %7.3f\n", Start_time));
 
-			openxr_reset_offset();
+			openxr_start_mission();
 			break;
 
 		case GS_EVENT_END_GAME:
