@@ -4159,14 +4159,20 @@ void game_frame(bool paused)
 				// This is a VR frame. Essentially like a normal frame, but we need some additional cleanup
 				// 1. Make sure both eyes have identical random for stuff like screenshakes
 				// 2. Save and restore anything that makes a visual delta to the last frame (currently only retail stars)
+				// 3. Make sure we don't allow the rendering to mess up the lighting data
 				extern std::unique_ptr<star[]> Stars, Stars_XRBuffer;
 				int random = util::Random::next();
+
+				SCP_vector<light> Lights_copy = Lights, Static_light_copy = Static_light;
 
 				const auto& pose = openxr_start_stereo_frame();
 
 				util::Random::seed(random);
 				game_do_full_frame(DEBUG_TIMER_CALL &pose.eyes[0].offset, &pose.eyes[0].orientation);
 				std::swap(Stars, Stars_XRBuffer);
+
+				Lights = std::move(Lights_copy);
+				Static_light = std::move(Static_light_copy);
 
 				util::Random::seed(random);
 				game_do_full_frame(DEBUG_TIMER_CALL &pose.eyes[1].offset, &pose.eyes[1].orientation);
