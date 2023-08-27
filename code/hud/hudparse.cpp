@@ -10,6 +10,7 @@
 
 #include "cmdline/cmdline.h"
 #include "graphics/font.h" //for gr_force_fit_string
+#include "graphics/openxr.h"
 #include "hud/hud.h"
 #include "hud/hudbrackets.h"
 #include "hud/hudconfig.h" // for retrieving user's hud config
@@ -1386,6 +1387,11 @@ std::unique_ptr<T> gauge_load_common(gauge_settings* settings, T* preAllocated =
 	if (settings->set_colour) {
 		instance->updateColor(colors[0], colors[1], colors[2]);
 		instance->lockConfigColor(lock_color);
+	}
+
+	if (openxr_requested()) {
+		//In this case, we must always slew every hud gauge, no matter what.
+		instance->initSlew(true);
 	}
 
 	return instance;

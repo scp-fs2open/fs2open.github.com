@@ -10,6 +10,7 @@
 #define XR_MAKE_VERSION_SHORT(major, minor, patch) \
     ((((major) & 0x3ffU) << 20) | (((minor) & 0x3ffU) << 10) | ((patch) & 0x3ffU))
 
+bool openxr_req = false;
 bool openxr_initialized = false;
 bool openxr_recieve = false;
 
@@ -65,6 +66,7 @@ static XrBool32 handleXRError(XrDebugUtilsMessageSeverityFlagsEXT severity, XrDe
 
 void openxr_prepare(float hudscale) {
 	Hud_global_scale = hudscale;
+	openxr_req = true;
 }
 
 static bool openxr_init_instance() {
@@ -232,6 +234,8 @@ static void openxr_init_post() {
 	);
 
 	VIEWER_ZOOM_DEFAULT = COCKPIT_ZOOM_DEFAULT = (fabsf(xr_views[0].fov.angleLeft) + fabsf(xr_views[0].fov.angleRight) + fabsf(xr_views[1].fov.angleLeft) + fabsf(xr_views[1].fov.angleRight)) / (2.0f * PROJ_FOV_FACTOR);
+
+	
 }
 
 void openxr_init(float scale) {
@@ -281,6 +285,10 @@ void openxr_close() {
 
 bool openxr_enabled() {
 	return openxr_initialized && openxr_recieve;
+}
+
+bool openxr_requested() {
+	return openxr_req;
 }
 
 void openxr_start_mission() {

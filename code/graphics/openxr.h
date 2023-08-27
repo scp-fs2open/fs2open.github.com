@@ -33,7 +33,7 @@ void openxr_close();
 void openxr_poll();
 
 /**
- * @brief Grabs the last known HMD position and sets it as the zero-state (whereever the specified eyepoint is in mission / ship)
+ * @brief Grabs the last known HMD position and sets it as the zero-state (whereever the specified eyepoint is in mission / ship), as well as initializing buffers for the mission
  */
 void openxr_start_mission();
 
@@ -41,6 +41,11 @@ void openxr_start_mission();
  * @brief Polls whether OpenXR is active and can render
  */
 bool openxr_enabled();
+
+/**
+ * @brief Polls whether OpenXR is requested to start. Required if you need to poll for OpenXR during some initialization where it might not yet be running
+ */
+bool openxr_requested();
 
 /**
  * @brief Polls HMD position and sets up the OpenXR state machine to wait for and accept two frames, one for each eye.
