@@ -257,6 +257,19 @@ SCP_vector<menu_music> Spooled_music;
 int Mission_music[NUM_SCORES];
 
 
+bool event_music_pattern_is_skippable(const SOUNDTRACK_PATTERN_INFO &pattern)
+{
+	// check for blank or "none"
+	if (pattern.fname[0] == '\0' || !strnicmp(pattern.fname, NOX("none.wav"), 4))
+		return true;
+
+	// no content means this pattern isn't intended to play
+	if (pattern.num_measures == 0 || pattern.samples_per_measure == 0)
+		return true;
+
+	return false;
+}
+
 // -------------------------------------------------------------------------------------------------
 // event_music_init() 
 //
@@ -294,7 +307,7 @@ void event_music_init()
 	// now that we've parsed everything, check the validity
 	for (auto &soundtrack : Soundtracks)
 	{
-		bool all_patterns_found = true;
+		bool all_patterns_valid = true;
 
 		// Goober5000 - set the valid flag according to whether we can load all our patterns
 		// (since someone may be running an enhanced music.tbl without warble_fs1 installed)
@@ -302,9 +315,17 @@ void event_music_init()
 		{
 			auto filename = soundtrack.patterns[i].fname;
 
-			// check for "none"
-			if (!strlen(filename) || !strnicmp(filename, "none", 4))
+			// some patterns aren't played for various legitimate reasons
+			if (event_music_pattern_is_skippable(soundtrack.patterns[i]))
 				continue;
+
+			// check for negative numbers (zero is allowed)
+			if (soundtrack.patterns[i].num_measures < 0 || soundtrack.patterns[i].samples_per_measure < 0)
+			{
+				Warning(LOCATION, "Soundtrack file %s has a negative 'num_measures' or 'samples_per_measure'; this is not allowed", soundtrack.patterns[i].fname);
+				all_patterns_valid = false;
+				break;
+			}
 
 			// check for file with exact extension
 			// (since event music specifies samples and measures, the audio format is important; so we don't want to assume any format will work)
@@ -318,12 +339,12 @@ void event_music_init()
 #endif
 
 				Warning(LOCATION, "One or more files in '%s' could not be loaded.  The soundtrack will not be used.", soundtrack.name);
-				all_patterns_found = false;
+				all_patterns_valid = false;
 				break;
 			}
 		}
 
-		if (all_patterns_found)
+		if (all_patterns_valid)
 			soundtrack.flags |= EMF_VALID;
 	}
 	
@@ -581,14 +602,11 @@ void event_music_level_start(int force_soundtrack)
 	if (force_soundtrack != -1)
 		Current_soundtrack_num = force_soundtrack;
 
+	// Check that soundtrack index is in range, except that < 0 means no soundtrack
 	if (Current_soundtrack_num < 0)
-	{
 		return;
-	}
-
-	Assert(Current_soundtrack_num >= 0 && Current_soundtrack_num < (int)Soundtracks.size());
-
-	if (Current_soundtrack_num < 0 || Current_soundtrack_num > (int)Soundtracks.size())
+	Assert(Current_soundtrack_num < (int)Soundtracks.size());
+	if (Current_soundtrack_num >= (int)Soundtracks.size())
 		return;
 
 	strack = &Soundtracks[Current_soundtrack_num];
@@ -601,7 +619,7 @@ void event_music_level_start(int force_soundtrack)
 	// tracks because their patterns weren't -1
 	for (i = 0; i < MAX_PATTERNS; i++)
 	{
-		if (!strnicmp(strack->patterns[i].fname, NOX("none.wav"), 4))
+		if (event_music_pattern_is_skippable(strack->patterns[i]))
 		{
 			Patterns[i].handle = -1;
 			continue;
@@ -1205,9 +1223,6 @@ void parse_soundtrack()
 	int i, strack_idx = -1;
 	bool nocreate = false;
 
-	//Start parsing soundtrack
-	//required_string("#Soundtrack Start");
-
 	//Get the name, and do we have this track already?
 	required_string("$SoundTrack Name:");
 	stuff_string(namebuf, F_NAME, NAME_LENGTH);
@@ -1601,7 +1616,7 @@ int hostile_ships_present()
 // NOTE: callers to this function are advised to allocate a 256 byte buffer
 void event_music_get_info(char *outbuf)
 {
-	if ( Event_music_enabled == FALSE || Event_music_level_inited == FALSE || Current_pattern == -1 ) {
+	if ( Event_music_enabled == FALSE || Event_music_level_inited == FALSE || Current_soundtrack_num < 0 || Current_pattern < 0 ) {
 		strcpy(outbuf,XSTR( "Event music is not playing", 213));
 	}
 	else {	
@@ -1620,7 +1635,7 @@ int event_music_next_soundtrack(int delta)
 {
 	int new_soundtrack;
 
-	if ( Event_music_enabled == FALSE || Event_music_level_inited == FALSE ) {
+	if ( Event_music_enabled == FALSE || Event_music_level_inited == FALSE || Soundtracks.empty() ) {
 		return -1;
 	}
 		
@@ -1664,7 +1679,7 @@ void event_sexp_change_soundtrack(const char *name)
 // NOTE: callers to this function are advised to allocate a NAME_LENGTH buffer
 void event_music_get_soundtrack_name(char *outbuf)
 {
-	if ( Event_music_enabled == FALSE || Event_music_level_inited == FALSE ) {
+	if ( Event_music_enabled == FALSE || Event_music_level_inited == FALSE || Current_soundtrack_num < 0 ) {
 		strcpy(outbuf, XSTR( "Event music is not playing", 213));
 	}
 	else {
@@ -1675,11 +1690,15 @@ void event_music_get_soundtrack_name(char *outbuf)
 // set the current soundtrack based on name
 void event_music_set_soundtrack(const char *name)
 {
-	Current_soundtrack_num = event_music_get_soundtrack_index(name);
+	int index = event_music_get_soundtrack_index(name);
 
-	if ( Current_soundtrack_num == -1 ) {
+	if (index >= 0 && Soundtracks[index].flags & EMF_VALID)
+		Current_soundtrack_num = index;
+	else
+		Current_soundtrack_num = -1;
+
+	if (Current_soundtrack_num == -1)
 		mprintf(("Current soundtrack set to -1 in event_music_set_soundtrack\n"));
-	}
 }
 
 int event_music_get_soundtrack_index(const char *name)
@@ -1696,7 +1715,7 @@ int event_music_get_soundtrack_index(const char *name)
 
 int event_music_get_spooled_music_index(const char *name)
 {
-	// find the correct index for the event music
+	// find the correct index for the spooled music
 	for ( int i = 0; i < (int)Spooled_music.size(); i++ ) {
 		if ( !stricmp(name, Spooled_music[i].name) ) {
 			return i;
@@ -1716,8 +1735,12 @@ void event_music_set_score(int score_index, const char *name)
 {
 	Assert(score_index < NUM_SCORES);
 
-	// find the correct index for the event music
-	Mission_music[score_index] = event_music_get_spooled_music_index(name);
+	int index = event_music_get_spooled_music_index(name);
+
+	if (index >= 0 && Spooled_music[index].flags & SMF_VALID)
+		Mission_music[score_index] = index;
+	else
+		Mission_music[score_index] = -1;
 }
 
 // reset what sort of music is to be used for this mission
