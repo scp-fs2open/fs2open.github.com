@@ -11,7 +11,7 @@ env:
 jobs:
   create_release:
     name: Create GitHub release
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - name: Create Release
         id: create_release
@@ -43,7 +43,7 @@ jobs:
         configuration: [FastDebug, Release]
     name: Linux
     needs: create_release   # Don't run this job until create_release is done and successful
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     container: ghcr.io/scp-fs2open/linux_build:sha-3d30dc5
     steps:
       # - name: Cache Qt
@@ -137,7 +137,7 @@ jobs:
   linux_zip:
     name: Build Linux distribution zip
     needs: build_linux
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     container: ghcr.io/scp-fs2open/sftp_upload:sha-748b19d
     steps:
       - uses: actions/checkout@v1
@@ -271,7 +271,7 @@ jobs:
   windows_zip:
     name: Build Windows distribution zip
     needs: build_windows
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     container: ghcr.io/scp-fs2open/sftp_upload:sha-748b19d
     strategy:
       fail-fast: false  # Run the other jobs in the matrix instead of failing them
@@ -390,7 +390,7 @@ jobs:
   mac_zip:
     name: Build Mac distribution zip
     needs: build_mac
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     container: ghcr.io/scp-fs2open/sftp_upload:sha-748b19d
     steps:
       - uses: actions/checkout@v2
