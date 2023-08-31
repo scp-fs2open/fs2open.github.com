@@ -4282,6 +4282,7 @@ void HudGaugeLeadSight::renderSight(int frame_offset, vec3d *target_pos, vec3d *
 		reticle_follow = false;
 		renderBitmap(Lead_sight.first_frame + frame_offset, fl2i(reticle_target_sx), fl2i(reticle_target_sy));
 		reticle_follow = do_slew;
+		reticle_follow = do_slew;
 	}
 }
 
