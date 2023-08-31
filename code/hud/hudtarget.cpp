@@ -4190,7 +4190,7 @@ void HudGaugeLeadIndicator::renderLeadQuick(vec3d *target_world_pos, object *tar
 }
 
 HudGaugeLeadSight::HudGaugeLeadSight():
-HudGauge(HUD_OBJECT_LEAD_SIGHT, HUD_LEAD_INDICATOR, true, false, VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP, 255, 255, 255)
+HudGauge3DAnchor(HUD_OBJECT_LEAD_SIGHT, HUD_LEAD_INDICATOR, true, false, VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP, 255, 255, 255)
 {
 }
 

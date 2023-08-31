@@ -579,7 +579,7 @@ public:
 	void pageIn() override;
 };
 
-class HudGaugeLeadSight: public HudGauge
+class HudGaugeLeadSight: public HudGauge3DAnchor
 {
 protected:
 	hud_frames Lead_sight;
