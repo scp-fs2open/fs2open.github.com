@@ -18,7 +18,7 @@ jobs:
         - configuration: Release
           tag_suffix: ""
       fail-fast: false
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v1
       name: Checkout

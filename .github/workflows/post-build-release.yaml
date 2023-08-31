@@ -38,7 +38,7 @@ env:
 jobs:
   post_builds:
     name: Post builds on Nebula and the forums
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - name: Caller
         # Name of what called this yaml.  Used to debug auto/manual step being triggered
