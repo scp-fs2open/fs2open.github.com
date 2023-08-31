@@ -4135,7 +4135,7 @@ void HudGaugeSupernova::render(float  /*frametime*/)
 }
 
 HudGaugeFlightPath::HudGaugeFlightPath():
-HudGauge(HUD_OBJECT_FLIGHT_PATH, HUD_CENTER_RETICLE, false, false, VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY, 255, 255, 255)
+HudGauge3DAnchor(HUD_OBJECT_FLIGHT_PATH, HUD_CENTER_RETICLE, false, false, VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY, 255, 255, 255)
 {
 }
 

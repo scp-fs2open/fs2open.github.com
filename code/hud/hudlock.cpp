@@ -107,7 +107,7 @@ void hud_init_missile_lock()
 }
 
 HudGaugeLock::HudGaugeLock():
-HudGauge(HUD_OBJECT_LOCK, HUD_LEAD_INDICATOR, false, false, VM_DEAD_VIEW, 255, 255, 255)
+HudGauge3DAnchor(HUD_OBJECT_LOCK, HUD_LEAD_INDICATOR, false, false, VM_DEAD_VIEW, 255, 255, 255)
 {
 }
 

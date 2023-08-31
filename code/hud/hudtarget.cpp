@@ -2983,6 +2983,7 @@ void HudGaugeReticleTriangle::renderTriangle(vec3d *hostile_pos, int aspect_flag
 	float		ang;
 	float		xpos,ypos,cur_dist,sin_ang,cos_ang;
 	int		draw_inside=0;
+	int tablePosX, tablePosY;
 
 	// determine if the given object is within the targeting reticle
 	// (which means the triangle is not drawn)
@@ -2991,6 +2992,24 @@ void HudGaugeReticleTriangle::renderTriangle(vec3d *hostile_pos, int aspect_flag
 
 	g3_rotate_vertex(&hostile_vertex, hostile_pos);
 	g3_project_vertex(&hostile_vertex);
+
+	if (reticle_follow) {
+		int nx = HUD_nose_x;
+		int ny = HUD_nose_y;
+
+		gr_resize_screen_pos(&nx, &ny);
+		gr_set_screen_scale(base_w, base_h);
+		gr_unsize_screen_pos(&nx, &ny);
+		gr_reset_screen_scale();
+
+		tablePosX = position[0] + nx;
+		tablePosY = position[1] + ny;
+	}
+	else {
+		//Technically not non-slewing, but keeps old behaviour
+		tablePosX = position[0] + fl2i(HUD_offset_x + HUD_nose_x);
+		tablePosY = position[1] + fl2i(HUD_offset_y + HUD_nose_y);
+	}
 
 	if (hostile_vertex.codes == 0)  { // on screen
 		int		projected_x, projected_y;
@@ -3003,8 +3022,8 @@ void HudGaugeReticleTriangle::renderTriangle(vec3d *hostile_pos, int aspect_flag
 
 			unsize(&projected_x, &projected_y);
 
-			mag_squared = (projected_x - position[0]) * (projected_x - position[0]) +
-							  (projected_y - position[1]) * (projected_y - position[1]);
+			mag_squared = (projected_x - tablePosX) * (projected_x - tablePosX) +
+							  (projected_y - tablePosY) * (projected_y - tablePosY);
 
 			if ( mag_squared < Radius*Radius ) {
 				if ( show_interior ) {
@@ -3016,27 +3035,19 @@ void HudGaugeReticleTriangle::renderTriangle(vec3d *hostile_pos, int aspect_flag
 		}
 	}
 
-	int HUD_nose_scaled_x = HUD_nose_x;
-	int HUD_nose_scaled_y = HUD_nose_y;
+	unsize( &hostile_vertex.screen.xyw.x, &hostile_vertex.screen.xyw.y );
 
-	gr_resize_screen_pos(&HUD_nose_scaled_x, &HUD_nose_scaled_y);
-
-	unsize( &hostile_vertex.world.xyz.x, &hostile_vertex.world.xyz.y );
-
-	ang = atan2_safe(hostile_vertex.world.xyz.y,hostile_vertex.world.xyz.x);
+	ang = atan2_safe(-(hostile_vertex.screen.xyw.y - tablePosY), hostile_vertex.screen.xyw.x - tablePosX);
 	sin_ang=sinf(ang);
 	cos_ang=cosf(ang);
 
 	if ( draw_inside ) {
-		xpos = position[0] + cos_ang*(Radius-7);
-		ypos = position[1] - sin_ang*(Radius-7);
+		xpos = tablePosX + cos_ang*(Radius-7);
+		ypos = tablePosY - sin_ang*(Radius-7);
 	} else {
-		xpos = position[0] + cos_ang*(Radius+4);
-		ypos = position[1] - sin_ang*(Radius+4);
+		xpos = tablePosX + cos_ang*(Radius+4);
+		ypos = tablePosY - sin_ang*(Radius+4);
 	}
-
-	xpos += HUD_offset_x + HUD_nose_x;
-	ypos += HUD_offset_y + HUD_nose_y;
 
 	if ( split_tri ) {
 		// renderTriangleMissileSplit(ang, xpos, ypos, cur_dist, aspect_flag, draw_inside);
@@ -3818,7 +3829,7 @@ void polish_predicted_target_pos(weapon_info *wip, object *targetp, vec3d *enemy
 }
 
 HudGaugeLeadIndicator::HudGaugeLeadIndicator():
-HudGauge(HUD_OBJECT_LEAD, HUD_LEAD_INDICATOR, false, false, VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP, 255, 255, 255)
+HudGauge3DAnchor(HUD_OBJECT_LEAD, HUD_LEAD_INDICATOR, false, false, VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP, 255, 255, 255)
 {
 
 }
@@ -4183,7 +4194,7 @@ void HudGaugeLeadIndicator::renderLeadQuick(vec3d *target_world_pos, object *tar
 }
 
 HudGaugeLeadSight::HudGaugeLeadSight():
-HudGauge(HUD_OBJECT_LEAD_SIGHT, HUD_LEAD_INDICATOR, true, false, VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP, 255, 255, 255)
+HudGauge3DAnchor(HUD_OBJECT_LEAD_SIGHT, HUD_LEAD_INDICATOR, true, false, VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP, 255, 255, 255)
 {
 }
 
@@ -6364,7 +6375,7 @@ void hud_target_clear_display_list()
 }
 
 HudGaugeOffscreen::HudGaugeOffscreen():
-HudGauge(HUD_OBJECT_OFFSCREEN, HUD_OFFSCREEN_INDICATOR, false, true, VM_DEAD_VIEW | VM_OTHER_SHIP, 255, 255, 255)
+HudGauge3DAnchor(HUD_OBJECT_OFFSCREEN, HUD_OFFSCREEN_INDICATOR, false, true, VM_DEAD_VIEW | VM_OTHER_SHIP, 255, 255, 255)
 {
 }
 
