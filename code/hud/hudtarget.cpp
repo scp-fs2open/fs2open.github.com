@@ -4194,7 +4194,7 @@ void HudGaugeLeadIndicator::renderLeadQuick(vec3d *target_world_pos, object *tar
 }
 
 HudGaugeLeadSight::HudGaugeLeadSight():
-HudGauge3DAnchor(HUD_OBJECT_LEAD_SIGHT, HUD_LEAD_INDICATOR, true, false, VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP, 255, 255, 255)
+HudGauge(HUD_OBJECT_LEAD_SIGHT, HUD_LEAD_INDICATOR, true, false, VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_OTHER_SHIP, 255, 255, 255)
 {
 }
 
@@ -4260,11 +4260,32 @@ void HudGaugeLeadSight::renderSight(int frame_offset, vec3d *target_pos, vec3d *
 		float reticle_target_sx = target_sx - Lead_sight_half[0] - target_lead_sx;
 		float reticle_target_sy = target_sy - Lead_sight_half[1] - target_lead_sy;
 
-		reticle_target_sx += position[0] + 0.5f;
-		reticle_target_sy += position[1] + 0.5f;
+		int tablePosX = position[0];
+		int tablePosY = position[1];
+
+		bool do_slew = reticle_follow;
+		if (do_slew) {
+			int nx = HUD_nose_x;
+			int ny = HUD_nose_y;
+
+			gr_resize_screen_pos(&nx, &ny);
+			gr_set_screen_scale(base_w, base_h);
+			gr_unsize_screen_pos(&nx, &ny);
+			gr_reset_screen_scale();
+
+			tablePosX += nx;
+			tablePosY += ny;
+		}
+
+		reticle_target_sx += tablePosX + 0.5f;
+		reticle_target_sy += tablePosY + 0.5f;
 
 		setGaugeColor();
+
+		//We need to do slewing manually only on the non-3D-dependant part of the hud, so make the rendering function believe that we don't slew
+		reticle_follow = false;
 		renderBitmap(Lead_sight.first_frame + frame_offset, fl2i(reticle_target_sx) + fl2i(HUD_offset_x), fl2i(reticle_target_sy) + fl2i(HUD_offset_y));
+		reticle_follow = do_slew;
 	}
 }
 
