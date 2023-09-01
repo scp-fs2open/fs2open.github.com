@@ -1180,17 +1180,33 @@ void HudGaugeTalkingHead::render(float frametime)
 			// hud_set_default_color();
 			setGaugeColor();
 
+			int tablePosX = position[0];
+			int tablePosY = position[1];
+			if (reticle_follow) {
+				int nx = HUD_nose_x;
+				int ny = HUD_nose_y;
+
+				gr_resize_screen_pos(&nx, &ny);
+				gr_set_screen_scale(base_w, base_h);
+				gr_unsize_screen_pos(&nx, &ny);
+				gr_reset_screen_scale();
+
+				tablePosX += nx;
+				tablePosY += ny;
+			}
+
 			// clear
-			setClip(position[0] + Anim_offsets[0], position[1] + Anim_offsets[1], Anim_size[0], Anim_size[1]);
+			setClip(tablePosX + Anim_offsets[0], tablePosY + Anim_offsets[1], Anim_size[0], Anim_size[1]);
 			gr_clear();
 			resetClip();
 
+			//renderBitmap is slew corrected, so use uncorrected position
 			renderBitmap(Head_frame.first_frame, position[0], position[1]);		// head ani border
 			float scale_x = i2fl(Anim_size[0]) / i2fl(head_anim->width);
 			float scale_y = i2fl(Anim_size[1]) / i2fl(head_anim->height);
 			gr_set_screen_scale(fl2ir(base_w / scale_x), fl2ir(base_h / scale_y));
 			setGaugeColor();
-			generic_anim_render(head_anim,frametime, fl2ir((position[0] + Anim_offsets[0] + HUD_offset_x) / scale_x), fl2ir((position[1] + Anim_offsets[1] + HUD_offset_y) / scale_y));
+			generic_anim_render(head_anim,frametime, fl2ir((tablePosX + Anim_offsets[0] + HUD_offset_x) / scale_x), fl2ir((tablePosY + Anim_offsets[1] + HUD_offset_y) / scale_y));
 			// draw title
 			gr_set_screen_scale(base_w, base_h);
 			renderString(position[0] + Header_offsets[0], position[1] + Header_offsets[1], XSTR("message", 217));
