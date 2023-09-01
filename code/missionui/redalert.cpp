@@ -811,7 +811,7 @@ void red_alert_store_wing_status() {
 			}
 
 			if (!found) {
-				temp_wing_status.emplace_back(SCP_string(current_wing.name), current_wing.wave_count, current_wing.current_wave, 1);
+				temp_wing_status.emplace_back(SCP_string(current_wing.name), current_wing.wave_count, current_wing.num_waves, current_wing.current_wave, 1);
 			}
 		}
 	}
