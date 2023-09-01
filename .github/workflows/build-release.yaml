@@ -43,7 +43,7 @@ jobs:
         configuration: [FastDebug, Release]
     name: Linux
     needs: create_release   # Don't run this job until create_release is done and successful
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     container: ghcr.io/scp-fs2open/linux_build:sha-3d30dc5
     steps:
       # - name: Cache Qt
