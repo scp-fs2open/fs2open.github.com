@@ -797,7 +797,7 @@ void red_alert_store_wing_status() {
 	for (const auto& po : Parse_objects){
 
 		if (po.wingnum > 1 && po.flags[Mission::Parse_Object_Flags::SF_Red_alert_store_status]) {
-			wing& current_wing = Wings[po->wingnum];
+			wing& current_wing = Wings[po.wingnum];
 			bool found = false;
 			
 			for (auto& recorded_wing : temp_wing_status){
@@ -878,7 +878,7 @@ void red_alert_bash_wingman_status()
 	SCP_vector<red_alert_ship_status>::iterator rasii;
 	SCP_vector<p_object>::iterator poii;
 
-	SCP_unordered_map<int, int> Wing_pobjects_deleted;
+	SCP_unordered_map<int, int> Wing_pobjects_marked_for_deletion;
 	SCP_unordered_map<int, int>::iterator ii;
 
 	if ( !(Game_mode & GM_CAMPAIGN_MODE) ) {
@@ -1060,12 +1060,14 @@ void red_alert_bash_wingman_status()
 			red_alert_delete_ship(pobjp, ship_state);
 
 			if (pobjp->wingnum >= 0)
-				Wing_pobjects_deleted[pobjp->wingnum]++;
+				++Wing_pobjects_marked_for_deletion[pobjp->wingnum];
 		}
 	}
 
 	// if all parse objects in a wing have been removed, decrement the count for that wing
-	for (ii = Wing_pobjects_deleted.begin(); ii != Wing_pobjects_deleted.end(); ++ii)
+	// This section is still needed, because if all the ships in the current wave were destroyed, than the 
+	// amount from Red_alert_wing_status is not accurate.
+	for (ii = Wing_pobjects_marked_for_deletion.begin(); ii != Wing_pobjects_marked_for_deletion.end(); ++ii)
 	{
 		wing *wingp = &Wings[ii->first];
 
@@ -1092,6 +1094,38 @@ void red_alert_bash_wingman_status()
                     else
                         pobjp->flags.remove(Mission::Parse_Object_Flags::Red_alert_deleted);
 				}
+			}
+		}
+	}
+}
+
+void red_alert_bash_wing_status()
+{
+	for (const auto& recorded_wing : Red_alert_wing_status){
+
+		for (int i = 0; i < MAX_WINGS; ++i){
+			auto& mission_wing = Wings[i];
+
+			// check that we have the same wing.  Then we check if the wings are actually compatible.
+			if (!stricmp(recorded_wing.wing_name.c_str(), mission_wing.name)){
+
+				// do we have sufficient waves in the current mission to handle where the wave should be from the previous mission?
+				if  ((mission_wing.num_waves < recorded_wing.current_wave) || (mission_wing.wave_count != recorded_wing.max_ships_per_wave)){
+					mprintf(("Red alert code cannot restore %s wing's info since there's a mismatch of total ships available (total waves and ships per wave). New ships for this wing will not appear.", mission_wing.name));
+					mission_wing.flags.set(Ship::Wing_Flags::Gone);
+
+					// look through all ships yet to arrive and mark the ones in this wing as deleted.
+					for (p_object *pobjp = GET_FIRST(&Ship_arrival_list); pobjp != END_OF_LIST(&Ship_arrival_list); pobjp = GET_NEXT(pobjp))
+					{
+						if (pobjp->wingnum == i){
+							red_alert_delete_ship(pobjp, RED_ALERT_DESTROYED_SHIP_CLASS);
+						}
+					}
+				} else {
+					mission_wing.current_wave = recorded_wing.current_wave;
+				}
+
+				break;
 			}
 		}
 	}
@@ -1153,6 +1187,7 @@ void red_alert_maybe_move_to_next_mission()
 	// basic premise here is to stop the current mission, and then set the next mission in the campaign
 	// which better be a red alert mission
 	if ( Game_mode & GM_CAMPAIGN_MODE ) {
+		red_alert_store_wing_status();
 		red_alert_store_wingman_status();
 		mission_goal_fail_incomplete();
 

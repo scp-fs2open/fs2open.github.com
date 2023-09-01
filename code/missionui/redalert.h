@@ -27,7 +27,9 @@ int	red_alert_in_progress();
 void red_alert_maybe_move_to_next_mission();
 
 void red_alert_store_wingman_status();
+void red_alert_store_wing_status();
 void red_alert_bash_wingman_status();
+void red_alert_bash_wing_status();
 void red_alert_clear();
 
 void red_alert_voice_pause();
@@ -58,7 +60,7 @@ typedef struct red_alert_wing_status {
 	int wave_count; // Put this in for now, too.  The max number of waves for this wing. 
 	int current_wave; // 1-based index for which wave we are currently on out of the total
 	int number_of_ships_marked; // if the number of ships marked does not end up being the same as the entire wave, then we don't keep this  
-}
+} red_alert_wing_status;
 
 extern SCP_vector<red_alert_ship_status> Red_alert_wingman_status;
 extern SCP_vector<red_alert_wing_status> Red_alert_wing_status;
