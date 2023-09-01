@@ -1204,7 +1204,7 @@ void HudGaugeTalkingHead::render(float frametime)
 			}
 
 			// clear
-			setClip(position[0] + Anim_offsets[0], position[1] + Anim_offsets[1], Anim_size[0], Anim_size[1]);
+			setClip(tablePosX + Anim_offsets[0], tablePosY + Anim_offsets[1], Anim_size[0], Anim_size[1]);
 			gr_clear();
 			resetClip();
 
