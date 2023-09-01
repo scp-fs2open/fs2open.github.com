@@ -51,6 +51,7 @@ static TIMESTAMP Red_alert_new_mission_timestamp;		// timestamp used to give use
 static int Red_alert_voice_started;
 
 SCP_vector<red_alert_ship_status> Red_alert_wingman_status;
+SCP_vector<red_alert_wing_status> Red_alert_wing_status;
 SCP_string Red_alert_precursor_mission;
 
 /////////////////////////////////////////////////////////////////////////////
@@ -785,6 +786,45 @@ void red_alert_store_wingman_status()
 	}
 
 	Assert( !Red_alert_wingman_status.empty() );
+}
+
+// This differs from the function above because it stores the actual info from the wing struct
+void red_alert_store_wing_status() {
+	SCP_vector<red_alert_wing_status> temp_wing_status;
+
+	// loop through all parse objects, because we need every single ship that can be in a wing.
+	// According to discussions on our discord, ships created via script cannot be in a wing.
+	for (const auto& po : Parse_objects){
+
+		if (po.wingnum > 1 && po.flags[Mission::Parse_Object_Flags::SF_Red_alert_store_status]) {
+			wing& current_wing = Wings[po->wingnum];
+			bool found = false;
+			
+			for (auto& recorded_wing : temp_wing_status){
+				if (!stricmp(recorded_wing.wing_name.c_str(), current_wing.name)){
+					++recorded_wing.number_of_ships_marked;
+
+					Assertion(recorded_wing.number_of_ships_marked <= recorded_wing.max_ships_per_wave, "Somehow the number of ships in a wing, %d, exceeds its max, %d, according to red_alert_store_wing_status.  Please report to a SCP coder!", recorded_wing.number_of_ships_marked, recorded_wing.max_ships_per_wave);
+					found = true;
+					break;
+				}
+			}
+
+			if (!found) {
+				temp_wing_status.emplace_back(SCP_string(current_wing.name), current_wing.wave_count, current_wing.current_wave, 1);
+			}
+		}
+	}
+
+	// Cyborg - imho, clearing data before trying to record the current mission's data is the right move, 
+	// pretty much no matter what.
+	Red_alert_wing_status.clear();
+
+	for (const auto& recorded_wing : temp_wing_status) {
+		// only allow a wing's status to carry over if all of the ships were marked.
+		if (recorded_wing.number_of_ships_marked == recorded_wing.max_ships_per_wave)
+			Red_alert_wing_status.push_back(recorded_wing);
+	}
 }
 
 // Delete a ship in a red alert mission (since it must have died/departed in the previous mission)

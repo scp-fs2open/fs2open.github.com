@@ -52,7 +52,16 @@ typedef struct red_alert_ship_status {
 	SCP_vector<wep_t>	secondary_weapons;
 } red_alert_ship_status;
 
+typedef struct red_alert_wing_status {
+	SCP_string wing_name;
+	int max_ships_per_wave; // how many ships per wave.  If this doesn't match, then we have to ignore this info
+	int wave_count; // Put this in for now, too.  The max number of waves for this wing. 
+	int current_wave; // 1-based index for which wave we are currently on out of the total
+	int number_of_ships_marked; // if the number of ships marked does not end up being the same as the entire wave, then we don't keep this  
+}
+
 extern SCP_vector<red_alert_ship_status> Red_alert_wingman_status;
+extern SCP_vector<red_alert_wing_status> Red_alert_wing_status;
 extern SCP_string Red_alert_precursor_mission;
 #endif
 
