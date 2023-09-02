@@ -77,7 +77,7 @@ target_link_libraries(code PUBLIC imgui)
 
 target_link_libraries(code PUBLIC OpenXR::openxr_loader)
 target_include_directories(code PUBLIC OpenXR::Headers)
-IF(UNIX)
+IF(CMAKE_SYSTEM_NAME MATCHES "Linux")
 	# On Linux, we need to access X11 window data.
 	# On Windows, SDL already provides everything, so no need to do anything
 	find_package(X11)

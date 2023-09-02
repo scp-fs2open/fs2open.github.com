@@ -24,7 +24,7 @@ if (WIN32)
 	# On Windows we need WGL which requires the OpenGL libraries
 	find_package(OpenGL)
 	target_link_libraries(glad_wgl PUBLIC "${OPENGL_LIBRARIES}")
-elseif(UNIX)
+elseif(CMAKE_SYSTEM_NAME MATCHES "Linux")
 	add_library(glad_glx STATIC
 			"glad_glx/include/glad/glad_glx.h"
 			"glad_glx/include/KHR/khrplatform.h"

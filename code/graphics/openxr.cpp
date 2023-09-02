@@ -29,6 +29,7 @@ float xr_scale = 1.0f;
 
 std::unique_ptr<star[]> Stars_XRBuffer;
 
+#if !defined(NDEBUG)
 static XrBool32 handleXRError(XrDebugUtilsMessageSeverityFlagsEXT severity, XrDebugUtilsMessageTypeFlagsEXT type, const XrDebugUtilsMessengerCallbackDataEXT* callbackData, void* /*userData*/) {
 	SCP_string message;
 	switch (type)
@@ -63,6 +64,7 @@ static XrBool32 handleXRError(XrDebugUtilsMessageSeverityFlagsEXT severity, XrDe
 
 	return XR_FALSE;
 }
+#endif
 
 void openxr_prepare(float hudscale) {
 	Hud_global_scale = hudscale;
@@ -116,7 +118,7 @@ static bool openxr_init_instance() {
 		nullptr,
 		XR_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT | XR_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | XR_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT,
 		XR_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | XR_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | XR_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT | XR_DEBUG_UTILS_MESSAGE_TYPE_CONFORMANCE_BIT_EXT,
-		handleXRError,
+		&handleXRError,
 		nullptr
 	};
 
