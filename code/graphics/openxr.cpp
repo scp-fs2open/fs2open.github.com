@@ -101,7 +101,12 @@ static bool openxr_init_instance() {
 
 	strncpy_s(instanceCreateInfo.applicationInfo.applicationName, Mod_title.empty() ? "FreeSpace Open" : Mod_title.c_str(), XR_MAX_APPLICATION_NAME_SIZE);
 
-	if (xrCreateInstance(&instanceCreateInfo, &xr_instance) != XR_SUCCESS) {
+	XrResult create = xrCreateInstance(&instanceCreateInfo, &xr_instance);
+	if (create != XR_SUCCESS) {
+		if (create == XR_ERROR_EXTENSION_NOT_PRESENT) {
+			//This is to be expected to be one of THE common issue cases, since not all OpenXR runtimes, notably WMR, don't supply the OpenGL extensions
+			ReleaseWarning(LOCATION, "The OpenXR runtime does not support the required backend! Try to use a different OpenXR runtime.");
+		}
 		return false;
 	}
 
