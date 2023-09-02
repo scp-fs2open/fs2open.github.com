@@ -305,7 +305,7 @@ void openxr_start_mission() {
 	xr_offset = ZERO_VECTOR;
 	for (uint32_t i = 0; i < 2; i++) {
 		const auto& pos = xr_views[i].pose.position;
-		xr_offset += vec3d{ {pos.x * xr_scale, pos.y * xr_scale, pos.z * -xr_scale} };
+		xr_offset += vec3d{{ {pos.x * xr_scale, pos.y * xr_scale, pos.z * -xr_scale} }};
 	}
 	xr_offset /= 2;
 
@@ -400,7 +400,7 @@ OpenXRTrackingInfo openxr_start_stereo_frame() {
 	for (uint32_t i = 0; i < 2; i++) {
 		const auto& pos = xr_views[i].pose.position;
 		const auto& ori = xr_views[i].pose.orientation;
-		info.eyes[i].offset = vec3d{ {pos.x * xr_scale, pos.y * xr_scale, pos.z * -xr_scale} } - xr_offset;
+		info.eyes[i].offset = vec3d{{ {pos.x * xr_scale, pos.y * xr_scale, pos.z * -xr_scale} }} - xr_offset;
 
 		matrix asymmetric_fov, orientation;
 		angles fix_asymmetric_fov{ 0, 0, xr_views[i].fov.angleLeft + xr_views[i].fov.angleRight };
