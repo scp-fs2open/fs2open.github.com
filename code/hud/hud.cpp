@@ -1051,17 +1051,22 @@ void HudGauge::setClip(int x, int y, int w, int h)
 
 		gr_set_clip(hx, hy, w, h);
 	} else {
-		if ( reticle_follow ) {
+		if (reticle_follow) {
 			hx += HUD_nose_x;
 			hy += HUD_nose_y;
+
+			gr_resize_screen_pos(&hx, &hy);
+			gr_set_screen_scale(base_w, base_h);
+			gr_unsize_screen_pos(&hx, &hy);
+		}
+		else {
+			gr_set_screen_scale(base_w, base_h);
 		}
 
-		gr_resize_screen_pos(&hx, &hy);
-
-		gr_set_screen_scale(base_w, base_h);
+		x += hx;
+		y += hy;
 		gr_resize_screen_pos(&x, &y, &w, &h);
-
-		gr_set_clip(hx+x, hy+y, w, h, GR_RESIZE_NONE);
+		gr_set_clip(x, y, w, h, GR_RESIZE_NONE);
 	}
 
 	gr_reset_screen_scale();

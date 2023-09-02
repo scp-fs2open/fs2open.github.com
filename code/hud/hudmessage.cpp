@@ -444,6 +444,10 @@ void HudGaugeMessages::render(float  /*frametime*/)
 	// dependant on max_width, max_lines, and line_height
 	setClip(position[0], position[1], Window_width, Window_height+2);
 
+	//Since setClip already sets makes drawing local, further renderings mustn't additionally slew
+	bool doSlew = reticle_follow;
+	reticle_follow = false;
+
 	for ( SCP_vector<Hud_display_info>::iterator m = active_messages.begin(); m != active_messages.end(); ++m) {
 		if ( !timestamp_elapsed(m->total_life) ) {
 			if ( !(Player->flags & PLAYER_FLAGS_MSG_MODE) || !Hidden_by_comms_menu) {
@@ -459,6 +463,8 @@ void HudGaugeMessages::render(float  /*frametime*/)
 			}
 		}
 	}
+
+	reticle_follow = doSlew;
 }
 
 //	Similar to HUD printf, but shows only one message at a time, at a fixed location.
@@ -1196,7 +1202,7 @@ void HudGaugeTalkingHead::render(float frametime)
 			}
 
 			// clear
-			setClip(tablePosX + Anim_offsets[0], tablePosY + Anim_offsets[1], Anim_size[0], Anim_size[1]);
+			setClip(position[0] + Anim_offsets[0], position[1] + Anim_offsets[1], Anim_size[0], Anim_size[1]);
 			gr_clear();
 			resetClip();
 
@@ -1208,7 +1214,7 @@ void HudGaugeTalkingHead::render(float frametime)
 			setGaugeColor();
 			generic_anim_render(head_anim,frametime, fl2ir((tablePosX + Anim_offsets[0] + HUD_offset_x) / scale_x), fl2ir((tablePosY + Anim_offsets[1] + HUD_offset_y) / scale_y));
 			// draw title
-			gr_set_screen_scale(base_w, base_h);
+			gr_reset_screen_scale();
 			renderString(position[0] + Header_offsets[0], position[1] + Header_offsets[1], XSTR("message", 217));
 		} else {
 			for (int j = 0; j < Num_messages_playing; ++j) {
