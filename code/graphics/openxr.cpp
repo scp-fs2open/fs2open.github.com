@@ -109,6 +109,9 @@ static bool openxr_init_instance() {
 			//This is to be expected to be one of THE common issue cases, since not all OpenXR runtimes, notably WMR, don't supply the OpenGL extensions
 			ReleaseWarning(LOCATION, "The OpenXR runtime does not support the required backend! Try to use a different OpenXR runtime.");
 		}
+
+		mprintf(("Failed to create OpenXR instance with code %d\n", static_cast<int>(create)));
+
 		return false;
 	}
 
@@ -135,7 +138,9 @@ static bool openxr_init_system() {
 	XR_FORM_FACTOR_HEAD_MOUNTED_DISPLAY
 	};
 
-	if (xrGetSystem(xr_instance, &systemGetInfo, &xr_system) != XR_SUCCESS) {
+	XrResult systemInit = xrGetSystem(xr_instance, &systemGetInfo, &xr_system);
+	if (systemInit != XR_SUCCESS) {
+		mprintf(("Failed to create OpenXR system with code %d\n", static_cast<int>(systemInit)));
 		xr_system = XR_NULL_SYSTEM_ID;
 		return false;
 	}
@@ -180,7 +185,9 @@ static bool openxr_init_swapchains() {
 			1
 		};
 
-		if (xrCreateSwapchain(xr_session, &swapchainCreateInfo, &swapchains[i]) != XR_SUCCESS) {
+		XrResult swapchainInit = xrCreateSwapchain(xr_session, &swapchainCreateInfo, &swapchains[i]);
+		if (swapchainInit != XR_SUCCESS) {
+			mprintf(("Failed to create OpenXR swapchain %d with code %d\n", i, static_cast<int>(swapchainInit)));
 			return false;
 		}
 
@@ -240,13 +247,25 @@ static void openxr_init_post() {
 		xr_views.data()
 	);
 
-	VIEWER_ZOOM_DEFAULT = COCKPIT_ZOOM_DEFAULT = (fabsf(xr_views[0].fov.angleLeft) + fabsf(xr_views[0].fov.angleRight) + fabsf(xr_views[1].fov.angleLeft) + fabsf(xr_views[1].fov.angleRight)) / (2.0f * PROJ_FOV_FACTOR);
+	vec3d xr_offset{{ {
+		(xr_views[0].pose.position.x - xr_views[1].pose.position.x) * xr_scale,
+		(xr_views[0].pose.position.y - xr_views[1].pose.position.y) * xr_scale,
+		(xr_views[0].pose.position.z - xr_views[1].pose.position.z) * xr_scale} }};
 
-	
+	mprintf(("OpenXR HMD data:\n\tLeft Res: %dx%d\n\tLeft FoV (l|r|t|b): %f, %f, %f, %f\n\tRight Res: %dx%d\n\tRight FoV (l|r|t|b): %f, %f, %f, %f\n\tIPD: %f\n",
+		xr_swapchains[0]->width, xr_swapchains[0]->height,
+		xr_views[0].fov.angleLeft, xr_views[0].fov.angleRight, xr_views[0].fov.angleUp, xr_views[0].fov.angleDown,
+		xr_swapchains[1]->width, xr_swapchains[1]->height,
+		xr_views[1].fov.angleLeft, xr_views[1].fov.angleRight, xr_views[1].fov.angleUp, xr_views[1].fov.angleDown,
+		vm_vec_mag(&xr_offset)));
+
+	VIEWER_ZOOM_DEFAULT = COCKPIT_ZOOM_DEFAULT = (fabsf(xr_views[0].fov.angleLeft) + fabsf(xr_views[0].fov.angleRight) + fabsf(xr_views[1].fov.angleLeft) + fabsf(xr_views[1].fov.angleRight)) / (2.0f * PROJ_FOV_FACTOR);
 }
 
 void openxr_init(float scale) {
 	xr_scale = scale;
+
+	mprintf(("Attempting to initialize OpenXR...\n"));
 
 	if (!openxr_init_instance())
 		return;
@@ -270,9 +289,13 @@ void openxr_init(float scale) {
 
 	openxr_initialized = true;
 
+	mprintf(("OpenXR initialized!\n"));
+
 	while (openxr_initialized && !openxr_recieve) {
 		os_poll();
 	}
+
+	mprintf(("OpenXR recieving!\n"));
 
 	openxr_init_post();
 }
@@ -403,7 +426,7 @@ OpenXRTrackingInfo openxr_start_stereo_frame() {
 		info.eyes[i].offset = vec3d{{ {pos.x * xr_scale, pos.y * xr_scale, pos.z * -xr_scale} }} - xr_offset;
 
 		matrix asymmetric_fov, orientation;
-		angles fix_asymmetric_fov{ 0, 0, xr_views[i].fov.angleLeft + xr_views[i].fov.angleRight };
+		angles fix_asymmetric_fov{ -(xr_views[i].fov.angleUp + xr_views[i].fov.angleDown), 0, xr_views[i].fov.angleLeft + xr_views[i].fov.angleRight };
 		vm_quaternion_to_matrix(&orientation, ori.x, ori.y, -ori.z, -ori.w);
 		vm_angles_2_matrix(&asymmetric_fov, &fix_asymmetric_fov);
 		vm_matrix_x_matrix(&info.eyes[i].orientation, &orientation, &asymmetric_fov);

@@ -42,10 +42,12 @@ bool gr_opengl_openxr_test_capabilities() {
 	requirements.type = XR_TYPE_GRAPHICS_REQUIREMENTS_OPENGL_KHR;
 
 	if (openxr_callExtensionFunction<PFN_xrGetOpenGLGraphicsRequirementsKHR>("xrGetOpenGLGraphicsRequirementsKHR", xr_instance, xr_system, &requirements) != XR_SUCCESS) {
+		mprintf(("Failed to query OpenXR graphics requirements!\n"));
 		return false;
 	}
 
 	if (requirements.minApiVersionSupported > XR_MAKE_VERSION(GLVersion.major, GLVersion.minor, 0)) {
+		mprintf(("System doesn't meet OpenXR graphics requirements (min %d, available %d)!\n", requirements.minApiVersionSupported, XR_MAKE_VERSION(GLVersion.major, GLVersion.minor, 0)));
 		return false;
 	}
 
@@ -72,6 +74,7 @@ bool gr_opengl_openxr_create_session() {
 	GLXFBConfig* fbconfigs = glXChooseFBConfig(wmInfo.info.x11.display, glxscreenid, fbconfigattrs, &nfbconfigs);
 
 	if (nfbconfigs < 1) {
+		mprintf(("Unable to find Linux FBConfig for OpenXR!\n"));
 		return false;
 	}
 
@@ -92,7 +95,9 @@ bool gr_opengl_openxr_create_session() {
 		sessionCreateInfo.systemId = xr_system
 	};
 
-	if (xrCreateSession(xr_instance, &sessionCreateInfo, &xr_session) != XR_SUCCESS) {
+	XrResult sessionInit = xrCreateSession(xr_instance, &sessionCreateInfo, &xr_session);
+	if (sessionInit != XR_SUCCESS) {
+		mprintf(("Failed to create OpenXR session with code %d\n", static_cast<int>(sessionInit)));
 		return false;
 	}
 
@@ -118,7 +123,9 @@ bool gr_opengl_openxr_create_session() {
 		sessionCreateInfo.systemId = xr_system
 	};
 
-	if (xrCreateSession(xr_instance, &sessionCreateInfo, &xr_session) != XR_SUCCESS) {
+	XrResult sessionInit = xrCreateSession(xr_instance, &sessionCreateInfo, &xr_session);
+	if (sessionInit != XR_SUCCESS) {
+		mprintf(("Failed to create OpenXR session with code %d\n", static_cast<int>(sessionInit)));
 		return false;
 	}
 
@@ -126,6 +133,7 @@ bool gr_opengl_openxr_create_session() {
 }
 #elif defined __APPLE_CC__
 bool gr_opengl_openxr_create_session() {
+	mprintf(("Cannot create OpenXR session on macOS.\n"));
 	return false;
 }
 #endif
@@ -173,13 +181,17 @@ bool gr_opengl_openxr_acquire_swapchain_buffers() {
 	for (uint32_t i = 0; i < 2; i++) {
 		uint32_t imageCount = 0;
 
-		if (xrEnumerateSwapchainImages(xr_swapchains[i]->swapchain, 0, &imageCount, nullptr) != XR_SUCCESS) {
+		XrResult swapchainAcq = xrEnumerateSwapchainImages(xr_swapchains[i]->swapchain, 0, &imageCount, nullptr);
+		if (swapchainAcq != XR_SUCCESS) {
+			mprintf(("Failed to acquire OpenXR swapchain %d with code %d\n", i, static_cast<int>(swapchainAcq)));
 			return false;
 		}
 
 		swapchainImages[i] = SCP_vector<XrSwapchainImageOpenGLKHR>(imageCount, { XR_TYPE_SWAPCHAIN_IMAGE_OPENGL_KHR, nullptr, 0 });
 
-		if (xrEnumerateSwapchainImages(xr_swapchains[i]->swapchain, imageCount, &imageCount, (XrSwapchainImageBaseHeader*)swapchainImages[i].data()) != XR_SUCCESS) {
+		swapchainAcq = xrEnumerateSwapchainImages(xr_swapchains[i]->swapchain, imageCount, &imageCount, (XrSwapchainImageBaseHeader*)swapchainImages[i].data());
+		if (swapchainAcq != XR_SUCCESS) {
+			mprintf(("Failed to acquire OpenXR swapchain %d with code %d\n", i, static_cast<int>(swapchainAcq)));
 			return false;
 		}
 	}
