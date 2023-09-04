@@ -796,7 +796,7 @@ void red_alert_store_wing_status() {
 	// According to discussions on our discord, ships created via script cannot be in a wing.
 	for (const auto& po : Parse_objects){
 
-		if (po.wingnum > 1 && po.flags[Mission::Parse_Object_Flags::SF_Red_alert_store_status]) {
+		if (po.wingnum > -1 && po.flags[Mission::Parse_Object_Flags::SF_Red_alert_store_status]) {
 			wing& current_wing = Wings[po.wingnum];
 			bool found = false;
 			
