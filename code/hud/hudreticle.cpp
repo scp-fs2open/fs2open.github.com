@@ -365,6 +365,11 @@ void HudGaugeReticle::getFirepointStatus() {
 					int bankactive = 0;
 					ship_weapon *swp = &shipp->weapons;
 
+					// If this firepoint doesn't actually have a weapon mounted, skip all of this
+					if (swp->primary_bank_weapons[i] < 0) {
+						continue;
+					}
+
 					if (!timestamp_elapsed(shipp->weapons.next_primary_fire_stamp[i]))
 						bankactive = 1;
 					else if (timestamp_elapsed(shipp->weapons.primary_animation_done_time[i]))
