@@ -52,6 +52,8 @@ typedef struct trail {
 
 } trail;
 
+void trail_info_init(trail_info* t_info);
+
 // Call at the start of freespace to init trails
 
 // Call at start of level to reinit all missilie trail stuff
