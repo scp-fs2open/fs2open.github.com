@@ -567,7 +567,7 @@ void do_subobj_heal_stuff(object* ship_objp, object* other_obj, vec3d* hitpos, i
 		if ((j == 0) && (!(parent_armor_flags & SAF_IGNORE_SS_ARMOR))) {
 			if (subsystem->armor_type_idx > -1)
 			{
-				healing_left = Armor_types[subsystem->armor_type_idx].GetDamage(healing_left, dmg_type_idx, 1.0f); 
+				healing_left = Armor_types[subsystem->armor_type_idx].GetDamage(healing_left, dmg_type_idx, 1.0f, other_obj->type == OBJ_BEAM);
 			}
 		}
 
@@ -598,13 +598,12 @@ void do_subobj_heal_stuff(object* ship_objp, object* other_obj, vec3d* hitpos, i
 		// if we're not in CLIENT_NODAMAGE multiplayer mode (which is a the NEW way of doing things)
 		if ((heal_to_apply > 0.1f) && !(MULTIPLAYER_CLIENT))
 		{
-			
 			healing_left -= (heal_to_apply);
 
 			//Apply armor to healing
 			if (subsystem->armor_type_idx >= 0)
 				// Nuke: this will finally factor it in to heal_to_apply and i wont need to factor it in anywhere after this
-				heal_to_apply = Armor_types[subsystem->armor_type_idx].GetDamage(heal_to_apply, dmg_type_idx, 1.0f);
+				heal_to_apply = Armor_types[subsystem->armor_type_idx].GetDamage(heal_to_apply, dmg_type_idx, 1.0f, other_obj->type == OBJ_BEAM);
 
 			subsystem->current_hits += heal_to_apply;
 
@@ -892,7 +891,7 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 		if ( (j == 0) && (!(parent_armor_flags & SAF_IGNORE_SS_ARMOR))) {
 			if(subsystem->armor_type_idx > -1)
 			{
-				damage = Armor_types[subsystem->armor_type_idx].GetDamage(damage, dmg_type_idx, 1.0f); // Nuke: I don't think we need to apply damage sacaling to this one, using 1.0f
+				damage = Armor_types[subsystem->armor_type_idx].GetDamage(damage, dmg_type_idx, 1.0f, other_obj->type == OBJ_BEAM); // Nuke: I don't think we need to apply damage sacaling to this one, using 1.0f
 				if(hull_should_apply_armor) {
 					*hull_should_apply_armor = false;
 				}
@@ -974,7 +973,7 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 			//Apply armor to damage
 			if (subsystem->armor_type_idx >= 0) {
 				// Nuke: this will finally factor it in to damage_to_apply and i wont need to factor it in anywhere after this
-				damage_to_apply = Armor_types[subsystem->armor_type_idx].GetDamage(damage_to_apply, dmg_type_idx, ss_dif_scale);
+				damage_to_apply = Armor_types[subsystem->armor_type_idx].GetDamage(damage_to_apply, dmg_type_idx, ss_dif_scale, other_obj->type == OBJ_BEAM);
 			} else { // Nuke: no get damage call to apply difficulty scaling, so factor it in now
 				damage_to_apply *= ss_dif_scale;
 			}

@@ -19506,7 +19506,7 @@ int calculation_type_get(char *str)
 }
 
 //STEP 3: Add the calculation to the switch statement.
-float ArmorType::GetDamage(float damage_applied, int in_damage_type_idx, float diff_dmg_scale, int is_beam) {
+float ArmorType::GetDamage(float damage_applied, int in_damage_type_idx, float diff_dmg_scale, bool is_beam) {
 	// Nuke: If the weapon has no damage type, just return damage
 	if (in_damage_type_idx < 0) {
 		// multiply by difficulty scaler now, since it is no longer done where this is called
