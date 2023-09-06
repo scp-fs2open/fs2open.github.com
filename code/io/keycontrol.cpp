@@ -1834,7 +1834,7 @@ int button_function_critical(int n, net_player *p = NULL)
 			if (ship_select_next_primary(objp, CYCLE_PRIMARY_NEXT)) {
 				ship* shipp = &Ships[objp->instance];
 				if ( timestamp_elapsed(shipp->weapons.next_primary_fire_stamp[shipp->weapons.current_primary_bank]) ) {
-					shipp->weapons.next_primary_fire_stamp[shipp->weapons.current_primary_bank] = timestamp(250);	//	1/4 second delay until can fire
+					shipp->weapons.next_primary_fire_stamp[shipp->weapons.current_primary_bank] = timestamp(BANK_SWITCH_DELAY);	//	1/4 second delay until can fire
 				}
 
 				// multiplayer server should maintain bank/link status here
@@ -1855,7 +1855,7 @@ int button_function_critical(int n, net_player *p = NULL)
 			if (ship_select_next_primary(objp, CYCLE_PRIMARY_PREV)) {
 				ship* shipp = &Ships[objp->instance];
 				if ( timestamp_elapsed(shipp->weapons.next_primary_fire_stamp[shipp->weapons.current_primary_bank]) ) {
-					shipp->weapons.next_primary_fire_stamp[shipp->weapons.current_primary_bank] = timestamp(250);	//	1/4 second delay until can fire
+					shipp->weapons.next_primary_fire_stamp[shipp->weapons.current_primary_bank] = timestamp(BANK_SWITCH_DELAY);	//	1/4 second delay until can fire
 				}
 
 				// multiplayer server should maintain bank/link status here
@@ -1875,7 +1875,7 @@ int button_function_critical(int n, net_player *p = NULL)
 			if (ship_select_next_secondary(objp)) {
 				ship* shipp = &Ships[objp->instance];
 				if ( timestamp_elapsed(shipp->weapons.next_secondary_fire_stamp[shipp->weapons.current_secondary_bank]) ) {
-					shipp->weapons.next_secondary_fire_stamp[shipp->weapons.current_secondary_bank] = timestamp(250);	//	1/4 second delay until can fire
+					shipp->weapons.next_secondary_fire_stamp[shipp->weapons.current_secondary_bank] = timestamp(BANK_SWITCH_DELAY);	//	1/4 second delay until can fire
 				}
 
 				// multiplayer server should maintain bank/link status here
