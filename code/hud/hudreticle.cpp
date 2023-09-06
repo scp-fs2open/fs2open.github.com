@@ -372,8 +372,8 @@ void HudGaugeReticle::getFirepointStatus() {
 
 					// bank is firing
 					// (make sure we haven't cycled banks recently, since that will also reset the timestamp)
-					if (   (!Control_config[CYCLE_NEXT_PRIMARY].digital_used.isValid() || timestamp_since(Control_config[CYCLE_NEXT_PRIMARY].digital_used) > 250)
-						&& (!Control_config[CYCLE_PREV_PRIMARY].digital_used.isValid() || timestamp_since(Control_config[CYCLE_PREV_PRIMARY].digital_used) > 250)
+					if (   (!Control_config[CYCLE_NEXT_PRIMARY].digital_used.isValid() || timestamp_since(Control_config[CYCLE_NEXT_PRIMARY].digital_used) > BANK_SWITCH_DELAY)
+						&& (!Control_config[CYCLE_PREV_PRIMARY].digital_used.isValid() || timestamp_since(Control_config[CYCLE_PREV_PRIMARY].digital_used) > BANK_SWITCH_DELAY)
 						&& (!timestamp_elapsed(shipp->weapons.next_primary_fire_stamp[i]) || !timestamp_elapsed(shipp->weapons.primary_animation_done_time[i]))) {
 						bankactive = 2;
 					}
