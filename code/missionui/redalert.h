@@ -61,7 +61,7 @@ typedef struct red_alert_wing_status {
 	int current_wave; // 1-based index for which wave we are currently on out of the total
 	int number_of_ships_marked; // if the number of ships marked does not end up being the same as the entire wave, then we don't keep this  
 
-	red_alert_wing_status(SCP_string wing_name_in, int max_ships_in, int wave_count_in, int current_wave_in, int number_of_ships_marked_in){
+	red_alert_wing_status(const SCP_string &wing_name_in, int max_ships_in, int wave_count_in, int current_wave_in, int number_of_ships_marked_in){
 		wing_name = wing_name_in;
 		max_ships_per_wave = max_ships_in;
 		wave_count = wave_count_in;

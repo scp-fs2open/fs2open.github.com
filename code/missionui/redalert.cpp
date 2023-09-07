@@ -824,6 +824,8 @@ void red_alert_store_wing_status() {
 		// only allow a wing's status to carry over if all of the ships were marked.
 		if (recorded_wing.number_of_ships_marked == recorded_wing.max_ships_per_wave)
 			Red_alert_wing_status.push_back(recorded_wing);
+		else
+			Warning(LOCATION, "Not all ships in %s were marked with \"red-alert-carry\".  The wing will not be stored.", recorded_wing.wing_name.c_str());
 	}
 }
 
@@ -1076,7 +1078,7 @@ void red_alert_bash_wingman_status()
 			wingp->current_wave++;
 			wingp->red_alert_skipped_ships += wingp->wave_count;
 
-			bool waves_spent = wingp->current_wave >= wingp->num_waves;
+			bool waves_spent = wingp->current_wave > wingp->num_waves;
 
             if (waves_spent)
                 wingp->flags.set(Ship::Wing_Flags::Gone);
@@ -1111,7 +1113,7 @@ void red_alert_bash_wing_status()
 
 				// do we have sufficient waves in the current mission to handle where the wave should be from the previous mission?
 				if  ((mission_wing.num_waves < recorded_wing.current_wave) || (mission_wing.wave_count != recorded_wing.max_ships_per_wave)){
-					mprintf(("Red alert code cannot restore %s wing's info since there's a mismatch of total ships available (total waves and ships per wave). New ships for this wing will not appear.", mission_wing.name));
+					Warning(LOCATION, "Red alert code cannot restore %s wing's info since there's a mismatch of total ships available (total waves and ships per wave). New ships for this wing will not appear.", mission_wing.name);
 					mission_wing.flags.set(Ship::Wing_Flags::Gone);
 
 					// look through all ships yet to arrive and mark the ones in this wing as deleted.
