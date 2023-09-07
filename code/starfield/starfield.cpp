@@ -1545,13 +1545,13 @@ void stars_draw_bitmaps(int show_bitmaps)
 
 		if (Starfield_bitmaps[star_index].xparent) {
 			if (Starfield_bitmaps[star_index].fps) {
-				bitmap_id = Starfield_bitmaps[star_index].bitmap_id + ((timestamp() * Starfield_bitmaps[star_index].fps / MILLISECONDS_PER_SECOND) % Starfield_bitmaps[star_index].n_frames);
+				bitmap_id = Starfield_bitmaps[star_index].bitmap_id + (((timestamp() * Starfield_bitmaps[star_index].fps) / MILLISECONDS_PER_SECOND) % Starfield_bitmaps[star_index].n_frames);
 			} else {
 				bitmap_id = Starfield_bitmaps[star_index].bitmap_id;
 			}
 		} else {
 			if (Starfield_bitmaps[star_index].fps) {
-				bitmap_id = Starfield_bitmaps[star_index].bitmap_id + ((timestamp() * Starfield_bitmaps[star_index].fps / MILLISECONDS_PER_SECOND) % Starfield_bitmaps[star_index].n_frames);
+				bitmap_id = Starfield_bitmaps[star_index].bitmap_id + (((timestamp() * Starfield_bitmaps[star_index].fps) / MILLISECONDS_PER_SECOND) % Starfield_bitmaps[star_index].n_frames);
 				blending = true;
 				alpha = 0.9999f;
 			} else {
