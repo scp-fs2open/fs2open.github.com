@@ -1232,13 +1232,13 @@ int CFred_mission_save::save_briefing()
 					}
 				}
 
-				if (save_format != MissionFormat::RETAIL) {
+				if (save_format != MissionFormat::RETAIL && bi->scale_factor != 1.0f) {
 					if (optional_string_fred("$icon scale:"))
 						parse_comments();
 					else
 						fout("\n$icon scale:");
 
-					fout(" %d", bi->scale);
+					fout(" %d", static_cast<int>(bi->scale_factor * 100.0f));
 				}
 
 				if (optional_string_fred("+id:")) {
@@ -1254,20 +1254,29 @@ int CFred_mission_save::save_briefing()
 				fout(" %d", (bi->flags & BI_HIGHLIGHT) ? 1 : 0);
 
 				if (save_format != MissionFormat::RETAIL) {
-					required_string_fred("$mirror:");
-					parse_comments();
+					if (optional_string_fred("$mirror:"))
+						parse_comments();
+					else
+						fout("\n$mirror:");
+
 					fout(" %d", (bi->flags & BI_MIRROR_ICON) ? 1 : 0);
 				}
 
 				if ((save_format != MissionFormat::RETAIL) && (bi->flags & BI_USE_WING_ICON)) {
-					required_string_fred("$use wing icon:");
-					parse_comments();
+					if (optional_string_fred("$use wing icon:"))
+						parse_comments();
+					else
+						fout("\n$use wing icon:");
+
 					fout(" %d", (bi->flags & BI_USE_WING_ICON) ? 1 : 0);
 				}
 
 				if ((save_format != MissionFormat::RETAIL) && (bi->flags & BI_USE_CARGO_ICON)) {
-					required_string_fred("$use cargo icon:");
-					parse_comments();
+					if (optional_string_fred("$use cargo icon:"))
+						parse_comments();
+					else
+						fout("\n$use cargo icon:");
+
 					fout(" %d", (bi->flags & BI_USE_CARGO_ICON) ? 1 : 0);
 				}
 
