@@ -796,7 +796,7 @@ void red_alert_store_wing_status() {
 	// According to discussions on our discord, ships created via script cannot be in a wing.
 	for (const auto& po : Parse_objects){
 
-		if (po.wingnum > -1 && po.flags[Mission::Parse_Object_Flags::SF_Red_alert_store_status]) {
+		if (po.wingnum >= 0 && (po.flags[Mission::Parse_Object_Flags::SF_From_player_wing] || po.flags[Mission::Parse_Object_Flags::SF_Red_alert_store_status])) {
 			wing& current_wing = Wings[po.wingnum];
 			bool found = false;
 			
@@ -981,22 +981,8 @@ void red_alert_bash_wingman_status()
 		if ( pobjp->created_object != NULL )
 			continue;
 
-		// if we're in a wing, check whether we're in the player wing
-		bool from_player_wing = false;
-		if (pobjp->wingnum >= 0)
-		{
-			for (j = 0; j < MAX_STARTING_WINGS; j++)
-			{
-				if (!stricmp(Starting_wing_names[j], Wings[pobjp->wingnum].name))
-				{
-					from_player_wing = true;
-					break;
-				}
-			}
-		}
-
 		// same condition as in ship_obj loop
-		if ( !from_player_wing && !(pobjp->flags[Mission::Parse_Object_Flags::SF_Red_alert_store_status]) ) {
+		if ( !(pobjp->flags[Mission::Parse_Object_Flags::SF_From_player_wing]) && !(pobjp->flags[Mission::Parse_Object_Flags::SF_Red_alert_store_status]) ) {
 			continue;
 		}
 
