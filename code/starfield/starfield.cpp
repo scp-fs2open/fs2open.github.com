@@ -108,12 +108,10 @@ typedef struct starfield_bitmap_instance {
 	int div_x, div_y;								// # of x and y divisions
 	angles ang;										// angles from FRED
 	int star_bitmap_index;							// index into starfield_bitmap array
-	int timestamp;
-	int cur_frame;
 	int n_verts;
 	vertex *verts;
 
-	starfield_bitmap_instance() : scale_x(1.0f), scale_y(1.0f), div_x(1), div_y(1), star_bitmap_index(0), timestamp(0), cur_frame(0), n_verts(0), verts(NULL) {
+	starfield_bitmap_instance() : scale_x(1.0f), scale_y(1.0f), div_x(1), div_y(1), star_bitmap_index(0), n_verts(0), verts(NULL) {
 		ang.p = 0.0f;
 		ang.b = 0.0f;
 		ang.h = 0.0f;
@@ -1340,10 +1338,8 @@ void stars_draw_sun(int show_sun)
 		// draw the sun itself, keep track of how many we drew
 		int bitmap_id = -1;
 		if (bm->fps) {
-			//gr_set_bitmap(bm->bitmap_id + ((timestamp() / (int)(bm->fps)) % bm->n_frames), GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.999f);
-			bitmap_id = bm->bitmap_id + ((timestamp() / (int)(bm->fps)) % bm->n_frames);
+			bitmap_id = bm->bitmap_id + ((timestamp() * bm->fps / MILLISECONDS_PER_SECOND) % bm->n_frames);
 		} else {
-			//gr_set_bitmap(bm->bitmap_id, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.999f);
 			bitmap_id = bm->bitmap_id;
 		}
 
@@ -1477,10 +1473,8 @@ void stars_draw_sun_glow(int sun_n)
 	// draw the sun itself, keep track of how many we drew
 	int bitmap_id = -1;
 	if (bm->glow_fps) {
-		//gr_set_bitmap(bm->glow_bitmap + ((timestamp() / (int)(bm->glow_fps)) % bm->glow_n_frames), GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.5f);
-		bitmap_id = bm->glow_bitmap + ((timestamp() / (int)(bm->glow_fps)) % bm->glow_n_frames);
+		bitmap_id = bm->glow_bitmap + ((timestamp() * bm->glow_fps / MILLISECONDS_PER_SECOND) % bm->glow_n_frames);
 	} else {
-		//gr_set_bitmap(bm->glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.5f);
 		bitmap_id = bm->glow_bitmap;
 	}
 
@@ -1502,39 +1496,6 @@ void stars_draw_sun_glow(int sun_n)
 	}
 
 	//gr_zbuffer_set(zbuff);
-}
-
-int stars_get_next_frame(starfield_bitmap_instance &inst, starfield_bitmap &bm, int timestamp_ms)
-{
-	int bitmap_id = bm.bitmap_id;
-	
-	// After frame 0 we check if we should animate
-	if (inst.timestamp > 0) {
-
-		int mpf = 1000 / bm.fps; // The expected ms per frame for this animation
-		int time_passed = timestamp_ms - inst.timestamp; // Amount of time passed since last check
-
-		// Has the ms-per-frame passed since the last frame update?
-		if (time_passed >= mpf) {
-			bitmap_id = inst.cur_frame + (time_passed / mpf);
-
-			// Should we loop back to start?
-			if (bitmap_id >= (bm.bitmap_id + bm.n_frames)) {
-				bitmap_id = bm.bitmap_id;
-			}
-
-		} else {
-			return inst.cur_frame;
-		}
-	} else { //draw frame 0 at start
-		bitmap_id = bm.bitmap_id;
-	}
-
-	// Save the timestamp and bitmap id for the next frame check
-	inst.timestamp = timestamp_ms;
-	inst.cur_frame = bitmap_id;
-
-	return bitmap_id;
 }
 
 void stars_draw_bitmaps(int show_bitmaps)
@@ -1584,13 +1545,13 @@ void stars_draw_bitmaps(int show_bitmaps)
 
 		if (Starfield_bitmaps[star_index].xparent) {
 			if (Starfield_bitmaps[star_index].fps) {
-				bitmap_id = stars_get_next_frame(Starfield_bitmap_instances[idx], Starfield_bitmaps[star_index], timestamp());
+				bitmap_id = Starfield_bitmaps[star_index].bitmap_id + (((timestamp() * Starfield_bitmaps[star_index].fps) / MILLISECONDS_PER_SECOND) % Starfield_bitmaps[star_index].n_frames);
 			} else {
 				bitmap_id = Starfield_bitmaps[star_index].bitmap_id;
 			}
 		} else {
 			if (Starfield_bitmaps[star_index].fps) {
-				bitmap_id = stars_get_next_frame(Starfield_bitmap_instances[idx], Starfield_bitmaps[star_index], timestamp());
+				bitmap_id = Starfield_bitmaps[star_index].bitmap_id + (((timestamp() * Starfield_bitmaps[star_index].fps) / MILLISECONDS_PER_SECOND) % Starfield_bitmaps[star_index].n_frames);
 				blending = true;
 				alpha = 0.9999f;
 			} else {
