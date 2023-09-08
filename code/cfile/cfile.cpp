@@ -1847,7 +1847,9 @@ int cfile_get_path_type(const SCP_string& dir)
 		auto start = buf.find_first_not_of("\\/");
 		auto end = buf.find_last_not_of("\\/");
 
-		if ( (start > 0) || (end < buf.length()-1) ) {
+		if (start == SCP_string::npos) {
+			buf = "";
+		} else if ( (start > 0) || (end < buf.length()-1) ) {
 			buf = buf.substr(start, end-start+1);
 		}
 	}
@@ -1883,7 +1885,7 @@ int cfile_get_path_type(const SCP_string& dir)
 		}
 
 		// for everything else just find closest match, allowing for unknown subdirectories
-		if ( !buf.compare(0, strlen(Pathtype.path), Pathtype.path) ) {
+		if ( !strnicmp(buf.c_str(), Pathtype.path, strlen(Pathtype.path)) ) {
 			best_match = Pathtype.index;
 		}
 	}

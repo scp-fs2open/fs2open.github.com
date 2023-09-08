@@ -52,7 +52,7 @@ static SCP_string shockwave_mode_display(bool mode) { return mode ? "3D" : "2D";
 
 static bool Use_3D_shockwaves = true;
 
-static auto Shockwave3DMode =
+static auto Shockwave3DMode __UNUSED =
     options::OptionBuilder<bool>("Graphics.3DShockwaves", "Shockwaves", "The way shockwaves are displayed.")
         .category("Graphics")
         .display(shockwave_mode_display)
@@ -132,6 +132,8 @@ int shockwave_create(int parent_objnum, vec3d* pos, shockwave_create_info* sci, 
 	sw->obj_sig_hitlist.clear();
 	sw->shockwave_info_index = info_index;		// only one type for now... type could be passed is as a parameter
 	sw->current_bitmap = -1;
+
+	sw->blast_sound_id = sci->blast_sound_id;
 
 	sw->time_elapsed=0.0f;
 	sw->delay_stamp = delay;
@@ -281,6 +283,8 @@ void shockwave_move(object *shockwave_objp, float frametime)
 	// blast ships and asteroids
 	// And (some) weapons
 	for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 		if ( (objp->type != OBJ_SHIP) && (objp->type != OBJ_ASTEROID) && (objp->type != OBJ_WEAPON)) {
 			continue;
 		}
@@ -296,11 +300,9 @@ void shockwave_move(object *shockwave_objp, float frametime)
 		}
 
 	
-		if ( objp->type == OBJ_SHIP ) {
-			// don't blast navbuoys
-			if ( ship_get_SIF(objp->instance)[Ship::Info_Flags::Navbuoy] ) {
-				continue;
-			}
+		// don't blast no-collide or navbuoys
+		if ( !objp->flags[Object::Object_Flags::Collides] || (objp->type == OBJ_SHIP && ship_get_SIF(objp->instance)[Ship::Info_Flags::Navbuoy]) ) {
+			continue;
 		}
 
 		bool found_in_list = false;
@@ -336,15 +338,16 @@ void shockwave_move(object *shockwave_objp, float frametime)
 				weapon_do_electronics_effect(objp, &sw->pos, sw->weapon_info_index);
 			}
 			ship_apply_global_damage(objp, shockwave_objp, &sw->pos, damage, sw->damage_type_idx );
-			weapon_area_apply_blast(NULL, objp, &sw->pos, blast, 1);
+			weapon_area_apply_blast(nullptr, objp, &sw->pos, blast, true);
 			break;
 		case OBJ_ASTEROID:
-			asteroid_hit(objp, NULL, NULL, damage);
+			weapon_area_apply_blast(nullptr, objp, &sw->pos, blast, true);
+			asteroid_hit(objp, nullptr, nullptr, damage, nullptr);
 			break;
 		case OBJ_WEAPON:
 			wip = &Weapon_info[Weapons[objp->instance].weapon_info_index];
 			if (wip->armor_type_idx >= 0)
-				damage = Armor_types[wip->armor_type_idx].GetDamage(damage, shockwave_get_damage_type_idx(shockwave_objp->instance),1.0f);
+				damage = Armor_types[wip->armor_type_idx].GetDamage(damage, shockwave_get_damage_type_idx(shockwave_objp->instance), 1.0f, false);
 
 			objp->hull_strength -= damage;
 			if (objp->hull_strength < 0.0f) {
@@ -371,7 +374,9 @@ void shockwave_move(object *shockwave_objp, float frametime)
 			} else {
 				vol_scale = 1.0f;
 			}
-			snd_play( gamesnd_get_game_sound(GameSounds::SHOCKWAVE_IMPACT), 0.0f, vol_scale );
+			if (sw->blast_sound_id.isValid()) {
+				snd_play(gamesnd_get_game_sound(sw->blast_sound_id), 0.0f, vol_scale);
+			}
 		}
 
 	}	// end for
@@ -402,8 +407,8 @@ void shockwave_render(object *objp, model_draw_list *scene)
 
 
 	float alpha = 1.0f;
-	if (The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb_affects_weapons)
-		alpha *= neb2_get_fog_visibility(&objp->pos, Neb2_fog_visibility_shockwave);
+	if (Neb_affects_weapons)
+		nebula_handle_alpha(alpha, &objp->pos, Neb2_fog_visibility_shockwave);
 
 	if (sw->model_id > -1) {
 		vec3d scale;
@@ -723,6 +728,8 @@ void shockwave_create_info_init(shockwave_create_info *sci)
 	sci->rot_defined = false;
 	sci->damage_type_idx = sci->damage_type_idx_sav = -1;
 	sci->damage_overidden = false;
+
+	sci->blast_sound_id = GameSounds::SHOCKWAVE_IMPACT;
 }
 
 /**

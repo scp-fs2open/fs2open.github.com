@@ -17,6 +17,7 @@
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"
+#include "globalincs/utility.h"
 #include "graphics/matrix.h"
 #include "hud/hudartillery.h"
 #include "hud/hudbrackets.h"
@@ -1177,6 +1178,9 @@ void hud_target_common(int team_mask, int next_flag)
 	start2 = advance_fb(start, next_flag);
 
 	for ( A = start2; A != start; A = advance_fb(A, next_flag) ) {
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		is_ship = 0;
 
 		if (A == &obj_used_list)
@@ -1330,7 +1334,10 @@ static object* select_next_target_by_distance(const bool targeting_from_closest_
     object   *prospective_victim_ptr;
     ship     *prospective_victim_ship_ptr;
     for (ship_object_ptr = GET_FIRST(&Ship_obj_list); ship_object_ptr != END_OF_LIST(&Ship_obj_list); ship_object_ptr = GET_NEXT(ship_object_ptr)) {
-        prospective_victim_ptr = &Objects[ship_object_ptr->objnum];
+		if (Objects[ship_object_ptr->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
+	
+		prospective_victim_ptr = &Objects[ship_object_ptr->objnum];
         // get a pointer to the ship information
         prospective_victim_ship_ptr = &Ships[prospective_victim_ptr->instance];
 
@@ -1475,6 +1482,8 @@ void hud_target_missile(object *source_obj, int next_flag)
 
 		Assert(mo->objnum >= 0 && mo->objnum < MAX_OBJECTS);
 		A = &Objects[mo->objnum];
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 
 		Assert(A->type == OBJ_WEAPON);
 		Assert((A->instance >= 0) && (A->instance < MAX_WEAPONS));
@@ -1523,14 +1532,17 @@ void hud_target_missile(object *source_obj, int next_flag)
 		}
 
 		for (so=advance_ship(startShip, next_flag); so!=startShip; so=advance_ship(so, next_flag)) {
-			A = &Objects[so->objnum];
 
 			// don't look at header
 			if (so == &Ship_obj_list) {
 				continue;
 			}
 
-			Assertion(Objects[so->objnum].type == OBJ_SHIP, "hud_target_missile was about to call obj_team with a non-ship obejct with type %d. Please report!", Objects[so->objnum].type); 
+			A = &Objects[so->objnum];
+			if (A->flags[Object::Object_Flags::Should_be_dead])
+				continue;
+
+			Assertion(A->type == OBJ_SHIP, "hud_target_missile was about to call obj_team with a non-ship obejct with type %d. Please report!", A->type);
 
 			// only allow targeting of hostile bombs
 			if (!iff_x_attacks_y(Player_ship->team, obj_team(A))) {
@@ -1602,6 +1614,9 @@ void hud_target_uninspected_cargo(int next_flag)
 	start2 = advance_fb(start, next_flag);
 
 	for ( A = start2; A != start; A = advance_fb(A, next_flag) ) {
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		if ( A == &obj_used_list ) {
 			continue;
 		}
@@ -1665,6 +1680,8 @@ void hud_target_newest_ship()
 
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		A = &Objects[so->objnum];
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 		shipp = &Ships[A->instance];	// get a pointer to the ship information
 
 		if ( (A == Player_obj) || (should_be_ignored(shipp)) )
@@ -1751,14 +1768,18 @@ void hud_target_live_turret(int next_flag, int auto_advance, int only_player_tar
 	int num_live_turrets = 0;
 
 	// make sure we're targeting a ship
-	if (Player_ai->target_objnum == -1 && !auto_advance) {
-		snd_play(gamesnd_get_game_sound(GameSounds::TARGET_FAIL));
+	if (Player_ai->target_objnum == -1) {
+		if (!auto_advance) {
+			snd_play(gamesnd_get_game_sound(GameSounds::TARGET_FAIL));
+		}
 		return;
 	}
 
 	// only targeting subsystems on ship
-	if ((Objects[Player_ai->target_objnum].type != OBJ_SHIP) && (!auto_advance)) {
-		snd_play( gamesnd_get_game_sound(GameSounds::TARGET_FAIL));
+	if (Objects[Player_ai->target_objnum].type != OBJ_SHIP) {
+		if (!auto_advance) {
+			snd_play( gamesnd_get_game_sound(GameSounds::TARGET_FAIL));
+		}
 		return;
 	}
 
@@ -2212,8 +2233,9 @@ int hud_target_closest(int team_mask, int attacked_objnum, int play_fail_snd, in
 	eval_ship_as_closest_target_args.turret_attacking_target = get_closest_turret_attacking_player;
 
 	for ( so=GET_FIRST(&Ship_obj_list); so!=END_OF_LIST(&Ship_obj_list); so=GET_NEXT(so) ) {
-
 		A = &Objects[so->objnum];
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 		shipp = &Ships[A->instance];	// get a pointer to the ship information
 
 		// fill in rest of eval_ship_as_closest_target_args
@@ -2449,10 +2471,12 @@ void hud_target_in_reticle_new()
 	//	Get 3d vector through center of reticle
 	vm_vec_scale_add(&terminus, &Eye_position, &Player_obj->orient.vec.fvec, TARGET_IN_RETICLE_DISTANCE);
 
-	mc_info_init(&mc);
 	mc.model_instance_num = -1;
 	mc.model_num = 0;
 	for ( A = GET_FIRST(&obj_used_list); A !=END_OF_LIST(&obj_used_list); A = GET_NEXT(A) ) {
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		if ( !object_targetable_in_reticle(A) ) {
 			continue;
 		}
@@ -2559,6 +2583,9 @@ void hud_target_in_reticle_old()
 	vec3d	vec_to_target;
 
 	for ( A = GET_FIRST(&obj_used_list); A !=END_OF_LIST(&obj_used_list); A = GET_NEXT(A) ) {
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		if ( !object_targetable_in_reticle(A) ) {
 			continue;
 		}
@@ -3064,8 +3091,10 @@ void hud_process_homing_missiles()
 
 	for ( mo = GET_NEXT(&Missile_obj_list); mo != END_OF_LIST(&Missile_obj_list); mo = GET_NEXT(mo) ) {
 		A = &Objects[mo->objnum];
-		Assert((A->instance >= 0) && (A->instance < MAX_WEAPONS));
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 
+		Assert((A->instance >= 0) && (A->instance < MAX_WEAPONS));
 		wp = &Weapons[A->instance];
 
 		if (wp->homing_object == Player_obj) {
@@ -3128,8 +3157,10 @@ void HudGaugeMissileTriangles::render(float  /*frametime*/)
 
 	for ( mo = GET_NEXT(&Missile_obj_list); mo != END_OF_LIST(&Missile_obj_list); mo = GET_NEXT(mo) ) {
 		A = &Objects[mo->objnum];
-		Assert((A->instance >= 0) && (A->instance < MAX_WEAPONS));
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 
+		Assert((A->instance >= 0) && (A->instance < MAX_WEAPONS));
 		wp = &Weapons[A->instance];
 
 		if (wp->homing_object == Player_obj) {
@@ -3190,6 +3221,8 @@ void hud_process_remote_detonate_missile()
 	for ( mo = GET_FIRST(&Missile_obj_list); mo != END_OF_LIST(&Missile_obj_list); mo = GET_NEXT(mo) ) {
 		Assert(mo->objnum >= 0 && mo->objnum < MAX_OBJECTS);
 		mobjp = &Objects[mo->objnum];
+		if (mobjp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 
 		if ((Player_obj != NULL) && (mobjp->parent_sig == Player_obj->parent_sig)) {
 			if (Weapon_info[Weapons[mobjp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Remote]) {
@@ -3527,8 +3560,9 @@ void hud_show_hostile_triangle()
 	hostile_obj = NULL;
 
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list);  so = GET_NEXT(so) ) {
-
 		A = &Objects[so->objnum];
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 		sp = &Ships[A->instance];
 
 		// only look at ships who attack us
@@ -3636,11 +3670,12 @@ void HudGaugeHostileTriangle::render(float  /*frametime*/)
 	}
 }
 
-void hud_calculate_lead_pos(vec3d *lead_target_pos, vec3d *target_pos, object *targetp, weapon_info	*wip, float dist_to_target, vec3d *rel_pos)
+bool hud_calculate_lead_pos(vec3d* shooter_pos, vec3d *lead_target_pos, vec3d *target_pos, object *targetp, weapon_info	*wip, float dist_to_target, vec3d *rel_pos)
 {
-	vec3d target_moving_direction;
+	vec3d target_speed;
 	vec3d last_delta_vector;
 	float time_to_target, target_moved_dist;
+	bool valid_lead_pos = true;
 
 	if(wip->max_speed != 0) {
 		time_to_target = dist_to_target / wip->max_speed;
@@ -3650,24 +3685,36 @@ void hud_calculate_lead_pos(vec3d *lead_target_pos, vec3d *target_pos, object *t
 
 	target_moved_dist = targetp->phys_info.speed * time_to_target;
 
-	target_moving_direction = targetp->phys_info.vel;
+	target_speed = targetp->phys_info.vel;
+
+	if (!IS_VEC_NULL(&The_mission.gravity) && wip->gravity_const != 0.0f) {
+		if (physics_lead_ballistic_trajectory(shooter_pos, target_pos, &targetp->phys_info.vel, wip->max_speed, &The_mission.gravity, lead_target_pos)) {
+			*lead_target_pos = *shooter_pos + *lead_target_pos * 1000.0f;
+			return true;
+		} else {
+			valid_lead_pos = false;
+			// continue, in case the caller wants to get a lead pos either way
+		}
+	}
 
 	if(The_mission.ai_profile->flags[AI::Profile_Flags::Use_additive_weapon_velocity])
-		vm_vec_scale_sub2(&target_moving_direction, &Player_obj->phys_info.vel, wip->vel_inherit_amount);
+		vm_vec_scale_sub2(&target_speed, &Player_obj->phys_info.vel, wip->vel_inherit_amount);
 
 	// test if the target is moving at all
-	if ( vm_vec_mag_quick(&target_moving_direction) < 0.1f ) { // Find distance!
+	if ( vm_vec_mag_quick(&target_speed) < 0.1f ) { // Find distance!
 		*lead_target_pos =  *target_pos;
 	} else {
-		vm_vec_normalize(&target_moving_direction);
-		vm_vec_scale(&target_moving_direction, target_moved_dist);
-		vm_vec_add(lead_target_pos, target_pos, &target_moving_direction );
+		vm_vec_normalize(&target_speed);
+		vm_vec_scale(&target_speed, target_moved_dist);
+		vm_vec_add(lead_target_pos, target_pos, &target_speed);
 		polish_predicted_target_pos(wip, targetp, target_pos, lead_target_pos, dist_to_target, &last_delta_vector, 1); // Not used:, float time_to_enemy)
 
 		if(rel_pos) { // needed for quick lead indicators, not needed for normal lead indicators.
 			vm_vec_add2(lead_target_pos, rel_pos);
 		}
 	}
+
+	return valid_lead_pos;
 }
 
 // Return the bank number for the primary weapon that can fire the farthest, from
@@ -3996,10 +4043,13 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 			if (weapon_range < dist_to_target)
 				continue;
 
+			if (!hud_calculate_lead_pos(&Player_obj->pos, &lead_target_pos, &target_pos, targetp, wip, dist_to_target)) {
+				continue;
+			}
+
 			frame_offset = pickFrame(weapon_range, srange, dist_to_target);
 
 			if (frame_offset >= 0) {
-				hud_calculate_lead_pos(&lead_target_pos, &target_pos, targetp, wip, dist_to_target);
 				if (Lead_indicator_behavior == leadIndicatorBehavior::MULTIPLE) {
 					renderIndicator(frame_offset, targetp, &lead_target_pos);
 				}
@@ -4015,13 +4065,16 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 		}
 	}
 	else if (bank_to_fire >= 0) { //leadIndicatorBehavior::DEFAULT
+		if (!hud_calculate_lead_pos(&Player_obj->pos, &lead_target_pos, &target_pos, targetp, wip, dist_to_target)) {
+			prange = 0.0f; // no ballistic trajectory, primary is 'always out of range'
+		}
+
 		frame_offset = pickFrame(prange, srange, dist_to_target);
 		if ( frame_offset < 0 && srange != -1.0f ) {
 			return;
 		}
 
 		if (frame_offset >= 0) {
-			hud_calculate_lead_pos(&lead_target_pos, &target_pos, targetp, wip, dist_to_target);
 			renderIndicator(frame_offset, targetp, &lead_target_pos);
 		}
 	}
@@ -4042,8 +4095,8 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 		if (dist_to_target > max_dist)
 			return;
 
-		hud_calculate_lead_pos(&lead_target_pos, &target_pos, targetp, wip, dist_to_target);
-		renderIndicator(0, targetp, &lead_target_pos);
+		if (hud_calculate_lead_pos(&Player_obj->pos, &lead_target_pos, &target_pos, targetp, wip, dist_to_target))
+			renderIndicator(0, targetp, &lead_target_pos);
 	}
 }
 
@@ -4125,7 +4178,7 @@ void HudGaugeLeadIndicator::renderLeadQuick(vec3d *target_world_pos, object *tar
 		return;
 	}
 
-	hud_calculate_lead_pos(&lead_target_pos, target_world_pos, targetp, wip, dist_to_target, rel_pos);
+	hud_calculate_lead_pos(&source_pos , &lead_target_pos, target_world_pos, targetp, wip, dist_to_target, rel_pos);
 	renderIndicator(frame_offset, targetp, &lead_target_pos);
 }
 
@@ -4291,7 +4344,7 @@ void HudGaugeLeadSight::render(float  /*frametime*/)
 			g3_start_frame(0);
 		}
 
-		hud_calculate_lead_pos(&lead_target_pos, &target_pos, targetp, wip, dist_to_target);
+		hud_calculate_lead_pos(&source_pos, &lead_target_pos, &target_pos, targetp, wip, dist_to_target);
 		renderSight(1, &target_pos, &lead_target_pos); // render the primary weapon lead sight
 
 		if(!in_frame) {
@@ -4328,7 +4381,7 @@ void HudGaugeLeadSight::render(float  /*frametime*/)
 
 	//give it the "in secondary range frame
 
-	hud_calculate_lead_pos(&lead_target_pos, &target_pos, targetp, wip, dist_to_target);
+	hud_calculate_lead_pos(&source_pos, &lead_target_pos, &target_pos, targetp, wip, dist_to_target);
 	renderSight(0, &target_pos, &lead_target_pos); // now render the secondary weapon lead sight
 
 	if(!in_frame) {
@@ -4773,7 +4826,8 @@ void HudGaugeAutoTarget::render(float  /*frametime*/)
 
 	// draw the box background
 	setGaugeColor();
-	renderBitmap(Toggle_frame.first_frame+frame_offset, position[0], position[1]);
+	if (Toggle_frame.first_frame + frame_offset >= 0)
+		renderBitmap(Toggle_frame.first_frame+frame_offset, position[0], position[1]);
 
 	// draw the text on top
 	if (frame_offset == 1) {
@@ -4859,7 +4913,8 @@ void HudGaugeAutoSpeed::render(float  /*frametime*/)
 
 	setGaugeColor();
 
-	renderBitmap(Toggle_frame.first_frame+frame_offset, position[0], position[1]);
+	if (Toggle_frame.first_frame + frame_offset >= 0)
+		renderBitmap(Toggle_frame.first_frame+frame_offset, position[0], position[1]);
 
 	// draw the text on top
 	if (frame_offset == 3) {
@@ -4896,6 +4951,8 @@ int hud_target_closest_repair_ship(int goal_objnum)
 
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		A = &Objects[so->objnum];
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 		shipp = &Ships[A->instance];	// get a pointer to the ship information
 
 		// ignore all ships that aren't repair ships
@@ -4967,8 +5024,9 @@ void hud_target_closest_uninspected_object()
 	float		new_distance = 0.0f;
 
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
-
 		A = &Objects[so->objnum];
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 		shipp = &Ships[A->instance];	// get a pointer to the ship information
 
 		if ( (A == Player_obj) || (should_be_ignored(shipp)) ){
@@ -5032,6 +5090,8 @@ void hud_target_uninspected_object(int next_flag)
 
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		A = &Objects[so->objnum];
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 		shipp = &Ships[A->instance];	// get a pointer to the ship information
 
 		if ( (A == Player_obj) || (should_be_ignored(shipp)) )
@@ -5443,9 +5503,8 @@ void HudGaugeCmeasures::pageIn()
 
 void HudGaugeCmeasures::render(float  /*frametime*/)
 {
-	if ( Cmeasure_gauge.first_frame == -1) {
-		Int3();	// failed to load coutermeasure gauge background
-		return;
+	if ( Cmeasure_gauge.first_frame < 0) {
+		return;	// failed to load coutermeasure gauge background
 	}
 
 	ship_info *sip = &Ship_info[Player_ship->ship_info_index];
@@ -5493,7 +5552,7 @@ void HudGaugeAfterburner::render(float  /*frametime*/)
 	float percent_left;
 	int	clip_h,w,h;
 
-	if ( Energy_bar.first_frame == -1 ){
+	if ( Energy_bar.first_frame < 0 ){
 		return;
 	}
 
@@ -5702,7 +5761,7 @@ void HudGaugeWeaponEnergy::render(float  /*frametime*/)
 		weapon_info *wip;
 		ship_weapon *sw;
 
-		if ( Energy_bar.first_frame == -1 ) {
+		if ( Energy_bar.first_frame < 0 ) {
 			return;
 		}
 
@@ -6067,7 +6126,8 @@ void HudGaugeWeapons::render(float  /*frametime*/)
 	setGaugeColor();
 
 	// draw top of primary display
-	renderBitmap(primary_top[ballistic_hud_index].first_frame, position[0] + top_offset_x[ballistic_hud_index], position[1]);
+	if (primary_top[ballistic_hud_index].first_frame >= 0)
+		renderBitmap(primary_top[ballistic_hud_index].first_frame, position[0] + top_offset_x[ballistic_hud_index], position[1]);
 
 	// render the header of this gauge
 	renderString(position[0] + Weapon_header_offsets[ballistic_hud_index][0], position[1] + Weapon_header_offsets[ballistic_hud_index][1], EG_WEAPON_TITLE, XSTR( "weapons", 328));
@@ -6087,10 +6147,11 @@ void HudGaugeWeapons::render(float  /*frametime*/)
 		// It is assumed that the top primary wep frame already has this rendered.
 		if(i == 1) {
 			// used to draw the second primary weapon background
-			renderBitmap(primary_middle[ballistic_hud_index].first_frame, position[0] + frame_offset_x[ballistic_hud_index], y);
+			if (primary_middle[ballistic_hud_index].first_frame >= 0)
+				renderBitmap(primary_middle[ballistic_hud_index].first_frame, position[0] + frame_offset_x[ballistic_hud_index], y);
 		} else if(i != 0) {
 			// used to draw the the third, fourth, fifth, etc...
-			if(primary_last[ballistic_hud_index].first_frame != -1)
+			if(primary_last[ballistic_hud_index].first_frame >= 0)
 				renderBitmap(primary_last[ballistic_hud_index].first_frame, position[0] + frame_offset_x[ballistic_hud_index], y);
 		}
 
@@ -6140,7 +6201,8 @@ void HudGaugeWeapons::render(float  /*frametime*/)
 		setGaugeColor(HUD_C_BRIGHT);
 	}
 
-	renderBitmap(secondary_top[ballistic_hud_index].first_frame, position[0] + frame_offset_x[ballistic_hud_index], y);
+	if (secondary_top[ballistic_hud_index].first_frame >= 0)
+		renderBitmap(secondary_top[ballistic_hud_index].first_frame, position[0] + frame_offset_x[ballistic_hud_index], y);
 	name_y = y + sname_start_offset_y;
 	y += top_secondary_h;
 
@@ -6149,7 +6211,7 @@ void HudGaugeWeapons::render(float  /*frametime*/)
 		setGaugeColor();
 		wip = &Weapon_info[sw->secondary_bank_weapons[i]];
 
-		if(i!=0) {
+		if(i!=0 && secondary_middle[ballistic_hud_index].first_frame >= 0) {
 			renderBitmap(secondary_middle[ballistic_hud_index].first_frame, position[0] + frame_offset_x[ballistic_hud_index], y);
 		}
 
@@ -6223,7 +6285,8 @@ void HudGaugeWeapons::render(float  /*frametime*/)
 
 	y -= 0;
 	// finish drawing the background
-	renderBitmap(secondary_bottom[ballistic_hud_index].first_frame, position[0] + frame_offset_x[ballistic_hud_index], y);
+	if (secondary_bottom[ballistic_hud_index].first_frame >= 0)
+		renderBitmap(secondary_bottom[ballistic_hud_index].first_frame, position[0] + frame_offset_x[ballistic_hud_index], y);
 }
 
 void hud_update_weapon_flash()
@@ -6785,7 +6848,8 @@ void HudGaugeWarheadCount::render(float  /*frametime*/)
 			column = i;
 		}
 
-		renderBitmap(Warhead.first_frame, position[0] + Warhead_count_offsets[0] + column * delta_x, position[1] + Warhead_count_offsets[1] + delta_y);
+		if (Warhead.first_frame >= 0)
+			renderBitmap(Warhead.first_frame, position[0] + Warhead_count_offsets[0] + column * delta_x, position[1] + Warhead_count_offsets[1] + delta_y);
 	}
 }
 
@@ -6954,7 +7018,8 @@ void HudGaugePrimaryWeapons::render(float  /*frametime*/)
 
 	setGaugeColor();
 
-	renderBitmap(_background_first.first_frame, position[0], position[1]);
+	if (_background_first.first_frame >= 0)
+		renderBitmap(_background_first.first_frame, position[0], position[1]);
 
 	// render the header of this gauge
 	renderString(position[0] + _header_offsets[0], position[1] + _header_offsets[1], EG_WEAPON_TITLE, header_text);
@@ -6967,7 +7032,8 @@ void HudGaugePrimaryWeapons::render(float  /*frametime*/)
 	for ( i = 0; i < num_primaries; ++i ) {
 		setGaugeColor();
 
-		renderBitmap(_background_entry.first_frame, position[0], position[1] + bg_y_offset);
+		if (_background_entry.first_frame >= 0)
+			renderBitmap(_background_entry.first_frame, position[0], position[1] + bg_y_offset);
 
 		auto weapon_name = Weapon_info[sw->primary_bank_weapons[i]].get_display_name();
 
@@ -7005,13 +7071,15 @@ void HudGaugePrimaryWeapons::render(float  /*frametime*/)
 	}
 
 	if ( num_primaries == 0 ) {
-		renderBitmap(_background_entry.first_frame, position[0], position[1] + bg_y_offset);
+		if (_background_entry.first_frame >= 0)
+			renderBitmap(_background_entry.first_frame, position[0], position[1] + bg_y_offset);
 		renderString(position[0] + _pname_offset_x, position[1] + text_y_offset, EG_WEAPON_P1, XSTR( "<none>", 329));
 
 		bg_y_offset += _background_entry_h;
 	}
 
-	renderBitmap(_background_last.first_frame, position[0], position[1] + bg_y_offset + _bg_last_offset_y);
+	if (_background_last.first_frame >= 0)
+		renderBitmap(_background_last.first_frame, position[0], position[1] + bg_y_offset + _bg_last_offset_y);
 }
 
 HudGaugeSecondaryWeapons::HudGaugeSecondaryWeapons():

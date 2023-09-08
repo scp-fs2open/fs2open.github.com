@@ -836,14 +836,15 @@ void hud_lock_acquire_uncaged_target(lock_info *current_lock, weapon_info *wip)
 	bool actively_locking = false;
 
 	for ( A = GET_FIRST(&obj_used_list); A !=END_OF_LIST(&obj_used_list); A = GET_NEXT(A) ) {
-		ship* sp = &Ships[A->instance];
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 
 		if (!weapon_multilock_can_lock_on_target(Player_obj, A, wip, &dot))
 			continue;
 
 		bool in_range = weapon_secondary_world_pos_in_range(Player_obj, wip, &A->pos);
 
-		if ( Ship_info[sp->ship_info_index].is_big_or_huge() ) {
+		if ( A->type == OBJ_SHIP && Ship_info[Ships[A->instance].ship_info_index].is_big_or_huge() ) {
 			lock_info temp_lock;
 
 			temp_lock.obj = A;
@@ -917,6 +918,9 @@ void hud_lock_acquire_uncaged_target_weapon(lock_info* current_lock, weapon_info
 	bool actively_locking = false;
 
 	for (A = GET_FIRST(&obj_used_list); A != END_OF_LIST(&obj_used_list); A = GET_NEXT(A)) {
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		if (!weapon_multilock_can_lock_on_target(Player_obj, A, wip, &dot, true))
 			continue;
 
@@ -1689,7 +1693,7 @@ void HudGaugeLock::renderLockTrianglesOld(int center_x, int center_y, int radius
 // draw a frame of the rotating lock triangles animation
 void HudGaugeLock::renderLockTriangles(int center_x, int center_y, float frametime)
 {
-	if ( Lock_anim.first_frame == -1 ) {
+	if ( Lock_anim.first_frame < 0 ) {
 		renderLockTrianglesOld(center_x, center_y, Lock_target_box_width/2);
 	} else {
 		// render the anim
@@ -1730,7 +1734,7 @@ void HudGaugeLock::renderLockTriangles(int center_x, int center_y, float frameti
 
 void HudGaugeLock::renderLockTrianglesNew(int center_x, int center_y, float frametime, lock_info *slot)
 {
-	if ( Lock_anim.first_frame == -1 ) {
+	if ( Lock_anim.first_frame < 0 ) {
 		renderLockTrianglesOld(center_x, center_y, Lock_target_box_width/2);
 	} else {
 		// render the anim

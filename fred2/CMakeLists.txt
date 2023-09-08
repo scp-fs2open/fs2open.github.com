@@ -33,6 +33,8 @@ set(FRED2_SOURCES
 	campaigntreeview.h
 	campaigntreewnd.cpp
 	campaigntreewnd.h
+	checkboxlistdlg.cpp
+	checkboxlistdlg.h
 	cmdbrief.cpp
 	cmdbrief.h
 	createwingdlg.cpp
@@ -41,8 +43,6 @@ set(FRED2_SOURCES
 	customwingnames.h
 	debriefingeditordlg.cpp
 	debriefingeditordlg.h
-	dialog1.cpp
-	dialog1.h
 	dumpstats.cpp
 	dumpstats.h
 	editcontainernamedlg.cpp
@@ -50,8 +50,6 @@ set(FRED2_SOURCES
 	editor.h
 	eventeditor.cpp
 	eventeditor.h
-	folderdlg.cpp
-	folderdlg.h
 	fred.cpp
 	fred.h
 	freddoc.cpp
@@ -69,6 +67,8 @@ set(FRED2_SOURCES
 	initialships.h
 	initialstatus.cpp
 	initialstatus.h
+	jumpnodedlg.cpp
+	jumpnodedlg.h
 	listitemchooser.cpp
 	listitemchooser.h
 	mainfrm.cpp
@@ -85,8 +85,12 @@ set(FRED2_SOURCES
 	missionsave.h
 	modifyvariabledlg.cpp
 	modifyvariabledlg.h
+	musicplayerdlg.cpp
+	musicplayerdlg.h
 	operatorargtypeselect.cpp
 	operatorargtypeselect.h
+	OperatorComboBox.cpp
+	OperatorComboBox.h
 	orienteditor.cpp
 	orienteditor.h
 	playerstarteditor.cpp
@@ -132,6 +136,8 @@ set(FRED2_SOURCES
 	textviewdlg.h
 	voiceactingmanager.cpp
 	voiceactingmanager.h
+	volumetricsdlg.cpp
+	volumetricsdlg.h
 	warpparamsdlg.cpp
 	warpparamsdlg.h
 	waypointpathdlg.cpp

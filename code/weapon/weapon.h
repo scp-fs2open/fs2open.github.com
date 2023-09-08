@@ -59,6 +59,8 @@ extern int Num_weapon_subtypes;
 // enum for multilock object type restriction
 enum class LR_Objecttypes { LRO_SHIPS, LRO_WEAPONS };
 
+constexpr int BANK_SWITCH_DELAY = 250;	// after switching banks, 1/4 second delay until player can fire
+
 //particle names go here -nuke
 #define PSPEW_NONE		-1			//used to disable a spew, useful for xmts
 #define PSPEW_DEFAULT	0			//std fs2 pspew
@@ -79,25 +81,6 @@ enum class LR_Objecttypes { LRO_SHIPS, LRO_WEAPONS };
 #define WEAPON_DEFAULT_TABLED_MAX_RANGE 999999999.9f
 
 #define MAX_SPAWN_TYPES_PER_WEAPON 5
-
-enum class WeaponState : uint32_t
-{
-	INVALID,
-
-	// States for laser weapons
-	NORMAL, //!< For laser weapons that have only one state
-
-	// Missile states following
-	FREEFLIGHT, //!< The initial flight state where the missile is "unpowered"
-	IGNITION, //!< The moment when the missile comes out of free flight
-	HOMED_FLIGHT, //!< The missile is homing in on its target
-	UNHOMED_FLIGHT, //!< The missile does not currently target an object
-};
-struct WeaponStateHash {
-	size_t operator()(const WeaponState& state) const {
-		return static_cast<size_t>(state);
-	}
-};
 
 typedef struct weapon {
 	int		weapon_info_index;			// index into weapon_info array
@@ -279,7 +262,8 @@ typedef struct particle_spew_info {	//this will be used for multi spews
 
 typedef struct spawn_weapon_info 
 {
-	short	spawn_type;							//	Type of weapon to spawn when detonated.
+	short	spawn_wep_index;					//	weapon info index of the child weapon, during parsing instead an index into Spawn_names
+												//  MAY BE -1, if parsed weapon could not be found
 	short	spawn_count;						//	Number of weapons of spawn_type to spawn.
 	float	spawn_angle;						//  Angle to spawn the child weapons in.  default is 180
 	float	spawn_min_angle;					//  Angle of spawning 'deadzone' inside spawn angle. Default 0.
@@ -370,6 +354,7 @@ struct weapon_info
 	float	vel_inherit_amount;					// how much of the parent ship's velocity is inherited (0.0..1.0)
 	float	free_flight_time;
 	float	free_flight_speed_factor;
+	float gravity_const;						// multiplier applied to gravity, if any in the mission
 	float mass;									// mass of the weapon
 	float fire_wait;							// fire rate -- amount of time before you can refire the weapon
 	float max_delay;							// max time to delay a shot (DahBlount)
@@ -407,6 +392,7 @@ struct weapon_info
 	float turn_time;
 	float turn_accel_time;
 	float	cargo_size;							// cargo space taken up by individual weapon (missiles only)
+	float autoaim_fov;							// the weapon specific auto-aim field of view
 	float rearm_rate;							// rate per second at which secondary weapons are loaded during rearming
 	int		reloaded_per_batch;				    // number of munitions rearmed per batch
 	float	weapon_range;						// max range weapon can be effectively fired.  (May be less than life * speed)
@@ -456,8 +442,10 @@ struct weapon_info
 	gamesnd_id pre_launch_snd;
 	int	pre_launch_snd_min_interval;	//Minimum interval in ms between the last time the pre-launch sound was played and the next time it can play, as a limiter in case the player is pumping the trigger
 	gamesnd_id	launch_snd;
+	gamesnd_id	cockpit_launch_snd;
 	gamesnd_id	impact_snd;
-	gamesnd_id disarmed_impact_snd;
+	gamesnd_id  disarmed_impact_snd;
+	gamesnd_id  shield_impact_snd;
 	gamesnd_id	flyby_snd;							//	whizz-by sound, transmitted through weapon's portable atmosphere.
 	gamesnd_id	ambient_snd;
 	
@@ -492,9 +480,14 @@ struct weapon_info
 	// Recoil effect
 	float recoil_modifier;
 
+	float shudder_modifier;
+
 	// Energy suck effect
 	float weapon_reduce;					// how much energy removed from weapons systems
 	float afterburner_reduce;			// how much energy removed from weapons systems
+
+	// Vampirism Effect Multiplier
+	float vamp_regen;					// Factor by which a vampiric weapon will multiply the healing done to the shooter
 
 	// tag stuff
 	float	tag_time;						// how long the tag lasts		
@@ -515,8 +508,10 @@ struct weapon_info
 	int cs_num_fired;
 	float cs_radius;
 	float cs_twist;
-	int cs_crotate;
+	bool cs_crotate;
 	int cs_delay;
+	bool cs_random_angle;
+	float cs_angle;
 
 	//electronics info - phreak 5/3/03
 	int elec_time;				//how long it lasts, in milliseconds
@@ -553,8 +548,8 @@ struct weapon_info
 	int   cmeasure_timer_interval;	// how many milliseconds between pulses
 	int cmeasure_firewait;						// delay in milliseconds between countermeasure firing --wookieejedi
 	bool cmeasure_use_firewait;					// if set to true, then countermeasure will use specified firewait instead of default --wookieejedi
-	int cmeasure_failure_delay_multiplier_ai;	// multiplier for firewait between failed countermeasure launches, next launch try = this value * firewait  --wookieejedi
-	int cmeasure_sucess_delay_multiplier_ai;	// multiplier for firewait between successful countermeasure launches, next launch try = this value * firewait  --wookieejedi
+	float cmeasure_failure_delay_multiplier_ai;	// multiplier for firewait between failed countermeasure launches, next launch try = this value * firewait  --wookieejedi
+	float cmeasure_success_delay_multiplier_ai;	// multiplier for firewait between successful countermeasure launches, next launch try = this value * firewait  --wookieejedi
 
 	float weapon_submodel_rotate_accell;
 	float weapon_submodel_rotate_vel;
@@ -731,7 +726,7 @@ void spawn_child_weapons( object *objp, int spawn_index_override = -1);
 // call to detonate a weapon. essentially calls weapon_hit() with other_obj as NULL, and sends a packet in multiplayer
 void weapon_detonate(object *objp);
 
-void	weapon_area_apply_blast(vec3d *force_apply_pos, object *ship_objp, vec3d *blast_pos, float blast, int make_shockwave);
+void	weapon_area_apply_blast(vec3d *force_apply_pos, object *ship_objp, vec3d *blast_pos, float blast, bool make_shockwave);
 int	weapon_area_calc_damage(object *objp, vec3d *pos, float inner_rad, float outer_rad, float max_blast, float max_damage,
 										float *blast, float *damage, float limit);
 

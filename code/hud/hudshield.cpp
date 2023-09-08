@@ -581,7 +581,7 @@ void HudGaugeShield::showShields(object *objp, int mode)
 	if (sip->shield_icon_index != 255) {
 		sgp = &Shield_gauges.at(sip->shield_icon_index);
 
-		if ( (sgp->first_frame == -1) && (sip->shield_icon_index < Hud_shield_filenames.size()) ) {
+		if ( (sgp->first_frame < 0) && (sip->shield_icon_index < Hud_shield_filenames.size()) ) {
 			sgp->first_frame = bm_load_animation(Hud_shield_filenames.at(sip->shield_icon_index).c_str(), &sgp->num_frames);
 			if (sgp->first_frame == -1) {
 				if (!shield_ani_warning_displayed_already) {
@@ -958,6 +958,9 @@ void HudGaugeShieldMini::pageIn()
 // Draw the miniature shield icon that is drawn near the reticle
 void HudGaugeShieldMini::showMiniShields(object *objp)
 {
+	if (Shield_mini_gauge.first_frame < 0)
+		return;
+
 	float			max_shield;
 	int			hud_color_index, range, frame_offset;
 	int			sx, sy, i;

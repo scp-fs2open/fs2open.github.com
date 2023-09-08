@@ -67,6 +67,20 @@ enum class TextureOverride {
 	Specular
 };
 
+
+namespace ltp = lighting_profiles;
+
+struct gfx_options {
+	int bloom_level;
+	float ambient_factor;
+	float light_factor;
+	float emissive_factor;
+	float exposure_level;
+	ltp::piecewise_power_curve_values ppcv;
+	AntiAliasMode aa_mode;
+	ltp::TonemapperAlgorithm tonemapper;
+};
+
 constexpr auto LAB_MISSION_NONE_STRING = "None";
 constexpr auto LAB_TEAM_COLOR_NONE = "<none>";
 
@@ -106,8 +120,8 @@ public:
 		Motion_debris_override = false;
 	}
 
-	static void setTonemapper(TonemapperAlgorithm mode) {
-		lighting_profile::lab_set_tonemapper(mode);
+	static void setTonemapper(ltp::TonemapperAlgorithm mode) {
+		ltp::lab_set_tonemapper(mode);
 	}
 
 	void useNextTeamColorPreset() {
@@ -139,22 +153,27 @@ public:
 		currentTeamColor = std::move(teamColor);
 	}
 
+	SCP_string getCurrentTeamColor()
+	{
+		return currentTeamColor;
+	}
+
 	void resetView() {}
 
 	void setRenderFlag(LabRenderFlag flag, bool value) { renderFlags.set(flag, value); }
 
 	static float setAmbientFactor(float factor) { 
-		lighting_profile::lab_set_ambient(factor);
+		ltp::lab_set_ambient(factor);
 		return factor; 
 	}
 
 	static float setLightFactor(float factor) {
-		lighting_profile::lab_set_light(factor);
+		ltp::lab_set_light(factor);
 		return factor; 
 	}
 
 	static float setEmissiveFactor(float factor) { 
-		lighting_profile::lab_set_emissive(factor);
+		ltp::lab_set_emissive(factor);
 		return factor; 
 	}
 
@@ -166,19 +185,25 @@ public:
 
 	float setExposureLevel(float level) {
 		exposureLevel = level;
-		lighting_profile::lab_set_exposure(level);
+		ltp::lab_set_exposure(level);
 		return level;
 	}
 	
-	static void setPPCValues(piecewise_power_curve_values ppcv) {
-		lighting_profile::lab_set_ppc(ppcv);
+	static void setPPCValues(ltp::piecewise_power_curve_values ppcv) {
+		ltp::lab_set_ppc(ppcv);
 	}
 
 	void setTextureQuality(TextureQuality quality) { textureQuality = quality; }
+	TextureQuality getTextureQuality()
+	{
+		return textureQuality;
+	}
 
 	void setTextureOverride(TextureOverride, bool) {};
 
 	void resetTextureOverride() {};
+
+	void resetGraphicsSettings(gfx_options settings);
 
 	std::unique_ptr<LabCamera> &getCurrentCamera();
 	void setCurrentCamera(std::unique_ptr<LabCamera> &newcam);

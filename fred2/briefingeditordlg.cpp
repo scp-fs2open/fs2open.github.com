@@ -28,6 +28,7 @@
 #include "iff_defs/iff_defs.h"
 #include "sound/audiostr.h"
 #include "localization/localize.h"
+#include "mod_table/mod_table.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -62,6 +63,7 @@ briefing_editor_dlg::briefing_editor_dlg(CWnd* pParent /*=NULL*/)
 	m_icon_image = -1;
 	m_icon_label = _T("");
 	m_icon_closeup_label = _T("");
+	m_icon_scale = -1;
 	m_stage_title = _T("");
 	m_text = _T("");
 	m_time = _T("");
@@ -74,6 +76,7 @@ briefing_editor_dlg::briefing_editor_dlg(CWnd* pParent /*=NULL*/)
 	m_substitute_briefing_music = _T("");
 	m_cut_next = FALSE;
 	m_cut_prev = FALSE;
+	m_no_grid = FALSE;
 	m_current_briefing = -1;
 	m_flipicon = FALSE;
 	m_use_wing = FALSE;
@@ -98,6 +101,7 @@ void briefing_editor_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_CBIndex(pDX, IDC_ICON_IMAGE, m_icon_image);
 	DDX_Text(pDX, IDC_ICON_LABEL, m_icon_label);
 	DDX_Text(pDX, IDC_ICON_CLOSEUP_LABEL, m_icon_closeup_label);
+	DDX_Text(pDX, IDC_ICON_SCALE, m_icon_scale);
 	DDX_Text(pDX, IDC_STAGE_TITLE, m_stage_title);
 	DDX_Text(pDX, IDC_TEXT, m_text);
 	DDX_Text(pDX, IDC_TIME, m_time);
@@ -110,6 +114,7 @@ void briefing_editor_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_SUBSTITUTE_BRIEFING_MUSIC, m_substitute_briefing_music);
 	DDX_Check(pDX, IDC_CUT_NEXT, m_cut_next);
 	DDX_Check(pDX, IDC_CUT_PREV, m_cut_prev);
+	DDX_Check(pDX, IDC_NO_GRID, m_no_grid);
 	DDX_Check(pDX, IDC_FLIP_ICON, m_flipicon);
 	DDX_Check(pDX, IDC_USE_WING_ICON, m_use_wing);
 	DDX_Check(pDX, IDC_USE_CARGO_ICON, m_use_cargo);
@@ -366,6 +371,9 @@ void briefing_editor_dlg::update_data(int update)
 		else
 			i &= ~BS_FORWARD_CUT;
 
+		if (m_no_grid)
+			ptr->draw_grid = false;
+
 		MODIFY(ptr->flags, i);
 		ptr->formula = m_tree.save_tree();
 		switch (m_lines.GetCheck()) {
@@ -472,6 +480,9 @@ void briefing_editor_dlg::update_data(int update)
 			}
 			strcpy_s(ptr->icons[m_last_icon].closeup_label, buf);
 
+			if (m_icon_scale > 0)
+				ptr->icons[m_last_icon].scale_factor = m_icon_scale / 100.0f;
+
 			if ( m_hilight )
 				ptr->icons[m_last_icon].flags |= BI_HIGHLIGHT;
 			else
@@ -532,6 +543,7 @@ void briefing_editor_dlg::update_data(int update)
 		m_voice = ptr->voice;
 		m_cut_prev = (ptr->flags & BS_BACKWARD_CUT) ? 1 : 0;
 		m_cut_next = (ptr->flags & BS_FORWARD_CUT) ? 1 : 0;
+		m_no_grid = (ptr->draw_grid) ? 0 : 1;
 		m_tree.load_tree(ptr->formula);
 
 	} else {
@@ -540,6 +552,7 @@ void briefing_editor_dlg::update_data(int update)
 		m_time = _T("");
 		m_voice = _T("");
 		m_cut_prev = m_cut_next = 0;
+		m_no_grid = 0;
 		m_tree.clear_tree();
 		enable = FALSE;
 		m_cur_stage = -1;
@@ -576,6 +589,7 @@ void briefing_editor_dlg::update_data(int update)
 	GetDlgItem(IDC_GOTO_VIEW) -> EnableWindow(enable);
 	GetDlgItem(IDC_CUT_PREV) -> EnableWindow(enable);
 	GetDlgItem(IDC_CUT_NEXT) -> EnableWindow(enable);
+	GetDlgItem(IDC_NO_GRID)->EnableWindow(enable);
 	GetDlgItem(IDC_TREE) -> EnableWindow(enable);
 	GetDlgItem(IDC_PLAY) -> EnableWindow(enable);
 
@@ -588,6 +602,7 @@ void briefing_editor_dlg::update_data(int update)
 		m_icon_team = ptr->icons[m_cur_icon].team;
 		m_icon_label = ptr->icons[m_cur_icon].label;
 		m_icon_closeup_label = ptr->icons[m_cur_icon].closeup_label;
+		m_icon_scale = static_cast<int>(ptr->icons[m_cur_icon].scale_factor * 100.0f);
 		m_ship_type = ptr->icons[m_cur_icon].ship_class;
 		m_id = ptr->icons[m_cur_icon].id;
 		enable = TRUE;
@@ -602,6 +617,7 @@ void briefing_editor_dlg::update_data(int update)
 		m_ship_type = -1;
 		m_icon_label = _T("");
 		m_icon_closeup_label = _T("");
+		m_icon_scale = 100;
 		m_cur_icon = -1;
 		m_id = 0;
 		enable = FALSE;
@@ -852,8 +868,10 @@ void briefing_editor_dlg::draw_icon(object *objp)
 	if (m_cur_stage < 0)
 		return;
 
-	brief_render_icon(m_cur_stage, objp->instance, 1.0f/30.0f, objp->flags[Object::Object_Flags::Marked],
-		(float) True_rw / BRIEF_GRID_W, (float) True_rh / BRIEF_GRID_H);
+	// average the w and h scale factors
+	float scale_factor = 0.5f * ((float)True_rw / Briefing_window_resolution[0] + (float)True_rh / Briefing_window_resolution[1]);
+
+	brief_render_icon(m_cur_stage, objp->instance, 1.0f/30.0f, objp->flags[Object::Object_Flags::Marked], scale_factor);
 }
 
 void briefing_editor_dlg::batch_render()
@@ -1064,6 +1082,7 @@ void briefing_editor_dlg::OnMakeIcon()
 	biconp->pos = pos;
 	biconp->flags = 0;
 	biconp->id = Cur_brief_id++;
+	biconp->scale_factor = 1.0f;
 
 	biconp->modelnum = -1;
 	biconp->model_instance_num = -1;

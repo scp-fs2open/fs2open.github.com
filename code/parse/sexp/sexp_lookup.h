@@ -6,6 +6,11 @@
 namespace sexp {
 
 /**
+ * @brief Returns the maximum SEXP id, exclusive, or alternatively the id that would be used by the next scripted SEXP.
+ */
+int operator_upper_bound();
+
+/**
  * @brief Adds the sexp to the dynamic SEXP system
  *
  * The pointer is transferred to the ownership of the SEXP system and may not be deleted by outside code.
@@ -18,7 +23,7 @@ namespace sexp {
  * 
  * @return The operator id of the SEXP
  */
-int add_dynamic_sexp(std::unique_ptr<DynamicSEXP>&& sexp, int type = SEXP_ACTION_OPERATOR);
+int add_dynamic_sexp(std::unique_ptr<DynamicSEXP>&& sexp, sexp_oper_type type = sexp_oper_type::ACTION);
 
 /**
  * @brief Given an operator constant, return the associated dynamic SEXP
@@ -28,13 +33,47 @@ int add_dynamic_sexp(std::unique_ptr<DynamicSEXP>&& sexp, int type = SEXP_ACTION
 DynamicSEXP* get_dynamic_sexp(int operator_const);
 
 /**
+ * @brief Given a category name, return the category index
+ * @param name The category name
+ * @return The category index or OP_CATEGORY_NONE if not found
+ */
+int get_category(const SCP_string& name);
+
+/**
+ * @brief Given a category and a subcategory name, return the subcategory index
+ * @param name The subcategory name
+ * @param category The parent category
+ * @return The subcategory index or OP_SUBCATEGORY_NONE if not found
+ */
+int get_subcategory(const SCP_string& name, int category);
+
+/**
+ * @brief Given a subcategory constant, return its parent category
+ * @param subcategory_id The subcategory constant to check
+ * @return The category or OP_CATEGORY_NONE if there isn't one
+ */
+int get_category_of_subcategory(int subcategory_id);
+
+/**
+ * @brief Dynamically add a new category to the SEXP system
+ *
+ * @warning Category names must be globally unique! This is not validated by this function.
+ *
+ * @param name The display name of the category
+ * @return The new category identifier
+ */
+int add_category(const SCP_string& name);
+
+int increment_enum_list_id();
+
+/**
  * @brief Dynamically add a new subcategory to the SEXP system
  *
  * @warning Subcategory names must be globally unique! This is not validated by this function.
  *
  * @param parent_category The parent category of this category
- * @param name The display name of the category
- * @return The new category identifier or -1 on error
+ * @param name The display name of the subcategory
+ * @return The new subcategory identifier
  */
 int add_subcategory(int parent_category, const SCP_string& name);
 

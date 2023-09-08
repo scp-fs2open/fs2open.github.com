@@ -63,6 +63,9 @@
 #define ICON_JUMP_NODE						33
 #define ICON_TRANSPORT						34
 
+#define BRIEF_ICON_TYPES					3
+
+//If any types are added here then be sure to update BRIEF_ICON_TYPES
 typedef struct briefing_icon_info {
 	generic_anim	regular;
 	hud_anim		fade;
@@ -112,6 +115,7 @@ extern const float		BRIEF_TEXT_WIPE_TIME;		// time in seconds for wipe to occur
 
 typedef struct brief_icon {
 	int		x,y,w,h;
+	float	scale_factor;
 	int		hold_x, hold_y;	// 2D screen position of icon, used to place animations
 	int		ship_class;
 	int		modelnum;
@@ -124,8 +128,7 @@ typedef struct brief_icon {
 	vec3d	pos;
 	char		label[MAX_LABEL_LEN];
 	char		closeup_label[MAX_LABEL_LEN];
-	hud_anim	fadein_anim;
-	hud_anim	fadeout_anim;
+	hud_anim	fade_anim;
 	hud_anim	highlight_anim;
 	int		flags;				// BI_* flags defined above
 } brief_icon;
@@ -154,10 +157,11 @@ public:
 	brief_icon	*icons;
 	int			num_lines;
 	brief_line	*lines;
+	bool		draw_grid;
 
 	brief_stage( ) 
-		: text( ), camera_time( 0 ), flags( 0 ), formula( -1 ),
-		  num_icons( 0 ), icons( NULL ), num_lines( 0 ), lines( NULL )
+		: text( ), camera_time( 0 ), flags( 0 ), formula( -1 ), num_icons(0), icons(NULL), num_lines(0), lines(NULL),
+		  draw_grid( true )
 	{ 
 		voice[ 0 ] = 0;
 		camera_pos = vmd_zero_vector;
@@ -235,14 +239,14 @@ extern int Brief_text_max_lines[GR_NUM_RESOLUTIONS];
 extern const char *Brief_static_name[GR_NUM_RESOLUTIONS];
 extern int Brief_static_coords[GR_NUM_RESOLUTIONS][2];
 
-// Needed for Fred
+/* Needed for Fred
 #define BRIEF_GRID3_X1						42
 #define BRIEF_GRID3_Y1						122
 #define BRIEF_GRID0_X2						585
 #define BRIEF_GRID0_Y2						371
 #define BRIEF_GRID_W							(BRIEF_GRID0_X2-BRIEF_GRID3_X1+1)
 #define BRIEF_GRID_H							(BRIEF_GRID0_Y2-BRIEF_GRID3_Y1+1)
-/*
+
 #define BRIEF_GRID0_X1						63
 #define BRIEF_GRID0_Y1						122
 #define BRIEF_GRID1_X1						575
@@ -295,7 +299,7 @@ void brief_init_screen(int multiplayer_flag);
 void brief_render_map(int stage_num, float frametime);
 void brief_set_new_stage(vec3d *pos, matrix *orient, int time, int stage_num);
 void brief_camera_move(float frametime, int stage_num);
-void brief_render_icon(int stage_num, int icon_num, float frametime, int selected = 0, float w_scale_factor = 1.0f, float h_scale_factor = 1.0f);
+void brief_render_icon(int stage_num, int icon_num, float frametime, int selected = 0, float scale_factor = 1.0f);
 void brief_render_icon_line(int stage_num, int line_num);
 void brief_init_map();
 void brief_icons_init();

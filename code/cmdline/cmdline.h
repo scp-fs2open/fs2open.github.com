@@ -52,7 +52,6 @@ extern char *Cmdline_center_res;
 // FSO OPTIONS -------------------------------------------------
 
 // Graphics related
-extern float Cmdline_clip_dist;
 extern float Cmdline_ambient_power;
 extern float Cmdline_emissive_power;
 extern float Cmdline_light_power;
@@ -70,6 +69,7 @@ extern int Cmdline_no_deferred_lighting;
 extern bool Cmdline_deferred_lighting_cockpit;
 extern int Cmdline_emissive;
 extern int Cmdline_aniso_level;
+extern int Cmdline_msaa_enabled;
 
 // Game Speed related
 extern int Cmdline_NoFPSCap;
@@ -104,6 +104,7 @@ extern char *Cmdline_gateway_ip;
 
 // Launcher related options
 extern bool Cmdline_portable_mode;
+extern SCP_string Cmdline_lang;
 
 // Troubleshooting
 extern int Cmdline_load_all_weapons;
@@ -155,6 +156,8 @@ extern bool Cmdline_log_to_stdout;
 extern bool Cmdline_slow_frames_ok;
 extern bool Cmdline_lua_devmode;
 extern bool Cmdline_override_data;
+extern bool Cmdline_show_imgui_debug;
+extern bool Cmdline_vulkan;
 
 enum class WeaponSpewType { NONE = 0, STANDARD, ALL };
 extern WeaponSpewType Cmdline_spew_weapon_stats;

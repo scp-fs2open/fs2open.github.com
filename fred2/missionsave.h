@@ -40,7 +40,7 @@ public:
 	/**
 	 * @brief Default constructor
 	 */
-	CFred_mission_save() : err(0), raw_ptr(Parse_text_raw) {}
+	CFred_mission_save() : err(0), raw_ptr(nullptr), fp(nullptr) {}
 
 	/**
 	 * @brief Move past the comment without copying it to the output file. Used for special FSO comment tags
@@ -150,7 +150,7 @@ public:
 	 *
 	 * @see save_mission_internal()
 	 */
-	int save_campaign_file(char *pathname);
+	int save_campaign_file(const char *pathname);
 
 	/**
 	 * @brief Saves the mission file to the given full pathname
@@ -164,7 +164,7 @@ public:
 	 *
 	 * @see save_mission_internal()
 	 */
-	int save_mission_file(char *pathname);
+	int save_mission_file(const char *pathname);
 
 	/**
 	 * @brief Save the reinforcements to file

@@ -15,13 +15,17 @@
 
 #include "ai/ai.h"
 #include "ai/ai_profiles.h"
+#include "globalincs/version.h"
 #include "graphics/2d.h"
 #include "io/keycontrol.h"
 #include "model/model.h"
+#include "model/modelanimation.h"
 #include "object/object.h"
 #include "parse/sexp.h"
 #include "sound/sound.h"
 #include "mission/mission_flags.h"
+#include "nebula/volumetrics.h"
+#include "stats/scoring.h"
 
 //WMC - This should be here
 #define FS_MISSION_FILE_EXT				NOX(".fs2")
@@ -41,12 +45,11 @@ struct p_dock_instance;
 
 int get_special_anchor(const char *name);
 
-// update version when mission file format changes, and add approprate code
-// to check loaded mission version numbers in the parse code.  Also, be sure
-// to update both MissionParse and MissionSave (FRED) when changing the
-// mission file format!
-#define	MISSION_VERSION 0.10f
-#define	FRED_MISSION_VERSION 0.10f
+// MISSION_VERSION should be the earliest version of FSO that can load the current mission format without
+// requiring version-specific comments.  It should be updated whenever the format changes, but it should
+// not be updated simply because the engine's version changed.
+extern const gameversion::version MISSION_VERSION;
+extern const gameversion::version LEGACY_MISSION_VERSION;
 
 #define WING_PLAYER_BASE	0x80000  // used by Fred to tell ship_index in a wing points to a player
 
@@ -106,10 +109,17 @@ typedef struct mission_cutscene {
 	int formula;
 } mission_cutscene;
 
+// descriptions of flags for FRED
+template <class T>
+struct parse_object_flag_description {
+	T def;
+	SCP_string flag_desc;
+};
+
 typedef struct mission {
 	char	name[NAME_LENGTH];
-	char	author[NAME_LENGTH];
-	float	version;
+	SCP_string	author;
+	gameversion::version	required_fso_version;
 	char	created[DATE_TIME_LENGTH];
 	char	modified[DATE_TIME_LENGTH];
 	char	notes[NOTES_LENGTH];
@@ -124,6 +134,7 @@ typedef struct mission {
 	char	squad_name[NAME_LENGTH];				// if the player has been reassigned to a squadron, this is the name of the squadron, otherwise empty string
 	char	loading_screen[GR_NUM_RESOLUTIONS][MAX_FILENAME_LEN];
 	char	skybox_model[MAX_FILENAME_LEN];
+	animation::ModelAnimationSet skybox_model_animations;
 	matrix	skybox_orientation;
 	char	envmap_name[MAX_FILENAME_LEN];
 	int		skybox_flags;
@@ -131,12 +142,15 @@ typedef struct mission {
 	int		ambient_light_level;
 	float	neb_far_multi;
 	float	neb_near_multi;
+	tl::optional<volumetric_nebula> volumetrics;
 	sound_env	sound_environment;
+	vec3d   gravity;
 
 	// Goober5000
 	int	command_persona;
 	char command_sender[NAME_LENGTH];
 	int debriefing_persona;
+	traitor_override_t* traitor_override;
 
 	// Goober5000
 	char event_music_name[NAME_LENGTH];
@@ -146,6 +160,8 @@ typedef struct mission {
 
 	// Goober5000
 	ai_profile_t *ai_profile;
+
+	SCP_string lighting_profile_name;
 
 	SCP_vector<mission_cutscene> cutscenes;
 
@@ -171,9 +187,6 @@ typedef struct mission {
 
 extern mission The_mission;
 extern char Mission_filename[80];  // filename of mission in The_mission (Fred only)
-
-#define	MAX_FORMATION_NAMES	3
-#define	MAX_STATUS_NAMES		3
 
 // defines for arrival locations.  These defines should match their counterparts in the arrival location
 // array
@@ -211,10 +224,6 @@ typedef struct path_restriction_t {
 
 extern const char *Ship_class_names[MAX_SHIP_CLASSES];
 extern const char *Ai_behavior_names[MAX_AI_BEHAVIORS];
-extern char *Formation_names[MAX_FORMATION_NAMES];
-extern const char *Status_desc_names[MAX_STATUS_NAMES];
-extern const char *Status_type_names[MAX_STATUS_NAMES];
-extern const char *Status_target_names[MAX_STATUS_NAMES];
 extern const char *Arrival_location_names[MAX_ARRIVAL_NAMES];
 extern const char *Departure_location_names[MAX_DEPARTURE_NAMES];
 extern const char *Goal_type_names[MAX_GOAL_TYPE_NAMES];
@@ -222,6 +231,7 @@ extern const char *Goal_type_names[MAX_GOAL_TYPE_NAMES];
 extern const char *Reinforcement_type_names[];
 extern char *Object_flags[];
 extern flag_def_list_new<Mission::Parse_Object_Flags> Parse_object_flags[];
+extern parse_object_flag_description<Mission::Parse_Object_Flags> Parse_object_flag_descriptions[];
 extern const size_t Num_parse_object_flags;
 extern const char *Icon_names[];
 extern const char *Mission_event_log_flags[];
@@ -238,9 +248,7 @@ extern int	Num_iff;
 extern int	Num_ai_behaviors;
 extern int	Num_ai_classes;
 extern int	Num_cargo;
-extern int	Num_status_names;
 extern int	Num_arrival_names;
-extern int	Num_formation_names;
 extern int	Num_goal_type_names;
 extern int	Num_reinforcement_type_names;
 extern int	Player_starts;
@@ -315,13 +323,13 @@ public:
 	int	arrival_distance = 0;					// used when arrival location is near or in front of some ship
 	int	arrival_anchor = -1;						// ship used for anchoring an arrival point
 	int arrival_path_mask = 0;					// Goober5000
-	int	arrival_cue = Locked_sexp_true;				//	Index in Sexp_nodes of this sexp.
+	int	arrival_cue = -1;				//	Index in Sexp_nodes of this sexp.
 	int	arrival_delay = 0;
 
 	int	departure_location = DEPART_AT_LOCATION;
 	int	departure_anchor = -1;
 	int departure_path_mask = 0;				// Goober5000
-	int	departure_cue = Locked_sexp_false;			//	Index in Sexp_nodes of this sexp.
+	int	departure_cue = -1;			//	Index in Sexp_nodes of this sexp.
 	int	departure_delay = 0;
 
 	int warpin_params_index = -1;
@@ -339,6 +347,7 @@ public:
 	SCP_set<size_t> orders_accepted;		// which orders this ship will accept from the player
 	p_dock_instance	*dock_list = nullptr;				// Goober5000 - parse objects this parse object is docked to
 	object *created_object = nullptr;					// Goober5000
+	int collision_group_id = 0;							// Goober5000
 	int	group = -1;								// group object is within or -1 if none.
 	int	persona_index = -1;
 	int	kamikaze_damage = 0;					// base damage for a kamikaze attack
@@ -499,7 +508,7 @@ void mission_parse_reset_callsign();
 int is_training_mission();
 
 // code to save/restore mission parse stuff
-int get_mission_info(const char *filename, mission *missionp = NULL, bool basic = true);
+int get_mission_info(const char *filename, mission *missionp = nullptr, bool basic = true, bool filename_is_full_path = false);
 
 // Goober5000
 void parse_dock_one_docked_object(p_object *pobjp, p_object *parent_pobjp);

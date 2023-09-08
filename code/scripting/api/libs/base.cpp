@@ -8,6 +8,7 @@
 #include "freespace.h"
 
 #include "gamesequence/gamesequence.h"
+#include "libs/discord/discord.h"
 #include "mission/missiontraining.h"
 #include "network/multi.h"
 #include "parse/parselo.h"
@@ -654,7 +655,7 @@ ADE_FUNC(getModVersion, l_Base, nullptr,
 		size_t pos = str.find_first_of('.');
 		if (pos != SCP_string::npos) {
 			auto ver = str.substr(0, pos);
-			if(!ver.empty() && std::find_if(ver.begin(), ver.end(), [](char c) { return !std::isdigit(c); }) == ver.end()){
+			if(!ver.empty() && std::find_if(ver.begin(), ver.end(), [](char c) { return !std::isdigit(c, SCP_default_locale); }) == ver.end()){
 				if (major < 0) {
 					major = std::stoi(str.c_str());
 				} else if (minor < 0) {
@@ -665,7 +666,7 @@ ADE_FUNC(getModVersion, l_Base, nullptr,
 				break; //Break out of the loop if the first string is not a digit. In this case we only return the whole string.
 			}
 		} else if ((major > -1) && (minor > -1) && (!str.empty() && std::find_if(str.begin(), str.end(), [](char c) {
-					   return !std::isdigit(c);
+					   return !std::isdigit(c, SCP_default_locale);
 				   }) == str.end())) {
 			patch = std::stoi(str.c_str());
 		}
@@ -750,6 +751,38 @@ ADE_FUNC(deserializeValue,
 		LuaError(L, "Failed to deserialize value: %s", e.what());
 		return ADE_RETURN_NIL;
 	}
+}
+
+
+ADE_FUNC(setDiscordPresence,
+	l_Base,
+	"string DisplayText, [boolean Gameplay]",
+	"Sets the Discord presence to a specific string. If Gameplay is true then the string is ignored and presence will "
+	"be set as if the player is in-mission. The latter will fail if the player is not in a mission.",
+	nullptr,
+	"nothing")
+{
+	const char* text;
+	bool gp = false;
+	if (!ade_get_args(L, "s|b", &text, &gp)) {
+		return ADE_RETURN_NIL;
+	}
+
+	if (gp) {
+		if ((Game_mode & GM_IN_MISSION) != 0){
+			libs::discord::set_presence_gameplay();
+		}
+	} else {
+		libs::discord::set_presence_string(text);
+	}
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(hasFocus, l_Base, nullptr, "Returns if the game engine has focus or not", "boolean", "True if the game has focus, false if it has been lost")
+{
+	return ade_set_args(L, "b", os_foreground());
+
 }
 
 //**********SUBLIBRARY: Base/Events

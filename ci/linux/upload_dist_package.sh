@@ -10,11 +10,21 @@ HERE=$(dirname "$SCRIPT")
 source $HERE/dist_functions.sh
 
 if [ "$UPLOAD_TYPE" = "nightly" ]; then
-    SSHPASS=$INDIEGAMES_SSHPASS upload_files_to_sftp "$INDIEGAMES_USER@scp.indiegames.us" "public_html/builds/nightly"
+    any_success=false
+    if SSHPASS=$INDIEGAMES_SSHPASS upload_files_to_sftp "$INDIEGAMES_USER@scp.indiegames.us" "public_html/builds/nightly"; then
+        any_success=true
+    fi
 
-    SSHPASS=$DATACORDER_SSHPASS upload_files_to_sftp "$DATACORDER_USER@porphyrion.feralhosting.com" "www/datacorder.porphyrion.feralhosting.com/public_html/builds/nightly"
+    if SSHPASS=$DATACORDER_SSHPASS upload_files_to_sftp "$DATACORDER_USER@perses.feralhosting.com" "www/datacorder.perses.feralhosting.com/public_html/builds/nightly"; then
+        any_success=true
+    fi
+
+    if [ "$any_success" = "false" ]; then
+        echo "All uploads failed"
+        exit 1
+    fi
 elif [ "$UPLOAD_TYPE" = "test" ]; then
-    SSHPASS=$DATACORDER_SSHPASS upload_files_to_sftp "$DATACORDER_USER@porphyrion.feralhosting.com" "www/datacorder.porphyrion.feralhosting.com/public_html/builds/test"
+    SSHPASS=$DATACORDER_SSHPASS upload_files_to_sftp "$DATACORDER_USER@perses.feralhosting.com" "www/datacorder.perses.feralhosting.com/public_html/builds/test"
 else
     echo "Unknown upload type $UPLOAD_TYPE"
     exit 1

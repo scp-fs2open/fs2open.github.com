@@ -25,6 +25,31 @@ struct obj_pair;
 struct beam_weapon_info;
 struct vec3d;
 
+enum class WeaponState : uint32_t
+{
+	INVALID,
+
+	// States for laser weapons
+	NORMAL, //!< For laser weapons that have only one state
+
+	// Missile states following
+	FREEFLIGHT, //!< The initial flight state where the missile is "unpowered"
+	IGNITION, //!< The moment when the missile comes out of free flight
+	HOMED_FLIGHT, //!< The missile is homing in on its target
+	UNHOMED_FLIGHT, //!< The missile does not currently target an object
+
+	// Beam states following
+	WARMUP, //!< The beam is charging up
+	FIRING, //!< The beam is firing, and there's a beam and everything
+	PAUSED, //!< The beam is technically firing, but it's in between bursts
+	WARMDOWN, //!< The beam is cooling down
+};
+struct WeaponStateHash {
+	size_t operator()(const WeaponState& state) const {
+		return static_cast<size_t>(state);
+	}
+};
+
 typedef enum class BeamType {
 	DIRECT_FIRE,	// unidirectional beam; used to be BEAM_TYPE_A
 	SLASHING,		// "slash" in one direction; used to be BEAM_TYPE_B
@@ -192,6 +217,8 @@ typedef struct beam {
 
 	bool rotates;					// type 5s only, determines whether it rotates
 	float type5_rot_speed;          // how fast it rotates if it does
+
+	WeaponState weapon_state;  
 } beam;
 
 extern std::array<beam, MAX_BEAMS> Beams;				// all beams

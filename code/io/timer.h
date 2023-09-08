@@ -89,6 +89,7 @@ public:
 
 extern void timer_init();
 extern void timer_close();
+extern void timer_start_frame();
 
 //==========================================================================
 // These functions return the time since the timer was initialized in
@@ -121,9 +122,10 @@ extern int timer_get_seconds();				// seconds since program started... not accur
 
 // conversion factors
 constexpr int MILLISECONDS_PER_SECOND = 1000;
-constexpr uint64_t MICROSECONDS_PER_SECOND = 1000000;
-constexpr uint64_t NANOSECONDS_PER_SECOND = 1000000000;
-constexpr uint64_t NANOSECONDS_PER_MICROSECOND = 1000;
+constexpr int MICROSECONDS_PER_MILLISECOND = 1000;
+constexpr int NANOSECONDS_PER_MICROSECOND = 1000;
+constexpr uint64_t MICROSECONDS_PER_SECOND = MICROSECONDS_PER_MILLISECOND * MILLISECONDS_PER_SECOND;
+constexpr uint64_t NANOSECONDS_PER_SECOND = NANOSECONDS_PER_MICROSECOND * MICROSECONDS_PER_SECOND;
 
 // use this call to get the current counter value (which represents the time at the time
 // this function is called).  I.e. it doesn't return a count that would be in the future,
@@ -202,7 +204,9 @@ bool ui_timestamp_in_between(UI_TIMESTAMP stamp, UI_TIMESTAMP before, UI_TIMESTA
 
 bool timestamp_elapsed( int stamp );
 bool timestamp_elapsed( TIMESTAMP stamp );
+bool timestamp_elapsed_last_frame( TIMESTAMP stamp );
 bool ui_timestamp_elapsed( UI_TIMESTAMP stamp );
+bool ui_timestamp_elapsed_last_frame( UI_TIMESTAMP stamp );
 
 // safer version of timestamp
 bool timestamp_elapsed_safe(int a, int b);
@@ -245,6 +249,7 @@ void timestamp_start_mission();
 // Calculate the current mission time using the timestamps
 fix timestamp_get_mission_time();
 uint64_t timestamp_get_mission_time_in_microseconds();
+int timestamp_get_mission_time_in_milliseconds();
 
 // Advance mission time by specific offset (for in-game joining)
 void timestamp_offset_mission_time(float offset);

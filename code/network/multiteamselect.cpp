@@ -1643,7 +1643,6 @@ void multi_ts_init_players()
 void multi_ts_init_objnums()
 {
 	int idx,s_idx,team_index,slot_index;
-	object *objp;
 
 	// zero out the indices
 	for(idx=0;idx<MULTI_TS_MAX_TVT_TEAMS;idx++){
@@ -1653,17 +1652,16 @@ void multi_ts_init_objnums()
 	}
 
 	// set all the objnums
-	objp = GET_FIRST(&obj_used_list);
-	while(objp != END_OF_LIST(&obj_used_list)){
-		// if its a ship, get its slot index (if any)
-		if(objp->type == OBJ_SHIP){
-			multi_ts_get_team_and_slot(Ships[objp->instance].ship_name,&team_index,&slot_index);			
-			if((slot_index != -1) && (team_index != -1)){
-				Multi_ts_team[team_index].multi_ts_objnum[slot_index] = Ships[objp->instance].objnum;				
-			}
-		}
+	for (auto so: list_range(&Ship_obj_list)) {
+		auto objp = &Objects[so->objnum];
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 
-		objp = GET_NEXT(objp);
+		// if its a ship, get its slot index (if any)
+		multi_ts_get_team_and_slot(Ships[objp->instance].ship_name,&team_index,&slot_index);			
+		if((slot_index != -1) && (team_index != -1)){
+			Multi_ts_team[team_index].multi_ts_objnum[slot_index] = Ships[objp->instance].objnum;				
+		}
 	}		
 }
 

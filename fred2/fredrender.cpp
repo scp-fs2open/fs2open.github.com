@@ -31,6 +31,7 @@
 #include "graphics/tmapper.h"
 #include "iff_defs/iff_defs.h"
 #include "io/key.h"
+#include "io/spacemouse.h"
 #include "io/timer.h"
 #include "jumpnode/jumpnode.h"
 #include "lighting/lighting.h"
@@ -47,6 +48,7 @@
 #include "render/3d.h"
 #include "render/3dinternal.h"
 #include "ship/ship.h"
+#include "sound/audiostr.h"
 #include "starfield/starfield.h"
 #include "weapon/weapon.h"
 
@@ -540,7 +542,8 @@ void display_ship_info() {
 							strcpy_s(buf, "Briefing icon");
 
 					} else if (objp->type == OBJ_JUMP_NODE) {
-						strcpy_s(buf, "Jump Node");
+						CJumpNode* jnp = jumpnode_get_by_objnum(OBJ_INDEX(objp));
+						sprintf(buf, "%s\n%s", jnp->GetName(), jnp->GetDisplayName());
 					} else
 						Assert(0);
 				}
@@ -947,11 +950,19 @@ void game_do_frame() {
 
 	inc_mission_time();
 
+	// sync all timestamps across the entire frame
+	timer_start_frame();
+
 	viewer_position = my_orient.vec.fvec;
 	vm_vec_scale(&viewer_position, my_pos.xyz.z);
 
 	if ((viewpoint == 1) && !query_valid_object(view_obj))
 		viewpoint = 0;
+
+	//If the music player dialog is open and music is selected
+	if (Music_player_dialog.IsPlayerActive()) {
+		Music_player_dialog.DoFrame();
+	}
 
 	key = key_inkey();
 	process_system_keys(key);
@@ -1290,7 +1301,6 @@ void move_mouse(int btn, int mdx, int mdy) {
 
 int object_check_collision(object *objp, vec3d *p0, vec3d *p1, vec3d *hitpos) {
 	mc_info mc;
-	mc_info_init(&mc);
 
 	if ((objp->type == OBJ_NONE) || (objp->type == OBJ_POINT))
 		return 0;
@@ -1344,8 +1354,20 @@ int object_check_collision(object *objp, vec3d *p0, vec3d *p1, vec3d *hitpos) {
 }
 
 void process_controls(vec3d *pos, matrix *orient, float frametime, int key, int mode) {
+	static std::unique_ptr<io::spacemouse::SpaceMouse> spacemouse = io::spacemouse::SpaceMouse::searchSpaceMice(0);
+
 	if (Flying_controls_mode) {
 		grid_read_camera_controls(&view_controls, frametime);
+		if (spacemouse != nullptr) {
+			auto spacemouse_movement = spacemouse->getMovement();
+			spacemouse_movement.handleNonlinearities(Fred_spacemouse_nonlinearity);
+			view_controls.pitch += spacemouse_movement.rotation.p;
+			view_controls.vertical += spacemouse_movement.translation.xyz.z;
+			view_controls.heading += spacemouse_movement.rotation.h;
+			view_controls.sideways += spacemouse_movement.translation.xyz.x;
+			view_controls.bank += spacemouse_movement.rotation.b;
+			view_controls.forward += spacemouse_movement.translation.xyz.y;
+		}
 
 		if (key_get_shift_status())
 			memset(&view_controls, 0, sizeof(control_info));
@@ -1363,7 +1385,7 @@ void process_controls(vec3d *pos, matrix *orient, float frametime, int key, int 
 		if (mode)
 			physics_sim_editor(pos, orient, &view_physics, frametime);
 		else
-			physics_sim(pos, orient, &view_physics, frametime);
+			physics_sim(pos, orient, &view_physics, &vmd_zero_vector, frametime);
 
 	} else {
 		vec3d		movement_vec, rel_movement_vec;
@@ -1371,6 +1393,13 @@ void process_controls(vec3d *pos, matrix *orient, float frametime, int key, int 
 		matrix		newmat, rotmat;
 
 		process_movement_keys(key, &movement_vec, &rotangs);
+		if (spacemouse != nullptr) {
+			auto spacemouse_movement = spacemouse->getMovement();
+			spacemouse_movement.handleNonlinearities(Fred_spacemouse_nonlinearity);
+			movement_vec += spacemouse_movement.translation;
+			rotangs += spacemouse_movement.rotation;
+		}
+
 		vm_vec_rotate(&rel_movement_vec, &movement_vec, &The_grid->gmatrix);
 		vm_vec_add2(pos, &rel_movement_vec);
 
@@ -1515,15 +1544,15 @@ void render_frame() {
 		True_rw = rect.Width();
 		True_rh = rect.Height();
 		if (Fixed_briefing_size) {
-			True_rw = BRIEF_GRID_W;
-			True_rh = BRIEF_GRID_H;
+			True_rw = Briefing_window_resolution[0];
+			True_rh = Briefing_window_resolution[1];
 
 		} else {
-			if ((float) True_rh / (float) True_rw > (float) BRIEF_GRID_H / (float) BRIEF_GRID_W) {
-				True_rh = (int) ((float) BRIEF_GRID_H * (float) True_rw / (float) BRIEF_GRID_W);
+			if ((float) True_rh / (float) True_rw > (float) Briefing_window_resolution[1] / (float) Briefing_window_resolution[0]) {
+				True_rh = (int) ((float) Briefing_window_resolution[1] * (float) True_rw / (float) Briefing_window_resolution[0]);
 
 			} else {  // Fred is wider than briefing window
-				True_rw = (int) ((float) BRIEF_GRID_W * (float) True_rh / (float) BRIEF_GRID_H);
+				True_rw = (int) ((float) Briefing_window_resolution[0] * (float) True_rh / (float) Briefing_window_resolution[1]);
 			}
 		}
 

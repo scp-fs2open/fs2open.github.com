@@ -157,7 +157,7 @@ void light_add_directional(const vec3d* dir, const hdr_color* new_color, const f
 	Assert(new_color!= nullptr);
 	light_add_directional(dir, new_color->i(), new_color->r(), new_color->g(), new_color->b(), source_radius);
 }
-
+namespace ltp=lighting_profiles;
 void light_add_directional(const vec3d *dir, float intensity, float r, float g, float b, const float source_radius)
 {
 	if (Lighting_off) return;
@@ -175,7 +175,7 @@ void light_add_directional(const vec3d *dir, float intensity, float r, float g, 
 	l.b = b;
 
 	//configurable global tuning of light qualities
-	auto lp = lighting_profile::current();
+	auto lp = ltp::current();
 	l.intensity = lp->overall_brightness.handle(lp->directional_light_brightness.handle(intensity));
 	l.rada = 0.0f;
 	l.radb = 0.0f;
@@ -215,7 +215,7 @@ void light_add_point(const vec3d *pos, float r1, float r2, float intensity, floa
 	l.b = b;
 
 	//configurable global tuning of light qualities
-	auto lp = lighting_profile::current();
+	auto lp = ltp::current();
 	l.intensity = lp->overall_brightness.handle(lp->point_light_brightness.handle(intensity));
 	l.rada = lp->point_light_radius.handle(r1);
 	l.radb = lp->point_light_radius.handle(r2);
@@ -255,7 +255,7 @@ void light_add_tube(const vec3d *p0, const vec3d *p1, float r1, float r2, float 
 	l.b = b;
 
 	//configurable global tuning of light qualities
-	auto lp = lighting_profile::current();
+	auto lp = ltp::current();
 	l.intensity = lp->overall_brightness.handle(lp->tube_light_brightness.handle(intensity));
 	l.rada = lp->tube_light_radius.handle(r1);
 	l.radb = lp->tube_light_radius.handle(r2);
@@ -461,7 +461,7 @@ void light_add_cone(const vec3d *pos, const vec3d *dir, float angle, float inner
 	l.g = g;
 	l.b = b;
 
-	auto lp = lighting_profile::current();
+	auto lp = ltp::current();
 	l.intensity = lp->overall_brightness.handle(lp->cone_light_brightness.handle(intensity));
 	l.rada = lp->cone_light_radius.handle(r1);
 	l.radb = lp->cone_light_radius.handle(r2);

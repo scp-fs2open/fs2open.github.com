@@ -1,0 +1,10 @@
+#CUSTOM CHEATS
+
+$Cheat:
+	+Code: arrrrwalktheplank
+	+Message: Walk the plank
+	+SpawnShip: 
+		+Name: Volition Bravos
+		+Class: Volition Bravos
+
+#END

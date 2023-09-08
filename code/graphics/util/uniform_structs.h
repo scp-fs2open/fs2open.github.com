@@ -13,7 +13,8 @@ namespace graphics {
  * @file
  *
  * This file contains definitions for GPU uniform buffer structs. These structs must respect the std140 layout rules.
- * Read the OpenGL specification for the exact layout and padding rules.
+ * The complete rules for this can be found here: https://www.khronos.org/opengl/wiki/Interface_Block_(GLSL)#Explicit_variable_layout,
+ * but the TL;DR here is that everything in here must be 16-byte aligned.
  */
 
 struct deferred_global_data {
@@ -30,7 +31,7 @@ struct deferred_global_data {
 	float invScreenWidth;
 	float invScreenHeight;
 
-	float pad;
+	float pad[2];
 };
 
 /**
@@ -104,21 +105,12 @@ struct model_uniform_data {
 	int blend_alpha;
 
 	vec3d emissionFactor;
-	int overrideDiffuse;
-
-	vec3d diffuseClr;
-	int overrideGlow;
-
-	vec3d glowClr;
-	int overrideSpec;
-
-	vec3d specClr;
 	int alphaGloss;
 
 	int gammaSpec;
 	int envGloss;
-	int alpha_spec;
 	int effect_num;
+	int sBasemapIndex;  // moved up here to track alignment
 
 	vec4 fogColor;
 
@@ -138,17 +130,19 @@ struct model_uniform_data {
 	float middist;
 	float fardist;
 
-	vec2d normalAlphaMinMax;
-	int sBasemapIndex;
 	int sGlowmapIndex;
-
 	int sSpecmapIndex;
 	int sNormalmapIndex;
 	int sAmbientmapIndex;
-	int sMiscmapIndex;
 
+	int sMiscmapIndex;
 	float alphaMult;
+	int flags;
+	int pad[1];
 };
+
+const size_t model_uniform_data_size = sizeof(model_uniform_data);
+const float mud_align = model_uniform_data_size / 16.0f;
 
 enum class NanoVGShaderType: int32_t {
 	FillGradient = 0, FillImage = 1, Simple = 2, Image = 3
@@ -308,6 +302,49 @@ struct fog_data {
 	float zFar;
 
 	float pad[1];
+};
+
+struct volumetric_fog_data {
+	matrix4 p_inv;
+	matrix4 v_inv;
+	
+	vec3d cameraPos;
+	float zNear;
+	
+	vec3d globalLightDirection;
+	float zFar;
+	
+	vec3d globalLightDiffuse;
+	float stepsize;
+	
+	vec3d nebPos;
+	float globalstepalpha;
+	
+	vec3d nebSize;
+	float alphalimit;
+	
+	float emissiveSpreadFactor;
+	float emissiveIntensity;
+	float emissiveFalloff;
+	float henyeyGreensteinCoeff;
+	
+	float noiseColor[3];
+	int directionalLightSampleSteps;
+	
+	float directionalLightStepSize;
+	float noiseColorScale1;
+	float noiseColorScale2;
+	float noiseColorIntensity;
+	
+	float aspect;
+	float fov;
+	float pad[2];
+};
+
+struct msaa_data {
+	int samples;
+	float fov;
+	float pad[2];
 };
 
 struct blur_data {

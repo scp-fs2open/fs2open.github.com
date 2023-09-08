@@ -20,6 +20,7 @@
 #include "globalincs/linklist.h"
 #include "globalincs/version.h"
 #include "globalincs/alphacolors.h"
+#include "math/curve.h"
 #include "mission/missiongrid.h"
 #include "mission/missionparse.h"
 #include "mission/missionmessage.h"
@@ -58,6 +59,7 @@
 #include "nebula/neb.h"
 #include "nebula/neblightning.h"
 #include "species_defs/species_defs.h"
+#include "lighting/lighting_profiles.h"
 #include "osapi/osapi.h"
 #include "graphics/font.h"
 #include "object/objectdock.h"
@@ -87,7 +89,7 @@ int cur_wing = -1;
 int cur_wing_index;
 int cur_object_index = -1;
 int cur_ship = -1;
-int cur_model_index = 0;
+int cur_ship_type_combo_index = 0;
 waypoint *cur_waypoint = NULL;
 waypoint_list *cur_waypoint_list = NULL;
 int delete_flag;
@@ -151,7 +153,7 @@ int query_ship_name_duplicate(int ship);
 char *reg_read_string( char *section, char *name, char *default_value );
 
 // Note that the parameter here is max *length*, not max buffer size.  Leave room for the null-terminator!
-void string_copy(char *dest, const CString &src, size_t max_len, int modify)
+void string_copy(char *dest, const CString &src, size_t max_len, bool modify)
 {
 	if (modify)
 		if (strcmp(src, dest))
@@ -165,7 +167,7 @@ void string_copy(char *dest, const CString &src, size_t max_len, int modify)
 	dest[len] = 0;
 }
 
-void string_copy(SCP_string &dest, const CString &src, int modify)
+void string_copy(SCP_string &dest, const CString &src, bool modify)
 {
 	if (modify)
 		if (strcmp(src, dest.c_str()))
@@ -219,64 +221,14 @@ void pad_with_newline(CString& str, int max_size) {
 	}
 }
 
-// medal_stuff Medals[NUM_MEDALS];
-/*
-void parse_medal_tbl()
+void lcl_fred_replace_stuff(CString &text)
 {
-	int rval, num_medals;
-
-	// open localization
-	lcl_ext_open();
-
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "medals.tbl", rval));
-		lcl_ext_close();
-		return;
-	} 
-
-	read_file_text("medals.tbl");
-	reset_parse();
-
-	// parse in all the rank names
-	num_medals = 0;
-	required_string("#Medals");
-	while ( required_string_either("#End", "$Name:") ) {
-		Assert ( num_medals < NUM_MEDALS);
-		required_string("$Name:");
-		stuff_string( Medals[num_medals].name, F_NAME, NULL );
-		required_string("$Bitmap:");
-		stuff_string( Medals[num_medals].bitmap, F_NAME, NULL );
-		required_string("$Num mods:");
-		stuff_int( &Medals[num_medals].num_versions);
-
-		// some medals are based on kill counts.  When string +Num Kills: is present, we know that
-		// this medal is a badge and should be treated specially
-		Medals[num_medals].kills_needed = 0;
-
-		if ( optional_string("+Num Kills:") ) {
-			char buf[MULTITEXT_LENGTH + 1];
-
-			stuff_int( &Medals[num_medals].kills_needed );
-
-			required_string("$Wavefile 1:");
-			stuff_string(buf, F_NAME, NULL, MAX_FILENAME_LEN);
-
-			required_string("$Wavefile 2:");
-			stuff_string(buf, F_NAME, NULL, MAX_FILENAME_LEN);
-
-			required_string("$Promotion Text:");
-			stuff_string(buf, F_MULTITEXT, NULL);
-		}
-
-		num_medals++;
-	}
-
-	required_string("#End");      
-
-	// close localization
-	lcl_ext_close();
+	// this should be kept in sync with the function in localize.cpp
+	text.Replace("\"", "$quote");
+	text.Replace(";", "$semicolon");
+	text.Replace("/", "$slash");
+	text.Replace("\\", "$backslash");
 }
-*/
 
 void brief_init_colors();
 
@@ -375,10 +327,13 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	key_init();
 	mouse_init();
 
+	curves_init();
 	particle::ParticleManager::init();
 
-	iff_init();			// Goober5000
-	species_init();		// Kazan
+	gamesnd_parse_soundstbl(true);
+	iff_init();						// Goober5000
+	species_init();					// Kazan
+	gamesnd_parse_soundstbl(false);
 
 	brief_icons_init();
 
@@ -405,10 +360,9 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 
 	alpha_colors_init();
 	
-	gamesnd_parse_soundstbl();		// needs to be loaded after species stuff but before interface/weapon/ship stuff - taylor
 	mission_brief_common_init();	
 
-	sexp::dynamic_sexp_init(); // Must happen before ship init for LuaAI
+	sexp_startup(); // Must happen before ship init for LuaAI
 
 	animation::ModelAnimationParseHelper::parseTables();
 	obj_init();
@@ -424,6 +378,8 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	techroom_intel_init();
 	hud_positions_init();
 	asteroid_init();
+	lighting_profiles::load_profiles();
+	traitor_init();
 
 	// get fireball IDs for sexpression usage
 	// (we don't need to init the entire system via fireball_init, we just need the information)
@@ -443,6 +399,9 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	fiction_viewer_reset();
 	cmd_brief_reset();
 	Show_waypoints = TRUE;
+
+	// mission creation requires the existence of a timestamp snapshot
+	timer_start_frame();
 
 	mission_campaign_clear();
 	create_new_mission();
@@ -464,13 +423,17 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	g3_set_view_matrix(&eye_pos, &eye_orient, 0.5f);
 	
 	// Get the default player ship
-	Default_player_model = cur_model_index = get_default_player_ship_index();
+	Default_player_model = get_default_player_ship_index();
 
 	Fred_main_wnd -> init_tools();
 
 	Script_system.RunInitFunctions();
 	if (scripting::hooks::OnGameInit->isActive()) {
 		scripting::hooks::OnGameInit->run();
+	}
+	//Technically after the splash screen, but the best we can do these days. Since the override is hard-deprecated, we don't need to check it.
+	if (scripting::hooks::OnSplashScreen->isActive()) {
+		scripting::hooks::OnSplashScreen->run();
 	}
 
 	return true;
@@ -718,10 +681,10 @@ int create_object(vec3d *pos, int waypoint_instance)
 {
 	int obj, n;
 
-	if (cur_model_index == Id_select_type_waypoint)
+	if (cur_ship_type_combo_index == Id_select_type_waypoint)
 		obj = create_waypoint(pos, waypoint_instance);
 
-	else if (cur_model_index == Id_select_type_start) {
+	else if (cur_ship_type_combo_index == Id_select_type_start) {
 		if (Player_starts >= MAX_PLAYERS) {
 			Fred_main_wnd->MessageBox("Unable to create new player start point.\n"
 				"You have reached the maximum limit.", NULL, MB_OK | MB_ICONEXCLAMATION);
@@ -740,14 +703,16 @@ int create_object(vec3d *pos, int waypoint_instance)
 		} else
 			obj = create_player(Player_starts, pos, NULL, Default_player_model);
 
-	} else if (cur_model_index == Id_select_type_jump_node) {
+	} else if (cur_ship_type_combo_index == Id_select_type_jump_node) {
 		CJumpNode jnp(pos);
 		obj = jnp.GetSCPObjectNumber();
 		Jump_nodes.push_back(std::move(jnp));
-	} else if(Ship_info[cur_model_index].flags[Ship::Info_Flags::No_fred]){		
-		obj = -1;
 	} else {  // creating a ship
-		obj = create_ship(NULL, pos, cur_model_index);
+		int ship_class = m_new_ship_type_combo_box.GetShipClass(cur_ship_type_combo_index);
+		if (ship_class < 0 || ship_class >= ship_info_size())
+			return -1;
+
+		obj = create_ship(nullptr, pos, ship_class);
 		if (obj == -1)
 			return -1;
 
@@ -826,8 +791,6 @@ void clear_mission()
 	if (Briefing_dialog){
 		Briefing_dialog->reset_editor();
 	}
-	mission_event_shutdown();
-
 
 	allocate_parse_text( PARSE_TEXT_SIZE );
 
@@ -862,8 +825,7 @@ void clear_mission()
 	t = CTime::GetCurrentTime();
 
 	strcpy_s(The_mission.name, "Untitled");
-	strncpy(The_mission.author, str, NAME_LENGTH - 1);
-	The_mission.author[NAME_LENGTH - 1] = 0;
+	The_mission.author = str;
 	strcpy_s(The_mission.created, t.Format("%x at %X"));
 	strcpy_s(The_mission.modified, The_mission.created);
 	strcpy_s(The_mission.notes, "This is a FRED2_OPEN created mission.\n");
@@ -998,6 +960,7 @@ void set_cur_object_index(int obj)
 	set_cur_indices(obj);  // select the new object
 	Update_ship = Update_wing = 1;
 	Waypoint_editor_dialog.initialize_data(1);
+	Jumpnode_editor_dialog.initialize_data(1);
 	Update_window = 1;
 }
 
@@ -1120,6 +1083,15 @@ int update_dialog_boxes()
 		return z;
 	}
 
+	z = Jumpnode_editor_dialog.update_data();
+	if (z) {
+		nprintf(("Fred routing", "jumpnode dialog save failed\n"));
+		Jumpnode_editor_dialog
+			.SetWindowPos(&Fred_main_wnd->wndTop, 0, 0, 0, 0, SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
+
+		return z;
+	}
+
 	update_map_window();
 	return 0;
 }
@@ -1175,7 +1147,7 @@ int common_object_delete(int obj)
 		Assert((i >= 0) && (i < MAX_SHIPS));
 		sprintf(msg, "Player %d", i + 1);
 		name = msg;
-		r = reference_handler(name, REF_TYPE_PLAYER, obj);
+		r = reference_handler(name, sexp_ref_type::PLAYER, obj);
 		if (r)
 			return r;
 
@@ -1186,7 +1158,7 @@ int common_object_delete(int obj)
 		}
 
 		Objects[obj].type = OBJ_SHIP;  // was allocated as a ship originally, so remove as such.
-		invalidate_references(name, REF_TYPE_PLAYER);
+		invalidate_references(name, sexp_ref_type::PLAYER);
 
 		// check if any ship is docked with this ship and break dock if so
 		while (object_is_docked(&Objects[obj]))
@@ -1218,7 +1190,7 @@ int common_object_delete(int obj)
 		// we'll end up deleting the path, so check for path references
 		if (count == 1) {
 			name = wp_list->get_name();
-			r = reference_handler(name, REF_TYPE_PATH, obj);
+			r = reference_handler(name, sexp_ref_type::WAYPOINT_PATH, obj);
 			if (r)
 				return r;
 		}
@@ -1226,15 +1198,15 @@ int common_object_delete(int obj)
 		// check for waypoint references
 		sprintf(msg, "%s:%d", wp_list->get_name(), index + 1);
 		name = msg;
-		r = reference_handler(name, REF_TYPE_WAYPOINT, obj);
+		r = reference_handler(name, sexp_ref_type::WAYPOINT, obj);
 		if (r)
 			return r;
 
 		// at this point we've confirmed we want to delete it
 
-		invalidate_references(name, REF_TYPE_WAYPOINT);
+		invalidate_references(name, sexp_ref_type::WAYPOINT);
 		if (count == 1) {
-			invalidate_references(wp_list->get_name(), REF_TYPE_PATH);
+			invalidate_references(wp_list->get_name(), sexp_ref_type::WAYPOINT_PATH);
 		}
 
 		// the actual removal code has been moved to this function in waypoints.cpp
@@ -1242,13 +1214,13 @@ int common_object_delete(int obj)
 
 	} else if (type == OBJ_SHIP) {
 		name = Ships[Objects[obj].instance].ship_name;
-		r = reference_handler(name, REF_TYPE_SHIP, obj);
+		r = reference_handler(name, sexp_ref_type::SHIP, obj);
 		if (r)
 			return r;
 
 		z = Objects[obj].instance;
 		if (Ships[z].wingnum >= 1) {
-			invalidate_references(name, REF_TYPE_SHIP);
+			invalidate_references(name, sexp_ref_type::SHIP);
 			r = delete_ship_from_wing(z);
 			if (r)
 				return r;
@@ -1258,7 +1230,7 @@ int common_object_delete(int obj)
 			if (r)
 				return r;
 
-			invalidate_references(name, REF_TYPE_SHIP);
+			invalidate_references(name, sexp_ref_type::SHIP);
 		}
 
 		for (i=0; i<Num_reinforcements; i++)
@@ -1426,6 +1398,7 @@ void mark_object(int obj)
 		}
 		Update_ship = Update_wing = 1;
 		Waypoint_editor_dialog.initialize_data(1);
+		Jumpnode_editor_dialog.initialize_data(1);
 	}
 }
 
@@ -1453,6 +1426,7 @@ void unmark_object(int obj)
 		}
 		Update_ship = Update_wing = 1;
 		Waypoint_editor_dialog.initialize_data(1);
+		Jumpnode_editor_dialog.initialize_data(1);
 	}
 }
 
@@ -1732,7 +1706,7 @@ int rename_ship(int ship, char *name)
 	Assert(strlen(name) < NAME_LENGTH);
 
 	update_sexp_references(Ships[ship].ship_name, name);
-	ai_update_goal_references(REF_TYPE_SHIP, Ships[ship].ship_name, name);
+	ai_update_goal_references(sexp_ref_type::SHIP, Ships[ship].ship_name, name);
 	update_texture_replacements(Ships[ship].ship_name, name);
 	for (i=0; i<Num_reinforcements; i++)
 		if (!stricmp(Ships[ship].ship_name, Reinforcements[i].name)) {
@@ -1746,7 +1720,7 @@ int rename_ship(int ship, char *name)
 	return 0;
 }
 
-int invalidate_references(char *name, int type)
+int invalidate_references(char *name, sexp_ref_type type)
 {
 	char new_name[512];
 	int i;
@@ -1767,10 +1741,10 @@ int internal_integrity_check()
 {
 	int i;
 
-	for (i=0; i<Num_mission_events; i++)
+	for (i=0; i<(int)Mission_events.size(); i++)
 		verify_sexp_tree(Mission_events[i].formula);
 
-	for (i=0; i<Num_goals; i++)
+	for (i=0; i<(int)Mission_goals.size(); i++)
 		verify_sexp_tree(Mission_goals[i].formula);
 
 	for (i=0; i<MAX_WINGS; i++)
@@ -1864,7 +1838,7 @@ int get_ship_from_obj(object *objp)
 	return 0;
 }
 
-void ai_update_goal_references(int type, const char *old_name, const char *new_name)
+void ai_update_goal_references(sexp_ref_type type, const char *old_name, const char *new_name)
 {
 	int i;
 
@@ -1877,21 +1851,21 @@ void ai_update_goal_references(int type, const char *old_name, const char *new_n
 			ai_update_goal_references(Wings[i].ai_goals, type, old_name, new_name);
 }
 
-int query_referenced_in_ai_goals(int type, const char *name)
+std::pair<int, sexp_src> query_referenced_in_ai_goals(sexp_ref_type type, const char *name)
 {
 	int i;
 
 	for (i=0; i<MAX_AI_INFO; i++)  // loop through all Ai_info entries
 		if (Ai_info[i].shipnum >= 0)  // skip if unused
 			if (query_referenced_in_ai_goals(Ai_info[i].goals, type, name))
-				return Ai_info[i].shipnum | SRC_SHIP_ORDER;
+				return std::make_pair(Ai_info[i].shipnum, sexp_src::SHIP_ORDER);
 
 	for (i=0; i<MAX_WINGS; i++)
 		if (Wings[i].wave_count)
 			if (query_referenced_in_ai_goals(Wings[i].ai_goals, type, name))
-				return i | SRC_WING_ORDER;
+				return std::make_pair(i, sexp_src::WING_ORDER);
 
-	return 0;
+	return std::make_pair(-1, sexp_src::NONE);
 }
 
 int advanced_stricmp(char *one, char *two)
@@ -1911,29 +1885,29 @@ int advanced_stricmp(char *one, char *two)
 // returns 0: go ahead change object
 //			  1: don't change it
 //			  2: abort (they used cancel to go to reference)
-int reference_handler(char *name, int type, int obj)
+int reference_handler(char *name, sexp_ref_type type, int obj)
 {
 	char msg[2048], text[128], type_name[128];
-	int r, n, node;
+	int r, node;
 
 	switch (type) {
-		case REF_TYPE_SHIP:
+		case sexp_ref_type::SHIP:
 			sprintf(type_name, "Ship \"%s\"", name);
 			break;
 
-		case REF_TYPE_WING:
+		case sexp_ref_type::WING:
 			sprintf(type_name, "Wing \"%s\"", name);
 			break;
 
-		case REF_TYPE_PLAYER:
+		case sexp_ref_type::PLAYER:
 			strcpy_s(type_name, name);
 			break;
 
-		case REF_TYPE_WAYPOINT:
+		case sexp_ref_type::WAYPOINT:
 			sprintf(type_name, "Waypoint \"%s\"", name);
 			break;
 
-		case REF_TYPE_PATH:
+		case sexp_ref_type::WAYPOINT_PATH:
 			sprintf(type_name, "Waypoint path \"%s\"", name);
 			break;
 
@@ -1941,47 +1915,49 @@ int reference_handler(char *name, int type, int obj)
 			Error(LOCATION, "Type unknown for object \"%s\".  Let Hoffos know now!", name);
 	}
 
-	r = query_referenced_in_sexp(type, name, &node);
-	if (r) {
-		n = r & SRC_DATA_MASK;
-		switch (r & SRC_MASK) {
-			case SRC_SHIP_ARRIVAL:
+	auto pair = query_referenced_in_sexp(type, name, node);
+	int n = pair.first;
+	sexp_src source = pair.second;
+
+	if (source != sexp_src::NONE) {
+		switch (source) {
+			case sexp_src::SHIP_ARRIVAL:
 				sprintf(text, "the arrival cue of ship \"%s\"", Ships[n].ship_name);
 				break;
 
-			case SRC_SHIP_DEPARTURE:
+			case sexp_src::SHIP_DEPARTURE:
 				sprintf(text, "the departure cue of ship \"%s\"", Ships[n].ship_name);
 				break;
 
-			case SRC_WING_ARRIVAL:
+			case sexp_src::WING_ARRIVAL:
 				sprintf(text, "the arrival cue of wing \"%s\"", Wings[n].name);
 				break;
 
-			case SRC_WING_DEPARTURE:
+			case sexp_src::WING_DEPARTURE:
 				sprintf(text, "the departure cue of wing \"%s\"", Wings[n].name);
 				break;
 
-			case SRC_EVENT:
-				if (*Mission_events[n].name)
-					sprintf(text, "event \"%s\"", Mission_events[n].name);
+			case sexp_src::EVENT:
+				if (!Mission_events[n].name.empty())
+					sprintf(text, "event \"%s\"", Mission_events[n].name.c_str());
 				else
 					sprintf(text, "event #%d", n);
 
 				break;
 
-			case SRC_MISSION_GOAL:
-				if (*Mission_goals[n].name)
-					sprintf(text, "mission goal \"%s\"", Mission_goals[n].name);
+			case sexp_src::MISSION_GOAL:
+				if (!Mission_goals[n].name.empty())
+					sprintf(text, "mission goal \"%s\"", Mission_goals[n].name.c_str());
 				else
 					sprintf(text, "mission goal #%d", n);
 
 				break;
 
-			case SRC_DEBRIEFING:
+			case sexp_src::DEBRIEFING:
 				sprintf(text, "debriefing #%d", n);
 				break;
 
-			case SRC_BRIEFING:
+			case sexp_src::BRIEFING:
 				sprintf(text, "briefing #%d", n);
 				break;
 
@@ -1997,7 +1973,7 @@ int reference_handler(char *name, int type, int obj)
 			"Do you want to delete it anyway?\n\n"
 			"(click Cancel to go to the reference)", type_name, text);
 
-		r = sexp_reference_handler(node, r, msg);
+		r = sexp_reference_handler(node, source, n, msg);
 		if (r == 1) {
 			if (obj >= 0)
 				unmark_object(obj);
@@ -2011,15 +1987,17 @@ int reference_handler(char *name, int type, int obj)
 		}
 	}
 
-	r = query_referenced_in_ai_goals(type, name);
-	if (r) {
-		n = r & SRC_DATA_MASK;
-		switch (r & SRC_MASK) {
-			case SRC_SHIP_ORDER:
+	pair = query_referenced_in_ai_goals(type, name);
+	n = pair.first;
+	source = pair.second;
+
+	if (source != sexp_src::NONE) {
+		switch (source) {
+			case sexp_src::SHIP_ORDER:
 				sprintf(text, "ship \"%s\"", Ships[n].ship_name);
 				break;
 
-			case SRC_WING_ORDER:
+			case sexp_src::WING_ORDER:
 				sprintf(text, "wing \"%s\"", Wings[n].name);
 				break;
 
@@ -2032,7 +2010,7 @@ int reference_handler(char *name, int type, int obj)
 			"more initial orders).  Do you want to delete it anyway?\n\n"
 			"(click Cancel to go to the reference)", type_name, text);
 
-		r = orders_reference_handler(r, msg);
+		r = orders_reference_handler(source, n, msg);
 		if (r == 1) {
 			if (obj >= 0)
 				unmark_object(obj);
@@ -2046,7 +2024,7 @@ int reference_handler(char *name, int type, int obj)
 		}
 	}
 
-	if ((type != REF_TYPE_SHIP) && (type != REF_TYPE_WING))
+	if ((type != sexp_ref_type::SHIP) && (type != sexp_ref_type::WING))
 		return 0;
 
 	for (n=0; n<Num_reinforcements; n++)
@@ -2069,11 +2047,9 @@ int reference_handler(char *name, int type, int obj)
 	return 0;
 }
 
-int orders_reference_handler(int code, char *msg)
+int orders_reference_handler(sexp_src source, int source_index, char *msg)
 {
-	int r, n;
-
-	r = Fred_main_wnd->MessageBox(msg, "Warning", MB_YESNOCANCEL | MB_ICONEXCLAMATION);
+	int r = Fred_main_wnd->MessageBox(msg, "Warning", MB_YESNOCANCEL | MB_ICONEXCLAMATION);
 	if (r == IDNO)
 		return 1;
 
@@ -2082,27 +2058,26 @@ int orders_reference_handler(int code, char *msg)
 
 	ShipGoalsDlg dlg_goals;
 
-	n = code & SRC_DATA_MASK;
-	switch (code & SRC_MASK) {
-		case SRC_SHIP_ORDER:
+	switch (source) {
+		case sexp_src::SHIP_ORDER:
 			unmark_all();
-			mark_object(Ships[n].objnum);
+			mark_object(Ships[source_index].objnum);
 
-			dlg_goals.self_ship = n;
+			dlg_goals.self_ship = source_index;
 			dlg_goals.DoModal();
-			if (!query_initial_orders_empty(Ai_info[Ships[n].ai_index].goals))
-				if ((Ships[n].wingnum >= 0) && (query_initial_orders_conflict(Ships[n].wingnum)))
+			if (!query_initial_orders_empty(Ai_info[Ships[source_index].ai_index].goals))
+				if ((Ships[source_index].wingnum >= 0) && (query_initial_orders_conflict(Ships[source_index].wingnum)))
 					Fred_main_wnd->MessageBox("This ship's wing also has initial orders", "Possible conflict");
 
 			break;
 
-		case SRC_WING_ORDER:
+		case sexp_src::WING_ORDER:
 			unmark_all();
-			mark_wing(n);
+			mark_wing(source_index);
 
-			dlg_goals.self_wing = n;
+			dlg_goals.self_wing = source_index;
 			dlg_goals.DoModal();
-			if (query_initial_orders_conflict(n))
+			if (query_initial_orders_conflict(source_index))
 				Fred_main_wnd->MessageBox("One or more ships of this wing also has initial orders", "Possible conflict");
 
 			break;
@@ -2115,9 +2090,9 @@ int orders_reference_handler(int code, char *msg)
 	return 2;
 }
 
-int sexp_reference_handler(int node, int code, char *msg)
+int sexp_reference_handler(int node, sexp_src source, int source_index, char *msg)
 {
-	int r;
+	int r, n;
 
 	r = Fred_main_wnd->MessageBox(msg, "Warning", MB_YESNOCANCEL | MB_ICONEXCLAMATION);
 	if (r == IDNO)
@@ -2126,9 +2101,10 @@ int sexp_reference_handler(int node, int code, char *msg)
 	if (r == IDYES)
 		return 0;
 
-	switch (code & SRC_MASK) {
-		case SRC_SHIP_ARRIVAL:
-		case SRC_SHIP_DEPARTURE:
+	n = source_index;
+	switch (source) {
+		case sexp_src::SHIP_ARRIVAL:
+		case sexp_src::SHIP_DEPARTURE:
 			if (!Ship_editor_dialog.GetSafeHwnd())
 				Ship_editor_dialog.Create();
 
@@ -2138,11 +2114,11 @@ int sexp_reference_handler(int node, int code, char *msg)
 
 			Ship_editor_dialog.select_sexp_node = node;
 			unmark_all();
-			mark_object(Ships[code & SRC_DATA_MASK].objnum);
+			mark_object(Ships[n].objnum);
 			break;
 
-		case SRC_WING_ARRIVAL:
-		case SRC_WING_DEPARTURE:
+		case sexp_src::WING_ARRIVAL:
+		case sexp_src::WING_DEPARTURE:
 			if (!Wing_editor_dialog.GetSafeHwnd())
 				Wing_editor_dialog.Create();
 
@@ -2152,10 +2128,10 @@ int sexp_reference_handler(int node, int code, char *msg)
 
 			Wing_editor_dialog.select_sexp_node = node;
 			unmark_all();
-			mark_wing(code & SRC_DATA_MASK);
+			mark_wing(n);
 			break;
 
-		case SRC_EVENT:
+		case sexp_src::EVENT:
 			if (Message_editor_dlg) {
 				Fred_main_wnd->MessageBox("You must close the message editor before the event editor can be opened");
 				break;
@@ -2171,7 +2147,7 @@ int sexp_reference_handler(int node, int code, char *msg)
 			Event_editor_dlg->ShowWindow(SW_RESTORE);
 			break;
 
-		case SRC_MISSION_GOAL: {
+		case sexp_src::MISSION_GOAL: {
 			CMissionGoalsDlg dlg;
 
 			dlg.select_sexp_node = node;
@@ -2179,7 +2155,7 @@ int sexp_reference_handler(int node, int code, char *msg)
 			break;
 		}
 
-		case SRC_DEBRIEFING: {
+		case sexp_src::DEBRIEFING: {
 			debriefing_editor_dlg dlg;
 
 			dlg.select_sexp_node = node;
@@ -2187,7 +2163,7 @@ int sexp_reference_handler(int node, int code, char *msg)
 			break;
 		}
 
-		case SRC_BRIEFING: {
+		case sexp_src::BRIEFING: {
 			if (!Briefing_dialog) {
 				Briefing_dialog = new briefing_editor_dlg;
 				Briefing_dialog->create();

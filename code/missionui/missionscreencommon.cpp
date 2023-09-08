@@ -46,6 +46,7 @@
 #include "popup/popup.h"
 #include "render/3d.h"
 #include "render/batching.h"
+#include "scripting/global_hooks.h"
 #include "scripting/scripting.h"
 #include "ship/ship.h"
 #include "ui/uidefs.h"
@@ -314,10 +315,10 @@ void set_active_ui(UI_WINDOW *ui_window)
 	Active_ui_window = ui_window;
 }
 
-SCP_string common_music_get_filename(int score_index)
+const char *common_music_get_filename(int score_index)
 {
 	if (Cmdline_freespace_no_music) {
-		return SCP_string();
+		return "";
 	}
 
 	Assertion(score_index >= 0 && score_index < NUM_SCORES, "Invalid score index %d.", score_index);
@@ -329,7 +330,7 @@ SCP_string common_music_get_filename(int score_index)
 				"No briefing music is selected, so play first briefing track: %s\n",
 				Spooled_music[Mission_music[score_index]].name));
 		} else {
-			return SCP_string();
+			return "";
 		}
 	}
 
@@ -340,11 +341,11 @@ void common_music_init(int score_index)
 {
 	const auto file_name = common_music_get_filename(score_index);
 
-	if (file_name.empty()) {
+	if (file_name[0] == '\0') {
 		return;
 	}
 
-	briefing_load_music(file_name.c_str());
+	briefing_load_music(file_name);
 	// Use this id to trigger the start of music playing on the briefing screen
 	Briefing_music_begin_timestamp = ui_timestamp(BRIEFING_MUSIC_DELAY);
 }
@@ -583,22 +584,22 @@ void common_select_init(bool API_Access)
 
 		Drop_icon_mflag = 0;
 		Drop_on_wing_mflag = 0;
-
-		// init colors
-		gr_init_alphacolor(&Icon_colors[ICON_FRAME_NORMAL], 32, 128, 128, 255);
-		gr_init_alphacolor(&Icon_colors[ICON_FRAME_HOT], 48, 160, 160, 255);
-		gr_init_alphacolor(&Icon_colors[ICON_FRAME_SELECTED], 64, 192, 192, 255);
-		gr_init_alphacolor(&Icon_colors[ICON_FRAME_PLAYER], 192, 128, 64, 255);
-		gr_init_alphacolor(&Icon_colors[ICON_FRAME_DISABLED], 175, 175, 175, 255);
-		gr_init_alphacolor(&Icon_colors[ICON_FRAME_DISABLED_HIGH], 100, 100, 100, 255);
-		// init shaders
-		gr_create_shader(&Icon_shaders[ICON_FRAME_NORMAL], 32, 128, 128, 255);
-		gr_create_shader(&Icon_shaders[ICON_FRAME_HOT], 48, 160, 160, 255);
-		gr_create_shader(&Icon_shaders[ICON_FRAME_SELECTED], 64, 192, 192, 255);
-		gr_create_shader(&Icon_shaders[ICON_FRAME_PLAYER], 192, 128, 64, 255);
-		gr_create_shader(&Icon_shaders[ICON_FRAME_DISABLED], 175, 175, 175, 255);
-		gr_create_shader(&Icon_shaders[ICON_FRAME_DISABLED_HIGH], 100, 100, 100, 255);
 	}
+
+	// init colors
+	gr_init_alphacolor(&Icon_colors[ICON_FRAME_NORMAL], 32, 128, 128, 255);
+	gr_init_alphacolor(&Icon_colors[ICON_FRAME_HOT], 48, 160, 160, 255);
+	gr_init_alphacolor(&Icon_colors[ICON_FRAME_SELECTED], 64, 192, 192, 255);
+	gr_init_alphacolor(&Icon_colors[ICON_FRAME_PLAYER], 192, 128, 64, 255);
+	gr_init_alphacolor(&Icon_colors[ICON_FRAME_DISABLED], 175, 175, 175, 255);
+	gr_init_alphacolor(&Icon_colors[ICON_FRAME_DISABLED_HIGH], 100, 100, 100, 255);
+	// init shaders
+	gr_create_shader(&Icon_shaders[ICON_FRAME_NORMAL], 32, 128, 128, 255);
+	gr_create_shader(&Icon_shaders[ICON_FRAME_HOT], 48, 160, 160, 255);
+	gr_create_shader(&Icon_shaders[ICON_FRAME_SELECTED], 64, 192, 192, 255);
+	gr_create_shader(&Icon_shaders[ICON_FRAME_PLAYER], 192, 128, 64, 255);
+	gr_create_shader(&Icon_shaders[ICON_FRAME_DISABLED], 175, 175, 175, 255);
+	gr_create_shader(&Icon_shaders[ICON_FRAME_DISABLED_HIGH], 100, 100, 100, 255);
 }
 
 void common_reset_buttons()
@@ -1068,15 +1069,15 @@ int common_scroll_down_pressed(int *start, int size, int max_show)
 
 void common_fire_stage_script_hook(int old_stage, int new_stage)
 {
-	if (!Script_system.IsActiveAction(CHA_ONBRIEFSTAGE)) {
-		return;
+	if (scripting::hooks::OnBriefStage->isActive()) {
+		// call a scripting hook for switching stages
+		// note that we add 1 because Lua arrays are 1-based
+		scripting::hooks::OnBriefStage->run(
+			scripting::hook_param_list(
+				scripting::hook_param("OldStage", 'i', old_stage + 1),
+				scripting::hook_param("NewStage", 'i', new_stage + 1)
+			));
 	}
-	// call a scripting hook for switching stages
-	// note that we add 1 because Lua arrays are 1-based
-	Script_system.SetHookVar("OldStage", 'i', old_stage + 1);
-	Script_system.SetHookVar("NewStage", 'i', new_stage + 1);
-	Script_system.RunCondition(CHA_ONBRIEFSTAGE);
-	Script_system.RemHookVars({"OldStage", "NewStage"});
 }
 
 // NEWSTUFF BEGIN

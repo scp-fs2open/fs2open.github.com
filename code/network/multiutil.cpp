@@ -1128,14 +1128,14 @@ void multi_unpack_orient_matrix(ubyte *data,matrix *m)
 	                      
 void multi_do_client_warp(float frame_time)
 {
-   ship_obj *moveup;
-	
-   moveup = GET_FIRST(&Ship_obj_list);
-	while(moveup!=END_OF_LIST(&Ship_obj_list)){
+	for (auto moveup: list_range(&Ship_obj_list))
+	{
+		if (Objects[moveup->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		// do all _necessary_ ship warp in (arrival) processing
 		if ( Ships[Objects[moveup->objnum].instance].is_arriving() )	
 			shipfx_warpin_frame( &Objects[moveup->objnum], frame_time );
-		moveup = GET_NEXT(moveup);
 	}	
 }	
 
@@ -1380,15 +1380,15 @@ int server_all_filesigs_ok()
 
 void multi_untag_player_ships()
 {
-	ship_obj *moveup;
+	for (auto moveup: list_range(&Ship_obj_list))
+	{
+		if (Objects[moveup->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
 
-	moveup = GET_FIRST(&Ship_obj_list);
-	while(moveup != END_OF_LIST(&Ship_obj_list)){
 		if(Objects[moveup->objnum].flags[Object::Object_Flags::Player_ship]){
             Objects[moveup->objnum].flags.remove(Object::Object_Flags::Player_ship);
 			obj_set_flags( &Objects[moveup->objnum], Objects[moveup->objnum].flags + Object::Object_Flags::Could_be_player);
 		}
-		moveup = GET_NEXT(moveup);
 	}
 }
 
@@ -1583,10 +1583,8 @@ int multi_message_should_broadcast(int type)
 {
 	switch (type) {
 		case MESSAGE_ARRIVE_ENEMY:
-		case MESSAGE_BETA_ARRIVED:
-		case MESSAGE_GAMMA_ARRIVED:
 		case MESSAGE_HELP:
-		case MESSAGE_REINFORCEMENTS:
+		case MESSAGE_BACKUP:
 		case MESSAGE_SUPPORT_KILLED:
 			return 1; 
 		default:
@@ -2678,14 +2676,16 @@ int multi_process_restricted_keys(int k)
 // determine the status of available player ships (use team_0 for non team vs. team situations)
 void multi_player_ships_available(int *team_0,int *team_1)
 {
-	ship_obj *moveup;
 	int mp_team_num;
 	
 	*team_0 = 0;
 	*team_1 = 0;
-	
-	moveup = GET_FIRST(&Ship_obj_list);
-	while(moveup!=END_OF_LIST(&Ship_obj_list)){
+
+	for (auto moveup: list_range(&Ship_obj_list))
+	{
+		if (Objects[moveup->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		// if this ship is flagged as OF_COULD_BE_PLAYER
 		if(Objects[moveup->objnum].flags[Object::Object_Flags::Could_be_player]){
 			// get the team # for this ship
@@ -2696,8 +2696,6 @@ void multi_player_ships_available(int *team_0,int *team_1)
 				(*team_1)++;
 			}
 		}
-		
-		moveup = GET_NEXT(moveup);
 	}	
 }
 
@@ -3711,7 +3709,7 @@ int multi_pack_turret_angles(ubyte* data, ship_subsys* ssp)
 	bitbuffer_put(&buf, contains_section, 1);
 
 	// if the second section is valid 
-	if (ssp->submodel_instance_1 != nullptr){
+	if (ssp->submodel_instance_2 != nullptr){
 		contains_section = MULTI_PACKER_TRUE;
 		section2 = true;
 	} else {

@@ -47,11 +47,13 @@ void ai_manage_ets(object* obj);
 void increase_recharge_rate(object* obj, SYSTEM_TYPE enum_value);
 void decrease_recharge_rate(object* obj, SYSTEM_TYPE enum_value);
 void set_default_recharge_rates(object* obj);
+void set_recharge_rates(object* obj, int shields, int weapons, int engines);
 
 void transfer_energy_to_shields(object* obj);
 void transfer_energy_to_weapons(object* obj);
 
 float ets_get_max_speed(object* objp, float engine_energy);
+void ets_update_max_speed(object* ship_objp);
 void sanity_check_ets_inputs(int (&ets_indexes)[num_retail_ets_gauges]);
 bool validate_ship_ets_indxes(const int &ship_idx, int (&ets_indexes)[num_retail_ets_gauges]);
 void zero_one_ets (int *reduce, int *add1, int *add2);

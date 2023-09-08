@@ -49,8 +49,21 @@ inline void SCP_toupper(SCP_string &str) {
 	std::transform(str.begin(), str.end(), str.begin(), [](char c) { return SCP_toupper(c); });
 }
 
+inline bool SCP_truncate(SCP_string &str, size_t c_str_size) {
+	if (str.length() >= c_str_size) {
+		str.resize(c_str_size - 1);
+		return true;
+	} else {
+		return false;
+	}
+}
+
 extern void SCP_tolower(char *str);
 extern void SCP_toupper(char *str);
+extern void SCP_totitle(char *str);
+
+extern bool lcase_equal(const SCP_string& _Left, const SCP_string& _Right);
+extern bool lcase_lessthan(const SCP_string& _Left, const SCP_string& _Right);
 
 
 template <typename T, typename U>
@@ -67,6 +80,9 @@ using SCP_deque = std::deque<T, std::allocator<T>>;
 
 template <typename T>
 using SCP_set = std::set<T, std::less<T>, std::allocator<T>>;
+
+template <typename T>
+using SCP_multiset = std::multiset<T, std::less<T>, std::allocator<T>>;
 
 #if __cplusplus < 201402L
 template<class T, bool>
@@ -115,43 +131,13 @@ struct SCP_string_lcase_hash {
 
 struct SCP_string_lcase_equal_to {
 	bool operator()(const SCP_string& _Left, const SCP_string& _Right) const {
-		if (_Left.size() != _Right.size()) {
-			return false;
-		}
-		auto l_it = _Left.cbegin();
-		auto r_it = _Right.cbegin();
-		while (l_it != _Left.cend()) {
-			if (SCP_tolower(*l_it) != SCP_tolower(*r_it)) {
-				return false;
-			}
-			++l_it;
-			++r_it;
-		}
-		return true;
+		return lcase_equal(_Left, _Right);
 	}
 };
 
 struct SCP_string_lcase_less_than {
 	bool operator()(const SCP_string& _Left, const SCP_string& _Right) const {
-		auto l_it = _Left.cbegin();
-		auto r_it = _Right.cbegin();
-		while (true) {
-			if (l_it == _Left.cend()) {
-				return (r_it != _Right.cend());
-			} else if (r_it == _Right.cend()) {
-				return false;
-			}
-			auto lch = SCP_tolower(*l_it);
-			auto rch = SCP_tolower(*r_it);
-			if (lch < rch) {
-				return true;
-			} else if (lch > rch) {
-				return false;
-			}
-			++l_it;
-			++r_it;
-		}
-		return true;
+		return lcase_lessthan(_Left, _Right);
 	}
 };
 

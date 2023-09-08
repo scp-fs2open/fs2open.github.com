@@ -54,6 +54,7 @@ extern Category LoadBatchingBuffers;
 extern Category SortColliders;
 extern Category FindOverlapColliders;
 extern Category CollidePair;
+extern Category RetimeCollisionCache;
 
 extern Category WeaponPostMove;
 extern Category ShipPostMove;
@@ -137,7 +138,6 @@ extern Category LoadPostMissionLoad;
 extern Category LoadModelFile;
 extern Category ReadModelFile;
 extern Category ModelCreateVertexBuffers;
-extern Category ModelCreateOctants;
 extern Category ModelParseAllBSPTrees;
 extern Category ModelParseBSPTree;
 extern Category ModelConfigureVertexBuffers;

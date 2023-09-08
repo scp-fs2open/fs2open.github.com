@@ -1,13 +1,16 @@
 #include "lab/renderer/lab_renderer.h"
+#include "globalincs/vmallocator.h"
 #include "lab/labv2_internal.h"
-#include "lab/wmcgui.h"
 #include "graphics/2d.h"
 #include "graphics/light.h"
 #include "lighting/lighting_profiles.h"
+#include "parse/parselo.h"
 #include "starfield/starfield.h"
 #include "starfield/nebula.h"
 #include "nebula/neb.h"
 #include "freespace.h"
+
+#include "missionui/missionscreencommon.h"
 #include "tracing/tracing.h"
 
 void LabRenderer::onFrame(float frametime) {
@@ -39,6 +42,19 @@ void LabRenderer::onFrame(float frametime) {
 	// the LabManager::onFrame method
 }
 
+namespace ltp = lighting_profiles;
+void LabRenderer::resetGraphicsSettings(gfx_options settings) {
+	
+	ltp::lab_set_ambient(settings.ambient_factor);
+	ltp::lab_set_emissive(settings.emissive_factor);
+	ltp::lab_set_exposure(settings.exposure_level);
+	ltp::lab_set_light(settings.light_factor);
+	ltp::lab_set_ppc(settings.ppcv);
+	ltp::lab_set_tonemapper(settings.tonemapper);
+	gr_set_bloom_intensity(settings.bloom_level);
+	Gr_aa_mode = settings.aa_mode;
+}
+
 void LabRenderer::renderModel(float frametime) {
 	GR_DEBUG_SCOPE("Lab Render Model");
 
@@ -47,6 +63,10 @@ void LabRenderer::renderModel(float frametime) {
 	auto lab_emissive_light_save = Cmdline_emissive;
 
 	light_reset();
+
+	if (currentMissionBackground == LAB_MISSION_NONE_STRING) {
+		common_setup_room_lights();
+	}
 
 	Cmdline_emissive = renderFlags[LabRenderFlag::ShowEmissiveLighting];
 
@@ -250,7 +270,7 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 	extern const char* Neb2_filenames[];
 
 	char envmap_name[MAX_FILENAME_LEN] = {0};
-
+	SCP_string ltp_name;
 	currentMissionBackground = mission_name;
 
 	stars_pre_level_init(true);
@@ -259,7 +279,7 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 	// (DahBlount) - Remember to load the debris anims
 	stars_load_debris(false);
 
-	if (mission_name != "None") {
+	if (mission_name != LAB_MISSION_NONE_STRING) {
 		read_file_text((mission_name + ".fs2").c_str(), CF_TYPE_MISSIONS);
 		reset_parse();
 
@@ -268,9 +288,19 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 		if (optional_string("+Flags:"))
 			stuff_flagset(&flags);
 
-		// Are we using a skybox?
-		skip_to_start_of_string_either("$Skybox Model:", "#Background bitmaps");
+		skip_to_start_of_string_one_of(SCP_vector<SCP_string>{ "+Volumetric Nebula:", "$Skybox Model:", "$Lighting Profile:", "#Background bitmaps" });
+		if (optional_string("+Volumetric Nebula:")) {
+			//Rendering usually happens in post-mission-init, just do it now in the lab
+			The_mission.volumetrics.emplace().parse_volumetric_nebula().renderVolumeBitmap();
+		}
+		else {
+			volumetrics_level_close();
+		}
 
+		// Are we using a skybox?
+		//skip will skip to the end of the file (or to the 'end' string) if any string is absent,
+		//so be sure to include any section that might be found
+		skip_to_start_of_string_one_of(SCP_vector<SCP_string>{ "$Skybox Model:", "$Lighting Profile:", "#Background bitmaps" });
 		strcpy_s(skybox_model, "");
 		if (optional_string("$Skybox Model:")) {
 			stuff_string(skybox_model, F_NAME, MAX_FILENAME_LEN);
@@ -289,8 +319,15 @@ void LabRenderer::useBackground(const SCP_string& mission_name) {
 
 			stars_set_background_model(skybox_model, nullptr, skybox_flags);
 			stars_set_background_orientation(&skybox_orientation);
+		}
 
-			skip_to_start_of_string("#Background bitmaps");
+		skip_to_start_of_string_either("$Lighting Profile:", "#Background bitmaps");
+		ltp_name = ltp::default_name();
+		if(optional_string("$Lighting Profile:")){
+			stuff_string(ltp_name,F_NAME);
+		}
+		if (ltp_name != ltp::current()->name) {
+				ltp::switch_to(ltp_name);
 		}
 
 		if (optional_string("#Background bitmaps")) {

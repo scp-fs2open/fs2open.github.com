@@ -98,7 +98,8 @@ void HudGaugeRadarStd::blipDrawFlicker(blip *b, int x, int y)
 }
 void HudGaugeRadarStd::blitGauge()
 {
-	renderBitmap(Radar_gauge.first_frame+1, position[0], position[1] );
+	if (Radar_gauge.first_frame + 1 >= 0)
+		renderBitmap(Radar_gauge.first_frame+1, position[0], position[1] );
 }
 void HudGaugeRadarStd::drawBlips(int blip_type, int bright, int distort)
 {
@@ -297,7 +298,7 @@ void HudGaugeRadarStd::render(float  /*frametime*/)
 	}
 
 	// note that on lowest skill level, there is no radar effects due to sensors damage
-	if ( (Game_skill_level == 0) || (sensors_str > SENSOR_STR_RADAR_NO_EFFECTS) ) {
+	if ( ((Game_skill_level == 0) || (sensors_str > SENSOR_STR_RADAR_NO_EFFECTS)) && !Sensor_static_forced ) {
 		Radar_static_playing = 0;
 		Radar_static_next = 0;
 		Radar_death_timer = 0;

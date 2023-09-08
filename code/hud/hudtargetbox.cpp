@@ -395,7 +395,8 @@ void HudGaugeTargetBox::render(float frametime)
 	setGaugeColor();
 
 	// blit the background frame
-	renderBitmap(Monitor_frame.first_frame, position[0], position[1]);
+	if (Monitor_frame.first_frame >= 0)
+		renderBitmap(Monitor_frame.first_frame, position[0], position[1]);
 
 	if ( Monitor_mask >= 0 ) {
 		// render the alpha mask
@@ -461,8 +462,9 @@ void HudGaugeTargetBox::render(float frametime)
 void HudGaugeTargetBox::renderTargetForeground()
 {
 	setGaugeColor();
-
-	renderBitmap(Monitor_frame.first_frame+1, position[0], position[1]);	
+	
+	if (Monitor_frame.first_frame + 1 >= 0)
+		renderBitmap(Monitor_frame.first_frame+1, position[0], position[1]);	
 }
 
 /**
@@ -473,7 +475,7 @@ void HudGaugeTargetBox::renderTargetIntegrity(int disabled,int force_obj_num)
 	int		clip_h,w,h;
 	char		buf[16];
 
-	if ( Integrity_bar.first_frame == -1 ) 
+	if ( Integrity_bar.first_frame < 0 ) 
 		return;
 
 	if ( disabled ) {
@@ -1243,7 +1245,7 @@ void HudGaugeTargetBox::renderTargetAsteroid(object *target_objp)
 			break;
 
 		default:
-			strcpy_s(hud_name, Asteroid_info[asteroidp->asteroid_type].name);
+			strcpy_s(hud_name, Asteroid_info[asteroidp->asteroid_type].display_name.c_str());
 			break;
 	}
 
@@ -1320,9 +1322,7 @@ void HudGaugeTargetBox::renderTargetJumpNode(object *target_objp)
 		renderTargetIntegrity(1);
 		setGaugeColor();
 
-		strcpy_s(outstr, jnp->GetName());
-		end_string_at_first_hash_symbol(outstr);
-		renderString(position[0] + Name_offsets[0], position[1] + Name_offsets[1], EG_TBOX_NAME, outstr);	
+		renderString(position[0] + Name_offsets[0], position[1] + Name_offsets[1], EG_TBOX_NAME, jnp->GetDisplayName());
 
 		dist = Player_ai->current_target_distance;
 		if ( Hud_unit_multiplier > 0.0f ) {	// use a different displayed distance scale
@@ -1582,7 +1582,7 @@ void HudGaugeExtraTargetData::render(float  /*frametime*/)
 		extra_data_shown=1;
 	}
 
-	if ( extra_data_shown ) {	
+	if ( extra_data_shown && bracket.first_frame >= 0) {
 		renderBitmap(bracket.first_frame, position[0] + bracket_offsets[0], position[1] + bracket_offsets[1]);		
 	}
 }
@@ -2193,7 +2193,7 @@ void HudGaugeTargetBox::showTargetData(float  /*frametime*/)
 			gr_printf_no_resize(sx, sy, "%s", outstr);
 			sy += dy;
 
-			gr_printf_no_resize(sx, sy, "Max speed = %d, (%d%%)", (int) shipp->current_max_speed, (int) (100.0f * vm_vec_mag(&target_objp->phys_info.vel)/shipp->current_max_speed));
+			gr_printf_no_resize(sx, sy, "Max speed = %d, (%d%%)", (int)target_objp->phys_info.max_vel.xyz.z, (int) (100.0f * vm_vec_mag(&target_objp->phys_info.vel)/target_objp->phys_info.max_vel.xyz.z));
 			sy += dy;
 			
 			// data can be found in target montior
@@ -2231,7 +2231,7 @@ void HudGaugeTargetBox::showTargetData(float  /*frametime*/)
 			// print out energy transfer information on the ship
 			sy = gr_screen.center_offset_y + 70;
 
-			sprintf(outstr,"MAX G/E: %.0f/%.0f",shipp->weapon_energy,shipp->current_max_speed);
+			sprintf(outstr,"MAX G/E: %.0f/%.0f",shipp->weapon_energy, target_objp->phys_info.max_vel.xyz.z);
 			gr_printf_no_resize(sx, sy, "%s", outstr);
 			sy += dy;
 			 
@@ -2347,6 +2347,7 @@ void hud_init_target_static()
 {
 	Target_static_next = 0;
 	Target_static_playing = 0;
+	Sensor_static_forced = false;
 }
 
 /**
@@ -2357,7 +2358,7 @@ void hud_update_target_static()
 	float	sensors_str;
 
 	// on lowest skill level, don't show static on target monitor
-	if ( Game_skill_level == 0 ) 
+	if ( (Game_skill_level == 0) && !Sensor_static_forced ) 
 		return;
 
 	// if multiplayer observer, don't show static
@@ -2370,7 +2371,7 @@ void hud_update_target_static()
 		sensors_str = SENSOR_STR_TARGET_NO_EFFECTS-1;
 	}
 
-	if ( sensors_str > SENSOR_STR_TARGET_NO_EFFECTS ) {
+	if ( (sensors_str > SENSOR_STR_TARGET_NO_EFFECTS) && !Sensor_static_forced ) {
 		Target_static_playing = 0;
 		Target_static_next = 0;
 	} else {

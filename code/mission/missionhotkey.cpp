@@ -22,6 +22,7 @@
 #include "io/timer.h"
 #include "mission/missionhotkey.h"
 #include "missionui/missionscreencommon.h"
+#include "mod_table/mod_table.h"
 #include "object/object.h"
 #include "parse/parselo.h"
 #include "playerman/player.h"
@@ -97,15 +98,9 @@ static const char *Hotkey_mask_fname[GR_NUM_RESOLUTIONS] = {
 #define HOTKEY_X		575
 #define HOTKEY_Y		41
 */
- 
-#define HOTKEY_LINE_HEADING	1
-#define HOTKEY_LINE_WING		2
-#define HOTKEY_LINE_SHIP		3
-#define HOTKEY_LINE_SUBSHIP	4  // ship that is in a wing
 
 #define WING_FLAG	0x80000
 
-#define MAX_LINES					200
 #define NUM_BUTTONS				10
 #define LIST_BUTTONS_MAX		50
 
@@ -257,15 +252,7 @@ static UI_XSTR Hotkey_text[GR_NUM_RESOLUTIONS][HOTKEY_NUM_TEXT] = {
 	}
 };
 
-
-
-static struct {
-	SCP_string label;
-	int type;
-	int index;
-	int y;  // Y coordinate of line
-} Hotkey_lines[MAX_LINES];
-
+hotkey_line Hotkey_lines[MAX_LINES];
 static int Cur_hotkey = 0;
 static int Scroll_offset;
 static int Num_lines;
@@ -285,9 +272,8 @@ int Hotkey_overlay_id;
 // not trivial since our current keysets (F5 - F12) do not have sequential keycodes
 int mission_hotkey_get_set_num( int k )
 {
-	int i;
 
-	for (i = 0; i < MAX_KEYED_TARGETS; i++ ) {
+	for (int i = 0; i < MAX_KEYED_TARGETS; i++ ) {
 		if ( Key_sets[i] == k ) {
 			return i;
 		}
@@ -300,15 +286,14 @@ int mission_hotkey_get_set_num( int k )
 // function to maybe restore some hotkeys during the first N seconds of the mission
 void mission_hotkey_maybe_restore()
 {
-	int i, index;
 
-	for ( i = 0; i < Num_hotkeys_saved; i++ ) {
+	for (int i = 0; i < Num_hotkeys_saved; i++ ) {
 		// don't process something that has no set
 		if ( Hotkey_saved_info[i].setnum == -1 )
 			continue;
 
 		// the ship is present, add it to the given set.
-		index = ship_name_lookup(Hotkey_saved_info[i].name);
+		int index = ship_name_lookup(Hotkey_saved_info[i].name);
 		if ( index != -1 ) {
 			hud_target_hotkey_add_remove( Hotkey_saved_info[i].setnum, &Objects[Ships[index].objnum], HOTKEY_USER_ADDED );
 			Hotkey_saved_info[i].setnum = -1;
@@ -320,16 +305,13 @@ void mission_hotkey_maybe_restore()
 // mission_hotkey_set_defaults()
 //
 // Set up the hotkey lists for the player based on the mission designer
-// defaults.  
+// defaults. 
+// Set restore to false to explicitely ignore player saved values. 
 //
-void mission_hotkey_set_defaults()
+void mission_hotkey_set_defaults(bool restore)
 {
-	int		i,j;
-	wing		*wp;
-	ship		*sp;
-	object	*A;
 
-	for ( i = 0; i < MAX_KEYED_TARGETS; i++ ) {
+	for (int i = 0; i < MAX_KEYED_TARGETS; i++ ) {
 		hud_target_hotkey_clear(i);
 	}
 
@@ -340,21 +322,23 @@ void mission_hotkey_set_defaults()
 	// if we have hotkeys saved from the previous run of this mission, then simply keep the cleared
 	// sets, and let the restore code take care of it!  This works because this function is currently
 	// only called from one place -- after the mission loads.
-	if ( Num_hotkeys_saved > 0 ) {
+	if ( restore && (Num_hotkeys_saved > 0) ) {
 		mission_hotkey_maybe_restore();
 		return;
 	}
 
 	// Check for ships with a hotkey assigned
 	obj_merge_created_list();
-	for ( A = GET_FIRST(&obj_used_list); A !=END_OF_LIST(&obj_used_list); A = GET_NEXT(A) ) {
-
-		if ( (A == &obj_used_list) || (A->type != OBJ_SHIP) || ((Game_mode & GM_NORMAL) && (A == Player_obj)) ) {
+	for (auto so: list_range(&Ship_obj_list)) {
+		auto A = &Objects[so->objnum];
+		if (A->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+		if ( (A->type != OBJ_SHIP) || ((Game_mode & GM_NORMAL) && (A == Player_obj)) ) {
 			continue;
 		}
 
 		Assert(A->instance >= 0 && A->instance < MAX_SHIPS);
-		sp = &Ships[A->instance];		
+		ship *sp = &Ships[A->instance];		
 
 		if ( sp->hotkey == -1 )
 			continue;
@@ -370,8 +354,8 @@ void mission_hotkey_set_defaults()
 	}
 
 	// Check for wings with a hotkey assigned
-	for ( i = 0; i < Num_wings; i++ ) {
-		wp = &Wings[i];
+	for (int i = 0; i < Num_wings; i++ ) {
+		wing *wp = &Wings[i];
 
 		if ( wp->hotkey == -1 )  
 			continue;
@@ -380,11 +364,11 @@ void mission_hotkey_set_defaults()
 		if ( wp->hotkey == MAX_KEYED_TARGETS )
 			continue;
 
-		for ( j = 0; j < wp->current_count; j++ ) {
+		for (int j = 0; j < wp->current_count; j++ ) {
 			if ( wp->ship_index[j] == -1 )
 				continue;
 
-			sp = &Ships[wp->ship_index[j]];
+			ship *sp = &Ships[wp->ship_index[j]];
 			hud_target_hotkey_add_remove( wp->hotkey, &Objects[sp->objnum], HOTKEY_MISSION_FILE_ADDED );
 		}				
 	}
@@ -400,11 +384,6 @@ void mission_hotkey_reset_saved()
 // sets N seconds into the mission
 void mission_hotkey_maybe_save_sets()
 {
-	int i;
-	htarget_list	*hitem, *plist;
-	HK_save_info *hkp;
-	bool found_player_hotkey;
-
 	if ( !timestamp_elapsed(Mission_hotkey_save_timestamp) ) {
 		mission_hotkey_maybe_restore();
 		return;
@@ -414,20 +393,21 @@ void mission_hotkey_maybe_save_sets()
 	if ( Hotkey_sets_saved )
 		return;
 
-	for ( i = 0; i < MAX_HOTKEY_TARGET_ITEMS; i++ )
+	for (int i = 0; i < MAX_HOTKEY_TARGET_ITEMS; i++ )
 		Hotkey_saved_info[i].setnum = -1;
 
 	Num_hotkeys_saved = 0;
-	hkp = &(Hotkey_saved_info[0]);
+	HK_save_info *hkp = &(Hotkey_saved_info[0]);
 
-	for ( i = 0; i < MAX_KEYED_TARGETS; i++ ) {
+	for (int i = 0; i < MAX_KEYED_TARGETS; i++ ) {
 
 		// get the list.  do nothing if list is empty
-		plist = &(Player->keyed_targets[i]);
+		htarget_list *plist = &(Player->keyed_targets[i]);
 		if ( EMPTY(plist) )
 			continue;
 
-		found_player_hotkey = false;
+		bool found_player_hotkey = false;
+		htarget_list* hitem;
 		for ( hitem = GET_FIRST(plist); hitem != END_OF_LIST(plist); hitem = GET_NEXT(hitem) )
 			if (hitem->how_added == HOTKEY_USER_ADDED)
 				found_player_hotkey = true;
@@ -462,21 +442,20 @@ void mission_hotkey_mf_add( int set, int objnum, int how_to_add )
 
 void mission_hotkey_validate()
 {
-	htarget_list	*hitem, *plist;
-	object			*A;
-	int				obj_valid, i;
-
-	for ( i = 0; i < MAX_KEYED_TARGETS; i++ ) {
-		plist = &(Players[Player_num].keyed_targets[i]);
+	for (int i = 0; i < MAX_KEYED_TARGETS; i++ ) {
+		htarget_list* plist = &(Players[Player_num].keyed_targets[i]);
 		if ( EMPTY( plist ) )			// no items in list, then do nothing
 			continue;
 
-		hitem = GET_FIRST(plist);
+		htarget_list *hitem = GET_FIRST(plist);
 		while ( hitem != END_OF_LIST(plist) ) {
 
 			// ensure this object is still valid and in the obj_used_list
-			obj_valid = FALSE;
+			int obj_valid = FALSE;
+			object* A;
 			for ( A = GET_FIRST(&obj_used_list); A !=END_OF_LIST(&obj_used_list); A = GET_NEXT(A) ) {
+				if (A->flags[Object::Object_Flags::Should_be_dead])
+					continue;
 				if ( A->signature == hitem->objp->signature ) {
 					obj_valid = TRUE;
 					break;
@@ -488,7 +467,7 @@ void mission_hotkey_validate()
 				temp = GET_NEXT(hitem);
 				list_remove( plist, hitem );
 				list_append( &htarget_free_list, hitem );
-				hitem->objp = NULL;
+				hitem->objp = nullptr;
 				hitem = temp;
 				continue;
 			}
@@ -501,26 +480,33 @@ void mission_hotkey_validate()
 // get the Hotkey_bits of a whole wing (bits must be set in all ships of wing for a hotkey bit to be set)
 int get_wing_hotkeys(int n)
 {
-	int i, total = 0xffffffff;
+	int idx = Hotkey_lines[n].index;
+	
+	int total = 0xffffffff;
 
-	Assert((n >= 0) && (n < Num_wings));
-	for (i=0; i<Wings[n].current_count; i++) {
+	Assert((idx >= 0) && (idx < Num_wings));
+	for (int i = 0; i < Wings[idx].current_count; i++) {
 		int ship_index;
 
 		// don't count the player ship for the total -- you cannot assign the player since bad things
 		// can happen on the hud.
-		ship_index = Wings[n].ship_index[i];
+		ship_index = Wings[idx].ship_index[i];
 		if ( &Ships[ship_index] == Player_ship )
 			continue;
 
-		total &= Hotkey_bits[Wings[n].ship_index[i]];
+		total &= Hotkey_bits[Wings[idx].ship_index[i]];
 	}
 
 	return total;
 }
 
+int get_ship_hotkeys(int n)
+{
+	return Hotkey_bits[Hotkey_lines[n].index];
+}
+
 // add a line of hotkey smuck to end of list
-int hotkey_line_add(const char *text, int type, int index, int y)
+int hotkey_line_add(const char *text, HotkeyLineType type, int index, int y)
 {
 	if (Num_lines >= MAX_LINES)
 		return 0;
@@ -533,14 +519,13 @@ int hotkey_line_add(const char *text, int type, int index, int y)
 }
 
 // insert a line of hotkey smuck before line 'n'.
-int hotkey_line_insert(int n, const char *text, int type, int index)
+int hotkey_line_insert(int n, const char *text, HotkeyLineType type, int index)
 {
-	int z;
 
 	if (Num_lines >= MAX_LINES)
 		return 0;
 
-	z = Num_lines++;
+	int z = Num_lines++;
 	while (z > n) {
 		Hotkey_lines[z] = Hotkey_lines[z - 1];
 		z--;
@@ -554,19 +539,18 @@ int hotkey_line_insert(int n, const char *text, int type, int index)
 
 // insert a line of hotkey smuck somewhere between 'start' and end of list such that it is
 // sorted by name
-int hotkey_line_add_sorted(const char *text, int type, int index, int start)
+int hotkey_line_add_sorted(const char *text, HotkeyLineType type, int index, int start)
 {
-	int z;
 
 	if (Num_lines >= MAX_LINES)
 		return -1;
 
-	z = Num_lines - 1;
-	while ((z >= start) && ((Hotkey_lines[z].type == HOTKEY_LINE_SUBSHIP) || (stricmp(text, Hotkey_lines[z].label.c_str()) < 0)))
+	int z = Num_lines - 1;
+	while ((z >= start) && ((Hotkey_lines[z].type == HotkeyLineType::SUBSHIP) || (stricmp(text, Hotkey_lines[z].label.c_str()) < 0)))
 		z--;
 
 	z++;
-	while ((z < Num_lines) && (Hotkey_lines[z].type == HOTKEY_LINE_SUBSHIP))
+	while ((z < Num_lines) && (Hotkey_lines[z].type == HotkeyLineType::SUBSHIP))
 		z++;
 
 	return hotkey_line_insert(z, text, type, index);
@@ -574,10 +558,8 @@ int hotkey_line_add_sorted(const char *text, int type, int index, int start)
 
 int hotkey_build_team_listing(int enemy_team_mask, int y, bool list_enemies)
 {
-	ship_obj *so;
-	const char *str = NULL;
-	int i, j, s, z, start, team_mask;
-	int font_height = gr_get_font_height();
+	const char *str = nullptr;
+	int team_mask;
 	IFF_hotkey_team hotkey_team;
 
 	if (list_enemies)
@@ -593,13 +575,17 @@ int hotkey_build_team_listing(int enemy_team_mask, int y, bool list_enemies)
 		hotkey_team = IFF_hotkey_team::Friendly;
 	}
 
-	hotkey_line_add(str, HOTKEY_LINE_HEADING, 0, y);
+	hotkey_line_add(str, HotkeyLineType::HEADING, 0, y);
 	y += 2;
 
-	start = Num_lines;
+	int start = Num_lines;
+	ship_obj* so;
 
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		bool add_it;
+
+		if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
 
 		// don't process non-ships, or the player ship
 		if ( (Game_mode & GM_NORMAL) && (so->objnum == OBJ_INDEX(Player_obj)) )
@@ -623,7 +609,7 @@ int hotkey_build_team_listing(int enemy_team_mask, int y, bool list_enemies)
 		// if a ship's hotkey is the last hotkey on the list, then maybe make the hotkey -1 if
 		// we are now in mission.  Otherwise, skip this ship
 		if ( shipp->hotkey == MAX_KEYED_TARGETS ) {
-			if ( !(Game_mode & GM_IN_MISSION) )
+			if ((!(Game_mode & GM_IN_MISSION)) || Hotkey_always_hide_hidden_ships)
 				continue;										// skip to next ship
 			shipp->hotkey = -1;
 		}
@@ -637,11 +623,11 @@ int hotkey_build_team_listing(int enemy_team_mask, int y, bool list_enemies)
 
 		// add it if the teams match or if the IFF says to
 		if (add_it) {
-			hotkey_line_add_sorted(shipp->get_display_name(), HOTKEY_LINE_SHIP, shipnum, start);
+			hotkey_line_add_sorted(shipp->get_display_name(), HotkeyLineType::SHIP, shipnum, start);
 		}
 	}
 
-	for (i=0; i<Num_wings; i++) {
+	for (int i=0; i<Num_wings; i++) {
 		bool add_it;
 		char wing_name[NAME_LENGTH];
 
@@ -674,6 +660,8 @@ int hotkey_build_team_listing(int enemy_team_mask, int y, bool list_enemies)
 				Wings[i].hotkey = -1;
 			}
 
+			int j;
+
 			// don't add any wing data whose ships are hidden from sensors
 			for ( j = 0; j < Wings[i].current_count; j++ ) {
 				if ( Ships[Wings[i].ship_index[j]].flags[Ship::Ship_Flags::Hidden_from_sensors] )
@@ -686,12 +674,12 @@ int hotkey_build_team_listing(int enemy_team_mask, int y, bool list_enemies)
 			strcpy_s(wing_name, Wings[i].name);
 			end_string_at_first_hash_symbol(wing_name);
 
-			z = hotkey_line_add_sorted(wing_name, HOTKEY_LINE_WING, i, start);
+			int z = hotkey_line_add_sorted(wing_name, HotkeyLineType::WING, i, start);
 			if (Wings[i].flags[Ship::Wing_Flags::Expanded]) {
 				for (j=0; j<Wings[i].current_count; j++) {
-					s = Wings[i].ship_index[j];
+					int s = Wings[i].ship_index[j];
 					if (!Ships[s].is_dying_or_departing()) {
-						z = hotkey_line_insert(z + 1, Ships[s].get_display_name(), HOTKEY_LINE_SUBSHIP, s);
+						z = hotkey_line_insert(z + 1, Ships[s].get_display_name(), HotkeyLineType::SUBSHIP, s);
 					}
 				}
 			}
@@ -705,8 +693,10 @@ int hotkey_build_team_listing(int enemy_team_mask, int y, bool list_enemies)
 		return y - 2;
 	}
 
-	for (i=start; i<Num_lines; i++) {
-		if (Hotkey_lines[i].type == HOTKEY_LINE_SUBSHIP)
+	int font_height = gr_get_font_height();
+
+	for (int i=start; i<Num_lines; i++) {
+		if (Hotkey_lines[i].type == HotkeyLineType::SUBSHIP)
 			y += font_height;
 		else
 			y += font_height + 2;
@@ -718,13 +708,18 @@ int hotkey_build_team_listing(int enemy_team_mask, int y, bool list_enemies)
 	return y;
 }
 
+void hotkey_set_selected_line(int line)
+{
+	Selected_line = line;
+}
+
 void hotkey_build_listing()
 {
-	int y, enemy_team_mask;
+	int y;
 
 	Num_lines = y = 0;
 
-	enemy_team_mask = iff_get_attackee_mask(Player_ship->team);
+	int enemy_team_mask = iff_get_attackee_mask(Player_ship->team);
 
 	y = hotkey_build_team_listing(enemy_team_mask, y, false);
 	y = hotkey_build_team_listing(enemy_team_mask, y, true);
@@ -732,12 +727,10 @@ void hotkey_build_listing()
 
 int hotkey_line_query_visible(int n)
 {
-	int y;
-
 	if ((n < 0) || (n >= Num_lines))
 		return 0;
 	
-	y = Hotkey_lines[n].y - Hotkey_lines[Scroll_offset].y;
+	int y = Hotkey_lines[n].y - Hotkey_lines[Scroll_offset].y;
 	if ((y < 0) || (y + gr_get_font_height() > Hotkey_list_coords[gr_screen.res][3]))
 		return 0;
 
@@ -749,7 +742,7 @@ void hotkey_scroll_screen_up()
 	if (Scroll_offset) {
 		Scroll_offset--;
 		Assert(Selected_line > Scroll_offset);
-		while (!hotkey_line_query_visible(Selected_line) || (Hotkey_lines[Selected_line].type == HOTKEY_LINE_HEADING))
+		while (!hotkey_line_query_visible(Selected_line) || (Hotkey_lines[Selected_line].type == HotkeyLineType::HEADING))
 			Selected_line--;
 
 		gamesnd_play_iface(InterfaceSounds::SCROLL);
@@ -762,7 +755,7 @@ void hotkey_scroll_line_up()
 {
 	if (Selected_line > 1) {
 		Selected_line--;
-		while (Hotkey_lines[Selected_line].type == HOTKEY_LINE_HEADING)
+		while (Hotkey_lines[Selected_line].type == HotkeyLineType::HEADING)
 			Selected_line--;
 
 		if (Selected_line < Scroll_offset)
@@ -778,7 +771,7 @@ void hotkey_scroll_screen_down()
 {
 	if (Hotkey_lines[Num_lines - 1].y + gr_get_font_height() > Hotkey_lines[Scroll_offset].y + Hotkey_list_coords[gr_screen.res][3]) {
 		Scroll_offset++;
-		while (!hotkey_line_query_visible(Selected_line) || (Hotkey_lines[Selected_line].type == HOTKEY_LINE_HEADING)) {
+		while (!hotkey_line_query_visible(Selected_line) || (Hotkey_lines[Selected_line].type == HotkeyLineType::HEADING)) {
 			Selected_line++;
 			Assert(Selected_line < Num_lines);
 		}
@@ -793,7 +786,7 @@ void hotkey_scroll_line_down()
 {
 	if (Selected_line < Num_lines - 1) {
 		Selected_line++;
-		while (Hotkey_lines[Selected_line].type == HOTKEY_LINE_HEADING)
+		while (Hotkey_lines[Selected_line].type == HotkeyLineType::HEADING)
 			Selected_line++;
 
 		Assert(Selected_line > Scroll_offset);
@@ -806,16 +799,18 @@ void hotkey_scroll_line_down()
 		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 }
 
-void expand_wing()
+void expand_wing(int line, bool forceExpand)
 {
-	int i, z;
-
-	if (Hotkey_lines[Selected_line].type == HOTKEY_LINE_WING) {
-		i = Hotkey_lines[Selected_line].index;
-        Wings[i].flags.toggle(Ship::Wing_Flags::Expanded);
+	if (Hotkey_lines[line].type == HotkeyLineType::WING) {
+		int i = Hotkey_lines[line].index;
+		if (forceExpand) {
+			Wings[i].flags.set(Ship::Wing_Flags::Expanded);
+		} else {
+			Wings[i].flags.toggle(Ship::Wing_Flags::Expanded);
+		}
 		hotkey_build_listing();
-		for (z=0; z<Num_lines; z++)
-			if ((Hotkey_lines[z].type == HOTKEY_LINE_WING) && (Hotkey_lines[z].index == i)) {
+		for (int z=0; z<Num_lines; z++)
+			if ((Hotkey_lines[z].type == HotkeyLineType::WING) && (Hotkey_lines[z].index == i)) {
 				Selected_line = z;
 				break;
 			}
@@ -824,13 +819,12 @@ void expand_wing()
 
 void reset_hotkeys()
 {
-	int i;
 	htarget_list *hitem, *plist;
 
-	for (i=0; i<MAX_SHIPS; i++)
+	for (int i=0; i<MAX_SHIPS; i++)
 		Hotkey_bits[i] = 0;
 
-	for ( i=0; i<MAX_KEYED_TARGETS; i++ ) {
+	for (int i=0; i<MAX_KEYED_TARGETS; i++ ) {
 		plist = &(Players[Player_num].keyed_targets[i]);
 		if ( EMPTY(plist) ) // no items in list, then do nothing
 			continue;
@@ -842,30 +836,30 @@ void reset_hotkeys()
 	}
 }
 
-void clear_hotkeys()
+void clear_hotkeys(int line)
 {
-	int i, b, z;
+	auto type = Hotkey_lines[line].type;
 
-	z = Hotkey_lines[Selected_line].type;
-	if (z == HOTKEY_LINE_WING) {
-		z = Hotkey_lines[Selected_line].index;
-		b = ~get_wing_hotkeys(z);
-		for (i=0; i<Wings[z].current_count; i++)
+	if (type == HotkeyLineType::WING) {
+		int z = Hotkey_lines[line].index;
+		int b = ~get_wing_hotkeys(line);
+		for (int i=0; i<Wings[z].current_count; i++)
 			Hotkey_bits[Wings[z].ship_index[i]] &= b;
 
-	} else if ((z == HOTKEY_LINE_SHIP) || (z == HOTKEY_LINE_SUBSHIP)) {
-		Hotkey_bits[Hotkey_lines[Selected_line].index] = 0;
+	} else if ((type == HotkeyLineType::SHIP) || (type == HotkeyLineType::SUBSHIP)) {
+		Hotkey_bits[Hotkey_lines[line].index] = 0;
 	}
 }
 
 void save_hotkeys()
 {
-	ship_obj *so;
-	int i;
-
-	for (i=0; i<MAX_KEYED_TARGETS; i++) {
+	for (int i=0; i<MAX_KEYED_TARGETS; i++) {
 		hud_target_hotkey_clear(i);
+		ship_obj* so;
+
 		for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
+			if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+				continue;
 			if ( Hotkey_bits[Objects[so->objnum].instance] & (1 << i) ) {
 				hud_target_hotkey_add_remove(i, &Objects[so->objnum], HOTKEY_USER_ADDED );
 			}
@@ -873,33 +867,31 @@ void save_hotkeys()
 	}
 }
 
-void add_hotkey(int hotkey)
+void add_hotkey(int hotkey, int line)
 {
-	int i, z;
+	auto type = Hotkey_lines[line].type;
 
-	z = Hotkey_lines[Selected_line].type;
-	if (z == HOTKEY_LINE_WING) {
-		z = Hotkey_lines[Selected_line].index;
-		for (i=0; i<Wings[z].current_count; i++)
+	if (type == HotkeyLineType::WING) {
+		int z = Hotkey_lines[line].index;
+		for (int i=0; i<Wings[z].current_count; i++)
 			Hotkey_bits[Wings[z].ship_index[i]] |= (1 << hotkey);
 
-	} else if ((z == HOTKEY_LINE_SHIP) || (z == HOTKEY_LINE_SUBSHIP)) {
-		Hotkey_bits[Hotkey_lines[Selected_line].index] |= (1 << hotkey);
+	} else if ((type == HotkeyLineType::SHIP) || (type == HotkeyLineType::SUBSHIP)) {
+		Hotkey_bits[Hotkey_lines[line].index] |= (1 << hotkey);
 	}
 }
 
-void remove_hotkey()
+void remove_hotkey(int hotkey, int line)
 {
-	int i, z;
+	auto type = Hotkey_lines[line].type;
 
-	z = Hotkey_lines[Selected_line].type;
-	if (z == HOTKEY_LINE_WING) {
-		z = Hotkey_lines[Selected_line].index;
-		for (i=0; i<Wings[z].current_count; i++)
-			Hotkey_bits[Wings[z].ship_index[i]] &= ~(1 << Cur_hotkey);
+	if (type == HotkeyLineType::WING) {
+		int z = Hotkey_lines[line].index;
+		for (int i=0; i<Wings[z].current_count; i++)
+			Hotkey_bits[Wings[z].ship_index[i]] &= ~(1 << hotkey);
 
-	} else if ((z == HOTKEY_LINE_SHIP) || (z == HOTKEY_LINE_SUBSHIP)) {
-		Hotkey_bits[Hotkey_lines[Selected_line].index] &= ~(1 << Cur_hotkey);
+	} else if ((type == HotkeyLineType::SHIP) || (type == HotkeyLineType::SUBSHIP)) {
+		Hotkey_bits[Hotkey_lines[line].index] &= ~(1 << hotkey);
 	}
 }
 
@@ -915,12 +907,12 @@ void hotkey_button_pressed(int n)
 			break;
 
 		case ADD_HOTKEY_BUTTON:
-			add_hotkey(Cur_hotkey);
+			add_hotkey(Cur_hotkey, Selected_line);
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
 		case REMOVE_HOTKEY_BUTTON:
-			remove_hotkey();
+			remove_hotkey(Cur_hotkey, Selected_line);
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
@@ -945,7 +937,7 @@ void hotkey_button_pressed(int n)
 			break;
 
 		case CLEAR_BUTTON:
-			clear_hotkeys();
+			clear_hotkeys(Selected_line);
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
@@ -964,9 +956,6 @@ void hotkey_button_pressed(int n)
 //
 void mission_hotkey_init()
 {
-	int i;
-	hotkey_buttons *b;
-
 	// pause all weapon sounds
 	weapon_pause_sounds();
 
@@ -978,8 +967,8 @@ void mission_hotkey_init()
 	Ui_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
 	Ui_window.set_mask_bmap(Hotkey_mask_fname[gr_screen.res]);
 
-	for (i=0; i<NUM_BUTTONS; i++) {
-		b = &Buttons[gr_screen.res][i];
+	for (int i=0; i<NUM_BUTTONS; i++) {
+		hotkey_buttons *b = &Buttons[gr_screen.res][i];
 
 		b->button.create(&Ui_window, "", b->x, b->y, 60, 30, i < 2 ? 1 : 0, 1);
 		// set up callback for when a mouse first goes over a button
@@ -989,11 +978,11 @@ void mission_hotkey_init()
 	}
 
 	// add all xstr text
-	for(i=0; i<HOTKEY_NUM_TEXT; i++) {
+	for(int i=0; i<HOTKEY_NUM_TEXT; i++) {
 		Ui_window.add_XSTR(&Hotkey_text[gr_screen.res][i]);
 	}
 
-	for (i=0; i<LIST_BUTTONS_MAX; i++) {
+	for (int i=0; i<LIST_BUTTONS_MAX; i++) {
 		List_buttons[i].create(&Ui_window, "", 0, 0, 60, 30, (i < 2), 1);
 		List_buttons[i].hide();
 		List_buttons[i].disable();
@@ -1055,18 +1044,13 @@ void mission_hotkey_close()
 //
 void mission_hotkey_do_frame(float  /*frametime*/)
 {
-	char buf[256];
-	int i, k, w, h, y, z, line, hotkeys;
-	int font_height = gr_get_font_height();
-	int select_tease_line = -1;  // line mouse is down on, but won't be selected until button released
-	color circle_color;
 
 	if ( help_overlay_active(Hotkey_overlay_id) ) {
 		Buttons[gr_screen.res][HELP_BUTTON].button.reset_status();
 		Ui_window.set_ignore_gadgets(1);
 	}
 
-	k = Ui_window.process() & ~KEY_DEBUGGED;
+	int k = Ui_window.process() & ~KEY_DEBUGGED;
 
 	if ( (k > 0) || B1_JUST_RELEASED ) {
 		if ( help_overlay_active(Hotkey_overlay_id) ) {
@@ -1109,17 +1093,17 @@ void mission_hotkey_do_frame(float  /*frametime*/)
 		case KEY_TAB:
 		case KEY_ENTER:
 		case KEY_PADENTER:
-			expand_wing();
+			expand_wing(Selected_line);
 			break;
 
 		case KEY_EQUAL:
 		case KEY_PADPLUS:
-			add_hotkey(Cur_hotkey);
+			add_hotkey(Cur_hotkey, Selected_line);
 			break;
 
 		case KEY_MINUS:
 		case KEY_PADMINUS:
-			remove_hotkey();
+			remove_hotkey(Cur_hotkey, Selected_line);
 			break;
 
 		case KEY_F2:			
@@ -1131,28 +1115,33 @@ void mission_hotkey_do_frame(float  /*frametime*/)
 			break;
 
 		case KEY_CTRLED | KEY_C:
-			clear_hotkeys();
+			clear_hotkeys(Selected_line);
 			break;
 	}	// end switch
 
-	// ?
-	for (i=0; i<MAX_KEYED_TARGETS; i++) {
+	// if the key that was pressed is one of the hotkeys
+	// then set that as the active hotkey.
+	// if the hotkey was shifted then add it to the current
+	// selected line.
+	for (int i=0; i<MAX_KEYED_TARGETS; i++) {
 		if (k == Key_sets[i])
 			Cur_hotkey = i;
 
 		if (k == (Key_sets[i] | KEY_SHIFTED))
-			add_hotkey(i);
+			add_hotkey(i, Selected_line);
 	}
 
 	// handle pressed buttons
-	for (i=0; i<NUM_BUTTONS; i++) {
+	for (int i=0; i<NUM_BUTTONS; i++) {
 		if (Buttons[gr_screen.res][i].button.pressed()) {
 			hotkey_button_pressed(i);
 			break;					// only need to handle 1 button @ a time
 		}
 	}
 
-	for (i=0; i<LIST_BUTTONS_MAX; i++) {
+	int select_tease_line = -1; // line mouse is down on, but won't be selected until button released
+
+	for (int i=0; i<LIST_BUTTONS_MAX; i++) {
 		// check for tease line
 		if (List_buttons[i].button_down()) {
 			select_tease_line = i + Scroll_offset;
@@ -1161,32 +1150,37 @@ void mission_hotkey_do_frame(float  /*frametime*/)
 		// check for selected list item
 		if (List_buttons[i].pressed()) {
 			Selected_line = i + Scroll_offset;
-			List_buttons[i].get_mouse_pos(&z, NULL);
+
+			int z;
+			List_buttons[i].get_mouse_pos(&z, nullptr);
 			z += Hotkey_list_coords[gr_screen.res][0];		// adjust to full screen space
 			if ((z >= Hotkey_wing_icon_x[gr_screen.res]) && (z < (Hotkey_wing_icon_x[gr_screen.res]) + Hotkey_function_field_width[gr_screen.res])) {
-				expand_wing();
+				expand_wing(Selected_line);
 			}
 		}
 
 		if (List_buttons[i].double_clicked()) {
 			Selected_line = i + Scroll_offset;
-			hotkeys = -1;
+			int hotkeys = -1;
 			switch (Hotkey_lines[Selected_line].type) {
-				case HOTKEY_LINE_WING:
-					hotkeys = get_wing_hotkeys(Hotkey_lines[Selected_line].index);
+				case HotkeyLineType::WING:
+					hotkeys = get_wing_hotkeys(Selected_line);
 					break;
 
-				case HOTKEY_LINE_SHIP:
-				case HOTKEY_LINE_SUBSHIP:
-					hotkeys = Hotkey_bits[Hotkey_lines[Selected_line].index];
+				case HotkeyLineType::SHIP:
+				case HotkeyLineType::SUBSHIP:
+					hotkeys = get_ship_hotkeys(Selected_line);
+					break;
+
+				default:
 					break;
 			}
 
 			if (hotkeys != -1) {
 				if (hotkeys & (1 << Cur_hotkey))
-					remove_hotkey();
+					remove_hotkey(Cur_hotkey, Selected_line);
 				else
-					add_hotkey(Cur_hotkey);
+					add_hotkey(Cur_hotkey, Selected_line);
 			}
 		}
 	}
@@ -1200,36 +1194,44 @@ void mission_hotkey_do_frame(float  /*frametime*/)
 		gr_clear();
 
 	Ui_window.draw();
+	color circle_color;
 	gr_init_color(&circle_color, 160, 160, 0);
 
 	// draw the big "F10" in the little box	
 	font::set_font(font::FONT2);
 	gr_set_color_fast(&Color_text_normal);
+
+	char buf[256];
 	strcpy_s(buf, textify_scancode(Key_sets[Cur_hotkey]));
+
+	int w, h;
 	gr_get_string_size(&w, &h, buf);
 	gr_printf_menu(Hotkey_function_name_coords[gr_screen.res][0] + (Hotkey_function_name_coords[gr_screen.res][2] - w) / 2, Hotkey_function_name_coords[gr_screen.res][1], "%s", buf);
 
 	font::set_font(font::FONT1);
-	line = Scroll_offset;
+	int line = Scroll_offset;
 	while (hotkey_line_query_visible(line)) {
-		z = Hotkey_lines[line].index;
-		y = Hotkey_list_coords[gr_screen.res][1] + Hotkey_lines[line].y - Hotkey_lines[Scroll_offset].y;
-		hotkeys = 0;
+		//int z = Hotkey_lines[line].index;
+		int y = Hotkey_list_coords[gr_screen.res][1] + Hotkey_lines[line].y - Hotkey_lines[Scroll_offset].y;
+		int hotkeys = 0;
+		int font_height = gr_get_font_height();
+		int width = 0;
+
 		switch (Hotkey_lines[line].type) {
-			case HOTKEY_LINE_HEADING:
+			case HotkeyLineType::HEADING:
 				gr_set_color_fast(&Color_text_heading);
 
 				gr_get_string_size(&w, &h, Hotkey_lines[line].label.c_str());
-				i = y + h / 2 - 1;
-				gr_line(Hotkey_list_coords[gr_screen.res][0], i, Hotkey_ship_x[gr_screen.res] - 2, i, GR_RESIZE_MENU);
-				gr_line(Hotkey_ship_x[gr_screen.res] + w + 1, i, Hotkey_list_coords[gr_screen.res][0] + Hotkey_list_coords[gr_screen.res][2], i, GR_RESIZE_MENU);
+				width = y + h / 2 - 1;
+				gr_line(Hotkey_list_coords[gr_screen.res][0], width, Hotkey_ship_x[gr_screen.res] - 2, width, GR_RESIZE_MENU);
+				gr_line(Hotkey_ship_x[gr_screen.res] + w + 1, width, Hotkey_list_coords[gr_screen.res][0] + Hotkey_list_coords[gr_screen.res][2], width, GR_RESIZE_MENU);
 				break;
 
-			case HOTKEY_LINE_WING:
+			case HotkeyLineType::WING:
 				gr_set_bitmap(Wing_bmp);
-				bm_get_info(Wing_bmp, NULL, &h, NULL);
-				i = y + font_height / 2 - h / 2 - 1;
-				gr_bitmap(Hotkey_wing_icon_x[gr_screen.res], i, GR_RESIZE_MENU);
+				bm_get_info(Wing_bmp, nullptr, &h, nullptr);
+				width = y + font_height / 2 - h / 2 - 1;
+				gr_bitmap(Hotkey_wing_icon_x[gr_screen.res], width, GR_RESIZE_MENU);
 
 //				i = y + font_height / 2 - 1;
 //				gr_set_color_fast(&circle_color);
@@ -1241,19 +1243,19 @@ void mission_hotkey_do_frame(float  /*frametime*/)
 //				gr_line(ICON_LIST_X + 6, i, ICON_LIST_X + 8, i, GR_RESIZE_MENU);
 //				gr_line(ICON_LIST_X + 4, i + 2, ICON_LIST_X + 4, i + 4, GR_RESIZE_MENU);
 
-				hotkeys = get_wing_hotkeys(Hotkey_lines[line].index);
+				hotkeys = get_wing_hotkeys(line);
 				break;
 
-			case HOTKEY_LINE_SHIP:
-			case HOTKEY_LINE_SUBSHIP:
-				hotkeys = Hotkey_bits[Hotkey_lines[line].index];
+			case HotkeyLineType::SHIP:
+			case HotkeyLineType::SUBSHIP:
+				hotkeys = get_ship_hotkeys(line);
 				break;
 
 			default:
 				Int3();
 		}
 
-		if (Hotkey_lines[line].type != HOTKEY_LINE_HEADING) {
+		if (Hotkey_lines[line].type != HotkeyLineType::HEADING) {
 			Assert( (line - Scroll_offset) < LIST_BUTTONS_MAX );
 			List_buttons[line - Scroll_offset].update_dimensions(Hotkey_list_coords[gr_screen.res][0], y, Hotkey_list_coords[gr_screen.res][0] + Hotkey_list_coords[gr_screen.res][2] - Hotkey_list_coords[gr_screen.res][0], font_height);
 			List_buttons[line - Scroll_offset].enable();
@@ -1276,7 +1278,7 @@ void mission_hotkey_do_frame(float  /*frametime*/)
 
 		// print active hotkeys associated for this line
 		if (hotkeys) {
-			for (i=0; i<MAX_KEYED_TARGETS; i++) {
+			for (int i=0; i<MAX_KEYED_TARGETS; i++) {
 				if (hotkeys & (1 << i)) {
 					gr_printf_menu(Hotkey_list_coords[gr_screen.res][0] + Hotkey_function_field_width[gr_screen.res]*i, y, "%s", textify_scancode(Key_sets[i]));
 				}
@@ -1299,7 +1301,7 @@ void mission_hotkey_do_frame(float  /*frametime*/)
 	
 		// draw ship/wing name
 		strcpy_s(buf, Hotkey_lines[line].label.c_str());
-		if (Hotkey_lines[line].type == HOTKEY_LINE_SUBSHIP) {
+		if (Hotkey_lines[line].type == HotkeyLineType::SUBSHIP) {
 			// indent
 			font::force_fit_string(buf, 255, Hotkey_list_coords[gr_screen.res][0] + Hotkey_list_coords[gr_screen.res][2] - (Hotkey_ship_x[gr_screen.res]+20));
 			gr_printf_menu(Hotkey_ship_x[gr_screen.res]+20, y, "%s", buf);
@@ -1311,7 +1313,7 @@ void mission_hotkey_do_frame(float  /*frametime*/)
 		line++;
 	}
 
-	i = line - Scroll_offset;
+	int i = line - Scroll_offset;
 	while (i < LIST_BUTTONS_MAX)
 		List_buttons[i++].disable();
 

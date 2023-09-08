@@ -290,7 +290,7 @@ class opengl_state
 		void UseProgram(GLuint program);
 		bool IsCurrentProgram(GLuint program);
 
-		void BindFrameBuffer(GLuint name);
+		void BindFrameBuffer(GLuint name, GLenum mode = GL_FRAMEBUFFER);
 
 		void PushFramebufferState();
 		void PopFramebufferState();

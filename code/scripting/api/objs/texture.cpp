@@ -12,7 +12,7 @@ namespace api {
 
 texture_h::texture_h() = default;
 texture_h::texture_h(int bm, bool refcount) : handle(bm) {
-	if (refcount)
+	if (refcount && isValid())
 		bm_get_entry(bm)->load_count++;
 }
 texture_h::~texture_h()

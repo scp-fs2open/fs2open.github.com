@@ -20,6 +20,8 @@ enum lua_enum : int32_t {
 	LE_MOUSE_LEFT_BUTTON,
 	LE_MOUSE_RIGHT_BUTTON,
 	LE_MOUSE_MIDDLE_BUTTON,
+	LE_MOUSE_X1_BUTTON,
+	LE_MOUSE_X2_BUTTON,
 	LE_ORDER_ATTACK,
 	LE_ORDER_ATTACK_ANY,
 	LE_ORDER_DEPART,
@@ -145,6 +147,17 @@ enum lua_enum : int32_t {
 	LE_DC_VAPORIZE,
 	LE_DC_SET_VELOCITY,
 	LE_DC_FIRE_HOOK,
+	LE_RPC_SERVER,
+	LE_RPC_CLIENTS,
+	LE_RPC_BOTH,
+	LE_RPC_RELIABLE,
+	LE_RPC_ORDERED,
+	LE_RPC_UNRELIABLE,
+	LE_HOTKEY_LINE_NONE, // the sequence and offsets of these five #defines should correspond to the HotkeyLineType enums
+	LE_HOTKEY_LINE_HEADING,
+	LE_HOTKEY_LINE_WING,
+	LE_HOTKEY_LINE_SHIP,
+	LE_HOTKEY_LINE_SUBSHIP,
 	ENUM_NEXT_INDEX,
 	ENUM_COMBINATION,
 	ENUM_INVALID
@@ -180,6 +193,9 @@ public:
 
 	friend enum_h operator&(const enum_h& l, const enum_h& other);
 	friend enum_h operator|(const enum_h& l, const enum_h& other);
+
+	void serialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, const luacpp::LuaValue& value, ubyte* data, int& packet_size);
+	void deserialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, char* data_ptr, ubyte* data, int& offset);
 };
 
 

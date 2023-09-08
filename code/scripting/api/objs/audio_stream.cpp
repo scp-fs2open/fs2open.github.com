@@ -7,7 +7,7 @@ namespace scripting {
 namespace api {
 
 //**********HANDLE: Asteroid
-ADE_OBJ(l_AudioStream, int, "audio_stream", "An audio stream handle");
+ADE_OBJ_NO_MULTI(l_AudioStream, int, "audio_stream", "An audio stream handle");
 
 ADE_FUNC(play,
 	l_AudioStream,
@@ -145,6 +145,20 @@ ADE_FUNC(setVolume,	l_AudioStream, "number volume", "Sets the volume of the audi
 	}
 	audiostream_set_volume(streamHandle, volume);
 	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(getDuration, l_AudioStream, nullptr, "Gets the duration of the stream", "number", "the duration in float seconds or nil if invalid")
+{
+	int streamHandle = -1;
+	if (!ade_get_args(L, "o", l_AudioStream.Get(&streamHandle))) {
+		return ADE_RETURN_NIL;
+	}
+
+	if (streamHandle < 0) {
+		return ADE_RETURN_NIL;
+	}
+
+	return ade_set_args(L, "f", (float)audiostream_get_duration(streamHandle));
 }
 
 ADE_FUNC(isValid,

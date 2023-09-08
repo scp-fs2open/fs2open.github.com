@@ -226,6 +226,10 @@ void gr_stub_deferred_lighting_begin(bool /*clearNonColorBufs*/)
 {
 }
 
+void gr_stub_deferred_lighting_msaa() 
+{
+}
+
 void gr_stub_deferred_lighting_end()
 {
 }
@@ -514,6 +518,7 @@ bool gr_stub_init()
 	gr_screen.gf_copy_effect_texture = gr_stub_copy_effect_texture;
 
 	gr_screen.gf_deferred_lighting_begin = gr_stub_deferred_lighting_begin;
+	gr_screen.gf_deferred_lighting_msaa = gr_stub_deferred_lighting_msaa;
 	gr_screen.gf_deferred_lighting_end = gr_stub_deferred_lighting_end;
 	gr_screen.gf_deferred_lighting_finish = gr_stub_deferred_lighting_finish;
 
@@ -564,6 +569,8 @@ bool gr_stub_init()
 	gr_screen.gf_sync_delete = [](gr_sync /*sync*/) {};
 
 	gr_screen.gf_set_viewport = [](int /*x*/, int /*y*/, int /*width*/, int /*height*/) {};
+
+	gr_screen.gf_override_fog = [](bool /*b*/) {};
 
 	return true;
 }

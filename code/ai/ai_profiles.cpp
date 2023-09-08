@@ -223,6 +223,9 @@ void parse_ai_profiles_tbl(const char *filename)
 				if (optional_string("$Player Subsys Damage Factor:") || optional_string("$AI Damage Reduction to Player Subsys:"))
 					parse_float_list(profile->subsys_damage_scale, NUM_SKILL_LEVELS);
 
+				if (optional_string("$Player Damage Inflicted Factor:"))
+					parse_float_list(profile->player_damage_inflicted_scale, NUM_SKILL_LEVELS);
+
 				// represented in fractions of F1_0
 				if (optional_string("$Predict Position Delay:"))
 				{
@@ -546,16 +549,18 @@ void parse_ai_profiles_tbl(const char *filename)
 					mprintf(("Warning: \"$ships with no shields can manage ETS\" flag is deprecated in favor of \"$any ship with no shields can manage ETS\"\n"));
 					bool temp;
 					stuff_boolean(&temp);
-                    profile->flags.set(AI::Profile_Flags::all_nonshielded_ships_can_manage_ets, temp);
+                    profile->flags.set(AI::Profile_Flags::All_nonshielded_ships_can_manage_ets, temp);
 				}
 
                 set_flag(profile, "$no directional bias for missile and ship turning:", AI::Profile_Flags::No_turning_directional_bias);
 
 				set_flag(profile, "$respect ship axial turnrate differences:", AI::Profile_Flags::Use_axial_turnrate_differences);
 
-				set_flag(profile, "$any ship with no shields can manage ETS:", AI::Profile_Flags::all_nonshielded_ships_can_manage_ets);
+				set_flag(profile, "$any ship with no shields can manage ETS:", AI::Profile_Flags::All_nonshielded_ships_can_manage_ets);
 
-				set_flag(profile, "$fighters/bombers with no shields can manage ETS:", AI::Profile_Flags::fightercraft_nonshielded_ships_can_manage_ets);
+				set_flag(profile, "$fighters/bombers with no shields can manage ETS:", AI::Profile_Flags::Fightercraft_nonshielded_ships_can_manage_ets);
+
+				set_flag(profile, "$ships playing dead don't manage ETS:", AI::Profile_Flags::Ships_playing_dead_dont_manage_ets);
 
 				set_flag(profile, "$better combat collision avoidance for fightercraft:", AI::Profile_Flags::Better_collision_avoidance);
 
@@ -610,6 +615,13 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$use adjusted AI class autoscale:", AI::Profile_Flags::Adjusted_AI_class_autoscale);
 
+				set_flag(profile, "$carry shield difficulty scaling bug:", AI::Profile_Flags::Carry_shield_difficulty_scaling_bug);
+
+				set_flag(profile, "$debris affected by physics whacks:", AI::Profile_Flags::Whackable_debris);
+
+				set_flag(profile, "$asteroids affected by physics whacks:", AI::Profile_Flags::Whackable_asteroids);
+
+				set_flag(profile, "$dynamic goals afterburn hard:", AI::Profile_Flags::Dynamic_goals_afterburn_hard);
 
 				// if we've been through once already and are at the same place, force a move
 				if (saved_Mp && (saved_Mp == Mp))
@@ -652,12 +664,21 @@ void ai_profiles_init()
 	// init retail entry first
 	parse_ai_profiles_tbl(NULL);
 
+	// Allow mission_profiles.tbl to be a alias of ai_profiles.tbl, but only load one or the other.
+	// mission_profiles.tbl would be newer so assume intended, but print to the log to be sure - Mjn
+	char filename[MAX_FILENAME_LEN] = "ai_profiles.tbl";
+	if (cf_exists_full("mission_profiles.tbl", CF_TYPE_TABLES)) {
+		mprintf(("mission_profiles.tbl was found! Using that instead of ai_profiles.tbl...\n"));
+		strcpy_s(filename, "mission_profiles.tbl");
+	}
+
 	// now parse the supplied table (if any)
-	if (cf_exists_full("ai_profiles.tbl", CF_TYPE_TABLES))
-		parse_ai_profiles_tbl("ai_profiles.tbl");
+	if (cf_exists_full(filename, CF_TYPE_TABLES))
+		parse_ai_profiles_tbl(filename);
 
 	// parse any modular tables
 	parse_modular_table("*-aip.tbm", parse_ai_profiles_tbl);
+	parse_modular_table("*-msp.tbm", parse_ai_profiles_tbl);
 
 	// set default if specified
 	temp = ai_profile_lookup(Default_profile_name);
@@ -711,6 +732,7 @@ void ai_profile_t::reset()
         shield_energy_scale[i] = 0;
         afterburner_recharge_scale[i] = 0;
         player_damage_scale[i] = 0;
+		player_damage_inflicted_scale[i] = 0;
 
         subsys_damage_scale[i] = 0;
         beam_friendly_damage_cap[i] = 0;
@@ -760,7 +782,7 @@ void ai_profile_t::reset()
 		flags.set(AI::Profile_Flags::Fix_ai_path_order_bug);
 		flags.set(AI::Profile_Flags::Aspect_invulnerability_fix);
 		flags.set(AI::Profile_Flags::Use_actual_primary_range);
-		flags.set(AI::Profile_Flags::fightercraft_nonshielded_ships_can_manage_ets);
+		flags.set(AI::Profile_Flags::Fightercraft_nonshielded_ships_can_manage_ets);
 	}
 	// this flag has been enabled ever since 3.7.2
 	if (mod_supports_version(3, 7, 2)) {
@@ -770,6 +792,10 @@ void ai_profile_t::reset()
 	if (mod_supports_version(3, 6, 10)) {
 		flags.set(AI::Profile_Flags::Reset_last_hit_target_time_for_player_hits);
 	}
+	// backwards compatible flag for a bug accidentally introduced during this time
+	if (mod_supports_version(3, 6, 14) && !mod_supports_version(23, 1, 0)) {
+		flags.set(AI::Profile_Flags::Carry_shield_difficulty_scaling_bug);
+	}
 	if (mod_supports_version(21, 4, 0)) {
 		flags.set(AI::Profile_Flags::Fixed_ship_weapon_collision);
 	}
@@ -778,9 +804,12 @@ void ai_profile_t::reset()
 		flags.set(AI::Profile_Flags::Prevent_negative_turret_ammo);
 		flags.set(AI::Profile_Flags::Fix_keep_safe_distance);
 	}
-	if (mod_supports_version(22, 4, 0)) {
+	if (mod_supports_version(23, 0, 0)) {
 		flags.set(AI::Profile_Flags::Fix_good_rearm_time_bug);
 		flags.set(AI::Profile_Flags::No_continuous_turn_on_attack);
 		flags.set(AI::Profile_Flags::Fixed_removing_play_dead_order);
+	}
+	if (mod_supports_version(23, 2, 0)) {
+		flags.set(AI::Profile_Flags::Ships_playing_dead_dont_manage_ets);
 	}
 }

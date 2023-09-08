@@ -117,6 +117,11 @@ add_file_folder("Camera"
 	camera/camera.h
 )
 
+add_file_folder("Cheats Table"
+	cheats_table/cheats_table.cpp
+	cheats_table/cheats_table.h
+)
+
 # CFile files
 add_file_folder("CFile"
 	cfile/cfile.cpp
@@ -222,6 +227,7 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/bloom-comp-f.sdr
 	def_files/data/effects/blur-f.sdr
 	def_files/data/effects/brightpass-f.sdr
+	def_files/data/effects/copy-f.sdr
 	def_files/data/effects/decal-f.sdr
 	def_files/data/effects/decal-v.sdr
 	def_files/data/effects/deferred-clear-f.sdr
@@ -245,6 +251,8 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/main-f.sdr
 	def_files/data/effects/main-g.sdr
 	def_files/data/effects/main-v.sdr
+	def_files/data/effects/model_shader_flags.h
+	def_files/data/effects/msaa-f.sdr
 	def_files/data/effects/nanovg-f.sdr
 	def_files/data/effects/nanovg-v.sdr
 	def_files/data/effects/normals.sdr
@@ -267,6 +275,7 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/tonemapping-f.sdr
 	def_files/data/effects/video-f.sdr
 	def_files/data/effects/video-v.sdr
+	def_files/data/effects/volumetric-f.sdr
 )
 
 add_file_folder("Default files\\\\data\\\\maps"
@@ -289,6 +298,7 @@ add_file_folder("Default files\\\\data\\\\tables"
 	def_files/data/tables/objecttypes.tbl
 	def_files/data/tables/post_processing.tbl
 	def_files/data/tables/species_defs.tbl
+	def_files/data/tables/cheats.tbl
 )
 
 # These files will be included in the executable but not in CFile
@@ -372,6 +382,8 @@ add_file_folder("Generated Files"
 
 # GlobalIncs files
 add_file_folder("GlobalIncs"
+	globalincs/adjustment.cpp
+	globalincs/adjustment.h
 	globalincs/alphacolors.cpp
 	globalincs/alphacolors.h
 	globalincs/crashdump.cpp
@@ -387,6 +399,7 @@ add_file_folder("GlobalIncs"
 	globalincs/toolchain.h
 	globalincs/undosys.cpp
 	globalincs/undosys.h
+	globalincs/utility.h
 	globalincs/version.cpp
 	globalincs/version.h
 	globalincs/vmallocator.h
@@ -650,6 +663,8 @@ add_file_folder("Io"
 	io/joy-sdl.cpp
 	io/joy_ff.h
 	io/joy_ff-sdl.cpp
+	io/spacemouse.cpp
+	io/spacemouse.h
 )
 
 # jpgutils files
@@ -666,31 +681,16 @@ add_file_folder("JumpNode"
 
 # Lab files
 add_file_folder("Lab"
-	lab/wmcgui.cpp
-	lab/wmcgui.h
 	lab/labv2.h
 	lab/labv2_internal.h
 	lab/labv2.cpp
 )
 
 add_file_folder("Lab\\\\Dialogs"
-	lab/dialogs/lab_dialog.h
-	lab/dialogs/ship_classes.h
-	lab/dialogs/ship_classes.cpp
-	lab/dialogs/weapon_classes.h
-	lab/dialogs/weapon_classes.cpp
-	lab/dialogs/class_descriptions.h
-	lab/dialogs/class_descriptions.cpp
-	lab/dialogs/class_options.h
-	lab/dialogs/class_options.cpp
-	lab/dialogs/class_variables.h
-	lab/dialogs/class_variables.cpp
-	lab/dialogs/render_options.h
-	lab/dialogs/render_options.cpp
-	lab/dialogs/backgrounds.h
-	lab/dialogs/backgrounds.cpp
-	lab/dialogs/actions.h
-	lab/dialogs/actions.cpp
+	lab/dialogs/lab_ui.h
+	lab/dialogs/lab_ui.cpp
+	lab/dialogs/lab_ui_helpers.h
+	lab/dialogs/lab_ui_helpers.cpp
 )
 
 add_file_folder("Lab\\\\Manager"
@@ -754,6 +754,8 @@ add_file_folder("Localization"
 
 # Math files
 add_file_folder("Math"
+	math/curve.cpp
+	math/curve.h
 	math/bitarray.h
 	math/fix.cpp
 	math/fix.h
@@ -761,8 +763,8 @@ add_file_folder("Math"
 	math/floating.h
 	math/fvi.cpp
 	math/fvi.h
-        math/ik_solver.cpp
-        math/ik_solver.h
+	math/ik_solver.cpp
+	math/ik_solver.h
 	math/spline.cpp
 	math/spline.h
 	math/staticrand.cpp
@@ -867,7 +869,6 @@ add_file_folder("Model"
 	model/modelanimation_segments.h
 	model/modelcollide.cpp
 	model/modelinterp.cpp
-	model/modeloctant.cpp
 	model/modelread.cpp
 	model/modelrender.h
 	model/modelrender.cpp
@@ -883,6 +884,8 @@ add_file_folder("Nebula"
 	nebula/neb.h
 	nebula/neblightning.cpp
 	nebula/neblightning.h
+	nebula/volumetrics.cpp
+	nebula/volumetrics.h
 )
 
 # Network files
@@ -911,6 +914,8 @@ add_file_folder("Network"
 	network/multi_kick.h
 	network/multi_log.cpp
 	network/multi_log.h
+	network/multi_lua.cpp
+	network/multi_lua.h
 	network/multi_mdns.cpp
 	network/multi_mdns.h
 	network/multi_obj.cpp
@@ -1223,6 +1228,8 @@ add_file_folder("Scripting"
 	scripting/global_hooks.h
 	scripting/hook_api.cpp
 	scripting/hook_api.h
+	scripting/hook_conditions.cpp
+	scripting/hook_conditions.h
 	scripting/lua.cpp
 	scripting/scripting.cpp
 	scripting/scripting.h
@@ -1291,6 +1298,8 @@ add_file_folder("Scripting\\\\Api\\\\Libs"
 add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/ai_helper.cpp
 	scripting/api/objs/ai_helper.h
+	scripting/api/objs/animation_handle.cpp
+	scripting/api/objs/animation_handle.h
 	scripting/api/objs/asteroid.cpp
 	scripting/api/objs/asteroid.h
 	scripting/api/objs/audio_stream.cpp
@@ -1311,6 +1320,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/cockpit_display.h
 	scripting/api/objs/control_binding.cpp
 	scripting/api/objs/control_binding.h
+	scripting/api/objs/control_config.cpp
+	scripting/api/objs/control_config.h
 	scripting/api/objs/color.cpp
 	scripting/api/objs/color.h
 	scripting/api/objs/control_info.cpp
@@ -1343,22 +1354,34 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/font.h
 	scripting/api/objs/gameevent.cpp
 	scripting/api/objs/gameevent.h
+	scripting/api/objs/gamehelp.cpp
+	scripting/api/objs/gamehelp.h
 	scripting/api/objs/gamestate.cpp
 	scripting/api/objs/gamestate.h
+	scripting/api/objs/hudconfig.cpp
+	scripting/api/objs/hudconfig.h
 	scripting/api/objs/hudgauge.cpp
 	scripting/api/objs/hudgauge.h
 	scripting/api/objs/intelentry.cpp
 	scripting/api/objs/intelentry.h
 	scripting/api/objs/loop_brief.cpp
 	scripting/api/objs/loop_brief.h
+	scripting/api/objs/LuaEnum.cpp
+	scripting/api/objs/LuaEnum.h
 	scripting/api/objs/LuaSEXP.cpp
 	scripting/api/objs/LuaSEXP.h
 	scripting/api/objs/luaaisexp.cpp
 	scripting/api/objs/luaaisexp.h
 	scripting/api/objs/mc_info.cpp
 	scripting/api/objs/mc_info.h
+	scripting/api/objs/medals.cpp
+	scripting/api/objs/medals.h
 	scripting/api/objs/message.cpp
 	scripting/api/objs/message.h
+	scripting/api/objs/missionhotkey.cpp
+	scripting/api/objs/missionhotkey.h
+	scripting/api/objs/missionlog.cpp
+	scripting/api/objs/missionlog.h
 	scripting/api/objs/model.cpp
 	scripting/api/objs/model.h
 	scripting/api/objs/modelinstance.cpp
@@ -1385,22 +1408,26 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/player.h
 	scripting/api/objs/promise.cpp
 	scripting/api/objs/promise.h
+	scripting/api/objs/rank.cpp
+	scripting/api/objs/rank.h
 	scripting/api/objs/redalert.cpp
 	scripting/api/objs/redalert.h
+	scripting/api/objs/rpc.cpp
+	scripting/api/objs/rpc.h
 	scripting/api/objs/sexpvar.cpp
 	scripting/api/objs/sexpvar.h
 	scripting/api/objs/shields.cpp
 	scripting/api/objs/shields.h
 	scripting/api/objs/ship_bank.cpp
 	scripting/api/objs/ship_bank.h
-	scripting/api/objs/ship_registry_entry.cpp
-	scripting/api/objs/ship_registry_entry.h
 	scripting/api/objs/shipclass.cpp
 	scripting/api/objs/shipclass.h
 	scripting/api/objs/ship.cpp
 	scripting/api/objs/ship.h
 	scripting/api/objs/shiptype.cpp
 	scripting/api/objs/shiptype.h
+	scripting/api/objs/ship_registry_entry.cpp
+	scripting/api/objs/ship_registry_entry.h
 	scripting/api/objs/shipwepselect.cpp
 	scripting/api/objs/shipwepselect.h
 	scripting/api/objs/sound.cpp
@@ -1433,6 +1460,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/weapon.h
 	scripting/api/objs/wing.cpp
 	scripting/api/objs/wing.h
+	scripting/api/objs/wingformation.cpp
+	scripting/api/objs/wingformation.h
 )
 
 add_file_folder("Scripting\\\\Lua"
@@ -1508,6 +1537,13 @@ add_file_folder("Sound"
 	sound/voicerec.cpp
 	sound/voicerec.h
 )
+
+if (APPLE)
+	add_file_folder("Sound"
+		${file_root_sound}
+		sound/speech.mm
+	)
+endif()
 
 if (FSO_BUILD_WITH_FFMPEG)
 	# Sound -> ffmpeg files

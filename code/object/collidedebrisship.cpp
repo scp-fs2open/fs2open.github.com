@@ -74,21 +74,22 @@ int collide_debris_ship( obj_pair * pair )
 		{
 			bool ship_override = false, debris_override = false;
 
-			if (Script_system.IsActiveAction(CHA_COLLIDEDEBRIS)) {
-				Script_system.SetHookObjects(4, "Self", ship_objp, "Object", debris_objp, "Ship", ship_objp, "Debris", debris_objp);
-				Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(hitpos));
-				ship_override = Script_system.IsConditionOverride(CHA_COLLIDEDEBRIS, ship_objp, debris_objp);
-				Script_system.RemHookVars({ "Self", "Object", "Ship", "Debris", "Hitpos" });
+			if (scripting::hooks::OnDebrisCollision->isActive()) {
+				ship_override = scripting::hooks::OnDebrisCollision->isOverride(scripting::hooks::CollisionConditions{ {ship_objp, debris_objp} },
+					scripting::hook_param_list(scripting::hook_param("Self", 'o', ship_objp),
+						scripting::hook_param("Object", 'o', debris_objp),
+						scripting::hook_param("Ship", 'o', ship_objp),
+						scripting::hook_param("Debris", 'o', debris_objp),
+						scripting::hook_param("Hitpos", 'o', hitpos)));
 			}
 
 			if (scripting::hooks::OnShipCollision->isActive()) {
-				debris_override = scripting::hooks::OnShipCollision->isOverride(
+				debris_override = scripting::hooks::OnShipCollision->isOverride(scripting::hooks::CollisionConditions{{ship_objp, debris_objp}},
 					scripting::hook_param_list(scripting::hook_param("Self", 'o', debris_objp),
 						scripting::hook_param("Object", 'o', ship_objp),
 						scripting::hook_param("Ship", 'o', ship_objp),
 						scripting::hook_param("Debris", 'o', debris_objp),
-						scripting::hook_param("Hitpos", 'o', hitpos)),
-					debris_objp, ship_objp);
+						scripting::hook_param("Hitpos", 'o', hitpos)));
 			}
 
 			if(!ship_override && !debris_override)
@@ -124,7 +125,8 @@ int collide_debris_ship( obj_pair * pair )
 				}
 
 				// apply damage to debris
-				debris_hit( debris_objp, ship_objp, &hitpos, debris_damage);		// speed => damage
+				// no need for force, already handled in calculate_ship_ship_collision_physics
+				debris_hit( debris_objp, ship_objp, &hitpos, debris_damage, nullptr);		// speed => damage
 				int apply_ship_damage;
 
 				// apply damage to ship unless 1) debris is from ship
@@ -154,23 +156,22 @@ int collide_debris_ship( obj_pair * pair )
 				collide_ship_ship_do_sound(&hitpos, ship_objp, debris_objp, ship_objp==Player_obj);
 			}
 
-			if (Script_system.IsActiveAction(CHA_COLLIDEDEBRIS) && !(debris_override && !ship_override))
-			{
-				Script_system.SetHookObjects(4, "Self", ship_objp, "Object", debris_objp, "Ship", ship_objp, "Debris", debris_objp);
-				Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(hitpos));
-				Script_system.RunCondition(CHA_COLLIDEDEBRIS, ship_objp, debris_objp);
-				Script_system.RemHookVars({ "Self", "Object", "Ship", "Debris", "Hitpos" });
+			if (scripting::hooks::OnDebrisCollision->isActive() && !(debris_override && !ship_override)) {
+				scripting::hooks::OnDebrisCollision->run(scripting::hooks::CollisionConditions{ {ship_objp, debris_objp} },
+					scripting::hook_param_list(scripting::hook_param("Self", 'o', ship_objp),
+						scripting::hook_param("Object", 'o', debris_objp),
+						scripting::hook_param("Ship", 'o', ship_objp),
+						scripting::hook_param("Debris", 'o', debris_objp),
+						scripting::hook_param("Hitpos", 'o', hitpos)));
 			}
-
 			if (scripting::hooks::OnShipCollision->isActive() && ((debris_override && !ship_override) || (!debris_override && !ship_override)))
 			{
-				scripting::hooks::OnShipCollision->run(
+				scripting::hooks::OnShipCollision->run(scripting::hooks::CollisionConditions{{ship_objp, debris_objp}},
 					scripting::hook_param_list(scripting::hook_param("Self", 'o', debris_objp),
 						scripting::hook_param("Object", 'o', ship_objp),
 						scripting::hook_param("Ship", 'o', ship_objp),
 						scripting::hook_param("Debris", 'o', debris_objp),
-						scripting::hook_param("Hitpos", 'o', hitpos)),
-					debris_objp, ship_objp);
+						scripting::hook_param("Hitpos", 'o', hitpos)));
 			}
 
 			return 0;
@@ -252,21 +253,21 @@ int collide_asteroid_ship( obj_pair * pair )
 			bool ship_override = false, asteroid_override = false;
 
 			//Scripting support (WMC)
-			if (Script_system.IsActiveAction(CHA_COLLIDEASTEROID)) {
-				Script_system.SetHookObjects(4, "Self", ship_objp, "Object", asteroid_objp, "Ship", ship_objp, "Asteroid", asteroid_objp);
-				Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(hitpos));
-				ship_override = Script_system.IsConditionOverride(CHA_COLLIDEASTEROID, ship_objp, asteroid_objp);
-				Script_system.RemHookVars({ "Self", "Object", "Ship", "Asteroid", "Hitpos" });
+			if (scripting::hooks::OnAsteroidCollision->isActive()) {
+				ship_override = scripting::hooks::OnAsteroidCollision->isOverride(scripting::hooks::CollisionConditions{ {ship_objp, asteroid_objp} },
+					scripting::hook_param_list(scripting::hook_param("Self", 'o', ship_objp),
+						scripting::hook_param("Object", 'o', asteroid_objp),
+						scripting::hook_param("Ship", 'o', ship_objp),
+						scripting::hook_param("Asteroid", 'o', asteroid_objp),
+						scripting::hook_param("Hitpos", 'o', hitpos)));
 			}
-
 			if (scripting::hooks::OnShipCollision->isActive()) {
-				asteroid_override = scripting::hooks::OnShipCollision->isOverride(
+				asteroid_override = scripting::hooks::OnShipCollision->isOverride(scripting::hooks::CollisionConditions{{ship_objp, asteroid_objp}},
 					scripting::hook_param_list(scripting::hook_param("Self", 'o', asteroid_objp),
 						scripting::hook_param("Object", 'o', ship_objp),
 						scripting::hook_param("Ship", 'o', ship_objp),
 						scripting::hook_param("Asteroid", 'o', asteroid_objp),
-						scripting::hook_param("Hitpos", 'o', hitpos)),
-					asteroid_objp, ship_objp);
+						scripting::hook_param("Hitpos", 'o', hitpos)));
 			}
 
 			if(!ship_override && !asteroid_override)
@@ -312,7 +313,7 @@ int collide_asteroid_ship( obj_pair * pair )
 				asteroid_damage = (asteroid_damage > ship_damage) ? asteroid_damage : ship_damage;
 
 				// apply damage to asteroid
-				asteroid_hit( asteroid_objp, ship_objp, &hitpos, asteroid_damage);		// speed => damage
+				asteroid_hit( asteroid_objp, ship_objp, &hitpos, asteroid_damage, nullptr);		// speed => damage
 
 				int ast_damage_type = Asteroid_info[Asteroids[asteroid_objp->instance].asteroid_type].damage_type_idx;
 
@@ -336,23 +337,22 @@ int collide_asteroid_ship( obj_pair * pair )
 				collide_ship_ship_do_sound(&hitpos, ship_objp, asteroid_objp, ship_objp==Player_obj);
 			}
 
-			if (Script_system.IsActiveAction(CHA_COLLIDEASTEROID) && !(asteroid_override && !ship_override))
-			{
-				Script_system.SetHookObjects(4, "Self", ship_objp, "Object", asteroid_objp, "Ship", ship_objp, "Asteroid", asteroid_objp);
-				Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(hitpos));
-				Script_system.RunCondition(CHA_COLLIDEASTEROID, ship_objp, asteroid_objp);
-				Script_system.RemHookVars({ "Self", "Object", "Ship", "Asteroid", "Hitpos" });
+			if (scripting::hooks::OnAsteroidCollision->isActive() && !(asteroid_override && !ship_override)) {
+				scripting::hooks::OnAsteroidCollision->run(scripting::hooks::CollisionConditions{ {ship_objp, asteroid_objp} },
+					scripting::hook_param_list(scripting::hook_param("Self", 'o', ship_objp),
+						scripting::hook_param("Object", 'o', asteroid_objp),
+						scripting::hook_param("Ship", 'o', ship_objp),
+						scripting::hook_param("Asteroid", 'o', asteroid_objp),
+						scripting::hook_param("Hitpos", 'o', hitpos)));
 			}
-
 			if (scripting::hooks::OnShipCollision->isActive() && ((asteroid_override && !ship_override) || (!asteroid_override && !ship_override)))
 			{
-				scripting::hooks::OnShipCollision->run(
+				scripting::hooks::OnShipCollision->run(scripting::hooks::CollisionConditions{{ship_objp, asteroid_objp}},
 					scripting::hook_param_list(scripting::hook_param("Self", 'o', asteroid_objp),
 						scripting::hook_param("Object", 'o', ship_objp),
 						scripting::hook_param("Ship", 'o', ship_objp),
 						scripting::hook_param("Asteroid", 'o', asteroid_objp),
-						scripting::hook_param("Hitpos", 'o', hitpos)),
-					asteroid_objp, ship_objp);
+						scripting::hook_param("Hitpos", 'o', hitpos)));
 			}
 
 			return 0;

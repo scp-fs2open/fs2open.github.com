@@ -39,7 +39,13 @@ endif(NOT CMAKE_BUILD_TYPE AND NOT DEFINED CMAKE_CONFIGURATION_TYPES)
 # Override standard CMake configurations
 set(CMAKE_CONFIGURATION_TYPES Debug Release FastDebug CACHE STRING "Available configurations" FORCE)
 
-PROJECT(FS2_Open)
+set(FSO_LANGUAGES C CXX)
+
+if(APPLE)
+	set(FSO_LANGUAGES ${FSO_LANGUAGES} OBJC OBJCXX)
+endif()
+
+PROJECT(FS2_Open LANGUAGES ${FSO_LANGUAGES})
 
 find_program(CCACHE_PROGRAM ccache)
 # Currently only GCC support ccache properly without generating additional warnings
@@ -83,9 +89,11 @@ IF(RESET_INSTALL_PREFIX)
 	ENDIF(NOT $ENV{FS2PATH} STREQUAL "")
 ENDIF(RESET_INSTALL_PREFIX)
 
-IF (WIN32)
-	OPTION(FSO_USE_SPEECH "Use Windows specific text-to-speach libraries" ON)
+IF(WIN32 OR APPLE)
+	OPTION(FSO_USE_SPEECH "Use text-to-speach libraries" ON)
+ENDIF(WIN32 OR APPLE)
 
+IF (WIN32)
 	OPTION(FSO_USE_VOICEREC "Enable voice recognition support" ON)
 
 	OPTION(FSO_BUILD_FRED2 "Build FRED2 binary" ON)
@@ -129,8 +137,9 @@ option(FSO_RELEASE_LOGGING "Enable logging output for release builds" OFF)
 OPTION(FSO_BUILD_WITH_FFMPEG "Enable the usage of FFmpeg for sound and custscenes" ON)
 
 OPTION(FSO_BUILD_WITH_OPENGL "Enable compilation of the OpenGL renderer" ON)
+OPTION(FSO_BUILD_WITH_OPENGL_DEBUG "Enables debug option for OpenGL" OFF)
 
-OPTION(FSO_BUILD_WITH_VULKAN "Enable compilation of the Vulkan renderer" ON)
+OPTION(FSO_BUILD_WITH_VULKAN "Enable compilation of the Vulkan renderer" OFF)
 
 MARK_AS_ADVANCED(FORCE FSO_CMAKE_DEBUG)
 MARK_AS_ADVANCED(FORCE FSO_BUILD_INCLUDED_LIBS)
@@ -143,6 +152,7 @@ mark_as_advanced(FORCE ENABLE_COTIRE)
 mark_as_advanced(FORCE FSO_RELEASE_LOGGING)
 mark_as_advanced(FORCE FSO_BUILD_WITH_FFMPEG)
 mark_as_advanced(FORCE FSO_BUILD_WITH_OPENGL)
+mark_as_advanced(FORCE FSO_BUILD_WITH_OPENGL_DEBUG)
 mark_as_advanced(FORCE FSO_BUILD_WITH_VULKAN)
 
 # Include cotire file from https://github.com/sakra/cotire/
@@ -208,8 +218,10 @@ include(package)
 include(doxygen)
 
 # Print used options to log
-IF (WIN32)
+IF(WIN32 OR APPLE)
 	message(STATUS "Using text to speech: ${FSO_USE_SPEECH}")
+ENDIF()
+IF (WIN32)
 	message(STATUS "Using voice recogition: ${FSO_USE_VOICEREC}")
 	message(STATUS "Building FRED2: ${FSO_BUILD_FRED2}")
 elseif(UNIX)

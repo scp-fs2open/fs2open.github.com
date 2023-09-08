@@ -45,7 +45,8 @@ namespace AI {
 		Purge,				// purge this goal next time we process
 		Goals_purged,		// this goal has already caused other goals to get purged
 		Depart_sound_played,// Goober5000 - replacement for AL's hack ;)
-		Target_own_team,
+		Target_own_team,	// this attack goal is allowed to target friendlies
+		Afterburn_hard,		// afterburn as hard as possible to the goal
 
 		NUM_VALUES
 	};
@@ -121,7 +122,7 @@ namespace AI {
         Smart_shield_management,
         Smart_subsystem_targeting_for_turrets,
         Strict_turret_tagged_only_targeting,
-		Support_dont_add_primaries, //Prevents support ship from equipping new primary as requested in http://scp.indiegames.us/mantis/view.php?id=3198
+		Support_dont_add_primaries, //Prevents support ship from equipping new primary as requested in https://scp.indiegames.us/mantis/view.php?id=3198
         Turrets_ignore_target_radius,
         Use_actual_primary_range,
         Use_subsystem_path_point_radii,
@@ -130,8 +131,9 @@ namespace AI {
         Use_only_single_fov_for_turrets,
         No_turning_directional_bias,
 		Use_axial_turnrate_differences,
-		all_nonshielded_ships_can_manage_ets,
-		fightercraft_nonshielded_ships_can_manage_ets,
+		All_nonshielded_ships_can_manage_ets,
+		Fightercraft_nonshielded_ships_can_manage_ets,
+		Ships_playing_dead_dont_manage_ets,
 		Better_collision_avoidance,
 		Require_exact_los,
 		Improved_missile_avoidance,
@@ -150,6 +152,10 @@ namespace AI {
 		Fixed_removing_play_dead_order,
 		Disable_bay_emerge_timeout,
 		Adjusted_AI_class_autoscale,
+		Carry_shield_difficulty_scaling_bug,
+		Whackable_debris,
+		Whackable_asteroids,
+		Dynamic_goals_afterburn_hard,
 
 		NUM_VALUES
 	};

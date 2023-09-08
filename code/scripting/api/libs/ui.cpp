@@ -10,6 +10,7 @@
 #include "cutscene/cutscenes.h"
 #include "gamesnd/eventmusic.h"
 #include "gamesequence/gamesequence.h"
+#include "io/key.h"
 #include "menuui/barracks.h"
 #include "menuui/credits.h"
 #include "menuui/mainhallmenu.h"
@@ -27,16 +28,20 @@
 #include "missionui/missiondebrief.h"
 #include "mission/missiongoals.h"
 #include "mission/missioncampaign.h"
+#include "mission/missionhotkey.h"
 #include "missionui/redalert.h"
+#include "missionui/missionpause.h"
 #include "mod_table/mod_table.h"
 #include "network/multi.h"
 #include "network/multiteamselect.h"
+#include "pilotfile/pilotfile.h"
 #include "playerman/managepilot.h"
 #include "radar/radarsetup.h"
 #include "ship/ship.h"
 #include "weapon/weapon.h"
 #include "scpui/SoundPlugin.h"
 #include "scpui/rocket_ui.h"
+#include "scripting/api/objs/control_config.h"
 #include "scripting/api/objs/techroom.h"
 #include "scripting/api/objs/loop_brief.h"
 #include "scripting/api/objs/redalert.h"
@@ -45,11 +50,19 @@
 #include "scripting/api/objs/briefing.h"
 #include "scripting/api/objs/debriefing.h"
 #include "scripting/api/objs/shipwepselect.h"
+#include "scripting/api/objs/missionhotkey.h"
+#include "scripting/api/objs/gamehelp.h"
+#include "scripting/api/objs/missionlog.h"
+#include "scripting/api/objs/hudconfig.h"
 #include "scripting/api/objs/color.h"
 #include "scripting/api/objs/enums.h"
 #include "scripting/api/objs/player.h"
+#include "scripting/api/objs/medals.h"
+#include "scripting/api/objs/rank.h"
 #include "scripting/api/objs/texture.h"
+#include "scripting/api/objs/vecmath.h"
 #include "scripting/lua/LuaTable.h"
+#include "sound/audiostr.h"
 #include "stats/medals.h"
 #include "stats/stats.h"
 
@@ -64,9 +77,8 @@
 namespace scripting {
 namespace api {
 
-//*************************Testing stuff*************************
-// This section is for stuff that's considered experimental.
-ADE_LIB(l_UserInterface, "UserInterface", "ui", "Functions for managing the \"scpui\" user interface system.");
+//*************************Global UI stuff*************************
+ADE_LIB(l_UserInterface, "UserInterface", "ui", "Functions for managing the \"SCPUI\" user interface system.");
 
 ADE_FUNC(setOffset, l_UserInterface, "number x, number y",
          "Sets the offset from the top left corner at which <b>all</b> rocket contexts will be rendered", "boolean",
@@ -257,8 +269,7 @@ ADE_FUNC(linkTexture, l_UserInterface, "texture texture", "Links a texture direc
 
 //**********SUBLIBRARY: UserInterface/PilotSelect
 ADE_LIB_DERIV(l_UserInterface_PilotSelect, "PilotSelect", nullptr,
-              "API for accessing values specific to the pilot select screen.<br><b>Warning:</b> This is an internal "
-              "API for the new UI system. This should not be used by other code and may be removed in the future!",
+              "API for accessing values specific to the Pilot Select UI.",
               l_UserInterface);
 
 ADE_VIRTVAR(MAX_PILOTS, l_UserInterface_PilotSelect, nullptr, "Gets the maximum number of possible pilots.", "number",
@@ -380,8 +391,7 @@ ADE_VIRTVAR(CmdlinePilot, l_UserInterface_PilotSelect, nullptr,
 
 //**********SUBLIBRARY: UserInterface/MainHall
 ADE_LIB_DERIV(l_UserInterface_MainHall, "MainHall", nullptr,
-              "API for accessing values specific to the main hall screen.<br><b>Warning:</b> This is an internal "
-              "API for the new UI system. This should not be used by other code and may be removed in the future!",
+              "API for accessing values specific to the Main Hall UI.",
               l_UserInterface);
 
 ADE_FUNC(startAmbientSound, l_UserInterface_MainHall, nullptr, "Starts the ambient mainhall sound.", nullptr, "nothing")
@@ -407,8 +417,7 @@ ADE_FUNC(startMusic, l_UserInterface_MainHall, nullptr, "Starts the mainhall mus
 
 //**********SUBLIBRARY: UserInterface/Barracks
 ADE_LIB_DERIV(l_UserInterface_Barracks, "Barracks", nullptr,
-              "API for accessing values specific to the barracks screen.<br><b>Warning:</b> This is an internal "
-              "API for the new UI system. This should not be used by other code and may be removed in the future!",
+              "API for accessing values specific to the Barracks UI.",
               l_UserInterface);
 
 ADE_FUNC(listPilotImages, l_UserInterface_Barracks, nullptr, "Lists the names of the available pilot images.",
@@ -456,8 +465,7 @@ ADE_FUNC(acceptPilot, l_UserInterface_Barracks, "player selection", "Accept the 
 ADE_LIB_DERIV(l_UserInterface_Options,
 	"OptionsMenu",
 	nullptr,
-	"API for accessing values specific to the options screen.<br><b>Warning:</b> This is an internal "
-	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	"API for accessing values specific to the Options UI.",
 	l_UserInterface);
 
 ADE_FUNC(playVoiceClip,
@@ -475,8 +483,7 @@ ADE_FUNC(playVoiceClip,
 ADE_LIB_DERIV(l_UserInterface_Campaign,
 	"CampaignMenu",
 	nullptr,
-	"API for accessing data related to the campaign UI.<br><b>Warning:</b> This is an internal "
-	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	"API for accessing data related to the Campaign UI.",
 	l_UserInterface);
 
 ADE_FUNC(loadCampaignList,
@@ -553,8 +560,7 @@ ADE_FUNC(resetCampaign,
 ADE_LIB_DERIV(l_UserInterface_Brief,
 	"Briefing",
 	nullptr,
-	"API for accessing data related to the briefing UI.<br><b>Warning:</b> This is an internal "
-	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	"API for accessing data related to the Briefing UI.",
 	l_UserInterface);
 
 ADE_FUNC(getBriefingMusicName,
@@ -564,7 +570,7 @@ ADE_FUNC(getBriefingMusicName,
 	"string",
 	"The file name or empty if no music")
 {
-	return ade_set_args(L, "s", common_music_get_filename(SCORE_BRIEFING).c_str());
+	return ade_set_args(L, "s", common_music_get_filename(SCORE_BRIEFING));
 }
 
 ADE_FUNC(runBriefingStageHook,
@@ -693,10 +699,6 @@ ADE_FUNC(skipTraining,
 	return ADE_RETURN_NIL;
 }
 
-// For now any loadout error checking needs to happen in the script to prevent FSO from
-// generating a popup that will not be interactible from Librocket. A later update to this
-// method will introduce return values instead of generating popups and those return values
-// can be used to handle loadout popups on the script side
 ADE_FUNC(commitToMission,
 	l_UserInterface_Brief,
 	nullptr,
@@ -708,6 +710,66 @@ ADE_FUNC(commitToMission,
 	"the error value")
 {
 	return ade_set_args(L, "i", static_cast<int>(commit_pressed(true)));
+}
+
+ADE_FUNC(renderBriefingModel,
+	l_UserInterface_Brief,
+	"string PofName, number CloseupZoom, vector CloseupPos, number X1, number Y1, number X2, number Y2, [number RotationPercent =0, number PitchPercent =0, "
+	"number "
+	"BankPercent=40, number Zoom=1.3, boolean Lighting=true, boolean Jumpnode=false]",
+	"Draws a pof. True for regular lighting, false for flat lighting.",
+	"boolean",
+	"Whether pof was rendered")
+{
+	int x1, y1, x2, y2;
+	angles rot_angles = {0.0f, 0.0f, 40.0f};
+	const char* pof;
+	float closeup_zoom;
+	vec3d closeup_pos;
+	float zoom = 1.3f;
+	bool lighting = true;
+	bool jumpNode = false;
+	if (!ade_get_args(L,
+			"sfoiiii|ffffbb",
+			&pof,
+			&closeup_zoom,
+			l_Vector.Get(&closeup_pos),
+			&x1,
+			&y1,
+			&x2,
+			&y2,
+			&rot_angles.h,
+			&rot_angles.p,
+			&rot_angles.b,
+			&zoom,
+			&lighting,
+			&jumpNode))
+		return ade_set_error(L, "b", false);
+
+	if (x2 < x1 || y2 < y1)
+		return ade_set_args(L, "b", false);
+
+	CLAMP(rot_angles.p, 0.0f, 100.0f);
+	CLAMP(rot_angles.b, 0.0f, 100.0f);
+	CLAMP(rot_angles.h, 0.0f, 100.0f);
+
+	// Handle angles
+	matrix orient = vmd_identity_matrix;
+	angles view_angles = {-0.6f, 0.0f, 0.0f};
+	vm_angles_2_matrix(&orient, &view_angles);
+
+	rot_angles.p = (rot_angles.p * 0.01f) * PI2;
+	rot_angles.b = (rot_angles.b * 0.01f) * PI2;
+	rot_angles.h = (rot_angles.h * 0.01f) * PI2;
+	vm_rotate_matrix_by_angles(&orient, &rot_angles);
+
+	tech_render_type thisType = TECH_POF;
+
+	if (jumpNode) {
+		thisType = TECH_JUMP_NODE;
+	}
+
+	return ade_set_args(L, "b", render_tech_model(thisType, x1, y1, x2, y2, zoom, lighting, -1, &orient, pof, closeup_zoom, closeup_pos));
 }
 
 ADE_FUNC(drawBriefingMap,
@@ -743,6 +805,31 @@ ADE_FUNC(drawBriefingMap,
 	brief_api_do_frame(flRealframetime);
 
 	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(checkStageIcons,
+	l_UserInterface_Brief,
+	"number xPos, number yPos",
+	"Sends the mouse position to the brief map rendering functions to properly highlight icons.",
+	"string, number, vector, string, number",
+	"If an icon is highlighted then this will return the ship name for ships or the pof to render for asteroid, jumpnode, or unknown icons. "
+	"also returns the closeup zoom, the closeup position, the closeup label, and the icon id. Otherwise it returns nil")
+{
+	int x;
+	int y;
+
+	if (!ade_get_args(L, "ii", &x, &y)) {
+		LuaError(L, "X and Y coordinates not provided!");
+		return ADE_RETURN_NIL;
+	}
+
+	brief_check_for_anim(true, x, y);
+
+	if (Closeup_icon == nullptr) {
+		return ADE_RETURN_NIL;
+	} else {
+		return ade_set_args(L, "sfosi", Closeup_type_name, Closeup_zoom, l_Vector.Set(Closeup_cam_pos), Closeup_icon->closeup_label, Closeup_icon->id);
+	}
 }
 
 ADE_FUNC(callNextMapStage,
@@ -804,20 +891,25 @@ ADE_INDEXER(l_Briefing_Goals,
 	if (!ade_get_args(L, "*i", &idx))
 		return ade_set_error(L, "s", "");
 
+	// convert from lua index
+	idx--;
+
+	if ((idx < 0) || idx >= (int)Mission_goals.size())
+		return ade_set_args(L, "o", l_Goals.Set(-1));
+
 	return ade_set_args(L, "o", l_Goals.Set(idx));
 }
 
 ADE_FUNC(__len, l_Briefing_Goals, nullptr, "The number of goals in the mission", "number", "The number of goals.")
 {
-	return ade_set_args(L, "i", Num_goals);
+	return ade_set_args(L, "i", (int)Mission_goals.size());
 }
 
 //**********SUBLIBRARY: UserInterface/CommandBriefing
 ADE_LIB_DERIV(l_UserInterface_CmdBrief,
 	"CommandBriefing",
 	nullptr,
-	"API for accessing data related to the command briefing UI.<br><b>Warning:</b> This is an internal "
-	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	"API for accessing data related to the Command Briefing UI.",
 	l_UserInterface);
 
 ADE_FUNC(getCmdBriefing,
@@ -835,8 +927,7 @@ ADE_FUNC(getCmdBriefing,
 ADE_LIB_DERIV(l_UserInterface_Debrief,
 	"Debriefing",
 	nullptr,
-	"API for accessing data related to the debriefing UI.<br><b>Warning:</b> This is an internal "
-	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	"API for accessing data related to the Debriefing UI.",
 	l_UserInterface);
 
 ADE_FUNC(initDebriefing,
@@ -846,8 +937,6 @@ ADE_FUNC(initDebriefing,
 	"number",
 	"Returns true when completed")
 {
-	//This is used to skip some UI preloading in debrief init
-	API_Access = true;
 	
 	// stop all looping mission sounds
 	game_stop_looped_sounds();
@@ -855,9 +944,7 @@ ADE_FUNC(initDebriefing,
 	 // fail all incomplete goals before entering debriefing
 	mission_goal_fail_incomplete();
 	hud_config_as_player();
-	debrief_init();
-
-	API_Access = false;
+	debrief_init(true);
 	
 	return ade_set_args(L, "b", true);
 }
@@ -869,7 +956,7 @@ ADE_FUNC(getDebriefingMusicName,
 	"string",
 	"The file name or empty if no music")
 {
-	return ade_set_args(L, "s", common_music_get_filename(debrief_select_music()).c_str());
+	return ade_set_args(L, "s", common_music_get_filename(debrief_select_music()));
 }
 
 ADE_FUNC(getDebriefing, l_UserInterface_Debrief, nullptr, "Get the debriefing", "debriefing", "The debriefing data")
@@ -1017,16 +1104,11 @@ ADE_FUNC(replayMission,
 
 	ade_get_args(L, "|b", &restart);
 
-	// This is used to skip some UI preloading in debrief init
-	API_Access = true;
-
-	debrief_close();
+	debrief_close(true);
 
 	if (restart) {
 		gameseq_post_event(GS_EVENT_START_GAME);
 	}
-
-	API_Access = false;
 
 	return ADE_RETURN_NIL;
 }
@@ -1043,18 +1125,13 @@ ADE_FUNC(acceptMission,
 
 	ade_get_args(L, "|b", &start);
 
-	// This is used to skip some UI preloading in debrief init
-	API_Access = true;
-
 	if (start) {
-		debrief_accept(1);
+		debrief_accept(1, true);
 	} else {
-		debrief_accept(0);
+		debrief_accept(0, true);
 	};
 
-	debrief_close();
-
-	API_Access = false;
+	debrief_close(true);
 
 	return ADE_RETURN_NIL;
 }
@@ -1063,8 +1140,7 @@ ADE_FUNC(acceptMission,
 ADE_LIB_DERIV(l_UserInterface_LoopBrief,
 	"LoopBrief",
 	nullptr,
-	"API for accessing data related to the loop brief UI.<br><b>Warning:</b> This is an internal "
-	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	"API for accessing data related to the Loop Brief UI.",
 	l_UserInterface);
 
 ADE_FUNC(getLoopBrief,
@@ -1100,8 +1176,7 @@ ADE_FUNC(setLoopChoice, l_UserInterface_LoopBrief, "boolean", "Accepts mission o
 ADE_LIB_DERIV(l_UserInterface_RedAlert,
 	"RedAlert",
 	nullptr,
-	"API for accessing data related to the Red Alert UI.<br><b>Warning:</b> This is an internal "
-	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	"API for accessing data related to the Red Alert UI.",
 	l_UserInterface);
 
  ADE_FUNC(getRedAlert,
@@ -1136,8 +1211,7 @@ ADE_FUNC(replayPreviousMission,
 ADE_LIB_DERIV(l_UserInterface_FictionViewer,
 	"FictionViewer",
 	nullptr,
-	"API for accessing data related to the fiction viewer UI.<br><b>Warning:</b> This is an internal "
-	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	"API for accessing data related to the Fiction Viewer UI.",
 	l_UserInterface);
 
 ADE_FUNC(getFiction, l_UserInterface_FictionViewer, nullptr, "Get the fiction.", "fiction_viewer_stage", "The fiction data")
@@ -1154,15 +1228,14 @@ ADE_FUNC(getFictionMusicName, l_UserInterface_FictionViewer, nullptr,
 	"string",
 	"The file name or empty if no music")
 {
-	return ade_set_args(L, "s", common_music_get_filename(SCORE_FICTION_VIEWER).c_str());
+	return ade_set_args(L, "s", common_music_get_filename(SCORE_FICTION_VIEWER));
 }
 
 //**********SUBLIBRARY: UserInterface/ShipWepSelect
 ADE_LIB_DERIV(l_UserInterface_ShipWepSelect,
 	"ShipWepSelect",
 	nullptr,
-	"API for accessing data related to the ship and weapon select UIs.<br><b>Warning:</b> This is an internal "
-	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	"API for accessing data related to the Ship and Weapon Select UIs.",
 	l_UserInterface);
 
 ADE_FUNC(initSelect,
@@ -1415,8 +1488,7 @@ ADE_FUNC(__len, l_Loadout_Ships, nullptr, "The number of loadout ships", "number
 ADE_LIB_DERIV(l_UserInterface_TechRoom,
 	"TechRoom",
 	nullptr,
-	"API for accessing data related to the tech room UI.<br><b>Warning:</b> This is an internal "
-	"API for the new UI system. This should not be used by other code and may be removed in the future!",
+	"API for accessing data related to the Tech Room UIs.",
 	l_UserInterface);
 
 ADE_FUNC(buildMissionList,
@@ -1443,10 +1515,11 @@ ADE_FUNC(buildCredits,
 	"number",
 	"Returns 1 when completed")
 {
-	credits_parse();
+	credits_parse(false);
 	credits_scp_position();
 
 	size_t count = Credit_text_parts.size();
+	credits_complete.clear();
 
 	for (size_t i = 0; i < count; i++) {
 		credits_complete.append(Credit_text_parts[i]);
@@ -1576,6 +1649,741 @@ ADE_VIRTVAR(Complete, l_UserInterface_Credits, nullptr, "The complete credits st
 	}
 
 	return ade_set_args(L, "s", credits_complete);
+}
+
+//**********SUBLIBRARY: UserInterface/Medals
+ADE_LIB_DERIV(l_UserInterface_Medals,
+	"Medals",
+	nullptr,
+	"API for accessing data related to the Medals UI.",
+	l_UserInterface);
+
+ADE_LIB_DERIV(l_Medals, "Medals_List", nullptr, nullptr, l_UserInterface_Medals);
+ADE_INDEXER(l_Medals,
+	"number Index",
+	"Array of Medals",
+	"medal",
+	"medal handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "o", l_Medal.Set(medal_h()));
+	idx--; // Convert to Lua's 1 based index system
+
+	if ((idx < 0) || (idx >= (int)Medals.size()))
+		return ade_set_error(L, "o", l_Medal.Set(medal_h()));
+
+	return ade_set_args(L, "o", l_Medal.Set(medal_h(idx)));
+}
+
+ADE_FUNC(__len, l_Medals, nullptr, "The number of valid medals", "number", "The number of valid medals.")
+{
+	return ade_set_args(L, "i", Medals.size());
+}
+
+ADE_LIB_DERIV(l_Ranks, "Ranks_List", nullptr, nullptr, l_UserInterface_Medals);
+ADE_INDEXER(l_Ranks, "number Index", "Array of Ranks", "rank", "rank handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "o", l_Rank.Set(rank_h()));
+	idx--; // Convert to Lua's 1 based index system
+
+	if ((idx < 0) || (idx >= (int)Ranks.size()))
+		return ade_set_error(L, "o", l_Rank.Set(rank_h()));
+
+	return ade_set_args(L, "o", l_Rank.Set(rank_h(idx)));
+}
+
+ADE_FUNC(__len, l_Ranks, nullptr, "The number of valid ranks", "number", "The number of valid ranks.")
+{
+	return ade_set_args(L, "i", Ranks.size());
+}
+
+//**********SUBLIBRARY: UserInterface/Hotkeys
+ADE_LIB_DERIV(l_UserInterface_Hotkeys,
+	"MissionHotkeys",
+	nullptr,
+	"API for accessing data related to the Mission Hotkeys UI.",
+	l_UserInterface);
+
+ADE_FUNC(initHotkeysList,
+	l_UserInterface_Hotkeys,
+	nullptr,
+	"Initializes the hotkeys list. Must be used before the hotkeys list is accessed.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	reset_hotkeys();
+	hotkey_set_selected_line(1);
+	hotkey_build_listing();
+
+	// We want to allow the API to handle expanding wings on its own,
+	// so lets expand every wing in the list and not try to handle it after that.
+	for (int i = 0; i < MAX_LINES; i++) {
+		auto item = Hotkey_lines[i];
+		if (item.type == HotkeyLineType::WING) {
+			expand_wing(i, true);
+		}
+	}
+
+	// Reset the selected line back to 1
+	hotkey_set_selected_line(1);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(resetHotkeys,
+	l_UserInterface_Hotkeys,
+	nullptr,
+	"Resets the hotkeys list to previous setting, removing anything that wasn't saved. Returns nothing.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	reset_hotkeys();
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(saveHotkeys,
+	l_UserInterface_Hotkeys,
+	nullptr,
+	"Saves changes to the hotkey list. Returns nothing.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	save_hotkeys();
+
+	return ADE_RETURN_NIL;
+}
+
+// This is not a retail UI feature, but it's just good design to allow it.
+// This will allow SCPUI to create a restore to mission defaults button.
+ADE_FUNC(resetHotkeysDefault,
+	l_UserInterface_Hotkeys,
+	nullptr,
+	"Resets the hotkeys list to the default mission setting. Returns nothing.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	// argument to false, because if we're doing this we explicitely do not want
+	// to restore player's saved values
+	mission_hotkey_set_defaults(false);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_LIB_DERIV(l_Hotkeys, "Hotkeys_List", nullptr, nullptr, l_UserInterface_Hotkeys);
+ADE_INDEXER(l_Hotkeys,
+	"number Index",
+	"Array of Hotkey'd ships",
+	"hotkey_ship",
+	"hotkey ship handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "o", l_Hotkey.Set(hotkey_h()));
+	idx--; // Convert to Lua's 1 based index system
+
+	if ((idx < 0) || (idx >= MAX_LINES))
+		return ade_set_error(L, "o", l_Hotkey.Set(hotkey_h()));
+
+	return ade_set_args(L, "o", l_Hotkey.Set(hotkey_h(idx)));
+}
+
+ADE_FUNC(__len, l_Hotkeys, nullptr, "The number of valid hotkey ships", "number", "The number of valid hotkey ships.")
+{
+	int s = 0;
+
+	// this is dumb, but whatever
+	for (int i = 0; i < MAX_LINES; i++) {
+		auto item = Hotkey_lines[i];
+		if (item.type == HotkeyLineType::NONE) {
+			s = i;
+			break;
+		}
+	}
+	
+	return ade_set_args(L, "i", s);
+}
+
+//**********SUBLIBRARY: UserInterface/GameHelp
+ADE_LIB_DERIV(l_UserInterface_GameHelp,
+	"GameHelp",
+	nullptr,
+	"API for accessing data related to the Game Help UI.",
+	l_UserInterface);
+
+ADE_FUNC(initGameHelp, l_UserInterface_GameHelp, nullptr, "Initializes the Game Help data. Must be used before Help Sections is accessed.", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	Help_text.clear(); // Make sure the vector is empty before we start
+	Help_text = gameplay_help_init_text();
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(closeGameHelp, l_UserInterface_GameHelp, nullptr, "Clears the Game Help data. Should be used when finished accessing Help Sections.", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	Help_text.clear();
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_LIB_DERIV(l_Help_Sections, "Help_Sections", nullptr, nullptr, l_UserInterface_GameHelp);
+ADE_INDEXER(l_Help_Sections,
+	"number Index",
+	"Array of help sections",
+	"help_section",
+	"help section handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "o", l_Help_Section.Set(help_section_h()));
+	idx--; //Convert to Lua's 1 based index system
+
+	if ((idx < 0) || (idx >= (int)Help_text.size()))
+		return ade_set_error(L, "o", l_Help_Section.Set(help_section_h()));
+
+	return ade_set_args(L, "o", l_Help_Section.Set(help_section_h(idx)));
+}
+
+ADE_FUNC(__len, l_Help_Sections, nullptr, "The number of help sections", "number", "The number of help sections.")
+{
+	return ade_set_args(L, "i", (int)Help_text.size());
+}
+
+
+
+
+//**********SUBLIBRARY: UserInterface/MissionLog
+ADE_LIB_DERIV(l_UserInterface_MissionLog,
+	"MissionLog",
+	nullptr,
+	"API for accessing data related to the Mission Log UI.",
+	l_UserInterface);
+
+ADE_FUNC(initMissionLog, l_UserInterface_MissionLog, nullptr, "Initializes the Mission Log data. Must be used before Mission Log is accessed.", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	Log_scrollback_vec.clear(); // Make sure the vector is empty before we start
+
+	//explicitely do not split lines!
+	message_log_init_scrollback(0, false);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(closeMissionLog, l_UserInterface_MissionLog, nullptr, "Clears the Mission Log data. Should be used when finished accessing Mission Log Entries.", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	message_log_shutdown_scrollback();
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_LIB_DERIV(l_Log_Entries, "Log_Entries", nullptr, nullptr, l_UserInterface_MissionLog);
+ADE_INDEXER(l_Log_Entries,
+	"number Index",
+	"Array of mission log entries",
+	"log_entry",
+	"log entry handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "o", l_Log_Entry.Set(log_entry_h()));
+	idx--; //Convert to Lua's 1 based index system
+
+	if ((idx < 0) || (idx >= (int)Log_scrollback_vec.size()))
+		return ade_set_error(L, "o", l_Log_Entry.Set(log_entry_h()));
+
+	return ade_set_args(L, "o", l_Log_Entry.Set(log_entry_h(idx)));
+}
+
+ADE_FUNC(__len, l_Log_Entries, nullptr, "The number of mission log entries", "number", "The number of log entries.")
+{
+	return ade_set_args(L, "i", (int)Log_scrollback_vec.size());
+}
+
+ADE_LIB_DERIV(l_Log_Messages, "Log_Messages", nullptr, nullptr, l_UserInterface_MissionLog);
+ADE_INDEXER(l_Log_Messages,
+	"number Index",
+	"Array of message log entries",
+	"message_entry",
+	"message entry handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "o", l_Message_Entry.Set(message_entry_h()));
+	idx--; //Convert to Lua's 1 based index system
+
+	if ((idx < 0) || (idx >= (int)Msg_scrollback_vec.size()))
+		return ade_set_error(L, "o", l_Message_Entry.Set(message_entry_h()));
+
+	return ade_set_args(L, "o", l_Message_Entry.Set(message_entry_h(idx)));
+}
+
+ADE_FUNC(__len, l_Log_Messages, nullptr, "The number of mission message entries", "number", "The number of message entries.")
+{
+	return ade_set_args(L, "i", (int)Msg_scrollback_vec.size());
+}
+
+//**********SUBLIBRARY: UserInterface/ControlConfig
+ADE_LIB_DERIV(l_UserInterface_ControlConfig,
+	"ControlConfig",
+	nullptr,
+	"API for accessing data related to the Control Config UI.",
+	l_UserInterface);
+
+ADE_FUNC(initControlConfig,
+	l_UserInterface_ControlConfig,
+	nullptr,
+	"Inits the control config UI elements. Must be used before accessing control config elements!",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	control_config_init(true);
+	
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(closeControlConfig,
+	l_UserInterface_ControlConfig,
+	nullptr,
+	"Closes the control config UI elements. Must be used when finished accessing control config elements!",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	control_config_close(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(clearAll,
+	l_UserInterface_ControlConfig,
+	nullptr,
+	"Clears all control bindings.",
+	"boolean",
+	"Returns true if successful, false otherwise")
+{
+	SCP_UNUSED(L);
+
+	return ade_set_args(L, "b", control_config_clear_all(true));
+}
+
+ADE_FUNC(resetToPreset,
+	l_UserInterface_ControlConfig,
+	nullptr,
+	"Resets all control bindings to the current preset defaults.",
+	"boolean",
+	"Returns true if successful, false otherwise")
+{
+	SCP_UNUSED(L);
+
+	return ade_set_args(L, "b", control_config_do_reset(false, true));
+}
+
+ADE_FUNC(usePreset,
+	l_UserInterface_ControlConfig,
+	"string PresetName",
+	"Uses a defined preset if it can be found.",
+	"boolean",
+	"Returns true if successful, false otherwise")
+{
+	const char* preset = nullptr;
+	if (!ade_get_args(L, "s", &preset)) {
+		return ADE_RETURN_FALSE;
+	}
+
+	SCP_string name = preset;
+
+	return ade_set_args(L, "b", control_config_use_preset_by_name(name));
+}
+
+ADE_FUNC(createPreset,
+	l_UserInterface_ControlConfig,
+	"string Name",
+	"Creates a new preset with the given name. Returns true if successful, false otherwise.",
+	"boolean",
+	"The return status")
+{
+	const char* preset;
+	ade_get_args(L, "s", &preset);
+
+	SCP_string name = preset;
+
+	return ade_set_args(L, "b", control_config_create_new_preset(name));
+}
+
+ADE_FUNC(undoLastChange,
+	l_UserInterface_ControlConfig,
+	nullptr,
+	"Reverts the last change to the control bindings",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	control_config_do_undo(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(searchBinds,
+	l_UserInterface_ControlConfig,
+	nullptr,
+	"Waits for a keypress to search for. Returns index into Control Configs if the key matches a bind. Should run On Frame.",
+	"number",
+	"Control Config index, or 0 if no key was found. Returns -1 if Escape was pressed.")
+{
+	SCP_UNUSED(L);
+
+	int idx = control_config_search_key_on_frame(true);
+	idx++; //convert to lua
+
+	return ade_set_args(L, "i", idx);
+}
+
+ADE_FUNC(acceptBinding,
+	l_UserInterface_ControlConfig,
+	nullptr,
+	"Accepts changes to the keybindings. Returns true if successful, false if there are key conflicts or the preset needs to be saved.",
+	"boolean",
+	"The return status")
+{
+	SCP_UNUSED(L);
+
+	return ade_set_args(L, "b", control_config_accept(true));
+}
+
+ADE_FUNC(cancelBinding,
+	l_UserInterface_ControlConfig,
+	nullptr,
+	"Cancels changes to the keybindings, reverting changes to the state it was when initControlConfig was called.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	control_config_cancel_exit(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(getCurrentPreset,
+	l_UserInterface_ControlConfig,
+	nullptr,
+	"Returns the name of the current controls preset.",
+	"string",
+	"The name of the preset or nil if the current binds do not match a preset")
+{
+	SCP_UNUSED(L);
+
+	auto it = control_config_get_current_preset();
+
+	if (it == Control_config_presets.end()) {
+		return ADE_RETURN_NIL;
+	}
+
+	return ade_set_args(L, "s", it->name.c_str());
+}
+
+ADE_LIB_DERIV(l_Presets, "ControlPresets", nullptr, nullptr, l_UserInterface_ControlConfig);
+ADE_INDEXER(l_Presets,
+	"number Index",
+	"Array of control presets",
+	"preset",
+	"control preset handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "o", l_Preset.Set(preset_h()));
+	idx--; // Convert to Lua's 1 based index system
+
+	if ((idx < 0) || (idx >= (int)Control_config.size()))
+		return ade_set_error(L, "o", l_Preset.Set(preset_h()));
+
+	return ade_set_args(L, "o", l_Preset.Set(preset_h(idx)));
+}
+
+ADE_FUNC(__len, l_Presets, nullptr, "The number of control presets", "number", "The number of control presets.")
+{
+	return ade_set_args(L, "i", (int)Control_config_presets.size());
+}
+
+ADE_LIB_DERIV(l_Controls, "ControlConfigs", nullptr, nullptr, l_UserInterface_ControlConfig);
+ADE_INDEXER(l_Controls,
+	"number Index",
+	"Array of controls",
+	"control",
+	"control handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "o", l_Control.Set(control_h()));
+	idx--; // Convert from Lua's 1 based index system
+
+	if ((idx < 0) || (idx >= (int)Control_config.size()))
+		return ade_set_error(L, "o", l_Control.Set(control_h()));
+
+	return ade_set_args(L, "o", l_Control.Set(control_h(idx)));
+}
+
+ADE_FUNC(__len, l_Controls, nullptr, "The number of controls", "number", "The number of controls.")
+{
+	return ade_set_args(L, "i", (int)Control_config.size());
+}
+
+//**********SUBLIBRARY: UserInterface/HUDConfig
+ADE_LIB_DERIV(l_UserInterface_HUDConfig,
+	"HudConfig",
+	nullptr,
+	"API for accessing data related to the HUD Config UI.",
+	l_UserInterface);
+
+ADE_FUNC(initHudConfig,
+	l_UserInterface_HUDConfig,
+	"[number X, number Y, number Width]",
+	"Initializes the HUD Configuration data. Must be used before HUD Configuration data accessed. "
+	"X and Y are the coordinates where the HUD preview will be drawn when drawHudConfig is used. "
+	"Width is the pixel width to draw the gauges preview.",
+	nullptr,
+	nullptr)
+{
+	int x = 0;
+	int y = 0;
+	int w = 0;
+	ade_get_args(L, "|iii", &x, &y, &w);
+
+	hud_config_init(true, x, y, w);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(closeHudConfig,
+	l_UserInterface_HUDConfig,
+	"boolean Save",
+	"If True then saves the gauge configuration, discards if false. Defaults to false. Then cleans up memory. Should be used when finished accessing HUD Configuration.",
+	nullptr,
+	nullptr)
+{
+	bool save = false;
+	ade_get_args(L, "|b", &save);
+
+	if (save) {
+		Pilot.save_savefile();
+	} else {
+		hud_config_cancel(false);
+	}
+
+	hud_config_close(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(drawHudConfig,
+	l_UserInterface_HUDConfig,
+	"[number MouseX, number MouseY]",
+	"Draws the HUD for the HUD Config UI. Should be called On Frame.",
+	"gauge_config",
+	"Returns the gauge currently being hovered over, or empty handle if nothing is hovered")
+{
+	int mx = 0;
+	int my = 0;
+	ade_get_args(L, "|ii", &mx, &my);
+
+	hud_config_do_frame(0.0f, true, mx, my);
+
+	if (HC_gauge_hot >= 0) {
+		return ade_set_args(L, "o", l_Gauge_Config.Set(gauge_config_h(HC_gauge_hot)));
+	} else {
+		return ade_set_error(L, "o", l_Gauge_Config.Set(gauge_config_h()));
+	}
+}
+
+ADE_FUNC(selectAllGauges,
+	l_UserInterface_HUDConfig,
+	"boolean Toggle",
+	"Sets all gauges as selected. True for select all, False to unselect all. Defaults to False.",
+	nullptr,
+	nullptr)
+{
+	bool toggle = false;
+	ade_get_args(L, "|b", &toggle);
+
+	hud_config_select_all_toggle(toggle, true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(setToDefault,
+	l_UserInterface_HUDConfig,
+	"string Filename",
+	"Sets all gauges to the defined default. If no filename is provided then 'hud_3.hcf' is used.",
+	nullptr,
+	nullptr)
+{
+	const char* filename = "hud_3.hcf";
+	ade_get_args(L, "|s", &filename);
+
+	hud_config_select_all_toggle(0, true);
+	hud_set_default_hud_config(Player, filename);
+	HUD_init_hud_color_array();
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(saveToPreset,
+	l_UserInterface_HUDConfig,
+	"string Filename",
+	"Saves all gauges to the file with the name provided. Filename should not include '.hcf' extension and not be longer than 28 characters.",
+	nullptr,
+	nullptr)
+{
+	const char* filename;
+	ade_get_args(L, "s", &filename);
+
+	SCP_string name = filename;
+
+	// trim filename length to leave room for adding the extension
+	if (name.size() > MAX_FILENAME_LEN - 4) {
+		name.resize(MAX_FILENAME_LEN - 4);
+	}
+
+	// add extension
+	name += ".hcf";
+
+	hud_config_color_save(name.c_str());
+
+	// reload the preset list for sorting
+	hud_config_preset_init();
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(usePresetFile,
+	l_UserInterface_HUDConfig,
+	"string Filename",
+	"Sets all gauges to the provided preset file settings.",
+	nullptr,
+	nullptr)
+{
+	const char* filename;
+	ade_get_args(L, "s", &filename);
+
+	hud_config_color_load(filename);
+	HUD_init_hud_color_array();
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_LIB_DERIV(l_HUD_Gauges, "GaugeConfigs", nullptr, nullptr, l_UserInterface_HUDConfig);
+ADE_INDEXER(l_HUD_Gauges,
+	"number Index",
+	"Array of built-in gauge configs",
+	"gauge_config",
+	"gauge_config handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "o", l_Gauge_Config.Set(gauge_config_h()));
+	idx--; // Convert from Lua's 1 based index system
+
+	if ((idx < 0) || (idx >= NUM_HUD_GAUGES))
+		return ade_set_error(L, "o", l_Gauge_Config.Set(gauge_config_h()));
+
+	return ade_set_args(L, "o", l_Gauge_Config.Set(gauge_config_h(idx)));
+}
+
+ADE_FUNC(__len, l_HUD_Gauges, nullptr, "The number of gauge configs", "number", "The number of gauge configs.")
+{
+	return ade_set_args(L, "i", NUM_HUD_GAUGES);
+}
+
+ADE_LIB_DERIV(l_HUD_Presets, "GaugePresets", nullptr, nullptr, l_UserInterface_HUDConfig);
+ADE_INDEXER(l_HUD_Presets,
+	"number Index",
+	"Array of HUD Preset files",
+	"hud_preset",
+	"hud_preset handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "o", l_HUD_Preset.Set(hud_preset_h()));
+	idx--; // Convert from Lua's 1 based index system
+
+	if ((idx < 0) || (idx >= (int)HC_preset_filenames.size()))
+		return ade_set_error(L, "o", l_HUD_Preset.Set(hud_preset_h()));
+
+	return ade_set_args(L, "o", l_HUD_Preset.Set(hud_preset_h(idx)));
+}
+
+ADE_FUNC(__len, l_HUD_Presets, nullptr, "The number of hud presets", "number", "The number of hud presets.")
+{
+	return ade_set_args(L, "i", HC_preset_filenames.size());
+}
+
+//**********SUBLIBRARY: UserInterface/PauseScreen
+ADE_LIB_DERIV(l_UserInterface_PauseScreen,
+	"PauseScreen",
+	nullptr,
+	"API for accessing data related to the Pause Screen UI.",
+	l_UserInterface);
+
+ADE_VIRTVAR(isPaused, l_UserInterface_PauseScreen, nullptr, "Returns true if the game is paused, false otherwise", "boolean", "true if paused, false if unpaused")
+{
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "b", Paused);
+}
+
+ADE_FUNC(initPause, l_UserInterface_PauseScreen, nullptr, "Makes sure everything is done correctly to pause the game.", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	weapon_pause_sounds();
+	audiostream_pause_all();
+
+	Paused = true;
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(closePause, l_UserInterface_PauseScreen, nullptr, "Makes sure everything is done correctly to unpause the game.", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	weapon_unpause_sounds();
+	audiostream_unpause_all();
+
+	// FSO can run pause_init() before the actual games state change when the game loses focus
+	// so this is required to make sure that the saved screen is cleared if SCPUI takes over
+	// after the game state change
+	gr_free_screen(Pause_saved_screen);
+	Pause_saved_screen = -1;
+
+	Paused = false;
+
+	return ADE_RETURN_NIL;
 }
 
 } // namespace api

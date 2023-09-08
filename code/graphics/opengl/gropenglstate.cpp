@@ -551,9 +551,9 @@ void opengl_state::UseProgram(GLuint program)
 bool opengl_state::IsCurrentProgram(GLuint program) {
 	return current_program == program;
 }
-void opengl_state::BindFrameBuffer(GLuint name) {
+void opengl_state::BindFrameBuffer(GLuint name, GLenum mode) {
 	if (current_framebuffer != name) {
-		glBindFramebuffer(GL_FRAMEBUFFER, name);
+		glBindFramebuffer(mode, name);
 		current_framebuffer = name;
 	}
 }

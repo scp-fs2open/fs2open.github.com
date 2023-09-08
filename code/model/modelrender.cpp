@@ -21,6 +21,7 @@
 #include "jumpnode/jumpnode.h"
 #include "lighting/lighting.h"
 #include "math/staticrand.h"
+#include "missionui/missionscreencommon.h"
 #include "mod_table/mod_table.h"
 #include "nebula/neb.h"
 #include "particle/particle.h"
@@ -833,39 +834,72 @@ void model_render_add_lightning( model_draw_list *scene, model_render_params* in
  		return;
  	}
 
-	// try and scale the size a bit so that it looks equally well on smaller vessels
-	if ( pm->rad < 500.0f ) {
-		width *= (pm->rad * 0.01f);
-
-		if ( width < 0.2f ) {
-			width = 0.2f;
-		}
-	}
-
 	for ( i = 0; i < smi->num_arcs; i++ ) {
 		// pick a color based upon arc type
 		switch ( smi->arc_type[i] ) {
 			// "normal", FreeSpace 1 style arcs
 		case MARC_TYPE_DAMAGED:
-		case MARC_TYPE_SHIP:
 			if ( Random::flip_coin() )	{
-				gr_init_color(&primary, std::get<0>(Arc_color_damage_p1), std::get<1>(Arc_color_damage_p1), std::get<2>(Arc_color_damage_p1));
+				primary = Arc_color_damage_p1;
 			} else {
-				gr_init_color(&primary, std::get<0>(Arc_color_damage_p2), std::get<1>(Arc_color_damage_p2), std::get<2>(Arc_color_damage_p2));
+				primary = Arc_color_damage_p2;
 			}
 
-			gr_init_color(&primary, std::get<0>(Arc_color_damage_s1), std::get<1>(Arc_color_damage_s1), std::get<2>(Arc_color_damage_s1));
+			secondary = Arc_color_damage_s1;
+			
+			// try and scale the size a bit so that it looks equally well on smaller vessels
+			width = Arc_width_default_damage;
+			if (pm->rad < Arc_width_no_multiply_over_radius_damage) {
+				width *= (pm->rad * Arc_width_radius_multiplier_damage);
+
+				if (width < Arc_width_minimum_damage) {
+					width = Arc_width_minimum_damage;
+				}
+			}
+			
+			break;
+
+		case MARC_TYPE_SHIP:
+			if ( Random::flip_coin() )	{
+				primary = smi->arc_primary_color_1[i];
+			} else {
+				primary = smi->arc_primary_color_2[i];
+			}
+
+			secondary = smi->arc_secondary_color[i];
+      
+      			// try and scale the size a bit so that it looks equally well on smaller vessels
+			width = Arc_width_default_damage;
+			if (pm->rad < Arc_width_no_multiply_over_radius_damage) {
+				width *= (pm->rad * Arc_width_radius_multiplier_damage);
+
+				if (width < Arc_width_minimum_damage) {
+					width = Arc_width_minimum_damage;
+				}
+			}
+
 			break;
 
 			// "EMP" style arcs
 		case MARC_TYPE_EMP:
 			if ( Random::flip_coin() )	{
-				gr_init_color(&primary, std::get<0>(Arc_color_emp_p1), std::get<1>(Arc_color_emp_p1), std::get<2>(Arc_color_emp_p1));
+				primary = Arc_color_emp_p1;
 			} else {
-				gr_init_color(&primary, std::get<0>(Arc_color_emp_p2), std::get<1>(Arc_color_emp_p2), std::get<2>(Arc_color_emp_p2));
+				primary = Arc_color_emp_p2;
 			}
 
-			gr_init_color(&primary, std::get<0>(Arc_color_emp_s1), std::get<1>(Arc_color_emp_s1), std::get<2>(Arc_color_emp_s1));
+			secondary = Arc_color_emp_s1;
+      
+			// try and scale the size a bit so that it looks equally well on smaller vessels
+			width = Arc_width_default_emp;
+			if (pm->rad < Arc_width_no_multiply_over_radius_emp) {
+				width *= (pm->rad * Arc_width_radius_multiplier_emp);
+
+				if (width < Arc_width_minimum_emp) {
+					width = Arc_width_minimum_emp;
+				}
+			}      
+      
 			break;
 
 		default:
@@ -873,7 +907,8 @@ void model_render_add_lightning( model_draw_list *scene, model_render_params* in
 		}
 
 		// render the actual arc segment
-		scene->add_arc(&smi->arc_pts[i][0], &smi->arc_pts[i][1], &primary, &secondary, width);
+		if (width > 0.0f)
+			scene->add_arc(&smi->arc_pts[i][0], &smi->arc_pts[i][1], &primary, &secondary, width);
 	}
 }
 
@@ -1365,7 +1400,8 @@ int model_render_determine_elapsed_time(int objnum, uint flags)
 		return timestamp_since(Skybox_timestamp);
 	}
 
-	return 0;
+	// by default, assume texture animation started at the beginning of the mission
+	return timestamp_get_mission_time_in_milliseconds();
 }
 
 bool model_render_determine_autocenter(vec3d *auto_back, polymodel *pm, int detail_level, uint flags)
@@ -1626,7 +1662,7 @@ void model_render_glowpoint_bitmap(int point_num, vec3d *pos, matrix *orient, gl
 	vec3d submodel_static_offset; // The associated submodel's static offset in the ship's frame of reference
 	bool submodel_rotation = false;
 
-	if ( bank->submodel_parent > 0 && pm->submodel[bank->submodel_parent].flags[Model::Submodel_flags::Can_move] && shipp != nullptr ) {
+	if ( bank->submodel_parent > 0 && pm->submodel[bank->submodel_parent].flags[Model::Submodel_flags::Can_move] ) {
 		model_find_submodel_offset(&submodel_static_offset, pm, bank->submodel_parent);
 
 		submodel_rotation = true;
@@ -1636,11 +1672,14 @@ void model_render_glowpoint_bitmap(int point_num, vec3d *pos, matrix *orient, gl
 		vm_vec_sub(&loc_offset, &gpt->pnt, &submodel_static_offset);
 
 		tempv = loc_offset;
-		if (IS_VEC_NULL(&loc_norm)) {	// zero vectors are allowed for glowpoint norms
-			model_instance_local_to_global_point(&loc_offset, &tempv, pm, pmi, bank->submodel_parent);
-		} else {
-			vec3d tempn = loc_norm;
-			model_instance_local_to_global_point_dir(&loc_offset, &loc_norm, &tempv, &tempn, pm, pmi, bank->submodel_parent);
+		if (pmi) {
+			if (IS_VEC_NULL(&loc_norm)) {	// zero vectors are allowed for glowpoint norms
+				model_instance_local_to_global_point(&loc_offset, &tempv, pm, pmi, bank->submodel_parent);
+			}
+			else {
+				vec3d tempn = loc_norm;
+				model_instance_local_to_global_point_dir(&loc_offset, &loc_norm, &tempv, &tempn, pm, pmi, bank->submodel_parent);
+			}
 		}
 	}
 
@@ -1672,6 +1711,8 @@ void model_render_glowpoint_bitmap(int point_num, vec3d *pos, matrix *orient, gl
 		{
 			float d = 1.0f;
 			float pulse = model_render_get_point_activation(bank, gpo);
+			if (pulse == 0.0f)
+				return;
 
 			if ( IS_VEC_NULL(&world_norm) ) {
 				d = 1.0f;	//if given a nul vector then always show it
@@ -1694,12 +1735,12 @@ void model_render_glowpoint_bitmap(int point_num, vec3d *pos, matrix *orient, gl
 
 
 				// fade them in the nebula as well
-				if ( The_mission.flags[Mission::Mission_Flags::Fullneb] ) {
+				nebula_handle_alpha(d, &world_pnt, Neb2_fog_visibility_glowpoint);
+				if (The_mission.flags[Mission::Mission_Flags::Fullneb]) {
 					//vec3d npnt;
 					//vm_vec_add(&npnt, &loc_offset, pos);
 
-					d *= neb2_get_fog_visibility(&world_pnt, Neb2_fog_visibility_glowpoint);
-					w *= 1.5;	//make it bigger in a nebula
+					w *= 1.5;	//make it bigger in a nebula (but fullneb only)
 				}
 				
 				g3_transfer_vertex(&p, &world_pnt);
@@ -1827,6 +1868,8 @@ void model_render_glowpoint_add_light(int point_num, vec3d *pos, matrix *orient,
 	if( (gpo->type_override?gpo->type:bank->type)==0)
 	{
 		float pulse = model_render_get_point_activation(bank, gpo);
+		if (pulse == 0.0f)
+			return;
 		vec3d lightcolor;
 		//fade between mix and normal color depending on pulse state
 		lightcolor.xyz.x =pulse * gpo->light_color.xyz.x + (1.0f-pulse) * gpo->light_mix_color.xyz.x;
@@ -1850,10 +1893,10 @@ void model_render_glowpoint_add_light(int point_num, vec3d *pos, matrix *orient,
 			vm_vec_rotate(&cone_dir_screen, &cone_dir_world, &Eye_matrix);
 			cone_dir_screen.xyz.z = -cone_dir_screen.xyz.z;
 			light_add_cone(
-				&world_pnt, &cone_dir_screen, gpo->cone_angle, gpo->cone_inner_angle, gpo->dualcone, 1.0f, light_radius, 1,
+				&world_pnt, &cone_dir_screen, gpo->cone_angle, gpo->cone_inner_angle, gpo->dualcone, 1.0f, light_radius, gpo->intensity,
 				lightcolor.xyz.x, lightcolor.xyz.y, lightcolor.xyz.z, gpt->radius);
 		} else {
-			light_add_point(&world_pnt, 1.0f, light_radius, 1,	lightcolor.xyz.x, lightcolor.xyz.y, lightcolor.xyz.z, gpt->radius);
+			light_add_point(&world_pnt, 1.0f, light_radius, gpo->intensity,	lightcolor.xyz.x, lightcolor.xyz.y, lightcolor.xyz.z, gpt->radius);
 		}
 	}
 }
@@ -1866,7 +1909,7 @@ float model_render_get_point_activation(glow_point_bank* bank, glow_point_bank_o
 	}
 
 	float pulse = 1.0f;
-	int period;
+	int period = 0;
 
 	if (gpo->pulse_period_override) {
 		period = gpo->pulse_period;
@@ -1878,6 +1921,9 @@ float model_render_get_point_activation(glow_point_bank* bank, glow_point_bank_o
 		}
 	}
 
+	if (period == 0)
+		return 0.0f;
+
 	int x = 0;
 	int disp_time = gpo->disp_time_override ? gpo->disp_time : bank->disp_time;
   	int on_time = gpo->on_time_override ? gpo->on_time : bank->on_time;
@@ -1886,7 +1932,7 @@ float model_render_get_point_activation(glow_point_bank* bank, glow_point_bank_o
 	if ( off_time) {
   		x = (timestamp() - disp_time) % ( on_time + off_time ) - off_time;
 	} else {
-  		x = (timestamp() - disp_time) % gpo->pulse_period;
+  		x = (timestamp() - disp_time) % period;
 	}
 
 	switch (gpo->pulse_type) {
@@ -1904,7 +1950,7 @@ float model_render_get_point_activation(glow_point_bank* bank, glow_point_bank_o
 		if(off_time) {
 			x %= on_time + off_time;
 		} else {
-			x %= gpo->pulse_period;
+			x %= period;
 		}
 		FALLTHROUGH;
 
@@ -2030,7 +2076,7 @@ void model_render_glow_points(polymodel *pm, polymodel_instance *pmi, ship *ship
 		if (bank->glow_bitmap == -1)
 			continue;
 
-		if (pmi != nullptr) {
+		if ((pmi != nullptr) && (bank->submodel_parent > -1)) {
 			auto smi = &pmi->submodel[bank->submodel_parent];
 			if (smi->blown_off) {
 				continue;
@@ -2252,8 +2298,8 @@ void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, in
 			vec3d scale_vec = { { { 1.0f, 0.0f, 0.0f } } };
 
 			// normalize banks, in case of incredibly big normals
-			if ( !IS_VEC_NULL_SQ_SAFE(&world_norm) )
-				vm_vec_copy_normalize(&scale_vec, &world_norm);
+			if ( !IS_VEC_NULL_SQ_SAFE(&loc_norm) )
+				vm_vec_copy_normalize(&scale_vec, &loc_norm);
 
 			// adjust for thrust
 			(scale_vec.xyz.x *= thruster_info.length.xyz.x) -= 0.1f;
@@ -2280,20 +2326,10 @@ void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, in
 			float fog_int = 1.0f;
 
 			// fade them in the nebula as well
-			if (The_mission.flags[Mission::Mission_Flags::Fullneb]) {
-				vm_vec_unrotate(&npnt, &gpt->pnt, orient);
-				vm_vec_add2(&npnt, pos);
-
-				fog_int = neb2_get_fog_visibility(&npnt, Neb2_fog_visibility_thruster);
-
-				if (fog_int > 1.0f)
-					fog_int = 1.0f;
-
-				d *= fog_int;
-
-				if (d > 1.0f)
-					d = 1.0f;
-			}
+			vm_vec_unrotate(&npnt, &gpt->pnt, orient);
+			vm_vec_add2(&npnt, pos);
+			nebula_handle_alpha(fog_int, &npnt, Neb2_fog_visibility_thruster);
+			d *= fog_int;
 
 			// Scale the thrusters so they always appears at least some configured amount of pixels wide.
 			float scaled_thruster_radius = model_render_get_diameter_clamped_to_min_pixel_size(
@@ -2343,8 +2379,8 @@ void model_queue_render_thrusters(model_render_params *interp, polymodel *pm, in
 
 					if (The_mission.flags[Mission::Mission_Flags::Fullneb]) {
 						vm_vec_add(&npnt, &pnt, pos);
-						d *= fog_int;
 					}
+					d *= fog_int;
 
 					batching_add_beam(thruster_info.secondary_glow_bitmap, &pnt, &norm2, wVal*thruster_info.secondary_glow_rad_factor*0.5f, d);
 
@@ -3044,4 +3080,140 @@ void model_render_only_glowpoint_lights(model_render_params* interp, int model_n
 void model_render_set_wireframe_color(color* clr)
 {
 	Wireframe_color = *clr;
+}
+
+// renders a model as if in the tech room or briefing UI
+// model_type 1 for ship class, 2 for weapon class, 3 for pof
+bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int y2, float zoom, bool lighting, int class_idx, matrix* orient, SCP_string pof_filename, float close_zoom, vec3d close_pos)
+{
+
+	model_render_params render_info;
+	vec3d closeup_pos;
+	float closeup_zoom;
+	int model_num;
+	bool model_lighting = true;
+	uint render_flags = MR_AUTOCENTER | MR_NO_FOGGING;
+
+	switch (model_type) {
+		case TECH_SHIP:
+			ship_info* sip;
+			sip = &Ship_info[class_idx];
+
+			closeup_pos = sip->closeup_pos;
+			closeup_zoom = sip->closeup_zoom;
+
+			if (sip->uses_team_colors) {
+				render_info.set_team_color(sip->default_team_name, "none", 0, 0);
+			}
+
+			if (sip->flags[Ship::Info_Flags::No_lighting]) {
+				model_lighting = false;
+			}
+
+			// Make sure model is loaded
+			model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0], 0);
+
+			break;
+
+		case TECH_WEAPON:
+			weapon_info* wip;
+			wip = &Weapon_info[class_idx];
+
+			closeup_pos = wip->closeup_pos;
+			closeup_zoom = wip->closeup_zoom;
+
+			if (wip->wi_flags[Weapon::Info_Flags::Mr_no_lighting]) {
+				model_lighting = false;
+			}
+
+			// Make sure model is loaded
+			if (VALID_FNAME(wip->tech_model)) {
+				model_num = model_load(wip->tech_model, 0, nullptr, 0);
+			} else {
+				// no tech model!!
+				return false;
+			}
+
+			break;
+
+		case TECH_POF:
+			closeup_pos = close_pos;
+			closeup_zoom = close_zoom;
+			model_num = model_load(pof_filename.c_str(), 0, nullptr);
+
+			break;
+
+		case TECH_JUMP_NODE:
+			closeup_pos = close_pos;
+			closeup_zoom = close_zoom;
+			model_num = model_load(pof_filename.c_str(), 0, nullptr);
+			render_info.set_color(HUD_color_red, HUD_color_green, HUD_color_blue);
+			render_flags |= MR_NO_POLYS | MR_SHOW_OUTLINE_HTL | MR_NO_TEXTURING;
+			model_lighting = false;
+
+			break;
+
+		default:
+			return false;
+	}
+
+	//check if the model was loaded
+	if (model_num < 0)
+		return false;
+
+	// Clip
+	gr_set_clip(x1, y1, x2 - x1, y2 - y1, GR_RESIZE_NONE);
+
+	// Handle 3D init stuff
+	g3_start_frame(1);
+	g3_set_view_matrix(&closeup_pos, &vmd_identity_matrix, closeup_zoom * zoom);
+
+	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+	gr_set_view_matrix(&Eye_position, &Eye_matrix);
+
+	// setup lights
+	common_setup_room_lights();
+
+	// Draw the model!!
+	model_clear_instance(model_num);
+
+	int model_instance = -1;
+
+	// Create an instance for ships that can be used to clear out destroyed subobjects from rendering
+	if (model_type == TECH_SHIP) {
+		model_instance = model_create_instance(-1, model_num);
+		model_set_up_techroom_instance(&Ship_info[class_idx], model_instance);
+	}
+
+	render_info.set_detail_level_lock(0);
+
+	if (!lighting || !model_lighting)
+		render_flags |= MR_NO_LIGHTING;
+
+	render_info.set_flags(render_flags);
+
+	bool s_save = Shadow_override;
+	Shadow_override = true;
+
+	if (model_type == TECH_SHIP) {
+		model_render_immediate(&render_info, model_num, model_instance, orient, &vmd_zero_vector);
+	} else {
+		model_render_immediate(&render_info, model_num, orient, &vmd_zero_vector);
+	}
+
+	Shadow_override = s_save;
+
+	// OK we're done
+	gr_end_view_matrix();
+	gr_end_proj_matrix();
+
+	// Bye!!
+	g3_end_frame();
+	gr_reset_clip();
+
+	// Now that we've rendered the frame we can remove the instance if one was created for ships
+	if (model_type == TECH_SHIP)
+		model_delete_instance(model_instance);
+
+	return true;
 }

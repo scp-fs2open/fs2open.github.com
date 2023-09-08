@@ -14,11 +14,12 @@
 
 #include "controlconfig/controlsconfig.h"
 #include "globalincs/pstypes.h"
+#include "scripting/hook_api.h"
 
 extern int Mouse_sensitivity;
 extern bool Use_mouse_to_fly;
 
-extern const std::shared_ptr<scripting::Hook> OnMouseWheelHook;
+extern const std::shared_ptr<scripting::Hook<>> OnMouseWheelHook;
 
 // call once to init the mouse
 void mouse_init();

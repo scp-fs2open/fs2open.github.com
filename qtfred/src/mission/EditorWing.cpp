@@ -36,7 +36,7 @@ int Editor::delete_wing(int wing_num, int bypass)
 		}
 	}
 
-	invalidate_references(Wings[wing_num].name, REF_TYPE_WING);
+	invalidate_references(Wings[wing_num].name, sexp_ref_type::WING);
 	if (!bypass) {
 		total = Wings[wing_num].wave_count;
 		for (i = 0; i < total; i++) {
@@ -184,6 +184,8 @@ int Editor::create_wing()
 		}
 
 		Wings[wing].clear();
+		Wings[wing].arrival_cue = Locked_sexp_true;
+		Wings[wing].departure_cue = Locked_sexp_false;
 
 		auto dlg = _lastActiveViewport->dialogProvider->createFormWingDialog();
 

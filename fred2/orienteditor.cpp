@@ -86,7 +86,10 @@ void orient_editor::DoDataExchange(CDataExchange* pDX)
 
 BEGIN_MESSAGE_MAP(orient_editor, CDialog)
 	//{{AFX_MSG_MAP(orient_editor)
+	ON_CBN_SELCHANGE(IDC_OBJECT_LIST, OnObjectSelected)
 	ON_BN_CLICKED(IDC_POINT_TO_CHECKBOX, OnPointTo)
+	ON_BN_CLICKED(IDC_POINT_TO_OBJECT, OnPointToObject)
+	ON_BN_CLICKED(IDC_POINT_TO_LOCATION, OnPointToLocation)
 	ON_WM_CLOSE()
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
@@ -403,7 +406,20 @@ float orient_editor::convert(const CString &str) const
 			buf[j++] = buf[i];
 
 	buf[j] = 0;
-	return (float) atof(buf);
+
+	float val = (float)atof(buf);
+
+	// disallow input larger than INT_MAX
+	if (val > (float)INT_MAX) {
+		val = (float)INT_MAX;
+	}
+
+	// disallow input smaller than INT_MIN
+	if (val < (float)INT_MIN) {
+		val = (float)INT_MIN;
+	}
+
+	return val;
 }
 
 /**
@@ -418,6 +434,13 @@ float orient_editor::perform_input_rounding(float val) const
 	return convert(str);
 }
 
+void orient_editor::OnObjectSelected()
+{
+	((CButton*)GetDlgItem(IDC_POINT_TO_OBJECT))->SetCheck(TRUE);
+	((CButton*)GetDlgItem(IDC_POINT_TO_LOCATION))->SetCheck(FALSE);
+	OnPointToObject();
+}
+
 void orient_editor::OnPointTo()
 {
 	UpdateData(TRUE);
@@ -428,6 +451,18 @@ void orient_editor::OnPointTo()
 	GetDlgItem(IDC_SPIN11)->EnableWindow(!m_point_to);
 	GetDlgItem(IDC_SPIN12)->EnableWindow(!m_point_to);
 	GetDlgItem(IDC_SPIN13)->EnableWindow(!m_point_to);
+}
+
+void orient_editor::OnPointToObject()
+{
+	((CButton*)GetDlgItem(IDC_POINT_TO_CHECKBOX))->SetCheck(TRUE);
+	OnPointTo();
+}
+
+void orient_editor::OnPointToLocation()
+{
+	((CButton*)GetDlgItem(IDC_POINT_TO_CHECKBOX))->SetCheck(TRUE);
+	OnPointTo();
 }
 
 void orient_editor::OnCancel()

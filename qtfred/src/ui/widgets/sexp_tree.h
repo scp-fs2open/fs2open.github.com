@@ -110,13 +110,13 @@ class SexpTreeEditorInterface {
 	virtual bool hasDefaultMessageParamter();
 	virtual SCP_vector<SCP_string> getMessages();
 
-	virtual SCP_vector<SCP_string> getMissionGoals(const SCP_string& reference_name);
+	virtual QStringList getMissionGoals(const QString& reference_name);
 	virtual bool hasDefaultGoal(int operator_value);
 
-	virtual SCP_vector<SCP_string> getMissionEvents(const SCP_string& reference_name);
+	virtual QStringList getMissionEvents(const QString& reference_name);
 	virtual bool hasDefaultEvent(int operator_value);
 
-	virtual SCP_vector<SCP_string> getMissionNames();
+	virtual QStringList getMissionNames();
 	virtual bool hasDefaultMissionName();
 
 	virtual int getRootReturnType() const;
@@ -124,6 +124,8 @@ class SexpTreeEditorInterface {
 	const flagset<TreeFlags>& getFlags() const;
 
 	virtual bool requireCampaignOperators() const;
+
+	virtual QList<QAction *> getContextMenuExtras(QObject *parent = nullptr);
 };
 
 /*
@@ -189,12 +191,13 @@ class sexp_tree: public QTreeWidget {
 	QTreeWidgetItem* handle(int node);
 	int get_type(QTreeWidgetItem* h);
 	int get_node(QTreeWidgetItem* h);
+	int get_root(int node);
 	int query_false(int node = -1);
 	int add_default_operator(int op, int argnum);
 	int get_default_value(sexp_list_item* item, char* text_buf, int op, int i);
 	int query_default_argument_available(int op);
 	int query_default_argument_available(int op, int i);
-	void swap_roots(QTreeWidgetItem* one, QTreeWidgetItem* two);
+	void move_root(QTreeWidgetItem* source, QTreeWidgetItem* dest, bool insert_before);
 	void move_branch(int source, int parent = -1);
 	QTreeWidgetItem*
 	move_branch(QTreeWidgetItem* source, QTreeWidgetItem* parent = nullptr, QTreeWidgetItem* after = nullptr);
@@ -237,7 +240,7 @@ class sexp_tree: public QTreeWidget {
 	void add_sub_tree(int node, QTreeWidgetItem* root);
 	int load_sub_tree(int index, bool valid, const char* text);
 	void hilite_item(int node);
-	SCP_string match_closest_operator(const SCP_string &str, int node);
+	const SCP_string &match_closest_operator(const SCP_string &str, int node);
 	void delete_sexp_tree_variable(const char* var_name);
 	void modify_sexp_tree_variable(const char* old_name, int sexp_var_index);
 	int get_item_index_to_var_index();
@@ -271,7 +274,7 @@ class sexp_tree: public QTreeWidget {
 	sexp_list_item* get_listing_opf_point();
 	sexp_list_item* get_listing_opf_iff();
 	sexp_list_item* get_listing_opf_ai_goal(int parent_node);
-	sexp_list_item* get_listing_opf_docker_point(int parent_node);
+	sexp_list_item* get_listing_opf_docker_point(int parent_node, int arg_index);
 	sexp_list_item* get_listing_opf_dockee_point(int parent_node);
 	sexp_list_item* get_listing_opf_message();
 	sexp_list_item* get_listing_opf_who_from();
@@ -320,6 +323,7 @@ class sexp_tree: public QTreeWidget {
 	sexp_list_item* get_listing_opf_subsystem_or_none(int parent_node, int arg_index);
 	sexp_list_item* get_listing_opf_subsys_or_generic(int parent_node, int arg_index);
 	sexp_list_item* get_listing_opf_turret_target_order();
+	sexp_list_item* get_listing_opf_turret_types();
 	sexp_list_item* get_listing_opf_armor_type();
 	sexp_list_item* get_listing_opf_damage_type();
 	sexp_list_item* get_listing_opf_turret_target_priorities();
@@ -342,6 +346,8 @@ class sexp_tree: public QTreeWidget {
 	sexp_list_item* get_listing_opf_wing_flags();
 	sexp_list_item* get_listing_opf_team_colors();
 	sexp_list_item* get_listing_opf_nebula_patterns();
+	sexp_list_item* get_listing_opf_motion_debris();
+	sexp_list_item* get_listing_opf_asteroid_debris();
 	sexp_list_item* get_listing_opf_game_snds();
 	sexp_list_item* get_listing_opf_fireball();
 	sexp_list_item *get_listing_opf_species();
@@ -349,6 +355,10 @@ class sexp_tree: public QTreeWidget {
 	sexp_list_item *get_listing_opf_functional_when_eval_type();
 	sexp_list_item *get_listing_opf_animation_name(int parent_node);
 	static sexp_list_item *get_listing_opf_sexp_containers(ContainerType con_type);
+	sexp_list_item *get_listing_opf_wing_formation();
+	sexp_list_item *check_for_dynamic_sexp_enum(int opf);
+	sexp_list_item *get_listing_opf_bolt_types();
+	sexp_list_item *get_listing_opf_traitor_overrides();
 
 	// container modifier options for container data nodes
 	sexp_list_item *get_container_modifiers(int con_data_node) const;
@@ -373,6 +383,7 @@ class sexp_tree: public QTreeWidget {
 	void rootNodeDeleted(int node);
 	void rootNodeRenamed(int node);
 	void rootNodeFormulaChanged(int old, int node);
+	void nodeChanged(int node);
 
 	void selectedRootChanged(int formula);
 

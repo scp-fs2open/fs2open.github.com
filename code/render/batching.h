@@ -13,7 +13,7 @@
 
 struct batch_vertex {
 	vec3d position;
-	vec3d tex_coord; // 3D coordinate since we also include the array index
+	vec4 tex_coord; // 4D coordinate since we also include the array index, and a trapezoidal correction value for laser bitmaps
 	ubyte r, g, b, a;
 	float radius;
 	vec3d uvec;
@@ -122,9 +122,14 @@ void batching_add_distortion_beam(int texture, vec3d *start, vec3d *end, float w
 void batching_add_beam(int texture, vec3d *start, vec3d *end, float width, float intensity);
 void batching_add_line(vec3d *start, vec3d *end, float widthStart, float widthEnd, color custom_color, bool translucent = true);
 void batching_add_polygon(int texture, vec3d *pos, matrix *orient, float width, float height, float alpha = 1.0f);
+void batching_add_volume_polygon(int texture, vec3d* pos, matrix* orient, float width, float height, float alpha = 1.0f);
 void batching_add_laser(int texture, vec3d *p0, float width1, vec3d *p1, float width2, int r = 255, int g = 255, int b = 255);
-void batching_add_quad(int texture, vertex *verts);
+void batching_add_quad(int texture, vertex *verts, float trapezoidal_correction = 1.0f);
 void batching_add_tri(int texture, vertex *verts);
+
+//these require some blurring the lines between things, but finding the batch in every call gets expensive in some cases such as trails.
+void batching_add_quad(int texture, vertex *verts, primitive_batch* batch, float trapezoidal_correction = 1.0f);
+void batching_add_tri(int texture, vertex *verts, primitive_batch* batch);
 
 void batching_render_all(bool render_distortions = false);
 

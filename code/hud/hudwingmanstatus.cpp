@@ -183,12 +183,14 @@ void hud_wingman_status_update()
 
 		for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 			ship_objp = &Objects[so->objnum];
+			if (ship_objp->flags[Object::Object_Flags::Should_be_dead])
+				continue;
 			shipp = &Ships[ship_objp->instance];
 
 			wing_index = shipp->wing_status_wing_index;
 			wing_pos = shipp->wing_status_wing_pos;
 
-			if ( (wing_index >= 0) && (wing_pos >= 0) && !(ship_objp->flags[Object::Object_Flags::Should_be_dead]) ) {
+			if ( (wing_index >= 0) && (wing_pos >= 0) ) {
 
 				HUD_wingman_status[wing_index].used = 1;
 				if (!(shipp->is_departing()) ) {
@@ -386,7 +388,7 @@ void HudGaugeWingmanStatus::renderBackground(int num_wings_to_draw)
 
 		sy += right_frame_start_offset;
 	} else {
-		if(num_wings_to_draw > 2 && bitmap > 0) {
+		if(num_wings_to_draw > 2 && bitmap >= 0) {
 			for(int i = 0; i < num_wings_to_draw - 2; i++){
 				renderBitmap(bitmap, sx, sy);
 				sx += wing_width;
@@ -397,7 +399,8 @@ void HudGaugeWingmanStatus::renderBackground(int num_wings_to_draw)
 	}
 
 	bitmap = Wingman_status_right.first_frame;
-	renderBitmap(bitmap, sx, sy);
+	if (bitmap >= 0)
+		renderBitmap(bitmap, sx, sy);
 }
 
 void HudGaugeWingmanStatus::renderDots(int wing_index, int screen_index, int num_wings_to_draw)

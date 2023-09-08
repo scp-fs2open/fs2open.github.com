@@ -21,6 +21,7 @@ public:
 	TextViewDlg(CWnd* pParent = nullptr);   // standard constructor
 
 	void LoadShipsTblText(const ship_info *sip);
+	void LoadMusicTblText();
 	void SetText(const CString &text);
 	void GetText(CString &text);
 

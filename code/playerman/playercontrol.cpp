@@ -714,7 +714,7 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 
 				//SUSHI: If gliding, don't do anything for speed matching
 				if (!( (Objects[Player->objnum].phys_info.flags & PF_GLIDING) || (Objects[Player->objnum].phys_info.flags & PF_FORCE_GLIDE) )) {
-					pmax_speed = Ships[Player_obj->instance].current_max_speed;
+					pmax_speed = Player_obj->phys_info.max_vel.xyz.z;
 					if (pmax_speed > 0.0f) {
 						ci->forward_cruise_percent = (tspeed / pmax_speed) * 100.0f;
 					} else {
@@ -1011,9 +1011,9 @@ void read_player_controls(object *objp, float frametime)
 					gameseq_post_event( GS_EVENT_PLAYER_WARPOUT_STOP );
 				} else {
 					if ( Warpout_forced ) {
-						Ships[objp->instance].current_max_speed = target_warpout_speed * 2.0f;
-					} else if (Ships[objp->instance].current_max_speed < target_warpout_speed) {
-						Ships[objp->instance].current_max_speed = target_warpout_speed + 5.0f;
+						objp->phys_info.max_vel.xyz.z = target_warpout_speed * 2.0f;
+					} else if (objp->phys_info.max_vel.xyz.z < target_warpout_speed) {
+						objp->phys_info.max_vel.xyz.z = target_warpout_speed + 5.0f;
 					}
 
 					diff = target_warpout_speed - objp->phys_info.fspeed;
@@ -1021,7 +1021,7 @@ void read_player_controls(object *objp, float frametime)
 					if ( diff < 0.0f ) 
 						diff = 0.0f;
 					
-					Player->ci.forward = ((target_warpout_speed + diff) / Ships[objp->instance].current_max_speed);
+					Player->ci.forward = ((target_warpout_speed + diff) / objp->phys_info.max_vel.xyz.z);
 				}
 			
 				if ( Player->control_mode == PCM_WARPOUT_STAGE1 )
@@ -1052,10 +1052,6 @@ void read_player_controls(object *objp, float frametime)
 		}
 	}
 
-	// the ships maximum velocity now depends on the energy flowing to engines
-	if(objp->type != OBJ_OBSERVER){
-		objp->phys_info.max_vel.xyz.z = Ships[objp->instance].current_max_speed;
-	} 
 	if(Player_obj->type == OBJ_SHIP && !Player_use_ai){	
 		// only read player control info if player ship is not dead
 		// or if Player_use_ai is disabed
@@ -1205,6 +1201,9 @@ void player_init_all_alone_msg()
 	// See if there are any friendly ships present, if so return without preventing msg
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		objp = &Objects[so->objnum];
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		if ( objp == Player_obj ) {
 			continue;
 		}
@@ -1310,7 +1309,7 @@ void player_level_init()
 	Viewer_external_info.current_distance = 0.0f;
 
 	
-	if (Chase_view_default || The_mission.flags[Mission::Mission_Flags::Player_start_chase_view])
+	if (Default_start_chase_view != The_mission.flags[Mission::Mission_Flags::Toggle_start_chase_view])
 	{
 		Viewer_mode = VM_CHASE;
 	}
@@ -1483,16 +1482,14 @@ int player_process_pending_praise()
 		if ( ship_index >= 0 ) {
 			// Only praise if above 50% integrity
 			if ( get_hull_pct(&Objects[Ships[ship_index].objnum]) > 0.5f ) {
-				if (Player->stats.m_kill_count_ok > 10) {	// this number should probably be in the AI profile or mission file rather than hardcoded
-					message_send_builtin_to_player(MESSAGE_HIGH_PRAISE, &Ships[ship_index], MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_SOON, 0, 0, -1, -1);
+				// This cutoff should probably be in the AI profile or mission file rather than hardcoded
+				auto message = (Player->stats.m_kill_count_ok > 10) ? MESSAGE_HIGH_PRAISE : MESSAGE_PRAISE;
+				if (message_send_builtin(message, &Ships[ship_index], nullptr, -1, -1)) {
+					Player->allow_praise_timestamp = timestamp(Builtin_messages[MESSAGE_PRAISE].min_delay * (Game_skill_level+1) );
+					Player->allow_scream_timestamp = timestamp(20000);		// prevent death scream following praise
+					Player->praise_count++;
+					return 1;
 				}
-				else {
-					message_send_builtin_to_player(MESSAGE_PRAISE, &Ships[ship_index], MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_SOON, 0, 0, -1, -1);
-				}
-				Player->allow_praise_timestamp = timestamp(Builtin_messages[MESSAGE_PRAISE].min_delay * (Game_skill_level+1) );
-				Player->allow_scream_timestamp = timestamp(20000);		// prevent death scream following praise
-				Player->praise_count++;
-				return 1;
 			}
 		}
 	}
@@ -1558,7 +1555,9 @@ int player_inspect_cargo(float frametime, char *outstr)
 	// if cargo is already revealed
 	if ( cargo_sp->flags[Ship::Ship_Flags::Cargo_revealed] ) {
 		if ( !(cargo_sp->flags[Ship::Ship_Flags::Scannable]) ) {
-			char *cargo_name = Cargo_names[cargo_sp->cargo1 & CARGO_INDEX_MASK];
+			auto cargo_name = (cargo_sp->cargo1 & CARGO_INDEX_MASK) == 0
+				? XSTR("Nothing", 1674)
+				: Cargo_names[cargo_sp->cargo1 & CARGO_INDEX_MASK];
             Assert(cargo_sip->flags[Ship::Info_Flags::Cargo] || cargo_sip->flags[Ship::Info_Flags::Transport]);
 
 			if ( cargo_name[0] == '#' ) {
@@ -1658,7 +1657,9 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 	// if cargo is already revealed
 	if (subsys->flags[Ship::Subsystem_Flags::Cargo_revealed]) {
 		if ( !(cargo_sp->flags[Ship::Ship_Flags::Scannable]) ) {
-			char *cargo_name = Cargo_names[subsys->subsys_cargo_name & CARGO_INDEX_MASK];
+			auto cargo_name = (subsys->subsys_cargo_name & CARGO_INDEX_MASK) == 0
+				? XSTR("Nothing", 1674)
+				: Cargo_names[subsys->subsys_cargo_name & CARGO_INDEX_MASK];
 
 			if ( cargo_name[0] == '#' ) {
 				sprintf(outstr, XSTR("passengers: %s", 83), cargo_name+1 );
@@ -1759,83 +1760,53 @@ float	player_farthest_weapon_range()
 }
 
 /**
- * Determine text name for the weapon that killed the player.
- *
- * @param weapon_info_index	Weapon type that killed the player (can be -1 if no weapon involved)
- * @param killer_species Species of ship that fired weapon
- * @param weapon_name (Output parameter) Stores weapon name generated in this function
- */
-const char *player_get_killer_weapon_name(int weapon_info_index, int killer_species)
-{
-	if ( weapon_info_index < 0 ) {
-		return "";
-	}
-
-#ifndef NDEBUG
-	if ( Show_killer_weapon || (killer_species == Ship_info[Player_ship->ship_info_index].species) ) {
-#else
-	if (killer_species == Ship_info[Player_ship->ship_info_index].species) {
-#endif
-		return Weapon_info[weapon_info_index].get_display_name();
-	} else {
-		if ( Weapon_info[weapon_info_index].subtype == WP_MISSILE ) {
-			return XSTR( "missile", 90);
-		} else {
-			return XSTR( "laser fire", 91);
-		}
-	}
-}
-
-/**
  * Generates the message for death of a player given the information stored in the player object.
  */
 void player_generate_death_message(player *player_p)
 {
 	SCP_string &msg = player_p->death_message;
-	int ship_index;
 
-	auto weapon_name = player_get_killer_weapon_name(player_p->killer_weapon_index, player_p->killer_species);
+	// killer_parent_name is always a ship name or a callsign (or blank).  If it's a ship name, get the ship and use the ship's display name
+	auto ship_entry = ship_registry_get(player_p->killer_parent_name);
+	auto killer_display_name = (ship_entry != nullptr && ship_entry->status == ShipStatus::PRESENT) ? ship_entry->shipp->get_display_name() : player_p->killer_parent_name;
 
 	switch (player_p->killer_objtype)
 	{
 		case OBJ_SHOCKWAVE:
-			if (weapon_name[0])
+			if (player_p->killer_weapon_index >= 0)
 			{
 				sprintf(msg, XSTR( "%s was killed by a missile shockwave", 92), player_p->callsign);
 			}
 			else
 			{
-				sprintf(msg, XSTR( "%s was killed by a shockwave from %s exploding", 93), player_p->callsign, player_p->killer_parent_name);
+				sprintf(msg, XSTR( "%s was killed by a shockwave from %s exploding", 93), player_p->callsign, killer_display_name);
 			}
 			break;
 
 		case OBJ_WEAPON:
-			Assert(weapon_name[0]);
-
 			// is this from a friendly ship?
-			ship_index = ship_name_lookup(player_p->killer_parent_name, 1);
-			if ((ship_index >= 0) && (Player_ship != NULL) && (Player_ship->team == Ships[ship_index].team))
+			if ((ship_entry != nullptr) && (ship_entry->status == ShipStatus::PRESENT) && (Player_ship != nullptr) && (Player_ship->team == ship_entry->shipp->team))
 			{
-				sprintf(msg, XSTR( "%s was killed by friendly fire from %s", 1338), player_p->callsign, player_p->killer_parent_name);
+				sprintf(msg, XSTR( "%s was killed by friendly fire from %s", 1338), player_p->callsign, killer_display_name);
 			}
 			else
 			{
-				sprintf(msg, XSTR( "%s was killed by %s", 94), player_p->callsign, player_p->killer_parent_name);
+				sprintf(msg, XSTR( "%s was killed by %s", 94), player_p->callsign, killer_display_name);
 			}
 			break;
 
 		case OBJ_SHIP:
 			if (player_p->flags & PLAYER_FLAGS_KILLED_BY_EXPLOSION)
 			{
-				sprintf(msg, XSTR( "%s was killed by a blast from %s exploding", 95), player_p->callsign, player_p->killer_parent_name);
+				sprintf(msg, XSTR( "%s was killed by a blast from %s exploding", 95), player_p->callsign, killer_display_name);
 			}
 			else if (player_p->flags & PLAYER_FLAGS_KILLED_BY_ENGINE_WASH)
 			{
-				sprintf(msg, XSTR( "%s was killed by engine wash from %s", 1494), player_p->callsign, player_p->killer_parent_name);
+				sprintf(msg, XSTR( "%s was killed by engine wash from %s", 1494), player_p->callsign, killer_display_name);
 			}
 			else
 			{
-				sprintf(msg, XSTR( "%s was killed by a collision with %s", 96), player_p->callsign, player_p->killer_parent_name);
+				sprintf(msg, XSTR( "%s was killed by a collision with %s", 96), player_p->callsign, killer_display_name);
 			}
 			break;
 
@@ -1856,14 +1827,13 @@ void player_generate_death_message(player *player_p)
 			else
 			{
 				// is this from a friendly ship?
-				ship_index = ship_name_lookup(player_p->killer_parent_name, 1);
-				if ((ship_index >= 0) && (Player_ship != NULL) && (Player_ship->team == Ships[ship_index].team))
+				if ((ship_entry != nullptr) && (ship_entry->status == ShipStatus::PRESENT) && (Player_ship != nullptr) && (Player_ship->team == ship_entry->shipp->team))
 				{
-					sprintf(msg, XSTR( "%s was destroyed by friendly beam fire from %s", 1339), player_p->callsign, player_p->killer_parent_name);
+					sprintf(msg, XSTR( "%s was destroyed by friendly beam fire from %s", 1339), player_p->callsign, killer_display_name);
 				}
 				else
 				{
-					sprintf(msg, XSTR( "%s was destroyed by a beam from %s", 1082), player_p->callsign, player_p->killer_parent_name);
+					sprintf(msg, XSTR( "%s was destroyed by a beam from %s", 1082), player_p->callsign, killer_display_name);
 				}			
 			}
 			break;
@@ -1962,6 +1932,8 @@ void player_maybe_play_all_alone_msg()
 
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
 		objp = &Objects[so->objnum];
+		if (objp->flags[Object::Object_Flags::Should_be_dead])
+			continue;
 
 		if ( objp == Player_obj ) {
 			continue;
@@ -1975,10 +1947,7 @@ void player_maybe_play_all_alone_msg()
 		}
 	}
 
-	// met all the requirements, now only play 50% of the time :)
-	if (Random::flip_coin()) {
-		message_send_builtin_to_player(MESSAGE_ALL_ALONE, NULL, MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_ANYTIME, 0, 0, -1, -1);
-	}
+	message_send_builtin(MESSAGE_ALL_ALONE, nullptr, nullptr, -1, -1);
 	Player->flags |= PLAYER_FLAGS_NO_CHECK_ALL_ALONE_MSG;
 } 
 

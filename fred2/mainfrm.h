@@ -27,23 +27,14 @@ class color_combo_box : public CComboBox
 {
 public:
 	/**
-	 * @brief Sets the given item index as the selected item
-	 *
-	 * @param[in] model_index The index of the item within the combobox
-	 *
-	 * @returns The item index if successful, or
-	 * @returns CB_ERR otherwise
+	 * Gets the ship class corresponding to the item index
 	 */
-	int SetCurSelNEW(int model_index);
+	int GetShipClass(int item_index);
 
 	/**
-	 * @brief Gets an index of the current selection
-	 *
-	 * @returns The ship_info index of the ship/object, or
-	 * @returns The current selection if it is a special item, or
-	 * @returns CB_ERR if an error occured
+	 * Gets the item index corresponding to the ship class
 	 */
-	int GetCurSelNEW();
+	int GetItemIndex(int ship_class);
 
 private:
 	/**
@@ -176,14 +167,6 @@ protected:
 	 * @brief Handler for Right button clicks. Shows a popup menu at the mouse cursor's location
 	 */
 	afx_msg void OnRButtonDown(UINT nFlags, CPoint point);
-
-	/**
-	 * @brief Calls dialog1
-	 *
-	 * @note Not sure if this is actually useful
-	 * @TODO Verify and remove
-	 */
-	afx_msg void OnHelpInputInterface();
 
 	/**
 	 * @brief Handler for OnClose() events. called by ON_WM_CLOSE()

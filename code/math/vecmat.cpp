@@ -180,6 +180,18 @@ vec3d vm_vec_new(float x, float y, float z)
 	return vec;
 }
 
+vec4 vm_vec4_new(float x, float y, float z, float w)
+{
+	vec4 vec;
+
+	vec.xyzw.x = x;
+	vec.xyzw.y = y;
+	vec.xyzw.z = z;
+	vec.xyzw.w = w;
+
+	return vec;
+}
+
 matrix vm_matrix_new(float a0, float a1, float a2, float a3, float a4, float a5, float a6, float a7, float a8)
 {
 	matrix m;
@@ -216,6 +228,30 @@ void vm_vec_add(vec3d *dest, const vec3d *src0, const vec3d *src1)
 	dest->xyz.x = src0->xyz.x + src1->xyz.x;
 	dest->xyz.y = src0->xyz.y + src1->xyz.y;
 	dest->xyz.z = src0->xyz.z + src1->xyz.z;
+}
+
+//Component-wise multiplication of two vectors
+void vm_vec_cmult(vec3d* dest, const vec3d* src0, const vec3d* src1) {
+	dest->xyz.x = src0->xyz.x * src1->xyz.x;
+	dest->xyz.y = src0->xyz.y * src1->xyz.y;
+	dest->xyz.z = src0->xyz.z * src1->xyz.z;
+}
+void vm_vec_cmult2(vec3d* dest, const vec3d* src) {
+	dest->xyz.x *= src->xyz.x;
+	dest->xyz.y *= src->xyz.y;
+	dest->xyz.z *= src->xyz.z;
+}
+
+//Component-wise division of two vectors
+void vm_vec_cdiv(vec3d* dest, const vec3d* src0, const vec3d* src1) {
+	dest->xyz.x = src0->xyz.x / src1->xyz.x;
+	dest->xyz.y = src0->xyz.y / src1->xyz.y;
+	dest->xyz.z = src0->xyz.z / src1->xyz.z;
+}
+void vm_vec_cdiv2(vec3d* dest, const vec3d* src) {
+	dest->xyz.x /= src->xyz.x;
+	dest->xyz.y /= src->xyz.y;
+	dest->xyz.z /= src->xyz.z;
 }
 
 //subs two vectors, fills in dest, returns ptr to dest
@@ -2268,7 +2304,7 @@ bool is_valid_matrix(const matrix *m)
 	return is_valid_vec(&m->vec.fvec) && is_valid_vec(&m->vec.uvec) && is_valid_vec(&m->vec.rvec);
 }
 
-// interpolate between 2 vectors. t goes from 0.0 to 1.0. at
+// interpolate between 2 vectors. t goes from 0.0 to 1.0.
 void vm_vec_interp_constant(vec3d *out, const vec3d *v0, const vec3d *v1, float t)
 {
 	vec3d cross;

@@ -19,7 +19,6 @@ namespace Model {
 		Collide_invisible,				//SUSHI: If set, this submodel should allow collisions for invisible textures. For the "replacement" collision model scheme.
 		Use_render_box_offset,			// whether an offset has been defined; needed because one can't tell just by looking at render_box_offset
 		Use_render_sphere_offset,		// whether an offset has been defined; needed because one can't tell just by looking at render_sphere_offset
-		Attach_thrusters,				//zookeeper: If set and this submodel or any of its parents rotates, also rotates associated thrusters.
 
 		NUM_VALUES
 	};
@@ -44,8 +43,9 @@ namespace Model {
 		Fire_on_target,		// prevents turret from firing unless it is pointing at the firingpoints are pointing at the target
 		No_ss_targeting,	// toggles the subsystem targeting for the turret
 		Turret_reset_idle,	// makes turret reset to their initial position if the target is out of field of view
-		Turret_base_restricted_fov,	// tells the game to use additional calculations should turret have a limited base fov or elevation
-		Turret_barrel_override_fov,	// indicates the ships.tbl FOV should override the POF FOV
+		Turret_barrel_fov_overridden,	// indicates the ships.tbl value should override the pof value
+		Turret_base_fov_overridden,	// ..
+		Turret_max_fov_overridden,	// ..
 		Carry_shockwave,	// subsystem - even with 'carry no damage' flag - will carry shockwave damage to the hull
 		Allow_landing,		// This subsystem can be landed on
 		Fov_edge_check,		// Tells the game to use better FOV edge checking with this turret

@@ -41,6 +41,7 @@ Category LoadBatchingBuffers("Load batching buffers", true);
 Category SortColliders("Sort Colliders", false);
 Category FindOverlapColliders("Find overlap colliders", false);
 Category CollidePair("Collide Pair", false);
+Category RetimeCollisionCache("Retime Collision Cache", false);
 
 Category WeaponPostMove("Weapon post move", false);
 Category ShipPostMove("Ship post move", false);
@@ -123,7 +124,6 @@ Category LoadPostMissionLoad("Mission load post processing", false);
 Category LoadModelFile("Load model file", false);
 Category ReadModelFile("Read model file", false);
 Category ModelCreateVertexBuffers("Create model vertex buffers", false);
-Category ModelCreateOctants("Create model octants", false);
 Category ModelParseAllBSPTrees("Parse all BSP trees", false);
 Category ModelParseBSPTree("Parse BSP tree", false);
 Category ModelConfigureVertexBuffers("Model configure vertex buffers", false);

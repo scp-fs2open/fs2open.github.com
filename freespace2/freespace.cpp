@@ -42,6 +42,7 @@
 #include "autopilot/autopilot.h"
 #include "bmpman/bmpman.h"
 #include "cfile/cfile.h"
+#include "cheats_table/cheats_table.h"
 #include "cmdline/cmdline.h"
 #include "cmeasure/cmeasure.h"
 #include "cutscene/cutscenes.h"
@@ -83,13 +84,13 @@
 #include "io/timer.h"
 #include "jumpnode/jumpnode.h"
 #include "lab/labv2.h"
-#include "lab/wmcgui.h" //So that GUI_System can be initialized
 #include "libs/discord/discord.h"
 #include "libs/ffmpeg/FFmpeg.h"
 #include "lighting/lighting.h"
 #include "lighting/lighting_profiles.h"
 #include "localization/localize.h"
 #include "math/staticrand.h"
+#include "math/curve.h"
 #include "menuui/barracks.h"
 #include "menuui/credits.h"
 #include "menuui/mainhallmenu.h"
@@ -122,6 +123,7 @@
 #include "model/modelreplace.h"
 #include "nebula/neb.h"
 #include "nebula/neblightning.h"
+#include "nebula/volumetrics.h"
 #include "network/multi.h"
 #include "network/multi_dogfight.h"
 #include "network/multi_endgame.h"
@@ -201,6 +203,8 @@
 #include <cinttypes>
 #include <stdexcept>
 
+#include "imgui.h"
+
 #ifdef WIN32
 // According to AMD and NV, these _should_ force their drivers into high-performance mode
 extern "C" {
@@ -252,7 +256,7 @@ static SCP_string skill_level_display(int value)
 	return SCP_string(Skill_level_names(value, true));
 }
 
-static auto GameSkillOption =
+static auto GameSkillOption __UNUSED =
     options::OptionBuilder<int>("Game.SkillLevel", "Skill Level", "The skill level for the game.")
         .category("Game")
         .range(0, 4)
@@ -354,34 +358,6 @@ extern void ssm_process();
 UI_TIMESTAMP Player_died_popup_wait;
 
 UI_TIMESTAMP Multi_ping_timestamp;
-
-
-const auto OnMissionAboutToEndHook = scripting::Hook::Factory(
-	"On Mission About To End", "Called when a mission is about to end but has not run any mission-ending logic", {});
-
-const auto OnMissionEndHook = scripting::OverridableHook::Factory(
-	"On Mission End", "Called when a mission has ended", {});
-
-const auto OnStateAboutToEndHook = scripting::Hook::Factory(
-	"On State About To End", "Called when a game state is about to end but has not run any state-ending logic",
-	{
-		{"OldState", "gamestate", "The game state that has ended."},
-		{"NewState", "gamestate", "The game state that will begin next."},
-	});
-
-const auto OnStateEndHook = scripting::OverridableHook::Factory(
-	"On State End", "Called when a game state has ended",
-	{
-		{"OldState", "gamestate", "The game state that has ended."},
-		{"NewState", "gamestate", "The game state that will begin next."},
-	});
-
-const auto OnCameraSetUpHook = scripting::Hook::Factory(
-	"On Camera Set Up", "Called every frame when the camera is positioned and oriented for rendering.",
-	{
-		{"Camera", "camera", "The camera about to be used for rendering."},
-	});
-
 
 // builtin mission list stuff
 int Game_builtin_mission_count = 92;
@@ -736,7 +712,7 @@ void game_sunspot_process(float frametime)
 			for(idx=0; idx<n_lights; idx++)	{
 				bool in_shadow = shipfx_eye_in_shadow(&Eye_position, Viewer_obj, idx);
 
-				if (gr_lightshafts_enabled() && !in_shadow) {
+				if (!in_shadow) {
 					vec3d light_dir;				
 					light_get_global_dir(&light_dir, idx);
 
@@ -745,8 +721,7 @@ void game_sunspot_process(float frametime)
 						float dot = vm_vec_dot( &light_dir, &Eye_matrix.vec.fvec )*0.5f+0.5f;
 						Sun_spot_goal += (float)pow(dot,85.0f);
 					}
-				}
-				if ( !in_shadow )	{
+
 					// draw the glow for this sun
 					stars_draw_sun_glow(idx);				
 				}
@@ -859,14 +834,14 @@ static void game_flash_diminish(float frametime)
 
 void game_level_close()
 {
-	if (OnMissionAboutToEndHook->isActive())
+	if (scripting::hooks::OnMissionAboutToEndHook->isActive())
 	{
-		OnMissionAboutToEndHook->run();
+		scripting::hooks::OnMissionAboutToEndHook->run();
 	}
 
 	//WMC - this is actually pretty damn dangerous, but I don't want a modder
 	//to accidentally use an override here without realizing it.
-	if (!OnMissionEndHook->isActive() || !OnMissionEndHook->isOverride())
+	if (!scripting::hooks::OnMissionEndHook->isActive() || !scripting::hooks::OnMissionEndHook->isOverride())
 	{
 		// save player-persistent variables and containers
 		mission_campaign_save_on_close_variables();	// Goober5000
@@ -886,12 +861,12 @@ void game_level_close()
 		shockwave_level_close();
 		fireball_close();	
 		shield_hit_close();
-		mission_event_shutdown();
 		asteroid_level_close();
 		jumpnode_level_close();
 		waypoint_level_close();
 		flak_level_close();						// unload flak stuff
 		neb2_level_close();						// shutdown gaseous nebula stuff
+		volumetrics_level_close();
 		ct_level_close();
 		beam_level_close();
 		mflash_level_close();
@@ -902,7 +877,7 @@ void game_level_close()
 		particle::ParticleManager::get()->clearSources();
 		particle::close();
 		trail_level_close();
-		ship_clear_cockpit_displays();
+		ship_close_cockpit_displays(Player_ship);
 		hud_level_close();
 		hud_escort_clear_all();
 		model_instance_free_all();
@@ -947,9 +922,9 @@ void game_level_close()
 		Error(LOCATION, "Scripting Mission End override is not fully supported yet.");
 	}
 
-	if (OnMissionEndHook->isActive())
+	if (scripting::hooks::OnMissionEndHook->isActive())
 	{
-		OnMissionEndHook->run();
+		scripting::hooks::OnMissionEndHook->run();
 	}
 }
 
@@ -986,6 +961,7 @@ void game_level_init()
 
 	Key_normal_game = (Game_mode & GM_NORMAL);
 	Cheats_enabled = 0;
+	CheatUsed = "";
 
 	Game_shudder_time = TIMESTAMP::invalid();
 
@@ -1025,7 +1001,7 @@ void game_level_init()
 	debris_init();
 	shield_hit_init();				//	Initialize system for showing shield hits
 
-	mission_init_goals();
+	mission_goals_and_events_init();
 	mission_log_init();
 	messages_init();
 	obj_snd_level_init();					// init object-linked persistant sounds
@@ -1198,14 +1174,11 @@ void game_loading_callback(int count)
 
 	auto progress = static_cast<float>(count) / static_cast<float>(COUNT_ESTIMATE);
 	CLAMP(progress, 0.0f, 1.0f);
-	Script_system.SetHookVar("Progress", 'f', progress);
 
-	if (Script_system.RunCondition(CHA_LOADSCREEN)) {
+	if (scripting::hooks::OnLoadScreen->run(scripting::hook_param_list(scripting::hook_param("Progress", 'f', progress))) > 0) {
 		// At least one script exeuted so we probably need to do a flip now
 		do_flip = 1;
 	}
-
-	Script_system.RemHookVar("Progress");
 
 	os_defer_events_on_load_screen();
 
@@ -1388,17 +1361,14 @@ void game_post_level_init()
 
 	mission_process_alt_types();
 
-	// m!m Make hv.Player available in "On Mission Start" hook
-	if(Player_obj)
-		Script_system.SetHookObject("Player", Player_obj);
-
-	// HACK: That scripting hook should be in mission so GM_IN_MISSION has to be set
-	Game_mode |= GM_IN_MISSION;
-	Script_system.RunCondition(CHA_MISSIONSTART);
-	Game_mode &= ~GM_IN_MISSION;
-
-	if (Player_obj)
-		Script_system.RemHookVar("Player");
+	if (scripting::hooks::OnMissionStart->isActive()) {
+		// HACK: That scripting hook should be in mission so GM_IN_MISSION has to be set
+		Game_mode |= GM_IN_MISSION;
+		scripting::hooks::OnMissionStart->run(scripting::hook_param_list(
+			scripting::hook_param("Player", 'o', Player_obj, Player_obj != nullptr)
+		));
+		Game_mode &= ~GM_IN_MISSION;
+	}
 }
 
 /**
@@ -1437,7 +1407,14 @@ bool game_start_mission()
 
 	if ( !load_success ) {
 		if ( !(Game_mode & GM_MULTIPLAYER) ) {
-			popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR( "Attempt to load the mission failed", 169));
+			// the version will have been assigned before loading was aborted
+			if (!gameversion::check_at_least(The_mission.required_fso_version)) {
+				popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("This mission requires FSO version %s", 1671), format_version(The_mission.required_fso_version, true).c_str());
+			}
+			// standard load failure
+			else {
+				popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Attempt to load the mission failed", 169));
+			}
 			gameseq_post_event(GS_EVENT_MAIN_MENU);
 		} else {
 			multi_quit_game(PROMPT_NONE, MULTI_END_NOTIFY_NONE, MULTI_END_ERROR_LOAD_FAIL);
@@ -1679,6 +1656,8 @@ void game_init()
 	// seed the random number generator
 	Random::seed(static_cast<unsigned int>(time(nullptr)));
 
+	ImGui::CreateContext();
+
 	Framerate_delay = 0;
 
 #ifndef NDEBUG
@@ -1842,11 +1821,7 @@ void game_init()
 	font::init();					// loads up all fonts
 	
 	// add title screen
-	if(!Is_standalone){
-		// #Kazan# - moved this down - WATCH THESE calls - anything that shares code between standalone and normal
-		// cannot make gr_* calls in standalone mode because all gr_ calls are NULL pointers
-		game_title_screen_display();
-	}
+	game_title_screen_display();
 	
 	// attempt to load up master tracker registry info (login and password)
 	Multi_tracker_id = -1;		
@@ -1888,17 +1863,14 @@ void game_init()
 		mprintf(( "Using high memory settings...\n" ));
 		bm_set_low_mem(0);		// Use all frames of bitmaps
 	}
-
-	//WMC - Initialize my new GUI system
-	//This may seem scary, but it should take up 0 processing time and very little memory
-	//as long as it's not being used.
-	//Otherwise, it just keeps the parsed interface.tbl in memory.
-	GUI_system.ParseClassInfo("interface.tbl");
 	
+	curves_init();
 	particle::ParticleManager::init();
 
+	gamesnd_parse_soundstbl(true);	// Goober5000 - this needs to be split
 	iff_init();						// Goober5000 - this must be done even before species_defs :p
 	species_init();					// Load up the species defs - this needs to be done FIRST -- Kazan
+	gamesnd_parse_soundstbl(false);
 
 	brief_icons_init();
 
@@ -1906,14 +1878,13 @@ void game_init()
 
 	control_config_common_init();				// sets up localization stuff in the control config
 
-	parse_rank_tbl();
-	parse_traitor_tbl();
+	rank_init();
+	traitor_init();
 	medals_init();
 
 	cutscene_init();
 	key_init();
 	mouse_init();
-	gamesnd_parse_soundstbl();
 
 	gameseq_init();
 
@@ -1945,8 +1916,8 @@ void game_init()
 
 	animation::ModelAnimationParseHelper::parseTables();
 
-	// Initialize dynamic SEXPs. Must happen before ship init for LuaAI
-	sexp::dynamic_sexp_init();
+	// Initialize SEXPs. Must happen before ship init for LuaAI
+	sexp_startup();
 
 	obj_init();	
 	virtual_pof_init();
@@ -1978,7 +1949,9 @@ void game_init()
 	player_tips_init();				// helpful tips
 	beam_init();
 
-	lighting_profile::load_profiles();
+	cheat_table_init();
+
+	lighting_profiles::load_profiles();
 
 	// load the list of pilot pic filenames (for barracks and pilot select popup quick reference)
 	pilot_load_pic_list();	
@@ -2009,12 +1982,16 @@ void game_init()
 	// Do this before the initial scripting hook runs in case that hook does something with the UI
 	scpui::initialize();
 
+	game_title_screen_close();
+
 	Script_system.RunInitFunctions();
 	if (scripting::hooks::OnGameInit->isActive()) {
 		scripting::hooks::OnGameInit->run();
 	}
-
-	game_title_screen_close();
+	//Technically after the splash screen, but the best we can do these days. Since the override is hard-deprecated, we don't need to check it.
+	if (scripting::hooks::OnSplashScreen->isActive()) {
+		scripting::hooks::OnSplashScreen->run();
+	}
 
 	// convert old pilot files (if they need it)
 	convert_pilot_files();
@@ -2971,8 +2948,13 @@ void apply_view_shake(matrix *eye_orient)
 	tangles.h = 0.0f;
 	tangles.b = 0.0f;
 
-	// do shakes that only affect the HUD (unless disabled by cmdline in singleplayer)
-	if (Viewer_obj == Player_obj && (!Cmdline_no_screenshake || Game_mode & GM_MULTIPLAYER)) {
+	bool do_hud_shudder = (Viewer_obj == Player_obj);
+
+	if ((Viewer_mode & VM_CHASE) && Apply_shudder_to_chase_view)
+		do_hud_shudder = true;
+
+	// do shakes that only affect the HUD (unless disabled by cmdline in singleplayer or enabled by mod flag)
+	if (do_hud_shudder && (!Cmdline_no_screenshake || Game_mode & GM_MULTIPLAYER)) {
 		physics_info *pi = &Player_obj->phys_info;
 
 		// Make eye shake due to afterburner
@@ -2983,7 +2965,7 @@ void apply_view_shake(matrix *eye_orient)
 
 		// Make eye shake due to engine wash
 		if (Player_obj->type == OBJ_SHIP && (Ships[Player_obj->instance].wash_intensity > 0) && Wash_on ) {
-			float wash_intensity = Ships[Player_obj->instance].wash_intensity;
+			float wash_intensity = Ships[Player_obj->instance].wash_intensity * Ship_info[Ships[Player_obj->instance].ship_info_index].ship_shudder_modifier;
 	
 			tangles.p += get_shake(0.07f * wash_intensity, -1, 0);
 			tangles.h += get_shake(0.07f * wash_intensity, -1, 0);
@@ -3199,8 +3181,8 @@ camid game_render_frame_setup()
 			if(Viewer_mode & VM_FREECAMERA) {
 				Viewer_obj = nullptr;
 
-				if (OnCameraSetUpHook->isActive()) {
-					OnCameraSetUpHook->run(scripting::hook_param_list(
+				if (scripting::hooks::OnCameraSetUpHook->isActive()) {
+					scripting::hooks::OnCameraSetUpHook->run(scripting::hook_param_list(
 						scripting::hook_param("Camera", 'o', scripting::api::l_Camera.Set(cam_get_current()))));
 				}
 
@@ -3334,8 +3316,8 @@ camid game_render_frame_setup()
 	main_cam->set_position(&eye_pos);
 	main_cam->set_rotation(&eye_orient);
 
-	if (OnCameraSetUpHook->isActive())	{
-		OnCameraSetUpHook->run(scripting::hook_param_list(
+	if (scripting::hooks::OnCameraSetUpHook->isActive())	{
+		scripting::hooks::OnCameraSetUpHook->run(scripting::hook_param_list(
 			scripting::hook_param("Camera", 'o', scripting::api::l_Camera.Set(Main_camera))));
 	}
 
@@ -3464,8 +3446,10 @@ void game_render_frame( camid cid )
 		gr_end_proj_matrix();
 		gr_end_view_matrix();
 
+		gr_override_fog(true);
 		GR_DEBUG_SCOPE("Render Cockpit");
 		ship_render_player_ship(Viewer_obj);
+		gr_override_fog(false);
 
 		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
 		gr_set_view_matrix(&Eye_position, &Eye_matrix);
@@ -3544,25 +3528,23 @@ void game_simulation_frame()
 	// blow ships up in multiplayer dogfight
 	if( MULTIPLAYER_MASTER && (Net_player != nullptr) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && (f2fl(Missiontime) >= 2.0f) && !dogfight_blown){
 		// blow up all non-player ships
-		ship_obj *moveup = GET_FIRST(&Ship_obj_list);
-		ship *shipp;
-		ship_info *sip;
-		while((moveup != END_OF_LIST(&Ship_obj_list)) && (moveup != nullptr)){
+		for (auto moveup: list_range(&Ship_obj_list)){
+			if (Objects[moveup->objnum].flags[Object::Object_Flags::Should_be_dead])
+				continue;
+
 			// bogus
 			if((moveup->objnum < 0) || (moveup->objnum >= MAX_OBJECTS) || (Objects[moveup->objnum].type != OBJ_SHIP) || (Objects[moveup->objnum].instance < 0) || (Objects[moveup->objnum].instance >= MAX_SHIPS) || (Ships[Objects[moveup->objnum].instance].ship_info_index < 0) || (Ships[Objects[moveup->objnum].instance].ship_info_index >= ship_info_size())){
-				moveup = GET_NEXT(moveup);
 				continue;
 			}
-			shipp = &Ships[Objects[moveup->objnum].instance];
-			sip = &Ship_info[shipp->ship_info_index];
+
+			auto shipp = &Ships[Objects[moveup->objnum].instance];
+			auto sip = &Ship_info[shipp->ship_info_index];
 
 			// only blow up small ships			
 			if((sip->is_small_ship()) && (multi_find_player_by_object(&Objects[moveup->objnum]) < 0) && (shipp->team == Iff_traitor) && (Objects[moveup->objnum].net_signature != STANDALONE_SHIP_SIG) ){							
 				// function to simply explode a ship where it is currently at
 				ship_self_destruct( &Objects[moveup->objnum] );					
 			}
-
-			moveup = GET_NEXT(moveup);
 		}
 
 		dogfight_blown = 1;
@@ -3708,7 +3690,7 @@ void game_simulation_frame()
 
 	// Kick off externally injected operations after the simulation step has finished
 	executor::OnSimulationExecutor->process();
-	Script_system.RunCondition(CHA_SIMULATION);
+	scripting::hooks::OnSimulation->run();
 }
 
 // Maybe render and process the dead-popup
@@ -4075,10 +4057,13 @@ void game_frame(bool paused)
 			}
 
 			Scripting_didnt_draw_hud = 1;
-			Script_system.SetHookObject("Self", Viewer_obj);
-			Script_system.SetHookObject("Player", Player_obj);
-			if(Script_system.IsConditionOverride(CHA_HUDDRAW, Viewer_obj)) {
-				Scripting_didnt_draw_hud = 0;
+			auto scripting_param_list = scripting::hook_param_list(
+				scripting::hook_param("Self", 'o', Viewer_obj),
+				scripting::hook_param("Player", 'o', Player_obj)
+			);
+
+			if (scripting::hooks::OnHudDraw->isActive()) {
+				Scripting_didnt_draw_hud = scripting::hooks::OnHudDraw->isOverride(scripting::hooks::ObjectDrawConditions{ Viewer_obj }, scripting_param_list) ? 0 : 1;
 			}
 
 			if(Scripting_didnt_draw_hud) {
@@ -4097,10 +4082,10 @@ void game_frame(bool paused)
 			{
 				TRACE_SCOPE(tracing::RenderHUDHook);
 
-				Script_system.RunCondition(CHA_HUDDRAW, Viewer_obj);
+				if (scripting::hooks::OnHudDraw->isActive()) {
+					scripting::hooks::OnHudDraw->run(scripting::hooks::ObjectDrawConditions{ Viewer_obj }, scripting_param_list);
+				}
 			}
-			Script_system.RemHookVar("Self");
-			Script_system.RemHookVar("Player");
 			
 			// check to see if we should display the death died popup
 			if(Game_mode & GM_DEAD_BLEW_UP){				
@@ -4252,26 +4237,20 @@ void lock_time_compression(bool is_locked)
 
 void change_time_compression(float multiplier)
 {
-	fix modified = fl2f( f2fl(Game_time_compression) * multiplier );
-
-	Desired_time_compression = Game_time_compression = modified;
+	Desired_time_compression = fl2f( f2fl(Game_time_compression) * multiplier );
 	Time_compression_change_rate = 0;
-
-	timestamp_update_time_compression();
 }
 
-void set_time_compression(float multiplier, float change_time)
+void set_time_compression(float compression, float change_time)
 {
+	Desired_time_compression = fl2f(compression);
+
 	if(change_time <= 0.0f)
 	{
-		Game_time_compression = Desired_time_compression = fl2f(multiplier);
 		Time_compression_change_rate = 0;
-
-		timestamp_update_time_compression();
 		return;
 	}
 
-	Desired_time_compression = fl2f(multiplier);
 	Time_compression_change_rate = fl2f( f2fl(Desired_time_compression - Game_time_compression) / change_time );
 }
 
@@ -4280,6 +4259,9 @@ void game_set_frametime(int state)
 	fix thistime;
 	float frame_cap_diff;
 	bool do_pre_player_skip = false;
+
+	// sync all timestamps across the entire frame
+	timer_start_frame();
 
 	thistime = timer_get_fixed_seconds();
 
@@ -4338,18 +4320,24 @@ void game_set_frametime(int state)
 	//Handle changes in time compression
 	if(Game_time_compression != Desired_time_compression)
 	{
-		bool ascending = Desired_time_compression > Game_time_compression;
-		if(Time_compression_change_rate)
-		{
-			Game_time_compression += fixmul(Time_compression_change_rate, Frametime);
-			timestamp_update_time_compression();
-		}
-		if((ascending && Game_time_compression > Desired_time_compression)
-			|| (!ascending && Game_time_compression < Desired_time_compression))
+		if (Time_compression_change_rate == 0)
 		{
 			Game_time_compression = Desired_time_compression;
-			timestamp_update_time_compression();
 		}
+		else
+		{
+			bool ascending = Desired_time_compression > Game_time_compression;
+
+			Game_time_compression += fixmul(Time_compression_change_rate, Frametime);
+
+			if((ascending && Game_time_compression > Desired_time_compression)
+				|| (!ascending && Game_time_compression < Desired_time_compression))
+			{
+				Game_time_compression = Desired_time_compression;
+			}
+		}
+
+		timestamp_update_time_compression();
 	}
 
 	Frametime = fixmul(Frametime, Game_time_compression);
@@ -4754,13 +4742,9 @@ void game_process_event( int current_state, int event )
 			memset(&Multi_ship_status_bi, 0, sizeof(button_info));
 
 			// Make hv.Player available in "On Gameplay Start" hook -zookeeper
-			if(Player_obj)
-				Script_system.SetHookObject("Player", Player_obj);
-
-			Script_system.RunCondition(CHA_GAMEPLAYSTART);
-
-			if (Player_obj)
-				Script_system.RemHookVar("Player");
+			scripting::hooks::OnGameplayStart->run(scripting::hook_param_list(
+				scripting::hook_param("Player", 'o', Player_obj, Player_obj != nullptr)
+			));
 
 			Start_time = f2fl(timer_get_approx_seconds());
 			mprintf(("Entering game at time = %7.3f\n", Start_time));
@@ -5108,18 +5092,18 @@ void game_leave_state( int old_state, int new_state )
 			break;
 	}
 
-	if (OnStateAboutToEndHook->isActive() || OnStateEndHook->isActive())
+	if (scripting::hooks::OnStateAboutToEndHook->isActive() || scripting::hooks::OnStateEndHook->isActive())
 	{
 		auto script_param_list = scripting::hook_param_list(
 			scripting::hook_param("OldState", 'o', scripting::api::l_GameState.Set(scripting::api::gamestate_h(old_state))),
 			scripting::hook_param("NewState", 'o', scripting::api::l_GameState.Set(scripting::api::gamestate_h(new_state))));
 
-		if (OnStateAboutToEndHook->isActive())
-			OnStateAboutToEndHook->run(script_param_list);
+		if (scripting::hooks::OnStateAboutToEndHook->isActive())
+			scripting::hooks::OnStateAboutToEndHook->run(script_param_list);
 
-		if (OnStateEndHook->isActive() && OnStateEndHook->isOverride(script_param_list))
+		if (scripting::hooks::OnStateEndHook->isActive() && scripting::hooks::OnStateEndHook->isOverride(script_param_list))
 		{
-			OnStateEndHook->run(script_param_list);
+			scripting::hooks::OnStateEndHook->run(script_param_list);
 			return;
 		}
 	}
@@ -5543,13 +5527,13 @@ void game_leave_state( int old_state, int new_state )
 	}
 
 	//WMC - Now run scripting stuff
-	if (OnStateEndHook->isActive())
+	if (scripting::hooks::OnStateEndHook->isActive())
 	{
 		auto script_param_list = scripting::hook_param_list(
 			scripting::hook_param("OldState", 'o', scripting::api::l_GameState.Set(scripting::api::gamestate_h(old_state))),
 			scripting::hook_param("NewState", 'o', scripting::api::l_GameState.Set(scripting::api::gamestate_h(new_state))));
 
-		OnStateEndHook->run(script_param_list);
+		scripting::hooks::OnStateEndHook->run(script_param_list);
 	}
 }
 
@@ -5569,13 +5553,15 @@ void game_enter_state( int old_state, int new_state )
 
 	using namespace scripting::api;
 
-	Script_system.SetHookVar("OldState", 'o', l_GameState.Set(gamestate_h(old_state)));
-	Script_system.SetHookVar("NewState", 'o', l_GameState.Set(gamestate_h(new_state)));
+	auto script_param_list = scripting::hook_param_list(
+		scripting::hook_param("OldState", 'o', l_GameState.Set(gamestate_h(old_state))),
+		scripting::hook_param("NewState", 'o', l_GameState.Set(gamestate_h(new_state))));
 
-	if(Script_system.IsConditionOverride(CHA_ONSTATESTART, nullptr, nullptr, old_state)) {
-		Script_system.RunCondition(CHA_ONSTATESTART, nullptr, nullptr, old_state);
-		Script_system.RemHookVars({"OldState", "NewState"});
-		return;
+	if(scripting::hooks::OnStateStart->isActive()) {
+		if (scripting::hooks::OnStateStart->isOverride(script_param_list)) {
+			scripting::hooks::OnStateStart->run(script_param_list);
+			return;
+		}
 	}
 
 	switch (new_state) {
@@ -6101,8 +6087,9 @@ void mouse_force_pos(int x, int y);
 	} // end switch
 
 	//WMC - now do user scripting stuff
-	Script_system.RunCondition(CHA_ONSTATESTART, nullptr, nullptr, old_state);
-	Script_system.RemHookVars({"OldState", "NewState"});
+	if (scripting::hooks::OnStateStart->isActive()) {
+		scripting::hooks::OnStateStart->run(script_param_list);
+	}
 }
 
 // do stuff that may need to be done regardless of state
@@ -6741,14 +6728,12 @@ void game_shutdown(void)
 	particle::close();			// close out the particle system
 	weapon_close();					// free any memory that was allocated for the weapons
 	ship_close();					// free any memory that was allocated for the ships
-	hud_free_scrollback_list();// free space allocated to store hud messages in hud scrollback
 
 	decals::shutdown();
 
 	io::mouse::CursorManager::shutdown();
 
 	mission_campaign_clear();	// clear out the campaign stuff
-	message_mission_close();	// clear loaded table data from message.tbl
 	mission_parse_close();		// clear out any extra memory that may be in use by mission parsing
 	multi_voice_close();			// close down multiplayer voice (including freeing buffers, etc)
 	multi_log_close();
@@ -6776,7 +6761,6 @@ void game_shutdown(void)
 
 	scpui::shutdown();				// Deinitialize the new UI system, needs to be done after scripting shutdown to make sure the resources were released properly
 
-
 	control_config_common_close();
 	io::joystick::shutdown();
 
@@ -6802,6 +6786,8 @@ void game_shutdown(void)
 	if (Is_standalone) {
 		std_deinit_standalone();
 	}
+
+	ImGui::DestroyContext();
 
 	os_cleanup();
 
@@ -6935,7 +6921,7 @@ void game_event_debug_init()
 	int e;
 
 	ED_count = 0;
-	for (e=0; e<Num_mission_events; e++) {
+	for (e=0; e<(int)Mission_events.size(); e++) {
 		game_add_event_debug_index(e | EVENT_DEBUG_EVENT, 0);
 		game_add_event_debug_sexp(Mission_events[e].formula, 1);
 	}
@@ -7002,7 +6988,7 @@ void game_show_event_debug(float  /*frametime*/)
 		if (z & EVENT_DEBUG_EVENT) {
 			z &= 0x7fff;
 			sprintf(buf, NOX("%s%s (%s) %s%d %d"), (Mission_events[z].flags & MEF_CURRENT) ? NOX("* ") : "",
-				Mission_events[z].name, Mission_events[z].result ? NOX("True") : NOX("False"),
+				Mission_events[z].name.c_str(), Mission_events[z].result ? NOX("True") : NOX("False"),
 				(Mission_events[z].chain_delay < 0) ? "" : NOX("x "),
 				Mission_events[z].repeat_count, Mission_events[z].interval);
 
@@ -7477,52 +7463,115 @@ int game_hacked_data()
     return 0;
 }
 
-void game_title_screen_display()
+void game_title_screen_draw(float alpha)
 {
-	bool condhook_override = Script_system.IsConditionOverride(CHA_SPLASHSCREEN);
-	mprintf(("SCRIPTING: Splash screen overrides checked\n"));
-	if(!condhook_override)
-	{
-		Game_title_logo = bm_load(Game_logo_screen_fname[gr_screen.res]);
-		Game_title_bitmap = bm_load(Game_title_screen_fname[gr_screen.res]);
+	game_set_frametime(-1); //Set the frame time
+	
+	// clamp alpha to avoid any funny business because this is a splash screen not a comedy sketch
+	CLAMP(alpha, 0.0f, 1.0f);
 
-		if (Game_title_bitmap != -1)
-		{
-			// set
-			gr_set_bitmap(Game_title_bitmap);
+	gr_clear();
+	if (Game_title_bitmap != -1) {
+		// set
+		gr_set_bitmap(Game_title_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha);
 
-			// get bitmap's width and height
-			int width, height;
-			bm_get_info(Game_title_bitmap, &width, &height);
+		// get bitmap's width and height
+		int width, height;
+		bm_get_info(Game_title_bitmap, &width, &height);
 
-			// set the screen scale to the bitmap's dimensions
-			gr_set_screen_scale(width, height);
+		// set the screen scale to the bitmap's dimensions
+		gr_set_screen_scale(width, height);
 
-			// draw it in the center of the screen
-			gr_bitmap((gr_screen.max_w_unscaled - width)/2, (gr_screen.max_h_unscaled - height)/2, GR_RESIZE_MENU);
+		// draw it in the center of the screen
+		gr_bitmap((gr_screen.max_w_unscaled - width) / 2, (gr_screen.max_h_unscaled - height) / 2, GR_RESIZE_MENU);
+	}
 
-			if (Game_title_logo != -1)
-			{
-				gr_set_bitmap(Game_title_logo);
+	if (Game_title_logo != -1) {
+		gr_set_bitmap(Game_title_logo, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha);
+			
+		// get bitmap's width and height
+		int width, height;
+		bm_get_info(Game_title_logo, &width, &height);
 
-				gr_bitmap(0, 0, GR_RESIZE_MENU);
+		// set the screen scale to the screen's dimensions
+		gr_set_screen_scale(gr_screen.max_w, gr_screen.max_h);
 
-			}
-
-			gr_reset_screen_scale();
+		if (Splash_logo_center){
+			gr_bitmap((gr_screen.max_w_unscaled - width) / 2, (gr_screen.max_h_unscaled - height) / 2, GR_RESIZE_MENU);
+		} else {
+			gr_bitmap(0, 0, GR_RESIZE_MENU);
 		}
 	}
 
-	Script_system.RunCondition(CHA_SPLASHSCREEN);
-
-	mprintf(("SCRIPTING: Splash screen conditional hook has been run\n"));
+		gr_reset_screen_scale();
 
 	// flip
 	gr_flip();
+	os_poll();
+}
+
+void game_title_screen_display()
+{
+	// anything that shares code between standalone and normal cannot make
+	// gr_* calls in standalone mode because all gr_ calls are NULL pointers
+	if (Is_standalone) {
+		return;
+	}
+	
+	//As the script system isn't available here (it needs tables loaded and stuff), the on Splash Screen hook is removed from here.
+	//It is deprecated as of 23.0 (where it was nonfunctional anyways), and will only be called for compatibility once the init has occurred after the splash screen -Lafiel
+	
+	Game_title_logo = bm_load(Game_logo_screen_fname[gr_screen.res]);
+
+	if (!Splash_screens.empty()) {
+		Game_title_bitmap = bm_load(Splash_screens[Random::next(0, (int)Splash_screens.size() - 1)].c_str());
+	} else {
+		Game_title_bitmap = bm_load(Game_title_screen_fname[gr_screen.res]);
+	}
+
+	if (Splash_fade_in_time > 0) {
+		float alpha = 0.0f;
+		int timer = timer_get_milliseconds() + Splash_fade_in_time;
+
+		while (timer_get_milliseconds() < timer) {
+			game_title_screen_draw(alpha); // draw the splash image
+
+			// increment alpha to the next value
+			float a_inc = 1.0f / ((Splash_fade_in_time / 1000) / flFrametime);
+			alpha += a_inc;
+		}
+	} else {
+		game_title_screen_draw(1.0f);
+	}
+
 }
 
 void game_title_screen_close()
 {
+	// anything that shares code between standalone and normal cannot make
+	// gr_* calls in standalone mode because all gr_ calls are NULL pointers
+	if (Is_standalone) {
+		return;
+	}
+
+	if (Splash_fade_out_time > 0) {
+		//draw a starting splash image. This also reset the frametime
+		//after asset loading messed with it. Helps to keep the fade out
+		//nice and smooooooooth, baby.
+		game_title_screen_draw(1.0f);
+
+		float alpha = 1.0f;
+		int timer = timer_get_milliseconds() + Splash_fade_out_time;
+
+		while (timer_get_milliseconds() < timer) {
+			game_title_screen_draw(alpha); // draw the splash image
+
+			// decrement alpha to the next value
+			float a_inc = 1.0f / ((Splash_fade_out_time / 1000) / flFrametime);
+			alpha -= a_inc;
+		}
+	}
+
 	if (Game_title_bitmap != -1) {
 		bm_release(Game_title_bitmap);
 		Game_title_bitmap = -1;

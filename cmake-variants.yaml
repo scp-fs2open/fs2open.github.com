@@ -1,0 +1,16 @@
+buildType:
+  default: release
+  description: R
+  choices:
+    release:
+      short: Release
+      long: Release builds
+      buildType: Release
+    fastDebug:
+      short: FastDebug
+      long: Debug with optimizations
+      buildType: FastDebug
+    debug:
+      short: Debug
+      long: Debug without optimizations
+      buildType: Debug

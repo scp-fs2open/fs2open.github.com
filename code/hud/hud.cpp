@@ -2407,10 +2407,11 @@ int hud_anim_load(hud_anim *ha)
  * @param reverse		Play animation in reverse (default 0)
  * @param resize_mode		Resize for non-standard resolutions
  * @param mirror		Mirror along y-axis so icon points left instead of right
+ * @param scale_factor	Multiplier for the width and height
  *
  * @returns  1 on success, 0 on failure
  */
-int hud_anim_render(hud_anim *ha, float frametime, int draw_alpha, int loop, int hold_last, int reverse, int resize_mode, bool mirror)
+int hud_anim_render(hud_anim *ha, float frametime, int draw_alpha, int loop, int hold_last, int reverse, int resize_mode, bool mirror, float scale_factor)
 {
 	int framenum;
 
@@ -2434,7 +2435,7 @@ int hud_anim_render(hud_anim *ha, float frametime, int draw_alpha, int loop, int
 	if(emp_should_blit_gauge()){
 		gr_set_bitmap(ha->first_frame + framenum);
 		if ( draw_alpha ){
-			gr_aabitmap(ha->sx, ha->sy, resize_mode, mirror);
+			gr_aabitmap(ha->sx, ha->sy, resize_mode, mirror, scale_factor);
 		} else {
 			gr_bitmap(ha->sx, ha->sy, resize_mode);
 		}
@@ -2835,15 +2836,16 @@ int hud_get_dock_time( object *docker_objp )
  */
 int hud_support_find_closest( int objnum )
 {
-	ship_obj		*sop;
 	ai_info		*aip;
 	object		*objp;
 	int i;
 
 	objp = &Objects[objnum];
 
-	sop = GET_FIRST(&Ship_obj_list);
-	while(sop != END_OF_LIST(&Ship_obj_list)){
+	for (auto sop: list_range(&Ship_obj_list)) {
+		if (Objects[sop->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		if ( Ship_info[Ships[Objects[sop->objnum].instance].ship_info_index].flags[Ship::Info_Flags::Support] ) {
 			int pship_index, sindex;
 
@@ -2870,7 +2872,6 @@ int hud_support_find_closest( int objnum )
 				}
 			}
 		}
-		sop = GET_NEXT(sop);
 	}
 
 	return -1;
@@ -2960,6 +2961,9 @@ void HudGaugeSupport::render(float  /*frametime*/)
 {
 	int	show_time, w, h;
 	char	outstr[64];
+
+	if (background.first_frame < 0)
+		return;
 
 	if ( !Hud_support_view_active ) {
 		return;

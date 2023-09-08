@@ -643,7 +643,9 @@ const char *translate_key(char *key)
 
 	if (!first.empty() && !second.empty()) {
 		strcpy_s(text, first.textify().c_str());
-		strcat_s(text, " or ");
+		strcat_s(text, " ");
+		strcat_s(text, XSTR("or", 1672));
+		strcat_s(text, " ");
 		strcat_s(text, second.textify().c_str());
 
 	} else if (!first.empty()) {
@@ -653,7 +655,7 @@ const char *translate_key(char *key)
 		strcpy_s(text, second.textify().c_str());
 
 	} else {
-			strcpy_s(text, "None");
+			strcpy_s(text, XSTR("None", 1673));
 	}
 
 	return text;
@@ -664,7 +666,7 @@ const char *textify_scancode(int code)
 	static char text[BTN_MSG_LEN];
 
 	if (code < 0)
-		return "None";
+		return XSTR("None", 1673);
 
 	int keycode = code & KEY_MASK;
 
@@ -797,6 +799,8 @@ void control_config_common_init()
 	Mouse_button_text[6] = vm_strdup(XSTR("Wheel Down", 1656));
 	Mouse_button_text[7] = vm_strdup(XSTR("Wheel Left", 1657));
 	Mouse_button_text[8] = vm_strdup(XSTR("Wheel Right", 1658));
+
+	Script_system.OnStateDestroy.add([](lua_State*) -> void { Lua_hooks.clear(); });
 }
 
 /*
@@ -1400,7 +1404,8 @@ void control_enable_hook(IoActionId id, bool enable) {
 }
 
 /**
- * Stuffs the CCF flags into the given char.  Needs item_id for validation
+ * Stuffs the CCF flags into the given char.  Needs item_id for validation.
+ * @details Unknown, unrecognized, or excessive flags are silently ignored on Release builds.  Debug builds complain.
  */
 void stuff_CCF(char& flags, size_t item_id) {
 	Assert(item_id < Control_config.size());
@@ -1414,7 +1419,9 @@ void stuff_CCF(char& flags, size_t item_id) {
 	SCP_string flag_str;
 	size_t pos = 0;
 	size_t len = 0;
-
+	
+	// Lambda to add flags.
+	// Debug version Eats the substring as it is found.
 	auto ADD_FLAG = [&](char id) {
 		flag_str = ValToCCF(id);
 		pos = szTempBuffer.find(flag_str);
@@ -1425,6 +1432,8 @@ void stuff_CCF(char& flags, size_t item_id) {
 		}
 	};
 #else
+	// Lambda to add flags.
+	// Release version doesn't modify szTempBuffer as it searches for substrings.
 	auto ADD_FLAG = [&](char id) {
 		if (szTempBuffer.find(ValToCCF(id)) != SCP_string::npos)
 			flags |= id;
@@ -1438,13 +1447,38 @@ void stuff_CCF(char& flags, size_t item_id) {
 	ADD_FLAG(CCF_HAT);
 	ADD_FLAG(CCF_BALL);
 
+
 #ifndef NDEBUG
+	// Eat the "CCF_NONE" and "NONE" substrings
+	auto EAT_FLAG = [&](SCP_string str) {
+		pos = szTempBuffer.find(str);
+		len = str.length();
+			if (pos != SCP_string::npos) {
+				if (flags != 0) {
+					// Complain about bad habits
+					error_display(0,
+						"Flag 'NONE' passed to config item %i along with other flags, ignoring: \n'%s'",
+						static_cast<int>(item_id),
+						szTempBuffer.c_str()
+					);
+				}
+				szTempBuffer.erase(pos, len);
+			}
+	};
+
+	EAT_FLAG("CCF_NONE");
+	EAT_FLAG("NONE");
+
 	// Complain about any unknown flag strings
 	replace_all(szTempBuffer, ",", " ");
 	drop_white_space(szTempBuffer);
 
 	if (!szTempBuffer.empty()) {
-		error_display(0, "Unknown flags passed to config item %i, ignoring: \n'%s'", static_cast<int>(item_id), szTempBuffer.c_str());
+		error_display(0,
+			"Unknown (or excessive) flags passed to config item %i, ignoring: \n'%s'",
+			static_cast<int>(item_id),
+			szTempBuffer.c_str()
+		);
 	}
 #endif
 
@@ -2276,7 +2310,7 @@ SCP_string ValToCCF(char id) {
 	}
 
 	if (str.empty()) {
-		// If unsupported flags, or no flags at all, list as "None"
+		// If unsupported flags, or (id == CCF_NONE), list as "None"
 		str = "NONE";
 	}
 

@@ -11,7 +11,6 @@
 
 #include <cstdio>
 #include <cstring>
-#include <csetjmp>
 
 #include "globalincs/pstypes.h"
 #include "jpgutils/jpgutils.h"
@@ -58,7 +57,6 @@ static int jpeg_error_code;
 
 // error handler stuff, rather than the default, which will screw us
 //
-jmp_buf FSJpegError;
 
 // error (exit) handler
 void jpg_error_exit(j_common_ptr cinfo)
@@ -73,7 +71,7 @@ void jpg_error_exit(j_common_ptr cinfo)
 	Jpeg_Set_Error(JPEG_ERROR_READING);
 
 	// bail
-	longjmp(FSJpegError, 1);
+	throw std::runtime_error("JPEG_ERROR_READING");
 }
 
 // message handler for errors
@@ -197,7 +195,7 @@ int jpeg_read_bitmap(const char *real_filename, ubyte *image_data, ubyte * /*pal
 	// or we risk needed more memory than we have available in "image_data".  The only exception is
 	// bpp since 'dest_size' should already indicate what we want to end up with.
 
-	if ( setjmp( FSJpegError ) == 0) {
+	try {
 		// initialize decompression struct
 		jpeg_create_decompress(&jpeg_info);
 
@@ -250,6 +248,9 @@ int jpeg_read_bitmap(const char *real_filename, ubyte *image_data, ubyte * /*pal
 
 		// cleanup
 		jpeg_destroy_decompress(&jpeg_info);
+	}
+	catch (const std::exception &e) {
+		mprintf(("jpgutils: error code %d (%s) while reading %s\n", jpeg_error_code, e.what(), real_filename));
 	}
 
 	cfclose(img_cfp);

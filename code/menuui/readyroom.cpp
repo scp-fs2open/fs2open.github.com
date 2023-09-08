@@ -269,7 +269,7 @@ void sim_room_load_mission_icons();
 void sim_room_unload_mission_icons();
 void sim_room_blit_icons(int line_index, int y_start, fs_builtin_mission *fb = NULL, int is_md = 0);
 
-const std::shared_ptr<scripting::Hook> OnCampaignBeginHook = scripting::Hook::Factory(
+const std::shared_ptr<scripting::Hook<>> OnCampaignBeginHook = scripting::Hook<>::Factory(
 	"On Campaign Begin", "Called when a campaign is started from the beginning or is reset",
 	{
 		{ "Campaign", "string", "The campaign filename (without the extension)" },
@@ -1312,7 +1312,7 @@ void api_sim_room_build_mission_list(bool API_Access)
 //
 void sim_room_do_frame(float  /*frametime*/)
 {
-	char buf[256];
+	char buf[CF_MAX_PATHNAME_LENGTH + 4]; // must hold at most the Campaign.name and a file extension (4 chars)
 	int i, k, y, line;
 	int font_height = gr_get_font_height();
 	int select_tease_line = -1;  // line mouse is down on, but won't be selected until button released	
@@ -1440,8 +1440,8 @@ void sim_room_do_frame(float  /*frametime*/)
 			gr_printf_menu(list_x2, Mission_list_coords[gr_screen.res][1], "%s", buf);
 
 			// blit the proper icons if necessary
-			char full_name[256];
-			memset(full_name, 0, 256);
+			char full_name[CF_MAX_PATHNAME_LENGTH + 4];
+			memset(full_name, 0, CF_MAX_PATHNAME_LENGTH + 4);
 			strcpy_s(full_name, cf_add_ext(Campaign.filename,FS_CAMPAIGN_FILE_EXT));
 			fs_builtin_mission *fb = game_find_builtin_mission(full_name);
 			if(fb != NULL){
@@ -1660,7 +1660,7 @@ void campaign_reset(const SCP_string& campaign_file)
 
 	mission_campaign_savefile_delete(filename.c_str());
 
-	const int load_status = mission_campaign_load(filename.c_str(), nullptr, 1 , false);	// retail doesn't reset stats when resetting the campaign
+	const int load_status = mission_campaign_load(filename.c_str(), nullptr, nullptr, 1 , false);	// retail doesn't reset stats when resetting the campaign
 
 	// see if we successfully loaded this campaign
 	if (load_status == 0) {
@@ -1910,8 +1910,18 @@ void campaign_room_do_frame(float  /*frametime*/)
 
 	// If we don't have a mask, we don't have enough data to do anything with this screen.
 	if (Campaign_background_bitmap_mask == -1) {
-		{
-			//popup_game_feature_not_in_demo();
+		if ((Active_campaign_index < 0) || (Active_campaign_index >= Num_campaigns)) {
+			// Player is trying to use a regular pilot in the demo.
+			if (Num_campaigns < 1) {
+				// If there are no campaigns loaded, there's really nothing left to do.
+				popup_game_feature_not_in_demo();
+				return;
+			}
+			int select_default = popup(PF_USE_AFFIRMATIVE_ICON|PF_BODY_BIG, 2, "Exit", "Select first campaign", "Campaign Room only available in full version. However, you may select the first campaign found.");
+			if (select_default == 1) {
+				campaign_select_campaign(Campaign_file_names[0]);
+			}
+		} else {
 			int reset_campaign = popup(PF_USE_AFFIRMATIVE_ICON|PF_BODY_BIG, 2, "Exit", "Restart Campaign", "Campaign Room only available in full version. However, you may restart the campaign.");
 			if (reset_campaign == 1) {
 				// Rather than hardcoding the reset, let's reuse this.

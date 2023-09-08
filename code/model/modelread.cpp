@@ -37,6 +37,7 @@
 #include "render/3dinternal.h"
 #include "ship/ship.h"
 #include "starfield/starfield.h"
+#include "graphics/shadows.h"
 #include "weapon/weapon.h"
 #include "tracing/tracing.h"
 
@@ -246,8 +247,6 @@ void model_free(polymodel* pm)
 		vm_free(pm->debug_info);
 	}
 #endif
-
-	model_octant_free(pm);
 
 	if (pm->submodel) {
 		for (i = 0; i < pm->n_models; i++) {
@@ -711,18 +710,42 @@ void set_subsystem_info(int model_num, model_subsystem *subsystemp, char *props,
 	} else if ( strstr(lcdname, "radar") ) {
 		subsystemp->type = SUBSYSTEM_RADAR;
 	} else if ( strstr(lcdname, "turret") ) {
-		float angle;
 
 		subsystemp->type = SUBSYSTEM_TURRET;
-		if (in(p, props, "$fov"))
-			get_user_prop_value(p+4, buf);			// get the value of the fov
-		else
-			strcpy_s(buf,"180");
-		angle = fl_radians(atoi(buf))/2.0f;
 
-		// don't set the turret FOV if it has already been set (e.g. through ships.tbl)
-		if (!subsystemp->flags[Model::Subsystem_Flags::Turret_barrel_override_fov])
-			subsystemp->turret_fov = cosf(angle);
+		// don't set the turret FOV values if they have already been set (e.g. through ships.tbl)
+		if (!subsystemp->flags[Model::Subsystem_Flags::Turret_barrel_fov_overridden]) {
+			if (in(p, props, "$fov")) {
+				get_user_prop_value(p + 4, buf);			// get the value of the fov
+				float value = (float)atoi(buf);
+				CLAMP(value, 0.0f, 360.0f);
+				float angle = fl_radians(value) / 2.0f;
+				subsystemp->turret_fov = cosf(angle);
+			} else
+				subsystemp->turret_fov = 0.0f;
+		}		
+
+		if (!subsystemp->flags[Model::Subsystem_Flags::Turret_base_fov_overridden]) {
+			if (in(p, props, "$base_fov")) {
+				get_user_prop_value(p + 9, buf);			// get the value of the fov
+				float value = (float)atoi(buf);
+				CLAMP(value, 0.0f, 360.0f);
+				float angle = fl_radians(value) / 2.0f;
+				subsystemp->turret_base_fov = cosf(angle);
+			} else
+				subsystemp->turret_base_fov = -1.0f;
+		}
+
+		if (!subsystemp->flags[Model::Subsystem_Flags::Turret_max_fov_overridden]) {
+			if (in(p, props, "$max_fov")) {
+				get_user_prop_value(p + 8, buf);			// get the value of the fov
+				float value = (float)atoi(buf);
+				CLAMP(value, 0.0f, 90.0f);
+				float angle = PI_2 - fl_radians(value);
+				subsystemp->turret_max_fov = cosf(angle);
+			} else
+				subsystemp->turret_max_fov = 1.0f;
+		}
 
 		subsystemp->turret_num_firing_points = 0;
 
@@ -1450,7 +1473,7 @@ void maybe_adjust_movement_axis(bool is_rotation, bsp_info *sm)
 	}
 }
 
-void do_movement_sanity_checks(bool is_rotation, bsp_info *sm, bsp_info *parent_sm, const char *filename)
+void do_movement_sanity_checks(bsp_info *sm, bsp_info *parent_sm, const char *filename, bool is_rotation, bool is_turret)
 {
 	int *movement_axis_id, *movement_type;
 	vec3d *movement_axis;
@@ -1465,34 +1488,31 @@ void do_movement_sanity_checks(bool is_rotation, bsp_info *sm, bsp_info *parent_
 	// (do this before the compatibility check below to prevent doing it twice)
 	maybe_adjust_movement_axis(is_rotation, sm);
 
-	if (is_rotation)
+	if (is_rotation && is_turret)
 	{
 		// important compatibility check: if there are multipart turrets without rotation axes defined, define them
 		// also, some of the retail models got the axes wrong, so fix those :-/
 		// what this boils down to is that we must force turret axes for submodels with frame_of_reference defined
 		//     and also for turrets which don't have their axes set to "other"
-		if (parent_sm && in(parent_sm->name, "turret"))
+		auto base = parent_sm;
+		auto gun = sm;
+
+		if (!vm_matrix_equal(base->frame_of_reference, vmd_identity_matrix)
+			|| (base->rotation_axis_id != MOVEMENT_AXIS_OTHER))
 		{
-			auto base = parent_sm;
-			auto gun = sm;
+			base->rotation_axis_id = MOVEMENT_AXIS_Y;
+			base->rotation_axis = vmd_y_vector;
+			base->rotation_type = MOVEMENT_TYPE_TURRET;
+			maybe_adjust_movement_axis(true, base);
+		}
 
-			if (!vm_matrix_equal(base->frame_of_reference, vmd_identity_matrix)
-				|| (base->rotation_axis_id != MOVEMENT_AXIS_OTHER))
-			{
-				base->rotation_axis_id = MOVEMENT_AXIS_Y;
-				base->rotation_axis = vmd_y_vector;
-				base->rotation_type = MOVEMENT_TYPE_TURRET;
-				maybe_adjust_movement_axis(true, base);
-			}
-
-			if (!vm_matrix_equal(gun->frame_of_reference, vmd_identity_matrix)
-				|| (gun->rotation_axis_id != MOVEMENT_AXIS_OTHER))
-			{
-				gun->rotation_axis_id = MOVEMENT_AXIS_X;
-				gun->rotation_axis = vmd_x_vector;
-				gun->rotation_type = MOVEMENT_TYPE_TURRET;
-				maybe_adjust_movement_axis(true, gun);
-			}
+		if (!vm_matrix_equal(gun->frame_of_reference, vmd_identity_matrix)
+			|| (gun->rotation_axis_id != MOVEMENT_AXIS_OTHER))
+		{
+			gun->rotation_axis_id = MOVEMENT_AXIS_X;
+			gun->rotation_axis = vmd_x_vector;
+			gun->rotation_type = MOVEMENT_TYPE_TURRET;
+			maybe_adjust_movement_axis(true, gun);
 		}
 	}
 
@@ -1943,8 +1963,6 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				if (in(p, props, "$lod0_name"))
 					get_user_prop_value(p+10, sm->lod_name);
 
-				sm->flags.set(Model::Submodel_flags::Attach_thrusters, in(props, "$attach_thrusters"));
-
 				if (in(p, props, "$detail_box:")) {
 					p += 12;
 					while (*p == ' ') p++;
@@ -2067,13 +2085,6 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 					sm->frame_of_reference = parent_sm ? parent_sm->frame_of_reference : vmd_identity_matrix;
 				}
 
-				// ---------- submodel movement sanity checks ----------
-
-				do_movement_sanity_checks(true, sm, parent_sm, pm->filename);
-				do_movement_sanity_checks(false, sm, parent_sm, pm->filename);
-
-				// ---------- done submodel movement sanity checks ----------
-
 				{
 					int nchunks = cfread_int( fp );		// Throw away nchunks
 					if ( nchunks > 0 )	{
@@ -2106,23 +2117,30 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 						// byte swap first thing
 						swap_bsp_data(pm, bsp_data);
 
-						auto bsp_data_size_aligned = align_bsp_data(bsp_data, nullptr, sm->bsp_data_size);
-
-						if (bsp_data_size_aligned != static_cast<uint>(sm->bsp_data_size)) {
-							auto bsp_data_aligned = reinterpret_cast<ubyte *>(vm_malloc(bsp_data_size_aligned));
-
-							align_bsp_data(bsp_data, bsp_data_aligned, sm->bsp_data_size);
-
-							// release unaligned data
-							vm_free(bsp_data);
-							bsp_data = nullptr;
-
-							nprintf(("Model", "BSP ALIGN => %s:%s resized by %d bytes (%d total)\n", pm->filename, sm->name, bsp_data_size_aligned-sm->bsp_data_size, bsp_data_size_aligned));
-
-							sm->bsp_data = bsp_data_aligned;
-							sm->bsp_data_size = bsp_data_size_aligned;
-						} else {
+						extern bool Cmdline_no_bsp_align;
+						if (Cmdline_no_bsp_align) {
 							sm->bsp_data = bsp_data;
+						}
+						else {
+							auto bsp_data_size_aligned = align_bsp_data(bsp_data, nullptr, sm->bsp_data_size);
+
+							if (bsp_data_size_aligned != static_cast<uint>(sm->bsp_data_size)) {
+								auto bsp_data_aligned = reinterpret_cast<ubyte*>(vm_malloc(bsp_data_size_aligned));
+
+								align_bsp_data(bsp_data, bsp_data_aligned, sm->bsp_data_size);
+
+								// release unaligned data
+								vm_free(bsp_data);
+								bsp_data = nullptr;
+
+								nprintf(("Model", "BSP ALIGN => %s:%s resized by %d bytes (%d total)\n", pm->filename, sm->name, bsp_data_size_aligned - sm->bsp_data_size, bsp_data_size_aligned));
+
+								sm->bsp_data = bsp_data_aligned;
+								sm->bsp_data_size = bsp_data_size_aligned;
+							}
+							else {
+								sm->bsp_data = bsp_data;
+							}
 						}
 					}
 					else {
@@ -2840,6 +2858,53 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 
 	// Now that we've processed all the chunks, resolve the submodel indexes if we have any...
 
+	// first do some sanity checking to detect model errors
+	for (i = 0; i < pm->n_detail_levels; i++) {
+		if (pm->detail[i] < 0 || pm->detail[i] >= pm->n_models) {
+			Warning(LOCATION, "Model %s detail %d is %d which is not a valid submodel!", pm->filename, i, pm->detail[i]);
+			return modelread_status::FAIL;
+		}
+	}
+	for (i = 0; i < pm->num_debris_objects; i++) {
+		if (pm->debris_objects[i] < 0 || pm->debris_objects[i] >= pm->n_models) {
+			Warning(LOCATION, "Model %s debris object %d is %d which is not a valid submodel!", pm->filename, i, pm->debris_objects[i]);
+			return modelread_status::FAIL;
+		}
+	}
+	for (i = 0; i < pm->n_models; i++) {
+		if (pm->submodel[i].parent < -1 || pm->submodel[i].parent >= pm->n_models) {
+			Warning(LOCATION, "Model %s submodel %d parent is %d which is not a valid submodel!", pm->filename, i, pm->submodel[i].parent);
+			return modelread_status::FAIL;
+		}
+	}
+
+	create_family_tree(pm);
+
+	// ---------- submodel movement sanity checks ----------
+
+	for (i = 0; i < pm->n_models; i++) {
+		if (pm->submodel[i].parent < 0) {
+			model_iterate_submodel_tree(pm, i, [&](int submodel, int /*level*/, bool /*isLeaf*/)
+				{
+					auto sm = &pm->submodel[submodel];
+					auto parent_sm = sm->parent < 0 ? nullptr : &pm->submodel[sm->parent];
+
+					bool is_turret = false;
+					for (const auto& subsystem : subsystemParseList.weapons_subsystems) {
+						if (submodel == subsystem.second.gun_subobj_nr && sm->parent >= 0 && subsystem.first == sm->parent) {
+							is_turret = true;
+							break;
+						}
+					}
+
+					do_movement_sanity_checks(sm, parent_sm, pm->filename, true, is_turret);
+					do_movement_sanity_checks(sm, parent_sm, pm->filename, false, is_turret);
+				});
+		}
+	}
+
+	// ---------- done submodel movement sanity checks ----------
+
 	// handle look_at
 	for (i = 0; i < pm->n_models; i++) {
 		auto sm = &pm->submodel[i];
@@ -2860,12 +2925,38 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 		}
 	}
 
-	// handle dockpoint parent_submodels
+	// some dockpoint checks
 	for (i = 0; i < pm->n_docks; i++) {
 		auto dock = &pm->docking_bays[i];
 
+		// handle dockpoint parent_submodels
 		if (dock->parent_submodel >= 0) {
 			resolve_submodel_index(pm, dock->name, "$parent_submodel", dock->parent_submodel, dock_parent_submodel_names);
+		}
+
+		// reconcile paths
+		for (j = 0; j < dock->num_spline_paths; j++) {
+			auto path_num = dock->splines[j];
+
+			if (path_num < 0) {
+				continue;
+			} else if (path_num >= pm->n_paths) {
+				Warning(LOCATION, "On model '%s', path %d for dockpoint '%s' is not valid!  The index is %d but the total number of paths is %d.", pm->filename, j, dock->name, path_num, pm->n_paths);
+				dock->splines[j] = -1;
+				continue;
+			}
+
+			auto path = &pm->paths[path_num];
+
+			// most dockpoint paths will have a parent_name like $dock01-01 which does not resolve to a submodel
+			if (path->parent_submodel < 0) {
+				continue;
+			}
+			// for paths that have a parent, it had better match
+			if (path->parent_submodel != dock->parent_submodel) {
+				Warning(LOCATION, "On model '%s', the path for dockpoint '%s' does not have the same parent submodel as the dockpoint itself!", pm->filename, dock->name);
+				continue;
+			}
 		}
 	}
 
@@ -3137,53 +3228,11 @@ void model_load_texture(polymodel *pm, int i, char *file)
 	// -------------------------------------------------------------------------
 
 	// See if we need to compile a new shader for this material
-	int shader_flags = 0;
+	if (Shadow_quality != ShadowQuality::Disabled)
+		gr_maybe_create_shader(SDR_TYPE_MODEL, SDR_FLAG_MODEL_SHADOW_MAP);
 
-	if (tbase->GetTexture() > 0)
-		shader_flags |= SDR_FLAG_MODEL_DIFFUSE_MAP;
-	if (tglow->GetTexture() > 0 && Cmdline_glow)
-		shader_flags |= SDR_FLAG_MODEL_GLOW_MAP;
-	if ((tspec->GetTexture() > 0 || tspecgloss->GetTexture() > 0) && Cmdline_spec)
-		shader_flags |= SDR_FLAG_MODEL_SPEC_MAP;
-	if (tnorm->GetTexture() > 0 && Cmdline_normal)
-		shader_flags |= SDR_FLAG_MODEL_NORMAL_MAP;
-	if (theight->GetTexture() > 0 && Cmdline_height)
-		shader_flags |= SDR_FLAG_MODEL_HEIGHT_MAP;
-	if (Cmdline_env) // always render envmaps, they contribue lightning no matter what textures are avaliable.
-		shader_flags |= SDR_FLAG_MODEL_ENV_MAP;
-	if (tmisc->GetTexture() > 0)
-		shader_flags |= SDR_FLAG_MODEL_MISC_MAP;
-	if (tambient->GetTexture() >0)
-		shader_flags |= SDR_FLAG_MODEL_AMBIENT_MAP;
-	
-	gr_maybe_create_shader(SDR_TYPE_MODEL, SDR_FLAG_MODEL_SHADOW_MAP);
+	gr_maybe_create_shader(SDR_TYPE_MODEL, 0);
 
-	shader_flags |= SDR_FLAG_MODEL_CLIP;
-
-	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_ANIMATED);
-	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_ANIMATED | SDR_FLAG_MODEL_FOG);
-
-	shader_flags |= SDR_FLAG_MODEL_DEFERRED;
-
-	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT);
-	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_FOG);
-
-	shader_flags &= ~SDR_FLAG_MODEL_DEFERRED;
-	shader_flags |= SDR_FLAG_MODEL_TRANSFORM;
-
-	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_ANIMATED);
-	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_ANIMATED | SDR_FLAG_MODEL_FOG);
-
-	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT);
-	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_FOG);
-
-	shader_flags |= SDR_FLAG_MODEL_DEFERRED;
-
-	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_ANIMATED);
-	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_ANIMATED | SDR_FLAG_MODEL_FOG);
-
-	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT);
-	gr_maybe_create_shader(SDR_TYPE_MODEL, shader_flags | SDR_FLAG_MODEL_LIGHT | SDR_FLAG_MODEL_FOG);
 }
 
 //returns the number of the pof tech model if specified, otherwise number of pof model
@@ -3230,7 +3279,7 @@ int model_load(const  char* filename, int n_subsystems, model_subsystem* subsyst
 
 	TRACE_SCOPE(tracing::LoadModelFile);
 
-	nprintf(("Model", "Loading model '%s' into slot '%i'\n", filename, num ));
+	mprintf(( "Loading model '%s' into slot '%i'\n", filename, num ));
 
 	pm = new polymodel;	
 	Polygon_models[num] = pm;
@@ -3332,8 +3381,6 @@ int model_load(const  char* filename, int n_subsystems, model_subsystem* subsyst
 
 	}
 
-	create_family_tree(pm);
-
 	// maybe generate vertex buffers
 	create_vertex_buffer(pm, deferredTasks);
 
@@ -3428,17 +3475,12 @@ int model_load(const  char* filename, int n_subsystems, model_subsystem* subsyst
 
 	}
 
-
-	model_octant_create( pm );
-
 	TRACE_SCOPE(tracing::ModelParseAllBSPTrees);
 
 	for (i = 0; i < pm->n_models; ++i) {
-		if (!pm->submodel[i].flags[Model::Submodel_flags::Nocollide_this_only, Model::Submodel_flags::No_collisions]) {
-			pm->submodel[i].collision_tree_index = model_create_bsp_collision_tree();
-			bsp_collision_tree* tree             = model_get_bsp_collision_tree(pm->submodel[i].collision_tree_index);
-			model_collide_parse_bsp(tree, pm->submodel[i].bsp_data, pm->version);
-		}
+		pm->submodel[i].collision_tree_index = model_create_bsp_collision_tree();
+		bsp_collision_tree* tree             = model_get_bsp_collision_tree(pm->submodel[i].collision_tree_index);
+		model_collide_parse_bsp(tree, pm->submodel[i].bsp_data, pm->version);
 	}
 
 	// Find the core_radius... the minimum of 
@@ -4345,8 +4387,6 @@ int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, ship_
 	auto base_smi = &pmi->submodel[turret->subobj_num];
 	auto gun_smi = &pmi->submodel[turret->turret_gun_sobj];
 
-	bool limited_base_rotation = false;
-
 	// Check for a valid turret
 	Assert( turret->turret_num_firing_points > 0 );
 	// Check for a valid subsystem
@@ -4412,9 +4452,6 @@ int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, ship_
 		}
 	}
 
-	if (turret->flags[Model::Subsystem_Flags::Turret_base_restricted_fov])
-		limited_base_rotation = true;
-
 	// figure out how much time we need to account for.  This only varies in mulitplayer
 	// in singleplayer or multiplayer servers info_from_server_stamp will always be Timestamp::never()
 	float calc_time;
@@ -4438,7 +4475,7 @@ int model_rotate_gun(object *objp, polymodel *pm, polymodel_instance *pmi, ship_
 	else
 		ss->rotation_timestamp = timestamp(turret->turret_reset_delay);
 
-	base_delta = vm_interp_angle(&base_smi->cur_angle, desired_base_angle, step_size, limited_base_rotation);
+	base_delta = vm_interp_angle(&base_smi->cur_angle, desired_base_angle, step_size, turret->turret_base_fov > -1.0f);
 	gun_delta = vm_interp_angle(&gun_smi->cur_angle, desired_gun_angle, step_size);
 
 	submodel_canonicalize_rotation(base_sm, base_smi, true);
@@ -5047,7 +5084,7 @@ void model_instance_clear_arcs(polymodel *pm, polymodel_instance *pmi)
 }
 
 // Adds an electrical arcing effect to a submodel
-void model_instance_add_arc(polymodel *pm, polymodel_instance *pmi, int sub_model_num, vec3d *v1, vec3d *v2, int arc_type )
+void model_instance_add_arc(polymodel *pm, polymodel_instance *pmi, int sub_model_num, vec3d *v1, vec3d *v2, int arc_type, color *primary_color_1, color *primary_color_2, color *secondary_color )
 {
 	Assert(pm->id == pmi->model_num);
 
@@ -5066,6 +5103,13 @@ void model_instance_add_arc(polymodel *pm, polymodel_instance *pmi, int sub_mode
 		smi->arc_type[smi->num_arcs] = (ubyte)arc_type;
 		smi->arc_pts[smi->num_arcs][0] = *v1;
 		smi->arc_pts[smi->num_arcs][1] = *v2;
+
+		if (arc_type == MARC_TYPE_SHIP) {
+			smi->arc_primary_color_1[smi->num_arcs] = *primary_color_1;
+			smi->arc_primary_color_2[smi->num_arcs] = *primary_color_2;
+			smi->arc_secondary_color[smi->num_arcs] = *secondary_color;
+		}
+
 		smi->num_arcs++;
 	}
 }
@@ -5092,11 +5136,18 @@ int model_find_submodel_index(int modelnum, const char *name)
 // Goober5000 - now finds more than one dockpoint of this type
 int model_find_dock_index(int modelnum, int dock_type, int index_to_start_at)
 {
-	int i;
-	polymodel *pm;
+	polymodel* pm;
 
-	// get model and make sure it has dockpoints
 	pm = model_get(modelnum);
+
+	return model_find_dock_index(pm, dock_type, index_to_start_at);
+}
+
+int model_find_dock_index(const polymodel* pm, int dock_type, int index_to_start_at)
+{
+	int i;
+
+	// make sure it has dockpoints
 	if ( pm->n_docks <= 0 )
 		return -1;
 
@@ -5116,11 +5167,18 @@ int model_find_dock_index(int modelnum, int dock_type, int index_to_start_at)
 // so that a desginer doesn't have to know exact names if building a mission from hand.
 int model_find_dock_name_index(int modelnum, const char* name)
 {
-	int i;
-	polymodel *pm;
-
-	// get model and make sure it has dockpoints
+	polymodel* pm;
+	
 	pm = model_get(modelnum);
+
+	return model_find_dock_name_index(pm, name);
+}
+
+int model_find_dock_name_index(const polymodel* pm, const char* name)
+{
+	int i;
+
+	// make sure it has dockpoints
 	if ( pm->n_docks <= 0 )
 		return -1;
 
@@ -5129,7 +5187,7 @@ int model_find_dock_name_index(int modelnum, const char* name)
 	for(i = 0; i < Num_dock_type_names; i++)
 	{
 		if(!stricmp(name, Dock_type_names[i].name)) {
-			return model_find_dock_index(modelnum, Dock_type_names[i].def);
+			return model_find_dock_index(pm, Dock_type_names[i].def);
 		}
 	}
 	/*
@@ -5616,6 +5674,7 @@ void glowpoint_override_defaults(glow_point_bank_override *gpo)
 	gpo->glow_bitmap = -1;
 	gpo->glow_neb_bitmap = -1;
 	gpo->is_on = true;
+	gpo->default_off = false;
 	gpo->type_override = false;
 	gpo->on_time_override = false;
 	gpo->off_time_override = false;
@@ -5638,6 +5697,7 @@ void glowpoint_override_defaults(glow_point_bank_override *gpo)
 	gpo->rotating = false;
 	gpo->rotation_axis = vmd_zero_vector;
 	gpo->rotation_speed = 0.0f;
+	gpo->intensity = 1.0f;
 }
 
 SCP_vector<glow_point_bank_override>::iterator get_glowpoint_bank_override_by_name(const char* name)
@@ -5686,6 +5746,10 @@ void parse_glowpoint_table(const char *filename)
 
 			if (optional_string("$On:")) {
 				stuff_boolean(&gpo.is_on);
+			}
+
+			if (optional_string("$Default Off:")) {
+				stuff_boolean(&gpo.default_off);
 			}
 
 			if (optional_string("$Displacement time:")) {
@@ -5782,6 +5846,10 @@ void parse_glowpoint_table(const char *filename)
 
 			if (optional_string("+light")) {
 				gpo.is_lightsource = true;
+
+				if (optional_string("$Light intensity:")) {
+					stuff_float(&gpo.intensity);
+				}
 
 				if (optional_string("$Light radius multiplier:")) {
 					stuff_float(&gpo.radius_multi);
@@ -5896,8 +5964,8 @@ void model_subsystem::reset()
     turret_norm.xyz.x = turret_norm.xyz.y = turret_norm.xyz.z = 0.0f;
     
     turret_fov = 0;
-    turret_max_fov = 0;
-    turret_base_fov = 0;
+    turret_max_fov = 1;
+    turret_base_fov = -1;
     turret_num_firing_points = 0;
     for (auto it = std::begin(turret_firing_point); it != std::end(turret_firing_point); ++it)
         it->xyz.x = it->xyz.y = it->xyz.z = 0.0f;
@@ -6038,13 +6106,20 @@ uint align_bsp_data(ubyte* bsp_in, ubyte* bsp_out, uint bsp_size)
 	do {
 		//Read Chunk type and size
 		memcpy(&bsp_chunk_type, bsp_in, 4);
-		
+
 		//Chunk type 0 is EOF, but the size is read as 0, it needs to be adjusted
 		if (bsp_chunk_type == 0) {
 			bsp_chunk_size = 4;
 		}
 		else {
 			memcpy(&bsp_chunk_size, bsp_in + 4, 4);
+		}
+
+		//Chunk size validation, if fails change it to copy the remaining data in chain
+		auto max_size = end - bsp_in;
+		if (bsp_chunk_size > max_size) {
+			Warning(LOCATION, "Invalid BSP Chunk size detected during BSP data align: Chunk Type: %d, Chunk Size: %d, Max Size: %d", bsp_chunk_type, bsp_chunk_size, static_cast<uint>(max_size));
+			bsp_chunk_size = static_cast<uint>(max_size);
 		}
 
 		//mprintf(("|%d | %d|\n",bsp_chunk_type,bsp_chunk_size));

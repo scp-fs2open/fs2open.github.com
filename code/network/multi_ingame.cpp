@@ -37,6 +37,7 @@
 #include "network/multiteamselect.h"
 #include "missionui/missionweaponchoice.h"
 #include "network/multi_endgame.h"
+#include "hud/hudets.h"
 #include "hud/hudshield.h"
 #include "mission/missionhotkey.h"
 #include "globalincs/alphacolors.h"
@@ -878,8 +879,6 @@ void multi_ingame_join_display_ship(object *objp,int y_start)
 // display the available ships (OF_COULD_BE_PLAYER flagged)
 void multi_ingame_join_display_avail()
 {		
-	ship_obj *moveup;	
-
 	// recalculate this # every frame
 	Multi_ingame_num_avail = 0;	
 
@@ -895,8 +894,10 @@ void multi_ingame_join_display_avail()
 		gr_line((Mi_name_field[gr_screen.res][MI_FIELD_X]-1) + (Mi_width[gr_screen.res]+2), y_start,(Mi_name_field[gr_screen.res][MI_FIELD_X]-1) + (Mi_width[gr_screen.res]+2),y_start + Mi_spacing[gr_screen.res] - 2, GR_RESIZE_MENU);
 	}
 
-	moveup = GET_FIRST(&Ship_obj_list);	
-	while(moveup != END_OF_LIST(&Ship_obj_list)){
+	for (auto moveup: list_range(&Ship_obj_list)) {
+		if (Objects[moveup->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		if( !(Ships[Objects[moveup->objnum].instance].is_dying_or_departing()) && (Objects[moveup->objnum].flags[Object::Object_Flags::Could_be_player]) ) {
 			// display the ship
 			multi_ingame_join_display_ship(&Objects[moveup->objnum],Mi_name_field[gr_screen.res][MI_FIELD_Y] + (Multi_ingame_num_avail * Mi_spacing[gr_screen.res]));
@@ -907,7 +908,6 @@ void multi_ingame_join_display_avail()
 			// inc the # available
 			Multi_ingame_num_avail++;
 		}
-		moveup = GET_NEXT(moveup);
 	}		
 }
 
@@ -1126,9 +1126,10 @@ void send_ingame_ships_packet(net_player *player)
 	// in wings.  The joiner will take the list, create any ships which should be created, and delete all
 	// other ships after the list is sent.
 	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
-		ship *shipp;
+		if (Objects[so->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
 
-		shipp = &Ships[Objects[so->objnum].instance];
+		ship *shipp = &Ships[Objects[so->objnum].instance];
 
 		// skip all wings.
 		// if ( shipp->wingnum != -1 ){
@@ -1590,6 +1591,7 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 	int player_num;
 	short sval;
 	fix mission_time;
+	int shield_ets, weapon_ets, engine_ets;
 
 	// get the code
 	GET_INT(code);
@@ -1713,11 +1715,12 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 
 		// get the ships ets settings
 		GET_DATA(val);
-		Player_ship->weapon_recharge_index = val;
+		weapon_ets = val;
 		GET_DATA(val);
-		Player_ship->shield_recharge_index = val;
+		shield_ets = val;
 		GET_DATA(val);
-		Player_ship->engine_recharge_index = val;		
+		engine_ets = val;		
+		set_recharge_rates(objp, shield_ets, weapon_ets, engine_ets);
 
 		// get current primary and secondary banks, and add link status
 		GET_DATA(val);
@@ -1822,21 +1825,16 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 
 void multi_ingame_send_ship_update(net_player *p)
 {
-	ship_obj *moveup;
-	
-	// get the first object on the list
-	moveup = GET_FIRST(&Ship_obj_list);
-	
 	// go through the list and send all ships which are mark as OF_COULD_BE_PLAYER
-	while(moveup!=END_OF_LIST(&Ship_obj_list)){
+	for (auto moveup: list_range(&Ship_obj_list)) {
+		if (Objects[moveup->objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
 		//Make sure the object can be a player and is on the same team as this guy
 		if(Objects[moveup->objnum].flags[Object::Object_Flags::Could_be_player] && Objects[moveup->objnum].type == OBJ_SHIP && obj_team(&Objects[moveup->objnum]) == p->p_info.team){
 			// send the update
 			send_ingame_ship_update_packet(p,&Ships[Objects[moveup->objnum].instance]);
 		}
-
-		// move to the next item
-		moveup = GET_NEXT(moveup);
 	}
 }
 

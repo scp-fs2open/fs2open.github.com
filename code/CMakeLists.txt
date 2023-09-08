@@ -20,6 +20,9 @@ TARGET_INCLUDE_DIRECTORIES(code PUBLIC ${GENERATED_SOURCE_DIR}/code)
 
 if (FSO_BUILD_WITH_OPENGL)
 	target_link_libraries(code PUBLIC OpenGL)
+	if(FSO_BUILD_WITH_OPENGL_DEBUG)
+		add_definitions(-DFS_OPENGL_DEBUG)
+	endif()
 endif()
 
 TARGET_LINK_LIBRARIES(code PUBLIC openal)
@@ -47,10 +50,6 @@ target_link_libraries(code PUBLIC libRocket)
 
 target_link_libraries(code PUBLIC pcp)
 
-if (FSO_BUILD_WITH_VULKAN)
-	target_link_libraries(code PUBLIC vulkan-hpp)
-endif()
-
 target_link_libraries(code PUBLIC parsers)
 
 target_link_libraries(code PUBLIC mdns)
@@ -69,6 +68,12 @@ target_link_libraries(code PUBLIC variant)
 target_link_libraries(code PUBLIC any)
 
 target_link_libraries(code PUBLIC optional)
+
+target_link_libraries(code PUBLIC anl)
+
+target_link_libraries(code PUBLIC hidapi::hidapi)
+
+target_link_libraries(code PUBLIC imgui)
 
 # Headers for standalone "gui" on UNIX
 IF(UNIX)
@@ -92,7 +97,16 @@ if (FSO_BUILD_WITH_OPENGL)
 	target_compile_definitions(code PUBLIC WITH_OPENGL)
 endif()
 if (FSO_BUILD_WITH_VULKAN)
-	target_compile_definitions(code PUBLIC WITH_VULKAN)
+	find_package(Vulkan REQUIRED)
+	if (Vulkan_FOUND)
+		target_compile_definitions(code PUBLIC WITH_VULKAN)
+		target_link_libraries(code PRIVATE Vulkan::Vulkan)
+
+		target_compile_definitions(code PUBLIC WITH_VULKAN VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1 VK_NO_PROTOTYPES)
+	else()
+		message(WARNING "FSO_BUILD_WITH_VULKAN was set, but the package was unable to be found. Forcing OFF.")
+		set(FSO_BUILD_WITH_VULKAN OFF CACHE BOOL "Enable compilation of the Vulkan renderer" FORCE)
+	endif()
 endif()
 
 include(shaders.cmake)

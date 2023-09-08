@@ -23,10 +23,10 @@ ADE_VIRTVAR(Name, l_Persona, "string", "The name of the persona", "string", "The
 	if (!ade_get_args(L, "o", l_Persona.Get(&idx)))
 		return ade_set_error(L, "s", "");
 
-	if (Personas == NULL)
+	if (Personas.empty())
 		return ade_set_error(L, "s", "");
 
-	if (idx < 0 || idx >= Num_personas)
+	if (idx < 0 || idx >= (int)Personas.size())
 		return ade_set_error(L, "s", "");
 
 	return ade_set_args(L, "s", Personas[idx].name);
@@ -39,7 +39,7 @@ ADE_FUNC(isValid, l_Persona, NULL, "Detect if the handle is valid", "boolean", "
 	if (!ade_get_args(L, "o", l_Persona.Get(&idx)))
 		return ADE_RETURN_FALSE;
 
-	return ade_set_args(L, "b", idx >= 0 && idx < Num_personas);
+	return ade_set_args(L, "b", idx >= 0 && idx < (int)Personas.size());
 }
 
 //**********HANDLE: Message
@@ -132,7 +132,7 @@ ADE_VIRTVAR(Persona, l_Message, "persona", "The persona of the message", "person
 	if (idx < 0 && idx >= (int) Messages.size())
 		return ade_set_error(L, "o", l_Soundfile.Set(soundfile_h()));
 
-	if (ADE_SETTING_VAR && newPersona >= 0 && newPersona < Num_personas)
+	if (ADE_SETTING_VAR && newPersona >= 0 && newPersona < (int)Personas.size())
 	{
 		Messages[idx].persona_index = newPersona;
 	}

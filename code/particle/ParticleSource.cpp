@@ -39,6 +39,20 @@ void SourceOrigin::getGlobalPosition(vec3d* posOut) const {
 			offset = m_offset;
 			break;
 		}
+		case SourceOriginType::BEAM: {
+			auto beam = &Beams[m_origin.m_object.objp->instance];
+			*posOut = beam->last_start;
+			// weight the random points towards the start linearly
+			// proportion along the beam the beam stopped, of its total potential length
+			float dist_adjusted = vm_vec_dist(&beam->last_start, &beam->last_shot) / beam->range;
+			// randomly sample from the weighted distribution, excluding points beyond the last_shot
+			auto t = (1.0f - sqrtf(frand_range(powf(1.f - dist_adjusted, 2.0f), 1.0f)));
+			vec3d dir;
+			vm_vec_normalized_dir(&dir, &beam->last_shot, &beam->last_start);
+			*posOut += (dir * beam->range) * t;
+			offset = m_offset;
+			break;
+		}
 		default: {
 			*posOut = vmd_zero_vector;
 			offset = m_offset;
@@ -49,12 +63,18 @@ void SourceOrigin::getGlobalPosition(vec3d* posOut) const {
 	vm_vec_add2(posOut, &offset);
 }
 void SourceOrigin::getHostOrientation(matrix* matOut) const {
+	vec3d vec;
 	switch (m_originType) {
 	case SourceOriginType::OBJECT:
 		*matOut = m_origin.m_object.objp->orient;
 		break;
 	case SourceOriginType::PARTICLE:
 		vm_vector_2_matrix(matOut, &m_origin.m_particle.lock()->velocity, nullptr, nullptr);
+		break;
+	case SourceOriginType::BEAM:
+		vec = vmd_zero_vector;
+		vm_vec_normalized_dir(&vec, &Beams[m_origin.m_object.objp->instance].last_shot, &Beams[m_origin.m_object.objp->instance].last_start);
+		vm_vector_2_matrix(matOut, &vec, nullptr, nullptr);
 		break;
 	case SourceOriginType::VECTOR: // Intentional fall-through, plain vectors have no orientation
 	default:
@@ -75,6 +95,7 @@ void SourceOrigin::applyToParticleInfo(particle_info& info, bool allowRelative) 
 				info.pos = m_offset;
 				break;
 			}
+			case SourceOriginType::BEAM: // Intentional fall-through
 			case SourceOriginType::PARTICLE: // Intentional fall-through
 			case SourceOriginType::VECTOR: // Intentional fall-through
 			default: {
@@ -124,6 +145,13 @@ void SourceOrigin::moveTo(vec3d* pos) {
 	m_origin.m_pos = *pos;
 }
 
+void SourceOrigin::moveToBeam(object* objp) {
+	Assertion(objp, "Invalid object pointer passed!");
+
+	m_originType = SourceOriginType::BEAM;
+	m_origin.m_object = object_h(objp);
+}
+
 void SourceOrigin::moveToObject(object* objp, vec3d* offset) {
 	Assertion(objp, "Invalid object pointer passed!");
 	Assertion(offset, "Invalid vector pointer passed!");
@@ -143,14 +171,15 @@ bool SourceOrigin::isValid() const {
 	switch (m_originType) {
 		case SourceOriginType::NONE:
 			return false;
-		case SourceOriginType::OBJECT: {
+		case SourceOriginType::OBJECT:
+		case SourceOriginType::BEAM: {
 			if (!m_origin.m_object.IsValid()) {
 				return false;
 			}
 
 			auto objp = m_origin.m_object.objp;
 
-			if (objp->type != OBJ_WEAPON) {
+			if (objp->type != OBJ_WEAPON && objp->type != OBJ_BEAM) {
 				// The following checks are only relevant for weapons
 				return true;
 			}
@@ -160,10 +189,14 @@ bool SourceOrigin::isValid() const {
 				return true;
 			}
 
-			weapon* wp = &Weapons[objp->instance];
-
 			// Make sure we stay in the same weapon state
-			return wp->weapon_state == m_weaponState;
+			if (objp->type == OBJ_BEAM) {
+				beam* bm = &Beams[objp->instance];
+				return bm->weapon_state == m_weaponState;
+			} else {
+				weapon* wp = &Weapons[objp->instance];
+				return wp->weapon_state == m_weaponState;
+			}
 		}
 		case SourceOriginType::PARTICLE:
 			return !m_origin.m_particle.expired();

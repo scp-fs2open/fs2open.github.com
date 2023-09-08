@@ -316,20 +316,34 @@ void ShipEditorDialog::updateColumnOne()
 void ShipEditorDialog::updateColumnTwo()
 {
 	util::SignalBlockers blockers(this);
-	int i;
 	ui->wing->setText(_model->getWing().c_str());
 
 	ui->personaCombo->clear();
 	ui->personaCombo->addItem("<none>", QVariant(-1));
-	for (i = 0; i < Num_personas; i++) {
+	for (size_t i = 0; i < Personas.size(); i++) {
 		if (Personas[i].flags & PERSONA_FLAG_WINGMAN) {
-
 			SCP_string persona_name = Personas[i].name;
-			if (Personas[i].flags & PERSONA_FLAG_VASUDAN) {
-				persona_name += " -Vas";
+
+			// see if the bitfield matches one and only one species
+			int species = -1;
+			for (size_t j = 0; j < 32 && j < Species_info.size(); j++) {
+				if (Personas[i].species_bitfield == (1 << j)) {
+					species = (int)j;
+					break;
+				}
 			}
 
-			ui->personaCombo->addItem(persona_name.c_str(), QVariant(i));
+			// if it is an exact species that isn't the first
+			if (species > 0) {
+				persona_name += "-";
+
+				auto species_name = Species_info[species].species_name;
+				size_t len = strlen(species_name);
+				for (size_t j = 0; j < 3 && j < len; j++)
+					persona_name += species_name[j];
+			}
+
+			ui->personaCombo->addItem(persona_name.c_str(), QVariant((int)i));
 		}
 	}
 	auto idx = _model->getPersona();

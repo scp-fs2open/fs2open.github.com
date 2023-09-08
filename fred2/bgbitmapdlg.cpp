@@ -10,10 +10,12 @@
 
 
 
+#include "globalincs/vmallocator.h"
 #include "stdafx.h"
 #include "FRED.h"
 #include "BgBitmapDlg.h"
 #include "listitemchooser.h"
+#include "lighting/lighting_profiles.h"
 #include "starfield/starfield.h"
 #include "bmpman/bmpman.h"
 #include "graphics/light.h"
@@ -24,6 +26,7 @@
 #include "nebula/neblightning.h"
 #include "parse/parselo.h"
 #include "mission/missionparse.h"
+#include <vcruntime.h>
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -47,6 +50,7 @@ bg_bitmap_dlg::bg_bitmap_dlg(CWnd* pParent) : CDialog(bg_bitmap_dlg::IDD, pParen
 	m_subspace = FALSE;
 	m_fullneb = FALSE;
 	m_fog_color_override = FALSE;
+	m_fullneb_background_bitmaps = FALSE;
 	m_fog_r = 0;
 	m_fog_g = 0;
 	m_fog_b = 0;
@@ -75,6 +79,7 @@ bg_bitmap_dlg::bg_bitmap_dlg(CWnd* pParent) : CDialog(bg_bitmap_dlg::IDD, pParen
 	m_sky_flag_4 = The_mission.skybox_flags & MR_NO_CULL ? 1 : 0;
 	m_sky_flag_5 = The_mission.skybox_flags & MR_NO_GLOWMAPS ? 1 : 0;
 	m_sky_flag_6 = The_mission.skybox_flags & MR_FORCE_CLAMP ? 1 : 0;
+	m_light_profile_index = 0;
 	//}}AFX_DATA_INIT
 }
 
@@ -96,6 +101,7 @@ void bg_bitmap_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_SUBSPACE, m_subspace);
 	DDX_Check(pDX, IDC_FULLNEB, m_fullneb);
 	DDX_Check(pDX, IDC_NEB2_PALETTE_OVERRIDE, m_fog_color_override);
+	DDX_Check(pDX, IDC_NEB2_BACKGROUND_BITMAPS, m_fullneb_background_bitmaps);
 	DDX_Check(pDX, IDC_CORRECTED_ANGLES_IN_MISSION_FILE, m_corrected_angles_in_mission_file);
 
 	DDX_Check(pDX, IDC_NEB2_TOGGLE_TRAILS, m_toggle_trails);
@@ -138,6 +144,7 @@ void bg_bitmap_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_SKY_FLAG_CLAMP, m_sky_flag_6);
 	DDX_Text(pDX, IDC_NEB2_FAR_MULTIPLIER, m_neb_far_multi);
 	DDX_Text(pDX, IDC_NEB2_NEAR_MULTIPLIER, m_neb_near_multi);
+	DDX_CBIndex(pDX, IDC_LIGHT_PROFILE, m_light_profile_index);
 	DDX_Text(pDX, IDC_NEB2_FOG_R, m_fog_r);
 	DDV_MinMaxInt(pDX, m_fog_r, 0, 255);
 	DDX_Text(pDX, IDC_NEB2_FOG_G, m_fog_g);
@@ -268,18 +275,13 @@ void bg_bitmap_dlg::create()
 	m_skybox_heading = fl2ir(fl_degrees(skybox_angles.h));
 
 	//make sure angle values are in the 0-359 degree range
-	if (m_skybox_pitch < 0)
-		m_skybox_pitch = m_skybox_pitch + 360;
-	if (m_skybox_bank < 0)
-		m_skybox_bank = m_skybox_bank + 360;
-	if (m_skybox_heading < 0)
-		m_skybox_heading = m_skybox_heading + 360;
+	if (m_skybox_pitch < 0) m_skybox_pitch += 360;
+	if (m_skybox_bank < 0) m_skybox_bank += 360;
+	if (m_skybox_heading < 0) m_skybox_heading += 360;
 
 
-	for(i=0; i<MAX_NEB2_BITMAPS; i++){
-		if(strlen(Neb2_bitmap_filenames[i]) > 0){ //-V805
-			((CComboBox*)GetDlgItem(IDC_NEB2_TEXTURE))->AddString(Neb2_bitmap_filenames[i]);
-		}
+	for (i = 0; i < (int)Neb2_bitmap_filenames.size(); i++) {
+		((CComboBox*)GetDlgItem(IDC_NEB2_TEXTURE))->AddString(Neb2_bitmap_filenames[i].c_str());
 	}
 	// if we have a texture selected already
 	if(strlen(Neb2_texture_name) > 0){ //-V805
@@ -310,6 +312,7 @@ void bg_bitmap_dlg::create()
 		
 	m_fullneb = The_mission.flags[Mission::Mission_Flags::Fullneb] ? TRUE : FALSE;
 	m_fog_color_override = The_mission.flags[Mission::Mission_Flags::Neb2_fog_color_override] ? TRUE : FALSE;
+	m_fullneb_background_bitmaps = The_mission.flags[Mission::Mission_Flags::Fullneb_background_bitmaps] ? TRUE : FALSE;
 
 	// determine if a full Neb2 is active - load in the full nebula filenames or the partial neb
 	// filenames
@@ -326,12 +329,14 @@ void bg_bitmap_dlg::create()
 		m_bank = Nebula_bank;
 		m_heading = Nebula_heading;
 
-		// no full nebula, no override
+		// no full nebula, no override or bitmaps
 		m_fog_color_override = FALSE;
+		m_fullneb_background_bitmaps = FALSE;
 	}
 
 	((CButton*)GetDlgItem(IDC_FULLNEB))->SetCheck(m_fullneb);
 	((CButton*)GetDlgItem(IDC_NEB2_PALETTE_OVERRIDE))->SetCheck(m_fog_color_override);
+	((CButton*)GetDlgItem(IDC_NEB2_BACKGROUND_BITMAPS))->SetCheck(m_fullneb_background_bitmaps);
 
 	m_fog_r = Neb2_fog_color[0];
 	m_fog_g = Neb2_fog_color[1];
@@ -382,6 +387,17 @@ void bg_bitmap_dlg::create()
 	m_neb_near_multi = Neb2_fog_near_mult;
 	m_neb_far_multi = Neb2_fog_far_mult;
 
+	box = (CComboBox *) GetDlgItem(IDC_LIGHT_PROFILE);
+	SCP_vector<SCP_string> profiles = lighting_profiles::list_profiles();
+	m_light_profile_index = 0;
+	for(size_t idx = 0; idx<profiles.size();idx++){
+		SCP_string n = profiles[idx];
+		box->AddString(profiles[idx].c_str());
+		if(The_mission.lighting_profile_name == n)
+			m_light_profile_index = (int) idx;
+	}
+	box->SetCurSel(m_light_profile_index);
+
 	background_flags_init();
 
 	UpdateData(FALSE);
@@ -424,7 +440,9 @@ void bg_bitmap_dlg::OnClose()
 		}
 		
 		// get the bitmap name
-		strcpy_s(Neb2_texture_name, Neb2_bitmap_filenames[m_neb2_texture]);
+		if ((m_neb2_texture >= 0) && (m_neb2_texture < (int)Neb2_bitmap_filenames.size())){
+			strcpy_s(Neb2_texture_name, Neb2_bitmap_filenames[m_neb2_texture].c_str());
+		}
 
 		// init the nebula
 		neb2_level_init();
@@ -434,8 +452,9 @@ void bg_bitmap_dlg::OnClose()
 		Neb2_awacs = -1.0f;
 		strcpy_s(Neb2_texture_name, "");
 
-		// no full nebula, no override
+		// no full nebula, no override or bitmaps
 		m_fog_color_override = FALSE;
+		m_fullneb_background_bitmaps = FALSE;
 	}
 
 	The_mission.flags.set(Mission::Mission_Flags::Neb2_fog_color_override, m_fog_color_override == TRUE);
@@ -444,6 +463,8 @@ void bg_bitmap_dlg::OnClose()
 		Neb2_fog_color[1] = (ubyte)m_fog_g;
 		Neb2_fog_color[2] = (ubyte)m_fog_b;
 	}
+
+	The_mission.flags.set(Mission::Mission_Flags::Fullneb_background_bitmaps, m_fullneb_background_bitmaps == TRUE);
 
 	// check for no ship trails -C
     The_mission.flags.set(Mission::Mission_Flags::Toggle_ship_trails, m_toggle_trails != 0);
@@ -491,6 +512,7 @@ void bg_bitmap_dlg::OnClose()
 	Neb2_fog_near_mult = m_neb_near_multi;
 	Neb2_fog_far_mult = m_neb_far_multi;
 
+	The_mission.lighting_profile_name = lighting_profiles::list_profiles()[m_light_profile_index];
 	// close sun data
 	sun_data_close();
 
@@ -593,6 +615,8 @@ void bg_bitmap_dlg::OnFullNeb()
 		GetDlgItem(IDC_NEB2_FOG_G)->EnableWindow(m_fog_color_override);
 		GetDlgItem(IDC_NEB2_FOG_B)->EnableWindow(m_fog_color_override);
 
+		GetDlgItem(IDC_NEB2_BACKGROUND_BITMAPS)->EnableWindow(TRUE);
+
 		GetDlgItem(IDC_NEB2_TOGGLE_TRAILS)->EnableWindow(TRUE);
 
 		// disable non-fullneb controls
@@ -624,6 +648,8 @@ void bg_bitmap_dlg::OnFullNeb()
 		GetDlgItem(IDC_NEB2_FOG_G)->EnableWindow(FALSE);
 		GetDlgItem(IDC_NEB2_FOG_B)->EnableWindow(FALSE);
 
+		GetDlgItem(IDC_NEB2_BACKGROUND_BITMAPS)->EnableWindow(FALSE);
+
 		GetDlgItem(IDC_NEB2_TOGGLE_TRAILS)->EnableWindow(FALSE);
 	}
 }
@@ -647,7 +673,7 @@ void bg_bitmap_dlg::OnSelchangeNeb2Texture()
 	if (m_fog_color_override)
 	{
 		ubyte rgb[3];
-		neb2_generate_fog_color(m_neb2_texture >= 0 ? Neb2_bitmap_filenames[m_neb2_texture] : "", rgb);
+		neb2_generate_fog_color(m_neb2_texture >= 0 ? Neb2_bitmap_filenames[m_neb2_texture].c_str() : "", rgb);
 		m_fog_r = rgb[0];
 		m_fog_g = rgb[1];
 		m_fog_b = rgb[2];
@@ -761,6 +787,13 @@ void bg_bitmap_dlg::OnSunChange()
 		s_bank = fl2ir(fl_degrees(sle->ang.b) + delta);
 		s_heading = fl2ir(fl_degrees(sle->ang.h) + delta);
 		s_scale = sle->scale_x;
+
+		// make sure angles are in the 0-359 degree range;
+		// an angle of 6.28318310, which is less than 6.28318548,
+		// is converted to 359.999847, which is rounded to 360
+		if (s_pitch >= 360) s_pitch -= 360;
+		if (s_bank >= 360) s_bank -= 360;
+		if (s_heading >= 360) s_heading -= 360;
 
 		// stuff back into the controls
 		UpdateData(FALSE);
@@ -928,6 +961,11 @@ void bg_bitmap_dlg::OnBitmapChange()
 		b_scale_y = sle->scale_y;
 		b_div_x = sle->div_x;
 		b_div_y = sle->div_y;
+
+		// make sure angles are in the 0-359 degree range
+		if (b_pitch >= 360) b_pitch -= 360;
+		if (b_bank >= 360) b_bank -= 360;
+		if (b_heading >= 360) b_heading -= 360;
 
 		// stuff back into the controls
 		UpdateData(FALSE);

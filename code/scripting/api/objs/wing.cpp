@@ -1,9 +1,11 @@
 //
 //
 
-#include "wing.h"
 #include "ship.h"
 #include "object/object.h"
+#include "wing.h"
+#include "wingformation.h"
+
 #include "ship/ship.h"
 
 extern bool sexp_check_flag_array(const char *flag_name, Ship::Wing_Flags &wing_flag);
@@ -178,6 +180,47 @@ static int wing_getset_helper(lua_State* L, int wing::* field, bool canSet = fal
 	}
 
 	return ade_set_args(L, "i", Wings[wingnum].*field);
+}
+
+ADE_VIRTVAR(Formation, l_Wing, "wingformation", "Gets or sets the formation of the wing.", "wingformation", "Wing formation, or nil if wing is invalid")
+{
+	int wingnum, formation_id = -1;
+
+	if (!ade_get_args(L, "o|o", l_Wing.Get(&wingnum), l_WingFormation.Get(&formation_id)))
+		return ADE_RETURN_NIL;
+
+	if (wingnum < 0 || wingnum >= Num_wings)
+		return ADE_RETURN_NIL;
+
+	wing* wingp = &Wings[wingnum];
+
+	if (ADE_SETTING_VAR && formation_id >= 0)
+	{
+		wingp->formation = formation_id - 1;		// offset from Default
+	}
+
+	return ade_set_args(L, "o", l_WingFormation.Set(formation_id));
+}
+
+ADE_VIRTVAR(FormationScale, l_Wing, "number", "Gets or sets the scale (i.e. distance multiplier) of the current wing formation.", "number", "scale of wing formation, nil if wing or formation invalid")
+{
+	int wingnum;
+	float formation_scale = 0.0f;
+
+	if (!ade_get_args(L, "o|f", l_Wing.Get(&wingnum), &formation_scale))
+		return ADE_RETURN_NIL;
+
+	if (wingnum < 0 || wingnum >= Num_wings)
+		return ADE_RETURN_NIL;
+
+	wing* wingp = &Wings[wingnum];
+
+	if (ADE_SETTING_VAR && formation_scale != 0.0f)
+	{
+		wingp->formation_scale = formation_scale;
+	}
+
+	return ade_set_args(L, "f", wingp->formation_scale);
 }
 
 ADE_VIRTVAR(CurrentCount, l_Wing, nullptr, "Gets the number of ships in the wing that are currently present", "number", "Number of ships, or nil if invalid handle")

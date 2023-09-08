@@ -13,6 +13,7 @@
 #include "network/multi.h"
 #include "object/objcollide.h"
 #include "object/object.h"
+#include "scripting/global_hooks.h"
 #include "scripting/scripting.h"
 #include "scripting/api/objs/vecmath.h"
 #include "ship/ship.h"
@@ -85,17 +86,20 @@ int collide_weapon_weapon( obj_pair * pair )
 	{
 		bool a_override = false, b_override = false;
 
-		if (Script_system.IsActiveAction(CHA_COLLIDEWEAPON)) {
-			Script_system.SetHookObjects(4, "Self", A, "Object", B, "Weapon", A, "WeaponB", B);
-			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(B->pos));
-			a_override = Script_system.IsConditionOverride(CHA_COLLIDEWEAPON, A, B);
-			Script_system.RemHookVars({"Self", "Object", "Weapon", "WeaponB", "Hitpos" });
-
-			// Yes, this should be reversed.
-			Script_system.SetHookObjects(4, "Self", B, "Object", A, "Weapon", B, "WeaponB", A);
-			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(A->pos));
-			b_override = Script_system.IsConditionOverride(CHA_COLLIDEWEAPON, B, A);
-			Script_system.RemHookVars({ "Self", "Object", "Weapon", "WeaponB", "Hitpos" });
+		if (scripting::hooks::OnWeaponCollision->isActive()) {
+			a_override = scripting::hooks::OnWeaponCollision->isOverride(scripting::hooks::CollisionConditions{ {A, B} },
+				scripting::hook_param_list(scripting::hook_param("Self", 'o', A),
+					scripting::hook_param("Object", 'o', B),
+					scripting::hook_param("Weapon", 'o', A),
+					scripting::hook_param("WeaponB", 'o', B),
+					scripting::hook_param("Hitpos", 'o', B->pos)));
+			//Yes, this should be reversed
+			b_override = scripting::hooks::OnWeaponCollision->isOverride(scripting::hooks::CollisionConditions{ {A, B} },
+				scripting::hook_param_list(scripting::hook_param("Self", 'o', B),
+					scripting::hook_param("Object", 'o', A),
+					scripting::hook_param("Weapon", 'o', B),
+					scripting::hook_param("WeaponB", 'o', A),
+					scripting::hook_param("Hitpos", 'o', A->pos)));
 		}
 
 		// damage calculation should not be done on clients, the server will tell the client version of the bomb when to die
@@ -103,11 +107,11 @@ int collide_weapon_weapon( obj_pair * pair )
 		{
 			float aDamage = wipA->damage;
 			if (wipB->armor_type_idx >= 0)
-				aDamage = Armor_types[wipB->armor_type_idx].GetDamage(aDamage, wipA->damage_type_idx, 1.0f);
+				aDamage = Armor_types[wipB->armor_type_idx].GetDamage(aDamage, wipA->damage_type_idx, 1.0f, false);
 
 			float bDamage = wipB->damage;
 			if (wipA->armor_type_idx >= 0)
-				bDamage = Armor_types[wipA->armor_type_idx].GetDamage(bDamage, wipB->damage_type_idx, 1.0f);
+				bDamage = Armor_types[wipA->armor_type_idx].GetDamage(bDamage, wipB->damage_type_idx, 1.0f, false);
 
 			if (wipA->weapon_hitpoints > 0) {
 				if (wipB->weapon_hitpoints > 0) {		//	Two bombs collide, detonate both.
@@ -186,24 +190,28 @@ int collide_weapon_weapon( obj_pair * pair )
 			}
 		}
 
-		if (!Script_system.IsActiveAction(CHA_COLLIDEWEAPON)) {
+		if (!scripting::hooks::OnWeaponCollision->isActive()) {
 			return 1;
 		}
 
 		if(!(b_override && !a_override))
 		{
-			Script_system.SetHookObjects(4, "Self", A, "Object", B, "Weapon", A, "WeaponB", B);
-			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(B->pos));
-			Script_system.RunCondition(CHA_COLLIDEWEAPON, A, B);
-			Script_system.RemHookVars({ "Self", "Object", "Weapon", "WeaponB", "Hitpos" });
+			scripting::hooks::OnWeaponCollision->run(scripting::hooks::CollisionConditions{ {A, B} },
+				scripting::hook_param_list(scripting::hook_param("Self", 'o', A),
+					scripting::hook_param("Object", 'o', B),
+					scripting::hook_param("Weapon", 'o', A),
+					scripting::hook_param("WeaponB", 'o', B),
+					scripting::hook_param("Hitpos", 'o', B->pos)));
 		}
 		else
 		{
 			// Yes, this should be reversed.
-			Script_system.SetHookObjects(4, "Self", B, "Object", A, "Weapon", B, "WeaponB", A);
-			Script_system.SetHookVar("Hitpos", 'o', scripting::api::l_Vector.Set(A->pos));
-			Script_system.RunCondition(CHA_COLLIDEWEAPON, B, A);
-			Script_system.RemHookVars({ "Self", "Object", "Weapon", "WeaponB", "Hitpos" });
+			scripting::hooks::OnWeaponCollision->run(scripting::hooks::CollisionConditions{ {A, B} },
+				scripting::hook_param_list(scripting::hook_param("Self", 'o', B),
+					scripting::hook_param("Object", 'o', A),
+					scripting::hook_param("Weapon", 'o', B),
+					scripting::hook_param("WeaponB", 'o', A),
+					scripting::hook_param("Hitpos", 'o', A->pos)));
 		}
 
 		return 1;

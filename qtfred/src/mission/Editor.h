@@ -127,7 +127,7 @@ class Editor : public QObject {
 	// (It's also duplicated in FS2, in post_process_mission, for setting the indexes at mission load.)
 	static void update_custom_wing_indexes();
 
-	void ai_update_goal_references(int type, const char* old_name, const char* new_name);
+	void ai_update_goal_references(sexp_ref_type type, const char* old_name, const char* new_name);
 
 	// Goober5000
 	void update_texture_replacements(const char* old_name, const char* new_name);
@@ -179,6 +179,7 @@ class Editor : public QObject {
 
 	static void strip_quotation_marks(SCP_string& str);
 	static void pad_with_newline(SCP_string& str, size_t max_size);
+	static void lcl_fred_replace_stuff(QString& text);
 
 	static const ai_goal_list* getAi_goal_list();
 	static int getAigoal_list_size();
@@ -212,14 +213,14 @@ class Editor : public QObject {
 
 	int common_object_delete(int obj);
 
-	int reference_handler(const char* name, int type, int obj);
+	int reference_handler(const char* name, sexp_ref_type type, int obj);
 
-	int sexp_reference_handler(int node, int code, const char* msg);
-	int orders_reference_handler(int code, char* msg);
+	int sexp_reference_handler(int node, sexp_src source, int source_index, const char* msg);
+	int orders_reference_handler(sexp_src source, int source_index, char* msg);
 
 	int delete_ship_from_wing(int ship);
 
-	int invalidate_references(const char* name, int type);
+	int invalidate_references(const char* name, sexp_ref_type type);
 
 	// DA 1/7/99 These ship names are not variables
 	int rename_ship(int ship, char* name);

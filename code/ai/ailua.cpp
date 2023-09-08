@@ -158,7 +158,7 @@ bool ai_lua_is_valid_target_lua(const ai_mode_lua& mode, int target_objnum, ship
 	return true;
 }
 
-bool ai_lua_is_valid_target(int sexp_op, int target_objnum, ship* self) {
+bool ai_lua_is_valid_target(int sexp_op, int target_objnum, ship* self, size_t order) {
 	const ai_mode_lua& mode = *ai_lua_find_mode(sexp_op);
 
 	//All targetless AI modes are fine
@@ -174,10 +174,34 @@ bool ai_lua_is_valid_target(int sexp_op, int target_objnum, ship* self) {
 
 		if (!ai_lua_is_valid_target_intrinsic(sexp_op, target_objnum, self))
 			return false;
+
+		// check if this order can be issued against the target
+		ship *shipp = &Ships[Objects[target_objnum].instance];
+		if (shipp->orders_allowed_against.find(order) == shipp->orders_allowed_against.end()) {
+			return false;
+		}
 	}
 
 	//If we haven't bailed yet, query the custom callback
 	return ai_lua_is_valid_target_lua(mode, target_objnum, self);
+}
+
+bool ai_lua_is_valid_ship(int sexp_op, bool isWing, ship* self)
+{
+	const player_order_lua& order = *ai_lua_find_player_order(sexp_op);
+
+	switch (order.shipRestrictions) {
+	case player_order_lua::ship_restrictions::ANY:
+		return true;
+	case player_order_lua::ship_restrictions::WING:
+		return isWing;
+	case player_order_lua::ship_restrictions::IN_PLAYER_WING:
+		return self->wingnum != -1 && Ships[Player_obj->instance].wingnum == self->wingnum;
+	case player_order_lua::ship_restrictions::PLAYER_WING:
+		return isWing && self->wingnum != -1 && Ships[Player_obj->instance].wingnum == self->wingnum;
+	}
+
+	return false;
 }
 
 ai_achievability ai_lua_is_achievable(const ai_goal* aigp, int objnum){

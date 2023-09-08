@@ -15,6 +15,8 @@
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
 
+#include "gamesnd/gamesnd.h"
+
 class object;
 class model_draw_list;
 
@@ -65,6 +67,7 @@ typedef struct shockwave {
 	int			delay_stamp;			// for delayed shockwaves
 	angles		rot_angles;
 	int			model_id;
+	gamesnd_id  blast_sound_id;
 } shockwave;
 
 typedef struct shockwave_create_info {
@@ -83,6 +86,8 @@ typedef struct shockwave_create_info {
 
 	int damage_type_idx;
 	int damage_type_idx_sav;	// stored value from table used to reset damage_type_idx
+
+	gamesnd_id blast_sound_id;	// allow setting unique sounds for a ship or weapon shockwave --wookieejedi
 
 } shockwave_create_info;
 

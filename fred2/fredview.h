@@ -213,9 +213,11 @@ protected:
 	afx_msg void OnEditorsMessage();
 	afx_msg void OnEditorsStarfield();
 	afx_msg void OnEditorsBgBitmaps();
+	afx_msg void OnEditorsVolumetrics();
 	afx_msg void OnEditorsReinforcement();
 	afx_msg void OnErrorChecker();
 	afx_msg void OnEditorsWaypoint();
+	afx_msg void OnEditorsJumpnode();
 	afx_msg void OnViewOutlines();
 	afx_msg void OnUpdateViewOutlines(CCmdUI* pCmdUI);
 	afx_msg void OnViewOutlinesOnSelected();
@@ -269,6 +271,7 @@ protected:
 	afx_msg void OnUpdateLookatObj(CCmdUI* pCmdUI);
 	afx_msg void OnEditorsAdjustGrid();
 	afx_msg void OnCalcRelativeCoords();
+	afx_msg void OnMusicPlayer();
 	afx_msg void OnEditorsShieldSys();
 	afx_msg void OnLevelObj();
 	afx_msg void OnAlignObj();

@@ -35,7 +35,7 @@ Section lookupSectionValue(const char* name) {
 	return Section::Invalid;
 }
 
-void load_preset_files() {
+void load_preset_files(SCP_string clone) {
 	SCP_vector<SCP_string> filelist;
 	cf_get_file_list(filelist, CF_TYPE_PLAYER_BINDS, NOX("*.json"), CF_SORT_NAME, nullptr,
 	                 CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
@@ -128,7 +128,8 @@ void load_preset_files() {
 		// Done with the file
 		auto it = preset_find_duplicate(preset);
 
-		if (it == Control_config_presets.end()) {
+		// If we just cloned the file, then allow the duplicate. Just this once.
+		if ((clone == preset.name) || (it == Control_config_presets.end())) {
 			Control_config_presets.push_back(preset);
 
 		} else if ((it->name != preset.name) || (it->type != Preset_t::pst)) {
@@ -145,6 +146,31 @@ bool preset_file_exists(SCP_string name) {
 	}
 
 	return cf_exists(name.c_str(), CF_TYPE_PLAYER_BINDS) != 0;
+}
+
+bool delete_preset_file(CC_preset preset) {
+
+	// can't remove the default preset!
+	if (preset.name == "default") {
+		return false;
+	}
+
+	auto it = control_config_get_current_preset();
+
+	// can't remove the currently loaded preset either!
+	if (preset.name == it->name) {
+		return false;
+	}
+
+	SCP_string filename = preset.name + ".json";
+
+	cf_delete(filename.c_str(), CF_TYPE_PLAYER_BINDS, CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
+
+	// Reload the presets from file.
+	Control_config_presets.resize(1);
+	load_preset_files();
+
+	return true;
 }
 
 bool save_preset_file(CC_preset preset, bool overwrite) {

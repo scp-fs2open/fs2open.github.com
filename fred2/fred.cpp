@@ -118,6 +118,8 @@ CWnd*                Prev_window;
 CShipEditorDlg       Ship_editor_dialog;
 wing_editor          Wing_editor_dialog;
 waypoint_path_dlg    Waypoint_editor_dialog;
+jumpnode_dlg         Jumpnode_editor_dialog;
+music_player_dlg	 Music_player_dialog;
 bg_bitmap_dlg*       Bg_bitmap_dialog = NULL;
 briefing_editor_dlg* Briefing_dialog = NULL;
 
@@ -133,6 +135,8 @@ window_data Bg_wnd_data;
 window_data Briefing_wnd_data;
 window_data Reinforcement_wnd_data;
 window_data Waypoint_wnd_data;
+window_data Jumpnode_wnd_data;
+window_data MusPlayer_wnd_data;
 window_data Starfield_wnd_data;
 window_data Asteroid_wnd_data;
 window_data Mission_notes_wnd_data;
@@ -242,6 +246,8 @@ BOOL CFREDApp::InitInstance() {
 	read_window("Ship window", &Ship_wnd_data);
 	read_window("Wing window", &Wing_wnd_data);
 	read_window("Waypoint window", &Waypoint_wnd_data);
+	read_window("Jumpnode window", &Jumpnode_wnd_data);
+	read_window("Musicplayer window", &MusPlayer_wnd_data);
 	read_window("Object window", &Object_wnd_data);
 	read_window("Mission goals window", &Mission_goals_wnd_data);
 	read_window("Messages window", &Messages_wnd_data);
@@ -379,7 +385,9 @@ BOOL CFREDApp::OnIdle(LONG lCount) {
 		app_init = 1;
 		theApp.init_window(&Ship_wnd_data, &Ship_editor_dialog, 0, 1);
 		theApp.init_window(&Wing_wnd_data, &Wing_editor_dialog, 0, 1);
+		theApp.init_window(&MusPlayer_wnd_data, &Music_player_dialog, 0, 1);
 		theApp.init_window(&Waypoint_wnd_data, &Waypoint_editor_dialog, 0, 1);
+		theApp.init_window(&Jumpnode_wnd_data, &Jumpnode_editor_dialog, 0, 1);
 		init_window(&Main_wnd_data, Fred_main_wnd);
 		Fred_main_wnd->SetWindowPos(&CWnd::wndTop, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 
@@ -513,6 +521,8 @@ void CFREDApp::write_ini_file(int degree) {
 
 	if (!degree) {
 		record_window_data(&Waypoint_wnd_data, &Waypoint_editor_dialog);
+		record_window_data(&Jumpnode_wnd_data, &Jumpnode_editor_dialog);
+		record_window_data(&MusPlayer_wnd_data, &Music_player_dialog);
 		record_window_data(&Wing_wnd_data, &Wing_editor_dialog);
 		record_window_data(&Ship_wnd_data, &Ship_editor_dialog);
 		record_window_data(&Main_wnd_data, Fred_main_wnd);
@@ -521,6 +531,8 @@ void CFREDApp::write_ini_file(int degree) {
 		write_window("Ship window", &Ship_wnd_data);
 		write_window("Wing window", &Wing_wnd_data);
 		write_window("Waypoint window", &Waypoint_wnd_data);
+		write_window("Jumpnode window", &Jumpnode_wnd_data);
+		write_window("Musicplayer window", &MusPlayer_wnd_data);
 		write_window("Object window", &Object_wnd_data);
 		write_window("Mission goals window", &Mission_goals_wnd_data);
 		write_window("Messages window", &Messages_wnd_data);
@@ -657,8 +669,6 @@ void update_map_window() {
 		return;
 
 	render_frame();	// "do the rendering!"
-
-	gr_flip();
 
 	show_control_mode();
 	process_pending_messages();

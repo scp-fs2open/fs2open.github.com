@@ -67,6 +67,7 @@ public:
 	float u0, v0, u1, v1;
 	float alpha;
 	bool draw;
+	int resize_mode;
 
 	generic_extras()
 		: width(0), height(0)
@@ -74,6 +75,7 @@ public:
 		, u1(1.0f), v1(1.0f)
 		, alpha(1.0f)
 		, draw(true)
+		, resize_mode(0)	// GR_RESIZE_NONE
 	{}
 };
 

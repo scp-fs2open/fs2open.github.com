@@ -22,7 +22,7 @@ bool ship_banktype_h::IsValid() {
 }
 
 //**********HANDLE: Weaponbanktype
-ADE_OBJ(l_WeaponBankType, ship_banktype_h, "weaponbanktype", "Ship/subsystem weapons bank type handle");
+ADE_OBJ_NO_MULTI(l_WeaponBankType, ship_banktype_h, "weaponbanktype", "Ship/subsystem weapons bank type handle");
 
 ADE_INDEXER(l_WeaponBankType, "number Index", "Array of weapon banks", "weaponbank", "Weapon bank, or invalid handle on failure")
 {
@@ -175,7 +175,7 @@ ADE_FUNC(__len, l_WeaponBankType, NULL, "Number of weapons in the mounted bank",
 
 
 //**********HANDLE: Weaponbank
-ADE_OBJ(l_WeaponBank, ship_bank_h, "weaponbank", "Ship/subystem weapons bank handle");
+ADE_OBJ_NO_MULTI(l_WeaponBank, ship_bank_h, "weaponbank", "Ship/subystem weapons bank handle");
 
 ship_bank_h::ship_bank_h() : ship_banktype_h() {
 	bank = -1;

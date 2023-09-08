@@ -13,6 +13,7 @@
 #include "cfile/cfile.h"
 #include "gamesequence/gamesequence.h"
 #include "globalincs/alphacolors.h"
+#include "globalincs/utility.h"
 #include "hud/hudmessage.h"
 #include "io/timer.h"
 #include "mission/missiongoals.h"
@@ -235,7 +236,8 @@ void HudGaugeDirectives::render(float  /*frametime*/)
 	// draw top of objective display
 	setGaugeColor();
 
-	renderBitmap(directives_top.first_frame, position[0], position[1]);
+	if (directives_top.first_frame >= 0)
+		renderBitmap(directives_top.first_frame, position[0], position[1]);
 
 	// print out title
 	renderPrintf(position[0] + header_offsets[0], position[1] + header_offsets[1], EG_OBJ_TITLE, "%s", XSTR( "directives", 422));
@@ -250,11 +252,11 @@ void HudGaugeDirectives::render(float  /*frametime*/)
 
 		c = &Color_normal;
 		if (Training_obj_lines[i + offset] & TRAINING_OBJ_LINES_KEY) {
-			SCP_string temp_buf = message_translate_tokens(Mission_events[z].objective_key_text);  // remap keys
+			SCP_string temp_buf = message_translate_tokens(Mission_events[z].objective_key_text.c_str());  // remap keys
 			strcpy_s(buf, temp_buf.c_str());
 			c = &Color_bright_green;
 		} else {
-			strcpy_s(buf, Mission_events[z].objective_text);
+			strcpy_s(buf, Mission_events[z].objective_text.c_str());
 			if (Mission_events[z].count){
 				sprintf(buf + strlen(buf), NOX(" [%d]"), Mission_events[z].count);
 			}
@@ -277,7 +279,7 @@ void HudGaugeDirectives::render(float  /*frametime*/)
 
 			case EVENT_SATISFIED:
 				t = Mission_events[z].satisfied_time;
-				Assertion(t.isValid(), "Since event %s was satisfied, satisfied_time must be valid here", Mission_events[z].name);
+				Assertion(t.isValid(), "Since event %s was satisfied, satisfied_time must be valid here", Mission_events[z].name.c_str());
 				if (timestamp_since(t) < 2 * MILLISECONDS_PER_SECOND) {
 					if (Missiontime % fl2f(.4f) < fl2f(.2f)){
 						c = &Color_bright_blue;
@@ -302,12 +304,15 @@ void HudGaugeDirectives::render(float  /*frametime*/)
 		// blit the background frames
 		setGaugeColor();
 
-		renderBitmap(directives_middle.first_frame, bx, by);
+		if (directives_middle.first_frame >= 0)
+			renderBitmap(directives_middle.first_frame, bx, by);
 		
 		by += text_h;
 
 		if ( second_line ) {
-			renderBitmap(directives_middle.first_frame, bx, by);
+
+			if (directives_top.first_frame >= 0)
+				renderBitmap(directives_middle.first_frame, bx, by);
 			
 			by += text_h;
 		}
@@ -331,7 +336,8 @@ void HudGaugeDirectives::render(float  /*frametime*/)
 	// draw the bottom of objective display
 	setGaugeColor();
 
-	renderBitmap(directives_bottom.first_frame, bx, by + bottom_bg_offset);
+	if (directives_bottom.first_frame >= 0)
+		renderBitmap(directives_bottom.first_frame, bx, by + bottom_bg_offset);
 }
 
 /**
@@ -406,7 +412,7 @@ void sort_training_objectives()
 			Training_obj_lines[i] |= TRAINING_OBJ_STATUS_UNKNOWN;
 			num_offset_events++;
 		} else if (event_status ==	EVENT_SATISFIED) {
-			Assertion(Mission_events[event_num].satisfied_time.isValid(), "Since event %s was satisfied, satisfied_time must be valid here", Mission_events[event_num].name);
+			Assertion(Mission_events[event_num].satisfied_time.isValid(), "Since event %s was satisfied, satisfied_time must be valid here", Mission_events[event_num].name.c_str());
 			if (timestamp_since(Mission_events[event_num].satisfied_time) < MIN_SATISFIED_TIME) {
 				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_UNKNOWN;
 				num_offset_events++;
@@ -414,7 +420,7 @@ void sort_training_objectives()
 				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_KNOWN;
 			}
 		} else if (event_status ==	EVENT_FAILED) {
-			Assertion(Mission_events[event_num].satisfied_time.isValid(), "Since event %s failed, satisfied_time must be valid here", Mission_events[event_num].name);
+			Assertion(Mission_events[event_num].satisfied_time.isValid(), "Since event %s failed, satisfied_time must be valid here", Mission_events[event_num].name.c_str());
 			if (timestamp_since(Mission_events[event_num].satisfied_time) < MIN_FAILED_TIME) {
 				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_UNKNOWN;
 				num_offset_events++;
@@ -445,14 +451,14 @@ void sort_training_objectives()
 		if (event_status == EVENT_CURRENT)  {
 			Training_obj_lines[i] |= TRAINING_OBJ_STATUS_UNKNOWN;
 		} else if (event_status ==	EVENT_SATISFIED) {
-			Assertion(Mission_events[event_num].satisfied_time.isValid(), "Since event %s was satisfied, satisfied_time must be valid here", Mission_events[event_num].name);
+			Assertion(Mission_events[event_num].satisfied_time.isValid(), "Since event %s was satisfied, satisfied_time must be valid here", Mission_events[event_num].name.c_str());
 			if (timestamp_since(Mission_events[event_num].satisfied_time) < MIN_SATISFIED_TIME) {
 				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_UNKNOWN;
 			} else {
 				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_KNOWN;
 			}
 		} else if (event_status ==	EVENT_FAILED) {
-			Assertion(Mission_events[event_num].satisfied_time.isValid(), "Since event %s failed, satisfied_time must be valid here", Mission_events[event_num].name);
+			Assertion(Mission_events[event_num].satisfied_time.isValid(), "Since event %s failed, satisfied_time must be valid here", Mission_events[event_num].name.c_str());
 			if (timestamp_since(Mission_events[event_num].satisfied_time) < MIN_FAILED_TIME) {
 				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_UNKNOWN;
 			} else {
@@ -510,10 +516,10 @@ void training_check_objectives()
 	int i, event_idx, event_status;
 
 	Training_obj_num_lines = 0;
-	for (event_idx=0; event_idx<Num_mission_events; event_idx++) {
+	for (event_idx=0; event_idx<(int)Mission_events.size(); event_idx++) {
 		event_status = mission_get_event_status(event_idx);
-		if ( (event_status != EVENT_UNBORN) && Mission_events[event_idx].objective_text && (timestamp_since(Mission_events[event_idx].born_on_date) > Directive_wait_time) ) {
-			if (!Training_failure || !strnicmp(Mission_events[event_idx].name, XSTR( "Training failed", 423), 15)) {
+		if ( (event_status != EVENT_UNBORN) && !Mission_events[event_idx].objective_text.empty() && (timestamp_since(Mission_events[event_idx].born_on_date) > Directive_wait_time) ) {
+			if (!Training_failure || !strnicmp(Mission_events[event_idx].name.c_str(), XSTR( "Training failed", 423), 15)) {
 
 				// check for the actual objective
 				for (i=0; i<Training_obj_num_lines; i++) {
@@ -544,7 +550,7 @@ void training_check_objectives()
 				}
 
 				// if there is a keypress message with directive, process that too.
-				if (Mission_events[event_idx].objective_key_text) {
+				if (!Mission_events[event_idx].objective_key_text.empty()) {
 					if (event_status == EVENT_CURRENT) {
 
 						// not in objective list, need to add it
@@ -655,9 +661,7 @@ SCP_string message_translate_tokens(const char *text)
 				break;
 
 			// make sure we aren't going to have any type of out-of-bounds issues
-			if ( ((toke2 - text) < 0) || ((toke2 - text) >= (ptr_s)sizeof(temp)) ) {
-				Int3();
-			} else {
+			if ( (toke2 > text) && ((toke2 - text) < (ptr_s)sizeof(temp)) ) {
 				strncpy(temp, text, toke2 - text);  // isolate token into seperate buffer
 				temp[toke2 - text] = 0;  // null terminate string
 				ptr = translate_key(temp);  // try and translate key
@@ -692,9 +696,7 @@ SCP_string message_translate_tokens(const char *text)
 				break;
 
 			// make sure we aren't going to have any type of out-of-bounds issues
-			if ( ((toke1 - text) < 0) || ((toke1 - text) >= (ptr_s)sizeof(temp)) ) {
-				Int3();
-			} else {
+			if ( (toke1 > text) && ((toke1 - text) < (ptr_s)sizeof(temp)) ) {
 				strncpy(temp, text, toke1 - text);  // isolate token into seperate buffer
 				temp[toke1 - text] = 0;  // null terminate string
 				ptr = translate_message_token(temp);  // try and translate key
@@ -916,15 +918,22 @@ void message_training_remove_from_queue(int idx)
  */
 void message_training_queue_check()
 {
-	int i, iship_num;
-
 	// get the instructor's ship.
-	iship_num = ship_name_lookup(NOX("instructor"));
-
-	// if the instructor is dying or departing, do nothing
-	if ( iship_num != -1 )	// added by Goober5000
-		if (Ships[iship_num].is_dying_or_departing())
+	auto ship_entry = ship_registry_get(NOX("instructor"));
+	if (ship_entry != nullptr)
+	{
+		if (ship_entry->status == ShipStatus::PRESENT)
+		{
+			// if the instructor is dying or departing, do nothing
+			if (ship_entry->shipp->is_dying_or_departing())
+				return;
+		}
+		else
+		{
+			// if the instructor has left the mission, or hasn't arrived yet, do nothing
 			return;
+		}
+	}
 
 	if (Training_failure)
 		return;
@@ -940,7 +949,7 @@ void message_training_queue_check()
 			return;
 	}
 
-	for (i=0; i<Training_message_queue_count; i++) {
+	for (int i=0; i<Training_message_queue_count; i++) {
 		if (timestamp_elapsed(Training_message_queue[i].timestamp)) {
 			message_training_setup(Training_message_queue[i].num, Training_message_queue[i].length, Training_message_queue[i].special_message);
 

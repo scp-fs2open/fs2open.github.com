@@ -12,6 +12,7 @@
 #include "anim/animplay.h"
 #include "gamesequence/gamesequence.h"
 #include "gamesnd/gamesnd.h"
+#include "globalincs/utility.h"
 #include "hud/hud.h"
 #include "hud/hudconfig.h"
 #include "hud/hudgauges.h"
@@ -40,65 +41,34 @@
 #include "utils/Random.h"
 #include "weapon/emp.h"
 
+bool Allow_generic_backup_messages = false;
+float Command_announces_enemy_arrival_chance = 0.25;
+
 SCP_vector<SCP_string> Builtin_moods;
 int Current_mission_mood;
 
-int Valid_builtin_message_types[MAX_BUILTIN_MESSAGE_TYPES];
-// here is the list of the builtin message names and the settings which control how frequently
-// they are heard.  These names are used to match against names read in for builtin message
-// radio bits to see what message to play.
-// These are generic names, meaning that there will be the same message type for a
-// number of different personas
-builtin_message Builtin_messages[] =
-{
-//XSTR:OFF
-	{"Arrive Enemy",			100,	-1,		0}, 
-	{"Attack Target",			100,	-1,		0}, 
-	{"Beta Arrived",			100,	-1,		0}, 
-	{"Check 6",					100,	2,		6000}, 
-	{"Engage",					100,	-1,		0}, 
-	{"Gamma Arrived",			100,	-1,		0}, 
-	{"Help",					100,	10,		60000}, 
-	{"Praise",					100,	10,		60000}, 
-	{"Backup",					100,	-1,		0}, 
-	{"Ignore Target",			100,	-1,		0}, 
-	{"No",						100,	-1,		0}, 
-	{"Oops 1",					100,	-1,		0}, 
-	{"Permission",				100,	-1,		0}, 		// AL: no code support yet
-	{"Stray",					100,	-1,		0}, 			// DA: no code support
-	{"Depart",					100,	-1,		0}, 
-	{"yes",						100,	-1,		0}, 
-	{"Rearm on Way",			100,	-1,		0}, 
-	{"On way",					100,	-1,		0}, 
-	{"Rearm warping in",		100,	-1,		0}, 
-	{"No Target",				100,	-1,		0}, 
-	{"Docking Start",			100,	-1,		0}, 		// AL: no message seems to exist for this
-	{"Repair Done",				100,	-1,		0}, 
-	{"Repair Aborted",			100,	-1,		0}, 
-	{"Traitor",					100,	-1,		0}, 
-	{"Rearm",					100,	-1,		0}, 
-	{"Disable Target",			100,	-1,		0}, 
-	{"Disarm Target",			100,	-1,		0}, 
-	{"Player Dead",				100,	-1,		0}, 
-	{"Death",					50,		10,		60000}, 
-	{"Support Killed",			100,	-1,		0}, 
-	{"All Clear",				100,	-1,		0}, 			// DA: no code support
-	{"All Alone",				100,	-1,		0}, 
-	{"Repair",					100,	-1,		0}, 
-	{"Delta Arrived",			100,	-1,		0}, 
-	{"Epsilon Arrived",			100,	-1,		0}, 
-	{"Instructor Hit",			100,	-1,		0}, 
-	{"Instructor Attack",		100,	-1,		0}, 
-	{"Stray Warning",			100,	-1,		0}, 
-	{"Stray Warning Final",		100,	-1,		0}, 
-	{"AWACS at 75",				100,	-1,		0}, 
-	{"AWACS at 25",				100,	-1,		0}, 
-	{"Praise Self",				10,		4,		60000}, 
-	{"High Praise",				100,	-1,		0}, 
-	{"Rearm Primaries",			100,	-1,		0}, 
-	{"Primaries Low",			100,	-1,		0}, 
-	//XSTR:ON
+builtin_message Builtin_messages[] = {
+  #define X(_, NAME, CHANCE, COUNT, DELAY, PRIORITY, TIME, FALLBACK) { \
+    NAME,                                                              \
+    CHANCE,                                                            \
+    COUNT,                                                             \
+    DELAY,                                                             \
+    MESSAGE_PRIORITY_ ## PRIORITY,                                     \
+    MESSAGE_TIME_ ## TIME,                                             \
+    MESSAGE_ ## FALLBACK                                               \
+  }
+  BUILTIN_MESSAGE_TYPES
+  #undef X
 };
+
+int get_builtin_message_type(const char* name) {
+	for (int i = 0; i < MAX_BUILTIN_MESSAGE_TYPES; i++) {
+		if (!stricmp(Builtin_messages[i].name, name)) {
+			return i;
+		}
+	}
+	return MESSAGE_NONE;
+}
 
 SCP_vector<MMessage> Messages;
 
@@ -138,32 +108,28 @@ int Message_expire;							// timestamp to extend the duration of message bracket
 
 typedef struct message_q {
 	fix	time_added;					// time at which this entry was added
-	int	window_timestamp;			// timestamp which will tell us how long we have to play the message
+	TIMESTAMP window_timestamp;		// timestamp which will tell us how long we have to play the message
 	int	priority;					// priority of the message
 	int	message_num;				// index into the Messages[] array
-	char *special_message;			// Goober5000 - message to play if we've replaced stuff (like variables)
+	SCP_vm_unique_ptr<char> special_message;	// Goober5000 - message to play if we've replaced stuff (like variables)
 	char who_from[NAME_LENGTH];		// who this message is from
 	int	source;						// who the source of the message is (HUD_SOURCE_* type)
 	int	builtin_type;				// type of builtin message (-1 if mission message)
 	int	flags;						// should this message entry be converted to Terran Command head/wave file
-	int	min_delay_stamp;			// minimum delay before this message will start playing
+	TIMESTAMP min_delay_stamp;		// minimum delay before this message will start playing
 	int	group;						// message is part of a group, don't time it out
 	int event_num_to_cancel;		// Goober5000 - if this event is true, the message will not be played
 } message_q;
 
-#define MAX_MESSAGE_Q				30
-#define MAX_MESSAGE_LIFE			F1_0*30		// After being queued for 30 seconds, don't play it
 #define DEFAULT_MESSAGE_LENGTH	3000			// default number of milliseconds to display message indicator on hud
-message_q	MessageQ[MAX_MESSAGE_Q];
+SCP_vector<message_q>	MessageQ;
 int MessageQ_num;			// keeps track of number of entries on the queue.
 
 #define MESSAGE_IMMEDIATE_TIMESTAMP		1000		// immediate messages must play within 1 second
 #define MESSAGE_SOON_TIMESTAMP			5000		// "soon" messages must play within 5 seconds
-#define MESSAGE_ANYTIME_TIMESTAMP		-1			// anytime timestamps are invalid
 
 // Persona information
-int Num_personas;
-Persona *Personas = NULL;
+SCP_vector<Persona> Personas;
 
 const char *Persona_type_names[MAX_PERSONA_TYPES] =
 {
@@ -175,7 +141,7 @@ const char *Persona_type_names[MAX_PERSONA_TYPES] =
 //XSTR:ON
 };
 
-int Default_command_persona;
+int Default_command_persona, Default_support_persona;
 
 // Goober5000
 // NOTE - these are truncated filenames, i.e. without extensions
@@ -208,7 +174,7 @@ int Head_coords[GR_NUM_RESOLUTIONS][2] = {
 	}
 };
 
-const auto OnMessageReceivedHook = scripting::Hook::Factory(
+const auto OnMessageReceivedHook = scripting::Hook<>::Factory(
 	"On Message Received",
 	"Invoked when a mission sends a message.",
 	{
@@ -231,52 +197,33 @@ int comm_between_player_and_ship(int other_shipnum, bool for_death_scream);
 
 // following functions to parse messages.tbl -- code pretty much ripped from weapon/ship table parsing code
 
-static void persona_parse_close()
-{
-	if (Personas != NULL) {
-		vm_free(Personas);
-		Personas = NULL;
-	}
-}
-
 // functions to deal with parsing personas.  Personas are just a list of names that give someone
 // sending a message an identity which spans the life of the mission
 void persona_parse()
 {
-	int i;
-	char type[NAME_LENGTH];
-
-	static bool done_at_exit = false;
-	if ( !done_at_exit ) {
-		atexit( persona_parse_close );
-		done_at_exit = true;
-	}
-
-	// this way should cause the least amount of problems on the various platforms - taylor
-	Personas = (Persona*)vm_realloc( Personas, sizeof(Persona) * (Num_personas + 1) );
-
-	if (Personas == NULL)
-		Error(LOCATION, "Not enough memory to allocate Personas!" );
-
-	memset(&Personas[Num_personas], 0, sizeof(Persona));
+	Persona this_persona;
+	this_persona.flags = 0;
+	this_persona.species_bitfield = 0;
 
 	required_string("$Persona:");
-	stuff_string(Personas[Num_personas].name, F_NAME, NAME_LENGTH);
+	stuff_string(this_persona.name, F_NAME, NAME_LENGTH);
+	
+	bool dup = false;
+	if (message_persona_name_lookup(this_persona.name) >= 0) {
+		Warning(LOCATION, "Duplicate Persona %s found, ignoring!", this_persona.name);
+		dup = true;
+	}
 
 	// get the type name and set the appropriate flag
 	required_string("$Type:");
+	char type[NAME_LENGTH];
 	stuff_string( type, F_NAME, NAME_LENGTH );
+
+	int i;
 	for ( i = 0; i < MAX_PERSONA_TYPES; i++ ) {
 		if ( !stricmp( type, Persona_type_names[i]) ) {
 
-			Personas[Num_personas].flags |= (1<<i);
-
-			// save the Command persona in a global
-			if ( Personas[Num_personas].flags & PERSONA_FLAG_COMMAND ) {
-				// always use the most recent Command persona
-				// found, since that's how retail does it
-				Default_command_persona = Num_personas;
-			}
+			this_persona.flags |= (1 << i);
 
 			break;
 		}
@@ -286,26 +233,60 @@ void persona_parse()
 		WarningEx(LOCATION, "Unknown persona type in messages.tbl -- %s\n", type );
 
 	char cstrtemp[NAME_LENGTH];
-	if ( optional_string("+") )
+	while ( optional_string("+") )
 	{
 		stuff_string(cstrtemp, F_NAME, NAME_LENGTH);
 		int j = species_info_lookup(cstrtemp);
 
 		if (j >= 0)
-			Personas[Num_personas].species = j;
+		{
+			if (j < 32)
+				this_persona.species_bitfield |= (1 << j);
+			else
+				Warning(LOCATION, "Species %s is index 32 or higher and therefore cannot be assigned to the persona species bitfield of %s",
+					Species_info[j].species_name, this_persona.name);
+		}
 		else
 			WarningEx(LOCATION, "Unknown species in messages.tbl -- %s\n", cstrtemp );
 	}
 
-	if (optional_string("$Allow substitution of missing messages:")) {
-		stuff_boolean(&Personas[Num_personas].substitute_missing_messages);
+	// if no species were assigned, the persona should default to the first species, since that's how retail did it
+	if (this_persona.species_bitfield == 0)
+		this_persona.species_bitfield = (1 << 0);
+
+	if (optional_string("$Allow substitution of missing messages:"))
+	{
+		bool temp;
+		stuff_boolean(&temp);
+		if (temp)
+			this_persona.flags |= PERSONA_FLAG_SUBSTITUTE_MISSING_MESSAGES;
 	}
 	else 
 	{
-		Personas[Num_personas].substitute_missing_messages = true;
+		this_persona.flags |= PERSONA_FLAG_SUBSTITUTE_MISSING_MESSAGES;
 	}
 
-	Num_personas++;
+	if (optional_string("$No automatic assignment:"))
+	{
+		bool temp;
+		stuff_boolean(&temp);
+		if (temp)
+			this_persona.flags |= PERSONA_FLAG_NO_AUTOMATIC_ASSIGNMENT;
+	}
+
+	if (!dup) {
+		int persona_index = (int) Personas.size();
+		Personas.push_back(this_persona);
+
+		// Save some important personae for later
+		if (this_persona.flags & PERSONA_FLAG_COMMAND) {
+			// Always use the most recent Command persona found, since that's how retail does it
+			Default_command_persona = persona_index;
+		}
+		if ((this_persona.flags & PERSONA_FLAG_SUPPORT) && (Default_support_persona == -1)) {
+			Default_support_persona = persona_index;
+		}
+	}
 }
 
 // two functions to add avi/wave names into a table
@@ -354,9 +335,76 @@ int add_wave( const char *wave_name )
 	return ((int)Message_waves.size() - 1);
 }
 
+void message_filter_clear(MessageFilter& filter) {
+	filter.species_bitfield = 0;
+	filter.type_bitfield = 0;
+}
+
+void message_filter_parse(MessageFilter& filter) {
+	SCP_string buf;
+	message_filter_clear(filter);
+	while (optional_string("+Ship name:")) {
+		stuff_string(buf, F_NAME);
+		filter.ship_name.push_back(buf);
+	}
+	while (optional_string("+Callsign:")) {
+		stuff_string(buf, F_NAME);
+		filter.callsign.push_back(buf);
+	}
+	while (optional_string("+Class name:")) {
+		stuff_string(buf, F_NAME);
+		filter.class_name.push_back(buf);
+	}
+	while (optional_string("+Wing name:")) {
+		stuff_string(buf, F_NAME);
+		filter.wing_name.push_back(buf);
+	}
+	while (optional_string("+Species:")) {
+		stuff_string(buf, F_NAME);
+		int species = species_info_lookup(buf.c_str());
+		if (species < 0) {
+			Warning(LOCATION, "Unknown species %s in messages.tbl", buf.c_str());
+		} else if (species >= 32) {
+			Warning(LOCATION, "Species %s is index 32 or higher and therefore cannot be used in a message filter", buf.c_str());
+		} else {
+			filter.species_bitfield |= (1 << species);
+		}
+	}
+	while (optional_string("+Type:")) {
+		stuff_string(buf, F_NAME);
+		int type = ship_type_name_lookup(buf.c_str());
+		if (type < 0) {
+			Warning(LOCATION, "Unknown type %s in messages.tbl", buf.c_str());
+		} else if (type >= 32) {
+			Warning(LOCATION, "Type %s is index 32 or higher and therefore cannot be used in a message filter", buf.c_str());
+		} else {
+			filter.type_bitfield |= (1 << type);
+		}
+	}
+}
+
+void handle_legacy_backup_message(MissionMessage& msg, SCP_string wing_name) {
+	static bool warned = false;
+	if (!warned) {
+		WarningEx(LOCATION,
+			"Converting legacy '%s Arrived' message. Consult the documention on message filters for more information. "
+			"A complete list will be printed to the log.",
+			wing_name.c_str());
+		warned = true;
+	} 
+	
+	mprintf(("Converting legacy '%s Arrived' message for message %s with persona %s.\n",
+			wing_name.c_str(),
+			msg.name,
+			Personas[msg.persona_index].name));
+
+	static const char* backup = Builtin_messages[MESSAGE_BACKUP].name;
+	msg.sender_filter.wing_name.push_back(wing_name);
+	strcpy(msg.name, backup);
+}
+
 // parses an individual message
-void message_parse(bool importing_from_fsm)
-{
+void message_parse(MessageFormat format) {
 	MissionMessage msg;
 	char persona_name[NAME_LENGTH];
 
@@ -365,23 +413,23 @@ void message_parse(bool importing_from_fsm)
 
 	// team
 	msg.multi_team = -1;
-	if(optional_string("$Team:")){
+	if (optional_string("$Team:")) {
 		int mt;
 		stuff_int(&mt);
 
 		// keep it real
-		if((mt < 0) || (mt >= MAX_TVT_TEAMS)){
+		if ((mt < 0) || (mt >= MAX_TVT_TEAMS)) {
 			mt = -1;
 		}
 
 		// only bother with filters in-game if multiplayer and TvT
-		if(Fred_running || (MULTI_TEAM) ){
+		if (Fred_running || (MULTI_TEAM)) {
 			msg.multi_team = mt;
 		}
 	}
 
 	// backwards compatibility for old fred missions - all new ones should use $MessageNew
-	if(optional_string("$Message:")){
+	if (optional_string("$Message:")) {
 		stuff_string(msg.message, F_MESSAGE, MESSAGE_LENGTH);
 	} else {
 		required_string("$MessageNew:");
@@ -389,53 +437,56 @@ void message_parse(bool importing_from_fsm)
 	}
 
 	msg.persona_index = -1;
-	if ( optional_string("+Persona:") ) {
+	if (optional_string("+Persona:")) {
 		stuff_string(persona_name, F_NAME, NAME_LENGTH);
-		msg.persona_index = message_persona_name_lookup( persona_name );
+		msg.persona_index = message_persona_name_lookup(persona_name);
 
-		if ( msg.persona_index == -1 )
+		if (msg.persona_index == -1) {
 			WarningEx(LOCATION, "Unknown persona in message %s in messages.tbl -- %s\n", msg.name, persona_name );
+		}
 	}
 
-	if ( !Fred_running)
+	if (!Fred_running) {
 		msg.avi_info.index = -1;
-	else
+	} else {
 		msg.avi_info.name = NULL;
+	}
 
-	if ( optional_string("+AVI Name:") ) {
+	if (optional_string("+AVI Name:")) {
 		char avi_name[MAX_FILENAME_LEN];
 
 		stuff_string(avi_name, F_NAME, MAX_FILENAME_LEN);
 
-		// Goober5000 - for some reason :V: swapped Head-TP1
-		// and Head-TP4 in FS2
-		if (importing_from_fsm && !strnicmp(avi_name, "Head-TP1", 8))
+		// Goober5000 - for some reason :V: swapped Head-TP1 and Head-TP4 in FS2
+		if (format == MessageFormat::FS1_MISSION && !strnicmp(avi_name, "Head-TP1", 8)) {
 			avi_name[7] = '4';
+		}
 
-		if ( !Fred_running ) {
+		if (!Fred_running) {
 			msg.avi_info.index = add_avi(avi_name);
 		} else {
 			msg.avi_info.name = vm_strdup(avi_name);
 		}
 	}
 
-	if ( !Fred_running )
+	if (!Fred_running) {
 		msg.wave_info.index = -1;
-	else
+	} else {
 		msg.wave_info.name = NULL;
+	}
 
-	if ( optional_string("+Wave Name:") ) {
+	if (optional_string("+Wave Name:")) {
 		char wave_name[MAX_FILENAME_LEN];
 
 		stuff_string(wave_name, F_NAME, MAX_FILENAME_LEN);
-		if ( !Fred_running ) {
+		if (!Fred_running) {
 			msg.wave_info.index = add_wave(wave_name);
 		} else {
 			msg.wave_info.name = vm_strdup(wave_name);
 		}
 	}
 
-	if ( optional_string("$Mood:")) {
+	if (optional_string("$Mood:")) {
 		SCP_string buf; 
 		bool found = false;
 
@@ -457,7 +508,7 @@ void message_parse(bool importing_from_fsm)
 		msg.mood = 0;
 	}
 
-	if ( optional_string("$Exclude Mood:")) {
+	if (optional_string("$Exclude Mood:")) {
 		SCP_vector<SCP_string> buff;
 		bool found = false;
 
@@ -478,6 +529,32 @@ void message_parse(bool importing_from_fsm)
 		}
 	}
 
+	if (optional_string("$Filter by sender:")) {
+		message_filter_parse(msg.sender_filter);
+	} else {
+		message_filter_clear(msg.sender_filter);
+	}
+
+	if (optional_string("$Filter by subject:")) {
+		message_filter_parse(msg.subject_filter);
+	} else {
+		message_filter_clear(msg.subject_filter);
+	}
+
+	if (format == MessageFormat::TABLED) {
+		if (!stricmp(msg.name, "Beta Arrived")) {
+			handle_legacy_backup_message(msg, "Beta");
+		} else if (!stricmp(msg.name, "Gamma Arrived")) {
+			handle_legacy_backup_message(msg, "Gamma");
+		} else if (!stricmp(msg.name, "Delta Arrived")) {
+			handle_legacy_backup_message(msg, "Delta");
+		} else if (!stricmp(msg.name, "Epsilon Arrived")) {
+			handle_legacy_backup_message(msg, "Epsilon");
+		} if (get_builtin_message_type(msg.name) == MESSAGE_NONE) {
+			Warning(LOCATION, "Unknown builtin message type %s in messages.tbl", msg.name);
+		}
+	}
+
 	Num_messages++;
 	Messages.push_back(msg); 
 }
@@ -485,20 +562,12 @@ void message_parse(bool importing_from_fsm)
 void message_frequency_parse()
 {
 	char name[32];
-	int i, max_count, min_delay, occurrence_chance;  
-	int builtin_type = -1; 
+	int max_count, min_delay, occurrence_chance;
 
 	required_string("$Name:");
 	stuff_string(name, F_NAME, NAME_LENGTH);
-
-	for (i = 0; i < MAX_BUILTIN_MESSAGE_TYPES; i++) {
-		if (!strcmp(name, Builtin_messages[i].name)) {
-			builtin_type = i;
-			break;
-		}
-	}
-
-	if (builtin_type == -1) {
+	int builtin_type = get_builtin_message_type(name);
+	if (builtin_type == MESSAGE_NONE) {
 		Warning(LOCATION, "Unknown Builtin Message Type Detected. Type : %s not supported", name);
 		return;
 	}
@@ -525,6 +594,17 @@ void message_frequency_parse()
 	}	
 }
 
+bool message_moods_check_existing(const SCP_string& mood)
+{
+	for (int i = 0; i < (int)Builtin_moods.size(); i++) {
+		if (mood == Builtin_moods[i]) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
 void message_moods_parse()
 {	
 
@@ -534,44 +614,58 @@ void message_moods_parse()
 		required_string("$Mood:");
 		stuff_string(buf, F_NAME);
 
-		Builtin_moods.push_back(buf);
+		if (!message_moods_check_existing(buf)) {
+			Builtin_moods.push_back(buf);
+		} else {
+			mprintf(("Message mood %s already exists. Skipping!", buf.c_str()));
+		}
 	}
 
 	required_string("#End");
 }
 
-void parse_msgtbl()
+void parse_msgtbl(const char* filename)
 {
-	int i, j;
-
-	//speed things up a little by setting the capacities for the message vectors to roughly the FS2 amounts
-	Messages.reserve(500);
-	Message_waves.reserve(300);
-	Message_avis.reserve(30);
-
 	try {
-		read_file_text("messages.tbl", CF_TYPE_TABLES);
+		read_file_text(filename, CF_TYPE_TABLES);
 		reset_parse();
-		Num_messages = 0;
-		Num_personas = 0;
 
 		// Goober5000 - ugh, ugly hack to fix the FS2 retail tables
-		char *pVawacs25 = strstr(Mp, "Vawacs25.wav");
-		if (pVawacs25)
-		{
-			char *pAwacs75 = strstr(pVawacs25, "Awacs75.wav");
-			if (pAwacs75)
-			{
-				// move the 'V' from the first filename to the second, and adjust the 'A' case
-				*pVawacs25 = 'A';
-				for (i = 1; i < (pAwacs75 - pVawacs25) - 1; i++)
-					pVawacs25[i] = pVawacs25[i+1];
-				pAwacs75[-1] = 'V';
-				pAwacs75[0] = 'a';
+		if (!Parsing_modular_table) {
+			char* pVawacs25 = strstr(Mp, "Vawacs25.wav");
+			if (pVawacs25) {
+				char* pAwacs75 = strstr(pVawacs25, "Awacs75.wav");
+				if (pAwacs75) {
+					// move the 'V' from the first filename to the second, and adjust the 'A' case
+					*pVawacs25 = 'A';
+					for (int i = 1; i < (pAwacs75 - pVawacs25) - 1; i++)
+						pVawacs25[i] = pVawacs25[i + 1];
+					pAwacs75[-1] = 'V';
+					pAwacs75[0] = 'a';
+				}
 			}
 		}
 
 		// now we can start parsing
+		if (optional_string("#Message Settings")) {
+			if (optional_string("$Allow Any Ship To Send Backup Messages:")) {
+				stuff_boolean(&Allow_generic_backup_messages);
+			}
+			if (optional_string("$Chance for Command to announce enemy arrival:")) {
+				int scratch;
+				stuff_int(&scratch);
+				if (scratch < 0) {
+					Warning(LOCATION, "$Chance for Command to announce enemy arrival: is negative; assuming 0");
+					Command_announces_enemy_arrival_chance = 0;
+				} else if (scratch > 100) {
+					Warning(LOCATION, "$Chance for Command to announce enemy arrival: is over 100; assuming 100");
+					Command_announces_enemy_arrival_chance = 1;
+				} else {
+					Command_announces_enemy_arrival_chance = static_cast<float>(scratch) / 100;
+				}
+			}
+		}
+
 		if (optional_string("#Message Frequencies")) {
 			while (!required_string_one_of(3, "$Name:", "#Personas", "#Moods" )) {
 				message_frequency_parse();
@@ -583,67 +677,41 @@ void parse_msgtbl()
 			message_moods_parse();
 		}
 
-
-		required_string("#Personas");
-		while ( required_string_either("#Messages", "$Persona:")){
-			persona_parse();
+		if (optional_string("#Personas")) {
+			while (required_string_one_of(3, "#Messages", "$Persona:", "#End")) {
+				persona_parse();
+			}
 		}
 
-		required_string("#Messages");
-		while (required_string_either("#End", "$Name:")){
-			message_parse();
+		if (optional_string("#Messages")) {
+			while (required_string_either("#End", "$Name:")) {
+				message_parse(MessageFormat::TABLED);
+			}
 		}
 
 		required_string("#End");
 
-		// save the number of builtin message things -- make initing between missions easier
-		Num_builtin_messages = Num_messages;
-		Num_builtin_avis = Num_message_avis;
-		Num_builtin_waves = Num_message_waves;
-
-
-		memset(Valid_builtin_message_types, 0, sizeof(int)*MAX_BUILTIN_MESSAGE_TYPES);
-		// now cycle through the messages to determine which type of builtins we have messages for
-		for (i = 0; i < Num_builtin_messages; i++) {
-			for (j = 0; j < MAX_BUILTIN_MESSAGE_TYPES; j++) {
-				if (!(stricmp(Messages[i].name, Builtin_messages[j].name))) {
-					Valid_builtin_message_types[j] = 1;
-					break;
-				}
-			}
-		}
-
-
-		// additional table part!
-		Generic_message_filenames.clear();
-		Generic_message_filenames.push_back("none");
-		Generic_message_filenames.push_back("cuevoice");
-		Generic_message_filenames.push_back("cue_voice");
-		Generic_message_filenames.push_back("emptymsg");
-		Generic_message_filenames.push_back("generic");
-		Generic_message_filenames.push_back("msgstart");
-
 		if (optional_string("#Simulated Speech Overrides"))
 		{
-			char filename[MAX_FILENAME_LEN];
+			char file[MAX_FILENAME_LEN];
 
 			while (required_string_either("#End", "$File Name:"))
 			{
 				required_string("$File Name:");
-				stuff_string(filename, F_NAME, MAX_FILENAME_LEN);
+				stuff_string(file, F_NAME, MAX_FILENAME_LEN);
 
 				// get extension
-				char *ptr = strchr(filename, '.');
+				char* ptr = strchr(file, '.');
 				if (ptr == NULL)
 				{
-					Warning(LOCATION, "Simulated speech override file '%s' was provided with no extension!", filename);
+					Warning(LOCATION, "Simulated speech override file '%s' was provided with no extension!", file);
 					continue;
 				}
 
 				// test extension
 				if (stricmp(ptr, ".ogg") != 0 && stricmp(ptr, ".wav") != 0)
 				{
-					Warning(LOCATION, "Simulated speech override file '%s' was provided with an extension other than .wav or .ogg!", filename);
+					Warning(LOCATION, "Simulated speech override file '%s' was provided with an extension other than .wav or .ogg!", file);
 					continue;
 				}
 
@@ -651,7 +719,7 @@ void parse_msgtbl()
 				*ptr = '\0';
 
 				// add truncated file name
-				Generic_message_filenames.push_back(filename);
+				Generic_message_filenames.push_back(file);
 			}
 
 			required_string("#End");
@@ -659,7 +727,7 @@ void parse_msgtbl()
 	}
 	catch (const parse::ParseException& e)
 	{
-		mprintf(("MISSIONCAMPAIGN: Unable to parse 'messages.tbl'!  Error message = %s.\n", e.what()));
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
 		return;
 	}
 }
@@ -672,17 +740,36 @@ void messages_init()
 
 	if ( !table_read ) {
 		Default_command_persona = -1;
-		
-		try
-		{
-			parse_msgtbl();
-			table_read = 1;
-		}
-		catch (const parse::ParseException& e)
-		{
-			mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", "messages.tbl", e.what()));
-			return;
-		}
+		Default_support_persona = -1;
+
+		// speed things up a little by setting the capacities for the message vectors to roughly the FS2 amounts
+		Messages.reserve(500);
+		Message_waves.reserve(300);
+		Message_avis.reserve(30);
+
+		Num_messages = 0;
+
+		// Add built-in generic filenames
+		Generic_message_filenames.clear();
+		Generic_message_filenames.push_back("none");
+		Generic_message_filenames.push_back("cuevoice");
+		Generic_message_filenames.push_back("cue_voice");
+		Generic_message_filenames.push_back("emptymsg");
+		Generic_message_filenames.push_back("generic");
+		Generic_message_filenames.push_back("msgstart");
+
+		// first parse the default table
+		parse_msgtbl("messages.tbl");
+
+		// parse any modular tables
+		parse_modular_table("*-msg.tbm", parse_msgtbl);
+
+		// save the number of builtin message things -- make initing between missions easier
+		Num_builtin_messages = Num_messages;
+		Num_builtin_avis = Num_message_avis;
+		Num_builtin_waves = Num_message_waves;
+
+		table_read = 1;
 	}
 
 	Current_mission_mood = 0;
@@ -695,18 +782,7 @@ void messages_init()
 
 	// initialize the stuff for the linked lists of messages
 	MessageQ_num = 0;
-	for (i = 0; i < MAX_MESSAGE_Q; i++) {
-		MessageQ[i].priority = -1;
-		MessageQ[i].time_added = -1;
-		MessageQ[i].message_num = -1;
-		MessageQ[i].builtin_type = -1;
-		MessageQ[i].min_delay_stamp = -1;
-		MessageQ[i].group = 0;
-
-		// Goober5000
-		MessageQ[i].special_message = nullptr;
-		MessageQ[i].event_num_to_cancel = -1;
-	}
+	MessageQ.clear();
 	
 	// this forces a reload of the AVI's and waves for builtin messages.  Needed because the flic and
 	// sound system also get reset between missions!
@@ -733,7 +809,7 @@ void messages_init()
 	}
 
 	// reinitialize the personas.  mark them all as not used
-	for ( i = 0; i < Num_personas; i++ ){
+	for (i = 0; i < (int)Personas.size(); i++) {
 		Personas[i].flags &= ~PERSONA_FLAG_USED;
 	}
 
@@ -784,25 +860,8 @@ void message_mission_shutdown()
 		message_mission_free_avi(i);
 	}
 
-	// Goober5000 - free up special messages
-	for (i = 0; i < MAX_MESSAGE_Q; i++)
-	{
-		if (MessageQ[i].special_message != NULL)
-		{
-			vm_free(MessageQ[i].special_message);
-			MessageQ[i].special_message = NULL;
-		}
-	}
-}
-
-// call from game_shutdown() ONLY!!!
-void message_mission_close()
-{
-	// free the persona data
-	if (Personas != NULL) {
-		vm_free( Personas );
-		Personas = NULL;
-	}
+	// Goober5000 - free up special messages (done automatically via unique_ptr)
+	MessageQ.clear();
 }
 
 // functions to deal with queuing messages to the message system.
@@ -967,25 +1026,22 @@ void message_remove_from_queue(message_q *q)
 		return;
 	}	
 
-	MessageQ_num--;
 	q->priority = -1;
 	q->time_added = -1;
 	q->message_num = -1;
 	q->builtin_type = -1;
-	q->min_delay_stamp = -1;
+	q->min_delay_stamp = TIMESTAMP::invalid();
 	q->group = 0;
 
 	// Goober5000
-	if (q->special_message != NULL)
-	{
-		vm_free(q->special_message);
-		q->special_message = NULL;
-	}
+	q->special_message.reset();
 	q->event_num_to_cancel = -1;
 
-	if ( MessageQ_num > 0 ) {
-		insertion_sort(MessageQ, MAX_MESSAGE_Q, message_queue_priority_compare);
+	if ( MessageQ_num > 1 ) {
+		insertion_sort(MessageQ, MessageQ_num, message_queue_priority_compare);
 	}
+
+	MessageQ_num--;
 }
 
 // Load in the sound data for a message.
@@ -1394,7 +1450,7 @@ void message_queue_process()
 	while ( MessageQ_num > 0 ) {
 		q = &MessageQ[0];
 		// message is outside its time window
-		if ( timestamp_valid(q->window_timestamp) && timestamp_elapsed(q->window_timestamp) && !q->group) {
+		if ( q->window_timestamp.isValid() && timestamp_elapsed(q->window_timestamp) && !q->group) {
 			// remove message from queue and see if more to remove
 			nprintf(("messaging", "Message %s didn't play because it didn't fit into time window.\n", Messages[q->message_num].name));
 			if ( q->message_num < Num_builtin_messages ){			// we should only ever remove builtin messages this way
@@ -1423,7 +1479,7 @@ void message_queue_process()
 	int idx = 0;
 	while((found == -1) && (idx < MessageQ_num)){
 		// if this guy has no min delay timestamp, or it has expired, select him
-		if((MessageQ[idx].min_delay_stamp == -1) || timestamp_elapsed(MessageQ[idx].min_delay_stamp)){
+		if (!MessageQ[idx].min_delay_stamp.isValid() || timestamp_elapsed(MessageQ[idx].min_delay_stamp)) {
 			found = idx;
 			break;
 		}
@@ -1438,18 +1494,16 @@ void message_queue_process()
 	}
 	// if this is not the first item on the queue, make it the first item
 	if(found != 0){
-		message_q temp;
-
 		// store the entry
-		memcpy(&temp, &MessageQ[found], sizeof(message_q));
+		message_q temp = std::move(MessageQ[found]);
 
 		// move all other entries up
 		for(idx=found; idx>0; idx--){
-			memcpy(&MessageQ[idx], &MessageQ[idx-1], sizeof(message_q));
+			MessageQ[idx] = std::move(MessageQ[idx-1]);
 		}
 
 		// plop the entry down as being first
-		memcpy(&MessageQ[0], &temp, sizeof(message_q));
+		MessageQ[0] = std::move(temp);
 	}
 
 	q = &MessageQ[0];
@@ -1582,7 +1636,7 @@ void message_queue_process()
 	Message_wave_duration = 0;
 
 	// translate tokens in message to the real things
-	buf = message_translate_tokens(q->special_message ? q->special_message : m->message);
+	buf = message_translate_tokens(q->special_message ? q->special_message.get() : m->message);
 
 	Message_expire = timestamp(static_cast<int>(42 * buf.size()));
 
@@ -1659,7 +1713,7 @@ void message_queue_message( int message_num, int priority, int timing, const cha
 
 	// some messages can get queued quickly.  Try to filter out certain types of messages before
 	// they get queued if there are other messages of the same type already queued
-	if ( (builtin_type == MESSAGE_REARM_ON_WAY) || (builtin_type == MESSAGE_OOPS) ) {
+	if ( (builtin_type == MESSAGE_ALREADY_ON_WAY) || (builtin_type == MESSAGE_OOPS) ) {
 		// if it is already playing, then don't play it
 		if ( message_playing_specific_builtin(builtin_type) ) 
 			return;
@@ -1672,10 +1726,9 @@ void message_queue_message( int message_num, int priority, int timing, const cha
 		}
 	}
 
-	// check to be sure that we haven't reached our max limit on these messages yet.
-	if ( MessageQ_num == MAX_MESSAGE_Q ) {
-		mprintf(("Message queue already full. Message will not be added!\n"));										
-		return;
+	// check to be sure that we have room to queue this message
+	if ( MessageQ_num == (int)MessageQ.size() ) {
+		MessageQ.emplace_back();
 	}
 
 	// if player is a traitor, no messages for him!!!
@@ -1690,24 +1743,17 @@ void message_queue_message( int message_num, int priority, int timing, const cha
 	m_persona = Messages[message_num].persona_index;
 
 	// put the message into a slot
-	i = MessageQ_num;
+	i = MessageQ_num++;
 	MessageQ[i].time_added = Missiontime;
 	MessageQ[i].priority = priority;
 	MessageQ[i].message_num = message_num;
 	MessageQ[i].source = source;
 	MessageQ[i].builtin_type = builtin_type;
-	MessageQ[i].min_delay_stamp = timestamp(delay);
+	MessageQ[i].min_delay_stamp = _timestamp(delay);
 	MessageQ[i].group = group;
 	strcpy_s(MessageQ[i].who_from, who_from);
+	MessageQ[i].special_message.reset();
 	MessageQ[i].event_num_to_cancel = event_num_to_cancel;
-
-	// Goober5000 - this shouldn't happen, but let's be safe
-	if (MessageQ[i].special_message != NULL)
-	{
-		Int3();
-		vm_free(MessageQ[i].special_message);
-		MessageQ[i].special_message = NULL;
-	}
 
 	// Goober5000 - replace variables if necessary
 	// karajorma/jg18 - replace container references if necessary
@@ -1715,7 +1761,7 @@ void message_queue_message( int message_num, int priority, int timing, const cha
 	const bool replace_var = sexp_replace_variable_names_with_values(temp_buf, MESSAGE_LENGTH - 1);
 	const bool replace_con = sexp_container_replace_refs_with_values(temp_buf, MESSAGE_LENGTH - 1);
 	if (replace_var || replace_con)
-		MessageQ[i].special_message = vm_strdup(temp_buf);
+		MessageQ[i].special_message.reset(vm_strdup(temp_buf));
 
 	MessageQ[i].flags = 0;
 
@@ -1753,104 +1799,13 @@ void message_queue_message( int message_num, int priority, int timing, const cha
 
 	// set the timestamp of when to play this message based on the 'timing' value
 	if ( timing == MESSAGE_TIME_IMMEDIATE )
-		MessageQ[i].window_timestamp = timestamp(MESSAGE_IMMEDIATE_TIMESTAMP);
+		MessageQ[i].window_timestamp = _timestamp(MESSAGE_IMMEDIATE_TIMESTAMP);
 	else if ( timing == MESSAGE_TIME_SOON )
-		MessageQ[i].window_timestamp = timestamp(MESSAGE_SOON_TIMESTAMP);
+		MessageQ[i].window_timestamp = _timestamp(MESSAGE_SOON_TIMESTAMP);
 	else
-		MessageQ[i].window_timestamp = timestamp(MESSAGE_ANYTIME_TIMESTAMP);		// make invalid
+		MessageQ[i].window_timestamp = TIMESTAMP::invalid();		// make invalid
 
-	MessageQ_num++;
-	insertion_sort(MessageQ, MAX_MESSAGE_Q, message_queue_priority_compare);
-
-	// Try to start it!
-	// MWA -- called every frame from game loop
-	//message_queue_process();
-}
-
-// function to return the persona index of the given ship.  If it isn't assigned, it will be
-// in this function.  persona_type could be a wingman, Terran Command, or other generic ship
-// type personas.  ship is the ship we should assign a persona to
-int message_get_persona( ship *shipp )
-{
-	int i = 0, count;
-    ship_info* sip;
-	int *slist = new int[Num_personas];
-	memset( slist, 0, sizeof(int) * Num_personas );
-
-	if ( shipp != NULL ) {
-		// see if this ship has a persona
-		if ( shipp->persona_index != -1 ) {
-		//	return shipp->persona_index;
-			i = shipp->persona_index;
-			goto I_Done;
-		}
-
-		// get the type of ship (i.e. support, fighter/bomber, etc)
-		sip = &Ship_info[shipp->ship_info_index];
-
-		int persona_needed;
-		count = 0;
-
-		if ( sip->is_fighter_bomber() )
-		{
-			persona_needed = PERSONA_FLAG_WINGMAN;
-		} else if ( sip->flags[Ship::Info_Flags::Support] ) 
-		{
-			persona_needed = PERSONA_FLAG_SUPPORT;
-		}
-		else 
-		{
-			persona_needed = PERSONA_FLAG_LARGE;
-		}
-
-		// first try to go for an unused persona
-		for (i = 0; i < Num_personas; i++)
-		{
-			// this Persona is not our species - skip it
-			if (Personas[i].species != Ship_info[shipp->ship_info_index].species)
-				continue;
-
-			// check the ship types, and don't try to assign those which don't type match
-			if ( Personas[i].flags & persona_needed)
-			{
-				if (!(Personas[i].flags & PERSONA_FLAG_USED))
-				{
-					// if it hasn't been used - USE IT!
-					Personas[i].flags |= PERSONA_FLAG_USED;
-				//	return i;
-					goto I_Done;
-				}
-				else
-				{
-					// otherwise add it to our list of valid options to randomly select from
-					slist[count] = i;
-					count++;
-				}
-			}
-		}
-
-		// we didn't find an unused one - so we randomly select one
-		if(count != 0)
-		{
-			i = Random::next(count);
-			i = slist[i];
-		}
-		// RT Protect against count being zero
-		else
-			i = slist[0];
-
-		//return i;
-		goto I_Done;
-	}
-
-	// for now -- we don't support other types of personas (non-wingman personas)
-	Int3();
-//	return 0;
-
-I_Done:
-	delete[] slist;
-
-	return i;
+	insertion_sort(MessageQ, MessageQ_num, message_queue_priority_compare);
 }
 
 // given a message id#, should it be filtered for me?
@@ -1894,7 +1849,7 @@ int message_filter_multi(int id)
 
 // send_unique_to_player sends a mission unique (specific) message to the player (possibly a multiplayer
 // person).  These messages are *not* the builtin messages
-void message_send_unique_to_player( const char *id, const void *data, int m_source, int priority, int group, int delay, int event_num_to_cancel )
+void message_send_unique( const char *id, const void *data, int m_source, int priority, int group, int delay, int event_num_to_cancel )
 {
 	int i, source;
 	const char *who_from;
@@ -1964,239 +1919,310 @@ void message_send_unique_to_player( const char *id, const void *data, int m_sour
 	nprintf (("messaging", "Couldn't find message id %s to send to player!\n", id ));
 }
 
-#define BUILTIN_MATCHES_TYPE					0
-#define BUILTIN_MATCHES_SPECIES					1
-#define BUILTIN_MATCHES_PERSONA_CHECK_MOOD		2
-#define BUILTIN_MATCHES_PERSONA_EXCLUDED		3
-#define BUILTIN_MATCHES_PERSONA					4
-#define	BUILTIN_MATCHES_PERSONA_MOOD			5
-
-typedef	struct matching_builtin {
-		int type_of_match;
-		int message_index;
-}matching_builtin;
-
-// send builtin_to_player sends a message (from messages.tbl) to the player.  These messages are
-// the generic informational type messages.  The have priorities like misison specific messages,
-// and use a timing to tell how long we should wait before playing this message
-void message_send_builtin_to_player( int type, ship *shipp, int priority, int timing, int group, int delay, int multi_target, int multi_team_filter )
-{
-	int i, persona_index = -1, persona_species = -1, message_index = -1, random_selection = -1;
-	int source;
-	int num_matching_builtins = 0;
-	const char *who_from;
-	int best_match = -1;
-
-	matching_builtin current_builtin;
-	SCP_vector <matching_builtin> matching_builtins; 
-
-
-	// if we aren't showing builtin msgs, bail
-	if (The_mission.flags[Mission::Mission_Flags::No_builtin_msgs])
-		return;
-
-	// Karajorma - If we aren't showing builtin msgs from command and this is not a ship, bail
-	if ( (shipp == NULL) && (The_mission.flags[Mission::Mission_Flags::No_builtin_command]) ) 
-		return;
-
-	// builtin type isn't supported by this version of the table
-	if (!Valid_builtin_message_types[type]) {
-		// downgrade certain message types to more generic ones more likely to be supported
-		if (type == MESSAGE_HIGH_PRAISE ) {
-			type = MESSAGE_PRAISE; 
-		}
-		else if ( type == MESSAGE_REARM_PRIMARIES ) {
-			type = MESSAGE_REARM_REQUEST; 
-		}
-		else {
-			return;
-		}
-
-		// check if the downgraded type is also invalid
-		if (!Valid_builtin_message_types[type]) {
-			return;
-		}
+bool should_skip_builtin_message(int type, ship* shipp) {
+	if (type == MESSAGE_NONE) {
+		return true;
 	}
 
-	// see if there is a persona assigned to this ship.  If not, then try to assign one!!!
-	if ( shipp ) {
-		// Karajorma - the game should assert if a silenced ship gets this far
-		Assert( !(shipp->flags[Ship::Ship_Flags::No_builtin_messages]) );
+	// If we aren't showing builtin msgs, bail.
+	if (The_mission.flags[Mission::Mission_Flags::No_builtin_msgs]) {
+		return true;
+	}
 
-		if ( shipp->persona_index == -1 )
-			shipp->persona_index = message_get_persona( shipp );
+	// Karajorma - If we aren't showing builtin msgs from command and this is not a ship, bail.
+	if ((shipp == NULL) && (The_mission.flags[Mission::Mission_Flags::No_builtin_command])) {
+		return true;
+	}
 
-		persona_index = shipp->persona_index;
+	// Respect the tabled occurrence chance.
+	int occurrence_chance = Builtin_messages[type].occurrence_chance;
+	return (occurrence_chance < 100 && (int)(frand()*100) > occurrence_chance);
+}
 
-		if ( persona_index == -1 )
-			nprintf(("messaging", "Couldn't find persona for %s\n", shipp->ship_name ));	
-
-		// be sure that this ship can actually send a message!!! (i.e. not-not-flyable -- get it!)
-		Assert( Ship_info[shipp->ship_info_index].is_flyable() );		// get allender or alan
+int get_persona_type(ship_info* sip) {
+	if (sip->is_fighter_bomber()) {
+		return PERSONA_FLAG_WINGMAN;
+	} else if (sip->flags[Ship::Info_Flags::Support]) {
+		return PERSONA_FLAG_SUPPORT;
 	} else {
-		persona_index = The_mission.command_persona;				// use the terran command persona
+		return PERSONA_FLAG_LARGE;
 	}
+}
 
-	const char *name = Builtin_messages[type].name;
-
-	if (persona_index >= 0) {
-		persona_species = Personas[persona_index].species;
+int pick_persona(ship* shipp) {
+	SCP_vector<int> candidates;
+	ship_info* sip = &Ship_info[shipp->ship_info_index];
+	int species = sip->species;
+	int persona_type = get_persona_type(sip);
+	for (int i = 0; i < (int)Personas.size(); i++) {
+		if (species >= 32 || (Personas[i].species_bitfield & (1 << species)) == 0) {
+			// The persona's species is incompatible with the ship's
+			continue;
+		}
+		if (Personas[i].flags & PERSONA_FLAG_NO_AUTOMATIC_ASSIGNMENT)
+			// The persona does not allow us to pick it
+			continue;
+		if ((Personas[i].flags & persona_type) == 0) {
+			// The persona is the wrong type
+			continue;
+		}
+		if (Personas[i].flags & PERSONA_FLAG_USED) {
+			// This persona has been used before, but note it in case we need it
+			candidates.push_back(i);
+		} else {
+			// We haven't used this persona yet, so do!
+			Personas[i].flags |= PERSONA_FLAG_USED;
+			return i;
+		}
 	}
+	int count = (int) candidates.size();
+	if (count == 1) {
+		return candidates[0];
+	} else if (count > 1) {
+		return candidates[Random::next(0, count)];
+	} else if (persona_type & PERSONA_FLAG_SUPPORT) {
+		// Species without a support persona (e.g. the UEF) historically used the
+		// first support persona; retain that behavior
+		return Default_support_persona;
+	} else {
+		return -1;
+	} 
+}
 
-	// try to find a builtin message with the given type for the given persona
-	// we may try to play a message in the wrong persona if we can't find the right message for the given persona
-	for ( i = 0; i < Num_builtin_messages; i++ ) {
-		// check the type of message
-		if ( !stricmp(Messages[i].name, name) ) {
-			// condition 1: we have a type match
-			current_builtin.message_index = i;
-			current_builtin.type_of_match =  BUILTIN_MATCHES_TYPE; 
+bool can_auto_assign_persona(ship* shipp) {
+	// If the Auto_assign_personas flag is on, we can assign them for any ship
+	// Otherwise, we can only assign them for support
+	return Auto_assign_personas || Ship_info[shipp->ship_info_index].flags[Ship::Info_Flags::Support];
+}
 
-			// check the species of this persona (if required)
-			if ( (persona_species >= 0) && (Personas[Messages[i].persona_index].species == persona_species) ) {
-				// condition 2: we have a type + species match
-				current_builtin.type_of_match =  BUILTIN_MATCHES_SPECIES; 
+int get_persona(ship* shipp) {
+	if (shipp == NULL) {
+		return The_mission.command_persona;
+	} else if (shipp->persona_index != -1) {
+		return shipp->persona_index;
+	} else if (can_auto_assign_persona(shipp)) {
+		return shipp->persona_index = pick_persona(shipp);
+	} else {
+		return -1;
+	}
+}
+
+bool persona_allows_substitution(int persona) {
+	return (persona >= 0) && (Personas[persona].flags & PERSONA_FLAG_SUBSTITUTE_MISSING_MESSAGES);
+}
+
+bool has_filters(MessageFilter& filter) {
+	return !filter.ship_name.empty()
+	    || !filter.callsign.empty()
+			|| !filter.class_name.empty()
+			|| !filter.wing_name.empty()
+			||  filter.species_bitfield
+			||  filter.type_bitfield;
+}
+
+bool filter_matches(SCP_string value, SCP_vector<SCP_string>& filter) {
+	for (SCP_vector<SCP_string>::iterator iter = filter.begin(); iter != filter.end(); ++iter) {
+		if (value == *iter) {
+			return true;
+		}
+	}
+	return filter.empty();
+}
+
+bool filter_matches(int value, int filter) {
+	return (filter == 0) || ((1 << value) & filter);
+}
+
+bool filters_match(MessageFilter& filter, ship* it) {
+	Assert (has_filters(filter));
+	if (it == nullptr) {
+		return false;
+	} else {
+		int wing_index = it->wingnum;
+		SCP_string wing_name = (wing_index < 0) ? "" : Wings[wing_index].name;
+		return filter_matches(it->ship_name, filter.ship_name)
+	      && filter_matches(hud_get_ship_callsign(it), filter.callsign)
+		    && filter_matches(hud_get_ship_class(it), filter.class_name)
+		    && filter_matches(wing_name, filter.wing_name)
+		    && filter_matches(Ship_info[it->ship_info_index].species, filter.species_bitfield)
+		    && filter_matches(Ship_info[it->ship_info_index].class_type, filter.type_bitfield);
+	}
+}
+
+bool excludes_current_mood(int message) {
+	for (SCP_vector<int>::iterator iter = Messages[message].excluded_moods.begin(); iter != Messages[message].excluded_moods.end(); ++iter) {
+		if (*iter == Current_mission_mood) {
+			return true;
+		}
+	}
+	return false;
+}
+
+int get_builtin_message_inner(int type, int persona, ship* sender, ship* subject, bool require_exact_persona_match) {
+	static const int BUILTIN_MATCHES_TYPE    = 0;
+	static const int BUILTIN_MATCHES_FILTER  = 1;
+	static const int BUILTIN_MATCHES_MOOD    = 2;
+	static const int BUILTIN_MATCHES_SPECIES = 4;
+	static const int BUILTIN_MATCHES_PERSONA = 8;
+
+	const char* name = Builtin_messages[type].name;
+	SCP_vector<int> matching_builtins;
+	int match_level, best_match_level = 0;
+
+	for (int i = 0; i < Num_builtin_messages; i++) {
+		if (stricmp(Messages[i].name, name)) {
+			continue;
+		} else if (Messages[i].persona_index == persona) {
+			match_level = BUILTIN_MATCHES_PERSONA;
+		} else if (require_exact_persona_match) {
+			continue;
+		} else if (Personas[Messages[i].persona_index].flags & PERSONA_FLAG_NO_AUTOMATIC_ASSIGNMENT) {
+			continue;
+		} else if ((persona >= 0) && ((Personas[Messages[i].persona_index].species_bitfield & Personas[persona].species_bitfield) != 0)) {
+			match_level = BUILTIN_MATCHES_SPECIES;
+		} else {
+			match_level = BUILTIN_MATCHES_TYPE;
+		}
+
+		if (Current_mission_mood == Messages[i].mood) {
+			// Boost messages that match the current mood
+			match_level |= BUILTIN_MATCHES_MOOD;
+		} else if (excludes_current_mood(i)) {
+			// Ignore messages that are incompatible with the current mood
+			continue;
+		}
+
+		// Apply sender filters
+		if (has_filters(Messages[i].sender_filter)) {
+			if (filters_match(Messages[i].sender_filter, sender)) {
+				// Boost messages that have at least one filter
+				match_level |= BUILTIN_MATCHES_FILTER;
+			} else {
+				// Ignore messages where any filter doesn't match
+				continue;
 			}
+		} else if (type == MESSAGE_BACKUP && !Allow_generic_backup_messages) {
+			// Historically, only certain wings were allowed to send Backup messages.
+			// The hardcoded requirement has been moved to message filters, but it
+			// would break backwards compatibility if we suddenly start sending Backup
+			// messages for wings that previously couldn't.
+			continue;
+		}
 
-			// check the exact persona (if required)
-			// NOTE: doesn't need to be nested under the species condition above
-			if ( (persona_index >= 0) && (Messages[i].persona_index == persona_index) ) {
-				// condition 3: type + species + persona index match	
-				current_builtin.type_of_match =  BUILTIN_MATCHES_PERSONA_CHECK_MOOD; 
+		// Ditto with subject filters
+		if (has_filters(Messages[i].subject_filter)) {
+			if (filters_match(Messages[i].subject_filter, subject)) {
+				// Boost messages that have at least one filter
+				match_level |= BUILTIN_MATCHES_FILTER;
+			} else {
+				// Ignore messages where any filter doesn't match
+				continue;
 			}
+		}
 
-			// check if the personas mood suits this particular message, first check if it is excluded
-			if (!Messages[i].excluded_moods.empty() && (current_builtin.type_of_match ==  BUILTIN_MATCHES_PERSONA_CHECK_MOOD)) {
-				for (SCP_vector<int>::iterator iter = Messages[i].excluded_moods.begin(); iter != Messages[i].excluded_moods.end(); ++iter) {
-					if (*iter == Current_mission_mood) {
-						current_builtin.type_of_match =  BUILTIN_MATCHES_PERSONA_EXCLUDED; 
-						break; 
-					}
-				}
-			}
-
-			if (current_builtin.type_of_match ==  BUILTIN_MATCHES_PERSONA_CHECK_MOOD) {
-				if (Current_mission_mood == Messages[i].mood) {
-					current_builtin.type_of_match =  BUILTIN_MATCHES_PERSONA_MOOD; 
-				}
-				else {
-					current_builtin.type_of_match =  BUILTIN_MATCHES_PERSONA; 
-				}
-			}			
-
-			if (current_builtin.type_of_match == best_match) {
-				num_matching_builtins++;
-			}
-			// otherwise check to see if the this is the best kind of match we've found so far
-			else if (current_builtin.type_of_match > best_match) {
-				best_match = current_builtin.type_of_match; 
-				num_matching_builtins = 1;
-			}
-
-			// add the match to our list
-			matching_builtins.push_back(current_builtin); 
+		if (match_level == best_match_level) {
+			matching_builtins.push_back(i);
+		} else if (match_level > best_match_level) {
+			best_match_level = match_level;
+			matching_builtins.clear();
+			matching_builtins.push_back(i);
 		}
 	}
 
-	switch (best_match) {
-		case BUILTIN_MATCHES_PERSONA_EXCLUDED:
-			nprintf(("MESSAGING", "Couldn't find builtin message %s for persona %d with a none excluded mood\n", Builtin_messages[type].name, persona_index));
-			if (!Personas[persona_index].substitute_missing_messages) {
-				nprintf(("MESSAGING", "Persona does not allow substitution, skipping message.\n"));
-				return;
-			}
-			else
-				nprintf(("MESSAGING", "using an excluded message for this persona\n"));
-			break;
-		case BUILTIN_MATCHES_SPECIES:
-			nprintf(("MESSAGING", "Couldn't find builtin message %s for persona %d\n", Builtin_messages[type].name, persona_index));
-			if (!Personas[persona_index].substitute_missing_messages) {
-				nprintf(("MESSAGING", "Persona does not allow substitution, skipping message.\n"));
-				return;
-			}
-			else
-				nprintf(("MESSAGING", "using a message for any persona of that species\n"));
-			break;
-		case BUILTIN_MATCHES_TYPE:
-			nprintf(("MESSAGING", "Couldn't find builtin message %s for persona %d\n", Builtin_messages[type].name, persona_index));
-			if (!Personas[persona_index].substitute_missing_messages) {
-				nprintf(("MESSAGING", "Persona does not allow substitution, skipping message.\n"));
-				return;
-			}
-			else
-				nprintf(("MESSAGING", "looking for message for any persona of any species\n"));
-			break;
-		case -1:
-			Error(LOCATION, "Couldn't find any builtin message of type %d\n", type);
-			return;
+	int matches = (int) matching_builtins.size();
+	if (matches == 1) {
+		return matching_builtins[0];
+	} else if (matches > 0) {
+		return matching_builtins[Random::next(matches)];
 	}
 
-	
-	// since we may have multiple builtins we need to pick one at random
-	random_selection = Random::next(1, num_matching_builtins);
+	// We're still here, so look for a fallback message
+	int fallback = Builtin_messages[type].fallback;
+	if (fallback != MESSAGE_NONE) {
+		return get_builtin_message_inner(fallback, persona, sender, subject, require_exact_persona_match);
+	} 
 
-	// loop through the vector until we have found enough elements of the correct matching type
-	for (i = 0; i < (int)matching_builtins.size(); i++) {
-		if (matching_builtins[i].type_of_match == best_match) {
-			random_selection--; 
-			if (random_selection == 0) {
-				message_index = matching_builtins[i].message_index;
-				break;
-			}
-		}
+	// Still here? Guess we're staying silent
+	return MESSAGE_NONE;
+}
+
+int get_builtin_message(int type, int persona, ship* sender, ship* subject) {
+	int result = get_builtin_message_inner(type, persona, sender, subject, true);
+	if (result != MESSAGE_NONE) {
+		return result;
+	} else if (persona_allows_substitution(persona)) {
+		// Only borrow messages from other personae as an absolute last-ditch effort
+		return get_builtin_message_inner(type, persona, sender, subject, false);
+	} else {
+		return MESSAGE_NONE;
+	}
+}
+
+// send builtin_to_player sends a message (from messages.tbl) to the player. These messages are
+// the generic informational type messages. The have priorities like misison specific messages,
+// and use a timing to tell how long we should wait before playing this message
+bool message_send_builtin(int type, ship* sender, ship* subject, int multi_target, int multi_team_filter) {
+	if (should_skip_builtin_message(type, sender)) {
+		return false;
 	}
 
-	Assertion (random_selection == 0, "unable to randomly select built in message correctly, still have %d selections left", random_selection); 
+	int persona_index = get_persona(sender);
+	int message_index = get_builtin_message(type, persona_index, sender, subject);
+	if (message_index == MESSAGE_NONE) {
+		return false;
+	}
 
-	// get who this message is from -- kind of a hack since we assume Terran Command in the
-	// absence of a ship.  This will be fixed later
-	if ( shipp ) {
-		who_from = shipp->ship_name;
-		source = HUD_team_get_source( shipp->team );
+	// Get the message's source for HUD purposes
+	int source;
+	const char *who_from;
+	if (sender) {
+		who_from = sender->ship_name;
+		source = HUD_team_get_source(sender->team);
+	} else if (type == MESSAGE_ALREADY_ON_WAY) {
+		// If the player called for support while a support ship is arriving, have it acknowledge the request
+		who_from = SUPPORT_NAME;
+		source = HUD_SOURCE_TERRAN_CMD;
 	} else {
 		who_from = The_mission.command_sender;
 
 		// Goober5000 - if Command is a ship that is present, change the source accordingly
 		int shipnum = ship_name_lookup(who_from);
-		if (shipnum >= 0)
-			source = HUD_team_get_source( Ships[shipnum].team );
-		else
+		if (shipnum >= 0) {
+			source = HUD_team_get_source(Ships[shipnum].team);
+		} else {
 			source = HUD_SOURCE_TERRAN_CMD;
-	}
-
-	// maybe change the who from here for special rearm cases (always seems like that is the case :-) )
-	if ( !stricmp(who_from, The_mission.command_sender) && (type == MESSAGE_REARM_ON_WAY) ){
-		who_from = SUPPORT_NAME;
-	}
-
-	// determine what we should actually do with this dang message.  In multiplayer, we must
-	// deal with the fact that this message might not get played on my machine if I am a server
-
-	// not multiplayer or this message is for me, then queue it
-	if ( !(Game_mode & GM_MULTIPLAYER) || ((multi_target == -1) || (multi_target == MY_NET_PLAYER_NUM)) ){
-
-		// if this filter matches mine
-		if( (multi_team_filter < 0) || !(Netgame.type_flags & NG_TYPE_TEAM) || ((Net_player != NULL) && (Net_player->p_info.team == multi_team_filter)) ){
-			message_queue_message( message_index, priority, timing, who_from, source, group, delay, type, -1 );
 		}
 	}
 
-	// send a message packet to a player if destined for everyone or only a specific person
-	if ( MULTIPLAYER_MASTER ) {
+	// Queue this message, handling multiplayer routing if needed
+	int priority = Builtin_messages[type].priority;
+	int timing = Builtin_messages[type].timing;
+
+	// Not multiplayer or this message is for me, then queue it
+	if (!(Game_mode & GM_MULTIPLAYER) || ((multi_target == -1) || (multi_target == MY_NET_PLAYER_NUM))) {
+		// if this filter matches mine
+		if ((multi_team_filter < 0) || !(Netgame.type_flags & NG_TYPE_TEAM) || ((Net_player != NULL) && (Net_player->p_info.team == multi_team_filter))) {
+			message_queue_message(message_index, priority, timing, who_from, source, 0, 0, type, -1);
+		}
+	}
+
+	// Send a message packet to a player if destined for everyone or only a specific person
+	if (MULTIPLAYER_MASTER) {
 		// only send a message if it is of a particular type
-		if(multi_target == -1){
-			if(multi_message_should_broadcast(type)){				
-				send_mission_message_packet( message_index, who_from, priority, timing, source, type, -1, multi_team_filter );
+		if (multi_target == -1) {
+			if (multi_message_should_broadcast(type)) {
+				send_mission_message_packet(message_index, who_from, priority, timing, source, type, -1, multi_team_filter);
 			}
 		} else {
-			send_mission_message_packet( message_index, who_from, priority, timing, source, type, multi_target, multi_team_filter );
+			send_mission_message_packet(message_index, who_from, priority, timing, source, type, multi_target, multi_team_filter);
 		}
 	}
+	return true;
 }
 
 // message_is_playing()
 //
-// Return the Message_playing flag.  Message_playing is local to MissionMessage.cpp, but
+// Return the Message_playing flag. Message_playing is local to MissionMessage.cpp, but
 // this info is needed by code in HUDsquadmsg.cpp
 //
 int message_is_playing()
@@ -2211,7 +2237,7 @@ int message_persona_name_lookup(const char* name)
 {
 	int i;
 
-	for (i = 0; i < Num_personas; i++ ) {
+	for (i = 0; i < (int)Personas.size(); i++) {
 		if ( !stricmp(Personas[i].name, name) )
 			return i;
 	}

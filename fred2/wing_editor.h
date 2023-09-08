@@ -66,6 +66,7 @@ public:
 	BOOL	m_no_arrival_music;
 	int		m_departure_target;
 	BOOL	m_no_arrival_message;
+	BOOL	m_no_first_wave_message;
 	BOOL	m_no_arrival_warp;
 	BOOL	m_no_departure_warp;
 	BOOL	m_same_arrival_warp_when_docked;

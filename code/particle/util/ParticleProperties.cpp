@@ -3,10 +3,11 @@
 #include "particle/ParticleManager.h"
 
 #include "bmpman/bmpman.h"
+#include "math/curve.h"
 
 namespace particle {
 namespace util {
-ParticleProperties::ParticleProperties() : m_radius(0.0f, 1.0f), m_lifetime(0.0f, 1.0f), m_length (0.0f){
+ParticleProperties::ParticleProperties() : m_radius(0.0f, 1.0f), m_lifetime(0.0f, 1.0f), m_length (0.0f), m_size_lifetime_curve (-1), m_vel_lifetime_curve (-1){
 }
 
 void ParticleProperties::parse(bool nocreate) {
@@ -33,6 +34,26 @@ void ParticleProperties::parse(bool nocreate) {
 			m_lifetime = ::util::parseUniformRange<float>();
 		}
 	}
+
+	if (optional_string("+Size over lifetime curve:")) {
+		SCP_string buf;
+		stuff_string(buf, F_NAME);
+		m_size_lifetime_curve = curve_get_by_name(buf);
+
+		if (m_size_lifetime_curve < 0) {
+			Warning(LOCATION, "Could not find curve '%s'", buf.c_str());
+		}
+	}
+
+	if (optional_string("+Velocity scalar over lifetime curve:")) {
+		SCP_string buf;
+		stuff_string(buf, F_NAME);
+		m_vel_lifetime_curve = curve_get_by_name(buf);
+
+		if (m_vel_lifetime_curve < 0) {
+			Warning(LOCATION, "Could not find curve '%s'", buf.c_str());
+		}
+	}
 }
 
 int ParticleProperties::chooseBitmap()
@@ -52,6 +73,8 @@ void ParticleProperties::createParticle(particle_info& info) {
 		info.lifetime = m_lifetime.next();
 		info.lifetime_from_animation = false;
 	}
+	info.size_lifetime_curve = m_size_lifetime_curve;
+	info.vel_lifetime_curve = m_vel_lifetime_curve;
 
 	create(&info);
 }
@@ -61,6 +84,8 @@ WeakParticlePtr ParticleProperties::createPersistentParticle(particle_info& info
 	info.type = PARTICLE_BITMAP;
 	info.rad = m_radius.next();
 	info.length = m_length.next();
+	info.size_lifetime_curve = m_size_lifetime_curve;
+	info.vel_lifetime_curve = m_vel_lifetime_curve;
 
 	auto p = createPersistent(&info);
 

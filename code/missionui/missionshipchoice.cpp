@@ -1084,7 +1084,7 @@ void ship_select_blit_ship_info()
 		if(sum != 0)
 			sprintf(str, "%d", sum);
 		else
-			strcpy_s(str, "None");
+			strcpy_s(str, XSTR("None", 1673));
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, str, GR_RESIZE_MENU);
 	}
 	else
@@ -1098,7 +1098,7 @@ void ship_select_blit_ship_info()
 		}
 		else
 		{
-			strcpy_s(str, "None");
+			strcpy_s(str, XSTR("None", 1673));
 		}
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, str, GR_RESIZE_MENU);
 	}
@@ -1120,7 +1120,7 @@ void ship_select_blit_ship_info()
 		}
 		else
 		{
-			strcpy_s(str, "None");
+			strcpy_s(str, XSTR("None", 1673));
 		}
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, str, GR_RESIZE_MENU);
 	}
@@ -1206,7 +1206,7 @@ void ship_select_blit_ship_info()
 	
 	if(Ship_select_ship_info_text[0] != '\0'){
 		// split the string into multiple lines
-		// MageKing17: Changed to use the widths determined by Yarn here: http://scp.indiegames.us/mantis/view.php?id=3144#c16516
+		// MageKing17: Changed to use the widths determined by Yarn here: https://scp.indiegames.us/mantis/view.php?id=3144#c16516
 		n_lines = split_str(Ship_select_ship_info_text, gr_screen.res == GR_640 ? 204 : 328, n_chars, p_str, MAX_NUM_SHIP_DESC_LINES, SHIP_SELECT_SHIP_INFO_MAX_LINE_LEN);
 
 		// copy the split up lines into the text lines array

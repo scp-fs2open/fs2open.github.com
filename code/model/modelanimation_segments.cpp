@@ -243,6 +243,61 @@ namespace animation {
 	}
 
 
+	ModelAnimationSegmentSetOffset::ModelAnimationSegmentSetOffset(std::shared_ptr<ModelAnimationSubmodel> submodel, const vec3d& offset, ModelAnimationCoordinateRelation isOffsetRelative) :
+		  m_submodel(std::move(submodel)), m_target(offset), m_relationType(isOffsetRelative) { }
+
+	ModelAnimationSegment* ModelAnimationSegmentSetOffset::copy() const {
+		return new ModelAnimationSegmentSetOffset(*this);
+	}
+
+	void ModelAnimationSegmentSetOffset::recalculate(ModelAnimationSubmodelBuffer& base, ModelAnimationSubmodelBuffer& currentAnimDelta, polymodel_instance* pmi) {
+		int pmi_id = pmi->id;
+		if (m_relationType == ModelAnimationCoordinateRelation::RELATIVE_COORDS) {
+			m_instances[pmi_id].offset = m_target;
+		}
+		else {
+			//In Absolute mode we need to undo the previously applied translation to make sure we actually end up at the target despite having only a delta we output, as opposed to just overwriting the value
+			const ModelAnimationData<>& submodel = (m_relationType == ModelAnimationCoordinateRelation::ABSOLUTE_COORDS ? base[m_submodel].data : currentAnimDelta[m_submodel].data);
+			m_instances[pmi_id].offset = m_target - submodel.position;
+		}
+
+		m_duration[pmi_id] = 0.0f;
+	}
+
+	void ModelAnimationSegmentSetOffset::calculateAnimation(ModelAnimationSubmodelBuffer& base, float /*time*/, int pmi_id) const {
+		ModelAnimationData<true> data;
+		data.position = m_instances.at(pmi_id).offset;
+
+		base[m_submodel].data.applyDelta(data);
+		base[m_submodel].modified = true;
+	}
+
+	void ModelAnimationSegmentSetOffset::exchangeSubmodelPointers(ModelAnimationSet& replaceWith) {
+		m_submodel = replaceWith.getSubmodel(m_submodel);
+	}
+
+	std::shared_ptr<ModelAnimationSegment> ModelAnimationSegmentSetOffset::parser(ModelAnimationParseHelper* data) {
+		vec3d target;
+
+		required_string("+Target:");
+		stuff_vec3d(&target);
+		ModelAnimationCoordinateRelation relationType = ModelAnimationParseHelper::parseCoordinateRelation();
+
+		auto submodel = ModelAnimationParseHelper::parseSubmodel();
+
+		if (!submodel) {
+			if (data->parentSubmodel)
+				submodel = data->parentSubmodel;
+			else
+				error_display(1, "Set Offset has no target submodel!");
+		}
+
+		auto segment = std::shared_ptr<ModelAnimationSegmentSetOffset>(new ModelAnimationSegmentSetOffset(submodel, target, relationType));
+
+		return segment;
+	}
+
+
 	ModelAnimationSegmentSetAngle::ModelAnimationSegmentSetAngle(std::shared_ptr<ModelAnimationSubmodel> submodel, float angle) :
 		m_submodel(std::move(submodel)), m_angle(angle) { }
 
@@ -1166,8 +1221,8 @@ namespace animation {
 	}
 
 
-	ModelAnimationSegmentSoundDuring::ModelAnimationSegmentSoundDuring(std::shared_ptr<ModelAnimationSegment> segment, gamesnd_id start, gamesnd_id end, gamesnd_id during, bool flipIfReversed, float radius, std::shared_ptr<ModelAnimationSubmodel> submodel, tl::optional<vec3d> position) :
-		m_segment(std::move(segment)), m_submodel(submodel), m_position(std::move(position)), m_radius(radius), m_start(start), m_end(end), m_during(during), m_flipIfReversed(flipIfReversed) { }
+	ModelAnimationSegmentSoundDuring::ModelAnimationSegmentSoundDuring(std::shared_ptr<ModelAnimationSegment> segment, gamesnd_id start, gamesnd_id end, gamesnd_id during, bool flipIfReversed, bool abortPlayingSounds, float radius, std::shared_ptr<ModelAnimationSubmodel> submodel, tl::optional<vec3d> position) :
+		m_segment(std::move(segment)), m_submodel(submodel), m_position(std::move(position)), m_radius(radius), m_start(start), m_end(end), m_during(during), m_flipIfReversed(flipIfReversed), m_abortSoundIfRunning(abortPlayingSounds) { }
 
 	ModelAnimationSegment* ModelAnimationSegmentSoundDuring::copy() const {
 		auto newCopy = new ModelAnimationSegmentSoundDuring(*this);
@@ -1213,14 +1268,14 @@ namespace animation {
 	}
 
 	void ModelAnimationSegmentSoundDuring::playStartSnd(polymodel_instance* pmi) {
-		if (snd_is_playing(m_instances[pmi->id].currentlyPlaying))
+		if (m_abortSoundIfRunning && snd_is_playing(m_instances[pmi->id].currentlyPlaying))
 			snd_stop(m_instances[pmi->id].currentlyPlaying);
 		
 		if(m_start.isValid())
 			m_instances[pmi->id].currentlyPlaying = playSnd(pmi, m_start, false);
 	}
 	void ModelAnimationSegmentSoundDuring::playEndSnd(polymodel_instance* pmi) {
-		if (snd_is_playing(m_instances[pmi->id].currentlyPlaying))
+		if (m_abortSoundIfRunning && snd_is_playing(m_instances[pmi->id].currentlyPlaying))
 			snd_stop(m_instances[pmi->id].currentlyPlaying);
 
 		if (m_end.isValid()) 
@@ -1277,8 +1332,9 @@ namespace animation {
 		}
 
 		bool flipIfReversed = optional_string("+Flip When Reversed");
+		bool abortSoundIfRunning = !optional_string("+Don't Interrupt Playing Sounds");
 
-		auto segment = std::shared_ptr<ModelAnimationSegmentSoundDuring>(new ModelAnimationSegmentSoundDuring(data->parseSegment(), start_sound, end_sound, loop_sound, flipIfReversed, snd_rad, submodel, position));
+		auto segment = std::shared_ptr<ModelAnimationSegmentSoundDuring>(new ModelAnimationSegmentSoundDuring(data->parseSegment(), start_sound, end_sound, loop_sound, flipIfReversed, abortSoundIfRunning, snd_rad, submodel, position));
 
 		return segment;
 	}

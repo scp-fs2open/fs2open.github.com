@@ -4,6 +4,7 @@
 #include "graphics.h"
 
 #include "scripting/api/objs/camera.h"
+#include "scripting/api/objs/color.h"
 #include "scripting/api/objs/enums.h"
 #include "scripting/api/objs/font.h"
 #include "scripting/api/objs/model.h"
@@ -14,6 +15,7 @@
 #include "scripting/api/objs/subsystem.h"
 #include "scripting/api/objs/texture.h"
 #include "scripting/api/objs/vecmath.h"
+#include "scripting/global_hooks.h"
 
 #include <asteroid/asteroid.h>
 #include <camera/camera.h>
@@ -57,6 +59,8 @@ ADE_LIB(l_Graphics, "Graphics", "gr", "Graphics Library");
 static float lua_Opacity = 1.0f;
 static int lua_Opacity_type = GR_ALPHABLEND_FILTER;
 static int lua_ResizeMode = GR_RESIZE_NONE;
+
+int get_resize_mode() { return lua_ResizeMode; }
 
 //****SUBLIBRARY: Graphics/Cameras
 ADE_LIB_DERIV(l_Graphics_Cameras, "Cameras", NULL, "Cameras", l_Graphics);
@@ -282,13 +286,30 @@ ADE_FUNC(clear, l_Graphics, nullptr, "Calls gr_clear(), which fills the entire s
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(clearScreen, l_Graphics, "[number red, number green, number blue, number alpha]",
-         "Clears the screen to black, or the color specified.", nullptr, nullptr)
+ADE_FUNC(clearScreen, l_Graphics, "[number|color /* red value or color object */, number green, number blue, number alpha]",
+	"Clears the screen to black, or the color specified.",
+	nullptr,
+	nullptr)
 {
-	int r,g,b,a;
-	r=g=b=0;
-	a=255;
-	ade_get_args(L, "|iiii", &r, &g, &b, &a);
+	int r, g, b, a;
+	r = g = b = 0;
+	a = 255;
+
+	if (lua_isnumber(L, 1)) {
+		ade_get_args(L, "|iiii", &r, &g, &b, &a);
+
+	} else {
+		color col;
+		gr_init_alphacolor(&col, 0, 0, 0, 255);
+
+		ade_get_args(L, "|o", l_Color.Get(&col));
+		r = col.red;
+		g = col.green;
+		b = col.blue;
+		a = col.alpha;
+	}
+
+	
 
 	//WMC - Set to valid values
 	if(r != 0 || g != 0 || b != 0 || a!= 255)
@@ -500,31 +521,56 @@ ADE_FUNC(setCamera, l_Graphics, "[camera Camera]", "Sets current camera, or rese
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(setColor, l_Graphics, "number Red, number Green, number Blue, [number Alpha]",
-         "Sets 2D drawing color; each color number should be from 0 (darkest) to 255 (brightest)", nullptr, nullptr)
+ADE_FUNC(setColor,
+	l_Graphics,
+	"number|color /* red value or color object */, number Green, number Blue, [number Alpha]",
+	"Sets 2D drawing color; each color number should be from 0 (darkest) to 255 (brightest)",
+	nullptr,
+	nullptr)
 {
-	if(!Gr_inited)
+	if (!Gr_inited)
 		return ADE_RETURN_NIL;
 
-	int r,g,b,a=255;
+	int r, g, b, a = 255;
+	color col;
 
-	if(!ade_get_args(L, "iii|i", &r, &g, &b, &a))
-		return ADE_RETURN_NIL;
+	if (lua_isnumber(L, 1)) {
+		if (!ade_get_args(L, "iii|i", &r, &g, &b, &a))
+			return ADE_RETURN_NIL;
 
-	color ac;
-	gr_init_alphacolor(&ac,r,g,b,a);
-	gr_set_color_fast(&ac);
+		gr_init_alphacolor(&col, r, g, b, a);
+
+	} else {
+		gr_init_alphacolor(&col, 0, 0, 0, 255);
+
+		ade_get_args(L, "o", l_Color.Get(&col));
+	}
+
+	gr_set_color_fast(&col);
 
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(getColor, l_Graphics, nullptr, "Gets the active 2D drawing color", "number, number, number, number" , "rgba color which is currently in use for 2D drawing")
+ADE_FUNC(getColor,
+	l_Graphics,
+	"boolean",
+	"Gets the active 2D drawing color. False to return raw rgb, true to return a color object. Defaults to false.",
+	"number, number, number, number | color",
+	"rgba color which is currently in use for 2D drawing")
 {
 	if(!Gr_inited)
 		return ADE_RETURN_NIL;
 
+	bool rc = false;
+	ade_get_args(L, "|b", &rc);
+
 	color cur = gr_screen.current_color;
-	return ade_set_args(L, "iiii", (int)cur.red, (int)cur.green, (int)cur.blue, (int)cur.alpha);
+
+	if (!rc) {
+		return ade_set_args(L, "iiii", (int)cur.red, (int)cur.green, (int)cur.blue, (int)cur.alpha);
+	} else {
+		return ade_set_args(L, "o", l_Color.Set(cur));
+	}
 }
 
 ADE_FUNC(setLineWidth, l_Graphics, "[number width=1.0]", "Sets the line width for lines. This call might fail if the specified width is not supported by the graphics implementation. Then the width will be the nearest supported value.", "boolean", "true if succeeded, false otherwise")
@@ -875,7 +921,7 @@ ADE_FUNC(drawModel, l_Graphics, "model model, vector position, orientation orien
 
 	// Make sure we have a scene to use
 	// Note that this is only relevant, and thus only expected to be set, in OBJECTRENDER hooks
-	if (Script_system.IsActiveAction(CHA_OBJECTRENDER) && !Current_scene)
+	if (scripting::hooks::OnObjectRender->isActive() && !Current_scene)
 		return ade_set_args(L, "i", 4);
 
 	//Handle angles
@@ -919,7 +965,7 @@ ADE_FUNC(drawModel, l_Graphics, "model model, vector position, orientation orien
 	// of some optimizations by adding this model to the global render queue.
 	// In all other circumstances, we need to render the model in immediate mode, which may be slow but
 	// is guaranteed to work.
-	if (Script_system.IsActiveAction(CHA_OBJECTRENDER))
+	if (scripting::hooks::OnObjectRender->isActive())
 		model_render_queue(&render_info, Current_scene, model_num, orient, v);
 	else
 		model_render_immediate(&render_info, model_num, orient, v);
@@ -962,7 +1008,7 @@ ADE_FUNC(drawModelOOR, l_Graphics, "model Model, vector Position, orientation Or
 
 	// Make sure we have a scene to use
 	// Note that this is only relevant, and thus only expected to be set, in OBJECTRENDER hooks
-	if (Script_system.IsActiveAction(CHA_OBJECTRENDER) && !Current_scene)
+	if (scripting::hooks::OnObjectRender->isActive() && !Current_scene)
 		return ade_set_args(L, "i", 4);
 
 	//Handle angles
@@ -978,7 +1024,7 @@ ADE_FUNC(drawModelOOR, l_Graphics, "model Model, vector Position, orientation Or
 	// of some optimizations by adding this model to the global render queue.
 	// In all other circumstances, we need to render the model in immediate mode, which may be slow but
 	// is guaranteed to work.
-	if (Script_system.IsActiveAction(CHA_OBJECTRENDER))
+	if (scripting::hooks::OnObjectRender->isActive())
 		model_render_queue(&render_info, Current_scene, model_num, orient, v);
 	else
 		model_render_immediate(&render_info, model_num, orient, v);
@@ -1841,15 +1887,34 @@ ADE_FUNC(getImageHeight, l_Graphics, "string name", "Gets image height", "number
 	return ade_set_args(L, "i", h);
 }
 
-ADE_FUNC(flashScreen, l_Graphics, "number Red, number Green, number Blue", "Flashes the screen", NULL, NULL)
+ADE_FUNC(flashScreen,
+	l_Graphics,
+	"number|color /* red value or color object */, number Green, number Blue",
+	"Flashes the screen",
+	nullptr,
+	nullptr)
 {
 	if(!Gr_inited)
 		return ADE_RETURN_NIL;
 
-	int r,g,b;
+	int r, g, b;
 
-	if(!ade_get_args(L, "iii", &r, &g, &b))
-		return ADE_RETURN_NIL;
+	if (lua_isnumber(L, 1)) {
+		if (!ade_get_args(L, "iii", &r, &g, &b))
+			return ADE_RETURN_NIL;
+
+	} else {
+		color col;
+
+		gr_init_alphacolor(&col, 0, 0, 0, 255);
+
+		if (!ade_get_args(L, "o", l_Color.Get(&col)))
+			return ADE_RETURN_NIL;
+
+		r = col.red;
+		g = col.green;
+		b = col.blue;
+	}
 
 	gr_flash(r,g,b);
 
@@ -2166,6 +2231,42 @@ ADE_FUNC(screenToBlob, l_Graphics, nullptr, "Captures the current render target 
 		return ade_set_error(L, "s", "");
 
 	return ade_set_args(L, "s", gr_blob_screen().c_str());
+}
+
+ADE_FUNC(freeAllModels, l_Graphics, nullptr, "Releases all loaded models and frees the memory. Intended for use in UI situations "
+	"and not within missions. Do not use after mission parse. Use at your own risk!", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+	
+	model_free_all();
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(createColor,
+	l_Graphics,
+	"number Red, number Green, number Blue, [number Alpha]",
+	"Creates a color object. Values are capped 0-255. Alpha defaults to 255.",
+	"color",
+	"The color")
+{
+	int r;
+	int g;
+	int b;
+	int a = 255;
+	if (!ade_get_args(L, "iii|i", &r, &g, &b, &a)) {
+		return ADE_RETURN_NIL;
+	}
+
+	CLAMP(r, 0, 255);
+	CLAMP(g, 0, 255);
+	CLAMP(b, 0, 255);
+	CLAMP(a, 0, 255);
+
+	color thisColor;
+	gr_init_alphacolor(&thisColor, r, g, b, a);
+
+	return ade_set_args(L, "o", l_Color.Set(thisColor));
 }
 
 } // namespace api

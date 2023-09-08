@@ -691,7 +691,7 @@ color *iff_get_color_by_team(int team, int seen_from_team, int is_bright)
  * 
  * this one for the function calls that include some - any - of object
  */
-color* iff_get_color_by_team_and_object(int team, int seen_from_team, int is_bright, object* objp)
+color *iff_get_color_by_team_and_object(int team, int seen_from_team, int is_bright, object *objp)
 {
 	Assert(team >= 0 && team < (int)Iff_info.size());
 	Assert(seen_from_team < (int)Iff_info.size());

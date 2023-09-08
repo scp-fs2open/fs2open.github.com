@@ -16,6 +16,7 @@
 #include "graphics/matrix.h"
 #include "missionui/missionscreencommon.h"
 #include "scripting/api/objs/weaponclass.h"
+#include "model/modelrender.h"
 
 namespace scripting {
 namespace api {
@@ -689,6 +690,28 @@ ADE_VIRTVAR(ScanTime, l_Shipclass, nullptr, "Ship scan time", "number", "Time re
 	return ade_set_args(L, "i", Ship_info[idx].scan_time);
 }
 
+ADE_VIRTVAR(CountermeasureClass, l_Shipclass, "weaponclass", "The default countermeasure class assigned to this ship class", "weaponclass", "Countermeasure hardpoint weapon class, or invalid weaponclass handle if no countermeasure class or ship handle is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
+		return ade_set_error(L, "o", l_Weaponclass.Set(-1));
+
+	if (idx < 0 || idx >= ship_info_size())
+		return ade_set_error(L, "o", l_Weaponclass.Set(-1));
+
+	ship_info* sip = &Ship_info[idx];
+
+	if(ADE_SETTING_VAR) {
+		LuaError(L, "Setting CountermeasureClass is not supported");
+	}
+
+	if (sip->cmeasure_type > -1) {
+		return ade_set_args(L, "o", l_Weaponclass.Set(sip->cmeasure_type));
+	} else {
+		return ade_set_error(L, "o", l_Weaponclass.Set(-1));
+	}
+}
+
 ADE_VIRTVAR(CountermeasuresMax, l_Shipclass, "number", "Maximum number of countermeasures the ship can carry", "number", "Countermeasure capacity, or 0 if handle is invalid")
 {
 	int idx;
@@ -1189,19 +1212,6 @@ ADE_FUNC(renderTechModel,
 	CLAMP(rot_angles.b, 0.0f, 100.0f);
 	CLAMP(rot_angles.h, 0.0f, 100.0f);
 
-	ship_info *sip = &Ship_info[idx];
-	model_render_params render_info;
-
-	if (sip->uses_team_colors) {
-		render_info.set_team_color(sip->default_team_name, "none", 0, 0);
-	}
-
-	//Make sure model is loaded
-	sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0], 0);
-
-	if(sip->model_num < 0)
-		return ade_set_args(L, "b", false);
-
 	//Handle angles
 	matrix orient = vmd_identity_matrix;
 	angles view_angles = {-0.6f, 0.0f, 0.0f};
@@ -1212,41 +1222,7 @@ ADE_FUNC(renderTechModel,
 	rot_angles.h = (rot_angles.h*0.01f) * PI2;
 	vm_rotate_matrix_by_angles(&orient, &rot_angles);
 
-	//Clip
-	gr_set_clip(x1,y1,x2-x1,y2-y1,GR_RESIZE_NONE);
-
-	//Handle 3D init stuff
-	g3_start_frame(1);
-	g3_set_view_matrix(&sip->closeup_pos, &vmd_identity_matrix, sip->closeup_zoom * zoom);
-
-	gr_set_proj_matrix( Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-	gr_set_view_matrix(&Eye_position, &Eye_matrix);
-
-	//setup lights
-	common_setup_room_lights();
-
-	//Draw the ship!!
-	model_clear_instance(sip->model_num);
-	render_info.set_detail_level_lock(0);
-
-	uint render_flags = MR_AUTOCENTER | MR_NO_FOGGING;
-
-	if(!lighting || (sip->flags[Ship::Info_Flags::No_lighting]))
-		render_flags |= MR_NO_LIGHTING;
-
-	render_info.set_flags(render_flags);
-
-	model_render_immediate(&render_info, sip->model_num, &orient, &vmd_zero_vector);
-
-	//OK we're done
-	gr_end_view_matrix();
-	gr_end_proj_matrix();
-
-	//Bye!!
-	g3_end_frame();
-	gr_reset_clip();
-
-	return ade_set_args(L, "b", true);
+	return ade_set_args(L, "b", render_tech_model(TECH_SHIP, x1, y1, x2, y2, zoom, lighting, idx, &orient));
 }
 
 // Nuke's alternate tech model rendering function
@@ -1265,57 +1241,10 @@ ADE_FUNC(renderTechModel2, l_Shipclass, "number X1, number Y1, number X2, number
 	if(x2 < x1 || y2 < y1)
 		return ade_set_args(L, "b", false);
 
-	ship_info *sip = &Ship_info[idx];
-	model_render_params render_info;
-
-	if (sip->uses_team_colors) {
-		render_info.set_team_color(sip->default_team_name, "none", 0, 0);
-	}
-
-	//Make sure model is loaded
-	sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0], 0);
-
-	if(sip->model_num < 0)
-		return ade_set_args(L, "b", false);
-
 	//Handle angles
 	matrix *orient = mh->GetMatrix();
 
-	//Clip
-	gr_set_clip(x1,y1,x2-x1,y2-y1,GR_RESIZE_NONE);
-
-	//Handle 3D init stuff
-	g3_start_frame(1);
-	g3_set_view_matrix(&sip->closeup_pos, &vmd_identity_matrix, sip->closeup_zoom * zoom);
-
-	gr_set_proj_matrix( Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-	gr_set_view_matrix(&Eye_position, &Eye_matrix);
-
-	//setup lights
-	common_setup_room_lights();
-
-	//Draw the ship!!
-	model_clear_instance(sip->model_num);
-	render_info.set_detail_level_lock(0);
-
-	uint render_flags = MR_AUTOCENTER | MR_NO_FOGGING;
-
-	if(sip->flags[Ship::Info_Flags::No_lighting])
-		render_flags |= MR_NO_LIGHTING;
-
-	render_info.set_flags(render_flags);
-
-	model_render_immediate(&render_info, sip->model_num, orient, &vmd_zero_vector);
-
-	//OK we're done
-	gr_end_view_matrix();
-	gr_end_proj_matrix();
-
-	//Bye!!
-	g3_end_frame();
-	gr_reset_clip();
-
-	return ade_set_args(L, "b", true);
+	return ade_set_args(L, "b", render_tech_model(TECH_SHIP, x1, y1, x2, y2, zoom, true, idx, orient));
 }
 
 ADE_FUNC(renderSelectModel,
@@ -1543,6 +1472,29 @@ ADE_FUNC(isModelLoaded, l_Shipclass, "[boolean Load = false]", "Checks if the mo
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
+}
+
+ADE_FUNC(isPlayerAllowed,
+	l_Shipclass,
+	nullptr,
+	"Detects whether the ship has the player allowed flag",
+	"boolean",
+	"true if player allowed, false otherwise, nil if a syntax/type error occurs")
+{
+	int idx;
+	if (!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
+		return ADE_RETURN_NIL;
+
+	if (idx < 0 || idx >= ship_info_size())
+		return ADE_RETURN_FALSE;
+
+	ship_info* sip = &Ship_info[idx];
+
+	if (sip->flags[Ship::Info_Flags::Player_ship]) {
+		return ADE_RETURN_TRUE;
+	}
+
+	return ADE_RETURN_FALSE;
 }
 
 ADE_FUNC(getShipClassIndex, l_Shipclass, nullptr, "Gets the index value of the ship class", "number", "index value of the ship class")

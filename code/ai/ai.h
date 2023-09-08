@@ -34,7 +34,13 @@ typedef struct ai_flag_name {
 	char flag_name[TOKEN_LENGTH];
 } ai_flag_name;
 
+typedef struct ai_flag_description {
+	AI::AI_Flags flag;
+	SCP_string flag_desc;
+} ai_flag_description;
+
 extern ai_flag_name Ai_flag_names[];
+extern ai_flag_description Ai_flag_descriptions[];
 extern const int Num_ai_flag_names;
 
 //	dock_orient_and_approach() modes.
@@ -461,6 +467,7 @@ typedef struct ai_info {
 	ai_lua_parameters lua_ai_target;
 } ai_info;
 
+int ai_maybe_autoscale(int absolute_index = -1);
 int ai_get_autoscale_index(int absolute_index = -1);
 
 // Goober5000
@@ -587,6 +594,8 @@ extern int ai_fire_primary_weapon(object *objp);	//changed to return weather it 
 extern int ai_fire_secondary_weapon(object *objp);
 extern float ai_get_weapon_dist(ship_weapon *swp);
 extern void turn_towards_point(object *objp, vec3d *point, vec3d *slide_vec, float bank_override, matrix* target_orient = nullptr, int flags = 0);
+extern bool ai_willing_to_afterburn_hard(ai_info* aip);
+extern void ai_afterburn_hard(object* objp, ai_info* aip);
 extern int ai_maybe_fire_afterburner(object *objp, ai_info *aip);
 extern void set_predicted_enemy_pos(vec3d *predicted_enemy_pos, object *pobjp, vec3d *enemy_pos, vec3d *enemy_vel, ai_info *aip);
 

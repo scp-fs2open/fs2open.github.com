@@ -21,6 +21,9 @@
 #include "render/3d.h"
 #include "util/uniform_structs.h"
 
+namespace ltp = lighting_profiles;
+using namespace ltp;
+
 // Structures
 struct gr_light
 {
@@ -329,8 +332,8 @@ void gr_set_ambient_light(int red, int green, int blue) {
 	gr_light_ambient[3] = 1.0f;
 }
 void gr_get_ambient_light(vec3d* light_vector) {
-	auto abv = lighting_profile::current()->ambient_light_brightness;
-	auto over = lighting_profile::current()->overall_brightness;
+	auto abv = ltp::current()->ambient_light_brightness;
+	auto over = ltp::current()->overall_brightness;
 	light_vector->xyz.x = over.handle(abv.handle(gr_light_ambient[0]));
 	light_vector->xyz.y = over.handle(abv.handle(gr_light_ambient[1]));
 	light_vector->xyz.z = over.handle(abv.handle(gr_light_ambient[2]));

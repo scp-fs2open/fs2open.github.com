@@ -32,6 +32,7 @@ bool Fixed_missile_detonation;
 bool Damage_impacted_subsystem_first;
 bool Cutscene_camera_displays_hud;
 bool Alternate_chaining_behavior;
+bool Fixed_chaining_to_repeat;
 bool Use_host_orientation_for_set_camera_facing;
 bool Use_3d_ship_select;
 bool Use_3d_ship_icons;
@@ -52,8 +53,10 @@ bool Flight_controls_follow_eyepoint_orientation;
 int FS2NetD_port;
 int Default_multi_object_update_level;
 float Briefing_window_FOV;
+int Briefing_window_resolution[2];
 bool Disable_hc_message_ani;
 SCP_vector<SCP_string> Custom_head_anis;
+SCP_vector<SCP_string> Ignored_music_player_files;
 bool Red_alert_applies_to_delayed_ships;
 bool Beams_use_damage_factors;
 float Generic_pain_flash_factor;
@@ -65,6 +68,10 @@ SCP_string Window_title;
 SCP_string Mod_title;
 SCP_string Mod_version;
 bool Unicode_text_mode;
+SCP_vector<SCP_string> Splash_screens;
+int Splash_fade_in_time;
+int Splash_fade_out_time;
+bool Splash_logo_center;
 bool Use_tabled_strings_for_default_language;
 bool Dont_preempt_training_voice;
 SCP_string Movie_subtitle_font;
@@ -81,17 +88,26 @@ SCP_string Inherited_shockwave_damage_type_suffix;
 SCP_string Inherited_dinky_shockwave_damage_type_suffix;
 SCP_string Default_shockwave_damage_type;
 SCP_string Default_dinky_shockwave_damage_type;
-std::tuple<ubyte, ubyte, ubyte> Arc_color_damage_p1;
-std::tuple<ubyte, ubyte, ubyte> Arc_color_damage_p2;
-std::tuple<ubyte, ubyte, ubyte> Arc_color_damage_s1;
-std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_p1;
-std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_p2;
-std::tuple<ubyte, ubyte, ubyte> Arc_color_emp_s1;
+color Arc_color_damage_p1;
+color Arc_color_damage_p2;
+color Arc_color_damage_s1;
+float Arc_width_default_damage;
+float Arc_width_radius_multiplier_damage;
+float Arc_width_no_multiply_over_radius_damage;
+float Arc_width_minimum_damage;
+color Arc_color_emp_p1;
+color Arc_color_emp_p2;
+color Arc_color_emp_s1;
+float Arc_width_default_emp;
+float Arc_width_radius_multiplier_emp;
+float Arc_width_no_multiply_over_radius_emp;
+float Arc_width_minimum_emp;
 bool Use_engine_wash_intensity;
+bool Apply_shudder_to_chase_view;
 bool Framerate_independent_turning; // an in-depth explanation how this flag is supposed to work can be found in #2740 PR description
 bool Ai_respect_tabled_turntime_rotdamp;
 bool Swarmers_lead_targets;
-bool Chase_view_default;
+bool Default_start_chase_view;
 SCP_vector<gr_capability> Required_render_ext;
 float Weapon_SS_Threshold_Turret_Inaccuracy;
 bool Render_player_mflash;
@@ -113,14 +129,23 @@ bool Supernova_hits_at_zero;
 bool Show_subtitle_uses_pixels;
 int Show_subtitle_screen_base_res[2];
 int Show_subtitle_screen_adjusted_res[2];
+int HUD_set_coords_screen_base_res[2];
 bool Always_warn_player_about_unbound_keys;
 leadIndicatorBehavior Lead_indicator_behavior;
 shadow_disable_overrides Shadow_disable_overrides {false, false, false, false};
 float Thruster_easing;
 bool Always_use_distant_firepoints;
 bool Discord_presence;
+bool Hotkey_always_hide_hidden_ships;
+bool Use_weapon_class_sounds_for_hits_to_player;
+bool SCPUI_loads_hi_res_animations;
+bool Auto_assign_personas;
+bool Countermeasures_use_capacity;
+bool Play_thruster_sounds_for_player;
+std::array<std::tuple<float, float>, 6> Fred_spacemouse_nonlinearity;
+bool Randomize_particle_rotation;
 
-static auto DiscordOption = options::OptionBuilder<bool>("Other.Discord", "Discord Presence", "Toggle Discord Rich Presence")
+static auto DiscordOption __UNUSED = options::OptionBuilder<bool>("Other.Discord", "Discord Presence", "Toggle Discord Rich Presence")
 							 .category("Other")
 							 .default_val(Discord_presence)
 							 .level(options::ExpertLevel::Advanced)
@@ -200,6 +225,46 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Unicode_text_mode);
 
 			mprintf(("Game Settings Table: Unicode mode: %s\n", Unicode_text_mode ? "yes" : "no"));
+		}
+
+		if (optional_string("$Splash screens:")) {
+			SCP_string splash_bitmap;
+			while (optional_string("+Bitmap:")) {
+				stuff_string(splash_bitmap, F_NAME);
+
+				// remove extension?
+				if (drop_extension(splash_bitmap)) {
+					mprintf(("Game Settings Table: Removed extension on splash screen file name %s\n", splash_bitmap.c_str()));
+				}
+
+				Splash_screens.push_back(splash_bitmap);
+			}
+		}
+
+		if (optional_string("$Splash fade in time:")) {
+			int val;
+			stuff_int(&val);
+			
+			if (val < 0) {
+				mprintf(("Game Settings Table: Got splash fade in time of %i. It must be >= 0! Ignoring!", val));
+			} else {
+				Splash_fade_in_time = val;
+			}
+		}
+
+		if (optional_string("$Splash fade out time:")) {
+			int val;
+			stuff_int(&val);
+
+			if (val < 0) {
+				mprintf(("Game Settings Table: Got splash fade out time of %i. It must be >= 0! Ignoring!", val));
+			} else {
+				Splash_fade_out_time = val;
+			}
+		}
+
+		if (optional_string("$Center splash logo:")) {
+			stuff_boolean(&Splash_logo_center);
 		}
 
 		optional_string("#LOCALIZATION SETTINGS");
@@ -331,6 +396,10 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Always_warn_player_about_unbound_keys);
 		}
 
+		if (optional_string("$HUD drop shadows enabled by default:")) {
+			stuff_boolean(&HUD_shadows);
+		}
+
 		optional_string("#SEXP SETTINGS");
 
 		if (optional_string("$Loop SEXPs Then Arguments:")) {
@@ -350,6 +419,16 @@ void parse_mod_table(const char *filename)
 			}
 			else {
 				mprintf(("Game Settings Table: Using standard event chaining behavior\n"));
+			}
+		}
+
+		if (optional_string("$Fixed Chaining To Repeating Events:")) {
+			stuff_boolean(&Fixed_chaining_to_repeat);
+			if (Fixed_chaining_to_repeat) {
+				mprintf(("Game Settings Table: Using fixed chaining to repeating events\n"));
+			}
+			else {
+				mprintf(("Game Settings Table: Using retail chaining to repeating events\n"));
 			}
 		}
 
@@ -384,6 +463,21 @@ void parse_mod_table(const char *filename)
 				}
 			} else {
 				Warning(LOCATION, "$Show-subtitle base resolution: must specify two arguments");
+			}
+		}
+
+		if (optional_string("$HUD-set-coords base resolution:")) {
+			int base_res[2];
+			if (stuff_int_list(base_res, 2) == 2) {
+				if (base_res[0] >= 640 && base_res[1] >= 480) {
+					HUD_set_coords_screen_base_res[0] = base_res[0];
+					HUD_set_coords_screen_base_res[1] = base_res[1];
+					mprintf(("Game Settings Table: HUD-set-coords base resolution is (%d, %d)\n", base_res[0], base_res[1]));
+				} else {
+					Warning(LOCATION, "$HUD-set-coords base resolution: arguments must be at least 640x480!");
+				}
+			} else {
+				Warning(LOCATION, "$HUD-set-coords base resolution: must specify two arguments");
 			}
 		}
 
@@ -473,7 +567,7 @@ void parse_mod_table(const char *filename)
 				int rgb[3];
 				stuff_int_list(rgb, 3);
 				if ((rgb[0] >= 0 && rgb[0] <= 255) && (rgb[1] >= 0 && rgb[1] <= 255) && (rgb[2] >= 0 && rgb[2] <= 255)) {
-					Arc_color_emp_p1 = std::make_tuple(static_cast<ubyte>(rgb[0]), static_cast<ubyte>(rgb[1]), static_cast<ubyte>(rgb[2]));
+					gr_init_color(&Arc_color_emp_p1, rgb[0], rgb[1], rgb[2]);
 				} else {
 					error_display(0, "$EMP Arc Color: +Primary Color Option 1 is %i, %i, %i. "
 						"One or more of these values is not within the range of 0-255. Assuming default color.", rgb[0], rgb[1], rgb[2]);
@@ -483,7 +577,7 @@ void parse_mod_table(const char *filename)
 				int rgb[3];
 				stuff_int_list(rgb, 3);
 				if ((rgb[0] >= 0 && rgb[0] <= 255) && (rgb[1] >= 0 && rgb[1] <= 255) && (rgb[2] >= 0 && rgb[2] <= 255)) {
-					Arc_color_emp_p2 = std::make_tuple(static_cast<ubyte>(rgb[0]), static_cast<ubyte>(rgb[1]), static_cast<ubyte>(rgb[2]));
+					gr_init_color(&Arc_color_emp_p2, rgb[0], rgb[1], rgb[2]);
 				} else {
 					error_display(0, "$EMP Arc Color: +Primary Color Option 2 is %i, %i, %i. "
 					    "One or more of these values is not within the range of 0-255. Assuming default color.", rgb[0], rgb[1], rgb[2]);
@@ -493,7 +587,7 @@ void parse_mod_table(const char *filename)
 				int rgb[3];
 				stuff_int_list(rgb, 3);
 				if ((rgb[0] >= 0 && rgb[0] <= 255) && (rgb[1] >= 0 && rgb[1] <= 255) && (rgb[2] >= 0 && rgb[2] <= 255)) {
-					Arc_color_emp_s1 = std::make_tuple(static_cast<ubyte>(rgb[0]), static_cast<ubyte>(rgb[1]), static_cast<ubyte>(rgb[2]));
+					gr_init_color(&Arc_color_emp_s1, rgb[0], rgb[1], rgb[2]);
 			    } else {
 				    error_display(0,"$EMP Arc Color: +Secondary Color Option 1 is %i, %i, %i. "
 					    "One or more of these values is not within the range of 0-255. Assuming default color.", rgb[0], rgb[1], rgb[2]);
@@ -501,12 +595,27 @@ void parse_mod_table(const char *filename)
 		    }
 		}
 
+		if (optional_string("$EMP Arc Width:")) {
+			if (optional_string("+Width Default:")) {
+				stuff_float(&Arc_width_default_emp);
+			}
+			if (optional_string("+Width Radius Multiplier:")) {
+				stuff_float(&Arc_width_radius_multiplier_emp);
+			}
+			if (optional_string("+Do Not Use Width Multiplier Over Radius:")) {
+				stuff_float(&Arc_width_no_multiply_over_radius_emp);
+			}
+			if (optional_string("+Width Radius Minimum:")) {
+				stuff_float(&Arc_width_minimum_emp);
+			}
+		}
+
 		if (optional_string("$Damage Arc Color:")) {
 			if (optional_string("+Primary Color Option 1:")) {
 				int rgb[3];
 				stuff_int_list(rgb, 3);
 				if ((rgb[0] >= 0 && rgb[0] <= 255) && (rgb[1] >= 0 && rgb[1] <= 255) && (rgb[2] >= 0 && rgb[2] <= 255)) {
-					Arc_color_damage_p1 = std::make_tuple(static_cast<ubyte>(rgb[0]), static_cast<ubyte>(rgb[1]), static_cast<ubyte>(rgb[2]));
+					gr_init_color(&Arc_color_damage_p1, rgb[0], rgb[1], rgb[2]);
 		        } else {
 			        error_display(0, "Damage Arc Color: +Primary Color Option 1 is %i, %i, %i. "
 					    "One or more of these values is not within the range of 0-255. Assuming default color.", rgb[0], rgb[1], rgb[2]);
@@ -516,7 +625,7 @@ void parse_mod_table(const char *filename)
 				int rgb[3];
 				stuff_int_list(rgb, 3);
 				if ((rgb[0] >= 0 && rgb[0] <= 255) && (rgb[1] >= 0 && rgb[1] <= 255) && (rgb[2] >= 0 && rgb[2] <= 255)) {
-					Arc_color_damage_p2 = std::make_tuple(static_cast<ubyte>(rgb[0]), static_cast<ubyte>(rgb[1]), static_cast<ubyte>(rgb[2]));
+					gr_init_color(&Arc_color_damage_p2, rgb[0], rgb[1], rgb[2]);
 	            } else {
 		            error_display(0, "$Damage Arc Color: +Primary Color Option 2 is %i, %i, %i. "
 					    "One or more of these values is not within the range of 0-255. Assuming default color.", rgb[0], rgb[1], rgb[2]);
@@ -526,11 +635,26 @@ void parse_mod_table(const char *filename)
 				int rgb[3];
 				stuff_int_list(rgb, 3);
 				if ((rgb[0] >= 0 && rgb[0] <= 255) && (rgb[1] >= 0 && rgb[1] <= 255) && (rgb[2] >= 0 && rgb[2] <= 255)) {
-					Arc_color_damage_s1 = std::make_tuple(static_cast<ubyte>(rgb[0]), static_cast<ubyte>(rgb[1]), static_cast<ubyte>(rgb[2]));
+					gr_init_color(&Arc_color_damage_s1, rgb[0], rgb[1], rgb[2]);
 	            } else {
 		            error_display(0, "$Damage Arc Color: +Secondary Color Option 1 is %i, %i, %i. "
 					    "One or more of these values is not within the range of 0-255. Assuming default color.", rgb[0], rgb[1], rgb[2]);
 	            }
+			}
+		}
+
+		if (optional_string("$Damage Arc Width:")) {
+			if (optional_string("+Width Default:")) {
+				stuff_float(&Arc_width_default_damage);
+			}
+			if (optional_string("+Width Radius Multiplier:")) {
+				stuff_float(&Arc_width_radius_multiplier_damage);
+			}
+			if (optional_string("+Do Not Use Width Multiplier Over Radius:")) {
+				stuff_float(&Arc_width_no_multiply_over_radius_damage);
+			}
+			if (optional_string("+Width Radius Minimum:")) {
+				stuff_float(&Arc_width_minimum_damage);
 			}
 		}
 
@@ -713,6 +837,38 @@ void parse_mod_table(const char *filename)
 
 		}
 
+		if (optional_string("$SCPUI attempts to load hires animations:")) {
+			stuff_boolean(&SCPUI_loads_hi_res_animations);
+		}
+
+		if (optional_string("$Max draw distance:")) {
+			stuff_float(&Max_draw_distance);
+
+			if (fl_near_zero(Max_draw_distance) || Max_draw_distance < 0.0f) {
+				Warning(LOCATION, "The $Max draw distance must be above 0. Using default value.\n");
+				Max_draw_distance = Default_max_draw_distance;
+			} 
+		}
+
+		if (optional_string("$Min draw distance:")) {
+			stuff_float(&Min_draw_distance);
+
+			if (fl_near_zero(Min_draw_distance) || Min_draw_distance < 0.0f) {
+				Warning(LOCATION, "The $Min draw distance must be above 0. Using default value.\n");
+				Min_draw_distance = Default_min_draw_distance;
+			}
+		}
+
+		if (Min_draw_distance >= Max_draw_distance) {
+			Warning(LOCATION, "The $Min draw distance must be strictly less than the $Max draw distance. Using default values for both.\n");
+			Min_draw_distance = Default_min_draw_distance;
+			Max_draw_distance = Default_max_draw_distance;
+		}
+
+		if (optional_string("$Randomize particle rotation:")) {
+			stuff_boolean(&Randomize_particle_rotation);
+		}
+
 		optional_string("#NETWORK SETTINGS");
 
 		if (optional_string("$FS2NetD port:")) {
@@ -763,6 +919,14 @@ void parse_mod_table(const char *filename)
 			}
 		}
 
+		if (optional_string("$Use weapon class impact sounds for hits to player:")) {
+			stuff_boolean(&Use_weapon_class_sounds_for_hits_to_player);
+		}
+
+		if (optional_string("$Play thruster sounds for the player:")) {
+			stuff_boolean(&Play_thruster_sounds_for_player);
+		}
+
 		optional_string("#FRED SETTINGS");
 
 		if (optional_string("$Disable Hard Coded Message Head Ani Files:")) {
@@ -798,6 +962,50 @@ void parse_mod_table(const char *filename)
 			else {
 				mprintf(("Game Settings Table: FRED - Scripts will not be executed when running FRED.\n"));
 			}
+		}
+
+		if (optional_string("$FRED Briefing window resolution:")) {
+			int res[2];
+			if (stuff_int_list(res, 2) == 2) {
+				mprintf(("Game Settings Table: Setting FRED briefing window resolution from (%ix%i) to (%ix%i)\n",
+					Briefing_window_resolution[0],
+					Briefing_window_resolution[1],
+					res[0],
+					res[1]));
+
+				Briefing_window_resolution[0] = res[0];
+				Briefing_window_resolution[1] = res[1];
+			} else {
+				Warning(LOCATION, "$FRED Briefing window resolution: must specify two arguments");
+			}
+		}
+
+
+		if (optional_string("$Ignore Music Files In Music Player:")) {
+			SCP_string music_name;
+			while (optional_string("+File:")) {
+				stuff_string(music_name, F_NAME);
+
+				drop_extension(music_name);
+
+				Ignored_music_player_files.push_back(music_name);
+			}
+		}
+
+		if (optional_string("$FRED spacemouse nonlinearities:")) {
+#define SPACEMOUSE_NONLINEARITY(name, id) \
+			if (optional_string("+" name " exponent:")) \
+				stuff_float(&std::get<0>(Fred_spacemouse_nonlinearity[id])); \
+			if (optional_string("+" name " scale:")) \
+				stuff_float(&std::get<1>(Fred_spacemouse_nonlinearity[id]));
+			SPACEMOUSE_NONLINEARITY("Sideways", 0);
+			SPACEMOUSE_NONLINEARITY("Forwards", 1);
+			SPACEMOUSE_NONLINEARITY("Upwards", 2);
+			SPACEMOUSE_NONLINEARITY("Pitch", 3);
+			SPACEMOUSE_NONLINEARITY("Bank", 4);
+			SPACEMOUSE_NONLINEARITY("Heading", 5);
+#undef SPACEMOUSE_NONLINEARITY
+
 		}
 
 		optional_string("#OTHER SETTINGS");
@@ -856,7 +1064,6 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Use_3d_overhead_ship);
 		}
 
-		Default_overhead_ship_style = OH_TOP_VIEW;
 		if (optional_string("$Default overhead ship style:")) {
 			char effect[NAME_LENGTH];
 			stuff_string(effect, F_NAME, NAME_LENGTH);
@@ -992,6 +1199,10 @@ void parse_mod_table(const char *filename)
 			stuff_boolean(&Use_engine_wash_intensity);
 		}
 
+		if (optional_string("$Apply HUD shudder to chase view:")) {
+			stuff_boolean(&Apply_shudder_to_chase_view);
+		}
+
 		if (optional_string("$Swarmers Lead Targets:")) {
 			stuff_boolean(&Swarmers_lead_targets);
 		}
@@ -1018,7 +1229,7 @@ void parse_mod_table(const char *filename)
 		}
 		
 		if (optional_string("$Player starts in third person/chase view by default:")) {
-			stuff_boolean(&Chase_view_default);
+			stuff_boolean(&Default_start_chase_view);
 		}
 		
 		if (optional_string("$Custom briefing icons always override standard icons:")) {
@@ -1052,8 +1263,21 @@ void parse_mod_table(const char *filename)
 		if (optional_string("$Use distant firepoint for all turrets:")){
 			stuff_boolean(&Always_use_distant_firepoints);
 		}
-		if (optional_string("$Enable discord rich presence:")) {
+
+		if (optional_string("$Enable Discord rich presence:")) {
 			stuff_boolean(&Discord_presence);
+		}
+
+		if (optional_string("$Always hide hidden ships in hotkey list:")) {
+			stuff_boolean(&Hotkey_always_hide_hidden_ships);
+		}
+
+		if (optional_string("$Allow automatically assigning personas:")) {
+			stuff_boolean(&Auto_assign_personas);
+		}
+
+		if (optional_string("$Countermeasures use capacity:")) {
+			stuff_boolean(&Countermeasures_use_capacity);
 		}
 
 		required_string("#END");
@@ -1087,20 +1311,26 @@ void mod_table_post_process()
 	// use the same widescreen code as in adjust_base_res()
 	// This calculates an adjusted resolution if the aspect ratio of the base resolution doesn't exactly match that of the current resolution.
 	// The base resolution specified in game_settings.tbl does not need to be 1024x768 or even 4:3.
-	float aspect_quotient = ((float)gr_screen.center_w / (float)gr_screen.center_h) / ((float)Show_subtitle_screen_base_res[0] / (float)Show_subtitle_screen_base_res[1]);
-	if (aspect_quotient >= 1.0) {
-		Show_subtitle_screen_adjusted_res[0] = (int)(Show_subtitle_screen_base_res[0] * aspect_quotient);
+	float aspect_quotient_subtitle = ((float)gr_screen.center_w / (float)gr_screen.center_h) / ((float)Show_subtitle_screen_base_res[0] / (float)Show_subtitle_screen_base_res[1]);
+	if (aspect_quotient_subtitle >= 1.0) {
+		Show_subtitle_screen_adjusted_res[0] = (int)(Show_subtitle_screen_base_res[0] * aspect_quotient_subtitle);
 		Show_subtitle_screen_adjusted_res[1] = Show_subtitle_screen_base_res[1];
 	} else {
 		Show_subtitle_screen_adjusted_res[0] = Show_subtitle_screen_base_res[0];
-		Show_subtitle_screen_adjusted_res[1] = (int)(Show_subtitle_screen_base_res[1] / aspect_quotient);
+		Show_subtitle_screen_adjusted_res[1] = (int)(Show_subtitle_screen_base_res[1] / aspect_quotient_subtitle);
 	}
 	mprintf(("Game Settings Table: Show-subtitle adjusted resolution is (%d, %d)\n", Show_subtitle_screen_adjusted_res[0], Show_subtitle_screen_adjusted_res[1]));
+
+	// we don't need to calculate adjusted resolution for hud-set-coords because that function doesn't do screen scaling
 }
 
 bool mod_supports_version(int major, int minor, int build)
 {
 	return Targeted_version >= gameversion::version(major, minor, build, 0);
+}
+
+bool mod_supports_version(const gameversion::version& version) {
+	return Targeted_version >= version;
 }
 
 void mod_table_reset()
@@ -1112,9 +1342,11 @@ void mod_table_reset()
 	Damage_impacted_subsystem_first = false;
 	Cutscene_camera_displays_hud = false;
 	Alternate_chaining_behavior = false;
+	Fixed_chaining_to_repeat = false;
 	Use_host_orientation_for_set_camera_facing = false;
 	Default_ship_select_effect = 2;
 	Default_weapon_select_effect = 2;
+	Default_overhead_ship_style = OH_TOP_VIEW;
 	Default_fiction_viewer_ui = -1;
 	Enable_external_shaders = false;
 	Enable_external_default_scripts = false;
@@ -1126,6 +1358,8 @@ void mod_table_reset()
 	FS2NetD_port = 0;
 	Default_multi_object_update_level = OBJ_UPDATE_HIGH;
 	Briefing_window_FOV = 0.29375f;
+	Briefing_window_resolution[0] = 888;
+	Briefing_window_resolution[1] = 371;
 	Disable_hc_message_ani = false;
 	Red_alert_applies_to_delayed_ships = false;
 	Beams_use_damage_factors = false;
@@ -1138,9 +1372,12 @@ void mod_table_reset()
 	Mod_title = "";
 	Mod_version = "";
 	Unicode_text_mode = false;
+	Splash_fade_in_time = 0;
+	Splash_fade_out_time = 0;
+	Splash_logo_center = false;
 	Use_tabled_strings_for_default_language = false;
 	Dont_preempt_training_voice = false;
-	Movie_subtitle_font = "font01.vf";
+	Movie_subtitle_font = "";
 	Enable_scripts_in_fred = false;
 	Window_icon_path = "app_icon_sse";
 	Disable_built_in_translations = false;
@@ -1154,16 +1391,25 @@ void mod_table_reset()
 	Inherited_dinky_shockwave_damage_type_suffix = "";
 	Default_shockwave_damage_type = "";
 	Default_dinky_shockwave_damage_type = "";
-	Arc_color_damage_p1 = std::make_tuple(static_cast<ubyte>(64), static_cast<ubyte>(64), static_cast<ubyte>(225));
-	Arc_color_damage_p2 = std::make_tuple(static_cast<ubyte>(128), static_cast<ubyte>(128), static_cast<ubyte>(255));
-	Arc_color_damage_s1 = std::make_tuple(static_cast<ubyte>(200), static_cast<ubyte>(200), static_cast<ubyte>(255));
-	Arc_color_emp_p1 = std::make_tuple(static_cast<ubyte>(64), static_cast<ubyte>(64), static_cast<ubyte>(5));
-	Arc_color_emp_p2 = std::make_tuple(static_cast<ubyte>(128), static_cast<ubyte>(128), static_cast<ubyte>(10));
-	Arc_color_emp_s1 = std::make_tuple(static_cast<ubyte>(255), static_cast<ubyte>(255), static_cast<ubyte>(10));
+	gr_init_color(&Arc_color_damage_p1, 64, 64, 255);
+	gr_init_color(&Arc_color_damage_p2, 128, 128, 255);
+	gr_init_color(&Arc_color_damage_s1, 200, 200, 255);
+	Arc_width_default_damage = 0.9f;
+	Arc_width_radius_multiplier_damage = 0.01f;
+	Arc_width_no_multiply_over_radius_damage = 500.0f;
+	Arc_width_minimum_damage = 0.2f;
+	gr_init_color(&Arc_color_emp_p1, 64, 64, 5);
+	gr_init_color(&Arc_color_emp_p2, 128, 128, 10);
+	gr_init_color(&Arc_color_emp_s1, 255, 255, 10);
+	Arc_width_default_emp = 0.9f;
+	Arc_width_radius_multiplier_emp = 0.01f;
+	Arc_width_no_multiply_over_radius_emp = 500.0f;
+	Arc_width_minimum_emp = 0.2f;
 	Use_engine_wash_intensity = false;
+	Apply_shudder_to_chase_view = false;
 	Framerate_independent_turning = true;
 	Ai_respect_tabled_turntime_rotdamp = false;
-	Chase_view_default = false;
+	Default_start_chase_view = false;
 	Swarmers_lead_targets = false;
 	Required_render_ext.clear();
 	Weapon_SS_Threshold_Turret_Inaccuracy = 0.7f; // Defaults to retail value of 0.7 --wookieejedi
@@ -1188,11 +1434,28 @@ void mod_table_reset()
 	Show_subtitle_screen_base_res[1] = -1;
 	Show_subtitle_screen_adjusted_res[0] = -1;
 	Show_subtitle_screen_adjusted_res[1] = -1;
+	HUD_set_coords_screen_base_res[0] = -1;
+	HUD_set_coords_screen_base_res[1] = -1;
 	Always_warn_player_about_unbound_keys = false;
 	Lead_indicator_behavior = leadIndicatorBehavior::DEFAULT;
 	Thruster_easing = 0;
 	Always_use_distant_firepoints = false;
 	Discord_presence = true;
+	Hotkey_always_hide_hidden_ships = false;
+	Use_weapon_class_sounds_for_hits_to_player = false;
+	SCPUI_loads_hi_res_animations = true;
+	Auto_assign_personas = true;
+	Countermeasures_use_capacity = false;
+	Play_thruster_sounds_for_player = false;
+	Fred_spacemouse_nonlinearity = std::array<std::tuple<float, float>, 6>{{
+			std::tuple<float, float>{ 1.0f, 1.0f },
+			std::tuple<float, float>{ 1.0f, 1.0f },
+			std::tuple<float, float>{ 1.0f, 1.0f },
+			std::tuple<float, float>{ 1.0f, 1.0f },
+			std::tuple<float, float>{ 1.0f, 1.0f },
+			std::tuple<float, float>{ 1.0f, 1.0f }
+		}};
+	Randomize_particle_rotation = false;
 }
 
 void mod_table_set_version_flags()
@@ -1204,7 +1467,8 @@ void mod_table_set_version_flags()
 		Framerate_independent_turning = true;					// this is already true, but let's re-emphasize it
 		Use_host_orientation_for_set_camera_facing = true;		// this is essentially a bugfix
 	}
-	if (mod_supports_version(22, 4, 0)) {
+	if (mod_supports_version(23, 0, 0)) {
 		Shockwaves_inherit_parent_damage_type = true;	// people intuitively expect shockwaves to default to the damage type of the weapon that spawned them
+		Fixed_chaining_to_repeat = true;
 	}
 }

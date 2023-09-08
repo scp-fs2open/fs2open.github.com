@@ -70,11 +70,7 @@ const float PROBABLY_TOO_MANY_POOFS = 100000.0f;
 int32_t Neb2_poof_flags = 0;
 
 // array of neb2 bitmaps
-char Neb2_bitmap_filenames[MAX_NEB2_BITMAPS][MAX_FILENAME_LEN] = {
-	"", "", "", "", "", ""
-};
-int Neb2_bitmap[MAX_NEB2_BITMAPS] = { -1, -1, -1, -1, -1, -1 };
-int Neb2_bitmap_count = 0;
+SCP_vector<SCP_string> Neb2_bitmap_filenames;
 
 // texture to use for this level
 char Neb2_texture_name[MAX_FILENAME_LEN] = "";
@@ -138,7 +134,7 @@ const SCP_vector<std::pair<int, SCP_string>> DetailLevelValues = {{ 0, "Minimum"
                                                                   { 3, "High" },
                                                                   { 4, "Ultra" }, };
 
-const auto ModelDetailOption = options::OptionBuilder<int>("Graphics.NebulaDetail",
+const auto NebulaDetailOption __UNUSED = options::OptionBuilder<int>("Graphics.NebulaDetail",
                                                            "Nebula Detail",
                                                            "Detail level of nebulas").category("Graphics").values(
 	DetailLevelValues).default_val(MAX_DETAIL_LEVEL).importance(7).change_listener([](int val, bool) {
@@ -191,13 +187,17 @@ void parse_nebula_table(const char* filename)
 			optional_string("+Nebula:");
 			stuff_string(name, F_NAME, MAX_FILENAME_LEN);
 
-			if (Neb2_bitmap_count < MAX_NEB2_BITMAPS) {
-				strcpy_s(Neb2_bitmap_filenames[Neb2_bitmap_count++], name);
+			if (!generic_bitmap_exists(name) && !generic_anim_exists(name)) {
+				error_display(0, "Nebula bitmap %s was not found!, skipping!", name);
+				continue;
 			}
-			else {
-				WarningEx(LOCATION, "nebula.tbl\nExceeded maximum number of nebulas (%d)!\nSkipping %s.", MAX_NEB2_BITMAPS, name);
-			}
+
+			Neb2_bitmap_filenames.push_back(name);
 		}
+
+		// allow modular tables to not define poofs
+		if (Parsing_modular_table && check_for_eof())
+			return;
 
 		// poofs
 		while (required_string_one_of(3, "#end", "+Poof:", "$Name:")) {
@@ -211,6 +211,11 @@ void parse_nebula_table(const char* filename)
 				strcpy_s(pooft.bitmap_filename, name);
 
 				strcpy_s(pooft.name, name);
+
+				if (!generic_bitmap_exists(pooft.bitmap_filename) && !generic_anim_exists(pooft.bitmap_filename)) {
+					error_display(0, "Bitmap defined for nebula poof %s was not found. Skipping!", pooft.name);
+					continue;
+				}
 
 				generic_anim_init(&pooft.bitmap, name);
 
@@ -273,6 +278,10 @@ void parse_nebula_table(const char* filename)
 					}
 				}
 
+				//We can't skip here because we'd have to back out the entire poof from the vector-Mjn
+				if (!generic_bitmap_exists(poofp->bitmap_filename) && !generic_anim_exists(poofp->bitmap_filename))
+					error_display(0, "Bitmap defined for nebula poof %s was not found!", poofp->name);
+
 				if (optional_string("$Scale:"))
 					poofp->scale = ::util::parseUniformRange<float>(0.01f, 100000.0f);
 
@@ -323,7 +332,6 @@ void parse_nebula_table(const char* filename)
 // initialize neb2 stuff at game startup
 void neb2_init()
 {
-	Neb2_bitmap_count = 0;
 
 	// first parse the default table
 	parse_nebula_table("nebula.tbl");
@@ -338,7 +346,7 @@ void neb2_set_poof_bits(const SCP_vector<SCP_string>& list)
 	Neb2_poof_flags = 0; //Make absolutely sure flags are zero'd before we start adding to it-Mjn
 	for (const SCP_string& thisPoof : list) {
 		for (int i = 0; i < (int)Poof_info.size(); i++) {
-			if (SCP_string_lcase_equal_to()(Poof_info[i].name, thisPoof)) {
+			if (lcase_equal(Poof_info[i].name, thisPoof)) {
 				Neb2_poof_flags |= (1 << i);
 			}
 		}
@@ -470,15 +478,16 @@ void neb2_post_level_init(bool fog_color_override)
 	// load in all nebula bitmaps
 	for (poof_info &pinfo : Poof_info) {
 		if (pinfo.bitmap.first_frame < 0) {
-			pinfo.bitmap.first_frame = bm_load(pinfo.bitmap_filename);
-
-			if (pinfo.bitmap.first_frame >= 0) {
-				pinfo.bitmap.num_frames = 1;
-				pinfo.bitmap.total_time = 1.0f;
-			}		// fall back to an animated type
-			else if (generic_anim_load(&pinfo.bitmap)) {
-				mprintf(("Could not find a usable bitmap for nebula poof '%s'!\n", pinfo.name));
-				Warning(LOCATION, "Could not find a usable bitmap (%s) for nebula poof '%s'!\n", pinfo.bitmap_filename, pinfo.name);
+			if (generic_anim_load(&pinfo.bitmap)) {
+				// fall back to non-animated type
+				pinfo.bitmap.first_frame = bm_load(pinfo.bitmap_filename);
+				if (pinfo.bitmap.first_frame >= 0) {
+					pinfo.bitmap.num_frames = 1;
+					pinfo.bitmap.total_time = 1.0f;
+				} else {
+					mprintf(("Could not find a usable bitmap for nebula poof '%s'!\n", pinfo.name));
+					Warning(LOCATION, "Could not find a usable bitmap (%s) for nebula poof '%s'!\n", pinfo.bitmap_filename, pinfo.name);
+				}
 			}
 		}
 	}
@@ -934,7 +943,7 @@ void neb2_render_poofs()
 			continue;
 
 		// render!
-		batching_add_polygon(pinfo->bitmap.first_frame + framenum, &pf.pt, &orient, pf.radius, pf.radius, alpha);
+		batching_add_volume_polygon(pinfo->bitmap.first_frame + framenum, &pf.pt, &orient, pf.radius, pf.radius, alpha);
 	}
 
 	// gr_set_color_fast(&Color_bright_red);
@@ -1016,7 +1025,7 @@ void neb2_get_adjusted_fog_values(float *fnear, float *ffar, float *fdensity, ob
 
 // given a position, returns 0 - 1 the fog visibility of that position, 0 = completely obscured
 // distance_mult will multiply the result, use for things that can be obscured but can 'shine through' the nebula more than normal
-float neb2_get_fog_visibility(vec3d *pos, float distance_mult)
+float neb2_get_fog_visibility(const vec3d *pos, float distance_mult)
 {
 	float pct;
 
@@ -1026,6 +1035,18 @@ float neb2_get_fog_visibility(vec3d *pos, float distance_mult)
     CLAMP(pct, 0.0f, 1.0f);
 
 	return pct;
+}
+
+bool nebula_handle_alpha(float& alpha, const vec3d* pos, float distance_mult) {
+	if (The_mission.flags[Mission::Mission_Flags::Fullneb]) {
+		alpha *= neb2_get_fog_visibility(pos, distance_mult);
+		return true;
+	}
+	else if (The_mission.volumetrics) {
+		alpha *= The_mission.volumetrics->getAlphaToPos(*pos, distance_mult);
+		return true;
+	}
+	return false;
 }
 
 // fogging stuff --------------------------------------------------------------------

@@ -55,9 +55,10 @@ void ets_init_ship(object* obj)
 }
 
 // -------------------------------------------------------------------------------------------------
-// update_ets() is called once per frame for every OBJ_SHIP in the game.  The amount of energy
-// to send to the weapons and shields is calculated, and the top ship speed is calculated.  The
-// amount of time elapsed from the previous call is passed in as the parameter fl_frametime.
+// update_ets() is called once per frame for every OBJ_SHIP in the game.  
+// The amount of energy to send to the weapons and shields is calculated.
+// The max speed is also updated if there is a change in aggregate engine health.
+// The amount of time elapsed from the previous call is passed in as the parameter fl_frametime.
 //
 // parameters:   obj          ==> object that is updating their energy system
 //               fl_frametime ==> game frametime (in seconds)
@@ -82,7 +83,7 @@ void update_ets(object* objp, float fl_frametime)
 		return;
 	}
 
-//	new_energy = fl_frametime * sinfo_p->power_output;
+	//	new_energy = fl_frametime * sinfo_p->power_output;
 
 	// update weapon energy
 	max_new_weapon_energy = fl_frametime * ship_p->max_weapon_regen_per_second * max_g;
@@ -117,23 +118,27 @@ void update_ets(object* objp, float fl_frametime)
 		}
 	}
 
-	// calculate the top speed of the ship based on the energy flow to engines
-	float y = Energy_levels[ship_p->engine_recharge_index];
-
-	ship_p->current_max_speed = ets_get_max_speed(objp, y);
-
 	// AL 11-15-97: Rules for engine strength affecting max speed:
-	//						1. if strength >= 0.5 no affect 
+	//						1. if strength >= 0.5 no affect
 	//						2. if strength < 0.5 then max_speed = sqrt(strength)
-	//					 
+	//
 	//					 This will translate to 71% max speed at 50% engines, and 31% max speed at 10% engines
 	//
-	float strength = ship_get_subsystem_strength(ship_p, SUBSYSTEM_ENGINE);
 
-	// don't let engine strength affect max speed when playing on lowest skill level
-	if ( (objp != Player_obj) || (Game_skill_level > 0) ) {
-		if ( strength < SHIP_MIN_ENGINES_FOR_FULL_SPEED ) {
-			ship_p->current_max_speed *= fl_sqrt(strength);
+	float eng_current_strength = ship_get_subsystem_strength(ship_p, SUBSYSTEM_ENGINE);
+
+	// only update max speed if aggregate engine health has changed
+	// which helps minimze amount of overrides to max speed
+	if (eng_current_strength != ship_p->prev_engine_aggregate_strength) {
+		ets_update_max_speed(objp);
+		ship_p->prev_engine_aggregate_strength = eng_current_strength;
+
+		// check if newly updated max speed should be reduced due to engine damage
+		// don't let engine strength affect max speed when playing on lowest skill level
+		if ((objp != Player_obj) || (Game_skill_level > 0)) {
+			if (eng_current_strength < SHIP_MIN_ENGINES_FOR_FULL_SPEED) {
+				objp->phys_info.max_vel.xyz.z *= fl_sqrt(eng_current_strength);
+			}
 		}
 	}
 
@@ -179,6 +184,16 @@ float ets_get_max_speed(object* objp, float engine_energy)
 	}
 }
 
+void ets_update_max_speed(object* ship_objp)
+{
+	Assertion(ship_objp != nullptr, "Invalid object pointer passed!");
+	Assertion(ship_objp->type == OBJ_SHIP, "Object needs to be a ship object!");
+
+	// calculate the top speed of the ship based on the energy flow to engines
+	float x = Energy_levels[Ships[ship_objp->instance].engine_recharge_index];
+	ship_objp->phys_info.max_vel.xyz.z = ets_get_max_speed(ship_objp, x);
+}
+
 
 // -------------------------------------------------------------------------------------------------
 // ai_manage_ets() will determine if a ship should modify it's energy transfer percentages, or 
@@ -221,10 +236,14 @@ void ai_manage_ets(object* obj)
 	}
 
 	// also check if the ship has no shields and if the AI is allowed to manage weapons and engines --wookieejedi
-	if ( !(ship_p->ship_max_shield_strength) && !( (aip->ai_profile_flags[AI::Profile_Flags::all_nonshielded_ships_can_manage_ets]) || 
-		( (ship_info_p->is_fighter_bomber()) && (aip->ai_profile_flags[AI::Profile_Flags::fightercraft_nonshielded_ships_can_manage_ets])) ) ) {
+	if ( !(ship_p->ship_max_shield_strength) && !( (aip->ai_profile_flags[AI::Profile_Flags::All_nonshielded_ships_can_manage_ets]) || 
+		( (ship_info_p->is_fighter_bomber()) && (aip->ai_profile_flags[AI::Profile_Flags::Fightercraft_nonshielded_ships_can_manage_ets])) ) ) {
 		return;
 	}
+
+	// also check if the ship is playing dead --Goober5000
+	if (aip->mode == AIM_PLAY_DEAD && aip->ai_profile_flags[AI::Profile_Flags::Ships_playing_dead_dont_manage_ets])
+		return;
 
 	float weapon_left_percent = ship_p->weapon_energy/ship_info_p->max_weapon_reserve;
 
@@ -284,6 +303,18 @@ void ai_manage_ets(object* obj)
 	}
 }
 
+void set_recharge_rates(object* obj, int shields, int weapons, int engines) {
+	Assertion(obj->type == OBJ_SHIP, "Can't set ets values on a non-ship");
+	if (obj->type != OBJ_SHIP)
+		return;
+
+	Ships[obj->instance].shield_recharge_index = shields;
+	Ships[obj->instance].weapon_recharge_index = weapons;
+	Ships[obj->instance].engine_recharge_index = engines;
+
+	ets_update_max_speed(obj);
+}
+
 // -------------------------------------------------------------------------------------------------
 // set_default_recharge_rates() will set the charge levels for the weapons, shields and
 // engines to their default levels
@@ -310,45 +341,31 @@ void set_default_recharge_rates(object* obj)
 	// the default charge rate depends on what systems are on each ship
 	switch ( ship_properties ) {
 		case HAS_ENGINES | HAS_WEAPONS | HAS_SHIELDS:
-			ship_p->shield_recharge_index = INTIAL_SHIELD_RECHARGE_INDEX;
-			ship_p->weapon_recharge_index = INTIAL_WEAPON_RECHARGE_INDEX;
-			ship_p->engine_recharge_index = INTIAL_ENGINE_RECHARGE_INDEX;
+			set_recharge_rates(obj, INTIAL_SHIELD_RECHARGE_INDEX, INTIAL_WEAPON_RECHARGE_INDEX, INTIAL_ENGINE_RECHARGE_INDEX);
 			break;
 
 		case HAS_ENGINES | HAS_SHIELDS:
-			ship_p->shield_recharge_index = ONE_HALF_INDEX;
-			ship_p->weapon_recharge_index = ZERO_INDEX;
-			ship_p->engine_recharge_index = ONE_HALF_INDEX;
+			set_recharge_rates(obj, ONE_HALF_INDEX, ZERO_INDEX, ONE_HALF_INDEX);
 			break;
 
 		case HAS_WEAPONS | HAS_SHIELDS:
-			ship_p->shield_recharge_index = ONE_HALF_INDEX;
-			ship_p->weapon_recharge_index = ONE_HALF_INDEX;
-			ship_p->engine_recharge_index = ZERO_INDEX;
+			set_recharge_rates(obj, ONE_HALF_INDEX, ONE_HALF_INDEX, ZERO_INDEX);
 			break;
 
 		case HAS_ENGINES | HAS_WEAPONS:
-			ship_p->shield_recharge_index = ZERO_INDEX;
-			ship_p->weapon_recharge_index = ONE_HALF_INDEX;
-			ship_p->engine_recharge_index = ONE_HALF_INDEX;
+			set_recharge_rates(obj, ZERO_INDEX, ONE_HALF_INDEX, ONE_HALF_INDEX);
 			break;
 
 		case HAS_SHIELDS:
-			ship_p->shield_recharge_index = ALL_INDEX;
-			ship_p->weapon_recharge_index = ZERO_INDEX;
-			ship_p->engine_recharge_index = ZERO_INDEX;
+			set_recharge_rates(obj, ALL_INDEX, ZERO_INDEX, ZERO_INDEX);
 			break;
 
 		case HAS_ENGINES:
-			ship_p->shield_recharge_index = ZERO_INDEX;
-			ship_p->weapon_recharge_index = ZERO_INDEX;
-			ship_p->engine_recharge_index = ALL_INDEX;
+			set_recharge_rates(obj, ZERO_INDEX, ZERO_INDEX, ALL_INDEX);
 			break;
 
 		case HAS_WEAPONS:
-			ship_p->shield_recharge_index = ZERO_INDEX;
-			ship_p->weapon_recharge_index = ALL_INDEX;
-			ship_p->engine_recharge_index = ZERO_INDEX;
+			set_recharge_rates(obj, ZERO_INDEX, ALL_INDEX, ZERO_INDEX);
 			break;
 
 		default:
@@ -479,6 +496,8 @@ void increase_recharge_rate(object* obj, SYSTEM_TYPE ship_system)
 
 	if ( obj == Player_obj )
 		snd_play( gamesnd_get_game_sound(GameSounds::ENERGY_TRANS), 0.0f );
+
+	ets_update_max_speed(obj);
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -598,6 +617,8 @@ void decrease_recharge_rate(object* obj, SYSTEM_TYPE ship_system)
 
 	if ( obj == Player_obj )
 		snd_play( gamesnd_get_game_sound(GameSounds::ENERGY_TRANS), 0.0f );
+
+	ets_update_max_speed(obj);
 }
 
 void transfer_energy_weapon_common(object *objp, float from_field, float to_field, float *from_delta, float *to_delta, float from_max, float to_max, float scale, float eff)
@@ -867,6 +888,10 @@ void HudGaugeEts::pageIn()
  */
 void HudGaugeEts::blitGauge(int index)
 {
+	if (Ets_bar.first_frame < 0) {
+		return;
+	}
+
 	int y_start, y_end, clip_h, w, h, x, y;
 
 	clip_h = fl2i( (1 - Energy_levels[index]) * ETS_bar_h );

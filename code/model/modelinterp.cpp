@@ -659,31 +659,27 @@ void model_draw_debug_points( polymodel *pm, bsp_info * submodel, uint flags )
 	} else {
 		gr_set_color(0,255,0);
 
-		int j;
-		for (j=0; j<8; j++ )	{
+		vec3d	bounding_box[8];		// caclulated fron min/max
+		model_calc_bound_box(bounding_box,&pm->mins, &pm->maxs);
 
-			vec3d	bounding_box[8];		// caclulated fron min/max
-			model_calc_bound_box(bounding_box,&pm->octants[j].min,&pm->octants[j].max);
+		for (i=0; i<8; i++ )	{
+			g3_rotate_vertex( &pts[i], &bounding_box[i] );
+		}
+		gr_set_color(128,0,0);
+		g3_draw_line( &pts[0], &pts[1] );
+		g3_draw_line( &pts[1], &pts[2] );
+		g3_draw_line( &pts[2], &pts[3] );
+		g3_draw_line( &pts[3], &pts[0] );
 
-			for (i=0; i<8; i++ )	{
-				g3_rotate_vertex( &pts[i], &bounding_box[i] );
-			}
-			gr_set_color(128,0,0);
-			g3_draw_line( &pts[0], &pts[1] );
-			g3_draw_line( &pts[1], &pts[2] );
-			g3_draw_line( &pts[2], &pts[3] );
-			g3_draw_line( &pts[3], &pts[0] );
+		g3_draw_line( &pts[4], &pts[5] );
+		g3_draw_line( &pts[5], &pts[6] );
+		g3_draw_line( &pts[6], &pts[7] );
+		g3_draw_line( &pts[7], &pts[4] );
 
-			g3_draw_line( &pts[4], &pts[5] );
-			g3_draw_line( &pts[5], &pts[6] );
-			g3_draw_line( &pts[6], &pts[7] );
-			g3_draw_line( &pts[7], &pts[4] );
-
-			g3_draw_line( &pts[0], &pts[4] );
-			g3_draw_line( &pts[1], &pts[5] );
-			g3_draw_line( &pts[2], &pts[6] );
-			g3_draw_line( &pts[3], &pts[7] );			
-		}		
+		g3_draw_line( &pts[0], &pts[4] );
+		g3_draw_line( &pts[1], &pts[5] );
+		g3_draw_line( &pts[2], &pts[6] );
+		g3_draw_line( &pts[3], &pts[7] );			
 	}
 }
 
@@ -1159,112 +1155,7 @@ void moldel_calc_facing_pts( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, fl
 	vm_vec_scale_add( bot, &temp, &uvec, -w/2.0f );	
 }
 
-// Fills in an array with points from a model.
-// Only gets up to max_num verts;
-// Returns number of verts found;
-static int submodel_get_points_internal(int model_num, int submodel_num)
-{
-	polymodel * pm;
-
-	pm = model_get(model_num);
-
-	if ( submodel_num < 0 )	{
-		submodel_num = pm->detail[0];
-	}
-
-	ubyte *p = pm->submodel[submodel_num].bsp_data;
-	int chunk_type, chunk_size;
-
-	chunk_type = w(p);
-	chunk_size = w(p+4);
-
-	while (chunk_type != OP_EOF)	{
-		switch (chunk_type) {
-		case OP_DEFPOINTS:	{
-				uint n;
-				uint nverts = uw(p+8);				
-				uint offset = uw(p+16);
-				uint nnorms = 0;			
-
-				ubyte * normcount = p+20;
-				vec3d *src = vp(p+offset);
-
-				for (n = 0; n < nverts; n++) {
-					nnorms += normcount[n];
-				}
-
-				model_allocate_interp_data(nverts, nnorms);
-
-				// this must happen only after the interp_data allocation call (since the address changes)
-				vec3d **verts = Interp_verts;
-				vec3d **norms = Interp_norms;
-
-				for (n=0; n<nverts; n++ )	{
-					*verts++ = src;
-					*norms++ = src + 1;		// first normal associated with the point
-
-					src += normcount[n]+1;
-				} 
-				return nverts;		// Read in 'n' points
-			}
-			break;
-		case OP_FLATPOLY:		break;
-		case OP_TMAPPOLY:		break;
-		case OP_SORTNORM:		break;
-		case OP_SORTNORM2:		break;
-		case OP_BOUNDBOX:		break;
-		case OP_TMAP2POLY:		break;
-		default:
-			mprintf(( "Bad chunk type %d, len=%d in submodel_get_points\n", chunk_type, chunk_size ));
-			Int3();		// Bad chunk type!
-			return 0;
-		}
-		p += chunk_size;
-		chunk_type = w(p);
-		chunk_size = w(p+4);
-	}
-	return 0;		// Couldn't find 'em
-}
-
-/**
- * Gets two random points on a model
- */
-void submodel_get_two_random_points(int model_num, int submodel_num, vec3d *v1, vec3d *v2, vec3d *n1, vec3d *n2 )
-{
-	int nv = submodel_get_points_internal(model_num, submodel_num);
-
-	// this is not only because of the immediate div-0 error but also because of the less immediate expectation for at least one point (preferably two) to be found
-	if (nv <= 0) {
-		polymodel *pm = model_get(model_num);
-		Error(LOCATION, "Model %d ('%s') must have at least one point from submodel_get_points_internal!", model_num, (pm == NULL) ? "<null model?!?>" : pm->filename);
-
-		// in case people ignore the error...
-		vm_vec_zero(v1);
-		vm_vec_zero(v2);
-		if (n1 != NULL) {
-			vm_vec_zero(n1);
-		}
-		if (n2 != NULL) {
-			vm_vec_zero(n2);
-		}
-		return;
-	}
-
-	int vn1 = Random::next(nv);
-	int vn2 = Random::next(nv);
-
-	*v1 = *Interp_verts[vn1];
-	*v2 = *Interp_verts[vn2];
-
-	if(n1 != NULL){
-		*n1 = *Interp_norms[vn1];
-	}
-	if(n2 != NULL){
-		*n2 = *Interp_norms[vn2];
-	}
-}
-
-void submodel_get_two_random_points_better(int model_num, int submodel_num, vec3d *v1, vec3d *v2, int seed)
+vec3d submodel_get_random_point(int model_num, int submodel_num, int seed)
 {
 	polymodel *pm = model_get(model_num);
 
@@ -1273,35 +1164,25 @@ void submodel_get_two_random_points_better(int model_num, int submodel_num, vec3
 			submodel_num = pm->detail[0];
 		}
 
-		// the Shivan Comm Node does not have a collision tree, for one
-		if (pm->submodel[submodel_num].collision_tree_index < 0) {
-			nprintf(("Model", "In submodel_get_two_random_points_better(), model %s does not have a collision tree!  Falling back to submodel_get_two_random_points().\n", pm->filename));
-
-			submodel_get_two_random_points(model_num, submodel_num, v1, v2);
-			return;
-		}
-
 		bsp_collision_tree *tree = model_get_bsp_collision_tree(pm->submodel[submodel_num].collision_tree_index);
 
 		int nv = tree->n_verts;
 
 		// this is not only because of the immediate div-0 error but also because of the less immediate expectation for at least one point (preferably two) to be found
 		if (nv <= 0) {
-			Error(LOCATION, "Model %d ('%s') must have at least one point from submodel_get_points_internal!", model_num, (pm == NULL) ? "<null model?!?>" : pm->filename);
+			Error(LOCATION, "Model %d ('%s') must have at least one point in its collision tree!", model_num, (pm == NULL) ? "<null model?!?>" : pm->filename);
 
 			// in case people ignore the error...
-			vm_vec_zero(v1);
-			vm_vec_zero(v2);
-
-			return;
+			return vmd_zero_vector;
 		}
 
 		int seed_num = seed == -1 ? Random::next() : seed;
 		int vn1 = static_rand(seed_num) % nv;
-		int vn2 = static_rand(seed_num) % nv;
 
-		*v1 = tree->point_list[vn1];
-		*v2 = tree->point_list[vn2];
+		return tree->point_list[vn1];
+	} else {
+		Assertion(false, "submodel_get_random_point called on an invalid model!");
+		return vmd_zero_vector;
 	}
 }
 
@@ -1312,12 +1193,6 @@ void submodel_get_cross_sectional_avg_pos(int model_num, int submodel_num, float
 	if (pm != nullptr) {
 		if (submodel_num < 0) {
 			submodel_num = pm->detail[0];
-		}
-
-		// the Shivan Comm Node does not have a collision tree, for one
-		if (pm->submodel[submodel_num].collision_tree_index < 0) {
-			nprintf(("Model", "In submodel_get_cross_sectional_avg_pos(), model %s does not have a collision tree!\n", pm->filename));
-			return;
 		}
 
 		bsp_collision_tree* tree = model_get_bsp_collision_tree(pm->submodel[submodel_num].collision_tree_index);

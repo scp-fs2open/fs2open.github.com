@@ -16,7 +16,11 @@ static SCP_unordered_map<SCP_string, std::function<std::unique_ptr<VirtualPOFOpe
 	{"$Add Turret:", &make_unique<VirtualPOFOperationAddTurret> },
 	{"$Add Engine:", &make_unique<VirtualPOFOperationAddEngine> },
 	{"$Add Glowpoint:", &make_unique<VirtualPOFOperationAddGlowpoint> },
+	{"$Add Weapon Bank:", &make_unique<VirtualPOFOperationAddWeapons> },
+	{"$Add Dock Point:", &make_unique<VirtualPOFOperationAddDockPoint> },
+	{"$Add Path:", &make_unique<VirtualPOFOperationAddPath> },
 	{"$Rename Subobjects:", &make_unique<VirtualPOFOperationRenameSubobjects> },
+	{"$Set Subsystem Data:", &make_unique<VirtualPOFOperationChangeSubsystemData> },
 	{"$Set Subobject Data:", &make_unique<VirtualPOFOperationChangeData> },
 	{"$Set Header Data:", &make_unique<VirtualPOFOperationHeaderData> }
 };
@@ -196,12 +200,27 @@ void virtual_pof_init() {
 
 // Internal helper functions
 
-template<typename T, typename member_t>
-T object_copy_including_array_member(const T& item, member_t T::* ptm, int T::* size) {
-	T result{ item };
-	result.*ptm = (member_t) vm_malloc(sizeof(typename std::remove_pointer<member_t>::type) * (result.*size));
-	for (int i = 0; i < result.*size; i++)
+template<typename T, bool vmalloc, typename member_t>
+inline void object_copy_including_array_member_inner(const T& item, T& result, int size, member_t T::* ptm) {
+	if (vmalloc)
+		result.*ptm = (member_t)vm_malloc(sizeof(typename std::remove_pointer<member_t>::type) * (size));
+	else
+		result.*ptm = new typename std::remove_pointer<member_t>::type[size];
+
+	for (int i = 0; i < size; i++)
 		(result.*ptm)[i] = (item.*ptm)[i];
+}
+
+template<typename T, bool vmalloc, typename member_t_0, typename member_t_1, typename... member_t>
+inline void object_copy_including_array_member_inner(const T& item, T& result, int size, member_t_0 T::* ptm, member_t_1 T::* ptm1, member_t T::*... ptms) {
+	object_copy_including_array_member_inner<T, vmalloc>(item, result, size, ptm);
+	object_copy_including_array_member_inner<T, vmalloc>(item, result, size, ptm1, ptms...);
+}
+
+template<typename T, bool vmalloc = true, typename... member_t>
+T object_copy_including_array_member(const T& item, int T::* size, member_t T::*... ptm) {
+	T result{ item };
+	object_copy_including_array_member_inner<T, vmalloc>(item, result, result.*size, ptm...);
 	return result;
 }
 
@@ -218,8 +237,27 @@ int reallocate_and_copy_array(T*& array, int& size, size_t to_add) {
 
 	//Copy over old data. Pointers in the struct can still point to old members, we will just delete the outer bsp_info array
 	for (int i = 0; i < size_before; i++)
-		array[i] = oldArray[i];
+		array[i] = std::move(oldArray[i]);
 	delete[] oldArray;
+
+	return size_before;
+}
+
+template<typename T>
+int reallocate_and_copy_array_vmalloc(T*& array, int& size, size_t to_add) {
+	//Make sure to keep old data
+	T* oldArray = array;
+
+	int size_before = size;
+
+	//Realloc new submodel array of proper size
+	size += static_cast<int>(to_add);
+	array = (T*)vm_malloc(sizeof(T) * size);
+
+	//Copy over old data. Pointers in the struct can still point to old members, we will just delete the outer bsp_info array
+	for (int i = 0; i < size_before; i++)
+		array[i] = std::move(oldArray[i]);
+	vm_free(oldArray);
 
 	return size_before;
 }
@@ -469,7 +507,7 @@ void VirtualPOFOperationAddSubmodel::process(polymodel* pm, model_read_deferred_
 				}
 				int insertFrom = reallocate_and_copy_array(pm->glow_point_banks, pm->n_glow_point_banks, glowpointbanks.size());
 				for (const glow_point_bank* gpb : glowpointbanks) {
-					pm->glow_point_banks[insertFrom] = object_copy_including_array_member(*gpb, &glow_point_bank::points, &glow_point_bank::num_points);
+					pm->glow_point_banks[insertFrom] = object_copy_including_array_member(*gpb, &glow_point_bank::num_points, &glow_point_bank::points);
 					change_submodel_numbers(pm->glow_point_banks[insertFrom], replaceSubobjNo);
 				}
 			}
@@ -602,7 +640,7 @@ void VirtualPOFOperationAddEngine::process(polymodel* pm, model_read_deferred_ta
 	int newEngineNumber = reallocate_and_copy_array(pm->thrusters, pm->n_thrusters, 1);
 	const SCP_unordered_map<int, int> thrusterReplacementMap{ {engineNumber, newEngineNumber} };
 
-	pm->thrusters[newEngineNumber] = object_copy_including_array_member(appendingPM->pm()->thrusters[engineNumber], &thruster_bank::points, &thruster_bank::num_points);
+	pm->thrusters[newEngineNumber] = object_copy_including_array_member(appendingPM->pm()->thrusters[engineNumber], &thruster_bank::num_points, &thruster_bank::points);
 	
 	if (moveEngine) {
 		const vec3d& offset = *moveEngine;
@@ -652,7 +690,7 @@ void VirtualPOFOperationAddGlowpoint::process(polymodel* pm, model_read_deferred
 	}
 
 	int newGPNumber = reallocate_and_copy_array(pm->glow_point_banks, pm->n_glow_point_banks, 1);
-	pm->glow_point_banks[newGPNumber] = object_copy_including_array_member(appendingPM->pm()->glow_point_banks[sourceId], &glow_point_bank::points, &glow_point_bank::num_points);
+	pm->glow_point_banks[newGPNumber] = object_copy_including_array_member(appendingPM->pm()->glow_point_banks[sourceId], &glow_point_bank::num_points, &glow_point_bank::points);
 	pm->glow_point_banks[newGPNumber].submodel_parent = dest_subobj_no;
 
 	appendingPM->keepGlowbank(sourceId);
@@ -706,6 +744,247 @@ void VirtualPOFOperationAddSpecialSubsystem::process(polymodel* /*pm*/, model_re
 		deferredTasks.model_subsystems.emplace(*it);
 }
 
+VirtualPOFOperationAddWeapons::VirtualPOFOperationAddWeapons() {
+	required_string("+POF to Add:");
+	stuff_string(appendingPOF, F_FILESPEC);
+
+	required_string("+Type:");
+	primary = required_string_either("Primary", "Secondary") == 0;
+
+	required_string("+Source Weapon Bank:");
+	stuff_int(&sourcebank);
+
+	if (optional_string("+Destination Weapon Bank:"))
+		stuff_int(&destbank);	
+}
+
+void VirtualPOFOperationAddWeapons::process(polymodel* pm, model_read_deferred_tasks& /*deferredTasks*/, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const {
+	auto appendingPM = virtual_pof_build_cache(appendingPOF, depth);
+
+	w_bank*& banks = primary ? pm->gun_banks : pm->missile_banks;
+	int& n_banks = primary ? pm->n_guns : pm->n_missiles;
+
+	const w_bank* const& banks_src = primary ? appendingPM->pm()->gun_banks : appendingPM->pm()->missile_banks;
+	const int& n_banks_src = primary ? appendingPM->pm()->n_guns : appendingPM->pm()->n_missiles;
+
+	const int& n_banks_max = primary ? MAX_SHIP_PRIMARY_BANKS : MAX_SHIP_SECONDARY_BANKS;
+	
+	if (sourcebank < 0 || sourcebank >= n_banks_src) {
+		Warning(LOCATION, "Source bank %d on POF %s for virtual POF %s does not exist. Returning original POF", sourcebank, appendingPOF.c_str(), virtualPof.name.c_str());
+		return;
+	}
+
+	int actual_destbank = destbank;
+
+	if (destbank < 0) {
+		//Add
+		if (n_banks >= n_banks_max) {
+			Warning(LOCATION, "No space for additional destination bank on POF %s for virtual POF %s. Returning original POF", pm->filename, virtualPof.name.c_str());
+			return;
+		}
+
+		actual_destbank = reallocate_and_copy_array(banks, n_banks, 1);
+	}
+	else {
+		//Replace
+		if (destbank >= n_banks) {
+			Warning(LOCATION, "Destination bank %d on POF %s for virtual POF %s does not exist. Returning original POF", destbank, pm->filename, virtualPof.name.c_str());
+			return;
+		}
+	}
+
+	banks[actual_destbank] = object_copy_including_array_member<w_bank, false>(banks_src[sourcebank], &w_bank::num_slots, &w_bank::pnt, &w_bank::norm, &w_bank::external_model_angle_offset);
+}
+
+
+VirtualPOFOperationAddDockPoint::VirtualPOFOperationAddDockPoint() {
+	required_string("+POF to Add:");
+	stuff_string(appendingPOF, F_FILESPEC);
+
+	required_string("+Source Dock Point:");
+	stuff_string(sourcedock, F_NAME);
+
+	if (optional_string("+Rename Dock Point:")) {
+		SCP_string name;
+		stuff_string(name, F_NAME);
+		renameDock = std::move(name);
+	}
+
+	while (optional_string("+Rename Path:")) {
+		SCP_string from, to;
+		required_string("+From:");
+		stuff_string(from, F_NAME);
+		required_string("+To:");
+		stuff_string(to, F_NAME);
+		renamePaths.emplace(std::move(from), std::move(to));
+	}
+
+	if (optional_string("+Parent Submodel:")) {
+		SCP_string name;
+		stuff_string(name, F_NAME);
+		targetParentSubsystem = std::move(name);
+	}
+}
+	
+void VirtualPOFOperationAddDockPoint::process(polymodel* pm, model_read_deferred_tasks& /*deferredTasks*/, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const {
+	const polymodel* appendingPM = virtual_pof_build_cache(appendingPOF, depth)->pm();
+
+	int dockpoint = model_find_dock_name_index(appendingPM, sourcedock.c_str());
+	if (dockpoint < 0) {
+		Warning(LOCATION, "Could not find dockpoint %s on POF %s for virtual POF %s. Returning original POF", sourcedock.c_str(), appendingPOF.c_str(), virtualPof.name.c_str());
+		return;
+	}
+
+	const SCP_string& targetName = renameDock ? *renameDock : sourcedock;
+	if (model_find_dock_name_index(pm, targetName.c_str()) >= 0) {
+		Warning(LOCATION, "Dockpoint %s already exists on POF %s for virtual POF %s. Returning original POF", targetName.c_str(), pm->filename, virtualPof.name.c_str());
+		return;
+	}
+
+	if (appendingPM->docking_bays[dockpoint].parent_submodel >= 0 && !targetParentSubsystem) {
+		Warning(LOCATION, "Dockpoint %s must have a parent submodel specified for virtual POF %s. Returning original POF", sourcedock.c_str(), virtualPof.name.c_str());
+		return;
+	}
+
+	int submodel_index = -1;
+	if (targetParentSubsystem) {
+		submodel_index = model_find_submodel_index(pm, targetParentSubsystem->c_str());
+		if (submodel_index < 0) {
+			Warning(LOCATION, "Submodel %s does not exist on POF %s for virtual POF %s. Returning original POF", targetParentSubsystem->c_str(), pm->filename, virtualPof.name.c_str());
+			return;
+		}
+	}
+
+	for (int i = 0; i < appendingPM->docking_bays[dockpoint].num_spline_paths; i++) {
+		const auto& originalName = appendingPM->paths[appendingPM->docking_bays[dockpoint].splines[i]].name;
+		auto renamed = renamePaths.find(originalName);
+		const SCP_string& targetSplineName = renamed == renamePaths.end() ? originalName : renamed->second;
+
+		for (int j = 0; j < pm->n_paths; j++) {
+			if (stricmp(targetSplineName.c_str(), pm->paths[j].name) == 0) {
+				Warning(LOCATION, "Path %s already exists on POF %s for virtual POF %s. Returning original POF", targetSplineName.c_str(), pm->filename, virtualPof.name.c_str());
+				return;
+			}
+		}
+	}
+
+	int destdock = reallocate_and_copy_array_vmalloc(pm->docking_bays, pm->n_docks, 1);
+	pm->docking_bays[destdock] = object_copy_including_array_member(appendingPM->docking_bays[dockpoint], &dock_bay::num_spline_paths, &dock_bay::splines);
+	int splinefrom = reallocate_and_copy_array_vmalloc(pm->paths, pm->n_paths, pm->docking_bays[destdock].num_spline_paths);
+	
+	for (int i = 0; i < pm->docking_bays[destdock].num_spline_paths; i++) {
+		pm->paths[i + splinefrom] = object_copy_including_array_member(appendingPM->paths[appendingPM->docking_bays[dockpoint].splines[i]], &model_path::nverts, &model_path::verts);
+		if (targetParentSubsystem) {
+			strcpy_s(pm->paths[i + splinefrom].parent_name, targetParentSubsystem->c_str());
+			pm->paths[i + splinefrom].parent_submodel = submodel_index;
+		}
+		else {
+			//Make sure that the path's parent name is cleared in this case
+			pm->paths[i + splinefrom].parent_name[0] = '\0';
+		}
+		auto renamed = renamePaths.find(pm->paths[i + splinefrom].name);
+		if (renamed != renamePaths.end()) {
+			strcpy_s(pm->paths[i + splinefrom].name, renamed->second.c_str());
+		}
+		pm->docking_bays[destdock].splines[i] = i + splinefrom;
+	}
+
+	if (targetParentSubsystem) {
+		pm->docking_bays[destdock].parent_submodel = submodel_index;
+	}
+
+	if (renameDock) {
+		strcpy_s(pm->docking_bays[destdock].name, renameDock->c_str());
+
+		// the name has changed, so the type_flags should be regenerated;
+		// c.f. parsing ID_DOCK in modelread.cpp
+		if ( !strnicmp(pm->docking_bays[destdock].name, "cargo", 5) )
+			pm->docking_bays[destdock].type_flags = DOCK_TYPE_CARGO;
+		else
+			pm->docking_bays[destdock].type_flags = (DOCK_TYPE_REARM | DOCK_TYPE_GENERIC);
+	}
+}
+
+
+VirtualPOFOperationAddPath::VirtualPOFOperationAddPath() {
+	required_string("+POF to Add:");
+	stuff_string(appendingPOF, F_FILESPEC);
+
+	required_string("+Source Path:");
+	stuff_string(sourcepath, F_NAME);
+
+	if (optional_string("+Rename Path:")) {
+		SCP_string name;
+		stuff_string(name, F_NAME);
+		renamePath = std::move(name);
+	}
+
+	if (optional_string("+Parent Submodel:")) {
+		SCP_string name;
+		stuff_string(name, F_NAME);
+		targetParentSubsystem = std::move(name);
+	}
+}
+
+void VirtualPOFOperationAddPath::process(polymodel* pm, model_read_deferred_tasks& /*deferredTasks*/, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const {
+	const polymodel* appendingPM = virtual_pof_build_cache(appendingPOF, depth)->pm();
+
+	int sourcePathNr = -1;
+	for (int i = 0; i < appendingPM->n_paths; i++) {
+		if (lcase_equal(sourcepath, appendingPM->paths[i].name)) {
+			sourcePathNr = i;
+			break;
+		}
+	}
+
+	const SCP_string& targetName = renamePath ? *renamePath : sourcepath;
+	for (int i = 0; i < pm->n_paths; i++) {
+		if (lcase_equal(targetName, pm->paths[i].name)) {
+			Warning(LOCATION, "Path %s already exists on POF %s for virtual POF %s. Returning original POF", targetName.c_str(), pm->filename, virtualPof.name.c_str());
+			return;
+		}
+	}
+
+	if (sourcePathNr < 0) {
+		Warning(LOCATION, "Could not find path %s on POF %s for virtual POF %s. Returning original POF", sourcepath.c_str(), appendingPOF.c_str(), virtualPof.name.c_str());
+		return;
+	}
+
+	int submodel_index = -1;
+	bool clear_parent = false;
+	if (targetParentSubsystem) {
+		if (lcase_equal(*targetParentSubsystem, "<none>"))
+			clear_parent = true;
+		else
+			submodel_index = model_find_submodel_index(pm, targetParentSubsystem->c_str());
+		//Not finding this is okay, it means that the parent is a subsystem, not a submodel. Blame whoever designed this field to be double-function
+	}
+
+	if (appendingPM->paths[sourcePathNr].parent_submodel >= 0 && submodel_index < 0) {
+		Warning(LOCATION, "Path %s must have a parent submodel specified for virtual POF %s. Returning original POF", sourcepath.c_str(), virtualPof.name.c_str());
+		return;
+	}
+
+	int destpath = reallocate_and_copy_array_vmalloc(pm->paths, pm->n_paths, 1);
+	pm->paths[destpath] = object_copy_including_array_member(appendingPM->paths[sourcePathNr], &model_path::nverts, &model_path::verts);
+
+	if (targetParentSubsystem) {
+		if(clear_parent){
+			pm->paths[destpath].parent_name[0] = '\0';
+			pm->paths[destpath].parent_submodel = -1;
+		}
+		else {
+			strcpy_s(pm->paths[destpath].parent_name, targetParentSubsystem->c_str());
+			pm->paths[destpath].parent_submodel = submodel_index;
+		}
+	}
+
+	if (renamePath) {
+		strcpy_s(pm->paths[destpath].name, renamePath->c_str());
+	}
+}
+
+
 VirtualPOFOperationRenameSubobjects::VirtualPOFOperationRenameSubobjects() {
 	while (optional_string("+Replace:")) {
 		SCP_string replace;
@@ -729,6 +1008,64 @@ void VirtualPOFOperationRenameSubobjects::process(polymodel* pm, model_read_defe
 	for (const auto& entry : deferredTasks.engine_subsystems)
 		copy_engine_subsys.emplace(change_submodel_name(model_read_deferred_tasks::engine_subsystem_pair(entry), replacements));
 	deferredTasks.engine_subsystems = std::move(copy_engine_subsys);
+}
+
+VirtualPOFOperationChangeSubsystemData::VirtualPOFOperationChangeSubsystemData() {
+	required_string("+Subsystem:");
+	stuff_string(subsystem, F_NAME);
+
+	if (optional_string("+Set Position:")) {
+		vec3d& offset = setPosition.emplace();
+		stuff_vec3d(&offset);
+	}
+
+	if (optional_string("+Set Radius:")) {
+		float& rad = setRadius.emplace();
+		stuff_float(&rad);
+	}
+
+	if (optional_string("+Set Properties:")) {
+		SCP_string& props = setProperties.emplace();
+		stuff_string(props, F_MULTITEXT);
+	} else if (optional_string("+Append Properties:")) {
+		propertyReplace = false;
+		SCP_string& props = setProperties.emplace();
+		stuff_string(props, F_MULTITEXT);
+	}
+}
+
+void VirtualPOFOperationChangeSubsystemData::process(polymodel* /*pm*/, model_read_deferred_tasks& deferredTasks, model_parse_depth /*depth*/, const VirtualPOFDefinition& virtualPof) const {
+	auto subsys_it = deferredTasks.model_subsystems.find(subsystem);
+
+	if (subsys_it == deferredTasks.model_subsystems.end()){
+		Warning(LOCATION, "Failed to find subsystem %s to change data of in virtual POF %s. Returning original POF", subsystem.c_str(), virtualPof.name.c_str());
+		return;
+	}
+
+	model_read_deferred_tasks::model_subsystem_parse& subsys = subsys_it->second;
+
+	if (setPosition) {
+		if (subsys.subobj_nr < 0) {
+			subsys.pnt = *setPosition;
+		}
+		else
+			Warning(LOCATION, "Cannot change position of modelled subsystem %s in virtual POF %s. Not modifying position", subsystem.c_str(), virtualPof.name.c_str());
+	}
+
+	if (setRadius) {
+		if (subsys.subobj_nr < 0) {
+			subsys.rad = *setRadius;
+		}
+		else
+			Warning(LOCATION, "Cannot change radius of modelled subsystem %s in virtual POF %s. Not modifying radius", subsystem.c_str(), virtualPof.name.c_str());
+	}
+
+	if (setProperties) {
+		if (propertyReplace)
+			subsys.props = *setProperties;
+		else
+			subsys.props += '\n' + *setProperties;
+	}
 }
 
 VirtualPOFOperationChangeData::VirtualPOFOperationChangeData() {

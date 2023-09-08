@@ -21,7 +21,8 @@
 #define DEFAULT_NMODEL_FLAGS  (MR_NO_ZBUFFER | MR_NO_CULL | MR_ALL_XPARENT | MR_NO_LIGHTING)
 
 #define MAX_STARFIELD_BITMAP_LISTS	1
-#define MAX_ASTEROID_FIELDS			4
+
+#define MAX_MOTION_DEBRIS_BITMAPS 4
 
 // nice low polygon background
 #define BACKGROUND_MODEL_FILENAME			"spherec.pof"
@@ -56,6 +57,20 @@ extern bool Subspace_sexp_used;
 
 extern bool Motion_debris_override;
 extern bool Motion_debris_enabled;
+
+struct motion_debris_bitmaps {
+	int bm;
+	int nframes;
+	char name[MAX_FILENAME_LEN];
+};
+
+struct motion_debris_types {
+	motion_debris_bitmaps bitmaps[MAX_MOTION_DEBRIS_BITMAPS];
+	SCP_string name;
+};
+
+extern SCP_vector<motion_debris_types> Motion_debris_info;
+extern motion_debris_bitmaps* Motion_debris_ptr;
 
 void stars_swap_backgrounds(int idx1, int idx2);
 void stars_pack_backgrounds();
@@ -149,7 +164,9 @@ void stars_preload_background_bitmap(const char *fname);
 
 void stars_set_nebula(bool activate, float range);
 
-void stars_load_debris(int fullneb = 0);
+int get_motion_debris_by_name(const SCP_string &name);
+
+void stars_load_debris(int fullneb = 0, const SCP_string &custom_name = "");
 
 // Starfield functions that should be used only by FRED ...
 

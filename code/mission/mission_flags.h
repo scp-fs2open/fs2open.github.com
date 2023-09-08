@@ -32,8 +32,9 @@ namespace Mission {
 		Toggle_showing_goals,			// Show mission goals for training missions, hide otherwise - Karajorma/naomimyselfandi
 		End_to_mainhall,			// Return to the mainhall after debrief - niffiwan
 		Override_hashcommand,		// Override #Command with the Command info in Mission Specs - Goober5000
-		Player_start_chase_view,	// Player starts mission in chase view - Goober5000
+		Toggle_start_chase_view,	// Toggles (versus the default) whether the player starts the mission in chase view - Goober5000
 		Neb2_fog_color_override,	// Whether to use explicit fog colors instead of checking the palette - Goober5000
+		Fullneb_background_bitmaps, // Show background bitmaps despite fullneb
 		
 		NUM_VALUES
 	};
@@ -107,6 +108,7 @@ namespace Mission {
 		SF_Fail_sound_locked_secondary,	// Kiloku - Plays fail sound when firing with locked weapons
 		SF_Aspect_immune,				// Kiloku - Ship cannot be locked onto by aspect seeking weapons
 		SF_Cannot_perform_scan,			// Goober5000 - ship cannot scan other ships
+		SF_No_targeting_limits,			// MjnMixael - Ship is always targetable regardless of AWACS or targeting range limits
 		SF_From_player_wing,			// set for ships that are members of any player starting wing
 
 		NUM_VALUES

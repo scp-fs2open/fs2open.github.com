@@ -14,6 +14,7 @@
 
 #include "stats/scoring.h"
 #include "parse/sexp.h"
+#include "cfile/cfile.h"
 #include "parse/sexp_container.h"
 
 struct sexp_variable;
@@ -53,9 +54,16 @@ struct sexp_variable;
 // but the flag is kept in order to maintain compatibility with older campaigns
 #define CMISSION_FLAG_BASTION	(1<<0)	// set if stationed on Bastion, else Galatea
 
-#define CMISSION_FLAG_SKIPPED	(1<<1)	// set if skipped, else not
-#define CMISSION_FLAG_HAS_LOOP	(1<<2)	// mission loop, e.g. FS2 SOC loops
-#define CMISSION_FLAG_HAS_FORK	(1<<3)	// campaign fork, e.g. Scroll or BWO (mutually exclusive with loop)
+#define CMISSION_FLAG_SKIPPED				(1<<1)	// set if skipped, else not
+#define CMISSION_FLAG_HAS_LOOP				(1<<2)	// mission loop, e.g. FS2 SOC loops
+#define CMISSION_FLAG_HAS_FORK				(1<<3)	// campaign fork, e.g. Scroll or BWO (mutually exclusive with loop)
+
+// internal flags start from the end, except for some flags that are grandfathered in
+#define CMISSION_FLAG_FRED_LOAD_PENDING		(1<<31)	// originally handled by num_goals being set to -1
+#define CMISSION_FIRST_INTERNAL_FLAG		CMISSION_FLAG_FRED_LOAD_PENDING
+
+// all flags below FIRST_INTERNAL_FLAG, except SKIPPED, HAS_LOOP, and HAS_FORK
+#define CMISSION_EXTERNAL_FLAG_MASK		((static_cast<unsigned int>(CMISSION_FIRST_INTERNAL_FLAG) - 1) & ~CMISSION_FLAG_SKIPPED & ~CMISSION_FLAG_HAS_LOOP & ~CMISSION_FLAG_HAS_FORK)
 
 #define CAMPAIGN_LOOP_MISSION_UNINITIALIZED	-2
 
@@ -87,12 +95,9 @@ public:
 	char				briefing_cutscene[NAME_LENGTH];	// name of the cutscene to be played before this mission
 	int				formula;					// sexpression used to determine mission branching.
 	int				completed;				// has the player completed this mission
-	int				num_goals;				// number of goals this mission had
-	mgoal			*goals;					// malloced array of mgoals (of num_goals size) which has the goal completion status
-	int				num_events;				// number of events this mission had
-	mevent			*events;				// malloced array of mevents (of num_events size) which has event completion status
-	int				num_variables;			// number of variables this mission had - Goober5000
-	sexp_variable	*variables;				// malloced array of sexp_variables (of num_variables size) containing mission-persistent variables - Goober5000
+	SCP_vector<mgoal> goals;				// vector of mgoals which has the goal completion status
+	SCP_vector<mevent> events;				// vector of mevents which has the event completion status
+	SCP_vector<sexp_variable> variables;	// vector of sexp_variables (of num_variables size) containing mission-persistent variables - Goober5000
 	int				mission_loop_formula;	// formula to determine whether to allow a side loop
 	char			*mission_branch_desc;	// message in popup
 	char			*mission_branch_brief_anim;
@@ -109,7 +114,7 @@ class campaign
 {
 public:
 	char	name[NAME_LENGTH];						// name of the campaign
-	char	filename[MAX_FILENAME_LEN];				// filename the campaign info is in
+	char	filename[CF_MAX_PATHNAME_LENGTH];			// filename the campaign info is in
 	char	*desc;									// description of campaign
 	int		type;									// type of campaign
 	int		flags;									// flags - Goober5000
@@ -168,7 +173,7 @@ void player_loadout_init();
 void mission_campaign_init( void );
 
 // load up and initialize a new campaign
-int mission_campaign_load(const char* filename, player* pl = nullptr, int load_savefile = 1, bool reset_stats = true);
+int mission_campaign_load(const char* filename, const char* full_path = nullptr, player* pl = nullptr, int load_savefile = 1, bool reset_stats = true);
 
 bool campaign_is_ignored(const char *filename);
 

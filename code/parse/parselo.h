@@ -14,6 +14,7 @@
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
 #include "globalincs/flagset.h"
+#include "globalincs/version.h"
 #include "def_files/def_files.h"
 #include "utils/unicode.h"
 
@@ -78,6 +79,9 @@ extern int get_index_of_first_hash_symbol(SCP_string &src, bool ignore_doubled_h
 
 extern void consolidate_double_characters(char *str, char ch);
 
+// for limiting strings that may be very long; useful for dialog boxes
+char *three_dot_truncate(char *buffer, const char *source, size_t buffer_size);
+
 // white space
 extern int is_white_space(char ch);
 extern int is_white_space(unicode::codepoint_t cp);
@@ -106,6 +110,7 @@ extern void error_display(int error_level, SCP_FORMAT_STRING const char *format,
 extern int skip_to_string(const char *pstr, const char *end = NULL);
 extern int skip_to_start_of_string(const char *pstr, const char *end = NULL);
 extern int skip_to_start_of_string_either(const char *pstr1, const char *pstr2, const char *end = NULL);
+extern int skip_to_start_of_string_one_of(const SCP_vector<SCP_string>& pstr, const char* end = nullptr);
 extern void advance_to_eoln(const char *terminators);
 extern bool skip_eoln();
 extern void skip_token();
@@ -144,6 +149,8 @@ extern char* alloc_block(const char* startstr, const char* endstr, int extra_cha
 // the default string length if using the F_NAME case.
 extern char *stuff_and_malloc_string(int type, const char *terminators = nullptr);
 extern void stuff_malloc_string(char **dest, int type, const char *terminators = nullptr);
+extern bool check_first_non_whitespace_char(const char *str, char ch_to_look_for, char **after_ch = nullptr);
+extern bool check_first_non_grayspace_char(const char *str, char ch_to_look_for, char **after_ch = nullptr);
 extern int stuff_float(float *f, bool optional = false);
 extern int stuff_int(int *i, bool optional = false);
 extern int stuff_long(long *l, bool optional = false);
@@ -229,6 +236,7 @@ extern void stuff_float_list(SCP_vector<float>& flp);
 extern size_t stuff_vec3d_list(vec3d *vlp, size_t max_vecs);
 extern void stuff_vec3d_list(SCP_vector<vec3d> &vec_list);
 extern size_t stuff_bool_list(bool *blp, size_t max_bools);
+extern void stuff_vec2d(vec2d* vp);
 extern void stuff_vec3d(vec3d *vp);
 extern void stuff_matrix(matrix *mp);
 extern void stuff_angles_deg_phb(angles* vp);
@@ -239,6 +247,7 @@ extern void find_and_stuff_or_add(const char *id, int *addr, int f_type, char *s
 	int max, const char *description);
 extern int get_string(char *str, int max = -1);
 extern void get_string(SCP_string &str);
+extern void stuff_parenthesized_vec2d(vec2d* vp);
 extern void stuff_parenthesized_vec3d(vec3d *vp);
 extern void stuff_boolean(int *i, bool a_to_eol=true);
 extern void stuff_boolean(bool *b, bool a_to_eol=true);
@@ -292,6 +301,7 @@ extern void stop_parse();
 // utility
 extern void compact_multitext_string(char *str);
 extern void compact_multitext_string(SCP_string &str);
+extern void read_file_bytes(const char *filename, int mode, char *raw_bytes = nullptr);
 extern void read_file_text(const char *filename, int mode = CF_TYPE_ANY, char *processed_text = NULL, char *raw_text = NULL);
 extern void read_file_text_from_default(const default_file& file, char *processed_text = NULL, char *raw_text = NULL);
 extern void read_raw_file_text(const char *filename, int mode = CF_TYPE_ANY, char *raw_text = NULL);
@@ -397,6 +407,17 @@ namespace parse
 	public:
 		explicit ParseException(const std::string& msg) : std::runtime_error(msg) {}
 		~ParseException() noexcept override = default;
+	};
+
+	class VersionException : public std::runtime_error
+	{
+	private:
+		gameversion::version _required_version;
+
+	public:
+		explicit VersionException(const std::string& msg, const gameversion::version& required_version) : std::runtime_error(msg), _required_version(required_version) {}
+		~VersionException() noexcept override = default;
+		const gameversion::version& required_version() { return _required_version; }
 	};
 
 	/**

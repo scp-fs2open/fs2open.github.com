@@ -67,8 +67,6 @@ const int DEBRIEFING_FONT = font::FONT1;
 
 extern float Brief_text_wipe_time_elapsed;
 
-bool API_Access = false;
-
 // 3rd coord is max width in pixels
 int Debrief_title_coords[GR_NUM_RESOLUTIONS][3] = {
 	{ // GR_640
@@ -382,7 +380,6 @@ static int Debrief_skip_popup_already_shown = 0;
 
 void debrief_text_init();
 bool debrief_can_accept();
-void debrief_accept(int ok_to_post_start_game_event);
 void debrief_kick_selected_player();
 
 
@@ -1067,20 +1064,27 @@ void debrief_traitor_init()
 
 		// if traitor, set up persona-specific traitor debriefing
 		auto stagep = &Traitor_debriefing.stages[0];
+		
+		// see if we are using a traitor override
+		if (The_mission.traitor_override != nullptr) {
+			stagep->text = The_mission.traitor_override->text;
+			strcpy_s(stagep->voice, The_mission.traitor_override->voice_filename);
+			stagep->recommendation_text = The_mission.traitor_override->recommendation_text;
+		} else {
+			// see if we have a persona
+			int persona_index = The_mission.debriefing_persona;
 
-		// see if we have a persona
-		int persona_index = The_mission.debriefing_persona;
+			// use persona-specific traitor text if it exists; otherwise, use default
+			if (Traitor.debriefing_text.find(persona_index) != Traitor.debriefing_text.end())
+				stagep->text = Traitor.debriefing_text[persona_index];
+			else
+				stagep->text = Traitor.debriefing_text[-1];
 
-		// use persona-specific traitor text if it exists; otherwise, use default
-		if (Traitor.debriefing_text.find(persona_index) != Traitor.debriefing_text.end())
-			stagep->text = Traitor.debriefing_text[persona_index];
-		else
-			stagep->text = Traitor.debriefing_text[-1];
+			// choose appropriate traitor voice for this mission
+			debrief_choose_voice(stagep->voice, sizeof(stagep->voice), Traitor.traitor_voice_base, persona_index, 1);
 
-		// choose appropriate traitor voice for this mission
-		debrief_choose_voice(stagep->voice, sizeof(stagep->voice), Traitor.traitor_voice_base, persona_index, 1);
-
-		stagep->recommendation_text = Traitor.recommendation_text;
+			stagep->recommendation_text = Traitor.recommendation_text;
+		}
 	}
 
 	if (!(Game_mode & GM_MULTIPLAYER) && (Game_mode & GM_CAMPAIGN_MODE)) {
@@ -1278,7 +1282,7 @@ bool debrief_can_accept()
 }
 
 // what to do when the accept button is hit
-void debrief_accept(int ok_to_post_start_game_event)
+void debrief_accept(int ok_to_post_start_game_event, bool API_Access)
 {
 	int go_loop = 0;
 
@@ -1908,7 +1912,7 @@ static void debrief_init_music()
 	common_music_init(score);
 }
 
-void debrief_init()
+void debrief_init(bool API_Access)
 {
 	Assert(!Debrief_inited);
 //	Campaign.loop_enabled = 0;
@@ -2041,7 +2045,7 @@ void debrief_init()
 
 // --------------------------------------------------------------------------------------
 //	debrief_close()
-void debrief_close()
+void debrief_close(bool API_Access)
 {
 	int i;
 	scoring_struct *sc;

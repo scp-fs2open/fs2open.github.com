@@ -490,9 +490,9 @@ void cf_build_pack_list( cf_root *root )
 	int i;
 
 #ifdef _WIN32
-	const char *filter = "*.vp";
+	const SCP_vector<SCP_string> filters = { "*.vpc", "*.vp" };
 #else
-	const char *filter = "*.[vV][pP]";
+	const SCP_vector<SCP_string> filters = { "*.[vV][pP][cC]", "*.[vV][pP]" };
 #endif
 
 	// now just setup all the root info
@@ -513,7 +513,11 @@ void cf_build_pack_list( cf_root *root )
 
 		SCP_vector<_file_list_t> files;
 
-		if ( !cf_get_list_of_files(filespec, files, filter) ) {
+		for (auto &filter : filters) {
+			cf_get_list_of_files(filespec, files, filter.c_str());
+		}
+
+		if (files.empty()) {
 			continue;
 		}
 
@@ -771,9 +775,10 @@ int is_ext_in_list( const char *ext_list, const char *ext )
 // Run a basic test for indexed files that may be shadowed
 #ifndef NDEBUG
 	#define ENABLE_SHADOW_CHECK		1
+	SCP_vector<SCP_string> critical_shadowed;
 #endif
 
-static void check_file_shadows(const int root_index __UNUSED, const int pathtype __UNUSED, const SCP_string &name __UNUSED, const SCP_string sub_path __UNUSED)
+static void check_file_shadows(const int root_index __UNUSED, const int pathtype __UNUSED, const SCP_string &name __UNUSED, const SCP_string &sub_path __UNUSED, const char *real_name = nullptr)
 {
 #if ENABLE_SHADOW_CHECK
 	if ( !cf_should_scan_subdirs(pathtype) ) {
@@ -782,11 +787,12 @@ static void check_file_shadows(const int root_index __UNUSED, const int pathtype
 
 	SCP_string curfile, newfile;
 
+	const bool critical = ((pathtype == CF_TYPE_TABLES) || (pathtype == CF_TYPE_MISSIONS));
 	const auto root = cf_get_root(root_index);
 
 	newfile = root->path + ((root->roottype == CF_ROOTTYPE_PACK) ? "::" : "");
 	newfile += cf_get_root_pathtype(root, pathtype) + DIR_SEPARATOR_CHAR;
-	newfile += sub_path + name;
+	newfile += sub_path + (real_name ? real_name : name);
 
 	for (uint i = 0; i < Num_files; ++i) {
 		const auto f = cf_get_file(i);
@@ -811,13 +817,22 @@ static void check_file_shadows(const int root_index __UNUSED, const int pathtype
 			continue;
 		}
 
-		curfile = r->path + ((r->roottype == CF_ROOTTYPE_PACK) ? "::" : "");
-		curfile += cf_get_root_pathtype(r, pathtype) + DIR_SEPARATOR_CHAR;
-		curfile += f->sub_path + f->name_ext;
+		if (r->roottype == CF_ROOTTYPE_PATH) {
+			curfile = f->real_name;
+		} else {
+			curfile = r->path + ((r->roottype == CF_ROOTTYPE_PACK) ? "::" : "");
+			curfile += cf_get_root_pathtype(r, pathtype) + DIR_SEPARATOR_CHAR;
+			curfile += f->sub_path + f->name_ext;
+		}
 
 		// this log message occurs in the middle of an existing line, hence the extra new lines
-		mprintf(("\nWARNING! A file being indexed may be shadowed by an existing file!\n New:\n  %s\n Existing:\n  %s\n",
+		mprintf(("\nWARNING! A %sfile being indexed may be shadowed by an existing file!\n New:\n  %s\n Existing:\n  %s\n",
+				critical ? "critical " : "",
 				newfile.c_str(), curfile.c_str()));
+
+		if (critical) {
+			critical_shadowed.push_back(name);
+		}
 
 		break;
 	}
@@ -882,12 +897,18 @@ void cf_search_root_path(int root_index)
 
 		for (auto &file : files) {
 			auto ext_idx = file.name.rfind('.');
+			auto orig_name = file.name;
+
+			if ( ext_idx != SCP_string::npos && SCP_string_lcase_equal_to()(file.name.substr(ext_idx), SCP_string(".lz41")) ) {
+				file.name = file.name.erase(ext_idx, file.name.length());
+				ext_idx = file.name.rfind('.');
+			}
 
 			if ( ext_idx == SCP_string::npos || !is_ext_in_list(Pathtypes[i].extensions, file.name.substr(ext_idx+1).c_str()) ) {
 				continue;
 			}
 
-			check_file_shadows(root_index, i, file.name, file.sub_path);
+			check_file_shadows(root_index, i, file.name, file.sub_path, orig_name.c_str());
 
 			cf_file *cfile = cf_create_file();
 
@@ -897,7 +918,7 @@ void cf_search_root_path(int root_index)
 			cfile->write_time = file.m_time;
 			cfile->size = static_cast<int>(file.size);
 			cfile->pack_offset = 0;
-			cfile->real_name = search_path + DIR_SEPARATOR_STR + file.sub_path + file.name;
+			cfile->real_name = search_path + DIR_SEPARATOR_STR + file.sub_path + orig_name;
 			cfile->sub_path = file.sub_path;
 
 			++num_files;
@@ -1139,6 +1160,24 @@ void cf_build_file_list()
 		}
 	}
 
+#ifndef NDEBUG
+	// if some special/critical files might be shadowed then make sure the user knows about it
+	if ( !critical_shadowed.empty() && !running_unittests ) {
+		SCP_string shadowed;
+		const auto count = critical_shadowed.size();
+
+		// only report a few of the files so that the warning dialog doesn't get freakishly large
+		for (size_t j = 0; (j < 5) && (j < count); ++j) {
+			shadowed += critical_shadowed[j] + '\n';
+		}
+
+		Warning(LOCATION, "Some critical files might be shadowed! Please check the debug log for details.\n\n"
+							"%lu file(s) detected, including:\n%s", count, shadowed.c_str());
+	}
+
+	critical_shadowed.clear();
+	critical_shadowed.shrink_to_fit();
+#endif
 }
 
 
@@ -1713,6 +1752,41 @@ int cf_get_file_list(SCP_vector<SCP_string>& list, int pathtype, const char* _fi
 	}
 
 	SCP_string filespec;
+	SCP_vector<_file_list_t> files;
+
+	// do we have a full path already?
+	if (is_absolute_path(_filter)) {
+		// check for full path and only grab matching files from it if specified
+		auto last_separator = strrchr(_filter, DIR_SEPARATOR_CHAR);
+
+		Assertion(Get_file_list_filter == nullptr, "File list filter not supported with absolute paths!");
+
+		const char *fltr = last_separator + 1;
+		filespec = SCP_string(_filter, strlen(_filter) - strlen(last_separator));
+
+		cf_get_list_of_files(filespec, files, fltr);
+
+		for (auto &file : files) {
+			SCP_string::size_type pos = file.name.find_last_of('.');
+
+			if (pos != SCP_string::npos) {
+				list.push_back(file.name.substr(0, pos));
+			} else {
+				list.push_back(file.name);
+			}
+
+			if (info) {
+				tinfo.write_time = file.m_time;
+				info->push_back(tinfo);
+			}
+		}
+
+		if (sort != CF_SORT_NONE)	{
+			cf_sort_filenames(list, sort, info);
+		}
+
+		return (int)list.size();
+	}
 
 	bool check_duplicates = !list.empty();
 
@@ -1749,7 +1823,6 @@ int cf_get_file_list(SCP_vector<SCP_string>& list, int pathtype, const char* _fi
 	}
 
 	SCP_string fullname;
-	SCP_vector<_file_list_t> files;
 
 	cf_get_list_of_files(filespec, files, filter.c_str());
 

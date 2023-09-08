@@ -6,6 +6,12 @@
 #include "weaponclass.h"
 #include "wing.h"
 
+#include "mission/missionparse.h"
+
+#include "network/multi.h"
+#include "network/multimsgs.h"
+#include "network/multiutil.h"
+
 extern bool sexp_check_flag_arrays(const char *flag_name, Object::Object_Flags &object_flag, Ship::Ship_Flags &ship_flags, Mission::Parse_Object_Flags &parse_obj_flag, AI::AI_Flags &ai_flag);
 extern void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future_ships, Object::Object_Flags object_flag, Ship::Ship_Flags ship_flag, Mission::Parse_Object_Flags parse_obj_flag, AI::AI_Flags ai_flag, bool set_flag);
 
@@ -15,6 +21,20 @@ namespace api {
 parse_object_h::parse_object_h(p_object* obj) : _obj(obj) {}
 p_object* parse_object_h::getObject() const { return _obj; }
 bool parse_object_h::isValid() const { return _obj != nullptr; }
+
+void parse_object_h::serialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, const luacpp::LuaValue& value, ubyte* data, int& packet_size) {
+	parse_object_h pobj(nullptr);
+	value.getValue(l_ParseObject.Get(&pobj));
+	const ushort& netsig = pobj.isValid() ? pobj._obj->net_signature : 0;
+	ADD_USHORT(netsig);
+}
+
+void parse_object_h::deserialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, char* data_ptr, ubyte* data, int& offset) {
+	ushort net_signature;
+	GET_USHORT(net_signature);
+	new(data_ptr) parse_object_h(mission_parse_get_arrival_ship(net_signature));
+}
+
 
 //**********HANDLE: parse_object
 ADE_OBJ(l_ParseObject, parse_object_h, "parse_object", "Handle to a parsed ship");
@@ -65,6 +85,35 @@ ADE_VIRTVAR(
 	}
 
 	return ade_set_args(L, "s", poh->getObject()->get_display_name());
+}
+
+ADE_FUNC(isPlayer, l_ParseObject, nullptr, "Checks whether the parsed ship is a player ship", "boolean", "Whether the parsed ship is a player ship")
+{
+	parse_object_h *poh = nullptr;
+	if (!ade_get_args(L, "o", l_ParseObject.GetPtr(&poh)))
+		return ade_set_error(L, "b", false);
+
+	if (!poh->isValid())
+		return ade_set_error(L, "b", false);
+
+	// singleplayer
+	if (!(Game_mode & GM_MULTIPLAYER))
+	{
+		if (poh->getObject()->flags[Mission::Parse_Object_Flags::OF_Player_start])
+			return ADE_RETURN_TRUE;
+		else
+			return ADE_RETURN_FALSE;
+	}
+	// multiplayer
+	else
+	{
+		// try and find the player
+		int np_index = multi_find_player_by_parse_object(poh->getObject());
+		if ((np_index >= 0) && (np_index < MAX_PLAYERS))
+			return ADE_RETURN_TRUE;
+		else
+			return ADE_RETURN_FALSE;
+	}
 }
 
 ADE_FUNC(setFlag, l_ParseObject, "boolean set_it, string flag_name", "Sets or clears one or more flags - this function can accept an arbitrary number of flag arguments.  The flag names can be any string that the alter-ship-flag SEXP operator supports.", nullptr, "Returns nothing")
@@ -471,10 +520,81 @@ ADE_FUNC(makeShipArrive, l_ParseObject, nullptr, "Causes this parsed ship to arr
 	return mission_maybe_make_ship_arrive(poh->getObject(), true) ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
 }
 
+ADE_VIRTVAR(CollisionGroups, l_ParseObject, "number", "Collision group data", "number", "Current set of collision groups. NOTE: This is a bitfield, NOT a normal number.")
+{
+	parse_object_h* poh = nullptr;
+	int id = 0;
+	if (!ade_get_args(L, "o|i", l_ParseObject.GetPtr(&poh), &id))
+		return ade_set_error(L, "i", 0);
+
+	if (!poh->isValid())
+		return ade_set_error(L, "i", 0);
+
+	//Set collision group data
+	if (ADE_SETTING_VAR)
+		poh->getObject()->collision_group_id = id;
+
+	return ade_set_args(L, "i", poh->getObject()->collision_group_id);
+}
+
+ADE_FUNC(addToCollisionGroup, l_ParseObject, "number group", "Adds this parsed ship to the specified collision group.  The group must be between 0 and 31, inclusive.", nullptr, "Returns nothing")
+{
+	parse_object_h* poh = nullptr;
+	int group;
+
+	if (!ade_get_args(L, "oi", l_ParseObject.GetPtr(&poh), &group))
+		return ADE_RETURN_NIL;
+
+	if (!poh->isValid())
+		return ADE_RETURN_NIL;
+
+	if (group >= 0 && group <= 31)
+		poh->getObject()->collision_group_id |= (1 << group);
+	else
+		Warning(LOCATION, "In addToCollisionGroup, group %d must be between 0 and 31, inclusive", group);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(removeFromCollisionGroup, l_ParseObject, "number group", "Removes this parsed ship from the specified collision group.  The group must be between 0 and 31, inclusive.", nullptr, "Returns nothing")
+{
+	parse_object_h* poh = nullptr;
+	int group;
+
+	if (!ade_get_args(L, "oi", l_ParseObject.GetPtr(&poh), &group))
+		return ADE_RETURN_NIL;
+
+	if (!poh->isValid())
+		return ADE_RETURN_NIL;
+
+	if (group >= 0 && group <= 31)
+		poh->getObject()->collision_group_id &= ~(1 << group);
+	else
+		Warning(LOCATION, "In removeFromCollisionGroup, group %d must be between 0 and 31, inclusive", group);
+
+	return ADE_RETURN_NIL;
+}
+
 parse_subsys_h::parse_subsys_h() = default;
 parse_subsys_h::parse_subsys_h(p_object* obj, int subsys_offset) : _obj(obj), _subsys_offset(subsys_offset) {}
 subsys_status* parse_subsys_h::getSubsys() const { return &Subsys_status[_obj->subsys_index + _subsys_offset]; }
 bool parse_subsys_h::isValid() const { return _obj != nullptr && _subsys_offset < _obj->subsys_count; }
+
+void parse_subsys_h::serialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, const luacpp::LuaValue& value, ubyte* data, int& packet_size) {
+	parse_subsys_h pobj;
+	value.getValue(l_ParseSubsystem.Get(&pobj));
+	const ushort& netsig = pobj.isValid() ? pobj._obj->net_signature : 0;
+	ADD_USHORT(netsig);
+	ADD_INT(pobj._subsys_offset);
+}
+
+void parse_subsys_h::deserialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, char* data_ptr, ubyte* data, int& offset) {
+	ushort net_signature;
+	int ss;
+	GET_USHORT(net_signature);
+	GET_INT(ss);
+	new(data_ptr) parse_subsys_h(mission_parse_get_arrival_ship(net_signature), ss);
+}
 
 //**********HANDLE: parse_object
 ADE_OBJ(l_ParseSubsystem, parse_subsys_h, "parse_subsystem", "Handle to a parse subsystem");

@@ -74,6 +74,14 @@ namespace particle
 		{
 			source->getOrigin()->moveToObject(obj, d);
 		}
+	}	
+	
+	void ParticleSourceWrapper::moveToBeam(object* obj)
+	{
+		for (auto& source : m_sources)
+		{
+			source->getOrigin()->moveToBeam(obj);
+		}
 	}
 
 	void ParticleSourceWrapper::moveTo(vec3d* pos)

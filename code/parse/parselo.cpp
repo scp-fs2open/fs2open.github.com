@@ -455,6 +455,42 @@ int skip_to_start_of_string_either(const char *pstr1, const char *pstr2, const c
 	return 1;
 }
 
+int skip_to_start_of_string_one_of(const SCP_vector<SCP_string>& pstr, const char* end) {
+	size_t endlen;
+
+	ignore_white_space();
+	if (end)
+		endlen = strlen(end);
+	else
+		endlen = 0;
+
+	while (*Mp != '\0') {
+		bool foundStart = false;
+		for (const SCP_string& pstr_i : pstr) {
+			if (strnicmp(pstr_i.c_str(), Mp, pstr_i.size()) == 0) {
+				foundStart = true;
+				break;
+			}
+		}
+		if (foundStart)
+			break;
+
+		if (end && *Mp == '#')
+			return 0;
+
+		if (end && !strnicmp(end, Mp, endlen))
+			return 0;
+
+		advance_to_eoln(NULL);
+		ignore_white_space();
+	}
+
+	if (!Mp || *Mp == '\0')
+		return 0;
+
+	return 1;
+}
+
 // Find a required string.
 // If not found, display an error message, but try up to RS_MAX_TRIES times
 // to find the string.  (This is the groundwork for ignoring non-understood
@@ -1078,17 +1114,22 @@ int get_string_or_variable (char *str)
 	ignore_white_space();
 
 	// Variable
-	if (*Mp == '@')
+	if (*Mp == SEXP_VARIABLE_CHAR)
 	{
+		auto saved_Mp = Mp;
 		Mp++;
 		stuff_string_white(str);
 		int sexp_variable_index = get_index_sexp_variable_name(str);
 
 		// We only want String variables
-		Assertion (sexp_variable_index != -1, "Didn't find variable name \"%s\"", str);
-		Assert (Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_STRING);
-
-		result = PARSING_FOUND_VARIABLE;
+		if (sexp_variable_index >= 0)
+			result = PARSING_FOUND_VARIABLE;
+		else
+		{
+			Mp = saved_Mp;
+			stuff_string_white(str);
+			error_display(1, "Expected \"%s\" to be a variable", str);
+		}
 	}
 	// Quoted string
 	else if (*Mp == '"')
@@ -1099,7 +1140,7 @@ int get_string_or_variable (char *str)
 	else
 	{
 		get_string(str);
-		Error(LOCATION, "Invalid entry \"%s\"  found in get_string_or_variable. Must be a quoted string or a string variable name.", str);
+		error_display(1, "Invalid entry \"%s\" found in get_string_or_variable. Must be a quoted string or a string variable name.", str);
 	}
 
 	return result;
@@ -1113,17 +1154,22 @@ int get_string_or_variable (SCP_string &str)
 	ignore_white_space();
 
 	// Variable
-	if (*Mp == '@')
+	if (*Mp == SEXP_VARIABLE_CHAR)
 	{
+		auto saved_Mp = Mp;
 		Mp++;
 		stuff_string_white(str);
 		int sexp_variable_index = get_index_sexp_variable_name(str);
 
 		// We only want String variables
-		Assertion (sexp_variable_index != -1, "Didn't find variable name \"%s\"", str.c_str());
-		Assert (Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_STRING);
-
-		result = PARSING_FOUND_VARIABLE;
+		if (sexp_variable_index >= 0)
+			result = PARSING_FOUND_VARIABLE;
+		else
+		{
+			Mp = saved_Mp;
+			stuff_string_white(str);
+			error_display(1, "Expected \"%s\" to be a variable", str.c_str());
+		}
 	}
 	// Quoted string
 	else if (*Mp == '"')
@@ -1134,7 +1180,7 @@ int get_string_or_variable (SCP_string &str)
 	else
 	{
 		get_string(str);
-		Error(LOCATION, "Invalid entry \"%s\"  found in get_string_or_variable. Must be a quoted string or a string variable name.", str.c_str());
+		error_display(1, "Invalid entry \"%s\" found in get_string_or_variable. Must be a quoted string or a string variable name.", str.c_str());
 	}
 
 	return result;
@@ -2184,16 +2230,16 @@ void read_raw_file_text(const char *filename, int mode, char *raw_text)
 	mf = cfopen(filename, "rb", CFILE_NORMAL, mode);
 	if (mf == NULL)
 	{
-        nprintf(("Error", "Wokka!  Error opening file (%s)!\n", filename));
-        throw parse::ParseException("Failed to open file");
+		nprintf(("Error", "Wokka!  Error opening file (%s)!\n", filename));
+		throw parse::ParseException("Failed to open file");
 	}
 
 	// read the entire file in
 	int file_len = cfilelength(mf);
 
 	if(!file_len) {
-        nprintf(("Error", "Oh noes!!  File is empty! (%s)!\n", filename));
-        throw parse::ParseException("Failed to open file");
+		nprintf(("Error", "Oh noes!!  File is empty! (%s)!\n", filename));
+		throw parse::ParseException("Failed to open file");
 	}
 
 	// For the possible Latin1 -> UTF-8 conversion we need to reallocate the raw_text at some point and we can only do
@@ -2412,6 +2458,100 @@ void debug_show_mission_text()
 		printf("%c", ch);
 }
 
+// Goober5000
+void read_file_bytes(const char *filename, int mode, char *raw_bytes)
+{
+	CFILE	*mf;
+
+	// copy the filename
+	if (!filename)
+		throw parse::ParseException("Invalid filename");
+
+	strcpy_s(Current_filename_sub, filename);
+
+	// if we are paused then raw_bytes must not be NULL!!
+	if ( !Bookmarks.empty() && (raw_bytes == nullptr) ) {
+		Error(LOCATION, "ERROR: raw_bytes may not be NULL when parsing is paused!!\n");
+	}
+
+	mf = cfopen(filename, "rb", CFILE_NORMAL, mode);
+	if (mf == nullptr)
+	{
+		nprintf(("Error", "Wokka!  Error opening file (%s)!\n", filename));
+		throw parse::ParseException("Failed to open file");
+	}
+
+	// read the entire file in
+	int file_len = cfilelength(mf);
+
+	if(!file_len) {
+		nprintf(("Error", "Oh noes!!  File is empty! (%s)!\n", filename));
+		throw parse::ParseException("Failed to open file");
+	}
+
+	if (raw_bytes == nullptr) {
+		// allocate, or reallocate, memory for Parse_text and Parse_text_raw based on size we need now
+		allocate_parse_text((size_t) (file_len + 1));
+		// NOTE: this always has to be done *after* the allocate_mission_text() call!!
+		raw_bytes = Parse_text_raw;
+	}
+
+	cfread(raw_bytes, file_len, 1, mf);
+
+	//WMC - Slap a NULL character on here for the odd error where we forgot a #End
+	// Goober5000 - for binary files, the equivalent is an EOF
+	raw_bytes[file_len] = EOF;
+
+	cfclose(mf);
+}
+
+// Returns whether the first character encountered in str that is not whitespace is the character to look for.
+// If so, and if after_ch is non-nullptr, it will be set to point to the first character after the character to look for.
+bool check_first_non_whitespace_char(const char *str, char char_to_look_for, char **after_ch)
+{
+	auto active_ch = str;
+	while (true)
+	{
+		if (*active_ch == '\0')
+			return false;
+		if (!is_white_space(*active_ch))
+			break;
+		active_ch++;
+	}
+
+	if (*active_ch == char_to_look_for)
+	{
+		if (after_ch != nullptr)
+			*after_ch = const_cast<char*>(active_ch + 1);	// this is ugly, but strtof and strtod do the same thing
+		return true;
+	}
+
+	return false;
+}
+
+// Do the same thing for grayspace
+bool check_first_non_grayspace_char(const char *str, char char_to_look_for, char **after_ch)
+{
+	auto active_ch = str;
+	while (true)
+	{
+		if (*active_ch == '\0')
+			return false;
+		if (!is_gray_space(*active_ch))
+			break;
+		active_ch++;
+	}
+
+	if (*active_ch == char_to_look_for)
+	{
+		if (after_ch != nullptr)
+			*after_ch = const_cast<char*>(active_ch + 1);	// this is ugly, but strtof and strtod do the same thing
+		return true;
+	}
+
+	return false;
+}
+
 bool unexpected_numeric_char(char ch)
 {
 	return (ch != '\0') && (ch != ',') && (ch != ')') && !is_white_space(ch);
@@ -2446,19 +2586,19 @@ int stuff_float(float *f, bool optional)
 	if (success)
 		Mp = str_end;
 
-	// if an unexpected character is part of the number, the number parsing should fail
+	// if an unexpected character is part of the number, warn about it
 	if (success && unexpected_numeric_char(*Mp))
 	{
-		Mp = str_start;
-		success = false;
-		error_display(1, "Expected float, found [%.32s].\n", next_tokens(true));
+		error_display(0, "Expected float, found [%.32s].\n", next_tokens(true));
+		// Rather than back up to str_start, do what retail did and continue
+		// merrily parsing along at the next character.  (Optional numbers
+		// will still back up to str_start - c.f. a few lines down.)
+		if (optional)
+			success = false;
 	}
 
-	if (*Mp == ',')
-	{
+	if (check_first_non_grayspace_char(Mp, ',', &Mp))
 		comma = true;
-		Mp++;
-	}
 
 	if (optional && !success)
 		Mp = str_start;
@@ -2517,19 +2657,19 @@ int stuff_int(int *i, bool optional)
 	if (success)
 		Mp += span;
 
-	// if an unexpected character is part of the number, the number parsing should fail
+	// if an unexpected character is part of the number, warn about it
 	if (success && unexpected_numeric_char(*Mp))
 	{
-		Mp = str_start;
-		success = false;
-		error_display(1, "Expected int, found [%.32s].\n", next_tokens(true));
+		error_display(0, "Expected int, found [%.32s].\n", next_tokens(true));
+		// Rather than back up to str_start, do what retail did and continue
+		// merrily parsing along at the next character.  (Optional numbers
+		// will still back up to str_start - c.f. a few lines down.)
+		if (optional)
+			success = false;
 	}
 
-	if (*Mp == ',')
-	{
+	if (check_first_non_grayspace_char(Mp, ',', &Mp))
 		comma = true;
-		Mp++;
-	}
 
 	if (optional && !success)
 		Mp = str_start;
@@ -2588,19 +2728,19 @@ int stuff_long(long *l, bool optional)
 	if (success)
 		Mp += span;
 
-	// if an unexpected character is part of the number, the number parsing should fail
+	// if an unexpected character is part of the number, warn about it
 	if (success && unexpected_numeric_char(*Mp))
 	{
-		Mp = str_start;
-		success = false;
-		error_display(1, "Expected long, found [%.32s].\n", next_tokens(true));
+		error_display(0, "Expected long, found [%.32s].\n", next_tokens(true));
+		// Rather than back up to str_start, do what retail did and continue
+		// merrily parsing along at the next character.  (Optional numbers
+		// will still back up to str_start - c.f. a few lines down.)
+		if (optional)
+			success = false;
 	}
 
-	if (*Mp == ',')
-	{
+	if (check_first_non_grayspace_char(Mp, ',', &Mp))
 		comma = true;
-		Mp++;
-	}
 
 	if (optional && !success)
 		Mp = str_start;
@@ -2632,13 +2772,14 @@ int stuff_int_optional(int *i)
 // index of the variable in the following slot.
 void stuff_int_or_variable(int *i, int *var_index, bool need_positive_value)
 {
-	if (*Mp == '@')
+	if (*Mp == SEXP_VARIABLE_CHAR)
 	{
-		Mp++;
 		int value = -1;
 		SCP_string str;
-		stuff_string(str, F_NAME);
 
+		auto saved_Mp = Mp;
+		Mp++;
+		stuff_string(str, F_NAME);
 		int index = get_index_sexp_variable_name(str);
 
 		if (index > -1 && index < MAX_SEXP_VARIABLES)
@@ -2654,7 +2795,8 @@ void stuff_int_or_variable(int *i, int *var_index, bool need_positive_value)
 		}
 		else
 		{
-
+			Mp = saved_Mp;
+			stuff_string(str, F_NAME);
 			error_display(1, "Invalid variable name \"%s\" found.", str.c_str());
 		}
 
@@ -2761,7 +2903,7 @@ void stuff_ubyte(ubyte *i)
 }
 
 template <typename T, typename F>
-void stuff_token_list(SCP_vector<T> &list, F stuff_one_token, const char *type_as_string)
+void stuff_token_list(SCP_vector<T> &list, F stuff_one_token, const char *type_as_string, bool skip_comma = true)
 {
 	list.clear();
 
@@ -2774,30 +2916,24 @@ void stuff_token_list(SCP_vector<T> &list, F stuff_one_token, const char *type_a
 	}
 	Mp++;
 
-	ignore_white_space();
-
-	while (*Mp != ')')
+	while (!check_first_non_whitespace_char(Mp, ')', &Mp))
 	{
+		ignore_white_space();
+
 		T item;
 		if (stuff_one_token(&item))
 			list.push_back(std::move(item));
 
-		ignore_white_space();
-
-		if (*Mp == ',')
-		{
-			Mp++;
-			ignore_white_space();
-		}
+		if (skip_comma)
+			check_first_non_grayspace_char(Mp, ',', &Mp);
 	}
-	Mp++;
 }
 
 template <typename T, typename F>
-size_t stuff_token_list(T *listp, size_t list_max, F stuff_one_token, const char *type_as_string)
+size_t stuff_token_list(T *listp, size_t list_max, F stuff_one_token, const char *type_as_string, bool skip_comma = true)
 {
 	SCP_vector<T> list;
-	stuff_token_list(list, stuff_one_token, type_as_string);
+	stuff_token_list(list, stuff_one_token, type_as_string, skip_comma);
 
 	if (list_max < list.size())
 	{
@@ -3057,7 +3193,7 @@ size_t stuff_float_list(float* flp, size_t max_floats)
 	return stuff_token_list(flp, max_floats, [](float *f)->bool {
 		stuff_float(f);
 		return true;
-	}, "float");
+	}, "float", false);	// don't skip the comma in stuff_token_list because stuff_float also skips one
 }
 
 // ditto the above, but a vector of floats...
@@ -3066,7 +3202,14 @@ void stuff_float_list(SCP_vector<float>& flp)
 	stuff_token_list(flp, [](float* buf)->bool {
 		stuff_float(buf);
 		return true;
-		}, "float");
+	}, "float", false);	// don't skip the comma in stuff_token_list because stuff_float also skips one
+}
+
+//	Stuff a vec2d struct, which is 2 floats.
+void stuff_vec2d(vec2d* vp)
+{
+	stuff_float(&vp->x);
+	stuff_float(&vp->y);
 }
 
 //	Stuff a vec3d struct, which is 3 floats.
@@ -3084,6 +3227,26 @@ void stuff_angles_deg_phb(angles* ap) {
 	ap->p = fl_radians(ap->p);
 	ap->h = fl_radians(ap->h);
 	ap->b = fl_radians(ap->b);
+}
+
+void stuff_parenthesized_vec2d(vec2d* vp)
+{
+	ignore_white_space();
+
+	if (*Mp != '(') {
+		error_display(1, "Reading parenthesized vec2d.  Found [%c].  Expected '('.\n", *Mp);
+		throw parse::ParseException("Syntax error");
+	}
+	else {
+		Mp++;
+		stuff_vec2d(vp);
+		ignore_white_space();
+		if (*Mp != ')') {
+			error_display(1, "Reading parenthesized vec2d.  Found [%c].  Expected ')'.\n", *Mp);
+			throw parse::ParseException("Syntax error");
+		}
+		Mp++;
+	}
 }
 
 void stuff_parenthesized_vec3d(vec3d *vp)
@@ -3289,7 +3452,9 @@ char *split_str_once(char *src, int max_pixel_w)
 	bool last_was_white = false;
 
 	Assert(src);
-	Assert(max_pixel_w > 0);
+
+	if (max_pixel_w <= 0)
+		return src;  // if there's no width, skip everything else
 
 	gr_get_string_size(&w, nullptr, src);
 	if ( (w <= max_pixel_w) && !strstr(src, "\n") ) {
@@ -3933,6 +4098,24 @@ void consolidate_double_characters(char *src, char ch)
 		if (src != dest)
 			*dest = *src;
 	}
+}
+
+char *three_dot_truncate(char *buffer, const char *source, size_t buffer_size)
+{
+	Assertion(buffer && source, "Arguments must not be null!");
+
+	// this would be silly
+	if (buffer_size < 6)
+	{
+		*buffer = '\0';
+		return buffer;
+	}
+
+	strncpy(buffer, source, buffer_size);
+	if (buffer[buffer_size - 1] != '\0')
+		strcpy(&buffer[buffer_size - 6], "[...]");
+
+	return buffer;
 }
 
 // Goober5000

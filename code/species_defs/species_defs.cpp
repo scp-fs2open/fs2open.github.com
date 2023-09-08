@@ -13,8 +13,10 @@
 #include "iff_defs/iff_defs.h"
 #include "localization/localize.h"
 #include "parse/parselo.h"
+#include "ship/shipfx.h"
 #include "species_defs/species_defs.h"
 
+extern int parse_warp_params(const WarpParams *inherit_from, WarpDirection direction, const char *info_type_name, const char *info_name);
 
 SCP_vector<species_info> Species_info;
 
@@ -355,6 +357,12 @@ void parse_species_tbl(const char *filename)
 									  "The Species doing the borrowing must be defined after the Species it is borrowing from\n", temp_name, species->species_name);
 				}
 			}
+
+			// get species parameters for warpin and warpout
+			// Note: if the index is not -1, we must have already assigned warp parameters, probably because we are now
+			// parsing a TBM.  In that case, inherit from ourselves.
+			species->warpin_params_index = parse_warp_params(species->warpin_params_index >= 0 ? &Warp_params[species->warpin_params_index] : nullptr, WarpDirection::WARP_IN, "Species", species->species_name);
+			species->warpout_params_index = parse_warp_params(species->warpout_params_index >= 0 ? &Warp_params[species->warpout_params_index] : nullptr, WarpDirection::WARP_OUT, "Species", species->species_name);
 
 			// don't add new entry if this is just a modified one
 			if (!no_create)

@@ -10,6 +10,8 @@
 #include "mission/missioncampaign.h"
 #include "pilotfile/pilotfile.h"
 #include "playerman/player.h"
+#include "stats/medals.h"
+#include "scripting/api/objs/rank.h"
 #include "scripting/api/objs/shipclass.h"
 #include "scripting/lua/LuaTable.h"
 #include "ship/ship.h"
@@ -336,7 +338,7 @@ ADE_FUNC(loadCampaign, l_Player, "string campaign", "Loads the specified campaig
 	strcpy_s(pl->current_campaign, filename); // track new campaign for player
 
 	// attempt to load the campaign
-	const int load_status = mission_campaign_load(filename, pl);
+	const int load_status = mission_campaign_load(filename, nullptr, pl);
 
 	// see if we successfully loaded this campaign and it's at the beginning
 	if (load_status == 0 && Campaign.prev_mission < 0) {
@@ -797,6 +799,59 @@ ADE_FUNC(setMissionShipclassKills,
 
 	return ADE_RETURN_TRUE;
 }
+
+ADE_VIRTVAR(Medals,
+	l_ScoringStats,
+	nullptr,
+	"Gets a table of medals that the player has earned. The number returned is the number of times the player has won that medal. "
+	"The index position in the table is an index into Medals.",
+	"{ number => number ... }",
+	"The medals table")
+{
+	scoring_stats_h* ssh;
+	if (!ade_get_args(L, "o", l_ScoringStats.GetPtr(&ssh))) {
+		return ADE_RETURN_NIL;
+	}
+
+	auto table = luacpp::LuaTable::create(L);
+	if (!ssh->isValid()) {
+		return ade_set_error(L, "t", &table);
+	}
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	for (int i = 0; i < (int)Medals.size(); i++) {
+		table.addValue(i + 1, ssh->get()->medal_counts[i]); // translate to Lua index
+	}
+
+	return ade_set_args(L, "t", &table);
+}
+
+ADE_VIRTVAR(Rank,
+	l_ScoringStats,
+	nullptr, 
+	"Returns the player's current rank",
+	"rank",
+	"The current rank")
+{
+	scoring_stats_h* ssh;
+	if (!ade_get_args(L, "o", l_ScoringStats.GetPtr(&ssh))) {
+		return ADE_RETURN_NIL;
+	}
+	if (!ssh->isValid()) {
+		return ade_set_error(L, "o", l_Rank.Set(rank_h()));
+	}
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	int rank_index = verify_rank(ssh->get()->rank);
+	return ade_set_args(L, "o", l_Rank.Set(rank_h(rank_index)));
+}
+
 }
 }
 

@@ -58,6 +58,7 @@ public:
 	BOOL		m_subspace;
 	BOOL		m_fullneb;
 	BOOL		m_fog_color_override;
+	BOOL		m_fullneb_background_bitmaps;
 	BOOL		m_toggle_trails;
 	BOOL		m_corrected_angles_in_mission_file;
 	int		m_fog_r;
@@ -92,6 +93,7 @@ public:
 	int m_skybox_heading;
 	float m_neb_near_multi;
 	float m_neb_far_multi;
+	int m_light_profile_index;
 	//}}AFX_DATA
 
 // Overrides

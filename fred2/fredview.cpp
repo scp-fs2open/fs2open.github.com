@@ -58,6 +58,8 @@
 #include "sound/audiostr.h"
 #include "mission/missiongrid.h"
 #include "calcrelativecoordsdlg.h"
+#include "musicplayerdlg.h"
+#include "volumetricsdlg.h"
 
 #include "osapi/osapi.h"
 
@@ -252,9 +254,11 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_COMMAND(ID_EDITORS_MESSAGE, OnEditorsMessage)
 	ON_COMMAND(ID_EDITORS_STARFIELD, OnEditorsStarfield)
 	ON_COMMAND(ID_EDITORS_BG_BITMAPS, OnEditorsBgBitmaps)
+	ON_COMMAND(ID_EDITORS_VOLUMETRICS, OnEditorsVolumetrics)
 	ON_COMMAND(ID_EDITORS_REINFORCEMENT, OnEditorsReinforcement)
 	ON_COMMAND(ID_ERROR_CHECKER, OnErrorChecker)
 	ON_COMMAND(ID_EDITORS_WAYPOINT, OnEditorsWaypoint)
+	ON_COMMAND(ID_EDITORS_JUMPNODE, OnEditorsJumpnode)
 	ON_COMMAND(ID_VIEW_OUTLINES, OnViewOutlines)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_OUTLINES, OnUpdateViewOutlines)
 	ON_COMMAND(ID_VIEW_OUTLINES_ON_SELECTED, OnViewOutlinesOnSelected)
@@ -308,6 +312,7 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_UPDATE_COMMAND_UI(ID_LOOKAT_OBJ, OnUpdateLookatObj)
 	ON_COMMAND(ID_EDITORS_ADJUST_GRID, OnEditorsAdjustGrid)
 	ON_COMMAND(ID_CALC_RELATIVE_COORDS, OnCalcRelativeCoords)
+	ON_COMMAND(ID_MUSIC_PLAYER, OnMusicPlayer)
 	ON_COMMAND(ID_EDITORS_SHIELD_SYS, OnEditorsShieldSys)
 	ON_COMMAND(ID_LEVEL_OBJ, OnLevelObj)
 	ON_COMMAND(ID_ALIGN_OBJ, OnAlignObj)
@@ -1439,7 +1444,7 @@ void CFREDView::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
 					str.Format("Edit %s", Ships[Objects[objnum].instance].ship_name);
 
 				else if (Objects[objnum].type == OBJ_JUMP_NODE) {
-					id = ID_EDITORS_WAYPOINT;
+					id = ID_EDITORS_JUMPNODE;
 					for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
 						if(jnp->GetSCPObject() == &Objects[objnum])
 							break;
@@ -1479,8 +1484,8 @@ void CFREDView::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
 			// create a popup menu based on the ship models read in ship.cpp.
 			shipPopup.CreatePopupMenu();
 			shipPopup.AppendMenu(MF_STRING | MF_ENABLED, SHIP_TYPES + Id_select_type_waypoint, "Waypoint");
-			shipPopup.AppendMenu(MF_STRING | MF_ENABLED, SHIP_TYPES + Id_select_type_start, "Player Start");
 			shipPopup.AppendMenu(MF_STRING | MF_ENABLED, SHIP_TYPES + Id_select_type_jump_node, "Jump Node");
+			shipPopup.AppendMenu(MF_STRING | MF_ENABLED, SHIP_TYPES + Id_select_type_start, "Player Start");
 			for (i=0; i<(int)Species_info.size(); i++) {
 				species_submenu[i].CreatePopupMenu();
 				shipPopup.AppendMenu(MF_STRING | MF_POPUP | MF_ENABLED,
@@ -1555,79 +1560,6 @@ CFREDView *CFREDView::GetView()
   return (CFREDView *) pView;
 }
 
-/*void CFREDView::OnShipType0() 
-{
-	cur_model_index = 1;
-}
-
-void CFREDView::OnShipType1() 
-{
-	cur_model_index = 2;
-}
-
-void CFREDView::OnShipType2() 
-{
-	cur_model_index = 3;
-}
-
-void CFREDView::OnShipType3() 
-{
-	cur_model_index = 4;
-}
-
-void CFREDView::OnShipType4() 
-{
-	cur_model_index = 5;
-}
-
-void CFREDView::OnShipType5() 
-{
-	cur_model_index = 6;
-}
-
-void CFREDView::OnUpdateShipType1(CCmdUI* pCmdUI) 
-{
-	pCmdUI->SetCheck(cur_model_index == 2);
-}
-
-void CFREDView::OnUpdateShipType2(CCmdUI* pCmdUI) 
-{
-	pCmdUI->SetCheck(cur_model_index == 3);
-}
-
-void CFREDView::OnUpdateShipType3(CCmdUI* pCmdUI) 
-{
-	pCmdUI->SetCheck(cur_model_index == 4);
-}
-
-void CFREDView::OnUpdateShipType4(CCmdUI* pCmdUI) 
-{
-	pCmdUI->SetCheck(cur_model_index == 5);
-}
-
-void CFREDView::OnUpdateShipType5(CCmdUI* pCmdUI) 
-{
-	pCmdUI->SetCheck(cur_model_index == 6);
-}
-
-
-void CFREDView::OnUpdateShipType0(CCmdUI* pCmdUI) 
-{
-	pCmdUI->SetCheck(cur_model_index == 1);
-	
-}
-
-void CFREDView::OnEditShipType6() 
-{
-	cur_model_index = 7;
-	
-}
-
-void CFREDView::OnUpdateEditShipType6(CCmdUI* pCmdUI) 
-{
-	pCmdUI->SetCheck(cur_model_index == 7);
-} */
-
 
 // following code added by MWA 09/04/96
 // Implements messages for popup menu built on the fly.
@@ -1641,12 +1573,12 @@ BOOL CFREDView::OnCmdMsg(UINT nID, int nCode, void* pExtra, AFX_CMDHANDLERINFO* 
 	if (!pHandlerInfo) {
 		if ((id >= SHIP_TYPES) && (id < SHIP_TYPES + (int)ship_type_combo_box_size + 3)) {
 			if (nCode == CN_COMMAND) {
-				cur_model_index = id - SHIP_TYPES;
-				m_new_ship_type_combo_box.SetCurSelNEW(cur_model_index);
+				cur_ship_type_combo_index = id - SHIP_TYPES;
+				m_new_ship_type_combo_box.SetCurSel(cur_ship_type_combo_index);
 
 			} else if (nCode == CN_UPDATE_COMMAND_UI)	{
 				// Update UI element state
-				((CCmdUI*) pExtra)->SetCheck(cur_model_index + SHIP_TYPES == id);
+				((CCmdUI*) pExtra)->SetCheck(cur_ship_type_combo_index + SHIP_TYPES == id);
 				((CCmdUI*) pExtra)->Enable(TRUE);
 			}
 
@@ -2032,8 +1964,11 @@ void CFREDView::OnLButtonDblClk(UINT nFlags, CPoint point)
 				break;
 
 			case OBJ_WAYPOINT:
-			case OBJ_JUMP_NODE:
 				OnEditorsWaypoint();
+				break;
+
+			case OBJ_JUMP_NODE:
+				OnEditorsJumpnode();
 				break;
 		}
 
@@ -2438,6 +2373,13 @@ void CFREDView::OnEditorsBgBitmaps()
 	Bg_bitmap_dialog->SetWindowPos(&wndTop, 0, 0, 0, 0,
 		SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
 	Bg_bitmap_dialog->ShowWindow(SW_RESTORE);
+}
+
+void CFREDView::OnEditorsVolumetrics()
+{
+	volumetrics_dlg dlg;
+
+	dlg.DoModal();
 }
 
 void CFREDView::OnEditorsReinforcement()
@@ -2976,14 +2918,14 @@ int CFREDView::global_error_check()
 		return i;
 	}
 
-	for (i=0; i<Num_mission_events; i++){
-		if (fred_check_sexp(Mission_events[i].formula, OPR_NULL, "mission event \"%s\"", Mission_events[i].name)){
+	for (i=0; i<(int)Mission_events.size(); i++){
+		if (fred_check_sexp(Mission_events[i].formula, OPR_NULL, "mission event \"%s\"", Mission_events[i].name.c_str())){
 			return -1;
 		}
 	}
 
-	for (i=0; i<Num_goals; i++){
-		if (fred_check_sexp(Mission_goals[i].formula, OPR_BOOL, "mission goal \"%s\"", Mission_goals[i].name)){
+	for (i=0; i<(int)Mission_goals.size(); i++){
+		if (fred_check_sexp(Mission_goals[i].formula, OPR_BOOL, "mission goal \"%s\"", Mission_goals[i].name.c_str())){
 			return -1;
 		}
 	}
@@ -3451,6 +3393,17 @@ void CFREDView::OnEditorsWaypoint()
 	Waypoint_editor_dialog.ShowWindow(SW_RESTORE);
 }
 
+void CFREDView::OnEditorsJumpnode()
+{
+	Assert(Jumpnode_editor_dialog.GetSafeHwnd());
+
+	if (!theApp.init_window(&Jumpnode_wnd_data, &Jumpnode_editor_dialog))
+		return;
+
+	Jumpnode_editor_dialog.SetWindowPos(&wndTop, 0, 0, 0, 0, SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
+	Jumpnode_editor_dialog.ShowWindow(SW_RESTORE);
+}
+
 char *error_check_initial_orders(ai_goal *goals, int ship, int wing)
 {
 	char *source;
@@ -3821,11 +3774,11 @@ void CFREDView::OnUpdateNewShipType(CCmdUI* pCmdUI)
 	int z;
 	CWnd *bar;
 
-	z = m_new_ship_type_combo_box.GetCurSelNEW();
+	z = m_new_ship_type_combo_box.GetCurSel();
 	if (z == CB_ERR)
-		m_new_ship_type_combo_box.SetCurSelNEW(cur_model_index);
+		m_new_ship_type_combo_box.SetCurSel(cur_ship_type_combo_index);
 	else
-		cur_model_index = z;
+		cur_ship_type_combo_index = z;
 
 	bar = GetDlgItem(pCmdUI->m_nID);
 	if (!bar) {
@@ -4196,6 +4149,17 @@ void CFREDView::OnCalcRelativeCoords()
 	calc_relative_coords_dlg dlg;
 
 	dlg.DoModal();
+}
+
+void CFREDView::OnMusicPlayer()
+{
+	Assertion(Music_player_dialog.GetSafeHwnd(), "Unable to create music player window!");
+
+	if (!theApp.init_window(&MusPlayer_wnd_data, &Music_player_dialog))
+		return;
+
+	Music_player_dialog.SetWindowPos(&wndTop, 0, 0, 0, 0, SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
+	Music_player_dialog.ShowWindow(SW_RESTORE);
 }
 
 void CFREDView::OnEditorsShieldSys() 

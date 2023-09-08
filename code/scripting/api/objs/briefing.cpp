@@ -102,7 +102,7 @@ ADE_VIRTVAR(hasBackwardCut,
 }
 
 //**********HANDLE: briefing
-ADE_OBJ(l_Brief, int, "briefing", "Briefing handle");
+ADE_OBJ_NO_MULTI(l_Brief, int, "briefing", "Briefing handle");
 
 ADE_INDEXER(l_Brief,
 	"number index",
@@ -145,7 +145,7 @@ ADE_FUNC(__len, l_Brief, nullptr, "The number of stages in the briefing", "numbe
 }
 
 //**********HANDLE: mission goals
-ADE_OBJ(l_Goals, int, "mission_goal", "Mission objective handle");
+ADE_OBJ_NO_MULTI(l_Goals, int, "mission_goal", "Mission objective handle");
 
 ADE_VIRTVAR(Name, l_Goals, nullptr, "The name of the goal", "string", "The goal name")
 {
@@ -158,7 +158,7 @@ ADE_VIRTVAR(Name, l_Goals, nullptr, "The name of the goal", "string", "The goal 
 		LuaError(L, "This property is read only.");
 	}
 
-	return ade_set_args(L, "s", Mission_goals[current].name);
+	return ade_set_args(L, "s", Mission_goals[current].name.c_str());
 }
 
 ADE_VIRTVAR(Message, l_Goals, nullptr, "The message of the goal", "string", "The goal message")
@@ -172,7 +172,7 @@ ADE_VIRTVAR(Message, l_Goals, nullptr, "The message of the goal", "string", "The
 		LuaError(L, "This property is read only.");
 	}
 
-	return ade_set_args(L, "s", Mission_goals[current].message);
+	return ade_set_args(L, "s", Mission_goals[current].message.c_str());
 }
 
 ADE_VIRTVAR(Type, l_Goals, nullptr, "The goal type", "string", "primary, secondary, bonus, or none")
@@ -224,6 +224,34 @@ ADE_VIRTVAR(Team, l_Goals, nullptr, "The goal team", "team", "The goal team")
 	return ade_set_args(L, "o", l_Team.Set(Mission_goals[current].team));
 }
 
+ADE_VIRTVAR(isGoalSatisfied, l_Goals, nullptr, "The status of the goal", "number", "0 if failed, 1 if complete, 2 if incomplete")
+{
+	int current;
+	if (!ade_get_args(L, "o", l_Goals.Get(&current))) {
+		return ADE_RETURN_NIL;
+	}
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "i", Mission_goals[current].satisfied);
+}
+
+ADE_VIRTVAR(Score, l_Goals, nullptr, "The score of the goal", "number", "the score")
+{
+	int current;
+	if (!ade_get_args(L, "o", l_Goals.Get(&current))) {
+		return ADE_RETURN_NIL;
+	}
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "i", Mission_goals[current].score);
+}
+
 ADE_VIRTVAR(isGoalValid, l_Goals, nullptr, "The goal validity", "boolean", "true if valid, false otherwise")
 {
 	int current;
@@ -236,6 +264,16 @@ ADE_VIRTVAR(isGoalValid, l_Goals, nullptr, "The goal validity", "boolean", "true
 	}
 
 	return ade_set_args(L, "b", !(Mission_goals[current].type & INVALID_GOAL));
+}
+
+ADE_FUNC(isValid, l_Goals, nullptr, "Detect if the handle is valid", "boolean", "true if valid, false otherwise")
+{
+	int current = -1;
+
+	if (!ade_get_args(L, "o", l_Goals.Get(&current)))
+		return ADE_RETURN_FALSE;
+
+	return ade_set_args(L, "b", (current >= 0) && (current < (int)Mission_goals.size()));
 }
 
 } // namespace api

@@ -2,33 +2,38 @@
 #include "mission/management.h"
 
 #include "object.h"
+#include <project.h>
+#include <libs/ffmpeg/FFmpeg.h>
 
-#include <localization/localize.h>
-#include <ui/QtGraphicsOperations.h>
+#include <asteroid/asteroid.h>
+#include <cutscene/cutscenes.h>
+#include <gamesnd/eventmusic.h>
+#include <globalincs/alphacolors.h>
+#include <hud/hudsquadmsg.h>
+#include <iff_defs/iff_defs.h>
 #include <io/key.h>
 #include <io/mouse.h>
-#include <iff_defs/iff_defs.h>
-#include <weapon/weapon.h>
-#include <stats/medals.h>
+#include <lighting/lighting_profiles.h>
+#include <localization/fhash.h>
+#include <localization/localize.h>
+#include <math/curve.h>
+#include <menuui/mainhallmenu.h>
+#include <menuui/techmenu.h>
+#include <mission/missioncampaign.h>
+#include <missionui/fictionviewer.h>
 #include <model/modelreplace.h>
 #include <nebula/neb.h>
-#include <starfield/starfield.h>
-#include <sound/audiostr.h>
-#include <project.h>
+#include <nebula/neblightning.h>
+#include <parse/sexp/sexp_lookup.h>
 #include <scripting/scripting.h>
 #include <scripting/global_hooks.h>
-#include <hud/hudsquadmsg.h>
-#include <globalincs/alphacolors.h>
-
-#include <menuui/techmenu.h>
-#include <localization/fhash.h>
-#include <gamesnd/eventmusic.h>
-#include <missionui/fictionviewer.h>
-#include <mission/missioncampaign.h>
-#include <nebula/neblightning.h>
-#include <libs/ffmpeg/FFmpeg.h>
-#include <parse/sexp/sexp_lookup.h>
+#include <sound/audiostr.h>
+#include <starfield/starfield.h>
+#include <stats/medals.h>
+#include <stats/scoring.h>
+#include <ui/QtGraphicsOperations.h>
 #include <utils/Random.h>
+#include <weapon/weapon.h>
 
 #include <clocale>
 
@@ -142,13 +147,20 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 	mouse_init();
 
 	listener(SubSystem::Particles);
+	curves_init();
 	particle::ParticleManager::init();
+
+	listener(SubSystem::GameSound1);
+	gamesnd_parse_soundstbl(true);
 
 	listener(SubSystem::Iff);
 	iff_init();            // Goober5000
 
 	listener(SubSystem::Species);
 	species_init();        // Kazan
+
+	listener(SubSystem::GameSound2);
+	gamesnd_parse_soundstbl(false);
 
 	listener(SubSystem::BriefingIcons);
 	brief_icons_init();
@@ -162,15 +174,15 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 	listener(SubSystem::AlphaColors);
 	alpha_colors_init();
 
-	listener(SubSystem::GameSound);
-	gamesnd_parse_soundstbl();        // needs to be loaded after species stuff but before interface/weapon/ship stuff - taylor
-
 	listener(SubSystem::MissionBrief);
 	mission_brief_common_init();
 
-	// Initialize dynamic SEXPs. Must happen before ship init for LuaAI
-	listener(SubSystem::DynamicSEXPs);
-	sexp::dynamic_sexp_init();
+	// Initialize SEXPs. Must happen before ship init for LuaAI
+	listener(SubSystem::SEXPs);
+	sexp_startup();
+
+	listener(SubSystem::ModelAnimations);
+	animation::ModelAnimationParseHelper::parseTables();
 
 	listener(SubSystem::Objects);
 	obj_init();
@@ -206,6 +218,18 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 	listener(SubSystem::TechroomIntel);
 	techroom_intel_init();
 
+	listener(SubSystem::HudGaugePositions);
+	hud_positions_init();
+
+	listener(SubSystem::Asteroids);
+	asteroid_init();
+
+	listener(SubSystem::LightingProfiles);
+	lighting_profiles::load_profiles();
+
+	listener(SubSystem::Traitor);
+	traitor_init();
+
 	// get fireball IDs for sexpression usage
 	// (we don't need to init the entire system via fireball_init, we just need the information)
 	fireball_parse_tbl();
@@ -237,10 +261,20 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 	cmd_brief_reset();
 	Show_waypoints = TRUE;
 
+	listener(SubSystem::Cutscenes);
+	cutscene_init();
+
+	listener(SubSystem::Mainhalls);
+	main_hall_table_init();
+
+	listener(SubSystem::Ranks);
+	rank_init();
+
+	// mission creation requires the existence of a timestamp snapshot
+	timer_start_frame();
+
 	listener(SubSystem::Campaign);
 	mission_campaign_clear();
-
-	stars_post_level_init();
 
 	// neb lightning
 	listener(SubSystem::NebulaLightning);
@@ -259,6 +293,10 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 	Script_system.RunInitFunctions();
 	if (scripting::hooks::OnGameInit->isActive()) {
 		scripting::hooks::OnGameInit->run();
+	}
+	//Technically after the splash screen, but the best we can do these days. Since the override is hard-deprecated, we don't need to check it.
+	if (scripting::hooks::OnSplashScreen->isActive()) {
+		scripting::hooks::OnSplashScreen->run();
 	}
 
 	return true;

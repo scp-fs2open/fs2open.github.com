@@ -48,7 +48,7 @@ bool fireballs_parsed = false;
 
 bool Fireball_use_3d_warp = false;
 
-static auto WarpOption = options::OptionBuilder<bool>("Graphics.3dWarp", "3D Warp", "Use a 3D model for warp effects")
+static auto WarpOption __UNUSED = options::OptionBuilder<bool>("Graphics.3dWarp", "3D Warp", "Use a 3D model for warp effects")
                              .category("Graphics")
                              .default_val(true)
                              .level(options::ExpertLevel::Advanced)
@@ -1069,8 +1069,8 @@ void fireball_render(object* obj, model_draw_list *scene)
 
 	float alpha = 1.0f;
 
-	if (The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb_affects_fireballs)
-		alpha *= neb2_get_fog_visibility(&obj->pos, 
+	if (Neb_affects_fireballs)
+		nebula_handle_alpha(alpha, &obj->pos, 
 			Neb2_fog_visibility_fireball_const + (obj->radius * Neb2_fog_visibility_fireball_scaled_factor));
 	
 	g3_transfer_vertex(&p, &obj->pos);

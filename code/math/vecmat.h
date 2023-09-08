@@ -73,6 +73,7 @@ extern void vm_set_identity(matrix *m);
 
 extern angles vm_angles_new(float p, float b, float h);
 extern vec3d vm_vec_new(float x, float y, float z);
+extern vec4 vm_vec4_new(float x, float y, float z, float w);
 extern matrix vm_matrix_new(float a0, float a1, float a2, float a3, float a4, float a5, float a6, float a7, float a8);
 extern matrix vm_matrix_new(vec3d rvec, vec3d uvec, vec3d fvec);
 
@@ -89,7 +90,7 @@ extern matrix4 vmd_zero_matrix4;
 extern angles vmd_zero_angles;
 
 //Here's a handy constant
-
+#define ZERO_ANGLES { 0.0f, 0.0f, 0.0f }
 #define ZERO_VECTOR { { { 0.0f, 0.0f, 0.0f } } }
 #define SCALE_IDENTITY_VECTOR { { { 1.0f, 1.0f, 1.0f } } }
 //#define IDENTITY_MATRIX {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f}
@@ -115,6 +116,14 @@ typedef struct plane {
 //adds two vectors, fills in dest, returns ptr to dest
 //ok for dest to equal either source, but should use vm_vec_add2() if so
 void vm_vec_add(vec3d *dest, const vec3d *src0, const vec3d *src1);
+
+//Component-wise multiplication of two vectors
+void vm_vec_cmult(vec3d* dest, const vec3d* src0, const vec3d* src1);
+void vm_vec_cmult2(vec3d* dest, const vec3d* src);
+
+//Component-wise division of two vectors
+void vm_vec_cdiv(vec3d* dest, const vec3d* src0, const vec3d* src1);
+void vm_vec_cdiv2(vec3d* dest, const vec3d* src);
 
 //adds src onto dest vector, returns ptr to dest
 void vm_vec_add2(vec3d *dest, const vec3d *src);
@@ -499,7 +508,8 @@ void vm_matrix_to_rot_axis_and_angle(const matrix *m, float *theta, vec3d *rot_a
 // If the axis is equal or very close to the orientation of the matrix, returns a distance of Pi/2 and an angle of 0
 float vm_closest_angle_to_matrix(const matrix* mat, const vec3d* rot_axis, float* angle);
 
-// interpolate between 2 vectors. t goes from 0.0 to 1.0. at
+// interpolate between 2 vectors. t goes from 0.0 to 1.0
+// out, v1 and v2 may all safely alias
 void vm_vec_interp_constant(vec3d *out, const vec3d *v1, const vec3d *v2, float t);
 
 // randomly perturb a vector around a given (normalized vector) or optional orientation matrix
@@ -629,6 +639,30 @@ inline vec3d& operator-=(vec3d& left, const vec3d& right)
 	return left;
 }
 
+inline vec3d operator*(const vec3d& left, const vec3d& right)
+{
+	vec3d res;
+	vm_vec_cmult(&res, &left, &right);
+	return res;
+}
+inline vec3d& operator*=(vec3d& left, const vec3d& right)
+{
+	vm_vec_cmult2(&left, &right);
+	return left;
+}
+
+inline vec3d operator/(const vec3d& left, const vec3d& right)
+{
+	vec3d res;
+	vm_vec_cdiv(&res, &left, &right);
+	return res;
+}
+inline vec3d& operator/=(vec3d& left, const vec3d& right)
+{
+	vm_vec_cdiv2(&left, &right);
+	return left;
+}
+
 inline vec3d operator*(const vec3d& left, float right)
 {
 	vec3d out;
@@ -676,6 +710,14 @@ inline matrix operator-(const matrix& left, const matrix& right)
 inline matrix& operator-=(matrix& left, const matrix& right)
 {
 	vm_matrix_sub2(&left, &right);
+	return left;
+}
+
+inline angles& operator+=(angles& left, const angles& right)
+{
+	left.p += right.p;
+	left.b += right.b;
+	left.h += right.h;
 	return left;
 }
 

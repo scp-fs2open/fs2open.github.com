@@ -13,12 +13,30 @@
 
 #include "asteroid/asteroid.h"
 #include "debris/debris.h"
+#include "object/objcollide.h"
 #include "object/objectshield.h"
 #include "object/objectsnd.h"
 #include "scripting/api/LuaEventCallback.h"
+#include "scripting/api/objs/color.h"
 #include "scripting/lua/LuaFunction.h"
 #include "ship/ship.h"
 #include "weapon/weapon.h"
+#include "network/multi.h"
+#include "network/multimsgs.h"
+#include "network/multiutil.h"
+
+void object_h::serialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, const luacpp::LuaValue& value, ubyte* data, int& packet_size) {
+	object_h obj;
+	value.getValue(scripting::api::l_Object.Get(&obj));
+	const ushort& netsig = obj.IsValid() ? obj.objp->net_signature : 0;
+	ADD_USHORT(netsig);
+}
+
+void object_h::deserialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, char* data_ptr, ubyte* data, int& offset) {
+	ushort net_signature;
+	GET_USHORT(net_signature);
+	new(data_ptr) object_h(multi_get_network_object(net_signature));
+}
 
 namespace scripting {
 namespace api {
@@ -131,6 +149,9 @@ ADE_VIRTVAR(Position, l_Object, "vector", "Object world position (World vector)"
 			waypoint *wpt = find_waypoint_with_objnum(OBJ_INDEX(objh->objp));
 			wpt->set_pos(v3);
 		}
+
+		if (objh->objp->flags[Object::Object_Flags::Collides])
+			obj_collide_obj_cache_stale(objh->objp);
 	}
 
 	return ade_set_args(L, "o", l_Vector.Set(objh->objp->pos));
@@ -165,6 +186,9 @@ ADE_VIRTVAR(Orientation, l_Object, "orientation", "Object world orientation (Wor
 
 	if(ADE_SETTING_VAR && mh != NULL) {
 		objh->objp->orient = *mh->GetMatrix();
+
+		if (objh->objp->flags[Object::Object_Flags::Collides])
+			obj_collide_obj_cache_stale(objh->objp);
 	}
 
 	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&objh->objp->orient)));
@@ -300,6 +324,18 @@ ADE_FUNC(isValid, l_Object, NULL, "Detects whether handle is valid", "boolean", 
 	return ade_set_args(L, "b", oh->IsValid());
 }
 
+ADE_FUNC(isExpiring, l_Object, nullptr, "Checks whether the object has the should-be-dead flag set, which will cause it to be deleted within one frame", "boolean", "true or false according to the flag, or nil if a syntax/type error occurs")
+{
+	object_h* oh;
+	if (!ade_get_args(L, "o", l_Object.GetPtr(&oh)))
+		return ADE_RETURN_NIL;
+
+	if (!oh->IsValid())
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "b", oh->objp->flags[Object::Object_Flags::Should_be_dead]);
+}
+
 ADE_FUNC(getBreedName, l_Object, NULL, "Gets object type", "string", "Object type name, or empty string if handle is invalid")
 {
 	object_h *objh;
@@ -312,7 +348,7 @@ ADE_FUNC(getBreedName, l_Object, NULL, "Gets object type", "string", "Object typ
 	return ade_set_args(L, "s", Object_type_names[objh->objp->type]);
 }
 
-ADE_VIRTVAR(CollisionGroups, l_Object, "number", "Collision group data", "number", "Current collision group signature. NOTE: This is a bitfield, NOT a normal number.")
+ADE_VIRTVAR(CollisionGroups, l_Object, "number", "Collision group data", "number", "Current set of collision groups. NOTE: This is a bitfield, NOT a normal number.")
 {
 	object_h *objh = NULL;
 	int id = 0;
@@ -343,6 +379,8 @@ ADE_FUNC(addToCollisionGroup, l_Object, "number group", "Adds this object to the
 
 	if (group >= 0 && group <= 31)
 		objh->objp->collision_group_id |= (1 << group);
+	else
+		Warning(LOCATION, "In addToCollisionGroup, group %d must be between 0 and 31, inclusive", group);
 
 	return ADE_RETURN_NIL;
 }
@@ -360,6 +398,8 @@ ADE_FUNC(removeFromCollisionGroup, l_Object, "number group", "Removes this objec
 
 	if (group >= 0 && group <= 31)
 		objh->objp->collision_group_id &= ~(1 << group);
+	else
+		Warning(LOCATION, "In removeFromCollisionGroup, group %d must be between 0 and 31, inclusive", group);
 
 	return ADE_RETURN_NIL;
 }
@@ -484,8 +524,6 @@ ADE_FUNC(
 	}
 
 	mc_info hull_check;
-	mc_info_init(&hull_check);
-
 	hull_check.model_num = model_num;
 	hull_check.model_instance_num = model_instance_num;
 	hull_check.submodel_num = submodel;
@@ -631,27 +669,28 @@ ADE_FUNC(removeSound, l_Object, "soundentry GameSnd, [subsystem Subsys=nil]",
 }
 
 
-ADE_FUNC(getIFFColor, l_Object, "number, number, number", 
-	"Gets the IFF color of the object",
-	"number, number, number", 
+ADE_FUNC(getIFFColor, l_Object, "boolean ReturnType", 
+	"Gets the IFF color of the object. False to return raw rgb, true to return color object. Defaults to false.",
+	"number, number, number, number | color", 
 	"IFF rgb color of the object or nil if object invalid")
 {
 	object_h* objh;
+	bool rc = false;
 
-	if (!ade_get_args(L, "o", l_Object.GetPtr(&objh)))
+	if (!ade_get_args(L, "o|b", l_Object.GetPtr(&objh), &rc))
 		return ADE_RETURN_NIL;
 
 	if (!objh->IsValid())
 		return ADE_RETURN_NIL;
 
 	auto objp = objh->objp;
-	color* col = hud_get_iff_color(objp);
+	color* cur = hud_get_iff_color(objp);
 
-	int r = col->red;
-	int g = col->green;
-	int b = col->blue;
-
-	return ade_set_args(L, "iii", r, g, b);
+	if (!rc) {
+		return ade_set_args(L, "iiii", (int)cur->red, (int)cur->green, (int)cur->blue, (int)cur->alpha);
+	} else {
+		return ade_set_args(L, "o", l_Color.Set(*cur));
+	}
 }
 
 } // namespace api

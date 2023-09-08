@@ -39,6 +39,7 @@ void fiction_viewer_do_frame(float frametime);
 bool mission_has_fiction();
 int fiction_viewer_ui_name_to_index(const char *ui_name);
 void fiction_viewer_reset();
+SCP_string get_localized_fiction_filename(const char* filename);
 void fiction_viewer_load(int stage);
 
 void fiction_viewer_pause();

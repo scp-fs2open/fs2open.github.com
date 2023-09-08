@@ -42,6 +42,7 @@ extern "C" {
 #include "scripting/api/objs/physics_info.h"
 #include "scripting/api/objs/player.h"
 #include "scripting/api/objs/promise.h"
+#include "scripting/api/objs/rpc.h"
 #include "scripting/api/objs/sexpvar.h"
 #include "scripting/api/objs/shields.h"
 #include "scripting/api/objs/ship.h"
@@ -198,8 +199,7 @@ static bool sort_table_entries(const ade_table_entry* left, const ade_table_entr
 		return false;
 	}
 
-	SCP_string_lcase_less_than lt;
-	return lt(leftCmp, rightCmp);
+	return lcase_lessthan(leftCmp, rightCmp);
 }
 
 static bool sort_doc_entries(const ade_table_entry* left, const ade_table_entry* right) {

@@ -30,6 +30,7 @@
 #include "graphics/util/GPUMemoryHeap.h"
 #include "graphics/util/UniformBuffer.h"
 #include "graphics/util/UniformBufferManager.h"
+#include "graphics/shadows.h"
 #include "io/mouse.h"
 #include "libs/jansson.h"
 #include "options/Option.h"
@@ -78,8 +79,6 @@ io::mouse::Cursor* Web_cursor = NULL;
 
 int Gr_inited = 0;
 
-uint Gr_signature = 0;
-
 float Gr_gamma = 1.0f;
 
 static SCP_vector<float> gamma_value_enumerator()
@@ -113,7 +112,7 @@ static bool gamma_change_listener(float new_val, bool initial)
 	return true;
 }
 
-static auto GammaOption =
+static auto GammaOption __UNUSED =
     options::OptionBuilder<float>("Graphics.Gamma", "Brightness", "The brighness value used for the game window")
         .category("Graphics")
         .default_val(1.0f)
@@ -129,7 +128,7 @@ const SCP_vector<std::pair<int, SCP_string>> DetailLevelValues = {{ 0, "Minimum"
                                                                   { 3, "High" },
                                                                   { 4, "Ultra" }, };
 
-const auto LightingOption = options::OptionBuilder<int>("Graphics.Lighting", "Lighting", "Level of detail of the lighting")
+const auto LightingOption __UNUSED = options::OptionBuilder<int>("Graphics.Lighting", "Lighting", "Level of detail of the lighting")
 		.importance(1)
 		.category("Graphics")
 		.values(DetailLevelValues)
@@ -163,7 +162,7 @@ static bool mode_change_func(os::ViewportState state, bool initial)
 	return true;
 }
 
-static auto WindowModeOption = options::OptionBuilder<os::ViewportState>("Graphics.WindowMode", "Window Mode",
+static auto WindowModeOption __UNUSED = options::OptionBuilder<os::ViewportState>("Graphics.WindowMode", "Window Mode",
 																		 "Controls how the game window is created.")
 								   .category("Graphics")
 								   .level(options::ExpertLevel::Beginner)
@@ -175,8 +174,8 @@ static auto WindowModeOption = options::OptionBuilder<os::ViewportState>("Graphi
 								   .change_listener(mode_change_func)
 								   .finish();
 
-const std::shared_ptr<scripting::OverridableHook> OnFrameHook = scripting::OverridableHook::Factory(
-	"On Frame", "Called every frame as the last action before showing the frame result to the user.", {}, CHA_ONFRAME);
+const std::shared_ptr<scripting::OverridableHook<>> OnFrameHook = scripting::OverridableHook<>::Factory(
+	"On Frame", "Called every frame as the last action before showing the frame result to the user.", {}, tl::nullopt, CHA_ONFRAME);
 
 // z-buffer stuff
 int gr_zbuffering        = 0;
@@ -375,7 +374,7 @@ static auto ResolutionOption =
 
 bool Gr_enable_soft_particles = false;
 
-static auto SoftParticlesOption = options::OptionBuilder<bool>("Graphics.SoftParticles", "Soft Particles",
+static auto SoftParticlesOption __UNUSED = options::OptionBuilder<bool>("Graphics.SoftParticles", "Soft Particles",
                                                                "Enable or disable soft particle rendering.")
                                       .category("Graphics")
                                       .level(options::ExpertLevel::Advanced)
@@ -386,7 +385,7 @@ static auto SoftParticlesOption = options::OptionBuilder<bool>("Graphics.SoftPar
 
 flagset<FramebufferEffects> Gr_framebuffer_effects;
 
-static auto FramebufferEffectsOption =
+static auto FramebufferEffectsOption __UNUSED =
     options::OptionBuilder<flagset<FramebufferEffects>>(
         "Graphics.FramebufferEffects", "Framebuffer effects",
         "Controls which framebuffer effects will be applied to the scene.")
@@ -404,7 +403,7 @@ static auto FramebufferEffectsOption =
 AntiAliasMode Gr_aa_mode = AntiAliasMode::None;
 AntiAliasMode Gr_aa_mode_last_frame = AntiAliasMode::None;
 
-static auto AAOption = options::OptionBuilder<AntiAliasMode>("Graphics.AAMode", "Anti Aliasing",
+static auto AAOption __UNUSED = options::OptionBuilder<AntiAliasMode>("Graphics.AAMode", "Anti Aliasing",
                                                              "Controls the anti aliasing mode of the engine.")
                            .category("Graphics")
                            .level(options::ExpertLevel::Advanced)
@@ -421,6 +420,20 @@ static auto AAOption = options::OptionBuilder<AntiAliasMode>("Graphics.AAMode", 
                            .importance(79)
                            .finish();
 
+extern int Cmdline_msaa_enabled;
+static auto MSAAOption __UNUSED = options::OptionBuilder<int>("Graphics.MSAASamples", "Multisample Anti Aliasing",
+                                                             "Controls whether multisample anti aliasing is enabled, and with how many samples.")
+                           .category("Graphics")
+                           .level(options::ExpertLevel::Advanced)
+                           .values({{0, "Off"},
+                                    {4, "4 Samples"},
+                                    {8, "8 Samples"},
+                                    {16, "16 Samples"}})
+                           .default_val(0)
+                           .bind_to(&Cmdline_msaa_enabled)
+                           .importance(78)
+                           .finish();
+
 bool gr_is_fxaa_mode(AntiAliasMode mode)
 {
 	return mode == AntiAliasMode::FXAA_Low || mode == AntiAliasMode::FXAA_Medium || mode == AntiAliasMode::FXAA_High;
@@ -431,7 +444,7 @@ bool gr_is_smaa_mode(AntiAliasMode mode) {
 
 bool Gr_post_processing_enabled = true;
 
-static auto PostProcessOption =
+static auto PostProcessOption __UNUSED =
     options::OptionBuilder<bool>("Graphics.PostProcessing", "Post processing",
                                  "Controls whether post processing is enabled in the engine")
         .category("Graphics")
@@ -443,7 +456,7 @@ static auto PostProcessOption =
 
 bool Gr_enable_vsync = true;
 
-static auto VSyncOption = options::OptionBuilder<bool>("Graphics.VSync", "Vertical Sync",
+static auto VSyncOption __UNUSED = options::OptionBuilder<bool>("Graphics.VSync", "Vertical Sync",
                                                        "Controls how the engine does vertical synchronization")
                               .category("Graphics")
                               .level(options::ExpertLevel::Advanced)
@@ -1299,8 +1312,6 @@ static bool gr_init_sub(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, i
 	Gr_save_menu_zoomed_offset_X = Gr_menu_zoomed_offset_X = Gr_menu_offset_X;
 	Gr_save_menu_zoomed_offset_Y = Gr_menu_zoomed_offset_Y = Gr_menu_offset_Y;
 	
-
-	gr_screen.signature = Gr_signature++;
 	gr_screen.bits_per_pixel = depth;
 	gr_screen.bytes_per_pixel= depth / 8;
 	gr_screen.rendering_to_texture = -1;
@@ -1541,6 +1552,9 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 		depth = d_depth;
 	}
 
+	if (Cmdline_vulkan)
+		mode = GR_VULKAN;
+
 	// if we are in standalone mode then just use special defaults
 	if (Is_standalone) {
 		mode = GR_STUB;
@@ -1680,6 +1694,11 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 
 	Gr_inited = 1;
 
+	if (!gr_is_capable(CAPABILITY_SHADOWS) && Shadow_quality != ShadowQuality::Disabled) {
+		Warning(LOCATION, "Shadows are enabled, but the system does not fulfill the requirements. Disabling shadows...");
+		Shadow_quality = ShadowQuality::Disabled;
+	}
+
 	return true;
 }
 
@@ -1738,7 +1757,6 @@ void gr_init_color(color *c, int r, int g, int b)
 	CAP(g, 0, 255);
 	CAP(b, 0, 255);
 
-	c->screen_sig = gr_screen.signature;
 	c->red = (ubyte)r;
 	c->green = (ubyte)g;
 	c->blue = (ubyte)b;
@@ -1774,23 +1792,14 @@ void gr_set_color( int r, int g, int b )
 	gr_init_color( &gr_screen.current_color, r, g, b );	
 }
 
-void gr_set_color_fast(color *dst)
+void gr_set_color_fast(const color *dst)
 {
-	if ( dst->screen_sig != gr_screen.signature ) {
-		if (dst->is_alphacolor) {
-			gr_init_alphacolor( dst, dst->red, dst->green, dst->blue, dst->alpha, dst->ac_type );
-		} else {
-			gr_init_color( dst, dst->red, dst->green, dst->blue );
-		}
-	}
-
 	gr_screen.current_color = *dst;
 }
 
 // shader functions
 void gr_create_shader(shader *shade, ubyte r, ubyte g, ubyte b, ubyte c )
 {
-	shade->screen_sig = gr_screen.signature;
 	shade->r = r;
 	shade->g = g;
 	shade->b = b;
@@ -1800,9 +1809,6 @@ void gr_create_shader(shader *shade, ubyte r, ubyte g, ubyte b, ubyte c )
 void gr_set_shader(shader *shade)
 {
 	if (shade) {
-		if (shade->screen_sig != gr_screen.signature) {
-			gr_create_shader( shade, shade->r, shade->g, shade->b, shade->c );
-		}
 		gr_screen.current_shader = *shade;
 	} else {
 		gr_create_shader( &gr_screen.current_shader, 0, 0, 0, 0 );
@@ -2586,7 +2592,7 @@ void gr_flip(bool execute_scripting)
 
 void gr_print_timestamp(int x, int y, fix timestamp, int resize_mode)
 {
-	int seconds = fl2i(f2fl(timestamp));
+	int seconds = f2i(timestamp);
 
 	// format the time information into strings
 	SCP_string time;

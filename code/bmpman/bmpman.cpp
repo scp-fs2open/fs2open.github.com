@@ -585,6 +585,59 @@ int bm_create(int bpp, int w, int h, void *data, int flags) {
 	return n;
 }
 
+int bm_create_3d(int bpp, int w, int h, int d, void* data) {
+	Assert((bpp == 16) || (bpp == 24) || (bpp == 32));
+	
+	Assertion(bm_inited, "bmpman must be initialized before this function can be called!");
+
+	int n = find_block_of(1);
+
+	// Out of bitmap slots
+	if (n == -1)
+		return -1;
+
+	// make sure that we have valid data
+	if (data == nullptr) {
+		UNREACHABLE("No valid data recieved for 3D Bitmap creation!");
+		return -1;
+	}
+
+	auto entry = bm_get_entry(n);
+
+	memset(entry, 0, sizeof(bitmap_entry));
+
+	sprintf_safe(entry->filename, "TMP%dx%dx%d+%d", w, h, d, bpp);
+	entry->type = BM_TYPE_3D;
+	entry->comp_type = BM_TYPE_NONE;
+
+	entry->bm.w = (short)w;
+	entry->bm.h = (short)h;
+	entry->bm.d = (short)d;
+	entry->bm.rowsize = (short)w;
+	entry->bm.bpp = (ubyte)bpp;
+	entry->bm.true_bpp = (ubyte)bpp;
+	entry->bm.flags = (ubyte)BMP_TEX_XPARENT;
+	entry->bm.data = 0;
+	entry->bm.palette = nullptr;
+
+	entry->info.user.bpp = (ubyte)bpp;
+	entry->info.user.data = data;
+	entry->info.user.flags = (ubyte)BMP_TEX_XPARENT;
+
+	entry->signature = Bm_next_signature++;
+
+	entry->handle = n;
+	entry->mem_taken = (w * h * d * (bpp >> 3));
+
+	entry->load_count++;
+
+	bm_update_memory_used(n, (int)entry->mem_taken);
+
+	gr_bm_create(bm_get_slot(n));
+
+	return n;
+}
+
 void bm_convert_format(bitmap *bmp, ushort flags) {
 	int idx;
 
@@ -628,7 +681,7 @@ void bm_free_data(bitmap_slot* bs, bool release)
 
 	// Don't free up memory for user defined bitmaps, since
 	// BmpMan isn't the one in charge of allocating/deallocing them.
-	if (be->type==BM_TYPE_USER) {
+	if (be->type == BM_TYPE_USER || be->type == BM_TYPE_3D) {
 #ifdef BMPMAN_NDEBUG
 		if ( be->data_size != 0 )
 			bm_texture_ram -= be->data_size;
@@ -684,7 +737,7 @@ void bm_free_data_fast(int handle)
 
 	// Don't free up memory for user defined bitmaps, since
 	// BmpMan isn't the one in charge of allocating/deallocing them.
-	if (be->type == BM_TYPE_USER) {
+	if (be->type == BM_TYPE_USER || be->type == BM_TYPE_3D) {
 #ifdef BMPMAN_NDEBUG
 		if ( be->data_size != 0 )
 			bm_texture_ram -= be->data_size;
@@ -890,6 +943,27 @@ int bm_get_info(int handle, int *w, int * h, ushort* flags, int *nframes, int *f
 
 		return handle;
 	}
+}
+
+int bm_get_depth(int handle, int* depth) {
+	bitmap* bmp;
+
+	if (!bm_inited) return -1;
+
+	auto entry = bm_get_entry(handle);
+
+	Assertion(entry->handle == handle, "Invalid bitmap handle %d passed to bm_get_info().\nThis might be due to an invalid animation somewhere else.\n", handle);		// INVALID BITMAP HANDLE!
+
+	if (entry->type != BM_TYPE_3D) {
+		*depth = 0;
+		return -1;
+	}
+
+	bmp = &(entry->bm);
+
+	*depth = bmp->d;
+
+	return handle;
 }
 
 int bm_get_num_mipmaps(int num) {
@@ -1407,6 +1481,10 @@ static int bm_load_image_data(int handle, int bpp, ushort flags, bool nodebug)
 			bm_lock_user(handle, bs, bmp, true_bpp, flags);
 			break;
 
+		case BM_TYPE_3D:
+			bm_lock_user(handle, bs, bmp, true_bpp, flags, false);
+			break;
+
 		default:
 			Warning(LOCATION, "Unsupported type in bm_lock -- %d\n", c_type);
 			return -1;
@@ -1517,10 +1595,13 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 	// MAX_FILENAME_LEN-10 == 5 character frame designator plus '.' plus 3 letter ext plus NULL terminator
 	// we only check for -5 here since the filename should already have the extension on it, and it must have passed the previous check
 	if (strlen(filename) > MAX_FILENAME_LEN - 5) {
-		Warning(LOCATION, "Passed filename, '%s', is too long to support an extension and frames!!\n\nMaximum length for an ANI/EFF/APNG, minus the extension, is %i characters.\n", filename, MAX_FILENAME_LEN - 10);
-		if (img_cfp != nullptr)
-			cfclose(img_cfp);
-		return -1;
+		// Don't check PNGs yet, because a PNG could be a regular non-animated image
+		if (type != BM_TYPE_PNG) {
+			Warning(LOCATION, "Passed filename, '%s', is too long to support an extension and frames!!\n\nMaximum length for an ANI/EFF/APNG, minus the extension, is %i characters.\n", filename, MAX_FILENAME_LEN - 10);
+			if (img_cfp != nullptr)
+				cfclose(img_cfp);
+			return -1;
+		}
 	}
 
 	// it's an effect file, any readable image type with eff being txt
@@ -1603,6 +1684,14 @@ int bm_load_animation(const char *real_filename, int *nframes, int *fps, int *ke
 				nprintf(("apng","Failed to load apng: %s\n", e.what()));
 				return -1;
 			}
+		}
+
+		// Now do the same filename length check that was deferred for PNGs above
+		if (strlen(filename) > MAX_FILENAME_LEN - 5) {
+			Warning(LOCATION, "Passed filename, '%s', is too long to support an extension and frames!!\n\nMaximum length for an ANI/EFF/APNG, minus the extension, is %i characters.\n", filename, MAX_FILENAME_LEN - 10);
+			if (img_cfp != nullptr)
+				cfclose(img_cfp);
+			return -1;
 		}
 	}
 	else {
@@ -2388,7 +2477,7 @@ void bm_lock_tga(int handle, bitmap_slot *bs, bitmap *bmp, int bpp, ushort flags
 	bm_convert_format(bmp, flags);
 }
 
-void bm_lock_user(int /*handle*/, bitmap_slot *bs, bitmap *bmp, int bpp, ushort flags) {
+void bm_lock_user(int /*handle*/, bitmap_slot *bs, bitmap *bmp, int bpp, ushort flags, bool convert) {
 	auto be = &bs->entry;
 
 	// Unload any existing data
@@ -2428,7 +2517,8 @@ void bm_lock_user(int /*handle*/, bitmap_slot *bs, bitmap *bmp, int bpp, ushort 
 		break;
 	}
 
-	bm_convert_format(bmp, flags);
+	if (convert)
+		bm_convert_format(bmp, flags);
 }
 
 int bm_make_render_target(int width, int height, int flags) {
@@ -2512,7 +2602,7 @@ void *bm_malloc(int n, size_t size) {
 void bm_page_in_aabitmap(int handle, int nframes) {
 	int i;
 
-	if (handle == -1)
+	if (handle < 0)
 		return;
 
 	Assert(bm_get_entry(handle)->handle == handle);
@@ -3131,7 +3221,7 @@ int bm_unload_fast(int handle, int clear_render_targets) {
 		return -1;		// Already been released
 	}
 
-	if (be->type == BM_TYPE_USER) {
+	if (be->type == BM_TYPE_USER || be->type == BM_TYPE_3D) {
 		return -1;
 	}
 

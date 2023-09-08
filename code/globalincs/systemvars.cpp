@@ -72,15 +72,6 @@ bool PostProcessing_override = false;
 bool Shadow_override = false;
 bool Trail_render_override = false;
 
-bool Basemap_color_override_set = false;
-float Basemap_color_override[4] = {0.0f, 0.0f, 0.0f, 1.0f};
-
-bool Glowmap_color_override_set = false;
-float Glowmap_color_override[3] = {0.0f, 0.0f, 0.0f};
-
-bool Specmap_color_override_set = false;
-float Specmap_color_override[3] = {0.0f, 0.0f, 0.0f};
-
 // Values used for noise for thruster animations
 float Noise[NOISE_NUM_FRAMES] = { 
 	0.468225f,
@@ -260,14 +251,14 @@ const SCP_vector<std::pair<int, SCP_string>> DetailLevelValues = {{ 0, "Minimum"
                                                                   { 3, "High" },
                                                                   { 4, "Ultra" }, };
 
-const auto ModelDetailOption =
+const auto ModelDetailOption __UNUSED =
 	options::OptionBuilder<int>("Graphics.Detail", "Model Detail", "Detail level of models").importance(8).category(
 		"Graphics").values(DetailLevelValues).default_val(MAX_DETAIL_LEVEL).change_listener([](int val, bool) {
 		Detail.detail_distance = val;
 		return true;
 	}).finish();
 
-const auto TexturesOption = options::OptionBuilder<int>("Graphics.Texture",
+const auto TexturesOption __UNUSED = options::OptionBuilder<int>("Graphics.Texture",
                                                         "3D Hardware Textures",
                                                         "Level of detail of textures").importance(6).category("Graphics").values(
 	DetailLevelValues).default_val(MAX_DETAIL_LEVEL).change_listener([](int val, bool) {
@@ -275,7 +266,7 @@ const auto TexturesOption = options::OptionBuilder<int>("Graphics.Texture",
 	return true;
 }).finish();
 
-const auto ParticlesOption = options::OptionBuilder<int>("Graphics.Particles",
+const auto ParticlesOption __UNUSED = options::OptionBuilder<int>("Graphics.Particles",
                                                          "Particles",
                                                          "Level of detail for particles").importance(5).category(
 	"Graphics").values(DetailLevelValues).default_val(MAX_DETAIL_LEVEL).change_listener([](int val, bool) {
@@ -283,7 +274,7 @@ const auto ParticlesOption = options::OptionBuilder<int>("Graphics.Particles",
 	return true;
 }).finish();
 
-const auto SmallDebrisOption =
+const auto SmallDebrisOption __UNUSED =
 	options::OptionBuilder<int>("Graphics.SmallDebris", "Impact Effects", "Level of detail of impact effects").category(
 		"Graphics").values(DetailLevelValues).default_val(MAX_DETAIL_LEVEL).importance(4).change_listener([](int val,
 	                                                                                                         bool) {
@@ -291,7 +282,7 @@ const auto SmallDebrisOption =
 		return true;
 	}).finish();
 
-const auto ShieldEffectsOption = options::OptionBuilder<int>("Graphics.ShieldEffects",
+const auto ShieldEffectsOption __UNUSED = options::OptionBuilder<int>("Graphics.ShieldEffects",
                                                              "Shield Hit Effects",
                                                              "Level of detail of shield impacts").importance(3).category(
 	"Graphics").values(DetailLevelValues).default_val(MAX_DETAIL_LEVEL).change_listener([](int val, bool) {
@@ -299,7 +290,7 @@ const auto ShieldEffectsOption = options::OptionBuilder<int>("Graphics.ShieldEff
 	return true;
 }).finish();
 
-const auto StarsOption =
+const auto StarsOption __UNUSED =
 	options::OptionBuilder<int>("Graphics.Stars", "Stars", "Number of stars in the mission").importance(2).category(
 		"Graphics").values(DetailLevelValues).default_val(MAX_DETAIL_LEVEL).change_listener([](int val, bool) {
 		Detail.num_stars = val;
@@ -433,4 +424,72 @@ void SCP_toupper(char *str)
 {
 	for (; *str != '\0'; ++str)
 		*str = SCP_toupper(*str);
+}
+
+// this is a bit naive but it is good enough for the time being
+void SCP_totitle(char *str)
+{
+	bool prev_alpha = false;
+
+	for (; *str != '\0'; ++str)
+	{
+		bool this_alpha = (*str >= 'a' && *str <= 'z') || (*str >= 'A' && *str <= 'Z');
+
+		if (this_alpha)
+		{
+			if (prev_alpha)
+				*str = SCP_tolower(*str);
+			else
+				*str = SCP_toupper(*str);
+		}
+
+		prev_alpha = this_alpha;
+	}
+}
+
+bool lcase_equal(const SCP_string& _Left, const SCP_string& _Right)
+{
+	if (_Left.size() != _Right.size())
+		return false;
+
+	auto l_it = _Left.cbegin();
+	auto r_it = _Right.cbegin();
+
+	while (l_it != _Left.cend())
+	{
+		if (SCP_tolower(*l_it) != SCP_tolower(*r_it))
+			return false;
+
+		++l_it;
+		++r_it;
+	}
+
+	return true;
+}
+
+bool lcase_lessthan(const SCP_string& _Left, const SCP_string& _Right)
+{
+	auto l_it = _Left.cbegin();
+	auto r_it = _Right.cbegin();
+
+	while (true)
+	{
+		if (l_it == _Left.cend())
+			return (r_it != _Right.cend());
+		else if (r_it == _Right.cend())
+			return false;
+
+		auto lch = SCP_tolower(*l_it);
+		auto rch = SCP_tolower(*r_it);
+
+		if (lch < rch)
+			return true;
+		else if (lch > rch)
+			return false;
+
+		++l_it;
+		++r_it;
+	}
+
+	return true;
 }

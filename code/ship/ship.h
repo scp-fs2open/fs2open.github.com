@@ -40,11 +40,6 @@
 class object;
 class WarpEffect;
 
-namespace scripting
-{
-	class Hook;
-}
-
 //	Part of the player died system.
 extern vec3d	Original_vec_to_deader;
 
@@ -241,7 +236,7 @@ public:
 	//Get
 	char *GetNamePtr(){return Name;}
 	bool IsName(const char* in_name) { return (stricmp(in_name, Name) == 0); }
-	float GetDamage(float damage_applied, int in_damage_type_idx, float diff_dmg_scale, int is_beam = 0);
+	float GetDamage(float damage_applied, int in_damage_type_idx, float diff_dmg_scale, bool is_beam);
 	float GetShieldPiercePCT(int damage_type_idx);
 	int GetPiercingType(int damage_type_idx);
 	float GetPiercingLimit(int damage_type_idx);
@@ -274,6 +269,9 @@ extern SCP_vector<DamageTypeStruct>	Damage_types;
 
 #define NUM_TURRET_ORDER_TYPES		3
 extern const char *Turret_target_order_names[NUM_TURRET_ORDER_TYPES];	//aiturret.cpp
+
+#define NUM_TURRET_TYPES 4
+extern const char* Turret_valid_types[NUM_TURRET_TYPES];
 
 // Swifty: Cockpit displays
 typedef struct cockpit_display {
@@ -361,6 +359,7 @@ public:
 	vec3d	turret_last_fire_direction;		//	direction pointing last time this turret fired
 	int		turret_next_enemy_check_stamp;	//	time at which to next look for a new enemy.
 	int		turret_next_fire_stamp;				// next time this turret can fire
+	TIMESTAMP		turret_last_fired;				// time when the turret last fired any weapon
 	int		turret_enemy_objnum;					//	object index of ship this turret is firing upon
 	int		turret_enemy_sig;						//	signature of object ship this turret is firing upon
 	int		turret_next_fire_pos;				// counter which tells us which gun position to fire from next
@@ -455,7 +454,13 @@ typedef struct ship_flag_name {
 	char flag_name[TOKEN_LENGTH];		// the name written to the mission file for its corresponding parse_object flag
 } ship_flag_name;
 
+typedef struct ship_flag_description {
+	Ship::Ship_Flags flag;
+	SCP_string flag_desc;
+} ship_flag_description;
+
 extern ship_flag_name Ship_flag_names[];
+extern ship_flag_description Ship_flag_descriptions[];
 extern const size_t Num_ship_flag_names;
 
 typedef struct wing_flag_name {
@@ -463,7 +468,13 @@ typedef struct wing_flag_name {
 	char flag_name[TOKEN_LENGTH];
 } wing_flag_name;
 
+typedef struct wing_flag_description {
+	Ship::Wing_Flags flag;
+	SCP_string flag_desc;
+} wing_flag_description;
+
 extern wing_flag_name Wing_flag_names[];
+extern wing_flag_description Wing_flag_descriptions[];
 extern const size_t Num_wing_flag_names;
 
 #define DEFAULT_SHIP_PRIMITIVE_SENSOR_RANGE		10000	// Goober5000
@@ -618,6 +629,7 @@ public:
 
 	int	wingnum;								// wing number this ship is in.  -1 if in no wing, Wing array index otherwise
 	SCP_set<size_t> orders_accepted;				// set of orders this ship will accept from the player.
+	SCP_set<size_t> orders_allowed_against;		// set of orders for which this ship cannot be a target.
 
 	// Subsystem fields.  The subsys_list is a list of all subsystems (which might include multiple types
 	// of a particular subsystem, like engines).  The subsys_info struct is information for particular
@@ -633,8 +645,8 @@ public:
 	int	weapon_recharge_index;			// index into array holding the weapon recharge rate
 	int	engine_recharge_index;			// index into array holding the engine recharge rate
 	float	weapon_energy;						// Number of EUs in energy reserves
-	float	current_max_speed;				// Max ship speed (based on energy diverted to engines)
 	int	next_manage_ets;					// timestamp for when ai can next modify ets ( -1 means never )
+	float prev_engine_aggregate_strength;	// aggregate engine health to allow for minimzing overrides to max speed --Asteroth and wookieejedi
 
 	flagset<Ship::Ship_Flags>	flags;		// flag variable to contain ship state
 	int	reinforcement_index;				// index into reinforcement struct or -1
@@ -708,6 +720,9 @@ public:
 	vec3d	arc_pts[MAX_SHIP_ARCS][2];			// The endpoints of each arc
 	TIMESTAMP	arc_timestamp[MAX_SHIP_ARCS];		// When this times out, the spark goes away.  Invalid is not used
 	ubyte		arc_type[MAX_SHIP_ARCS];			// see MARC_TYPE_* defines in model.h
+	color		arc_primary_color_1[MAX_SHIP_ARCS];
+	color		arc_primary_color_2[MAX_SHIP_ARCS];
+	color		arc_secondary_color[MAX_SHIP_ARCS];
 	int		arc_next_time;							// When the next damage/emp arc will be created.	
 	SCP_vector<int>		passive_arc_next_times;		// When the next passive ship arc will be created.	
 
@@ -811,6 +826,9 @@ public:
 	int team_change_time;
 
 	float autoaim_fov;
+	float bank_autoaim_fov[MAX_SHIP_PRIMARY_BANKS];
+
+	int cockpit_model_instance;
 
 	TIMESTAMP	multi_client_collision_timestamp;
 
@@ -927,6 +945,9 @@ typedef struct ship_passive_arc_info {
 	std::pair<vec3d, vec3d> pos;
 	float duration;
 	float frequency;
+	color primary_color_1;
+	color primary_color_2;
+	color secondary_color;
 } ship_lightning_data;
 
 typedef struct thruster_particles {
@@ -1145,6 +1166,8 @@ public:
 	float		forward_decel;
 	float		slide_accel;
 	float		slide_decel;
+	float	gravity_const;						// multiplies the affect of gravity, if any
+	float	dying_gravity_const;				// as above, when death rolling
 
 	int warpin_params_index;
 	int warpout_params_index;
@@ -1196,6 +1219,8 @@ public:
 	float			debris_max_hitpoints;
 	float			debris_damage_mult;
 	float			debris_arc_percent;
+	float			debris_gravity_const;			// see gravity_const above
+	float			debris_density;
 	gamesnd_id		debris_ambient_sound;
 	gamesnd_id		debris_collision_sound_light;
 	gamesnd_id		debris_collision_sound_heavy;
@@ -1256,6 +1281,9 @@ public:
 
 	// Recoil modifier for the ship
 	float ship_recoil_modifier;
+
+	// Shudder modifier for the ship
+	float ship_shudder_modifier;
 
 	float	max_hull_strength;				// Max hull strength of this class of ship.
 	float	max_shield_strength;
@@ -1379,6 +1407,7 @@ public:
 	bool newtonian_damp_override; 
 
 	float autoaim_fov;
+	float bank_autoaim_fov[MAX_SHIP_PRIMARY_BANKS];
 
 	bool topdown_offset_def;
 	vec3d topdown_offset;
@@ -1428,6 +1457,7 @@ public:
 	SCP_unordered_map<int, void*> glowpoint_bank_override_map;
 
 	animation::ModelAnimationSet animations;
+	animation::ModelAnimationSet cockpit_animations;
 
 	SCP_vector<ship_passive_arc_info> ship_passive_arcs;
 
@@ -1520,6 +1550,7 @@ typedef struct wing {
 	int total_vanished;						// total number of ships vanished in this wing (including all waves)
 
 	int	special_ship;							// the leader of the wing.  An index into ship_index[].
+	int special_ship_ship_info_index;					// the ship info index of the special ship
 
 	int	arrival_location;						// arrival and departure information for wings -- similar to info for ships
 	int	arrival_distance;						// distance from some ship where this ship arrives
@@ -1764,6 +1795,7 @@ extern void ship_add_ship_type_count( int ship_info_index, int num );
 
 extern int ship_get_type(char* output, ship_info* sip);
 extern const std::set<size_t>& ship_get_default_orders_accepted( ship_info *sip );
+extern const std::set<size_t> ship_set_default_orders_against();
 extern int ship_query_general_type(int ship);
 extern int ship_class_query_general_type(int ship_class);
 extern int ship_query_general_type(ship *shipp);
@@ -1791,7 +1823,7 @@ ship_subsys *ship_return_next_subsys(ship *shipp, int type, vec3d *attacker_pos)
 
 extern int ship_get_random_team_ship(int team_mask, int flags = SHIP_GET_ANY_SHIP, float max_dist = 0.0f);
 extern int ship_get_random_player_wing_ship(int flags = SHIP_GET_ANY_SHIP, float max_dist = 0.0f, int persona_index = -1, int get_first = 0, int multi_team = -1);
-extern int ship_get_random_ship_in_wing(int wingnum, int flags = SHIP_GET_ANY_SHIP, float max_dist = 0.0f, int get_first = 0);
+extern int ship_get_random_ship_in_wing(int wingnum, int flags = SHIP_GET_ANY_SHIP, float max_dist = 0.0f, int get_first = 0, int order_id = -1);
 
 // return ship index
 int ship_get_random_targetable_ship();
@@ -1818,7 +1850,7 @@ int	ship_return_seconds_to_goal(ship *sp);
 void	ship_maybe_warn_player(ship *enemy_sp, float dist);
 void	ship_maybe_praise_player(ship *deader_sp);
 void	ship_maybe_praise_self(ship *deader_sp, ship *killer_sp);
-void	ship_maybe_ask_for_help(ship *sp);
+void	ship_maybe_ask_for_help(ship *sp, ship *attacker);
 void	ship_scream(ship *sp);
 void	ship_maybe_scream(ship *sp);
 void	ship_maybe_tell_about_rearm(ship *sp);
@@ -1961,7 +1993,7 @@ extern int ship_has_engine_power(ship *shipp);
 
 // Swifty - Cockpit displays
 void ship_init_cockpit_displays(ship *shipp);
-void ship_clear_cockpit_displays();
+void ship_close_cockpit_displays(ship* shipp);
 int ship_start_render_cockpit_display(size_t cockpit_display_num);
 void ship_end_render_cockpit_display(size_t cockpit_display_num);
 

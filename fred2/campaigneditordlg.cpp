@@ -55,6 +55,8 @@ campaign_editor::campaign_editor()
 	m_num_links = 0;
 	m_tree.link_modified(&Campaign_modified);
 	m_last_mission = -1;
+
+	m_current_campaign_path = _T("");
 }
 
 campaign_editor::~campaign_editor()
@@ -139,11 +141,17 @@ void campaign_editor::OnLoad()
 		}
 	}
 
-	auto res = cf_find_file_location(Campaign.missions[Cur_campaign_mission].name, CF_TYPE_MISSIONS);
+	// try to open the file from the same folder as the campaign
+	if (!m_current_campaign_path.IsEmpty()) {
+		auto full_mission_path = GetPathWithoutFile();
+		full_mission_path.Append(Campaign.missions[Cur_campaign_mission].name);
 
-	if (res.found) {
-		FREDDoc_ptr->SetPathName(res.full_name.c_str());
+		auto res = cf_find_file_location((LPCTSTR)full_mission_path, CF_TYPE_MISSIONS, false);
+		if (res.found) {
+			FREDDoc_ptr->SetPathName(res.full_name.c_str());
+		}
 	}
+
 	Campaign_wnd->DestroyWindow();
 }
 
@@ -165,23 +173,38 @@ BOOL campaign_editor::Create(LPCTSTR lpszClassName, LPCTSTR lpszWindowName, DWOR
 	return r;
 }
 
-void campaign_editor::load_campaign()
+void campaign_editor::load_campaign(const char *filename, const char *full_path)
 {
 	Cur_campaign_mission = Cur_campaign_link = -1;
 	load_tree(0);
 
-	if (!strlen(Campaign.filename))
-		strcpy_s(Campaign.filename, Default_campaign_file_name);
+	if (!filename || !strlen(filename))
+		filename = Default_campaign_file_name;
 
-	if (mission_campaign_load(Campaign.filename, NULL, 0)) {
-		MessageBox("Couldn't open Campaign file!", "Error");
+	if (full_path && strlen(full_path))
+		m_current_campaign_path = full_path;
+	else
+		m_current_campaign_path = _T("");
+
+	auto result = mission_campaign_load(filename, full_path, nullptr, 0);
+	if (result != 0) {
+		if (result == CAMPAIGN_ERROR_CORRUPT)
+			MessageBox("Requested campaign file is corrupt.", "Could not load campaign file");
+		else if (result == CAMPAIGN_ERROR_SEXP_EXHAUSTED)
+			MessageBox("Requested campaign requires too many SEXPs.", "Could not load campaign file");
+		else if (result == CAMPAIGN_ERROR_SAVEFILE)
+			MessageBox("The pilot savefile for this campaign is invalid for the current mod.", "Could not load campaign file");
+		else if (result == CAMPAIGN_ERROR_IGNORED)
+			MessageBox("This campaign file is ignored by the current mod.", "Could not load campaign file");
+		else
+			MessageBox("Couldn't open Campaign file!", "Error");
 		Campaign_wnd->OnCpgnFileNew();
 		return;
 	}
 
 	Campaign_modified = 0;
 	Campaign_tree_viewp->construct_tree();
-	initialize();
+	initialize(true, false);
 }
 
 void campaign_editor::OnAlign() 
@@ -191,17 +214,20 @@ void campaign_editor::OnAlign()
 	Campaign_tree_viewp->Invalidate();
 }
 
-void campaign_editor::initialize( int init_files )
+void campaign_editor::initialize( bool init_files, bool clear_path )
 {
 	Cur_campaign_mission = Cur_campaign_link = -1;
 	m_tree.setup((CEdit *) GetDlgItem(IDC_HELP_BOX));
 	load_tree(0);
 	Campaign_tree_viewp->initialize();
 
+	if (clear_path)
+		m_current_campaign_path = _T("");
+
 	// only initialize the file dialog box when the parameter says to.  This should
 	// only happen when a campaign type changes
 	if ( init_files ){
-		m_filelist.initialize();
+		m_filelist.initialize(GetPathWithoutFile());
 	}
 
 	m_name = Campaign.name;
@@ -262,6 +288,10 @@ void campaign_editor::update()
 
 	// get data from dlog box
 	UpdateData(TRUE);
+
+	// handle special characters
+	lcl_fred_replace_stuff(m_name);
+	lcl_fred_replace_stuff(m_desc);
 
 	// update campaign name
 	string_copy(Campaign.name, m_name, NAME_LENGTH - 1);
@@ -500,7 +530,7 @@ void campaign_editor::OnMoveUp()
 		if ((last != -1) && (i < Total_links)) {
 			h1 = m_tree.GetParentItem(m_tree.handle(Links[i].node));
 			h2 = m_tree.GetParentItem(m_tree.handle(Links[last].node));
-			m_tree.swap_roots(h1, h2);
+			m_tree.move_root(h1, h2, true);
 			m_tree.SelectItem(m_tree.GetParentItem(m_tree.handle(Links[i].node)));
 
 			temp = Links[last];
@@ -533,7 +563,7 @@ void campaign_editor::OnMoveDown()
 		if (j < Total_links) {
 			h1 = m_tree.GetParentItem(m_tree.handle(Links[i].node));
 			h2 = m_tree.GetParentItem(m_tree.handle(Links[j].node));
-			m_tree.swap_roots(h1, h2);
+			m_tree.move_root(h1, h2, false);
 			m_tree.SelectItem(m_tree.GetParentItem(m_tree.handle(Links[i].node)));
 
 			temp = Links[j];
@@ -546,7 +576,7 @@ void campaign_editor::OnMoveDown()
 	GetDlgItem(IDC_SEXP_TREE)->SetFocus();
 }
 
-void campaign_editor::swap_handler(int node1, int node2)
+void campaign_editor::move_handler(int node1, int node2, bool insert_before)
 {
 	int index1, index2;
 	campaign_tree_link temp;
@@ -567,11 +597,13 @@ void campaign_editor::swap_handler(int node1, int node2)
 
 	temp = Links[index1];
 
-	while (index1 < index2) {
+	int offset = insert_before ? -1 : 0;
+
+	while (index1 < index2 + offset) {
 		Links[index1] = Links[index1 + 1];
 		index1++;
 	}
-	while (index1 > index2 + 1) {
+	while (index1 > index2 + offset + 1) {
 		Links[index1] = Links[index1 - 1];
 		index1--;
 	}
@@ -579,7 +611,7 @@ void campaign_editor::swap_handler(int node1, int node2)
 	Links[index1] = temp;
 
 	// update Cur_campaign_link
-	Cur_campaign_link = index1;
+	Cur_campaign_link = index2;
 }
 
 void campaign_editor::insert_handler(int old, int node)
@@ -634,7 +666,7 @@ void campaign_editor::OnSelchangeType()
 {
 	// if campaign type is single player, then disable the multiplayer items
 	update();
-	initialize();
+	initialize(true, false);
 	Campaign_modified = 1;
 }
 
@@ -646,6 +678,9 @@ void campaign_editor::save_loop_desc_window()
 
 	// update only if active link and there is a mission has mission loop or fork
 	if ( (Cur_campaign_link >= 0) && (Links[Cur_campaign_link].is_mission_loop || Links[Cur_campaign_link].is_mission_fork) ) {
+		// handle special characters
+		lcl_fred_replace_stuff(m_branch_desc);
+
 		deconvert_multiline_string(buffer, m_branch_desc, MISSION_DESC_LENGTH - 1);
 		if (Links[Cur_campaign_link].mission_branch_txt) {
 			free(Links[Cur_campaign_link].mission_branch_txt);
@@ -882,4 +917,28 @@ void campaign_editor::OnCustomTechDB()
 		Campaign.flags |= CF_CUSTOM_TECH_DATABASE;
 	else
 		Campaign.flags &= ~CF_CUSTOM_TECH_DATABASE;
+}
+
+CString campaign_editor::GetPathWithoutFile() const
+{
+	if (m_current_campaign_path.IsEmpty())
+		return m_current_campaign_path;
+
+	CString path = m_current_campaign_path;
+	int pos = path.ReverseFind(DIR_SEPARATOR_CHAR);
+	if (pos >= 0) {
+		path.Truncate(pos + 1);
+	}
+
+	return path;
+}
+
+void campaign_editor::SetCurrentCampaignPath(const CString& path)
+{
+	m_current_campaign_path = path;
+}
+
+const CString &campaign_editor::GetCurrentCampaignPath() const
+{
+	return m_current_campaign_path;
 }

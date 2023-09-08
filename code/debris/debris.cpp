@@ -251,10 +251,10 @@ void debris_process_post(object * obj, float frame_time)
 
 			int n, n_arcs = Random::next(1, 3);		// Create 1-3 sparks
 
-			vec3d v1, v2, v3, v4;
-
-			submodel_get_two_random_points_better(db->model_num, db->submodel_num, &v1, &v2);
-			submodel_get_two_random_points_better(db->model_num, db->submodel_num, &v3, &v4);
+			vec3d v1 = submodel_get_random_point(db->model_num, db->submodel_num);
+			vec3d v2 = submodel_get_random_point(db->model_num, db->submodel_num);
+			vec3d v3 = submodel_get_random_point(db->model_num, db->submodel_num);
+			vec3d v4 = submodel_get_random_point(db->model_num, db->submodel_num);
 
 			n = 0;
 
@@ -327,11 +327,7 @@ void debris_process_post(object * obj, float frame_time)
 				// Maybe move a vertex....  20% of the time maybe?
 				int mr = Random::next();
 				if ( mr < Random::MAX_VALUE/5 )	{
-					vec3d v1, v2;
-
-					submodel_get_two_random_points_better(db->model_num, db->submodel_num, &v1, &v2);
-
-					db->arc_pts[i][mr % 2] = v1;
+					db->arc_pts[i][mr % 2] = submodel_get_random_point(db->model_num, db->submodel_num);
 				}
 			}
 		}
@@ -363,7 +359,7 @@ int debris_find_oldest()
 }
 
 #define	DEBRIS_ROTVEL_SCALE	5.0f
-void calc_debris_physics_properties( physics_info *pi, vec3d *min, vec3d *max );
+void calc_debris_physics_properties( physics_info *pi, vec3d *min, vec3d *max, float density );
 
 MONITOR(NumSmallDebris)
 MONITOR(NumHullDebris)
@@ -378,8 +374,9 @@ MONITOR(NumHullDebris)
  * @param exp_center	Explosion center in global coordinates
  * @param hull_flag		Whether this debris is a chunk of a ship's hull (as opposed to shrapnel)
  * @param exp_force		Explosion force, used to assign velocity to pieces. 1.0f assigns velocity like before. 2.0f assigns twice as much to non-inherited part of velocity
+ * @param source_subsys	The subsystem this debris came from, if any
  */
-object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d *pos, vec3d *exp_center, bool hull_flag, float exp_force)
+object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d *pos, vec3d *exp_center, bool hull_flag, float exp_force, ship_subsys* source_subsys)
 {
 	int             parent_objnum;
 	object  *obj;
@@ -397,7 +394,7 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 	obj = debris_create_only(parent_objnum, shipp->ship_info_index, shipp->alt_type_index, shipp->team, -1.0f, -1, model_num, submodel_num, pos, nullptr, hull_flag, vaporize, shipp->debris_damage_type_idx);
 	if (obj != nullptr)
 	{
-		debris_create_set_velocity(&Debris[obj->instance], shipp, exp_center, exp_force);
+		debris_create_set_velocity(&Debris[obj->instance], shipp, exp_center, exp_force, source_subsys);
 		debris_create_fire_hook(obj, source_obj);
 	}
 
@@ -669,7 +666,7 @@ object *debris_create_only(int parent_objnum, int parent_ship_class, int alt_typ
 	return obj;
 }
 
-void debris_create_set_velocity(debris *db, ship *source_shipp, vec3d *exp_center, float exp_force)
+void debris_create_set_velocity(debris *db, ship *source_shipp, vec3d *exp_center, float exp_force, ship_subsys* source_subsys)
 {
 	auto obj = &Objects[db->objnum];
 	auto source_obj = (source_shipp == nullptr) ? nullptr : &Objects[source_shipp->objnum];
@@ -690,7 +687,8 @@ void debris_create_set_velocity(debris *db, ship *source_shipp, vec3d *exp_cente
 		vec3d *min, *max;
 		min = &pm->submodel[db->submodel_num].min;
 		max = &pm->submodel[db->submodel_num].max;
-		calc_debris_physics_properties( &obj->phys_info, min, max );
+		float density = source_subsys != nullptr ? source_subsys->system_info->density : Ship_info[source_shipp->ship_info_index].debris_density;
+		calc_debris_physics_properties( &obj->phys_info, min, max, density);
 	}
 	else {
 		scale = exp_force * i2fl(Random::next(10, 29));	// for radial_vel away from blast center (non-hull)
@@ -731,8 +729,8 @@ void debris_create_set_velocity(debris *db, ship *source_shipp, vec3d *exp_cente
 	vm_vec_rand_vec_quick(&rotvel);
 	vm_vec_scale(&rotvel, scale);
 
-	pi->flags |= PF_DEAD_DAMP;
 	pi->rotvel = rotvel;
+	pi->flags |= (PF_DEAD_DAMP | PF_BALLISTIC);
 	check_rotvel_limit( &obj->phys_info );
 
 	// check that debris is not created with too high a velocity
@@ -743,8 +741,12 @@ void debris_create_set_velocity(debris *db, ship *source_shipp, vec3d *exp_cente
 
 	// blow out his reverse thrusters. Or drag, same thing.
 	pi->rotdamp = 10000.0f;
-	pi->side_slip_time_const = 10000.0f;
-	pi->flags |= (PF_REDUCED_DAMP | PF_DEAD_DAMP);	// set damping equal for all axis and not changable
+	if (source_shipp != nullptr) {
+		pi->gravity_const = Ship_info[source_shipp->ship_info_index].debris_gravity_const;
+	} else {
+		pi->gravity_const = 1.0f;
+	}
+	
 
 	vm_vec_zero(&pi->max_vel);		// make so he can't turn on his own VOLITION anymore.
 	vm_vec_zero(&pi->max_rotvel);	// make so he can't change speed on his own VOLITION anymore.
@@ -756,9 +758,12 @@ void debris_create_set_velocity(debris *db, ship *source_shipp, vec3d *exp_cente
 void debris_create_fire_hook(object *obj, object *source_obj)
 {
 	if (scripting::hooks::OnDebrisCreated->isActive()) {
-		scripting::hooks::OnDebrisCreated->run(scripting::hook_param_list(
-			scripting::hook_param("Debris", 'o', obj),
-			scripting::hook_param("Source", 'o', source_obj)));
+		scripting::hooks::ShipSourceConditions conditions;
+		conditions.source_shipp = (source_obj != nullptr && source_obj->type == OBJ_SHIP) ? &Ships[source_obj->instance] : nullptr;
+		scripting::hooks::OnDebrisCreated->run(std::move(conditions),
+			scripting::hook_param_list(
+				scripting::hook_param("Debris", 'o', obj),
+				scripting::hook_param("Source", 'o', source_obj)));
 	}
 }
 
@@ -766,7 +771,7 @@ void debris_create_fire_hook(object *obj, object *source_obj)
  * Alas, poor debris_obj got whacked.  Fortunately, we know who did it, where and how hard, so we
  * can do something about it.
  */
-void debris_hit(object *debris_obj, object * /*other_obj*/, vec3d *hitpos, float damage)
+void debris_hit(object *debris_obj, object * /*other_obj*/, vec3d *hitpos, float damage, vec3d* force)
 {
 	debris	*debris_p = &Debris[debris_obj->instance];
 
@@ -806,6 +811,11 @@ void debris_hit(object *debris_obj, object * /*other_obj*/, vec3d *hitpos, float
 		damage = 0.0f;
 	}
 
+	if (hitpos && force && The_mission.ai_profile->flags[AI::Profile_Flags::Whackable_debris]) {
+		vec3d rel_hit_pos = *hitpos - debris_obj->pos;
+		physics_calculate_and_apply_whack(force, &rel_hit_pos, &debris_obj->phys_info, &debris_obj->orient, &debris_obj->phys_info.I_body_inv);
+	}
+
 	debris_obj->hull_strength -= damage;
 
 	if (debris_obj->hull_strength < 0.0f) {
@@ -826,7 +836,6 @@ void debris_hit(object *debris_obj, object * /*other_obj*/, vec3d *hitpos, float
 int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, collision_info_struct *debris_hit_info, vec3d* hitNormal)
 {
 	mc_info	mc;
-	mc_info_init(&mc);
 
 	Assert( pdebris->type == OBJ_DEBRIS );
 
@@ -866,7 +875,7 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 
 		weapon *wp = &Weapons[other_obj->instance];
 		wp->collisionInfo = new mc_info;	// The weapon will free this memory later
-		memcpy(wp->collisionInfo, &mc, sizeof(mc_info));
+		*wp->collisionInfo = mc;
 
 		return mc.num_hits;
 	}
@@ -1108,7 +1117,7 @@ int debris_get_team(object *objp)
 /**
  * Fills in debris physics properties when created, specifically mass and moment of inertia
  */
-void calc_debris_physics_properties( physics_info *pi, vec3d *mins, vec3d *maxs )
+void calc_debris_physics_properties( physics_info *pi, vec3d *mins, vec3d *maxs, float density )
 {
 	float dx, dy, dz, mass;
 	dx = maxs->xyz.x - mins->xyz.x;
@@ -1117,7 +1126,7 @@ void calc_debris_physics_properties( physics_info *pi, vec3d *mins, vec3d *maxs 
 
 	// John, with new bspgen, just set pi->mass = mass
 	mass = 0.12f * dx * dy * dz;
-	pi->mass = (float) pow(mass, 0.6666667f) * 4.65f;
+	pi->mass = (float) pow(mass, 0.6666667f) * 4.65f * density;
 
 	pi->I_body_inv.vec.rvec.xyz.x = 12.0f / (pi->mass *  (dy*dy + dz*dz));
 	pi->I_body_inv.vec.rvec.xyz.y = 0.0f;
