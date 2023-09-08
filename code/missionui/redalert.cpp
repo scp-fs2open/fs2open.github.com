@@ -913,7 +913,7 @@ void red_alert_bash_wingman_status()
 
 				// find this ship's position in the wing
 				int ship_entry_index = ship_registry_get_index(shipp->ship_name);
-				Assertion(Ship_registry[ship_entry_index].p_objp, "Ship %s does not have a parse object!", shipp->ship_name);
+				Assertion(Ship_registry[ship_entry_index].p_objp, "Ship %s must have a parse object!", shipp->ship_name);
 				int pos_in_wing = Ship_registry[ship_entry_index].p_objp->pos_in_wing;
 				
 				// give the ship its name from the latest wave

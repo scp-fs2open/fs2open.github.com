@@ -1353,7 +1353,7 @@ void game_post_level_init()
 
 	// If this is a red alert mission in campaign mode, bash wingman status
 	if ( (Game_mode & GM_CAMPAIGN_MODE) && red_alert_mission() ) {
-		red_alert_bash_wingman_status();		
+		red_alert_bash_wingman_status();
 	}
 
 	freespace_mission_load_stuff();
