@@ -47,11 +47,9 @@
 /////////////////////////////////////////////////////////////////////////////
 
 static TIMESTAMP Red_alert_new_mission_timestamp;		// timestamp used to give user a little warning for red alerts
-//static int Red_alert_num_slots_used = 0;
 static int Red_alert_voice_started;
 
 SCP_vector<red_alert_ship_status> Red_alert_wingman_status;
-SCP_vector<red_alert_wing_status> Red_alert_wing_status;
 SCP_string Red_alert_precursor_mission;
 
 /////////////////////////////////////////////////////////////////////////////
@@ -790,47 +788,6 @@ void red_alert_store_wingman_status()
 	Assert( !Red_alert_wingman_status.empty() );
 }
 
-// This differs from the function above because it stores the actual info from the wing struct
-void red_alert_store_wing_status() {
-	SCP_vector<red_alert_wing_status> temp_wing_status;
-
-	// loop through all parse objects, because we need every single ship that can be in a wing.
-	// According to discussions on our discord, ships created via script cannot be in a wing.
-	for (const auto& po : Parse_objects){
-
-		if (po.wingnum >= 0 && (po.flags[Mission::Parse_Object_Flags::SF_From_player_wing] || po.flags[Mission::Parse_Object_Flags::SF_Red_alert_store_status])) {
-			wing& current_wing = Wings[po.wingnum];
-			bool found = false;
-			
-			for (auto& recorded_wing : temp_wing_status){
-				if (!stricmp(recorded_wing.wing_name.c_str(), current_wing.name)){
-					++recorded_wing.number_of_ships_marked;
-
-					Assertion(recorded_wing.number_of_ships_marked <= recorded_wing.max_ships_per_wave, "Somehow the number of ships in a wing, %d, exceeds its max, %d, according to red_alert_store_wing_status.  Please report to a SCP coder!", recorded_wing.number_of_ships_marked, recorded_wing.max_ships_per_wave);
-					found = true;
-					break;
-				}
-			}
-
-			if (!found) {
-				temp_wing_status.emplace_back(SCP_string(current_wing.name), current_wing.wave_count, current_wing.num_waves, current_wing.current_wave, 1);
-			}
-		}
-	}
-
-	// Cyborg - imho, clearing data before trying to record the current mission's data is the right move, 
-	// pretty much no matter what.
-	Red_alert_wing_status.clear();
-
-	for (const auto& recorded_wing : temp_wing_status) {
-		// only allow a wing's status to carry over if all of the ships were marked.
-		if (recorded_wing.number_of_ships_marked == recorded_wing.max_ships_per_wave)
-			Red_alert_wing_status.push_back(recorded_wing);
-		else
-			Warning(LOCATION, "Not all ships in %s were marked with \"red-alert-carry\".  The wing will not be stored.", recorded_wing.wing_name.c_str());
-	}
-}
-
 // Delete a ship in a red alert mission (since it must have died/departed in the previous mission)
 void red_alert_delete_ship(int shipnum, int ship_state)
 {
@@ -876,14 +833,13 @@ void red_alert_delete_ship(p_object *pobjp, int ship_state)
  */
 void red_alert_bash_wingman_status()
 {
-	int j;
 	ship_obj			*so;
 
 	SCP_vector<red_alert_ship_status>::iterator rasii;
 	SCP_vector<p_object>::iterator poii;
 
 	SCP_unordered_map<int, int> Wing_pobjects_marked_for_deletion;
-	SCP_unordered_map<int, int>::iterator ii;
+	SCP_map<int, int> Latest_wave_stored;
 
 	if ( !(Game_mode & GM_CAMPAIGN_MODE) ) {
 		return;
@@ -892,6 +848,39 @@ void red_alert_bash_wingman_status()
 	if ( Red_alert_wingman_status.empty() ) {
 		return;
 	}
+
+
+	// first, go through all wings and see how many waves we got to in the previous mission
+	for (int wingnum = 0; wingnum < Num_wings; ++wingnum)
+	{
+		auto wingp = &Wings[wingnum];
+
+		while (true)
+		{
+			char prospective_name[NAME_LENGTH];
+			int prospective_wave = Latest_wave_stored[wingnum] + 1;		// on the first iteration, the map will return 0 so the wave will be 1
+
+			// find the wing leader name for this wave
+			wing_bash_ship_name(prospective_name, wingp->name, ((prospective_wave - 1) * wingp->wave_count) + 1);
+
+			// see if this wing leader was stored
+			auto it = std::find_if(Red_alert_wingman_status.begin(), Red_alert_wingman_status.end(), [&](const red_alert_ship_status &ras) -> bool
+			{
+				return stricmp(ras.name.c_str(), prospective_name) == 0;
+			});
+
+			// found?
+			if (it != Red_alert_wingman_status.end())
+			{
+				Latest_wave_stored[wingnum] = prospective_wave;
+				if (prospective_wave > 1)
+					wingp->red_alert_skipped_ships += wingp->wave_count;
+			}
+			else
+				break;
+		}
+	}
+
 
 	// go through all ships in the game, and see if there is red alert status data for any
 
@@ -910,6 +899,30 @@ void red_alert_bash_wingman_status()
 		if ( !(shipp->flags[Ship::Ship_Flags::From_player_wing]) && !(shipp->flags[Ship::Ship_Flags::Red_alert_store_status]) ) {
 			so = GET_NEXT(so);
 			continue;
+		}
+
+		// see if this ship belongs to a wing that was stored
+		if (shipp->wingnum >= 0)
+		{
+			int latest_wave = Latest_wave_stored[shipp->wingnum];
+			if (latest_wave > 1)
+			{
+				// assign the wave number to the wing
+				auto wingp = &Wings[shipp->wingnum];
+				wingp->current_wave = latest_wave;
+
+				// find this ship's position in the wing
+				int ship_entry_index = ship_registry_get_index(shipp->ship_name);
+				Assertion(Ship_registry[ship_entry_index].p_objp, "Ship %s does not have a parse object!", shipp->ship_name);
+				int pos_in_wing = Ship_registry[ship_entry_index].p_objp->pos_in_wing;
+				
+				// give the ship its name from the latest wave
+				// (this will make the ship match to the correct red-alert data)
+				wing_bash_ship_name(shipp->ship_name, wingp->name, ((latest_wave - 1) * wingp->wave_count) + 1 + pos_in_wing);
+				// need to update the ship registry too
+				strcpy_s(Ship_registry[ship_entry_index].name, shipp->ship_name);
+				Ship_registry_map[shipp->ship_name] = ship_entry_index;
+			}
 		}
 
 		bool ship_data_restored = false;
@@ -931,7 +944,10 @@ void red_alert_bash_wingman_status()
 						if (ras->ship_class >= 0 && ras->ship_class < ship_info_size())
 							change_ship_type(SHIP_INDEX(shipp), ras->ship_class);
 						else
+						{
 							mprintf(("Invalid ship class specified in red alert data for ship %s. Using mission defaults.\n", shipp->ship_name));
+							break;
+						}
 					}
 
 					float max_hull;
@@ -993,6 +1009,25 @@ void red_alert_bash_wingman_status()
 			continue;
 		}
 
+		char pobjp_name_to_check[NAME_LENGTH];
+		strcpy_s(pobjp_name_to_check, pobjp->name);
+
+		// see if this parse object belongs to a wing that was stored
+		if (pobjp->wingnum >= 0)
+		{
+			int latest_wave = Latest_wave_stored[pobjp->wingnum];
+			if (latest_wave > 1)
+			{
+				// assign the wave number to the wing
+				auto wingp = &Wings[pobjp->wingnum];
+				wingp->current_wave = latest_wave;
+
+				// use the name from the latest wave for the purposes of matching
+				// (this will make the pobjp match to the correct red-alert data)
+				wing_bash_ship_name(pobjp_name_to_check, wingp->name, ((latest_wave - 1) * wingp->wave_count) + 1 + pobjp->pos_in_wing);
+			}
+		}
+
 		bool ship_data_restored = false;
 		int ship_state = RED_ALERT_DESTROYED_SHIP_CLASS;
 
@@ -1001,7 +1036,7 @@ void red_alert_bash_wingman_status()
 			red_alert_ship_status *ras = &(*rasii);
 
 			// red-alert data matches this ship!
-			if ( !stricmp(ras->name.c_str(), pobjp->name)  )
+			if ( !stricmp(ras->name.c_str(), pobjp_name_to_check)  )
 			{
 				// we only want to restore ships which haven't been destroyed, or were removed by the player
 				if ( (ras->ship_class != RED_ALERT_DESTROYED_SHIP_CLASS) && (ras->ship_class != RED_ALERT_PLAYER_DEL_SHIP_CLASS) )
@@ -1014,8 +1049,6 @@ void red_alert_bash_wingman_status()
 						else
 						{
 							mprintf(("Invalid ship class specified in red alert data for ship %s. Using mission defaults.\n", pobjp->name));
-							
-							// We will break anyway to this should work
 							break;
 						}
 					}
@@ -1059,20 +1092,16 @@ void red_alert_bash_wingman_status()
 		}
 	}
 
-	// if all parse objects in a wing have been removed, decrement the count for that wing
-	// This section is still needed, because if all the ships in the current wave were destroyed, than the 
-	// amount from Red_alert_wing_status is not accurate.
-	for (ii = Wing_pobjects_marked_for_deletion.begin(); ii != Wing_pobjects_marked_for_deletion.end(); ++ii)
+	// if all parse objects in a wing have been removed, clear the count for that wing so the next wave can arrive, if applicable
+	for (const auto &ii: Wing_pobjects_marked_for_deletion)
 	{
-		wing *wingp = &Wings[ii->first];
+		wing *wingp = &Wings[ii.first];
 
-		if (wingp->num_waves > 0 && wingp->wave_count == ii->second)
-		{			
-			wingp->current_wave++;
+		if (wingp->num_waves > 0 && wingp->wave_count == ii.second)
+		{
 			wingp->red_alert_skipped_ships += wingp->wave_count;
 
-			bool waves_spent = wingp->current_wave > wingp->num_waves;
-
+			bool waves_spent = wingp->current_wave >= wingp->num_waves;
             if (waves_spent)
                 wingp->flags.set(Ship::Wing_Flags::Gone);
 
@@ -1080,47 +1109,15 @@ void red_alert_bash_wingman_status()
 			for (p_object *pobjp = GET_FIRST(&Ship_arrival_list); pobjp != END_OF_LIST(&Ship_arrival_list); pobjp = GET_NEXT(pobjp))
 			{
 				// ...and mark the ones in this wing
-				if (pobjp->wingnum == ii->first)
+				if (pobjp->wingnum == ii.first)
 				{
 					// no waves left to arrive, so mark ships accordingly
                     if (waves_spent)
                         pobjp->flags.set(Mission::Parse_Object_Flags::SF_Cannot_arrive);
-                    // we skipped one complete wave, so clear the flag so the next wave creates all ships
+                    // we skipped a complete wave, so clear the flag so the next wave creates all ships
                     else
                         pobjp->flags.remove(Mission::Parse_Object_Flags::Red_alert_deleted);
 				}
-			}
-		}
-	}
-}
-
-void red_alert_bash_wing_status()
-{
-	for (const auto& recorded_wing : Red_alert_wing_status){
-
-		for (int i = 0; i < MAX_WINGS; ++i){
-			auto& mission_wing = Wings[i];
-
-			// check that we have the same wing.  Then we check if the wings are actually compatible.
-			if (!stricmp(recorded_wing.wing_name.c_str(), mission_wing.name)){
-
-				// do we have sufficient waves in the current mission to handle where the wave should be from the previous mission?
-				if  ((mission_wing.num_waves < recorded_wing.current_wave) || (mission_wing.wave_count != recorded_wing.max_ships_per_wave)){
-					Warning(LOCATION, "Red alert code cannot restore %s wing's info since there's a mismatch of total ships available (total waves and ships per wave). New ships for this wing will not appear.", mission_wing.name);
-					mission_wing.flags.set(Ship::Wing_Flags::Gone);
-
-					// look through all ships yet to arrive and mark the ones in this wing as deleted.
-					for (p_object *pobjp = GET_FIRST(&Ship_arrival_list); pobjp != END_OF_LIST(&Ship_arrival_list); pobjp = GET_NEXT(pobjp))
-					{
-						if (pobjp->wingnum == i){
-							red_alert_delete_ship(pobjp, RED_ALERT_DESTROYED_SHIP_CLASS);
-						}
-					}
-				} else {
-					mission_wing.current_wave = recorded_wing.current_wave;
-				}
-
-				break;
 			}
 		}
 	}
@@ -1182,7 +1179,6 @@ void red_alert_maybe_move_to_next_mission()
 	// basic premise here is to stop the current mission, and then set the next mission in the campaign
 	// which better be a red alert mission
 	if ( Game_mode & GM_CAMPAIGN_MODE ) {
-		red_alert_store_wing_status();
 		red_alert_store_wingman_status();
 		mission_goal_fail_incomplete();
 

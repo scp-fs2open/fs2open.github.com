@@ -27,9 +27,7 @@ int	red_alert_in_progress();
 void red_alert_maybe_move_to_next_mission();
 
 void red_alert_store_wingman_status();
-void red_alert_store_wing_status();
 void red_alert_bash_wingman_status();
-void red_alert_bash_wing_status();
 void red_alert_clear();
 
 void red_alert_voice_pause();
@@ -46,33 +44,15 @@ static const int RED_ALERT_LOWEST_VALID_SHIP_CLASS = RED_ALERT_PLAYER_DEL_SHIP_C
 
 typedef struct red_alert_ship_status {
 	SCP_string	name;
-	float		hull;
-	int			ship_class;
+	float		hull = 0.0f;
+	int			ship_class = 0;
 	SCP_vector<float>	subsys_current_hits;
 	SCP_vector<float>	subsys_aggregate_current_hits;
 	SCP_vector<wep_t>	primary_weapons;
 	SCP_vector<wep_t>	secondary_weapons;
 } red_alert_ship_status;
 
-typedef struct red_alert_wing_status {
-	SCP_string wing_name;
-	int max_ships_per_wave; // how many ships per wave.  If this doesn't match, then we have to ignore this info
-	int wave_count; // Put this in for now, too.  The max number of waves for this wing. 
-	int current_wave; // 1-based index for which wave we are currently on out of the total
-	int number_of_ships_marked; // if the number of ships marked does not end up being the same as the entire wave, then we don't keep this  
-
-	red_alert_wing_status(const SCP_string &wing_name_in, int max_ships_in, int wave_count_in, int current_wave_in, int number_of_ships_marked_in){
-		wing_name = wing_name_in;
-		max_ships_per_wave = max_ships_in;
-		wave_count = wave_count_in;
-		current_wave = current_wave_in;
-		number_of_ships_marked = number_of_ships_marked_in;
-	}
-	
-} red_alert_wing_status;
-
 extern SCP_vector<red_alert_ship_status> Red_alert_wingman_status;
-extern SCP_vector<red_alert_wing_status> Red_alert_wing_status;
 extern SCP_string Red_alert_precursor_mission;
 #endif
 
