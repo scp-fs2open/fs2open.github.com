@@ -4607,6 +4607,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		}
 
 		trail_info *ci = &sip->ct_info[sip->ct_count++];
+		trail_info_init(ci);
 		
 		required_string("+Offset:");
 		stuff_vec3d(&ci->pt);
@@ -4630,8 +4631,6 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 				ci->a_decay_exponent = 1.0f;
 			}
 		}
-		else if (first_time)
-			ci->a_decay_exponent = 1.0f;
 
 		required_string("+Max Life:");
 		stuff_float(&ci->max_life);
@@ -4657,8 +4656,6 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 				ci->texture_stretch = 1.0f;
 			}
 		}
-		else if (first_time)
-			ci->texture_stretch = 1.0f;
 
 		if (optional_string("+Faded Out Sections:") ) {
 			stuff_int(&ci->n_fade_out_sections);
