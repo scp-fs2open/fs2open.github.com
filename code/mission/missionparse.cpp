@@ -2536,7 +2536,6 @@ void parse_bring_in_docked_wing(p_object *p_objp, int wingnum, int shipnum)
 	Assert(p_objp != NULL);
 	Assert(wingnum >= 0);
 	Assert(shipnum >= 0);
-	int j, index;
 	wing *wingp = &Wings[wingnum];
 
 	// link ship and wing together
@@ -2577,7 +2576,7 @@ void parse_bring_in_docked_wing(p_object *p_objp, int wingnum, int shipnum)
 		aip->ai_flags.set(AI::AI_Flags::No_dynamic);
 
 	// copy any goals from the wing to the newly created ship
-	for (index = 0; index < MAX_AI_GOALS; index++)
+	for (int index = 0; index < MAX_AI_GOALS; index++)
 	{
 		if (wingp->ai_goals[index].ai_mode != AI_GOAL_NONE)
 			ai_copy_mission_wing_goal(&wingp->ai_goals[index], aip);
