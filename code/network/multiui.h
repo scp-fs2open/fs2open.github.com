@@ -101,7 +101,7 @@ int multi_create_lookup_campaign(char *fname);
 
 extern int Multi_sg_overlay_id;
 
-void multi_sg_rank_build_name(char *in,char *out);
+void multi_sg_rank_build_name(const char *in,char *out);
 
 extern int Multi_join_overlay_id;
 

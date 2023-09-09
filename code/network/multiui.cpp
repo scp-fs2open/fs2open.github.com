@@ -2292,7 +2292,7 @@ void multi_sg_rank_scroll_up();
 void multi_sg_rank_scroll_down();
 void multi_sg_rank_display_stuff();
 void multi_sg_rank_process_select();
-void multi_sg_rank_build_name(char *in,char *out);
+void multi_sg_rank_build_name(const char *in,char *out);
 void multi_sg_check_passwd();
 void multi_sg_check_name();
 void multi_sg_release_passwd();
@@ -2892,7 +2892,7 @@ void multi_sg_rank_display_stuff()
 		}
 
 		// print the text
-		multi_sg_rank_build_name(Ranks[idx].name,rank_name);
+		multi_sg_rank_build_name(get_rank_display_name(&Ranks[idx]).c_str(), rank_name);
 		gr_string(Msg_rank_list_coords[gr_screen.res][MSG_X_COORD],y,rank_name,GR_RESIZE_MENU);
 
 		// increment stuff
@@ -2937,14 +2937,16 @@ void multi_sg_rank_process_select()
 				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 
 				memset(string,0,255);
-				sprintf(string,XSTR("Illegal value for a host of your rank (%s)\n",784),Ranks[verify_rank(Net_player->m_player->stats.rank)].name);
+				sprintf(string,
+					XSTR("Illegal value for a host of your rank (%s)\n", 784),
+					get_rank_display_name(&Ranks[verify_rank(Net_player->m_player->stats.rank)]).c_str());
 				multi_common_add_notify(string);
 			}
 		}		
 	}
 }
 
-void multi_sg_rank_build_name(char *in,char *out)
+void multi_sg_rank_build_name(const char *in,char *out)
 {
 	char use[100];
 	char *first;
