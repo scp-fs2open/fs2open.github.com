@@ -4007,6 +4007,9 @@ void game_do_full_frame(DEBUG_TIMER_SIG const vec3d* offset = nullptr, const mat
 		TRACE_SCOPE(tracing::RenderHUDHook);
 
 		if (scripting::hooks::OnHudDraw->isActive()) {
+			if (fov_override)
+				g3_set_fov(*fov_override);
+
 			scripting::hooks::OnHudDraw->run(scripting::hooks::ObjectDrawConditions{ Viewer_obj }, scripting_param_list);
 		}
 	}
@@ -4054,6 +4057,9 @@ void game_do_full_frame(DEBUG_TIMER_SIG const vec3d* offset = nullptr, const mat
 
 	// If a regular popup is active, don't flip (popup code flips)
 	if (!popup_running_state()) {
+		if (fov_override)
+			g3_set_fov(*fov_override);
+
 		DEBUG_GET_TIME(flip_time1)
 		game_flip_page_and_time_it();
 		DEBUG_GET_TIME(flip_time2)
