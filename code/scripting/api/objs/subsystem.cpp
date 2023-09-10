@@ -588,7 +588,7 @@ ADE_VIRTVAR(TurretLocked, l_Subsystem, "boolean", "Whether the turret is locked.
 	return ade_set_args(L, "b", (sso->ss->weapons.flags[Ship::Weapon_Flags::Turret_Lock]));
 }
 
-ADE_VIRTVAR(TurretLockedWithTimestamp, l_Subsystem, "boolean", "Behaves like TurretLocked, but when the turret is freed, the next-fire timestamp is set to be consistent with SEXP behavior.", "boolean", "True if turret is locked, false otherwise")
+ADE_VIRTVAR(TurretLockedWithTimestamp, l_Subsystem, "boolean", "Behaves like TurretLocked, but when the turret is freed, there will be a short random delay (between 50 and 4000 milliseconds) before firing, to be consistent with SEXP behavior.", "boolean", "True if turret is locked, false otherwise")
 {
 	ship_subsys_h *sso;
 	bool newVal = false;
@@ -624,7 +624,7 @@ ADE_VIRTVAR(BeamFree, l_Subsystem, "boolean", "Whether the turret is beam-freed.
 	return ade_set_args(L, "b", (sso->ss->weapons.flags[Ship::Weapon_Flags::Beam_Free]));
 }
 
-ADE_VIRTVAR(BeamFreeWithTimestamp, l_Subsystem, "boolean", "Behaves like BeamFree, but when the turret is freed, the next-fire timestamp is set to be consistent with SEXP behavior.", "boolean", "True if turret is beam-freed, false otherwise")
+ADE_VIRTVAR(BeamFreeWithTimestamp, l_Subsystem, "boolean", "Behaves like BeamFree, but when the turret is freed, there will be a short random delay (between 50 and 4000 milliseconds) before firing, to be consistent with SEXP behavior.", "boolean", "True if turret is beam-freed, false otherwise")
 {
 	ship_subsys_h *sso;
 	bool newVal = false;
