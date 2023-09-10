@@ -905,12 +905,13 @@ void red_alert_bash_wingman_status()
 		if (shipp->wingnum >= 0)
 		{
 			int latest_wave = Latest_wave_stored[shipp->wingnum];
+			auto wingp = &Wings[shipp->wingnum];
+
+			// assign the wave number to the wing
+			wingp->current_wave = latest_wave;
+
 			if (latest_wave > 1)
 			{
-				// assign the wave number to the wing
-				auto wingp = &Wings[shipp->wingnum];
-				wingp->current_wave = latest_wave;
-
 				// find this ship's position in the wing
 				int ship_entry_index = ship_registry_get_index(shipp->ship_name);
 				Assertion(Ship_registry[ship_entry_index].p_objp, "Ship %s must have a parse object!", shipp->ship_name);
@@ -1016,12 +1017,14 @@ void red_alert_bash_wingman_status()
 		if (pobjp->wingnum >= 0)
 		{
 			int latest_wave = Latest_wave_stored[pobjp->wingnum];
+			auto wingp = &Wings[pobjp->wingnum];
+
+			// assign the wave number to the wing
+			// note that since the wing hasn't arrived yet, and the wave is incremented upon arrival, we need to subtract 1
+			wingp->current_wave = latest_wave - 1;
+
 			if (latest_wave > 1)
 			{
-				// assign the wave number to the wing
-				auto wingp = &Wings[pobjp->wingnum];
-				wingp->current_wave = latest_wave;
-
 				// use the name from the latest wave for the purposes of matching
 				// (this will make the pobjp match to the correct red-alert data)
 				wing_bash_ship_name(pobjp_name_to_check, wingp->name, ((latest_wave - 1) * wingp->wave_count) + 1 + pobjp->pos_in_wing);
@@ -1099,7 +1102,9 @@ void red_alert_bash_wingman_status()
 
 		if (wingp->num_waves > 0 && wingp->wave_count == ii.second)
 		{
+			// skip over this wave
 			wingp->red_alert_skipped_ships += wingp->wave_count;
+			wingp->current_wave++;
 
 			bool waves_spent = wingp->current_wave >= wingp->num_waves;
             if (waves_spent)
