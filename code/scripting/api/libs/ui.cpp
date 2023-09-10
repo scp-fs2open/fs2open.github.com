@@ -535,6 +535,7 @@ ADE_FUNC(selectCampaign,
 	}
 
 	campaign_select_campaign(filename);
+	Pilot.save_player();
 
 	return ADE_RETURN_TRUE;
 }
