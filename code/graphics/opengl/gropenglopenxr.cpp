@@ -259,14 +259,16 @@ bool gr_opengl_openxr_flip() {
 			const auto& pos = xr_views[i].pose.position;
 			const auto& ori = xr_views[i].pose.orientation;
 			vec3d position{{ { pos.x, pos.y, -pos.z } }};
-			matrix asymmetric_fov, orientation;
-			angles fix_asymmetric_fov{ 0, 0, xr_views[i].fov.angleLeft + xr_views[i].fov.angleRight };
+			matrix orientation;
 			vm_quaternion_to_matrix(&orientation, ori.x, ori.y, -ori.z, -ori.w);
-			vm_angles_2_matrix(&asymmetric_fov, &fix_asymmetric_fov);
-			vm_matrix_x_matrix(&orientation, &orientation, &asymmetric_fov);
-
+			
 			gr_set_clip(0, 0, xr_swapchains[i]->width, xr_swapchains[i]->height, GR_RESIZE_REPLACE);
-			gr_set_proj_matrix(xr_views[i].fov.angleRight - xr_views[i].fov.angleLeft, i2fl(xr_swapchains[i]->width) / i2fl(xr_swapchains[i]->height), 0.01f, 1000);
+			gr_set_proj_matrix(asymmetric_fov {
+					xr_views[i].fov.angleLeft,
+					xr_views[i].fov.angleRight,
+					xr_views[i].fov.angleUp,
+					xr_views[i].fov.angleDown
+				}, i2fl(xr_swapchains[i]->width) / i2fl(xr_swapchains[i]->height), 0.01f, 1000);
 			gr_set_view_matrix(&position, &orientation);
 
 			glViewport(0, 0, xr_swapchains[i]->width, xr_swapchains[i]->height);

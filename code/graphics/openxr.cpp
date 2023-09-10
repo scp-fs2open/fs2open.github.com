@@ -247,7 +247,7 @@ static void openxr_init_post() {
 		xr_views.data()
 	);
 
-	vec3d xr_offset{{ {
+	vec3d xr_offset_debug {{ {
 		(xr_views[0].pose.position.x - xr_views[1].pose.position.x) * xr_scale,
 		(xr_views[0].pose.position.y - xr_views[1].pose.position.y) * xr_scale,
 		(xr_views[0].pose.position.z - xr_views[1].pose.position.z) * xr_scale} }};
@@ -257,9 +257,14 @@ static void openxr_init_post() {
 		xr_views[0].fov.angleLeft, xr_views[0].fov.angleRight, xr_views[0].fov.angleUp, xr_views[0].fov.angleDown,
 		xr_swapchains[1]->width, xr_swapchains[1]->height,
 		xr_views[1].fov.angleLeft, xr_views[1].fov.angleRight, xr_views[1].fov.angleUp, xr_views[1].fov.angleDown,
-		vm_vec_mag(&xr_offset)));
+		vm_vec_mag(&xr_offset_debug)));
 
-	VIEWER_ZOOM_DEFAULT = COCKPIT_ZOOM_DEFAULT = (fabsf(xr_views[0].fov.angleLeft) + fabsf(xr_views[0].fov.angleRight) + fabsf(xr_views[1].fov.angleLeft) + fabsf(xr_views[1].fov.angleRight)) / (2.0f * PROJ_FOV_FACTOR);
+	VIEWER_ZOOM_DEFAULT = COCKPIT_ZOOM_DEFAULT = asymmetric_fov { 
+		xr_views[0].fov.angleLeft + xr_views[1].fov.angleLeft,
+		xr_views[0].fov.angleRight + xr_views[1].fov.angleRight,
+		xr_views[0].fov.angleUp + xr_views[1].fov.angleUp,
+		xr_views[0].fov.angleDown + xr_views[1].fov.angleDown
+	} * (1.0f / (2.0f * PROJ_FOV_FACTOR));
 }
 
 void openxr_init(float scale) {
@@ -424,12 +429,7 @@ OpenXRTrackingInfo openxr_start_stereo_frame() {
 		const auto& pos = xr_views[i].pose.position;
 		const auto& ori = xr_views[i].pose.orientation;
 		info.eyes[i].offset = vec3d{{ {pos.x * xr_scale, pos.y * xr_scale, pos.z * -xr_scale} }} - xr_offset;
-
-		matrix asymmetric_fov, orientation;
-		angles fix_asymmetric_fov{ -(xr_views[i].fov.angleUp + xr_views[i].fov.angleDown), 0, xr_views[i].fov.angleLeft + xr_views[i].fov.angleRight };
-		vm_quaternion_to_matrix(&orientation, ori.x, ori.y, -ori.z, -ori.w);
-		vm_angles_2_matrix(&asymmetric_fov, &fix_asymmetric_fov);
-		vm_matrix_x_matrix(&info.eyes[i].orientation, &orientation, &asymmetric_fov);
+		vm_quaternion_to_matrix(&info.eyes[i].orientation, ori.x, ori.y, -ori.z, -ori.w);
 	}
 
 	return info;
