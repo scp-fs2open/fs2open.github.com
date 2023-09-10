@@ -240,6 +240,8 @@ enum shader_type {
 
 #define SDR_FLAG_COPY_FROM_ARRAY (1 << 0)
 
+#define SDR_FLAG_TONEMAPPING_LINEAR_OUT (1 << 0)
+
 
 enum class uniform_block_type {
 	Lights = 0,
