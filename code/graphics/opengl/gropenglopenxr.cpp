@@ -47,7 +47,7 @@ bool gr_opengl_openxr_test_capabilities() {
 	}
 
 	if (requirements.minApiVersionSupported > XR_MAKE_VERSION(GLVersion.major, GLVersion.minor, 0)) {
-		mprintf(("System doesn't meet OpenXR graphics requirements (min %" PRIuPTR ", available %" PRIuPTR ")!\n", requirements.minApiVersionSupported, XR_MAKE_VERSION(GLVersion.major, GLVersion.minor, 0)));
+		mprintf(("System doesn't meet OpenXR graphics requirements (min %" PRIuPTR ", available %" PRIuPTR ")!\n", requirements.minApiVersionSupported, static_cast<XrVersion>(XR_MAKE_VERSION(GLVersion.major, GLVersion.minor, 0))));
 		return false;
 	}
 
