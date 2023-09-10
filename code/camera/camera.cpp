@@ -39,38 +39,20 @@ asymmetric_fov operator- (const asymmetric_fov& left, const float& right) {
 	return asymmetric_fov{ left.left + right * 0.5f, left.right - right * 0.5f, left.up - right * 0.5f * ar, left.down + right * 0.5f * ar };
 }
 
-struct apply_mul_to_fov {
-	float r;
-	template<typename T>
-	fov_t operator()(const T& l) {
-		return fov_t(l * r);
-	}
-};
-fov_t operator* (const fov_t& zoom, const float& scale) {
-	//The elegant way of doing this needs C++14
-	//return mpark::visit([scale](const auto& fov) -> fov_t { return fov_t(fov * scale); }, zoom);
-	return mpark::visit(apply_mul_to_fov{scale}, zoom);
+#define APPLY_TO_FOV_T(op, name) \
+struct apply_##name##_to_fov { \
+	float r; \
+	template<typename T> \
+	fov_t operator()(const T& l) { \
+		return fov_t(l op r); \
+	} \
+}; \
+fov_t operator##op (const fov_t& zoom, const float& scale) { \
+	return mpark::visit(apply_##name##_to_fov{scale}, zoom); \
 }
-struct apply_add_to_fov {
-	float r;
-	template<typename T>
-	fov_t operator()(const T& l) {
-		return fov_t(l + r);
-	}
-};
-fov_t operator+ (const fov_t& zoom, const float& scale) {
-	return mpark::visit(apply_add_to_fov{ scale }, zoom);
-}
-struct apply_sub_to_fov {
-	float r;
-	template<typename T>
-	fov_t operator()(const T& l) {
-		return fov_t(l - r);
-	}
-};
-fov_t operator- (const fov_t& zoom, const float& scale) {
-	return mpark::visit(apply_sub_to_fov{ scale }, zoom);
-}
+APPLY_TO_FOV_T(*, mul)
+APPLY_TO_FOV_T(+, add)
+APPLY_TO_FOV_T(-, sub)
 
 static SCP_string fov_display(float val)
 {
