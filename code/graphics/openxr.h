@@ -1,11 +1,13 @@
 #pragma once
 
 #include <array>
+#include "camera/camera.h"
 
 struct OpenXRTrackingInfo {
 	struct OpenXREyeInfo {
 		vec3d offset;
 		matrix orientation;
+		fov_t zoom; //zoom, not fov! difference of a factor of PROJ_FOV_FACTOR
 	};
 	std::array<OpenXREyeInfo, 2> eyes;
 };

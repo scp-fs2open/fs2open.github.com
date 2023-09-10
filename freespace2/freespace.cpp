@@ -3340,7 +3340,7 @@ void clip_frame_view();
 // Does everything needed to render a frame
 extern SCP_vector<object*> effect_ships;
 extern SCP_vector<object*> transparent_objects;
-void game_render_frame( camid cid, const vec3d* offset, const matrix* rot_offset)
+void game_render_frame( camid cid, const vec3d* offset, const matrix* rot_offset, const fov_t* fov_override)
 {
 	GR_DEBUG_SCOPE("Main Frame");
 	TRACE_SCOPE(tracing::RenderMainFrame);
@@ -3349,6 +3349,7 @@ void game_render_frame( camid cid, const vec3d* offset, const matrix* rot_offset
 
 	camera *cam = cid.getCamera();
 	matrix eye_no_jitter = vmd_identity_matrix;
+
 	if(cam != nullptr)
 	{
 		vec3d eye_pos;
@@ -3376,13 +3377,13 @@ void game_render_frame( camid cid, const vec3d* offset, const matrix* rot_offset
 
 		//Maybe override FOV from SEXP
 		if(Sexp_fov <= 0.0f)
-			g3_set_view_matrix(&eye_pos, &eye_orient, cam->get_fov());
+			g3_set_view_matrix(&eye_pos, &eye_orient, fov_override ? *fov_override : cam->get_fov());
 		else
-			g3_set_view_matrix(&eye_pos, &eye_orient, Sexp_fov);
+			g3_set_view_matrix(&eye_pos, &eye_orient, fov_override ? *fov_override : Sexp_fov);
 	}
 	else
 	{
-		g3_set_view_matrix(&vmd_zero_vector, &vmd_identity_matrix, VIEWER_ZOOM_DEFAULT);
+		g3_set_view_matrix(&vmd_zero_vector, &vmd_identity_matrix, fov_override ? *fov_override : VIEWER_ZOOM_DEFAULT);
 	}
 
 	if (!(Game_mode & GM_LAB)) {
@@ -3457,7 +3458,7 @@ void game_render_frame( camid cid, const vec3d* offset, const matrix* rot_offset
 
 		gr_override_fog(true);
 		GR_DEBUG_SCOPE("Render Cockpit");
-		ship_render_player_ship(Viewer_obj, offset, rot_offset);
+		ship_render_player_ship(Viewer_obj, offset, rot_offset, fov_override);
 		gr_override_fog(false);
 
 		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
@@ -3954,7 +3955,7 @@ void game_render_post_frame()
 #define DEBUG_TIMER_CALL
 #endif
 
-void game_do_full_frame(DEBUG_TIMER_SIG const vec3d* offset = nullptr, const matrix* rot_offset = nullptr) {
+void game_do_full_frame(DEBUG_TIMER_SIG const vec3d* offset = nullptr, const matrix* rot_offset = nullptr, const fov_t* fov_override = nullptr) {
 	// clear the screen to black
 	gr_reset_clip();
 	if ((Game_detail_flags & DETAIL_FLAG_CLEAR)) {
@@ -3966,7 +3967,7 @@ void game_do_full_frame(DEBUG_TIMER_SIG const vec3d* offset = nullptr, const mat
 
 	camid cid = game_render_frame_setup();
 
-	game_render_frame(cid, offset, rot_offset);
+	game_render_frame(cid, offset, rot_offset, fov_override);
 
 	//Cutscene bars
 	clip_frame_view();
@@ -4168,14 +4169,14 @@ void game_frame(bool paused)
 				const auto& pose = openxr_start_stereo_frame();
 
 				util::Random::seed(random);
-				game_do_full_frame(DEBUG_TIMER_CALL &pose.eyes[0].offset, &pose.eyes[0].orientation);
+				game_do_full_frame(DEBUG_TIMER_CALL &pose.eyes[0].offset, &pose.eyes[0].orientation, &pose.eyes[0].zoom);
 				std::swap(Stars, Stars_XRBuffer);
 
 				Lights = std::move(Lights_copy);
 				Static_light = std::move(Static_light_copy);
 
 				util::Random::seed(random);
-				game_do_full_frame(DEBUG_TIMER_CALL &pose.eyes[1].offset, &pose.eyes[1].orientation);
+				game_do_full_frame(DEBUG_TIMER_CALL &pose.eyes[1].offset, &pose.eyes[1].orientation, &pose.eyes[1].zoom);
 				std::swap(Stars, Stars_XRBuffer);
 			}
 		} else {

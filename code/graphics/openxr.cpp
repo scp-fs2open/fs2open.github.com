@@ -430,6 +430,7 @@ OpenXRTrackingInfo openxr_start_stereo_frame() {
 		const auto& ori = xr_views[i].pose.orientation;
 		info.eyes[i].offset = vec3d{{ {pos.x * xr_scale, pos.y * xr_scale, pos.z * -xr_scale} }} - xr_offset;
 		vm_quaternion_to_matrix(&info.eyes[i].orientation, ori.x, ori.y, -ori.z, -ori.w);
+		info.eyes[i].zoom = asymmetric_fov{ xr_views[i].fov.angleLeft, xr_views[i].fov.angleRight, xr_views[i].fov.angleUp, xr_views[i].fov.angleDown } * (1.0f / PROJ_FOV_FACTOR);
 	}
 
 	return info;
