@@ -2758,8 +2758,10 @@ void HudGaugeOrientationTee::renderOrientation(object *from_objp, object *to_obj
 	y1 += position[1];
 	x1 += position[0];
 
-	x1 += HUD_offset_x;
-	y1 += HUD_offset_y;
+	if (gr_screen.rendering_to_texture == -1) {
+		x1 += HUD_offset_x;
+		y1 += HUD_offset_y;
+	}
 
 	y2 = sinf(dot_product) * (Radius - T_OFFSET_FROM_CIRCLE - T_LENGTH);
 	x2 = cosf(dot_product) * (Radius - T_OFFSET_FROM_CIRCLE - T_LENGTH);
@@ -2767,8 +2769,10 @@ void HudGaugeOrientationTee::renderOrientation(object *from_objp, object *to_obj
 	y2 += position[1];
 	x2 += position[0];
 
-	x2 += HUD_offset_x;
-	y2 += HUD_offset_y;
+	if (gr_screen.rendering_to_texture == -1) {
+		x2 += HUD_offset_x;
+		y2 += HUD_offset_y;
+	}
 
 	x3 = x1 - T_BASE_LENGTH * sinf(dot_product);
 	y3 = y1 + T_BASE_LENGTH * cosf(dot_product);

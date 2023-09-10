@@ -1033,8 +1033,8 @@ void HudGauge::renderCircle(int x, int y, int diameter, bool filled)
 
 void HudGauge::setClip(int x, int y, int w, int h)
 {
-	int hx = fl2i(HUD_offset_x);
-	int hy = fl2i(HUD_offset_y);
+	int hx;
+	int hy;
 
 	if ( gr_screen.rendering_to_texture != -1 ) {
 		gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, target_w, target_h, true);
@@ -1051,6 +1051,8 @@ void HudGauge::setClip(int x, int y, int w, int h)
 
 		gr_set_clip(hx, hy, w, h);
 	} else {
+		hx = fl2i(HUD_offset_x);
+		hy = fl2i(HUD_offset_y);
 		if (reticle_follow) {
 			hx += HUD_nose_x;
 			hy += HUD_nose_y;

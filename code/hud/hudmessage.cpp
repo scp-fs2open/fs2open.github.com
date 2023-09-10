@@ -1212,7 +1212,15 @@ void HudGaugeTalkingHead::render(float frametime)
 			float scale_y = i2fl(Anim_size[1]) / i2fl(head_anim->height);
 			gr_set_screen_scale(fl2ir(base_w / scale_x), fl2ir(base_h / scale_y));
 			setGaugeColor();
-			generic_anim_render(head_anim,frametime, fl2ir((tablePosX + Anim_offsets[0] + HUD_offset_x) / scale_x), fl2ir((tablePosY + Anim_offsets[1] + HUD_offset_y) / scale_y));
+
+			int hx = tablePosX + Anim_offsets[0];
+			int hy = tablePosY + Anim_offsets[1];
+			if (gr_screen.rendering_to_texture == -1) {
+				hx += fl2i(HUD_offset_x);
+				hy += fl2i(HUD_offset_y);
+			}
+
+			generic_anim_render(head_anim,frametime, fl2ir(hx / scale_x), fl2ir(hy / scale_y));
 			// draw title
 			gr_reset_screen_scale();
 			renderString(position[0] + Header_offsets[0], position[1] + Header_offsets[1], XSTR("message", 217));
