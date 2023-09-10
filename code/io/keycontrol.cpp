@@ -1320,7 +1320,7 @@ void process_debug_keys(int k)
 				break;
 			}
 			cam->set_fov(cam->get_fov() + 0.1f);
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, "Camera fov raised to %0.2f" , cam->get_fov());
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, "Camera fov raised to %0.2f" , g3_get_hfov(cam->get_fov()));
 			}
 			break;
 
@@ -1334,7 +1334,7 @@ void process_debug_keys(int k)
 				break;
 			}
 			cam->set_fov(cam->get_fov() - 0.1f);
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, "Camera fov lowered to %0.2f" , cam->get_fov());
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, "Camera fov lowered to %0.2f" , g3_get_hfov(cam->get_fov()));
 			}
 			break;
 		case KEY_DEBUGGED + KEY_Z:
