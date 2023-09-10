@@ -2751,7 +2751,7 @@ DCF(fov, "Change the field of view of the main camera")
 		if(cam == nullptr) {
 			dc_printf("Camera unavailable.");
 		} else {
-			dc_printf("Zoom factor set to %6.3f (original = 0.5, John = 0.75)\n", cam->get_fov());
+			dc_printf("Zoom factor set to %6.3f (original = 0.5, John = 0.75)\n", g3_get_hfov(cam->get_fov()));
 		}
 
 		process = false;
