@@ -8274,7 +8274,7 @@ void ship_wing_cleanup( int shipnum, wing *wingp )
 
 		// Goober5000 - some changes for clarity and closing holes
 		// make sure to flag the wing as gone if all of its member ships are gone and no more can arrive
-		if ((wingp->current_wave == wingp->num_waves) && (wingp->total_destroyed + wingp->total_departed + wingp->total_vanished == wingp->total_arrived_count))
+		if ((wingp->current_wave >= wingp->num_waves) && (wingp->total_destroyed + wingp->total_departed + wingp->total_vanished == wingp->total_arrived_count))
 		{
 			// mark the wing as gone
 			wingp->flags.set(Ship::Wing_Flags::Gone);
@@ -8320,7 +8320,7 @@ void ship_wing_cleanup( int shipnum, wing *wingp )
 						// TODO: I think this Int3() is triggered when a wing whose ships are all docked to ships of another
 						// wing departs.  It can be reliably seen in TVWP chapter 1 mission 7, when Torino and Iota wing depart.
 						// Not sure how to fix this. -- Goober5000
-						Int3();
+						UNREACHABLE("A ship is still present even though its wing should be gone!");
 					}
 				}
 			}

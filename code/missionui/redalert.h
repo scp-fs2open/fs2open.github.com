@@ -44,8 +44,8 @@ static const int RED_ALERT_LOWEST_VALID_SHIP_CLASS = RED_ALERT_PLAYER_DEL_SHIP_C
 
 typedef struct red_alert_ship_status {
 	SCP_string	name;
-	float		hull;
-	int			ship_class;
+	float		hull = 0.0f;
+	int			ship_class = 0;
 	SCP_vector<float>	subsys_current_hits;
 	SCP_vector<float>	subsys_aggregate_current_hits;
 	SCP_vector<wep_t>	primary_weapons;
