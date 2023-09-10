@@ -3787,13 +3787,16 @@ int game_actually_playing()
 		return 1;
 }
 
-void game_render_hud(camid cid)
+void game_render_hud(camid cid, const fov_t* fov_override = nullptr)
 {
 	gr_reset_clip();
 
 	if(cid.isValid()) {
 		g3_start_frame(0);		// 0 = turn zbuffering off
 		g3_set_view( cid.getCamera() );
+
+		if (fov_override)
+			g3_set_fov(*fov_override);
 
 		hud_render_preprocess(flFrametime);
 
@@ -3991,7 +3994,7 @@ void game_do_full_frame(DEBUG_TIMER_SIG const vec3d* offset = nullptr, const mat
 		GR_DEBUG_SCOPE("Render HUD");
 		TRACE_SCOPE(tracing::RenderHUD);
 
-		game_render_hud(cid);
+		game_render_hud(cid, fov_override);
 	}
 	HUD_reset_clip();
 
