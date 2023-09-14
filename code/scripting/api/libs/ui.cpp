@@ -1425,12 +1425,16 @@ ADE_FUNC(resetSelect,
 	nullptr)
 {
 	// Note this does all the things from ss_reset_to_default() in missionshipchoice.cpp except
-	// resetting UI elements - Mjn
+	// resetting UI elements. It also resets the weapon pool. - Mjn
 
 	SCP_UNUSED(L); // unused parameter
 
+	//Reset ships pool
 	ss_init_pool(&Team_data[Common_team]);
 	ss_init_units();
+
+	//Reset weapons pool
+	wl_init_pool(&Team_data[Common_team]);
 
 	if (!(Game_mode & GM_MULTIPLAYER)) {
 		wl_fill_slots();
