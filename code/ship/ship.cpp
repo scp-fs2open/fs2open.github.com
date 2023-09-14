@@ -548,6 +548,7 @@ ship_flag_name Ship_flag_names[] = {
 	{ Ship_Flags::Always_death_scream,			"always-death-scream"},
 	{ Ship_Flags::No_builtin_messages,			"no-builtin-messages"},
 	{ Ship_Flags::Scramble_messages,			"scramble-messages"},
+	{ Ship_Flags::Maneuver_despite_engines,		"maneuver-despite-engines" },
 };
 
 ship_flag_description Ship_flag_descriptions[] = {
@@ -584,6 +585,7 @@ ship_flag_description Ship_flag_descriptions[] = {
 	{ Ship_Flags::Always_death_scream,			"Ship will always send a death message when destroyed."},
 	{ Ship_Flags::No_builtin_messages,			"Ship will not send any persona messages."},
 	{ Ship_Flags::Scramble_messages,			"All messages sent from this ship will appear scrambled, as if the ship had been hit by an EMP."},
+	{ Ship_Flags::Maneuver_despite_engines,		"Ship can maneuver even if its engines are disabled or disrupted" },
 };
 
 extern const size_t Num_ship_flag_names = sizeof(Ship_flag_names) / sizeof(ship_flag_name);
@@ -16147,11 +16149,15 @@ int ship_secondary_bank_has_ammo(int shipnum)
 // returns 1 if ship is able to warp, otherwise return 0
 int ship_engine_ok_to_warp(ship *sp)
 {
-	// disabled ships can't warp
-	if (sp->flags[Ship_Flags::Disabled])
+	if (sp->flags[Ship_Flags::Warp_broken] || sp->flags[Ship_Flags::Warp_never])
 		return 0;
 
-	if (sp->flags[Ship_Flags::Warp_broken] || sp->flags[Ship_Flags::Warp_never])
+	// ships which can maneuver can also warp
+	if (sp->flags[Ship_Flags::Maneuver_despite_engines])
+		return 1;
+
+	// disabled ships can't warp
+	if (sp->flags[Ship_Flags::Disabled])
 		return 0;
 
 	float engine_strength = ship_get_subsystem_strength(sp, SUBSYSTEM_ENGINE);

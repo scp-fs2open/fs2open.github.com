@@ -137,6 +137,7 @@ namespace Ship {
 		Aspect_immune,						// Kiloku -- Ship cannot be targeted by Aspect Seekers.
 		Cannot_perform_scan,		// Goober5000 - ship cannot scan other ships
 		No_targeting_limits,				//MjnMixael -- Ship is always targetable regardless of AWACS or targeting range limits
+		Maneuver_despite_engines,	// Goober5000 - ship can move even when engines are disabled or disrupted
 
 		NUM_VALUES
 

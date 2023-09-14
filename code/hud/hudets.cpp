@@ -125,10 +125,16 @@ void update_ets(object* objp, float fl_frametime)
 	//					 This will translate to 71% max speed at 50% engines, and 31% max speed at 10% engines
 	//
 
-	float eng_current_strength = ship_get_subsystem_strength(ship_p, SUBSYSTEM_ENGINE);
+	float eng_current_strength;
+	if (ship_p->flags[Ship::Ship_Flags::Maneuver_despite_engines]) {
+		// Since prev_engine_aggregate_strength isn't used anywhere else, it's ok to fake setting the strength to 100% here
+		eng_current_strength = 1.0f;
+	} else {
+		eng_current_strength = ship_get_subsystem_strength(ship_p, SUBSYSTEM_ENGINE);
+	}
 
 	// only update max speed if aggregate engine health has changed
-	// which helps minimze amount of overrides to max speed
+	// which helps minimize amount of overrides to max speed
 	if (eng_current_strength != ship_p->prev_engine_aggregate_strength) {
 		ets_update_max_speed(objp);
 		ship_p->prev_engine_aggregate_strength = eng_current_strength;
