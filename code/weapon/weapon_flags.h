@@ -27,6 +27,7 @@ namespace Weapon {
 		Thruster,							// Has thruster cone and/or glow
 		In_tech_database,
 		Player_allowed,						// allowed to be on starting wing ships/in weaponry pool
+		Default_player_weapon,				// added to the weapons pool by default
 		Bomber_plus,						// Fire this missile only at a bomber or big ship.  But not a fighter.
 		Corkscrew,							// corkscrew style missile
 		Particle_spew,						// spews particles as it travels

@@ -167,6 +167,7 @@ special_flag_def_list_new<Weapon::Info_Flags, weapon_info*, flagset<Weapon::Info
     { "no dumbfire",					Weapon::Info_Flags::No_dumbfire,						true },
 	{ "no doublefire",					Weapon::Info_Flags::No_doublefire,						true },
     { "in tech database",				Weapon::Info_Flags::In_tech_database,					true },
+	{ "default player weapon",			Weapon::Info_Flags::Default_player_weapon,				true },
     { "player allowed",					Weapon::Info_Flags::Player_allowed,                     true }, 
     { "particle spew",					Weapon::Info_Flags::Particle_spew,						true },
     { "emp",							Weapon::Info_Flags::Emp,								true },

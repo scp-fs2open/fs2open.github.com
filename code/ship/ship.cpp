@@ -456,6 +456,7 @@ flag_def_list_new<Weapon::Info_Flags> ai_tgt_weapon_flags[] = {
     { "thruster",					Weapon::Info_Flags::Thruster,							true, false },
     { "in tech database",			Weapon::Info_Flags::In_tech_database,					true, false },
     { "player allowed",				Weapon::Info_Flags::Player_allowed,						true, false },
+	{ "default player weapon",		Weapon::Info_Flags::Default_player_weapon,				true, false },
     { "corkscrew",					Weapon::Info_Flags::Corkscrew,							true, false },
     { "particle spew",				Weapon::Info_Flags::Particle_spew,						true, false },
     { "esuck",						Weapon::Info_Flags::Energy_suck,						true, false },
