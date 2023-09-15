@@ -12859,9 +12859,14 @@ void ai_do_repair_frame(object *objp, ai_info *aip, float frametime)
 				repaired = ship_do_rearm_frame( objp, frametime );		// hook to do missile rearming
 
 				//	See if fully repaired.  If so, cause process to stop.
-				if ( repaired && (repair_aip->submode == AIS_DOCK_4)) {
+				if ( repaired ) {
 
-					repair_aip->submode = AIS_UNDOCK_0;
+					// We can repair ships without being docked, so only do this if we are docked
+					if (repair_aip->submode == AIS_DOCK_4) {
+						repair_aip->submode = AIS_UNDOCK_0;
+					} else { // Undocking ends the repair, but since we don't need to do that in this case, end it here
+						ai_do_objects_repairing_stuff(objp, &Objects[support_objnum], REPAIR_INFO_END);
+					}
 					repair_aip->submode_start_time = Missiontime;
 
 					// if repairing player object -- tell him done with repair

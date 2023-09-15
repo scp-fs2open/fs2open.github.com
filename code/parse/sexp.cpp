@@ -780,6 +780,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "reset-time-compression",			OP_CUTSCENES_RESET_TIME_COMPRESSION,	0,	0,			SEXP_ACTION_OPERATOR,	},
 	{ "call-ssm-strike",				OP_CALL_SSM_STRIKE,						3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// X3N0-Life-Form
 	{ "set-gravity-accel",				OP_SET_GRAVITY_ACCEL,					1,	1,			SEXP_ACTION_OPERATOR, },	// Asteroth
+	{ "force-rearm",					OP_FORCE_REARM,							2,	2,			SEXP_ACTION_OPERATOR,	},  // MjnMixael
 
 	//Variable Category
 	{ "modify-variable",				OP_MODIFY_VARIABLE,						2,	2,			SEXP_ACTION_OPERATOR,	},
@@ -14066,6 +14067,34 @@ void multi_sexp_set_gravity_accel()
 		// gravity was turned on or turned off
 		collide_apply_gravity_flags_weapons();
 	}
+}
+
+void sexp_force_rearm(int n)
+{
+	auto repairee = eval_ship(n);
+	if (!repairee || !repairee->shipp)
+		return;
+	n = CDR(n);
+	auto repairer = eval_ship(n);
+	if (!repairer || !repairer->shipp)
+		return;
+
+	//Set repairee flags
+	ai_info* repairee_aip = &Ai_info[Ships[repairee->objp->instance].ai_index];
+	repairee_aip->support_ship_signature = repairer->objp->signature;
+	repairee_aip->support_ship_objnum = OBJ_INDEX(repairer->objp);
+	repairee_aip->mode = AIM_BE_REARMED;
+
+	//Set repairer flags
+	ai_info* repairer_aip = &Ai_info[Ships[repairer->objp->instance].ai_index];
+	repairer_aip->submode_start_time = Missiontime;
+	repairer_aip->mode = AIM_STILL; // probably need a special one of these!
+
+	if (repairee_aip == Player_ai) {
+		hud_support_view_start();
+	}
+
+	ai_do_objects_repairing_stuff(repairee->objp, repairer->objp, REPAIR_INFO_BEGIN);
 }
 
 // this function get called by send-message or send-message random with the name of the message, sender,
@@ -28732,6 +28761,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_FORCE_REARM:
+				sexp_force_rearm(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			default:{
 				// Check if we have a dynamic SEXP with this operator and if there is, execute that
 				auto dynamicSEXP = sexp::get_dynamic_sexp(op_num);
@@ -29978,6 +30012,7 @@ int query_operator_return_type(int op)
 		case OP_COPY_CONTAINER:
 		case OP_APPLY_CONTAINER_FILTER:
 		case OP_SET_GRAVITY_ACCEL:
+		case OP_FORCE_REARM:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -32736,6 +32771,9 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_SET_GRAVITY_ACCEL:
 			return OPF_POSITIVE;
 
+		case OP_FORCE_REARM:
+			return OPF_SHIP;
+
 		default: {
 			auto dynamicSEXP = sexp::get_dynamic_sexp(op);
 			if (dynamicSEXP != nullptr) {
@@ -34913,6 +34951,7 @@ int get_category(int op_id)
 		case OP_HUD_FORCE_SENSOR_STATIC:
 		case OP_HUD_FORCE_EMP_EFFECT:
 		case OP_SET_GRAVITY_ACCEL:
+		case OP_FORCE_REARM:
 		case OP_SET_ORDER_ALLOWED_TARGET:
 		case OP_SET_ASTEROID_FIELD:
 		case OP_SET_DEBRIS_FIELD:
@@ -35375,6 +35414,7 @@ int get_subcategory(int op_id)
 		case OP_CUTSCENES_RESET_TIME_COMPRESSION:
 		case OP_CALL_SSM_STRIKE:
 		case OP_SET_GRAVITY_ACCEL:
+		case OP_FORCE_REARM:
 			return CHANGE_SUBCATEGORY_SPECIAL_EFFECTS;
 
 		case OP_MODIFY_VARIABLE:
@@ -39233,6 +39273,14 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tSets the gravity acceleration rate in units of 0.01 m/s^2\r\n"
 		"\te.g. '981' would be earth gravity, 9.81 m/s^2.\r\n"
 		"\t1: Acceleration rate"
+	},
+
+	{ OP_FORCE_REARM, "force-rearm\r\n"
+		"\tForces a ship to instantly begin a rearm sequence as if docked to a support ship\r\n"
+		"\tNote that the ship doing the rearming does not need to be docked to the rearm-ee\r\n"
+		"\tTakes 2 arguments\r\n"
+		"\t1: The ship to rearm\r\n"
+		"\t2: The ship to do the rearming"
 	},
 
 	{ OP_SET_POST_EFFECT, "set-post-effect\r\n"
