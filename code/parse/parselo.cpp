@@ -80,7 +80,7 @@ bool is_gray_space(unicode::codepoint_t cp) {
 	return cp == UNICODE_CHAR(' ') || cp == UNICODE_CHAR('\t');
 }
 
-int is_parenthesis(char ch)
+bool is_parenthesis(char ch)
 {
 	return ((ch == '(') || (ch == ')'));
 }
@@ -245,11 +245,12 @@ int get_line_num()
 	bool	inquote = false;
 	int		incomment = false;
 	int		multiline = false;
-	char	*stoploc;
-	char	*p;
+	char	*p = Parse_text;
+	char	*stoploc = Mp;
 
-	p = Parse_text;
-	stoploc = Mp;
+	// if there is no parse text, then we have some ad-hoc text such as provided in an evaluateSEXP call or in the debug console
+	if (Parse_text == nullptr)
+		return count;
 
 	while (p < stoploc)
 	{

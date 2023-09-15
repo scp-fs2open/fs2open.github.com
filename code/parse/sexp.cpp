@@ -4338,6 +4338,7 @@ int get_sexp()
 	bool prune_extra_args = false;
 
 	Assert(*(Mp-1) == '(');
+	auto starting_Mp = Mp;
 
 	// start - the node allocated in first instance of function
 	// node - the node allocated in current instance of function
@@ -4350,7 +4351,8 @@ int get_sexp()
 	while (*Mp != ')') {
 		// end of string or end of file
 		if (*Mp == '\0') {
-			error_display(0, "Unexpected end of sexp!");
+			char buf[512];
+			error_display(0, "Unexpected end of sexp!\n%s", three_dot_truncate(buf, starting_Mp, 512));
 			return Locked_sexp_false;
 		}
 
@@ -4366,7 +4368,8 @@ int get_sexp()
 			auto len = strcspn(Mp + 1, "\"");
 			// was closing quote not found?
 			if (*(Mp + 1 + len) != '\"') {
-				error_display(0, "Unexpected end of quoted string embedded in sexp!");
+				char buf[512];
+				error_display(0, "Unexpected end of quoted string embedded in sexp!\n%s", three_dot_truncate(buf, starting_Mp, 512));
 				skip_sexp(true);	// this will have the effect of skipping to the end of the file or string
 				return Locked_sexp_false;
 			}
@@ -4399,16 +4402,11 @@ int get_sexp()
 		else if (*Mp == sexp_container::DELIM) {
 			auto startp = Mp;
 			size_t len = 0;
-			while (*Mp != ')' && !is_white_space(*Mp)) {
+			while (!is_parenthesis(*Mp) && !is_white_space(*Mp)) {
 				// end of string or end of file
 				if (*Mp == '\0') {
-					error_display(0, "Unexpected end of sexp!");
-					return Locked_sexp_false;
-				}
-				// bad format
-				if (*Mp == '(') {
 					char buf[512];
-					error_display(1, "Mismatched parentheses while parsing SEXP!  Current parse position:\n%s", three_dot_truncate(buf, Mp, 512));
+					error_display(0, "Unexpected end of sexp!\n%s", three_dot_truncate(buf, starting_Mp, 512));
 					return Locked_sexp_false;
 				}
 				Mp++;
@@ -4471,16 +4469,11 @@ int get_sexp()
 		else {
 			auto startp = Mp;
 			size_t len = 0;
-			while (*Mp != ')' && !is_white_space(*Mp)) {
+			while (!is_parenthesis(*Mp) && !is_white_space(*Mp)) {
 				// end of string or end of file
 				if (*Mp == '\0') {
-					error_display(0, "Unexpected end of sexp!");
-					return Locked_sexp_false;
-				}
-				// bad format
-				if (*Mp == '(') {
 					char buf[512];
-					error_display(1, "Mismatched parentheses while parsing SEXP!  Current parse position:\n%s", three_dot_truncate(buf, Mp, 512));
+					error_display(0, "Unexpected end of sexp!\n%s", three_dot_truncate(buf, starting_Mp, 512));
 					return Locked_sexp_false;
 				}
 				Mp++;

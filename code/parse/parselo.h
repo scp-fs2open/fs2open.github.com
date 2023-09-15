@@ -100,6 +100,9 @@ extern int is_gray_space(char ch);
 extern bool is_gray_space(unicode::codepoint_t cp);
 extern void ignore_gray_space(const char **pp = nullptr);
 
+// other
+extern bool is_parenthesis(char ch);
+
 // error
 extern int get_line_num();
 extern char *next_tokens(bool terminate_before_parenthesis_or_comma = false);
