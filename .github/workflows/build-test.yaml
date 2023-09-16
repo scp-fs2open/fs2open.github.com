@@ -77,7 +77,7 @@ jobs:
   linux_zip:
     name: Build Linux distribution zip
     needs: build_linux
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     container: ghcr.io/scp-fs2open/sftp_upload:sha-748b19d
     steps:
       - uses: actions/checkout@v2
@@ -203,7 +203,7 @@ jobs:
   windows_zip:
     name: Build Windows distribution zip
     needs: build_windows
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     container: ghcr.io/scp-fs2open/sftp_upload:sha-748b19d
     strategy:
       matrix:
@@ -310,7 +310,7 @@ jobs:
   mac_zip:
     name: Build Mac distribution zip
     needs: build_mac
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     container: ghcr.io/scp-fs2open/sftp_upload:sha-748b19d
     steps:
       - uses: actions/checkout@v2
