@@ -45,6 +45,7 @@
 bool Allow_generic_backup_messages = false;
 float Command_announces_enemy_arrival_chance = 0.25;
 
+#define DEFAULT_MOOD 0
 SCP_vector<SCP_string> Builtin_moods;
 int Current_mission_mood;
 
@@ -426,6 +427,16 @@ void handle_legacy_backup_message(MissionMessage& msg, SCP_string wing_name) {
 	strcpy(msg.name, backup);
 }
 
+int lookup_mood(SCP_string& name) {
+	for (auto i = Builtin_moods.begin(); i != Builtin_moods.end(); ++i) {
+		if (*i == name) {
+			return (int) std::distance(Builtin_moods.begin(), i);
+		}
+	}
+	Warning(LOCATION, "Message.tbl has an entry for mood type %s, but this mood is not in the #Moods section of the table.", name.c_str());
+	return -1;
+}
+
 // parses an individual message
 void message_parse(MessageFormat format) {
 	MissionMessage msg;
@@ -509,45 +520,31 @@ void message_parse(MessageFormat format) {
 		}
 	}
 
+	bool require_exact_mood_match;
 	if (optional_string("$Mood:")) {
-		SCP_string buf; 
-		bool found = false;
-
-		stuff_string(buf, F_NAME); 
-		for (SCP_vector<SCP_string>::iterator iter = Builtin_moods.begin(); iter != Builtin_moods.end(); ++iter) {
-			if (*iter == buf) {
-				msg.mood = (int)std::distance(Builtin_moods.begin(), iter);
-				found = true;
-				break;
-			}
-		}
-
-		if (!found) {
-			// found a mood, but it's not in the list of moods at the start of the table
-			Warning(LOCATION, "Message.tbl has an entry for mood type %s, but this mood is not in the #Moods section of the table.", buf.c_str()); 
-		}
-	}
-	else {
-		msg.mood = 0;
+		SCP_string buf;
+		stuff_string(buf, F_NAME);
+		msg.mood = lookup_mood(buf);
+		require_exact_mood_match = optional_string("+Require exact match");
+	} else {
+		msg.mood = DEFAULT_MOOD;
+		require_exact_mood_match = false;
 	}
 
-	if (optional_string("$Exclude Mood:")) {
-		SCP_vector<SCP_string> buff;
-		bool found = false;
-
-		stuff_string_list(buff); 
-		for (SCP_vector<SCP_string>::iterator parsed_moods = buff.begin(); parsed_moods != buff.end(); ++parsed_moods) {
-			for (SCP_vector<SCP_string>::iterator iter = Builtin_moods.begin(); iter != Builtin_moods.end(); ++iter) {
-				if (!stricmp(iter->c_str(), parsed_moods->c_str())) {
-					msg.excluded_moods.push_back((int)std::distance(Builtin_moods.begin(), iter));
-					found = true;
-					break;
-				}
+	if (require_exact_mood_match) {
+		for (auto i = Builtin_moods.begin(); i != Builtin_moods.end(); ++i) {
+			int mood = (int) std::distance(Builtin_moods.begin(), i);
+			if (mood != msg.mood) {
+				msg.excluded_moods.push_back(mood);
 			}
-
-			if (!found) {
-				// found a mood, but it's not in the list of moods at the start of the table
-				Warning(LOCATION, "Message.tbl has an entry for exclude mood type %s, but this mood is not in the #Moods section of the table.", parsed_moods->c_str()); 
+		}
+	} else if (optional_string("$Exclude Mood:")) {
+		SCP_vector<SCP_string> buf;
+		stuff_string_list(buf);
+		for (auto i = buf.begin(); i != buf.end(); ++i) {
+			int mood = lookup_mood(*i);
+			if (mood >= 0) {
+				msg.excluded_moods.push_back(mood);
 			}
 		}
 	}
