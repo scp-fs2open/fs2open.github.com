@@ -62,6 +62,16 @@ builtin_message Builtin_messages[] = {
   #undef X
 };
 
+#define BUILTIN_BOOST_LEVEL_ONE  1
+#define BUILTIN_BOOST_LEVEL_TWO  2
+#define BUILTIN_MATCHES_TYPE     4
+#define BUILTIN_MATCHES_FILTER   8
+#define BUILTIN_MATCHES_MOOD    16
+#define BUILTIN_MATCHES_SPECIES 32
+#define BUILTIN_MATCHES_PERSONA 64
+
+#define BUILTIN_BOOST_LEVEL_THREE (BUILTIN_BOOST_LEVEL_ONE | BUILTIN_BOOST_LEVEL_TWO)
+
 int get_builtin_message_type(const char* name) {
 	for (int i = 0; i < MAX_BUILTIN_MESSAGE_TYPES; i++) {
 		if (!stricmp(Builtin_messages[i].name, name)) {
@@ -562,6 +572,16 @@ void message_parse(MessageFormat format) {
 		message_filter_parse(msg.outer_filter);
 	} else {
 		message_filter_clear(msg.outer_filter);
+	}
+
+	if (optional_string("$Prefer this message very highly")) {
+		msg.boost_level = BUILTIN_BOOST_LEVEL_THREE;
+	} else if (optional_string("$Prefer this message highly")) {
+		msg.boost_level = BUILTIN_BOOST_LEVEL_TWO;
+	} else if (optional_string("$Prefer this message")) {
+		msg.boost_level = BUILTIN_BOOST_LEVEL_ONE;
+	} else {
+		msg.boost_level = 0;
 	}
 
 	if (format == MessageFormat::TABLED) {
@@ -2103,12 +2123,6 @@ bool excludes_current_mood(int message) {
 }
 
 int get_builtin_message_inner(int type, int persona, ship* sender, ship* subject, bool require_exact_persona_match) {
-	static const int BUILTIN_MATCHES_TYPE    = 0;
-	static const int BUILTIN_MATCHES_FILTER  = 1;
-	static const int BUILTIN_MATCHES_MOOD    = 2;
-	static const int BUILTIN_MATCHES_SPECIES = 4;
-	static const int BUILTIN_MATCHES_PERSONA = 8;
-
 	const char* name = Builtin_messages[type].name;
 	SCP_vector<int> matching_builtins;
 	int match_level, best_match_level = 0;
@@ -2127,6 +2141,9 @@ int get_builtin_message_inner(int type, int persona, ship* sender, ship* subject
 		} else {
 			match_level = BUILTIN_MATCHES_TYPE;
 		}
+
+		// Apply "Prefer this message" flags
+		match_level |= Messages[i].boost_level;
 
 		if (Current_mission_mood == Messages[i].mood) {
 			// Boost messages that match the current mood
