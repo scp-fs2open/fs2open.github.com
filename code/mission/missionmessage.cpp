@@ -338,6 +338,7 @@ int add_wave( const char *wave_name )
 void message_filter_clear(MessageFilter& filter) {
 	filter.species_bitfield = 0;
 	filter.type_bitfield = 0;
+	filter.team_bitfield = 0;
 }
 
 void message_filter_parse(MessageFilter& filter) {
@@ -374,11 +375,22 @@ void message_filter_parse(MessageFilter& filter) {
 		stuff_string(buf, F_NAME);
 		int type = ship_type_name_lookup(buf.c_str());
 		if (type < 0) {
-			Warning(LOCATION, "Unknown type %s in messages.tbl", buf.c_str());
+			Warning(LOCATION, "Unknown ship type %s in messages.tbl", buf.c_str());
 		} else if (type >= 32) {
 			Warning(LOCATION, "Type %s is index 32 or higher and therefore cannot be used in a message filter", buf.c_str());
 		} else {
 			filter.type_bitfield |= (1 << type);
+		}
+	}
+	while (optional_string("+Team:")) {
+		stuff_string(buf, F_NAME);
+		int team = iff_lookup(buf.c_str());
+		if (team < 0) {
+			Warning(LOCATION, "Unknown team %s in messages.tbl", buf.c_str());
+		} else if (team >= 32) {
+			Warning(LOCATION, "Team %s is index 32 or higher and therefore cannot be used in a message filter", buf.c_str());
+		} else {
+			filter.team_bitfield |= (1 << team);
 		}
 	}
 }
@@ -550,7 +562,7 @@ void message_parse(MessageFormat format) {
 			handle_legacy_backup_message(msg, "Delta");
 		} else if (!stricmp(msg.name, "Epsilon Arrived")) {
 			handle_legacy_backup_message(msg, "Epsilon");
-		} if (get_builtin_message_type(msg.name) == MESSAGE_NONE) {
+		} else if (get_builtin_message_type(msg.name) == MESSAGE_NONE) {
 			Warning(LOCATION, "Unknown builtin message type %s in messages.tbl", msg.name);
 		}
 	}
@@ -2017,7 +2029,8 @@ bool has_filters(MessageFilter& filter) {
 			|| !filter.class_name.empty()
 			|| !filter.wing_name.empty()
 			||  filter.species_bitfield
-			||  filter.type_bitfield;
+			||  filter.type_bitfield
+			||  filter.team_bitfield;
 }
 
 bool filter_matches(SCP_string value, SCP_vector<SCP_string>& filter) {
@@ -2045,7 +2058,8 @@ bool filters_match(MessageFilter& filter, ship* it) {
 		    && filter_matches(hud_get_ship_class(it), filter.class_name)
 		    && filter_matches(wing_name, filter.wing_name)
 		    && filter_matches(Ship_info[it->ship_info_index].species, filter.species_bitfield)
-		    && filter_matches(Ship_info[it->ship_info_index].class_type, filter.type_bitfield);
+		    && filter_matches(Ship_info[it->ship_info_index].class_type, filter.type_bitfield)
+		    && filter_matches(it->team, filter.team_bitfield);
 	}
 }
 

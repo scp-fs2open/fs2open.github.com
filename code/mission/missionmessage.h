@@ -148,6 +148,7 @@ typedef struct MessageFilter {
 	SCP_vector<SCP_string> wing_name;
 	int                    species_bitfield;
 	int                    type_bitfield;
+	int                    team_bitfield;
 } MessageFilter;
 
 typedef struct MissionMessage {
