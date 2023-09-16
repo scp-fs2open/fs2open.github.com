@@ -21,6 +21,7 @@
 #include "iff_defs/iff_defs.h"
 #include "io/timer.h"
 #include "localization/localize.h"
+#include "math/vecmat.h"
 #include "mission/missiontraining.h"
 #include "mission/missiongoals.h"
 #include "mod_table/mod_table.h"
@@ -551,6 +552,16 @@ void message_parse(MessageFormat format) {
 		message_filter_parse(msg.subject_filter);
 	} else {
 		message_filter_clear(msg.subject_filter);
+	}
+
+	msg.outer_filter_radius = -1;
+	if (optional_string("$Filter by other ship:")) {
+		if (optional_string("+Within range of sender:")) {
+			stuff_int(&msg.outer_filter_radius);
+		}
+		message_filter_parse(msg.outer_filter);
+	} else {
+		message_filter_clear(msg.outer_filter);
 	}
 
 	if (format == MessageFormat::TABLED) {
@@ -2063,6 +2074,25 @@ bool filters_match(MessageFilter& filter, ship* it) {
 	}
 }
 
+bool outer_filters_match(MessageFilter& filter, int range, ship* sender) {
+	for (auto i: list_range(&Ship_obj_list)) {
+		auto obj = &Objects[i->objnum];
+		if (obj->flags[Object::Object_Flags::Should_be_dead]) {
+			continue;
+		}
+		if ((range >= 0) && (vm_vec_dist(&obj->pos, &Objects[sender->objnum].pos) > range)) {
+			continue;
+		}
+    if (sender->objnum == i->objnum) {
+      continue;
+    }
+		if (filters_match(filter, &Ships[obj->instance])) {
+			return true;
+		}
+	}
+	return false;
+}
+
 bool excludes_current_mood(int message) {
 	for (SCP_vector<int>::iterator iter = Messages[message].excluded_moods.begin(); iter != Messages[message].excluded_moods.end(); ++iter) {
 		if (*iter == Current_mission_mood) {
@@ -2126,6 +2156,17 @@ int get_builtin_message_inner(int type, int persona, ship* sender, ship* subject
 		// Ditto with subject filters
 		if (has_filters(Messages[i].subject_filter)) {
 			if (filters_match(Messages[i].subject_filter, subject)) {
+				// Boost messages that have at least one filter
+				match_level |= BUILTIN_MATCHES_FILTER;
+			} else {
+				// Ignore messages where any filter doesn't match
+				continue;
+			}
+		}
+
+		// Ditto with outer filters, although they're more complicated
+		if (has_filters(Messages[i].outer_filter)) {
+			if (outer_filters_match(Messages[i].outer_filter, Messages[i].outer_filter_radius, sender)) {
 				// Boost messages that have at least one filter
 				match_level |= BUILTIN_MATCHES_FILTER;
 			} else {

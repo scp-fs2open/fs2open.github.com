@@ -161,6 +161,8 @@ typedef struct MissionMessage {
 
 	MessageFilter sender_filter;
 	MessageFilter subject_filter;
+	MessageFilter outer_filter;
+	int outer_filter_radius;
 
 	// unions for avi/wave information.  Because of issues with Fred, we are using
 	// the union to specify either the index into the avi or wave arrays above,
