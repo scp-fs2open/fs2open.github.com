@@ -16481,6 +16481,14 @@ void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future
 				}
 			}
 
+			// special case: the "no_collide" parse object flag is the same, but opposite, as the "collides" object flag
+			if (parse_obj_flag == Mission::Parse_Object_Flags::OF_No_collide)
+			{
+				auto tmp_flagset = oswpt.objp->flags;
+				tmp_flagset.set(Object::Object_Flags::Collides, !set_flag);
+				obj_set_flags(oswpt.objp, tmp_flagset);
+			}
+
 			// see if we have an ai flag to set
 			if (ai_flag != AI::AI_Flags::NUM_VALUES)
 			{
@@ -16494,6 +16502,12 @@ void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future
 		case OSWPT_TYPE_PARSE_OBJECT:
 			if (!future_ships) {
 				return;
+			}
+
+			// special case: the "collides" object flag is the same, but opposite, as the "no_collide" parse object flag
+			if (object_flag == Object::Object_Flags::Collides)
+			{
+				oswpt.ship_entry->p_objp->flags.set(Mission::Parse_Object_Flags::OF_No_collide, !set_flag);
 			}
 
 			// see if we have a p_object flag to set
@@ -16619,7 +16633,11 @@ int sexp_are_ship_flags_set(int node)
 				return SEXP_FALSE;
 		}
 
-		// we don't check parse flags
+		// we don't check parse flags, except for one that can be an object flag in reverse
+		if (parse_obj_flag == Mission::Parse_Object_Flags::OF_No_collide) {
+			if (objp->flags[Object::Object_Flags::Collides])
+				return SEXP_FALSE;
+		}
 
 		if (ai_flag != AI::AI_Flags::NUM_VALUES) {
 			if (!(aip->ai_flags[ai_flag]))

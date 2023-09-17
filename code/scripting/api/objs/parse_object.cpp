@@ -183,7 +183,12 @@ ADE_FUNC(getFlag, l_ParseObject, "string flag_name", "Checks whether one or more
 			return ADE_RETURN_FALSE;
 		}
 
-		// we only check parse flags
+		// we only check parse flags, unless this is the one object flag that is the same thing in reverse
+		if (object_flag == Object::Object_Flags::Collides)
+		{
+			if (pobjp->flags[Mission::Parse_Object_Flags::OF_No_collide])
+				return ADE_RETURN_FALSE;
+		}
 
 		if (parse_obj_flag != Mission::Parse_Object_Flags::NUM_VALUES)
 		{
