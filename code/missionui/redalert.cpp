@@ -860,17 +860,27 @@ void red_alert_bash_wingman_status()
 			char prospective_name[NAME_LENGTH];
 			int prospective_wave = Latest_wave_stored[wingnum] + 1;		// on the first iteration, the map will return 0 so the wave will be 1
 
-			// find the wing leader name for this wave
-			wing_bash_ship_name(prospective_name, wingp->name, ((prospective_wave - 1) * wingp->wave_count) + 1);
-
-			// see if this wing leader was stored
-			auto it = std::find_if(Red_alert_wingman_status.begin(), Red_alert_wingman_status.end(), [&](const red_alert_ship_status &ras) -> bool
+			// look for any ship in this wave
+			bool found = false;
+			for (int pos_in_wing = 0; pos_in_wing < wingp->wave_count; ++pos_in_wing)
 			{
-				return stricmp(ras.name.c_str(), prospective_name) == 0;
-			});
+				// find the name for this wingman in this position and wave
+				wing_bash_ship_name(prospective_name, wingp->name, ((prospective_wave - 1) * wingp->wave_count) + pos_in_wing + 1);
 
-			// found?
-			if (it != Red_alert_wingman_status.end())
+				// see if this ship was stored
+				auto it = std::find_if(Red_alert_wingman_status.begin(), Red_alert_wingman_status.end(), [&](const red_alert_ship_status &ras) -> bool
+				{
+					return stricmp(ras.name.c_str(), prospective_name) == 0;
+				});
+				if (it != Red_alert_wingman_status.end())
+				{
+					found = true;
+					break;
+				}
+			}
+
+			// any ship found?
+			if (found)
 			{
 				Latest_wave_stored[wingnum] = prospective_wave;
 				if (prospective_wave > 1)
@@ -907,8 +917,9 @@ void red_alert_bash_wingman_status()
 			int latest_wave = Latest_wave_stored[shipp->wingnum];
 			auto wingp = &Wings[shipp->wingnum];
 
-			// assign the wave number to the wing
-			wingp->current_wave = latest_wave;
+			// assign the wave number to the wing, but only if it was stored
+			if (latest_wave > 0)
+				wingp->current_wave = latest_wave;
 
 			if (latest_wave > 1)
 			{
