@@ -780,7 +780,8 @@ SCP_vector<sexp_oper> Operators = {
 	{ "reset-time-compression",			OP_CUTSCENES_RESET_TIME_COMPRESSION,	0,	0,			SEXP_ACTION_OPERATOR,	},
 	{ "call-ssm-strike",				OP_CALL_SSM_STRIKE,						3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// X3N0-Life-Form
 	{ "set-gravity-accel",				OP_SET_GRAVITY_ACCEL,					1,	1,			SEXP_ACTION_OPERATOR, },	// Asteroth
-	{ "force-rearm",					OP_FORCE_REARM,							2,	2,			SEXP_ACTION_OPERATOR,	},  // MjnMixael
+	{ "force-rearm",					OP_FORCE_REARM,							1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},  // MjnMixael
+	{ "abort-rearm",					OP_ABORT_REARM,							1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// MjnMixael
 
 	//Variable Category
 	{ "modify-variable",				OP_MODIFY_VARIABLE,						2,	2,			SEXP_ACTION_OPERATOR,	},
@@ -14097,7 +14098,21 @@ void sexp_force_rearm(int node)
 		// Begin the repair
 		ai_do_objects_repairing_stuff(ship->objp, ship->objp, REPAIR_INFO_BEGIN);
 	}
+}
 
+void sexp_abort_rearm(int node)
+{
+	for (int n = node; n >= 0; n = CDR(n)) {
+
+		auto ship = eval_ship(n);
+		if (!ship || !ship->shipp)
+			return;
+
+		ai_info* aip = &Ai_info[Ships[ship->objp->instance].ai_index];
+
+		// Begin the repair
+		ai_do_objects_repairing_stuff(ship->objp, &Objects[aip->support_ship_objnum], REPAIR_INFO_ABORT);
+	}
 }
 
 // this function get called by send-message or send-message random with the name of the message, sender,
@@ -28769,6 +28784,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_ABORT_REARM:
+				sexp_abort_rearm(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			default:{
 				// Check if we have a dynamic SEXP with this operator and if there is, execute that
 				auto dynamicSEXP = sexp::get_dynamic_sexp(op_num);
@@ -30016,6 +30036,7 @@ int query_operator_return_type(int op)
 		case OP_APPLY_CONTAINER_FILTER:
 		case OP_SET_GRAVITY_ACCEL:
 		case OP_FORCE_REARM:
+		case OP_ABORT_REARM:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -30316,6 +30337,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_GET_DAMAGE_CAUSED:
 		case OP_GET_THROTTLE_SPEED:
 		case OP_FORCE_REARM:
+		case OP_ABORT_REARM:
 			return OPF_SHIP;
 
 		case OP_ALTER_SHIP_FLAG:
@@ -34953,6 +34975,7 @@ int get_category(int op_id)
 		case OP_HUD_FORCE_EMP_EFFECT:
 		case OP_SET_GRAVITY_ACCEL:
 		case OP_FORCE_REARM:
+		case OP_ABORT_REARM:
 		case OP_SET_ORDER_ALLOWED_TARGET:
 		case OP_SET_ASTEROID_FIELD:
 		case OP_SET_DEBRIS_FIELD:
@@ -35416,6 +35439,7 @@ int get_subcategory(int op_id)
 		case OP_CALL_SSM_STRIKE:
 		case OP_SET_GRAVITY_ACCEL:
 		case OP_FORCE_REARM:
+		case OP_ABORT_REARM:
 			return CHANGE_SUBCATEGORY_SPECIAL_EFFECTS;
 
 		case OP_MODIFY_VARIABLE:
@@ -39281,6 +39305,11 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tTakes 1 or more arguments\r\n"
 		"\tALL: The ship to rearm\r\n"
 	},
+
+	{ OP_ABORT_REARM, "abort-rearm\r\n"
+		"\tForces a ship to instantly abort a rearm sequence\r\n"
+		"\tTakes 1 or more arguments\r\n"
+		"\tALL: The ship to abort rearm\r\n"
 	},
 
 	{ OP_SET_POST_EFFECT, "set-post-effect\r\n"
