@@ -14069,32 +14069,35 @@ void multi_sexp_set_gravity_accel()
 	}
 }
 
-void sexp_force_rearm(int n)
+void sexp_force_rearm(int node)
 {
-	auto repairee = eval_ship(n);
-	if (!repairee || !repairee->shipp)
-		return;
-	n = CDR(n);
-	auto repairer = eval_ship(n);
-	if (!repairer || !repairer->shipp)
-		return;
+	// This is kiiiiinda hacky. All the related repair methods expect a docker and a dockee, but
+	// nothing really special happens between them. It checks that they are same team and tells the docker
+	// to undock when repair is completed. So with minimal changes we can skip the dock stuff and just tell
+	// the code that the repairer is the repairee and all works as expected. Basically we simply created a
+	// way for a ship to 'repair itself'.
 
-	//Set repairee flags
-	ai_info* repairee_aip = &Ai_info[Ships[repairee->objp->instance].ai_index];
-	repairee_aip->support_ship_signature = repairer->objp->signature;
-	repairee_aip->support_ship_objnum = OBJ_INDEX(repairer->objp);
-	repairee_aip->mode = AIM_BE_REARMED;
+	for (int n = node; n >= 0; n = CDR(n)) {
 
-	//Set repairer flags
-	ai_info* repairer_aip = &Ai_info[Ships[repairer->objp->instance].ai_index];
-	repairer_aip->submode_start_time = Missiontime;
-	repairer_aip->mode = AIM_STILL; // probably need a special one of these!
+		auto ship = eval_ship(n);
+		if (!ship || !ship->shipp)
+			return;
 
-	if (repairee_aip == Player_ai) {
-		hud_support_view_start();
+		// Set flags
+		ai_info* aip = &Ai_info[Ships[ship->objp->instance].ai_index];
+		aip->support_ship_signature = ship->objp->signature;
+		aip->support_ship_objnum = OBJ_INDEX(ship->objp);
+		aip->submode_start_time = Missiontime;
+
+		// Start the HUD stuff
+		if (aip == Player_ai) {
+			hud_support_view_start();
+		}
+
+		// Begin the repair
+		ai_do_objects_repairing_stuff(ship->objp, ship->objp, REPAIR_INFO_BEGIN);
 	}
 
-	ai_do_objects_repairing_stuff(repairee->objp, repairer->objp, REPAIR_INFO_BEGIN);
 }
 
 // this function get called by send-message or send-message random with the name of the message, sender,
@@ -30312,6 +30315,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_IS_FRIENDLY_STEALTH_VISIBLE:
 		case OP_GET_DAMAGE_CAUSED:
 		case OP_GET_THROTTLE_SPEED:
+		case OP_FORCE_REARM:
 			return OPF_SHIP;
 
 		case OP_ALTER_SHIP_FLAG:
@@ -32770,9 +32774,6 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_SET_GRAVITY_ACCEL:
 			return OPF_POSITIVE;
-
-		case OP_FORCE_REARM:
-			return OPF_SHIP;
 
 		default: {
 			auto dynamicSEXP = sexp::get_dynamic_sexp(op);
@@ -39277,10 +39278,9 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_FORCE_REARM, "force-rearm\r\n"
 		"\tForces a ship to instantly begin a rearm sequence as if docked to a support ship\r\n"
-		"\tNote that the ship doing the rearming does not need to be docked to the rearm-ee\r\n"
-		"\tTakes 2 arguments\r\n"
-		"\t1: The ship to rearm\r\n"
-		"\t2: The ship to do the rearming"
+		"\tTakes 1 or more arguments\r\n"
+		"\tALL: The ship to rearm\r\n"
+	},
 	},
 
 	{ OP_SET_POST_EFFECT, "set-post-effect\r\n"
