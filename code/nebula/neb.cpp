@@ -759,6 +759,57 @@ float neb2_get_alpha_2shell(float alpha, float inner_radius, float outer_radius,
 	return 0.0f;
 }
 
+// Calculate the alpha multiplier for a poof type. This is used for fading in and out
+void neb2_calc_poof_fades() {
+
+	for (size_t i = 0; i < Poof_info.size(); i++) {
+
+		poof_info* pinfo = &Poof_info[i];
+
+		if (pinfo->fade_duration > -1) {
+
+			// Initialize variables
+			if (pinfo->fade_start == -1) {
+				pinfo->fade_start = timer_get_milliseconds();
+			}
+
+			// Calculate the elapsed time in milliseconds
+			auto currentTime = timer_get_milliseconds();
+			auto elapsedTime = currentTime - pinfo->fade_start;
+
+			// fade duration of 0 can be reasonably set to 1 to prevent divide by 0
+			if (pinfo->fade_duration == 0) {
+				pinfo->fade_duration = 1;
+			}
+
+			if (pinfo->fade_in) {
+				// Make sure to enable this poof type if we're fading it in
+				if (pinfo->fade_multiplier < 0) {
+					Neb2_poof_flags |= (1 << i);
+					neb2_poof_setup();
+				}
+				pinfo->fade_multiplier = 0.0f + ((float)elapsedTime / pinfo->fade_duration);
+			} else {
+				pinfo->fade_multiplier = 1.0f - ((float)elapsedTime / pinfo->fade_duration);
+			}
+
+			// if we're finished then reset pf_info
+			if ((pinfo->fade_multiplier >= 1.0f && pinfo->fade_in) || (pinfo->fade_multiplier <= 0.0f && !pinfo->fade_in)) {
+				pinfo->fade_duration = -1;
+				pinfo->fade_start = -1;
+				pinfo->fade_in = true;
+				pinfo->fade_multiplier = -1.0f;
+
+				//turn off any faded out poof types
+				if (!pinfo->fade_in) {
+					Neb2_poof_flags &= ~(1 << i);
+					neb2_poof_setup();
+				}
+			}
+		}
+	}
+}
+
 // -------------------------------------------------------------------------------------------------
 // WACKY LOCAL PLAYER NEBULA STUFF
 //
@@ -774,6 +825,14 @@ void neb2_toggle_poof(int poof_idx, bool enabling) {
 	vm_vec_make(&Poof_last_gen_pos, 999999.0f, 999999.0f, 999999.0f);
 
 	neb2_poof_setup();
+}
+
+void neb2_fade_poofs(int poof_idx, int time, bool type)
+{
+	poof_info* pinfo = &Poof_info[poof_idx];
+
+	pinfo->fade_duration = time;
+	pinfo->fade_in = type;
 }
 
 void new_poof(size_t poof_info_idx, vec3d* pos) {
@@ -885,6 +944,9 @@ void neb2_render_poofs()
 		return;
 	}
 
+	// upkeep poof fade stuff
+	neb2_calc_poof_fades();
+
 	// render the nebula
 	for (poof &pf : Neb2_poofs) {
 		poof_info* pinfo = &Poof_info[pf.poof_info_index];
@@ -936,6 +998,11 @@ void neb2_render_poofs()
 
 		// get the proper alpha value
 		alpha = neb2_get_alpha_2shell(pf.alpha, pf.radius, pinfo->view_dist, pf.radius/4, &pf.pt);
+
+		if (pinfo->fade_duration > -1) {
+
+			alpha = alpha * pinfo->fade_multiplier;
+		}
 
 		// optimization 2 - don't draw 0.0f or less poly's
 		// this amounts to big savings

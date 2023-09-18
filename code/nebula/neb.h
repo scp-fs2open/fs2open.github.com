@@ -73,6 +73,10 @@ typedef struct poof_info {
 	::util::UniformFloatRange rotation;
 	float view_dist;
 	::util::UniformFloatRange alpha;
+	int fade_start;
+	int fade_duration;
+	bool fade_in;
+	float fade_multiplier;
 
 	poof_info() {
 		bitmap_filename[0] = '\0';
@@ -82,6 +86,10 @@ typedef struct poof_info {
 		rotation = ::util::UniformFloatRange(-3.7f, 3.7f);
 		view_dist = 250.f;
 		alpha = ::util::UniformFloatRange(0.8f, 0.8f);
+		fade_start = -1;
+		fade_duration = -1;
+		fade_in = true;
+		fade_multiplier = -1.0f;
 	}
 } poof_info;
 
@@ -149,6 +157,9 @@ void neb2_render_setup(camid cid);
 
 // turns a poof on or off
 void neb2_toggle_poof(int poof_idx, bool enabling);
+
+// fades poofs
+void neb2_fade_poofs(int poof_idx, int time, bool type);
 
 // render the player nebula
 void neb2_render_poofs();
