@@ -795,16 +795,18 @@ void neb2_calc_poof_fades() {
 
 			// if we're finished then reset pf_info
 			if ((pinfo->fade_multiplier >= 1.0f && pinfo->fade_in) || (pinfo->fade_multiplier <= 0.0f && !pinfo->fade_in)) {
-				pinfo->fade_duration = -1;
-				pinfo->fade_start = -1;
-				pinfo->fade_in = true;
-				pinfo->fade_multiplier = -1.0f;
 
-				//turn off any faded out poof types
+				// turn off any faded out poof types
 				if (!pinfo->fade_in) {
 					Neb2_poof_flags &= ~(1 << i);
 					neb2_poof_setup();
 				}
+
+				// reset the values to default
+				pinfo->fade_duration = -1;
+				pinfo->fade_start = -1;
+				pinfo->fade_in = true;
+				pinfo->fade_multiplier = -1.0f;
 			}
 		}
 	}
