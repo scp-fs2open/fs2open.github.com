@@ -871,6 +871,17 @@ void upkeep_poofs()
 		}
 	}
 
+	// cull unused poof types
+	if (!Neb2_poofs.empty()) {
+		for (size_t i = 0; i < Neb2_poofs.size();) {
+			if (!poof_is_used(Neb2_poofs[i].poof_info_index)) {
+				Neb2_poofs[i] = Neb2_poofs.back();
+				Neb2_poofs.pop_back();
+			} else // if we needed to cull we should not advance because we just moved a new poof into this spot
+				i++;
+		}
+	}
+
 	neb_rand_seed = 0;
 
 	// make new poofs
@@ -930,6 +941,9 @@ void neb2_render_poofs()
     memset(&p, 0, sizeof(p));
 	memset(&ptemp, 0, sizeof(ptemp));
 
+	// upkeep poof fade stuff
+	neb2_calc_poof_fades();
+
 	// get eye position and orientation
 	neb2_get_eye_pos(&eye_pos);
 	neb2_get_eye_orient(&eye_orient);
@@ -945,9 +959,6 @@ void neb2_render_poofs()
 		return;
 	}
 
-	// upkeep poof fade stuff
-	neb2_calc_poof_fades();
-
 	// render the nebula
 	for (poof &pf : Neb2_poofs) {
 		poof_info* pinfo = &Poof_info[pf.poof_info_index];
@@ -955,6 +966,13 @@ void neb2_render_poofs()
 		// Miss this one out if the id is -1
 		if (pinfo->bitmap.first_frame < 0)
 			continue;
+
+		// It's possible for some faded-out poofs to get rendered after a poof type has finished a fade out
+		// and reset it's multiplier but before the poof is culled from the poof vector. So this small safety
+		// prevents them from flickering.
+		if (!poof_is_used(pf.poof_info_index)) {
+			continue;
+		}
 
 		// do animation upkeep
 		int framenum = 0;
@@ -1001,7 +1019,6 @@ void neb2_render_poofs()
 		alpha = neb2_get_alpha_2shell(pf.alpha, pf.radius, pinfo->view_dist, pf.radius/4, &pf.pt);
 
 		if (pinfo->fade_duration > -1) {
-
 			alpha = alpha * pinfo->fade_multiplier;
 		}
 
