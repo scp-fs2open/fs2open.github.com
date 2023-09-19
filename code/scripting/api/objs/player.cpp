@@ -752,7 +752,7 @@ ADE_FUNC(getMissionShipclassKills,
 
 	scoring_stats_h* ssh;
 	int ship_idx;
-	if (!ade_get_args(L, "oo|i", l_ScoringStats.GetPtr(&ssh), l_Shipclass.Get(&ship_idx))) {
+	if (!ade_get_args(L, "oo", l_ScoringStats.GetPtr(&ssh), l_Shipclass.Get(&ship_idx))) {
 		return ade_set_error(L, "i", -1);
 	}
 
