@@ -76,7 +76,7 @@ typedef struct poof_info {
 
 	// These values are dynamic, unlike the above and can change during a mission.
 	// They are used for fading poof types in and out via sexp
-	int fade_start;			// when the fade began
+	TIMESTAMP fade_start;			// when the fade began
 	int fade_duration;		// the length of the fade in milliseconds
 	bool fade_in;			// true if fading the poof type in, false if fading out
 	float fade_multiplier;	// the current multiplier for a poof's alpha transparency used to render the poofs of this type
@@ -89,7 +89,7 @@ typedef struct poof_info {
 		rotation = ::util::UniformFloatRange(-3.7f, 3.7f);
 		view_dist = 250.f;
 		alpha = ::util::UniformFloatRange(0.8f, 0.8f);
-		fade_start = -1;
+		fade_start = TIMESTAMP::invalid();
 		fade_duration = -1;
 		fade_in = true;
 		fade_multiplier = -1.0f;

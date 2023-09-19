@@ -769,13 +769,12 @@ void neb2_calc_poof_fades() {
 		if (pinfo->fade_duration > -1) {
 
 			// Initialize variables
-			if (pinfo->fade_start == -1) {
-				pinfo->fade_start = timer_get_milliseconds();
+			if (pinfo->fade_start == TIMESTAMP::invalid()) {
+				pinfo->fade_start = _timestamp();
 			}
 
 			// Calculate the elapsed time in milliseconds
-			auto currentTime = timer_get_milliseconds();
-			auto elapsedTime = currentTime - pinfo->fade_start;
+			auto elapsedTime = timestamp_since(pinfo->fade_start);
 
 			// fade duration of 0 can be reasonably set to 1 to prevent divide by 0
 			if (pinfo->fade_duration == 0) {
@@ -804,7 +803,7 @@ void neb2_calc_poof_fades() {
 
 				// reset the values to default
 				pinfo->fade_duration = -1;
-				pinfo->fade_start = -1;
+				pinfo->fade_start = TIMESTAMP::invalid();
 				pinfo->fade_in = true;
 				pinfo->fade_multiplier = -1.0f;
 			}
