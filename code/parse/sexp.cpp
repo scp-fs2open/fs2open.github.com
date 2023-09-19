@@ -39887,8 +39887,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	},
 
 	{ OP_NEBULA_FADE_POOF, "nebula-fade-poof\r\n"
-		"\tSets a poof pattern to fade in or out over time but does not toggle the poof on or off.\r\n"
-		"\tTo do that, use nebula-toggle-poof in conjunction with this sexp.\r\n"
+		"\tSets a poof pattern to fade in or out over time\r\n"
 		"Takes 3 arguments...\r\n"
 		"\t1:\tName of the nebula poof to fade\r\n"
 		"\t2:\tTime in milliseconds to fade\r\n"
