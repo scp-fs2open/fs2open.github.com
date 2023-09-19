@@ -862,22 +862,15 @@ void upkeep_poofs()
 	// cull distant poofs
 	if (!Neb2_poofs.empty()) {
 		for (size_t i = 0; i < Neb2_poofs.size();) {
-			if (vm_vec_dist(&Neb2_poofs[i].pt, &eye_pos) > Poof_info[Neb2_poofs[i].poof_info_index].view_dist * UPKEEP_DIST_MULT) {
+
+			// If the poof type is not used or if the poof is too far then cull it
+			if (!poof_is_used(Neb2_poofs[i].poof_info_index) || (
+					vm_vec_dist(&Neb2_poofs[i].pt, &eye_pos) >
+					Poof_info[Neb2_poofs[i].poof_info_index].view_dist * UPKEEP_DIST_MULT)) {
 				Neb2_poofs[i] = Neb2_poofs.back();
 				Neb2_poofs.pop_back();
 			}
 			else // if we needed to cull we should not advance because we just moved a new poof into this spot
-				i++;
-		}
-	}
-
-	// cull unused poof types
-	if (!Neb2_poofs.empty()) {
-		for (size_t i = 0; i < Neb2_poofs.size();) {
-			if (!poof_is_used(Neb2_poofs[i].poof_info_index)) {
-				Neb2_poofs[i] = Neb2_poofs.back();
-				Neb2_poofs.pop_back();
-			} else // if we needed to cull we should not advance because we just moved a new poof into this spot
 				i++;
 		}
 	}
