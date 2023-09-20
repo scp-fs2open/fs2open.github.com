@@ -3788,6 +3788,8 @@ void HUD_set_offsets(object *viewer_obj, int wiggedy_wack, matrix *eye_orient)
 	} else {
 		HUD_get_nose_coordinates(&HUD_nose_x, &HUD_nose_y);
 	}
+
+	hud_reticle_set_aim_cursor_offset();
 }
 
 /**

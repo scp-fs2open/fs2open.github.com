@@ -60,6 +60,8 @@ physics_info Descent_physics;			// used when we want to control the player like 
 
 angles chase_slew_angles;
 
+angles Player_aim_cursor;
+
 int toggle_glide = 0;
 int press_glide = 0;
 
@@ -1052,6 +1054,22 @@ void read_player_controls(object *objp, float frametime)
 		}
 	}
 
+	if (true) {
+		float max_aim_angle = 0.35f;
+
+		Player_aim_cursor.p += Player->ci.pitch * 0.015f;
+		Player_aim_cursor.h += Player->ci.heading * 0.015f;
+
+		float mag = powf(powf(Player_aim_cursor.p, 2.0f) + powf(Player_aim_cursor.h, 2.0f), 0.5f);
+		if (mag > max_aim_angle) {
+			Player_aim_cursor.p *= max_aim_angle / mag;
+			Player_aim_cursor.h *= max_aim_angle / mag;
+		}
+
+		Player->ci.pitch = Player_aim_cursor.p / max_aim_angle;
+		Player->ci.heading = Player_aim_cursor.h / max_aim_angle;
+	}
+
 	if(Player_obj->type == OBJ_SHIP && !Player_use_ai){	
 		// only read player control info if player ship is not dead
 		// or if Player_use_ai is disabed
@@ -1307,6 +1325,8 @@ void player_level_init()
 	Viewer_external_info.angles.h = 0.0f;
 	Viewer_external_info.preferred_distance = 0.0f;
 	Viewer_external_info.current_distance = 0.0f;
+
+	Player_aim_cursor = vmd_zero_angles;
 
 	
 	if (Default_start_chase_view != The_mission.flags[Mission::Mission_Flags::Toggle_start_chase_view])

@@ -225,6 +225,8 @@ int Reticle_launch_coords[GR_NUM_RESOLUTIONS][2] = {
 static int Threat_lock_timer;				// timestamp for when to show next flashing frame for lock threat
 static int Threat_lock_frame;				// frame offset of current lock flashing warning
 
+static vertex Player_aim_cursor_offset;
+
 
 HudGaugeReticle::HudGaugeReticle():
 HudGauge(HUD_OBJECT_CENTER_RETICLE, HUD_CENTER_RETICLE, true, false, (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY | VM_TOPDOWN | VM_OTHER_SHIP), 255, 255, 255)
@@ -234,6 +236,7 @@ HudGauge(HUD_OBJECT_CENTER_RETICLE, HUD_CENTER_RETICLE, true, false, (VM_EXTERNA
 
 void HudGaugeReticle::initBitmaps(char *fname)
 {
+	Warning(LOCATION, "Cannot load hud ani: %s\n", fname);
 	crosshair.first_frame = bm_load_animation(fname, &crosshair.num_frames);
 	if (crosshair.first_frame < 0) {
 		Warning(LOCATION, "Cannot load hud ani: %s\n", fname);
@@ -254,6 +257,8 @@ void HudGaugeReticle::render(float  /*frametime*/)
 	}
 
 	ship_info *sip = &Ship_info[Player_ship->ship_info_index];
+	int bitmap_size_x, bitmap_size_y;
+	bm_get_info(crosshair.first_frame, &bitmap_size_x, &bitmap_size_y);
 
 	if (autoaim_frame_offset > 0 || sip->autoaim_lock_snd.isValid() || sip->autoaim_lost_snd.isValid()) {
 		ship *shipp = &Ships[Objects[Player->objnum].instance];
@@ -306,15 +311,18 @@ void HudGaugeReticle::render(float  /*frametime*/)
 	else
 		renderBitmap(crosshair.first_frame, position[0], position[1]);
 
+	if (aim_cursor_frame_offset > 0) {
+		int x = Player_aim_cursor_offset.screen.xyw.x;
+		int y = Player_aim_cursor_offset.screen.xyw.y;
+		unsize(&x, &y);
+		renderBitmap(crosshair.first_frame + aim_cursor_frame_offset, x - (bitmap_size_x / 2), y - (bitmap_size_y / 2));
+	}
+
 	if (firepoint_display) {
 		fp.clear();
 		getFirepointStatus();
 		
 		if (!fp.empty()) {
-			int ax, ay;
-			bm_get_info(crosshair.first_frame, &ax, &ay);
-			int centerX = position[0] + (ax / 2);
-			int centerY = position[1] + (ay / 2);
 
 			for (SCP_vector<firepoint>::iterator fpi = fp.begin(); fpi != fp.end(); ++fpi) {
 				if (fpi->active == 2)
@@ -323,7 +331,9 @@ void HudGaugeReticle::render(float  /*frametime*/)
 					setGaugeColor(HUD_C_NORMAL);
 				else
 					setGaugeColor(HUD_C_DIM);
-			
+
+				int centerX = position[0] + (bitmap_size_x / 2);
+				int centerY = position[1] + (bitmap_size_y / 2);
 				renderCircle((int) (centerX + (fpi->xy.x * firepoint_scale_x)), (int) (centerY + (fpi->xy.y * firepoint_scale_y)), firepoint_size);
 			}
 		}
@@ -413,6 +423,13 @@ void HudGaugeReticle::getFirepointStatus() {
 			}
 		}
 	}
+}
+
+void HudGaugeReticle::setAimCursorFrame(int framenum) {
+	if (framenum < 0 || framenum > crosshair.num_frames - 1)
+		aim_cursor_frame_offset = 1;
+	else
+		aim_cursor_frame_offset = framenum;
 }
 
 void HudGaugeReticle::setAutoaimFrame(int framenum) {
@@ -1139,4 +1156,14 @@ void hud_update_reticle( player *pp )
 			}
 		}
 	} 
+}
+
+void hud_reticle_set_aim_cursor_offset() {
+	matrix view_mat;
+	vm_angles_2_matrix(&view_mat, &Player_aim_cursor);
+	view_mat = view_mat * Player_obj->orient;
+
+	vec3d view_pos = Eye_position + view_mat.vec.fvec * 100.0f;
+	g3_rotate_vertex(&Player_aim_cursor_offset, &view_pos);
+	g3_project_vertex(&Player_aim_cursor_offset);
 }

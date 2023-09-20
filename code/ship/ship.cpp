@@ -12332,7 +12332,12 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 
 		if ( pm->n_guns > 0 ) {
 			vec3d predicted_target_pos, plr_to_target_vec;
-			vec3d player_forward_vec = obj->orient.vec.fvec;
+			matrix firing_orient = obj->orient;
+			if (obj == Player_obj) {
+				vm_angles_2_matrix(&firing_orient, &Player_aim_cursor);
+				firing_orient = firing_orient * obj->orient;
+			}
+
 			bool in_automatic_aim_fov = false;
 			float dist_to_aim = 0;
 
@@ -12359,7 +12364,7 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 				vm_vec_sub(&plr_to_target_vec, &predicted_target_pos, &obj->pos);
 
 				if (has_autoaim) {
-					angle_to_target = vm_vec_delta_ang(&player_forward_vec, &plr_to_target_vec, NULL);
+					angle_to_target = vm_vec_delta_ang(&firing_orient.vec.fvec, &plr_to_target_vec, NULL);
 					if (angle_to_target < autoaim_fov)
 						in_automatic_aim_fov = true;
 				}
@@ -12593,7 +12598,7 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 							vm_vec_unrotate(&gun_point, &pnt, &obj->orient);
 							vm_vec_add(&firing_pos, &gun_point, &obj->pos);
 
-							matrix firing_orient;
+							matrix firing_orient2;
 							
 							/*	I AIM autoaim convergence
 								II AIM autoaim
@@ -12619,7 +12624,7 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 								vec3d target_vec, firing_vec, convergence_offset;
 								
 								// make sure vector is of the set length
-								vm_vec_copy_normalize(&target_vec, &player_forward_vec);
+								vm_vec_copy_normalize(&target_vec, &firing_orient.vec.fvec);
 								if ((sip->aiming_flags[Ship::Aiming_Flags::Auto_convergence]) && (aip->target_objnum != -1)) {
 									// auto convergence
 									vm_vec_scale(&target_vec, dist_to_aim);
@@ -12644,9 +12649,6 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 								vec3d firing_vec;
 								vm_vec_unrotate(&firing_vec, &pm->gun_banks[bank_to_fire].norm[pt], &obj->orient);
 								vm_vector_2_matrix(&firing_orient, &firing_vec, NULL, NULL);
-							} else {
-								// no autoaim or convergence
-								firing_orient = obj->orient;
 							}
 							
 							if (winfo_p->wi_flags[Weapon::Info_Flags::Apply_Recoil]){	// Function to add recoil functionality - DahBlount
