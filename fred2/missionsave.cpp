@@ -1203,13 +1203,13 @@ int CFred_mission_save::save_briefing()
 					}
 				}
 
-				if (Mission_save_format != FSO_FORMAT_RETAIL) {
+				if (Mission_save_format != FSO_FORMAT_RETAIL && bi->scale_factor != 1.0f) {
 					if (optional_string_fred("$icon scale:"))
 						parse_comments();
 					else
 						fout("\n$icon scale:");
 
-					fout(" %d", bi->scale);
+					fout(" %d", static_cast<int>(bi->scale_factor * 100.0f));
 				}
 
 				if (optional_string_fred("+id:"))
@@ -1224,20 +1224,29 @@ int CFred_mission_save::save_briefing()
 				fout(" %d", (bi->flags & BI_HIGHLIGHT) ? 1 : 0);
 
 				if (Mission_save_format != FSO_FORMAT_RETAIL) {
-					required_string_fred("$mirror:");
-					parse_comments();
+					if (optional_string_fred("$mirror:"))
+						parse_comments();
+					else
+						fout("\n$mirror:");
+
 					fout(" %d", (bi->flags & BI_MIRROR_ICON) ? 1 : 0);
 				}
 
 				if ((Mission_save_format != FSO_FORMAT_RETAIL) && (bi->flags & BI_USE_WING_ICON)) {
-					required_string_fred("$use wing icon:");
-					parse_comments();
+					if (optional_string_fred("$use wing icon:"))
+						parse_comments();
+					else
+						fout("\n$use wing icon:");
+
 					fout(" %d", (bi->flags & BI_USE_WING_ICON) ? 1 : 0);
 				}
 
 				if ((Mission_save_format != FSO_FORMAT_RETAIL) && (bi->flags & BI_USE_CARGO_ICON)) {
-					required_string_fred("$use cargo icon:");
-					parse_comments();
+					if (optional_string_fred("$use cargo icon:"))
+						parse_comments();
+					else
+						fout("\n$use cargo icon:");
+
 					fout(" %d", (bi->flags & BI_USE_CARGO_ICON) ? 1 : 0);
 				}
 
@@ -1278,7 +1287,9 @@ int CFred_mission_save::save_campaign_file(const char *pathname)
 
 	Campaign_tree_formp->save_tree();  // flush all changes so they get saved.
 	Campaign_tree_viewp->sort_elements();
+
 	reset_parse();
+	raw_ptr = Parse_text_raw;
 	fred_parse_flag = 0;
 
 	pathname = cf_add_ext(pathname, FS_CAMPAIGN_FILE_EXT);
@@ -1355,10 +1366,13 @@ int CFred_mission_save::save_campaign_file(const char *pathname)
 		required_string_fred("+Flags:", "$Mission:");
 		parse_comments();
 
+		// don't save any internal flags
+		auto flags_to_save = Campaign.missions[m].flags & CMISSION_EXTERNAL_FLAG_MASK;
+
 		// Goober5000
 		if (Mission_save_format != FSO_FORMAT_RETAIL) {
 			// don't save Bastion flag
-			fout(" %d", Campaign.missions[m].flags & ~CMISSION_FLAG_BASTION);
+			fout(" %d", flags_to_save & ~CMISSION_FLAG_BASTION);
 
 			// new main hall stuff
 			if (optional_string_fred("+Main Hall:", "$Mission:"))
@@ -1369,7 +1383,7 @@ int CFred_mission_save::save_campaign_file(const char *pathname)
 			fout(" %s", Campaign.missions[m].main_hall.c_str());
 		} else {
 			// save Bastion flag properly
-			fout(" %d", Campaign.missions[m].flags | ((Campaign.missions[m].main_hall != "") ? CMISSION_FLAG_BASTION : 0));
+			fout(" %d", flags_to_save | ((Campaign.missions[m].main_hall != "") ? CMISSION_FLAG_BASTION : 0));
 		}
 
 		if (Campaign.missions[m].debrief_persona_index > 0) {
@@ -2599,8 +2613,13 @@ int CFred_mission_save::save_mission_info()
 
 	required_string_fred("$Version:");
 	parse_comments(2);
-	// Since previous versions of FreeSpace interpret this as a float, this can only have one decimal point
-	fout(" %d.%d", The_mission.required_fso_version.major, The_mission.required_fso_version.minor);
+	if (Mission_save_format == FSO_FORMAT_RETAIL) {
+		// All retail missions, both FS1 and FS2, have the same version
+		fout(" %d.%d", LEGACY_MISSION_VERSION.major, LEGACY_MISSION_VERSION.minor);
+	} else {
+		// Since previous versions of FreeSpace interpret this as a float, this can only have one decimal point
+		fout(" %d.%d", The_mission.required_fso_version.major, The_mission.required_fso_version.minor);
+	}
 
 	// XSTR
 	required_string_fred("$Name:");
@@ -3083,7 +3102,9 @@ void CFred_mission_save::save_mission_internal(const char *pathname)
 	The_mission.required_fso_version = MISSION_VERSION;
 
 	reset_parse();
+	raw_ptr = Parse_text_raw;
 	fred_parse_flag = 0;
+
 	fp = cfopen(pathname, "wt", CFILE_NORMAL, CF_TYPE_MISSIONS);
 	if (!fp) {
 		nprintf(("Error", "Can't open mission file to save.\n"));

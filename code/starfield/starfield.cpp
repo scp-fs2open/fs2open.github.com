@@ -1338,10 +1338,8 @@ void stars_draw_sun(int show_sun)
 		// draw the sun itself, keep track of how many we drew
 		int bitmap_id = -1;
 		if (bm->fps) {
-			//gr_set_bitmap(bm->bitmap_id + ((timestamp() / (int)(bm->fps)) % bm->n_frames), GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.999f);
-			bitmap_id = bm->bitmap_id + ((timestamp() / (int)(bm->fps)) % bm->n_frames);
+			bitmap_id = bm->bitmap_id + ((timestamp() * bm->fps / MILLISECONDS_PER_SECOND) % bm->n_frames);
 		} else {
-			//gr_set_bitmap(bm->bitmap_id, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.999f);
 			bitmap_id = bm->bitmap_id;
 		}
 
@@ -1475,10 +1473,8 @@ void stars_draw_sun_glow(int sun_n)
 	// draw the sun itself, keep track of how many we drew
 	int bitmap_id = -1;
 	if (bm->glow_fps) {
-		//gr_set_bitmap(bm->glow_bitmap + ((timestamp() / (int)(bm->glow_fps)) % bm->glow_n_frames), GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.5f);
-		bitmap_id = bm->glow_bitmap + ((timestamp() / (int)(bm->glow_fps)) % bm->glow_n_frames);
+		bitmap_id = bm->glow_bitmap + ((timestamp() * bm->glow_fps / MILLISECONDS_PER_SECOND) % bm->glow_n_frames);
 	} else {
-		//gr_set_bitmap(bm->glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.5f);
 		bitmap_id = bm->glow_bitmap;
 	}
 
@@ -1549,13 +1545,13 @@ void stars_draw_bitmaps(int show_bitmaps)
 
 		if (Starfield_bitmaps[star_index].xparent) {
 			if (Starfield_bitmaps[star_index].fps) {
-				bitmap_id = Starfield_bitmaps[star_index].bitmap_id + ((timestamp() / (int)(Starfield_bitmaps[star_index].fps)) % Starfield_bitmaps[star_index].n_frames);
+				bitmap_id = Starfield_bitmaps[star_index].bitmap_id + (((timestamp() * Starfield_bitmaps[star_index].fps) / MILLISECONDS_PER_SECOND) % Starfield_bitmaps[star_index].n_frames);
 			} else {
 				bitmap_id = Starfield_bitmaps[star_index].bitmap_id;
 			}
 		} else {
 			if (Starfield_bitmaps[star_index].fps) {
-				bitmap_id = Starfield_bitmaps[star_index].bitmap_id + ((timestamp() / (int)(Starfield_bitmaps[star_index].fps)) % Starfield_bitmaps[star_index].n_frames);
+				bitmap_id = Starfield_bitmaps[star_index].bitmap_id + (((timestamp() * Starfield_bitmaps[star_index].fps) / MILLISECONDS_PER_SECOND) % Starfield_bitmaps[star_index].n_frames);
 				blending = true;
 				alpha = 0.9999f;
 			} else {

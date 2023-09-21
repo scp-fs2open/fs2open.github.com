@@ -639,7 +639,7 @@ void obj_snd_do_frame()
 
 				// non-looping sounds that have already played once need to be removed from the object sound list
 				int sound_index = obj_snd_find(objp, osp);
-				obj_snd_delete(objp, sound_index, false);
+				obj_snd_delete(objp, sound_index);
 
 				// don't corrupt the iterating loop (next iteration will move to the deleted osp's next sibling)
 				osp = osp_prev;
@@ -776,17 +776,15 @@ int obj_snd_assign(int objnum, gamesnd_id sndnum, const vec3d *pos, int flags, c
 //
 // parameters:  objnum		=> index of object that sound is being removed from.
 //				index		=> index of sound in objsnd_num
-//				stop_sound	=> whether we stop it (defaults to true)
 //
-void obj_snd_delete(object *objp, int index, bool stop_sound)
+void obj_snd_delete(object *objp, int index)
 {
 	Assert(index > -1 && index < (int) objp->objsnd_num.size());
 
 	obj_snd *osp = &Objsnds[objp->objsnd_num[index]];
 
 	//Stop the sound
-	if (stop_sound)
-		obj_snd_stop(objp, index);
+	obj_snd_stop(objp, index);
 
 	// remove objp from the obj_snd_list
 	list_remove( &obj_snd_list, osp );

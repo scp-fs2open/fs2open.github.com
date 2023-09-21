@@ -47,7 +47,6 @@
 /////////////////////////////////////////////////////////////////////////////
 
 static TIMESTAMP Red_alert_new_mission_timestamp;		// timestamp used to give user a little warning for red alerts
-//static int Red_alert_num_slots_used = 0;
 static int Red_alert_voice_started;
 
 SCP_vector<red_alert_ship_status> Red_alert_wingman_status;
@@ -818,7 +817,7 @@ void red_alert_delete_ship(p_object *pobjp, int ship_state)
 {
 	if (ship_state == RED_ALERT_DESTROYED_SHIP_CLASS || ship_state == RED_ALERT_PLAYER_DEL_SHIP_CLASS)
 	{
-		pobjp->flags[Mission::Parse_Object_Flags::Red_alert_deleted];
+		pobjp->flags.set(Mission::Parse_Object_Flags::Red_alert_deleted);
 
         if (pobjp->wingnum < 0)
             pobjp->flags.set(Mission::Parse_Object_Flags::SF_Cannot_arrive);
@@ -834,14 +833,13 @@ void red_alert_delete_ship(p_object *pobjp, int ship_state)
  */
 void red_alert_bash_wingman_status()
 {
-	int j;
 	ship_obj			*so;
 
 	SCP_vector<red_alert_ship_status>::iterator rasii;
 	SCP_vector<p_object>::iterator poii;
 
-	SCP_unordered_map<int, int> Wing_pobjects_deleted;
-	SCP_unordered_map<int, int>::iterator ii;
+	SCP_unordered_map<int, int> Wing_pobjects_marked_for_deletion;
+	SCP_map<int, int> Latest_wave_stored;
 
 	if ( !(Game_mode & GM_CAMPAIGN_MODE) ) {
 		return;
@@ -850,6 +848,49 @@ void red_alert_bash_wingman_status()
 	if ( Red_alert_wingman_status.empty() ) {
 		return;
 	}
+
+
+	// first, go through all wings and see how many waves we got to in the previous mission
+	for (int wingnum = 0; wingnum < Num_wings; ++wingnum)
+	{
+		auto wingp = &Wings[wingnum];
+
+		while (true)
+		{
+			char prospective_name[NAME_LENGTH];
+			int prospective_wave = Latest_wave_stored[wingnum] + 1;		// on the first iteration, the map will return 0 so the wave will be 1
+
+			// look for any ship in this wave
+			bool found = false;
+			for (int pos_in_wing = 0; pos_in_wing < wingp->wave_count; ++pos_in_wing)
+			{
+				// find the name for this wingman in this position and wave
+				wing_bash_ship_name(prospective_name, wingp->name, ((prospective_wave - 1) * wingp->wave_count) + pos_in_wing + 1);
+
+				// see if this ship was stored
+				auto it = std::find_if(Red_alert_wingman_status.begin(), Red_alert_wingman_status.end(), [&](const red_alert_ship_status &ras) -> bool
+				{
+					return stricmp(ras.name.c_str(), prospective_name) == 0;
+				});
+				if (it != Red_alert_wingman_status.end())
+				{
+					found = true;
+					break;
+				}
+			}
+
+			// any ship found?
+			if (found)
+			{
+				Latest_wave_stored[wingnum] = prospective_wave;
+				if (prospective_wave > 1)
+					wingp->red_alert_skipped_ships += wingp->wave_count;
+			}
+			else
+				break;
+		}
+	}
+
 
 	// go through all ships in the game, and see if there is red alert status data for any
 
@@ -868,6 +909,32 @@ void red_alert_bash_wingman_status()
 		if ( !(shipp->flags[Ship::Ship_Flags::From_player_wing]) && !(shipp->flags[Ship::Ship_Flags::Red_alert_store_status]) ) {
 			so = GET_NEXT(so);
 			continue;
+		}
+
+		// see if this ship belongs to a wing that was stored
+		if (shipp->wingnum >= 0)
+		{
+			int latest_wave = Latest_wave_stored[shipp->wingnum];
+			auto wingp = &Wings[shipp->wingnum];
+
+			// assign the wave number to the wing, but only if it was stored
+			if (latest_wave > 0)
+				wingp->current_wave = latest_wave;
+
+			if (latest_wave > 1)
+			{
+				// find this ship's position in the wing
+				int ship_entry_index = ship_registry_get_index(shipp->ship_name);
+				Assertion(Ship_registry[ship_entry_index].p_objp, "Ship %s must have a parse object!", shipp->ship_name);
+				int pos_in_wing = Ship_registry[ship_entry_index].p_objp->pos_in_wing;
+				
+				// give the ship its name from the latest wave
+				// (this will make the ship match to the correct red-alert data)
+				wing_bash_ship_name(shipp->ship_name, wingp->name, ((latest_wave - 1) * wingp->wave_count) + 1 + pos_in_wing);
+				// need to update the ship registry too
+				strcpy_s(Ship_registry[ship_entry_index].name, shipp->ship_name);
+				Ship_registry_map[shipp->ship_name] = ship_entry_index;
+			}
 		}
 
 		bool ship_data_restored = false;
@@ -889,7 +956,10 @@ void red_alert_bash_wingman_status()
 						if (ras->ship_class >= 0 && ras->ship_class < ship_info_size())
 							change_ship_type(SHIP_INDEX(shipp), ras->ship_class);
 						else
+						{
 							mprintf(("Invalid ship class specified in red alert data for ship %s. Using mission defaults.\n", shipp->ship_name));
+							break;
+						}
 					}
 
 					float max_hull;
@@ -946,23 +1016,30 @@ void red_alert_bash_wingman_status()
 		if ( pobjp->created_object != NULL )
 			continue;
 
-		// if we're in a wing, check whether we're in the player wing
-		bool from_player_wing = false;
-		if (pobjp->wingnum >= 0)
-		{
-			for (j = 0; j < MAX_STARTING_WINGS; j++)
-			{
-				if (!stricmp(Starting_wing_names[j], Wings[pobjp->wingnum].name))
-				{
-					from_player_wing = true;
-					break;
-				}
-			}
+		// same condition as in ship_obj loop
+		if ( !(pobjp->flags[Mission::Parse_Object_Flags::SF_From_player_wing]) && !(pobjp->flags[Mission::Parse_Object_Flags::SF_Red_alert_store_status]) ) {
+			continue;
 		}
 
-		// same condition as in ship_obj loop
-		if ( !from_player_wing && !(pobjp->flags[Mission::Parse_Object_Flags::SF_Red_alert_store_status]) ) {
-			continue;
+		char pobjp_name_to_check[NAME_LENGTH];
+		strcpy_s(pobjp_name_to_check, pobjp->name);
+
+		// see if this parse object belongs to a wing that was stored
+		if (pobjp->wingnum >= 0)
+		{
+			int latest_wave = Latest_wave_stored[pobjp->wingnum];
+			auto wingp = &Wings[pobjp->wingnum];
+
+			// assign the wave number to the wing
+			// note that since the wing hasn't arrived yet, and the wave is incremented upon arrival, we need to subtract 1
+			wingp->current_wave = latest_wave - 1;
+
+			if (latest_wave > 1)
+			{
+				// use the name from the latest wave for the purposes of matching
+				// (this will make the pobjp match to the correct red-alert data)
+				wing_bash_ship_name(pobjp_name_to_check, wingp->name, ((latest_wave - 1) * wingp->wave_count) + 1 + pobjp->pos_in_wing);
+			}
 		}
 
 		bool ship_data_restored = false;
@@ -973,7 +1050,7 @@ void red_alert_bash_wingman_status()
 			red_alert_ship_status *ras = &(*rasii);
 
 			// red-alert data matches this ship!
-			if ( !stricmp(ras->name.c_str(), pobjp->name)  )
+			if ( !stricmp(ras->name.c_str(), pobjp_name_to_check)  )
 			{
 				// we only want to restore ships which haven't been destroyed, or were removed by the player
 				if ( (ras->ship_class != RED_ALERT_DESTROYED_SHIP_CLASS) && (ras->ship_class != RED_ALERT_PLAYER_DEL_SHIP_CLASS) )
@@ -986,8 +1063,6 @@ void red_alert_bash_wingman_status()
 						else
 						{
 							mprintf(("Invalid ship class specified in red alert data for ship %s. Using mission defaults.\n", pobjp->name));
-							
-							// We will break anyway to this should work
 							break;
 						}
 					}
@@ -1027,33 +1102,35 @@ void red_alert_bash_wingman_status()
 			red_alert_delete_ship(pobjp, ship_state);
 
 			if (pobjp->wingnum >= 0)
-				Wing_pobjects_deleted[pobjp->wingnum]++;
+				++Wing_pobjects_marked_for_deletion[pobjp->wingnum];
 		}
 	}
 
-	// if all parse objects in a wing have been removed, decrement the count for that wing
-	for (ii = Wing_pobjects_deleted.begin(); ii != Wing_pobjects_deleted.end(); ++ii)
+	// if all parse objects in a wing have been removed, clear the count for that wing so the next wave can arrive, if applicable
+	for (const auto &ii: Wing_pobjects_marked_for_deletion)
 	{
-		wing *wingp = &Wings[ii->first];
+		wing *wingp = &Wings[ii.first];
 
-		if (wingp->num_waves > 0 && wingp->wave_count == ii->second)
-		{			
-			wingp->current_wave++;
+		if (wingp->num_waves > 0 && wingp->wave_count == ii.second)
+		{
+			// skip over this wave
 			wingp->red_alert_skipped_ships += wingp->wave_count;
+			wingp->current_wave++;
 
-            if (wingp->num_waves == 0)
+			bool waves_spent = wingp->current_wave >= wingp->num_waves;
+            if (waves_spent)
                 wingp->flags.set(Ship::Wing_Flags::Gone);
 
 			// look through all ships yet to arrive...
 			for (p_object *pobjp = GET_FIRST(&Ship_arrival_list); pobjp != END_OF_LIST(&Ship_arrival_list); pobjp = GET_NEXT(pobjp))
 			{
 				// ...and mark the ones in this wing
-				if (pobjp->wingnum == ii->first)
+				if (pobjp->wingnum == ii.first)
 				{
 					// no waves left to arrive, so mark ships accordingly
-                    if (wingp->num_waves == 0)
+                    if (waves_spent)
                         pobjp->flags.set(Mission::Parse_Object_Flags::SF_Cannot_arrive);
-                    // we skipped one complete wave, so clear the flag so the next wave creates all ships
+                    // we skipped a complete wave, so clear the flag so the next wave creates all ships
                     else
                         pobjp->flags.remove(Mission::Parse_Object_Flags::Red_alert_deleted);
 				}

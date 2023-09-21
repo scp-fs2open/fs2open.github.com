@@ -236,7 +236,7 @@ public:
 	//Get
 	char *GetNamePtr(){return Name;}
 	bool IsName(const char* in_name) { return (stricmp(in_name, Name) == 0); }
-	float GetDamage(float damage_applied, int in_damage_type_idx, float diff_dmg_scale, int is_beam = 0);
+	float GetDamage(float damage_applied, int in_damage_type_idx, float diff_dmg_scale, bool is_beam);
 	float GetShieldPiercePCT(int damage_type_idx);
 	int GetPiercingType(int damage_type_idx);
 	float GetPiercingLimit(int damage_type_idx);

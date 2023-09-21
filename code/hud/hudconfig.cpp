@@ -900,7 +900,7 @@ void hud_config_render_gauges(bool API_Access)
 				resize = GR_RESIZE_NONE;
 			}
 
-			gr_aabitmap(HC_gauge_coords[i].x, HC_gauge_coords[i].y, resize, false, (int)(HC_gauge_scale * 100));
+			gr_aabitmap(HC_gauge_coords[i].x, HC_gauge_coords[i].y, resize, false, HC_gauge_scale);
 		}
 		
 		/*

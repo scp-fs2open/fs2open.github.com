@@ -59,6 +59,8 @@ extern int Num_weapon_subtypes;
 // enum for multilock object type restriction
 enum class LR_Objecttypes { LRO_SHIPS, LRO_WEAPONS };
 
+constexpr int BANK_SWITCH_DELAY = 250;	// after switching banks, 1/4 second delay until player can fire
+
 //particle names go here -nuke
 #define PSPEW_NONE		-1			//used to disable a spew, useful for xmts
 #define PSPEW_DEFAULT	0			//std fs2 pspew

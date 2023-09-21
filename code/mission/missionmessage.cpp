@@ -1979,7 +1979,7 @@ int pick_persona(ship* shipp) {
 	if (count == 1) {
 		return candidates[0];
 	} else if (count > 1) {
-		return candidates[Random::next(0, count)];
+		return candidates[Random::next(count)];
 	} else if (persona_type & PERSONA_FLAG_SUPPORT) {
 		// Species without a support persona (e.g. the UEF) historically used the
 		// first support persona; retain that behavior

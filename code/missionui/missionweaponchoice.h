@@ -12,6 +12,8 @@
 #ifndef __MISSION_WEAPON_CHOICE_H__
 #define __MISSION_WEAPON_CHOICE_H__
 
+#include "mission/missionparse.h"
+
 class p_object;
 struct wss_unit;
 class ship_weapon;
@@ -83,6 +85,7 @@ void	wl_bash_ship_weapons(ship_weapon *swp, wss_unit *slot);
 
 void wl_set_default_weapons(int index, int ship_class);
 void wl_reset_to_defaults();
+void wl_init_pool(team_data* td);
 void wl_fill_slots();
 
 // Set selected slot to first placed ship

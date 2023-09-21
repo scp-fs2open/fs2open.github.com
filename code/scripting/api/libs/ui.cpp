@@ -535,6 +535,7 @@ ADE_FUNC(selectCampaign,
 	}
 
 	campaign_select_campaign(filename);
+	Pilot.save_player();
 
 	return ADE_RETURN_TRUE;
 }
@@ -570,7 +571,7 @@ ADE_FUNC(getBriefingMusicName,
 	"string",
 	"The file name or empty if no music")
 {
-	return ade_set_args(L, "s", common_music_get_filename(SCORE_BRIEFING).c_str());
+	return ade_set_args(L, "s", common_music_get_filename(SCORE_BRIEFING));
 }
 
 ADE_FUNC(runBriefingStageHook,
@@ -956,7 +957,7 @@ ADE_FUNC(getDebriefingMusicName,
 	"string",
 	"The file name or empty if no music")
 {
-	return ade_set_args(L, "s", common_music_get_filename(debrief_select_music()).c_str());
+	return ade_set_args(L, "s", common_music_get_filename(debrief_select_music()));
 }
 
 ADE_FUNC(getDebriefing, l_UserInterface_Debrief, nullptr, "Get the debriefing", "debriefing", "The debriefing data")
@@ -1228,7 +1229,7 @@ ADE_FUNC(getFictionMusicName, l_UserInterface_FictionViewer, nullptr,
 	"string",
 	"The file name or empty if no music")
 {
-	return ade_set_args(L, "s", common_music_get_filename(SCORE_FICTION_VIEWER).c_str());
+	return ade_set_args(L, "s", common_music_get_filename(SCORE_FICTION_VIEWER));
 }
 
 //**********SUBLIBRARY: UserInterface/ShipWepSelect
@@ -1424,12 +1425,16 @@ ADE_FUNC(resetSelect,
 	nullptr)
 {
 	// Note this does all the things from ss_reset_to_default() in missionshipchoice.cpp except
-	// resetting UI elements - Mjn
+	// resetting UI elements. It also resets the weapon pool. - Mjn
 
 	SCP_UNUSED(L); // unused parameter
 
+	//Reset ships pool
 	ss_init_pool(&Team_data[Common_team]);
 	ss_init_units();
+
+	//Reset weapons pool
+	wl_init_pool(&Team_data[Common_team]);
 
 	if (!(Game_mode & GM_MULTIPLAYER)) {
 		wl_fill_slots();

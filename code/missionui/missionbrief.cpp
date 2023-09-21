@@ -1507,10 +1507,18 @@ void brief_check_for_anim(bool api_access, int api_x, int api_y)
 	for ( i = 0; i < bs->num_icons; i++ ) {
 		bi = &bs->icons[i];
 		brief_common_get_icon_dimensions(&iw, &ih, bi);
+
+		// could be a scaled icon
+		if (bi->scale_factor != 1.0f) {
+			iw = static_cast<int>(iw * bi->scale_factor);
+			ih = static_cast<int>(ih * bi->scale_factor);
+		}
+
 		if ( mx < bi->x ) continue;
 		if ( mx > (bi->x + iw) ) continue;
 		if ( my < bi->y ) continue;
 		if ( my > (bi->y + ih) ) continue;
+
 		// if we've got here, must be a hit
 		break;
 	}

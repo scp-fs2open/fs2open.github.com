@@ -74,15 +74,16 @@ extern SCP_vector<menu_music> Spooled_music;
 
 
 // event music soundtrack storage
+typedef struct tagSOUNDTRACK_PATTERN_INFO {
+	char fname[MAX_FILENAME_LEN];
+	float num_measures;
+	int samples_per_measure;
+} SOUNDTRACK_PATTERN_INFO;
 typedef struct tagSOUNDTRACK_INFO {
 	int flags;
 	int	num_patterns;
 	char name[NAME_LENGTH];
-	struct {
-		char fname[MAX_FILENAME_LEN];
-		float num_measures;
-		int samples_per_measure;
-	} patterns[MAX_PATTERNS];
+	SOUNDTRACK_PATTERN_INFO patterns[MAX_PATTERNS];
 } SOUNDTRACK_INFO;
 
 // Goober5000 - event music flags

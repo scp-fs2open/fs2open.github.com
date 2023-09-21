@@ -4607,6 +4607,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		}
 
 		trail_info *ci = &sip->ct_info[sip->ct_count++];
+		trail_info_init(ci);
 		
 		required_string("+Offset:");
 		stuff_vec3d(&ci->pt);
@@ -4630,8 +4631,6 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 				ci->a_decay_exponent = 1.0f;
 			}
 		}
-		else if (first_time)
-			ci->a_decay_exponent = 1.0f;
 
 		required_string("+Max Life:");
 		stuff_float(&ci->max_life);
@@ -4657,8 +4656,6 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 				ci->texture_stretch = 1.0f;
 			}
 		}
-		else if (first_time)
-			ci->texture_stretch = 1.0f;
 
 		if (optional_string("+Faded Out Sections:") ) {
 			stuff_int(&ci->n_fade_out_sections);
@@ -8277,7 +8274,7 @@ void ship_wing_cleanup( int shipnum, wing *wingp )
 
 		// Goober5000 - some changes for clarity and closing holes
 		// make sure to flag the wing as gone if all of its member ships are gone and no more can arrive
-		if ((wingp->current_wave == wingp->num_waves) && (wingp->total_destroyed + wingp->total_departed + wingp->total_vanished == wingp->total_arrived_count))
+		if ((wingp->current_wave >= wingp->num_waves) && (wingp->total_destroyed + wingp->total_departed + wingp->total_vanished == wingp->total_arrived_count))
 		{
 			// mark the wing as gone
 			wingp->flags.set(Ship::Wing_Flags::Gone);
@@ -8323,7 +8320,7 @@ void ship_wing_cleanup( int shipnum, wing *wingp )
 						// TODO: I think this Int3() is triggered when a wing whose ships are all docked to ships of another
 						// wing departs.  It can be reliably seen in TVWP chapter 1 mission 7, when Torino and Iota wing depart.
 						// Not sure how to fix this. -- Goober5000
-						Int3();
+						UNREACHABLE("A ship is still present even though its wing should be gone!");
 					}
 				}
 			}
@@ -19506,7 +19503,7 @@ int calculation_type_get(char *str)
 }
 
 //STEP 3: Add the calculation to the switch statement.
-float ArmorType::GetDamage(float damage_applied, int in_damage_type_idx, float diff_dmg_scale, int is_beam) {
+float ArmorType::GetDamage(float damage_applied, int in_damage_type_idx, float diff_dmg_scale, bool is_beam) {
 	// Nuke: If the weapon has no damage type, just return damage
 	if (in_damage_type_idx < 0) {
 		// multiply by difficulty scaler now, since it is no longer done where this is called

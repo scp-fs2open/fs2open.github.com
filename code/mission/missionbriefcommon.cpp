@@ -1017,10 +1017,9 @@ void brief_render_icon_line(int stage_num, int line_num)
  * @param icon_num icon number in stage
  * @param frametime	time elapsed in seconds
  * @param selected FRED only (will be 0 or non-zero)
- * @param w_scale_factor scale icon in width by this amount (default 1.0f)
- * @param h_scale_factor scale icon in height by this amount (default 1.0f)
+ * @param scale_factor scale icon by this amount (default 1.0f)
  */
-void brief_render_icon(int stage_num, int icon_num, float frametime, int selected, float w_scale_factor, float h_scale_factor)
+void brief_render_icon(int stage_num, int icon_num, float frametime, int selected, float scale_factor)
 {
 	brief_icon	*bi, *closeup_icon;
 	generic_anim *ga;
@@ -1033,7 +1032,11 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 	Assert( Briefing != NULL );
 	
 	bi = &Briefing->stages[stage_num].icons[icon_num];
-	mirror_icon = (bi->flags & BI_MIRROR_ICON)? true:false;
+
+	mirror_icon = (bi->flags & BI_MIRROR_ICON) ? true : false;
+	if (bi->scale_factor != 1.0f) {
+		scale_factor *= bi->scale_factor;
+	}
 
 	icon_move_info *mi, *next;
 	int interp_pos_found = 0;
@@ -1111,8 +1114,8 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 		}
 		gr_unsize_screen_posf(&sx, &sy, NULL, NULL, this_resize);
 	
-		scaled_w = i2fl(((icon_w * bi->scale) / 100) * w_scale_factor);
-		scaled_h = i2fl(((icon_h * bi->scale) / 100) * h_scale_factor);
+		scaled_w = icon_w * scale_factor;
+		scaled_h = icon_h * scale_factor;
 		bxf = sx - scaled_w / 2.0f + 0.5f;
 		byf = sy - scaled_h / 2.0f + 0.5f;
 		bx = fl2i(bxf);
@@ -1126,7 +1129,7 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 		}
 
 		// render highlight anim frame
-		if ( (bi->flags&BI_SHOWHIGHLIGHT) && (bi->flags&BI_HIGHLIGHT) ) {
+		if ( (bi->flags & BI_SHOWHIGHLIGHT) && (bi->flags & BI_HIGHLIGHT) ) {
 			hud_anim *ha = &bi->highlight_anim;
 			if ( ha->first_frame >= 0 ) {
 				ha->sx = bi->hold_x;
@@ -1139,7 +1142,7 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 				//hud_set_iff_color(bi->team);
 				brief_set_icon_color(bi->team);
 
-				hud_anim_render(ha, frametime, 1, 0, 1, 0, bscreen.resize, mirror_icon);
+				hud_anim_render(ha, frametime, 1, 0, 1, 0, bscreen.resize, mirror_icon, scale_factor);
 
 				if (!Brief_stage_highlight_sound_handle.isValid()) {
 					if ( !Fred_running) {
@@ -1151,13 +1154,13 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 
 		// render fade-in anim frame
 		if ( bi->flags & BI_FADEIN ) {
-			hud_anim *ha = &bi->fadein_anim;
+			hud_anim *ha = &bi->fade_anim;
 			if ( ha->first_frame >= 0 ) {
 				ha->sx = bx;
 				ha->sy = by;
 				brief_set_icon_color(bi->team);
 
-				if (hud_anim_render(ha, frametime, 1, 0, 0, 1, bscreen.resize, mirror_icon) == 0) {
+				if (hud_anim_render(ha, frametime, 1, 0, 0, 1, bscreen.resize, mirror_icon, scale_factor) == 0) {
 					bi->flags &= ~BI_FADEIN;
 				}
 			} else {
@@ -1167,7 +1170,7 @@ void brief_render_icon(int stage_num, int icon_num, float frametime, int selecte
 
 		if ( !(bi->flags & BI_FADEIN) ) {
 			gr_set_bitmap(icon_bitmap);
-			gr_aabitmap(bx, by, bscreen.resize, mirror_icon, bi->scale);
+			gr_aabitmap(bx, by, bscreen.resize, mirror_icon, scale_factor);
 
 			// draw text centered over the icon (make text darker)
 			if ( bi->type == ICON_FIGHTER_PLAYER || bi->type == ICON_BOMBER_PLAYER ) {
@@ -1259,6 +1262,11 @@ void brief_start_highlight_anims(int stage_num)
 			bi->highlight_anim.time_elapsed=0.0f;
 
 			bm_get_info( bi->highlight_anim.first_frame, &anim_w, &anim_h, NULL);
+			if (bi->scale_factor != 1.0f) {
+				anim_w = static_cast<int>(anim_w * bi->scale_factor);
+				anim_h = static_cast<int>(anim_h * bi->scale_factor);
+			}
+
 			x = fl2i( i2fl(bi->x) + bi->w/2.0f - anim_w/2.0f );
 			y = fl2i( i2fl(bi->y) + bi->h/2.0f - anim_h/2.0f );
 			bi->hold_x = x;
@@ -1907,8 +1915,8 @@ int brief_set_move_list(int new_stage, int current_stage, float time)
 			}
 
 			newb->icons[i].flags |= BI_FADEIN;
-			newb->icons[i].fadein_anim = bii->fade;
-			newb->icons[i].fadein_anim.time_elapsed = 0.0f;
+			newb->icons[i].fade_anim = bii->fade;
+			newb->icons[i].fade_anim.time_elapsed = 0.0f;
 		}
 	}
 

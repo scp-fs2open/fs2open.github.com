@@ -1023,14 +1023,18 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, char
 		break;
 
 	case OP_AI_STAY_NEAR_SHIP:
+	{
+		bool is_nan, is_nan_forever;
+
 		aigp->target_name = ai_get_goal_target_name( CTEXT(CDR(node)), &aigp->target_name_index );
 		aigp->priority = atoi( CTEXT(CDDR(node)) );
 		if ( CDDDR(node) < 0 )
 			aigp->float_data = 300.0f;
 		else
-			aigp->float_data = i2fl(atoi( CTEXT(CDDDR(node)) ));
+			aigp->float_data = i2fl(eval_num(CDDDR(node), is_nan, is_nan_forever));
 		aigp->ai_mode = AI_GOAL_STAY_NEAR_SHIP;
 		break;
+	}
 
 	case OP_AI_FORM_ON_WING:
 		aigp->priority = 99;
@@ -1118,17 +1122,17 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, char
 
 	// Goober5000 - we now have an extra optional chase argument to allow chasing our own team
 	if ( op == OP_AI_CHASE || op == OP_AI_CHASE_WING || op == OP_AI_CHASE_SHIP_CLASS || op == OP_AI_DISABLE_SHIP || op == OP_AI_DISARM_SHIP ) {
-		if ((CDDDR(node) != -1) && is_sexp_true(CDDDR(node)))
+		if (is_sexp_true(CDDDR(node)))
 			aigp->flags.set(AI::Goal_Flags::Target_own_team);
 	}
 	if ( op == OP_AI_DESTROY_SUBSYS ) {
-		if ((CDDDDR(node) != -1) && is_sexp_true(CDDDDR(node)))
+		if (is_sexp_true(CDDDDR(node)))
 			aigp->flags.set(AI::Goal_Flags::Target_own_team);
 	}
 
 	// maybe get the afterburn hard flag
 	if (op == OP_AI_CHASE_ANY) {
-		if ((CDDR(node) != -1) && is_sexp_true(CDDR(node)))
+		if (is_sexp_true(CDDR(node)))
 			aigp->flags.set(AI::Goal_Flags::Afterburn_hard);
 	}
 	if (op == OP_AI_GUARD || 
@@ -1136,7 +1140,7 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, char
 		op == OP_AI_WAYPOINTS || 
 		op == OP_AI_WAYPOINTS_ONCE || 
 		op == OP_AI_FLY_TO_SHIP) {
-		if ((CDDDR(node) != -1) && is_sexp_true(CDDDR(node)))
+		if (is_sexp_true(CDDDR(node)))
 			aigp->flags.set(AI::Goal_Flags::Afterburn_hard);
 	}
 	if (op == OP_AI_CHASE || 
@@ -1145,11 +1149,11 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, char
 		op == OP_AI_DISABLE_SHIP || 
 		op == OP_AI_DISARM_SHIP || 
 		op == OP_AI_STAY_NEAR_SHIP) {
-		if ((CDDDDR(node) != -1) && is_sexp_true(CDDDDR(node)))
+		if (is_sexp_true(CDDDDR(node)))
 			aigp->flags.set(AI::Goal_Flags::Afterburn_hard);
 	}	
 	if (op == OP_AI_DESTROY_SUBSYS || op == OP_AI_DOCK) {
-		if ((CDDDDDR(node) != -1) && is_sexp_true(CDDDDDR(node)))
+		if (is_sexp_true(CDDDDDR(node)))
 			aigp->flags.set(AI::Goal_Flags::Afterburn_hard);
 	}
 
@@ -1749,7 +1753,7 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 		}
 
 		default:
-			Int3();
+			UNREACHABLE("Unhandled AI goal %d", aigp->ai_mode);
 			status = 0;
 			break;
 	}
@@ -1821,9 +1825,16 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 	// Goober5000 - before doing anything else, check if this is a disarm goal for an arrived ship...
 	if ((status == SHIP_STATUS_ARRIVED) && (aigp->ai_mode == AI_GOAL_DISARM_SHIP))
 	{
-		// if the ship has no turrets, we can't disarm it!
-		if (Ships[ship_name_lookup(aigp->target_name)].subsys_info[SUBSYSTEM_TURRET].type_count == 0)
-			return ai_achievability::NOT_ACHIEVABLE;
+		sindex = ship_name_lookup(aigp->target_name);
+
+		if ( sindex >= 0 ) {
+			// if the ship has no turrets, we can't disarm it!
+			if (Ships[sindex].subsys_info[SUBSYSTEM_TURRET].type_count == 0)
+				return ai_achievability::NOT_ACHIEVABLE;
+		} else {
+			UNREACHABLE("Target name %s is not an arrived ship!", aigp->target_name);
+			return ai_achievability::NOT_ACHIEVABLE;			// force this goal to be invalid
+		}
 	}
 
 	// if the goal is an ignore/disable/disarm goal, then 
@@ -1864,7 +1875,7 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 		}
 
 		if ( (aigp->dockee.index == -1) || (aigp->docker.index == -1) ) {
-			Int3();			// for now, allender wants to know about these things!!!!
+			Warning(LOCATION, "Cannot determine docking information for %s!", Ships[objp->instance].ship_name);			// for now, allender wants to know about these things!!!!
 			return ai_achievability::NOT_ACHIEVABLE;
 		}
 
@@ -1874,7 +1885,10 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 
 		// we must also determine if we're prevented from docking for any reason
 		sindex = ship_name_lookup(aigp->target_name);
-		Assert( sindex >= 0 );
+		if (sindex < 0) {
+			UNREACHABLE("Target name %s is not an arrived ship!", aigp->target_name);
+			return ai_achievability::NOT_ACHIEVABLE;			// force this goal to be invalid
+		}
 		object *goal_objp = &Objects[Ships[sindex].objnum];
 
 		// if the ship that I am supposed to dock with is docked with something else, then I need to put my goal on hold
@@ -1924,9 +1938,16 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 		// might happen too, so err on the safe side.  (Yay for emergent paragraph justification!)
 		if ((aip->mode == AIM_DOCK) && (aip->submode >= AIS_UNDOCK_0))
 		{
-			// only put it on hold if it's someone other than the guy we're undocking from right now!!
-			if (aip->goal_objnum != Ships[ship_name_lookup(aigp->target_name)].objnum)
-				return ai_achievability::NOT_KNOWN;
+			sindex = ship_name_lookup(aigp->target_name);
+
+			if ( sindex >= 0 ) {
+				// only put it on hold if it's someone other than the guy we're undocking from right now!!
+				if (aip->goal_objnum != Ships[sindex].objnum)
+					return ai_achievability::NOT_KNOWN;
+			} else {
+				UNREACHABLE("Target name %s is not an arrived ship!", aigp->target_name);
+				return ai_achievability::NOT_ACHIEVABLE;			// force this goal to be invalid
+			}
 		}
 
 	} else if ( (aigp->ai_mode == AI_GOAL_DESTROY_SUBSYSTEM) && (status == SHIP_STATUS_ARRIVED) ) {
@@ -1940,7 +1961,7 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 				aigp->ai_submode = ship_find_subsys( &Ships[sindex], aigp->docker.name );
 				aigp->flags.remove(AI::Goal_Flags::Subsys_needs_fixup);
 			} else {
-				Int3();
+				UNREACHABLE("Target name %s is not an arrived ship!", aigp->target_name);
 				return ai_achievability::NOT_ACHIEVABLE;			// force this goal to be invalid
 			}
 		}
@@ -1949,7 +1970,10 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 
 		// for ignoring a ship, call the ai_ignore object function, then declare the goal satisfied
 		sindex = ship_name_lookup( aigp->target_name );
-		Assert( sindex != -1 );		// should be true because of above status
+		if (sindex < 0) {
+			UNREACHABLE("Target name %s is not an arrived ship!", aigp->target_name);
+			return ai_achievability::NOT_ACHIEVABLE;			// force this goal to be invalid
+		}
 		ignored = &Objects[Ships[sindex].objnum];
 
 		ai_ignore_object(objp, ignored, (aigp->ai_mode == AI_GOAL_IGNORE_NEW));
@@ -1983,7 +2007,7 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 			else if ( status == SHIP_STATUS_UNKNOWN )
 				return ai_achievability::NOT_KNOWN;
 
-			Int3();		// get allender -- bad logic
+			UNREACHABLE("Invalid status variable %d for ship %s; get Allender or a SCP member", status, Ships[objp->instance].ship_name);		// get allender -- bad logic
 			break;
 		}
 
@@ -1995,7 +2019,7 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 			// short circuit a couple of cases.  Ship not arrived shouldn't happen.  Ship gone means
 			// we mark the goal as not achievable.
 			if ( status == SHIP_STATUS_NOT_ARRIVED ) {
-				Int3();										// get Allender.  this shouldn't happen!!!
+				UNREACHABLE("Ship %s cannot rearm a ship that hasn't arrived; get Allender or a SCP member", Ships[objp->instance].ship_name);	// get Allender.  this shouldn't happen!!!
 				return ai_achievability::NOT_ACHIEVABLE;
 			}
 
@@ -2003,9 +2027,8 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 				return ai_achievability::NOT_ACHIEVABLE;
 
 			sindex = ship_name_lookup( aigp->target_name );
-
 			if ( sindex < 0 ) {
-				Int3();
+				UNREACHABLE("Target name %s is not an arrived ship!", aigp->target_name);
 				return ai_achievability::NOT_ACHIEVABLE;
 			}
 
@@ -2041,7 +2064,7 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 		}
 
 		default:
-			Int3();			// invalid case in switch:
+			UNREACHABLE("Unhandled AI goal %d", aigp->ai_mode);			// invalid case in switch:
 	}
 
 	return ai_achievability::NOT_KNOWN;

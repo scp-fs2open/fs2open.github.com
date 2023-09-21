@@ -4130,21 +4130,61 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 }
 
 // Goober5000
-void get_unformatted_sexp_variable_name(char *unformatted, const char *formatted_pre)
+bool get_unformatted_sexp_variable_name(char *unformatted, const char *formatted)
 {
-	const char *formatted;
+	// first character should be @
+	if (*formatted != SEXP_VARIABLE_CHAR)
+		return false;
 
-	// Goober5000 - trim @ if needed
-	if (formatted_pre[0] == SEXP_VARIABLE_CHAR)
-		formatted = formatted_pre+1;
-	else
-		formatted = formatted_pre;
+	auto intermediate = formatted + 1;
+	size_t n;
 
-	// get variable name (up to '['
-	auto end_index = strcspn(formatted, "[");
-	Assert( (end_index != 0) && (end_index < TOKEN_LENGTH-1) );
-	strncpy(unformatted, formatted, end_index);
-	unformatted[end_index] = '\0';
+	// get variable name (up to '[')
+	auto l_bracket = strchr(intermediate, '[');
+	if (l_bracket) {
+		auto r_bracket = strchr(l_bracket, ']');
+		if (!r_bracket) {
+			error_display(0, "Malformed variable token: %s", formatted);
+			return false;
+		}
+		n = l_bracket - intermediate;
+	} else {
+		n = strlen(intermediate);
+	}
+
+	if (n >= TOKEN_LENGTH - 1)
+		return false;
+
+	strncpy(unformatted, intermediate, n);
+	unformatted[n] = 0;
+	return true;
+}
+
+// Goober5000
+// This function specifically checks the token that is parsed from a mission file.
+// In this situation the variable would appear as @variable_name[variable_contents].
+// See also check_sexp_node_text_for_sexp_variable().
+int check_string_for_sexp_variable(const char *str, size_t n_chars)
+{
+	if (*str != SEXP_VARIABLE_CHAR)
+		return -1;
+
+	constexpr size_t var_token_size = 2 * (TOKEN_LENGTH - 1) + 4;		// @variable_token[contents_token]\0
+	char variable_token[var_token_size];
+	char variable_name[NAME_LENGTH];
+
+	// token is too long?
+	if (n_chars >= var_token_size)
+		return -1;
+
+	strncpy(variable_token, str, n_chars);
+	variable_token[n_chars] = 0;
+
+	// see if it's really a variable
+	if (!get_unformatted_sexp_variable_name(variable_name, variable_token))
+		return -1;
+
+	return get_index_sexp_variable_name(variable_name);
 }
 
 /**
@@ -4153,18 +4193,13 @@ void get_unformatted_sexp_variable_name(char *unformatted, const char *formatted
  * If Fred_running - stuff Sexp_variables[].variable_name
  * otherwise - stuff index into Sexp_variables array.
  */
-void get_sexp_text_for_variable(char *text, const char *token)
+void get_sexp_text_for_variable(char *text, int sexp_var_index)
 {
-	int sexp_var_index;
-	
-	get_unformatted_sexp_variable_name(text, token);
+	Assertion(sexp_var_index >= 0 && sexp_var_index < MAX_SEXP_VARIABLES, "sexp_var_index out of range!");
 
-	if ( !Fred_running ) {
-		// freespace - get index into Sexp_variables array
-		sexp_var_index = get_index_sexp_variable_name(text);
-		if (sexp_var_index == -1) {
-			Error(LOCATION, "Invalid variable name [%s]!", text);
-		}
+	if (Fred_running) {
+		strcpy(text, Sexp_variables[sexp_var_index].variable_name);
+	} else {
 		sprintf(text, "%d", sexp_var_index);
 	}
 }
@@ -4261,6 +4296,36 @@ void localize_sexp(int text_node, int id_node)
 	lcl_ext_localize(xstr.c_str(), Sexp_nodes[text_node].text, TOKEN_LENGTH - 1);
 }
 
+// Advance to and consume the closing parenthesis of a sexp, in case of a parse error.
+// If a closing parenthesis is not found, this advances to the end of the string.
+void skip_sexp(bool within_quotes = false)
+{
+	int level = 1;
+
+	while (*Mp != '\0')
+	{
+		if (*Mp == '\"')
+			within_quotes = !within_quotes;
+
+		if (!within_quotes)
+		{
+			if (*Mp == ')')
+			{
+				level--;
+				if (level == 0)
+				{
+					Mp++;
+					return;
+				}
+			}
+			else if (*Mp == '(')
+				level++;
+		}
+
+		Mp++;
+	}
+}
+
 /**
  * Returns the first sexp index of data this function allocates. (start of this sexp)
  *
@@ -4270,10 +4335,10 @@ int get_sexp()
 {
 	int start, node, last, op;
 	char token[TOKEN_LENGTH];
-	char variable_text[TOKEN_LENGTH];
 	bool prune_extra_args = false;
 
 	Assert(*(Mp-1) == '(');
+	auto starting_Mp = Mp;
 
 	// start - the node allocated in first instance of function
 	// node - the node allocated in current instance of function
@@ -4286,8 +4351,9 @@ int get_sexp()
 	while (*Mp != ')') {
 		// end of string or end of file
 		if (*Mp == '\0') {
-			Error(LOCATION, "Unexpected end of sexp!");
-			return -1;
+			char buf[512];
+			error_display(0, "Unexpected end of sexp!\n%s", three_dot_truncate(buf, starting_Mp, 512));
+			return Locked_sexp_false;
 		}
 
 		// Sexp list
@@ -4298,173 +4364,182 @@ int get_sexp()
 
 		// Sexp string
 		else if (*Mp == '\"') {
+			auto startp = Mp;
 			auto len = strcspn(Mp + 1, "\"");
 			// was closing quote not found?
 			if (*(Mp + 1 + len) != '\"') {
-				Error(LOCATION, "Unexpected end of quoted string embedded in sexp!");
-				return -1;
+				char buf[512];
+				error_display(0, "Unexpected end of quoted string embedded in sexp!\n%s", three_dot_truncate(buf, starting_Mp, 512));
+				skip_sexp(true);	// this will have the effect of skipping to the end of the file or string
+				return Locked_sexp_false;
 			}
+			// bump past closing quote
+			Mp += (len + 2);
 
-			// check if string variable
-			if ( *(Mp + 1) == SEXP_VARIABLE_CHAR ) {
-				char variable_token[2*TOKEN_LENGTH+2];	// variable_token[contents_token]
-
-				// reduce length by 1 for end \"
-				auto length = len - 1;
-				if (length >= 2*TOKEN_LENGTH+2) {
-					Error(LOCATION, "Variable token %s is too long. Needs to be %d characters or shorter.", Mp, 2*TOKEN_LENGTH+2 - 1);
-					return -1;
-				}
-
-				// start copying after skipping 1st char (i.e. variable char)
-				strncpy(variable_token, Mp + 2, length);
-				variable_token[length] = 0;
-
-				get_sexp_text_for_variable(variable_text, variable_token);
-				node = alloc_sexp(variable_text, (SEXP_ATOM | SEXP_FLAG_VARIABLE), SEXP_ATOM_STRING, -1, -1);
-			} else {
+			// it could be a string variable
+			int sexp_var_index = check_string_for_sexp_variable(startp + 1, len);
+			if (sexp_var_index >= 0) {
+				get_sexp_text_for_variable(token, sexp_var_index);
+				node = alloc_sexp(token, (SEXP_ATOM | SEXP_FLAG_VARIABLE), SEXP_ATOM_STRING, -1, -1);
+			}
+			// it's a regular string
+			else {
 				// token is too long?
 				if (len >= TOKEN_LENGTH) {
-					Error(LOCATION, "Token %s is too long. Needs to be %d characters or shorter.", Mp, TOKEN_LENGTH - 1);
-					return -1;
+					SCP_string long_token(startp + 1, len);
+					error_display(0, "Token is too long. Needs to be %d characters or shorter:\n%s", TOKEN_LENGTH - 1, long_token.c_str());
+					// here we can just truncate; we don't need to return
+					len = TOKEN_LENGTH - 1;
 				}
 
-				strncpy(token, Mp + 1, len);
+				strncpy(token, startp + 1, len);
 				token[len] = 0;
 				node = alloc_sexp(token, SEXP_ATOM, SEXP_ATOM_STRING, -1, -1);
 			}
-
-			// bump past closing \" by 1 char
-			Mp += (len + 2);
-
 		}
 
 		// Sexp container
 		else if (*Mp == sexp_container::DELIM) {
-			Mp++;
-
-			char container_name[sexp_container::NAME_MAX_LENGTH + 1];
-
-			if (*Mp == sexp_container::DELIM) {
-				// container name
-				Mp++;
-
-				// ' ' occurs if there are arguments after the container name
-				// ')' occurs if this is the SEXP's last argument
-				stuff_string(container_name, F_NAME, sizeof(container_name), " )");
-				if (*Mp != ')') {
-					Mp++;
+			auto startp = Mp;
+			size_t len = 0;
+			while (!is_parenthesis(*Mp) && !is_white_space(*Mp)) {
+				// end of string or end of file
+				if (*Mp == '\0') {
+					char buf[512];
+					error_display(0, "Unexpected end of sexp!\n%s", three_dot_truncate(buf, starting_Mp, 512));
+					return Locked_sexp_false;
 				}
+				Mp++;
+				len++;
+			}
+
+			// token is too long?
+			if (len >= TOKEN_LENGTH) {
+				SCP_string long_token(startp, len);
+				error_display(0, "Token is too long. Needs to be %d characters or shorter:\n%s", TOKEN_LENGTH - 1, long_token.c_str());
+				skip_sexp();
+				return Locked_sexp_false;
+			}
+
+			strncpy(token, startp, len);
+			token[len] = 0;
+
+			// container name
+			if (token[1] == sexp_container::DELIM) {
+				auto container_name = token + 2;
 
 				if (get_sexp_container(container_name) == nullptr) {
-					Error(LOCATION, "Attempt to use unknown container '%s'", container_name);
-					return -1;
+					error_display(0, "Attempt to use unknown container '%s'", token);
+					skip_sexp();
+					return Locked_sexp_false;
 				}
 
 				node = alloc_sexp(container_name, SEXP_ATOM, SEXP_ATOM_CONTAINER_NAME, -1, -1);
-			} else {
-				// container data
-				stuff_string(container_name, F_NAME, sizeof(container_name), sexp_container::DELIM_STR.c_str());
+			}
+			// container data
+			else {
+				if (token[len - 1] != sexp_container::DELIM) {
+					error_display(0, "Malformed container data token: %s", token);
+					skip_sexp();
+					return Locked_sexp_false;
+				}
 
-				// bump past closing '&'
-				Mp += 2;
+				char container_name[TOKEN_LENGTH];
+				strcpy_s(container_name, token + 1);	// skip first delimiter
+				container_name[len - 2] = 0;			// truncate last delimiter
 
 				if (get_sexp_container(container_name) == nullptr) {
-					Error(LOCATION, "Attempt to use data from unknown container '%s'", container_name);
-					return -1;
+					error_display(0, "Attempt to use data from unknown container '%s'", token);
+					skip_sexp();
+					return Locked_sexp_false;
 				}
 
 				// advance to the container modifier, since we'll read them when calling get_sexp() below
-				while (*Mp != '(') {
-					// watch out for malformed input
-					if ('\n' == *Mp || '\0' == *Mp) {
-						break;
-					}
-					Mp++;
-				}
+				ignore_gray_space();
+				// watch out for malformed input
+				if (*Mp != '(')
+					break;
 				Mp++;
 
 				node = alloc_sexp(container_name, SEXP_ATOM, SEXP_ATOM_CONTAINER_DATA, get_sexp(), -1);
 			}
-
-			ignore_white_space();
 		}
 
 		// Sexp operator or number
 		else {
-			int len = 0;
-			bool variable = false;
-			while (*Mp != ')' && !is_white_space(*Mp)) {
-				// numeric variable?
-				if ( (len == 0) && (*Mp == SEXP_VARIABLE_CHAR) ) {
-					variable = true;
-					Mp++;
-					continue;
-				}
-
-				// end of string or end of file?
+			auto startp = Mp;
+			size_t len = 0;
+			while (!is_parenthesis(*Mp) && !is_white_space(*Mp)) {
+				// end of string or end of file
 				if (*Mp == '\0') {
-					Error(LOCATION, "Unexpected end of sexp!");
-					return -1;
+					char buf[512];
+					error_display(0, "Unexpected end of sexp!\n%s", three_dot_truncate(buf, starting_Mp, 512));
+					return Locked_sexp_false;
 				}
-
-				// token is too long?
-				if (len >= TOKEN_LENGTH - 1) {
-					token[TOKEN_LENGTH - 1] = '\0';
-					Error(LOCATION, "Token %s is too long. Needs to be %d characters or shorter.", token, TOKEN_LENGTH - 1);
-					return -1;
-				}
-
-				// build the token
-				token[len++] = *Mp++;
+				Mp++;
+				len++;
 			}
-			token[len] = 0;
 
-			// maybe replace deprecated names
-			if (!stricmp(token, "set-ship-position"))
-				strcpy_s(token, "set-object-position");
-			else if (!stricmp(token, "set-ship-facing"))
-				strcpy_s(token, "set-object-facing");
-			else if (!stricmp(token, "set-ship-facing-object"))
-				strcpy_s(token, "set-object-facing-object");
-			else if (!stricmp(token, "ai-chase-any-except")) {
-				strcpy_s(token, "ai-chase-any");
-				prune_extra_args = true;
-			} else if (!stricmp(token, "change-ship-model"))
-				strcpy_s(token, "change-ship-class");
-			else if (!stricmp(token, "radar-set-max-range"))
-				strcpy_s(token, "hud-set-max-targeting-range");
-			else if (!stricmp(token, "ship-subsys-vanished"))
-				strcpy_s(token, "ship-subsys-vanish");
-			else if (!stricmp(token, "directive-is-variable"))
-				strcpy_s(token, "directive-value");
-			else if (!stricmp(token, "variable-array-get"))
-				strcpy_s(token, "get-variable-by-index");
-			else if (!stricmp(token, "variable-array-set"))
-				strcpy_s(token, "set-variable-by-index");
-			else if (!stricmp(token, "distance-ship-subsystem"))
-				strcpy_s(token, "distance-center-to-subsystem");
-			else if (!stricmp(token, "remove-weapons"))
-				strcpy_s(token, "clear-weapons");
-			else if (!stricmp(token, "hud-set-retail-gauge-active"))
-				strcpy_s(token, "hud-set-builtin-gauge-active");
-			else if (!stricmp(token, "perform-actions"))
-				strcpy_s(token, "perform-actions-bool-first");
-			else if (!stricmp(token, "add-to-collision-group2"))
-				strcpy_s(token, "add-to-collision-group-new");
-			else if (!stricmp(token, "remove-from-collision-group2"))
-				strcpy_s(token, "remove-from-collision-group-new");
+			// it could be a numeric variable
+			int sexp_var_index = check_string_for_sexp_variable(startp, len);
+			if (sexp_var_index >= 0) {
+				get_sexp_text_for_variable(token, sexp_var_index);
+				node = alloc_sexp(token, (SEXP_ATOM | SEXP_FLAG_VARIABLE), SEXP_ATOM_NUMBER, -1, -1);
+			}
+			// it could be an operator
+			else {
+				// token is too long?
+				if (len >= TOKEN_LENGTH) {
+					SCP_string long_token(startp, len);
+					error_display(0, "Token is too long. Needs to be %d characters or shorter:\n%s", TOKEN_LENGTH - 1, long_token.c_str());
+					skip_sexp();
+					return Locked_sexp_false;
+				}
 
-			op = get_operator_index(token);
-			if (op >= 0) {
-				node = alloc_sexp(token, SEXP_ATOM, SEXP_ATOM_OPERATOR, -1, -1);
-			} else {
-				if ( variable ) {
-					// convert token text for variable
-					get_sexp_text_for_variable(variable_text, token);
+				strncpy(token, startp, len);
+				token[len] = 0;
 
-					node = alloc_sexp(variable_text, (SEXP_ATOM | SEXP_FLAG_VARIABLE), SEXP_ATOM_NUMBER, -1, -1);
-				} else {
+				// maybe replace deprecated names
+				if (!stricmp(token, "set-ship-position"))
+					strcpy_s(token, "set-object-position");
+				else if (!stricmp(token, "set-ship-facing"))
+					strcpy_s(token, "set-object-facing");
+				else if (!stricmp(token, "set-ship-facing-object"))
+					strcpy_s(token, "set-object-facing-object");
+				else if (!stricmp(token, "ai-chase-any-except")) {
+					strcpy_s(token, "ai-chase-any");
+					prune_extra_args = true;
+				} else if (!stricmp(token, "change-ship-model"))
+					strcpy_s(token, "change-ship-class");
+				else if (!stricmp(token, "radar-set-max-range"))
+					strcpy_s(token, "hud-set-max-targeting-range");
+				else if (!stricmp(token, "ship-subsys-vanished"))
+					strcpy_s(token, "ship-subsys-vanish");
+				else if (!stricmp(token, "directive-is-variable"))
+					strcpy_s(token, "directive-value");
+				else if (!stricmp(token, "variable-array-get"))
+					strcpy_s(token, "get-variable-by-index");
+				else if (!stricmp(token, "variable-array-set"))
+					strcpy_s(token, "set-variable-by-index");
+				else if (!stricmp(token, "distance-ship-subsystem"))
+					strcpy_s(token, "distance-center-to-subsystem");
+				else if (!stricmp(token, "remove-weapons"))
+					strcpy_s(token, "clear-weapons");
+				else if (!stricmp(token, "hud-set-retail-gauge-active"))
+					strcpy_s(token, "hud-set-builtin-gauge-active");
+				else if (!stricmp(token, "perform-actions"))
+					strcpy_s(token, "perform-actions-bool-first");
+				else if (!stricmp(token, "add-to-collision-group2"))
+					strcpy_s(token, "add-to-collision-group-new");
+				else if (!stricmp(token, "remove-from-collision-group2"))
+					strcpy_s(token, "remove-from-collision-group-new");
+
+				op = get_operator_index(token);
+				if (op >= 0) {
+					node = alloc_sexp(token, SEXP_ATOM, SEXP_ATOM_OPERATOR, -1, -1);
+				}
+				// it's not an operator, and we've checked for variables, so treat it as a number
+				else {
 					node = alloc_sexp(token, SEXP_ATOM, SEXP_ATOM_NUMBER, -1, -1);
 				}
 			}
@@ -5049,9 +5124,10 @@ int eval_num(int n, bool &is_nan, bool &is_nan_forever)
 	is_nan = false;
 	is_nan_forever = false;
 
-	Assert(n >= 0);
-	if (n < 0)
+	// see precedent in eval_sexp
+	if (n == -1)
 		return 0;
+	Assert(n >= 0);
 
 	if (CAR(n) != -1)				// if argument is a sexp
 	{
@@ -12492,8 +12568,8 @@ void sexp_hud_set_directive(int n)
 	auto text = CTEXT(CDR(n));
 	SCP_string message = message_translate_tokens(text);
 
-	if (message.size() > MESSAGE_LENGTH) {
-		WarningEx(LOCATION, "Message %s is too long for use in a HUD gauge. Please shorten it to %d characters or less.", message.c_str(), MESSAGE_LENGTH);
+	if (message.size() >= MESSAGE_LENGTH) {
+		WarningEx(LOCATION, "Message %s is too long for use in a HUD gauge. Please shorten it to %d characters or less.", message.c_str(), MESSAGE_LENGTH - 1);
 		return;
 	}
 
@@ -12542,6 +12618,12 @@ void sexp_hud_set_coords(int n)
 
 	HudGauge* hg = hud_get_gauge(gaugename);
 	if (hg) {
+		// we might need to adjust the coordinates
+		if (HUD_set_coords_screen_base_res[0] > 0 && HUD_set_coords_screen_base_res[1] > 0) {
+			coord_x = fl2i(i2fl(coord_x) * gr_screen.center_w / HUD_set_coords_screen_base_res[0]);
+			coord_y = fl2i(i2fl(coord_y) * gr_screen.center_h / HUD_set_coords_screen_base_res[1]);
+		}
+
 		hg->setGaugeCoords(coord_x, coord_y);
 	} else {
 		WarningEx(LOCATION, "Could not find a hud gauge named %s\n", gaugename);
@@ -16399,6 +16481,14 @@ void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future
 				}
 			}
 
+			// special case: the "no_collide" parse object flag is the same, but opposite, as the "collides" object flag
+			if (parse_obj_flag == Mission::Parse_Object_Flags::OF_No_collide)
+			{
+				auto tmp_flagset = oswpt.objp->flags;
+				tmp_flagset.set(Object::Object_Flags::Collides, !set_flag);
+				obj_set_flags(oswpt.objp, tmp_flagset);
+			}
+
 			// see if we have an ai flag to set
 			if (ai_flag != AI::AI_Flags::NUM_VALUES)
 			{
@@ -16412,6 +16502,12 @@ void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future
 		case OSWPT_TYPE_PARSE_OBJECT:
 			if (!future_ships) {
 				return;
+			}
+
+			// special case: the "collides" object flag is the same, but opposite, as the "no_collide" parse object flag
+			if (object_flag == Object::Object_Flags::Collides)
+			{
+				oswpt.ship_entry->p_objp->flags.set(Mission::Parse_Object_Flags::OF_No_collide, !set_flag);
 			}
 
 			// see if we have a p_object flag to set
@@ -16537,7 +16633,11 @@ int sexp_are_ship_flags_set(int node)
 				return SEXP_FALSE;
 		}
 
-		// we don't check parse flags
+		// we don't check parse flags, except for one that can be an object flag in reverse
+		if (parse_obj_flag == Mission::Parse_Object_Flags::OF_No_collide) {
+			if (objp->flags[Object::Object_Flags::Collides])
+				return SEXP_FALSE;
+		}
 
 		if (ai_flag != AI::AI_Flags::NUM_VALUES) {
 			if (!(aip->ai_flags[ai_flag]))
@@ -29086,11 +29186,7 @@ int get_sexp_main()
 	if (*Mp != '(')
 	{
 		char buf[512];
-		strncpy(buf, Mp, 512);
-		if (buf[511] != '\0')
-			strcpy(&buf[506], "[...]");
-
-		Error(LOCATION, "Expected to find an open parenthesis in the following sexp:\n%s", buf);
+		error_display(0, "Expected to find an open parenthesis in the following sexp:\n%s", three_dot_truncate(buf, Mp, 512));
 		return -1;
 	}
 
@@ -29103,7 +29199,7 @@ int get_sexp_main()
 		op = get_operator_index(start_node);
 		if (op < 0)
 		{
-			Error(LOCATION, "Can't find operator %s in operator list!\n", CTEXT(start_node));
+			error_display(0, "Can't find operator %s in operator list!\n", CTEXT(start_node));
 			return -1;
 		}
 	}
@@ -30820,7 +30916,6 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_BOOL;
 
 		case OP_AI_EVADE_SHIP:
-		case OP_AI_STAY_NEAR_SHIP:
 		case OP_AI_IGNORE:
 		case OP_AI_IGNORE_NEW:
 		case OP_AI_FLY_TO_SHIP:
@@ -30828,6 +30923,14 @@ int query_operator_argument_type(int op, int argnum)
 			if (argnum == 0)
 				return OPF_SHIP;
 			else if (argnum == 1)
+				return OPF_POSITIVE;
+			else
+				return OPF_BOOL;
+
+		case OP_AI_STAY_NEAR_SHIP:
+			if (argnum == 0)
+				return OPF_SHIP;
+			else if (argnum == 1 || argnum == 2)
 				return OPF_POSITIVE;
 			else
 				return OPF_BOOL;
@@ -33296,21 +33399,27 @@ int query_sexp_ai_goal_valid(int sexp_ai_goal, int ship_num)
 	return ai_query_goal_valid(ship_num, Sexp_ai_goal_links[i].ai_goal);
 }
 
-int check_text_for_variable_name(const char *text)
+// Goober5000
+// This function specifically checks the sexp node text that can be referenced
+// by a special argument.  In this situation the variable could appear as an
+// undecorated variable_name or as the full @variable_name[variable_contents].
+// There is also no need to copy the characters since the string is a small
+// token rather than an entire file.  See also check_string_for_sexp_variable().
+int check_sexp_node_text_for_sexp_variable(const char *text)
 {
-	char variable_name[TOKEN_LENGTH];
-
-	// if the text is a variable name, get the variable index
-	int sexp_variable_index = get_index_sexp_variable_name(text);
-
 	// if the text is a formatted variable name, get the variable index
-	if (sexp_variable_index < 0 && text[0] == SEXP_VARIABLE_CHAR)
+	if (text[0] == SEXP_VARIABLE_CHAR)
 	{
-		get_unformatted_sexp_variable_name(variable_name, text);
-		sexp_variable_index = get_index_sexp_variable_name(variable_name);
+		char variable_name[TOKEN_LENGTH];
+
+		if (!get_unformatted_sexp_variable_name(variable_name, text))
+			return -1;
+
+		return get_index_sexp_variable_name(variable_name);
 	}
 
-	return sexp_variable_index;
+	// try a straight lookup
+	return get_index_sexp_variable_name(text);
 }
 
 /**
@@ -33351,16 +33460,16 @@ const char *CTEXT(int n)
 
 			if (!(Sexp_nodes[arg_n].flags & SNF_CHECKED_ARG_FOR_VAR))
 			{
-				Sexp_nodes[arg_n].cached_variable_index = check_text_for_variable_name(text);
+				// nodes that have an officially formatted variable will store the variable index in the token
+				if (Sexp_nodes[arg_n].type & SEXP_FLAG_VARIABLE)
+					Sexp_nodes[arg_n].cached_variable_index = atoi(text);
+				else
+					Sexp_nodes[arg_n].cached_variable_index = check_sexp_node_text_for_sexp_variable(text);
+
 				Sexp_nodes[arg_n].flags |= SNF_CHECKED_ARG_FOR_VAR;
 			}
 
 			sexp_variable_index = Sexp_nodes[arg_n].cached_variable_index;
-		}
-		// just check the text of the argument for a variable
-		else
-		{
-			sexp_variable_index = check_text_for_variable_name(text);
 		}
 
 		// if we have a variable, return the variable value, else return the regular argument
@@ -35496,6 +35605,16 @@ bool usable_in_campaign(int op_id)
 	}
 }
 
+// For tokenizing in SEXP help
+#define MAX_SEXP_VARIABLES_1		249
+#define TOKEN_LENGTH_1				31
+#if (MAX_SEXP_VARIABLES_1) != (MAX_SEXP_VARIABLES - 1)
+#error MAX_SEXP_VARIABLES_1 must be equal to MAX_SEXP_VARIABLES - 1!
+#endif
+#if (TOKEN_LENGTH_1) != (TOKEN_LENGTH - 1)
+#error TOKEN_LENGTH_1 must be equal to TOKEN_LENGTH - 1!
+#endif
+
 // clang-format off
 SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_PLUS, "Plus (Arithmetic operator)\r\n"
@@ -36655,7 +36774,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"arrays and pointers.\r\n\r\nPlease note that only numeric variables are supported.  Any "
 		"attempt to access a string variable will result in a value of SEXP_NAN_FOREVER being returned.\r\n\r\n"
 		"Takes 1 argument...\r\n"
-		"\t1:\tIndex of variable, from 0 to MAX_SEXP_VARIABLES - 1." },
+		"\t1:\tIndex of variable, from 0 to " SCP_TOKEN_TO_STR(MAX_SEXP_VARIABLES_1) "." },
 
 	{ OP_SET_VARIABLE_BY_INDEX, "set-variable-by-index (originally variable-array-set)\r\n"
 		"\tSets the value of the variable specified by the given index.  This is an alternate way "
@@ -36663,7 +36782,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"arrays and pointers.\r\n\r\nIn contrast to get-variable-by-index, note that this sexp "
 		"*does* allow the modification of string variables.\r\n\r\n"
 		"Takes 2 arguments...\r\n"
-		"\t1:\tIndex of variable, from 0 to MAX_SEXP_VARIABLES - 1.\r\n"
+		"\t1:\tIndex of variable, from 0 to " SCP_TOKEN_TO_STR(MAX_SEXP_VARIABLES_1) ".\r\n"
 		"\t2:\tValue to be set." },
 
 	{ OP_COPY_VARIABLE_FROM_INDEX, "copy-variable-from-index\r\n"
@@ -36671,14 +36790,14 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"This is very similar to get-variable-by-index, except the result is stored in a new variable rather than "
 		"being returned by value.  One important difference is that this sexp can be used to copy string variables as well as numeric variables.\r\n\r\n"
 		"Takes 2 arguments...\r\n"
-		"\t1:\tIndex of source variable, from 0 to MAX_SEXP_VARIABLES - 1.\r\n"
+		"\t1:\tIndex of source variable, from 0 to " SCP_TOKEN_TO_STR(MAX_SEXP_VARIABLES_1) ".\r\n"
 		"\t2:\tDestination variable.  The type of this variable must match the type of the variable referenced by the index." },
 
 	{ OP_COPY_VARIABLE_BETWEEN_INDEXES, "copy-variable-between-indexes\r\n"
 		"\tRetrieves the value of the variable specified by the first index and stores it in the variable specified by the second index.  The first variable is not modified.\r\n\r\n"
 		"Takes 2 arguments...\r\n"
-		"\t1:\tIndex of source variable, from 0 to MAX_SEXP_VARIABLES - 1.\r\n"
-		"\t2:\tIndex of destination variable, from 0 to MAX_SEXP_VARIABLES - 1.  The types of both variables must match." },
+		"\t1:\tIndex of source variable, from 0 to " SCP_TOKEN_TO_STR(MAX_SEXP_VARIABLES_1) ".\r\n"
+		"\t2:\tIndex of destination variable, from 0 to " SCP_TOKEN_TO_STR(MAX_SEXP_VARIABLES_1) ".  The types of both variables must match." },
 
 	// Karajorma/jg18
 	{ OP_CONTAINER_ADD_TO_LIST, "add-to-list\r\n"
@@ -37495,7 +37614,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	// Goober5000
 	{ OP_STRING_CONCATENATE, "string-concatenate (deprecated in favor of string-concatenate-block)\r\n"
 		"\tConcatenates two strings, putting the result into a string variable.  If the length of the string will "
-		"exceed the sexp variable token limit (currently 32), it will be truncated.\r\n\r\n"
+		"exceed the sexp variable token limit (" SCP_TOKEN_TO_STR(TOKEN_LENGTH_1) "), it will be truncated.\r\n\r\n"
 		"Takes 3 arguments...\r\n"
 		"\t1: First string\r\n"
 		"\t2: Second string\r\n"
@@ -37504,7 +37623,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	// Goober5000
 	{ OP_STRING_CONCATENATE_BLOCK, "string-concatenate-block\r\n"
 		"\tConcatenates two or more strings, putting the result into a string variable.  If the length of the string will "
-		"exceed the sexp variable token limit (currently 32), it will be truncated.\r\n\r\n"
+		"exceed the sexp variable token limit (" SCP_TOKEN_TO_STR(TOKEN_LENGTH_1) "), it will be truncated.\r\n\r\n"
 		"Takes 3 or more arguments...\r\n"
 		"\t1: String variable to hold the result\r\n"
 		"\tRest: Strings to concatenate.  At least two of these are required; the rest are optional.\r\n" },
@@ -37512,7 +37631,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	// Goober5000
 	{ OP_STRING_GET_SUBSTRING, "string-get-substring\r\n"
 		"\tExtracts a substring from a parent string, putting the result into a string variable.  If the length of the string will "
-		"exceed the sexp variable token limit (currently 32), it will be truncated.\r\n\r\n"
+		"exceed the sexp variable token limit (" SCP_TOKEN_TO_STR(TOKEN_LENGTH_1) "), it will be truncated.\r\n\r\n"
 		"Takes 3 arguments...\r\n"
 		"\t1: Parent string\r\n"
 		"\t2: Index at which the substring begins (0-based)\r\n"
@@ -37522,7 +37641,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	// Goober5000
 	{ OP_STRING_SET_SUBSTRING, "string-set-substring\r\n"
 		"\tReplaces a substring from a parent string with a new string, putting the result into a string variable.  If the length of the string will "
-		"exceed the sexp variable token limit (currently 32), it will be truncated.\r\n\r\n"
+		"exceed the sexp variable token limit (" SCP_TOKEN_TO_STR(TOKEN_LENGTH_1) "), it will be truncated.\r\n\r\n"
 		"Takes 3 arguments...\r\n"
 		"\t1: Parent string\r\n"
 		"\t2: Index at which the substring begins (0-based)\r\n"
@@ -37684,14 +37803,14 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t2:\tTime in seconds rearm window should last" },
 
 	{ OP_ALLOW_SHIP, "Allow ship (Action operator)\r\n"
-		"\tThis operator makes the given ship type available to the Terran team.  Players will be "
+		"\tThis operator makes the given ship type available to the player team.  Players will be "
 		"able to have ships of this type in their starting wings in all future missions of this "
 		"campaign.\r\n\r\n"
 		"Takes 1 argument...\r\n"
 		"\t1:\tName of ship type (or ship class) to allow." },
 
 	{ OP_ALLOW_WEAPON, "Allow weapon (Action operator)\r\n"
-		"\tThis operator makes the given weapon available to the Terran team.  Players will be "
+		"\tThis operator makes the given weapon available to the player team.  Players will be "
 		"able to equip ships with in all future missions of this campaign.\r\n\r\n"
 		"Takes 1 argument...\r\n"
 		"\t1:\tName of weapon (primary or secondary) to allow." },
@@ -37759,8 +37878,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t2:\tThe team to alter the score for. (0 will add the score to all teams!)"},
 
 	{ OP_AI_EVADE_SHIP, "Ai-evade ship (Ship goal)\r\n"
-		"\tCauses the specified ship to go into evade mode and run away like the weak "
-		"sally-boy it is.\r\n\r\n"
+		"\tCauses the specified ship to go into evade mode and run away like the "
+		"coward it is.\r\n\r\n"
 		"Takes 2 arguments...\r\n"
 		"\t1:\tName of ship to evade from.\r\n"
 		"\t2:\tGoal priority (number between 0 and 89)." },
@@ -39245,7 +39364,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	//WMC
 	{ OP_HUD_SET_COORDS, "hud-set-coords\r\n"
-		"\tSets the coordinates of a given HUD gauge. Works for custom and retail gauges. Takes 3 arguments...\r\n"
+		"\tSets the coordinates of a given HUD gauge. Works for custom and retail gauges. The coordinates can be configured to scale according to "
+		" screen resolution via the '$HUD-set-coords base resolution' option in game_settings.tbl. Takes 3 arguments...\r\n"
 		"\t1:\tHUD gauge to be modified\r\n"
 		"\t2:\tCoordinate X component\r\n"
 		"\t2:\tCoordinate Y component"
