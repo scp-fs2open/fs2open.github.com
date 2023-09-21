@@ -34,15 +34,17 @@ static SCP_string fov_display(float val)
 	sprintf(out, u8"%.1f\u00B0", degrees);
 	return out;
 }
-auto FovOption = options::OptionBuilder<float>("Graphics.FOV", "Field Of View", "The vertical field of view.")
-                     .category("Graphics")
-                     .range(0.436332f, 1.5708f)
-                     .bind_to(&VIEWER_ZOOM_DEFAULT)
-                     .display(fov_display)
-                     .default_val(0.75f)
-                     .level(options::ExpertLevel::Advanced)
-                     .importance(60)
-                     .finish();
+auto FovOption = options::OptionBuilder<float>("Graphics.FOV",
+					 std::pair<const char*, int>{"Field Of View", 1703},
+					 std::pair<const char*, int>{"The vertical field of view", 1704})
+					 .category("Graphics")
+					 .range(0.436332f, 1.5708f)
+					 .bind_to(&VIEWER_ZOOM_DEFAULT)
+					 .display(fov_display)
+					 .default_val(0.75f)
+					 .level(options::ExpertLevel::Advanced)
+					 .importance(60)
+					 .finish();
 
 //*************************CLASS: camera*************************
 //This is where the camera class begins! :D
