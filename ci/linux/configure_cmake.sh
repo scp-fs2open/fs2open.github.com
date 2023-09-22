@@ -22,7 +22,7 @@ if [ "$RUNNER_OS" = "macOS" ]; then
     PLATFORM_CMAKE_OPTIONS="-DFSO_BUILD_WITH_VULKAN=OFF"
     export CMAKE_OSX_ARCHITECTURES="$ARCHITECTURE"
 else
-    CXXFLAGS="-m64 -mtune=generic -mfpmath=sse -msse -msse2 -pipe -Wno-unknown-pragmas"
+    CXXFLAGS="-m64 -mtune=generic -mfpmath=sse -msse -msse2 -pipe -Wno-unknown-pragmas -static-libstdc++"
     CFLAGS="-m64 -mtune=generic -mfpmath=sse -msse -msse2 -pipe -Wno-unknown-pragmas"
     PLATFORM_CMAKE_OPTIONS="-DFSO_BUILD_APPIMAGE=ON"
 fi
