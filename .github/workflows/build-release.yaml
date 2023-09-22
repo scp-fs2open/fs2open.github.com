@@ -44,7 +44,7 @@ jobs:
     name: Linux
     needs: create_release   # Don't run this job until create_release is done and successful
     runs-on: ubuntu-latest
-    container: ghcr.io/scp-fs2open/linux_build:sha-8a6bbbe
+    container: ghcr.io/scp-fs2open/linux_build:sha-3d30dc5
     steps:
       # - name: Cache Qt
         # id: cache-qt-lin
@@ -87,10 +87,6 @@ jobs:
           # cached: ${{ steps.cache-qt-lin.outputs.cache-hit }}
           # setup-python: 'false'
           # aqtversion: ==1.1.3
-      - name: Add curl to the container
-        run: |    
-          apt-get update -y 
-          apt -y install curl jq
       - uses: actions/checkout@v1
         # checks-out your repository under $GITHUB_WORKSPACE, so your workflow can access it.
         name: Checkout
