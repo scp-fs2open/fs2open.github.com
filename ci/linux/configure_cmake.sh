@@ -30,6 +30,8 @@ fi
 CMAKE_OPTIONS="$JOB_CMAKE_OPTIONS"
 if [[ "$COMPILER" =~ ^clang.*$ ]]; then
     CMAKE_OPTIONS="$CMAKE_OPTIONS -DCLANG_USE_LIBCXX=ON"
+    # force clang to silently allow -static-libstdc++ flag
+    CXXFLAGS="$CXXFLAGS -Qunused-arguments"
 fi
 
 mkdir build
