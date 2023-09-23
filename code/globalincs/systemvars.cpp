@@ -318,7 +318,7 @@ const auto ShieldEffectsOption __UNUSED = options::OptionBuilder<int>("Graphics.
 
 const auto StarsOption __UNUSED = options::OptionBuilder<int>("Graphics.Stars", 
                      std::pair<const char*, int>{"Stars", 1366}, 
-                     std::pair<const char*, int>{"Number of stars in the mission", 1744})
+                     std::pair<const char*, int>{"Number of stars in the mission", 1796})
                      .importance(2)
                      .category("Graphics")
                      .values(DetailLevelValues)

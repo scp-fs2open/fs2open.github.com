@@ -69,7 +69,7 @@ static auto MouseSensitivityOption __UNUSED = options::OptionBuilder<int>("Input
 
 bool Use_mouse_to_fly = false;
 
-static SCP_string mouse_mode_display(bool mode) { return mode ? XSTR("Joy-0", 1793) : XSTR("Mouse", 1794); }
+static SCP_string mouse_mode_display(bool mode) { return mode ? XSTR("Joy-0", 1797) : XSTR("Mouse", 1798); }
 
 static auto UseMouseOption __UNUSED = options::OptionBuilder<bool>("Input.UseMouse",
                      std::pair<const char*, int>{"Mouse", 1376},
