@@ -427,7 +427,7 @@ void handle_legacy_backup_message(MissionMessage& msg, SCP_string wing_name) {
 	strcpy(msg.name, backup);
 }
 
-int lookup_mood(SCP_string& name) {
+int lookup_mood(SCP_string const& name) {
 	for (auto i = Builtin_moods.begin(); i != Builtin_moods.end(); ++i) {
 		if (*i == name) {
 			return (int) std::distance(Builtin_moods.begin(), i);
@@ -2094,15 +2094,19 @@ bool filters_match(MessageFilter& filter, ship* it) {
 bool outer_filters_match(MessageFilter& filter, int range, ship* sender) {
 	for (auto i: list_range(&Ship_obj_list)) {
 		auto obj = &Objects[i->objnum];
+		// Ignore dying ships
 		if (obj->flags[Object::Object_Flags::Should_be_dead]) {
 			continue;
 		}
-		if ((range >= 0) && (vm_vec_dist(&obj->pos, &Objects[sender->objnum].pos) > range)) {
+		// Ignore the sender itself
+		if (sender->objnum == i->objnum) {
 			continue;
 		}
-    if (sender->objnum == i->objnum) {
-      continue;
-    }
+		// If a range was specified, ignore anything out of range
+		if ((range > 0) && (vm_vec_dist(&obj->pos, &Objects[sender->objnum].pos) > range)) {
+			continue;
+		}
+		// If we got this far, we can check our filters
 		if (filters_match(filter, &Ships[obj->instance])) {
 			return true;
 		}
