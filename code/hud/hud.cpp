@@ -3775,7 +3775,7 @@ void HUD_get_nose_coordinates(int *x, int *y)
 	*x = 0;
 	*y = 0;
 	
-	vm_vec_scale_add(&p0, &Player_obj->pos, &Player_obj->orient.vec.fvec, 10000.0f);
+	vm_vec_scale_add(&p0, &Player_obj->pos, &Player_obj->orient.vec.fvec, 1000.0f);
 	g3_rotate_vertex(&v0, &p0);
 
 	if (v0.codes == 0) {
@@ -3833,6 +3833,7 @@ void hud_save_restore_camera_data(int save)
 {
 	static vec3d	save_view_position;
 	static fov_t	save_view_zoom;
+	static fov_t	save_proj_fov;
 	static matrix	save_view_matrix;
 	static matrix	save_eye_matrix;
 	static vec3d	save_eye_position;
@@ -3840,6 +3841,7 @@ void hud_save_restore_camera_data(int save)
 	if ( save ) {
 		save_view_position		= View_position;
 		save_view_zoom			= View_zoom;
+		save_proj_fov			= Proj_fov;
 		save_view_matrix		= View_matrix;
 		save_eye_matrix			= Eye_matrix;
 		save_eye_position		= Eye_position;
@@ -3848,6 +3850,7 @@ void hud_save_restore_camera_data(int save)
 		// restore global view variables
 		View_position	= save_view_position;
 		View_zoom		= save_view_zoom;
+		Proj_fov		= save_proj_fov;
 		View_matrix		= save_view_matrix;
 		Eye_matrix		= save_eye_matrix;
 		Eye_position	= save_eye_position;
