@@ -48,14 +48,47 @@ bool gr_opengl_openxr_test_capabilities() {
 	}
 
 	if (requirements.minApiVersionSupported > XR_MAKE_VERSION(GLVersion.major, GLVersion.minor, 0)) {
-		mprintf(("System doesn't meet OpenXR graphics requirements (min %" PRIuPTR ", available %" PRIuPTR ")!\n", requirements.minApiVersionSupported, static_cast<XrVersion>(XR_MAKE_VERSION(GLVersion.major, GLVersion.minor, 0))));
+		mprintf(("System doesn't meet OpenXR graphics requirements (min %" PRIu64 ", available %" PRIu64 ")!\n", requirements.minApiVersionSupported, static_cast<XrVersion>(XR_MAKE_VERSION(GLVersion.major, GLVersion.minor, 0))));
 		return false;
 	}
 
 	return true;
 }
 
-#ifdef SCP_UNIX
+#ifdef WIN32
+bool gr_opengl_openxr_create_session() {
+	SDL_SysWMinfo wmInfo;
+	SDL_VERSION(&wmInfo.version);
+	SDL_GetWindowWMInfo(os::getSDLMainWindow(), &wmInfo);
+
+	XrGraphicsBindingOpenGLWin32KHR graphicsBinding{
+		XR_TYPE_GRAPHICS_BINDING_OPENGL_WIN32_KHR,
+		nullptr,
+		wmInfo.info.win.hdc,
+		(HGLRC) SDL_GL_GetCurrentContext() //uuuuuugly, and not technically allowed by the standard, but this "opaque" SDL_GLContext type is just the hGLRC on Win32
+	};
+	
+	XrSessionCreateInfo sessionCreateInfo{
+		sessionCreateInfo.type = XR_TYPE_SESSION_CREATE_INFO,
+		sessionCreateInfo.next = &graphicsBinding,
+		sessionCreateInfo.createFlags = 0,
+		sessionCreateInfo.systemId = xr_system
+	};
+
+	XrResult sessionInit = xrCreateSession(xr_instance, &sessionCreateInfo, &xr_session);
+	if (sessionInit != XR_SUCCESS) {
+		mprintf(("Failed to create OpenXR session with code %d\n", static_cast<int>(sessionInit)));
+		return false;
+	}
+
+	return true;
+}
+#elif defined __APPLE_CC__
+bool gr_opengl_openxr_create_session() {
+	mprintf(("Cannot create OpenXR session on macOS.\n"));
+	return false;
+}
+#elif defined SCP_UNIX
 bool gr_opengl_openxr_create_session() {
 	//TODO Untested:
 	SDL_SysWMinfo wmInfo;
@@ -103,39 +136,6 @@ bool gr_opengl_openxr_create_session() {
 	}
 
 	return true;
-}
-#elif defined WIN32
-bool gr_opengl_openxr_create_session() {
-	SDL_SysWMinfo wmInfo;
-	SDL_VERSION(&wmInfo.version);
-	SDL_GetWindowWMInfo(os::getSDLMainWindow(), &wmInfo);
-
-	XrGraphicsBindingOpenGLWin32KHR graphicsBinding{
-		XR_TYPE_GRAPHICS_BINDING_OPENGL_WIN32_KHR,
-		nullptr,
-		wmInfo.info.win.hdc,
-		(HGLRC) SDL_GL_GetCurrentContext() //uuuuuugly, and not technically allowed by the standard, but this "opaque" SDL_GLContext type is just the hGLRC on Win32
-	};
-	
-	XrSessionCreateInfo sessionCreateInfo{
-		sessionCreateInfo.type = XR_TYPE_SESSION_CREATE_INFO,
-		sessionCreateInfo.next = &graphicsBinding,
-		sessionCreateInfo.createFlags = 0,
-		sessionCreateInfo.systemId = xr_system
-	};
-
-	XrResult sessionInit = xrCreateSession(xr_instance, &sessionCreateInfo, &xr_session);
-	if (sessionInit != XR_SUCCESS) {
-		mprintf(("Failed to create OpenXR session with code %d\n", static_cast<int>(sessionInit)));
-		return false;
-	}
-
-	return true;
-}
-#elif defined __APPLE_CC__
-bool gr_opengl_openxr_create_session() {
-	mprintf(("Cannot create OpenXR session on macOS.\n"));
-	return false;
 }
 #endif
 
