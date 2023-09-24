@@ -10,13 +10,8 @@
 #include "graphics/opengl/ShaderProgram.h"
 #include "osapi/osapi.h"
 
-#ifdef SCP_UNIX
 
-#define XR_USE_PLATFORM_XLIB
-#include<X11/Xlib.h>
-#include<glad/glad_glx.h>
-
-#elif defined WIN32
+#ifdef WIN32
 
 #define XR_USE_PLATFORM_WIN32
 #include <unknwn.h>
@@ -24,6 +19,12 @@
 #elif defined __APPLE_CC__
 
 //Not supported
+
+#elif defined SCP_UNIX
+
+#define XR_USE_PLATFORM_XLIB
+#include<X11/Xlib.h>
+#include<glad/glad_glx.h>
 
 #endif
 

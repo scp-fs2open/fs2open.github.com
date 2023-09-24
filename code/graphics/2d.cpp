@@ -1620,7 +1620,7 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 
 	if (Cmdline_enable_vr) {
 		float user_ar = i2fl(width) / i2fl(height);
-		float xr_ar = openxr_preinit(mode, user_ar);
+		float xr_ar = openxr_preinit(user_ar);
 
 		if (MAX(user_ar, xr_ar) / MIN(user_ar, xr_ar) > 1.05f) {
 			int newWidth = fl2i(i2fl(height) * xr_ar);

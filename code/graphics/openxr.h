@@ -24,7 +24,7 @@ void openxr_prepare(float hudscale = 0.5f);
  * @param scale Controls the scale of the OpenXR coordinates. This mainly affects eye distance and how far real movement translates to ingame movement
  * @returns the expected aspect ratio of the swapchain
  */
-float openxr_preinit(int graphics_api, float req_ar, float scale = 1.0f);
+float openxr_preinit(float req_ar, float scale = 1.0f);
 
 /**
  * @brief Opens an OpenXR session to the point that we can render. As this waits for OpenXR, this may take a while

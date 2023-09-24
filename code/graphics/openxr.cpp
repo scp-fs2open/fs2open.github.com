@@ -71,7 +71,7 @@ void openxr_prepare(float hudscale) {
 	openxr_req = true;
 }
 
-static bool openxr_init_instance(int graphics_api) {
+static bool openxr_init_instance() {
 	auto extensions = gr_openxr_get_extensions();
 
 	const gameversion::version& fso_version = gameversion::get_executable_version();
@@ -281,12 +281,12 @@ static void openxr_init_post() {
 	} * (1.0f / (2.0f * PROJ_FOV_FACTOR));
 }
 
-float openxr_preinit(int graphics_api, float req_ar, float scale) {
+float openxr_preinit(float req_ar, float scale) {
 	xr_scale = scale;
 
 	mprintf(("Attempting to pre-initialize OpenXR...\n"));
 
-	if (!openxr_init_instance(graphics_api)) {
+	if (!openxr_init_instance()) {
 		openxr_req = false;
 		return req_ar;
 	}
