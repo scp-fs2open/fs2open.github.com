@@ -1330,10 +1330,10 @@ void HudGaugeTargetBox::renderTargetJumpNode(object *target_objp)
 		}
 
 		// account for hud shaking
-		if (gr_screen.rendering_to_texture == -1) {
+		/*if (gr_screen.rendering_to_texture == -1) {
 			hx = fl2i(HUD_offset_x);
 			hy = fl2i(HUD_offset_y);
-		}
+		}*/
 
 		sprintf(outstr,XSTR( "d: %.0f", 340), dist);
 		hud_num_make_mono(outstr, font_num);
@@ -2116,10 +2116,10 @@ void HudGaugeTargetBox::showTargetData(float  /*frametime*/)
 	int hx = 0, hy = 0;
 
 	// Account for HUD shaking
-	if (gr_screen.rendering_to_texture == -1) {
+	/*if (gr_screen.rendering_to_texture == -1) {
 		hx = fl2i(HUD_offset_x);
 		hy = fl2i(HUD_offset_y);
-	}
+	}*/
 
 	// print out the target distance and speed
 	sprintf(outstr,XSTR( "d: %.0f%s", 350), displayed_target_distance, modifiers[Player_ai->current_target_dist_trend]);

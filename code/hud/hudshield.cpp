@@ -365,8 +365,8 @@ void hud_shield_show_mini(object *objp, int x_force, int y_force, int x_hull_off
 	if (!Shield_mini_loaded)
 		return;
 
-	sx = (x_force == -1) ? Shield_mini_coords[gr_screen.res][0]+fl2i(HUD_offset_x) : x_force;
-	sy = (y_force == -1) ? Shield_mini_coords[gr_screen.res][1]+fl2i(HUD_offset_y) : y_force;
+	sx = (x_force == -1) ? Shield_mini_coords[gr_screen.res][0]/* + fl2i(HUD_offset_x)*/ : x_force;
+	sy = (y_force == -1) ? Shield_mini_coords[gr_screen.res][1]/* + fl2i(HUD_offset_y)*/ : y_force;
 
 	// draw the ship first
 	hud_shield_maybe_flash(HUD_TARGET_MINI_ICON, SHIELD_HIT_TARGET, Shield_hit_data[SHIELD_HIT_TARGET].hull_hit_index);
@@ -596,10 +596,10 @@ void HudGaugeShield::showShields(object *objp, int mode)
 	sx = position[0];
 	sy = position[1];
 
-	if (gr_screen.rendering_to_texture == -1) {
+	/*if (gr_screen.rendering_to_texture == -1) {
 		sx += fl2i(HUD_offset_x);
 		sy += fl2i(HUD_offset_y);
-	}
+	}*/
 
 	// draw the ship first
 	maybeFlashShield(SHIELD_HIT_PLAYER, Shield_hit_data[SHIELD_HIT_PLAYER].hull_hit_index);
@@ -975,10 +975,10 @@ void HudGaugeShieldMini::showMiniShields(object *objp)
 
 	sx = position[0];
 	sy = position[1];
-	if (gr_screen.rendering_to_texture == -1) {
+	/*if (gr_screen.rendering_to_texture == -1) {
 		sx+=fl2i(HUD_offset_x);
 		sy+=fl2i(HUD_offset_y);
-	}
+	}*/
 
 	// draw the ship first
 	maybeFlashShield(SHIELD_HIT_TARGET, Shield_hit_data[SHIELD_HIT_TARGET].hull_hit_index);
@@ -1070,10 +1070,10 @@ void HudGaugeShieldMini::showIntegrity(float p_target_integrity)
 	final_pos[0] += position[0];
 	final_pos[1] += position[1];
 
-	if (gr_screen.rendering_to_texture == -1) {
+	/*if (gr_screen.rendering_to_texture == -1) {
 		final_pos[0] += fl2i(HUD_offset_x);
 		final_pos[1] += fl2i(HUD_offset_y);
-	}
+	}*/
 
 	sprintf(text_integrity, "%d", numeric_integrity);
 	if ( numeric_integrity < 100 ) {

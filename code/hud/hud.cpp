@@ -1051,8 +1051,8 @@ void HudGauge::setClip(int x, int y, int w, int h)
 
 		gr_set_clip(hx, hy, w, h);
 	} else {
-		hx = fl2i(HUD_offset_x);
-		hy = fl2i(HUD_offset_y);
+		hx = 0;//fl2i(HUD_offset_x);
+		hy = 0;//fl2i(HUD_offset_y);
 		if (reticle_follow) {
 			hx += HUD_nose_x;
 			hy += HUD_nose_y;
@@ -1092,8 +1092,8 @@ void HudGauge::resetClip()
 
 		gr_set_clip(hx, hy, w, h);
 	} else {
-		hx = fl2i(HUD_offset_x);
-		hy = fl2i(HUD_offset_y);
+		hx = 0;// fl2i(HUD_offset_x);
+		hy = 0;// fl2i(HUD_offset_y);
 
 		gr_resize_screen_pos(&hx, &hy);
 		gr_set_screen_scale(base_w, base_h);
@@ -3852,8 +3852,8 @@ void HUD_get_nose_coordinates(int *x, int *y)
  */
 void HUD_reset_clip()
 {
-	int hx = fl2i(HUD_offset_x);
-	int hy = fl2i(HUD_offset_y);
+	int hx = 0;// fl2i(HUD_offset_x);
+	int hy = 0;// fl2i(HUD_offset_y);
 
 	gr_set_clip(hx, hy, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled);
 }
@@ -3863,8 +3863,8 @@ void HUD_reset_clip()
  */
 void HUD_set_clip(int x, int y, int w, int h)
 {
-	int hx = fl2i(HUD_offset_x);
-	int hy = fl2i(HUD_offset_y);
+	int hx = 0;// fl2i(HUD_offset_x);
+	int hy = 0;// fl2i(HUD_offset_y);
 
 	gr_set_clip(hx+x, hy+y, w, h);
 }
