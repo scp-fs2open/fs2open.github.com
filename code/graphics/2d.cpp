@@ -1260,13 +1260,37 @@ static void init_colors()
 	Gr_ta_alpha.scale = 17;
 }
 
+static void gr_init_function_pointers(int mode) {
+	gr_screen = {};
+
+	switch (mode) {
+	case GR_OPENGL:
+#ifdef WITH_OPENGL
+		gr_opengl_init_function_pointers();
+#else
+		Error(LOCATION, "OpenGL renderer was requested but that was not compiled into this build.");
+#endif
+		break;
+	case GR_VULKAN:
+#ifdef WITH_VULKAN
+		graphics::vulkan::initialize_function_pointers();
+#else
+		Error(LOCATION, "Vulkan renderer was requested but that was not compiled into this build.");
+#endif
+		break;
+	case GR_STUB:
+		gr_stub_init_function_pointers();
+		break;
+	default:
+		UNREACHABLE("Invalid graphics mode requested"); // Invalid graphics mode
+	}
+}
+
 static bool gr_init_sub(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int mode, int width, int height,
 						int depth, float center_aspect_ratio)
 {
 	int res = GR_1024;
 	bool rc = false;
-
-	gr_screen = {};
 
 	float aspect_ratio = (float)width / (float)height;
 
@@ -1566,9 +1590,6 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 		depth = d_depth;
 	}
 
-	if (Cmdline_vulkan)
-		mode = GR_VULKAN;
-
 	// if we are in standalone mode then just use special defaults
 	if (Is_standalone) {
 		mode = GR_STUB;
@@ -1577,6 +1598,8 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 		depth = 16;
 		center_aspect_ratio = -1.0f;
 	}
+
+	gr_init_function_pointers(mode);
 
 	if (gr_get_resolution_class(width, height) != GR_640) {
 		// check for hi-res interface files so that we can verify our width/height is correct
@@ -1592,6 +1615,17 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 				height = 600;
 				center_aspect_ratio = -1.0f;
 			}
+		}
+	}
+
+	if (Cmdline_enable_vr) {
+		float user_ar = i2fl(width) / i2fl(height);
+		float xr_ar = openxr_preinit(mode, user_ar);
+
+		if (MAX(user_ar, xr_ar) / MIN(user_ar, xr_ar) > 1.05f) {
+			int newWidth = fl2i(i2fl(height) * xr_ar);
+			mprintf(("User specified resolution does not match OpenXR HMD aspect ratio. Adjusting width from %dpx to %dpx.", width, newWidth));
+			width = newWidth;
 		}
 	}
 

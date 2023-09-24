@@ -927,7 +927,7 @@ int opengl_init_display_device()
 	return 0;
 }
 
-void opengl_setup_function_pointers()
+void gr_opengl_init_function_pointers()
 {
 	gr_screen.gf_flip				= gr_opengl_flip;
 	gr_screen.gf_setup_frame		= gr_opengl_setup_frame;
@@ -1295,11 +1295,6 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 		}
 	}
 #endif
-
-
-	// this MUST be done before any other gr_opengl_* or
-	// opengl_* function calls!!
-	opengl_setup_function_pointers();
 
 	mprintf(( "  OpenGL Vendor    : %s\n", glGetString(GL_VENDOR) ));
 	mprintf(( "  OpenGL Renderer  : %s\n", glGetString(GL_RENDERER) ));

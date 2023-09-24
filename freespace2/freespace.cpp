@@ -1782,7 +1782,12 @@ void game_init()
 		// Standalone mode doesn't require graphics operations
 		sdlGraphicsOperations.reset(new SDLGraphicsOperations());
 	}
-	if (!gr_init(std::move(sdlGraphicsOperations))) {
+
+	int graphics_api = GR_DEFAULT;
+	if (Cmdline_vulkan)
+		graphics_api = GR_VULKAN;
+
+	if (!gr_init(std::move(sdlGraphicsOperations), graphics_api)) {
 		os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, "Error initializing graphics!");
 		exit(1);
 		return;

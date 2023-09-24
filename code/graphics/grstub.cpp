@@ -456,7 +456,7 @@ bool gr_stub_openxr_flip()
 	return false; 
 }
 
-bool gr_stub_init() 
+bool gr_stub_init()
 {
 	if (gr_screen.res != GR_640) {
 		gr_screen.res = GR_640;
@@ -482,6 +482,10 @@ bool gr_stub_init()
 	Gr_blue.mask = 0xff;
 	Gr_t_blue = Gr_blue;
 
+	return true;
+}
+
+void gr_stub_init_function_pointers() {
 	// function pointers...
 	gr_screen.gf_flip				= gr_stub_flip;
 	gr_screen.gf_setup_frame		= gr_stub_setup_frame;
@@ -614,6 +618,4 @@ bool gr_stub_init()
 	gr_screen.gf_openxr_get_swapchain_format = gr_stub_openxr_get_swapchain_format;
 	gr_screen.gf_openxr_acquire_swapchain_buffers = gr_stub_openxr_acquire_swapchain_buffers;
 	gr_screen.gf_openxr_flip = gr_stub_openxr_flip;
-
-	return true;
 }

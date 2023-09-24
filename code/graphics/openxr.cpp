@@ -71,7 +71,7 @@ void openxr_prepare(float hudscale) {
 	openxr_req = true;
 }
 
-static bool openxr_init_instance() {
+static bool openxr_init_instance(int graphics_api) {
 	auto extensions = gr_openxr_get_extensions();
 
 	const gameversion::version& fso_version = gameversion::get_executable_version();
@@ -146,6 +146,20 @@ static bool openxr_init_system() {
 	}
 
 	return true;
+}
+
+static float openxr_system_get_ar() {
+	XrSystemProperties props {
+		XR_TYPE_SYSTEM_PROPERTIES,
+		nullptr,
+		xr_system,
+		0,
+		"\0",
+		XrSystemGraphicsProperties{},
+		XrSystemTrackingProperties{}
+	};
+	xrGetSystemProperties(xr_instance, xr_system, &props);
+	return i2fl(props.graphicsProperties.maxSwapchainImageWidth) / i2fl(props.graphicsProperties.maxSwapchainImageHeight);
 }
 
 static bool openxr_init_swapchains() {
@@ -267,16 +281,29 @@ static void openxr_init_post() {
 	} * (1.0f / (2.0f * PROJ_FOV_FACTOR));
 }
 
-void openxr_init(float scale) {
+float openxr_preinit(int graphics_api, float req_ar, float scale) {
 	xr_scale = scale;
 
-	mprintf(("Attempting to initialize OpenXR...\n"));
+	mprintf(("Attempting to pre-initialize OpenXR...\n"));
 
-	if (!openxr_init_instance())
+	if (!openxr_init_instance(graphics_api)) {
+		openxr_req = false;
+		return req_ar;
+	}
+
+	if (!openxr_init_system()) {
+		openxr_req = false;
+		return req_ar;
+	}
+
+	return openxr_system_get_ar();
+}
+
+void openxr_init() {
+	if (!openxr_req)
 		return;
 
-	if (!openxr_init_system())
-		return;
+	mprintf(("Attempting to initialize OpenXR and get a session...\n"));
 
 	if (!gr_openxr_test_capabilities())
 		return;
