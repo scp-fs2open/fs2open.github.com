@@ -288,12 +288,12 @@ jobs:
         run: $GITHUB_WORKSPACE/ci/linux/run_tests.sh
       - name: Package build result
         working-directory: ./build
-        run: cd bin && tar -cvzf macos-build.tar *.app
+        run: cd bin && tar -cvzf macos-build-${{ matrix.configuration }}.tar.gz *.app
       - name: Upload build result
         uses: actions/upload-artifact@v2
         with:
           name: mac-${{ matrix.configuration }}
-          path: ${{ github.workspace }}/build/bin/macos-build.tar
+          path: ${{ github.workspace }}/build/bin/macos-build-${{ matrix.configuration }}.tar.gz
   mac_zip:
     name: Build Mac distribution zip
     needs: build_mac
@@ -311,11 +311,17 @@ jobs:
         with:
           name: mac-Release
           path: builds
+      - name: Unpack Release build
+        working-directory: ./builds
+        run: tar -xvzf macos-build-Release.tar.gz
       - name: Download FastDebug builds
         uses: actions/download-artifact@v2
         with:
           name: mac-FastDebug
           path: builds
+      - name: Unpack FastDebug build
+        working-directory: ./builds
+        run: tar -xvzf macos-build-FastDebug.tar.gz
       - name: Create Distribution package
         working-directory: ./builds
         run: $GITHUB_WORKSPACE/ci/linux/create_dist_pack.sh Mac
