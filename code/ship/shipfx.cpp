@@ -3730,6 +3730,29 @@ int WE_Default::getWarpOrientation(matrix* output)
     return 1;
 }
 
+float shipfx_calculate_arrival_warp_distance(object *objp)
+{
+	Assert(objp != nullptr && objp->type == OBJ_SHIP);
+
+	// c.f. WE_Default::warpStart()
+	float half_length, warping_dist;
+	if (object_is_docked(objp))
+	{
+		half_length = dock_calc_max_semilatus_rectum_parallel_to_axis(objp, Z_AXIS);
+		warping_dist = 2.0f * half_length;
+	}
+	else
+	{
+		warping_dist = ship_class_get_length(&Ship_info[Ships[objp->instance].ship_info_index]);
+		half_length = 0.5f * warping_dist;
+	}
+	float warping_time = shipfx_calculate_warp_time(objp, WarpDirection::WARP_IN, half_length, warping_dist);
+	float warping_speed = warping_dist / warping_time;
+
+	// the total distance is a full length from its current position, plus the time it takes to slow down from its warping speed
+	// TODO
+}
+
 //********************-----CLASS: WE_BSG-----********************//
 WE_BSG::WE_BSG(object *n_objp, WarpDirection n_direction)
 	:WarpEffect(n_objp, n_direction)
