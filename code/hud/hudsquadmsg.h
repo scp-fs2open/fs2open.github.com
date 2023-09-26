@@ -24,6 +24,7 @@
 #define SM_MODE_REPAIR_REARM			7		//repair/rearm player ship
 #define SM_MODE_REPAIR_REARM_ABORT	8		//abort repair/rearm of player ship
 #define SM_MODE_ALL_FIGHTERS			9		//message all fighters/bombers
+#define SM_MODE_GENERAL             10		//general orders, usually luaAI
 
 // define for trapping messages send to "all fighters"
 #define MESSAGE_ALL_FIGHTERS		-999

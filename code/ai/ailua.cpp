@@ -56,7 +56,11 @@ void run_ai_lua_action(const luacpp::LuaFunction& action, const ai_mode_lua& lua
 	}
 
 	luacpp::LuaValueList luaParameters;
-	luaParameters.push_back(luacpp::LuaValue::createValue(action.getLuaState(), scripting::api::l_AI_Helper.Set(object_h(&Objects[Ships[aip->shipnum].objnum]))));
+	if (aip->shipnum >= 0){
+		luaParameters.push_back(luacpp::LuaValue::createValue(action.getLuaState(), scripting::api::l_AI_Helper.Set(object_h(&Objects[Ships[aip->shipnum].objnum]))));
+	} else {
+		luaParameters.push_back(luacpp::LuaValue::createValue(action.getLuaState(), scripting::api::l_AI_Helper.Set(object_h())));
+	}
 	if (lua_ai.needsTarget) {
 		luaParameters.push_back(luacpp::LuaValue::createValue(action.getLuaState(), scripting::api::l_OSWPT.Set(aip->lua_ai_target.target)));
 	}
@@ -67,8 +71,13 @@ void run_ai_lua_action(const luacpp::LuaFunction& action, const ai_mode_lua& lua
 	auto retVals = action.call(Script_system.GetLuaSession(), luaParameters);
 
 	if (!retVals.empty() && retVals[0].getValueType() == luacpp::ValueType::BOOLEAN) {
-		if (retVals[0].getValue<bool>())
-			ai_mission_goal_complete(aip);
+		if (retVals[0].getValue<bool>()) {
+
+			// If we don't have a ship then it's a general order and we have nothing else to do
+			if (aip->shipnum < 0) {
+				ai_mission_goal_complete(aip);
+			}
+		}
 	}
 }
 
@@ -101,6 +110,26 @@ void ai_lua_start(ai_goal* aigp, object* objp){
 	const auto& action = lua_ai_sexp.getActionEnter();
 
 	run_ai_lua_action(action, lua_ai, aip);
+}
+
+// For sending general orders that don't run on a ship.
+// Essentially just runs arbitrary lua script when the command is called
+void ai_lua_start_general(int lua_sexp_id, int target_objnum)
+{
+	//Create a dummy aip to pass the target data
+	ai_info aip;
+	aip.shipnum = -1;
+
+	if (target_objnum >= 0) {
+		aip.lua_ai_target = {object_ship_wing_point_team(&Ships[Objects[target_objnum].instance]), {}};
+	}
+	
+	const auto& lua_ai = ai_lua_find_mode(lua_sexp_id);
+
+	const auto& lua_ai_sexp = lua_ai->sexp;
+	const auto& action = lua_ai_sexp.getActionEnter();
+
+	run_ai_lua_action(action, *lua_ai, &aip);
 }
 
 bool ai_lua_is_valid_target_intrinsic(int sexp_op, int target_objnum, ship* self) {

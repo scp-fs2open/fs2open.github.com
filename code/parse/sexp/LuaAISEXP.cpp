@@ -139,6 +139,10 @@ void LuaAISEXP::parseTable() {
 			error_display(1, "Player orders must have either no target or a ship-type target parameter!");
 		}
 
+		if (optional_string("+General Order:")) {
+			stuff_boolean(&order.generalOrder);
+		}
+
 		required_string("+Display String:");
 		stuff_string(order.displayText, F_NAME);
 

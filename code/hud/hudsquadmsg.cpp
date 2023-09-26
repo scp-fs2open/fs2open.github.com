@@ -141,7 +141,7 @@ int keys_used[] = {	KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_
 
 // following are defines and character strings that are used as part of messaging mode
 
-#define NUM_COMM_ORDER_TYPES			6
+#define NUM_COMM_ORDER_TYPES			7
 
 #define TYPE_SHIP_ITEM					0
 #define TYPE_WING_ITEM					1
@@ -149,6 +149,7 @@ int keys_used[] = {	KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_
 #define TYPE_REINFORCEMENT_ITEM			3
 #define TYPE_REPAIR_REARM_ITEM			4
 #define TYPE_REPAIR_REARM_ABORT_ITEM	5
+#define TYPE_GENERAL                    6
 
 
 SCP_string  Comm_order_types[NUM_COMM_ORDER_TYPES];
@@ -196,7 +197,8 @@ void hud_init_comm_orders()
 		XSTR("All Fighters", 295),
 		XSTR("Reinforcements", 296),
 		XSTR("Rearm/Repair Subsys", 297),
-		XSTR("Abort Rearm", 298)
+		XSTR("Abort Rearm", 298),
+		XSTR("General", 1807)
 	};
 
 	for (i = 0; i < NUM_COMM_ORDER_TYPES; i++)
@@ -1734,6 +1736,8 @@ do_main_menu:
 				hud_squadmsg_do_mode( SM_MODE_REPAIR_REARM );
 			} else if ( k == TYPE_REPAIR_REARM_ABORT_ITEM ) {
 				hud_squadmsg_do_mode( SM_MODE_REPAIR_REARM_ABORT );
+			} else if (k == TYPE_GENERAL) {
+				hud_squadmsg_do_mode(SM_MODE_GENERAL);
 			}
 		}
 	}
@@ -2078,6 +2082,51 @@ void hud_squadmsg_ship_command()
 	}
 }
 
+void hud_squadmsg_msg_general()
+{
+	int k;
+
+	Num_menu_items = 0;
+	for (size_t order_id = 0; order_id < Player_orders.size(); order_id++) {
+		Assert(Num_menu_items < MAX_MENU_ITEMS);
+
+		if (Player_orders[order_id].lua_id <= 0) {
+			continue;
+		}
+
+		auto lua_porder = ai_lua_find_player_order(Player_orders[order_id].lua_id);
+
+		//If it's not a general order then do not add it.
+		if (!lua_porder->generalOrder) {
+			continue;
+		}
+
+		MsgItems[Num_menu_items].text = Player_orders[order_id].localized_name;
+		MsgItems[Num_menu_items].instance = Player_orders[order_id].lua_id;
+		MsgItems[Num_menu_items].active = 1; //always start active
+
+		// do some other checks to possibly gray out other items.
+		// if no target, remove any items which are associated with the players target
+		if (!hud_squadmsg_is_target_order_valid(order_id, nullptr))
+			MsgItems[Num_menu_items].active = 0;
+
+		Num_menu_items++;
+	}
+
+	strcpy_s(Squad_msg_title, XSTR("What Command", 321));
+	k = hud_squadmsg_get_key();
+
+	// when we get a valid goal, we must add the goal to the ai ship's goal list
+
+	if (k != -1) {
+		Assert(k < Num_menu_items);
+		
+		ai_lua_start_general(MsgItems[k].instance, Player_ai->target_objnum);
+
+		hud_squadmsg_toggle();
+	}
+}
+
 // function to display list of command for a wing
 void hud_squadmsg_wing_command()
 {
@@ -2412,6 +2461,10 @@ int hud_squadmsg_do_frame( )
 
 	case SM_MODE_ALL_FIGHTERS:
 		hud_squadmsg_msg_all_fighters();
+		break;
+
+	case SM_MODE_GENERAL:
+		hud_squadmsg_msg_general();
 		break;
 
 	default:
