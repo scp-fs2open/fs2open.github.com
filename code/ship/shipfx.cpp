@@ -3634,7 +3634,7 @@ int WE_Default::warpFrame(float frametime)
 			// notify physics to slow down
 			if (params->special_warp_physics) {
 				// let physics know this is a special warp in
-				objp->phys_info.flags |= PF_SPECIAL_WARP_IN;
+				objp->phys_info.flags |= PF_SUPERCAP_WARP_IN;
 			}
 		}
 	}
@@ -3750,7 +3750,16 @@ float shipfx_calculate_arrival_warp_distance(object *objp)
 	float warping_speed = warping_dist / warping_time;
 
 	// the total distance is a full length from its current position, plus the time it takes to slow down from its warping speed
-	// TODO
+	float decel_time_const = objp->phys_info.forward_decel_time_const;
+	if (Ship_info[Ships[objp->instance].ship_info_index].flags[Ship::Info_Flags::Supercap]) {
+		// super cap style warpins are annoying, one time constant while above their max speed, a different one while slowing down from there
+		float supercap_slowdown_dist = (warping_speed - (objp->phys_info.max_vel.xyz.z + 5.0f))  * SUPERCAP_WARP_T_CONST;
+		float regular_slowdown_dist = (objp->phys_info.max_vel.xyz.z + 5.0f) * decel_time_const;
+
+		return warping_dist + supercap_slowdown_dist + regular_slowdown_dist;
+	} else {
+		return warping_dist + warping_speed * decel_time_const;
+	}
 }
 
 //********************-----CLASS: WE_BSG-----********************//

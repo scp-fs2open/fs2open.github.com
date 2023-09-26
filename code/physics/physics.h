@@ -25,7 +25,7 @@
 #define	PF_AFTERBURNER_WAIT		(1 << 7)	// true when afterburner cannot be used.  replaces variable used in afterburner code
 #define	PF_CONST_VEL			(1 << 8)	// Use velocity in phys_info struct.  Optimize weapons in phys_sim 
 #define	PF_WARP_IN				(1 << 9)	//	Use when ship is warping in
-#define	PF_SPECIAL_WARP_IN		(1 << 10)	//	Use when ship is warping in and we want to slow the ship faster than normal game physics
+#define	PF_SUPERCAP_WARP_IN		(1 << 10)	//	Use when ship is warping in and we want to slow the ship faster than normal game physics
 #define	PF_WARP_OUT				(1 << 11)	//	Use when ship is warping out
 #define	PF_SPECIAL_WARP_OUT		(1 << 12)	//	Use when ship is warping out and we want to slow the ship faster than normal game physics
 #define PF_BOOSTER_ON			(1 << 13)
