@@ -38,11 +38,11 @@ void openxr_start_frame();
 
 template<typename openxr_fnc, typename... arg_t>
 tl::optional<typename std::result_of<openxr_fnc(arg_t...)>::type> openxr_callExtensionFunction(const char* const name, arg_t&&... args) {
-	PFN_xrVoidFunction func;
+	openxr_fnc func;
 
-	if (xrGetInstanceProcAddr(xr_instance, name, &func) != XR_SUCCESS) {
+	if (xrGetInstanceProcAddr(xr_instance, name, (PFN_xrVoidFunction*)&func) != XR_SUCCESS) {
 		return tl::nullopt;
 	}
 
-	return ((openxr_fnc)func)(std::forward<arg_t>(args)...);
+	return func(std::forward<arg_t>(args)...);
 }

@@ -29,7 +29,7 @@ float xr_scale = 1.0f;
 
 std::unique_ptr<star[]> Stars_XRBuffer;
 
-#if !defined(NDEBUG)
+#if !defined(NDEBUG) && defined(FS_OPENXR_DEBUG)
 static XrBool32 handleXRError(XrDebugUtilsMessageSeverityFlagsEXT severity, XrDebugUtilsMessageTypeFlagsEXT type, const XrDebugUtilsMessengerCallbackDataEXT* callbackData, void* /*userData*/) {
 	SCP_string message;
 	switch (type)
@@ -77,7 +77,7 @@ static bool openxr_init_instance() {
 	const gameversion::version& fso_version = gameversion::get_executable_version();
 	const gameversion::version& mod_version(Mod_version);
 
-#if !defined(NDEBUG)
+#if !defined(NDEBUG) && defined(FS_OPENXR_DEBUG)
 	extensions.emplace_back("XR_EXT_debug_utils");
 #endif
 
@@ -115,7 +115,7 @@ static bool openxr_init_instance() {
 		return false;
 	}
 
-#if !defined(NDEBUG)
+#if !defined(NDEBUG) && defined(FS_OPENXR_DEBUG)
 	XrDebugUtilsMessengerCreateInfoEXT debugMessengerCreateInfo {
 		XR_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
 		nullptr,
@@ -338,7 +338,7 @@ void openxr_close() {
 		sc.release();
 	xrDestroySession(xr_session);
 
-#if !defined(NDEBUG)
+#if !defined(NDEBUG) && defined(FS_OPENXR_DEBUG)
 	openxr_callExtensionFunction<PFN_xrDestroyDebugUtilsMessengerEXT>("xrDestroyDebugUtilsMessengerEXT", xr_debugMessenger);
 #endif
 
@@ -375,8 +375,11 @@ void openxr_poll() {
 	if (!openxr_initialized)
 		return;
 
-	XrEventDataBuffer eventData;
-	eventData.type = XR_TYPE_EVENT_DATA_BUFFER;
+	XrEventDataBuffer eventData{
+		XR_TYPE_EVENT_DATA_BUFFER,
+		nullptr,
+		{0}
+	};
 
 	XrResult result = xrPollEvent(xr_instance, &eventData);
 	if (result == XR_EVENT_UNAVAILABLE) {

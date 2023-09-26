@@ -38,9 +38,14 @@ SCP_vector<const char*> gr_opengl_openxr_get_extensions() {
 	return { XR_KHR_OPENGL_ENABLE_EXTENSION_NAME };
 }
 
+
 bool gr_opengl_openxr_test_capabilities() {
-	XrGraphicsRequirementsOpenGLKHR requirements;
-	requirements.type = XR_TYPE_GRAPHICS_REQUIREMENTS_OPENGL_KHR;
+	XrGraphicsRequirementsOpenGLKHR requirements{
+		XR_TYPE_GRAPHICS_REQUIREMENTS_OPENGL_KHR,
+		nullptr,
+		0,
+		0
+	};
 
 	if (openxr_callExtensionFunction<PFN_xrGetOpenGLGraphicsRequirementsKHR>("xrGetOpenGLGraphicsRequirementsKHR", xr_instance, xr_system, &requirements) != XR_SUCCESS) {
 		mprintf(("Failed to query OpenXR graphics requirements!\n"));
@@ -69,10 +74,10 @@ bool gr_opengl_openxr_create_session() {
 	};
 	
 	XrSessionCreateInfo sessionCreateInfo{
-		sessionCreateInfo.type = XR_TYPE_SESSION_CREATE_INFO,
-		sessionCreateInfo.next = &graphicsBinding,
-		sessionCreateInfo.createFlags = 0,
-		sessionCreateInfo.systemId = xr_system
+		XR_TYPE_SESSION_CREATE_INFO,
+		&graphicsBinding,
+		0,
+		xr_system
 	};
 
 	XrResult sessionInit = xrCreateSession(xr_instance, &sessionCreateInfo, &xr_session);
