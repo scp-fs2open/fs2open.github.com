@@ -40,6 +40,8 @@
 #define	REDUCED_DAMP_TIME		2000	// ms (2.0 sec)
 #define	WEAPON_SHAKE_TIME		500	//	ms (0.5 sec)	viewer shake time after hit by weapon (implemented via afterburner shake)
 
+const float SUPERCAP_WARP_T_CONST = 0.651f;	// special warp time constant (lose 99 % of excess speed in 3 sec)
+
 void update_reduced_damp_timestamp( physics_info *pi, float impulse );
 float velocity_ramp (float v_in, float v_goal, float time_const, float t);
 float glide_ramp (float v_in, float v_goal, float ramp_time_const, float accel_mult, float t);
