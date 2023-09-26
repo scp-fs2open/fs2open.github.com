@@ -244,6 +244,7 @@ special_flag_def_list_new<Weapon::Info_Flags, weapon_info*, flagset<Weapon::Info
  	{ "don't merge lead indicators",	Weapon::Info_Flags::Dont_merge_indicators,			    true },
 	{ "no_fred",						Weapon::Info_Flags::No_fred,							true },
 	{ "detonate on expiration",			Weapon::Info_Flags::Detonate_on_expiration,				true },
+	{ "ignores countermeasures",		Weapon::Info_Flags::Ignores_countermeasures,			true },
 };
 
 const size_t num_weapon_info_flags = sizeof(Weapon_Info_Flags) / sizeof(special_flag_def_list_new<Weapon::Info_Flags, weapon_info*, flagset<Weapon::Info_Flags>&>);
@@ -4870,6 +4871,10 @@ void find_homing_object_cmeasures(const SCP_vector<object*> &cmeasure_list)
 		if (weapon_objp->type == OBJ_WEAPON) {
 			weapon *wp = &Weapons[weapon_objp->instance];
 			weapon_info	*wip = &Weapon_info[wp->weapon_info_index];
+
+			// If the weapon has the ignores countermeasures flag, then do not try to find a valid countermeasure!
+			if (wip->wi_flags[Weapon::Info_Flags::Ignores_countermeasures])
+				continue;
 
 			if (wip->is_homing()) {
 				float best_dot = wip->fov;

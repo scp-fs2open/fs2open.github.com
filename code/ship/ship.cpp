@@ -507,6 +507,7 @@ flag_def_list_new<Weapon::Info_Flags> ai_tgt_weapon_flags[] = {
 	{ "no impact spew",				Weapon::Info_Flags::No_impact_spew,						true, false },
 	{ "require exact los",			Weapon::Info_Flags::Require_exact_los,					true, false },
 	{ "multilock target dead subsys", Weapon::Info_Flags::Multilock_target_dead_subsys,		true, false },
+	{ "ignores countermeasures",	Weapon::Info_Flags::Ignores_countermeasures,			true, false },
 };
 
 const int num_ai_tgt_weapon_info_flags = sizeof(ai_tgt_weapon_flags) / sizeof(flag_def_list_new<Weapon::Info_Flags>);
