@@ -35,6 +35,8 @@
 #define PF_MANEUVER_NO_DAMP		(1 << 17)	// Goober5000 - don't damp velocity changes in physics; used for instantaneous acceleration
 #define PF_BALLISTIC			(1 << 18)	// Asteroth - not moving 'under its own power', simplified physics calculations
 
+constexpr float SUPERCAP_WARP_T_CONST = 0.651f;	// special warp time constant (lose 99 % of excess speed in 3 sec)
+
 //information for physics sim for an object
 typedef struct physics_info {
 	uint		flags;			//misc physics flags

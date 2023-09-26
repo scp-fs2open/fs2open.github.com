@@ -83,9 +83,6 @@ extern vec3d	Original_vec_to_deader;
 
 #define RF_IS_AVAILABLE			(1<<0)			// reinforcement is now available
 
-#define	SUPERCAP_WARP_T_CONST	0.651	// special warp time constant (loose 99 % of excess speed in 3 sec)
-
-
 typedef struct {
 	char	name[NAME_LENGTH];	// ship or wing name (ship and wing names don't collide)
 	int	type;						// what operations this reinforcement unit can perform
