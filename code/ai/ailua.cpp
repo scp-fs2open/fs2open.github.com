@@ -60,8 +60,56 @@ int ai_lua_get_num_general_orders() {
 	return count;
 }
 
-SCP_vector<SCP_string> ai_lua_get_enabled_orders()
+SCP_vector<SCP_string> ai_lua_get_order_categories()
 {
+	SCP_vector<SCP_string> list;
+
+	for (auto order : Lua_player_orders) {
+		SCP_string cat = order.second.category;
+
+		// If it's not a general order then move on
+		if (!order.second.generalOrder) {
+			continue;
+		}
+
+		// If the order is not enabled then move on
+		if (!order.second.cur_enabled) {
+			continue;
+		}
+
+		Assertion((cat.length() > 0), "Lua general orders category name must be longer than 0 characters!");
+
+		for (size_t i = 0; i <= list.size(); i++) {
+
+			// reached the end of the list, so add it
+			if (i == list.size()) {
+				list.push_back(cat);
+				break;
+			}
+
+			// if it's already in the list then don't add it
+			if (cat == list[i]) {
+				break;
+			}
+		}
+	}
+
+	return list;
+}
+
+SCP_vector<SCP_string> ai_lua_get_enabled_orders_by_category(SCP_string cat) {
+	SCP_vector<SCP_string> list;
+
+	for (auto order : Lua_player_orders) {
+		if ((order.second.category == cat) && order.second.cur_enabled) {
+			list.push_back(order.second.parseText);
+		}
+	}
+
+	return list;
+}
+
+SCP_vector<SCP_string> ai_lua_get_enabled_orders() {
 	SCP_vector<SCP_string> list;
 
 	for (auto order : Lua_player_orders) {

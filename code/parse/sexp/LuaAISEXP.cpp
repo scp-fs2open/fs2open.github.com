@@ -141,6 +141,15 @@ void LuaAISEXP::parseTable() {
 
 		if (optional_string("+General Order:")) {
 			stuff_boolean(&order.generalOrder);
+
+			order.category = XSTR("General", 1807);
+			if (optional_string("+Category:")) {
+				stuff_string(order.category, F_NAME);
+
+				if (order.category.length() <= 0) {
+					error_display(1, "Order category name must be longer than 0 characters!");
+				}
+			}
 		}
 
 		required_string("+Display String:");

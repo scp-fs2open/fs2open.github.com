@@ -112,6 +112,7 @@ char Squad_msg_title[256] = "";
 mmode_item MsgItems[MAX_MENU_ITEMS];
 int Num_menu_items = -1;					// number of items for a message menu
 int First_menu_item= -1;							// index of first item in the menu
+SCP_string Lua_sqd_msg_cat;
 
 // -----------
 // following set of vars/defines are used to store/restore key bindings for keys that
@@ -141,7 +142,7 @@ int keys_used[] = {	KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_
 
 // following are defines and character strings that are used as part of messaging mode
 
-#define NUM_COMM_ORDER_TYPES			7
+#define NUM_COMM_ORDER_TYPES			6
 
 #define TYPE_SHIP_ITEM					0
 #define TYPE_WING_ITEM					1
@@ -149,7 +150,6 @@ int keys_used[] = {	KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_
 #define TYPE_REINFORCEMENT_ITEM			3
 #define TYPE_REPAIR_REARM_ITEM			4
 #define TYPE_REPAIR_REARM_ABORT_ITEM	5
-#define TYPE_GENERAL_ITEM               6
 
 
 SCP_string  Comm_order_types[NUM_COMM_ORDER_TYPES];
@@ -197,8 +197,7 @@ void hud_init_comm_orders()
 		XSTR("All Fighters", 295),
 		XSTR("Reinforcements", 296),
 		XSTR("Rearm/Repair Subsys", 297),
-		XSTR("Abort Rearm", 298),
-		XSTR("General", 1807)
+		XSTR("Abort Rearm", 298)
 	};
 
 	for (i = 0; i < NUM_COMM_ORDER_TYPES; i++)
@@ -1634,15 +1633,19 @@ void hud_squadmsg_type_select( )
 
 	int num_order_types = NUM_COMM_ORDER_TYPES;
 
-	// If there are no general orders, then do not show the category at all
-	if (ai_lua_get_num_general_orders() == 0) {
-		num_order_types--;
-	}
+	// Now get a list of all lua categories to add. Meow.
+	SCP_vector<SCP_string> lua_cat_list = ai_lua_get_order_categories();
+
+	num_order_types += (int)lua_cat_list.size();
 
 	// Add the items
 	for (i = 0; i < num_order_types; i++)
 	{
-		MsgItems[i].text = Comm_order_types[i];
+		if (i < NUM_COMM_ORDER_TYPES) {
+			MsgItems[i].text = Comm_order_types[i];
+		} else {
+			MsgItems[i].text = lua_cat_list[i - NUM_COMM_ORDER_TYPES];
+		}
 		MsgItems[i].active = 1;						// assume active
 	}
 	Num_menu_items = num_order_types;
@@ -1676,8 +1679,12 @@ void hud_squadmsg_type_select( )
 	MsgItems[TYPE_REPAIR_REARM_ITEM].active = 1;				// this item will always be available (I think)
 	MsgItems[TYPE_REPAIR_REARM_ABORT_ITEM].active = 0;
 
-	if (ai_lua_get_enabled_orders().size() == 0) {
-		MsgItems[TYPE_GENERAL_ITEM].active = 0;
+	int count = 0;
+	for(auto cat : lua_cat_list){
+		if (ai_lua_get_enabled_orders_by_category(cat).size() == 0) {
+			MsgItems[NUM_COMM_ORDER_TYPES + count].active = 0;
+		}
+		count++;
 	}
 
 	// AL: 10/13/97
@@ -1747,8 +1754,9 @@ do_main_menu:
 				hud_squadmsg_do_mode( SM_MODE_REPAIR_REARM );
 			} else if ( k == TYPE_REPAIR_REARM_ABORT_ITEM ) {
 				hud_squadmsg_do_mode( SM_MODE_REPAIR_REARM_ABORT );
-			} else if (k == TYPE_GENERAL_ITEM) {
-				hud_squadmsg_do_mode(SM_MODE_GENERAL);
+			} else if (k >= NUM_COMM_ORDER_TYPES) {
+				Lua_sqd_msg_cat = lua_cat_list[k - NUM_COMM_ORDER_TYPES];
+				hud_squadmsg_do_mode( SM_MODE_GENERAL );
 			}
 		}
 	}
@@ -2109,6 +2117,11 @@ void hud_squadmsg_msg_general()
 
 		//If it's not a general order then do not add it.
 		if (!lua_porder->generalOrder) {
+			continue;
+		}
+
+		//If it's not part of the selected category then do not add it.
+		if (lua_porder->category != Lua_sqd_msg_cat) {
 			continue;
 		}
 

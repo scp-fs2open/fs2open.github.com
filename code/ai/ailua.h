@@ -20,6 +20,7 @@ struct player_order_lua {
 	SCP_string parseText = "";
 	SCP_string displayText = "";
 	bool generalOrder = false;
+	SCP_string category = "";
 	bool cur_enabled = false;
 	bool cur_valid = false;
 	enum class target_restrictions : int { TARGET_ALLIES, TARGET_ALL, TARGET_OWN, TARGET_ENEMIES, TARGET_SAME_WING, TARGET_PLAYER_WING, TARGET_ALL_CAPS, TARGET_ALLIED_CAPS, TARGET_ENEMY_CAPS, TARGET_NOT_SELF } targetRestrictions = target_restrictions::TARGET_ALL;
@@ -32,7 +33,9 @@ bool ai_lua_add_order(int sexp_op, player_order_lua order);
 bool ai_lua_has_mode(int sexp_op);
 const ai_mode_lua* ai_lua_find_mode(int sexp_op);
 const player_order_lua* ai_lua_find_player_order(int sexp_op);
+SCP_vector<SCP_string> ai_lua_get_order_categories();
 int ai_lua_get_num_general_orders();
+SCP_vector<SCP_string> ai_lua_get_enabled_orders_by_category(SCP_string cat);
 SCP_vector<SCP_string> ai_lua_get_enabled_orders();
 SCP_vector<SCP_string> ai_lua_get_valid_orders();
 int ai_lua_find_player_order_id(SCP_string name);
