@@ -5018,6 +5018,10 @@ void weapon_home(object *obj, int num, float frame_time)
 	wip = &Weapon_info[wp->weapon_info_index];
 	hobjp = Weapons[num].homing_object;
 
+	// don't home if we're detonating; we don't want to change target, lifetime, heading, or speed
+	if (wp->weapon_flags[Weapon::Weapon_Flags::Begun_detonation])
+		return;
+
 	//local ssms home only in stages 1 and 5
 	if ( (wp->lssm_stage==2) || (wp->lssm_stage==3) || (wp->lssm_stage==4))
 		return;
@@ -5370,6 +5374,9 @@ void weapon_home(object *obj, int num, float frame_time)
 
 			// this flag is needed so we don't prolong the missile's life by repeatedly detonating it
 			wp->weapon_flags.set(Weapon::Weapon_Flags::Begun_detonation);
+
+			// return so we don't change target, lifetime, heading, or speed
+			return;
         }
 
 		//	Only lead target if more than one second away.  Otherwise can miss target.  I think this
