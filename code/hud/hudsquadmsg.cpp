@@ -149,7 +149,7 @@ int keys_used[] = {	KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_
 #define TYPE_REINFORCEMENT_ITEM			3
 #define TYPE_REPAIR_REARM_ITEM			4
 #define TYPE_REPAIR_REARM_ABORT_ITEM	5
-#define TYPE_GENERAL                    6
+#define TYPE_GENERAL_ITEM               6
 
 
 SCP_string  Comm_order_types[NUM_COMM_ORDER_TYPES];
@@ -1632,13 +1632,20 @@ void hud_squadmsg_type_select( )
 {
 	int k, i;
 
+	int num_order_types = NUM_COMM_ORDER_TYPES;
+
+	// If there are no general orders, then do not show the category at all
+	if (ai_lua_get_num_general_orders() == 0) {
+		num_order_types--;
+	}
+
 	// Add the items
-	for (i = 0; i < NUM_COMM_ORDER_TYPES; i++)
+	for (i = 0; i < num_order_types; i++)
 	{
 		MsgItems[i].text = Comm_order_types[i];
 		MsgItems[i].active = 1;						// assume active
 	}
-	Num_menu_items = NUM_COMM_ORDER_TYPES;
+	Num_menu_items = num_order_types;
 
 
 	// check to see if the player is a traitor.  If so, then he will not
@@ -1668,6 +1675,10 @@ void hud_squadmsg_type_select( )
 
 	MsgItems[TYPE_REPAIR_REARM_ITEM].active = 1;				// this item will always be available (I think)
 	MsgItems[TYPE_REPAIR_REARM_ABORT_ITEM].active = 0;
+
+	if (ai_lua_get_enabled_orders().size() == 0) {
+		MsgItems[TYPE_GENERAL_ITEM].active = 0;
+	}
 
 	// AL: 10/13/97
 	// If the player ship communications are severely damaged, then the player
@@ -1736,7 +1747,7 @@ do_main_menu:
 				hud_squadmsg_do_mode( SM_MODE_REPAIR_REARM );
 			} else if ( k == TYPE_REPAIR_REARM_ABORT_ITEM ) {
 				hud_squadmsg_do_mode( SM_MODE_REPAIR_REARM_ABORT );
-			} else if (k == TYPE_GENERAL) {
+			} else if (k == TYPE_GENERAL_ITEM) {
 				hud_squadmsg_do_mode(SM_MODE_GENERAL);
 			}
 		}
@@ -2101,16 +2112,20 @@ void hud_squadmsg_msg_general()
 			continue;
 		}
 
-		MsgItems[Num_menu_items].text = Player_orders[order_id].localized_name;
-		MsgItems[Num_menu_items].instance = Player_orders[order_id].lua_id;
-		MsgItems[Num_menu_items].active = 1; //always start active
+		//Only add it if it is enabled for the mission
+		if (lua_porder->cur_enabled) {
 
-		// do some other checks to possibly gray out other items.
-		// if no target, remove any items which are associated with the players target
-		if (!hud_squadmsg_is_target_order_valid(order_id, nullptr))
-			MsgItems[Num_menu_items].active = 0;
+			MsgItems[Num_menu_items].text = Player_orders[order_id].localized_name;
+			MsgItems[Num_menu_items].instance = Player_orders[order_id].lua_id;
+			MsgItems[Num_menu_items].active = (int)lua_porder->cur_valid;
 
-		Num_menu_items++;
+			// do some other checks to possibly gray out other items.
+			// if no target, remove any items which are associated with the players target
+			if (!hud_squadmsg_is_target_order_valid(order_id, nullptr))
+				MsgItems[Num_menu_items].active = 0;
+
+			Num_menu_items++;
+		}
 	}
 
 	strcpy_s(Squad_msg_title, XSTR("What Command", 321));

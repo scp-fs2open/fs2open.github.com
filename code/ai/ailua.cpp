@@ -48,6 +48,79 @@ const player_order_lua* ai_lua_find_player_order(int sexp_op) {
 		return &aiLuaOrder->second;
 }
 
+int ai_lua_get_num_general_orders() {
+	int count = 0;
+	
+	for (auto order : Lua_player_orders) {
+		if (order.second.generalOrder) {
+			count++;
+		}
+	}
+
+	return count;
+}
+
+SCP_vector<SCP_string> ai_lua_get_enabled_orders()
+{
+	SCP_vector<SCP_string> list;
+
+	for (auto order : Lua_player_orders) {
+		if (order.second.cur_enabled) {
+			list.push_back(order.second.parseText);
+		}
+	}
+
+	return list;
+}
+
+SCP_vector<SCP_string> ai_lua_get_valid_orders() {
+	SCP_vector<SCP_string> list;
+
+	for (auto order : Lua_player_orders) {
+		if (order.second.cur_valid) {
+			list.push_back(order.second.parseText);
+		}
+	}
+
+	return list;
+}
+
+int ai_lua_find_player_order_id(SCP_string name) {
+	for (auto order : Lua_player_orders) {
+		if (order.second.parseText == name) {
+			return order.first;
+		}
+	}
+
+	return -1;
+}
+
+void ai_lua_enable_player_order(int sexp_op, bool enable) {
+	auto aiLuaOrder = Lua_player_orders.find(sexp_op);
+
+	if (aiLuaOrder == Lua_player_orders.end())
+		return;
+	else
+		aiLuaOrder->second.cur_enabled = enable;
+}
+
+void ai_lua_validate_player_order(int sexp_op, bool validity)
+{
+	auto aiLuaOrder = Lua_player_orders.find(sexp_op);
+
+	if (aiLuaOrder == Lua_player_orders.end())
+		return;
+	else
+		aiLuaOrder->second.cur_valid = validity;
+}
+
+void ai_lua_reset_player_orders() {
+	for (auto order : Lua_player_orders) {
+		ai_lua_enable_player_order(order.first, order.second.enabled);
+		ai_lua_validate_player_order(order.first, order.second.valid);
+	}
+}
+
 void run_ai_lua_action(const luacpp::LuaFunction& action, const ai_mode_lua& lua_ai, ai_info* aip) {
 	if (!action.isValid()) {
 		Error(LOCATION,

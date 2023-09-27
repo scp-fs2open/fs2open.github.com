@@ -16,6 +16,7 @@
 
 
 #include "ai/aigoals.h"
+#include "ai/ailua.h"
 #include "asteroid/asteroid.h"
 #include "bmpman/bmpman.h"
 #include "cfile/cfile.h"
@@ -850,6 +851,34 @@ void parse_player_info(mission *pm)
 	}
 	
 	required_string("#Players");
+
+	// starting general orders go here
+	ai_lua_reset_player_orders();
+
+	if (optional_string("+General Orders Enabled:")) {
+		SCP_vector<SCP_string> accepted_flags;
+		stuff_string_list(accepted_flags);
+
+		for (const SCP_string& accepted : accepted_flags) {
+			int lua_order_id = ai_lua_find_player_order_id(accepted);
+
+			if (lua_order_id >= 0) {
+				ai_lua_enable_player_order(lua_order_id, true);
+			}
+		}
+	}
+	if (optional_string("+General Orders Valid:")) {
+		SCP_vector<SCP_string> accepted_flags;
+		stuff_string_list(accepted_flags);
+
+		for (const SCP_string& accepted : accepted_flags) {
+			int lua_order_id = ai_lua_find_player_order_id(accepted);
+
+			if (lua_order_id >= 0) {
+				ai_lua_validate_player_order(lua_order_id, true);
+			}
+		}
+	}
 
 	while (required_string_either("#Objects", "$")){
 		parse_player_info2(pm);
@@ -6542,6 +6571,7 @@ void mission_init(mission *pm)
 
 	mission_parse_reset_alt();
 	mission_parse_reset_callsign();
+	ai_lua_reset_player_orders();
 
 	Num_parse_names = 0;
 	Num_path_restrictions = 0;

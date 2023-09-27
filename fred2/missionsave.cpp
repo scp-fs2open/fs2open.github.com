@@ -21,6 +21,7 @@
 #include "MissionSave.h"
 
 #include "ai/aigoals.h"
+#include "ai/ailua.h"
 #include "asteroid/asteroid.h"
 #include "cfile/cfile.h"
 #include "gamesnd/eventmusic.h"
@@ -4147,6 +4148,38 @@ int CFred_mission_save::save_players()
 	required_string_fred("#Players");
 	parse_comments(2);
 	fout("\t\t;! %d total\n", Player_starts);
+
+	SCP_vector<SCP_string> e_list = ai_lua_get_enabled_orders();
+
+	if (Mission_save_format != FSO_FORMAT_RETAIL && (e_list.size() > 0)) {
+		if (optional_string_fred("+General Orders Enabled:", "#Players"))
+			parse_comments();
+		else
+			fout("\n+General Orders Enabled:");
+
+		fout(" (");
+
+		for (SCP_string order : e_list) {
+			fout(" \"%s\"", order.c_str());
+		}
+		fout(" )\n");
+	}
+
+	SCP_vector<SCP_string> v_list = ai_lua_get_valid_orders();
+
+	if (Mission_save_format != FSO_FORMAT_RETAIL && (v_list.size() > 0)) {
+		if (optional_string_fred("+General Orders Valid:", "#Players"))
+			parse_comments();
+		else
+			fout("\n+General Orders Valid:");
+
+		fout(" (");
+
+		for (SCP_string order : v_list) {
+			fout(" \"%s\"", order.c_str());
+		}
+		fout(" )\n");
+	}
 
 	for (i = 0; i < Num_teams; i++) {
 		required_string_fred("$Starting Shipname:");
