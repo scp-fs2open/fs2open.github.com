@@ -60,7 +60,7 @@ int ai_lua_get_num_general_orders() {
 	return count;
 }
 
-SCP_vector<SCP_string> ai_lua_get_order_categories()
+SCP_vector<SCP_string> ai_lua_get_order_categories(bool enabled_only)
 {
 	SCP_vector<SCP_string> list;
 
@@ -73,7 +73,7 @@ SCP_vector<SCP_string> ai_lua_get_order_categories()
 		}
 
 		// If the order is not enabled then move on
-		if (!order.second.cur_enabled) {
+		if (enabled_only && !order.second.cur_enabled) {
 			continue;
 		}
 
@@ -95,6 +95,10 @@ SCP_vector<SCP_string> ai_lua_get_order_categories()
 	}
 
 	return list;
+}
+
+int ai_lua_get_num_categories() {
+	return (int)ai_lua_get_order_categories(false).size();
 }
 
 SCP_vector<SCP_string> ai_lua_get_enabled_orders_by_category(SCP_string cat) {

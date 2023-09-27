@@ -1636,6 +1636,18 @@ void hud_squadmsg_type_select( )
 	// Now get a list of all lua categories to add. Meow.
 	SCP_vector<SCP_string> lua_cat_list = ai_lua_get_order_categories();
 
+	// If we have too many categories then we have an oopsie!
+	if ((int)lua_cat_list.size() > (MAX_MENU_ITEMS - NUM_COMM_ORDER_TYPES)) {
+		Warning(LOCATION,
+			"Too many defined Lua General Order Categories! Any categories beyond %i will be ignored.",
+			MAX_MENU_ITEMS - NUM_COMM_ORDER_TYPES);
+
+		//Remove any categories that go beyond MAX_MENU_ITEMS
+		while (lua_cat_list.size() > (MAX_MENU_ITEMS - NUM_COMM_ORDER_TYPES)) {
+			lua_cat_list.pop_back(); // Remove the last element
+		}
+	}
+
 	num_order_types += (int)lua_cat_list.size();
 
 	// Add the items
