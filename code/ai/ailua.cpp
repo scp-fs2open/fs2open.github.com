@@ -116,8 +116,8 @@ void ai_lua_validate_player_order(int sexp_op, bool validity)
 
 void ai_lua_reset_player_orders() {
 	for (auto order : Lua_player_orders) {
-		ai_lua_enable_player_order(order.first, order.second.enabled);
-		ai_lua_validate_player_order(order.first, order.second.valid);
+		ai_lua_enable_player_order(order.first, false);
+		ai_lua_validate_player_order(order.first, false);
 	}
 }
 

@@ -20,8 +20,6 @@ struct player_order_lua {
 	SCP_string parseText = "";
 	SCP_string displayText = "";
 	bool generalOrder = false;
-	bool enabled = false;
-	bool valid = false;
 	bool cur_enabled = false;
 	bool cur_valid = false;
 	enum class target_restrictions : int { TARGET_ALLIES, TARGET_ALL, TARGET_OWN, TARGET_ENEMIES, TARGET_SAME_WING, TARGET_PLAYER_WING, TARGET_ALL_CAPS, TARGET_ALLIED_CAPS, TARGET_ENEMY_CAPS, TARGET_NOT_SELF } targetRestrictions = target_restrictions::TARGET_ALL;
