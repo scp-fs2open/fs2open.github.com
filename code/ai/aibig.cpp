@@ -538,8 +538,8 @@ bool ai_new_maybe_reposition_attack_subsys() {
 	model_local_to_global_point(&geye, &ep->pnt, pm, 0, &Pl_objp->orient, &Pl_objp->pos);
 
 	// get world pos of subsystem
-	pm = model_get(Ship_info[Ships[target_objp->instance].ship_info_index].model_num);
-	model_local_to_global_point(&gsubpos, &vmd_zero_vector, pm, aip->targeted_subsys->system_info->subobj_num, &En_objp->orient, &En_objp->pos);
+	polymodel* tgt_pm = model_get(Ship_info[Ships[target_objp->instance].ship_info_index].model_num);
+	model_local_to_global_point(&gsubpos, &vmd_zero_vector, tgt_pm, aip->targeted_subsys->system_info->subobj_num, &En_objp->orient, &En_objp->pos);
 
 	// you're in sight! shoot it!
 	if (ship_subsystem_in_sight(En_objp, aip->targeted_subsys, &geye, &gsubpos, 0))
