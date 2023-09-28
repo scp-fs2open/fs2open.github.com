@@ -155,8 +155,8 @@ static bool openxr_init_configuration_views() {
 		configView = { XR_TYPE_VIEW_CONFIGURATION_VIEW, nullptr, 0, 0, 0, 0, 0, 0 };
 
 	if (xrEnumerateViewConfigurationViews(xr_instance, xr_system, XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, configurationViewsCount, &configurationViewsCount, xr_configurationviews.data()) != XR_SUCCESS) {
-		return false;
 		mprintf(("Failed to find OpenXR configuration views for stereo displays!\n"));
+		return false;
 	}
 
 	return true;
