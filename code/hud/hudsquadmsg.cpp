@@ -1634,7 +1634,7 @@ void hud_squadmsg_type_select( )
 	int num_order_types = NUM_COMM_ORDER_TYPES;
 
 	// Now get a list of all lua categories to add. Meow.
-	SCP_vector<SCP_string> lua_cat_list = ai_lua_get_order_categories();
+	SCP_vector<SCP_string> lua_cat_list = ai_lua_get_general_order_categories();
 
 	// If we have too many categories then we have an oopsie!
 	if ((int)lua_cat_list.size() > (MAX_MENU_ITEMS - NUM_COMM_ORDER_TYPES)) {
@@ -1693,7 +1693,7 @@ void hud_squadmsg_type_select( )
 
 	int count = 0;
 	for(auto cat : lua_cat_list){
-		if (ai_lua_get_enabled_orders_by_category(cat).size() == 0) {
+		if (ai_lua_get_enabled_general_orders_by_category(cat).size() == 0) {
 			MsgItems[NUM_COMM_ORDER_TYPES + count].active = 0;
 		}
 		count++;

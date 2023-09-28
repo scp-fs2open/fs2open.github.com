@@ -853,17 +853,17 @@ void parse_player_info(mission *pm)
 	required_string("#Players");
 
 	// starting general orders go here
-	ai_lua_reset_player_orders();
+	ai_lua_reset_general_orders();
 
 	if (optional_string("+General Orders Enabled:")) {
 		SCP_vector<SCP_string> accepted_flags;
 		stuff_string_list(accepted_flags);
 
 		for (const SCP_string& accepted : accepted_flags) {
-			int lua_order_id = ai_lua_find_player_order_id(accepted);
+			int lua_order_id = ai_lua_find_general_order_id(accepted);
 
 			if (lua_order_id >= 0) {
-				ai_lua_enable_player_order(lua_order_id, true);
+				ai_lua_enable_general_order(lua_order_id, true);
 			}
 		}
 	}
@@ -872,10 +872,10 @@ void parse_player_info(mission *pm)
 		stuff_string_list(accepted_flags);
 
 		for (const SCP_string& accepted : accepted_flags) {
-			int lua_order_id = ai_lua_find_player_order_id(accepted);
+			int lua_order_id = ai_lua_find_general_order_id(accepted);
 
 			if (lua_order_id >= 0) {
-				ai_lua_validate_player_order(lua_order_id, true);
+				ai_lua_validate_general_order(lua_order_id, true);
 			}
 		}
 	}
@@ -6571,7 +6571,7 @@ void mission_init(mission *pm)
 
 	mission_parse_reset_alt();
 	mission_parse_reset_callsign();
-	ai_lua_reset_player_orders();
+	ai_lua_reset_general_orders();
 
 	Num_parse_names = 0;
 	Num_path_restrictions = 0;
