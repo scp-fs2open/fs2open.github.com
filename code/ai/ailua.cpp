@@ -109,6 +109,19 @@ SCP_vector<SCP_string> ai_lua_get_enabled_general_orders_by_category(SCP_string 
 	return list;
 }
 
+SCP_vector<SCP_string> ai_lua_get_all_general_orders()
+{
+	SCP_vector<SCP_string> list;
+
+	for (auto order : Lua_player_orders) {
+		if (order.second.generalOrder) {
+			list.push_back(order.second.parseText);
+		}
+	}
+
+	return list;
+}
+
 SCP_vector<SCP_string> ai_lua_get_enabled_general_orders() {
 	SCP_vector<SCP_string> list;
 
