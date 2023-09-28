@@ -145,7 +145,7 @@ void gr_set_proj_matrix(fov_t fov, float aspect, float z_near, float z_far) {
 			create_perspective_projection_matrix(&gr_projection_matrix, clip_l, clip_r, clip_u, clip_d, z_near, z_far);
 		}
 		else {
-			create_perspective_projection_matrix(&gr_projection_matrix, clip_l, clip_r, -clip_u, -clip_d, z_near, z_far);
+			create_perspective_projection_matrix(&gr_projection_matrix, clip_l, clip_r, clip_d, clip_u, z_near, z_far);
 		}
 	}
 
