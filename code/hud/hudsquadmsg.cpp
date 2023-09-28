@@ -1633,6 +1633,8 @@ void hud_squadmsg_type_select( )
 
 	int num_order_types = NUM_COMM_ORDER_TYPES;
 
+	int lua_order_count = 0;
+
 	// Now get a list of all lua categories to add. Meow.
 	SCP_vector<SCP_string> lua_cat_list = ai_lua_get_general_order_categories();
 
@@ -1691,12 +1693,11 @@ void hud_squadmsg_type_select( )
 	MsgItems[TYPE_REPAIR_REARM_ITEM].active = 1;				// this item will always be available (I think)
 	MsgItems[TYPE_REPAIR_REARM_ABORT_ITEM].active = 0;
 
-	int count = 0;
 	for(auto cat : lua_cat_list){
 		if (ai_lua_get_enabled_general_orders_by_category(cat).size() == 0) {
-			MsgItems[NUM_COMM_ORDER_TYPES + count].active = 0;
+			MsgItems[NUM_COMM_ORDER_TYPES + lua_order_count].active = 0;
 		}
-		count++;
+		lua_order_count++;
 	}
 
 	// AL: 10/13/97
