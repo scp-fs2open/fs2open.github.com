@@ -149,6 +149,12 @@ void LuaAISEXP::parseTable() {
 				if (order.category.length() <= 0) {
 					error_display(1, "Order category name must be longer than 0 characters!");
 				}
+
+				// General orders explicitely do not show up in FRED as sexps because they
+				// they are only meant for the comms board
+				_return_type = OPR_NONE;
+				_category = OP_CATEGORY_NONE;
+				_subcategory = OP_SUBCATEGORY_NONE;
 			}
 		}
 
