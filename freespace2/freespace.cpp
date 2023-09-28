@@ -5234,6 +5234,7 @@ void game_leave_state( int old_state, int new_state )
 				if (Game_mode & GM_IN_MISSION) {
 					weapon_unpause_sounds();
 					audiostream_unpause_all();
+					message_resume_all();
 
 					// multi doesn't pause here so time keeps going
 					if ( !(Game_mode & GM_MULTIPLAYER) ) {
@@ -5744,6 +5745,7 @@ void game_enter_state( int old_state, int new_state )
 				if (Game_mode & GM_IN_MISSION) {
 					weapon_pause_sounds();
 					audiostream_pause_all();
+					message_pause_all();
 
 					// multi doesn't pause here so time needs to keep going
 					if ( !(Game_mode & GM_MULTIPLAYER) ) {
