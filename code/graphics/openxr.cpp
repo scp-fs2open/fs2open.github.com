@@ -150,7 +150,7 @@ static bool openxr_init_system() {
 }
 
 static bool openxr_init_configuration_views() {
-	uint32_t configurationViewsCount = xr_configurationviews.size();
+	uint32_t configurationViewsCount = static_cast<uint32_t>(xr_configurationviews.size());
 	for (auto& configView : xr_configurationviews)
 		configView = { XR_TYPE_VIEW_CONFIGURATION_VIEW, nullptr, 0, 0, 0, 0, 0, 0 };
 
