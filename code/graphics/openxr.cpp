@@ -22,6 +22,7 @@ XrTime xr_time;
 XrDebugUtilsMessengerEXT xr_debugMessenger;
 std::array<std::unique_ptr<XrSwapchainHandler>, 2> xr_swapchains;
 std::array<XrView, 2> xr_views;
+std::array<XrViewConfigurationView, 2> xr_configurationviews;
 vec3d xr_offset = ZERO_VECTOR;
 XrFrameState xr_state;
 OpenXRFBStage xr_stage = OpenXRFBStage::NONE;
@@ -148,28 +149,20 @@ static bool openxr_init_system() {
 	return true;
 }
 
-static float openxr_system_get_ar() {
-	XrSystemProperties props {
-		XR_TYPE_SYSTEM_PROPERTIES,
-		nullptr,
-		xr_system,
-		0,
-		"\0",
-		XrSystemGraphicsProperties{},
-		XrSystemTrackingProperties{}
-	};
-	xrGetSystemProperties(xr_instance, xr_system, &props);
-	return i2fl(props.graphicsProperties.maxSwapchainImageWidth) / i2fl(props.graphicsProperties.maxSwapchainImageHeight);
+static bool openxr_init_configuration_views() {
+	uint32_t configurationViewsCount = xr_configurationviews.size();
+	for (auto& configView : xr_configurationviews)
+		configView = { XR_TYPE_VIEW_CONFIGURATION_VIEW, nullptr, 0, 0, 0, 0, 0, 0 };
+
+	if (xrEnumerateViewConfigurationViews(xr_instance, xr_system, XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, configurationViewsCount, &configurationViewsCount, xr_configurationviews.data()) != XR_SUCCESS) {
+		return false;
+		mprintf(("Failed to find OpenXR configuration views for stereo displays!\n"));
+	}
+
+	return true;
 }
 
 static bool openxr_init_swapchains() {
-	uint32_t configurationViewsCount = 2;
-	SCP_vector<XrViewConfigurationView> configurationViews(configurationViewsCount, { XR_TYPE_VIEW_CONFIGURATION_VIEW, nullptr, 0, 0, 0, 0, 0, 0 });
-
-	if (xrEnumerateViewConfigurationViews(xr_instance, xr_system, XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, configurationViewsCount, &configurationViewsCount, configurationViews.data()) != XR_SUCCESS) {
-		return false;
-	}
-
 	uint32_t formatCount = 0;
 	if (xrEnumerateSwapchainFormats(xr_session, 0, &formatCount, nullptr) != XR_SUCCESS) {
 		return false;
@@ -192,8 +185,8 @@ static bool openxr_init_swapchains() {
 			XR_SWAPCHAIN_USAGE_TRANSFER_DST_BIT,
 			chosenFormat,
 			1,
-			configurationViews[i].recommendedImageRectWidth,
-			configurationViews[i].recommendedImageRectHeight,
+			xr_configurationviews[i].recommendedImageRectWidth,
+			xr_configurationviews[i].recommendedImageRectHeight,
 			1,
 			1,
 			1
@@ -208,8 +201,8 @@ static bool openxr_init_swapchains() {
 		xr_swapchains[i].reset(new XrSwapchainHandler {
 			swapchains[i],
 			chosenFormat,
-			configurationViews[i].recommendedImageRectWidth,
-			configurationViews[i].recommendedImageRectHeight
+			xr_configurationviews[i].recommendedImageRectWidth,
+			xr_configurationviews[i].recommendedImageRectHeight
 		});
 	}
 
@@ -296,7 +289,12 @@ float openxr_preinit(float req_ar, float scale) {
 		return req_ar;
 	}
 
-	return openxr_system_get_ar();
+	if (!openxr_init_configuration_views()) {
+		openxr_req = false;
+		return req_ar;
+	}
+
+	return  i2fl(xr_configurationviews[0].recommendedImageRectWidth) / i2fl(xr_configurationviews[0].recommendedImageRectHeight);
 }
 
 void openxr_init() {
