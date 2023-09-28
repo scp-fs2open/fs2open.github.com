@@ -517,8 +517,6 @@ void gameplay_help_leave()
 	weapon_unpause_sounds();
 	audiostream_unpause_all();
 
-	Help_text.clear();
-
 	gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
 	game_flush();
 }
