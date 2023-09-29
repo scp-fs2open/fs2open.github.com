@@ -881,6 +881,7 @@ typedef struct exited_ship {
 	int		obj_signature;
 	int		ship_class;
 	int		team;
+	int		wingnum;
 	flagset<Ship::Exit_Flags> flags;
 	fix		time;
 	int		hull_strength;

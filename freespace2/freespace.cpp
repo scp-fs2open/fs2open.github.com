@@ -1351,9 +1351,9 @@ void game_post_level_init()
 							(The_mission.ambient_light_level >> 8) & 0xff,
 							(The_mission.ambient_light_level >> 16) & 0xff);
 
-	// If this is a red alert mission in campaign mode, bash wingman status
+	// If this is a red alert mission in campaign mode, bash status
 	if ( (Game_mode & GM_CAMPAIGN_MODE) && red_alert_mission() ) {
-		red_alert_bash_wingman_status();
+		red_alert_bash_ship_status();
 	}
 
 	freespace_mission_load_stuff();
