@@ -521,7 +521,7 @@ int create_ship(matrix *orient, vec3d *pos, int ship_type)
 
 	// default shield setting
 	shipp->special_shield = -1;
-	z1 = Shield_sys_teams[shipp->team];
+	z1 = Shield_sys_types[shipp->team];
 	z2 = Shield_sys_types[ship_type];
     if (((z1 == 1) && z2) || (z2 == 1))
         Objects[obj].flags.set(Object::Object_Flags::No_shields);
