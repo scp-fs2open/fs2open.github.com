@@ -953,7 +953,7 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 
 			// if this subsystem doesn't carry damage then subtract it off of our total return
 			if (subsystem->system_info->flags[Model::Subsystem_Flags::Carry_no_damage]) {
-				if ((other_obj->type != OBJ_SHOCKWAVE) || (!(subsystem->system_info->flags[Model::Subsystem_Flags::Carry_shockwave]))) {
+				if ((other_obj == nullptr) || (other_obj->type != OBJ_SHOCKWAVE) || (!(subsystem->system_info->flags[Model::Subsystem_Flags::Carry_shockwave]))) {
 					float subsystem_factor = 0.0f;
 					if ((weapon_info_index >= 0) && ((other_obj->type == OBJ_WEAPON) || (other_obj->type == OBJ_SHOCKWAVE))) {
 						if (subsystem->flags[Ship::Subsystem_Flags::Damage_as_hull]) {
