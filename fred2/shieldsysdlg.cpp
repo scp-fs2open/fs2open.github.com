@@ -58,7 +58,7 @@ END_MESSAGE_MAP()
 BOOL shield_sys_dlg::OnInitDialog() 
 {
 	int i, z;
-	SCP_vector<int> teams(Iff_info.size(), 0) 
+	SCP_vector<int> teams(Iff_info.size(), 0);
 	SCP_vector<int> types(ship_info_size(), 0);
 	CComboBox *box;
 
