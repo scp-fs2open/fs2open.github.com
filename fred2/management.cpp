@@ -806,8 +806,8 @@ void clear_mission()
 	Shield_sys_teams.clear();
 	Shield_sys_teams.resize(Iff_info.size(), 0);
 
-	Shields_sys_types.clear();
-	Shields_sys_types.resize(ship_info_size(), 0);
+	Shield_sys_types.clear();
+	Shield_sys_types.resize(ship_info_size(), 0);
 
 	set_cur_indices(-1);
 
