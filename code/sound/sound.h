@@ -185,7 +185,7 @@ void	snd_stop_all();
 // determines if the sound handle is still palying
 int snd_is_playing(sound_handle snd_handle);
 
-int snd_is_paused(sound_handle sig);
+bool snd_is_paused(sound_handle sig);
 
 // change the looping status of a sound that is playing
 void snd_chg_loop_status(sound_handle snd_handle, int loop);

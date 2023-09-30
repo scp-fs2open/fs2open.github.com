@@ -972,14 +972,12 @@ void snd_stop(sound_handle sig)
  */
 void snd_pause(sound_handle sig)
 {
-	int channel;
-
 	if (!ds_initialized)
 		return;
 	if (!sig.isValid())
 		return;
 
-	channel = ds_get_channel(sig);
+	int channel = ds_get_channel(sig);
 	if (channel == -1)
 		return;
 
@@ -993,14 +991,12 @@ void snd_pause(sound_handle sig)
  */
 void snd_resume(sound_handle sig)
 {
-	int channel;
-
 	if (!ds_initialized)
 		return;
 	if (!sig.isValid())
 		return;
 
-	channel = ds_get_channel_raw(sig);
+	int channel = ds_get_channel_raw(sig);
 	if (channel == -1)
 		return;
 
@@ -1197,26 +1193,20 @@ int snd_is_playing(sound_handle sig)
 //
 // parameters:		sig	=> signature of sound, what is returned from snd_play()
 //
-int snd_is_paused(sound_handle sig)
+bool snd_is_paused(sound_handle sig)
 {
-	int channel, is_paused;
-
 	if (!ds_initialized)
-		return 0;
+		return false;
 
 	if (!sig.isValid())
-		return 0;
+		return false;
 
-	channel = ds_get_channel_raw(sig);
+	int channel = ds_get_channel_raw(sig);
 	if (channel == -1)
-		return 0;
+		return false;
 
-	is_paused = ds_is_channel_paused(channel);
-	if (is_paused == TRUE) {
-		return 1;
-	}
+	return ds_is_channel_paused(channel);
 
-	return 0;
 }
 
 // ---------------------------------------------------------------------------------------

@@ -1160,9 +1160,7 @@ int ds_get_channel(ds_sound_handle sig)
  */
 int ds_get_channel_raw(ds_sound_handle sig)
 {
-	int i;
-
-	for (i = 0; i < MAX_CHANNELS; i++) {
+	for (int i = 0; i < MAX_CHANNELS; i++) {
 		if (Channels[i].source_id && (Channels[i].sig == sig)) {
 			return i;
 		}
@@ -1192,7 +1190,7 @@ int ds_is_channel_playing(int channel_id)
  * @return Channel number, if not playing, return -1.
  * @param channel id to sound, what is returned from ds_get_channel()
  */
-int ds_is_channel_paused(int channel_id)
+bool ds_is_channel_paused(int channel_id)
 {
 	if (Channels[channel_id].source_id != 0) {
 		ALint status;
@@ -1202,7 +1200,7 @@ int ds_is_channel_paused(int channel_id)
 		return (status == AL_PAUSED);
 	}
 
-	return 0;
+	return false;
 }
 
 /**

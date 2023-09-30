@@ -65,7 +65,7 @@ ds_sound_handle ds_play(int sid, int snd_id, int priority, const EnhancedSoundDa
 int ds_get_channel(ds_sound_handle sig);
 int ds_get_channel_raw(ds_sound_handle sig);
 int ds_is_channel_playing(int channel);
-int ds_is_channel_paused(int channel_id);
+bool ds_is_channel_paused(int channel_id);
 void ds_stop_channel(int channel);
 void ds_pause_channel(int channel_id);
 void ds_resume_channel(int channel_id);
