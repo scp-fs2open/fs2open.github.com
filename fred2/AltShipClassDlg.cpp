@@ -42,7 +42,8 @@ AltShipClassDlg::AltShipClassDlg(CWnd* pParent /*=NULL*/)
 	num_string_variables = 0;
 
 	memset(string_variable_indices, -1, sizeof (int)*MAX_SEXP_VARIABLES); 
-	memset(ship_class_indices, -1, sizeof (int)*MAX_SHIP_CLASSES);
+	ship_class_indices.clear();
+	ship_class_indices.resize(ship_info_size(), -1);
 }
 
 void AltShipClassDlg::alt_class_list_rebuild() {
@@ -70,7 +71,7 @@ void AltShipClassDlg::alt_class_list_rebuild() {
 			// add it to the list
 			m_alt_class_list.AddString(buff);
 		} else {
-			if (alt_class_pool[i].ship_class >= 0 && alt_class_pool[i].ship_class < MAX_SHIP_CLASSES) {
+			if (alt_class_pool[i].ship_class >= 0 && alt_class_pool[i].ship_class < ship_info_size()) {
 				m_alt_class_list.AddString(Ship_info[alt_class_pool[i].ship_class].name);
 			} else {
 				m_alt_class_list.AddString("Invalid Ship Class");
@@ -319,7 +320,7 @@ void AltShipClassDlg::OnSelchangeAltClassList() {
 	}
 	// Ship selected
 	else {
-		for (i = 0; i < MAX_SHIP_CLASSES; i++) {
+		for (i = 0; i < ship_info_size(); i++) {
 			if (ship_class_indices[i] == alt_class_pool[index].ship_class) {
 				ship_selection = i;
 				break;
