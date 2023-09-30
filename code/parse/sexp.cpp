@@ -4108,7 +4108,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 				}
 				break;
 
-			default:
+			default: //This handles OPF_DYNAMIC_LUA_ENUM as well
 				if (Dynamic_enums.size() > 0) {
 					if ((type - First_available_opf_id) < (int)Dynamic_enums.size()) {
 						if (type2 != SEXP_ATOM_STRING)
