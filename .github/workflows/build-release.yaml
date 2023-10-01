@@ -413,7 +413,9 @@ jobs:
           path: builds
       - name: Unpack builds
         working-directory: ./builds
-        run: tar -xvzf macos-build*.tgz
+        run: |
+          tar -xvzf macos-build-Release.tgz
+          tar -xvzf macos-build-FastDebug.tgz
       - name: Create Distribution package
         id: generate_package
         working-directory: ./builds
