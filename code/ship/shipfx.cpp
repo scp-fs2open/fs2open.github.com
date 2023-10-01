@@ -3753,8 +3753,8 @@ float shipfx_calculate_arrival_warp_distance(object *objp)
 	float decel_time_const = objp->phys_info.forward_decel_time_const;
 	if (Ship_info[Ships[objp->instance].ship_info_index].flags[Ship::Info_Flags::Supercap]) {
 		// super cap style warpins are annoying, one time constant while above their max speed, a different one while slowing down from there
-		float supercap_slowdown_dist = (warping_speed - (objp->phys_info.max_vel.xyz.z + 5.0f))  * SUPERCAP_WARP_T_CONST;
-		float regular_slowdown_dist = (objp->phys_info.max_vel.xyz.z + 5.0f) * decel_time_const;
+		float supercap_slowdown_dist = (warping_speed - (objp->phys_info.max_vel.xyz.z + SUPERCAP_WARP_EXCESS_SPD_THRESHOLD)) * SUPERCAP_WARP_T_CONST;
+		float regular_slowdown_dist = (objp->phys_info.max_vel.xyz.z + SUPERCAP_WARP_EXCESS_SPD_THRESHOLD) * decel_time_const;
 
 		return warping_dist + supercap_slowdown_dist + regular_slowdown_dist;
 	} else {

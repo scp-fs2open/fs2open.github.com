@@ -41,6 +41,7 @@
 #define	WEAPON_SHAKE_TIME		500	//	ms (0.5 sec)	viewer shake time after hit by weapon (implemented via afterburner shake)
 
 const float SUPERCAP_WARP_T_CONST = 0.651f;	// special warp time constant (lose 99 % of excess speed in 3 sec)
+const float SUPERCAP_WARP_EXCESS_SPD_THRESHOLD = 5.0f;	// more than this many m/s faster than the ship's max speed and we use the above damp constant instead
 
 void update_reduced_damp_timestamp( physics_info *pi, float impulse );
 float velocity_ramp (float v_in, float v_goal, float time_const, float t);
@@ -346,7 +347,7 @@ void physics_sim_vel(vec3d * position, physics_info * pi, matrix *orient, vec3d*
 	vec3d grav_vel = vmd_zero_vector;
 	int special_warp_in = FALSE;
 	float excess = local_v_in.xyz.z - pi->max_vel.xyz.z;
-	if (excess > 5 && (pi->flags & PF_SUPERCAP_WARP_IN)) {
+	if (excess > SUPERCAP_WARP_EXCESS_SPD_THRESHOLD && (pi->flags & PF_SUPERCAP_WARP_IN)) {
 		special_warp_in = TRUE;
 		float exp_factor = float(exp(-sim_time / SUPERCAP_WARP_T_CONST));
 		local_v_out.xyz.z = pi->max_vel.xyz.z + excess * exp_factor;
@@ -367,7 +368,7 @@ void physics_sim_vel(vec3d * position, physics_info * pi, matrix *orient, vec3d*
 	}
 
 	// maybe turn off special warp in flag
-	if ((pi->flags & PF_SUPERCAP_WARP_IN) && (excess < 5)) {
+	if ((pi->flags & PF_SUPERCAP_WARP_IN) && (excess < SUPERCAP_WARP_EXCESS_SPD_THRESHOLD)) {
 		pi->flags &= ~(PF_SUPERCAP_WARP_IN);
 	}
 

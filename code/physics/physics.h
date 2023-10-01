@@ -36,6 +36,7 @@
 #define PF_BALLISTIC			(1 << 18)	// Asteroth - not moving 'under its own power', simplified physics calculations
 
 extern const float SUPERCAP_WARP_T_CONST;
+extern const float SUPERCAP_WARP_EXCESS_SPD_THRESHOLD;
 
 //information for physics sim for an object
 typedef struct physics_info {
