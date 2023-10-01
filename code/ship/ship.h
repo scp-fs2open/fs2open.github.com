@@ -906,10 +906,13 @@ enum class ShipStatus
 	// A ship is currently in-mission, and its objp and shipp pointers are valid
 	PRESENT,
 
-	// A ship is destroyed, departed, or vanished.  Note however that for destroyed ships,
-	// ship_cleanup is not called until the death roll is complete, which means there is a
-	// period of time where the ship is "exited", but objp and shipp are still valid and
-	// exited_index is not yet assigned.
+	// A ship has been destroyed but is still doing its death roll (not yet "exited");
+	// the objp and shipp pointers are still valid
+	DEATH_ROLL,
+
+	// A ship is destroyed, departed, or vanished; the objp and shipp pointers are nullptr.
+	// Note that for destroyed ships, ship_cleanup is not called until the death roll is complete,
+	// so the ship will spend a period of time in DEATH_ROLL before moving to EXITED.
 	EXITED
 };
 

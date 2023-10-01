@@ -976,7 +976,7 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, char
 		// this goal needs some extra setup
 		// if this doesn't work, the goal will be immediately removed
 		auto ship_entry = ship_registry_get(aigp->target_name);
-		if (ship_entry->status == ShipStatus::PRESENT)
+		if (ship_entry->shipp)
 		{
 			auto target_aip = &Ai_info[ship_entry->shipp->ai_index];
 			target_aip->ai_flags.set(AI::AI_Flags::Awaiting_repair);
@@ -1797,7 +1797,7 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 			status = SHIP_STATUS_UNKNOWN;
 		}
 		// goal ship is currently in mission
-		else if (ship_entry->status == ShipStatus::PRESENT)
+		else if (ship_entry->status == ShipStatus::PRESENT || ship_entry->status == ShipStatus::DEATH_ROLL)
 		{
 			status = SHIP_STATUS_ARRIVED;
 		}

@@ -386,7 +386,7 @@ int is_preferred_weapon(int weapon_num, object *firer_objp, object *target_objp)
 			continue;
 
 		auto ship_entry = &Ship_registry[hfi->ship_registry_index];
-		if (ship_entry->status != ShipStatus::PRESENT)
+		if (!ship_entry->objp)
 			continue;
 
 		int signature = ship_entry->objp->signature;

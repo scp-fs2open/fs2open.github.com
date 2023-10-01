@@ -176,7 +176,7 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum, int parent_node) const
 			return LuaValue::createValue(_action.getLuaState(), ship_entry ? ship_entry->name : "");
 		}
 
-		if (!ship_entry || ship_entry->status != ShipStatus::PRESENT) {
+		if (!ship_entry || !ship_entry->objp) {
 			// Name is invalid
 			return LuaValue::createValue(_action.getLuaState(), l_Ship.Set(object_h()));
 		}
@@ -256,7 +256,7 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum, int parent_node) const
 
 		auto ship_entry = eval_ship(this_node);
 
-		if (!ship_entry || ship_entry->status != ShipStatus::PRESENT) {
+		if (!ship_entry || !ship_entry->shipp) {
 			// Name is invalid
 			return LuaValue::createValue(_action.getLuaState(), l_Ship.Set(object_h()));
 		}
@@ -284,7 +284,7 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum, int parent_node) const
 		}
 
 		auto ship_entry = eval_ship(this_node);
-		if (!ship_entry || ship_entry->status != ShipStatus::PRESENT) {
+		if (!ship_entry || !ship_entry->shipp) {
 			// Name is invalid
 			return LuaValue::createValue(_action.getLuaState(), l_Ship.Set(object_h()));
 		}
