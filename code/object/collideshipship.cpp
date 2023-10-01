@@ -1057,7 +1057,8 @@ static void do_kamikaze_crash(object *obj1, object *obj2)
 				obj1->hull_strength = KAMIKAZE_HULL_ON_DEATH;
 				shield_set_strength(obj1, 0.0f);
 			}
-		} if (aip2->ai_flags[AI::AI_Flags::Kamikaze]) {
+		}
+		if (aip2->ai_flags[AI::AI_Flags::Kamikaze]) {
             if (Ship_info[ship1->ship_info_index].is_big_or_huge()) {
 				obj2->hull_strength = KAMIKAZE_HULL_ON_DEATH;
 				shield_set_strength(obj2, 0.0f);

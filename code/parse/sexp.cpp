@@ -37506,7 +37506,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tIs true as long as the second object is within the first ship's specified "
 		"forward cone.  A forward cone is defined as any point that the angle between the "
 		"vector of the ship and point, and the forward facing vector is within the "
-		"given angle. If the distance between the two is greater than the fourth"
+		"given angle. If the distance between the two is greater than the fourth "
 		"parameter, this will return false.\r\n\r\n"
 		"Returns a boolean value.  Takes 3 or 4 argument...\r\n"
 		"\t1:\tShip to check from.\r\n"

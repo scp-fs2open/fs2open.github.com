@@ -2941,7 +2941,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 			if (path_num < 0) {
 				continue;
 			} else if (path_num >= pm->n_paths) {
-				Warning(LOCATION, "On model '%s', path %d for dockpoint '%s' is not valid!  The index is %d but the total number of paths is %d.", pm->filename, j, dock->name, path_num, pm->n_paths);
+				Warning(LOCATION, "On model '%s', path %d for dockpoint '%s' is not valid!  The index is %d but the total number of paths is %d (the index should be between 0 and %d).", pm->filename, j, dock->name, path_num, pm->n_paths, pm->n_paths - 1);
 				dock->splines[j] = -1;
 				continue;
 			}
@@ -2954,7 +2954,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 			}
 			// for paths that have a parent, it had better match
 			if (path->parent_submodel != dock->parent_submodel) {
-				Warning(LOCATION, "On model '%s', the path for dockpoint '%s' does not have the same parent submodel as the dockpoint itself!", pm->filename, dock->name);
+				Warning(LOCATION, "On model '%s', the path for dockpoint '%s' does not have the same parent submodel as the dockpoint itself!  This could be due to an incorrect dockpoint path, an incorrect dockpoint parent submodel, or an incorrect path parent submodel.  Be sure to check all three.", pm->filename, dock->name);
 				continue;
 			}
 		}
