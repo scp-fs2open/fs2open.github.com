@@ -3732,7 +3732,7 @@ int WE_Default::getWarpOrientation(matrix* output)
 
 float shipfx_calculate_arrival_warp_distance(object *objp)
 {
-	Assert(objp != nullptr && objp->type == OBJ_SHIP);
+	Assertion(objp != nullptr && objp->type == OBJ_SHIP, "Object parameter to shipfx_calculate_arrival_warp_distance must be a ship!");
 
 	// c.f. WE_Default::warpStart()
 	float half_length, warping_dist;
