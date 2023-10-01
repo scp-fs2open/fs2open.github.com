@@ -15905,8 +15905,8 @@ int ship_get_random_player_wing_ship( int flags, float max_dist, int persona_ind
 
 		// multi-team?
 		if(MULTI_TEAM){
-			for (auto& wing : TVT_wings[multi_team]){
-				if( i == wing) {
+			for (auto& multi_wing : TVT_wings[multi_team]){
+				if( i == multi_wing) {
 					wingnum = i;
 				}
 			}
