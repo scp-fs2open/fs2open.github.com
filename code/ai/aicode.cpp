@@ -16088,22 +16088,19 @@ void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hit_normal)
 			return;
 		}
 		break;
+	case AIM_FLY_TO_SHIP:
 	case AIM_WAYPOINTS:
 		if (sip->is_fighter_bomber())
 			break;
-		else
-			return;
-		break;
+		return;
 	case AIM_SAFETY:
 		if ((aip->submode != AISS_1) || (Missiontime - aip->submode_start_time > i2f(1))) {
 			aip->submode = AISS_1;
 			aip->submode_start_time = Missiontime;
 		}
 		return;
-		break;
 	case AIM_WARP_OUT:
 		return;
-		break;
 	case AIM_LUA:
 		return;
 	default:
