@@ -698,7 +698,7 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 	}
 
 	//	Shockwave damage is applied like weapon damage.  It gets consumed.
-	if (other_obj_is_shockwave)	// Goober5000 check for NULL
+	if (other_obj_is_shockwave)
 	{
 		//	MK, 9/2/99.  Shockwaves do zero subsystem damage on small ships.
 		// Goober5000 - added back in via flag
@@ -957,7 +957,7 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 
 			// if this subsystem doesn't carry damage then subtract it off of our total return
 			if (subsystem->system_info->flags[Model::Subsystem_Flags::Carry_no_damage]) {
-				if (other_obj_is_shockwave || (!(subsystem->system_info->flags[Model::Subsystem_Flags::Carry_shockwave]))) {
+				if (!other_obj_is_shockwave || !(subsystem->system_info->flags[Model::Subsystem_Flags::Carry_shockwave])) {
 					float subsystem_factor = 0.0f;
 					if ((weapon_info_index >= 0) && (other_obj_is_weapon || other_obj_is_shockwave)) {
 						if (subsystem->flags[Ship::Subsystem_Flags::Damage_as_hull]) {
