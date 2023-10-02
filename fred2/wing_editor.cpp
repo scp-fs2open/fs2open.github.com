@@ -330,9 +330,9 @@ void wing_editor::initialize_data_safe(int full_update)
 			}
 			else
 			{
-				for (auto& wing : Starting_wings)
+				for (auto& start_wing : Starting_wings)
 				{
-					if (cur_wing == wing)
+					if (cur_wing == start_wing)
 						player_enabled = 0;
 				}
 			}
