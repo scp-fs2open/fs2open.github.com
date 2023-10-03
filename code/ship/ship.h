@@ -978,8 +978,15 @@ typedef struct ship_type_info {
 
 	float debris_max_speed;
 
+	// Damage multiplier for friendly fire, but only for purposes of scoring and traitor check, not actually damaging ships in-mission
 	float ff_multiplier;
+
+	// Not currently implemented. Originally used for "electronics" weapons. Deactivated in commit 941faf9ab9ed05a1b0efebf7de32c6e3c724baf7 
+	// as it broke retail compatibility.
 	float emp_multiplier;
+
+	// Modifies the audible range used for warp fireball 3d sound effects
+	float warp_sound_range_multiplier;
 
 	//Fog
 	float fog_start_dist;
@@ -1005,7 +1012,7 @@ typedef struct ship_type_info {
 
 	ship_type_info( )
 		: debris_max_speed( 0.f ),
-		  ff_multiplier( 0.f ), emp_multiplier( 0.f ),
+		  ff_multiplier( 0.f ), emp_multiplier( 0.f ), warp_sound_range_multiplier( 1.f ),
 		  fog_start_dist( 0.f ), fog_complete_dist( 0.f ),
 		  ai_valid_goals( 0 ), ai_active_dock( 0 ), ai_passive_dock( 0 ),
 		  vaporize_chance( 0.f )
