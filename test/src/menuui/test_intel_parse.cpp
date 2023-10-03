@@ -121,7 +121,8 @@ TEST_F(IntelParseTest, single_translate) {
 		"Foo name German", // XSTR id 3000
 		"Foo desc German", // XSTR id 3001
 		"Foo anim",
-		IIF_IN_TECH_DATABASE | IIF_DEFAULT_IN_TECH_DATABASE
+		IIF_IN_TECH_DATABASE | IIF_DEFAULT_IN_TECH_DATABASE,
+		SCP_map<SCP_string, SCP_string>{}
 	};
 
 	ASSERT_EQ(intel_info_size(), 1);
