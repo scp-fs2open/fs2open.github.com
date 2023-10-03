@@ -675,6 +675,10 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 	int				subsys_hit_first = -1; // the subsys which should be hit first and take most of the damage; index into subsys_list
 	vec3d			hitpos2;
 	float			ss_dif_scale = 1.0f; // Nuke: Set a base dificulty scale for compatibility
+	
+	const bool other_obj_is_weapon = other_obj && other_obj->type == OBJ_WEAPON;
+	const bool other_obj_is_shockwave = other_obj && other_obj->type == OBJ_SHOCKWAVE;
+	const bool other_obj_is_beam = other_obj && other_obj->type == OBJ_BEAM;
 
 	//WMC - first, set this to damage if it isn't NULL, in case we want to return with no damage to subsystems
 	if(hull_should_apply_armor != NULL) {
@@ -694,7 +698,7 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 	}
 
 	//	Shockwave damage is applied like weapon damage.  It gets consumed.
-	if ((other_obj != NULL) && (other_obj->type == OBJ_SHOCKWAVE))	// Goober5000 check for NULL
+	if (other_obj_is_shockwave)
 	{
 		//	MK, 9/2/99.  Shockwaves do zero subsystem damage on small ships.
 		// Goober5000 - added back in via flag
@@ -713,8 +717,8 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 
 	// scale subsystem damage if appropriate
 	weapon_info_index = shiphit_get_damage_weapon(other_obj);	// Goober5000 - a NULL other_obj returns -1
-	if ((weapon_info_index >= 0) && ((other_obj->type == OBJ_WEAPON) ||
-				(Beams_use_damage_factors && (other_obj->type == OBJ_BEAM)))) {
+	if ((weapon_info_index >= 0) && (other_obj_is_weapon ||
+				(Beams_use_damage_factors && other_obj_is_beam))) {
 		if ( Weapon_info[weapon_info_index].wi_flags[Weapon::Info_Flags::Training] ) {
 			return damage_left;
 		}
@@ -891,7 +895,7 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 		if ( (j == 0) && (!(parent_armor_flags & SAF_IGNORE_SS_ARMOR))) {
 			if(subsystem->armor_type_idx > -1)
 			{
-				damage = Armor_types[subsystem->armor_type_idx].GetDamage(damage, dmg_type_idx, 1.0f, other_obj->type == OBJ_BEAM); // Nuke: I don't think we need to apply damage sacaling to this one, using 1.0f
+				damage = Armor_types[subsystem->armor_type_idx].GetDamage(damage, dmg_type_idx, 1.0f, other_obj_is_beam); // Nuke: I don't think we need to apply damage sacaling to this one, using 1.0f
 				if(hull_should_apply_armor) {
 					*hull_should_apply_armor = false;
 				}
@@ -903,7 +907,7 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 		//	miss their target.  There is code dating to FS1 in the collision code to detect that a bomb or
 		//	missile has somehow missed its target.  It gets its lifeleft set to 0.1 and then it detonates.
 		//	Unfortunately, the shockwave damage was cut by 4 above.  So boost it back up here.
-		if ((weapon_info_index >= 0) && (dist < 10.0f) && ((other_obj) && (other_obj->type == OBJ_SHOCKWAVE))) {	// Goober5000 check for NULL
+		if ((weapon_info_index >= 0) && (dist < 10.0f) && other_obj_is_shockwave) {	// Goober5000 check for NULL
 			damage_left *= 4.0f * Weapon_info[weapon_info_index].subsystem_factor;
 			damage_if_hull *= 4.0f * Weapon_info[weapon_info_index].armor_factor;			
 		}
@@ -953,9 +957,9 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 
 			// if this subsystem doesn't carry damage then subtract it off of our total return
 			if (subsystem->system_info->flags[Model::Subsystem_Flags::Carry_no_damage]) {
-				if ((other_obj->type != OBJ_SHOCKWAVE) || (!(subsystem->system_info->flags[Model::Subsystem_Flags::Carry_shockwave]))) {
+				if (!other_obj_is_shockwave || !(subsystem->system_info->flags[Model::Subsystem_Flags::Carry_shockwave])) {
 					float subsystem_factor = 0.0f;
-					if ((weapon_info_index >= 0) && ((other_obj->type == OBJ_WEAPON) || (other_obj->type == OBJ_SHOCKWAVE))) {
+					if ((weapon_info_index >= 0) && (other_obj_is_weapon || other_obj_is_shockwave)) {
 						if (subsystem->flags[Ship::Subsystem_Flags::Damage_as_hull]) {
 							subsystem_factor = Weapon_info[weapon_info_index].armor_factor;
 						} else {
@@ -973,7 +977,7 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 			//Apply armor to damage
 			if (subsystem->armor_type_idx >= 0) {
 				// Nuke: this will finally factor it in to damage_to_apply and i wont need to factor it in anywhere after this
-				damage_to_apply = Armor_types[subsystem->armor_type_idx].GetDamage(damage_to_apply, dmg_type_idx, ss_dif_scale, other_obj->type == OBJ_BEAM);
+				damage_to_apply = Armor_types[subsystem->armor_type_idx].GetDamage(damage_to_apply, dmg_type_idx, ss_dif_scale, other_obj_is_beam);
 			} else { // Nuke: no get damage call to apply difficulty scaling, so factor it in now
 				damage_to_apply *= ss_dif_scale;
 			}
