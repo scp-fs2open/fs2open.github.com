@@ -6593,7 +6593,7 @@ void eval_object_ship_wing_point_team(object_ship_wing_point_team *oswpt, int no
 				break;
 
 			default:
-				Assertion(false, "Unhandled ship status!");
+				UNREACHABLE("Unhandled ship registry entry status for %s: %d", ship_entry->name, (int)ship_entry->status);
 		}
 
 		return;
@@ -16267,8 +16267,8 @@ void sexp_deal_with_ship_flag(int node, bool process_subsequent_nodes, Object::O
 				Current_sexp_network_packet.send_ship(ship_entry->shipp); 
 			}
 		}
-		// if it's not in-mission
-		else
+		// if it hasn't arrived yet
+		else if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 		{
 			// see if we have a p_object flag to set
 			if (p_object_flag != Mission::Parse_Object_Flags::NUM_VALUES)
@@ -16495,12 +16495,13 @@ void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future
 				// set or clear?
 				Ai_info[oswpt.ship_entry->shipp->ai_index].ai_flags.set(ai_flag, set_flag);
 			}
-			
+
 			// no break statement. We want to fall through.
 			FALLTHROUGH;
 			
 		case OSWPT_TYPE_PARSE_OBJECT:
-			if (!future_ships) {
+			// only apply the flag to future ships if we want to and we are able to
+			if (!future_ships || !oswpt.ship_entry->p_objp) {
 				return;
 			}
 
@@ -16511,7 +16512,7 @@ void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future
 			}
 
 			// see if we have a p_object flag to set
-			if (parse_obj_flag != Mission::Parse_Object_Flags::NUM_VALUES && oswpt.ship_entry->p_objp != nullptr)
+			if (parse_obj_flag != Mission::Parse_Object_Flags::NUM_VALUES)
 			{
 				oswpt.ship_entry->p_objp->flags.set(parse_obj_flag, set_flag);
 			}
@@ -16520,7 +16521,6 @@ void sexp_alter_ship_flag_helper(object_ship_wing_point_team &oswpt, bool future
 		default:
 			break;
 	}
-
 }
 
 void alter_flag_for_all_ships(bool future_ships, Object::Object_Flags object_flag, Ship::Ship_Flags ship_flag, Mission::Parse_Object_Flags parse_obj_flag, AI::AI_Flags ai_flag, bool set_flag)
