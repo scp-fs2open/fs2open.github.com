@@ -71,7 +71,7 @@ SCP_vector<std::unique_ptr<HudGauge>> default_hud_gauges;
 #define HUD_NEW_ALPHA_BRIGHT_HI			255
 
 // Externals not related to the HUD code itself
-extern float View_zoom;
+extern fov_t View_zoom;
 
 // globals that will control the color of the HUD gauges
 int HUD_color_red = 0;
@@ -3869,7 +3869,7 @@ void HUD_set_clip(int x, int y, int w, int h)
 void hud_save_restore_camera_data(int save)
 {
 	static vec3d	save_view_position;
-	static float	save_view_zoom;
+	static fov_t	save_view_zoom;
 	static matrix	save_view_matrix;
 	static matrix	save_eye_matrix;
 	static vec3d	save_eye_position;

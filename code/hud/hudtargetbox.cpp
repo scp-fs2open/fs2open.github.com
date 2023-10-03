@@ -39,7 +39,7 @@
 #endif
 
 
-extern float View_zoom;
+extern fov_t View_zoom;
 
 int Target_window_coords[GR_NUM_RESOLUTIONS][4] =
 {
@@ -524,7 +524,7 @@ void HudGaugeTargetBox::renderTargetIntegrity(int disabled,int force_obj_num)
 	}
 }
 
-void HudGaugeTargetBox::renderTargetSetup(vec3d *camera_eye, matrix *camera_orient, float zoom)
+void HudGaugeTargetBox::renderTargetSetup(vec3d *camera_eye, matrix *camera_orient, fov_t zoom)
 {
 	// JAS: g3_start_frame uses clip_width and clip_height to determine the
 	// size to render to.  Normally, you would set this by using gr_set_clip,
@@ -943,7 +943,7 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 			vm_vec_sub(&obj_pos, &viewed_obj->pos, &viewer_obj->pos);
 		}
 
-		renderTargetSetup(&camera_eye, &camera_orient, View_zoom/3);
+		renderTargetSetup(&camera_eye, &camera_orient, View_zoom * (1.0f/3.0f));
 		model_clear_instance(viewed_model_num);
 		
 		model_render_params render_info;

@@ -3031,7 +3031,7 @@ void stars_pack_backgrounds()
 		stars_add_blank_background(true);
 }
 
-static void render_environment(int i, vec3d *eye_pos, matrix *new_orient, float new_zoom)
+static void render_environment(int i, vec3d *eye_pos, matrix *new_orient, fov_t new_zoom)
 {
 	bm_set_render_target(gr_screen.envmap_render_target, i);
 
@@ -3039,7 +3039,7 @@ static void render_environment(int i, vec3d *eye_pos, matrix *new_orient, float 
 
 	g3_set_view_matrix( eye_pos, new_orient, new_zoom );
 
-	gr_set_proj_matrix( PI_2 * new_zoom, 1.0f, Min_draw_distance, Max_draw_distance);
+	gr_set_proj_matrix( new_zoom * PI_2, 1.0f, Min_draw_distance, Max_draw_distance);
 	gr_set_view_matrix( &Eye_position, &Eye_matrix );
 
 	if ( Game_subspace_effect ) {
@@ -3055,8 +3055,8 @@ static void render_environment(int i, vec3d *eye_pos, matrix *new_orient, float 
 void stars_setup_environment_mapping(camid cid) {
 	matrix new_orient = IDENTITY_MATRIX;
 
-	extern float View_zoom;
-	float old_zoom = View_zoom, new_zoom = 1.0f;//0.925f;
+	extern fov_t View_zoom;
+	fov_t old_zoom = View_zoom, new_zoom = 1.0f;//0.925f;
 
 	if (gr_screen.mode == GR_STUB) {
 		return;

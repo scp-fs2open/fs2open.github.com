@@ -14,8 +14,8 @@
 #include "ship/ship.h"        //compute_slew_matrix
 
 //*************************IMPORTANT GLOBALS*************************
-float VIEWER_ZOOM_DEFAULT = 0.75f;			//	Default viewer zoom, 0.625 as per multi-lateral agreement on 3/24/97
-float COCKPIT_ZOOM_DEFAULT = 0.75f;
+fov_t VIEWER_ZOOM_DEFAULT = 0.75f;			//	Default viewer zoom, 0.625 as per multi-lateral agreement on 3/24/97
+fov_t COCKPIT_ZOOM_DEFAULT = 0.75f;
 float Sexp_fov = 0.0f;
 warp_camera Warp_camera;
 
@@ -27,6 +27,28 @@ SCP_vector<camera*> Cameras;
 camid Current_camera;
 camid Main_camera;
 
+asymmetric_fov operator* (const asymmetric_fov& left, const float& right) {
+	return asymmetric_fov{ left.left * right, left.right * right, left.up * right, left.down * right };
+}
+asymmetric_fov operator+ (const asymmetric_fov& left, const float& right) {
+	float ar = (left.up - left.down) / (left.right - left.left);
+	return asymmetric_fov{ left.left - right * 0.5f, left.right + right * 0.5f, left.up + right * 0.5f * ar, left.down - right * 0.5f * ar };
+}
+asymmetric_fov operator- (const asymmetric_fov& left, const float& right) {
+	float ar = (left.up - left.down) / (left.right - left.left);
+	return asymmetric_fov{ left.left + right * 0.5f, left.right - right * 0.5f, left.up - right * 0.5f * ar, left.down + right * 0.5f * ar };
+}
+
+fov_t operator* (const fov_t& zoom, const float& scale) {
+	return mpark::visit([scale](const auto& fov) -> fov_t { return fov_t(fov * scale); }, zoom);
+}
+fov_t operator+ (const fov_t& zoom, const float& scale) {
+	return mpark::visit([scale](const auto& fov) -> fov_t { return fov_t(fov + scale); }, zoom);
+}
+fov_t operator- (const fov_t& zoom, const float& scale) {
+	return mpark::visit([scale](const auto& fov) -> fov_t { return fov_t(fov - scale); }, zoom);
+}
+
 static SCP_string fov_display(float val)
 {
 	auto degrees = fl_degrees(val);
@@ -37,7 +59,10 @@ static SCP_string fov_display(float val)
 auto FovOption = options::OptionBuilder<float>("Graphics.FOV", "Field Of View", "The vertical field of view.")
                      .category("Graphics")
                      .range(0.436332f, 1.5708f)
-                     .bind_to(&VIEWER_ZOOM_DEFAULT)
+					 .change_listener([](const float& val, bool) {
+							VIEWER_ZOOM_DEFAULT = val;
+							return true;
+						})
                      .display(fov_display)
                      .default_val(0.75f)
                      .level(options::ExpertLevel::Advanced)
@@ -85,7 +110,7 @@ void camera::reset()
 	func_custom_orientation = NULL;
 
 	fov.clear();
-	fov.set(VIEWER_ZOOM_DEFAULT);
+	fov.set(g3_get_hfov(VIEWER_ZOOM_DEFAULT));
 
 	pos_x.clear();
 	pos_y.clear();
@@ -104,7 +129,7 @@ void camera::set_name(const char *in_name)
 		strncpy(name, in_name, NAME_LENGTH-1);
 }
 
-void camera::set_fov(float in_fov, float in_fov_time, float in_fov_acceleration_time, float in_fov_deceleration_time)
+void camera::set_fov(fov_t in_fov, float in_fov_time, float in_fov_acceleration_time, float in_fov_deceleration_time)
 {
 	if(in_fov_time == 0.0f && in_fov_acceleration_time == 0.0f && in_fov_deceleration_time == 0.0f)
 	{
@@ -114,12 +139,12 @@ void camera::set_fov(float in_fov, float in_fov_time, float in_fov_acceleration_
 	}
 
 	flags &= ~CAM_STATIONARY_FOV;
-	if(in_fov <= 0.0f)
+	if(g3_get_hfov(in_fov) <= 0.0f)
 	{
 		fov.setVD(in_fov_time, in_fov_acceleration_time, 0.0f);
 	}
 
-	fov.setAVD(in_fov, in_fov_time, in_fov_acceleration_time, in_fov_deceleration_time, 0.0f);
+	fov.setAVD(g3_get_hfov(in_fov), in_fov_time, in_fov_acceleration_time, in_fov_deceleration_time, 0.0f);
 }
 
 void camera::set_object_host(object *objp, int n_object_host_submodel)
@@ -319,11 +344,14 @@ int camera::get_object_target_submodel()
 	return object_target_submodel;
 }
 
-float camera::get_fov()
+fov_t camera::get_fov()
 {
 	if(!(flags & CAM_STATIONARY_FOV))
 	{
-		fov.get(&c_fov, NULL);
+		float fov_now;
+		fov.get(&fov_now, nullptr);
+		return fov_now;
+		//TODO enable moving asymmetric fov
 	}
 
 	return c_fov;

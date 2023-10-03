@@ -222,14 +222,34 @@ void shadows_debug_show_frustum(matrix* orient, vec3d *pos, float fov, float asp
  	g3_render_line_3d(true, &far_bottom_left, &far_top_left);
 }
 
-void shadows_construct_light_frustum(light_frustum_info *shadow_data, matrix *light_matrix, matrix *orient, vec3d * /*pos*/, float fov, float aspect, float z_near, float z_far)
+void shadows_construct_light_frustum(light_frustum_info *shadow_data, matrix *light_matrix, matrix *orient, vec3d * /*pos*/, fov_t fov, float aspect, float z_near, float z_far)
 {
 	// find the widths and heights of the near plane and far plane to determine the points of this frustum
-	float near_height = tanf(fov * 0.5f) * z_near;
-	float near_width = near_height * aspect;
+	float near_l, near_r, near_u, near_d;
+	float far_l, far_r, far_u, far_d;
+	if (mpark::holds_alternative<float>(fov)) {
+		near_d = tanf(mpark::get<float>(fov) * 0.5f) * z_near;
+		near_u = -near_d;
+		near_r = near_d * aspect;
+		near_l = -near_r;
 
-	float far_height = tanf(fov * 0.5f) * z_far;
-	float far_width = far_height * aspect;
+		far_d = tanf(mpark::get<float>(fov) * 0.5f) * z_far;
+		far_u = -far_d;
+		far_r = far_d * aspect;
+		far_l = -far_r;
+	}
+	else {
+		const auto& afov = mpark::get<asymmetric_fov>(fov);
+		near_d = tanf(-afov.down) * z_near;
+		near_u = -tanf(afov.up) * z_near;
+		near_r = tanf(-afov.left) * z_near;
+		near_l = -tanf(afov.right) * z_near;
+
+		far_d = tanf(-afov.down) * z_far;
+		far_u = -tanf(afov.up) * z_far;
+		far_r = tanf(-afov.left) * z_far;
+		far_l = -tanf(afov.right) * z_far;
+	}
 
 	vec3d up_scale = ZERO_VECTOR;
 	vec3d right_scale = ZERO_VECTOR;
@@ -247,40 +267,40 @@ void shadows_construct_light_frustum(light_frustum_info *shadow_data, matrix *li
 
 	// near top left
 	up_scale = orient->vec.uvec;
-	vm_vec_scale(&up_scale, -near_height);
+	vm_vec_scale(&up_scale, near_u);
 
 	right_scale = orient->vec.rvec;
-	vm_vec_scale(&right_scale, -near_width);
+	vm_vec_scale(&right_scale, near_l);
 
 	vm_vec_add(&near_top_left, &up_scale, &right_scale);
 	vm_vec_add2(&near_top_left, &forward_scale_near);
 
 	// near top right
 	up_scale = orient->vec.uvec;
-	vm_vec_scale(&up_scale, -near_height);
+	vm_vec_scale(&up_scale, near_u);
 
 	right_scale = orient->vec.rvec;
-	vm_vec_scale(&right_scale, near_width);
+	vm_vec_scale(&right_scale, near_r);
 
 	vm_vec_add(&near_top_right, &up_scale, &right_scale);
 	vm_vec_add2(&near_top_right, &forward_scale_near);
 
 	// near bottom left
 	up_scale = orient->vec.uvec;
-	vm_vec_scale(&up_scale, near_height);
+	vm_vec_scale(&up_scale, near_d);
 
 	right_scale = orient->vec.rvec;
-	vm_vec_scale(&right_scale, -near_width);
+	vm_vec_scale(&right_scale, near_l);
 
 	vm_vec_add(&near_bottom_left, &up_scale, &right_scale);
 	vm_vec_add2(&near_bottom_left, &forward_scale_near);
 
 	// near bottom right
 	up_scale = orient->vec.uvec;
-	vm_vec_scale(&up_scale, near_height);
+	vm_vec_scale(&up_scale, near_d);
 
 	right_scale = orient->vec.rvec;
-	vm_vec_scale(&right_scale, near_width);
+	vm_vec_scale(&right_scale, near_r);
 
 	vm_vec_add(&near_bottom_right, &up_scale, &right_scale);
 	vm_vec_add2(&near_bottom_right, &forward_scale_near);
@@ -292,40 +312,40 @@ void shadows_construct_light_frustum(light_frustum_info *shadow_data, matrix *li
 
 	// far top left
 	up_scale = orient->vec.uvec;
-	vm_vec_scale(&up_scale, -far_height);
+	vm_vec_scale(&up_scale, far_u);
 
 	right_scale = orient->vec.rvec;
-	vm_vec_scale(&right_scale, -far_width);
+	vm_vec_scale(&right_scale, far_l);
 
 	vm_vec_add(&far_top_left, &up_scale, &right_scale);
 	vm_vec_add2(&far_top_left, &forward_scale_far);
 
 	// far top right
 	up_scale = orient->vec.uvec;
-	vm_vec_scale(&up_scale, -far_height);
+	vm_vec_scale(&up_scale, far_u);
 
 	right_scale = orient->vec.rvec;
-	vm_vec_scale(&right_scale, far_width);
+	vm_vec_scale(&right_scale, far_r);
 
 	vm_vec_add(&far_top_right, &up_scale, &right_scale);
 	vm_vec_add2(&far_top_right, &forward_scale_far);
 
 	// far bottom left
 	up_scale = orient->vec.uvec;
-	vm_vec_scale(&up_scale, far_height);
+	vm_vec_scale(&up_scale, far_d);
 
 	right_scale = orient->vec.rvec;
-	vm_vec_scale(&right_scale, -far_width);
+	vm_vec_scale(&right_scale, far_l);
 
 	vm_vec_add(&far_bottom_left, &up_scale, &right_scale);
 	vm_vec_add2(&far_bottom_left, &forward_scale_far);
 
 	// far bottom right
 	up_scale = orient->vec.uvec;
-	vm_vec_scale(&up_scale, far_height);
+	vm_vec_scale(&up_scale, far_d);
 
 	right_scale = orient->vec.rvec;
-	vm_vec_scale(&right_scale, far_width);
+	vm_vec_scale(&right_scale, far_r);
 
 	vm_vec_add(&far_bottom_right, &up_scale, &right_scale);
 	vm_vec_add2(&far_bottom_right, &forward_scale_far);
@@ -381,7 +401,7 @@ void shadows_construct_light_frustum(light_frustum_info *shadow_data, matrix *li
 	shadows_construct_light_proj(shadow_data);
 }
 
-matrix shadows_start_render(matrix *eye_orient, vec3d *eye_pos, float fov, float aspect, float veryneardist, float neardist, float middist, float fardist)
+matrix shadows_start_render(matrix *eye_orient, vec3d *eye_pos, fov_t fov, float aspect, float veryneardist, float neardist, float middist, float fardist)
 {	
 	if(Static_light.empty())
 		return vmd_identity_matrix; 
@@ -419,7 +439,7 @@ void shadows_end_render()
 	gr_shadow_map_end();
 }
 
-void shadows_render_all(float fov, matrix *eye_orient, vec3d *eye_pos)
+void shadows_render_all(fov_t fov, matrix *eye_orient, vec3d *eye_pos)
 {
 	if (gr_screen.mode == GR_STUB) {
 		return;

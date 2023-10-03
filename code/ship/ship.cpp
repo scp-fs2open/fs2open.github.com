@@ -7763,7 +7763,7 @@ void ship_render_player_ship(object* objp) {
 	ship_get_eye_local(&eye_pos, &eye_orient, objp);
 	vm_vec_copy_scale(&eye_offset, &eye_pos, -1.0f);
 
-	float fov_backup = Proj_fov;
+	fov_t fov_backup = Proj_fov;
 	g3_set_fov(Sexp_fov <= 0.0f ? COCKPIT_ZOOM_DEFAULT : Sexp_fov);
 
 	if (prerenderShipModel) {

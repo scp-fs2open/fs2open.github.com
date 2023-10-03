@@ -641,7 +641,7 @@ extern int Framerate_delay;
 
 extern vec3d Eye_position;
 extern matrix Eye_matrix;
-extern void g3_set_view_matrix(const vec3d *view_pos, const matrix *view_matrix, float zoom);
+extern void g3_set_view_matrix(const vec3d *view_pos, const matrix *view_matrix, fov_t zoom);
 
 extern int Show_cpu;
 
