@@ -102,6 +102,39 @@ version get_executable_version() {
 version::version(int major_in, int minor_in, int build_in, int revision_in) :
 	major(major_in), minor(minor_in), build(build_in), revision(revision_in) {
 }
+
+version::version(const SCP_string& semver) : major(-1), minor(-1), build(-1), revision(-1) {
+	int i = 0;
+	auto str = semver;
+	while (i <= 4) {
+		size_t pos = str.find_first_of('.');
+		if (pos != SCP_string::npos) {
+			auto ver = str.substr(0, pos);
+			if (!ver.empty() && std::find_if(ver.begin(), ver.end(), [](char c) { return !std::isdigit(c, SCP_default_locale); }) == ver.end()) {
+				if (major < 0) {
+					major = std::stoi(str.c_str());
+				}
+				else if (minor < 0) {
+					minor = std::stoi(str.c_str());
+				}
+				else if (build < 0) {
+					build = std::stoi(str.c_str());
+				}
+				str.erase(0, pos + 1);
+			}
+			else if (major < 0) {
+				break; //Break out of the loop if the first string is not a digit.
+			}
+		}
+		else if ((major > -1) && (minor > -1) && (build > -1) && (!str.empty() && std::find_if(str.begin(), str.end(), [](char c) {
+			return !std::isdigit(c, SCP_default_locale);
+			}) == str.end())) {
+			revision = std::stoi(str.c_str());
+		}
+		i++;
+	}
+}
+
 bool version::isValid() const { return major != 0 || minor != 0 || build != 0 || revision != 0; }
 bool version::operator<(const version& v) const {
 
