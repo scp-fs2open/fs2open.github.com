@@ -30441,7 +30441,7 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_SHIP;
 
 		case OP_SET_HUD_TIME_PAD:
-			return OPF_POSITIVE;
+			return OPF_NUMBER;
 
 		case OP_WAS_DESTROYED_BY_DELAY:
 			if (argnum == 0)
