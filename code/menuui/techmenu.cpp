@@ -1082,6 +1082,7 @@ static void intel_info_init(intel_data* inteli)
 	inteli->desc = "";
 	inteli->anim_filename[0] = '\0';
 	inteli->flags = IIF_DEFAULT_VALUE;
+	inteli->custom_data = {};
 }
 
 void parse_intel_table(const char* filename)
@@ -1154,6 +1155,10 @@ void parse_intel_table(const char* filename)
 
 			if (optional_string("$Description:")) {
 				stuff_string(intel_p->desc, F_MULTITEXT);
+			}
+
+			if (optional_string("$Custom data:")) {
+				parse_string_map(intel_p->custom_data, "$end_custom_data", "+Val:");
 			}
 
 			//retail table doesn't have #end so we have to check for the start of the next entry
