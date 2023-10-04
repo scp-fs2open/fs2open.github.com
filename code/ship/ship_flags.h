@@ -149,6 +149,7 @@ namespace Ship {
 		Player_deleted,
 		Been_tagged,
 		Red_alert_carry,
+		From_player_wing,
 
 		NUM_VALUES
 	};

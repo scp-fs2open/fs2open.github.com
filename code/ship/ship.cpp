@@ -6237,10 +6237,14 @@ void ship_add_exited_ship( ship *sp, Ship::Exit_Flags reason )
 	entry.obj_signature = Objects[sp->objnum].signature;
 	entry.ship_class = sp->ship_info_index;
 	entry.team = sp->team;
+	entry.wingnum = sp->wingnum;
 	entry.flags += reason;
-	// if ship is red alert, flag as such
+	// copy some flags
 	if (sp->flags[Ship_Flags::Red_alert_store_status]) {
         entry.flags.set(Ship::Exit_Flags::Red_alert_carry);
+	}
+	if (sp->flags[Ship_Flags::From_player_wing]) {
+		entry.flags.set(Ship::Exit_Flags::From_player_wing);
 	}
 	entry.time = Missiontime;
 	entry.hull_strength = int(Objects[sp->objnum].hull_strength);
@@ -6473,7 +6477,6 @@ vec3d get_submodel_offset(int model, int submodel){
 // Reset all ship values to empty/unused.
 void ship::clear()
 {
-
 	objnum = -1;
 	ai_index = -1;
 	ship_info_index = -1;

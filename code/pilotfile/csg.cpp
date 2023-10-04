@@ -799,7 +799,7 @@ void pilotfile::csg_write_stats()
 
 void pilotfile::csg_read_redalert()
 {
-	int idx, i, j, list_size = 0;
+	int idx, i, j, ship_list_size = 0, wing_list_size = 0;
 	int count;
 	char t_string[MAX_FILENAME_LEN+NAME_LENGTH+1] = { '\0' };
 	float hit;
@@ -809,9 +809,9 @@ void pilotfile::csg_read_redalert()
 		throw "RedAlert before Info!";
 	}
 
-	list_size = cfread_int(cfp);
+	ship_list_size = cfread_int(cfp);
 
-	if (list_size <= 0) {
+	if (ship_list_size <= 0) {
 		return;
 	}
 
@@ -819,7 +819,7 @@ void pilotfile::csg_read_redalert()
 
 	Red_alert_precursor_mission = t_string;
 
-	for (idx = 0; idx < list_size; idx++) {
+	for (idx = 0; idx < ship_list_size; idx++) {
 		red_alert_ship_status ras;
 
 		cfread_string_len(t_string, NAME_LENGTH, cfp);
@@ -888,28 +888,57 @@ void pilotfile::csg_read_redalert()
 
 		// this is quite likely a *bad* thing if it doesn't happen
 		if (ras.ship_class >= RED_ALERT_LOWEST_VALID_SHIP_CLASS) {
-			Red_alert_wingman_status.push_back( ras );
+			Red_alert_ship_status.push_back( ras );
 		}
+	}
+
+
+	// old versions of CSG files do not store wing status
+	if (csg_ver < 8) {
+		return;
+	}
+
+
+	wing_list_size = cfread_int(cfp);
+
+	if (wing_list_size <= 0) {
+		return;
+	}
+
+	for (idx = 0; idx < wing_list_size; idx++) {
+		red_alert_wing_status rws;
+
+		cfread_string_len(t_string, NAME_LENGTH, cfp);
+		rws.name = t_string;
+
+		rws.latest_wave = cfread_int(cfp);
+
+		rws.wave_count = cfread_int(cfp);
+		rws.total_arrived_count = cfread_int(cfp);
+		rws.total_departed = cfread_int(cfp);
+		rws.total_destroyed = cfread_int(cfp);
+		rws.total_vanished = cfread_int(cfp);
+
+		Red_alert_wing_status.push_back(rws);
 	}
 }
 
 void pilotfile::csg_write_redalert()
 {
-	int idx, j, list_size = 0;
+	int idx, j, ship_list_size = 0, wing_list_size = 0;
 	int count;
-	red_alert_ship_status *ras;
 
 	startSection(Section::RedAlert);
 
-	list_size = (int)Red_alert_wingman_status.size();
+	ship_list_size = (int)Red_alert_ship_status.size();
 
-	cfwrite_int(list_size, cfp);
+	cfwrite_int(ship_list_size, cfp);
 
-	if (list_size) {
+	if (ship_list_size) {
 		cfwrite_string_len(Red_alert_precursor_mission.c_str(), cfp);
 
-		for (idx = 0; idx < list_size; idx++) {
-			ras = &Red_alert_wingman_status[idx];
+		for (idx = 0; idx < ship_list_size; idx++) {
+			auto ras = &Red_alert_ship_status[idx];
 
 			cfwrite_string_len(ras->name.c_str(), cfp);
 
@@ -951,6 +980,26 @@ void pilotfile::csg_write_redalert()
 				cfwrite_int(ras->secondary_weapons[j].index, cfp);
 				cfwrite_int(ras->secondary_weapons[j].count, cfp);
 			}
+		}
+	}
+
+	wing_list_size = (int)Red_alert_wing_status.size();
+
+	cfwrite_int(wing_list_size, cfp);
+
+	if (wing_list_size) {
+		for (idx = 0; idx < wing_list_size; idx++) {
+			auto rws = &Red_alert_wing_status[idx];
+
+			cfwrite_string_len(rws->name.c_str(), cfp);
+
+			cfwrite_int(rws->latest_wave, cfp);
+
+			cfwrite_int(rws->wave_count, cfp);
+			cfwrite_int(rws->total_arrived_count, cfp);
+			cfwrite_int(rws->total_departed, cfp);
+			cfwrite_int(rws->total_destroyed, cfp);
+			cfwrite_int(rws->total_vanished, cfp);
 		}
 	}
 
@@ -1516,7 +1565,8 @@ void pilotfile::csg_reset_data()
 	Campaign.red_alert_containers.clear();
 
 	// clear red alert data
-	Red_alert_wingman_status.clear();
+	Red_alert_ship_status.clear();
+	Red_alert_wing_status.clear();
 
 	// clear out mission stuff
 	for (idx = 0; idx < MAX_CAMPAIGN_MISSIONS; idx++) {
@@ -1768,7 +1818,8 @@ bool pilotfile::save_savefile()
 	// assertion before writing so that we don't corrupt the .csg by asserting halfway through writing
 	// assertion should also prevent loss of major campaign progress
 	// i.e. lose one mission, not several missions worth (in theory)
-	Assertion(Red_alert_wingman_status.size() <= MAX_SHIPS, "Invalid number of Red_alert_wingman_status entries: " SIZE_T_ARG "\n", Red_alert_wingman_status.size());
+	Assertion(Red_alert_ship_status.size() <= MAX_SHIPS, "Invalid number of Red_alert_ship_status entries: " SIZE_T_ARG "\n", Red_alert_ship_status.size());
+	Assertion(Red_alert_wing_status.size() <= MAX_WINGS, "Invalid number of Red_alert_wing_status entries: " SIZE_T_ARG "\n", Red_alert_wing_status.size());
 
 	// open it, hopefully...
 	cfp = cfopen(filename.c_str(), "wb", CFILE_NORMAL, CF_TYPE_PLAYERS, false,
