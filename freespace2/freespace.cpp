@@ -6653,6 +6653,10 @@ int game_main(int argc, char *argv[])
 		return 0;
 	}
 
+	if (scripting::hooks::OnIntroAboutToPlay->isActive()) {
+		scripting::hooks::OnIntroAboutToPlay->run();
+	}
+
 	if (!Is_standalone) {
 		movie::play("intro.mve");
 	}
