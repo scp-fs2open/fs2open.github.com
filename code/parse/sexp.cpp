@@ -6585,6 +6585,7 @@ void eval_object_ship_wing_point_team(object_ship_wing_point_team *oswpt, int no
 				break;
 
 			case ShipStatus::PRESENT:
+			case ShipStatus::DEATH_ROLL:
 				oswpt->type = OSWPT_TYPE_SHIP;
 				break;
 
@@ -6853,7 +6854,7 @@ int sexp_is_destroyed(int n, fix *latest_time)
 			if (ship_entry->status == ShipStatus::NOT_YET_PRESENT)
 				return SEXP_CANT_EVAL;
 
-			if (ship_entry->status == ShipStatus::EXITED)
+			if (ship_entry->status == ShipStatus::DEATH_ROLL || ship_entry->status == ShipStatus::EXITED)
 			{
 				// check the mission log
 				if (mission_log_get_time(LOG_SHIP_DESTROYED, ship_entry->name, nullptr, &time) || mission_log_get_time(LOG_SELF_DESTRUCTED, ship_entry->name, nullptr, &time))
@@ -7301,7 +7302,7 @@ int sexp_was_destroyed_by(int n, fix *latest_time)
 				*latest_time = time;
 		}
 		// if the ship has exited, no way to destroy it
-		else if (ship_entry->status == ShipStatus::EXITED)
+		else if (destroyed_ship_entry->status == ShipStatus::EXITED)
 			return SEXP_KNOWN_FALSE;
 	}
 
@@ -7526,7 +7527,14 @@ int sexp_time_exited(int n, int op_num)
 	if (ship)
 	{
 		auto ship_entry = eval_ship(n);
-		if (!ship_entry || ship_entry->status != ShipStatus::EXITED)
+		if (!ship_entry)
+			return SEXP_NAN;
+		if (ship_entry->status == ShipStatus::DEATH_ROLL)
+		{
+			if (!destroyed)
+				return SEXP_NAN;
+		}
+		else if (ship_entry->status != ShipStatus::EXITED)
 			return SEXP_NAN;
 
 		if (destroyed)
@@ -8784,7 +8792,8 @@ int sexp_angle_vectors(int node) {
 	return fl2ir(angle);
 }
 
-int sexp_angle_fvec_target(int node) {
+int sexp_angle_fvec_target(int node)
+{
 	auto* ship = eval_ship(node);
 
 	if (ship->status == ShipStatus::EXITED)
@@ -9412,7 +9421,7 @@ int sexp_last_order_time(int n)
 
 		auto ship_entry = eval_ship(n);
 		if (ship_entry) {
-			if (ship_entry->status == ShipStatus::PRESENT) {
+			if (ship_entry->shipp) {
 				aigp = Ai_info[ship_entry->shipp->ai_index].goals;
 			}
 		} else {
@@ -9785,7 +9794,7 @@ int sexp_destroyed_departed_delay(int n)
 					return SEXP_CANT_EVAL;
 				}
 
-				if (ship_entry->status == ShipStatus::EXITED) {
+				if (ship_entry->status == ShipStatus::DEATH_ROLL || ship_entry->status == ShipStatus::EXITED) {
 					if (mission_log_get_time(LOG_SHIP_DEPARTED, ship_entry->name, nullptr, &time_gone)) {
 						count++;
 					} else if (mission_log_get_time(LOG_SHIP_DESTROYED, ship_entry->name, nullptr, &time_gone)) {
@@ -11847,6 +11856,8 @@ int sexp_is_iff(int n)
 					// ship is in the EXITED state but probably in the process of exploding
 					else if (oswpt.ship_entry->shipp)
 					{
+						UNREACHABLE("With the addition of the ShipStatus::DEATH_ROLL state, this shouldn't happen");
+
 						// if the team doesn't match the team specified, return false immediately
 						if (oswpt.ship_entry->shipp->team != team)
 							return SEXP_KNOWN_FALSE;
@@ -12335,7 +12346,7 @@ void sexp_add_goal(int n)
 	auto ship_entry = eval_ship(n);
 	if (ship_entry)
 	{
-		if (ship_entry->status != ShipStatus::PRESENT)
+		if (!ship_entry->shipp)
 			return;										// ship not around anymore???? then forget it!
 
 		ai_add_ship_goal_sexp(goal_node, AIG_TYPE_EVENT_SHIP, &(Ai_info[ship_entry->shipp->ai_index]));
@@ -12362,7 +12373,7 @@ void sexp_remove_goal(int n)
 	auto ship_entry = eval_ship(n);
 	if (ship_entry)
 	{
-		if (ship_entry->status != ShipStatus::PRESENT)
+		if (!ship_entry->shipp)
 			return;										// ship not around anymore???? then forget it!
 
 		int goalindex = ai_remove_goal_sexp_sub(goal_node, Ai_info[ship_entry->shipp->ai_index].goals);
@@ -12394,7 +12405,7 @@ void sexp_clear_goals(int n)
 		auto ship_entry = eval_ship(n);
 		if (ship_entry)
 		{
-			if (ship_entry->status != ShipStatus::PRESENT)
+			if (!ship_entry->shipp)
 				continue;										// ship not around anymore???? then forget it!
 
 			ai_clear_ship_goals(&(Ai_info[ship_entry->shipp->ai_index]));
@@ -16225,7 +16236,7 @@ void sexp_deal_with_ship_flag(int node, bool process_subsequent_nodes, Object::O
 			continue;
 
 		// if ship is in-mission
-		if (ship_entry->status == ShipStatus::PRESENT)
+		if (ship_entry->shipp)
 		{
 			// save flags for state change comparisons
 			auto object_flag_orig = ship_entry->objp->flags;
@@ -20181,23 +20192,20 @@ void sexp_set_alphamult(int n)
 		case OSWPT_TYPE_SHIP:
 		{
 			auto ship_entry = oswpt.ship_entry;
+			ship* shipp = ship_entry->shipp;
 
-			if (ship_entry->status == ShipStatus::PRESENT)
-			{
-				ship* shipp = ship_entry->shipp;
-				shipp->flags.remove(Ship::Ship_Flags::Cloaked);
-				if (newAlpha >= 100) {
-					shipp->alpha_mult = 1.0f;
-					shipp->flags.remove(Ship::Ship_Flags::Render_with_alpha_mult);
-				}
-				else if (newAlpha <= 0) {
-					shipp->alpha_mult = 0.0f;
-					shipp->flags.set(Ship::Ship_Flags::Cloaked);
-				}
-				else {
-					shipp->alpha_mult = ((float)newAlpha) / 100.f;
-					shipp->flags.set(Ship::Ship_Flags::Render_with_alpha_mult);
-				}
+			shipp->flags.remove(Ship::Ship_Flags::Cloaked);
+			if (newAlpha >= 100) {
+				shipp->alpha_mult = 1.0f;
+				shipp->flags.remove(Ship::Ship_Flags::Render_with_alpha_mult);
+			}
+			else if (newAlpha <= 0) {
+				shipp->alpha_mult = 0.0f;
+				shipp->flags.set(Ship::Ship_Flags::Cloaked);
+			}
+			else {
+				shipp->alpha_mult = ((float)newAlpha) / 100.f;
+				shipp->flags.set(Ship::Ship_Flags::Render_with_alpha_mult);
 			}
 			break;
 		}
@@ -20307,7 +20315,7 @@ void sexp_ship_copy_damage(int node)
 			continue;
 
 		// maybe it's present in-mission
-		if (target->status == ShipStatus::PRESENT)
+		if (target->shipp)
 		{
 			ship_copy_damage(target->shipp, source->shipp);
 			continue;
@@ -25709,7 +25717,7 @@ int sexp_is_in_mission(int node)
 	{
 		// For this sexp, we do not short-circuit known-true or known-false.
 		auto ship_entry = eval_ship(n);
-		if (!ship_entry || ship_entry->status != ShipStatus::PRESENT)
+		if (!ship_entry || !ship_entry->shipp)
 			return SEXP_FALSE;
 	}
 
@@ -25718,7 +25726,6 @@ int sexp_is_in_mission(int node)
 
 int sexp_has_armor_type(int node)
 {
-
 	// get ship from sexp
 	auto ship_entry = eval_ship(node);
 	if (!ship_entry || ship_entry->status == ShipStatus::NOT_YET_PRESENT)
@@ -25808,7 +25815,7 @@ void sexp_manipulate_colgroup(int node, bool add_to_group)
 		return;
 	node = CDR(node);
 
-	int colgroup_id = (ship_entry->status == ShipStatus::PRESENT)
+	int colgroup_id = (ship_entry->objp)
 		? ship_entry->objp->collision_group_id
 		: ship_entry->p_objp->collision_group_id;
 
@@ -25830,7 +25837,7 @@ void sexp_manipulate_colgroup(int node, bool add_to_group)
 		}
 	}
 
-	if (ship_entry->status == ShipStatus::PRESENT)
+	if (ship_entry->objp)
 		ship_entry->objp->collision_group_id = colgroup_id;
 	else
 		ship_entry->p_objp->collision_group_id = colgroup_id;
@@ -25856,7 +25863,7 @@ void sexp_manipulate_colgroup_new(int node, bool add_to_group)
 		if (!ship_entry || ship_entry->status == ShipStatus::EXITED)
 			continue;
 
-		if (ship_entry->status == ShipStatus::PRESENT)
+		if (ship_entry->objp)
 		{
 			if (add_to_group)
 				ship_entry->objp->collision_group_id |= (1 << group);
@@ -25881,7 +25888,7 @@ int sexp_get_colgroup(int node)
 	if (ship_entry->status == ShipStatus::EXITED)
 		return SEXP_NAN_FOREVER;
 
-	if (ship_entry->status == ShipStatus::PRESENT)
+	if (ship_entry->objp)
 		return ship_entry->objp->collision_group_id;
 	else
 		return ship_entry->p_objp->collision_group_id;

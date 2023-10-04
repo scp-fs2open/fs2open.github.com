@@ -922,7 +922,7 @@ void message_training_queue_check()
 	auto ship_entry = ship_registry_get(NOX("instructor"));
 	if (ship_entry != nullptr)
 	{
-		if (ship_entry->status == ShipStatus::PRESENT)
+		if (ship_entry->shipp != nullptr)
 		{
 			// if the instructor is dying or departing, do nothing
 			if (ship_entry->shipp->is_dying_or_departing())

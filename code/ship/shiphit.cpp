@@ -1983,7 +1983,7 @@ void ship_hit_kill(object *ship_objp, object *other_obj, vec3d *hitpos, float pe
 
 	// Goober5000 - since we added a mission log entry above, immediately set the status.  For destruction, ship_cleanup isn't called until a little bit later
 	auto entry = &Ship_registry[Ship_registry_map[sp->ship_name]];
-	entry->status = ShipStatus::EXITED;
+	entry->status = ShipStatus::DEATH_ROLL;
 
 	ship_generic_kill_stuff( ship_objp, percent_killed );
 
