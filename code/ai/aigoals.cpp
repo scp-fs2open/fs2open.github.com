@@ -1022,17 +1022,30 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, char
 		aigp->ai_mode = AI_GOAL_KEEP_SAFE_DISTANCE;
 		break;
 
+	case OP_AI_FLY_TO_SHIP:
 	case OP_AI_STAY_NEAR_SHIP:
 	{
 		bool is_nan, is_nan_forever;
 
 		aigp->target_name = ai_get_goal_target_name( CTEXT(CDR(node)), &aigp->target_name_index );
 		aigp->priority = atoi( CTEXT(CDDR(node)) );
+
+		// distance from ship
 		if ( CDDDR(node) < 0 )
 			aigp->float_data = 300.0f;
 		else
 			aigp->float_data = i2fl(eval_num(CDDDR(node), is_nan, is_nan_forever));
-		aigp->ai_mode = AI_GOAL_STAY_NEAR_SHIP;
+
+		// (the next argument is whether to afterburn)
+
+		// whether to "escort" the ship
+		if ( CDDDDDR(node) >= 0 )
+			aigp->int_data = is_sexp_true(CDDDDDR(node)) ? 1 : 0;
+
+		if (op == OP_AI_FLY_TO_SHIP)
+			aigp->ai_mode = AI_GOAL_FLY_TO_SHIP;
+		else
+			aigp->ai_mode = AI_GOAL_STAY_NEAR_SHIP;
 		break;
 	}
 
@@ -1050,7 +1063,6 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, char
 	case OP_AI_EVADE_SHIP:
 	case OP_AI_IGNORE:
 	case OP_AI_IGNORE_NEW:
-	case OP_AI_FLY_TO_SHIP:
 		aigp->target_name = ai_get_goal_target_name( CTEXT(CDR(node)), &aigp->target_name_index );
 		aigp->priority = atoi( CTEXT(CDR(CDR(node))) );
 
@@ -1077,14 +1089,10 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, char
 			aigp->ai_mode = AI_GOAL_CHASE_WING;
 		} else if (op == OP_AI_CHASE_SHIP_CLASS) {
 			aigp->ai_mode = AI_GOAL_CHASE_SHIP_CLASS;
-		} else if ( op == OP_AI_STAY_NEAR_SHIP ) {
-			aigp->ai_mode = AI_GOAL_STAY_NEAR_SHIP;
 		} else if ( op == OP_AI_IGNORE ) {
 			aigp->ai_mode = AI_GOAL_IGNORE;
 		} else if ( op == OP_AI_IGNORE_NEW ) {
 			aigp->ai_mode = AI_GOAL_IGNORE_NEW;
-		} else if ( op == OP_AI_FLY_TO_SHIP ) {
-			aigp->ai_mode = AI_GOAL_FLY_TO_SHIP;
 		} else
 			UNREACHABLE("Coding error: unhandled AI goal in ai_add_goal_sub_sexp!");
 
@@ -1138,8 +1146,7 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, char
 	if (op == OP_AI_GUARD || 
 		op == OP_AI_GUARD_WING || 
 		op == OP_AI_WAYPOINTS || 
-		op == OP_AI_WAYPOINTS_ONCE || 
-		op == OP_AI_FLY_TO_SHIP) {
+		op == OP_AI_WAYPOINTS_ONCE) {
 		if (is_sexp_true(CDDDR(node)))
 			aigp->flags.set(AI::Goal_Flags::Afterburn_hard);
 	}
@@ -1148,7 +1155,8 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, char
 		op == OP_AI_CHASE_SHIP_CLASS || 
 		op == OP_AI_DISABLE_SHIP || 
 		op == OP_AI_DISARM_SHIP || 
-		op == OP_AI_STAY_NEAR_SHIP) {
+		op == OP_AI_STAY_NEAR_SHIP ||
+		op == OP_AI_FLY_TO_SHIP) {
 		if (is_sexp_true(CDDDDR(node)))
 			aigp->flags.set(AI::Goal_Flags::Afterburn_hard);
 	}	
@@ -1699,6 +1707,15 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 				return_val = ai_achievability::NOT_ACHIEVABLE;
 			} else {
 				status = 0;
+			}
+
+			// fly-to-ship can potentially be determined
+			if (aigp->ai_mode == AI_GOAL_FLY_TO_SHIP && target_ship_entry && target_ship_entry->objp) {
+				auto dist = vm_vec_dist(&target_ship_entry->objp->pos, &objp->pos);
+				if (dist < aigp->float_data) {
+					return_val = ai_achievability::SATISFIED;
+					status = 1;
+				}
 			}
 
 			break;
@@ -2307,12 +2324,6 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 		break;
 	}
 
-	case AI_GOAL_FLY_TO_SHIP:
-		shipnum = ship_name_lookup( current_goal->target_name );
-		Assert (shipnum != -1 );			// shouldn't get here if this is false!!!!
-		ai_start_fly_to_ship(objp, shipnum);
-		break;
-
 	case AI_GOAL_DOCK: {
 		shipnum = ship_name_lookup( current_goal->target_name );
 		Assert (shipnum != -1 );			// shouldn't get here if this is false!!!!
@@ -2480,14 +2491,17 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 
 // labels for support ship commands
 
-	case AI_GOAL_STAY_NEAR_SHIP: {
+	case AI_GOAL_STAY_NEAR_SHIP:
+	case AI_GOAL_FLY_TO_SHIP:
+	{
 		shipnum = ship_name_lookup( current_goal->target_name );
 		Assert( shipnum >= 0 );
 		other_obj = &Objects[Ships[shipnum].objnum];
 		float dist = current_goal->float_data;	//	How far away to stay from ship.  Should be set in SEXP?
-		ai_do_stay_near(objp, other_obj, dist);
+		int additional_data = current_goal->int_data;	// Whether to target a particular point as if escorting
+		ai_do_stay_near(objp, other_obj, dist, additional_data);
 		break;
-										  }
+	}
 
 	case AI_GOAL_KEEP_SAFE_DISTANCE:
 		// todo MK: hook to keep support ship at a safe distance

@@ -836,8 +836,8 @@ SCP_vector<sexp_oper> Operators = {
 	{ "ai-ignore",						OP_AI_IGNORE,							2,	2,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-ignore-new",					OP_AI_IGNORE_NEW,						2,	2,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-form-on-wing",				OP_AI_FORM_ON_WING,						1,	1,			SEXP_GOAL_OPERATOR, },
-	{ "ai-fly-to-ship",					OP_AI_FLY_TO_SHIP,						2,	3,			SEXP_GOAL_OPERATOR, },
-	{ "ai-stay-near-ship",				OP_AI_STAY_NEAR_SHIP,					2,	4,			SEXP_GOAL_OPERATOR,	},
+	{ "ai-fly-to-ship",					OP_AI_FLY_TO_SHIP,						2,	5,			SEXP_GOAL_OPERATOR, },
+	{ "ai-stay-near-ship",				OP_AI_STAY_NEAR_SHIP,					2,	5,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-evade-ship",					OP_AI_EVADE_SHIP,						2,	2,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-keep-safe-distance",			OP_AI_KEEP_SAFE_DISTANCE,				1,	1,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-stay-still",					OP_AI_STAY_STILL,						2,	2,			SEXP_GOAL_OPERATOR,	},
@@ -30947,7 +30947,6 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_AI_EVADE_SHIP:
 		case OP_AI_IGNORE:
 		case OP_AI_IGNORE_NEW:
-		case OP_AI_FLY_TO_SHIP:
 		case OP_AI_REARM_REPAIR:
 			if (argnum == 0)
 				return OPF_SHIP;
@@ -30956,6 +30955,7 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_BOOL;
 
+		case OP_AI_FLY_TO_SHIP:
 		case OP_AI_STAY_NEAR_SHIP:
 			if (argnum == 0)
 				return OPF_SHIP;
@@ -37457,7 +37457,9 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"Takes 2 arguments...\r\n"
 		"\t1:\tName of ship to fly towards.\r\n"
 		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100).\r\n"
-		"\t3 (optional):\tWhether to afterburn as hard as possible to the target; defaults to false."  },
+		"\t3:\tDistance from the target ship to fly to (optional; defaults to 300).\r\n"
+		"\t4 (optional):\tWhether to afterburn as hard as possible to the target; defaults to false.\r\n"
+		"\t5 (optional):\tWhether the ship should always stay in a particular location as if escorting the target; defaults to false." },
 
 	{ OP_AI_REARM_REPAIR, "Ai-rearm-repair (Ship goal)\r\n"
 		"\tCauses the specified ship to rearm and/or repair another ship.  Typically only works on support ships.\r\n\r\n"
@@ -37923,7 +37925,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tName of ship to stay near.\r\n"
 		"\t2:\tGoal priority (number between 0 and 89).\r\n"
 		"\t3:\tDistance to stay within (optional; defaults to 300).\r\n"
-		"\t4 (optional):\tWhether to afterburn as hard as possible to the target; defaults to false." },
+		"\t4 (optional):\tWhether to afterburn as hard as possible to the target; defaults to false.\r\n"
+		"\t5 (optional):\tWhether the ship should always stay in a particular location as if escorting the target; defaults to false." },
 
 	{ OP_AI_KEEP_SAFE_DISTANCE, "Ai-keep safe distance (Ship goal)\r\n"
 		"\tTells the specified ship to stay a safe distance away from any ship that isn't on the "

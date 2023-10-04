@@ -3462,36 +3462,6 @@ void ai_dock_with_object(object *docker, int docker_index, object *dockee, int d
 }
 
 
-/*
- * Cause a ship to fly toward a ship.
- */
-void ai_start_fly_to_ship(object *objp, int shipnum)
-{
-	ai_info	*aip;
-
-	aip = &Ai_info[Ships[objp->instance].ai_index];
-
-	if (The_mission.flags[Mission::Mission_Flags::Use_ap_cinematics] && AutoPilotEngaged)
-	{
-		aip->ai_flags.remove(AI::AI_Flags::Formation_wing); 
-	}
-	else
-	{
-		aip->ai_flags.set(AI::AI_Flags::Formation_wing); 
-	}
-	aip->ai_flags.remove(AI::AI_Flags::Formation_object);
-
-	aip->mode = AIM_FLY_TO_SHIP;
-	aip->submode_start_time = Missiontime;
-
-	aip->target_objnum = Ships[shipnum].objnum;
-	// clear targeted subsystem
-	set_targeted_subsys(aip, nullptr, -1);
-
-	Assert(aip->active_goal != AI_ACTIVE_GOAL_DYNAMIC);
-}
-
-
 //	Cause a ship to fly its waypoints.
 //	flags tells:
 //		WPF_REPEAT	Set -> repeat waypoints.
@@ -3533,7 +3503,7 @@ void ai_start_waypoints(object *objp, waypoint_list *wp_list, int wp_flags)
 /**
  * Make *objp stay within dist units of *other_objp
  */
-void ai_do_stay_near(object *objp, object *other_objp, float dist)
+void ai_do_stay_near(object *objp, object *other_objp, float dist, int additional_data)
 {
 	ai_info	*aip;
 
@@ -3546,7 +3516,8 @@ void ai_do_stay_near(object *objp, object *other_objp, float dist)
 	aip->mode = AIM_STAY_NEAR;
 	aip->submode = -1;
 	aip->submode_start_time = Missiontime;
-	aip->stay_near_distance = dist;
+	aip->submode_float0 = dist;
+	aip->submode_parm0 = additional_data;
 	aip->goal_objnum = OBJ_INDEX(other_objp);
 	aip->goal_signature = other_objp->signature;
 }
@@ -4917,84 +4888,6 @@ void ai_waypoints()
 							scripting::hook_param("Waypointlist", 'o', scripting::api::l_WaypointList.Set(scripting::api::waypointlist_h(aip->wp_list)))
 						));
 				}
-			}
-		}
-	}
-}
-
-//	--------------------------------------------------------------------------
-//	make Pl_objp fly toward a ship
-void ai_fly_to_ship()
-{
-	ai_info	*aip;
-	object* target_p = NULL;
-
-	aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
-
-	if ( aip->mode != AIM_FLY_TO_SHIP ) {
-		Warning(LOCATION,
-			"ai_fly_to_ship called for '%s' when ai_info.mode not equal to AIM_FLY_TO_SHIP. Is actually '%d'",
-			Ships[Pl_objp->instance].ship_name,
-			aip->mode);
-		aip->mode = AIM_NONE;
-		return;
-	}
-	if ( aip->active_goal < 0 || aip->active_goal >= MAX_AI_GOALS ) {
-		Warning(LOCATION,
-			"'%s' is trying to fly-to a ship without an active AI_GOAL\n\n"
-			"Active ai mode is '%d'",
-			Ships[Pl_objp->instance].ship_name,
-			aip->active_goal);
-		aip->mode = AIM_NONE;
-		return;
-	}
-	Assert( aip->goals[aip->active_goal].target_name != NULL );
-	if ( aip->goals[aip->active_goal].target_name[0] == '\0' ) {
-		Warning(LOCATION, "'%s' is trying to fly-to-ship without a name for the ship", Ships[Pl_objp->instance].ship_name);
-		aip->mode = AIM_NONE;
-		ai_remove_ship_goal( aip, aip->active_goal ); // function sets aip->active_goal to NONE for me
-		return;
-	}
-
-	for (int j = 0; j < MAX_SHIPS; j++)
-	{
-		if (Ships[j].objnum != -1 && !stricmp(aip->goals[aip->active_goal].target_name, Ships[j].ship_name))
-		{
-			target_p = &Objects[Ships[j].objnum];
-			break;
-		}
-	}
-
-	if ( target_p == NULL ) {
-		#ifndef NDEBUG
-		for (int i = 0; i < MAX_AI_GOALS; i++)
-		{
-			if (aip->mode == AIM_FLY_TO_SHIP || aip->goals[i].ai_mode == AI_GOAL_FLY_TO_SHIP)
-			{
-				mprintf(("Ship '%s' told to fly to target ship '%s'\n",
-					Ships[Pl_objp->instance].ship_name,
-					aip->goals[i].target_name));
-			}
-		}
-		#endif
-		Warning(LOCATION, "Ship '%s' told to fly to a ship but none of the ships it was told to fly to exist.\n"
-			"See log before this message for list of ships set as fly-to tagets",
-			Ships[Pl_objp->instance].ship_name);
-		aip->mode = AIM_NONE;
-		ai_remove_ship_goal( aip, aip->active_goal ); // function sets aip->active_goal to NONE for me
-		return;
-	} else {
-		bool done, treat_as_ship;
-		ai_fly_to_target_position(&(target_p->pos), &done, &treat_as_ship);
-
-		if ( done ) {
-			// remove the goal from the AI goals of the ship pr wing, respectively.
-			// Wether or not we should treat this as a ship or a wing is determined by
-			// ai_fly_to_target when it marks the AI directive as complete
-			if ( treat_as_ship ) {
-				ai_mission_goal_complete( aip );					// this call should reset the AI mode
-			} else {
-				ai_mission_wing_goal_complete( Ships[Pl_objp->instance].wingnum, &(aip->goals[aip->active_goal]) );
 			}
 		}
 	}
@@ -11357,24 +11250,52 @@ void ai_still()
 //	Make *Pl_objp stay near another ship.
 void ai_stay_near()
 {
-	ai_info	*aip;
-	int		goal_objnum;
-
-	aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
-
-	goal_objnum = aip->goal_objnum;
+	auto aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
+	int goal_objnum = aip->goal_objnum;
 
 	if ((goal_objnum < 0) || (Objects[goal_objnum].type != OBJ_SHIP) || (Objects[goal_objnum].signature != aip->goal_signature)) {
 		aip->mode = AIM_NONE;
-	} else {
-		float		dist, max_dist, scale;
-		vec3d	rand_vec, goal_pos, vec_to_goal;
-		object	*goal_objp;
+	}
+	// "escort" behavior
+	else if (aip->submode_parm0 != 0) {
+		vec3d rand_vec, center_to_goal, center_to_objp;
+		auto goal_objp = &Objects[goal_objnum];
+		float max_dist = aip->submode_float0;
 
-		goal_objp = &Objects[goal_objnum];
+		// Figure out a goal point to fly to
+		//	Make not all ships pursue same point.
+		//	Calculate the seed from both shipnums so the same Pl_objp doesn't always choose the same spot
+		static_randvec((goal_objp->instance * MAX_SHIPS) + (Pl_objp->instance), &rand_vec);
+		aip->goal_point = goal_objp->pos + max_dist * rand_vec;
+
+		//	Make sure point is on the near side of goal_objp (relative to Pl_objp's position).
+		center_to_goal = aip->goal_point - goal_objp->pos;
+		center_to_objp = Pl_objp->pos - goal_objp->pos;
+		if (vm_vec_dot(&center_to_goal, &center_to_objp) < 0.0f) {
+			vm_vec_negate(&rand_vec);
+			aip->goal_point = goal_objp->pos + max_dist * rand_vec;
+		}
+
+		//	Fly to the point
+		auto dist = vm_vec_dist_quick(&goal_objp->pos, &Pl_objp->pos);
+		if (dist > max_dist) {
+			turn_towards_point(Pl_objp, &aip->goal_point, nullptr, 0.0f);
+			accelerate_ship(aip, dist / max_dist - 0.8f);
+
+			float dot = vm_vec_dot_to_point(&Pl_objp->orient.vec.fvec, &Pl_objp->pos, &aip->goal_point);
+			if (ai_willing_to_afterburn_hard(aip) && dot > 0.99f && dist - max_dist > 700.0f)
+				ai_afterburn_hard(Pl_objp, aip);
+		}
+	}
+	// standard behavior
+	else {
+		vec3d	rand_vec, goal_pos, vec_to_goal;
+		auto goal_objp = &Objects[goal_objnum];
+		float max_dist = aip->submode_float0;
 
 		//	Make not all ships pursue same point.
-		static_randvec(OBJ_INDEX(Pl_objp), &rand_vec);
+		//	Calculate the seed from both shipnums so the same Pl_objp doesn't always choose the same spot
+		static_randvec((goal_objp->instance * MAX_SHIPS) + (Pl_objp->instance), &rand_vec);
 
 		//	Make sure point is in front hemisphere (relative to Pl_objp's position.
 		vm_vec_sub(&vec_to_goal, &goal_objp->pos, &Pl_objp->pos);
@@ -11383,28 +11304,22 @@ void ai_stay_near()
 		}
 
 		//	Scale the random vector by an amount proportional to the distance from Pl_objp to the true goal.
-		dist = vm_vec_dist_quick(&goal_objp->pos, &Pl_objp->pos);
-		max_dist = aip->stay_near_distance;
-		scale = dist - max_dist/2;
+		float dist = vm_vec_dist_quick(&goal_objp->pos, &Pl_objp->pos);
+		float scale = dist - max_dist/2;
 		if (scale < 0.0f)
 			scale = 0.0f;
-
 		vm_vec_scale_add(&goal_pos, &goal_objp->pos, &rand_vec, scale);
 
-		if (max_dist < Pl_objp->radius + goal_objp->radius + 25.0f)
-			max_dist = Pl_objp->radius + goal_objp->radius + 25.0f;
-
+		//	Fly to the point
 		if (dist > max_dist) {
-			turn_towards_point(Pl_objp, &goal_pos, NULL, 0.0f);
+			turn_towards_point(Pl_objp, &goal_pos, nullptr, 0.0f);
 			accelerate_ship(aip, dist / max_dist - 0.8f);
 
 			float dot = vm_vec_dot_to_point(&Pl_objp->orient.vec.fvec, &Pl_objp->pos, &goal_pos);
 			if (ai_willing_to_afterburn_hard(aip) && dot > 0.99f && dist - max_dist > 700.0f)
 				ai_afterburn_hard(Pl_objp, aip);
 		}
-	
 	}
-
 }
 
 //	Warn player if dock path is obstructed.
@@ -12499,7 +12414,7 @@ int ai_formation()
 	} else {	//	Formation flying in waypoint mode.
 		Assert(aip->ai_flags[AI::AI_Flags::Formation_wing]);
 
-		if ( (aip->mode != AIM_WAYPOINTS) && (aip->mode != AIM_FLY_TO_SHIP) ) {
+		if ( aip->mode != AIM_WAYPOINTS ) {
 			aip->ai_flags.remove(AI::AI_Flags::Formation_wing);
 			return 1;
 		}
@@ -13921,6 +13836,7 @@ void ai_execute_behavior(ai_info *aip)
 	case AIM_STILL:
 		ai_still();
 		break;
+	case AIM_FLY_TO_SHIP:	// same code as stay-near
 	case AIM_STAY_NEAR:
 		ai_stay_near();
 		break;
@@ -13929,9 +13845,6 @@ void ai_execute_behavior(ai_info *aip)
 		break;
 	case AIM_WAYPOINTS:
 		ai_waypoints();
-		break;
-	case AIM_FLY_TO_SHIP:
-		ai_fly_to_ship();
 		break;
 	case AIM_DOCK:
 		ai_dock();
@@ -15279,6 +15192,7 @@ void init_ai_object(int objnum)
 	aip->submode_start_time = 0;
 	aip->submode_parm0 = 0;
 	aip->submode_parm1 = 0;
+	aip->submode_float0 = 0.0f;
 	aip->active_goal = -1;
 	aip->goal_check_time = timestamp(0);
 	aip->last_predicted_enemy_pos = near_vec;
