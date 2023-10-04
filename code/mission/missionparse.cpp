@@ -2518,6 +2518,7 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 
 	if (ship_it != Ship_registry_map.end()) {
 		auto entry = &Ship_registry[ship_it->second];
+		entry->status = ShipStatus::NOT_YET_PRESENT;
 		entry->p_objp = p_objp;
 	}
 
@@ -4261,6 +4262,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 			if (!ship_registry_get(p_objp->name))
 			{
 				ship_registry_entry entry(p_objp->name);
+				entry.status = ShipStatus::NOT_YET_PRESENT;
 				entry.p_objp = p_objp;
 
 				Ship_registry.push_back(entry);
@@ -4880,6 +4882,7 @@ void post_process_ships_wings()
 	for (auto &p_obj : Parse_objects)
 	{
 		ship_registry_entry entry(p_obj.name);
+		entry.status = ShipStatus::NOT_YET_PRESENT;
 		entry.p_objp = &p_obj;
 
 		Ship_registry.push_back(entry);

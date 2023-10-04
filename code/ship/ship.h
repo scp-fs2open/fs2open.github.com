@@ -900,8 +900,11 @@ extern int ship_find_exited_ship_by_signature( int signature);
 // Stuff for overall ship status, useful for reference by sexps and scripts.  Status changes occur in the same frame as mission log entries.
 enum class ShipStatus
 {
+	// The ship_registry_entry hasn't been initialized yet
+	INVALID = 0,
+
 	// A ship is on the arrival list as a parse object
-	NOT_YET_PRESENT = 0,
+	NOT_YET_PRESENT,
 
 	// A ship is currently in-mission, and its objp and shipp pointers are valid
 	PRESENT,
@@ -915,7 +918,7 @@ enum class ShipStatus
 
 struct ship_registry_entry
 {
-	ShipStatus status = ShipStatus::NOT_YET_PRESENT;
+	ShipStatus status = ShipStatus::INVALID;
 	char name[NAME_LENGTH];
 
 	p_object *p_objp = nullptr;
