@@ -186,6 +186,11 @@ int ship_registry_get_index(const char *name)
 	return -1;
 }
 
+bool ship_registry_exists(const char *name)
+{
+	return Ship_registry_map.find(name) != Ship_registry_map.end();
+}
+
 const ship_registry_entry *ship_registry_get(const char *name)
 {
 	auto ship_it = Ship_registry_map.find(name);

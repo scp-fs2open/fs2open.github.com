@@ -4269,7 +4269,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 			}
 
 			// subsequent waves of ships will not be in the ship registry, so add them
-			if (!ship_registry_get(p_objp->name))
+			if (!ship_registry_exists(p_objp->name))
 			{
 				ship_registry_entry entry(p_objp->name);
 				entry.status = ShipStatus::NOT_YET_PRESENT;
@@ -8373,6 +8373,16 @@ void mission_bring_in_support_ship( object *requester_objp )
 			break;
 		i++;
 	} while(true);
+
+	// create a ship registry entry for the support ship
+	{
+		ship_registry_entry entry(pobj->name);
+		entry.status = ShipStatus::NOT_YET_PRESENT;
+		entry.p_objp = pobj;
+
+		Ship_registry.push_back(entry);
+		Ship_registry_map[pobj->name] = static_cast<int>(Ship_registry.size() - 1);
+	}
 
 	pobj->team = requester_shipp->team;
 
