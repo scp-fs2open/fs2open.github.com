@@ -2521,12 +2521,12 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 		auto entry = &Ship_registry[ship_it->second];
 
 		if (entry->status == ShipStatus::INVALID) {
-			Warning(LOCATION, "Potential in-game join bug: ship registry status for %s is INVALID", shipp->ship_name);
+			Warning(LOCATION, "Potential bug: ship registry status for %s is INVALID", shipp->ship_name);
 		}
 		if (entry->p_objp == nullptr) {
-			Warning(LOCATION, "Potential in-game join bug: ship registry parse object for %s is nullptr", shipp->ship_name);
+			Warning(LOCATION, "Potential bug: ship registry parse object for %s is nullptr", shipp->ship_name);
 		} else if (entry->p_objp != p_objp) {
-			Warning(LOCATION, "Potential in-game join bug: ship registry parse object for %s is different from its expected value", shipp->ship_name);
+			Warning(LOCATION, "Potential bug: ship registry parse object for %s is different from its expected value", shipp->ship_name);
 		}
 
 		entry->p_objp = p_objp;
