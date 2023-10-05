@@ -2514,11 +2514,21 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 	}
 
 	// assign/update parse object in ship registry entry if needed
+	// (this is unrelated to ship registry state management and is only here because apparently in-game joining needs it;
+	// in the normal course of ship creation, the pointers and status are updated elsewhere)
 	auto ship_it = Ship_registry_map.find(shipp->ship_name);
-
 	if (ship_it != Ship_registry_map.end()) {
 		auto entry = &Ship_registry[ship_it->second];
-		entry->status = ShipStatus::NOT_YET_PRESENT;
+
+		if (entry->status == ShipStatus::INVALID) {
+			Warning(LOCATION, "Potential in-game join bug: ship registry status for %s is INVALID", shipp->ship_name);
+		}
+		if (entry->p_objp == nullptr) {
+			Warning(LOCATION, "Potential in-game join bug: ship registry parse object for %s is nullptr", shipp->ship_name);
+		} else if (entry->p_objp != p_objp) {
+			Warning(LOCATION, "Potential in-game join bug: ship registry parse object for %s is different from its expected value", shipp->ship_name);
+		}
+
 		entry->p_objp = p_objp;
 	}
 
