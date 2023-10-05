@@ -129,7 +129,7 @@ void hud_render_gauges(int cockpit_display_num = -1);
 void hud_stop_looped_engine_sounds();
 
 // set the offset values for this render frame
-void HUD_set_offsets(object *viewer_obj, int wiggedy_wack, matrix *eye_orient);
+void HUD_set_offsets();
 // returns the offset between the player's view vector and the forward vector of the ship in pixels (Swifty)
 void HUD_get_nose_coordinates(int *x, int *y);
 

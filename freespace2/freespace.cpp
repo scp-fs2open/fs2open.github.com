@@ -3374,9 +3374,7 @@ void game_render_frame( camid cid )
 	}
 
 	if (!(Game_mode & GM_LAB)) {
-		// maybe offset the HUD (jitter stuff) and measure the 2D displacement between the player's view and ship vector
-		int dont_offset = ((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_OBSERVER));
-		HUD_set_offsets(Viewer_obj, !dont_offset, &eye_no_jitter);
+		HUD_set_offsets();
 	}
 
 	// for multiplayer clients, call code in Shield.cpp to set up the Shield_hit array.  Have to

@@ -3744,7 +3744,7 @@ int hud_objective_notify_active()
  * @param wiggedy_wack
  * @param eye_orient 
  */
-void HUD_set_offsets(object *viewer_obj, int wiggedy_wack, matrix *eye_orient)
+void HUD_set_offsets()
 {
 	if ( Viewer_mode & ( VM_TOPDOWN | VM_CHASE ) ) {
 		HUD_nose_x = 0;
