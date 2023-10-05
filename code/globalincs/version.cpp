@@ -53,41 +53,10 @@ version parse_version() {
 	return v;
 }
 version parse_version_inline() {
-	version v;
-
 	SCP_string input;
 	stuff_string(input, F_RAW);
 
-	size_t start_pos = 0;
-	size_t end_pos = input.find('.');
-
-	v.major = std::atoi(input.substr(start_pos, end_pos - start_pos).c_str());
-
-	if (end_pos == SCP_string::npos)
-		return v;
-
-	start_pos = end_pos + 1;
-	end_pos = input.find('.', start_pos);
-
-	v.minor = std::atoi(input.substr(start_pos, end_pos - start_pos).c_str());
-
-	if (end_pos == SCP_string::npos)
-		return v;
-
-	start_pos = end_pos + 1;
-	end_pos = input.find('.', start_pos);
-
-	v.build = std::atoi(input.substr(start_pos, end_pos - start_pos).c_str());
-
-	if (end_pos == SCP_string::npos)
-		return v;
-
-	start_pos = end_pos + 1;
-	end_pos = input.find('.', start_pos);
-
-	v.revision = std::atoi(input.substr(start_pos, end_pos - start_pos).c_str());
-
-	return v;
+	return version(std::move(input), 0);
 }
 version get_executable_version() {
 	version v;
@@ -103,7 +72,7 @@ version::version(int major_in, int minor_in, int build_in, int revision_in) :
 	major(major_in), minor(minor_in), build(build_in), revision(revision_in) {
 }
 
-version::version(const SCP_string& semver) : major(-1), minor(-1), build(-1), revision(-1) {
+version::version(const SCP_string& semver, int missing) : major(missing), minor(missing), build(missing), revision(missing) {
 	int i = 0;
 	auto str = semver;
 	while (i <= 4) {
