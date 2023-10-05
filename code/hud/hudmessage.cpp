@@ -1215,10 +1215,6 @@ void HudGaugeTalkingHead::render(float frametime)
 
 			int hx = tablePosX + Anim_offsets[0];
 			int hy = tablePosY + Anim_offsets[1];
-			/*if (gr_screen.rendering_to_texture == -1) {
-				hx += fl2i(HUD_offset_x);
-				hy += fl2i(HUD_offset_y);
-			}*/
 
 			generic_anim_render(head_anim,frametime, fl2ir(hx / scale_x), fl2ir(hy / scale_y));
 			// draw title

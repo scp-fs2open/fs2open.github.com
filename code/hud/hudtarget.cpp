@@ -2758,21 +2758,11 @@ void HudGaugeOrientationTee::renderOrientation(object *from_objp, object *to_obj
 	y1 += position[1];
 	x1 += position[0];
 
-	/*if (gr_screen.rendering_to_texture == -1) {
-		x1 += HUD_offset_x;
-		y1 += HUD_offset_y;
-	}*/
-
 	y2 = sinf(dot_product) * (Radius - T_OFFSET_FROM_CIRCLE - T_LENGTH);
 	x2 = cosf(dot_product) * (Radius - T_OFFSET_FROM_CIRCLE - T_LENGTH);
 
 	y2 += position[1];
 	x2 += position[0];
-
-	/*if (gr_screen.rendering_to_texture == -1) {
-		x2 += HUD_offset_x;
-		y2 += HUD_offset_y;
-	}*/
 
 	x3 = x1 - T_BASE_LENGTH * sinf(dot_product);
 	y3 = y1 + T_BASE_LENGTH * cosf(dot_product);
@@ -3011,8 +3001,8 @@ void HudGaugeReticleTriangle::renderTriangle(vec3d *hostile_pos, int aspect_flag
 	}
 	else {
 		//Technically not non-slewing, but keeps old behaviour
-		tablePosX = position[0] + fl2i(/*HUD_offset_x +*/HUD_nose_x);
-		tablePosY = position[1] + fl2i(/*HUD_offset_y +*/HUD_nose_y);
+		tablePosX = position[0] + fl2i(HUD_nose_x);
+		tablePosY = position[1] + fl2i(HUD_nose_y);
 	}								   
 
 	if (hostile_vertex.codes == 0)  { // on screen
@@ -4288,7 +4278,7 @@ void HudGaugeLeadSight::renderSight(int frame_offset, vec3d *target_pos, vec3d *
 
 		//We need to do slewing manually only on the non-3D-dependant part of the hud, so make the rendering function believe that we don't slew
 		reticle_follow = false;
-		renderBitmap(Lead_sight.first_frame + frame_offset, fl2i(reticle_target_sx)/* + fl2i(HUD_offset_x)*/, fl2i(reticle_target_sy)/* + fl2i(HUD_offset_y)*/);
+		renderBitmap(Lead_sight.first_frame + frame_offset, fl2i(reticle_target_sx), fl2i(reticle_target_sy));
 		reticle_follow = do_slew;
 	}
 }

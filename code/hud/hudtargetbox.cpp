@@ -1329,12 +1329,6 @@ void HudGaugeTargetBox::renderTargetJumpNode(object *target_objp)
 			dist = dist * Hud_unit_multiplier;
 		}
 
-		// account for hud shaking
-		/*if (gr_screen.rendering_to_texture == -1) {
-			hx = fl2i(HUD_offset_x);
-			hy = fl2i(HUD_offset_y);
-		}*/
-
 		sprintf(outstr,XSTR( "d: %.0f", 340), dist);
 		hud_num_make_mono(outstr, font_num);
 		gr_get_string_size(&w,&h,outstr);
@@ -2113,21 +2107,13 @@ void HudGaugeTargetBox::showTargetData(float  /*frametime*/)
 			break;
 	}
 
-	int hx = 0, hy = 0;
-
-	// Account for HUD shaking
-	/*if (gr_screen.rendering_to_texture == -1) {
-		hx = fl2i(HUD_offset_x);
-		hy = fl2i(HUD_offset_y);
-	}*/
-
 	// print out the target distance and speed
 	sprintf(outstr,XSTR( "d: %.0f%s", 350), displayed_target_distance, modifiers[Player_ai->current_target_dist_trend]);
 
 	hud_num_make_mono(outstr, font_num);
 	gr_get_string_size(&w,&h,outstr);
 
-	renderString(position[0] + Dist_offsets[0]+hx, position[1] + Dist_offsets[1]+hy, EG_TBOX_DIST, outstr);	
+	renderString(position[0] + Dist_offsets[0], position[1] + Dist_offsets[1], EG_TBOX_DIST, outstr);	
 
 #if 0
 	current_target_speed = vm_vec_dist(&target_objp->pos, &target_objp->last_pos) / frametime;
@@ -2155,7 +2141,7 @@ void HudGaugeTargetBox::showTargetData(float  /*frametime*/)
 	sprintf(outstr, XSTR( "s: %.0f%s", 351), displayed_target_speed, (displayed_target_speed>1)?modifiers[Player_ai->current_target_speed_trend]:"");
 	hud_num_make_mono(outstr, font_num);
 
-	renderString(position[0] + Speed_offsets[0]+hx, position[1] + Speed_offsets[1]+hy, EG_TBOX_SPEED, outstr);
+	renderString(position[0] + Speed_offsets[0], position[1] + Speed_offsets[1], EG_TBOX_SPEED, outstr);
 
 	//
 	// output target info for debug purposes only, this will be removed later
