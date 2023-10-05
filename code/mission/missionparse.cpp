@@ -2514,11 +2514,21 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 	}
 
 	// assign/update parse object in ship registry entry if needed
+	// (this is unrelated to ship registry state management and is only here because apparently in-game joining needs it;
+	// in the normal course of ship creation, the pointers and status are updated elsewhere)
 	auto ship_it = Ship_registry_map.find(shipp->ship_name);
-
 	if (ship_it != Ship_registry_map.end()) {
 		auto entry = &Ship_registry[ship_it->second];
-		entry->status = ShipStatus::NOT_YET_PRESENT;
+
+		if (entry->status == ShipStatus::INVALID) {
+			Warning(LOCATION, "Potential bug: ship registry status for %s is INVALID", shipp->ship_name);
+		}
+		if (entry->p_objp == nullptr) {
+			Warning(LOCATION, "Potential bug: ship registry parse object for %s is nullptr", shipp->ship_name);
+		} else if (entry->p_objp != p_objp) {
+			Warning(LOCATION, "Potential bug: ship registry parse object for %s is different from its expected value", shipp->ship_name);
+		}
+
 		entry->p_objp = p_objp;
 	}
 
@@ -4259,7 +4269,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 			}
 
 			// subsequent waves of ships will not be in the ship registry, so add them
-			if (!ship_registry_get(p_objp->name))
+			if (!ship_registry_exists(p_objp->name))
 			{
 				ship_registry_entry entry(p_objp->name);
 				entry.status = ShipStatus::NOT_YET_PRESENT;
@@ -8363,6 +8373,16 @@ void mission_bring_in_support_ship( object *requester_objp )
 			break;
 		i++;
 	} while(true);
+
+	// create a ship registry entry for the support ship
+	{
+		ship_registry_entry entry(pobj->name);
+		entry.status = ShipStatus::NOT_YET_PRESENT;
+		entry.p_objp = pobj;
+
+		Ship_registry.push_back(entry);
+		Ship_registry_map[pobj->name] = static_cast<int>(Ship_registry.size() - 1);
+	}
 
 	pobj->team = requester_shipp->team;
 
