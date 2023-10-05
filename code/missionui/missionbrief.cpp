@@ -1123,23 +1123,30 @@ void brief_render_closeup(int ship_class, float frametime)
 	model_render_params render_info;
 	render_info.set_detail_level_lock(0);
 
-	if (shadow_maybe_start_frame(Shadow_disable_overrides.disable_mission_select_ships))
+	if (Closeup_icon->type == ICON_JUMP_NODE)
 	{
-		auto pm = model_get(Closeup_icon->modelnum);
-
-		gr_reset_clip();
-		shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, gr_screen.clip_aspect, -Closeup_cam_pos.xyz.z + pm->rad, -Closeup_cam_pos.xyz.z + pm->rad + 200.0f, -Closeup_cam_pos.xyz.z + pm->rad + 2000.0f, -Closeup_cam_pos.xyz.z + pm->rad + 10000.0f);
-		render_info.set_flags(MR_NO_TEXTURING | MR_NO_LIGHTING | MR_AUTOCENTER);
-
-		model_render_immediate(&render_info, Closeup_icon->modelnum, Closeup_icon->model_instance_num, &Closeup_orient, &Closeup_pos);
-		shadows_end_render();
-		gr_set_clip(Closeup_region[gr_screen.res][0], Closeup_region[gr_screen.res][1], w, h, GR_RESIZE_MENU);
-	}
-
-	if ( Closeup_icon->type == ICON_JUMP_NODE) {
 		render_info.set_color(HUD_color_red, HUD_color_green, HUD_color_blue);
 		render_info.set_flags(MR_NO_LIGHTING | MR_AUTOCENTER | MR_NO_POLYS | MR_SHOW_OUTLINE_HTL | MR_NO_TEXTURING);
-	} else {
+	}
+	else
+	{
+		if (shadow_maybe_start_frame(Shadow_disable_overrides.disable_mission_select_ships))
+		{
+			auto pm = model_get(Closeup_icon->modelnum);
+
+			gr_reset_clip();
+			shadows_start_render(&Eye_matrix, &Eye_position, Proj_fov, gr_screen.clip_aspect, -Closeup_cam_pos.xyz.z + pm->rad, -Closeup_cam_pos.xyz.z + pm->rad + 200.0f, -Closeup_cam_pos.xyz.z + pm->rad + 2000.0f, -Closeup_cam_pos.xyz.z + pm->rad + 10000.0f);
+			render_info.set_flags(MR_NO_TEXTURING | MR_NO_LIGHTING | MR_AUTOCENTER);
+
+			model_render_immediate(&render_info, Closeup_icon->modelnum, Closeup_icon->model_instance_num, &Closeup_orient, &Closeup_pos);
+			shadows_end_render();
+			gr_set_clip(Closeup_region[gr_screen.res][0], Closeup_region[gr_screen.res][1], w, h, GR_RESIZE_MENU);
+		}
+
+		auto sip = &Ship_info[ship_class];
+		if (!sip->replacement_textures.empty())
+			render_info.set_replacement_textures(Closeup_icon->modelnum, sip->replacement_textures);
+
 		render_info.set_flags(MR_AUTOCENTER);
 	}
 
