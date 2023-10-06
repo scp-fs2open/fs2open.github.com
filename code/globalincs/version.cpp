@@ -103,7 +103,7 @@ version::version(const SCP_string& semver, int missing) : major(missing), minor(
 				++has_fields;
 				break;
 			case 3:
-				revision = std::stoi(str.c_str());
+				revision = std::stoi(ver.c_str());
 			++has_fields;
 				break;
 			default:
