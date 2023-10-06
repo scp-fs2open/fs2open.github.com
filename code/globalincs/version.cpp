@@ -75,31 +75,45 @@ version::version(int major_in, int minor_in, int build_in, int revision_in) :
 version::version(const SCP_string& semver, int missing) : major(missing), minor(missing), build(missing), revision(missing) {
 	int i = 0;
 	auto str = semver;
+	int has_fields = 0;
 	while (i <= 4) {
 		size_t pos = str.find_first_of('.');
+		SCP_string ver;
 		if (pos != SCP_string::npos) {
-			auto ver = str.substr(0, pos);
-			if (!ver.empty() && std::find_if(ver.begin(), ver.end(), [](char c) { return !std::isdigit(c, SCP_default_locale); }) == ver.end()) {
-				if (major < 0) {
-					major = std::stoi(str.c_str());
-				}
-				else if (minor < 0) {
-					minor = std::stoi(str.c_str());
-				}
-				else if (build < 0) {
-					build = std::stoi(str.c_str());
-				}
-				str.erase(0, pos + 1);
-			}
-			else if (major < 0) {
-				break; //Break out of the loop if the first string is not a digit.
+			ver = str.substr(0, pos);
+			str.erase(0, pos + 1);
+		}
+		else {
+			ver = str;
+			str.clear();
+		}
+
+		if (!ver.empty() && std::find_if(ver.begin(), ver.end(), [](char c) { return !std::isdigit(c, SCP_default_locale); }) == ver.end()) {
+			switch (has_fields) {
+			case 0:
+				major = std::stoi(ver.c_str());
+				++has_fields;
+				break;
+			case 1:
+				minor = std::stoi(ver.c_str());
+				++has_fields;
+				break;
+			case 2:
+				build = std::stoi(ver.c_str());
+				++has_fields;
+				break;
+			case 3:
+				revision = std::stoi(str.c_str());
+			++has_fields;
+				break;
+			default:
+				UNREACHABLE("Version parsing broken, get a coder!");
+				break;
 			}
 		}
-		else if ((major > -1) && (minor > -1) && (build > -1) && (!str.empty() && std::find_if(str.begin(), str.end(), [](char c) {
-			return !std::isdigit(c, SCP_default_locale);
-			}) == str.end())) {
-			revision = std::stoi(str.c_str());
-		}
+		else 
+			break; //Break out of the loop if the first string is not a digit.
+		
 		i++;
 	}
 }
