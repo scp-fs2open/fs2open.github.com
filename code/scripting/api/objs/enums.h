@@ -140,8 +140,10 @@ enum lua_enum : int32_t {
 	LE_SCORE_DEBRIEFING_AVERAGE,
 	LE_SCORE_DEBRIEFING_FAILURE,
 	LE_SCORE_FICTION_VIEWER,
-	LE_NOT_YET_PRESENT, // the sequence and offsets of these three #defines should correspond to the ShipStatus enums
+	LE_INVALID, // the sequence and offsets of these five #defines should correspond to the ShipStatus enums
+	LE_NOT_YET_PRESENT,
 	LE_PRESENT,
+	LE_DEATH_ROLL,
 	LE_EXITED,
 	LE_DC_IS_HULL,
 	LE_DC_VAPORIZE,
