@@ -2019,7 +2019,7 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 			// short circuit a couple of cases.  Ship not arrived shouldn't happen.  Ship gone means
 			// we mark the goal as not achievable.
 			if ( status == SHIP_STATUS_NOT_ARRIVED ) {
-				UNREACHABLE("Ship %s cannot rearm a ship that hasn't arrived; get Allender or a SCP member", Ships[objp->instance].ship_name);	// get Allender.  this shouldn't happen!!!
+				UNREACHABLE("Ship %s cannot rearm a target %s that hasn't arrived; get Allender or a SCP member", Ships[objp->instance].ship_name, aigp->target_name);	// get Allender.  this shouldn't happen!!!
 				return ai_achievability::NOT_ACHIEVABLE;
 			}
 
