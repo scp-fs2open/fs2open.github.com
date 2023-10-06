@@ -7560,13 +7560,16 @@ void game_title_screen_display()
 		}), Splash_screens.end()
 	);
 
+	const char* filename;
 	if (Splash_screens.size() == 1) {
-		Game_title_bitmap = bm_load(Splash_screens[0].filename.c_str());
+		filename = Splash_screens[0].filename.c_str();
 	} else if (!Splash_screens.empty()) {
-		Game_title_bitmap = bm_load(Splash_screens[Random::next((int)Splash_screens.size())].filename.c_str());
+		filename = Splash_screens[Random::next((int)Splash_screens.size())].filename.c_str();
 	} else {
-		Game_title_bitmap = bm_load(Game_title_screen_fname[gr_screen.res]);
+		filename = Game_title_screen_fname[gr_screen.res];
 	}
+	mprintf(("Loading %s as splash screen\n", filename));
+	Game_title_bitmap = bm_load(filename);
 
 	if (Splash_fade_in_time > 0) {
 		float alpha = 0.0f;
