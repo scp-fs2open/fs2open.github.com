@@ -1208,17 +1208,19 @@ void HudGaugeTalkingHead::render(float frametime)
 
 			//renderBitmap is slew corrected, so use uncorrected position
 			renderBitmap(Head_frame.first_frame, position[0], position[1]);		// head ani border
-			float scale_x = i2fl(Anim_size[0]) / i2fl(head_anim->width);
-			float scale_y = i2fl(Anim_size[1]) / i2fl(head_anim->height);
-			gr_set_screen_scale(fl2ir(base_w / scale_x), fl2ir(base_h / scale_y));
-			setGaugeColor();
 
 			int hx = tablePosX + Anim_offsets[0];
 			int hy = tablePosY + Anim_offsets[1];
 
-			generic_anim_render(head_anim,frametime, fl2ir(hx / scale_x), fl2ir(hy / scale_y));
-			// draw title
+			if (gr_screen.rendering_to_texture != -1) 
+				gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, target_w, target_h, true);
+			else
+				gr_set_screen_scale(base_w, base_h);
+
+			generic_anim_render_ex(head_anim,frametime, hx, hy, Anim_size[0], Anim_size[1]);
 			gr_reset_screen_scale();
+
+			// draw title
 			renderString(position[0] + Header_offsets[0], position[1] + Header_offsets[1], XSTR("message", 217));
 		} else {
 			for (int j = 0; j < Num_messages_playing; ++j) {
