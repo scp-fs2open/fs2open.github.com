@@ -225,7 +225,8 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/batched-f.sdr
 	def_files/data/effects/batched-v.sdr
 	def_files/data/effects/bloom-comp-f.sdr
-	def_files/data/effects/blur-f.sdr
+	def_files/data/effects/bloom-downsample-f.sdr
+	def_files/data/effects/bloom-upsample-f.sdr
 	def_files/data/effects/brightpass-f.sdr
 	def_files/data/effects/copy-f.sdr
 	def_files/data/effects/decal-f.sdr
@@ -240,6 +241,7 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/effect-g.sdr
 	def_files/data/effects/effect-v.sdr
 	def_files/data/effects/envmap-sphere-warp-f.sdr
+	def_files/data/effects/filter-tent.sdr
 	def_files/data/effects/fog-f.sdr
 	def_files/data/effects/fxaa-f.sdr
 	def_files/data/effects/fxaa-v.sdr
