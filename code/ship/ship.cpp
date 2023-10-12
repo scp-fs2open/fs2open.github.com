@@ -13657,12 +13657,9 @@ bool ship_select_next_primary(object *objp, CycleDirection direction)
 	auto sip = &Ship_info[shipp->ship_info_index];
 	auto swp = &shipp->weapons;
 
-	Assert((swp->current_primary_bank >= 0) && (swp->current_primary_bank < swp->num_primary_banks));
-
 	auto original_bank = swp->current_primary_bank;
 	auto original_link_flag = shipp->flags[Ship_Flags::Primary_linked];
 
-	// redid case structure to possibly add more primaries in the future - Goober5000
 	if ( swp->num_primary_banks == 0 )
 	{
 		if ( objp == Player_obj )
@@ -13686,6 +13683,8 @@ bool ship_select_next_primary(object *objp, CycleDirection direction)
 		UNREACHABLE("The ship %s has more primary banks than the maximum!", shipp->ship_name);
 		return false;
 	}
+
+	Assert((swp->current_primary_bank >= 0) && (swp->current_primary_bank < swp->num_primary_banks));
 
 	// set parameters based on direction
 	// (need the != operator to make this work for both)
