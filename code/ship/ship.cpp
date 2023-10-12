@@ -13621,7 +13621,7 @@ done_secondary:
 }
 
 // Goober5000
-static int primary_out_of_ammo(ship_weapon *swp, int bank)
+static bool primary_out_of_ammo(const ship_weapon *swp, int bank)
 {
 	// true if both ballistic and ammo <= 0,
 	// false if not ballistic or if ballistic and ammo > 0
@@ -13630,24 +13630,11 @@ static int primary_out_of_ammo(ship_weapon *swp, int bank)
 	{
 		if (swp->primary_bank_ammo[bank] <= 0)
 		{
-			return 1;
+			return true;
 		}
 	}
 
 	// note: never out of ammo if not ballistic
-	return 0;
-}
-
-static bool ship_has_a_ballistic_primary(const ship *shipp)
-{
-	const ship_weapon *swp = &shipp->weapons;
-
-	for (int i = 0; i < swp->num_primary_banks; i++)
-	{
-		if (Weapon_info[swp->primary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::Ballistic])
-			return true;
-	}
-
 	return false;
 }
 
@@ -13655,40 +13642,25 @@ static bool ship_has_a_ballistic_primary(const ship *shipp)
  * Return true if a new index gets selected.
  * 
  * @param objp      pointer to object for ship cycling primary
- * @param direction forward == CYCLE_PRIMARY_NEXT, backward == CYCLE_PRIMARY_PREV
+ * @param direction forward == CycleDirection::NEXT, backward == CycleDirection::PREV
  *
  * NOTE: This code can be called for any arbitrary ship.  HUD messages and sounds are only used
  *       for the player ship.
  */
-int ship_select_next_primary(object *objp, int direction)
+bool ship_select_next_primary(object *objp, CycleDirection direction)
 {
-	ship	*shipp;
-	ship_info *sip;
-	ship_weapon *swp;
-	int new_bank;
-	int original_bank;
-	int i;
-
 	Assert(objp != NULL);
 	Assert(objp->type == OBJ_SHIP);
 	Assert(objp->instance >= 0 && objp->instance < MAX_SHIPS);
 
-	shipp = &Ships[objp->instance];
-	sip = &Ship_info[shipp->ship_info_index];
-	swp = &shipp->weapons;
+	auto shipp = &Ships[objp->instance];
+	auto sip = &Ship_info[shipp->ship_info_index];
+	auto swp = &shipp->weapons;
 
-	Assert(direction == CYCLE_PRIMARY_NEXT || direction == CYCLE_PRIMARY_PREV);
+	Assert((swp->current_primary_bank >= 0) && (swp->current_primary_bank < swp->num_primary_banks));
 
-	original_bank = swp->current_primary_bank;
+	auto original_bank = swp->current_primary_bank;
 	auto original_link_flag = shipp->flags[Ship_Flags::Primary_linked];
-
-	// check if at least two weapons can be linked
-	int num_linkable_weapons = 0;
-	for (int j = 0; j < swp->num_primary_banks; j++) {
-		if (!Weapon_info[swp->primary_bank_weapons[j]].wi_flags[Weapon::Info_Flags::Nolink]) {
-			num_linkable_weapons++;
-		}
-	}
 
 	// redid case structure to possibly add more primaries in the future - Goober5000
 	if ( swp->num_primary_banks == 0 )
@@ -13698,7 +13670,7 @@ int ship_select_next_primary(object *objp, int direction)
 			HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR( "This ship has no primary weapons", 490));
 			gamesnd_play_error_beep();
 		}
-		return 0;
+		return false;
 	}
 	else if ( swp->num_primary_banks == 1 )
 	{
@@ -13707,129 +13679,97 @@ int ship_select_next_primary(object *objp, int direction)
 			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "This ship has only one primary weapon: %s", 491),Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]].get_display_name(), swp->current_primary_bank + 1);
 			gamesnd_play_error_beep();
 		}
-		return 0;
+		return false;
 	}
 	else if ( swp->num_primary_banks > MAX_SHIP_PRIMARY_BANKS )
 	{
-		Int3();
-		return 0;
+		UNREACHABLE("The ship %s has more primary banks than the maximum!", shipp->ship_name);
+		return false;
+	}
+
+	// set parameters based on direction
+	// (need the != operator to make this work for both)
+	int start, end, increment;
+	if (direction == CycleDirection::NEXT)
+	{
+		start = 0;
+		end = swp->num_primary_banks;
+		increment = 1;
 	}
 	else
 	{
-		Assert((swp->current_primary_bank >= 0) && (swp->current_primary_bank < swp->num_primary_banks));
-
-		// first check if linked
-		if ( shipp->flags[Ship_Flags::Ship_selective_linking] )
-		{
-			printf("npb:%i\n", swp->num_primary_banks );
-		}
-
-		if ( shipp->flags[Ship_Flags::Primary_linked] )
-		{
-			shipp->flags.remove(Ship_Flags::Primary_linked);
-			if ( direction == CYCLE_PRIMARY_NEXT )
-			{
-				swp->current_primary_bank = 0;
-			}
-			else
-			{
-				swp->current_primary_bank = swp->num_primary_banks - 1;
-			}
-		}
-		// now handle when not linked: cycle and constrain
-		else
-		{
-			if ( direction == CYCLE_PRIMARY_NEXT )
-			{
-				if ( swp->current_primary_bank < swp->num_primary_banks - 1 )
-				{
-					swp->current_primary_bank++;
-				}
-				else if( sip->flags[Ship::Info_Flags::No_primary_linking] || (num_linkable_weapons <= 1))
-				{
-					swp->current_primary_bank = 0;
-				}
-				else
-				{
-					shipp->flags.set(Ship_Flags::Primary_linked);
-				}
-			}
-			else
-			{
-				if ( swp->current_primary_bank > 0 )
-				{
-					swp->current_primary_bank--;
-				}
-				else if( sip->flags[Ship::Info_Flags::No_primary_linking] || (num_linkable_weapons <= 1))
-				{
-					swp->current_primary_bank = swp->num_primary_banks - 1;
-				}
-				else
-				{
-					shipp->flags.set(Ship_Flags::Primary_linked);
-				}
-			}
-		}
+		start = swp->num_primary_banks - 1;
+		end = -1;
+		increment = -1;
 	}
 
-	// test for ballistics - Goober5000
-	if (ship_has_a_ballistic_primary(shipp))
+	// first check if linked
+	if (shipp->flags[Ship_Flags::Primary_linked])
 	{
-		// if we can't link, disengage primary linking and change to next available bank
-		if (shipp->flags[Ship_Flags::Primary_linked])
+		shipp->flags.remove(Ship_Flags::Primary_linked);
+
+		// chose the first possible bank in whatever direction
+		bool found = false;
+		for (int bank = start; bank != end; bank += increment)
 		{
-			for (i = 0; i < swp->num_primary_banks; i++)
+			if (!primary_out_of_ammo(swp, bank))
 			{
-				if (!Weapon_info[swp->primary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::Nolink] && primary_out_of_ammo(swp, i)) // We only care if linkable primaries are out of ammo.
-				{
-					shipp->flags.remove(Ship_Flags::Primary_linked);
-					
-					if (direction == CYCLE_PRIMARY_NEXT)
-					{
-						swp->current_primary_bank = 0;
-					}
-					else
-					{
-						swp->current_primary_bank = shipp->weapons.num_primary_banks-1;
-					}
-					break;
-				}
+				swp->current_primary_bank = bank;
+				found = true;
+				break;
+			}
+		}
+		if (!found)
+			swp->current_primary_bank = start;
+	}
+	// now handle when not linked: cycle and constrain
+	else
+	{
+		int bank = swp->current_primary_bank;
+
+		// see if we can choose a bank in our cycle direction
+		bool found = false, looped = false;
+		for (int i = 0; i < swp->num_primary_banks; ++i)
+		{
+			bank += increment;
+
+			if (bank == end)
+			{
+				looped = true;
+				bank = start;
+			}
+
+			if (!primary_out_of_ammo(swp, bank))
+			{
+				found = true;
+				break;
 			}
 		}
 
-		// check to see if we keep cycling...we have to if we're out of ammo in the current bank
-		if ( primary_out_of_ammo(swp, swp->current_primary_bank) )
+		// if there are no valid banks, we can't do anything; a bank must be found to either cycle or link
+		if (found)
 		{
-			// cycle around until we find ammunition...
-			// we land on the original bank if all banks fail
-			Assert(swp->current_primary_bank < swp->num_primary_banks);
-			new_bank = swp->current_primary_bank;
-
-			for (i = 1; i < swp->num_primary_banks; i++)
+			// we might want to link
+			if (looped && !sip->flags[Ship::Info_Flags::No_primary_linking])
 			{
-				// cycle in the proper direction
-				if ( direction == CYCLE_PRIMARY_NEXT )
-				{
-					new_bank = (swp->current_primary_bank + i) % swp->num_primary_banks;
-				}
+				// check if at least two weapons can be linked
+				int num_linkable_weapons = 0;
+				for (int j = 0; j < swp->num_primary_banks; ++j)
+					if (!primary_out_of_ammo(swp, j) && !Weapon_info[swp->primary_bank_weapons[j]].wi_flags[Weapon::Info_Flags::Nolink])
+						num_linkable_weapons++;
+
+				// link them
+				if (num_linkable_weapons > 1)
+					shipp->flags.set(Ship_Flags::Primary_linked);
+				// otherwise just cycle
 				else
-				{
-					new_bank = (swp->current_primary_bank + swp->num_primary_banks - i) % swp->num_primary_banks;
-				}
-
-				// check to see if this is a valid bank
-				if (!primary_out_of_ammo(swp, new_bank))
-				{
-					break;
-				}
+					swp->current_primary_bank = bank;
 			}
-			// set the new bank; defaults to resetting to the old bank if we completed a full iteration
-			swp->current_primary_bank = new_bank;
+			// otherwise just cycle
+			else
+				swp->current_primary_bank = bank;
 		}
-		
-		// make sure we're okay
-		Assert((swp->current_primary_bank >= 0) && (swp->current_primary_bank < swp->num_primary_banks));
-	}	// end of ballistics implementation
+	}
 
 	swp->previous_primary_bank = original_bank;
 
@@ -13837,20 +13777,18 @@ int ship_select_next_primary(object *objp, int direction)
 	if ( (swp->current_primary_bank != original_bank) || ((shipp->flags[Ship_Flags::Primary_linked]) != original_link_flag) )
 	{
 		if ( objp == Player_obj )
-		{
 			snd_play( gamesnd_get_game_sound(ship_get_sound(objp, GameSounds::PRIMARY_CYCLE)), 0.0f );
-		}
+
 		ship_primary_changed(shipp);
-		objp = &Objects[shipp->objnum];
+
 		object* target;
 		if (Ai_info[shipp->ai_index].target_objnum != -1)
 			target = &Objects[Ai_info[shipp->ai_index].target_objnum];
 		else
 			target = NULL;
-		if (objp == Player_obj && Player_ai->target_objnum != -1)
-			target = &Objects[Player_ai->target_objnum];
 
-		if (scripting::hooks::OnWeaponSelected->isActive() || scripting::hooks::OnWeaponDeselected->isActive()) {
+		if (scripting::hooks::OnWeaponSelected->isActive() || scripting::hooks::OnWeaponDeselected->isActive())
+		{
 			auto param_list = scripting::hook_param_list(
 				scripting::hook_param("User", 'o', objp),
 				scripting::hook_param("Target", 'o', target)
@@ -13859,15 +13797,14 @@ int ship_select_next_primary(object *objp, int direction)
 			scripting::hooks::OnWeaponDeselected->run(scripting::hooks::WeaponDeselectedConditions{ shipp, swp->current_primary_bank, original_bank, true }, param_list);
 		}
 
-		return 1;
+		return true;
 	}
 
 	// could not select new weapon:
 	if ( objp == Player_obj )
-	{
 		gamesnd_play_error_beep();
-	}
-	return 0;
+
+	return false;
 }
 
 // ------------------------------------------------------------------------------
