@@ -1761,6 +1761,16 @@ bool SetCmdlineParams()
 			Warning(LOCATION, "Failed to parse -window_res parameter \"%s\". Must be in format \"<width>x<height>\".\n", window_res_arg.str());
 		}
 	}
+	if(window_res_arg.found()){
+		int width = 0;
+		int height = 0;
+
+		if ( sscanf(window_res_arg.str(), "%dx%d", &width, &height) == 2 ) {
+			Cmdline_window_res.emplace(width, height);
+		} else {
+			mprintf(("Failed to parse -res parameter \"%s\". Must be in format \"<width>x<height>\".\n", Cmdline_res));
+		}
+	}
 	if(center_res_arg.found()){
 		Cmdline_center_res = center_res_arg.str();
 	}

@@ -216,17 +216,18 @@ bool gr_opengl_openxr_flip() {
 
 		GR_DEBUG_SCOPE("XR Blit");
 
-		GL_state.BindFrameBuffer(0, GL_READ_FRAMEBUFFER);
+		GL_state.PushFramebufferState();
 		GL_state.BindFrameBuffer(xr_fbo, GL_DRAW_FRAMEBUFFER);
+		GL_state.BindFrameBuffer(Cmdline_window_res ? Back_framebuffer : 0, GL_READ_FRAMEBUFFER);
 
 		glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, xr_swap_tex, 0);
 
 		glDrawBuffer(GL_COLOR_ATTACHMENT0);
-		glReadBuffer(GL_BACK);
+		glReadBuffer(Cmdline_window_res ? GL_COLOR_ATTACHMENT0 : GL_BACK);
 		glBlitFramebuffer(0, 0, gr_screen.max_w, gr_screen.max_h, 0, 0, gr_screen.max_w, gr_screen.max_h, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-		
 		glDrawBuffer(GL_NONE);
-		GL_state.BindFrameBuffer(0);
+
+		GL_state.PopFramebufferState();
 	}
 
 	uint32_t startFrame = xr_stage == OpenXRFBStage::SECOND ? 1 : 0;
@@ -254,6 +255,8 @@ bool gr_opengl_openxr_flip() {
 		//Monoframe mode: We only have one image that FSO just tried to flip. We have it in a readable texture which we'll now render as a flat plane in a fake 3D scene directly to the swapchain
 		if (xr_stage == OpenXRFBStage::NONE) {
 			GR_DEBUG_SCOPE("XR Plane");
+
+			GL_state.PushFramebufferState();
 			GL_state.BindFrameBuffer(xr_fbo);
 
 			glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, image.image, 0);
@@ -354,24 +357,26 @@ bool gr_opengl_openxr_flip() {
 
 			GL_state.Texture.Enable(0);
 			glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, 0, 0);
-
 			glDrawBuffer(GL_NONE);
-			GL_state.BindFrameBuffer(0);
+
+			GL_state.PopFramebufferState();
 		}
 		//If we are in stereo mode, we just need to take the current backbuffer and blit it to the proper swapchain target
 		else {
 			GR_DEBUG_SCOPE("XR Blit");
-			GL_state.BindFrameBuffer(0, GL_READ_FRAMEBUFFER);
+
+			GL_state.PushFramebufferState();
 			GL_state.BindFrameBuffer(xr_fbo, GL_DRAW_FRAMEBUFFER);
+			GL_state.BindFrameBuffer(Cmdline_window_res ? Back_framebuffer : 0, GL_READ_FRAMEBUFFER);
 
 			glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, image.image, 0);
 			glDrawBuffer(GL_COLOR_ATTACHMENT0);
-			glReadBuffer(GL_BACK);
+			glReadBuffer(Cmdline_window_res ? GL_COLOR_ATTACHMENT0 : GL_BACK);
 			glBlitFramebuffer(0, 0, gr_screen.max_w, gr_screen.max_h, 0, 0, xr_swapchains[i]->width, xr_swapchains[i]->height, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 			glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, 0, 0);
-
 			glDrawBuffer(GL_NONE);
-			GL_state.BindFrameBuffer(0);
+
+			GL_state.PopFramebufferState();
 		}
 
 		XrSwapchainImageReleaseInfo releaseImageInfo {
