@@ -6,12 +6,13 @@
  * source.
  *
 
-*/ 
+*/
 
 
 #ifndef FS_CMDLINE_HEADER_FILE
 #define FS_CMDLINE_HEADER_FILE
 
+#include <tl/optional.hpp>
 
 int parse_cmdline(int argc, char *argv[]);
 
@@ -46,6 +47,7 @@ extern int Cmdline_use_last_pilot;
 extern int Cmdline_window;
 extern int Cmdline_fullscreen_window;
 extern char *Cmdline_res;
+extern tl::optional<std::pair<uint16_t, uint16_t>>Cmdline_window_res;
 extern char *Cmdline_center_res;
 
 
