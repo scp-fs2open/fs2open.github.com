@@ -30,11 +30,13 @@ extern XrTime xr_time; //The last known time something happened. May be the last
 extern std::array<std::unique_ptr<XrSwapchainHandler>, 2> xr_swapchains;
 extern std::array<XrView, 2> xr_views;
 extern XrFrameState xr_state;
+extern vec3d xr_offset;
 
 enum class OpenXRFBStage { NONE, FIRST, SECOND };
 extern OpenXRFBStage xr_stage; //State machine tracker for rendering. Needed since OpenXR needs to be able to tell whether this is a stereoscopic frame or not whenever the code flips
 
 void openxr_start_frame();
+void openxr_reset_offset();
 
 template<typename openxr_fnc, typename... arg_t>
 tl::optional<typename std::result_of<openxr_fnc(arg_t...)>::type> openxr_callExtensionFunction(const char* const name, arg_t&&... args) {

@@ -209,6 +209,8 @@ bool gr_opengl_openxr_flip() {
 	if (!openxr_enabled())
 		return false;
 
+	static bool was_multiframe = false;
+
 	//If a stereoscopic frame has started, we're good. Otherwise, this is a normal frame that still needs to be OpenXR-Initialized
 	//In addition, since we don't actually blit one backbuffer per eye in monoframe mode, we need to make a copy of it to a readable texture now.
 	if (xr_stage == OpenXRFBStage::NONE) {
@@ -228,7 +230,14 @@ bool gr_opengl_openxr_flip() {
 		glDrawBuffer(GL_NONE);
 
 		GL_state.PopFramebufferState();
+
+		if (was_multiframe) {
+			openxr_reset_offset();
+			was_multiframe = false; 
+		}
 	}
+	else
+		was_multiframe = true;
 
 	uint32_t startFrame = xr_stage == OpenXRFBStage::SECOND ? 1 : 0;
 	uint32_t endFrame = xr_stage == OpenXRFBStage::FIRST ? 1 : 2;
@@ -268,6 +277,7 @@ bool gr_opengl_openxr_flip() {
 			const auto& pos = xr_views[i].pose.position;
 			const auto& ori = xr_views[i].pose.orientation;
 			vec3d position{{ { pos.x, pos.y, -pos.z } }};
+			position -= xr_offset;
 			matrix orientation;
 			vm_quaternion_to_matrix(&orientation, ori.x, ori.y, -ori.z, -ori.w);
 			
@@ -286,16 +296,16 @@ bool gr_opengl_openxr_flip() {
 
 			GLfloat v[4][5] = {
 				{
-					-2.0f * gr_screen.clip_aspect, -1.0f, 5, 0, 0
+					-2.0f * gr_screen.clip_aspect, -2.0f, 4, 0, 0
 				},
 				{
-					2.0f * gr_screen.clip_aspect, -1.0f, 5, 1, 0
+					2.0f * gr_screen.clip_aspect, -2.0f, 4, 1, 0
 				},
 				{
-					2.0f * gr_screen.clip_aspect, 3.0f, 5, 1, 1
+					2.0f * gr_screen.clip_aspect, 2.0f, 4, 1, 1
 				},
 				{
-					-2.0f * gr_screen.clip_aspect, 3.0f, 5, 0, 1
+					-2.0f * gr_screen.clip_aspect, 2.0f, 4, 0, 1
 				}
 			};
 
@@ -330,21 +340,21 @@ bool gr_opengl_openxr_flip() {
 
 				float left = 2.0f * gr_screen.clip_aspect * mouse_unscaled_x;
 				float right = left + 4.0f * gr_screen.clip_aspect * mouse_unscaled_w;
-				float top = 1 + 2.0f * mouse_unscaled_y;
+				float top = 2.0f * mouse_unscaled_y;
 				float bottom = top - 4.0f * mouse_unscaled_h;
 
 				GLfloat vmouse[4][5] = {
 					{
-						left, bottom, 5, 0, 1
+						left, bottom, 4, 0, 1
 					},
 					{
-						right, bottom, 5, 1, 1
+						right, bottom, 4, 1, 1
 					},
 					{
-						right, top, 5, 1, 0
+						right, top, 4, 1, 0
 					},
 					{
-						left, top, 5, 0, 0
+						left, top, 4, 0, 0
 					}
 				};
 				opengl_render_primitives_immediate(PRIM_TYPE_TRIFAN, &vert_def, 4, vmouse, sizeof(vmouse));

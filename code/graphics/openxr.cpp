@@ -254,6 +254,8 @@ static void openxr_init_post() {
 		xr_views.data()
 	);
 
+	openxr_reset_offset();
+
 	vec3d xr_offset_debug {{ {
 		(xr_views[0].pose.position.x - xr_views[1].pose.position.x) * xr_scale,
 		(xr_views[0].pose.position.y - xr_views[1].pose.position.y) * xr_scale,
@@ -351,16 +353,20 @@ bool openxr_requested() {
 	return openxr_req;
 }
 
+void openxr_reset_offset() {
+	xr_offset = ZERO_VECTOR;
+	for (uint32_t i = 0; i < 2; i++) {
+		const auto& pos = xr_views[i].pose.position;
+		xr_offset += vec3d{ { {pos.x * xr_scale, pos.y * xr_scale, pos.z * -xr_scale} } };
+	}
+	xr_offset /= 2;
+}
+
 void openxr_start_mission() {
 	if (!openxr_initialized)
 		return;
 
-	xr_offset = ZERO_VECTOR;
-	for (uint32_t i = 0; i < 2; i++) {
-		const auto& pos = xr_views[i].pose.position;
-		xr_offset += vec3d{{ {pos.x * xr_scale, pos.y * xr_scale, pos.z * -xr_scale} }};
-	}
-	xr_offset /= 2;
+	openxr_reset_offset();
 
 	if (!static_cast<bool>(Stars_XRBuffer))
 		Stars_XRBuffer = make_unique<star[]>(MAX_STARS);
