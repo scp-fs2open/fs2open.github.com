@@ -15,6 +15,7 @@
 #include "freespace.h"
 #include "gamesnd/eventmusic.h"
 #include "gamesnd/gamesnd.h"
+#include "graphics/openxr.h"
 #include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"
 #include "hud/hud.h"
@@ -1865,6 +1866,9 @@ void hud_render_gauges(int cockpit_display_num)
 		}
 	}
 
+	//Since we render things twice in VR mode, frametime needs to be halved for HUD, as the HUD uses the frametime to advance ANI's and crucially, the missile lock...
+	float frametime = openxr_enabled() ? flFrametime * 0.5f : flFrametime;
+
 	// Check if this ship has its own HUD gauges. 
 	if ( sip->hud_enabled ) {
 		num_gauges = sip->hud_gauges.size();
@@ -1877,7 +1881,7 @@ void hud_render_gauges(int cockpit_display_num)
 				sip->hud_gauges[j]->preprocess();
 			}
 
-			sip->hud_gauges[j]->onFrame(flFrametime);
+			sip->hud_gauges[j]->onFrame(frametime);
 
 			if ( !sip->hud_gauges[j]->setupRenderCanvas(render_target) ) {
 				continue;
@@ -1891,7 +1895,7 @@ void hud_render_gauges(int cockpit_display_num)
 
 			sip->hud_gauges[j]->resetClip();
 			sip->hud_gauges[j]->setFont();
-			sip->hud_gauges[j]->render(flFrametime);
+			sip->hud_gauges[j]->render(frametime);
 		}
 	} else {
 		num_gauges = default_hud_gauges.size();
@@ -1901,7 +1905,7 @@ void hud_render_gauges(int cockpit_display_num)
 
 			default_hud_gauges[j]->preprocess();
 
-			default_hud_gauges[j]->onFrame(flFrametime);
+			default_hud_gauges[j]->onFrame(frametime);
 
 			if ( !default_hud_gauges[j]->canRender() ) {
 				continue;
@@ -1911,7 +1915,7 @@ void hud_render_gauges(int cockpit_display_num)
 
 			default_hud_gauges[j]->resetClip();
 			default_hud_gauges[j]->setFont();
-			default_hud_gauges[j]->render(flFrametime);
+			default_hud_gauges[j]->render(frametime);
 		}
 	}
 
