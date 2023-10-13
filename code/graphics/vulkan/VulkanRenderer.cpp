@@ -321,6 +321,9 @@ bool VulkanRenderer::initDisplayDevice() const
 		}
 	}
 
+	if (Cmdline_capture_mosue)
+		attrs.flags.set(os::ViewPortFlags::Capture_Mouse);
+
 	auto viewPort = m_graphicsOps->createViewport(attrs);
 	if (!viewPort) {
 		return false;
