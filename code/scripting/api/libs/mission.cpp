@@ -1459,6 +1459,22 @@ ADE_FUNC(getMissionTime, l_Mission, nullptr, "Game time in seconds since the mis
 	return ade_set_args(L, "x", Missiontime);
 }
 
+ADE_VIRTVAR(MissionHUDTimerPadding,
+	l_Mission,
+	"number",
+	"Gets or sets padding currently applied to the HUD mission timer.",
+	"number",
+	"the padding in seconds")
+{
+	int pad;
+
+	if (ADE_SETTING_VAR && ade_get_args(L, "*i", &pad)) {
+		The_mission.HUD_timer_padding = pad;
+	}
+
+	return ade_set_args(L, "i", The_mission.HUD_timer_padding);
+}
+
 //WMC - These are in freespace.cpp
 ADE_FUNC(loadMission, l_Mission, "string missionName", "Loads a mission", "boolean", "True if mission was loaded, otherwise false")
 {

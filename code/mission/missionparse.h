@@ -145,6 +145,7 @@ typedef struct mission {
 	tl::optional<volumetric_nebula> volumetrics;
 	sound_env	sound_environment;
 	vec3d   gravity;
+	int     HUD_timer_padding;
 
 	// Goober5000
 	int	command_persona;
