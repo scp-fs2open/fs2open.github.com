@@ -4649,7 +4649,7 @@ int get_sexp()
 
 			case OP_MISSION_SET_SUBSPACE:
 				// set flag for Goober5000
-				Subspace_sexp_used = true;
+				The_mission.flags.set(Mission::Mission_Flags::Preload_subspace);
 				break;
 
 			case OP_WARP_EFFECT:

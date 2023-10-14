@@ -165,8 +165,6 @@ int Nmodel_bitmap = -1;						// model texture
 
 bool Dynamic_environment = false;
 
-bool Subspace_sexp_used = false;
-
 bool Motion_debris_override = false;
 bool Motion_debris_enabled = true;
 
@@ -886,8 +884,6 @@ void stars_pre_level_init(bool clear_backgrounds)
 
 	// also clear the preload indexes
 	Preload_background_indexes.clear();
-
-	Subspace_sexp_used = false;
 
 	Dynamic_environment = false;
 	Motion_debris_override = false;
@@ -2086,7 +2082,7 @@ void stars_page_in()
 
 	// Initialize the subspace stuff
 
-	if ( Game_subspace_effect || Subspace_sexp_used ) {
+	if (Game_subspace_effect || (The_mission.flags[Mission::Mission_Flags::Preload_subspace])) {
 		Subspace_model_inner = model_load("subspace_small.pof", 0, nullptr);
 		Assert(Subspace_model_inner >= 0);
 

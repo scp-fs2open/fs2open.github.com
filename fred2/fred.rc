@@ -957,6 +957,7 @@ BEGIN
     CONTROL         "Toggle Showing Goals In Briefing",IDC_TOGGLE_SHOWING_GOALS,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,181,142,10
     CONTROL         "Mission End to Mainhall",IDC_END_TO_MAINHALL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,191,142,10
+    CONTROL         "Preload Subspace Tunnel",IDC_PRELOAD_SUBSPACE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,201,142,10
     CONTROL         "Override #Command in event messages",IDC_OVERRIDE_HASHCOMMAND,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,166,172,142,10
 END
