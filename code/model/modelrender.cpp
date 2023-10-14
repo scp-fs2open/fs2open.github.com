@@ -2137,7 +2137,7 @@ float model_render_get_diameter_clamped_to_min_pixel_size(const vec3d* pos, floa
 	float current_pixel_size = convert_distance_and_diameter_to_pixel_size(
 		distance_to_eye,
 		diameter,
-		fl_degrees(Eye_fov),
+		fl_degrees(g3_get_hfov(Eye_fov)),
 		gr_screen.max_h);
 
 	float scaled_diameter = diameter;
@@ -2145,7 +2145,7 @@ float model_render_get_diameter_clamped_to_min_pixel_size(const vec3d* pos, floa
 		scaled_diameter = convert_pixel_size_and_distance_to_diameter(
 			min_pixel_size,
 			distance_to_eye,
-			fl_degrees(Eye_fov),
+			fl_degrees(g3_get_hfov(Eye_fov)),
 			gr_screen.max_h);
 	}
 

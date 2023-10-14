@@ -116,23 +116,37 @@ void gr_end_instance_matrix()
 }
 
 // the projection matrix; fov, aspect ratio, near, far
-void gr_set_proj_matrix(float fov, float aspect, float z_near, float z_far) {
+void gr_set_proj_matrix(fov_t fov, float aspect, float z_near, float z_far) {
 	if (gr_screen.rendering_to_texture != -1) {
 		gr_set_viewport(gr_screen.offset_x, gr_screen.offset_y, gr_screen.clip_width, gr_screen.clip_height);
 	} else {
 		gr_set_viewport(gr_screen.offset_x, (gr_screen.max_h - gr_screen.offset_y - gr_screen.clip_height), gr_screen.clip_width, gr_screen.clip_height);
 	}
 
-	float clip_width, clip_height;
-
-	clip_height = tan( fov * 0.5f ) * z_near;
-	clip_width = clip_height * aspect;
-
 	gr_last_projection_matrix = gr_projection_matrix;
-	if (gr_screen.rendering_to_texture != -1) {
-		create_perspective_projection_matrix(&gr_projection_matrix, -clip_width, clip_width, clip_height, -clip_height, z_near, z_far);
-	} else {
-		create_perspective_projection_matrix(&gr_projection_matrix, -clip_width, clip_width, -clip_height, clip_height, z_near, z_far);
+
+	if (mpark::holds_alternative<float>(fov)) {
+		float clip_width, clip_height;
+		clip_height = tan(mpark::get<float>(fov) * 0.5f) * z_near;
+		clip_width = clip_height * aspect;
+		if (gr_screen.rendering_to_texture != -1) {
+			create_perspective_projection_matrix(&gr_projection_matrix, -clip_width, clip_width, clip_height, -clip_height, z_near, z_far);
+		} else {
+			create_perspective_projection_matrix(&gr_projection_matrix, -clip_width, clip_width, -clip_height, clip_height, z_near, z_far);
+		}
+	}
+	else {
+		const auto& afov = mpark::get<asymmetric_fov>(fov);
+		float clip_l = tanf(afov.left) * z_near;
+		float clip_r = tanf(afov.right) * z_near;
+		float clip_u = tanf(afov.up) * z_near;
+		float clip_d = tanf(afov.down) * z_near;
+		if (gr_screen.rendering_to_texture != -1) {
+			create_perspective_projection_matrix(&gr_projection_matrix, clip_l, clip_r, clip_u, clip_d, z_near, z_far);
+		}
+		else {
+			create_perspective_projection_matrix(&gr_projection_matrix, clip_l, clip_r, clip_d, clip_u, z_near, z_far);
+		}
 	}
 
 	gr_htl_projection_matrix_set = true;

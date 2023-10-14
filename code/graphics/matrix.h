@@ -1,6 +1,7 @@
 #pragma once
 
 #include "graphics/2d.h"
+#include "render/3d.h"
 
 extern transform_stack gr_model_matrix_stack;
 extern matrix4 gr_view_matrix;
@@ -15,7 +16,7 @@ void gr_start_instance_matrix(const vec3d* offset, const matrix* rotation);
 void gr_start_angles_instance_matrix(const vec3d* pos, const angles* rotation);
 void gr_end_instance_matrix();
 
-void gr_set_proj_matrix(float fov, float aspect, float z_near, float z_far);
+void gr_set_proj_matrix(fov_t fov, float aspect, float z_near, float z_far);
 void gr_end_proj_matrix();
 
 void gr_set_view_matrix(const vec3d* pos, const matrix* orient);

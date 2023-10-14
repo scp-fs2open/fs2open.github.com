@@ -24425,7 +24425,7 @@ void multi_sexp_set_camera_fov()
 	if (cam == nullptr)
 		return;
 
-	float camera_fov = VIEWER_ZOOM_DEFAULT;
+	float camera_fov = g3_get_hfov(VIEWER_ZOOM_DEFAULT);
 	float camera_time = 0.0f;
 	float camera_acc_time = 0.0f;
 	float camera_dec_time = 0.0f;
@@ -24584,7 +24584,7 @@ int sexp_get_fov()
 		// SEXP override has been set
 		return (int)fl_degrees(Sexp_fov);
 	else
-		return (int)fl_degrees(cam->get_fov());
+		return (int)fl_degrees(g3_get_hfov(cam->get_fov()));
 }
 
 /**
