@@ -1368,6 +1368,25 @@ ADE_FUNC(createBolt,
 	return ade_set_args(L, "b", nebl_bolt(boltclass, &origin, &dest, playSound));
 }
 
+ADE_FUNC(getSupportAllowed,
+	l_Mission,
+	"[boolean SimpleCheck = true]",
+	"Get whether or not the player's call for support will be successful. If simple check is false, the code will do a much more "
+	"expensive, but accurate check.",
+	"boolean",
+	"true if support can be called, false if not or not in a mission")
+{
+	bool simple_check = true;
+	ade_get_args(L, "|b", &simple_check);
+
+	// we should be in a mission and the player object must exist
+	if (((Game_mode & GM_IN_MISSION) == 0) && (Player_obj != nullptr)) {
+		return ade_set_args(L, "b", (bool)is_support_allowed(Player_obj, simple_check));
+	}
+
+	return ADE_RETURN_FALSE;
+}
+
 ADE_FUNC(getMissionFilename, l_Mission, NULL, "Gets mission filename", "string", "Mission filename, or empty string if game is not in a mission")
 {
 	char temp[MAX_FILENAME_LEN];
