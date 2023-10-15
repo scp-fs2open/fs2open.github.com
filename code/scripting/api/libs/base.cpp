@@ -643,37 +643,9 @@ ADE_FUNC(getModVersion, l_Base, nullptr,
 		 "the returned numbers will all be -1",
          "string, number, number, number", "The mod version string; the major, minor, patch version numbers or -1 if invalid")
 {
-	auto version = Mod_version;
+	gameversion::version version(Mod_version);
 
-	int major = -1;
-	int minor = -1;
-	int patch = -1;
-	
-	int i = 0;
-	auto str = Mod_version;
-	while (i <= 3) {
-		size_t pos = str.find_first_of('.');
-		if (pos != SCP_string::npos) {
-			auto ver = str.substr(0, pos);
-			if(!ver.empty() && std::find_if(ver.begin(), ver.end(), [](char c) { return !std::isdigit(c, SCP_default_locale); }) == ver.end()){
-				if (major < 0) {
-					major = std::stoi(str.c_str());
-				} else if (minor < 0) {
-					minor = std::stoi(str.c_str());
-				}
-				str.erase(0, pos + 1);
-			} else if (major < 0) {
-				break; //Break out of the loop if the first string is not a digit. In this case we only return the whole string.
-			}
-		} else if ((major > -1) && (minor > -1) && (!str.empty() && std::find_if(str.begin(), str.end(), [](char c) {
-					   return !std::isdigit(c, SCP_default_locale);
-				   }) == str.end())) {
-			patch = std::stoi(str.c_str());
-		}
-		i++;
-	}
-
-	return ade_set_args(L, "siii", version.c_str(), major, minor, patch);
+	return ade_set_args(L, "siii", Mod_version.c_str(), version.major, version.minor, version.build);
 }
 
 ADE_VIRTVAR(MultiplayerMode, l_Base, "boolean", "Determines if the game is currently in single- or multiplayer mode",
