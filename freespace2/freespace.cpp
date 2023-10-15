@@ -7150,11 +7150,13 @@ void Time_model( int modelnum )
 
 	bm_get_frame_usage(&bitmaps_used_this_frame,&bitmaps_new_this_frame);
 
-	modelstats_num_polys /= framecount;
-	modelstats_num_verts /= framecount;
+	// safety check
+	if framecount > 0{ 
+		modelstats_num_polys /= framecount;
+		modelstats_num_verts /= framecount;
 
-	Tmap_npixels /=framecount;
-
+		Tmap_npixels /=framecount;
+	}
 
 	mprintf(( "'%s' is %.2f FPS\n", pof_file, i2fl(framecount)/f2fl(t2-t1) ));
 	fprintf( Time_fp, "\"%s\"\t%.0f\t%d\t%d\t%d\t%d\n", pof_file, i2fl(framecount)/f2fl(t2-t1), bitmaps_used_this_frame, modelstats_num_polys, modelstats_num_verts, Tmap_npixels );
