@@ -182,6 +182,9 @@ int campaign_file_list_filter(const char *filename)
 		if ( type == CAMPAIGN_TYPE_SINGLE) {
 			Campaign_names[local_num_campaigns] = vm_strdup(name);
 			local_num_campaigns++;
+		
+			if (desc != NULL)
+				vm_free(desc);
 
 			return 1;
 		}
