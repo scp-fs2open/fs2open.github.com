@@ -1799,6 +1799,10 @@ void ship_hit_kill(object *ship_objp, object *other_obj, vec3d *hitpos, float pe
 	Assert(ship_objp);	// Goober5000 - but not other_obj, not only for sexp but also for self-destruct
 	ship *sp = &Ships[ship_objp->instance];
 
+	// don't kill the ship if it's already dying
+	if (sp->flags[Ship::Ship_Flags::Dying])
+		return;
+
 	if (scripting::hooks::OnShipDeathStarted->isActive())
 	{
 		// add scripting hook for 'On Ship Death Started' -- Goober5000
@@ -2036,6 +2040,10 @@ void ship_hit_kill(object *ship_objp, object *other_obj, vec3d *hitpos, float pe
 void ship_self_destruct( object *objp )
 {	
 	Assert ( objp->type == OBJ_SHIP );
+
+	// don't self-destruct if this ship is already dying
+	if (Ships[objp->instance].flags[Ship::Ship_Flags::Dying])
+		return;
 
 	// check to see if this ship needs to be respawned
 	if(MULTIPLAYER_MASTER){
