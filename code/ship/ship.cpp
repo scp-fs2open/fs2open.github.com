@@ -5634,6 +5634,10 @@ static void parse_ship_type(const char *filename, const bool replace)
 		stuff_float(&stp->emp_multiplier);
 	}
 
+	if(optional_string("$Warp Sound Range Multiplier:")) {
+		stuff_float(&stp->warp_sound_range_multiplier);
+	}
+
 	if(optional_string("$Beams Easily Hit:")) {
 		stuff_boolean_flag(stp->flags, Ship::Type_Info_Flags::Beams_easily_hit);
 	}

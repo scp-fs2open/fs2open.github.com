@@ -61,31 +61,33 @@ static auto WarpOption __UNUSED = options::OptionBuilder<bool>("Graphics.3dWarp"
  */
 void fireball_play_warphole_open_sound(int ship_class, fireball *fb)
 {
-	gamesnd_id sound_index;
-	float		range_multiplier = 1.0f;
-	object	*fireball_objp;	
-		
 	Assert((fb != NULL) && (fb->objnum >= 0));
 	if((fb == NULL) || (fb->objnum < 0)){
 		return;
 	}
-	fireball_objp = &Objects[fb->objnum];
+	auto fireball_objp = &Objects[fb->objnum];
+	auto sound_index = gamesnd_id(GameSounds::WARP_IN);
 
-	sound_index = gamesnd_id(GameSounds::WARP_IN);
-
-	if(fb->warp_open_sound_index.isValid()) {
+	if (fb->warp_open_sound_index.isValid()) {
 		sound_index = fb->warp_open_sound_index;
 	} else if ((ship_class >= 0) && (ship_class < ship_info_size())) {
 		if ( Ship_info[ship_class].is_huge_ship() ) {
 			sound_index = gamesnd_id(GameSounds::CAPITAL_WARP_IN);
-			fb->flags |= FBF_WARP_CAPITAL_SIZE;
-		} else if ( Ship_info[ship_class].is_big_ship() ) {
-			range_multiplier = 6.0f;
-			fb->flags |= FBF_WARP_CRUISER_SIZE;
 		}
 	}
 
-	snd_play_3d(gamesnd_get_game_sound(sound_index), &fireball_objp->pos, &Eye_position, fireball_objp->radius, NULL, 0, 1.0f, SND_PRIORITY_DOUBLE_INSTANCE, NULL, range_multiplier); // play warp sound effect
+	if (ship_class >= 0 && ship_class < ship_info_size()) {
+		if (Ship_info[ship_class].is_huge_ship()) {
+			fb->flags |= FBF_WARP_CAPITAL_SIZE;
+		} else if (Ship_info[ship_class].is_big_ship()) {
+			fb->flags |= FBF_WARP_CRUISER_SIZE;
+		}
+
+		// originally 6.0 for SIF_BIG_SHIP and 1.0 for everything else
+		fb->warp_sound_range_multiplier = Ship_types[Ship_info[ship_class].class_type].warp_sound_range_multiplier;
+	}
+
+	snd_play_3d(gamesnd_get_game_sound(sound_index), &fireball_objp->pos, &Eye_position, fireball_objp->radius, NULL, 0, 1.0f, SND_PRIORITY_DOUBLE_INSTANCE, NULL, fb->warp_sound_range_multiplier); // play warp sound effect
 }
 
 /**
@@ -93,15 +95,14 @@ void fireball_play_warphole_open_sound(int ship_class, fireball *fb)
  */
 void fireball_play_warphole_close_sound(fireball *fb)
 {
-	gamesnd_id sound_index;
+	Assert((fb != NULL) && (fb->objnum >= 0));
+	if((fb == NULL) || (fb->objnum < 0)){
+		return;
+	}
+	auto fireball_objp = &Objects[fb->objnum];
+	auto sound_index = gamesnd_id(GameSounds::WARP_OUT);
 
-	object *fireball_objp;
-
-	fireball_objp = &Objects[fb->objnum];
-
-	sound_index = gamesnd_id(GameSounds::WARP_OUT);
-
-	if ( fb->warp_close_sound_index.isValid() ) {
+	if (fb->warp_close_sound_index.isValid()) {
 		sound_index = fb->warp_close_sound_index;
 	} else if ( fb->flags & FBF_WARP_CAPITAL_SIZE ) {
 		sound_index = gamesnd_id(GameSounds::CAPITAL_WARP_OUT);
@@ -109,7 +110,7 @@ void fireball_play_warphole_close_sound(fireball *fb)
 		return;
 	}
 
-	snd_play_3d(gamesnd_get_game_sound(sound_index), &fireball_objp->pos, &Eye_position, fireball_objp->radius); // play warp sound effect
+	snd_play_3d(gamesnd_get_game_sound(sound_index), &fireball_objp->pos, &Eye_position, fireball_objp->radius, NULL, 0, 1.0F, SND_PRIORITY_SINGLE_INSTANCE, NULL, fb->warp_sound_range_multiplier); // play warp sound effect
 }
 
 static void fireball_generate_unique_id(char *unique_id, int buffer_len, int fireball_index)
@@ -845,6 +846,7 @@ int fireball_create(vec3d *pos, int fireball_type, int render_type, int parent_o
 	new_fireball->warp_close_sound_index = warp_close_sound;
 	new_fireball->warp_open_duration = (warp_open_duration < 0.0f) ? WARPHOLE_GROW_TIME : warp_open_duration;
 	new_fireball->warp_close_duration = (warp_close_duration < 0.0f) ? WARPHOLE_GROW_TIME : warp_close_duration;
+	new_fireball->warp_sound_range_multiplier = 1.0f;
 
 	matrix orient;
 	if(orient_override != NULL){
