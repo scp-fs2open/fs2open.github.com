@@ -125,25 +125,25 @@ void update_ets(object* objp, float fl_frametime)
 	//					 This will translate to 71% max speed at 50% engines, and 31% max speed at 10% engines
 	//
 
-	float eng_current_strength;
+	float engine_aggregate_strength;
 	if (ship_p->flags[Ship::Ship_Flags::Maneuver_despite_engines]) {
-		// Since prev_engine_aggregate_strength isn't used anywhere else, it's ok to fake setting the strength to 100% here
-		eng_current_strength = 1.0f;
+		// Pretend our strength is 100% when this flag is active
+		engine_aggregate_strength = 1.0f;
 	} else {
-		eng_current_strength = ship_get_subsystem_strength(ship_p, SUBSYSTEM_ENGINE);
+		engine_aggregate_strength = ship_get_subsystem_strength(ship_p, SUBSYSTEM_ENGINE);
 	}
 
-	// only update max speed if aggregate engine health has changed
+	// only update max speed if engine_aggregate_strength has changed
 	// which helps minimize amount of overrides to max speed
-	if (eng_current_strength != ship_p->prev_engine_aggregate_strength) {
+	if (engine_aggregate_strength != ship_p->prev_engine_aggregate_strength) {
 		ets_update_max_speed(objp);
-		ship_p->prev_engine_aggregate_strength = eng_current_strength;
+		ship_p->prev_engine_aggregate_strength = engine_aggregate_strength;
 
 		// check if newly updated max speed should be reduced due to engine damage
 		// don't let engine strength affect max speed when playing on lowest skill level
 		if ((objp != Player_obj) || (Game_skill_level > 0)) {
-			if (eng_current_strength < SHIP_MIN_ENGINES_FOR_FULL_SPEED) {
-				objp->phys_info.max_vel.xyz.z *= fl_sqrt(eng_current_strength);
+			if (engine_aggregate_strength < SHIP_MIN_ENGINES_FOR_FULL_SPEED) {
+				objp->phys_info.max_vel.xyz.z *= fl_sqrt(engine_aggregate_strength);
 			}
 		}
 	}
