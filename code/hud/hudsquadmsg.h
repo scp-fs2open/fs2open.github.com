@@ -61,6 +61,20 @@ class object;
 // used for Message box gauge
 #define NUM_MBOX_FRAMES		3
 
+#define MAX_MENU_ITEMS 50   // max number of items in the menu
+#define MAX_MENU_DISPLAY 10 // max number that can be displayed
+
+// following are defines and character strings that are used as part of messaging mode
+
+#define NUM_COMM_ORDER_TYPES 6
+
+#define TYPE_SHIP_ITEM 0
+#define TYPE_WING_ITEM 1
+#define TYPE_ALL_FIGHTERS_ITEM 2
+#define TYPE_REINFORCEMENT_ITEM 3
+#define TYPE_REPAIR_REARM_ITEM 4
+#define TYPE_REPAIR_REARM_ABORT_ITEM 5
+
 typedef struct player_order {
 private:
 	//Needed, because legacy order-id's were not assigned in order

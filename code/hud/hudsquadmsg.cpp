@@ -105,9 +105,6 @@ typedef struct mmode_item {
 	SCP_string	text;		// text to display on the menu
 } mmode_item;
 
-#define MAX_MENU_ITEMS		50				// max number of items in the menu
-#define MAX_MENU_DISPLAY	10				// max number that can be displayed
-
 char Squad_msg_title[256] = "";
 mmode_item MsgItems[MAX_MENU_ITEMS];
 int Num_menu_items = -1;					// number of items for a message menu
@@ -139,17 +136,6 @@ int keys_used[] = {	KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_
 
 #define ID1		1
 #define ID2		2
-
-// following are defines and character strings that are used as part of messaging mode
-
-#define NUM_COMM_ORDER_TYPES			6
-
-#define TYPE_SHIP_ITEM					0
-#define TYPE_WING_ITEM					1
-#define TYPE_ALL_FIGHTERS_ITEM			2
-#define TYPE_REINFORCEMENT_ITEM			3
-#define TYPE_REPAIR_REARM_ITEM			4
-#define TYPE_REPAIR_REARM_ABORT_ITEM	5
 
 
 SCP_string  Comm_order_types[NUM_COMM_ORDER_TYPES];
@@ -1638,18 +1624,6 @@ void hud_squadmsg_type_select( )
 	// Now get a list of all lua categories to add. Meow.
 	SCP_vector<SCP_string> lua_cat_list = ai_lua_get_general_order_categories();
 
-	// If we have too many categories then we have an oopsie!
-	if ((int)lua_cat_list.size() > (MAX_MENU_ITEMS - NUM_COMM_ORDER_TYPES)) {
-		Warning(LOCATION,
-			"Too many defined Lua General Order Categories! Any categories beyond %i will be ignored.",
-			MAX_MENU_ITEMS - NUM_COMM_ORDER_TYPES);
-
-		//Remove any categories that go beyond MAX_MENU_ITEMS
-		while (lua_cat_list.size() > (MAX_MENU_ITEMS - NUM_COMM_ORDER_TYPES)) {
-			lua_cat_list.pop_back(); // Remove the last element
-		}
-	}
-
 	num_order_types += (int)lua_cat_list.size();
 
 	// Add the items
@@ -1693,8 +1667,8 @@ void hud_squadmsg_type_select( )
 	MsgItems[TYPE_REPAIR_REARM_ITEM].active = 1;				// this item will always be available (I think)
 	MsgItems[TYPE_REPAIR_REARM_ABORT_ITEM].active = 0;
 
-	for(auto cat : lua_cat_list){
-		if (ai_lua_get_enabled_general_orders_by_category(cat).size() == 0) {
+	for(const auto& cat : lua_cat_list){
+		if (ai_lua_get_general_orders(false, false, cat).size() == 0) {
 			MsgItems[NUM_COMM_ORDER_TYPES + lua_order_count].active = 0;
 		}
 		lua_order_count++;

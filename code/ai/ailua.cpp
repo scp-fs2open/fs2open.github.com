@@ -51,7 +51,7 @@ const player_order_lua* ai_lua_find_player_order(int sexp_op) {
 int ai_lua_get_num_general_orders() {
 	int count = 0;
 	
-	for (auto order : Lua_player_orders) {
+	for (const auto& order : Lua_player_orders) {
 		if (order.second.generalOrder) {
 			count++;
 		}
@@ -64,8 +64,8 @@ SCP_vector<SCP_string> ai_lua_get_general_order_categories(bool enabled_only)
 {
 	SCP_vector<SCP_string> list;
 
-	for (auto order : Lua_player_orders) {
-		SCP_string cat = order.second.category;
+	for (const auto& order : Lua_player_orders) {
+		const SCP_string &cat = order.second.category;
 
 		// If it's not a general order then move on
 		if (!order.second.generalOrder) {
@@ -97,57 +97,42 @@ SCP_vector<SCP_string> ai_lua_get_general_order_categories(bool enabled_only)
 	return list;
 }
 
-SCP_vector<SCP_string> ai_lua_get_enabled_general_orders_by_category(SCP_string cat) {
-	SCP_vector<SCP_string> list;
-
-	for (auto order : Lua_player_orders) {
-		if ((order.second.category == cat) && order.second.cur_enabled) {
-			list.push_back(order.second.parseText);
-		}
-	}
-
-	return list;
-}
-
-SCP_vector<SCP_string> ai_lua_get_all_general_orders()
+SCP_vector<SCP_string> ai_lua_get_general_orders(bool onlyEnabled, bool onlyValid, const SCP_string& category)
 {
 	SCP_vector<SCP_string> list;
 
 	for (auto order : Lua_player_orders) {
 		if (order.second.generalOrder) {
-			list.push_back(order.second.parseText);
+			bool add = false;
+
+			// Only enabled orders
+			if (onlyEnabled && order.second.cur_enabled) {
+				add = true;
+
+			// Only valid orders
+			} else if (onlyValid && order.second.cur_valid) {
+				add = true;
+
+			// Only orders that match the category requested
+			} else if ((!category.empty()) && (order.second.category == category)) {
+				add = true;
+
+			// All general orders
+			} else {
+				add = true;
+			}
+
+			if (add) {
+				list.push_back(order.second.parseText);
+			}
 		}
 	}
 
 	return list;
 }
 
-SCP_vector<SCP_string> ai_lua_get_enabled_general_orders() {
-	SCP_vector<SCP_string> list;
-
-	for (auto order : Lua_player_orders) {
-		if (order.second.cur_enabled) {
-			list.push_back(order.second.parseText);
-		}
-	}
-
-	return list;
-}
-
-SCP_vector<SCP_string> ai_lua_get_valid_general_orders() {
-	SCP_vector<SCP_string> list;
-
-	for (auto order : Lua_player_orders) {
-		if (order.second.cur_valid) {
-			list.push_back(order.second.parseText);
-		}
-	}
-
-	return list;
-}
-
-int ai_lua_find_general_order_id(SCP_string name) {
-	for (auto order : Lua_player_orders) {
+int ai_lua_find_general_order_id(const SCP_string& name) {
+	for (const auto& order : Lua_player_orders) {
 		if (order.second.parseText == name) {
 			return order.first;
 		}
@@ -217,7 +202,7 @@ void run_ai_lua_action(const luacpp::LuaFunction& action, const ai_mode_lua& lua
 		if (retVals[0].getValue<bool>()) {
 
 			// If we don't have a ship then it's a general order and we have nothing else to do
-			if (aip->shipnum < 0) {
+			if (aip->shipnum >= 0) {
 				ai_mission_goal_complete(aip);
 			}
 		}

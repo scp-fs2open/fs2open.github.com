@@ -7548,9 +7548,9 @@ sexp_list_item* sexp_tree::get_listing_opf_lua_general_orders()
 {
 	sexp_list_item head;
 
-	SCP_vector<SCP_string> orders = ai_lua_get_all_general_orders();
+	SCP_vector<SCP_string> orders = ai_lua_get_general_orders();
 
-	for (auto val : orders) {
+	for (const auto& val : orders) {
 		head.add_data(val.c_str());
 	}
 

@@ -5,6 +5,7 @@
 #include "localization/localize.h"
 #include "parse/parselo.h"
 #include "parse/sexp/LuaSEXP.h"
+#include "hud/hudsquadmsg.h"
 
 using namespace luacpp;
 
@@ -148,6 +149,16 @@ void LuaAISEXP::parseTable() {
 
 				if (order.category.length() <= 0) {
 					error_display(1, "Order category name must be longer than 0 characters!");
+				}
+
+				// Now get a list of all lua categories to add. Meow.
+				SCP_vector<SCP_string> lua_cat_list = ai_lua_get_general_order_categories();
+
+				// If we have too many categories then we have an oopsie!
+				if ((int)lua_cat_list.size() > (MAX_MENU_ITEMS - NUM_COMM_ORDER_TYPES)) {
+					Warning(LOCATION, "Too many defined Lua General Order Categories! Setting order to first available: %s", lua_cat_list[0].c_str());
+
+					order.category = lua_cat_list[0];
 				}
 
 				// General orders explicitely do not show up in FRED as sexps because they

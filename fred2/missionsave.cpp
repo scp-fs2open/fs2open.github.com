@@ -4149,7 +4149,7 @@ int CFred_mission_save::save_players()
 	parse_comments(2);
 	fout("\t\t;! %d total\n", Player_starts);
 
-	SCP_vector<SCP_string> e_list = ai_lua_get_enabled_general_orders();
+	SCP_vector<SCP_string> e_list = ai_lua_get_general_orders(true);
 
 	if (Mission_save_format != FSO_FORMAT_RETAIL && (e_list.size() > 0)) {
 		if (optional_string_fred("+General Orders Enabled:", "#Players"))
@@ -4159,13 +4159,13 @@ int CFred_mission_save::save_players()
 
 		fout(" (");
 
-		for (SCP_string order : e_list) {
+		for (const SCP_string& order : e_list) {
 			fout(" \"%s\"", order.c_str());
 		}
 		fout(" )\n");
 	}
 
-	SCP_vector<SCP_string> v_list = ai_lua_get_valid_general_orders();
+	SCP_vector<SCP_string> v_list = ai_lua_get_general_orders(false, true);
 
 	if (Mission_save_format != FSO_FORMAT_RETAIL && (v_list.size() > 0)) {
 		if (optional_string_fred("+General Orders Valid:", "#Players"))
@@ -4175,7 +4175,7 @@ int CFred_mission_save::save_players()
 
 		fout(" (");
 
-		for (SCP_string order : v_list) {
+		for (const SCP_string& order : v_list) {
 			fout(" \"%s\"", order.c_str());
 		}
 		fout(" )\n");
