@@ -20762,7 +20762,7 @@ void sexp_beam_floating_fire(int n)
 	beam_fire(&fire_info);
 }
 
-void sexp_beam_free_one_turret(ship_subsys *turret, bool is_beam, bool free)
+void sexp_beam_or_turret_free_one(ship_subsys *turret, bool is_beam, bool free)
 {
 	if (is_beam)
 	{
@@ -20815,7 +20815,7 @@ void sexp_beam_or_turret_free_or_lock(int node, bool is_beam, bool free)
 		if (!turret || turret->system_info->type != SUBSYSTEM_TURRET)
 			continue;
 
-		sexp_beam_free_one_turret(turret, is_beam, free);
+		sexp_beam_or_turret_free_one(turret, is_beam, free);
 	}
 }
 
@@ -20834,7 +20834,7 @@ void sexp_beam_or_turret_free_or_lock_all(int node, bool is_beam, bool free)
 			if (turret->system_info->type != SUBSYSTEM_TURRET)
 				continue;
 
-			sexp_beam_free_one_turret(turret, is_beam, free);
+			sexp_beam_or_turret_free_one(turret, is_beam, free);
 		}
 	}
 }
@@ -38502,31 +38502,31 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\ttime there is no player in a given ship, this sexpression will return 0"},	
 
 	{ OP_BEAM_FREE, "beam-free\r\n"
-		"\tSets one or more beam weapons to allow firing for a given ship\r\n"
+		"\tSets one or more turrets to allow beam weapons firing.  When a beam-equipped turret is activated, there will be a short random delay (between 50 and 4000 milliseconds) before firing.\r\n"
 		"\t1: Ship to be operated on\r\n"
 		"\t2, 3, etc : List of turrets to activate\r\n"},
 
 	{ OP_BEAM_FREE_ALL, "beam-free-all\r\n"
-		"\tSets all beam weapons on the specified ship to be active\r\n"},
+		"\tSets all beam weapons on the specified ship to be active.  For each beam-equipped turret, there will be a different short random delay (between 50 and 4000 milliseconds) before firing.\r\n"},
 
 	{ OP_BEAM_LOCK, "beam-lock\r\n"
-		"\tSets one or more beam weapons to NOT allow firing for a given ship\r\n"
+		"\tSets one or more turrets to NOT allow beam weapons firing.\r\n"
 		"\t1: Ship to be operated on\r\n"
 		"\t2, 3, etc : List of turrets to deactivate\r\n"},
 
 	{ OP_BEAM_LOCK_ALL, "beam-lock-all\r\n"
-		"\tSets all beam weapons on the specified ship to be deactivated\r\n"},
+		"\tSets all beam turrets on the specified ship to be deactivated\r\n"},
 
 	{ OP_TURRET_FREE, "turret-free\r\n"
-		"\tSets one or more turret weapons to allow firing for a given ship\r\n"
+		"\tSets one or more turrets to allow standard primary or secondary weapons firing.  When a turret is activated, there will be a short random delay (between 50 and 4000 milliseconds) before firing.\r\n"
 		"\t1: Ship to be operated on\r\n"
 		"\t2, 3, etc : List of turrets to activate\r\n"},
 
 	{ OP_TURRET_FREE_ALL, "turret-free-all\r\n"
-		"\tSets all turret weapons on the specified ship to be active\r\n"},
+		"\tSets all standard primary or secondary weapon turrets on the specified ship to be active.  For each turret, there will be a different short random delay (between 50 and 4000 milliseconds) before firing.\r\n"},
 
 	{ OP_TURRET_LOCK, "turret-lock\r\n"
-		"\tSets one or more turret weapons to NOT allow firing for a given ship\r\n"
+		"\tSets one or more turrets to NOT allow standard primary or secondary weapons firing.\r\n"
 		"\t1: Ship to be operated on\r\n"
 		"\t2, 3, etc : List of turrets to deactivate\r\n"},
 
