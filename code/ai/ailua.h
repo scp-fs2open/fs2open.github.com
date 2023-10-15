@@ -36,7 +36,7 @@ const player_order_lua* ai_lua_find_player_order(int sexp_op);
 SCP_vector<SCP_string> ai_lua_get_general_order_categories(bool enabled_only = true);
 int ai_lua_get_num_general_orders();
 SCP_vector<SCP_string> ai_lua_get_general_orders(bool onlyEnabled = false, bool onlyValid = false, const SCP_string& category = "");
-int ai_lua_find_general_order_id(SCP_string name);
+int ai_lua_find_general_order_id(const SCP_string& name);
 void ai_lua_enable_general_order(int sexp_op, bool enable);
 void ai_lua_validate_general_order(int sexp_op, bool validity);
 void ai_lua_reset_general_orders();
