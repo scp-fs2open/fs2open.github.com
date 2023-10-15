@@ -879,7 +879,12 @@ void delete_player(int player_num,int kicked_reason)
 {			
 	char notify_string[256] = "";
 	int idx;
-	
+
+	Assertion(Net_player != nullptr, "Somehow Net_player is nullptr when trying to delete a player. Please get an SCP coder!");	
+	if (Net_player == nullptr) {
+		return;
+	}
+
 	if(!MULTI_CONNECTED(Net_players[player_num])){
 		return;
 	}
