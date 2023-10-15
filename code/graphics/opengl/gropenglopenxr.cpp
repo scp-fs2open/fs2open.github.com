@@ -95,7 +95,6 @@ bool gr_opengl_openxr_create_session() {
 }
 #elif defined SCP_UNIX
 bool gr_opengl_openxr_create_session() {
-	//TODO Untested:
 	SDL_SysWMinfo wmInfo;
 	SDL_VERSION(&wmInfo.version);
 	SDL_GetWindowWMInfo(os::getSDLMainWindow(), &wmInfo);

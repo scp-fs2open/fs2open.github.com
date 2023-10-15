@@ -6,7 +6,6 @@
 #include <direct.h>
 #endif
 
-
 #if !defined __APPLE_CC__ && defined SCP_UNIX
 #include<glad/glad_glx.h>
 #endif
