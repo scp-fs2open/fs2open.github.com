@@ -1036,7 +1036,7 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, char
 		else
 			aigp->float_data = i2fl(eval_num(CDDDR(node), is_nan, is_nan_forever));
 
-		// (the next argument is whether to afterburn)
+		// (the CDDDDR argument is whether to afterburn, and is handled at the end of the function, so don't handle it here)
 
 		// whether to "escort" the ship
 		if ( CDDDDDR(node) >= 0 )
