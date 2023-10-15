@@ -3733,6 +3733,7 @@ int WE_Default::getWarpOrientation(matrix* output)
 float shipfx_calculate_arrival_warp_distance(object *objp)
 {
 	Assertion(objp != nullptr && objp->type == OBJ_SHIP, "Object parameter to shipfx_calculate_arrival_warp_distance must be a ship!");
+	auto shipp = &Ships[objp->instance];
 
 	// c.f. WE_Default::warpStart()
 	float half_length, warping_dist;
@@ -3743,15 +3744,17 @@ float shipfx_calculate_arrival_warp_distance(object *objp)
 	}
 	else
 	{
-		warping_dist = ship_class_get_length(&Ship_info[Ships[objp->instance].ship_info_index]);
+		warping_dist = ship_class_get_length(&Ship_info[shipp->ship_info_index]);
 		half_length = 0.5f * warping_dist;
 	}
 	float warping_time = shipfx_calculate_warp_time(objp, WarpDirection::WARP_IN, half_length, warping_dist);
 	float warping_speed = warping_dist / warping_time;
 
+	auto warpin_params = &Warp_params[shipp->warpin_params_index];
+
 	// the total distance is a full length from its current position, plus the distance it takes to slow down from its warping speed
 	float decel_time_const = objp->phys_info.forward_decel_time_const;
-	if (Ship_info[Ships[objp->instance].ship_info_index].flags[Ship::Info_Flags::Supercap]) {
+	if (warpin_params->special_warp_physics) {
 		// super cap style warpins are annoying, one time constant while above their max speed, a different one while slowing down from there
 		float supercap_slowdown_dist = (warping_speed - (objp->phys_info.max_vel.xyz.z + SUPERCAP_WARP_EXCESS_SPD_THRESHOLD)) * SUPERCAP_WARP_T_CONST;
 		float regular_slowdown_dist = (objp->phys_info.max_vel.xyz.z + SUPERCAP_WARP_EXCESS_SPD_THRESHOLD) * decel_time_const;
