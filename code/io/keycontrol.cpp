@@ -166,6 +166,8 @@ void factor_table::resize(size_t size)
 	}
 }
 
+// Cyborg -- You may see a linter or coverity complain about this function, since it basically discards a lot of the result of the float division.
+// But using modulo division instead is actually about 60% slower based on some quick testing I did, and it gives the same results.
 bool factor_table::isNaturalNumberFactor(size_t factor, size_t n)
 {
 	return ((float)n / (float)factor) == n / factor;
