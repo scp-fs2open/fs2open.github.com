@@ -352,7 +352,7 @@ void physics_sim_vel(vec3d * position, physics_info * pi, matrix *orient, vec3d*
 		float exp_factor = float(exp(-sim_time / SUPERCAP_WARP_T_CONST));
 		local_v_out.xyz.z = pi->max_vel.xyz.z + excess * exp_factor;
 		local_disp.xyz.z = (pi->max_vel.xyz.z * sim_time) + excess * (float(SUPERCAP_WARP_T_CONST) * (1.0f - exp_factor));
-	} else if (pi->flags & PF_SPECIAL_WARP_OUT) {
+	} else if (pi->flags & PF_SUPERCAP_WARP_OUT) {
 		float exp_factor = float(exp(-sim_time / SUPERCAP_WARP_T_CONST));
 		vec3d temp;
 		vm_vec_rotate(&temp, &pi->prev_ramp_vel, orient);

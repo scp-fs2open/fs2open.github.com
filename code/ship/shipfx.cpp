@@ -3509,11 +3509,11 @@ int WE_Default::warpStart()
 		effect_time += SHIPFX_WARP_DELAY;
 
 		// turn off warpin physics in case we're jumping out immediately
-		objp->phys_info.flags &= ~PF_SPECIAL_WARP_IN;
+		objp->phys_info.flags &= ~PF_SUPERCAP_WARP_IN;
 
 		// maybe turn on warpout physics
 		if (params->special_warp_physics) {
-			objp->phys_info.flags |= PF_SPECIAL_WARP_OUT;
+			objp->phys_info.flags |= PF_SUPERCAP_WARP_OUT;
 		}
 	}
 

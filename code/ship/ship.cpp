@@ -3550,7 +3550,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	// get ship parameters for warpin and warpout
 	// Note: if the index is not -1, we must have already assigned warp parameters, probably because we are now
 	// parsing a TBM.  In that case, inherit from ourselves.
-	// Note2: In retail, supercaps have the PF_SPECIAL_WARP_IN applied by default (but not PF_SPECIAL_WARP_OUT).  So,
+	// Note2: In retail, supercaps have the PF_SUPERCAP_WARP_IN applied by default (but not PF_SUPERCAP_WARP_OUT).  So,
 	// if we are parsing a supercap for the first time, and this is a warpin, set the flag.
 	sip->warpin_params_index = parse_warp_params(sip->warpin_params_index >= 0 ? &Warp_params[sip->warpin_params_index] : nullptr, WarpDirection::WARP_IN, info_type_name, sip->name, first_time && is_supercap_for_warp_params);
 	sip->warpout_params_index = parse_warp_params(sip->warpout_params_index >= 0 ? &Warp_params[sip->warpout_params_index] : nullptr, WarpDirection::WARP_OUT, info_type_name, sip->name, false);
