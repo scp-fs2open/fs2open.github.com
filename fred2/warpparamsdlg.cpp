@@ -32,6 +32,7 @@ warp_params_dlg::warp_params_dlg(CWnd* pParent) : CDialog(warp_params_dlg::IDD, 
 	m_accel_exp = _T("");
 	m_radius = _T("");
 	m_anim = _T("");
+	m_special_warp_physics = FALSE;
 	m_player_warpout_speed = _T("");
 	//}}AFX_DATA_INIT
 }
@@ -49,6 +50,7 @@ void warp_params_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_ACCEL_EXP, m_accel_exp);
 	DDX_Text(pDX, IDC_RADIUS, m_radius);
 	DDX_Text(pDX, IDC_ANIM, m_anim);
+	DDX_Check(pDX, IDC_SPECIAL_WARP_PHYSICS, m_special_warp_physics);
 	DDX_Text(pDX, IDC_PLAYER_WARPOUT_SPEED, m_player_warpout_speed);
 	//}}AFX_DATA_MAP
 }
@@ -123,6 +125,8 @@ BOOL warp_params_dlg::OnInitDialog()
 
 		if (strlen(params->anim) > 0)
 			m_anim = params->anim;
+
+		m_special_warp_physics = params->special_warp_physics ? TRUE : FALSE;
 
 		if (params->warpout_player_speed > 0.0f)
 			m_player_warpout_speed.Format(_T("%.2f"), params->warpout_player_speed);
@@ -228,6 +232,8 @@ void warp_params_dlg::OnOK()
 
 	if (m_anim.GetLength() > 0)
 		strcpy_s(params.anim, m_anim);
+
+	params.special_warp_physics = (m_special_warp_physics == TRUE);
 
 	if (!m_warp_in && m_player_warpout_speed.GetLength() > 0)
 	{

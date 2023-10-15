@@ -255,6 +255,7 @@ extern void stuff_parenthesized_vec3d(vec3d *vp);
 extern void stuff_boolean(int *i, bool a_to_eol=true);
 extern void stuff_boolean(bool *b, bool a_to_eol=true);
 extern void stuff_boolean_flag(int *i, int flag, bool a_to_eol=true);
+extern bool parse_boolean(const char *token, bool*b);
 
 template <class T>
 int string_lookup(const char* str1, T strlist, size_t max, const char* description = nullptr, bool say_errors = false)
