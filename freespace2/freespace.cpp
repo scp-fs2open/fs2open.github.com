@@ -7151,7 +7151,7 @@ void Time_model( int modelnum )
 	bm_get_frame_usage(&bitmaps_used_this_frame,&bitmaps_new_this_frame);
 
 	// safety check
-	if framecount > 0{ 
+	if (framecount > 0) { 
 		modelstats_num_polys /= framecount;
 		modelstats_num_verts /= framecount;
 
