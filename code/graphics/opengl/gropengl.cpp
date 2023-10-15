@@ -6,6 +6,11 @@
 #include <direct.h>
 #endif
 
+
+#if !defined __APPLE_CC__ && defined SCP_UNIX
+#include<glad/glad_glx.h>
+#endif
+
 #include "gropengl.h"
 #include "ShaderProgram.h"
 #include "gropenglbmpman.h"
@@ -1263,6 +1268,12 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	if (!gladLoadGLLoader(GL_context->getLoaderFunction())) {
 		Error(LOCATION, "Failed to load OpenGL!");
 	}
+
+#if !defined __APPLE_CC__ && defined SCP_UNIX
+	if (!gladLoadGLXLoader(GL_context->getLoaderFunction(), nullptr, 0)) {
+		Error(LOCATION, "Failed to load GLX!");
+	}
+#endif
 
 	// version check
 	GL_version = (GLVersion.major * 10) + GLVersion.minor;
