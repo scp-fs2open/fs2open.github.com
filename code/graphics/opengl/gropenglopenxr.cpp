@@ -218,8 +218,8 @@ bool gr_opengl_openxr_flip() {
 		GR_DEBUG_SCOPE("XR Blit");
 
 		GL_state.PushFramebufferState();
-		GL_state.BindFrameBuffer(xr_fbo, GL_DRAW_FRAMEBUFFER);
 		GL_state.BindFrameBuffer(Cmdline_window_res ? Back_framebuffer : 0, GL_READ_FRAMEBUFFER);
+		GL_state.BindFrameBuffer(xr_fbo, GL_DRAW_FRAMEBUFFER);
 
 		glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, xr_swap_tex, 0);
 
@@ -375,8 +375,8 @@ bool gr_opengl_openxr_flip() {
 			GR_DEBUG_SCOPE("XR Blit");
 
 			GL_state.PushFramebufferState();
-			GL_state.BindFrameBuffer(xr_fbo, GL_DRAW_FRAMEBUFFER);
 			GL_state.BindFrameBuffer(Cmdline_window_res ? Back_framebuffer : 0, GL_READ_FRAMEBUFFER);
+			GL_state.BindFrameBuffer(xr_fbo, GL_DRAW_FRAMEBUFFER);
 
 			glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, image.image, 0);
 			glDrawBuffer(GL_COLOR_ATTACHMENT0);
