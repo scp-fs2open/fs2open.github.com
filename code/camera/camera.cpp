@@ -165,7 +165,7 @@ void camera::set_object_host(object *objp, int n_object_host_submodel)
 	set_custom_orientation_function(NULL);
 	if(n_object_host_submodel > 0)
 	{
-		if(objp->type == OBJ_SHIP)
+		if(objp != nullptr && objp->type == OBJ_SHIP)
 		{
 			ship_subsys* ssp = GET_FIRST(&Ships[objp->instance].subsys_list);
 			while ( ssp != END_OF_LIST( &Ships[objp->instance].subsys_list ) )
