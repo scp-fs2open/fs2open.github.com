@@ -990,7 +990,7 @@ ADE_FUNC(sendPlainMessage,
 
 ADE_FUNC(addMessageToScrollback,
 	l_Mission,
-	"string message, [number source=0]",
+	"string message, [number|enumeration source=HUD_SOURCE_COMPUTER]",
 	"Adds a string to the message log scrollback without sending it as a message first. Source matches the built-in sources and then "
 	"the team index where (N - num built-in sources) == team index. Currently the built-in sources are 0-7 in this order: Computer, training, hidden, "
 	" important, failed, satisfied, terran command, netplayer.",
@@ -998,10 +998,55 @@ ADE_FUNC(addMessageToScrollback,
 	"true if successful, false otherwise")
 {
 	const char* message = nullptr;
-	const int source = 0;
+	int source = HUD_SOURCE_COMPUTER;
+	enum_h* esp = nullptr;
 
-	if (!ade_get_args(L, "s|i", &message, &source))
-		return ADE_RETURN_FALSE;
+	if (lua_isnumber(L, 2)) {
+		if (!ade_get_args(L, "s|i", &message, &source)) {
+			return ADE_RETURN_FALSE;
+		} else {
+			if (source < HUD_SOURCE_TEAM_OFFSET) {
+				LuaError(L, "Source index must be greater than the %i built-in sources.", HUD_SOURCE_TEAM_OFFSET);
+				return ADE_RETURN_FALSE;
+			}
+		}
+	} else {
+		if (!ade_get_args(L, "s|i", &message, l_Enum.GetPtr(&esp))) {
+			return ADE_RETURN_FALSE;
+		} else {
+			if (esp != nullptr) {
+				switch (esp->index) {
+				case LE_SCROLLBACK_SOURCE_COMPUTER:
+					source = HUD_SOURCE_COMPUTER;
+					break;
+				case LE_SCROLLBACK_SOURCE_TRAINING:
+					source = HUD_SOURCE_TRAINING;
+					break;
+				case LE_SCROLLBACK_SOURCE_HIDDEN:
+					source = HUD_SOURCE_HIDDEN;
+					break;
+				case LE_SCROLLBACK_SOURCE_IMPORTANT:
+					source = HUD_SOURCE_IMPORTANT;
+					break;
+				case LE_SCROLLBACK_SOURCE_FAILED:
+					source = HUD_SOURCE_FAILED;
+					break;
+				case LE_SCROLLBACK_SOURCE_SATISFIED:
+					source = HUD_SOURCE_SATISFIED;
+					break;
+				case LE_SCROLLBACK_SOURCE_COMMAND:
+					source = HUD_SOURCE_TERRAN_CMD;
+					break;
+				case LE_SCROLLBACK_SOURCE_NETPLAYER:
+					source = HUD_SOURCE_NETPLAYER;
+					break;
+				default:
+					LuaError(L, "Invalid enumeration used! Must be one of SCROLLBACK_SOURCE_*.");
+					return ADE_RETURN_FALSE;
+				}
+			}
+		}
+	}
 
 	if (message == nullptr)
 		return ADE_RETURN_FALSE;
