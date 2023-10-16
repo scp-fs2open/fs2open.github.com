@@ -861,6 +861,9 @@ int opengl_init_display_device()
 		}
 	}
 
+	if (Cmdline_capture_mouse)
+		attrs.flags.set(os::ViewPortFlags::Capture_Mouse);
+
 	auto viewport = gr_opengl_create_viewport(attrs);
 	if (!viewport) {
 		return 1;
