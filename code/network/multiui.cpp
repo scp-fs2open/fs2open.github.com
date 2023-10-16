@@ -7798,7 +7798,7 @@ void multi_sync_blit_screen_all()
 			case NETPLAYER_STATE_MISSION_XFER :				
 				memset(txt,0,255);
 				// server should display the pct completion of all clients				
-				if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
+				if(Net_player != nullptr && Net_player->flags & NETINFO_FLAG_AM_MASTER){
 					if(Net_players[idx].s_info.xfer_handle != -1){					
 						pct_complete = multi_xfer_pct_complete(Net_players[idx].s_info.xfer_handle);
 
