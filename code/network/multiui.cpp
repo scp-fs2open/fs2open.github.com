@@ -2955,6 +2955,7 @@ void multi_sg_rank_build_name(char *in,char *out)
 	// just copy the string
 	if(first == NULL){
 		strcpy(out,in);
+		return;
 	}
 	
 	// if the first part of the string is lieutenant, then abbreivate it and tack on the rest of the string	
