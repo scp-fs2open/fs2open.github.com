@@ -63,15 +63,15 @@ builtin_message Builtin_messages[] = {
   #undef X
 };
 
-#define BUILTIN_BOOST_LEVEL_ONE  1
-#define BUILTIN_BOOST_LEVEL_TWO  2
-#define BUILTIN_MATCHES_TYPE     4
-#define BUILTIN_MATCHES_FILTER   8
-#define BUILTIN_MATCHES_MOOD    16
-#define BUILTIN_MATCHES_SPECIES 32
-#define BUILTIN_MATCHES_PERSONA 64
+constexpr int BUILTIN_BOOST_LEVEL_ONE =  1;
+constexpr int BUILTIN_BOOST_LEVEL_TWO =  2;
+constexpr int BUILTIN_MATCHES_TYPE    =  4;
+constexpr int BUILTIN_MATCHES_FILTER  =  8;
+constexpr int BUILTIN_MATCHES_MOOD    = 16;
+constexpr int BUILTIN_MATCHES_SPECIES = 32;
+constexpr int BUILTIN_MATCHES_PERSONA = 64;
 
-#define BUILTIN_BOOST_LEVEL_THREE (BUILTIN_BOOST_LEVEL_ONE | BUILTIN_BOOST_LEVEL_TWO)
+constexpr int BUILTIN_BOOST_LEVEL_THREE = (BUILTIN_BOOST_LEVEL_ONE | BUILTIN_BOOST_LEVEL_TWO);
 
 int get_builtin_message_type(const char* name) {
 	for (int i = 0; i < MAX_BUILTIN_MESSAGE_TYPES; i++) {
@@ -429,7 +429,7 @@ void handle_legacy_backup_message(MissionMessage& msg, SCP_string wing_name) {
 
 int lookup_mood(SCP_string const& name) {
 	for (auto i = Builtin_moods.begin(); i != Builtin_moods.end(); ++i) {
-		if (*i == name) {
+		if (lcase_equal(*i, name)) {
 			return (int) std::distance(Builtin_moods.begin(), i);
 		}
 	}
@@ -2094,8 +2094,8 @@ bool filters_match(MessageFilter& filter, ship* it) {
 bool outer_filters_match(MessageFilter& filter, int range, ship* sender) {
 	for (auto i: list_range(&Ship_obj_list)) {
 		auto obj = &Objects[i->objnum];
-		// Ignore dying ships
-		if (obj->flags[Object::Object_Flags::Should_be_dead]) {
+		// Ignore dead/dying ships
+		if (obj->flags[Object::Object_Flags::Should_be_dead] || Ships[obj->instance].flags[Ship::Ship_Flags::Dying]) {
 			continue;
 		}
 		// Ignore the sender itself
