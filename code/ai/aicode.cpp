@@ -1316,7 +1316,7 @@ void ai_turn_towards_vector(vec3d* dest, object* objp, vec3d* slide_vec, vec3d* 
 	//	Don't allow a ship to turn if it has no engine strength.
 	// AL 3-12-98: objp may not always be a ship!
 	if ( (objp->type == OBJ_SHIP) && !(flags & AITTV_VIA_SEXP) ) {
-		if (ship_get_subsystem_strength(&Ships[objp->instance], SUBSYSTEM_ENGINE) <= 0.0f)
+		if (!Ships[objp->instance].flags[Ship::Ship_Flags::Maneuver_despite_engines] && ship_get_subsystem_strength(&Ships[objp->instance], SUBSYSTEM_ENGINE) <= 0.0f)
 			return;
 	}
 
@@ -9684,7 +9684,7 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 
 	// Goober5000 - moved out here to save calculations
 	if (dock_mode != DOA_DOCK_STAY)
-		if (ship_get_subsystem_strength(&Ships[docker_objp->instance], SUBSYSTEM_ENGINE) <= 0.0f)
+		if (!Ships[docker_objp->instance].flags[Ship::Ship_Flags::Maneuver_despite_engines] && ship_get_subsystem_strength(&Ships[docker_objp->instance], SUBSYSTEM_ENGINE) <= 0.0f)
 			return 9999.9f;
 
 	//	If dockee has moved much, then path will be recreated.
@@ -12071,7 +12071,7 @@ object *get_wing_leader(int wingnum)
 
 	//	If this ship is disabled, try another ship in the wing.
 	int n = 0;
-	while (ship_get_subsystem_strength(&Ships[ship_num], SUBSYSTEM_ENGINE) == 0.0f) {
+	while (!Ships[ship_num].flags[Ship::Ship_Flags::Maneuver_despite_engines] && ship_get_subsystem_strength(&Ships[ship_num], SUBSYSTEM_ENGINE) == 0.0f) {
 		n++;
 
 		if (n >= wingp->current_count) {
