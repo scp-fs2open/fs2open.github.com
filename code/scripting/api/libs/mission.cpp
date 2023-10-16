@@ -988,6 +988,29 @@ ADE_FUNC(sendPlainMessage,
 	return ADE_RETURN_TRUE;
 }
 
+ADE_FUNC(addMessageToScrollback,
+	l_Mission,
+	"string message, [number source=0]",
+	"Adds a string to the message log scrollback without sending it as a message first. Source matches the built-in sources and then "
+	"the team index where (N - num built-in sources) == team index. Currently the built-in sources are 0-7 in this order: Computer, training, hidden, "
+	" important, failed, satisfied, terran command, netplayer.",
+	"boolean",
+	"true if successful, false otherwise")
+{
+	const char* message = nullptr;
+	const int source = 0;
+
+	if (!ade_get_args(L, "s|i", &message, &source))
+		return ADE_RETURN_FALSE;
+
+	if (message == nullptr)
+		return ADE_RETURN_FALSE;
+
+	HUD_add_to_scrollback(message, source);
+
+	return ADE_RETURN_TRUE;
+}
+
 ADE_FUNC(createShip,
 	l_Mission,
 	"[string Name, shipclass Class /* First ship class by default */, orientation Orientation=null, vector Position /* "
