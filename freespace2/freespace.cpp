@@ -7520,11 +7520,54 @@ void game_title_screen_display()
 	
 	Game_title_logo = bm_load(Game_logo_screen_fname[gr_screen.res]);
 
-	if (!Splash_screens.empty()) {
-		Game_title_bitmap = bm_load(Splash_screens[Random::next(0, (int)Splash_screens.size() - 1)].c_str());
-	} else {
-		Game_title_bitmap = bm_load(Game_title_screen_fname[gr_screen.res]);
+	// Search splash screens for matches
+	bool any_exact_match = false;
+	bool any_range_match = false;
+	for (auto &ss : Splash_screens) {
+		if (ss.aspect_ratio_exact != 0.0f) {
+			ss.match_exact = fl_equal(ss.aspect_ratio_exact, gr_screen.clip_aspect, 0.01f);
+		}
+		if (ss.aspect_ratio_min != 0.0f || ss.aspect_ratio_max != 0.0f) {
+			bool match = true;
+			if (ss.aspect_ratio_min != 0.0f && ss.aspect_ratio_min > gr_screen.clip_aspect) {
+				match = false;
+			}
+			if (ss.aspect_ratio_max != 0.0f && ss.aspect_ratio_max < gr_screen.clip_aspect) {
+				match = false;
+			}
+			ss.match_range = match;
+		}
+		if (ss.match_exact) {
+			any_exact_match = true;
+		}
+		if (ss.match_range) {
+			any_range_match = true;
+		}
 	}
+
+	// Filter splash screens
+	Splash_screens.erase(
+		std::remove_if(Splash_screens.begin(), Splash_screens.end(), [any_exact_match, any_range_match](const splash_screen& ss) {
+			if (any_exact_match) {
+				return !ss.match_exact;
+			} else if (any_range_match) {
+				return !ss.match_range;
+			} else {
+				return !ss.is_default;
+			}
+		}), Splash_screens.end()
+	);
+
+	const char* filename;
+	if (Splash_screens.size() == 1) {
+		filename = Splash_screens[0].filename.c_str();
+	} else if (!Splash_screens.empty()) {
+		filename = Splash_screens[Random::next((int)Splash_screens.size())].filename.c_str();
+	} else {
+		filename = Game_title_screen_fname[gr_screen.res];
+	}
+	mprintf(("Loading %s as splash screen\n", filename));
+	Game_title_bitmap = bm_load(filename);
 
 	if (Splash_fade_in_time > 0) {
 		float alpha = 0.0f;

@@ -68,7 +68,7 @@ SCP_string Window_title;
 SCP_string Mod_title;
 SCP_string Mod_version;
 bool Unicode_text_mode;
-SCP_vector<SCP_string> Splash_screens;
+SCP_vector<splash_screen> Splash_screens;
 int Splash_fade_in_time;
 int Splash_fade_out_time;
 bool Splash_logo_center;
@@ -228,16 +228,36 @@ void parse_mod_table(const char *filename)
 		}
 
 		if (optional_string("$Splash screens:")) {
-			SCP_string splash_bitmap;
 			while (optional_string("+Bitmap:")) {
-				stuff_string(splash_bitmap, F_NAME);
+				splash_screen splash;
+				stuff_string(splash.filename, F_NAME);
 
 				// remove extension?
-				if (drop_extension(splash_bitmap)) {
-					mprintf(("Game Settings Table: Removed extension on splash screen file name %s\n", splash_bitmap.c_str()));
+				if (drop_extension(splash.filename)) {
+					mprintf(("Game Settings Table: Removed extension on splash screen file name %s\n", splash.filename.c_str()));
 				}
 
-				Splash_screens.push_back(splash_bitmap);
+				if (optional_string("+Aspect Ratio:")) {
+					stuff_float(&splash.aspect_ratio_exact);
+				}
+				if (optional_string("+Aspect Ratio Min:")) {
+					stuff_float(&splash.aspect_ratio_min);
+				}
+				if (optional_string("+Aspect Ratio Max:")) {
+					stuff_float(&splash.aspect_ratio_max);
+				}
+
+				if (splash.aspect_ratio_exact != 0.0f && (splash.aspect_ratio_min != 0.0f || splash.aspect_ratio_max != 0.0f)) {
+					Warning(LOCATION, "Game Settings Table: An exact aspect ratio and either a min or max aspect ratio were supplied for '%s'.  Only the exact value will be used.", splash.filename.c_str());
+					splash.aspect_ratio_min = 0.0f;
+					splash.aspect_ratio_max = 0.0f;
+				}
+
+				if (splash.aspect_ratio_exact == 0.0f && splash.aspect_ratio_min == 0.0f && splash.aspect_ratio_max == 0.0f) {
+					splash.is_default = true;
+				}
+
+				Splash_screens.push_back(splash);
 			}
 		}
 
