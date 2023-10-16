@@ -474,15 +474,18 @@ void LuaSEXP::parseTable() {
 		_category = sexp::add_category(category);
 	}
 
-	required_string("$Subcategory:");
-	SCP_string subcategory;
-	stuff_string(subcategory, F_NAME);
+	if (optional_string("$Subcategory:")) {
+		SCP_string subcategory;
+		stuff_string(subcategory, F_NAME);
 
-	_subcategory = get_subcategory(subcategory, _category);
-	if (_subcategory == OP_SUBCATEGORY_NONE) {
-		// Unknown subcategory so we need to add this one
-		_subcategory = sexp::add_subcategory(_category, subcategory);
-	} 
+		_subcategory = get_subcategory(subcategory, _category);
+		if (_subcategory == OP_SUBCATEGORY_NONE) {
+			// Unknown subcategory so we need to add this one
+			_subcategory = sexp::add_subcategory(_category, subcategory);
+		}
+	} else {
+		_subcategory = OP_SUBCATEGORY_NONE;
+	}
 
 	required_string("$Minimum Arguments:");
 
