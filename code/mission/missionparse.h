@@ -180,7 +180,7 @@ typedef struct mission {
 // must be reworked so that all the flags are maintained from function to function
 #define CARGO_INDEX_MASK	0xBF
 #define CARGO_NO_DEPLETE	0x40		// CARGO_NO_DEPLETE + CARGO_INDEX_MASK must == FF
-#define MAX_CARGO				30
+#define MAX_CARGO				60
 
 
 // Goober5000 - contrail threshold (previously defined in ShipContrails.cpp)
