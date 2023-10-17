@@ -39,23 +39,24 @@ static SCP_unordered_map<SCP_string, int> parameter_type_mapping{{ "boolean",   
 														  { "string",       OPF_STRING },
 														  { "team",         OPF_IFF },
 														  { "waypointpath", OPF_WAYPOINT_PATH },
+														  { "waypoint",     OPF_POINT },
 														  { "variable",     OPF_VARIABLE_NAME },
 														  { "message",      OPF_MESSAGE },
 														  { "wing",         OPF_WING },
 														  { "shipclass",    OPF_SHIP_CLASS_NAME },
 														  { "weaponclass",  OPF_WEAPON_NAME },
 														  { "soundentry",   OPF_GAME_SND }, 
-														  { "ship+waypoint",   OPF_SHIP_POINT },
-														  { "ship+wing",   OPF_SHIP_WING },
+														  { "ship+waypoint",OPF_SHIP_POINT },
+														  { "ship+wing",    OPF_SHIP_WING },
 														  { "ship+wing+team",   OPF_SHIP_WING_WHOLETEAM },
 														  { "ship+wing+ship_on_team+waypoint",   OPF_SHIP_WING_SHIPONTEAM_POINT },
 														  { "ship+wing+waypoint",   OPF_SHIP_WING_POINT },
 														  { "ship+wing+waypoint+none",   OPF_SHIP_WING_POINT_OR_NONE },
-														  { "subsystem",   OPF_SUBSYSTEM },
-														  { "dockpoint",   OPF_DOCKER_POINT },
-														  { "hudgauge",   OPF_ANY_HUD_GAUGE },
-														  { "event",   OPF_EVENT_NAME },
-														  { "enum",   First_available_opf_id } };
+														  { "subsystem",    OPF_SUBSYSTEM },
+														  { "dockpoint",    OPF_DOCKER_POINT },
+														  { "hudgauge",     OPF_ANY_HUD_GAUGE },
+														  { "event",        OPF_EVENT_NAME },
+														  { "enum",         First_available_opf_id } };
 
 // If a parameter requires a parent parameter then it must be listed here!
 static SCP_vector<SCP_string> parent_parameter_required{"subsystem", "dockpoint"};
@@ -232,6 +233,7 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum, int parent_node) const
 	case OPF_SHIP_WING_WHOLETEAM:
 	case OPF_SHIP_WING_SHIPONTEAM_POINT:
 	case OPF_SHIP_WING_POINT:
+	case OPF_POINT:
 	case OPF_SHIP_WING_POINT_OR_NONE: {
 		object_ship_wing_point_team oswpt;
 		eval_object_ship_wing_point_team(&oswpt, node);
