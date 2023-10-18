@@ -9,6 +9,7 @@ extern matrix4 gr_model_view_matrix;
 extern matrix4 gr_projection_matrix;
 extern matrix4 gr_last_projection_matrix;
 extern matrix4 gr_env_texture_matrix;
+extern float gr_near_plane;
 
 void gr_matrix_on_frame();
 

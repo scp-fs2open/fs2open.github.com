@@ -24,6 +24,8 @@ layout (std140) uniform globalDeferredData {
 
 	float invScreenWidth;
 	float invScreenHeight;
+
+	float nearPlane;
 };
 
 layout (std140) uniform matrixData {
@@ -168,7 +170,7 @@ void main()
 	vec2 screenPos = gl_FragCoord.xy * vec2(invScreenWidth, invScreenHeight);
 	vec3 position = texture(PositionBuffer, screenPos).xyz;
 
-	if(abs(dot(position, position)) < 0.1)
+	if(abs(dot(position, position)) < nearPlane * nearPlane)
 		discard;
 
 	vec3 diffColor = texture(ColorBuffer, screenPos).rgb;

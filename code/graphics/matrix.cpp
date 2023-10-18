@@ -16,6 +16,8 @@ matrix4 gr_texture_matrix;
 
 matrix4 gr_env_texture_matrix;
 
+float gr_near_plane;
+
 bool gr_htl_projection_matrix_set = false;
 
 static int modelview_matrix_depth = 1;
@@ -152,6 +154,7 @@ void gr_set_proj_matrix(fov_t fov, float aspect, float z_near, float z_far) {
 	gr_htl_projection_matrix_set = true;
 
 	matrix_uniform_up_to_date = false;
+	gr_near_plane = z_near;
 }
 
 void gr_end_proj_matrix() {

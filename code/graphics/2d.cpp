@@ -188,6 +188,7 @@ int gr_stencil_mode = 0;
 // Default clipping distances
 const float Default_min_draw_distance = 1.0f;
 const float Default_max_draw_distance = 1e10;
+float Min_draw_distance_cockpit = 0.02f;
 float Min_draw_distance = Default_min_draw_distance;
 float Max_draw_distance = Default_max_draw_distance;
 
