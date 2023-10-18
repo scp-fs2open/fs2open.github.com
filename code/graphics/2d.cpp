@@ -170,7 +170,7 @@ static auto WindowModeOption __UNUSED = options::OptionBuilder<os::ViewportState
                      std::pair<const char*, int>{"Controls how the game window is created", 1773})
                      .category("Graphics")
                      .level(options::ExpertLevel::Beginner)
-                     .values({{os::ViewportState::Fullscreen, {"Fullscreen", 1775}},
+                     .values({{os::ViewportState::Fullscreen, {"Fullscreen", 1679}},
                               {os::ViewportState::Borderless, {"Borderless", 1675}},
                               {os::ViewportState::Windowed, {"Windowed", 1676}}})
                      .importance(98)
