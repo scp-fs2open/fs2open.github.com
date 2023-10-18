@@ -54,11 +54,15 @@ extern void g3_end_frame_func(const char *filename, int lineno);
  */
 extern int g3_in_frame();
 
+constexpr float PROJ_FOV_FACTOR = 1.39626348f;
+extern fov_t Proj_fov;					// Projection matrix fov (for HT&L)
 
 /**
  * Sets the Proj_fov from the specified zoom value
  */
-void g3_set_fov(float zoom);
+void g3_set_fov(fov_t zoom);
+
+float g3_get_hfov(const fov_t& fov);
 
 /**
  * Set view from camera
@@ -68,7 +72,7 @@ void g3_set_view(camera *cam);
 /**
  * Set view from x,y,z, viewer matrix, and zoom.  Must call one of g3_set_view_*()
  */
-void g3_set_view_matrix(const vec3d *view_pos, const matrix *view_matrix, float zoom);
+void g3_set_view_matrix(const vec3d *view_pos, const matrix *view_matrix, fov_t zoom);
 
 // Never set these!
 extern matrix		View_matrix;		// The matrix to convert local coordinates to screen
@@ -79,12 +83,10 @@ extern vec3d		Light_base;			// Used to rotate world points into current local co
 
 extern matrix		Eye_matrix;			// Where the viewer's eye is pointing in World coordinates
 extern vec3d		Eye_position;		// Where the viewer's eye is at in World coordinates
-extern float		Eye_fov;			// What the viewer's FOV is
+extern fov_t		Eye_fov;			// What the viewer's FOV is
 
 extern vec3d Object_position;
 extern matrix	Object_matrix;			// Where the opject is pointing in World coordinates
-
-extern float Proj_fov;					// Projection matrix fov (for HT&L)
 
 
 /**

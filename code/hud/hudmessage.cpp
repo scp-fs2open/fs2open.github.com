@@ -444,6 +444,10 @@ void HudGaugeMessages::render(float  /*frametime*/)
 	// dependant on max_width, max_lines, and line_height
 	setClip(position[0], position[1], Window_width, Window_height+2);
 
+	//Since setClip already sets makes drawing local, further renderings mustn't additionally slew
+	bool doSlew = reticle_follow;
+	reticle_follow = false;
+
 	for ( SCP_vector<Hud_display_info>::iterator m = active_messages.begin(); m != active_messages.end(); ++m) {
 		if ( !timestamp_elapsed(m->total_life) ) {
 			if ( !(Player->flags & PLAYER_FLAGS_MSG_MODE) || !Hidden_by_comms_menu) {
@@ -459,6 +463,8 @@ void HudGaugeMessages::render(float  /*frametime*/)
 			}
 		}
 	}
+
+	reticle_follow = doSlew;
 }
 
 //	Similar to HUD printf, but shows only one message at a time, at a fixed location.
@@ -1180,19 +1186,41 @@ void HudGaugeTalkingHead::render(float frametime)
 			// hud_set_default_color();
 			setGaugeColor();
 
+			int tablePosX = position[0];
+			int tablePosY = position[1];
+			if (reticle_follow && gr_screen.rendering_to_texture == -1) {
+				int nx = HUD_nose_x;
+				int ny = HUD_nose_y;
+
+				gr_resize_screen_pos(&nx, &ny);
+				gr_set_screen_scale(base_w, base_h);
+				gr_unsize_screen_pos(&nx, &ny);
+				gr_reset_screen_scale();
+
+				tablePosX += nx;
+				tablePosY += ny;
+			}
+
 			// clear
 			setClip(position[0] + Anim_offsets[0], position[1] + Anim_offsets[1], Anim_size[0], Anim_size[1]);
 			gr_clear();
 			resetClip();
 
+			//renderBitmap is slew corrected, so use uncorrected position
 			renderBitmap(Head_frame.first_frame, position[0], position[1]);		// head ani border
-			float scale_x = i2fl(Anim_size[0]) / i2fl(head_anim->width);
-			float scale_y = i2fl(Anim_size[1]) / i2fl(head_anim->height);
-			gr_set_screen_scale(fl2ir(base_w / scale_x), fl2ir(base_h / scale_y));
-			setGaugeColor();
-			generic_anim_render(head_anim,frametime, fl2ir((position[0] + Anim_offsets[0] + HUD_offset_x) / scale_x), fl2ir((position[1] + Anim_offsets[1] + HUD_offset_y) / scale_y));
+
+			int hx = tablePosX + Anim_offsets[0];
+			int hy = tablePosY + Anim_offsets[1];
+
+			if (gr_screen.rendering_to_texture != -1) 
+				gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, target_w, target_h, true);
+			else
+				gr_set_screen_scale(base_w, base_h);
+
+			generic_anim_render_ex(head_anim,frametime, hx, hy, Anim_size[0], Anim_size[1]);
+			gr_reset_screen_scale();
+
 			// draw title
-			gr_set_screen_scale(base_w, base_h);
 			renderString(position[0] + Header_offsets[0], position[1] + Header_offsets[1], XSTR("message", 217));
 		} else {
 			for (int j = 0; j < Num_messages_playing; ++j) {

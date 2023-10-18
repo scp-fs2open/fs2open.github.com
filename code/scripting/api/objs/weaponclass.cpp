@@ -6,6 +6,7 @@
 #include "weapon/weapon.h"
 #include "graphics/matrix.h"
 #include "vecmath.h"
+#include "mission/missioncampaign.h"
 #include "missionui/missionscreencommon.h"
 #include "model/modelrender.h"
 
@@ -637,6 +638,23 @@ ADE_VIRTVAR(InTechDatabase, l_Weaponclass, "boolean", "Gets or sets whether this
 	return ade_set_args(L, "b", Weapon_info[idx].wi_flags[Weapon::Info_Flags::In_tech_database]);
 }
 
+ADE_VIRTVAR(AllowedInCampaign, l_Weaponclass, "boolean", "Gets or sets whether this weapon class is allowed in loadouts in campaign mode", "boolean", "True or false")
+{
+	int idx;
+	bool new_value;
+	if (!ade_get_args(L, "o|b", l_Weaponclass.Get(&idx), &new_value))
+		return ade_set_error(L, "b", false);
+
+	if (idx < 0 || idx >= weapon_info_size())
+		return ade_set_error(L, "b", false);
+
+	if (ADE_SETTING_VAR) {
+		Campaign.weapons_allowed[idx] = new_value;
+	}
+
+	return Campaign.weapons_allowed[idx] ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
+}
+
 ADE_VIRTVAR(CargoSize, l_Weaponclass, "number", "The cargo size of this weapon class", "number", "The new cargo size or -1 on error")
 {
 	int idx;
@@ -673,6 +691,9 @@ ADE_VIRTVAR(BurstShots, l_Weaponclass, "number", "The number of shots in a burst
 	if (idx < 0 || idx >= weapon_info_size())
 		return ade_set_error(L, "i", 0);
 
+	if (ADE_SETTING_VAR)
+		LuaError(L, "Setting BurstShots is not supported");
+
 	return ade_set_args(L, "i", Weapon_info[idx].burst_shots + 1);
 }
 
@@ -685,7 +706,64 @@ ADE_VIRTVAR(BurstDelay, l_Weaponclass, "number", "The time in seconds between sh
 	if (idx < 0 || idx >= weapon_info_size())
 		return ade_set_error(L, "f", 0.0f);
 
+	if (ADE_SETTING_VAR)
+		LuaError(L, "Setting BurstDelay is not supported");
+
 	return ade_set_args(L, "f", Weapon_info[idx].burst_delay);
+}
+
+ADE_VIRTVAR(BeamLife, l_Weaponclass, "number", "The time in seconds that a beam lasts while firing.", "number", "Beam life, or 0 if handle is invalid or the weapon is not a beam")
+{
+	int idx;
+	if (!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
+		return ade_set_error(L, "f", 0.0f);
+
+	if (idx < 0 || idx >= weapon_info_size())
+		return ade_set_error(L, "f", 0.0f);
+
+	if (ADE_SETTING_VAR)
+		LuaError(L, "Setting BeamLife is not supported");
+
+	if (Weapon_info[idx].wi_flags[Weapon::Info_Flags::Beam] || Weapon_info[idx].subtype == WP_BEAM)
+		return ade_set_args(L, "f", Weapon_info[idx].b_info.beam_life);
+
+	return ade_set_args(L, "f", 0.0f);
+}
+
+ADE_VIRTVAR(BeamWarmup, l_Weaponclass, "number", "The time in seconds that a beam takes to warm up.", "number", "Warmup time, or 0 if handle is invalid or the weapon is not a beam")
+{
+	int idx;
+	if (!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
+		return ade_set_error(L, "f", 0.0f);
+
+	if (idx < 0 || idx >= weapon_info_size())
+		return ade_set_error(L, "f", 0.0f);
+
+	if (ADE_SETTING_VAR)
+		LuaError(L, "Setting BeamWarmup is not supported");
+
+	if (Weapon_info[idx].wi_flags[Weapon::Info_Flags::Beam] || Weapon_info[idx].subtype == WP_BEAM)
+		return ade_set_args(L, "f", i2fl(Weapon_info[idx].b_info.beam_warmup) / MILLISECONDS_PER_SECOND);
+
+	return ade_set_args(L, "f", 0.0f);
+}
+
+ADE_VIRTVAR(BeamWarmdown, l_Weaponclass, "number", "The time in seconds that a beam takes to warm down.", "number", "Warmdown time, or 0 if handle is invalid or the weapon is not a beam")
+{
+	int idx;
+	if (!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
+		return ade_set_error(L, "f", 0.0f);
+
+	if (idx < 0 || idx >= weapon_info_size())
+		return ade_set_error(L, "f", 0.0f);
+
+	if (ADE_SETTING_VAR)
+		LuaError(L, "Setting BeamWarmdown is not supported");
+
+	if (Weapon_info[idx].wi_flags[Weapon::Info_Flags::Beam] || Weapon_info[idx].subtype == WP_BEAM)
+		return ade_set_args(L, "f", i2fl(Weapon_info[idx].b_info.beam_warmdown) / MILLISECONDS_PER_SECOND);
+
+	return ade_set_args(L, "f", 0.0f);
 }
 
 ADE_FUNC(isValid, l_Weaponclass, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")

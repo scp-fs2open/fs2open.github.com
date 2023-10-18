@@ -71,7 +71,7 @@ SCP_vector<std::unique_ptr<HudGauge>> default_hud_gauges;
 #define HUD_NEW_ALPHA_BRIGHT_HI			255
 
 // Externals not related to the HUD code itself
-extern float View_zoom;
+extern fov_t View_zoom;
 
 // globals that will control the color of the HUD gauges
 int HUD_color_red = 0;
@@ -90,10 +90,6 @@ color HUD_color_defaults[HUD_NUM_COLOR_LEVELS];		// array of colors with differe
 color HUD_color_debug;										// grey debug text shown on HUD
 
 static sound_handle Player_engine_snd_loop = sound_handle::invalid();
-
-// HUD render frame offsets
-float HUD_offset_x = 0.0f;
-float HUD_offset_y = 0.0f;
 
 // the offset of the player's view vector and the ship forward vector in pixels (Swifty)
 int HUD_nose_x;
@@ -1033,8 +1029,8 @@ void HudGauge::renderCircle(int x, int y, int diameter, bool filled)
 
 void HudGauge::setClip(int x, int y, int w, int h)
 {
-	int hx = fl2i(HUD_offset_x);
-	int hy = fl2i(HUD_offset_y);
+	int hx = 0;
+	int hy = 0;
 
 	if ( gr_screen.rendering_to_texture != -1 ) {
 		gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, target_w, target_h, true);
@@ -1051,17 +1047,22 @@ void HudGauge::setClip(int x, int y, int w, int h)
 
 		gr_set_clip(hx, hy, w, h);
 	} else {
-		if ( reticle_follow ) {
+		if (reticle_follow) {
 			hx += HUD_nose_x;
 			hy += HUD_nose_y;
+
+			gr_resize_screen_pos(&hx, &hy);
+			gr_set_screen_scale(base_w, base_h);
+			gr_unsize_screen_pos(&hx, &hy);
+		}
+		else {
+			gr_set_screen_scale(base_w, base_h);
 		}
 
-		gr_resize_screen_pos(&hx, &hy);
-
-		gr_set_screen_scale(base_w, base_h);
+		x += hx;
+		y += hy;
 		gr_resize_screen_pos(&x, &y, &w, &h);
-
-		gr_set_clip(hx+x, hy+y, w, h, GR_RESIZE_NONE);
+		gr_set_clip(x, y, w, h, GR_RESIZE_NONE);
 	}
 
 	gr_reset_screen_scale();
@@ -1085,9 +1086,6 @@ void HudGauge::resetClip()
 
 		gr_set_clip(hx, hy, w, h);
 	} else {
-		hx = fl2i(HUD_offset_x);
-		hy = fl2i(HUD_offset_y);
-
 		gr_resize_screen_pos(&hx, &hy);
 		gr_set_screen_scale(base_w, base_h);
 
@@ -1778,8 +1776,8 @@ void HudGaugeMissionTime::render(float  /*frametime*/)
 	int minutes=0;
 	int seconds=0;
 	
-	mission_time = f2fl(Missiontime);  // convert to seconds
-
+	mission_time = f2fl(Missiontime) + (float)The_mission.HUD_timer_padding;  // convert to seconds
+	
 	minutes=(int)(mission_time/60);
 	seconds=(int)mission_time%60;
 
@@ -3746,42 +3744,8 @@ int hud_objective_notify_active()
  * @param wiggedy_wack
  * @param eye_orient 
  */
-void HUD_set_offsets(object *viewer_obj, int wiggedy_wack, matrix *eye_orient)
+void HUD_set_offsets()
 {
-	if ( (viewer_obj == Player_obj) && wiggedy_wack ){		
-		vec3d tmp;
-		vertex pt;
-
-		HUD_offset_x = 0.0f;
-		HUD_offset_y = 0.0f;
-
-		vm_vec_scale_add( &tmp, &Eye_position, &eye_orient->vec.fvec, 100.0f );
-		
-		(void) g3_rotate_vertex(&pt,&tmp);
-
-		g3_project_vertex(&pt);
-
-		gr_unsize_screen_posf( &pt.screen.xyw.x, &pt.screen.xyw.y );
-		HUD_offset_x -= 0.45f * (i2fl(gr_screen.clip_width_unscaled)*0.5f - pt.screen.xyw.x);
-		HUD_offset_y -= 0.45f * (i2fl(gr_screen.clip_height_unscaled)*0.5f - pt.screen.xyw.y);
-
-		if ( HUD_offset_x > 100.0f )	{
-			HUD_offset_x = 100.0f;
-		} else if ( HUD_offset_x < -100.0f )	{
-			HUD_offset_x += 100.0f;
-		}
-
-		if ( HUD_offset_y > 100.0f )	{
-			HUD_offset_y = 100.0f;
-		} else if ( HUD_offset_y < -100.0f )	{
-			HUD_offset_y += 100.0f;
-		}
-
-	} else {
-		HUD_offset_x = 0.0f;
-		HUD_offset_y = 0.0f;
-	}
-
 	if ( Viewer_mode & ( VM_TOPDOWN | VM_CHASE ) ) {
 		HUD_nose_x = 0;
 		HUD_nose_y = 0;
@@ -3845,10 +3809,7 @@ void HUD_get_nose_coordinates(int *x, int *y)
  */
 void HUD_reset_clip()
 {
-	int hx = fl2i(HUD_offset_x);
-	int hy = fl2i(HUD_offset_y);
-
-	gr_set_clip(hx, hy, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled);
+	gr_set_clip(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled);
 }
 
 /**
@@ -3856,10 +3817,7 @@ void HUD_reset_clip()
  */
 void HUD_set_clip(int x, int y, int w, int h)
 {
-	int hx = fl2i(HUD_offset_x);
-	int hy = fl2i(HUD_offset_y);
-
-	gr_set_clip(hx+x, hy+y, w, h);
+	gr_set_clip(x, y, w, h);
 }
 
 /**
@@ -3869,7 +3827,7 @@ void HUD_set_clip(int x, int y, int w, int h)
 void hud_save_restore_camera_data(int save)
 {
 	static vec3d	save_view_position;
-	static float	save_view_zoom;
+	static fov_t	save_view_zoom;
 	static matrix	save_view_matrix;
 	static matrix	save_eye_matrix;
 	static vec3d	save_eye_position;
@@ -4135,7 +4093,7 @@ void HudGaugeSupernova::render(float  /*frametime*/)
 }
 
 HudGaugeFlightPath::HudGaugeFlightPath():
-HudGauge(HUD_OBJECT_FLIGHT_PATH, HUD_CENTER_RETICLE, false, false, VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY, 255, 255, 255)
+HudGauge3DAnchor(HUD_OBJECT_FLIGHT_PATH, HUD_CENTER_RETICLE, false, false, VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY, 255, 255, 255)
 {
 }
 

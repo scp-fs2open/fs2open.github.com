@@ -1154,8 +1154,6 @@ bool pilotfile::load_player(const char* callsign, player* _p, bool force_binary)
 
 	player_set_squad_bitmap(p, p->m_squad_filename, true);
 
-	hud_squadmsg_save_keys();
-
 	// Flags to signal the main UI the state of the loaded player file
 	// Do these here after player_read_flags() so they don't get trashed!
 	if (plr_ver < 4) {

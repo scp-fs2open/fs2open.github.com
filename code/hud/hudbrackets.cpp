@@ -331,7 +331,7 @@ int draw_subsys_brackets(graphics::line_draw_list* draw_list, ship_subsys* subsy
 }
 
 HudGaugeBrackets::HudGaugeBrackets():
-HudGauge(HUD_OBJECT_BRACKETS, HUD_OFFSCREEN_INDICATOR, false, true, VM_DEAD_VIEW, 255, 255, 255)
+HudGauge3DAnchor(HUD_OBJECT_BRACKETS, HUD_OFFSCREEN_INDICATOR, false, true, VM_DEAD_VIEW, 255, 255, 255)
 {
 }
 

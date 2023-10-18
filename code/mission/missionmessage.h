@@ -148,6 +148,7 @@ typedef struct MessageFilter {
 	SCP_vector<SCP_string> wing_name;
 	int                    species_bitfield;
 	int                    type_bitfield;
+	int                    team_bitfield;
 } MessageFilter;
 
 typedef struct MissionMessage {
@@ -160,6 +161,9 @@ typedef struct MissionMessage {
 
 	MessageFilter sender_filter;
 	MessageFilter subject_filter;
+	MessageFilter outer_filter;
+	int outer_filter_radius;
+	int boost_level;
 
 	// unions for avi/wave information.  Because of issues with Fred, we are using
 	// the union to specify either the index into the avi or wave arrays above,

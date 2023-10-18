@@ -92,6 +92,9 @@ typedef struct fireball {
 	gamesnd_id warp_close_sound_index;
 	float	warp_open_duration;
 	float	warp_close_duration;
+
+	// the sound multiplier is based on the ship class, but we lose that while the warp is closing
+	float	warp_sound_range_multiplier;
 } fireball;
 // end move
 

@@ -669,6 +669,12 @@ inline vec3d operator*(const vec3d& left, float right)
 	vm_vec_copy_scale(&out, &left, right);
 	return out;
 }
+inline vec3d operator*(float left, const vec3d& right)
+{
+	vec3d out;
+	vm_vec_copy_scale(&out, &right, left);
+	return out;
+}
 inline vec3d& operator*=(vec3d& left, float right)
 {
 	vm_vec_scale(&left, right);

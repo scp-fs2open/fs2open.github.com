@@ -9,7 +9,7 @@
 using namespace luacpp;
 
 namespace sexp {
-static const SCP_unordered_set<int> allowed_oswpt_parameters{ OPF_SHIP, OPF_WING, OPF_SHIP_POINT, OPF_SHIP_WING, OPF_SHIP_WING_WHOLETEAM, OPF_SHIP_WING_SHIPONTEAM_POINT, OPF_SHIP_WING_POINT, OPF_SHIP_WING_POINT_OR_NONE };
+static const SCP_unordered_set<int> allowed_oswpt_parameters{ OPF_SHIP, OPF_WING, OPF_SHIP_POINT, OPF_SHIP_WING, OPF_SHIP_WING_WHOLETEAM, OPF_SHIP_WING_SHIPONTEAM_POINT, OPF_SHIP_WING_POINT, OPF_SHIP_WING_POINT_OR_NONE, OPF_POINT };
 
 LuaAISEXP::LuaAISEXP(const SCP_string& name) : LuaSEXP(name) {
 	_return_type = OPR_AI_GOAL;

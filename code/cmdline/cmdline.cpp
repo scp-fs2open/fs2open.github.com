@@ -188,6 +188,7 @@ Flag exe_params[] =
 	//flag					launcher text								FSO		on_flags							off_flags						category		reference URL
 	{ "-window",			"Run in window",							true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-window", },
 	{ "-fullscreen_window",	"Run in fullscreen window",					false,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-fullscreen_window", },
+	{ "-capture_mouse",		"Capture the mouse within the window",		true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-capture_mouse", },
 	{ "-stretch_menu",		"Stretch interface to fill screen",			true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-stretch_menu", },
 	{ "-noscalevid",		"Disable scale-to-window for movies",		true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-noscalevid", },
 	{ "-nomotiondebris",	"Disable motion debris",					true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nomotiondebris",},
@@ -406,6 +407,7 @@ cmdline_parm use_3dwarp("-3dwarp", nullptr, AT_NONE);			// Is now Fireball_use_3
 cmdline_parm use_warp_flash("-warp_flash", nullptr, AT_NONE);	// Cmdline_warp_flash
 cmdline_parm allow_autpilot_interrupt("-no_ap_interrupt", nullptr, AT_NONE);
 cmdline_parm stretch_menu("-stretch_menu", nullptr, AT_NONE);	// Cmdline_stretch_menu
+cmdline_parm capture_mouse("-capture_mouse", nullptr, AT_NONE);	// Cmdline_capture_mouse
 cmdline_parm no_screenshake("-no_screenshake", nullptr, AT_NONE); // Cmdline_no_screenshake
 cmdline_parm deadzone("-deadzone", 
 "Sets the joystick deadzone. Integer value from 0 to 100 as a percentage of the joystick's range (100% would make the stick do nothing). Disables deadzone slider in the in-game Options menu.", AT_INT); //Cmdline_deadzone
@@ -414,6 +416,7 @@ int Cmdline_ship_choice_3d = 0;
 int Cmdline_weapon_choice_3d = 0;
 int Cmdline_autopilot_interruptable = 1;
 int Cmdline_stretch_menu = 0;
+bool Cmdline_capture_mouse = false;
 int Cmdline_no_screenshake = 0;
 int Cmdline_deadzone = -1;
 
@@ -1870,6 +1873,10 @@ bool SetCmdlineParams()
 
 	if ( stretch_menu.found() )	{
 		Cmdline_stretch_menu = 1;
+	}
+
+	if ( capture_mouse.found() ) {
+		Cmdline_capture_mouse = true;
 	}
 	// new lighting lines
 	if ( ambient_power_arg.found() )

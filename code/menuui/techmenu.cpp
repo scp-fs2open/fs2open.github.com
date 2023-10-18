@@ -552,7 +552,7 @@ void techroom_ships_render(float frametime)
 		closeup_pos = sip->closeup_pos;
 		closeup_zoom = sip->closeup_zoom;
 
-		if (sip->replacement_textures.size() > 0) {
+		if (!sip->replacement_textures.empty()) {
 			render_info.set_replacement_textures(Techroom_modelnum, sip->replacement_textures);
 		}
 

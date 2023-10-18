@@ -20,7 +20,7 @@ extern float Canv_w2,Canv_h2;			//fixed-point width,height/2
 extern vec3d Window_scale;
 extern int free_point_num;
 
-extern float View_zoom;
+extern fov_t View_zoom;
 extern vec3d View_position,Matrix_scale;
 extern matrix View_matrix,Unscaled_matrix;
 

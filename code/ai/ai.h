@@ -56,12 +56,6 @@ extern const int Num_ai_flag_names;
 #define	AIDO_DOCK_NOW	2		//	Immediately move into dock position.  For ships that start mission docked.
 #define	AIDO_UNDOCK		3		//	Set goal of undocking with object.
 
-//	Submodes for seeking safety.
-#define	AISS_1	41				//	Pick a spot to fly to.
-#define	AISS_2	42				//	Flying to spot.
-#define	AISS_3	43				//  Gotten near spot, fly about there.
-#define	AISS_1a	44				//	Pick a new nearby spot because we are endangered, then go to AISS_2
-
 //	Flags to ai_turn_towards_vector().
 #define	AITTV_FAST					(1<<0)	//	Turn fast, not slowed down based on skill level.
 #define AITTV_VIA_SEXP				(1<<1)	//	Goober5000 - via sexp
@@ -93,7 +87,7 @@ extern const int Num_ai_flag_names;
 #define	AIM_BAY_DEPART			18		//  Departing to a fighter bay, following path to do so
 #define	AIM_SENTRYGUN			19		//  AI mode for sentry guns only (floating turrets)
 #define	AIM_WARP_OUT			20		//	Commence warp out sequence.  Point in legal direction.  Then call John's code.
-#define AIM_FLY_TO_SHIP			21		//  [Kazan] Fly to a ship, doesn't matter if it's hostile or friendly -- for Autopilot usage
+#define AIM_FLY_TO_SHIP			21		//  Rendezvous with a ship.  Like stay-near, but non-perpetual.
 #define AIM_LUA					22		//  Generic Lua-based AI mode
 
 #define	MAX_AI_BEHAVIORS		23		//	Number of AIM_xxxx types
@@ -186,6 +180,12 @@ typedef struct ai_class {
 #define	AIS_UNDOCK_3	33
 #define	AIS_UNDOCK_4	34
 
+//	Submodes for seeking safety.
+#define	AISS_1	41				//	Pick a spot to fly to.
+#define	AISS_2	42				//	Flying to spot.
+#define	AISS_3	43				//  Gotten near spot, fly about there.
+#define	AISS_1a	44				//	Pick a new nearby spot because we are endangered, then go to AISS_2.  (Not implemented.)
+
 //	Submodes for Guard behavior
 #define	AIS_GUARD_PATROL		101
 #define	AIS_GUARD_ATTACK		102
@@ -240,7 +240,6 @@ typedef struct ai_info {
 	flagset<AI::AI_Flags> ai_flags;				//	Special flags for AI behavior.
 	int		shipnum;					// Ship using this slot, -1 means none.
 
-	int		behavior;				//	AI behavior; vestigial field from early development of FS1
 	int		mode;
 	int		previous_mode;
 	int		mode_time;				//	timestamp at which current mode elapses.
@@ -308,6 +307,7 @@ typedef struct ai_info {
 	fix		submode_start_time;	// time at which we entered the current submode
 	int		submode_parm0;			//	parameter specific to current submode
 	int		submode_parm1;			//	SUSHI: Another optional parameter
+	float	submode_float0;			//	Goober5000: a float parameter
 	fix		next_predict_pos_time;			//	Next time to predict position.
 
 	int		next_dynamic_path_check_time;	//ETP: Time of next path check in ai_new_maybe_reposition_attack_subsys
@@ -372,11 +372,6 @@ typedef struct ai_info {
 	float	ai_max_aim_update_delay;
 	float	ai_turret_max_aim_update_delay;
 	flagset<AI::Profile_Flags> ai_profile_flags;	//Holds AI_Profiles flags (possibly overriden by AI class) that actually apply to AI
-
-
-	union {
-	float		stay_near_distance;				//	Distance to stay within for AIM_STAY_NEAR mode.
-	};
 
 	ship_subsys*	targeted_subsys;			// Targeted subobject on current target.  NULL if none;
 	ship_subsys*	last_subsys_target;		// last known subsystem target
@@ -565,7 +560,7 @@ extern void ai_attack_wing(object *attacker, int wingnum);
 extern void ai_deathroll_start(object *ship_obj);
 extern int set_target_objnum(ai_info *aip, int objnum);
 extern void ai_form_on_wing(object *objp, object *goal_objp);
-extern void ai_do_stay_near(object *objp, object *other_obj, float dist);
+extern void ai_do_stay_near(object *objp, object *other_obj, float dist, int additional_data);
 extern ship_subsys *set_targeted_subsys(ai_info *aip, ship_subsys *new_subsys, int parent_objnum);
 extern void ai_rearm_repair( object *objp, int docker_index, object *goal_objp, int dockee_index );
 extern void ai_add_rearm_goal( object *requester_objp, object *support_objp );
@@ -624,10 +619,6 @@ int get_nearest_objnum(int objnum, int enemy_team_mask, int enemy_wing, float ra
 
 // moved to header file by Goober5000
 void ai_announce_ship_dying(object *dying_objp);
-
-// added by kazan
-void ai_start_fly_to_ship(object *objp, int shipnum);
-void ai_fly_to_ship();
 
 //Moved declaration here for player ship -WMC
 void ai_process_subobjects(int objnum);
