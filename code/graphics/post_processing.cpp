@@ -40,7 +40,7 @@ PostEffectUniformType mapUniformNameToType(const SCP_string& uniform_name)
 // used by In-Game Options menu
 bool Post_processing_enable_lightshafts = true;
 
-auto LightshaftsOption __UNUSED =
+static auto LightshaftsOption =
 	options::OptionBuilder<bool>("Graphics.Lightshafts", "Lightshafts", "Enable lightshafts (requires post-processing)")
 		.category("Graphics")
 		.default_val(true)
@@ -51,7 +51,7 @@ auto LightshaftsOption __UNUSED =
 
 int Post_processing_bloom_intensity = 25; // using default value of Cmdline_bloom_intensity
 
-auto BloomIntensityOption __UNUSED = options::OptionBuilder<int>("Graphics.BloomIntensity",
+static auto BloomIntensityOption = options::OptionBuilder<int>("Graphics.BloomIntensity",
 	"Bloom intensity",
 	"Set bloom intensity (requires post-processing)")
 	.category("Graphics")
@@ -223,7 +223,7 @@ bool gr_lightshafts_enabled()
 	}
 
 	if (Using_in_game_options) {
-		return graphics::Post_processing_enable_lightshafts;
+		return graphics::LightshaftsOption->getValue();
 	} else {
 		return !Cmdline_force_lightshaft_off;
 	}
@@ -240,7 +240,7 @@ int gr_bloom_intensity()
 	}
 
 	if (Using_in_game_options) {
-		return graphics::Post_processing_bloom_intensity;
+		return graphics::BloomIntensityOption->getValue();
 	} else {
 		return Cmdline_bloom_intensity;
 	}
