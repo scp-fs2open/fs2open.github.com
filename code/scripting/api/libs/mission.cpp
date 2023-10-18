@@ -990,28 +990,29 @@ ADE_FUNC(sendPlainMessage,
 
 ADE_FUNC(addMessageToScrollback,
 	l_Mission,
-	"string message, [number|enumeration source=HUD_SOURCE_COMPUTER]",
-	"Adds a string to the message log scrollback without sending it as a message first. Source matches the built-in sources and then "
-	"the team index where (N - num built-in sources) == team index. Currently the built-in sources are 0-7 in this order: Computer, training, hidden, "
-	" important, failed, satisfied, terran command, netplayer.",
+	"string message, [team|enumeration source=HUD_SOURCE_COMPUTER]",
+	"Adds a string to the message log scrollback without sending it as a message first. Source should be either the team handle "
+	"or one of the SCROLLBACK_SOURCE enumerations.",
 	"boolean",
 	"true if successful, false otherwise")
 {
 	const char* message = nullptr;
-	int source = HUD_SOURCE_COMPUTER;
+	int team = -1;
 	enum_h* esp = nullptr;
 
-	if (lua_isnumber(L, 2)) {
-		if (!ade_get_args(L, "s|i", &message, &source)) {
+	int source = HUD_SOURCE_COMPUTER;
+	if (luacpp::convert::ade_odata_is_userdata_type(L, 2, l_Team)) {
+		if (!ade_get_args(L, "s|o", &message, l_Team.Get(&team))) {
 			return ADE_RETURN_FALSE;
 		} else {
+			source = HUD_team_get_source(team);
 			if (source < HUD_SOURCE_TEAM_OFFSET) {
-				LuaError(L, "Source index must be greater than the %i built-in sources.", HUD_SOURCE_TEAM_OFFSET);
+				LuaError(L, "Got team index %i. Team source may be invalid!", source);
 				return ADE_RETURN_FALSE;
 			}
 		}
 	} else {
-		if (!ade_get_args(L, "s|i", &message, l_Enum.GetPtr(&esp))) {
+		if (!ade_get_args(L, "s|o", &message, l_Enum.GetPtr(&esp))) {
 			return ADE_RETURN_FALSE;
 		} else {
 			if (esp != nullptr) {
