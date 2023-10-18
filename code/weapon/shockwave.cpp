@@ -48,7 +48,7 @@ int Shockwave_inited = 0;
 extern int Show_area_effect;
 extern int Cmdline_enable_3d_shockwave;
 
-static SCP_string shockwave_mode_display(bool mode) { return mode ? XSTR("3D", 1791) : XSTR("2D", 1792); }
+static SCP_string shockwave_mode_display(bool mode) { return mode ? XSTR("3D", 1691) : XSTR("2D", 1692); }
 
 static bool Use_3D_shockwaves = true;
 

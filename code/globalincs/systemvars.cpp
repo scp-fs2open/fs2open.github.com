@@ -245,7 +245,7 @@ detail_levels Detail_defaults[NUM_DEFAULT_DETAIL_LEVELS] = {
 // Global used to access detail levels in game and libs
 detail_levels Detail = Detail_defaults[NUM_DEFAULT_DETAIL_LEVELS - 1];
 
-const SCP_vector<std::pair<int, std::pair<const char*, int>>> DetailLevelValues = {{ 0, {"Minimum", 1780}},
+const SCP_vector<std::pair<int, std::pair<const char*, int>>> DetailLevelValues = {{ 0, {"Minimum", 1680}},
                                                                                    { 1, {"Low", 1161}},
                                                                                    { 2, {"Medium", 1162}},
                                                                                    { 3, {"High", 1163}},
@@ -318,7 +318,7 @@ const auto ShieldEffectsOption __UNUSED = options::OptionBuilder<int>("Graphics.
 
 const auto StarsOption __UNUSED = options::OptionBuilder<int>("Graphics.Stars", 
                      std::pair<const char*, int>{"Stars", 1366}, 
-                     std::pair<const char*, int>{"Number of stars in the mission", 1796})
+                     std::pair<const char*, int>{"Number of stars in the mission", 1698})
                      .importance(2)
                      .category("Graphics")
                      .values(DetailLevelValues)

@@ -47,8 +47,8 @@ extern int GLOWMAP;
 extern int SPECMAP;
 extern int ENVMAP;
 
-const SCP_vector<std::pair<int, std::pair<const char*, int>>> TextureFilteringValues = {{0, {"Bilinear", 1777}},
-																		                { 1, {"Trilinear", 1778}}};
+const SCP_vector<std::pair<int, std::pair<const char*, int>>> TextureFilteringValues = {{0, {"Bilinear", 1677}},
+																		                { 1, {"Trilinear", 1678}}};
 
 static auto TextureFilteringOption __UNUSED = options::OptionBuilder<int>("Graphics.TextureFilter",
                      std::pair<const char*, int>{"Texture Filtering", 1763},

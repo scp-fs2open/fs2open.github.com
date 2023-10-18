@@ -123,7 +123,7 @@ static auto GammaOption __UNUSED = options::OptionBuilder<float>("Graphics.Gamma
                      .finish();
 
 
-const SCP_vector<std::pair<int, std::pair<const char*, int>>> DetailLevelValues = {{ 0, {"Minimum", 1780}},
+const SCP_vector<std::pair<int, std::pair<const char*, int>>> DetailLevelValues = {{ 0, {"Minimum", 1680}},
                                                                                    { 1, {"Low", 1161}},
                                                                                    { 2, {"Medium", 1162}},
                                                                                    { 3, {"High", 1163}},
@@ -170,9 +170,9 @@ static auto WindowModeOption __UNUSED = options::OptionBuilder<os::ViewportState
                      std::pair<const char*, int>{"Controls how the game window is created", 1773})
                      .category("Graphics")
                      .level(options::ExpertLevel::Beginner)
-                     .values({{os::ViewportState::Fullscreen, {"Fullscreen", 1774}},
-                              {os::ViewportState::Borderless, {"Borderless", 1775}},
-                              {os::ViewportState::Windowed, {"Windowed", 1776}}})
+                     .values({{os::ViewportState::Fullscreen, {"Fullscreen", 1674}},
+                              {os::ViewportState::Borderless, {"Borderless", 1675}},
+                              {os::ViewportState::Windowed, {"Windowed", 1676}}})
                      .importance(98)
                      .default_val(os::ViewportState::Fullscreen)
                      .change_listener(mode_change_func)
@@ -398,9 +398,9 @@ static auto FramebufferEffectsOption __UNUSED = options::OptionBuilder<flagset<F
                      .category("Graphics")
                      .level(options::ExpertLevel::Advanced)
                      .values({{{}, {"None", 211}},
-                              {{FramebufferEffects::Shockwaves}, {"Shockwaves", 1788}},
-                              {{FramebufferEffects::Thrusters}, {"Thrusters", 1789}},
-                              {{FramebufferEffects::Shockwaves, FramebufferEffects::Thrusters}, {"All", 1790}}})
+                              {{FramebufferEffects::Shockwaves}, {"Shockwaves", 1688}},
+                              {{FramebufferEffects::Thrusters}, {"Thrusters", 1689}},
+                              {{FramebufferEffects::Shockwaves, FramebufferEffects::Thrusters}, {"All", 1690}}})
                      .default_val({FramebufferEffects::Shockwaves, FramebufferEffects::Thrusters})
                      .bind_to_once(&Gr_framebuffer_effects)
                      .importance(77)
@@ -415,13 +415,13 @@ static auto AAOption __UNUSED = options::OptionBuilder<AntiAliasMode>("Graphics.
                      .category("Graphics")
                      .level(options::ExpertLevel::Advanced)
                      .values({{AntiAliasMode::None, {"None", 211}},
-                              {AntiAliasMode::FXAA_Low, {"FXAA Low", 1781}},
-                              {AntiAliasMode::FXAA_Medium, {"FXAA Medium", 1782}},
-                              {AntiAliasMode::FXAA_High, {"FXAA High", 1783}},
-                              {AntiAliasMode::SMAA_Low, {"SMAA Low", 1784}},
-                              {AntiAliasMode::SMAA_Medium, {"SMAA Medium", 1785}},
-                              {AntiAliasMode::SMAA_High, {"SMAA High", 1786}},
-                              {AntiAliasMode::SMAA_Ultra, {"SMAA Ultra", 1787}}})
+                              {AntiAliasMode::FXAA_Low, {"FXAA Low", 1681}},
+                              {AntiAliasMode::FXAA_Medium, {"FXAA Medium", 1682}},
+                              {AntiAliasMode::FXAA_High, {"FXAA High", 1683}},
+                              {AntiAliasMode::SMAA_Low, {"SMAA Low", 1684}},
+                              {AntiAliasMode::SMAA_Medium, {"SMAA Medium", 1685}},
+                              {AntiAliasMode::SMAA_High, {"SMAA High", 1686}},
+                              {AntiAliasMode::SMAA_Ultra, {"SMAA Ultra", 1687}}})
                      .default_val(AntiAliasMode::None)
                      .bind_to(&Gr_aa_mode)
                      .importance(79)
@@ -433,10 +433,10 @@ static auto MSAAOption __UNUSED = options::OptionBuilder<int>("Graphics.MSAASamp
                      std::pair<const char*, int>{"Controls whether multisample anti asliasing is enabled, and with how many samples", 1759})
                      .category("Graphics")
                      .level(options::ExpertLevel::Advanced)
-                     .values({{0, {"Off", 1791}},
-                              {4, {"4 Samples", 1792}},
-                              {8, {"8 Samples", 1793}},
-                              {16, {"16 Samples", 1794}}})
+                     .values({{0, {"Off", 1693}},
+                              {4, {"4 Samples", 1694}},
+                              {8, {"8 Samples", 1695}},
+                              {16, {"16 Samples", 1696}}})
                      .default_val(0)
                      .bind_to(&Cmdline_msaa_enabled)
                      .importance(78)
