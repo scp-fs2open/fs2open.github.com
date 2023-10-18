@@ -3509,11 +3509,11 @@ int WE_Default::warpStart()
 		effect_time += SHIPFX_WARP_DELAY;
 
 		// turn off warpin physics in case we're jumping out immediately
-		objp->phys_info.flags &= ~PF_SPECIAL_WARP_IN;
+		objp->phys_info.flags &= ~PF_SUPERCAP_WARP_IN;
 
 		// maybe turn on warpout physics
 		if (params->special_warp_physics) {
-			objp->phys_info.flags |= PF_SPECIAL_WARP_OUT;
+			objp->phys_info.flags |= PF_SUPERCAP_WARP_OUT;
 		}
 	}
 
@@ -3634,7 +3634,7 @@ int WE_Default::warpFrame(float frametime)
 			// notify physics to slow down
 			if (params->special_warp_physics) {
 				// let physics know this is a special warp in
-				objp->phys_info.flags |= PF_SPECIAL_WARP_IN;
+				objp->phys_info.flags |= PF_SUPERCAP_WARP_IN;
 			}
 		}
 	}
@@ -3728,6 +3728,41 @@ int WE_Default::getWarpOrientation(matrix* output)
 		vm_vector_2_matrix(output, &backwards, nullptr, nullptr);
 	}
     return 1;
+}
+
+float shipfx_calculate_arrival_warp_distance(object *objp)
+{
+	Assertion(objp != nullptr && objp->type == OBJ_SHIP, "Object parameter to shipfx_calculate_arrival_warp_distance must be a ship!");
+	auto shipp = &Ships[objp->instance];
+
+	// c.f. WE_Default::warpStart()
+	float half_length, warping_dist;
+	if (object_is_docked(objp))
+	{
+		half_length = dock_calc_max_semilatus_rectum_parallel_to_axis(objp, Z_AXIS);
+		warping_dist = 2.0f * half_length;
+	}
+	else
+	{
+		warping_dist = ship_class_get_length(&Ship_info[shipp->ship_info_index]);
+		half_length = 0.5f * warping_dist;
+	}
+	float warping_time = shipfx_calculate_warp_time(objp, WarpDirection::WARP_IN, half_length, warping_dist);
+	float warping_speed = warping_dist / warping_time;
+
+	auto warpin_params = &Warp_params[shipp->warpin_params_index];
+
+	// the total distance is a full length from its current position, plus the distance it takes to slow down from its warping speed
+	float decel_time_const = objp->phys_info.forward_decel_time_const;
+	if (warpin_params->special_warp_physics) {
+		// super cap style warpins are annoying, one time constant while above their max speed, a different one while slowing down from there
+		float supercap_slowdown_dist = (warping_speed - (objp->phys_info.max_vel.xyz.z + SUPERCAP_WARP_EXCESS_SPD_THRESHOLD)) * SUPERCAP_WARP_T_CONST;
+		float regular_slowdown_dist = (objp->phys_info.max_vel.xyz.z + SUPERCAP_WARP_EXCESS_SPD_THRESHOLD) * decel_time_const;
+
+		return warping_dist + supercap_slowdown_dist + regular_slowdown_dist;
+	} else {
+		return warping_dist + warping_speed * decel_time_const;
+	}
 }
 
 //********************-----CLASS: WE_BSG-----********************//
