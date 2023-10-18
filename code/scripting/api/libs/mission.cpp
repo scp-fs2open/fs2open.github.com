@@ -988,6 +988,75 @@ ADE_FUNC(sendPlainMessage,
 	return ADE_RETURN_TRUE;
 }
 
+ADE_FUNC(addMessageToScrollback,
+	l_Mission,
+	"string message, [team|enumeration source=HUD_SOURCE_COMPUTER]",
+	"Adds a string to the message log scrollback without sending it as a message first. Source should be either the team handle "
+	"or one of the SCROLLBACK_SOURCE enumerations.",
+	"boolean",
+	"true if successful, false otherwise")
+{
+	const char* message = nullptr;
+	int team = -1;
+	enum_h* esp = nullptr;
+
+	int source = HUD_SOURCE_COMPUTER;
+	if (luacpp::convert::ade_odata_is_userdata_type(L, 2, l_Team)) {
+		if (!ade_get_args(L, "s|o", &message, l_Team.Get(&team))) {
+			return ADE_RETURN_FALSE;
+		} else {
+			source = HUD_team_get_source(team);
+			if (source < HUD_SOURCE_TEAM_OFFSET) {
+				LuaError(L, "Got team index %i. Team source may be invalid!", source);
+				return ADE_RETURN_FALSE;
+			}
+		}
+	} else {
+		if (!ade_get_args(L, "s|o", &message, l_Enum.GetPtr(&esp))) {
+			return ADE_RETURN_FALSE;
+		} else {
+			if (esp != nullptr) {
+				switch (esp->index) {
+				case LE_SCROLLBACK_SOURCE_COMPUTER:
+					source = HUD_SOURCE_COMPUTER;
+					break;
+				case LE_SCROLLBACK_SOURCE_TRAINING:
+					source = HUD_SOURCE_TRAINING;
+					break;
+				case LE_SCROLLBACK_SOURCE_HIDDEN:
+					source = HUD_SOURCE_HIDDEN;
+					break;
+				case LE_SCROLLBACK_SOURCE_IMPORTANT:
+					source = HUD_SOURCE_IMPORTANT;
+					break;
+				case LE_SCROLLBACK_SOURCE_FAILED:
+					source = HUD_SOURCE_FAILED;
+					break;
+				case LE_SCROLLBACK_SOURCE_SATISFIED:
+					source = HUD_SOURCE_SATISFIED;
+					break;
+				case LE_SCROLLBACK_SOURCE_COMMAND:
+					source = HUD_SOURCE_TERRAN_CMD;
+					break;
+				case LE_SCROLLBACK_SOURCE_NETPLAYER:
+					source = HUD_SOURCE_NETPLAYER;
+					break;
+				default:
+					LuaError(L, "Invalid enumeration used! Must be one of SCROLLBACK_SOURCE_*.");
+					return ADE_RETURN_FALSE;
+				}
+			}
+		}
+	}
+
+	if (message == nullptr)
+		return ADE_RETURN_FALSE;
+
+	HUD_add_to_scrollback(message, source);
+
+	return ADE_RETURN_TRUE;
+}
+
 ADE_FUNC(createShip,
 	l_Mission,
 	"[string Name, shipclass Class /* First ship class by default */, orientation Orientation=null, vector Position /* "
