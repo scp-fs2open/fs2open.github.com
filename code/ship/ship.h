@@ -63,8 +63,7 @@ extern vec3d	Original_vec_to_deader;
 
 
 // defines for 'direction' parameter of ship_select_next_primary()
-#define CYCLE_PRIMARY_NEXT		0
-#define CYCLE_PRIMARY_PREV		1
+enum class CycleDirection { NEXT, PREV };
 
 #define BANK_1		0
 #define BANK_2		1
@@ -1699,7 +1698,7 @@ extern int ship_launch_countermeasure(object *objp, int rand_val = -1);
 // for special targeting lasers
 extern void ship_process_targeting_lasers();
 
-extern int ship_select_next_primary(object *objp, int direction);
+extern bool ship_select_next_primary(object *objp, CycleDirection direction);
 extern int  ship_select_next_secondary(object *objp);
 
 // Goober5000

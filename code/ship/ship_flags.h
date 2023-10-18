@@ -107,7 +107,6 @@ namespace Ship {
 		No_thrusters,				// The E - Thrusters on this ship are not rendered.
 		Ship_locked,				// Karajorma - Prevents the player from changing the ship class on loadout screen
 		Weapons_locked,				// Karajorma - Prevents the player from changing the weapons on the ship on the loadout screen
-		Ship_selective_linking,		// RSAXVC - Allow pilot to pick firing configuration
 		Scramble_messages,			// Goober5000 - all messages sent from this ship appear scrambled
         No_secondary_lockon,        // zookeeper - secondary lock-on disabled
         No_disabled_self_destruct,  // Goober5000 - ship will not self-destruct after 90 seconds if engines or weapons destroyed (c.f. ai_maybe_self_destruct)
