@@ -12,6 +12,10 @@ const std::shared_ptr<Hook<>> OnGameInit = Hook<>::Factory("On Game Init",
 	tl::nullopt,
 	CHA_GAMEINIT);
 
+const std::shared_ptr<Hook<>> OnIntroAboutToPlay = Hook<>::Factory("On Intro About To Play",
+	"Executed just before the intro movie is played.",
+	{});
+
 const std::shared_ptr<OverridableHook<>> OnStateStart = OverridableHook<>::Factory("On State Start",
 	"Executed whenever a new state is entered.",
 	{ 
