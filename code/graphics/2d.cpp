@@ -430,7 +430,7 @@ static auto MSAAOption __UNUSED = options::OptionBuilder<int>("Graphics.MSAASamp
                                     {8, "8 Samples"},
                                     {16, "16 Samples"}})
                            .default_val(0)
-                           .bind_to(&Cmdline_msaa_enabled)
+                           .bind_to_once(&Cmdline_msaa_enabled)
                            .importance(78)
                            .finish();
 
