@@ -1216,9 +1216,9 @@ ADE_FUNC(createWeapon,
 	l_Mission,
 	"[weaponclass Class /* first weapon in table by default*/, orientation Orientation=identity, vector "
 	"WorldPosition/* null vector by default */, object Parent = "
-	"nil, number Group = -1]",
+	"nil, number GroupId = -1]",
 	"Creates a weapon and returns a handle to it. 'Group' is used for lighting grouping purposes;"
-	" for example, quad lasers would only need to act as one light source.",
+	" for example, quad lasers would only need to act as one light source.  Use generateWeaponGroupId() if you need a group.",
 	"weapon",
 	"Weapon handle, or invalid weapon handle if weapon couldn't be created.")
 {
@@ -1243,6 +1243,16 @@ ADE_FUNC(createWeapon,
 		return ade_set_args(L, "o", l_Weapon.Set(object_h(&Objects[obj_idx])));
 	else
 		return ade_set_error(L, "o", l_Weapon.Set(object_h()));
+}
+
+ADE_FUNC(generateWeaponGroupId,
+	l_Mission,
+	nullptr,
+	"Generates a weapon group ID to be used with createWeapon.  This is only needed for weapons that should share a light source, such as quad lasers.  Group IDs may be reused by the engine.",
+	"number",
+	"the group ID")
+{
+	return ade_set_args(L, "i", weapon_create_group_id());
 }
 
 ADE_FUNC(createWarpeffect,
