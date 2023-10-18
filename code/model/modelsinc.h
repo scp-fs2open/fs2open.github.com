@@ -27,27 +27,19 @@ class polymodel;
 #define OP_TMAP2POLY	6
 #define OP_SORTNORM2	7
 
-// change header for freespace2
-//#define FREESPACE1_FORMAT
-#define FREESPACE2_FORMAT
-#if defined( FREESPACE1_FORMAT )
-#elif defined ( FREESPACE2_FORMAT )
-#else
-	#error Neither FREESPACE1_FORMAT or FREESPACE2_FORMAT defined
-#endif
-
 // endianess will be handled by cfile and others now, little-endian should be default in all cases
 
 // little-endian (Intel) IDs
 #define POF_HEADER_ID  0x4f505350	// 'OPSP' (PSPO) POF file header
-#if defined( FREESPACE1_FORMAT )
-	// FREESPACE1 FORMAT
-	#define ID_OHDR 0x5244484f			// RDHO (OHDR): POF file header
-	#define ID_SOBJ 0x4a424f53			// JBOS (SOBJ): Subobject header
-#else
-	#define ID_OHDR 0x32524448			// 2RDH (HDR2): POF file header
-	#define ID_SOBJ 0x324a424f			// 2JBO (OBJ2): Subobject header
-#endif
+
+// FREESPACE1 FORMAT
+#define ID_OHDR 0x5244484f			// RDHO (OHDR): POF file header
+#define ID_SOBJ 0x4a424f53			// JBOS (SOBJ): Subobject header
+
+// FREESPACE2 FORMAT
+#define ID_HDR2 0x32524448			// 2RDH (HDR2): POF file header
+#define ID_OBJ2 0x324a424f			// 2JBO (OBJ2): Subobject header
+
 #define ID_TXTR 0x52545854				// RTXT (TXTR): Texture filename list
 #define ID_INFO 0x464e4950				// FNIP (PINF): POF file information, like command line, etc
 #define ID_GRID 0x44495247				// DIRG (GRID): Grid information
