@@ -48,13 +48,15 @@ bool fireballs_parsed = false;
 
 bool Fireball_use_3d_warp = false;
 
-static auto WarpOption __UNUSED = options::OptionBuilder<bool>("Graphics.3dWarp", "3D Warp", "Use a 3D model for warp effects")
-                             .category("Graphics")
-                             .default_val(true)
-                             .level(options::ExpertLevel::Advanced)
-                             .bind_to(&Fireball_use_3d_warp)
-                             .importance(65)
-                             .finish();
+static auto WarpOption __UNUSED = options::OptionBuilder<bool>("Graphics.3dWarp",
+                     std::pair<const char*, int>{"3D Warp", 1770},
+                     std::pair<const char*, int>{"Use a 3D model for warp effects", 1771})
+                     .category("Graphics")
+                     .default_val(true)
+                     .level(options::ExpertLevel::Advanced)
+                     .bind_to(&Fireball_use_3d_warp)
+                     .importance(65)
+                     .finish();
 
 /**
  * Play warp in sound for warp effect

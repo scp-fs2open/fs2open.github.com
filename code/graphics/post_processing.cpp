@@ -40,27 +40,28 @@ PostEffectUniformType mapUniformNameToType(const SCP_string& uniform_name)
 // used by In-Game Options menu
 bool Post_processing_enable_lightshafts = true;
 
-static auto LightshaftsOption =
-	options::OptionBuilder<bool>("Graphics.Lightshafts", "Lightshafts", "Enable lightshafts (requires post-processing)")
-		.category("Graphics")
-		.default_val(true)
-		.level(options::ExpertLevel::Advanced)
-		.bind_to(&Post_processing_enable_lightshafts)
-		.importance(60)
-		.finish();
+static auto LightshaftsOption __UNUSED = options::OptionBuilder<bool>("Graphics.Lightshafts",
+                     std::pair<const char*, int>{"Lightshafts", 1724},
+                     std::pair<const char*, int>{"Enables or disables lightshafts (requires post-processing)", 1725})
+                     .category("Graphics")
+                     .default_val(true)
+                     .level(options::ExpertLevel::Advanced)
+                     .bind_to(&Post_processing_enable_lightshafts)
+                     .importance(60)
+                     .finish();
 
 int Post_processing_bloom_intensity = 25; // using default value of Cmdline_bloom_intensity
 
-static auto BloomIntensityOption = options::OptionBuilder<int>("Graphics.BloomIntensity",
-	"Bloom intensity",
-	"Set bloom intensity (requires post-processing)")
-	.category("Graphics")
-	.range(0, 200)
-	.level(options::ExpertLevel::Advanced)
-	.default_val(25)
-	.bind_to(&Post_processing_bloom_intensity)
-	.importance(55)
-	.finish();
+static auto BloomIntensityOption __UNUSED = options::OptionBuilder<int>("Graphics.BloomIntensity",
+                     std::pair<const char*, int>{"Bloom intensity", 1701},
+                     std::pair<const char*, int>{"Sets the bloom intensity (requires post-processing)", 1702})
+                     .category("Graphics")
+                     .range(0, 200)
+                     .level(options::ExpertLevel::Advanced)
+                     .default_val(25)
+                     .bind_to(&Post_processing_bloom_intensity)
+                     .importance(55)
+                     .finish();
 } // namespace
 
 bool PostProcessingManager::parse_table()

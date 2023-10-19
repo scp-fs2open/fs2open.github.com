@@ -127,14 +127,15 @@ debriefing	*Debriefing;						// pointer to correct debriefing
 
 bool Briefing_voice_enabled = true; // flag which turn on/off voice playback of briefings/debriefings
 
-static auto BriefingVoiceOption __UNUSED = options::OptionBuilder<bool>("Audio.BriefingVoice", "Briefing voice",
-                                                               "Enable or disable voice playback in the briefing.")
-                                      .category("Audio")
-                                      .level(options::ExpertLevel::Beginner)
-                                      .default_val(true)
-                                      .bind_to(&Briefing_voice_enabled)
-                                      .importance(4)
-                                      .finish();
+static auto BriefingVoiceOption __UNUSED = options::OptionBuilder<bool>("Audio.BriefingVoice",
+                     std::pair<const char*, int>{"Briefing voice", 1368},
+                     std::pair<const char*, int>{"Enable or disable voice playback in the briefing", 1716})
+                     .category("Audio")
+                     .level(options::ExpertLevel::Beginner)
+                     .default_val(true)
+                     .bind_to(&Briefing_voice_enabled)
+                     .importance(4)
+                     .finish();
 
 // --------------------------------------------------------------------------------------
 // Module global data

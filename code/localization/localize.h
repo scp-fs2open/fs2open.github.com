@@ -135,4 +135,6 @@ void lcl_translate_targetbox_name_pl(char *name);
 void lcl_translate_medal_name_gr(char *name);
 void lcl_translate_medal_name_pl(char *name);
 
+void lcl_delayed_xstr(SCP_string& str, const char* name, int xstr);
+
 #endif	// defined __FREESPACE2_LOCALIZATION_UTILITIES_HEADER_FILE
