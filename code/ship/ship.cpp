@@ -7819,7 +7819,7 @@ void ship_render_player_ship(object* objp) {
 	if (prerenderShipModel) {
 		gr_post_process_save_zbuffer();
 
-		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 0.05f, Max_draw_distance);
+		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance_cockpit, Max_draw_distance);
 		gr_set_view_matrix(&leaning_position, &eye_orient);
 
 		model_render_params render_info;
@@ -7891,7 +7891,7 @@ void ship_render_player_ship(object* objp) {
 		gr_clear_states();
 	}
 
-	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 0.02f, Max_draw_distance);
+	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance_cockpit, Max_draw_distance);
 	gr_set_view_matrix(&leaning_position, &eye_orient);
 
 	Shadow_view_matrix_render = gr_view_matrix;
@@ -7939,7 +7939,7 @@ void ship_render_player_ship(object* objp) {
 		gr_end_view_matrix();
 		gr_end_proj_matrix();
 
-		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance_cockpit, Max_draw_distance);
 		gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
 		gr_deferred_lighting_msaa();

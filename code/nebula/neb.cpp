@@ -128,19 +128,24 @@ SCP_vector<poof> Neb2_poofs;
 
 int Neb2_background_color[3] = {0, 0, 255};			// rgb background color (used for lame rendering)
 
-const SCP_vector<std::pair<int, SCP_string>> DetailLevelValues = {{ 0, "Minimum" },
-                                                                  { 1, "Low" },
-                                                                  { 2, "Medium" },
-                                                                  { 3, "High" },
-                                                                  { 4, "Ultra" }, };
+const SCP_vector<std::pair<int, std::pair<const char*, int>>> DetailLevelValues = {{ 0, {"Minimum", 1680}},
+                                                                                   { 1, {"Low", 1161}},
+                                                                                   { 2, {"Medium", 1162}},
+                                                                                   { 3, {"High", 1163}},
+                                                                                   { 4, {"Ultra", 1721}}};
 
 const auto NebulaDetailOption __UNUSED = options::OptionBuilder<int>("Graphics.NebulaDetail",
-                                                           "Nebula Detail",
-                                                           "Detail level of nebulas").category("Graphics").values(
-	DetailLevelValues).default_val(MAX_DETAIL_LEVEL).importance(7).change_listener([](int val, bool) {
-	Detail.nebula_detail = val;
-	return true;
-}).finish();
+                     std::pair<const char*, int>{"Nebula Detail", 1361},
+                     std::pair<const char*, int>{"Detail level of nebulas", 1697})
+                     .category("Graphics")
+                     .values(DetailLevelValues)
+                     .default_val(MAX_DETAIL_LEVEL)
+                     .importance(7)
+                     .change_listener([](int val, bool) {
+                          Detail.nebula_detail = val;
+                          return true;
+                     })
+                     .finish();
 
 // --------------------------------------------------------------------------------------------------------
 // NEBULA FORWARD DECLARATIONS

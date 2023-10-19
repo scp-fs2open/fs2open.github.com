@@ -256,16 +256,17 @@ static SCP_string skill_level_display(int value)
 	return SCP_string(Skill_level_names(value, true));
 }
 
-static auto GameSkillOption __UNUSED =
-    options::OptionBuilder<int>("Game.SkillLevel", "Skill Level", "The skill level for the game.")
-        .category("Game")
-        .range(0, 4)
-        .level(options::ExpertLevel::Beginner)
-        .default_val(DEFAULT_SKILL_LEVEL)
-        .bind_to(&Game_skill_level)
-        .display(skill_level_display)
-        .importance(1)
-        .finish();
+static auto GameSkillOption __UNUSED = options::OptionBuilder<int>("Game.SkillLevel",
+                     std::pair<const char*, int>{"Skill Level", 1284},
+                     std::pair<const char*, int>{"The skill level for the game.", 1700})
+                     .category("Game")
+                     .range(0, 4)
+                     .level(options::ExpertLevel::Beginner)
+                     .default_val(DEFAULT_SKILL_LEVEL)
+                     .bind_to(&Game_skill_level)
+                     .display(skill_level_display)
+                     .importance(1)
+                     .finish();
 
 #define EXE_FNAME			("fs2.exe")
 
@@ -6649,6 +6650,10 @@ int game_main(int argc, char *argv[])
 		cfile_spew_pack_file_crcs();
 		game_shutdown();
 		return 0;
+	}
+
+	if (scripting::hooks::OnIntroAboutToPlay->isActive()) {
+		scripting::hooks::OnIntroAboutToPlay->run();
 	}
 
 	if (!Is_standalone) {

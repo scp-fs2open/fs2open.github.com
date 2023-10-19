@@ -36,6 +36,7 @@ class OverridableHook;
 
 extern const float Default_min_draw_distance;
 extern const float Default_max_draw_distance;
+extern float Min_draw_distance_cockpit;
 extern float Min_draw_distance;
 extern float Max_draw_distance;
 extern int Gr_inited;
