@@ -563,8 +563,6 @@ int beam_fire(beam_fire_info *fire_info)
 	// start the warmup phase
 	beam_start_warmup(new_item);
 
-	beam_set_state(wip, new_item, WeaponState::WARMUP);
-
 	return objnum;
 }
 
@@ -2051,6 +2049,13 @@ void beam_apply_lighting()
 // delete a beam
 void beam_delete(beam *b)
 {
+	// there isn't much distinction between death and death-started for beams
+	if (scripting::hooks::OnBeamDeath->isActive()) {
+		scripting::hooks::OnBeamDeath->run(scripting::hook_param_list(
+			scripting::hook_param("Beam", 'o', &Objects[b->objnum])
+		));
+	}
+
 	// remove from active list and put on free list
 	list_remove(&Beam_used_list, b);
 	list_append(&Beam_free_list, b);
@@ -2131,12 +2136,25 @@ int beam_get_model(object *objp)
 // start the warmup phase for the beam
 void beam_start_warmup(beam *b)
 {
+	auto wip = &Weapon_info[b->weapon_info_index];
+
 	// set the warmup stamp
-	b->warmup_stamp = timestamp(Weapon_info[b->weapon_info_index].b_info.beam_warmup);
+	b->warmup_stamp = timestamp(wip->b_info.beam_warmup);
 
 	// start playing warmup sound
-	if(!(Game_mode & GM_STANDALONE_SERVER) && (Weapon_info[b->weapon_info_index].b_info.beam_warmup_sound.isValid())){
-		snd_play_3d(gamesnd_get_game_sound(Weapon_info[b->weapon_info_index].b_info.beam_warmup_sound), &b->last_start, &View_position);
+	if(!(Game_mode & GM_STANDALONE_SERVER) && (wip->b_info.beam_warmup_sound.isValid())){
+		snd_play_3d(gamesnd_get_game_sound(wip->b_info.beam_warmup_sound), &b->last_start, &View_position);
+	}
+
+	beam_set_state(wip, b, WeaponState::WARMUP);
+
+	if (scripting::hooks::OnBeamWarmup->isActive()) {
+		scripting::hooks::OnBeamWarmup->run(scripting::hooks::WeaponUsedConditions{ b->objp == nullptr ? nullptr : &Ships[b->objp->instance], b->target, SCP_vector<int>{ b->weapon_info_index }, true },
+			scripting::hook_param_list(
+				scripting::hook_param("Beam", 'o', &Objects[b->objnum]),
+				scripting::hook_param("User", 'o', b->objp),
+				scripting::hook_param("Target", 'o', b->target)
+			));
 	}
 }
 
@@ -2200,7 +2218,7 @@ int beam_start_firing(beam *b)
 	beam_set_state(wip, b, WeaponState::FIRING);
 
 	if (scripting::hooks::OnBeamFired->isActive()) {
-		scripting::hooks::OnBeamFired->run(scripting::hooks::WeaponUsedConditions{ &Ships[b->objp->instance], b->target, SCP_vector<int>{ b->weapon_info_index }, true },
+		scripting::hooks::OnBeamFired->run(scripting::hooks::WeaponUsedConditions{ b->objp == nullptr ? nullptr : &Ships[b->objp->instance], b->target, SCP_vector<int>{ b->weapon_info_index }, true },
 			scripting::hook_param_list(
 				scripting::hook_param("Beam", 'o', &Objects[b->objnum]),
 				scripting::hook_param("User", 'o', b->objp),
@@ -2238,6 +2256,15 @@ void beam_start_warmdown(beam *b)
 	}
 
 	beam_set_state(&Weapon_info[b->weapon_info_index], b, WeaponState::WARMDOWN);
+
+	if (scripting::hooks::OnBeamWarmdown->isActive()) {
+		scripting::hooks::OnBeamWarmdown->run(scripting::hooks::WeaponUsedConditions{ b->objp == nullptr ? nullptr : &Ships[b->objp->instance], b->target, SCP_vector<int>{ b->weapon_info_index }, true },
+			scripting::hook_param_list(
+				scripting::hook_param("Beam", 'o', &Objects[b->objnum]),
+				scripting::hook_param("User", 'o', b->objp),
+				scripting::hook_param("Target", 'o', b->target)
+			));
+	}
 }
 
 // recalculate beam sounds (looping sounds relative to the player)

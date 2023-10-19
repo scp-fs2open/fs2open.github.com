@@ -68,7 +68,7 @@ SCP_string Window_title;
 SCP_string Mod_title;
 SCP_string Mod_version;
 bool Unicode_text_mode;
-SCP_vector<SCP_string> Splash_screens;
+SCP_vector<splash_screen> Splash_screens;
 int Splash_fade_in_time;
 int Splash_fade_out_time;
 bool Splash_logo_center;
@@ -145,28 +145,30 @@ bool Play_thruster_sounds_for_player;
 std::array<std::tuple<float, float>, 6> Fred_spacemouse_nonlinearity;
 bool Randomize_particle_rotation;
 
-static auto DiscordOption __UNUSED = options::OptionBuilder<bool>("Other.Discord", "Discord Presence", "Toggle Discord Rich Presence")
-							 .category("Other")
-							 .default_val(Discord_presence)
-							 .level(options::ExpertLevel::Advanced)
-							 .importance(55)
-		                     .change_listener([](bool val, bool) {
-									if(Discord_presence){
-										if (!val) {
-											Discord_presence = false;
-											libs::discord::shutdown();
-											return true;
-										}
-									} else {
-										if (val) {
-											Discord_presence = true;
-											libs::discord::init();
-											return true;
-										}
-									}
-									return false;
-								})
-							 .finish();
+static auto DiscordOption __UNUSED = options::OptionBuilder<bool>("Other.Discord",
+                     std::pair<const char*, int>{"Discord Presence", 1754},
+                     std::pair<const char*, int>{"Toggle Discord Rich Presence", 1755})
+                     .category("Other")
+                     .default_val(Discord_presence)
+                     .level(options::ExpertLevel::Advanced)
+                     .importance(55)
+                     .change_listener([](bool val, bool) {
+                          if(Discord_presence){
+                               if (!val) {
+                                    Discord_presence = false;
+                                    libs::discord::shutdown();
+                                    return true;
+                               }
+                          } else {
+                               if (val) {
+                                    Discord_presence = true;
+                                    libs::discord::init();
+                                    return true;
+                               }
+                          }
+                          return false;
+                     })
+                     .finish();
 
 void mod_table_set_version_flags();
 
@@ -228,16 +230,36 @@ void parse_mod_table(const char *filename)
 		}
 
 		if (optional_string("$Splash screens:")) {
-			SCP_string splash_bitmap;
 			while (optional_string("+Bitmap:")) {
-				stuff_string(splash_bitmap, F_NAME);
+				splash_screen splash;
+				stuff_string(splash.filename, F_NAME);
 
 				// remove extension?
-				if (drop_extension(splash_bitmap)) {
-					mprintf(("Game Settings Table: Removed extension on splash screen file name %s\n", splash_bitmap.c_str()));
+				if (drop_extension(splash.filename)) {
+					mprintf(("Game Settings Table: Removed extension on splash screen file name %s\n", splash.filename.c_str()));
 				}
 
-				Splash_screens.push_back(splash_bitmap);
+				if (optional_string("+Aspect Ratio:")) {
+					stuff_float(&splash.aspect_ratio_exact);
+				}
+				if (optional_string("+Aspect Ratio Min:")) {
+					stuff_float(&splash.aspect_ratio_min);
+				}
+				if (optional_string("+Aspect Ratio Max:")) {
+					stuff_float(&splash.aspect_ratio_max);
+				}
+
+				if (splash.aspect_ratio_exact != 0.0f && (splash.aspect_ratio_min != 0.0f || splash.aspect_ratio_max != 0.0f)) {
+					Warning(LOCATION, "Game Settings Table: An exact aspect ratio and either a min or max aspect ratio were supplied for '%s'.  Only the exact value will be used.", splash.filename.c_str());
+					splash.aspect_ratio_min = 0.0f;
+					splash.aspect_ratio_max = 0.0f;
+				}
+
+				if (splash.aspect_ratio_exact == 0.0f && splash.aspect_ratio_min == 0.0f && splash.aspect_ratio_max == 0.0f) {
+					splash.is_default = true;
+				}
+
+				Splash_screens.push_back(splash);
 			}
 		}
 

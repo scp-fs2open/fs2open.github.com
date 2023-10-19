@@ -1582,7 +1582,7 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 	{
 		g3_set_view_matrix( &sip->closeup_pos, &vmd_identity_matrix, zoom);
 
-		gr_set_proj_matrix(0.5f*Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+		gr_set_proj_matrix(Proj_fov * 0.5f, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
 	}
 	else
 	{
@@ -1623,7 +1623,7 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 		}
 		g3_set_view_matrix( &weap_closeup, &vmd_identity_matrix, tm_zoom);
 
-		gr_set_proj_matrix(0.5f*Proj_fov, gr_screen.clip_aspect, 0.05f, 1000.0f);
+		gr_set_proj_matrix(Proj_fov * 0.5f, gr_screen.clip_aspect, 0.05f, 1000.0f);
 	}
 
 	model_render_params render_info;

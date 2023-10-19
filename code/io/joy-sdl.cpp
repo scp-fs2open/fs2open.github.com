@@ -238,53 +238,61 @@ SCP_vector<Joystick*> joystick_enumerator()
  * Joystick options for the new menu system
  * These should be displayed as a dropdown box type widget
  */
-auto JoystickOption = options::OptionBuilder<Joystick*>("Input.Joystick", "Joystick", "The current joystick 0.")
-                          .category("Input")                    // Category this option shows up in the scripting heirachy
-                          .deserializer(joystick_deserialize)   // callback for json to C++
-                          .serializer(joystick_serializer)      // callback for C++ to json
-                          .display(joystick_display)            // callback for constructing the display label
-                          .enumerator(joystick_enumerator)      // callback for enumerating/constructing the values this option may take
-                          .level(options::ExpertLevel::Beginner)
-                          .default_val(nullptr)                 // initial/default value for this option
-                          .flags({options::OptionFlags::ForceMultiValueSelection})
-                          .importance(3)
-                          .finish();
+auto JoystickOption = options::OptionBuilder<Joystick*>("Input.Joystick",
+                     std::pair<const char*, int>{"Joystick 0", 1705},
+                     std::pair<const char*, int>{"The current joystick 0", 1706})
+                     .category("Input")                    // Category this option shows up in the scripting heirachy
+                     .deserializer(joystick_deserialize)   // callback for json to C++
+                     .serializer(joystick_serializer)      // callback for C++ to json
+                     .display(joystick_display)            // callback for constructing the display label
+                     .enumerator(joystick_enumerator)      // callback for enumerating/constructing the values this option may take
+                     .level(options::ExpertLevel::Beginner)
+                     .default_val(nullptr)                 // initial/default value for this option
+                     .flags({options::OptionFlags::ForceMultiValueSelection})
+                     .importance(3)
+                     .finish();
 
-auto JoystickOption1 = options::OptionBuilder<Joystick*>("Input.Joystick1", "Joystick1", "The current joystick 1.")
-                          .category("Input")
-                          .deserializer(joystick_deserialize)
-                          .serializer(joystick_serializer)
-                          .display(joystick_display)
-                          .enumerator(joystick_enumerator)
-                          .level(options::ExpertLevel::Beginner)
-                          .default_val(nullptr)
-                          .flags({ options::OptionFlags::ForceMultiValueSelection })
-                          .importance(3)
-                          .finish();
+auto JoystickOption1 = options::OptionBuilder<Joystick*>("Input.Joystick1",
+                     std::pair<const char*, int>{"Joystick 1", 1707},
+                     std::pair<const char*, int>{"The current joystick 1", 1708})
+                     .category("Input")
+                     .deserializer(joystick_deserialize)
+                     .serializer(joystick_serializer)
+                     .display(joystick_display)
+                     .enumerator(joystick_enumerator)
+                     .level(options::ExpertLevel::Beginner)
+                     .default_val(nullptr)
+                     .flags({ options::OptionFlags::ForceMultiValueSelection })
+                     .importance(3)
+                     .finish();
 
-auto JoystickOption2 = options::OptionBuilder<Joystick*>("Input.Joystick2", "Joystick2", "The current joystick 2.")
-                          .category("Input")
-                          .deserializer(joystick_deserialize)
-                          .serializer(joystick_serializer)
-                          .display(joystick_display)
-                          .enumerator(joystick_enumerator)
-                          .level(options::ExpertLevel::Beginner)
-                          .default_val(nullptr)
-                          .flags({ options::OptionFlags::ForceMultiValueSelection })
-                          .importance(3)
-                          .finish();
+auto JoystickOption2 = options::OptionBuilder<Joystick*>("Input.Joystick2",
+                     std::pair<const char*, int>{"Joystick 2", 1709},
+                     std::pair<const char*, int>{"The current joystick 2", 1710})
+                     .category("Input")
+                     .deserializer(joystick_deserialize)
+                     .serializer(joystick_serializer)
+                     .display(joystick_display)
+                     .enumerator(joystick_enumerator)
+                     .level(options::ExpertLevel::Beginner)
+                     .default_val(nullptr)
+                     .flags({ options::OptionFlags::ForceMultiValueSelection })
+                     .importance(3)
+                     .finish();
 
-auto JoystickOption3 = options::OptionBuilder<Joystick*>("Input.Joystick3", "Joystick3", "The current joystick 3.")
-                           .category("Input")
-                           .deserializer(joystick_deserialize)
-                           .serializer(joystick_serializer)
-                           .display(joystick_display)
-                           .enumerator(joystick_enumerator)
-                           .level(options::ExpertLevel::Beginner)
-                           .default_val(nullptr)
-                           .flags({ options::OptionFlags::ForceMultiValueSelection })
-                           .importance(3)
-                           .finish();
+auto JoystickOption3 = options::OptionBuilder<Joystick*>("Input.Joystick3",
+                     std::pair<const char*, int>{"Joystick 3", 1711},
+                     std::pair<const char*, int>{"The current joystick 3", 1712})
+                     .category("Input")
+                     .deserializer(joystick_deserialize)
+                     .serializer(joystick_serializer)
+                     .display(joystick_display)
+                     .enumerator(joystick_enumerator)
+                     .level(options::ExpertLevel::Beginner)
+                     .default_val(nullptr)
+                     .flags({ options::OptionFlags::ForceMultiValueSelection })
+                     .importance(3)
+                     .finish();
 
 HatPosition convertSDLHat(int val)
 {

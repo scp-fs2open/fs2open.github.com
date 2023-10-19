@@ -57,7 +57,7 @@ ADE_VIRTVAR(Name, l_Camera, "string", "New camera name", "string", "Camera name"
 ADE_VIRTVAR(FOV, l_Camera, "number", "New camera FOV (in radians)", "number", "Camera FOV (in radians)")
 {
 	camid cid;
-	float f = VIEWER_ZOOM_DEFAULT;
+	float f = g3_get_hfov(VIEWER_ZOOM_DEFAULT);
 	if(!ade_get_args(L, "o|f", l_Camera.Get(&cid), &f))
 		return ade_set_error(L, "f", 0.0f);
 
@@ -68,7 +68,7 @@ ADE_VIRTVAR(FOV, l_Camera, "number", "New camera FOV (in radians)", "number", "C
 		cid.getCamera()->set_fov(f);
 	}
 
-	return ade_set_args(L, "f", cid.getCamera()->get_fov());
+	return ade_set_args(L, "f", g3_get_hfov(cid.getCamera()->get_fov()));
 }
 
 ADE_VIRTVAR(Orientation, l_Camera, "orientation", "New camera orientation", "orientation", "Camera orientation")
@@ -228,7 +228,7 @@ ADE_FUNC(setFOV, l_Camera, "[number FOV, number ZoomTime, number ZoomAcceleratio
 		 "boolean", "true if successful, false or nil otherwise")
 {
 	camid cid;
-	float n_fov = VIEWER_ZOOM_DEFAULT;
+	float n_fov = g3_get_hfov(VIEWER_ZOOM_DEFAULT);
 	float time=0.0f;
 	float acc_time=0.0f;
 	float dec_time=0.0f;

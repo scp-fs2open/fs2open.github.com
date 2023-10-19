@@ -563,7 +563,6 @@ void HudGaugeRadarOrb::drawCrosshairs( vec3d pnt )
 }
 
 extern void hud_save_restore_camera_data(int);
-extern float View_zoom;
 
 void HudGaugeRadarOrb::setupViewHtl()
 {

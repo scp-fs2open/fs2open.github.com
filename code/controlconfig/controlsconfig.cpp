@@ -1359,9 +1359,6 @@ bool control_config_accept(bool API_Access)
 		}
 	}
 	
-
-	hud_squadmsg_save_keys();  // rebuild map for saving/restoring keys in squadmsg mode
-
 	if (!API_Access) {
 		gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
 		gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
@@ -1630,7 +1627,7 @@ void control_config_close(bool API_Access)
 		Ui_window.destroy();
 		common_free_interface_palette(); // restore game palette
 	}
-	hud_squadmsg_save_keys();				// rebuild map for saving/restoring keys in squadmsg mode
+
 	game_flush();
 
 	if (Game_mode & GM_MULTIPLAYER) {

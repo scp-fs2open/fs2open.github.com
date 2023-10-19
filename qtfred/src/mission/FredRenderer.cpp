@@ -18,6 +18,7 @@
 #include <lighting/lighting.h>
 #include <starfield/starfield.h>
 #include <ship/ship.h>
+#include <ship/shipfx.h>
 #include <jumpnode/jumpnode.h>
 #include <asteroid/asteroid.h>
 #include <iff_defs/iff_defs.h>
@@ -876,7 +877,26 @@ void FredRenderer::render_one_model_htl(object* objp,
 
 		g3_done_instance(0);
 
-		model_render_immediate(&render_info, Ship_info[Ships[z].ship_info_index].model_num, &objp->orient, &objp->pos);
+		model_render_immediate(&render_info, Ship_info[Ships[z].ship_info_index].model_num, Ships[z].model_instance_num, &objp->orient, &objp->pos);
+
+		if (view().Draw_outline_at_warpin_position 
+			&& (Ships[z].arrival_cue != Locked_sexp_true || Ships[z].arrival_delay > 0)
+			&& Ships[z].arrival_cue != Locked_sexp_false
+			&& !Ships[z].flags[Ship::Ship_Flags::No_arrival_warp])
+		{
+			int warp_type = Warp_params[Ships[z].warpin_params_index].warp_type;
+			if (warp_type == WT_DEFAULT || warp_type == WT_KNOSSOS || warp_type == WT_DEFAULT_THEN_KNOSSOS || (warp_type & WT_DEFAULT_WITH_FIREBALL)) {
+				float warpin_dist = shipfx_calculate_arrival_warp_distance(objp);
+
+				// project the ship forward as far as it should go
+				vec3d warpin_pos;
+				vm_vec_scale_add(&warpin_pos, &objp->pos, &objp->orient.vec.fvec, warpin_dist);
+
+				render_info.set_color(65, 65, 65);	// grey; see rgba_defaults
+				render_info.set_flags(j | MR_SHOW_OUTLINE_HTL | MR_NO_LIGHTING | MR_NO_POLYS | MR_NO_TEXTURING);
+				model_render_immediate(&render_info, Ship_info[Ships[z].ship_info_index].model_num, Ships[z].model_instance_num, &objp->orient, &warpin_pos);
+			}
+		}
 	} else {
 		int r = 0, g = 0, b = 0;
 

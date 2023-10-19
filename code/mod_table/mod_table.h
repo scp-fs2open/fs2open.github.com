@@ -20,6 +20,19 @@ typedef enum {
 	OH_ROTATING
 } overhead_style;
 
+// And one for splash screens
+struct splash_screen {
+	SCP_string filename;
+	float aspect_ratio_exact = 0.0f;
+	float aspect_ratio_min = 0.0f;
+	float aspect_ratio_max = 0.0f;
+
+	// for filtering
+	bool is_default = false;
+	bool match_exact = false;
+	bool match_range = false;
+};
+
 extern int Directive_wait_time;
 extern bool True_loop_argument_sexps;
 extern bool Fixed_turret_collisions;
@@ -62,7 +75,7 @@ extern SCP_string Window_title;
 extern SCP_string Mod_title;
 extern SCP_string Mod_version;
 extern bool Unicode_text_mode;
-extern SCP_vector<SCP_string> Splash_screens;
+extern SCP_vector<splash_screen> Splash_screens;
 extern int Splash_fade_in_time;
 extern int Splash_fade_out_time;
 extern bool Splash_logo_center;

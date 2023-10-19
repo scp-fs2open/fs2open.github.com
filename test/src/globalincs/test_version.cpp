@@ -31,3 +31,11 @@ TEST(VersionTest, lesser_version) {
 	ASSERT_FALSE(version(2, 0, 0, 0) < version(2, 0, 0, 0));
 	ASSERT_FALSE(version(2, 0, 0, 0) < version(1, 0, 0, 0));
 }
+
+TEST(VersionTest, version_parse) {
+	ASSERT_TRUE(version("1.2.3") == version(1, 2, 3, -1));
+	ASSERT_TRUE(version("1.2.invalid") == version(1, 2, -1, -1));
+	ASSERT_TRUE(version("invalid", 0) == version(0, 0, 0, 0));
+	ASSERT_TRUE(version("1.2.3.-5") == version(1, 2, 3, -1));
+	ASSERT_TRUE(version("1") == version(1, -1, -1, -1));
+}

@@ -1030,7 +1030,7 @@ bool asteroid_is_within_view(vec3d *pos, float range, bool range_override)
 	float dot = vm_vec_dot(&Eye_matrix.vec.fvec, &vec_to_asteroid);
 
 	// if asteroid is within view or far enough away then wrap
-	if (dot > cos(Proj_fov)) {
+	if (dot > cos(g3_get_hfov(Proj_fov))) {
 		if (range_override) {
 			return true;
 		} else {

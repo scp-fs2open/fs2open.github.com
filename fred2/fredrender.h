@@ -20,7 +20,8 @@ extern int Show_grid;       //!< Bool. If nonzero, draw the grid
 extern int Show_grid_positions;     //!< Bool. If nonzero, draw an elevation line from each object to the grid.
 extern int Show_coordinates;        //!< Bool. If nonzero, draw the coordinates of each object on their label
 extern int Show_outlines;           //!< Bool. If nonzero, draw each object's mesh. If models are shown, highlight them in white.
-extern bool Draw_outlines_on_selected_ships;	// If a ship is selected, don't draw the mesh lines that would normally be drawn
+extern bool Draw_outlines_on_selected_ships;	// If a ship is selected, draw mesh lines
+extern bool Draw_outline_at_warpin_position;	// Project an outline at the place where the ship will arrive after warping in
 extern int Show_stars;              //!< Bool. If nonzero, draw the starfield, nebulas, and suns. Might also handle skyboxes
 extern int Single_axis_constraint;  //!< Bool. If nonzero, constrain movement to one axis
 extern int Show_distances;          //!< Bool. If nonzero, draw lines between each object and display their distance on the middle of each line

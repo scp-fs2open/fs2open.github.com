@@ -39,7 +39,9 @@
 #define	REDUCED_DAMP_VEL		30		// change in velocity at which reduced_damp_time is 2000 ms
 #define	REDUCED_DAMP_TIME		2000	// ms (2.0 sec)
 #define	WEAPON_SHAKE_TIME		500	//	ms (0.5 sec)	viewer shake time after hit by weapon (implemented via afterburner shake)
-#define	SPECIAL_WARP_T_CONST	0.651	// special warp time constant (loose 99 % of excess speed in 3 sec)
+
+const float SUPERCAP_WARP_T_CONST = 0.651f;	// special warp time constant (lose 99 % of excess speed in 3 sec)
+const float SUPERCAP_WARP_EXCESS_SPD_THRESHOLD = 5.0f;	// more than this many m/s faster than the ship's max speed and we use the above damp constant instead
 
 void update_reduced_damp_timestamp( physics_info *pi, float impulse );
 float velocity_ramp (float v_in, float v_goal, float time_const, float t);
@@ -345,18 +347,18 @@ void physics_sim_vel(vec3d * position, physics_info * pi, matrix *orient, vec3d*
 	vec3d grav_vel = vmd_zero_vector;
 	int special_warp_in = FALSE;
 	float excess = local_v_in.xyz.z - pi->max_vel.xyz.z;
-	if (excess > 5 && (pi->flags & PF_SPECIAL_WARP_IN)) {
+	if (excess > SUPERCAP_WARP_EXCESS_SPD_THRESHOLD && (pi->flags & PF_SUPERCAP_WARP_IN)) {
 		special_warp_in = TRUE;
-		float exp_factor = float(exp(-sim_time / SPECIAL_WARP_T_CONST));
+		float exp_factor = float(exp(-sim_time / SUPERCAP_WARP_T_CONST));
 		local_v_out.xyz.z = pi->max_vel.xyz.z + excess * exp_factor;
-		local_disp.xyz.z = (pi->max_vel.xyz.z * sim_time) + excess * (float(SPECIAL_WARP_T_CONST) * (1.0f - exp_factor));
-	} else if (pi->flags & PF_SPECIAL_WARP_OUT) {
-		float exp_factor = float(exp(-sim_time / SPECIAL_WARP_T_CONST));
+		local_disp.xyz.z = (pi->max_vel.xyz.z * sim_time) + excess * (float(SUPERCAP_WARP_T_CONST) * (1.0f - exp_factor));
+	} else if (pi->flags & PF_SUPERCAP_WARP_OUT) {
+		float exp_factor = float(exp(-sim_time / SUPERCAP_WARP_T_CONST));
 		vec3d temp;
 		vm_vec_rotate(&temp, &pi->prev_ramp_vel, orient);
 		float deficeit = temp.xyz.z - local_v_in.xyz.z;
 		local_v_out.xyz.z = local_v_in.xyz.z + deficeit * (1.0f - exp_factor);
-		local_disp.xyz.z = (local_v_in.xyz.z * sim_time) + deficeit * (sim_time - (float(SPECIAL_WARP_T_CONST) * (1.0f - exp_factor)));
+		local_disp.xyz.z = (local_v_in.xyz.z * sim_time) + deficeit * (sim_time - (float(SUPERCAP_WARP_T_CONST) * (1.0f - exp_factor)));
 	} else {
 		apply_physics (damp.xyz.z, local_desired_vel.xyz.z, local_v_in.xyz.z, sim_time, &local_v_out.xyz.z, &local_disp.xyz.z);
 		if (pi->gravity_const != 0.0f) {
@@ -366,8 +368,8 @@ void physics_sim_vel(vec3d * position, physics_info * pi, matrix *orient, vec3d*
 	}
 
 	// maybe turn off special warp in flag
-	if ((pi->flags & PF_SPECIAL_WARP_IN) && (excess < 5)) {
-		pi->flags &= ~(PF_SPECIAL_WARP_IN);
+	if ((pi->flags & PF_SUPERCAP_WARP_IN) && (excess < SUPERCAP_WARP_EXCESS_SPD_THRESHOLD)) {
+		pi->flags &= ~(PF_SUPERCAP_WARP_IN);
 	}
 
 	// update world position from local to world coords using orient

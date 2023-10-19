@@ -426,8 +426,8 @@ void Editor::clearMission() {
 	The_mission.author = userName;
 	strcpy_s(The_mission.created, time_buffer);
 	strcpy_s(The_mission.modified, The_mission.created);
-	strcpy_s(The_mission.notes, "This is a FRED2_OPEN created mission.\n");
-	strcpy_s(The_mission.mission_desc, "Put mission description here\n");
+	strcpy_s(The_mission.notes, "This is a FRED2_OPEN created mission.");
+	strcpy_s(The_mission.mission_desc, "Put mission description here");
 
 	// reset alternate name & callsign stuff
 	for (auto i = 0; i < MAX_SHIPS; i++) {
