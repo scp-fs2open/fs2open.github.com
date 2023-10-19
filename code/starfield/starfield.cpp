@@ -168,14 +168,15 @@ bool Dynamic_environment = false;
 bool Motion_debris_override = false;
 bool Motion_debris_enabled = true;
 
-auto MotionDebrisOption = options::OptionBuilder<bool>("Graphics.MotionDebris", "Motion Debris",
-                                                       "Controls whether motion debris are shown or not")
-                              .category("Graphics")
-                              .bind_to_once(&Motion_debris_enabled)
-                              .default_val(true)
-                              .level(options::ExpertLevel::Advanced)
-                              .importance(67)
-                              .finish();
+auto MotionDebrisOption = options::OptionBuilder<bool>("Graphics.MotionDebris",
+                     std::pair<const char*, int>{"Motion Debris", 1713},
+                     std::pair<const char*, int>{"Enable or disable visible motion debris", 1714})
+                     .category("Graphics")
+                     .bind_to_once(&Motion_debris_enabled)
+                     .default_val(true)
+                     .level(options::ExpertLevel::Advanced)
+                     .importance(67)
+                     .finish();
 
 static int Default_env_map = -1;
 static int Mission_env_map = -1;

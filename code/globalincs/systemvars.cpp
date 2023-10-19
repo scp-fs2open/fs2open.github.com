@@ -245,57 +245,89 @@ detail_levels Detail_defaults[NUM_DEFAULT_DETAIL_LEVELS] = {
 // Global used to access detail levels in game and libs
 detail_levels Detail = Detail_defaults[NUM_DEFAULT_DETAIL_LEVELS - 1];
 
-const SCP_vector<std::pair<int, SCP_string>> DetailLevelValues = {{ 0, "Minimum" },
-                                                                  { 1, "Low" },
-                                                                  { 2, "Medium" },
-                                                                  { 3, "High" },
-                                                                  { 4, "Ultra" }, };
+const SCP_vector<std::pair<int, std::pair<const char*, int>>> DetailLevelValues = {{ 0, {"Minimum", 1680}},
+                                                                                   { 1, {"Low", 1161}},
+                                                                                   { 2, {"Medium", 1162}},
+                                                                                   { 3, {"High", 1163}},
+                                                                                   { 4, {"Ultra", 1721}}};
 
-const auto ModelDetailOption __UNUSED =
-	options::OptionBuilder<int>("Graphics.Detail", "Model Detail", "Detail level of models").importance(8).category(
-		"Graphics").values(DetailLevelValues).default_val(MAX_DETAIL_LEVEL).change_listener([](int val, bool) {
-		Detail.detail_distance = val;
-		return true;
-	}).finish();
+const auto ModelDetailOption __UNUSED = options::OptionBuilder<int>("Graphics.Detail",
+                     std::pair<const char*, int>{"Model Detail", 1739},
+                     std::pair<const char*, int>{"Detail level of models", 1740})
+                     .importance(8)
+                     .category("Graphics")
+                     .values(DetailLevelValues)
+                     .default_val(MAX_DETAIL_LEVEL)
+                     .change_listener([](int val, bool) {
+                          Detail.detail_distance = val;
+                          return true;
+                     })
+                     .finish();
 
 const auto TexturesOption __UNUSED = options::OptionBuilder<int>("Graphics.Texture",
-                                                        "3D Hardware Textures",
-                                                        "Level of detail of textures").importance(6).category("Graphics").values(
-	DetailLevelValues).default_val(MAX_DETAIL_LEVEL).change_listener([](int val, bool) {
-	Detail.hardware_textures = val;
-	return true;
-}).finish();
+                     std::pair<const char*, int>{"3D Hardware Textures", 1362},
+                     std::pair<const char*, int>{"Level of detail of textures", 1720})
+                     .importance(6)
+                     .category("Graphics")
+                     .values(DetailLevelValues)
+                     .default_val(MAX_DETAIL_LEVEL)
+                     .change_listener([](int val, bool) {
+                          Detail.hardware_textures = val;
+                          return true;
+                     })
+                     .finish();
 
 const auto ParticlesOption __UNUSED = options::OptionBuilder<int>("Graphics.Particles",
-                                                         "Particles",
-                                                         "Level of detail for particles").importance(5).category(
-	"Graphics").values(DetailLevelValues).default_val(MAX_DETAIL_LEVEL).change_listener([](int val, bool) {
-	Detail.num_particles = val;
-	return true;
-}).finish();
+                     std::pair<const char*, int>{"Particles", 1363},
+                     std::pair<const char*, int>{"Level of detail for particles", 1717})
+                     .importance(5)
+                     .category("Graphics")
+                     .values(DetailLevelValues)
+                     .default_val(MAX_DETAIL_LEVEL)
+                     .change_listener([](int val, bool) {
+                          Detail.num_particles = val;
+                          return true;
+                     })
+                     .finish();
 
-const auto SmallDebrisOption __UNUSED =
-	options::OptionBuilder<int>("Graphics.SmallDebris", "Impact Effects", "Level of detail of impact effects").category(
-		"Graphics").values(DetailLevelValues).default_val(MAX_DETAIL_LEVEL).importance(4).change_listener([](int val,
-	                                                                                                         bool) {
-		Detail.num_small_debris = val;
-		return true;
-	}).finish();
+const auto SmallDebrisOption __UNUSED = options::OptionBuilder<int>("Graphics.SmallDebris", 
+                     std::pair<const char*, int>{"Impact Effects", 1364}, 
+                     std::pair<const char*, int>{"Level of detail of impact effects", 1743})
+                     .category("Graphics")
+                     .values(DetailLevelValues)
+                     .default_val(MAX_DETAIL_LEVEL)
+                     .importance(4)
+                     .change_listener([](int val,bool) {
+                          Detail.num_small_debris = val;
+                          return true;
+                     })
+                     .finish();
 
 const auto ShieldEffectsOption __UNUSED = options::OptionBuilder<int>("Graphics.ShieldEffects",
-                                                             "Shield Hit Effects",
-                                                             "Level of detail of shield impacts").importance(3).category(
-	"Graphics").values(DetailLevelValues).default_val(MAX_DETAIL_LEVEL).change_listener([](int val, bool) {
-	Detail.shield_effects = val;
-	return true;
-}).finish();
+                     std::pair<const char*, int>{"Shield Hit Effects", 1718},
+                     std::pair<const char*, int>{"Level of detail of shield impacts", 1719})
+                     .importance(3)
+                     .category("Graphics")
+                     .values(DetailLevelValues)
+                     .default_val(MAX_DETAIL_LEVEL)
+                     .change_listener([](int val, bool) {
+                          Detail.shield_effects = val;
+                          return true;
+                     })
+                     .finish();
 
-const auto StarsOption __UNUSED =
-	options::OptionBuilder<int>("Graphics.Stars", "Stars", "Number of stars in the mission").importance(2).category(
-		"Graphics").values(DetailLevelValues).default_val(MAX_DETAIL_LEVEL).change_listener([](int val, bool) {
-		Detail.num_stars = val;
-		return true;
-	}).finish();
+const auto StarsOption __UNUSED = options::OptionBuilder<int>("Graphics.Stars", 
+                     std::pair<const char*, int>{"Stars", 1366}, 
+                     std::pair<const char*, int>{"Number of stars in the mission", 1698})
+                     .importance(2)
+                     .category("Graphics")
+                     .values(DetailLevelValues)
+                     .default_val(MAX_DETAIL_LEVEL)
+                     .change_listener([](int val, bool) {
+                          Detail.num_stars = val;
+                          return true;
+                     })
+                     .finish();
 
 // Call this with:
 // 0 - lowest

@@ -4,9 +4,11 @@
 #include "globalincs/pstypes.h"
 #include "libs/jansson.h"
 #include "options/OptionsManager.h"
+#include "localization/localize.h"
 
 #include <functional>
 #include <utility>
+#include <mpark/variant.hpp>
 
 namespace options {
 
@@ -39,6 +41,9 @@ struct ValueDescription {
 };
 
 class OptionBase {
+	template <typename T>
+	friend class OptionBuilder;
+
   protected:
 	OptionsManager* _parent   = nullptr;
 	ExpertLevel _expert_level = ExpertLevel::Expert;
@@ -311,10 +316,10 @@ class VectorEnumerator {
 
 template <typename T>
 class MapValueDisplay {
-	SCP_unordered_map<T, SCP_string> _mapping;
+	SCP_unordered_map<T, std::pair<const char*, int>> _mapping;
 
   public:
-	explicit MapValueDisplay(SCP_unordered_map<T, SCP_string> mapping)
+	explicit MapValueDisplay(SCP_unordered_map<T, std::pair<const char*, int>> mapping)
 	    : _mapping(std::move(mapping))
 	{
 	}
@@ -325,7 +330,7 @@ class MapValueDisplay {
 		if (iter == _mapping.end()) {
 			throw std::runtime_error("Display called with invalid value!");
 		}
-		return iter->second;
+		return XSTR(iter->second.first, iter->second.second);
 	}
 };
 
@@ -390,10 +395,16 @@ class OptionBuilder {
 	Option<T> _instance;
 
 	SCP_unordered_map<PresetKind, T> _preset_values;
+	const mpark::variant<SCP_string, std::pair<const char*, int>>&_title, &_description;
 
   public:
-	OptionBuilder(const SCP_string& config_key, const SCP_string& title, const SCP_string& description)
-	    : _instance(config_key, title, description)
+	  OptionBuilder(const SCP_string& config_key, const mpark::variant<SCP_string, std::pair<const char*, int>>& title, const mpark::variant<SCP_string, std::pair<const char*, int>>& description)
+		  : _instance(
+			  config_key,
+			  mpark::holds_alternative<SCP_string>(title) ? mpark::get<SCP_string>(title) : mpark::get<std::pair<const char*, int>>(title).first,
+			  mpark::holds_alternative<SCP_string>(description) ? mpark::get<SCP_string>(description) : mpark::get<std::pair<const char*, int>>(description).first),
+		    _title(title),
+		    _description(description)
 	{
 		internal::set_defaults(_instance);
 	}
@@ -446,10 +457,10 @@ class OptionBuilder {
 		return *this;
 	}
 	//The valid values for the option
-	OptionBuilder& values(const SCP_vector<std::pair<T, SCP_string>>& value_display_pairs)
+	OptionBuilder& values(const SCP_vector<std::pair<T, std::pair<const char*, int>>>& value_display_pairs)
 	{
 		SCP_vector<T> values;
-		SCP_unordered_map<T, SCP_string> display_mapping;
+		SCP_unordered_map<T, std::pair<const char*, int>> display_mapping;
 
 		for (auto& p : value_display_pairs) {
 			values.push_back(p.first);
@@ -525,6 +536,17 @@ class OptionBuilder {
 			                                                    JSON_COMPACT | JSON_ENSURE_ASCII | JSON_ENCODE_ANY));
 		}
 		std::unique_ptr<Option<T>> opt_ptr(new Option<T>(_instance));
+
+		if (mpark::holds_alternative<std::pair<const char*, int>>(_title)) {
+			const auto& xstr_info = mpark::get<std::pair<const char*, int>>(_title);
+			lcl_delayed_xstr(opt_ptr->_title, xstr_info.first, xstr_info.second);
+		}
+
+		if (mpark::holds_alternative<std::pair<const char*, int>>(_description)) {
+			const auto& xstr_info = mpark::get<std::pair<const char*, int>>(_description);
+			lcl_delayed_xstr(opt_ptr->_description, xstr_info.first, xstr_info.second);
+		}
+
 		auto ptr = opt_ptr.get(); // We need to get the pointer now since we loose the type information otherwise
 		OptionsManager::instance()->addOption(std::unique_ptr<OptionBase>(opt_ptr.release()));
 		return ptr;

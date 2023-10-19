@@ -56,28 +56,31 @@ int Mouse_dz = 0;
 
 int Mouse_sensitivity = 4;
 
-static auto MouseSensitivityOption __UNUSED =
-    options::OptionBuilder<int>("Input.MouseSensitivity", "Sensitivity", "The sentitivity of the mouse input.")
-        .category("Input")
-        .range(0, 9)
-        .level(options::ExpertLevel::Beginner)
-        .default_val(4)
-        .bind_to(&Mouse_sensitivity)
-        .importance(0)
-        .finish();
+static auto MouseSensitivityOption __UNUSED = options::OptionBuilder<int>("Input.MouseSensitivity",
+                     std::pair<const char*, int>{"Sensitivity", 1374},
+                     std::pair<const char*, int>{"The sensitivity of the mouse input", 1747})
+                     .category("Input")
+                     .range(0, 9)
+                     .level(options::ExpertLevel::Beginner)
+                     .default_val(4)
+                     .bind_to(&Mouse_sensitivity)
+                     .importance(0)
+                     .finish();
 
 bool Use_mouse_to_fly = false;
 
-static SCP_string mouse_mode_display(bool mode) { return mode ? "Joy-0" : "Mouse"; }
+static SCP_string mouse_mode_display(bool mode) { return mode ? XSTR("Joy-0", 1699) : XSTR("Mouse", 1774); }
 
-static auto UseMouseOption __UNUSED = options::OptionBuilder<bool>("Input.UseMouse", "Mouse", "Use the mouse for flying")
-                                 .category("Input")
-				 .display(mouse_mode_display) 
-                                 .level(options::ExpertLevel::Beginner)
-                                 .default_val(false)
-                                 .bind_to(&Use_mouse_to_fly)
-                                 .importance(1)
-                                 .finish();
+static auto UseMouseOption __UNUSED = options::OptionBuilder<bool>("Input.UseMouse",
+                     std::pair<const char*, int>{"Mouse", 1376},
+                     std::pair<const char*, int>{"Whether or not to use the mouse for flying", 1765})
+                     .category("Input")
+                     .display(mouse_mode_display) 
+                     .level(options::ExpertLevel::Beginner)
+                     .default_val(false)
+                     .bind_to(&Use_mouse_to_fly)
+                     .importance(1)
+                     .finish();
 
 const std::shared_ptr<scripting::Hook<>> OnMouseWheelHook = scripting::Hook<>::Factory(
 	"On Mouse Wheel", "Called when the mouse wheel is moved in any direction.",
