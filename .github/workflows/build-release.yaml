@@ -380,13 +380,15 @@ jobs:
           XDG_RUNTIME_DIR: /root
         run: $GITHUB_WORKSPACE/ci/linux/run_tests.sh
       - name: Package build result
-        working-directory: ./build
-        run: cd bin && tar -cvzf macos-build-${{ matrix.configuration }}.tar.gz *.app
+        working-directory: ./build/bin
+        # Use GNU tar here (part of runner image) to avoid weird corruption bug with bsdtar
+        # Ref: https://github.com/actions/runner-images/issues/2619
+        run: gtar -cvzf macos-build-${{ matrix.configuration }}.tgz *.app
       - name: Upload build result
         uses: actions/upload-artifact@v2
         with:
           name: mac-${{ matrix.configuration }}
-          path: ${{ github.workspace }}/build/bin/macos-build-${{ matrix.configuration }}.tar.gz
+          path: ${{ github.workspace }}/build/bin/macos-build-${{ matrix.configuration }}.tgz
   mac_zip:
     name: Build Mac distribution zip
     needs: build_mac
@@ -404,17 +406,16 @@ jobs:
         with:
           name: mac-Release
           path: builds
-      - name: Unpack Release build
-        working-directory: ./builds
-        run: tar -xvzf macos-build-Release.tar.gz
       - name: Download FastDebug builds
         uses: actions/download-artifact@v2
         with:
           name: mac-FastDebug
           path: builds
-      - name: Unpack FastDebug build
+      - name: Unpack builds
         working-directory: ./builds
-        run: tar -xvzf macos-build-FastDebug.tar.gz
+        run: |
+          tar -xvzf macos-build-Release.tgz
+          tar -xvzf macos-build-FastDebug.tgz
       - name: Create Distribution package
         id: generate_package
         working-directory: ./builds

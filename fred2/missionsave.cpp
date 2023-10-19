@@ -3355,6 +3355,11 @@ int CFred_mission_save::save_warp_params(WarpDirection direction, ship *shipp)
 			fout("\n%s animation: %s", prefix, shipp_params->anim);
 	}
 
+	if (shipp_params->special_warp_physics != sip_params->special_warp_physics)
+	{
+		fout("\n$Special warp%s physics: %s", direction == WarpDirection::WARP_IN ? "in" : "out", shipp_params->special_warp_physics ? "YES" : "NO");
+	}
+
 	if (direction == WarpDirection::WARP_OUT && shipp_params->warpout_player_speed != sip_params->warpout_player_speed)
 	{
 		if (shipp_params->warpout_player_speed > 0.0f)

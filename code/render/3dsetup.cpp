@@ -26,10 +26,10 @@ vec3d		Light_base;			// Used to rotate world points into current local coordinat
 
 matrix		Eye_matrix;			// Where the viewer's eye is pointing in World coordinates
 vec3d		Eye_position;		// Where the viewer's eye is at in World coordinates
-float		Eye_fov;			// What the viewer's FOV is
+fov_t		Eye_fov;			// What the viewer's FOV is
 
-float			View_zoom;		// The zoom factor
-float			Proj_fov;		// The fov (for HTL projection matrix)
+fov_t			View_zoom = 0.0f;		// The zoom factor
+fov_t			Proj_fov = 0.0f;// The fov (for HTL projection matrix)
 
 vec3d		Window_scale;		// Scaling for window aspect
 vec3d		Matrix_scale;		// How the matrix is scaled, window_scale * zoom
@@ -124,8 +124,17 @@ void g3_end_frame_func(const char * /*filename*/, int  /*lineno*/)
 
 void scale_matrix(void);
 
-void g3_set_fov(float zoom) {
-	Proj_fov = 1.39626348f * zoom;
+void g3_set_fov(fov_t zoom) {
+	Proj_fov = zoom * PROJ_FOV_FACTOR;
+}
+
+float g3_get_hfov(const fov_t& fov) {
+	if (mpark::holds_alternative<float>(fov))
+		return mpark::get<float>(fov);
+	else {
+		const auto& afov = mpark::get<asymmetric_fov>(fov);
+		return afov.right - afov.left;
+	}
 }
 
 void g3_set_view(camera *cam)
@@ -143,7 +152,7 @@ void g3_set_view(camera *cam)
 /**
  * Set view from x,y,z, viewer matrix, and zoom.  Must call one of g3_set_view_*()
  */
-void g3_set_view_matrix(const vec3d *view_pos, const matrix *view_matrix, float zoom)
+void g3_set_view_matrix(const vec3d *view_pos, const matrix *view_matrix, fov_t zoom)
 {
 	Assert( G3_count == 1 );
 
@@ -179,7 +188,7 @@ void scale_matrix(void)
 
 	Matrix_scale = Window_scale;
 
-	float s = 1.0f / tanf(Proj_fov * 0.5f);
+	float s = 1.0f / tanf(g3_get_hfov(Proj_fov) * 0.5f);
 
 	Matrix_scale.xyz.x *= s;
 	Matrix_scale.xyz.y *= s;

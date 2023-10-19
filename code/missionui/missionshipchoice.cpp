@@ -282,7 +282,8 @@ static MENU_REGION	Region[NUM_SHIP_SELECT_REGIONS];
 static int				Num_mask_regions;
 
 //stuff for ht&l. vars and such
-extern float View_zoom, Canv_h2, Canv_w2;
+extern fov_t View_zoom;
+extern float Canv_h2, Canv_w2;
 
 //////////////////////////////////////////////////////
 // Drag and Drop variables

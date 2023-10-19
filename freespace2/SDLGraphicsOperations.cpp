@@ -183,6 +183,9 @@ std::unique_ptr<os::Viewport> SDLGraphicsOperations::createViewport(const os::Vi
 	if (props.flags[os::ViewPortFlags::Resizeable]) {
 		windowflags |= SDL_WINDOW_RESIZABLE;
 	}
+	if (props.flags[os::ViewPortFlags::Capture_Mouse]) {
+		windowflags |= SDL_WINDOW_INPUT_GRABBED;
+	}
 
 	SDL_Rect bounds;
 	if (SDL_GetDisplayBounds(props.display, &bounds) != 0) {
@@ -213,6 +216,8 @@ std::unique_ptr<os::Viewport> SDLGraphicsOperations::createViewport(const os::Vi
 		mprintf(("Failed to create SDL Window: %s\n", SDL_GetError()));
 		return nullptr;
 	}
+
+	SDL_RaiseWindow(window);
 
 	return std::unique_ptr<os::Viewport>(new SDLWindowViewPort(window, props));
 }

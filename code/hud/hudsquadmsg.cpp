@@ -113,23 +113,8 @@ mmode_item MsgItems[MAX_MENU_ITEMS];
 int Num_menu_items = -1;					// number of items for a message menu
 int First_menu_item= -1;							// index of first item in the menu
 
-// -----------
-// following set of vars/defines are used to store/restore key bindings for keys that
-// are used in messaging mode
-
-// array to temporarily store key bindings that will be in use for the messaging
-// system
-typedef struct key_store {
-	int	option_num;					// which element in the	Control_config array is this
-	int	id;							// which id (1 or 2) is this key.
-	int	key_value;					// which key value to put there.
-} key_store;
-
 #define MAX_KEYS_NO_SCROLL	10
 #define MAX_KEYS_USED		12		// maximum number of keys used for the messaging system
-
-key_store key_save[MAX_KEYS_USED];		// array to save the key information during messaging mode
-int num_keys_saved = 0;					// number of keys that are saved.
 
 // next array is the array of MAX_KEYS_USED size which are the keys to use for messaging mode
 
@@ -242,17 +227,7 @@ void hud_squadmsg_start()
 		}
 	}
 
-//	int i;
-
-	//if ( num_keys_saved < 0 )  // save the keys if they haven't been saved yet
-	hud_squadmsg_save_keys();
-
 	Msg_key = -1;
-
-/*
-	for (i=0; i<num_keys_saved; i++)
-		clear_key_binding ( (short) key_save[i].key_value );				// removes all mention of this key from Control_config
-*/
 
 	Num_menu_items = -1;													// reset the menu items
 	First_menu_item = 0;
@@ -274,7 +249,7 @@ void hud_squadmsg_start()
 	}
 }
 
-// functions which will restore all of the key binding stuff when messaging mode is done
+// function which will clean things up when messaging mode is done
 void hud_squadmsg_end()
 {
 	if (scripting::hooks::OnHudCommMenuClosed->isActive())
@@ -286,17 +261,6 @@ void hud_squadmsg_end()
 			return;
 		}
 	}
-
-/*
-	int i;
-	key_store *ksp;
-
-	// move through all keys saved and restore their orignal values.
-	for ( i=0; i<num_keys_saved; i++ ) {
-		ksp = &key_save[i];
-		Control_config[ksp->option_num].key_id = (short) ksp->key_value;
-	}
-*/
 
 	if ( message_is_playing() == FALSE )
 		snd_play( gamesnd_get_game_sound(GameSounds::SQUADMSGING_OFF) );
@@ -425,10 +389,6 @@ int hud_squadmsg_count_ships(int add_to_menu)
 			Num_menu_items++;
 		}
 	}
-
-	// if adding to the menu and we have > 10 items, then don't allow page up and page down to be used.
-	if ( add_to_menu && (Num_menu_items > MAX_MENU_DISPLAY) )
-		hud_squadmsg_save_keys(1);
 
 	return count;
 }
@@ -2162,43 +2122,6 @@ void hud_squadmsg_wing_command()
 
 //----------------------------------------------------------
 // external entry points below!!!!
-
-// when starting messaging mode, we must remove old bindings from the
-// keys that are used for messaging mode (which will get restored when
-// messaging mode is done).
-
-// this code below will get called only the key config changes (from ControlsConfig.cpp)
-// or if the bindings haven't been saved yet.  This code doesn't remove the bindings
-// but just sets up the array so that the bindings can be removed when messaging
-// mode is entered.
-//
-// do_scroll indicates whether we should save the page up and page down keys
-void hud_squadmsg_save_keys( int  /*do_scroll*/ )
-{
-//	int i, j;
-
-	num_keys_saved = 0;
-
-/*
-	for ( j=0; j<MAX_KEYS_USED; j++ ) {
-		for ( i=0; Control_config[i].text[0]; i++ ) {	// the text field in this structure is empty at the end of the config list
-			if ( Control_config[i].key_id == keys_used[j] ) {		// this is true if we have a match
-
-				// if we are not saving scrolling keys and we are trying to match page up and page down
-				// then skip them.
-				if ( !do_scroll && ((keys_used[j] == KEY_PAGEDOWN) || (keys_used[j] == KEY_PAGEUP)) )
-					continue;
-
-				Assert( num_keys_saved < MAX_KEYS_USED );
-				key_save[num_keys_saved].option_num = i;
-				key_save[num_keys_saved].key_value = keys_used[j];
-				num_keys_saved++;
-				break;  // done with this key -- move to next.
-			}
-		}
-	}
-*/
-}
 
 // function is called once per mission start.  Initializes those values
 // which only need to be inited once per mission.

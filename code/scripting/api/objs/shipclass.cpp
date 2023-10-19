@@ -12,6 +12,7 @@
 #include "ship/ship.h"
 #include "playerman/player.h"
 #include "weapon/weapon.h"
+#include "mission/missioncampaign.h"
 #include "missionui/missionweaponchoice.h"
 #include "graphics/matrix.h"
 #include "missionui/missionscreencommon.h"
@@ -1068,6 +1069,23 @@ ADE_VIRTVAR(InTechDatabase, l_Shipclass, "boolean", "Gets or sets whether this s
 	}
 
 	return ade_set_args(L, "b", Ship_info[idx].flags[flag]);
+}
+
+ADE_VIRTVAR(AllowedInCampaign, l_Shipclass, "boolean", "Gets or sets whether this ship class is allowed in loadouts in campaign mode", "boolean", "True or false")
+{
+	int idx;
+	bool new_value;
+	if (!ade_get_args(L, "o|b", l_Shipclass.Get(&idx), &new_value))
+		return ade_set_error(L, "b", false);
+
+	if (idx < 0 || idx >= ship_info_size())
+		return ade_set_error(L, "b", false);
+
+	if (ADE_SETTING_VAR) {
+		Campaign.ships_allowed[idx] = new_value;
+	}
+
+	return Campaign.ships_allowed[idx] ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
 }
 
 ADE_VIRTVAR(PowerOutput, l_Shipclass, "number", "Gets or sets a ship class' power output", "number", "The ship class' current power output")

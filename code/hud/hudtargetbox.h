@@ -128,7 +128,7 @@ public:
 	void renderTargetDebris(object *target_objp);
 	void renderTargetAsteroid(object *target_objp);
 	void renderTargetJumpNode(object *target_objp);
-	void renderTargetSetup(vec3d *camera_eye, matrix *camera_orient, float zoom);
+	void renderTargetSetup(vec3d *camera_eye, matrix *camera_orient, fov_t zoom);
 	void renderTargetClose();
 	void renderTargetForeground();
 	void renderTargetIntegrity(int disabled, int force_obj_num = -1);

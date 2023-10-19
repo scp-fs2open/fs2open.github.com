@@ -114,6 +114,7 @@ const char *fs2_open_credit_text =
 	"libpcp - Copyright (c) 2013 by Cisco Systems, Inc.\n"
 	"This software uses libraries from the FFmpeg project under the LGPLv2.1\n"
 	"Dear ImGui by Omar Cornut and contributors\n"
+	"dkjson.lua - Copyright (C) 2010-2014 David Heiko Kolf"
 	"\n"
 	"\n"
 	"\n";

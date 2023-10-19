@@ -10,7 +10,6 @@
 
 
 #include "graphics/2d.h"
-#include "hud/hud.h" //For HUD_offset_*
 #include "render/3dinternal.h"
 #include "tracing/Monitor.h"
 
@@ -92,6 +91,20 @@ ubyte g3_transfer_vertex(vertex *dest, const vec3d *src)
 	return 0;
 }
 
+static void g3_compensate_asymmetric_fov(float& x, float& y, float z) {
+	if (mpark::holds_alternative<asymmetric_fov>(Proj_fov)) {
+		const auto& afov = mpark::get<asymmetric_fov>(Proj_fov);
+		float angle = atan2_safe(z, x) + (afov.left + afov.right);
+		x = angle == PI_2 ? 0.0f : z / tanf(angle);
+
+		angle = atan2_safe(z, y) + (afov.up + afov.down);
+		y = angle == PI_2 ? 0.0f : z / tanf(angle);
+	}
+}
+
+static inline void g3_compensate_asymmetric_fov(vec3d& rotated) {
+	g3_compensate_asymmetric_fov(rotated.xyz.x, rotated.xyz.y, rotated.xyz.z);
+}
 
 MONITOR( NumRotations )
 
@@ -125,6 +138,8 @@ ubyte g3_rotate_vertex(vertex *dest, const vec3d *src)
 	z = tx * View_matrix.vec.fvec.xyz.x;
 	z += ty * View_matrix.vec.fvec.xyz.y;
 	z += tz * View_matrix.vec.fvec.xyz.z;
+
+	g3_compensate_asymmetric_fov(x, y, z);
 
 	codes = 0;
 
@@ -161,6 +176,7 @@ ubyte g3_rotate_faraway_vertex(vertex *dest, const vec3d *src)
 	MONITOR_INC( NumRotations, 1 );	
 
 	vm_vec_rotate( &dest->world, src, &View_matrix );
+	g3_compensate_asymmetric_fov(dest->world);
 	dest->flags = 0;	//not projected
 	return g3_code_vertex(dest);
 }	
@@ -179,6 +195,7 @@ ubyte g3_rotate_vector(vec3d *dest, const vec3d *src)
 
 	vm_vec_sub(&tempv,src,&View_position);
 	vm_vec_rotate(dest,&tempv,&View_matrix);
+	g3_compensate_asymmetric_fov(*dest);
 	return g3_code_vector(dest);
 }	
 		
@@ -192,8 +209,8 @@ ubyte g3_project_vector(const vec3d *p, float *sx, float *sy )
 
 	w=1.0f / p->xyz.z;
 
-	*sx = (Canvas_width + (p->xyz.x*Canvas_width*w))*0.5f;
-	*sy = (Canvas_height - (p->xyz.y*Canvas_height*w))*0.5f;
+	*sx = (Canvas_width + (p->xyz.x * Canvas_width * w)) * 0.5f;
+	*sy = (Canvas_height - (p->xyz.y * Canvas_height * w)) * 0.5f;
 	return PF_PROJECTED;
 }
 
@@ -213,9 +230,10 @@ int g3_project_vertex(vertex *p)
 		p->flags |= PF_OVERFLOW;
 	} else {
 		w = 1.0f / p->world.xyz.z;
-		p->screen.xyw.x = (Canvas_width + (p->world.xyz.x*Canvas_width*w))*0.5f;
-		p->screen.xyw.y = (Canvas_height - (p->world.xyz.y*Canvas_height*w))*0.5f;
 
+		p->screen.xyw.x = (Canvas_width + (p->world.xyz.x * Canvas_width * w)) * 0.5f;
+		p->screen.xyw.y = (Canvas_height - (p->world.xyz.y * Canvas_height * w)) * 0.5f;
+		 
 		if ( w > 1.0f ) w = 1.0f;		
 		
 		p->screen.xyw.w = w;

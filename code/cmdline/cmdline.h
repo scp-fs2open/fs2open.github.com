@@ -86,6 +86,7 @@ extern int Cmdline_ship_choice_3d;
 extern int Cmdline_weapon_choice_3d;
 extern int Cmdline_autopilot_interruptable;
 extern int Cmdline_stretch_menu;
+extern bool Cmdline_capture_mouse;
 extern int Cmdline_no_screenshake;
 extern int Cmdline_deadzone;
 

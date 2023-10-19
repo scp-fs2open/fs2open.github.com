@@ -24,13 +24,15 @@
 
 bool Fireball_warp_flash = false;
 
-static auto WarpFlashOption __UNUSED = options::OptionBuilder<bool>("Graphics.WarpFlash", "Warp Flash", "Show flash upon warp open or close")
-							 .category("Graphics")
-							 .default_val(true)
-							 .level(options::ExpertLevel::Advanced)
-							 .bind_to_once(&Fireball_warp_flash)
-							 .importance(65)
-							 .finish();
+static auto WarpFlashOption __UNUSED = options::OptionBuilder<bool>("Graphics.WarpFlash",
+                     std::pair<const char*, int>{"Warp Flash", 1768},
+                     std::pair<const char*, int>{"Show flash upon warp open or close", 1769})
+                     .category("Graphics")
+                     .default_val(true)
+                     .level(options::ExpertLevel::Advanced)
+                     .bind_to_once(&Fireball_warp_flash)
+                     .importance(65)
+                     .finish();
 
 void warpin_batch_draw_face( int texture, vertex *v1, vertex *v2, vertex *v3 )
 {
