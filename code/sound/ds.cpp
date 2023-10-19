@@ -1147,6 +1147,9 @@ int ds_get_channel(ds_sound_handle sig)
 			if ( ds_is_channel_playing(i) == TRUE ) {
 				return i;
 			}
+			if (ds_is_channel_paused(i) == TRUE) {
+				return i;
+			}
 		}
 	}
 
