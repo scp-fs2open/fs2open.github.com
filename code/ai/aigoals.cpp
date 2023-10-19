@@ -51,6 +51,8 @@ struct ship_registry_entry;
 // Goober5000 - okay, this seems really stupid.  If any ship in the mission is assigned a goal
 // in PURGE_GOALS_ALL_SHIPS, *every* other ship will have certain goals purged.  So I added
 // PURGE_GOALS_ONE_SHIP for goals which should only purge other goals in the one ship.
+// Goober5000 - note that the new disable and disarm goals (AI_GOAL_DISABLE_SHIP_TACTICAL and
+// AI_GOAL_DISARM_SHIP_TACTICAL) do not purge ANY goals, not even the ones in the one ship
 #define PURGE_GOALS_ALL_SHIPS		(AI_GOAL_IGNORE | AI_GOAL_DISABLE_SHIP | AI_GOAL_DISARM_SHIP)
 #define PURGE_GOALS_ONE_SHIP		(AI_GOAL_IGNORE_NEW)
 
@@ -75,7 +77,9 @@ ai_goal_list Ai_goal_names[] =
 	{ "Attack wing",			AI_GOAL_CHASE_WING,				0 },
 	{ "Guard ship",				AI_GOAL_GUARD,					0 },
 	{ "Disable ship",			AI_GOAL_DISABLE_SHIP,			0 },
+	{ "Disable ship (tactical)",AI_GOAL_DISABLE_SHIP_TACTICAL,	0 },
 	{ "Disarm ship",			AI_GOAL_DISARM_SHIP,			0 },
+	{ "Disarm ship (tactical)",	AI_GOAL_DISARM_SHIP_TACTICAL,	0 },
 	{ "Attack any",				AI_GOAL_CHASE_ANY,				0 },
 	{ "Ignore ship",			AI_GOAL_IGNORE,					0 },
 	{ "Ignore ship (new)",		AI_GOAL_IGNORE_NEW,				0 },
@@ -120,8 +124,10 @@ const char *Ai_goal_text(int goal, int submode)
 	case AI_GOAL_GUARD_WING:
 		return XSTR( "guard ", 480);
 	case AI_GOAL_DISABLE_SHIP:
+	case AI_GOAL_DISABLE_SHIP_TACTICAL:
 		return XSTR( "disable ", 481);
 	case AI_GOAL_DISARM_SHIP:
+	case AI_GOAL_DISARM_SHIP_TACTICAL:
 		return XSTR( "disarm ", 482);
 	case AI_GOAL_EVADE_SHIP:
 		return XSTR( "evade ", 483);
@@ -528,11 +534,12 @@ void ai_goal_purge_invalid_goals( ai_goal *aigp, ai_goal *goal_list, ai_info *ai
 			// ignore goals should get rid of any kind of attack goal
 			case AI_GOAL_IGNORE:
 			case AI_GOAL_IGNORE_NEW:
-				if ( purge_ai_mode & (AI_GOAL_DISABLE_SHIP | AI_GOAL_DISARM_SHIP | AI_GOAL_CHASE | AI_GOAL_CHASE_WING | AI_GOAL_CHASE_SHIP_CLASS | AI_GOAL_DESTROY_SUBSYSTEM) )
+				if ( purge_ai_mode & (AI_GOAL_DISABLE_SHIP | AI_GOAL_DISABLE_SHIP_TACTICAL | AI_GOAL_DISARM_SHIP | AI_GOAL_DISARM_SHIP_TACTICAL | AI_GOAL_CHASE | AI_GOAL_CHASE_WING | AI_GOAL_CHASE_SHIP_CLASS | AI_GOAL_DESTROY_SUBSYSTEM) )
 					purge_goal->flags.set(AI::Goal_Flags::Purge);
 				break;
 
 			// disarm/disable goals should remove attacks from certain ships types
+			// (but not tactical disarm/disable)
 			case AI_GOAL_DISARM_SHIP:
 			case AI_GOAL_DISABLE_SHIP:
 				if ( purge_ai_mode & (AI_GOAL_CHASE | AI_GOAL_CHASE_WING | AI_GOAL_CHASE_SHIP_CLASS) ) {
@@ -931,14 +938,16 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, char
 		break;
 
 	case OP_AI_DISABLE_SHIP:
-		aigp->ai_mode = AI_GOAL_DISABLE_SHIP;
+	case OP_AI_DISABLE_SHIP_TACTICAL:
+		aigp->ai_mode = (op == OP_AI_DISABLE_SHIP) ? AI_GOAL_DISABLE_SHIP : AI_GOAL_DISABLE_SHIP_TACTICAL;
 		aigp->target_name = ai_get_goal_target_name( CTEXT(CDR(node)), &aigp->target_name_index );
 		aigp->ai_submode = -SUBSYSTEM_ENGINE;
 		aigp->priority = atoi( CTEXT(CDR(CDR(node))) );
 		break;
 
 	case OP_AI_DISARM_SHIP:
-		aigp->ai_mode = AI_GOAL_DISARM_SHIP;
+	case OP_AI_DISARM_SHIP_TACTICAL:
+		aigp->ai_mode = (op == OP_AI_DISARM_SHIP) ? AI_GOAL_DISARM_SHIP : AI_GOAL_DISARM_SHIP_TACTICAL;
 		aigp->target_name = ai_get_goal_target_name( CTEXT(CDR(node)), &aigp->target_name_index );
 		aigp->ai_submode = -SUBSYSTEM_TURRET;
 		aigp->priority = atoi( CTEXT(CDR(CDR(node))) );
@@ -1129,7 +1138,8 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, char
 	}
 
 	// Goober5000 - we now have an extra optional chase argument to allow chasing our own team
-	if ( op == OP_AI_CHASE || op == OP_AI_CHASE_WING || op == OP_AI_CHASE_SHIP_CLASS || op == OP_AI_DISABLE_SHIP || op == OP_AI_DISARM_SHIP ) {
+	if ( op == OP_AI_CHASE || op == OP_AI_CHASE_WING || op == OP_AI_CHASE_SHIP_CLASS
+		|| op == OP_AI_DISABLE_SHIP || op == OP_AI_DISABLE_SHIP_TACTICAL || op == OP_AI_DISARM_SHIP || op == OP_AI_DISARM_SHIP_TACTICAL ) {
 		if (is_sexp_true(CDDDR(node)))
 			aigp->flags.set(AI::Goal_Flags::Target_own_team);
 	}
@@ -1154,7 +1164,9 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, char
 		op == OP_AI_CHASE_WING || 
 		op == OP_AI_CHASE_SHIP_CLASS || 
 		op == OP_AI_DISABLE_SHIP || 
+		op == OP_AI_DISABLE_SHIP_TACTICAL || 
 		op == OP_AI_DISARM_SHIP || 
+		op == OP_AI_DISARM_SHIP_TACTICAL || 
 		op == OP_AI_STAY_NEAR_SHIP ||
 		op == OP_AI_FLY_TO_SHIP) {
 		if (is_sexp_true(CDDDDR(node)))
@@ -1231,11 +1243,13 @@ int ai_remove_goal_sexp_sub( int sexp, ai_goal* aigp )
 		priority = ( CDR( CDR( CDR(node) ) ) >= 0 ) ? atoi( CTEXT( CDR( CDR( CDR( node ) ) ) ) ) : -1;
 		break;
 	case OP_AI_DISABLE_SHIP:
-		goalmode = AI_GOAL_DISABLE_SHIP;
+	case OP_AI_DISABLE_SHIP_TACTICAL:
+		goalmode = (op == OP_AI_DISABLE_SHIP) ? AI_GOAL_DISABLE_SHIP : AI_GOAL_DISABLE_SHIP_TACTICAL;
 		priority = ( CDR( CDR(node) ) >= 0 ) ? atoi( CTEXT( CDR( CDR( node ) ) ) ) : -1;
 		break;
 	case OP_AI_DISARM_SHIP:
-		goalmode = AI_GOAL_DISABLE_SHIP;
+	case OP_AI_DISARM_SHIP_TACTICAL:
+		goalmode = (op == OP_AI_DISARM_SHIP) ? AI_GOAL_DISARM_SHIP : AI_GOAL_DISARM_SHIP_TACTICAL;
 		priority = ( CDR( CDR(node) ) >= 0 ) ? atoi( CTEXT( CDR( CDR( node ) ) ) ) : -1;
 		break;
 	case OP_AI_WARP_OUT:
@@ -1265,11 +1279,8 @@ int ai_remove_goal_sexp_sub( int sexp, ai_goal* aigp )
 		priority = ( CDR(node) >= 0 ) ? atoi( CTEXT( CDR( node ) ) ) : -1;
 		break;
 	case OP_AI_PLAY_DEAD:
-		goalmode = AI_GOAL_PLAY_DEAD;
-		priority = ( CDR(node) >= 0 ) ? atoi( CTEXT( CDR( node ) ) ) : -1;
-		break;
 	case OP_AI_PLAY_DEAD_PERSISTENT:
-		goalmode = AI_GOAL_PLAY_DEAD_PERSISTENT;
+		goalmode = (op == OP_AI_PLAY_DEAD) ? AI_GOAL_PLAY_DEAD : AI_GOAL_PLAY_DEAD_PERSISTENT;
 		priority = ( CDR(node) >= 0 ) ? atoi( CTEXT( CDR( node ) ) ) : -1;
 		break;
 	case OP_AI_KEEP_SAFE_DISTANCE:
@@ -1311,12 +1322,9 @@ int ai_remove_goal_sexp_sub( int sexp, ai_goal* aigp )
 		goalmode = AI_GOAL_STAY_NEAR_SHIP;
 		break;
 	case OP_AI_IGNORE:
-		priority = ( CDR( CDR(node) ) >= 0 ) ? atoi( CTEXT( CDR( CDR( node ) ) ) ) : -1;
-		goalmode = AI_GOAL_IGNORE;
-		break;
 	case OP_AI_IGNORE_NEW:
 		priority = ( CDR( CDR(node) ) >= 0 ) ? atoi( CTEXT( CDR( CDR( node ) ) ) ) : -1;
-		goalmode = AI_GOAL_IGNORE_NEW;
+		goalmode = (op == OP_AI_IGNORE) ? AI_GOAL_IGNORE : AI_GOAL_IGNORE_NEW;
 		break;
 	case OP_AI_FORM_ON_WING:
 		priority = 99;
@@ -1658,6 +1666,7 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 		}
 
 		case AI_GOAL_DISABLE_SHIP:
+		case AI_GOAL_DISABLE_SHIP_TACTICAL:
 		{
 			// shipnum could be -1 depending on if the ship hasn't arrived or died.  only look for subsystem
 			// destroyed when shipnum is valid
@@ -1673,6 +1682,7 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 		}
 
 		case AI_GOAL_DISARM_SHIP:
+		case AI_GOAL_DISARM_SHIP_TACTICAL:
 		{
 			// shipnum could be -1 depending on if the ship hasn't arrived or died.  only look for subsystem
 			// destroyed when shipnum is valid
@@ -1823,7 +1833,7 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 	}
 
 	// Goober5000 - before doing anything else, check if this is a disarm goal for an arrived ship...
-	if ((status == SHIP_STATUS_ARRIVED) && (aigp->ai_mode == AI_GOAL_DISARM_SHIP))
+	if ((status == SHIP_STATUS_ARRIVED) && (aigp->ai_mode == AI_GOAL_DISARM_SHIP || aigp->ai_mode == AI_GOAL_DISARM_SHIP_TACTICAL))
 	{
 		if (target_ship_entry && target_ship_entry->shipp) {
 			// if the ship has no turrets, we can't disarm it!
@@ -1977,7 +1987,9 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 		case AI_GOAL_GUARD:
 		case AI_GOAL_GUARD_WING:
 		case AI_GOAL_DISABLE_SHIP:
+		case AI_GOAL_DISABLE_SHIP_TACTICAL:
 		case AI_GOAL_DISARM_SHIP:
+		case AI_GOAL_DISARM_SHIP_TACTICAL:
 		case AI_GOAL_DESTROY_SUBSYSTEM:
 		case AI_GOAL_IGNORE:
 		case AI_GOAL_IGNORE_NEW:
@@ -2398,19 +2410,23 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 		break;
 
 
-		// when destroying a subsystem, we can destroy a specific instance of a subsystem
-		// or all instances of a type of subsystem (i.e. a specific engine or all engines).
-		// the ai_submode value is > 0 for a specific instance of subsystem and < 0 for all
-		// instances of a specific type
+	// when destroying a subsystem, we can destroy a specific instance of a subsystem
+	// or all instances of a type of subsystem (i.e. a specific engine or all engines).
+	// the ai_submode value is > 0 for a specific instance of subsystem and < 0 for all
+	// instances of a specific type
 	case AI_GOAL_DESTROY_SUBSYSTEM:
 	case AI_GOAL_DISABLE_SHIP:
-	case AI_GOAL_DISARM_SHIP: {
+	case AI_GOAL_DISABLE_SHIP_TACTICAL:
+	case AI_GOAL_DISARM_SHIP:
+	case AI_GOAL_DISARM_SHIP_TACTICAL: {
 		shipnum = ship_name_lookup( current_goal->target_name );
 		Assert( shipnum >= 0 );
 		other_obj = &Objects[Ships[shipnum].objnum];
 		ai_attack_object( objp, other_obj);
 		ai_set_attack_subsystem( objp, current_goal->ai_submode );		// submode stored the subsystem type
-		if (current_goal->ai_mode != AI_GOAL_DESTROY_SUBSYSTEM) {
+
+		// don't protect-ship for tactical goals
+		if (current_goal->ai_mode != AI_GOAL_DESTROY_SUBSYSTEM && current_goal->ai_mode != AI_GOAL_DISABLE_SHIP_TACTICAL && current_goal->ai_mode != AI_GOAL_DISARM_SHIP_TACTICAL) {
 			if (aip->target_objnum != -1) {
 				//	Only protect if _not_ a capital ship.  We don't want the Lucifer accidentally getting protected.
 				if (Ship_types[Ship_info[Ships[shipnum].ship_info_index].class_type].flags[Ship::Type_Info_Flags::AI_protected_on_cripple])
@@ -2549,7 +2565,9 @@ void ai_update_goal_references(ai_goal *goals, sexp_ref_type type, const char *o
 					case AI_GOAL_DESTROY_SUBSYSTEM:
 					case AI_GOAL_GUARD:
 					case AI_GOAL_DISABLE_SHIP:
+					case AI_GOAL_DISABLE_SHIP_TACTICAL:
 					case AI_GOAL_DISARM_SHIP:
+					case AI_GOAL_DISARM_SHIP_TACTICAL:
 					case AI_GOAL_IGNORE:
 					case AI_GOAL_IGNORE_NEW:
 					case AI_GOAL_EVADE_SHIP:
@@ -2623,7 +2641,9 @@ bool query_referenced_in_ai_goals(ai_goal *goals, sexp_ref_type type, const char
 					case AI_GOAL_DESTROY_SUBSYSTEM:
 					case AI_GOAL_GUARD:
 					case AI_GOAL_DISABLE_SHIP:
+					case AI_GOAL_DISABLE_SHIP_TACTICAL:
 					case AI_GOAL_DISARM_SHIP:
+					case AI_GOAL_DISARM_SHIP_TACTICAL:
 					case AI_GOAL_IGNORE:
 					case AI_GOAL_IGNORE_NEW:
 					case AI_GOAL_EVADE_SHIP:
