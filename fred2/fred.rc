@@ -264,7 +264,8 @@ BEGIN
         MENUITEM SEPARATOR
         MENUITEM "Show Ship Models\tShift+Alt+M", 32820, CHECKED
         MENUITEM "Show Outlines\tShift+Alt+O",  32980
-        MENUITEM "Draw Outlines on Selected Ships", 32982, CHECKED
+        MENUITEM "Draw Outlines on Selected Ships", ID_VIEW_OUTLINES_ON_SELECTED, CHECKED
+        MENUITEM "Draw Outline at Warpin Position", ID_VIEW_OUTLINE_AT_WARPIN, CHECKED
         MENUITEM "Show Ship Info\tShift+Alt+I", 32823, CHECKED, HELP
         MENUITEM "Show Coordinates\tShift+Alt+C", 32915
         MENUITEM "Show Grid Positions\tShift+Alt+P", 32914
@@ -958,6 +959,7 @@ BEGIN
     CONTROL         "Toggle Showing Goals In Briefing",IDC_TOGGLE_SHOWING_GOALS,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,181,142,10
     CONTROL         "Mission End to Mainhall",IDC_END_TO_MAINHALL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,191,142,10
+    CONTROL         "Preload Subspace Tunnel",IDC_PRELOAD_SUBSPACE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,201,142,10
     CONTROL         "Override #Command in event messages",IDC_OVERRIDE_HASHCOMMAND,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,166,172,142,10
 END
@@ -2307,13 +2309,13 @@ BEGIN
     PUSHBUTTON      "IDB_PLAY",IDC_PLAY,235,62,17,15,BS_BITMAP,WS_EX_TRANSPARENT
 END
 
-IDD_WARP_PARAMS DIALOGEX 0, 0, 271, 252
+IDD_WARP_PARAMS DIALOGEX 0, 0, 271, 271
 STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Warp Parameters"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    DEFPUSHBUTTON   "OK",IDOK,161,231,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,214,231,50,14
+    DEFPUSHBUTTON   "OK",IDOK,161,250,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,214,250,50,14
     LTEXT           "Warp Type",IDC_STATIC,7,41,99,8
     COMBOBOX        IDC_WARP_TYPE,161,39,103,196,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     LTEXT           "Start Sound",IDC_STATIC,7,60,99,8
@@ -2325,7 +2327,8 @@ BEGIN
     LTEXT           "Acceleration Exponent (Hyperspace Only)",IDC_ACCEL_EXP_LABEL,7,155,143,8,WS_DISABLED
     LTEXT           "Radius",IDC_STATIC,7,174,99,8
     LTEXT           "Animation (Homeworld Only)",IDC_ANIM_LABEL,7,193,99,8,WS_DISABLED
-    LTEXT           "Player Warpout Speed",IDC_PLAYER_WARPOUT_SPEED_LABEL,7,212,99,8,WS_DISABLED
+    LTEXT           "Special Warp Physics",IDC_STATIC,7,212,99,8
+    LTEXT           "Player Warpout Speed",IDC_PLAYER_WARPOUT_SPEED_LABEL,7,231,99,8,WS_DISABLED
     EDITTEXT        IDC_END_SOUND,161,77,103,12,ES_AUTOHSCROLL
     EDITTEXT        IDC_WARPOUT_ENGAGE_TIME,161,96,103,12,ES_AUTOHSCROLL
     EDITTEXT        IDC_SPEED,161,115,103,12,ES_AUTOHSCROLL
@@ -2333,7 +2336,8 @@ BEGIN
     EDITTEXT        IDC_ACCEL_EXP,161,153,103,12,ES_AUTOHSCROLL
     EDITTEXT        IDC_RADIUS,161,172,103,12,ES_AUTOHSCROLL
     EDITTEXT        IDC_ANIM,161,191,103,12,ES_AUTOHSCROLL
-    EDITTEXT        IDC_PLAYER_WARPOUT_SPEED,161,210,103,12,ES_AUTOHSCROLL
+    CONTROL         "",IDC_SPECIAL_WARP_PHYSICS,"Button",BS_AUTOCHECKBOX,161,210,103,12
+    EDITTEXT        IDC_PLAYER_WARPOUT_SPEED,161,229,103,12,ES_AUTOHSCROLL
     LTEXT           "All of these parameters are optional, and a mission designer will usually not need to override more than one or two.  These parameters are the same as those found in ships.tbl.",IDC_STATIC,7,7,257,29
 END
 

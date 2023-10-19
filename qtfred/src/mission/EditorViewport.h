@@ -21,6 +21,7 @@ struct ViewSettings {
 	bool Show_coordinates = false;
 	bool Show_outlines = false;
 	bool Draw_outlines_on_selected_ships = true;
+	bool Draw_outline_at_warpin_position = false;
 	bool Show_grid_positions = true;
 	bool Show_dock_points = false;
 	bool Show_starts = true;

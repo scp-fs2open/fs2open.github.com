@@ -260,6 +260,10 @@ def main():
 		if "Linux" not in groups.keys():
 			print("ERROR: No Linux builds were detected!")
 			sys.exit(1)
+
+		if "Mac" not in groups.keys():
+			print("ERROR: No Mac builds were detected!")
+			sys.exit(1)
 		
 		# z64: What dose this do???
 		# print(installer.render_installer_config(version, groups, config))

@@ -2225,6 +2225,15 @@ ADE_FUNC(createParticle,
 	return ADE_RETURN_TRUE;
 }
 
+ADE_FUNC(killAllParticles, l_Graphics, nullptr, "Clears all particles from a mission", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	particle::kill_all();
+
+	return ADE_RETURN_NIL;
+}
+
 ADE_FUNC(screenToBlob, l_Graphics, nullptr, "Captures the current render target and encodes it into a blob-PNG", "string", "The png blob string")
 {
 	if (!Gr_inited)

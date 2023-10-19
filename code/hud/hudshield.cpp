@@ -365,8 +365,8 @@ void hud_shield_show_mini(object *objp, int x_force, int y_force, int x_hull_off
 	if (!Shield_mini_loaded)
 		return;
 
-	sx = (x_force == -1) ? Shield_mini_coords[gr_screen.res][0]+fl2i(HUD_offset_x) : x_force;
-	sy = (y_force == -1) ? Shield_mini_coords[gr_screen.res][1]+fl2i(HUD_offset_y) : y_force;
+	sx = (x_force == -1) ? Shield_mini_coords[gr_screen.res][0] : x_force;
+	sy = (y_force == -1) ? Shield_mini_coords[gr_screen.res][1] : y_force;
 
 	// draw the ship first
 	hud_shield_maybe_flash(HUD_TARGET_MINI_ICON, SHIELD_HIT_TARGET, Shield_hit_data[SHIELD_HIT_TARGET].hull_hit_index);
@@ -596,9 +596,6 @@ void HudGaugeShield::showShields(object *objp, int mode)
 	sx = position[0];
 	sy = position[1];
 
-	sx += fl2i(HUD_offset_x);
-	sy += fl2i(HUD_offset_y);
-
 	// draw the ship first
 	maybeFlashShield(SHIELD_HIT_PLAYER, Shield_hit_data[SHIELD_HIT_PLAYER].hull_hit_index);
 
@@ -635,7 +632,7 @@ void HudGaugeShield::showShields(object *objp, int mode)
 			g3_set_view_matrix( &finger_vec, &vmd_identity_matrix, 1.0f);
 		}*/
 
-		gr_set_proj_matrix(0.5f*Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+			gr_set_proj_matrix(Proj_fov * 0.5f, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
 		gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
 		//We're ready to show stuff
@@ -971,8 +968,8 @@ void HudGaugeShieldMini::showMiniShields(object *objp)
 
 	setGaugeColor();
 
-	sx = position[0]+fl2i(HUD_offset_x);
-	sy = position[1]+fl2i(HUD_offset_y);
+	sx = position[0];
+	sy = position[1];
 
 	// draw the ship first
 	maybeFlashShield(SHIELD_HIT_TARGET, Shield_hit_data[SHIELD_HIT_TARGET].hull_hit_index);
@@ -1061,8 +1058,8 @@ void HudGaugeShieldMini::showIntegrity(float p_target_integrity)
 		}
 	}
 
-	final_pos[0] += fl2i( HUD_offset_x ) + position[0];
-	final_pos[1] += fl2i( HUD_offset_y ) + position[1];
+	final_pos[0] += position[0];
+	final_pos[1] += position[1];
 
 	sprintf(text_integrity, "%d", numeric_integrity);
 	if ( numeric_integrity < 100 ) {

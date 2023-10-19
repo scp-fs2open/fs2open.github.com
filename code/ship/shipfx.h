@@ -97,6 +97,7 @@ public:
 	int			time = 0;					// in ms
 	float		accel_exp = 1.0f;
 	int			warp_type = WT_DEFAULT;
+	bool		special_warp_physics = false;
 
 	// only valid for warpout
 	int			warpout_engage_time = -1;	// in ms
@@ -112,7 +113,7 @@ extern SCP_vector<WarpParams> Warp_params;
 extern int find_or_add_warp_params(const WarpParams &params);
 
 extern float shipfx_calculate_warp_time(object *objp, WarpDirection warp_dir, float half_length, float warping_dist);
-
+extern float shipfx_calculate_arrival_warp_distance(object *objp);
 
 // =================================================
 //          SHIP SHADOW EFFECT STUFF

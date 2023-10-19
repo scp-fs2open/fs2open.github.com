@@ -165,8 +165,6 @@ int Nmodel_bitmap = -1;						// model texture
 
 bool Dynamic_environment = false;
 
-bool Subspace_sexp_used = false;
-
 bool Motion_debris_override = false;
 bool Motion_debris_enabled = true;
 
@@ -886,8 +884,6 @@ void stars_pre_level_init(bool clear_backgrounds)
 
 	// also clear the preload indexes
 	Preload_background_indexes.clear();
-
-	Subspace_sexp_used = false;
 
 	Dynamic_environment = false;
 	Motion_debris_override = false;
@@ -2086,7 +2082,7 @@ void stars_page_in()
 
 	// Initialize the subspace stuff
 
-	if ( Game_subspace_effect || Subspace_sexp_used ) {
+	if (Game_subspace_effect || (The_mission.flags[Mission::Mission_Flags::Preload_subspace])) {
 		Subspace_model_inner = model_load("subspace_small.pof", 0, nullptr);
 		Assert(Subspace_model_inner >= 0);
 
@@ -3031,7 +3027,7 @@ void stars_pack_backgrounds()
 		stars_add_blank_background(true);
 }
 
-static void render_environment(int i, vec3d *eye_pos, matrix *new_orient, float new_zoom)
+static void render_environment(int i, vec3d *eye_pos, matrix *new_orient, fov_t new_zoom)
 {
 	bm_set_render_target(gr_screen.envmap_render_target, i);
 
@@ -3039,7 +3035,7 @@ static void render_environment(int i, vec3d *eye_pos, matrix *new_orient, float 
 
 	g3_set_view_matrix( eye_pos, new_orient, new_zoom );
 
-	gr_set_proj_matrix( PI_2 * new_zoom, 1.0f, Min_draw_distance, Max_draw_distance);
+	gr_set_proj_matrix( new_zoom * PI_2, 1.0f, Min_draw_distance, Max_draw_distance);
 	gr_set_view_matrix( &Eye_position, &Eye_matrix );
 
 	if ( Game_subspace_effect ) {
@@ -3055,8 +3051,8 @@ static void render_environment(int i, vec3d *eye_pos, matrix *new_orient, float 
 void stars_setup_environment_mapping(camid cid) {
 	matrix new_orient = IDENTITY_MATRIX;
 
-	extern float View_zoom;
-	float old_zoom = View_zoom, new_zoom = 1.0f;//0.925f;
+	extern fov_t View_zoom;
+	fov_t old_zoom = View_zoom, new_zoom = 1.0f;//0.925f;
 
 	if (gr_screen.mode == GR_STUB) {
 		return;

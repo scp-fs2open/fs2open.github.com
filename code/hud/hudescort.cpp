@@ -300,7 +300,6 @@ void HudGaugeEscort::renderIcon(int x, int y, int index)
 	float	shields, integrity;
 	int		screen_integrity, offset, objnum = -1;
 	char	buf[255];
-	const player *pl = nullptr;
 
 	auto eship = get_escort_entry_from_index(index);
 
@@ -312,8 +311,7 @@ void HudGaugeEscort::renderIcon(int x, int y, int index)
 		int np_index = find_player_index(eship->np_id);
 
 		if (np_index >= 0) {
-			pl = Net_players[np_index].m_player;
-			objnum = pl->objnum;
+			objnum = Net_players[np_index].m_player->objnum;
 
 			// this can occassionally happen in multi when a player still needs to respawn.
 			if (objnum < 0 || Objects[objnum].type != OBJ_SHIP){
@@ -350,15 +348,9 @@ void HudGaugeEscort::renderIcon(int x, int y, int index)
 	}
 
 	// print out ship name
-	// behavior largely taken from message_queue_process() in missionmessage.cpp,
-	// but with the multiplayer callsign behavior kept in accordance with #1674.
-	if (sp->callsign_index >= 0 && !pl)
-	{
-		// Without the !pl, this would just stuff short_callsign anyway, so may
-		// as well use the ship name and append it instead.
-		hud_stuff_ship_callsign(buf, sp);
-	}
-	else if (((Iff_info[sp->team].flags & IFFF_WING_NAME_HIDDEN) && (sp->wingnum != -1)) || (sp->flags[Ship::Ship_Flags::Hide_ship_name]))
+	// original behavior replaced with similar logic to hudtargetbox.cpp, except
+	// if the name is hidden, it's replaced with the class name.
+	if (((Iff_info[sp->team].flags & IFFF_WING_NAME_HIDDEN) && (sp->wingnum != -1)) || (sp->flags[Ship::Ship_Flags::Hide_ship_name]))
 	{
 		// If we're hiding the ship name, we probably shouldn't append the callsign either
 		hud_stuff_ship_class(buf, sp);
@@ -367,17 +359,19 @@ void HudGaugeEscort::renderIcon(int x, int y, int index)
 	{
 		hud_stuff_ship_name(buf, sp);
 
-		// maybe add callsign if multi and player ship
-		if (pl) {
-			SCP_string callsign;
+		// maybe concatenate the callsign
+		if (*buf)
+		{
+			char callsign[NAME_LENGTH];
 
-			callsign.reserve(32);
-
-			callsign += " (";
-			callsign += pl->short_callsign;
-			callsign += ")";
-
-			strcat_s(buf, callsign.c_str());
+			hud_stuff_ship_callsign(callsign, sp);
+			if (*callsign)
+				sprintf(&buf[strlen(buf)], " (%s)", callsign);
+		}
+		// maybe substitute the callsign
+		else
+		{
+			hud_stuff_ship_callsign(buf, sp);
 		}
 	}
 

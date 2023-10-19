@@ -100,7 +100,8 @@ int Show_grid = 1;
 int Show_grid_positions = 1;
 int Show_horizon = 0;
 int Show_outlines = 0;
-bool Draw_outlines_on_selected_ships = false;
+bool Draw_outlines_on_selected_ships = true;
+bool Draw_outline_at_warpin_position = false;
 int Show_stars = 1;
 int Single_axis_constraint = 0;
 int True_rw, True_rh;
@@ -237,13 +238,6 @@ void render_model_x_htl(vec3d *pos, grid *gridp, int col_scheme = 0);
  * @param[in] objp Object to maybe draw
  */
 void render_one_model_htl(object *objp);
-
-/**
- * @brief Draws a model without HTL
- *
- * @param[in] objp Object to maybe draw
- */
-void render_one_model_nohtl(object *objp);
 
 /**
  * @brief Draws a single briefing icon, if the given object is an icon
@@ -1887,6 +1881,25 @@ void render_one_model_htl(object *objp) {
 			model_render_immediate(&render_info, Ship_info[Ships[z].ship_info_index].model_num, Ships[z].model_instance_num, &objp->orient, &objp->pos);
 		}
 
+		if (Draw_outline_at_warpin_position
+			&& (Ships[z].arrival_cue != Locked_sexp_true || Ships[z].arrival_delay > 0)
+			&& Ships[z].arrival_cue != Locked_sexp_false
+			&& !Ships[z].flags[Ship::Ship_Flags::No_arrival_warp])
+		{
+			int warp_type = Warp_params[Ships[z].warpin_params_index].warp_type;
+			if (warp_type == WT_DEFAULT || warp_type == WT_KNOSSOS || warp_type == WT_DEFAULT_THEN_KNOSSOS || (warp_type & WT_DEFAULT_WITH_FIREBALL)) {
+				float warpin_dist = shipfx_calculate_arrival_warp_distance(objp);
+
+				// project the ship forward as far as it should go
+				vec3d warpin_pos;
+				vm_vec_scale_add(&warpin_pos, &objp->pos, &objp->orient.vec.fvec, warpin_dist);
+
+				render_info.set_color(65, 65, 65);	// grey; see rgba_defaults
+				render_info.set_flags(j | MR_SHOW_OUTLINE_HTL | MR_NO_LIGHTING | MR_NO_POLYS | MR_NO_TEXTURING);
+				model_render_immediate(&render_info, Ship_info[Ships[z].ship_info_index].model_num, Ships[z].model_instance_num, &objp->orient, &warpin_pos);
+			}
+		}
+
 		g3_done_instance(0);
 
 		if (Show_ship_models) {
@@ -1950,142 +1963,6 @@ void render_one_model_htl(object *objp) {
 	}
 
 	render_model_x_htl(&objp->pos, The_grid);
-	render_count++;
-}
-
-void render_one_model_nohtl(object *objp) {
-	int j, z;
-	uint debug_flags = 0;
-	object *o2;
-
-	Assert(objp->type != OBJ_NONE);
-
-	if (objp->type == OBJ_JUMP_NODE) {
-		return;
-	}
-
-	if ((objp->type == OBJ_WAYPOINT) && !Show_waypoints)
-		return;
-
-	if ((objp->type == OBJ_START) && !Show_starts)
-		return;
-
-	if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) {
-		if (!Show_ships)
-			return;
-
-		if (!Show_iff[Ships[objp->instance].team])
-			return;
-	}
-
-	if (objp->flags[Object::Object_Flags::Hidden])
-		return;
-
-	rendering_order[render_count] = OBJ_INDEX(objp);
-	Fred_outline = 0;
-
-	if (!Draw_outlines_on_selected_ships && ((OBJ_INDEX(objp) == cur_object_index) || (objp->flags[Object::Object_Flags::Marked])))
-		/* don't draw the outlines we would normally draw */;
-
-	else if ((OBJ_INDEX(objp) == cur_object_index) && !Bg_bitmap_dialog)
-		Fred_outline = FRED_COLOUR_WHITE;
-
-	else if ((objp->flags[Object::Object_Flags::Marked]) && !Bg_bitmap_dialog)  // is it a marked object?
-		Fred_outline = FRED_COLOUR_YELLOW_GREEN;
-
-	else if ((objp->type == OBJ_SHIP) && Show_outlines) {
-		color *iff_color = iff_get_color_by_team_and_object(Ships[objp->instance].team, -1, 1, objp);
-
-		Fred_outline = (iff_color->red << 16) | (iff_color->green << 8) | (iff_color->blue);
-
-	} else if ((objp->type == OBJ_START) && Show_outlines) {
-		Fred_outline = 0x007f00;
-
-	} else
-		Fred_outline = 0;
-
-	// build flags
-	if ((Show_ship_models || Show_outlines) && ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START))) {
-		if (Show_ship_models) {
-			j = MR_NORMAL;
-		} else {
-			j = MR_NO_POLYS;
-		}
-
-		if (Show_dock_points) {
-			debug_flags |= MR_DEBUG_BAY_PATHS;
-		}
-
-		if (Show_paths_fred) {
-			debug_flags |= MR_DEBUG_PATHS;
-		}
-
-		z = objp->instance;
-
-		model_clear_instance(Ship_info[Ships[z].ship_info_index].model_num);
-
-		//		if (!viewpoint || OBJ_INDEX(objp) != cur_object_index)
-		{
-			model_render_params render_info;
-
-			if (Fred_outline) {
-				render_info.set_flags(j | MR_SHOW_OUTLINE | MR_NO_TEXTURING | MR_NO_LIGHTING);
-				render_info.set_color(Fred_outline >> 16, (Fred_outline >> 8) & 0xff, Fred_outline & 0xff);
-			} else {
-				render_info.set_flags(j);
-			}
-
-			render_info.set_debug_flags(debug_flags);
-			render_info.set_replacement_textures(Ships[z].ship_replacement_textures);
-
-			model_render_immediate(&render_info, Ship_info[Ships[z].ship_info_index].model_num, &objp->orient, &objp->pos);
-		}
-
-	} else {
-		int r = 0, g = 0, b = 0;
-
-		if (objp->type == OBJ_SHIP) {
-			if (!Show_ships)
-				return;
-
-			color *iff_color = iff_get_color_by_team_and_object(Ships[objp->instance].team, -1, 1, objp);
-
-			r = iff_color->red;
-			g = iff_color->green;
-			b = iff_color->blue;
-
-		} else if (objp->type == OBJ_START) {
-			r = 0;	g = 127;	b = 0;
-
-		} else if (objp->type == OBJ_WAYPOINT) {
-			r = 96;	g = 0;	b = 112;
-
-		} else if (objp->type == OBJ_POINT) {
-			if (objp->instance != BRIEFING_LOOKAT_POINT_ID) {
-				return;
-			}
-
-			r = 196;	g = 32;	b = 196;
-
-		} else
-			Assert(0);
-
-		if (Fred_outline)
-			draw_orient_sphere2(Fred_outline, objp, r, g, b);
-		else
-			draw_orient_sphere(objp, r, g, b);
-	}
-
-	if (objp->type == OBJ_WAYPOINT) {
-		for (j = 0; j < render_count; j++) {
-			o2 = &Objects[rendering_order[j]];
-			if (o2->type == OBJ_WAYPOINT)
-				if ((o2->instance == objp->instance - 1) || (o2->instance == objp->instance + 1))
-					rpd_line(&o2->pos, &objp->pos);
-		}
-	}
-
-	render_model_x(&objp->pos, The_grid);
 	render_count++;
 }
 

@@ -49,7 +49,8 @@
 static TIMESTAMP Red_alert_new_mission_timestamp;		// timestamp used to give user a little warning for red alerts
 static int Red_alert_voice_started;
 
-SCP_vector<red_alert_ship_status> Red_alert_wingman_status;
+SCP_vector<red_alert_ship_status> Red_alert_ship_status;
+SCP_vector<red_alert_wing_status> Red_alert_wing_status;
 SCP_string Red_alert_precursor_mission;
 
 /////////////////////////////////////////////////////////////////////////////
@@ -506,8 +507,8 @@ void red_alert_store_weapons(red_alert_ship_status *ras, ship_weapon *swp)
 	}
 }
 
-// Take the weapons stored in a wingman_status struct, and bash them into the ship weapons struct
-void red_alert_bash_weapons(red_alert_ship_status *ras, ship_weapon *swp)
+// Take the weapons stored in a ship_status struct, and bash them into the ship weapons struct
+void red_alert_bash_weapons(const red_alert_ship_status *ras, ship_weapon *swp)
 {
 	int i, list_size = 0;
 
@@ -544,7 +545,7 @@ void red_alert_bash_weapons(red_alert_ship_status *ras, ship_weapon *swp)
 	swp->num_secondary_banks = list_size;
 }
 
-void red_alert_bash_weapons(red_alert_ship_status *ras, p_object *pobjp)
+void red_alert_bash_weapons(const red_alert_ship_status *ras, p_object *pobjp)
 {
 	int i, list_size = 0;
 	ship_info *sip;
@@ -601,7 +602,7 @@ void red_alert_bash_weapons(red_alert_ship_status *ras, p_object *pobjp)
 	}
 }
 
-void red_alert_bash_subsys_status(red_alert_ship_status *ras, ship *shipp)
+void red_alert_bash_subsys_status(const red_alert_ship_status *ras, ship *shipp)
 {
 	ship_subsys *ss;
 	int i, count = 0;
@@ -639,7 +640,7 @@ void red_alert_bash_subsys_status(red_alert_ship_status *ras, ship *shipp)
 
 extern int insert_subsys_status(p_object *pobjp);
 
-void red_alert_bash_subsys_status(red_alert_ship_status *ras, p_object *pobjp)
+void red_alert_bash_subsys_status(const red_alert_ship_status *ras, p_object *pobjp)
 {
 	int i, j;
 	ship_info *sip;
@@ -714,29 +715,27 @@ void red_alert_store_subsys_status(red_alert_ship_status *ras, ship *shipp)
 /*
  * Record the current state of the players wingman & ships with the "red-alert-carry" flag
  * Wingmen without the red-alert-carry flag are only stored if they survive
- * dead wingmen must still be handled in red_alert_bash_wingman_status
+ * dead wingmen must still be handled in red_alert_bash_ship_status
  */
-void red_alert_store_wingman_status()
+void red_alert_store_ship_status()
 {
-	ship				*shipp;
-	red_alert_ship_status	ras;
-	ship_obj			*so;
-	object			*ship_objp;
+	SCP_set<int> needed_wingnums;
 
 	// store the mission filename for the red alert precursor mission
 	Red_alert_precursor_mission = Game_current_mission_filename;
 
-	// Pyro3d - Clear list of stored red alert ships 
+	// Pyro3d - Clear stored red alert data
 	// Probably not the best solution, but it prevents an assertion in change_ship_type()
-	Red_alert_wingman_status.clear();
+	red_alert_clear();
+
 
 	// store status for all existing ships
-	for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
-		ship_objp = &Objects[so->objnum];
+	for (const auto so : list_range(&Ship_obj_list)) {
+		auto ship_objp = &Objects[so->objnum];
 		if (ship_objp->flags[Object::Object_Flags::Should_be_dead])
 			continue;
 		Assert(ship_objp->type == OBJ_SHIP);
-		shipp = &Ships[ship_objp->instance];
+		auto shipp = &Ships[ship_objp->instance];
 
 		if ( shipp->flags[Ship::Ship_Flags::Dying] ) {
 			continue;
@@ -746,46 +745,80 @@ void red_alert_store_wingman_status()
 			continue;
 		}
 
+		red_alert_ship_status ras;
 		ras.name = shipp->ship_name;
 		ras.hull = Objects[shipp->objnum].hull_strength;
 		ras.ship_class = shipp->ship_info_index;
+
 		red_alert_store_weapons(&ras, &shipp->weapons);
 		red_alert_store_subsys_status(&ras, shipp);
 
-		Red_alert_wingman_status.push_back( ras );
+		Red_alert_ship_status.push_back( ras );
 		// niffiwan: trying to track down red alert bug creating HUGE pilot files 
-		Assert( (Red_alert_wingman_status.size() <= MAX_SHIPS) );
-	}
+		Assert( (Red_alert_ship_status.size() <= MAX_SHIPS) );
 
-	// store exited ships that did not die
-	for (int idx=0; idx<(int)Ships_exited.size(); idx++) {
-		if (Ships_exited[idx].flags[Ship::Exit_Flags::Red_alert_carry]) {
-			ras.name = Ships_exited[idx].ship_name;
-			ras.hull = float(Ships_exited[idx].hull_strength);
-
-			// if a ship has been destroyed or removed manually by the player, then mark it as such ...
-			if ( Ships_exited[idx].flags[Ship::Exit_Flags::Destroyed]) {
-				ras.ship_class = RED_ALERT_DESTROYED_SHIP_CLASS;
-			}
-			else if (Ships_exited[idx].flags[Ship::Exit_Flags::Player_deleted]) {
-				ras.ship_class = RED_ALERT_PLAYER_DEL_SHIP_CLASS;
-			}
-			// ... otherwise we want to make sure and carry over the ship class
-			else {
-				Assert( Ships_exited[idx].ship_class >= 0 );
-				ras.ship_class = Ships_exited[idx].ship_class;
-			}
-
-			red_alert_store_weapons(&ras, NULL);
-			red_alert_store_subsys_status(&ras, NULL);
-
-			Red_alert_wingman_status.push_back( ras );
-			// niffiwan: trying to track down red alert bug creating HUGE pilot files 
-			Assert( (Red_alert_wingman_status.size() <= MAX_SHIPS) );
+		if (shipp->wingnum >= 0) {
+			needed_wingnums.insert(shipp->wingnum);
 		}
 	}
 
-	Assert( !Red_alert_wingman_status.empty() );
+
+	// store exited ships that did not die
+	for (const auto &exited : Ships_exited) {
+		if ( !(exited.flags[Ship::Exit_Flags::From_player_wing]) && !(exited.flags[Ship::Exit_Flags::Red_alert_carry]) ) {
+			continue;
+		}
+
+		red_alert_ship_status ras;
+		ras.name = exited.ship_name;
+		ras.hull = float(exited.hull_strength);
+
+		// if a ship has been destroyed or removed manually by the player, then mark it as such ...
+		if ( exited.flags[Ship::Exit_Flags::Destroyed]) {
+			ras.ship_class = RED_ALERT_DESTROYED_SHIP_CLASS;
+		}
+		else if (exited.flags[Ship::Exit_Flags::Player_deleted]) {
+			ras.ship_class = RED_ALERT_PLAYER_DEL_SHIP_CLASS;
+		}
+		// ... otherwise we want to make sure and carry over the ship class
+		else {
+			Assert( exited.ship_class >= 0 );
+			ras.ship_class = exited.ship_class;
+		}
+
+		red_alert_store_weapons(&ras, NULL);
+		red_alert_store_subsys_status(&ras, NULL);
+
+		Red_alert_ship_status.push_back( ras );
+		// niffiwan: trying to track down red alert bug creating HUGE pilot files 
+		Assert( (Red_alert_ship_status.size() <= MAX_SHIPS) );
+
+		if (exited.wingnum >= 0) {
+			needed_wingnums.insert(exited.wingnum);
+		}
+	}
+
+	Assert( !Red_alert_ship_status.empty() );
+
+
+	// store status for all wings related to a stored ship
+	for (int wingnum : needed_wingnums) {
+		auto wingp = &Wings[wingnum];
+
+		red_alert_wing_status rws;
+		rws.name = wingp->name;
+		rws.latest_wave = wingp->current_wave;
+
+		rws.wave_count = wingp->wave_count;
+		rws.total_arrived_count = wingp->total_arrived_count;
+		rws.total_departed = wingp->total_departed;
+		rws.total_destroyed = wingp->total_destroyed;
+		rws.total_vanished = wingp->total_vanished;
+
+		Red_alert_wing_status.push_back( rws );
+		// see comments from niffiwan above
+		Assert( (Red_alert_wing_status.size() <= MAX_WINGS) );
+	}
 }
 
 // Delete a ship in a red alert mission (since it must have died/departed in the previous mission)
@@ -831,70 +864,50 @@ void red_alert_delete_ship(p_object *pobjp, int ship_state)
  * "red alert ships" are wingmen and any ship with the red-alert-carry flag
  * Wingmen without red alert data still need to be handled / removed
  */
-void red_alert_bash_wingman_status()
+void red_alert_bash_ship_status()
 {
-	ship_obj			*so;
-
-	SCP_vector<red_alert_ship_status>::iterator rasii;
-	SCP_vector<p_object>::iterator poii;
-
 	SCP_unordered_map<int, int> Wing_pobjects_marked_for_deletion;
-	SCP_map<int, int> Latest_wave_stored;
+	SCP_unordered_map<SCP_string, const red_alert_ship_status*, SCP_string_lcase_hash, SCP_string_lcase_equal_to> red_alert_ship_map;
+	SCP_unordered_map<SCP_string, const red_alert_wing_status*, SCP_string_lcase_hash, SCP_string_lcase_equal_to> red_alert_wing_map;
 
 	if ( !(Game_mode & GM_CAMPAIGN_MODE) ) {
 		return;
 	}
 
-	if ( Red_alert_wingman_status.empty() ) {
+	if ( Red_alert_ship_status.empty() ) {
 		return;
+	}
+	// if there is no wing status, that's ok; the code will just behave as if there was one wave in the previous mission's wing
+
+
+	// create maps for data lookup
+	for (const auto& ras : Red_alert_ship_status) {
+		red_alert_ship_map[ras.name] = &ras;
+	}
+	for (const auto& rws : Red_alert_wing_status) {
+		red_alert_wing_map[rws.name] = &rws;
 	}
 
 
-	// first, go through all wings and see how many waves we got to in the previous mission
+	// first, go through all wings and see if we need to skip any ships
 	for (int wingnum = 0; wingnum < Num_wings; ++wingnum)
 	{
 		auto wingp = &Wings[wingnum];
+		auto rws_iter = red_alert_wing_map.find(wingp->name);
 
-		while (true)
+		if (rws_iter != red_alert_wing_map.end())
 		{
-			char prospective_name[NAME_LENGTH];
-			int prospective_wave = Latest_wave_stored[wingnum] + 1;		// on the first iteration, the map will return 0 so the wave will be 1
+			auto rws = rws_iter->second;
 
-			// look for any ship in this wave
-			bool found = false;
-			for (int pos_in_wing = 0; pos_in_wing < wingp->wave_count; ++pos_in_wing)
-			{
-				// find the name for this wingman in this position and wave
-				wing_bash_ship_name(prospective_name, wingp->name, ((prospective_wave - 1) * wingp->wave_count) + pos_in_wing + 1);
-
-				// see if this ship was stored
-				auto it = std::find_if(Red_alert_wingman_status.begin(), Red_alert_wingman_status.end(), [&](const red_alert_ship_status &ras) -> bool
-				{
-					return stricmp(ras.name.c_str(), prospective_name) == 0;
-				});
-				if (it != Red_alert_wingman_status.end())
-				{
-					found = true;
-					break;
-				}
-			}
-
-			// any ship found?
-			if (found)
-			{
-				Latest_wave_stored[wingnum] = prospective_wave;
-				if (prospective_wave > 1)
-					wingp->red_alert_skipped_ships += wingp->wave_count;
-			}
-			else
-				break;
+			// if this wing has been stored, we need to skip based on the previous mission's latest wave, but *this mission's* wave count
+			if (rws->latest_wave > 1)
+				wingp->red_alert_skipped_ships += (rws->latest_wave - 1) * wingp->wave_count;
 		}
 	}
 
 
 	// go through all ships in the game, and see if there is red alert status data for any
-
-	so = GET_FIRST(&Ship_obj_list);
+	auto so = GET_FIRST(&Ship_obj_list);
 	for ( ; so != END_OF_LIST(&Ship_obj_list); )
 	{
 		object *ship_objp = &Objects[so->objnum];
@@ -914,80 +927,77 @@ void red_alert_bash_wingman_status()
 		// see if this ship belongs to a wing that was stored
 		if (shipp->wingnum >= 0)
 		{
-			int latest_wave = Latest_wave_stored[shipp->wingnum];
 			auto wingp = &Wings[shipp->wingnum];
+			auto rws_iter = red_alert_wing_map.find(wingp->name);
 
-			// assign the wave number to the wing, but only if it was stored
-			if (latest_wave > 0)
-				wingp->current_wave = latest_wave;
-
-			if (latest_wave > 1)
+			if (rws_iter != red_alert_wing_map.end())
 			{
-				// find this ship's position in the wing
-				int ship_entry_index = ship_registry_get_index(shipp->ship_name);
-				Assertion(Ship_registry[ship_entry_index].p_objp, "Ship %s must have a parse object!", shipp->ship_name);
-				int pos_in_wing = Ship_registry[ship_entry_index].p_objp->pos_in_wing;
-				
-				// give the ship its name from the latest wave
-				// (this will make the ship match to the correct red-alert data)
-				wing_bash_ship_name(shipp->ship_name, wingp->name, ((latest_wave - 1) * wingp->wave_count) + 1 + pos_in_wing);
-				// need to update the ship registry too
-				strcpy_s(Ship_registry[ship_entry_index].name, shipp->ship_name);
-				Ship_registry_map[shipp->ship_name] = ship_entry_index;
+				auto rws = rws_iter->second;
+
+				// assign the wave number to the wing
+				wingp->current_wave = rws->latest_wave;
+
+				if (rws->latest_wave > 1)
+				{
+					// find this ship's position in the wing
+					int ship_entry_index = ship_registry_get_index(shipp->ship_name);
+					Assertion(Ship_registry[ship_entry_index].p_objp, "Ship %s must have a parse object!", shipp->ship_name);
+					int pos_in_wing = Ship_registry[ship_entry_index].p_objp->pos_in_wing;
+
+					// give the ship its name from the latest wave
+					// (this will make the ship match to the correct red-alert data)
+					wing_bash_ship_name(shipp->ship_name, wingp->name, ((rws->latest_wave - 1) * wingp->wave_count) + 1 + pos_in_wing);
+					// need to update the ship registry too
+					strcpy_s(Ship_registry[ship_entry_index].name, shipp->ship_name);
+					Ship_registry_map[shipp->ship_name] = ship_entry_index;
+				}
 			}
 		}
 
 		bool ship_data_restored = false;
 		int ship_state = RED_ALERT_DESTROYED_SHIP_CLASS;
 
-		for ( rasii = Red_alert_wingman_status.begin(); rasii != Red_alert_wingman_status.end(); ++rasii )
+		auto ras_iter = red_alert_ship_map.find(shipp->ship_name);
+
+		// red-alert data matches this ship!
+		if (ras_iter != red_alert_ship_map.end())
 		{
-			red_alert_ship_status *ras = &(*rasii);
+			auto ras = ras_iter->second;
 
-			// red-alert data matches this ship!
-			if ( !stricmp(ras->name.c_str(), shipp->ship_name)  )
+			// we only want to restore ships which haven't been destroyed, or were removed by the player
+			if ( (ras->ship_class != RED_ALERT_DESTROYED_SHIP_CLASS) && (ras->ship_class != RED_ALERT_PLAYER_DEL_SHIP_CLASS) )
 			{
-				// we only want to restore ships which haven't been destroyed, or were removed by the player
-				if ( (ras->ship_class != RED_ALERT_DESTROYED_SHIP_CLASS) && (ras->ship_class != RED_ALERT_PLAYER_DEL_SHIP_CLASS) )
+				// if necessary, restore correct ship class
+				if ( ras->ship_class != shipp->ship_info_index )
 				{
-					// if necessary, restore correct ship class
-					if ( ras->ship_class != shipp->ship_info_index )
-					{
-						if (ras->ship_class >= 0 && ras->ship_class < ship_info_size())
-							change_ship_type(SHIP_INDEX(shipp), ras->ship_class);
-						else
-						{
-							mprintf(("Invalid ship class specified in red alert data for ship %s. Using mission defaults.\n", shipp->ship_name));
-							break;
-						}
-					}
-
-					float max_hull;
-					if (shipp->special_hitpoints)
-						max_hull = shipp->ship_max_hull_strength;
+					if (ras->ship_class >= 0 && ras->ship_class < ship_info_size())
+						change_ship_type(SHIP_INDEX(shipp), ras->ship_class);
 					else
-						max_hull = Ship_info[shipp->ship_info_index].max_hull_strength;
-
-					// restore hull (but not shields)
-					if (ras->hull >= 0.0f && ras->hull <= max_hull)
-						ship_objp->hull_strength = ras->hull;
-					else
-						mprintf(("Invalid health in red alert data for ship %s. Using mission defaults.\n", shipp->ship_name));
-
-					// restore weapons and subsys
-					red_alert_bash_weapons(ras, &shipp->weapons);
-					red_alert_bash_subsys_status(ras, shipp);
-
-					ship_data_restored = true;
+						mprintf(("Invalid ship class specified in red alert data for ship %s. Using mission default class.\n", shipp->ship_name));
 				}
-				// must be destroyed or deleted
+
+				float max_hull;
+				if (shipp->special_hitpoints)
+					max_hull = shipp->ship_max_hull_strength;
 				else
-				{
-					ship_state = ras->ship_class;
-				}
+					max_hull = Ship_info[shipp->ship_info_index].max_hull_strength;
 
-				// we won't have two ships with the same name, so bail
-				break;
+				// restore hull (but not shields)
+				if (ras->hull >= 0.0f && ras->hull <= max_hull)
+					ship_objp->hull_strength = ras->hull;
+				else
+					mprintf(("Invalid hull strength in red alert data for ship %s. Using mission default hull.\n", shipp->ship_name));
+
+				// restore weapons and subsys
+				red_alert_bash_weapons(ras, &shipp->weapons);
+				red_alert_bash_subsys_status(ras, shipp);
+
+				ship_data_restored = true;
+			}
+			// must be destroyed or deleted
+			else
+			{
+				ship_state = ras->ship_class;
 			}
 		}
 
@@ -1006,11 +1016,11 @@ void red_alert_bash_wingman_status()
 	if (!Red_alert_applies_to_delayed_ships)
 		return;
 
-	// go through all ships yet to arrive, and see if there is red alert status data for any
 
-	for ( poii = Parse_objects.begin(); poii != Parse_objects.end(); ++poii )
+	// go through all ships yet to arrive, and see if there is red alert status data for any
+	for (auto &pobj : Parse_objects)
 	{
-		p_object *pobjp = &(*poii);
+		auto pobjp = &pobj;
 
 		// objects that have already arrived would have been handled in the above loop
 		if ( pobjp->created_object != NULL )
@@ -1027,72 +1037,70 @@ void red_alert_bash_wingman_status()
 		// see if this parse object belongs to a wing that was stored
 		if (pobjp->wingnum >= 0)
 		{
-			int latest_wave = Latest_wave_stored[pobjp->wingnum];
 			auto wingp = &Wings[pobjp->wingnum];
+			auto rws_iter = red_alert_wing_map.find(wingp->name);
 
-			// assign the wave number to the wing
-			// note that since the wing hasn't arrived yet, and the wave is incremented upon arrival, we need to subtract 1
-			wingp->current_wave = latest_wave - 1;
-
-			if (latest_wave > 1)
+			if (rws_iter != red_alert_wing_map.end())
 			{
-				// use the name from the latest wave for the purposes of matching
-				// (this will make the pobjp match to the correct red-alert data)
-				wing_bash_ship_name(pobjp_name_to_check, wingp->name, ((latest_wave - 1) * wingp->wave_count) + 1 + pobjp->pos_in_wing);
+				auto rws = rws_iter->second;
+
+				// assign the wave number to the wing
+				// note that since the wing hasn't arrived yet, and the wave is incremented upon arrival, we need to subtract 1
+				wingp->current_wave = rws->latest_wave - 1;
+
+				if (rws->latest_wave > 1)
+				{
+					// use the name from the latest wave for the purposes of matching
+					// (this will make the pobjp match to the correct red-alert data)
+					wing_bash_ship_name(pobjp_name_to_check, wingp->name, ((rws->latest_wave - 1) * wingp->wave_count) + 1 + pobjp->pos_in_wing);
+				}
 			}
 		}
 
 		bool ship_data_restored = false;
 		int ship_state = RED_ALERT_DESTROYED_SHIP_CLASS;
 
-		for ( rasii = Red_alert_wingman_status.begin(); rasii != Red_alert_wingman_status.end(); ++rasii )
+		auto ras_iter = red_alert_ship_map.find(pobjp_name_to_check);
+
+		// red-alert data matches this ship!
+		if (ras_iter != red_alert_ship_map.end())
 		{
-			red_alert_ship_status *ras = &(*rasii);
+			auto ras = ras_iter->second;
 
-			// red-alert data matches this ship!
-			if ( !stricmp(ras->name.c_str(), pobjp_name_to_check)  )
+			// we only want to restore ships which haven't been destroyed, or were removed by the player
+			if ( (ras->ship_class != RED_ALERT_DESTROYED_SHIP_CLASS) && (ras->ship_class != RED_ALERT_PLAYER_DEL_SHIP_CLASS) )
 			{
-				// we only want to restore ships which haven't been destroyed, or were removed by the player
-				if ( (ras->ship_class != RED_ALERT_DESTROYED_SHIP_CLASS) && (ras->ship_class != RED_ALERT_PLAYER_DEL_SHIP_CLASS) )
+				// if necessary, restore correct ship class
+				if ( ras->ship_class != pobjp->ship_class )
 				{
-					// if necessary, restore correct ship class
-					if ( ras->ship_class != pobjp->ship_class )
-					{
-						if (ras->ship_class >= 0 && ras->ship_class < ship_info_size())
-							swap_parse_object(pobjp, ras->ship_class);
-						else
-						{
-							mprintf(("Invalid ship class specified in red alert data for ship %s. Using mission defaults.\n", pobjp->name));
-							break;
-						}
-					}
-
-					float max_hull;
-					if (pobjp->special_hitpoints)
-						max_hull = pobjp->ship_max_hull_strength;
+					if (ras->ship_class >= 0 && ras->ship_class < ship_info_size())
+						swap_parse_object(pobjp, ras->ship_class);
 					else
-						max_hull = Ship_info[pobjp->ship_class].max_hull_strength;
-
-					// restore hull (but not shields)
-					if (ras->hull >= 0.0f && ras->hull <= max_hull)
-						pobjp->initial_hull = (int) (ras->hull * 100.0f / max_hull);
-					else
-						mprintf(("Invalid health in red alert data for ship %s. Using mission defaults.\n", pobjp->name));
-
-					// restore weapons and subsys
-					red_alert_bash_weapons(ras, pobjp);
-					red_alert_bash_subsys_status(ras, pobjp);
-
-					ship_data_restored = true;
+						mprintf(("Invalid ship class specified in red alert data for ship %s. Using mission default class.\n", pobjp->name));
 				}
-				// must be destroyed or deleted
+
+				float max_hull;
+				if (pobjp->special_hitpoints)
+					max_hull = pobjp->ship_max_hull_strength;
 				else
-				{
-					ship_state = ras->ship_class;
-				}
+					max_hull = Ship_info[pobjp->ship_class].max_hull_strength;
 
-				// we won't have two ships with the same name, so bail
-				break;
+				// restore hull (but not shields)
+				if (ras->hull >= 0.0f && ras->hull <= max_hull)
+					pobjp->initial_hull = (int) (ras->hull * 100.0f / max_hull);
+				else
+					mprintf(("Invalid hull strength in red alert data for ship %s. Using mission default hull.\n", pobjp->name));
+
+				// restore weapons and subsys
+				red_alert_bash_weapons(ras, pobjp);
+				red_alert_bash_subsys_status(ras, pobjp);
+
+				ship_data_restored = true;
+			}
+			// must be destroyed or deleted
+			else
+			{
+				ship_state = ras->ship_class;
 			}
 		}
 
@@ -1122,7 +1130,7 @@ void red_alert_bash_wingman_status()
                 wingp->flags.set(Ship::Wing_Flags::Gone);
 
 			// look through all ships yet to arrive...
-			for (p_object *pobjp = GET_FIRST(&Ship_arrival_list); pobjp != END_OF_LIST(&Ship_arrival_list); pobjp = GET_NEXT(pobjp))
+			for (auto pobjp : list_range(&Ship_arrival_list))
 			{
 				// ...and mark the ones in this wing
 				if (pobjp->wingnum == ii.first)
@@ -1195,7 +1203,7 @@ void red_alert_maybe_move_to_next_mission()
 	// basic premise here is to stop the current mission, and then set the next mission in the campaign
 	// which better be a red alert mission
 	if ( Game_mode & GM_CAMPAIGN_MODE ) {
-		red_alert_store_wingman_status();
+		red_alert_store_ship_status();
 		mission_goal_fail_incomplete();
 
 		if (Game_mode & GM_MULTIPLAYER) {
@@ -1227,5 +1235,6 @@ void red_alert_maybe_move_to_next_mission()
  */
 void red_alert_clear()
 {
-	Red_alert_wingman_status.clear();
+	Red_alert_ship_status.clear();
+	Red_alert_wing_status.clear();
 }

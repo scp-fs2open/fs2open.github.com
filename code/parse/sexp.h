@@ -350,6 +350,7 @@ enum : int {
 	OP_TIME_DOCKED,
 	OP_TIME_UNDOCKED,
 	OP_TIME_TO_GOAL, // tcrayford
+	OP_SET_HUD_TIME_PAD, // MjnMixael
 	
 	// OP_CATEGORY_STATUS
 	
