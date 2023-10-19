@@ -267,6 +267,9 @@ int mission_campaign_maybe_add(const char *filename)
 
 			Num_campaigns++;
 
+			if (desc != NULL)
+				vm_free(desc);
+				
 			return 1;
 		}
 	}
