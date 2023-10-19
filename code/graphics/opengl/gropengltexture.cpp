@@ -47,17 +47,19 @@ extern int GLOWMAP;
 extern int SPECMAP;
 extern int ENVMAP;
 
-const SCP_vector<std::pair<int, SCP_string>> TextureFilteringValues = {{ 0, "Bilinear" },
-                                                                      { 1, "Trilinear" }, };
+const SCP_vector<std::pair<int, std::pair<const char*, int>>> TextureFilteringValues = {{0, {"Bilinear", 1677}},
+																		                { 1, {"Trilinear", 1678}}};
 
-static auto TextureFilteringOption __UNUSED = options::OptionBuilder<int>("Graphics.TextureFilter", "Texture Filtering", "Texture filtering option")
-								 .importance(1)
-								 .category("Graphics")
-								 .values(TextureFilteringValues)
-								 .default_val(0)
-								 .bind_to_once(&GL_mipmap_filter)
-								 .flags({options::OptionFlags::ForceMultiValueSelection})
-								 .finish();
+static auto TextureFilteringOption __UNUSED = options::OptionBuilder<int>("Graphics.TextureFilter",
+                     std::pair<const char*, int>{"Texture Filtering", 1763},
+                     std::pair<const char*, int>{"Texture filtering option", 1764})
+                     .importance(1)
+                     .category("Graphics")
+                     .values(TextureFilteringValues)
+                     .default_val(0)
+                     .bind_to_once(&GL_mipmap_filter)
+                     .flags({options::OptionFlags::ForceMultiValueSelection})
+                     .finish();
 
 static SCP_vector<float> anisotropic_value_enumerator()
 {
@@ -100,16 +102,16 @@ static float anisotropic_default()
 	return max;
 }
 
-static auto AnisotropyOption =
-    options::OptionBuilder<float>("Graphics.Anisotropy", "Anisotropic filtering",
-                                  "Controls the amount of anisotropic filtering of the textures.")
-        .enumerator(anisotropic_value_enumerator)
-        .category("Graphics")
-        .display(anisotropic_display)
-        .default_func(anisotropic_default)
-        .level(options::ExpertLevel::Advanced)
-        .importance(78)
-        .finish();
+static auto AnisotropyOption = options::OptionBuilder<float>("Graphics.Anisotropy",
+                     std::pair<const char*, int>{"Anistropic filtering", 1736},
+                     std::pair<const char*, int>{"Controls the amount of anistropic filtering of the textures", 1737})
+                     .enumerator(anisotropic_value_enumerator)
+                     .category("Graphics")
+                     .display(anisotropic_display)
+                     .default_func(anisotropic_default)
+                     .level(options::ExpertLevel::Advanced)
+                     .importance(78)
+                     .finish();
 
 // forward declarations
 int opengl_free_texture(tcache_slot_opengl *t);

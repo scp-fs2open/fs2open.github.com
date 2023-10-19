@@ -24,6 +24,21 @@
 static int Num_trails = 0;
 static trail Trails;
 
+void trail_info_init(trail_info* t_info) {
+	t_info->pt = vmd_zero_vector;
+	t_info->w_start = 0.0f;
+	t_info->w_end = 0.0f;
+	t_info->a_start = 0.0f;
+	t_info->a_end = 0.0f;
+	t_info->a_decay_exponent = 1.0f;
+	t_info->max_life = 0.0f;
+	t_info->stamp = 0;
+	generic_bitmap_init(&t_info->texture);
+	t_info->texture_stretch = 1.0f;
+	t_info->n_fade_out_sections = 0;
+	t_info->spread = 0.0f;
+}
+
 // Reset everything between levels
 void trail_level_init()
 {

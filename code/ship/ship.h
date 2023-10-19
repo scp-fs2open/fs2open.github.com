@@ -63,8 +63,7 @@ extern vec3d	Original_vec_to_deader;
 
 
 // defines for 'direction' parameter of ship_select_next_primary()
-#define CYCLE_PRIMARY_NEXT		0
-#define CYCLE_PRIMARY_PREV		1
+enum class CycleDirection { NEXT, PREV };
 
 #define BANK_1		0
 #define BANK_2		1
@@ -236,7 +235,7 @@ public:
 	//Get
 	char *GetNamePtr(){return Name;}
 	bool IsName(const char* in_name) { return (stricmp(in_name, Name) == 0); }
-	float GetDamage(float damage_applied, int in_damage_type_idx, float diff_dmg_scale, int is_beam = 0);
+	float GetDamage(float damage_applied, int in_damage_type_idx, float diff_dmg_scale, bool is_beam);
 	float GetShieldPiercePCT(int damage_type_idx);
 	int GetPiercingType(int damage_type_idx);
 	float GetPiercingLimit(int damage_type_idx);
@@ -646,7 +645,7 @@ public:
 	int	engine_recharge_index;			// index into array holding the engine recharge rate
 	float	weapon_energy;						// Number of EUs in energy reserves
 	int	next_manage_ets;					// timestamp for when ai can next modify ets ( -1 means never )
-	float prev_engine_aggregate_strength;	// aggregate engine health to allow for minimzing overrides to max speed --Asteroth and wookieejedi
+	float prev_engine_aggregate_strength;	// used only in update_ets() to allow for minimizing overrides to max speed --Asteroth and wookieejedi
 
 	flagset<Ship::Ship_Flags>	flags;		// flag variable to contain ship state
 	int	reinforcement_index;				// index into reinforcement struct or -1
@@ -881,6 +880,7 @@ typedef struct exited_ship {
 	int		obj_signature;
 	int		ship_class;
 	int		team;
+	int		wingnum;
 	flagset<Ship::Exit_Flags> flags;
 	fix		time;
 	int		hull_strength;
@@ -900,22 +900,28 @@ extern int ship_find_exited_ship_by_signature( int signature);
 // Stuff for overall ship status, useful for reference by sexps and scripts.  Status changes occur in the same frame as mission log entries.
 enum class ShipStatus
 {
+	// The ship_registry_entry hasn't been initialized yet
+	INVALID = 0,
+
 	// A ship is on the arrival list as a parse object
-	NOT_YET_PRESENT = 0,
+	NOT_YET_PRESENT,
 
 	// A ship is currently in-mission, and its objp and shipp pointers are valid
 	PRESENT,
 
-	// A ship is destroyed, departed, or vanished.  Note however that for destroyed ships,
-	// ship_cleanup is not called until the death roll is complete, which means there is a
-	// period of time where the ship is "exited", but objp and shipp are still valid and
-	// exited_index is not yet assigned.
+	// A ship has been destroyed but is still doing its death roll (not yet "exited");
+	// the objp and shipp pointers are still valid
+	DEATH_ROLL,
+
+	// A ship is destroyed, departed, or vanished; the objp and shipp pointers are nullptr.
+	// Note that for destroyed ships, ship_cleanup is not called until the death roll is complete,
+	// so the ship will spend a period of time in DEATH_ROLL before moving to EXITED.
 	EXITED
 };
 
 struct ship_registry_entry
 {
-	ShipStatus status = ShipStatus::NOT_YET_PRESENT;
+	ShipStatus status = ShipStatus::INVALID;
 	char name[NAME_LENGTH];
 
 	p_object *p_objp = nullptr;
@@ -934,6 +940,7 @@ extern SCP_vector<ship_registry_entry> Ship_registry;
 extern SCP_unordered_map<SCP_string, int, SCP_string_lcase_hash, SCP_string_lcase_equal_to> Ship_registry_map;
 
 extern int ship_registry_get_index(const char *name);
+extern bool ship_registry_exists(const char *name);
 extern const ship_registry_entry *ship_registry_get(const char *name);
 
 #define REGULAR_WEAPON	(1<<0)
@@ -978,8 +985,15 @@ typedef struct ship_type_info {
 
 	float debris_max_speed;
 
+	// Damage multiplier for friendly fire, but only for purposes of scoring and traitor check, not actually damaging ships in-mission
 	float ff_multiplier;
+
+	// Not currently implemented. Originally used for "electronics" weapons. Deactivated in commit 941faf9ab9ed05a1b0efebf7de32c6e3c724baf7 
+	// as it broke retail compatibility.
 	float emp_multiplier;
+
+	// Modifies the audible range used for warp fireball 3d sound effects
+	float warp_sound_range_multiplier;
 
 	//Fog
 	float fog_start_dist;
@@ -1005,7 +1019,7 @@ typedef struct ship_type_info {
 
 	ship_type_info( )
 		: debris_max_speed( 0.f ),
-		  ff_multiplier( 0.f ), emp_multiplier( 0.f ),
+		  ff_multiplier( 0.f ), emp_multiplier( 0.f ), warp_sound_range_multiplier( 1.f ),
 		  fog_start_dist( 0.f ), fog_complete_dist( 0.f ),
 		  ai_valid_goals( 0 ), ai_active_dock( 0 ), ai_passive_dock( 0 ),
 		  vaporize_chance( 0.f )
@@ -1684,7 +1698,7 @@ extern int ship_launch_countermeasure(object *objp, int rand_val = -1);
 // for special targeting lasers
 extern void ship_process_targeting_lasers();
 
-extern int ship_select_next_primary(object *objp, int direction);
+extern bool ship_select_next_primary(object *objp, CycleDirection direction);
 extern int  ship_select_next_secondary(object *objp);
 
 // Goober5000

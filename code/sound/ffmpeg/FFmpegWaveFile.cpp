@@ -209,8 +209,15 @@ bool FFmpegWaveFile::Open(const char* pszFilename, bool keep_ext)
 			}
 
 			auto res = cf_find_file_location(pszFilename, CF_TYPE_ANY);
-
 			if (!res.found) {
+#ifndef NDEBUG
+				// see if the file exists with a different extension
+				res = cf_find_file_location_ext(filename, NUM_AUDIO_EXT, audio_ext_list, CF_TYPE_ANY);
+				if (res.found) {
+					Warning(LOCATION, "File %s was not found with its specified extension, but another file %s exists in the modpack.  Please update the extension and adjust audio specifications if necessary.", filename, res.name_ext.c_str());
+				}
+#endif
+
 				throw FFmpegException("File not found.");
 			}
 

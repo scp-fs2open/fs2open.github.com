@@ -80,7 +80,7 @@ bool is_gray_space(unicode::codepoint_t cp) {
 	return cp == UNICODE_CHAR(' ') || cp == UNICODE_CHAR('\t');
 }
 
-int is_parenthesis(char ch)
+bool is_parenthesis(char ch)
 {
 	return ((ch == '(') || (ch == ')'));
 }
@@ -245,11 +245,12 @@ int get_line_num()
 	bool	inquote = false;
 	int		incomment = false;
 	int		multiline = false;
-	char	*stoploc;
-	char	*p;
+	char	*p = Parse_text;
+	char	*stoploc = Mp;
 
-	p = Parse_text;
-	stoploc = Mp;
+	// if there is no parse text, then we have some ad-hoc text such as provided in an evaluateSEXP call or in the debug console
+	if (Parse_text == nullptr)
+		return count;
 
 	while (p < stoploc)
 	{
@@ -2844,20 +2845,35 @@ void stuff_boolean_flag(int *i, int flag, bool a_to_eol)
 // Stuffs a boolean value pointed at by Mp.
 // YES/NO (supporting 1/0 now as well)
 // Now supports localization :) -WMC
-
 void stuff_boolean(bool *b, bool a_to_eol)
 {
-	char token[32];
-	stuff_string_white(token, sizeof(token)/sizeof(char));
+	char token[NAME_LENGTH];
+	stuff_string_white(token);
 	if(a_to_eol)
 		advance_to_eoln(NULL);
 
-	if( isdigit(token[0]))
+	if (!parse_boolean(token, b))
+	{
+		*b = false;
+		error_display(0, "Boolean '%s' type unknown; assuming 'no/false'", token);
+	}
+
+	diag_printf("Stuffed bool: %s\n", (b) ? NOX("true") : NOX("false"));
+}
+
+// Parses a token into a boolean value, if the token is recognized.  If so, the boolean parameter is assigned the value and the function returns true;
+// if not, the boolean parameter is not assigned and the function returns false.
+bool parse_boolean(const char *token, bool *b)
+{
+	Assertion(token != nullptr && b != nullptr, "Parameters must not be NULL!");
+
+	if(isdigit(token[0]))
 	{
 		if(token[0] != '0')
 			*b = true;
 		else
 			*b = false;
+		return true;
 	}
 	else
 	{
@@ -2870,6 +2886,7 @@ void stuff_boolean(bool *b, bool a_to_eol)
 			|| !stricmp(token, "HIja'") || !stricmp(token, "HISlaH"))	//Klingon
 		{
 			*b = true;
+			return true;
 		}
 		else if(!stricmp(token, "no")
 			|| !stricmp(token, "false")
@@ -2882,15 +2899,12 @@ void stuff_boolean(bool *b, bool a_to_eol)
 			|| !stricmp(token, "ghobe'"))	//Klingon
 		{
 			*b = false;
-		}
-		else
-		{
-			*b = false;
-			error_display(0, "Boolean '%s' type unknown; assuming 'no/false'",token);
+			return true;
 		}
 	}
 
-	diag_printf("Stuffed bool: %s\n", (b) ? NOX("true") : NOX("false"));
+	// token not recognized
+	return false;
 }
 
 //	Stuff an integer value (cast to a ubyte) pointed at by Mp.

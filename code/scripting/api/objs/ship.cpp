@@ -269,7 +269,12 @@ ADE_FUNC(getFlag, l_Ship, "string flag_name", "Checks whether one or more flags 
 				return ADE_RETURN_FALSE;
 		}
 
-		// we don't check parse flags
+		// we don't check parse flags, except for one that can be an object flag in reverse
+		if (parse_obj_flag == Mission::Parse_Object_Flags::OF_No_collide)
+		{
+			if (objp->flags[Object::Object_Flags::Collides])
+				return ADE_RETURN_FALSE;
+		}
 
 		if (ai_flag != AI::AI_Flags::NUM_VALUES)
 		{

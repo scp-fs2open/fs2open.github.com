@@ -45,27 +45,29 @@ int Failed_key_index;
 // Joystick configuration
 int Joy_dead_zone_size = 10;
 
-auto DeadZoneOption =
-    options::OptionBuilder<int>("Input.JoystickDeadZone", "Deadzone", "The deadzone of the selected joystick.")
-        .category("Input")
-        .range(0, 45)
-        .level(options::ExpertLevel::Beginner)
-        .default_val(10)
-        .bind_to(&Joy_dead_zone_size)
-        .importance(1)
-        .finish();
+auto DeadZoneOption = options::OptionBuilder<int>("Input.JoystickDeadZone",
+                     std::pair<const char*, int>{"Deadzone", 1377},
+                     std::pair<const char*, int>{"The deadzone used for all joysticks", 1744})
+                     .category("Input")
+                     .range(0, 45)
+                     .level(options::ExpertLevel::Beginner)
+                     .default_val(10)
+                     .bind_to(&Joy_dead_zone_size)
+                     .importance(1)
+                     .finish();
 
 int Joy_sensitivity = 9;
 
-auto SensitivityOption =
-    options::OptionBuilder<int>("Input.JoystickSensitivity", "Sensitivity", "The sentitivity of the selected joystick.")
-        .category("Input")
-        .range(0, 9)
-        .level(options::ExpertLevel::Beginner)
-        .default_val(9)
-        .bind_to(&Joy_sensitivity)
-        .importance(2)
-        .finish();
+auto SensitivityOption = options::OptionBuilder<int>("Input.JoystickSensitivity",
+                     std::pair<const char*, int>{"Sensitivity", 1745},
+                     std::pair<const char*, int>{"The sensitivity used for all joysticks", 1746})
+                     .category("Input")
+                     .range(0, 9)
+                     .level(options::ExpertLevel::Beginner)
+                     .default_val(9)
+                     .bind_to(&Joy_sensitivity)
+                     .importance(2)
+                     .finish();
 
 //! arrays which hold the key mappings.  The array index represents a key-independent action.
 //! please use SPACES for aligning the fields of this array
@@ -158,8 +160,8 @@ void control_config_common_init_bindings() {
 	// flight controls (flight modes)
 	(BANK_WHEN_PRESSED,                                      -1, -1, SHIP_TAB, 1, "Bank When Pressed",  CC_TYPE_CONTINUOUS)
 	(AFTERBURNER,                                       KEY_TAB,  5, SHIP_TAB, 1, "Afterburner",        CC_TYPE_CONTINUOUS)
-	(GLIDE_WHEN_PRESSED,                                     -1, -1, SHIP_TAB, 0, "Glide When Pressed", CC_TYPE_CONTINUOUS)
-	(TOGGLE_GLIDING,                          KEY_ALTED | KEY_G, -1, SHIP_TAB, 0, "Toggle Gliding",     CC_TYPE_TRIGGER)
+	(GLIDE_WHEN_PRESSED,                                     -1, -1, SHIP_TAB, 1774, "Glide When Pressed", CC_TYPE_CONTINUOUS)
+	(TOGGLE_GLIDING,                          KEY_ALTED | KEY_G, -1, SHIP_TAB, 1775, "Toggle Gliding",     CC_TYPE_TRIGGER)
 
 	// flight controls (axes)
 	(JOY_HEADING_AXIS,                     JOY_X_AXIS, MOUSE_X_AXIS, SHIP_TAB, 1016, "Turn (Yaw) Axis",        CC_TYPE_AXIS_REL)
@@ -173,7 +175,7 @@ void control_config_common_init_bindings() {
 	(FIRE_SECONDARY,                               KEY_SPACEBAR,  1, WEAPON_TAB, 1, "Fire Secondary Weapon",                  CC_TYPE_CONTINUOUS)
 	(CYCLE_NEXT_PRIMARY,                             KEY_PERIOD, -1, WEAPON_TAB, 1, "Cycle Primary Weapon Forward",           CC_TYPE_TRIGGER)
 	(CYCLE_PREV_PRIMARY,                              KEY_COMMA, -1, WEAPON_TAB, 1, "Cycle Primary Weapon Backward",          CC_TYPE_TRIGGER)
-	(CYCLE_PRIMARY_WEAPON_SEQUENCE,                       KEY_O, -1, WEAPON_TAB, 0, "Cycle Primary Weapon Firing Rate",       CC_TYPE_TRIGGER)
+	(CYCLE_PRIMARY_WEAPON_SEQUENCE,                       KEY_O, -1, WEAPON_TAB, 1776, "Cycle Primary Weapon Firing Rate",       CC_TYPE_TRIGGER)
 	(CYCLE_SECONDARY,                                KEY_DIVIDE, -1, WEAPON_TAB, 1, "Cycle Secondary Weapon Forward",         CC_TYPE_TRIGGER)
 	(CYCLE_NUM_MISSLES,                KEY_SHIFTED | KEY_DIVIDE, -1, WEAPON_TAB, 1, "Cycle Secondary Weapon Firing Rate",     CC_TYPE_TRIGGER)
 	(LAUNCH_COUNTERMEASURE,                               KEY_X,  3, WEAPON_TAB, 1, "Launch Countermeasure",                  CC_TYPE_TRIGGER)
@@ -209,8 +211,8 @@ void control_config_common_init_bindings() {
 	(PADLOCK_DOWN,                                           -1, 32, COMPUTER_TAB, 1, "View Rear",                          CC_TYPE_CONTINUOUS)
 	(PADLOCK_LEFT,                                           -1, 34, COMPUTER_TAB, 1, "View Left",                          CC_TYPE_CONTINUOUS)
 	(PADLOCK_RIGHT,                                          -1, 35, COMPUTER_TAB, 1, "View Right",                         CC_TYPE_CONTINUOUS)
-	(VIEW_TOPDOWN,                                           -1, -1, COMPUTER_TAB, 0, "Top-Down View",                      CC_TYPE_TRIGGER)
-	(VIEW_TRACK_TARGET,                                      -1, -1, COMPUTER_TAB, 0, "Target Padlock View",                CC_TYPE_TRIGGER)
+	(VIEW_TOPDOWN,                                           -1, -1, COMPUTER_TAB, 1777, "Top-Down View",                      CC_TYPE_TRIGGER)
+	(VIEW_TRACK_TARGET,                                      -1, -1, COMPUTER_TAB, 1778, "Target Padlock View",                CC_TYPE_TRIGGER)
 
 	(RADAR_RANGE_CYCLE,                            KEY_RAPOSTRO, -1, COMPUTER_TAB, 1, "Cycle Radar Range",                 CC_TYPE_TRIGGER)
 	(SQUADMSG_MENU,                                       KEY_C, -1, COMPUTER_TAB, 1, "Communications Menu",               CC_TYPE_TRIGGER)
@@ -235,8 +237,8 @@ void control_config_common_init_bindings() {
 
 	// Navigation and Autopilot
 	(SHOW_NAVMAP,                                            -1, -1, NO_TAB,       1, "Show Nav Map",       CC_TYPE_TRIGGER, true)
-	(AUTO_PILOT_TOGGLE,                       KEY_ALTED | KEY_A, -1, COMPUTER_TAB, 0, "Toggle Auto Pilot",  CC_TYPE_TRIGGER)
-	(NAV_CYCLE,                               KEY_ALTED | KEY_N, -1, COMPUTER_TAB, 0, "Cycle Nav Points",   CC_TYPE_TRIGGER)
+	(AUTO_PILOT_TOGGLE,                       KEY_ALTED | KEY_A, -1, COMPUTER_TAB, 1779, "Toggle Auto Pilot",  CC_TYPE_TRIGGER)
+	(NAV_CYCLE,                               KEY_ALTED | KEY_N, -1, COMPUTER_TAB, 1780, "Cycle Nav Points",   CC_TYPE_TRIGGER)
 
 	// Escort
 	(ADD_REMOVE_ESCORT,                       KEY_ALTED | KEY_E, -1, COMPUTER_TAB, 1, "Add or Remove Escort",   CC_TYPE_TRIGGER)
@@ -258,7 +260,7 @@ void control_config_common_init_bindings() {
 	// HUD
 	(TOGGLE_HUD,                                    KEY_SHIFTED | KEY_O, -1, COMPUTER_TAB, 1, "Toggle HUD",                       CC_TYPE_TRIGGER)
 	(TOGGLE_HUD_CONTRAST,                                         KEY_L, -1, COMPUTER_TAB, 1, "Toggle High HUD Contrast",         CC_TYPE_TRIGGER)
-	(TOGGLE_HUD_SHADOWS,                              KEY_ALTED | KEY_L, -1, COMPUTER_TAB, 0, "Toggle HUD Drop Shadows",          CC_TYPE_TRIGGER)
+	(TOGGLE_HUD_SHADOWS,                              KEY_ALTED | KEY_L, -1, COMPUTER_TAB, 1781, "Toggle HUD Drop Shadows",          CC_TYPE_TRIGGER)
 	(HUD_TARGETBOX_TOGGLE_WIREFRAME,    KEY_ALTED | KEY_SHIFTED | KEY_Q, -1, COMPUTER_TAB, 1, "Toggle HUD Wireframe Target View", CC_TYPE_TRIGGER)
 
 	// Custom Controls

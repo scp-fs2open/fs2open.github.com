@@ -481,7 +481,7 @@ void briefing_editor_dlg::update_data(int update)
 			strcpy_s(ptr->icons[m_last_icon].closeup_label, buf);
 
 			if (m_icon_scale > 0)
-				ptr->icons[m_last_icon].scale = m_icon_scale;
+				ptr->icons[m_last_icon].scale_factor = m_icon_scale / 100.0f;
 
 			if ( m_hilight )
 				ptr->icons[m_last_icon].flags |= BI_HIGHLIGHT;
@@ -602,7 +602,7 @@ void briefing_editor_dlg::update_data(int update)
 		m_icon_team = ptr->icons[m_cur_icon].team;
 		m_icon_label = ptr->icons[m_cur_icon].label;
 		m_icon_closeup_label = ptr->icons[m_cur_icon].closeup_label;
-		m_icon_scale = ptr->icons[m_cur_icon].scale;
+		m_icon_scale = static_cast<int>(ptr->icons[m_cur_icon].scale_factor * 100.0f);
 		m_ship_type = ptr->icons[m_cur_icon].ship_class;
 		m_id = ptr->icons[m_cur_icon].id;
 		enable = TRUE;
@@ -868,8 +868,10 @@ void briefing_editor_dlg::draw_icon(object *objp)
 	if (m_cur_stage < 0)
 		return;
 
-	brief_render_icon(m_cur_stage, objp->instance, 1.0f/30.0f, objp->flags[Object::Object_Flags::Marked],
-		(float) True_rw / Briefing_window_resolution[0], (float) True_rh / Briefing_window_resolution[1]);
+	// average the w and h scale factors
+	float scale_factor = 0.5f * ((float)True_rw / Briefing_window_resolution[0] + (float)True_rh / Briefing_window_resolution[1]);
+
+	brief_render_icon(m_cur_stage, objp->instance, 1.0f/30.0f, objp->flags[Object::Object_Flags::Marked], scale_factor);
 }
 
 void briefing_editor_dlg::batch_render()
@@ -1080,7 +1082,7 @@ void briefing_editor_dlg::OnMakeIcon()
 	biconp->pos = pos;
 	biconp->flags = 0;
 	biconp->id = Cur_brief_id++;
-	biconp->scale = 100;
+	biconp->scale_factor = 1.0f;
 
 	biconp->modelnum = -1;
 	biconp->model_instance_num = -1;

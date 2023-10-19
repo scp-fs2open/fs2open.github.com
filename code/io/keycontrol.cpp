@@ -641,7 +641,7 @@ extern int Framerate_delay;
 
 extern vec3d Eye_position;
 extern matrix Eye_matrix;
-extern void g3_set_view_matrix(const vec3d *view_pos, const matrix *view_matrix, float zoom);
+extern void g3_set_view_matrix(const vec3d *view_pos, const matrix *view_matrix, fov_t zoom);
 
 extern int Show_cpu;
 
@@ -1320,7 +1320,7 @@ void process_debug_keys(int k)
 				break;
 			}
 			cam->set_fov(cam->get_fov() + 0.1f);
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, "Camera fov raised to %0.2f" , cam->get_fov());
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, "Camera fov raised to %0.2f" , g3_get_hfov(cam->get_fov()));
 			}
 			break;
 
@@ -1334,7 +1334,7 @@ void process_debug_keys(int k)
 				break;
 			}
 			cam->set_fov(cam->get_fov() - 0.1f);
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, "Camera fov lowered to %0.2f" , cam->get_fov());
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, "Camera fov lowered to %0.2f" , g3_get_hfov(cam->get_fov()));
 			}
 			break;
 		case KEY_DEBUGGED + KEY_Z:
@@ -1831,10 +1831,10 @@ int button_function_critical(int n, net_player *p = NULL)
 			}
 
 			hud_gauge_popup_start(HUD_WEAPONS_GAUGE);
-			if (ship_select_next_primary(objp, CYCLE_PRIMARY_NEXT)) {
+			if (ship_select_next_primary(objp, CycleDirection::NEXT)) {
 				ship* shipp = &Ships[objp->instance];
 				if ( timestamp_elapsed(shipp->weapons.next_primary_fire_stamp[shipp->weapons.current_primary_bank]) ) {
-					shipp->weapons.next_primary_fire_stamp[shipp->weapons.current_primary_bank] = timestamp(250);	//	1/4 second delay until can fire
+					shipp->weapons.next_primary_fire_stamp[shipp->weapons.current_primary_bank] = timestamp(BANK_SWITCH_DELAY);	//	1/4 second delay until can fire
 				}
 
 				// multiplayer server should maintain bank/link status here
@@ -1852,10 +1852,10 @@ int button_function_critical(int n, net_player *p = NULL)
 			}
 
 			hud_gauge_popup_start(HUD_WEAPONS_GAUGE);
-			if (ship_select_next_primary(objp, CYCLE_PRIMARY_PREV)) {
+			if (ship_select_next_primary(objp, CycleDirection::PREV)) {
 				ship* shipp = &Ships[objp->instance];
 				if ( timestamp_elapsed(shipp->weapons.next_primary_fire_stamp[shipp->weapons.current_primary_bank]) ) {
-					shipp->weapons.next_primary_fire_stamp[shipp->weapons.current_primary_bank] = timestamp(250);	//	1/4 second delay until can fire
+					shipp->weapons.next_primary_fire_stamp[shipp->weapons.current_primary_bank] = timestamp(BANK_SWITCH_DELAY);	//	1/4 second delay until can fire
 				}
 
 				// multiplayer server should maintain bank/link status here
@@ -1875,7 +1875,7 @@ int button_function_critical(int n, net_player *p = NULL)
 			if (ship_select_next_secondary(objp)) {
 				ship* shipp = &Ships[objp->instance];
 				if ( timestamp_elapsed(shipp->weapons.next_secondary_fire_stamp[shipp->weapons.current_secondary_bank]) ) {
-					shipp->weapons.next_secondary_fire_stamp[shipp->weapons.current_secondary_bank] = timestamp(250);	//	1/4 second delay until can fire
+					shipp->weapons.next_secondary_fire_stamp[shipp->weapons.current_secondary_bank] = timestamp(BANK_SWITCH_DELAY);	//	1/4 second delay until can fire
 				}
 
 				// multiplayer server should maintain bank/link status here

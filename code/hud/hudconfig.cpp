@@ -900,7 +900,7 @@ void hud_config_render_gauges(bool API_Access)
 				resize = GR_RESIZE_NONE;
 			}
 
-			gr_aabitmap(HC_gauge_coords[i].x, HC_gauge_coords[i].y, resize, false, (int)(HC_gauge_scale * 100));
+			gr_aabitmap(HC_gauge_coords[i].x, HC_gauge_coords[i].y, resize, false, HC_gauge_scale);
 		}
 		
 		/*
@@ -1657,10 +1657,6 @@ void hud_config_as_observer(ship *shipp,ai_info *aif)
 {
 	// store the current hud
 	hud_config_backup();
-
-	// bash these values so the HUD is not offset incorrectly
-	HUD_offset_x = 0.0f;
-	HUD_offset_y = 0.0f;
 
 	// initialize the observer HUD
 	hud_observer_init(shipp,aif);	

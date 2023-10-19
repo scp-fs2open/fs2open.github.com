@@ -315,10 +315,10 @@ void set_active_ui(UI_WINDOW *ui_window)
 	Active_ui_window = ui_window;
 }
 
-SCP_string common_music_get_filename(int score_index)
+const char *common_music_get_filename(int score_index)
 {
 	if (Cmdline_freespace_no_music) {
-		return SCP_string();
+		return "";
 	}
 
 	Assertion(score_index >= 0 && score_index < NUM_SCORES, "Invalid score index %d.", score_index);
@@ -330,7 +330,7 @@ SCP_string common_music_get_filename(int score_index)
 				"No briefing music is selected, so play first briefing track: %s\n",
 				Spooled_music[Mission_music[score_index]].name));
 		} else {
-			return SCP_string();
+			return "";
 		}
 	}
 
@@ -341,11 +341,11 @@ void common_music_init(int score_index)
 {
 	const auto file_name = common_music_get_filename(score_index);
 
-	if (file_name.empty()) {
+	if (file_name[0] == '\0') {
 		return;
 	}
 
-	briefing_load_music(file_name.c_str());
+	briefing_load_music(file_name);
 	// Use this id to trigger the start of music playing on the briefing screen
 	Briefing_music_begin_timestamp = ui_timestamp(BRIEFING_MUSIC_DELAY);
 }
@@ -1582,7 +1582,7 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 	{
 		g3_set_view_matrix( &sip->closeup_pos, &vmd_identity_matrix, zoom);
 
-		gr_set_proj_matrix(0.5f*Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+		gr_set_proj_matrix(Proj_fov * 0.5f, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
 	}
 	else
 	{
@@ -1623,7 +1623,7 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 		}
 		g3_set_view_matrix( &weap_closeup, &vmd_identity_matrix, tm_zoom);
 
-		gr_set_proj_matrix(0.5f*Proj_fov, gr_screen.clip_aspect, 0.05f, 1000.0f);
+		gr_set_proj_matrix(Proj_fov * 0.5f, gr_screen.clip_aspect, 0.05f, 1000.0f);
 	}
 
 	model_render_params render_info;

@@ -60,6 +60,8 @@ static float lua_Opacity = 1.0f;
 static int lua_Opacity_type = GR_ALPHABLEND_FILTER;
 static int lua_ResizeMode = GR_RESIZE_NONE;
 
+int get_resize_mode() { return lua_ResizeMode; }
+
 //****SUBLIBRARY: Graphics/Cameras
 ADE_LIB_DERIV(l_Graphics_Cameras, "Cameras", NULL, "Cameras", l_Graphics);
 
@@ -2221,6 +2223,15 @@ ADE_FUNC(createParticle,
 	particle::create(&pi);
 
 	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(killAllParticles, l_Graphics, nullptr, "Clears all particles from a mission", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	particle::kill_all();
+
+	return ADE_RETURN_NIL;
 }
 
 ADE_FUNC(screenToBlob, l_Graphics, nullptr, "Captures the current render target and encodes it into a blob-PNG", "string", "The png blob string")

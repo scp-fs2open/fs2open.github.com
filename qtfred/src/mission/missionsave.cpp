@@ -1232,13 +1232,13 @@ int CFred_mission_save::save_briefing()
 					}
 				}
 
-				if (save_format != MissionFormat::RETAIL) {
+				if (save_format != MissionFormat::RETAIL && bi->scale_factor != 1.0f) {
 					if (optional_string_fred("$icon scale:"))
 						parse_comments();
 					else
 						fout("\n$icon scale:");
 
-					fout(" %d", bi->scale);
+					fout(" %d", static_cast<int>(bi->scale_factor * 100.0f));
 				}
 
 				if (optional_string_fred("+id:")) {
@@ -1254,20 +1254,29 @@ int CFred_mission_save::save_briefing()
 				fout(" %d", (bi->flags & BI_HIGHLIGHT) ? 1 : 0);
 
 				if (save_format != MissionFormat::RETAIL) {
-					required_string_fred("$mirror:");
-					parse_comments();
+					if (optional_string_fred("$mirror:"))
+						parse_comments();
+					else
+						fout("\n$mirror:");
+
 					fout(" %d", (bi->flags & BI_MIRROR_ICON) ? 1 : 0);
 				}
 
 				if ((save_format != MissionFormat::RETAIL) && (bi->flags & BI_USE_WING_ICON)) {
-					required_string_fred("$use wing icon:");
-					parse_comments();
+					if (optional_string_fred("$use wing icon:"))
+						parse_comments();
+					else
+						fout("\n$use wing icon:");
+
 					fout(" %d", (bi->flags & BI_USE_WING_ICON) ? 1 : 0);
 				}
 
 				if ((save_format != MissionFormat::RETAIL) && (bi->flags & BI_USE_CARGO_ICON)) {
-					required_string_fred("$use cargo icon:");
-					parse_comments();
+					if (optional_string_fred("$use cargo icon:"))
+						parse_comments();
+					else
+						fout("\n$use cargo icon:");
+
 					fout(" %d", (bi->flags & BI_USE_CARGO_ICON) ? 1 : 0);
 				}
 
@@ -2356,10 +2365,13 @@ int CFred_mission_save::save_campaign_file(const char *pathname)
 		required_string_fred("+Flags:", "$Mission:");
 		parse_comments();
 
+		// don't save any internal flags
+		auto flags_to_save = cm.flags & CMISSION_EXTERNAL_FLAG_MASK;
+
 		// Goober5000
 		if (save_format != MissionFormat::RETAIL) {
 			// don't save Bastion flag
-			fout(" %d", cm.flags & ~CMISSION_FLAG_BASTION);
+			fout(" %d", flags_to_save & ~CMISSION_FLAG_BASTION);
 
 			// new main hall stuff
 			if (optional_string_fred("+Main Hall:", "$Mission:")) {
@@ -2371,7 +2383,7 @@ int CFred_mission_save::save_campaign_file(const char *pathname)
 			fout(" %s", cm.main_hall.c_str());
 		} else {
 			// save Bastion flag properly
-			fout(" %d", cm.flags | ((! cm.main_hall.empty()) ? CMISSION_FLAG_BASTION : 0));
+			fout(" %d", flags_to_save | ((! cm.main_hall.empty()) ? CMISSION_FLAG_BASTION : 0));
 		}
 
 		if (cm.debrief_persona_index > 0) {
@@ -3273,6 +3285,11 @@ int CFred_mission_save::save_warp_params(WarpDirection direction, ship *shipp)
 	{
 		if (strlen(shipp_params->anim) > 0)
 			fout("\n%s animation: %s", prefix, shipp_params->anim);
+	}
+
+	if (shipp_params->special_warp_physics != sip_params->special_warp_physics)
+	{
+		fout("\n$Special warp%s physics: %s", direction == WarpDirection::WARP_IN ? "in" : "out", shipp_params->special_warp_physics ? "YES" : "NO");
 	}
 
 	if (direction == WarpDirection::WARP_OUT && shipp_params->warpout_player_speed != sip_params->warpout_player_speed)

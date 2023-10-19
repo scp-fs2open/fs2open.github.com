@@ -365,12 +365,22 @@ void HudGaugeReticle::getFirepointStatus() {
 					int bankactive = 0;
 					ship_weapon *swp = &shipp->weapons;
 
-					if (!timestamp_elapsed(shipp->weapons.next_primary_fire_stamp[i]))
-						bankactive = 1;
-					else if (timestamp_elapsed(shipp->weapons.primary_animation_done_time[i]))
-						bankactive = 1;
-					else if (i == shipp->weapons.current_primary_bank || shipp->flags[Ship::Ship_Flags::Primary_linked])
+					// If this firepoint doesn't actually have a weapon mounted, skip all of this
+					if (swp->primary_bank_weapons[i] < 0) {
+						continue;
+					}
+
+					// bank is firing
+					// (make sure we haven't cycled banks recently, since that will also reset the timestamp)
+					if (   (!Control_config[CYCLE_NEXT_PRIMARY].digital_used.isValid() || timestamp_since(Control_config[CYCLE_NEXT_PRIMARY].digital_used) > BANK_SWITCH_DELAY)
+						&& (!Control_config[CYCLE_PREV_PRIMARY].digital_used.isValid() || timestamp_since(Control_config[CYCLE_PREV_PRIMARY].digital_used) > BANK_SWITCH_DELAY)
+						&& (!timestamp_elapsed(shipp->weapons.next_primary_fire_stamp[i]) || !timestamp_elapsed(shipp->weapons.primary_animation_done_time[i]))) {
 						bankactive = 2;
+					}
+					// bank is selected
+					else if (i == shipp->weapons.current_primary_bank || shipp->flags[Ship::Ship_Flags::Primary_linked]) {
+						bankactive = 1;
+					}
 
 					int num_slots = pm->gun_banks[i].num_slots;
 					for (int j = 0; j < num_slots; j++) {

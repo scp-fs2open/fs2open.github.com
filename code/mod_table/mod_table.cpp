@@ -68,7 +68,7 @@ SCP_string Window_title;
 SCP_string Mod_title;
 SCP_string Mod_version;
 bool Unicode_text_mode;
-SCP_vector<SCP_string> Splash_screens;
+SCP_vector<splash_screen> Splash_screens;
 int Splash_fade_in_time;
 int Splash_fade_out_time;
 bool Splash_logo_center;
@@ -129,6 +129,7 @@ bool Supernova_hits_at_zero;
 bool Show_subtitle_uses_pixels;
 int Show_subtitle_screen_base_res[2];
 int Show_subtitle_screen_adjusted_res[2];
+int HUD_set_coords_screen_base_res[2];
 bool Always_warn_player_about_unbound_keys;
 leadIndicatorBehavior Lead_indicator_behavior;
 shadow_disable_overrides Shadow_disable_overrides {false, false, false, false};
@@ -144,28 +145,30 @@ bool Play_thruster_sounds_for_player;
 std::array<std::tuple<float, float>, 6> Fred_spacemouse_nonlinearity;
 bool Randomize_particle_rotation;
 
-static auto DiscordOption __UNUSED = options::OptionBuilder<bool>("Other.Discord", "Discord Presence", "Toggle Discord Rich Presence")
-							 .category("Other")
-							 .default_val(Discord_presence)
-							 .level(options::ExpertLevel::Advanced)
-							 .importance(55)
-		                     .change_listener([](bool val, bool) {
-									if(Discord_presence){
-										if (!val) {
-											Discord_presence = false;
-											libs::discord::shutdown();
-											return true;
-										}
-									} else {
-										if (val) {
-											Discord_presence = true;
-											libs::discord::init();
-											return true;
-										}
-									}
-									return false;
-								})
-							 .finish();
+static auto DiscordOption __UNUSED = options::OptionBuilder<bool>("Other.Discord",
+                     std::pair<const char*, int>{"Discord Presence", 1754},
+                     std::pair<const char*, int>{"Toggle Discord Rich Presence", 1755})
+                     .category("Other")
+                     .default_val(Discord_presence)
+                     .level(options::ExpertLevel::Advanced)
+                     .importance(55)
+                     .change_listener([](bool val, bool) {
+                          if(Discord_presence){
+                               if (!val) {
+                                    Discord_presence = false;
+                                    libs::discord::shutdown();
+                                    return true;
+                               }
+                          } else {
+                               if (val) {
+                                    Discord_presence = true;
+                                    libs::discord::init();
+                                    return true;
+                               }
+                          }
+                          return false;
+                     })
+                     .finish();
 
 void mod_table_set_version_flags();
 
@@ -227,16 +230,36 @@ void parse_mod_table(const char *filename)
 		}
 
 		if (optional_string("$Splash screens:")) {
-			SCP_string splash_bitmap;
 			while (optional_string("+Bitmap:")) {
-				stuff_string(splash_bitmap, F_NAME);
+				splash_screen splash;
+				stuff_string(splash.filename, F_NAME);
 
 				// remove extension?
-				if (drop_extension(splash_bitmap)) {
-					mprintf(("Game Settings Table: Removed extension on splash screen file name %s\n", splash_bitmap.c_str()));
+				if (drop_extension(splash.filename)) {
+					mprintf(("Game Settings Table: Removed extension on splash screen file name %s\n", splash.filename.c_str()));
 				}
 
-				Splash_screens.push_back(splash_bitmap);
+				if (optional_string("+Aspect Ratio:")) {
+					stuff_float(&splash.aspect_ratio_exact);
+				}
+				if (optional_string("+Aspect Ratio Min:")) {
+					stuff_float(&splash.aspect_ratio_min);
+				}
+				if (optional_string("+Aspect Ratio Max:")) {
+					stuff_float(&splash.aspect_ratio_max);
+				}
+
+				if (splash.aspect_ratio_exact != 0.0f && (splash.aspect_ratio_min != 0.0f || splash.aspect_ratio_max != 0.0f)) {
+					Warning(LOCATION, "Game Settings Table: An exact aspect ratio and either a min or max aspect ratio were supplied for '%s'.  Only the exact value will be used.", splash.filename.c_str());
+					splash.aspect_ratio_min = 0.0f;
+					splash.aspect_ratio_max = 0.0f;
+				}
+
+				if (splash.aspect_ratio_exact == 0.0f && splash.aspect_ratio_min == 0.0f && splash.aspect_ratio_max == 0.0f) {
+					splash.is_default = true;
+				}
+
+				Splash_screens.push_back(splash);
 			}
 		}
 
@@ -462,6 +485,21 @@ void parse_mod_table(const char *filename)
 				}
 			} else {
 				Warning(LOCATION, "$Show-subtitle base resolution: must specify two arguments");
+			}
+		}
+
+		if (optional_string("$HUD-set-coords base resolution:")) {
+			int base_res[2];
+			if (stuff_int_list(base_res, 2) == 2) {
+				if (base_res[0] >= 640 && base_res[1] >= 480) {
+					HUD_set_coords_screen_base_res[0] = base_res[0];
+					HUD_set_coords_screen_base_res[1] = base_res[1];
+					mprintf(("Game Settings Table: HUD-set-coords base resolution is (%d, %d)\n", base_res[0], base_res[1]));
+				} else {
+					Warning(LOCATION, "$HUD-set-coords base resolution: arguments must be at least 640x480!");
+				}
+			} else {
+				Warning(LOCATION, "$HUD-set-coords base resolution: must specify two arguments");
 			}
 		}
 
@@ -1295,15 +1333,17 @@ void mod_table_post_process()
 	// use the same widescreen code as in adjust_base_res()
 	// This calculates an adjusted resolution if the aspect ratio of the base resolution doesn't exactly match that of the current resolution.
 	// The base resolution specified in game_settings.tbl does not need to be 1024x768 or even 4:3.
-	float aspect_quotient = ((float)gr_screen.center_w / (float)gr_screen.center_h) / ((float)Show_subtitle_screen_base_res[0] / (float)Show_subtitle_screen_base_res[1]);
-	if (aspect_quotient >= 1.0) {
-		Show_subtitle_screen_adjusted_res[0] = (int)(Show_subtitle_screen_base_res[0] * aspect_quotient);
+	float aspect_quotient_subtitle = ((float)gr_screen.center_w / (float)gr_screen.center_h) / ((float)Show_subtitle_screen_base_res[0] / (float)Show_subtitle_screen_base_res[1]);
+	if (aspect_quotient_subtitle >= 1.0) {
+		Show_subtitle_screen_adjusted_res[0] = (int)(Show_subtitle_screen_base_res[0] * aspect_quotient_subtitle);
 		Show_subtitle_screen_adjusted_res[1] = Show_subtitle_screen_base_res[1];
 	} else {
 		Show_subtitle_screen_adjusted_res[0] = Show_subtitle_screen_base_res[0];
-		Show_subtitle_screen_adjusted_res[1] = (int)(Show_subtitle_screen_base_res[1] / aspect_quotient);
+		Show_subtitle_screen_adjusted_res[1] = (int)(Show_subtitle_screen_base_res[1] / aspect_quotient_subtitle);
 	}
 	mprintf(("Game Settings Table: Show-subtitle adjusted resolution is (%d, %d)\n", Show_subtitle_screen_adjusted_res[0], Show_subtitle_screen_adjusted_res[1]));
+
+	// we don't need to calculate adjusted resolution for hud-set-coords because that function doesn't do screen scaling
 }
 
 bool mod_supports_version(int major, int minor, int build)
@@ -1359,7 +1399,7 @@ void mod_table_reset()
 	Splash_logo_center = false;
 	Use_tabled_strings_for_default_language = false;
 	Dont_preempt_training_voice = false;
-	Movie_subtitle_font = "font01.vf";
+	Movie_subtitle_font = "";
 	Enable_scripts_in_fred = false;
 	Window_icon_path = "app_icon_sse";
 	Disable_built_in_translations = false;
@@ -1416,6 +1456,8 @@ void mod_table_reset()
 	Show_subtitle_screen_base_res[1] = -1;
 	Show_subtitle_screen_adjusted_res[0] = -1;
 	Show_subtitle_screen_adjusted_res[1] = -1;
+	HUD_set_coords_screen_base_res[0] = -1;
+	HUD_set_coords_screen_base_res[1] = -1;
 	Always_warn_player_about_unbound_keys = false;
 	Lead_indicator_behavior = leadIndicatorBehavior::DEFAULT;
 	Thruster_easing = 0;
