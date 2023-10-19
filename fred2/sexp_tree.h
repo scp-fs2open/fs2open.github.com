@@ -73,6 +73,7 @@
 #define MODE_GOALS		(1 | ST_LABELED_ROOT | ST_ROOT_DELETABLE)
 #define MODE_EVENTS		(2 | ST_LABELED_ROOT | ST_ROOT_DELETABLE | ST_ROOT_EDITABLE)
 #define MODE_CAMPAIGN	(3 | ST_LABELED_ROOT | ST_ROOT_DELETABLE)
+#define MODE_CUTSCENES	(4 | ST_LABELED_ROOT | ST_ROOT_DELETABLE)
 
 // various tree operations notification codes (to be handled by derived class)
 #define ROOT_DELETED	1

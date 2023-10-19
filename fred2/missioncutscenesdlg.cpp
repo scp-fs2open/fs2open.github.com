@@ -51,7 +51,7 @@ CMissionCutscenesDlg::CMissionCutscenesDlg(CWnd* pParent /*=NULL*/)
 	m_name = _T("");
 	m_desc = _T("");
 	//}}AFX_DATA_INIT
-	m_cutscenes_tree.m_mode = MODE_GOALS; // We don't need to perform actions here, so use the same method as Goals
+	m_cutscenes_tree.m_mode = MODE_CUTSCENES; // We don't need to perform actions here, so use the same method as Goals
 	m_cutscenes_tree.link_modified(&modified);
 	modified = 0;
 	select_sexp_node = -1;
@@ -226,7 +226,7 @@ void CMissionCutscenesDlg::update_cur_cutscene()
 // handler for context menu (i.e. a right mouse button click).
 void CMissionCutscenesDlg::OnRclickCutscenesTree(NMHDR* pNMHDR, LRESULT* pResult)
 {
-	m_cutscenes_tree.right_clicked(MODE_GOALS); // We don't need to perform actions here, so use the same method as Goals
+	m_cutscenes_tree.right_clicked(MODE_CUTSCENES); // We don't need to perform actions here, so use the same method as Goals
 	*pResult = 0;
 }
 
