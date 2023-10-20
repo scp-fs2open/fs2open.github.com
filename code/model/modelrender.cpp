@@ -17,6 +17,7 @@
 #include "graphics/shadows.h"
 #include "graphics/tmapper.h"
 #include "graphics/uniforms.h"
+#include "graphics/opengl/gropengl.h"
 #include "io/timer.h"
 #include "jumpnode/jumpnode.h"
 #include "lighting/lighting.h"
@@ -488,7 +489,7 @@ void model_draw_list::add_buffer_draw(model_material *render_material, indexed_v
 		// make sure that the deferred flag is disabled or else some parts of the rendered colors go missing
 		// TODO: This should really be handled somewhere else. This feels like a crude hack...
 		auto possibly_deferred = draw_data.render_material.get_depth_mode() == ZBUFFER_TYPE_FULL
-			&& gr_is_capable(CAPABILITY_DEFERRED_LIGHTING) && !Cmdline_no_deferred_lighting;
+			&& gr_is_capable(CAPABILITY_DEFERRED_LIGHTING) && gr_opengl_deferred_enabled();
 
 		if (possibly_deferred) {
 			// Fog is handled differently in deferred shader situations

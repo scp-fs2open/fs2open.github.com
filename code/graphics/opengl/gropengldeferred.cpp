@@ -57,7 +57,7 @@ void opengl_clear_deferred_buffers()
 
 void gr_opengl_deferred_lighting_begin(bool clearNonColorBufs)
 {
-	if ( Cmdline_no_deferred_lighting)
+	if (!gr_opengl_deferred_enabled())
 		return;
 
 	static const float black[] = {0, 0, 0, 1.0f};
@@ -181,7 +181,7 @@ void gr_opengl_deferred_lighting_finish()
 	GR_DEBUG_SCOPE("Deferred lighting finish");
 	TRACE_SCOPE(tracing::ApplyLights);
 
-	if (Cmdline_no_deferred_lighting) {
+	if (!gr_opengl_deferred_enabled()) {
 		return;
 	}
 

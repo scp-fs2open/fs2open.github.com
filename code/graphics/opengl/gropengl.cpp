@@ -78,6 +78,19 @@ static std::unique_ptr<os::OpenGLContext> GL_context = nullptr;
 static std::unique_ptr<os::GraphicsOperations> graphic_operations = nullptr;
 static os::Viewport* current_viewport = nullptr;
 
+// used by In-Game Options menu
+static bool DeferredLightingEnabled = true;
+
+static auto DeferredLightingOption = options::OptionBuilder<bool>("Graphics.DeferredLighting",
+                     std::pair<const char*, int>{"Deferred Lighting", 1783},
+                     std::pair<const char*, int>{"Enables or disables deferred lighting", 1784})
+                     .category("Graphics")
+                     .default_val(true)
+                     .level(options::ExpertLevel::Advanced)
+                     .bind_to_once(&DeferredLightingEnabled)
+                     .importance(60)
+                     .finish();
+
 void gr_opengl_clear()
 {
 	float red = gr_screen.current_clear_color.red / 255.0f;
@@ -120,6 +133,15 @@ void gr_opengl_flip()
 		mprintf(("!!DEBUG!! OpenGL Errors this frame: %i\n", ic));
 	}
 #endif
+}
+
+bool gr_opengl_deferred_enabled()
+{
+	if (Using_in_game_options) {
+		return DeferredLightingOption->getValue();
+	} else {
+		return !Cmdline_no_deferred_lighting;
+	}
 }
 
 void gr_opengl_set_clip(int x, int y, int w, int h, int resize_mode)
@@ -1402,7 +1424,7 @@ bool gr_opengl_is_capable(gr_capability capability)
 	case CAPABILITY_POST_PROCESSING:
 		return Gr_post_processing_enabled  && !Cmdline_no_fbo;
 	case CAPABILITY_DEFERRED_LIGHTING:
-		return !Cmdline_no_fbo && !Cmdline_no_deferred_lighting;
+		return !Cmdline_no_fbo && gr_opengl_deferred_enabled();
 	case CAPABILITY_SHADOWS:
 	case CAPABILITY_THICK_OUTLINE:
 		return !Cmdline_no_geo_sdr_effects;

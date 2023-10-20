@@ -673,7 +673,7 @@ void gr_opengl_scene_texture_begin()
 		Scene_texture_v_scale = 1.0f;
 	}
 
-	if ( Cmdline_no_deferred_lighting ) {
+	if (!gr_opengl_deferred_enabled()) {
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	} else {
