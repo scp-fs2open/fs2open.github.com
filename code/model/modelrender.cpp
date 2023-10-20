@@ -17,7 +17,6 @@
 #include "graphics/shadows.h"
 #include "graphics/tmapper.h"
 #include "graphics/uniforms.h"
-#include "graphics/opengl/gropengl.h"
 #include "io/timer.h"
 #include "jumpnode/jumpnode.h"
 #include "lighting/lighting.h"
