@@ -23,7 +23,6 @@ bool gr_opengl_is_capable(gr_capability capability);
 bool gr_opengl_get_property(gr_property prop, void* dest);
 void gr_opengl_push_debug_group(const char* name);
 void gr_opengl_pop_debug_group();
-bool gr_opengl_deferred_enabled();
 
 /**
  * @brief Assigns a string name to the specified handle
