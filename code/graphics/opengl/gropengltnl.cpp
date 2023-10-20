@@ -974,7 +974,7 @@ void opengl_tnl_set_material_particle(particle_material * material_info)
 			data->srgb          = High_dynamic_range ? 1 : 0;
 			data->blend_alpha   = material_info->get_blend_mode() != ALPHA_BLEND_ADDITIVE;
 
-			if (Cmdline_no_deferred_lighting) {
+			if (!light_deferred_enabled()) {
 				data->linear_depth = 0;
 			} else {
 				data->linear_depth = 1;
@@ -984,7 +984,7 @@ void opengl_tnl_set_material_particle(particle_material * material_info)
 	Current_shader->program->Uniforms.setTextureUniform("baseMap", 0);
 	Current_shader->program->Uniforms.setTextureUniform("depthMap", 1);
 
-	if (!Cmdline_no_deferred_lighting) {
+	if (light_deferred_enabled()) {
 		Assert(Scene_position_texture != 0);
 
 		GL_state.Texture.Enable(1, GL_TEXTURE_2D, Scene_position_texture);

@@ -114,4 +114,6 @@ extern int light_get_global_count();
 extern int light_get_global_dir(vec3d *pos, int n);
 
 bool light_compare_by_type(const light &a, const light &b);
+
+bool light_deferred_enabled();
 #endif

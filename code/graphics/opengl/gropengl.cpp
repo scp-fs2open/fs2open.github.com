@@ -27,6 +27,7 @@
 #include "graphics/2d.h"
 #include "graphics/matrix.h"
 #include "libs/renderdoc/renderdoc.h"
+#include "lighting/lighting.h"
 #include "math/floating.h"
 #include "model/model.h"
 #include "options/Option.h"
@@ -1402,7 +1403,7 @@ bool gr_opengl_is_capable(gr_capability capability)
 	case CAPABILITY_POST_PROCESSING:
 		return Gr_post_processing_enabled  && !Cmdline_no_fbo;
 	case CAPABILITY_DEFERRED_LIGHTING:
-		return !Cmdline_no_fbo && !Cmdline_no_deferred_lighting;
+		return !Cmdline_no_fbo && light_deferred_enabled();
 	case CAPABILITY_SHADOWS:
 	case CAPABILITY_THICK_OUTLINE:
 		return !Cmdline_no_geo_sdr_effects;

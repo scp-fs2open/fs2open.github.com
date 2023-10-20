@@ -20,6 +20,7 @@
 #include "math/vecmat.h"
 #include "model/modelrender.h"
 #include "render/3d.h"
+#include "options/Option.h"
 
 
 SCP_vector<light> Lights;
@@ -97,6 +98,29 @@ DCF(light,"Changes lighting parameters")
 	} else {
 		dc_stuff_string_white(arg_str);
 		dc_printf("Error: Unknown argument '%s'\n", arg_str.c_str());
+	}
+}
+
+// used by In-Game Options menu
+static bool DeferredLightingEnabled = true;
+
+static auto DeferredLightingOption = options::OptionBuilder<bool>("Graphics.DeferredLighting",
+                  std::pair<const char*, int>{"Deferred Lighting", 1782},
+                  std::pair<const char*, int>{"Enables or disables deferred lighting", 1783})
+                  .category("Graphics")
+                  .default_val(true)
+                  .level(options::ExpertLevel::Advanced)
+                  .bind_to_once(&DeferredLightingEnabled)
+                  .importance(60)
+                  .finish();
+
+
+bool light_deferred_enabled()
+{
+	if (Using_in_game_options) {
+		return DeferredLightingOption->getValue();
+	} else {
+		return !Cmdline_no_deferred_lighting;
 	}
 }
 
