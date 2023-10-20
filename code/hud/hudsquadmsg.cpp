@@ -1107,7 +1107,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 				Objects[ainfo->target_objnum].flags.remove(Object::Object_Flags::Protected);
 			}
 
-			ai_mode = AI_GOAL_DISABLE_SHIP;
+			ai_mode = (The_mission.ai_profile->flags[AI::Profile_Flags::Hudsquadmsg_tactical_disarm_disable]) ? AI_GOAL_DISABLE_SHIP_TACTICAL : AI_GOAL_DISABLE_SHIP;
 			ai_submode = -SUBSYSTEM_ENGINE;
 			message = MESSAGE_DISABLE_TARGET;
 			break;
@@ -1121,7 +1121,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 				Objects[ainfo->target_objnum].flags.remove(Object::Object_Flags::Protected);
 			}
 
-			ai_mode = AI_GOAL_DISARM_SHIP;
+			ai_mode = (The_mission.ai_profile->flags[AI::Profile_Flags::Hudsquadmsg_tactical_disarm_disable]) ? AI_GOAL_DISARM_SHIP_TACTICAL : AI_GOAL_DISARM_SHIP;
 			ai_submode = -SUBSYSTEM_TURRET;
 			message = MESSAGE_DISARM_TARGET;
 			break;
@@ -1393,7 +1393,7 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 			Assert(target_shipname);
 			Assert(wing_team != target_team);
 
-			ai_mode = AI_GOAL_DISABLE_SHIP;
+			ai_mode = (The_mission.ai_profile->flags[AI::Profile_Flags::Hudsquadmsg_tactical_disarm_disable]) ? AI_GOAL_DISABLE_SHIP_TACTICAL : AI_GOAL_DISABLE_SHIP;
 			ai_submode = -SUBSYSTEM_ENGINE;
 			message = MESSAGE_DISABLE_TARGET;
 			break;
@@ -1402,7 +1402,7 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 			Assert(target_shipname);
 			Assert(wing_team != target_team);
 
-			ai_mode = AI_GOAL_DISARM_SHIP;
+			ai_mode = (The_mission.ai_profile->flags[AI::Profile_Flags::Hudsquadmsg_tactical_disarm_disable]) ? AI_GOAL_DISARM_SHIP_TACTICAL : AI_GOAL_DISARM_SHIP;
 			ai_submode = -SUBSYSTEM_TURRET;
 			message = MESSAGE_DISARM_TARGET;
 			break;

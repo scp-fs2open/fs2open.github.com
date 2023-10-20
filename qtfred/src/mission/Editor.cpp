@@ -70,7 +70,9 @@ ai_goal_list Ai_goal_list[] = {
 	{ "Attack ship class",		AI_GOAL_CHASE_SHIP_CLASS,	0 },
 	{ "Guard",					AI_GOAL_GUARD | AI_GOAL_GUARD_WING, 0 },
 	{ "Disable ship",			AI_GOAL_DISABLE_SHIP,		0 },
+	{ "Disable ship (tactical)",AI_GOAL_DISABLE_SHIP_TACTICAL, 0 },
 	{ "Disarm ship",			AI_GOAL_DISARM_SHIP,		0 },
+	{ "Disarm ship (tactical)",	AI_GOAL_DISARM_SHIP_TACTICAL, 0 },
 	{ "Destroy subsystem",		AI_GOAL_DESTROY_SUBSYSTEM,	0 },
 	{ "Dock",					AI_GOAL_DOCK,				0 },
 	{ "Undock",					AI_GOAL_UNDOCK,				0 },
@@ -2600,7 +2602,9 @@ const char* Editor::error_check_initial_orders(ai_goal* goals, int ship, int win
 		case AI_GOAL_CHASE:
 		case AI_GOAL_GUARD:
 		case AI_GOAL_DISARM_SHIP:
+		case AI_GOAL_DISARM_SHIP_TACTICAL:
 		case AI_GOAL_DISABLE_SHIP:
+		case AI_GOAL_DISABLE_SHIP_TACTICAL:
 		case AI_GOAL_EVADE_SHIP:
 		case AI_GOAL_STAY_NEAR_SHIP:
 		case AI_GOAL_IGNORE:
@@ -2775,7 +2779,9 @@ const char* Editor::error_check_initial_orders(ai_goal* goals, int ship, int win
 		case AI_GOAL_CHASE_WING:
 		case AI_GOAL_DESTROY_SUBSYSTEM:
 		case AI_GOAL_DISARM_SHIP:
+		case AI_GOAL_DISARM_SHIP_TACTICAL:
 		case AI_GOAL_DISABLE_SHIP:
+		case AI_GOAL_DISABLE_SHIP_TACTICAL:
 			if (team == team2) {
 				if (ship >= 0)
 					return "Ship assigned to attack same team";

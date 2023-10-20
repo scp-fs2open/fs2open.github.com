@@ -203,8 +203,8 @@ int ConnectToChatServer(char *serveraddr, char *nickname, char *trackerid)
 			{
 				// make sure that we don't have any connect() errors (since it's non-blocking)
 				int err_val = 0;
-				size_t err_val_size = sizeof(err_val);
-				getsockopt(Chatsock, SOL_SOCKET, SO_ERROR, (char*)&err_val, (socklen_t*)&err_val_size);
+				socklen_t err_val_size = static_cast<socklen_t>(sizeof(err_val));
+				getsockopt(Chatsock, SOL_SOCKET, SO_ERROR, (char*)&err_val, &err_val_size);
 
 				if (err_val)
 				{
