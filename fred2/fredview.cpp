@@ -3462,7 +3462,9 @@ char *error_check_initial_orders(ai_goal *goals, int ship, int wing)
 			case AI_GOAL_CHASE:
 			case AI_GOAL_GUARD:
 			case AI_GOAL_DISARM_SHIP:
+			case AI_GOAL_DISARM_SHIP_TACTICAL:
 			case AI_GOAL_DISABLE_SHIP:
+			case AI_GOAL_DISABLE_SHIP_TACTICAL:
 			case AI_GOAL_EVADE_SHIP:
 			case AI_GOAL_STAY_NEAR_SHIP:
 			case AI_GOAL_IGNORE:
@@ -3638,7 +3640,9 @@ char *error_check_initial_orders(ai_goal *goals, int ship, int wing)
 			case AI_GOAL_CHASE_WING:
 			case AI_GOAL_DESTROY_SUBSYSTEM:
 			case AI_GOAL_DISARM_SHIP:
+			case AI_GOAL_DISARM_SHIP_TACTICAL:
 			case AI_GOAL_DISABLE_SHIP:
+			case AI_GOAL_DISABLE_SHIP_TACTICAL:
 				if (team == team2) {
 					if (ship >= 0)
 						return "Ship assigned to attack same team";

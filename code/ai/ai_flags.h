@@ -156,6 +156,7 @@ namespace AI {
 		Whackable_debris,
 		Whackable_asteroids,
 		Dynamic_goals_afterburn_hard,
+		Hudsquadmsg_tactical_disarm_disable,
 
 		NUM_VALUES
 	};
