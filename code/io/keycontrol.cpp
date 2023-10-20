@@ -875,13 +875,17 @@ void process_debug_keys(int k)
 
 					do_subobj_hit_stuff(objp, Player_obj, &g_subobj_pos, Player_ai->targeted_subsys->system_info->subobj_num, (float) -Player_ai->targeted_subsys->system_info->type, NULL); //100.0f);
 
-					if ( sp->subsys_info[SUBSYSTEM_ENGINE].aggregate_current_hits <= 0.0f ) {
-						mission_log_add_entry(LOG_SHIP_DISABLED, sp->ship_name, NULL );
-						sp->flags.set(Ship::Ship_Flags::Disabled);				// add the disabled flag
+					if ( Player_ai->targeted_subsys->system_info->type == SUBSYSTEM_ENGINE ) {
+						if ( sp->subsys_info[SUBSYSTEM_ENGINE].aggregate_current_hits <= 0.0f ) {
+							mission_log_add_entry(LOG_SHIP_DISABLED, sp->ship_name, NULL );
+							sp->flags.set(Ship::Ship_Flags::Disabled);				// add the disabled flag
+						}
 					}
 
-					if ( sp->subsys_info[SUBSYSTEM_TURRET].aggregate_current_hits <= 0.0f ) {
-						mission_log_add_entry(LOG_SHIP_DISARMED, sp->ship_name, NULL );
+					if ( Player_ai->targeted_subsys->system_info->type == SUBSYSTEM_TURRET ) {
+						if ( sp->subsys_info[SUBSYSTEM_TURRET].aggregate_current_hits <= 0.0f ) {
+							mission_log_add_entry(LOG_SHIP_DISARMED, sp->ship_name, NULL );
+						}
 					}
 				}
 			}
