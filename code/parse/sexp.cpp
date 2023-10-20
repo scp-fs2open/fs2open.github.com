@@ -744,6 +744,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "remove-sun-bitmap",				OP_REMOVE_SUN_BITMAP,					1,	1,			SEXP_ACTION_OPERATOR,	},	// phreak
 	{ "nebula-change-storm",			OP_NEBULA_CHANGE_STORM,					1,	1,			SEXP_ACTION_OPERATOR,	},	// phreak
 	{ "nebula-toggle-poof",				OP_NEBULA_TOGGLE_POOF,					2,	2,			SEXP_ACTION_OPERATOR,	},	// phreak
+	{ "nebula-fade-poof",				OP_NEBULA_FADE_POOF,					3,	3,			SEXP_ACTION_OPERATOR,	},	// MjnMixael
 	{ "nebula-change-pattern",			OP_NEBULA_CHANGE_PATTERN,				1,	1,			SEXP_ACTION_OPERATOR,	},	// Axem
 	{ "nebula-change-fog-color",		OP_NEBULA_CHANGE_FOG_COLOR,				3,	3,			SEXP_ACTION_OPERATOR,   },	// Asteroth
 	{ "set-skybox-model",				OP_SET_SKYBOX_MODEL,					1,	8,			SEXP_ACTION_OPERATOR,	},	// taylor
@@ -15585,6 +15586,31 @@ void sexp_nebula_toggle_poof(int n)
 	neb2_toggle_poof(i, result);
 }
 
+void sexp_nebula_fade_poofs(int n)
+{
+	bool is_nan, is_nan_forever;
+	
+	auto name = CTEXT(n);
+	n = CDR(n);
+	int time = eval_num(n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
+	n = CDR(n);
+	bool result = is_sexp_true(n);
+	int i;
+
+	for (i = 0; i < (int)Poof_info.size(); i++) {
+		if (!stricmp(name, Poof_info[i].name))
+			break;
+	}
+
+	// coulnd't find the poof
+	if (i == (int)Poof_info.size())
+		return;
+
+	neb2_fade_poofs(i, time, result);
+}
+
 void sexp_nebula_change_pattern(int n)
 {
 	if (!(The_mission.flags[Mission::Mission_Flags::Fullneb]))
@@ -27578,6 +27604,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_NEBULA_FADE_POOF:
+				sexp_nebula_fade_poofs(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_NEBULA_CHANGE_PATTERN:
 				sexp_nebula_change_pattern(node);
 				sexp_val = SEXP_TRUE;
@@ -29948,6 +29979,7 @@ int query_operator_return_type(int op)
 		case OP_REMOVE_SUN_BITMAP:
 		case OP_NEBULA_CHANGE_STORM:
 		case OP_NEBULA_TOGGLE_POOF:
+		case OP_NEBULA_FADE_POOF:
 		case OP_TOGGLE_ASTEROID_FIELD:
 		case OP_SET_ASTEROID_FIELD:
 		case OP_SET_DEBRIS_FIELD:
@@ -32567,6 +32599,14 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_BOOL;
 
+		case OP_NEBULA_FADE_POOF:
+			if (argnum == 0)
+				return OPF_NEBULA_POOF;
+			else if (argnum == 1)
+				return OPF_POSITIVE;
+			else
+				return OPF_BOOL;
+
 		case OP_NEBULA_CHANGE_FOG_COLOR:
 			return OPF_POSITIVE;
 
@@ -34792,6 +34832,7 @@ int get_category(int op_id)
 		case OP_REMOVE_SUN_BITMAP:
 		case OP_NEBULA_CHANGE_STORM:
 		case OP_NEBULA_TOGGLE_POOF:
+		case OP_NEBULA_FADE_POOF:
 		case OP_TURRET_CHANGE_WEAPON:
 		case OP_TURRET_SET_TARGET_ORDER:
 		case OP_SHIP_TURRET_TARGET_ORDER:
@@ -35411,6 +35452,7 @@ int get_subcategory(int op_id)
 		case OP_REMOVE_SUN_BITMAP:
 		case OP_NEBULA_CHANGE_STORM:
 		case OP_NEBULA_TOGGLE_POOF:
+		case OP_NEBULA_FADE_POOF:
 		case OP_NEBULA_CHANGE_PATTERN:
 		case OP_NEBULA_CHANGE_FOG_COLOR:
 		case OP_SET_AMBIENT_LIGHT:
@@ -39947,6 +39989,14 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"Takes 2 arguments...\r\n"
 		"\t1:\tName of nebula poof to toggle\r\n"
 		"\t2:\tA True boolean expression will toggle this poof on.  A false one will do the opposite."
+	},
+
+	{ OP_NEBULA_FADE_POOF, "nebula-fade-poof\r\n"
+		"\tSets a poof pattern to fade in or out over time\r\n"
+		"Takes 3 arguments...\r\n"
+		"\t1:\tName of the nebula poof to fade\r\n"
+		"\t2:\tTime in milliseconds to fade\r\n"
+		"\t3:\tWhether or not to fade in or out. True to fade in, false to fade out\r\n"
 	},
 
 	{ OP_NEBULA_CHANGE_PATTERN, "nebula-change-pattern\r\n"
